@@ -23,14 +23,18 @@
  * approach to matching/unifying.
  *)
 
-(*****************************************************************************)
-(* The parameter of the functor (the specific actions) *)
-(*****************************************************************************)
 
 (* should be used as less as possible. Most of the time the code in
  * cocci_vs_c should be the same if we pattern or transform *)
 type mode = PatternMode | TransformMode
 
+(* used in both pattern and transform, in envf *)
+val equal_metavarval : 
+  Ast_c.metavar_binding_kind -> Ast_c.metavar_binding_kind -> bool
+
+(*****************************************************************************)
+(* The parameter of the functor (the specific actions) *)
+(*****************************************************************************)
 
 
 module type PARAM =
@@ -132,7 +136,7 @@ module type PARAM =
       Ast_cocci.keep_binding ->
       Ast_cocci.inherited ->
       Ast_cocci.meta_name * Ast_c.metavar_binding_kind ->
-      tin -> (Ast_cocci.meta_name * Ast_c.metavar_binding_kind) tout
+      (unit -> tin -> 'x tout) -> (tin -> 'x tout)
 
 
     val all_bound : Ast_cocci.meta_name list -> tin -> bool

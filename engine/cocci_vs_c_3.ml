@@ -188,6 +188,45 @@ let equal_storage a b =
   | _ -> false
 
 (*---------------------------------------------------------------------------*)
+
+let equal_metavarval valu valu' =
+  match valu, valu' with
+  | Ast_c.MetaIdVal a, Ast_c.MetaIdVal b -> a =$= b
+  | Ast_c.MetaFuncVal a, Ast_c.MetaFuncVal b -> a =$= b
+  | Ast_c.MetaLocalFuncVal a, Ast_c.MetaLocalFuncVal b -> 
+      (* do something more ? *)
+      a =$= b
+
+  (* al_expr before comparing !!! and accept when they match.
+   * Note that here we have Astc._expression, so it is a match
+   * modulo isomorphism (there is no metavariable involved here,
+   * just isomorphisms). => TODO call isomorphism_c_c instead of
+   * =*=. Maybe would be easier to transform ast_c in ast_cocci
+   * and call the iso engine of julia. *)
+  | Ast_c.MetaExprVal a, Ast_c.MetaExprVal b -> 
+      Lib_parsing_c.al_expr a =*= Lib_parsing_c.al_expr b
+  | Ast_c.MetaStmtVal a, Ast_c.MetaStmtVal b -> 
+      Lib_parsing_c.al_statement a =*= Lib_parsing_c.al_statement b
+  | Ast_c.MetaTypeVal a, Ast_c.MetaTypeVal b -> 
+      (* old: Lib_parsing_c.al_type a =*= Lib_parsing_c.al_type b *)
+      Equality_c.eq_type a b
+        
+  | Ast_c.MetaListlenVal a, Ast_c.MetaListlenVal b -> a =|= b
+  | Ast_c.MetaExprListVal a, Ast_c.MetaExprListVal b -> 
+      failwith "not handling MetaExprListVal"
+  | Ast_c.MetaParamVal a, Ast_c.MetaParamVal b -> 
+      failwith "not handling MetaParamVal"
+  | Ast_c.MetaParamListVal a, Ast_c.MetaParamListVal b -> 
+      failwith "not handling MetaParamListVal"
+
+  | Ast_c.MetaPosVal (posa1,posa2), Ast_c.MetaPosVal (posb1,posb2) -> 
+      Ast_c.equal_pos posa1 posb1 && Ast_c.equal_pos posa2 posb2
+        
+  | _ -> raise Impossible
+
+
+
+(*---------------------------------------------------------------------------*)
 (* could put in ast_c.ml, next to the split/unsplit_comma *)
 let split_signb_baseb_ii (baseb, ii) = 
   let iis = ii +> List.map (fun info -> info.B.pinfo.Common.str, info) in
@@ -442,8 +481,7 @@ module type PARAM =
     val envf : 
       A.keep_binding -> A.inherited -> 
       A.meta_name * Ast_c.metavar_binding_kind ->
-      tin -> 
-      (A.meta_name * Ast_c.metavar_binding_kind) tout
+      (unit -> tin -> 'x tout) -> (tin -> 'x tout)
 
     val all_bound : A.meta_name list -> (tin -> bool)
 
@@ -475,7 +513,10 @@ let (>&&>) = X.(>&&>)
 let tokenf = X.tokenf
 
 (* should be raise Impossible when called from transformation.ml *)
-let fail2 = fail
+let fail2 () = 
+  match X.mode with
+  | PatternMode -> fail
+  | TransformMode -> raise Impossible
 
 
 let (option: ('a,'b) matcher -> ('a option,'b option) matcher)= fun f t1 t2 ->
@@ -555,30 +596,12 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
 	) 
         >>= (fun () () ->
 		
-		
-         (* get binding, assert =*=,  distribute info in ida *)
-	 X.envf keep inherited (term ida, Ast_c.MetaExprVal expb) >>=
-	  (fun _s v ->
-          (* todo: now that we have tagged SP, useless to check if what is
-           * in env match what is in C because the tag on ida will detect
-           * it also sooner or later
-           *)
-	    match v with
-            (* the expa is 'abstract-lined' so should not be the base of 
-             * futur processing. Just here to check. Then use expb! 
-             *)
-	    | Ast_c.MetaExprVal expa -> 
-		if (Lib_parsing_c.al_expr expa =*=
-		    Lib_parsing_c.al_expr expb)
-		then 
-		  X.distrf_e ida expb >>= (fun ida expb -> 
-		    return (
-		      A.MetaExpr (ida,keep,opttypa,form,inherited)+>
-			A.rewrap ea,
-		      expb
-		    ))
-		else fail
-	    | _ -> raise Impossible
+	 X.envf keep inherited (term ida, Ast_c.MetaExprVal expb) (fun () -> 
+	   X.distrf_e ida expb >>= (fun ida expb -> 
+	     return (
+	       A.MetaExpr (ida,keep,opttypa,form,inherited)+>A.rewrap ea,
+	       expb
+	     ))
 	  ))
       else fail
 	  
@@ -908,36 +931,23 @@ and (ident: info_ident -> (A.ident, string * Ast_c.info) matcher) =
 
 
   | A.MetaId(mida,keep,inherited) -> 
-      (* get binding, assert =*=,  distribute info *)
-      X.envf keep inherited (term mida, Ast_c.MetaIdVal (idb)) >>= (fun _s v ->
-        match v with
-        | Ast_c.MetaIdVal sa -> 
-            if (sa =$= idb) 
-            then 
-              tokenf mida iib >>= (fun mida iib -> 
-                return (
-                  ((A.MetaId (mida, keep, inherited)) +> A.rewrap ida,
-                  (idb, iib)
-                  )))
-            else fail
-        | _ -> raise Impossible
+      X.envf keep inherited (term mida, Ast_c.MetaIdVal (idb)) (fun () -> 
+        tokenf mida iib >>= (fun mida iib -> 
+          return (
+            ((A.MetaId (mida, keep, inherited)) +> A.rewrap ida,
+            (idb, iib)
+            )))
       )
 
   | A.MetaFunc(mida,keep,inherited) -> 
       (match infoidb with 
       | LocalFunction | Function -> 
-          X.envf keep inherited(term mida,Ast_c.MetaFuncVal idb)>>=(fun _s v ->
-            match v with
-            | Ast_c.MetaFuncVal sa -> 
-                if(sa =$= idb) 
-                then 
-                  tokenf mida iib >>= (fun mida iib -> 
-                    return (
-                      ((A.MetaFunc(mida,keep,inherited))) +> A.rewrap ida,
-                      (idb, iib)
-                    ))
-                else fail
-            | _ -> raise Impossible
+          X.envf keep inherited(term mida,Ast_c.MetaFuncVal idb) (fun () -> 
+            tokenf mida iib >>= (fun mida iib -> 
+              return (
+                ((A.MetaFunc(mida,keep,inherited))) +> A.rewrap ida,
+                (idb, iib)
+              ))
           )
       | DontKnow -> failwith "MetaFunc, need more semantic info about id"
       )
@@ -945,19 +955,12 @@ and (ident: info_ident -> (A.ident, string * Ast_c.info) matcher) =
   | A.MetaLocalFunc(mida,keep,inherited) -> 
       (match infoidb with 
       | LocalFunction -> 
-          X.envf keep inherited (term mida,Ast_c.MetaLocalFuncVal idb) >>=
-            (fun _s v ->
-            match v with
-            | Ast_c.MetaLocalFuncVal sa -> 
-                if(sa =$= idb) 
-                then 
-                  tokenf mida iib >>= (fun mida iib -> 
-                    return (
-                      ((A.MetaLocalFunc(mida,keep,inherited))) +> A.rewrap ida,
-                      (idb, iib)
-                    ))
-                else fail
-            | _ -> raise Impossible
+          X.envf keep inherited (term mida,Ast_c.MetaLocalFuncVal idb) (fun()->
+            tokenf mida iib >>= (fun mida iib -> 
+              return (
+                ((A.MetaLocalFunc(mida,keep,inherited))) +> A.rewrap ida,
+                (idb, iib)
+              ))
           )
       | Function -> fail
       | DontKnow -> failwith "MetaLocalFunc, need more semantic info about id"
@@ -1067,15 +1070,7 @@ and arguments_bis = fun eas ebs ->
 	       *)
 
               X.envf keep inherited (term ida, Ast_c.MetaExprListVal startxs')
-              >>= (fun _s v -> 
-                  match v with
-                  | Ast_c.MetaExprListVal startxsenv -> 
-                      (* TODO
-                      if (Lib_parsing_c.al_expr expa =*= 
-                          Lib_parsing_c.al_expr expb)
-                      *)
-                     X.distrf_args ida (Ast_c.split_comma startxs')
-                  | _ -> raise Impossible) 
+              (fun () -> X.distrf_args ida (Ast_c.split_comma startxs'))
               >>= (fun ida startxs -> 
                   arguments_bis eas endxs >>= (fun eas endxs -> 
                     return (
@@ -1202,15 +1197,7 @@ and parameters_bis eas ebs =
 		(lenname, Ast_c.MetaListlenVal (List.length startxs')) *)
 
               X.envf keep inherited (term ida, Ast_c.MetaParamListVal startxs')
-              >>= (fun _s v -> 
-                  match v with
-                  | Ast_c.MetaParamListVal startxsenv -> 
-                      (* TODO
-                      if (Lib_parsing_c.al_expr expa =*= 
-                          Lib_parsing_c.al_expr expb)
-                      *)
-                     X.distrf_params ida (Ast_c.split_comma startxs')
-                  | _ -> raise Impossible) 
+              (fun () -> X.distrf_params ida (Ast_c.split_comma startxs'))
               >>= (fun ida startxs -> 
                   parameters_bis eas endxs >>= (fun eas endxs -> 
                     return (
@@ -1250,17 +1237,9 @@ and parameters_bis eas ebs =
 
       | A.MetaParam (ida,keep,inherited), (Left eb)::ebs -> 
           (* todo: use quaopt, hasreg ? *)
-          X.envf keep inherited (term ida, Ast_c.MetaParamVal eb) >>= 
-            (fun _s v -> 
-              match v with
-              | Ast_c.MetaParamVal ea -> 
-                  (* TODO
-                     if (Lib_parsing_c.al_expr expa =*= 
-                     Lib_parsing_c.al_expr expb)
-                  *)
-                  X.distrf_param ida eb
-              | _ -> raise Impossible
-            ) >>= (fun ida eb -> 
+          X.envf keep inherited (term ida, Ast_c.MetaParamVal eb) (fun () -> 
+            X.distrf_param ida eb
+          ) >>= (fun ida eb -> 
               parameters_bis eas ebs >>= (fun eas ebs -> 
                 return (
                   (A.MetaParam(ida,keep,inherited))+> A.rewrap ea::eas,
@@ -1969,17 +1948,12 @@ and (fullTypebis: (A.typeC, Ast_c.fullType) matcher) =
 
   (* cas general *)
   | A.MetaType(ida,keep, inherited),  typb -> 
-      X.envf keep inherited (term ida, B.MetaTypeVal typb) >>= (fun _s v ->  
-        match v with
-        | B.MetaTypeVal typa  -> 
-          if (Lib_parsing_c.al_type typa =*= Lib_parsing_c.al_type typb)
-          then X.distrf_type ida typb >>= (fun ida typb -> 
-            return (
-              A.MetaType(ida,keep, inherited) +> A.rewrap ta,
-              typb
-            ))
-          else fail
-        | _ -> raise Impossible
+      X.envf keep inherited (term ida, B.MetaTypeVal typb) (fun () -> 
+        X.distrf_type ida typb >>= (fun ida typb -> 
+          return (
+            A.MetaType(ida,keep, inherited) +> A.rewrap ta,
+            typb
+          ))
       )
   | unwrap, (qub, typb) -> 
       typeC ta typb >>= (fun ta typb -> 
@@ -2447,8 +2421,7 @@ and compatible_type a b =
         else fail
 
   | Type_cocci.MetaType (ida,keep,inherited),     typb -> 
-      
-      X.envf keep inherited (ida, B.MetaTypeVal typb) >>= (fun _s v ->  
+      X.envf keep inherited (ida, B.MetaTypeVal typb) (fun () -> 
         ok
       )
 
@@ -2620,7 +2593,7 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
 
   (* note: the order of the clauses is important. *)
 
-  | _, F.Enter | _, F.Exit | _, F.ErrorExit -> fail2
+  | _, F.Enter | _, F.Exit | _, F.ErrorExit -> fail2()
 
   (* the metaRuleElem contains just '-' information. We dont need to add
    * stuff in the environment. If we need stuff in environment, because
@@ -2684,10 +2657,10 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
   | _, F.EndStatement _ | _, F.CaseNode _
   | _, F.TrueNode | _, F.FalseNode | _, F.AfterNode | _, F.FallThroughNode
   | _, F.InLoopNode
-    -> fail2
+    -> fail2()
 
   (* really ? diff between pattern.ml and transformation.ml *)
-  | _, F.Fake -> fail2
+  | _, F.Fake -> fail2()
 
 
   (* cas general: a Meta can match everything. It matches only
@@ -2699,23 +2672,13 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
 
       (match Control_flow_c.extract_fullstatement node with
       | Some stb -> 
-         X.envf keep inherited (term ida, Ast_c.MetaStmtVal stb) >>= 
-           (fun _s v -> 
-             match v with
-             | B.MetaStmtVal sta -> 
-                 if (Lib_parsing_c.al_statement sta 
-                      =*= 
-                     Lib_parsing_c.al_statement stb)
-                 then
-                   (* no need tag ida, we can't be called in transform-mode *)
-                   return (
-                     A.MetaStmt (ida, keep, metainfoMaybeTodo, inherited),
-                     unwrap_node
-                   )
-                 else fail
-             | _ -> raise Impossible
+         X.envf keep inherited (term ida, Ast_c.MetaStmtVal stb) (fun () -> 
+           (* no need tag ida, we can't be called in transform-mode *)
+           return (
+             A.MetaStmt (ida, keep, metainfoMaybeTodo, inherited),
+             unwrap_node
            )
-           
+         )
       | None -> fail
       )
 
@@ -2781,14 +2744,8 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
                 Lib_parsing_c.max_min_by_pos (Lib_parsing_c.ii_of_expr eb) in
               let keep = Type_cocci.Unitary in
               let inherited = false in
-              X.envf keep inherited (pos, B.MetaPosVal (min,max)) >>= 
-               (fun _s v ->
-                match v with
-                | B.MetaPosVal posa -> 
-                    if posa =*= (min,max)
-                    then expression ea eb
-                    else fail 
-                | _ -> raise Impossible
+              X.envf keep inherited (pos, B.MetaPosVal (min,max)) (fun () -> 
+                expression ea eb
               )
             )
       in
@@ -3152,7 +3109,7 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
   | _, F.Asm _
   | _, F.Ifdef _
   | _, F.MacroTop _
-    -> fail2
+    -> fail2()
 
 
   | _, _ -> fail  

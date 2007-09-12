@@ -378,18 +378,28 @@ module XTRANS = struct
   let meta_name_to_str (s1, s2) = 
     s1 ^ "." ^ s2
 
-  let envf keep _inherited (s, value) = fun tin -> 
-    if keep = Type_cocci.Saved
-    then (
-      try Some (s, List.assoc s tin.binding)
-      with Not_found -> 
-        pr2 (sprintf "Don't find value for metavariable %s in the environment"
-                (meta_name_to_str s));
-        None
-    )
-    else 
-      (* not raise Impossible! *)
-      Some (s, value)
+  let envf keep _inherited = fun (s, value) f tin -> 
+    let v = 
+      if keep = Type_cocci.Saved
+      then (
+        try Some (List.assoc s tin.binding)
+        with Not_found -> 
+          pr2(sprintf "Don't find value for metavariable %s in the environment"
+                 (meta_name_to_str s));
+          None
+      )
+      else 
+        (* not raise Impossible! *)
+        Some (value)
+    in
+    match v with
+    | None -> fail tin
+    | Some (value') -> 
+        if Cocci_vs_c_3.equal_metavarval value value' 
+        then f () tin
+        else fail tin
+    
+
 
   (* ------------------------------------------------------------------------*)
   (* Environment, allbounds *) 

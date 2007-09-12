@@ -234,46 +234,13 @@ module XMATCH = struct
   let check_add_metavars_binding _keep inherited = fun (k, valu) tin ->
     (match Common.optionise (fun () -> tin.binding +> List.assoc k) with
     | Some (valu') ->
-        if
-          (match valu, valu' with
-          | Ast_c.MetaIdVal a, Ast_c.MetaIdVal b -> a =$= b
-          | Ast_c.MetaFuncVal a, Ast_c.MetaFuncVal b -> a =$= b
-          | Ast_c.MetaLocalFuncVal a, Ast_c.MetaLocalFuncVal b -> 
-              (* do something more ? *)
-              a =$= b
-
-          (* al_expr before comparing !!! and accept when they match.
-           * Note that here we have Astc._expression, so it is a match
-           * modulo isomorphism (there is no metavariable involved here,
-           * just isomorphisms). => TODO call isomorphism_c_c instead of
-           * =*=. Maybe would be easier to transform ast_c in ast_cocci
-           * and call the iso engine of julia. *)
-          | Ast_c.MetaExprVal a, Ast_c.MetaExprVal b -> 
-              Lib_parsing_c.al_expr a =*= Lib_parsing_c.al_expr b
-          | Ast_c.MetaStmtVal a, Ast_c.MetaStmtVal b -> 
-              Lib_parsing_c.al_statement a =*= Lib_parsing_c.al_statement b
-          | Ast_c.MetaTypeVal a, Ast_c.MetaTypeVal b -> 
-              (* old: Lib_parsing_c.al_type a =*= Lib_parsing_c.al_type b *)
-              Equality_c.eq_type a b
-
-          | Ast_c.MetaListlenVal a, Ast_c.MetaListlenVal b -> a =|= b
-          | Ast_c.MetaExprListVal a, Ast_c.MetaExprListVal b -> 
-              failwith "not handling MetaExprListVal"
-          | Ast_c.MetaParamVal a, Ast_c.MetaParamVal b -> 
-              failwith "not handling MetaParamVal"
-          | Ast_c.MetaParamListVal a, Ast_c.MetaParamListVal b -> 
-              failwith "not handling MetaParamListVal"
-
-          | Ast_c.MetaPosVal (posa1,posa2), Ast_c.MetaPosVal (posb1,posb2) -> 
-              Ast_c.equal_pos posa1 posb1 && Ast_c.equal_pos posa2 posb2
-
-          | _ -> raise Impossible
-          ) 
-        then [tin.binding]
-        else []
+        if Cocci_vs_c_3.equal_metavarval valu valu'
+        then Some tin.binding
+        else None
 
     | None -> 
-        if inherited then []
+        if inherited 
+        then None
         else 
           let valu' = 
             (match valu with
@@ -296,16 +263,16 @@ module XMATCH = struct
             | Ast_c.MetaPosVal (pos1,pos2) -> Ast_c.MetaPosVal (pos1,pos2)
             ) 
           in
-          [tin.binding +> Common.insert_assoc (k, valu')]
+          Some (tin.binding +> Common.insert_assoc (k, valu'))
     )
 
 
 
-  let envf keep inherited = fun (k, valu) tin -> 
-    check_add_metavars_binding keep inherited (k, valu) tin
-      +> List.map (fun binding -> (k,valu), binding)
-
-
+  let envf keep inherited = fun (k, valu) f tin -> 
+    match check_add_metavars_binding keep inherited (k, valu) tin with
+    | Some binding -> f () {extra = tin.extra; binding = binding}
+    | None -> fail tin
+        
 
   (* ------------------------------------------------------------------------*)
   (* Environment, allbounds *) 
