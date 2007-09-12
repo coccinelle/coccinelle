@@ -303,7 +303,7 @@ let rec expression e =
     | Ast0.MetaExpr(name,ty,form,_)  ->
 	Ast.MetaExpr(mcode name,unitary,ty,form,false)
     | Ast0.MetaExprList(name,lenname,_) ->
-	Ast.MetaExprList(mcode name,lenname,unitary,false)
+	Ast.MetaExprList(mcode name,lenname,unitary,false,false)
     | Ast0.EComma(cm)         -> Ast.EComma(mcode cm)
     | Ast0.DisjExpr(_,exps,_,_)     -> Ast.DisjExpr(List.map expression exps)
     | Ast0.NestExpr(_,exp_dots,_,whencode) ->
@@ -502,7 +502,7 @@ and parameterTypeDef p =
     | Ast0.Param(ty,id) -> Ast.Param(typeC ty,get_option ident id)
     | Ast0.MetaParam(name,_) -> Ast.MetaParam(mcode name,unitary,false)
     | Ast0.MetaParamList(name,lenname,_) ->
-	Ast.MetaParamList(mcode name,lenname,unitary,false)
+	Ast.MetaParamList(mcode name,lenname,unitary,false,false)
     | Ast0.PComma(cm) -> Ast.PComma(mcode cm)
     | Ast0.Pdots(dots) -> Ast.Pdots(mcode dots)
     | Ast0.Pcircles(dots) -> Ast.Pcircles(mcode dots)

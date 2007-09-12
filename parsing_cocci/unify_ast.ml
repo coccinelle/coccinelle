@@ -154,10 +154,10 @@ let rec unify_expression e1 e2 =
 
   | (Ast.MetaErr(_,_,_),_)
   | (Ast.MetaExpr(_,_,_,_,_),_)
-  | (Ast.MetaExprList(_,_,_,_),_)
+  | (Ast.MetaExprList(_,_,_,_,_),_)
   | (_,Ast.MetaErr(_,_,_))
   | (_,Ast.MetaExpr(_,_,_,_,_))
-  | (_,Ast.MetaExprList(_,_,_,_)) -> return true
+  | (_,Ast.MetaExprList(_,_,_,_,_)) -> return true
 
   | (Ast.EComma(cm1),Ast.EComma(cm2)) -> return true
 
@@ -330,9 +330,9 @@ and unify_parameterTypeDef p1 p2 =
 	(unify_option unify_ident i1 i2)
 
   | (Ast.MetaParam(_,_,_),_)
-  | (Ast.MetaParamList(_,_,_,_),_)
+  | (Ast.MetaParamList(_,_,_,_,_),_)
   | (_,Ast.MetaParam(_,_,_))
-  | (_,Ast.MetaParamList(_,_,_,_)) -> return true
+  | (_,Ast.MetaParamList(_,_,_,_,_)) -> return true
 
   | (Ast.PComma(_),Ast.PComma(_)) -> return true
 

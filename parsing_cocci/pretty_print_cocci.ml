@@ -208,7 +208,7 @@ let rec expression e =
   | Ast.MetaErr(name,_,_) -> mcode print_meta name
   | Ast.MetaExpr(name,keep,ty,form,inherited) ->
       mcode print_meta name; print_type keep inherited ty
-  | Ast.MetaExprList(name,_,_,_) -> mcode print_meta name
+  | Ast.MetaExprList(name,_,_,_,_) -> mcode print_meta name
   | Ast.EComma(cm) -> mcode print_string cm; print_space()
   | Ast.DisjExpr(exp_list) -> print_disj_list expression exp_list
   | Ast.NestExpr(expr_dots,Some whencode) ->
@@ -461,7 +461,7 @@ and parameterTypeDef p =
   | Ast.Param(ty,Some id) -> print_named_type ty id
   | Ast.Param(ty,None) -> fullType ty
   | Ast.MetaParam(name,_,_) -> mcode print_meta name
-  | Ast.MetaParamList(name,_,_,_) -> mcode print_meta name
+  | Ast.MetaParamList(name,_,_,_,_) -> mcode print_meta name
   | Ast.PComma(cm) -> mcode print_string cm; print_space()
   | Ast.Pdots(dots) -> mcode print_string dots
   | Ast.Pcircles(dots) -> mcode print_string dots
