@@ -8,7 +8,9 @@ type meta_name = string * string
 (* need to be careful about rewrapping, to avoid duplicating pos info
 currently, the pos info is always None until asttoctl2. *)
 type 'a wrap =
-    ('a * line * meta_name list (*free vars*) * meta_name list (*fresh vars*) *
+    ('a * line * meta_name list (*free vars*) *
+       meta_name list (*minus free vars*) *
+       meta_name list (*fresh vars*) *
        meta_name list (*inherited vars*) * meta_name list (*witness vars*) *
        dots_bef_aft *
        meta_name option (* pos info, try not to duplicate *))
@@ -503,25 +505,28 @@ let mkToken x = Token (x,None)
 
 (* --------------------------------------------------------------------- *)
 
-let rewrap (_,l,fvs,fresh,inherited,saved,d,pos) x =
-  (x,l,fvs,fresh,inherited,saved,d,pos)
-let unwrap (x,_,_,_,_,_,_,_) = x
+let rewrap (_,l,fvs,mfvs,fresh,inherited,saved,d,pos) x =
+  (x,l,fvs,mfvs,fresh,inherited,saved,d,pos)
+let unwrap (x,_,_,_,_,_,_,_,_) = x
 let unwrap_mcode (x,_,_) = x
 let get_mcodekind (_,_,x) = x
-let get_line (_,l,_,_,_,_,_,_) = l
+let get_line (_,l,_,_,_,_,_,_,_) = l
 let get_mcode_line (_,l,_) = l.line
-let get_fvs (_,_,fvs,_,_,_,_,_) = fvs
-let set_fvs fvs (x,l,_,fresh,inherited,saved,d,pos) =
-  (x,l,fvs,fresh,inherited,saved,d,pos)
-let get_fresh (_,_,_,fresh,_,_,_,_) = fresh
-let get_inherited (_,_,_,_,inherited,_,_,_) = inherited
-let get_saved (_,_,_,_,_,saved,_,_) = saved
-let get_dots_bef_aft (_,_,_,_,_,_,d,_) = d
-let get_pos (_,_,_,_,_,_,_,pos) = pos
-let rewrap_dots_bef_aft (x,l,fvs,fresh,inherited,saved,_,pos) d =
-  (x,l,fvs,fresh,inherited,saved,d,pos)
-let rewrap_pos (x,l,fvs,fresh,inherited,saved,d,_) pos =
-  (x,l,fvs,fresh,inherited,saved,d,pos)
+let get_fvs (_,_,fvs,_,_,_,_,_,_) = fvs
+let set_fvs fvs (x,l,_,mfvs,fresh,inherited,saved,d,pos) =
+  (x,l,fvs,mfvs,fresh,inherited,saved,d,pos)
+let get_mfvs (_,_,_,mfvs,_,_,_,_,_) = mfvs
+let set_mfvs mfvs (x,l,fvs,_,fresh,inherited,saved,d,pos) =
+  (x,l,fvs,mfvs,fresh,inherited,saved,d,pos)
+let get_fresh (_,_,_,_,fresh,_,_,_,_) = fresh
+let get_inherited (_,_,_,_,_,inherited,_,_,_) = inherited
+let get_saved (_,_,_,_,_,_,saved,_,_) = saved
+let get_dots_bef_aft (_,_,_,_,_,_,_,d,_) = d
+let get_pos (_,_,_,_,_,_,_,_,pos) = pos
+let rewrap_dots_bef_aft (x,l,fvs,mfvs,fresh,inherited,saved,_,pos) d =
+  (x,l,fvs,mfvs,fresh,inherited,saved,d,pos)
+let rewrap_pos (x,l,fvs,mfvs,fresh,inherited,saved,d,_) pos =
+  (x,l,fvs,mfvs,fresh,inherited,saved,d,pos)
 
 (* --------------------------------------------------------------------- *)
 
@@ -548,13 +553,13 @@ let no_info = { line = 0; column = 0; strbef = []; straft = [] }
 
 let make_meta_rule_elem s d (fvs,fresh,inh) =
   (MetaRuleElem((("",s),no_info,d),Type_cocci.Unitary,false),
-   0, fvs, fresh, inh, [], NoDots, None)
+   0, fvs, [], fresh, inh, [], NoDots, None)
 
 let make_meta_decl s d (fvs,fresh,inh) =
   (MetaDecl((("",s),no_info,d),Type_cocci.Unitary,false), 0,
-   fvs, fresh, inh, [], NoDots, None)
+   fvs, [], fresh, inh, [], NoDots, None)
 
-let make_term x = (x,0,[],[],[],[],NoDots, None)
+let make_term x = (x,0,[],[],[],[],[],NoDots, None)
 let make_mcode x = (x,no_info,CONTEXT(NoPos,NOTHING))
 
 (* --------------------------------------------------------------------- *)

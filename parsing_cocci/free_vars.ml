@@ -407,66 +407,72 @@ let astfvs metavars bound =
 
   (* cases for the elements of anything *)
   let astfvrule_elem recursor k re =
+    let minus_free = nub (collect_all_refs.V.combiner_rule_elem re) in
     let free =
-      Common.union_set
-	(nub (collect_all_refs.V.combiner_rule_elem re))
+      Common.union_set minus_free
 	(collect_in_plus_term.V.combiner_rule_elem re) in
     let (unbound,inherited) =
       List.partition (function x -> not(List.mem x bound)) free in
-    let (re,l,_,_,_,_,d,pos) = k re in
-    (re,l,unbound,collect_fresh unbound,inherited,[],d,pos) in
+    let munbound =
+      List.filter (function x -> not(List.mem x bound)) minus_free in
+    let (re,l,_,_,_,_,_,d,pos) = k re in
+    (re,l,unbound,munbound,collect_fresh unbound,inherited,[],d,pos) in
 
   let astfvstatement recursor k s =
+    let minus_free = nub (collect_all_refs.V.combiner_statement s) in
     let free =
-      Common.union_set
-	(nub (collect_all_refs.V.combiner_statement s))
+      Common.union_set minus_free
 	(collect_in_plus_term.V.combiner_statement s) in
-    let classify free =
+    let classify free minus_free =
       let (unbound,inherited) =
 	List.partition (function x -> not(List.mem x bound)) free in
-      (unbound,collect_fresh unbound,inherited) in
-    let (s,l,_,_,_,_,d,pos) = k s in
+      let munbound =
+	List.filter (function x -> not(List.mem x bound)) minus_free in
+      (unbound,munbound,collect_fresh unbound,inherited) in
+    let (s,l,_,_,_,_,_,d,pos) = k s in
     let s =
       match s with
 	Ast.IfThen(header,branch,(_,_,_,aft)) ->
-	  let (unbound,fresh,inherited) =
-	    classify (cip_mcodekind collect_in_plus_term aft) in
+	  let (unbound,_,fresh,inherited) =
+	    classify (cip_mcodekind collect_in_plus_term aft) [] in
 	  Ast.IfThen(header,branch,(unbound,fresh,inherited,aft))
       | Ast.IfThenElse(header,branch1,els,branch2,(_,_,_,aft)) ->
-	  let (unbound,fresh,inherited) =
-	    classify (cip_mcodekind collect_in_plus_term aft) in
+	  let (unbound,_,fresh,inherited) =
+	    classify (cip_mcodekind collect_in_plus_term aft) [] in
 	  Ast.IfThenElse(header,branch1,els,branch2,
 			 (unbound,fresh,inherited,aft))
       | Ast.While(header,body,(_,_,_,aft)) ->
-	  let (unbound,fresh,inherited) =
-	    classify (cip_mcodekind collect_in_plus_term aft) in
+	  let (unbound,_,fresh,inherited) =
+	    classify (cip_mcodekind collect_in_plus_term aft) [] in
 	  Ast.While(header,body,(unbound,fresh,inherited,aft))
       | Ast.For(header,body,(_,_,_,aft)) ->
-	  let (unbound,fresh,inherited) =
-	    classify (cip_mcodekind collect_in_plus_term aft) in
+	  let (unbound,_,fresh,inherited) =
+	    classify (cip_mcodekind collect_in_plus_term aft) [] in
 	  Ast.For(header,body,(unbound,fresh,inherited,aft))
       | Ast.Iterator(header,body,(_,_,_,aft)) ->
-	  let (unbound,fresh,inherited) =
-	    classify (cip_mcodekind collect_in_plus_term aft) in
+	  let (unbound,_,fresh,inherited) =
+	    classify (cip_mcodekind collect_in_plus_term aft) [] in
 	  Ast.Iterator(header,body,(unbound,fresh,inherited,aft))
       |	_ -> s in
-    let (unbound,fresh,inherited) = classify free in
-    (s,l,unbound,collect_fresh unbound,inherited,[],d,pos) in
+    let (unbound,munbound,fresh,inherited) = classify free minus_free in
+    (s,l,unbound,munbound,collect_fresh unbound,inherited,[],d,pos) in
 
   let astfvstatement_dots recursor k sd =
+    let minus_free = nub (collect_all_refs.V.combiner_statement_dots sd) in
     let free =
-      Common.union_set
-	(nub (collect_all_refs.V.combiner_statement_dots sd))
+      Common.union_set minus_free 
 	(collect_in_plus_term.V.combiner_statement_dots sd) in
     let (unbound,inherited) =
       List.partition (function x -> not(List.mem x bound)) free in
-    let (sd,l,_,_,_,_,d,pos) = k sd in
-    (sd,l,unbound,collect_fresh unbound,inherited,[],d,pos) in
+    let munbound =
+      List.filter (function x -> not(List.mem x bound)) minus_free in
+    let (sd,l,_,_,_,_,_,d,pos) = k sd in
+    (sd,l,unbound,munbound,collect_fresh unbound,inherited,[],d,pos) in
 
   let astfvtoplevel recursor k tl =
     let saved = collect_saved.V.combiner_top_level tl in
-    let (tl,l,unbound,fresh,inherited,_,d,pos) = k tl in
-    (tl,l,unbound,fresh,inherited,saved,d,pos) in
+    let (tl,l,unbound,munbound,fresh,inherited,_,d,pos) = k tl in
+    (tl,l,unbound,munbound,fresh,inherited,saved,d,pos) in
 
   let mcode x = x in
   let donothing r k e = k e in

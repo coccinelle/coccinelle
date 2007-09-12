@@ -6,9 +6,12 @@ type info = { line : int; column : int;
 type line = int
 type meta_name = string * string
 type 'a wrap =
-    ('a * line * meta_name list (*free vars*) * meta_name list (*fresh vars*) *
+    ('a * line * meta_name list (*free vars*) *
+       meta_name list (*minus free vars*) *
+       meta_name list (*fresh vars*) *
        meta_name list (*inherited vars*) * meta_name list (*witness vars*) *
-       dots_bef_aft * meta_name option (* pos info, try not to duplicate *))
+       dots_bef_aft *
+       meta_name option (* pos info, try not to duplicate *))
 
 and 'a befaft =
     BEFORE      of 'a list list
@@ -498,6 +501,8 @@ val get_line : 'a wrap -> line
 val get_mcode_line : 'a mcode -> line
 val get_fvs : 'a wrap -> meta_name list
 val set_fvs : meta_name list -> 'a wrap -> 'a wrap
+val get_mfvs : 'a wrap -> meta_name list
+val set_mfvs : meta_name list -> 'a wrap -> 'a wrap
 val get_fresh : 'a wrap -> meta_name list
 val get_inherited : 'a wrap -> meta_name list
 val get_saved : 'a wrap -> meta_name list

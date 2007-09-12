@@ -147,6 +147,9 @@ let elim_opt =
   let fvlist l =
     List.fold_left Common.union_set [] (List.map Ast.get_fvs l) in
 
+  let mfvlist l =
+    List.fold_left Common.union_set [] (List.map Ast.get_mfvs l) in
+
   let freshlist l =
     List.fold_left Common.union_set [] (List.map Ast.get_fresh l) in
 
@@ -157,7 +160,7 @@ let elim_opt =
     List.fold_left Common.union_set [] (List.map Ast.get_saved l) in
 
   let varlists l =
-    (fvlist l, freshlist l, inheritedlist l, savedlist l) in
+    (fvlist l, mfvlist l, freshlist l, inheritedlist l, savedlist l) in
 
   let rec dots_list unwrapped wrapped =
     match (unwrapped,wrapped) with
@@ -170,48 +173,60 @@ let elim_opt =
 	 let l = Ast.get_line stm in
 	 let new_rest1 = stm :: (dots_list (u::urest) (d1::rest)) in
 	 let new_rest2 = dots_list urest rest in
-	 let (fv_rest1,fresh_rest1,inherited_rest1,s1) = varlists new_rest1 in
-	 let (fv_rest2,fresh_rest2,inherited_rest2,s2) = varlists new_rest2 in
+	 let (fv_rest1,mfv_rest1,fresh_rest1,inherited_rest1,s1) =
+	   varlists new_rest1 in
+	 let (fv_rest2,mfv_rest2,fresh_rest2,inherited_rest2,s2) =
+	   varlists new_rest2 in
 	 [d0;
 	   (Ast.Disj
-	      [(Ast.DOTS(new_rest1),l,fv_rest1,fresh_rest1,inherited_rest1,s1,
+	      [(Ast.DOTS(new_rest1),l,
+		fv_rest1,mfv_rest1,fresh_rest1,inherited_rest1,s1,
 		Ast.NoDots,None);
-		(Ast.DOTS(new_rest2),l,fv_rest2,fresh_rest2,inherited_rest2,s2,
+		(Ast.DOTS(new_rest2),l,
+		 fv_rest2,mfv_rest2,fresh_rest2,inherited_rest2,s2,
 		 Ast.NoDots,None)],
-	      l,fv_rest1,fresh_rest1,inherited_rest1,s1,Ast.NoDots,None)]
+	    l,fv_rest1,mfv_rest1,fresh_rest1,inherited_rest1,s1,
+	    Ast.NoDots,None)]
 
     | (Ast.OptStm(stm)::urest,_::rest) ->
 	 let l = Ast.get_line stm in
 	 let new_rest1 = dots_list urest rest in
 	 let new_rest2 = stm::new_rest1 in
-	 let (fv_rest1,fresh_rest1,inherited_rest1,s1) = varlists new_rest1 in
-	 let (fv_rest2,fresh_rest2,inherited_rest2,s2) = varlists new_rest2 in
+	 let (fv_rest1,mfv_rest1,fresh_rest1,inherited_rest1,s1) =
+	   varlists new_rest1 in
+	 let (fv_rest2,mfv_rest2,fresh_rest2,inherited_rest2,s2) =
+	   varlists new_rest2 in
 	 [(Ast.Disj
-	     [(Ast.DOTS(new_rest2),l,fv_rest2,fresh_rest2,inherited_rest2,s2,
-	       Ast.NoDots,None);
-	       (Ast.DOTS(new_rest1),l,fv_rest1,fresh_rest1,inherited_rest1,s1,
-		Ast.NoDots,None)],
-	   l,fv_rest2,fresh_rest2,inherited_rest2,s2,Ast.NoDots,None)]
+	     [(Ast.DOTS(new_rest2),l,fv_rest2,mfv_rest2,fresh_rest2,
+	       inherited_rest2,s2,Ast.NoDots,None);
+	       (Ast.DOTS(new_rest1),l,fv_rest1,mfv_rest1,fresh_rest1,
+		inherited_rest1,s1,Ast.NoDots,None)],
+	   l,fv_rest2,fv_rest2,fresh_rest2,inherited_rest2,s2,Ast.NoDots,None)]
 
     | ([Ast.Dots(_,_,_,_);Ast.OptStm(stm)],[d1;_]) ->
 	let l = Ast.get_line stm in
 	let fv_stm = Ast.get_fvs stm in
+	let mfv_stm = Ast.get_mfvs stm in
 	let fresh_stm = Ast.get_fresh stm in
 	let inh_stm = Ast.get_inherited stm in
 	let saved_stm = Ast.get_saved stm in
 	let fv_d1 = Ast.get_fvs d1 in
+	let mfv_d1 = Ast.get_mfvs d1 in
 	let fresh_d1 = Ast.get_fresh d1 in
 	let inh_d1 = Ast.get_inherited d1 in
 	let saved_d1 = Ast.get_saved d1 in
 	let fv_both = Common.union_set fv_stm fv_d1 in
+	let mfv_both = Common.union_set mfv_stm mfv_d1 in
 	let fresh_both = Common.union_set fresh_stm fresh_d1 in
 	let inh_both = Common.union_set inh_stm inh_d1 in
 	let saved_both = Common.union_set saved_stm saved_d1 in
-	[d1;(Ast.Disj[(Ast.DOTS([stm]),l,fv_stm,fresh_stm,inh_stm,saved_stm,
-		       Ast.NoDots,None);
-		       (Ast.DOTS([d1]),l,fv_d1,fresh_d1,inh_d1,saved_d1,
-			Ast.NoDots,None)],
-	     l,fv_both,fresh_both,inh_both,saved_both,Ast.NoDots,None)]
+	[d1;(Ast.Disj
+	       [(Ast.DOTS([stm]),l,fv_stm,mfv_stm,fresh_stm,inh_stm,saved_stm,
+		 Ast.NoDots,None);
+		 (Ast.DOTS([d1]),l,fv_d1,mfv_d1,fresh_d1,inh_d1,saved_d1,
+		  Ast.NoDots,None)],
+	     l,fv_both,mfv_both,fresh_both,inh_both,saved_both,
+	     Ast.NoDots,None)]
 
     | ([Ast.Nest(_,_,_,_);Ast.OptStm(stm)],[d1;_]) ->
 	let l = Ast.get_line stm in
@@ -223,8 +238,9 @@ let elim_opt =
 		      Ast.strbef = [];Ast.straft = []},
 		    Ast.CONTEXT(Ast.NoPos,Ast.NOTHING)),
 		   [],[],[]) in
-	[d1;rw(Ast.Disj[rwd(Ast.DOTS([stm]));
-			 (Ast.DOTS([rw dots]),l,[],[],[],[],Ast.NoDots,None)])]
+	[d1;rw(Ast.Disj
+		 [rwd(Ast.DOTS([stm]));
+		   (Ast.DOTS([rw dots]),l,[],[],[],[],[],Ast.NoDots,None)])]
 
     | (_::urest,stm::rest) -> stm :: (dots_list urest rest)
     | _ -> failwith "not possible" in
@@ -1757,31 +1773,32 @@ let rec cleanup = function
 let top_level ua t =
   used_after := ua;
   saved := Ast.get_saved t;
-  match Ast.unwrap t with
-    Ast.FILEINFO(old_file,new_file) -> failwith "not supported fileinfo"
-  | Ast.DECL(stmt) ->
-      let unopt = elim_opt.V.rebuilder_statement stmt in
-      let unopt = preprocess_dots_e unopt in
-      cleanup(statement unopt Tail [] None false)
-  | Ast.CODE(stmt_dots) ->
-      let unopt = elim_opt.V.rebuilder_statement_dots stmt_dots in
-      let unopt = preprocess_dots unopt in
-      let starts_with_dots =
-	match Ast.undots stmt_dots with
-	  d::ds ->
-	    (match Ast.unwrap d with
-	      Ast.Dots(_,_,_,_) | Ast.Circles(_,_,_,_) | Ast.Stars(_,_,_,_) ->
-		true
-	    | _ -> false)
-	| _ -> false in
-      let res = statement_list unopt Tail [] None false false in
-      cleanup
-	(if starts_with_dots
-	then
+  quantify ua
+    (match Ast.unwrap t with
+      Ast.FILEINFO(old_file,new_file) -> failwith "not supported fileinfo"
+    | Ast.DECL(stmt) ->
+	let unopt = elim_opt.V.rebuilder_statement stmt in
+	let unopt = preprocess_dots_e unopt in
+	cleanup(statement unopt Tail ua None false)
+    | Ast.CODE(stmt_dots) ->
+	let unopt = elim_opt.V.rebuilder_statement_dots stmt_dots in
+	let unopt = preprocess_dots unopt in
+	let starts_with_dots =
+	  match Ast.undots stmt_dots with
+	    d::ds ->
+	      (match Ast.unwrap d with
+		Ast.Dots(_,_,_,_) | Ast.Circles(_,_,_,_)
+	      | Ast.Stars(_,_,_,_) -> true
+	      | _ -> false)
+	  | _ -> false in
+	let res = statement_list unopt Tail ua None false false in
+	cleanup
+	  (if starts_with_dots
+	  then
 	  (* EX because there is a loop on enter/top *)
-	  ctl_and CTL.NONSTRICT (enterpred None) (ctl_ex res)
-	else res)
-  | Ast.ERRORWORDS(exps) -> failwith "not supported errorwords"
+	    ctl_and CTL.NONSTRICT (enterpred None) (ctl_ex res)
+	  else res)
+    | Ast.ERRORWORDS(exps) -> failwith "not supported errorwords")
 
 (* --------------------------------------------------------------------- *)
 (* Entry points *)

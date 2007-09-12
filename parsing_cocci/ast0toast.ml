@@ -225,9 +225,10 @@ let mcode(term,_,info,mcodekind) =
 (* Dots *)
 
 let rewrap ast0 ast =
-  (ast, (Ast0.get_info ast0).Ast0.line_start, [], [], [], [], Ast.NoDots, None)
+  (ast, (Ast0.get_info ast0).Ast0.line_start,
+   [], [], [], [], [], Ast.NoDots, None)
 let tokenwrap (_,info,_) ast =
-  (ast, info.Ast.line, [], [], [], [], Ast.NoDots, None)
+  (ast, info.Ast.line, [], [], [], [], [], Ast.NoDots, None)
 
 let dots fn d =
   rewrap d
@@ -523,10 +524,10 @@ and statement s =
 	    Ast.DroppingBetweenDots (statement seqible s,get_ctr())
 	| Ast0.AddingBetweenDots s ->
 	    Ast.AddingBetweenDots (statement seqible s,get_ctr()) in
-      (ast, (Ast0.get_info ast0).Ast0.line_start, [], [], [], [],
+      (ast, (Ast0.get_info ast0).Ast0.line_start, [], [], [], [], [],
        befaft,None) in
     let local_rewrap ast0 ast =
-      (ast, (Ast0.get_info ast0).Ast0.line_start, [], [], [], [],
+      (ast, (Ast0.get_info ast0).Ast0.line_start, [], [], [], [], [],
        Ast.NoDots, None) in
     rewrap s
       (match Ast0.unwrap s with
