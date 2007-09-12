@@ -317,6 +317,41 @@ let structdef_to_struct_name ty =
       )
   | _ -> raise Impossible
 
+(*---------------------------------------------------------------------------*)
+let initialisation_to_affectation decl = 
+  match decl with
+  | B.MacroDecl _ -> F.Decl decl
+  | B.DeclList (xs, iis) -> 
+      
+      (* todo?: should not do that if the variable is an array cos
+       *  will have x[] = , mais de toute facon ca sera pas un InitExp
+       *)
+      (match xs with
+      | [] -> raise Impossible
+      | [x] -> 
+          let ((var, returnType, storage),iisep) = x in
+          
+          (match var with
+          | Some ((s, ini),  iis::iini) -> 
+              (match ini with
+              | Some (B.InitExpr e, ii_empty2) -> 
+                  let typ = ref (Some (Lib_parsing_c.al_type returnType)) in
+                  let id = (B.Ident s, typ),[iis] in
+                  F.DefineExpr
+                    ((B.Assignment (id, B.SimpleAssign, e), 
+                     Ast_c.noType()), iini)
+              | _ -> F.Decl decl
+              )
+          | _ -> F.Decl decl
+          )
+      | x::xs -> 
+          pr2 "TODO: initialisation_to_affectation for multi vars";
+          F.Decl decl
+      )
+
+
+
+
 
 (*****************************************************************************)
 (* Functor parameter combinators *)
@@ -2704,6 +2739,17 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
    *)
 
   | A.Exp exp, nodeb -> 
+
+      let node = 
+        match A.unwrap exp, nodeb with
+        | A.Assignment (ea, op, eb, _true), F.Decl decl -> 
+            initialisation_to_affectation decl +> F.rewrap node
+        | _ -> node
+      in
+
+
+
+
      (* Now keep fullstatement inside the control flow node, 
       * so that can then get in a MetaStmtVar the fullstatement to later
       * pp back when the S is in a +. But that means that 
