@@ -757,14 +757,16 @@ let triples_witness x unchecked not_keep trips =
 		(SUB.print_mvar x; Format.print_flush();
 		 print_state ": empty witness from" [t]);
 	      t::prev
-	  | l when anyneg l ->
-	      (* negated substitution only allowed with negwits.
+	  | l when anyneg l -> prev
+	      (* see tests/nestseq for how neg bindings can come up even
+		 without eg partial matches
+              (* negated substitution only allowed with negwits.
 		 just dropped *)
 	      if anynegwit wit && allnegwit wit (* nonempty negwit list *)
 	      then prev
 	      else
 		(print_generic_substitution l; Format.print_newline();
-		failwith "unexpected negative binding with positive witnesses")
+		failwith "unexpected negative binding with positive witnesses")*)
 	  | [_] -> (* positive must be alone *)
 	      let new_triple =
 		if unchecked or not_keep
