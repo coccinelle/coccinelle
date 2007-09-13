@@ -546,7 +546,7 @@ sizeof(E) => sizeof E
 
 Expression
 @ sizeof_type_expr @
-type T;
+pure type T; // pure because we drop a metavar
 T E;
 @@
 
