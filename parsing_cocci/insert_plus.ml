@@ -165,6 +165,7 @@ bind to that; not good for isomorphisms *)
   let cdots r k d = dots r.V0.combiner_case_line k d in
 
   let statement r k s =
+    (*
     let redo_branched res (ifinfo,aftmc) =
       let redo fv info mc rest =
 	let new_info = {info with Ast0.attachable_end = false} in
@@ -191,14 +192,14 @@ bind to that; not good for isomorphisms *)
 	  (match mc with
 	    Ast0.CONTEXT(_) -> redo fv info mc rest
 	  | _ -> res)
-      | _ -> failwith "unexpected empty code" in
+      | _ -> failwith "unexpected empty code" in *)
     match Ast0.unwrap s with
-      Ast0.IfThen(_,_,_,_,_,aft)
+ (*     Ast0.IfThen(_,_,_,_,_,aft)
     | Ast0.IfThenElse(_,_,_,_,_,_,_,aft)
     | Ast0.While(_,_,_,_,_,aft)
     | Ast0.For(_,_,_,_,_,_,_,_,_,aft)
     | Ast0.Iterator(_,_,_,_,_,aft) ->
-	redo_branched (do_nothing r k s) aft
+	redo_branched (do_nothing r k s) aft*)
     | Ast0.FunDecl((info,bef),fninfo,name,lp,params,rp,lbrace,body,rbrace) ->
 	(Toplevel,info,bef)::(k s)
     | Ast0.Decl((info,bef),decl) -> (Decl,info,bef)::(k s)

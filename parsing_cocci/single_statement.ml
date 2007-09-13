@@ -149,10 +149,16 @@ let all_minus s =
     Ast0.MINUS(_) -> true
   | _ -> false
 
+let unchanged_minus s =
+  match Ast0.get_mcodekind s with
+    Ast0.MINUS(mc) -> (match !mc with ([],_) -> true | _ -> false)
+  | _ -> false
+
 let rec do_branch s =
-  if contains_only_minus.V0.combiner_statement s
+  if unchanged_minus s
   then
-    Ast0.set_dots_bef_aft s (Ast0.DroppingBetweenDots(add_braces s))
+    (Printf.printf "in another case\n";
+    Ast0.set_dots_bef_aft s (Ast0.DroppingBetweenDots(add_braces s)))
   else
     match Ast0.unwrap s with
       Ast0.Disj(starter,statement_dots_list,mids,ender) ->
@@ -172,14 +178,16 @@ let rec statement dots_before dots_after s =
   let do_one s =
     if dots_before && dots_after
     then
-      if contains_only_minus.V0.combiner_statement s
+      if unchanged_minus s
       then
-	let with_braces = add_braces s in
-	Ast0.set_dots_bef_aft s (Ast0.DroppingBetweenDots(with_braces))
+	(let with_braces = add_braces s in
+	Printf.printf "in the first case\n";
+	Ast0.set_dots_bef_aft s (Ast0.DroppingBetweenDots(with_braces)))
       else if adding_something s
       then
-	let with_braces = add_braces s in
-	Ast0.set_dots_bef_aft s (Ast0.AddingBetweenDots(with_braces))
+	(let with_braces = add_braces s in
+	Printf.printf "in this case\n";
+	Ast0.set_dots_bef_aft s (Ast0.AddingBetweenDots(with_braces)))
       else s
     else s in
 
