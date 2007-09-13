@@ -35,8 +35,10 @@ let strip_info_visitor =
 
 let al_expr      = Visitor_c.vk_expr_s      strip_info_visitor 
 let al_statement = Visitor_c.vk_statement_s strip_info_visitor
-let al_type      = Visitor_c.vk_type_s      strip_info_visitor 
+let al_type      = Visitor_c.vk_type_s      strip_info_visitor
+let al_param     = Visitor_c.vk_param_s     strip_info_visitor
 let al_params    = Visitor_c.vk_params_s    strip_info_visitor
+let al_arguments = Visitor_c.vk_arguments_s strip_info_visitor
 
 let al_program  = List.map (Visitor_c.vk_program_s  strip_info_visitor)
 

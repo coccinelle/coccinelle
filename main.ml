@@ -25,6 +25,10 @@ let test_all = ref false
 let test_okfailed = ref false
 let test_regression_okfailed = ref false
 
+(* index mode *)
+let index_mode = ref false
+let use_index_mode = ref false
+
 (* action mode *)
 let action = ref ""
 
@@ -307,6 +311,13 @@ let other_options = [
     "   option to set if launch spatch in ocamldebug";
     "-disable_once",     Arg.Set Common._disable_once, 
     "   to print more messages";
+  ];
+
+  "misc options bis",
+  "",
+  [
+    "-index", Arg.Set index_mode, " ";
+    "-use_index", Arg.Set use_index_mode, " ";
 
     "-use_cache", Arg.Set Flag_parsing_c.use_cache, 
     "   use .ast_raw pre-parsed cached C file";
@@ -466,6 +477,14 @@ let main () =
     | x::xs when !test_okfailed -> 
         (* do its own timeout on Flag_cocci.timeout internally *)
         Testing.test_okfailed !cocci_file (x::xs)
+
+    (* --------------------------------------------------------- *)
+    (* Index mode *)
+    (* --------------------------------------------------------- *)
+    | [dir;tmpdir] when !index_mode -> 
+        Cocci.index dir tmpdir
+    | [tmpdir] when !use_index_mode -> 
+        Cocci.full_engine_use_index (!cocci_file, !Config.std_iso) tmpdir
 
     (* --------------------------------------------------------- *)
     (* Actions, useful to debug subpart of coccinelle *)

@@ -70,6 +70,10 @@ val vk_program_s : visitor_c_s -> toplevel -> toplevel
 val vk_info_s : visitor_c_s -> info -> info
 val vk_node_s : visitor_c_s -> Control_flow_c.node -> Control_flow_c.node
 
+val vk_arguments_s : 
+  visitor_c_s -> 
+  argument wrap2 list -> argument wrap2 list
+
 val vk_args_splitted_s : 
   visitor_c_s -> 
   (argument, il) Common.either list -> 

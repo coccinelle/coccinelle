@@ -1043,3 +1043,169 @@ let check_duplicate_modif2 xs =
   )
 let check_duplicate_modif a = 
   Common.profile_code "check_duplicate" (fun () -> check_duplicate_modif2 a)
+
+(*****************************************************************************)
+(* Index and use index functions *)
+(*****************************************************************************)
+
+(* 
+ glimpseindex -o -H . home 
+ glimpse -y -H . -N -W -w pattern;pattern2
+
+./spatch.opt -profile -sgrep2 -quiet -show_diff -c demos/while_idiom.sgrep -dir ~/kernels/git/linux-2.6/
+./spatch.opt -profile -sgrep2 -quiet -show_diff -c demos/while_idiom.sgrep -use_index /tmp/cocci_index/
+ -l
+*)
+
+let index dir tmpdir = 
+  pr2 (spf "INDEXING %s and keeping result in %s" dir tmpdir);
+  Common.command2 ("mkdir -p " ^ tmpdir);
+
+  (* cant anticipate what will be the SP used with this general index *)
+  g_contain_typedmetavar := true;
+
+  let already = Hashtbl.create 101 in
+
+  (* iter c files *)
+  let cfiles = Common.cmd_to_list ("find "^dir^" -name \"*.c\"") in
+  cfiles +> List.iter (fun cfile -> 
+    pr2 ("HANDLING:" ^ cfile);
+    
+    try (
+    let c_infos = prepare_c [cfile] in
+
+    (* iter dependent files of a c cile (the ".h" included in general) *)
+    c_infos +> List.iter (fun cinfo -> 
+      pr2 (spf "%s, %s" cinfo.fname cinfo.fpath);
+
+      if Hashtbl.mem already cinfo.fpath
+      then pr2 ("already done:" ^ cinfo.fpath)
+      else begin
+        Hashtbl.add already cinfo.fpath true;
+
+        let (d,b,e) = Common.dbe_of_filename cinfo.fpath in
+        let d' = Filename.concat tmpdir d in
+        Common.command2 ("mkdir -p " ^ d');
+        
+        (* iter toplevel elements in file *)
+        Common.index_list cinfo.asts +> List.iter (fun (topcinfo, i) -> 
+          (*pr2 (spf "%d" i);*)
+          
+          let smallfile = Common.filename_of_dbe (d', b^"__"^ i_to_s i, e) in
+
+          match topcinfo.ast_c with
+          (* index only functions for the moment *)
+          | Ast_c.Definition _ -> 
+              let finfo = { cinfo with
+                fname = Filename.basename smallfile;
+                asts = [{ topcinfo with flow = None}];
+                fpath = smallfile;
+              }
+              in
+              let c = topcinfo in
+              cfile_of_program 
+                [(c.ast_c, (c.fullstring, c.tokens_c)), Unparse_c.PPviastr] 
+                smallfile;
+          
+              let marshalled_file = smallfile ^ ".marshalled_finfo" in
+              write_value (finfo : file_info) marshalled_file;
+          | _ -> ()
+        );
+      end
+    )
+    ) with exn -> pr2 ("EXN:" ^ Printexc.to_string exn); 
+  )
+
+
+
+
+
+
+let find_in_index_cfiles toks tmpdir = 
+  (* TODO use toks *)
+  pr2_gen toks;
+
+  let kwd = "list_for_each;list_entry" in
+  pr2 ("glimpse request = " ^ kwd);
+  let files = 
+    Common.cmd_to_list 
+      (*("find "^tmpdir^" -name \"*.c\"") *)
+      (spf "glimpse -y -H %s -N -W -w '%s'" tmpdir kwd)
+  in
+  files
+
+
+
+let read_from_cache cfiles =
+  cfiles +> List.map (fun smallfile -> 
+    (* lazy *)
+    (fun () ->
+
+    let marshalled_file = smallfile ^ ".marshalled_finfo" in
+    let finfo = (get_value marshalled_file : file_info) in
+
+    {finfo with 
+      asts = finfo.asts +> List.map (fun topcinfo -> 
+        let c = topcinfo.ast_c in
+        
+        let flow = 
+          ast_to_flow_with_error_messages c +> Common.map_option (fun flow -> 
+            let flow = Ast_to_flow.annotate_loop_nodes flow in
+            (* remove the fake nodes for julia *)
+            let fixed_flow = CCI.fix_flow_ctl flow in
+            fixed_flow
+          )
+        in
+        { topcinfo with 
+          flow = flow;
+          fullstring  = "";
+          env_typing_before = TAC.initial_env;
+          env_typing_after = TAC.initial_env;
+        }
+      )
+    }
+  )
+  )
+
+
+let full_engine_use_index (coccifile, isofile) tmpdir = 
+
+  let isofile = Some isofile in
+
+  let (astcocci,free_var_lists,used_after_lists,toks) = 
+    sp_of_file coccifile isofile in
+  let ctls = 
+    ctls_of_ast  astcocci used_after_lists in
+  
+  (* :(  check_macro_in_sp_and_adjust toks; *)
+
+  let cocci_infos =
+    prepare_cocci ctls free_var_lists used_after_lists astcocci in
+
+  let cfiles = find_in_index_cfiles toks tmpdir in
+  pr2 (spf "number of relevant files: %d" (List.length cfiles));
+  (*cfiles +> List.iter (fun cfile -> pr2 ("relevant functions: " ^ cfile));*)
+
+  let c_infos_lazy  = read_from_cache cfiles in
+
+  pr2 "let's go";
+  c_infos_lazy +> List.iter (fun c_info_lazy -> 
+    try (
+    let c_info = c_info_lazy () in
+   
+    let c_infos' = bigloop cocci_infos [c_info] in
+
+    c_infos' +> List.iter (fun c_or_h -> 
+      if !(c_or_h.was_modified_once)
+      then begin
+        let outfile = Common.new_temp_file "cocci-output" ("-" ^ c_or_h.fname) 
+        in
+        (* and now unparse everything *)
+        cfile_of_program (for_unparser c_or_h.asts) outfile;
+
+        let show_only_minus = !Flag.sgrep_mode2 in
+        show_or_not_diff c_or_h.fpath outfile show_only_minus;
+      end
+    )
+    ) with exn -> pr2 ("EXN:" ^ Printexc.to_string exn); 
+  )

@@ -201,6 +201,8 @@ let redirect_stdin file f =
 
 include Printf
 
+let spf = sprintf
+
 let _chan = ref stderr
 let start_log_file () = 
   _chan := open_out ( "/tmp/debugml" ^  
@@ -568,8 +570,8 @@ let get_value filename =
 
 let write_value valu filename = 
   let chan = open_out filename in
-  ((* output_value chan valu;*)  (* <=> Marshal.to_channel *)
-   Marshal.to_channel chan valu [Marshal.Closures];
+  (output_value chan valu;  (* <=> Marshal.to_channel *)
+   (* Marshal.to_channel chan valu [Marshal.Closures]; *)
    close_out chan) 
 
 let write_back func filename = 

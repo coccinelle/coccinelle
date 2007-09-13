@@ -1,6 +1,5 @@
 open Common open Commonop
 
-
 (*****************************************************************************)
 (* The functor argument  *) 
 (*****************************************************************************)
@@ -230,7 +229,12 @@ module XMATCH = struct
   (* Environment *) 
   (* ------------------------------------------------------------------------*)
   (* pre: if have declared a new metavar that hide another one, then
-   * must be passed with a binding that deleted this metavar *)
+   * must be passed with a binding that deleted this metavar
+   * 
+   * Here we dont use the keep argument of julia. cf f(X,X), J'ai
+   * besoin de garder le X en interne, meme si julia s'en fout elle du
+   * X et qu'elle a mis X a DontSaved.
+   *)
   let check_add_metavars_binding _keep inherited = fun (k, valu) tin ->
     (match Common.optionise (fun () -> tin.binding +> List.assoc k) with
     | Some (valu') ->
@@ -249,13 +253,16 @@ module XMATCH = struct
             | Ast_c.MetaLocalFuncVal a -> Ast_c.MetaLocalFuncVal a (* more ? *)
             | Ast_c.MetaExprVal a -> 
                 Ast_c.MetaExprVal (Lib_parsing_c.al_expr a)
+            | Ast_c.MetaExprListVal a ->  
+                Ast_c.MetaExprListVal (Lib_parsing_c.al_arguments a)
+
             | Ast_c.MetaStmtVal a -> 
                 Ast_c.MetaStmtVal (Lib_parsing_c.al_statement a)
             | Ast_c.MetaTypeVal a -> 
                 Ast_c.MetaTypeVal (Lib_parsing_c.al_type a)
+
             | Ast_c.MetaListlenVal a -> Ast_c.MetaListlenVal a
-            | Ast_c.MetaExprListVal a ->  
-                failwith "not handling MetaExprListVal"
+
             | Ast_c.MetaParamVal a ->     
                 failwith "not handling MetaParamVal"
             | Ast_c.MetaParamListVal a -> 

@@ -37,6 +37,8 @@ val sprintf : ('a, unit, string) format -> 'a
 val bprintf : Buffer.t -> ('a, Buffer.t, unit) format -> 'a
 val kprintf : (string -> 'a) -> ('b, unit, string, 'a) format4 -> 'b
 
+val spf : ('a, unit, string) format -> 'a
+
 val _chan : out_channel ref (* default = stderr *)
 val start_log_file : unit -> unit (* generate & use a /tmp/debugml-xxx file *)
 val verbose_level : int ref

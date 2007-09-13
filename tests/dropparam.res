@@ -5,3 +5,8 @@ int f(char *x, int y, char* z) {
 int g(char *x, char* z) {
   return;
 }
+
+void main(void)
+{
+	g("toto", "tata");
+}

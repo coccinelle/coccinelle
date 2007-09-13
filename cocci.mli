@@ -21,3 +21,10 @@ val full_engine :
 
 val check_duplicate_modif : 
  (filename * filename option) list -> (filename * filename option) list
+
+
+
+val index : 
+  string (* dir *) -> string (* tmpdir *) -> unit
+val full_engine_use_index : 
+  (filename * filename) -> string (* tmpdir *) -> unit

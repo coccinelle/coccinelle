@@ -395,9 +395,23 @@ module XTRANS = struct
     match v with
     | None -> fail tin
     | Some (value') -> 
+
+        (* Ex: in cocci_vs_c someone wants to add a binding. Here in
+         * transformation3 the value for this var may be already in the 
+         * env, because for instance its value were fixed in a previous
+         * SmPL rule. So here we want to check that this is the same value.
+         * If forget to do the check, what can happen ? Because of Exp
+         * and other disjunctive feature of cocci_vs_c (>||>), we 
+         * may accept a match at a wrong position. Maybe later this
+         * will be detected via the pos system on tokens, but maybe
+         * not. So safer to keep the check.
+         *)
+
+        (*f () tin*)
         if Cocci_vs_c_3.equal_metavarval value value' 
         then f () tin
         else fail tin
+
     
 
 

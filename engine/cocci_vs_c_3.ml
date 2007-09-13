@@ -205,6 +205,9 @@ let equal_metavarval valu valu' =
    * and call the iso engine of julia. *)
   | Ast_c.MetaExprVal a, Ast_c.MetaExprVal b -> 
       Lib_parsing_c.al_expr a =*= Lib_parsing_c.al_expr b
+  | Ast_c.MetaExprListVal a, Ast_c.MetaExprListVal b -> 
+      Lib_parsing_c.al_arguments a =*= Lib_parsing_c.al_arguments b
+
   | Ast_c.MetaStmtVal a, Ast_c.MetaStmtVal b -> 
       Lib_parsing_c.al_statement a =*= Lib_parsing_c.al_statement b
   | Ast_c.MetaTypeVal a, Ast_c.MetaTypeVal b -> 
@@ -212,12 +215,11 @@ let equal_metavarval valu valu' =
       Equality_c.eq_type a b
         
   | Ast_c.MetaListlenVal a, Ast_c.MetaListlenVal b -> a =|= b
-  | Ast_c.MetaExprListVal a, Ast_c.MetaExprListVal b -> 
-      failwith "not handling MetaExprListVal"
+
   | Ast_c.MetaParamVal a, Ast_c.MetaParamVal b -> 
-      failwith "not handling MetaParamVal"
+      Lib_parsing_c.al_param a =*= Lib_parsing_c.al_param b
   | Ast_c.MetaParamListVal a, Ast_c.MetaParamListVal b -> 
-      failwith "not handling MetaParamListVal"
+      Lib_parsing_c.al_params a =*= Lib_parsing_c.al_params b
 
   | Ast_c.MetaPosVal (posa1,posa2), Ast_c.MetaPosVal (posb1,posb2) -> 
       Ast_c.equal_pos posa1 posb1 && Ast_c.equal_pos posa2 posb2
@@ -1061,17 +1063,41 @@ and arguments_bis = fun eas ebs ->
       | A.MetaExprList(ida,leninfo,keep,inherited),ys ->
           let startendxs = Common.zip (Common.inits ys) (Common.tails ys) in
           startendxs +> List.fold_left (fun acc (startxs, endxs) -> 
-            let startxs' = Ast_c.unsplit_comma startxs in
             acc >||> (
+              let ok =
+                if startxs = []
+                then
+                  if mcode_contain_plus (mcodekind ida)
+                  then false 
+                    (* failwith "no token that I could accroche myself on" *)
+                  else true
+                else 
+                  (match Common.last startxs with
+                  | Right _ -> false
+                  | Left _ -> true
+                  )
+              in
+              if not ok
+              then fail
+              else 
+                let startxs' = Ast_c.unsplit_comma startxs in
+                let len = List.length  startxs' in
 
-	    (* need to integrate the following somehow
-              X.envf keep inherited
-		(lenname, Ast_c.MetaListlenVal (List.length startxs'))
-	       *)
-	    
-	    X.envf keep inherited (term ida, Ast_c.MetaExprListVal startxs')
-	      (fun () -> X.distrf_args ida (Ast_c.split_comma startxs'))
-              >>= (fun ida startxs -> 
+		(match leninfo with
+		| Some (lenname,lenkeep,leninherited) ->
+                    X.envf lenkeep leninherited
+                      (lenname, Ast_c.MetaListlenVal (len))
+		| None -> function f -> f()
+                )
+                (fun () -> 
+                  X.envf keep inherited 
+                    (term ida, Ast_c.MetaExprListVal startxs') 
+                (fun () -> 
+		  if startxs = []
+		  then return (ida, [])
+                  else X.distrf_args ida (Ast_c.split_comma startxs')
+                )
+                >>= (fun ida startxs -> 
                   arguments_bis eas endxs >>= (fun eas endxs -> 
                     return (
                       (A.MetaExprList(ida,leninfo,keep,inherited))
@@ -1080,7 +1106,7 @@ and arguments_bis = fun eas ebs ->
                     ))
                   )
                 )
-            ) fail 
+            )) fail 
 
 
       | _unwrapx, (Left eb)::ebs -> 
@@ -1212,25 +1238,25 @@ and parameters_bis eas ebs =
 		  Some (lenname,lenkeep,leninherited) ->
                     X.envf lenkeep leninherited
 		      (lenname, Ast_c.MetaListlenVal (len))
-		| None -> function f -> f())
-
-		  (fun () -> 
-                    X.envf keep inherited 
-                      (term ida, Ast_c.MetaParamListVal startxs') (fun () -> 
-			if startxs = []
-			then return (ida, [])
-			else X.distrf_params ida (Ast_c.split_comma startxs')
-			    )
-                   >>= (fun ida startxs -> 
-                     parameters_bis eas endxs >>= (fun eas endxs -> 
-                       return (
-                       (A.MetaParamList(ida,leninfo,keep,inherited))
-			 +> A.rewrap ea::eas,
-                       startxs ++ endxs
-		     ))
-                   )
+		| None -> function f -> f()
+                )
+	        (fun () -> 
+                  X.envf keep inherited 
+                    (term ida, Ast_c.MetaParamListVal startxs') 
+                (fun () -> 
+		  if startxs = []
+		  then return (ida, [])
+		  else X.distrf_params ida (Ast_c.split_comma startxs')
+		) >>= (fun ida startxs -> 
+                  parameters_bis eas endxs >>= (fun eas endxs -> 
+                    return (
+                      (A.MetaParamList(ida,leninfo,keep,inherited))
+                        +> A.rewrap ea::eas,
+                      startxs ++ endxs
+		    ))
+                )
                 ))
-            ) fail 
+          ) fail 
 
 
       | A.VoidParam ta, ys -> 

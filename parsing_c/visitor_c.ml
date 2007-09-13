@@ -1150,6 +1150,10 @@ let vk_args_splitted_s = fun bigf args_splitted ->
   | Right ii -> Right (iif ii)
   )
 
+let vk_arguments_s = fun bigf args -> 
+  let iif ii = vk_ii_s bigf ii in
+  args +> List.map (fun (e, ii) -> vk_argument_s bigf e, iif ii)
+
 
 let vk_params_splitted_s = fun bigf args_splitted -> 
   let iif ii = vk_ii_s bigf ii in
