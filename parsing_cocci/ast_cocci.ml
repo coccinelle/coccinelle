@@ -53,7 +53,7 @@ and metavar =
   | MetaTypeDecl of arity * meta_name (* name *)
   | MetaListlenDecl of meta_name (* name *)
   | MetaParamDecl of arity * meta_name (* name *)
-  | MetaParamListDecl of arity * meta_name (* name *) * meta_name (* len *)
+  | MetaParamListDecl of arity * meta_name (*name*) * meta_name option (*len*)
   | MetaConstDecl of
       arity * meta_name (* name *) * Type_cocci.typeC list option
   | MetaErrDecl of arity * meta_name (* name *)
@@ -61,7 +61,7 @@ and metavar =
       arity * meta_name (* name *) * Type_cocci.typeC list option
   | MetaIdExpDecl of
       arity * meta_name (* name *) * Type_cocci.typeC list option
-  | MetaExpListDecl of arity * meta_name (* name *) * meta_name (* len *)
+  | MetaExpListDecl of arity * meta_name (*name*) * meta_name option (*len*)
   | MetaStmDecl of arity * meta_name (* name *)
   | MetaStmListDecl of arity * meta_name (* name *)
   | MetaFuncDecl of arity * meta_name (* name *)
@@ -128,9 +128,8 @@ and base_expression =
   | MetaErr        of meta_name mcode * keep_binding * inherited
   | MetaExpr       of meta_name mcode * keep_binding *
 	              Type_cocci.typeC list option * form * inherited
-  | MetaExprList   of meta_name mcode * (meta_name * inherited (* lenname *)) *
-                      keep_binding * inherited (* name *)
-                      (* only in arg lists *)
+  | MetaExprList   of meta_name mcode * listlen option * keep_binding *
+                      inherited (* only in arg lists *)
 
   | EComma         of string mcode (* only in arg lists *)
 
@@ -152,6 +151,8 @@ and base_expression =
 and form = ANY | ID | CONST (* form for MetaExp *)
 
 and expression = base_expression wrap
+
+and listlen = meta_name * keep_binding * inherited
 
 and  unaryOp = GetRef | DeRef | UnPlus |  UnMinus | Tilde | Not
 and  assignOp = SimpleAssign | OpAssign of arithOp
@@ -273,8 +274,8 @@ and base_parameterTypeDef =
   | Param         of fullType * ident option
 
   | MetaParam     of meta_name mcode * keep_binding * inherited
-  | MetaParamList of meta_name mcode * (meta_name * inherited (* lenname *)) *
-	             keep_binding * inherited (* name *)
+  | MetaParamList of meta_name mcode * listlen option * keep_binding *
+	             inherited
 
   | PComma        of string mcode
 
@@ -509,6 +510,7 @@ let mkToken x = Token (x,None)
 
 let rewrap (_,l,fvs,mfvs,fresh,inherited,saved,d,pos) x =
   (x,l,fvs,mfvs,fresh,inherited,saved,d,pos)
+let rewrap_mcode (_,a,b) x = (x,a,b)
 let unwrap (x,_,_,_,_,_,_,_,_) = x
 let unwrap_mcode (x,_,_) = x
 let get_mcodekind (_,_,x) = x

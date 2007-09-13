@@ -1058,7 +1058,7 @@ and arguments_bis = fun eas ebs ->
           then fail
           else arguments_bis eas ebs
 
-      | A.MetaExprList (ida, (lenname, leninherited), keep, inherited), ys -> 
+      | A.MetaExprList(ida,leninfo,keep,inherited),ys ->
           let startendxs = Common.zip (Common.inits ys) (Common.tails ys) in
           startendxs +> List.fold_left (fun acc (startxs, endxs) -> 
             let startxs' = Ast_c.unsplit_comma startxs in
@@ -1068,15 +1068,14 @@ and arguments_bis = fun eas ebs ->
               X.envf keep inherited
 		(lenname, Ast_c.MetaListlenVal (List.length startxs'))
 	       *)
-
-              X.envf keep inherited (term ida, Ast_c.MetaExprListVal startxs')
-              (fun () -> X.distrf_args ida (Ast_c.split_comma startxs'))
+	    
+	    X.envf keep inherited (term ida, Ast_c.MetaExprListVal startxs')
+	      (fun () -> X.distrf_args ida (Ast_c.split_comma startxs'))
               >>= (fun ida startxs -> 
                   arguments_bis eas endxs >>= (fun eas endxs -> 
                     return (
-                      (A.MetaExprList
-			 (ida,(lenname,leninherited),keep,inherited)) +>
-		        A.rewrap ea::eas,
+                      (A.MetaExprList(ida,leninfo,keep,inherited))
+		      +> A.rewrap ea::eas,
                       startxs ++ endxs
                     ))
                   )
@@ -1186,7 +1185,7 @@ and parameters_bis eas ebs =
           else parameters_bis eas ebs
 
 
-      | A.MetaParamList (ida, (lenname, leninherited), keep, inherited), ys -> 
+      | A.MetaParamList(ida,leninfo,keep,inherited),ys->
           let startendxs = Common.zip (Common.inits ys) (Common.tails ys) in
           startendxs +> List.fold_left (fun acc (startxs, endxs) -> 
             acc >||> (
@@ -1209,23 +1208,27 @@ and parameters_bis eas ebs =
                 let startxs' = Ast_c.unsplit_comma startxs in
                 let len = List.length  startxs' in
 
-                X.envf keep leninherited
-		  (lenname, Ast_c.MetaListlenVal (len)) (fun () -> 
-                X.envf keep inherited 
-                  (term ida, Ast_c.MetaParamListVal startxs') (fun () -> 
-                    if startxs = []
-                    then return (ida, [])
-                    else X.distrf_params ida (Ast_c.split_comma startxs')
-                  )
-                >>= (fun ida startxs -> 
-                  parameters_bis eas endxs >>= (fun eas endxs -> 
-                    return (
-                      (A.MetaParamList
-			  (ida,(lenname,leninherited),keep,inherited)) +>
-		        A.rewrap ea::eas,
-                      startxs ++ endxs
-                    ))
-                  )
+		(match leninfo with
+		  Some (lenname,lenkeep,leninherited) ->
+                    X.envf lenkeep leninherited
+		      (lenname, Ast_c.MetaListlenVal (len))
+		| None -> function f -> f())
+
+		  (fun () -> 
+                    X.envf keep inherited 
+                      (term ida, Ast_c.MetaParamListVal startxs') (fun () -> 
+			if startxs = []
+			then return (ida, [])
+			else X.distrf_params ida (Ast_c.split_comma startxs')
+			    )
+                   >>= (fun ida startxs -> 
+                     parameters_bis eas endxs >>= (fun eas endxs -> 
+                       return (
+                       (A.MetaParamList(ida,leninfo,keep,inherited))
+			 +> A.rewrap ea::eas,
+                       startxs ++ endxs
+		     ))
+                   )
                 ))
             ) fail 
 

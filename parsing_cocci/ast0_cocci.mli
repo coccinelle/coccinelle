@@ -95,7 +95,7 @@ and base_expression =
   | MetaExpr       of Ast_cocci.meta_name mcode *
 	              Type_cocci.typeC list option * Ast_cocci.form * pure
   | MetaExprList   of Ast_cocci.meta_name mcode (* only in arglists *) *
-	              Ast_cocci.meta_name * pure
+	              Ast_cocci.meta_name option * pure
   | EComma         of string mcode (* only in arglists *)
   | DisjExpr       of string mcode * expression list * string mcode list *
 	              string mcode
@@ -196,7 +196,8 @@ and base_parameterTypeDef =
     VoidParam     of typeC
   | Param         of typeC * ident option
   | MetaParam     of Ast_cocci.meta_name mcode * pure
-  | MetaParamList of Ast_cocci.meta_name mcode * Ast_cocci.meta_name * pure
+  | MetaParamList of Ast_cocci.meta_name mcode * Ast_cocci.meta_name option *
+	             pure
   | PComma        of string mcode
   | Pdots         of string mcode (* ... *)
   | Pcircles      of string mcode (* ooo *)

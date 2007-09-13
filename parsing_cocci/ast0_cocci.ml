@@ -102,7 +102,7 @@ and base_expression =
   | MetaExpr       of Ast.meta_name mcode *
 	              Type_cocci.typeC list option * Ast.form * pure
   | MetaExprList   of Ast.meta_name mcode (* only in arg lists *) *
-	              Ast.meta_name * pure
+	              Ast.meta_name option * pure
   | EComma         of string mcode (* only in arg lists *)
   | DisjExpr       of string mcode * expression list *
 	              string mcode list (* the |s *) * string mcode
@@ -203,7 +203,7 @@ and base_parameterTypeDef =
     VoidParam     of typeC
   | Param         of typeC * ident option
   | MetaParam     of Ast.meta_name mcode * pure
-  | MetaParamList of Ast.meta_name mcode * Ast.meta_name * pure
+  | MetaParamList of Ast.meta_name mcode * Ast.meta_name option * pure
   | PComma        of string mcode
   | Pdots         of string mcode (* ... *)
   | Pcircles      of string mcode (* ooo *)

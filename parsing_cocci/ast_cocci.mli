@@ -51,7 +51,7 @@ and metavar =
   | MetaTypeDecl of arity * meta_name (* name *)
   | MetaListlenDecl of meta_name (* name *)
   | MetaParamDecl of arity * meta_name (* name *)
-  | MetaParamListDecl of arity * meta_name (* name *) * meta_name (* len *)
+  | MetaParamListDecl of arity * meta_name (*name*) * meta_name option (*len*)
   | MetaConstDecl of
       arity * meta_name (* name *) * Type_cocci.typeC list option
   | MetaErrDecl of arity * meta_name (* name *)
@@ -59,7 +59,7 @@ and metavar =
       arity * meta_name (* name *) * Type_cocci.typeC list option
   | MetaIdExpDecl of
       arity * meta_name (* name *) * Type_cocci.typeC list option
-  | MetaExpListDecl of arity * meta_name (* name *) * meta_name (* len *)
+  | MetaExpListDecl of arity * meta_name (*name*) * meta_name option (*len*)
   | MetaStmDecl of arity * meta_name (* name *)
   | MetaStmListDecl of arity * meta_name (* name *)
   | MetaFuncDecl of arity * meta_name (* name *)
@@ -125,7 +125,7 @@ and base_expression =
   | MetaErr        of meta_name mcode * keep_binding * inherited
   | MetaExpr       of meta_name mcode * keep_binding *
 	              Type_cocci.typeC list option * form * inherited
-  | MetaExprList   of meta_name mcode * (meta_name * inherited) *
+  | MetaExprList   of meta_name mcode * listlen option *
 	              keep_binding * inherited (* only in arg lists *)
 
   | EComma         of string mcode (* only in arg lists *)
@@ -147,6 +147,8 @@ and base_expression =
 and form = ANY | ID | CONST (* form for MetaExp *)
 
 and expression = base_expression wrap
+
+and listlen = meta_name * keep_binding * inherited
 
 and  unaryOp = GetRef | DeRef | UnPlus |  UnMinus | Tilde | Not
 and  assignOp = SimpleAssign | OpAssign of arithOp
@@ -262,7 +264,7 @@ and base_parameterTypeDef =
   | Param         of fullType * ident option
 
   | MetaParam     of meta_name mcode * keep_binding * inherited
-  | MetaParamList of meta_name mcode * (meta_name * inherited) * keep_binding *
+  | MetaParamList of meta_name mcode * listlen option * keep_binding *
 	             inherited
 
   | PComma        of string mcode
@@ -495,6 +497,7 @@ val undots : 'a dots -> 'a list
 (* --------------------------------------------------------------------- *)
 
 val rewrap : 'a wrap -> 'b -> 'b wrap
+val rewrap_mcode : 'a mcode -> 'a -> 'a mcode
 val unwrap : 'a wrap -> 'a
 val unwrap_mcode : 'a mcode -> 'a
 val get_mcodekind : 'a mcode -> mcodekind

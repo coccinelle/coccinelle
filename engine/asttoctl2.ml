@@ -362,11 +362,11 @@ let make_match label guard code =
   if contains_modif code && not guard
   then CTL.Exists(true,v,predmaker guard (matcher,CTL.Modif v) label)
   else
-    match (!onlyModif,guard,intersect !used_after (Ast.get_fvs code)) with
+    (match (!onlyModif,guard,intersect !used_after (Ast.get_fvs code)) with
       (true,_,[]) | (_,true,_) ->
 	predmaker guard (matcher,CTL.Control) label
     | (b1,b2,l) ->
-	CTL.Exists(true,v,predmaker guard (matcher,CTL.UnModif v) label)
+	CTL.Exists(true,v,predmaker guard (matcher,CTL.UnModif v) label))
 
 let make_raw_match label guard code =
   predmaker guard (Lib_engine.Match(code),CTL.Control) label

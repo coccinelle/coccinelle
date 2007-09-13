@@ -20,7 +20,8 @@ val add_type_meta: (Ast_cocci.meta_name -> Ast0_cocci.pure -> unit) ref
 val add_param_meta: (Ast_cocci.meta_name -> Ast0_cocci.pure -> unit) ref
 
 val add_paramlist_meta:
-    (Ast_cocci.meta_name -> Ast_cocci.meta_name -> Ast0_cocci.pure -> unit) ref
+    (Ast_cocci.meta_name -> Ast_cocci.meta_name option -> Ast0_cocci.pure ->
+      unit) ref
 
 val add_const_meta:
     (Type_cocci.typeC list option -> Ast_cocci.meta_name -> Ast0_cocci.pure ->
@@ -37,7 +38,8 @@ val add_idexp_meta:
       unit) ref
 
 val add_explist_meta:
-    (Ast_cocci.meta_name -> Ast_cocci.meta_name -> Ast0_cocci.pure -> unit) ref
+    (Ast_cocci.meta_name -> Ast_cocci.meta_name option -> Ast0_cocci.pure ->
+      unit) ref
 
 val add_stm_meta: (Ast_cocci.meta_name -> Ast0_cocci.pure -> unit) ref
 

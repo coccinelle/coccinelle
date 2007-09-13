@@ -42,12 +42,12 @@ module P = Parse_aux
 %token <Ast_cocci.meta_name * Ast0_cocci.pure * Data.clt> TMetaErr
 %token <Ast_cocci.meta_name * Ast0_cocci.pure * Data.clt>
                                                   TMetaParam
-%token <Ast_cocci.meta_name * Ast_cocci.meta_name * Ast0_cocci.pure * Data.clt>
+%token <Ast_cocci.meta_name * Ast_cocci.meta_name option * Ast0_cocci.pure * Data.clt>
                                                   TMetaParamList
 %token <Ast_cocci.meta_name * Ast0_cocci.pure * Data.clt> TMetaStm TMetaStmList
 %token <Ast_cocci.meta_name * Ast0_cocci.pure * Data.clt>
                                                   TMetaFunc TMetaLocalFunc
-%token <Ast_cocci.meta_name * Ast_cocci.meta_name * Ast0_cocci.pure * Data.clt>
+%token <Ast_cocci.meta_name * Ast_cocci.meta_name option * Ast0_cocci.pure * Data.clt>
                                                   TMetaExpList
 %token <Ast_cocci.meta_name * Ast0_cocci.pure * Type_cocci.typeC list option *
           Data.clt> TMetaExp TMetaIdExp TMetaConst
@@ -237,16 +237,18 @@ metadec:
     ids=comma_list(pure_ident_or_meta_ident) TMPtVirg
     { P.create_len_metadec ar ispure
 	(fun lenname arity name pure check_meta ->
-	  let tok = check_meta(Ast.MetaParamListDecl(arity,name,lenname)) in
-	  !Data.add_paramlist_meta name lenname pure; tok)
+	  let tok =
+	    check_meta(Ast.MetaParamListDecl(arity,name,Some lenname)) in
+	  !Data.add_paramlist_meta name (Some lenname) pure; tok)
 	id ids }
 | ar=arity ispure=pure
     TExpression Tlist TOCro id=pure_ident_or_meta_ident TCCro
     ids=comma_list(pure_ident_or_meta_ident) TMPtVirg
     { P.create_len_metadec ar ispure
 	(fun lenname arity name pure check_meta ->
-	  let tok = check_meta(Ast.MetaExpListDecl(arity,name,lenname)) in
-	  !Data.add_paramlist_meta name lenname pure; tok)
+	  let tok =
+	    check_meta(Ast.MetaExpListDecl(arity,name,Some lenname)) in
+	  !Data.add_explist_meta name (Some lenname) pure; tok)
 	id ids }
 
 %inline metakind:
@@ -266,6 +268,10 @@ metadec:
     { (fun arity name pure check_meta ->
       let tok = check_meta(Ast.MetaParamDecl(arity,name)) in
       !Data.add_param_meta name pure; tok) }
+| TParameter Tlist
+    { (fun arity name pure check_meta ->
+      let tok = check_meta(Ast.MetaParamListDecl(arity,name,None)) in
+      !Data.add_paramlist_meta name None pure; tok) }
 | TError
     { (fun arity name pure check_meta ->
       let tok = check_meta(Ast.MetaErrDecl(arity,name)) in
@@ -274,6 +280,10 @@ metadec:
     { (fun arity name pure check_meta ->
       let tok = check_meta(Ast.MetaExpDecl(arity,name,None)) in
       !Data.add_exp_meta None name pure; tok) }
+| TExpression Tlist
+    { (fun arity name pure check_meta ->
+      let tok = check_meta(Ast.MetaExpListDecl(arity,name,None)) in
+      !Data.add_explist_meta name None pure; tok) }
 | TIdExpression ty=ioption(meta_exp_type)
     { (fun arity name pure check_meta ->
       let tok = check_meta(Ast.MetaExpDecl(arity,name,ty)) in

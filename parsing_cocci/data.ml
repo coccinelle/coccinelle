@@ -30,7 +30,7 @@ let add_param_meta: (Ast.meta_name -> Ast0.pure -> unit) ref =
   ref (fun _ -> failwith "uninitialized add_meta") 
 
 let add_paramlist_meta:
-    (Ast.meta_name -> Ast.meta_name -> Ast0.pure -> unit) ref = 
+    (Ast.meta_name -> Ast.meta_name option -> Ast0.pure -> unit) ref = 
   ref (fun _ -> failwith "uninitialized add_meta") 
 
 let add_const_meta:
@@ -52,7 +52,7 @@ let add_idexp_meta:
   ref (fun _ -> failwith "uninitialized add_meta") 
 
 let add_explist_meta:
-    (Ast.meta_name -> Ast.meta_name -> Ast0.pure -> unit) ref = 
+    (Ast.meta_name -> Ast.meta_name option -> Ast0.pure -> unit) ref = 
   ref (fun _ -> failwith "uninitialized add_meta") 
 
 let add_stm_meta: (Ast.meta_name -> Ast0.pure -> unit) ref = 
