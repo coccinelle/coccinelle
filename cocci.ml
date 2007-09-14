@@ -1125,7 +1125,12 @@ let find_in_index_cfiles toks tmpdir =
   (* TODO use toks *)
   pr2_gen toks;
 
-  let kwd = "list_for_each;list_entry" in
+  let kwd = 
+   (* "list_for_each;list_entry" *)
+    (*"do_setitimer"*)
+    (*"cputime_eq;jiffies_to_cputime"*)
+    "cputime_gt;cputime_add"
+  in
   pr2 ("glimpse request = " ^ kwd);
   let files = 
     Common.cmd_to_list 

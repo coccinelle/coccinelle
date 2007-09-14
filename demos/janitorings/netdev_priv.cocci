@@ -1,3 +1,16 @@
+// TODO: now that have the assign/affect iso, can perhaps
+// deal with the cast pb
+// rewriting
+// - (T*) dev->priv
+// + netdev_priv(dev)
+// into
+// x = 
+//  - (T*) dev-> priv
+//  + netdev_priv(dev)
+
+// and then make another rule for the remaining case
+
+
 @ alloc disable plus_comm @
 type T;
 expression E;

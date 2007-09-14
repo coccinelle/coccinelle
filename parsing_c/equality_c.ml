@@ -2,6 +2,13 @@ open Common open Commonop
 
 open Ast_c
 
+(* TODO: should use the isomorphism engine of julia *)
+
+(* for the moment I do only eq_type and not eq_expr, etc. The reason
+ * for eq_type is realted to the typedef and struct isomorphism. Sometimes
+ * one use the typedef and sometimes the structname.
+ *)
+
 let rec eq_type a b = 
   let ((qua,iiqa), (tya,iia)) = a in
   let ((qub,iiqb), (tyb,iib)) = b in
@@ -15,11 +22,54 @@ let rec eq_type a b =
       (* dont care about size ? *)
       eq_type a b
 
-  | FunctionType fta, FunctionType ftb -> 
-      raise Todo
+  | FunctionType (returna, paramsa), FunctionType (returnb, paramsb) -> 
+      eq_type returna returnb &&
+      let (tsa, (ba,_iihas3dotsa)) = paramsa in
+      let (tsb, (bb,_iihas3dotsb)) = paramsb in
+      ba = bb && 
+      List.length tsa = List.length tsb &&
+      Common.zip tsa tsb +> List.for_all (fun ((parama,_iia),(paramb,_iib))->
+        
+        let (((ba, saopt, ta), ii_b_sa)) = parama in
+        let (((bb, sbopt, tb), ii_b_sb)) = paramb in
+        ba =:= bb && saopt =*= sbopt && 
+        eq_type ta tb
+      )
 
-  | Enum (saopt, enuma), Enum (sbopt, enumb) -> raise Todo
-  | StructUnion (sua, saopt, sta), StructUnion (sub, sbopt, stb) -> raise Todo
+  | Enum (saopt, enuma), Enum (sbopt, enumb) -> 
+      saopt =*= sbopt &&
+      List.length enuma = List.length enumb && 
+      Common.zip enuma enumb +> List.for_all (fun 
+        ((((sa, eopta),ii_s_eqa), iicommaa), (((sb, eoptb),ii_s_eqb),iicommab))
+          -> 
+            sa =$= sb && 
+            eopta =*= eoptb 
+        )
+
+  | StructUnion (sua, saopt, sta), StructUnion (sub, sbopt, stb) -> 
+      sua =*= sub && 
+      saopt =*= sbopt && 
+      List.length sta = List.length stb && 
+      Common.zip sta stb +> List.for_all (fun ((xfielda, iia), (xfieldb, iib)) 
+        -> 
+          match xfielda, xfieldb with 
+          | EmptyField, EmptyField -> true
+          | FieldDeclList fa, FieldDeclList fb -> 
+              List.length fa =|= List.length fb && 
+              Common.zip fa fb +> List.for_all (fun ((fielda,_),(fieldb,_))-> 
+                match fst fielda, fst fieldb with
+                | Simple (saopt, ta), Simple (sbopt, tb) -> 
+                    saopt =*= sbopt && eq_type ta tb
+                | BitField (sopta, ta, ea), BitField (soptb, tb, eb) -> 
+                    sopta =*= soptb && 
+                    eq_type ta tb &&
+                    ea =*= eb
+                | _,_ -> false
+              )
+          
+          
+          | _ -> false
+        )
 
   | EnumName sa, EnumName sb -> sa =$= sb
   | StructUnionName (sua, sa), StructUnionName (sub, sb) -> 
@@ -31,17 +81,19 @@ let rec eq_type a b =
       (* iso here ? *)
          eq_type a b
 
-  | TypeOfType ea, TypeOfExpr eb -> 
-      raise Todo
+  | TypeOfExpr ea, TypeOfExpr eb -> 
+      ea =*= eb 
+
   | TypeOfType a, TypeOfType b -> 
       eq_type a b
 
 (*  | TypeOfType a, b -> 
     | a, TypeOfType b -> 
 *)
+
   (* typedef iso *)
   | TypeName (_, Some a), tyb -> 
-      eq_type a b(*topleve b*)
+      eq_type a b (*toplevel b, not tyb *)
   | tya, TypeName (_, Some b) -> 
-      eq_type a(*toplevel a*) b
+      eq_type a (*toplevel a, not tya*) b
   | _, _ -> false
