@@ -1258,8 +1258,9 @@ let process file isofile verbose =
 	     let minus = Compute_lines.compute_lines minus in
 	     let plus = Compute_lines.compute_lines plus in
 	     let minus = Arity.minus_arity minus in
-	     let function_prototypes =
-	       Function_prototypes.process rule_name dropped_isos minus plus in
+	     let ((metavars,minus),function_prototypes) =
+	       Function_prototypes.process
+		 rule_name metavars dropped_isos minus plus in
 	     (* warning! context_neg side-effects its arguments! *)
 	     let (m,p) = List.split(Context_neg.context_neg minus plus) in
 	     Type_infer.type_infer p;
@@ -1278,8 +1279,7 @@ let process file isofile verbose =
 		 minus in
 	     match function_prototypes with
 	       None -> [(extra_meta@metavars, minus_ast)]
-	     | Some mv_fp ->
-		 [(extra_meta@metavars, minus_ast);mv_fp])
+	     | Some mv_fp -> [(extra_meta@metavars, minus_ast);mv_fp])
 	 minus plus) in
   let disjd = Disjdistr.disj parsed in
   let (code,fvs,ua) = Free_vars.free_vars disjd in

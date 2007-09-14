@@ -1,5 +1,5 @@
-@@
-local function ioctlfn;
+@r@
+identifier ioctlfn;
 identifier dev, cmd, arg;
 @@
 

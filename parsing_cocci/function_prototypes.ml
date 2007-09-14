@@ -28,7 +28,7 @@ let collect_function (stm : Ast0.statement) =
 	match
 	  List.filter (function Ast0.FType(_) -> true | _ -> false)
 	    fninfo with [Ast0.FType(t)] -> Some t | _ -> None in
-      [(get_name name,
+      [(get_name name,stm,
 	Ast0.copywrap stm
 	  (Ast0.Decl((Ast0.default_info(),Ast0.context_befaft()),
 		     Ast0.copywrap stm
@@ -49,8 +49,8 @@ let get_all_functions rule =
     | Ast0.CODE(rule_elem_dots) -> collect_functions rule_elem_dots
     | _ -> [] in
   List.map
-    (function (nm,vl) ->
-      (nm,(Iso_pattern.rebuild_mcode None).V0.rebuilder_statement vl))
+    (function (nm,def,vl) ->
+      (nm,(def,(Iso_pattern.rebuild_mcode None).V0.rebuilder_statement vl)))
     res
 
 (* --------------------------------------------------------------------- *)
@@ -64,33 +64,33 @@ one.  Otherwise, align the two current ones. *)
 let rec align all_minus all_plus =
   let rec loop = function
       ([],_) -> []
-    | ((mname,mproto)::minus,[]) ->
+    | ((mname,(mdef,mproto))::minus,[]) ->
 	(try
-	  let pproto = List.assoc mname all_plus in
-	  (mname,mproto,Some pproto)::(loop (minus,[]))
-	with Not_found -> (mname,mproto,None)::(loop (minus, [])))
-    | ((mname,mproto)::minus,(pname,pproto)::plus) ->
+	  let (_,pproto) = List.assoc mname all_plus in
+	  (mname,mdef,mproto,Some pproto)::(loop (minus,[]))
+	with Not_found -> (mname,mdef,mproto,None)::(loop (minus, [])))
+    | ((mname,(mdef,mproto))::minus,(pname,(pdef,pproto))::plus) ->
 	if mname = pname
-	then (mname,mproto,Some pproto)::(loop (minus, []))
+	then (mname,mdef,mproto,Some pproto)::(loop (minus, []))
 	else
 	  (try
-	    let pproto_for_minus = List.assoc mname all_plus in
+	    let (_,pproto_for_minus) = List.assoc mname all_plus in
 	    (try
 	      let _ = List.assoc mname all_plus in
 	      (* protos that match both *)
-	      (mname,mproto,Some pproto_for_minus)::(loop (minus, plus))
+	      (mname,mdef,mproto,Some pproto_for_minus)::(loop (minus, plus))
 	    with Not_found ->
 	      (* proto that matches only minus *)
-	      (mname,mproto,Some pproto_for_minus)::
-	      (loop (minus, ((pname,pproto)::plus))))
+	      (mname,mdef,mproto,Some pproto_for_minus)::
+	      (loop (minus, ((pname,(pdef,pproto))::plus))))
 	  with Not_found ->
 	    (try
 	      let _ = List.assoc mname all_plus in
 	      (* proto only for plus *)
-	      (mname,mproto,None)::(loop (minus, plus))
+	      (mname,mdef,mproto,None)::(loop (minus, plus))
 	    with Not_found ->
 	      (* protos for no one *)
-	      (mname,mproto,Some pproto)::(loop (minus, plus)))) in
+	      (mname,mdef,mproto,Some pproto)::(loop (minus, plus)))) in
   List.filter changed_proto (loop (all_minus, all_plus))
 
 (* --------------------------------------------------------------------- *)
@@ -137,8 +137,8 @@ and strip =
     donothing donothing
 
 and changed_proto = function
-    (mname,mproto,None) -> true
-  | (mname,mproto,Some pproto) ->
+    (mname,mdef,mproto,None) -> true
+  | (mname,mdef,mproto,Some pproto) ->
       not ((strip.V0.rebuilder_statement mproto) =
 	   (strip.V0.rebuilder_statement pproto))
 
@@ -182,69 +182,119 @@ let drop_names dec =
       |	_ -> failwith "unexpected declaration")
   | _ -> failwith "unexpected term"
 
-(* only fails if there are dots at both ends of the parameter list, because in
-that case names may be needed to identify the parameters unambiguously *)
-let no_dots param_list =
-  let param_list = List.map Ast0.unwrap param_list in
-  match param_list with
-    Ast0.Pdots(_)::_ ->
-      (match List.rev param_list with
-	Ast0.Pdots(_)::_ -> false
-      |	_ -> true)
-  | _ -> true
-
 let ct = ref 0
 
-let rename_param param =
+let new_name name = 
+  let n = !ct in
+  ct := !ct + 1;
+  name^"__"^(string_of_int n)
+
+let rec rename_param old_name all param =
   match Ast0.unwrap param with
-    Ast0.Param(ty,Some id) ->
+    Ast0.Param(ty,Some id) when all ->
       (match Ast0.unwrap id with
 	Ast0.MetaId(((_,name),arity,info,mcodekind),pure) ->
-	  let new_name = ("__no_name__",name^"__"^(string_of_int !ct)) in
-	  ct := !ct + 1;
+	  let nm = ("__no_name__",new_name name) in
 	  let new_id =
 	    Ast0.rewrap id
-	      (Ast0.MetaId((new_name,arity,info,mcodekind),Ast0.Pure)) in
-	  ([Ast.MetaIdDecl(Ast.NONE,new_name)],
+	      (Ast0.MetaId((nm,arity,info,mcodekind),Ast0.Pure)) in
+	  ([Ast.MetaIdDecl(Ast.NONE,nm)],
 	   Ast0.rewrap param (Ast0.Param(ty,Some new_id)))
       |	_ -> ([],param))
+  | Ast0.Pdots(d) ->
+      let nm = (old_name,new_name "__P") in
+      let nml = (old_name,new_name "__n") in
+      let new_id =
+	Ast0.rewrap param
+	  (Ast0.MetaParamList(Ast0.rewrap_mcode d nm,Some nml,Ast0.Pure)) in
+      ([Ast.MetaParamListDecl(Ast.NONE,nm,Some nml);Ast.MetaListlenDecl(nml)],
+       new_id)
+  | Ast0.OptParam(p) ->
+      let (metavars,p) = rename_param old_name all p in
+      (metavars,Ast0.rewrap param (Ast0.OptParam(p)))
+  | Ast0.UniqueParam(p) ->
+      let (metavars,p) = rename_param old_name all p in
+      (metavars,Ast0.rewrap param (Ast0.UniqueParam(p)))
   | _ -> ([],param)
 
 (* try to convert names in the - parameter list to new metavariables, to
 account for spelling mistakes on the part of the programmer *)
-let fresh_names dec =
-  let res = ([],dec) in
+let fresh_names old_name mdef dec =
+  let res = ([],[],dec,mdef) in
   match Ast0.unwrap dec with
     Ast0.Decl(info,uninit) ->
       (match Ast0.unwrap uninit with
 	Ast0.UnInit(stg,typ,name,sem) ->
 	  (match Ast0.unwrap typ with
 	    Ast0.FunctionType(ty,lp,params,rp) ->
-	      (match Ast0.unwrap params with
-		Ast0.DOTS(l) ->
-		  if no_dots l
-		  then
-		    let (metavars,l) =
-		      List.split(List.map rename_param l) in
-		    (List.concat metavars,
-		     Ast0.rewrap dec
-		       (Ast0.Decl
-			  (info,
-			   Ast0.rewrap uninit
-			     (Ast0.UnInit
-				(stg,
-				 Ast0.rewrap typ
-				   (Ast0.FunctionType
-				      (ty,lp,
-				       Ast0.rewrap params (Ast0.DOTS(l)),
-				       rp)),
-				 name,sem)))))
-		  else res
-	      |	_ -> res)
+	      let (metavars,newdec) =
+		let (metavars,l) =
+		  List.split
+		    (List.map (rename_param old_name true)
+		       (Ast0.undots params)) in
+		(List.concat metavars,
+		 Ast0.rewrap dec
+		   (Ast0.Decl
+		      (info,
+		       Ast0.rewrap uninit
+			 (Ast0.UnInit
+			    (stg,
+			     Ast0.rewrap typ
+			       (Ast0.FunctionType
+				  (ty,lp,Ast0.rewrap params (Ast0.DOTS(l)),
+				   rp)),
+			     name,sem))))) in
+	      let (def_metavars,newdef) =
+		match Ast0.unwrap mdef with
+		  Ast0.FunDecl(x,fninfo,name,lp,params,rp,lb,body,rb) ->
+		    let (def_metavars,def_l) =
+		      List.split
+			(List.map (rename_param old_name false)
+			   (Ast0.undots params)) in
+		    (List.concat def_metavars,
+		     Ast0.rewrap mdef
+		       (Ast0.FunDecl(x,fninfo,name,lp,
+				     Ast0.rewrap params (Ast0.DOTS(def_l)),
+				     rp,lb,body,rb)))
+		   | _ -> failwith "unexpected function definition" in
+	      (metavars,def_metavars,newdec,newdef)
 	  | _ -> res)
       |	_ -> res)
   | _ -> res
-	      
+
+(* since there is no + counterpart, the function must be completely deleted *)
+let no_names dec =
+  match Ast0.unwrap dec with
+    Ast0.Decl(info,uninit) ->
+      (match Ast0.unwrap uninit with
+	Ast0.UnInit(stg,typ,name,sem) ->
+	  (match Ast0.unwrap typ with
+	    Ast0.FunctionType(ty,lp,params,rp) ->
+	      Ast0.rewrap dec
+		(Ast0.Decl
+		   (info,
+		    Ast0.rewrap uninit
+		      (Ast0.UnInit
+			 (stg,
+			  Ast0.rewrap typ
+			    (Ast0.FunctionType
+			       (ty,lp,
+				Ast0.rewrap params
+				  (let info = Ast0.get_info params in
+				  let mcodekind =
+				    (* use the mcodekind of an atomic minused
+				       thing *)
+				    Ast0.get_mcode_mcodekind lp in
+				  let pdots =
+				    ("...",Ast0.NONE,info,mcodekind) in
+				  Ast0.DOTS
+				    ([Ast0.rewrap params
+					 (Ast0.Pdots(pdots))])),
+				rp)),
+			  name,sem))))
+	  | _ -> dec)
+      |	_ -> dec)
+  | _ -> dec
 
 let merge mproto pproto =
   let mproto =
@@ -261,40 +311,75 @@ let merge mproto pproto =
     Ast.DECL mproto -> mproto
   | _ -> failwith "not possible"
 
-let make_rule = function
-    (mname,mproto,Some pproto) ->
-      let (metavars,mproto) = fresh_names mproto in
+let make_rule rule_name = function
+    (mname,mdef,mproto,Some pproto) ->
+      let (metavars,mdef_metavars,mproto,mdef) =
+	fresh_names rule_name mdef mproto in
       let no_name_mproto = drop_names mproto in
       let no_name_pproto = drop_names pproto in
-      (metavars,
-       [merge mproto pproto; merge no_name_mproto no_name_pproto])
-  | (mname,mproto,None) ->
-      let (metavars,mproto) = fresh_names mproto in
-      (metavars,
-       [Ast0toast.statement mproto;Ast0toast.statement(drop_names mproto)])
+      (metavars,mdef_metavars,
+       [merge mproto pproto; merge no_name_mproto no_name_pproto],mdef)
+  | (mname,mdef,mproto,None) ->
+      ([],[],[Ast0toast.statement(no_names mproto)],mdef)
+
+(* --------------------------------------------------------------------- *)
+
+let reinsert mdefs minus =
+  let table =
+    List.map
+      (function x ->
+	match Ast0.unwrap x with
+	  Ast0.FunDecl(_,fninfo,name,lp,params,rp,lbrace,body,rbrace) ->
+	    (name,x)
+	| _ -> failwith "bad mdef")
+      mdefs in
+  List.map
+    (function x ->
+      match Ast0.unwrap x with
+	Ast0.DECL(stmt) ->
+	  (match Ast0.unwrap stmt with
+	    Ast0.FunDecl(_,fninfo,name,lp,params,rp,lbrace,body,rbrace) ->
+	      (try Ast0.rewrap x (Ast0.DECL(List.assoc name table))
+	      with Not_found -> x)
+	  | _ -> x)
+      | Ast0.CODE(rule_elem_dots) ->
+	  (* let's hope there are no functions in here... *)
+	  x
+      |	_ -> x)
+    minus
 
 (* --------------------------------------------------------------------- *)
 (* entry point *)
 
-let process rule_name dropped_isos minus plus =
+let rec split4 = function
+    [] -> ([],[],[],[])
+  | (a,b,c,d)::rest ->
+      let (ax,bx,cx,dx) = split4 rest in (a::ax,b::bx,c::cx,d::dx)
+
+let process rule_name rule_metavars dropped_isos minus plus =
   let minus_functions = List.concat (List.map get_all_functions minus) in
   match minus_functions with
-    [] -> None
+    [] -> ((rule_metavars,minus),None)
   | _ ->
       let plus_functions =
 	List.concat (List.map get_all_functions plus) in
       let protos = align minus_functions plus_functions in
-      let (metavars,rules) = List.split(List.map make_rule protos) in
+      let (metavars,mdef_metavars,rules,mdefs) =
+	split4(List.map (make_rule rule_name) protos) in
       let metavars = List.concat metavars in
+      let mdef_metavars = (List.concat mdef_metavars) @ rule_metavars in
       let rules = List.concat rules in
+      let minus = reinsert mdefs minus in
       match rules with
-	[] -> None
+	[] -> ((rule_metavars,minus),None)
       | [x] ->
 	  (* probably not possible, since there is always the version with
 	     variables and the version without *)
-	  Some (metavars,("proto for "^rule_name,
-			  (Ast.Dep rule_name,dropped_isos,Ast.Forall),
-			  [Ast.rewrap x (Ast.DECL x)]))
+	  ((mdef_metavars,minus),
+	   Some 
+	     (metavars,("proto for "^rule_name,
+			(Ast.Dep rule_name,dropped_isos,Ast.Forall),
+			[Ast.rewrap x (Ast.DECL x)])))
       |	x::_ ->
 	  let drules =
 	    List.map (function x -> Ast.rewrap x (Ast.DOTS [x])) rules in
@@ -302,4 +387,4 @@ let process rule_name dropped_isos minus plus =
 	    ("proto for "^rule_name,
 	     (Ast.Dep rule_name,dropped_isos,Ast.Forall),
 	     [Ast.rewrap x (Ast.DECL (Ast.rewrap x (Ast.Disj drules)))]) in
-	  Some(metavars,res)
+	  ((mdef_metavars,minus),Some(metavars,res))
