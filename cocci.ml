@@ -339,6 +339,11 @@ let includes_to_parse xs =
       | Ast_c.Include ((x,ii),info_h_pos)  -> 
           (match x with
           | Ast_c.Local xs -> 
+	      (* for our tests, it would be better to put Filename.basename
+		 around the call to Common.join, because all the files are
+		 flat in the current directory:
+              Some
+	      (Filename.concat dir (Filename.basename (Common.join "/" xs))) *)
               Some (Filename.concat dir (Common.join "/" xs))
           | Ast_c.NonLocal xs -> 
               if !Flag_cocci.all_includes ||
