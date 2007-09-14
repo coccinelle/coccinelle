@@ -1429,7 +1429,7 @@ aexpr:
   | TMetaExpList
       { let (nm,lenname,pure,clt) = $1 in
       Ast0.wrap(Ast0.MetaExprList(P.clt2mcode nm clt,lenname,pure)) }
-  | generic_ctype
+  | ctype
       { Ast0.set_arg_exp(Ast0.wrap(Ast0.TypeExp($1))) }
 
 eexpr_list_start:
