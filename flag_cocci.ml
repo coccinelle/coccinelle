@@ -28,6 +28,10 @@ let popl = ref false
 
 let all_includes = ref false
 let include_path = ref "include"
+(* if true then when have a #include "../../xx.h", we look also for xx.h in
+ * current directory. This is because of how works extract_c_and_res
+ *)
+let relax_include_path = ref false 
 
 let timeout = ref (None : int option)
 

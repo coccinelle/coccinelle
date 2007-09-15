@@ -489,7 +489,7 @@ let test_parse_unparse infile =
 
 
 
-let test_typeur infile = 
+let test_type_c infile = 
   if not (infile =~ ".*\\.c") 
   then pr2 "warning: seems not a .c file";
 

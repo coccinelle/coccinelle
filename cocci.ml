@@ -271,8 +271,6 @@ let worth_trying cfiles tokens =
   else true
 
 let check_macro_in_sp_and_adjust tokens = 
-  (* drop the following line for a list of list by rules, if that is desired
-     here *)
   let tokens = Common.union_all tokens in
   tokens +> List.iter (fun s -> 
     if Hashtbl.mem !Parsing_hacks._defs s
@@ -339,12 +337,12 @@ let includes_to_parse xs =
       | Ast_c.Include ((x,ii),info_h_pos)  -> 
           (match x with
           | Ast_c.Local xs -> 
-	      (* for our tests, it would be better to put Filename.basename
-		 around the call to Common.join, because all the files are
-		 flat in the current directory:
-              Some
-	      (Filename.concat dir (Filename.basename (Common.join "/" xs))) *)
-              Some (Filename.concat dir (Common.join "/" xs))
+              let f = Filename.concat dir (Common.join "/" xs) in
+	      (* for our tests, all the files are flat in the current dir *)
+              if not (Sys.file_exists f) && !Flag_cocci.relax_include_path
+              then Some (Filename.concat dir (Common.last xs))
+              else Some f
+
           | Ast_c.NonLocal xs -> 
               if !Flag_cocci.all_includes ||
 	          Common.fileprefix (Common.last xs) = Common.fileprefix file
@@ -352,7 +350,7 @@ let includes_to_parse xs =
                 Some (Filename.concat !Flag_cocci.include_path 
                          (Common.join "/" xs))
               else None
-        | Ast_c.Wierd _ -> None
+          | Ast_c.Wierd _ -> None
           )
       | _ -> None
     )
@@ -543,9 +541,8 @@ let for_unparser xs =
 (* --------------------------------------------------------------------- *)
 let prepare_cocci ctls free_var_lists used_after_lists astcocci = 
 
-  let gathered =
-    Common.index_list_1
-      (zip (zip (zip ctls astcocci) free_var_lists) used_after_lists)
+  let gathered = Common.index_list_1
+    (zip (zip (zip ctls astcocci) free_var_lists) used_after_lists)
   in
   gathered +> List.map 
     (fun ((((ctl_toplevel_list,ast),free_var_list),used_after_list),rulenb) -> 
@@ -620,7 +617,8 @@ let rebuild_info_program cs =
     then begin
       let file = Common.new_temp_file "cocci_small_output" ".c" in
       cfile_of_program 
-        [(c.ast_c, (c.fullstring, c.tokens_c)), Unparse_c.PPnormal] file;
+        [(c.ast_c, (c.fullstring, c.tokens_c)), Unparse_c.PPnormal] 
+        file;
 
       (* Common.command2 ("cat " ^ file); *)
       let cprogram = cprogram_of_file file in

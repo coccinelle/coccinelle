@@ -363,7 +363,7 @@ let other_options = [
     "   <file> or <file:function>");
     (let s = "-parse_unparse"  in s, Arg.Unit (fun () -> action := s),
     "   <file>");
-    (let s = "-typeur"  in s, Arg.Unit (fun () -> action := s),
+    (let s = "-type_c"  in s, Arg.Unit (fun () -> action := s),
     "   <file>");
     (let s = "-compare_c"  in s, Arg.Unit (fun () -> action := s),
     "  <file1> <file2>");
@@ -476,6 +476,7 @@ let main () =
 
     | x::xs when !test_okfailed -> 
         (* do its own timeout on Flag_cocci.timeout internally *)
+        Flag_cocci.relax_include_path := true;
         Testing.test_okfailed !cocci_file (x::xs)
 
     (* --------------------------------------------------------- *)
@@ -503,8 +504,8 @@ let main () =
         Testing.test_cfg filefunc
     | [file] when !action = "-parse_unparse" -> 
        Testing.test_parse_unparse file
-    | [file] when !action = "-typeur" -> 
-        Testing.test_typeur file
+    | [file] when !action = "-type_c" -> 
+        Testing.test_type_c file
     | [file1;file2] when !action = "-compare_c" -> 
        Testing.test_compare_c file1 file2 (* result is in unix code *)
     | [] when !action = "-compare_c_hardcoded" -> 
