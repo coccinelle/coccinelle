@@ -339,6 +339,8 @@ let other_options = [
 
     "-compare_with_expected", Arg.Set compare_with_expected, 
     "   use also file.res"; 
+    "-relax_include_path", Arg.Set Flag_cocci.relax_include_path,
+    " ";
     
   ];
 

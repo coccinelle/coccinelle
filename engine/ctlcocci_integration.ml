@@ -255,6 +255,9 @@ module ENV =
 	 Lib_engine.NormalMetaVal(Ast_c.MetaPosVal(min2,max2))) ->
 	   ((min1 <= min2) && (max1 >= max2)) or
 	   ((min2 <= min1) && (max2 >= max1))
+      |	(Lib_engine.NormalMetaVal(Ast_c.MetaTypeVal a),
+	 Lib_engine.NormalMetaVal(Ast_c.MetaTypeVal b)) ->
+          C_vs_c.eq_type a b
       |	_ -> v = v'
     let merge_val v v' = (* values guaranteed to be compatible *)
       (* v *)
@@ -267,6 +270,10 @@ module ENV =
 	     if (min2 <= min1) && (max2 >= max1)
 	     then Lib_engine.NormalMetaVal(Ast_c.MetaPosVal(min2,max2))
 	     else failwith "incompatible positions give to merge"
+      |	(Lib_engine.NormalMetaVal(Ast_c.MetaTypeVal a),
+	 Lib_engine.NormalMetaVal(Ast_c.MetaTypeVal b)) ->
+          Lib_engine.NormalMetaVal (Ast_c.MetaTypeVal (C_vs_c.merge_type a b))
+
       |	_ -> v
     let print_mvar (_,s) = Format.print_string s
     let print_value x = Pretty_print_engine.pp_binding_kind2 x
