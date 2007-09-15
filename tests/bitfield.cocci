@@ -1,9 +1,9 @@
 @@
 @@
 
- struct chsc_ssd_area {
- ...
-- int x;
-//+ float x;
- ...
- };
+struct dvb_frontend {
+        ...
+-       struct dvb_frontend_ops* ops;
++       struct dvb_frontend_ops ops;
+        ...
+};
