@@ -212,7 +212,7 @@ let equal_metavarval valu valu' =
       Lib_parsing_c.al_statement a =*= Lib_parsing_c.al_statement b
   | Ast_c.MetaTypeVal a, Ast_c.MetaTypeVal b -> 
       (* old: Lib_parsing_c.al_type a =*= Lib_parsing_c.al_type b *)
-      Equality_c.eq_type a b
+      C_vs_c.eq_type a b
         
   | Ast_c.MetaListlenVal a, Ast_c.MetaListlenVal b -> a =|= b
 
