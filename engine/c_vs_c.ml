@@ -140,33 +140,52 @@ and typeC tya tyb =
 
 
   | StructUnion (sua, saopt, sta), StructUnion (sub, sbopt, stb) -> 
-      raise Todo
+      (sua =*= sub && saopt =*= sbopt && List.length sta = List.length stb) 
+      >&&> 
+      Common.zip sta stb +> List.fold_left 
+        (fun acc ((xfielda, iia), (xfieldb, iib)) -> 
+          let iix = iia in
+          acc >>= (fun xs -> 
+            match xfielda, xfieldb with 
+            | EmptyField, EmptyField -> return ((EmptyField, iix)::xs)
 
-(*
-      sua =*= sub && 
-      saopt =*= sbopt && 
-      List.length sta = List.length stb && 
-      Common.zip sta stb +> List.for_all (fun ((xfielda, iia), (xfieldb, iib)) 
-        -> 
-          match xfielda, xfieldb with 
-          | EmptyField, EmptyField -> true
-          | FieldDeclList fa, FieldDeclList fb -> 
-              List.length fa =|= List.length fb && 
-              Common.zip fa fb +> List.for_all (fun ((fielda,_),(fieldb,_))-> 
-                match fst fielda, fst fieldb with
-                | Simple (saopt, ta), Simple (sbopt, tb) -> 
-                    saopt =*= sbopt && merge_type ta tb
-                | BitField (sopta, ta, ea), BitField (soptb, tb, eb) -> 
-                    sopta =*= soptb && 
-                    merge_type ta tb &&
-                    ea =*= eb
-                | _,_ -> false
-              )
-          
-          
-          | _ -> false
+            | FieldDeclList fa, FieldDeclList fb -> 
+                (List.length fa =|= List.length fb) >&&> 
+
+                Common.zip fa fb +> List.fold_left 
+                  (fun acc2 ((fielda,iia),(fieldb,iib))-> 
+                    let iix = iia in
+                    acc2 >>= (fun xs -> 
+                      let (fa, ii2a) = fielda in
+                      let (fb, ii2b) = fieldb in
+                      let ii2x = ii2a in
+                      match fa, fb with
+                      | Simple (saopt, ta), Simple (sbopt, tb) -> 
+                          saopt =*= sbopt >&&> 
+                          fullType ta tb >>= (fun tx -> 
+                            return (((Simple (saopt, tx), ii2x), iix)::xs)
+                          )
+                          
+                      | BitField (sopta, ta, ea), BitField (soptb, tb, eb) -> 
+                          (sopta =*= soptb && ea =*= eb) >&&> 
+                          fullType ta tb >>= (fun tx -> 
+                            return (((BitField (sopta,tx,ea), ii2x), iix)::xs)
+                          )
+                      | _,_ -> fail
+                    )
+                  ) (return [])
+                 >>= (fun fx -> 
+                   return ((FieldDeclList (List.rev fx), iix)::xs)
+                 )
+            | _ -> fail
+          )
+
+
+        ) (return [])
+        >>= (fun stx -> 
+          return (StructUnion (sua, saopt, List.rev stx), iix)
         )
-*)
+
 
 
   (* choose the lub *)

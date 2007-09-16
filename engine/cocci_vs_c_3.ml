@@ -1447,18 +1447,17 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
  (* kind of typedef iso, we must unfold, it's for the case 
   * T { }; that we want to match against typedef struct { } xx_t;
   *)
- | A.TyDecl (ty0, ptvirga), 
+ | A.TyDecl (tya0, ptvirga), 
    ((Some ((idb, None),[iidb]), typb0, (B.StoTypedef, inl)), iivirg)  ->
 
-   (match A.unwrap ty0, typb0 with
-   | A.Type(cv1,ty1), ((qu,il),typb1) ->
+   (match A.unwrap tya0, typb0 with
+   | A.Type(cv1,tya1), ((qu,il),typb1) ->
 
-     (match A.unwrap ty1, typb1 with
-     | A.StructUnionDef(ty2, lba, declsa, rba), 
-       (B.StructUnion (sub, sbopt, declsb), ii) -> 
+     (match A.unwrap tya1, typb1 with
+     | A.StructUnionDef(tya2, lba, declsa, rba), 
+      (B.StructUnion (sub, sbopt, declsb), ii) -> 
 
        let (iisub, iisbopt, lbb, rbb) = 
-
          match sbopt with
          | None -> 
              let (iisub, lbb, rbb) = tuple_of_list3 ii in
@@ -1472,55 +1471,74 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
              let (iisub, iisb, lbb, rbb) = tuple_of_list4 ii in
              (iisub, [iisb], lbb, rbb)
        in
+       let structnameb = 
+         structdef_to_struct_name
+           (Ast_c.nQ, (B.StructUnion (sub, sbopt, declsb), ii))
+       in
+       let fake_typeb = 
+         Ast_c.nQ,((B.TypeName (idb, Some 
+           (Lib_parsing_c.al_type structnameb))), [iidb]) 
+       in
 
-         (match A.unwrap ty2 with
-         | A.Type(cv3, ty3) -> 
-           (match A.unwrap ty3 with
+       tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb -> 
+       tokenf lba lbb >>= (fun lba lbb -> 
+       tokenf rba rbb >>= (fun rba rbb -> 
+       struct_fields (A.undots declsa) declsb >>=(fun undeclsa declsb ->
+         let declsa = redots declsa undeclsa in
+
+         (match A.unwrap tya2 with
+         | A.Type(cv3, tya3) -> 
+           (match A.unwrap tya3 with
            | A.MetaType(ida,keep, inherited) -> 
 
-             let typedefdef = 
-               structdef_to_struct_name
-                 (Lib_parsing_c.al_type 
-                     (Ast_c.nQ, (B.StructUnion (sub, sbopt, declsb), ii)))
-             in
-             let fake_typeb = 
-               Ast_c.nQ,((B.TypeName (idb, Some typedefdef)), [iidb]) 
-             in
-             fullType ty2 fake_typeb >>= (fun ty2 fake_typeb -> 
+             fullType tya2 fake_typeb >>= (fun tya2 fake_typeb -> 
+               let tya1 = A.StructUnionDef(tya2,lba,declsa,rba)+> A.rewrap tya1
+               in
+               let tya0 = A.Type(cv1, tya1) +> A.rewrap tya0 in
+               
                    
-             tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb -> 
-
-             tokenf lba lbb >>= (fun lba lbb -> 
-             tokenf rba rbb >>= (fun rba rbb -> 
-             struct_fields (A.undots declsa) declsb >>=(fun undeclsa declsb ->
-               let declsa = redots declsa undeclsa in
-
                let typb1 = B.StructUnion (sub,sbopt, declsb),
                  [iisub] @ iisbopt @ [lbb;rbb] in
                let typb0 = ((qu, il), typb1) in
                
-               let ty1 = A.StructUnionDef(ty2,lba,declsa,rba)+> A.rewrap ty1 in
-               let ty0 = A.Type(cv1, ty1) +> A.rewrap ty0 in
-               
-
                match fake_typeb with 
                | _nQ, ((B.TypeName (idb,_typ)), [iidb]) -> 
 
                    return (
-                     (A.TyDecl (ty0, ptvirga)) +> A.rewrap decla,
+                     (A.TyDecl (tya0, ptvirga)) +> A.rewrap decla,
                      (((Some ((idb, None),[iidb]), typb0, (B.StoTypedef, inl)),
                        iivirg),iiptvirgb,iistob)
                    )
                | _ -> raise Impossible    
                  
-             )))))
+             )
 
            | A.StructUnionName(sua, sa) -> 
-               raise Todo
+
+             fullType tya2 structnameb >>= (fun tya2 structnameb -> 
+
+               let tya1 = A.StructUnionDef(tya2,lba,declsa,rba)+> A.rewrap tya1
+               in
+               let tya0 = A.Type(cv1, tya1) +> A.rewrap tya0 in
+
+               match structnameb with 
+               | _nQ, (B.StructUnionName (sub, s), [iisub;iisbopt]) ->
+
+                   let typb1 = B.StructUnion (sub,sbopt, declsb),
+                     [iisub;iisbopt;lbb;rbb] in
+                   let typb0 = ((qu, il), typb1) in
+               
+                   return (
+                     (A.TyDecl (tya0, ptvirga)) +> A.rewrap decla,
+                     (((Some ((idb, None),[iidb]), typb0, (B.StoTypedef, inl)),
+                      iivirg),iiptvirgb,iistob)
+                   )
+               | _ -> raise Impossible    
+             )
            | _ -> raise Impossible
            )
          | _ -> fail
-       )
+       )))))
      | _ -> fail
      )
    | _ -> fail
