@@ -250,13 +250,17 @@ let split_signb_baseb_ii (baseb, ii) =
       | B.UnSigned, B.CChar2,   ["unsigned",i1;"char",i2] -> 
           Some (B.UnSigned, i1), [i2]
 
-      | B.Signed, B.CShort, ["short",i1] -> None, [i1]
+      | B.Signed, B.CShort, ["short",i1] -> 
+          None, [i1]
       | B.Signed, B.CShort, ["signed",i1;"short",i2] -> 
           Some (B.Signed, i1), [i2]
       | B.UnSigned, B.CShort, ["unsigned",i1;"short",i2] -> 
           Some (B.UnSigned, i1), [i2]
+      | B.Signed, B.CShort, ["short",i1;"int",i2] -> 
+          None, [i1;i2]
 
-      | B.Signed, B.CInt, ["int",i1] -> None, [i1]
+      | B.Signed, B.CInt, ["int",i1] -> 
+          None, [i1]
       | B.Signed, B.CInt, ["signed",i1;"int",i2] -> 
           Some (B.Signed, i1), [i2]
       | B.UnSigned, B.CInt, ["unsigned",i1;"int",i2] -> 
@@ -267,7 +271,10 @@ let split_signb_baseb_ii (baseb, ii) =
       | B.UnSigned, B.CInt, ["unsigned",i1;] -> 
           Some (B.UnSigned, i1), []
 
-      | B.Signed, B.CLong, ["long",i1] -> None, [i1]
+      | B.Signed, B.CLong, ["long",i1] -> 
+          None, [i1]
+      | B.Signed, B.CLong, ["long",i1;"int",i2] -> 
+          None, [i1;i2]
       | B.Signed, B.CLong, ["signed",i1;"long",i2] -> 
           Some (B.Signed, i1), [i2]
       | B.UnSigned, B.CLong, ["unsigned",i1;"long",i2] -> 
@@ -2072,7 +2079,11 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
                     ))
               
 
-          | x::y::ys -> raise Impossible
+          | [x;y] -> 
+              pr2_once 
+                "warning: long int or short int not handled by ast_cocci";
+              fail
+
           | [ibaseb] -> 
           sign signaopt signbopt >>= (fun signaopt iisignbopt -> 
           tokenf basea ibaseb >>= (fun basea ibaseb -> 
@@ -2080,6 +2091,8 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
                (A.BaseType (basea, signaopt)) +> A.rewrap ta,
                (B.BaseType (baseb), iisignbopt ++ [ibaseb])
                )))
+          | _ -> raise Impossible
+
           )
 
             
