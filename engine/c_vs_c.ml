@@ -98,21 +98,38 @@ and typeC tya tyb =
       ea =*= eb >&&> fullType a b >>= (fun x -> return (Array (ea, x), iix))
 
   | FunctionType (returna, paramsa), FunctionType (returnb, paramsb) -> 
-      raise Todo
-(*
-      merge_type returna returnb &&
-      let (tsa, (ba,_iihas3dotsa)) = paramsa in
-      let (tsb, (bb,_iihas3dotsb)) = paramsb in
-      ba = bb && 
-      List.length tsa = List.length tsb &&
-      Common.zip tsa tsb +> List.for_all (fun ((parama,_iia),(paramb,_iib))->
-        
-        let (((ba, saopt, ta), ii_b_sa)) = parama in
-        let (((bb, sbopt, tb), ii_b_sb)) = paramb in
-        ba =:= bb && saopt =*= sbopt && 
-        merge_type ta tb
-      )
-*)
+      let (tsa, (ba,iihas3dotsa)) = paramsa in
+      let (tsb, (bb,iihas3dotsb)) = paramsb in
+
+      let bx = ba in
+      let iihas3dotsx = iihas3dotsa in
+
+      (ba = bb && List.length tsa = List.length tsb) >&&>
+      fullType returna returnb >>= (fun returnx -> 
+
+      Common.zip tsa tsb +> List.fold_left 
+        (fun acc ((parama,iia),(paramb,iib))->
+          let iix = iia in
+          acc >>= (fun xs -> 
+
+            let (((ba, saopt, ta), ii_b_sa)) = parama in
+            let (((bb, sbopt, tb), ii_b_sb)) = paramb in
+
+            let bx = ba in
+            let sxopt = saopt in
+            let ii_b_sx = ii_b_sa in
+
+            (ba =:= bb && saopt =*= sbopt) >&&>
+            fullType ta tb >>= (fun tx -> 
+              let paramx = (((bx, sxopt, tx), ii_b_sx)) in
+              return ((paramx,iix)::xs)
+            )
+          )
+        ) (return [])
+      >>= (fun tsx -> 
+        let paramsx = (List.rev tsx, (bx, iihas3dotsx)) in
+        return (FunctionType (returnx, paramsx), iix)
+      ))
 
   | Enum (saopt, enuma), Enum (sbopt, enumb) -> 
       (saopt =*= sbopt &&
@@ -125,11 +142,8 @@ and typeC tya tyb =
         )
       ) >&&>
         return (Enum (saopt, enuma), iix)
-      
-
 
   | EnumName sa, EnumName sb -> sa =$= sb >&&> return (EnumName sa, iix)
-
 
   | ParenType a, ParenType b -> 
       (* iso here ? *)
@@ -209,9 +223,6 @@ and typeC tya tyb =
       )
 
   | _, _ -> fail
-
-
-
 
 
 

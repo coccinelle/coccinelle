@@ -524,6 +524,11 @@ let rec (annotate_program2 :
       | StructUnion  (su, Some s, structType),ii -> 
           add_binding (StructUnionNameDef (s, ((su, structType),ii))) true;
           k typ (* todo: restrict ? new scope so use do_in_scope ? *)
+
+
+      (* TODO: if have a TypeName, then maybe can fill the option
+       * information.
+       *)
       | _ -> k typ
           
     );    
