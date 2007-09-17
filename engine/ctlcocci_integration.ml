@@ -341,11 +341,10 @@ let (mysat2:
     in
     if not (!Flag_parsing_cocci.sgrep_mode || !Flag.sgrep_mode2)
     then Check_reachability.check_reachability triples flow;
-    let (trans_info2,used_after_fresh_env) =
+    let (trans_info2,used_after_fresh_envs) =
       Postprocess_transinfo.process used_after binding2 trans_info2 in
     let used_after_envs =
-      (* not ideal, fresh envs should be tree specific *)
-      List.map (function x -> used_after_fresh_env @ x) used_after_envs in
+      Common.uniq(List.map2 (@) used_after_fresh_envs used_after_envs) in
     let trans_info = satbis_to_trans_info trans_info2 in
     let newbindings = List.map metavars_binding2_to_binding used_after_envs in
     (trans_info, returned_any_states, newbindings)

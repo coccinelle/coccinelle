@@ -206,7 +206,7 @@ struct
 	   (* throw in the old binding.  By construction it doesn't conflict
            with any of the new things, and it is useful if there are no new
 	   things. *)
-	(Common.uniq (List.map (collect_used_after used_after) new_bindings))))
+	(List.map (collect_used_after used_after) new_bindings)))
 
 let print_bench _ = WRAPPER_ENGINE.print_bench()
 

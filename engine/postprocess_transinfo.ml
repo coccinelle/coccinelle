@@ -9,17 +9,19 @@ how we reached a particular match *)
 
 module Ast = Ast_cocci
 
+let extra_counter = ref 0
+let get_extra _ =
+  let ctr = !extra_counter in
+  extra_counter := !extra_counter + 1;
+  "__extra_counter__"^(string_of_int ctr)
+
 let read_fresh_id () =
   try 
     let s = read_line () in
     match Parse_c.tokens_string s with
-    | [Parser_c.TIdent _; Parser_c.EOF _] -> 
-        s
+      [Parser_c.TIdent _; Parser_c.EOF _] -> s
     | _ -> failwith ("wrong fresh id: " ^ s)
-  with End_of_file -> 
-    failwith "EOF encountered in read_fresh_id"
-
-
+  with End_of_file -> get_extra()
 
 let get_vars = function
     Lib_engine.Match(re) -> (Ast.get_fvs re, Ast.get_fresh re)
@@ -62,38 +64,9 @@ let process_tree inherited_env l =
 	 fresh_env) in
   (List.rev res, fresh_env)
 
-(* needs to follow the same strategy as the function with the same name in
-wrapper_ctl.ml *)
 let collect_used_after used_after envs =
-  let print_var (_,var) = Printf.printf "%s" var in
-  List.concat
-    (List.map
-       (function used_after_var ->
-	 let vl =
-	   List.fold_left
-	     (function rest ->
-	       function env ->
-		 try
-		   let vl = List.assoc used_after_var env in
-		   match rest with
-		     None -> Some vl
-		   | Some old_vl when vl = old_vl -> rest
-		   | Some old_vl -> print_var used_after_var;
-		       Format.print_newline();
-		       Pretty_print_engine.pp_binding_kind2 old_vl;
-		       Format.print_newline();
-		       Pretty_print_engine.pp_binding_kind2 vl;
-		       Format.print_newline();
-		       failwith "incompatible values"
-		 with Not_found -> rest)
-	     None envs in
-	 match vl with
-	   None -> [] (*raise (INCOMPLETE_BINDINGS used_after_var)*)
-	 | Some vl -> [(used_after_var, vl)])
-       used_after)
-    
-    
-    
+  List.map (List.filter (function (v,vl) -> List.mem v used_after)) envs
+
 let process used_after inherited_env l =
   let (trees, fresh_envs) =
     List.split (List.map (process_tree inherited_env) l) in

@@ -8,4 +8,4 @@ val process :
 	 (Ograph_extended.nodei *
 	    (Ast_cocci.meta_name * Lib_engine.metavar_binding_kind2) list *
 	    Lib_engine.predicate) list *
-	   (Ast_cocci.meta_name * Lib_engine.metavar_binding_kind2) list
+	   (Ast_cocci.meta_name * Lib_engine.metavar_binding_kind2) list list
