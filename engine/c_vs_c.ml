@@ -81,9 +81,18 @@ and typeC tya tyb =
 
   | TypeName (sa, opta), TypeName (sb, optb) -> 
       (* assert compatible opta optb ? *)
-      sa =$= sb >&&> option fullType opta optb >>= (fun opt -> 
-        return (TypeName (sa, opt), iix)
-      )
+      (*option fullType opta optb*)
+      sa =$= sb >&&> 
+       let opt = 
+         (match opta, optb with
+         | None, None -> None
+         | Some x, _ 
+         | _, Some x 
+             -> Some x
+         ) 
+       in
+       return (TypeName (sa, opt), iix)
+      
 
   | Array (ea, a), Array (eb,b) -> 
       ea =*= eb >&&> fullType a b >>= (fun x -> return (Array (ea, x), iix))

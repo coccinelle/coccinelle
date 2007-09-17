@@ -902,13 +902,17 @@ and process_a_ctl_a_env_a_toplevel2 r e c =
     if not (null trans_info)
     then begin
       c.was_modified := true;
-      (* modify ast via side effect *)
       try 
+        (* les "more than one var in a decl" et "already tagged token"
+         * font crasher coccinelle. Si on a 5 fichiers, donc on a 5
+         * failed. Le try limite le scope des crashes pendant la
+         * trasformation au fichier concerne. *)
+
+        (* modify ast via side effect *)
         ignore(Transformation3.transform r.rulename r.dropped_isos
                   trans_info (Common.some c.flow));
       with Timeout -> raise Timeout | UnixExit i -> raise (UnixExit i)
          | exn -> pr2 ("EXN:" ^ Printexc.to_string exn); 
-      
     end;
 
     Some newbindings
