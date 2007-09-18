@@ -13,7 +13,7 @@ chomp $subdirs;
 my $i = 0;
 foreach my $dir (@subdirs) {
   if(-e "$dir/") {
-    #print "RULE: $dir\n";
+    print "RULE: $dir\n";
     my ($s) = 
       `cd $dir; ~/coccinelle/scripts/stat_directory_complete.pl | grep M:`;
     chomp $s;

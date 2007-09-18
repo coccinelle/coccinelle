@@ -10,8 +10,9 @@ use diagnostics;
 
 my $debug = 0; 
 
-sub pr2 { print "@_\n" if $debug; }
+sub pr2 { print STDERR "@_\n"; }
 sub pr { print "@_\n"; }
+sub mylog { print STDERR "@_\n" if $debug; }
 
 #------------------------------------------------------------------------------
 # Globals
@@ -59,6 +60,7 @@ if($spfile =~ /(rule|mega|bt)(\d+)\.cocci/) { $ruleno = "$2"; }
 $cedescr = `make ce_descr`;
 chomp $cedescr;
 $cedescr =~ s//\\f/g;
+$cedescr =~ s/\t/\\t/g;
 
 #------------------------------------------------------------------------------
 # List c files 
@@ -77,7 +79,7 @@ map {
   chomp $linefile;
   die "wierd wc output" unless $linefile =~ /^(\d+) /;
   $sumlinefiles += $1;
-  pr2 "filesize $_ $1";
+  mylog "filesize $_ $1";
 } @cfiles;
 
 
@@ -92,8 +94,17 @@ chomp $sizeSP;
 #------------------------------------------------------------------------------
 # Bugs
 #------------------------------------------------------------------------------
-open TMP, "README" or die "no README file ?";
-while(<TMP>) { if (/\[bug\]/) { $errors++ } }
+if(!(-e "README")) { pr2 "no README file ?"; }
+else {
+  open TMP, "README" or die "no README file ?";
+  while(<TMP>) { 
+    if (/\[bug\]/ || /status\]\s*bug/ || /status\]\s*BUG/ ) { 
+      #pr2 "OLD BUG FORMAT: $_"; 
+      $errors++ 
+    }
+  }
+}
+
 
 
 #------------------------------------------------------------------------------
@@ -104,7 +115,7 @@ if(-e "gitinfo") {
   ($sumlineP) = `cat gitinfo |wc -l`;
   chomp $sumlineP;
 } else {
-  print "NO GIT INFO!!!!!!!!!!!!!!!!!!!!!!!!!!\n";
+  pr2 "no GIT INFO?";
 }
 
 #------------------------------------------------------------------------------
@@ -113,13 +124,13 @@ if(-e "gitinfo") {
 
 
 foreach my $c (@cfiles) {
-  die "" unless ($c =~ /(.*)\.c$/);
+  die "wierd: $c, with $spfile" unless ($c =~ /(.*)\.c$/);
   my $base = $1;
   my $bef = "$base.c";
   my $aft = "$base.res"; 
   if(-e "corrected_$base.res") { 
     $aft = "corrected_$base.res";
-    pr2 "found corrected";
+    mylog "found corrected";
   }
   my $onlychange = 0;
   open TMP, "diff -u -b -B $bef $aft |";
@@ -143,7 +154,7 @@ foreach my $c (@cfiles) {
   my $base = $1;
   
   my $diagnosefile = "";
-  pr2 "$base";
+  mylog "$base";
 
   if(-e "$base.c.ok")        { $ok++; $diagnosefile = "$base.c.ok"; }
   if(-e "$base.c.failed")    { $fa++; $diagnosefile = "$base.c.failed"; }
@@ -171,7 +182,7 @@ foreach my $c (@cfiles) {
 
       $time = $1;
 
-      pr2 (sprintf "%4.1fs\n", $time);
+      mylog (sprintf "%4.1fs\n", $time);
       printf "I: %15s  & %4.1fs\n", $c, $time;
       
     }
@@ -205,10 +216,10 @@ my $ratioPvsSP2 = $sumlineP2 / $sizeSP;
 #------------------------------------------------------------------------------
 
 
-pr2 "SP = $spfile";
-pr2 "FILES = \n";
-map { pr2 "\t$_"; } @cfiles;
-pr2 "----------------------------------------";
+pr "SP = $spfile";
+mylog "FILES = \n";
+map { mylog "\t$_"; } @cfiles;
+pr "----------------------------------------";
 
 
 pr "!!Total files = $nbfiles";
@@ -231,10 +242,8 @@ printf "!!MaxTime = %.1fs\n", $maxtime;
 printf "!!AvgTime = %.1fs\n", $avgtime;
 
 my $totalstatus = $ok + $fa + $so + $gu;
-pr2 "----------------------------------------------------------------";
-pr2 "Sanity checks: nb files vs total status: $nbfiles =? $totalstatus";
-
-
+mylog "----------------------------------------------------------------";
+mylog "Sanity checks: nb files vs total status: $nbfiles =? $totalstatus";
 
 
 
