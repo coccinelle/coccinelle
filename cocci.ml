@@ -929,10 +929,10 @@ and process_a_ctl_a_env_a_toplevel  a b c =
 (* The main function *)
 (*****************************************************************************)
 
+(* for memoization, contains only one entry, the one for the SP *)
 let _hparse = Hashtbl.create 101
 let _hctl = Hashtbl.create 101
 
-(* Returns nothing. The output is in the file outfile *)
 let full_engine2 (coccifile, isofile) cfiles = 
 
   show_or_not_cfiles  cfiles;
@@ -1223,5 +1223,5 @@ let full_engine_use_index (coccifile, isofile) tmpdir =
         show_or_not_diff c_or_h.fpath outfile show_only_minus;
       end
     )
-    ) with exn -> pr2 ("EXN:" ^ Printexc.to_string exn); 
+   ) with exn -> pr2 ("EXN:" ^ Printexc.to_string exn); 
   )

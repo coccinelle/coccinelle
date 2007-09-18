@@ -3,7 +3,7 @@ open Common
 (* full_engine takes (coccifile, isofile) and cfiles in parameters and
  * returns a list associating to the input cfiles, and maybe header
  * files that was also required to be modified, the files containing the
- * result, in general files in /tmp.
+ * result (in general files in /tmp).
  * 
  * This function use memoisation internally, which is useful when 
  * use -dir to not redo twice the same work. So take care!
@@ -18,12 +18,11 @@ val full_engine :
  * remove duplicates and check that the modification are consistent 
  * among the different drivers.
  *)
-
 val check_duplicate_modif : 
  (filename * filename option) list -> (filename * filename option) list
 
 
-
+(* EXPERIMENTAL: limited function level engine that works with glimpse *)
 val index : 
   string (* dir *) -> string (* tmpdir *) -> unit
 val full_engine_use_index : 

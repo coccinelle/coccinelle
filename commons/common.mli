@@ -29,6 +29,7 @@ val pr2_once : string -> unit
 
 val redirect_stdout_stderr : filename -> (unit -> unit) -> unit
 val redirect_stdin : filename -> (unit -> unit) -> unit
+val redirect_stdin_opt : filename option -> (unit -> unit) -> unit
 
 val fprintf : out_channel -> ('a, out_channel, unit) format -> 'a
 val printf : ('a, out_channel, unit) format -> 'a

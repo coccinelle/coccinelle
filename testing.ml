@@ -172,26 +172,38 @@ let test_okfailed cocci_file cfiles =
   let final_files = ref [] in 
 
 
-  let newout = Common.new_temp_file "cocci" ".stdout" in
-
-  let redirect_in = 
+  let newout = 
+    Common.new_temp_file "cocci" ".stdout" 
+  in
+  let newin = 
     match cfiles with
     | x::xs -> 
         let (dir, base, ext) = Common.dbe_of_filename x in
         let varfile = Common.filename_of_dbe (dir, base, "var") in
         if ext = "c" && Common.lfile_exists varfile
-        then Common.redirect_stdin varfile
-        else (fun f -> f ())
+        then Some varfile
+        else None
     | [] -> failwith "wierd: no files for test_okfailed given"
   in
+
+  let t = Unix.gettimeofday () in
+  let time_per_file_str () = 
+    let t' = Unix.gettimeofday () in
+    let tdiff = t' -. t in
+    let tperfile = tdiff /. (float_of_int (List.length cfiles)) in
+    spf "time: %f" tperfile
+  in
   
-  redirect_in (fun () -> 
+  Common.redirect_stdin_opt newin (fun () -> 
     Common.redirect_stdout_stderr newout (fun () -> 
       try (
         Common.timeout_function_opt !Flag_cocci.timeout (fun () ->
-          
+
+        
           let outfiles = Cocci.full_engine (cocci_file, !Config.std_iso) cfiles
           in
+
+          let time_str = time_per_file_str () in
           
           outfiles +> List.iter (fun (infile, outopt) -> 
             let (dir, base, ext) = Common.dbe_of_filename infile in
@@ -219,7 +231,7 @@ let test_okfailed cocci_file cfiles =
               ()
           | Some outfile, false -> 
               let s =("PB: input file " ^ infile ^ " modified but no .res") in
-              push2 (infile^t_to_s Failed, [s]) final_files
+              push2 (infile^t_to_s Failed, [s;time_str]) final_files
 
           | x, true -> 
               let outfile = 
@@ -231,17 +243,19 @@ let test_okfailed cocci_file cfiles =
               let diff = Compare_c.compare_default outfile expected_res in
               let s1 = (Compare_c.compare_result_to_string diff) in
               if fst diff = Compare_c.Correct
-              then push2 (infile ^ (t_to_s Ok), [s1]) final_files
+              then push2 (infile ^ (t_to_s Ok), [s1;time_str]) final_files
               else 
                 if Common.lfile_exists expected_res2
                 then begin
                   let diff = Compare_c.compare_default outfile expected_res2 in
                   let s2 = Compare_c.compare_result_to_string diff in
                   if fst diff = Compare_c.Correct
-                  then push2 (infile ^ (t_to_s SpatchOK),[s2;s1]) final_files
-                  else push2 (infile ^ (t_to_s Failed), [s2;s1]) final_files
+                  then push2 (infile ^ (t_to_s SpatchOK),[s2;s1;time_str]) 
+                    final_files
+                  else push2 (infile ^ (t_to_s Failed), [s2;s1;time_str]) 
+                    final_files
                 end
-              else push2 (infile ^ (t_to_s Failed), [s1]) final_files
+              else push2 (infile ^ (t_to_s Failed), [s1;time_str]) final_files
         )
       );
     )
@@ -252,12 +266,14 @@ let test_okfailed cocci_file cfiles =
 	     (Str.global_replace (Str.regexp "\\\\t") "\t" s)) in
       let s = "PROBLEM\n"^("   exn = " ^ clean(Printexc.to_string exn) ^ "\n")
       in
+      let time_str = time_per_file_str () 
+      in
       (* we may miss some file because cfiles is shorter than outfiles.
        * For instance the detected local headers are not in cfiles, so
        * may have less failed. But at least have some failed.
        *)
       cfiles +> List.iter (fun infile -> 
-        push2 (infile ^ (t_to_s Failed), [s]) final_files;
+        push2 (infile ^ (t_to_s Failed), [s;time_str]) final_files;
       );
   ));
   !final_files +> List.iter (fun (file, additional_strs) -> 

@@ -196,6 +196,11 @@ let redirect_stdin file f =
     close_in chan;
   end
 
+let redirect_stdin_opt optfile f = 
+  match optfile with
+  | None -> f()
+  | Some infile -> redirect_stdin infile f
+
 
 
 

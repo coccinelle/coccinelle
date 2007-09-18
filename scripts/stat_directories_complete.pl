@@ -15,7 +15,7 @@ foreach my $dir (@subdirs) {
   if(-e "$dir/") {
     #print "RULE: $dir\n";
     my ($s) = 
-      `cd $dir; ~/mobile/coccinelle/scripts/stat_directory.pl | grep M:`;
+      `cd $dir; ~/coccinelle/scripts/stat_directory_complete.pl | grep M:`;
     chomp $s;
     $i++;
     #print "M$i.$s\n";
