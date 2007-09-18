@@ -41,12 +41,12 @@ let warning e msg =
 let rebuild e1 left right op simple =
   Ast0.rewrap e1 (Ast0.Assignment(left,op,right,simple))
 
-let rec exp e1 =
+let rec exp mc e1 =
   match Ast0.unwrap e1 with
     Ast0.Assignment(left,op,right,_) ->
       if is_simple_assign left op
       then
-	(match Ast0.get_mcodekind e1 with
+	(match mc with
 	  Ast0.MINUS(mc) ->
 	    (match !mc with
 	      ([[Ast.ExpressionTag(e2)]],_) ->
@@ -67,10 +67,16 @@ let rec exp e1 =
 	    else rebuild e1 left right op pure)
       else e1
   | Ast0.DisjExpr(lp,exps,mids,rp) ->
-      Ast0.rewrap e1 (Ast0.DisjExpr(lp,List.map exp exps,mids,rp))
-  | Ast0.OptExp(e) -> Ast0.rewrap e1 (Ast0.OptExp(exp e))
-  | Ast0.UniqueExp(e) -> Ast0.rewrap e1 (Ast0.UniqueExp(exp e))
-  | Ast0.MultiExp(e) -> Ast0.rewrap e1 (Ast0.MultiExp(exp e))
+      Ast0.rewrap e1
+	(Ast0.DisjExpr
+	   (lp,List.map (function x -> exp (Ast0.get_mcodekind x) x) exps,
+	    mids,rp))
+  | Ast0.OptExp(e) ->
+      Ast0.rewrap e1 (Ast0.OptExp(exp (Ast0.get_mcodekind e) e))
+  | Ast0.UniqueExp(e) ->
+      Ast0.rewrap e1 (Ast0.UniqueExp(exp (Ast0.get_mcodekind e) e))
+  | Ast0.MultiExp(e) ->
+      Ast0.rewrap e1 (Ast0.MultiExp(exp (Ast0.get_mcodekind e) e))
   | _ -> e1
 
 let simple_assignments l =
@@ -78,7 +84,7 @@ let simple_assignments l =
   let donothing r k e = k e in
   let statement r k e =
     match Ast0.unwrap e with
-      Ast0.Exp(e1) -> Ast0.rewrap e (Ast0.Exp(exp e1))
+      Ast0.Exp(e1) -> Ast0.rewrap e (Ast0.Exp(exp (Ast0.get_mcodekind e) e1))
     | _ -> k e in
   let fn =
     V0.rebuilder
