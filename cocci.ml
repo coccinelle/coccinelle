@@ -912,7 +912,6 @@ and process_a_ctl_a_env_a_toplevel2 r e c =
         ignore(Transformation3.transform r.rulename r.dropped_isos
                   trans_info (Common.some c.flow));
       with Timeout -> raise Timeout | UnixExit i -> raise (UnixExit i)
-         | exn -> pr2 ("EXN:" ^ Printexc.to_string exn); 
     end;
 
     Some newbindings

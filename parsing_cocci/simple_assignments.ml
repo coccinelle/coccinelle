@@ -38,41 +38,47 @@ let warning e msg =
      "that prevent it from matching a declaration ("^msg^")\n");
   e
 
-let rebuild e e1 left right op simple =
-  Ast0.rewrap e
-    (Ast0.Exp (Ast0.rewrap e1 (Ast0.Assignment(left,op,right,simple))))
+let rebuild e1 left right op simple =
+  Ast0.rewrap e1 (Ast0.Assignment(left,op,right,simple))
+
+let rec exp e1 =
+  match Ast0.unwrap e1 with
+    Ast0.Assignment(left,op,right,_) ->
+      if is_simple_assign left op
+      then
+	(match Ast0.get_mcodekind e1 with
+	  Ast0.MINUS(mc) ->
+	    (match !mc with
+	      ([[Ast.ExpressionTag(e2)]],_) ->
+		(match Ast.unwrap e2 with
+		  Ast.Assignment(left',op',_,_) ->
+		    if is_simple_ast_assign left' op' left
+		    then rebuild e1 left right op true
+		    else warning e1 "replacement is not simple"
+		| _ -> warning e1 "replacement is not an assignment")
+	    | _ -> warning e1 "multiple replacements")
+	| m ->
+	    let pure =
+	      (pure_mcodekind m) &&
+	      (pure_mcodekind (Ast0.get_mcodekind left)) &&
+	      (pure_mcodekind (Ast0.get_mcode_mcodekind op)) in
+	    if not pure
+	    then warning e1 "not pure"
+	    else rebuild e1 left right op pure)
+      else e1
+  | Ast0.DisjExpr(lp,exps,mids,rp) ->
+      Ast0.rewrap e1 (Ast0.DisjExpr(lp,List.map exp exps,mids,rp))
+  | Ast0.OptExp(e) -> Ast0.rewrap e1 (Ast0.OptExp(exp e))
+  | Ast0.UniqueExp(e) -> Ast0.rewrap e1 (Ast0.UniqueExp(exp e))
+  | Ast0.MultiExp(e) -> Ast0.rewrap e1 (Ast0.MultiExp(exp e))
+  | _ -> e1
 
 let simple_assignments l =
   let mcode x = x in
   let donothing r k e = k e in
   let statement r k e =
     match Ast0.unwrap e with
-      Ast0.Exp(e1) ->
-	(match Ast0.unwrap e1 with
-	  Ast0.Assignment(left,op,right,_) ->
-	    if is_simple_assign left op
-	    then
-	      (match Ast0.get_mcodekind e with
-		Ast0.MINUS(mc) ->
-		  (match !mc with
-		    ([[Ast.ExpressionTag(e2)]],_) ->
-		      (match Ast.unwrap e2 with
-			Ast.Assignment(left',op',_,_) ->
-			  if is_simple_ast_assign left' op' left
-			  then rebuild e e1 left right op true
-			  else warning e "replacement is not simple"
-		      | _ -> warning e "replacement is not an assignment")
-		  | _ -> warning e "multiple replacements")
-	      |	m ->
-		  let pure =
-		    (pure_mcodekind m) &&
-		    (pure_mcodekind (Ast0.get_mcodekind left)) &&
-		    (pure_mcodekind (Ast0.get_mcode_mcodekind op)) in
-		  if not pure
-		  then warning e "not pure"
-		  else rebuild e e1 left right op pure)
-	    else e
-	| _ -> e)
+      Ast0.Exp(e1) -> Ast0.rewrap e (Ast0.Exp(exp e1))
     | _ -> k e in
   let fn =
     V0.rebuilder
