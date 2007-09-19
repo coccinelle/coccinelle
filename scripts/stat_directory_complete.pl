@@ -98,8 +98,9 @@ if(!(-e "README")) { pr2 "no README file ?"; }
 else {
   open TMP, "README" or die "no README file ?";
   while(<TMP>) { 
-    if (/\[bug\]/ || /status\]\s*bug/ || /status\]\s*BUG/ ) { 
+    if (/\[bug\]/ || /status\]\s*bug/ || /status\]\s*semi-bug/ ||  /status\]\s*BUG/ ) { 
       #pr2 "OLD BUG FORMAT: $_"; 
+      # can also look for [semibug] but it's often related to [corrected_c] kind of pbs
       $errors++ 
     }
   }

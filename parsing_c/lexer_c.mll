@@ -316,18 +316,18 @@ rule token = parse
   (* '0'+ because sometimes it is a #if 000 *)
   | "#" [' ' '\t']* "if" [' ' '\t']* '0'+           (* [^'\n']*  '\n' *)
       { let info = tokinfo lexbuf in 
-        TIfdefbool (false, info +> tok_add_s (cpp_eat_until_nl lexbuf)) 
+        TIfdefBool (false, info +> tok_add_s (cpp_eat_until_nl lexbuf)) 
       }
 
   | "#" [' ' '\t']* "if" [' ' '\t']* '1'   [^'\n']*  '\n'
       { let info = tokinfo lexbuf in 
-        TIfdefbool (true, info) 
+        TIfdefBool (true, info) 
 
       } 
 
   | "#" [' ' '\t']* "ifdef" [' ' '\t']* "__cplusplus"   [^'\n']*  '\n'
       { let info = tokinfo lexbuf in 
-        TIfdefbool (false, info) 
+        TIfdefMisc (false, info) 
       }
 
 
@@ -359,14 +359,14 @@ rule token = parse
   (* linuxext: *)
   | "#" spopt "if" sp "("?  "LINUX_VERSION_CODE" sp (">=" | ">") sp
       { let info = tokinfo lexbuf in 
-        TIfdefbool (true, info +> tok_add_s (cpp_eat_until_nl lexbuf)) 
+        TIfdefVersion (true, info +> tok_add_s (cpp_eat_until_nl lexbuf)) 
       } 
   (* linuxext: *)
   | "#" spopt "if" sp "!" "("?  "LINUX_VERSION_CODE" sp (">=" | ">") sp
   | "#" spopt "if" sp ['(']?  "LINUX_VERSION_CODE" sp ("<=" | "<") sp
       
       { let info = tokinfo lexbuf in 
-        TIfdefbool (false, info +> tok_add_s (cpp_eat_until_nl lexbuf)) 
+        TIfdefVersion (false, info +> tok_add_s (cpp_eat_until_nl lexbuf)) 
       } 
 
 

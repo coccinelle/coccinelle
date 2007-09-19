@@ -31,7 +31,7 @@ let is_cpp_instruction = function
   | TInclude _ | TDefine _
   | TIfdef _   | TIfdefelse _ | TIfdefelif _
   | TEndif _ 
-  | TIfdefbool _ 
+  | TIfdefBool _ | TIfdefMisc _ | TIfdefVersion _
       -> true
   | _ -> false
 
@@ -145,7 +145,9 @@ let info_of_tok = function
   | TIfdefelse           (i) -> i
   | TIfdefelif           (i) -> i
   | TEndif               (i) -> i
-  | TIfdefbool           (b, i) -> i
+  | TIfdefBool           (b, i) -> i
+  | TIfdefMisc           (b, i) -> i
+  | TIfdefVersion           (b, i) -> i
 
   | TOPar                (i) -> i
   | TCPar                (i) -> i
@@ -272,7 +274,9 @@ let visitor_info_of_tok f = function
   | TIfdefelse           (i) -> TIfdefelse           (f i) 
   | TIfdefelif           (i) -> TIfdefelif           (f i) 
   | TEndif               (i) -> TEndif               (f i) 
-  | TIfdefbool           (b, i) -> TIfdefbool    (b, f i) 
+  | TIfdefBool           (b, i) -> TIfdefBool    (b, f i) 
+  | TIfdefMisc           (b, i) -> TIfdefMisc    (b, f i) 
+  | TIfdefVersion           (b, i) -> TIfdefVersion    (b, f i) 
 
   | TOPar                (i) -> TOPar                (f i) 
   | TCPar                (i) -> TCPar                (f i) 

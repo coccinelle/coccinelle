@@ -302,7 +302,8 @@ let mk_e e ii = ((e, Ast_c.noType()), ii)
 
 
 %token <Ast_c.info> TIfdef TIfdefelse TIfdefelif TEndif
-%token <(bool * Ast_c.info)> TIfdefbool
+%token <(bool * Ast_c.info)> TIfdefBool TIfdefMisc TIfdefVersion
+
 
 %token <Ast_c.info> TCommentMisc
 %token <(Ast_c.cppcommentkind * Ast_c.info)> TCommentCpp

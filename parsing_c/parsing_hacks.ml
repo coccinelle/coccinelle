@@ -364,9 +364,18 @@ let rec mk_ifdef xs =
       | TIfdef _ -> 
           let body, extra, xs = mk_ifdef_parameters [x] [] xs in
           Ifdef (body, extra)::mk_ifdef xs
-      | TIfdefbool (b,_) -> 
+      | TIfdefBool (b,_) -> 
+          let body, extra, xs = mk_ifdef_parameters [x] [] xs in
+          
+          (* if not passing, then consider a #if 0 as an ordinary #ifdef *)
+          if !Flag_parsing_c.if0_passing
+          then Ifdefbool (b, body, extra)::mk_ifdef xs
+          else Ifdef(body, extra)::mk_ifdef xs
+
+      | TIfdefMisc (b,_) | TIfdefVersion (b,_) -> 
           let body, extra, xs = mk_ifdef_parameters [x] [] xs in
           Ifdefbool (b, body, extra)::mk_ifdef xs
+
           
       | _ -> 
           (* todo? can have some Ifdef in the line ? *)
@@ -393,7 +402,19 @@ and mk_ifdef_parameters extras acc_before_sep xs =
           mk_ifdef_parameters 
             extras (Ifdef (body, extrasnest)::acc_before_sep) xs
 
-      | TIfdefbool (b,_) -> 
+      | TIfdefBool (b,_) -> 
+          let body, extrasnest, xs = mk_ifdef_parameters [x] [] xs in
+
+          if !Flag_parsing_c.if0_passing
+          then
+            mk_ifdef_parameters 
+              extras (Ifdefbool (b, body, extrasnest)::acc_before_sep) xs
+          else 
+            mk_ifdef_parameters 
+              extras (Ifdef (body, extrasnest)::acc_before_sep) xs
+
+
+      | TIfdefMisc (b,_) | TIfdefVersion (b,_) -> 
           let body, extrasnest, xs = mk_ifdef_parameters [x] [] xs in
           mk_ifdef_parameters 
             extras (Ifdefbool (b, body, extrasnest)::acc_before_sep) xs
@@ -628,11 +649,11 @@ let set_context_tag xs =
 (* ------------------------------------------------------------------------- *)
 
 (* #if 0, #if 1,  #if LINUX_VERSION handling *)
-let rec find_ifdef_zero xs = 
+let rec find_ifdef_bool xs = 
   xs +> List.iter (function 
   | NotIfdefLine _ -> ()
   | Ifdefbool (is_ifdef_positif, xxs, info_ifdef_stmt) -> 
-
+      
       if is_ifdef_positif
       then pr2_cpp "commenting parts of a #if 1 or #if LINUX_VERSION"
       else pr2_cpp "commenting a #if 0 or #if LINUX_VERSION or __cplusplus";
@@ -641,7 +662,7 @@ let rec find_ifdef_zero xs =
       | [] -> raise Impossible
       | firstclause::xxs -> 
           info_ifdef_stmt +> List.iter (set_as_comment Ast_c.CppDirective);
-
+            
           if is_ifdef_positif
           then xxs +> List.iter 
             (iter_token_ifdef (set_as_comment Ast_c.CppOther))
@@ -657,7 +678,7 @@ let rec find_ifdef_zero xs =
           end
       );
       
-  | Ifdef (xxs, info_ifdef_stmt) -> xxs +> List.iter find_ifdef_zero
+  | Ifdef (xxs, info_ifdef_stmt) -> xxs +> List.iter find_ifdef_bool
   )
 
 
@@ -1383,8 +1404,7 @@ let fix_tokens_cpp2 tokens =
     ) in
     let ifdef_grouped = mk_ifdef cleaner in
     find_ifdef_funheaders ifdef_grouped;
-    if !Flag_parsing_c.if0_passing 
-    then find_ifdef_zero       ifdef_grouped;
+    find_ifdef_bool       ifdef_grouped;
     find_ifdef_mid        ifdef_grouped;
 
 
@@ -1990,7 +2010,8 @@ let lookahead2 next before =
   (*-------------------------------------------------------------*)
   (* CPP *)
   (*-------------------------------------------------------------*)
-  | ((TIfdef ii |TIfdefelse ii |TIfdefelif ii |TEndif ii |TIfdefbool (_,ii))
+  | ((TIfdef ii |TIfdefelse ii |TIfdefelif ii |TEndif ii |
+      TIfdefBool (_,ii)|TIfdefMisc(_,ii)|TIfdefVersion(_,ii))
         as x)
     ::_, _ 
       -> 
