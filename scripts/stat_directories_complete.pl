@@ -13,13 +13,14 @@ chomp $subdirs;
 my $i = 0;
 foreach my $dir (@subdirs) {
   if(-e "$dir/") {
-    print "RULE: $dir\n";
+    #print "RULE: $dir\n";
+    my $kind = "M";
     my ($s) = 
-      `cd $dir; ~/coccinelle/scripts/stat_directory_complete.pl | grep M:`;
+      `cd $dir; ~/coccinelle/scripts/stat_directory_complete.pl | grep $kind:`;
     chomp $s;
     $i++;
     #print "M$i.$s\n";
-    $s =~ s/C:/C$i./;
+    $s =~ s/$kind:/$kind$i./;
     print "$s\n";
   }
 

@@ -3,6 +3,9 @@
 use strict;
 use diagnostics;
 
+use Data::Dumper;
+use Date::Manip qw(ParseDate UnixDate); #sudo apt-get install libdate-manip-perl
+use Date::Calc qw(Delta_Days); #sudo apt-get install libdate-calc-perl
 
 #------------------------------------------------------------------------------
 # Helpers 
@@ -13,6 +16,11 @@ my $debug = 0;
 sub pr2 { print STDERR "@_\n"; }
 sub pr { print "@_\n"; }
 sub mylog { print STDERR "@_\n" if $debug; }
+
+sub plural { 
+  my ($n) = @_;
+  $n > 1 ? "s" : "";
+}
 
 #------------------------------------------------------------------------------
 # Globals
@@ -43,6 +51,9 @@ my $sizeSP = 0;
 
 my $cedescr = "";
 
+my $numauthors = 0;
+my $duration = 0; # in days 
+
 my @cfiles = ();
 
 #------------------------------------------------------------------------------
@@ -59,8 +70,12 @@ if($spfile =~ /(rule|mega|bt)(\d+)\.cocci/) { $ruleno = "$2"; }
 
 $cedescr = `make ce_descr`;
 chomp $cedescr;
-$cedescr =~ s//\\f/g;
-$cedescr =~ s/\t/\\t/g;
+#print STDERR (Dumper($cedescr));
+
+
+#$cedescr =~ s/\\/\\\\/g;
+#$cedescr =~ s//\\f/g;
+#$cedescr =~ s/\t/\\t/g;
 
 #------------------------------------------------------------------------------
 # List c files 
@@ -121,6 +136,76 @@ if(-e "gitinfo") {
 } else {
   pr2 "no GIT INFO?";
 }
+
+#------------------------------------------------------------------------------
+# Number of authors and duration
+#------------------------------------------------------------------------------
+
+
+if(-e "gitinfo") { 
+  
+  open TMP, "gitinfo" or die "no gitinfo file ?";
+
+  #for authors
+  my $h = {};
+
+  #for duration
+  my @mindate = ();
+  my @maxdate = ();
+  my $nodateyet = 1;
+
+  while(<TMP>) { 
+    #can also do: egrep "^Author" gitinfo | sort | uniq | wc -l
+    if (/^Author: (.*)/) {
+      $h->{$1}++;
+    }
+
+    if(/^Date: (.*) ([-+]\d+)?/) {
+      my $date = ParseDate($1);
+      if (!$date) { die "bad date" } 
+      else {
+        my ($year, $month, $day) = UnixDate($date, "%Y", "%m", "%d");
+        my @current = ($year, $month, $day);
+        if($nodateyet) {
+          @mindate = @current;
+          @maxdate = @current;
+          $nodateyet = 0;
+        } else {
+          my $diff1 = Delta_Days(@mindate, @current);
+          if($diff1 < 0) { @mindate = @current; }
+          my $diff2 = Delta_Days(@current, @maxdate);
+          if($diff2 < 0) { @maxdate = @current; }
+
+          #pr2 "$diff1, $diff2";
+        }
+      }
+    }
+  }
+
+  my $diff = Delta_Days(@mindate, @maxdate);
+  if($diff == 1 || $diff == 0) {
+    $duration = "1 day";
+  }
+  elsif($diff < 31) {
+    $duration = "$diff days"; 
+  }
+  elsif($diff > 365) {
+    my $years = int($diff / 365);
+    my $s = plural($years);
+    $duration = "$years year$s"; 
+  }
+  elsif($diff > 31) {
+    my $months = int($diff / 31);
+    my $s = plural($months);
+    $duration = "$months month$s"; 
+  }
+  else { die "impossible"; }
+
+  $numauthors = scalar(keys %{$h});
+} else {
+  pr2 "no GIT INFO?";
+}
+
 
 #------------------------------------------------------------------------------
 # Size P (only change for .c in drivers/ or sounds/ (the test files))
@@ -256,20 +341,12 @@ printf "L: %20s (r%3s) & %5.1f%% & %5dfi & %2de & %6.1fx & %6.1fs \n",
 
 
 # Mega, Complex, Bluetooth
- 
 
+printf "M: %60s & %5d & %6d (%d) & %2d & %s & %2d & %3d & %6.0fx & %6.1fs (%.1fs)  & %5.0f\\%% \\\\\\hline%% SP: %s  \n", 
+ $cedescr, $nbfiles, $sumlineP, $sumlinePchange, $numauthors, $duration, $errors, $sizeSP, $ratioPvsSP,
+ $avgtime, $maxtime, $pourcentcorrect, $spfile;
 
-
-#printf "C: %60s & %5d & %5d(%d) %3d & & %6.1fx & %6.1fs(%.1fs) & %2d & %5.0f\\%% \\\\\\hline%% SP: %s  \n", 
-# $cedescr, $nbfiles, $sizeSP, $sumlineP2, $sumlinePchange, $ratioPvsSP2,
-# $avgtime, $maxtime, $errors, $pourcentcorrect, $spfile;
-
-
-printf "C: %60s & %5d & %5d (%d) & %3d & %6.0fx & %6.1fs (%.1fs) & %2d & %5.0f\\%% \\\\\\hline%% SP: %s  \n", 
- $cedescr, $nbfiles, $sumlineP2, $sumlinePchange, $sizeSP, $ratioPvsSP2,
- $avgtime, $maxtime, $errors, $pourcentcorrect, $spfile;
-
-printf "M: %60s & %5d & %5d (%d) & %2d & %3d & %6.0fx & %6.1fs (%.1fs)  & %5.0f\\%% \\\\\\hline%% SP: %s  \n", 
+printf "C: %60s & %5d & %6d (%d) & %2d & %3d & %6.0fx & %6.1fs (%.1fs)  & %5.0f\\%% \\\\\\hline%% SP: %s  \n", 
  $cedescr, $nbfiles, $sumlineP, $sumlinePchange, $errors, $sizeSP, $ratioPvsSP,
  $avgtime, $maxtime, $pourcentcorrect, $spfile;
 
