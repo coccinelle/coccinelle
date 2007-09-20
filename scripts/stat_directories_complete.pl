@@ -1,6 +1,9 @@
 #!/usr/bin/perl 
 
-#usage: cd tests/; ../scripts/stat_rules.pl 
+#usage: 
+
+if(@ARGV < 1) { die "usage: stat_directories_complete.pl  [M|C|B]";}
+my $kind = "$ARGV[0]";
 
 
 my $subdirs = `make subdirs`;
@@ -14,7 +17,7 @@ my $i = 0;
 foreach my $dir (@subdirs) {
   if(-e "$dir/") {
     #print "RULE: $dir\n";
-    my $kind = "M";
+
     my ($s) = 
       `cd $dir; ~/coccinelle/scripts/stat_directory_complete.pl | grep $kind:`;
     chomp $s;

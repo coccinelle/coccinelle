@@ -68,9 +68,14 @@ if($spfile =~ /(rule|mega|bt)(\d+)\.cocci/) { $ruleno = "$2"; }
 # CE
 #------------------------------------------------------------------------------
 
-$cedescr = `make ce_descr`;
-chomp $cedescr;
+#$cedescr = `make ce_descr`;
+#chomp $cedescr;
 #print STDERR (Dumper($cedescr));
+open TMP, "Makefile" or die "no Makefile file ?";
+while(<TMP>) { 
+  if(/^(CE)?DESCRIPTION=["'](.*)["']/) {  $cedescr = $2; }
+}
+
 
 
 #$cedescr =~ s/\\/\\\\/g;
