@@ -3,9 +3,9 @@
 use strict;
 use diagnostics;
 
-use Data::Dumper;
-use Date::Manip qw(ParseDate UnixDate); #sudo apt-get install libdate-manip-perl
-use Date::Calc qw(Delta_Days); #sudo apt-get install libdate-calc-perl
+#use Data::Dumper;
+#use Date::Manip qw(ParseDate UnixDate); #sudo apt-get install libdate-manip-perl
+#use Date::Calc qw(Delta_Days); #sudo apt-get install libdate-calc-perl
 
 #------------------------------------------------------------------------------
 # Helpers 
@@ -160,46 +160,51 @@ if(-e "gitinfo") {
       $h->{$1}++;
     }
 
-    if(/^Date: (.*) ([-+]\d+)?/) {
-      my $date = ParseDate($1);
-      if (!$date) { die "bad date" } 
-      else {
-        my ($year, $month, $day) = UnixDate($date, "%Y", "%m", "%d");
-        my @current = ($year, $month, $day);
-        if($nodateyet) {
-          @mindate = @current;
-          @maxdate = @current;
-          $nodateyet = 0;
-        } else {
-          my $diff1 = Delta_Days(@mindate, @current);
-          if($diff1 < 0) { @mindate = @current; }
-          my $diff2 = Delta_Days(@current, @maxdate);
-          if($diff2 < 0) { @maxdate = @current; }
+#    if(/^Date: (.*) ([-+]\d+)?/) {
+#      my $date = ParseDate($1);
+#      if (!$date) { die "bad date" } 
+#      else {
+#        my ($year, $month, $day) = UnixDate($date, "%Y", "%m", "%d");
+#        my @current = ($year, $month, $day);
+#        if($nodateyet) {
+#          @mindate = @current;
+#          @maxdate = @current;
+#          $nodateyet = 0;
+#        } else {
+#          my $diff1 = Delta_Days(@mindate, @current);
+#          if($diff1 < 0) { @mindate = @current; }
+#          my $diff2 = Delta_Days(@current, @maxdate);
+#          if($diff2 < 0) { @maxdate = @current; }
+#
+#          #pr2 "$diff1, $diff2";
+#        }
+#      }
+#    }
+ 
 
-          #pr2 "$diff1, $diff2";
-        }
-      }
-    }
+
   }
 
-  my $diff = Delta_Days(@mindate, @maxdate);
-  if($diff == 1 || $diff == 0) {
-    $duration = "1 day";
-  }
-  elsif($diff < 31) {
-    $duration = "$diff days"; 
-  }
-  elsif($diff > 365) {
-    my $years = int($diff / 365);
-    my $s = plural($years);
-    $duration = "$years year$s"; 
-  }
-  elsif($diff > 31) {
-    my $months = int($diff / 31);
-    my $s = plural($months);
-    $duration = "$months month$s"; 
-  }
-  else { die "impossible"; }
+#  my $diff = Delta_Days(@mindate, @maxdate);
+#  if($diff == 1 || $diff == 0) {
+#    $duration = "1 day";
+#  }
+#  elsif($diff < 31) {
+#    $duration = "$diff days"; 
+#  }
+#  elsif($diff > 365) {
+#    my $years = int($diff / 365);
+#    my $s = plural($years);
+#    $duration = "$years year$s"; 
+#  }
+#  elsif($diff > 31) {
+#    my $months = int($diff / 31);
+#    my $s = plural($months);
+#    $duration = "$months month$s"; 
+#  }
+#  else { die "impossible"; }
+
+  $duration = "xxx months";
 
   $numauthors = scalar(keys %{$h});
 } else {
