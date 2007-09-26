@@ -258,7 +258,7 @@ expression X;
 X == NULL <=> NULL == X => !X
 
 Expression
-@ isnt_zero @ 
+@ isnt_null @ 
 expression X; 
 @@
 X != NULL <=> NULL != X => X
