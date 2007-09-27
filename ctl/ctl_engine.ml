@@ -2086,7 +2086,7 @@ let preprocess (cfg,_,_) label = function
       if List.exists get_all l
       then true
       else
-	(if !Flag_ctl.verbose_ctl_engine
+	(if !Flag_ctl.verbose_match
 	then
 	   List.iter (List.iter (function x -> let _ = get_any true x in ()))
 	    l;

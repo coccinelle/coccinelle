@@ -47,7 +47,7 @@ let quiet_profile = (
   [
   ],
   [
-    Flag_cocci.show_diff;
+    (* Flag_cocci.show_diff;   just leave this as it is *)
 
     Flag.show_misc;
 
@@ -63,6 +63,7 @@ let quiet_profile = (
     Flag_parsing_cocci.show_SP;
     Flag_parsing_cocci.show_iso_failures;
     Flag_ctl.verbose_ctl_engine;
+    Flag_ctl.verbose_match;
     Flag_engine.debug_engine;
     Flag_engine.debug_unparsing;
     Flag_parsing_c.verbose_type;
@@ -89,6 +90,7 @@ let pad_profile = (
     Flag_parsing_cocci.show_SP;
     Flag_parsing_cocci.show_iso_failures;
     Flag_ctl.verbose_ctl_engine;
+    Flag_ctl.verbose_match;
     Flag_engine.debug_engine;
     Flag_engine.debug_unparsing;
     Flag_parsing_c.verbose_type;
@@ -216,6 +218,7 @@ let other_options = [
   "",
   [
     "-verbose_ctl_engine",   Arg.Set Flag_ctl.verbose_ctl_engine, " ";
+    "-verbose_match",   Arg.Set Flag_ctl.verbose_match, " ";
     "-verbose_engine",       Arg.Set Flag_engine.debug_engine,    " ";
     "-no_parse_error_msg", Arg.Clear Flag_parsing_c.verbose_parsing, " ";
     "-no_type_error_msg",  Arg.Clear Flag_parsing_c.verbose_type, " ";

@@ -46,25 +46,28 @@ let rec exp mc e1 =
     Ast0.Assignment(left,op,right,_) ->
       if is_simple_assign left op
       then
-	(match mc with
-	  Ast0.MINUS(mc) ->
-	    (match !mc with
-	      ([[Ast.ExpressionTag(e2)]],_) ->
-		(match Ast.unwrap e2 with
-		  Ast.Assignment(left',op',_,_) ->
-		    if is_simple_ast_assign left' op' left
-		    then rebuild e1 left right op true
-		    else warning e1 "replacement is not simple"
-		| _ -> warning e1 "replacement is not an assignment")
-	    | _ -> warning e1 "multiple replacements")
-	| m ->
-	    let pure =
-	      (pure_mcodekind m) &&
-	      (pure_mcodekind (Ast0.get_mcodekind left)) &&
-	      (pure_mcodekind (Ast0.get_mcode_mcodekind op)) in
-	    if not pure
-	    then warning e1 "not pure"
-	    else rebuild e1 left right op pure)
+	(if !Flag.sgrep_mode2
+	then rebuild e1 left right op true
+	else
+	  match mc with
+	    Ast0.MINUS(mc) ->
+	      (match !mc with
+		([[Ast.ExpressionTag(e2)]],_) ->
+		  (match Ast.unwrap e2 with
+		    Ast.Assignment(left',op',_,_) ->
+		      if is_simple_ast_assign left' op' left
+		      then rebuild e1 left right op true
+		      else warning e1 "replacement is not simple"
+		  | _ -> warning e1 "replacement is not an assignment")
+	      | _ -> warning e1 "multiple replacements")
+	  | m ->
+	      let pure =
+		(pure_mcodekind m) &&
+		(pure_mcodekind (Ast0.get_mcodekind left)) &&
+		(pure_mcodekind (Ast0.get_mcode_mcodekind op)) in
+	      if not pure
+	      then warning e1 "not pure"
+	      else rebuild e1 left right op pure)
       else e1
   | Ast0.DisjExpr(lp,exps,mids,rp) ->
       Ast0.rewrap e1

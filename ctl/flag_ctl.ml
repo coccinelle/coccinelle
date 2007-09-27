@@ -1,6 +1,9 @@
 (* option -verbose_ctl_engine *)
 let verbose_ctl_engine = ref false
 
+(* cheap partial matches using assttomember *)
+let verbose_match = ref false
+
 let partial_match = ref false
 
 let poswits_only = ref false
