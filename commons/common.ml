@@ -1227,6 +1227,8 @@ let rec split_on_char c s =
 
 let lowercase = String.lowercase
 
+let quote s = "\"" ^ s ^ "\""  
+
 (*****************************************************************************)
 (* Regexp *)
 (*****************************************************************************)
@@ -1364,6 +1366,24 @@ let replace_ext file oldext newext =
   let (d,b,e) = dbe_of_filename file in
   assert(e = oldext);
   filename_of_dbe (d,b,newext)
+
+
+let normalize_path file = 
+  let (dir, filename) = Filename.dirname file, Filename.basename file in
+  let xs = split "/" dir in
+  let rec aux acc = function
+    | [] -> List.rev acc
+    | x::xs -> 
+        (match x with
+        | "." -> aux acc xs
+        | ".." -> aux (List.tl acc) xs
+        | x -> aux (x::acc) xs
+        )
+  in
+  let xs' = aux [] xs in
+  Filename.concat (join "/" xs') filename
+
+
 
 (*****************************************************************************)
 (* Dates *)
@@ -2183,16 +2203,18 @@ let rec doublon = function
   | a::l -> if List.mem a l then true
   else doublon l
 
-let rec (inseredans: 'a -> 'a list -> 'a list list) = fun x -> function
+let rec (insert_in: 'a -> 'a list -> 'a list list) = fun x -> function
   | []    -> [[x]]
-  | y::ys -> (x::y::ys)  :: (List.map (fun xs -> y::xs) (inseredans x ys))
-(* [1;2;3] -> 3   [2;3] [3;2] *)
+  | y::ys -> (x::y::ys)  :: (List.map (fun xs -> y::xs) (insert_in x ys))
+(* insert_in 3 [1;2] = [[3; 1; 2]; [1; 3; 2]; [1; 2; 3]] *)
 
 let rec (permutation: 'a list -> 'a list list) = function
   | [] -> []
   | [x] -> [[x]]
-  | x::xs -> List.flatten (List.map (inseredans x) (permutation xs))
-
+  | x::xs -> List.flatten (List.map (insert_in x) (permutation xs))
+(* permutation [1;2;3] = 
+ * [[1; 2; 3]; [2; 1; 3]; [2; 3; 1]; [1; 3; 2]; [3; 1; 2]; [3; 2; 1]]
+ *)
 
 
 let rec remove_elem_pos pos xs =

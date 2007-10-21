@@ -231,6 +231,8 @@ let dfs_iter_with_path xi f g =
 let generate_ograph_xxx g filename =
   with_open_outfile filename (fun (pr,_) ->
     pr "digraph misc {\n" ;
+    pr "size = \"10,10\";\n" ;
+
     let nodes = g#nodes in
     nodes#iter (fun (k,(node, s)) -> 
      (* so can see if nodes without arcs were created *) 

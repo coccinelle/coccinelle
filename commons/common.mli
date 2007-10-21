@@ -506,6 +506,8 @@ val split_on_char : char -> string -> string list
 
 val lowercase : string -> string
 
+val quote : string -> string
+
 (*****************************************************************************)
 (* Regexp *)
 (*****************************************************************************)
@@ -559,6 +561,9 @@ val dbe_of_filename_safe :
 
 (* ex: replace_ext "toto.c" "c" "var" *)
 val replace_ext: filename -> string -> string -> filename
+
+(* remove the ., .. *)
+val normalize_path : filename -> filename
 
 (*****************************************************************************)
 (* Dates *)
@@ -806,7 +811,6 @@ val iter_with_previous : ('a -> 'a -> 'b) -> 'a list -> unit
 
 val get_pair : 'a list -> ('a * 'a) list
 
-val inseredans : 'a -> 'a list -> 'a list list
 val permutation : 'a list -> 'a list list
 
 val remove_elem_pos : int -> 'a list -> 'a list

@@ -102,18 +102,22 @@ testparsing:
 # -parse_c pb_parsing_ecoop/
 
 
-
+#-filter_define_error
 PARSECMD=./spatch.opt -D standard.h -filter_define_error -filter_classic_passed \
 	  -dir
 
 testparsing2: 
 	$(PARSECMD) -parse_c ~/kernels/git/linux-2.6/sound/ > /tmp/parse_sound_filter 2>&1 
 	$(PARSECMD) -parse_c ~/kernels/git/linux-2.6/drivers/  > /tmp/parse_drivers_filter 2>&1 
-	$(PARSECMD) -parse_c ~/kernels/git/linux-2.6/  > /tmp/parse_all_filter 2>&1 
+	$(PARSECMD) -parse_c ~/kernels/git/linux-2.6/  > /tmp/parse_c_filter 2>&1 
 	$(PARSECMD) -parse_h ~/kernels/git/linux-2.6/  > /tmp/parse_h_filter 2>&1 
+	$(PARSECMD) -parse_ch ~/kernels/git/linux-2.6/ > /tmp/parse_ch_filter 2>&1
 
 testparsing3:
-	./spatch -D standard.h -parse_ch -dir ~/kernels/git/linux-2.6/ > /tmp/parse_ch_all 2>&1
+	./spatch.opt -D standard.h -parse_ch -dir ~/kernels/git/linux-2.6/ > /tmp/parse_ch_all 2>&1
+
+testparsing4:
+	./spatch.opt -D standard.h -parse_c -dir tests-big/ > /tmp/parse_big_c 2>&1
 
 # -inline 0  to see all the functions in the profile.
 forprofiling:
@@ -124,6 +128,11 @@ clean::
 
 tags:
 	otags -no-mli-tags -r  .
+
+dependencygraph:
+	find  -name "*.ml" |grep -v "scripts" | xargs ocamldep -I commons -I globals -I ctl -I parsing_cocci -I parsing_c -I engine -I popl -I extra > /tmp/dependfull.depend
+	ocamldot -fullgraph /tmp/dependfull.depend > /tmp/dependfull.dot
+	dot -Tps /tmp/dependfull.dot > /tmp/dependfull.ps
 
 ##############################################################################
 # Misc rules

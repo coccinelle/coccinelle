@@ -1616,7 +1616,7 @@ let not_annot s =
   not (s ==~ regexp_annot)
 
 
-let forLOOKAHEAD = 20
+let forLOOKAHEAD = 30
 
   
 (* look if there is a '{' just after the closing ')', and handling the

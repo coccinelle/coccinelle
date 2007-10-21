@@ -56,6 +56,10 @@ clean::
 
 
 
+dependencygraph:
+	ocamldep *.mli *.ml > /tmp/dependfull.depend
+	ocamldot -fullgraph /tmp/dependfull.depend > /tmp/dependfull.dot
+	dot -Tps /tmp/dependfull.dot > /tmp/dependfull.ps
 
 
 .SUFFIXES:

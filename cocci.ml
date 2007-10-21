@@ -1065,6 +1065,8 @@ let check_duplicate_modif a =
 ./spatch.opt -profile -sgrep2 -quiet -show_diff -c demos/while_idiom.sgrep -dir ~/kernels/git/linux-2.6/
 ./spatch.opt -profile -sgrep2 -quiet -show_diff -c demos/while_idiom.sgrep -use_index /tmp/cocci_index/
  -l
+
+ could index only functions or fields ?
 *)
 
 let index dir tmpdir = 
@@ -1126,26 +1128,112 @@ let index dir tmpdir =
     ) with exn -> pr2 ("EXN:" ^ Printexc.to_string exn); 
   )
 
+(* --------------------------------------------------------------------- *)
 
+module Ast = Ast_cocci
+module V = Visitor_ast
 
+let visit_rule_get_keywords arule = 
+  let donothing r k e = k e in
+  let option_default = [] in
+  let mcode _ _ = option_default in
+  let bind = Common.union_set in
 
+  let ident r k e = k e in
 
+  let expression r k e =
+    match Ast.unwrap e with
+    | Ast.FunCall (exp, _, args, _) -> 
+        (match Ast.unwrap exp with
+        | Ast.Ident id -> 
+            (match Ast.unwrap id with
+            | Ast.Id s -> bind (k e) ([Ast.unwrap_mcode s])
+            | _ -> k e
+            )
+        | _ -> k e
+        )
 
-let find_in_index_cfiles toks tmpdir = 
-  (* TODO use toks *)
-  pr2_gen toks;
-
-  let kwd = 
-   (* "list_for_each;list_entry" *)
-    (*"do_setitimer"*)
-    (*"cputime_eq;jiffies_to_cputime"*)
-    "cputime_gt;cputime_add"
+    | Ast.RecordAccess(exp,_,fld) | Ast.RecordPtAccess(exp,_,fld) ->
+	bind
+	  (Common.union_all
+	      (List.map (function id -> [id]) (*  ["."^id;"->"^id] *)
+		(r.V.combiner_ident fld)))
+	  (r.V.combiner_expression exp)
+    | _ -> k e in
+  
+  let typeC r k e = 
+    match Ast.unwrap e with
+    | Ast.StructUnionName (su, idopt) -> 
+        (match idopt with
+        | Some id -> 
+            (match Ast.unwrap id with
+            | Ast.Id s -> bind (k e) ([Ast.unwrap_mcode s])
+            | _ -> k e
+            )
+        | None -> k e
+        )
+    | _ -> k e 
   in
-  pr2 ("glimpse request = " ^ kwd);
+  let fullType r k e = k e in
+  let declaration r k e = k e in
+  let initialiser r k e = k e in
+  let parameter r k e = k e in
+  let case r k e = k e in
+  let rule_elem r k e = 
+    match Ast.unwrap e with
+    | Ast.FunHeader (_mc, _b, _fnlist, id, _, _args, _) -> 
+        (match Ast.unwrap id with
+        | Ast.Id s -> 
+            bind (k e) ([Ast.unwrap_mcode s])
+        | _ -> k e
+        )
+    | Ast.WhileHeader (_, _, _, _) -> bind (k e) (["while"])
+    | _ -> k e 
+  in
+  let statement r k e = k e in
+
+  let combiner = 
+    V.combiner bind option_default
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode
+    donothing donothing donothing donothing
+    ident expression fullType typeC initialiser parameter declaration
+    rule_elem statement case donothing donothing
+  in
+  let (_nm,_,rule) = arule in
+  rule 
+    +> List.map combiner.Visitor_ast.combiner_top_level
+    +> Common.union_all
+       
+  
+
+
+
+let extract_keywords astcocci = 
+  match astcocci with
+  | [] -> failwith "no rule"
+  | [x] -> 
+      visit_rule_get_keywords x
+  | _ -> failwith "more than one rule: not handled yet for indexed search"
+
+
+let find_in_index_cfiles astcocci tmpdir = 
+  let kwd = 
+   (* ["list_for_each";"list_entry"]
+    * ["do_setitimer"]
+    * ["cputime_eq";"jiffies_to_cputime"]
+    * ["cputime_gt";"cputime_add"]
+    *)
+    extract_keywords astcocci
+  in
+  if null kwd then failwith "no keyword infered from snippet";
+
+  let query = join ";" kwd in 
+  pr2 ("glimpse request = " ^ query);
   let files = 
     Common.cmd_to_list 
       (*("find "^tmpdir^" -name \"*.c\"") *)
-      (spf "glimpse -y -H %s -N -W -w '%s'" tmpdir kwd)
+      (spf "glimpse -y -H %s -N -W -w '%s'" tmpdir query)
   in
   files
 
@@ -1154,10 +1242,16 @@ let find_in_index_cfiles toks tmpdir =
 let read_from_cache cfiles =
   cfiles +> List.map (fun smallfile -> 
     (* lazy *)
-    (fun () ->
+   (fun () ->
+    
+    Common.profile_code "Cocci.read_from_cache" (fun () -> 
 
     let marshalled_file = smallfile ^ ".marshalled_finfo" in
-    let finfo = (get_value marshalled_file : file_info) in
+    let finfo = 
+      Common.profile_code "get_value" (fun () -> 
+        (get_value marshalled_file : file_info) 
+      )
+    in
 
     {finfo with 
       asts = finfo.asts +> List.map (fun topcinfo -> 
@@ -1180,6 +1274,7 @@ let read_from_cache cfiles =
       )
     }
   )
+   )
   )
 
 
@@ -1187,7 +1282,7 @@ let full_engine_use_index (coccifile, isofile) tmpdir =
 
   let isofile = Some isofile in
 
-  let (astcocci,free_var_lists,used_after_lists,toks) = 
+  let (astcocci,free_var_lists,used_after_lists,_toks) = 
     sp_of_file coccifile isofile in
   let ctls = 
     ctls_of_ast  astcocci used_after_lists in
@@ -1197,7 +1292,7 @@ let full_engine_use_index (coccifile, isofile) tmpdir =
   let cocci_infos =
     prepare_cocci ctls free_var_lists used_after_lists astcocci in
 
-  let cfiles = find_in_index_cfiles toks tmpdir in
+  let cfiles = find_in_index_cfiles astcocci tmpdir in
   pr2 (spf "number of relevant files: %d" (List.length cfiles));
   (*cfiles +> List.iter (fun cfile -> pr2 ("relevant functions: " ^ cfile));*)
 
@@ -1207,6 +1302,7 @@ let full_engine_use_index (coccifile, isofile) tmpdir =
   c_infos_lazy +> List.iter (fun c_info_lazy -> 
     try (
     let c_info = c_info_lazy () in
+    show_or_not_cfiles [c_info.fpath];
    
     let c_infos' = bigloop cocci_infos [c_info] in
 

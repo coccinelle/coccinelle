@@ -4,12 +4,12 @@
 
 /* This file contains:
  *   - macros found in <.h>
- *   - macros found in .c, macros that cannot be parsed 
- *     in the future should be autodetected
+ *   - macros found in .c; macros that cannot be parsed.
+ *     In the future should be autodetected
  *     (not so easy to do same for macros in .h cos require to access .h file)
  *   - macros found in ".h" 
  *     but where we cant detect that it will be a "bad macro"
- *   - macros found in .c, macros correctly parsed
+ *   - macros found in .c; macros correctly parsed
  *     but where we cant detect that it will be a "bad macro"
  *
  * Some of those macros could be deleted and the C code rewritten because
@@ -658,6 +658,25 @@ do {									\
 
 
 // ****************************************************************************
+// for tests-big/ macros, may be obsolete now cos fixed in latest kernel 
+// ****************************************************************************
+
+// rule10
+//#define	 ACPI_MODULE_NAME(x)
+
+
+
+
+
+
+
+// ****************************************************************************
+// Gnu Hello macros 
+// ****************************************************************************
+
+#define __getopt_argv_const const
+
+// ****************************************************************************
 // Sparse macros 
 // ****************************************************************************
 
@@ -729,9 +748,3 @@ do {									\
 // #define OPTIONAL
 
 
-// ****************************************************************************
-// for tests-big/ macros, may be obsolete now cos fixed in latest kernel 
-// ****************************************************************************
-
-// rule10
-//#define	 ACPI_MODULE_NAME(x)
