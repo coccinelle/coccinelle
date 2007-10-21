@@ -1,8 +1,15 @@
-static struct mtd_chip_driver *get_mtd_chip_driver (const char *name)
+static int nvram_remove_os_partition(void)
 {
-	struct list_head *pos;
-	struct mtd_chip_driver *this;
-
-		this = list_entry(pos, typeof(*this), list);
-		this = list_entry(pos, struct foo, list);
+  struct list_head *i;
+  struct list_head *j;
+  
+  list_for_each(i, &nvram_part->partition) {
+    part = list_entry(i, struct nvram_partition, partition);
+    list_for_each_prev(j, &part->partition) {
+      cur_part = list_entry(j, struct nvram_partition, partition);
+    }
+    
+  }
+  
+  return 0;
 }

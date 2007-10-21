@@ -1494,19 +1494,31 @@ and statement stmt after quantified minus_quantified label guard =
   | Ast.Nest(stmt_dots,whencode,bef,aft) ->
       (* label in recursive call is None because label check is already
 	 wrapped around the corresponding code *)
+
+      let bfvs =
+	match seq_fvs quantified [Ast.get_wcfvs whencode;Ast.get_fvs stmt_dots]
+	with
+	  [(wcfvs,bothfvs);(bdfvs,_)] -> bothfvs
+	| _ -> failwith "not possible" in
+
+      (* no minus version because when code doesn't contain any minus code *)
+      let new_quantified = Common.union_set bfvs quantified in
+
       let call stmt_dots =
 	let dots_pattern =
-	  statement_list stmt_dots (a2n after) quantified minus_quantified
+	  statement_list stmt_dots (a2n after) new_quantified minus_quantified
 	    None true guard in
 	dots_and_nests false
 	  (Some dots_pattern) whencode bef aft None after label
-	  (process_bef_aft quantified minus_quantified None true)
+	  (process_bef_aft new_quantified minus_quantified None true)
 	  (function x ->
-	    statement_list x Tail quantified minus_quantified None true true)
+	    statement_list x Tail new_quantified minus_quantified None
+	      true true)
 	  (function x ->
-	    statement x Tail quantified minus_quantified None true)
+	    statement x Tail new_quantified minus_quantified None true)
 	  guard (function x -> Ast.set_fvs [] (Ast.rewrap stmt x)) in
 
+      quantify bfvs
       (match Ast.unwrap stmt_dots with
 	Ast.DOTS([l]) ->
 	  (match Ast.unwrap l with
@@ -1525,15 +1537,15 @@ and statement stmt after quantified minus_quantified label guard =
 
 	      dots_and_nests true
 		(Some
-		   (statement stm (a2n after) quantified minus_quantified
+		   (statement stm (a2n after) new_quantified minus_quantified
 		      None guard))
 		whencode bef aft None after label
-		(process_bef_aft quantified minus_quantified None true)
+		(process_bef_aft new_quantified minus_quantified None true)
 		(function x ->
-		  statement_list x Tail quantified minus_quantified None
+		  statement_list x Tail new_quantified minus_quantified None
 		    true true)
 		(function x ->
-		  statement x Tail quantified minus_quantified None true)
+		  statement x Tail new_quantified minus_quantified None true)
 		guard (function x -> Ast.set_fvs [] (Ast.rewrap stmt x))
 	  | _ -> call stmt_dots)
       |	_  -> call stmt_dots)

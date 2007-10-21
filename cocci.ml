@@ -117,89 +117,92 @@ let show_or_not_cocci a b =
 
 let show_or_not_diff2 cfile outfile show_only_minus = 
   if !Flag_cocci.show_diff then begin
-    (* may need --strip-trailing-cr under windows *)
-    pr2 "diff = ";
+    match Common.fst(Compare_c.compare_default cfile outfile) with
+      Compare_c.Correct -> () (* diff only in spacing, etc *)
+    | _ ->
+        (* may need --strip-trailing-cr under windows *)
+	pr2 "diff = ";
 
-    let line =
-      match !Flag_parsing_c.diff_lines with
-      | None ->   "diff -u -p -b -B " ^ cfile ^ " " ^ outfile
-      | Some n -> "diff -U "^n^" -p -b -B "^cfile^" "^outfile in
-    let xs =
-      let res = Common.cmd_to_list line in
-      match (!Flag_cocci.patch,res) with
+	let line =
+	  match !Flag_parsing_c.diff_lines with
+	  | None ->   "diff -u -p -b -B " ^ cfile ^ " " ^ outfile
+	  | Some n -> "diff -U "^n^" -p -b -B "^cfile^" "^outfile in
+	let xs =
+	  let res = Common.cmd_to_list line in
+	  match (!Flag_cocci.patch,res) with
 	(* create something that looks like the output of patch *)
-	(Some prefix,minus_file::plus_file::rest) ->
-	  let drop_prefix file =
-	    if prefix = ""
-	    then "/"^file
-	    else
-	      (match Str.split (Str.regexp prefix) file with
-		[base_file] -> base_file
-	      |	_ -> failwith "prefix not found in the old file name") in
-	  let diff_line =
-	    match List.rev(Str.split (Str.regexp " ") line) with
-	      new_file::old_file::cmdrev ->
-		let old_base_file = drop_prefix old_file in
-		String.concat " "
-		  (List.rev
-		     (("b"^old_base_file)::("a"^old_base_file)::cmdrev))
-	    | _ -> failwith "bad command" in
-	  let (minus_line,plus_line) =
-	    match (Str.split (Str.regexp "[ \t]") minus_file,
-		   Str.split (Str.regexp "[ \t]") plus_file) with
-	      ("---"::old_file::old_rest,"+++"::new_file::new_rest) ->
-		let old_base_file = drop_prefix old_file in
-		(String.concat " " ("---"::("a"^old_base_file)::old_rest),
-		 String.concat " " ("+++"::("b"^old_base_file)::new_rest))
-	    | (l1,l2) ->
-		failwith (Printf.sprintf "bad diff header lines: %s %s"
-			    (String.concat ":" l1) (String.concat ":" l2)) in
-	  diff_line::minus_line::plus_line::rest
-      |	_ -> res in
-    xs +> List.iter (fun s -> 
-      if s =~ "^\\+" && show_only_minus
-      then ()
-      else pr s
-    )
+	    (Some prefix,minus_file::plus_file::rest) ->
+	      let drop_prefix file =
+		if prefix = ""
+		then "/"^file
+		else
+		  (match Str.split (Str.regexp prefix) file with
+		    [base_file] -> base_file
+		  | _ -> failwith "prefix not found in the old file name") in
+	      let diff_line =
+		match List.rev(Str.split (Str.regexp " ") line) with
+		  new_file::old_file::cmdrev ->
+		    let old_base_file = drop_prefix old_file in
+		    String.concat " "
+		      (List.rev
+			 (("b"^old_base_file)::("a"^old_base_file)::cmdrev))
+		| _ -> failwith "bad command" in
+	      let (minus_line,plus_line) =
+		match (Str.split (Str.regexp "[ \t]") minus_file,
+		       Str.split (Str.regexp "[ \t]") plus_file) with
+		  ("---"::old_file::old_rest,"+++"::new_file::new_rest) ->
+		    let old_base_file = drop_prefix old_file in
+		    (String.concat " " ("---"::("a"^old_base_file)::old_rest),
+		     String.concat " " ("+++"::("b"^old_base_file)::new_rest))
+		| (l1,l2) ->
+		    failwith
+		      (Printf.sprintf "bad diff header lines: %s %s"
+			 (String.concat ":" l1) (String.concat ":" l2)) in
+	      diff_line::minus_line::plus_line::rest
+	  |	_ -> res in
+	xs +> List.iter (fun s -> 
+	  if s =~ "^\\+" && show_only_minus
+	  then ()
+	  else pr s)
   end
 let show_or_not_diff a b c  = 
   Common.profile_code "show_xxx" (fun () -> show_or_not_diff2 a b c)
-
-
+    
+    
 (* the derived input *)
-
+    
 let show_or_not_ctl_tex2 astcocci ctls =
   if !Flag_cocci.show_ctl_tex then begin
     Ctltotex.totex ("/tmp/__cocci_ctl.tex") astcocci ctls;
     Common.command2 ("cd /tmp; latex __cocci_ctl.tex; " ^
-              "dvips __cocci_ctl.dvi -o __cocci_ctl.ps;" ^
-              "gv __cocci_ctl.ps &");
+		     "dvips __cocci_ctl.dvi -o __cocci_ctl.ps;" ^
+		     "gv __cocci_ctl.ps &");
   end
 let show_or_not_ctl_tex a b  = 
   Common.profile_code "show_xxx" (fun () -> show_or_not_ctl_tex2 a b)
-
-
-
+    
+    
+    
 let show_or_not_ctl_text2 ctl ast rulenb =
   if !Flag_cocci.show_ctl_text then begin
-
+    
     Common.pr_xxxxxxxxxxxxxxxxx ();
     pr ("rule " ^ i_to_s rulenb ^ " = ");
     Common.pr_xxxxxxxxxxxxxxxxx ();
-      adjust_pp_with_indent (fun () -> 
-        Format.force_newline();
-        Pretty_print_cocci.print_plus_flag := true;
-        Pretty_print_cocci.print_minus_flag := true;
-        Pretty_print_cocci.unparse ast;
+    adjust_pp_with_indent (fun () -> 
+      Format.force_newline();
+      Pretty_print_cocci.print_plus_flag := true;
+      Pretty_print_cocci.print_minus_flag := true;
+      Pretty_print_cocci.unparse ast;
       );
-
+    
     pr "CTL = ";
     let (ctl,_) = ctl in
     adjust_pp_with_indent (fun () -> 
       Format.force_newline();
       Pretty_print_engine.pp_ctlcocci 
         !Flag_cocci.show_mcodekind_in_ctl !Flag_cocci.inline_let_ctl ctl;
-    );
+      );
     pr "";
   end
 let show_or_not_ctl_text a b c = 

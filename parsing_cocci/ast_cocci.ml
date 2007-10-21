@@ -540,6 +540,15 @@ let get_isos (_,_,_,_,_,_,_,_,_,isos) = isos
 let set_isos (x,l,fvs,mfvs,fresh,inherited,saved,d,pos,_) isos =
   (x,l,fvs,mfvs,fresh,inherited,saved,d,pos,isos)
 
+let get_wcfvs (whencode : ('a wrap, 'b wrap) whencode list) =
+  Common.union_all
+    (List.map
+       (function
+	   WhenNot(a) -> get_fvs a
+	 | WhenAlways(a) -> get_fvs a
+	 | WhenAny -> [])
+       whencode)
+
 (* --------------------------------------------------------------------- *)
 
 let get_meta_name = function

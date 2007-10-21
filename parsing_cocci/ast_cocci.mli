@@ -506,6 +506,7 @@ val get_mcodekind : 'a mcode -> mcodekind
 val get_line : 'a wrap -> line
 val get_mcode_line : 'a mcode -> line
 val get_fvs : 'a wrap -> meta_name list
+val get_wcfvs : ('a wrap,'b wrap) whencode list -> meta_name list
 val set_fvs : meta_name list -> 'a wrap -> 'a wrap
 val get_mfvs : 'a wrap -> meta_name list
 val set_mfvs : meta_name list -> 'a wrap -> 'a wrap
