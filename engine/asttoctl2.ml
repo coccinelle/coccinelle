@@ -1159,14 +1159,30 @@ let rec dots_and_nests plus nest whencodes bef aft dotcode after label
   (* process nest code, if any *)
   (* whencode goes in the negated part of the nest; if no nest, just goes
       on the "true" in between code *)
+  let plus_var = if plus then get_label_ctr() else string2var "" in
   let ornest =
     match (nest,guard) with
       (None,_) | (_,true) -> whencodes CTL.True
     | (Some nest,false) ->
 	let v = get_let_ctr() in
+	let is_plus x =
+	  if plus
+	  then CTL.And(CTL.NONSTRICT,x,
+		       CTL.Pred(Lib_engine.BindGood(plus_var),CTL.Control))
+	  else x in
         CTL.Let(v,nest,
-		CTL.Or(CTL.Ref v,
+		CTL.Or(is_plus (CTL.Ref v),
 		       whencodes (CTL.Not(ctl_uncheck (CTL.Ref v))))) in
+  let plus_modifier x =
+    if plus
+    then
+      CTL.Exists
+	(false,plus_var,
+	 (CTL.And
+	    (CTL.NONSTRICT,x,
+	     CTL.Not(CTL.Pred(Lib_engine.BindBad(plus_var),CTL.Control)))))
+    else x in
+
   let ender =
     match after with
       After f -> f
@@ -1180,14 +1196,10 @@ let rec dots_and_nests plus nest whencodes bef aft dotcode after label
 	if !exists
 	then ctl_or exit errorexit (* end anywhere *)
 	else exit (* end at the real end of the function *) *) in
-  if plus
-  then
-    do_plus_dots (after = Tail) label guard wrapcode ornest nest labelled
-      aft ender
-  else
-    dots_au (after = Tail) label (guard_to_strict guard) wrapcode
+  plus_modifier
+    (dots_au (after = Tail) label (guard_to_strict guard) wrapcode
       (ctl_and_ns dotcode (ctl_and_ns ornest labelled))
-      aft ender
+      aft ender)
 
 and do_plus_dots toend label guard wrapcode ornest nest whencodes aft ender =
   (* f(); <... \+ g(); ...> h(); after 
