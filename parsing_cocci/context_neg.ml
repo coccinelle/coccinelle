@@ -22,7 +22,8 @@ let set_mcodekind x mcodekind =
   | Ast0.DotsCaseTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.IdentTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.ExprTag(d) -> Ast0.set_mcodekind d mcodekind
-  | Ast0.ArgExprTag(d) -> failwith "not possible - iso only"
+  | Ast0.ArgExprTag(d) | Ast0.TestExprTag(d) ->
+      failwith "not possible - iso only"
   | Ast0.TypeCTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.ParamTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.DeclTag(d) -> Ast0.set_mcodekind d mcodekind
@@ -42,7 +43,8 @@ let set_index x index =
   | Ast0.DotsCaseTag(d) -> Ast0.set_index d index
   | Ast0.IdentTag(d) -> Ast0.set_index d index
   | Ast0.ExprTag(d) -> Ast0.set_index d index
-  | Ast0.ArgExprTag(d) -> failwith "not possible - iso only"
+  | Ast0.ArgExprTag(d) | Ast0.TestExprTag(d) ->
+      failwith "not possible - iso only"
   | Ast0.TypeCTag(d) -> Ast0.set_index d index
   | Ast0.ParamTag(d) -> Ast0.set_index d index
   | Ast0.InitTag(d) -> Ast0.set_index d index
@@ -61,7 +63,8 @@ let get_index = function
   | Ast0.DotsCaseTag(d) -> Index.case_line_dots d
   | Ast0.IdentTag(d) -> Index.ident d
   | Ast0.ExprTag(d) -> Index.expression d
-  | Ast0.ArgExprTag(d) -> failwith "not possible - iso only"
+  | Ast0.ArgExprTag(d) | Ast0.TestExprTag(d) ->
+      failwith "not possible - iso only"
   | Ast0.TypeCTag(d) -> Index.typeC d
   | Ast0.ParamTag(d) -> Index.parameterTypeDef d
   | Ast0.InitTag(d) -> Index.initialiser d

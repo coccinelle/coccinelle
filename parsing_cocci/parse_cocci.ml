@@ -200,6 +200,7 @@ let token2c (tok,_) =
   | PC.TIsoTopLevel -> "TopLevel"
   | PC.TIsoExpression -> "Expression"
   | PC.TIsoArgExpression -> "ArgExpression"
+  | PC.TIsoTestExpression -> "TestExpression"
   | PC.TIsoStatement -> "Statement"
   | PC.TIsoDeclaration -> "Declaration"
   | PC.TIsoType -> "Type"
@@ -573,7 +574,7 @@ let split_token ((tok,_) as t) =
 
   | PC.TIso | PC.TRightIso
   | PC.TIsoExpression | PC.TIsoStatement | PC.TIsoDeclaration | PC.TIsoType
-  | PC.TIsoTopLevel | PC.TIsoArgExpression ->
+  | PC.TIsoTopLevel | PC.TIsoArgExpression | PC.TIsoTestExpression ->
       failwith "unexpected tokens"
 
 let split_token_stream tokens =
@@ -1055,6 +1056,7 @@ let parse_iso file =
 	    let (more,tokens) =
 	      get_tokens
 		[PC.TIsoStatement;PC.TIsoExpression;PC.TIsoArgExpression;
+		  PC.TIsoTestExpression;
 		  PC.TIsoDeclaration;PC.TIsoType;PC.TIsoTopLevel] in
 	    let next_start = List.hd(List.rev tokens) in
 	    let dummy_info = ("",(-1,-1),(-1,-1)) in

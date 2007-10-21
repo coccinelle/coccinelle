@@ -28,9 +28,6 @@ type ('pred,'state,'mvar,'value,'wit) wrapped_labelfunc =
        'wit
       ) list
 
-
-
-
 (* ********************************************************************** *)
 (* Module type: CTL_ENGINE_BIS (wrapper for CTL_ENGINE)                   *)
 (* ********************************************************************** *)
@@ -132,7 +129,7 @@ struct
 	    [] -> [(st,acc,v)]
 	  | _ -> raise (NEVER_CTL "predvar tree should have no children"))
       | A.Wit(st,[A.Subst(x,PredVal(A.UnModif(v)))],anno,wit)
-	when not modifonly ->
+	when not modifonly or !Flag.track_iso_usage ->
 	  (match wit with
 	    [] -> [(st,acc,v)]
 	  | _ -> raise (NEVER_CTL "predvar tree should have no children"))

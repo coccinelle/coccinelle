@@ -150,8 +150,11 @@ let short_options = [
   "  <dir> where are the Linux headers (optional)";
 
 
-  "-dir", Arg.Set dir, 
+  "-dir", Arg.Set dir,
   "    <dirname> process all files in directory recursively";
+  "-patch", Arg.String (function s -> Flag_cocci.patch := Some s),
+  ("    <dirname> path name with respect to which a patch should be created\n"^
+   "    \"\" for a file in the current directory");
   "-kbuild_info", Arg.Set_string kbuild_info, 
   "    <file> improve -dir by grouping related c files";
 
@@ -279,6 +282,8 @@ let other_options = [
     "   <level> for profiling the CTL engine";
     "-timeout", Arg.Int (fun x -> Flag_cocci.timeout := Some x), 
     "   <sec> timeout in seconds";
+    "-track_iso", Arg.Set Flag.track_iso_usage,
+    "   gather information about isomorphism usage"
   ];
 
 
@@ -525,6 +530,15 @@ let main () =
 
         if (!cocci_file = "") 
         then failwith "I need a cocci file,  use -sp_file <file>";
+
+	if !dir && !Flag_cocci.patch = None
+	then
+	  (match xs with
+	    [] -> Flag_cocci.patch := Some x
+	  | _ ->
+	      pr2
+		("warning: patch output can only be created when only one\n"^
+		 "directory is specified or when the -patch flag is used"));
 
         let infiles = 
           Common.profile_code "Main.infiles computation" (fun () -> 

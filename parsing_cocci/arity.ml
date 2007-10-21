@@ -312,7 +312,8 @@ let rec top_expression in_nest opt_allowed tgt expr =
 	| None -> Ast0.DisjExpr(starter,exps,mids,ender))
   | Ast0.NestExpr(starter,exp_dots,ender,whencode) ->
       let res =
-	Ast0.NestExpr(starter,dots (top_expression true true tgt) exp_dots,
+	Ast0.NestExpr(starter,
+		      dots (top_expression true true Ast0.NONE) exp_dots,
 		      ender,whencode) in
       Ast0.rewrap expr res
   | Ast0.Edots(dots,whencode) ->
@@ -851,7 +852,7 @@ and statement in_nest tgt stm =
       with Failure _ -> Ast0.rewrap stm (Ast0.Disj(starter,stms,mids,ender)))
   | Ast0.Nest(starter,rule_elem_dots,ender,whencode) ->
       let new_rule_elem_dots =
-	concat_dots (statement true tgt) rule_elem_dots in
+	concat_dots (statement true Ast0.NONE) rule_elem_dots in
       Ast0.rewrap stm (Ast0.Nest(starter,new_rule_elem_dots,ender,whencode))
   | Ast0.Dots(dots,whn)    ->
       let arity = stm_same (mcode2line dots) [mcode2arity dots] in

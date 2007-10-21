@@ -94,7 +94,7 @@ module P = Parse_aux
 %token <Ast_cocci.assignOp * Data.clt> TAssign
 
 %token TIso TRightIso TIsoExpression TIsoStatement TIsoDeclaration TIsoType
-%token TIsoTopLevel TIsoArgExpression
+%token TIsoTopLevel TIsoArgExpression TIsoTestExpression
 
 %token TInvalid
 
@@ -1080,17 +1080,17 @@ arith_expr(r,pe):
   | arith_expr(r,pe) TShr    arith_expr(r,pe)
       { P.arith_op Ast.DecRight $1 $2 $3}
   | arith_expr(r,pe) TInf    arith_expr(r,pe)
-      { P.logic_op Ast.Inf $1 $2 $3 }
+      { Ast0.set_test_exp(P.logic_op Ast.Inf $1 $2 $3) }
   | arith_expr(r,pe) TSup    arith_expr(r,pe)
-      { P.logic_op Ast.Sup $1 $2 $3 }
+      { Ast0.set_test_exp(P.logic_op Ast.Sup $1 $2 $3) }
   | arith_expr(r,pe) TInfEq  arith_expr(r,pe)
-      { P.logic_op Ast.InfEq $1 $2 $3 }
+      { Ast0.set_test_exp(P.logic_op Ast.InfEq $1 $2 $3) }
   | arith_expr(r,pe) TSupEq  arith_expr(r,pe)
-      { P.logic_op Ast.SupEq $1 $2 $3 }
+      { Ast0.set_test_exp(P.logic_op Ast.SupEq $1 $2 $3) }
   | arith_expr(r,pe) TEqEq   arith_expr(r,pe)
-      { P.logic_op Ast.Eq $1 $2 $3 }
+      { Ast0.set_test_exp(P.logic_op Ast.Eq $1 $2 $3) }
   | arith_expr(r,pe) TNotEq  arith_expr(r,pe)
-      { P.logic_op Ast.NotEq $1 $2 $3 }
+      { Ast0.set_test_exp(P.logic_op Ast.NotEq $1 $2 $3) }
   | arith_expr(r,pe) TAnd    arith_expr(r,pe)
       { P.arith_op Ast.And $1 $2 $3 }
   | arith_expr(r,pe) TOr     arith_expr(r,pe)
@@ -1098,9 +1098,11 @@ arith_expr(r,pe):
   | arith_expr(r,pe) TXor    arith_expr(r,pe)
       { P.arith_op Ast.Xor $1 $2 $3 }
   | arith_expr(r,pe) TAndLog arith_expr(r,pe)
-      { P.logic_op Ast.AndLog $1 $2 $3 }
+      { P.logic_op Ast.AndLog
+	  (Ast0.set_test_exp $1) $2 (Ast0.set_test_exp $3) }
   | arith_expr(r,pe) TOrLog  arith_expr(r,pe)
-      { P.logic_op Ast.OrLog $1 $2 $3 }
+      { P.logic_op Ast.OrLog
+	  (Ast0.set_test_exp $1) $2 (Ast0.set_test_exp $3) }
 
 cast_expr(r,pe):
     unary_expr(r,pe)                      { $1 }
@@ -1116,21 +1118,21 @@ unary_expr(r,pe):
       { Ast0.wrap(Ast0.Infix ($2, P.clt2mcode Ast.Dec $1)) }
   | unary_op unary_expr(r,pe)
       { let mcode = $1 in Ast0.wrap(Ast0.Unary($2, mcode)) }
+  | TBang unary_expr(r,pe)
+      { let mcode = P.clt2mcode Ast.Not $1 in
+      Ast0.wrap(Ast0.Unary($2, mcode)) }
   | TSizeof unary_expr(r,pe)
       { Ast0.wrap(Ast0.SizeOfExpr (P.clt2mcode "sizeof" $1, $2)) }
   | s=TSizeof lp=TOPar t=ctype rp=TCPar
       { Ast0.wrap(Ast0.SizeOfType (P.clt2mcode "sizeof" s,
-                                   P.clt2mcode "(" lp,
-                                   t,
+                                   P.clt2mcode "(" lp,t,
                                    P.clt2mcode ")" rp)) }
-                                   
 
 unary_op: TAnd    { P.clt2mcode Ast.GetRef $1 }
 	| TMul    { P.clt2mcode Ast.DeRef $1 }
 	| TPlus   { P.clt2mcode Ast.UnPlus $1 }
 	| TMinus  { P.clt2mcode Ast.UnMinus $1 }
 	| TTilde  { P.clt2mcode Ast.Tilde $1 }
-	| TBang   { P.clt2mcode Ast.Not $1 }
 
 postfix_expr(r,pe):
    primary_expr(r,pe)                            { $1 }
@@ -1573,6 +1575,8 @@ iso_main:
     { P.iso_adjust (function x -> Ast0.ExprTag x) e1 el }
 | TIsoArgExpression e1=dexpr el=list(iso(dexpr)) EOF
     { P.iso_adjust (function x -> Ast0.ArgExprTag x) e1 el }
+| TIsoTestExpression e1=dexpr el=list(iso(dexpr)) EOF
+    { P.iso_adjust (function x -> Ast0.TestExprTag x) e1 el }
 | TIsoStatement s1=single_statement sl=list(iso(single_statement)) EOF
     { P.iso_adjust (function x -> Ast0.StmtTag x) s1 sl }
 | TIsoType t1=ctype tl=list(iso(ctype)) EOF

@@ -291,10 +291,49 @@ let disj_all =
     disj_rule_elem donothing donothing donothing donothing
 
 (* ----------------------------------------------------------------------- *)
+(* collect iso information at the rule_elem level *)
+
+let collect_all_isos =
+  let bind = (@) in
+  let option_default = [] in
+  let mcode r x = [] in
+  let donothing r k e = (Ast.get_isos e) @ (k e) in
+  let doanything r k e = k e in
+  V.combiner bind option_default
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode
+    donothing donothing donothing donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing donothing
+    donothing doanything
+
+let collect_iso_info =
+  let mcode x = x in
+  let donothing r k e = k e in
+  let rule_elem r k e =
+    match Ast.unwrap e with
+      Ast.DisjRuleElem(l) -> k e
+    | _ ->
+	let isos = collect_all_isos.V.combiner_rule_elem e in
+	Ast.set_isos e isos in
+  V.rebuilder
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode
+    donothing donothing donothing donothing donothing donothing donothing
+    donothing donothing donothing donothing rule_elem donothing donothing
+    donothing donothing
+
+(* ----------------------------------------------------------------------- *)
 
 let disj rules =
   List.map
     (function (mv,(nm,rule_info,r)) ->
       let res =
-	List.map disj_all.V.rebuilder_top_level r in (mv,(nm,rule_info,res)))
+	List.map
+	  (function x ->
+	    let res = disj_all.V.rebuilder_top_level x in
+	    if !Flag.track_iso_usage
+	    then collect_iso_info.V.rebuilder_top_level res
+	    else res)
+	  r in
+      (mv,(nm,rule_info,res)))
     rules

@@ -709,6 +709,8 @@ let top_level t =
 let rule =
   print_between (function _ -> force_newline(); force_newline()) top_level
 
+let pp_print_anything x = !anything x
+
 let _ =
   anything := function
       Ast.FullTypeTag(x) -> fullType x

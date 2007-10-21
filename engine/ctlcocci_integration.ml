@@ -36,6 +36,19 @@ let show_or_not_nodes nodes =
     )
   end
 
+let show_isos rule_elem =
+  match Ast_cocci.get_isos rule_elem with
+    [] -> ()
+  | isos ->
+      Printf.printf "rule elem: ";
+      Pretty_print_cocci.rule_elem "" rule_elem;
+      Format.print_newline();
+      List.iter
+	(function (nm,x) ->
+	  Printf.printf "    iso: %s: " nm;
+	  Pretty_print_cocci.pp_print_anything x;
+	  Format.print_newline())
+	isos
 
 (*****************************************************************************)
 (* Labeling function *)
@@ -233,7 +246,8 @@ let model_for_ctl dropped_isos cflow binding =
  newflow, labels, states
  
 
-(******************************************************************************)
+(*****************************************************************************)
+
 module PRED = 
   struct
     type t = Lib_engine.predicate
@@ -320,7 +334,9 @@ let (satbis_to_trans_info:
     xs +> List.map (fun (nodei, binding2, pred) -> 
          let rule_elem = 
            (match pred with
-           | Lib_engine.Match (rule_elem) -> rule_elem
+           | Lib_engine.Match (rule_elem) ->
+	       if !Flag.track_iso_usage then show_isos rule_elem;
+	       rule_elem
            | _ -> raise Impossible
            ) in
          nodei, metavars_binding2_to_binding binding2, rule_elem

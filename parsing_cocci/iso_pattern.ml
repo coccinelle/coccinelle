@@ -22,9 +22,9 @@ type isomorphism =
 let strip_info =
   let mcode (term,_,_,_) = (term,Ast0.NONE,Ast0.default_info(),Ast0.PLUS) in
   let donothing r k e =
-    let (term,info,index,mc,ty,dots,arg) = k e in
+    let (term,info,index,mc,ty,dots,arg,test,is_iso) = k e in
     (term,Ast0.default_info(),ref 0,ref Ast0.PLUS,ref None,Ast0.NoDots,
-     false) in
+     false,test,None) in
   V0.rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode
@@ -52,6 +52,8 @@ let anything_equal = function
       (strip_info.V0.rebuilder_expression d1) =
       (strip_info.V0.rebuilder_expression d2)
   | (Ast0.ArgExprTag(_),_) | (_,Ast0.ArgExprTag(_)) ->
+      failwith "not possible - only in isos1"
+  | (Ast0.TestExprTag(_),_) | (_,Ast0.TestExprTag(_)) ->
       failwith "not possible - only in isos1"
   | (Ast0.TypeCTag(d1),Ast0.TypeCTag(d2)) ->
       (strip_info.V0.rebuilder_typeC d1) =
@@ -1103,7 +1105,8 @@ let make_minus =
 (* mcodes will be side effected later with plus code, so we have to copy
    them on instantiating an isomorphism.  One could wonder whether it would
    be better not to use side-effects, but they are convenient for insert_plus
-   where is it useful to manipulate a list of the mcodes but side-effect a tree *)
+   where is it useful to manipulate a list of the mcodes but side-effect a
+   tree *)
 (* hmm... Insert_plus is called before Iso_pattern... *)
 let rebuild_mcode start_line =
   let copy_mcodekind = function
@@ -1122,13 +1125,13 @@ let rebuild_mcode start_line =
       |	None -> info in
     (term,arity,info,copy_mcodekind mcodekind) in
   
-  let copy_one (term,info,index,mcodekind,ty,dots,arg) =
+  let copy_one (term,info,index,mcodekind,ty,dots,arg,test,is_iso) =
     let info =
       match start_line with
 	Some x -> {info with Ast0.line_start = x; Ast0.line_end = x}
       |	None -> info in
     (term,info,ref !index,
-     ref (copy_mcodekind !mcodekind),ty,dots,arg) in
+     ref (copy_mcodekind !mcodekind),ty,dots,arg,test,is_iso) in
   
   let donothing r k e = copy_one (k e) in
   
@@ -1798,8 +1801,10 @@ let transform_type (metavars,alts,name) e =
 	       | _ -> failwith "invalid alt"))
 	  alts in
       mkdisj match_typeC metavars alts
-	(function b -> function mv_b ->
-	  (instantiate b mv_b).V0.rebuilder_typeC) e
+	(function b -> function mv_b -> function t ->
+	  Ast0.set_iso
+	    ((instantiate b mv_b).V0.rebuilder_typeC t)
+	    (name,Ast0.TypeCTag t)) e
 	make_disj_type make_minus.V0.rebuilder_typeC
 	(rebuild_mcode start_line).V0.rebuilder_typeC
 	name Unparse_ast0.typeC extra_copy_other_plus
@@ -1814,21 +1819,24 @@ let transform_expr (metavars,alts,name) e =
       List.map
 	(List.map
 	   (function
-	       Ast0.ExprTag(p) | Ast0.ArgExprTag(p) ->
+	       Ast0.ExprTag(p) | Ast0.ArgExprTag(p) | Ast0.TestExprTag(p) ->
 		 (p,count_edots.V0.combiner_expression p,
 		  count_idots.V0.combiner_expression p,
 		  count_dots.V0.combiner_expression p)
 	     | _ -> failwith "invalid alt"))
 	alts in
     mkdisj match_expr metavars alts
-      (function b -> function mv_b ->
-	(instantiate b mv_b).V0.rebuilder_expression) e
+      (function b -> function mv_b -> function e ->
+	Ast0.set_iso
+	  ((instantiate b mv_b).V0.rebuilder_expression e)
+	  (name,Ast0.ExprTag e)) e
       make_disj_expr make_minus.V0.rebuilder_expression
       (rebuild_mcode start_line).V0.rebuilder_expression
       name Unparse_ast0.expression extra_copy_other_plus in
   match alts with
     (Ast0.ExprTag(_)::_)::_ -> process()
   | (Ast0.ArgExprTag(_)::_)::_ when Ast0.get_arg_exp e -> process()
+  | (Ast0.TestExprTag(_)::_)::_ when Ast0.get_test_exp e -> process()
   | _ -> ([],e)
 
 let transform_decl (metavars,alts,name) e =
@@ -1847,8 +1855,10 @@ let transform_decl (metavars,alts,name) e =
 	       | _ -> failwith "invalid alt"))
 	  alts in
       mkdisj match_decl metavars alts
-	(function b -> function mv_b ->
-	  (instantiate b mv_b).V0.rebuilder_declaration) e
+	(function b -> function mv_b -> function d ->
+	  Ast0.set_iso
+	    ((instantiate b mv_b).V0.rebuilder_declaration d)
+	    (name,Ast0.DeclTag d)) e
 	make_disj_decl
 	make_minus.V0.rebuilder_declaration
 	(rebuild_mcode start_line).V0.rebuilder_declaration
@@ -1871,8 +1881,10 @@ let transform_stmt (metavars,alts,name) e =
 	       | _ -> failwith "invalid alt"))
 	  alts in
       mkdisj match_statement metavars alts
-	(function b -> function mv_b ->
-	  (instantiate b mv_b).V0.rebuilder_statement) e
+	(function b -> function mv_b -> function s ->
+	  Ast0.set_iso
+	    ((instantiate b mv_b).V0.rebuilder_statement s)
+	    (name,Ast0.StmtTag s)) e
 	make_disj_stmt make_minus.V0.rebuilder_statement
 	(rebuild_mcode start_line).V0.rebuilder_statement
 	name (Unparse_ast0.statement "") extra_copy_stmt_plus
@@ -1913,8 +1925,11 @@ let transform_top (metavars,alts,name) e =
 		     | _ -> failwith "invalid alt"))
 		alts in
 	    mkdisj match_statement_dots metavars alts
-	      (function b -> function mv_b ->
-		(instantiate b mv_b).V0.rebuilder_statement_dots) stmts
+	      (function b -> function mv_b -> function s ->
+		Ast0.set_iso
+		  ((instantiate b mv_b).V0.rebuilder_statement_dots s)
+		  (name,Ast0.DotsStmtTag s))
+	      stmts
 	      (function x ->
 		Ast0.rewrap e (Ast0.DOTS([make_disj_stmt_list x])))
 	      make_minus.V0.rebuilder_statement_dots
@@ -1995,6 +2010,7 @@ let rewrap_anything = function
   | Ast0.IdentTag(d) -> Ast0.IdentTag(rewrap.V0.rebuilder_ident d)
   | Ast0.ExprTag(d) -> Ast0.ExprTag(rewrap.V0.rebuilder_expression d)
   | Ast0.ArgExprTag(d) -> Ast0.ArgExprTag(rewrap.V0.rebuilder_expression d)
+  | Ast0.TestExprTag(d) -> Ast0.TestExprTag(rewrap.V0.rebuilder_expression d)
   | Ast0.TypeCTag(d) -> Ast0.TypeCTag(rewrap.V0.rebuilder_typeC d)
   | Ast0.InitTag(d) -> Ast0.InitTag(rewrap.V0.rebuilder_initialiser d)
   | Ast0.ParamTag(d) -> Ast0.ParamTag(rewrap.V0.rebuilder_parameter d)

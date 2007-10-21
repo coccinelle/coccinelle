@@ -28,6 +28,8 @@ type 'a mcode = 'a * arity * info * mcodekind
 type 'a wrap = 'a * info * int ref * mcodekind ref
       * Type_cocci.typeC option ref (* only for expressions *)
       * dots_bef_aft * bool (* true if "arg_exp", only for exprs *)
+      * bool (* true if "test_exp", only for exprs *)
+      * (string*anything) option(* Some if this represents the use of an iso *)
 
 and dots_bef_aft =
     NoDots | AddingBetweenDots of statement | DroppingBetweenDots of statement
@@ -317,7 +319,7 @@ and case_line = base_case_line wrap
 (* --------------------------------------------------------------------- *)
 (* Top-level code *)
 
-type base_top_level =
+and base_top_level =
     DECL of statement
   | CODE of statement dots
   | FILEINFO of string mcode (* old file *) * string mcode (* new file *)
@@ -329,7 +331,7 @@ and rule = top_level list
 
 (* --------------------------------------------------------------------- *)
 
-type anything =
+and anything =
     DotsExprTag of expression dots
   | DotsInitTag of initialiser dots
   | DotsParamTag of parameterTypeDef dots
@@ -338,7 +340,8 @@ type anything =
   | DotsCaseTag of case_line dots
   | IdentTag of ident
   | ExprTag of expression
-  | ArgExprTag of expression
+  | ArgExprTag of expression  (* for isos *)
+  | TestExprTag of expression (* for isos *)
   | TypeCTag of typeC
   | ParamTag of parameterTypeDef
   | InitTag of initialiser
@@ -382,6 +385,7 @@ val rewrap : 'a wrap -> 'b -> 'b wrap
 val rewrap_mcode : 'a mcode -> 'b -> 'b mcode
 val copywrap : 'a wrap -> 'b -> 'b wrap
 val get_info : 'a wrap -> info
+val set_info : 'a wrap -> info -> 'a wrap
 val get_index : 'a wrap -> int
 val set_index : 'a wrap -> int -> unit
 val get_line : 'a wrap -> int
@@ -396,6 +400,10 @@ val set_dots_bef_aft : statement -> dots_bef_aft -> statement
 val get_dots_bef_aft : 'a wrap -> dots_bef_aft
 val set_arg_exp : expression -> expression
 val get_arg_exp : expression -> bool
+val set_test_exp : expression -> expression
+val get_test_exp : expression -> bool
+val set_iso : 'a wrap -> (string*anything) -> 'a wrap
+val get_iso : 'a wrap -> (string*anything) option
 val fresh_index : unit -> int
 val set_mcode_data : 'a -> 'a mcode -> 'a mcode
 

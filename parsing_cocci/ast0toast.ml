@@ -6,6 +6,7 @@ rule_elems, and on subterms if the context is ? also. *)
 module Ast0 = Ast0_cocci
 module Ast = Ast_cocci
 module V0 = Visitor_ast0
+module V = Visitor_ast
 
 let unitary = Type_cocci.Unitary
 
@@ -199,7 +200,7 @@ let check_allminus =
 let get_option fn = function
     None -> None
   | Some x -> Some (fn x)
-	
+
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)
 (* Mcode *)
@@ -223,15 +224,19 @@ let mcode(term,_,info,mcodekind) =
 
 (* --------------------------------------------------------------------- *)
 (* Dots *)
+let wrap ast line isos =
+  (ast, line, [], [], [], [], [], Ast.NoDots, None, isos)
 
-let rewrap ast0 ast =
-  (ast, (Ast0.get_info ast0).Ast0.line_start,
-   [], [], [], [], [], Ast.NoDots, None)
-let tokenwrap (_,info,_) ast =
-  (ast, info.Ast.line, [], [], [], [], [], Ast.NoDots, None)
+let rewrap ast0 isos ast =
+  wrap ast ((Ast0.get_info ast0).Ast0.line_start) isos
+
+let no_isos = []
+
+(* no isos on tokens *)
+let tokenwrap (_,info,_) s ast = wrap ast info.Ast.line no_isos
 
 let dots fn d =
-  rewrap d
+  rewrap d no_isos
     (match Ast0.unwrap d with
       Ast0.DOTS(x) -> Ast.DOTS(List.map fn x)
     | Ast0.CIRCLES(x) -> Ast.CIRCLES(List.map fn x)
@@ -240,8 +245,12 @@ let dots fn d =
 (* --------------------------------------------------------------------- *)
 (* Identifier *)
 
-let rec ident i =
-  rewrap i
+let rec do_isos = function
+    None -> no_isos
+  | Some (nm,x) -> [(nm,anything x)]
+
+and ident i =
+  rewrap i (do_isos (Ast0.get_iso i))
     (match Ast0.unwrap i with
       Ast0.Id(name) -> Ast.Id(mcode name)
     | Ast0.MetaId(name,_) -> Ast.MetaId(mcode name,unitary,false)
@@ -255,8 +264,8 @@ let rec ident i =
 (* --------------------------------------------------------------------- *)
 (* Expression *)
 
-let rec expression e =
-  rewrap e
+and expression e =
+  rewrap e (do_isos (Ast0.get_iso e))
     (match Ast0.unwrap e with
       Ast0.Ident(id) -> Ast.Ident(ident id)
     | Ast0.Constant(const) ->
@@ -333,53 +342,57 @@ and expression_dots ed = dots expression ed
 (* Types *)
 
 and typeC t =
-  rewrap t
+  rewrap t (do_isos (Ast0.get_iso t))
     (match Ast0.unwrap t with
       Ast0.ConstVol(cv,ty) -> Ast.Type(Some (mcode cv),base_typeC ty)
     | Ast0.BaseType(ty,sign) ->
-	Ast.Type(None,rewrap t(Ast.BaseType(mcode ty,get_option mcode sign)))
+	Ast.Type(None,
+		 rewrap t no_isos
+		   (Ast.BaseType(mcode ty,get_option mcode sign)))
     | Ast0.ImplicitInt(sign) ->
-	Ast.Type(None,rewrap t(Ast.ImplicitInt(mcode sign)))
+	Ast.Type(None,rewrap t no_isos (Ast.ImplicitInt(mcode sign)))
     | Ast0.Pointer(ty,star) ->
-	Ast.Type
-	  (None,rewrap t(Ast.Pointer(typeC ty,mcode star)))
+	Ast.Type(None, rewrap t no_isos (Ast.Pointer(typeC ty,mcode star)))
     | Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
 	Ast.Type(None,
-		 rewrap t
+		 rewrap t no_isos
 		   (Ast.FunctionPointer
 		      (typeC ty,mcode lp1,mcode star,mcode rp1,
 		       mcode lp2,parameter_list params,mcode rp2)))
     | Ast0.FunctionType(ty,lp1,params,rp1) ->
 	let allminus = check_allminus.V0.combiner_typeC t in
 	Ast.Type(None,
-		 rewrap t
+		 rewrap t no_isos
 		   (Ast.FunctionType
 		      (allminus,get_option typeC ty,mcode lp1,
 		       parameter_list params,mcode rp1)))
     | Ast0.Array(ty,lb,size,rb) ->
 	Ast.Type(None,
-		 rewrap t
+		 rewrap t no_isos
 		   (Ast.Array(typeC ty,mcode lb,get_option expression size,
 			      mcode rb)))
     | Ast0.StructUnionName(kind,name) ->
 	Ast.Type(None,
-		 rewrap t
+		 rewrap t no_isos
 		   (Ast.StructUnionName(mcode kind,get_option ident name)))
     | Ast0.StructUnionDef(ty,lb,decls,rb) ->
 	Ast.Type(None,
-		 rewrap t
+		 rewrap t no_isos
 		   (Ast.StructUnionDef(typeC ty,mcode lb,
-				       dots declaration decls,mcode rb)))
-    | Ast0.TypeName(name) -> Ast.Type(None,rewrap t (Ast.TypeName(mcode name)))
+				       dots declaration decls,
+				       mcode rb)))
+    | Ast0.TypeName(name) ->
+	Ast.Type(None,rewrap t no_isos (Ast.TypeName(mcode name)))
     | Ast0.MetaType(name,_) ->
-	Ast.Type(None,rewrap t (Ast.MetaType(mcode name,unitary,false)))
+	Ast.Type(None,
+		 rewrap t no_isos (Ast.MetaType(mcode name,unitary,false)))
     | Ast0.DisjType(_,types,_,_) -> Ast.DisjType(List.map typeC types)
     | Ast0.OptType(ty) -> Ast.OptType(typeC ty)
     | Ast0.UniqueType(ty) -> Ast.UniqueType(typeC ty)
     | Ast0.MultiType(ty) -> Ast.MultiType(typeC ty))
     
 and base_typeC t =
-  rewrap t
+  rewrap t (do_isos (Ast0.get_iso t))
     (match Ast0.unwrap t with
       Ast0.BaseType(ty,sign) ->
 	Ast.BaseType(mcode ty,get_option mcode sign)
@@ -389,7 +402,9 @@ and base_typeC t =
     | Ast0.StructUnionName(kind,name) ->
 	Ast.StructUnionName(mcode kind,get_option ident name)
     | Ast0.StructUnionDef(ty,lb,decls,rb) ->
-	Ast.StructUnionDef(typeC ty,mcode lb,dots declaration decls,mcode rb)
+	Ast.StructUnionDef(typeC ty,mcode lb,
+			   dots declaration decls,
+			   mcode rb)
     | Ast0.TypeName(name) -> Ast.TypeName(mcode name)
     | Ast0.MetaType(name,_) -> Ast.MetaType(mcode name,unitary,false)
     | _ -> failwith "unexpected type")
@@ -400,7 +415,7 @@ and base_typeC t =
    split out into multiple declarations of a single variable each. *)
     
 and declaration d =
-  rewrap d
+  rewrap d (do_isos (Ast0.get_iso d))
     (match Ast0.unwrap d with
       Ast0.Init(stg,ty,id,eq,ini,sem) ->
 	let stg = get_option mcode stg in
@@ -412,15 +427,15 @@ and declaration d =
 	Ast.Init(stg,ty,id,eq,ini,sem)
     | Ast0.UnInit(stg,ty,id,sem) ->
 	(match Ast0.unwrap ty with
-	  Ast0.FunctionType(ty,lp1,params,rp1) ->
+	  Ast0.FunctionType(tyx,lp1,params,rp1) ->
 	    let allminus = check_allminus.V0.combiner_declaration d in
 	    Ast.UnInit(get_option mcode stg,
-		       rewrap d
+		       rewrap ty (do_isos (Ast0.get_iso ty))
 			 (Ast.Type
 			    (None,
-			     rewrap d
+			     rewrap ty no_isos
 			       (Ast.FunctionType
-				  (allminus,get_option typeC ty,mcode lp1,
+				  (allminus,get_option typeC tyx,mcode lp1,
 				   parameter_list params,mcode rp1)))),
 		       ident id,mcode sem)
 	| _ -> Ast.UnInit(get_option mcode stg,typeC ty,ident id,mcode sem))
@@ -469,11 +484,11 @@ and strip_idots initlist =
   | Ast0.CIRCLES(x) | Ast0.STARS(x) -> failwith "not possible for an initlist"
 
 and initialiser i =
-  rewrap i
+  rewrap i no_isos
     (match Ast0.unwrap i with
       Ast0.InitExpr(exp) -> Ast.InitExpr(expression exp)
     | Ast0.InitList(lb,initlist,rb) ->
-	let (whencode,initlist) = strip_idots initlist in
+	let (whencode,initlist) =  strip_idots initlist in
 	Ast.InitList(mcode lb,List.map initialiser initlist,mcode rb,
 		     List.map initialiser whencode)
     | Ast0.InitGccDotName(dot,name,eq,ini) ->
@@ -492,13 +507,11 @@ and initialiser i =
     | Ast0.UniqueIni(ini) -> Ast.UniqueIni(initialiser ini)
     | Ast0.MultiIni(ini) -> Ast.MultiIni(initialiser ini))
 
-and initialiser_dots l = dots initialiser l
-    
 (* --------------------------------------------------------------------- *)
 (* Parameter *)
     
 and parameterTypeDef p =
-  rewrap p
+  rewrap p no_isos
     (match Ast0.unwrap p with
       Ast0.VoidParam(ty) -> Ast.VoidParam(typeC ty)
     | Ast0.Param(ty,id) -> Ast.Param(typeC ty,get_option ident id)
@@ -520,7 +533,7 @@ and parameter_list l = dots parameterTypeDef l
 
 and statement s =
   let rec statement seqible s =
-    let rewrap ast0 ast =
+    let rewrap_stmt ast0 ast =
       let befaft =
 	match Ast0.get_dots_bef_aft s with
 	  Ast0.NoDots -> Ast.NoDots
@@ -528,15 +541,13 @@ and statement s =
 	    Ast.DroppingBetweenDots (statement seqible s,get_ctr())
 	| Ast0.AddingBetweenDots s ->
 	    Ast.AddingBetweenDots (statement seqible s,get_ctr()) in
-      (ast, (Ast0.get_info ast0).Ast0.line_start, [], [], [], [], [],
-       befaft,None) in
-    let local_rewrap ast0 ast =
-      (ast, (Ast0.get_info ast0).Ast0.line_start, [], [], [], [], [],
-       Ast.NoDots, None) in
-    rewrap s
+      Ast.set_dots_bef_aft befaft (rewrap ast0 no_isos ast) in
+    let rewrap_rule_elem ast0 ast =
+      rewrap ast0 (do_isos (Ast0.get_iso ast0)) ast in
+    rewrap_stmt s
       (match Ast0.unwrap s with
 	Ast0.Decl((_,bef),decl) ->
-	  Ast.Atomic(local_rewrap s
+	  Ast.Atomic(rewrap_rule_elem s
 		       (Ast.Decl(convert_mcodekind bef,
 				 check_allminus.V0.combiner_statement s,
 				 declaration decl)))
@@ -544,37 +555,38 @@ and statement s =
 	  let lbrace = mcode lbrace in
 	  let (decls,body) = separate_decls seqible body in
 	  let rbrace = mcode rbrace in
-	  Ast.Seq(tokenwrap lbrace (Ast.SeqStart(lbrace)),decls,body,
-		  tokenwrap rbrace (Ast.SeqEnd(rbrace)))
+	  Ast.Seq(tokenwrap lbrace s (Ast.SeqStart(lbrace)),
+		  decls,body,
+		  tokenwrap rbrace s (Ast.SeqEnd(rbrace)))
       | Ast0.ExprStatement(exp,sem) ->
-	  Ast.Atomic(local_rewrap s
+	  Ast.Atomic(rewrap_rule_elem s
 		       (Ast.ExprStatement(expression exp,mcode sem)))
       | Ast0.IfThen(iff,lp,exp,rp,branch,(_,aft)) ->
 	  Ast.IfThen
-	    (local_rewrap s
+	    (rewrap_rule_elem s
 	       (Ast.IfHeader(mcode iff,mcode lp,expression exp,mcode rp)),
 	     statement Ast.NotSequencible branch,
 	     ([],[],[],convert_mcodekind aft))
       | Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2,(_,aft)) ->
 	  let els = mcode els in
 	  Ast.IfThenElse
-	    (local_rewrap s
+	    (rewrap_rule_elem s
 	       (Ast.IfHeader(mcode iff,mcode lp,expression exp,mcode rp)),
 	     statement Ast.NotSequencible branch1,
-	     tokenwrap els (Ast.Else(els)),
+	     tokenwrap els s (Ast.Else(els)),
 	     statement Ast.NotSequencible branch2,
 	     ([],[],[],convert_mcodekind aft))
       | Ast0.While(wh,lp,exp,rp,body,(_,aft)) ->
-	  Ast.While(local_rewrap s
+	  Ast.While(rewrap_rule_elem s
 		      (Ast.WhileHeader
 			 (mcode wh,mcode lp,expression exp,mcode rp)),
 		    statement Ast.NotSequencible body,
 		    ([],[],[],convert_mcodekind aft))
       | Ast0.Do(d,body,wh,lp,exp,rp,sem) ->
 	  let wh = mcode wh in
-	  Ast.Do(local_rewrap s (Ast.DoHeader(mcode d)),
+	  Ast.Do(rewrap_rule_elem s (Ast.DoHeader(mcode d)),
 		 statement Ast.NotSequencible body,
-		 tokenwrap wh
+		 tokenwrap wh s
 		   (Ast.WhileTail(wh,mcode lp,expression exp,mcode rp,
 				  mcode sem)))
       | Ast0.For(fr,lp,exp1,sem1,exp2,sem2,exp3,rp,body,(_,aft)) ->
@@ -587,13 +599,15 @@ and statement s =
 	  let exp3 = get_option expression exp3 in
 	  let rp = mcode rp in
 	  let body = statement Ast.NotSequencible body in
-	  Ast.For(local_rewrap s
+	  Ast.For(rewrap_rule_elem s
 		    (Ast.ForHeader(fr,lp,exp1,sem1,exp2,sem2,exp3,rp)),
 		  body,([],[],[],convert_mcodekind aft))
       | Ast0.Iterator(nm,lp,args,rp,body,(_,aft)) ->
-	  Ast.Iterator(local_rewrap s
+	  Ast.Iterator(rewrap_rule_elem s
 		      (Ast.IteratorHeader
-			 (mcode nm,mcode lp,dots expression args,mcode rp)),
+			 (mcode nm,mcode lp,
+			  dots expression args,
+			  mcode rp)),
 		    statement Ast.NotSequencible body,
 		    ([],[],[],convert_mcodekind aft))
       |	Ast0.Switch(switch,lp,exp,rp,lb,cases,rb) ->
@@ -604,30 +618,32 @@ and statement s =
 	  let lb = mcode lb in
 	  let cases = List.map case_line (Ast0.undots cases) in
 	  let rb = mcode rb in
-	  Ast.Switch(local_rewrap s (Ast.SwitchHeader(switch,lp,exp,rp)),
-		     tokenwrap lb (Ast.SeqStart(lb)),cases,
-		     tokenwrap rb (Ast.SeqEnd(rb)))
+	  Ast.Switch(rewrap_rule_elem s (Ast.SwitchHeader(switch,lp,exp,rp)),
+		     tokenwrap lb s (Ast.SeqStart(lb)),
+		     cases,
+		     tokenwrap rb s (Ast.SeqEnd(rb)))
       | Ast0.Break(br,sem) ->
-	  Ast.Atomic(local_rewrap s (Ast.Break(mcode br,mcode sem)))
+	  Ast.Atomic(rewrap_rule_elem s (Ast.Break(mcode br,mcode sem)))
       | Ast0.Continue(cont,sem) ->
-	  Ast.Atomic(local_rewrap s (Ast.Continue(mcode cont,mcode sem)))
+	  Ast.Atomic(rewrap_rule_elem s (Ast.Continue(mcode cont,mcode sem)))
       | Ast0.Return(ret,sem) ->
-	  Ast.Atomic(local_rewrap s (Ast.Return(mcode ret,mcode sem)))
+	  Ast.Atomic(rewrap_rule_elem s (Ast.Return(mcode ret,mcode sem)))
       | Ast0.ReturnExpr(ret,exp,sem) ->
 	  Ast.Atomic
-	    (local_rewrap s
+	    (rewrap_rule_elem s
 	       (Ast.ReturnExpr(mcode ret,expression exp,mcode sem)))
       | Ast0.MetaStmt(name,_) ->
-	  Ast.Atomic(local_rewrap s
+	  Ast.Atomic(rewrap_rule_elem s
 		       (Ast.MetaStmt(mcode name,unitary,seqible,false)))
       | Ast0.MetaStmtList(name,_) ->
-	  Ast.Atomic(local_rewrap s
+	  Ast.Atomic(rewrap_rule_elem s
 		       (Ast.MetaStmtList(mcode name,unitary,false)))
       | Ast0.TopExp(exp) ->
-	  Ast.Atomic(local_rewrap s (Ast.TopExp(expression exp)))
-      | Ast0.Exp(exp) -> Ast.Atomic(local_rewrap s (Ast.Exp(expression exp)))
+	  Ast.Atomic(rewrap_rule_elem s (Ast.TopExp(expression exp)))
+      | Ast0.Exp(exp) ->
+	  Ast.Atomic(rewrap_rule_elem s (Ast.Exp(expression exp)))
       | Ast0.Ty(ty) ->
-	  Ast.Atomic(local_rewrap s (Ast.Ty(typeC ty)))
+	  Ast.Atomic(rewrap_rule_elem s (Ast.Ty(typeC ty)))
       | Ast0.Disj(_,rule_elem_dots_list,_,_) ->
 	  Ast.Disj(List.map (function x -> statement_dots seqible x)
 		     rule_elem_dots_list)
@@ -672,17 +688,17 @@ and statement s =
 	  let (decls,body) = separate_decls seqible body in
 	  let rbrace = mcode rbrace in
 	  let allminus = check_allminus.V0.combiner_statement s in
-	  Ast.FunDecl(local_rewrap s
+	  Ast.FunDecl(rewrap_rule_elem s
 			(Ast.FunHeader(convert_mcodekind bef,
 				       allminus,fi,name,lp,params,rp)),
-		      tokenwrap lbrace (Ast.SeqStart(lbrace)),
+		      tokenwrap lbrace s (Ast.SeqStart(lbrace)),
 		      decls,body,
-		      tokenwrap rbrace (Ast.SeqEnd(rbrace)))
+		      tokenwrap rbrace s (Ast.SeqEnd(rbrace)))
       |	Ast0.Include(inc,str) ->
-	  Ast.Atomic(local_rewrap s (Ast.Include(mcode inc,mcode str)))
+	  Ast.Atomic(rewrap_rule_elem s (Ast.Include(mcode inc,mcode str)))
       | Ast0.Define(def,id,params,body) ->
 	  Ast.Define
-	    (local_rewrap s
+	    (rewrap_rule_elem s
 	       (Ast.DefineHeader
 		  (mcode def,ident id, define_parameters params)),
 	     statement_dots Ast.NotSequencible (*not sure*) body)
@@ -691,14 +707,16 @@ and statement s =
       | Ast0.MultiStm(stm) -> Ast.MultiStm(statement seqible stm))
 
   and define_parameters p =
-    rewrap p
+    rewrap p no_isos
       (match Ast0.unwrap p with
 	Ast0.NoParams -> Ast.NoParams
       | Ast0.DParams(lp,params,rp) ->
-	  Ast.DParams(mcode lp,dots define_param params,mcode rp))
+	  Ast.DParams(mcode lp,
+		      dots define_param params,
+		      mcode rp))
 
   and define_param p =
-    rewrap p
+    rewrap p no_isos
       (match Ast0.unwrap p with
 	Ast0.DParam(id) -> Ast.DParam(ident id)
       | Ast0.DPComma(comma) -> Ast.DPComma(mcode comma)
@@ -712,21 +730,27 @@ and statement s =
     | Ast0.WhenAlways a -> Ast.WhenAlways (alwaysfn a)
     | Ast0.WhenAny -> Ast.WhenAny
 
-  and process_list seqible = function
+  and process_list seqible isos = function
       [] -> []
     | x::rest ->
+	let first = statement seqible x in
+	let first =
+	  if !Flag.track_iso_usage
+	  then Ast.set_isos first (isos@(Ast.get_isos first))
+	  else first in
 	(match Ast0.unwrap x with
 	  Ast0.Dots(_,_) | Ast0.Nest(_) ->
-	    (statement seqible x)::
-	    (process_list (Ast.SequencibleAfterDots []) rest)
-	| _ -> (statement seqible x)::(process_list Ast.Sequencible rest))
+	    first::(process_list (Ast.SequencibleAfterDots []) no_isos rest)
+	| _ ->
+	    first::(process_list Ast.Sequencible no_isos rest))
 
   and statement_dots seqible d =
-    rewrap d
+    let isos = do_isos (Ast0.get_iso d) in
+    rewrap d no_isos
       (match Ast0.unwrap d with
-	Ast0.DOTS(x) -> Ast.DOTS(process_list seqible x)
-      | Ast0.CIRCLES(x) -> Ast.CIRCLES(process_list seqible x)
-      | Ast0.STARS(x) -> Ast.STARS(process_list seqible x))
+	Ast0.DOTS(x) -> Ast.DOTS(process_list seqible isos x)
+      | Ast0.CIRCLES(x) -> Ast.CIRCLES(process_list seqible isos x)
+      | Ast0.STARS(x) -> Ast.STARS(process_list seqible isos x))
 
   and separate_decls seqible d =
     let rec collect_decls = function
@@ -759,8 +783,9 @@ and statement s =
 
     let process l d fn =
       let (decls,other) = collect_decls l in
-      (rewrap d (fn (List.map (statement seqible) decls)),
-       rewrap d (fn (process_list seqible other))) in
+      (rewrap d no_isos (fn (List.map (statement seqible) decls)),
+       rewrap d no_isos
+	 (fn (process_list seqible (do_isos (Ast0.get_iso d)) other))) in
     match Ast0.unwrap d with
       Ast0.DOTS(x) -> process x d (function x -> Ast.DOTS x)
     | Ast0.CIRCLES(x) -> process x d (function x -> Ast.CIRCLES x)
@@ -779,34 +804,58 @@ and option_to_list = function
   | None -> []
 
 and case_line c =
-  rewrap c
+  rewrap c no_isos
     (match Ast0.unwrap c with
       Ast0.Default(def,colon,code) ->
 	let def = mcode def in
 	let colon = mcode colon in
 	let code = dots statement code in
-	Ast.CaseLine(rewrap c (Ast.Default(def,colon)),code)
+	Ast.CaseLine(rewrap c no_isos (Ast.Default(def,colon)),code)
     | Ast0.Case(case,exp,colon,code) ->
 	let case = mcode case in
 	let exp = expression exp in
 	let colon = mcode colon in
 	let code = dots statement code in
-	Ast.CaseLine(rewrap c (Ast.Case(case,exp,colon)),code)
+	Ast.CaseLine(rewrap c no_isos (Ast.Case(case,exp,colon)),code)
     | Ast0.OptCase(case) -> Ast.OptCase(case_line case))
 
 and statement_dots l = dots statement l
     
 (* --------------------------------------------------------------------- *)
+
+(* what is possible is only what is at the top level in an iso *)
+and anything = function
+    Ast0.DotsExprTag(d) -> Ast.ExprDotsTag(expression_dots d)
+  | Ast0.DotsParamTag(d) -> Ast.ParamDotsTag(parameter_list d)
+  | Ast0.DotsInitTag(d) -> failwith "not possible"
+  | Ast0.DotsStmtTag(d) -> Ast.StmtDotsTag(statement_dots d)
+  | Ast0.DotsDeclTag(d) -> Ast.DeclDotsTag(declaration_dots d)
+  | Ast0.DotsCaseTag(d) -> failwith "not possible"
+  | Ast0.IdentTag(d) -> Ast.IdentTag(ident d)
+  | Ast0.ExprTag(d) -> Ast.ExpressionTag(expression d)
+  | Ast0.ArgExprTag(d) | Ast0.TestExprTag(d) ->
+     failwith "only in isos, not converted to ast"
+  | Ast0.TypeCTag(d) -> Ast.FullTypeTag(typeC d)
+  | Ast0.ParamTag(d) -> Ast.ParamTag(parameterTypeDef d)
+  | Ast0.InitTag(d) -> Ast.InitTag(initialiser d)
+  | Ast0.DeclTag(d) -> Ast.DeclarationTag(declaration d)
+  | Ast0.StmtTag(d) -> Ast.StatementTag(statement d)
+  | Ast0.CaseLineTag(d) -> Ast.CaseLineTag(case_line d)
+  | Ast0.TopTag(d) -> Ast.Code(top_level d)
+  | Ast0.AnyTag -> failwith "not possible"
+
+(* --------------------------------------------------------------------- *)
 (* Function declaration *)
+(* top level isos are probably lost to tracking *)
     
-let top_level t =
-  rewrap t
+and top_level t =
+  rewrap t no_isos
     (match Ast0.unwrap t with
       Ast0.FILEINFO(old_file,new_file) ->
 	Ast.FILEINFO(mcode old_file,mcode new_file)
     | Ast0.DECL(stmt) -> Ast.DECL(statement stmt)
     | Ast0.CODE(rule_elem_dots) ->
-	Ast.CODE(dots statement rule_elem_dots)
+	Ast.CODE(statement_dots rule_elem_dots)
     | Ast0.ERRORWORDS(exps) -> Ast.ERRORWORDS(List.map expression exps)
     | Ast0.OTHER(_) -> failwith "eliminated by top_level")
 

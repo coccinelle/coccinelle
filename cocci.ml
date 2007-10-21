@@ -120,11 +120,42 @@ let show_or_not_diff2 cfile outfile show_only_minus =
     (* may need --strip-trailing-cr under windows *)
     pr2 "diff = ";
 
-    let xs =
+    let line =
       match !Flag_parsing_c.diff_lines with
-      | None ->   Common.cmd_to_list ("diff -u -b -B " ^ cfile ^ " " ^ outfile)
-      | Some n -> Common.cmd_to_list ("diff -U "^n^" -b -B "^cfile^" "^outfile)
-    in
+      | None ->   "diff -u -p -b -B " ^ cfile ^ " " ^ outfile
+      | Some n -> "diff -U "^n^" -p -b -B "^cfile^" "^outfile in
+    let xs =
+      let res = Common.cmd_to_list line in
+      match (!Flag_cocci.patch,res) with
+	(* create something that looks like the output of patch *)
+	(Some prefix,minus_file::plus_file::rest) ->
+	  let drop_prefix file =
+	    if prefix = ""
+	    then "/"^file
+	    else
+	      (match Str.split (Str.regexp prefix) file with
+		[base_file] -> base_file
+	      |	_ -> failwith "prefix not found in the old file name") in
+	  let diff_line =
+	    match List.rev(Str.split (Str.regexp " ") line) with
+	      new_file::old_file::cmdrev ->
+		let old_base_file = drop_prefix old_file in
+		String.concat " "
+		  (List.rev
+		     (("b"^old_base_file)::("a"^old_base_file)::cmdrev))
+	    | _ -> failwith "bad command" in
+	  let (minus_line,plus_line) =
+	    match (Str.split (Str.regexp "[ \t]") minus_file,
+		   Str.split (Str.regexp "[ \t]") plus_file) with
+	      ("---"::old_file::old_rest,"+++"::new_file::new_rest) ->
+		let old_base_file = drop_prefix old_file in
+		(String.concat " " ("---"::("a"^old_base_file)::old_rest),
+		 String.concat " " ("+++"::("b"^old_base_file)::new_rest))
+	    | (l1,l2) ->
+		failwith (Printf.sprintf "bad diff header lines: %s %s"
+			    (String.concat ":" l1) (String.concat ":" l2)) in
+	  diff_line::minus_line::plus_line::rest
+      |	_ -> res in
     xs +> List.iter (fun s -> 
       if s =~ "^\\+" && show_only_minus
       then ()

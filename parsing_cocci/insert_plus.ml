@@ -105,7 +105,8 @@ let create_root_token_table minus =
 	  | Ast0.DotsCaseTag(d) -> Ast0.get_index d
 	  | Ast0.IdentTag(d) -> Ast0.get_index d
 	  | Ast0.ExprTag(d) -> Ast0.get_index d
-	  | Ast0.ArgExprTag(d) -> failwith "not possible - iso only"
+	  | Ast0.ArgExprTag(d) | Ast0.TestExprTag(d) ->
+	      failwith "not possible - iso only"
 	  | Ast0.TypeCTag(d) -> Ast0.get_index d
 	  | Ast0.ParamTag(d) -> Ast0.get_index d
 	  | Ast0.InitTag(d) -> Ast0.get_index d
@@ -117,9 +118,10 @@ let create_root_token_table minus =
 	Hashtbl.add root_token_table key tokens)
     CN.minus_table;
   List.iter
-    (function (t,info,index,mcodekind,ty,dots,arg) ->
-      try let _ = Hashtbl.find root_token_table !index in ()
-      with Not_found -> Hashtbl.add root_token_table !index [])
+    (function r ->
+      let index = Ast0.get_index r in
+      try let _ = Hashtbl.find root_token_table index in ()
+      with Not_found -> Hashtbl.add root_token_table index [])
     minus
 
 let collect_minus_join_points root =
@@ -133,7 +135,7 @@ let collect_minus_join_points root =
     then [(Unfavored,info,mcodekind)]
     else [(Favored,info,mcodekind)] in
 
-  let do_nothing r k ((_,info,index,mcodekind,_,_,_) as e) =
+  let do_nothing r k ((_,info,index,mcodekind,_,_,_,_,_) as e) =
     match !mcodekind with
       (Ast0.MINUS(_)) as mc -> [(Favored,info,mc)]
     | (Ast0.CONTEXT(_)) as mc when not(!index = root_index) ->
@@ -262,7 +264,8 @@ let call_collect_minus context_nodes :
       | Ast0.ExprTag(e) ->
 	  (Ast0.get_index e,
 	   (collect_minus_join_points e).V0.combiner_expression e)
-      | Ast0.ArgExprTag(e) -> failwith "not possible - iso only"
+      | Ast0.ArgExprTag(e) | Ast0.TestExprTag(e) ->
+	  failwith "not possible - iso only"
       | Ast0.TypeCTag(e) ->
 	  (Ast0.get_index e,
 	   (collect_minus_join_points e).V0.combiner_typeC e)
@@ -378,10 +381,10 @@ let collect_plus_nodes root =
       Ast0.PLUS -> [(info,fn term (Ast0toast.convert_info info))]
     | _ -> [] in
 
-  let do_nothing fn r k ((term,info,index,mcodekind,ty,dots,arg) as e) =
-    match !mcodekind with
-      (Ast0.CONTEXT(_)) when not(!index = root_index) -> []
-    | Ast0.PLUS -> [(info,fn e)]
+  let do_nothing fn r k e =
+    match Ast0.get_mcodekind e with
+      (Ast0.CONTEXT(_)) when not(Ast0.get_index e = root_index) -> []
+    | Ast0.PLUS -> [(Ast0.get_info e,fn e)]
     | _ -> k e in
 
   (* case for everything that is just a wrapper for a simpler thing *)
@@ -452,7 +455,8 @@ let call_collect_plus context_nodes :
       | Ast0.ExprTag(e) ->
 	  (Ast0.get_index e,
 	   (collect_plus_nodes e).V0.combiner_expression e)
-      | Ast0.ArgExprTag(_) -> failwith "not possible - iso only"
+      | Ast0.ArgExprTag(_) | Ast0.TestExprTag(_) ->
+	  failwith "not possible - iso only"
       | Ast0.TypeCTag(e) ->
 	  (Ast0.get_index e,
 	   (collect_plus_nodes e).V0.combiner_typeC e)

@@ -752,6 +752,9 @@ let triples_witness x unchecked not_keep trips =
 	  let (th_x,newth) = split_subst th x in
 	  match th_x with
 	    [] ->
+	      (* one consider whether if not not_keep is true, then we should
+		 fail.  but it could be that the variable is a used_after and
+		 then it is the later rule that should fail and not this one *)
 	      if not not_keep && !Flag_ctl.verbose_ctl_engine
 	      then
 		(SUB.print_mvar x; Format.print_flush();
@@ -766,7 +769,7 @@ let triples_witness x unchecked not_keep trips =
 	      then prev
 	      else
 		(print_generic_substitution l; Format.print_newline();
-		failwith "unexpected negative binding with positive witnesses")*)
+		failwith"unexpected negative binding with positive witnesses")*)
 	  | [_] -> (* positive must be alone *)
 	      let new_triple =
 		if unchecked or not_keep
@@ -2093,14 +2096,17 @@ let preprocess (cfg,_,_) label = function
 	 false)
 
 let filter_partial_matches trips =
-  let anynegwit = (* if any is neg, then all are *)
-    List.exists (function A.NegWit _ -> true | A.Wit _ -> false) in
-  let (bad,good) =
-    List.partition (function (s,th,wit) -> anynegwit wit) trips in
-  (match bad with
-    [] -> ()
-  | _ -> print_state "partial matches" bad; Format.print_newline());
-  good
+  if !Flag_ctl.partial_match
+  then
+    let anynegwit = (* if any is neg, then all are *)
+      List.exists (function A.NegWit _ -> true | A.Wit _ -> false) in
+    let (bad,good) =
+      List.partition (function (s,th,wit) -> anynegwit wit) trips in
+    (match bad with
+      [] -> ()
+    | _ -> print_state "partial matches" bad; Format.print_newline());
+    good
+  else trips
 
 (* ---------------------------------------------------------------------- *)
 (* Main entry point for engine *)

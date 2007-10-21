@@ -60,6 +60,7 @@ type 'a inout = 'a -> 'a (* for specifying the type of rebuilder *)
 type rebuilder =
     {rebuilder_ident : Ast_cocci.ident inout;
       rebuilder_expression : Ast_cocci.expression inout;
+      rebuilder_fullType : Ast_cocci.fullType inout;
       rebuilder_typeC : Ast_cocci.typeC inout;
       rebuilder_declaration : Ast_cocci.declaration inout;
       rebuilder_initialiser : Ast_cocci.initialiser inout;
@@ -72,6 +73,9 @@ type rebuilder =
       rebuilder_expression_dots : Ast_cocci.expression Ast_cocci.dots inout;
       rebuilder_statement_dots : Ast_cocci.statement Ast_cocci.dots inout;
       rebuilder_declaration_dots : Ast_cocci.declaration Ast_cocci.dots inout;
+      rebuilder_define_param_dots: Ast_cocci.define_param Ast_cocci.dots inout;
+      rebuilder_define_param : Ast_cocci.define_param inout;
+      rebuilder_define_parameters : Ast_cocci.define_parameters inout;
       rebuilder_anything : Ast_cocci.anything inout}
 
 type 'mc rmcode = 'mc Ast_cocci.mcode inout

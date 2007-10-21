@@ -11,7 +11,9 @@ type 'a wrap =
        meta_name list (*fresh vars*) *
        meta_name list (*inherited vars*) * meta_name list (*witness vars*) *
        dots_bef_aft *
-       meta_name option (* pos info, try not to duplicate *))
+       meta_name option (* pos info, try not to duplicate *) *
+       (string*anything) list (* list of the isos relevant to the term;
+				 ultimately only used for rule_elems *))
 
 and 'a befaft =
     BEFORE      of 'a list list
@@ -511,9 +513,12 @@ val get_fresh : 'a wrap -> meta_name list
 val get_inherited : 'a wrap -> meta_name list
 val get_saved : 'a wrap -> meta_name list
 val get_dots_bef_aft : statement -> dots_bef_aft
+val set_dots_bef_aft : dots_bef_aft -> statement -> statement
 val get_pos : 'a wrap -> meta_name option
 val rewrap_dots_bef_aft : statement -> dots_bef_aft -> statement
 val rewrap_pos : 'a wrap -> meta_name option -> 'a wrap
+val get_isos : 'a wrap -> (string*anything) list
+val set_isos : 'a wrap -> (string*anything) list -> 'a wrap
 
 val get_meta_name : metavar -> meta_name
 

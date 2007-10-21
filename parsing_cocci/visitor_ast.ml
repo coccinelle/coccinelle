@@ -515,6 +515,7 @@ type 'a inout = 'a -> 'a (* for specifying the type of rebuilder *)
 type rebuilder =
     {rebuilder_ident : Ast.ident inout;
       rebuilder_expression : Ast.expression inout;
+      rebuilder_fullType : Ast.fullType inout;
       rebuilder_typeC : Ast.typeC inout;
       rebuilder_declaration : Ast.declaration inout;
       rebuilder_initialiser : Ast.initialiser inout;
@@ -527,6 +528,9 @@ type rebuilder =
       rebuilder_expression_dots : Ast.expression Ast.dots inout;
       rebuilder_statement_dots : Ast.statement Ast.dots inout;
       rebuilder_declaration_dots : Ast.declaration Ast.dots inout;
+      rebuilder_define_param_dots : Ast.define_param Ast.dots inout;
+      rebuilder_define_param : Ast.define_param inout;
+      rebuilder_define_parameters : Ast.define_parameters inout;
       rebuilder_anything : Ast.anything inout}
 
 type 'mc rmcode = 'mc Ast.mcode inout
@@ -1002,6 +1006,7 @@ let rebuilder
   and all_functions =
     {rebuilder_ident = ident;
       rebuilder_expression = expression;
+      rebuilder_fullType= fullType;
       rebuilder_typeC = typeC;
       rebuilder_declaration = declaration;
       rebuilder_initialiser = initialiser;
@@ -1014,6 +1019,9 @@ let rebuilder
       rebuilder_expression_dots = expression_dots;
       rebuilder_statement_dots = statement_dots;
       rebuilder_declaration_dots = declaration_dots;
+      rebuilder_define_param_dots = define_param_dots;
+      rebuilder_define_param = define_param;
+      rebuilder_define_parameters = define_parameters;
       rebuilder_anything = anything} in
   all_functions
 

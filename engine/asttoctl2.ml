@@ -186,12 +186,12 @@ let elim_opt =
 	   (Ast.Disj
 	      [(Ast.DOTS(new_rest1),l,
 		fv_rest1,mfv_rest1,fresh_rest1,inherited_rest1,s1,
-		Ast.NoDots,None);
+		Ast.NoDots,None,[]);
 		(Ast.DOTS(new_rest2),l,
 		 fv_rest2,mfv_rest2,fresh_rest2,inherited_rest2,s2,
-		 Ast.NoDots,None)],
+		 Ast.NoDots,None,[])],
 	    l,fv_rest1,mfv_rest1,fresh_rest1,inherited_rest1,s1,
-	    Ast.NoDots,None)]
+	    Ast.NoDots,None,[])]
 
     | (Ast.OptStm(stm)::urest,_::rest) ->
 	 let l = Ast.get_line stm in
@@ -203,10 +203,11 @@ let elim_opt =
 	   varlists new_rest2 in
 	 [(Ast.Disj
 	     [(Ast.DOTS(new_rest2),l,fv_rest2,mfv_rest2,fresh_rest2,
-	       inherited_rest2,s2,Ast.NoDots,None);
+	       inherited_rest2,s2,Ast.NoDots,None,[]);
 	       (Ast.DOTS(new_rest1),l,fv_rest1,mfv_rest1,fresh_rest1,
-		inherited_rest1,s1,Ast.NoDots,None)],
-	   l,fv_rest2,fv_rest2,fresh_rest2,inherited_rest2,s2,Ast.NoDots,None)]
+		inherited_rest1,s1,Ast.NoDots,None,[])],
+	   l,fv_rest2,fv_rest2,fresh_rest2,inherited_rest2,s2,Ast.NoDots,None,
+	   [])]
 
     | ([Ast.Dots(_,_,_,_);Ast.OptStm(stm)],[d1;_]) ->
 	let l = Ast.get_line stm in
@@ -227,11 +228,11 @@ let elim_opt =
 	let saved_both = Common.union_set saved_stm saved_d1 in
 	[d1;(Ast.Disj
 	       [(Ast.DOTS([stm]),l,fv_stm,mfv_stm,fresh_stm,inh_stm,saved_stm,
-		 Ast.NoDots,None);
+		 Ast.NoDots,None,[]);
 		 (Ast.DOTS([d1]),l,fv_d1,mfv_d1,fresh_d1,inh_d1,saved_d1,
-		  Ast.NoDots,None)],
+		  Ast.NoDots,None,[])],
 	     l,fv_both,mfv_both,fresh_both,inh_both,saved_both,
-	     Ast.NoDots,None)]
+	     Ast.NoDots,None,[])]
 
     | ([Ast.Nest(_,_,_,_);Ast.OptStm(stm)],[d1;_]) ->
 	let l = Ast.get_line stm in
@@ -245,7 +246,7 @@ let elim_opt =
 		   [],[],[]) in
 	[d1;rw(Ast.Disj
 		 [rwd(Ast.DOTS([stm]));
-		   (Ast.DOTS([rw dots]),l,[],[],[],[],[],Ast.NoDots,None)])]
+		   (Ast.DOTS([rw dots]),l,[],[],[],[],[],Ast.NoDots,None,[])])]
 
     | (_::urest,stm::rest) -> stm :: (dots_list urest rest)
     | _ -> failwith "not possible" in
@@ -362,11 +363,12 @@ let make_match label guard code =
   if contains_modif code && not guard
   then CTL.Exists(true,v,predmaker guard (matcher,CTL.Modif v) label)
   else
-    (match (!onlyModif,guard,intersect !used_after (Ast.get_fvs code)) with
-      (true,_,[]) | (_,true,_) ->
+    let iso_info = !Flag.track_iso_usage && not (Ast.get_isos code = []) in
+    (match (iso_info,!onlyModif,guard,
+	    intersect !used_after (Ast.get_fvs code)) with
+      (false,true,_,[]) | (_,_,true,_) ->
 	predmaker guard (matcher,CTL.Control) label
-    | (b1,b2,l) ->
-	CTL.Exists(true,v,predmaker guard (matcher,CTL.UnModif v) label))
+    | _ -> CTL.Exists(true,v,predmaker guard (matcher,CTL.UnModif v) label))
 
 let make_raw_match label guard code =
   predmaker guard (Lib_engine.Match(code),CTL.Control) label
@@ -1129,7 +1131,8 @@ let rec dots_and_nests plus nest whencodes bef aft dotcode after label
      without finding the rest of the pattern *)
   let aft = shortest aft in
   (* process whencode *)
-  let whencodes =
+  let labelled = label_pred_maker label in
+  let whencodes arg =
     let (poswhen,negwhen) =
       List.fold_left
 	(function (poswhen,negwhen) ->
@@ -1140,7 +1143,7 @@ let rec dots_and_nests plus nest whencodes bef aft dotcode after label
 		(ctl_and CTL.NONSTRICT (statement stm) poswhen,negwhen)
 	    | Ast.WhenAny -> (poswhen,negwhen))
 	(CTL.True,bef_aft) (List.rev whencodes) in
-    let poswhen = ctl_and_ns (label_pred_maker label) poswhen in
+    let poswhen = ctl_and_ns arg poswhen in
     let negwhen =
       if !exists
       then
@@ -1154,12 +1157,16 @@ let rec dots_and_nests plus nest whencodes bef aft dotcode after label
       (None,_) | (_,true) -> CTL.True
     | (Some dotcode,_) -> dotcode in
   (* process nest code, if any *)
+  (* whencode goes in the negated part of the nest; if no nest, just goes
+      on the "true" in between code *)
   let ornest =
     match (nest,guard) with
-      (None,_) | (_,true) -> CTL.True
+      (None,_) | (_,true) -> whencodes CTL.True
     | (Some nest,false) ->
 	let v = get_let_ctr() in
-        CTL.Let(v,nest,CTL.Or(CTL.Ref v,CTL.Not(ctl_uncheck (CTL.Ref v)))) in
+        CTL.Let(v,nest,
+		CTL.Or(CTL.Ref v,
+		       whencodes (CTL.Not(ctl_uncheck (CTL.Ref v))))) in
   let ender =
     match after with
       After f -> f
@@ -1175,11 +1182,11 @@ let rec dots_and_nests plus nest whencodes bef aft dotcode after label
 	else exit (* end at the real end of the function *) *) in
   if plus
   then
-    do_plus_dots (after = Tail) label guard wrapcode ornest nest whencodes
+    do_plus_dots (after = Tail) label guard wrapcode ornest nest labelled
       aft ender
   else
     dots_au (after = Tail) label (guard_to_strict guard) wrapcode
-      (ctl_and_ns dotcode (ctl_and_ns ornest whencodes))
+      (ctl_and_ns dotcode (ctl_and_ns ornest labelled))
       aft ender
 
 and do_plus_dots toend label guard wrapcode ornest nest whencodes aft ender =

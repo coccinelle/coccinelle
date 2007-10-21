@@ -33,6 +33,8 @@ type 'a wrap = 'a * info * int ref * mcodekind ref
       * Type_cocci.typeC option ref (* only for expressions *)
       * dots_bef_aft (* only for statements *)
       * bool (* true if "arg_exp", only for exprs *)
+      * bool (* true if "test_exp", only for exprs *)
+      * (string*anything) option(* Some if this represents the use of an iso *)
 
 and dots_bef_aft =
     NoDots | AddingBetweenDots of statement | DroppingBetweenDots of statement
@@ -322,7 +324,7 @@ and case_line = base_case_line wrap
 (* --------------------------------------------------------------------- *)
 (* Top-level code *)
 
-type base_top_level =
+and base_top_level =
     DECL of statement
   | CODE of statement dots
   | FILEINFO of string mcode (* old file *) * string mcode (* new file *)
@@ -334,7 +336,7 @@ and rule = top_level list
 
 (* --------------------------------------------------------------------- *)
 
-type anything =
+and anything =
     DotsExprTag of expression dots
   | DotsInitTag of initialiser dots
   | DotsParamTag of parameterTypeDef dots
@@ -343,7 +345,8 @@ type anything =
   | DotsCaseTag of case_line dots
   | IdentTag of ident
   | ExprTag of expression
-  | ArgExprTag of expression
+  | ArgExprTag of expression  (* for isos *)
+  | TestExprTag of expression (* for isos *)
   | TypeCTag of typeC
   | ParamTag of parameterTypeDef
   | InitTag of initialiser
@@ -385,15 +388,17 @@ let context_befaft _ =
   CONTEXT(ref (Ast.NOTHING,default_token_info,default_token_info))
 
 let wrap x =
-  (x,default_info(),ref (-1),ref (default_befaft()),ref None,NoDots,false)
+  (x,default_info(),ref (-1),ref (default_befaft()),ref None,NoDots,
+   false,false,None)
 let context_wrap x =
-  (x,default_info(),ref (-1),ref (context_befaft()),ref None,NoDots,false)
-let unwrap (x,_,_,_,_,_,_) = x
+  (x,default_info(),ref (-1),ref (context_befaft()),ref None,NoDots,
+   false,false,None)
+let unwrap (x,_,_,_,_,_,_,_,_) = x
 let unwrap_mcode (x,_,_,_) = x
-let rewrap (_,info,index,mcodekind,ty,dots,arg) x =
-  (x,info,index,mcodekind,ty,dots,arg)
+let rewrap (_,info,index,mcodekind,ty,dots,arg,test,iso) x =
+  (x,info,index,mcodekind,ty,dots,arg,test,iso)
 let rewrap_mcode (_,arity,info,mcodekind) x = (x,arity,info,mcodekind)
-let copywrap (_,info,index,mcodekind,ty,dots,arg) x =
+let copywrap (_,info,index,mcodekind,ty,dots,arg,test,iso) x =
   (x,
    { line_start = info.line_start; line_end = info.line_end;
      logical_start = info.logical_start; logical_end = info.logical_end;
@@ -403,22 +408,29 @@ let copywrap (_,info,index,mcodekind,ty,dots,arg) x =
      column = info.column; offset = info.offset;
      strings_before = info.strings_before;
      strings_after = info.strings_after },
-   ref !index,ref !mcodekind,ref !ty,dots,arg)
-let get_info (_,info,_,_,_,_,_) = info
-let get_line (_,info,_,_,_,_,_) = info.line_start
-let get_line_end (_,info,_,_,_,_,_) = info.line_end
-let get_index (_,_,index,_,_,_,_) = !index
-let set_index (_,_,index,_,_,_,_) i = index := i
-let get_mcodekind (_,_,_,mcodekind,_,_,_) = !mcodekind
+   ref !index,ref !mcodekind,ref !ty,dots,arg,test,iso)
+let get_info (_,info,_,_,_,_,_,_,_) = info
+let set_info (a,_,b,c,d,e,f,g,h) info = (a,info,b,c,d,e,f,g,h)
+let get_line (_,info,_,_,_,_,_,_,_) = info.line_start
+let get_line_end (_,info,_,_,_,_,_,_,_) = info.line_end
+let get_index (_,_,index,_,_,_,_,_,_) = !index
+let set_index (_,_,index,_,_,_,_,_,_) i = index := i
+let get_mcodekind (_,_,_,mcodekind,_,_,_,_,_) = !mcodekind
 let get_mcode_mcodekind (_,_,_,mcodekind) = mcodekind
-let get_mcodekind_ref (_,_,_,mcodekind,_,_,_) = mcodekind
-let set_mcodekind (_,_,_,mcodekind,_,_,_) mk = mcodekind := mk
-let set_type (_,_,_,_,ty,_,_) t = ty := t
-let get_type (_,_,_,_,ty,_,_) = !ty
-let get_dots_bef_aft (_,_,_,_,_,d,_) = d
-let set_dots_bef_aft (a,b,c,d,e,_,f) dots_bef_aft = (a,b,c,d,e,dots_bef_aft,f)
-let get_arg_exp (_,_,_,_,_,_,d) = d
-let set_arg_exp (a,b,c,d,e,f,_) = (a,b,c,d,e,f,true)
+let get_mcodekind_ref (_,_,_,mcodekind,_,_,_,_,_) = mcodekind
+let set_mcodekind (_,_,_,mcodekind,_,_,_,_,_) mk = mcodekind := mk
+let set_type (_,_,_,_,ty,_,_,_,_) t = ty := t
+let get_type (_,_,_,_,ty,_,_,_,_) = !ty
+let get_dots_bef_aft (_,_,_,_,_,d,_,_,_) = d
+let set_dots_bef_aft (a,b,c,d,e,_,f,g,h) dots_bef_aft =
+  (a,b,c,d,e,dots_bef_aft,f,g,h)
+let get_arg_exp (_,_,_,_,_,_,d,_,_) = d
+let set_arg_exp (a,b,c,d,e,f,_,g,h) = (a,b,c,d,e,f,true,g,h)
+let get_test_exp (_,_,_,_,_,_,_,d,_) = d
+let set_test_exp (a,b,c,d,e,f,g,_,h) = (a,b,c,d,e,f,g,true,h)
+let get_iso (_,_,_,_,_,_,_,_,d) = d
+let set_iso ((a,b,c,d,e,f,g,h,_) as x) i =
+  if !Flag.track_iso_usage then (a,b,c,d,e,f,g,h,Some i) else x
 let set_mcode_data data (_,ar,info,mc) = (data,ar,info,mc)
 
 (* --------------------------------------------------------------------- *)
