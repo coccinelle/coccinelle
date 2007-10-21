@@ -87,7 +87,6 @@ let (labels_for_ctl: string list (* dropped isos *) ->
           prefixes +> List.map (fun prefixlabels -> 
             (nodei, (p,[(s --> (Lib_engine.LabelVal prefixlabels))]))
           )
-          
 
       | Lib_engine.Match (re), _unwrapnode -> 
           let substs = 
@@ -120,6 +119,9 @@ let (labels_for_ctl: string list (* dropped isos *) ->
       | Lib_engine.Enter, _  -> []
       | Lib_engine.Exit, _  -> []
       | Lib_engine.ErrorExit, _  -> []
+
+      |	Lib_engine.BindGood s, _ -> [(nodei, (p,[(s --> Lib_engine.GoodVal)]))]
+      |	Lib_engine.BindBad s, _ ->  [(nodei, (p,[(s --> Lib_engine.BadVal)]))]
 
       | Lib_engine.Return, node -> 
           (match node with

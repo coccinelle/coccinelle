@@ -15,6 +15,8 @@ type predicate =
   | Match of Ast_cocci.rule_elem
   | Label of Ast_cocci.meta_name
   | PrefixLabel of Ast_cocci.meta_name
+  | BindGood of Ast_cocci.meta_name (* used to implement \+ *)
+  | BindBad  of Ast_cocci.meta_name
 
 type ctlcocci = (predicate, Ast_cocci.meta_name) Wrapper_ctl.wrapped_ctl
 
@@ -29,6 +31,7 @@ type metavar_binding_kind2 =
   | NormalMetaVal of Ast_c.metavar_binding_kind
   | ParenVal of Ast_cocci.meta_name
   | LabelVal of int list
+  | GoodVal | BadVal (* used to implement \+ *)
 
 and metavars_binding2 = (mvar, metavar_binding_kind2) Common.assoc
 
