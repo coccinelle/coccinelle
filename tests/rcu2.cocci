@@ -131,16 +131,16 @@ expression E1, E2;
 
 - struct list_head *I;
 + T *I;
-  <... when != _Y(I)
-\+- list_for_each_rcu(_X(I),E1)
-+   list_for_each_entry_rcu(I,E1,E2)
-\+  {
-      <... when != _Y(I)
-\+-    list_entry(_X(I),T,E2)
-+      I
-      ...>
-\+  }
-  ...>
+  <+... when != _Y(I)
+- list_for_each_rcu(_X(I),E1)
++ list_for_each_entry_rcu(I,E1,E2)
+  {
+      <+... when != _Y(I)
+-     list_entry(_X(I),T,E2)
++     I
+      ...+>
+  }
+  ...+>
 
 @@
 type T;
@@ -150,29 +150,21 @@ expression E1, E2;
 
 - struct list_head *I;
 + T *I;
-  <... when != _Y(I)
-\+- list_for_each(_X(I),E1)
-+   list_for_each_entry(I,E1,E2)
-\+  {
-      <... when != _Y(I)
-\+-    list_entry(_X(I),T,E2)
-+      I
-      ...>
-\+  }
-  ...>
+  <+... when != _Y(I)
+- list_for_each(_X(I),E1)
++ list_for_each_entry(I,E1,E2)
+  {
+      <+... when != _Y(I)
+-     list_entry(_X(I),T,E2)
++     I
+      ...+>
+  }
+  ...+>
 
 // clean up
 
-@ exists @
-identifier I;
 @@
-
-  ... when != struct list_head *I;
-- _X(I)
-+ _INCONSISTENT_MODIF(I)
-
-@@
-expression I;
+struct list_head *I;
 @@
 
 (
@@ -181,6 +173,18 @@ expression I;
 |
 - _Y(I)
 + I
+)
+
+@@
+expression I;
+@@
+
+(
+- _X(I)
++ _INCONSISTENT_MODIF(I)
+|
+- _Y(I)
++ _INCONSISTENT_MODIF(I)
 )
 
 @ depends on r || ra @

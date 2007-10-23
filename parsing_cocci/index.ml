@@ -60,7 +60,6 @@ let ident i =
   | Ast0.MetaLocalFunc(name,_) -> [13]
   | Ast0.OptIdent(id) -> [14]
   | Ast0.UniqueIdent(id) -> [15]
-  | Ast0.MultiIdent(id) -> [16]
 	
 let expression e =
   match Ast0.unwrap e with
@@ -86,13 +85,12 @@ let expression e =
   | Ast0.MetaExprList(name,_,_) -> [34]
   | Ast0.EComma(cm) -> [35]
   | Ast0.DisjExpr(_,expr_list,_,_) -> [36]
-  | Ast0.NestExpr(_,expr_dots,_,_) -> [37]
+  | Ast0.NestExpr(_,expr_dots,_,_,_) -> [37]
   | Ast0.Edots(dots,whencode) -> [38]
   | Ast0.Ecircles(dots,whencode) -> [39]
   | Ast0.Estars(dots,whencode) -> [40]
   | Ast0.OptExp(exp) -> [41]
   | Ast0.UniqueExp(exp) -> [42]
-  | Ast0.MultiExp(exp) -> [43]
 
 let typeC t =
   match Ast0.unwrap t with
@@ -110,7 +108,6 @@ let typeC t =
   | Ast0.DisjType(_,type_list,_,_) -> [130]
   | Ast0.OptType(ty) -> [45]
   | Ast0.UniqueType(ty) -> [46]
-  | Ast0.MultiType(ty) -> [47]
 	
 let declaration d =
   match Ast0.unwrap d with
@@ -123,7 +120,6 @@ let declaration d =
   | Ast0.Ddots(dots,whencode) -> [133]
   | Ast0.OptDecl(decl) -> [56]
   | Ast0.UniqueDecl(decl) -> [57]
-  | Ast0.MultiDecl(decl) -> [58]
 
 let initialiser i =
   match Ast0.unwrap i with
@@ -137,7 +133,6 @@ let initialiser i =
   | Ast0.Idots(d,whencode) -> [109]
   | Ast0.OptIni(id) -> [110]
   | Ast0.UniqueIni(id) -> [111]
-  | Ast0.MultiIni(id) -> [112]
 
 let parameterTypeDef p =
   match Ast0.unwrap p with
@@ -171,7 +166,7 @@ let statement s =
   | Ast0.MetaStmt(name,_) -> [79]
   | Ast0.MetaStmtList(name,_) -> [80]
   | Ast0.Disj(_,statement_dots_list,_,_) -> [81]
-  | Ast0.Nest(_,stmt_dots,_,_) -> [82]
+  | Ast0.Nest(_,stmt_dots,_,_,_) -> [82]
   | Ast0.Exp(exp) -> [83]
   | Ast0.TopExp(exp) -> [141]
   | Ast0.Ty(ty) -> [124]
@@ -182,7 +177,6 @@ let statement s =
   | Ast0.Define(def,id,params,body) -> [119]
   | Ast0.OptStm(re) -> [87]
   | Ast0.UniqueStm(re) -> [88]
-  | Ast0.MultiStm(re) -> [89]
 
 let case_line c =
   match Ast0.unwrap c with

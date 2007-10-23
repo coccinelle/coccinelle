@@ -37,6 +37,7 @@ and dots_bef_aft =
 
 and inherited = Type_cocci.inherited
 and keep_binding = Type_cocci.keep_binding
+and multi = bool (*true if a nest is one or more, false if it is zero or more*)
 
 and end_info =
     meta_name list (*free vars*) * meta_name list (*inherited vars*) *
@@ -90,7 +91,6 @@ and base_ident =
 
   | OptIdent      of ident
   | UniqueIdent   of ident
-  | MultiIdent    of ident (* only allowed in nests *)
 
 and ident = base_ident wrap
 
@@ -133,7 +133,7 @@ and base_expression =
   | EComma         of string mcode (* only in arg lists *)
 
   | DisjExpr       of expression list
-  | NestExpr       of expression dots * expression option
+  | NestExpr       of expression dots * expression option * multi
 
   (* can appear in arg lists, and also inside Nest, as in:
    if(< ... X ... Y ...>)
@@ -144,7 +144,6 @@ and base_expression =
 
   | OptExp         of expression
   | UniqueExp      of expression
-  | MultiExp       of expression (* only allowed in nests *)
 
 and form = ANY | ID | CONST (* form for MetaExp *)
 
@@ -175,7 +174,6 @@ and base_fullType =
   | DisjType        of fullType list (* only after iso *)
   | OptType         of fullType
   | UniqueType      of fullType
-  | MultiType       of fullType
 
 and base_typeC = 
     BaseType        of baseType mcode * sign mcode option
@@ -229,7 +227,6 @@ and base_declaration =
 
   | OptDecl    of declaration
   | UniqueDecl of declaration
-  | MultiDecl  of declaration (* only allowed in nests *)
 
 and declaration = base_declaration wrap
 
@@ -254,7 +251,6 @@ and base_initialiser =
   | IComma of string mcode (* , *)
   | OptIni    of initialiser
   | UniqueIni of initialiser
-  | MultiIni  of initialiser
 
 and initialiser = base_initialiser wrap
 
@@ -386,7 +382,7 @@ and base_statement =
   | Atomic        of rule_elem
   | Disj          of statement dots list
   | Nest          of statement dots *
-	             (statement dots,statement) whencode list *
+	             (statement dots,statement) whencode list * multi *
 	             dots_whencode list * dots_whencode list
   | FunDecl       of rule_elem (* header *) * rule_elem (* { *) *
      	             statement dots * statement dots * rule_elem (* } *)
@@ -402,7 +398,6 @@ and base_statement =
 	             dots_whencode list * dots_whencode list
   | OptStm        of statement
   | UniqueStm     of statement
-  | MultiStm      of statement (* only allowed in nests *)
 
 and ('a,'b) whencode =
     WhenNot of 'a

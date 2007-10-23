@@ -909,7 +909,7 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
   | A.DisjExpr eas, eb -> 
       eas +> List.fold_left (fun acc ea -> acc >|+|> (expression ea eb)) fail
 
-  | A.MultiExp _, _ | A.UniqueExp _,_ | A.OptExp _,_ -> 
+  | A.UniqueExp _,_ | A.OptExp _,_ -> 
       failwith "not handling Opt/Unique/Multi on expr"
 
  (* Because of Exp cant put a raise Impossible; have to put a fail *)
@@ -975,8 +975,8 @@ and (ident: info_ident -> (A.ident, string * Ast_c.info) matcher) =
       | DontKnow -> failwith "MetaLocalFunc, need more semantic info about id"
       )
 
-  | A.OptIdent _ | A.UniqueIdent _ | A.MultiIdent _ -> 
-      failwith "not handling Opt/Unique/Multi for ident"
+  | A.OptIdent _ | A.UniqueIdent _ -> 
+      failwith "not handling Opt/Unique for ident"
 
 
 
@@ -1285,7 +1285,7 @@ and parameters_bis eas ebs =
           )
 
       | (A.OptParam _ | A.UniqueParam _), _ -> 
-              failwith "handling Opt/Unique/Multi for Param"
+              failwith "handling Opt/Unique for Param"
 
       | A.Pcircles (_), ys -> raise Impossible (* in Ordered mode *)
 
@@ -1660,8 +1660,8 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
    | A.Ddots(dots,whencode), _ ->
        raise Impossible
             
-   | A.OptDecl _, _ | A.UniqueDecl _, _ | A.MultiDecl _, _ -> 
-       failwith "not handling Opt/Unique/Multi Decl"
+   | A.OptDecl _, _ | A.UniqueDecl _, _ -> 
+       failwith "not handling Opt/Unique Decl"
 
 
    | _, _ -> fail
@@ -1789,8 +1789,8 @@ and (initialiser: (A.initialiser, Ast_c.initialiser) matcher)
     | A.IComma(comma), _ ->
         raise Impossible
 
-    | A.MultiIni _, _ | A.UniqueIni _,_ | A.OptIni _,_ -> 
-      failwith "not handling Opt/Unique/Multi on initialisers"
+    | A.UniqueIni _,_ | A.OptIni _,_ -> 
+      failwith "not handling Opt/Unique on initialisers"
           
     | _, _ -> fail
 
@@ -2002,8 +2002,8 @@ and (fullType: (A.fullType, Ast_c.fullType) matcher) =
       typas +>
       List.fold_left (fun acc typa -> acc >|+|> (fullType typa typb)) fail
 
-   | A.OptType(_), _  | A.UniqueType(_), _ | A.MultiType(_), _ 
-       -> failwith "not handling Opt/Unique/Multi on type"
+   | A.OptType(_), _  | A.UniqueType(_), _
+       -> failwith "not handling Opt/Unique on type"
    )
  
 
@@ -2637,7 +2637,7 @@ and define_paramsbis = fun eas ebs ->
             (define_paramsbis eas ebs) (* try optional comma trick *)
 
       | (A.OptDParam _ | A.UniqueDParam _), _ -> 
-              failwith "handling Opt/Unique/Multi for define parameters"
+              failwith "handling Opt/Unique for define parameters"
 
       | A.DPcircles (_), ys -> raise Impossible (* in Ordered mode *)
 

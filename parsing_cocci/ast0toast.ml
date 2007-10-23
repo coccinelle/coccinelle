@@ -258,8 +258,7 @@ and ident i =
     | Ast0.MetaLocalFunc(name,_) ->
 	Ast.MetaLocalFunc(mcode name,unitary,false)
     | Ast0.OptIdent(id) -> Ast.OptIdent(ident id)
-    | Ast0.UniqueIdent(id) -> Ast.UniqueIdent(ident id)
-    | Ast0.MultiIdent(id) -> Ast.MultiIdent(ident id))
+    | Ast0.UniqueIdent(id) -> Ast.UniqueIdent(ident id))
 
 (* --------------------------------------------------------------------- *)
 (* Expression *)
@@ -317,9 +316,9 @@ and expression e =
 	Ast.MetaExprList(mcode name,None,unitary,false)
     | Ast0.EComma(cm)         -> Ast.EComma(mcode cm)
     | Ast0.DisjExpr(_,exps,_,_)     -> Ast.DisjExpr(List.map expression exps)
-    | Ast0.NestExpr(_,exp_dots,_,whencode) ->
+    | Ast0.NestExpr(_,exp_dots,_,whencode,multi) ->
 	let whencode = get_option expression whencode in
-	Ast.NestExpr(dots expression exp_dots,whencode)
+	Ast.NestExpr(dots expression exp_dots,whencode,multi)
     | Ast0.Edots(dots,whencode) ->
 	let dots = mcode dots in
 	let whencode = get_option expression whencode in
@@ -333,8 +332,7 @@ and expression e =
 	let whencode = get_option expression whencode in
 	Ast.Estars(dots,whencode)
     | Ast0.OptExp(exp) -> Ast.OptExp(expression exp)
-    | Ast0.UniqueExp(exp) -> Ast.UniqueExp(expression exp)
-    | Ast0.MultiExp(exp) -> Ast.MultiExp(expression exp))
+    | Ast0.UniqueExp(exp) -> Ast.UniqueExp(expression exp))
 
 and expression_dots ed = dots expression ed
   
@@ -388,8 +386,7 @@ and typeC t =
 		 rewrap t no_isos (Ast.MetaType(mcode name,unitary,false)))
     | Ast0.DisjType(_,types,_,_) -> Ast.DisjType(List.map typeC types)
     | Ast0.OptType(ty) -> Ast.OptType(typeC ty)
-    | Ast0.UniqueType(ty) -> Ast.UniqueType(typeC ty)
-    | Ast0.MultiType(ty) -> Ast.MultiType(typeC ty))
+    | Ast0.UniqueType(ty) -> Ast.UniqueType(typeC ty))
     
 and base_typeC t =
   rewrap t (do_isos (Ast0.get_iso t))
@@ -459,8 +456,7 @@ and declaration d =
 	let whencode = get_option declaration whencode in
 	Ast.Ddots(dots,whencode)
     | Ast0.OptDecl(decl) -> Ast.OptDecl(declaration decl)
-    | Ast0.UniqueDecl(decl) -> Ast.UniqueDecl(declaration decl)
-    | Ast0.MultiDecl(decl) -> Ast.MultiDecl(declaration decl))
+    | Ast0.UniqueDecl(decl) -> Ast.UniqueDecl(declaration decl))
 
 and declaration_dots l = dots declaration l
 
@@ -504,8 +500,7 @@ and initialiser i =
     | Ast0.IComma(comma) -> Ast.IComma(mcode comma)
     | Ast0.Idots(_,_) -> failwith "Idots should have been removed"
     | Ast0.OptIni(ini) -> Ast.OptIni(initialiser ini)
-    | Ast0.UniqueIni(ini) -> Ast.UniqueIni(initialiser ini)
-    | Ast0.MultiIni(ini) -> Ast.MultiIni(initialiser ini))
+    | Ast0.UniqueIni(ini) -> Ast.UniqueIni(initialiser ini))
 
 (* --------------------------------------------------------------------- *)
 (* Parameter *)
@@ -647,13 +642,13 @@ and statement s =
       | Ast0.Disj(_,rule_elem_dots_list,_,_) ->
 	  Ast.Disj(List.map (function x -> statement_dots seqible x)
 		     rule_elem_dots_list)
-      | Ast0.Nest(_,rule_elem_dots,_,whencode) ->
+      | Ast0.Nest(_,rule_elem_dots,_,whencode,multi) ->
 	  Ast.Nest
 	    (statement_dots Ast.Sequencible rule_elem_dots,
 	     (match whencode with
 	       None -> []
 	     | Some x -> [Ast.WhenNot (statement_dots Ast.Sequencible x)]),
-	     [],[])
+	     multi,[],[])
       | Ast0.Dots(d,whn) ->
 	  let d = mcode d in
 	  let whn =
@@ -703,8 +698,7 @@ and statement s =
 		  (mcode def,ident id, define_parameters params)),
 	     statement_dots Ast.NotSequencible (*not sure*) body)
       | Ast0.OptStm(stm) -> Ast.OptStm(statement seqible stm)
-      | Ast0.UniqueStm(stm) -> Ast.UniqueStm(statement seqible stm)
-      | Ast0.MultiStm(stm) -> Ast.MultiStm(statement seqible stm))
+      | Ast0.UniqueStm(stm) -> Ast.UniqueStm(statement seqible stm))
 
   and define_parameters p =
     rewrap p no_isos
@@ -760,7 +754,7 @@ and statement s =
 	    Ast0.Decl(_) ->
 	      let (decls,other) = collect_decls xs in
 	      (x :: decls,other)
-	  | Ast0.Dots(_,_) | Ast0.Nest(_,_,_,_) ->
+	  | Ast0.Dots(_,_) | Ast0.Nest(_,_,_,_,_) ->
 	      let (decls,other) = collect_decls xs in
 	      (match decls with
 		[] -> ([],x::other)

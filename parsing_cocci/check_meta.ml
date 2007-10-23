@@ -82,7 +82,7 @@ let ident context old_metas table minus i =
   | Ast0.MetaId(name,_) -> check_table table minus name
   | Ast0.MetaFunc(name,_) -> check_table table minus name
   | Ast0.MetaLocalFunc(name,_) -> check_table table minus name
-  | Ast0.OptIdent(_) | Ast0.UniqueIdent(_) | Ast0.MultiIdent(_) ->
+  | Ast0.OptIdent(_) | Ast0.UniqueIdent(_) ->
       failwith "unexpected code"
 
 (* --------------------------------------------------------------------- *)
@@ -144,7 +144,7 @@ let rec expression context old_metas table minus e =
       check_table table minus (Ast0.rewrap_mcode name lenname)
   | Ast0.DisjExpr(_,exps,_,_) ->
       List.iter (expression ID old_metas table minus) exps
-  | Ast0.NestExpr(_,exp_dots,_,w) ->
+  | Ast0.NestExpr(_,exp_dots,_,w,_) ->
       dots (expression ID old_metas table minus) exp_dots;
       get_opt (expression ID old_metas table minus) w
   | Ast0.Edots(_,Some x) | Ast0.Ecircles(_,Some x) | Ast0.Estars(_,Some x) ->
@@ -181,7 +181,7 @@ and typeC old_metas table minus t =
   | Ast0.StructUnionDef(ty,lb,decls,rb) ->
       typeC old_metas table minus ty;
       dots (declaration GLOBAL old_metas table minus) decls
-  | Ast0.OptType(ty) | Ast0.UniqueType(ty) | Ast0.MultiType(ty) ->
+  | Ast0.OptType(ty) | Ast0.UniqueType(ty) ->
       failwith "unexpected code"
   | _ -> () (* no metavariable subterms *)
 
@@ -219,7 +219,7 @@ and declaration context old_metas table minus d =
       List.iter (declaration ID old_metas table minus) decls
   | Ast0.Ddots(_,Some x) -> declaration ID old_metas table minus x
   | Ast0.Ddots(_,None) -> ()
-  | Ast0.OptDecl(_) | Ast0.UniqueDecl(_) | Ast0.MultiDecl(_) ->
+  | Ast0.OptDecl(_) | Ast0.UniqueDecl(_) ->
       failwith "unexpected code"
 
 (* --------------------------------------------------------------------- *)
@@ -244,7 +244,7 @@ and initialiser old_metas table minus ini =
       expression ID old_metas table minus exp2;
       initialiser old_metas table minus ini
   | Ast0.Idots(_,Some x) -> initialiser old_metas table minus x
-  | Ast0.OptIni(_) | Ast0.UniqueIni(_) | Ast0.MultiIni(_) ->
+  | Ast0.OptIni(_) | Ast0.UniqueIni(_) ->
       failwith "unexpected code"
   | _ -> () (* no metavariable subterms *)
 
@@ -311,7 +311,7 @@ and statement old_metas table minus s =
   | Ast0.Ty(ty) -> typeC old_metas table minus ty
   | Ast0.Disj(_,rule_elem_dots_list,_,_) ->
       List.iter (dots (statement old_metas table minus)) rule_elem_dots_list
-  | Ast0.Nest(_,rule_elem_dots,_,w) ->
+  | Ast0.Nest(_,rule_elem_dots,_,w,_) ->
       dots (statement old_metas table minus) rule_elem_dots;
       get_opt (dots (statement old_metas table minus)) w
   | Ast0.Dots(_,x) | Ast0.Circles(_,x) | Ast0.Stars(_,x) ->

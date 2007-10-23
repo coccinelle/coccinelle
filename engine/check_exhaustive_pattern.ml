@@ -53,7 +53,7 @@ let dumb_astcocci_decl = function
  | A.MetaDecl _ -> ()
  | A.Typedef(d,ty1,ty2,pv) -> ()
  | A.DisjDecl xs -> ()
- | A.OptDecl _ | A.UniqueDecl _ | A.MultiDecl _ -> ()
+ | A.OptDecl _ | A.UniqueDecl _ -> ()
 
 let dumb_astcocci_initialiser = function
     A.Init(stg,ty,id,eq,ini,sem) -> ()
@@ -66,7 +66,6 @@ let dumb_astcocci_initialiser = function
   | A.MetaDecl(name,_,_) -> ()
   | A.OptDecl(decl) -> ()
   | A.UniqueDecl(decl) -> ()
-  | A.MultiDecl(decl) -> ()
 
 let dumb_astcocci_expr = function
  | A.MetaExpr (ida,_, opttypa, _, _) -> ()
@@ -98,7 +97,6 @@ let dumb_astcocci_expr = function
  | A.Ecircles _ -> ()
  | A.Estars _ -> ()
  | A.DisjExpr eas -> ()
- | A.MultiExp _ -> ()
  | A.UniqueExp _ -> ()
  | A.OptExp _ -> ()
 
@@ -107,7 +105,6 @@ let dumb_astcocci_fulltype = function
   | A.DisjType(types) -> ()
   | A.OptType(ty) -> ()
   | A.UniqueType(ty) -> ()
-  | A.MultiType(ty) -> ()
 
 let dumb_astcocci_type = function
  | A.MetaType(ida,_,_) -> ()

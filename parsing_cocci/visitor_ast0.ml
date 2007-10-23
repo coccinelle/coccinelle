@@ -94,8 +94,7 @@ let combiner bind option_default
       | Ast0.MetaFunc(name,_) -> meta_mcode name
       | Ast0.MetaLocalFunc(name,_) -> meta_mcode name
       | Ast0.OptIdent(id) -> ident id
-      | Ast0.UniqueIdent(id) -> ident id
-      | Ast0.MultiIdent(id) -> ident id in
+      | Ast0.UniqueIdent(id) -> ident id in
   identfn all_functions k i
   and expression e =
     let k e =
@@ -154,7 +153,7 @@ let combiner bind option_default
 				bind (string_mcode mid) (expression x))
 			    mids xs))
 	              (string_mcode ender))))
-      | Ast0.NestExpr(starter,expr_dots,ender,whencode) ->
+      | Ast0.NestExpr(starter,expr_dots,ender,whencode,multi) ->
 	  bind (string_mcode starter)
 	    (bind (expression_dots expr_dots)
 	       (bind (string_mcode ender) (get_option expression whencode)))
@@ -162,8 +161,7 @@ let combiner bind option_default
       | Ast0.Estars(dots,whencode) ->
 	  bind (string_mcode dots) (get_option expression whencode)
       | Ast0.OptExp(exp) -> expression exp
-      | Ast0.UniqueExp(exp) -> expression exp
-      | Ast0.MultiExp(exp) -> expression exp in
+      | Ast0.UniqueExp(exp) -> expression exp in
     exprfn all_functions k e
   and function_pointer (ty,lp1,star,rp1,lp2,params,rp2) extra =
     (* have to put the treatment of the identifier into the right position *)
@@ -215,8 +213,7 @@ let combiner bind option_default
 			    mids xs))
 	              (string_mcode ender))))
       | Ast0.OptType(ty) -> typeC ty
-      | Ast0.UniqueType(ty) -> typeC ty
-      | Ast0.MultiType(ty) -> typeC ty in
+      | Ast0.UniqueType(ty) -> typeC ty in
     tyfn all_functions k t
   and named_type ty id =
     match Ast0.unwrap ty with
@@ -263,8 +260,7 @@ let combiner bind option_default
       |	Ast0.Ddots(dots,whencode) ->
 	  bind (string_mcode dots) (get_option declaration whencode)
       | Ast0.OptDecl(decl) -> declaration decl
-      | Ast0.UniqueDecl(decl) -> declaration decl
-      | Ast0.MultiDecl(decl) -> declaration decl in
+      | Ast0.UniqueDecl(decl) -> declaration decl in
     declfn all_functions k d
   and initialiser i =
     let k i =
@@ -291,8 +287,7 @@ let combiner bind option_default
       | Ast0.Idots(dots,whencode) ->
 	  bind (string_mcode dots) (get_option initialiser whencode)
       | Ast0.OptIni(i) -> initialiser i
-      | Ast0.UniqueIni(i) -> initialiser i
-      | Ast0.MultiIni(i) -> initialiser i in
+      | Ast0.UniqueIni(i) -> initialiser i in
     initfn all_functions k i
   and parameterTypeDef p =
     let k p =
@@ -387,7 +382,7 @@ let combiner bind option_default
 				bind (string_mcode mid) (statement_dots x))
 			    mids xs))
 	              (string_mcode ender))))
-      | Ast0.Nest(starter,stmt_dots,ender,whencode) ->
+      | Ast0.Nest(starter,stmt_dots,ender,whencode,multi) ->
 	  bind (string_mcode starter)
 	    (bind (statement_dots stmt_dots)
 	       (bind (string_mcode ender)
@@ -403,8 +398,7 @@ let combiner bind option_default
 	  multibind [string_mcode def; ident id; define_parameters params;
 		      statement_dots body]
       | Ast0.OptStm(re) -> statement re
-      | Ast0.UniqueStm(re) -> statement re
-      | Ast0.MultiStm(re) -> statement re in
+      | Ast0.UniqueStm(re) -> statement re in
     stmtfn all_functions k s
 
   (* not parameterizable for now... *)
@@ -587,8 +581,7 @@ let rebuilder = fun
 	| Ast0.MetaLocalFunc(name,pure) ->
 	    Ast0.MetaLocalFunc(meta_mcode name,pure)
 	| Ast0.OptIdent(id) -> Ast0.OptIdent(ident id)
-	| Ast0.UniqueIdent(id) -> Ast0.UniqueIdent(ident id)
-	| Ast0.MultiIdent(id) -> Ast0.MultiIdent(ident id)) in
+	| Ast0.UniqueIdent(id) -> Ast0.UniqueIdent(ident id)) in
     identfn all_functions k i
   and expression e =
     let k e =
@@ -639,9 +632,10 @@ let rebuilder = fun
 	| Ast0.DisjExpr(starter,expr_list,mids,ender) ->
 	    Ast0.DisjExpr(string_mcode starter,List.map expression expr_list,
 			  List.map string_mcode mids,string_mcode ender)
-	| Ast0.NestExpr(starter,expr_dots,ender,whencode) ->
+	| Ast0.NestExpr(starter,expr_dots,ender,whencode,multi) ->
 	    Ast0.NestExpr(string_mcode starter,expression_dots expr_dots,
-			  string_mcode ender, get_option expression whencode)
+			  string_mcode ender, get_option expression whencode,
+			  multi)
 	| Ast0.Edots(dots,whencode) ->
 	    Ast0.Edots(string_mcode dots, get_option expression whencode)
 	| Ast0.Ecircles(dots,whencode) ->
@@ -649,8 +643,7 @@ let rebuilder = fun
 	| Ast0.Estars(dots,whencode) ->
 	    Ast0.Estars(string_mcode dots, get_option expression whencode)
 	| Ast0.OptExp(exp) -> Ast0.OptExp(expression exp)
-	| Ast0.UniqueExp(exp) -> Ast0.UniqueExp(expression exp)
-	| Ast0.MultiExp(exp) -> Ast0.MultiExp(expression exp)) in
+	| Ast0.UniqueExp(exp) -> Ast0.UniqueExp(expression exp)) in
     exprfn all_functions k e
   and typeC t =
     let k t =
@@ -687,8 +680,7 @@ let rebuilder = fun
 	    Ast0.DisjType(string_mcode starter,List.map typeC types,
 			  List.map string_mcode mids,string_mcode ender)
 	| Ast0.OptType(ty) -> Ast0.OptType(typeC ty)
-	| Ast0.UniqueType(ty) -> Ast0.UniqueType(typeC ty)
-	| Ast0.MultiType(ty) -> Ast0.MultiType(typeC ty)) in
+	| Ast0.UniqueType(ty) -> Ast0.UniqueType(typeC ty)) in
     tyfn all_functions k t
   and declaration d =
     let k d =
@@ -715,8 +707,7 @@ let rebuilder = fun
 	| Ast0.Ddots(dots,whencode) ->
 	    Ast0.Ddots(string_mcode dots, get_option declaration whencode)
 	| Ast0.OptDecl(decl) -> Ast0.OptDecl(declaration decl)
-	| Ast0.UniqueDecl(decl) -> Ast0.UniqueDecl(declaration decl)
-	| Ast0.MultiDecl(decl) -> Ast0.MultiDecl(declaration decl)) in
+	| Ast0.UniqueDecl(decl) -> Ast0.UniqueDecl(declaration decl)) in
     declfn all_functions k d
   and initialiser i =
     let k i =
@@ -744,8 +735,7 @@ let rebuilder = fun
 	| Ast0.Idots(d,whencode) ->
 	    Ast0.Idots(string_mcode d, get_option initialiser whencode)
 	| Ast0.OptIni(i) -> Ast0.OptIni(initialiser i)
-	| Ast0.UniqueIni(i) -> Ast0.UniqueIni(initialiser i)
-	| Ast0.MultiIni(i) -> Ast0.MultiIni(initialiser i)) in
+	| Ast0.UniqueIni(i) -> Ast0.UniqueIni(initialiser i)) in
     initfn all_functions k i
   and parameterTypeDef p =
     let k p =
@@ -835,9 +825,10 @@ let rebuilder = fun
 		      List.map statement_dots statement_dots_list,
 		      List.map string_mcode mids,
 		      string_mcode ender)
-	| Ast0.Nest(starter,stmt_dots,ender,whencode) ->
+	| Ast0.Nest(starter,stmt_dots,ender,whencode,multi) ->
 	    Ast0.Nest(string_mcode starter,statement_dots stmt_dots,
-		      string_mcode ender,get_option statement_dots whencode)
+		      string_mcode ender,get_option statement_dots whencode,
+		      multi)
 	| Ast0.Exp(exp) -> Ast0.Exp(expression exp)
 	| Ast0.TopExp(exp) -> Ast0.TopExp(expression exp)
 	| Ast0.Ty(ty) -> Ast0.Ty(typeC ty)
@@ -857,8 +848,7 @@ let rebuilder = fun
 			define_parameters params,
 			statement_dots body)
 	| Ast0.OptStm(re) -> Ast0.OptStm(statement re)
-	| Ast0.UniqueStm(re) -> Ast0.UniqueStm(statement re)
-	| Ast0.MultiStm(re) -> Ast0.MultiStm(statement re)) in
+	| Ast0.UniqueStm(re) -> Ast0.UniqueStm(statement re)) in
     let s = stmtfn all_functions k s in
     process_bef_aft s
 

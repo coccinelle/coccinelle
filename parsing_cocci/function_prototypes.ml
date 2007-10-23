@@ -9,7 +9,7 @@ let rec get_name name =
     Ast0.Id(nm) -> Id(Ast0.unwrap_mcode nm)
   | Ast0.MetaId(nm,_) | Ast0.MetaFunc(nm,_)
   | Ast0.MetaLocalFunc(nm,_) -> Meta(Ast0.unwrap_mcode nm)
-  | Ast0.OptIdent(id) | Ast0.UniqueIdent(id) | Ast0.MultiIdent(id) ->
+  | Ast0.OptIdent(id) | Ast0.UniqueIdent(id) ->
       get_name id
 
 (* --------------------------------------------------------------------- *)

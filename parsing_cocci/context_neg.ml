@@ -281,8 +281,8 @@ let classify is_minus all_marked table code =
   let expression r k e =
     compute_result Ast0.expr e
       (match Ast0.unwrap e with
-	Ast0.NestExpr(starter,exp,ender,whencode) ->
-	  k (Ast0.rewrap e (Ast0.NestExpr(starter,exp,ender,None)))
+	Ast0.NestExpr(starter,exp,ender,whencode,multi) ->
+	  k (Ast0.rewrap e (Ast0.NestExpr(starter,exp,ender,None,multi)))
       | Ast0.Edots(dots,whencode) ->
 	  k (Ast0.rewrap e (Ast0.Edots(dots,None)))
       | Ast0.Ecircles(dots,whencode) ->
@@ -348,8 +348,8 @@ let classify is_minus all_marked table code =
   let statement r k s =
     compute_result Ast0.stmt s
       (match Ast0.unwrap s with
-	Ast0.Nest(started,stm_dots,ender,whencode) ->
-	  k (Ast0.rewrap s (Ast0.Nest(started,stm_dots,ender,None)))
+	Ast0.Nest(started,stm_dots,ender,whencode,multi) ->
+	  k (Ast0.rewrap s (Ast0.Nest(started,stm_dots,ender,None,multi)))
       | Ast0.Dots(dots,whencode) ->
 	  k (Ast0.rewrap s (Ast0.Dots(dots,[])))
       | Ast0.Circles(dots,whencode) ->
@@ -417,7 +417,6 @@ let rec equal_ident i1 i2 =
       equal_mcode name1 name2
   | (Ast0.OptIdent(_),Ast0.OptIdent(_)) -> true
   | (Ast0.UniqueIdent(_),Ast0.UniqueIdent(_)) -> true
-  | (Ast0.MultiIdent(_),Ast0.MultiIdent(_)) -> true
   | _ -> false
 
 let rec equal_expression e1 e2 =
@@ -459,14 +458,14 @@ let rec equal_expression e1 e2 =
        equal_mcode starter1 starter2 && 
        List.for_all2 equal_mcode mids1 mids2 &&
        equal_mcode ender1 ender2
-  | (Ast0.NestExpr(starter1,_,ender1,_),Ast0.NestExpr(starter2,_,ender2,_)) ->
-      equal_mcode starter1 starter2 && equal_mcode ender1 ender2
+  | (Ast0.NestExpr(starter1,_,ender1,_,m1),
+     Ast0.NestExpr(starter2,_,ender2,_,m2)) ->
+      equal_mcode starter1 starter2 && equal_mcode ender1 ender2 && m1 = m2
   | (Ast0.Edots(dots1,_),Ast0.Edots(dots2,_))
   | (Ast0.Ecircles(dots1,_),Ast0.Ecircles(dots2,_))
   | (Ast0.Estars(dots1,_),Ast0.Estars(dots2,_)) -> equal_mcode dots1 dots2
   | (Ast0.OptExp(_),Ast0.OptExp(_)) -> true
   | (Ast0.UniqueExp(_),Ast0.UniqueExp(_)) -> true
-  | (Ast0.MultiExp(_),Ast0.MultiExp(_)) -> true
   | _ -> false
 
 let rec equal_typeC t1 t2 =
@@ -496,7 +495,6 @@ let rec equal_typeC t1 t2 =
        equal_mcode ender1 ender2
   | (Ast0.OptType(_),Ast0.OptType(_)) -> true
   | (Ast0.UniqueType(_),Ast0.UniqueType(_)) -> true
-  | (Ast0.MultiType(_),Ast0.MultiType(_)) -> true
   | _ -> false
 
 let equal_declaration d1 d2 =
@@ -512,7 +510,6 @@ let equal_declaration d1 d2 =
   | (Ast0.Ddots(dots1,_),Ast0.Ddots(dots2,_)) -> equal_mcode dots1 dots2
   | (Ast0.OptDecl(_),Ast0.OptDecl(_)) -> true
   | (Ast0.UniqueDecl(_),Ast0.UniqueDecl(_)) -> true
-  | (Ast0.MultiDecl(_),Ast0.MultiDecl(_)) -> true
   | (Ast0.DisjDecl _,_) | (_,Ast0.DisjDecl _) ->
       failwith "DisjDecl not expected here"
   | _ -> false
@@ -536,7 +533,6 @@ let equal_initialiser i1 i2 =
   | (Ast0.Idots(d1,_),Ast0.Idots(d2,_)) -> equal_mcode d1 d2
   | (Ast0.OptIni(_),Ast0.OptIni(_)) -> true
   | (Ast0.UniqueIni(_),Ast0.UniqueIni(_)) -> true
-  | (Ast0.MultiIni(_),Ast0.MultiIni(_)) -> true
   | _ -> false
 	
 let equal_parameterTypeDef p1 p2 =
@@ -604,8 +600,8 @@ let rec equal_statement s1 s2 =
       equal_mcode starter1 starter2 && 
       List.for_all2 equal_mcode mids1 mids2 &&
       equal_mcode ender1 ender2
-  | (Ast0.Nest(starter1,_,ender1,_),Ast0.Nest(starter2,_,ender2,_)) ->
-      equal_mcode starter1 starter2 && equal_mcode ender1 ender2
+  | (Ast0.Nest(starter1,_,ender1,_,m1),Ast0.Nest(starter2,_,ender2,_,m2)) ->
+      equal_mcode starter1 starter2 && equal_mcode ender1 ender2 && m1 = m2
   | (Ast0.Exp(_),Ast0.Exp(_)) -> true
   | (Ast0.TopExp(_),Ast0.TopExp(_)) -> true
   | (Ast0.Ty(_),Ast0.Ty(_)) -> true
@@ -618,7 +614,6 @@ let rec equal_statement s1 s2 =
       equal_mcode def1 def2
   | (Ast0.OptStm(_),Ast0.OptStm(_)) -> true
   | (Ast0.UniqueStm(_),Ast0.UniqueStm(_)) -> true
-  | (Ast0.MultiStm(_),Ast0.MultiStm(_)) -> true
   | _ -> false
 
 and equal_fninfo x y =
@@ -713,7 +708,7 @@ let contextify_whencode =
 
   let expression r k e =
     match Ast0.unwrap e with
-      Ast0.NestExpr(_,_,_,Some whencode)
+      Ast0.NestExpr(_,_,_,Some whencode,_)
     | Ast0.Edots(_,Some whencode)
     | Ast0.Ecircles(_,Some whencode)
     | Ast0.Estars(_,Some whencode) ->
@@ -728,7 +723,7 @@ let contextify_whencode =
 
   let statement r k (s : Ast0.statement) =
     match Ast0.unwrap s with
-      Ast0.Nest(_,_,_,Some whencode) ->
+      Ast0.Nest(_,_,_,Some whencode,_) ->
 	contextify_all.V0.combiner_statement_dots whencode
     | Ast0.Dots(_,whencode)
     | Ast0.Circles(_,whencode) | Ast0.Stars(_,whencode) ->

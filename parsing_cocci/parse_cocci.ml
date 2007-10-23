@@ -19,9 +19,9 @@ let line_type (d,_,_,_,_,_,_) = d
 
 let line_type2c tok =
   match line_type tok with
-    D.MINUS | D.OPTMINUS | D.UNIQUEMINUS | D.MULTIMINUS -> ":-"
+    D.MINUS | D.OPTMINUS | D.UNIQUEMINUS -> ":-"
   | D.PLUS -> ":+"
-  | D.CONTEXT | D.UNIQUE | D.OPT | D.MULTI -> ""
+  | D.CONTEXT | D.UNIQUE | D.OPT -> ""
 
 let token2c (tok,_) =
  match tok with
@@ -158,6 +158,8 @@ let token2c (tok,_) =
 
   | PC.TOEllipsis(clt) -> "<..."^(line_type2c clt)
   | PC.TCEllipsis(clt) -> "...>"^(line_type2c clt)
+  | PC.TPOEllipsis(clt) -> "<+..."^(line_type2c clt)
+  | PC.TPCEllipsis(clt) -> "...+>"^(line_type2c clt)
 (*
   | PC.TOCircles(clt)  -> "<ooo"^(line_type2c clt)
   | PC.TCCircles(clt)  -> "ooo>"^(line_type2c clt)
@@ -260,7 +262,8 @@ let plus_attachable (tok,_) =
       if line_type clt = D.PLUS then PLUS else NOTPLUS
 
   | PC.TOPar0(clt) | PC.TMid0(clt) | PC.TCPar0(clt)
-  | PC.TOEllipsis(clt) | PC.TCEllipsis(clt) (* | PC.TOCircles(clt)
+  | PC.TOEllipsis(clt) | PC.TCEllipsis(clt) 
+  | PC.TPOEllipsis(clt) | PC.TPCEllipsis(clt) (* | PC.TOCircles(clt)
   | PC.TCCircles(clt) | PC.TOStars(clt) | PC.TCStars(clt) *) -> NOTPLUS
 
   | _ -> SKIP
@@ -316,7 +319,8 @@ let get_clt (tok,_) =
   | PC.TPtVirg(clt)
 
   | PC.TOPar0(clt) | PC.TMid0(clt) | PC.TCPar0(clt)
-  | PC.TOEllipsis(clt) | PC.TCEllipsis(clt) (* | PC.TOCircles(clt)
+  | PC.TOEllipsis(clt) | PC.TCEllipsis(clt)
+  | PC.TPOEllipsis(clt) | PC.TPCEllipsis(clt) (* | PC.TOCircles(clt)
   | PC.TCCircles(clt) | PC.TOStars(clt) | PC.TCStars(clt) *) -> clt
 
   | _ -> failwith "no clt"
@@ -421,6 +425,8 @@ let update_clt (tok,x) clt =
 
   | PC.TOEllipsis(_) -> (PC.TOEllipsis(clt),x)
   | PC.TCEllipsis(_) -> (PC.TCEllipsis(clt),x)
+  | PC.TPOEllipsis(_) -> (PC.TPOEllipsis(clt),x)
+  | PC.TPCEllipsis(_) -> (PC.TPCEllipsis(clt),x)
 (*
   | PC.TOCircles(_)  -> (PC.TOCircles(clt),x)
   | PC.TCCircles(_)  -> (PC.TCCircles(clt),x)
@@ -493,10 +499,10 @@ let tokens_all table file get_ats lexbuf end_markers :
 
 let split t = function
     (D.MINUS,_,_,_,_,_,_) | (D.OPTMINUS,_,_,_,_,_,_)
-  | (D.UNIQUEMINUS,_,_,_,_,_,_) | (D.MULTIMINUS,_,_,_,_,_,_) -> ([t],[])
+  | (D.UNIQUEMINUS,_,_,_,_,_,_) -> ([t],[])
   | (D.PLUS,_,_,_,_,_,_) -> ([],[t])
   | (D.CONTEXT,_,_,_,_,_,_) | (D.UNIQUE,_,_,_,_,_,_)
-  | (D.OPT,_,_,_,_,_,_) | (D.MULTI,_,_,_,_,_,_) -> ([t],[t])
+  | (D.OPT,_,_,_,_,_,_) -> ([t],[t])
 
 let split_token ((tok,_) as t) =
   match tok with
@@ -540,6 +546,7 @@ let split_token ((tok,_) as t) =
   | PC.TEllipsis(clt) (* | PC.TCircles(clt) | PC.TStars(clt) *) -> split t clt
 
   | PC.TOEllipsis(_) | PC.TCEllipsis(_) (* clt must be context *)
+  | PC.TPOEllipsis(_) | PC.TPCEllipsis(_) (* clt must be context *)
 (*
   | PC.TOCircles(_) | PC.TCCircles(_)   (* clt must be context *)
   | PC.TOStars(_) | PC.TCStars(_)       (* clt must be context *)
@@ -652,6 +659,7 @@ statement. *)
 let detect_types in_meta_decls l =
   let is_delim infn = function
       (PC.TOEllipsis(_),_) (* | (PC.TOCircles(_),_) | (PC.TOStars(_),_) *)
+    | (PC.TPOEllipsis(_),_) (* | (PC.TOCircles(_),_) | (PC.TOStars(_),_) *)
     | (PC.TEllipsis(_),_) (* | (PC.TCircles(_),_) | (PC.TStars(_),_) *)
     | (PC.TPtVirg(_),_) | (PC.TOBrace(_),_) | (PC.TCBrace(_),_)
     | (PC.TPure,_) | (PC.TContext,_)
@@ -766,7 +774,8 @@ let token2line (tok,_) =
   | PC.TWhen(clt) | PC.TAny(clt) | PC.TEllipsis(clt)
   (* | PC.TCircles(clt) | PC.TStars(clt) *)
 
-  | PC.TOEllipsis(clt) (* | PC.TCEllipsis(clt) | PC.TOCircles(clt)
+  | PC.TOEllipsis(clt) | PC.TCEllipsis(clt) 
+  | PC.TPOEllipsis(clt) | PC.TPCEllipsis(clt) (*| PC.TOCircles(clt)
   | PC.TCCircles(clt) | PC.TOStars(clt) | PC.TCStars(clt) *)
 
   | PC.TWhy(clt) | PC.TDotDot(clt) | PC.TBang(clt) | PC.TOPar(clt)
@@ -876,7 +885,8 @@ isomorphisms.  This shouldn't matter because the context code of the +
 slice is mostly ignored anyway *)
 let rec drop_double_dots l =
   let start = function
-      (PC.TOEllipsis(_),_) (* | (PC.TOCircles(_),_) | (PC.TOStars(_),_) *) ->
+      (PC.TOEllipsis(_),_) | (PC.TPOEllipsis(_),_)
+ (* | (PC.TOCircles(_),_) | (PC.TOStars(_),_) *) ->
 	true
     | _ -> false in
   let middle = function

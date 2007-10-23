@@ -21,7 +21,7 @@ let rec stm s =
       (match whencodes with
 	[Ast.WhenNot(a)] -> Past.DInfo(Past.When(Past.Dots,stm_list a),[],[])
       |	_ -> failwith "only one when != supported")
-  | Ast.Nest(stmt_dots,whencodes,_,_) ->
+  | Ast.Nest(stmt_dots,whencodes,false,_,_) ->
       let nest = Past.Nest(stm_list stmt_dots) in
       (match whencodes with
 	[Ast.WhenNot(a)] -> Past.DInfo(Past.When(nest,stm_list a),[],[])

@@ -98,8 +98,7 @@ let combiner bind option_default
       | Ast.MetaFunc(name,_,_) -> meta_mcode name
       | Ast.MetaLocalFunc(name,_,_) -> meta_mcode name
       | Ast.OptIdent(id) -> ident id
-      | Ast.UniqueIdent(id) -> ident id
-      | Ast.MultiIdent(id) -> ident id in
+      | Ast.UniqueIdent(id) -> ident id in
     identfn all_functions k i
     
   and expression e =
@@ -145,12 +144,12 @@ let combiner bind option_default
       | Ast.MetaExprList(name,_,_,_) -> meta_mcode name
       | Ast.EComma(cm) -> string_mcode cm
       | Ast.DisjExpr(exp_list) -> multibind (List.map expression exp_list)
-      | Ast.NestExpr(expr_dots,whencode) ->
+      | Ast.NestExpr(expr_dots,whencode,multi) ->
 	  bind (expression_dots expr_dots) (get_option expression whencode)
       | Ast.Edots(dots,whencode) | Ast.Ecircles(dots,whencode)
       | Ast.Estars(dots,whencode) ->
 	  bind (string_mcode dots) (get_option expression whencode)
-      | Ast.OptExp(exp) | Ast.UniqueExp(exp) | Ast.MultiExp(exp) ->
+      | Ast.OptExp(exp) | Ast.UniqueExp(exp) ->
 	  expression exp in
     exprfn all_functions k e
 	  
@@ -160,8 +159,7 @@ let combiner bind option_default
 	Ast.Type(cv,ty) -> bind (get_option cv_mcode cv) (typeC ty)
       | Ast.DisjType(types) -> multibind (List.map fullType types)
       | Ast.OptType(ty) -> fullType ty
-      | Ast.UniqueType(ty) -> fullType ty
-      | Ast.MultiType(ty) -> fullType ty in
+      | Ast.UniqueType(ty) -> fullType ty in
     ftfn all_functions k ft
 
   and function_pointer (ty,lp1,star,rp1,lp2,params,rp2) extra =
@@ -241,8 +239,7 @@ let combiner bind option_default
 	  bind (string_mcode dots) (get_option declaration whencode)
       | Ast.MetaDecl(name,_,_) -> meta_mcode name
       | Ast.OptDecl(decl) -> declaration decl
-      | Ast.UniqueDecl(decl) -> declaration decl
-      | Ast.MultiDecl(decl) -> declaration decl in
+      | Ast.UniqueDecl(decl) -> declaration decl in
     declfn all_functions k d
 
   and initialiser i =
@@ -271,8 +268,7 @@ let combiner bind option_default
 	      initialiser ini]
       | Ast.IComma(cm) -> string_mcode cm
       | Ast.OptIni(i) -> initialiser i
-      | Ast.UniqueIni(i) -> initialiser i
-      | Ast.MultiIni(i) -> initialiser i in
+      | Ast.UniqueIni(i) -> initialiser i in
     initfn all_functions k i
 
   and parameterTypeDef p =
@@ -408,7 +404,7 @@ let combiner bind option_default
       | Ast.Atomic(re) -> rule_elem re
       | Ast.Disj(stmt_dots_list) ->
 	  multibind (List.map statement_dots stmt_dots_list)
-      | Ast.Nest(stmt_dots,whn,_,_) ->
+      | Ast.Nest(stmt_dots,whn,_,_,_) ->
 	  bind (statement_dots stmt_dots)
 	    (multibind (List.map (whencode statement_dots statement) whn))
       | Ast.FunDecl(header,lbrace,decls,body,rbrace) ->
@@ -420,7 +416,7 @@ let combiner bind option_default
       | Ast.Dots(d,whn,_,_) | Ast.Circles(d,whn,_,_) | Ast.Stars(d,whn,_,_) ->
 	  bind (string_mcode d)
 	    (multibind (List.map (whencode statement_dots statement) whn))
-      | Ast.OptStm(stmt) | Ast.UniqueStm(stmt) | Ast.MultiStm(stmt) ->
+      | Ast.OptStm(stmt) | Ast.UniqueStm(stmt) ->
 	  statement stmt in
     stmtfn all_functions k s
 
@@ -595,8 +591,7 @@ let rebuilder
 	| Ast.MetaLocalFunc(name,keep,inherited) ->
 	    Ast.MetaLocalFunc(meta_mcode name,keep,inherited)
 	| Ast.OptIdent(id) -> Ast.OptIdent(ident id)
-	| Ast.UniqueIdent(id) -> Ast.UniqueIdent(ident id)
-	| Ast.MultiIdent(id) -> Ast.MultiIdent(ident id)) in
+	| Ast.UniqueIdent(id) -> Ast.UniqueIdent(ident id)) in
     identfn all_functions k i
       
   and expression e =
@@ -646,9 +641,9 @@ let rebuilder
 	    Ast.MetaExprList(meta_mcode name,lenname_inh,keep,inherited)
 	| Ast.EComma(cm) -> Ast.EComma(string_mcode cm)
 	| Ast.DisjExpr(exp_list) -> Ast.DisjExpr(List.map expression exp_list)
-	| Ast.NestExpr(expr_dots,whencode) ->
+	| Ast.NestExpr(expr_dots,whencode,multi) ->
 	    Ast.NestExpr(expression_dots expr_dots,
-			 get_option expression whencode)
+			 get_option expression whencode,multi)
 	| Ast.Edots(dots,whencode) ->
 	    Ast.Edots(string_mcode dots,get_option expression whencode)
 	| Ast.Ecircles(dots,whencode) ->
@@ -656,8 +651,7 @@ let rebuilder
 	| Ast.Estars(dots,whencode) ->
 	    Ast.Estars(string_mcode dots,get_option expression whencode)
 	| Ast.OptExp(exp) -> Ast.OptExp(expression exp)
-	| Ast.UniqueExp(exp) -> Ast.UniqueExp(expression exp)
-	| Ast.MultiExp(exp) -> Ast.MultiExp(expression exp)) in
+	| Ast.UniqueExp(exp) -> Ast.UniqueExp(expression exp)) in
     exprfn all_functions k e
 	  
   and fullType ft =
@@ -667,8 +661,7 @@ let rebuilder
 	  Ast.Type(cv,ty) -> Ast.Type (get_option cv_mcode cv, typeC ty)
 	| Ast.DisjType(types) -> Ast.DisjType(List.map fullType types)
 	| Ast.OptType(ty) -> Ast.OptType(fullType ty)
-	| Ast.UniqueType(ty) -> Ast.UniqueType(fullType ty)
-	| Ast.MultiType(ty) -> Ast.MultiType(fullType ty)) in
+	| Ast.UniqueType(ty) -> Ast.UniqueType(fullType ty)) in
     ftfn all_functions k ft
 	  
   and typeC ty =
@@ -726,8 +719,7 @@ let rebuilder
 	| Ast.MetaDecl(name,keep,inherited) ->
 	    Ast.MetaDecl(meta_mcode name,keep,inherited)
 	| Ast.OptDecl(decl) -> Ast.OptDecl(declaration decl)
-	| Ast.UniqueDecl(decl) -> Ast.UniqueDecl(declaration decl)
-	| Ast.MultiDecl(decl) -> Ast.MultiDecl(declaration decl)) in
+	| Ast.UniqueDecl(decl) -> Ast.UniqueDecl(declaration decl)) in
     declfn all_functions k d
 
   and initialiser i =
@@ -754,8 +746,7 @@ let rebuilder
 	       initialiser ini)
 	| Ast.IComma(cm) -> Ast.IComma(string_mcode cm)
 	| Ast.OptIni(i) -> Ast.OptIni(initialiser i)
-	| Ast.UniqueIni(i) -> Ast.UniqueIni(initialiser i)
-	| Ast.MultiIni(i) -> Ast.MultiIni(initialiser i)) in
+	| Ast.UniqueIni(i) -> Ast.UniqueIni(initialiser i)) in
     initfn all_functions k i
 	  
   and parameterTypeDef p =
@@ -908,9 +899,10 @@ let rebuilder
 	| Ast.Atomic(re) -> Ast.Atomic(rule_elem re)
 	| Ast.Disj(stmt_dots_list) ->
 	    Ast.Disj (List.map statement_dots stmt_dots_list)
-	| Ast.Nest(stmt_dots,whn,bef,aft) ->
+	| Ast.Nest(stmt_dots,whn,multi,bef,aft) ->
 	    Ast.Nest(statement_dots stmt_dots,
-		     List.map (whencode statement_dots statement) whn,bef,aft)
+		     List.map (whencode statement_dots statement) whn,
+		     multi,bef,aft)
 	| Ast.FunDecl(header,lbrace,decls,body,rbrace) ->
 	    Ast.FunDecl(rule_elem header,rule_elem lbrace,
 			statement_dots decls,
@@ -928,8 +920,7 @@ let rebuilder
 	    Ast.Stars(string_mcode d,
 		      List.map (whencode statement_dots statement) whn,bef,aft)
 	| Ast.OptStm(stmt) -> Ast.OptStm(statement stmt)
-	| Ast.UniqueStm(stmt) -> Ast.UniqueStm(statement stmt)
-	| Ast.MultiStm(stmt) -> Ast.MultiStm(statement stmt)) in
+	| Ast.UniqueStm(stmt) -> Ast.UniqueStm(statement stmt)) in
     let s = stmtfn all_functions k s in
     (* better to do this after, in case there is an equality test on the whole
        statement, eg in free_vars.  equality test would require that this

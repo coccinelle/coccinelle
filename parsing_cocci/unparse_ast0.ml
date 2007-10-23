@@ -105,8 +105,7 @@ let rec ident i =
       | Ast0.MetaFunc(name,_) -> mcode print_meta name
       | Ast0.MetaLocalFunc(name,_) -> mcode print_meta name
       | Ast0.OptIdent(id) -> print_string "?"; ident id
-      | Ast0.UniqueIdent(id) -> print_string "!"; ident id
-      | Ast0.MultiIdent(id) -> print_string "\\+"; ident id)
+      | Ast0.UniqueIdent(id) -> print_string "!"; ident id)
 
 (* --------------------------------------------------------------------- *)
 (* Expression *)
@@ -170,11 +169,11 @@ let rec expression e =
 	    (function _ -> print_string "\n|"; force_newline())
 	    expression exp_list;
 	  print_string "\n)"
-      | Ast0.NestExpr(starter,expr_dots,ender,None) ->
+      | Ast0.NestExpr(starter,expr_dots,ender,None,multi) ->
 	  mcode print_string starter;
 	  start_block(); dots force_newline expression expr_dots; end_block();
 	  mcode print_string ender
-      | Ast0.NestExpr(starter,expr_dots,ender,Some whencode) ->
+      | Ast0.NestExpr(starter,expr_dots,ender,Some whencode,multi) ->
 	  mcode print_string starter; print_string "   WHEN != ";
 	  expression whencode;
 	  start_block(); dots force_newline expression expr_dots; end_block();
@@ -188,8 +187,7 @@ let rec expression e =
       | Ast0.Ecircles(dots,None)
       | Ast0.Estars(dots,None) -> mcode print_string dots
       | Ast0.OptExp(exp) -> print_string "?"; expression exp
-      | Ast0.UniqueExp(exp) -> print_string "!"; expression exp
-      | Ast0.MultiExp(exp) -> print_string "\\+"; expression exp)
+      | Ast0.UniqueExp(exp) -> print_string "!"; expression exp)
 
 and expression_dots x = dots (function _ -> ()) expression x
 
@@ -240,8 +238,7 @@ and typeC t =
 	    typeC types;
 	  print_string "\n"; mcode print_string rp
       | Ast0.OptType(ty) -> print_string "?"; typeC ty
-      | Ast0.UniqueType(ty) -> print_string "!"; typeC ty
-      | Ast0.MultiType(ty) -> print_string "\\+"; typeC ty)
+      | Ast0.UniqueType(ty) -> print_string "!"; typeC ty)
 
 (* --------------------------------------------------------------------- *)
 (* Variable declaration *)
@@ -302,8 +299,7 @@ and declaration d =
 	  declaration whencode
       | Ast0.Ddots(dots,None) -> mcode print_string dots
       | Ast0.OptDecl(decl) -> print_string "?"; declaration decl
-      | Ast0.UniqueDecl(decl) -> print_string "!"; declaration decl
-      | Ast0.MultiDecl(decl) -> print_string "\\+"; declaration decl)
+      | Ast0.UniqueDecl(decl) -> print_string "!"; declaration decl)
 
 and declaration_dots l = dots (function _ -> ()) declaration l
 
@@ -339,8 +335,7 @@ and initialiser i =
 	  initialiser whencode
       | Ast0.Idots(d,None) -> mcode print_string d
       | Ast0.OptIni(ini) -> print_string "?"; initialiser ini
-      | Ast0.UniqueIni(ini) -> print_string "!"; initialiser ini
-      | Ast0.MultiIni(ini) -> print_string "+"; initialiser ini)
+      | Ast0.UniqueIni(ini) -> print_string "!"; initialiser ini)
 
 and initialiser_list l = dots (function _ -> ()) initialiser l
 
@@ -463,7 +458,7 @@ and statement arity s =
 	    (dots force_newline (statement arity))
 	    statement_dots_list;
 	  print_string "\n)"
-      | Ast0.Nest(starter,stmt_dots,ender,whencode) ->
+      | Ast0.Nest(starter,stmt_dots,ender,whencode,multi) ->
 	  print_string arity;
 	  mcode print_string starter;
 	  print_option
@@ -490,8 +485,7 @@ and statement arity s =
 	  print_string " ";
 	  dots force_newline (statement arity) body
       | Ast0.OptStm(re) -> statement "?" re
-      | Ast0.UniqueStm(re) -> statement "!" re
-      | Ast0.MultiStm(re) -> statement "\\+" re)
+      | Ast0.UniqueStm(re) -> statement "!" re)
 
 and print_define_parameters params =
   match Ast0.unwrap params with

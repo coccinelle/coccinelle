@@ -202,14 +202,10 @@ and statement testfn mcode tail stmt : 'a list list =
       then []
       else Common.union_all processed
 
-  | Ast.Nest(stmt_dots,whencode,_,_) ->
-      (match Ast.unwrap stmt_dots with
-	Ast.DOTS([l]) ->
-	  (match Ast.unwrap l with
-	    Ast.MultiStm(stm) ->
-	      statement testfn mcode tail stm
-	  | _ -> [])
-      | _ -> [])
+  | Ast.Nest(stmt_dots,whencode,true,_,_) ->
+      statement_list testfn mcode false stmt_dots
+
+  | Ast.Nest(stmt_dots,whencode,false,_,_) -> []
 
   | Ast.Dots((_,i,d),whencodes,_,_) -> []
 
@@ -227,8 +223,7 @@ and statement testfn mcode tail stmt : 'a list list =
 
   | Ast.OptStm(stm) -> []
 
-  | Ast.UniqueStm(stm) | Ast.MultiStm(stm) ->
-      statement testfn mcode tail stm
+  | Ast.UniqueStm(stm) -> statement testfn mcode tail stm
 
   | _ -> failwith "not supported"
 

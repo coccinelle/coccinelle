@@ -1,7 +1,7 @@
 type line_type =
-    MINUS | OPTMINUS | UNIQUEMINUS | MULTIMINUS
+    MINUS | OPTMINUS | UNIQUEMINUS
   | PLUS
-  | CONTEXT | UNIQUE | OPT | MULTI
+  | CONTEXT | UNIQUE | OPT
 
 val in_rule_name : bool ref (* true if parsing the rule name *)
 val in_meta : bool ref      (* true if parsing the metavariable decls *)

@@ -54,7 +54,7 @@ let get_minus_constants bind =
 	bind (k e) [Ast.unwrap_mcode sizeof]
     | Ast.DisjExpr(exps) ->
 	disj_union_all bind (List.map r.V.combiner_expression exps)
-    | Ast.OptExp(_) | Ast.NestExpr(_,_)
+    | Ast.OptExp(_) | Ast.NestExpr(_,_,_)
     | Ast.Edots(_,_) | Ast.Ecircles(_,_) | Ast.Estars(_,_) -> []
     | _ -> k e in
 
@@ -113,7 +113,7 @@ let get_minus_constants bind =
 	disj_union_all bind (List.map r.V.combiner_statement_dots stmt_dots)
     | Ast.OptStm(_) -> []
     | Ast.Dots(d,whn,_,_) | Ast.Circles(d,whn,_,_) | Ast.Stars(d,whn,_,_) -> []
-    | Ast.Nest(stmt_dots,whn,_,_) -> []
+    | Ast.Nest(stmt_dots,whn,_,_,_) -> []
     | _ -> k e in
 
   V.combiner bind option_default

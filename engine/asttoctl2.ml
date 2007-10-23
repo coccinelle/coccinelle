@@ -173,7 +173,7 @@ let elim_opt =
 
     | (Ast.Dots(_,_,_,_)::Ast.OptStm(stm)::(Ast.Dots(_,_,_,_) as u)::urest,
        d0::_::d1::rest)
-    | (Ast.Nest(_,_,_,_)::Ast.OptStm(stm)::(Ast.Dots(_,_,_,_) as u)::urest,
+    | (Ast.Nest(_,_,_,_,_)::Ast.OptStm(stm)::(Ast.Dots(_,_,_,_) as u)::urest,
        d0::_::d1::rest) ->
 	 let l = Ast.get_line stm in
 	 let new_rest1 = stm :: (dots_list (u::urest) (d1::rest)) in
@@ -234,7 +234,7 @@ let elim_opt =
 	     l,fv_both,mfv_both,fresh_both,inh_both,saved_both,
 	     Ast.NoDots,None,[])]
 
-    | ([Ast.Nest(_,_,_,_);Ast.OptStm(stm)],[d1;_]) ->
+    | ([Ast.Nest(_,_,_,_,_);Ast.OptStm(stm)],[d1;_]) ->
 	let l = Ast.get_line stm in
 	let rw = Ast.rewrap stm in
 	let rwd = Ast.rewrap stm in
@@ -485,7 +485,7 @@ and get_before_e s a =
   match Ast.unwrap s with
     Ast.Dots(d,w,_,aft) ->
       (Ast.rewrap s (Ast.Dots(d,get_before_whencode w,a,aft)),a)
-  | Ast.Nest(stmt_dots,w,_,aft) ->
+  | Ast.Nest(stmt_dots,w,multi,_,aft) ->
       let w = get_before_whencode w in
       let (sd,_) = get_before stmt_dots a in
       let a =
@@ -505,7 +505,7 @@ and get_before_e s a =
 		| _ -> true)
 	    | _ -> true)
 	  a in
-      (Ast.rewrap s (Ast.Nest(sd,w,a,aft)),[Ast.Other_dots stmt_dots])
+      (Ast.rewrap s (Ast.Nest(sd,w,multi,a,aft)),[Ast.Other_dots stmt_dots])
   | Ast.Disj(stmt_dots_list) ->
       (* put the result of processing each branch in the whencode of the
 	 subsequent branches.  acc_dsl collects these extra whencodes
@@ -574,9 +574,6 @@ and get_before_e s a =
       let (de,dea) = get_before decls [] in
       let (bd,_) = get_before body dea in
       (Ast.rewrap s (Ast.FunDecl(header,lbrace,de,bd,rbrace)),[])
-  | Ast.MultiStm(stm) -> (* I have no idea ... *)
-      let (stm,res) = get_before_e stm a in
-      (Ast.rewrap s (Ast.MultiStm(stm)),res)
   | _ -> failwith "get_before_e: not supported"
 
 let rec get_after sl a =
@@ -606,7 +603,7 @@ and get_after_e s a =
   match Ast.unwrap s with
     Ast.Dots(d,w,bef,_) ->
       (Ast.rewrap s (Ast.Dots(d,get_after_whencode a w,bef,a)),a)
-  | Ast.Nest(stmt_dots,w,bef,_) ->
+  | Ast.Nest(stmt_dots,w,multi,bef,_) ->
       let w = get_after_whencode a w in
       let (sd,_) = get_after stmt_dots a in
       let a =
@@ -626,7 +623,7 @@ and get_after_e s a =
 		| _ -> true)
 	    | _ -> true)
 	  a in
-      (Ast.rewrap s (Ast.Nest(sd,w,bef,a)),[Ast.Other_dots stmt_dots])
+      (Ast.rewrap s (Ast.Nest(sd,w,multi,bef,a)),[Ast.Other_dots stmt_dots])
   | Ast.Disj(stmt_dots_list) ->
       let (dsl,dsla) =
 	List.split (List.map (function e -> get_after e a) stmt_dots_list) in
@@ -641,7 +638,7 @@ and get_after_e s a =
 	    (function
 		Ast.Other x ->
 		  (match Ast.unwrap x with
-		    Ast.Dots(_,_,_,_) | Ast.Nest(_,_,_,_) ->
+		    Ast.Dots(_,_,_,_) | Ast.Nest(_,_,_,_,_) ->
 		      failwith
 			"dots/nest not allowed before and after stmt metavar"
 		  | _ -> ())
@@ -649,7 +646,7 @@ and get_after_e s a =
 		  (match Ast.undots x with
 		    x::_ ->
 		      (match Ast.unwrap x with
-			Ast.Dots(_,_,_,_) | Ast.Nest(_,_,_,_) ->
+			Ast.Dots(_,_,_,_) | Ast.Nest(_,_,_,_,_) ->
 			  failwith
 			    ("dots/nest not allowed before and after stmt "^
 			     "metavar")
@@ -706,9 +703,6 @@ and get_after_e s a =
       let (bd,bda) = get_after body [] in
       let (de,_) = get_after decls bda in
       (Ast.rewrap s (Ast.FunDecl(header,lbrace,de,bd,rbrace)),[])
-  | Ast.MultiStm(stm) -> (* I have no idea ... *)
-      let (stm,res) = get_after_e stm a in
-      (Ast.rewrap s (Ast.MultiStm(stm)),res)
   | _ -> failwith "get_after_e: not supported"
 
 let preprocess_dots sl =
@@ -1503,7 +1497,7 @@ and statement stmt after quantified minus_quantified label guard =
 		  true guard)
 	      stmt_dots_list))
 
-  | Ast.Nest(stmt_dots,whencode,bef,aft) ->
+  | Ast.Nest(stmt_dots,whencode,multi,bef,aft) ->
       (* label in recursive call is None because label check is already
 	 wrapped around the corresponding code *)
 
@@ -1516,11 +1510,11 @@ and statement stmt after quantified minus_quantified label guard =
       (* no minus version because when code doesn't contain any minus code *)
       let new_quantified = Common.union_set bfvs quantified in
 
-      let call stmt_dots =
-	let dots_pattern =
+      quantify bfvs
+	(let dots_pattern =
 	  statement_list stmt_dots (a2n after) new_quantified minus_quantified
 	    None true guard in
-	dots_and_nests false
+	dots_and_nests multi
 	  (Some dots_pattern) whencode bef aft None after label
 	  (process_bef_aft new_quantified minus_quantified None true)
 	  (function x ->
@@ -1528,39 +1522,7 @@ and statement stmt after quantified minus_quantified label guard =
 	      true true)
 	  (function x ->
 	    statement x Tail new_quantified minus_quantified None true)
-	  guard (function x -> Ast.set_fvs [] (Ast.rewrap stmt x)) in
-
-      quantify bfvs
-      (match Ast.unwrap stmt_dots with
-	Ast.DOTS([l]) ->
-	  (match Ast.unwrap l with
-	    Ast.MultiStm(stm) ->
-	      (* f(); <... \+ g(); ...> h(); after 
-   
-		 becomes:
-   
-		 f(); & AX(A[!f(); & !h() & (!g(); v g();) U h(); after] &
-		 E[!f(); & !h() U (g() & AXA[!f(); & !h() U h(); after])])
-   
-		 Unfortunately, this is not really what we want.  We really
-		 want the outer AX to become an EX.  That could perhaps be
-		 done with some postprocessing.  We have taken care of the
-		 AX(PDots ...) case, and hope nothing else can show up. *)
-
-	      dots_and_nests true
-		(Some
-		   (statement stm (a2n after) new_quantified minus_quantified
-		      None guard))
-		whencode bef aft None after label
-		(process_bef_aft new_quantified minus_quantified None true)
-		(function x ->
-		  statement_list x Tail new_quantified minus_quantified None
-		    true true)
-		(function x ->
-		  statement x Tail new_quantified minus_quantified None true)
-		guard (function x -> Ast.set_fvs [] (Ast.rewrap stmt x))
-	  | _ -> call stmt_dots)
-      |	_  -> call stmt_dots)
+	  guard (function x -> Ast.set_fvs [] (Ast.rewrap stmt x)))
 
   | Ast.Dots((_,i,d),whencodes,bef,aft) ->
       let dot_code =
@@ -1771,15 +1733,10 @@ and statement stmt after quantified minus_quantified label guard =
 	match (Ast.undots decls,Ast.undots body,contains_modif rbrace) with
 	  ([],[body],false) ->
 	    (match Ast.unwrap body with
-	      Ast.Nest(stmt_dots,[],_,_) ->
-		(match Ast.undots stmt_dots with
-		  [s] ->
-		    (match Ast.unwrap s with
-		      Ast.MultiStm(stm) ->
-			(* not sure how to optimize this case *)
-			None
-		    | _ -> Some (Common.Left stmt_dots))
-		| _ -> Some (Common.Left stmt_dots))
+	      Ast.Nest(stmt_dots,[],multi,_,_) ->
+		if multi
+		then None (* not sure how to optimize this case *)
+		else Some (Common.Left stmt_dots)
 	    | Ast.Dots(_,whencode,_,_) -> Some (Common.Right whencode)
 	    | _ -> None)
 	| _ -> None in
@@ -1867,8 +1824,6 @@ and statement stmt after quantified minus_quantified label guard =
       failwith "OptStm should have been compiled away\n"
   | Ast.UniqueStm(stm) ->
       failwith "arities not yet supported"
-  | Ast.MultiStm(stm) ->
-      failwith "MultiStm should have been compiled away\n"
   | _ -> failwith "not supported" in
   if guard or !dots_done
   then term

@@ -102,10 +102,8 @@ and unify_ident i1 i2 =
 
   | (Ast.OptIdent(_),_)
   | (Ast.UniqueIdent(_),_)
-  | (Ast.MultiIdent(_),_)
   | (_,Ast.OptIdent(_))
-  | (_,Ast.UniqueIdent(_))
-  | (_,Ast.MultiIdent(_)) -> failwith "unsupported ident"
+  | (_,Ast.UniqueIdent(_)) -> failwith "unsupported ident"
 
 (* --------------------------------------------------------------------- *)
 (* Expression *)
@@ -165,7 +163,7 @@ let rec unify_expression e1 e2 =
       disjunct_all_bindings (List.map (function x -> unify_expression x e2) e1)
   | (_,Ast.DisjExpr(e2)) ->
       disjunct_all_bindings (List.map (function x -> unify_expression e1 x) e2)
-  | (Ast.NestExpr(e1,_),Ast.NestExpr(e2,_)) ->
+  | (Ast.NestExpr(e1,_,_),Ast.NestExpr(e2,_,_)) ->
       unify_dots unify_expression edots e1 e2
 
   (* dots can match against anything.  return true to be safe. *)
@@ -175,10 +173,8 @@ let rec unify_expression e1 e2 =
 
   | (Ast.OptExp(_),_)
   | (Ast.UniqueExp(_),_)
-  | (Ast.MultiExp(_),_)
   | (_,Ast.OptExp(_))
-  | (_,Ast.UniqueExp(_))
-  | (_,Ast.MultiExp(_)) -> failwith "unsupported expression"
+  | (_,Ast.UniqueExp(_)) -> failwith "unsupported expression"
   | _ -> return false
 
 (* --------------------------------------------------------------------- *)
@@ -197,10 +193,8 @@ and unify_fullType ft1 ft2 =
 
   | (Ast.OptType(_),_)
   | (Ast.UniqueType(_),_)
-  | (Ast.MultiType(_),_)
   | (_,Ast.OptType(_))
-  | (_,Ast.UniqueType(_))
-  | (_,Ast.MultiType(_)) -> failwith "unsupported type"
+  | (_,Ast.UniqueType(_)) -> failwith "unsupported type"
 
 and unify_typeC t1 t2 =
   match (Ast.unwrap t1,Ast.unwrap t2) with
@@ -278,10 +272,8 @@ and unify_declaration d1 d2 =
 
   | (Ast.OptDecl(_),_)
   | (Ast.UniqueDecl(_),_)
-  | (Ast.MultiDecl(_),_)
   | (_,Ast.OptDecl(_))
-  | (_,Ast.UniqueDecl(_))
-  | (_,Ast.MultiDecl(_)) -> failwith "unsupported decl"
+  | (_,Ast.UniqueDecl(_)) -> failwith "unsupported decl"
   | _ -> return false
 
 (* --------------------------------------------------------------------- *)
@@ -313,10 +305,8 @@ and unify_initialiser i1 i2 =
 	
   | (Ast.OptIni(_),_)
   | (Ast.UniqueIni(_),_)
-  | (Ast.MultiIni(_),_)
   | (_,Ast.OptIni(_))
-  | (_,Ast.UniqueIni(_))
-  | (_,Ast.MultiIni(_)) -> failwith "unsupported decl"
+  | (_,Ast.UniqueIni(_)) -> failwith "unsupported decl"
   | _ -> return false
 
 (* --------------------------------------------------------------------- *)
@@ -530,7 +520,7 @@ let rec unify_statement s1 s2 =
 	(List.map
 	   (function x -> unify_dots unify_statement sdots s1 x)
 	   s2)
-  | (Ast.Nest(s1,_,_,_),Ast.Nest(s2,_,_,_)) ->
+  | (Ast.Nest(s1,_,_,_,_),Ast.Nest(s2,_,_,_,_)) ->
       unify_dots unify_statement sdots s1 s2
   | (Ast.FunDecl(h1,lb1,d1,s1,rb1),Ast.FunDecl(h2,lb2,d2,s2,rb2)) ->
       conjunct_bindings (unify_rule_elem h1 h2)
@@ -541,8 +531,6 @@ let rec unify_statement s1 s2 =
   | (Ast.Define(h1,s1),Ast.Define(h2,s2)) ->
       conjunct_bindings (unify_rule_elem h1 h2)
 	(unify_dots unify_statement sdots s1 s2)
-  | (Ast.MultiStm(s1),_) -> unify_statement s1 s2 
-  | (_,Ast.MultiStm(s2)) -> unify_statement s1 s2 
   (* dots can match against anything.  return true to be safe. *)
   | (Ast.Dots(_,_,_,_),_) | (_,Ast.Dots(_,_,_,_))
   | (Ast.Circles(_,_,_,_),_) | (_,Ast.Circles(_,_,_,_))

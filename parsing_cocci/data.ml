@@ -9,9 +9,9 @@ let in_iso = ref false
 let in_prolog = ref false
 
 type line_type =
-    MINUS | OPTMINUS | UNIQUEMINUS | MULTIMINUS
+    MINUS | OPTMINUS | UNIQUEMINUS
   | PLUS
-  | CONTEXT | UNIQUE | OPT | MULTI
+  | CONTEXT | UNIQUE | OPT
 
 let all_metadecls =
   (Hashtbl.create(100) : (string, Ast.metavar list) Hashtbl.t)

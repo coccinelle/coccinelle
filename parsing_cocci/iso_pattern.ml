@@ -400,11 +400,10 @@ let match_maker checks_needed context_required whencode_allowed =
 	  match (up,Ast0.unwrap id) with
 	    (Ast0.Id(namea),Ast0.Id(nameb)) -> return (mcode_equal namea nameb)
 	  | (Ast0.OptIdent(ida),Ast0.OptIdent(idb))
-	  | (Ast0.UniqueIdent(ida),Ast0.UniqueIdent(idb))
-	  | (Ast0.MultiIdent(ida),Ast0.MultiIdent(idb)) -> match_ident ida idb
+	  | (Ast0.UniqueIdent(ida),Ast0.UniqueIdent(idb)) ->
+	      match_ident ida idb
 	  | (_,Ast0.OptIdent(idb))
-	  | (_,Ast0.UniqueIdent(idb))
-	  | (_,Ast0.MultiIdent(idb)) -> match_ident pattern idb
+	  | (_,Ast0.UniqueIdent(idb)) -> match_ident pattern idb
 	  | _ -> return false
 	else return_false (ContextRequired (Ast0.IdentTag id)) in
 
@@ -569,7 +568,7 @@ let match_maker checks_needed context_required whencode_allowed =
 	  | (Ast0.EComma(_),Ast0.EComma(cm)) -> return true
 	  | (Ast0.DisjExpr(_,expsa,_,_),_) ->
 	      failwith "not allowed in the pattern of an isomorphism"
-	  | (Ast0.NestExpr(_,exp_dotsa,_,_),_) ->
+	  | (Ast0.NestExpr(_,exp_dotsa,_,_,_),_) ->
 	      failwith "not allowed in the pattern of an isomorphism"
 	  | (Ast0.Edots(_,None),Ast0.Edots(_,None))
 	  | (Ast0.Ecircles(_,None),Ast0.Ecircles(_,None))
@@ -588,11 +587,9 @@ let match_maker checks_needed context_required whencode_allowed =
 	  | (Ast0.Estars(_,Some _),_) ->
 	      failwith "whencode not allowed in a pattern1"
 	  | (Ast0.OptExp(expa),Ast0.OptExp(expb))
-	  | (Ast0.UniqueExp(expa),Ast0.UniqueExp(expb))
-	  | (Ast0.MultiExp(expa),Ast0.MultiExp(expb)) -> match_expr expa expb
+	  | (Ast0.UniqueExp(expa),Ast0.UniqueExp(expb)) -> match_expr expa expb
 	  | (_,Ast0.OptExp(expb))
-	  | (_,Ast0.UniqueExp(expb))
-	  | (_,Ast0.MultiExp(expb)) -> match_expr pattern expb
+	  | (_,Ast0.UniqueExp(expb)) -> match_expr pattern expb
 	  | _ -> return false
 	else return_false (ContextRequired (Ast0.ExprTag expr))
 	    
@@ -650,11 +647,9 @@ let match_maker checks_needed context_required whencode_allowed =
 	  | (Ast0.DisjType(_,typesa,_,_),Ast0.DisjType(_,typesb,_,_)) ->
 	      failwith "not allowed in the pattern of an isomorphism"
 	  | (Ast0.OptType(tya),Ast0.OptType(tyb))
-	  | (Ast0.UniqueType(tya),Ast0.UniqueType(tyb))
-	  | (Ast0.MultiType(tya),Ast0.MultiType(tyb)) -> match_typeC tya tyb
+	  | (Ast0.UniqueType(tya),Ast0.UniqueType(tyb)) -> match_typeC tya tyb
 	  | (_,Ast0.OptType(tyb))
-	  | (_,Ast0.UniqueType(tyb))
-	  | (_,Ast0.MultiType(tyb)) -> match_typeC pattern tyb
+	  | (_,Ast0.UniqueType(tyb)) -> match_typeC pattern tyb
 	  | _ -> return false
 	else return_false (ContextRequired (Ast0.TypeCTag t))
 	    
@@ -697,11 +692,10 @@ let match_maker checks_needed context_required whencode_allowed =
 	  failwith "whencode not allowed in a pattern1"
 	    
       | (Ast0.OptDecl(decla),Ast0.OptDecl(declb))
-      | (Ast0.UniqueDecl(decla),Ast0.UniqueDecl(declb))
-      | (Ast0.MultiDecl(decla),Ast0.MultiDecl(declb)) -> match_decl decla declb
+      | (Ast0.UniqueDecl(decla),Ast0.UniqueDecl(declb)) ->
+	  match_decl decla declb
       | (_,Ast0.OptDecl(declb))
-      | (_,Ast0.UniqueDecl(declb))
-      | (_,Ast0.MultiDecl(declb)) -> match_decl pattern declb
+      | (_,Ast0.UniqueDecl(declb)) -> match_decl pattern declb
       | _ -> return false
     else return_false (ContextRequired (Ast0.DeclTag d))
 	
@@ -738,11 +732,9 @@ let match_maker checks_needed context_required whencode_allowed =
       | (Ast0.Idots(_,Some _),_) ->
 	  failwith "whencode not allowed in a pattern2"
       | (Ast0.OptIni(ia),Ast0.OptIni(ib))
-      | (Ast0.UniqueIni(ia),Ast0.UniqueIni(ib))
-      | (Ast0.MultiIni(ia),Ast0.MultiIni(ib)) -> match_init ia ib
+      | (Ast0.UniqueIni(ia),Ast0.UniqueIni(ib)) -> match_init ia ib
       | (_,Ast0.OptIni(ib))
-      | (_,Ast0.UniqueIni(ib))
-      | (_,Ast0.MultiIni(ib)) -> match_init pattern ib
+      | (_,Ast0.UniqueIni(ib)) -> match_init pattern ib
       | _ -> return false
     else return_false (ContextRequired (Ast0.InitTag i))
 	
@@ -875,7 +867,7 @@ let match_maker checks_needed context_required whencode_allowed =
 	      match_expr expa expb
 	  | (Ast0.Disj(_,statement_dots_lista,_,_),_) ->
 	      failwith "disj not supported in patterns"
-	  | (Ast0.Nest(_,stmt_dotsa,_,_),_) ->
+	  | (Ast0.Nest(_,stmt_dotsa,_,_,_),_) ->
 	      failwith "nest not supported in patterns"
 	  | (Ast0.Exp(expa),Ast0.Exp(expb)) -> match_expr expa expb
 	  | (Ast0.TopExp(expa),Ast0.TopExp(expb)) -> match_expr expa expb
@@ -911,11 +903,10 @@ let match_maker checks_needed context_required whencode_allowed =
 	  | (Ast0.Stars(_,_::_),_) ->
 	      failwith "whencode not allowed in a pattern3"
 	  | (Ast0.OptStm(rea),Ast0.OptStm(reb))
-	  | (Ast0.UniqueStm(rea),Ast0.UniqueStm(reb))
-	  | (Ast0.MultiStm(rea),Ast0.MultiStm(reb)) -> match_statement rea reb
+	  | (Ast0.UniqueStm(rea),Ast0.UniqueStm(reb)) ->
+	      match_statement rea reb
 	  | (_,Ast0.OptStm(reb))
-	  | (_,Ast0.UniqueStm(reb))
-	  | (_,Ast0.MultiStm(reb)) -> match_statement pattern reb
+	  | (_,Ast0.UniqueStm(reb)) -> match_statement pattern reb
 	  |	_ -> return false
 	else return_false (ContextRequired (Ast0.StmtTag s))
 	    
@@ -1026,12 +1017,12 @@ let make_minus =
     | Ast0.Estars(d,whencode) ->
 	(*don't recurse because whencode hasn't been processed by context_neg*)
 	update_mc mcodekind e; Ast0.rewrap e (Ast0.Estars(mcode d,whencode))
-    | Ast0.NestExpr(starter,expr_dots,ender,whencode) ->
+    | Ast0.NestExpr(starter,expr_dots,ender,whencode,multi) ->
 	update_mc mcodekind e;
 	Ast0.rewrap e
 	  (Ast0.NestExpr(mcode starter,
 			 r.V0.rebuilder_expression_dots expr_dots,
-			 mcode ender,whencode))
+			 mcode ender,whencode,multi))
     | _ -> donothing r k e in
   
   let declaration r k e =
@@ -1052,11 +1043,11 @@ let make_minus =
 	update_mc mcodekind e; Ast0.rewrap e (Ast0.Circles(mcode d,whencode))
     | Ast0.Stars(d,whencode) ->
 	update_mc mcodekind e; Ast0.rewrap e (Ast0.Stars(mcode d,whencode))
-    | Ast0.Nest(starter,stmt_dots,ender,whencode) ->
+    | Ast0.Nest(starter,stmt_dots,ender,whencode,multi) ->
 	update_mc mcodekind e;
 	Ast0.rewrap e
 	  (Ast0.Nest(mcode starter,r.V0.rebuilder_statement_dots stmt_dots,
-		     mcode ender,whencode))
+		     mcode ender,whencode,multi))
     | _ -> donothing r k e in
   
   let initialiser r k e =

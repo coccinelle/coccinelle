@@ -97,20 +97,22 @@ let dots between fn d =
   | Ast.CIRCLES(l) -> print_between between fn l
   | Ast.STARS(l) -> print_between between fn l
 
-let nest_dots fn f d =
+let nest_dots multi fn f d =
+  let mo s = if multi then "<+"^s else "<"^s in
+  let mc s = if multi then s^"+>" else s^">" in
   match Ast.unwrap d with
     Ast.DOTS(l) ->
-      print_string "<..."; f(); start_block();
+      print_string (mo "..."); f(); start_block();
       print_between force_newline fn l;
-      end_block(); print_string "...>"
+      end_block(); print_string (mc "...")
   | Ast.CIRCLES(l) ->
-      print_string "<ooo"; f(); start_block();
+      print_string (mo "ooo"); f(); start_block();
       print_between force_newline fn l;
-      end_block(); print_string "ooo>"
+      end_block(); print_string (mc "ooo")
   | Ast.STARS(l) ->
-      print_string "<***"; f(); start_block();
+      print_string (mo "***"); f(); start_block();
       print_between force_newline fn l;
-      end_block(); print_string "***>"
+      end_block(); print_string (mc "***")
 
 (* --------------------------------------------------------------------- *)
 
@@ -139,7 +141,6 @@ let rec ident i =
   | Ast.MetaLocalFunc(name,_,_) -> mcode print_meta name
   | Ast.OptIdent(id) -> print_string "?"; ident id
   | Ast.UniqueIdent(id) -> print_string "!"; ident id
-  | Ast.MultiIdent(id) -> print_string "\\+"; ident id
 
 and print_unitary = function
     Type_cocci.Unitary -> print_string "unitary"
@@ -211,12 +212,12 @@ let rec expression e =
   | Ast.MetaExprList(name,_,_,_) -> mcode print_meta name
   | Ast.EComma(cm) -> mcode print_string cm; print_space()
   | Ast.DisjExpr(exp_list) -> print_disj_list expression exp_list
-  | Ast.NestExpr(expr_dots,Some whencode) ->
-      nest_dots expression
+  | Ast.NestExpr(expr_dots,Some whencode,multi) ->
+      nest_dots multi expression
 	(function _ -> print_string "   when != "; expression whencode)
 	expr_dots
-  | Ast.NestExpr(expr_dots,None) ->
-      nest_dots expression (function _ -> ()) expr_dots
+  | Ast.NestExpr(expr_dots,None,multi) ->
+      nest_dots multi expression (function _ -> ()) expr_dots
   | Ast.Edots(dots,Some whencode)
   | Ast.Ecircles(dots,Some whencode)
   | Ast.Estars(dots,Some whencode) ->
@@ -226,7 +227,6 @@ let rec expression e =
   | Ast.Estars(dots,None) -> mcode print_string dots
   | Ast.OptExp(exp) -> print_string "?"; expression exp
   | Ast.UniqueExp(exp) -> print_string "!"; expression exp
-  | Ast.MultiExp(exp) -> print_string "\\+"; expression exp
 
 and  unaryOp = function
     Ast.GetRef -> print_string "&"
@@ -296,7 +296,6 @@ and fullType ft =
   | Ast.DisjType(decls) -> print_disj_list fullType decls
   | Ast.OptType(ty) -> print_string "?"; fullType ty
   | Ast.UniqueType(ty) -> print_string "!"; fullType ty
-  | Ast.MultiType(ty) -> print_string "\\+"; fullType ty
 
 and print_function_pointer (ty,lp1,star,rp1,lp2,params,rp2) fn =
   fullType ty; mcode print_string lp1; mcode print_string star; fn();
@@ -415,7 +414,6 @@ and declaration d =
   | Ast.MetaDecl(name,_,_) -> mcode print_meta name
   | Ast.OptDecl(decl) -> print_string "?"; declaration decl
   | Ast.UniqueDecl(decl) -> print_string "!"; declaration decl
-  | Ast.MultiDecl(decl) -> print_string "\\+"; declaration decl
 
 (* --------------------------------------------------------------------- *)
 (* Initialiser *)
@@ -450,7 +448,6 @@ and initialiser i =
   | Ast.IComma(comma) -> mcode print_string comma; force_newline()
   | Ast.OptIni(ini) -> print_string "?"; initialiser ini
   | Ast.UniqueIni(ini) -> print_string "!"; initialiser ini
-  | Ast.MultiIni(ini) -> print_string "\\+"; initialiser ini
 
 (* --------------------------------------------------------------------- *)
 (* Parameter *)
@@ -632,9 +629,9 @@ and statement arity s =
   | Ast.Define(header,body) ->
       rule_elem arity header; print_string " ";
       dots force_newline (statement arity) body
-  | Ast.Nest(stmt_dots,whn,_,_) ->
+  | Ast.Nest(stmt_dots,whn,multi,_,_) ->
       print_string arity;
-      nest_dots (statement arity)
+      nest_dots multi (statement arity)
 	(function _ ->
 	  open_box 0;
 	  print_between force_newline
@@ -649,7 +646,6 @@ and statement arity s =
       close_box(); force_newline()
   | Ast.OptStm(s) -> statement "?" s
   | Ast.UniqueStm(s) -> statement "!" s
-  | Ast.MultiStm(s) -> statement "\\+" s
 
 and print_statement_when whencode =
   print_string "   WHEN != ";

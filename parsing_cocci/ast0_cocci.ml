@@ -3,7 +3,7 @@ module Ast = Ast_cocci
 (* --------------------------------------------------------------------- *)
 (* Modified code *)
 
-type arity = OPT | UNIQUE | MULTI | NONE
+type arity = OPT | UNIQUE | NONE
 
 type token_info =
     { tline_start : int; tline_end : int;
@@ -68,7 +68,6 @@ and base_ident =
   | MetaLocalFunc of Ast.meta_name mcode * pure
   | OptIdent      of ident
   | UniqueIdent   of ident
-  | MultiIdent    of ident (* only allowed in nests *)
 
 and ident = base_ident wrap
 
@@ -109,13 +108,12 @@ and base_expression =
   | DisjExpr       of string mcode * expression list *
 	              string mcode list (* the |s *) * string mcode
   | NestExpr       of string mcode * expression dots * string mcode *
-	              expression option
+	              expression option * Ast.multi
   | Edots          of string mcode (* ... *) * expression option
   | Ecircles       of string mcode (* ooo *) * expression option
   | Estars         of string mcode (* *** *) * expression option
   | OptExp         of expression
   | UniqueExp      of expression
-  | MultiExp       of expression (* only allowed in nests *)
 
 and expression = base_expression wrap
 
@@ -144,7 +142,6 @@ and base_typeC =
                        string mcode list (* the |s *)  * string mcode
   | OptType         of typeC
   | UniqueType      of typeC
-  | MultiType       of typeC
 
 and typeC = base_typeC wrap
 
@@ -167,7 +164,6 @@ and base_declaration =
   | Ddots      of string mcode (* ... *) * declaration option (* whencode *)
   | OptDecl    of declaration
   | UniqueDecl of declaration
-  | MultiDecl  of declaration (* only allowed in nests *)
 
 and declaration = base_declaration wrap
 
@@ -192,7 +188,6 @@ and base_initialiser =
   | Idots  of string mcode (* ... *) * initialiser option (* whencode *)
   | OptIni    of initialiser
   | UniqueIni of initialiser
-  | MultiIni  of initialiser
 
 and initialiser = base_initialiser wrap
 
@@ -281,7 +276,7 @@ and base_statement =
   | Disj          of string mcode * statement dots list *
 	             string mcode list (* the |s *)  * string mcode
   | Nest          of string mcode * statement dots * string mcode *
-	             statement dots option
+	             statement dots option * Ast.multi
   | Dots          of string mcode (* ... *) *
                      (statement dots,statement) whencode list
   | Circles       of string mcode (* ooo *) *
@@ -298,7 +293,6 @@ and base_statement =
 	define_parameters (*params*) * statement dots
   | OptStm   of statement
   | UniqueStm of statement
-  | MultiStm  of statement (* only allowed in nests *)
 
 and fninfo =
     FStorage of Ast.storage mcode
@@ -482,7 +476,7 @@ let rec ast0_type_to_type ty =
   | MetaType(name,_) ->
       Type_cocci.MetaType(unwrap_mcode name,Type_cocci.Unitary,false)
   | DisjType(_,types,_,_) -> failwith "unexpected DisjType"
-  | OptType(ty) | UniqueType(ty) | MultiType(ty) ->
+  | OptType(ty) | UniqueType(ty) ->
       ast0_type_to_type ty
 
 and baseType t =

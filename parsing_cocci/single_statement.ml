@@ -141,7 +141,7 @@ let add_braces orig_s =
 let is_dots x =
   match Ast0.unwrap x with
     Ast0.Dots(_,_) | Ast0.Circles(_,_) | Ast0.Stars(_,_)
-  | Ast0.Nest(_,_,_,_) -> true
+  | Ast0.Nest(_,_,_,_,_) -> true
   | _ -> false
 
 let all_minus s =
@@ -249,9 +249,10 @@ let rec statement dots_before dots_after s =
 		   List.map (statement_dots dots_before dots_after)
 		     statement_dots_list,
 		   mids,ender))
-  | Ast0.Nest(starter,stmt_dots,ender,whencode) ->
+  | Ast0.Nest(starter,stmt_dots,ender,whencode,multi) ->
       Ast0.rewrap s
-	(Ast0.Nest(starter,statement_dots true true stmt_dots,ender,whencode))
+	(Ast0.Nest
+	   (starter,statement_dots true true stmt_dots,ender,whencode,multi))
   | Ast0.Exp(exp) -> s
   | Ast0.TopExp(exp) -> s
   | Ast0.Ty(ty) -> s
@@ -264,9 +265,6 @@ let rec statement dots_before dots_after s =
   | Ast0.UniqueStm(re) ->
       Ast0.rewrap s
 	(Ast0.UniqueStm(statement dots_before dots_after re))
-  | Ast0.MultiStm(re) ->
-      Ast0.rewrap s
-	(Ast0.MultiStm(statement dots_before dots_after re))
 
 and case_line c =
   Ast0.rewrap c

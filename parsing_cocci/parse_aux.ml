@@ -33,9 +33,6 @@ let clt2mcode str = function
   | (Data.UNIQUEMINUS,line,lline,offset,col,strbef,straft) ->
       (str,Ast0.UNIQUE,make_info line lline offset col strbef straft,
        Ast0.MINUS(ref([],Ast0.default_token_info)))
-  | (Data.MULTIMINUS,line,lline,offset,col,strbef,straft) ->
-      (str,Ast0.MULTI,make_info line lline offset col strbef straft,
-       Ast0.MINUS(ref([],Ast0.default_token_info)))
   | (Data.PLUS,line,lline,offset,col,strbef,straft)        ->
       (str,Ast0.NONE,make_info line lline offset col strbef straft,Ast0.PLUS)
   | (Data.CONTEXT,line,lline,offset,col,strbef,straft)     ->
@@ -48,10 +45,6 @@ let clt2mcode str = function
 			Ast0.default_token_info,Ast0.default_token_info)))
   | (Data.UNIQUE,line,lline,offset,col,strbef,straft)      ->
       (str,Ast0.UNIQUE,make_info line lline offset col strbef straft,
-       Ast0.CONTEXT(ref(Ast.NOTHING,
-			Ast0.default_token_info,Ast0.default_token_info)))
-  | (Data.MULTI,line,lline,offset,col,strbef,straft)      ->
-      (str,Ast0.MULTI,make_info line lline offset col strbef straft,
        Ast0.CONTEXT(ref(Ast.NOTHING,
 			Ast0.default_token_info,Ast0.default_token_info)))
 

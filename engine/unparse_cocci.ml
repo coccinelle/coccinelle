@@ -89,7 +89,7 @@ let rec ident i =
         | _ -> raise Impossible
         )
 
-  | Ast.OptIdent(_) | Ast.UniqueIdent(_) | Ast.MultiIdent(_) -> 
+  | Ast.OptIdent(_) | Ast.UniqueIdent(_) -> 
       raise CantBeInPlus
 
 in
@@ -162,7 +162,7 @@ let rec expression e =
   | Ast.Estars(_) 
     -> raise CantBeInPlus
 
-  | Ast.OptExp(exp) | Ast.UniqueExp(exp) | Ast.MultiExp(exp) -> 
+  | Ast.OptExp(exp) | Ast.UniqueExp(exp) -> 
       raise CantBeInPlus
 
 and  unaryOp = function
@@ -223,7 +223,7 @@ and fullType ft =
       print_option (function x -> mcode const_vol x; print_string " ") cv;
       typeC ty
   | Ast.DisjType _ -> failwith "can't be in plus"
-  | Ast.OptType(_) | Ast.UniqueType(_) | Ast.MultiType(_) ->
+  | Ast.OptType(_) | Ast.UniqueType(_) ->
       raise CantBeInPlus
 
 and print_function_pointer (ty,lp1,star,rp1,lp2,params,rp2) fn =
@@ -360,7 +360,7 @@ and declaration d =
       mcode print_string sem
   | Ast.DisjDecl(_) | Ast.MetaDecl(_,_,_) -> raise CantBeInPlus
   | Ast.Ddots(_,_) -> raise CantBeInPlus
-  | Ast.OptDecl(decl)  | Ast.UniqueDecl(decl) | Ast.MultiDecl(decl) -> 
+  | Ast.OptDecl(decl)  | Ast.UniqueDecl(decl) -> 
       raise CantBeInPlus
 
 (* --------------------------------------------------------------------- *)
@@ -388,7 +388,7 @@ and initialiser i =
       print_string " "; mcode print_string eq; print_string " ";
       initialiser ini
   | Ast.IComma(comma) -> mcode print_string comma; force_newline()
-  | Ast.OptIni(ini) | Ast.UniqueIni(ini) | Ast.MultiIni(ini) ->
+  | Ast.OptIni(ini) | Ast.UniqueIni(ini) ->
       raise CantBeInPlus
 
 (* --------------------------------------------------------------------- *)
@@ -595,7 +595,7 @@ let rec statement arity s =
   | Ast.Dots(_) | Ast.Circles(_) | Ast.Stars(_) ->
       raise CantBeInPlus
 
-  | Ast.OptStm(s) | Ast.UniqueStm(s) | Ast.MultiStm(s) -> 
+  | Ast.OptStm(s) | Ast.UniqueStm(s) -> 
       raise CantBeInPlus
 
 and case_line arity c =

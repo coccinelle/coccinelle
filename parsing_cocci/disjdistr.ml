@@ -41,9 +41,6 @@ let rec disjty ft =
   | Ast.UniqueType(ty) ->
       let ty = disjty ty in
       List.map (function ty -> Ast.rewrap ft (Ast.UniqueType(ty))) ty
-  | Ast.MultiType(ty) ->
-      let ty = disjty ty in
-      List.map (function ty -> Ast.rewrap ft (Ast.MultiType(ty))) ty
 
 let rec disjexp e =
   match Ast.unwrap e with
@@ -112,7 +109,7 @@ let rec disjexp e =
   | Ast.MetaErr(_,_,_) | Ast.MetaExpr(_,_,_,_,_)
   | Ast.MetaExprList(_,_,_,_) | Ast.EComma(_) -> [e]
   | Ast.DisjExpr(exp_list) -> List.concat (List.map disjexp exp_list)
-  | Ast.NestExpr(expr_dots,whencode) ->
+  | Ast.NestExpr(expr_dots,whencode,multi) ->
       (* not sure what to do here, so ambiguities still possible *)
       [e]
   | Ast.Edots(dots,_) | Ast.Ecircles(dots,_) | Ast.Estars(dots,_) -> [e]
@@ -122,9 +119,6 @@ let rec disjexp e =
   | Ast.UniqueExp(exp) ->
       let exp = disjexp exp in
       List.map (function exp -> Ast.rewrap e (Ast.UniqueExp(exp))) exp
-  | Ast.MultiExp(exp) ->
-      let exp = disjexp exp in
-      List.map (function exp -> Ast.rewrap e (Ast.MultiExp(exp))) exp
 
 let rec disjparam p =
   match Ast.unwrap p with
@@ -176,9 +170,6 @@ let rec disjini i =
   | Ast.UniqueIni(ini) -> 
       let ini = disjini ini in
       List.map (function ini -> Ast.rewrap i (Ast.UniqueIni(ini))) ini
-  | Ast.MultiIni(ini) -> 
-      let ini = disjini ini in
-      List.map (function ini -> Ast.rewrap i (Ast.MultiIni(ini))) ini
 
 let rec disjdecl d =
   match Ast.unwrap d with
@@ -207,9 +198,6 @@ let rec disjdecl d =
   | Ast.UniqueDecl(decl) ->
       let decl = disjdecl decl in
       List.map (function decl -> Ast.rewrap d (Ast.UniqueDecl(decl))) decl
-  | Ast.MultiDecl(decl) ->
-      let decl = disjdecl decl in
-      List.map (function decl -> Ast.rewrap d (Ast.MultiDecl(decl))) decl
 
 let generic_orify_rule_elem f re exp rebuild =
   match f exp with

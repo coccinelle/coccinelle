@@ -170,8 +170,6 @@ let rec ident i =
       let id = ident id in mkres i (Ast0.OptIdent(id)) id id
   | Ast0.UniqueIdent(id) ->
       let id = ident id in mkres i (Ast0.UniqueIdent(id)) id id
-  | Ast0.MultiIdent(id) ->
-      let id = ident id in mkres i (Ast0.MultiIdent(id)) id id
 	
 (* --------------------------------------------------------------------- *)
 (* Expression *)
@@ -256,11 +254,11 @@ let rec expression e =
       mkmultires e (Ast0.DisjExpr(starter,exps,mids,ender))
 	(promote_mcode starter) (promote_mcode ender)
 	(get_all_start_info exps) (get_all_end_info exps)
-  | Ast0.NestExpr(starter,exp_dots,ender,whencode) ->
+  | Ast0.NestExpr(starter,exp_dots,ender,whencode,multi) ->
       let exp_dots = dots is_exp_dots None expression exp_dots in
       let starter = bad_mcode starter in
       let ender = bad_mcode ender in
-      mkres e (Ast0.NestExpr(starter,exp_dots,ender,whencode))
+      mkres e (Ast0.NestExpr(starter,exp_dots,ender,whencode,multi))
 	(promote_mcode starter) (promote_mcode ender)
   | Ast0.Edots(dots,whencode) ->
       let dots = bad_mcode dots in
@@ -280,9 +278,6 @@ let rec expression e =
   | Ast0.UniqueExp(exp) ->
       let exp = expression exp in
       mkres e (Ast0.UniqueExp(exp)) exp exp
-  | Ast0.MultiExp(exp) ->
-      let exp = expression exp in
-      mkres e (Ast0.MultiExp(exp)) exp exp
 
 and expression_dots x = dots is_exp_dots None expression x
 	
@@ -348,8 +343,6 @@ and typeC t =
       let ty = typeC ty in mkres t (Ast0.OptType(ty)) ty ty
   | Ast0.UniqueType(ty) ->
       let ty = typeC ty in mkres t (Ast0.UniqueType(ty)) ty ty
-  | Ast0.MultiType(ty) ->
-      let ty = typeC ty in mkres t (Ast0.MultiType(ty)) ty ty
 	
 (* --------------------------------------------------------------------- *)
 (* Variable declaration *)
@@ -412,9 +405,6 @@ and declaration d =
   | Ast0.UniqueDecl(decl) ->
       let decl = declaration decl in
       mkres d (Ast0.UniqueDecl(declaration decl)) decl decl
-  | Ast0.MultiDecl(decl) ->
-      let decl = declaration decl in
-      mkres d (Ast0.MultiDecl(declaration decl)) decl decl
 
 (* --------------------------------------------------------------------- *)
 (* Initializer *)
@@ -464,9 +454,6 @@ and initialiser i =
   | Ast0.UniqueIni(ini) ->
       let ini = initialiser ini in
       mkres i (Ast0.UniqueIni(ini)) ini ini
-  | Ast0.MultiIni(ini) ->
-      let ini = initialiser ini in
-      mkres i (Ast0.MultiIni(ini)) ini ini
 
 and initialiser_list prev = dots is_init_dots prev initialiser
 
@@ -624,11 +611,11 @@ let rec statement s =
       mkmultires s (Ast0.Disj(starter,elems,mids,ender))
 	(promote_mcode starter) (promote_mcode ender)
 	(get_all_start_info elems) (get_all_end_info elems)
-  | Ast0.Nest(starter,rule_elem_dots,ender,whencode) ->
+  | Ast0.Nest(starter,rule_elem_dots,ender,whencode,multi) ->
       let starter = bad_mcode starter in
       let ender = bad_mcode ender in
       let rule_elem_dots = dots is_stm_dots None statement rule_elem_dots in
-      mkres s (Ast0.Nest(starter,rule_elem_dots,ender,whencode))
+      mkres s (Ast0.Nest(starter,rule_elem_dots,ender,whencode,multi))
 	(promote_mcode starter) (promote_mcode ender)
   | Ast0.Dots(dots,whencode) ->
       let dots = bad_mcode dots in
@@ -694,8 +681,6 @@ let rec statement s =
       let stm = statement stm in mkres s (Ast0.OptStm(stm)) stm stm
   | Ast0.UniqueStm(stm) ->
       let stm = statement stm in mkres s (Ast0.UniqueStm(stm)) stm stm
-  | Ast0.MultiStm(stm) ->
-      let stm = statement stm in mkres s (Ast0.MultiStm(stm)) stm stm
 
 and case_line c =
   match Ast0.unwrap c with

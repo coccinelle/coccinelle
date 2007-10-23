@@ -59,16 +59,12 @@ let add_current_line_type x =
       current_line_type := (D.UNIQUEMINUS,ln,lln)
   | (D.MINUS,(D.OPT,ln,lln))      ->
       current_line_type := (D.OPTMINUS,ln,lln)
-  | (D.MINUS,(D.MULTI,ln,lln))      ->
-      current_line_type := (D.MULTIMINUS,ln,lln)
   | (D.PLUS,(D.CONTEXT,ln,lln))   ->
       current_line_type := (D.PLUS,ln,lln)
   | (D.UNIQUE,(D.CONTEXT,ln,lln)) ->
       current_line_type := (D.UNIQUE,ln,lln)
   | (D.OPT,(D.CONTEXT,ln,lln))    ->
       current_line_type := (D.OPT,ln,lln)
-  | (D.MULTI,(D.CONTEXT,ln,lln))    ->
-      current_line_type := (D.MULTI,ln,lln)
   | _ -> raise (Lexical "invalid control character combination")
 
 let check_minus_context_linetype s =
@@ -367,6 +363,10 @@ rule token = parse
 	     TOEllipsis (get_current_line_type lexbuf) }
   | "...>" { start_line true; check_context_linetype (tok lexbuf);
 	     TCEllipsis (get_current_line_type lexbuf) }
+  | "<+..." { start_line true; check_context_linetype (tok lexbuf);
+	     TPOEllipsis (get_current_line_type lexbuf) }
+  | "...+>" { start_line true; check_context_linetype (tok lexbuf);
+	     TPCEllipsis (get_current_line_type lexbuf) }
 (*
   | "<ooo" { start_line true; check_context_linetype (tok lexbuf);
 	     TOCircles (get_current_line_type lexbuf) }
@@ -388,12 +388,6 @@ rule token = parse
           else if !Data.in_meta
 	  then TPlus0
           else (add_current_line_type D.PLUS; token lexbuf) }
-  | "\\+" { pass_zero();
-	  if !current_line_started
-	  then failwith "Illegal use of \\+"
-          else if !Data.in_meta
-	  then TPlus0
-          else (add_current_line_type D.MULTI; token lexbuf) }
   | "?" { pass_zero();
 	  if !current_line_started
 	  then (start_line true; TWhy (get_current_line_type lexbuf))

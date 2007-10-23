@@ -190,9 +190,9 @@ let rec propagate_types env =
 	  | Some t ->
 	      List.iter (function e -> Ast0.set_type e (Some t)) exp_list;
 	      Some t)
-      | Ast0.NestExpr(starter,expr_dots,ender,None) ->
+      | Ast0.NestExpr(starter,expr_dots,ender,None,multi) ->
 	  let _ = r.V0.combiner_expression_dots expr_dots in None
-      | Ast0.NestExpr(starter,expr_dots,ender,Some e) ->
+      | Ast0.NestExpr(starter,expr_dots,ender,Some e,multi) ->
 	  let _ = r.V0.combiner_expression_dots expr_dots in
 	  let _ = r.V0.combiner_expression e in None
       | Ast0.Edots(_,None) | Ast0.Ecircles(_,None) | Ast0.Estars(_,None) ->
@@ -201,8 +201,7 @@ let rec propagate_types env =
       | Ast0.Estars(_,Some e) ->
 	  let _ = r.V0.combiner_expression e in None
       | Ast0.OptExp(exp) -> Ast0.get_type exp
-      | Ast0.UniqueExp(exp) -> Ast0.get_type exp
-      | Ast0.MultiExp(exp) -> Ast0.get_type exp in
+      | Ast0.UniqueExp(exp) -> Ast0.get_type exp in
     Ast0.set_type e ty;
     ty in
 
@@ -215,8 +214,7 @@ let rec propagate_types env =
     | Ast0.MetaFunc(name,_)      -> Meta(Ast0.unwrap_mcode name)
     | Ast0.MetaLocalFunc(name,_) -> Meta(Ast0.unwrap_mcode name)
     | Ast0.OptIdent(id)    -> strip id
-    | Ast0.UniqueIdent(id) -> strip id
-    | Ast0.MultiIdent(id)  -> strip id in
+    | Ast0.UniqueIdent(id) -> strip id in
 
   (* assume that all of the declarations are at the beginning of a statement
      list, which is required by C, but not actually required by the cocci
@@ -241,8 +239,7 @@ let rec propagate_types env =
 		  List.concat(List.map process_decl disjs)
 	      | Ast0.Ddots(_,_) -> [] (* not in a statement list anyway *)
 	      | Ast0.OptDecl(decl) -> process_decl decl
-	      | Ast0.UniqueDecl(decl) -> process_decl decl
-	      | Ast0.MultiDecl(decl) -> process_decl decl in
+	      | Ast0.UniqueDecl(decl) -> process_decl decl in
 	    let new_acc = (process_decl decl)@acc in
 	    process_statement_list new_acc ss
 	| Ast0.Dots(_,wc) -> process_statement_list acc ss

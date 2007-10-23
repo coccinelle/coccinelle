@@ -36,8 +36,8 @@ it *)
     donothing Ast0.expr r k
       (Ast0.rewrap e
 	 (match Ast0.unwrap e with
-	   Ast0.NestExpr(starter,exp,ender,whencode) ->
-	     Ast0.NestExpr(starter,exp,ender,None)
+	   Ast0.NestExpr(starter,exp,ender,whencode,multi) ->
+	     Ast0.NestExpr(starter,exp,ender,None,multi)
 	 | Ast0.Edots(dots,whencode) -> Ast0.Edots(dots,None)
 	 | Ast0.Ecircles(dots,whencode) -> Ast0.Ecircles(dots,None)
 	 | Ast0.Estars(dots,whencode) -> Ast0.Estars(dots,None)
@@ -54,8 +54,8 @@ it *)
     donothing Ast0.stmt r k
       (Ast0.rewrap s
 	 (match Ast0.unwrap s with
-	   Ast0.Nest(started,stm_dots,ender,whencode) ->
-	     Ast0.Nest(started,stm_dots,ender,None)
+	   Ast0.Nest(started,stm_dots,ender,whencode,multi) ->
+	     Ast0.Nest(started,stm_dots,ender,None,multi)
 	 | Ast0.Dots(dots,whencode) -> Ast0.Dots(dots,[])
 	 | Ast0.Circles(dots,whencode) -> Ast0.Circles(dots,[])
 	 | Ast0.Stars(dots,whencode) -> Ast0.Stars(dots,[])
@@ -205,7 +205,7 @@ bind to that; not good for isomorphisms *)
     | Ast0.FunDecl((info,bef),fninfo,name,lp,params,rp,lbrace,body,rbrace) ->
 	(Toplevel,info,bef)::(k s)
     | Ast0.Decl((info,bef),decl) -> (Decl,info,bef)::(k s)
-    | Ast0.Nest(starter,stmt_dots,ender,whencode) ->
+    | Ast0.Nest(starter,stmt_dots,ender,whencode,multi) ->
 	mcode starter @ r.V0.combiner_statement_dots stmt_dots @ mcode ender
     | Ast0.Dots(d,whencode) | Ast0.Circles(d,whencode)
     | Ast0.Stars(d,whencode) -> mcode d (* ignore whencode *)
@@ -218,7 +218,7 @@ bind to that; not good for isomorphisms *)
 
   let expression r k e =
     match Ast0.unwrap e with
-      Ast0.NestExpr(starter,expr_dots,ender,whencode) ->
+      Ast0.NestExpr(starter,expr_dots,ender,whencode,multi) ->
 	mcode starter @
 	r.V0.combiner_expression_dots expr_dots @ mcode ender
     | Ast0.Edots(d,whencode) | Ast0.Ecircles(d,whencode)
@@ -926,7 +926,7 @@ let insert_markers e =
 	       | Ast0.STARS(x::_) -> get_start_statements x
 	       | _ -> [])
 	     s)
-    | Ast0.OptStm(s) | Ast0.UniqueStm(s) | Ast0.MultiStm(s) ->
+    | Ast0.OptStm(s) | Ast0.UniqueStm(s) ->
 	get_start_statements s
     | _ -> [e] in
   
@@ -942,7 +942,7 @@ let insert_markers e =
 	       | Ast0.STARS((_::_) as l) -> get_end_statements (last l)
 	       | _ -> [])
 	     s)
-    | Ast0.OptStm(s) | Ast0.UniqueStm(s) | Ast0.MultiStm(s) ->
+    | Ast0.OptStm(s) | Ast0.UniqueStm(s) ->
 	get_end_statements s
     | _ -> [e] in
   
@@ -950,7 +950,7 @@ let insert_markers e =
     let is_dots e =
       match Ast0.unwrap e with
 	Ast0.Dots(_,_) | Ast0.Circles(_,_) | Ast0.Stars(_,_) -> true
-      |	Ast0.Nest(_,_,_,_) -> true
+      |	Ast0.Nest(_,_,_,_,_) -> true
       | _ -> false in
     let rec loop dots = function
 	[] -> ()
