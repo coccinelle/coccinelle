@@ -239,7 +239,7 @@ and typeC ty =
   match Ast.unwrap ty with
     Ast.BaseType(ty,sgn) -> print_option (mcode sign) sgn; mcode baseType ty
   | Ast.ImplicitInt(sgn) -> mcode sign sgn
-  | Ast.Pointer(ty,star) -> fullType ty; mcode print_string star
+  | Ast.Pointer(ty,star) -> fullType ty; ft_space ty; mcode print_string star
   | Ast.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
       print_function_pointer (ty,lp1,star,rp1,lp2,params,rp2)
 	(function _ -> ())
@@ -250,20 +250,18 @@ and typeC ty =
       mcode print_string rb
   | Ast.StructUnionName(kind,name) ->
       mcode structUnion kind;
-      print_option (function x -> ident x; print_string " ") name
+      print_option ident name
   | Ast.StructUnionDef(ty,lb,decls,rb) ->
       fullType ty;
       mcode print_string lb;
       dots force_newline declaration decls;
       mcode print_string rb
-  | Ast.TypeName(name)-> mcode print_string name; print_string " "
+  | Ast.TypeName(name)-> mcode print_string name
   | Ast.MetaType(name,_,_) -> 
       handle_metavar name  (function
-        | Ast_c.MetaTypeVal exp -> 
-            Pretty_print_c.pp_type_gen pr_elem  exp
-        | _ -> raise Impossible
-                           )
-
+          Ast_c.MetaTypeVal exp -> 
+            Pretty_print_c.pp_type_gen pr_elem exp
+        | _ -> raise Impossible)
 
 and baseType = function
     Ast.VoidType -> print_string "void "
@@ -322,10 +320,23 @@ and print_named_type ty id =
 			print_option expression size;
 			mcode print_string rb)
 		| _ -> failwith "complex array types not supported")
-	    | _ -> typeC ty; ident id; k () in
+	    | _ -> typeC ty; ty_space ty; ident id; k () in
 	  loop ty1 (function _ -> ())
-      | _ -> fullType ty; ident id)
-  | _ -> fullType ty; ident id
+      | _ -> fullType ty; ft_space ty; ident id)
+  | _ -> fullType ty; ft_space ty; ident id
+
+and ty_space ty =
+  match Ast.unwrap ty with
+    Ast.Pointer(_,_) -> ()
+  | _ -> print_space()
+
+and ft_space ty =
+  match Ast.unwrap ty with
+    Ast.Type(cv,ty) ->
+      (match Ast.unwrap ty with
+	Ast.Pointer(_,_) -> ()
+      | _ -> print_space())
+  | _ -> print_space()
 
 and declaration d =
   match Ast.unwrap d with

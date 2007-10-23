@@ -82,11 +82,50 @@ iterator list_for_each_entry;
   }
   ...>
 
-// the case where the list element is used for something else (often a return)
+// instances of the above that we can't treat because of the local variable
+// problem.  seems better to do nothing.
 
 @r1@
+type T,T1;
+identifier I, x;
+expression E, E1, E2;
+@@
+
+  list_for_each_rcu(
+-                   _X(I)
++                   _Y(I)
+                    ,E1)
+  {
+      ...
+      T1 x;
+      ...
+      x = list_entry(_X(I),T,E2);
+      ...
+  }
+
+@r1a@
+type T,T1;
+identifier I, x;
+expression E, E1, E2;
+@@
+
+  list_for_each(
+-               _X(I)
++               _Y(I)
+                ,E1)
+  {
+      ...
+      T1 x;
+      ...
+      x = list_entry(_X(I),T,E2);
+      ...
+  }
+
+// the case where the list element is used for something else (often a return)
+
+@@
 type T;
-identifier I;
+identifier I,x;
 expression E1, E2;
 @@
 
@@ -103,9 +142,9 @@ expression E1, E2;
 \+  }
   ...>
 
-@r1a@
+@@
 type T;
-identifier I;
+identifier I,x;
 expression E1, E2;
 @@
 
@@ -124,6 +163,14 @@ expression E1, E2;
 
 // clean up
 
+@ exists @
+identifier I;
+@@
+
+  ... when != struct list_head *I;
+- _X(I)
++ _INCONSISTENT_MODIF(I)
+
 @@
 expression I;
 @@
@@ -135,29 +182,6 @@ expression I;
 - _Y(I)
 + I
 )
-
-// We have the following three rules rather than just the last one in an
-// attempt to reduce the number of blank lines that will have to be dropped
-// by hand
-@ depends on r || ra @
-identifier I, I1;
-type T;
-@@
-
-- struct list_head *I;
-- T *I1;
-+ T *I1;
-  ... when != I
-
-@ depends on r || ra @
-identifier I, I1;
-type T;
-@@
-
-- struct list_head *I;
-- T I1;
-+ T I1;
-  ... when != I
 
 @ depends on r || ra @
 identifier I;
