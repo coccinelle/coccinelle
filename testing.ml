@@ -175,16 +175,6 @@ let test_okfailed cocci_file cfiles =
   let newout = 
     Common.new_temp_file "cocci" ".stdout" 
   in
-  let newin = 
-    match cfiles with
-    | x::xs -> 
-        let (dir, base, ext) = Common.dbe_of_filename x in
-        let varfile = Common.filename_of_dbe (dir, base, "var") in
-        if ext = "c" && Common.lfile_exists varfile
-        then Some varfile
-        else None
-    | [] -> failwith "wierd: no files for test_okfailed given"
-  in
 
   let t = Unix.gettimeofday () in
   let time_per_file_str () = 
@@ -194,37 +184,36 @@ let test_okfailed cocci_file cfiles =
     spf "time: %f" tperfile
   in
   
-  Common.redirect_stdin_opt newin (fun () -> 
-    Common.redirect_stdout_stderr newout (fun () -> 
-      try (
-        Common.timeout_function_opt !Flag_cocci.timeout (fun () ->
+  Common.redirect_stdout_stderr newout (fun () -> 
+    try (
+      Common.timeout_function_opt !Flag_cocci.timeout (fun () ->
 
         
-          let outfiles = Cocci.full_engine (cocci_file, !Config.std_iso) cfiles
-          in
+        let outfiles = Cocci.full_engine (cocci_file, !Config.std_iso) cfiles
+        in
 
-          let time_str = time_per_file_str () in
+        let time_str = time_per_file_str () in
           
-          outfiles +> List.iter (fun (infile, outopt) -> 
-            let (dir, base, ext) = Common.dbe_of_filename infile in
-            let expected_suffix   = 
-              match ext with
-              | "c" -> "res"
-              | "h" -> "h.res"
-              | s -> pr2 ("WIERD: not a .c or .h :" ^ base ^ "." ^ s);
-                     "" (* no extension, will compare to same file *)
-            in
-            let expected_res =  
-              Common.filename_of_dbe  (dir, base, expected_suffix) in
-            let expected_res2 = 
-              Common.filename_of_dbe (dir,"corrected_"^ base,expected_suffix) 
-            in
-
+        outfiles +> List.iter (fun (infile, outopt) -> 
+          let (dir, base, ext) = Common.dbe_of_filename infile in
+          let expected_suffix   = 
+            match ext with
+            | "c" -> "res"
+            | "h" -> "h.res"
+            | s -> pr2 ("WIERD: not a .c or .h :" ^ base ^ "." ^ s);
+                "" (* no extension, will compare to same file *)
+          in
+          let expected_res =  
+            Common.filename_of_dbe  (dir, base, expected_suffix) in
+          let expected_res2 = 
+            Common.filename_of_dbe (dir,"corrected_"^ base,expected_suffix) 
+          in
+	  
             (* can delete more than the first delete_previous_result_files
-             * because here we can have more files than in cfiles, for instance
-             * the header files
-             *)
-            delete_previous_result_files infile;
+               * because here we can have more files than in cfiles, for instance
+               * the header files
+            *)
+          delete_previous_result_files infile;
           
           match outopt, Common.lfile_exists expected_res with
           | None, false -> 
@@ -232,7 +221,7 @@ let test_okfailed cocci_file cfiles =
           | Some outfile, false -> 
               let s =("PB: input file " ^ infile ^ " modified but no .res") in
               push2 (infile^t_to_s Failed, [s;time_str]) final_files
-
+		
           | x, true -> 
               let outfile = 
                 match x with 
@@ -251,14 +240,14 @@ let test_okfailed cocci_file cfiles =
                   let s2 = Compare_c.compare_result_to_string diff in
                   if fst diff = Compare_c.Correct
                   then push2 (infile ^ (t_to_s SpatchOK),[s2;s1;time_str]) 
-                    final_files
+                      final_files
                   else push2 (infile ^ (t_to_s Failed), [s2;s1;time_str]) 
-                    final_files
+                      final_files
                 end
-              else push2 (infile ^ (t_to_s Failed), [s1;time_str]) final_files
-        )
-      );
-    )
+		else push2 (infile ^ (t_to_s Failed), [s1;time_str]) final_files
+		    )
+	  );
+      )
     with exn -> 
       let clean s =
 	Str.global_replace (Str.regexp "\\\\n") "\n"
@@ -269,22 +258,20 @@ let test_okfailed cocci_file cfiles =
       let time_str = time_per_file_str () 
       in
       (* we may miss some file because cfiles is shorter than outfiles.
-       * For instance the detected local headers are not in cfiles, so
-       * may have less failed. But at least have some failed.
-       *)
+	 * For instance the detected local headers are not in cfiles, so
+	 * may have less failed. But at least have some failed.
+      *)
       cfiles +> List.iter (fun infile -> 
         push2 (infile ^ (t_to_s Failed), [s;time_str]) final_files;
+	);
       );
-  ));
   !final_files +> List.iter (fun (file, additional_strs) -> 
     Common.command2 ("cp " ^ newout ^ " " ^ file);
     with_open_outfile file (fun (pr, chan) -> 
       additional_strs +> List.iter (fun s -> pr (s ^ "\n"))
-    );
+	);
     
-  )
-
-  
+    )
 
 
 let test_regression_okfailed () = 

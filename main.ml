@@ -435,8 +435,16 @@ let long_usage () =
 let _ = short_usage_func := short_usage
 let _ = long_usage_func := long_usage
 
+(*****************************************************************************)
 
-
+let adjust_stdin cfile k =
+  let newin = 
+    let (dir, base, ext) = Common.dbe_of_filename cfile in
+    let varfile = Common.filename_of_dbe (dir, base, "var") in
+    if ext = "c" && Common.lfile_exists varfile
+    then Some varfile
+    else None in
+  Common.redirect_stdin_opt newin k
   
 (*****************************************************************************)
 (* The coccinelle main entry point *)
@@ -487,7 +495,8 @@ let main () =
     | x::xs when !test_okfailed -> 
         (* do its own timeout on Flag_cocci.timeout internally *)
         Flag_cocci.relax_include_path := true;
-        Testing.test_okfailed !cocci_file (x::xs)
+	adjust_stdin x
+	  (function () -> Testing.test_okfailed !cocci_file (x::xs))
 
     (* --------------------------------------------------------- *)
     (* Index mode *)
@@ -528,94 +537,102 @@ let main () =
     (* --------------------------------------------------------- *)
     | x::xs -> 
 
-        if (!cocci_file = "") 
-        then failwith "I need a cocci file,  use -sp_file <file>";
-
-	if !dir && !Flag_cocci.patch = None
-	then
-	  (match xs with
-	    [] -> Flag_cocci.patch := Some x
-	  | _ ->
-	      pr2
-		("warning: patch output can only be created when only one\n"^
-		 "directory is specified or when the -patch flag is used"));
-
-        let infiles = 
-          Common.profile_code "Main.infiles computation" (fun () -> 
-          match !dir, !kbuild_info with
-          | false, _ -> [x::xs]
-          | true, "" -> 
-              Common.cmd_to_list ("find "^(join " " (x::xs))^" -name \"*.c\"")
-              +> List.map (fun x -> [x])
-          | true, kbuild_info_file -> 
-              let dirs = 
-                Common.cmd_to_list ("find "^(join " " (x::xs))^" -type d") in
-              let info = Kbuild.parse_kbuild_info kbuild_info_file in
-              let groups = Kbuild.files_in_dirs dirs info in
-
-              groups +> List.map (function Kbuild.Group xs -> xs)
-          )
-        in
-
-        let outfiles = 
-          Common.profile_code "Main.outfiles computation" (fun () -> 
-          infiles +> List.map (fun cfiles -> 
-            pr2 ("HANDLING: " ^ (join " " cfiles));
-            Common.timeout_function_opt !Flag_cocci.timeout (fun () -> 
-            Common.report_if_take_time 10 (join " " cfiles) (fun () -> 
-            (* Unix.sleep 1; *)
-            (try Cocci.full_engine (!cocci_file, !Config.std_iso) cfiles
-              with 
-              | Common.UnixExit x -> raise (Common.UnixExit x)
-              | e -> 
-                  if !dir then begin
-                    pr2 ("EXN:" ^ Printexc.to_string e); 
-                    [] (* *)
-                  end 
-                  else raise e
-            ))))
-          +> List.concat
-          )
-        in
-        Common.profile_code "Main.result analysis" (fun () -> 
-
-	  Ctlcocci_integration.print_bench();
-
-          let outfiles = Cocci.check_duplicate_modif outfiles in
-          
-          outfiles +> List.iter (fun (infile, outopt) -> 
-            outopt +> do_option (fun outfile -> 
-              if !inplace_modif
-              then begin
-                Common.command2 ("cp " ^infile ^ " " ^ infile ^ ".cocci_orig");
-                Common.command2 ("cp " ^ outfile ^ " " ^ infile);
-              end;
-              if !outplace_modif
-              then Common.command2 ("cp " ^outfile^ " " ^infile ^".cocci_res");
-
-              if !output_file = "" 
-              then begin
-                let tmpfile = "/tmp/"^Common.basename infile in
-                pr2 (sprintf "One file modified. Result is here: %s" tmpfile);
-                Common.command2 ("cp "^outfile^" "^tmpfile);
-              end
-
-            ));
-          if !output_file <> "" then
-            (match outfiles with 
-            | [infile, Some outfile] when infile = x && null xs -> 
-                Common.command2 ("cp " ^outfile^ " " ^ !output_file);
-            | [infile, None] when infile = x && null xs -> 
-                Common.command2 ("cp " ^infile^ " " ^ !output_file);
-            | _ -> 
-                failwith 
-                  ("-o can not be applied because there is multiple " ^
-                      "modified files");
-            );
-          
-          if !compare_with_expected
-          then Testing.compare_with_expected outfiles
-        )
+	adjust_stdin x
+	  (function () ->
+            if (!cocci_file = "") 
+            then failwith "I need a cocci file,  use -sp_file <file>";
+	    
+	    if !dir && !Flag_cocci.patch = None
+	    then
+	      (match xs with
+		[] -> Flag_cocci.patch := Some x
+	      | _ ->
+		  pr2
+		    ("warning: patch output can only be created when only one\n"^
+		     "directory is specified or when the -patch flag is used"));
+	    
+            let infiles = 
+              Common.profile_code "Main.infiles computation" (fun () -> 
+		match !dir, !kbuild_info with
+		| false, _ -> [x::xs]
+		| true, "" -> 
+		    Common.cmd_to_list
+		      ("find "^(join " " (x::xs))^" -name \"*.c\"")
+		      +> List.map (fun x -> [x])
+		| true, kbuild_info_file -> 
+		    let dirs = 
+                      Common.cmd_to_list
+			("find "^(join " " (x::xs))^" -type d") in
+		    let info = Kbuild.parse_kbuild_info kbuild_info_file in
+		    let groups = Kbuild.files_in_dirs dirs info in
+		    
+		    groups +> List.map (function Kbuild.Group xs -> xs)
+		      )
+            in
+	    
+            let outfiles = 
+              Common.profile_code "Main.outfiles computation" (fun () -> 
+		infiles +> List.map (fun cfiles -> 
+		  pr2 ("HANDLING: " ^ (join " " cfiles));
+		  Common.timeout_function_opt !Flag_cocci.timeout (fun () -> 
+		    Common.report_if_take_time 10 (join " " cfiles) (fun () -> 
+                    (* Unix.sleep 1; *)
+		      (try
+			Cocci.full_engine (!cocci_file, !Config.std_iso) cfiles
+		      with 
+		      | Common.UnixExit x -> raise (Common.UnixExit x)
+		      | e -> 
+			  if !dir
+			  then
+			    begin
+			      pr2 ("EXN:" ^ Printexc.to_string e); 
+			      [] (* *)
+			    end
+			  else raise e))))
+		  +> List.concat) in
+            Common.profile_code "Main.result analysis" (fun () -> 
+	      
+	      Ctlcocci_integration.print_bench();
+	      
+              let outfiles = Cocci.check_duplicate_modif outfiles in
+              
+              outfiles +> List.iter (fun (infile, outopt) -> 
+		outopt +> do_option (fun outfile -> 
+		  if !inplace_modif
+		  then
+		    begin
+                      Common.command2 ("cp "^infile^" "^infile^".cocci_orig");
+                      Common.command2 ("cp "^outfile^" "^infile);
+		    end;
+		  if !outplace_modif
+		  then
+		    Common.command2 ("cp "^outfile^" "^infile^".cocci_res");
+		  
+		  if !output_file = "" 
+		  then
+		    begin
+                      let tmpfile = "/tmp/"^Common.basename infile in
+                      pr2
+			(sprintf "One file modified. Result is here: %s"
+			   tmpfile);
+                      Common.command2 ("cp "^outfile^" "^tmpfile);
+		    end
+		      
+		      ));
+              if !output_file <> "" then
+		(match outfiles with 
+		| [infile, Some outfile] when infile = x && null xs -> 
+                    Common.command2 ("cp " ^outfile^ " " ^ !output_file);
+		| [infile, None] when infile = x && null xs -> 
+                    Common.command2 ("cp " ^infile^ " " ^ !output_file);
+		| _ -> 
+                    failwith 
+                      ("-o can not be applied because there is multiple " ^
+                       "modified files");
+		    );
+              
+              if !compare_with_expected
+              then Testing.compare_with_expected outfiles))
 
     (* --------------------------------------------------------- *)
     (* empty entry *)
