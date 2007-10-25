@@ -576,7 +576,7 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
 	    let rec matches = function
 		B.Constant(c) -> true
               | B.Ident idb when idb =~ "^[A-Z_][A-Z_0-9]*$" -> 
-		  pr2 ("warning: I consider " ^ idb ^ " as a constant");
+		  pr2_once ("warning: I consider " ^ idb ^ " as a constant");
 		  true
 	      | B.Cast(ty,e) -> matches (B.unwrap_expr e)
 	      | B.SizeOfExpr(exp) -> true
@@ -2160,10 +2160,10 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
 
         let (lpb, rpb) = tuple_of_list2 ii in
         if isvaargs 
-        then begin 
-          pr2 "Not handling well variable length arguments func. ";
-          pr2 "You have been warned";
-        end;
+        then
+          pr2_once
+	    ("Not handling well variable length arguments func. "^
+             "You have been warned");
         tokenf lpa lpb >>= (fun lpa lpb -> 
         tokenf rpa rpb >>= (fun rpa rpb -> 
         fullType_optional_allminus allminus tyaopt tyb >>= (fun tyaopt tyb -> 
@@ -2192,12 +2192,11 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
             | B.FunctionType (tyb, (paramsb, (isvaargs, iidotsb))), ii -> 
                 let (lp2b, rp2b) = tuple_of_list2 ii in
 
-                if isvaargs 
-                then begin 
-                  pr2 "Not handling well variable length arguments func. ";
-                  pr2 "You have been warned";
-                end;
-
+                if isvaargs
+                then
+		  pr2_once
+		    ("Not handling well variable length arguments func. "^
+		     "You have been warned");
 
                 fullType tya tyb >>= (fun tya tyb -> 
                 tokenf lp1a lp1b >>= (fun lp1a lp1b -> 
@@ -2885,10 +2884,10 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
             stoa (stob, iistob) >>= (fun stoa (stob, iistob) -> 
               (
                 if isvaargs 
-                then begin 
-                  pr2 "Not handling well variable length arguments func. ";
-                  pr2 "You have been warned";
-                end;
+                then 
+		  pr2_once
+		    ("Not handling well variable length arguments func. "^
+		     "You have been warned");
                 if allminus
                 then minusize_list iidotsb
                 else return ((),iidotsb)

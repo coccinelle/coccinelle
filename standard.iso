@@ -134,37 +134,17 @@ signed => signed int
 // Boolean isomorphisms
 // ---------------------------------------------------------------------------
 
-// the space at the beginning of the line is very important!
-TestExpression
-@ not_int1 @ 
-int X; 
-@@
- !X => 0 == X
-
-// the space at the beginning of the line is very important!
-TestExpression
-@ not_int2 @ 
-int X; 
-@@
- !X => X == 0
-
-TestExpression
-@ is_int3 @ 
-int X; 
-@@
-X => X != 0
-
 TestExpression
 @ is_zero @ 
-expression X; 
+int X; 
 @@
-X == 0 <=> 0 == X => !X
+X == 0 <=> 0 == X <=> !X
 
 TestExpression
 @ isnt_zero @ 
-expression X; 
+int X; 
 @@
-X != 0 <=> 0 != X => X
+X != 0 <=> 0 != X <=> X
 
 Expression
 @ or_comm @ 
@@ -243,38 +223,17 @@ for(X;Y;i++) S <=> for(X;Y;++i) S
 // Pointer isomorphisms
 // ---------------------------------------------------------------------------
 
-// the space at the beginning of the line is very important!
-TestExpression
-@ not_ptr1 @ 
-expression *X; 
-@@
- !X => NULL == X
-
-// the space at the beginning of the line is very important!
-TestExpression
-@ not_ptr2 @ 
-expression *X; 
-@@
- !X => X == NULL
-
-// the space at the beginning of the line is very important!
-TestExpression
-@ is_ptr3 @ 
-expression *X; 
-@@
- X => X != NULL
-
 TestExpression
 @ is_null @ 
-expression X; 
+expression *X;
 @@
-X == NULL <=> NULL == X => !X
+X == NULL <=> NULL == X <=> !X
 
 TestExpression
 @ isnt_null @ 
-expression X; 
+expression *X;
 @@
-X != NULL <=> NULL != X => X
+X != NULL <=> NULL != X <=> X
 
 // pointer arithmetic equivalences
 

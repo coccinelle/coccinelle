@@ -40,12 +40,13 @@ let show_isos rule_elem =
   match Ast_cocci.get_isos rule_elem with
     [] -> ()
   | isos ->
+      let line = Ast_cocci.get_line rule_elem in
       Printf.printf "rule elem: ";
       Pretty_print_cocci.rule_elem "" rule_elem;
       Format.print_newline();
       List.iter
 	(function (nm,x) ->
-	  Printf.printf "    iso: %s: " nm;
+	  Printf.printf "    iso: %s(%d): " nm line;
 	  Pretty_print_cocci.pp_print_anything x;
 	  Format.print_newline())
 	isos
@@ -323,6 +324,8 @@ let metavars_binding2_to_binding   binding2 =
        satbis_to_trans_info but it does not seems so *)
     | Lib_engine.ParenVal _ -> None
     | Lib_engine.LabelVal _ -> None
+    | Lib_engine.BadVal     -> None (* should not occur *)
+    | Lib_engine.GoodVal    -> None (* should not occur *)
    )
 
 let metavars_binding_to_binding2 binding = 

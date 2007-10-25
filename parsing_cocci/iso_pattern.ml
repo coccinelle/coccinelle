@@ -1734,11 +1734,27 @@ let mkdisj matcher metavars alts instantiater e disj_maker minusify
   outer_loop 0 0 0 alts
 
 (* no one should ever look at the information stored in these mcodes *)
-let disj_starter =
-  ("(",Ast0.NONE,Ast0.default_info(),Ast0.context_befaft())
+let disj_starter lst =
+  let old_info = Ast0.get_info(List.hd lst) in
+  let info =
+    { old_info with
+      Ast0.line_end = old_info.Ast0.line_start;
+      Ast0.logical_end = old_info.Ast0.logical_start;
+      Ast0.attachable_start = false; Ast0.attachable_end = false;
+      Ast0.mcode_start = []; Ast0.mcode_end = [];
+      Ast0.strings_before = []; Ast0.strings_after = [] } in
+  ("(",Ast0.NONE,info,Ast0.context_befaft())
 
-let disj_ender =
-  ("(",Ast0.NONE,Ast0.default_info(),Ast0.context_befaft())
+let disj_ender lst =
+  let old_info = Ast0.get_info(List.hd lst) in
+  let info =
+    { old_info with
+      Ast0.line_start = old_info.Ast0.line_end;
+      Ast0.logical_start = old_info.Ast0.logical_end;
+      Ast0.attachable_start = false; Ast0.attachable_end = false;
+      Ast0.mcode_start = []; Ast0.mcode_end = [];
+      Ast0.strings_before = []; Ast0.strings_after = [] } in
+  (")",Ast0.NONE,info,Ast0.context_befaft())
 
 let disj_mid _ =
   ("|",Ast0.NONE,Ast0.default_info(),Ast0.context_befaft())
@@ -1748,25 +1764,25 @@ let make_disj_type tl =
     match tl with
       [] -> failwith "bad disjunction"
     | x::xs -> List.map disj_mid xs in
-  Ast0.context_wrap (Ast0.DisjType(disj_starter,tl,mids,disj_ender))
+  Ast0.context_wrap (Ast0.DisjType(disj_starter tl,tl,mids,disj_ender tl))
 let make_disj_stmt_list tl =
   let mids =
     match tl with
       [] -> failwith "bad disjunction"
     | x::xs -> List.map disj_mid xs in
-  Ast0.context_wrap (Ast0.Disj(disj_starter,tl,mids,disj_ender))
+  Ast0.context_wrap (Ast0.Disj(disj_starter tl,tl,mids,disj_ender tl))
 let make_disj_expr el =
   let mids =
     match el with
       [] -> failwith "bad disjunction"
     | x::xs -> List.map disj_mid xs in
-  Ast0.context_wrap (Ast0.DisjExpr(disj_starter,el,mids,disj_ender))
+  Ast0.context_wrap (Ast0.DisjExpr(disj_starter el,el,mids,disj_ender el))
 let make_disj_decl dl =
   let mids =
     match dl with
       [] -> failwith "bad disjunction"
     | x::xs -> List.map disj_mid xs in
-  Ast0.context_wrap (Ast0.DisjDecl(disj_starter,dl,mids,disj_ender))
+  Ast0.context_wrap (Ast0.DisjDecl(disj_starter dl,dl,mids,disj_ender dl))
 let make_disj_stmt sl =
   let dotify x = Ast0.context_wrap (Ast0.DOTS[x]) in
   let mids =
@@ -1774,7 +1790,7 @@ let make_disj_stmt sl =
       [] -> failwith "bad disjunction"
     | x::xs -> List.map disj_mid xs in
   Ast0.context_wrap
-    (Ast0.Disj(disj_starter,List.map dotify sl,mids,disj_ender))
+    (Ast0.Disj(disj_starter sl,List.map dotify sl,mids,disj_ender sl))
 
 let transform_type (metavars,alts,name) e =
   match alts with

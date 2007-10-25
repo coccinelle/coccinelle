@@ -22,6 +22,10 @@ let rec disjmult f = function
       let rest = disjmult f xs in
       disjmult2 cur rest (function cur -> function rest -> cur :: rest)
 
+let disjoption f = function
+    None -> [None]
+  | Some x -> List.map (function x -> Some x) (f x)
+
 let disjdots f d =
   match Ast.unwrap d with
     Ast.DOTS(l) ->
@@ -33,7 +37,9 @@ let disjdots f d =
 
 let rec disjty ft =
   match Ast.unwrap ft with
-    Ast.Type(cv,ty) -> [ft]
+    Ast.Type(cv,ty) ->
+      let ty = disjtypeC ty in
+      List.map (function ty -> Ast.rewrap ft (Ast.Type(cv,ty))) ty
   | Ast.DisjType(types) -> List.concat (List.map disjty types)
   | Ast.OptType(ty) ->
       let ty = disjty ty in
@@ -42,7 +48,36 @@ let rec disjty ft =
       let ty = disjty ty in
       List.map (function ty -> Ast.rewrap ft (Ast.UniqueType(ty))) ty
 
-let rec disjexp e =
+and disjtypeC bty =
+  match Ast.unwrap bty with
+    Ast.BaseType(_,_) | Ast.ImplicitInt(_) -> [bty]
+  | Ast.Pointer(ty,star) ->
+      let ty = disjty ty in
+      List.map (function ty -> Ast.rewrap bty (Ast.Pointer(ty,star))) ty
+  | Ast.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
+      let ty = disjty ty in
+      List.map
+	(function ty ->
+	  Ast.rewrap bty (Ast.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2)))
+	ty
+  | Ast.FunctionType (s,ty,lp1,params,rp1) ->
+      let ty = disjoption disjty ty in
+      List.map
+	(function ty ->
+	  Ast.rewrap bty (Ast.FunctionType (s,ty,lp1,params,rp1)))
+	ty
+  | Ast.Array(ty,lb,size,rb) ->
+      disjmult2 (disjty ty) (disjoption disjexp size)
+	(function ty -> function size ->
+	  Ast.rewrap bty (Ast.Array(ty,lb,size,rb)))
+  | Ast.StructUnionName(kind,name) -> [bty]
+  | Ast.StructUnionDef(ty,lb,decls,rb) ->
+      disjmult2 (disjty ty) (disjdots disjdecl decls)
+	(function ty -> function decls ->
+	  Ast.rewrap bty (Ast.StructUnionDef(ty,lb,decls,rb)))
+  | Ast.TypeName(_) | Ast.MetaType(_,_,_) -> [bty]
+
+and disjexp e =
   match Ast.unwrap e with
     Ast.Ident(_) | Ast.Constant(_) -> [e]
   | Ast.FunCall(fn,lp,args,rp) ->
@@ -120,7 +155,7 @@ let rec disjexp e =
       let exp = disjexp exp in
       List.map (function exp -> Ast.rewrap e (Ast.UniqueExp(exp))) exp
 
-let rec disjparam p =
+and disjparam p =
   match Ast.unwrap p with
     Ast.VoidParam(ty) -> [p] (* void is the only possible value *)
   | Ast.Param(ty,id) ->
@@ -135,7 +170,7 @@ let rec disjparam p =
       let param = disjparam param in
       List.map (function param -> Ast.rewrap p (Ast.UniqueParam(param))) param
 
-let rec disjini i =
+and disjini i =
   match Ast.unwrap i with
     Ast.InitExpr(exp) ->
       let exp = disjexp exp in
@@ -171,7 +206,7 @@ let rec disjini i =
       let ini = disjini ini in
       List.map (function ini -> Ast.rewrap i (Ast.UniqueIni(ini))) ini
 
-let rec disjdecl d =
+and disjdecl d =
   match Ast.unwrap d with
     Ast.Init(stg,ty,id,eq,ini,sem) ->
       disjmult2 (disjty ty) (disjini ini)
@@ -236,10 +271,7 @@ let disj_rule_elem r k re =
   | Ast.WhileTail(whl,lp,exp,rp,sem) ->
       orify_rule_elem re exp (function exp -> Ast.WhileTail(whl,lp,exp,rp,sem))
   | Ast.ForHeader(fr,lp,e1,sem1,e2,sem2,e3,rp) ->
-      let disjexpopt = function
-	  None -> [None]
-	| Some exp -> List.map (function x -> Some x) (disjexp exp) in
-      generic_orify_rule_elem (disjmult disjexpopt) re [e1;e2;e3]
+      generic_orify_rule_elem (disjmult (disjoption disjexp)) re [e1;e2;e3]
 	(function
 	    [exp1;exp2;exp3] -> Ast.ForHeader(fr,lp,e1,sem1,e2,sem2,e3,rp)
 	  | _ -> failwith "not possible")

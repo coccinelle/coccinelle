@@ -231,7 +231,6 @@ and typeC t =
       | Ast0.TypeName(name)-> mcode print_string name; print_string " "
       | Ast0.MetaType(name,_)-> mcode print_meta name; print_string " "
       | Ast0.DisjType(lp,types,mids,rp) ->
-	  List.iter (mcode print_string) mids;
 	  print_string "\n"; mcode print_string lp; force_newline();
 	  print_between
 	    (function _ -> print_string "\n|"; force_newline())
