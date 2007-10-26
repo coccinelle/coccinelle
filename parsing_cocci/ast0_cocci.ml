@@ -34,7 +34,7 @@ type 'a wrap = 'a * info * int ref * mcodekind ref
       * dots_bef_aft (* only for statements *)
       * bool (* true if "arg_exp", only for exprs *)
       * bool (* true if "test_exp", only for exprs *)
-      * (string*anything) option(* Some if this represents the use of an iso *)
+      * (string*anything) list(*nonempty if this represents the use of an iso*)
 
 and dots_bef_aft =
     NoDots | AddingBetweenDots of statement | DroppingBetweenDots of statement
@@ -383,10 +383,10 @@ let context_befaft _ =
 
 let wrap x =
   (x,default_info(),ref (-1),ref (default_befaft()),ref None,NoDots,
-   false,false,None)
+   false,false,[])
 let context_wrap x =
   (x,default_info(),ref (-1),ref (context_befaft()),ref None,NoDots,
-   false,false,None)
+   false,false,[])
 let unwrap (x,_,_,_,_,_,_,_,_) = x
 let unwrap_mcode (x,_,_,_) = x
 let rewrap (_,info,index,mcodekind,ty,dots,arg,test,iso) x =
@@ -424,7 +424,7 @@ let get_test_exp (_,_,_,_,_,_,_,d,_) = d
 let set_test_exp (a,b,c,d,e,f,g,_,h) = (a,b,c,d,e,f,g,true,h)
 let get_iso (_,_,_,_,_,_,_,_,d) = d
 let set_iso ((a,b,c,d,e,f,g,h,_) as x) i =
-  if !Flag.track_iso_usage then (a,b,c,d,e,f,g,h,Some i) else x
+  if !Flag.track_iso_usage then (a,b,c,d,e,f,g,h,i) else x
 let set_mcode_data data (_,ar,info,mc) = (data,ar,info,mc)
 
 (* --------------------------------------------------------------------- *)

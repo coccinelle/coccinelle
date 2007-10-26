@@ -1103,6 +1103,7 @@ let dots_au toend label s wrapcode x seq_after y =
 	      (ctl_au CTL.NONSTRICT preflabelpred
 		 (ctl_and CTL.NONSTRICT preflabelpred
 		    (ctl_or (retpred None)
+		       (*CTL.True*)
 		       (ctl_or matchcontinue
 			  (ctl_and CTL.NONSTRICT
 			     (ctl_or matchgoto matchbreak)

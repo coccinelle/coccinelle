@@ -99,7 +99,7 @@ and strip =
   let donothing r k e =
     let x = Ast0.unwrap (k e) in
     (x,Ast0.default_info(),ref 0,ref Ast0.PLUS,ref None,Ast0.NoDots,
-     false,false,None) in
+     false,false,[]) in
   let mcode (mc,_,_,_) = (mc,Ast0.NONE,Ast0.default_info(),Ast0.PLUS) in
 
   (* need a case for everything that has an unvisited component and can be in

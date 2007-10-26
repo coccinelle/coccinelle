@@ -29,7 +29,7 @@ type 'a wrap = 'a * info * int ref * mcodekind ref
       * Type_cocci.typeC option ref (* only for expressions *)
       * dots_bef_aft * bool (* true if "arg_exp", only for exprs *)
       * bool (* true if "test_exp", only for exprs *)
-      * (string*anything) option(* Some if this represents the use of an iso *)
+      * (string*anything) list(*nonempty if this represents the use of an iso*)
 
 and dots_bef_aft =
     NoDots | AddingBetweenDots of statement | DroppingBetweenDots of statement
@@ -396,8 +396,8 @@ val set_arg_exp : expression -> expression
 val get_arg_exp : expression -> bool
 val set_test_exp : expression -> expression
 val get_test_exp : expression -> bool
-val set_iso : 'a wrap -> (string*anything) -> 'a wrap
-val get_iso : 'a wrap -> (string*anything) option
+val set_iso : 'a wrap -> (string*anything) list -> 'a wrap
+val get_iso : 'a wrap -> (string*anything) list
 val fresh_index : unit -> int
 val set_mcode_data : 'a -> 'a mcode -> 'a mcode
 

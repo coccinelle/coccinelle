@@ -56,7 +56,7 @@ let promote_mcode (_,_,info,mcodekind) =
   let new_info =
     {info with
       Ast0.mcode_start = [mcodekind]; Ast0.mcode_end = [mcodekind]} in
-  ((),new_info,ref (-1),ref mcodekind,ref None,Ast0.NoDots,false,false,None)
+  ((),new_info,ref (-1),ref mcodekind,ref None,Ast0.NoDots,false,false,[])
 
 let promote_mcode_plus_one (_,_,info,mcodekind) =
   let new_info =
@@ -66,7 +66,7 @@ let promote_mcode_plus_one (_,_,info,mcodekind) =
       Ast0.line_end = info.Ast0.line_end + 1;
       Ast0.logical_end = info.Ast0.logical_end + 1;
       Ast0.mcode_start = [mcodekind]; Ast0.mcode_end = [mcodekind]} in
-  ((),new_info,ref (-1),ref mcodekind,ref None,Ast0.NoDots,false,false,None)
+  ((),new_info,ref (-1),ref mcodekind,ref None,Ast0.NoDots,false,false,[])
 
 let promote_to_statement stm mcodekind =
   let info = Ast0.get_info stm in
@@ -76,7 +76,7 @@ let promote_to_statement stm mcodekind =
       Ast0.line_start = info.Ast0.line_end;
       Ast0.mcode_start = [mcodekind]; Ast0.mcode_end = [mcodekind];
       Ast0.attachable_start = true; Ast0.attachable_end = true} in
-  ((),new_info,ref (-1),ref mcodekind,ref None,Ast0.NoDots,false,false,None)
+  ((),new_info,ref (-1),ref mcodekind,ref None,Ast0.NoDots,false,false,[])
 
 let promote_to_statement_start stm mcodekind =
   let info = Ast0.get_info stm in
@@ -86,7 +86,7 @@ let promote_to_statement_start stm mcodekind =
       Ast0.line_end = info.Ast0.line_start;
       Ast0.mcode_start = [mcodekind]; Ast0.mcode_end = [mcodekind];
       Ast0.attachable_start = true; Ast0.attachable_end = true} in
-  ((),new_info,ref (-1),ref mcodekind,ref None,Ast0.NoDots,false,false,None)
+  ((),new_info,ref (-1),ref mcodekind,ref None,Ast0.NoDots,false,false,[])
 
 (* mcode is good by default *)
 let bad_mcode (t,a,info,mcodekind) =

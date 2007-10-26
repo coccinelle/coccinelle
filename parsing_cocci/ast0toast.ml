@@ -234,6 +234,7 @@ let no_isos = []
 
 (* no isos on tokens *)
 let tokenwrap (_,info,_) s ast = wrap ast info.Ast.line no_isos
+let iso_tokenwrap (_,info,_) s ast iso = wrap ast info.Ast.line iso
 
 let dots fn d =
   rewrap d no_isos
@@ -245,9 +246,7 @@ let dots fn d =
 (* --------------------------------------------------------------------- *)
 (* Identifier *)
 
-let rec do_isos = function
-    None -> no_isos
-  | Some (nm,x) -> [(nm,anything x)]
+let rec do_isos l = List.map (function (nm,x) -> (nm,anything x)) l
 
 and ident i =
   rewrap i (do_isos (Ast0.get_iso i))
@@ -550,7 +549,8 @@ and statement s =
 	  let lbrace = mcode lbrace in
 	  let (decls,body) = separate_decls seqible body in
 	  let rbrace = mcode rbrace in
-	  Ast.Seq(tokenwrap lbrace s (Ast.SeqStart(lbrace)),
+	  Ast.Seq(iso_tokenwrap lbrace s (Ast.SeqStart(lbrace))
+		    (do_isos (Ast0.get_iso s)),
 		  decls,body,
 		  tokenwrap rbrace s (Ast.SeqEnd(rbrace)))
       | Ast0.ExprStatement(exp,sem) ->

@@ -24,7 +24,7 @@ let strip_info =
   let donothing r k e =
     let (term,info,index,mc,ty,dots,arg,test,is_iso) = k e in
     (term,Ast0.default_info(),ref 0,ref Ast0.PLUS,ref None,Ast0.NoDots,
-     false,test,None) in
+     false,test,[]) in
   V0.rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode
@@ -203,7 +203,10 @@ let bool_match_option f t1 t2 =
   if would be nice if we knew more about the relationship between the - and +
   code, because in the case where the + code is a separate statement in a
   sequence, this is not a problem.  Perhaps something could be done in
-  insert_plus *)
+  insert_plus
+
+   The example seems strange.  Why isn't the cast attached to x?
+ *)
 let is_context e =
   match Ast0.get_mcodekind e with
     Ast0.CONTEXT(cell) -> true
@@ -1680,7 +1683,7 @@ let make_new_metavars metavars bindings =
 
 (* --------------------------------------------------------------------- *)
 
-let mkdisj matcher metavars alts instantiater e disj_maker minusify
+let mkdisj matcher metavars alts e instantiater mkiso disj_maker minusify
     rebuild_mcodes name printer extra_plus =
   let call_instantiate bindings mv_bindings alts =
     List.concat
@@ -1690,9 +1693,12 @@ let mkdisj matcher metavars alts instantiater e disj_maker minusify
 	   (* no need to create duplicates when the bindings have no effect *)
 	     (List.map
 		(function bindings ->
-		  copy_plus printer minusify e
-		    (extra_plus e
-		       (instantiater bindings mv_bindings (rebuild_mcodes a))))
+		  Ast0.set_iso
+		    (copy_plus printer minusify e
+		       (extra_plus e
+			  (instantiater bindings mv_bindings
+			     (rebuild_mcodes a))))
+		    (Common.union_set [(name,mkiso a)] (Ast0.get_iso e)))
 		bindings))
 	 alts) in
   let rec inner_loop all_alts prev_ecount prev_icount prev_dcount = function
@@ -1807,11 +1813,10 @@ let transform_type (metavars,alts,name) e =
 		    count_dots.V0.combiner_typeC p)
 	       | _ -> failwith "invalid alt"))
 	  alts in
-      mkdisj match_typeC metavars alts
-	(function b -> function mv_b -> function t ->
-	  Ast0.set_iso
-	    ((instantiate b mv_b).V0.rebuilder_typeC t)
-	    (name,Ast0.TypeCTag t)) e
+      mkdisj match_typeC metavars alts e
+	(function b -> function mv_b ->
+	  (instantiate b mv_b).V0.rebuilder_typeC)
+	(function t -> Ast0.TypeCTag t)
 	make_disj_type make_minus.V0.rebuilder_typeC
 	(rebuild_mcode start_line).V0.rebuilder_typeC
 	name Unparse_ast0.typeC extra_copy_other_plus
@@ -1832,11 +1837,10 @@ let transform_expr (metavars,alts,name) e =
 		  count_dots.V0.combiner_expression p)
 	     | _ -> failwith "invalid alt"))
 	alts in
-    mkdisj match_expr metavars alts
-      (function b -> function mv_b -> function e ->
-	Ast0.set_iso
-	  ((instantiate b mv_b).V0.rebuilder_expression e)
-	  (name,Ast0.ExprTag e)) e
+    mkdisj match_expr metavars alts e
+      (function b -> function mv_b ->
+	(instantiate b mv_b).V0.rebuilder_expression)
+      (function e -> Ast0.ExprTag e)
       make_disj_expr make_minus.V0.rebuilder_expression
       (rebuild_mcode start_line).V0.rebuilder_expression
       name Unparse_ast0.expression extra_copy_other_plus in
@@ -1861,11 +1865,10 @@ let transform_decl (metavars,alts,name) e =
 		    count_dots.V0.combiner_declaration p)
 	       | _ -> failwith "invalid alt"))
 	  alts in
-      mkdisj match_decl metavars alts
-	(function b -> function mv_b -> function d ->
-	  Ast0.set_iso
-	    ((instantiate b mv_b).V0.rebuilder_declaration d)
-	    (name,Ast0.DeclTag d)) e
+      mkdisj match_decl metavars alts e
+	(function b -> function mv_b ->
+	  (instantiate b mv_b).V0.rebuilder_declaration)
+	(function d -> Ast0.DeclTag d)
 	make_disj_decl
 	make_minus.V0.rebuilder_declaration
 	(rebuild_mcode start_line).V0.rebuilder_declaration
@@ -1887,11 +1890,10 @@ let transform_stmt (metavars,alts,name) e =
 		    count_dots.V0.combiner_statement p)
 	       | _ -> failwith "invalid alt"))
 	  alts in
-      mkdisj match_statement metavars alts
-	(function b -> function mv_b -> function s ->
-	  Ast0.set_iso
-	    ((instantiate b mv_b).V0.rebuilder_statement s)
-	    (name,Ast0.StmtTag s)) e
+      mkdisj match_statement metavars alts e
+	(function b -> function mv_b ->
+	  (instantiate b mv_b).V0.rebuilder_statement)
+	(function s -> Ast0.StmtTag s)
 	make_disj_stmt make_minus.V0.rebuilder_statement
 	(rebuild_mcode start_line).V0.rebuilder_statement
 	name (Unparse_ast0.statement "") extra_copy_stmt_plus
@@ -1931,12 +1933,10 @@ let transform_top (metavars,alts,name) e =
 			  count_dots.V0.combiner_statement_dots p)
 		     | _ -> failwith "invalid alt"))
 		alts in
-	    mkdisj match_statement_dots metavars alts
-	      (function b -> function mv_b -> function s ->
-		Ast0.set_iso
-		  ((instantiate b mv_b).V0.rebuilder_statement_dots s)
-		  (name,Ast0.DotsStmtTag s))
-	      stmts
+	    mkdisj match_statement_dots metavars alts stmts
+	      (function b -> function mv_b ->
+		(instantiate b mv_b).V0.rebuilder_statement_dots)
+	      (function s -> Ast0.DotsStmtTag s)
 	      (function x ->
 		Ast0.rewrap e (Ast0.DOTS([make_disj_stmt_list x])))
 	      make_minus.V0.rebuilder_statement_dots
