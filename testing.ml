@@ -5,7 +5,7 @@ open Common open Commonop
 (* Test framework *)
 (*****************************************************************************)
 
-(* There can have multiple .c for the same cocci file. The convention
+(* There can be multiple .c for the same cocci file. The convention
  * is to have one base.cocci and a base.c and some optional
  * base_vernn.[c,res].
  * 

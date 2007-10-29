@@ -488,12 +488,14 @@ let match_maker checks_needed context_required whencode_allowed =
 		     "warning: type metavar can only match one type";*)
 			return false)
 		| _ ->
-		    failwith "mixture of metatype and other types not supported")
+		    failwith
+		      "mixture of metatype and other types not supported")
 	      else
 		let expty = Ast0.get_type expr in
 		if List.exists (function t -> Type_cocci.compatible t expty) ts
 		then
-		  add_pure_binding name pure pure_sp_code.V0.combiner_expression
+		  add_pure_binding name pure
+		    pure_sp_code.V0.combiner_expression
 		    (function expr -> Ast0.ExprTag expr)
 		    expr
 		else return false
@@ -2030,20 +2032,25 @@ let rewrap_anything = function
 (* --------------------------------------------------------------------- *)
 
 let apply_isos isos rule rule_name =
-  current_rule := rule_name;
-  let isos =
-    List.map
-      (function (metavars,iso,name) ->
-	(metavars,List.map (List.map rewrap_anything) iso,name))
-      isos in
-  let (extra_meta,rule) =
-    List.split
-      (List.map
-	 (function t ->
-	   List.fold_left
-	     (function (extra_meta,t) -> function iso ->
-	       let (new_extra_meta,t) = transform iso t in
-	       (new_extra_meta@extra_meta,t))
-	     ([],t) isos)
-       rule) in
-  (List.concat extra_meta, Compute_lines.compute_lines rule)
+  if isos = []
+  then ([],rule)
+  else
+    begin
+      current_rule := rule_name;
+      let isos =
+	List.map
+	  (function (metavars,iso,name) ->
+	    (metavars,List.map (List.map rewrap_anything) iso,name))
+	  isos in
+      let (extra_meta,rule) =
+	List.split
+	  (List.map
+	     (function t ->
+	       List.fold_left
+		 (function (extra_meta,t) -> function iso ->
+		   let (new_extra_meta,t) = transform iso t in
+		   (new_extra_meta@extra_meta,t))
+		 ([],t) isos)
+	     rule) in
+      (List.concat extra_meta, Compute_lines.compute_lines rule)
+    end

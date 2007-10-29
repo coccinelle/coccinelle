@@ -11,6 +11,9 @@ gitgrep: gitgrep.ml
 gitsort: gitsort.ml
 	ocamlopt -o gitsort str.cmxa gitsort.ml
 
+isoprof: process_isoprofile.ml
+	ocamlc -g -o isoprof str.cma process_isoprofile.ml
+
 
 SYSLIBS = str.cma unix.cma 
 

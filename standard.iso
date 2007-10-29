@@ -435,15 +435,6 @@ return ...; => return;
 // Pointer/Field isomorphisms
 // ---------------------------------------------------------------------------
 
-Expression
-@ ptr_to_array @
-expression E1, E2; // was pure, not sure why that's needed, not good for rule27
-identifier fld;
-@@
-
-E1->fld => E1[E2].fld
-
-
 
 TopLevel
 @ mkinit @
@@ -476,17 +467,18 @@ identifier fld;
 E.fld => E1->fld
 
 
+Expression
+@ ptr_to_array @
+expression E1, E2; // was pure, not sure why that's needed, not good for rule27
+identifier fld;
+@@
+
+E1->fld => E1[E2].fld
+
+
 // ---------------------------------------------------------------------------
 // sizeof isomorphisms
 // ---------------------------------------------------------------------------
-
-Expression
-@ sizeof_parens @
-expression E;
-@@
-
-sizeof(E) => sizeof E
-
 
 Expression
 @ sizeof_type_expr @
@@ -496,6 +488,13 @@ T E;
 
 sizeof(T) => sizeof(E)
 
+
+Expression
+@ sizeof_parens @
+expression E;
+@@
+
+sizeof(E) => sizeof E
 
 // ****************************************************************************
 // Linux specific isomorphisms 

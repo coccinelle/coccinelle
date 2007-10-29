@@ -276,14 +276,19 @@ let other_options = [
   "bench options",
   "",
   [
-    "-profile",          Arg.Set  Common.profile , 
+    "-profile", Arg.Unit (function () -> Common.profile := Common.PALL) , 
     "   gather timing information about the main coccinelle functions";
     "-bench", Arg.Int (function x -> Flag_ctl.bench := x), 
     "   <level> for profiling the CTL engine";
     "-timeout", Arg.Int (fun x -> Flag_cocci.timeout := Some x), 
     "   <sec> timeout in seconds";
     "-track_iso", Arg.Set Flag.track_iso_usage,
-    "   gather information about isomorphism usage"
+    "   gather information about isomorphism usage";
+    "-profile_iso",
+    Arg.Unit
+    (function () ->
+      Common.profile:=PSOME ["parse cocci";"mysat";"asttoctl2";"full_engine"]),
+    "   gather information about the cost of isomorphism usage"
   ];
 
 

@@ -293,7 +293,14 @@ let time_func f =
   (*   let _ = Timing () in *)
   x
 
-let profile = ref false
+type prof = PALL | PNONE | PSOME of string list
+let profile = ref PNONE
+
+let do_profile category =
+  match !profile with
+    PALL -> true
+  | PNONE -> false
+  | PSOME l -> List.mem category l
 
 let _profile_table = ref (Hashtbl.create 100)
 let profile_start category = failwith "todo"
@@ -303,7 +310,7 @@ let profile_end category = failwith "todo"
  * and will profile nothing 
  *)  
 let profile_code category f = 
-  if not !profile 
+  if not (do_profile category)
   then f() 
   else begin
   let t = Unix.gettimeofday () in
@@ -331,7 +338,7 @@ let profile_code category f =
 
 (* todo: also put  % ? also add % to see if coherent numbers *)
 let profile_diagnostic () = 
-  if not !profile then () else begin
+  if !profile = PNONE then () else begin
   let xs = 
     Hashtbl.fold (fun k v acc -> (k,v)::acc) !_profile_table [] 
       +> List.sort (fun (k1, (t1,n1)) (k2, (t2,n2)) -> compare t2 t1)
@@ -352,7 +359,6 @@ let report_if_take_time timethreshold s f =
   if (t' -. t  > float_of_int timethreshold) 
   then pr2 (sprintf "NOTE: this code takes more than: %ds %s" timethreshold s);
   res
-
 
 (*****************************************************************************)
 (* Test *)

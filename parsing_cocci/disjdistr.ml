@@ -237,10 +237,7 @@ and disjdecl d =
 let generic_orify_rule_elem f re exp rebuild =
   match f exp with
     [exp] -> re
-  | orexps ->
-      Ast.rewrap re
-	(Ast.DisjRuleElem
-	   (List.map (function exp -> Ast.rewrap re (rebuild exp)) orexps))
+  | orexps -> Ast.rewrap re (Ast.DisjRuleElem (List.map rebuild orexps))
 
 let orify_rule_elem re exp rebuild =
   generic_orify_rule_elem disjexp re exp rebuild
@@ -254,50 +251,58 @@ let disj_rule_elem r k re =
     Ast.FunHeader(bef,allminus,fninfo,name,lp,params,rp) ->
       generic_orify_rule_elem (disjdots disjparam) re params
 	(function params ->
-	  Ast.FunHeader(bef,allminus,fninfo,name,lp,params,rp))
+	  Ast.rewrap re
+	    (Ast.FunHeader(bef,allminus,fninfo,name,lp,params,rp)))
   | Ast.Decl(bef,allminus,decl) ->
       orify_rule_elem_decl re decl
-	(function decl -> Ast.Decl(bef,allminus,decl))
+	(function decl -> Ast.rewrap re (Ast.Decl(bef,allminus,decl)))
   | Ast.SeqStart(brace) -> re
   | Ast.SeqEnd(brace) -> re
   | Ast.ExprStatement(exp,sem) ->
-      orify_rule_elem re exp (function exp -> Ast.ExprStatement(exp,sem))
+      orify_rule_elem re exp
+	(function exp -> Ast.rewrap re (Ast.ExprStatement(exp,sem)))
   | Ast.IfHeader(iff,lp,exp,rp) ->
-      orify_rule_elem re exp (function exp -> Ast.IfHeader(iff,lp,exp,rp))
+      orify_rule_elem re exp
+	(function exp -> Ast.rewrap re (Ast.IfHeader(iff,lp,exp,rp)))
   | Ast.Else(els) -> re
   | Ast.WhileHeader(whl,lp,exp,rp) ->
-      orify_rule_elem re exp (function exp -> Ast.WhileHeader(whl,lp,exp,rp))
+      orify_rule_elem re exp
+	(function exp -> Ast.rewrap re (Ast.WhileHeader(whl,lp,exp,rp)))
   | Ast.DoHeader(d) -> re
   | Ast.WhileTail(whl,lp,exp,rp,sem) ->
-      orify_rule_elem re exp (function exp -> Ast.WhileTail(whl,lp,exp,rp,sem))
+      orify_rule_elem re exp
+	(function exp -> Ast.rewrap re (Ast.WhileTail(whl,lp,exp,rp,sem)))
   | Ast.ForHeader(fr,lp,e1,sem1,e2,sem2,e3,rp) ->
       generic_orify_rule_elem (disjmult (disjoption disjexp)) re [e1;e2;e3]
 	(function
-	    [exp1;exp2;exp3] -> Ast.ForHeader(fr,lp,e1,sem1,e2,sem2,e3,rp)
+	    [exp1;exp2;exp3] ->
+	      Ast.rewrap re (Ast.ForHeader(fr,lp,e1,sem1,e2,sem2,e3,rp))
 	  | _ -> failwith "not possible")
   | Ast.IteratorHeader(whl,lp,args,rp) ->
       generic_orify_rule_elem (disjdots disjexp) re args
-	(function args -> Ast.IteratorHeader(whl,lp,args,rp))
+	(function args -> Ast.rewrap re (Ast.IteratorHeader(whl,lp,args,rp)))
   | Ast.SwitchHeader(switch,lp,exp,rp) ->
       orify_rule_elem re exp
-	(function exp -> Ast.SwitchHeader(switch,lp,exp,rp))
+	(function exp -> Ast.rewrap re (Ast.SwitchHeader(switch,lp,exp,rp)))
   | Ast.Break(_,_) | Ast.Continue(_,_) | Ast.Goto
   | Ast.Return(_,_) -> re
   | Ast.ReturnExpr(ret,exp,sem) ->
-      orify_rule_elem re exp (function exp -> Ast.ReturnExpr(ret,exp,sem))
+      orify_rule_elem re exp
+	(function exp -> Ast.rewrap re (Ast.ReturnExpr(ret,exp,sem)))
   | Ast.MetaRuleElem(_,_,_) | Ast.MetaStmt(_,_,_,_)
   | Ast.MetaStmtList(_,_,_) -> re
   | Ast.Exp(exp) ->
-      orify_rule_elem re exp (function exp -> Ast.Exp(exp))
+      orify_rule_elem re exp (function exp -> Ast.rewrap exp (Ast.Exp(exp)))
   | Ast.TopExp(exp) ->
-      orify_rule_elem re exp (function exp -> Ast.TopExp(exp))
+      orify_rule_elem re exp (function exp -> Ast.rewrap exp (Ast.TopExp(exp)))
   | Ast.Ty(ty) ->
-      orify_rule_elem_ty re ty (function ty -> Ast.Ty(ty))
+      orify_rule_elem_ty re ty (function ty -> Ast.rewrap ty (Ast.Ty(ty)))
   | Ast.Include(inc,s) -> re
   | Ast.DefineHeader(def,id,params) -> re
   | Ast.Default(def,colon) -> re
   | Ast.Case(case,exp,colon) ->
-      orify_rule_elem re exp (function exp -> Ast.Case(case,exp,colon))
+      orify_rule_elem re exp
+	(function exp -> Ast.rewrap re (Ast.Case(case,exp,colon)))
   | Ast.DisjRuleElem(_) -> failwith "not possible"
 
 let disj_all =
@@ -317,7 +322,7 @@ let collect_all_isos =
   let bind = (@) in
   let option_default = [] in
   let mcode r x = [] in
-  let donothing r k e = (Ast.get_isos e) @ (k e) in
+  let donothing r k e = Common.union_set (Ast.get_isos e) (k e) in
   let doanything r k e = k e in
   V.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode

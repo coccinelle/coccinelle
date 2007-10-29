@@ -89,8 +89,10 @@ val profile_diagnostic_basic : unit -> string
 
 val time_func : (unit -> 'a) -> 'a
 
+type prof = PALL | PNONE | PSOME of string list
+val profile : prof ref
+
 val _profile_table : (string, (float ref * int ref)) Hashtbl.t ref
-val profile : bool ref
 val profile_code : string -> (unit -> 'a) -> 'a
 val profile_diagnostic : unit -> unit
 

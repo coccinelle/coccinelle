@@ -71,7 +71,7 @@ let ast_to_flow_with_error_messages a =
 (* --------------------------------------------------------------------- *)
 (* Ctl related *)
 (* --------------------------------------------------------------------- *)
-let ctls_of_ast ast ua  =
+let ctls_of_ast2 ast ua =
   List.map2
     (function ast -> function ua ->
       List.combine
@@ -80,6 +80,9 @@ let ctls_of_ast ast ua  =
 	else Asttoctl2.asttoctl ast ua)
 	(Asttomember.asttomember ast ua))
     ast ua
+
+let ctls_of_ast ast ua  =
+  Common.profile_code "asttoctl2" (fun () -> ctls_of_ast2 ast ua)
 
 (*****************************************************************************)
 (* Some  debugging functions *)
