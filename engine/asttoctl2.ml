@@ -1103,11 +1103,13 @@ let dots_au toend label s wrapcode x seq_after y =
 	      (ctl_au CTL.NONSTRICT preflabelpred
 		 (ctl_and CTL.NONSTRICT preflabelpred
 		    (ctl_or (retpred None)
-		       (*CTL.True*)
-		       (ctl_or matchcontinue
-			  (ctl_and CTL.NONSTRICT
-			     (ctl_or matchgoto matchbreak)
-			     (ctl_ag s (ctl_not seq_after))))))))) in
+		       (if !Flag_engine.only_return_is_error_exit
+		       then CTL.True
+		       else
+			 (ctl_or matchcontinue
+			    (ctl_and CTL.NONSTRICT
+			       (ctl_or matchgoto matchbreak)
+			       (ctl_ag s (ctl_not seq_after)))))))))) in
   ctl_au s x (ctl_or y stop_early)
 
 let rec dots_and_nests plus nest whencodes bef aft dotcode after label

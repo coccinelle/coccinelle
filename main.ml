@@ -314,6 +314,9 @@ let other_options = [
        "disallow an expresion pattern from matching a term and its subterm";
     "-disable_worth_trying_opt", Arg.Clear Flag_cocci.worth_trying_opt,
     "  ";
+    "-only_return_is_error_exit",
+    Arg.Set Flag_engine.only_return_is_error_exit,
+    "if this flag is not set, then break and continue are also error exits";
   ];
 
   "misc options",
@@ -443,13 +446,16 @@ let _ = long_usage_func := long_usage
 (*****************************************************************************)
 
 let adjust_stdin cfile k =
-  let newin = 
-    let (dir, base, ext) = Common.dbe_of_filename cfile in
-    let varfile = Common.filename_of_dbe (dir, base, "var") in
-    if ext = "c" && Common.lfile_exists varfile
-    then Some varfile
-    else None in
-  Common.redirect_stdin_opt newin k
+  if !dir
+  then k()
+  else
+    let newin = 
+      let (dir, base, ext) = Common.dbe_of_filename cfile in
+      let varfile = Common.filename_of_dbe (dir, base, "var") in
+      if ext = "c" && Common.lfile_exists varfile
+      then Some varfile
+      else None in
+    Common.redirect_stdin_opt newin k
   
 (*****************************************************************************)
 (* The coccinelle main entry point *)

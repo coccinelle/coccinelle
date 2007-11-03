@@ -707,13 +707,14 @@ let contextify_whencode =
   let do_nothing r k e = k e in
 
   let expression r k e =
+    k e;
     match Ast0.unwrap e with
       Ast0.NestExpr(_,_,_,Some whencode,_)
     | Ast0.Edots(_,Some whencode)
     | Ast0.Ecircles(_,Some whencode)
     | Ast0.Estars(_,Some whencode) ->
 	contextify_all.V0.combiner_expression whencode
-    | _ -> k e in
+    | _ -> () in
 
   let initialiser r k i =
     match Ast0.unwrap i with
@@ -722,6 +723,7 @@ let contextify_whencode =
     | _ -> k i in
 
   let statement r k (s : Ast0.statement) =
+    k s;
     match Ast0.unwrap s with
       Ast0.Nest(_,_,_,Some whencode,_) ->
 	contextify_all.V0.combiner_statement_dots whencode
@@ -733,7 +735,7 @@ let contextify_whencode =
 	    | Ast0.WhenAlways s -> contextify_all.V0.combiner_statement s
 	    | Ast0.WhenAny -> ())
 	  whencode
-    | _ -> k s in
+    | _ -> () in
 
   let combiner = 
     V0.combiner bind option_default

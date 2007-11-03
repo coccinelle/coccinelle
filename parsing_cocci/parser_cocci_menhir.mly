@@ -729,14 +729,7 @@ statement:
 | TContinue TPtVirg { P.cont $1 $2 }
 | TOBrace pre_post_decl_statement_and_expression_opt TCBrace
     { P.seq $1 $2 $3 }
-| TOEllipsis w=option(whenppdecs) b=statement_dots(TEllipsis) c=TCEllipsis
-    { Ast0.wrap(Ast0.Nest(P.clt2mcode "<..." $1,
-			  Ast0.wrap(Ast0.DOTS(b (P.mkdots "..."))),
-			  P.clt2mcode "...>" c, w, false)) }
-| TPOEllipsis w=option(whenppdecs) b=statement_dots(TEllipsis) c=TPCEllipsis
-    { Ast0.wrap(Ast0.Nest(P.clt2mcode "<+..." $1,
-			  Ast0.wrap(Ast0.DOTS(b (P.mkdots "..."))),
-			  P.clt2mcode "...+>" c, w, true)) }
+| statement_nest { $1 }
 /*
 | TOCircles w=option(whenppdecs) b=statement_dots(TCircles) c=TCCircles
     { Ast0.wrap(Ast0.Nest(P.clt2mcode "<ooo" $1,
@@ -747,6 +740,16 @@ statement:
 			  Ast0.wrap(Ast0.STARS(b (P.mkdots "***"))),
 			  P.clt2mcode "***>" c, w)) }
 */
+
+statement_nest:
+  TOEllipsis w=option(whenppdecs) b=statement_dots(TEllipsis) c=TCEllipsis
+    { Ast0.wrap(Ast0.Nest(P.clt2mcode "<..." $1,
+			  Ast0.wrap(Ast0.DOTS(b (P.mkdots "..."))),
+			  P.clt2mcode "...>" c, w, false)) }
+| TPOEllipsis w=option(whenppdecs) b=statement_dots(TEllipsis) c=TPCEllipsis
+    { Ast0.wrap(Ast0.Nest(P.clt2mcode "<+..." $1,
+			  Ast0.wrap(Ast0.DOTS(b (P.mkdots "..."))),
+			  P.clt2mcode "...+>" c, w, true)) }
 
 whenppdecs: TWhen TNotEq w=pre_post_decl_statement_or_expression TLineEnd
     { w }
@@ -1281,35 +1284,12 @@ pure_decl_statement_list:
 exp_decl_statement_list:
     TNothing { [] } /* only in + code, between dots */
   | expr { [Ast0.wrap(Ast0.Exp(Ast0.set_arg_exp($1)))] }
-  | expr TOEllipsis b=statement_dots(TEllipsis) TCEllipsis
-    exp_decl_statement_list
+  | expr statement_nest exp_decl_statement_list
       /* HACK!!! */
-    { (Ast0.wrap(Ast0.Exp(Ast0.set_arg_exp($1))))::
-      (Ast0.wrap(Ast0.Nest(P.clt2mcode "<..." $2,
-			  Ast0.wrap(Ast0.DOTS(b (P.mkdots "..."))),
-			  P.clt2mcode "...>" $4, None, false)))::
-      $5 }
-  | expr TOEllipsis b=statement_dots(TEllipsis) TCEllipsis
+    { (Ast0.wrap(Ast0.Exp(Ast0.set_arg_exp($1))))::$2::$3 }
+  | expr statement_nest
       /* HACK!!! */
-    { [(Ast0.wrap(Ast0.Exp(Ast0.set_arg_exp($1))));
-	(Ast0.wrap(Ast0.Nest(P.clt2mcode "<..." $2,
-			     Ast0.wrap(Ast0.DOTS(b (P.mkdots "..."))),
-			     P.clt2mcode "...>" $4, None, false)))] }
-
-  | expr TPOEllipsis b=statement_dots(TEllipsis) TPCEllipsis
-    exp_decl_statement_list
-      /* HACK!!! */
-    { (Ast0.wrap(Ast0.Exp(Ast0.set_arg_exp($1))))::
-      (Ast0.wrap(Ast0.Nest(P.clt2mcode "<..." $2,
-			  Ast0.wrap(Ast0.DOTS(b (P.mkdots "..."))),
-			  P.clt2mcode "...>" $4, None, true)))::
-      $5 }
-  | expr TPOEllipsis b=statement_dots(TEllipsis) TPCEllipsis
-      /* HACK!!! */
-    { [(Ast0.wrap(Ast0.Exp(Ast0.set_arg_exp($1))));
-	(Ast0.wrap(Ast0.Nest(P.clt2mcode "<..." $2,
-			     Ast0.wrap(Ast0.DOTS(b (P.mkdots "..."))),
-			     P.clt2mcode "...>" $4, None, true)))] }
+    { [(Ast0.wrap(Ast0.Exp(Ast0.set_arg_exp($1))));$2] }
 
   | pure_decl_statement_list                { $1 }
 
@@ -1328,49 +1308,15 @@ fun_exp_decl_statement_list:
 	(Ast0.DisjType(P.clt2mcode "(" lp,code,mids, P.clt2mcode ")" rp)) in
     [Ast0.wrap(Ast0.OTHER(Ast0.wrap(Ast0.Ty(s))))]}
   | expr { [Ast0.wrap(Ast0.OTHER(Ast0.wrap(Ast0.Exp(Ast0.set_arg_exp($1)))))] }
-  | expr TOEllipsis b=statement_dots(TEllipsis) TCEllipsis
-    fun_exp_decl_statement_list
+  | expr statement_nest fun_exp_decl_statement_list
       /* HACK!!! */
     { (Ast0.wrap(Ast0.OTHER(Ast0.wrap(Ast0.Exp(Ast0.set_arg_exp($1))))))::
-      (Ast0.wrap
-	 (Ast0.OTHER
-	    (Ast0.wrap
-	       (Ast0.Nest(P.clt2mcode "<..." $2,
-			  Ast0.wrap(Ast0.DOTS(b (P.mkdots "..."))),
-			  P.clt2mcode "...>" $4, None, false)))))::
-      $5 }
+      (Ast0.wrap (Ast0.OTHER $2)):: $3 }
 
-  | expr TOEllipsis b=statement_dots(TEllipsis) TCEllipsis
+  | expr statement_nest
       /* HACK!!! */
     { [(Ast0.wrap(Ast0.OTHER(Ast0.wrap(Ast0.Exp(Ast0.set_arg_exp($1))))));
-      (Ast0.wrap
-	 (Ast0.OTHER
-	    (Ast0.wrap
-	       (Ast0.Nest(P.clt2mcode "<..." $2,
-			  Ast0.wrap(Ast0.DOTS(b (P.mkdots "..."))),
-			  P.clt2mcode "...>" $4, None, false)))))] }
-
-  | expr TPOEllipsis b=statement_dots(TEllipsis) TPCEllipsis
-    fun_exp_decl_statement_list
-      /* HACK!!! */
-    { (Ast0.wrap(Ast0.OTHER(Ast0.wrap(Ast0.Exp(Ast0.set_arg_exp($1))))))::
-      (Ast0.wrap
-	 (Ast0.OTHER
-	    (Ast0.wrap
-	       (Ast0.Nest(P.clt2mcode "<..." $2,
-			  Ast0.wrap(Ast0.DOTS(b (P.mkdots "..."))),
-			  P.clt2mcode "...>" $4, None, true)))))::
-      $5 }
-
-  | expr TPOEllipsis b=statement_dots(TEllipsis) TPCEllipsis
-      /* HACK!!! */
-    { [(Ast0.wrap(Ast0.OTHER(Ast0.wrap(Ast0.Exp(Ast0.set_arg_exp($1))))));
-      (Ast0.wrap
-	 (Ast0.OTHER
-	    (Ast0.wrap
-	       (Ast0.Nest(P.clt2mcode "<..." $2,
-			  Ast0.wrap(Ast0.DOTS(b (P.mkdots "..."))),
-			  P.clt2mcode "...>" $4, None, true)))))] }
+      (Ast0.wrap (Ast0.OTHER $2))] }
 
   | f=nonempty_list(fun_decl_statement)        { List.concat f }
 
