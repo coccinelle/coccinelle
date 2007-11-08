@@ -11,7 +11,7 @@ expression delay;
 -     void *data
 +     struct work_struct *work
      ) {
-      <...
-\+    schedule_delayed_work(&device->fld1,delay);
-      ...>
+      <+...
+      schedule_delayed_work(&device->fld1,delay);
+      ...+>
   }

@@ -179,7 +179,7 @@ let drop_names dec =
 			  Ast0.rewrap typ
 			    (Ast0.FunctionType(ty,lp,params,rp)),
 			  name,sem))))
-	  | _ -> failwith "unexpected type")
+	  | _ -> failwith "function prototypes: unexpected type")
       |	_ -> failwith "unexpected declaration")
   | _ -> failwith "unexpected term"
 

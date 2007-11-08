@@ -271,7 +271,7 @@ and base_statement =
   | Disj          of string mcode * statement dots list * string mcode list *
 	             string mcode
   | Nest          of string mcode * statement dots * string mcode *
-	             statement dots option * Ast_cocci.multi
+	             statement dots list * Ast_cocci.multi
   | Dots          of string mcode (* ... *) *
                      (statement dots,statement) whencode list
   | Circles       of string mcode (* ooo *) *

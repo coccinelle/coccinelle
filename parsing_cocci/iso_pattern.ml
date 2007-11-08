@@ -1334,7 +1334,8 @@ let instantiate bindings mv_bindings =
 			  with
 			    Common.Left(Ast0.TypeCTag(t)) ->
 			      Ast0.ast0_type_to_type t
-			  | Common.Left(_) -> failwith "unexpected type"
+			  | Common.Left(_) ->
+			      failwith "iso pattern: unexpected type"
 			  | Common.Right(new_mv) ->
 			      Type_cocci.MetaType(new_mv,keep,inherited))
 		      |	Type_cocci.ConstVol(cv,ty) ->

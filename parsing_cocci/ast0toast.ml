@@ -341,70 +341,63 @@ and expression_dots ed = dots expression ed
 and typeC t =
   rewrap t (do_isos (Ast0.get_iso t))
     (match Ast0.unwrap t with
-      Ast0.ConstVol(cv,ty) -> Ast.Type(Some (mcode cv),base_typeC ty)
-    | Ast0.BaseType(ty,sign) ->
-	Ast.Type(None,
-		 rewrap t no_isos
-		   (Ast.BaseType(mcode ty,get_option mcode sign)))
-    | Ast0.ImplicitInt(sign) ->
-	Ast.Type(None,rewrap t no_isos (Ast.ImplicitInt(mcode sign)))
-    | Ast0.Pointer(ty,star) ->
-	Ast.Type(None, rewrap t no_isos (Ast.Pointer(typeC ty,mcode star)))
-    | Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
-	Ast.Type(None,
-		 rewrap t no_isos
-		   (Ast.FunctionPointer
-		      (typeC ty,mcode lp1,mcode star,mcode rp1,
-		       mcode lp2,parameter_list params,mcode rp2)))
-    | Ast0.FunctionType(ty,lp1,params,rp1) ->
-	let allminus = check_allminus.V0.combiner_typeC t in
-	Ast.Type(None,
-		 rewrap t no_isos
-		   (Ast.FunctionType
-		      (allminus,get_option typeC ty,mcode lp1,
-		       parameter_list params,mcode rp1)))
-    | Ast0.Array(ty,lb,size,rb) ->
-	Ast.Type(None,
-		 rewrap t no_isos
-		   (Ast.Array(typeC ty,mcode lb,get_option expression size,
-			      mcode rb)))
-    | Ast0.StructUnionName(kind,name) ->
-	Ast.Type(None,
-		 rewrap t no_isos
-		   (Ast.StructUnionName(mcode kind,get_option ident name)))
-    | Ast0.StructUnionDef(ty,lb,decls,rb) ->
-	Ast.Type(None,
-		 rewrap t no_isos
-		   (Ast.StructUnionDef(typeC ty,mcode lb,
-				       dots declaration decls,
-				       mcode rb)))
-    | Ast0.TypeName(name) ->
-	Ast.Type(None,rewrap t no_isos (Ast.TypeName(mcode name)))
-    | Ast0.MetaType(name,_) ->
-	Ast.Type(None,
-		 rewrap t no_isos (Ast.MetaType(mcode name,unitary,false)))
+      Ast0.ConstVol(cv,ty) ->
+	let rec collect_disjs t =
+	  match Ast0.unwrap t with
+	    Ast0.DisjType(_,types,_,_) ->
+	      if Ast0.get_iso t = []
+	      then List.concat (List.map collect_disjs types)
+	      else failwith "unexpected iso on a disjtype"
+	  | _ -> [t] in
+	let res =
+	  List.map
+	    (function ty ->
+	      Ast.Type
+		(Some (mcode cv),
+		 rewrap ty (do_isos (Ast0.get_iso ty)) (base_typeC ty)))
+	    (collect_disjs ty) in
+	(* one could worry that isos are lost because we flatten the
+	   disjunctions.  but there should not be isos on the disjunctions
+	   themselves. *)
+	(match res with
+	  [ty] -> ty
+	| types -> Ast.DisjType(List.map (rewrap t no_isos) types))
+    | Ast0.BaseType(_,_) | Ast0.ImplicitInt(_) | Ast0.Pointer(_,_)
+    | Ast0.FunctionPointer(_,_,_,_,_,_,_) | Ast0.FunctionType(_,_,_,_)
+    | Ast0.Array(_,_,_,_) | Ast0.StructUnionName(_,_)
+    | Ast0.StructUnionDef(_,_,_,_) | Ast0.TypeName(_) | Ast0.MetaType(_,_) ->
+	Ast.Type(None,rewrap t no_isos (base_typeC t))
     | Ast0.DisjType(_,types,_,_) -> Ast.DisjType(List.map typeC types)
     | Ast0.OptType(ty) -> Ast.OptType(typeC ty)
     | Ast0.UniqueType(ty) -> Ast.UniqueType(typeC ty))
     
 and base_typeC t =
-  rewrap t (do_isos (Ast0.get_iso t))
-    (match Ast0.unwrap t with
-      Ast0.BaseType(ty,sign) ->
-	Ast.BaseType(mcode ty,get_option mcode sign)
-    | Ast0.Pointer(ty,star) -> Ast.Pointer(typeC ty,mcode star)
-    | Ast0.Array(ty,lb,size,rb) ->
-	Ast.Array(typeC ty,mcode lb,get_option expression size,mcode rb)
-    | Ast0.StructUnionName(kind,name) ->
-	Ast.StructUnionName(mcode kind,get_option ident name)
-    | Ast0.StructUnionDef(ty,lb,decls,rb) ->
-	Ast.StructUnionDef(typeC ty,mcode lb,
-			   dots declaration decls,
-			   mcode rb)
-    | Ast0.TypeName(name) -> Ast.TypeName(mcode name)
-    | Ast0.MetaType(name,_) -> Ast.MetaType(mcode name,unitary,false)
-    | _ -> failwith "unexpected type")
-    
+  match Ast0.unwrap t with
+    Ast0.BaseType(ty,sign) ->
+      Ast.BaseType(mcode ty,get_option mcode sign)
+  | Ast0.ImplicitInt(sgn) -> Ast.ImplicitInt(mcode sgn)
+  | Ast0.Pointer(ty,star) -> Ast.Pointer(typeC ty,mcode star)
+  | Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
+      Ast.FunctionPointer
+	(typeC ty,mcode lp1,mcode star,mcode rp1,
+	 mcode lp2,parameter_list params,mcode rp2)
+  | Ast0.FunctionType(ret,lp,params,rp) ->
+      let allminus = check_allminus.V0.combiner_typeC t in
+      Ast.FunctionType
+	(allminus,get_option typeC ret,mcode lp,
+	 parameter_list params,mcode rp)
+  | Ast0.Array(ty,lb,size,rb) ->
+      Ast.Array(typeC ty,mcode lb,get_option expression size,mcode rb)
+  | Ast0.StructUnionName(kind,name) ->
+      Ast.StructUnionName(mcode kind,get_option ident name)
+  | Ast0.StructUnionDef(ty,lb,decls,rb) ->
+      Ast.StructUnionDef(typeC ty,mcode lb,
+			 dots declaration decls,
+			 mcode rb)
+  | Ast0.TypeName(name) -> Ast.TypeName(mcode name)
+  | Ast0.MetaType(name,_) -> Ast.MetaType(mcode name,unitary,false)
+  | _ -> failwith "ast0toast: unexpected type"
+	
 (* --------------------------------------------------------------------- *)
 (* Variable declaration *)
 (* Even if the Cocci program specifies a list of declarations, they are
@@ -645,9 +638,9 @@ and statement s =
       | Ast0.Nest(_,rule_elem_dots,_,whencode,multi) ->
 	  Ast.Nest
 	    (statement_dots Ast.Sequencible rule_elem_dots,
-	     (match whencode with
-	       None -> []
-	     | Some x -> [Ast.WhenNot (statement_dots Ast.Sequencible x)]),
+	     List.map
+	       (function x -> Ast.WhenNot (statement_dots Ast.Sequencible x))
+	       whencode,
 	     multi,[],[])
       | Ast0.Dots(d,whn) ->
 	  let d = mcode d in

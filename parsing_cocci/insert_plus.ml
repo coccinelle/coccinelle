@@ -55,7 +55,7 @@ it *)
       (Ast0.rewrap s
 	 (match Ast0.unwrap s with
 	   Ast0.Nest(started,stm_dots,ender,whencode,multi) ->
-	     Ast0.Nest(started,stm_dots,ender,None,multi)
+	     Ast0.Nest(started,stm_dots,ender,[],multi)
 	 | Ast0.Dots(dots,whencode) -> Ast0.Dots(dots,[])
 	 | Ast0.Circles(dots,whencode) -> Ast0.Circles(dots,[])
 	 | Ast0.Stars(dots,whencode) -> Ast0.Stars(dots,[])

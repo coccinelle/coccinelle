@@ -742,11 +742,11 @@ statement:
 */
 
 statement_nest:
-  TOEllipsis w=option(whenppdecs) b=statement_dots(TEllipsis) c=TCEllipsis
+  TOEllipsis w=list(whenppdecs) b=statement_dots(TEllipsis) c=TCEllipsis
     { Ast0.wrap(Ast0.Nest(P.clt2mcode "<..." $1,
 			  Ast0.wrap(Ast0.DOTS(b (P.mkdots "..."))),
 			  P.clt2mcode "...>" c, w, false)) }
-| TPOEllipsis w=option(whenppdecs) b=statement_dots(TEllipsis) c=TPCEllipsis
+| TPOEllipsis w=list(whenppdecs) b=statement_dots(TEllipsis) c=TPCEllipsis
     { Ast0.wrap(Ast0.Nest(P.clt2mcode "<+..." $1,
 			  Ast0.wrap(Ast0.DOTS(b (P.mkdots "..."))),
 			  P.clt2mcode "...+>" c, w, true)) }

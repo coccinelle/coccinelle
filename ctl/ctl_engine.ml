@@ -965,7 +965,7 @@ let satAU dir ((cfg,_,states) as m) s1 s2 reqst =
   if s1 = []
   then AUok s2
   else
-    (*let ctr = ref 0 in*)
+    let ctr = ref 0 in
     let pre_forall =
       if !Flag_ctl.loop_in_src_code
       then pre_forall_AW
@@ -976,7 +976,7 @@ let satAU dir ((cfg,_,states) as m) s1 s2 reqst =
 	match newinfo with
 	  [] -> AUok y
 	| new_info ->
-	    (*ctr := !ctr + 1;
+(*	    ctr := !ctr + 1;
 	    print_state (Printf.sprintf "iteration %d\n" !ctr) y;
 	    flush stdout;*)
 	    let pre =
@@ -988,6 +988,9 @@ let satAU dir ((cfg,_,states) as m) s1 s2 reqst =
 		match triples_conj s1 pre with
 		  [] -> AUok y
 		| first ->
+(*		    print_state "s1" s1;
+		    print_state "pre" pre;
+		    print_state "first" first;*)
 		    let res = triples_union first y in
 		    let new_info =
 		      if not !something_dropped

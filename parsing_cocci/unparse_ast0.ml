@@ -460,10 +460,13 @@ and statement arity s =
       | Ast0.Nest(starter,stmt_dots,ender,whencode,multi) ->
 	  print_string arity;
 	  mcode print_string starter;
-	  print_option
+	  open_box 0;
+	  List.iter
 	    (function x ->
 	      print_string "   WHEN != "; open_box 0;
-	      dots force_newline (statement "") x) whencode;
+	      dots force_newline (statement "") x)
+	    whencode;
+	  close_box();
 	  start_block();
 	  dots force_newline (statement arity) stmt_dots;
 	  end_block();

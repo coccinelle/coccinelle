@@ -349,7 +349,7 @@ let classify is_minus all_marked table code =
     compute_result Ast0.stmt s
       (match Ast0.unwrap s with
 	Ast0.Nest(started,stm_dots,ender,whencode,multi) ->
-	  k (Ast0.rewrap s (Ast0.Nest(started,stm_dots,ender,None,multi)))
+	  k (Ast0.rewrap s (Ast0.Nest(started,stm_dots,ender,[],multi)))
       | Ast0.Dots(dots,whencode) ->
 	  k (Ast0.rewrap s (Ast0.Dots(dots,[])))
       | Ast0.Circles(dots,whencode) ->
@@ -725,8 +725,8 @@ let contextify_whencode =
   let statement r k (s : Ast0.statement) =
     k s;
     match Ast0.unwrap s with
-      Ast0.Nest(_,_,_,Some whencode,_) ->
-	contextify_all.V0.combiner_statement_dots whencode
+      Ast0.Nest(_,_,_,whencode,_) ->
+	List.iter contextify_all.V0.combiner_statement_dots whencode
     | Ast0.Dots(_,whencode)
     | Ast0.Circles(_,whencode) | Ast0.Stars(_,whencode) ->
 	List.iter

@@ -385,10 +385,10 @@ let rec seq_fvs quantified = function
       let new_quantified = Common.union_set bothfvs quantified in
       (t1onlyfvs,bothfvs)::(seq_fvs new_quantified fvs)
 
-let quantify =
+let quantify guard =
   List.fold_right
     (function cur ->
-      function code -> CTL.Exists (List.mem cur !saved,cur,code))
+      function code -> CTL.Exists (not guard && List.mem cur !saved,cur,code))
 
 let non_saved_quantify =
   List.fold_right
@@ -773,7 +773,7 @@ let do_re_matches label guard res quantified minus_quantified =
   let make_match x =
     let stmt_fvs = Ast.get_fvs x in
     let fvs = get_unquantified quantified stmt_fvs in
-    quantify fvs (make_match None guard x) in
+    quantify guard fvs (make_match None guard x) in
   ctl_and CTL.NONSTRICT (label_pred_maker label)
     (match List.map Ast.unwrap res with
       [] -> failwith "unexpected empty disj"
@@ -820,7 +820,7 @@ let end_control_structure fvs header body after_pred
   let body = body after_branch in
   let s = guard_to_strict guard in
   (* the code *)
-  quantify fvs
+  quantify guard fvs
     (ctl_and s header
        (opt_and guard
 	  (match (after,aft_needed) with
@@ -852,7 +852,7 @@ let ifthen ifheader branch ((afvs,_,_,_) as aft) after
     | _ -> failwith "not possible" in
   let new_mquantified = Common.union_set mbfvs minus_quantified in
   (* if header *)
-  let if_header = quantify efvs (make_match ifheader) in
+  let if_header = quantify guard efvs (make_match ifheader) in
   (* then branch and after *)
   let true_branch =
     make_seq guard
@@ -912,7 +912,7 @@ let ifthenelse ifheader branch1 els branch2 ((afvs,_,_,_) as aft) after
   let mbothfvs       = union (union mb1fvs mb2fvs) (intersect ms1fvs ms2fvs) in
   let new_mquantified = union mbothfvs minus_quantified in
   (* if header *)
-  let if_header = quantify exponlyfvs (make_match ifheader) in
+  let if_header = quantify guard exponlyfvs (make_match ifheader) in
   (* then and else branches *)
   let true_branch =
     make_seq guard
@@ -949,7 +949,7 @@ let forwhile header body ((afvs,_,_,_) as aft) after
       | _ -> failwith "not possible" in
     let new_mquantified = Common.union_set mbfvs minus_quantified in
     (* loop header *)
-    let header = quantify efvs (make_match header) in
+    let header = quantify guard efvs (make_match header) in
     let body =
       make_seq guard
 	[inlooppred label;
@@ -967,7 +967,7 @@ let forwhile header body ((afvs,_,_,_) as aft) after
 	    match seq_fvs quantified [Ast.get_fvs header] with
 	      [(efvs,_)] -> efvs
 	    | _ -> failwith "not possible" in
-	  quantify efvs (make_match header)
+	  quantify guard efvs (make_match header)
       | _ -> process())
   | _ -> process()
   
@@ -1043,7 +1043,7 @@ let svar_context_with_add_after s label quantified d ast
     ctl_and CTL.NONSTRICT label_pred
        (f (ctl_and CTL.NONSTRICT
 	    (make_raw_match label false ast) (ctl_or left_or right_or))) in
-  quantify (label_var::get_unquantified quantified [s])
+  quantify guard (label_var::get_unquantified quantified [s])
     (sequencibility body label_pred process_bef_aft seqible)
 
 let svar_minus_or_no_add_after s label quantified d ast
@@ -1070,7 +1070,7 @@ let svar_minus_or_no_add_after s label quantified d ast
 	    (make_seq guard
 	       [first_metamatch;
 		 ctl_au CTL.NONSTRICT rest_nodes last_node]))) in
-  quantify (label_var::get_unquantified quantified [s])
+  quantify guard (label_var::get_unquantified quantified [s])
     (sequencibility body label_pred process_bef_aft seqible)
 
 (* --------------------------------------------------------------------- *)
@@ -1097,7 +1097,7 @@ let dots_au toend label s wrapcode x seq_after y =
     then CTL.Or(aftpred label,exitpred label)
     else
       ctl_or (aftpred label)
-	(quantify [lv]
+	(quantify false [lv]
 	   (ctl_and CTL.NONSTRICT
 	      (ctl_and CTL.NONSTRICT (truepred label) labelpred)
 	      (ctl_au CTL.NONSTRICT preflabelpred
@@ -1142,11 +1142,11 @@ let rec dots_and_nests plus nest whencodes bef aft dotcode after label
 	(CTL.True,bef_aft) (List.rev whencodes) in
     let poswhen = ctl_and_ns arg poswhen in
     let negwhen =
-      if !exists
-      then
+(*      if !exists
+      then*)
         (* add in After, because it's not part of the program *)
 	ctl_or (aftpred label) negwhen
-      else negwhen in
+      (*else negwhen*) in
     ctl_and_ns poswhen (ctl_not negwhen) in
   (* process dot code, if any *)
   let dotcode =
@@ -1247,7 +1247,7 @@ let rec statement_list stmt_list after quantified minus_quantified
 	      get_unquantified minus_quantified minus_shared in
 	    let new_mquantified =
 	      Common.union_set munqshared minus_quantified in
-	    quantify unqshared
+	    quantify guard unqshared
 	      (statement e
 		 (After
 		    (loop new_quantified new_mquantified (isdots e)
@@ -1297,11 +1297,11 @@ and statement stmt after quantified minus_quantified label guard =
 	    | Ast.Exp(_) | Ast.Ty(_) ->
 		let stmt_fvs = Ast.get_fvs stmt in
 		let fvs = get_unquantified quantified stmt_fvs in
-		CTL.InnerAnd(quantify fvs (make_match ast))
+		CTL.InnerAnd(quantify guard fvs (make_match ast))
 	    | _ ->
 		let stmt_fvs = Ast.get_fvs stmt in
 		let fvs = get_unquantified quantified stmt_fvs in
-		quantify fvs (make_match ast) in
+		quantify guard fvs (make_match ast) in
 	  match Ast.unwrap ast with
             Ast.Return((_,info,retmc),(_,_,semmc)) ->
 	      (* discard pattern that comes after return *)
@@ -1392,10 +1392,10 @@ and statement stmt after quantified minus_quantified label guard =
       let label_pred = CTL.Pred(Lib_engine.Label lv,CTL.Control) in
       let start_brace =
 	ctl_and
-	  (quantify lbfvs (make_match lbrace))
+	  (quantify guard lbfvs (make_match lbrace))
 	  (ctl_and paren_pred label_pred) in
       let end_brace =
-	ctl_and (quantify rbfvs (make_match rbrace)) paren_pred in
+	ctl_and (quantify guard rbfvs (make_match rbrace)) paren_pred in
       let new_quantified2 =
 	Common.union_set b1fvs (Common.union_set b2fvs quantified) in
       let new_quantified3 = Common.union_set b3fvs new_quantified2 in
@@ -1405,13 +1405,13 @@ and statement stmt after quantified minus_quantified label guard =
       let pattern_as_given =
 	CTL.Exists
 	  (true,pv,CTL.Exists
-	     (true,lv,quantify b1fvs
+	     (true,lv,quantify guard b1fvs
 		(make_seq
 		   [start_brace;
-		     quantify b2fvs
+		     quantify guard b2fvs
 		       (statement_list decls
 			  (After
-			     (quantify b3fvs
+			     (quantify guard b3fvs
 				(statement_list body
 				   (After (make_seq_after end_brace after))
 				   new_quantified3 new_mquantified3
@@ -1442,13 +1442,13 @@ and statement stmt after quantified minus_quantified label guard =
 	      ctl_ax (* skip the destination label *)
 		(ctl_au
 		   (make_match empty_rbrace)
-		   (quantify b3fvs
+		   (quantify guard b3fvs
 		      (statement_list body End
 			 new_quantified3 new_mquantified3 None true
 			 guard)))] in
 	let pattern3 =
 	  CTL.Exists
-	    (true,lv,quantify b1fvs
+	    (true,lv,quantify guard b1fvs
 	       (make_seq
 		  [start_brace;
 		    ctl_and
@@ -1459,10 +1459,10 @@ and statement stmt after quantified minus_quantified label guard =
 			       (Ast.rewrap stmt Ast.Goto))
 			    (* want AF even for sgrep *)
 			    (CTL.AF(CTL.FORWARD,CTL.STRICT,end_brace))))
-		      (quantify b2fvs
+		      (quantify guard b2fvs
 			 (statement_list decls
 			    (After
-			       (quantify b3fvs
+			       (quantify guard b3fvs
 				  (statement_list body Tail
 					(*After
 					   (make_seq_after
@@ -1513,7 +1513,7 @@ and statement stmt after quantified minus_quantified label guard =
       (* no minus version because when code doesn't contain any minus code *)
       let new_quantified = Common.union_set bfvs quantified in
 
-      quantify bfvs
+      quantify guard bfvs
 	(let dots_pattern =
 	  statement_list stmt_dots (a2n after) new_quantified minus_quantified
 	    None true guard in
@@ -1613,9 +1613,9 @@ and statement stmt after quantified minus_quantified label guard =
       let new2_mquantified = union mb2fvs new1_mquantified in
 (*      let b3fvs = union_all all_b3fvs in*)
       (* ------------------- end collection of free variables *)
-      let switch_header = quantify exponlyfvs (make_match header) in
-      let lb = quantify lbonlyfvs (make_match lb) in
-(*      let rb = quantify rbonlyfvs (make_match rb) in*)
+      let switch_header = quantify guard exponlyfvs (make_match header) in
+      let lb = quantify guard lbonlyfvs (make_match lb) in
+(*      let rb = quantify guard rbonlyfvs (make_match rb) in*)
       let case_headers =
 	List.map
 	  (function case_line ->
@@ -1625,7 +1625,7 @@ and statement stmt after quantified minus_quantified label guard =
 		  match seq_fvs new2_quantified [Ast.get_fvs header] with
 		    [(e1fvs,_)] -> e1fvs
 		  | _ -> failwith "not possible" in
-		quantify e1fvs (real_make_match label true header)
+		quantify guard e1fvs (real_make_match label true header)
 	    | Ast.OptCase(case_line) -> failwith "not supported")
 	  cases in
       let no_header =
@@ -1646,14 +1646,14 @@ and statement stmt after quantified minus_quantified label guard =
 		      [(e1fvs,b1fvs);(s1fvs,_)] -> (e1fvs,b1fvs,s1fvs)
 		    | _ -> failwith "not possible" in
 		  let case_header =
-		    quantify e1fvs (make_match header) in
+		    quantify guard e1fvs (make_match header) in
 		  let new3_quantified = union b1fvs new2_quantified in
 		  let new3_mquantified = union mb1fvs new2_mquantified in
 		  let body =
 		    statement_list body Tail
 		      new3_quantified new3_mquantified label
 		      true(*?*) guard in
-		  quantify b1fvs (make_seq [case_header; body])
+		  quantify guard b1fvs (make_seq [case_header; body])
 	    | Ast.OptCase(case_line) -> failwith "not supported")
 	  cases in
       let default_required =
@@ -1672,7 +1672,7 @@ and statement stmt after quantified minus_quantified label guard =
       let body after_branch =
 	ctl_or
 	  (default_required
-	     (quantify b2fvs
+	     (quantify guard b2fvs
 		(make_seq
 		   [ctl_and lb
 		       (List.fold_left ctl_and CTL.True
@@ -1705,8 +1705,8 @@ and statement stmt after quantified minus_quantified label guard =
 	  [(hfvs,b1fvs);(lbfvs,b2fvs);(_,b3fvs);(_,b4fvs);(rbfvs,_)] ->
 	    (hfvs,b1fvs,lbfvs,b2fvs,b3fvs,b4fvs,rbfvs)
 	| _ -> failwith "not possible" in
-      let function_header = quantify hfvs (make_match header) in
-      let start_brace = quantify lbfvs (make_match lbrace) in
+      let function_header = quantify guard hfvs (make_match header) in
+      let start_brace = quantify guard lbfvs (make_match lbrace) in
       let stripped_rbrace =
 	match Ast.unwrap rbrace with
 	  Ast.SeqEnd((data,info,_)) ->
@@ -1717,7 +1717,7 @@ and statement stmt after quantified minus_quantified label guard =
 	let exit = CTL.Pred (Lib_engine.Exit,CTL.Control) in
 	let errorexit = CTL.Pred (Lib_engine.ErrorExit,CTL.Control) in
 	ctl_and
-	  (quantify rbfvs (make_match rbrace))
+	  (quantify guard rbfvs (make_match rbrace))
 	  (ctl_and
 	     (ctl_back_ex (ctl_not (make_match stripped_rbrace)))
 	     (ctl_au
@@ -1795,16 +1795,16 @@ and statement stmt after quantified minus_quantified label guard =
 	| None ->
 	    make_seq
 	      [start_brace;
-		quantify b3fvs
+		quantify guard b3fvs
 		  (statement_list decls
 		     (After
-			(quantify b4fvs
+			(quantify guard b4fvs
 			   (statement_list body
 			      (After (make_seq_after end_brace after))
 			      new_quantified4 new_mquantified4
 			      None true guard)))
 		     new_quantified3 new_mquantified3 None false guard)] in
-      quantify b1fvs (make_seq [function_header; quantify b2fvs body_code])
+      quantify guard b1fvs (make_seq [function_header; quantify guard b2fvs body_code])
   | Ast.Define(header,body) ->
       let (hfvs,bfvs,bodyfvs) =
 	match seq_fvs quantified [Ast.get_fvs header;Ast.get_fvs body]
@@ -1816,13 +1816,13 @@ and statement stmt after quantified minus_quantified label guard =
 	with
 	  [(hfvs,b1fvs);(bodyfvs,_)] -> (hfvs,b1fvs,bodyfvs)
 	| _ -> failwith "not possible" in
-      let define_header = quantify hfvs (make_match header) in
+      let define_header = quantify guard hfvs (make_match header) in
       let body_code =
 	statement_list body after
 	  (Common.union_set bfvs quantified)
 	  (Common.union_set mbfvs minus_quantified)
 	  None true guard in
-      quantify bfvs (make_seq [define_header; body_code])
+      quantify guard bfvs (make_seq [define_header; body_code])
   | Ast.OptStm(stm) ->
       failwith "OptStm should have been compiled away\n"
   | Ast.UniqueStm(stm) ->
@@ -1909,7 +1909,7 @@ let rec cleanup = function
 let top_level ua t =
   used_after := ua;
   saved := Ast.get_saved t;
-  quantify ua
+  quantify false ua
     (match Ast.unwrap t with
       Ast.FILEINFO(old_file,new_file) -> failwith "not supported fileinfo"
     | Ast.DECL(stmt) ->
