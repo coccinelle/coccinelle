@@ -21,7 +21,7 @@ module P = Parse_aux
 %token Tlist TFresh TConstant TError TWords TWhy0 TPlus0 TBang0
 %token TPure TContext
 %token TTypedef TDeclarer TIterator
-%token TUsing TDisable TExtends TDepends TOn TEver TNever TExists
+%token TUsing TDisable TExtends TDepends TOn TEver TNever TExists TForall
 %token TNothing
 %token<string> TRuleName
 
@@ -218,7 +218,8 @@ disable:
 
 exists:
   TExists { Ast.Exists }
-|         { Ast.Forall }
+| TForall { Ast.Forall }
+|         { Ast.Undetermined }
 
 include_main:
   list(incl) TArob     { $1 }

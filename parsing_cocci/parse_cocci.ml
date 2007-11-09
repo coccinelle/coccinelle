@@ -51,6 +51,7 @@ let token2c (tok,_) =
   | PC.TEver -> "ever"
   | PC.TNever -> "never"
   | PC.TExists -> "exists"
+  | PC.TForall -> "forall"
   | PC.TError -> "error"
   | PC.TWords -> "words"
 
@@ -512,7 +513,7 @@ let split_token ((tok,_) as t) =
   | PC.TType | PC.TParameter | PC.TLocal | PC.Tlist | PC.TFresh | PC.TPure
   | PC.TContext | PC.TRuleName(_) | PC.TUsing | PC.TDisable | PC.TExtends
   | PC.TPathIsoFile(_)
-  | PC.TDepends | PC.TOn | PC.TEver | PC.TNever | PC.TExists
+  | PC.TDepends | PC.TOn | PC.TEver | PC.TNever | PC.TExists | PC.TForall
   | PC.TError | PC.TWords | PC.TNothing -> ([t],[t])
 
   | PC.Tchar(clt) | PC.Tshort(clt) | PC.Tint(clt) | PC.Tdouble(clt)
@@ -933,8 +934,7 @@ let drop_empty_or =
     (function (PC.TMid0(_),_) -> true | _ -> false)
     (function (PC.TCPar0(_),_) -> true | _ -> false)
 
-let drop_empty_nest =
-  drop_empty_thing
+let drop_empty_nest = drop_empty_thing
 
 (* ----------------------------------------------------------------------- *)
 (* Read tokens *)

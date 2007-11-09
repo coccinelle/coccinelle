@@ -965,7 +965,7 @@ let satAU dir ((cfg,_,states) as m) s1 s2 reqst =
   if s1 = []
   then AUok s2
   else
-    let ctr = ref 0 in
+    (*let ctr = ref 0 in*)
     let pre_forall =
       if !Flag_ctl.loop_in_src_code
       then pre_forall_AW

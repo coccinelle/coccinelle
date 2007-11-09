@@ -130,10 +130,6 @@ let short_options = [
   "-outplace", Arg.Set outplace_modif,
   "   store modifications in a .cocci_res file";
 
-  "-sgrep", Arg.Set Flag_parsing_cocci.sgrep_mode, 
-  "    sgrep mode (sgrep for semantic grep)";
-  "-sgrep2", Arg.Set Flag.sgrep_mode2,
-  "    sgrep mode2 (sgrep for semantic grep)";
   "-U", Arg.Int (fun n -> Flag_parsing_c.diff_lines := Some (i_to_s n)), 
   "  set number of diff context lines";
   "-partial_match",        Arg.Set Flag_ctl.partial_match, 

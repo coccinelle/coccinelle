@@ -1942,10 +1942,10 @@ let top_level ua t =
 let asttoctl (name,(_,_,exists_flag),l) used_after =
   letctr := 0;
   labelctr := 0;
-  (if exists_flag = Ast.Exists or
-    !Flag_parsing_cocci.sgrep_mode or !Flag.sgrep_mode2
-  then exists := true
-  else exists := false);
+  (match exists_flag with
+    Ast.Exists -> exists := true
+  | Ast.Forall -> exists := false
+  | Ast.Undetermined -> exists := !Flag.sgrep_mode2);
 
   let (l,used_after) =
     List.split

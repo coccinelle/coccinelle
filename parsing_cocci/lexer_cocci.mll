@@ -98,6 +98,24 @@ let process_include start finish str =
   String.sub str (start + 1) (finish - start - 1)
 
 (* ---------------------------------------------------------------------- *)
+type pm = PATCH | MATCH | UNKNOWN
+
+let pm = ref UNKNOWN
+
+let patch_or_match = function
+    PATCH ->
+      (match !pm with
+	MATCH -> failwith "- or + not allowed in the first column for a match"
+      |	PATCH -> ()
+      |	UNKNOWN -> Flag.sgrep_mode2 := false; pm := PATCH)
+  | MATCH ->
+      (match !pm with
+	PATCH -> failwith "* not allowed in the first column for a patch"
+      |	MATCH -> ()
+      |	UNKNOWN -> Flag.sgrep_mode2 := true; pm := MATCH)
+  | _ -> failwith "unexpected argument"
+
+(* ---------------------------------------------------------------------- *)
 (* identifiers, including metavariables *)
 
 let metavariables = (Hashtbl.create(100) : (string, D.clt -> token) Hashtbl.t)
@@ -169,6 +187,7 @@ let id_tokens lexbuf =
   | "ever" when in_rule_name    -> check_context_linetype s; TEver
   | "never" when in_rule_name   -> check_context_linetype s; TNever
   | "exists" when in_rule_name   -> check_context_linetype s; TExists
+  | "forall" when in_rule_name   -> check_context_linetype s; TForall
 
   | "char" ->       Tchar     linetype
   | "short" ->      Tshort    linetype
@@ -381,13 +400,15 @@ rule token = parse
   | "-" { pass_zero();
 	  if !current_line_started
 	  then (start_line true; TMinus (get_current_line_type lexbuf))
-          else (add_current_line_type D.MINUS; token lexbuf) }
+          else (patch_or_match PATCH;
+		add_current_line_type D.MINUS; token lexbuf) }
   | "+" { pass_zero();
 	  if !current_line_started
 	  then (start_line true; TPlus (get_current_line_type lexbuf))
           else if !Data.in_meta
 	  then TPlus0
-          else (add_current_line_type D.PLUS; token lexbuf) }
+          else (patch_or_match PATCH;
+		add_current_line_type D.PLUS; token lexbuf) }
   | "?" { pass_zero();
 	  if !current_line_started
 	  then (start_line true; TWhy (get_current_line_type lexbuf))
@@ -433,7 +454,13 @@ rule token = parse
 		     else TPtVirg (get_current_line_type lexbuf) }
 
   
-  | '*'            { start_line true;  TMul (get_current_line_type lexbuf) }
+  | '*'            { pass_zero();
+		     if !current_line_started
+		     then
+		       (start_line true; TMul (get_current_line_type lexbuf))
+		     else
+		       (patch_or_match MATCH;
+			add_current_line_type D.MINUS; token lexbuf) }
   | '/'            { start_line true;  TDiv (get_current_line_type lexbuf) } 
   | '%'            { start_line true;  TMod (get_current_line_type lexbuf) } 
   | '~'            { start_line true;  TTilde (get_current_line_type lexbuf) } 
