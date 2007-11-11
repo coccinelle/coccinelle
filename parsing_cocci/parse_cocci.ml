@@ -1031,7 +1031,7 @@ let get_rule_name parse_fn starts_with_name get_tokens file prefix =
 	  (if List.mem nm reserved_names
 	  then failwith (Printf.sprintf "invalid name %s\n" nm));
 	  (nm,a,b,c,d)
-    else (mknm(),Ast_cocci.NoDep,[],[],Ast_cocci.Forall) in
+    else (mknm(),Ast_cocci.NoDep,[],[],Ast_cocci.Undetermined) in
   Data.in_rule_name := false;
   name_res
 

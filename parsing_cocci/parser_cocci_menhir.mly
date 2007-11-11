@@ -175,7 +175,7 @@ iso_rule_name:
     (try let _ =  Hashtbl.find Data.all_metadecls n in
     raise (Semantic_cocci.Semantic ("repeated rule name"))
     with Not_found -> ());
-    (Some n,Ast.NoDep,[],[],Ast.Exists (*discarded*)) }
+    (Some n,Ast.NoDep,[],[],Ast.Undetermined (*discarded*)) }
 
 rule_name:
   nm=ioption(pure_ident) extends d=depends i=loption(choose_iso)
@@ -217,9 +217,9 @@ disable:
   TDisable separated_nonempty_list(TComma,pure_ident) { List.map P.id2name $2 }
 
 exists:
-  TExists { Ast.Exists }
-| TForall { Ast.Forall }
-|         { Ast.Undetermined }
+  TExists { Printf.printf "found exists\n"; Ast.Exists }
+| TForall { Printf.printf "found forall\n"; Ast.Forall }
+|         { Printf.printf "found undetermined\n"; Ast.Undetermined }
 
 include_main:
   list(incl) TArob     { $1 }
