@@ -257,8 +257,8 @@ let rec statement dots_before dots_after s =
   | Ast0.TopExp(exp) -> s
   | Ast0.Ty(ty) -> s
   | Ast0.Dots(d,whn) | Ast0.Circles(d,whn) | Ast0.Stars(d,whn) -> s
-  | Ast0.Include(inc,string) -> do_one s
-  | Ast0.Define(def,id,params,body) -> do_one s
+  | Ast0.Include(inc,string) -> s (* doesn't affect the need for braces *)
+  | Ast0.Define(def,id,params,body) -> s (* same as include *)
   | Ast0.OptStm(re) -> 
       Ast0.rewrap s
 	(Ast0.OptStm(statement dots_before dots_after re))

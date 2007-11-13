@@ -217,9 +217,9 @@ disable:
   TDisable separated_nonempty_list(TComma,pure_ident) { List.map P.id2name $2 }
 
 exists:
-  TExists { Printf.printf "found exists\n"; Ast.Exists }
-| TForall { Printf.printf "found forall\n"; Ast.Forall }
-|         { Printf.printf "found undetermined\n"; Ast.Undetermined }
+  TExists { Ast.Exists }
+| TForall { Ast.Forall }
+|         { Ast.Undetermined }
 
 include_main:
   list(incl) TArob     { $1 }

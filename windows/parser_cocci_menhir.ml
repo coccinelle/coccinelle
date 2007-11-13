@@ -30177,7 +30177,7 @@ and _menhir_reduce222 : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
   fun _menhir_env _menhir_stack _menhir_s ->
     let _v : 'tv_exists = 
 # 222 "parser_cocci_menhir.mly"
-          ( Printf.printf "found undetermined\n"; Ast.Undetermined )
+          ( Ast.Undetermined )
 # 30182 "parser_cocci_menhir.ml"
      in
     _menhir_goto_exists _menhir_env _menhir_stack _menhir_s _v
@@ -30190,7 +30190,7 @@ and _menhir_run1342 : _menhir_env -> ((('ttv_tail * _menhir_state * 'tv_extends)
     let (_menhir_s : _menhir_state) = _menhir_s in
     ((let _v : 'tv_exists = 
 # 221 "parser_cocci_menhir.mly"
-          ( Printf.printf "found forall\n"; Ast.Forall )
+          ( Ast.Forall )
 # 30195 "parser_cocci_menhir.ml"
      in
     _menhir_goto_exists _menhir_env _menhir_stack _menhir_s _v) : 'freshtv3092)
@@ -30203,7 +30203,7 @@ and _menhir_run1343 : _menhir_env -> ((('ttv_tail * _menhir_state * 'tv_extends)
     let (_menhir_s : _menhir_state) = _menhir_s in
     ((let _v : 'tv_exists = 
 # 220 "parser_cocci_menhir.mly"
-          ( Printf.printf "found exists\n"; Ast.Exists )
+          ( Ast.Exists )
 # 30208 "parser_cocci_menhir.ml"
      in
     _menhir_goto_exists _menhir_env _menhir_stack _menhir_s _v) : 'freshtv3090)
