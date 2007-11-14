@@ -31,6 +31,9 @@ let include_path = ref "include"
 (* if true then when have a #include "../../xx.h", we look also for xx.h in
  * current directory. This is because of how works extract_c_and_res
  *)
+
+let no_includes = ref false (* no includes at all, not even the local ones *)
+
 let relax_include_path = ref false 
 
 let timeout = ref (None : int option)

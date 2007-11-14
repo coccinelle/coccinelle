@@ -142,8 +142,10 @@ let short_options = [
 
   "-all_includes",   Arg.Set Flag_cocci.all_includes,
   "  causes all available include files to be used";
+  "-no_includes",   Arg.Set Flag_cocci.no_includes,
+  "  causes not even local include files to be used";
   "-I",   Arg.Set_string Flag_cocci.include_path,
-  "  <dir> where are the Linux headers (optional)";
+  "  <dir> containing the Linux headers (optional)";
 
 
   "-dir", Arg.Set dir,

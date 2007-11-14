@@ -366,35 +366,38 @@ let sp_contain_typed_metavar toplevel_list_list =
  *)
 
 let includes_to_parse xs = 
-  xs +> List.map (fun (file, cs) -> 
-    let dir = Common.dirname file in
-
-    cs +> Common.map_filter (fun (c,_info_item) -> 
-      match c with
-      | Ast_c.Include ((x,ii),info_h_pos)  -> 
-          (match x with
-          | Ast_c.Local xs -> 
-              let f = Filename.concat dir (Common.join "/" xs) in
+  if !Flag_cocci.no_includes
+  then []
+  else
+    xs +> List.map (fun (file, cs) -> 
+      let dir = Common.dirname file in
+      
+      cs +> Common.map_filter (fun (c,_info_item) -> 
+	match c with
+	| Ast_c.Include ((x,ii),info_h_pos)  -> 
+            (match x with
+            | Ast_c.Local xs -> 
+		let f = Filename.concat dir (Common.join "/" xs) in
 	      (* for our tests, all the files are flat in the current dir *)
-              if not (Sys.file_exists f) && !Flag_cocci.relax_include_path
-              then Some (Filename.concat dir (Common.last xs))
-              else Some f
-
-          | Ast_c.NonLocal xs -> 
-              if !Flag_cocci.all_includes ||
-	          Common.fileprefix (Common.last xs) = Common.fileprefix file
-              then 
-                Some (Filename.concat !Flag_cocci.include_path 
-                         (Common.join "/" xs))
-              else None
-          | Ast_c.Wierd _ -> None
-          )
-      | _ -> None
-    )
-  )
-  +> List.concat
-  +> Common.uniq
-
+		if not (Sys.file_exists f) && !Flag_cocci.relax_include_path
+		then Some (Filename.concat dir (Common.last xs))
+		else Some f
+		    
+            | Ast_c.NonLocal xs -> 
+		if !Flag_cocci.all_includes ||
+	        Common.fileprefix (Common.last xs) = Common.fileprefix file
+		then 
+                  Some (Filename.concat !Flag_cocci.include_path 
+                          (Common.join "/" xs))
+		else None
+            | Ast_c.Wierd _ -> None
+		  )
+	| _ -> None
+	      )
+	)
+      +> List.concat
+      +> Common.uniq
+      
 let rec interpret_dependencies local global = function
     Ast_cocci.Dep s      -> List.mem s local
   | Ast_cocci.AntiDep s  -> not (List.mem s local)
@@ -407,7 +410,7 @@ let rec interpret_dependencies local global = function
       (interpret_dependencies local global s1) or
       (interpret_dependencies local global s2)
   | Ast_cocci.NoDep -> true
-
+	
 let rec print_dependencies local global =
   let seen = ref [] in
   let rec loop = function
@@ -437,16 +440,16 @@ let rec print_dependencies local global =
 	print_dependencies local global s2
     | Ast_cocci.NoDep -> () in
   loop
-
-
-
-
+    
+    
+    
+    
 (* --------------------------------------------------------------------- *)
 (* #include relative position in the file *)
 (* --------------------------------------------------------------------- *)
-
+    
 (* compute the set of new prefixes
- * on 
+   * on 
  *  "a/b/x"; (* in fact it is now a list of string so  ["a";"b";"x"] *)
  *  "a/b/c/x";
  *  "a/x";
