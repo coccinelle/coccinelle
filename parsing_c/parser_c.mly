@@ -282,7 +282,7 @@ let mk_e e ii = ((e, Ast_c.noType()), ii)
 
 %token <Ast_c.info> TUnknown /* unrecognized token */
 
-%token <Ast_c.info> TComment TCommentSpace 
+%token <Ast_c.info> TComment TCommentSpace TCommentNewline
 
 /* cppext: extra tokens */
 

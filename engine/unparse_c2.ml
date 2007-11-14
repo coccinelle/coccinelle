@@ -260,7 +260,8 @@ let expand_mcode toks =
 let is_minusable_comment = function
   | T2 (t,_b,_i) -> 
       (match t with
-      | Parser_c.TCommentSpace _ (* only whitespace *)
+      | Parser_c.TCommentSpace _   (* only whitespace *)
+      | Parser_c.TCommentNewline _ (* newline plus whitespace *)
       | Parser_c.TComment _ 
       | Parser_c.TCommentCpp (Ast_c.CppAttr, _) 
       | Parser_c.TCommentCpp (Ast_c.CppMacro, _) 
@@ -279,7 +280,8 @@ let set_minus_comment = function
   | T2 (t,false,idx) -> 
       let str = TH.str_of_tok t in
       (match t with
-      | Parser_c.TCommentSpace _ -> ()
+      | Parser_c.TCommentSpace _
+      | Parser_c.TCommentNewline _ -> ()
 
       | Parser_c.TComment _ 
       | Parser_c.TCommentCpp (Ast_c.CppAttr, _) 
@@ -289,6 +291,7 @@ let set_minus_comment = function
       | _ -> raise Impossible
       );
       T2 (t, true, idx)
+  | T2 (Parser_c.TCommentNewline _,true,idx) as x -> x
   | _ -> raise Impossible
       
 
@@ -306,25 +309,19 @@ let remove_minus_and_between_and_expanded_and_fake xs =
   (*This drops the space before each completely minused block (no plus code).*)
   let rec adjust_before_minus = function
       [] -> []
-    | (T2(Parser_c.TCommentSpace _,_b,_i) as x)::xs ->
-	let (between_minus,rest) =
-	  Common.span (function T2(_,true,_) -> true | x -> false) xs in
+    | (T2(Parser_c.TCommentNewline c,_b,_i) as x)::((T2(_,true,_)::_) as xs) ->
+	let minus_or_comment = function
+	    T2(_,true,_) -> true
+	  | T2(Parser_c.TCommentNewline _,_b,_i) -> false
+	  | x -> is_minusable_comment x in
+	let (between_minus,rest) = Common.span minus_or_comment xs in
 	(match rest with
 	  [] -> (set_minus_comment x) :: between_minus
-	| T2(Parser_c.TCommentSpace c,_b,_i)::_ when contains_nl c ->
+	| T2(Parser_c.TCommentNewline _,_b,_i)::_ ->
 	    (set_minus_comment x) :: between_minus @
-	    (skip_to_non_minus rest)
+	    (adjust_before_minus rest)
 	| _ -> x :: between_minus @ (adjust_before_minus rest))
-    | x::xs -> x::adjust_before_minus xs
-  (* goal: don't interfere with adjust_between_minus *)
-  and skip_to_non_minus = function
-      [] -> []
-    | (T2(_,true,_) as x)::xs -> x :: skip_to_non_minus xs
-    | x::xs when is_minusable_comment x -> x :: skip_to_non_minus xs
-    | l -> adjust_before_minus l
-  and contains_nl s =
-    try let _ = String.index s.pinfo.Common.str '\n' in true
-    with Not_found -> false in
+    | x::xs -> x::adjust_before_minus xs in
 
   let xs = adjust_before_minus xs in
 
@@ -349,8 +346,7 @@ let remove_minus_and_between_and_expanded_and_fake xs =
                (between_comments @ adjust_between_minus (x::xs))
         )
 
-    | x::xs -> 
-        x::adjust_between_minus xs in
+    | x::xs -> x::adjust_between_minus xs in
 
   let xs = adjust_between_minus xs in
 
@@ -386,18 +382,13 @@ let rec add_space xs =
  * TODO: if in #define region, should add a \ \n
  *)
 let new_tabbing2 space = 
-  let xs = list_of_string space in
-  if (xs +> List.exists (fun c -> c = '\n'))
-  then
-    Some (
-      xs
-      +> List.rev
-      +> Common.take_until (fun c -> c = '\n')
-      +> List.rev
-      +> List.map string_of_char
-      +> String.concat ""
-    )
-  else None
+  (list_of_string space)
+    +> List.rev
+    +> Common.take_until (fun c -> c = '\n')
+    +> List.rev
+    +> List.map string_of_char
+    +> String.concat ""
+
 let new_tabbing a = 
   Common.profile_code "C unparsing.new_tabbing" (fun () -> new_tabbing2 a)
 
@@ -410,9 +401,8 @@ let rec adjust_indentation xs =
     | [] ->  []
     | x::xs -> 
         (match x with
-        | T2 (Parser_c.TCommentSpace s, _, _) ->
-            str_of_token2 x +> new_tabbing +> Common.do_option (fun s -> 
-              _current_tabbing := s);
+        | T2 (Parser_c.TCommentNewline s, _, _) ->
+            str_of_token2 x +> new_tabbing +> (fun s -> _current_tabbing := s);
             x::aux xs
         | Cocci2 "\n" -> 
             (* dont inline in expr because of wierd eval order of ocaml *)

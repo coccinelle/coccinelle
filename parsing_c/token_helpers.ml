@@ -7,14 +7,14 @@ open Parser_c
 (*****************************************************************************)
 
 let is_comment = function
-  | TComment _    | TCommentSpace _ 
+  | TComment _    | TCommentSpace _ | TCommentNewline _ 
   | TCommentCpp _ 
   | TCommentMisc _ -> true
   | _ -> false
 
 
 let is_real_comment = function
-  | TComment _    | TCommentSpace _ 
+  | TComment _    | TCommentSpace _ | TCommentNewline _ 
       -> true
   | _ -> false
 
@@ -138,6 +138,7 @@ let info_of_tok = function
 
   | TComment             (i) -> i
   | TCommentSpace        (i) -> i
+  | TCommentNewline      (i) -> i
   | TCommentCpp          (cppkind, i) -> i
   | TCommentMisc         (i) -> i
 
@@ -253,14 +254,14 @@ let visitor_info_of_tok f = function
   | TDefParamVariadic (s, i1) -> TDefParamVariadic (s, f i1)
 
 
-  | TUnknown             (i) -> TUnknown             (f i)
+  | TUnknown             (i) -> TUnknown                (f i)
 
-  | TMacroStmt               (i) -> TMacroStmt             (f i)
-  | TMacroString               (i) -> TMacroString             (f i)
-  | TMacroDecl               (s,i) -> TMacroDecl             (s, f i)
-  | TMacroDeclConst               (i) -> TMacroDeclConst             (f i)
-  | TMacroIterator               (s,i) -> TMacroIterator             (s,f i)
-(*  | TMacroTop               (s,i) -> TMacroTop             (s,f i) *)
+  | TMacroStmt           (i)   -> TMacroStmt            (f i)
+  | TMacroString         (i)   -> TMacroString          (f i)
+  | TMacroDecl           (s,i) -> TMacroDecl            (s, f i)
+  | TMacroDeclConst      (i)   -> TMacroDeclConst       (f i)
+  | TMacroIterator       (s,i) -> TMacroIterator        (s,f i)
+(*  | TMacroTop          (s,i) -> TMacroTop             (s,f i) *)
   | TCParEOL (i) ->     TCParEOL (f i)
 
 
@@ -268,15 +269,16 @@ let visitor_info_of_tok f = function
 
   | TComment             (i) -> TComment             (f i) 
   | TCommentSpace        (i) -> TCommentSpace        (f i) 
-  | TCommentCpp          (cppkind, i) -> TCommentCpp          (cppkind, f i) 
+  | TCommentNewline      (i) -> TCommentNewline      (f i) 
+  | TCommentCpp          (cppkind, i) -> TCommentCpp (cppkind, f i) 
   | TCommentMisc         (i) -> TCommentMisc         (f i) 
   | TIfdef               (i) -> TIfdef               (f i) 
   | TIfdefelse           (i) -> TIfdefelse           (f i) 
   | TIfdefelif           (i) -> TIfdefelif           (f i) 
   | TEndif               (i) -> TEndif               (f i) 
-  | TIfdefBool           (b, i) -> TIfdefBool    (b, f i) 
-  | TIfdefMisc           (b, i) -> TIfdefMisc    (b, f i) 
-  | TIfdefVersion           (b, i) -> TIfdefVersion    (b, f i) 
+  | TIfdefBool           (b, i) -> TIfdefBool        (b, f i) 
+  | TIfdefMisc           (b, i) -> TIfdefMisc        (b, f i) 
+  | TIfdefVersion        (b, i) -> TIfdefVersion     (b, f i) 
 
   | TOPar                (i) -> TOPar                (f i) 
   | TCPar                (i) -> TCPar                (f i) 

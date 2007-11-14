@@ -167,7 +167,10 @@ rule token = parse
   (* ----------------------------------------------------------------------- *)
   (* spacing/comments *)
   (* ----------------------------------------------------------------------- *)
-  | [' ' '\t' '\n' '\r' '\011' '\012' ]+  
+  | ['\n'] [' ' '\t' '\r' '\011' '\012' ]*
+      (* starting a new line; the newline character followed by whitespace *)
+      { TCommentNewline (tokinfo lexbuf) }
+  | [' ' '\t' '\r' '\011' '\012' ]+  
       { TCommentSpace (tokinfo lexbuf) }
   | "/*" 
       { let info = tokinfo lexbuf in 

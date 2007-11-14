@@ -229,6 +229,7 @@ let compare_ast filename1 filename2  =
 let is_normal_space_or_comment = function
   | Parser_c.TComment _ 
   | Parser_c.TCommentSpace _
+  | Parser_c.TCommentNewline _
 
 (*  | Parser_c.TComma _ *) (* UGLY, because of gcc_opt_comma isomorphism  *)
       -> true
