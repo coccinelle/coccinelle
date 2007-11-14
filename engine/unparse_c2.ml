@@ -58,7 +58,8 @@ let info_of_token1 t =
 let str_of_token2 = function
   | T2 (t,_,_) -> TH.str_of_tok t
   | Fake2 -> ""
-  | Cocci2 s | C2 s -> s
+  | Cocci2 s -> s
+  | C2 s -> s
 
 let str_of_token3 = function
   | T3 t -> TH.str_of_tok t
@@ -228,21 +229,21 @@ let expand_mcode toks =
          * set of tokens, so I can then process and remove the 
          * is_between_two_minus for instance *)
         add_elem t true;
-        Unparse_cocci2.pp_list_list_any args_pp any_xxs 
+        Unparse_cocci2.pp_list_list_any args_pp any_xxs Unparse_cocci2.InPlace
     | Ast_cocci.CONTEXT (_,any_befaft) -> 
         (match any_befaft with
         | Ast_cocci.NOTHING -> 
             add_elem t false
         | Ast_cocci.BEFORE xxs -> 
-            Unparse_cocci2.pp_list_list_any args_pp xxs;
+            Unparse_cocci2.pp_list_list_any args_pp xxs Unparse_cocci2.Before;
             add_elem t false
         | Ast_cocci.AFTER xxs -> 
             add_elem t false;
-            Unparse_cocci2.pp_list_list_any args_pp xxs;
+            Unparse_cocci2.pp_list_list_any args_pp xxs Unparse_cocci2.After;
         | Ast_cocci.BEFOREAFTER (xxs, yys) -> 
-            Unparse_cocci2.pp_list_list_any args_pp xxs;
+            Unparse_cocci2.pp_list_list_any args_pp xxs Unparse_cocci2.Before;
             add_elem t false;
-            Unparse_cocci2.pp_list_list_any args_pp yys;
+            Unparse_cocci2.pp_list_list_any args_pp yys Unparse_cocci2.After;
         )
     | Ast_cocci.PLUS -> raise Impossible
 
@@ -259,12 +260,11 @@ let expand_mcode toks =
 let is_minusable_comment = function
   | T2 (t,_b,_i) -> 
       (match t with
-      | Parser_c.TCommentSpace _ 
+      | Parser_c.TCommentSpace _ (* only whitespace *)
       | Parser_c.TComment _ 
       | Parser_c.TCommentCpp (Ast_c.CppAttr, _) 
       | Parser_c.TCommentCpp (Ast_c.CppMacro, _) 
         -> true
-
 
       | Parser_c.TCommentMisc _ 
       | Parser_c.TCommentCpp (Ast_c.CppDirective, _)
@@ -302,7 +302,34 @@ let remove_minus_and_between_and_expanded_and_fake xs =
     | _ -> false
   )
   in
-  
+
+  (*This drops the space before each completely minused block (no plus code).*)
+  let rec adjust_before_minus = function
+      [] -> []
+    | (T2(Parser_c.TCommentSpace _,_b,_i) as x)::xs ->
+	let (between_minus,rest) =
+	  Common.span (function T2(_,true,_) -> true | x -> false) xs in
+	(match rest with
+	  [] -> (set_minus_comment x) :: between_minus
+	| T2(Parser_c.TCommentSpace c,_b,_i)::_ when contains_nl c ->
+	    (set_minus_comment x) :: between_minus @
+	    (skip_to_non_minus rest)
+	| _ -> x :: between_minus @ (adjust_before_minus rest))
+    | x::xs -> x::adjust_before_minus xs
+  (* goal: don't interfere with adjust_between_minus *)
+  and skip_to_non_minus = function
+      [] -> []
+    | (T2(_,true,_) as x)::xs -> x :: skip_to_non_minus xs
+    | x::xs when is_minusable_comment x -> x :: skip_to_non_minus xs
+    | l -> adjust_before_minus l
+  and contains_nl s =
+    try let _ = String.index s.pinfo.Common.str '\n' in true
+    with Not_found -> false in
+
+  let xs = adjust_before_minus xs in
+
+  (* this deals with any stuff that is between the minused code, eg
+     spaces, comments, attributes, etc. *)
   let rec adjust_between_minus xs = 
     match xs with
     | [] -> []
@@ -323,8 +350,7 @@ let remove_minus_and_between_and_expanded_and_fake xs =
         )
 
     | x::xs -> 
-        x::adjust_between_minus xs
-  in
+        x::adjust_between_minus xs in
 
   let xs = adjust_between_minus xs in
 
@@ -347,8 +373,6 @@ let rec add_space xs =
       if is_ident_like sx && is_ident_like sy 
       then x::C2 " "::(add_space (y::xs))
       else x::(add_space (y::xs))
-
-
 
 
 
@@ -474,10 +498,6 @@ let start_mark = function
   | KExpanded -> "!E!"
   | KOrigin -> ""
 
-
-
-
-
 let print_all_tokens2 pr xs =
   if !Flag_engine.debug_unparsing
   then
@@ -581,3 +601,4 @@ let pp_program2 xs outfile  =
 
 let pp_program a b = 
   Common.profile_code "C unparsing" (fun () -> pp_program2 a b)
+

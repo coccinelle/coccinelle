@@ -4,7 +4,7 @@ open Common open Commonop
 (* The AST C related types *)
 (*****************************************************************************)
 
-(* Cocci: Each token will be decorated in the futur by the mcodekind
+(* Cocci: Each token will be decorated in the future by the mcodekind
  * of cocci. It is the job of the pretty printer to look at this
  * information and decide to print or not the token (and also the
  * pending '+' associated sometimes with the token).
@@ -57,7 +57,7 @@ and il = info list
 (* wrap2 is like wrap, except that I use it often for separator such
  * as ','. In that case the info is associated to the argument that
  * follows, so in 'a,b' I will have in the list [(a,[]); (b,[','])]. *)
-and 'a wrap  = 'a * il   
+and 'a wrap  = 'a * il
 and 'a wrap2 = 'a * il
 
 (* ------------------------------------------------------------------------- *)

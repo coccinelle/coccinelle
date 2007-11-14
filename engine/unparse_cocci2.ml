@@ -17,7 +17,9 @@ exception CantBeInPlus
 
 (*****************************************************************************)
 
-let rec pp_list_list_any (env, pr, pr_elem) xxs =
+type pos = Before | After | InPlace
+
+let rec pp_list_list_any (env, pr, pr_elem) xxs before =
 
 (* Just to be able to copy paste the code from pretty_print_cocci.ml. *)
 let print_string = pr in
@@ -669,8 +671,8 @@ let rec pp_any = function
      normally there should be no '...' inside them *)
   | Ast.ExprDotsTag(x) -> dots (function _ -> ()) expression x
   | Ast.ParamDotsTag(x) -> parameter_list x
-  | Ast.StmtDotsTag(x) -> dots (function _ -> ()) (statement "") x
-  | Ast.DeclDotsTag(x) -> dots (function _ -> ()) declaration x
+  | Ast.StmtDotsTag(x) -> dots (function _ -> pr "\n") (statement "") x
+  | Ast.DeclDotsTag(x) -> dots (function _ -> pr "\n") declaration x
 
   | Ast.TypeCTag(x) -> typeC x
   | Ast.ParamTag(x) -> parameterTypeDef x
@@ -680,23 +682,30 @@ in
 
   (* todo? imitate what is in pretty_print_cocci ? *)
   match xxs with
-  | xs::xxs -> 
-      (* for many tags, we must not do a first newline on
-       * the first '+'
-       *)
-      xs +> List.iter (fun any -> 
-        (match any with
-        | Ast.Rule_elemTag _ -> pr "\n"; (*XXXpr current_tabbing;*) pp_any any;
-        | Ast.StatementTag _ -> pr "\n"; (*XXXpr current_tabbing;*) pp_any any;
-        | _ -> pp_any any
-        ));
-      xxs +> List.iter (fun xs -> 
-        pr "\n"; 
-        (*XXXpr current_tabbing;*)
+    [] -> ()
+  | x::xs -> 
+      (* for many tags, we must not do a newline before the first '+' *)
+      let newline_before =
+	before = After &&
+	(match List.hd xxs with
+          (Ast.Rule_elemTag _::_) | (Ast.StatementTag _::_) -> true
+        | _ -> false) in
+      let newline_after =
+	before = Before &&
+	(match List.rev(List.hd(List.rev xxs)) with
+          (Ast.Rule_elemTag _::_) | (Ast.StatementTag _::_) -> true
+        | _ -> false) in
+      (* print a newline at the beginning, if needed *)
+      (if newline_before then pr "\n");
+      (* print the first one with no leading newline *)
+      x +> List.iter (fun any -> pp_any any);
+      (* print a newline before each of the rest *)
+      xs +> List.iter (fun xs -> 
+        pr "\n";
         xs +> List.iter (fun any -> 
           pp_any any
         )
       );
-
-  | [] -> ()
+      (* print a newline at the end, if needed *)
+      (if newline_after then pr "\n")
 

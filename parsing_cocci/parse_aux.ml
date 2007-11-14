@@ -127,6 +127,7 @@ let ty_pointerify ty m =
     ty m
 
 (* Left is <=>, Right is =>.  Collect <=>s. *)
+(* The parser should have done this, with precedences.  But whatever... *)
 let iso_adjust fn first rest =
   let rec loop = function
       [] -> [[]]
