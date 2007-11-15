@@ -828,6 +828,28 @@ let merge minus_list plus_list =
     minus_list
 
 (* --------------------------------------------------------------------- *)
+(* For toplevel and decl, we want the new stuff to be "after".  Then we can
+later put a newline before it. *)
+
+let flip_toplevel_decl l =
+  List.iter
+    (function (index,minus_info) ->
+      List.iter
+	(function
+	    (Toplevel,_,Ast0.CONTEXT(neighbors))
+	  | (Decl,_,Ast0.CONTEXT(neighbors)) ->
+	      let (repl,ti1,ti2) = !neighbors in
+	      (match repl with
+		Ast.BEFORE(bef) ->
+		  neighbors := (Ast.AFTER(bef),ti1,ti2)
+	      | Ast.BEFOREAFTER(bef,aft) ->
+		  neighbors := (Ast.AFTER(bef@aft),ti1,ti2)
+	      | _ -> ())
+	  | _ -> ())
+	minus_info)
+    l
+
+(* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)
 (* Need to check that CONTEXT nodes have nothing attached to their tokens.
 If they do, they become MIXED *)
@@ -860,131 +882,10 @@ let reevaluate_contextness =
 
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)
-(* add markers for sgrep_mode *)
-(* undesirable to add + markers in token stream because then have to parse them
-can't merge with the above, because since there is no +, there will be just
-one big bind node
-in ast, lose easy access to left and rightmost tokens *)
-
-(* first collect mcodes *)
-let insert_markers e =
-  let bind x y = () in
-  let option_default = () in
-  let mcode _ = () in
-
-  let donothing r k e = k e in
-
-  let start_marker ln = Ast.SgrepStartTag (Printf.sprintf "%d" ln) in
-  let end_marker ln = Ast.SgrepEndTag (Printf.sprintf "%d" ln) in
-
-  let add_start_marker e =
-    let start_marker = start_marker ((Ast0.get_info e).Ast0.line_start) in
-    match Ast0.get_mcodekind e with
-      Ast0.MINUS(info) ->
-	let (repl,repl_info) = !info in
-	info := ([start_marker]::repl,repl_info)
-    | Ast0.CONTEXT(info)
-    | Ast0.MIXED(info) ->
-	let (ba,before_info,after_info) = !info in
-	let new_ba =
-	  match ba with
-	    Ast.NOTHING -> Ast.BEFORE([[start_marker]])
-	  | Ast.BEFORE(bef) -> Ast.BEFORE(bef@[[start_marker]])
-	  | Ast.AFTER(aft) -> Ast.BEFOREAFTER([[start_marker]],aft)
-	  | Ast.BEFOREAFTER(bef,aft) ->
-	      Ast.BEFOREAFTER(bef@[[start_marker]],aft) in
-	info := (new_ba,before_info,after_info)
-    | _ -> failwith "start: non-context is not possible" in
-  
-  let add_end_marker e =
-    let end_marker = end_marker ((Ast0.get_info e).Ast0.line_end) in
-    match Ast0.get_mcodekind e with
-      Ast0.MINUS(info) ->
-	let (repl,repl_info) = !info in
-	info := (repl@[[end_marker]],repl_info)
-    | Ast0.CONTEXT(info)
-    | Ast0.MIXED(info) ->
-	let (ba,before_info,after_info) = !info in
-	let new_ba =
-	  match ba with
-	    Ast.NOTHING -> Ast.AFTER([[end_marker]])
-	  | Ast.BEFORE(bef) -> Ast.BEFOREAFTER(bef,[[end_marker]])
-	  | Ast.AFTER(aft) -> Ast.AFTER([end_marker]::aft)
-	  | Ast.BEFOREAFTER(bef,aft) ->
-	      Ast.BEFOREAFTER(bef,[end_marker]::aft) in
-	info := (new_ba,before_info,after_info)
-    | _ -> failwith "end: non-context is not possible" in
-
-  let rec get_start_statements e =
-    match Ast0.unwrap e with
-      Ast0.Disj(_,s,_,_) ->
-	List.concat
-	  (List.map
-	     (function sd ->
-	       match Ast0.unwrap sd with
-		 Ast0.DOTS(x::_) | Ast0.CIRCLES(x::_)
-	       | Ast0.STARS(x::_) -> get_start_statements x
-	       | _ -> [])
-	     s)
-    | Ast0.OptStm(s) | Ast0.UniqueStm(s) ->
-	get_start_statements s
-    | _ -> [e] in
-  
-  let rec get_end_statements e =
-    let last l = List.hd(List.rev l) in
-    match Ast0.unwrap e with
-      Ast0.Disj(_,s,_,_) ->
-	List.concat
-	  (List.map
-	     (function sd ->
-	       match Ast0.unwrap sd with
-		 Ast0.DOTS((_::_) as l) | Ast0.CIRCLES((_::_) as l)
-	       | Ast0.STARS((_::_) as l) -> get_end_statements (last l)
-	       | _ -> [])
-	     s)
-    | Ast0.OptStm(s) | Ast0.UniqueStm(s) ->
-	get_end_statements s
-    | _ -> [e] in
-  
-  let statement_dots r k e =
-    let is_dots e =
-      match Ast0.unwrap e with
-	Ast0.Dots(_,_) | Ast0.Circles(_,_) | Ast0.Stars(_,_) -> true
-      |	Ast0.Nest(_,_,_,_,_) -> true
-      | _ -> false in
-    let rec loop dots = function
-	[] -> ()
-      | x::xs ->
-	  (if dots then List.iter add_start_marker (get_start_statements x));
-	  (match xs with
-	    [] -> ()
-	  | y::rest when is_dots y ->
-	      List.iter add_end_marker (get_end_statements x); loop true rest
-	  | _ -> loop (is_dots x) xs) in
-    match Ast0.unwrap e with
-      Ast0.DOTS(l) | Ast0.CIRCLES(l) | Ast0.STARS(l) -> loop false l in
-
-  let top_level r k e =
-    k e;
-    add_start_marker e;
-    add_end_marker e in
-
-  let res =
-    V0.combiner bind option_default
-      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      mcode
-      donothing donothing donothing statement_dots donothing donothing
-      donothing donothing
-      donothing donothing donothing donothing donothing donothing top_level in
-  res.V0.combiner_top_level e
-
-(* --------------------------------------------------------------------- *)
-(* --------------------------------------------------------------------- *)
 
 let insert_plus minus plus =
   let minus_stream = process_minus minus in
   let plus_stream = process_plus plus in
   merge minus_stream plus_stream;
-  if !Flag_parsing_cocci.sgrep_mode
-  then List.iter (function minus -> insert_markers minus) minus;
+  flip_toplevel_decl minus_stream;
   List.iter (function x -> let _ =  reevaluate_contextness x in ()) minus

@@ -566,6 +566,7 @@ let pp_program2 xs outfile  =
             List.mem (TH.mark_of_tok t) [OriginTok;ExpandedTok;]
           ));
           let toks = get_fakeInfo_and_tokens e toks_e in
+	  Printf.printf "after fake info\n";
           (* assert Origin;ExpandedTok;Faketok *)
           let toks = expand_mcode toks in
           (* assert Origin;ExpandedTok; + Cocci + C (was AbstractLineTok)

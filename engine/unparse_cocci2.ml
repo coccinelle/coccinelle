@@ -266,13 +266,13 @@ and typeC ty =
         | _ -> raise Impossible)
 
 and baseType = function
-    Ast.VoidType -> print_string "void "
-  | Ast.CharType -> print_string "char "
-  | Ast.ShortType -> print_string "short "
-  | Ast.IntType -> print_string "int "
-  | Ast.DoubleType -> print_string "double "
-  | Ast.FloatType -> print_string "float "
-  | Ast.LongType -> print_string "long "
+    Ast.VoidType -> print_string "void"
+  | Ast.CharType -> print_string "char"
+  | Ast.ShortType -> print_string "short"
+  | Ast.IntType -> print_string "int"
+  | Ast.DoubleType -> print_string "double"
+  | Ast.FloatType -> print_string "float"
+  | Ast.LongType -> print_string "long"
 
 and structUnion = function
     Ast.Struct -> print_string "struct "
@@ -685,18 +685,25 @@ in
     [] -> ()
   | x::xs -> 
       (* for many tags, we must not do a newline before the first '+' *)
-      let newline_before =
-	before = After &&
-	(match List.hd xxs with
-          (Ast.Rule_elemTag _::_) | (Ast.StatementTag _::_) -> true
-        | _ -> false) in
-      let newline_after =
-	before = Before &&
-	(match List.rev(List.hd(List.rev xxs)) with
-          (Ast.Rule_elemTag _::_) | (Ast.StatementTag _::_) -> true
-        | _ -> false) in
+      let isfn s =
+	match Ast.unwrap s with Ast.FunDecl _ -> true | _ -> false in
+      let newline_before _ =
+	if before = After
+	then
+	  match List.hd xxs with
+            (Ast.StatementTag s::_) when isfn s -> pr "\n\n"
+          | (Ast.Rule_elemTag _::_) | (Ast.StatementTag _::_)
+	  | (Ast.DeclarationTag _::_) -> pr "\n"
+          | _ -> () in
+      let newline_after _ =
+	if before = Before
+	then
+	  match List.rev(List.hd(List.rev xxs)) with
+	    (Ast.Rule_elemTag _::_) | (Ast.StatementTag _::_)
+	  | (Ast.DeclarationTag _::_) -> pr "\n"
+          | _ -> () in
       (* print a newline at the beginning, if needed *)
-      (if newline_before then pr "\n");
+      newline_before();
       (* print the first one with no leading newline *)
       x +> List.iter (fun any -> pp_any any);
       (* print a newline before each of the rest *)
@@ -707,5 +714,5 @@ in
         )
       );
       (* print a newline at the end, if needed *)
-      (if newline_after then pr "\n")
+      newline_after()
 
