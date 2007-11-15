@@ -169,6 +169,44 @@ let get_fakeInfo_and_tokens celem toks =
 
   List.rev !toks_out
 
+(* Fake nodes that have BEFORE code should be moved over any subsequent
+whitespace and newlines, but not any comments, to get as close to the affected
+code as possible.  Similarly, face nodes that have AFTER code should be moved
+backwards.  No fake nodes should have both before and after code. *)
+
+let displace_fake_nodes toks =
+  let is_fake = function Fake1 _ -> true | _ -> false in
+  let is_whitespace = function
+      T1(Parser_c.TCommentSpace _)
+    | T1(Parser_c.TCommentNewline _) -> true
+    | _ -> false in
+  let rec loop toks =
+    let fake_info =
+      try Some (Common.split_when is_fake toks)
+      with Not_found -> None in
+    match fake_info with
+      Some(bef,((Fake1 info) as fake),aft) ->
+	(match !(info.cocci_tag) with
+	  (Ast_cocci.CONTEXT(_,Ast_cocci.BEFORE _),_) ->
+	    (* move the fake node forwards *)
+	    let (whitespace,rest) = Common.span is_whitespace aft in
+	    bef @ whitespace @ fake :: (loop rest)
+	| (Ast_cocci.CONTEXT(_,Ast_cocci.AFTER _),_) ->
+	    (* move the fake node backwards *)
+	    let revbef = List.rev bef in
+	    let (revwhitespace,revprev) = Common.span is_whitespace revbef in
+	    let whitespace = List.rev revwhitespace in
+	    let prev = List.rev revprev in
+	    prev @ fake :: (loop (whitespace @ aft))
+	| (Ast_cocci.CONTEXT(_,Ast_cocci.NOTHING),_) ->
+	    bef @ fake :: (loop aft)
+	| _ ->
+	    failwith
+	      "fake node must be context and before, after or nothing")
+    | None -> toks
+    | _ -> raise Impossible in
+  loop toks
+
 (*****************************************************************************)
 (* Tokens2 generation *)
 (*****************************************************************************)
@@ -566,7 +604,7 @@ let pp_program2 xs outfile  =
             List.mem (TH.mark_of_tok t) [OriginTok;ExpandedTok;]
           ));
           let toks = get_fakeInfo_and_tokens e toks_e in
-	  Printf.printf "after fake info\n";
+	  let toks = displace_fake_nodes toks in
           (* assert Origin;ExpandedTok;Faketok *)
           let toks = expand_mcode toks in
           (* assert Origin;ExpandedTok; + Cocci + C (was AbstractLineTok)

@@ -828,28 +828,6 @@ let merge minus_list plus_list =
     minus_list
 
 (* --------------------------------------------------------------------- *)
-(* For toplevel and decl, we want the new stuff to be "after".  Then we can
-later put a newline before it. *)
-
-let flip_toplevel_decl l =
-  List.iter
-    (function (index,minus_info) ->
-      List.iter
-	(function
-	    (Toplevel,_,Ast0.CONTEXT(neighbors))
-	  | (Decl,_,Ast0.CONTEXT(neighbors)) ->
-	      let (repl,ti1,ti2) = !neighbors in
-	      (match repl with
-		Ast.BEFORE(bef) ->
-		  neighbors := (Ast.AFTER(bef),ti1,ti2)
-	      | Ast.BEFOREAFTER(bef,aft) ->
-		  neighbors := (Ast.AFTER(bef@aft),ti1,ti2)
-	      | _ -> ())
-	  | _ -> ())
-	minus_info)
-    l
-
-(* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)
 (* Need to check that CONTEXT nodes have nothing attached to their tokens.
 If they do, they become MIXED *)
@@ -887,5 +865,4 @@ let insert_plus minus plus =
   let minus_stream = process_minus minus in
   let plus_stream = process_plus plus in
   merge minus_stream plus_stream;
-  flip_toplevel_decl minus_stream;
   List.iter (function x -> let _ =  reevaluate_contextness x in ()) minus

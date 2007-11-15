@@ -699,7 +699,8 @@ in
 	if before = Before
 	then
 	  match List.rev(List.hd(List.rev xxs)) with
-	    (Ast.Rule_elemTag _::_) | (Ast.StatementTag _::_)
+	    (Ast.StatementTag s::_) when isfn s -> pr "\n\n"
+          | (Ast.Rule_elemTag _::_) | (Ast.StatementTag _::_)
 	  | (Ast.DeclarationTag _::_) -> pr "\n"
           | _ -> () in
       (* print a newline at the beginning, if needed *)
