@@ -6,7 +6,7 @@ identifier attach, detach;
 @@
 
 struct pcmcia_driver driver = {
-	.remove		= detach
+	.remove		= detach,
 };
 
 @@

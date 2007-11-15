@@ -1,3 +1,6 @@
+@@
+statement S;
+@@
 
 + foo();
   S

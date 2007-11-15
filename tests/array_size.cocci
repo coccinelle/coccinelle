@@ -1,4 +1,4 @@
-@ rule1 using "empty.iso" @
+@ rule1 using "~/coccinelle/empty.iso" @
 expression E;
 type T;
 @@

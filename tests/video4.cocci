@@ -4,12 +4,12 @@ identifier fld;
 expression E;
 @@
 
-  int v;
+  struct foo v;
   m();
   <...
   f(E);
   <...
-- v.fld
+* v.fld
   ...>
   g(E);
   ...>

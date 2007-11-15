@@ -1,5 +1,5 @@
 @ rule1 @
-identifier C;
+identifier C, i;
 @@
  int C(int i) {
   ...
@@ -13,7 +13,7 @@ identifier C;
 
 
 @@
-identifier TestMethod;
+identifier TestMethod, i;
 expression name; 
 statement S1,S2;
 identifier rule1.C;
@@ -65,12 +65,12 @@ identifier rule1.C;
   }
 
 @@
-identifier rule1.C;
+identifier rule1.C, i, c;
 @@
  int C(int i) {
   ...
   if(UnitTest()) {
-   int c;
+   struct foo c;
    ...
 +  c = C();
 +  Console.WriteLine("invoking test", name);

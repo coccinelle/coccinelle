@@ -4,6 +4,6 @@ expression E;
 @@
 
 struct i2c_client I = {
-- 	.name = E
-+	.dev = { .name = E }
+- 	.name = E,
++	.dev = { .name = E, },
 };

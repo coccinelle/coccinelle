@@ -8,7 +8,7 @@
 
 - bar();
 
-@ rule3 depends on rule1, rule2 @
+@ rule3 depends on rule1 && rule2 @
 @@
 
 - xxx();

@@ -23,7 +23,7 @@ request_irq(irq, handler, irqflags, devname, dev_id)
 identifier rule2.handler, irq, dev, regs;
 @@
 
-- handler(int irq, void *dev, struct pt_regs *regs)
+* handler(int irq, void *dev, struct pt_regs *regs)
   { ... }
 
 // ----------------------------------------------------------------------
@@ -56,7 +56,7 @@ identifier rule3.handler, irq, dev, regs;
 identifier rule3.handler, irq, dev, regs;
 @@
 
-- handler(int irq, void *dev, struct pt_regs *regs)
+* handler(int irq, void *dev, struct pt_regs *regs)
   { ... }
 
 // ----------------------------------------------------------------------
@@ -74,7 +74,7 @@ int E;
 (
     handle_irq(E,regs)
 |
--   regs
+*   regs
 )
     ...>
   }

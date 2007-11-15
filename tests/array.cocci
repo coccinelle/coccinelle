@@ -1,6 +1,6 @@
 @@
 type T;
-T id[];
+T[] id;
 @@
 
 - sizeof(id) / sizeof(T)

@@ -4,7 +4,7 @@ identifier f;
 T *x;
 @@
 
-- T *f(...)
+* T *f(...)
 {
   ...
   x = kmalloc(...);
