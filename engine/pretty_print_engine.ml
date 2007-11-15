@@ -7,11 +7,6 @@ let pp = Common.pp
 
 let pp_meta (_,x) = pp x
 
-let pr_elem info = 
-  let s = Ast_c.str_of_info info in
-  pp s
-
-
 let rec pp_binding_kind = function
   | Ast_c.MetaIdVal        s -> pp ("id " ^ s)
   | Ast_c.MetaFuncVal      s -> pp ("func " ^ s)
@@ -20,7 +15,7 @@ let rec pp_binding_kind = function
       Pretty_print_c.pp_expression_simple expr
   | Ast_c.MetaExprListVal  expr_list -> pp "<<exprlist>>"
   | Ast_c.MetaTypeVal      typ -> 
-      Pretty_print_c.pp_type_gen pr_elem typ
+      Pretty_print_c.pp_type_simple typ
   | Ast_c.MetaStmtVal      statement -> 
       Pretty_print_c.pp_statement_simple statement
   | Ast_c.MetaParamVal     params -> pp "<<param>>"

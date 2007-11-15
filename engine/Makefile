@@ -6,7 +6,7 @@ SOURCES = flag_engine.ml lib_engine.ml pretty_print_engine.ml \
 	  check_reachability.ml \
 	  c_vs_c.ml isomorphisms_c_c.ml \
           cocci_vs_c_3.ml pattern3.ml sgrep.ml transformation3.ml  \
-	  unparse_cocci.ml unparse_c.ml unparse_cocci2.ml unparse_c2.ml \
+	  unparse_cocci2.ml unparse_c2.ml \
 	  asttomember.ml asttoctl2.ml ctltotex.ml \
 	  postprocess_transinfo.ml ctlcocci_integration.ml
 

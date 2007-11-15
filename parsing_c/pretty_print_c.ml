@@ -3,6 +3,7 @@ open Common open Commonop
 open Ast_c
 
 type pr_elem_func = Ast_c.info -> unit
+type pr_space_func = unit -> unit
 
 (*****************************************************************************)
 
@@ -15,10 +16,10 @@ type pr_elem_func = Ast_c.info -> unit
  * to pretty print some piece of C that was generated, or some
  * abstract-lined piece of code, etc. *)
 
-let rec pp_expression_gen pr_elem = 
+let rec pp_expression_gen pr_elem pr_space = 
   (* subtil: dont try to shorten the def of pp_statement by omitting e,
      otherwise get infinite funcall and huge memory consumption *)
-  let pp_statement e = pp_statement_gen pr_elem e in
+  let pp_statement e = pp_statement_gen pr_elem pr_space e in
   let rec pp_expression = fun ((exp, typ), ii) -> 
     (match exp, ii with
     | Ident (c),         [i]     -> pr_elem i
@@ -28,25 +29,26 @@ let rec pp_expression_gen pr_elem =
     | FunCall  (e, es),     [i1;i2] -> 
         pp_expression e; pr_elem i1; 
         es +> List.iter (fun (e, opt) -> 
-          assert (List.length opt <= 1);
-          opt +> List.iter pr_elem;
-          pp_argument_gen pr_elem e;
+          assert (List.length opt <= 1); (* opt must be a comma? *)
+          opt +> List.iter (function x -> pr_elem x; pr_space());
+          pp_argument_gen pr_elem pr_space e;
         );
         pr_elem i2;
         
     | CondExpr (e1, e2, e3),    [i1;i2]    -> 
-        pp_expression e1; pr_elem i1; do_option pp_expression e2; pr_elem i2; 
+        pp_expression e1; pr_space(); pr_elem i1; pr_space();
+	do_option (function x -> pp_expression x; pr_space()) e2; pr_elem i2; 
         pp_expression e3
     | Sequence (e1, e2),          [i]  -> 
-        pp_expression e1; pr_elem i; pp_expression e2
+        pp_expression e1; pr_elem i; pr_space(); pp_expression e2
     | Assignment (e1, op, e2),    [i]  -> 
-        pp_expression e1; pr_elem i;  pp_expression e2
+        pp_expression e1; pr_space(); pr_elem i; pr_space(); pp_expression e2
           
     | Postfix  (e, op),    [i] -> pp_expression e; pr_elem i;
     | Infix    (e, op),    [i] -> pr_elem i; pp_expression e;
     | Unary    (e, op),    [i] -> pr_elem i; pp_expression e
     | Binary   (e1, op, e2),    [i] -> 
-        pp_expression e1;   pr_elem i; pp_expression e2
+        pp_expression e1; pr_space(); pr_elem i; pr_space(); pp_expression e2
           
     | ArrayAccess    (e1, e2),   [i1;i2] -> 
         pp_expression e1; pr_elem i1; pp_expression e2; pr_elem i2
@@ -57,10 +59,10 @@ let rec pp_expression_gen pr_elem =
 
     | SizeOfExpr  (e),     [i] -> pr_elem i; pp_expression e
     | SizeOfType  (t),     [i1;i2;i3] -> 
-        pr_elem i1; pr_elem i2; pp_type_gen pr_elem t; 
+        pr_elem i1; pr_elem i2; pp_type_gen pr_elem pr_space t; 
         pr_elem i3
     | Cast    (t, e),      [i1;i2] -> 
-        pr_elem i1; pp_type_gen pr_elem t; pr_elem i2; 
+        pr_elem i1; pp_type_gen pr_elem pr_space t; pr_elem i2; 
         pp_expression e
 
     | StatementExpr (statxs, [ii1;ii2]),  [i1;i2] -> 
@@ -71,13 +73,13 @@ let rec pp_expression_gen pr_elem =
         pr_elem i2;
     | Constructor (t, xs), lp::rp::i1::i2::iicommaopt -> 
         pr_elem lp;
-        pp_type_gen pr_elem t;
+        pp_type_gen pr_elem pr_space t;
         pr_elem rp;
         pr_elem i1;
         xs +> List.iter (fun (x, ii) -> 
           assert (List.length ii <= 1);
-          ii +> List.iter pr_elem;
-          pp_init_gen pr_elem x
+          ii +> List.iter (function x -> pr_elem x; pr_space());
+          pp_init_gen pr_elem pr_space x
         );
         iicommaopt +> List.iter pr_elem;
         pr_elem i2;
@@ -99,7 +101,7 @@ let rec pp_expression_gen pr_elem =
     if !Flag_parsing_c.pretty_print_type_info
     then begin
       pr_elem (Ast_c.fakeInfo() +> Ast_c.rewrap_str "/*");
-      !typ +> Common.do_option (fun x -> pp_type_gen pr_elem x);
+      !typ +> Common.do_option (fun x -> pp_type_gen pr_elem pr_space x);
       pr_elem (Ast_c.fakeInfo() +> Ast_c.rewrap_str "*/");
     end
 
@@ -107,15 +109,15 @@ let rec pp_expression_gen pr_elem =
   pp_expression
 
 
-and pp_argument_gen pr_elem argument = 
+and pp_argument_gen pr_elem pr_space argument = 
   let rec pp_action = function 
     | (ActMisc ii) -> ii +> List.iter pr_elem
   in
   match argument with
-  | Left e -> pp_expression_gen pr_elem e
+  | Left e -> pp_expression_gen pr_elem pr_space e
   | Right wierd -> 
       (match wierd with
-      | ArgType param -> pp_param_gen pr_elem param
+      | ArgType param -> pp_param_gen pr_elem pr_space param
       | ArgAction action -> pp_action action
       )
 
@@ -124,8 +126,8 @@ and pp_argument_gen pr_elem argument =
 
 
 (* ---------------------- *)
-and pp_statement_gen pr_elem = 
-  let pp_expression e = pp_expression_gen pr_elem e in
+and pp_statement_gen pr_elem pr_space = 
+  let pp_expression e = pp_expression_gen pr_elem pr_space e in
   let rec pp_statement = function
     | Labeled (Label (s, st)), [i1;i2] -> 
         pr_elem i1; pr_elem i2; pp_statement st
@@ -184,7 +186,7 @@ and pp_statement_gen pr_elem =
         es +> List.iter (fun (e, opt) -> 
           assert (List.length opt <= 1);
           opt +> List.iter pr_elem;
-          pp_argument_gen pr_elem e;
+          pp_argument_gen pr_elem pr_space e;
         );
 
         pr_elem i3;
@@ -198,23 +200,23 @@ and pp_statement_gen pr_elem =
     | Jump (GotoComputed e), [i1;i2;i3] -> 
         pr_elem i1; pr_elem i2; pp_expression e; pr_elem i3
 
-    | Decl decl, [] -> pp_decl_gen pr_elem decl 
+    | Decl decl, [] -> pp_decl_gen pr_elem pr_space decl 
     | Asm asmbody, ii -> 
         (match ii with
         | [iasm;iopar;icpar;iptvirg] -> 
             pr_elem iasm; pr_elem iopar;
-            pp_asmbody_gen pr_elem asmbody;
+            pp_asmbody_gen pr_elem pr_space asmbody;
             pr_elem icpar; pr_elem iptvirg
         | [iasm;ivolatile;iopar;icpar;iptvirg] -> 
             pr_elem iasm; pr_elem ivolatile; pr_elem iopar; 
-            pp_asmbody_gen pr_elem asmbody;
+            pp_asmbody_gen pr_elem pr_space asmbody;
             pr_elem icpar; pr_elem iptvirg
         | _ -> raise Impossible
         )
 
     | NestedFunc def, ii -> 
         assert (null ii);
-        pp_def_gen pr_elem def
+        pp_def_gen pr_elem pr_space def
     | MacroStmt, ii -> 
         ii +> List.iter pr_elem ;
 
@@ -247,19 +249,19 @@ and pp_statement_gen pr_elem =
   pp_statement
 
 
-and pp_asmbody_gen pr_elem (string_list, colon_list) = 
+and pp_asmbody_gen pr_elem pr_space (string_list, colon_list) = 
   string_list +> List.iter pr_elem ;
   colon_list +> List.iter (fun (Colon xs, ii) -> 
     ii +> List.iter pr_elem;
     xs +> List.iter (fun (x,iicomma) -> 
       assert ((List.length iicomma) <= 1);
-      iicomma +> List.iter pr_elem;
+      iicomma +> List.iter (function x -> pr_elem x; pr_space());
       (match x with 
       | ColonMisc, ii -> ii +> List.iter pr_elem;
       | ColonExpr e, [istring;iopar;icpar] -> 
           pr_elem istring;
           pr_elem iopar;
-          pp_expression_gen pr_elem e;
+          pp_expression_gen pr_elem pr_space e;
           pr_elem icpar
       | _ -> raise Impossible
       )
@@ -268,18 +270,20 @@ and pp_asmbody_gen pr_elem (string_list, colon_list) =
 
 (* ---------------------- *)
 and (pp_type_with_ident_gen: 
-        pr_elem_func -> 
+        pr_elem_func -> pr_space_func -> 
       (string * info) option -> (storage * il) option -> fullType -> unit) = 
-  fun pr_elem -> 
+  fun pr_elem pr_space ->
     fun ident sto ((qu, iiqu), (ty, iity)) -> 
-      pp_base_type_gen pr_elem ((qu, iiqu), (ty, iity))  sto;
-      pp_type_with_ident_rest_gen pr_elem  ident ((qu, iiqu), (ty, iity))
+      pp_base_type_gen pr_elem pr_space ((qu, iiqu), (ty, iity))  sto;
+      pp_type_with_ident_rest_gen pr_elem pr_space ident
+	((qu, iiqu), (ty, iity))
 
 
 and (pp_base_type_gen: 
-        pr_elem_func -> fullType -> (storage * il) option -> unit) = 
-  fun pr_elem -> 
-    let pp_expression e = pp_expression_gen pr_elem e in
+       pr_elem_func -> pr_space_func -> fullType ->
+	 (storage * il) option -> unit) = 
+  fun pr_elem pr_space -> 
+    let pp_expression e = pp_expression_gen pr_elem pr_space e in
 
     let rec pp_base_type = 
       fun (qu, (ty, iity)) sto -> 
@@ -343,19 +347,20 @@ and (pp_base_type_gen:
                         | (Some s, [iis]) -> Some (s, iis) 
                         | x -> raise Impossible) 
                       in
-                      pp_type_with_ident_gen pr_elem  identinfo None typ;
+                      pp_type_with_ident_gen pr_elem pr_space
+			identinfo None typ;
 
                   | (BitField (sopt, typ, expr), ii), iivirg -> 
                       (* first var cant have a preceding ',' *)
                       assert (List.length iivirg = 0); 
                       (match sopt, ii with
                       | (None , [idot]) -> 
-                          pp_type_gen  pr_elem typ;
+                          pp_type_gen pr_elem pr_space typ;
                           pr_elem idot;
                           pp_expression expr
                       | (Some s, [is;idot]) -> 
                           pp_type_with_ident_gen 
-                            pr_elem (Some (s, is)) None typ;
+                            pr_elem pr_space (Some (s, is)) None typ;
                           pr_elem idot;
                           pp_expression expr
                       | x -> raise Impossible
@@ -373,14 +378,15 @@ and (pp_base_type_gen:
                         | (Some s, [iis]) -> Some (s, iis) 
                         | x -> raise Impossible) 
                       in
-                      pp_type_with_ident_rest_gen pr_elem identinfo typ;
+                      pp_type_with_ident_rest_gen pr_elem pr_space
+			identinfo typ;
 
                   | (BitField (sopt, typ, expr), ii), iivirg -> 
                       iivirg +> List.iter pr_elem;
                       (match sopt, ii with
                       | (Some s, [is;idot]) -> 
                           pp_type_with_ident_rest_gen 
-                            pr_elem (Some (s, is)) typ;
+                            pr_elem pr_space (Some (s, is)) typ;
                           pr_elem idot;
                           pp_expression expr
                       | x -> raise Impossible
@@ -416,7 +422,7 @@ and (pp_base_type_gen:
 
             enumt +> List.iter (fun (((s, eopt),ii_s_eq), iicomma) -> 
               assert (List.length iicomma <= 1);
-              iicomma +> List.iter pr_elem;
+              iicomma +> List.iter (function x -> pr_elem x; pr_space());
               (match eopt, ii_s_eq with
               | None, [is] -> pr_elem is;
               | Some e, [is;ieq] -> pr_elem is; pr_elem ieq; pp_expression e
@@ -458,7 +464,7 @@ and (pp_base_type_gen:
             (match iis with
             | [itypeof;iopar;icpar] -> 
                 pr_elem itypeof; pr_elem iopar;
-                pp_expression_gen pr_elem e;
+                pp_expression_gen pr_elem pr_space e;
                 pr_elem icpar;
             | _ -> raise Impossible
             )
@@ -468,7 +474,7 @@ and (pp_base_type_gen:
             (match iis with
             | [itypeof;iopar;icpar] -> 
                 pr_elem itypeof; pr_elem iopar;
-                pp_type_gen pr_elem t; 
+                pp_type_gen pr_elem pr_space t; 
                 pr_elem icpar;
             | _ -> raise Impossible
             )
@@ -482,8 +488,9 @@ and (pp_base_type_gen:
 (* used because of DeclList, in    int i,*j[23];  we dont print anymore the 
    int before *j *) 
 and (pp_type_with_ident_rest_gen: 
-        pr_elem_func -> (string * info) option -> fullType -> unit) = 
-  fun pr_elem -> 
+        pr_elem_func -> pr_space_func ->
+	  (string * info) option -> fullType -> unit) = 
+  fun pr_elem pr_space -> 
     fun ident (((qu, iiqu), (ty, iity)) as fullt) -> 
       let print_ident ident = do_option (fun (s, iis) -> pr_elem iis) ident
       in
@@ -492,12 +499,12 @@ and (pp_type_with_ident_rest_gen:
       (* the work is to do in base_type !! *)
       | (BaseType _, iis)                       -> print_ident ident
       | (Enum  (sopt, enumt), iis)              -> print_ident ident
-      | (StructUnion (_, sopt, fields),iis)   -> print_ident ident
+      | (StructUnion (_, sopt, fields),iis)     -> print_ident ident
       | (StructUnionName (s, structunion), iis) -> print_ident ident
       | (EnumName  s, iis)                      -> print_ident ident
-      | (TypeName (s,_typ), iis)                     -> print_ident ident
-      | (TypeOfExpr (e), iis)                     -> print_ident ident
-      | (TypeOfType (e), iis)                     -> print_ident ident
+      | (TypeName (s,_typ), iis)                -> print_ident ident
+      | (TypeOfExpr (e), iis)                   -> print_ident ident
+      | (TypeOfType (e), iis)                   -> print_ident ident
 
 
 
@@ -508,17 +515,17 @@ and (pp_type_with_ident_rest_gen:
           (* bug: pp_type_with_ident_rest None t;      print_ident ident *)
           pr_elem i; 
           iiqu +> List.iter pr_elem; (* le const est forcement apres le '*' *)
-          pp_type_with_ident_rest_gen pr_elem ident t;
+          pp_type_with_ident_rest_gen pr_elem pr_space ident t;
 
       (* ugly special case ... todo? maybe sufficient in practice *)       
       | (ParenType (q1, (Pointer (q2, (FunctionType t, ii3))   , 
                         [ipointer])  ), [i1;i2]) ->  
-          pp_type_left_gen pr_elem (q2, (FunctionType t, ii3));
+          pp_type_left_gen pr_elem pr_space (q2, (FunctionType t, ii3));
           pr_elem i1;
           pr_elem ipointer;
           print_ident ident;
           pr_elem i2;
-          pp_type_right_gen pr_elem (q2, (FunctionType t, ii3));
+          pp_type_right_gen pr_elem pr_space (q2, (FunctionType t, ii3));
 
       (* another ugly special case *)
       | (ParenType 
@@ -527,45 +534,45 @@ and (pp_type_with_ident_rest_gen:
               (q3, (FunctionType t, iifunc)), 
                  [ipointer]))),
                [iarray1;iarray2])), [i1;i2]) -> 
-          pp_type_left_gen pr_elem (q3, (FunctionType t, iifunc));
+          pp_type_left_gen pr_elem pr_space (q3, (FunctionType t, iifunc));
           pr_elem i1;
           pr_elem ipointer;
           print_ident ident;
           pr_elem iarray1;
-          do_option (pp_expression_gen pr_elem) eopt;
+          do_option (pp_expression_gen pr_elem pr_space) eopt;
           pr_elem iarray2;
           pr_elem i2;
-          pp_type_right_gen pr_elem (q3, (FunctionType t, iifunc))
+          pp_type_right_gen pr_elem pr_space (q3, (FunctionType t, iifunc))
             
 
 
       | (ParenType t, [i1;i2]) ->  
           pr2 "PB PARENTYPE ZARB, I forget about the ()";
-          pp_type_with_ident_rest_gen pr_elem  ident t;
+          pp_type_with_ident_rest_gen pr_elem pr_space ident t;
           
 
       | (Array (eopt, t), [i1;i2]) -> 
-          pp_type_left_gen pr_elem fullt;
+          pp_type_left_gen pr_elem pr_space fullt;
 
           iiqu +> List.iter pr_elem;
           print_ident ident;
 
-          pp_type_right_gen pr_elem fullt;
+          pp_type_right_gen pr_elem pr_space fullt;
 
 
       | (FunctionType (returnt, paramst), [i1;i2]) -> 
-          pp_type_left_gen pr_elem fullt;
+          pp_type_left_gen pr_elem pr_space fullt;
 
           iiqu +> List.iter pr_elem;
           print_ident ident;
 
-          pp_type_right_gen pr_elem fullt;
+          pp_type_right_gen pr_elem pr_space fullt;
 
       | x -> raise Impossible
           
 
-and (pp_type_left_gen: pr_elem_func -> fullType -> unit) = 
-  fun pr_elem ->
+and (pp_type_left_gen: pr_elem_func -> pr_space_func -> fullType -> unit) = 
+  fun pr_elem pr_space ->
     let rec pp_type_left = fun ((qu, iiqu), (ty, iity)) -> 
       match ty, iity with
       | (Pointer t, [i]) ->  
@@ -590,31 +597,31 @@ and (pp_type_left_gen: pr_elem_func -> fullType -> unit) =
     pp_type_left
 
 
-and pp_param_gen pr_elem = fun ((b, sopt, t), ii_b_s) -> 
+and pp_param_gen pr_elem pr_space = fun ((b, sopt, t), ii_b_s) -> 
   match b, sopt, ii_b_s with
   | false, None, [] -> 
-      pp_type_gen pr_elem t
+      pp_type_gen pr_elem pr_space t
   | true, None, [i1] -> 
       pr_elem i1;
-      pp_type_gen pr_elem t
+      pp_type_gen pr_elem pr_space t
 
   | false, Some s, [i1] -> 
-      pp_type_with_ident_gen pr_elem (Some (s, i1)) None t;
+      pp_type_with_ident_gen pr_elem pr_space (Some (s, i1)) None t;
   | true, Some s, [i1;i2] -> 
       pr_elem i1;
-      pp_type_with_ident_gen pr_elem (Some (s, i2)) None t;
+      pp_type_with_ident_gen pr_elem pr_space (Some (s, i2)) None t;
   | _ -> raise Impossible                
 
 
-and (pp_type_right_gen: pr_elem_func -> fullType -> unit) = 
-  fun pr_elem -> 
+and (pp_type_right_gen: pr_elem_func -> pr_space_func -> fullType -> unit) = 
+  fun pr_elem pr_space -> 
     let rec pp_type_right = fun ((qu, iiqu), (ty, iity)) -> 
       match ty, iity with
       | (Pointer t, [i]) ->  pp_type_right t
 
       | (Array (eopt, t), [i1;i2]) -> 
           pr_elem i1;
-          eopt +> do_option (fun e -> pp_expression_gen pr_elem e);
+          eopt +> do_option (fun e -> pp_expression_gen pr_elem pr_space e);
           pr_elem i2;
           pp_type_right t
 
@@ -625,9 +632,9 @@ and (pp_type_right_gen: pr_elem_func -> fullType -> unit) =
           | (ts, (b, iib)) -> 
               ts +> List.iter (fun (param,iicomma) -> 
                 assert ((List.length iicomma) <= 1);
-                iicomma +> List.iter pr_elem;
+                iicomma +> List.iter (function x -> pr_elem x; pr_space());
                 
-                pp_param_gen pr_elem param;
+                pp_param_gen pr_elem pr_space param;
               );
               iib +> List.iter pr_elem;
           );
@@ -646,10 +653,11 @@ and (pp_type_right_gen: pr_elem_func -> fullType -> unit) =
     in 
     pp_type_right
 
-and pp_type_gen pr_elem t = pp_type_with_ident_gen pr_elem None None t
+and pp_type_gen pr_elem pr_space t =
+  pp_type_with_ident_gen pr_elem pr_space None None t
 
 (* ---------------------- *)
-and pp_decl_gen pr_elem = function
+and pp_decl_gen pr_elem pr_space = function
   | DeclList ((((var, returnType, storage),[])::xs), 
              iivirg::ifakestart::iisto) -> 
 
@@ -661,11 +669,12 @@ and pp_decl_gen pr_elem = function
       (* handling the first var. Special case, we print the whole type *)
       (match var with
       | Some ((s, ini),  iis::iini) -> 
-          pp_type_with_ident_gen pr_elem (Some (s, iis)) (Some (storage, iisto))
+          pp_type_with_ident_gen pr_elem pr_space
+	    (Some (s, iis)) (Some (storage, iisto))
             returnType;
           ini +> do_option (fun init -> 
-            List.iter pr_elem iini; pp_init_gen pr_elem init);
-      | None -> pp_type_gen pr_elem returnType
+            List.iter pr_elem iini; pp_init_gen pr_elem pr_space init);
+      | None -> pp_type_gen pr_elem pr_space returnType
       | _ -> raise Impossible
       );
 
@@ -674,9 +683,10 @@ and pp_decl_gen pr_elem = function
       | ((Some ((s, ini), iis::iini), returnType, storage2), iivirg) -> 
           assert (storage2 = storage);
           iivirg +> List.iter pr_elem;
-          pp_type_with_ident_rest_gen pr_elem (Some (s, iis)) returnType;
+          pp_type_with_ident_rest_gen pr_elem pr_space
+	    (Some (s, iis)) returnType;
           ini +> do_option (fun (init) -> 
-            List.iter pr_elem iini; pp_init_gen pr_elem init);
+            List.iter pr_elem iini; pp_init_gen pr_elem pr_space init);
 
 
       | x -> raise Impossible
@@ -692,7 +702,7 @@ and pp_decl_gen pr_elem = function
       es +> List.iter (fun (e, opt) -> 
         assert (List.length opt <= 1);
         opt +> List.iter pr_elem;
-        pp_argument_gen pr_elem e;
+        pp_argument_gen pr_elem pr_space e;
       );
 
       pr_elem rp;
@@ -702,8 +712,8 @@ and pp_decl_gen pr_elem = function
       
 
 (* ---------------------- *)
-and pp_init_gen = fun pr_elem -> 
-  let pp_expression e = pp_expression_gen pr_elem e in
+and pp_init_gen = fun pr_elem pr_space -> 
+  let pp_expression e = pp_expression_gen pr_elem pr_space e in
   let rec pp_init = fun (init, iinit) -> 
     match init, iinit with
     | InitExpr e, [] -> pp_expression e;
@@ -718,7 +728,7 @@ and pp_init_gen = fun pr_elem ->
         pr_elem i2;
 
     | InitDesignators (xs, initialiser), [i1] -> (* : *)
-        xs +> List.iter (pp_designator pr_elem);
+        xs +> List.iter (pp_designator pr_elem pr_space);
         pr_elem i1;
         pp_init initialiser
 
@@ -734,8 +744,8 @@ and pp_init_gen = fun pr_elem ->
 
 
 
-and pp_designator pr_elem design = 
-  let pp_expression e = pp_expression_gen pr_elem e in
+and pp_designator pr_elem pr_space design = 
+  let pp_expression e = pp_expression_gen pr_elem pr_space e in
   match design with 
   | DesignatorField (s), [i1; i2] -> 
       pr_elem i1; pr_elem i2; 
@@ -751,14 +761,14 @@ and pp_designator pr_elem design =
 
 
 (* ---------------------- *)
-and pp_def_gen pr_elem def = 
+and pp_def_gen pr_elem pr_space def = 
   match def with 
   | ((s, (returnt, (paramst, (b, iib))), sto, statxs), 
                      is::iifunc1::iifunc2::i1::i2::ifakestart::isto) -> 
 
          pr_elem ifakestart;
                        
-         pp_type_with_ident_gen pr_elem None (Some (sto, isto)) 
+         pp_type_with_ident_gen pr_elem pr_space None (Some (sto, isto)) 
                          returnt;
          pr_elem is;
          pr_elem iifunc1;
@@ -774,7 +784,7 @@ and pp_def_gen pr_elem def =
                );
              assert (null iicomma);
              assert (null ii_b_s);
-             pp_type_with_ident_gen pr_elem  None None t
+             pp_type_with_ident_gen pr_elem pr_space  None None t
              
          | paramst -> 
            paramst +> List.iter (fun (((bool, s, t), ii_b_s), iicomma) ->
@@ -783,11 +793,11 @@ and pp_def_gen pr_elem def =
             (match b, s, ii_b_s with
             | false, Some s, [i1] -> 
                 pp_type_with_ident_gen 
-                  pr_elem (Some (s, i1)) None t;
+                  pr_elem pr_space (Some (s, i1)) None t;
             | true, Some s, [i1;i2] -> 
                 pr_elem i1;
                 pp_type_with_ident_gen 
-                  pr_elem (Some (s, i2)) None t;
+                  pr_elem pr_space (Some (s, i2)) None t;
 
             (* in definition we have name for params, except when f(void) *)
              | _, None, _ -> raise Impossible 
@@ -806,26 +816,26 @@ and pp_def_gen pr_elem def =
         *)
          paramst +> List.iter (fun (param,iicomma) -> 
            assert ((List.length iicomma) <= 1);
-           iicomma +> List.iter pr_elem;
+           iicomma +> List.iter (function x -> pr_elem x; pr_space());
            
-           pp_param_gen pr_elem param;
+           pp_param_gen pr_elem pr_space param;
          );
          iib +> List.iter pr_elem;
             
 
          pr_elem iifunc2;
          pr_elem i1; 
-         statxs +> List.iter (pp_statement_gen pr_elem);
+         statxs +> List.iter (pp_statement_gen pr_elem pr_space);
          pr_elem i2;
      | _ -> raise Impossible
 
 
 
 
-let pp_program_gen pr_elem progelem =
+let pp_program_gen pr_elem pr_space progelem =
   match progelem with
-  | Declaration decl -> pp_decl_gen pr_elem decl
-  | Definition def -> pp_def_gen pr_elem def
+  | Declaration decl -> pp_decl_gen pr_elem pr_space decl
+  | Definition def -> pp_def_gen pr_elem pr_space def
 
   | Include ((s, [i1;i2]),h_rel_pos) -> 
       pr_elem i1; pr_elem i2
@@ -834,19 +844,19 @@ let pp_program_gen pr_elem progelem =
       pr_elem iident;
         
       let define_val = function
-        | DefineExpr e -> pp_expression_gen pr_elem e
-        | DefineStmt st -> pp_statement_gen pr_elem st
+        | DefineExpr e -> pp_expression_gen pr_elem pr_space e
+        | DefineStmt st -> pp_statement_gen pr_elem pr_space st
         | DefineDoWhileZero (st, ii) -> 
             (match ii with
             | [ido;iwhile;iopar;iint;icpar] -> 
                 pr_elem ido;
-                pp_statement_gen pr_elem st;
+                pp_statement_gen pr_elem pr_space st;
                 pr_elem iwhile; pr_elem iopar; pr_elem iint; pr_elem icpar
             | _ -> raise Impossible
             )
-        | DefineFunction def -> pp_def_gen pr_elem def
+        | DefineFunction def -> pp_def_gen pr_elem pr_space def
             
-        | DefineType ty -> pp_type_gen pr_elem ty
+        | DefineType ty -> pp_type_gen pr_elem pr_space ty
         | DefineText (s, ii) -> List.iter pr_elem ii
         | DefineEmpty -> ()
       in
@@ -872,7 +882,7 @@ let pp_program_gen pr_elem progelem =
       es +> List.iter (fun (e, opt) -> 
         assert (List.length opt <= 1);
         opt +> List.iter pr_elem;
-        pp_argument_gen pr_elem e;
+        pp_argument_gen pr_elem pr_space e;
       );
       pr_elem i3;
       pr_elem i4;
@@ -896,8 +906,8 @@ let pr_elem info =
   let s = Ast_c.str_of_info info in
   pp s
 
+let pr_space _ = Format.print_space()
 
-let pp_expression_simple = pp_expression_gen pr_elem
-let pp_statement_simple  = pp_statement_gen pr_elem
-
-
+let pp_expression_simple = pp_expression_gen pr_elem pr_space
+let pp_statement_simple  = pp_statement_gen pr_elem pr_space
+let pp_type_simple  = pp_type_gen pr_elem pr_space

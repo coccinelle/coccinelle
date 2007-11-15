@@ -19,7 +19,7 @@ exception CantBeInPlus
 
 type pos = Before | After | InPlace
 
-let rec pp_list_list_any (env, pr, pr_elem) xxs before =
+let rec pp_list_list_any (env, pr, pr_elem, pr_space) xxs before =
 
 (* Just to be able to copy paste the code from pretty_print_cocci.ml. *)
 let print_string = pr in
@@ -148,7 +148,7 @@ let rec expression e =
   | Ast.MetaExpr (name,_,_typedontcare,_formdontcare,_) ->
       handle_metavar name  (function
         | Ast_c.MetaExprVal exp -> 
-            Pretty_print_c.pp_expression_gen pr_elem  exp
+            Pretty_print_c.pp_expression_gen pr_elem pr_space  exp
         | _ -> raise Impossible
       )
 
@@ -262,7 +262,7 @@ and typeC ty =
   | Ast.MetaType(name,_,_) -> 
       handle_metavar name  (function
           Ast_c.MetaTypeVal exp -> 
-            Pretty_print_c.pp_type_gen pr_elem exp
+            Pretty_print_c.pp_type_gen pr_elem pr_space exp
         | _ -> raise Impossible)
 
 and baseType = function
@@ -523,7 +523,7 @@ and rule_elem arity re =
   | Ast.MetaStmt(name,_,_,_) ->
       handle_metavar name  (function
         | Ast_c.MetaStmtVal exp -> 
-            Pretty_print_c.pp_statement_gen pr_elem  exp
+            Pretty_print_c.pp_statement_gen pr_elem pr_space  exp
         | _ -> raise Impossible
                            )
   | Ast.MetaStmtList(name,_,_) ->

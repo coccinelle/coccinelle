@@ -28,9 +28,7 @@ let cprogram_of_file_cached file =
 
 
 let cfile_of_program program2_with_ppmethod outf = 
-  if !Flag_cocci.unparse_c2
-  then Unparse_c2.pp_program program2_with_ppmethod outf
-  else Unparse_c.pp_program program2_with_ppmethod outf
+  Unparse_c2.pp_program program2_with_ppmethod outf
     
 
 (* --------------------------------------------------------------------- *)
@@ -576,7 +574,7 @@ let concat_headers_and_c ccs =
 
 let for_unparser xs = 
   xs +> List.map (fun x -> 
-    (x.ast_c, (x.fullstring, x.tokens_c)), Unparse_c.PPviastr
+    (x.ast_c, (x.fullstring, x.tokens_c)), Unparse_c2.PPviastr
   )
 
 (* --------------------------------------------------------------------- *)
@@ -658,7 +656,7 @@ let rebuild_info_program cs =
     then begin
       let file = Common.new_temp_file "cocci_small_output" ".c" in
       cfile_of_program 
-        [(c.ast_c, (c.fullstring, c.tokens_c)), Unparse_c.PPnormal] 
+        [(c.ast_c, (c.fullstring, c.tokens_c)), Unparse_c2.PPnormal] 
         file;
 
       (* Common.command2 ("cat " ^ file); *)
@@ -1157,7 +1155,7 @@ let index dir tmpdir =
               in
               let c = topcinfo in
               cfile_of_program 
-                [(c.ast_c, (c.fullstring, c.tokens_c)), Unparse_c.PPviastr] 
+                [(c.ast_c, (c.fullstring, c.tokens_c)), Unparse_c2.PPviastr] 
                 smallfile;
           
               let marshalled_file = smallfile ^ ".marshalled_finfo" in

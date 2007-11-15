@@ -160,9 +160,11 @@ let get_fakeInfo_and_tokens celem toks =
         before +> List.iter (fun x -> Common.push2 (T1 x) toks_out);
         push2 (T1 x) toks_out;
         toks_in := after;
-    | AbstractLineTok -> raise Impossible (* at this stage *)
-  in
-  Pretty_print_c.pp_program_gen pr_elem celem;
+    | AbstractLineTok -> raise Impossible (* at this stage *) in
+
+  let pr_space _ = () in
+
+  Pretty_print_c.pp_program_gen pr_elem pr_space celem;
 
   if not (null !toks_in)
   then failwith "WIERD: unparsing not finished";
@@ -255,10 +257,11 @@ let expand_mcode toks =
     in
     let pr_c info = 
       assert(Ast_c.mark_of_info info = AbstractLineTok);
-      push2 (C2 (Ast_c.str_of_info info)) toks_out;
-    in
+      push2 (C2 (Ast_c.str_of_info info)) toks_out in
 
-    let args_pp = (env, pr_cocci, pr_c) in
+    let pr_space _ = push2 (C2 " ") toks_out in
+
+    let args_pp = (env, pr_cocci, pr_c, pr_space) in
 
 
     match mcode with
@@ -596,7 +599,7 @@ let pp_program2 xs outfile  =
       let e = remove_useless_fakeInfo_struct e in
       
       match ppmethod with
-      | Unparse_c.PPnormal -> 
+      | PPnormal -> 
           (* now work on tokens *)
 
           (* phase1: just get all the tokens, all the information *)
@@ -624,7 +627,7 @@ let pp_program2 xs outfile  =
 
           print_all_tokens2 pr toks;
 
-      | Unparse_c.PPviastr -> pr str
+      | PPviastr -> pr str
     )
   )
 

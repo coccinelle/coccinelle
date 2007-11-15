@@ -19,7 +19,6 @@ let main _ =
   (* Parse_cocci.parse_and_merge !file; *)
   if !file = "" then failwith "filename required";
   Parse_cocci.process !file !isofile !verbose
-  (* if !verbose then Unparse_cocci.unparse minus; *)
   end
 
 let _ = main ()

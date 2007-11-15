@@ -484,7 +484,7 @@ let test_parse_unparse infile =
 
   let (program2, _stat) = Parse_c.parse_print_error_heuristic infile in
   let program2_with_ppmethod = 
-    program2 +> List.map (fun x -> x, Unparse_c.PPnormal)
+    program2 +> List.map (fun x -> x, Unparse_c2.PPnormal)
   in
   Unparse_c2.pp_program program2_with_ppmethod tmpfile;
   Common.command2 ("cat " ^ tmpfile)
@@ -510,9 +510,9 @@ let test_type_c infile =
     +> Common.uncurry Common.zip
   in
   let program2_with_ppmethod = 
-    program2 +> List.map (fun x -> x, Unparse_c.PPnormal)
+    program2 +> List.map (fun x -> x, Unparse_c2.PPnormal)
   in
-  Unparse_c.pp_program program2_with_ppmethod tmpfile;
+  Unparse_c2.pp_program program2_with_ppmethod tmpfile;
   Common.command2 ("cat " ^ tmpfile)
 
 

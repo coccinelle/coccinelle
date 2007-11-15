@@ -303,10 +303,6 @@ let other_options = [
     "   convert ifdef to if (buggy!)";
     "-noif0_passing",   Arg.Clear Flag_parsing_c.if0_passing, 
     " ";
-    "-unparse_c1",   Arg.Clear Flag_cocci.unparse_c2, 
-    " ";
-    "-unparse_c2",   Arg.Set Flag_cocci.unparse_c2, 
-    " ";
     "-noadd_typedef_root",   Arg.Clear Flag_parsing_c.add_typedef_root, " ";
     "-disallow_nested_exps", Arg.Set Flag_engine.disallow_nested_exps,
        "disallow an expresion pattern from matching a term and its subterm";
