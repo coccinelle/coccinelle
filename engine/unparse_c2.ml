@@ -564,7 +564,7 @@ let print_all_tokens2 pr xs =
  * PPviatok has disappeared.
  *)
 
-(* in unparse_c.ml:  type ppmethod = PPnormal | PPviastr *)
+type ppmethod = PPnormal | PPviastr
 
 
 
