@@ -830,7 +830,7 @@ let end_control_structure fvs header body after_pred
 	  (ctl_ax_absolute s body)))
 
 let ifthen ifheader branch ((afvs,_,_,_) as aft) after
-    quantified minus_quantified label recurse make_match guard =
+    quantified minus_quantified label llabel slabel recurse make_match guard =
 (* "if (test) thn" becomes:
     if(test) & AX((TrueBranch & AX thn) v FallThrough v After)
 
@@ -857,7 +857,7 @@ let ifthen ifheader branch ((afvs,_,_,_) as aft) after
   let true_branch =
     make_seq guard
       [truepred label; recurse branch Tail new_quantified new_mquantified
-	  label guard] in
+	  label llabel slabel guard] in
   let after_pred = aftpred label in
   let or_cases after_branch =
     ctl_or true_branch (ctl_or (fallpred label) after_branch) in
@@ -865,7 +865,7 @@ let ifthen ifheader branch ((afvs,_,_,_) as aft) after
       (Some(ctl_ex after_pred)) None aft after label guard
 
 let ifthenelse ifheader branch1 els branch2 ((afvs,_,_,_) as aft) after
-    quantified minus_quantified label recurse make_match guard =
+    quantified minus_quantified label llabel slabel recurse make_match guard =
 (*  "if (test) thn else els" becomes:
     if(test) & AX((TrueBranch & AX thn) v
                   (FalseBranch & AX (else & AX els)) v After)
@@ -917,11 +917,12 @@ let ifthenelse ifheader branch1 els branch2 ((afvs,_,_,_) as aft) after
   let true_branch =
     make_seq guard
       [truepred label; recurse branch1 Tail new_quantified new_mquantified
-	  label guard] in
+	  label llabel slabel guard] in
   let false_branch =
     make_seq guard
       [falsepred label; make_match els;
-	recurse branch2 Tail new_quantified new_mquantified label guard] in
+	recurse branch2 Tail new_quantified new_mquantified
+	  label llabel slabel guard] in
   let after_pred = aftpred label in
   let or_cases after_branch =
     ctl_or true_branch (ctl_or false_branch after_branch) in
@@ -950,14 +951,23 @@ let forwhile header body ((afvs,_,_,_) as aft) after
     let new_mquantified = Common.union_set mbfvs minus_quantified in
     (* loop header *)
     let header = quantify guard efvs (make_match header) in
+    let lv = get_label_ctr() in
+    let used = ref false in
     let body =
       make_seq guard
 	[inlooppred label;
-	  recurse body Tail new_quantified new_mquantified label guard] in
+	  recurse body Tail new_quantified new_mquantified
+	    label (Some (lv,used)) None guard] in
     let after_pred = fallpred label in
     let or_cases after_branch = ctl_or body after_branch in
-    end_control_structure bfvs header or_cases after_pred
-      (Some(ctl_ex after_pred)) None aft after label guard in
+    let res =
+      end_control_structure bfvs header or_cases after_pred
+	(Some(ctl_ex after_pred)) None aft after label guard in
+    if !used (* true if we need to maintain the break label *)
+    then
+      let label_pred = CTL.Pred (Lib_engine.Label(lv),CTL.Control) in
+      quantify true [lv] (ctl_and CTL.NONSTRICT(*???*) res label_pred)
+    else res in
   match (Ast.unwrap body,aft) with
     (Ast.Atomic(re),(_,_,_,Ast.CONTEXT(_,Ast.NOTHING))) ->
       (match Ast.unwrap re with
@@ -1224,7 +1234,7 @@ and do_plus_dots toend label guard wrapcode ornest nest whencodes aft ender =
 (* the main translation loop *)
   
 let rec statement_list stmt_list after quantified minus_quantified
-    label dots_before guard =
+    label llabel slabel dots_before guard =
   let isdots x =
     (* include Disj to be on the safe side *)
     match Ast.unwrap x with
@@ -1237,7 +1247,7 @@ let rec statement_list stmt_list after quantified minus_quantified
 	| ([e],_,_) ->
 	    statement e after quantified minus_quantified
 	      (compute_label label e dots_before)
-	      guard
+	      llabel slabel guard
 	| (e::sl,fv::fvs,mfv::mfvs) ->
 	    let shared = intersectll fv fvs in
 	    let unqshared = get_unquantified quantified shared in
@@ -1253,14 +1263,17 @@ let rec statement_list stmt_list after quantified minus_quantified
 		    (loop new_quantified new_mquantified (isdots e)
 		       (sl,fvs,mfvs)))
 		 new_quantified new_mquantified
-		 (compute_label label e dots_before) guard)
+		 (compute_label label e dots_before) llabel slabel guard)
 	| _ -> failwith "not possible" in
       loop quantified minus_quantified dots_before
 	(x,List.map Ast.get_fvs x,List.map Ast.get_mfvs x)
   | Ast.CIRCLES(x) -> failwith "not supported"
   | Ast.STARS(x) -> failwith "not supported"
 
-and statement stmt after quantified minus_quantified label guard =
+(* llabel is the label of the enclosing loop and slabel is the label of the
+   enclosing switch *)
+and statement stmt after quantified minus_quantified
+    label llabel slabel guard =
   let ctl_au     = ctl_au CTL.NONSTRICT in
   let ctl_ax     = ctl_ax CTL.NONSTRICT in
   let ctl_and    = ctl_and CTL.NONSTRICT in
@@ -1281,12 +1294,16 @@ and statement stmt after quantified minus_quantified label guard =
 		     keep,seqible,_)
       | Ast.MetaStmt((s,_,(Ast.CONTEXT(_,Ast.AFTER(_)) as d)),keep,seqible,_)->
 	  svar_context_with_add_after s label quantified d ast seqible after
-	    (process_bef_aft quantified minus_quantified label true) guard
+	    (process_bef_aft quantified minus_quantified
+	       label llabel slabel true)
+	    guard
 	    (Ast.get_fvs stmt, Ast.get_fresh stmt, Ast.get_inherited stmt)
 
       |	Ast.MetaStmt((s,_,d),keep,seqible,_) ->
 	  svar_minus_or_no_add_after s label quantified d ast seqible after
-	    (process_bef_aft quantified minus_quantified label true) guard
+	    (process_bef_aft quantified minus_quantified
+	       label llabel slabel true)
+	    guard
 	    (Ast.get_fvs stmt, Ast.get_fresh stmt, Ast.get_inherited stmt)
 
       |	_ ->
@@ -1303,7 +1320,23 @@ and statement stmt after quantified minus_quantified label guard =
 		let fvs = get_unquantified quantified stmt_fvs in
 		quantify guard fvs (make_match ast) in
 	  match Ast.unwrap ast with
-            Ast.Return((_,info,retmc),(_,_,semmc)) ->
+	    Ast.Break(brk,semi) ->
+	      (match (llabel,slabel) with
+		(_,Some(lv,used)) | (Some(lv,used),_) ->
+		  used := true;
+		  let label_pred =
+		    CTL.Pred (Lib_engine.BCLabel(lv),CTL.Control) in
+		  ctl_and term label_pred
+	      |	_ -> term)
+	  | Ast.Continue(brk,semi) ->
+	      (match llabel with
+		Some(lv,used) ->
+		  used := true;
+		  let label_pred =
+		    CTL.Pred (Lib_engine.BCLabel(lv),CTL.Control) in
+		  ctl_and term label_pred
+	      |	_ -> term)
+          | Ast.Return((_,info,retmc),(_,_,semmc)) ->
 	      (* discard pattern that comes after return *)
 	      let normal_res = make_seq_after term after in
 	      (* the following code tries to propagate the modifications on
@@ -1364,7 +1397,7 @@ and statement stmt after quantified minus_quantified label guard =
 		then term
 		else
 		  do_between_dots stmt term End
-		    quantified minus_quantified label guard in
+		    quantified minus_quantified label llabel slabel guard in
 	      dots_done := true;
 	      make_seq_after term after)
   | Ast.Seq(lbrace,decls,body,rbrace) ->
@@ -1415,9 +1448,9 @@ and statement stmt after quantified minus_quantified label guard =
 				(statement_list body
 				   (After (make_seq_after end_brace after))
 				   new_quantified3 new_mquantified3
-				   (Some lv) true guard)))
+				   (Some lv) llabel slabel true guard)))
 			  new_quantified2 new_mquantified2
-			  (Some lv) false guard)]))) in
+			  (Some lv) llabel slabel false guard)]))) in
       if ends_in_return body
       then
 	(* matching error handling code *)
@@ -1444,8 +1477,8 @@ and statement stmt after quantified minus_quantified label guard =
 		   (make_match empty_rbrace)
 		   (quantify guard b3fvs
 		      (statement_list body End
-			 new_quantified3 new_mquantified3 None true
-			 guard)))] in
+			 new_quantified3 new_mquantified3 None llabel slabel
+			 true guard)))] in
 	let pattern3 =
 	  CTL.Exists
 	    (true,lv,quantify guard b1fvs
@@ -1468,9 +1501,9 @@ and statement stmt after quantified minus_quantified label guard =
 					   (make_seq_after
 					      nopv_end_brace after)*)
 				     new_quantified3 new_mquantified3
-				     None true guard)))
+				     None llabel slabel true guard)))
 			    new_quantified2 new_mquantified2
-			    (Some lv) false guard))])) in
+			    (Some lv) llabel slabel false guard))])) in
 	ctl_or pattern_as_given
 	  (match Ast.unwrap decls with
 	    Ast.DOTS([]) -> ctl_or pattern2 pattern3
@@ -1479,11 +1512,11 @@ and statement stmt after quantified minus_quantified label guard =
       else pattern_as_given
   | Ast.IfThen(ifheader,branch,aft) ->
       ifthen ifheader branch aft after quantified minus_quantified
-	  label statement make_match guard
+	  label llabel slabel statement make_match guard
 	 
   | Ast.IfThenElse(ifheader,branch1,els,branch2,aft) ->
       ifthenelse ifheader branch1 els branch2 aft after quantified
-	  minus_quantified label statement make_match guard
+	  minus_quantified label llabel slabel statement make_match guard
 
   | Ast.While(header,body,aft) | Ast.For(header,body,aft)
   | Ast.Iterator(header,body,aft) ->
@@ -1497,7 +1530,7 @@ and statement stmt after quantified minus_quantified label guard =
 	   (List.map
 	      (function sl ->
 		statement_list sl after quantified minus_quantified label
-		  true guard)
+		  llabel slabel true guard)
 	      stmt_dots_list))
 
   | Ast.Nest(stmt_dots,whencode,multi,bef,aft) ->
@@ -1516,15 +1549,17 @@ and statement stmt after quantified minus_quantified label guard =
       quantify guard bfvs
 	(let dots_pattern =
 	  statement_list stmt_dots (a2n after) new_quantified minus_quantified
-	    None true guard in
+	    None llabel slabel true guard in
 	dots_and_nests multi
 	  (Some dots_pattern) whencode bef aft None after label
-	  (process_bef_aft new_quantified minus_quantified None true)
+	  (process_bef_aft new_quantified minus_quantified
+	     None llabel slabel true)
 	  (function x ->
 	    statement_list x Tail new_quantified minus_quantified None
-	      true true)
+	      llabel slabel true true)
 	  (function x ->
-	    statement x Tail new_quantified minus_quantified None true)
+	    statement x Tail new_quantified minus_quantified None
+	      llabel slabel true)
 	  guard (function x -> Ast.set_fvs [] (Ast.rewrap stmt x)))
 
   | Ast.Dots((_,i,d),whencodes,bef,aft) ->
@@ -1536,10 +1571,12 @@ and statement stmt after quantified minus_quantified label guard =
 	    Some(make_match (make_meta_rule_elem d ([],[],[])))
 	| _ -> None in
       dots_and_nests false None whencodes bef aft dot_code after label
-	(process_bef_aft quantified minus_quantified None true)
+	(process_bef_aft quantified minus_quantified None llabel slabel true)
 	(function x ->
-	  statement_list x Tail quantified minus_quantified None true true)
-	(function x -> statement x Tail quantified minus_quantified None true)
+	  statement_list x Tail quantified minus_quantified
+	    None llabel slabel true true)
+	(function x ->
+	  statement x Tail quantified minus_quantified None llabel slabel true)
 	guard (function x -> Ast.set_fvs [] (Ast.rewrap stmt x))
 
   | Ast.Switch(header,lb,cases,rb) ->
@@ -1630,6 +1667,8 @@ and statement stmt after quantified minus_quantified label guard =
 	  cases in
       let no_header =
 	ctl_not (List.fold_left ctl_or_fl CTL.False case_headers) in
+      let lv = get_label_ctr() in
+      let used = ref false in
       let case_code =
 	List.map
 	  (function case_line ->
@@ -1651,8 +1690,8 @@ and statement stmt after quantified minus_quantified label guard =
 		  let new3_mquantified = union mb1fvs new2_mquantified in
 		  let body =
 		    statement_list body Tail
-		      new3_quantified new3_mquantified label
-		      true(*?*) guard in
+		      new3_quantified new3_mquantified label llabel
+		      (Some (lv,used)) true(*?*) guard in
 		  quantify guard b1fvs (make_seq [case_header; body])
 	    | Ast.OptCase(case_line) -> failwith "not supported")
 	  cases in
@@ -1684,8 +1723,14 @@ and statement stmt after quantified minus_quantified label guard =
 	match Ast.unwrap rb with
 	  Ast.SeqEnd(rb) -> Ast.get_mcodekind rb
 	| _ -> failwith "not possible") in
-      end_control_structure b1fvs switch_header body
-	after_pred (Some(ctl_ex after_pred)) None aft after label guard
+      let res =
+	end_control_structure b1fvs switch_header body
+	  after_pred (Some(ctl_ex after_pred)) None aft after label guard in
+      if !used (* true if we need to maintain the break label *)
+      then
+	let label_pred = CTL.Pred (Lib_engine.Label(lv),CTL.Control) in
+	quantify true [lv] (ctl_and res label_pred)
+      else res
   | Ast.FunDecl(header,lbrace,decls,body,rbrace) ->
       let (hfvs,b1fvs,lbfvs,b2fvs,b3fvs,b4fvs,rbfvs) =
 	match
@@ -1754,7 +1799,8 @@ and statement stmt after quantified minus_quantified label guard =
 	       statement_list stmt_dots
 		 (* discards match on right brace, but don't need it *)
 		 (Guard (make_seq_after end_brace after))
-		 new_quantified4 new_mquantified4 None true guard)
+		 new_quantified4 new_mquantified4
+		 None llabel slabel true guard)
 	| Some (Common.Right whencode) ->
 	    (* try to be more efficient for the case where the body is just
 	       ...  Perhaps this is too much of a special case, but useful
@@ -1775,7 +1821,7 @@ and statement stmt after quantified minus_quantified label guard =
 				      let x =
 					statement_list sl Tail
 					  new_quantified4 new_mquantified4
-					  label true true in
+					  label llabel slabel true true in
 				      ctl_or prev x
 				  | Ast.WhenAny -> CTL.False)
 			      CTL.False whencode))
@@ -1786,7 +1832,7 @@ and statement stmt after quantified minus_quantified label guard =
 				   let x =
 				     statement s Tail
 				       new_quantified4 new_mquantified4
-				       label true in
+				       label llabel slabel true in
 				   ctl_and prev x
 			       | Ast.WhenNot(sl) -> prev
 			       | Ast.WhenAny -> CTL.True)
@@ -1802,9 +1848,11 @@ and statement stmt after quantified minus_quantified label guard =
 			   (statement_list body
 			      (After (make_seq_after end_brace after))
 			      new_quantified4 new_mquantified4
-			      None true guard)))
-		     new_quantified3 new_mquantified3 None false guard)] in
-      quantify guard b1fvs (make_seq [function_header; quantify guard b2fvs body_code])
+			      None llabel slabel true guard)))
+		     new_quantified3 new_mquantified3 None llabel slabel
+		     false guard)] in
+      quantify guard b1fvs
+	(make_seq [function_header; quantify guard b2fvs body_code])
   | Ast.Define(header,body) ->
       let (hfvs,bfvs,bodyfvs) =
 	match seq_fvs quantified [Ast.get_fvs header;Ast.get_fvs body]
@@ -1821,7 +1869,7 @@ and statement stmt after quantified minus_quantified label guard =
 	statement_list body after
 	  (Common.union_set bfvs quantified)
 	  (Common.union_set mbfvs minus_quantified)
-	  None true guard in
+	  None llabel slabel true guard in
       quantify guard bfvs (make_seq [define_header; body_code])
   | Ast.OptStm(stm) ->
       failwith "OptStm should have been compiled away\n"
@@ -1830,15 +1878,19 @@ and statement stmt after quantified minus_quantified label guard =
   | _ -> failwith "not supported" in
   if guard or !dots_done
   then term
-  else do_between_dots stmt term after quantified minus_quantified label guard
+  else
+    do_between_dots stmt term after quantified minus_quantified
+      label llabel slabel guard
 
 (* term is the translation of stmt *)
-and do_between_dots stmt term after quantified minus_quantified label guard =
+and do_between_dots stmt term after quantified minus_quantified
+    label llabel slabel guard =
     match Ast.get_dots_bef_aft stmt with
       Ast.AddingBetweenDots (brace_term,n)
     | Ast.DroppingBetweenDots (brace_term,n) ->
 	let match_brace =
-	  statement brace_term after quantified minus_quantified label guard in
+	  statement brace_term after quantified minus_quantified
+	    label llabel slabel guard in
 	let v = Printf.sprintf "_r_%d" n in
 	let case1 = ctl_and CTL.NONSTRICT (CTL.Ref v) match_brace in
 	let case2 = ctl_and CTL.NONSTRICT (ctl_not (CTL.Ref v)) term in
@@ -1851,15 +1903,17 @@ and do_between_dots stmt term after quantified minus_quantified label guard =
 
 (* un_process_bef_aft is because we don't want to do transformation in this
   code, and thus don't case about braces before or after it *)
-and process_bef_aft quantified minus_quantified label guard = function
+and process_bef_aft quantified minus_quantified label llabel slabel guard =
+  function
     Ast.WParen (re,n) ->
       let paren_pred = CTL.Pred (Lib_engine.Paren n,CTL.Control) in
       let s = guard_to_strict guard in
       ctl_and s (make_raw_match None guard re) paren_pred
   | Ast.Other s ->
-      statement s Tail quantified minus_quantified label guard
+      statement s Tail quantified minus_quantified label llabel slabel guard
   | Ast.Other_dots d ->
-      statement_list d Tail quantified minus_quantified label true guard
+      statement_list d Tail quantified minus_quantified
+	label llabel slabel true guard
 
 (* --------------------------------------------------------------------- *)
 (* cleanup: convert AX to EX for pdots.
@@ -1915,7 +1969,7 @@ let top_level ua t =
     | Ast.DECL(stmt) ->
 	let unopt = elim_opt.V.rebuilder_statement stmt in
 	let unopt = preprocess_dots_e unopt in
-	cleanup(statement unopt Tail ua [] None false)
+	cleanup(statement unopt Tail ua [] None None None false)
     | Ast.CODE(stmt_dots) ->
 	let unopt = elim_opt.V.rebuilder_statement_dots stmt_dots in
 	let unopt = preprocess_dots unopt in
@@ -1927,7 +1981,7 @@ let top_level ua t =
 	      | Ast.Stars(_,_,_,_) -> true
 	      | _ -> false)
 	  | _ -> false in
-	let res = statement_list unopt Tail ua [] None false false in
+	let res = statement_list unopt Tail ua [] None None None false false in
 	cleanup
 	  (if starts_with_dots
 	  then

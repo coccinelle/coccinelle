@@ -61,6 +61,7 @@ let rec pp_predicate = function
   | Paren s -> pp "Paren("; pp_meta s; pp ")"
   | Match (re) -> Pretty_print_cocci.print_rule_elem re
   | Label s -> pp "Label("; pp_meta s; pp ")"
+  | BCLabel s -> pp "BreakContinueLabel("; pp_meta s; pp ")"
   | PrefixLabel s -> pp "PrefixLabel("; pp_meta s; pp ")"
   | BindGood s -> pp "BindGood("; pp_meta s; pp ")"
   | BindBad s ->  pp "BindBad(";  pp_meta s; pp ")"

@@ -78,9 +78,11 @@ let (labels_for_ctl: string list (* dropped isos *) ->
 	  let make_var x = ("",i_to_s x) in
           [(nodei, (p,[(s --> (Lib_engine.ParenVal (make_var bracelevel)))]))]
       | Lib_engine.Paren _, _ -> []
-
       | Lib_engine.Label s, _ -> 
           let labels = F.extract_labels node in
+          [(nodei, (p,[(s --> (Lib_engine.LabelVal labels))]))]
+      | Lib_engine.BCLabel s, _ -> 
+          let labels = F.extract_bclabels node in
           [(nodei, (p,[(s --> (Lib_engine.LabelVal labels))]))]
       | Lib_engine.PrefixLabel s, _ -> 
           let labels = F.extract_labels node in
@@ -218,7 +220,7 @@ let (fix_flow_ctl2: F.cflow -> F.cflow) = fun flow ->
   !g#nodes#tolist +> List.iter (fun (nodei, node) -> 
     if (!g#predecessors nodei)#null 
     then begin
-      let fakei = !g#add_node (F.mk_node F.Fake [] "DEADCODELOOP") in
+      let fakei = !g#add_node (F.mk_node F.Fake [] [] "DEADCODELOOP") in
       !g#add_arc ((fakei, nodei), F.Direct);
       !g#add_arc ((fakei, fakei), F.Direct);
     end

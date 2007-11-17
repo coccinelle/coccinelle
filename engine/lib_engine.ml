@@ -14,6 +14,7 @@ type predicate =
   | Paren of Ast_cocci.meta_name
   | Match of Ast_cocci.rule_elem
   | Label of Ast_cocci.meta_name
+  | BCLabel of Ast_cocci.meta_name (* parent of break or continue *)
   | PrefixLabel of Ast_cocci.meta_name
   | BindGood of Ast_cocci.meta_name (* used to implement \+ *)
   | BindBad  of Ast_cocci.meta_name

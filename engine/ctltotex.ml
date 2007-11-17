@@ -245,6 +245,9 @@ let pred2c = function
   | Lib_engine.Label(s) ->
       let s = meta2c s in
       ("\\msf{Label}("^s^")",7+(String.length s))
+  | Lib_engine.BCLabel(s) ->
+      let s = meta2c s in
+      ("\\msf{BreakContinueLabel}("^s^")",20+(String.length s))
   | Lib_engine.PrefixLabel(s) ->
       let s = meta2c s in
       ("\\msf{PrefixLabel}("^s^")",13+(String.length s))

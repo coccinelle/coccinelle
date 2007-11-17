@@ -44,7 +44,9 @@ exception Error of error
 (*****************************************************************************)
 
 let add_node node labels nodestr g = 
-   g#add_node (mk_node node labels nodestr)
+   g#add_node (Control_flow_c.mk_node node labels [] nodestr)
+let add_bc_node node labels parent_labels nodestr g = 
+   g#add_node (Control_flow_c.mk_node node labels parent_labels  nodestr)
 let add_arc_opt (starti, nodei) g = 
   starti +> do_option (fun starti -> g#add_arc ((starti, nodei), Direct))
 
@@ -69,8 +71,8 @@ let pinfo_of_ii ii = (List.hd ii).Ast_c.pinfo
  *)
 type context_info =
   | NoInfo 
-  | LoopInfo   of nodei * nodei (* start, end *) * node list    
-  | SwitchInfo of nodei * nodei (* start, end *) * node list
+  | LoopInfo   of nodei * nodei (* start, end *) * node list * int list
+  | SwitchInfo of nodei * nodei (* start, end *) * node list * int list
 
 (* for the Compound case I need to do different things depending if 
  * the compound is the compound of the function definition, the compound of
@@ -283,8 +285,9 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
       in
  
       let newi = !g +> add_node (SeqStart (stmt, brace, i1)) lbl s1 in
-      let endnode = mk_node     (SeqEnd (brace, i2))         lbl s2 in
-      let _endnode_dup = mk_node (SeqEnd (brace, Ast_c.fakeInfo())) lbl s2 in
+      let endnode = mk_node     (SeqEnd (brace, i2))         lbl [] s2 in
+      let _endnode_dup =
+	mk_node (SeqEnd (brace, Ast_c.fakeInfo())) lbl [] s2 in
 
       let newxi = { xi_lbl with braces = endnode(*_dup*):: xi_lbl.braces } in
 
@@ -330,7 +333,7 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
    (* ------------------------- *)        
   | Labeled (Ast_c.Label (s, st)), ii -> 
       let ilabel = xi.labels_assoc#find s in
-      let node = mk_node (unwrap (!g#nodes#find ilabel)) lbl (s ^ ":") in
+      let node = mk_node (unwrap (!g#nodes#find ilabel)) lbl [] (s ^ ":") in
       !g#replace_node (ilabel, node);
       !g +> add_arc_opt (starti, ilabel);
       aux_statement (Some ilabel, xi_lbl) st
@@ -540,7 +543,7 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
               *)
              let todo_in_compound newi newxi = 
                let newxi' = { newxi with 
-                 ctx = SwitchInfo (newi(*!!*), newendswitch, xi.braces);
+                 ctx = SwitchInfo (newi(*!!*), newendswitch, xi.braces, lbl);
                  ctx_stack = newxi.ctx::newxi.ctx_stack
                }
                in
@@ -634,7 +637,7 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
       (match Common.optionise (fun () -> 
         (* old: xi.ctx *)
         (xi.ctx::xi.ctx_stack) +> Common.find_some (function 
-        | SwitchInfo (a, b, c) -> Some (a, b, c)
+        | SwitchInfo (a, b, c, _) -> Some (a, b, c)
         | _ -> None
         ))
       with
@@ -663,7 +666,7 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
       !g +> add_arc_opt (starti, newi);
 
       (match xi.ctx with
-      | SwitchInfo (startbrace, switchendi, _braces) -> 
+      | SwitchInfo (startbrace, switchendi, _braces, _parent_lbl) -> 
           let s = ("[casenode] " ^ i_to_s switchrank) in
           let newcasenodei = !g +> add_node (CaseNode switchrank) lbl s in
           !g#add_arc ((startbrace, newcasenodei), Direct);
@@ -696,7 +699,7 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
         !g +> add_node (EndStatement (Some iifakeend)) lbl "[endwhile]" in
 
       let newxi = { xi_lbl with
-         ctx = LoopInfo (newi, newfakeelse,  xi_lbl.braces);
+         ctx = LoopInfo (newi, newfakeelse,  xi_lbl.braces, lbl);
          ctx_stack = xi_lbl.ctx::xi_lbl.ctx_stack
         }
       in
@@ -740,7 +743,7 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
         !g +> add_node (EndStatement (Some iifakeend)) lbl "[enddowhile]" in
 
       let newxi = { xi_lbl with
-         ctx = LoopInfo (taili, newfakeelse, xi_lbl.braces);
+         ctx = LoopInfo (taili, newfakeelse, xi_lbl.braces, lbl);
          ctx_stack = xi_lbl.ctx::xi_lbl.ctx_stack
         }
       in
@@ -783,7 +786,7 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
         !g +> add_node (EndStatement (Some iifakeend)) lbl "[endfor]" in
 
       let newxi = { xi_lbl with
-           ctx = LoopInfo (newi, newfakeelse, xi_lbl.braces); 
+           ctx = LoopInfo (newi, newfakeelse, xi_lbl.braces, lbl); 
            ctx_stack = xi_lbl.ctx::xi_lbl.ctx_stack
         }
       in
@@ -818,7 +821,7 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
         !g +> add_node (EndStatement (Some iifakeend)) lbl "[endforeach]" in
 
       let newxi = { xi_lbl with
-           ctx = LoopInfo (newi, newfakeelse, xi_lbl.braces); 
+           ctx = LoopInfo (newi, newfakeelse, xi_lbl.braces, lbl); 
            ctx_stack = xi_lbl.ctx::xi_lbl.ctx_stack
         }
       in
@@ -834,22 +837,50 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
 
    (* ------------------------- *)        
   | Jump ((Ast_c.Continue|Ast_c.Break) as x),ii ->  
+      let context_info =
+	match xi.ctx with
+	  SwitchInfo (startbrace, loopendi, braces, parent_lbl) -> 
+            if x = Ast_c.Break
+	    then xi.ctx
+	    else
+	      (try 
+                xi.ctx_stack +> Common.find_some (function 
+                    LoopInfo (_,_,_,_) as c ->  Some c
+                  | _ -> None)
+              with Not_found -> 
+                raise (Error (OnlyBreakInSwitch (pinfo_of_ii ii))))
+        | LoopInfo (loopstarti, loopendi, braces, parent_lbl) -> xi.ctx
+	| NoInfo -> raise (Error (NoEnclosingLoop (pinfo_of_ii ii))) in
+
+      let parent_label =
+	match context_info with
+	  LoopInfo (loopstarti, loopendi, braces, parent_lbl) -> parent_lbl
+	| SwitchInfo (startbrace, loopendi, braces, parent_lbl) -> parent_lbl
+	| NoInfo -> raise Impossible in
+
       (* flow_to_ast: *)
-      let newi = 
-        !g +> add_node 
-          (match x with
-          | Ast_c.Continue -> Continue (stmt, ((), ii))
-          | Ast_c.Break    -> Break    (stmt, ((), ii))
+      let (node_info, string) =
+	let parent_string =
+	  String.concat "," (List.map string_of_int parent_label) in
+	(match x with
+          | Ast_c.Continue ->
+	      (Continue (stmt, ((), ii)),
+	       Printf.sprintf "continue; [%s]" parent_string)
+          | Ast_c.Break    ->
+	      (Break    (stmt, ((), ii)),
+	       Printf.sprintf "break; [%s]" parent_string)
           | _ -> raise Impossible
-          )
-          lbl "continue_break;"
-      in
+          ) in
+
+      (* idea: break or continue records the label of its parent loop or
+	 switch *)
+      let newi = !g +> add_bc_node node_info lbl parent_label string in
       !g +> add_arc_opt (starti, newi);
 
       (* let newi = some starti in *)
 
-      (match xi.ctx with
-      | LoopInfo (loopstarti, loopendi, braces) -> 
+      (match context_info with
+      | LoopInfo (loopstarti, loopendi, braces, parent_lbl) -> 
           let desti = 
             (match x with 
             | Ast_c.Break -> loopendi 
@@ -863,46 +894,16 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
           !g#add_arc ((newi, desti), Direct);
           None
 
-      | SwitchInfo (startbrace, loopendi, braces) -> 
-          if x = Ast_c.Break then
-            begin
-              let difference = List.length xi.braces - List.length braces in
-              assert (difference >= 0);
-              let toend = take difference xi.braces in
-              let newi = insert_all_braces toend newi in
-              !g#add_arc ((newi, loopendi), Direct);
-              None
-            end
-          else 
-            (* old: raise (OnlyBreakInSwitch (fst (List.hd ii)))
-             * in fact can have a continue, 
-             *)
-           if x = Ast_c.Continue then
-             (try 
-               let (loopstarti, loopendi, braces) = 
-                 xi.ctx_stack +> Common.find_some (function 
-                   | LoopInfo (loopstarti, loopendi, braces) -> 
-                       Some (loopstarti, loopendi, braces)
-                   | _ -> None
-                                                ) in
-               let desti = loopstarti in
-               let difference = List.length xi.braces - List.length braces in
-               assert (difference >= 0);
-               let toend = take difference xi.braces in
-               let newi = insert_all_braces toend newi in
-               !g#add_arc ((newi, desti), Direct);
-               None
-               
-               with Not_found -> 
-                 raise (Error (OnlyBreakInSwitch (pinfo_of_ii ii)))
-             )
-           else raise Impossible
-      | NoInfo -> raise (Error (NoEnclosingLoop (pinfo_of_ii ii)))
-      )        
-
-
-
-
+      | SwitchInfo (startbrace, loopendi, braces, parent_lbl) ->
+	  assert (x = Ast_c.Break);
+          let difference = List.length xi.braces - List.length braces in
+          assert (difference >= 0);
+          let toend = take difference xi.braces in
+          let newi = insert_all_braces toend newi in
+          !g#add_arc ((newi, loopendi), Direct);
+          None
+      | NoInfo -> raise Impossible
+      )
 
   | Jump ((Ast_c.Return | Ast_c.ReturnExpr _) as kind), ii -> 
      (match xi.exiti, xi.errorexiti with
