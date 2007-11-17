@@ -960,14 +960,16 @@ let forwhile header body ((afvs,_,_,_) as aft) after
 	    label (Some (lv,used)) None guard] in
     let after_pred = fallpred label in
     let or_cases after_branch = ctl_or body after_branch in
-    let res =
-      end_control_structure bfvs header or_cases after_pred
-	(Some(ctl_ex after_pred)) None aft after label guard in
-    if !used (* true if we need to maintain the break label *)
-    then
-      let label_pred = CTL.Pred (Lib_engine.Label(lv),CTL.Control) in
-      quantify true [lv] (ctl_and CTL.NONSTRICT(*???*) res label_pred)
-    else res in
+    let (header,wrapper) =
+      if !used
+      then
+	let label_pred = CTL.Pred (Lib_engine.Label(lv),CTL.Control) in
+	(ctl_and CTL.NONSTRICT(*???*) header label_pred,
+	 (function body -> quantify true [lv] body))
+      else (header,function x -> x) in
+    wrapper
+      (end_control_structure bfvs header or_cases after_pred
+	 (Some(ctl_ex after_pred)) None aft after label guard) in
   match (Ast.unwrap body,aft) with
     (Ast.Atomic(re),(_,_,_,Ast.CONTEXT(_,Ast.NOTHING))) ->
       (match Ast.unwrap re with
@@ -1436,21 +1438,20 @@ and statement stmt after quantified minus_quantified
 	Common.union_set mb1fvs (Common.union_set mb2fvs minus_quantified) in
       let new_mquantified3 = Common.union_set mb3fvs new_mquantified2 in
       let pattern_as_given =
-	CTL.Exists
-	  (true,pv,CTL.Exists
-	     (true,lv,quantify guard b1fvs
-		(make_seq
-		   [start_brace;
-		     quantify guard b2fvs
-		       (statement_list decls
-			  (After
-			     (quantify guard b3fvs
-				(statement_list body
-				   (After (make_seq_after end_brace after))
-				   new_quantified3 new_mquantified3
-				   (Some lv) llabel slabel true guard)))
-			  new_quantified2 new_mquantified2
-			  (Some lv) llabel slabel false guard)]))) in
+	quantify true [pv;lv]
+	  (quantify guard b1fvs
+	     (make_seq
+		[start_brace;
+		  quantify guard b2fvs
+		    (statement_list decls
+		       (After
+			  (quantify guard b3fvs
+			     (statement_list body
+				(After (make_seq_after end_brace after))
+				new_quantified3 new_mquantified3
+				(Some lv) llabel slabel true guard)))
+		       new_quantified2 new_mquantified2
+		       (Some lv) llabel slabel false guard)])) in
       if ends_in_return body
       then
 	(* matching error handling code *)
@@ -1480,8 +1481,8 @@ and statement stmt after quantified minus_quantified
 			 new_quantified3 new_mquantified3 None llabel slabel
 			 true guard)))] in
 	let pattern3 =
-	  CTL.Exists
-	    (true,lv,quantify guard b1fvs
+	  quantify true [lv]
+	    (quantify guard b1fvs
 	       (make_seq
 		  [start_brace;
 		    ctl_and
@@ -1723,14 +1724,16 @@ and statement stmt after quantified minus_quantified
 	match Ast.unwrap rb with
 	  Ast.SeqEnd(rb) -> Ast.get_mcodekind rb
 	| _ -> failwith "not possible") in
-      let res =
-	end_control_structure b1fvs switch_header body
-	  after_pred (Some(ctl_ex after_pred)) None aft after label guard in
-      if !used (* true if we need to maintain the break label *)
-      then
-	let label_pred = CTL.Pred (Lib_engine.Label(lv),CTL.Control) in
-	quantify true [lv] (ctl_and res label_pred)
-      else res
+      let (switch_header,wrapper) =
+	if !used
+	then
+	  let label_pred = CTL.Pred (Lib_engine.Label(lv),CTL.Control) in
+	  (ctl_and switch_header label_pred,
+	   (function body -> quantify true [lv] body))
+	else (switch_header,function x -> x) in
+      wrapper
+	(end_control_structure b1fvs switch_header body
+	   after_pred (Some(ctl_ex after_pred)) None aft after label guard)
   | Ast.FunDecl(header,lbrace,decls,body,rbrace) ->
       let (hfvs,b1fvs,lbfvs,b2fvs,b3fvs,b4fvs,rbfvs) =
 	match

@@ -82,8 +82,10 @@ let (labels_for_ctl: string list (* dropped isos *) ->
           let labels = F.extract_labels node in
           [(nodei, (p,[(s --> (Lib_engine.LabelVal labels))]))]
       | Lib_engine.BCLabel s, _ -> 
-          let labels = F.extract_bclabels node in
-          [(nodei, (p,[(s --> (Lib_engine.LabelVal labels))]))]
+	  (match F.extract_bclabels node with
+	    [] -> [] (* null for all nodes that are not break or continue *)
+	  | labels ->
+              [(nodei, (p,[(s --> (Lib_engine.LabelVal labels))]))])
       | Lib_engine.PrefixLabel s, _ -> 
           let labels = F.extract_labels node in
           let prefixes = Common.inits labels +> Common.tail in
