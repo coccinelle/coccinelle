@@ -32,13 +32,7 @@ let get_minus_constants bind =
       Ast.Id(name) ->
 	(match Ast.unwrap_mcode name with
 	  "NULL" -> [] (* special case, because this is too generic *)
-	| nm ->
-	    if !Flag.sgrep_mode2
-	    then
-	      match name with
-		(_,_,Ast.MINUS(_,_)) -> [nm]
-	      |	_ -> []
-	    else [nm])
+	| nm -> [nm])
     | Ast.OptIdent(_) -> []
     | _ -> k e in
 
@@ -182,7 +176,10 @@ let rule_fn tls in_plus =
       function cur ->
 	let minuses =
 	  (get_minus_constants keep_some_bind).V.combiner_top_level cur in
-	let all_minuses = get_all_minus_constants.V.combiner_top_level cur in
+	let all_minuses =
+	  if !Flag.sgrep_mode2
+	  then [] (* nothing removed for sgrep *)
+	  else get_all_minus_constants.V.combiner_top_level cur in
 	let plusses = get_plus_constants.V.combiner_top_level cur in
 	(* the following is for eg -foo(2) +foo(x) then in another rule
 	   -foo(10); don't want to consider that foo is guaranteed to be
@@ -205,4 +202,3 @@ let get_constants rules =
 	  (cur_info::rest_info,cur_plus))
       ([],[]) rules in
   List.rev info
-

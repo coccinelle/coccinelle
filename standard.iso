@@ -146,6 +146,12 @@ int X;
 @@
 X != 0 <=> 0 != X <=> X
 
+TestExpression
+@ isnt_zero_paren @ 
+int X; 
+@@
+ (X) != 0 => X
+
 Expression
 @ or_comm @ 
 expression X,Y; 
@@ -234,6 +240,12 @@ TestExpression
 expression *X;
 @@
 X != NULL <=> NULL != X <=> X
+
+TestExpression
+@ isnt_null_paren @ 
+expression X;
+@@
+ (X) != NULL => X
 
 // pointer arithmetic equivalences
 

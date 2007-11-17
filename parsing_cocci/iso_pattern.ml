@@ -1780,11 +1780,16 @@ let make_disj_stmt_list tl =
       [] -> failwith "bad disjunction"
     | x::xs -> List.map disj_mid xs in
   Ast0.context_wrap (Ast0.Disj(disj_starter tl,tl,mids,disj_ender tl))
-let make_disj_expr el =
+let make_disj_expr model el =
   let mids =
     match el with
       [] -> failwith "bad disjunction"
     | x::xs -> List.map disj_mid xs in
+  let update_arg x =
+    if Ast0.get_arg_exp model then Ast0.set_arg_exp x else x in
+  let update_test x =
+    if Ast0.get_test_exp model then Ast0.set_test_exp x else x in
+  let el = List.map update_arg (List.map update_test el) in
   Ast0.context_wrap (Ast0.DisjExpr(disj_starter el,el,mids,disj_ender el))
 let make_disj_decl dl =
   let mids =
@@ -1844,7 +1849,7 @@ let transform_expr (metavars,alts,name) e =
       (function b -> function mv_b ->
 	(instantiate b mv_b).V0.rebuilder_expression)
       (function e -> Ast0.ExprTag e)
-      make_disj_expr make_minus.V0.rebuilder_expression
+      (make_disj_expr e) make_minus.V0.rebuilder_expression
       (rebuild_mcode start_line).V0.rebuilder_expression
       name Unparse_ast0.expression extra_copy_other_plus in
   match alts with
