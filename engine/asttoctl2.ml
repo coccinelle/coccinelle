@@ -116,7 +116,15 @@ let ctl_uncheck = function
 
 let label_pred_maker = function
     None -> CTL.True
-  | Some label_var -> CTL.Pred(Lib_engine.PrefixLabel(label_var),CTL.Control)
+  | Some (label_var,used) ->
+      used := true;
+      CTL.Pred(Lib_engine.PrefixLabel(label_var),CTL.Control)
+
+let bclabel_pred_maker = function
+    None -> CTL.True
+  | Some (label_var,used) ->
+      used := true;
+      CTL.Pred(Lib_engine.BCLabel(label_var),CTL.Control)
 
 let predmaker guard pred label =
   ctl_and (guard_to_strict guard) (CTL.Pred pred) (label_pred_maker label)
@@ -287,6 +295,18 @@ than dots or a nest. *)
 type after = After of formula | Guard of formula | Tail | End
 
 let a2n = function After x -> Guard x | a -> a
+
+let print_ctl x =
+  let pp_pred (x,_) = Pretty_print_engine.pp_predicate x in
+  let pp_meta (_,x) = Common.pp x in
+  Pretty_print_ctl.pp_ctl (pp_pred,pp_meta) false x;
+  Format.print_newline()
+
+let print_after = function
+    After ctl -> Printf.printf "After;\n"; print_ctl ctl
+  | Guard ctl -> Printf.printf "Guard;\n"; print_ctl ctl
+  | Tail -> Printf.printf "Tail\n"
+  | End -> Printf.printf "End\n"
 
 (* --------------------------------------------------------------------- *)
 (* Top-level code *)
@@ -507,26 +527,9 @@ and get_before_e s a =
 	  a in
       (Ast.rewrap s (Ast.Nest(sd,w,multi,a,aft)),[Ast.Other_dots stmt_dots])
   | Ast.Disj(stmt_dots_list) ->
-      (* put the result of processing each branch in the whencode of the
-	 subsequent branches.  acc_dsl collects these extra whencodes
-	 not sure what the point of this is...
-      *)
-      let (dsl,_,dsla) =
-	List.fold_left
-	  (function (dsl,acc_dsl,dsla) ->
-	    function cur ->
-	      let (cur_dsl,cur_dsla) = get_before_elem cur acc_dsl in
-	      (cur_dsl::dsl,(Ast.Other_dots cur_dsl)::acc_dsl,cur_dsla::dsla))
-	  ([],a,[]) stmt_dots_list in
-      let dsl = List.rev dsl in
-      let dsla =
-	List.fold_left
-	  (function prev ->
-	    function
-		Common.Left x -> Common.union_set x prev
-	      |	Common.Right x -> x)
-	  [] dsla in
-      (Ast.rewrap s (Ast.Disj(dsl)),dsla)
+      let (dsl,dsla) =
+	List.split (List.map (function e -> get_before e a) stmt_dots_list) in
+      (Ast.rewrap s (Ast.Disj(dsl)),List.fold_left Common.union_set [] dsla)
   | Ast.Atomic(ast) ->
       (match Ast.unwrap ast with
 	Ast.MetaStmt(_,_,_,_) -> (s,[])
@@ -854,15 +857,25 @@ let ifthen ifheader branch ((afvs,_,_,_) as aft) after
   (* if header *)
   let if_header = quantify guard efvs (make_match ifheader) in
   (* then branch and after *)
+  let lv = get_label_ctr() in
+  let used = ref false in
   let true_branch =
     make_seq guard
       [truepred label; recurse branch Tail new_quantified new_mquantified
-	  label llabel slabel guard] in
+	  (Some (lv,used)) llabel slabel guard] in
   let after_pred = aftpred label in
   let or_cases after_branch =
     ctl_or true_branch (ctl_or (fallpred label) after_branch) in
-  end_control_structure bfvs if_header or_cases after_pred
-      (Some(ctl_ex after_pred)) None aft after label guard
+  let (if_header,wrapper) =
+    if !used
+    then
+      let label_pred = CTL.Pred (Lib_engine.Label(lv),CTL.Control) in
+      (ctl_and CTL.NONSTRICT(*???*) if_header label_pred,
+       (function body -> quantify true [lv] body))
+    else (if_header,function x -> x) in
+  wrapper
+    (end_control_structure bfvs if_header or_cases after_pred
+	(Some(ctl_ex after_pred)) None aft after label guard)
 
 let ifthenelse ifheader branch1 els branch2 ((afvs,_,_,_) as aft) after
     quantified minus_quantified label llabel slabel recurse make_match guard =
@@ -914,23 +927,33 @@ let ifthenelse ifheader branch1 els branch2 ((afvs,_,_,_) as aft) after
   (* if header *)
   let if_header = quantify guard exponlyfvs (make_match ifheader) in
   (* then and else branches *)
+  let lv = get_label_ctr() in
+  let used = ref false in
   let true_branch =
     make_seq guard
       [truepred label; recurse branch1 Tail new_quantified new_mquantified
-	  label llabel slabel guard] in
+	  (Some (lv,used)) llabel slabel guard] in
   let false_branch =
     make_seq guard
       [falsepred label; make_match els;
 	recurse branch2 Tail new_quantified new_mquantified
-	  label llabel slabel guard] in
+	  (Some (lv,used)) llabel slabel guard] in
   let after_pred = aftpred label in
   let or_cases after_branch =
     ctl_or true_branch (ctl_or false_branch after_branch) in
   let s = guard_to_strict guard in
-  end_control_structure bothfvs if_header or_cases after_pred
+  let (if_header,wrapper) =
+    if !used
+    then
+      let label_pred = CTL.Pred (Lib_engine.Label(lv),CTL.Control) in
+      (ctl_and CTL.NONSTRICT(*???*) if_header label_pred,
+       (function body -> quantify true [lv] body))
+    else (if_header,function x -> x) in
+  wrapper
+    (end_control_structure bothfvs if_header or_cases after_pred
       (Some(ctl_and s (ctl_ex (falsepred label)) (ctl_ex after_pred)))
       (Some(ctl_ex (falsepred label)))
-      aft after label guard
+      aft after label guard)
 
 let forwhile header body ((afvs,_,_,_) as aft) after
     quantified minus_quantified label recurse make_match guard =
@@ -957,7 +980,7 @@ let forwhile header body ((afvs,_,_,_) as aft) after
       make_seq guard
 	[inlooppred label;
 	  recurse body Tail new_quantified new_mquantified
-	    label (Some (lv,used)) None guard] in
+	    (Some (lv,used)) (Some (lv,used)) None guard] in
     let after_pred = fallpred label in
     let or_cases after_branch = ctl_or body after_branch in
     let (header,wrapper) =
@@ -1089,9 +1112,6 @@ let svar_minus_or_no_add_after s label quantified d ast
 (* dots and nests *)
 
 let dots_au toend label s wrapcode x seq_after y =
-  let lv = get_label_ctr() in
-  let labelpred = CTL.Pred(Lib_engine.Label lv,CTL.Control) in
-  let preflabelpred = label_pred_maker (Some lv) in
   let matchgoto =
     make_match None false (wrapcode Ast.Goto) in
   let matchbreak =
@@ -1108,6 +1128,9 @@ let dots_au toend label s wrapcode x seq_after y =
     else if toend
     then CTL.Or(aftpred label,exitpred label)
     else
+      let lv = get_label_ctr() in
+      let labelpred = CTL.Pred(Lib_engine.Label lv,CTL.Control) in
+      let preflabelpred = label_pred_maker (Some (lv,ref true)) in
       ctl_or (aftpred label)
 	(quantify false [lv]
 	   (ctl_and CTL.NONSTRICT
@@ -1197,7 +1220,11 @@ let rec dots_and_nests plus nest whencodes bef aft dotcode after label
       After f -> f
     | Guard f -> ctl_uncheck f
     | End -> CTL.True
-    | Tail -> endpred label
+    | Tail ->
+	(match label with
+	  Some (lv,used) -> used := true;
+	    CTL.Pred(Lib_engine.Label lv,CTL.Control)
+	| None -> endpred label)
 	  (* was the following, but not clear why sgrep should allow
 	     incomplete patterns
 	let exit = endpred label in
@@ -1324,20 +1351,10 @@ and statement stmt after quantified minus_quantified
 	  match Ast.unwrap ast with
 	    Ast.Break(brk,semi) ->
 	      (match (llabel,slabel) with
-		(_,Some(lv,used)) | (Some(lv,used),_) ->
-		  used := true;
-		  let label_pred =
-		    CTL.Pred (Lib_engine.BCLabel(lv),CTL.Control) in
-		  ctl_and term label_pred
-	      |	_ -> term)
-	  | Ast.Continue(brk,semi) ->
-	      (match llabel with
-		Some(lv,used) ->
-		  used := true;
-		  let label_pred =
-		    CTL.Pred (Lib_engine.BCLabel(lv),CTL.Control) in
-		  ctl_and term label_pred
-	      |	_ -> term)
+		(_,Some(lv,used)) -> (* use switch label if there is one *)
+		  ctl_and term (bclabel_pred_maker slabel)
+	      | _ -> ctl_and term (bclabel_pred_maker llabel))
+	  | Ast.Continue(brk,semi) -> ctl_and term (bclabel_pred_maker llabel)
           | Ast.Return((_,info,retmc),(_,_,semmc)) ->
 	      (* discard pattern that comes after return *)
 	      let normal_res = make_seq_after term after in
@@ -1449,9 +1466,10 @@ and statement stmt after quantified minus_quantified
 			     (statement_list body
 				(After (make_seq_after end_brace after))
 				new_quantified3 new_mquantified3
-				(Some lv) llabel slabel true guard)))
+				(Some (lv,ref true)) (* label mostly useful *)
+				llabel slabel true guard)))
 		       new_quantified2 new_mquantified2
-		       (Some lv) llabel slabel false guard)])) in
+		       (Some (lv,ref true)) llabel slabel false guard)])) in
       if ends_in_return body
       then
 	(* matching error handling code *)
@@ -1489,7 +1507,7 @@ and statement stmt after quantified minus_quantified
 		      (ctl_au
 			 (CTL.Pred(Lib_engine.PrefixLabel(lv),CTL.Control))
 			 (ctl_and (* brace must be eventually after goto *)
-			    (real_make_match (Some lv) false
+			    (real_make_match (Some (lv,ref true)) false
 			       (Ast.rewrap stmt Ast.Goto))
 			    (* want AF even for sgrep *)
 			    (CTL.AF(CTL.FORWARD,CTL.STRICT,end_brace))))
@@ -1504,7 +1522,8 @@ and statement stmt after quantified minus_quantified
 				     new_quantified3 new_mquantified3
 				     None llabel slabel true guard)))
 			    new_quantified2 new_mquantified2
-			    (Some lv) llabel slabel false guard))])) in
+			    (Some (lv,ref true))
+			    llabel slabel false guard))])) in
 	ctl_or pattern_as_given
 	  (match Ast.unwrap decls with
 	    Ast.DOTS([]) -> ctl_or pattern2 pattern3
@@ -1876,8 +1895,7 @@ and statement stmt after quantified minus_quantified
       quantify guard bfvs (make_seq [define_header; body_code])
   | Ast.OptStm(stm) ->
       failwith "OptStm should have been compiled away\n"
-  | Ast.UniqueStm(stm) ->
-      failwith "arities not yet supported"
+  | Ast.UniqueStm(stm) -> failwith "arities not yet supported"
   | _ -> failwith "not supported" in
   if guard or !dots_done
   then term

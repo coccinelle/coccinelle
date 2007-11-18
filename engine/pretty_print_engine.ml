@@ -117,7 +117,7 @@ let pp_ctlcocci show_plus inline_let_def ctl =
       Pretty_print_cocci.print_minus_flag := false;
     end;
     Common.pp_do_in_box (fun () -> 
-      Pretty_print_ctl.pp_ctl (pp_pred_smodif,(fun s -> pp_meta s)) 
+      Pretty_print_ctl.pp_ctl (pp_pred_smodif,(fun s -> pp_meta s))
         inline_let_def ctl;
       );
   end

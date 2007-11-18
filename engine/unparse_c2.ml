@@ -202,9 +202,9 @@ let displace_fake_nodes toks =
 	    prev @ fake :: (loop (whitespace @ aft))
 	| (Ast_cocci.CONTEXT(_,Ast_cocci.NOTHING),_) ->
 	    bef @ fake :: (loop aft)
-	| _ ->
-	    failwith
-	      "fake node must be context and before, after or nothing")
+	| (Ast_cocci.CONTEXT(_,Ast_cocci.BEFOREAFTER _),_) ->
+	    failwith "fake node should not be before-after"
+	| _ -> bef @ fake :: (loop aft))
     | None -> toks
     | _ -> raise Impossible in
   loop toks
