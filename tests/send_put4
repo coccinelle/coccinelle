@@ -1,0 +1,57 @@
+Send to:
+ambx1@neo.rr.com, linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+
+Subject: [PATCH 4/5] drivers/pnp/resource.c: Add missing pci_dev_put
+
+------------------------------------------------------
+
+From: Julia Lawall <julia@diku.dk>
+
+There should be a pci_dev_put when breaking out of a loop that iterates
+over calls to pci_get_device and similar functions.
+
+In this case, the return under the initial if needs a pci_dev_put in the
+same way that the return under the subsequent for loop has a pci_dev_put.
+
+This was fixed using the following semantic patch.
+
+// <smpl>
+@@
+identifier d;
+type T;
+expression e;
+iterator for_each_pci_dev;
+@@
+
+T *d;
+...
+for_each_pci_dev(d)
+  {... when != pci_dev_put(d)
+       when != e = d
+(
+   return d;
+|
++  pci_dev_put(d);
+?  return ...;
+)
+...}
+// </smpl>
+
+Signed-off-by: Julia Lawall <julia@diku.dk>
+---
+
+diff -u -p a/drivers/pnp/resource.c b/drivers/pnp/resource.c
+--- linux-2.6/drivers/pnp/resource.c    2007-10-22 11:25:20.000000000 +0200
++++ linuxcopy/drivers/pnp/resource.c    2007-11-19 08:18:44.000000000 +0100
+@@ -367,8 +367,10 @@ int pnp_check_irq(struct pnp_dev *dev, i
+        {
+                struct pci_dev *pci = NULL;
+                for_each_pci_dev(pci) {
+-                       if (pci->irq == *irq)
++                       if (pci->irq == *irq) {
++                               pci_dev_put(pci);
+                                return 0;
++                       }
+                }
+        }
+ #endif
