@@ -1,5 +1,5 @@
 diff -u -p -b a/arch/sparc64/kernel/isa.c b/arch/sparc64/kernel/isa.c
-OK
+OK send
 --- a/arch/sparc64/kernel/isa.c 2007-08-12 13:27:06.000000000 +0200
 +++ b/arch/sparc64/kernel/isa.c 2007-11-18 18:32:16.000000000 +0100
 @@ -155,6 +155,7 @@ void __init isa_init(void)
@@ -55,7 +55,7 @@ diff -u -p -b a/drivers/char/applicom.c b/drivers/char/applicom.c
 diff -u -p -b a/drivers/macintosh/via-pmu.c b/drivers/macintosh/via-pmu.c
 --- a/drivers/macintosh/via-pmu.c 2007-10-22 11:25:10.000000000 +0200
 +++ b/drivers/macintosh/via-pmu.c 2007-11-18 18:33:24.000000000 +0100
-OK
+OK sent
 @@ -1897,7 +1897,9 @@ pbook_pci_restore(void)
  		pci_write_config_dword(pd, 4, ps->config[1]);
  #else
@@ -99,7 +99,7 @@ BIZARRE submitted
  		}
  	}
 diff -u -p -b a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
-OK
+OK sent
 --- a/drivers/pci/pci-sysfs.c 2007-07-20 17:45:56.000000000 +0200
 +++ b/drivers/pci/pci-sysfs.c 2007-11-18 18:34:41.000000000 +0100
 @@ -703,7 +703,9 @@ static int __init pci_sysfs_init(void)
@@ -114,7 +114,7 @@ OK
  
  	return 0;
 diff -u -p -b a/drivers/pnp/resource.c b/drivers/pnp/resource.c
-OK
+OK sent
 --- a/drivers/pnp/resource.c 2007-10-22 11:25:20.000000000 +0200
 +++ b/drivers/pnp/resource.c 2007-11-18 18:34:46.000000000 +0100
 @@ -368,7 +368,9 @@ int pnp_check_irq(struct pnp_dev *dev, i
@@ -155,7 +155,7 @@ NO.  iTCO_wdt_init does put.
  			}
  		}
 diff -u -p -b a/sound/core/memalloc.c b/sound/core/memalloc.c
-OK
+OK sent
 --- a/sound/core/memalloc.c 2007-10-22 11:25:51.000000000 +0200
 +++ b/sound/core/memalloc.c 2007-11-18 18:38:21.000000000 +0100
 @@ -568,6 +568,7 @@ static ssize_t snd_mem_proc_write(struct

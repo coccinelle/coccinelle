@@ -33,7 +33,6 @@ let get_minus_constants bind =
 	(match Ast.unwrap_mcode name with
 	  "NULL" -> [] (* special case, because this is too generic *)
 	| nm -> [nm])
-    | Ast.OptIdent(_) -> []
     | _ -> k e in
 
   let expression r k e =
@@ -48,7 +47,6 @@ let get_minus_constants bind =
 	bind (k e) [Ast.unwrap_mcode sizeof]
     | Ast.DisjExpr(exps) ->
 	disj_union_all bind (List.map r.V.combiner_expression exps)
-    | Ast.OptExp(_) | Ast.NestExpr(_,_,false)
     | Ast.Edots(_,_) | Ast.Ecircles(_,_) | Ast.Estars(_,_) -> []
     | _ -> k e in
 
@@ -67,7 +65,6 @@ let get_minus_constants bind =
     match Ast.unwrap e with
       Ast.DisjType(types) ->
 	disj_union_all bind (List.map r.V.combiner_fullType types)
-    | Ast.OptType(_) -> []
     | _ -> k e in
 
   let declaration r k e =
@@ -75,23 +72,7 @@ let get_minus_constants bind =
       Ast.DisjDecl(decls) ->
 	disj_union_all bind (List.map r.V.combiner_declaration decls)
     | Ast.MacroDecl(nm,lp,args,rp,pv) -> [Ast.unwrap_mcode nm]
-    | Ast.OptDecl(_) -> []
     | Ast.Ddots(dots,whencode) -> []
-    | _ -> k e in
-
-  let initialiser r k e =
-    match Ast.unwrap e with
-      Ast.OptIni(_) -> []
-    | _ -> k e in
-
-  let parameter r k e =
-    match Ast.unwrap e with
-      Ast.OptParam(_) -> []
-    | _ -> k e in
-
-  let case r k e =
-    match Ast.unwrap e with
-      Ast.OptCase(_) -> []
     | _ -> k e in
 
   let rule_elem r k e =
@@ -105,7 +86,6 @@ let get_minus_constants bind =
     match Ast.unwrap e with
       Ast.Disj(stmt_dots) ->
 	disj_union_all bind (List.map r.V.combiner_statement_dots stmt_dots)
-    | Ast.OptStm(_) -> []
     | Ast.Dots(d,whn,_,_) | Ast.Circles(d,whn,_,_) | Ast.Stars(d,whn,_,_) -> []
     | Ast.Nest(stmt_dots,whn,false,_,_) -> []
     | _ -> k e in
@@ -114,8 +94,8 @@ let get_minus_constants bind =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode
     donothing donothing donothing donothing
-    ident expression fullType typeC initialiser parameter declaration
-    rule_elem statement case donothing donothing
+    ident expression fullType typeC donothing donothing declaration
+    rule_elem statement donothing donothing donothing
 
 (* ------------------------------------------------------------------------ *)
 

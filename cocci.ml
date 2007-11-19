@@ -126,8 +126,8 @@ let show_or_not_diff2 cfile outfile show_only_minus =
 
 	let line =
 	  match !Flag_parsing_c.diff_lines with
-	  | None ->   "diff -u -p -b " ^ cfile ^ " " ^ outfile
-	  | Some n -> "diff -U "^n^" -p -b "^cfile^" "^outfile in
+	  | None ->   "diff -u -p " ^ cfile ^ " " ^ outfile
+	  | Some n -> "diff -U "^n^" -p "^cfile^" "^outfile in
 	let xs =
 	  let res = Common.cmd_to_list line in
 	  match (!Flag_cocci.patch,res) with

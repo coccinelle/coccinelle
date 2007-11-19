@@ -180,9 +180,9 @@ let elim_opt =
       ([],_) -> []
 
     | (Ast.Dots(_,_,_,_)::Ast.OptStm(stm)::(Ast.Dots(_,_,_,_) as u)::urest,
-       d0::_::d1::rest)
+       d0::s::d1::rest)
     | (Ast.Nest(_,_,_,_,_)::Ast.OptStm(stm)::(Ast.Dots(_,_,_,_) as u)::urest,
-       d0::_::d1::rest) ->
+       d0::s::d1::rest) ->
 	 let l = Ast.get_line stm in
 	 let new_rest1 = stm :: (dots_list (u::urest) (d1::rest)) in
 	 let new_rest2 = dots_list urest rest in
@@ -303,8 +303,8 @@ let print_ctl x =
   Format.print_newline()
 
 let print_after = function
-    After ctl -> Printf.printf "After;\n"; print_ctl ctl
-  | Guard ctl -> Printf.printf "Guard;\n"; print_ctl ctl
+    After ctl -> Printf.printf "After:\n"; print_ctl ctl
+  | Guard ctl -> Printf.printf "Guard:\n"; print_ctl ctl
   | Tail -> Printf.printf "Tail\n"
   | End -> Printf.printf "End\n"
 
@@ -1223,7 +1223,8 @@ let rec dots_and_nests plus nest whencodes bef aft dotcode after label
     | Tail ->
 	(match label with
 	  Some (lv,used) -> used := true;
-	    CTL.Pred(Lib_engine.Label lv,CTL.Control)
+	    ctl_or (CTL.Pred(Lib_engine.Label lv,CTL.Control))
+	      (ctl_back_ex (retpred label))
 	| None -> endpred label)
 	  (* was the following, but not clear why sgrep should allow
 	     incomplete patterns
@@ -1387,7 +1388,6 @@ and statement stmt after quantified minus_quantified
 	      (match new_mc with
 		Some new_mc ->
 		  let exit = endpred None in
-		  let errorexit = exitpred None in
 		  let mod_rbrace =
 		    Ast.rewrap ast (Ast.SeqEnd (("}",info,new_mc))) in
 		  let stripped_rbrace =
@@ -1403,7 +1403,9 @@ and statement stmt after quantified minus_quantified
 				   (ctl_or simple_return return_expr))))
 			  (ctl_au
 			     (make_match stripped_rbrace)
-			     (ctl_or exit errorexit))))
+			     (* error exit not possible; it is in the middle
+				of code, so a return is needed *)
+			     exit)))
 	      |	_ ->
 		  (* some change in the middle of the return, so have to
 		     find an actual return *)
