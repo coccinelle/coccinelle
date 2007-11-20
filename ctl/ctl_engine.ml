@@ -2134,7 +2134,7 @@ let sat m phi reqopt =
 	then bench_sat m fn
 	else fn() in
     let res = filter_partial_matches res in
-    print_state "final result" res;
+    (*print_state "final result" res;*)
     res)
   else
     (if !Flag_ctl.verbose_ctl_engine

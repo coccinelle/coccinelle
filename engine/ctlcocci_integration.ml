@@ -360,6 +360,10 @@ let (mysat2:
   (Lib_engine.mvar list * Lib_engine.metavars_binding) ->
   (Lib_engine.transformation_info * bool * Lib_engine.metavars_binding list)) =
   fun (flow, label, states) ctl (used_after, binding) -> 
+    let used_after =
+      if !Flag.positions
+      then (List.map Ast_cocci.pos_name used_after) @ used_after
+      else used_after in
     let binding2 = metavars_binding_to_binding2 binding in
     let (triples,(trans_info2, returned_any_states, used_after_envs)) = 
       WRAPPED_ENGINE.satbis (flow, label, states) ctl (used_after, binding2)

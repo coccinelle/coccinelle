@@ -605,10 +605,6 @@ let collect_used_after metavar_rule_list =
 let free_vars rules =
   let metavars = List.map (function (mv,rule) -> mv) rules in
   let (fvs_lists,used_after_lists) = List.split (collect_used_after rules) in
-  let used_after_lists =
-    if !Flag.positions
-    then List.map (List.map pos_extend) used_after_lists
-    else used_after_lists in
   let new_rules =
     List.map2
       (function (mv,(nm,rule_info,r)) ->
