@@ -139,6 +139,7 @@ struct
     List.concat (List.map (function wit -> loop false [] wit) wits)
   ;;
 
+(*
   (* a match can return many trees, but within each tree, there has to be
      at most one value for each variable that is in the used_after list *)
   let collect_used_after used_after envs =
@@ -167,6 +168,30 @@ struct
 	   match vl with
 	     None -> []
 	   | Some vl -> [(used_after_var, vl)])
+	 used_after)
+*)
+
+  (* a match can return many trees, but within each tree, there has to be
+     at most one value for each variable that is in the used_after list *)
+  (* actually, this should always be the case, because these variables
+  should be quantified at the top level.  so the more complicated
+  definition above should not be needed. *)
+  let collect_used_after used_after envs =
+    List.concat
+      (List.map
+	 (function used_after_var ->
+	   let vl =
+	     List.fold_left
+	       (function rest ->
+		 function env ->
+		   try
+		     let vl = List.assoc used_after_var env in
+		     if List.exists (function x -> SUB.eq_val x vl) rest
+		     then rest
+		     else vl::rest
+		   with Not_found -> rest)
+	       [] envs in
+	   List.map (function x -> (used_after_var, x)) vl)
 	 used_after)
 
   (* ----------------------------------------------------- *)

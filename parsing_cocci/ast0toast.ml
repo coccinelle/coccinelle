@@ -225,7 +225,7 @@ let mcode(term,_,info,mcodekind) =
 (* --------------------------------------------------------------------- *)
 (* Dots *)
 let wrap ast line isos =
-  (ast, line, [], [], [], [], [], Ast.NoDots, None, isos)
+  (ast, line, [], [], [], [], [], [], Ast.NoDots, None, isos)
 
 let rewrap ast0 isos ast =
   wrap ast ((Ast0.get_info ast0).Ast0.line_start) isos

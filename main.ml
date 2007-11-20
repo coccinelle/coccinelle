@@ -311,6 +311,8 @@ let other_options = [
     "-only_return_is_error_exit",
     Arg.Set Flag_engine.only_return_is_error_exit,
     "if this flag is not set, then break and continue are also error exits";
+    "-positions", Arg.Set Flag.positions,
+    "record positions of metavariable matches";
   ];
 
   "misc options",

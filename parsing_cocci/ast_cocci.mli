@@ -8,6 +8,7 @@ type meta_name = string * string
 type 'a wrap =
     ('a * line * meta_name list (*free vars*) *
        meta_name list (*minus free vars*) *
+       meta_name list (*all minus free vars, including inherited ones*) *
        meta_name list (*fresh vars*) *
        meta_name list (*inherited vars*) * meta_name list (*witness vars*) *
        dots_bef_aft *
@@ -505,6 +506,7 @@ val get_wcfvs : ('a wrap,'b wrap) whencode list -> meta_name list
 val set_fvs : meta_name list -> 'a wrap -> 'a wrap
 val get_mfvs : 'a wrap -> meta_name list
 val set_mfvs : meta_name list -> 'a wrap -> 'a wrap
+val get_all_mfvs : 'a wrap -> meta_name list
 val get_fresh : 'a wrap -> meta_name list
 val get_inherited : 'a wrap -> meta_name list
 val get_saved : 'a wrap -> meta_name list
@@ -517,6 +519,7 @@ val get_isos : 'a wrap -> (string*anything) list
 val set_isos : 'a wrap -> (string*anything) list -> 'a wrap
 
 val get_meta_name : metavar -> meta_name
+val pos_name : meta_name -> meta_name
 
 val no_info : info
 

@@ -23,6 +23,8 @@ let rec pp_binding_kind = function
   | Ast_c.MetaListlenVal n -> pp (string_of_int n)
   | Ast_c.MetaPosVal (pos1, pos2) -> 
       pp (Common.sprintf ("pos(%d,%d)") pos1 pos2)
+  | Ast_c.MetaPosCodeVal l -> 
+      pp "positions("; pp_binding_kind l; pp ")"
 
 and pp_binding subst = 
   begin

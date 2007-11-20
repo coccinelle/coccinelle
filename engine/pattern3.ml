@@ -236,6 +236,7 @@ module XMATCH = struct
    * X et qu'elle a mis X a DontSaved.
    *)
   let check_add_metavars_binding _keep inherited = fun (k, valu) tin ->
+    let res =
     (match Common.optionise (fun () -> tin.binding +> List.assoc k) with
     | Some (valu') ->
         if Cocci_vs_c_3.equal_metavarval valu valu'
@@ -269,10 +270,17 @@ module XMATCH = struct
                 Ast_c.MetaParamListVal (Lib_parsing_c.al_params a)
 
             | Ast_c.MetaPosVal (pos1,pos2) -> Ast_c.MetaPosVal (pos1,pos2)
+            | Ast_c.MetaPosCodeVal _ -> failwith "not possible"
             ) 
           in
           Some (tin.binding +> Common.insert_assoc (k, valu'))
-    )
+    ) in
+    match (valu,res,!Flag.positions) with
+      (Ast_c.MetaPosVal (pos1,pos2),_,_) -> res
+    | (_,Some binding,true) ->
+	let k1 = Ast_cocci.pos_name k in
+	Some (binding +> Common.insert_assoc (k1,Ast_c.MetaPosCodeVal valu))
+    | _ -> res
 
 
 

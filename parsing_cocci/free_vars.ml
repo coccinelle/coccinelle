@@ -11,6 +11,8 @@ let rec nub = function
   | (x::xs) when (List.mem x xs) -> nub xs
   | (x::xs) -> x::(nub xs)
 
+let pos_extend l = (List.map Ast.pos_name l) @ l
+
 (* Collect all variable references in a minirule.  For a disj, we collect
 the maximum number (2 is enough) of references in any branch. *)
 
@@ -440,8 +442,9 @@ let astfvs metavars bound =
       List.partition (function x -> not(List.mem x bound)) free in
     let munbound =
       List.filter (function x -> not(List.mem x bound)) minus_free in
-    let (re,l,_,_,_,_,_,d,pos,isos) = k re in
-    (re,l,unbound,munbound,collect_fresh unbound,inherited,[],d,pos,isos) in
+    let (re,l,_,_,_,_,_,_,d,pos,isos) = k re in
+    (re,l,unbound,munbound,minus_free,collect_fresh unbound,inherited,[],d,
+     pos,isos) in
 
   let astfvstatement recursor k s =
     let minus_free = nub (collect_all_refs.V.combiner_statement s) in
@@ -454,7 +457,7 @@ let astfvs metavars bound =
       let munbound =
 	List.filter (function x -> not(List.mem x bound)) minus_free in
       (unbound,munbound,collect_fresh unbound,inherited) in
-    let (s,l,_,_,_,_,_,d,pos,isos) = k s in
+    let (s,l,_,_,_,_,_,_,d,pos,isos) = k s in
     let s =
       match s with
 	Ast.IfThen(header,branch,(_,_,_,aft)) ->
@@ -480,7 +483,8 @@ let astfvs metavars bound =
 	  Ast.Iterator(header,body,(unbound,fresh,inherited,aft))
       |	_ -> s in
     let (unbound,munbound,fresh,inherited) = classify free minus_free in
-    (s,l,unbound,munbound,collect_fresh unbound,inherited,[],d,pos,isos) in
+    (s,l,unbound,munbound,minus_free,collect_fresh unbound,inherited,[],d,
+     pos,isos) in
 
   let astfvstatement_dots recursor k sd =
     let minus_free = nub (collect_all_refs.V.combiner_statement_dots sd) in
@@ -491,13 +495,19 @@ let astfvs metavars bound =
       List.partition (function x -> not(List.mem x bound)) free in
     let munbound =
       List.filter (function x -> not(List.mem x bound)) minus_free in
-    let (sd,l,_,_,_,_,_,d,pos,isos) = k sd in
-    (sd,l,unbound,munbound,collect_fresh unbound,inherited,[],d,pos,isos) in
+    let (sd,l,_,_,_,_,_,_,d,pos,isos) = k sd in
+    (sd,l,unbound,munbound,minus_free,collect_fresh unbound,inherited,[],d,
+     pos,isos) in
 
   let astfvtoplevel recursor k tl =
     let saved = collect_saved.V.combiner_top_level tl in
-    let (tl,l,unbound,munbound,fresh,inherited,_,d,pos,isos) = k tl in
-    (tl,l,unbound,munbound,fresh,inherited,saved,d,pos,isos) in
+    let saved =
+      if !Flag.positions
+      then pos_extend saved
+      else saved in
+    let (tl,l,unbound,munbound,minus_free,fresh,inherited,_,d,pos,isos) =
+      k tl in
+    (tl,l,unbound,munbound,minus_free,fresh,inherited,saved,d,pos,isos) in
 
   let mcode x = x in
   let donothing r k e = k e in
@@ -595,6 +605,10 @@ let collect_used_after metavar_rule_list =
 let free_vars rules =
   let metavars = List.map (function (mv,rule) -> mv) rules in
   let (fvs_lists,used_after_lists) = List.split (collect_used_after rules) in
+  let used_after_lists =
+    if !Flag.positions
+    then List.map (List.map pos_extend) used_after_lists
+    else used_after_lists in
   let new_rules =
     List.map2
       (function (mv,(nm,rule_info,r)) ->
@@ -602,8 +616,4 @@ let free_vars rules =
 	  (nm,rule_info,classify_variables mv r (List.concat ua)))
       rules used_after_lists in
   let new_rules = collect_astfvs (List.combine metavars new_rules) in
-  (*List.iter
-    (List.iter
-       (function l -> Printf.printf "one rule: %s\n" (String.concat " " l)))
-    used_after_lists;*)
   (new_rules,fvs_lists,used_after_lists)

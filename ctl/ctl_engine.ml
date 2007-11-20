@@ -770,17 +770,15 @@ let triples_witness x unchecked not_keep trips =
 	      else
 		(print_generic_substitution l; Format.print_newline();
 		failwith"unexpected negative binding with positive witnesses")*)
-	  | [_] -> (* positive must be alone *)
+	  | _ ->
 	      let new_triple =
 		if unchecked or not_keep
 		then (s,newth,wit)
 		else
 		  if anynegwit wit && allnegwit wit
-		  then
-		    (s,newth,[A.NegWit(A.Wit(s,th_x,[],negtopos wit))])
+		  then (s,newth,[A.NegWit(A.Wit(s,th_x,[],negtopos wit))])
 		  else (s,newth,[A.Wit(s,th_x,[],wit)]) in
-	      new_triple::prev
-	  | _ -> failwith "there can only be one positive binding")
+	      new_triple::prev)
       [] trips in
   if unchecked || !Flag_ctl.partial_match (* the only way to have a NegWit *)
   then setify res
@@ -2136,7 +2134,7 @@ let sat m phi reqopt =
 	then bench_sat m fn
 	else fn() in
     let res = filter_partial_matches res in
-    (*print_state "final result" res;*)
+    print_state "final result" res;
     res)
   else
     (if !Flag_ctl.verbose_ctl_engine

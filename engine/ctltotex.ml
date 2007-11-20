@@ -255,6 +255,12 @@ let pred2c = function
       let s = Pretty_print_cocci.rule_elem_to_string re in
       let (s,len) = texify s in
       (Printf.sprintf "%s" s,len)
+  | Lib_engine.BindGood(nm) ->
+      let s = meta2c nm in
+      ("\\msf{Good}("^s^")",6+(String.length s))
+  | Lib_engine.BindBad(nm) ->
+      let s = meta2c nm in
+      ("\\msf{Bad}("^s^")",5+(String.length s))
 
 let totex out_file rules ctls =
   let o = open_out out_file in
