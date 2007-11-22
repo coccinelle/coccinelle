@@ -221,10 +221,15 @@ let rec propagate_types env =
     | Ast0.OptIdent(id)    -> strip id
     | Ast0.UniqueIdent(id) -> strip id in
 
+  let process_whencode notfn allfn = function
+      Ast0.WhenNot(x) -> let _ = notfn x in ()
+    | Ast0.WhenAlways(x) -> let _ = allfn x in ()
+    | Ast0.WhenAny -> () in
+
   (* assume that all of the declarations are at the beginning of a statement
      list, which is required by C, but not actually required by the cocci
      parser *)
-  let rec process_statement_list acc = function
+  let rec process_statement_list r acc = function
       [] -> acc
     | (s::ss) ->
 	(match Ast0.unwrap s with
@@ -246,23 +251,28 @@ let rec propagate_types env =
 	      | Ast0.OptDecl(decl) -> process_decl decl
 	      | Ast0.UniqueDecl(decl) -> process_decl decl in
 	    let new_acc = (process_decl decl)@acc in
-	    process_statement_list new_acc ss
-	| Ast0.Dots(_,wc) -> process_statement_list acc ss
+	    process_statement_list r new_acc ss
+	| Ast0.Dots(_,wc) ->
+	    List.iter
+	      (process_whencode r.V0.combiner_statement_dots
+		 r.V0.combiner_statement)
+	      wc;
+	    process_statement_list r acc ss
 	| Ast0.Disj(_,statement_dots_list,_,_) ->
 	    let new_acc =
 	      lub_envs
 		(List.map
-		   (function x -> process_statement_list acc (Ast0.undots x))
+		   (function x -> process_statement_list r acc (Ast0.undots x))
 		   statement_dots_list) in
-	    process_statement_list new_acc ss
+	    process_statement_list r new_acc ss
 	| _ ->
 	    let _ = (propagate_types acc).V0.combiner_statement s in
-	    process_statement_list acc ss) in
+	    process_statement_list r acc ss) in
 
   let statement_dots r k d =
     match Ast0.unwrap d with
       Ast0.DOTS(l) | Ast0.CIRCLES(l) | Ast0.STARS(l) ->
-	let _ = process_statement_list env l in option_default in
+	let _ = process_statement_list r env l in option_default in
   let statement r k s =
     match Ast0.unwrap s with
       Ast0.FunDecl(_,fninfo,name,lp,params,rp,lbrace,body,rbrace) ->

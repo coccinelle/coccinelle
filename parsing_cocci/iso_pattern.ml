@@ -208,15 +208,17 @@ let bool_match_option f t1 t2 =
    The example seems strange.  Why isn't the cast attached to x?
  *)
 let is_context e =
-  match Ast0.get_mcodekind e with
+  !Flag.sgrep_mode2 or (* everything is context for sgrep *)
+  (match Ast0.get_mcodekind e with
     Ast0.CONTEXT(cell) -> true
-  | _ -> false
+  | _ -> false)
 
 (* needs a special case when there is a Disj or an empty DOTS
    the following stops at the statement level, and gives true if one
    statement is replaced by another *)
 let rec is_pure_context s =
-  match Ast0.get_mcodekind s with
+  !Flag.sgrep_mode2 or (* everything is context for sgrep *)
+  (match Ast0.get_mcodekind s with
     Ast0.CONTEXT(mc) ->
       (match !mc with
 	(Ast.NOTHING,_,_) -> true
@@ -238,7 +240,7 @@ let rec is_pure_context s =
 		[s] -> is_pure_context s
 	      |	_ -> false (* could we do better? *))
 	    statement_dots_list
-      |	_ -> false)
+      |	_ -> false))
 
 let is_minus e =
   match Ast0.get_mcodekind e with Ast0.MINUS(cell) -> true | _ -> false
