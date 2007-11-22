@@ -1472,7 +1472,10 @@ and statement stmt after quantified minus_quantified
 	  (quantify guard lbfvs (make_match lbrace))
 	  (ctl_and paren_pred label_pred) in
       let end_brace =
-	ctl_and (quantify guard rbfvs (make_match rbrace)) paren_pred in
+	(* label is not needed; paren_pred is enough *)
+	ctl_and
+	  (quantify guard rbfvs (real_make_match None guard rbrace))
+	  paren_pred in
       let new_quantified2 =
 	Common.union_set b1fvs (Common.union_set b2fvs quantified) in
       let new_quantified3 = Common.union_set b3fvs new_quantified2 in
@@ -1516,9 +1519,9 @@ and statement stmt after quantified minus_quantified
 	    | _ -> failwith "unexpected close brace" in
 	  make_seq
 	    [make_match (Ast.rewrap stmt Ast.Goto);
-	      ctl_ax (* skip the destination label *)
-		(ctl_au
-		   (make_match empty_rbrace)
+	      ctl_au
+		(make_match empty_rbrace)
+		(ctl_ax (* skip the destination label *)
 		   (quantify guard b3fvs
 		      (statement_list body End
 			 new_quantified3 new_mquantified3 None llabel slabel
@@ -1529,9 +1532,10 @@ and statement stmt after quantified minus_quantified
 	       (make_seq
 		  [start_brace;
 		    ctl_and
-		      (ctl_au
-			 (CTL.Pred(Lib_engine.PrefixLabel(lv),CTL.Control))
-			 (ctl_and (* brace must be eventually after goto *)
+		      (CTL.AU (* want AF even for sgrep *)
+			 (CTL.FORWARD,CTL.STRICT,
+			  CTL.Pred(Lib_engine.PrefixLabel(lv),CTL.Control),
+			  ctl_and (* brace must be eventually after goto *)
 			    (real_make_match (Some (lv,ref true)) false
 			       (Ast.rewrap stmt Ast.Goto))
 			    (* want AF even for sgrep *)
