@@ -32,6 +32,8 @@ let rec lub_type t1 t2 =
 	    T.ConstVol(cv1,loop(ty1,ty2))
 	| (T.Pointer(ty1),T.Pointer(ty2)) ->
 	    T.Pointer(loop(ty1,ty2))
+	| (ty1,T.Pointer(ty2)) -> T.Pointer(ty2)
+	| (T.Pointer(ty1),ty2) -> T.Pointer(ty1)
 	| (T.Array(ty1),T.Array(ty2)) -> T.Array(loop(ty1,ty2))
 	| (t1,_) -> t1 in (* arbitrarily pick the first, assume type correct *)
       Some (loop (t1,t2))
@@ -123,6 +125,8 @@ let rec propagate_types env =
 	  | Ast.Tilde -> Ast0.get_type exp
 	  | Ast.Not -> Some(T.BaseType(T.BoolType,None)))
       | Ast0.Binary(exp1,op,exp2) ->
+	  let ty1 = Ast0.get_type exp1 in
+	  let ty2 = Ast0.get_type exp2 in
 	  let same_type = function
 	      (None,None) -> Some (T.BaseType(T.IntType,None))
 	    | (Some (T.Pointer ty1),Some ty2) ->
@@ -130,12 +134,13 @@ let rec propagate_types env =
 	    | (Some ty1,Some (T.Pointer ty2)) ->
 		Some (T.Pointer ty2)
 	    | (t1,t2) ->
-		let ty = lub_type (Ast0.get_type exp1) (Ast0.get_type exp2) in
+		let ty = lub_type t1 t2 in
 		Ast0.set_type exp1 ty; Ast0.set_type exp2 ty; ty in
 	  (match Ast0.unwrap_mcode op with
-	    Ast.Arith(op) -> same_type (Ast0.get_type exp1, Ast0.get_type exp2)
+	    Ast.Arith(op) -> same_type (ty1, ty2)
 	  | Ast.Logical(op) ->
-	      let _ = same_type (Ast0.get_type exp1, Ast0.get_type exp2) in
+	      let ty = lub_type ty1 ty2 in
+	      Ast0.set_type exp1 ty; Ast0.set_type exp2 ty;
 	      Some(T.BaseType(T.BoolType,None)))
       | Ast0.Paren(lp,exp,rp) -> Ast0.get_type exp
       | Ast0.ArrayAccess(exp1,lb,exp2,rb) ->

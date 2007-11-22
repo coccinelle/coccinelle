@@ -9,6 +9,7 @@ constant, not all the constants. *)
 
 module Ast = Ast_cocci
 module V = Visitor_ast
+module TC = Type_cocci
 
 let keep_some_bind x y = match x with [] -> y | _ -> x
 let keep_all_bind = Common.union_set
@@ -149,6 +150,101 @@ let get_plus_constants =
     donothing donothing donothing donothing donothing
 
 (* ------------------------------------------------------------------------ *)
+(* see if there are any inherited variables that must be bound for this rule
+to match *)
+
+let check_inherited nm =
+  let donothing r k e = k e in
+  let option_default = false in
+  let bind x y = x or y in
+  let mcode _ _ = option_default in
+  let inherited (nm1,_) = not(nm = nm1) in
+  let minherited (name,_,_) = inherited name in
+
+  (* a case for everything for there is a metavariable, also disjunctions
+     or optional things *)
+
+  let strictident recursor k i =
+    match Ast.unwrap i with
+      Ast.MetaId(name,_,_) | Ast.MetaFunc(name,_,_)
+    | Ast.MetaLocalFunc(name,_,_) -> minherited name
+    | _ -> k i in
+
+  let rec type_collect res = function
+      TC.ConstVol(_,ty) | TC.Pointer(ty) | TC.FunctionPointer(ty)
+    | TC.Array(ty) -> type_collect res ty
+    | TC.MetaType(tyname,_,_) -> inherited tyname
+    | ty -> res in
+
+  let strictexpr recursor k e =
+    match Ast.unwrap e with
+      Ast.MetaExpr(name,_,Some type_list,_,_) ->
+	let types = List.fold_left type_collect option_default type_list in
+	bind (minherited name) types
+    | Ast.MetaErr(name,_,_) | Ast.MetaExpr(name,_,_,_,_) -> minherited name
+    | Ast.MetaExprList(name,None,_,_) -> minherited name
+    | Ast.MetaExprList(name,Some (lenname,_,_),_,_) ->
+	bind (minherited name) (inherited lenname)
+    | Ast.DisjExpr(exps) ->
+	(* could see if there are any variables that appear in all branches,
+	   but perhaps not worth it *)
+	option_default
+    | _ -> k e in
+
+  let strictdecls recursor k d =
+    match Ast.unwrap d with
+      Ast.DisjDecl(decls) -> option_default
+    | _ -> k d in
+
+  let strictfullType recursor k ty =
+    match Ast.unwrap ty with
+      Ast.DisjType(types) -> option_default
+    | _ -> k ty in
+
+  let stricttypeC recursor k ty =
+    match Ast.unwrap ty with
+      Ast.MetaType(name,_,_) -> minherited name
+    | _ -> k ty in
+
+  let strictparam recursor k p =
+    match Ast.unwrap p with
+      Ast.MetaParam(name,_,_) -> minherited name
+    | Ast.MetaParamList(name,None,_,_) -> minherited name
+    | Ast.MetaParamList(name,Some(lenname,_,_),_,_) ->
+	bind (minherited name) (inherited lenname)
+    | _ -> k p in
+
+  let strictrule_elem recursor k re =
+    (*within a rule_elem, pattern3 manages the coherence of the bindings*)
+    match Ast.unwrap re with
+      Ast.MetaRuleElem(name,_,_) | Ast.MetaStmt(name,_,_,_)
+    | Ast.MetaStmtList(name,_,_) -> minherited name
+    | _ -> k re in
+
+  let strictstatement recursor k s =
+    match Ast.unwrap s with
+      Ast.Disj(stms) -> option_default
+    | _ -> k s in
+
+  V.combiner bind option_default
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode
+    donothing donothing donothing donothing
+    strictident strictexpr strictfullType stricttypeC donothing strictparam
+    strictdecls strictrule_elem strictstatement donothing donothing donothing
+
+(* ------------------------------------------------------------------------ *)
+
+let rec dependent = function
+    Ast.Dep s -> true
+  | Ast.AntiDep s -> false
+  | Ast.EverDep s -> true
+  | Ast.NeverDep s -> false
+  | Ast.AndDep (d1,d2) -> dependent d1 or dependent d2
+  | Ast.OrDep (d1,d2) -> dependent d1 && dependent d2
+  | Ast.NoDep -> false
+
+(* ------------------------------------------------------------------------ *)
 
 let rule_fn tls in_plus =
   List.fold_left
@@ -177,8 +273,15 @@ let get_constants rules =
   let (info,_) =
     List.fold_left
       (function (rest_info,in_plus) ->
-	function (nm,rule_info,cur) ->
+	function (nm,(dep,_,_),cur) ->
 	  let (cur_info,cur_plus) = rule_fn cur in_plus in
+	  let cur_info =
+	    (* no dependencies if dependent on another rule; then we need to
+	       find the constants of that rule *)
+	    if dependent dep or
+	      List.for_all (check_inherited nm).V.combiner_top_level cur
+	    then []
+	    else cur_info in
 	  (cur_info::rest_info,cur_plus))
-      ([],[]) rules in
+      ([],[]) (rules : Ast.rule list) in
   List.rev info
