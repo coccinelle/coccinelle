@@ -65,8 +65,9 @@ let mcodekind brackets fn x info = function
 let mcode fn (x,_,info,mc) =
   mcodekind (Some info.Ast0.line_start)(*None*) fn x info mc
 
-let print_context (_,info,i,mc,ty,_,_,_,_) fn =
-  mcodekind (Some info.Ast0.line_start) fn () info !mc
+let print_context x fn =
+  mcodekind (Some (Ast0.get_line x)) fn () (Ast0.get_info x)
+    (Ast0.get_mcodekind x)
 
 let print_meta (_,name) = print_string name
 

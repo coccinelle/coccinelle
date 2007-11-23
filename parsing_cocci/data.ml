@@ -67,6 +67,9 @@ let add_func_meta: (Ast.meta_name -> Ast0.pure -> unit) ref =
 let add_local_func_meta: (Ast.meta_name -> Ast0.pure -> unit) ref = 
   ref (fun _ -> failwith "uninitialized add_meta") 
 
+let add_pos_meta: (Ast.meta_name -> unit) ref = 
+  ref (fun _ -> failwith "uninitialized add_meta") 
+
 let add_type_name: (string -> unit) ref = 
   ref (fun _ -> failwith "uninitialized add_type") 
 

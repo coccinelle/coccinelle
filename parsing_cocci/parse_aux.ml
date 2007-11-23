@@ -2,6 +2,13 @@
 module Ast0 = Ast0_cocci
 module Ast = Ast_cocci
 
+(* types for metavariable tokens *)
+type info = Ast.meta_name * Ast0.pure * Data.clt
+type list_info = Ast.meta_name * Ast.meta_name option * Ast0.pure * Data.clt
+type typed_info = Ast.meta_name * Ast0.pure * Type_cocci.typeC list option *
+      Data.clt
+
+
 let get_option fn = function
     None -> None
   | Some x -> Some (fn x)
@@ -294,9 +301,9 @@ let str2inc s =
 (* ---------------------------------------------------------------------- *)
 (* statements *)
 
-let meta_stm name =
+let meta_stm name pos =
   let (nm,pure,clt) = name in
-  Ast0.wrap(Ast0.MetaStmt(clt2mcode nm clt,pure))
+  Ast0.set_pos pos (Ast0.wrap(Ast0.MetaStmt(clt2mcode nm clt,pure)))
 
 let exp_stm exp pv =
   Ast0.wrap(Ast0.ExprStatement (exp, clt2mcode ";" pv))

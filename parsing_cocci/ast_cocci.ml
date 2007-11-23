@@ -71,6 +71,7 @@ and metavar =
   | MetaStmListDecl of arity * meta_name (* name *)
   | MetaFuncDecl of arity * meta_name (* name *)
   | MetaLocalFuncDecl of arity * meta_name (* name *)
+  | MetaPosDecl of arity * meta_name (* name *)
 
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)
@@ -565,6 +566,7 @@ let get_meta_name = function
   | MetaStmListDecl(ar,nm) -> nm
   | MetaFuncDecl(ar,nm) -> nm
   | MetaLocalFuncDecl(ar,nm) -> nm
+  | MetaPosDecl(ar,nm) -> nm
 
 let pos_name (rule,name) = (rule,"_pos_"^name)
 

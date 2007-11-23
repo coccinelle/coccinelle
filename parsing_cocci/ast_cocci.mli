@@ -68,6 +68,7 @@ and metavar =
   | MetaStmListDecl of arity * meta_name (* name *)
   | MetaFuncDecl of arity * meta_name (* name *)
   | MetaLocalFuncDecl of arity * meta_name (* name *)
+  | MetaPosDecl of arity * meta_name (* name *)
 
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)

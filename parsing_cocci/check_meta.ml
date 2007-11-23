@@ -5,6 +5,7 @@ fresh are used.  What is the issue about error variables? (don't remember) *)
 
 module Ast0 = Ast0_cocci
 module Ast = Ast_cocci
+module V0 = Visitor_ast0
 
 (* all fresh identifiers *)
 let fresh_table = (Hashtbl.create(50) : ((string * string), unit) Hashtbl.t)
@@ -364,6 +365,33 @@ let rule old_metas table minus rules =
 
 (* --------------------------------------------------------------------- *)
 
+let positions table rules =
+  let mcode x = () in
+  let option_default = () in
+  let bind x y = () in
+  let donothing r k e =
+    k e;
+    get_opt
+      (function pos ->
+	let info = find_loop [table] pos in
+	if !info
+	then
+	  let (_,name) = pos in
+	  failwith ("duplicated use of position variable "^name)
+	else info := true)
+      (Ast0.get_pos e) in
+  let fn =
+    V0.combiner bind option_default
+      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode
+      donothing donothing donothing donothing donothing donothing
+      donothing donothing donothing donothing donothing donothing donothing
+      donothing donothing in
+
+  List.iter fn.V0.combiner_top_level rules
+
+(* --------------------------------------------------------------------- *)
+
 let make_table l =
   let table =
     (Hashtbl.create(List.length l) :
@@ -407,6 +435,7 @@ let check_meta rname old_metas inherited_metavars metavars minus plus =
   let iother_table = make_table iother in
   add_to_fresh_table fresh;
   rule old_metas [iother_table;other_table;err_table] true minus;
+  positions other_table minus;
   check_all_marked rname "metavariable" other_table "in the - or context code";
   rule old_metas [iother_table;fresh_table;err_table] false plus;
   check_all_marked rname "fresh identifier metavariable" iother_table

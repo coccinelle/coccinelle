@@ -51,6 +51,9 @@ let start_line seen_char =
 
 let pass_zero _ = col_zero := false
 
+let lexerr s1 s2 =
+  raise (Lexical (Printf.sprintf "%d: %s%s" !line s1 s2))
+
 let add_current_line_type x =
   match (x,!current_line_type) with
     (D.MINUS,(D.CONTEXT,ln,lln))  ->
@@ -65,34 +68,34 @@ let add_current_line_type x =
       current_line_type := (D.UNIQUE,ln,lln)
   | (D.OPT,(D.CONTEXT,ln,lln))    ->
       current_line_type := (D.OPT,ln,lln)
-  | _ -> raise (Lexical "invalid control character combination")
+  | _ -> lexerr "invalid control character combination" ""
 
 let check_minus_context_linetype s =
   match !current_line_type with
-    (D.PLUS,_,_) -> raise (Lexical ("invalid in a + context:"^s))
+    (D.PLUS,_,_) -> lexerr "invalid in a + context: " s
   | _ -> ()
 
 let check_context_linetype s =
   match !current_line_type with
     (D.CONTEXT,_,_) -> ()
-  | _ -> raise (Lexical ("invalid in a nonempty context:"^s))
+  | _ -> lexerr "invalid in a nonempty context: " s
 
 let check_plus_linetype s =
   match !current_line_type with
     (D.PLUS,_,_) -> ()
-  | _ -> raise (Lexical ("invalid in a non + context:"^s))
+  | _ -> lexerr "invalid in a non + context: " s
 
 let check_arity_context_linetype s =
   match !current_line_type with
     (D.CONTEXT,_,_) | (D.PLUS,_,_) | (D.UNIQUE,_,_) | (D.OPT,_,_) -> ()
-  | _ -> raise (Lexical ("invalid in a nonempty context:"^s))
+  | _ -> lexerr "invalid in a nonempty context: " s
 
 let process_include start finish str =
   (match !current_line_type with
     (D.PLUS,_,_) ->
       (try
 	let _ = Str.search_forward (Str.regexp "\\.\\.\\.") str start in
-	failwith "... not allowed in + include"
+	lexerr "... not allowed in + include" ""
       with Not_found -> ())
   | _ -> ());
   String.sub str (start + 1) (finish - start - 1)
@@ -105,12 +108,12 @@ let pm = ref UNKNOWN
 let patch_or_match = function
     PATCH ->
       (match !pm with
-	MATCH -> failwith "- or + not allowed in the first column for a match"
+	MATCH -> lexerr "- or + not allowed in the first column for a match" ""
       |	PATCH -> ()
       |	UNKNOWN -> Flag.sgrep_mode2 := false; pm := PATCH)
   | MATCH ->
       (match !pm with
-	PATCH -> failwith "* not allowed in the first column for a patch"
+	PATCH -> lexerr "* not allowed in the first column for a patch" ""
       |	MATCH -> ()
       |	UNKNOWN -> Flag.sgrep_mode2 := true; pm := MATCH)
   | _ -> failwith "unexpected argument"
@@ -172,6 +175,7 @@ let id_tokens lexbuf =
   | "typedef" when in_meta ->    check_arity_context_linetype s; TTypedef
   | "declarer" when in_meta ->   check_arity_context_linetype s; TDeclarer
   | "iterator" when in_meta ->   check_arity_context_linetype s; TIterator
+  | "position" when in_meta ->   check_arity_context_linetype s; TPosition
   | "pure" when in_meta && in_iso ->
       check_arity_context_linetype s; TPure
   | "context" when in_meta && in_iso ->
@@ -301,6 +305,15 @@ let init _ =
     (function name -> function pure ->
       let fn clt = TMetaLocalFunc(name,pure,clt) in
       Hashtbl.replace metavariables (get_name name) fn);
+  Data.add_pos_meta :=
+    (function name ->
+      let fn (d,ln,_,_,_,_,_) =
+	(if d = Data.PLUS
+	then
+	  failwith
+	    (Printf.sprintf "%d: positions only allowed in minus code" ln));
+	TMetaPos(name) in
+      Hashtbl.replace metavariables (get_name name) fn);
   Data.add_type_name :=
     (function name ->
       let fn clt = TTypeId(name,clt) in
@@ -360,7 +373,10 @@ rule token = parse
   | "//" [^ '\n']* { start_line false; token lexbuf }
 
   | "@@" { start_line true; TArobArob }
-  | "@"  { start_line true; TArob }
+  | "@"  { pass_zero();
+	   if !Data.in_rule_name or not !current_line_started
+	   then (start_line true; TArob)
+	   else (check_minus_context_linetype "@"; TPArob) }
 
   | "WHEN" | "when"
       { start_line true; check_minus_context_linetype (tok lexbuf);
@@ -428,7 +444,7 @@ rule token = parse
 	     TOPar0 (get_current_line_type lexbuf))}
   | "\\(" { start_line true; TOPar0 (get_current_line_type lexbuf) }
   | "|" { if not (!col_zero)
-	  then (start_line true; TOr (get_current_line_type lexbuf))
+	  then (start_line true; TOr(get_current_line_type lexbuf))
           else (start_line true;
 		check_context_linetype (tok lexbuf);
 		TMid0 (get_current_line_type lexbuf))}
@@ -461,8 +477,10 @@ rule token = parse
 		     else
 		       (patch_or_match MATCH;
 			add_current_line_type D.MINUS; token lexbuf) }
-  | '/'            { start_line true;  TDiv (get_current_line_type lexbuf) } 
-  | '%'            { start_line true;  TMod (get_current_line_type lexbuf) } 
+  | '/'            { start_line true;
+		     TDmOp (Ast.Div,get_current_line_type lexbuf) } 
+  | '%'            { start_line true;
+		     TDmOp (Ast.Mod,get_current_line_type lexbuf) } 
   | '~'            { start_line true;  TTilde (get_current_line_type lexbuf) } 
   
   | "++"           { start_line true;  TInc (get_current_line_type lexbuf) }
@@ -488,19 +506,25 @@ rule token = parse
   
   | "=="           { start_line true; TEqEq   (get_current_line_type lexbuf) }
   | "!="           { start_line true; TNotEq  (get_current_line_type lexbuf) } 
-  | ">="           { start_line true; TInfEq  (get_current_line_type lexbuf) } 
-  | "<="           { start_line true; TSupEq  (get_current_line_type lexbuf) } 
-  | "<"            { start_line true; TInf    (get_current_line_type lexbuf) } 
-  | ">"            { start_line true; TSup    (get_current_line_type lexbuf) }
+  | ">="           { start_line true;
+		     TLogOp(Ast.SupEq,get_current_line_type lexbuf) }
+  | "<="           { start_line true;
+		     TLogOp(Ast.InfEq,get_current_line_type lexbuf) }
+  | "<"            { start_line true;
+		     TLogOp(Ast.Inf,get_current_line_type lexbuf) } 
+  | ">"            { start_line true;
+		     TLogOp(Ast.Sup,get_current_line_type lexbuf) }
   
   | "&&"           { start_line true; TAndLog (get_current_line_type lexbuf) } 
   | "||"           { start_line true; TOrLog  (get_current_line_type lexbuf) }
   
-  | ">>"           { start_line true; TShr    (get_current_line_type lexbuf) }
-  | "<<"           { start_line true; TShl    (get_current_line_type lexbuf) }
+  | ">>"           { start_line true;
+		     TShOp(Ast.DecRight,get_current_line_type lexbuf) }
+  | "<<"           { start_line true;
+		     TShOp(Ast.DecLeft,get_current_line_type lexbuf) }
   
   | "&"            { start_line true; TAnd    (get_current_line_type lexbuf) }
-  | "^"            { start_line true; TXor    (get_current_line_type lexbuf) }
+  | "^"            { start_line true; TXor(get_current_line_type lexbuf) }
 
   | ( ("#" [' ' '\t']*  "define" [' ' '\t']+))
     ( (letter (letter |digit)*) as ident) 
@@ -546,7 +570,7 @@ rule token = parse
 	TPragma (tok lexbuf) }
   | "---" [^'\n']*
       { (if !current_line_started
-      then failwith "--- must be at the beginning of the line");
+      then lexerr "--- must be at the beginning of the line" "");
 	start_line true;
 	TMinusFile
 	  (let str = tok lexbuf in
@@ -554,7 +578,7 @@ rule token = parse
 	   (get_current_line_type lexbuf))) }
   | "+++" [^'\n']*
       { (if !current_line_started
-      then failwith "--- must be at the beginning of the line");
+      then lexerr "+++ must be at the beginning of the line" "");
 	start_line true;
 	TPlusFile
 	  (let str = tok lexbuf in
@@ -585,7 +609,7 @@ rule token = parse
 
   | eof            { EOF }
 
-  | _ { raise (Lexical ("unrecognised symbol, in token rule:"^tok lexbuf)) }
+  | _ { lexerr "unrecognised symbol, in token rule: " (tok lexbuf) }
 
 
 and char = parse
@@ -598,11 +622,11 @@ and char = parse
 	    | 'r' -> ()  | 'f' -> () | 'a' -> ()
 	    | '\\' -> () | '?'  -> () | '\'' -> ()  | '"' -> ()
             | 'e' -> ()
-	    | _ -> raise (Lexical ("unrecognised symbol:"^tok lexbuf))
+	    | _ -> lexerr "unrecognised symbol: " (tok lexbuf)
 	    );
           x
 	} 
-  | _ { raise (Lexical ("unrecognised symbol:"^tok lexbuf)) }
+  | _ { lexerr "unrecognised symbol: " (tok lexbuf) }
 
 and string  = parse
   | '"'                                       { "" }
@@ -617,8 +641,8 @@ and string  = parse
 	 | '\\' -> () | '?'  -> () | '\'' -> ()  | '"' -> ()
          | 'e' -> ()
          | '\n' -> () 
-         | _ -> raise (Lexical ("unrecognised symbol:"^tok lexbuf))
+         | _ -> lexerr "unrecognised symbol:" (tok lexbuf)
 	 );
           x ^ string lexbuf
        }
-  | _ { raise (Lexical ("unrecognised symbol:"^tok lexbuf)) }
+  | _ { lexerr "unrecognised symbol: " (tok lexbuf) }

@@ -135,10 +135,12 @@ let collect_minus_join_points root =
     then [(Unfavored,info,mcodekind)]
     else [(Favored,info,mcodekind)] in
 
-  let do_nothing r k ((_,info,index,mcodekind,_,_,_,_,_) as e) =
-    match !mcodekind with
+  let do_nothing r k e =
+    let info = Ast0.get_info e in
+    let index = Ast0.get_index e in
+    match Ast0.get_mcodekind e with
       (Ast0.MINUS(_)) as mc -> [(Favored,info,mc)]
-    | (Ast0.CONTEXT(_)) as mc when not(!index = root_index) ->
+    | (Ast0.CONTEXT(_)) as mc when not(index = root_index) ->
 	(* This was unfavored at one point, but I don't remember why *)
       [(Favored,info,mc)]
     | _ -> k e in

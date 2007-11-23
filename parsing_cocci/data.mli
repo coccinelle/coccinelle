@@ -49,6 +49,8 @@ val add_func_meta: (Ast_cocci.meta_name -> Ast0_cocci.pure -> unit) ref
 
 val add_local_func_meta: (Ast_cocci.meta_name -> Ast0_cocci.pure -> unit) ref
 
+val add_pos_meta: (Ast_cocci.meta_name -> unit) ref
+
 val add_type_name: (string -> unit) ref
 
 val add_declarer_name: (string -> unit) ref

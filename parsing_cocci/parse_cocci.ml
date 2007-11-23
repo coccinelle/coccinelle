@@ -4,6 +4,7 @@ separately (thus duplicating work for the parsing of the context elements) *)
 module D = Data
 module PC = Parser_cocci_menhir
 module V0 = Visitor_ast0
+module Ast = Ast_cocci
 let pr = Printf.sprintf
 (*let pr2 s = prerr_string s; prerr_string "\n"; flush stderr*)
 let pr2 s = Printf.printf "%s\n" s
@@ -32,6 +33,7 @@ let token2c (tok,_) =
   | PC.TExpression -> "expression"
   | PC.TIdExpression -> "idexpression"
   | PC.TStatement -> "statement"
+  | PC.TPosition -> "position"
   | PC.TFunction -> "function"
   | PC.TLocal -> "local"
   | PC.Tlist -> "list"
@@ -119,17 +121,29 @@ let token2c (tok,_) =
   | PC.TAnd (clt) -> "&"^(line_type2c clt)
   | PC.TEqEq(clt) -> "=="^(line_type2c clt)
   | PC.TNotEq(clt) -> "!="^(line_type2c clt)
-  | PC.TInf(clt) -> "<"^(line_type2c clt)
-  | PC.TSup(clt) -> ">"^(line_type2c clt)
-  | PC.TInfEq(clt) -> "<="^(line_type2c clt)
-  | PC.TSupEq (clt) -> ">="^(line_type2c clt)
-  | PC.TShl(clt) -> "<<"^(line_type2c clt)
-  | PC.TShr(clt) -> ">>"^(line_type2c clt)
+  | PC.TLogOp(op,clt) ->
+      (match op with
+	Ast.Inf -> "<"
+      |	Ast.InfEq -> "<="
+      |	Ast.Sup -> ">"
+      |	Ast.SupEq -> ">="
+      |	_ -> failwith "not possible")
+      ^(line_type2c clt)
+  | PC.TShOp(op,clt) ->
+      (match op with
+	Ast.DecLeft -> "<<"
+      |	Ast.DecRight -> ">>"
+      |	_ -> failwith "not possible")
+      ^(line_type2c clt)
   | PC.TPlus(clt) -> "+"^(line_type2c clt)
   | PC.TMinus(clt) -> "-"^(line_type2c clt)
   | PC.TMul(clt) -> "*"^(line_type2c clt)
-  | PC.TDiv(clt) -> "/"^(line_type2c clt)
-  | PC.TMod (clt) -> "%"^(line_type2c clt)
+  | PC.TDmOp(op,clt) ->
+      (match op with
+	Ast.Div -> "/"
+      |	Ast.Mod -> "%"
+      |	_ -> failwith "not possible")
+      ^(line_type2c clt)
   | PC.TTilde (clt) -> "~"^(line_type2c clt)
 
   | PC.TMetaParam(_,_,clt) -> "parammeta"^(line_type2c clt)
@@ -145,9 +159,11 @@ let token2c (tok,_) =
   | PC.TMetaStmList(_,_,clt)   -> "stmlistmeta"^(line_type2c clt)
   | PC.TMetaFunc(_,_,clt)  -> "funcmeta"^(line_type2c clt)
   | PC.TMetaLocalFunc(_,_,clt) -> "funcmeta"^(line_type2c clt)
+  | PC.TMetaPos(_)   -> "posmeta"
   | PC.TMPtVirg -> ";"
   | PC.TArobArob -> "@@"
   | PC.TArob -> "@"
+  | PC.TPArob -> "P@"
 
   | PC.TWhen(clt) -> "WHEN"^(line_type2c clt)
   | PC.TAny(clt) -> "ANY"^(line_type2c clt)
@@ -208,6 +224,12 @@ let token2c (tok,_) =
   | PC.TIsoDeclaration -> "Declaration"
   | PC.TIsoType -> "Type"
 
+let print_tokens s tokens =
+  Printf.printf "%s\n" s;
+  List.iter (function x -> Printf.printf "%s " (token2c x)) tokens;
+  Printf.printf "\n\n";
+  flush stdout
+
 type plus = PLUS | NOTPLUS | SKIP
 
 let plus_attachable (tok,_) =
@@ -234,10 +256,9 @@ let plus_attachable (tok,_) =
   | PC.TString(_,clt) | PC.TChar(_,clt) | PC.TFloat(_,clt) | PC.TInt(_,clt)
 
   | PC.TOrLog(clt) | PC.TAndLog(clt) | PC.TOr(clt) | PC.TXor(clt)
-  | PC.TAnd (clt) | PC.TEqEq(clt) | PC.TNotEq(clt) | PC.TInf(clt)
-  | PC.TSup(clt) | PC.TInfEq(clt) | PC.TSupEq (clt) | PC.TShl(clt)
-  | PC.TShr(clt) | PC.TPlus(clt) | PC.TMinus(clt) | PC.TMul(clt)
-  | PC.TDiv(clt) | PC.TMod (clt) | PC.TTilde (clt)
+  | PC.TAnd (clt) | PC.TEqEq(clt) | PC.TNotEq(clt) | PC.TLogOp(_,clt)
+  | PC.TShOp(_,clt) | PC.TPlus(clt) | PC.TMinus(clt) | PC.TMul(clt)
+  | PC.TDmOp(_,clt) | PC.TTilde (clt)
 
   | PC.TMetaParam(_,_,clt) | PC.TMetaParamList(_,_,_,clt)
   | PC.TMetaConst(_,_,_,clt) | PC.TMetaErr(_,_,clt)
@@ -266,6 +287,7 @@ let plus_attachable (tok,_) =
   | PC.TOEllipsis(clt) | PC.TCEllipsis(clt) 
   | PC.TPOEllipsis(clt) | PC.TPCEllipsis(clt) (* | PC.TOCircles(clt)
   | PC.TCCircles(clt) | PC.TOStars(clt) | PC.TCStars(clt) *) -> NOTPLUS
+  | PC.TMetaPos(nm) -> NOTPLUS
 
   | _ -> SKIP
 
@@ -292,10 +314,9 @@ let get_clt (tok,_) =
   | PC.TString(_,clt) | PC.TChar(_,clt) | PC.TFloat(_,clt) | PC.TInt(_,clt)
 
   | PC.TOrLog(clt) | PC.TAndLog(clt) | PC.TOr(clt) | PC.TXor(clt)
-  | PC.TAnd (clt) | PC.TEqEq(clt) | PC.TNotEq(clt) | PC.TInf(clt)
-  | PC.TSup(clt) | PC.TInfEq(clt) | PC.TSupEq (clt) | PC.TShl(clt)
-  | PC.TShr(clt) | PC.TPlus(clt) | PC.TMinus(clt) | PC.TMul(clt)
-  | PC.TDiv(clt) | PC.TMod (clt) | PC.TTilde (clt)
+  | PC.TAnd (clt) | PC.TEqEq(clt) | PC.TNotEq(clt) | PC.TLogOp(_,clt)
+  | PC.TShOp(_,clt) | PC.TPlus(clt) | PC.TMinus(clt) | PC.TMul(clt)
+  | PC.TDmOp(_,clt) | PC.TTilde (clt)
 
   | PC.TMetaParam(_,_,clt) | PC.TMetaParamList(_,_,_,clt)
   | PC.TMetaConst(_,_,_,clt) | PC.TMetaErr(_,_,clt)
@@ -389,17 +410,12 @@ let update_clt (tok,x) clt =
   | PC.TAnd (_) -> (PC.TAnd (clt),x)
   | PC.TEqEq(_) -> (PC.TEqEq(clt),x)
   | PC.TNotEq(_) -> (PC.TNotEq(clt),x)
-  | PC.TInf(_) -> (PC.TInf(clt),x)
-  | PC.TSup(_) -> (PC.TSup(clt),x)
-  | PC.TInfEq(_) -> (PC.TInfEq(clt),x)
-  | PC.TSupEq (_) -> (PC.TSupEq (clt),x)
-  | PC.TShl(_) -> (PC.TShl(clt),x)
-  | PC.TShr(_) -> (PC.TShr(clt),x)
+  | PC.TLogOp(op,_) -> (PC.TLogOp(op,clt),x)
+  | PC.TShOp(op,_) -> (PC.TShOp(op,clt),x)
   | PC.TPlus(_) -> (PC.TPlus(clt),x)
   | PC.TMinus(_) -> (PC.TMinus(clt),x)
   | PC.TMul(_) -> (PC.TMul(clt),x)
-  | PC.TDiv(_) -> (PC.TDiv(clt),x)
-  | PC.TMod (_) -> (PC.TMod (clt),x)
+  | PC.TDmOp(op,_) -> (PC.TDmOp(op,clt),x)
   | PC.TTilde (_) -> (PC.TTilde (clt),x)
 
   | PC.TMetaParam(a,b,_) -> (PC.TMetaParam(a,b,clt),x)
@@ -508,7 +524,7 @@ let split t = function
 let split_token ((tok,_) as t) =
   match tok with
     PC.TIdentifier | PC.TConstant | PC.TExpression | PC.TIdExpression
-  | PC.TStatement
+  | PC.TStatement | PC.TPosition
   | PC.TFunction | PC.TTypedef | PC.TDeclarer | PC.TIterator
   | PC.TType | PC.TParameter | PC.TLocal | PC.Tlist | PC.TFresh | PC.TPure
   | PC.TContext | PC.TRuleName(_) | PC.TUsing | PC.TDisable | PC.TExtends
@@ -541,6 +557,7 @@ let split_token ((tok,_) as t) =
   | PC.TMetaStm(_,_,clt) | PC.TMetaStmList(_,_,clt) | PC.TMetaErr(_,_,clt)
   | PC.TMetaFunc(_,_,clt) | PC.TMetaLocalFunc(_,_,clt) -> split t clt
   | PC.TMPtVirg | PC.TArob | PC.TArobArob -> ([t],[t])
+  | PC.TPArob | PC.TMetaPos(_) -> ([t],[])
 
   | PC.TFunDecl(clt)
   | PC.TWhen(clt) | PC.TAny(clt) | PC.TLineEnd(clt)
@@ -565,10 +582,9 @@ let split_token ((tok,_) as t) =
       split t clt
 
   | PC.TOrLog(clt) | PC.TAndLog(clt) | PC.TOr(clt) | PC.TXor(clt)
-  | PC.TAnd (clt) | PC.TEqEq(clt) | PC.TNotEq(clt) | PC.TInf(clt)
-  | PC.TSup(clt) | PC.TInfEq(clt) | PC.TSupEq (clt) | PC.TShl(clt)
-  | PC.TShr(clt) | PC.TPlus(clt) | PC.TMinus(clt) | PC.TMul(clt)
-  | PC.TDiv(clt) | PC.TMod (clt) | PC.TTilde (clt) -> split t clt
+  | PC.TAnd (clt) | PC.TEqEq(clt) | PC.TNotEq(clt) | PC.TLogOp(_,clt)
+  | PC.TShOp(_,clt) | PC.TPlus(clt) | PC.TMinus(clt) | PC.TMul(clt)
+  | PC.TDmOp(_,clt) | PC.TTilde (clt) -> split t clt
 
   | PC.TOBrace(clt) | PC.TCBrace(clt) -> split t clt
   | PC.TOCro(clt) | PC.TCCro(clt) -> split t clt
@@ -674,16 +690,17 @@ let detect_types in_meta_decls l =
   let is_id = function
       (PC.TIdent(_,_),_) | (PC.TMetaId(_,_,_),_) | (PC.TMetaFunc(_,_,_),_)
     | (PC.TMetaLocalFunc(_,_,_),_) -> true
-    | (PC.TMetaParam(_,_,clt),_)
-    | (PC.TMetaParamList(_,_,_,clt),_)
-    | (PC.TMetaConst(_,_,_,clt),_)
-    | (PC.TMetaErr(_,_,clt),_)
-    | (PC.TMetaExp(_,_,_,clt),_)
-    | (PC.TMetaIdExp(_,_,_,clt),_)
-    | (PC.TMetaExpList(_,_,_,clt),_)
-    | (PC.TMetaType(_,_,clt),_)
-    | (PC.TMetaStm(_,_,clt),_)
-    | (PC.TMetaStmList(_,_,clt),_) -> in_meta_decls 
+    | (PC.TMetaParam(_,_,_),_)
+    | (PC.TMetaParamList(_,_,_,_),_)
+    | (PC.TMetaConst(_,_,_,_),_)
+    | (PC.TMetaErr(_,_,_),_)
+    | (PC.TMetaExp(_,_,_,_),_)
+    | (PC.TMetaIdExp(_,_,_,_),_)
+    | (PC.TMetaExpList(_,_,_,_),_)
+    | (PC.TMetaType(_,_,_),_)
+    | (PC.TMetaStm(_,_,_),_)
+    | (PC.TMetaStmList(_,_,_),_)
+    | (PC.TMetaPos(_),_) -> in_meta_decls 
     | _ -> false in
   let redo_id ident clt v =
     !Data.add_type_name ident;
@@ -758,18 +775,16 @@ let token2line (tok,_) =
   | PC.TString(_,clt) | PC.TChar(_,clt) | PC.TFloat(_,clt) | PC.TInt(_,clt) 
 
   | PC.TOrLog(clt) | PC.TAndLog(clt) | PC.TOr(clt) | PC.TXor(clt)
-  | PC.TAnd (clt) | PC.TEqEq(clt) | PC.TNotEq(clt) | PC.TInf(clt) 
-  | PC.TSup(clt) | PC.TInfEq(clt) | PC.TSupEq (clt) | PC.TShl(clt) 
-  | PC.TShr(clt) | PC.TPlus(clt) | PC.TMinus(clt) | PC.TMul(clt) 
-  | PC.TDiv(clt) | PC.TMod (clt) | PC.TTilde (clt) 
+  | PC.TAnd (clt) | PC.TEqEq(clt) | PC.TNotEq(clt) | PC.TLogOp(_,clt) 
+  | PC.TShOp(_,clt) | PC.TPlus(clt) | PC.TMinus(clt) | PC.TMul(clt) 
+  | PC.TDmOp(_,clt) | PC.TTilde (clt) 
 
   | PC.TMetaParam(_,_,clt) | PC.TMetaParamList(_,_,_,clt) 
   | PC.TMetaConst(_,_,_,clt) | PC.TMetaExp(_,_,_,clt)
   | PC.TMetaIdExp(_,_,_,clt) | PC.TMetaExpList(_,_,_,clt) 
   | PC.TMetaId(_,_,clt) | PC.TMetaType(_,_,clt)
-  | PC.TMetaStm(_,_,clt)   
-  | PC.TMetaStmList(_,_,clt) | PC.TMetaFunc(_,_,clt)
-  | PC.TMetaLocalFunc(_,_,clt) 
+  | PC.TMetaStm(_,_,clt) | PC.TMetaStmList(_,_,clt) | PC.TMetaFunc(_,_,clt)
+  | PC.TMetaLocalFunc(_,_,clt)
 
   | PC.TFunDecl(clt)
   | PC.TWhen(clt) | PC.TAny(clt) | PC.TEllipsis(clt)
@@ -1008,12 +1023,6 @@ let get_metavars parse_fn table file lexbuf =
     match tokens with
       [(PC.TArobArob,_)] -> List.rev acc
     | _ ->
-	(*
-	Printf.printf "meta tokens\n";
-	List.iter (function x -> Printf.printf "%s " (token2c x)) tokens;
-	Printf.printf "\n\n";
-        flush stdout;
-	*)
 	let metavars = parse_one "meta" parse_fn file tokens in
 	meta_loop (metavars@acc) in
   partition_either (meta_loop [])
@@ -1031,7 +1040,7 @@ let get_rule_name parse_fn starts_with_name get_tokens file prefix =
 	  (if List.mem nm reserved_names
 	  then failwith (Printf.sprintf "invalid name %s\n" nm));
 	  (nm,a,b,c,d)
-    else (mknm(),Ast_cocci.NoDep,[],[],Ast_cocci.Undetermined) in
+    else (mknm(),Ast.NoDep,[],[],Ast.Undetermined) in
   Data.in_rule_name := false;
   name_res
 
@@ -1073,10 +1082,7 @@ let parse_iso file =
 	    let tokens = drop_last [(PC.EOF,dummy_info)] tokens in
 	    let tokens = prepare_tokens (start@tokens) in
             (*
-	       Printf.printf "iso tokens\n";
-	       List.iter
-	       (function x -> Printf.printf "%s " (token2c x)) tokens;
-	       Printf.printf "\n\n";
+	       print_tokens "iso tokens" tokens;
 	    *)
 	    let entry = parse_one "iso main" PC.iso_main file tokens in
 	    if more
@@ -1158,25 +1164,16 @@ let parse file =
 	    let (minus_tokens,plus_tokens) = split_token_stream tokens in 
 	    let minus_tokens = prepare_tokens minus_tokens in
 	    let plus_tokens = prepare_tokens plus_tokens in
-	    (*
-	       Printf.printf "minus tokens\n";
-	       List.iter
-	       (function x -> Printf.printf "%s " (token2c x)) minus_tokens;
-	       Printf.printf "\n\n";
-	       Printf.printf "plus tokens\n";
-	       List.iter
-	       (function x -> Printf.printf "%s " (token2c x)) plus_tokens;
-	       Printf.printf "\n\n";
-	    *)
+            (*
+	       print_tokens "minus tokens" minus_tokens;
+	       print_tokens "plus tokens" plus_tokens;
+            *)
 	    let plus_tokens =
 	      process_pragmas
 		(fix (function x -> drop_double_dots (drop_empty_or x))
 		   (drop_when plus_tokens)) in
 	    (*
-	       Printf.printf "plus tokens\n";
-	       List.iter
-	       (function x -> Printf.printf "%s " (token2c x)) plus_tokens;
-	       Printf.printf "\n\n";
+               print_tokens "plus tokens" plus_tokens;
 	       Printf.printf "before minus parse\n";
 	    *)
 	    let minus_res =
@@ -1299,3 +1296,4 @@ let process file isofile verbose =
   then List.iter Pretty_print_cocci.unparse code;
   let tokens = Get_constants.get_constants code in
   (code,fvs,ua,tokens)
+

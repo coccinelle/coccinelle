@@ -22,9 +22,10 @@ type isomorphism =
 let strip_info =
   let mcode (term,_,_,_) = (term,Ast0.NONE,Ast0.default_info(),Ast0.PLUS) in
   let donothing r k e =
-    let (term,info,index,mc,ty,dots,arg,test,is_iso) = k e in
-    (term,Ast0.default_info(),ref 0,ref Ast0.PLUS,ref None,Ast0.NoDots,
-     false,test,[]) in
+    let x = k e in
+    {(Ast0.wrap (Ast0.unwrap x)) with
+      Ast0.mcodekind = ref Ast0.PLUS;
+      Ast0.true_if_test = x.Ast0.true_if_test} in
   V0.rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode
@@ -1123,13 +1124,14 @@ let rebuild_mcode start_line =
       |	None -> info in
     (term,arity,info,copy_mcodekind mcodekind) in
   
-  let copy_one (term,info,index,mcodekind,ty,dots,arg,test,is_iso) =
+  let copy_one x =
+    let old_info = Ast0.get_info x in
     let info =
       match start_line with
-	Some x -> {info with Ast0.line_start = x; Ast0.line_end = x}
-      |	None -> info in
-    (term,info,ref !index,
-     ref (copy_mcodekind !mcodekind),ty,dots,arg,test,is_iso) in
+	Some x -> {old_info with Ast0.line_start = x; Ast0.line_end = x}
+      |	None -> old_info in
+    {x with Ast0.info = info; Ast0.index = ref(Ast0.get_index x);
+      Ast0.mcodekind = ref (copy_mcodekind (Ast0.get_mcodekind x))} in
   
   let donothing r k e = copy_one (k e) in
   
@@ -1670,6 +1672,8 @@ let get_name = function
       (nm,function nm -> Ast.MetaFuncDecl(ar,nm))
   | Ast.MetaLocalFuncDecl(ar,nm) ->
       (nm,function nm -> Ast.MetaLocalFuncDecl(ar,nm))
+  | Ast.MetaPosDecl(ar,nm) ->
+      (nm,function nm -> Ast.MetaPosDecl(ar,nm))
 
 let make_new_metavars metavars bindings =
   let new_metavars =

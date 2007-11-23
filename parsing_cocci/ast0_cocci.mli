@@ -25,11 +25,18 @@ type info = { line_start : int; line_end : int;
 	      strings_before : string list; strings_after : string list }
 
 type 'a mcode = 'a * arity * info * mcodekind
-type 'a wrap = 'a * info * int ref * mcodekind ref
-      * Type_cocci.typeC option ref (* only for expressions *)
-      * dots_bef_aft * bool (* true if "arg_exp", only for exprs *)
-      * bool (* true if "test_exp", only for exprs *)
-      * (string*anything) list(*nonempty if this represents the use of an iso*)
+type 'a wrap =
+    { node : 'a;
+      info : info;
+      index : int ref;
+      mcodekind : mcodekind ref;
+      exp_ty : Type_cocci.typeC option ref; (* only for expressions *)
+      bef_aft : dots_bef_aft; (* only for statements *)
+      true_if_arg : bool; (* true if "arg_exp", only for exprs *)
+      true_if_test : bool; (* true if "test_exp", only for exprs *)
+      (*nonempty if this represents the use of an iso*)
+      iso_info : (string*anything) list;
+      pos : Ast_cocci.meta_name option }
 
 and dots_bef_aft =
     NoDots | AddingBetweenDots of statement | DroppingBetweenDots of statement
@@ -378,6 +385,8 @@ val unwrap_mcode : 'a mcode -> 'a
 val rewrap : 'a wrap -> 'b -> 'b wrap
 val rewrap_mcode : 'a mcode -> 'b -> 'b mcode
 val copywrap : 'a wrap -> 'b -> 'b wrap
+val get_pos : 'a wrap -> Ast_cocci.meta_name option
+val set_pos : Ast_cocci.meta_name option -> 'a wrap -> 'a wrap
 val get_info : 'a wrap -> info
 val set_info : 'a wrap -> info -> 'a wrap
 val get_index : 'a wrap -> int

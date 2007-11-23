@@ -11,7 +11,6 @@ parameter needs both a type and an identifier *)
 module Ast0 = Ast0_cocci
 module Ast = Ast_cocci
 module P = Parse_aux
-
 %}
 
 %token EOF
@@ -20,7 +19,7 @@ module P = Parse_aux
 %token TIdExpression
 %token Tlist TFresh TConstant TError TWords TWhy0 TPlus0 TBang0
 %token TPure TContext
-%token TTypedef TDeclarer TIterator
+%token TTypedef TDeclarer TIterator TPosition
 %token TUsing TDisable TExtends TDepends TOn TEver TNever TExists TForall
 %token TNothing
 %token<string> TRuleName
@@ -34,24 +33,16 @@ module P = Parse_aux
 %token<string * Data.clt> Tattr
 
 %token <Data.clt> TIf TElse TWhile TFor TDo TSwitch TCase TDefault TReturn
-%token <Data.clt> TBreak TContinue
-%token <Data.clt> TSizeof
-%token <Data.clt> TFunDecl
+%token <Data.clt> TBreak TContinue TSizeof TFunDecl
 %token <string * Data.clt> TIdent TTypeId TDeclarerId TIteratorId
-%token <Ast_cocci.meta_name * Ast0_cocci.pure * Data.clt> TMetaId TMetaType
-%token <Ast_cocci.meta_name * Ast0_cocci.pure * Data.clt> TMetaErr
-%token <Ast_cocci.meta_name * Ast0_cocci.pure * Data.clt>
-                                                  TMetaParam
-%token <Ast_cocci.meta_name * Ast_cocci.meta_name option * Ast0_cocci.pure * Data.clt>
-                                                  TMetaParamList
-%token <Ast_cocci.meta_name * Ast0_cocci.pure * Data.clt> TMetaStm TMetaStmList
-%token <Ast_cocci.meta_name * Ast0_cocci.pure * Data.clt>
-                                                  TMetaFunc TMetaLocalFunc
-%token <Ast_cocci.meta_name * Ast_cocci.meta_name option * Ast0_cocci.pure * Data.clt>
-                                                  TMetaExpList
-%token <Ast_cocci.meta_name * Ast0_cocci.pure * Type_cocci.typeC list option *
-          Data.clt> TMetaExp TMetaIdExp TMetaConst
-%token TArob TArobArob
+
+%token <Parse_aux.info>       TMetaId TMetaType TMetaErr TMetaParam
+%token <Parse_aux.info>       TMetaStm TMetaStmList TMetaFunc TMetaLocalFunc
+%token <Parse_aux.list_info>  TMetaParamList TMetaExpList
+%token <Parse_aux.typed_info> TMetaExp TMetaIdExp TMetaConst
+%token <Ast_cocci.meta_name>  TMetaPos
+
+%token TArob TArobArob TPArob
 
 %token <Data.clt> TEllipsis TOEllipsis TCEllipsis TPOEllipsis TPCEllipsis
 %token <Data.clt> TWhen TAny TLineEnd
@@ -79,10 +70,11 @@ module P = Parse_aux
 %token <Data.clt> TXor
 %token <Data.clt> TAnd 
 %token <Data.clt> TEqEq TNotEq
-%token <Data.clt> TInf TSup TInfEq TSupEq 
-%token <Data.clt> TShl TShr
+%token <Ast_cocci.logicalOp * Data.clt> TLogOp /* TInf TSup TInfEq TSupEq */
+%token <Ast_cocci.arithOp * Data.clt>   TShOp  /* TShl TShr */
+%token <Ast_cocci.arithOp * Data.clt>   TDmOp  /* TDiv TMod */
 %token <Data.clt> TPlus TMinus
-%token <Data.clt> TMul TDiv TMod TTilde
+%token <Data.clt> TMul TTilde
 
 %token <Data.clt> TOBrace TCBrace
 %token <Data.clt> TOCro TCCro
@@ -108,10 +100,10 @@ module P = Parse_aux
 %left TXor
 %left TAnd 
 %left TEqEq TNotEq
-%left TInf TSup TInfEq TSupEq 
-%left TShl TShr
+%left TLogOp /* TInf TSup TInfEq TSupEq */
+%left TShOp /* TShl TShr */
 %left TPlus TMinus
-%left TMul TDiv TMod 
+%left TMul TDmOp /* TDiv TMod */
 
 %start reinit
 %type <unit> reinit
@@ -330,6 +322,10 @@ metadec:
     { (fun arity name pure check_meta ->
       let tok = check_meta(Ast.MetaConstDecl(arity,name,ty)) in
       !Data.add_const_meta ty name pure; tok) }
+| TPosition
+    { (fun arity name pure check_meta ->
+      let tok = check_meta(Ast.MetaPosDecl(arity,name)) in
+      !Data.add_pos_meta name; tok) }
 | TTypedef
     { (fun arity (_,name) pure check_meta ->
       if arity = Ast.NONE && pure = Ast0.Impure
@@ -681,9 +677,9 @@ decl: t=ctype i=ident
     | t=Tvoid
 	{ let ty = Ast0.wrap(Ast0.BaseType(P.clt2mcode Ast.VoidType t, None)) in
           Ast0.wrap(Ast0.VoidParam(ty)) }
-    | TMetaParam
+    | TMetaParam option(pos)
 	{ let (nm,pure,clt) = $1 in
-	Ast0.wrap(Ast0.MetaParam(P.clt2mcode nm clt,pure)) }
+	Ast0.set_pos $2 (Ast0.wrap(Ast0.MetaParam(P.clt2mcode nm clt,pure))) }
 
 name_opt_decl:
       decl  { $1 }
@@ -701,12 +697,15 @@ const_vol:
       Tconst       { P.clt2mcode Ast.Const $1 }
     | Tvolatile    { P.clt2mcode Ast.Volatile $1 }
 
+pos:
+      TPArob TMetaPos { $2 }
+
 /*****************************************************************************/
 
 statement:
   includes { $1 } /* shouldn't be allowed to be a single_statement... */
-| TMetaStm
-    { P.meta_stm $1 }
+| TMetaStm option(pos)
+    { P.meta_stm $1 $2 }
 | expr TPtVirg
     { P.exp_stm $1 $2 }
 | TIf TOPar eexpr TCPar single_statement %prec TIf
@@ -983,9 +982,9 @@ comma_initializers2(dotter):
 
 /* a statement that is part of a list */
 decl_statement:
-    TMetaStmList
+    TMetaStmList option(pos)
       { let (nm,pure,clt) = $1 in
-      [Ast0.wrap(Ast0.MetaStmt(P.clt2mcode nm clt,pure))] }
+      [Ast0.set_pos $2 (Ast0.wrap(Ast0.MetaStmt(P.clt2mcode nm clt,pure)))] }
   | decl_var
       { List.map
 	  (function x ->
@@ -1079,26 +1078,16 @@ arith_expr(r,pe):
     cast_expr(r,pe)                         { $1 }
   | arith_expr(r,pe) TMul    arith_expr(r,pe)
       { P.arith_op Ast.Mul $1 $2 $3 }
-  | arith_expr(r,pe) TDiv    arith_expr(r,pe)
-      { P.arith_op Ast.Div $1 $2 $3 }
-  | arith_expr(r,pe) TMod    arith_expr(r,pe)
-      { P.arith_op Ast.Mod $1 $2 $3 }
+  | arith_expr(r,pe) TDmOp    arith_expr(r,pe)
+      { let (op,clt) = $2 in P.arith_op op $1 clt $3 }
   | arith_expr(r,pe) TPlus   arith_expr(r,pe)
       { P.arith_op Ast.Plus $1 $2 $3 }
   | arith_expr(r,pe) TMinus  arith_expr(r,pe)
       { P.arith_op Ast.Minus $1 $2 $3 }
-  | arith_expr(r,pe) TShl    arith_expr(r,pe)
-      { P.arith_op Ast.DecLeft $1 $2 $3 }
-  | arith_expr(r,pe) TShr    arith_expr(r,pe)
-      { P.arith_op Ast.DecRight $1 $2 $3}
-  | arith_expr(r,pe) TInf    arith_expr(r,pe)
-      { Ast0.set_test_exp(P.logic_op Ast.Inf $1 $2 $3) }
-  | arith_expr(r,pe) TSup    arith_expr(r,pe)
-      { Ast0.set_test_exp(P.logic_op Ast.Sup $1 $2 $3) }
-  | arith_expr(r,pe) TInfEq  arith_expr(r,pe)
-      { Ast0.set_test_exp(P.logic_op Ast.InfEq $1 $2 $3) }
-  | arith_expr(r,pe) TSupEq  arith_expr(r,pe)
-      { Ast0.set_test_exp(P.logic_op Ast.SupEq $1 $2 $3) }
+  | arith_expr(r,pe) TShOp    arith_expr(r,pe)
+      { let (op,clt) = $2 in P.arith_op op $1 clt $3 }
+  | arith_expr(r,pe) TLogOp    arith_expr(r,pe)
+      { let (op,clt) = $2 in Ast0.set_test_exp(P.logic_op op $1 clt $3) }
   | arith_expr(r,pe) TEqEq   arith_expr(r,pe)
       { Ast0.set_test_exp(P.logic_op Ast.Eq $1 $2 $3) }
   | arith_expr(r,pe) TNotEq  arith_expr(r,pe)
@@ -1179,18 +1168,21 @@ primary_expr(recurser,primary_extra):
  | TChar
      { let (x,clt) = $1 in
      Ast0.wrap(Ast0.Constant (P.clt2mcode (Ast.Char x) clt)) }
- | TMetaConst
+ | TMetaConst option(pos)
      { let (nm,pure,ty,clt) = $1 in
-     Ast0.wrap(Ast0.MetaExpr(P.clt2mcode nm clt,ty,Ast.CONST,pure)) }
- | TMetaErr
+     Ast0.set_pos $2
+       (Ast0.wrap(Ast0.MetaExpr(P.clt2mcode nm clt,ty,Ast.CONST,pure))) }
+ | TMetaErr option(pos)
      { let (nm,pure,clt) = $1 in
-     Ast0.wrap(Ast0.MetaErr(P.clt2mcode nm clt,pure)) }
- | TMetaExp
+     Ast0.set_pos $2 (Ast0.wrap(Ast0.MetaErr(P.clt2mcode nm clt,pure))) }
+ | TMetaExp option(pos)
      { let (nm,pure,ty,clt) = $1 in
-     Ast0.wrap(Ast0.MetaExpr(P.clt2mcode nm clt,ty,Ast.ANY,pure)) }
- | TMetaIdExp
+     Ast0.set_pos $2
+       (Ast0.wrap(Ast0.MetaExpr(P.clt2mcode nm clt,ty,Ast.ANY,pure))) }
+ | TMetaIdExp option(pos)
      { let (nm,pure,ty,clt) = $1 in
-     Ast0.wrap(Ast0.MetaExpr(P.clt2mcode nm clt,ty,Ast.ID,pure)) }
+     Ast0.set_pos $2
+       (Ast0.wrap(Ast0.MetaExpr(P.clt2mcode nm clt,ty,Ast.ID,pure))) }
  | TOPar eexpr TCPar
      { Ast0.wrap(Ast0.Paren(P.clt2mcode "(" $1,$2,
 			    P.clt2mcode ")" $3)) }
@@ -1215,28 +1207,30 @@ pure_ident_or_meta_ident:
 
 func_ident: pure_ident
          { Ast0.wrap(Ast0.Id(P.id2mcode $1)) }
-     | TMetaId
+     | TMetaId option(pos)
          { let (nm,pure,clt) = $1 in
-           Ast0.wrap(Ast0.MetaId(P.clt2mcode nm clt,pure)) }
-     | TMetaFunc
+         Ast0.set_pos $2 (Ast0.wrap(Ast0.MetaId(P.clt2mcode nm clt,pure))) }
+     | TMetaFunc option(pos)
          { let (nm,pure,clt) = $1 in
-           Ast0.wrap(Ast0.MetaFunc(P.clt2mcode nm clt,pure)) }
-     | TMetaLocalFunc
+         Ast0.set_pos $2 (Ast0.wrap(Ast0.MetaFunc(P.clt2mcode nm clt,pure))) }
+     | TMetaLocalFunc option(pos)
 	 { let (nm,pure,clt) = $1 in
-           Ast0.wrap(Ast0.MetaLocalFunc(P.clt2mcode nm clt,pure)) }
+         Ast0.set_pos $2
+	   (Ast0.wrap(Ast0.MetaLocalFunc(P.clt2mcode nm clt,pure))) }
 
 ident: pure_ident
          { Ast0.wrap(Ast0.Id(P.id2mcode $1)) }
-     | TMetaId
+     | TMetaId option(pos)
          { let (nm,pure,clt) = $1 in
-           Ast0.wrap(Ast0.MetaId(P.clt2mcode nm clt,pure)) }
+         Ast0.set_pos $2 (Ast0.wrap(Ast0.MetaId(P.clt2mcode nm clt,pure))) }
 
 typedef_ident:
        pure_ident
          { Ast0.wrap(Ast0.TypeName(P.id2mcode $1)) }
-     | TMetaType
+     | TMetaType option(pos)
          { let (nm,pure,clt) = $1 in
-           Ast0.wrap(Ast0.MetaType(P.clt2mcode nm clt,pure)) }
+         Ast0.set_pos $2
+	   (Ast0.wrap(Ast0.MetaType(P.clt2mcode nm clt,pure))) }
 
 /*****************************************************************************/
 
@@ -1263,9 +1257,10 @@ decl_list_start(decl):
 
 one_dec(decl):
   decl  { $1 }
-| TMetaParamList
+| TMetaParamList option(pos)
     { let (nm,lenname,pure,clt) = $1 in
-    Ast0.wrap(Ast0.MetaParamList(P.clt2mcode nm clt,lenname,pure)) }
+    Ast0.set_pos $2
+      (Ast0.wrap(Ast0.MetaParamList(P.clt2mcode nm clt,lenname,pure))) }
  
 comma_decls(dotter,decl):
   TComma dotter
@@ -1420,9 +1415,10 @@ eexpr_list:
 aexpr:
     dexpr
       { Ast0.set_arg_exp $1 }
-  | TMetaExpList
+  | TMetaExpList option(pos)
       { let (nm,lenname,pure,clt) = $1 in
-      Ast0.wrap(Ast0.MetaExprList(P.clt2mcode nm clt,lenname,pure)) }
+      Ast0.set_pos $2
+	(Ast0.wrap(Ast0.MetaExprList(P.clt2mcode nm clt,lenname,pure))) }
   | ctype
       { Ast0.set_arg_exp(Ast0.wrap(Ast0.TypeExp($1))) }
 

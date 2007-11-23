@@ -1341,7 +1341,8 @@ and statement stmt after quantified minus_quantified
   match Ast.unwrap stmt with
     Ast.Atomic(ast) ->
       (match Ast.unwrap ast with
-	Ast.MetaStmt((s,_,(Ast.CONTEXT(_,Ast.BEFOREAFTER(_,_)) as d)),
+	Ast.MetaStmt(_,Type_cocci.Unitary,_,false) when guard -> CTL.True
+      |	Ast.MetaStmt((s,_,(Ast.CONTEXT(_,Ast.BEFOREAFTER(_,_)) as d)),
 		     keep,seqible,_)
       | Ast.MetaStmt((s,_,(Ast.CONTEXT(_,Ast.AFTER(_)) as d)),keep,seqible,_)->
 	  svar_context_with_add_after s label quantified d ast seqible after
