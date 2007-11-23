@@ -225,6 +225,12 @@ metadec:
   ar=arity ispure=pure
   kindfn=metakind ids=comma_list(pure_ident_or_meta_ident) TMPtVirg
     { P.create_metadec ar ispure kindfn ids }
+| ar=arity TPosition ids=comma_list(pure_ident) TMPtVirg
+    { let kindfn arity name pure check_meta =
+      let tok = check_meta(Ast.MetaPosDecl(arity,name)) in
+      !Data.add_pos_meta name; tok in
+    let ids = List.map (function nm -> (None,P.id2name nm)) ids in
+    P.create_metadec ar false kindfn ids }
 | ar=arity ispure=pure
     TParameter Tlist TOCro id=pure_ident_or_meta_ident TCCro
     ids=comma_list(pure_ident_or_meta_ident) TMPtVirg
@@ -322,10 +328,6 @@ metadec:
     { (fun arity name pure check_meta ->
       let tok = check_meta(Ast.MetaConstDecl(arity,name,ty)) in
       !Data.add_const_meta ty name pure; tok) }
-| TPosition
-    { (fun arity name pure check_meta ->
-      let tok = check_meta(Ast.MetaPosDecl(arity,name)) in
-      !Data.add_pos_meta name; tok) }
 | TTypedef
     { (fun arity (_,name) pure check_meta ->
       if arity = Ast.NONE && pure = Ast0.Impure

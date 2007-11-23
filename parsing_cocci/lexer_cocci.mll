@@ -51,8 +51,7 @@ let start_line seen_char =
 
 let pass_zero _ = col_zero := false
 
-let lexerr s1 s2 =
-  raise (Lexical (Printf.sprintf "%d: %s%s" !line s1 s2))
+let lexerr s1 s2 = raise (Lexical (Printf.sprintf "%s%s" s1 s2))
 
 let add_current_line_type x =
   match (x,!current_line_type) with
@@ -247,6 +246,12 @@ let init _ =
   logical_line := 0;
   prev_plus := false;
   line_start := 0;
+  current_line_started := false;
+  col_zero := true;
+  pm := UNKNOWN;
+  Data.in_rule_name := false;
+  Data.in_meta := false;
+  Data.in_prolog := false;
   Hashtbl.clear all_metavariables;
   Hashtbl.clear Data.all_metadecls;
   Hashtbl.clear metavariables;
