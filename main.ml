@@ -682,7 +682,7 @@ let _ =
           Ctlcocci_integration.print_bench();
         ))
        (fun()-> 
-         Common.profile_diagnostic ();
+         pr2 (Common.profile_diagnostic ());
          if not !save_tmp_files then Common.erase_temp_files ();
        )
     )

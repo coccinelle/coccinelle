@@ -8,7 +8,7 @@ SRC=flag_cocci.ml cocci.ml testing.ml test.ml main.ml
 SYSLIBS=str.cma unix.cma
 LIBS=commons/commons.cma globals/globals.cma\
      ctl/ctl.cma \
-     parsing_cocci/cocci_parser.cma parsing_c/c_parser.cma \
+     parsing_cocci/cocci_parser.cma parsing_c/parsing_c.cma \
      engine/cocciengine.cma popl/popl.cma \
      extra/extra.cma
 

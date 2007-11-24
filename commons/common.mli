@@ -42,10 +42,17 @@ val spf : ('a, unit, string) format -> 'a
 
 val _chan : out_channel ref (* default = stderr *)
 val start_log_file : unit -> unit (* generate & use a /tmp/debugml-xxx file *)
+
 val verbose_level : int ref
 val log : string -> unit
 val log2 : string -> unit
 val log3 : string -> unit
+val log4 : string -> unit
+
+val if_log  : (unit -> unit) -> unit
+val if_log2 : (unit -> unit) -> unit
+val if_log3 : (unit -> unit) -> unit
+val if_log4 : (unit -> unit) -> unit
 
 val pause : unit -> unit
 
@@ -80,6 +87,7 @@ val _count2 : int ref
 val _count3 : int ref
 val _count4 : int ref
 val _count5 : int ref
+
 val count1 : unit -> unit
 val count2 : unit -> unit
 val count3 : unit -> unit
@@ -94,7 +102,7 @@ val profile : prof ref
 
 val _profile_table : (string, (float ref * int ref)) Hashtbl.t ref
 val profile_code : string -> (unit -> 'a) -> 'a
-val profile_diagnostic : unit -> unit
+val profile_diagnostic : unit -> string
 
 val report_if_take_time : int -> string -> (unit -> 'a) -> 'a
 
@@ -219,6 +227,9 @@ val curry : ('a * 'b -> 'c) -> 'a -> 'b -> 'c
 val uncurry : ('a -> 'b -> 'c) -> 'a * 'b -> 'c
 
 val id : 'a -> 'a
+val do_nothing : unit -> unit
+
+val forever : (unit -> unit) -> unit
 
 val applyn : int -> ('a -> 'a) -> 'a -> 'a
 
@@ -291,6 +302,7 @@ val myassert : bool -> unit
 val warning : string -> 'a -> 'a
 val error_cant_have : 'a -> 'b
 
+val exn_to_s : exn -> string
 
 (*****************************************************************************)
 (* Equality *)
@@ -533,11 +545,12 @@ val matched3 : string -> string * string * string
 val matched4 : string -> string * string * string * string
 val matched5 : string -> string * string * string * string * string
 val matched6 : string -> string * string * string * string * string * string
+val matched7 : string -> string * string * string * string * string * string * string
 
 val string_match_substring : Str.regexp -> string -> bool
 
-val split : string -> string -> string list
-val join : string -> string list -> string
+val split : string (* sep regexp *) -> string -> string list
+val join : string (* sep *) -> string list -> string
 
 val split_list_regexp : string -> string list -> (string * string list) list
 
@@ -566,6 +579,8 @@ val replace_ext: filename -> string -> string -> filename
 
 (* remove the ., .. *)
 val normalize_path : filename -> filename
+
+val relative_to_absolute : filename -> filename
 
 (*****************************************************************************)
 (* Dates *)
@@ -616,6 +631,7 @@ val filesize : filename -> int
 val filemtime : filename -> float
 
 val lfile_exists : filename -> bool
+val is_directory : filename -> bool
 
 val capsule_unix : ('a -> unit) -> 'a -> unit
 
@@ -626,6 +642,7 @@ val readdir_to_link_list : string -> string list
 val readdir_to_dir_size_list : string -> (string * int) list
 
 val glob : string -> filename list
+val files_of_dir_or_files : string (* ext *) -> string list -> filename list
 
 type rwx = [ `R | `W | `X ] list
 val file_perm_of : u:rwx -> g:rwx -> o:rwx -> Unix.file_perm
@@ -677,7 +694,7 @@ val exn_to_real_unixexit : (unit -> 'a) -> 'a
 
 
 
-(* And now collection like types *)
+(* And now collection like types. See also ocollection.mli *)
 
 (*****************************************************************************)
 (* List *)
@@ -844,6 +861,7 @@ val array_find_index : ('a -> bool) -> 'a array -> int
 (* Fast array *)
 (*****************************************************************************)
 
+(* ?? *)
 
 (*****************************************************************************)
 (* Set. But have a look too at set*.mli. It's better. Or use Hashtbl. *)
@@ -949,7 +967,7 @@ val lookup_list : 'a -> ('a, 'b) assoc list -> 'b
 val lookup_list2 : 'a -> ('a, 'b) assoc list -> 'b * int
 
 (*****************************************************************************)
-(* Assocs specialized. *)
+(* Assoc, specialized. *)
 (*****************************************************************************)
 
 module IntMap :
@@ -1251,6 +1269,13 @@ val del_scope_h : ('a, 'b) scoped_h_env ref -> unit
 val do_in_new_scope_h : ('a, 'b) scoped_h_env ref -> (unit -> unit) -> unit
 
 val add_in_scope_h : ('a, 'b) scoped_h_env ref -> 'a * 'b -> unit
+
+(*****************************************************************************)
+(* Terminal *)
+(*****************************************************************************)
+
+val execute_and_show_progress : 
+ int (* length *) -> ((unit -> unit) -> unit) -> unit
 
 
 (*****************************************************************************)

@@ -13,6 +13,7 @@ open Commonop
  *   - Hashtbl
  *   - Arg
  *   - Format 
+ *   - Buffer
  * 
  * The Format library allows to hide passing an indent_level variable.
  * You use as usual the print_string function except that there is
@@ -98,6 +99,7 @@ let matched3 = fun s -> (matched 1 s, matched 2 s, matched 3 s)
 let matched4 = fun s -> (matched 1 s, matched 2 s, matched 3 s, matched 4 s)
 let matched5 = fun s -> (matched 1 s, matched 2 s, matched 3 s, matched 4 s, matched 5 s)
 let matched6 = fun s -> (matched 1 s, matched 2 s, matched 3 s, matched 4 s, matched 5 s, matched 6 s)
+let matched7 = fun s -> (matched 1 s, matched 2 s, matched 3 s, matched 4 s, matched 5 s, matched 6 s, matched 7 s)
 
 
 (*****************************************************************************)
@@ -105,19 +107,19 @@ let matched6 = fun s -> (matched 1 s, matched 2 s, matched 3 s, matched 4 s, mat
 (*****************************************************************************)
 
 let _tab_level_print = ref 0
+let _tab_indent = 5
 
 let indent_do f = 
-  _tab_level_print := !_tab_level_print + 5;
-  finalize f
-    (fun () -> 
-      _tab_level_print := !_tab_level_print - 5;
-    )
+  _tab_level_print := !_tab_level_print + _tab_indent;
+  finalize f 
+   (fun () -> _tab_level_print := !_tab_level_print - _tab_indent;)
 
 
 let pr s = 
   do_n !_tab_level_print (fun () -> print_string " ");
   print_string s;
-  print_string "\n"; flush stdout
+  print_string "\n"; 
+  flush stdout
 
 let pr_no_nl s = 
   do_n !_tab_level_print (fun () -> print_string " ");
@@ -128,7 +130,8 @@ let pr_no_nl s =
 let pr2 s = 
   do_n !_tab_level_print (fun () -> prerr_string " ");
   prerr_string s;
-  prerr_string "\n"; flush stderr
+  prerr_string "\n"; 
+  flush stderr
 
 let pr2_no_nl s = 
   do_n !_tab_level_print (fun () -> prerr_string " ");
@@ -210,9 +213,10 @@ let spf = sprintf
 
 let _chan = ref stderr
 let start_log_file () = 
-  _chan := open_out ( "/tmp/debugml" ^  
-    (string_of_int (Unix.getuid ())) ^  ":" ^ (string_of_int (Unix.getpid()))
-   )
+  let filename = (spf "/tmp/debugml%d:%d" (Unix.getuid()) (Unix.getpid())) in
+  pr2 (spf "now using %s for logging" filename);
+  _chan := open_out filename
+   
 
 let dolog s = output_string !_chan (s ^ "\n"); flush !_chan
 
@@ -220,6 +224,12 @@ let verbose_level = ref 1
 let log s =  if !verbose_level >= 1 then dolog s
 let log2 s = if !verbose_level >= 2 then dolog s
 let log3 s = if !verbose_level >= 3 then dolog s
+let log4 s = if !verbose_level >= 4 then dolog s
+
+let if_log f = if !verbose_level >= 1 then f()
+let if_log2 f = if !verbose_level >= 2 then f()
+let if_log3 f = if !verbose_level >= 3 then f()
+let if_log4 f = if !verbose_level >= 4 then f()
 
 let pause () = (pr2 "pause: type return"; ignore(read_line ()))
 
@@ -245,6 +255,16 @@ let debug f = if !_debug then f () else ()
  now in prelude:
  let debugger = ref false  
 *)
+
+let (with_open_stringbuf: (((string -> unit) * Buffer.t) -> unit) -> string) =
+ fun f ->
+  let buf = Buffer.create 1000 in
+  let pr s = Buffer.add_string buf (s ^ "\n") in
+  f (pr, buf);
+  Buffer.contents buf
+
+
+
 
 (*****************************************************************************)
 (* Profiling *)
@@ -296,7 +316,7 @@ let time_func f =
 type prof = PALL | PNONE | PSOME of string list
 let profile = ref PNONE
 
-let do_profile category =
+let check_profile category =
   match !profile with
     PALL -> true
   | PNONE -> false
@@ -307,10 +327,10 @@ let profile_start category = failwith "todo"
 let profile_end category = failwith "todo"
 
 (* subtil: don't forget to give all argumens to f, otherwise partial app
- * and will profile nothing 
+ * and will profile nothing.
  *)  
 let profile_code category f = 
-  if not (do_profile category)
+  if not (check_profile category)
   then f() 
   else begin
   let t = Unix.gettimeofday () in
@@ -338,18 +358,20 @@ let profile_code category f =
 
 (* todo: also put  % ? also add % to see if coherent numbers *)
 let profile_diagnostic () = 
-  if !profile = PNONE then () else begin
+  if !profile = PNONE then "" else
   let xs = 
     Hashtbl.fold (fun k v acc -> (k,v)::acc) !_profile_table [] 
       +> List.sort (fun (k1, (t1,n1)) (k2, (t2,n2)) -> compare t2 t1)
-  in
-  pr2 "---------------------";
-  pr2 "profiling result";
-  pr2 "---------------------";
-  xs +> List.iter (fun (k, (t,n)) -> 
-    pr2 (sprintf "%-40s : %10.3f sec %10d count" k !t !n)
+    in
+    with_open_stringbuf (fun (pr,_) -> 
+      pr "---------------------";
+      pr "profiling result";
+      pr "---------------------";
+      xs +> List.iter (fun (k, (t,n)) -> 
+        pr (sprintf "%-40s : %10.3f sec %10d count" k !t !n)
+      )
     )
-  end
+
 
 
 let report_if_take_time timethreshold s f = 
@@ -686,7 +708,7 @@ let pp s = Format.print_string s
 
 
 
-(* convert something printed using format to print into a string *)
+(* julia: convert something printed using format to print into a string *)
 let format_to_string f =
   let o = open_out "/tmp/out" in
   Format.set_formatter_out_channel o;
@@ -738,7 +760,9 @@ let t = macro_expand "type 'a bintree = Leaf of 'a | Branch of ('a bintree * 'a 
 (* Composition/Control *)
 (*****************************************************************************)
 
-(* I like the list@func notation, object reminescence *)
+(* I like the obj.func object notation. In OCaml cant use '.' so I use +>
+ * update: it seems that F# agrees with me, but they use |>
+ *)
 
 let (+>) o f = f o
 let (+!>) refo f = refo := f !refo 
@@ -769,7 +793,14 @@ let uncurry f (a,b) = f a b
 
 let id = fun x -> x
 
+let do_nothing () = ()
+
 let rec applyn n f o = if n = 0 then o else applyn (n-1) f (f o)
+
+let forever f = 
+  while true do
+    f();
+  done
 
 
 class ['a] shared_variable_hook (x:'a) = 
@@ -862,15 +893,18 @@ let error_cant_have x = internal_error ("cant have this case" ^(Dumper.dump x))
 let myassert cond = if cond then () else failwith "assert error"
 let warning s v = (pr2 ("Warning: " ^ s ^ "; value = " ^ (Dumper.dump v)); v)
 
+let exn_to_s exn = 
+  Printexc.to_string exn
 
 
-(* emacs/lisp inspiration, (vouillon does that too in unison I think) *)
 
 (* want or of merd, but cant cos cant put die ... in b (strict call) *)
 let (|||) a b = try a with _ -> b
 
+(* emacs/lisp inspiration, (vouillon does that too in unison I think) *)
 
-(* now in prelude
+(* now in Prelude:
+
 let unwind_protect f cleanup =
   if !debugger then f() else 
     try f ()
@@ -895,13 +929,13 @@ let finalize f cleanup =
 
 (* To infer all the code that use an equal, and that should be
  * transformed, is not that easy, because (=) is used by many
- * functions, such as List.find, List.mem, and so on, so the strategy
+ * functions, such as List.find, List.mem, and so on. So the strategy
  * is to turn what you were previously using into a function, because
- * (=) return an exception when applied to a function, then you simply
- * use ocamldebug to infer where the code has to be transformed 
+ * (=) return an exception when applied to a function. Then you simply
+ * use ocamldebug to infer where the code has to be transformed.
  *)
 
-(* src: caml list ? *)
+(* src: caml mailing list ? *)
 let (=|=) : int    -> int    -> bool = (=)
 let (=<=) : char   -> char   -> bool = (=)
 let (=$=) : string -> string -> bool = (=)
@@ -1291,6 +1325,7 @@ let matched6 = fun s -> (matched 1 s, matched 2 s, matched 3 s, matched 4 s, mat
 
 
 let split sep s = Str.split (Str.regexp sep) s
+let _ = example (split "/" "" = [])
 let join  sep xs = String.concat sep xs
 let _ = example (join "/" ["toto"; "titi"; "tata"] = "toto/titi/tata")
 (*
@@ -1389,6 +1424,26 @@ let normalize_path file =
   let xs' = aux [] xs in
   Filename.concat (join "/" xs') filename
 
+
+
+(*
+let relative_to_absolute s = 
+  if Filename.is_relative s
+  then 
+    begin
+      let old = Sys.getcwd () in
+      Sys.chdir s;
+      let current = Sys.getcwd () in
+      Sys.chdir old;
+      s
+    end
+  else s
+*)
+
+let relative_to_absolute s = 
+  if Filename.is_relative s
+  then Sys.getcwd () ^ "/" ^ s
+  else s
 
 
 (*****************************************************************************)
@@ -1554,7 +1609,15 @@ let command2_y_or_no cmd =
 
 
 
-let read_file file = cat file +> unlines
+let read_file_orig file = cat file +> unlines
+let read_file file =
+  let ic = open_in file  in
+  let size = in_channel_length ic in
+  let buf = String.create size in
+  really_input ic buf 0 size;
+  close_in ic;
+  buf
+
 
 let write_file file s = 
   let chan = open_out file in
@@ -1574,6 +1637,9 @@ let lfile_exists filename =
     | _ -> false
     )
   with Unix.Unix_error (Unix.ENOENT, _, _) -> false
+
+let is_directory file = 
+  (Unix.stat file).Unix.st_kind = Unix.S_DIR
     
       
 (* src: from chailloux et al book *)
@@ -1671,6 +1737,12 @@ let glob pattern =
   cmd_to_list ("ls -1 " ^ pattern)
 
 
+let files_of_dir_or_files ext xs = 
+  xs +> List.map (fun x -> 
+    if is_directory x
+    then cmd_to_list ("find " ^ x  ^" -name \"*." ^ext^"\"")
+    else [x]
+  ) +> List.concat
 
   
 (* taken from mlfuse, the predecessor of ocamlfuse *)
@@ -2475,7 +2547,7 @@ let (include_set_strict: 'a set -> 'a set -> bool) = fun s1 s2 ->
 let ($*$) = inter_set
 let ($+$) = union_set
 let ($-$) = minus_set
-let ($?$) = member_set
+let ($?$) a b = profile_code "$?$" (fun () -> member_set a b)
 let ($<$) = include_set_strict
 let ($<=$) = include_set
 let ($=$) = equal_set
@@ -2685,7 +2757,7 @@ let hash_hashset_add k e h =
   match optionise (fun () -> Hashtbl.find h k) with
   | Some hset -> Hashtbl.replace hset e true
   | None -> 
-      let hset = Hashtbl.create 100 in
+      let hset = Hashtbl.create 11 in
       begin
         Hashtbl.add h k hset;
         Hashtbl.replace hset e true;
@@ -3410,6 +3482,23 @@ let add_in_scope_h x (k,v) =
   end
 
 (*****************************************************************************)
+(* Terminal *)
+(*****************************************************************************)
+
+let execute_and_show_progress len f = 
+  let _count = ref 0 in
+  (* kind of continuation passed to f *)
+  let continue_pourcentage () = 
+    incr _count;
+    ANSITerminal.set_cursor 1 (-1);
+    ANSITerminal.printf [] "%d / %d" !_count len; flush stdout;
+  in
+  ANSITerminal.printf [] "0 / %d" len; flush stdout;
+  f continue_pourcentage;
+  pr2 ""
+
+
+(*****************************************************************************)
 (* Postlude *)
 (*****************************************************************************)
 (* stuff put here cos of of forward definition limitation of ocaml *)
@@ -3528,8 +3617,8 @@ class ['a] olist (ys: 'a list) =
     val xs = ys
     method view = xs
 (*    method fold f a = List.fold_left f a xs *)
-    method fold : 'b. ('b -> 'a -> 'b) -> 'b -> 'b =                                              
-      fun f accu -> List.fold_left f accu xs                                                        
+    method fold : 'b. ('b -> 'a -> 'b) -> 'b -> 'b = 
+      fun f accu -> List.fold_left f accu xs
   end
 
 

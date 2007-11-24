@@ -1,7 +1,9 @@
+##############################################################################
+# Variables
+##############################################################################
+TARGET=parsing_c
 
-TARGET=c_parser
-
-SOURCES = \
+SRC= \
  flag_parsing_c.ml ast_c.ml control_flow_c.ml semantic_c.ml \
  visitor_c.ml lib_parsing_c.ml \
  ast_to_flow.ml \
@@ -9,31 +11,37 @@ SOURCES = \
  token_helpers.ml parsing_hacks.ml parse_c.ml \
  compare_c.ml type_annoter_c.ml  pretty_print_c.ml
 
-
-SYSLIBS = str.cma unix.cma 
+SYSLIBS= str.cma unix.cma 
 
 # parsing_c now depends on cocci_parser because in addition to decorate the
 # token in Ast_c with some parse info, we now also make some place to
 # welcome some mcodekind of Ast_cocci.
 LIBS=../commons/commons.cma ../globals/globals.cma \
      ../parsing_cocci/cocci_parser.cma
-ADDONSPATH= -I ../commons -I ../globals -I  ../parsing_cocci 
 
+INCLUDES= -I ../commons -I ../globals -I  ../parsing_cocci 
+
+##############################################################################
+# Generic variables
+##############################################################################
 #for warning:  -w A 
 #for profiling:  -p -inline 0   with OCAMLOPT
-OCAMLC=ocamlc$(OPTBIN) -g -dtypes   $(ADDONSPATH) 
-OCAMLOPT=ocamlopt$(OPTBIN)   $(ADDONSPATH) $(OPTFLAGS)
+OCAMLC=ocamlc$(OPTBIN) -g -dtypes   $(INCLUDES) 
+OCAMLOPT=ocamlopt$(OPTBIN)   $(INCLUDES) $(OPTFLAGS)
 #OCAMLLEX=ocamllex$(OPTBIN) -ml
 OCAMLLEX=ocamllex$(OPTBIN)
 OCAMLYACC=ocamlyacc -v
-OCAMLDEP=ocamldep$(OPTBIN)  $(ADDONSPATH)
-OCAMLMKTOP=ocamlmktop -g -custom $(ADDONSPATH)
+OCAMLDEP=ocamldep$(OPTBIN)  $(INCLUDES)
+OCAMLMKTOP=ocamlmktop -g -custom $(INCLUDES)
 
 
-OBJS = $(SOURCES:.ml=.cmo)
-OPTOBJS = $(SOURCES:.ml=.cmx)
+OBJS = $(SRC:.ml=.cmo)
+OPTOBJS = $(SRC:.ml=.cmx)
 
 
+##############################################################################
+# Top rules
+##############################################################################
 all: $(TARGET).cma
 
 all.opt: $(TARGET).cmxa
@@ -71,12 +79,9 @@ clean::
 	rm -f parser_c.ml parser_c.mli parser_c.output
 beforedepend:: parser_c.ml parser_c.mli
 
-
-
-
-
-
-
+##############################################################################
+# Generic rules
+##############################################################################
 
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
 
@@ -92,7 +97,6 @@ beforedepend:: parser_c.ml parser_c.mli
 
 clean::
 	rm -f *.cm[ioxa] *.o *.a *.cmxa *.annot
-
 clean::
 	rm -f *~ .*~ gmon.out #*#
 
@@ -102,5 +106,3 @@ depend:: beforedepend
 	$(OCAMLDEP) *.mli *.ml    > .depend
 
 -include .depend
-
-

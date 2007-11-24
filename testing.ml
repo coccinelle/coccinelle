@@ -388,7 +388,9 @@ let test_parse_gen xs dirmode ext =
     pr2 ("PARSING: " ^ file);
 
     let (xs, stat) = Parse_c.parse_print_error_heuristic file in
-    xs +> List.iter (fun (ast, (s, toks)) -> Parse_c.print_commentized toks);
+    xs +> List.iter (fun (ast, (s, toks)) -> 
+      Parse_c.print_commentized toks
+    );
 
     Common.push2 stat stat_list;
     let s = 

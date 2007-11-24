@@ -1,26 +1,31 @@
-
+##############################################################################
+# Variables
+##############################################################################
 TARGET=globals
 
-SOURCES = flag.ml config.ml
+SRC= flag.ml config.ml
 
 LIBS=../commons/commons.cma
-ADDONSPATH= -I ../commons
+INCLUDES= -I ../commons
 
-#for warning:  -w A 
-#for profiling:  -p -inline 0   with OCAMLOPT
-OCAMLC=ocamlc$(OPTBIN) -g -dtypes   $(ADDONSPATH) 
-OCAMLOPT=ocamlopt$(OPTBIN)   $(ADDONSPATH) $(OPTFLAGS)
+##############################################################################
+# Generic variables
+##############################################################################
+OCAMLC=ocamlc$(OPTBIN) -g -dtypes   $(INCLUDES) 
+OCAMLOPT=ocamlopt$(OPTBIN)   $(INCLUDES) $(OPTFLAGS)
 #OCAMLLEX=ocamllex$(OPTBIN) -ml
 OCAMLLEX=ocamllex$(OPTBIN)
 OCAMLYACC=ocamlyacc -v
-OCAMLDEP=ocamldep$(OPTBIN)  $(ADDONSPATH)
-OCAMLMKTOP=ocamlmktop -g -custom $(ADDONSPATH)
+OCAMLDEP=ocamldep$(OPTBIN)  $(INCLUDES)
+OCAMLMKTOP=ocamlmktop -g -custom $(INCLUDES)
+
+OBJS= $(SRC:.ml=.cmo)
+OPTOBJS= $(SRC:.ml=.cmx)
 
 
-OBJS = $(SOURCES:.ml=.cmo)
-OPTOBJS = $(SOURCES:.ml=.cmx)
-
-
+##############################################################################
+# Top rules
+##############################################################################
 all: $(TARGET).cma
 
 all.opt: $(TARGET).cmxa
@@ -34,7 +39,9 @@ $(TARGET).cmxa: $(OPTOBJS) $(LIBS:.cma=.cmxa)
 
 
 
-
+##############################################################################
+# Developer rules
+##############################################################################
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
 
 .ml.cmo:

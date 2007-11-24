@@ -1,0 +1,86 @@
+#!/usr/bin/perl
+# Yes I know about autoconf ... and autoconf sux.
+
+# assume standard: diff
+# assume standard: perl
+
+#TODO should take --prefix and adjust config.ml to indicate
+# where to found standard.h and standard.iso
+
+######################################################################
+#BEGIN { die "need Perl 5 or greater" if $] < 5 ; }
+
+#use Common;
+sub pr2 { print STDERR "@_\n" }
+sub cat { 
+    my ($what) = @_;
+    my @list;
+    open(TMP, $what);
+    while(<TMP>) { push @list, "$_"; }
+    \@list;
+}
+sub notb   { !$_[0] }
+sub mapf   { my ($f, $xs) = @_; [ map { &$f($_) } @{$xs} ] }
+sub plural { my ($e) = @_; if ($e > 1) { "s" } else { "" } }
+
+sub check_config { my ($command, $expect, $msggood, $msgbad) = @_;
+    my $error = 0;
+		   
+    my $full = cat($command);
+    my $res = join(" ", @{$full});
+#	       pr2 $res;
+    if(notb($res =~ $expect)) { $error++; pr2 "!!!! $msgbad !!!!"; }
+    else { pr2 $msggood }
+    return $error;
+}
+
+######################################################################
+pr2 "Checking your configuration.\n";
+
+my $error = 0;
+######################################################################
+
+$error += 
+    check_config("echo \"1;;\\n\" | ocaml |",
+                 "Objective(.*) 3.0[9]",
+                 "OCaml (the wonderful language) is present.",
+                 "The program ocaml is missing or is not a good version. We need at least 3.09",
+                 );
+
+$error += 
+    check_config("menhir --version |",
+                 "menhir, version 2006.*",
+                 "Menhir (the parser generator) is present.",
+                 "The program menhir is missing or is not a good version.",
+                 );
+
+
+if($error) { 
+    pr2 "
+----------------------------------------------------------------------
+!!!! There seems to have problem, we have found $error missing package" . 
+plural($error) . ".
+" . (($error > 1) ? "Some of those packages" : "This package") . 
+    " may be installed by picking " . ($error > 1 ? "them" : "it") . 
+    " in cocci-dependencies.tgz available
+on the coccinelle website. !!!!
+----------------------------------------------------------------------
+";
+} else { 
+
+    pr2 "
+----------------------------------------------------------------------
+
+All seems fine for coccinelle.
+
+To compile coccinelle type:
+ make depend; make
+
+Then, to test coccinelle simply type:
+ ./spatch -iso_file standard.iso -cocci_file demos/simple.cocci demos/simple.c
+
+----------------------------------------------------------------------
+";
+
+}
+

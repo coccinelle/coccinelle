@@ -1,3 +1,7 @@
+(* do a open Fullcommon to access most of the functions in commons/ without
+ * needing to qualify them
+ *)
+
 include Common
 include Commonop
 

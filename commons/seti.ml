@@ -113,6 +113,7 @@ open Commonop
 (*     let _ = Example (remove 1 [Interv (6, 7); Interv(1,2)] = [Interv (6,7); Exact 2]) *)
 (*     let _ = Example (remove 3 [Interv (1, 7)] = [Interv (4,7); Interv (1,2)]) *)
     let _ = assert_equal     (remove 3 [Interv (1, 7)])        [Interv (4,7); Interv (1,2)]
+    let _ = assert_equal     (remove 4 [Interv (3, 4)])        [Exact (3);]
 (*     let _ = example (try (ignore(remove 6 [Interv (6, 6)] = []); false) with _ -> true)   *)
 
     

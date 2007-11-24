@@ -1,36 +1,64 @@
-open Common
+open Common open Commonop
 
 open Oassoc
 
-(* !!take care!!: this class does side effect, not a pure oassoc *)
-class ['a,'b] oassocdbm xs db (*fkey unkey*) fv unv = 
-  object(o)
-    inherit ['a,'b] oassoc
+(* !!take care!!: this class does side effect, not a pure oassoc.
+ * 
+ * The fv/unv are here to give the opportunity to translate the value
+ * from the dbm, before marshalling. This is useful for instance if you
+ * want to store objects such as oset. Indeed we cant marshall
+ * conveniently functions/closures, and so objects (you can but you can
+ * load them back only from the same binary, which limits the
+ * practicallibity of the approach). You have to translate them to
+ * traditionnal data structures before marshalling them, and you have
+ * to rebuild the object from the traditionnal data structure when you
+ * get them from the dbm. Hence fv/unv. You can do the same for the key
+ * with fkey/unkey, but as key are usually simple data structures,
+ * there is less need for them, so I have commented them. *)
+class ['a,'b] oassocdbm   xs db (*fkey unkey*) fv unv = 
+object(o)
+  inherit ['a,'b] oassoc
+    
+  val db = db
+    
+  method empty = raise Todo
+  method add (k,v) = 
+    (* pr2 (fkey k); *)
+    (* pr2 (debugv v); *)
 
-    val db = db
+    (* try Db.del data None 
+       (Marshal.to_string k []) [] 
+       with Not_found -> ());
+    *)
+    let k' = Marshal.to_string k [] in
+    let v' = (Marshal.to_string (fv v) [(*Marshal.Closures*)]) in
+    (try Dbm.add db k' v' 
+      with _ -> Dbm.replace db k' v'
+    );
+    o
 
-    method empty = raise Todo
-    method add (k,v) = 
-(*      let _ = pr2 (fkey k) in *)
-(*      let _ = pr2 (debugv v) in *)
-      (*((try Db.del data None (Marshal.to_string k []) [] with Not_found -> ());*)
-      ((try Dbm.add db (Marshal.to_string k []) (Marshal.to_string (fv v) [Marshal.Closures])
-          with _ -> Dbm.replace db (Marshal.to_string k []) (Marshal.to_string (fv v) [Marshal.Closures]))
-         ;
-       o)
-    method iter f = 
-      Dbm.iter (fun key data -> 
-	let key  = Marshal.from_string key 0 in (* unkey de not marshall *)
-	let valu = unv (Marshal.from_string data 0) in
-	f (key, valu)
-	       ) db
+  method iter f = 
+    db +> Dbm.iter (fun key data -> 
+      let k' = (* unkey *) Marshal.from_string key 0 in 
+      let v' = unv (Marshal.from_string data 0) in
+      f (k', v')
+    ) 
+     
+  method view = raise Todo
+    
+  method del (k,v) = raise Todo
+  method mem e = raise Todo
+  method null = raise Todo
+    
+  method assoc k = 
+    let k' = Marshal.to_string k [] in
+    unv (Marshal.from_string (Dbm.find db k') 0)
 
-    method view = raise Todo
-
-    method del (k,v) = raise Todo
-    method mem e = raise Todo
-    method null = raise Todo
-
-    method assoc k = unv (Marshal.from_string (Dbm.find db (Marshal.to_string k [])) 0)
-    method delkey k = try (Dbm.remove db (Marshal.to_string k []); o) with Dbm.Dbm_error "dbm_delete" -> raise Not_found
-end	
+  method delkey k = 
+    let k' = Marshal.to_string k [] in
+    try 
+      Dbm.remove db k';
+      o
+    with Dbm.Dbm_error "dbm_delete" -> 
+      raise Not_found
+end

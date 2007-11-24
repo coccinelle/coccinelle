@@ -10,6 +10,7 @@ class ['a,'b] oassocb xs =
 
     method empty = {< data = Mapb.empty >}
     method add (k,v) = {< data = Mapb.add k v data >}
+    method replkey (k,v) = {< data = Mapb.add k v (Mapb.remove k data) >}
     method iter f = Mapb.iter (curry f) data
     method view = raise Todo
 

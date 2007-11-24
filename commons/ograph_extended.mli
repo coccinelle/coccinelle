@@ -10,8 +10,8 @@ type nodei = int
  * 
  * When need index ? Must have an index when can't just use nodevalue
  * as a key, cos sometimes may have 2 times the same key, but it must
- * be 2 different nodes. For instance in program f(); f(); we want 2
- * nodes, one per f(); hence the index. If each node is different, then
+ * be 2 different nodes. For instance in a C program 'f(); f();' we want 2
+ * nodes, one per 'f();' hence the index. If each node is different, then
  * no problem, can omit index. 
  *)
 
@@ -25,13 +25,12 @@ object ('o)
   method add_arc : (nodei * nodei) * 'edge -> 'o
   method del_arc : (nodei * nodei) * 'edge -> 'o
 
-  method nodes : (nodei, 'node) Oassocb.oassocb
+  method nodes : (nodei, 'node) Oassoc.oassoc
 
-  method successors : nodei -> (nodei * 'edge) Osetb.osetb
-  method predecessors : nodei -> (nodei * 'edge) Osetb.osetb
-  method allsuccessors : (nodei, (nodei * 'edge) Osetb.osetb) Oassocb.oassocb
+  method successors : nodei -> (nodei * 'edge) Oset.oset
+  method predecessors : nodei -> (nodei * 'edge) Oset.oset
+  method allsuccessors : (nodei, (nodei * 'edge) Oset.oset) Oassoc.oassoc
 end
-
 
 
 class ['node, 'edge] ograph_mutable :
@@ -44,12 +43,13 @@ object ('o)
   method add_arc : (nodei * nodei) * 'edge -> unit
   method del_arc : (nodei * nodei) * 'edge -> unit
 
-  method nodes : (nodei, 'node) Oassocb.oassocb
+  method nodes : (nodei, 'node) Oassoc.oassoc
 
-  method successors : nodei -> (nodei * 'edge) Osetb.osetb
-  method predecessors : nodei -> (nodei * 'edge) Osetb.osetb
-  method allsuccessors : (nodei, (nodei * 'edge) Osetb.osetb) Oassocb.oassocb
+  method successors : nodei -> (nodei * 'edge) Oset.oset
+  method predecessors : nodei -> (nodei * 'edge) Oset.oset
+  method allsuccessors : (nodei, (nodei * 'edge) Oset.oset) Oassoc.oassoc
 end
+
 
 val dfs_iter : 
   nodei -> (nodei -> unit) -> ('node, 'edge) ograph_mutable -> unit
@@ -57,6 +57,7 @@ val dfs_iter :
 val dfs_iter_with_path : 
   nodei -> (nodei -> nodei list -> unit) -> ('node, 'edge) ograph_mutable -> 
   unit
+
 
 val print_ograph_extended : 
   ('node * string, 'edge) ograph_extended -> filename (* output file *) -> 
