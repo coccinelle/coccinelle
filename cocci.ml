@@ -544,6 +544,7 @@ type toplevel_cocci_info = {
   dropped_isos: string list;
   free_vars:  Ast_cocci.meta_name list;
   used_after: Ast_cocci.meta_name list;
+  positions: Ast_cocci.meta_name list;
 
   ruleid: int;
 
@@ -577,13 +578,16 @@ let for_unparser xs =
   )
 
 (* --------------------------------------------------------------------- *)
-let prepare_cocci ctls free_var_lists used_after_lists astcocci = 
+let prepare_cocci ctls free_var_lists used_after_lists positions_list
+    astcocci = 
 
   let gathered = Common.index_list_1
-    (zip (zip (zip ctls astcocci) free_var_lists) used_after_lists)
+    (zip (zip (zip (zip ctls astcocci) free_var_lists) used_after_lists)
+       positions_list)
   in
   gathered +> List.map 
-    (fun ((((ctl_toplevel_list,ast),free_var_list),used_after_list),rulenb) -> 
+    (fun (((((ctl_toplevel_list,ast),free_var_list),used_after_list),
+	   positions_list),rulenb) -> 
       
       if not (List.length ctl_toplevel_list = 1)
       then failwith "not handling multiple minirules";
@@ -597,6 +601,7 @@ let prepare_cocci ctls free_var_lists used_after_lists astcocci =
         dropped_isos = dropped_isos;
         free_vars = List.hd free_var_list;
         used_after = List.hd used_after_list;
+        positions = List.hd positions_list;
         ruleid = rulenb;
         was_matched = ref false;
       }
@@ -925,7 +930,7 @@ and process_a_ctl_a_env_a_toplevel2 r e c =
       (***************************************)
       let model_ctl  = CCI.model_for_ctl r.dropped_isos (Common.some c.flow) e
       in
-      CCI.mysat model_ctl r.ctl (r.used_after, e)
+      CCI.mysat model_ctl r.ctl (r.used_after, r.positions, e)
     ) 
   in
   if not returned_any_states 
@@ -985,7 +990,7 @@ let full_engine2 (coccifile, isofile) cfiles =
   in
 
   (* useful opti when use -dir *)
-  let (astcocci,free_var_lists,used_after_lists,toks) = 
+  let (astcocci,free_var_lists,used_after_lists,positions_lists,toks) = 
     Common.memoized _hparse (coccifile, isofile) (fun () -> 
       sp_of_file coccifile isofile)
   in
@@ -1013,7 +1018,8 @@ let full_engine2 (coccifile, isofile) cfiles =
     check_macro_in_sp_and_adjust toks;
 
     let cocci_infos =
-      prepare_cocci ctls free_var_lists used_after_lists astcocci in
+      prepare_cocci ctls free_var_lists used_after_lists positions_lists
+	astcocci in
     let c_infos  = prepare_c cfiles in
 
     show_or_not_ctl_tex astcocci ctls;
@@ -1320,7 +1326,7 @@ let full_engine_use_index (coccifile, isofile) tmpdir =
 
   let isofile = Some isofile in
 
-  let (astcocci,free_var_lists,used_after_lists,_toks) = 
+  let (astcocci,free_var_lists,used_after_lists,positions_list,_toks) = 
     sp_of_file coccifile isofile in
   let ctls = 
     ctls_of_ast  astcocci used_after_lists in
@@ -1328,7 +1334,8 @@ let full_engine_use_index (coccifile, isofile) tmpdir =
   (* :(  check_macro_in_sp_and_adjust toks; *)
 
   let cocci_infos =
-    prepare_cocci ctls free_var_lists used_after_lists astcocci in
+    prepare_cocci ctls free_var_lists used_after_lists positions_list
+      astcocci in
 
   let cfiles = find_in_index_cfiles astcocci tmpdir in
   pr2 (spf "number of relevant files: %d" (List.length cfiles));

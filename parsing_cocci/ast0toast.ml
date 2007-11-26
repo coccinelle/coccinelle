@@ -224,17 +224,18 @@ let mcode(term,_,info,mcodekind) =
 
 (* --------------------------------------------------------------------- *)
 (* Dots *)
-let wrap ast line isos =
-  (ast, line, [], [], [], [], [], [], Ast.NoDots, None, isos)
+let wrap ast line isos pos_var =
+  {(Ast.make_term ast) with Ast.node_line = line; Ast.iso_info = isos;
+  Ast.pos_var = pos_var}
 
 let rewrap ast0 isos ast =
-  wrap ast ((Ast0.get_info ast0).Ast0.line_start) isos
+  wrap ast ((Ast0.get_info ast0).Ast0.line_start) isos (Ast0.get_pos ast0)
 
 let no_isos = []
 
 (* no isos on tokens *)
-let tokenwrap (_,info,_) s ast = wrap ast info.Ast.line no_isos
-let iso_tokenwrap (_,info,_) s ast iso = wrap ast info.Ast.line iso
+let tokenwrap (_,info,_) s ast = wrap ast info.Ast.line no_isos None
+let iso_tokenwrap (_,info,_) s ast iso = wrap ast info.Ast.line iso None
 
 let dots fn d =
   rewrap d no_isos

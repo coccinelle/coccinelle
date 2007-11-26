@@ -8,16 +8,19 @@ type meta_name = string * string
 (* need to be careful about rewrapping, to avoid duplicating pos info
 currently, the pos info is always None until asttoctl2. *)
 type 'a wrap =
-    ('a * line * meta_name list (*free vars*) *
-       meta_name list (*minus free vars*) *
-       meta_name list (*all minus free vars, including inherited ones*) *
-       meta_name list (*fresh vars*) *
-       meta_name list (*inherited vars*) * meta_name list (*witness vars*) *
-       dots_bef_aft *
-       meta_name option (* pos info, try not to duplicate *) *
-       (string*anything) list (* list of the isos relevant to the term;
-				 ultimately only used for rule_elems *)
-       )
+    {node : 'a;
+      node_line : line;
+      free_vars : meta_name list; (*free vars*)
+      minus_free_vars : meta_name list; (*minus free vars*)
+      fresh_vars : meta_name list; (*fresh vars*)
+      inherited : meta_name list; (*inherited vars*)
+      saved_witness : meta_name list; (*witness vars*)
+      bef_aft : dots_bef_aft;
+      (* the following is for or expressions *)
+      pos_info : meta_name option; (* pos info, try not to duplicate *)
+      (* isos relevant to the term; ultimately only used for rule_elems *)
+      iso_info : (string*anything) list; 
+      pos_var : meta_name option }
 
 and 'a befaft =
     BEFORE      of 'a list list
@@ -508,36 +511,28 @@ let mkToken x = Token (x,None)
 
 (* --------------------------------------------------------------------- *)
 
-let rewrap (_,l,fvs,mfvs,amfvs,fresh,inherited,saved,d,pos,isos) x =
-  (x,l,fvs,mfvs,amfvs,fresh,inherited,saved,d,pos,isos)
+let rewrap model x         = {model with node = x}
 let rewrap_mcode (_,a,b) x = (x,a,b)
-let unwrap (x,_,_,_,_,_,_,_,_,_,_) = x
-let unwrap_mcode (x,_,_) = x
-let get_mcodekind (_,_,x) = x
-let get_line (_,l,_,_,_,_,_,_,_,_,_) = l
+let unwrap x               = x.node
+let unwrap_mcode (x,_,_)   = x
+let get_mcodekind (_,_,x)  = x
+let get_line x             = x.node_line
 let get_mcode_line (_,l,_) = l.line
-let get_fvs (_,_,fvs,_,_,_,_,_,_,_,_) = fvs
-let set_fvs fvs (x,l,_,mfvs,amfvs,fresh,inherited,saved,d,pos,isos) =
-  (x,l,fvs,mfvs,amfvs,fresh,inherited,saved,d,pos,isos)
-let get_mfvs (_,_,_,mfvs,_,_,_,_,_,_,_) = mfvs
-let set_mfvs mfvs (x,l,fvs,_,amfvs,fresh,inherited,saved,d,pos,isos) =
-  (x,l,fvs,mfvs,amfvs,fresh,inherited,saved,d,pos,isos)
-let get_all_mfvs (_,_,_,_,mfvs,_,_,_,_,_,_) = mfvs
-let get_fresh (_,_,_,_,_,fresh,_,_,_,_,_) = fresh
-let get_inherited (_,_,_,_,_,_,inherited,_,_,_,_) = inherited
-let get_saved (_,_,_,_,_,_,_,saved,_,_,_) = saved
-let get_dots_bef_aft (_,_,_,_,_,_,_,_,d,_,_) = d
-let set_dots_bef_aft d (x,l,fvs,mfvs,amfvs,fresh,inherited,saved,_,pos,isos) =
-  (x,l,fvs,mfvs,amfvs,fresh,inherited,saved,d,pos,isos)
-let get_pos (_,_,_,_,_,_,_,_,_,pos,_) = pos
-let rewrap_dots_bef_aft (x,l,fvs,mfvs,amfvs,fresh,inherited,saved,_,pos,isos)
-    d =
-  (x,l,fvs,mfvs,amfvs,fresh,inherited,saved,d,pos,isos)
-let rewrap_pos (x,l,fvs,mfvs,amfvs,fresh,inherited,saved,d,_,isos) pos =
-  (x,l,fvs,mfvs,amfvs,fresh,inherited,saved,d,pos,isos)
-let get_isos (_,_,_,_,_,_,_,_,_,_,isos) = isos
-let set_isos (x,l,fvs,mfvs,amfvs,fresh,inherited,saved,d,pos,_) isos =
-  (x,l,fvs,mfvs,amfvs,fresh,inherited,saved,d,pos,isos)
+let get_fvs x              = x.free_vars
+let set_fvs fvs x          = {x with free_vars = fvs}
+let get_mfvs x             = x.minus_free_vars
+let set_mfvs mfvs x        = {x with minus_free_vars = mfvs}
+let get_fresh x            = x.fresh_vars
+let get_inherited x        = x.inherited
+let get_saved x            = x.saved_witness
+let get_dots_bef_aft x     = x.bef_aft
+let set_dots_bef_aft d x   = {x with bef_aft = d}
+let get_pos x              = x.pos_info
+let set_pos x pos          = {x with pos_info = pos}
+let get_isos x             = x.iso_info
+let set_isos x isos        = {x with iso_info = isos}
+let get_pos_var x          = x.pos_var
+let set_pos_var vr x       = {x with pos_var = vr}
 
 let get_wcfvs (whencode : ('a wrap, 'b wrap) whencode list) =
   Common.union_all
@@ -568,21 +563,31 @@ let get_meta_name = function
   | MetaLocalFuncDecl(ar,nm) -> nm
   | MetaPosDecl(ar,nm) -> nm
 
-let pos_name (rule,name) = (rule,"_pos_"^name)
-
 (* --------------------------------------------------------------------- *)
 
 let no_info = { line = 0; column = 0; strbef = []; straft = [] }
 
+let make_term x =
+  {node = x;
+    node_line = 0;
+    free_vars = [];
+    minus_free_vars = [];
+    fresh_vars = [];
+    inherited = [];
+    saved_witness = [];
+    bef_aft = NoDots;
+    pos_info = None;
+    iso_info = [];
+    pos_var = None }
+
 let make_meta_rule_elem s d (fvs,fresh,inh) =
-  (MetaRuleElem((("",s),no_info,d),Type_cocci.Unitary,false),
-   0, fvs, [], [], fresh, inh, [], NoDots, None, [])
+  {(make_term (MetaRuleElem((("",s),no_info,d),Type_cocci.Unitary,false))) with
+    free_vars = fvs; fresh_vars = fresh; inherited = inh}
 
 let make_meta_decl s d (fvs,fresh,inh) =
-  (MetaDecl((("",s),no_info,d),Type_cocci.Unitary,false), 0,
-   fvs, [], [], fresh, inh, [], NoDots, None, [])
+  {(make_term (MetaDecl((("",s),no_info,d),Type_cocci.Unitary,false))) with
+    free_vars = fvs; fresh_vars = fresh; inherited = inh}
 
-let make_term x = (x,0,[],[],[],[],[],[],NoDots, None,[])
 let make_mcode x = (x,no_info,CONTEXT(NoPos,NOTHING))
 
 (* --------------------------------------------------------------------- *)

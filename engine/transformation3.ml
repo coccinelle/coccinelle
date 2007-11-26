@@ -378,23 +378,25 @@ module XTRANS = struct
   let meta_name_to_str (s1, s2) = 
     s1 ^ "." ^ s2
 
-  let envf keep _inherited = fun (s, value) f tin -> 
-    let v = 
-      if keep = Type_cocci.Saved
-      then (
-        try Some (List.assoc s tin.binding)
-        with Not_found -> 
-          pr2(sprintf "Don't find value for metavariable %s in the environment"
-                 (meta_name_to_str s));
-          None
-      )
-      else 
+  let envf relevant keep _inherited = fun (s, value) f tin -> 
+    if relevant
+    then
+      let v = 
+	if keep = Type_cocci.Saved
+	then (
+          try Some (List.assoc s tin.binding)
+          with Not_found -> 
+            pr2(sprintf
+		  "Don't find value for metavariable %s in the environment"
+                  (meta_name_to_str s));
+            None)
+	else
         (* not raise Impossible! *)
-        Some (value)
-    in
-    match v with
-    | None -> fail tin
-    | Some (value') -> 
+          Some (value)
+      in
+      match v with
+      | None -> fail tin
+      | Some (value') -> 
 
         (* Ex: in cocci_vs_c someone wants to add a binding. Here in
          * transformation3 the value for this var may be already in the 
@@ -408,9 +410,11 @@ module XTRANS = struct
          *)
 
         (*f () tin*)
-        if Cocci_vs_c_3.equal_metavarval value value' 
-        then f () tin
-        else fail tin
+          if Cocci_vs_c_3.equal_metavarval value value' 
+          then f () tin
+          else fail tin
+    else (* irrelevant, ie a position variable *)
+      f () tin
 
     
 

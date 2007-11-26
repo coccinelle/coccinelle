@@ -163,9 +163,6 @@ let elim_opt =
   let mfvlist l =
     List.fold_left Common.union_set [] (List.map Ast.get_mfvs l) in
 
-  let amfvlist l =
-    List.fold_left Common.union_set [] (List.map Ast.get_all_mfvs l) in
-
   let freshlist l =
     List.fold_left Common.union_set [] (List.map Ast.get_fresh l) in
 
@@ -176,8 +173,7 @@ let elim_opt =
     List.fold_left Common.union_set [] (List.map Ast.get_saved l) in
 
   let varlists l =
-    (fvlist l, mfvlist l, amfvlist l, freshlist l, inheritedlist l,
-     savedlist l) in
+    (fvlist l, mfvlist l, freshlist l, inheritedlist l, savedlist l) in
 
   let rec dots_list unwrapped wrapped =
     match (unwrapped,wrapped) with
@@ -190,66 +186,105 @@ let elim_opt =
 	 let l = Ast.get_line stm in
 	 let new_rest1 = stm :: (dots_list (u::urest) (d1::rest)) in
 	 let new_rest2 = dots_list urest rest in
-	 let (fv_rest1,mfv_rest1,amfv_rest1,fresh_rest1,inherited_rest1,s1) =
+	 let (fv_rest1,mfv_rest1,fresh_rest1,inherited_rest1,s1) =
 	   varlists new_rest1 in
-	 let (fv_rest2,mfv_rest2,amfv_rest2,fresh_rest2,inherited_rest2,s2) =
+	 let (fv_rest2,mfv_rest2,fresh_rest2,inherited_rest2,s2) =
 	   varlists new_rest2 in
 	 [d0;
-	   (Ast.Disj
-	      [(Ast.DOTS(new_rest1),l,
-		fv_rest1,mfv_rest1,amfv_rest1,fresh_rest1,inherited_rest1,s1,
-		Ast.NoDots,None,[]);
-		(Ast.DOTS(new_rest2),l,
-		 fv_rest2,mfv_rest2,amfv_rest2,fresh_rest2,inherited_rest2,s2,
-		 Ast.NoDots,None,[])],
-	    l,fv_rest1,mfv_rest1,amfv_rest1,fresh_rest1,inherited_rest1,s1,
-	    Ast.NoDots,None,[])]
+	   {(Ast.make_term
+	       (Ast.Disj
+		  [{(Ast.make_term(Ast.DOTS(new_rest1))) with
+		     Ast.node_line = l;
+		     Ast.free_vars = fv_rest1;
+		     Ast.minus_free_vars = mfv_rest1;
+		     Ast.fresh_vars = fresh_rest1;
+		     Ast.inherited = inherited_rest1;
+		     Ast.saved_witness = s1};
+		    {(Ast.make_term(Ast.DOTS(new_rest2))) with
+		      Ast.node_line = l;
+		      Ast.free_vars = fv_rest2;
+		      Ast.minus_free_vars = mfv_rest2;
+		      Ast.fresh_vars = fresh_rest2;
+		      Ast.inherited = inherited_rest2;
+		      Ast.saved_witness = s2}])) with
+	     Ast.node_line = l;
+	     Ast.free_vars = fv_rest1;
+	     Ast.minus_free_vars = mfv_rest1;
+	     Ast.fresh_vars = fresh_rest1;
+	     Ast.inherited = inherited_rest1;
+	     Ast.saved_witness = s1}]
 
     | (Ast.OptStm(stm)::urest,_::rest) ->
 	 let l = Ast.get_line stm in
 	 let new_rest1 = dots_list urest rest in
 	 let new_rest2 = stm::new_rest1 in
-	 let (fv_rest1,mfv_rest1,amfv_rest1,fresh_rest1,inherited_rest1,s1) =
+	 let (fv_rest1,mfv_rest1,fresh_rest1,inherited_rest1,s1) =
 	   varlists new_rest1 in
-	 let (fv_rest2,mfv_rest2,amfv_rest2,fresh_rest2,inherited_rest2,s2) =
+	 let (fv_rest2,mfv_rest2,fresh_rest2,inherited_rest2,s2) =
 	   varlists new_rest2 in
-	 [(Ast.Disj
-	     [(Ast.DOTS(new_rest2),l,fv_rest2,mfv_rest2,amfv_rest2,
-	       fresh_rest2,inherited_rest2,s2,Ast.NoDots,None,[]);
-	       (Ast.DOTS(new_rest1),l,fv_rest1,mfv_rest1,amfv_rest1,
-		fresh_rest1,inherited_rest1,s1,Ast.NoDots,None,[])],
-	   l,fv_rest2,mfv_rest2,amfv_rest2,fresh_rest2,inherited_rest2,s2,
-	   Ast.NoDots,None,[])]
+	 [{(Ast.make_term
+	       (Ast.Disj
+		  [{(Ast.make_term(Ast.DOTS(new_rest2))) with
+		      Ast.node_line = l;
+		      Ast.free_vars = fv_rest2;
+		      Ast.minus_free_vars = mfv_rest2;
+		      Ast.fresh_vars = fresh_rest2;
+		      Ast.inherited = inherited_rest2;
+		      Ast.saved_witness = s2};
+		    {(Ast.make_term(Ast.DOTS(new_rest1))) with
+		     Ast.node_line = l;
+		     Ast.free_vars = fv_rest1;
+		     Ast.minus_free_vars = mfv_rest1;
+		     Ast.fresh_vars = fresh_rest1;
+		     Ast.inherited = inherited_rest1;
+		     Ast.saved_witness = s1}])) with
+	     Ast.node_line = l;
+	     Ast.free_vars = fv_rest2;
+	     Ast.minus_free_vars = mfv_rest2;
+	     Ast.fresh_vars = fresh_rest2;
+	     Ast.inherited = inherited_rest2;
+	     Ast.saved_witness = s2}]
 
     | ([Ast.Dots(_,_,_,_);Ast.OptStm(stm)],[d1;_]) ->
 	let l = Ast.get_line stm in
 	let fv_stm = Ast.get_fvs stm in
 	let mfv_stm = Ast.get_mfvs stm in
-	let amfv_stm = Ast.get_all_mfvs stm in
 	let fresh_stm = Ast.get_fresh stm in
 	let inh_stm = Ast.get_inherited stm in
 	let saved_stm = Ast.get_saved stm in
 	let fv_d1 = Ast.get_fvs d1 in
 	let mfv_d1 = Ast.get_mfvs d1 in
-	let amfv_d1 = Ast.get_all_mfvs d1 in
 	let fresh_d1 = Ast.get_fresh d1 in
 	let inh_d1 = Ast.get_inherited d1 in
 	let saved_d1 = Ast.get_saved d1 in
 	let fv_both = Common.union_set fv_stm fv_d1 in
 	let mfv_both = Common.union_set mfv_stm mfv_d1 in
-	let amfv_both = Common.union_set amfv_stm amfv_d1 in
 	let fresh_both = Common.union_set fresh_stm fresh_d1 in
 	let inh_both = Common.union_set inh_stm inh_d1 in
 	let saved_both = Common.union_set saved_stm saved_d1 in
-	[d1;(Ast.Disj
-	       [(Ast.DOTS([stm]),l,fv_stm,mfv_stm,amfv_stm,fresh_stm,
-		 inh_stm,saved_stm,
-		 Ast.NoDots,None,[]);
-		 (Ast.DOTS([d1]),l,fv_d1,mfv_d1,amfv_d1,fresh_d1,
-		  inh_d1,saved_d1,
-		  Ast.NoDots,None,[])],
-	     l,fv_both,mfv_both,amfv_both,fresh_both,inh_both,saved_both,
-	     Ast.NoDots,None,[])]
+	[d1;
+	  {(Ast.make_term
+	      (Ast.Disj
+		 [{(Ast.make_term(Ast.DOTS([stm]))) with
+		    Ast.node_line = l;
+		    Ast.free_vars = fv_stm;
+		    Ast.minus_free_vars = mfv_stm;
+		    Ast.fresh_vars = fresh_stm;
+		    Ast.inherited = inh_stm;
+		    Ast.saved_witness = saved_stm};
+		   {(Ast.make_term(Ast.DOTS([d1]))) with
+		     Ast.node_line = l;
+		     Ast.free_vars = fv_d1;
+		     Ast.minus_free_vars = mfv_d1;
+		     Ast.fresh_vars = fresh_d1;
+		     Ast.inherited = inh_d1;
+		     Ast.saved_witness = saved_d1}])) with
+	     Ast.node_line = l;
+	     Ast.free_vars = fv_both;
+	     Ast.minus_free_vars = mfv_both;
+	     Ast.fresh_vars = fresh_both;
+	     Ast.inherited = inh_both;
+	     Ast.saved_witness = saved_both}]
 
     | ([Ast.Nest(_,_,_,_,_);Ast.OptStm(stm)],[d1;_]) ->
 	let l = Ast.get_line stm in
@@ -263,8 +298,8 @@ let elim_opt =
 		   [],[],[]) in
 	[d1;rw(Ast.Disj
 		 [rwd(Ast.DOTS([stm]));
-		   (Ast.DOTS([rw dots]),l,[],[],[],[],[],[],
-		    Ast.NoDots,None,[])])]
+		   {(Ast.make_term(Ast.DOTS([rw dots])))
+		   with Ast.node_line = l}])]
 
     | (_::urest,stm::rest) -> stm :: (dots_list urest rest)
     | _ -> failwith "not possible" in
@@ -386,9 +421,22 @@ let contains_modif =
       do_nothing rule_elem do_nothing do_nothing do_nothing do_nothing in
   recursor.V.combiner_rule_elem
 
+let drop_positions =
+  let mcode x = x in
+  let donothing r k e = Ast.set_pos_var None (k e) in
+  let donothing_a r k e = k e in
+  V.rebuilder
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode
+    donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing_a
+
 (* code is not a DisjRuleElem *)
 let make_match label guard code =
   let v = fresh_var() in
+  let code =
+    if guard then drop_positions.V.rebuilder_rule_elem code else code in
   let matcher = Lib_engine.Match(code) in
   if contains_modif code && not guard
   then CTL.Exists(true,v,predmaker guard (matcher,CTL.Modif v) label)
@@ -402,11 +450,6 @@ let make_match label guard code =
 
 let make_raw_match label guard code =
   predmaker guard (Lib_engine.Match(code),CTL.Control) label
-
-let extend_fvs fvs onto = (* only used for atomic things *)
-  if !Flag.positions
-  then (List.map Ast.pos_name fvs) @ onto
-  else onto
     
 let rec seq_fvs quantified = function
     [] -> []
@@ -760,8 +803,8 @@ let exptymatch l make_match make_guard_match =
   let matches_guard_matches =
     List.map
       (function x ->
-	(make_match (Ast.rewrap_pos x (Some pos)),
-	 make_guard_match (Ast.rewrap_pos x (Some pos))))
+	(make_match (Ast.set_pos x (Some pos)),
+	 make_guard_match (Ast.set_pos x (Some pos))))
       l in
   let (matches,guard_matches) = List.split matches_guard_matches in
   let rec suffixes = function
@@ -787,12 +830,10 @@ let do_re_matches label guard res quantified minus_quantified =
   let make_guard_match x =
     let stmt_fvs = Ast.get_mfvs x in
     let fvs = get_unquantified minus_quantified stmt_fvs in
-    let fvs = extend_fvs (Ast.get_all_mfvs x) fvs in
     non_saved_quantify fvs (make_match None true x) in
   let make_match x =
     let stmt_fvs = Ast.get_fvs x in
     let fvs = get_unquantified quantified stmt_fvs in
-    let fvs = extend_fvs (Ast.get_all_mfvs x) fvs in
     quantify guard fvs (make_match None guard x) in
   ctl_and CTL.NONSTRICT (label_pred_maker label)
     (match List.map Ast.unwrap res with
@@ -1096,7 +1137,6 @@ let svar_context_with_add_after s label quantified d ast
        (f (ctl_and CTL.NONSTRICT
 	    (make_raw_match label false ast) (ctl_or left_or right_or))) in
   let fvs = get_unquantified quantified [s] in
-  let fvs = extend_fvs [s] fvs in
   quantify guard (label_var::fvs)
     (sequencibility body label_pred process_bef_aft seqible)
 
@@ -1125,7 +1165,6 @@ let svar_minus_or_no_add_after s label quantified d ast
 	       [first_metamatch;
 		 ctl_au CTL.NONSTRICT rest_nodes last_node]))) in
   let fvs = get_unquantified quantified [s] in
-  let fvs = extend_fvs [s] fvs in
   quantify guard (label_var::fvs)
     (sequencibility body label_pred process_bef_aft seqible)
 
@@ -1366,12 +1405,10 @@ and statement stmt after quantified minus_quantified
 	    | Ast.Exp(_) | Ast.Ty(_) ->
 		let stmt_fvs = Ast.get_fvs stmt in
 		let fvs = get_unquantified quantified stmt_fvs in
-		let fvs = extend_fvs (Ast.get_all_mfvs stmt) fvs in
 		CTL.InnerAnd(quantify guard fvs (make_match ast))
 	    | _ ->
 		let stmt_fvs = Ast.get_fvs stmt in
 		let fvs = get_unquantified quantified stmt_fvs in
-		let fvs = extend_fvs (Ast.get_all_mfvs stmt) fvs in
 		quantify guard fvs (make_match ast) in
 	  match Ast.unwrap ast with
 	    Ast.Break(brk,semi) ->

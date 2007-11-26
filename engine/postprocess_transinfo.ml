@@ -68,6 +68,7 @@ let collect_used_after used_after envs =
   List.map (List.filter (function (v,vl) -> List.mem v used_after)) envs
 
 let process used_after inherited_env l =
+  extra_counter := 0;
   let (trees, fresh_envs) =
     List.split (List.map (process_tree inherited_env) l) in
   (Common.uniq(List.concat trees), collect_used_after used_after fresh_envs)

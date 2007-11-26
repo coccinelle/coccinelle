@@ -865,13 +865,14 @@ let rebuilder
     k p
 
   and process_bef_aft s =
-    Ast.rewrap_dots_bef_aft s
+    Ast.set_dots_bef_aft
       (match Ast.get_dots_bef_aft s with
 	Ast.NoDots -> Ast.NoDots
       | Ast.DroppingBetweenDots(stm,ind) ->
 	  Ast.DroppingBetweenDots(statement stm,ind)
       | Ast.AddingBetweenDots(stm,ind) ->
 	  Ast.AddingBetweenDots(statement stm,ind))
+      s
 
   and statement s =
     let k s =

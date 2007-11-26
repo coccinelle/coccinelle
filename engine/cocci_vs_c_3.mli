@@ -133,6 +133,7 @@ module type PARAM =
     (* Environment manipulation. Extract info from tin, the "something" *)
     (* -------------------------------------------------------------------- *)
     val envf :
+      bool -> (* true if value should be dripped before adding to env *)
       Ast_cocci.keep_binding ->
       Ast_cocci.inherited ->
       Ast_cocci.meta_name * Ast_c.metavar_binding_kind ->

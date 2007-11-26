@@ -148,7 +148,9 @@ let get_fakeInfo_and_tokens celem toks =
     | OriginTok | ExpandedTok -> 
         (* get the associated comments/space/cppcomment tokens *)
         let (before, x, after) = !toks_in +> Common.split_when (fun tok -> 
-          info =*= TH.info_of_tok tok) 
+	  Printf.printf "info %s\n" (Dumper.dump info); flush stdout;
+	  Printf.printf "info2 %s\n" (Dumper.dump (TH.info_of_tok tok)); flush stdout;
+	  info =*= TH.info_of_tok tok)
         in
         assert(info = TH.info_of_tok x);
         (*old: assert(before +> List.for_all (TH.is_comment)); *)
@@ -632,5 +634,6 @@ let pp_program2 xs outfile  =
   )
 
 let pp_program a b = 
+  Printf.printf "unparsing\n"; flush stdout;
   Common.profile_code "C unparsing" (fun () -> pp_program2 a b)
 

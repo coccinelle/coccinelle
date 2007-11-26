@@ -11,8 +11,6 @@ let rec nub = function
   | (x::xs) when (List.mem x xs) -> nub xs
   | (x::xs) -> x::(nub xs)
 
-let pos_extend l = (List.map Ast.pos_name l) @ l
-
 (* Collect all variable references in a minirule.  For a disj, we collect
 the maximum number (2 is enough) of references in any branch. *)
 
@@ -38,7 +36,16 @@ let collect_all_refs =
   let bind x y = x @ y in
   let option_default = [] in
 
-  let donothing recursor k e = k e in (* just combine in the normal way *)
+  let add_pos_var e res =
+    match Ast.get_pos_var e with
+      Some x -> bind [x] res
+    | _ -> res in
+
+  let donothing recursor k e =
+    add_pos_var e (k e) in (* just combine in the normal way *)
+
+  let donothing_a recursor k e = (* anything is not wrapped *)
+    k e in (* just combine in the normal way *)
 
   (* the following considers that anything that occurs non-unitarily in one
      branch occurs nonunitarily in all branches.  This is not optimal, but
@@ -58,10 +65,11 @@ let collect_all_refs =
   let metaid (x,_,_) = x in
 
   let astfvident recursor k i =
-    match Ast.unwrap i with
-      Ast.MetaId(name,_,_) | Ast.MetaFunc(name,_,_)
-    | Ast.MetaLocalFunc(name,_,_) -> [metaid name]
-    | _ -> k i in
+    add_pos_var i
+      (match Ast.unwrap i with
+	Ast.MetaId(name,_,_) | Ast.MetaFunc(name,_,_)
+      | Ast.MetaLocalFunc(name,_,_) -> [metaid name]
+      | _ -> k i) in
 
   let rec type_collect res = function
       TC.ConstVol(_,ty) | TC.Pointer(ty) | TC.FunctionPointer(ty)
@@ -70,51 +78,58 @@ let collect_all_refs =
     | ty -> res in
 
   let astfvexpr recursor k e =
-    match Ast.unwrap e with
-      Ast.MetaExpr(name,_,Some type_list,_,_) ->
-	let types = List.fold_left type_collect option_default type_list in
-	bind [metaid name] types
-    | Ast.MetaErr(name,_,_) | Ast.MetaExpr(name,_,_,_,_) -> [metaid name]
-    | Ast.MetaExprList(name,None,_,_) -> [metaid name]
-    | Ast.MetaExprList(name,Some (lenname,_,_),_,_) -> [metaid name;lenname]
-    | Ast.DisjExpr(exps) -> bind_disj (List.map k exps)
-    | _ -> k e in
+    add_pos_var e
+      (match Ast.unwrap e with
+	Ast.MetaExpr(name,_,Some type_list,_,_) ->
+	  let types = List.fold_left type_collect option_default type_list in
+	  bind [metaid name] types
+      | Ast.MetaErr(name,_,_) | Ast.MetaExpr(name,_,_,_,_) -> [metaid name]
+      | Ast.MetaExprList(name,None,_,_) -> [metaid name]
+      | Ast.MetaExprList(name,Some (lenname,_,_),_,_) -> [metaid name;lenname]
+      | Ast.DisjExpr(exps) -> bind_disj (List.map k exps)
+      | _ -> k e) in
 
   let astfvdecls recursor k d =
-    match Ast.unwrap d with
-      Ast.DisjDecl(decls) -> bind_disj (List.map k decls)
-    | _ -> k d in
+    add_pos_var d
+      (match Ast.unwrap d with
+	Ast.DisjDecl(decls) -> bind_disj (List.map k decls)
+      | _ -> k d) in
 
   let astfvfullType recursor k ty =
-    match Ast.unwrap ty with
-      Ast.DisjType(types) -> bind_disj (List.map k types)
-    | _ -> k ty in
+    add_pos_var ty
+      (match Ast.unwrap ty with
+	Ast.DisjType(types) -> bind_disj (List.map k types)
+      | _ -> k ty) in
 
   let astfvtypeC recursor k ty =
-    match Ast.unwrap ty with
-      Ast.MetaType(name,_,_) -> [metaid name]
-    | _ -> k ty in
+    add_pos_var ty
+      (match Ast.unwrap ty with
+	Ast.MetaType(name,_,_) -> [metaid name]
+      | _ -> k ty) in
 
   let astfvparam recursor k p =
-    match Ast.unwrap p with
-      Ast.MetaParam(name,_,_) -> [metaid name]
-    | Ast.MetaParamList(name,None,_,_) -> [metaid name]
-    | Ast.MetaParamList(name,Some(lenname,_,_),_,_) -> [metaid name;lenname]
-    | _ -> k p in
+    add_pos_var p
+      (match Ast.unwrap p with
+	Ast.MetaParam(name,_,_) -> [metaid name]
+      | Ast.MetaParamList(name,None,_,_) -> [metaid name]
+      | Ast.MetaParamList(name,Some(lenname,_,_),_,_) -> [metaid name;lenname]
+      | _ -> k p) in
 
   let astfvrule_elem recursor k re =
     (*within a rule_elem, pattern3 manages the coherence of the bindings*)
-    nub
-      (match Ast.unwrap re with
-	Ast.MetaRuleElem(name,_,_) | Ast.MetaStmt(name,_,_,_)
-      | Ast.MetaStmtList(name,_,_) -> [metaid name]
-      | _ -> k re) in
+    add_pos_var re
+      (nub
+	 (match Ast.unwrap re with
+	   Ast.MetaRuleElem(name,_,_) | Ast.MetaStmt(name,_,_,_)
+	 | Ast.MetaStmtList(name,_,_) -> [metaid name]
+	 | _ -> k re)) in
 
   let astfvstatement recursor k s =
-    match Ast.unwrap s with
-      Ast.Disj(stms) ->
-	bind_disj (List.map recursor.V.combiner_statement_dots stms)
-    | _ -> k s in
+    add_pos_var s
+      (match Ast.unwrap s with
+	Ast.Disj(stms) ->
+	  bind_disj (List.map recursor.V.combiner_statement_dots stms)
+      | _ -> k s) in
 
   let mcode r e = [] in
 
@@ -123,7 +138,7 @@ let collect_all_refs =
     mcode
     donothing donothing donothing donothing
     astfvident astfvexpr astfvfullType astfvtypeC donothing astfvparam
-    astfvdecls astfvrule_elem astfvstatement donothing donothing donothing
+    astfvdecls astfvrule_elem astfvstatement donothing donothing donothing_a
 
 let collect_all_rule_refs minirules =
   List.fold_left (@) []
@@ -201,6 +216,30 @@ let collect_saved =
     donothing donothing donothing donothing
     astfvident astfvexpr donothing astfvtypeC donothing astfvparam
     donothing astfvrule_elem donothing donothing donothing donothing
+
+(* for now, we assume that all positions are saved *)
+let collect_positions =
+  let bind = Common.union_set in
+  let option_default = [] in
+  let mcode r e = option_default in
+
+  let add_pos_var e res =
+    match Ast.get_pos_var e with
+      Some x -> bind [x] res
+    | _ -> res in
+
+  let donothing recursor k e =
+    add_pos_var e (k e) in (* just combine in the normal way *)
+
+  let donothing_a recursor k e = (* anything is not wrapped *)
+    k e in (* just combine in the normal way *)
+
+  V.combiner bind option_default
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode
+    donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing_a
 
 (* ---------------------------------------------------------------- *)
 
@@ -442,9 +481,12 @@ let astfvs metavars bound =
       List.partition (function x -> not(List.mem x bound)) free in
     let munbound =
       List.filter (function x -> not(List.mem x bound)) minus_free in
-    let (re,l,_,_,_,_,_,_,d,pos,isos) = k re in
-    (re,l,unbound,munbound,minus_free,collect_fresh unbound,inherited,[],d,
-     pos,isos) in
+    {(k re) with
+      Ast.free_vars = unbound;
+      Ast.minus_free_vars = munbound;
+      Ast.fresh_vars = collect_fresh unbound;
+      Ast.inherited = inherited;
+      Ast.saved_witness = []} in
 
   let astfvstatement recursor k s =
     let minus_free = nub (collect_all_refs.V.combiner_statement s) in
@@ -457,12 +499,13 @@ let astfvs metavars bound =
       let munbound =
 	List.filter (function x -> not(List.mem x bound)) minus_free in
       (unbound,munbound,collect_fresh unbound,inherited) in
-    let (s,l,_,_,_,_,_,_,d,pos,isos) = k s in
+    let res = k s in
     let s =
-      match s with
+      match Ast.unwrap res with
 	Ast.IfThen(header,branch,(_,_,_,aft)) ->
 	  let (unbound,_,fresh,inherited) =
 	    classify (cip_mcodekind collect_in_plus_term aft) [] in
+
 	  Ast.IfThen(header,branch,(unbound,fresh,inherited,aft))
       | Ast.IfThenElse(header,branch1,els,branch2,(_,_,_,aft)) ->
 	  let (unbound,_,fresh,inherited) =
@@ -481,10 +524,15 @@ let astfvs metavars bound =
 	  let (unbound,_,fresh,inherited) =
 	    classify (cip_mcodekind collect_in_plus_term aft) [] in
 	  Ast.Iterator(header,body,(unbound,fresh,inherited,aft))
-      |	_ -> s in
+      |	s -> s in
     let (unbound,munbound,fresh,inherited) = classify free minus_free in
-    (s,l,unbound,munbound,minus_free,collect_fresh unbound,inherited,[],d,
-     pos,isos) in
+    {res with
+      Ast.node = s;
+      Ast.free_vars = unbound;
+      Ast.minus_free_vars = munbound;
+      Ast.fresh_vars = collect_fresh unbound;
+      Ast.inherited = inherited;
+      Ast.saved_witness = []} in
 
   let astfvstatement_dots recursor k sd =
     let minus_free = nub (collect_all_refs.V.combiner_statement_dots sd) in
@@ -495,19 +543,17 @@ let astfvs metavars bound =
       List.partition (function x -> not(List.mem x bound)) free in
     let munbound =
       List.filter (function x -> not(List.mem x bound)) minus_free in
-    let (sd,l,_,_,_,_,_,_,d,pos,isos) = k sd in
-    (sd,l,unbound,munbound,minus_free,collect_fresh unbound,inherited,[],d,
-     pos,isos) in
+    {(k sd) with
+      Ast.free_vars = unbound;
+      Ast.minus_free_vars = munbound;
+      Ast.fresh_vars = collect_fresh unbound;
+      Ast.inherited = inherited;
+      Ast.saved_witness = []} in
 
   let astfvtoplevel recursor k tl =
     let saved = collect_saved.V.combiner_top_level tl in
-    let saved =
-      if !Flag.positions
-      then pos_extend saved
-      else saved in
-    let (tl,l,unbound,munbound,minus_free,fresh,inherited,_,d,pos,isos) =
-      k tl in
-    (tl,l,unbound,munbound,minus_free,fresh,inherited,saved,d,pos,isos) in
+    let saved = (collect_positions.V.combiner_top_level tl) @ saved in
+    {(k tl) with Ast.saved_witness = saved} in
 
   let mcode x = x in
   let donothing r k e = k e in
@@ -605,6 +651,16 @@ let collect_used_after metavar_rule_list =
 let free_vars rules =
   let metavars = List.map (function (mv,rule) -> mv) rules in
   let (fvs_lists,used_after_lists) = List.split (collect_used_after rules) in
+  let positions_list = (* for all rules, assume all positions are used after *)
+    List.map
+      (function (mv,(_,_,rule)) ->
+	let positions =
+	  List.fold_left
+	    (function prev ->
+	      function Ast.MetaPosDecl(_,nm) -> nm::prev | _ -> prev)
+	    [] mv in
+	List.map (function _ -> positions) rule)
+      rules in
   let new_rules =
     List.map2
       (function (mv,(nm,rule_info,r)) ->
@@ -612,4 +668,4 @@ let free_vars rules =
 	  (nm,rule_info,classify_variables mv r (List.concat ua)))
       rules used_after_lists in
   let new_rules = collect_astfvs (List.combine metavars new_rules) in
-  (new_rules,fvs_lists,used_after_lists)
+  (new_rules,fvs_lists,used_after_lists,positions_list)

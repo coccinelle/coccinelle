@@ -6,15 +6,18 @@ type info = { line : int; column : int;
 type line = int
 type meta_name = string * string
 type 'a wrap =
-    ('a * line * meta_name list (*free vars*) *
-       meta_name list (*minus free vars*) *
-       meta_name list (*all minus free vars, including inherited ones*) *
-       meta_name list (*fresh vars*) *
-       meta_name list (*inherited vars*) * meta_name list (*witness vars*) *
-       dots_bef_aft *
-       meta_name option (* pos info, try not to duplicate *) *
-       (string*anything) list (* list of the isos relevant to the term;
-				 ultimately only used for rule_elems *))
+    {node : 'a;
+      node_line : line;
+      free_vars : meta_name list; (*free vars*)
+      minus_free_vars : meta_name list; (*minus free vars*)
+      fresh_vars : meta_name list; (*fresh vars*)
+      inherited : meta_name list; (*inherited vars*)
+      saved_witness : meta_name list; (*witness vars*)
+      bef_aft : dots_bef_aft;
+      pos_info : meta_name option; (* pos info, try not to duplicate *)
+      (* isos relevant to the term; ultimately only used for rule_elems *)
+      iso_info : (string*anything) list; 
+      pos_var : meta_name option }
 
 and 'a befaft =
     BEFORE      of 'a list list
@@ -507,20 +510,19 @@ val get_wcfvs : ('a wrap,'b wrap) whencode list -> meta_name list
 val set_fvs : meta_name list -> 'a wrap -> 'a wrap
 val get_mfvs : 'a wrap -> meta_name list
 val set_mfvs : meta_name list -> 'a wrap -> 'a wrap
-val get_all_mfvs : 'a wrap -> meta_name list
 val get_fresh : 'a wrap -> meta_name list
 val get_inherited : 'a wrap -> meta_name list
 val get_saved : 'a wrap -> meta_name list
 val get_dots_bef_aft : statement -> dots_bef_aft
 val set_dots_bef_aft : dots_bef_aft -> statement -> statement
 val get_pos : 'a wrap -> meta_name option
-val rewrap_dots_bef_aft : statement -> dots_bef_aft -> statement
-val rewrap_pos : 'a wrap -> meta_name option -> 'a wrap
+val set_pos : 'a wrap -> meta_name option -> 'a wrap
 val get_isos : 'a wrap -> (string*anything) list
 val set_isos : 'a wrap -> (string*anything) list -> 'a wrap
+val get_pos_var : 'a wrap -> meta_name option
+val set_pos_var : meta_name option -> 'a wrap -> 'a wrap
 
 val get_meta_name : metavar -> meta_name
-val pos_name : meta_name -> meta_name
 
 val no_info : info
 

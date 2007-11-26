@@ -488,7 +488,9 @@ module type PARAM =
       (A.fullType, B.fullType) matcher -> (A.fullType, F.node) matcher
 
     val envf : 
-      A.keep_binding -> A.inherited -> 
+      (* the first argument is true if the value should be stripped, eg
+	 for normal metavars, and false for position variables *)
+      bool -> A.keep_binding -> A.inherited -> 
       A.meta_name * Ast_c.metavar_binding_kind ->
       (unit -> tin -> 'x tout) -> (tin -> 'x tout)
 
@@ -557,8 +559,19 @@ let metavar2dots (_,info,mcodekind) = ("...",info,mcodekind)
  *)
 
 (*---------------------------------------------------------------------------*)
+
+let add_pos_var e t f =
+  match A.get_pos_var e with
+    Some x ->
+      X.envf false
+	Type_cocci.Saved (* always want a witness *) false (* not inherited *)
+        (x,t) f
+  | None -> f()
+
+(*---------------------------------------------------------------------------*)
 let rec (expression: (A.expression, Ast_c.expression) matcher) =
  fun ea eb -> 
+  add_pos_var ea (Ast_c.MetaExprVal eb) (fun () ->
   X.all_bound (A.get_inherited ea) >&&>
   let wa x = A.rewrap ea x  in
   match A.unwrap ea, eb with
@@ -605,7 +618,7 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
 	) 
         >>= (fun () () ->
 		
-	 X.envf keep inherited (term ida, Ast_c.MetaExprVal expb) (fun () -> 
+	 X.envf true keep inherited (term ida, Ast_c.MetaExprVal expb) (fun () -> 
 	   X.distrf_e ida expb >>= (fun ida expb -> 
 	     return (
 	       A.MetaExpr (ida,keep,opttypa,form,inherited)+>A.rewrap ea,
@@ -920,13 +933,14 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
   | _, ((B.Constructor _,_),_) 
     -> fail
 
-  | _, _ -> fail
+  | _, _ -> fail)
 
 
 
 (* ------------------------------------------------------------------------- *)
 and (ident: info_ident -> (A.ident, string * Ast_c.info) matcher) = 
  fun infoidb ida (idb, iib) -> 
+  add_pos_var ida (Ast_c.MetaIdVal idb) (fun () ->
   X.all_bound (A.get_inherited ida) >&&>
   match A.unwrap ida with
   | A.Id sa -> 
@@ -940,7 +954,7 @@ and (ident: info_ident -> (A.ident, string * Ast_c.info) matcher) =
 
 
   | A.MetaId(mida,keep,inherited) -> 
-      X.envf keep inherited (term mida, Ast_c.MetaIdVal (idb)) (fun () -> 
+      X.envf true keep inherited (term mida, Ast_c.MetaIdVal (idb)) (fun () -> 
         tokenf mida iib >>= (fun mida iib -> 
           return (
             ((A.MetaId (mida, keep, inherited)) +> A.rewrap ida,
@@ -951,7 +965,7 @@ and (ident: info_ident -> (A.ident, string * Ast_c.info) matcher) =
   | A.MetaFunc(mida,keep,inherited) -> 
       (match infoidb with 
       | LocalFunction | Function -> 
-          X.envf keep inherited(term mida,Ast_c.MetaFuncVal idb) (fun () -> 
+          X.envf true keep inherited(term mida,Ast_c.MetaFuncVal idb) (fun () -> 
             tokenf mida iib >>= (fun mida iib -> 
               return (
                 ((A.MetaFunc(mida,keep,inherited))) +> A.rewrap ida,
@@ -964,7 +978,7 @@ and (ident: info_ident -> (A.ident, string * Ast_c.info) matcher) =
   | A.MetaLocalFunc(mida,keep,inherited) -> 
       (match infoidb with 
       | LocalFunction -> 
-          X.envf keep inherited (term mida,Ast_c.MetaLocalFuncVal idb) (fun()->
+          X.envf true keep inherited (term mida,Ast_c.MetaLocalFuncVal idb) (fun()->
             tokenf mida iib >>= (fun mida iib -> 
               return (
                 ((A.MetaLocalFunc(mida,keep,inherited))) +> A.rewrap ida,
@@ -976,7 +990,7 @@ and (ident: info_ident -> (A.ident, string * Ast_c.info) matcher) =
       )
 
   | A.OptIdent _ | A.UniqueIdent _ -> 
-      failwith "not handling Opt/Unique for ident"
+      failwith "not handling Opt/Unique for ident")
 
 
 
@@ -1092,12 +1106,12 @@ and arguments_bis = fun eas ebs ->
 
 		(match leninfo with
 		| Some (lenname,lenkeep,leninherited) ->
-                    X.envf lenkeep leninherited
+                    X.envf true lenkeep leninherited
                       (lenname, Ast_c.MetaListlenVal (len))
 		| None -> function f -> f()
                 )
                 (fun () -> 
-                  X.envf keep inherited 
+                  X.envf true keep inherited 
                     (term ida, Ast_c.MetaExprListVal startxs') 
                 (fun () -> 
 		  if startxs = []
@@ -1243,12 +1257,12 @@ and parameters_bis eas ebs =
 
 		(match leninfo with
 		  Some (lenname,lenkeep,leninherited) ->
-                    X.envf lenkeep leninherited
+                    X.envf true lenkeep leninherited
 		      (lenname, Ast_c.MetaListlenVal (len))
 		| None -> function f -> f()
                 )
 	        (fun () -> 
-                  X.envf keep inherited 
+                  X.envf true keep inherited 
                     (term ida, Ast_c.MetaParamListVal startxs') 
                 (fun () -> 
 		  if startxs = []
@@ -1292,7 +1306,7 @@ and parameters_bis eas ebs =
 
       | A.MetaParam (ida,keep,inherited), (Left eb)::ebs -> 
           (* todo: use quaopt, hasreg ? *)
-          X.envf keep inherited (term ida, Ast_c.MetaParamVal eb) (fun () -> 
+          X.envf true keep inherited (term ida, Ast_c.MetaParamVal eb) (fun () -> 
             X.distrf_param ida eb
           ) >>= (fun ida eb -> 
               parameters_bis eas ebs >>= (fun eas ebs -> 
@@ -2016,12 +2030,13 @@ and (fullType: (A.fullType, Ast_c.fullType) matcher) =
 
 and (fullTypebis: (A.typeC, Ast_c.fullType) matcher) = 
   fun ta tb -> 
+  add_pos_var ta (Ast_c.MetaTypeVal tb) (fun () ->
   X.all_bound (A.get_inherited ta) >&&> 
   match A.unwrap ta, tb with
 
   (* cas general *)
   | A.MetaType(ida,keep, inherited),  typb -> 
-      X.envf keep inherited (term ida, B.MetaTypeVal typb) (fun () -> 
+      X.envf true keep inherited (term ida, B.MetaTypeVal typb) (fun () -> 
         X.distrf_type ida typb >>= (fun ida typb -> 
           return (
             A.MetaType(ida,keep, inherited) +> A.rewrap ta,
@@ -2031,7 +2046,7 @@ and (fullTypebis: (A.typeC, Ast_c.fullType) matcher) =
   | unwrap, (qub, typb) -> 
       typeC ta typb >>= (fun ta typb -> 
         return (ta, (qub, typb))
-      )
+      ))
 
 
 and (typeC: (A.typeC, Ast_c.typeC) matcher) = 
@@ -2499,7 +2514,7 @@ and compatible_type a b =
         else fail
 
   | Type_cocci.MetaType (ida,keep,inherited),     typb -> 
-      X.envf keep inherited (ida, B.MetaTypeVal typb) (fun () -> 
+      X.envf true keep inherited (ida, B.MetaTypeVal typb) (fun () -> 
         ok
       )
 
@@ -2750,7 +2765,7 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
 
       (match Control_flow_c.extract_fullstatement node with
       | Some stb -> 
-         X.envf keep inherited (term ida, Ast_c.MetaStmtVal stb) (fun () -> 
+         X.envf true keep inherited (term ida, Ast_c.MetaStmtVal stb) (fun () -> 
            (* no need tag ida, we can't be called in transform-mode *)
            return (
              A.MetaStmt (ida, keep, metainfoMaybeTodo, inherited),
@@ -2822,8 +2837,9 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
                 Lib_parsing_c.max_min_by_pos (Lib_parsing_c.ii_of_expr eb) in
               let keep = Type_cocci.Unitary in
               let inherited = false in
-              X.envf keep inherited (pos, B.MetaPosVal (min,max)) (fun () -> 
-                expression ea eb
+              X.envf true keep inherited (pos, B.MetaPosVal (min,max))
+		(fun () -> 
+                  expression ea eb
               )
             )
       in

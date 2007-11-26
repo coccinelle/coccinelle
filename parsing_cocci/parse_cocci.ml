@@ -1291,9 +1291,9 @@ let process file isofile verbose =
 	     | Some mv_fp -> [(extra_meta@metavars, minus_ast);mv_fp])
 	 minus plus) in
   let disjd = Disjdistr.disj parsed in
-  let (code,fvs,ua) = Free_vars.free_vars disjd in
+  let (code,fvs,ua,pos) = Free_vars.free_vars disjd in
   if !Flag_parsing_cocci.show_SP 
   then List.iter Pretty_print_cocci.unparse code;
   let tokens = Get_constants.get_constants code in
-  (code,fvs,ua,tokens)
+  (code,fvs,ua,pos,tokens)
 

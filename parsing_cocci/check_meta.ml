@@ -376,8 +376,10 @@ let positions table rules =
 	let info = find_loop [table] pos in
 	if !info
 	then
-	  let (_,name) = pos in
-	  failwith ("duplicated use of position variable "^name)
+	  let (rule,name) = pos in
+	  failwith
+	    (Printf.sprintf "duplicated use of position variable %s.%s"
+	       rule name)
 	else info := true)
       (Ast0.get_pos e) in
   let fn =
