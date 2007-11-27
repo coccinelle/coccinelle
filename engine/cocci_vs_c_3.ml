@@ -1102,6 +1102,7 @@ and arguments_bis = fun eas ebs ->
               then fail
               else 
                 let startxs' = Ast_c.unsplit_comma startxs in
+		add_pos_var ea (Ast_c.MetaExprListVal startxs') (fun () ->
                 let len = List.length  startxs' in
 
 		(match leninfo with
@@ -1126,7 +1127,7 @@ and arguments_bis = fun eas ebs ->
                       startxs ++ endxs
                     ))
                   )
-                )
+                ))
             )) fail 
 
 
@@ -1183,7 +1184,9 @@ and parameters_bis eas ebs =
   match eas, ebs with
   | [], [] -> return ([], [])
   | [], eb::ebs -> fail
-  | ea::eas, ebs -> 
+  | ea::eas, ebs ->
+      (* the management of positions is inlined into each case, because
+	 sometimes there is a Param and sometimes a ParamList *)
       X.all_bound (A.get_inherited ea) >&&>
       (match A.unwrap ea, ebs with
       | A.Pdots (mcode), ys -> 
@@ -1253,6 +1256,7 @@ and parameters_bis eas ebs =
               then fail
               else 
                 let startxs' = Ast_c.unsplit_comma startxs in
+		add_pos_var ea (Ast_c.MetaParamListVal startxs') (fun () ->
                 let len = List.length  startxs' in
 
 		(match leninfo with
@@ -1276,13 +1280,14 @@ and parameters_bis eas ebs =
                       startxs ++ endxs
 		    ))
                 )
-                ))
+                )))
           ) fail 
 
 
       | A.VoidParam ta, ys -> 
           (match eas, ebs with
           | [], [Left eb] -> 
+	      add_pos_var ea (Ast_c.MetaParamVal eb) (fun () ->
               let ((hasreg, idbopt, tb), ii_b_s) = eb in
               if idbopt = None && null ii_b_s 
               then 
@@ -1294,7 +1299,7 @@ and parameters_bis eas ebs =
                         [Left ((hasreg, idbopt, tb), ii_b_s)]
                       ))
                 | _ -> fail
-              else fail
+              else fail)
           | _ -> fail
           )
 
@@ -1305,6 +1310,7 @@ and parameters_bis eas ebs =
 
 
       | A.MetaParam (ida,keep,inherited), (Left eb)::ebs -> 
+          add_pos_var ea (Ast_c.MetaParamVal eb) (fun () ->
           (* todo: use quaopt, hasreg ? *)
           X.envf true keep inherited (term ida, Ast_c.MetaParamVal eb) (fun () -> 
             X.distrf_param ida eb
@@ -1313,17 +1319,18 @@ and parameters_bis eas ebs =
                 return (
                   (A.MetaParam(ida,keep,inherited))+> A.rewrap ea::eas,
                   (Left eb)::ebs
-                )))
+                ))))
 
 
       | A.Param (typa, idaopt), (Left eb)::ebs -> 
+          add_pos_var ea (Ast_c.MetaParamVal eb) (fun () ->
 	  (*this should succeed if the C code has a name, and fail otherwise*)
           parameter (idaopt, typa) eb >>= (fun (idaopt, typa) eb -> 
           parameters_bis eas ebs >>= (fun eas ebs -> 
             return (
               (A.Param (typa, idaopt))+> A.rewrap ea :: eas,
               (Left eb)::ebs
-            )))
+            ))))
           
       | _unwrapx, (Right y)::ys -> raise Impossible
       | _unwrapx, [] -> fail
