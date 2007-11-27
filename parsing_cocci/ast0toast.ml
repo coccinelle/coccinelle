@@ -529,7 +529,8 @@ and statement s =
 	    Ast.DroppingBetweenDots (statement seqible s,get_ctr())
 	| Ast0.AddingBetweenDots s ->
 	    Ast.AddingBetweenDots (statement seqible s,get_ctr()) in
-      Ast.set_dots_bef_aft befaft (rewrap ast0 no_isos ast) in
+      Ast.set_dots_bef_aft befaft
+	(Ast.set_pos_var None (rewrap ast0 no_isos ast)) in
     let rewrap_rule_elem ast0 ast =
       rewrap ast0 (do_isos (Ast0.get_iso ast0)) ast in
     rewrap_stmt s

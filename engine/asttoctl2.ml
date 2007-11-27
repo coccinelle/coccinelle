@@ -1089,7 +1089,7 @@ let sequencibility body label_pred process_bef_aft = function
 	     ctl_and CTL.NONSTRICT (ctl_not (ctl_back_ax label_pred)) x))
   | Ast.NotSequencible -> body (function x -> x)
 
-let svar_context_with_add_after s label quantified d ast
+let svar_context_with_add_after stmt s label quantified d ast
     seqible after process_bef_aft guard fvinfo =
   let label_var = (*fresh_label_var*) string2var "_lab" in
   let label_pred =
@@ -1136,11 +1136,12 @@ let svar_context_with_add_after s label quantified d ast
     ctl_and CTL.NONSTRICT label_pred
        (f (ctl_and CTL.NONSTRICT
 	    (make_raw_match label false ast) (ctl_or left_or right_or))) in
-  let fvs = get_unquantified quantified [s] in
+  let stmt_fvs = Ast.get_fvs stmt in
+  let fvs = get_unquantified quantified stmt_fvs in
   quantify guard (label_var::fvs)
     (sequencibility body label_pred process_bef_aft seqible)
 
-let svar_minus_or_no_add_after s label quantified d ast
+let svar_minus_or_no_add_after stmt s label quantified d ast
     seqible after process_bef_aft guard fvinfo =
   let label_var = (*fresh_label_var*) string2var "_lab" in
   let label_pred =
@@ -1164,7 +1165,8 @@ let svar_minus_or_no_add_after s label quantified d ast
 	    (make_seq guard
 	       [first_metamatch;
 		 ctl_au CTL.NONSTRICT rest_nodes last_node]))) in
-  let fvs = get_unquantified quantified [s] in
+  let stmt_fvs = Ast.get_fvs stmt in
+  let fvs = get_unquantified quantified stmt_fvs in
   quantify guard (label_var::fvs)
     (sequencibility body label_pred process_bef_aft seqible)
 
@@ -1384,14 +1386,16 @@ and statement stmt after quantified minus_quantified
       |	Ast.MetaStmt((s,_,(Ast.CONTEXT(_,Ast.BEFOREAFTER(_,_)) as d)),
 		     keep,seqible,_)
       | Ast.MetaStmt((s,_,(Ast.CONTEXT(_,Ast.AFTER(_)) as d)),keep,seqible,_)->
-	  svar_context_with_add_after s label quantified d ast seqible after
+	  svar_context_with_add_after stmt s label quantified d ast seqible
+	    after
 	    (process_bef_aft quantified minus_quantified
 	       label llabel slabel true)
 	    guard
 	    (Ast.get_fvs stmt, Ast.get_fresh stmt, Ast.get_inherited stmt)
 
       |	Ast.MetaStmt((s,_,d),keep,seqible,_) ->
-	  svar_minus_or_no_add_after s label quantified d ast seqible after
+	  svar_minus_or_no_add_after stmt s label quantified d ast seqible
+	    after
 	    (process_bef_aft quantified minus_quantified
 	       label llabel slabel true)
 	    guard

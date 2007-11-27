@@ -2674,6 +2674,9 @@ and define_paramsbis = fun eas ebs ->
 (* Entry points *)
 (*****************************************************************************)
 
+(* no global solution for positions here, because for a statement metavariable
+we want a MetaStmtVal, and for the others, it's not clear what we want *)
+
 let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) = 
  fun re node -> 
   let rewrap x = 
@@ -2765,13 +2768,16 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
 
       (match Control_flow_c.extract_fullstatement node with
       | Some stb -> 
-         X.envf true keep inherited (term ida, Ast_c.MetaStmtVal stb) (fun () -> 
-           (* no need tag ida, we can't be called in transform-mode *)
-           return (
-             A.MetaStmt (ida, keep, metainfoMaybeTodo, inherited),
-             unwrap_node
-           )
-         )
+	  add_pos_var re (Ast_c.MetaStmtVal stb) (fun () ->
+            X.envf true keep inherited (term ida, Ast_c.MetaStmtVal stb)
+	      (fun () -> 
+              (* no need tag ida, we can't be called in transform-mode *)
+		return (
+		A.MetaStmt (ida, keep, metainfoMaybeTodo, inherited),
+		unwrap_node
+	      )
+	    )
+	  )
       | None -> fail
       )
 

@@ -283,7 +283,6 @@ module XMATCH = struct
 		  else Lib_parsing_c.semi_al_params a)
 
             | Ast_c.MetaPosVal (pos1,pos2) -> Ast_c.MetaPosVal (pos1,pos2)
-            | Ast_c.MetaPosCodeVal _ -> failwith "not possible"
           in Some (tin.binding +> Common.insert_assoc (k, valu'))
     )
 
