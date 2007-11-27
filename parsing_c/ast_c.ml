@@ -586,6 +586,12 @@ let al_info x =
     mark = AbstractLineTok;
   }
 
+let semi_al_info x = 
+  { x with
+    cocci_tag = ref emptyAnnot;
+    mark = AbstractLineTok;
+  }
+
 (*****************************************************************************)
 (* Views *)
 (*****************************************************************************)

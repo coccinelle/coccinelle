@@ -11,6 +11,8 @@ open Common
  *  emptyAnnot ? 
  *)
 
+(* drop all info information *)
+
 let strip_info_visitor = 
   { Visitor_c.default_visitor_c_s with
     Visitor_c.kinfo_s = (fun (k,_) i -> Ast_c.al_info i);
@@ -41,6 +43,26 @@ let al_params    = Visitor_c.vk_params_s    strip_info_visitor
 let al_arguments = Visitor_c.vk_arguments_s strip_info_visitor
 
 let al_program  = List.map (Visitor_c.vk_program_s  strip_info_visitor)
+
+let semi_strip_info_visitor = (* keep position information *)
+  { Visitor_c.default_visitor_c_s with
+    Visitor_c.kinfo_s = (fun (k,_) i -> Ast_c.semi_al_info i);
+
+    Visitor_c.kexpr_s = (fun (k,_) e -> 
+      let (e', _),ii' = k e in
+      (e', Ast_c.noType()), ii'
+    );
+    
+  }
+
+let semi_al_expr      = Visitor_c.vk_expr_s      semi_strip_info_visitor 
+let semi_al_statement = Visitor_c.vk_statement_s semi_strip_info_visitor
+let semi_al_type      = Visitor_c.vk_type_s      semi_strip_info_visitor
+let semi_al_param     = Visitor_c.vk_param_s     semi_strip_info_visitor
+let semi_al_params    = Visitor_c.vk_params_s    semi_strip_info_visitor
+let semi_al_arguments = Visitor_c.vk_arguments_s semi_strip_info_visitor
+
+let semi_al_program = List.map (Visitor_c.vk_program_s semi_strip_info_visitor)
 
 (*****************************************************************************)
 (* Extract infos *)

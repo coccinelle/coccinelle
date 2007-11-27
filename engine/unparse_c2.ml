@@ -148,8 +148,6 @@ let get_fakeInfo_and_tokens celem toks =
     | OriginTok | ExpandedTok -> 
         (* get the associated comments/space/cppcomment tokens *)
         let (before, x, after) = !toks_in +> Common.split_when (fun tok -> 
-	  Printf.printf "info %s\n" (Dumper.dump info); flush stdout;
-	  Printf.printf "info2 %s\n" (Dumper.dump (TH.info_of_tok tok)); flush stdout;
 	  info =*= TH.info_of_tok tok)
         in
         assert(info = TH.info_of_tok x);

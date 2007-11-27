@@ -247,33 +247,44 @@ module XMATCH = struct
         then None
         else 
           let valu' = 
-	    if strip
-	    then
-              (match valu with
-              | Ast_c.MetaIdVal a        -> Ast_c.MetaIdVal a
-              | Ast_c.MetaFuncVal a      -> Ast_c.MetaFuncVal a
-              | Ast_c.MetaLocalFuncVal a -> Ast_c.MetaLocalFuncVal a (*more?*)
-              | Ast_c.MetaExprVal a -> 
-                  Ast_c.MetaExprVal (Lib_parsing_c.al_expr a)
-              | Ast_c.MetaExprListVal a ->  
-                  Ast_c.MetaExprListVal (Lib_parsing_c.al_arguments a)
-		    
-              | Ast_c.MetaStmtVal a -> 
-                  Ast_c.MetaStmtVal (Lib_parsing_c.al_statement a)
-              | Ast_c.MetaTypeVal a -> 
-                  Ast_c.MetaTypeVal (Lib_parsing_c.al_type a)
+            match valu with
+              Ast_c.MetaIdVal a        -> Ast_c.MetaIdVal a
+            | Ast_c.MetaFuncVal a      -> Ast_c.MetaFuncVal a
+            | Ast_c.MetaLocalFuncVal a -> Ast_c.MetaLocalFuncVal a (*more?*)
+            | Ast_c.MetaExprVal a -> 
+                Ast_c.MetaExprVal
+		  (if strip
+		  then Lib_parsing_c.al_expr a
+		  else Lib_parsing_c.semi_al_expr a)
+            | Ast_c.MetaExprListVal a ->  
+                Ast_c.MetaExprListVal
+		  (if strip
+		  then Lib_parsing_c.al_arguments a
+		  else Lib_parsing_c.semi_al_arguments a)
+		  
+            | Ast_c.MetaStmtVal a -> 
+                Ast_c.MetaStmtVal
+		  (if strip
+		  then Lib_parsing_c.al_statement a
+		  else Lib_parsing_c.semi_al_statement a)
+            | Ast_c.MetaTypeVal a -> 
+                Ast_c.MetaTypeVal
+		  (if strip
+		  then Lib_parsing_c.al_type a
+		  else Lib_parsing_c.semi_al_type a)
 
-              | Ast_c.MetaListlenVal a -> Ast_c.MetaListlenVal a
+            | Ast_c.MetaListlenVal a -> Ast_c.MetaListlenVal a
 
-              | Ast_c.MetaParamVal a -> failwith "not handling MetaParamVal"
-              | Ast_c.MetaParamListVal a -> 
-                  Ast_c.MetaParamListVal (Lib_parsing_c.al_params a)
+            | Ast_c.MetaParamVal a -> failwith "not handling MetaParamVal"
+            | Ast_c.MetaParamListVal a -> 
+                Ast_c.MetaParamListVal
+		  (if strip
+		  then Lib_parsing_c.al_params a
+		  else Lib_parsing_c.semi_al_params a)
 
-              | Ast_c.MetaPosVal (pos1,pos2) -> Ast_c.MetaPosVal (pos1,pos2)
-              | Ast_c.MetaPosCodeVal _ -> failwith "not possible")
-	    else Ast_c.MetaPosCodeVal valu
-          in
-          Some (tin.binding +> Common.insert_assoc (k, valu'))
+            | Ast_c.MetaPosVal (pos1,pos2) -> Ast_c.MetaPosVal (pos1,pos2)
+            | Ast_c.MetaPosCodeVal _ -> failwith "not possible"
+          in Some (tin.binding +> Common.insert_assoc (k, valu'))
     )
 
   let envf strip keep inherited = fun (k, valu) f tin -> 
