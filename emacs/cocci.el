@@ -74,6 +74,11 @@
     (((background dark)) (:foreground "salmon")))
   "Highlighting lines to be added")
 
+(defface cocci-match-face
+  '((((background light)) (:foreground "purple"))
+    (((background dark)) (:foreground "purple")))
+  "Highlighting lines to be matched (sgrep)")
+
 
 ;; can look in lexer_cocci.mll for new identifiers
 
@@ -90,6 +95,7 @@
   '("identifier" "type" "parameter" "constant" "expression" "statement"
     "function" "local" "list" 
     "fresh" 
+    "position"
 
     "typedef" 
     "declarer" "iterator"
@@ -126,6 +132,8 @@
    ; modifiers
    ("^\\??\\+.*" . 'cocci-plus-face)
    ("^\\??-.*"   . 'cocci-minus-face)
+
+   ("^\\*.*"   . 'cocci-match-face)
    ;("^\\??\\+.*?//" . 'cocci-plus-face)
    ; ! \\+
 
