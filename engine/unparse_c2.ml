@@ -632,6 +632,5 @@ let pp_program2 xs outfile  =
   )
 
 let pp_program a b = 
-  Printf.printf "unparsing\n"; flush stdout;
   Common.profile_code "C unparsing" (fun () -> pp_program2 a b)
 
