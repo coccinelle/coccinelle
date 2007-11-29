@@ -270,18 +270,18 @@ let rule_fn tls in_plus =
     ([],in_plus) tls
 
 let get_constants rules =
-  let (info,_) =
-    List.fold_left
-      (function (rest_info,in_plus) ->
-	function (nm,(dep,_,_),cur) ->
-	  let (cur_info,cur_plus) = rule_fn cur in_plus in
-	  let cur_info =
+    let (info,_) =
+      List.fold_left
+	(function (rest_info,in_plus) ->
+	  function (nm,(dep,_,_),cur) ->
+	    let (cur_info,cur_plus) = rule_fn cur in_plus in
+	    let cur_info =
 	    (* no dependencies if dependent on another rule; then we need to
 	       find the constants of that rule *)
-	    if dependent dep or
-	      List.for_all (check_inherited nm).V.combiner_top_level cur
-	    then []
-	    else cur_info in
-	  (cur_info::rest_info,cur_plus))
-      ([],[]) (rules : Ast.rule list) in
-  List.rev info
+	      if dependent dep or
+		List.for_all (check_inherited nm).V.combiner_top_level cur
+	      then []
+	      else cur_info in
+	    (cur_info::rest_info,cur_plus))
+	([],[]) (rules : Ast.rule list) in
+    List.rev info

@@ -10,8 +10,8 @@ ast0toast.ml check_meta.ml top_level.ml type_infer.ml \
 unitary_ast0.ml arity.ml index.ml context_neg.ml \
 insert_plus.ml function_prototypes.ml \
 unify_ast.ml semantic_cocci.ml data.ml free_vars.ml parse_aux.ml disjdistr.ml \
-$(LEXER_SOURCES:.mll=.ml) $(PARSER_SOURCES:.mly=.ml) get_constants.ml \
-parse_cocci.ml
+$(LEXER_SOURCES:.mll=.ml) $(PARSER_SOURCES:.mly=.ml) \
+get_constants.ml get_constants2.ml parse_cocci.ml
 
 LIBS=../commons/commons.cma ../globals/globals.cma
 SYSLIBS = str.cma unix.cma

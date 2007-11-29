@@ -423,8 +423,11 @@ let test_parse_cocci file =
   if not (file =~ ".*\\.cocci") 
   then pr2 "warning: seems not a .cocci file";
 
-  let (xs,_,_,_,_) = Parse_cocci.process file (Some !Config.std_iso) false in
-  xs +> List.iter Pretty_print_cocci.unparse
+  let (xs,_,_,_,_,query) =
+    Parse_cocci.process file (Some !Config.std_iso) false in
+  xs +> List.iter Pretty_print_cocci.unparse;
+  if !Flag.use_glimpse
+  then match query with None -> pr "No query" | Some x -> pr x
 
 
 
@@ -581,13 +584,14 @@ let (cexpression_of_string: string -> Ast_c.expression) = fun s ->
   
 
 
+(* no point to memoize this one *)
 let sp_of_file file iso    = Parse_cocci.process file iso false
 
 let (rule_elem_of_string: string -> filename option -> Ast_cocci.rule_elem) =
  fun s iso -> 
   begin
     Common.write_file ("/tmp/__cocci.cocci") (s);
-    let (astcocci, _,_,_,_) = sp_of_file ("/tmp/__cocci.cocci") iso in
+    let (astcocci, _,_,_,_,_) = sp_of_file ("/tmp/__cocci.cocci") iso in
     let stmt =
       astcocci +>
       List.hd +> (function (_,_,x) -> List.hd x) +> (function x ->

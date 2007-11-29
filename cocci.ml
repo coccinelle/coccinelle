@@ -29,12 +29,17 @@ let cprogram_of_file_cached file =
 
 let cfile_of_program program2_with_ppmethod outf = 
   Unparse_c2.pp_program program2_with_ppmethod outf
-    
+
+(* for memoization, contains only one entry, the one for the SP *)
+let _hparse = Hashtbl.create 101
+let _hctl = Hashtbl.create 101
 
 (* --------------------------------------------------------------------- *)
 (* Cocci related *)
 (* --------------------------------------------------------------------- *)
-let sp_of_file2 file iso   = Parse_cocci.process file iso false
+let sp_of_file2 file iso   =
+  Common.memoized _hparse (file, iso) (fun () ->
+    Parse_cocci.process file iso false)
 let sp_of_file file iso    = 
   Common.profile_code "parse cocci" (fun () -> sp_of_file2 file iso)
 
@@ -971,10 +976,6 @@ and process_a_ctl_a_env_a_toplevel  a b c =
 (* The main function *)
 (*****************************************************************************)
 
-(* for memoization, contains only one entry, the one for the SP *)
-let _hparse = Hashtbl.create 101
-let _hctl = Hashtbl.create 101
-
 let full_engine2 (coccifile, isofile) cfiles = 
 
   show_or_not_cfiles  cfiles;
@@ -990,9 +991,8 @@ let full_engine2 (coccifile, isofile) cfiles =
   in
 
   (* useful opti when use -dir *)
-  let (astcocci,free_var_lists,used_after_lists,positions_lists,toks) = 
-    Common.memoized _hparse (coccifile, isofile) (fun () -> 
-      sp_of_file coccifile isofile)
+  let (astcocci,free_var_lists,used_after_lists,positions_lists,toks,_) = 
+      sp_of_file coccifile isofile
   in
   let ctls = 
     Common.memoized _hctl (coccifile, isofile) (fun () -> 
@@ -1103,7 +1103,8 @@ let check_duplicate_modif a =
 (*****************************************************************************)
 
 (* 
- glimpseindex -o -H . home 
+ cd ~/kernels/git/linux-2.6
+ glimpseindex -o -H . *
  glimpse -y -H . -N -W -w pattern;pattern2
 
 ./spatch.opt -profile -sgrep2 -quiet -show_diff -c demos/while_idiom.sgrep -dir ~/kernels/git/linux-2.6/
@@ -1326,7 +1327,7 @@ let full_engine_use_index (coccifile, isofile) tmpdir =
 
   let isofile = Some isofile in
 
-  let (astcocci,free_var_lists,used_after_lists,positions_list,_toks) = 
+  let (astcocci,free_var_lists,used_after_lists,positions_list,_toks,_query) = 
     sp_of_file coccifile isofile in
   let ctls = 
     ctls_of_ast  astcocci used_after_lists in

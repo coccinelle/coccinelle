@@ -27,3 +27,11 @@ val index :
   string (* dir *) -> string (* tmpdir *) -> unit
 val full_engine_use_index : 
   (filename * filename) -> string (* tmpdir *) -> unit
+
+(* provides memoization *)
+val sp_of_file :
+  filename (* coccifile *)  -> filename option (* isofile *) ->
+  Ast_cocci.rule list * Ast_cocci.meta_name list list list *
+      Ast_cocci.meta_name list list list * Ast_cocci.meta_name list list list *
+      string list list *
+      string option
