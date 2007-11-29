@@ -432,7 +432,6 @@ let get_constants rules =
 	    if dependent dep or
 	      List.for_all (check_inherited nm).V.combiner_top_level cur
 	    then (rest_info,cur_plus)
-	    else (Printf.printf "%s: %s\n" nm (combine2c cur_info);
-		  (build_or cur_info rest_info,cur_plus)))
+	    else (build_or cur_info rest_info,cur_plus))
 	(False,[]) (rules : Ast.rule list) in
     interpret true info
