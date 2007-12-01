@@ -466,7 +466,7 @@ let glimpse_filter (coccifile, isofile) dir =
       Some
 	(Common.cmd_to_list (spf "glimpse -y -H %s -N -W -w '%s'" dir query)
 	   +>
-	 List.filter (fun file -> List.mem (Common.filesuffix file) ["c";"h"]))
+	 List.filter (fun file -> List.mem (Common.filesuffix file) ["c"]))
 
 
 (*****************************************************************************)

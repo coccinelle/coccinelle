@@ -49,6 +49,9 @@ let get_minus_constants bind =
     | Ast.DisjExpr(exps) ->
 	disj_union_all bind (List.map r.V.combiner_expression exps)
     | Ast.Edots(_,_) | Ast.Ecircles(_,_) | Ast.Estars(_,_) -> []
+    | Ast.NestExpr(expr_dots,whencode,false) -> []
+    | Ast.NestExpr(expr_dots,whencode,true) ->
+	r.V.combiner_expression_dots expr_dots
     | _ -> k e in
 
   let typeC r k e =
@@ -89,6 +92,7 @@ let get_minus_constants bind =
 	disj_union_all bind (List.map r.V.combiner_statement_dots stmt_dots)
     | Ast.Dots(d,whn,_,_) | Ast.Circles(d,whn,_,_) | Ast.Stars(d,whn,_,_) -> []
     | Ast.Nest(stmt_dots,whn,false,_,_) -> []
+    | Ast.Nest(stmt_dots,whn,true,_,_) -> r.V.combiner_statement_dots stmt_dots
     | _ -> k e in
 
   V.combiner bind option_default

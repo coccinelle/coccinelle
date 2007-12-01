@@ -40,12 +40,12 @@
 ;; new (color) faces
 
 (defface cocci-number-face
-  '((((background light)) (:foreground "goldenrod3"))
+  '((((background light)) (:foreground "black"))
     (((background dark)) (:foreground "yellow3")))
   "Used for Cocci numbers")
 
 (defface cocci-punctuation-face
-  '((((background light)) (:foreground "dark cyan"))
+  '((((background light)) (:foreground "black"))
     (((background dark)) (:foreground "cyan")))
   "Used for punctuation")
 
@@ -55,7 +55,7 @@
   "Highlighting potential problems")
 
 (defface cocci-special-face
-  '((((background light)) (:foreground "red3"))
+  '((((background light)) (:foreground "blue"))
     (((background dark)) (:foreground "red")))
   "")
 
@@ -65,17 +65,17 @@
   "Highlighting the rule names")
 
 (defface cocci-minus-face
-  '((((background light)) (:foreground "SeaGreen4"))
+  '((((background light)) (:foreground "dark green"))
     (((background dark)) (:foreground "SeaGreen3")))
   "Highlighting lines to be removed")
 
 (defface cocci-plus-face
-  '((((background light)) (:foreground "dark salmon"))
+  '((((background light)) (:foreground "red"))
     (((background dark)) (:foreground "salmon")))
   "Highlighting lines to be added")
 
 (defface cocci-match-face
-  '((((background light)) (:foreground "purple"))
+  '((((background light)) (:foreground "violet red"))
     (((background dark)) (:foreground "purple")))
   "Highlighting lines to be matched (sgrep)")
 

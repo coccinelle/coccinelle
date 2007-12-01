@@ -150,6 +150,14 @@ let add_dot_binding var exp bindings =
     [] -> Fail NonMatch
   | x -> OK x
 
+(* multi-valued *)
+let add_multi_dot_binding var exp bindings =
+  let var = dot_term var in
+  let attempt bindings = [((var,exp)::bindings)] in
+  match List.concat(List.map attempt bindings) with
+    [] -> Fail NonMatch
+  | x -> OK x
+
 let rec nub ls =
   match ls with
     [] -> []
@@ -895,13 +903,13 @@ let match_maker checks_needed context_required whencode_allowed =
 			function
 			  | Ast0.WhenNot wc ->
 			      conjunct_bindings prev
-				(add_dot_binding d (Ast0.DotsStmtTag wc))
+				(add_multi_dot_binding d (Ast0.DotsStmtTag wc))
 			  | Ast0.WhenAlways wc ->
 			      conjunct_bindings prev
-				(add_dot_binding d (Ast0.StmtTag wc))
+				(add_multi_dot_binding d (Ast0.StmtTag wc))
 			  | Ast0.WhenAny ->
 			      conjunct_bindings prev
-				(add_dot_binding d Ast0.AnyTag))
+				(add_multi_dot_binding d Ast0.AnyTag))
 		      (return true) wc
 		  else
 		    (Printf.printf
