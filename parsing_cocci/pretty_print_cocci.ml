@@ -67,7 +67,7 @@ let print_string_befaft fn x info =
 let mcode fn = function
     (x, _, Ast.MINUS(_,plus_stream)) ->
       if !print_minus_flag
-      then print_string "-"; 
+      then print_string (if !Flag.sgrep_mode2 then "*" else "-");
       fn x; 
       if !print_plus_flag 
       then print_anything ">>> " plus_stream

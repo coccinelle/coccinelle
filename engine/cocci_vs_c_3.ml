@@ -592,6 +592,7 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
 		  pr2_once ("warning: I consider " ^ idb ^ " as a constant");
 		  true
 	      | B.Cast(ty,e) -> matches (B.unwrap_expr e)
+	      |	B.Unary(e,B.UnMinus) -> matches (B.unwrap_expr e)
 	      | B.SizeOfExpr(exp) -> true
 	      | B.SizeOfType(ty) -> true
 	      | _ -> false in
