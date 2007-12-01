@@ -54,6 +54,11 @@ let get_free checker t =
     let unitary =
       List.filter (function x -> not (List.mem x nonunitary)) unitary in
     unitary@nonunitary@nonunitary in
+
+  let whencode afn bfn = function
+      Ast0.WhenNot(a) -> afn a
+    | Ast0.WhenAlways(b) -> bfn b
+    | Ast0.WhenAny -> option_default in
   
   let ident r k i =
     match Ast0.unwrap i with
@@ -92,6 +97,14 @@ let get_free checker t =
       Ast0.MetaStmt(name,_) | Ast0.MetaStmtList(name,_) -> checker name
     | Ast0.Disj(starter,stmt_list,mids,ender) ->
 	detect_unitary_frees(List.map r.V0.combiner_statement_dots stmt_list)
+    | Ast0.Nest(starter,stmt_dots,ender,whn,multi) ->
+	bind (r.V0.combiner_statement_dots stmt_dots)
+	  (detect_unitary_frees (List.map r.V0.combiner_statement_dots whn))
+    | Ast0.Dots(d,whn) | Ast0.Circles(d,whn) | Ast0.Stars(d,whn) ->
+	detect_unitary_frees
+	  (List.map
+	     (whencode r.V0.combiner_statement_dots r.V0.combiner_statement)
+	     whn)
     | _ -> k s in
   
   let res = V0.combiner bind option_default 
