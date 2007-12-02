@@ -27,7 +27,8 @@ type token2 =
   | Fake2
   | Cocci2 of string
   | C2 of string
-
+  | Indent_cocci2
+  | Unindent_cocci2
 
 (* not used yet *)
 type token3 = 
@@ -60,6 +61,16 @@ let str_of_token2 = function
   | Fake2 -> ""
   | Cocci2 s -> s
   | C2 s -> s
+  | Indent_cocci2 -> ""
+  | Unindent_cocci2 -> ""
+
+let print_token2 = function
+  | T2 (t,_,_) -> "T2:"^TH.str_of_tok t
+  | Fake2 -> ""
+  | Cocci2 s -> "Cocci2:"^s
+  | C2 s -> "C2:"^s
+  | Indent_cocci2 -> "Indent"
+  | Unindent_cocci2 -> "Unindent"
 
 let str_of_token3 = function
   | T3 t -> TH.str_of_tok t
@@ -261,7 +272,10 @@ let expand_mcode toks =
 
     let pr_space _ = push2 (C2 " ") toks_out in
 
-    let args_pp = (env, pr_cocci, pr_c, pr_space) in
+    let indent _   = push2 Indent_cocci2 toks_out in
+    let unindent _ = push2 Unindent_cocci2 toks_out in
+
+    let args_pp = (env, pr_cocci, pr_c, pr_space, indent, unindent) in
 
 
     match mcode with
@@ -436,22 +450,59 @@ let new_tabbing a =
 
 let rec adjust_indentation xs = 
   let _current_tabbing = ref "" in
+  let tabbing_unit = ref None in
+
+  let string_of_list l = String.concat "" (List.map string_of_char l) in
+
+  (* try to pick a tabbing unit for the plus code *)
+  let adjust_tabbing_unit old_tab new_tab =
+    if !tabbing_unit = None && String.length new_tab > String.length old_tab
+    then
+      let old_tab = list_of_string old_tab in
+      let new_tab = list_of_string new_tab in
+      let rec loop = function
+	  ([],new_tab) ->
+	    tabbing_unit := Some(string_of_list new_tab,List.rev new_tab)
+	| (_,[]) -> failwith "not possible"
+	| (o::os,n::ns) -> loop (os,ns) in (* could check for equality *)
+      loop (old_tab,new_tab) in
+
+  let remtab tu current_tab =
+    let current_tab = List.rev(list_of_string current_tab) in
+    let rec loop = function
+	([],new_tab) -> string_of_list (List.rev new_tab)
+      |	(_,[]) -> "" (*wierd; tabbing unit used up more than the current tab*)
+      |	(t::ts,n::ns) when t = n -> loop (ts,ns)
+      |	(_,ns) -> (* mismatch; remove what we can *)
+	  string_of_list (List.rev ns) in
+    loop (tu,current_tab) in
 
   let rec aux xs = 
     match xs with
     | [] ->  []
-    | x::xs -> 
-        (match x with
-        | T2 (Parser_c.TCommentNewline s, _, _) ->
-            str_of_token2 x +> new_tabbing +> (fun s -> _current_tabbing := s);
-            x::aux xs
-        | Cocci2 "\n" -> 
+    | ((T2 (tok,_,_)) as x)::(T2 (Parser_c.TCommentNewline s, _, _))::
+      (Cocci2 "{")::xs when str_of_token2 x = ")" -> x::(Cocci2 " {")::(aux xs)
+    | ((T2 (Parser_c.TCommentNewline s, _, _)) as x)::xs ->
+	let old_tabbing = !_current_tabbing in 
+        str_of_token2 x +> new_tabbing +> (fun s -> _current_tabbing := s);
+	adjust_tabbing_unit old_tabbing !_current_tabbing;
+        x::aux xs
+    | ((Cocci2 "\n") as x)::xs -> 
             (* dont inline in expr because of wierd eval order of ocaml *)
-            let s = !_current_tabbing in 
-            x::Cocci2 (s)::aux xs
-        | _ -> x::aux xs
-        )
-  in
+        let s = !_current_tabbing in 
+        x::Cocci2 (s)::aux xs
+    | Indent_cocci2::xs ->
+	(match !tabbing_unit with
+	  None -> aux xs
+	| Some (tu,_) ->
+	    _current_tabbing := (!_current_tabbing)^tu;
+	    Cocci2 (tu)::aux xs)
+    | Unindent_cocci2::xs ->
+	(match !tabbing_unit with
+	  None -> aux xs
+	| Some (_,tu) ->
+	    _current_tabbing := remtab tu (!_current_tabbing); aux xs)
+    | x::xs -> x::aux xs in
   aux xs
 
 

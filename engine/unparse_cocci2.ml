@@ -19,16 +19,17 @@ exception CantBeInPlus
 
 type pos = Before | After | InPlace
 
-let rec pp_list_list_any (env, pr, pr_elem, pr_space) xxs before =
+let rec pp_list_list_any (env, pr, pr_elem, pr_space, indent, unindent)
+    xxs before =
 
 (* Just to be able to copy paste the code from pretty_print_cocci.ml. *)
 let print_string = pr in
-let close_box() = () in
+let close_box _ = () in
 let print_space() = pr " "  in
-let force_newline () = () in
+let force_newline () = pr "\n" in
 
-let start_block () = () in
-let end_block () = () in
+let start_block () = force_newline(); indent() in
+let end_block () = unindent(); force_newline () in
 let print_string_box s = print_string s in
 
 let print_option = Common.do_option in
@@ -621,7 +622,7 @@ let rule =
 in
 *)
 
-
+let if_open_brace  = function "{" -> indent() | _ -> () in
 
 let rec pp_any = function
   (* assert: normally there is only CONTEXT NOTHING tokens in any *)
@@ -653,7 +654,7 @@ let rec pp_any = function
   | Ast.CaseLineTag(x) -> case_line "" x
 
   | Ast.ConstVolTag(x) -> const_vol x
-  | Ast.Token(x,None) -> print_string x
+  | Ast.Token(x,None) -> print_string x; if_open_brace x
   | Ast.Token(x,Some info) -> 
       mcode
 	(function x ->
@@ -662,8 +663,8 @@ let rec pp_any = function
 	  (match x with
 	    "return" -> print_string " "
 	  | _ -> ()))
-	(x,info,())
-          
+	(x,info,());
+      if_open_brace x
 
   | Ast.Code(x) -> let _ = top_level x in ()
 
@@ -687,13 +688,17 @@ in
       (* for many tags, we must not do a newline before the first '+' *)
       let isfn s =
 	match Ast.unwrap s with Ast.FunDecl _ -> true | _ -> false in
+      let prnl = function (* need to get unindent before newline for } *)
+	  (Ast.Token ("}",_)::_) -> unindent(); pr "\n"
+	| _ -> pr "\n" in
       let newline_before _ =
 	if before = After
 	then
-	  match List.hd xxs with
+	  let hd = List.hd xxs in
+	  match hd with
             (Ast.StatementTag s::_) when isfn s -> pr "\n\n"
           | (Ast.Rule_elemTag _::_) | (Ast.StatementTag _::_)
-	  | (Ast.DeclarationTag _::_) -> pr "\n"
+	  | (Ast.DeclarationTag _::_) | (Ast.Token ("}",_)::_) -> prnl hd
           | _ -> () in
       let newline_after _ =
 	if before = Before
@@ -701,7 +706,7 @@ in
 	  match List.rev(List.hd(List.rev xxs)) with
 	    (Ast.StatementTag s::_) when isfn s -> pr "\n\n"
           | (Ast.Rule_elemTag _::_) | (Ast.StatementTag _::_)
-	  | (Ast.DeclarationTag _::_) -> pr "\n"
+	  | (Ast.DeclarationTag _::_) | (Ast.Token ("{",_)::_) -> pr "\n"
           | _ -> () in
       (* print a newline at the beginning, if needed *)
       newline_before();
@@ -709,7 +714,7 @@ in
       x +> List.iter (fun any -> pp_any any);
       (* print a newline before each of the rest *)
       xs +> List.iter (fun xs -> 
-        pr "\n";
+        prnl xs;
         xs +> List.iter (fun any -> 
           pp_any any
         )

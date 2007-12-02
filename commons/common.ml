@@ -63,8 +63,9 @@ let enum x n =
   in
   List.rev (enum_aux [] x n)
 
-let (list_of_string: string -> char list) = fun s -> 
-  (enum 0 ((String.length s) - 1) +> List.map (String.get s))
+let (list_of_string: string -> char list) = function
+    "" -> []
+  | s -> (enum 0 ((String.length s) - 1) +> List.map (String.get s))
 
 let push2 v l =
   l := v :: !l

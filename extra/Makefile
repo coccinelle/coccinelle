@@ -4,7 +4,7 @@ SOURCES = classic_patch.ml kbuild.ml maintainers.ml c_info.ml
 
 SYSLIBS = str.cma unix.cma 
 
-LIBS=../commons/commons.cma ../parsing_c/c_parser.cma ../globals/globals.cma 
+LIBS=../commons/commons.cma ../parsing_c/parsing_c.cma ../globals/globals.cma 
 ADDONSPATH= -I ../commons -I ../globals -I  ../parsing_cocci -I  ../parsing_c
 
 #for warning:  -w A 

@@ -515,173 +515,181 @@ let is_stm_dots s =
   | _ -> false
     
 let rec statement s =
-  match Ast0.unwrap s with
-    Ast0.Decl((_,bef),decl) ->
-      let decl = declaration decl in
-      let left = promote_to_statement_start decl bef in
-      mkres s (Ast0.Decl((Ast0.get_info left,bef),decl)) decl decl
-  | Ast0.Seq(lbrace,body,rbrace) -> 
-      let body =
-	dots is_stm_dots (Some(promote_mcode lbrace)) statement body in
-      mkres s (Ast0.Seq(lbrace,body,rbrace))
-	(promote_mcode lbrace) (promote_mcode rbrace)
-  | Ast0.ExprStatement(exp,sem) ->
-      let exp = expression exp in
-      mkres s (Ast0.ExprStatement(exp,sem)) exp (promote_mcode sem)
-  | Ast0.IfThen(iff,lp,exp,rp,branch,(_,aft)) ->
-      let exp = expression exp in
-      let branch = statement branch in
-      let right = promote_to_statement branch aft in
-      mkres s (Ast0.IfThen(iff,lp,exp,rp,branch,(Ast0.get_info right,aft)))
-	(promote_mcode iff) right
-  | Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2,(_,aft)) ->
-      let exp = expression exp in
-      let branch1 = statement branch1 in
-      let branch2 = statement branch2 in
-      let right = promote_to_statement branch2 aft in
-      mkres s
-	(Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2,
-	  (Ast0.get_info right,aft)))
-	(promote_mcode iff) right
-  | Ast0.While(wh,lp,exp,rp,body,(_,aft)) ->
-      let exp = expression exp in
-      let body = statement body in
-      let right = promote_to_statement body aft in
-      mkres s (Ast0.While(wh,lp,exp,rp,body,(Ast0.get_info right,aft)))
-	(promote_mcode wh) right
-  | Ast0.Do(d,body,wh,lp,exp,rp,sem) ->
-      let body = statement body in
-      let exp = expression exp in
-      mkres s (Ast0.Do(d,body,wh,lp,exp,rp,sem))
-	(promote_mcode d) (promote_mcode sem)
-  | Ast0.For(fr,lp,exp1,sem1,exp2,sem2,exp3,rp,body,(_,aft)) ->
-      let exp1 = get_option expression exp1 in
-      let exp2 = get_option expression exp2 in
-      let exp3 = get_option expression exp3 in
-      let body = statement body in
-      let right = promote_to_statement body aft in
-      mkres s (Ast0.For(fr,lp,exp1,sem1,exp2,sem2,exp3,rp,body,
-			(Ast0.get_info right,aft)))
-	(promote_mcode fr) right
-  | Ast0.Iterator(nm,lp,args,rp,body,(_,aft)) ->
-      let args = dots is_exp_dots (Some(promote_mcode lp)) expression args in
-      let body = statement body in
-      let right = promote_to_statement body aft in
-      mkres s (Ast0.Iterator(nm,lp,args,rp,body,(Ast0.get_info right,aft)))
-	(promote_mcode nm) right
-  | Ast0.Switch(switch,lp,exp,rp,lb,cases,rb) ->
-      let exp = expression exp in
-      let cases =
-	dots (function _ -> false) (Some(promote_mcode lb)) case_line cases in
-      mkres s
-	(Ast0.Switch(switch,lp,exp,rp,lb,cases,rb))
-	(promote_mcode switch) (promote_mcode rb)
-  | Ast0.Break(br,sem) as us ->
-      mkres s us (promote_mcode br) (promote_mcode sem)
-  | Ast0.Continue(cont,sem) as us ->
-      mkres s us (promote_mcode cont) (promote_mcode sem)
-  | Ast0.Return(ret,sem) as us ->
-      mkres s us (promote_mcode ret) (promote_mcode sem)
-  | Ast0.ReturnExpr(ret,exp,sem) ->
-      let exp = expression exp in
-      mkres s (Ast0.ReturnExpr(ret,exp,sem)) 
-	(promote_mcode ret) (promote_mcode sem)
-  | Ast0.MetaStmt(name,_)
-  | Ast0.MetaStmtList(name,_) as us ->
-      let ln = promote_mcode name in mkres s us ln ln
-  | Ast0.Exp(exp) ->
-      let exp = expression exp in
-      mkres s (Ast0.Exp(exp)) exp exp
-  | Ast0.TopExp(exp) ->
-      let exp = expression exp in
-      mkres s (Ast0.TopExp(exp)) exp exp
-  | Ast0.Ty(ty) ->
-      let ty = typeC ty in
-      mkres s (Ast0.Ty(ty)) ty ty
-  | Ast0.Disj(starter,rule_elem_dots_list,mids,ender) ->
-      let starter = bad_mcode starter in
-      let mids = List.map bad_mcode mids in
-      let ender = bad_mcode ender in
-      let rec loop prevs = function
-	  [] -> []
-	| stm::stms ->
-	    (dots is_stm_dots (Some(promote_mcode_plus_one(List.hd prevs)))
-	       statement stm)::
-	    (loop (List.tl prevs) stms) in
-      let elems = loop (starter::mids) rule_elem_dots_list in
-      mkmultires s (Ast0.Disj(starter,elems,mids,ender))
-	(promote_mcode starter) (promote_mcode ender)
-	(get_all_start_info elems) (get_all_end_info elems)
-  | Ast0.Nest(starter,rule_elem_dots,ender,whencode,multi) ->
-      let starter = bad_mcode starter in
-      let ender = bad_mcode ender in
-      let rule_elem_dots = dots is_stm_dots None statement rule_elem_dots in
-      mkres s (Ast0.Nest(starter,rule_elem_dots,ender,whencode,multi))
-	(promote_mcode starter) (promote_mcode ender)
-  | Ast0.Dots(dots,whencode) ->
-      let dots = bad_mcode dots in
-      let ln = promote_mcode dots in
-      mkres s (Ast0.Dots(dots,whencode)) ln ln
-  | Ast0.Circles(dots,whencode) ->
-      let dots = bad_mcode dots in
-      let ln = promote_mcode dots in
-      mkres s (Ast0.Circles(dots,whencode)) ln ln
-  | Ast0.Stars(dots,whencode) ->
-      let dots = bad_mcode dots in
-      let ln = promote_mcode dots in
-      mkres s (Ast0.Stars(dots,whencode)) ln ln
-  | Ast0.FunDecl((_,bef),fninfo,name,lp,params,rp,lbrace,body,rbrace) ->
-      let fninfo =
-	List.map
-	  (function Ast0.FType(ty) -> Ast0.FType(typeC ty) | x -> x)
-	  fninfo in
-      let name = ident name in
-      let params = parameter_list (Some(promote_mcode lp)) params in
-      let body =
-	dots is_stm_dots (Some(promote_mcode lbrace)) statement body in
-      let left =
+  let res =
+    match Ast0.unwrap s with
+      Ast0.Decl((_,bef),decl) ->
+	let decl = declaration decl in
+	let left = promote_to_statement_start decl bef in
+	mkres s (Ast0.Decl((Ast0.get_info left,bef),decl)) decl decl
+    | Ast0.Seq(lbrace,body,rbrace) -> 
+	let body =
+	  dots is_stm_dots (Some(promote_mcode lbrace)) statement body in
+	mkres s (Ast0.Seq(lbrace,body,rbrace))
+	  (promote_mcode lbrace) (promote_mcode rbrace)
+    | Ast0.ExprStatement(exp,sem) ->
+	let exp = expression exp in
+	mkres s (Ast0.ExprStatement(exp,sem)) exp (promote_mcode sem)
+    | Ast0.IfThen(iff,lp,exp,rp,branch,(_,aft)) ->
+	let exp = expression exp in
+	let branch = statement branch in
+	let right = promote_to_statement branch aft in
+	mkres s (Ast0.IfThen(iff,lp,exp,rp,branch,(Ast0.get_info right,aft)))
+	  (promote_mcode iff) right
+    | Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2,(_,aft)) ->
+	let exp = expression exp in
+	let branch1 = statement branch1 in
+	let branch2 = statement branch2 in
+	let right = promote_to_statement branch2 aft in
+	mkres s
+	  (Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2,
+	    (Ast0.get_info right,aft)))
+	  (promote_mcode iff) right
+    | Ast0.While(wh,lp,exp,rp,body,(_,aft)) ->
+	let exp = expression exp in
+	let body = statement body in
+	let right = promote_to_statement body aft in
+	mkres s (Ast0.While(wh,lp,exp,rp,body,(Ast0.get_info right,aft)))
+	  (promote_mcode wh) right
+    | Ast0.Do(d,body,wh,lp,exp,rp,sem) ->
+	let body = statement body in
+	let exp = expression exp in
+	mkres s (Ast0.Do(d,body,wh,lp,exp,rp,sem))
+	  (promote_mcode d) (promote_mcode sem)
+    | Ast0.For(fr,lp,exp1,sem1,exp2,sem2,exp3,rp,body,(_,aft)) ->
+	let exp1 = get_option expression exp1 in
+	let exp2 = get_option expression exp2 in
+	let exp3 = get_option expression exp3 in
+	let body = statement body in
+	let right = promote_to_statement body aft in
+	mkres s (Ast0.For(fr,lp,exp1,sem1,exp2,sem2,exp3,rp,body,
+			  (Ast0.get_info right,aft)))
+	  (promote_mcode fr) right
+    | Ast0.Iterator(nm,lp,args,rp,body,(_,aft)) ->
+	let args = dots is_exp_dots (Some(promote_mcode lp)) expression args in
+	let body = statement body in
+	let right = promote_to_statement body aft in
+	mkres s (Ast0.Iterator(nm,lp,args,rp,body,(Ast0.get_info right,aft)))
+	  (promote_mcode nm) right
+    | Ast0.Switch(switch,lp,exp,rp,lb,cases,rb) ->
+	let exp = expression exp in
+	let cases =
+	  dots (function _ -> false) (Some(promote_mcode lb)) case_line cases in
+	mkres s
+	  (Ast0.Switch(switch,lp,exp,rp,lb,cases,rb))
+	  (promote_mcode switch) (promote_mcode rb)
+    | Ast0.Break(br,sem) as us ->
+	mkres s us (promote_mcode br) (promote_mcode sem)
+    | Ast0.Continue(cont,sem) as us ->
+	mkres s us (promote_mcode cont) (promote_mcode sem)
+    | Ast0.Return(ret,sem) as us ->
+	mkres s us (promote_mcode ret) (promote_mcode sem)
+    | Ast0.ReturnExpr(ret,exp,sem) ->
+	let exp = expression exp in
+	mkres s (Ast0.ReturnExpr(ret,exp,sem)) 
+	  (promote_mcode ret) (promote_mcode sem)
+    | Ast0.MetaStmt(name,_)
+    | Ast0.MetaStmtList(name,_) as us ->
+	let ln = promote_mcode name in mkres s us ln ln
+    | Ast0.Exp(exp) ->
+	let exp = expression exp in
+	mkres s (Ast0.Exp(exp)) exp exp
+    | Ast0.TopExp(exp) ->
+	let exp = expression exp in
+	mkres s (Ast0.TopExp(exp)) exp exp
+    | Ast0.Ty(ty) ->
+	let ty = typeC ty in
+	mkres s (Ast0.Ty(ty)) ty ty
+    | Ast0.Disj(starter,rule_elem_dots_list,mids,ender) ->
+	let starter = bad_mcode starter in
+	let mids = List.map bad_mcode mids in
+	let ender = bad_mcode ender in
+	let rec loop prevs = function
+	    [] -> []
+	  | stm::stms ->
+	      (dots is_stm_dots (Some(promote_mcode_plus_one(List.hd prevs)))
+		 statement stm)::
+	      (loop (List.tl prevs) stms) in
+	let elems = loop (starter::mids) rule_elem_dots_list in
+	mkmultires s (Ast0.Disj(starter,elems,mids,ender))
+	  (promote_mcode starter) (promote_mcode ender)
+	  (get_all_start_info elems) (get_all_end_info elems)
+    | Ast0.Nest(starter,rule_elem_dots,ender,whencode,multi) ->
+	let starter = bad_mcode starter in
+	let ender = bad_mcode ender in
+	let rule_elem_dots = dots is_stm_dots None statement rule_elem_dots in
+	mkres s (Ast0.Nest(starter,rule_elem_dots,ender,whencode,multi))
+	  (promote_mcode starter) (promote_mcode ender)
+    | Ast0.Dots(dots,whencode) ->
+	let dots = bad_mcode dots in
+	let ln = promote_mcode dots in
+	mkres s (Ast0.Dots(dots,whencode)) ln ln
+    | Ast0.Circles(dots,whencode) ->
+	let dots = bad_mcode dots in
+	let ln = promote_mcode dots in
+	mkres s (Ast0.Circles(dots,whencode)) ln ln
+    | Ast0.Stars(dots,whencode) ->
+	let dots = bad_mcode dots in
+	let ln = promote_mcode dots in
+	mkres s (Ast0.Stars(dots,whencode)) ln ln
+    | Ast0.FunDecl((_,bef),fninfo,name,lp,params,rp,lbrace,body,rbrace) ->
+	let fninfo =
+	  List.map
+	    (function Ast0.FType(ty) -> Ast0.FType(typeC ty) | x -> x)
+	    fninfo in
+	let name = ident name in
+	let params = parameter_list (Some(promote_mcode lp)) params in
+	let body =
+	  dots is_stm_dots (Some(promote_mcode lbrace)) statement body in
+	let left =
 	(* cases on what is leftmost *)
-	match fninfo with
-	  [] -> promote_to_statement_start name bef
-	| Ast0.FStorage(stg)::_ ->
-	    promote_to_statement_start (promote_mcode stg) bef
-	| Ast0.FType(ty)::_ ->
-	    promote_to_statement_start ty bef
-	| Ast0.FInline(inline)::_ ->
-	    promote_to_statement_start (promote_mcode inline) bef
-	| Ast0.FAttr(attr)::_ ->
-	    promote_to_statement_start (promote_mcode attr) bef in
+	  match fninfo with
+	    [] -> promote_to_statement_start name bef
+	  | Ast0.FStorage(stg)::_ ->
+	      promote_to_statement_start (promote_mcode stg) bef
+	  | Ast0.FType(ty)::_ ->
+	      promote_to_statement_start ty bef
+	  | Ast0.FInline(inline)::_ ->
+	      promote_to_statement_start (promote_mcode inline) bef
+	  | Ast0.FAttr(attr)::_ ->
+	      promote_to_statement_start (promote_mcode attr) bef in
       (* pretend it is one line before the start of the function, so that it
 	 will catch things defined at top level.  We assume that these will not
 	 be defined on the same line as the function.  This is a HACK.
 	 A better approach would be to attach top_level things to this node,
 	 and other things to the node after, but that would complicate
 	 insert_plus, which doesn't distinguish between different mcodekinds *)
-      let res =
-	Ast0.FunDecl((Ast0.get_info left,bef),fninfo,name,lp,params,rp,lbrace,
-		     body,rbrace) in
+	let res =
+	  Ast0.FunDecl((Ast0.get_info left,bef),fninfo,name,lp,params,rp,lbrace,
+		       body,rbrace) in
       (* have to do this test again, because of typing problems - can't save
 	 the result, only use it *)
-      (match fninfo with
-	[] -> mkres s res name (promote_mcode rbrace)
-      | Ast0.FStorage(stg)::_ ->
-	  mkres s res (promote_mcode stg) (promote_mcode rbrace)
-      | Ast0.FType(ty)::_ -> mkres s res ty (promote_mcode rbrace)
-      | Ast0.FInline(inline)::_ ->
-	  mkres s res (promote_mcode inline) (promote_mcode rbrace)
-      | Ast0.FAttr(attr)::_ ->
-	  mkres s res (promote_mcode attr) (promote_mcode rbrace))
-
-  | Ast0.Include(inc,stm) ->
-      mkres s (Ast0.Include(inc,stm)) (promote_mcode inc) (promote_mcode stm)
-  | Ast0.Define(def,id,params,body) ->
-      let id = ident id in
-      let body = dots is_stm_dots None statement body in
-      mkres s (Ast0.Define(def,id,params,body)) (promote_mcode def) body
-  | Ast0.OptStm(stm) ->
-      let stm = statement stm in mkres s (Ast0.OptStm(stm)) stm stm
-  | Ast0.UniqueStm(stm) ->
-      let stm = statement stm in mkres s (Ast0.UniqueStm(stm)) stm stm
+	(match fninfo with
+	  [] -> mkres s res name (promote_mcode rbrace)
+	| Ast0.FStorage(stg)::_ ->
+	    mkres s res (promote_mcode stg) (promote_mcode rbrace)
+	| Ast0.FType(ty)::_ -> mkres s res ty (promote_mcode rbrace)
+	| Ast0.FInline(inline)::_ ->
+	    mkres s res (promote_mcode inline) (promote_mcode rbrace)
+	| Ast0.FAttr(attr)::_ ->
+	    mkres s res (promote_mcode attr) (promote_mcode rbrace))
+	  
+    | Ast0.Include(inc,stm) ->
+	mkres s (Ast0.Include(inc,stm)) (promote_mcode inc) (promote_mcode stm)
+    | Ast0.Define(def,id,params,body) ->
+	let id = ident id in
+	let body = dots is_stm_dots None statement body in
+	mkres s (Ast0.Define(def,id,params,body)) (promote_mcode def) body
+    | Ast0.OptStm(stm) ->
+	let stm = statement stm in mkres s (Ast0.OptStm(stm)) stm stm
+    | Ast0.UniqueStm(stm) ->
+	let stm = statement stm in mkres s (Ast0.UniqueStm(stm)) stm stm in
+  Ast0.set_dots_bef_aft res
+    (match Ast0.get_dots_bef_aft res with
+      Ast0.NoDots -> Ast0.NoDots
+    | Ast0.AddingBetweenDots s ->
+	Ast0.AddingBetweenDots(statement s)
+    | Ast0.DroppingBetweenDots s ->
+	Ast0.DroppingBetweenDots(statement s))
 
 and case_line c =
   match Ast0.unwrap c with

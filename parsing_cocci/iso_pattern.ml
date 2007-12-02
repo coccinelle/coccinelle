@@ -1146,29 +1146,37 @@ let rebuild_mcode start_line =
   (* case for control operators (if, etc) *)
   let statement r k e =
     let s = k e in
-    copy_one
-      (Ast0.rewrap s
-	 (match Ast0.unwrap s with
-	   Ast0.Decl((info,mc),decl) ->
-	     Ast0.Decl((info,copy_mcodekind mc),decl)
-	 | Ast0.IfThen(iff,lp,tst,rp,branch,(info,mc)) ->
-	     Ast0.IfThen(iff,lp,tst,rp,branch,(info,copy_mcodekind mc))
-	 | Ast0.IfThenElse(iff,lp,tst,rp,branch1,els,branch2,(info,mc)) ->
-	     Ast0.IfThenElse(iff,lp,tst,rp,branch1,els,branch2,
-	       (info,copy_mcodekind mc))
-	 | Ast0.While(whl,lp,exp,rp,body,(info,mc)) ->
-	     Ast0.While(whl,lp,exp,rp,body,(info,copy_mcodekind mc))
-	 | Ast0.For(fr,lp,e1,sem1,e2,sem2,e3,rp,body,(info,mc)) ->
-	     Ast0.For(fr,lp,e1,sem1,e2,sem2,e3,rp,body,
-		      (info,copy_mcodekind mc))
-	 | Ast0.Iterator(nm,lp,args,rp,body,(info,mc)) ->
-	     Ast0.Iterator(nm,lp,args,rp,body,(info,copy_mcodekind mc))
-	 | Ast0.FunDecl
-	     ((info,mc),fninfo,name,lp,params,rp,lbrace,body,rbrace) ->
-	       Ast0.FunDecl
-		 ((info,copy_mcodekind mc),
-		  fninfo,name,lp,params,rp,lbrace,body,rbrace)
-	 | s -> s)) in
+    let res =
+      copy_one
+	(Ast0.rewrap s
+	   (match Ast0.unwrap s with
+	     Ast0.Decl((info,mc),decl) ->
+	       Ast0.Decl((info,copy_mcodekind mc),decl)
+	   | Ast0.IfThen(iff,lp,tst,rp,branch,(info,mc)) ->
+	       Ast0.IfThen(iff,lp,tst,rp,branch,(info,copy_mcodekind mc))
+	   | Ast0.IfThenElse(iff,lp,tst,rp,branch1,els,branch2,(info,mc)) ->
+	       Ast0.IfThenElse(iff,lp,tst,rp,branch1,els,branch2,
+		 (info,copy_mcodekind mc))
+	   | Ast0.While(whl,lp,exp,rp,body,(info,mc)) ->
+	       Ast0.While(whl,lp,exp,rp,body,(info,copy_mcodekind mc))
+	   | Ast0.For(fr,lp,e1,sem1,e2,sem2,e3,rp,body,(info,mc)) ->
+	       Ast0.For(fr,lp,e1,sem1,e2,sem2,e3,rp,body,
+			(info,copy_mcodekind mc))
+	   | Ast0.Iterator(nm,lp,args,rp,body,(info,mc)) ->
+	       Ast0.Iterator(nm,lp,args,rp,body,(info,copy_mcodekind mc))
+	   | Ast0.FunDecl
+	       ((info,mc),fninfo,name,lp,params,rp,lbrace,body,rbrace) ->
+		 Ast0.FunDecl
+		   ((info,copy_mcodekind mc),
+		    fninfo,name,lp,params,rp,lbrace,body,rbrace)
+	   | s -> s)) in
+    Ast0.set_dots_bef_aft res
+      (match Ast0.get_dots_bef_aft res with
+	Ast0.NoDots -> Ast0.NoDots
+      | Ast0.AddingBetweenDots s ->
+	  Ast0.AddingBetweenDots(r.V0.rebuilder_statement s)
+      | Ast0.DroppingBetweenDots s ->
+	  Ast0.DroppingBetweenDots(r.V0.rebuilder_statement s)) in
   
   V0.rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
