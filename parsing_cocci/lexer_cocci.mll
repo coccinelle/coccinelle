@@ -312,12 +312,12 @@ let init _ =
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_pos_meta :=
     (function name ->
-      let fn (d,ln,_,_,_,_,_) =
+      let fn ((d,ln,_,_,_,_,_) as clt) =
 	(if d = Data.PLUS
 	then
 	  failwith
 	    (Printf.sprintf "%d: positions only allowed in minus code" ln));
-	TMetaPos(name) in
+	TMetaPos(name,clt) in
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_type_name :=
     (function name ->

@@ -40,7 +40,7 @@ module P = Parse_aux
 %token <Parse_aux.info>       TMetaStm TMetaStmList TMetaFunc TMetaLocalFunc
 %token <Parse_aux.list_info>  TMetaParamList TMetaExpList
 %token <Parse_aux.typed_info> TMetaExp TMetaIdExp TMetaConst
-%token <Ast_cocci.meta_name>  TMetaPos
+%token <Ast_cocci.meta_name * Data.clt>  TMetaPos
 
 %token TArob TArobArob TPArob
 
@@ -700,7 +700,7 @@ const_vol:
     | Tvolatile    { P.clt2mcode Ast.Volatile $1 }
 
 pos:
-      TPArob TMetaPos { $2 }
+      TPArob TMetaPos { let (name,clt) = $2 in name }
 
 /*****************************************************************************/
 

@@ -832,6 +832,16 @@ and find_line_end inwhen line clt q = function
   | xs -> (PC.TLineEnd(clt),q)::(insert_line_end xs)
 
 (* ----------------------------------------------------------------------- *)
+(* positions *)
+
+let rec extract_positions = function
+    [] -> ([],[])
+  | (PC.TPArob,_)::((PC.TMetaPos _) as x,_)::rest ->
+      let (positions,rest) = extract_positions rest in (x::positions,rest)
+  | x::rest ->
+      let (positions,rest) = extract_positions rest in (positions,x::rest)
+
+(* ----------------------------------------------------------------------- *)
 (* process pragmas: they can only be used in + code, and adjacent to
 another + token.  They are concatenated to the string representation of
 that other token. *)
@@ -1155,6 +1165,7 @@ let parse file =
 		 Lexer_cocci.metavariables []);
 	    (* get transformation rules *)
 	    let (more,tokens) = get_tokens [PC.TArobArob;PC.TArob] in
+	    let (positions,tokens) = extract_positions tokens in
 	    let starts_with_name =
 	      more &&
 	      (match List.hd (List.rev tokens) with

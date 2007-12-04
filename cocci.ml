@@ -1104,7 +1104,7 @@ let check_duplicate_modif a =
 
 (* 
  cd ~/kernels/git/linux-2.6
- glimpseindex -o -H . *          or
+ glimpseindex -o -H . *
  glimpse -y -H . -N -W -w pattern;pattern2
 
 ./spatch.opt -profile -sgrep2 -quiet -show_diff -c demos/while_idiom.sgrep -dir ~/kernels/git/linux-2.6/

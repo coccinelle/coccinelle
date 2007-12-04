@@ -96,11 +96,13 @@ let build_or x y =
 let keep x = Elem x
 let drop x = True
 
-let do_get_constants constants keywords =
+let do_get_constants constants keywords env =
   let donothing r k e = k e in
   let option_default = True in
   let mcode _ _ = option_default in
   let bind = build_and in
+  let inherited (nm1,_) = try List.assoc nm1 env with Not_found -> False in
+  let minherited name = inherited (Ast.unwrap_mcode name) in
 
   (* if one branch gives no information, then we have to take anything *)
   let disj_union_all = List.fold_left build_or False in
@@ -111,7 +113,15 @@ let do_get_constants constants keywords =
 	(match Ast.unwrap_mcode name with
 	  "NULL" -> keywords "NULL"
 	| nm -> constants nm)
+    | Ast.MetaId(name,_,_) | Ast.MetaFunc(name,_,_)
+    | Ast.MetaLocalFunc(name,_,_) -> minherited name
     | _ -> k i in
+
+  let rec type_collect res = function
+      TC.ConstVol(_,ty) | TC.Pointer(ty) | TC.FunctionPointer(ty)
+    | TC.Array(ty) -> type_collect res ty
+    | TC.MetaType(tyname,_,_) -> inherited tyname
+    | ty -> res in
 
   (* no point to do anything special for records because glimpse is
      word-oriented *)
@@ -125,6 +135,13 @@ let do_get_constants constants keywords =
 	| Ast.Int "1" -> keywords "1"
 	| Ast.Int s -> constants s
 	| Ast.Float s -> constants s)
+    |       Ast.MetaExpr(name,_,Some type_list,_,_) ->
+	let types = List.fold_left type_collect option_default type_list in
+	bind (minherited name) types
+    | Ast.MetaErr(name,_,_) | Ast.MetaExpr(name,_,_,_,_) -> minherited name
+    | Ast.MetaExprList(name,None,_,_) -> minherited name
+    | Ast.MetaExprList(name,Some (lenname,_,_),_,_) ->
+	bind (minherited name) (inherited lenname)
     | Ast.SizeOfExpr(sizeof,exp) -> bind (keywords "sizeof") (k e)
     | Ast.SizeOfType(sizeof,lp,ty,rp) -> bind (keywords "sizeof") (k e)
     | Ast.NestExpr(expr_dots,wc,false) -> option_default
@@ -156,6 +173,7 @@ let do_get_constants constants keywords =
     match Ast.unwrap ty with
       Ast.BaseType(ty,sgn) -> baseType (Ast.unwrap_mcode ty)
     | Ast.TypeName(name) -> constants (Ast.unwrap_mcode name)
+    | Ast.MetaType(name,_,_) -> minherited name
     | _ -> k ty in
 
   let declaration r k d =
@@ -175,11 +193,17 @@ let do_get_constants constants keywords =
   let parameter r k p =
     match Ast.unwrap p with
       Ast.OptParam(param) -> option_default
+    | Ast.MetaParam(name,_,_) -> minherited name
+    | Ast.MetaParamList(name,None,_,_) -> minherited name
+    | Ast.MetaParamList(name,Some(lenname,_,_),_,_) ->
+	bind (minherited name) (inherited lenname)
     | _ -> k p in
 
   let rule_elem r k re =
     match Ast.unwrap re with
-      Ast.WhileHeader(whl,lp,exp,rp) ->
+      Ast.MetaRuleElem(name,_,_) | Ast.MetaStmt(name,_,_,_)
+    | Ast.MetaStmtList(name,_,_) -> minherited name
+    | Ast.WhileHeader(whl,lp,exp,rp) ->
 	bind (keywords "while") (k re)
     | Ast.WhileTail(whl,lp,exp,rp,sem) ->
 	bind (keywords "do") (k re)
@@ -297,108 +321,45 @@ let get_plus_constants =
     donothing donothing donothing donothing donothing
 
 (* ------------------------------------------------------------------------ *)
-(* see if there are any inherited variables that must be bound for this rule
-to match *)
 
-let check_inherited nm =
-  let donothing r k e = k e in
-  let option_default = false in
-  let bind x y = x or y in
-  let mcode _ _ = option_default in
-  let inherited (nm1,_) = not(nm = nm1) in
-  let minherited (name,_,_) = inherited name in
+(* true means the rule should be analyzed, false means it should be ignored *)
+let rec dependencies env = function
+    Ast.Dep s -> (try List.assoc s env with Not_found -> False)
+  | Ast.AntiDep s -> True
+  | Ast.EverDep s -> (try List.assoc s env with Not_found -> False)
+  | Ast.NeverDep s -> True
+  | Ast.AndDep (d1,d2) -> build_and (dependencies env d1) (dependencies env d2)
+  | Ast.OrDep (d1,d2) -> build_or (dependencies env d1) (dependencies env d2)
+  | Ast.NoDep -> True
 
-  (* a case for everything for there is a metavariable, also disjunctions
-     or optional things *)
+(* ------------------------------------------------------------------------ *)
 
-  let strictident recursor k i =
-    match Ast.unwrap i with
-      Ast.MetaId(name,_,_) | Ast.MetaFunc(name,_,_)
-    | Ast.MetaLocalFunc(name,_,_) -> minherited name
-    | _ -> k i in
+let all_context =
+  let bind x y = x && y in
+  let option_default = true in
 
-  let rec type_collect res = function
-      TC.ConstVol(_,ty) | TC.Pointer(ty) | TC.FunctionPointer(ty)
-    | TC.Array(ty) -> type_collect res ty
-    | TC.MetaType(tyname,_,_) -> inherited tyname
-    | ty -> res in
+  let donothing recursor k e = k e in
 
-  let strictexpr recursor k e =
-    match Ast.unwrap e with
-      Ast.MetaExpr(name,_,Some type_list,_,_) ->
-	let types = List.fold_left type_collect option_default type_list in
-	bind (minherited name) types
-    | Ast.MetaErr(name,_,_) | Ast.MetaExpr(name,_,_,_,_) -> minherited name
-    | Ast.MetaExprList(name,None,_,_) -> minherited name
-    | Ast.MetaExprList(name,Some (lenname,_,_),_,_) ->
-	bind (minherited name) (inherited lenname)
-    | Ast.DisjExpr(exps) ->
-	(* could see if there are any variables that appear in all branches,
-	   but perhaps not worth it *)
-	option_default
-    | _ -> k e in
-
-  let strictdecls recursor k d =
-    match Ast.unwrap d with
-      Ast.DisjDecl(decls) -> option_default
-    | _ -> k d in
-
-  let strictfullType recursor k ty =
-    match Ast.unwrap ty with
-      Ast.DisjType(types) -> option_default
-    | _ -> k ty in
-
-  let stricttypeC recursor k ty =
-    match Ast.unwrap ty with
-      Ast.MetaType(name,_,_) -> minherited name
-    | _ -> k ty in
-
-  let strictparam recursor k p =
-    match Ast.unwrap p with
-      Ast.MetaParam(name,_,_) -> minherited name
-    | Ast.MetaParamList(name,None,_,_) -> minherited name
-    | Ast.MetaParamList(name,Some(lenname,_,_),_,_) ->
-	bind (minherited name) (inherited lenname)
-    | _ -> k p in
-
-  let strictrule_elem recursor k re =
-    (*within a rule_elem, pattern3 manages the coherence of the bindings*)
-    match Ast.unwrap re with
-      Ast.MetaRuleElem(name,_,_) | Ast.MetaStmt(name,_,_,_)
-    | Ast.MetaStmtList(name,_,_) -> minherited name
-    | _ -> k re in
-
-  let strictstatement recursor k s =
-    match Ast.unwrap s with
-      Ast.Disj(stms) -> option_default
-    | _ -> k s in
+  let mcode r e =
+    match Ast.get_mcodekind e with
+      Ast.CONTEXT(_,Ast.NOTHING) -> true
+    | _ -> false in
 
   V.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode
     donothing donothing donothing donothing
-    strictident strictexpr strictfullType stricttypeC donothing strictparam
-    strictdecls strictrule_elem strictstatement donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing
 
 (* ------------------------------------------------------------------------ *)
 
-let rec dependent = function
-    Ast.Dep s -> true
-  | Ast.AntiDep s -> false
-  | Ast.EverDep s -> true
-  | Ast.NeverDep s -> false
-  | Ast.AndDep (d1,d2) -> dependent d1 or dependent d2
-  | Ast.OrDep (d1,d2) -> dependent d1 && dependent d2
-  | Ast.NoDep -> false
-
-(* ------------------------------------------------------------------------ *)
-
-let rule_fn tls in_plus =
+let rule_fn tls in_plus env =
   List.fold_left
     (function (rest_info,in_plus) ->
       function cur ->
 	let minuses =
-	  (do_get_constants keep drop).V.combiner_top_level cur in
+	  (do_get_constants keep drop env).V.combiner_top_level cur in
 	let all_minuses =
 	  if !Flag.sgrep_mode2
 	  then [] (* nothing removed for sgrep *)
@@ -414,9 +375,13 @@ let rule_fn tls in_plus =
 	let was_bot = minuses = True in
 	let new_minuses = filter_combine minuses in_plus in
 	let new_plusses = Common.union_set plusses in_plus in
+	(* perhaps it should be build_and here?  we don't realy have multiple
+	   minirules anymore anyway. *)
 	match new_minuses with
 	  True ->
-	    (match (do_get_constants drop keep).V.combiner_top_level cur with
+	    let retry =
+	      (do_get_constants drop keep env).V.combiner_top_level cur in
+	    (match retry with
 	      True when not was_bot -> (rest_info, new_plusses)
 	    | x -> (build_or x rest_info, new_plusses))
 	| x -> (build_or x rest_info, new_plusses))
@@ -426,16 +391,26 @@ let get_constants rules =
   if not !Flag.use_glimpse
   then None
   else
-    let (info,_) =
+    let (info,_,_,_) =
       List.fold_left
-	(function (rest_info,in_plus) ->
+	(function (rest_info,in_plus,env,locals(*dom of env*)) ->
 	  function (nm,(dep,_,_),cur) ->
-	    let (cur_info,cur_plus) = rule_fn cur in_plus in
-	    (* no dependencies if dependent on another rule; then we need to
+	    let (cur_info,cur_plus) = rule_fn cur in_plus ((nm,True)::env) in
+	    if List.for_all all_context.V.combiner_top_level cur
+	    then
+	      (Printf.printf "rule %s is all context, augmenting env with %s\n" nm (combine2c cur_info);
+	      (rest_info,cur_plus,(nm,cur_info)::env,nm::locals))
+	    else
+	    (* no constants if dependent on another rule; then we need to
 	       find the constants of that rule *)
-	    if dependent dep or
-	      List.for_all (check_inherited nm).V.combiner_top_level cur
-	    then (rest_info,cur_plus)
-	    else (build_or cur_info rest_info,cur_plus))
-	(False,[]) (rules : Ast.rule list) in
+	      match dependencies env dep with
+		False ->
+		  (Printf.printf "rule %s is dependent on another\n" nm;
+		   (rest_info,cur_plus,env,locals))
+	      |	dependencies ->
+		  (Printf.printf "for rule %s, combining %s and %s\n" nm
+		     (combine2c dependencies) (combine2c cur_info);
+		  (build_or (build_and dependencies cur_info) rest_info,
+		   cur_plus,env,locals)))
+	(False,[],[],[]) (rules : Ast.rule list) in
     interpret true info
