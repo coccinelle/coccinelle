@@ -622,38 +622,38 @@ let rule =
 in
 *)
 
-let if_open_brace  = function "{" -> indent() | _ -> () in
+let if_open_brace  = function "{" -> true | _ -> false in
 
 let rec pp_any = function
   (* assert: normally there is only CONTEXT NOTHING tokens in any *)
-    Ast.FullTypeTag(x) -> fullType x
-  | Ast.BaseTypeTag(x) -> baseType x
-  | Ast.StructUnionTag(x) -> structUnion x
-  | Ast.SignTag(x) -> sign x
+    Ast.FullTypeTag(x) -> fullType x; false
+  | Ast.BaseTypeTag(x) -> baseType x; false
+  | Ast.StructUnionTag(x) -> structUnion x; false
+  | Ast.SignTag(x) -> sign x; false
 
-  | Ast.IdentTag(x) -> ident x
+  | Ast.IdentTag(x) -> ident x; false
 
-  | Ast.ExpressionTag(x) -> expression x
+  | Ast.ExpressionTag(x) -> expression x; false
 
-  | Ast.ConstantTag(x) -> constant x
-  | Ast.UnaryOpTag(x) -> unaryOp x
-  | Ast.AssignOpTag(x) -> assignOp x
-  | Ast.FixOpTag(x) -> fixOp x
-  | Ast.BinaryOpTag(x) -> binaryOp x
-  | Ast.ArithOpTag(x) -> arithOp x
-  | Ast.LogicalOpTag(x) -> logicalOp x
+  | Ast.ConstantTag(x) -> constant x; false
+  | Ast.UnaryOpTag(x) -> unaryOp x; false
+  | Ast.AssignOpTag(x) -> assignOp x; false
+  | Ast.FixOpTag(x) -> fixOp x; false
+  | Ast.BinaryOpTag(x) -> binaryOp x; false
+  | Ast.ArithOpTag(x) -> arithOp x; false
+  | Ast.LogicalOpTag(x) -> logicalOp x; false
 
-  | Ast.InitTag(x) -> initialiser x
-  | Ast.DeclarationTag(x) -> declaration x
+  | Ast.InitTag(x) -> initialiser x; false
+  | Ast.DeclarationTag(x) -> declaration x; false
 
-  | Ast.StorageTag(x) -> storage x
-  | Ast.IncFileTag(x) -> inc_file x
+  | Ast.StorageTag(x) -> storage x; false
+  | Ast.IncFileTag(x) -> inc_file x; false
 
-  | Ast.Rule_elemTag(x) -> rule_elem "" x
-  | Ast.StatementTag(x) -> statement "" x
-  | Ast.CaseLineTag(x) -> case_line "" x
+  | Ast.Rule_elemTag(x) -> rule_elem "" x; false
+  | Ast.StatementTag(x) -> statement "" x; false
+  | Ast.CaseLineTag(x) -> case_line "" x; false
 
-  | Ast.ConstVolTag(x) -> const_vol x
+  | Ast.ConstVolTag(x) -> const_vol x; false
   | Ast.Token(x,None) -> print_string x; if_open_brace x
   | Ast.Token(x,Some info) -> 
       mcode
@@ -666,17 +666,17 @@ let rec pp_any = function
 	(x,info,());
       if_open_brace x
 
-  | Ast.Code(x) -> let _ = top_level x in ()
+  | Ast.Code(x) -> let _ = top_level x in false
 
   (* this is not '...', but a list of expr/statement/params, and 
      normally there should be no '...' inside them *)
-  | Ast.ExprDotsTag(x) -> dots (function _ -> ()) expression x
-  | Ast.ParamDotsTag(x) -> parameter_list x
-  | Ast.StmtDotsTag(x) -> dots (function _ -> pr "\n") (statement "") x
-  | Ast.DeclDotsTag(x) -> dots (function _ -> pr "\n") declaration x
+  | Ast.ExprDotsTag(x) -> dots (function _ -> ()) expression x; false
+  | Ast.ParamDotsTag(x) -> parameter_list x; false
+  | Ast.StmtDotsTag(x) -> dots (function _ -> pr "\n") (statement "") x; false
+  | Ast.DeclDotsTag(x) -> dots (function _ -> pr "\n") declaration x; false
 
-  | Ast.TypeCTag(x) -> typeC x
-  | Ast.ParamTag(x) -> parameterTypeDef x
+  | Ast.TypeCTag(x) -> typeC x; false
+  | Ast.ParamTag(x) -> parameterTypeDef x; false
   | Ast.SgrepStartTag(x) -> failwith "unexpected start tag"
   | Ast.SgrepEndTag(x) -> failwith "unexpected end tag"
 in
@@ -688,9 +688,13 @@ in
       (* for many tags, we must not do a newline before the first '+' *)
       let isfn s =
 	match Ast.unwrap s with Ast.FunDecl _ -> true | _ -> false in
-      let prnl = function (* need to get unindent before newline for } *)
-	  (Ast.Token ("}",_)::_) -> unindent(); pr "\n"
-	| _ -> pr "\n" in
+      let unindent_before = function
+        (* need to get unindent before newline for } *)
+	  (Ast.Token ("}",_)::_) -> true
+	| _ -> false in
+      let prnl x =
+	(if unindent_before x then unindent());
+	pr "\n" in
       let newline_before _ =
 	if before = After
 	then
@@ -710,15 +714,21 @@ in
           | _ -> () in
       (* print a newline at the beginning, if needed *)
       newline_before();
-      (* print the first one with no leading newline *)
-      x +> List.iter (fun any -> pp_any any);
       (* print a newline before each of the rest *)
-      xs +> List.iter (fun xs -> 
-        prnl xs;
-        xs +> List.iter (fun any -> 
-          pp_any any
-        )
-      );
+      let rec loop leading_newline indent_needed = function
+	  [] -> ()
+	| x::xs ->
+	    (if leading_newline
+	    then
+	      match (indent_needed,unindent_before x) with
+		(true,true) -> pr "\n"
+	      | (true,false) -> pr "\n"; indent()
+	      | (false,true) -> unindent(); pr "\n"
+	      | (false,false) -> pr "\n");
+	    let indent_needed =
+	      List.fold_left (function indent_needed -> pp_any) false x in
+	    loop true indent_needed xs in
+      loop false false (x::xs);
       (* print a newline at the end, if needed *)
       newline_after()
 

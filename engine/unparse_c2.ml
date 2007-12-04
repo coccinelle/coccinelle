@@ -481,7 +481,8 @@ let rec adjust_indentation xs =
     match xs with
     | [] ->  []
     | ((T2 (tok,_,_)) as x)::(T2 (Parser_c.TCommentNewline s, _, _))::
-      (Cocci2 "{")::xs when str_of_token2 x = ")" -> x::(Cocci2 " {")::(aux xs)
+      (Cocci2 "{")::xs when str_of_token2 x = ")" ->
+	x::(Cocci2 " {")::(aux xs)
     | ((T2 (Parser_c.TCommentNewline s, _, _)) as x)::xs ->
 	let old_tabbing = !_current_tabbing in 
         str_of_token2 x +> new_tabbing +> (fun s -> _current_tabbing := s);
@@ -570,6 +571,7 @@ let kind_of_token2 = function
       | FakeTok -> raise Impossible (* now a Fake2 *)
       | AbstractLineTok -> raise Impossible (* now a KC *)
       )
+  | Unindent_cocci2 | Indent_cocci2 -> raise Impossible
   
 let end_mark = "!"
 
