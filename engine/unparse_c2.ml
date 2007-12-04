@@ -477,34 +477,38 @@ let rec adjust_indentation xs =
 	  string_of_list (List.rev ns) in
     loop (tu,current_tab) in
 
-  let rec aux xs = 
+  let rec aux started xs = 
     match xs with
     | [] ->  []
     | ((T2 (tok,_,_)) as x)::(T2 (Parser_c.TCommentNewline s, _, _))::
-      (Cocci2 "{")::xs when str_of_token2 x = ")" ->
-	x::(Cocci2 " {")::(aux xs)
+      (Cocci2 "{")::xs when started && str_of_token2 x = ")" ->
+	(* to be done for if, etc, but not for a function header *)
+	x::(Cocci2 " {")::(aux started xs)
     | ((T2 (Parser_c.TCommentNewline s, _, _)) as x)::xs ->
 	let old_tabbing = !_current_tabbing in 
         str_of_token2 x +> new_tabbing +> (fun s -> _current_tabbing := s);
-	adjust_tabbing_unit old_tabbing !_current_tabbing;
-        x::aux xs
+	(* only trust the indentation after the first { *)
+	(if started then adjust_tabbing_unit old_tabbing !_current_tabbing);
+        x::aux started xs
     | ((Cocci2 "\n") as x)::xs -> 
             (* dont inline in expr because of wierd eval order of ocaml *)
         let s = !_current_tabbing in 
-        x::Cocci2 (s)::aux xs
+        x::Cocci2 (s)::aux started xs
     | Indent_cocci2::xs ->
 	(match !tabbing_unit with
-	  None -> aux xs
+	  None -> aux started xs
 	| Some (tu,_) ->
 	    _current_tabbing := (!_current_tabbing)^tu;
-	    Cocci2 (tu)::aux xs)
+	    Cocci2 (tu)::aux started xs)
     | Unindent_cocci2::xs ->
 	(match !tabbing_unit with
-	  None -> aux xs
+	  None -> aux started xs
 	| Some (_,tu) ->
-	    _current_tabbing := remtab tu (!_current_tabbing); aux xs)
-    | x::xs -> x::aux xs in
-  aux xs
+	    _current_tabbing := remtab tu (!_current_tabbing); aux started xs)
+    | ((T2 (tok,_,_)) as x)::xs when str_of_token2 x = "{" ->  x::aux true xs
+    | (Cocci2 "{")::xs -> (Cocci2 "{")::aux true xs
+    | x::xs -> x::aux started xs in
+  aux false xs
 
 
 let rec find_paren_comma = function
