@@ -85,14 +85,14 @@ and compound_caller =
 (* other information used internally in ast_to_flow and passed recursively *) 
 and xinfo =  { 
 
-  ctx: context_info; (* cf below *)
+  ctx: context_info; (* cf above *)
   ctx_stack: context_info list;
 
   (* are we under a ifthen[noelse]. Used for ErrorExit *)
   under_ifthen: bool; 
   compound_caller: compound_caller;
 
-  (* does not change recursively *)
+  (* does not change recursively. Some kind of globals. *)
   labels_assoc: (string, nodei) oassoc; 
   exiti:      nodei option;
   errorexiti: nodei option;
@@ -1290,7 +1290,7 @@ let (check_control_flow: cflow -> unit) = fun g ->
 
 let report_error error = 
   let error_from_info info = 
-    (Common.error_message_short info.file ("", info.charpos))
+    Common.error_message_short info.file ("", info.charpos)
   in
   match error with
   | DeadCode          infoopt -> 

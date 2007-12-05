@@ -2318,6 +2318,13 @@ let _ =
       ('b', 1),  ['a';'c'];
       ('c', 2),  ['a';'b']
      ])
+
+let rec uncons_permut_lazy xs = 
+  let indexed = index_list xs in
+  indexed +> List.map (fun (x, pos) -> 
+    (x, pos),  
+    lazy (remove_elem_pos pos xs)
+  )
         
     
     

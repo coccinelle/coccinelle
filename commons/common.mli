@@ -835,6 +835,7 @@ val permutation : 'a list -> 'a list list
 val remove_elem_pos : int -> 'a list -> 'a list
 val insert_elem_pos : ('a * int) -> 'a list -> 'a list
 val uncons_permut :   'a list -> (('a * int) * 'a list) list
+val uncons_permut_lazy :   'a list -> (('a * int) * 'a list Lazy.t) list
 
 
 val pack_sorted : ('a -> 'a -> bool) -> 'a list -> 'a list list

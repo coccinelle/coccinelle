@@ -30,6 +30,19 @@ let (redots : 'a A.dots -> 'a list -> 'a A.dots)=fun eas easundots ->
   )
 
 
+let (need_unordered_initialisers : B.initialiser B.wrap2 list -> bool) = 
+ fun ibs -> 
+   ibs +> List.exists (fun (ib, icomma) -> 
+     match B.unwrap ib with
+     | B.InitDesignators _ 
+     | B.InitFieldOld _ 
+     | B.InitIndexOld _
+         -> true
+     | B.InitExpr _ 
+     | B.InitList _ 
+         -> false
+   )
+
 (* For the #include <linux/...> in the .cocci, need to find where is
  * the '+' attached to this element, to later find the first concrete
  * #include <linux/xxx.h> or last one in the serie of #includes in the
@@ -1692,8 +1705,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
 
 (* ------------------------------------------------------------------------- *)
 
-and (initialiser: (A.initialiser, Ast_c.initialiser) matcher)
-  =  fun ia ib -> 
+and (initialiser: (A.initialiser, Ast_c.initialiser) matcher) =  fun ia ib -> 
     X.all_bound (A.get_inherited ia) >&&>
     match (A.unwrap ia,ib) with
 
@@ -1823,21 +1835,48 @@ and (initialiser: (A.initialiser, Ast_c.initialiser) matcher)
 and initialisers = fun ias (ibs, iicomma) ->
   let ias_unsplit = unsplit_icomma      ias in
   let ibs_split   = resplit_initialiser ibs iicomma in
-  
-  initialisers2 ias_unsplit ibs_split >>= (fun ias_unsplit ibs_split -> 
-    return (
-      split_icomma ias_unsplit,
-      unsplit_initialiser ibs_split
-    )
-  )
 
-and initialisers2 = fun ias ibs -> 
+  let f = 
+    if need_unordered_initialisers ibs 
+    then initialisers_unordered2
+    else initialisers_ordered2
+  in
+  f ias_unsplit ibs_split >>= 
+      (fun ias_unsplit ibs_split -> 
+        return (
+          split_icomma ias_unsplit,
+          unsplit_initialiser ibs_split
+        )
+      )
+
+(* todo: one day julia will reput a IDots *)
+and initialisers_ordered2 = fun ias ibs -> 
+  match ias, ibs with
+  | [], [] -> return ([], [])
+  | (x, xcomma)::xs, (y, commay)::ys -> 
+      (match A.unwrap xcomma with
+      | A.IComma commax -> 
+          tokenf commax commay >>= (fun commax commay -> 
+          initialiser x y >>= (fun x y -> 
+          initialisers_ordered2 xs ys >>= (fun xs ys -> 
+            return (
+                    (x, (A.IComma commax) +> A.rewrap xcomma)::xs, 
+                    (y, commay)::ys
+            )
+          )))
+      | _ -> raise Impossible (* unsplit_iicomma wrong *)
+      )
+  | _ -> fail
+
+          
+
+and initialisers_unordered2 = fun ias ibs -> 
 
   match ias, ibs with
   | [], ys -> return ([], ys)
   | (x,xcomma)::xs, ys -> 
 
-      let permut = Common.uncons_permut ys in
+      let permut = Common.uncons_permut_lazy ys in
       permut +> List.fold_left (fun acc ((e, pos), rest) -> 
         acc >||> 
           (
@@ -1851,12 +1890,15 @@ and initialisers2 = fun ias ibs ->
                 )
                 )
             | _ -> raise Impossible (* unsplit_iicomma wrong *)
-            ) >>= (fun x e -> 
-            initialisers2 xs rest >>= (fun xs rest -> 
-              return (
-                x::xs,
-                Common.insert_elem_pos (e, pos) rest
-              ))))) fail
+            ) 
+            >>= (fun x e -> 
+              let rest = Lazy.force rest in
+              initialisers_unordered2 xs rest >>= (fun xs rest -> 
+                return (
+                  x::xs,
+                  Common.insert_elem_pos (e, pos) rest
+                ))))
+      ) fail
        
 
 (* ------------------------------------------------------------------------- *)

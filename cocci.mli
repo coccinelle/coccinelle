@@ -21,13 +21,6 @@ val full_engine :
 val check_duplicate_modif : 
  (filename * filename option) list -> (filename * filename option) list
 
-
-(* EXPERIMENTAL: limited function level engine that works with glimpse *)
-val index : 
-  string (* dir *) -> string (* tmpdir *) -> unit
-val full_engine_use_index : 
-  (filename * filename) -> string (* tmpdir *) -> unit
-
 (* provides memoization *)
 val sp_of_file :
   filename (* coccifile *)  -> filename option (* isofile *) ->
