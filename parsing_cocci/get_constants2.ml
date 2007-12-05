@@ -30,16 +30,17 @@ let interpret strict x =
       Elem x -> x
     | And [x] -> loop x
     | Or [x] -> loop x
-    | And l -> String.concat ";" (List.map loop l)
+    | And l -> Printf.sprintf "{%s}" (String.concat ";" (List.map loop l))
     | Or l -> Printf.sprintf "{%s}" (String.concat "," (List.map loop l))
     | True -> "True"
     | False ->
 	if strict
-	then failwith "False should not be in the final result"
+	then failwith "False should not be in the final result.  Perhaps your rule doesn't contain any +/-/* code"
 	else "False" in
   match x with
     True -> None
-  | False when strict -> failwith "False should not be in the final result"
+  | False when strict ->
+      failwith "False should not be in the final result.  Perhaps your rule doesn't contain any +/-/* code"
   | _ -> Some (loop x)
 
 let combine2c x =
@@ -397,20 +398,14 @@ let get_constants rules =
 	  function (nm,(dep,_,_),cur) ->
 	    let (cur_info,cur_plus) = rule_fn cur in_plus ((nm,True)::env) in
 	    if List.for_all all_context.V.combiner_top_level cur
-	    then
-	      (Printf.printf "rule %s is all context, augmenting env with %s\n" nm (combine2c cur_info);
-	      (rest_info,cur_plus,(nm,cur_info)::env,nm::locals))
+	    then (rest_info,cur_plus,(nm,cur_info)::env,nm::locals)
 	    else
 	    (* no constants if dependent on another rule; then we need to
 	       find the constants of that rule *)
 	      match dependencies env dep with
-		False ->
-		  (Printf.printf "rule %s is dependent on another\n" nm;
-		   (rest_info,cur_plus,env,locals))
+		False -> (rest_info,cur_plus,env,locals)
 	      |	dependencies ->
-		  (Printf.printf "for rule %s, combining %s and %s\n" nm
-		     (combine2c dependencies) (combine2c cur_info);
 		  (build_or (build_and dependencies cur_info) rest_info,
-		   cur_plus,env,locals)))
+		   cur_plus,env,locals))
 	(False,[],[],[]) (rules : Ast.rule list) in
     interpret true info
