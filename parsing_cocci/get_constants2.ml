@@ -398,12 +398,14 @@ let get_constants rules =
 	  function (nm,(dep,_,_),cur) ->
 	    let (cur_info,cur_plus) = rule_fn cur in_plus ((nm,True)::env) in
 	    if List.for_all all_context.V.combiner_top_level cur
-	    then (rest_info,cur_plus,(nm,cur_info)::env,nm::locals)
+	    then
+	      (rest_info,cur_plus,(nm,cur_info)::env,nm::locals)
 	    else
 	    (* no constants if dependent on another rule; then we need to
 	       find the constants of that rule *)
 	      match dependencies env dep with
-		False -> (rest_info,cur_plus,env,locals)
+		False ->
+		  (rest_info,cur_plus,env,locals)
 	      |	dependencies ->
 		  (build_or (build_and dependencies cur_info) rest_info,
 		   cur_plus,env,locals))

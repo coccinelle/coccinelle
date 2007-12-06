@@ -2,7 +2,15 @@
 let prefix = "/tmp/"
 let prefix = ""
 
+(* The -grouped option means that all - and + code must appear in a
+single contiguous block of - + code.  This option has no effect on the
+other kinds of patterns, ie Changelog (C) or Context (@) *)
+
 type dir = Minus | Plus | Context | ChangeLog
+
+type res = Git of string | BlockGit of int * string
+
+let grouped = ref false
 
 let space = Str.regexp " "
 
@@ -26,9 +34,36 @@ let scan dir pattern i =
 	   (not (String.get line 0 = '-') && not (String.get line 0 = '+') &&
 	    dir = Context)) &&
 	  matches pattern line
-	then (res := git::!res; loop true cl git)
+	then (res := Git(git)::!res; loop true cl git)
 	else loop skipping cl git in
   loop false false ""
+
+(* for Minus and Plus directions only *)
+let scan_grouped dir pattern i =
+  let block = ref 0 in
+  (* mp = true in minus-plus region *)
+  let rec loop mp git =
+    let line = input_line i in
+    match Str.split space line with
+      ["commit";git] -> loop false git
+    | "diff"::_ -> loop false git
+    | _ ->
+	if String.length line > 0
+	then
+	    let first_char = String.get line 0 in
+	    let new_mp =
+	      match first_char with
+		'-' | '+' -> (if not mp then block := !block + 1; true)
+	      |	_ -> false in
+	    match (first_char,dir) with
+	      ('-',Minus) | ('+',Plus) ->
+		let info = BlockGit(!block,git) in
+		(if matches pattern line && not (List.mem info !res)
+		then res := info::!res);
+		loop new_mp git
+	    | _ -> loop new_mp git
+	else loop mp git in
+  loop false ""
 
 let dot = Str.regexp "\\."
 
@@ -54,6 +89,7 @@ let open_git file =
 
 let rec split_args = function
     [] -> []
+  | "-grouped"::rest   -> grouped := true; split_args rest
   | "-"::pattern::rest -> (Minus,Str.regexp pattern) :: split_args rest
   | "+"::pattern::rest -> (Plus,Str.regexp pattern) :: split_args rest
   | "@"::pattern::rest -> (Context,Str.regexp pattern) :: split_args rest
@@ -63,7 +99,10 @@ let rec split_args = function
 let process_one (dir,pattern) version =
   res := [];
   let i = open_git version in
-  try scan dir pattern i
+  try
+    if !grouped && (dir = Minus or dir = Plus)
+    then scan_grouped dir pattern i
+    else scan dir pattern i
   with End_of_file -> (close_in i; List.rev !res)
 
 let inter l1 l2 = List.filter (function x -> List.mem x l1) l2
@@ -76,10 +115,20 @@ let _ =
   let pairs = List.rev(List.tl(List.rev args)) in
   let requirements = split_args pairs in
   let res =
-    List.fold_left
-      (function all ->
-	function pattern ->
-	  inter (process_one pattern version) all)
-      (process_one (List.hd requirements) version)
-      (List.tl requirements) in
+    List.map (function Git x -> x | BlockGit (_,x) -> x)
+      (List.fold_left
+	 (function all ->
+	   function pattern ->
+	     inter (process_one pattern version) all)
+	 (process_one (List.hd requirements) version)
+	 (List.tl requirements)) in
+  let res =
+    if !grouped
+    then
+      List.rev
+	(List.fold_left
+	   (function prev ->
+	     function x -> if List.mem x prev then prev else x::prev)
+	   [] res)
+    else res in
   List.iter (function name -> Printf.printf "%s\n" name) res

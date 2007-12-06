@@ -1,4 +1,4 @@
-(* sort a lost of git codes such that the most recent comes first *)
+(* sort a list of git codes such that the most recent comes first *)
 
 let git_home = ref "/home/julia/linux-2.6"
 
