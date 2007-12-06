@@ -8,7 +8,7 @@ other kinds of patterns, ie Changelog (C) or Context (@) *)
 
 type dir = Minus | Plus | Context | ChangeLog
 
-type res = Git of string | BlockGit of int * string
+type res = Git of string | Block of int * string
 
 let grouped = ref false
 
@@ -57,7 +57,7 @@ let scan_grouped dir pattern i =
 	      |	_ -> false in
 	    match (first_char,dir) with
 	      ('-',Minus) | ('+',Plus) ->
-		let info = BlockGit(!block,git) in
+		let info = Block(!block,git) in
 		(if matches pattern line && not (List.mem info !res)
 		then res := info::!res);
 		loop new_mp git
@@ -105,7 +105,27 @@ let process_one (dir,pattern) version =
     else scan dir pattern i
   with End_of_file -> (close_in i; List.rev !res)
 
-let inter l1 l2 = List.filter (function x -> List.mem x l1) l2
+let inter l1 l2 =
+  List.rev
+    (List.fold_left
+       (function prev ->
+	 function
+	     (Git(git)) as x ->
+	       let rec loop = function
+		   [] -> prev
+		 | Git(git1)::rest when git = git1 -> x::prev
+		 | Block(b1,git1)::rest when git = git1 -> Block(b1,git1)::prev
+		 | _::rest -> loop rest in
+	       loop l2
+	   | (Block(block,git)) as x ->
+	       let rec loop = function
+		   [] -> prev
+		 | Git(git1)::rest when git = git1 -> x::prev
+		 | Block(b1,git1)::rest when block = b1 && git = git1 ->
+		     Block(b1,git1)::prev
+		 | _::rest -> loop rest in
+	       loop l2)
+       [] l1)
 
 let _ =
   if Array.length Sys.argv < 4
@@ -115,7 +135,7 @@ let _ =
   let pairs = List.rev(List.tl(List.rev args)) in
   let requirements = split_args pairs in
   let res =
-    List.map (function Git x -> x | BlockGit (_,x) -> x)
+    List.map (function Git x -> x | Block (_,x) -> x)
       (List.fold_left
 	 (function all ->
 	   function pattern ->
