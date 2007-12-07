@@ -6,11 +6,15 @@ let prefix = ""
 single contiguous block of - + code.  This option has no effect on the
 other kinds of patterns, ie Changelog (C) or Context (@) *)
 
+(* example: gitgrep -grouped -maxlen 25 - "[A-Z][A-Z]+" + "[A-Z][A-Z]+"
+usb_21_22 *)
+
 type dir = Minus | Plus | Context | ChangeLog
 
 type res = Git of string | Block of int * string
 
 let grouped = ref false
+let maxlen = ref None
 
 let space = Str.regexp " "
 
@@ -65,6 +69,22 @@ let scan_grouped dir pattern i =
 	else loop mp git in
   loop false ""
 
+let scan_line max i =
+  let rec loop skipping num git =
+    let line = input_line i in
+    match Str.split space line with
+      ["commit";git1] ->
+	loop false (-1) git1
+    | "diff"::_ ->
+	if num > max && not skipping
+	then (res:=Git(git)::!res;loop true (num+1) git)
+	else loop skipping (if num = (-1) then 1 else num+1) git
+    | _ ->
+	if num > max && not skipping
+	then (res:=Git(git)::!res;loop true (num+1) git)
+	else loop skipping (if num = (-1) then num else num+1) git in
+  loop false (-1) ""
+
 let dot = Str.regexp "\\."
 
 let open_git file =
@@ -90,6 +110,7 @@ let open_git file =
 let rec split_args = function
     [] -> []
   | "-grouped"::rest   -> grouped := true; split_args rest
+  | "-maxlen"::len::rest -> maxlen := Some (int_of_string len); split_args rest
   | "-"::pattern::rest -> (Minus,Str.regexp pattern) :: split_args rest
   | "+"::pattern::rest -> (Plus,Str.regexp pattern) :: split_args rest
   | "@"::pattern::rest -> (Context,Str.regexp pattern) :: split_args rest
@@ -103,6 +124,12 @@ let process_one (dir,pattern) version =
     if !grouped && (dir = Minus or dir = Plus)
     then scan_grouped dir pattern i
     else scan dir pattern i
+  with End_of_file -> (close_in i; List.rev !res)
+
+let process_len max version =
+  res := [];
+  let i = open_git version in
+  try scan_line max i
   with End_of_file -> (close_in i; List.rev !res)
 
 let inter l1 l2 =
@@ -151,4 +178,10 @@ let _ =
 	     function x -> if List.mem x prev then prev else x::prev)
 	   [] res)
     else res in
+  let res =
+    match !maxlen with
+      None -> res
+    | Some max ->
+	let badgits = process_len max version in
+	List.filter (function x -> not(List.mem (Git(x)) badgits)) res in
   List.iter (function name -> Printf.printf "%s\n" name) res
