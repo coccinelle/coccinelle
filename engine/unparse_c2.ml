@@ -65,7 +65,7 @@ let str_of_token2 = function
   | Unindent_cocci2 -> ""
 
 let print_token2 = function
-  | T2 (t,_,_) -> "T2:"^TH.str_of_tok t
+  | T2 (t,b,_) -> "T2:"^(if b then "-" else "")^TH.str_of_tok t
   | Fake2 -> ""
   | Cocci2 s -> "Cocci2:"^s
   | C2 s -> "C2:"^s
@@ -331,6 +331,10 @@ let is_minusable_comment = function
       )
   | _ -> false 
 
+let is_minusable_comment_or_plus = function
+    Cocci2 _ | C2 _ | Indent_cocci2 | Unindent_cocci2 -> true
+  | x -> is_minusable_comment x
+
 let set_minus_comment = function
   | T2 (t,false,idx) -> 
       let str = TH.str_of_tok t in
@@ -348,6 +352,10 @@ let set_minus_comment = function
       T2 (t, true, idx)
   | T2 (Parser_c.TCommentNewline _,true,idx) as x -> x
   | _ -> raise Impossible
+
+let set_minus_comment_or_plus = function
+    Cocci2 _ | C2 _ | Indent_cocci2 | Unindent_cocci2 as x -> x
+  | x -> set_minus_comment x
       
 
 let remove_minus_and_between_and_expanded_and_fake xs =
@@ -382,19 +390,22 @@ let remove_minus_and_between_and_expanded_and_fake xs =
 
   (* this deals with any stuff that is between the minused code, eg
      spaces, comments, attributes, etc. *)
+  (* The use of is_minusable_comment_or_plus and set_minus_comment_or_plus
+     is because the + code can end up anywhere in the middle of the - code;
+     it is not necessarily to the far left *)
   let rec adjust_between_minus xs = 
     match xs with
     | [] -> []
     | (T2 (t1,true,idx1))::xs -> 
 
-        let (between_comments, rest) = Common.span is_minusable_comment xs in
+        let (between_comments, rest) =
+	  Common.span is_minusable_comment_or_plus xs in
         (match rest with
         | [] -> [(T2 (t1, true,idx1))]
 
-        | (T2 (t2, true,idx2))::rest -> 
-
+        | (T2 (t2, true,idx2))::rest ->
              (T2 (t1, true,idx1))::
-               (List.map set_minus_comment between_comments @
+               (List.map set_minus_comment_or_plus between_comments @
                adjust_between_minus ((T2 (t2, true, idx2))::rest))
         | x::xs -> 
              (T2 (t1, true, idx1))::

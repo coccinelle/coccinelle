@@ -153,8 +153,8 @@ let equal_logicalOp a b =
   match a, b with
   | A.Inf    , B.Inf    -> true
   | A.Sup    , B.Sup    -> true
-  | A.InfEq  , B.InfEq  -> true
-  | A.SupEq  , B.SupEq  -> true
+  | A.InfEq  , B.InfEq  -> Printf.printf "have two infeqs\n"; true
+  | A.SupEq  , B.SupEq  -> Printf.printf "have two supeqs\n"; true
   | A.Eq     , B.Eq     -> true
   | A.NotEq  , B.NotEq  -> true
   | A.AndLog , B.AndLog -> true

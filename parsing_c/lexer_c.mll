@@ -444,7 +444,7 @@ rule token = parse
   | ">>=" {TAssign (OpAssign DecRight, (tokinfo lexbuf))}
 
   | "==" { TEqEq(tokinfo lexbuf) }  | "!=" { TNotEq(tokinfo lexbuf) } 
-  | ">=" { TInfEq(tokinfo lexbuf) } | "<=" { TSupEq(tokinfo lexbuf) } 
+  | ">=" { TSupEq(tokinfo lexbuf) } | "<=" { TInfEq(tokinfo lexbuf) } 
   | "<"  { TInf(tokinfo lexbuf) }   | ">"  { TSup(tokinfo lexbuf) }
 
   | "&&" { TAndLog(tokinfo lexbuf) } | "||" { TOrLog(tokinfo lexbuf) }

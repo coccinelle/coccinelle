@@ -48,11 +48,11 @@ let inline_mcodes =
 		     true)
 		  else false
 	      | _ -> false in
-	    if not (minus_try(einfo.Ast0.attachable_end,
-			      einfo.Ast0.mcode_end)
+	    if not (minus_try(einfo.Ast0.attachable_start,
+			      einfo.Ast0.mcode_start)
 		      or
-    		    minus_try(einfo.Ast0.attachable_start,
-			      einfo.Ast0.mcode_start))
+    		    minus_try(einfo.Ast0.attachable_end,
+			      einfo.Ast0.mcode_end))
 	    then
 	      failwith "minus tree should not have bad code on both sides")
     | Ast0.CONTEXT(befaft)
