@@ -67,8 +67,8 @@ let collect_all_refs =
   let astfvident recursor k i =
     add_pos_var i
       (match Ast.unwrap i with
-	Ast.MetaId(name,_,_) | Ast.MetaFunc(name,_,_)
-      | Ast.MetaLocalFunc(name,_,_) -> [metaid name]
+	Ast.MetaId(name,_,_,_) | Ast.MetaFunc(name,_,_,_)
+      | Ast.MetaLocalFunc(name,_,_,_) -> [metaid name]
       | _ -> k i) in
 
   let rec type_collect res = function
@@ -80,10 +80,10 @@ let collect_all_refs =
   let astfvexpr recursor k e =
     add_pos_var e
       (match Ast.unwrap e with
-	Ast.MetaExpr(name,_,Some type_list,_,_) ->
+	Ast.MetaExpr(name,_,_,Some type_list,_,_) ->
 	  let types = List.fold_left type_collect option_default type_list in
 	  bind [metaid name] types
-      | Ast.MetaErr(name,_,_) | Ast.MetaExpr(name,_,_,_,_) -> [metaid name]
+      | Ast.MetaErr(name,_,_,_) | Ast.MetaExpr(name,_,_,_,_,_) -> [metaid name]
       | Ast.MetaExprList(name,None,_,_) -> [metaid name]
       | Ast.MetaExprList(name,Some (lenname,_,_),_,_) -> [metaid name;lenname]
       | Ast.DisjExpr(exps) -> bind_disj (List.map k exps)
@@ -159,8 +159,8 @@ let collect_saved =
   (* cases for metavariables *)
   let astfvident recursor k i =
     match Ast.unwrap i with
-      Ast.MetaId(name,TC.Saved,_) | Ast.MetaFunc(name,TC.Saved,_)
-    | Ast.MetaLocalFunc(name,TC.Saved,_) -> [metaid name]
+      Ast.MetaId(name,_,TC.Saved,_) | Ast.MetaFunc(name,_,TC.Saved,_)
+    | Ast.MetaLocalFunc(name,_,TC.Saved,_) -> [metaid name]
     | _ -> k i in
 
   let rec type_collect res = function
@@ -172,12 +172,12 @@ let collect_saved =
   let astfvexpr recursor k e =
     let tymetas =
       match Ast.unwrap e with
-	Ast.MetaExpr(name,_,Some type_list,_,_) ->
+	Ast.MetaExpr(name,_,_,Some type_list,_,_) ->
 	  List.fold_left type_collect option_default type_list
       |	_ -> [] in
     let vars =
       match Ast.unwrap e with
-	Ast.MetaErr(name,TC.Saved,_) | Ast.MetaExpr(name,TC.Saved,_,_,_)
+	Ast.MetaErr(name,_,TC.Saved,_) | Ast.MetaExpr(name,_,TC.Saved,_,_,_)
       | Ast.MetaExprList(name,None,TC.Saved,_) -> [metaid name]
       | Ast.MetaExprList(name,Some (lenname,ls,_),ns,_) ->
 	  let namesaved = match ns with TC.Saved -> [metaid name] | _ -> [] in
@@ -360,15 +360,15 @@ let classify_variables metavars minirules used_after =
 
   let ident r k e =
     match Ast.unwrap e with
-      Ast.MetaId(name,_,_) ->
+      Ast.MetaId(name,constraints,_,_) ->
 	let (unitary,inherited) = classify name in
-	Ast.rewrap e (Ast.MetaId(name,unitary,inherited))
-    | Ast.MetaFunc(name,_,_) ->
+	Ast.rewrap e (Ast.MetaId(name,constraints,unitary,inherited))
+    | Ast.MetaFunc(name,constraints,_,_) ->
 	let (unitary,inherited) = classify name in
-	Ast.rewrap e (Ast.MetaFunc(name,unitary,inherited))
-    | Ast.MetaLocalFunc(name,_,_) ->
+	Ast.rewrap e (Ast.MetaFunc(name,constraints,unitary,inherited))
+    | Ast.MetaLocalFunc(name,constraints,_,_) ->
 	let (unitary,inherited) = classify name in
-	Ast.rewrap e (Ast.MetaLocalFunc(name,unitary,inherited))
+	Ast.rewrap e (Ast.MetaLocalFunc(name,constraints,unitary,inherited))
     | _ -> k e in
 
   let rec type_infos = function
@@ -383,13 +383,13 @@ let classify_variables metavars minirules used_after =
 
   let expression r k e =
     match Ast.unwrap e with
-      Ast.MetaErr(name,_,_) ->
+      Ast.MetaErr(name,constraints,_,_) ->
 	let (unitary,inherited) = classify name in
-	Ast.rewrap e (Ast.MetaErr(name,unitary,inherited))
-    | Ast.MetaExpr(name,_,ty,form,_) ->
+	Ast.rewrap e (Ast.MetaErr(name,constraints,unitary,inherited))
+    | Ast.MetaExpr(name,constraints,_,ty,form,_) ->
 	let (unitary,inherited) = classify name in
 	let ty = get_option (List.map type_infos) ty in
-	Ast.rewrap e (Ast.MetaExpr(name,unitary,ty,form,inherited))
+	Ast.rewrap e (Ast.MetaExpr(name,constraints,unitary,ty,form,inherited))
     | Ast.MetaExprList(name,None,_,_) ->
 	(* lenname should have the same properties of being unitary or
 	   inherited as name *)

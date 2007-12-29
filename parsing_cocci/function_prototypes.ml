@@ -7,8 +7,8 @@ type id = Id of string | Meta of (string * string)
 let rec get_name name =
   match Ast0.unwrap name with
     Ast0.Id(nm) -> Id(Ast0.unwrap_mcode nm)
-  | Ast0.MetaId(nm,_) | Ast0.MetaFunc(nm,_)
-  | Ast0.MetaLocalFunc(nm,_) -> Meta(Ast0.unwrap_mcode nm)
+  | Ast0.MetaId(nm,_,_) | Ast0.MetaFunc(nm,_,_)
+  | Ast0.MetaLocalFunc(nm,_,_) -> Meta(Ast0.unwrap_mcode nm)
   | Ast0.OptIdent(id) | Ast0.UniqueIdent(id) ->
       get_name id
 
@@ -107,9 +107,12 @@ and strip =
     donothing r k
       (Ast0.rewrap e
 	 (match Ast0.unwrap e with
-	   Ast0.MetaId(nm,pure) -> Ast0.MetaId(nm,Ast0.Pure)
-	 | Ast0.MetaFunc(nm,pure) -> Ast0.MetaFunc(nm,Ast0.Pure)
-	 | Ast0.MetaLocalFunc(nm,pure) -> Ast0.MetaLocalFunc(nm,Ast0.Pure)
+	   Ast0.MetaId(nm,constraints,pure) ->
+	     Ast0.MetaId(nm,constraints,Ast0.Pure)
+	 | Ast0.MetaFunc(nm,constraints,pure) ->
+	     Ast0.MetaFunc(nm,constraints,Ast0.Pure)
+	 | Ast0.MetaLocalFunc(nm,constraints,pure) ->
+	     Ast0.MetaLocalFunc(nm,constraints,Ast0.Pure)
 	 | e -> e)) in
 
   let typeC r k e =
@@ -123,7 +126,8 @@ and strip =
     donothing r k
       (Ast0.rewrap e
 	 (match Ast0.unwrap e with
-	   Ast0.MetaParam(nm,pure) -> Ast0.MetaParam(nm,Ast0.Pure)
+	   Ast0.MetaParam(nm,pure) ->
+	     Ast0.MetaParam(nm,Ast0.Pure)
 	 | Ast0.MetaParamList(nm,lenname,pure) ->
 	     Ast0.MetaParamList(nm,lenname,Ast0.Pure)
 	 | e -> e)) in
@@ -192,11 +196,11 @@ let rec rename_param old_name all param =
   match Ast0.unwrap param with
     Ast0.Param(ty,Some id) when all ->
       (match Ast0.unwrap id with
-	Ast0.MetaId(((_,name),arity,info,mcodekind),pure) ->
+	Ast0.MetaId(((_,name),arity,info,mcodekind),constraints,pure) ->
 	  let nm = ("__no_name__",new_name name) in
 	  let new_id =
 	    Ast0.rewrap id
-	      (Ast0.MetaId((nm,arity,info,mcodekind),Ast0.Pure)) in
+	      (Ast0.MetaId((nm,arity,info,mcodekind),constraints,Ast0.Pure)) in
 	  ([Ast.MetaIdDecl(Ast.NONE,nm)],
 	   Ast0.rewrap param (Ast0.Param(ty,Some new_id)))
       |	_ -> ([],param))

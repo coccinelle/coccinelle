@@ -62,13 +62,13 @@ let get_free checker t =
   
   let ident r k i =
     match Ast0.unwrap i with
-      Ast0.MetaId(name,_) | Ast0.MetaFunc(name,_)
-    | Ast0.MetaLocalFunc(name,_) -> checker name
+      Ast0.MetaId(name,_,_) | Ast0.MetaFunc(name,_,_)
+    | Ast0.MetaLocalFunc(name,_,_) -> checker name
     | _ -> k i in
   
   let expression r k e =
     match Ast0.unwrap e with
-      Ast0.MetaErr(name,_) | Ast0.MetaExpr(name,_,_,_)
+      Ast0.MetaErr(name,_,_) | Ast0.MetaExpr(name,_,_,_,_)
     | Ast0.MetaExprList(name,_,_) -> checker name
     | Ast0.DisjExpr(starter,expr_list,mids,ender) ->
 	detect_unitary_frees(List.map r.V0.combiner_expression expr_list)
@@ -134,20 +134,20 @@ let update_unitary unitary =
 
   let ident r k i =
     match Ast0.unwrap i with
-      Ast0.MetaId(name,_) ->
-	Ast0.rewrap i (Ast0.MetaId(name,is_unitary name))
-    | Ast0.MetaFunc(name,_) ->
-	Ast0.rewrap i (Ast0.MetaFunc(name,is_unitary name))
-    | Ast0.MetaLocalFunc(name,_) ->
-	Ast0.rewrap i (Ast0.MetaLocalFunc(name,is_unitary name))
+      Ast0.MetaId(name,constraints,_) ->
+	Ast0.rewrap i (Ast0.MetaId(name,constraints,is_unitary name))
+    | Ast0.MetaFunc(name,constraints,_) ->
+	Ast0.rewrap i (Ast0.MetaFunc(name,constraints,is_unitary name))
+    | Ast0.MetaLocalFunc(name,constraints,_) ->
+	Ast0.rewrap i (Ast0.MetaLocalFunc(name,constraints,is_unitary name))
     | _ -> k i in
 
   let expression r k e =
     match Ast0.unwrap e with
-      Ast0.MetaErr(name,_) ->
-	Ast0.rewrap e (Ast0.MetaErr(name,is_unitary name))
-    | Ast0.MetaExpr(name,ty,form,_) ->
-	Ast0.rewrap e (Ast0.MetaExpr(name,ty,form,is_unitary name))
+      Ast0.MetaErr(name,constraints,_) ->
+	Ast0.rewrap e (Ast0.MetaErr(name,constraints,is_unitary name))
+    | Ast0.MetaExpr(name,constraints,ty,form,_) ->
+	Ast0.rewrap e (Ast0.MetaExpr(name,constraints,ty,form,is_unitary name))
     | Ast0.MetaExprList(name,lenname,_) ->
 	Ast0.rewrap e (Ast0.MetaExprList(name,lenname,is_unitary name))
     | _ -> k e in

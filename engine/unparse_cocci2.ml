@@ -76,17 +76,17 @@ in
 let rec ident i =
   match Ast.unwrap i with
     Ast.Id(name) -> mcode print_string name
-  | Ast.MetaId(name,_,_) -> 
+  | Ast.MetaId(name,_,_,_) -> 
       handle_metavar name (function
         | (Ast_c.MetaIdVal id) -> pr id
         | _ -> raise Impossible
         ) 
-  | Ast.MetaFunc(name,_,_) -> 
+  | Ast.MetaFunc(name,_,_,_) -> 
       handle_metavar name (function
         | (Ast_c.MetaFuncVal id) -> pr id
         | _ -> raise Impossible
         ) 
-  | Ast.MetaLocalFunc(name,_,_) -> 
+  | Ast.MetaLocalFunc(name,_,_,_) -> 
       handle_metavar name (function
         | (Ast_c.MetaLocalFuncVal id) -> pr id
         | _ -> raise Impossible
@@ -143,10 +143,10 @@ let rec expression e =
       mcode print_string rp
   | Ast.TypeExp(ty) -> fullType ty
 
-  | Ast.MetaErr(name,_,_) -> 
+  | Ast.MetaErr(name,_,_,_) -> 
       failwith "metaErr not handled"
 
-  | Ast.MetaExpr (name,_,_typedontcare,_formdontcare,_) ->
+  | Ast.MetaExpr (name,_,_,_typedontcare,_formdontcare,_) ->
       handle_metavar name  (function
         | Ast_c.MetaExprVal exp -> 
             Pretty_print_c.pp_expression_gen pr_elem pr_space  exp

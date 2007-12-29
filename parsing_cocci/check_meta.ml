@@ -80,9 +80,9 @@ let ident context old_metas table minus i =
 	    warning
 	      (Printf.sprintf "line %d: should %s be a metavariable?" rl name)
       | _ -> ())
-  | Ast0.MetaId(name,_) -> check_table table minus name
-  | Ast0.MetaFunc(name,_) -> check_table table minus name
-  | Ast0.MetaLocalFunc(name,_) -> check_table table minus name
+  | Ast0.MetaId(name,_,_) -> check_table table minus name
+  | Ast0.MetaFunc(name,_,_) -> check_table table minus name
+  | Ast0.MetaLocalFunc(name,_,_) -> check_table table minus name
   | Ast0.OptIdent(_) | Ast0.UniqueIdent(_) ->
       failwith "unexpected code"
 
@@ -128,7 +128,7 @@ let rec expression context old_metas table minus e =
   | Ast0.SizeOfExpr(szf,exp) -> expression ID old_metas table minus exp
   | Ast0.SizeOfType(szf,lp,ty,rp) -> typeC old_metas table minus ty
   | Ast0.TypeExp(ty) -> typeC old_metas table minus ty
-  | Ast0.MetaExpr(name,Some tys,_,_) ->
+  | Ast0.MetaExpr(name,_,Some tys,_,_) ->
       List.iter
 	(function x ->
 	  match get_type_name x with
@@ -136,7 +136,7 @@ let rec expression context old_metas table minus e =
 	  | None -> ())
 	tys;
       check_table table minus name
-  | Ast0.MetaExpr(name,_,_,_) | Ast0.MetaErr(name,_) ->
+  | Ast0.MetaExpr(name,_,_,_,_) | Ast0.MetaErr(name,_,_) ->
       check_table table minus name
   | Ast0.MetaExprList(name,None,_) ->
       check_table table minus name

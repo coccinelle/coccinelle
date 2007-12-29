@@ -253,10 +253,15 @@ and ident i =
   rewrap i (do_isos (Ast0.get_iso i))
     (match Ast0.unwrap i with
       Ast0.Id(name) -> Ast.Id(mcode name)
-    | Ast0.MetaId(name,_) -> Ast.MetaId(mcode name,unitary,false)
-    | Ast0.MetaFunc(name,_) -> Ast.MetaFunc(mcode name,unitary,false)
-    | Ast0.MetaLocalFunc(name,_) ->
-	Ast.MetaLocalFunc(mcode name,unitary,false)
+    | Ast0.MetaId(name,constraints,_) ->
+	let constraints = List.map ident constraints in
+	Ast.MetaId(mcode name,constraints,unitary,false)
+    | Ast0.MetaFunc(name,constraints,_) ->
+	let constraints = List.map ident constraints in
+	Ast.MetaFunc(mcode name,constraints,unitary,false)
+    | Ast0.MetaLocalFunc(name,constraints,_) ->
+	let constraints = List.map ident constraints in
+	Ast.MetaLocalFunc(mcode name,constraints,unitary,false)
     | Ast0.OptIdent(id) -> Ast.OptIdent(ident id)
     | Ast0.UniqueIdent(id) -> Ast.UniqueIdent(ident id))
 
@@ -307,9 +312,12 @@ and expression e =
     | Ast0.SizeOfType(szf,lp,ty,rp) ->
 	Ast.SizeOfType(mcode szf, mcode lp,typeC ty,mcode rp)
     | Ast0.TypeExp(ty) -> Ast.TypeExp(typeC ty)
-    | Ast0.MetaErr(name,_)  -> Ast.MetaErr(mcode name,unitary,false)
-    | Ast0.MetaExpr(name,ty,form,_)  ->
-	Ast.MetaExpr(mcode name,unitary,ty,form,false)
+    | Ast0.MetaErr(name,constraints,_)  ->
+	let constraints = List.map expression constraints in
+	Ast.MetaErr(mcode name,constraints,unitary,false)
+    | Ast0.MetaExpr(name,constraints,ty,form,_)  ->
+	let constraints = List.map expression constraints in
+	Ast.MetaExpr(mcode name,constraints,unitary,ty,form,false)
     | Ast0.MetaExprList(name,Some lenname,_) ->
 	Ast.MetaExprList(mcode name,Some (lenname,unitary,false),unitary,false)
     | Ast0.MetaExprList(name,None,_) ->
@@ -396,7 +404,8 @@ and base_typeC t =
 			 dots declaration decls,
 			 mcode rb)
   | Ast0.TypeName(name) -> Ast.TypeName(mcode name)
-  | Ast0.MetaType(name,_) -> Ast.MetaType(mcode name,unitary,false)
+  | Ast0.MetaType(name,_) ->
+      Ast.MetaType(mcode name,unitary,false)
   | _ -> failwith "ast0toast: unexpected type"
 	
 (* --------------------------------------------------------------------- *)
@@ -503,7 +512,8 @@ and parameterTypeDef p =
     (match Ast0.unwrap p with
       Ast0.VoidParam(ty) -> Ast.VoidParam(typeC ty)
     | Ast0.Param(ty,id) -> Ast.Param(typeC ty,get_option ident id)
-    | Ast0.MetaParam(name,_) -> Ast.MetaParam(mcode name,unitary,false)
+    | Ast0.MetaParam(name,_) ->
+	Ast.MetaParam(mcode name,unitary,false)
     | Ast0.MetaParamList(name,Some lenname,_) ->
 	Ast.MetaParamList(mcode name,Some(lenname,unitary,false),unitary,false)
     | Ast0.MetaParamList(name,None,_) ->

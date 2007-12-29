@@ -423,9 +423,12 @@ let test_parse_cocci file =
   if not (file =~ ".*\\.cocci") 
   then pr2 "warning: seems not a .cocci file";
 
-  let (xs,_,_,_,_,query) =
+  let (xs,_,_,_,grep_tokens,query) =
     Parse_cocci.process file (Some !Config.std_iso) false in
   xs +> List.iter Pretty_print_cocci.unparse;
+  Printf.printf "grep tokens\n";
+  List.iter (function x -> Printf.printf "%s\n" (String.concat " " x))
+    grep_tokens;
   if !Flag.use_glimpse
   then match query with None -> pr "No query" | Some x -> pr x
 

@@ -55,9 +55,9 @@ let case_line_dots d =
 let ident i =
   match Ast0.unwrap i with
     Ast0.Id(name) -> [10]
-  | Ast0.MetaId(name,_) -> [11]
-  | Ast0.MetaFunc(name,_) -> [12]
-  | Ast0.MetaLocalFunc(name,_) -> [13]
+  | Ast0.MetaId(name,_,_) -> [11]
+  | Ast0.MetaFunc(name,_,_) -> [12]
+  | Ast0.MetaLocalFunc(name,_,_) -> [13]
   | Ast0.OptIdent(id) -> [14]
   | Ast0.UniqueIdent(id) -> [15]
 	
@@ -80,8 +80,8 @@ let expression e =
   | Ast0.SizeOfExpr(szf,exp) -> [98] (* added after *)
   | Ast0.SizeOfType(szf,lp,ty,rp) -> [99] (* added after *)
   | Ast0.TypeExp(ty) -> [123] (* added after *)
-  | Ast0.MetaErr(name,_) -> [32]
-  | Ast0.MetaExpr(name,ty,_,_) -> [33]
+  | Ast0.MetaErr(name,_,_) -> [32]
+  | Ast0.MetaExpr(name,_,ty,_,_) -> [33]
   | Ast0.MetaExprList(name,_,_) -> [34]
   | Ast0.EComma(cm) -> [35]
   | Ast0.DisjExpr(_,expr_list,_,_) -> [36]

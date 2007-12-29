@@ -290,7 +290,15 @@ module XMATCH = struct
     match check_add_metavars_binding strip keep inherited (k, valu) tin with
     | Some binding -> f () {extra = tin.extra; binding = binding}
     | None -> fail tin
-        
+
+  let check_constraints matcher constraints exp = fun f tin ->
+    let rec loop = function
+	[] -> f () tin (* success *)
+      |	c::cs ->
+	  match matcher c exp tin with
+	    [] (* failure *) -> loop cs
+	  | _ (* success *) -> fail tin in
+    loop constraints
 
   (* ------------------------------------------------------------------------*)
   (* Environment, allbounds *) 

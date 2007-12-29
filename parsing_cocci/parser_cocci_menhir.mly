@@ -36,8 +36,9 @@ module P = Parse_aux
 %token <Data.clt> TBreak TContinue TSizeof TFunDecl
 %token <string * Data.clt> TIdent TTypeId TDeclarerId TIteratorId
 
-%token <Parse_aux.info>       TMetaId TMetaType TMetaErr TMetaParam
-%token <Parse_aux.info>       TMetaStm TMetaStmList TMetaFunc TMetaLocalFunc
+%token <Parse_aux.idinfo>     TMetaId TMetaFunc TMetaLocalFunc
+%token <Parse_aux.expinfo>    TMetaErr 
+%token <Parse_aux.info>       TMetaParam TMetaStm TMetaStmList TMetaType
 %token <Parse_aux.list_info>  TMetaParamList TMetaExpList
 %token <Parse_aux.typed_info> TMetaExp TMetaIdExp TMetaConst
 %token <Ast_cocci.meta_name * Data.clt>  TMetaPos
@@ -225,6 +226,10 @@ metadec:
   ar=arity ispure=pure
   kindfn=metakind ids=comma_list(pure_ident_or_meta_ident) TMPtVirg
     { P.create_metadec ar ispure kindfn ids }
+| ar=arity ispure=pure
+  kindfn=metakind_atomic
+  ids=comma_list(pure_ident_or_meta_ident_with_not_eq(not_eq)) TMPtVirg
+    { P.create_metadec_ne ar ispure kindfn ids }
 | ar=arity TPosition ids=comma_list(pure_ident) TMPtVirg
     { let kindfn arity name pure check_meta =
       let tok = check_meta(Ast.MetaPosDecl(arity,name)) in
@@ -251,18 +256,10 @@ metadec:
 	id ids }
 
 %inline metakind:
-    TIdentifier
-    { (fun arity name pure check_meta ->
-      let tok = check_meta(Ast.MetaIdDecl(arity,name)) in
-      !Data.add_id_meta name pure; tok) }
-| TFresh TIdentifier
+  TFresh TIdentifier
     { (fun arity name pure check_meta ->
       let tok = check_meta(Ast.MetaFreshIdDecl(arity,name)) in
-      !Data.add_id_meta name pure; tok) }
-| TType
-    { (fun arity name pure check_meta ->
-      let tok = check_meta(Ast.MetaTypeDecl(arity,name)) in
-      !Data.add_type_meta name pure; tok) } 
+      !Data.add_id_meta name [] pure; tok) }
 | TParameter
     { (fun arity name pure check_meta ->
       let tok = check_meta(Ast.MetaParamDecl(arity,name)) in
@@ -271,32 +268,14 @@ metadec:
     { (fun arity name pure check_meta ->
       let tok = check_meta(Ast.MetaParamListDecl(arity,name,None)) in
       !Data.add_paramlist_meta name None pure; tok) }
-| TError
-    { (fun arity name pure check_meta ->
-      let tok = check_meta(Ast.MetaErrDecl(arity,name)) in
-      !Data.add_err_meta name pure; tok) }
-| TExpression
-    { (fun arity name pure check_meta ->
-      let tok = check_meta(Ast.MetaExpDecl(arity,name,None)) in
-      !Data.add_exp_meta None name pure; tok) }
 | TExpression Tlist
     { (fun arity name pure check_meta ->
       let tok = check_meta(Ast.MetaExpListDecl(arity,name,None)) in
       !Data.add_explist_meta name None pure; tok) }
-| TIdExpression ty=ioption(meta_exp_type)
+| TType
     { (fun arity name pure check_meta ->
-      let tok = check_meta(Ast.MetaExpDecl(arity,name,ty)) in
-      !Data.add_idexp_meta ty name pure; tok) }
-| TIdExpression m=nonempty_list(TMul)
-    { (fun arity name pure check_meta ->
-      let ty = Some [P.ty_pointerify Type_cocci.Unknown m] in
-      let tok = check_meta(Ast.MetaIdExpDecl(arity,name,ty)) in
-      !Data.add_idexp_meta ty name pure; tok) }
-| TExpression m=nonempty_list(TMul)
-    { (fun arity name pure check_meta ->
-      let ty = Some [P.ty_pointerify Type_cocci.Unknown m] in
-      let tok = check_meta(Ast.MetaExpDecl(arity,name,ty)) in
-      !Data.add_exp_meta ty name pure; tok) }
+      let tok = check_meta(Ast.MetaTypeDecl(arity,name)) in
+      !Data.add_type_meta name pure; tok) } 
 | TStatement
     { (fun arity name pure check_meta ->
       let tok = check_meta(Ast.MetaStmDecl(arity,name)) in
@@ -305,29 +284,6 @@ metadec:
     { (fun arity name pure check_meta ->
       let tok = check_meta(Ast.MetaStmListDecl(arity,name)) in
       !Data.add_stmlist_meta name pure; tok) }
-| TFunction
-    { (fun arity name pure check_meta ->
-      let tok = check_meta(Ast.MetaFuncDecl(arity,name)) in
-      !Data.add_func_meta name pure; tok) }
-| TLocal TFunction
-    { (fun arity name pure check_meta ->
-      let tok = check_meta(Ast.MetaLocalFuncDecl(arity,name)) in
-      !Data.add_local_func_meta name pure;
-      tok) }
-| vl=meta_exp_type // no error if use $1 but doesn't type check
-    { (fun arity name pure check_meta ->
-      let ty = Some vl in
-      let tok = check_meta(Ast.MetaExpDecl(arity,name,ty)) in
-      !Data.add_exp_meta ty name pure; tok) }
-| vl=meta_exp_type TOCro TCCro
-    { (fun arity name pure check_meta ->
-      let ty = Some (List.map (function x -> Type_cocci.Array x) vl) in
-      let tok = check_meta(Ast.MetaExpDecl(arity,name,ty)) in
-      !Data.add_exp_meta ty name pure; tok) }
-| TConstant ty=ioption(meta_exp_type)
-    { (fun arity name pure check_meta ->
-      let tok = check_meta(Ast.MetaConstDecl(arity,name,ty)) in
-      !Data.add_const_meta ty name pure; tok) }
 | TTypedef
     { (fun arity (_,name) pure check_meta ->
       if arity = Ast.NONE && pure = Ast0.Impure
@@ -343,6 +299,58 @@ metadec:
       if arity = Ast.NONE && pure = Ast0.Impure
       then (!Data.add_iterator_name name; [])
       else raise (Semantic_cocci.Semantic "bad iterator")) }
+
+
+%inline metakind_atomic:
+  TIdentifier
+    { (fun arity name pure check_meta constraints ->
+      let tok = check_meta(Ast.MetaIdDecl(arity,name)) in
+      !Data.add_id_meta name constraints pure; tok) }
+| TError
+    { (fun arity name pure check_meta constraints ->
+      let tok = check_meta(Ast.MetaErrDecl(arity,name)) in
+      !Data.add_err_meta name constraints pure; tok) }
+| TExpression
+    { (fun arity name pure check_meta constraints ->
+      let tok = check_meta(Ast.MetaExpDecl(arity,name,None)) in
+      !Data.add_exp_meta None name constraints pure; tok) }
+| TIdExpression ty=ioption(meta_exp_type)
+    { (fun arity name pure check_meta constraints ->
+      let tok = check_meta(Ast.MetaExpDecl(arity,name,ty)) in
+      !Data.add_idexp_meta ty name constraints pure; tok) }
+| TIdExpression m=nonempty_list(TMul)
+    { (fun arity name pure check_meta constraints ->
+      let ty = Some [P.ty_pointerify Type_cocci.Unknown m] in
+      let tok = check_meta(Ast.MetaIdExpDecl(arity,name,ty)) in
+      !Data.add_idexp_meta ty name constraints pure; tok) }
+| TExpression m=nonempty_list(TMul)
+    { (fun arity name pure check_meta constraints ->
+      let ty = Some [P.ty_pointerify Type_cocci.Unknown m] in
+      let tok = check_meta(Ast.MetaExpDecl(arity,name,ty)) in
+      !Data.add_exp_meta ty name constraints pure; tok) }
+| TFunction
+    { (fun arity name pure check_meta constraints ->
+      let tok = check_meta(Ast.MetaFuncDecl(arity,name)) in
+      !Data.add_func_meta name constraints pure; tok) }
+| TLocal TFunction
+    { (fun arity name pure check_meta constraints ->
+      let tok = check_meta(Ast.MetaLocalFuncDecl(arity,name)) in
+      !Data.add_local_func_meta name constraints pure;
+      tok) }
+| vl=meta_exp_type // no error if use $1 but doesn't type check
+    { (fun arity name pure check_meta constraints ->
+      let ty = Some vl in
+      let tok = check_meta(Ast.MetaExpDecl(arity,name,ty)) in
+      !Data.add_exp_meta ty name constraints pure; tok) }
+| vl=meta_exp_type TOCro TCCro
+    { (fun arity name pure check_meta constraints ->
+      let ty = Some (List.map (function x -> Type_cocci.Array x) vl) in
+      let tok = check_meta(Ast.MetaExpDecl(arity,name,ty)) in
+      !Data.add_exp_meta ty name constraints pure; tok) }
+| TConstant ty=ioption(meta_exp_type)
+    { (fun arity name pure check_meta constraints ->
+      let tok = check_meta(Ast.MetaConstDecl(arity,name,ty)) in
+      !Data.add_const_meta ty name constraints pure; tok) }
 
 meta_exp_type:
   t=ctype
@@ -383,7 +391,8 @@ generic_ctype:
 					 d, P.clt2mcode "}" r)) }
      | s=TMetaType l=TOBrace d=struct_decl_list r=TCBrace
 	 { let (nm,pure,clt) = s in
-	 let ty = Ast0.wrap(Ast0.MetaType(P.clt2mcode nm clt,pure)) in
+	 let ty =
+	   Ast0.wrap(Ast0.MetaType(P.clt2mcode nm clt,pure)) in
 	 Ast0.wrap
 	   (Ast0.StructUnionDef(ty,P.clt2mcode "{" l,d,P.clt2mcode "}" r)) }
      | r=TRuleName TDot p=TIdent
@@ -519,18 +528,19 @@ defineop:
     { let (clt,ident) = $1 in
       function body ->
 	Ast0.wrap
-	  (Ast0.Define(P.clt2mcode "#define" clt,
-		       (match ident with
-			 TMetaId((nm,pure,clt)) ->
-			   Ast0.wrap(Ast0.MetaId(P.clt2mcode nm clt,pure))
-		       | TIdent(nm_pure) ->
-			   Ast0.wrap(Ast0.Id(P.id2mcode nm_pure))
-		       | _ ->
-			   raise
-			     (Semantic_cocci.Semantic
-				"unexpected name for a #define")),
-		       Ast0.wrap Ast0.NoParams,
-		       body)) }
+	  (Ast0.Define
+	     (P.clt2mcode "#define" clt,
+	      (match ident with
+		TMetaId((nm,constraints,pure,clt)) ->
+		  Ast0.wrap(Ast0.MetaId(P.clt2mcode nm clt,constraints,pure))
+	      | TIdent(nm_pure) ->
+		  Ast0.wrap(Ast0.Id(P.id2mcode nm_pure))
+	      | _ ->
+		  raise
+		    (Semantic_cocci.Semantic
+		       "unexpected name for a #define")),
+	      Ast0.wrap Ast0.NoParams,
+	      body)) }
 | TDefineParam define_param_list_option TCPar
     { let (clt,ident,parenoff) = $1 in
       let (arity,line,lline,offset,col,strbef,straft) = clt in
@@ -540,8 +550,8 @@ defineop:
 	  (Ast0.Define
 	     (P.clt2mcode "#define" clt,
 	      (match ident with
-		TMetaId((nm,pure,clt)) ->
-		  Ast0.wrap(Ast0.MetaId(P.clt2mcode nm clt,pure))
+		TMetaId((nm,constraints,pure,clt)) ->
+		  Ast0.wrap(Ast0.MetaId(P.clt2mcode nm clt,constraints,pure))
 	      | TIdent(nm_pure) ->
 		  Ast0.wrap(Ast0.Id(P.id2mcode nm_pure))
 	      | _ ->
@@ -1171,20 +1181,24 @@ primary_expr(recurser,primary_extra):
      { let (x,clt) = $1 in
      Ast0.wrap(Ast0.Constant (P.clt2mcode (Ast.Char x) clt)) }
  | TMetaConst option(pos)
-     { let (nm,pure,ty,clt) = $1 in
+     { let (nm,constraints,pure,ty,clt) = $1 in
      Ast0.set_pos $2
-       (Ast0.wrap(Ast0.MetaExpr(P.clt2mcode nm clt,ty,Ast.CONST,pure))) }
+       (Ast0.wrap
+	  (Ast0.MetaExpr(P.clt2mcode nm clt,constraints,ty,Ast.CONST,pure))) }
  | TMetaErr option(pos)
-     { let (nm,pure,clt) = $1 in
-     Ast0.set_pos $2 (Ast0.wrap(Ast0.MetaErr(P.clt2mcode nm clt,pure))) }
+     { let (nm,constraints,pure,clt) = $1 in
+     Ast0.set_pos $2
+       (Ast0.wrap(Ast0.MetaErr(P.clt2mcode nm clt,constraints,pure))) }
  | TMetaExp option(pos)
-     { let (nm,pure,ty,clt) = $1 in
+     { let (nm,constraints,pure,ty,clt) = $1 in
      Ast0.set_pos $2
-       (Ast0.wrap(Ast0.MetaExpr(P.clt2mcode nm clt,ty,Ast.ANY,pure))) }
+       (Ast0.wrap
+	  (Ast0.MetaExpr(P.clt2mcode nm clt,constraints,ty,Ast.ANY,pure))) }
  | TMetaIdExp option(pos)
-     { let (nm,pure,ty,clt) = $1 in
+     { let (nm,constraints,pure,ty,clt) = $1 in
      Ast0.set_pos $2
-       (Ast0.wrap(Ast0.MetaExpr(P.clt2mcode nm clt,ty,Ast.ID,pure))) }
+       (Ast0.wrap
+	  (Ast0.MetaExpr(P.clt2mcode nm clt,constraints,ty,Ast.ID,pure))) }
  | TOPar eexpr TCPar
      { Ast0.wrap(Ast0.Paren(P.clt2mcode "(" $1,$2,
 			    P.clt2mcode ")" $3)) }
@@ -1207,24 +1221,41 @@ pure_ident_or_meta_ident:
        pure_ident                { (None,P.id2name $1) }
      | TRuleName TDot pure_ident { (Some $1,P.id2name $3) }
 
+pure_ident_or_meta_ident_with_not_eq(not_eq):
+       i=pure_ident_or_meta_ident l=loption(not_eq) { (i,l) }
+
+not_eq:
+       TNotEq i=pure_ident
+         { (if !Data.in_iso
+	   then failwith "constraints not allowed in iso file");
+	   [i] }
+     | TNotEq TOBrace l=comma_list(pure_ident) TCBrace
+	 { (if !Data.in_iso
+	   then failwith "constraints not allowed in iso file");
+	   l }
+
 func_ident: pure_ident
          { Ast0.wrap(Ast0.Id(P.id2mcode $1)) }
      | TMetaId option(pos)
-         { let (nm,pure,clt) = $1 in
-         Ast0.set_pos $2 (Ast0.wrap(Ast0.MetaId(P.clt2mcode nm clt,pure))) }
-     | TMetaFunc option(pos)
-         { let (nm,pure,clt) = $1 in
-         Ast0.set_pos $2 (Ast0.wrap(Ast0.MetaFunc(P.clt2mcode nm clt,pure))) }
-     | TMetaLocalFunc option(pos)
-	 { let (nm,pure,clt) = $1 in
+         { let (nm,constraints,pure,clt) = $1 in
          Ast0.set_pos $2
-	   (Ast0.wrap(Ast0.MetaLocalFunc(P.clt2mcode nm clt,pure))) }
+	   (Ast0.wrap(Ast0.MetaId(P.clt2mcode nm clt,constraints,pure))) }
+     | TMetaFunc option(pos)
+         { let (nm,constraints,pure,clt) = $1 in
+         Ast0.set_pos $2
+	   (Ast0.wrap(Ast0.MetaFunc(P.clt2mcode nm clt,constraints,pure))) }
+     | TMetaLocalFunc option(pos)
+	 { let (nm,constraints,pure,clt) = $1 in
+         Ast0.set_pos $2
+	   (Ast0.wrap
+	      (Ast0.MetaLocalFunc(P.clt2mcode nm clt,constraints,pure))) }
 
 ident: pure_ident
          { Ast0.wrap(Ast0.Id(P.id2mcode $1)) }
      | TMetaId option(pos)
-         { let (nm,pure,clt) = $1 in
-         Ast0.set_pos $2 (Ast0.wrap(Ast0.MetaId(P.clt2mcode nm clt,pure))) }
+         { let (nm,constraints,pure,clt) = $1 in
+         Ast0.set_pos $2
+	   (Ast0.wrap(Ast0.MetaId(P.clt2mcode nm clt,constraints,pure))) }
 
 typedef_ident:
        pure_ident

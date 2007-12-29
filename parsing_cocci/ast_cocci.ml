@@ -93,9 +93,9 @@ and 'a dots = 'a base_dots wrap
 and base_ident =
     Id of string mcode
 
-  | MetaId        of meta_name mcode * keep_binding * inherited
-  | MetaFunc      of meta_name mcode * keep_binding * inherited
-  | MetaLocalFunc of meta_name mcode * keep_binding * inherited
+  | MetaId        of meta_name mcode * ident list * keep_binding * inherited
+  | MetaFunc      of meta_name mcode * ident list * keep_binding * inherited
+  | MetaLocalFunc of meta_name mcode * ident list * keep_binding * inherited
 
   | OptIdent      of ident
   | UniqueIdent   of ident
@@ -133,8 +133,9 @@ and base_expression =
   | Paren          of string mcode (* ( *) * expression *
                       string mcode (* ) *)
 
-  | MetaErr        of meta_name mcode * keep_binding * inherited
-  | MetaExpr       of meta_name mcode * keep_binding *
+  | MetaErr        of meta_name mcode * expression list * keep_binding *
+	              inherited
+  | MetaExpr       of meta_name mcode * expression list * keep_binding *
 	              Type_cocci.typeC list option * form * inherited
   | MetaExprList   of meta_name mcode * listlen option * keep_binding *
                       inherited (* only in arg lists *)

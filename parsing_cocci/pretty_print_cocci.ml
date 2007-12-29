@@ -136,9 +136,9 @@ let print_type keep info = function
 let rec ident i =
   match Ast.unwrap i with
     Ast.Id(name) -> mcode print_string name
-  | Ast.MetaId(name,keep,inherited) -> mcode print_meta name
-  | Ast.MetaFunc(name,_,_) -> mcode print_meta name
-  | Ast.MetaLocalFunc(name,_,_) -> mcode print_meta name
+  | Ast.MetaId(name,_,keep,inherited) -> mcode print_meta name
+  | Ast.MetaFunc(name,_,_,_) -> mcode print_meta name
+  | Ast.MetaLocalFunc(name,_,_,_) -> mcode print_meta name
   | Ast.OptIdent(id) -> print_string "?"; ident id
   | Ast.UniqueIdent(id) -> print_string "!"; ident id
 
@@ -206,8 +206,8 @@ let rec expression e =
       mcode print_string rp
   | Ast.TypeExp(ty) -> fullType ty
 
-  | Ast.MetaErr(name,_,_) -> mcode print_meta name
-  | Ast.MetaExpr(name,keep,ty,form,inherited) ->
+  | Ast.MetaErr(name,_,_,_) -> mcode print_meta name
+  | Ast.MetaExpr(name,_,keep,ty,form,inherited) ->
       mcode print_meta name; print_type keep inherited ty
   | Ast.MetaExprList(name,_,_,_) -> mcode print_meta name
   | Ast.EComma(cm) -> mcode print_string cm; print_space()

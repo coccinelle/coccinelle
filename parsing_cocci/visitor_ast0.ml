@@ -90,9 +90,9 @@ let combiner bind option_default
     let k i =
       match Ast0.unwrap i with
 	Ast0.Id(name) -> string_mcode name
-      | Ast0.MetaId(name,_) -> meta_mcode name
-      | Ast0.MetaFunc(name,_) -> meta_mcode name
-      | Ast0.MetaLocalFunc(name,_) -> meta_mcode name
+      | Ast0.MetaId(name,_,_) -> meta_mcode name
+      | Ast0.MetaFunc(name,_,_) -> meta_mcode name
+      | Ast0.MetaLocalFunc(name,_,_) -> meta_mcode name
       | Ast0.OptIdent(id) -> ident id
       | Ast0.UniqueIdent(id) -> ident id in
   identfn all_functions k i
@@ -135,8 +135,8 @@ let combiner bind option_default
 	  multibind
 	    [string_mcode szf; string_mcode lp; typeC ty; string_mcode rp]
       | Ast0.TypeExp(ty) -> typeC ty
-      | Ast0.MetaErr(name,_)
-      | Ast0.MetaExpr(name,_,_,_)
+      | Ast0.MetaErr(name,_,_)
+      | Ast0.MetaExpr(name,_,_,_,_)
       | Ast0.MetaExprList(name,_,_) -> meta_mcode name
       | Ast0.EComma(cm) -> string_mcode cm
       | Ast0.DisjExpr(starter,expr_list,mids,ender) ->
@@ -574,12 +574,12 @@ let rebuilder = fun
       Ast0.rewrap i
 	(match Ast0.unwrap i with
 	  Ast0.Id(name) -> Ast0.Id(string_mcode name)
-	| Ast0.MetaId(name,pure) ->
-	    Ast0.MetaId(meta_mcode name,pure)
-	| Ast0.MetaFunc(name,pure) ->
-	    Ast0.MetaFunc(meta_mcode name,pure)
-	| Ast0.MetaLocalFunc(name,pure) ->
-	    Ast0.MetaLocalFunc(meta_mcode name,pure)
+	| Ast0.MetaId(name,constraints,pure) ->
+	    Ast0.MetaId(meta_mcode name,constraints,pure)
+	| Ast0.MetaFunc(name,constraints,pure) ->
+	    Ast0.MetaFunc(meta_mcode name,constraints,pure)
+	| Ast0.MetaLocalFunc(name,constraints,pure) ->
+	    Ast0.MetaLocalFunc(meta_mcode name,constraints,pure)
 	| Ast0.OptIdent(id) -> Ast0.OptIdent(ident id)
 	| Ast0.UniqueIdent(id) -> Ast0.UniqueIdent(ident id)) in
     identfn all_functions k i
@@ -622,10 +622,10 @@ let rebuilder = fun
 	    Ast0.SizeOfType(string_mcode szf,string_mcode lp, typeC ty, 
                             string_mcode rp)
 	| Ast0.TypeExp(ty) -> Ast0.TypeExp(typeC ty)
-	| Ast0.MetaErr(name,pure) ->
-	    Ast0.MetaErr(meta_mcode name,pure)
-	| Ast0.MetaExpr(name,ty,form,pure) ->
-	    Ast0.MetaExpr(meta_mcode name,ty,form,pure)
+	| Ast0.MetaErr(name,constraints,pure) ->
+	    Ast0.MetaErr(meta_mcode name,constraints,pure)
+	| Ast0.MetaExpr(name,constraints,ty,form,pure) ->
+	    Ast0.MetaExpr(meta_mcode name,constraints,ty,form,pure)
 	| Ast0.MetaExprList(name,lenname,pure) ->
 	    Ast0.MetaExprList(meta_mcode name,lenname,pure)
 	| Ast0.EComma(cm) -> Ast0.EComma(string_mcode cm)

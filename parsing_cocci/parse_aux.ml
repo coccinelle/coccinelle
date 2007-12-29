@@ -4,9 +4,13 @@ module Ast = Ast_cocci
 
 (* types for metavariable tokens *)
 type info = Ast.meta_name * Ast0.pure * Data.clt
+type idinfo = Ast.meta_name * Ast0.ident list * Ast0.pure * Data.clt
+type expinfo = Ast.meta_name * Ast0.expression list * Ast0.pure * Data.clt
+type tyinfo = Ast.meta_name * Ast0.typeC list * Ast0.pure * Data.clt
 type list_info = Ast.meta_name * Ast.meta_name option * Ast0.pure * Data.clt
-type typed_info = Ast.meta_name * Ast0.pure * Type_cocci.typeC list option *
-      Data.clt
+type typed_info =
+    Ast.meta_name * Ast0.expression list * Ast0.pure *
+      Type_cocci.typeC list option * Data.clt
 
 
 let get_option fn = function
@@ -278,6 +282,32 @@ let create_metadec ar ispure kindfn ids current_rule =
 	       ((rule,nm),
 		function x -> check_meta x; [Common.Right x]) in
 	 kindfn ar rule ispure checker)
+       ids)
+
+let create_metadec_ne ar ispure kindfn ids current_rule =
+  List.concat
+    (List.map
+       (function ((rule,nm),constraints) ->
+	 let (rule,checker) =
+	   match rule with
+	     None -> ((current_rule,nm),function x -> [Common.Left x])
+	   | Some rule ->
+	       ((rule,nm),
+		function x -> check_meta x; [Common.Right x]) in
+	 kindfn ar rule ispure checker constraints)
+       ids)
+
+let create_metadec_ty ar ispure kindfn ids current_rule =
+  List.concat
+    (List.map
+       (function ((rule,nm),constraints) ->
+	 let (rule,checker) =
+	   match rule with
+	     None -> ((current_rule,nm),function x -> [Common.Left x])
+	   | Some rule ->
+	       ((rule,nm),
+		function x -> check_meta x; [Common.Right x]) in
+	 kindfn ar rule ispure checker constraints)
        ids)
 
 let create_len_metadec ar ispure kindfn lenid ids current_rule =

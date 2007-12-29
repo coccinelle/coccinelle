@@ -68,7 +68,7 @@ let rec propagate_types env =
       Ast0.Id(id) ->
 	(try Some(List.assoc (Id(Ast0.unwrap_mcode id)) env)
 	with Not_found -> None)
-    | Ast0.MetaId(id,_) ->
+    | Ast0.MetaId(id,_,_) ->
 	(try Some(List.assoc (Meta(Ast0.unwrap_mcode id)) env)
 	with Not_found -> None)
     | _ -> k i in
@@ -182,9 +182,9 @@ let rec propagate_types env =
       | Ast0.SizeOfExpr(szf,exp) -> Some(T.BaseType(T.IntType,None))
       | Ast0.SizeOfType(szf,lp,ty,rp) -> Some(T.BaseType(T.IntType,None))
       | Ast0.TypeExp(ty) -> None
-      | Ast0.MetaErr(name,_) -> None
-      | Ast0.MetaExpr(name,Some [ty],_,_) -> Some ty
-      | Ast0.MetaExpr(name,ty,_,_) -> None
+      | Ast0.MetaErr(name,_,_) -> None
+      | Ast0.MetaExpr(name,_,Some [ty],_,_) -> Some ty
+      | Ast0.MetaExpr(name,_,ty,_,_) -> None
       | Ast0.MetaExprList(name,_,_) -> None
       | Ast0.EComma(cm) -> None
       | Ast0.DisjExpr(_,exp_list,_,_) ->
@@ -215,9 +215,9 @@ let rec propagate_types env =
   let rec strip id =
     match Ast0.unwrap id with
       Ast0.Id(name)              -> Id(Ast0.unwrap_mcode name)
-    | Ast0.MetaId(name,_)        -> Meta(Ast0.unwrap_mcode name)
-    | Ast0.MetaFunc(name,_)      -> Meta(Ast0.unwrap_mcode name)
-    | Ast0.MetaLocalFunc(name,_) -> Meta(Ast0.unwrap_mcode name)
+    | Ast0.MetaId(name,_,_)        -> Meta(Ast0.unwrap_mcode name)
+    | Ast0.MetaFunc(name,_,_)      -> Meta(Ast0.unwrap_mcode name)
+    | Ast0.MetaLocalFunc(name,_,_) -> Meta(Ast0.unwrap_mcode name)
     | Ast0.OptIdent(id)    -> strip id
     | Ast0.UniqueIdent(id) -> strip id in
 
@@ -290,7 +290,7 @@ let rec propagate_types env =
 	let _ = k s in
 	(match (Ast0.unwrap exp,Ast0.get_type exp) with
 	  (Ast0.Edots(_,_),_) -> ()
-	| (Ast0.MetaExpr(_,_,_,_),_) ->
+	| (Ast0.MetaExpr(_,_,_,_,_),_) ->
 	    (* if a type is known, it is specified in the decl *)
 	    ()
 	| (_,None) -> Ast0.set_type exp (Some (T.BaseType(T.IntType,None)))

@@ -139,6 +139,9 @@ module type PARAM =
       Ast_cocci.meta_name * Ast_c.metavar_binding_kind ->
       (unit -> tin -> 'x tout) -> (tin -> 'x tout)
 
+    val check_constraints :
+      ('a, 'b) matcher -> 'a list -> 'b ->
+	(unit -> tin -> 'x tout) -> (tin -> 'x tout)
 
     val all_bound : Ast_cocci.meta_name list -> tin -> bool
 

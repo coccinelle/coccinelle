@@ -63,9 +63,9 @@ and 'a dots = 'a base_dots wrap
 
 and base_ident =
     Id of string mcode
-  | MetaId        of Ast_cocci.meta_name mcode * pure
-  | MetaFunc      of Ast_cocci.meta_name mcode * pure
-  | MetaLocalFunc of Ast_cocci.meta_name mcode * pure
+  | MetaId        of Ast_cocci.meta_name mcode * ident list * pure
+  | MetaFunc      of Ast_cocci.meta_name mcode * ident list * pure
+  | MetaLocalFunc of Ast_cocci.meta_name mcode * ident list * pure
   | OptIdent      of ident
   | UniqueIdent   of ident
 
@@ -99,8 +99,8 @@ and base_expression =
   | SizeOfType     of string mcode (* sizeof *) * string mcode (* ( *) *
                       typeC * string mcode (* ) *)
   | TypeExp        of typeC
-  | MetaErr        of Ast_cocci.meta_name mcode * pure
-  | MetaExpr       of Ast_cocci.meta_name mcode *
+  | MetaErr        of Ast_cocci.meta_name mcode * expression list * pure
+  | MetaExpr       of Ast_cocci.meta_name mcode * expression list *
 	              Type_cocci.typeC list option * Ast_cocci.form * pure
   | MetaExprList   of Ast_cocci.meta_name mcode (* only in arglists *) *
 	              Ast_cocci.meta_name option * pure

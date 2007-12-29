@@ -94,9 +94,9 @@ let combiner bind option_default
     let k i =
       match Ast.unwrap i with
 	Ast.Id(name) -> string_mcode name
-      | Ast.MetaId(name,_,_) -> meta_mcode name
-      | Ast.MetaFunc(name,_,_) -> meta_mcode name
-      | Ast.MetaLocalFunc(name,_,_) -> meta_mcode name
+      | Ast.MetaId(name,_,_,_) -> meta_mcode name
+      | Ast.MetaFunc(name,_,_,_) -> meta_mcode name
+      | Ast.MetaLocalFunc(name,_,_,_) -> meta_mcode name
       | Ast.OptIdent(id) -> ident id
       | Ast.UniqueIdent(id) -> ident id in
     identfn all_functions k i
@@ -139,8 +139,8 @@ let combiner bind option_default
 	  multibind
 	    [string_mcode szf; string_mcode lp; fullType ty; string_mcode rp]
       | Ast.TypeExp(ty) -> fullType ty
-      | Ast.MetaErr(name,_,_)
-      | Ast.MetaExpr(name,_,_,_,_)
+      | Ast.MetaErr(name,_,_,_)
+      | Ast.MetaExpr(name,_,_,_,_,_)
       | Ast.MetaExprList(name,_,_,_) -> meta_mcode name
       | Ast.EComma(cm) -> string_mcode cm
       | Ast.DisjExpr(exp_list) -> multibind (List.map expression exp_list)
@@ -584,12 +584,12 @@ let rebuilder
       Ast.rewrap i
 	(match Ast.unwrap i with
 	  Ast.Id(name) -> Ast.Id(string_mcode name)
-	| Ast.MetaId(name,keep,inherited) ->
-	    Ast.MetaId(meta_mcode name,keep,inherited)
-	| Ast.MetaFunc(name,keep,inherited) ->
-	    Ast.MetaFunc(meta_mcode name,keep,inherited)
-	| Ast.MetaLocalFunc(name,keep,inherited) ->
-	    Ast.MetaLocalFunc(meta_mcode name,keep,inherited)
+	| Ast.MetaId(name,constraints,keep,inherited) ->
+	    Ast.MetaId(meta_mcode name,constraints,keep,inherited)
+	| Ast.MetaFunc(name,constraints,keep,inherited) ->
+	    Ast.MetaFunc(meta_mcode name,constraints,keep,inherited)
+	| Ast.MetaLocalFunc(name,constraints,keep,inherited) ->
+	    Ast.MetaLocalFunc(meta_mcode name,constraints,keep,inherited)
 	| Ast.OptIdent(id) -> Ast.OptIdent(ident id)
 	| Ast.UniqueIdent(id) -> Ast.UniqueIdent(ident id)) in
     identfn all_functions k i
@@ -633,10 +633,10 @@ let rebuilder
 	    Ast.SizeOfType(string_mcode szf,string_mcode lp, fullType ty, 
                            string_mcode rp)
 	| Ast.TypeExp(ty) -> Ast.TypeExp(fullType ty)
-	| Ast.MetaErr(name,keep,inherited) ->
-	    Ast.MetaErr(meta_mcode name,keep,inherited)
-	| Ast.MetaExpr(name,keep,ty,form,inherited) ->
-	    Ast.MetaExpr(meta_mcode name,keep,ty,form,inherited)
+	| Ast.MetaErr(name,constraints,keep,inherited) ->
+	    Ast.MetaErr(meta_mcode name,constraints,keep,inherited)
+	| Ast.MetaExpr(name,constraints,keep,ty,form,inherited) ->
+	    Ast.MetaExpr(meta_mcode name,constraints,keep,ty,form,inherited)
 	| Ast.MetaExprList(name,lenname_inh,keep,inherited) ->
 	    Ast.MetaExprList(meta_mcode name,lenname_inh,keep,inherited)
 	| Ast.EComma(cm) -> Ast.EComma(string_mcode cm)

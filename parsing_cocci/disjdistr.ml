@@ -141,7 +141,7 @@ and disjexp e =
   | Ast.TypeExp(ty) ->
       let ty = disjty ty in
       List.map (function ty -> Ast.rewrap e (Ast.TypeExp(ty))) ty
-  | Ast.MetaErr(_,_,_) | Ast.MetaExpr(_,_,_,_,_)
+  | Ast.MetaErr(_,_,_,_) | Ast.MetaExpr(_,_,_,_,_,_)
   | Ast.MetaExprList(_,_,_,_) | Ast.EComma(_) -> [e]
   | Ast.DisjExpr(exp_list) -> List.concat (List.map disjexp exp_list)
   | Ast.NestExpr(expr_dots,whencode,multi) ->

@@ -311,15 +311,16 @@ let match_maker checks_needed context_required whencode_allowed =
     let ident r k i =
       bind (bind (pure_mcodekind (Ast0.get_mcodekind i)) (k i))
 	(match Ast0.unwrap i with
-	  Ast0.MetaId(name,pure) | Ast0.MetaFunc(name,pure)
-	| Ast0.MetaLocalFunc(name,pure) -> pure
+	  Ast0.MetaId(name,_,pure) | Ast0.MetaFunc(name,_,pure)
+	| Ast0.MetaLocalFunc(name,_,pure) -> pure
 	| _ -> Ast0.Impure) in
 
     let expression r k e =
       bind (bind (pure_mcodekind (Ast0.get_mcodekind e)) (k e))
 	(match Ast0.unwrap e with
-	  Ast0.MetaErr(name,pure) 
-	| Ast0.MetaExpr(name,_,_,pure) | Ast0.MetaExprList(name,_,pure) -> pure
+	  Ast0.MetaErr(name,_,pure)
+	| Ast0.MetaExpr(name,_,_,_,pure) | Ast0.MetaExprList(name,_,pure) ->
+	    pure
 	| _ -> Ast0.Impure) in
 
     let typeC r k t =
@@ -403,11 +404,11 @@ let match_maker checks_needed context_required whencode_allowed =
 
   let rec match_ident pattern id =
     match Ast0.unwrap pattern with
-      Ast0.MetaId(name,pure) ->
+      Ast0.MetaId(name,_,pure) ->
 	add_pure_binding name pure pure_sp_code.V0.combiner_ident
 	  (function id -> Ast0.IdentTag id) id
-    | Ast0.MetaFunc(name,pure) -> failwith "metafunc not supported"
-    | Ast0.MetaLocalFunc(name,pure) -> failwith "metalocalfunc not supported"
+    | Ast0.MetaFunc(name,_,pure) -> failwith "metafunc not supported"
+    | Ast0.MetaLocalFunc(name,_,pure) -> failwith "metalocalfunc not supported"
     | up ->
 	if not(checks_needed) or not(context_required) or is_context id
 	then
@@ -424,7 +425,7 @@ let match_maker checks_needed context_required whencode_allowed =
   (* should we do something about matching metavars against ...? *)
   let rec match_expr pattern expr =
     match Ast0.unwrap pattern with
-      Ast0.MetaExpr(name,ty,form,pure) ->
+      Ast0.MetaExpr(name,_,ty,form,pure) ->
 	let form_ok =
 	  match (form,expr) with
 	    (Ast.ANY,_) -> true
@@ -435,7 +436,7 @@ let match_maker checks_needed context_required whencode_allowed =
 		| Ast0.Cast(lp,ty,rp,e) -> matches e
 		| Ast0.SizeOfExpr(se,exp) -> true
 		| Ast0.SizeOfType(se,lp,ty,rp) -> true
-		| Ast0.MetaExpr(nm,_,Ast.CONST,p) ->
+		| Ast0.MetaExpr(nm,_,_,Ast.CONST,p) ->
 		    (Ast0.lub_pure p pure) = pure
 		| _ -> false in
 	      matches e
@@ -444,7 +445,8 @@ let match_maker checks_needed context_required whencode_allowed =
 		match Ast0.unwrap e with
 		  Ast0.Ident(c) -> true
 		| Ast0.Cast(lp,ty,rp,e) -> matches e
-		| Ast0.MetaExpr(nm,_,Ast.ID,p) -> (Ast0.lub_pure p pure) = pure
+		| Ast0.MetaExpr(nm,_,_,Ast.ID,p) ->
+		    (Ast0.lub_pure p pure) = pure
 		| _ -> false in
 	      matches e in
 	if form_ok
@@ -461,7 +463,7 @@ let match_maker checks_needed context_required whencode_allowed =
 		      match (Ast0.unwrap expr,Ast0.get_type expr) with
 		  (* easier than updating type inferencer to manage multiple
 		     types *)
-			(Ast0.MetaExpr(_,Some tts,_,_),_) -> Some tts
+			(Ast0.MetaExpr(_,_,Some tts,_,_),_) -> Some tts
 		      | (_,Some ty) -> Some [ty]
 		      | _ -> None in
 		    (match expty with
@@ -515,7 +517,7 @@ let match_maker checks_needed context_required whencode_allowed =
 		(function expr -> Ast0.ExprTag expr)
 		expr
 	else return false
-    | Ast0.MetaErr(namea,pure) -> failwith "metaerr not supported"
+    | Ast0.MetaErr(namea,_,pure) -> failwith "metaerr not supported"
     | Ast0.MetaExprList(_,_,_) -> failwith "metaexprlist not supported"
     | up ->
 	if not(checks_needed) or not(context_required) or is_context expr
@@ -1256,16 +1258,17 @@ let instantiate bindings mv_bindings =
   (* cases where metavariables can occur *)
   let identfn r k e =
     match Ast0.unwrap e with
-      Ast0.MetaId(name,pure) ->
+      Ast0.MetaId(name,constraints,pure) ->
 	(rebuild_mcode None).V0.rebuilder_ident
 	  (match lookup name bindings mv_bindings with
 	    Common.Left(Ast0.IdentTag(id)) -> id
 	  | Common.Left(_) -> failwith "not possible 1"
 	  | Common.Right(new_mv) ->
 	      Ast0.rewrap e
-		(Ast0.MetaId(Ast0.set_mcode_data new_mv name,pure)))
-    | Ast0.MetaFunc(name,pure) -> failwith "metafunc not supported"
-    | Ast0.MetaLocalFunc(name,pure) -> failwith "metalocalfunc not supported"
+		(Ast0.MetaId
+		   (Ast0.set_mcode_data new_mv name,constraints,pure)))
+    | Ast0.MetaFunc(name,_,pure) -> failwith "metafunc not supported"
+    | Ast0.MetaLocalFunc(name,_,pure) -> failwith "metalocalfunc not supported"
     | _ -> k e in
 
   (* case for list metavariables *)
@@ -1338,7 +1341,7 @@ let instantiate bindings mv_bindings =
 
   let exprfn r k e =
     match Ast0.unwrap e with
-      Ast0.MetaExpr(name,x,form,pure) ->
+      Ast0.MetaExpr(name,constraints,x,form,pure) ->
 	(rebuild_mcode None).V0.rebuilder_expression
 	  (match lookup name bindings mv_bindings with
 	    Common.Left(Ast0.ExprTag(exp)) -> exp
@@ -1370,15 +1373,16 @@ let instantiate bindings mv_bindings =
 		    Some(List.map renamer types) in
 	      Ast0.rewrap e
 		(Ast0.MetaExpr
-		   (Ast0.set_mcode_data new_mv name,new_types,form,pure)))
-    | Ast0.MetaErr(namea,pure) -> failwith "metaerr not supported"
+		   (Ast0.set_mcode_data new_mv name,constraints,
+		    new_types,form,pure)))
+    | Ast0.MetaErr(namea,_,pure) -> failwith "metaerr not supported"
     | Ast0.MetaExprList(namea,lenname,pure) ->
 	failwith "metaexprlist not supported"
     | Ast0.Unary(exp,unop) ->
 	(match Ast0.unwrap_mcode unop with
 	  Ast.Not ->
 	    (match Ast0.unwrap exp with
-	      Ast0.MetaExpr(name,x,form,pure) ->
+	      Ast0.MetaExpr(name,constraints,x,form,pure) ->
 		let res = r.V0.rebuilder_expression exp in
 		let rec negate e (*for rewrapping*) res (*code to process*) =
 		  match Ast0.unwrap res with
@@ -1468,7 +1472,7 @@ let instantiate bindings mv_bindings =
 	  | Common.Left(_) -> failwith "not possible 1"
 	  | Common.Right(new_mv) ->
 	      Ast0.rewrap e
-		(Ast0.MetaParam(Ast0.set_mcode_data new_mv name,pure)))
+		(Ast0.MetaParam(Ast0.set_mcode_data new_mv name, pure)))
     | Ast0.MetaParamList(name,lenname,pure) ->
 	failwith "metaparamlist not supported"
     | _ -> k e in

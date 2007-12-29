@@ -2,6 +2,8 @@
 open Parser_cocci_menhir
 module D = Data
 module Ast = Ast_cocci
+module Ast0 = Ast0_cocci
+module P = Parse_aux
 exception Lexical of string
 let tok = Lexing.lexeme
 
@@ -241,6 +243,14 @@ let id_tokens lexbuf =
 let mkassign op lexbuf =
   TAssign (Ast.OpAssign op, (get_current_line_type lexbuf))
 
+let mkids constraints =
+  List.map (function x -> Ast0.wrap(Ast0.Id(P.id2mcode x))) constraints
+
+let mkexps constraints =
+  List.map
+    (function x -> Ast0.wrap(Ast0.Ident(Ast0.wrap(Ast0.Id(P.id2mcode x)))))
+    constraints
+
 let init _ =
   line := 1;
   logical_line := 0;
@@ -259,11 +269,12 @@ let init _ =
   Hashtbl.clear rule_names;
   let get_name (_,x) = x in
   Data.add_id_meta :=
-    (function name -> function pure ->
-      let fn clt = TMetaId(name,pure,clt) in
+    (fun name constraints pure ->
+      let constraints = mkids constraints in
+      let fn clt = TMetaId(name,constraints,pure,clt) in
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_type_meta :=
-    (function name -> function pure ->
+    (fun name pure ->
       let fn clt = TMetaType(name,pure,clt) in
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_param_meta :=
@@ -275,20 +286,24 @@ let init _ =
       let fn clt = TMetaParamList(name,lenname,pure,clt) in
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_const_meta :=
-    (function tyopt -> function name -> function pure -> 
-      let fn clt = TMetaConst(name,pure,tyopt,clt) in
+    (fun tyopt name constraints pure ->
+      let constraints = mkexps constraints in
+      let fn clt = TMetaConst(name,constraints,pure,tyopt,clt) in
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_err_meta :=
-    (function name -> function pure ->
-      let fn clt = TMetaErr(name,pure,clt) in
+    (fun name constraints pure ->
+      let constraints = mkexps constraints in
+      let fn clt = TMetaErr(name,constraints,pure,clt) in
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_exp_meta :=
-    (function tyopt -> function name -> function pure ->
-      let fn clt = TMetaExp(name,pure,tyopt,clt) in
+    (fun tyopt name constraints pure ->
+      let constraints = mkexps constraints in
+      let fn clt = TMetaExp(name,constraints,pure,tyopt,clt) in
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_idexp_meta :=
-    (function tyopt -> function name -> function pure ->
-      let fn clt = TMetaIdExp(name,pure,tyopt,clt) in
+    (fun tyopt name constraints pure ->
+      let constraints = mkexps constraints in
+      let fn clt = TMetaIdExp(name,constraints,pure,tyopt,clt) in
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_explist_meta :=
     (function name -> function lenname -> function pure ->
@@ -303,12 +318,14 @@ let init _ =
       let fn clt = TMetaStmList(name,pure,clt) in
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_func_meta :=
-    (function name -> function pure ->
-      let fn clt = TMetaFunc(name,pure,clt) in
+    (fun name constraints pure ->
+      let constraints = mkids constraints in
+      let fn clt = TMetaFunc(name,constraints,pure,clt) in
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_local_func_meta :=
-    (function name -> function pure ->
-      let fn clt = TMetaLocalFunc(name,pure,clt) in
+    (fun name constraints pure ->
+      let constraints = mkids constraints in
+      let fn clt = TMetaLocalFunc(name,constraints,pure,clt) in
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_pos_meta :=
     (function name ->

@@ -153,8 +153,8 @@ let equal_logicalOp a b =
   match a, b with
   | A.Inf    , B.Inf    -> true
   | A.Sup    , B.Sup    -> true
-  | A.InfEq  , B.InfEq  -> Printf.printf "have two infeqs\n"; true
-  | A.SupEq  , B.SupEq  -> Printf.printf "have two supeqs\n"; true
+  | A.InfEq  , B.InfEq  -> true
+  | A.SupEq  , B.SupEq  -> true
   | A.Eq     , B.Eq     -> true
   | A.NotEq  , B.NotEq  -> true
   | A.AndLog , B.AndLog -> true
@@ -507,6 +507,10 @@ module type PARAM =
       A.meta_name * Ast_c.metavar_binding_kind ->
       (unit -> tin -> 'x tout) -> (tin -> 'x tout)
 
+    val check_constraints :
+      ('a, 'b) matcher -> 'a list -> 'b ->
+	(unit -> tin -> 'x tout) -> (tin -> 'x tout)
+
     val all_bound : A.meta_name list -> (tin -> bool)
 
     val optional_storage_flag : (bool -> tin -> 'x tout) -> (tin -> 'x tout)
@@ -590,7 +594,7 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
   match A.unwrap ea, eb with
   
   (* general case: a MetaExpr can match everything *)
-  | A.MetaExpr (ida,keep,opttypa,form,inherited),
+  | A.MetaExpr (ida,constraints,keep,opttypa,form,inherited),
     (((expr, opttypb), ii) as expb) ->
 
       (* old: before have a MetaConst. Now we factorize and use 'form' to 
@@ -629,16 +633,19 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
         | Some tas, Some tb -> 
             tas +> List.fold_left (fun acc ta ->  
               acc >|+|> compatible_type ta tb) fail
-	) 
-        >>= (fun () () ->
-		
-	 X.envf true keep inherited (term ida, Ast_c.MetaExprVal expb) (fun () -> 
-	   X.distrf_e ida expb >>= (fun ida expb -> 
+	) >>=
+	(fun () () ->
+	  X.check_constraints expression constraints eb
+            (fun () ->
+	  X.envf true keep inherited (term ida, Ast_c.MetaExprVal expb)
+	    (fun () -> 
+	  X.distrf_e ida expb >>= (fun ida expb -> 
 	     return (
-	       A.MetaExpr (ida,keep,opttypa,form,inherited)+>A.rewrap ea,
+	       A.MetaExpr (ida,constraints,keep,opttypa,form,inherited)+>
+	           A.rewrap ea,
 	       expb
 	     ))
-	  ))
+	  )))
       else fail
 	  
   (* old: 
@@ -953,7 +960,7 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
 
 (* ------------------------------------------------------------------------- *)
 and (ident: info_ident -> (A.ident, string * Ast_c.info) matcher) = 
- fun infoidb ida (idb, iib) -> 
+ fun infoidb ida ((idb, iib) as ib) -> 
   add_pos_var ida (Ast_c.MetaIdVal idb) (fun () ->
   X.all_bound (A.get_inherited ida) >&&>
   match A.unwrap ida with
@@ -967,38 +974,45 @@ and (ident: info_ident -> (A.ident, string * Ast_c.info) matcher) =
       else fail
 
 
-  | A.MetaId(mida,keep,inherited) -> 
+  | A.MetaId(mida,constraints,keep,inherited) -> 
+      X.check_constraints (ident infoidb) constraints ib
+        (fun () ->
       X.envf true keep inherited (term mida, Ast_c.MetaIdVal (idb)) (fun () -> 
         tokenf mida iib >>= (fun mida iib -> 
           return (
-            ((A.MetaId (mida, keep, inherited)) +> A.rewrap ida,
+            ((A.MetaId (mida, constraints, keep, inherited)) +> A.rewrap ida,
             (idb, iib)
             )))
-      )
+      ))
 
-  | A.MetaFunc(mida,keep,inherited) -> 
+  | A.MetaFunc(mida,constraints,keep,inherited) -> 
       (match infoidb with 
       | LocalFunction | Function -> 
+	  X.check_constraints (ident infoidb) constraints ib
+            (fun () ->
           X.envf true keep inherited(term mida,Ast_c.MetaFuncVal idb) (fun () -> 
             tokenf mida iib >>= (fun mida iib -> 
               return (
-                ((A.MetaFunc(mida,keep,inherited))) +> A.rewrap ida,
+                ((A.MetaFunc(mida,constraints,keep,inherited)))+>A.rewrap ida,
                 (idb, iib)
               ))
-          )
+          ))
       | DontKnow -> failwith "MetaFunc, need more semantic info about id"
       )
 
-  | A.MetaLocalFunc(mida,keep,inherited) -> 
+  | A.MetaLocalFunc(mida,constraints,keep,inherited) -> 
       (match infoidb with 
       | LocalFunction -> 
+	  X.check_constraints (ident infoidb) constraints ib
+            (fun () ->
           X.envf true keep inherited (term mida,Ast_c.MetaLocalFuncVal idb) (fun()->
             tokenf mida iib >>= (fun mida iib -> 
               return (
-                ((A.MetaLocalFunc(mida,keep,inherited))) +> A.rewrap ida,
+                ((A.MetaLocalFunc(mida,constraints,keep,inherited)))
+		   +> A.rewrap ida,
                 (idb, iib)
               ))
-          )
+          ))
       | Function -> fail
       | DontKnow -> failwith "MetaLocalFunc, need more semantic info about id"
       )
@@ -1526,26 +1540,25 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
            (match A.unwrap tya3 with
            | A.MetaType(ida,keep, inherited) -> 
 
-             fullType tya2 fake_typeb >>= (fun tya2 fake_typeb -> 
-               let tya1 = A.StructUnionDef(tya2,lba,declsa,rba)+> A.rewrap tya1
-               in
-               let tya0 = A.Type(cv1, tya1) +> A.rewrap tya0 in
+               fullType tya2 fake_typeb >>= (fun tya2 fake_typeb -> 
+		 let tya1 =
+		   A.StructUnionDef(tya2,lba,declsa,rba)+> A.rewrap tya1 in
+		 let tya0 = A.Type(cv1, tya1) +> A.rewrap tya0 in
                
                    
-               let typb1 = B.StructUnion (sub,sbopt, declsb),
-                 [iisub] @ iisbopt @ [lbb;rbb] in
-               let typb0 = ((qu, il), typb1) in
+		 let typb1 = B.StructUnion (sub,sbopt, declsb),
+                   [iisub] @ iisbopt @ [lbb;rbb] in
+		 let typb0 = ((qu, il), typb1) in
                
-               match fake_typeb with 
-               | _nQ, ((B.TypeName (idb,_typ)), [iidb]) -> 
+		 match fake_typeb with 
+		 | _nQ, ((B.TypeName (idb,_typ)), [iidb]) -> 
 
-                   return (
+                     return (
                      (A.TyDecl (tya0, ptvirga)) +> A.rewrap decla,
                      (((Some ((idb, None),[iidb]), typb0, (B.StoTypedef, inl)),
                        iivirg),iiptvirgb,iistob)
-                   )
-               | _ -> raise Impossible    
-                 
+                     )
+		 | _ -> raise Impossible    
              )
 
            | A.StructUnionName(sua, sa) -> 

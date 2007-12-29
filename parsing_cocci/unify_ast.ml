@@ -93,12 +93,12 @@ and unify_ident i1 i2 =
   match (Ast.unwrap i1,Ast.unwrap i2) with
     (Ast.Id(i1),Ast.Id(i2)) -> return (unify_mcode i1 i2)
 
-  | (Ast.MetaId(_,_,_),_)
-  | (Ast.MetaFunc(_,_,_),_)
-  | (Ast.MetaLocalFunc(_,_,_),_)
-  | (_,Ast.MetaId(_,_,_))
-  | (_,Ast.MetaFunc(_,_,_))
-  | (_,Ast.MetaLocalFunc(_,_,_)) -> return true
+  | (Ast.MetaId(_,_,_,_),_)
+  | (Ast.MetaFunc(_,_,_,_),_)
+  | (Ast.MetaLocalFunc(_,_,_,_),_)
+  | (_,Ast.MetaId(_,_,_,_))
+  | (_,Ast.MetaFunc(_,_,_,_))
+  | (_,Ast.MetaLocalFunc(_,_,_,_)) -> return true
 
   | (Ast.OptIdent(_),_)
   | (Ast.UniqueIdent(_),_)
@@ -150,11 +150,11 @@ let rec unify_expression e1 e2 =
   | (Ast.Paren(lp1,e1,rp1),Ast.Paren(lp2,e2,rp2)) ->
       unify_expression e1 e2
 
-  | (Ast.MetaErr(_,_,_),_)
-  | (Ast.MetaExpr(_,_,_,_,_),_)
+  | (Ast.MetaErr(_,_,_,_),_)
+  | (Ast.MetaExpr(_,_,_,_,_,_),_)
   | (Ast.MetaExprList(_,_,_,_),_)
-  | (_,Ast.MetaErr(_,_,_))
-  | (_,Ast.MetaExpr(_,_,_,_,_))
+  | (_,Ast.MetaErr(_,_,_,_))
+  | (_,Ast.MetaExpr(_,_,_,_,_,_))
   | (_,Ast.MetaExprList(_,_,_,_)) -> return true
 
   | (Ast.EComma(cm1),Ast.EComma(cm2)) -> return true

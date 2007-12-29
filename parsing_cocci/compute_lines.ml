@@ -164,8 +164,8 @@ let rec ident i =
   match Ast0.unwrap i with
     Ast0.Id(name) as ui ->
       let name = promote_mcode name in mkres i ui name name
-  | Ast0.MetaId(name,_)
-  | Ast0.MetaFunc(name,_) | Ast0.MetaLocalFunc(name,_) as ui ->
+  | Ast0.MetaId(name,_,_)
+  | Ast0.MetaFunc(name,_,_) | Ast0.MetaLocalFunc(name,_,_) as ui ->
       let name = promote_mcode name in mkres i ui name name
   | Ast0.OptIdent(id) ->
       let id = ident id in mkres i (Ast0.OptIdent(id)) id id
@@ -240,7 +240,7 @@ let rec expression e =
         (promote_mcode szf)  (promote_mcode rp)
   | Ast0.TypeExp(ty) ->
       let ty = typeC ty in mkres e (Ast0.TypeExp(ty)) ty ty
-  | Ast0.MetaErr(name,_) | Ast0.MetaExpr(name,_,_,_)
+  | Ast0.MetaErr(name,_,_) | Ast0.MetaExpr(name,_,_,_,_)
   | Ast0.MetaExprList(name,_,_) as ue ->
       let ln = promote_mcode name in mkres e ue ln ln
   | Ast0.EComma(cm) ->

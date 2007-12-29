@@ -69,9 +69,9 @@ and 'a dots = 'a base_dots wrap
 
 and base_ident =
     Id of string mcode
-  | MetaId        of Ast.meta_name mcode * pure
-  | MetaFunc      of Ast.meta_name mcode * pure
-  | MetaLocalFunc of Ast.meta_name mcode * pure
+  | MetaId        of Ast.meta_name mcode * ident list * pure
+  | MetaFunc      of Ast.meta_name mcode * ident list * pure
+  | MetaLocalFunc of Ast.meta_name mcode * ident list * pure
   | OptIdent      of ident
   | UniqueIdent   of ident
 
@@ -105,8 +105,8 @@ and base_expression =
   | SizeOfType     of string mcode (* sizeof *) * string mcode (* ( *) *
                       typeC * string mcode (* ) *)
   | TypeExp        of typeC (* type name used as an expression, only in args *)
-  | MetaErr        of Ast.meta_name mcode * pure
-  | MetaExpr       of Ast.meta_name mcode *
+  | MetaErr        of Ast.meta_name mcode * expression list * pure
+  | MetaExpr       of Ast.meta_name mcode * expression list *
 	              Type_cocci.typeC list option * Ast.form * pure
   | MetaExprList   of Ast.meta_name mcode (* only in arg lists *) *
 	              Ast.meta_name option * pure
@@ -475,7 +475,7 @@ let rec ast0_type_to_type ty =
       (match unwrap tag with
 	Id(tag) ->
 	  Type_cocci.StructUnionName(structUnion su,false,unwrap_mcode tag)
-      | MetaId(tag,_) ->
+      | MetaId(tag,_,_) ->
 	  (Printf.printf
 	     "warning: struct/union with a metavariable name detected.\n";
 	   Printf.printf
@@ -540,7 +540,7 @@ let rec reverse_type ty =
       then
 	(* not right... *)
 	StructUnionName(reverse_structUnion su,
-			Some(wrap(MetaId(ty_rewrap_mcode ("",tag),Impure))))
+			Some(wrap(MetaId(ty_rewrap_mcode ("",tag),[],Impure))))
       else
 	StructUnionName(reverse_structUnion su,
 			Some (wrap(Id(ty_rewrap_mcode tag))))

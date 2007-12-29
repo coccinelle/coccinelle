@@ -56,7 +56,6 @@ let show_isos rule_elem =
 (*****************************************************************************)
 let (-->) x v = Ast_ctl.Subst (x,v);;
 
-
 (* Take list of predicate and for each predicate returns where in the
  * control flow it matches, and the set of subsitutions for this match. 
  *)
@@ -145,8 +144,6 @@ let (labels_for_ctl: string list (* dropped isos *) ->
      show_or_not_nodes nodes';
      nodes'
    ) 
-
-
 
 (*****************************************************************************)
 (* Some fix flow, for CTL, for unparse *)

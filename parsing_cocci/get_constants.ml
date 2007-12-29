@@ -12,17 +12,18 @@ module V = Visitor_ast
 module TC = Type_cocci
 
 let keep_some_bind x y = match x with [] -> y | _ -> x
+let or_bind x y = match x with [] -> [] | _ -> x
 let keep_all_bind = Common.union_set
 
-let get_minus_constants bind =
+let get_minus_constants bind orbind =
   let donothing r k e = k e in
   let option_default = [] in
   let mcode _ _ = option_default in
 
   (* if one branch gives no information, then we have to take anything *)
-  let disj_union_all keeper l =
+  let disj_union_all l =
     if List.exists (function [] -> true | _ -> false) l
-    then keeper [] (Common.union_all l)
+    then orbind [] (Common.union_all l)
     else Common.union_all l in
 
   (* need special cases for everything with a disj, because the bind above
@@ -47,7 +48,7 @@ let get_minus_constants bind =
     | Ast.SizeOfExpr(sizeof,_) | Ast.SizeOfType(sizeof,_,_,_) ->
 	bind (k e) [Ast.unwrap_mcode sizeof]
     | Ast.DisjExpr(exps) ->
-	disj_union_all bind (List.map r.V.combiner_expression exps)
+	disj_union_all (List.map r.V.combiner_expression exps)
     | Ast.Edots(_,_) | Ast.Ecircles(_,_) | Ast.Estars(_,_) -> []
     | Ast.NestExpr(expr_dots,whencode,false) -> []
     | Ast.NestExpr(expr_dots,whencode,true) ->
@@ -68,13 +69,13 @@ let get_minus_constants bind =
   let fullType r k e =
     match Ast.unwrap e with
       Ast.DisjType(types) ->
-	disj_union_all bind (List.map r.V.combiner_fullType types)
+	disj_union_all (List.map r.V.combiner_fullType types)
     | _ -> k e in
 
   let declaration r k e =
     match Ast.unwrap e with
       Ast.DisjDecl(decls) ->
-	disj_union_all bind (List.map r.V.combiner_declaration decls)
+	disj_union_all (List.map r.V.combiner_declaration decls)
     | Ast.MacroDecl(nm,lp,args,rp,pv) -> [Ast.unwrap_mcode nm]
     | Ast.Ddots(dots,whencode) -> []
     | _ -> k e in
@@ -82,14 +83,14 @@ let get_minus_constants bind =
   let rule_elem r k e =
     match Ast.unwrap e with
       Ast.DisjRuleElem(res) ->
-	disj_union_all bind (List.map r.V.combiner_rule_elem res)
+	disj_union_all (List.map r.V.combiner_rule_elem res)
     | Ast.IteratorHeader(it,_,_,_) -> bind (k e) [Ast.unwrap_mcode it]
     | _ -> k e in
 
   let statement r k e =
     match Ast.unwrap e with
       Ast.Disj(stmt_dots) ->
-	disj_union_all bind (List.map r.V.combiner_statement_dots stmt_dots)
+	disj_union_all (List.map r.V.combiner_statement_dots stmt_dots)
     | Ast.Dots(d,whn,_,_) | Ast.Circles(d,whn,_,_) | Ast.Stars(d,whn,_,_) -> []
     | Ast.Nest(stmt_dots,whn,false,_,_) -> []
     | Ast.Nest(stmt_dots,whn,true,_,_) -> r.V.combiner_statement_dots stmt_dots
@@ -133,10 +134,8 @@ let get_plus_constants =
 	(List.fold_left
 	   (function prev ->
 	     function cur ->
-	       bind
-		 ((get_minus_constants keep_all_bind).V.combiner_anything
-		    cur)
-		 prev))
+	       let fn = get_minus_constants keep_all_bind keep_all_bind in
+	       bind (fn.V.combiner_anything cur) prev))
 	[] l in
     match mcodekind with
       Ast.MINUS(_,anythings) -> recurse anythings
@@ -170,8 +169,8 @@ let check_inherited nm =
 
   let strictident recursor k i =
     match Ast.unwrap i with
-      Ast.MetaId(name,_,_) | Ast.MetaFunc(name,_,_)
-    | Ast.MetaLocalFunc(name,_,_) -> minherited name
+      Ast.MetaId(name,_,_,_) | Ast.MetaFunc(name,_,_,_)
+    | Ast.MetaLocalFunc(name,_,_,_) -> minherited name
     | _ -> k i in
 
   let rec type_collect res = function
@@ -182,10 +181,10 @@ let check_inherited nm =
 
   let strictexpr recursor k e =
     match Ast.unwrap e with
-      Ast.MetaExpr(name,_,Some type_list,_,_) ->
+      Ast.MetaExpr(name,_,_,Some type_list,_,_) ->
 	let types = List.fold_left type_collect option_default type_list in
 	bind (minherited name) types
-    | Ast.MetaErr(name,_,_) | Ast.MetaExpr(name,_,_,_,_) -> minherited name
+    | Ast.MetaErr(name,_,_,_) | Ast.MetaExpr(name,_,_,_,_,_) -> minherited name
     | Ast.MetaExprList(name,None,_,_) -> minherited name
     | Ast.MetaExprList(name,Some (lenname,_,_),_,_) ->
 	bind (minherited name) (inherited lenname)
@@ -254,8 +253,8 @@ let rule_fn tls in_plus =
   List.fold_left
     (function (rest_info,in_plus) ->
       function cur ->
-	let minuses =
-	  (get_minus_constants keep_some_bind).V.combiner_top_level cur in
+	let mfn = get_minus_constants keep_some_bind or_bind in
+	let minuses = mfn.V.combiner_top_level cur in
 	let all_minuses =
 	  if !Flag.sgrep_mode2
 	  then [] (* nothing removed for sgrep *)

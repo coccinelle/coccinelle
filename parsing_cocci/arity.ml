@@ -138,24 +138,24 @@ let ident opt_allowed tgt i =
 	  [mcode2arity name] in
       let name = mcode name in
       make_id i tgt arity (Ast0.Id(name))
-  | Ast0.MetaId(name,pure) ->
+  | Ast0.MetaId(name,constraints,pure) ->
       let arity =
 	all_same opt_allowed tgt (mcode2line name)
 	  [mcode2arity name] in
       let name = mcode name in
-      make_id i tgt arity (Ast0.MetaId(name,pure))
-  | Ast0.MetaFunc(name,pure) ->
+      make_id i tgt arity (Ast0.MetaId(name,constraints,pure))
+  | Ast0.MetaFunc(name,constraints,pure) ->
       let arity =
 	all_same opt_allowed tgt (mcode2line name)
 	  [mcode2arity name] in
       let name = mcode name in
-      make_id i tgt arity (Ast0.MetaFunc(name,pure))
-  | Ast0.MetaLocalFunc(name,pure) ->
+      make_id i tgt arity (Ast0.MetaFunc(name,constraints,pure))
+  | Ast0.MetaLocalFunc(name,constraints,pure) ->
       let arity =
 	all_same opt_allowed tgt (mcode2line name)
 	  [mcode2arity name] in
       let name = mcode name in
-      make_id i tgt arity (Ast0.MetaLocalFunc(name,pure))
+      make_id i tgt arity (Ast0.MetaLocalFunc(name,constraints,pure))
   | Ast0.OptIdent(_) | Ast0.UniqueIdent(_) ->
       failwith "unexpected code"
 
@@ -272,14 +272,14 @@ let rec top_expression opt_allowed tgt expr =
       let rp = mcode rp in
       make_exp expr tgt arity (Ast0.SizeOfType(szf,lp,ty,rp))
   | Ast0.TypeExp(ty) -> Ast0.rewrap expr (Ast0.TypeExp(typeC tgt ty))
-  | Ast0.MetaErr(name,pure)  ->
+  | Ast0.MetaErr(name,constraints,pure)  ->
       let arity = exp_same (mcode2line name) [mcode2arity name] in
       let name = mcode name in
-      make_exp expr tgt arity (Ast0.MetaErr(name,pure))
-  | Ast0.MetaExpr(name,ty,form,pure)  ->
+      make_exp expr tgt arity (Ast0.MetaErr(name,constraints,pure))
+  | Ast0.MetaExpr(name,constraints,ty,form,pure)  ->
       let arity = exp_same (mcode2line name) [mcode2arity name] in
       let name = mcode name in
-      make_exp expr tgt arity (Ast0.MetaExpr(name,ty,form,pure))
+      make_exp expr tgt arity (Ast0.MetaExpr(name,constraints,ty,form,pure))
   | Ast0.MetaExprList(name,lenname,pure) ->
       let arity = exp_same (mcode2line name) [mcode2arity name] in
       let name = mcode name in

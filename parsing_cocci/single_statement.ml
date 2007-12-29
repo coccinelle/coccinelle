@@ -88,9 +88,9 @@ let rec left_ident i =
   modif_before i or
   match Ast0.unwrap i with
     Ast0.Id(name) -> modif_before_mcode name
-  | Ast0.MetaId(name,_) -> modif_before_mcode name
-  | Ast0.MetaFunc(name,_) -> modif_before_mcode name
-  | Ast0.MetaLocalFunc(name,_) -> modif_before_mcode name
+  | Ast0.MetaId(name,_,_) -> modif_before_mcode name
+  | Ast0.MetaFunc(name,_,_) -> modif_before_mcode name
+  | Ast0.MetaLocalFunc(name,_,_) -> modif_before_mcode name
   | Ast0.OptIdent(id) -> left_ident id
   | Ast0.UniqueIdent(id) -> left_ident id
 
@@ -117,8 +117,8 @@ let rec left_expression e =
   | Ast0.SizeOfExpr(szf,exp) -> modif_before_mcode szf
   | Ast0.SizeOfType(szf,lp,ty,rp) -> modif_before_mcode szf
   | Ast0.TypeExp(ty) -> left_typeC ty
-  | Ast0.MetaErr(name,_) -> modif_before_mcode name
-  | Ast0.MetaExpr(name,ty,_,_) -> modif_before_mcode name
+  | Ast0.MetaErr(name,_,_) -> modif_before_mcode name
+  | Ast0.MetaExpr(name,_,ty,_,_) -> modif_before_mcode name
   | Ast0.MetaExprList(name,_,_) -> modif_before_mcode name
   | Ast0.EComma(cm) -> modif_before_mcode cm
   | Ast0.DisjExpr(_,exp_list,_,_) -> List.exists left_expression exp_list

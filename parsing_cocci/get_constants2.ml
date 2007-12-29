@@ -114,8 +114,8 @@ let do_get_constants constants keywords env =
 	(match Ast.unwrap_mcode name with
 	  "NULL" -> keywords "NULL"
 	| nm -> constants nm)
-    | Ast.MetaId(name,_,_) | Ast.MetaFunc(name,_,_)
-    | Ast.MetaLocalFunc(name,_,_) -> minherited name
+    | Ast.MetaId(name,_,_,_) | Ast.MetaFunc(name,_,_,_)
+    | Ast.MetaLocalFunc(name,_,_,_) -> minherited name
     | _ -> k i in
 
   let rec type_collect res = function
@@ -136,10 +136,10 @@ let do_get_constants constants keywords env =
 	| Ast.Int "1" -> keywords "1"
 	| Ast.Int s -> constants s
 	| Ast.Float s -> constants s)
-    |       Ast.MetaExpr(name,_,Some type_list,_,_) ->
+    | Ast.MetaExpr(name,_,_,Some type_list,_,_) ->
 	let types = List.fold_left type_collect option_default type_list in
 	bind (minherited name) types
-    | Ast.MetaErr(name,_,_) | Ast.MetaExpr(name,_,_,_,_) -> minherited name
+    | Ast.MetaErr(name,_,_,_) | Ast.MetaExpr(name,_,_,_,_,_) -> minherited name
     | Ast.MetaExprList(name,None,_,_) -> minherited name
     | Ast.MetaExprList(name,Some (lenname,_,_),_,_) ->
 	bind (minherited name) (inherited lenname)

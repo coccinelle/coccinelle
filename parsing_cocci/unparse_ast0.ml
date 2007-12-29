@@ -101,9 +101,9 @@ let rec ident i =
     (function _ ->
       match Ast0.unwrap i with
 	Ast0.Id(name) -> mcode print_string name
-      | Ast0.MetaId(name,_) -> mcode print_meta name
-      | Ast0.MetaFunc(name,_) -> mcode print_meta name
-      | Ast0.MetaLocalFunc(name,_) -> mcode print_meta name
+      | Ast0.MetaId(name,_,_) -> mcode print_meta name
+      | Ast0.MetaFunc(name,_,_) -> mcode print_meta name
+      | Ast0.MetaLocalFunc(name,_,_) -> mcode print_meta name
       | Ast0.OptIdent(id) -> print_string "?"; ident id
       | Ast0.UniqueIdent(id) -> print_string "!"; ident id)
 
@@ -158,8 +158,8 @@ let rec expression e =
 	  mcode print_string_box lp; typeC ty; close_box();
 	  mcode print_string rp
       | Ast0.TypeExp(ty) -> typeC ty
-      | Ast0.MetaErr(name,_) -> mcode print_meta name
-      | Ast0.MetaExpr(name,ty,_,_) ->
+      | Ast0.MetaErr(name,_,_) -> mcode print_meta name
+      | Ast0.MetaExpr(name,_,ty,_,_) ->
 	  mcode print_meta name; print_types ty
       | Ast0.MetaExprList(name,_,_) -> mcode print_meta name
       | Ast0.EComma(cm) -> mcode print_string cm; print_space()
