@@ -58,7 +58,8 @@ let get_free checker t =
   let whencode afn bfn = function
       Ast0.WhenNot(a) -> afn a
     | Ast0.WhenAlways(b) -> bfn b
-    | Ast0.WhenAny -> option_default in
+    | Ast0.WhenAny -> option_default
+    | Ast0.WhenStrict -> option_default in
   
   let ident r k i =
     match Ast0.unwrap i with

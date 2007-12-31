@@ -422,7 +422,8 @@ let rec (annotate_program2 :
                 end;
               noTypeHere
           )
-        | Unary (e, DeRef)  
+        | Unary (e, UnMinus) | Unary (e, UnPlus) -> Some (type_of_s "int")
+        | Unary (e, DeRef)
         | ArrayAccess (e, _) ->
           (Ast_c.get_type_expr e) +> do_with_type (fun t -> 
             (* todo: maybe not good env !! *)

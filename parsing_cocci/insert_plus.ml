@@ -114,7 +114,8 @@ let create_root_token_table minus =
 	  | Ast0.StmtTag(d) -> Ast0.get_index d
 	  | Ast0.CaseLineTag(d) -> Ast0.get_index d
 	  | Ast0.TopTag(d) -> Ast0.get_index d
-	  | Ast0.AnyTag -> failwith "anytag only within iso phase" in
+	  | Ast0.AnyTag -> failwith "anytag only within iso phase"
+	  | Ast0.StrictTag -> failwith "stricttag only within iso phase" in
 	Hashtbl.add root_token_table key tokens)
     CN.minus_table;
   List.iter
@@ -289,7 +290,8 @@ let call_collect_minus context_nodes :
       | Ast0.TopTag(e) ->
 	  (Ast0.get_index e,
 	   (collect_minus_join_points e).V0.combiner_top_level e)
-      | Ast0.AnyTag -> failwith "anytag only within iso phase")
+      | Ast0.AnyTag -> failwith "anytag only within iso phase"
+      | Ast0.StrictTag -> failwith "stricttag only within iso phase")
     context_nodes
 
 (* result of collecting the join points should be sorted in nondecreasing
@@ -480,7 +482,8 @@ let call_collect_plus context_nodes :
       | Ast0.TopTag(e) ->
 	  (Ast0.get_index e,
 	   (collect_plus_nodes e).V0.combiner_top_level e)
-      | Ast0.AnyTag -> failwith "anytag only within iso phase")
+      | Ast0.AnyTag -> failwith "anytag only within iso phase"
+      | Ast0.StrictTag -> failwith "stricttag only within iso phase")
     context_nodes
 
 (* The plus fragments are converted to a list of lists of lists.

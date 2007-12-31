@@ -439,6 +439,7 @@ let combiner bind option_default
       Ast0.WhenNot a -> notfn a
     | Ast0.WhenAlways a -> alwaysfn a
     | Ast0.WhenAny -> option_default
+    | Ast0.WhenStrict -> option_default
 
   and case_line c =
     let k c =
@@ -894,6 +895,7 @@ let rebuilder = fun
       Ast0.WhenNot a -> Ast0.WhenNot (notfn a)
     | Ast0.WhenAlways a -> Ast0.WhenAlways (alwaysfn a)
     | Ast0.WhenAny -> Ast0.WhenAny
+    | Ast0.WhenStrict -> Ast0.WhenStrict
 
   and case_line c =
     let k c =

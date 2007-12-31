@@ -728,6 +728,7 @@ and statement s =
       Ast0.WhenNot a -> Ast.WhenNot (notfn a)
     | Ast0.WhenAlways a -> Ast.WhenAlways (alwaysfn a)
     | Ast0.WhenAny -> Ast.WhenAny
+    | Ast0.WhenStrict -> Ast.WhenStrict
 
   and process_list seqible isos = function
       [] -> []
@@ -842,6 +843,7 @@ and anything = function
   | Ast0.CaseLineTag(d) -> Ast.CaseLineTag(case_line d)
   | Ast0.TopTag(d) -> Ast.Code(top_level d)
   | Ast0.AnyTag -> failwith "not possible"
+  | Ast0.StrictTag -> failwith "not possible"
 
 (* --------------------------------------------------------------------- *)
 (* Function declaration *)

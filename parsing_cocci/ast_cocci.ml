@@ -423,6 +423,7 @@ and ('a,'b) whencode =
   (* The following removes the shortest path constraint.  It can be used
      with other when modifiers *)
   | WhenAny
+  | WhenStrict
 
 (* only used with asttoctl *)
 and dots_whencode =
@@ -541,7 +542,8 @@ let get_wcfvs (whencode : ('a wrap, 'b wrap) whencode list) =
        (function
 	   WhenNot(a) -> get_fvs a
 	 | WhenAlways(a) -> get_fvs a
-	 | WhenAny -> [])
+	 | WhenAny -> []
+	 | WhenStrict -> [])
        whencode)
 
 (* --------------------------------------------------------------------- *)

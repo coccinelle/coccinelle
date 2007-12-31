@@ -46,7 +46,7 @@ module P = Parse_aux
 %token TArob TArobArob TPArob
 
 %token <Data.clt> TEllipsis TOEllipsis TCEllipsis TPOEllipsis TPCEllipsis
-%token <Data.clt> TWhen TAny TLineEnd
+%token <Data.clt> TWhen TAny TStrict TLineEnd
 /*
 %token <Data.clt> TCircles TOCircles TCCircles
 %token <Data.clt> TStars TOStars TCStars
@@ -1579,6 +1579,7 @@ whens(when_grammar,simple_when_grammar):
     TWhen TNotEq w=when_grammar TLineEnd { Ast0.WhenNot w }
   | TWhen TEq w=simple_when_grammar TLineEnd { Ast0.WhenAlways w }
   | TWhen TAny TLineEnd { Ast0.WhenAny }
+  | TWhen TStrict TLineEnd { Ast0.WhenStrict }
 
 // used in NEST
 no_dot_start_end(grammar,dotter):

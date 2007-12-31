@@ -152,6 +152,7 @@ and typeC tya tyb =
       )
 
   | TypeOfExpr ea, TypeOfExpr eb -> 
+      let ea = Lib_parsing_c.al_expr ea in
       ea =*= eb >&&> return (TypeOfExpr ea, iix)
 
   | TypeOfType a, TypeOfType b -> 

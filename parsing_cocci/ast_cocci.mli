@@ -409,6 +409,7 @@ and ('a,'b) whencode =
     WhenNot of 'a
   | WhenAlways of 'b
   | WhenAny
+  | WhenStrict
 
 and dots_whencode =
     WParen of rule_elem * meta_name (*pren_var*)

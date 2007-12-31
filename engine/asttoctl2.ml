@@ -556,7 +556,8 @@ and get_before_whencode wc =
     (function
 	Ast.WhenNot w -> let (w,_) = get_before w [] in Ast.WhenNot w
       | Ast.WhenAlways w -> let (w,_) = get_before_e w [] in Ast.WhenAlways w
-      |	Ast.WhenAny -> Ast.WhenAny)
+      |	Ast.WhenAny -> Ast.WhenAny
+      |	Ast.WhenStrict -> Ast.WhenStrict)
     wc
 
 and get_before_e s a =
@@ -657,7 +658,8 @@ and get_after_whencode a wc =
     (function
 	Ast.WhenNot w -> let (w,_) = get_after w a (*?*) in Ast.WhenNot w
       | Ast.WhenAlways w -> let (w,_) = get_after_e w a in Ast.WhenAlways w
-      |	Ast.WhenAny -> Ast.WhenAny)
+      |	Ast.WhenAny -> Ast.WhenAny
+      |	Ast.WhenStrict -> Ast.WhenStrict)
     wc
 
 and get_after_e s a =
@@ -1173,7 +1175,7 @@ let svar_minus_or_no_add_after stmt s label quantified d ast
 (* --------------------------------------------------------------------- *)
 (* dots and nests *)
 
-let dots_au toend label s wrapcode x seq_after y =
+let dots_au is_strict toend label s wrapcode x seq_after y =
   let matchgoto =
     make_match None false (wrapcode Ast.Goto) in
   let matchbreak =
@@ -1189,6 +1191,8 @@ let dots_au toend label s wrapcode x seq_after y =
     then CTL.False
     else if toend
     then CTL.Or(aftpred label,exitpred label)
+    else if is_strict
+    then aftpred label
     else
       let lv = get_label_ctr() in
       let labelpred = CTL.Pred(Lib_engine.Label lv,CTL.Control) in
@@ -1221,6 +1225,8 @@ let rec dots_and_nests plus nest whencodes bef aft dotcode after label
 	List.find (function Ast.WhenAny -> true | _ -> false) whencodes in
       CTL.False
     with Not_found -> shortest (Common.union_set bef aft) in
+  let is_strict =
+    List.exists (function Ast.WhenStrict -> true | _ -> false) whencodes in
   (* the following is used when we find a goto, etc and consider accepting
      without finding the rest of the pattern *)
   let aft = shortest aft in
@@ -1235,11 +1241,12 @@ let rec dots_and_nests plus nest whencodes bef aft dotcode after label
 		(poswhen,ctl_or (statement_list whencodes) negwhen)
 	    | Ast.WhenAlways stm ->
 		(ctl_and CTL.NONSTRICT (statement stm) poswhen,negwhen)
-	    | Ast.WhenAny -> (poswhen,negwhen))
+	    | Ast.WhenAny -> (poswhen,negwhen)
+	    | Ast.WhenStrict -> (poswhen,negwhen))
 	(CTL.True,bef_aft) (List.rev whencodes) in
     let poswhen = ctl_and_ns arg poswhen in
     let negwhen =
-(*      if !exists
+(*    if !exists
       then*)
         (* add in After, because it's not part of the program *)
 	ctl_or (aftpred label) negwhen
@@ -1296,11 +1303,12 @@ let rec dots_and_nests plus nest whencodes bef aft dotcode after label
 	then ctl_or exit errorexit (* end anywhere *)
 	else exit (* end at the real end of the function *) *) in
   plus_modifier
-    (dots_au (after = Tail) label (guard_to_strict guard) wrapcode
+    (dots_au is_strict (after = Tail) label (guard_to_strict guard) wrapcode
       (ctl_and_ns dotcode (ctl_and_ns ornest labelled))
       aft ender)
 
-and do_plus_dots toend label guard wrapcode ornest nest whencodes aft ender =
+and do_plus_dots is_strict toend label guard wrapcode ornest nest whencodes
+    aft ender =
   (* f(); <... \+ g(); ...> h(); after 
      becomes:
         f(); & AX(A[!f(); & !h() & (!g(); v g();) U h(); after] &
@@ -1314,13 +1322,13 @@ and do_plus_dots toend label guard wrapcode ornest nest whencodes aft ender =
   CTL.LetR
     (CTL.FORWARD,v,whencodes,
      ctl_and CTL.NONSTRICT
-       (dots_au toend label (guard_to_strict guard) wrapcode
+       (dots_au is_strict toend label (guard_to_strict guard) wrapcode
 	  (ctl_and CTL.NONSTRICT (CTL.Ref v) ornest) aft ender)
        (CTL.EU(CTL.FORWARD,CTL.Ref v,
 	       ctl_and CTL.NONSTRICT (ctl_uncheck nest)
 		 (CTL.AX(CTL.FORWARD,CTL.NONSTRICT,
-			 (dots_au toend label (guard_to_strict guard) wrapcode
-			    (CTL.Ref v) aft ender))))))
+			 (dots_au is_strict toend label (guard_to_strict guard)
+			    wrapcode (CTL.Ref v) aft ender))))))
 
 (* --------------------------------------------------------------------- *)
 (* the main translation loop *)
@@ -1916,7 +1924,8 @@ and statement stmt after quantified minus_quantified
 					  new_quantified4 new_mquantified4
 					  label llabel slabel true true in
 				      ctl_or prev x
-				  | Ast.WhenAny -> CTL.False)
+				  | Ast.WhenAny -> CTL.False
+				  | Ast.WhenStrict -> prev)
 			      CTL.False whencode))
 			 (List.fold_left
 			   (function prev ->
@@ -1928,7 +1937,8 @@ and statement stmt after quantified minus_quantified
 				       label llabel slabel true in
 				   ctl_and prev x
 			       | Ast.WhenNot(sl) -> prev
-			       | Ast.WhenAny -> CTL.True)
+			       | Ast.WhenAny -> CTL.True
+			       | Ast.WhenStrict -> prev)
 			   CTL.True whencode) in
 		    ctl_au leftarg (make_match stripped_rbrace)]
 	| None ->

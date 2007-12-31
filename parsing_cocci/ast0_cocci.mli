@@ -306,6 +306,7 @@ and ('a,'b) whencode =
     WhenNot of 'a
   | WhenAlways of 'b
   | WhenAny
+  | WhenStrict
 
 and statement = base_statement wrap
 
@@ -351,6 +352,7 @@ and anything =
   | CaseLineTag of case_line
   | TopTag of top_level
   | AnyTag (* only for when code, in iso phase *)
+  | StrictTag (* only for when code, in iso phase *)
 
 val dotsExpr : expression dots -> anything
 val dotsInit : initialiser dots -> anything

@@ -167,6 +167,7 @@ let token2c (tok,_) =
 
   | PC.TWhen(clt) -> "WHEN"^(line_type2c clt)
   | PC.TAny(clt) -> "ANY"^(line_type2c clt)
+  | PC.TStrict(clt) -> "STRICT"^(line_type2c clt)
   | PC.TEllipsis(clt) -> "..."^(line_type2c clt)
 (*
   | PC.TCircles(clt)  -> "ooo"^(line_type2c clt)
@@ -269,7 +270,7 @@ let plus_attachable (tok,_) =
   | PC.TMetaStmList(_,_,clt)  | PC.TMetaFunc(_,_,_,clt) 
   | PC.TMetaLocalFunc(_,_,_,clt)
 
-  | PC.TWhen(clt) | PC.TAny(clt) | PC.TEllipsis(clt)
+  | PC.TWhen(clt) | PC.TAny(clt) | PC.TStrict(clt) | PC.TEllipsis(clt)
   (* | PC.TCircles(clt) | PC.TStars(clt) *)
 
   | PC.TWhy(clt) | PC.TDotDot(clt) | PC.TBang(clt) | PC.TOPar(clt) 
@@ -327,7 +328,7 @@ let get_clt (tok,_) =
   | PC.TMetaStmList(_,_,clt)  | PC.TMetaFunc(_,_,_,clt) 
   | PC.TMetaLocalFunc(_,_,_,clt)
 
-  | PC.TWhen(clt) | PC.TAny(clt) | PC.TEllipsis(clt)
+  | PC.TWhen(clt) | PC.TAny(clt) | PC.TStrict(clt) | PC.TEllipsis(clt)
   (* | PC.TCircles(clt) | PC.TStars(clt) *)
 
   | PC.TWhy(clt) | PC.TDotDot(clt) | PC.TBang(clt) | PC.TOPar(clt) 
@@ -434,6 +435,7 @@ let update_clt (tok,x) clt =
 
   | PC.TWhen(_) -> (PC.TWhen(clt),x)
   | PC.TAny(_) -> (PC.TAny(clt),x)
+  | PC.TStrict(_) -> (PC.TStrict(clt),x)
   | PC.TEllipsis(_) -> (PC.TEllipsis(clt),x)
 (*
   | PC.TCircles(_)  -> (PC.TCircles(clt),x)
@@ -560,7 +562,7 @@ let split_token ((tok,_) as t) =
   | PC.TPArob | PC.TMetaPos(_) -> ([t],[])
 
   | PC.TFunDecl(clt)
-  | PC.TWhen(clt) | PC.TAny(clt) | PC.TLineEnd(clt)
+  | PC.TWhen(clt) | PC.TAny(clt) | PC.TStrict(clt) | PC.TLineEnd(clt)
   | PC.TEllipsis(clt) (* | PC.TCircles(clt) | PC.TStars(clt) *) -> split t clt
 
   | PC.TOEllipsis(_) | PC.TCEllipsis(_) (* clt must be context *)
@@ -787,7 +789,7 @@ let token2line (tok,_) =
   | PC.TMetaLocalFunc(_,_,_,clt)
 
   | PC.TFunDecl(clt)
-  | PC.TWhen(clt) | PC.TAny(clt) | PC.TEllipsis(clt)
+  | PC.TWhen(clt) | PC.TAny(clt) | PC.TStrict(clt) | PC.TEllipsis(clt)
   (* | PC.TCircles(clt) | PC.TStars(clt) *)
 
   | PC.TOEllipsis(clt) | PC.TCEllipsis(clt) 
@@ -824,6 +826,10 @@ and find_line_end inwhen line clt q = function
     (* don't know what 2nd component should be so just use the info of
        the When.  Also inherit - of when, if any *)
     [] -> [(PC.TLineEnd(clt),q)]
+  | ((PC.TIdent("strict",clt),a) as x)::xs when token2line x = line ->
+      (PC.TStrict(clt),a) :: (find_line_end inwhen line clt q xs)
+  | ((PC.TIdent("STRICT",clt),a) as x)::xs when token2line x = line ->
+      (PC.TStrict(clt),a) :: (find_line_end inwhen line clt q xs)
   | ((PC.TIdent("any",clt),a) as x)::xs when token2line x = line ->
       (PC.TAny(clt),a) :: (find_line_end inwhen line clt q xs)
   | ((PC.TIdent("ANY",clt),a) as x)::xs when token2line x = line ->

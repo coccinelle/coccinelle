@@ -340,6 +340,7 @@ and whencode notfn alwaysfn = function
     Ast0.WhenNot a -> notfn a
   | Ast0.WhenAlways a -> alwaysfn a
   | Ast0.WhenAny -> ()
+  | Ast0.WhenStrict -> ()
 
 and case_line old_metas table minus c =
   match Ast0.unwrap c with

@@ -311,6 +311,12 @@ let other_options = [
     "-only_return_is_error_exit",
     Arg.Set Flag_engine.only_return_is_error_exit,
     "if this flag is not set, then break and continue are also error exits";
+    (* the following is a hack to make it easier to add code in sgrep-like
+       code, essentially to compensate for the fact that we don't have
+       any way of printing things out *)
+    "-allow_inconsistent_paths",
+    Arg.Set Flag_engine.allow_inconsistent_paths,
+    "if this flag is set don't check for inconsistent paths; dangerous";    
   ];
 
   "misc options",

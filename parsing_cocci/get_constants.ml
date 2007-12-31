@@ -272,7 +272,10 @@ let rule_fn tls in_plus =
 	(Common.union_set new_minuses rest_info, new_plusses))
     ([],in_plus) tls
 
+exception No_info
+
 let get_constants rules =
+  try
     let (info,_) =
       List.fold_left
 	(function (rest_info,in_plus) ->
@@ -284,7 +287,9 @@ let get_constants rules =
 	      if dependent dep or
 		List.for_all (check_inherited nm).V.combiner_top_level cur
 	      then []
-	      else cur_info in
+	      else
+		if cur_info = [] then raise No_info else cur_info in
 	    (cur_info::rest_info,cur_plus))
 	([],[]) (rules : Ast.rule list) in
     List.rev info
+  with No_info -> List.map (function _ -> []) rules

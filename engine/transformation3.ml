@@ -396,7 +396,7 @@ module XTRANS = struct
       in
       match v with
       | None -> fail tin
-      | Some (value') -> 
+      | Some (value') ->
 
         (* Ex: in cocci_vs_c someone wants to add a binding. Here in
          * transformation3 the value for this var may be already in the 
