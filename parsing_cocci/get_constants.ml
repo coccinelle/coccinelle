@@ -289,7 +289,7 @@ let get_constants rules =
 	      then []
 	      else
 		if cur_info = [] then raise No_info else cur_info in
-	    (cur_info::rest_info,cur_plus))
+	    (Common.union_set [cur_info] rest_info,cur_plus))
 	([],[]) (rules : Ast.rule list) in
     List.rev info
   with No_info -> List.map (function _ -> []) rules
