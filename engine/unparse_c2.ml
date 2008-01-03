@@ -72,6 +72,10 @@ let print_token2 = function
   | Indent_cocci2 -> "Indent"
   | Unindent_cocci2 -> "Unindent"
 
+let print_all_tokens2 l =
+  List.iter (function x -> Printf.printf "%s " (print_token2 x)) l;
+  Printf.printf "\n"
+
 let str_of_token3 = function
   | T3 t -> TH.str_of_tok t
   | Cocci3 s | C3 s -> s
@@ -331,9 +335,13 @@ let is_minusable_comment = function
       )
   | _ -> false 
 
-let is_minusable_comment_or_plus = function
+let all_coccis = function
     Cocci2 _ | C2 _ | Indent_cocci2 | Unindent_cocci2 -> true
-  | x -> is_minusable_comment x
+  | _ -> false
+
+let is_minusable_comment_or_plus = function
+    T2(Parser_c.TCommentNewline _,_b,_i) -> false
+  | x -> is_minusable_comment x or all_coccis x
 
 let set_minus_comment = function
   | T2 (t,false,idx) -> 
@@ -488,6 +496,17 @@ let rec adjust_indentation xs =
 	  string_of_list (List.rev ns) in
     loop (tu,current_tab) in
 
+  let rec find_first_tab started = function
+      [] -> ()
+    | ((T2 (tok,_,_)) as x)::xs when str_of_token2 x = "{" ->
+	find_first_tab true xs
+    | ((T2 (Parser_c.TCommentNewline s, _, _)) as x)::_
+      when started ->
+	let s = str_of_token2 x +> new_tabbing in
+	tabbing_unit := Some (s,List.rev (list_of_string s))
+    | x::xs -> find_first_tab started xs in
+  find_first_tab false xs;
+
   let rec aux started xs = 
     match xs with
     | [] ->  []
@@ -500,11 +519,12 @@ let rec adjust_indentation xs =
         str_of_token2 x +> new_tabbing +> (fun s -> _current_tabbing := s);
 	(* only trust the indentation after the first { *)
 	(if started then adjust_tabbing_unit old_tabbing !_current_tabbing);
-        x::aux started xs
-    | ((Cocci2 "\n") as x)::xs -> 
-            (* dont inline in expr because of wierd eval order of ocaml *)
-        let s = !_current_tabbing in 
-        x::Cocci2 (s)::aux started xs
+	let coccis_rest = Common.span all_coccis xs in
+	(match coccis_rest with
+	  (_::_,((T2 (tok,_,_)) as y)::_) when str_of_token2 y = "}" ->
+	    (* the case where cocci code has been added before a close } *)
+	    x::aux started (Indent_cocci2::xs)
+        | _ -> x::aux started xs)
     | Indent_cocci2::xs ->
 	(match !tabbing_unit with
 	  None -> aux started xs
@@ -515,9 +535,26 @@ let rec adjust_indentation xs =
 	(match !tabbing_unit with
 	  None -> aux started xs
 	| Some (_,tu) ->
-	    _current_tabbing := remtab tu (!_current_tabbing); aux started xs)
+	    Printf.printf "unindent is some: tab was :%s:\n"
+	      (!_current_tabbing);
+	    _current_tabbing := remtab tu (!_current_tabbing);
+	    Printf.printf "unindent is some: tab is now :%s:\n"
+	      (!_current_tabbing);
+	    aux started xs)
+    (* border between existing code and cocci code *)
+    | ((T2 (tok,_,_)) as x)::((Cocci2 "\n") as y)::xs
+      when str_of_token2 x = "{" ->
+	x::aux true (y::Indent_cocci2::xs)
+    | ((Cocci2 _) as x)::((T2 (tok,_,_)) as y)::xs
+      when str_of_token2 y = "}" ->
+	x::aux started (y::Unindent_cocci2::xs)
+    (* starting the body of the function *)
     | ((T2 (tok,_,_)) as x)::xs when str_of_token2 x = "{" ->  x::aux true xs
     | (Cocci2 "{")::xs -> (Cocci2 "{")::aux true xs
+    | ((Cocci2 "\n") as x)::xs -> 
+            (* dont inline in expr because of wierd eval order of ocaml *)
+        let s = !_current_tabbing in 
+        x::Cocci2 (s)::aux started xs
     | x::xs -> x::aux started xs in
   aux false xs
 

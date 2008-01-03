@@ -347,7 +347,7 @@ and declaration d =
       print_option (mcode storage) stg;
       print_named_type ty id;
       print_string " "; mcode print_string eq;
-      print_string " "; initialiser ini; mcode print_string sem
+      print_string " "; initialiser true ini; mcode print_string sem
   | Ast.UnInit(stg,ty,id,sem) ->
       print_option (mcode storage) stg;
       print_named_type ty id;
@@ -369,28 +369,36 @@ and declaration d =
 (* --------------------------------------------------------------------- *)
 (* Initialiser *)
 
-and initialiser i =
+and initialiser nlcomma i =
   match Ast.unwrap i with
     Ast.InitExpr(exp) -> expression exp
   | Ast.InitList(lb,initlist,rb,[]) ->
-      mcode print_string lb; List.iter initialiser initlist;
-      mcode print_string rb
+      mcode print_string lb; start_block();
+      (* awkward, because the comma is separate from the initialiser *)
+      let rec loop = function
+	  [] -> ()
+	| [x] -> initialiser false x
+	| x::xs -> initialiser nlcomma x; loop xs in
+      loop initlist;
+      end_block(); mcode print_string rb
   | Ast.InitList(lb,initlist,rb,_) -> failwith "unexpected whencode in plus"
   | Ast.InitGccDotName(dot,name,eq,ini) ->
       mcode print_string dot; ident name; print_string " ";
-      mcode print_string eq; print_string " "; initialiser ini
+      mcode print_string eq; print_string " "; initialiser nlcomma ini
   | Ast.InitGccName(name,eq,ini) ->
-      ident name; mcode print_string eq; initialiser ini
+      ident name; mcode print_string eq; initialiser nlcomma ini
   | Ast.InitGccIndex(lb,exp,rb,eq,ini) ->
       mcode print_string lb; expression exp; mcode print_string rb;
       print_string " "; mcode print_string eq; print_string " ";
-      initialiser ini
+      initialiser nlcomma ini
   | Ast.InitGccRange(lb,exp1,dots,exp2,rb,eq,ini) ->
       mcode print_string lb; expression exp1; mcode print_string dots;
       expression exp2; mcode print_string rb;
       print_string " "; mcode print_string eq; print_string " ";
-      initialiser ini
-  | Ast.IComma(comma) -> mcode print_string comma; force_newline()
+      initialiser nlcomma ini
+  | Ast.IComma(comma) ->
+      mcode print_string comma;
+      if nlcomma then force_newline()
   | Ast.OptIni(ini) | Ast.UniqueIni(ini) ->
       raise CantBeInPlus
 
@@ -643,7 +651,7 @@ let rec pp_any = function
   | Ast.ArithOpTag(x) -> arithOp x; false
   | Ast.LogicalOpTag(x) -> logicalOp x; false
 
-  | Ast.InitTag(x) -> initialiser x; false
+  | Ast.InitTag(x) -> initialiser false x; false
   | Ast.DeclarationTag(x) -> declaration x; false
 
   | Ast.StorageTag(x) -> storage x; false
@@ -702,6 +710,7 @@ in
 	  match hd with
             (Ast.StatementTag s::_) when isfn s -> pr "\n\n"
           | (Ast.Rule_elemTag _::_) | (Ast.StatementTag _::_)
+	  | (Ast.InitTag _::_)
 	  | (Ast.DeclarationTag _::_) | (Ast.Token ("}",_)::_) -> prnl hd
           | _ -> () in
       let newline_after _ =
@@ -710,6 +719,7 @@ in
 	  match List.rev(List.hd(List.rev xxs)) with
 	    (Ast.StatementTag s::_) when isfn s -> pr "\n\n"
           | (Ast.Rule_elemTag _::_) | (Ast.StatementTag _::_)
+	  | (Ast.InitTag _::_)
 	  | (Ast.DeclarationTag _::_) | (Ast.Token ("{",_)::_) -> pr "\n"
           | _ -> () in
       (* print a newline at the beginning, if needed *)
