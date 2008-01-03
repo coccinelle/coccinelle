@@ -243,14 +243,6 @@ let id_tokens lexbuf =
 let mkassign op lexbuf =
   TAssign (Ast.OpAssign op, (get_current_line_type lexbuf))
 
-let mkids constraints =
-  List.map (function x -> Ast0.wrap(Ast0.Id(P.id2mcode x))) constraints
-
-let mkexps constraints =
-  List.map
-    (function x -> Ast0.wrap(Ast0.Ident(Ast0.wrap(Ast0.Id(P.id2mcode x)))))
-    constraints
-
 let init _ =
   line := 1;
   logical_line := 0;
@@ -270,7 +262,6 @@ let init _ =
   let get_name (_,x) = x in
   Data.add_id_meta :=
     (fun name constraints pure ->
-      let constraints = mkids constraints in
       let fn clt = TMetaId(name,constraints,pure,clt) in
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_type_meta :=
@@ -287,22 +278,18 @@ let init _ =
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_const_meta :=
     (fun tyopt name constraints pure ->
-      let constraints = mkexps constraints in
       let fn clt = TMetaConst(name,constraints,pure,tyopt,clt) in
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_err_meta :=
     (fun name constraints pure ->
-      let constraints = mkexps constraints in
       let fn clt = TMetaErr(name,constraints,pure,clt) in
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_exp_meta :=
     (fun tyopt name constraints pure ->
-      let constraints = mkexps constraints in
       let fn clt = TMetaExp(name,constraints,pure,tyopt,clt) in
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_idexp_meta :=
     (fun tyopt name constraints pure ->
-      let constraints = mkexps constraints in
       let fn clt = TMetaIdExp(name,constraints,pure,tyopt,clt) in
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_explist_meta :=
@@ -319,12 +306,10 @@ let init _ =
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_func_meta :=
     (fun name constraints pure ->
-      let constraints = mkids constraints in
       let fn clt = TMetaFunc(name,constraints,pure,clt) in
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_local_func_meta :=
     (fun name constraints pure ->
-      let constraints = mkids constraints in
       let fn clt = TMetaLocalFunc(name,constraints,pure,clt) in
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_pos_meta :=

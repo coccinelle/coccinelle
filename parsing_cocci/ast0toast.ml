@@ -647,12 +647,13 @@ and statement s =
       | Ast0.Disj(_,rule_elem_dots_list,_,_) ->
 	  Ast.Disj(List.map (function x -> statement_dots seqible x)
 		     rule_elem_dots_list)
-      | Ast0.Nest(_,rule_elem_dots,_,whencode,multi) ->
+      | Ast0.Nest(_,rule_elem_dots,_,whn,multi) ->
 	  Ast.Nest
 	    (statement_dots Ast.Sequencible rule_elem_dots,
 	     List.map
-	       (function x -> Ast.WhenNot (statement_dots Ast.Sequencible x))
-	       whencode,
+	       (whencode (statement_dots Ast.Sequencible)
+		 (statement Ast.NotSequencible))
+	       whn,
 	     multi,[],[])
       | Ast0.Dots(d,whn) ->
 	  let d = mcode d in

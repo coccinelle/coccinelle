@@ -100,7 +100,10 @@ let get_free checker t =
 	detect_unitary_frees(List.map r.V0.combiner_statement_dots stmt_list)
     | Ast0.Nest(starter,stmt_dots,ender,whn,multi) ->
 	bind (r.V0.combiner_statement_dots stmt_dots)
-	  (detect_unitary_frees (List.map r.V0.combiner_statement_dots whn))
+	  (detect_unitary_frees 
+	     (List.map
+		(whencode r.V0.combiner_statement_dots r.V0.combiner_statement)
+		whn))
     | Ast0.Dots(d,whn) | Ast0.Circles(d,whn) | Ast0.Stars(d,whn) ->
 	detect_unitary_frees
 	  (List.map

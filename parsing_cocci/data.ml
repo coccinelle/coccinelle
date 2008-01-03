@@ -19,7 +19,8 @@ and line_type =
   | PLUS
   | CONTEXT | UNIQUE | OPT
 
-type constraints = (string * clt) list
+type iconstraints = Ast0.ident list
+type econstraints = Ast0.expression list
 
 let in_rule_name = ref false
 let in_meta = ref false
@@ -33,7 +34,7 @@ let clear_meta: (unit -> unit) ref =
   ref (fun _ -> failwith "uninitialized add_meta") 
 
 let add_id_meta:
-    (Ast.meta_name -> constraints -> Ast0.pure -> unit) ref = 
+    (Ast.meta_name -> iconstraints -> Ast0.pure -> unit) ref = 
   ref (fun _ -> failwith "uninitialized add_meta") 
 
 let add_type_meta: (Ast.meta_name -> Ast0.pure -> unit) ref = 
@@ -47,23 +48,23 @@ let add_paramlist_meta:
   ref (fun _ -> failwith "uninitialized add_meta") 
 
 let add_const_meta:
-    (Type_cocci.typeC list option -> Ast.meta_name -> constraints ->
+    (Type_cocci.typeC list option -> Ast.meta_name -> econstraints ->
       Ast0.pure -> unit)
     ref =
   ref (fun _ -> failwith "uninitialized add_meta") 
 
 let add_err_meta:
-    (Ast.meta_name -> constraints -> Ast0.pure -> unit) ref =
+    (Ast.meta_name -> econstraints -> Ast0.pure -> unit) ref =
   ref (fun _ -> failwith "uninitialized add_meta") 
 
 let add_exp_meta:
-    (Type_cocci.typeC list option -> Ast.meta_name -> constraints ->
+    (Type_cocci.typeC list option -> Ast.meta_name -> econstraints ->
       Ast0.pure -> unit)
     ref =
   ref (fun _ -> failwith "uninitialized add_meta") 
 
 let add_idexp_meta:
-    (Type_cocci.typeC list option -> Ast.meta_name -> constraints ->
+    (Type_cocci.typeC list option -> Ast.meta_name -> econstraints ->
       Ast0.pure -> unit)
     ref =
   ref (fun _ -> failwith "uninitialized add_meta") 
@@ -79,11 +80,11 @@ let add_stmlist_meta: (Ast.meta_name -> Ast0.pure -> unit) ref =
   ref (fun _ -> failwith "uninitialized add_meta") 
 
 let add_func_meta:
-    (Ast.meta_name -> constraints -> Ast0.pure -> unit) ref = 
+    (Ast.meta_name -> iconstraints -> Ast0.pure -> unit) ref = 
   ref (fun _ -> failwith "uninitialized add_meta") 
 
 let add_local_func_meta:
-    (Ast.meta_name -> constraints -> Ast0.pure -> unit) ref = 
+    (Ast.meta_name -> iconstraints -> Ast0.pure -> unit) ref = 
   ref (fun _ -> failwith "uninitialized add_meta") 
 
 let add_pos_meta: (Ast.meta_name -> unit) ref = 

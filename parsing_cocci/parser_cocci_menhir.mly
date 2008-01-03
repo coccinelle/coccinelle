@@ -230,6 +230,14 @@ metadec:
   kindfn=metakind_atomic
   ids=comma_list(pure_ident_or_meta_ident_with_not_eq(not_eq)) TMPtVirg
     { P.create_metadec_ne ar ispure kindfn ids }
+| ar=arity ispure=pure
+  kindfn=metakind_atomic_expi
+  ids=comma_list(pure_ident_or_meta_ident_with_not_eq(not_eqe)) TMPtVirg
+    { P.create_metadec_ne ar ispure kindfn ids }
+| ar=arity ispure=pure
+  kindfn=metakind_atomic_expe
+  ids=comma_list(pure_ident_or_meta_ident_with_not_eq(not_ceq)) TMPtVirg
+    { P.create_metadec_ne ar ispure kindfn ids }
 | ar=arity TPosition ids=comma_list(pure_ident) TMPtVirg
     { let kindfn arity name pure check_meta =
       let tok = check_meta(Ast.MetaPosDecl(arity,name)) in
@@ -306,14 +314,21 @@ metadec:
     { (fun arity name pure check_meta constraints ->
       let tok = check_meta(Ast.MetaIdDecl(arity,name)) in
       !Data.add_id_meta name constraints pure; tok) }
-| TError
+| TFunction
+    { (fun arity name pure check_meta constraints ->
+      let tok = check_meta(Ast.MetaFuncDecl(arity,name)) in
+      !Data.add_func_meta name constraints pure; tok) }
+| TLocal TFunction
+    { (fun arity name pure check_meta constraints ->
+      let tok = check_meta(Ast.MetaLocalFuncDecl(arity,name)) in
+      !Data.add_local_func_meta name constraints pure;
+      tok) }
+
+%inline metakind_atomic_expi:
+  TError
     { (fun arity name pure check_meta constraints ->
       let tok = check_meta(Ast.MetaErrDecl(arity,name)) in
       !Data.add_err_meta name constraints pure; tok) }
-| TExpression
-    { (fun arity name pure check_meta constraints ->
-      let tok = check_meta(Ast.MetaExpDecl(arity,name,None)) in
-      !Data.add_exp_meta None name constraints pure; tok) }
 | TIdExpression ty=ioption(meta_exp_type)
     { (fun arity name pure check_meta constraints ->
       let tok = check_meta(Ast.MetaExpDecl(arity,name,ty)) in
@@ -328,20 +343,6 @@ metadec:
       let ty = Some [P.ty_pointerify Type_cocci.Unknown m] in
       let tok = check_meta(Ast.MetaExpDecl(arity,name,ty)) in
       !Data.add_exp_meta ty name constraints pure; tok) }
-| TFunction
-    { (fun arity name pure check_meta constraints ->
-      let tok = check_meta(Ast.MetaFuncDecl(arity,name)) in
-      !Data.add_func_meta name constraints pure; tok) }
-| TLocal TFunction
-    { (fun arity name pure check_meta constraints ->
-      let tok = check_meta(Ast.MetaLocalFuncDecl(arity,name)) in
-      !Data.add_local_func_meta name constraints pure;
-      tok) }
-| vl=meta_exp_type // no error if use $1 but doesn't type check
-    { (fun arity name pure check_meta constraints ->
-      let ty = Some vl in
-      let tok = check_meta(Ast.MetaExpDecl(arity,name,ty)) in
-      !Data.add_exp_meta ty name constraints pure; tok) }
 | vl=meta_exp_type TOCro TCCro
     { (fun arity name pure check_meta constraints ->
       let ty = Some (List.map (function x -> Type_cocci.Array x) vl) in
@@ -351,6 +352,33 @@ metadec:
     { (fun arity name pure check_meta constraints ->
       let tok = check_meta(Ast.MetaConstDecl(arity,name,ty)) in
       !Data.add_const_meta ty name constraints pure; tok) }
+
+%inline metakind_atomic_expe:
+  TExpression
+    { (fun arity name pure check_meta constraints ->
+      let tok = check_meta(Ast.MetaExpDecl(arity,name,None)) in
+      !Data.add_exp_meta None name constraints pure; tok) }
+| vl=meta_exp_type // no error if use $1 but doesn't type check
+    { (fun arity name pure check_meta constraints ->
+      let ty = Some vl in
+      List.iter
+	(function c ->
+	  match Ast0.unwrap c with
+	    Ast0.Constant(_) ->
+	      if not
+		  (List.exists
+		     (function
+			 Type_cocci.BaseType(Type_cocci.IntType,_) -> true
+		       | Type_cocci.BaseType(Type_cocci.ShortType,_) -> true
+		       | Type_cocci.BaseType(Type_cocci.LongType,_) -> true
+		       | _ -> false)
+		     vl)
+	      then failwith "metavariable with int constraint must be an int"
+	  | _ -> ())
+	constraints;
+      let tok = check_meta(Ast.MetaExpDecl(arity,name,ty)) in
+      !Data.add_exp_meta ty name constraints pure; tok) }
+
 
 meta_exp_type:
   t=ctype
@@ -763,7 +791,8 @@ statement_nest:
 			  Ast0.wrap(Ast0.DOTS(b (P.mkdots "..."))),
 			  P.clt2mcode "...+>" c, w, true)) }
 
-whenppdecs: TWhen TNotEq w=pre_post_decl_statement_or_expression TLineEnd
+whenppdecs: w=whens(pre_post_decl_statement_or_expression,
+		  rule_elem_statement)
     { w }
 
 /* a statement that fits into a single rule_elem.  should nests be included?
@@ -1228,11 +1257,40 @@ not_eq:
        TNotEq i=pure_ident
          { (if !Data.in_iso
 	   then failwith "constraints not allowed in iso file");
-	   [i] }
+	   [Ast0.wrap(Ast0.Id(P.id2mcode i))] }
      | TNotEq TOBrace l=comma_list(pure_ident) TCBrace
 	 { (if !Data.in_iso
 	   then failwith "constraints not allowed in iso file");
+	   List.map (function i -> Ast0.wrap(Ast0.Id(P.id2mcode i))) l }
+
+not_eqe:
+       TNotEq i=pure_ident
+         { (if !Data.in_iso
+	   then failwith "constraints not allowed in iso file");
+	   [Ast0.wrap(Ast0.Ident(Ast0.wrap(Ast0.Id(P.id2mcode i))))] }
+     | TNotEq TOBrace l=comma_list(pure_ident) TCBrace
+	 { (if !Data.in_iso
+	   then failwith "constraints not allowed in iso file");
+	   List.map
+	     (function i ->
+	       Ast0.wrap(Ast0.Ident(Ast0.wrap(Ast0.Id(P.id2mcode i)))))
+	     l }
+
+not_ceq:
+       TNotEq i=ident_or_const
+         { (if !Data.in_iso
+	   then failwith "constraints not allowed in iso file");
+	   [i] }
+     | TNotEq TOBrace l=comma_list(ident_or_const) TCBrace
+	 { (if !Data.in_iso
+	   then failwith "constraints not allowed in iso file");
 	   l }
+
+ident_or_const:
+       i=pure_ident { Ast0.wrap(Ast0.Ident(Ast0.wrap(Ast0.Id(P.id2mcode i)))) }
+     | TInt
+	 { let (x,clt) = $1 in
+	 Ast0.wrap(Ast0.Constant (P.clt2mcode (Ast.Int x) clt)) }
 
 func_ident: pure_ident
          { Ast0.wrap(Ast0.Id(P.id2mcode $1)) }

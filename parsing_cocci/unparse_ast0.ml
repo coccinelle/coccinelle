@@ -457,15 +457,13 @@ and statement arity s =
 	    (dots force_newline (statement arity))
 	    statement_dots_list;
 	  print_string "\n)"
-      | Ast0.Nest(starter,stmt_dots,ender,whencode,multi) ->
+      | Ast0.Nest(starter,stmt_dots,ender,whn,multi) ->
 	  print_string arity;
 	  mcode print_string starter;
 	  open_box 0;
 	  List.iter
-	    (function x ->
-	      print_string "   WHEN != "; open_box 0;
-	      dots force_newline (statement "") x)
-	    whencode;
+	    (whencode (dots force_newline (statement "")) (statement ""))
+	    whn;
 	  close_box();
 	  start_block();
 	  dots force_newline (statement arity) stmt_dots;

@@ -730,20 +730,18 @@ let contextify_whencode =
 	contextify_all.V0.combiner_initialiser whencode
     | _ -> k i in
 
+  let whencode = function
+      Ast0.WhenNot sd -> contextify_all.V0.combiner_statement_dots sd
+    | Ast0.WhenAlways s -> contextify_all.V0.combiner_statement s
+    | Ast0.WhenAny -> ()
+    | Ast0.WhenStrict -> () in
+
   let statement r k (s : Ast0.statement) =
     k s;
     match Ast0.unwrap s with
-      Ast0.Nest(_,_,_,whencode,_) ->
-	List.iter contextify_all.V0.combiner_statement_dots whencode
-    | Ast0.Dots(_,whencode)
-    | Ast0.Circles(_,whencode) | Ast0.Stars(_,whencode) ->
-	List.iter
-	  (function
-	      Ast0.WhenNot sd -> contextify_all.V0.combiner_statement_dots sd
-	    | Ast0.WhenAlways s -> contextify_all.V0.combiner_statement s
-	    | Ast0.WhenAny -> ()
-	    | Ast0.WhenStrict -> ())
-	  whencode
+      Ast0.Nest(_,_,_,whn,_)
+    | Ast0.Dots(_,whn) | Ast0.Circles(_,whn) | Ast0.Stars(_,whn) ->
+	List.iter whencode whn
     | _ -> () in
 
   let combiner = 

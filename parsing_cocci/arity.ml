@@ -821,11 +821,15 @@ and statement tgt stm =
 	    stms in
 	make_rule_elem stm tgt Ast0.OPT (Ast0.Disj(starter,unoptd,mids,ender))
       with Failure _ -> Ast0.rewrap stm (Ast0.Disj(starter,stms,mids,ender)))
-  | Ast0.Nest(starter,rule_elem_dots,ender,whencode,multi) ->
+  | Ast0.Nest(starter,rule_elem_dots,ender,whn,multi) ->
       let new_rule_elem_dots =
 	concat_dots (statement Ast0.NONE) rule_elem_dots in
+      let whn =
+	List.map
+	  (whencode (concat_dots (statement Ast0.NONE)) (statement Ast0.NONE))
+	  whn in
       Ast0.rewrap stm
-	(Ast0.Nest(starter,new_rule_elem_dots,ender,whencode,multi))
+	(Ast0.Nest(starter,new_rule_elem_dots,ender,whn,multi))
   | Ast0.Dots(dots,whn)    ->
       let arity = stm_same (mcode2line dots) [mcode2arity dots] in
       let dots = mcode dots in

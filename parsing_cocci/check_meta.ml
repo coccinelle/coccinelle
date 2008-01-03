@@ -314,7 +314,9 @@ and statement old_metas table minus s =
       List.iter (dots (statement old_metas table minus)) rule_elem_dots_list
   | Ast0.Nest(_,rule_elem_dots,_,w,_) ->
       dots (statement old_metas table minus) rule_elem_dots;
-      List.iter (dots (statement old_metas table minus)) w
+      List.iter (whencode (dots (statement old_metas table minus))
+		   (statement old_metas table minus))
+	w
   | Ast0.Dots(_,x) | Ast0.Circles(_,x) | Ast0.Stars(_,x) ->
       List.iter
 	(whencode (dots (statement old_metas table minus))

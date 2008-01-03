@@ -382,11 +382,12 @@ let combiner bind option_default
 				bind (string_mcode mid) (statement_dots x))
 			    mids xs))
 	              (string_mcode ender))))
-      | Ast0.Nest(starter,stmt_dots,ender,whencode,multi) ->
+      | Ast0.Nest(starter,stmt_dots,ender,whn,multi) ->
 	  bind (string_mcode starter)
 	    (bind (statement_dots stmt_dots)
 	       (bind (string_mcode ender)
-		  (multibind (List.map statement_dots whencode))))
+		  (multibind
+		     (List.map (whencode statement_dots statement) whn))))
       | Ast0.Exp(exp) -> expression exp
       | Ast0.TopExp(exp) -> expression exp
       | Ast0.Ty(ty) -> typeC ty
@@ -826,9 +827,10 @@ let rebuilder = fun
 		      List.map statement_dots statement_dots_list,
 		      List.map string_mcode mids,
 		      string_mcode ender)
-	| Ast0.Nest(starter,stmt_dots,ender,whencode,multi) ->
+	| Ast0.Nest(starter,stmt_dots,ender,whn,multi) ->
 	    Ast0.Nest(string_mcode starter,statement_dots stmt_dots,
-		      string_mcode ender,List.map statement_dots whencode,
+		      string_mcode ender,
+		      List.map (whencode statement_dots statement) whn,
 		      multi)
 	| Ast0.Exp(exp) -> Ast0.Exp(expression exp)
 	| Ast0.TopExp(exp) -> Ast0.TopExp(expression exp)
