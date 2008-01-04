@@ -406,7 +406,7 @@ let initialisation_to_affectation decl =
           | _ -> F.Decl decl
           )
       | x::xs -> 
-          pr2 "TODO: initialisation_to_affectation for multi vars";
+          pr2_once "TODO: initialisation_to_affectation for multi vars";
           (* todo? do a fold_left and generate 'x = a, y = b' etc, use
            * the Sequence expression operator of C and make an 
            * ExprStatement from that.
@@ -626,7 +626,7 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
 	(match opttypa, !opttypb with
         | None, _ -> return ((),())
         | Some _, None -> 
-            pr2_once ("I don't have the type information. Certainly a pb in " ^
+            pr2_once ("Missing type information. Certainly a pb in " ^
                       "annotate_typer.ml");
             fail
 	      
@@ -2002,7 +2002,7 @@ and (struct_field: (A.declaration, B.field B.wrap) matcher) = fun fa fb ->
       )
 
     | x::y::xs -> 
-      pr2 "PB: More that one variable in decl. Have to split";
+      pr2_once "PB: More that one variable in decl. Have to split";
       fail
     )
   | B.EmptyField -> fail
@@ -2018,8 +2018,10 @@ and (fullType: (A.fullType, Ast_c.fullType) matcher) =
    | A.Type(cv,ty1), ((qu,il),ty2) ->
 
        if qu.B.const && qu.B.volatile 
-       then pr2 ("warning: the type is both const & volatile but cocci " ^ 
-                 "does not handle that");
+       then
+	 pr2_once
+	   ("warning: the type is both const & volatile but cocci " ^ 
+            "does not handle that");
 
 	(* Drop out the const/volatile part that has been matched.
          * This is because a SP can contain  const T v; in which case
@@ -2529,14 +2531,14 @@ and compatible_type a b =
       | Type_cocci.LongType, B.IntType (B.Si (signb, B.CLong)) -> 
           compatible_sign signa signb
       | _, B.IntType (B.Si (signb, B.CLongLong)) -> 
-          pr2 "no longlong in cocci";
+          pr2_once "no longlong in cocci";
           fail
       | Type_cocci.FloatType, B.FloatType B.CFloat -> assert (signa = None); 
           ok
       | Type_cocci.DoubleType, B.FloatType B.CDouble -> assert (signa = None); 
           ok
       | _, B.FloatType B.CLongDouble -> 
-          pr2 "no longdouble in cocci";
+          pr2_once "no longdouble in cocci";
           fail
       | Type_cocci.BoolType, _ -> failwith "no booltype in C"
       | _ -> fail
@@ -2563,8 +2565,10 @@ and compatible_type a b =
 
   | Type_cocci.ConstVol (qua, a),      (qub, b) -> 
       if (fst qub).B.const && (fst qub).B.volatile 
-      then begin pr2 ("warning: the type is both const & volatile but cocci " ^
-                      "does not handle that");
+      then
+	begin
+	  pr2_once ("warning: the type is both const & volatile but cocci " ^
+                    "does not handle that");
           fail
       end
       else 

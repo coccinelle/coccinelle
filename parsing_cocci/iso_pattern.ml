@@ -229,29 +229,29 @@ let is_context e =
    statement is replaced by another *)
 let rec is_pure_context s =
   !Flag.sgrep_mode2 or (* everything is context for sgrep *)
-  (match Ast0.get_mcodekind s with
-    Ast0.CONTEXT(mc) ->
-      (match !mc with
-	(Ast.NOTHING,_,_) -> true
-      |	_ -> false)
-  | Ast0.MINUS(mc) ->
-      (match !mc with
-	(* do better for the common case of replacing a stmt by another one *)
-	([[Ast.StatementTag(s)]],_) ->
-	  (match Ast.unwrap s with
-	    Ast.IfThen(_,_,_) -> false (* potentially dangerous *)
-	  | _ -> true)
-      |	(_,_) -> false)
+  (match Ast0.unwrap s with
+    Ast0.Disj(starter,statement_dots_list,mids,ender) ->
+      List.for_all
+	(function x ->
+	  match Ast0.undots x with
+	    [s] -> is_pure_context s
+	  | _ -> false (* could we do better? *))
+	statement_dots_list
   | _ ->
-      (match Ast0.unwrap s with
-	Ast0.Disj(starter,statement_dots_list,mids,ender) ->
-	  List.for_all
-	    (function x ->
-	      match Ast0.undots x with
-		[s] -> is_pure_context s
-	      |	_ -> false (* could we do better? *))
-	    statement_dots_list
-      |	_ -> false))
+      (match Ast0.get_mcodekind s with
+	Ast0.CONTEXT(mc) ->
+	  (match !mc with
+	    (Ast.NOTHING,_,_) -> true
+	  | _ -> false)
+      | Ast0.MINUS(mc) ->
+	  (match !mc with
+	(* do better for the common case of replacing a stmt by another one *)
+	    ([[Ast.StatementTag(s)]],_) ->
+	      (match Ast.unwrap s with
+		Ast.IfThen(_,_,_) -> false (* potentially dangerous *)
+	      | _ -> true)
+	  |	(_,_) -> false)
+      | _ -> false))
 
 let is_minus e =
   match Ast0.get_mcodekind e with Ast0.MINUS(cell) -> true | _ -> false

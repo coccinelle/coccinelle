@@ -803,24 +803,33 @@ and statement tgt stm =
       let stms =
 	List.map (function x -> concat_dots (statement tgt) x)
 	  rule_elem_dots_list in
-      (try
-	let unoptd =
-	  List.map
-	    (function x ->
-	      let rebuild =
-		List.map
-		  (function x ->
-		    match Ast0.unwrap x with
-		      Ast0.OptStm(x) -> x
-		    | Ast0.Dots(_,_) -> x
-		    | _ -> failwith "") in
-	      match Ast0.unwrap x with
-		Ast0.DOTS(l) -> Ast0.rewrap x (Ast0.DOTS(rebuild l))
-	      | Ast0.CIRCLES(l) -> Ast0.rewrap x (Ast0.CIRCLES(rebuild l))
-	      | Ast0.STARS(l) -> Ast0.rewrap x (Ast0.STARS(rebuild l)))
-	    stms in
-	make_rule_elem stm tgt Ast0.OPT (Ast0.Disj(starter,unoptd,mids,ender))
-      with Failure _ -> Ast0.rewrap stm (Ast0.Disj(starter,stms,mids,ender)))
+      let (found_opt,unopt) =
+	List.fold_left
+	  (function (found_opt,lines) ->
+	    function x ->
+	      let rebuild l =
+		match List.rev l with
+		  x::xs ->
+		    (match Ast0.unwrap x with
+		      Ast0.OptStm(x) -> (true,List.rev(x::xs))
+		    | _ -> (found_opt,l))
+		| _ -> (false,l) in
+	      let (l,k) =
+		match Ast0.unwrap x with
+		  Ast0.DOTS(l) ->
+		    (l,function l -> Ast0.rewrap x (Ast0.DOTS l))
+		| Ast0.CIRCLES(l) ->
+		    (l,function l -> Ast0.rewrap x (Ast0.CIRCLES l))
+		| Ast0.STARS(l) ->
+		    (l,function l -> Ast0.rewrap x (Ast0.STARS l)) in
+	      let (found_opt,l) = rebuild l in
+	      (found_opt,(k l)::lines))
+	  (false,[]) stms in
+      let unopt = List.rev unopt in
+      if found_opt
+      then
+	make_rule_elem stm tgt Ast0.OPT (Ast0.Disj(starter,unopt,mids,ender))
+      else Ast0.rewrap stm (Ast0.Disj(starter,stms,mids,ender))
   | Ast0.Nest(starter,rule_elem_dots,ender,whn,multi) ->
       let new_rule_elem_dots =
 	concat_dots (statement Ast0.NONE) rule_elem_dots in
