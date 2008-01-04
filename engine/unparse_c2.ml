@@ -535,11 +535,7 @@ let rec adjust_indentation xs =
 	(match !tabbing_unit with
 	  None -> aux started xs
 	| Some (_,tu) ->
-	    Printf.printf "unindent is some: tab was :%s:\n"
-	      (!_current_tabbing);
 	    _current_tabbing := remtab tu (!_current_tabbing);
-	    Printf.printf "unindent is some: tab is now :%s:\n"
-	      (!_current_tabbing);
 	    aux started xs)
     (* border between existing code and cocci code *)
     | ((T2 (tok,_,_)) as x)::((Cocci2 "\n") as y)::xs
