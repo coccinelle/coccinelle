@@ -1202,41 +1202,44 @@ let print_required required =
 exception Too_long
 
 let extend_required trips required =
-  Common.profile_code "extend_required" (fun () -> 
-  if !pREQUIRED_ENV_OPT
-  then
+  if !Flag_ctl.partial_match
+  then required
+  else
+    Common.profile_code "extend_required" (fun () -> 
+      if !pREQUIRED_ENV_OPT
+      then
     (* make it a set *)
-    let envs =
-      List.fold_left
-	(function rest ->
-	  function (_,t,_) -> if List.mem t rest then rest else t::rest)
-	[] trips in
-    let envs = if List.mem [] envs then [] else envs in
-    match (envs,required) with
-      ([],_) -> required
-    | (envs,hd::tl) ->
-	(try
-	  let hdln = List.length hd + 5 (* let it grow a little bit *) in
-	  let (_,merged) =
-	    let add x (ln,y) =
-	      if List.mem x y
-	      then (ln,y)
-	      else if ln + 1 > hdln then raise Too_long else (ln+1,x::y) in
-	    foldl
-	      (function rest ->
-		function t ->
-		  foldl
-		    (function rest ->
-		      function r ->
-			match conj_subst t r with
-			  None -> rest | Some th -> add th rest)
-		    rest hd)
-	      (0,[]) envs in
-	  merged :: tl
-	with Too_long -> envs :: required)
-    | (envs,_) -> envs :: required
-  else required)
-	
+	let envs =
+	  List.fold_left
+	    (function rest ->
+	      function (_,t,_) -> if List.mem t rest then rest else t::rest)
+	    [] trips in
+	let envs = if List.mem [] envs then [] else envs in
+	match (envs,required) with
+	  ([],_) -> required
+	| (envs,hd::tl) ->
+	    (try
+	      let hdln = List.length hd + 5 (* let it grow a little bit *) in
+	      let (_,merged) =
+		let add x (ln,y) =
+		  if List.mem x y
+		  then (ln,y)
+		  else if ln + 1 > hdln then raise Too_long else (ln+1,x::y) in
+		foldl
+		  (function rest ->
+		    function t ->
+		      foldl
+			(function rest ->
+			  function r ->
+			    match conj_subst t r with
+			      None -> rest | Some th -> add th rest)
+			rest hd)
+		  (0,[]) envs in
+	      merged :: tl
+	    with Too_long -> envs :: required)
+	| (envs,_) -> envs :: required
+      else required)
+
 let drop_required v required =
   if !pREQUIRED_ENV_OPT
   then

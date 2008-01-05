@@ -95,6 +95,9 @@ and typeC tya tyb =
       
 
   | Array (ea, a), Array (eb,b) -> 
+      let get_option f = function Some x -> Some (f x) | None -> None in
+      let ea = get_option Lib_parsing_c.al_expr ea in
+      let eb = get_option Lib_parsing_c.al_expr eb in
       ea =*= eb >&&> fullType a b >>= (fun x -> return (Array (ea, x), iix))
 
   | FunctionType (returna, paramsa), FunctionType (returnb, paramsb) -> 
@@ -153,6 +156,7 @@ and typeC tya tyb =
 
   | TypeOfExpr ea, TypeOfExpr eb -> 
       let ea = Lib_parsing_c.al_expr ea in
+      let eb = Lib_parsing_c.al_expr eb in
       ea =*= eb >&&> return (TypeOfExpr ea, iix)
 
   | TypeOfType a, TypeOfType b -> 

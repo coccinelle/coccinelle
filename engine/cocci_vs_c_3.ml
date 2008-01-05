@@ -986,18 +986,25 @@ and (ident: info_ident -> (A.ident, string * Ast_c.info) matcher) =
       ))
 
   | A.MetaFunc(mida,constraints,keep,inherited) -> 
-      (match infoidb with 
-      | LocalFunction | Function -> 
-	  X.check_constraints (ident infoidb) constraints ib
+      let is_function _ =
+	X.check_constraints (ident infoidb) constraints ib
             (fun () ->
-          X.envf true keep inherited(term mida,Ast_c.MetaFuncVal idb) (fun () -> 
+          X.envf true keep inherited (term mida,Ast_c.MetaFuncVal idb)
+	    (fun () ->
             tokenf mida iib >>= (fun mida iib -> 
               return (
                 ((A.MetaFunc(mida,constraints,keep,inherited)))+>A.rewrap ida,
                 (idb, iib)
               ))
-          ))
-      | DontKnow -> failwith "MetaFunc, need more semantic info about id"
+          )) in
+      (match infoidb with 
+      | LocalFunction | Function -> is_function()
+      | DontKnow ->
+	  failwith "MetaFunc, need more semantic info about id"
+	  (* the following implementation could possibly be useful, if one
+	     follows the convention that a macro is always in capital letters
+	     and that a macro is not a function.
+	  (if idb =~ "^[A-Z_][A-Z_0-9]*$" then fail else is_function())*)
       )
 
   | A.MetaLocalFunc(mida,constraints,keep,inherited) -> 

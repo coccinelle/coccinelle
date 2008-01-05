@@ -383,7 +383,12 @@ let includes_to_parse xs =
 		let f = Filename.concat dir (Common.join "/" xs) in
 	      (* for our tests, all the files are flat in the current dir *)
 		if not (Sys.file_exists f) && !Flag_cocci.relax_include_path
-		then Some (Filename.concat dir (Common.last xs))
+		then
+		  let attempt2 = Filename.concat dir (Common.last xs) in
+		  if not (Sys.file_exists f) && !Flag_cocci.all_includes
+		  then Some (Filename.concat !Flag_cocci.include_path 
+                               (Common.join "/" xs))
+		  else Some attempt2
 		else Some f
 		    
             | Ast_c.NonLocal xs -> 
