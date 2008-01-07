@@ -32,7 +32,7 @@ open Common open Commonop
 
 (* forunparser: *)
 
-type pos = int (* position *)
+type pos = int (* position, for MetaPosVal *)
 type mark_token = 
   (* Present both in ast and list of tokens *)
   | OriginTok 
@@ -408,7 +408,8 @@ and define = string wrap * define_body   (* #define s *)
 
 
 
-and includ = inc_file wrap * include_rel_pos option ref (* #include s *)
+and includ = inc_file wrap (* #include s *) * 
+  (include_rel_pos option ref * bool (* is in ifdef, cf -test incl *) )
  and inc_file = 
   | Local    of inc_elem list
   | NonLocal of inc_elem list
@@ -509,8 +510,11 @@ let emptyAnnot =
   (Ast_cocci.CONTEXT (Ast_cocci.NoPos,Ast_cocci.NOTHING),
   emptyMetavarsBinding)
 
-
-let noRelPos () = ref (None: include_rel_pos option)
+(* for include, some meta information needed by cocci *)
+let noRelPos () = 
+  ref (None: include_rel_pos option)
+let noInIfdef () = 
+  ref false
 
 
 (* When want add some info in ast that does not correspond to 

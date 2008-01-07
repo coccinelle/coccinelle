@@ -43,7 +43,7 @@ type node = node1 * string (* For debugging. Used by print_graph *)
   | DefineType of fullType
   | DefineDoWhileZeroHeader of unit wrap
 
-  | Include of inc_file wrap * include_rel_pos option ref
+  | Include of inc_file wrap * (include_rel_pos option ref * bool)
 
   | MacroTop of string * argument wrap2 list * il 
 

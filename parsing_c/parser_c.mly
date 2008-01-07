@@ -1,10 +1,13 @@
 %{
 open Common open Commonop
+
+open Ast_c
+
 module LP = Lexer_parser
 open Lexer_parser (* for the fields *)
 
-open Ast_c
-open Semantic_c
+open Semantic_c (* Semantic exn *)
+
 
 (*****************************************************************************)
 (* Wrappers *)
@@ -294,9 +297,9 @@ let mk_e e ii = ((e, Ast_c.noType()), ii)
 %token <Ast_c.info>            TDefEOL      /* same */
 
 /* used only in lexer_c, then transformed in comment or splitted in tokens */
-%token <(string * string * Ast_c.info)> TInclude
+%token <(string * string * bool ref * Ast_c.info)> TInclude
 /* tokens coming from above, generated in parse_c from TInclude, etc */
-%token <(Ast_c.info)>          TIncludeStart
+%token <(Ast_c.info * bool ref)>          TIncludeStart
 %token <(string * Ast_c.info)> TIncludeFilename
 
 
@@ -1284,7 +1287,9 @@ cpp_directives:
 
  | TIncludeStart TIncludeFilename 
      { 
-       let s = fst $2 in
+       let (i1, in_ifdef) = $1 in
+       let (s, i2) = $2 in
+
        let inc_file = 
          match () with
          | _ when s =~ "^\"\\(.*\\)\"$" -> 
@@ -1294,7 +1299,7 @@ cpp_directives:
          | _ -> 
              Wierd s 
        in
-       Include ((inc_file, [$1;snd $2]), Ast_c.noRelPos()) 
+       Include ((inc_file, [i1;i2]), (Ast_c.noRelPos(), !in_ifdef)) 
      }
 
  | TDefine TIdentDefine define_val TDefEOL 

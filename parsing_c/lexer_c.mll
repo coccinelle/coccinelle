@@ -304,7 +304,7 @@ rule token = parse
     ) as filename)
       {
         let info = tokinfo lexbuf in 
-        TInclude (includes, filename, info)
+        TInclude (includes, filename, Ast_c.noInIfdef(), info)
       }
 
    (* linuxext: special_for_no_exn: in atm/ambassador.c *)

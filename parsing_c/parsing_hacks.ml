@@ -820,6 +820,20 @@ let rec find_ifdef_funheaders = function
 
 
 
+let rec adjust_inifdef_include xs = 
+  xs +> List.iter (function 
+  | NotIfdefLine _ -> ()
+  | Ifdef (xxs, info_ifdef_stmt) | Ifdefbool (_, xxs, info_ifdef_stmt) -> 
+      xxs +> List.iter (iter_token_ifdef (fun tokext -> 
+        match tokext.tok with
+        | Parser_c.TInclude (s1, s2, inifdef_ref, ii) -> 
+            inifdef_ref := true;
+        | _ -> ()
+      ));
+  )
+
+
+
 (* ------------------------------------------------------------------------- *)
 (* macro, using standard.h or other defs *)
 (* ------------------------------------------------------------------------- *)
@@ -1406,6 +1420,7 @@ let fix_tokens_cpp2 tokens =
     find_ifdef_funheaders ifdef_grouped;
     find_ifdef_bool       ifdef_grouped;
     find_ifdef_mid        ifdef_grouped;
+    adjust_inifdef_include ifdef_grouped;
 
 
     (* macro 1 *)

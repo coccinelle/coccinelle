@@ -3190,7 +3190,7 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
 
 
 
-  | A.Include(incla,filea), F.Include ((fileb, ii), h_rel_pos) ->
+  | A.Include(incla,filea), F.Include ((fileb, ii), (h_rel_pos, inifdef)) ->
 
       let include_requirment = 
         match mcodekind incla, mcodekind filea with
@@ -3209,7 +3209,7 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
         tokenf filea iifileb >>= (fun filea iifileb -> 
           return (
             A.Include(incla, filea),
-            F.Include ((fileb, [inclb;iifileb]), h_rel_pos)
+            F.Include ((fileb, [inclb;iifileb]), (h_rel_pos, inifdef))
           )))
       else fail
 

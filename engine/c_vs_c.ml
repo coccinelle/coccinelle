@@ -2,14 +2,13 @@ open Common open Commonop
 
 open Ast_c
 
-(* TODO: should use the isomorphisms engine of julia.
- * Maybe I can transform my ast_c in ast_cocci, and use julia's code ?
- * Maybe I can add some Disj in my ast_c ?
-*)
-
 (* For the moment I do only eq_type and not eq_expr, etc. The reason
  * for eq_type is related to the typedef and struct isomorphism. Sometimes
  * one use the typedef and sometimes the structname.
+ * 
+ * TODO: should use the isomorphisms engine of julia.
+ * Maybe I can transform my ast_c in ast_cocci, and use julia's code ?
+ * Maybe I can add some Disj in my ast_c ?
  *)
 
 
@@ -216,15 +215,19 @@ and typeC tya tyb =
 
 
 
-  (* choose the lub *)
+  (* choose the lub.
+   * subtil: in the return must put iia, not iix, and in following case
+   * must put iib and not iix, because we want the token corresponding
+   * to the typedef.
+   *)
   | TypeName (s, Some a), _ -> 
       fullType a (Ast_c.nQ, tyb) >>= (fun x -> 
-        return (TypeName (s, Some x), iia) (* subtil: must put iia, not iix *)
+        return (TypeName (s, Some x), iia) 
       )
 
   | _, TypeName (s, Some b) -> 
       fullType b (Ast_c.nQ, tya) >>= (fun x -> 
-        return (TypeName (s, Some x), iib) (* same *)
+        return (TypeName (s, Some x), iib) (* subtil: *)
       )
 
   | _, _ -> fail

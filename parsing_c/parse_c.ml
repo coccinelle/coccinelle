@@ -671,7 +671,8 @@ let rec comment_until_defeol xs =
       )
 
 let drop_until_defeol xs = 
-  List.tl (drop_until (function Parser_c.TDefEOL _ -> true | _ -> false) xs)
+  List.tl 
+    (Common.drop_until (function Parser_c.TDefEOL _ -> true | _ -> false) xs)
 
 
 
@@ -679,8 +680,8 @@ let drop_until_defeol xs =
 (* returns a pair (replaced token, list of next tokens) *)
 (* ------------------------------------------------------------------------- *)
 
-let tokens_include (info, includes, filename) = 
-  Parser_c.TIncludeStart (Ast_c.rewrap_str includes info), 
+let tokens_include (info, includes, filename, inifdef) = 
+  Parser_c.TIncludeStart (Ast_c.rewrap_str includes info, inifdef), 
   [Parser_c.TIncludeFilename 
       (filename, (new_info (String.length includes) filename info))
   ]
@@ -788,7 +789,7 @@ let rec lexer_function tr = fun lexbuf ->
             v
           end
             
-      | Parser_c.TInclude (includes, filename, info) -> 
+      | Parser_c.TInclude (includes, filename, inifdef, info) -> 
           if not !LP._lexer_hint.LP.toplevel 
           then begin
             pr2_once ("CPP-INCLUDE: inside function, I treat it as comment");
@@ -797,10 +798,11 @@ let rec lexer_function tr = fun lexbuf ->
             lexer_function tr lexbuf
           end
           else begin
-            let (v,new_tokens) = tokens_include (info, includes, filename)
-            in
-            let new_tokens_clean = new_tokens +> List.filter TH.is_not_comment 
-            in
+            let (v,new_tokens) = 
+              tokens_include (info, includes, filename, inifdef) in
+            let new_tokens_clean = 
+              new_tokens +> List.filter TH.is_not_comment  in
+
             tr.passed <- v::tr.passed;
             tr.passed_clean <- v::tr.passed_clean;
             tr.rest <- new_tokens ++ tr.rest;

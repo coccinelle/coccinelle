@@ -457,7 +457,7 @@ let rec print_dependencies local global =
 (* --------------------------------------------------------------------- *)
     
 (* compute the set of new prefixes
-   * on 
+ * on 
  *  "a/b/x"; (* in fact it is now a list of string so  ["a";"b";"x"] *)
  *  "a/b/c/x";
  *  "a/x";
@@ -466,6 +466,9 @@ let rec print_dependencies local global =
  *   ""; "a"; "a/b"; "a/b/x"
  * for the second
  *   "a/b/c/x"
+ * 
+ * update: if the include is inside a ifdef a put nothing. cf -test incl.
+ * this is because we dont want code added inside ifdef.
  *)
 
 let compute_new_prefixes xs = 
@@ -485,10 +488,13 @@ let compute_new_prefixes xs =
 let rec update_include_rel_pos cs =
   let only_include = cs +> Common.map_filter (fun c -> 
     match c with 
-    | Ast_c.Include ((x,_),aref) ->
+    | Ast_c.Include ((x,_),(aref, inifdef)) ->
         (match x with
         | Ast_c.Wierd _ -> None
-        | _ -> Some (x, aref)
+        | _ -> 
+            if inifdef 
+            then None
+            else Some (x, aref)
         )
     | _ -> None
   )

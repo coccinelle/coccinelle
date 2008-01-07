@@ -190,7 +190,7 @@ type node = node1 * string
   | DefineType of fullType
   | DefineDoWhileZeroHeader of unit wrap
 
-  | Include of inc_file wrap * include_rel_pos option ref
+  | Include of inc_file wrap * (include_rel_pos option ref * bool)
 
   (* obsolete? *)
   | MacroTop of string * argument wrap2 list * il 
