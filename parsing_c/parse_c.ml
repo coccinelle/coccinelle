@@ -29,6 +29,8 @@ let error_msg_tok tok =
 
 
 let print_bad line_error (start_line, end_line) filelines  = 
+  if !Flag_parsing_c.verbose_parsing
+  then
   begin
     pr2 ("badcount: " ^ i_to_s (end_line - start_line));
     for i = start_line to end_line do 
