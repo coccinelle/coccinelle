@@ -753,6 +753,10 @@ and statement tgt stm =
       let cont = mcode cont in
       let sem = mcode sem in
       make_rule_elem stm tgt arity (Ast0.Continue(cont,sem))
+  | Ast0.Label(l,dd) ->
+      let arity = mcode2arity dd in
+      let l = ident false tgt l in
+      make_rule_elem stm tgt arity (Ast0.Label(l,dd))
   | Ast0.Return(ret,sem) ->
       let arity = stm_same (mcode2line ret) (List.map mcode2arity [ret;sem]) in
       let ret = mcode ret in

@@ -882,6 +882,8 @@ let match_maker checks_needed context_required whencode_allowed =
 		    casesa casesb)
 	  | (Ast0.Break(_,_),Ast0.Break(_,_)) -> return true
 	  | (Ast0.Continue(_,_),Ast0.Continue(_,_)) -> return true
+	  | (Ast0.Label(l1,_),Ast0.Label(l2,_)) ->
+	      match_ident l1 l2
 	  | (Ast0.Return(_,_),Ast0.Return(_,_)) -> return true
 	  | (Ast0.ReturnExpr(_,expa,_),Ast0.ReturnExpr(_,expb,_)) ->
 	      match_expr expa expb

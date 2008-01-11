@@ -122,6 +122,8 @@ let do_get_constants constants keywords env =
       TC.ConstVol(_,ty) | TC.Pointer(ty) | TC.FunctionPointer(ty)
     | TC.Array(ty) -> type_collect res ty
     | TC.MetaType(tyname,_,_) -> inherited tyname
+    | TC.TypeName(s) -> constants s
+    | TC.StructUnionName(_,false,s) -> constants s
     | ty -> res in
 
   (* no point to do anything special for records because glimpse is

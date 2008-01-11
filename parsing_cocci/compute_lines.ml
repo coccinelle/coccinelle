@@ -581,6 +581,9 @@ let rec statement s =
 	mkres s us (promote_mcode br) (promote_mcode sem)
     | Ast0.Continue(cont,sem) as us ->
 	mkres s us (promote_mcode cont) (promote_mcode sem)
+    | Ast0.Label(l,dd) ->
+	let l = ident l in
+	mkres s (Ast0.Label(l,dd)) l (promote_mcode dd)
     | Ast0.Return(ret,sem) as us ->
 	mkres s us (promote_mcode ret) (promote_mcode sem)
     | Ast0.ReturnExpr(ret,exp,sem) ->

@@ -169,6 +169,8 @@ bind to that; not good for isomorphisms *)
   let ddots r k d = dots r.V0.combiner_declaration k d in
   let cdots r k d = dots r.V0.combiner_case_line k d in
 
+  (* a case for everything that has a Opt *)
+
   let statement r k s =
     (*
     let redo_branched res (ifinfo,aftmc) =
@@ -212,12 +214,10 @@ bind to that; not good for isomorphisms *)
 	mcode starter @ r.V0.combiner_statement_dots stmt_dots @ mcode ender
     | Ast0.Dots(d,whencode) | Ast0.Circles(d,whencode)
     | Ast0.Stars(d,whencode) -> mcode d (* ignore whencode *)
+    | Ast0.OptStm s | Ast0.UniqueStm s ->
+	(* put the + code on the thing, not on the opt *)
+	r.V0.combiner_statement s
     | _ -> do_nothing r k s in
-
-  let initialiser r k e =
-    match Ast0.unwrap e with
-      Ast0.Idots(d,whencode) -> mcode d (* ignore whencode *)
-    | _ -> do_nothing r k e in
 
   let expression r k e =
     match Ast0.unwrap e with
@@ -226,6 +226,52 @@ bind to that; not good for isomorphisms *)
 	r.V0.combiner_expression_dots expr_dots @ mcode ender
     | Ast0.Edots(d,whencode) | Ast0.Ecircles(d,whencode)
     | Ast0.Estars(d,whencode) -> mcode d (* ignore whencode *)
+    | Ast0.OptExp e | Ast0.UniqueExp e ->
+	(* put the + code on the thing, not on the opt *)
+	r.V0.combiner_expression e
+    | _ -> do_nothing r k e in
+
+  let ident r k e =
+    match Ast0.unwrap e with
+      Ast0.OptIdent i | Ast0.UniqueIdent i ->
+	(* put the + code on the thing, not on the opt *)
+	r.V0.combiner_ident i
+    | _ -> do_nothing r k e in
+
+  let typeC r k e =
+    match Ast0.unwrap e with
+      Ast0.OptType t | Ast0.UniqueType t ->
+	(* put the + code on the thing, not on the opt *)
+	r.V0.combiner_typeC t
+    | _ -> do_nothing r k e in
+
+  let decl r k e =
+    match Ast0.unwrap e with
+      Ast0.OptDecl d | Ast0.UniqueDecl d ->
+	(* put the + code on the thing, not on the opt *)
+	r.V0.combiner_declaration d
+    | _ -> do_nothing r k e in
+
+  let initialiser r k e =
+    match Ast0.unwrap e with
+      Ast0.Idots(d,whencode) -> mcode d (* ignore whencode *)
+    | Ast0.OptIni i | Ast0.UniqueIni i ->
+	(* put the + code on the thing, not on the opt *)
+	r.V0.combiner_initialiser i
+    | _ -> do_nothing r k e in
+
+  let param r k e =
+    match Ast0.unwrap e with
+      Ast0.OptParam p | Ast0.UniqueParam p ->
+	(* put the + code on the thing, not on the opt *)
+	r.V0.combiner_parameter p
+    | _ -> do_nothing r k e in
+
+  let case_line r k e =
+    match Ast0.unwrap e with
+      Ast0.OptCase c ->
+	(* put the + code on the thing, not on the opt *)
+	r.V0.combiner_case_line c
     | _ -> do_nothing r k e in
 
   let do_top r k (e: Ast0.top_level) = k e in
@@ -234,8 +280,7 @@ bind to that; not good for isomorphisms *)
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode
     edots idots pdots sdots ddots cdots
-    do_nothing expression do_nothing initialiser do_nothing do_nothing
-    statement do_nothing do_top
+    ident expression typeC initialiser param decl statement case_line do_top
 
 
 let call_collect_minus context_nodes :

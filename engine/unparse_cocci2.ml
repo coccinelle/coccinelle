@@ -325,6 +325,9 @@ and print_named_type ty id =
 		| _ -> failwith "complex array types not supported")
 	    | _ -> typeC ty; ty_space ty; ident id; k () in
 	  loop ty1 (function _ -> ())
+    (*| should have a case here for pointer to array or function type
+        that would put ( * ) around the variable.  This makes one wonder
+        why we really need a special case for function pointer *)
       | _ -> fullType ty; ft_space ty; ident id)
   | _ -> fullType ty; ft_space ty; ident id
 

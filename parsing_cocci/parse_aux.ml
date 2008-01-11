@@ -388,6 +388,9 @@ let break b pv =
 let cont c pv =
   Ast0.wrap(Ast0.Continue(clt2mcode "continue" c,clt2mcode ";" pv))
 
+let label i dd =
+  Ast0.wrap(Ast0.Label(i,clt2mcode ":" dd))
+
 let seq lb s rb =
   Ast0.wrap(Ast0.Seq(clt2mcode "{" lb,s,clt2mcode "}" rb))
 

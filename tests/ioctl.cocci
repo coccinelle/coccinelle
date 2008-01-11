@@ -12,8 +12,7 @@ identifier fn.xyz_ioctl;
 identifier i, f, cmd, arg;
 @@
 
-int xyz_ioctl(struct inode *i,
-	      struct file *f, unsigned int cmd, unsigned long arg) 
+static int xyz_ioctl(struct inode *i, ...)
 {
   ... when != i
 }
@@ -30,7 +29,7 @@ statement S,S1;
 
 int xyz_ioctl(
 -             struct inode *i,
-              struct file *f, unsigned int cmd, unsigned long arg) 
+              ...)
 {
   ... when != S1
 + lock_kernel();
@@ -45,10 +44,20 @@ int xyz_ioctl(
 )
 }
 
+@call depends on one@
+identifier fn.xyz_ioctl;
+expression E;
+@@
+
+xyz_ioctl(
+-         E,
+          ...)
+
+
 // be sure the changes can be made before transforming
 // prototype has to be more complicated, because unsigned int can be
 // just unsigned
-@two depends on one@
+@decl depends on one@
 identifier xyz_ioctl;
 identifier xyz_ops;
 @@

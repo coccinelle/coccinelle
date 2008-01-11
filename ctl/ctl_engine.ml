@@ -1134,7 +1134,8 @@ let strict_triples_conj strict states trips trips' =
   then
     let fail_left = filter_conj states trips trips' in
     let fail_right = filter_conj states trips' trips in
-    triples_union res (triples_union fail_left fail_right)
+    let ors = triples_union fail_left fail_right in
+    triples_union res ors
   else res
 
 let left_strict_triples_conj strict states trips trips' =

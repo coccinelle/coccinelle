@@ -363,6 +363,7 @@ let combiner bind option_default
 	      string_mcode rb]
       | Ast0.Break(br,sem) -> bind (string_mcode br) (string_mcode sem)
       | Ast0.Continue(cont,sem) -> bind (string_mcode cont) (string_mcode sem)
+      |	Ast0.Label(l,dd) -> bind (ident l) (string_mcode dd)
       | Ast0.Return(ret,sem) -> bind (string_mcode ret) (string_mcode sem)
       | Ast0.ReturnExpr(ret,exp,sem) ->
 	  multibind [string_mcode ret; expression exp; string_mcode sem]
@@ -814,6 +815,7 @@ let rebuilder = fun
 	    Ast0.Break(string_mcode br,string_mcode sem)
 	| Ast0.Continue(cont,sem) ->
 	    Ast0.Continue(string_mcode cont,string_mcode sem)
+	| Ast0.Label(l,dd) -> Ast0.Label(ident l,string_mcode dd)
 	| Ast0.Return(ret,sem) ->
 	    Ast0.Return(string_mcode ret,string_mcode sem)
 	| Ast0.ReturnExpr(ret,exp,sem) ->

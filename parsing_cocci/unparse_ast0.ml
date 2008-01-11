@@ -434,6 +434,7 @@ and statement arity s =
 	  print_string arity; mcode print_string br; mcode print_string sem
       | Ast0.Continue(cont,sem) ->
 	  print_string arity; mcode print_string cont; mcode print_string sem
+      |	Ast0.Label(l,dd) -> ident l; print_string ":"
       | Ast0.Return(ret,sem) ->
 	  print_string arity; mcode print_string ret; mcode print_string sem
       | Ast0.ReturnExpr(ret,exp,sem) ->
@@ -563,12 +564,14 @@ let unparse_anything x =
   quiet := true;
   (match x with
     Ast0.DotsExprTag(d) ->
+      print_string "ExpDots:"; force_newline();
       expression_dots d
   | Ast0.DotsParamTag(d) ->
       parameter_list d
   | Ast0.DotsInitTag(d) ->
       initialiser_list d
   | Ast0.DotsStmtTag(d) ->
+      print_string "StmDots:"; force_newline();
       statement_dots d
   | Ast0.DotsDeclTag(d) ->
       declaration_dots d
@@ -577,6 +580,7 @@ let unparse_anything x =
   | Ast0.IdentTag(d) ->
       ident d
   | Ast0.ExprTag(d) | Ast0.ArgExprTag(d) | Ast0.TestExprTag(d) ->
+      print_string "Exp:"; force_newline();
       expression d
   | Ast0.TypeCTag(d) ->
       typeC d
@@ -587,6 +591,7 @@ let unparse_anything x =
   | Ast0.DeclTag(d) ->
       declaration d
   | Ast0.StmtTag(d) ->
+      print_string "Stm:"; force_newline();
       statement "" d
   | Ast0.CaseLineTag(d) ->
       case_line "" d

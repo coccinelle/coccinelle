@@ -767,6 +767,7 @@ statement:
 | TReturn TPtVirg { P.ret $1 $2 }
 | TBreak TPtVirg { P.break $1 $2 }
 | TContinue TPtVirg { P.cont $1 $2 }
+| ident TDotDot { P.label $1 $2 }
 | TOBrace pre_post_decl_statement_and_expression_opt TCBrace
     { P.seq $1 $2 $3 }
 | statement_nest { $1 }

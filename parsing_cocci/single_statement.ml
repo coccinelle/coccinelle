@@ -207,6 +207,7 @@ and left_statement s =
   | Ast0.Switch(switch,lp,exp,rp,lb,cases,rb) -> modif_before_mcode switch
   | Ast0.Break(br,sem) -> modif_before_mcode br
   | Ast0.Continue(cont,sem) -> modif_before_mcode cont
+  | Ast0.Label(l,dd) -> left_ident l
   | Ast0.Return(ret,sem) -> modif_before_mcode ret
   | Ast0.ReturnExpr(ret,exp,sem) -> modif_before_mcode ret
   | Ast0.MetaStmt(name,pure) -> modif_before_mcode name
@@ -244,6 +245,7 @@ and right_statement s =
   | Ast0.Switch(switch,lp,exp,rp,lb,cases,rb) -> modif_after_mcode rb
   | Ast0.Break(br,sem) -> modif_after_mcode sem
   | Ast0.Continue(cont,sem) -> modif_after_mcode sem
+  | Ast0.Label(l,dd) -> modif_after_mcode dd
   | Ast0.Return(ret,sem) -> modif_after_mcode sem
   | Ast0.ReturnExpr(ret,exp,sem) -> modif_after_mcode sem
   | Ast0.MetaStmt(name,pure) -> modif_after_mcode name
@@ -409,7 +411,7 @@ let all_minus s =
     Ast0.MINUS(_) -> true
   | _ -> false
 
-let unchanged_minus s =
+let rec unchanged_minus s =
   match Ast0.get_mcodekind s with
     Ast0.MINUS(mc) -> (match !mc with ([],_) -> true | _ -> false)
   | _ -> false
@@ -499,6 +501,7 @@ let rec statement dots_before dots_after s =
 			rb)))
   | Ast0.Break(br,sem) -> do_one s
   | Ast0.Continue(cont,sem) -> do_one s
+  | Ast0.Label(l,dd) -> do_one s
   | Ast0.Return(ret,sem) -> do_one s
   | Ast0.ReturnExpr(ret,exp,sem) -> do_one s
   | Ast0.MetaStmt(name,_) -> do_one s
