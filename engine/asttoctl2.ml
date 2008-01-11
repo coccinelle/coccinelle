@@ -1390,7 +1390,11 @@ and statement stmt after quantified minus_quantified
   match Ast.unwrap stmt with
     Ast.Atomic(ast) ->
       (match Ast.unwrap ast with
-	Ast.MetaStmt(_,Type_cocci.Unitary,_,false) when guard -> CTL.True
+	(* the following optimisation is not a good idea, because when S
+	   is alone, we would like it not to match a declaration.
+	   this makes more matching for things like when (...) S, but perhaps
+	   that matching is not so costly anyway *)
+	(*Ast.MetaStmt(_,Type_cocci.Unitary,_,false) when guard -> CTL.True*)
       |	Ast.MetaStmt((s,_,(Ast.CONTEXT(_,Ast.BEFOREAFTER(_,_)) as d)),
 		     keep,seqible,_)
       | Ast.MetaStmt((s,_,(Ast.CONTEXT(_,Ast.AFTER(_)) as d)),keep,seqible,_)->

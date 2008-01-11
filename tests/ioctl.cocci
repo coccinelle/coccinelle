@@ -9,7 +9,7 @@ struct file_operations xyz_ops = {
 
 @safe@
 identifier fn.xyz_ioctl;
-identifier i, f, cmd, arg;
+identifier i;
 @@
 
 static int xyz_ioctl(struct inode *i, ...)
@@ -17,19 +17,33 @@ static int xyz_ioctl(struct inode *i, ...)
   ... when != i
 }
 
-@one depends on safe@
+@count disable braces1, braces2, braces3, braces4@
+identifier fn.xyz_ioctl;
+statement S;
+@@
+
+int xyz_ioctl(...) {
+  <+...
+(
+   {
+    ... when strict
+    return ...; }
+|
+   if (...) return ...; else S
+)
+  ...+>
+}
+
+@one depends on safe && !count@
 identifier fn.xyz_ioctl;
 identifier i, f, cmd, arg;
 identifier ret;
 constant cret;
-type T;
-identifier id;
 statement S,S1;
 @@
 
-int xyz_ioctl(
--             struct inode *i,
-              ...)
+-xyz_ioctl(struct inode *i, struct file *f, unsigned cmd, unsigned long arg)
++xyz_ioctl(struct file *f, unsigned cmd, unsigned long arg)
 {
   ... when != S1
 + lock_kernel();
@@ -46,12 +60,11 @@ int xyz_ioctl(
 
 @call depends on one@
 identifier fn.xyz_ioctl;
-expression E;
+expression E1, E2, E3, E4;
 @@
 
-xyz_ioctl(
--         E,
-          ...)
+- xyz_ioctl(E1, E2, E3, E4)
++ xyz_ioctl(E2, E3, E4)
 
 
 // be sure the changes can be made before transforming

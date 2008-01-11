@@ -2837,6 +2837,8 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
    * "header"-statement. We transform only MetaRuleElem, not MetaStmt.
    * So can't have been called in transform. 
    *)
+  | A.MetaStmt (ida,keep,metainfoMaybeTodo,inherited),  F.Decl(_) -> fail
+
   | A.MetaStmt (ida,keep,metainfoMaybeTodo,inherited),  unwrap_node -> 
       (* todo: should not happen in transform mode *)
 
@@ -3278,7 +3280,7 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
 
   (* have not a counter part in coccinelle, for the moment *)
   (* todo?: print a warning at least ? *)
-  | _, F.Label _
+  | _, F.Label _  (* there is now A.Label, so should fill this in *)
   | _, F.CaseRange _  
   | _, F.Asm _
   | _, F.Ifdef _

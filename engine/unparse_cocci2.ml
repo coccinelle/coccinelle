@@ -241,7 +241,7 @@ and print_function_type (ty,lp1,params,rp1) fn =
 and typeC ty =
   match Ast.unwrap ty with
     Ast.BaseType(ty,sgn) -> print_option (mcode sign) sgn; mcode baseType ty
-  | Ast.ImplicitInt(sgn) -> mcode sign sgn
+  | Ast.ImplicitInt(sgn) -> mcode signns sgn
   | Ast.Pointer(ty,star) -> fullType ty; ft_space ty; mcode print_string star
   | Ast.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
       print_function_pointer (ty,lp1,star,rp1,lp2,params,rp2)
@@ -282,6 +282,10 @@ and structUnion = function
 and sign = function
     Ast.Signed -> print_string "signed "
   | Ast.Unsigned -> print_string "unsigned "
+
+and signns = function (* no space, like a normal type *)
+    Ast.Signed -> print_string "signed"
+  | Ast.Unsigned -> print_string "unsigned"
 
 
 and const_vol = function
@@ -506,6 +510,7 @@ and rule_elem arity re =
       print_string arity; mcode print_string br; mcode print_string sem
   | Ast.Continue(cont,sem) ->
       print_string arity; mcode print_string cont; mcode print_string sem
+  | Ast.Label(l,dd) -> ident l; mcode print_string dd
   | Ast.Goto -> print_string "goto"
   | Ast.Return(ret,sem) ->
       print_string arity; mcode print_string ret; 

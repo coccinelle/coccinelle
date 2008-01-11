@@ -36,6 +36,7 @@ let dumb_astcocci_rule_elem = function
  | A.Goto -> ()
  | A.Break _ -> ()
  | A.Continue _ -> ()
+ | A.Label _ -> ()
  | A.Return _ -> ()
  | A.ReturnExpr (_, ea, _) -> ()
  | A.DefineHeader _ -> ()
