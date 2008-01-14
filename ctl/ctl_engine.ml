@@ -974,9 +974,9 @@ let satAU dir ((cfg,_,states) as m) s1 s2 reqst =
 	match newinfo with
 	  [] -> AUok y
 	| new_info ->
-	    ctr := !ctr + 1;
+	    (*ctr := !ctr + 1;
 	    print_state (Printf.sprintf "iteration %d\n" !ctr) y;
-	    flush stdout;
+	    flush stdout;*)
 	    let pre =
 	      try Some (pre_forall dir m new_info y reqst)
 	      with AW -> None in
@@ -986,18 +986,18 @@ let satAU dir ((cfg,_,states) as m) s1 s2 reqst =
 		match triples_conj s1 pre with
 		  [] -> AUok y
 		| first ->
-		    print_state "s1" s1;
+		    (*print_state "s1" s1;
 		    print_state "pre" pre;
-		    print_state "first" first;
+		    print_state "first" first;*)
 		    let res = triples_union first y in
 		    let new_info =
 		      if not !something_dropped
 		      then first
 		      else setdiff res y in
-		  Printf.printf
+		  (*Printf.printf
 		     "iter %d res %d new_info %d\n"
 		     !ctr (List.length res) (List.length new_info);
-		     flush stdout;
+		     flush stdout;*)
 		    f res new_info in
       f s2 s2
     else
