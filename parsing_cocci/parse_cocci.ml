@@ -102,6 +102,7 @@ let token2c (tok,_) =
   | PC.TReturn(clt) -> "return"^(line_type2c clt)
   | PC.TBreak(clt) -> "break"^(line_type2c clt)
   | PC.TContinue(clt) -> "continue"^(line_type2c clt)
+  | PC.TGoto(clt) -> "goto"^(line_type2c clt)
   | PC.TIdent(s,clt) -> (pr "ident-%s" s)^(line_type2c clt)
   | PC.TTypeId(s,clt) -> (pr "typename-%s" s)^(line_type2c clt)
   | PC.TDeclarerId(s,clt) -> (pr "declarername-%s" s)^(line_type2c clt)
@@ -249,7 +250,7 @@ let plus_attachable (tok,_) =
 	
   | PC.TIf(clt) | PC.TElse(clt) | PC.TWhile(clt) | PC.TFor(clt) | PC.TDo(clt)
   | PC.TSwitch(clt) | PC.TCase(clt) | PC.TDefault(clt) | PC.TReturn(clt)
-  | PC.TBreak(clt) | PC.TContinue(clt) | PC.TIdent(_,clt)
+  | PC.TBreak(clt) | PC.TContinue(clt) | PC.TGoto(clt) | PC.TIdent(_,clt)
   | PC.TTypeId(_,clt) | PC.TDeclarerId(_,clt) | PC.TIteratorId(_,clt)
 
   | PC.TSizeof(clt)
@@ -307,7 +308,7 @@ let get_clt (tok,_) =
 	
   | PC.TIf(clt) | PC.TElse(clt) | PC.TWhile(clt) | PC.TFor(clt) | PC.TDo(clt)
   | PC.TSwitch(clt) | PC.TCase(clt) | PC.TDefault(clt) | PC.TReturn(clt)
-  | PC.TBreak(clt) | PC.TContinue(clt) | PC.TIdent(_,clt)
+  | PC.TBreak(clt) | PC.TContinue(clt) | PC.TGoto(clt) | PC.TIdent(_,clt)
   | PC.TTypeId(_,clt) | PC.TDeclarerId(_,clt) | PC.TIteratorId(_,clt)
 
   | PC.TSizeof(clt)
@@ -392,6 +393,7 @@ let update_clt (tok,x) clt =
   | PC.TReturn(_) -> (PC.TReturn(clt),x)
   | PC.TBreak(_) -> (PC.TBreak(clt),x)
   | PC.TContinue(_) -> (PC.TContinue(clt),x)
+  | PC.TGoto(_) -> (PC.TGoto(clt),x)
   | PC.TIdent(s,_) -> (PC.TIdent(s,clt),x)
   | PC.TTypeId(s,_) -> (PC.TTypeId(s,clt),x)
   | PC.TDeclarerId(s,_) -> (PC.TDeclarerId(s,clt),x)
@@ -550,7 +552,8 @@ let split_token ((tok,_) as t) =
   | PC.TIf(clt) | PC.TElse(clt)  | PC.TWhile(clt) | PC.TFor(clt) | PC.TDo(clt)
   | PC.TSwitch(clt) | PC.TCase(clt) | PC.TDefault(clt)
   | PC.TSizeof(clt)
-  | PC.TReturn(clt) | PC.TBreak(clt) | PC.TContinue(clt) | PC.TIdent(_,clt)
+  | PC.TReturn(clt) | PC.TBreak(clt) | PC.TContinue(clt) | PC.TGoto(clt)
+  | PC.TIdent(_,clt)
   | PC.TTypeId(_,clt) | PC.TDeclarerId(_,clt) | PC.TIteratorId(_,clt)
   | PC.TMetaConst(_,_,_,_,clt) | PC.TMetaExp(_,_,_,_,clt)
   | PC.TMetaIdExp(_,_,_,_,clt) | PC.TMetaExpList(_,_,_,clt)
@@ -771,7 +774,8 @@ let token2line (tok,_) =
 	
   | PC.TIf(clt) | PC.TElse(clt) | PC.TWhile(clt) | PC.TFor(clt) | PC.TDo(clt) 
   | PC.TSwitch (clt) | PC.TCase (clt) | PC.TDefault (clt) | PC.TSizeof (clt)
-  | PC.TReturn(clt) | PC.TBreak(clt) | PC.TContinue(clt) | PC.TIdent(_,clt)
+  | PC.TReturn(clt) | PC.TBreak(clt) | PC.TContinue(clt) | PC.TGoto(clt)
+  | PC.TIdent(_,clt)
   | PC.TTypeId(_,clt) | PC.TDeclarerId(_,clt) | PC.TIteratorId(_,clt)
 
   | PC.TString(_,clt) | PC.TChar(_,clt) | PC.TFloat(_,clt) | PC.TInt(_,clt) 
@@ -915,7 +919,8 @@ let rec drop_double_dots l =
       (PC.TEllipsis(_),_) (* | (PC.TCircles(_),_) | (PC.TStars(_),_) *) -> true
     | _ -> false in
   let final = function
-      (PC.TCEllipsis(_),_) (* | (PC.TCCircles(_),_) | (PC.TCStars(_),_) *) ->
+      (PC.TCEllipsis(_),_) | (PC.TPCEllipsis(_),_)
+ (* | (PC.TCCircles(_),_) | (PC.TCStars(_),_) *) ->
 	true
     | _ -> false in
   let rec loop ((_,i) as prev) = function

@@ -220,8 +220,8 @@ let do_get_constants constants keywords env =
 	keywords "break"
     | Ast.Continue(cont,sem) ->
 	keywords "continue"
-    | Ast.Goto ->
-	keywords "goto"
+    | Ast.Goto(_,i,_) ->
+	bind (keywords "goto") (k re)
     | Ast.Default(def,colon) ->
 	keywords "default"
     | Ast.Include(inc,s) ->

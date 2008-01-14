@@ -756,7 +756,15 @@ and statement tgt stm =
   | Ast0.Label(l,dd) ->
       let arity = mcode2arity dd in
       let l = ident false tgt l in
+      let dd = mcode dd in
       make_rule_elem stm tgt arity (Ast0.Label(l,dd))
+  | Ast0.Goto(goto,l,sem) ->
+      let arity =
+	stm_same (mcode2line goto) (List.map mcode2arity [goto;sem]) in
+      let goto = mcode goto in
+      let l = ident false tgt l in
+      let semd = mcode sem in
+      make_rule_elem stm tgt arity (Ast0.Goto(goto,l,sem))
   | Ast0.Return(ret,sem) ->
       let arity = stm_same (mcode2line ret) (List.map mcode2arity [ret;sem]) in
       let ret = mcode ret in

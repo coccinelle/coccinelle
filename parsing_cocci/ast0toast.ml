@@ -628,6 +628,9 @@ and statement s =
 	  Ast.Atomic(rewrap_rule_elem s (Ast.Continue(mcode cont,mcode sem)))
       |	Ast0.Label(l,dd) ->
 	  Ast.Atomic(rewrap_rule_elem s (Ast.Label(ident l,mcode dd)))
+      |	Ast0.Goto(goto,l,sem) ->
+	  Ast.Atomic
+	    (rewrap_rule_elem s (Ast.Goto(mcode goto,ident l,mcode sem)))
       | Ast0.Return(ret,sem) ->
 	  Ast.Atomic(rewrap_rule_elem s (Ast.Return(mcode ret,mcode sem)))
       | Ast0.ReturnExpr(ret,exp,sem) ->

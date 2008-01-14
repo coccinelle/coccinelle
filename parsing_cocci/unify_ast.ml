@@ -405,7 +405,7 @@ and unify_rule_elem re1 re2 =
   | (Ast.Break(r1,s1),Ast.Break(r2,s2)) -> return true
   | (Ast.Continue(r1,s1),Ast.Continue(r2,s2)) -> return true
   | (Ast.Label(l1,dd1),Ast.Label(l2,dd2)) -> unify_ident l1 l2
-  | (Ast.Goto,Ast.Goto) -> return true
+  | (Ast.Goto(g1,l1,dd1),Ast.Goto(g2,l2,dd2)) -> unify_ident l1 l2
   | (Ast.Return(r1,s1),Ast.Return(r2,s2)) -> return true
   | (Ast.ReturnExpr(r1,e1,s1),Ast.ReturnExpr(r2,e2,s2)) ->
       unify_expression e1 e2

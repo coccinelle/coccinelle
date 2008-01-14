@@ -33,7 +33,7 @@ module P = Parse_aux
 %token<string * Data.clt> Tattr
 
 %token <Data.clt> TIf TElse TWhile TFor TDo TSwitch TCase TDefault TReturn
-%token <Data.clt> TBreak TContinue TSizeof TFunDecl
+%token <Data.clt> TBreak TContinue TGoto TSizeof TFunDecl
 %token <string * Data.clt> TIdent TTypeId TDeclarerId TIteratorId
 
 %token <Parse_aux.idinfo>     TMetaId TMetaFunc TMetaLocalFunc
@@ -768,6 +768,7 @@ statement:
 | TBreak TPtVirg { P.break $1 $2 }
 | TContinue TPtVirg { P.cont $1 $2 }
 | ident TDotDot { P.label $1 $2 }
+| TGoto ident TPtVirg { P.goto $1 $2 $3 }
 | TOBrace pre_post_decl_statement_and_expression_opt TCBrace
     { P.seq $1 $2 $3 }
 | statement_nest { $1 }

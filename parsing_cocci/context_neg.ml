@@ -597,6 +597,8 @@ let rec equal_statement s1 s2 =
       equal_mcode cont1 cont2 && equal_mcode sem1 sem2
   | (Ast0.Label(_,dd1),Ast0.Label(_,dd2)) ->
       equal_mcode dd1 dd2
+  | (Ast0.Goto(g1,_,sem1),Ast0.Goto(g2,_,sem2)) ->
+      equal_mcode g1 g2 && equal_mcode sem1 sem2
   | (Ast0.Return(ret1,sem1),Ast0.Return(ret2,sem2)) ->
       equal_mcode ret1 ret2 && equal_mcode sem1 sem2
   | (Ast0.ReturnExpr(ret1,_,sem1),Ast0.ReturnExpr(ret2,_,sem2)) ->

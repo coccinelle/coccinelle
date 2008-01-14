@@ -208,6 +208,7 @@ and left_statement s =
   | Ast0.Break(br,sem) -> modif_before_mcode br
   | Ast0.Continue(cont,sem) -> modif_before_mcode cont
   | Ast0.Label(l,dd) -> left_ident l
+  | Ast0.Goto(goto,l,sem) -> modif_before_mcode goto
   | Ast0.Return(ret,sem) -> modif_before_mcode ret
   | Ast0.ReturnExpr(ret,exp,sem) -> modif_before_mcode ret
   | Ast0.MetaStmt(name,pure) -> modif_before_mcode name
@@ -246,6 +247,7 @@ and right_statement s =
   | Ast0.Break(br,sem) -> modif_after_mcode sem
   | Ast0.Continue(cont,sem) -> modif_after_mcode sem
   | Ast0.Label(l,dd) -> modif_after_mcode dd
+  | Ast0.Goto(goto,l,sem) -> modif_after_mcode sem
   | Ast0.Return(ret,sem) -> modif_after_mcode sem
   | Ast0.ReturnExpr(ret,exp,sem) -> modif_after_mcode sem
   | Ast0.MetaStmt(name,pure) -> modif_after_mcode name
@@ -502,6 +504,7 @@ let rec statement dots_before dots_after s =
   | Ast0.Break(br,sem) -> do_one s
   | Ast0.Continue(cont,sem) -> do_one s
   | Ast0.Label(l,dd) -> do_one s
+  | Ast0.Goto(goto,l,sem) -> do_one s
   | Ast0.Return(ret,sem) -> do_one s
   | Ast0.ReturnExpr(ret,exp,sem) -> do_one s
   | Ast0.MetaStmt(name,_) -> do_one s

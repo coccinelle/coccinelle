@@ -58,6 +58,7 @@ let rec pp_predicate = function
   | Enter -> pp "Enter"
   | ErrorExit -> pp "ErrorExit"
   | Exit -> pp "Exit"
+  | Goto -> pp "Goto"
   | Paren s -> pp "Paren("; pp_meta s; pp ")"
   | Match (re) -> Pretty_print_cocci.print_rule_elem re
   | Label s -> pp "Label("; pp_meta s; pp ")"

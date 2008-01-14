@@ -435,6 +435,8 @@ and statement arity s =
       | Ast0.Continue(cont,sem) ->
 	  print_string arity; mcode print_string cont; mcode print_string sem
       |	Ast0.Label(l,dd) -> ident l; print_string ":"
+      | Ast0.Goto(goto,l,sem) ->
+	  mcode print_string goto; ident l; mcode print_string sem
       | Ast0.Return(ret,sem) ->
 	  print_string arity; mcode print_string ret; mcode print_string sem
       | Ast0.ReturnExpr(ret,exp,sem) ->

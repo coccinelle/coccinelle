@@ -134,6 +134,7 @@ let retpred     = predmaker false (Lib_engine.Return,      CTL.Control)
 let enterpred   = predmaker false (Lib_engine.Enter,       CTL.Control)
 let exitpred    = predmaker false (Lib_engine.ErrorExit,   CTL.Control)
 let endpred     = predmaker false (Lib_engine.Exit,        CTL.Control)
+let gotopred    = predmaker false (Lib_engine.Goto,        CTL.Control)
 let inlooppred  = predmaker false (Lib_engine.InLoop,      CTL.Control)
 let truepred    = predmaker false (Lib_engine.TrueBranch,  CTL.Control)
 let falsepred   = predmaker false (Lib_engine.FalseBranch, CTL.Control)
@@ -1176,8 +1177,7 @@ let svar_minus_or_no_add_after stmt s label quantified d ast
 (* dots and nests *)
 
 let dots_au is_strict toend label s wrapcode x seq_after y =
-  let matchgoto =
-    make_match None false (wrapcode Ast.Goto) in
+  let matchgoto = gotopred None in
   let matchbreak =
     make_match None false
       (wrapcode
@@ -1261,6 +1261,7 @@ let rec dots_and_nests plus nest whencodes bef aft dotcode after label
   (* whencode goes in the negated part of the nest; if no nest, just goes
       on the "true" in between code *)
   let plus_var = if plus then get_label_ctr() else string2var "" in
+  let plus_var2 = if plus then get_label_ctr() else string2var "" in
   let ornest =
     match (nest,guard) with
       (None,_) | (_,true) -> whencodes CTL.True
@@ -1268,8 +1269,17 @@ let rec dots_and_nests plus nest whencodes bef aft dotcode after label
 	let v = get_let_ctr() in
 	let is_plus x =
 	  if plus
-	  then CTL.And(CTL.NONSTRICT,x,
-		       CTL.Pred(Lib_engine.BindGood(plus_var),CTL.Control))
+	  then
+	    (* the idea is that BindGood is sort of a witness; a witness to
+	       having found the subterm in at least one place.  If there is
+	       not a witness, then there is a risk that it will get thrown
+	       away, if it is merged with a node that has an empty
+	       environment.  See tests/nestplus.  But this all seems
+	       rather suspicious *)
+	    CTL.And(CTL.NONSTRICT,x,
+		    CTL.Exists(true,plus_var2,
+			       CTL.Pred(Lib_engine.BindGood(plus_var),
+					CTL.Modif plus_var2)))
 	  else x in
         CTL.Let(v,nest,
 		CTL.Or(is_plus (CTL.Ref v),
@@ -1572,7 +1582,7 @@ and statement stmt after quantified minus_quantified
 		  (Ast.SeqEnd ((data,info,Ast.CONTEXT(Ast.NoPos,Ast.NOTHING))))
 	    | _ -> failwith "unexpected close brace" in
 	  make_seq
-	    [make_match (Ast.rewrap stmt Ast.Goto);
+	    [gotopred label;
 	      ctl_au
 		(make_match empty_rbrace)
 		(ctl_ax (* skip the destination label *)
@@ -1590,8 +1600,7 @@ and statement stmt after quantified minus_quantified
 			 (CTL.FORWARD,CTL.STRICT,
 			  CTL.Pred(Lib_engine.PrefixLabel(lv),CTL.Control),
 			  ctl_and (* brace must be eventually after goto *)
-			    (real_make_match (Some (lv,ref true)) false
-			       (Ast.rewrap stmt Ast.Goto))
+			    (gotopred (Some (lv,ref true)))
 			    (* want AF even for sgrep *)
 			    (CTL.AF(CTL.FORWARD,CTL.STRICT,end_brace))))
 		      (quantify guard b2fvs
@@ -2014,7 +2023,8 @@ and process_bef_aft quantified minus_quantified label llabel slabel guard =
     Ast.WParen (re,n) ->
       let paren_pred = CTL.Pred (Lib_engine.Paren n,CTL.Control) in
       let s = guard_to_strict guard in
-      ctl_and s (make_raw_match None guard re) paren_pred
+      quantify true (get_unquantified quantified [n])
+	(ctl_and s (make_raw_match None guard re) paren_pred)
   | Ast.Other s ->
       statement s Tail quantified minus_quantified label llabel slabel guard
   | Ast.Other_dots d ->

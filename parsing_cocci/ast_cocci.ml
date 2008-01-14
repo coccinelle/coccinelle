@@ -352,9 +352,9 @@ and base_rule_elem =
   | SwitchHeader  of string mcode (* switch *) * string mcode (* ( *) *
 	             expression * string mcode (* ) *)
   | Break         of string mcode (* break *) * string mcode (* ; *)
-  | Label         of ident * string mcode
   | Continue      of string mcode (* continue *) * string mcode (* ; *)
-  | Goto             (* not in the source language *)
+  | Label         of ident * string mcode (* : *)
+  | Goto          of string mcode (* goto *) * ident * string mcode (* ; *)
   | Return        of string mcode (* return *) * string mcode (* ; *)
   | ReturnExpr    of string mcode (* return *) * expression *
 	             string mcode (* ; *)

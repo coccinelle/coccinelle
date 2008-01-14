@@ -511,7 +511,8 @@ and rule_elem arity re =
   | Ast.Continue(cont,sem) ->
       print_string arity; mcode print_string cont; mcode print_string sem
   | Ast.Label(l,dd) -> ident l; mcode print_string dd
-  | Ast.Goto -> print_string "goto"
+  | Ast.Goto(goto,l,sem) ->
+      mcode print_string goto; ident l; mcode print_string sem
   | Ast.Return(ret,sem) ->
       print_string arity; mcode print_string ret; 
       mcode print_string sem

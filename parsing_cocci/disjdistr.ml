@@ -284,7 +284,7 @@ let disj_rule_elem r k re =
   | Ast.SwitchHeader(switch,lp,exp,rp) ->
       orify_rule_elem re exp
 	(function exp -> Ast.rewrap re (Ast.SwitchHeader(switch,lp,exp,rp)))
-  | Ast.Break(_,_) | Ast.Continue(_,_) | Ast.Goto | Ast.Label(_,_)
+  | Ast.Break(_,_) | Ast.Continue(_,_) | Ast.Label(_,_) | Ast.Goto(_,_,_)
   | Ast.Return(_,_) -> re
   | Ast.ReturnExpr(ret,exp,sem) ->
       orify_rule_elem re exp

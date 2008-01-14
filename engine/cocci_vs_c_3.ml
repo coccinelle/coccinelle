@@ -3147,12 +3147,6 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
           F.SwitchHeader (st, (eb,[ib1;ib2;ib3]))
         )))))
       
-
-  (* julia: goto is just created by asttoctl2, with no +- info *)
-  | A.Goto,                  F.Goto (a,b)       -> 
-      return (A.Goto, F.Goto (a,b))
-      
-
   | A.Break (ia1, ia2), F.Break (st, ((),ii)) -> 
       let (ib1, ib2) = tuple_of_list2 ii in
       tokenf ia1 ib1 >>= (fun ia1 ib1 -> 
@@ -3278,9 +3272,41 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
 
   | _, F.ExprStatement (_, (None, ii)) -> fail (* happen ? *)
 
+  | A.Label(id,dd), F.Label (st,(s,ii)) ->
+      let (ib1,ib2) = tuple_of_list2 ii in
+      let (string_of_id,rebuild) =
+	match A.unwrap id with
+	  A.Id(s) -> (s,function s -> A.rewrap id (A.Id(s)))
+	| _ -> failwith "labels with metavariables not supported" in
+      if (term string_of_id) =$= s
+      then
+	tokenf string_of_id ib1 >>= (fun string_of_id ib1 ->
+	tokenf dd ib2 >>= (fun dd ib2 ->
+	  return (
+	    A.Label(rebuild string_of_id,dd),
+	    F.Label (st,(s,[ib1;ib2]))
+	  )))
+      else fail
+
+  | A.Goto(goto,id,sem),          F.Goto (st,(s,ii))       ->
+      let (ib1,ib2,ib3) = tuple_of_list3 ii in
+      let (string_of_id,rebuild) =
+	match A.unwrap id with
+	  A.Id(s) -> (s,function s -> A.rewrap id (A.Id(s)))
+	| _ -> failwith "labels with metavariables not supported" in
+      if (term string_of_id) =$= s
+      then
+        tokenf goto ib1 >>= (fun goto ib1 ->
+        tokenf string_of_id ib2 >>= (fun string_of_id ib2 ->
+        tokenf sem ib3 >>= (fun sem ib3 ->
+	  return (
+	    A.Goto(goto,id,sem),
+            F.Goto (st,(s,[ib1;ib2;ib3]))
+          ))))
+      else fail
+
   (* have not a counter part in coccinelle, for the moment *)
   (* todo?: print a warning at least ? *)
-  | _, F.Label _  (* there is now A.Label, so should fill this in *)
   | _, F.CaseRange _  
   | _, F.Asm _
   | _, F.Ifdef _

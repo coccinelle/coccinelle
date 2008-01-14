@@ -92,7 +92,7 @@ let ctl_au x seq_after y =
   let lv = get_label_ctr() in
   let labelpred = CTL.Pred(Lib_engine.Label lv,CTL.Control) in
   let preflabelpred = CTL.Pred(Lib_engine.PrefixLabel lv,CTL.Control) in
-  let matchgoto = predmaker false (Ast.make_term Ast.Goto) in
+  let matchgoto = CTL.Pred(Lib_engine.Goto,CTL.Control) in
   let matchbreak =
     predmaker false
       (Ast.make_term

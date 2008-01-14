@@ -391,6 +391,9 @@ let cont c pv =
 let label i dd =
   Ast0.wrap(Ast0.Label(i,clt2mcode ":" dd))
 
+let goto g i pv =
+  Ast0.wrap(Ast0.Goto(clt2mcode "goto" g,i,clt2mcode ";" pv))
+
 let seq lb s rb =
   Ast0.wrap(Ast0.Seq(clt2mcode "{" lb,s,clt2mcode "}" rb))
 

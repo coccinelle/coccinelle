@@ -114,6 +114,7 @@ let (labels_for_ctl: string list (* dropped isos *) ->
       | Lib_engine.Enter,       F.TopNode ->     [nodei, (p,[])]
       | Lib_engine.Exit,        F.Exit ->      [nodei, (p,[])]
       | Lib_engine.ErrorExit,   F.ErrorExit -> [nodei, (p,[])]
+      |	Lib_engine.Goto,        F.Goto(_,_) -> [nodei, (p,[])]
 
       | Lib_engine.InLoop , _ -> []
       | Lib_engine.TrueBranch , _ -> []
@@ -123,6 +124,7 @@ let (labels_for_ctl: string list (* dropped isos *) ->
       | Lib_engine.Enter, _  -> []
       | Lib_engine.Exit, _  -> []
       | Lib_engine.ErrorExit, _  -> []
+      | Lib_engine.Goto, _  -> []
 
       |	Lib_engine.BindGood s, _ -> [(nodei, (p,[(s --> Lib_engine.GoodVal)]))]
       |	Lib_engine.BindBad s, _ ->  [(nodei, (p,[(s --> Lib_engine.BadVal)]))]
@@ -337,16 +339,16 @@ let (satbis_to_trans_info:
   (nodei * Lib_engine.metavars_binding2 * Lib_engine.predicate) list -> 
   (nodei * Lib_engine.metavars_binding * Ast_cocci.rule_elem) list) = 
   fun xs -> 
-    xs +> List.map (fun (nodei, binding2, pred) -> 
-         let rule_elem = 
-           (match pred with
+    xs +> List.fold_left (fun prev (nodei, binding2, pred) -> 
+         match pred with
            | Lib_engine.Match (rule_elem) ->
 	       if !Flag.track_iso_usage then show_isos rule_elem;
-	       rule_elem
+	       (nodei, metavars_binding2_to_binding binding2, rule_elem)
+	       ::prev
+	     (* see BindGood in asttotctl2 *)
+           | Lib_engine.BindGood (_) -> prev
            | _ -> raise Impossible
-           ) in
-         nodei, metavars_binding2_to_binding binding2, rule_elem
-         )
+         ) []
 
 (*****************************************************************************)
 (* Call ctl engine *)

@@ -584,6 +584,10 @@ let rec statement s =
     | Ast0.Label(l,dd) ->
 	let l = ident l in
 	mkres s (Ast0.Label(l,dd)) l (promote_mcode dd)
+    | Ast0.Goto(goto,id,sem) ->
+	let id = ident id in
+	mkres s (Ast0.Goto(goto,id,sem)) 
+	  (promote_mcode goto) (promote_mcode sem)
     | Ast0.Return(ret,sem) as us ->
 	mkres s us (promote_mcode ret) (promote_mcode sem)
     | Ast0.ReturnExpr(ret,exp,sem) ->

@@ -1,5 +1,5 @@
 (* create an index for each constructor *)
-(* current max is 144 *)
+(* current max is 145 *)
 
 (* doesn't really work - requires that identical terms with no token
 subterms (eg dots) not appear on the same line *)
@@ -162,6 +162,7 @@ let statement s =
   | Ast0.Break(br,sem) -> [100]
   | Ast0.Continue(cont,sem) -> [101]
   | Ast0.Label(l,dd) -> [144]
+  | Ast0.Goto(goto,l,sem) -> [145]
   | Ast0.Return(ret,sem) -> [77]
   | Ast0.ReturnExpr(ret,exp,sem) -> [78]
   | Ast0.MetaStmt(name,_) -> [79]

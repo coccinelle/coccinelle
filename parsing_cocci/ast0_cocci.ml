@@ -271,7 +271,8 @@ and base_statement =
 	             case_line dots * string mcode (* } *)
   | Break         of string mcode (* break *) * string mcode (* ; *)
   | Continue      of string mcode (* continue *) * string mcode (* ; *)
-  | Label         of ident * string mcode
+  | Label         of ident * string mcode (* : *)
+  | Goto          of string mcode (* goto *) * ident * string mcode (* ; *)
   | Return        of string mcode (* return *) * string mcode (* ; *)
   | ReturnExpr    of string mcode (* return *) * expression *
 	             string mcode (* ; *)
