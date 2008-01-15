@@ -2116,6 +2116,7 @@ let filter_partial_matches trips =
 (* ---------------------------------------------------------------------- *)
 (* Main entry point for engine *)
 let sat m phi reqopt = 
+  Printf.printf "length reqopt %d\n" (List.length reqopt);
   Hashtbl.clear reachable_table;
   Hashtbl.clear memo_label;
   let (x,label,states) = m in

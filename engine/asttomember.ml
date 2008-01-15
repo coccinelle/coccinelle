@@ -279,11 +279,20 @@ let asttomember (_,_,l) used_after =
 	List.map (function (_,x) -> (Lib_engine.Match(x),CTL.Control)) info)
       l in
   List.map2
-    (function min -> function max ->
+    (function min -> function (max,big_max) ->
       match min with
-	[] -> process_one max
+	[] ->
+	  (match max() with
+	    [] -> process_one (big_max())
+	  | max -> process_one max)
       |	_ -> process_one min)
     (List.map (top_level contains_constant no_mcode) l)
-    (List.map2
-       (function x -> function ua -> top_level (contains_modif ua) mcode x)
-       l used_after)
+    (List.combine
+	(List.map2
+	   (function x -> function ua -> function _ ->
+	     top_level (contains_modif ua) mcode x)
+	   l used_after)
+	(List.map
+	   (function x -> function _ ->
+	     top_level (function _ -> true) no_mcode x)
+	   l))
