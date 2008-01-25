@@ -763,7 +763,7 @@ and statement tgt stm =
 	stm_same (mcode2line goto) (List.map mcode2arity [goto;sem]) in
       let goto = mcode goto in
       let l = ident false tgt l in
-      let semd = mcode sem in
+      let sem = mcode sem in
       make_rule_elem stm tgt arity (Ast0.Goto(goto,l,sem))
   | Ast0.Return(ret,sem) ->
       let arity = stm_same (mcode2line ret) (List.map mcode2arity [ret;sem]) in
@@ -820,12 +820,20 @@ and statement tgt stm =
 	  (function (found_opt,lines) ->
 	    function x ->
 	      let rebuild l =
-		match List.rev l with
-		  x::xs ->
-		    (match Ast0.unwrap x with
-		      Ast0.OptStm(x) -> (true,List.rev(x::xs))
-		    | _ -> (found_opt,l))
-		| _ -> (false,l) in
+		(* previously just checked the last thing in the list,
+		   but everything should be optional for the whole thing to
+		   be optional *)
+		let is_opt x =
+		  match Ast0.unwrap x with
+		    Ast0.OptStm(x) -> true
+		  | _ -> false in
+		let unopt x =
+		  match Ast0.unwrap x with
+		    Ast0.OptStm(x) -> x
+		  | _ -> x in
+		if List.for_all is_opt l
+		then (true,List.map unopt l)
+		else (false, l) in
 	      let (l,k) =
 		match Ast0.unwrap x with
 		  Ast0.DOTS(l) ->

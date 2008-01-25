@@ -261,6 +261,7 @@ let pred2c = function
   | Lib_engine.BindBad(nm) ->
       let s = meta2c nm in
       ("\\msf{Bad}("^s^")",5+(String.length s))
+  | Lib_engine.Goto -> ("goto",4)
 
 let totex out_file rules ctls =
   let o = open_out out_file in

@@ -133,6 +133,7 @@ let do_get_constants constants keywords env =
       Ast.Constant(const) ->
 	(match Ast.unwrap_mcode const with
 	  Ast.String s -> constants s
+	| Ast.Char "\\0" -> option_default (* glimpse doesn't like it *)
 	| Ast.Char s -> constants s
 	| Ast.Int "0" -> keywords "0"
 	| Ast.Int "1" -> keywords "1"
