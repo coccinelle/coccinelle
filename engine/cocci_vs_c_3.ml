@@ -497,6 +497,10 @@ module type PARAM =
     val cocciExp : 
       (A.expression, B.expression) matcher -> (A.expression, F.node) matcher
 
+    val cocciExpExp : 
+      (A.expression, B.expression) matcher ->
+	(A.expression, B.expression) matcher
+
     val cocciTy : 
       (A.fullType, B.fullType) matcher -> (A.fullType, F.node) matcher
 
@@ -924,10 +928,21 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
           ((B.ParenExpr (eb), typ), [ib1;ib2])
       ))))
 
+  | A.NestExpr(exps,None,false), eb ->
+      (match A.unwrap exps with
+	A.DOTS [exp] ->
+	  X.cocciExpExp expression exp eb >>= (fun exp eb -> 
+            return (
+            (A.NestExpr(A.rewrap exps (A.DOTS [exp]),None,false)) +> wa,
+            eb
+            )
+	  )
+      |	_ ->
+	  failwith
+	    "for nestexpr, only handling the case with dots and only one exp")
 
-
-
-  | A.NestExpr _, _ -> failwith "not my job to handle NestExpr"
+  | A.NestExpr _, _ ->
+      failwith "not handling multi or when code in a nest expr"
 
   (* only in arg lists or in define body *)  
   | A.TypeExp _, _ -> fail

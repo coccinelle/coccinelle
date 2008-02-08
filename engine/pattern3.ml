@@ -155,6 +155,35 @@ module XMATCH = struct
       (a, node), binding
     )
 
+  (* same as cocciExp, but for expressions in an expression, not expressions
+     in a node *)
+  let cocciExpExp = fun expf expa expb -> fun tin -> 
+
+    let globals = ref [] in
+    let bigf = { 
+      (* julia's style *)
+      Visitor_c.default_visitor_c with 
+      Visitor_c.kexpr = (fun (k, bigf) expb ->
+	match expf expa expb tin with
+	| [] -> (* failed *) k expb
+	| xs -> 
+            globals := xs @ !globals; 
+            if not !Flag_engine.disallow_nested_exps then k expb (* CHOICE *)
+      );
+      (* pad's style.
+       * push2 expr globals;  k expr
+       *  ...
+       *  !globals +> List.fold_left (fun acc e -> acc >||> match_e_e expr e) 
+       * (return false)
+       * 
+       *)
+    }
+    in
+    Visitor_c.vk_expr bigf expb;
+    !globals +> List.map (fun ((a, _exp), binding) -> 
+      (a, expb), binding
+    )
+
   let cocciTy = fun expf expa node -> fun tin -> 
 
     let globals = ref [] in

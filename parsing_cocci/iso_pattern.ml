@@ -831,7 +831,7 @@ let match_maker checks_needed context_required whencode_allowed =
 		 it starts introducing too many braces?  don't remember the
 		 exact problem...
 	      *)
-	      if not(checks_needed) or is_minus s or 
+	      if not(checks_needed) or is_minus s or
 		(is_context s &&
 		 List.for_all is_pure_context (Ast0.undots bodyb))
 	      then
@@ -1548,7 +1548,7 @@ let instantiate bindings mv_bindings =
 let is_minus e =
   match Ast0.get_mcodekind e with Ast0.MINUS(cell) -> true | _ -> false
 
-let context_required e = not(is_minus e)
+let context_required e = not(is_minus e) && not !Flag.sgrep_mode2
 
 let disj_fail bindings e =
   match bindings with
@@ -1605,19 +1605,25 @@ let merge_plus model_mcode e_mcode =
   | Ast0.PLUS -> failwith "not possible 9"
 
 let copy_plus printer minusify model e =
-  let e =
-    match Ast0.get_mcodekind model with
-      Ast0.MINUS(mc) -> minusify e
-    | Ast0.CONTEXT(mc) -> e
-    | _ -> failwith "not possible: copy_plus\n" in
-  merge_plus (Ast0.get_mcodekind model) (Ast0.get_mcodekind e);
-  e
+  if !Flag.sgrep_mode2
+  then e (* no plus code, can cause a "not possible" error, so just avoid it *)
+  else
+    let e =
+      match Ast0.get_mcodekind model with
+	Ast0.MINUS(mc) -> minusify e
+      | Ast0.CONTEXT(mc) -> e
+      | _ -> failwith "not possible: copy_plus\n" in
+    merge_plus (Ast0.get_mcodekind model) (Ast0.get_mcodekind e);
+    e
 
 let copy_minus printer minusify model e =
   match Ast0.get_mcodekind model with
     Ast0.MINUS(mc) -> minusify e
   | Ast0.CONTEXT(mc) -> e
-  | Ast0.MIXED(_) -> failwith "not possible 8"
+  | Ast0.MIXED(_) ->
+      if !Flag.sgrep_mode2
+      then e
+      else failwith "not possible 8"
   | Ast0.PLUS -> failwith "not possible 9"
 
 let whencode_allowed prev_ecount prev_icount prev_dcount
@@ -1638,28 +1644,30 @@ let whencode_allowed prev_ecount prev_icount prev_dcount
 
 (* copy the befores and afters to the instantiated code *)
 let extra_copy_stmt_plus model e =
-  (match Ast0.unwrap model with
-    Ast0.FunDecl((info,bef),_,_,_,_,_,_,_,_)
-  | Ast0.Decl((info,bef),_) ->
-      (match Ast0.unwrap e with
-	Ast0.FunDecl((info,bef1),_,_,_,_,_,_,_,_)
-      | Ast0.Decl((info,bef1),_) ->
-	  merge_plus bef bef1
-      | _ ->  merge_plus bef (Ast0.get_mcodekind e))
-  | Ast0.IfThen(_,_,_,_,_,(info,aft))
-  | Ast0.IfThenElse(_,_,_,_,_,_,_,(info,aft))
-  | Ast0.While(_,_,_,_,_,(info,aft))
-  | Ast0.For(_,_,_,_,_,_,_,_,_,(info,aft))
-  | Ast0.Iterator(_,_,_,_,_,(info,aft)) ->
-      (match Ast0.unwrap e with
-	Ast0.IfThen(_,_,_,_,_,(info,aft1))
-      | Ast0.IfThenElse(_,_,_,_,_,_,_,(info,aft1))
-      | Ast0.While(_,_,_,_,_,(info,aft1))
-      | Ast0.For(_,_,_,_,_,_,_,_,_,(info,aft1))
-      | Ast0.Iterator(_,_,_,_,_,(info,aft1)) ->
-	  merge_plus aft aft1
-      | _ -> merge_plus aft (Ast0.get_mcodekind e))
-  | _ -> ());
+  (if not !Flag.sgrep_mode2 (* sgrep has no plus code, so nothing to do *)
+  then
+    (match Ast0.unwrap model with
+      Ast0.FunDecl((info,bef),_,_,_,_,_,_,_,_)
+    | Ast0.Decl((info,bef),_) ->
+	(match Ast0.unwrap e with
+	  Ast0.FunDecl((info,bef1),_,_,_,_,_,_,_,_)
+	| Ast0.Decl((info,bef1),_) ->
+	    merge_plus bef bef1
+	| _ ->  merge_plus bef (Ast0.get_mcodekind e))
+    | Ast0.IfThen(_,_,_,_,_,(info,aft))
+    | Ast0.IfThenElse(_,_,_,_,_,_,_,(info,aft))
+    | Ast0.While(_,_,_,_,_,(info,aft))
+    | Ast0.For(_,_,_,_,_,_,_,_,_,(info,aft))
+    | Ast0.Iterator(_,_,_,_,_,(info,aft)) ->
+	(match Ast0.unwrap e with
+	  Ast0.IfThen(_,_,_,_,_,(info,aft1))
+	| Ast0.IfThenElse(_,_,_,_,_,_,_,(info,aft1))
+	| Ast0.While(_,_,_,_,_,(info,aft1))
+	| Ast0.For(_,_,_,_,_,_,_,_,_,(info,aft1))
+	| Ast0.Iterator(_,_,_,_,_,(info,aft1)) ->
+	    merge_plus aft aft1
+	| _ -> merge_plus aft (Ast0.get_mcodekind e))
+    | _ -> ()));
   e
 
 let extra_copy_other_plus model e = e
