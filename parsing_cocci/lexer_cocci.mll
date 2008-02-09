@@ -191,8 +191,8 @@ let id_tokens lexbuf =
   | "on" when in_rule_name      -> check_context_linetype s; TOn
   | "ever" when in_rule_name    -> check_context_linetype s; TEver
   | "never" when in_rule_name   -> check_context_linetype s; TNever
-  | "exists" when in_rule_name   -> check_context_linetype s; TExists
-  | "forall" when in_rule_name   -> check_context_linetype s; TForall
+  | "exists" when in_rule_name  -> check_context_linetype s; TExists
+  | "forall" when in_rule_name  -> check_context_linetype s; TForall
 
   | "char" ->       Tchar     linetype
   | "short" ->      Tshort    linetype
@@ -227,6 +227,7 @@ let id_tokens lexbuf =
   | "return" ->     TReturn   linetype
   | "break" ->      TBreak    linetype
   | "continue" ->   TContinue linetype
+  | "goto" ->       TGoto     linetype
 
   | "sizeof" ->     TSizeof   linetype
 

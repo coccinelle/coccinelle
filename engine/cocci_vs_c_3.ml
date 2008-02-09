@@ -3305,20 +3305,13 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
 
   | A.Goto(goto,id,sem),          F.Goto (st,(s,ii))       ->
       let (ib1,ib2,ib3) = tuple_of_list3 ii in
-      let (string_of_id,rebuild) =
-	match A.unwrap id with
-	  A.Id(s) -> (s,function s -> A.rewrap id (A.Id(s)))
-	| _ -> failwith "labels with metavariables not supported" in
-      if (term string_of_id) =$= s
-      then
-        tokenf goto ib1 >>= (fun goto ib1 ->
-        tokenf string_of_id ib2 >>= (fun string_of_id ib2 ->
-        tokenf sem ib3 >>= (fun sem ib3 ->
-	  return (
+      tokenf goto ib1 >>= (fun goto ib1 ->
+      ident DontKnow id (s, ib2) >>= (fun id (s, ib2) ->
+      tokenf sem ib3 >>= (fun sem ib3 ->
+	return(
 	    A.Goto(goto,id,sem),
             F.Goto (st,(s,[ib1;ib2;ib3]))
           ))))
-      else fail
 
   (* have not a counter part in coccinelle, for the moment *)
   (* todo?: print a warning at least ? *)

@@ -694,7 +694,8 @@ let match_maker checks_needed context_required whencode_allowed =
 	     match_dots match_expr is_elist_matcher do_elist_match
 	       argsa argsb
 	   else return false
-      | (Ast0.TyDecl(tya,_),Ast0.TyDecl(tyb,_)) -> match_typeC tya tyb
+      | (Ast0.TyDecl(tya,_),Ast0.TyDecl(tyb,_)) ->
+	  match_typeC tya tyb
       | (Ast0.Typedef(stga,tya,ida,_),Ast0.Typedef(stgb,tyb,idb,_)) ->
 	  conjunct_bindings (match_typeC tya tyb) (match_typeC ida idb)
       | (Ast0.DisjDecl(_,declsa,_,_),Ast0.DisjDecl(_,declsb,_,_)) ->
@@ -715,7 +716,8 @@ let match_maker checks_needed context_required whencode_allowed =
       | (Ast0.UniqueDecl(decla),Ast0.UniqueDecl(declb)) ->
 	  match_decl decla declb
       | (_,Ast0.OptDecl(declb))
-      | (_,Ast0.UniqueDecl(declb)) -> match_decl pattern declb
+      | (_,Ast0.UniqueDecl(declb)) ->
+	  match_decl pattern declb
       | _ -> return false
     else return_false (ContextRequired (Ast0.DeclTag d))
 	
@@ -812,7 +814,8 @@ let match_maker checks_needed context_required whencode_allowed =
 		       (match_dots
 			  match_statement is_slist_matcher do_slist_match
 			  bodya bodyb)))
-	  | (Ast0.Decl(_,decla),Ast0.Decl(_,declb)) -> match_decl decla declb
+	  | (Ast0.Decl(_,decla),Ast0.Decl(_,declb)) ->
+	      match_decl decla declb
 	  | (Ast0.Seq(_,bodya,_),Ast0.Seq(_,bodyb,_)) ->
 	      (* seqs can only match if they are all minus (plus code
 		 allowed) or all context (plus code not allowed in the body).
