@@ -14,6 +14,9 @@ gitsort: gitsort.ml
 isoprof: process_isoprofile.ml
 	ocamlc -g -o isoprof str.cma process_isoprofile.ml
 
+alloc_free: alloc_free.ml
+	ocamlopt -o alloc_free str.cmxa alloc_free.ml
+
 
 SYSLIBS = str.cma unix.cma 
 
