@@ -248,7 +248,7 @@ let tokens2 file =
  Common.with_open_infile file (fun chan -> 
   let lexbuf = Lexing.from_channel chan in
   try 
-    let rec tokens_aux () = 
+    let rec tokens_aux acc = 
       let tok = Lexer_c.token lexbuf in
       (* add the line x col information *)
       let tok = tok +> TH.visitor_info_of_tok (fun ii -> { ii with Ast_c.pinfo=
@@ -256,10 +256,10 @@ let tokens2 file =
       })
       in
       if TH.is_eof tok
-      then [tok]
-      else tok::(tokens_aux ())
+      then List.rev (tok::acc)
+      else tokens_aux (tok::acc)
     in
-    tokens_aux ()
+    tokens_aux []
   with
     | Lexer_c.Lexical s -> 
         failwith ("lexical error " ^ s ^ "\n =" ^ 

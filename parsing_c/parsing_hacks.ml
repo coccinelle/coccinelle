@@ -5,6 +5,12 @@ module LP = Lexer_parser
 
 open Parser_c 
 
+let acc_map f l =
+  let rec loop acc = function
+    [] -> List.rev acc
+  | x::xs -> loop ((f x)::acc) xs in
+  loop [] l
+
 (*****************************************************************************)
 (* Some debugging functions  *)
 (*****************************************************************************)
@@ -1372,7 +1378,7 @@ let rebuild_tokens_extented toks_ext =
     push2 tok.tok _tokens 
   );
   let tokens = List.rev !_tokens in
-  (tokens +> List.map mk_token_extended)
+  (tokens +> acc_map mk_token_extended)
 
 let filter_cpp_stuff xs = 
   let rec aux xs = 
@@ -1393,11 +1399,9 @@ let filter_cpp_stuff xs =
         )
   in
   aux xs
-          
 
 let fix_tokens_cpp2 tokens = 
-
-  let tokens2 = ref (tokens +> List.map mk_token_extended) in
+  let tokens2 = ref (tokens +> acc_map mk_token_extended) in
   
   begin 
     (* the order is important, if you put the action heuristic first,
@@ -1437,6 +1441,7 @@ let fix_tokens_cpp2 tokens =
     let cleaner = !tokens2 +> List.filter (fun x -> 
       not (TH.is_comment x.tok) (* could filter also #define/#include *)
     ) in
+
     let brace_grouped = mk_braceised cleaner in
     set_context_tag   brace_grouped;
 
@@ -1458,7 +1463,7 @@ let fix_tokens_cpp2 tokens =
     find_actions  paren_grouped;
 
 
-    !tokens2 +> List.map (fun x -> x.tok)
+    !tokens2 +> acc_map (fun x -> x.tok)
   end
 
 let fix_tokens_cpp a = 
