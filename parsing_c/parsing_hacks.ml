@@ -1498,48 +1498,50 @@ let mark_end_define ii =
   in
   TDefEOL (ii')
 
-
 (* put the TDefEOL at the good place *)
-let rec define_line_1 xs = 
+let rec define_line_1 acc xs = 
   match xs with
-  | [] -> []
-  | TDefine ii::xs -> 
+  | [] -> List.rev acc
+  | TDefine ii::xs ->
       let line = Ast_c.line_of_info ii in
-      TDefine ii::define_line_2 line ii xs
-  | TCppEscapedNewline ii::xs -> 
+      let acc = (TDefine ii) :: acc in
+      define_line_2 acc line ii xs
+  | TCppEscapedNewline ii::xs ->
       pr2 "WIERD: a \\ outside a #define";
-      TCommentSpace ii::define_line_1 xs
-  | x::xs -> 
-      x::define_line_1 xs
+      let acc = (TCommentSpace ii) :: acc in
+      define_line_1 acc xs
+  | x::xs -> define_line_1 (x::acc) xs
 
-and define_line_2 line lastinfo xs = 
+and define_line_2 acc line lastinfo xs = 
   match xs with 
   | [] -> 
       (* should not happened, should meet EOF before *)
       pr2 "PB: WIERD";   
-      mark_end_define lastinfo::[]
+      List.rev (mark_end_define lastinfo::acc)
   | x::xs -> 
       let line' = TH.line_of_tok x in
       let info = TH.info_of_tok x in
 
       (match x with
       | EOF ii -> 
-          mark_end_define lastinfo::EOF ii::define_line_1 xs
+	  let acc = (mark_end_define lastinfo) :: acc in
+	  let acc = (EOF ii) :: acc in
+          define_line_1 acc xs
       | TCppEscapedNewline ii -> 
           if (line' <> line) then pr2 "PB: WIERD: not same line number";
-          TCommentSpace ii::define_line_2 (line+1) info xs
+	  let acc = (TCommentSpace ii) :: acc in
+          define_line_2 acc (line+1) info xs
       | x -> 
           if line' = line
-          then x::define_line_2 line info xs 
-          else 
-            mark_end_define lastinfo::define_line_1 (x::xs)
+          then define_line_2 (x::acc) line info xs 
+          else define_line_1 (mark_end_define lastinfo::acc) (x::xs)
       )
 
-let rec define_ident xs = 
+let rec define_ident acc xs = 
   match xs with
-  | [] -> []
+  | [] -> List.rev acc
   | TDefine ii::xs -> 
-      TDefine ii::
+      let acc = TDefine ii :: acc in
       (match xs with
       | TCommentSpace i1::TIdent (s,i2)::TOPar (i3)::xs -> 
           (* Change also the kind of TIdent to avoid bad interaction
@@ -1551,21 +1553,26 @@ let rec define_ident xs =
            * it's a macro-function. Change token to avoid ambiguity
            * between #define foo(x)  and   #define foo   (x)
            *)
-          TCommentSpace i1::TIdentDefine (s,i2)::TOParDefine i3
-          ::define_ident xs
+	  let acc = (TCommentSpace i1) :: acc in
+	  let acc = (TIdentDefine (s,i2)) :: acc in
+	  let acc = (TOParDefine i3) :: acc in
+          define_ident acc xs
       | TCommentSpace i1::TIdent (s,i2)::xs -> 
-          TCommentSpace i1::TIdentDefine (s,i2)::define_ident xs
+	  let acc = (TCommentSpace i1) :: acc in
+	  let acc = (TIdentDefine (s,i2)) :: acc in
+          define_ident acc xs
       | _ -> 
           pr2 "wierd #define body"; 
-          define_ident xs
+          define_ident acc xs
       )
-  | x::xs -> 
-      x::define_ident xs
+  | x::xs ->
+      let acc = x :: acc in
+      define_ident acc xs
   
 
 
 let fix_tokens_define2 xs = 
-  define_ident (define_line_1 xs)
+  define_ident [] (define_line_1 [] xs)
 
 let fix_tokens_define a = 
   Common.profile_code "C parsing.fix_define" (fun () -> fix_tokens_define2 a)
