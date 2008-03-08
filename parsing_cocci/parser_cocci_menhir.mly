@@ -109,23 +109,29 @@ module P = Parse_aux
 %start reinit
 %type <unit> reinit
 
-%start minus_main 
+%start minus_main
 %type <Ast0_cocci.rule> minus_main
 
-%start plus_main 
+%start minus_exp_main
+%type <Ast0_cocci.rule> minus_exp_main
+
+%start plus_main
 %type <Ast0_cocci.rule> plus_main
+
+%start plus_exp_main
+%type <Ast0_cocci.rule> plus_exp_main
 
 %start include_main
 %type <(string,string) Common.either list> include_main
 
 %start iso_rule_name
 %type <string option * Ast_cocci.dependency * string list * string list *
-  Ast_cocci.exists>
+  Ast_cocci.exists * bool>
 iso_rule_name
 
 %start rule_name
 %type <string option * Ast_cocci.dependency * string list * string list *
-  Ast_cocci.exists>
+  Ast_cocci.exists * bool (* true if the whole thing is an expression *)>
 rule_name
 
 %start meta_main
@@ -147,6 +153,10 @@ minus_main: minus_body EOF { $1 } | m=minus_body TArobArob { m }
 | m=minus_body TArob { m }
 plus_main: plus_body EOF { $1 } | p=plus_body TArobArob { p }
 | p=plus_body TArob { p }
+minus_exp_main: minus_exp_body EOF { $1 } | m=minus_exp_body TArobArob { m }
+| m=minus_exp_body TArob { m }
+plus_exp_main: plus_exp_body EOF { $1 } | p=plus_exp_body TArobArob { p }
+| p=plus_exp_body TArob { p }
 meta_main: m=metadec   { m (!Ast0.rule_name) }
 iso_meta_main: m=metadec { m "" }
 
@@ -168,19 +178,19 @@ iso_rule_name:
     (try let _ =  Hashtbl.find Data.all_metadecls n in
     raise (Semantic_cocci.Semantic ("repeated rule name"))
     with Not_found -> ());
-    (Some n,Ast.NoDep,[],[],Ast.Undetermined (*discarded*)) }
+    (Some n,Ast.NoDep,[],[],Ast.Undetermined,false (*discarded*)) }
 
 rule_name:
   nm=ioption(pure_ident) extends d=depends i=loption(choose_iso)
-    a=loption(disable) e=exists TArob
+    a=loption(disable) e=exists ee=is_expression TArob
     { match nm with
       Some nm ->
 	let n = P.id2name nm in
 	(try let _ =  Hashtbl.find Data.all_metadecls n in
 	raise (Semantic_cocci.Semantic ("repeated rule name"))
 	with Not_found -> ());
-	(Some n,d,i,a,e)
-    | None -> (None,d,i,a,e) }
+	(Some n,d,i,a,e,ee)
+    | None -> (None,d,i,a,e,ee) }
 
 extends:
   /* empty */                                     { () }
@@ -213,6 +223,10 @@ exists:
   TExists { Ast.Exists }
 | TForall { Ast.Forall }
 |         { Ast.Undetermined }
+
+is_expression: // for more flexible parsing of top level expressions
+              { false }
+| TExpression { true }
 
 include_main:
   list(incl) TArob     { $1 }
@@ -510,6 +524,20 @@ plus_body:
     b=loption(plus_function_decl_statement_or_expression)
     ew=loption(error_words)
     { Top_level.top_level (f@b@ew) }
+
+minus_exp_body:
+    f=loption(filespec)
+    b=top_eexpr
+    ew=loption(error_words)
+    { match f@[b]@ew with
+      [] -> raise (Semantic_cocci.Semantic "minus slice can't be empty")
+    | code -> Top_level.top_level code }
+
+plus_exp_body:
+    f=loption(filespec)
+    b=top_eexpr
+    ew=loption(error_words)
+    { Top_level.top_level (f@[b]@ew) }
 
 filespec:
   TMinusFile TPlusFile
@@ -1067,6 +1095,9 @@ expr:  basic_expr(expr,invalid) { $1 }
 eexpr: basic_expr(eexpr,dot_expressions) { $1 }
 /* allows nests but not .... */
 dexpr: basic_expr(eexpr,nest_expressions) { $1 }
+
+top_eexpr:
+  eexpr { Ast0.wrap(Ast0.OTHER(Ast0.wrap(Ast0.Exp($1)))) }
 
 invalid:
   TInvalid { raise (Semantic_cocci.Semantic "not matchable") }

@@ -165,7 +165,8 @@ let id_tokens lexbuf =
   | "type" when in_meta ->       check_arity_context_linetype s; TType
   | "parameter" when in_meta ->  check_arity_context_linetype s; TParameter
   | "constant"  when in_meta ->  check_arity_context_linetype s; TConstant
-  | "expression" when in_meta -> check_arity_context_linetype s; TExpression
+  | "expression" when in_meta || in_rule_name ->
+      check_arity_context_linetype s; TExpression
   | "idexpression" when in_meta ->
       check_arity_context_linetype s; TIdExpression
   | "statement" when in_meta ->  check_arity_context_linetype s; TStatement

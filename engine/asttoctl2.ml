@@ -1451,7 +1451,10 @@ and statement stmt after quantified minus_quantified
 		 is absent *)
 	      let new_mc =
 		match (retmc,semmc) with
-		  (Ast.MINUS(_,l1),Ast.MINUS(_,l2))
+		  (Ast.MINUS(_,l1),Ast.MINUS(_,l2)) when !Flag.sgrep_mode2 ->
+		    (* in sgrep mode, we can propagate the - *)
+		    Some (Ast.MINUS(Ast.NoPos,l1@l2))
+		| (Ast.MINUS(_,l1),Ast.MINUS(_,l2))
 		| (Ast.CONTEXT(_,Ast.BEFORE(l1)),
 		   Ast.CONTEXT(_,Ast.AFTER(l2))) ->
 		    Some (Ast.CONTEXT(Ast.NoPos,Ast.BEFORE(l1@l2)))
@@ -1878,7 +1881,9 @@ and statement stmt after quantified minus_quantified
 	ctl_and
 	  (quantify guard rbfvs (make_match rbrace))
 	  (ctl_and
-	     (ctl_back_ex (ctl_not (make_match stripped_rbrace)))
+	     (* don't know why backex is here. doesn't work if the pattern
+		is f(...) {{ foo(); }} *)
+	     CTL.True(*(ctl_back_ex (ctl_not (make_match stripped_rbrace)))*)
 	     (ctl_au
 		(make_match stripped_rbrace)
 		(ctl_or exit errorexit))) in

@@ -1046,12 +1046,12 @@ let get_rule_name parse_fn starts_with_name get_tokens file prefix =
     then
       let (_,tokens) = get_tokens [PC.TArob] in
       match parse_one "rule name" parse_fn file tokens with
-	(None,a,b,c,d) -> (mknm(),a,b,c,d)
-      |	(Some nm,a,b,c,d) ->
+	(None,a,b,c,d,e) -> (mknm(),a,b,c,d,e)
+      |	(Some nm,a,b,c,d,e) ->
 	  (if List.mem nm reserved_names
 	  then failwith (Printf.sprintf "invalid name %s\n" nm));
-	  (nm,a,b,c,d)
-    else (mknm(),Ast.NoDep,[],[],Ast.Undetermined) in
+	  (nm,a,b,c,d,e)
+    else (mknm(),Ast.NoDep,[],[],Ast.Undetermined,false) in
   Data.in_rule_name := false;
   name_res
 
@@ -1072,7 +1072,7 @@ let parse_iso file =
 	    (!Data.init_rule)();
 	    (* get metavariable declarations - have to be read before the
 	       rest *)
-	    let (rule_name,_,_,_,_) =
+	    let (rule_name,_,_,_,_,_) =
 	      get_rule_name PC.iso_rule_name starts_with_name get_tokens
 		file ("iso file "^file) in
 	    Ast0_cocci.rule_name := rule_name;
@@ -1150,7 +1150,7 @@ let parse file =
 	    parse_one "iso file names" PC.include_main file data in
 	  let rec loop old_metas starts_with_name =
 	    (!Data.init_rule)();
-	    let (rule_name,dependencies,iso,dropiso,exists) =
+	    let (rule_name,dependencies,iso,dropiso,exists,is_expression) =
 	      get_rule_name PC.rule_name starts_with_name get_tokens file
 		"rule" in
 	    Ast0_cocci.rule_name := rule_name;
@@ -1188,7 +1188,9 @@ let parse file =
 	       Printf.printf "before minus parse\n";
 	    *)
 	    let minus_res =
-	      parse_one "minus" PC.minus_main file minus_tokens in
+	      if is_expression
+	      then parse_one "minus" PC.minus_exp_main file minus_tokens
+	      else parse_one "minus" PC.minus_main file minus_tokens in
 	    (*
 	       Unparse_ast0.unparse minus_res;
 	       Printf.printf "before plus parse\n";
@@ -1199,7 +1201,10 @@ let parse file =
 		List.map
 		  (Iso_pattern.rebuild_mcode None).V0.rebuilder_top_level
 		  minus_res
-	      else parse_one "plus" PC.plus_main file plus_tokens in
+	      else
+		if is_expression
+		then parse_one "plus" PC.plus_exp_main file plus_tokens
+		else parse_one "plus" PC.plus_main file plus_tokens in
 	    (*
 	       Printf.printf "after plus parse\n";
 	    *)

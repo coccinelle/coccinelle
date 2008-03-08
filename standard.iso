@@ -199,6 +199,62 @@ expression X, Y;
 @@
 X * Y => Y * X
 
+Expression
+@ plus_assoc @
+expression X, Y, Z;
+@@
+ // note space before (
+ (X + Y) + Z <=> X + Y + Z
+
+Expression
+@ minus_assoc @
+expression X, Y, Z;
+@@
+
+ (X - Y) - Z <=> X - Y - Z
+
+Expression
+@ plus_minus_assoc1 @
+expression X, Y, Z;
+@@
+
+ (X + Y) - Z <=> X + Y - Z
+
+Expression
+@ plus_minus_assoc2 @
+expression X, Y, Z;
+@@
+
+ (X - Y) + Z <=> X - Y + Z
+
+Expression
+@ times_assoc @
+expression X, Y, Z;
+@@
+
+ (X * Y) * Z <=> X * Y * Z
+
+Expression
+@ div_assoc @
+expression X, Y, Z;
+@@
+
+ (X / Y) / Z <=> X / Y / Z
+
+Expression
+@ times_div_assoc1 @
+expression X, Y, Z;
+@@
+
+ (X * Y) / Z <=> X * Y / Z
+
+Expression
+@ times_div_assoc2 @
+expression X, Y, Z;
+@@
+
+ (X / Y) * Z <=> X / Y * Z
+
 // ---------------------------------------------------------------------------
 // Relational isomorphisms
 // ---------------------------------------------------------------------------

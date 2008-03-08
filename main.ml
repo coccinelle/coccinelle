@@ -34,6 +34,9 @@ let compare_with_expected = ref false
 
 let save_tmp_files = ref false
 
+let distrib_index = ref (None : int option)
+let distrib_max   = ref (None : int option)
+
 
 (*****************************************************************************)
 (* Profiles *)
@@ -329,6 +332,15 @@ let other_options = [
     "-save_tmp_files",   Arg.Set save_tmp_files,   " ";
   ];
 
+  "concurrency",
+  "",
+  [
+    "-index",       Arg.Int (function x -> distrib_index := Some x) , 
+    "   the processor to use for this run of spatch";
+    "-max",         Arg.Int (function x -> distrib_max := Some x) , 
+    "   the number of processors available";
+  ];
+
   "pad options",
   "",
   [
@@ -603,6 +615,19 @@ let main () =
 		  groups +> List.map (function Kbuild.Group xs -> xs)
 	    )
           in
+
+	  let infiles =
+	    match (!distrib_index,!distrib_max) with
+	      (None,None) -> infiles
+	    | (Some index,Some max) ->
+		let rec loop ct = function
+		    [] -> []
+		  | x::xs ->
+		      if index = (ct mod max)
+		      then x::(loop (ct+1) xs)
+		      else loop (ct+1) xs in
+		loop 0 infiles
+	    | _ -> failwith "inconsistent distribution information" in
 	    
           let outfiles = 
             Common.profile_code "Main.outfiles computation" (fun () -> 
