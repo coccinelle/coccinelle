@@ -36,13 +36,7 @@ let collect_all_refs =
   let bind x y = x @ y in
   let option_default = [] in
 
-  let add_pos_var e res =
-    match Ast.get_pos_var e with
-      Some x -> bind [x] res
-    | _ -> res in
-
-  let donothing recursor k e =
-    add_pos_var e (k e) in (* just combine in the normal way *)
+  let donothing recursor k e = k e in (* just combine in the normal way *)
 
   let donothing_a recursor k e = (* anything is not wrapped *)
     k e in (* just combine in the normal way *)
@@ -62,14 +56,14 @@ let collect_all_refs =
       List.filter (function x -> not (List.mem x nonunitary)) unitary in
     unitary@nonunitary@nonunitary in
 
-  let metaid (x,_,_) = x in
+  let metaid (x,_,_,_) = x in
 
   let astfvident recursor k i =
-    add_pos_var i
+    bind (k i)
       (match Ast.unwrap i with
 	Ast.MetaId(name,_,_,_) | Ast.MetaFunc(name,_,_,_)
       | Ast.MetaLocalFunc(name,_,_,_) -> [metaid name]
-      | _ -> k i) in
+      | _ -> option_default) in
 
   let rec type_collect res = function
       TC.ConstVol(_,ty) | TC.Pointer(ty) | TC.FunctionPointer(ty)
@@ -78,60 +72,65 @@ let collect_all_refs =
     | ty -> res in
 
   let astfvexpr recursor k e =
-    add_pos_var e
+    bind (k e)
       (match Ast.unwrap e with
 	Ast.MetaExpr(name,_,_,Some type_list,_,_) ->
 	  let types = List.fold_left type_collect option_default type_list in
 	  bind [metaid name] types
       | Ast.MetaErr(name,_,_,_) | Ast.MetaExpr(name,_,_,_,_,_) -> [metaid name]
       | Ast.MetaExprList(name,None,_,_) -> [metaid name]
-      | Ast.MetaExprList(name,Some (lenname,_,_),_,_) -> [metaid name;lenname]
+      | Ast.MetaExprList(name,Some (lenname,_,_),_,_) ->
+	  [metaid name;metaid lenname]
       | Ast.DisjExpr(exps) -> bind_disj (List.map k exps)
-      | _ -> k e) in
+      | _ -> option_default) in
 
   let astfvdecls recursor k d =
-    add_pos_var d
+    bind (k d)
       (match Ast.unwrap d with
 	Ast.DisjDecl(decls) -> bind_disj (List.map k decls)
-      | _ -> k d) in
+      | _ -> option_default) in
 
   let astfvfullType recursor k ty =
-    add_pos_var ty
+    bind (k ty)
       (match Ast.unwrap ty with
 	Ast.DisjType(types) -> bind_disj (List.map k types)
-      | _ -> k ty) in
+      | _ -> option_default) in
 
   let astfvtypeC recursor k ty =
-    add_pos_var ty
+    bind (k ty)
       (match Ast.unwrap ty with
 	Ast.MetaType(name,_,_) -> [metaid name]
-      | _ -> k ty) in
+      | _ -> option_default) in
 
   let astfvparam recursor k p =
-    add_pos_var p
+    bind (k p)
       (match Ast.unwrap p with
 	Ast.MetaParam(name,_,_) -> [metaid name]
       | Ast.MetaParamList(name,None,_,_) -> [metaid name]
-      | Ast.MetaParamList(name,Some(lenname,_,_),_,_) -> [metaid name;lenname]
-      | _ -> k p) in
+      | Ast.MetaParamList(name,Some(lenname,_,_),_,_) ->
+	  [metaid name;metaid lenname]
+      | _ -> option_default) in
 
   let astfvrule_elem recursor k re =
     (*within a rule_elem, pattern3 manages the coherence of the bindings*)
-    add_pos_var re
+    bind (k re)
       (nub
 	 (match Ast.unwrap re with
 	   Ast.MetaRuleElem(name,_,_) | Ast.MetaStmt(name,_,_,_)
 	 | Ast.MetaStmtList(name,_,_) -> [metaid name]
-	 | _ -> k re)) in
+	 | _ -> option_default)) in
 
   let astfvstatement recursor k s =
-    add_pos_var s
+    bind (k s)
       (match Ast.unwrap s with
 	Ast.Disj(stms) ->
 	  bind_disj (List.map recursor.V.combiner_statement_dots stms)
-      | _ -> k s) in
+      | _ -> option_default) in
 
-  let mcode r e = [] in
+  let mcode r mc =
+    match Ast.get_pos_var mc with
+      Ast.MetaPos(name,constraints,_,_) -> (metaid name)::constraints
+    | _ -> option_default in
 
   V.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
@@ -154,14 +153,15 @@ let collect_saved =
 
   let donothing recursor k e = k e in (* just combine in the normal way *)
 
-  let metaid (x,_,_) = x in
+  let metaid (x,_,_,_) = x in
 
   (* cases for metavariables *)
   let astfvident recursor k i =
-    match Ast.unwrap i with
-      Ast.MetaId(name,_,TC.Saved,_) | Ast.MetaFunc(name,_,TC.Saved,_)
-    | Ast.MetaLocalFunc(name,_,TC.Saved,_) -> [metaid name]
-    | _ -> k i in
+    bind (k i)
+      (match Ast.unwrap i with
+	Ast.MetaId(name,_,TC.Saved,_) | Ast.MetaFunc(name,_,TC.Saved,_)
+      | Ast.MetaLocalFunc(name,_,TC.Saved,_) -> [metaid name]
+      | _ -> option_default) in
 
   let rec type_collect res = function
       TC.ConstVol(_,ty) | TC.Pointer(ty) | TC.FunctionPointer(ty)
@@ -176,39 +176,51 @@ let collect_saved =
 	  List.fold_left type_collect option_default type_list
       |	_ -> [] in
     let vars =
-      match Ast.unwrap e with
-	Ast.MetaErr(name,_,TC.Saved,_) | Ast.MetaExpr(name,_,TC.Saved,_,_,_)
-      | Ast.MetaExprList(name,None,TC.Saved,_) -> [metaid name]
-      | Ast.MetaExprList(name,Some (lenname,ls,_),ns,_) ->
-	  let namesaved = match ns with TC.Saved -> [metaid name] | _ -> [] in
-	  let lensaved = match ls with TC.Saved -> [lenname] | _ -> [] in
-	  lensaved @ namesaved
-      | _ -> k e in
+      bind (k e)
+	(match Ast.unwrap e with
+	  Ast.MetaErr(name,_,TC.Saved,_) | Ast.MetaExpr(name,_,TC.Saved,_,_,_)
+	| Ast.MetaExprList(name,None,TC.Saved,_) -> [metaid name]
+	| Ast.MetaExprList(name,Some (lenname,ls,_),ns,_) ->
+	    let namesaved =
+	      match ns with TC.Saved -> [metaid name] | _ -> [] in
+	    let lensaved =
+	      match ls with TC.Saved -> [metaid lenname] | _ -> [] in
+	    lensaved @ namesaved
+	| _ -> option_default) in
     bind tymetas vars in
 
   let astfvtypeC recursor k ty =
-    match Ast.unwrap ty with
-      Ast.MetaType(name,TC.Saved,_) -> [metaid name]
-    | _ -> k ty in
+    bind (k ty)
+      (match Ast.unwrap ty with
+	Ast.MetaType(name,TC.Saved,_) -> [metaid name]
+      | _ -> option_default) in
 
   let astfvparam recursor k p =
-    match Ast.unwrap p with
-      Ast.MetaParam(name,TC.Saved,_)
-    | Ast.MetaParamList(name,None,_,_) -> [metaid name]
-    | Ast.MetaParamList(name,Some (lenname,ls,_),ns,_) ->
-	let namesaved = match ns with TC.Saved -> [metaid name] | _ -> [] in
-	let lensaved = match ls with TC.Saved -> [lenname] | _ -> [] in
-	lensaved @ namesaved
-    | _ -> k p in
+    bind (k p)
+      (match Ast.unwrap p with
+	Ast.MetaParam(name,TC.Saved,_)
+      | Ast.MetaParamList(name,None,_,_) -> [metaid name]
+      | Ast.MetaParamList(name,Some (lenname,ls,_),ns,_) ->
+	  let namesaved =
+	    match ns with TC.Saved -> [metaid name] | _ -> [] in
+	  let lensaved =
+	    match ls with TC.Saved -> [metaid lenname] | _ -> [] in
+	  lensaved @ namesaved
+      | _ -> option_default) in
 
   let astfvrule_elem recursor k re =
-    nub (*within a rule_elem, pattern3 manages the coherence of the bindings*)
-      (match Ast.unwrap re with
-	Ast.MetaRuleElem(name,TC.Saved,_) | Ast.MetaStmt(name,TC.Saved,_,_)
-      | Ast.MetaStmtList(name,TC.Saved,_) -> [metaid name]
-      | _ -> k re) in
+    (*within a rule_elem, pattern3 manages the coherence of the bindings*)
+    bind (k re)
+      (nub
+	 (match Ast.unwrap re with
+	   Ast.MetaRuleElem(name,TC.Saved,_) | Ast.MetaStmt(name,TC.Saved,_,_)
+	 | Ast.MetaStmtList(name,TC.Saved,_) -> [metaid name]
+	 | _ -> option_default)) in
 
-  let mcode r e = [] in
+  let mcode r e =
+    match Ast.get_pos_var e with
+      Ast.MetaPos(name,_,TC.Saved,_) -> [metaid name]
+    | _ -> option_default in
 
   V.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
@@ -216,30 +228,6 @@ let collect_saved =
     donothing donothing donothing donothing
     astfvident astfvexpr donothing astfvtypeC donothing astfvparam
     donothing astfvrule_elem donothing donothing donothing donothing
-
-(* for now, we assume that all positions are saved *)
-let collect_positions =
-  let bind = Common.union_set in
-  let option_default = [] in
-  let mcode r e = option_default in
-
-  let add_pos_var e res =
-    match Ast.get_pos_var e with
-      Some x -> bind [x] res
-    | _ -> res in
-
-  let donothing recursor k e =
-    add_pos_var e (k e) in (* just combine in the normal way *)
-
-  let donothing_a recursor k e = (* anything is not wrapped *)
-    k e in (* just combine in the normal way *)
-
-  V.combiner bind option_default
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    mcode
-    donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing donothing_a
 
 (* ---------------------------------------------------------------- *)
 
@@ -269,7 +257,8 @@ let collect_in_plus_term =
   let option_default = [] in
   let donothing r k e = k e in
 
-  let mcode r (_,_,mck) = cip_mcodekind r mck in
+  (* no positions in the + code *)
+  let mcode r (_,_,mck,_) = cip_mcodekind r mck in
 
   (* case for things with bef/aft mcode *)
 
@@ -344,7 +333,6 @@ let classify_variables metavars minirules used_after =
   let inplus = collect_in_plus minirules in
   
   let donothing r k e = k e in
-  let mcode x = x in
   let check_unitary name inherited =
     if List.mem name inplus or List.mem name used_after
     then TC.Saved
@@ -354,11 +342,19 @@ let classify_variables metavars minirules used_after =
 
   let get_option f = function Some x -> Some (f x) | None -> None in
 
-  let classify (name,_,_) =
+  let classify (name,_,_,_) =
     let inherited = not (List.mem name metavars) in
     (check_unitary name inherited,inherited) in
 
+  let mcode mc =
+    match Ast.get_pos_var mc with
+      Ast.MetaPos(name,constraints,unitary,inherited) ->
+	let (unitary,inherited) = classify name in
+	Ast.set_pos_var (Ast.MetaPos(name,constraints,unitary,inherited)) mc
+    | _ -> mc in
+
   let ident r k e =
+    let e = k e in
     match Ast.unwrap e with
       Ast.MetaId(name,constraints,_,_) ->
 	let (unitary,inherited) = classify name in
@@ -369,7 +365,7 @@ let classify_variables metavars minirules used_after =
     | Ast.MetaLocalFunc(name,constraints,_,_) ->
 	let (unitary,inherited) = classify name in
 	Ast.rewrap e (Ast.MetaLocalFunc(name,constraints,unitary,inherited))
-    | _ -> k e in
+    | _ -> e in
 
   let rec type_infos = function
       TC.ConstVol(cv,ty) -> TC.ConstVol(cv,type_infos ty)
@@ -377,11 +373,12 @@ let classify_variables metavars minirules used_after =
     | TC.FunctionPointer(ty) -> TC.FunctionPointer(type_infos ty)
     | TC.Array(ty) -> TC.Array(type_infos ty)
     | TC.MetaType(name,_,_) ->
-	let (unitary,inherited) = classify (name,(),()) in
+	let (unitary,inherited) = classify (name,(),(),Ast.NoMetaPos) in
 	Type_cocci.MetaType(name,unitary,inherited)
     | ty -> ty in
 
   let expression r k e =
+    let e = k e in
     match Ast.unwrap e with
       Ast.MetaErr(name,constraints,_,_) ->
 	let (unitary,inherited) = classify name in
@@ -399,21 +396,22 @@ let classify_variables metavars minirules used_after =
 	(* lenname should have the same properties of being unitary or
 	   inherited as name *)
 	let (unitary,inherited) = classify name in
-	let (lenunitary,leninherited) =
-	  classify (Ast.rewrap_mcode name lenname) in
+	let (lenunitary,leninherited) = classify lenname in
 	Ast.rewrap e
 	  (Ast.MetaExprList
 	     (name,Some(lenname,lenunitary,leninherited),unitary,inherited))
-    | _ -> k e in
+    | _ -> e in
 
   let typeC r k e =
+    let e = k e in
     match Ast.unwrap e with
       Ast.MetaType(name,_,_) ->
 	let (unitary,inherited) = classify name in
 	Ast.rewrap e (Ast.MetaType(name,unitary,inherited))
-    | _ -> k e in
+    | _ -> e in
 
   let param r k e =
+    let e = k e in
     match Ast.unwrap e with
       Ast.MetaParam(name,_,_) ->
 	let (unitary,inherited) = classify name in
@@ -423,14 +421,14 @@ let classify_variables metavars minirules used_after =
 	Ast.rewrap e (Ast.MetaParamList(name,None,unitary,inherited))
     | Ast.MetaParamList(name,Some (lenname,_,_),_,_) ->
 	let (unitary,inherited) = classify name in
-	let (lenunitary,leninherited) =
-	  classify (Ast.rewrap_mcode name lenname) in
+	let (lenunitary,leninherited) = classify lenname in
 	Ast.rewrap e
 	  (Ast.MetaParamList
 	     (name,Some (lenname,lenunitary,leninherited),unitary,inherited))
-    | _ -> k e in
+    | _ -> e in
 
   let rule_elem r k e =
+    let e = k e in
     match Ast.unwrap e with
       Ast.MetaStmt(name,_,msi,_) ->
 	let (unitary,inherited) = classify name in
@@ -438,7 +436,7 @@ let classify_variables metavars minirules used_after =
     | Ast.MetaStmtList(name,_,_) ->
 	let (unitary,inherited) = classify name in
 	Ast.rewrap e (Ast.MetaStmtList(name,unitary,inherited))
-    | _ -> k e in
+    | _ -> e in
 
   let fn = V.rebuilder
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
@@ -552,7 +550,6 @@ let astfvs metavars bound =
 
   let astfvtoplevel recursor k tl =
     let saved = collect_saved.V.combiner_top_level tl in
-    let saved = (collect_positions.V.combiner_top_level tl) @ saved in
     {(k tl) with Ast.saved_witness = saved} in
 
   let mcode x = x in

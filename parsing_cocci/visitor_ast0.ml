@@ -28,7 +28,8 @@ type 'a combiner =
       combiner_declaration_dots :
 		  Ast0.declaration Ast0.dots -> 'a;
       combiner_case_line_dots :
-		  Ast0.case_line Ast0.dots -> 'a}
+		  Ast0.case_line Ast0.dots -> 'a;
+      combiner_anything : Ast0.anything -> 'a}
 
 
 type ('mc,'a) cmcode = 'mc Ast0.mcode -> 'a
@@ -456,6 +457,30 @@ let combiner bind option_default
       |	Ast0.OptCase(case) -> case_line case in
     casefn all_functions k c
 
+  and anything a = (* for compile_iso, not parameterisable *)
+    let k = function
+	Ast0.DotsExprTag(exprs) -> expression_dots exprs
+      | Ast0.DotsInitTag(inits) -> initialiser_dots inits
+      | Ast0.DotsParamTag(params) -> parameter_dots params
+      | Ast0.DotsStmtTag(stmts) -> statement_dots stmts
+      | Ast0.DotsDeclTag(decls) -> declaration_dots decls
+      | Ast0.DotsCaseTag(cases) -> case_line_dots cases
+      | Ast0.IdentTag(id) -> ident id
+      | Ast0.ExprTag(exp) -> expression exp
+      | Ast0.ArgExprTag(exp) -> expression exp
+      | Ast0.TestExprTag(exp) -> expression exp
+      | Ast0.TypeCTag(ty) -> typeC ty
+      | Ast0.ParamTag(param) -> parameterTypeDef param
+      | Ast0.InitTag(init) -> initialiser init
+      | Ast0.DeclTag(decl) -> declaration decl
+      | Ast0.StmtTag(stmt) -> statement stmt
+      | Ast0.CaseLineTag(c) -> case_line c
+      | Ast0.TopTag(top) -> top_level top
+      | Ast0.AnyTag -> option_default
+      | Ast0.StrictTag -> option_default
+      |	Ast0.MetaPosTag(var) -> failwith "not supported" in
+    k a
+
   and top_level t =
     let k t =
       match Ast0.unwrap t with
@@ -481,7 +506,8 @@ let combiner bind option_default
       combiner_expression_dots = expression_dots;
       combiner_statement_dots = statement_dots;
       combiner_declaration_dots = declaration_dots;
-      combiner_case_line_dots = case_line_dots} in
+      combiner_case_line_dots = case_line_dots;
+      combiner_anything = anything} in
   all_functions
 
 (* --------------------------------------------------------------------- *)

@@ -15,7 +15,8 @@ let rec get_name name =
 (* --------------------------------------------------------------------- *)
 (* collect all of the functions *)
 
-let brace_to_semi (_,arity,info,mcodekind) = (";",Ast0.NONE,info,mcodekind)
+let brace_to_semi (_,arity,info,mcodekind,pos) =
+  (";",Ast0.NONE,info,mcodekind,pos)
 
 let collect_function (stm : Ast0.statement) =
   match Ast0.unwrap stm with
@@ -98,7 +99,8 @@ let rec align all_minus all_plus =
 and strip =
   let donothing r k e =
     {(Ast0.wrap (Ast0.unwrap (k e))) with Ast0.mcodekind = ref Ast0.PLUS} in
-  let mcode (mc,_,_,_) = (mc,Ast0.NONE,Ast0.default_info(),Ast0.PLUS) in
+  let mcode (mc,_,_,_,_) =
+    (mc,Ast0.NONE,Ast0.default_info(),Ast0.PLUS,ref Ast0.NoMetaPos) in
 
   (* need a case for everything that has an unvisited component and can be in
      a function prototype *)
@@ -196,11 +198,12 @@ let rec rename_param old_name all param =
   match Ast0.unwrap param with
     Ast0.Param(ty,Some id) when all ->
       (match Ast0.unwrap id with
-	Ast0.MetaId(((_,name),arity,info,mcodekind),constraints,pure) ->
+	Ast0.MetaId(((_,name),arity,info,mcodekind,pos),constraints,pure) ->
 	  let nm = ("__no_name__",new_name name) in
 	  let new_id =
 	    Ast0.rewrap id
-	      (Ast0.MetaId((nm,arity,info,mcodekind),constraints,Ast0.Pure)) in
+	      (Ast0.MetaId
+		 ((nm,arity,info,mcodekind,pos),constraints,Ast0.Pure)) in
 	  ([Ast.MetaIdDecl(Ast.NONE,nm)],
 	   Ast0.rewrap param (Ast0.Param(ty,Some new_id)))
       |	_ -> ([],param))
@@ -209,7 +212,9 @@ let rec rename_param old_name all param =
       let nml = (old_name,new_name "__n") in
       let new_id =
 	Ast0.rewrap param
-	  (Ast0.MetaParamList(Ast0.rewrap_mcode d nm,Some nml,Ast0.Pure)) in
+	  (Ast0.MetaParamList(Ast0.rewrap_mcode d nm,
+			      Some (Ast0.rewrap_mcode d nml),
+			      Ast0.Pure)) in
       ([Ast.MetaParamListDecl(Ast.NONE,nm,Some nml);Ast.MetaListlenDecl(nml)],
        new_id)
   | Ast0.OptParam(p) ->
@@ -289,7 +294,8 @@ let no_names dec =
 				       thing *)
 				    Ast0.get_mcode_mcodekind lp in
 				  let pdots =
-				    ("...",Ast0.NONE,info,mcodekind) in
+				    ("...",Ast0.NONE,info,mcodekind,
+				     ref Ast0.NoMetaPos) in
 				  Ast0.DOTS
 				    ([Ast0.rewrap params
 					 (Ast0.Pdots(pdots))])),

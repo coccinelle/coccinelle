@@ -64,18 +64,30 @@ let print_string_befaft fn x info =
   List.iter (function s -> force_newline(); print_string s)
     info.Ast.straft
 
+let print_meta (r,x) = print_string r; print_string ":"; print_string x
+
+let print_pos = function
+    Ast.MetaPos(name,_,_,_) ->
+      let name = Ast.unwrap_mcode name in
+      print_string "@"; print_meta name
+  | _ -> ()
+
 let mcode fn = function
-    (x, _, Ast.MINUS(_,plus_stream)) ->
+    (x, _, Ast.MINUS(_,plus_stream), pos) ->
       if !print_minus_flag
       then print_string (if !Flag.sgrep_mode2 then "*" else "-");
-      fn x; 
+      fn x; print_pos pos;
       if !print_plus_flag 
       then print_anything ">>> " plus_stream
-  | (x, _, Ast.CONTEXT(_,plus_streams)) -> 
+  | (x, _, Ast.CONTEXT(_,plus_streams), pos) -> 
       if !print_plus_flag
-      then print_around fn x plus_streams
-      else fn x
-  | (x, info, Ast.PLUS) -> print_string_befaft fn x info
+      then
+	let fn x = fn x; print_pos pos in
+	print_around fn x plus_streams
+      else (fn x; print_pos pos)
+  | (x, info, Ast.PLUS, pos) ->
+      let fn x = fn x; print_pos pos in
+      print_string_befaft fn x info
 
 let print_mcodekind = function 
     Ast.MINUS(_,plus_stream) ->
@@ -84,8 +96,6 @@ let print_mcodekind = function
   | Ast.CONTEXT(_,plus_streams) ->
       print_around (function _ -> print_string "CONTEXT") () plus_streams
   | Ast.PLUS -> print_string "PLUS"
-
-let print_meta (r,x) = print_string r; print_string ":"; print_string x
 
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)
@@ -473,13 +483,13 @@ and parameter_list l = dots (function _ -> ()) parameterTypeDef l
 let rec rule_elem arity re =
   match Ast.unwrap re with
     Ast.FunHeader(bef,allminus,fninfo,name,lp,params,rp) ->
-      mcode (function _ -> ()) ((),Ast.no_info,bef);
+      mcode (function _ -> ()) ((),Ast.no_info,bef,Ast.NoMetaPos);
       print_string arity; List.iter print_fninfo fninfo;
       ident name; mcode print_string_box lp;
       parameter_list params; close_box(); mcode print_string rp;
       print_string " "
   | Ast.Decl(bef,allminus,decl) ->
-      mcode (function _ -> ()) ((),Ast.no_info,bef);
+      mcode (function _ -> ()) ((),Ast.no_info,bef,Ast.NoMetaPos);
       print_string arity;
       declaration decl
   | Ast.SeqStart(brace) ->
@@ -589,23 +599,23 @@ and statement arity s =
       rule_elem arity rbrace
   | Ast.IfThen(header,branch,(_,_,_,aft)) ->
       rule_elem arity header; statement arity branch;
-      mcode (function _ -> ()) ((),Ast.no_info,aft)
+      mcode (function _ -> ()) ((),Ast.no_info,aft,Ast.NoMetaPos)
   | Ast.IfThenElse(header,branch1,els,branch2,(_,_,_,aft)) ->
       rule_elem arity header; statement arity branch1; print_string " ";
       rule_elem arity els; statement arity branch2;
-      mcode (function _ -> ()) ((),Ast.no_info,aft)
+      mcode (function _ -> ()) ((),Ast.no_info,aft,Ast.NoMetaPos)
   | Ast.While(header,body,(_,_,_,aft)) ->
       rule_elem arity header; statement arity body;
-      mcode (function _ -> ()) ((),Ast.no_info,aft)
+      mcode (function _ -> ()) ((),Ast.no_info,aft,Ast.NoMetaPos)
   | Ast.Do(header,body,tail) ->
       rule_elem arity header; statement arity body;
       rule_elem arity tail
   | Ast.For(header,body,(_,_,_,aft)) ->
       rule_elem arity header; statement arity body;
-      mcode (function _ -> ()) ((),Ast.no_info,aft)
+      mcode (function _ -> ()) ((),Ast.no_info,aft,Ast.NoMetaPos)
   | Ast.Iterator(header,body,(_,_,_,aft)) ->
       rule_elem arity header; statement arity body;
-      mcode (function _ -> ()) ((),Ast.no_info,aft)
+      mcode (function _ -> ()) ((),Ast.no_info,aft,Ast.NoMetaPos)
   | Ast.Switch(header,lb,cases,rb) ->
       rule_elem arity header; rule_elem arity lb;
       List.iter (function x -> case_line arity x; force_newline()) cases;

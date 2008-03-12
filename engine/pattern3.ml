@@ -203,7 +203,7 @@ module XMATCH = struct
 
 
   (* ------------------------------------------------------------------------*)
-  (* Tokens *) 
+  (* Distribute mcode *) 
   (* ------------------------------------------------------------------------*)
   let tag_mck_pos mck posmck =
     match mck with 
@@ -216,25 +216,10 @@ module XMATCH = struct
         Ast_cocci.MINUS (posmck, xs)
   
 
-  let tag_mck_pos_mcode (x,info, mck) posmck stuff = fun tin -> 
-    [((x, info, tag_mck_pos mck posmck),stuff), tin.binding]
+  let tag_mck_pos_mcode (x,info,mck,pos) posmck stuff = fun tin -> 
+    [((x, info, tag_mck_pos mck posmck, pos),stuff), tin.binding]
     
 
-  let tokenf ia ib = fun tin -> 
-    let pos = Ast_c.pos_of_info ib in
-    let posmck = Ast_cocci.FixPos (pos, pos) in
-    tag_mck_pos_mcode ia posmck ib tin
-
-  let tokenf_mck mck ib = fun tin -> 
-    let pos = Ast_c.pos_of_info ib in
-    let posmck = Ast_cocci.FixPos (pos, pos) in
-    [(tag_mck_pos mck posmck, ib), tin.binding]
-    
-    
-
-  (* ------------------------------------------------------------------------*)
-  (* Distribute mcode *) 
-  (* ------------------------------------------------------------------------*)
   let distrf (ii_of_x_f) =
     fun mcode x -> fun tin -> 
     let (max, min) = Lib_parsing_c.max_min_by_pos (ii_of_x_f x)
@@ -254,6 +239,37 @@ module XMATCH = struct
   let distrf_cst = distrf (Lib_parsing_c.ii_of_cst)
   let distrf_define_params = distrf (Lib_parsing_c.ii_of_define_params)
 
+
+  (* ------------------------------------------------------------------------*)
+  (* Constraints on metavariable values *) 
+  (* ------------------------------------------------------------------------*)
+  let check_constraints matcher constraints exp = fun f tin ->
+    let rec loop = function
+	[] -> f () tin (* success *)
+      |	c::cs ->
+	  match matcher c exp tin with
+	    [] (* failure *) -> loop cs
+	  | _ (* success *) -> fail tin in
+    loop constraints
+
+  let check_pos_constraints constraints pvalu f tin =
+    check_constraints
+      (fun c exp tin ->
+	let success = [[]] in
+	let failure = [] in
+	(match Common.optionise (fun () -> tin.binding +> List.assoc c) with
+	  Some valu' ->
+	    Printf.printf "our value: ";
+	    Pretty_print_engine.pp_binding_kind exp;
+	    Format.print_newline();
+	    Printf.printf "constraint value: ";
+	    Pretty_print_engine.pp_binding_kind valu';
+	    Format.print_newline();
+	    if Cocci_vs_c_3.equal_metavarval exp valu'
+	    then success else failure
+	| None -> failure))
+      constraints pvalu f tin
+
   (* ------------------------------------------------------------------------*)
   (* Environment *) 
   (* ------------------------------------------------------------------------*)
@@ -271,7 +287,7 @@ module XMATCH = struct
         then Some tin.binding
         else None
 
-    | None -> 
+    | None ->
         if inherited 
         then None
         else 
@@ -312,22 +328,38 @@ module XMATCH = struct
 		  else Lib_parsing_c.semi_al_params a)
 
             | Ast_c.MetaPosVal (pos1,pos2) -> Ast_c.MetaPosVal (pos1,pos2)
+            | Ast_c.MetaPosValList l -> Ast_c.MetaPosValList l
           in Some (tin.binding +> Common.insert_assoc (k, valu'))
     )
 
-  let envf strip keep inherited = fun (k, valu) f tin -> 
-    match check_add_metavars_binding strip keep inherited (k, valu) tin with
-    | Some binding -> f () {extra = tin.extra; binding = binding}
+  let envf keep inherited = fun (k, valu, get_max_min) f tin ->
+    let x = Ast_cocci.unwrap_mcode k in
+    match check_add_metavars_binding true keep inherited (x, valu) tin with
+    | Some binding ->
+	let new_tin = {extra = tin.extra; binding = binding} in
+	(match Ast_cocci.get_pos_var k with
+	  Ast_cocci.MetaPos(name,constraints,keep,inherited) ->
+	    let pvalu =
+	      let (max,min) = get_max_min() in
+	      Ast_c.MetaPosValList[(max,min)] in
+	    (* check constraints.  success means that there is a match with
+	       one of the constraints, which will ultimately result in
+	       failure. *)
+	    check_pos_constraints constraints pvalu
+	      (function () ->
+		(* constraints are satisfied, now see if we are compatible
+		   with existing bindings *)
+		function new_tin ->
+		  let x = Ast_cocci.unwrap_mcode name in
+		  (match
+		    check_add_metavars_binding false keep inherited (x, pvalu)
+		      new_tin with
+		  | Some binding ->
+		      f () {extra = new_tin.extra; binding = binding}
+		  | None -> fail tin))
+	      new_tin
+	| Ast_cocci.NoMetaPos -> f () new_tin)
     | None -> fail tin
-
-  let check_constraints matcher constraints exp = fun f tin ->
-    let rec loop = function
-	[] -> f () tin (* success *)
-      |	c::cs ->
-	  match matcher c exp tin with
-	    [] (* failure *) -> loop cs
-	  | _ (* success *) -> fail tin in
-    loop constraints
 
   (* ------------------------------------------------------------------------*)
   (* Environment, allbounds *) 
@@ -357,6 +389,36 @@ module XMATCH = struct
     f (tin.extra.value_format_iso) tin
 
 
+  (* ------------------------------------------------------------------------*)
+  (* Tokens *) 
+  (* ------------------------------------------------------------------------*)
+  let tokenf ia ib = fun tin ->
+    let pos = Ast_c.pos_of_info ib in
+    let posmck = Ast_cocci.FixPos (pos, pos) in
+    let finish tin = tag_mck_pos_mcode ia posmck ib tin in
+    match Ast_cocci.get_pos_var ia with
+      Ast_cocci.MetaPos(name,constraints,keep,inherited) ->
+	let mpos = Lib_parsing_c.lin_col_by_pos [ib] in
+	let pvalu = Ast_c.MetaPosValList [mpos] in
+	check_pos_constraints constraints pvalu
+	  (function () ->
+	    (* constraints are satisfied, now see if we are compatible
+	       with existing bindings *)
+	    function new_tin ->
+	      let x = Ast_cocci.unwrap_mcode name in
+	      (match
+		check_add_metavars_binding false keep inherited (x, pvalu) tin
+	      with
+		Some binding -> finish {extra = tin.extra; binding = binding}
+	      | None -> fail tin))
+	  tin
+    | _ -> finish tin
+
+  let tokenf_mck mck ib = fun tin -> 
+    let pos = Ast_c.pos_of_info ib in
+    let posmck = Ast_cocci.FixPos (pos, pos) in
+    [(tag_mck_pos mck posmck, ib), tin.binding]
+    
 end
 
 (*****************************************************************************)

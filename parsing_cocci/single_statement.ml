@@ -302,7 +302,7 @@ and contains_only_minus =
 	| _ -> false)
     | Ast0.CONTEXT(mc) -> false
     | _ -> false in
-  let mcode (_,_,_,mc) = mcodekind mc in
+  let mcode (_,_,_,mc,_) = mcodekind mc in
 
   let donothing r k e = mcodekind (Ast0.get_mcodekind e) && k e in
 

@@ -145,7 +145,7 @@ let do_get_constants constants keywords env =
     | Ast.MetaErr(name,_,_,_) | Ast.MetaExpr(name,_,_,_,_,_) -> minherited name
     | Ast.MetaExprList(name,None,_,_) -> minherited name
     | Ast.MetaExprList(name,Some (lenname,_,_),_,_) ->
-	bind (minherited name) (inherited lenname)
+	bind (minherited name) (minherited lenname)
     | Ast.SizeOfExpr(sizeof,exp) -> bind (keywords "sizeof") (k e)
     | Ast.SizeOfType(sizeof,lp,ty,rp) -> bind (keywords "sizeof") (k e)
     | Ast.NestExpr(expr_dots,wc,false) -> option_default
@@ -200,7 +200,7 @@ let do_get_constants constants keywords env =
     | Ast.MetaParam(name,_,_) -> minherited name
     | Ast.MetaParamList(name,None,_,_) -> minherited name
     | Ast.MetaParamList(name,Some(lenname,_,_),_,_) ->
-	bind (minherited name) (inherited lenname)
+	bind (minherited name) (minherited lenname)
     | _ -> k p in
 
   let rule_elem r k re =
@@ -280,12 +280,12 @@ let get_all_constants minus_only =
   let donothing r k e = k e in
   let bind = Common.union_set in
   let option_default = [] in
-  let mcode r (x,_,mcodekind) =
+  let mcode r (x,_,mcodekind,_) =
     match mcodekind with
       Ast.MINUS(_,_) -> [x]
     | _ when minus_only -> []
     | _ -> [x] in
-  let other r (x,_,mcodekind) = [] in
+  let other r _ = [] in
 
   V.combiner bind option_default
     other mcode other other other other other other other other other other
@@ -301,7 +301,8 @@ let get_plus_constants =
   let donothing r k e = k e in
   let bind = Common.union_set in
   let option_default = [] in
-  let mcode r (_,_,mcodekind) =
+  let mcode r mc =
+    let mcodekind = Ast.get_mcodekind mc in
     let recurse l =
       List.fold_left
 	(List.fold_left

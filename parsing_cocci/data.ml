@@ -8,7 +8,8 @@ type fresh = bool
 
 type clt =
     line_type * int * int * int * int (* starting spaces *) *
-      string list (* code before *) * string list (* code after *)
+      string list (* code before *) * string list (* code after *) *
+      Ast0.meta_pos (* position variable, minus only *)
 
 (* ---------------------------------------------------------------------- *)
 
@@ -21,11 +22,14 @@ and line_type =
 
 type iconstraints = Ast0.ident list
 type econstraints = Ast0.expression list
+type pconstraints = Ast.meta_name list
 
 let in_rule_name = ref false
 let in_meta = ref false
 let in_iso = ref false
 let in_prolog = ref false
+let inheritable_positions =
+  ref ([] : string list) (* rules from which posns can be inherited *)
 
 let all_metadecls =
   (Hashtbl.create(100) : (string, Ast.metavar list) Hashtbl.t)
@@ -87,7 +91,7 @@ let add_local_func_meta:
     (Ast.meta_name -> iconstraints -> Ast0.pure -> unit) ref = 
   ref (fun _ -> failwith "uninitialized add_meta") 
 
-let add_pos_meta: (Ast.meta_name -> unit) ref = 
+let add_pos_meta: (Ast.meta_name -> pconstraints -> unit) ref = 
   ref (fun _ -> failwith "uninitialized add_meta") 
 
 let add_type_name: (string -> unit) ref = 

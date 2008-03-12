@@ -5,7 +5,7 @@ module Ast = Ast_cocci
 module V = Visitor_ast
 module CTL = Ast_ctl
 
-let mcode r (_,_,kind) =
+let mcode r (_,_,kind,_) =
   match kind with
     Ast.MINUS(_,_) -> true
   | Ast.PLUS -> failwith "not possible"
@@ -24,9 +24,9 @@ let contains_modif used_after x =
       let res = k re in
       match Ast.unwrap re with
 	Ast.FunHeader(bef,_,fninfo,name,lp,params,rp) ->
-	  bind (mcode r ((),(),bef)) res
+	  bind (mcode r ((),(),bef,Ast.NoMetaPos)) res
       | Ast.Decl(bef,_,decl) ->
-	  bind (mcode r ((),(),bef)) res
+	  bind (mcode r ((),(),bef,Ast.NoMetaPos)) res
       | _ -> res in
     let recursor =
       V.combiner bind option_default
@@ -175,7 +175,7 @@ and statement testfn mcode tail stmt : 'a list list =
   | Ast.While(header,branch,(_,_,_,aft))
   | Ast.For(header,branch,(_,_,_,aft))
   | Ast.Iterator(header,branch,(_,_,_,aft)) ->
-      if testfn header or mcode () ((),(),aft)
+      if testfn header or mcode () ((),(),aft,Ast.NoMetaPos)
       then conj (rule_elem header) (statement testfn mcode tail branch)
       else statement testfn mcode tail branch
 
@@ -190,7 +190,7 @@ and statement testfn mcode tail stmt : 'a list list =
 	conj
 	  (statement testfn mcode tail branch1)
 	  (statement testfn mcode tail branch2) in
-      if testfn ifheader or mcode () ((),(),aft)
+      if testfn ifheader or mcode () ((),(),aft,Ast.NoMetaPos)
       then conj (rule_elem ifheader) branches
       else branches
 
@@ -207,7 +207,7 @@ and statement testfn mcode tail stmt : 'a list list =
 
   | Ast.Nest(stmt_dots,whencode,false,_,_) -> []
 
-  | Ast.Dots((_,i,d),whencodes,_,_) -> []
+  | Ast.Dots(_,whencodes,_,_) -> []
 
   | Ast.FunDecl(header,lbrace,decls,body,rbrace) ->
       let body_info =

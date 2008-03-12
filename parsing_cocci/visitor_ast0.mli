@@ -20,7 +20,8 @@ type 'a combiner =
       combiner_declaration_dots :
 		  Ast0_cocci.declaration Ast0_cocci.dots -> 'a;
       combiner_case_line_dots :
-		  Ast0_cocci.case_line Ast0_cocci.dots -> 'a}
+		  Ast0_cocci.case_line Ast0_cocci.dots -> 'a;
+      combiner_anything : Ast0_cocci.anything -> 'a}
 
 type ('mc,'a) cmcode = 'mc Ast0_cocci.mcode -> 'a
 type ('cd,'a) ccode = 'a combiner -> ('cd -> 'a) -> 'cd -> 'a

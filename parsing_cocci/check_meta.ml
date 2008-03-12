@@ -12,7 +12,7 @@ let fresh_table = (Hashtbl.create(50) : ((string * string), unit) Hashtbl.t)
 
 let warning s = Printf.fprintf stderr "warning: %s\n" s
 
-let promote name = (name,(),Ast0.default_info(),())
+let promote name = (name,(),Ast0.default_info(),(),None)
 
 (* --------------------------------------------------------------------- *)
 
@@ -22,7 +22,7 @@ let find_loop table name =
     | x::xs -> (try Hashtbl.find x name with Not_found -> loop xs) in
   loop table
 
-let check_table table minus (name,_,info,_) =
+let check_table table minus (name,_,info,_,_) =
   let rl = info.Ast0.line_start in
   if minus
   then
@@ -60,7 +60,7 @@ let is_ifdef name =
 
 let ident context old_metas table minus i =
   match Ast0.unwrap i with
-    Ast0.Id((name,_,info,_) : string Ast0.mcode) ->
+    Ast0.Id((name,_,info,_,_) : string Ast0.mcode) ->
       let rl = info.Ast0.line_start in
       let err =
 	if List.exists (function x -> x = name) old_metas
@@ -142,7 +142,7 @@ let rec expression context old_metas table minus e =
       check_table table minus name
   | Ast0.MetaExprList(name,Some lenname,_) ->
       check_table table minus name;
-      check_table table minus (Ast0.rewrap_mcode name lenname)
+      check_table table minus lenname
   | Ast0.DisjExpr(_,exps,_,_) ->
       List.iter (expression ID old_metas table minus) exps
   | Ast0.NestExpr(_,exp_dots,_,w,_) ->
@@ -266,7 +266,7 @@ and parameterTypeDef old_metas table minus param =
       check_table table minus name
   | Ast0.MetaParamList(name,Some lenname,_) ->
       check_table table minus name;
-      check_table table minus (Ast0.rewrap_mcode name lenname)
+      check_table table minus lenname
   | _ -> () (* no metavariable subterms *)
 
 and parameter_list old_metas table minus =
@@ -370,22 +370,22 @@ let rule old_metas table minus rules =
 (* --------------------------------------------------------------------- *)
 
 let positions table rules =
-  let mcode x = () in
-  let option_default = () in
-  let bind x y = () in
-  let donothing r k e =
-    k e;
-    get_opt
-      (function pos ->
-	let info = find_loop [table] pos in
+  let mcode x =
+    match Ast0.get_pos x with
+      Ast0.MetaPos(name,constraints) ->
+	let pos = Ast0.unwrap_mcode name in
+	let info = find_loop table pos in
 	if !info
 	then
 	  let (rule,name) = pos in
 	  failwith
 	    (Printf.sprintf "duplicated use of position variable %s.%s"
 	       rule name)
-	else info := true)
-      (Ast0.get_pos e) in
+	else info := true
+    | _ -> () in
+  let option_default = () in
+  let bind x y = () in
+  let donothing r k e = k e in
   let fn =
     V0.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
@@ -441,7 +441,7 @@ let check_meta rname old_metas inherited_metavars metavars minus plus =
   let iother_table = make_table iother in
   add_to_fresh_table fresh;
   rule old_metas [iother_table;other_table;err_table] true minus;
-  positions other_table minus;
+  positions [iother_table;other_table] minus;
   check_all_marked rname "metavariable" other_table "in the - or context code";
   rule old_metas [iother_table;fresh_table;err_table] false plus;
   check_all_marked rname "fresh identifier metavariable" iother_table

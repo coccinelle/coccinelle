@@ -62,8 +62,8 @@ type info_ident =
   | DontKnow
 
 
-let term      (s,i,mc) = s
-let mcodekind (s,i,mc) = mc
+let term      mc = A.unwrap_mcode mc
+let mcodekind mc = A.get_mcodekind mc
 
 
 let mcode_contain_plus = function
@@ -89,19 +89,20 @@ let mcode_simple_minus = function
 let minusizer = 
   ("fake","fake"), 
   {A.line = 0; column =0; A.strbef=[]; A.straft=[];},
-  (A.MINUS(A.DontCarePos, []))
+  (A.MINUS(A.DontCarePos, [])),
+  A.NoMetaPos
 
 let generalize_mcode ia = 
-  let (s1, i, mck) = ia in
-  (s1, i, 
-  match mck with
-  | A.PLUS -> raise Impossible
-  | A.CONTEXT (A.NoPos,x) -> 
-      A.CONTEXT (A.DontCarePos,x)
-  | A.MINUS   (A.NoPos,x) -> 
-      A.MINUS   (A.DontCarePos,x)
-  | _ -> raise Impossible
-  )
+  let (s1, i, mck, pos) = ia in
+  let new_mck =
+    match mck with
+    | A.PLUS -> raise Impossible
+    | A.CONTEXT (A.NoPos,x) -> 
+	A.CONTEXT (A.DontCarePos,x)
+    | A.MINUS   (A.NoPos,x) -> 
+	A.MINUS   (A.DontCarePos,x)
+    | _ -> raise Impossible in
+  (s1, i, new_mck, pos)
 
 
 
@@ -237,6 +238,14 @@ let equal_metavarval valu valu' =
   | Ast_c.MetaPosVal (posa1,posa2), Ast_c.MetaPosVal (posb1,posb2) -> 
       Ast_c.equal_pos posa1 posb1 && Ast_c.equal_pos posa2 posb2
         
+  | Ast_c.MetaPosValList l1, Ast_c.MetaPosValList l2 ->
+      List.exists
+	(function (posa1,posa2) ->
+	  List.exists
+	    (function (posb1,posb2) ->
+	      Ast_c.equal_posl posa1 posb1 && Ast_c.equal_posl posa2 posb2)
+            l2)
+	l1
   | _ -> raise Impossible
 
 
@@ -504,11 +513,10 @@ module type PARAM =
     val cocciTy : 
       (A.fullType, B.fullType) matcher -> (A.fullType, F.node) matcher
 
-    val envf : 
-      (* the first argument is true if the value should be stripped, eg
-	 for normal metavars, and false for position variables *)
-      bool -> A.keep_binding -> A.inherited -> 
-      A.meta_name * Ast_c.metavar_binding_kind ->
+    val envf :
+      A.keep_binding -> A.inherited -> 
+      A.meta_name A.mcode * Ast_c.metavar_binding_kind *
+	  (unit -> Ast_c.posl * Ast_c.posl) ->
       (unit -> tin -> 'x tout) -> (tin -> 'x tout)
 
     val check_constraints :
@@ -564,8 +572,8 @@ let (option: ('a,'b) matcher -> ('a option,'b option) matcher)= fun f t1 t2 ->
 can match other things.  But they no longer have the same type.  Perhaps these
 functions could be avoided by introducing an appropriate level of polymorphism,
 but I don't know how to declare polymorphism across functors *)
-let dots2metavar (_,info,mcodekind) = (("","..."),info,mcodekind)
-let metavar2dots (_,info,mcodekind) = ("...",info,mcodekind)
+let dots2metavar (_,info,mcodekind,pos) = (("","..."),info,mcodekind,pos)
+let metavar2dots (_,info,mcodekind,pos) = ("...",info,mcodekind,pos)
 
 (*---------------------------------------------------------------------------*)
 (* toc: 
@@ -580,19 +588,8 @@ let metavar2dots (_,info,mcodekind) = ("...",info,mcodekind)
  *)
 
 (*---------------------------------------------------------------------------*)
-
-let add_pos_var e t f =
-  match A.get_pos_var e with
-    Some x ->
-      X.envf false
-	Type_cocci.Saved (* always want a witness *) false (* not inherited *)
-        (x,t) f
-  | None -> f()
-
-(*---------------------------------------------------------------------------*)
 let rec (expression: (A.expression, Ast_c.expression) matcher) =
  fun ea eb -> 
-  add_pos_var ea (Ast_c.MetaExprVal eb) (fun () ->
   X.all_bound (A.get_inherited ea) >&&>
   let wa x = A.rewrap ea x  in
   match A.unwrap ea, eb with
@@ -641,7 +638,9 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
 	(fun () () ->
 	  X.check_constraints expression constraints eb
             (fun () ->
-	  X.envf true keep inherited (term ida, Ast_c.MetaExprVal expb)
+	  let max_min _ =
+	    Lib_parsing_c.lin_col_by_pos (Lib_parsing_c.ii_of_expr expb) in
+	  X.envf keep inherited (ida, Ast_c.MetaExprVal expb, max_min)
 	    (fun () -> 
 	  X.distrf_e ida expb >>= (fun ida expb -> 
 	     return (
@@ -969,14 +968,13 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
   | _, ((B.Constructor _,_),_) 
     -> fail
 
-  | _, _ -> fail)
+  | _, _ -> fail
 
 
 
 (* ------------------------------------------------------------------------- *)
 and (ident: info_ident -> (A.ident, string * Ast_c.info) matcher) = 
  fun infoidb ida ((idb, iib) as ib) -> 
-  add_pos_var ida (Ast_c.MetaIdVal idb) (fun () ->
   X.all_bound (A.get_inherited ida) >&&>
   match A.unwrap ida with
   | A.Id sa -> 
@@ -992,7 +990,11 @@ and (ident: info_ident -> (A.ident, string * Ast_c.info) matcher) =
   | A.MetaId(mida,constraints,keep,inherited) -> 
       X.check_constraints (ident infoidb) constraints ib
         (fun () ->
-      X.envf true keep inherited (term mida, Ast_c.MetaIdVal (idb)) (fun () -> 
+      let max_min _ = Lib_parsing_c.lin_col_by_pos [iib] in
+      (* use drop_pos for ids so that the pos is not added a second time in
+	 the call to tokenf *)
+      X.envf keep inherited (A.drop_pos mida, Ast_c.MetaIdVal (idb), max_min)
+	(fun () -> 
         tokenf mida iib >>= (fun mida iib -> 
           return (
             ((A.MetaId (mida, constraints, keep, inherited)) +> A.rewrap ida,
@@ -1004,7 +1006,8 @@ and (ident: info_ident -> (A.ident, string * Ast_c.info) matcher) =
       let is_function _ =
 	X.check_constraints (ident infoidb) constraints ib
             (fun () ->
-          X.envf true keep inherited (term mida,Ast_c.MetaFuncVal idb)
+          let max_min _ = Lib_parsing_c.lin_col_by_pos [iib] in
+          X.envf keep inherited (A.drop_pos mida,Ast_c.MetaFuncVal idb,max_min)
 	    (fun () ->
             tokenf mida iib >>= (fun mida iib -> 
               return (
@@ -1027,7 +1030,10 @@ and (ident: info_ident -> (A.ident, string * Ast_c.info) matcher) =
       | LocalFunction -> 
 	  X.check_constraints (ident infoidb) constraints ib
             (fun () ->
-          X.envf true keep inherited (term mida,Ast_c.MetaLocalFuncVal idb) (fun()->
+          let max_min _ = Lib_parsing_c.lin_col_by_pos [iib] in
+          X.envf keep inherited
+	    (A.drop_pos mida,Ast_c.MetaLocalFuncVal idb, max_min)
+	    (fun () ->
             tokenf mida iib >>= (fun mida iib -> 
               return (
                 ((A.MetaLocalFunc(mida,constraints,keep,inherited)))
@@ -1040,7 +1046,7 @@ and (ident: info_ident -> (A.ident, string * Ast_c.info) matcher) =
       )
 
   | A.OptIdent _ | A.UniqueIdent _ -> 
-      failwith "not handling Opt/Unique for ident")
+      failwith "not handling Opt/Unique for ident"
 
 
 
@@ -1152,18 +1158,21 @@ and arguments_bis = fun eas ebs ->
               then fail
               else 
                 let startxs' = Ast_c.unsplit_comma startxs in
-		add_pos_var ea (Ast_c.MetaExprListVal startxs') (fun () ->
                 let len = List.length  startxs' in
 
 		(match leninfo with
 		| Some (lenname,lenkeep,leninherited) ->
-                    X.envf true lenkeep leninherited
-                      (lenname, Ast_c.MetaListlenVal (len))
+		    let max_min _ = failwith "no pos" in
+                    X.envf lenkeep leninherited
+                      (lenname, Ast_c.MetaListlenVal (len), max_min)
 		| None -> function f -> f()
                 )
                 (fun () -> 
-                  X.envf true keep inherited 
-                    (term ida, Ast_c.MetaExprListVal startxs') 
+		  let max_min _ =
+		    Lib_parsing_c.lin_col_by_pos
+		      (Lib_parsing_c.ii_of_args startxs) in
+                  X.envf keep inherited
+                    (ida, Ast_c.MetaExprListVal startxs', max_min)
                 (fun () -> 
 		  if startxs = []
 		  then return (ida, [])
@@ -1177,7 +1186,7 @@ and arguments_bis = fun eas ebs ->
                       startxs ++ endxs
                     ))
                   )
-                ))
+                )
             )) fail 
 
 
@@ -1306,18 +1315,21 @@ and parameters_bis eas ebs =
               then fail
               else 
                 let startxs' = Ast_c.unsplit_comma startxs in
-		add_pos_var ea (Ast_c.MetaParamListVal startxs') (fun () ->
                 let len = List.length  startxs' in
 
 		(match leninfo with
 		  Some (lenname,lenkeep,leninherited) ->
-                    X.envf true lenkeep leninherited
-		      (lenname, Ast_c.MetaListlenVal (len))
+		    let max_min _ = failwith "no pos" in
+                    X.envf lenkeep leninherited
+		      (lenname, Ast_c.MetaListlenVal (len), max_min)
 		| None -> function f -> f()
                 )
-	        (fun () -> 
-                  X.envf true keep inherited 
-                    (term ida, Ast_c.MetaParamListVal startxs') 
+	        (fun () ->
+		  let max_min _ =
+		    Lib_parsing_c.lin_col_by_pos
+		      (Lib_parsing_c.ii_of_params startxs) in
+                  X.envf keep inherited 
+                    (ida, Ast_c.MetaParamListVal startxs', max_min)
                 (fun () -> 
 		  if startxs = []
 		  then return (ida, [])
@@ -1330,14 +1342,13 @@ and parameters_bis eas ebs =
                       startxs ++ endxs
 		    ))
                 )
-                )))
+                ))
           ) fail 
 
 
       | A.VoidParam ta, ys -> 
           (match eas, ebs with
           | [], [Left eb] -> 
-	      add_pos_var ea (Ast_c.MetaParamVal eb) (fun () ->
               let ((hasreg, idbopt, tb), ii_b_s) = eb in
               if idbopt = None && null ii_b_s 
               then 
@@ -1349,7 +1360,7 @@ and parameters_bis eas ebs =
                         [Left ((hasreg, idbopt, tb), ii_b_s)]
                       ))
                 | _ -> fail
-              else fail)
+              else fail
           | _ -> fail
           )
 
@@ -1360,27 +1371,27 @@ and parameters_bis eas ebs =
 
 
       | A.MetaParam (ida,keep,inherited), (Left eb)::ebs -> 
-          add_pos_var ea (Ast_c.MetaParamVal eb) (fun () ->
           (* todo: use quaopt, hasreg ? *)
-          X.envf true keep inherited (term ida, Ast_c.MetaParamVal eb) (fun () -> 
+	  let max_min _ =
+	    Lib_parsing_c.lin_col_by_pos (Lib_parsing_c.ii_of_param eb) in
+          X.envf keep inherited (ida,Ast_c.MetaParamVal eb,max_min) (fun () -> 
             X.distrf_param ida eb
           ) >>= (fun ida eb -> 
               parameters_bis eas ebs >>= (fun eas ebs -> 
                 return (
                   (A.MetaParam(ida,keep,inherited))+> A.rewrap ea::eas,
                   (Left eb)::ebs
-                ))))
+                )))
 
 
       | A.Param (typa, idaopt), (Left eb)::ebs -> 
-          add_pos_var ea (Ast_c.MetaParamVal eb) (fun () ->
 	  (*this should succeed if the C code has a name, and fail otherwise*)
           parameter (idaopt, typa) eb >>= (fun (idaopt, typa) eb -> 
           parameters_bis eas ebs >>= (fun eas ebs -> 
             return (
               (A.Param (typa, idaopt))+> A.rewrap ea :: eas,
               (Left eb)::ebs
-            ))))
+            )))
           
       | _unwrapx, (Right y)::ys -> raise Impossible
       | _unwrapx, [] -> fail
@@ -2117,13 +2128,14 @@ and (fullType: (A.fullType, Ast_c.fullType) matcher) =
 
 and (fullTypebis: (A.typeC, Ast_c.fullType) matcher) = 
   fun ta tb -> 
-  add_pos_var ta (Ast_c.MetaTypeVal tb) (fun () ->
   X.all_bound (A.get_inherited ta) >&&> 
   match A.unwrap ta, tb with
 
   (* cas general *)
   | A.MetaType(ida,keep, inherited),  typb -> 
-      X.envf true keep inherited (term ida, B.MetaTypeVal typb) (fun () -> 
+      let max_min _ =
+	Lib_parsing_c.lin_col_by_pos (Lib_parsing_c.ii_of_type typb) in
+      X.envf keep inherited (ida, B.MetaTypeVal typb, max_min) (fun () -> 
         X.distrf_type ida typb >>= (fun ida typb -> 
           return (
             A.MetaType(ida,keep, inherited) +> A.rewrap ta,
@@ -2133,7 +2145,7 @@ and (fullTypebis: (A.typeC, Ast_c.fullType) matcher) =
   | unwrap, (qub, typb) -> 
       typeC ta typb >>= (fun ta typb -> 
         return (ta, (qub, typb))
-      ))
+      )
 
 
 and (typeC: (A.typeC, Ast_c.typeC) matcher) = 
@@ -2603,9 +2615,11 @@ and compatible_type a b =
         else fail
 
   | Type_cocci.MetaType (ida,keep,inherited),     typb -> 
-      X.envf true keep inherited (ida, B.MetaTypeVal typb) (fun () -> 
-        ok
-      )
+      let max_min _ =
+	Lib_parsing_c.lin_col_by_pos (Lib_parsing_c.ii_of_type typb) in
+      X.envf keep inherited (A.make_mcode ida, B.MetaTypeVal typb, max_min)
+	(fun () -> ok
+        )
 
   (* subtil: must be after the MetaType case *)
   | a, (qub, (B.TypeName (sb,Some b), ii)) -> 
@@ -2859,8 +2873,9 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
 
       (match Control_flow_c.extract_fullstatement node with
       | Some stb -> 
-	  add_pos_var re (Ast_c.MetaStmtVal stb) (fun () ->
-            X.envf true keep inherited (term ida, Ast_c.MetaStmtVal stb)
+	    let max_min _ =
+	      Lib_parsing_c.lin_col_by_pos (Lib_parsing_c.ii_of_stmt stb) in
+            X.envf keep inherited (ida, Ast_c.MetaStmtVal stb, max_min)
 	      (fun () -> 
               (* no need tag ida, we can't be called in transform-mode *)
 		return (
@@ -2868,7 +2883,6 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
 		unwrap_node
 	      )
 	    )
-	  )
       | None -> fail
       )
 
@@ -2934,7 +2948,8 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
                 Lib_parsing_c.max_min_by_pos (Lib_parsing_c.ii_of_expr eb) in
               let keep = Type_cocci.Unitary in
               let inherited = false in
-              X.envf true keep inherited (pos, B.MetaPosVal (min,max))
+	      let max_min _ = failwith "no pos" in
+              X.envf keep inherited (pos, B.MetaPosVal (min,max), max_min)
 		(fun () -> 
                   expression ea eb
               )

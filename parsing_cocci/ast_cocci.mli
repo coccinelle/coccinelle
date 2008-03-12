@@ -14,10 +14,9 @@ type 'a wrap =
       inherited : meta_name list; (*inherited vars*)
       saved_witness : meta_name list; (*witness vars*)
       bef_aft : dots_bef_aft;
-      pos_info : meta_name option; (* pos info, try not to duplicate *)
+      pos_info : meta_name mcode option; (* pos info, try not to duplicate *)
       (* isos relevant to the term; ultimately only used for rule_elems *)
-      iso_info : (string*anything) list; 
-      pos_var : meta_name option }
+      iso_info : (string*anything) list }
 
 and 'a befaft =
     BEFORE      of 'a list list
@@ -25,7 +24,7 @@ and 'a befaft =
   | BEFOREAFTER of 'a list list * 'a list list
   | NOTHING
 
-and 'a mcode = 'a * info * mcodekind
+and 'a mcode = 'a * info * mcodekind * meta_pos (* pos variable *)
  (* pos is an offset indicating where in the C code the mcodekind has an
  effect *)
  and mcodekind =
@@ -155,7 +154,7 @@ and form = ANY | ID | CONST (* form for MetaExp *)
 
 and expression = base_expression wrap
 
-and listlen = meta_name * keep_binding * inherited
+and listlen = meta_name mcode * keep_binding * inherited
 
 and  unaryOp = GetRef | DeRef | UnPlus |  UnMinus | Tilde | Not
 and  assignOp = SimpleAssign | OpAssign of arithOp
@@ -301,6 +300,13 @@ and base_define_parameters =
   | DParams      of string mcode(*( *) * define_param dots * string mcode(* )*)
 
 and define_parameters = base_define_parameters wrap
+
+(* --------------------------------------------------------------------- *)
+(* positions *)
+
+and meta_pos =
+    MetaPos of meta_name mcode * meta_name list * keep_binding * inherited
+  | NoMetaPos
 
 (* --------------------------------------------------------------------- *)
 (* Function declaration *)
@@ -518,12 +524,13 @@ val get_inherited : 'a wrap -> meta_name list
 val get_saved : 'a wrap -> meta_name list
 val get_dots_bef_aft : statement -> dots_bef_aft
 val set_dots_bef_aft : dots_bef_aft -> statement -> statement
-val get_pos : 'a wrap -> meta_name option
-val set_pos : 'a wrap -> meta_name option -> 'a wrap
+val get_pos : 'a wrap -> meta_name mcode option
+val set_pos : 'a wrap -> meta_name mcode option -> 'a wrap
 val get_isos : 'a wrap -> (string*anything) list
 val set_isos : 'a wrap -> (string*anything) list -> 'a wrap
-val get_pos_var : 'a wrap -> meta_name option
-val set_pos_var : meta_name option -> 'a wrap -> 'a wrap
+val get_pos_var : 'a mcode -> meta_pos
+val set_pos_var : meta_pos -> 'a mcode -> 'a mcode
+val drop_pos : 'a mcode -> 'a mcode
 
 val get_meta_name : metavar -> meta_name
 

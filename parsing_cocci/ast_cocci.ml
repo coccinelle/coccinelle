@@ -17,10 +17,9 @@ type 'a wrap =
       saved_witness : meta_name list; (*witness vars*)
       bef_aft : dots_bef_aft;
       (* the following is for or expressions *)
-      pos_info : meta_name option; (* pos info, try not to duplicate *)
+      pos_info : meta_name mcode option; (* pos info, try not to duplicate *)
       (* isos relevant to the term; ultimately only used for rule_elems *)
-      iso_info : (string*anything) list; 
-      pos_var : meta_name option }
+      iso_info : (string*anything) list }
 
 and 'a befaft =
     BEFORE      of 'a list list
@@ -28,7 +27,7 @@ and 'a befaft =
   | BEFOREAFTER of 'a list list * 'a list list
   | NOTHING
 
-and 'a mcode = 'a * info * mcodekind
+and 'a mcode = 'a * info * mcodekind * meta_pos (* pos variable *)
  (* pos is an offset indicating where in the C code the mcodekind has an
  effect *)
  and mcodekind =
@@ -160,7 +159,7 @@ and form = ANY | ID | CONST (* form for MetaExp *)
 
 and expression = base_expression wrap
 
-and listlen = meta_name * keep_binding * inherited
+and listlen = meta_name mcode * keep_binding * inherited
 
 and  unaryOp = GetRef | DeRef | UnPlus |  UnMinus | Tilde | Not
 and  assignOp = SimpleAssign | OpAssign of arithOp
@@ -312,6 +311,13 @@ and base_define_parameters =
   | DParams      of string mcode(*( *) * define_param dots * string mcode(* )*)
 
 and define_parameters = base_define_parameters wrap
+
+(* --------------------------------------------------------------------- *)
+(* positions *)
+
+and meta_pos =
+    MetaPos of meta_name mcode * meta_name list * keep_binding * inherited
+  | NoMetaPos
 
 (* --------------------------------------------------------------------- *)
 (* Function declaration *)
@@ -515,12 +521,12 @@ let mkToken x = Token (x,None)
 (* --------------------------------------------------------------------- *)
 
 let rewrap model x         = {model with node = x}
-let rewrap_mcode (_,a,b) x = (x,a,b)
+let rewrap_mcode (_,a,b,c) x = (x,a,b,c)
 let unwrap x               = x.node
-let unwrap_mcode (x,_,_)   = x
-let get_mcodekind (_,_,x)  = x
+let unwrap_mcode (x,_,_,_)  = x
+let get_mcodekind (_,_,x,_) = x
 let get_line x             = x.node_line
-let get_mcode_line (_,l,_) = l.line
+let get_mcode_line (_,l,_,_) = l.line
 let get_fvs x              = x.free_vars
 let set_fvs fvs x          = {x with free_vars = fvs}
 let get_mfvs x             = x.minus_free_vars
@@ -534,8 +540,9 @@ let get_pos x              = x.pos_info
 let set_pos x pos          = {x with pos_info = pos}
 let get_isos x             = x.iso_info
 let set_isos x isos        = {x with iso_info = isos}
-let get_pos_var x          = x.pos_var
-let set_pos_var vr x       = {x with pos_var = vr}
+let get_pos_var (_,_,_,p)  = p
+let set_pos_var vr (a,b,c,_) = (a,b,c,vr)
+let drop_pos (a,b,c,_)     = (a,b,c,NoMetaPos)
 
 let get_wcfvs (whencode : ('a wrap, 'b wrap) whencode list) =
   Common.union_all
@@ -581,18 +588,19 @@ let make_term x =
     saved_witness = [];
     bef_aft = NoDots;
     pos_info = None;
-    iso_info = [];
-    pos_var = None }
+    iso_info = [] }
 
 let make_meta_rule_elem s d (fvs,fresh,inh) =
-  {(make_term (MetaRuleElem((("",s),no_info,d),Type_cocci.Unitary,false))) with
-    free_vars = fvs; fresh_vars = fresh; inherited = inh}
+  {(make_term
+      (MetaRuleElem((("",s),no_info,d,NoMetaPos),Type_cocci.Unitary,false)))
+  with free_vars = fvs; fresh_vars = fresh; inherited = inh}
 
 let make_meta_decl s d (fvs,fresh,inh) =
-  {(make_term (MetaDecl((("",s),no_info,d),Type_cocci.Unitary,false))) with
+  {(make_term
+      (MetaDecl((("",s),no_info,d,NoMetaPos),Type_cocci.Unitary,false))) with
     free_vars = fvs; fresh_vars = fresh; inherited = inh}
 
-let make_mcode x = (x,no_info,CONTEXT(NoPos,NOTHING))
+let make_mcode x = (x,no_info,CONTEXT(NoPos,NOTHING),NoMetaPos)
 
 (* --------------------------------------------------------------------- *)
 

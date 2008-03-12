@@ -8,7 +8,7 @@ open Common open Commonop
 
 module Ast = Ast_cocci
 
-let term ((s,_,_) : 'a Ast_cocci.mcode) = s
+let term s = Ast.unwrap_mcode s
 
 (* or perhaps can have in plus, for instance a Disj, but those Disj must be 
  *  handled by interactive tool (by proposing alternatives) 
@@ -48,7 +48,7 @@ in
 
 (* --------------------------------------------------------------------- *)
 (* Here we don't care about the annotation on s. *)
-let mcode fn (s,info,_) =
+let mcode fn (s,info,_,_) =
   List.iter (function str -> print_string str; print_string "\n")
     info.Ast.strbef;
   if info.Ast.column > 0 && not(info.Ast.strbef = [])
@@ -593,7 +593,7 @@ let rec statement arity s =
       rule_elem arity header; statement arity body
   | Ast.Iterator(header,body,(_,_,_,aft)) ->
       rule_elem arity header; statement arity body;
-      mcode (function _ -> ()) ((),Ast.no_info,aft)
+      mcode (function _ -> ()) ((),Ast.no_info,aft,Ast.NoMetaPos)
 
   | Ast.Switch(header,lb,cases,rb) ->
       rule_elem arity header; rule_elem arity lb;
@@ -680,7 +680,7 @@ let rec pp_any = function
 	  (match x with
 	    "return" -> print_string " "
 	  | _ -> ()))
-	(x,info,());
+	(x,info,(),Ast.NoMetaPos);
       if_open_brace x
 
   | Ast.Code(x) -> let _ = top_level x in false

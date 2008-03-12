@@ -33,6 +33,7 @@ let set_mcodekind x mcodekind =
   | Ast0.TopTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.AnyTag -> failwith "anytag only within iso phase"
   | Ast0.StrictTag -> failwith "stricttag only within iso phase"
+  | Ast0.MetaPosTag(p) -> failwith "metapostag only within iso phase"
 
 let set_index x index =
   match x with
@@ -55,6 +56,7 @@ let set_index x index =
   | Ast0.TopTag(d) -> Ast0.set_index d index
   | Ast0.AnyTag -> failwith "anytag only within iso phase"
   | Ast0.StrictTag -> failwith "stricttag only within iso phase"
+  | Ast0.MetaPosTag(p) -> failwith "metapostag only within iso phase"
 
 let get_index = function
     Ast0.DotsExprTag(d) -> Index.expression_dots d
@@ -76,6 +78,7 @@ let get_index = function
   | Ast0.TopTag(d) -> Index.top_level d
   | Ast0.AnyTag -> failwith "anytag only within iso phase"
   | Ast0.StrictTag -> failwith "stricttag only within iso phase"
+  | Ast0.MetaPosTag(p) -> failwith "metapostag only within iso phase"
 
 (* --------------------------------------------------------------------- *)
 (* Collect the line numbers of the plus code.  This is used for disjunctions.
@@ -110,7 +113,7 @@ let collect_plus_lines top =
   let bind x y = () in
   let option_default = () in
   let donothing r k e = k e in
-  let mcode (_,_,info,mcodekind) =
+  let mcode (_,_,info,mcodekind,_) =
     match mcodekind with
       Ast0.PLUS -> insert info.Ast0.line_start
     | _ -> () in
@@ -200,7 +203,7 @@ let bind c1 c2 =
 let option_default = (*Bind(Neutral,[],[],[],[],[])*)
   Recursor(Neutral,[],[],[])
 
-let mcode (_,_,info,mcodekind) =
+let mcode (_,_,info,mcodekind,pos) =
   let offset = info.Ast0.offset in
   match mcodekind with
     Ast0.MINUS(_) -> Token(AllMarked,offset,mcodekind,[])
@@ -208,7 +211,7 @@ let mcode (_,_,info,mcodekind) =
   | Ast0.CONTEXT(_) -> Token(NotAllMarked,offset,mcodekind,[offset])
   | _ -> failwith "not possible"
 
-let neutral_mcode (_,_,info,mcodekind) =
+let neutral_mcode (_,_,info,mcodekind,pos) =
   let offset = info.Ast0.offset in
   match mcodekind with
     Ast0.MINUS(_) -> Token(Neutral,offset,mcodekind,[])
@@ -395,7 +398,7 @@ the same context children *)
 
 (* this is just a sanity check - really only need to look at the top-level
    structure *)
-let equal_mcode (_,_,info1,_) (_,_,info2,_) =
+let equal_mcode (_,_,info1,_,_) (_,_,info2,_,_) =
   info1.Ast0.offset = info2.Ast0.offset
 
 let equal_option e1 e2 =

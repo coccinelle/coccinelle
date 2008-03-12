@@ -53,13 +53,13 @@ let get_option fn = function
 (* --------------------------------------------------------------------- *)
 (* Mcode *)
 
-let promote_mcode (_,_,info,mcodekind) =
+let promote_mcode (_,_,info,mcodekind,_) =
   let new_info =
     {info with
       Ast0.mcode_start = [mcodekind]; Ast0.mcode_end = [mcodekind]} in
   {(Ast0.wrap ()) with Ast0.info = new_info; Ast0.mcodekind = ref mcodekind}
 
-let promote_mcode_plus_one (_,_,info,mcodekind) =
+let promote_mcode_plus_one (_,_,info,mcodekind,_) =
   let new_info =
     {info with
       Ast0.line_start = info.Ast0.line_start + 1;
@@ -90,10 +90,10 @@ let promote_to_statement_start stm mcodekind =
   {(Ast0.wrap ()) with Ast0.info = new_info; Ast0.mcodekind = ref mcodekind}
 
 (* mcode is good by default *)
-let bad_mcode (t,a,info,mcodekind) =
+let bad_mcode (t,a,info,mcodekind,pos) =
   let new_info =
     {info with Ast0.attachable_start = false; Ast0.attachable_end = false} in
-  (t,a,new_info,mcodekind)
+  (t,a,new_info,mcodekind,pos)
 
 let get_all_start_info l =
   (List.for_all (function x -> (Ast0.get_info x).Ast0.attachable_start) l,

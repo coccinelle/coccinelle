@@ -32,7 +32,8 @@ open Common open Commonop
 
 (* forunparser: *)
 
-type pos = int (* position, for MetaPosVal *)
+type pos = int (* position, for MetaPosVal, for managing expressions *)
+type posl = int * int (* lin-col, for MetaPosValList, for position variables *)
 type mark_token = 
   (* Present both in ast and list of tokens *)
   | OriginTok 
@@ -477,7 +478,8 @@ and metavars_binding = (Ast_cocci.meta_name, metavar_binding_kind) assoc
    * a '+'. But ParenVal or LabelVal are used only by CTL, they are not
    * variables accessible via SmPL whereas the position can be one day
    * so I think it's better to put MetaPosVal here *)
-  | MetaPosVal       of (pos * pos) (* min, max *)
+  | MetaPosVal       of (pos * pos) (* max, min *)
+  | MetaPosValList   of (posl * posl) list (* min, max *)
   | MetaListlenVal   of int
 
 
@@ -555,6 +557,7 @@ let rewrap_mark mark ii =
 
 let pos_of_info   ii = ii.pinfo.Common.charpos
 let line_of_info  ii = ii.pinfo.Common.line
+let col_of_info   ii = ii.pinfo.Common.column
 let str_of_info   ii = ii.pinfo.Common.str
 let file_of_info  ii = ii.pinfo.Common.file
 let mark_of_info  ii = ii.mark
@@ -565,6 +568,8 @@ let compare_pos i1 i2 =
   compare i1.pinfo.charpos i2.pinfo.charpos
 let equal_pos p1 p2 = 
   p1 =|= p2
+let equal_posl (l1,c1) (l2,c2) = 
+  (l1 =|= l2) && (c1 =|= c2)
 
 (*****************************************************************************)
 (* Abstract line *)

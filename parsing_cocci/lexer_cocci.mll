@@ -28,7 +28,7 @@ let get_current_line_type lexbuf =
     if !line_start < 0 then 0 else lex_start - !line_start in
   line_start := -1;
   prev_plus := (c = D.PLUS);
-  (c,l,ll,lex_start,preceeding_spaces,[],[])
+  (c,l,ll,lex_start,preceeding_spaces,[],[],Ast0.NoMetaPos)
 let current_line_started = ref false
 let col_zero = ref true
 
@@ -256,6 +256,7 @@ let init _ =
   Data.in_rule_name := false;
   Data.in_meta := false;
   Data.in_prolog := false;
+  Data.inheritable_positions := [];
   Hashtbl.clear all_metavariables;
   Hashtbl.clear Data.all_metadecls;
   Hashtbl.clear metavariables;
@@ -315,13 +316,13 @@ let init _ =
       let fn clt = TMetaLocalFunc(name,constraints,pure,clt) in
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_pos_meta :=
-    (function name ->
-      let fn ((d,ln,_,_,_,_,_) as clt) =
+    (fun name constraints ->
+      let fn ((d,ln,_,_,_,_,_,_) as clt) =
 	(if d = Data.PLUS
 	then
 	  failwith
 	    (Printf.sprintf "%d: positions only allowed in minus code" ln));
-	TMetaPos(name,clt) in
+	TMetaPos(name,constraints,clt) in
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_type_name :=
     (function name ->
@@ -538,21 +539,26 @@ rule token = parse
   | ( ("#" [' ' '\t']*  "define" [' ' '\t']+))
     ( (letter (letter |digit)*) as ident) 
       { start_line true;
-	let (arity,line,lline,offset,col,strbef,straft) as lt =
+	let (arity,line,lline,offset,col,strbef,straft,pos) as lt =
 	  get_current_line_type lexbuf in
 	let off = String.length "#define " in
 	(* -1 in the code below because the ident is not at the line start *)
 	TDefine
-	  (lt,check_var ident (arity,line,lline,offset+off,(-1),[],[])) }
+	  (lt,
+	   check_var ident
+	     (arity,line,lline,offset+off,(-1),[],[],Ast0.NoMetaPos)) }
   | ( ("#" [' ' '\t']*  "define" [' ' '\t']+))
     ( (letter (letter | digit)*) as ident) 
     '('
       { start_line true;
-	let (arity,line,lline,offset,col,strbef,straft) as lt =
+	let (arity,line,lline,offset,col,strbef,straft,pos) as lt =
 	  get_current_line_type lexbuf in
 	let off = String.length "#define " in
 	TDefineParam
-        (lt,check_var ident (arity,line,lline,offset+off,(-1),strbef,straft),
+        (lt,
+	 check_var ident
+	   (* why pos here but not above? *)
+	   (arity,line,lline,offset+off,(-1),strbef,straft,pos),
 	 offset + off + (String.length ident)) }
   | "#" [' ' '\t']* "include" [' ' '\t']* '"' [^ '"']+ '"'
       { TIncludeL

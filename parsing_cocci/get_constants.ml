@@ -61,7 +61,7 @@ let get_minus_constants bind orbind =
 	if !Flag.sgrep_mode2
 	then
 	  match ty with
-	    (_,_,Ast.MINUS(_,_)) -> [Ast.unwrap_mcode ty]
+	    (_,_,Ast.MINUS(_,_),_) -> [Ast.unwrap_mcode ty]
 	  | _ -> []
 	else [Ast.unwrap_mcode ty]
     | _ -> k e in
@@ -109,11 +109,11 @@ let get_all_minus_constants =
   let donothing r k e = k e in
   let bind = Common.union_set in
   let option_default = [] in
-  let mcode r (x,_,mcodekind) =
+  let mcode r (x,_,mcodekind,_) =
     match mcodekind with
       Ast.MINUS(_,_) -> [x]
     | _ -> [] in
-  let other r (x,_,mcodekind) = [] in
+  let other r (x,_,mcodekind,_) = [] in
 
   V.combiner bind option_default
     other mcode other other other other other other other other other other
@@ -128,7 +128,7 @@ let get_plus_constants =
   let donothing r k e = k e in
   let bind = Common.union_set in
   let option_default = [] in
-  let mcode r (_,_,mcodekind) =
+  let mcode r (_,_,mcodekind,_) =
     let recurse l =
       List.fold_left
 	(List.fold_left
@@ -162,7 +162,7 @@ let check_inherited nm =
   let bind x y = x or y in
   let mcode _ _ = option_default in
   let inherited (nm1,_) = not(nm = nm1) in
-  let minherited (name,_,_) = inherited name in
+  let minherited mc = inherited (Ast.unwrap_mcode mc) in
 
   (* a case for everything for there is a metavariable, also disjunctions
      or optional things *)
@@ -187,7 +187,7 @@ let check_inherited nm =
     | Ast.MetaErr(name,_,_,_) | Ast.MetaExpr(name,_,_,_,_,_) -> minherited name
     | Ast.MetaExprList(name,None,_,_) -> minherited name
     | Ast.MetaExprList(name,Some (lenname,_,_),_,_) ->
-	bind (minherited name) (inherited lenname)
+	bind (minherited name) (minherited lenname)
     | Ast.DisjExpr(exps) ->
 	(* could see if there are any variables that appear in all branches,
 	   but perhaps not worth it *)
@@ -214,7 +214,7 @@ let check_inherited nm =
       Ast.MetaParam(name,_,_) -> minherited name
     | Ast.MetaParamList(name,None,_,_) -> minherited name
     | Ast.MetaParamList(name,Some(lenname,_,_),_,_) ->
-	bind (minherited name) (inherited lenname)
+	bind (minherited name) (minherited lenname)
     | _ -> k p in
 
   let strictrule_elem recursor k re =

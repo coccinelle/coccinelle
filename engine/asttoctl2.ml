@@ -291,12 +291,7 @@ let elim_opt =
 	let l = Ast.get_line stm in
 	let rw = Ast.rewrap stm in
 	let rwd = Ast.rewrap stm in
-	let dots =
-	  Ast.Dots(("...",
-		    {Ast.line = 0;Ast.column = 0;
-		      Ast.strbef = [];Ast.straft = []},
-		    Ast.CONTEXT(Ast.NoPos,Ast.NOTHING)),
-		   [],[],[]) in
+	let dots = Ast.Dots(Ast.make_mcode "...",[],[],[]) in
 	[d1;rw(Ast.Disj
 		 [rwd(Ast.DOTS([stm]));
 		   {(Ast.make_term(Ast.DOTS([rw dots])))
@@ -400,7 +395,7 @@ let and_after guard first rest =
 let contains_modif =
   let bind x y = x or y in
   let option_default = false in
-  let mcode r (_,_,kind) =
+  let mcode r (_,_,kind,_) =
     match kind with
       Ast.MINUS(_,_) -> true
     | Ast.PLUS -> failwith "not possible"
@@ -410,8 +405,8 @@ let contains_modif =
     let res = k re in
     match Ast.unwrap re with
       Ast.FunHeader(bef,_,fninfo,name,lp,params,rp) ->
-	bind (mcode r ((),(),bef)) res
-    | Ast.Decl(bef,_,decl) -> bind (mcode r ((),(),bef)) res
+	bind (mcode r ((),(),bef,Ast.NoMetaPos)) res
+    | Ast.Decl(bef,_,decl) -> bind (mcode r ((),(),bef,Ast.NoMetaPos)) res
     | _ -> res in
   let recursor =
     V.combiner bind option_default
@@ -423,15 +418,14 @@ let contains_modif =
   recursor.V.combiner_rule_elem
 
 let drop_positions =
-  let mcode x = x in
-  let donothing r k e = Ast.set_pos_var None (k e) in
-  let donothing_a r k e = k e in
+  let mcode x = Ast.set_pos_var Ast.NoMetaPos x in
+  let donothing r k e = k e in
   V.rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode
     donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing_a
+    donothing donothing donothing donothing donothing
 
 (* code is not a DisjRuleElem *)
 let make_match label guard code =
@@ -806,6 +800,7 @@ let exptymatch l make_match make_guard_match =
   let matches_guard_matches =
     List.map
       (function x ->
+	let pos = Ast.make_mcode pos in
 	(make_match (Ast.set_pos x (Some pos)),
 	 make_guard_match (Ast.set_pos x (Some pos))))
       l in
@@ -1057,7 +1052,7 @@ let forwhile header body ((afvs,_,_,_) as aft) after
   match (Ast.unwrap body,aft) with
     (Ast.Atomic(re),(_,_,_,Ast.CONTEXT(_,Ast.NOTHING))) ->
       (match Ast.unwrap re with
-	Ast.MetaStmt((_,_,Ast.CONTEXT(_,Ast.NOTHING)),
+	Ast.MetaStmt((_,_,Ast.CONTEXT(_,Ast.NOTHING),_),
 		     Type_cocci.Unitary,_,false) ->
 	  let (efvs) =
 	    match seq_fvs quantified [Ast.get_fvs header] with
@@ -1186,7 +1181,7 @@ let dots_au is_strict toend label s wrapcode x seq_after y =
      make_match None false
       (wrapcode
 	 (Ast.Continue(Ast.make_mcode "continue",Ast.make_mcode ";"))) in
-  let stop_early =
+  let stop_early v =
     if !exists
     then CTL.False
     else if toend
@@ -1201,7 +1196,8 @@ let dots_au is_strict toend label s wrapcode x seq_after y =
 	(quantify false [lv]
 	   (ctl_and CTL.NONSTRICT
 	      (ctl_and CTL.NONSTRICT (truepred label) labelpred)
-	      (ctl_au CTL.NONSTRICT preflabelpred
+	      (ctl_au CTL.NONSTRICT
+		 (ctl_and CTL.NONSTRICT (ctl_not v) preflabelpred)
 		 (ctl_and CTL.NONSTRICT preflabelpred
 		    (ctl_or (retpred None)
 		       (if !Flag_engine.only_return_is_error_exit
@@ -1211,7 +1207,8 @@ let dots_au is_strict toend label s wrapcode x seq_after y =
 			    (ctl_and CTL.NONSTRICT
 			       (ctl_or matchgoto matchbreak)
 			       (ctl_ag s (ctl_not seq_after)))))))))) in
-  ctl_au s x (ctl_or y stop_early)
+  let v = get_let_ctr() in
+  ctl_au s x (CTL.Let(v,y,ctl_or (CTL.Ref v) (stop_early (CTL.Ref v))))
 
 let rec dots_and_nests plus nest whencodes bef aft dotcode after label
     process_bef_aft statement_list statement guard wrapcode =
@@ -1391,8 +1388,6 @@ and statement stmt after quantified minus_quantified
   let make_seq_after = make_seq_after guard in
   let real_make_match = make_match in
   let make_match = header_match label guard in
-  let new_info =
-    {Ast.line = (-1);Ast.column = (-1);Ast.strbef = []; Ast.straft = []} in
 
   let dots_done = ref false in (* hack for dots cases we can easily handle *)
 
@@ -1405,9 +1400,10 @@ and statement stmt after quantified minus_quantified
 	   this makes more matching for things like when (...) S, but perhaps
 	   that matching is not so costly anyway *)
 	(*Ast.MetaStmt(_,Type_cocci.Unitary,_,false) when guard -> CTL.True*)
-      |	Ast.MetaStmt((s,_,(Ast.CONTEXT(_,Ast.BEFOREAFTER(_,_)) as d)),
+      |	Ast.MetaStmt((s,_,(Ast.CONTEXT(_,Ast.BEFOREAFTER(_,_)) as d),_),
 		     keep,seqible,_)
-      | Ast.MetaStmt((s,_,(Ast.CONTEXT(_,Ast.AFTER(_)) as d)),keep,seqible,_)->
+      | Ast.MetaStmt((s,_,(Ast.CONTEXT(_,Ast.AFTER(_)) as d),_),
+		     keep,seqible,_)->
 	  svar_context_with_add_after stmt s label quantified d ast seqible
 	    after
 	    (process_bef_aft quantified minus_quantified
@@ -1415,7 +1411,7 @@ and statement stmt after quantified minus_quantified
 	    guard
 	    (Ast.get_fvs stmt, Ast.get_fresh stmt, Ast.get_inherited stmt)
 
-      |	Ast.MetaStmt((s,_,d),keep,seqible,_) ->
+      |	Ast.MetaStmt((s,_,d,_),keep,seqible,_) ->
 	  svar_minus_or_no_add_after stmt s label quantified d ast seqible
 	    after
 	    (process_bef_aft quantified minus_quantified
@@ -1443,7 +1439,7 @@ and statement stmt after quantified minus_quantified
 		  ctl_and term (bclabel_pred_maker slabel)
 	      | _ -> ctl_and term (bclabel_pred_maker llabel))
 	  | Ast.Continue(brk,semi) -> ctl_and term (bclabel_pred_maker llabel)
-          | Ast.Return((_,info,retmc),(_,_,semmc)) ->
+          | Ast.Return((_,info,retmc,pos),(_,_,semmc,_)) ->
 	      (* discard pattern that comes after return *)
 	      let normal_res = make_seq_after term after in
 	      (* the following code tries to propagate the modifications on
@@ -1464,13 +1460,10 @@ and statement stmt after quantified minus_quantified
 		| (Ast.CONTEXT(_,Ast.NOTHING),Ast.CONTEXT(_,Ast.AFTER(l))) ->
 		    Some (Ast.CONTEXT(Ast.NoPos,Ast.BEFORE(l)))
 		| _ -> None in
-	      let ret = ("return",new_info,
-			 Ast.CONTEXT(Ast.NoPos,Ast.NOTHING)) in
+	      let ret = Ast.make_mcode "return" in
 	      let edots =
-		Ast.rewrap ast
-		  (Ast.Edots(("...",new_info,
-			     Ast.CONTEXT(Ast.NoPos,Ast.NOTHING)),None)) in
-	      let semi = (";",new_info,Ast.CONTEXT(Ast.NoPos,Ast.NOTHING)) in
+		Ast.rewrap ast (Ast.Edots(Ast.make_mcode "...",None)) in
+	      let semi = Ast.make_mcode ";" in
 	      let simple_return =
 		make_match(Ast.rewrap ast (Ast.Return(ret,semi))) in
 	      let return_expr =
@@ -1479,11 +1472,9 @@ and statement stmt after quantified minus_quantified
 		Some new_mc ->
 		  let exit = endpred None in
 		  let mod_rbrace =
-		    Ast.rewrap ast (Ast.SeqEnd (("}",info,new_mc))) in
+		    Ast.rewrap ast (Ast.SeqEnd (("}",info,new_mc,pos))) in
 		  let stripped_rbrace =
-		    Ast.rewrap ast
-		      (Ast.SeqEnd
-			 (("}",info,Ast.CONTEXT(Ast.NoPos,Ast.NOTHING)))) in
+		    Ast.rewrap ast (Ast.SeqEnd(Ast.make_mcode "}")) in
 		  ctl_or normal_res
 		    (ctl_and (make_match mod_rbrace)
 		       (ctl_and
@@ -1580,9 +1571,8 @@ and statement stmt after quantified minus_quantified
 	let pattern2 =
 	  let empty_rbrace =
 	    match Ast.unwrap rbrace with
-	      Ast.SeqEnd((data,info,_)) ->
-		Ast.rewrap rbrace
-		  (Ast.SeqEnd ((data,info,Ast.CONTEXT(Ast.NoPos,Ast.NOTHING))))
+	      Ast.SeqEnd((data,info,_,pos)) ->
+		Ast.rewrap rbrace(Ast.SeqEnd(Ast.make_mcode data))
 	    | _ -> failwith "unexpected close brace" in
 	  make_seq
 	    [gotopred label;
@@ -1677,7 +1667,7 @@ and statement stmt after quantified minus_quantified
 	      llabel slabel true)
 	  guard (function x -> Ast.set_fvs [] (Ast.rewrap stmt x)))
 
-  | Ast.Dots((_,i,d),whencodes,bef,aft) ->
+  | Ast.Dots((_,i,d,_),whencodes,bef,aft) ->
       let dot_code =
 	match d with
 	  Ast.MINUS(_,_) ->
@@ -1871,22 +1861,21 @@ and statement stmt after quantified minus_quantified
       let start_brace = quantify guard lbfvs (make_match lbrace) in
       let stripped_rbrace =
 	match Ast.unwrap rbrace with
-	  Ast.SeqEnd((data,info,_)) ->
-	    Ast.rewrap rbrace
-	      (Ast.SeqEnd ((data,info,Ast.CONTEXT(Ast.NoPos,Ast.NOTHING))))
+	  Ast.SeqEnd((data,info,_,_)) ->
+	    Ast.rewrap rbrace(Ast.SeqEnd (Ast.make_mcode data))
 	| _ -> failwith "unexpected close brace" in
       let end_brace =
 	let exit = CTL.Pred (Lib_engine.Exit,CTL.Control) in
 	let errorexit = CTL.Pred (Lib_engine.ErrorExit,CTL.Control) in
+	let fake_brace = CTL.Pred (Lib_engine.FakeBrace,CTL.Control) in
 	ctl_and
 	  (quantify guard rbfvs (make_match rbrace))
 	  (ctl_and
-	     (* don't know why backex is here. doesn't work if the pattern
-		is f(...) {{ foo(); }} *)
-	     CTL.True(*(ctl_back_ex (ctl_not (make_match stripped_rbrace)))*)
-	     (ctl_au
-		(make_match stripped_rbrace)
-		(ctl_or exit errorexit))) in
+	     (* the following finds the beginning of the fake braces,
+		if there are any, not completely sure how this works.
+	     sse the examples sw and return *)
+	     (ctl_back_ex (ctl_not fake_brace))
+	     (ctl_au (make_match stripped_rbrace) (ctl_or exit errorexit))) in
       let new_quantified3 =
 	Common.union_set b1fvs
 	  (Common.union_set b2fvs (Common.union_set b3fvs quantified)) in

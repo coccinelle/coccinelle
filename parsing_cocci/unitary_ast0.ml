@@ -17,7 +17,7 @@ let rec nub = function
 let minus_checker name = let id = Ast0.unwrap_mcode name in [id]
 
 (* take only what is in the plus code *)
-let plus_checker (nm,_,_,mc) =
+let plus_checker (nm,_,_,mc,_) =
   match mc with Ast0.PLUS -> [nm] | _ -> []  
       
 let get_free checker t =

@@ -6,6 +6,7 @@ type node = node1 * string (* For debugging. Used by print_graph *)
       labels: int list;   (* Labels. Trick used for CTL engine *)
       bclabels: int list; (* parent of a break or continue node *)
       is_loop: bool;
+      is_fake: bool;
     }
   and node2 =
   | TopNode 
@@ -92,8 +93,10 @@ val extract_labels : node -> int list
 val extract_bclabels : node -> int list
 val extract_fullstatement : node -> Ast_c.statement option
 val extract_is_loop : node -> bool
+val extract_is_fake : node -> bool
 
 val mk_node: node2 -> int list -> int list -> string -> node
+val mk_fake_node: node2 -> int list -> int list -> string -> node
 
 val first_node : cflow -> Ograph_extended.nodei
 val find_node : (node2 -> bool) -> cflow -> Ograph_extended.nodei

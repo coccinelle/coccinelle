@@ -115,7 +115,9 @@ let create_root_token_table minus =
 	  | Ast0.CaseLineTag(d) -> Ast0.get_index d
 	  | Ast0.TopTag(d) -> Ast0.get_index d
 	  | Ast0.AnyTag -> failwith "anytag only within iso phase"
-	  | Ast0.StrictTag -> failwith "stricttag only within iso phase" in
+	  | Ast0.StrictTag -> failwith "stricttag only within iso phase"
+	  | Ast0.MetaPosTag(p) -> failwith "metapostag only within iso phase"
+	in
 	Hashtbl.add root_token_table key tokens)
     CN.minus_table;
   List.iter
@@ -131,7 +133,7 @@ let collect_minus_join_points root =
   let bind x y = x @ y in
   let option_default = [] in
 
-  let mcode (_,_,info,mcodekind) =
+  let mcode (_,_,info,mcodekind,_) =
     if List.mem (info.Ast0.offset) unfavored_tokens
     then [(Unfavored,info,mcodekind)]
     else [(Favored,info,mcodekind)] in
@@ -336,7 +338,8 @@ let call_collect_minus context_nodes :
 	  (Ast0.get_index e,
 	   (collect_minus_join_points e).V0.combiner_top_level e)
       | Ast0.AnyTag -> failwith "anytag only within iso phase"
-      | Ast0.StrictTag -> failwith "stricttag only within iso phase")
+      | Ast0.StrictTag -> failwith "stricttag only within iso phase"
+      | Ast0.MetaPosTag(p) -> failwith "metapostag only within iso phase")
     context_nodes
 
 (* result of collecting the join points should be sorted in nondecreasing
@@ -422,10 +425,10 @@ let collect_plus_nodes root =
   let bind x y = x @ y in
   let option_default = [] in
 
-  let mcode fn (term,_,info,mcodekind) =
+  let mcode fn (term,_,info,mcodekind,_) =
     match mcodekind with Ast0.PLUS -> [(info,fn term)] | _ -> [] in
 
-  let imcode fn (term,_,info,mcodekind) =
+  let imcode fn (term,_,info,mcodekind,_) =
     match mcodekind with
       Ast0.PLUS -> [(info,fn term (Ast0toast.convert_info info))]
     | _ -> [] in
@@ -528,7 +531,8 @@ let call_collect_plus context_nodes :
 	  (Ast0.get_index e,
 	   (collect_plus_nodes e).V0.combiner_top_level e)
       | Ast0.AnyTag -> failwith "anytag only within iso phase"
-      | Ast0.StrictTag -> failwith "stricttag only within iso phase")
+      | Ast0.StrictTag -> failwith "stricttag only within iso phase"
+      | Ast0.MetaPosTag(p) -> failwith "metapostag only within iso phase")
     context_nodes
 
 (* The plus fragments are converted to a list of lists of lists.
@@ -886,7 +890,7 @@ let reevaluate_contextness =
    let bind = (@) in
    let option_default = [] in
 
-   let mcode (_,_,_,mc) =
+   let mcode (_,_,_,mc,_) =
      match mc with
        Ast0.CONTEXT(mc) -> let (ba,_,_) = !mc in [ba]
      | _ -> [] in

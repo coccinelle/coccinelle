@@ -823,11 +823,13 @@ let rec bigloop2 rs ccs =
     Common.profile_code r.rulename (fun () -> 
     show_or_not_ctl_text r.ctl r.ast_rule r.ruleid;
 
+    let reorganized_env = reassociate_positions r.free_vars !es in
+
     (* looping over the environments *)
     let (_,newes (* envs for next round/rule *)) =
       List.fold_left
 	(function (cache,newes) ->
-	  function (e,rules_that_have_matched) ->
+	  function ((e,rules_that_have_matched),relevant_bindings) ->
 	    if not(interpret_dependencies rules_that_have_matched
 		     !rules_that_have_ever_matched r.dependencies)
 	    then
@@ -847,9 +849,6 @@ let rec bigloop2 rs ccs =
 		     rules_that_have_matched)])
 	      end
 	    else
-	      let relevant_bindings =
-		List.sort compare
-		  (List.filter (function (x,_) -> List.mem x r.free_vars) e) in
 	      let new_bindings =
 		try List.assoc relevant_bindings cache
 		with
@@ -907,7 +906,7 @@ let rec bigloop2 rs ccs =
 		    new_bindings_to_add in
 	      ((relevant_bindings,new_bindings)::cache,
 	       Common.union_set new_e newes))
-	([],[]) !es in (* end iter es *)
+	([],[]) reorganized_env in (* end iter es *)
     if !(r.was_matched)
     then Common.push2 r.rulename rules_that_have_ever_matched;
 
@@ -925,6 +924,76 @@ let rec bigloop2 rs ccs =
     ccs := rebuild_info_c_and_headers !ccs
   end;
   !ccs (* return final C asts *)
+
+and reassociate_positions free_vars envs =
+  (* issues: isolate the bindings that are relevant to a given rule.
+     separate out the position variables
+     associate all of the position variables for a given set of relevant
+     normal variable bindings with each set of relevant normal variable
+     bindings.  Goal: if eg if@p (E) matches in two places, then both inherited
+     occurrences of E should see both bindings of p, not just its own.
+     Otherwise, a position constraint for something that matches in two
+     places will never be useful, because the position can always be
+     different gfrom the other one. *)
+   let relevant =
+     List.map
+       (function (e,_) ->
+	 List.filter (function (x,_) -> List.mem x free_vars) e)
+       envs in
+   let splitted_relevant =
+     (* separate the relevant variables into the non-position ones and the
+	position ones *)
+     List.map
+       (function r ->
+	 List.fold_left
+	   (function (non_pos,pos) ->
+	     function (_,v) as x ->
+	       match v with
+		 Ast_c.MetaPosValList l -> (non_pos,x::pos)
+	       | _ -> (x::non_pos,pos))
+	   ([],[]) r)
+       relevant in
+   let splitted_relevant =
+     List.map
+       (function (non_pos,pos) ->
+	 (List.sort compare non_pos,List.sort compare pos))
+       splitted_relevant in
+   let extended_relevant =
+     (* extend the position variables with the values found at other identical
+	variable bindings *)
+     List.map
+       (function (non_pos,pos) ->
+	 let others =
+	   List.filter
+	     (function (other_non_pos,other_pos) ->
+               (* do we want equal? or just somehow compatible? eg non_pos
+	       binds only E, but other_non_pos binds both E and E1 *)
+	       non_pos = other_non_pos && not (pos = other_pos))
+	     splitted_relevant in
+	 List.sort compare (non_pos @ (combine_pos pos others)))
+       splitted_relevant in
+   List.combine envs extended_relevant
+
+and combine_pos poslist others =
+  List.map
+    (function (posvar,posval) ->
+      match posval with
+	Ast_c.MetaPosValList l ->
+	  (posvar,
+	   Ast_c.MetaPosValList
+	     (List.sort compare
+		(List.fold_left
+		   (function positions ->
+		     function (_,other_list) ->
+		       try
+			 match List.assoc posvar other_list with
+			   Ast_c.MetaPosValList l1 ->
+			     Common.union_set l1 positions
+			 | _ -> failwith "bad value for a position variable"
+		       with Not_found -> positions)
+		   l others)))
+      |	_ -> failwith "bad value for a position variable")
+    poslist
 
 and bigloop a b = 
   Common.profile_code "bigloop" (fun () -> bigloop2 a b)

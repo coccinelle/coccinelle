@@ -81,6 +81,7 @@ type node = node1 * string
       labels: int list;
       bclabels: int list; (* parent of a break or continue node *)
       is_loop: bool;
+      is_fake: bool;
     }
     and node2 =
 
@@ -254,15 +255,19 @@ let rewrap ((_node, info), nodestr) node = (node, info), nodestr
 let extract_labels ((node, info), nodestr) = info.labels
 let extract_bclabels ((node, info), nodestr) = info.bclabels
 let extract_is_loop ((node, info), nodestr) = info.is_loop 
+let extract_is_fake ((node, info), nodestr) = info.is_fake
 
-let mk_node node labels bclabels nodestr =
+let mk_any_node is_fake node labels bclabels nodestr =
   let nodestr = 
     if !Flag_parsing_c.show_flow_labels
     then nodestr ^ ("[" ^ (labels +> List.map i_to_s +> join ",") ^ "]")
     else nodestr
   in
-  ((node, {labels = labels;is_loop=false;bclabels=bclabels}), nodestr)
+  ((node, {labels = labels;is_loop=false;bclabels=bclabels;is_fake=is_fake}),
+   nodestr)
 
+let mk_node = mk_any_node false
+let mk_fake_node = mk_any_node true (* for duplicated braces *)
 
 (* ------------------------------------------------------------------------ *)
 let first_node g = 

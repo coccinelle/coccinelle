@@ -27,9 +27,9 @@ type info = { line_start : int; line_end : int;
 	      (* the following are only for + code *)
 	      strings_before : string list; strings_after : string list }
 
-type 'a mcode = 'a * arity * info * mcodekind
+type 'a mcode = 'a * arity * info * mcodekind * meta_pos ref (* pos, - only *)
 (* int ref is an index *)
-type 'a wrap =
+and 'a wrap =
     { node : 'a;
       info : info;
       index : int ref;
@@ -39,8 +39,7 @@ type 'a wrap =
       true_if_arg : bool; (* true if "arg_exp", only for exprs *)
       true_if_test : bool; (* true if "test_exp", only for exprs *)
       (*nonempty if this represents the use of an iso*)
-      iso_info : (string*anything) list;
-      pos : Ast.meta_name option } (* position variable, minus only *)
+      iso_info : (string*anything) list }
 
 and dots_bef_aft =
     NoDots | AddingBetweenDots of statement | DroppingBetweenDots of statement
@@ -109,7 +108,7 @@ and base_expression =
   | MetaExpr       of Ast.meta_name mcode * expression list *
 	              Type_cocci.typeC list option * Ast.form * pure
   | MetaExprList   of Ast.meta_name mcode (* only in arg lists *) *
-	              Ast.meta_name option * pure
+	              listlen * pure
   | EComma         of string mcode (* only in arg lists *)
   | DisjExpr       of string mcode * expression list *
 	              string mcode list (* the |s *) * string mcode
@@ -122,6 +121,8 @@ and base_expression =
   | UniqueExp      of expression
 
 and expression = base_expression wrap
+
+and listlen = Ast.meta_name mcode option
 
 (* --------------------------------------------------------------------- *)
 (* Types *)
@@ -206,7 +207,7 @@ and base_parameterTypeDef =
     VoidParam     of typeC
   | Param         of typeC * ident option
   | MetaParam     of Ast.meta_name mcode * pure
-  | MetaParamList of Ast.meta_name mcode * Ast.meta_name option * pure
+  | MetaParamList of Ast.meta_name mcode * listlen * pure
   | PComma        of string mcode
   | Pdots         of string mcode (* ... *)
   | Pcircles      of string mcode (* ooo *)
@@ -325,6 +326,13 @@ and base_case_line =
 and case_line = base_case_line wrap
 
 (* --------------------------------------------------------------------- *)
+(* Positions *)
+
+and meta_pos =
+    MetaPos of Ast.meta_name mcode * Ast.meta_name list
+  | NoMetaPos
+
+(* --------------------------------------------------------------------- *)
 (* Top-level code *)
 
 and base_top_level =
@@ -359,6 +367,7 @@ and anything =
   | TopTag of top_level
   | AnyTag
   | StrictTag
+  | MetaPosTag of meta_pos
 
 let dotsExpr x = DotsExprTag x
 let dotsParam x = DotsParamTag x
@@ -400,8 +409,7 @@ let wrap x =
     bef_aft = NoDots;
     true_if_arg = false;
     true_if_test = false;
-    iso_info = [];
-    pos = None }
+    iso_info = [] }
 let context_wrap x =
   { node = x;
     info = default_info();
@@ -411,17 +419,17 @@ let context_wrap x =
     bef_aft = NoDots;
     true_if_arg = false;
     true_if_test = false;
-    iso_info = [];
-    pos = None }
+    iso_info = [] }
 let unwrap x = x.node
-let unwrap_mcode (x,_,_,_) = x
+let unwrap_mcode (x,_,_,_,_) = x
 let rewrap model x = { model with node = x }
-let rewrap_mcode (_,arity,info,mcodekind) x = (x,arity,info,mcodekind)
+let rewrap_mcode (_,arity,info,mcodekind,pos) x = (x,arity,info,mcodekind,pos)
 let copywrap model x =
   { model with node = x; index = ref !(model.index);
     mcodekind = ref !(model.mcodekind); exp_ty = ref !(model.exp_ty)}
-let get_pos x       = x.pos
-let set_pos pos x   = {x with pos = pos}
+let get_pos (_,_,_,_,x) = !x
+let get_pos_ref (_,_,_,_,x) = x
+let set_pos pos (m,arity,info,mcodekind,_) = (m,arity,info,mcodekind,ref pos)
 let get_info x      = x.info
 let set_info x info = {x with info = info}
 let get_line x      = x.info.line_start
@@ -429,7 +437,7 @@ let get_line_end x  = x.info.line_end
 let get_index x     = !(x.index)
 let set_index x i   = x.index := i
 let get_mcodekind x = !(x.mcodekind)
-let get_mcode_mcodekind (_,_,_,mcodekind) = mcodekind
+let get_mcode_mcodekind (_,_,_,mcodekind,_) = mcodekind
 let get_mcodekind_ref x = x.mcodekind
 let set_mcodekind x mk  = x.mcodekind := mk
 let set_type x t        = x.exp_ty := t
@@ -442,7 +450,7 @@ let get_test_exp x      = x.true_if_test
 let set_test_exp x      = {x with true_if_test = true}
 let get_iso x           = x.iso_info
 let set_iso x i = if !Flag.track_iso_usage then {x with iso_info = i} else x
-let set_mcode_data data (_,ar,info,mc) = (data,ar,info,mc)
+let set_mcode_data data (_,ar,info,mc,pos) = (data,ar,info,mc,pos)
 
 (* --------------------------------------------------------------------- *)
 
@@ -525,7 +533,8 @@ and const_vol t =
 (* this function is a rather minimal attempt.  the problem is that information
 has been lost.  but since it is only used for metavariable types in the isos,
 perhaps it doesn't matter *)
-let ty_rewrap_mcode x = (x,NONE,default_info(),context_befaft())
+let make_mcode x = (x,NONE,default_info(),context_befaft(),ref NoMetaPos)
+let make_mcode_info x info = (x,NONE,info,context_befaft(),ref NoMetaPos)
 
 exception TyConv
 
@@ -538,23 +547,23 @@ let rec reverse_type ty =
   | Type_cocci.BaseType(bty,Some sgn) ->
       BaseType(reverse_baseType bty,Some (reverse_sign sgn))
   | Type_cocci.Pointer(ty) ->
-      Pointer(wrap(reverse_type ty),ty_rewrap_mcode "*")
+      Pointer(wrap(reverse_type ty),make_mcode "*")
   | Type_cocci.StructUnionName(su,mv,tag) ->
       if mv
       then
 	(* not right... *)
 	StructUnionName(reverse_structUnion su,
-			Some(wrap(MetaId(ty_rewrap_mcode ("",tag),[],Impure))))
+			Some(wrap(MetaId(make_mcode ("",tag),[],Impure))))
       else
 	StructUnionName(reverse_structUnion su,
-			Some (wrap(Id(ty_rewrap_mcode tag))))
-  | Type_cocci.TypeName(name) -> TypeName(ty_rewrap_mcode name)
+			Some (wrap(Id(make_mcode tag))))
+  | Type_cocci.TypeName(name) -> TypeName(make_mcode name)
   | Type_cocci.MetaType(name,_,_) ->
-      MetaType(ty_rewrap_mcode name,Impure(*not really right*))
+      MetaType(make_mcode name,Impure(*not really right*))
   | _ -> raise TyConv
 
 and reverse_baseType t =
-  ty_rewrap_mcode
+  make_mcode
     (match t with
       Type_cocci.VoidType -> Ast.VoidType
     | Type_cocci.CharType -> Ast.CharType
@@ -566,19 +575,19 @@ and reverse_baseType t =
     | Type_cocci.LongType -> Ast.LongType)
 
 and reverse_structUnion t =
-  ty_rewrap_mcode
+  make_mcode
     (match t with
       Type_cocci.Struct -> Ast.Struct
     | Type_cocci.Union -> Ast.Union)
 
 and reverse_sign t =
-  ty_rewrap_mcode
+  make_mcode
     (match t with
       Type_cocci.Signed -> Ast.Signed
     | Type_cocci.Unsigned -> Ast.Unsigned)
 
 and reverse_const_vol t =
-  ty_rewrap_mcode
+  make_mcode
     (match t with
       Type_cocci.Const -> Ast.Const
     | Type_cocci.Volatile -> Ast.Volatile)

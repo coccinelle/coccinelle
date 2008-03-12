@@ -128,6 +128,8 @@ let (labels_for_ctl: string list (* dropped isos *) ->
 
       |	Lib_engine.BindGood s, _ -> [(nodei, (p,[(s --> Lib_engine.GoodVal)]))]
       |	Lib_engine.BindBad s, _ ->  [(nodei, (p,[(s --> Lib_engine.BadVal)]))]
+      |	Lib_engine.FakeBrace, _ ->
+	  if F.extract_is_fake node then [nodei, (p,[])] else []
 
       | Lib_engine.Return, node -> 
           (match node with
@@ -360,7 +362,9 @@ let (mysat2:
   (Lib_engine.transformation_info * bool * Lib_engine.metavars_binding list)) =
   fun (flow, label, states) ctl (used_after, positions, binding) -> 
     let binding2 = metavars_binding_to_binding2 binding in
-    let used_after = positions @ used_after in
+    (* the following could be dropped if the python code would make visible
+       its position variables *)
+    let used_after = Common.union_set positions used_after in
     let (triples,(trans_info2, returned_any_states, used_after_envs)) = 
       WRAPPED_ENGINE.satbis (flow, label, states) ctl (used_after, binding2)
     in

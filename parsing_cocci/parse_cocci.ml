@@ -5,6 +5,7 @@ module D = Data
 module PC = Parser_cocci_menhir
 module V0 = Visitor_ast0
 module Ast = Ast_cocci
+module Ast0 = Ast0_cocci
 let pr = Printf.sprintf
 (*let pr2 s = prerr_string s; prerr_string "\n"; flush stderr*)
 let pr2 s = Printf.printf "%s\n" s
@@ -16,7 +17,7 @@ let reserved_names =
 (* ----------------------------------------------------------------------- *)
 (* Debugging... *)
 
-let line_type (d,_,_,_,_,_,_) = d
+let line_type (d,_,_,_,_,_,_,_) = d
 
 let line_type2c tok =
   match line_type tok with
@@ -160,7 +161,7 @@ let token2c (tok,_) =
   | PC.TMetaStmList(_,_,clt)   -> "stmlistmeta"^(line_type2c clt)
   | PC.TMetaFunc(_,_,_,clt)  -> "funcmeta"^(line_type2c clt)
   | PC.TMetaLocalFunc(_,_,_,clt) -> "funcmeta"^(line_type2c clt)
-  | PC.TMetaPos(_)   -> "posmeta"
+  | PC.TMetaPos(_,_,clt)   -> "posmeta"
   | PC.TMPtVirg -> ";"
   | PC.TArobArob -> "@@"
   | PC.TArob -> "@"
@@ -289,7 +290,7 @@ let plus_attachable (tok,_) =
   | PC.TOEllipsis(clt) | PC.TCEllipsis(clt) 
   | PC.TPOEllipsis(clt) | PC.TPCEllipsis(clt) (* | PC.TOCircles(clt)
   | PC.TCCircles(clt) | PC.TOStars(clt) | PC.TCStars(clt) *) -> NOTPLUS
-  | PC.TMetaPos(nm) -> NOTPLUS
+  | PC.TMetaPos(nm,_,_) -> NOTPLUS
 
   | _ -> SKIP
 
@@ -518,12 +519,12 @@ let tokens_all table file get_ats lexbuf end_markers :
 (* ----------------------------------------------------------------------- *)
 (* Split tokens into minus and plus fragments *)
 
-let split t = function
-    (D.MINUS,_,_,_,_,_,_) | (D.OPTMINUS,_,_,_,_,_,_)
-  | (D.UNIQUEMINUS,_,_,_,_,_,_) -> ([t],[])
-  | (D.PLUS,_,_,_,_,_,_) -> ([],[t])
-  | (D.CONTEXT,_,_,_,_,_,_) | (D.UNIQUE,_,_,_,_,_,_)
-  | (D.OPT,_,_,_,_,_,_) -> ([t],[t])
+let split t clt =
+  let (d,_,_,_,_,_,_,_) = clt in
+  match d with
+    D.MINUS | D.OPTMINUS | D.UNIQUEMINUS -> ([t],[])
+  | D.PLUS -> ([],[t])
+  | D.CONTEXT | D.UNIQUE | D.OPT -> ([t],[t])
 
 let split_token ((tok,_) as t) =
   match tok with
@@ -562,7 +563,7 @@ let split_token ((tok,_) as t) =
   | PC.TMetaStm(_,_,clt) | PC.TMetaStmList(_,_,clt) | PC.TMetaErr(_,_,_,clt)
   | PC.TMetaFunc(_,_,_,clt) | PC.TMetaLocalFunc(_,_,_,clt) -> split t clt
   | PC.TMPtVirg | PC.TArob | PC.TArobArob -> ([t],[t])
-  | PC.TPArob | PC.TMetaPos(_) -> ([t],[])
+  | PC.TPArob | PC.TMetaPos(_,_,_) -> ([t],[])
 
   | PC.TFunDecl(clt)
   | PC.TWhen(clt) | PC.TAny(clt) | PC.TStrict(clt) | PC.TLineEnd(clt)
@@ -705,7 +706,7 @@ let detect_types in_meta_decls l =
     | (PC.TMetaType(_,_,_),_)
     | (PC.TMetaStm(_,_,_),_)
     | (PC.TMetaStmList(_,_,_),_)
-    | (PC.TMetaPos(_),_) -> in_meta_decls 
+    | (PC.TMetaPos(_,_,_),_) -> in_meta_decls 
     | _ -> false in
   let redo_id ident clt v =
     !Data.add_type_name ident;
@@ -813,7 +814,7 @@ let token2line (tok,_) =
 
   | PC.TEq(clt) | PC.TAssign(_,clt) | PC.TDot(clt) | PC.TComma(clt) 
   | PC.TPtVirg(clt) ->
-      let (_,line,_,_,_,_,_) = clt in Some line
+      let (_,line,_,_,_,_,_,_) = clt in Some line
 
   | _ -> None
 
@@ -874,16 +875,16 @@ let rec process_pragmas = function
   | ((PC.TPragma(s),_)::_) as l ->
       let (pragmas,rest) = collect_all_pragmas [] l in
       let (skipped,aft,rest) = collect_up_to_plus [] rest in
-      let (a,b,c,d,e,strbef,straft) = get_clt aft in
+      let (a,b,c,d,e,strbef,straft,pos) = get_clt aft in
       skipped@
-      (process_pragmas ((update_clt aft (a,b,c,d,e,pragmas,straft))::rest))
+      (process_pragmas ((update_clt aft (a,b,c,d,e,pragmas,straft,pos))::rest))
   | bef::xs ->
       (match plus_attachable bef with
 	PLUS ->
 	  (match collect_up_to_pragmas [] xs with
 	    Some(skipped,pragmas,rest) ->
-	      let (a,b,c,d,e,strbef,straft) = get_clt bef in
-	      (update_clt bef (a,b,c,d,e,strbef,pragmas))::
+	      let (a,b,c,d,e,strbef,straft,pos) = get_clt bef in
+	      (update_clt bef (a,b,c,d,e,strbef,pragmas,pos))::
 	      skipped@(process_pragmas rest)
 	  | None -> bef::(process_pragmas xs))
       |	_ -> bef::(process_pragmas xs))
@@ -998,15 +999,15 @@ let parse_one str parsefn file toks =
   with 
     Lexer_cocci.Lexical s ->
       failwith
-	(Printf.sprintf "%s: lexical error %s\n =%s\n" str s
+	(Printf.sprintf "%s: lexical error: %s\n =%s\n" str s
 	   (Common.error_message file (get_s_starts !cur_tok) ))
   | Parser_cocci_menhir.Error ->
       failwith
-	(Printf.sprintf "%s: parse error \n = %s\n" str
+	(Printf.sprintf "%s: parse error: \n = %s\n" str
 	   (Common.error_message file (get_s_starts !cur_tok) ))
   | Semantic_cocci.Semantic s ->
       failwith
-	(Printf.sprintf "%s: semantic error %s\n =%s\n" str s
+	(Printf.sprintf "%s: semantic error: %s\n =%s\n" str s
 	   (Common.error_message file (get_s_starts !cur_tok) ))
 
   | e -> raise e
@@ -1014,6 +1015,43 @@ let parse_one str parsefn file toks =
 let prepare_tokens tokens =
   insert_line_end
     (detect_types false (find_function_names (detect_attr tokens)))
+
+let rec consume_minus_positions = function
+    [] -> []
+  | x::(PC.TPArob,_)::(PC.TMetaPos(name,constraints,clt),_)::xs ->
+      let (arity,ln,lln,offset,col,strbef,straft,_) = get_clt x in
+      let name = Parse_aux.clt2mcode name clt in
+      let x =
+	update_clt x
+	  (arity,ln,lln,offset,col,strbef,straft,
+	   Ast0.MetaPos(name,constraints)) in
+      x::(consume_minus_positions xs)
+  | x::xs -> x::consume_minus_positions xs
+
+let rec consume_plus_positions = function
+    [] -> []
+  | x::(PC.TPArob,_)::(PC.TMetaPos(_,_,clt),_)::xs
+    when not (((line_type (get_clt x)) = D.PLUS) or
+	      ((line_type clt) = D.PLUS)) ->
+      x::consume_minus_positions xs
+  | x::xs -> x::consume_minus_positions xs
+
+let any_modif rule =
+  let mcode x =
+    match Ast0.get_mcode_mcodekind x with
+      Ast0.MINUS _ | Ast0.PLUS -> true
+    | _ -> false in
+  let donothing r k e = k e in
+  let bind x y = x or y in
+  let option_default = false in
+  let fn =
+    V0.combiner bind option_default
+      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode
+      donothing donothing donothing donothing donothing donothing
+      donothing donothing donothing donothing donothing donothing donothing
+      donothing donothing in
+  List.exists fn.V0.combiner_top_level rule
 
 let drop_last extra l = List.rev(extra@(List.tl(List.rev l)))
 
@@ -1075,7 +1113,7 @@ let parse_iso file =
 	    let (rule_name,_,_,_,_,_) =
 	      get_rule_name PC.iso_rule_name starts_with_name get_tokens
 		file ("iso file "^file) in
-	    Ast0_cocci.rule_name := rule_name;
+	    Ast0.rule_name := rule_name;
 	    Data.in_meta := true;
 	    let iso_metavars =
 	      match get_metavars PC.iso_meta_main table file lexbuf with
@@ -1153,7 +1191,9 @@ let parse file =
 	    let (rule_name,dependencies,iso,dropiso,exists,is_expression) =
 	      get_rule_name PC.rule_name starts_with_name get_tokens file
 		"rule" in
-	    Ast0_cocci.rule_name := rule_name;
+	    Ast0.rule_name := rule_name;
+	    Data.inheritable_positions :=
+	      rule_name :: !Data.inheritable_positions;
 	    (* get metavariable declarations *)
 	    Data.in_meta := true;
 	    let (metavars,inherited_metavars) =
@@ -1174,7 +1214,9 @@ let parse file =
 	      | _ -> failwith "unexpected token") in
 	    let (minus_tokens,plus_tokens) = split_token_stream tokens in 
 	    let minus_tokens = prepare_tokens minus_tokens in
+	    let minus_tokens = consume_minus_positions minus_tokens in
 	    let plus_tokens = prepare_tokens plus_tokens in
+	    let minus_tokens = consume_plus_positions minus_tokens in
             (*
 	       print_tokens "minus tokens" minus_tokens;
 	       print_tokens "plus tokens" plus_tokens;
@@ -1208,6 +1250,11 @@ let parse file =
 	    (*
 	       Printf.printf "after plus parse\n";
 	    *)
+
+	    (if not !Flag.sgrep_mode2 &&
+	      (any_modif minus_res or any_modif plus_res)
+	    then Data.inheritable_positions := []);
+
 	    Check_meta.check_meta rule_name old_metas inherited_metavars
 	      metavars minus_res plus_res;
 	    if more
@@ -1270,6 +1317,7 @@ let process file isofile verbose =
 		   (* drop those isos *)
 		 List.filter (function (_,_,nm) -> not (List.mem nm dropiso))
 		   chosen_isos in
+	     List.iter Iso_compile.process chosen_isos;
 	     let dropped_isos =
 	       match reserved_names with
 		 "all"::others ->

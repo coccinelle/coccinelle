@@ -5,7 +5,8 @@ type fresh = bool
 
 type clt =
     line_type * int * int * int * int (* starting spaces *) *
-      string list (* code before *) * string list (* code after *)
+      string list (* code before *) * string list (* code after *) *
+      Ast0_cocci.meta_pos (* position variable, minus only *)
 
 (* ---------------------------------------------------------------------- *)
 
@@ -16,11 +17,13 @@ and line_type =
 
 type iconstraints = Ast0_cocci.ident list
 type econstraints = Ast0_cocci.expression list
+type pconstraints = Ast_cocci.meta_name list
 
 val in_rule_name : bool ref (* true if parsing the rule name *)
 val in_meta : bool ref      (* true if parsing the metavariable decls *)
 val in_iso : bool ref       (* true if parsing the isomorphisms *)
 val in_prolog : bool ref    (* true if parsing the beginning of an SP *)
+val inheritable_positions : string list ref
 
 val all_metadecls : (string, Ast_cocci.metavar list) Hashtbl.t
 
@@ -66,7 +69,7 @@ val add_func_meta:
 val add_local_func_meta:
     (Ast_cocci.meta_name -> iconstraints -> Ast0_cocci.pure -> unit) ref
 
-val add_pos_meta: (Ast_cocci.meta_name -> unit) ref
+val add_pos_meta: (Ast_cocci.meta_name -> pconstraints -> unit) ref
 
 val add_type_name: (string -> unit) ref
 

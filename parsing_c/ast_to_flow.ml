@@ -286,10 +286,13 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
  
       let newi = !g +> add_node (SeqStart (stmt, brace, i1)) lbl s1 in
       let endnode = mk_node     (SeqEnd (brace, i2))         lbl [] s2 in
+      let endnode_dup = mk_fake_node (SeqEnd (brace, i2))    lbl [] s2 in
+(*
       let _endnode_dup =
 	mk_node (SeqEnd (brace, Ast_c.fakeInfo())) lbl [] s2 in
+*)
 
-      let newxi = { xi_lbl with braces = endnode(*_dup*):: xi_lbl.braces } in
+      let newxi = { xi_lbl with braces = endnode_dup:: xi_lbl.braces } in
 
       let newxi = match xi.compound_caller with
         | Switch todo_in_compound -> 

@@ -29,6 +29,9 @@ let get_vars = function
 
 let string2val str = Lib_engine.NormalMetaVal(Ast_c.MetaIdVal(str))
 
+(* ----------------------------------------------------------------------- *)
+(* Get values for fresh variables *)
+
 let process_tree inherited_env l =
   let (all_fresh,local_freshs,new_triples) =
     List.fold_left
@@ -64,8 +67,14 @@ let process_tree inherited_env l =
 	 fresh_env) in
   (List.rev res, fresh_env)
 
+(* ----------------------------------------------------------------------- *)
+(* Create the environment to be used afterwards *)
+
 let collect_used_after used_after envs =
   List.map (List.filter (function (v,vl) -> List.mem v used_after)) envs
+
+(* ----------------------------------------------------------------------- *)
+(* entry point *)
 
 let process used_after inherited_env l =
   extra_counter := 0;

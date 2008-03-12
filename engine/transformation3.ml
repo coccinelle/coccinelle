@@ -198,7 +198,7 @@ module XTRANS = struct
 
 
   let tokenf ia ib = fun tin -> 
-    let (s1, i, mck) = ia in
+    let (_,i,mck,_) = ia in
     let pos = Ast_c.pos_of_info ib in
     if check_pos (Some i) mck pos 
     then return (ia, tag_with_mck mck ib tin) tin
@@ -251,7 +251,7 @@ module XTRANS = struct
               (fun ib -> tag_with_mck 
                 (Ast_cocci.CONTEXT (pos,Ast_cocci.BEFORE xxs)) ib tin)
             ) expr
-        | Ast_cocci.AFTER xxs ->  
+        | Ast_cocci.AFTER xxs -> 
             distributef (
               (fun x -> x), 
               (fun x -> x), 
@@ -346,7 +346,7 @@ module XTRANS = struct
       
   let distrf (ii_of_x_f, distribute_mck_x_f) = 
     fun ia x -> fun tin -> 
-    let (s1, i, mck) = ia in
+    let mck = Ast_cocci.get_mcodekind ia in
     let (max, min) = Lib_parsing_c.max_min_by_pos (ii_of_x_f x)
     in
     if 
@@ -393,25 +393,24 @@ module XTRANS = struct
   let meta_name_to_str (s1, s2) = 
     s1 ^ "." ^ s2
 
-  let envf relevant keep _inherited = fun (s, value) f tin -> 
-    if relevant
-    then
-      let v = 
-	if keep = Type_cocci.Saved
-	then (
-          try Some (List.assoc s tin.binding)
-          with Not_found -> 
-            pr2(sprintf
-		  "Don't find value for metavariable %s in the environment"
-                  (meta_name_to_str s));
-            None)
-	else
+  let envf keep _inherited = fun (s, value, _) f tin -> 
+    let s = Ast_cocci.unwrap_mcode s in
+    let v = 
+      if keep = Type_cocci.Saved
+      then (
+        try Some (List.assoc s tin.binding)
+        with Not_found -> 
+          pr2(sprintf
+		"Don't find value for metavariable %s in the environment"
+                (meta_name_to_str s));
+          None)
+      else
         (* not raise Impossible! *)
-          Some (value)
-      in
-      match v with
-      | None -> fail tin
-      | Some (value') ->
+        Some (value)
+    in
+    match v with
+    | None -> fail tin
+    | Some (value') ->
 
         (* Ex: in cocci_vs_c someone wants to add a binding. Here in
          * transformation3 the value for this var may be already in the 
@@ -425,11 +424,9 @@ module XTRANS = struct
          *)
 
         (*f () tin*)
-          if Cocci_vs_c_3.equal_metavarval value value' 
-          then f () tin
-          else fail tin
-    else (* irrelevant, ie a position variable *)
-      f () tin
+        if Cocci_vs_c_3.equal_metavarval value value' 
+        then f () tin
+        else fail tin
 
     
   let check_constraints matcher constraints exp = fun f tin -> f () tin

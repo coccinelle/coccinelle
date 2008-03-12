@@ -4,13 +4,14 @@ module Ast = Ast_cocci
 
 (* types for metavariable tokens *)
 type info = Ast.meta_name * Ast0.pure * Data.clt
-type idinfo = Ast.meta_name * Ast0.ident list * Ast0.pure * Data.clt
-type expinfo = Ast.meta_name * Ast0.expression list * Ast0.pure * Data.clt
+type idinfo = Ast.meta_name * Data.iconstraints * Ast0.pure * Data.clt
+type expinfo = Ast.meta_name * Data.econstraints * Ast0.pure * Data.clt
 type tyinfo = Ast.meta_name * Ast0.typeC list * Ast0.pure * Data.clt
 type list_info = Ast.meta_name * Ast.meta_name option * Ast0.pure * Data.clt
 type typed_info =
-    Ast.meta_name * Ast0.expression list * Ast0.pure *
+    Ast.meta_name * Data.econstraints * Ast0.pure *
       Type_cocci.typeC list option * Data.clt
+type pos_info = Ast.meta_name * Data.pconstraints * Data.clt
 
 
 let get_option fn = function
@@ -25,39 +26,43 @@ let make_info line logical_line offset col strbef straft =
     Ast0.column = col; Ast0.offset = offset;
     Ast0.strings_before = strbef; Ast0.strings_after = straft; }
 
-let clt2info (_,line,logical_line,offset,col,strbef,straft) =
+let clt2info (_,line,logical_line,offset,col,strbef,straft,pos) =
   make_info line logical_line offset col strbef straft
 
-let drop_bef (arity,line,lline,offset,col,strbef,straft) =
-  (arity,line,lline,offset,col,[],straft)
+let drop_bef (arity,line,lline,offset,col,strbef,straft,pos) =
+  (arity,line,lline,offset,col,[],straft,pos)
 
-let drop_aft (arity,line,lline,offset,col,strbef,straft) =
-  (arity,line,lline,offset,col,strbef,[])
+let drop_aft (arity,line,lline,offset,col,strbef,straft,pos) =
+  (arity,line,lline,offset,col,strbef,[],pos)
 
 let clt2mcode str = function
-    (Data.MINUS,line,lline,offset,col,strbef,straft)       ->
+    (Data.MINUS,line,lline,offset,col,strbef,straft,pos)       ->
       (str,Ast0.NONE,make_info line lline offset col strbef straft,
-       Ast0.MINUS(ref([],Ast0.default_token_info)))
-  | (Data.OPTMINUS,line,lline,offset,col,strbef,straft)    ->
+       Ast0.MINUS(ref([],Ast0.default_token_info)),ref pos)
+  | (Data.OPTMINUS,line,lline,offset,col,strbef,straft,pos)    ->
       (str,Ast0.OPT,make_info line lline offset col strbef straft,
-       Ast0.MINUS(ref([],Ast0.default_token_info)))
-  | (Data.UNIQUEMINUS,line,lline,offset,col,strbef,straft) ->
+       Ast0.MINUS(ref([],Ast0.default_token_info)),ref pos)
+  | (Data.UNIQUEMINUS,line,lline,offset,col,strbef,straft,pos) ->
       (str,Ast0.UNIQUE,make_info line lline offset col strbef straft,
-       Ast0.MINUS(ref([],Ast0.default_token_info)))
-  | (Data.PLUS,line,lline,offset,col,strbef,straft)        ->
-      (str,Ast0.NONE,make_info line lline offset col strbef straft,Ast0.PLUS)
-  | (Data.CONTEXT,line,lline,offset,col,strbef,straft)     ->
+       Ast0.MINUS(ref([],Ast0.default_token_info)),ref pos)
+  | (Data.PLUS,line,lline,offset,col,strbef,straft,pos)        ->
+      (str,Ast0.NONE,make_info line lline offset col strbef straft,Ast0.PLUS,
+       ref pos)
+  | (Data.CONTEXT,line,lline,offset,col,strbef,straft,pos)     ->
       (str,Ast0.NONE,make_info line lline offset col strbef straft,
        Ast0.CONTEXT(ref(Ast.NOTHING,
-			Ast0.default_token_info,Ast0.default_token_info)))
-  | (Data.OPT,line,lline,offset,col,strbef,straft)         ->
+			Ast0.default_token_info,Ast0.default_token_info)),
+       ref pos)
+  | (Data.OPT,line,lline,offset,col,strbef,straft,pos)         ->
       (str,Ast0.OPT,make_info line lline offset col strbef straft,
        Ast0.CONTEXT(ref(Ast.NOTHING,
-			Ast0.default_token_info,Ast0.default_token_info)))
-  | (Data.UNIQUE,line,lline,offset,col,strbef,straft)      ->
+			Ast0.default_token_info,Ast0.default_token_info)),
+       ref pos)
+  | (Data.UNIQUE,line,lline,offset,col,strbef,straft,pos)      ->
       (str,Ast0.UNIQUE,make_info line lline offset col strbef straft,
        Ast0.CONTEXT(ref(Ast.NOTHING,
-			Ast0.default_token_info,Ast0.default_token_info)))
+			Ast0.default_token_info,Ast0.default_token_info)),
+       ref pos)
 
 let id2name   (name, clt) = name
 let id2clt    (name, clt) = clt
@@ -267,6 +272,18 @@ let check_meta tok =
 	  raise
 	    (Semantic_cocci.Semantic
 	       ("incompatible inheritance declaration "^name)))
+  | Ast.MetaPosDecl(Ast.NONE,(rule,name)) ->
+      (match lookup rule name with
+	Ast.MetaPosDecl(_,_) ->
+	  if not (List.mem rule !Data.inheritable_positions)
+	  then
+	    raise
+	      (Semantic_cocci.Semantic
+		 ("position cannot be inherited over modifications: "^name))
+      | _ ->
+	  raise
+	    (Semantic_cocci.Semantic
+	       ("incompatible inheritance declaration "^name)))
   | _ ->
       raise
 	(Semantic_cocci.Semantic ("arity not allowed on imported declaration"))
@@ -331,9 +348,9 @@ let str2inc s =
 (* ---------------------------------------------------------------------- *)
 (* statements *)
 
-let meta_stm name pos =
+let meta_stm name =
   let (nm,pure,clt) = name in
-  Ast0.set_pos pos (Ast0.wrap(Ast0.MetaStmt(clt2mcode nm clt,pure)))
+  Ast0.wrap(Ast0.MetaStmt(clt2mcode nm clt,pure))
 
 let exp_stm exp pv =
   Ast0.wrap(Ast0.ExprStatement (exp, clt2mcode ";" pv))

@@ -12,7 +12,7 @@ type res = NO | MAYBE
 
 let return b = if b then MAYBE else NO
 
-let unify_mcode (x,_,_) (y,_,_) = x = y
+let unify_mcode (x,_,_,_) (y,_,_,_) = x = y
 
 let unify_option f t1 t2 =
   match (t1,t2) with

@@ -41,7 +41,7 @@ module P = Parse_aux
 %token <Parse_aux.info>       TMetaParam TMetaStm TMetaStmList TMetaType
 %token <Parse_aux.list_info>  TMetaParamList TMetaExpList
 %token <Parse_aux.typed_info> TMetaExp TMetaIdExp TMetaConst
-%token <Ast_cocci.meta_name * Data.clt>  TMetaPos
+%token <Parse_aux.pos_info>   TMetaPos
 
 %token TArob TArobArob TPArob
 
@@ -252,12 +252,12 @@ metadec:
   kindfn=metakind_atomic_expe
   ids=comma_list(pure_ident_or_meta_ident_with_not_eq(not_ceq)) TMPtVirg
     { P.create_metadec_ne ar ispure kindfn ids }
-| ar=arity TPosition ids=comma_list(pure_ident) TMPtVirg
-    { let kindfn arity name pure check_meta =
+| ar=arity TPosition
+    ids=comma_list(pure_ident_or_meta_ident_with_not_eq(not_pos)) TMPtVirg
+    { let kindfn arity name pure check_meta constraints =
       let tok = check_meta(Ast.MetaPosDecl(arity,name)) in
-      !Data.add_pos_meta name; tok in
-    let ids = List.map (function nm -> (None,P.id2name nm)) ids in
-    P.create_metadec ar false kindfn ids }
+      !Data.add_pos_meta name constraints; tok in
+    P.create_metadec_ne ar false kindfn ids }
 | ar=arity ispure=pure
     TParameter Tlist TOCro id=pure_ident_or_meta_ident TCCro
     ids=comma_list(pure_ident_or_meta_ident) TMPtVirg
@@ -549,18 +549,20 @@ includes:
   TIncludeL
     { Ast0.wrap
 	      (Ast0.Include(P.clt2mcode "#include" (P.drop_aft (P.id2clt $1)),
-			    let (arity,ln,lln,offset,col,strbef,straft) =
+			    let (arity,ln,lln,offset,col,strbef,straft,pos) =
 			      P.id2clt $1 in
-			    let clt = (arity,ln,lln,offset,0,strbef,straft) in
+			    let clt =
+			      (arity,ln,lln,offset,0,strbef,straft,pos) in
 			    P.clt2mcode
 			      (Ast.Local (Parse_aux.str2inc (P.id2name $1)))
 			      (P.drop_bef clt))) }
 | TIncludeNL
     { Ast0.wrap
 	      (Ast0.Include(P.clt2mcode "#include" (P.drop_aft (P.id2clt $1)),
-			    let (arity,ln,lln,offset,col,strbef,straft) =
+			    let (arity,ln,lln,offset,col,strbef,straft,pos) =
 			      P.id2clt $1 in
-			    let clt = (arity,ln,lln,offset,0,strbef,straft) in
+			    let clt =
+			      (arity,ln,lln,offset,0,strbef,straft,pos) in
 			    P.clt2mcode
 			      (Ast.NonLocal (Parse_aux.str2inc (P.id2name $1)))
 			      (P.drop_bef clt))) }
@@ -599,8 +601,9 @@ defineop:
 	      body)) }
 | TDefineParam define_param_list_option TCPar
     { let (clt,ident,parenoff) = $1 in
-      let (arity,line,lline,offset,col,strbef,straft) = clt in
-      let lp = P.clt2mcode "(" (arity,line,lline,parenoff,0,[],[]) in
+      let (arity,line,lline,offset,col,strbef,straft,pos) = clt in
+      let lp =
+	P.clt2mcode "(" (arity,line,lline,parenoff,0,[],[],Ast0.NoMetaPos) in
       function body ->
 	Ast0.wrap
 	  (Ast0.Define
@@ -745,9 +748,9 @@ decl: t=ctype i=ident
     | t=Tvoid
 	{ let ty = Ast0.wrap(Ast0.BaseType(P.clt2mcode Ast.VoidType t, None)) in
           Ast0.wrap(Ast0.VoidParam(ty)) }
-    | TMetaParam option(pos)
+    | TMetaParam
 	{ let (nm,pure,clt) = $1 in
-	Ast0.set_pos $2 (Ast0.wrap(Ast0.MetaParam(P.clt2mcode nm clt,pure))) }
+	Ast0.wrap(Ast0.MetaParam(P.clt2mcode nm clt,pure)) }
 
 name_opt_decl:
       decl  { $1 }
@@ -765,15 +768,12 @@ const_vol:
       Tconst       { P.clt2mcode Ast.Const $1 }
     | Tvolatile    { P.clt2mcode Ast.Volatile $1 }
 
-pos:
-      TPArob TMetaPos { let (name,clt) = $2 in name }
-
 /*****************************************************************************/
 
 statement:
   includes { $1 } /* shouldn't be allowed to be a single_statement... */
-| TMetaStm option(pos)
-    { P.meta_stm $1 $2 }
+| TMetaStm
+    { P.meta_stm $1 }
 | expr TPtVirg
     { P.exp_stm $1 $2 }
 | TIf TOPar eexpr TCPar single_statement %prec TIf
@@ -1053,9 +1053,9 @@ comma_initializers2(dotter):
 
 /* a statement that is part of a list */
 decl_statement:
-    TMetaStmList option(pos)
+    TMetaStmList
       { let (nm,pure,clt) = $1 in
-      [Ast0.set_pos $2 (Ast0.wrap(Ast0.MetaStmt(P.clt2mcode nm clt,pure)))] }
+      [Ast0.wrap(Ast0.MetaStmt(P.clt2mcode nm clt,pure))] }
   | decl_var
       { List.map
 	  (function x ->
@@ -1242,25 +1242,21 @@ primary_expr(recurser,primary_extra):
  | TChar
      { let (x,clt) = $1 in
      Ast0.wrap(Ast0.Constant (P.clt2mcode (Ast.Char x) clt)) }
- | TMetaConst option(pos)
+ | TMetaConst
      { let (nm,constraints,pure,ty,clt) = $1 in
-     Ast0.set_pos $2
-       (Ast0.wrap
-	  (Ast0.MetaExpr(P.clt2mcode nm clt,constraints,ty,Ast.CONST,pure))) }
- | TMetaErr option(pos)
+     Ast0.wrap
+       (Ast0.MetaExpr(P.clt2mcode nm clt,constraints,ty,Ast.CONST,pure)) }
+ | TMetaErr
      { let (nm,constraints,pure,clt) = $1 in
-     Ast0.set_pos $2
-       (Ast0.wrap(Ast0.MetaErr(P.clt2mcode nm clt,constraints,pure))) }
- | TMetaExp option(pos)
+     Ast0.wrap(Ast0.MetaErr(P.clt2mcode nm clt,constraints,pure)) }
+ | TMetaExp
      { let (nm,constraints,pure,ty,clt) = $1 in
-     Ast0.set_pos $2
-       (Ast0.wrap
-	  (Ast0.MetaExpr(P.clt2mcode nm clt,constraints,ty,Ast.ANY,pure))) }
- | TMetaIdExp option(pos)
+     Ast0.wrap
+       (Ast0.MetaExpr(P.clt2mcode nm clt,constraints,ty,Ast.ANY,pure)) }
+ | TMetaIdExp
      { let (nm,constraints,pure,ty,clt) = $1 in
-     Ast0.set_pos $2
-       (Ast0.wrap
-	  (Ast0.MetaExpr(P.clt2mcode nm clt,constraints,ty,Ast.ID,pure))) }
+     Ast0.wrap
+       (Ast0.MetaExpr(P.clt2mcode nm clt,constraints,ty,Ast.ID,pure)) }
  | TOPar eexpr TCPar
      { Ast0.wrap(Ast0.Paren(P.clt2mcode "(" $1,$2,
 			    P.clt2mcode ")" $3)) }
@@ -1279,9 +1275,12 @@ expr_dots(dotter):
 pure_ident:
      TIdent { $1 }
 
+meta_ident:
+       TRuleName TDot pure_ident { (Some $1,P.id2name $3) }
+
 pure_ident_or_meta_ident:
        pure_ident                { (None,P.id2name $1) }
-     | TRuleName TDot pure_ident { (Some $1,P.id2name $3) }
+     | meta_ident                { $1 }
 
 pure_ident_or_meta_ident_with_not_eq(not_eq):
        i=pure_ident_or_meta_ident l=loption(not_eq) { (i,l) }
@@ -1325,36 +1324,54 @@ ident_or_const:
 	 { let (x,clt) = $1 in
 	 Ast0.wrap(Ast0.Constant (P.clt2mcode (Ast.Int x) clt)) }
 
+not_pos:
+       TNotEq i=meta_ident
+         { (if !Data.in_iso
+	   then failwith "constraints not allowed in iso file");
+	   match i with
+	     (None,_) -> failwith "constraint must be an inherited variable"
+	   | (Some rule,name) ->
+	       let i = (rule,name) in
+	       P.check_meta(Ast.MetaPosDecl(Ast.NONE,i));
+	       [i] }
+     | TNotEq TOBrace l=comma_list(meta_ident) TCBrace
+	 { (if !Data.in_iso
+	   then failwith "constraints not allowed in iso file");
+	   List.map
+	     (function
+		 (None,_) ->
+		   failwith "constraint must be an inherited variable"
+	       | (Some rule,name) ->
+		   let i = (rule,name) in
+		   P.check_meta(Ast.MetaPosDecl(Ast.NONE,i));
+		   i)
+	     l }
+
 func_ident: pure_ident
          { Ast0.wrap(Ast0.Id(P.id2mcode $1)) }
-     | TMetaId option(pos)
+     | TMetaId
          { let (nm,constraints,pure,clt) = $1 in
-         Ast0.set_pos $2
-	   (Ast0.wrap(Ast0.MetaId(P.clt2mcode nm clt,constraints,pure))) }
-     | TMetaFunc option(pos)
+	 Ast0.wrap(Ast0.MetaId(P.clt2mcode nm clt,constraints,pure)) }
+     | TMetaFunc
          { let (nm,constraints,pure,clt) = $1 in
-         Ast0.set_pos $2
-	   (Ast0.wrap(Ast0.MetaFunc(P.clt2mcode nm clt,constraints,pure))) }
-     | TMetaLocalFunc option(pos)
+	 Ast0.wrap(Ast0.MetaFunc(P.clt2mcode nm clt,constraints,pure)) }
+     | TMetaLocalFunc
 	 { let (nm,constraints,pure,clt) = $1 in
-         Ast0.set_pos $2
-	   (Ast0.wrap
-	      (Ast0.MetaLocalFunc(P.clt2mcode nm clt,constraints,pure))) }
+	 Ast0.wrap
+	   (Ast0.MetaLocalFunc(P.clt2mcode nm clt,constraints,pure)) }
 
 ident: pure_ident
          { Ast0.wrap(Ast0.Id(P.id2mcode $1)) }
-     | TMetaId option(pos)
+     | TMetaId
          { let (nm,constraints,pure,clt) = $1 in
-         Ast0.set_pos $2
-	   (Ast0.wrap(Ast0.MetaId(P.clt2mcode nm clt,constraints,pure))) }
+         Ast0.wrap(Ast0.MetaId(P.clt2mcode nm clt,constraints,pure)) }
 
 typedef_ident:
        pure_ident
          { Ast0.wrap(Ast0.TypeName(P.id2mcode $1)) }
-     | TMetaType option(pos)
+     | TMetaType
          { let (nm,pure,clt) = $1 in
-         Ast0.set_pos $2
-	   (Ast0.wrap(Ast0.MetaType(P.clt2mcode nm clt,pure))) }
+	 Ast0.wrap(Ast0.MetaType(P.clt2mcode nm clt,pure)) }
 
 /*****************************************************************************/
 
@@ -1381,10 +1398,14 @@ decl_list_start(decl):
 
 one_dec(decl):
   decl  { $1 }
-| TMetaParamList option(pos)
+| TMetaParamList
     { let (nm,lenname,pure,clt) = $1 in
-    Ast0.set_pos $2
-      (Ast0.wrap(Ast0.MetaParamList(P.clt2mcode nm clt,lenname,pure))) }
+    let nm = P.clt2mcode nm clt in
+    let lenname =
+      match lenname with
+	Some nm -> Some(P.clt2mcode nm clt)
+      | None -> None in
+    Ast0.wrap(Ast0.MetaParamList(nm,lenname,pure)) }
  
 comma_decls(dotter,decl):
   TComma dotter
@@ -1539,10 +1560,14 @@ eexpr_list:
 aexpr:
     dexpr
       { Ast0.set_arg_exp $1 }
-  | TMetaExpList option(pos)
+  | TMetaExpList
       { let (nm,lenname,pure,clt) = $1 in
-      Ast0.set_pos $2
-	(Ast0.wrap(Ast0.MetaExprList(P.clt2mcode nm clt,lenname,pure))) }
+      let nm = P.clt2mcode nm clt in
+      let lenname =
+	match lenname with
+	  Some nm -> Some(P.clt2mcode nm clt)
+	| None -> None in
+      Ast0.wrap(Ast0.MetaExprList(nm,lenname,pure)) }
   | ctype
       { Ast0.set_arg_exp(Ast0.wrap(Ast0.TypeExp($1))) }
 
@@ -1726,3 +1751,4 @@ iso(term):
 *****************************************************************************/
 
 never_used: TPragma { () }
+  | TPArob TMetaPos { () }

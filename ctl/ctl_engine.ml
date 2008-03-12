@@ -1803,7 +1803,11 @@ let rec sat_verbose_loop unchecked required required_states annot maxlvl lvl
 	  else res in
 	anno res [] in
     let res1 = drop_wits required_states res phi in
-    if not(res1 = res) then print_state "after drop_wits" res1;
+    if not(res1 = res)
+    then
+      begin
+	print_required_states required_states;
+      print_state "after drop_wits" res1 end;
     (child,res1)
 	
 ;;

@@ -23,6 +23,13 @@ let rec pp_binding_kind = function
   | Ast_c.MetaListlenVal n -> pp (string_of_int n)
   | Ast_c.MetaPosVal (pos1, pos2) -> 
       pp (Common.sprintf ("pos(%d,%d)") pos1 pos2)
+  | Ast_c.MetaPosValList l -> 
+      pp (Common.sprintf ("poss[%s]")
+	    (String.concat ", "
+	       (List.map
+		  (function ((minl,minc),(maxl,maxc)) ->
+		    Printf.sprintf "((%d,%d),(%d,%d))" minl minc maxl maxc)
+		  l)))
 
 and pp_binding subst = 
   begin
@@ -66,6 +73,7 @@ let rec pp_predicate = function
   | PrefixLabel s -> pp "PrefixLabel("; pp_meta s; pp ")"
   | BindGood s -> pp "BindGood("; pp_meta s; pp ")"
   | BindBad s ->  pp "BindBad(";  pp_meta s; pp ")"
+  | FakeBrace -> pp "FakeBrace"
 
 and pp_binding2 subst = 
   begin

@@ -24,8 +24,8 @@ type info = { line_start : int; line_end : int;
 	      (* the following are only for + code *)
 	      strings_before : string list; strings_after : string list }
 
-type 'a mcode = 'a * arity * info * mcodekind
-type 'a wrap =
+type 'a mcode = 'a * arity * info * mcodekind * meta_pos ref (* pos, - only *)
+and 'a wrap =
     { node : 'a;
       info : info;
       index : int ref;
@@ -35,8 +35,7 @@ type 'a wrap =
       true_if_arg : bool; (* true if "arg_exp", only for exprs *)
       true_if_test : bool; (* true if "test_exp", only for exprs *)
       (*nonempty if this represents the use of an iso*)
-      iso_info : (string*anything) list;
-      pos : Ast_cocci.meta_name option }
+      iso_info : (string*anything) list }
 
 and dots_bef_aft =
     NoDots | AddingBetweenDots of statement | DroppingBetweenDots of statement
@@ -103,7 +102,7 @@ and base_expression =
   | MetaExpr       of Ast_cocci.meta_name mcode * expression list *
 	              Type_cocci.typeC list option * Ast_cocci.form * pure
   | MetaExprList   of Ast_cocci.meta_name mcode (* only in arglists *) *
-	              Ast_cocci.meta_name option * pure
+	              listlen * pure
   | EComma         of string mcode (* only in arglists *)
   | DisjExpr       of string mcode * expression list * string mcode list *
 	              string mcode
@@ -116,6 +115,8 @@ and base_expression =
   | UniqueExp      of expression
 
 and expression = base_expression wrap
+
+and listlen = Ast_cocci.meta_name mcode option
 
 (* --------------------------------------------------------------------- *)
 (* Types *)
@@ -200,8 +201,7 @@ and base_parameterTypeDef =
     VoidParam     of typeC
   | Param         of typeC * ident option
   | MetaParam     of Ast_cocci.meta_name mcode * pure
-  | MetaParamList of Ast_cocci.meta_name mcode * Ast_cocci.meta_name option *
-	             pure
+  | MetaParamList of Ast_cocci.meta_name mcode * listlen * pure
   | PComma        of string mcode
   | Pdots         of string mcode (* ... *)
   | Pcircles      of string mcode (* ooo *)
@@ -321,6 +321,13 @@ and base_case_line =
 and case_line = base_case_line wrap
 
 (* --------------------------------------------------------------------- *)
+(* Positions *)
+
+and meta_pos =
+    MetaPos of Ast_cocci.meta_name mcode * Ast_cocci.meta_name list
+  | NoMetaPos
+
+(* --------------------------------------------------------------------- *)
 (* Top-level code *)
 
 and base_top_level =
@@ -355,6 +362,7 @@ and anything =
   | TopTag of top_level
   | AnyTag (* only for when code, in iso phase *)
   | StrictTag (* only for when code, in iso phase *)
+  | MetaPosTag of meta_pos (* only in iso phase *)
 
 val dotsExpr : expression dots -> anything
 val dotsInit : initialiser dots -> anything
@@ -389,8 +397,9 @@ val unwrap_mcode : 'a mcode -> 'a
 val rewrap : 'a wrap -> 'b -> 'b wrap
 val rewrap_mcode : 'a mcode -> 'b -> 'b mcode
 val copywrap : 'a wrap -> 'b -> 'b wrap
-val get_pos : 'a wrap -> Ast_cocci.meta_name option
-val set_pos : Ast_cocci.meta_name option -> 'a wrap -> 'a wrap
+val get_pos : 'a mcode -> meta_pos
+val get_pos_ref : 'a mcode -> meta_pos ref
+val set_pos : meta_pos -> 'a mcode -> 'a mcode
 val get_info : 'a wrap -> info
 val set_info : 'a wrap -> info -> 'a wrap
 val get_index : 'a wrap -> int
@@ -413,6 +422,8 @@ val set_iso : 'a wrap -> (string*anything) list -> 'a wrap
 val get_iso : 'a wrap -> (string*anything) list
 val fresh_index : unit -> int
 val set_mcode_data : 'a -> 'a mcode -> 'a mcode
+val make_mcode : 'a -> 'a mcode
+val make_mcode_info : 'a -> info -> 'a mcode
 
 val ast0_type_to_type : typeC -> Type_cocci.typeC
 val reverse_type : Type_cocci.typeC -> base_typeC

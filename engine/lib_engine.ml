@@ -18,6 +18,7 @@ type predicate =
   | PrefixLabel of Ast_cocci.meta_name
   | BindGood of Ast_cocci.meta_name (* used to implement \+ *)
   | BindBad  of Ast_cocci.meta_name
+  | FakeBrace
 
 type ctlcocci = (predicate, Ast_cocci.meta_name) Wrapper_ctl.wrapped_ctl
 

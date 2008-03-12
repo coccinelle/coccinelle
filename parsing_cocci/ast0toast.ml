@@ -157,7 +157,7 @@ let check_allminus =
   let donothing r k e = k e in
   let bind x y = x && y in
   let option_default = true in
-  let mcode (_,_,_,mc) =
+  let mcode (_,_,_,mc,_) =
     match mc with
       Ast0.MINUS(r) -> let (plusses,_) = !r in plusses = []
     | _ -> false in
@@ -219,23 +219,31 @@ let convert_mcodekind = function
       let (befaft,_,_) = !befaft in Ast.CONTEXT(Ast.NoPos,befaft)
   | Ast0.MIXED(_) -> failwith "not possible for mcode"
 
-let mcode(term,_,info,mcodekind) =
-  (term,convert_info info,convert_mcodekind mcodekind)
+let pos_mcode(term,_,info,mcodekind,pos) =
+  (* avoids a recursion problem *)
+  (term,convert_info info,convert_mcodekind mcodekind,Ast.NoMetaPos)
+
+let mcode(term,_,info,mcodekind,pos) =
+  let pos =
+    match !pos with
+      Ast0.MetaPos(pos,constraints) ->
+	Ast.MetaPos(pos_mcode pos,constraints,unitary,false)
+    | _ -> Ast.NoMetaPos in
+  (term,convert_info info,convert_mcodekind mcodekind,pos)
 
 (* --------------------------------------------------------------------- *)
 (* Dots *)
-let wrap ast line isos pos_var =
-  {(Ast.make_term ast) with Ast.node_line = line; Ast.iso_info = isos;
-  Ast.pos_var = pos_var}
+let wrap ast line isos =
+  {(Ast.make_term ast) with Ast.node_line = line; Ast.iso_info = isos}
 
 let rewrap ast0 isos ast =
-  wrap ast ((Ast0.get_info ast0).Ast0.line_start) isos (Ast0.get_pos ast0)
+  wrap ast ((Ast0.get_info ast0).Ast0.line_start) isos
 
 let no_isos = []
 
 (* no isos on tokens *)
-let tokenwrap (_,info,_) s ast = wrap ast info.Ast.line no_isos None
-let iso_tokenwrap (_,info,_) s ast iso = wrap ast info.Ast.line iso None
+let tokenwrap (_,info,_,_) s ast = wrap ast info.Ast.line no_isos
+let iso_tokenwrap (_,info,_,_) s ast iso = wrap ast info.Ast.line iso
 
 let dots fn d =
   rewrap d no_isos
@@ -319,7 +327,8 @@ and expression e =
 	let constraints = List.map expression constraints in
 	Ast.MetaExpr(mcode name,constraints,unitary,ty,form,false)
     | Ast0.MetaExprList(name,Some lenname,_) ->
-	Ast.MetaExprList(mcode name,Some (lenname,unitary,false),unitary,false)
+	Ast.MetaExprList(mcode name,Some (mcode lenname,unitary,false),
+			 unitary,false)
     | Ast0.MetaExprList(name,None,_) ->
 	Ast.MetaExprList(mcode name,None,unitary,false)
     | Ast0.EComma(cm)         -> Ast.EComma(mcode cm)
@@ -515,7 +524,8 @@ and parameterTypeDef p =
     | Ast0.MetaParam(name,_) ->
 	Ast.MetaParam(mcode name,unitary,false)
     | Ast0.MetaParamList(name,Some lenname,_) ->
-	Ast.MetaParamList(mcode name,Some(lenname,unitary,false),unitary,false)
+	Ast.MetaParamList(mcode name,Some(mcode lenname,unitary,false),
+			  unitary,false)
     | Ast0.MetaParamList(name,None,_) ->
 	Ast.MetaParamList(mcode name,None,unitary,false)
     | Ast0.PComma(cm) -> Ast.PComma(mcode cm)
@@ -539,8 +549,7 @@ and statement s =
 	    Ast.DroppingBetweenDots (statement seqible s,get_ctr())
 	| Ast0.AddingBetweenDots s ->
 	    Ast.AddingBetweenDots (statement seqible s,get_ctr()) in
-      Ast.set_dots_bef_aft befaft
-	(Ast.set_pos_var None (rewrap ast0 no_isos ast)) in
+      Ast.set_dots_bef_aft befaft (rewrap ast0 no_isos ast) in
     let rewrap_rule_elem ast0 ast =
       rewrap ast0 (do_isos (Ast0.get_iso ast0)) ast in
     rewrap_stmt s
@@ -850,6 +859,7 @@ and anything = function
   | Ast0.TopTag(d) -> Ast.Code(top_level d)
   | Ast0.AnyTag -> failwith "not possible"
   | Ast0.StrictTag -> failwith "not possible"
+  | Ast0.MetaPosTag _ -> failwith "not possible"
 
 (* --------------------------------------------------------------------- *)
 (* Function declaration *)
