@@ -1397,11 +1397,7 @@ let instantiate bindings mv_bindings =
 
   (* cases where metavariables can occur *)
   let identfn r k e =
-    Printf.printf "ident old e\n";
-    Unparse_ast0.ident e; Format.print_newline();
     let e = k e in
-    Printf.printf "ident new e\n";
-    Unparse_ast0.ident e; Format.print_newline();
     match Ast0.unwrap e with
       Ast0.MetaId(name,constraints,pure) ->
 	(rebuild_mcode None).V0.rebuilder_ident

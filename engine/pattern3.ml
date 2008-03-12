@@ -259,12 +259,6 @@ module XMATCH = struct
 	let failure = [] in
 	(match Common.optionise (fun () -> tin.binding +> List.assoc c) with
 	  Some valu' ->
-	    Printf.printf "our value: ";
-	    Pretty_print_engine.pp_binding_kind exp;
-	    Format.print_newline();
-	    Printf.printf "constraint value: ";
-	    Pretty_print_engine.pp_binding_kind valu';
-	    Format.print_newline();
 	    if Cocci_vs_c_3.equal_metavarval exp valu'
 	    then success else failure
 	| None -> failure))
