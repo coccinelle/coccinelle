@@ -36,6 +36,7 @@ let save_tmp_files = ref false
 
 let distrib_index = ref (None : int option)
 let distrib_max   = ref (None : int option)
+let mod_distrib   = ref false
 
 
 (*****************************************************************************)
@@ -339,6 +340,8 @@ let other_options = [
     "   the processor to use for this run of spatch";
     "-max",         Arg.Int (function x -> distrib_max := Some x) , 
     "   the number of processors available";
+    "-mod_distrib", Arg.Set mod_distrib,
+    "   use mod to distribute files among the processors";
   ];
 
   "pad options",
@@ -620,13 +623,32 @@ let main () =
 	    match (!distrib_index,!distrib_max) with
 	      (None,None) -> infiles
 	    | (Some index,Some max) ->
-		let rec loop ct = function
-		    [] -> []
-		  | x::xs ->
-		      if index = (ct mod max)
-		      then x::(loop (ct+1) xs)
-		      else loop (ct+1) xs in
-		loop 0 infiles
+		(if index >= max
+		then
+		  failwith "index starts at 0, and so must be less than max");
+		if !mod_distrib
+		then
+		  let rec loop ct = function
+		      [] -> []
+		    | x::xs ->
+			if (ct mod max) = index
+			then x::(loop (ct+1) xs)
+			else loop (ct+1) xs in
+		  loop 0 infiles
+		else
+		  begin
+		    let all_files = List.length infiles in
+		    let regions = (all_files + (max - 1)) / max in
+		    let this_min = index * regions in
+		    let this_max = (index+1) * regions in
+		    let rec loop ct = function
+			[] -> []
+		      | x::xs ->
+			  if this_min <= ct && ct < this_max
+			  then x::(loop (ct+1) xs)
+			  else loop (ct+1) xs in
+		    loop 0 infiles
+		  end
 	    | _ -> failwith "inconsistent distribution information" in
 	    
           let outfiles = 

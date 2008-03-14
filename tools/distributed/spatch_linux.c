@@ -12,7 +12,7 @@
 
 #define DONE_SEM 0 // index of the semaphore on which to wait for children
 
-#define HOME "~/coccinelle/tools/distributed"
+#define HOME "/home/julia/coccinelle/tools/distributed/"
 
 void inc_sem(int sem, int sem_num, int inc) {
   struct sembuf sops;
@@ -55,6 +55,7 @@ void do_child(int sem, int id, unsigned int argc, char **argv) {
     sprintf(string, "%d", id);
     new_args[3] = string;  // processor number must be third
     execvp(HOME "spatch_linux_script",new_args);
+    printf("tried to execute %s\n",HOME "spatch_linux_script");
     perror("exec failure");
     exit(0);
   }
@@ -71,11 +72,15 @@ void cleanup(char **argv) {
 }
 
 int main(unsigned int argc, char **argv) {
-  int pid, i;
+  int pid, i, start=0;
   // initialize the semaphore
   int sem = semget(0,1/* only one sem */,(IPC_CREAT|0666));
   int max = MAX;
-  if (argc == 3) max = atoi(argv[2]);
+  if (argv[1] == "-processes") {max = atoi(argv[2]); start = 2;}
+  if (argv[1] == "--help") {
+    printf("spatch_linux [-processes n] foo.cocci ...\n");
+    exit (0);
+  }
 
   inc_sem(sem,0,max);
 
@@ -83,11 +88,11 @@ int main(unsigned int argc, char **argv) {
   for(i=0;i!=max;i++) {
     if (!(pid=fork())) {
       // child
-      do_child(sem,i,argc,argv);
+      do_child(sem,i,argc-start,&argv[start]);
       exit(0);
     }
   }
 
   wait_sem(sem,DONE_SEM); // wait for the children to end
-  cleanup(argv);
+  cleanup(&argv[start]);
 }
