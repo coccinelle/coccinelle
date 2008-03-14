@@ -1,0 +1,5 @@
+#!/bin/tcsh
+
+cat ${1:r}.*.out > ${1:r}
+/bin/rm ${1:r}.*.out
+

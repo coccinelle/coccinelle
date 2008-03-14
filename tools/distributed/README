@@ -1,0 +1,8 @@
+This directory contains code to distribute cpatch among multiple
+processors.  To adjust the actual call to spatch, modify the file
+spatch_linux_script, but leave it in the current directory.
+
+Normally, after running make and make install, spatch_linux foo.cocci will
+make 9 processes applying foo.cocci to the files in the directory mentioned
+in spatch_linux_script.  The result will be in foo.  spatch_linux foo.cocci
+n will do the same, but for n processes rather than 9.

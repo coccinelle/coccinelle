@@ -1,0 +1,5 @@
+#!/bin/tcsh
+
+~/coccinelle/spatch.opt -allow_inconsistent_paths -quiet -timeout 90 \
+-dir /code/linux-2.6 -max 10 -use_glimpse \
+-cocci_file $* > ${1:r}.${3}.out
