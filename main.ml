@@ -570,7 +570,7 @@ let main () =
 	adjust_stdin x (fun () ->
           if !cocci_file = ""
           then failwith "I need a cocci file,  use -sp_file <file>";
-	    
+
 	  if !dir && !Flag_cocci.patch = None
 	  then
 	    (match xs with
@@ -580,7 +580,7 @@ let main () =
 		  ("warning: patch output can only be created when only one\n"^
 		   "directory is specified or when the -patch flag is used")
             );
-	    
+
           let infiles = 
             Common.profile_code "Main.infiles computation" (fun () -> 
 	      match !dir, !kbuild_info, !Flag.use_glimpse with
@@ -632,7 +632,10 @@ let main () =
 		      [] -> []
 		    | x::xs ->
 			if (ct mod max) = index
-			then x::(loop (ct+1) xs)
+			then
+			  (Printf.printf "%d %d: %s\n" ct index (List.hd x);
+			   flush stdout;
+			  x::(loop (ct+1) xs))
 			else loop (ct+1) xs in
 		  loop 0 infiles
 		else
@@ -645,7 +648,10 @@ let main () =
 			[] -> []
 		      | x::xs ->
 			  if this_min <= ct && ct < this_max
-			  then x::(loop (ct+1) xs)
+			  then 
+			  (Printf.printf "%d %d: %s\n" ct index (List.hd x);
+			   flush stdout;
+			   x::(loop (ct+1) xs))
 			  else loop (ct+1) xs in
 		    loop 0 infiles
 		  end

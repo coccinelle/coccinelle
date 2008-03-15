@@ -38,22 +38,25 @@ void wait_sem(int sem, int sem_num) {
   semop(sem,&sops,1);
 }
 
-void do_child(int sem, int id, unsigned int argc, char **argv) {
+void do_child(int sem, int id, unsigned int argc, char **argv, int max) {
   int pid,status;
   if (!(pid=fork())) {
     // child
     int i;
-    char **new_args = malloc(sizeof(char*) * (argc + 3));
-    char string[50];
+    char **new_args = malloc(sizeof(char*) * (argc + 5));
+    char string1[50],string2[50];
     for(i=1; i!=argc; i++) {
-      new_args[i+2] = argv[i];
+      new_args[i+4] = argv[i];
     }
-    new_args[i+2] = NULL;
+    new_args[i+4] = NULL;
     new_args[0] = "nothing";
-    new_args[1] = new_args[3];  // cocci file must be first
+    new_args[1] = new_args[5];  // cocci file must be first
     new_args[2] = "-index";
-    sprintf(string, "%d", id);
-    new_args[3] = string;  // processor number must be third
+    sprintf(string1, "%d", id);
+    new_args[3] = string1;  // processor number must be third
+    new_args[4] = "-max";
+    sprintf(string2, "%d", max);
+    new_args[5] = string2;
     execvp(HOME "spatch_linux_script",new_args);
     printf("tried to execute %s\n",HOME "spatch_linux_script");
     perror("exec failure");
@@ -88,7 +91,7 @@ int main(unsigned int argc, char **argv) {
   for(i=0;i!=max;i++) {
     if (!(pid=fork())) {
       // child
-      do_child(sem,i,argc-start,&argv[start]);
+      do_child(sem,i,argc-start,&argv[start],max);
       exit(0);
     }
   }

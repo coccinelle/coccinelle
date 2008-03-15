@@ -1,3 +1,8 @@
+// shows the expressive power added by positions
+// normally, we find one root and then explore its children.
+// here the root is in some sense the if, and we want to see if it can
+// be reached from two contexts
+
 @n@
 position p;
 expression E;

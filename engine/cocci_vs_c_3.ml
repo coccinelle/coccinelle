@@ -927,12 +927,12 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
           ((B.ParenExpr (eb), typ), [ib1;ib2])
       ))))
 
-  | A.NestExpr(exps,None,false), eb ->
+  | A.NestExpr(exps,None,true), eb ->
       (match A.unwrap exps with
 	A.DOTS [exp] ->
 	  X.cocciExpExp expression exp eb >>= (fun exp eb -> 
             return (
-            (A.NestExpr(A.rewrap exps (A.DOTS [exp]),None,false)) +> wa,
+            (A.NestExpr(A.rewrap exps (A.DOTS [exp]),None,true)) +> wa,
             eb
             )
 	  )
@@ -941,7 +941,7 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
 	    "for nestexpr, only handling the case with dots and only one exp")
 
   | A.NestExpr _, _ ->
-      failwith "not handling multi or when code in a nest expr"
+      failwith "only handling multi and no when code in a nest expr"
 
   (* only in arg lists or in define body *)  
   | A.TypeExp _, _ -> fail
