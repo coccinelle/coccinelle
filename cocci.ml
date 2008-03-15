@@ -878,6 +878,8 @@ let rec bigloop2 rs ccs =
 
 		      !children_e
 		    end in
+	      List.iter (function x -> show_or_not_binding "mid_in" x)
+		new_bindings;
 	      let old_bindings_to_keep =
 		e +> List.filter (fun (s,v) -> List.mem s r.used_after) in
 	      let new_e =
@@ -894,10 +896,19 @@ let rec bigloop2 rs ccs =
 		else
 		(* combine the new bindings with the old ones, and
 		   specialize to the used_after_list *)
+		  let old_variables = List.map fst old_bindings_to_keep in
+		  (* have to explicitly discard the inherited variables
+		     because we want the inherited value of the positions
+		     variables not the extended one created by
+		     reassociate_positions. want to reassociate freshly
+		     according to the free variables of each rule. *)
 		  let new_bindings_to_add =
 		    new_bindings +>
 		    List.map
-		      (List.filter (fun (s,v) -> List.mem s r.used_after)) in
+		      (List.filter
+			 (fun (s,v) ->
+			   List.mem s r.used_after &&
+			   not (List.mem s old_variables))) in
 		  List.map
 		    (function new_binding_to_add ->
 		      (Common.union_set
@@ -909,6 +920,8 @@ let rec bigloop2 rs ccs =
 	([],[]) reorganized_env in (* end iter es *)
     if !(r.was_matched)
     then Common.push2 r.rulename rules_that_have_ever_matched;
+
+      List.iter (function (x,_) -> show_or_not_binding "post_in" x) newes;
 
     es := newes;
 
