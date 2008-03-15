@@ -3,3 +3,6 @@ spatch_linux: spatch_linux.c
 
 install: spatch_linux
 	cp spatch_linux ~/bin
+
+cleanup: cleanup.ml
+	ocamlc -o cleanup str.cma cleanup.ml

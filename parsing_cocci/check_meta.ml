@@ -374,14 +374,7 @@ let positions table rules =
     match Ast0.get_pos x with
       Ast0.MetaPos(name,constraints) ->
 	let pos = Ast0.unwrap_mcode name in
-	let info = find_loop table pos in
-	if !info
-	then
-	  let (rule,name) = pos in
-	  failwith
-	    (Printf.sprintf "duplicated use of position variable %s.%s"
-	       rule name)
-	else info := true
+	(find_loop table pos) := true
     | _ -> () in
   let option_default = () in
   let bind x y = () in
@@ -395,6 +388,67 @@ let positions table rules =
       donothing donothing in
 
   List.iter fn.V0.combiner_top_level rules
+
+let dup_positions rules =
+  let mcode x =
+    match Ast0.get_pos x with
+      Ast0.MetaPos(name,constraints) ->
+	let pos = Ast0.unwrap_mcode name in [pos]
+    | _ -> [] in
+  let option_default = [] in
+  let bind x y = x@y in
+
+  (* Case for everything that has a disj.
+     Note, no positions on ( | ) of a disjunction, so no need to recurse on
+     these. *)
+
+  let expression r k e =
+    match Ast0.unwrap e with
+      Ast0.DisjExpr(_,explist,_,_) ->
+	List.fold_left Common.union_set option_default
+	  (List.map r.V0.combiner_expression explist)
+    | _ -> k e in
+
+  let typeC r k e = (* not sure relevent because "only after iso" *)
+    match Ast0.unwrap e with
+      Ast0.DisjType(_,types,_,_) ->
+	List.fold_left Common.union_set option_default
+	  (List.map r.V0.combiner_typeC types)
+    | _ -> k e in
+
+  let declaration r k e =
+    match Ast0.unwrap e with
+      Ast0.DisjDecl(_,decls,_,_) ->
+	List.fold_left Common.union_set option_default
+	  (List.map r.V0.combiner_declaration decls)
+    | _ -> k e in
+
+  let statement r k e =
+    match Ast0.unwrap e with
+      Ast0.Disj(_,stmts,_,_) ->
+	List.fold_left Common.union_set option_default
+	  (List.map r.V0.combiner_statement_dots stmts)
+    | _ -> k e in
+
+  let donothing r k e = k e in
+  let fn =
+    V0.combiner bind option_default
+      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode
+      donothing donothing donothing donothing donothing donothing
+      donothing expression typeC donothing donothing declaration statement
+      donothing donothing in
+
+  let res =
+    List.sort compare
+      (List.fold_left Common.union_set option_default
+	 (List.map fn.V0.combiner_top_level rules)) in
+  let rec loop = function
+      [] | [_] -> ()
+    | ((rule,name) as x)::y::_ when x = y ->
+	failwith (Printf.sprintf "duplicate use of %s.%s" rule name)
+    | _::xs -> loop xs in
+  loop res
 
 (* --------------------------------------------------------------------- *)
 
@@ -442,6 +496,7 @@ let check_meta rname old_metas inherited_metavars metavars minus plus =
   add_to_fresh_table fresh;
   rule old_metas [iother_table;other_table;err_table] true minus;
   positions [iother_table;other_table] minus;
+  dup_positions minus;
   check_all_marked rname "metavariable" other_table "in the - or context code";
   rule old_metas [iother_table;fresh_table;err_table] false plus;
   check_all_marked rname "fresh identifier metavariable" iother_table
