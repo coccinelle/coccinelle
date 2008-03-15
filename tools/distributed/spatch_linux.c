@@ -14,6 +14,8 @@
 
 #define HOME "/home/julia/coccinelle/tools/distributed/"
 
+int sem;
+
 void inc_sem(int sem, int sem_num, int inc) {
   struct sembuf sops;
   sops.sem_num = sem_num;
@@ -32,10 +34,17 @@ void dec_sem(int sem, int sem_num) {
 
 void wait_sem(int sem, int sem_num) {
   struct sembuf sops;
+  int err;
   sops.sem_num = sem_num;
   sops.sem_op = 0;
   sops.sem_flg = 0;
-  semop(sem,&sops,1);
+  err = semop(sem,&sops,1);
+  if (err < 0) {printf("error in %d\n",sem);perror("wait_sem");}
+}
+
+void exit_sighandler(int x) {
+  semctl(sem,DONE_SEM,IPC_RMID);
+  exit(0);
 }
 
 void do_child(int sem, int id, unsigned int argc, char **argv, int max) {
@@ -76,10 +85,17 @@ void cleanup(char **argv) {
 }
 
 int main(unsigned int argc, char **argv) {
-  int pid, i, start=0;
+  int pid, i, start=0, max;
   // initialize the semaphore
-  int sem = semget(0,1/* only one sem */,(IPC_CREAT|0666));
-  int max = MAX;
+  sem = semget(0,1/* only one sem */,(IPC_CREAT|0666));
+  if (sem < 0) { perror("semget"); exit(0); }
+  // set up signal handlers so we can delete the semaphore
+  signal(SIGTERM,exit_sighandler); // kill
+  signal(SIGHUP,exit_sighandler);  // kill -HUP  /  xterm closed
+  signal(SIGINT,exit_sighandler);  // Interrupt from keyboard
+  signal(SIGQUIT,exit_sighandler); // Quit from keyboard
+  // interpret the arguments
+  max = MAX;
   if (argv[1] == "-processes") {max = atoi(argv[2]); start = 2;}
   if (argv[1] == "--help") {
     printf("spatch_linux [-processes n] foo.cocci ...\n");
@@ -98,5 +114,7 @@ int main(unsigned int argc, char **argv) {
   }
 
   wait_sem(sem,DONE_SEM); // wait for the children to end
+  int err = semctl(sem,DONE_SEM,IPC_RMID);
+  if (err < 0) perror ("couldn't remove");
   cleanup(&argv[start]);
 }
