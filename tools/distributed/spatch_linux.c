@@ -71,6 +71,7 @@ void cleanup(char **argv) {
   new_args[0] = "nothing";
   new_args[1] = argv[1];
   new_args[2] = NULL;
+  printf ("doing cleanup on %s\n",argv[1]);
   execvp(HOME "cleanup_script",new_args);
 }
 

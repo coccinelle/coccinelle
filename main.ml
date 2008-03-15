@@ -632,10 +632,7 @@ let main () =
 		      [] -> []
 		    | x::xs ->
 			if (ct mod max) = index
-			then
-			  (Printf.printf "%d %d: %s\n" ct index (List.hd x);
-			   flush stdout;
-			  x::(loop (ct+1) xs))
+			then x::(loop (ct+1) xs)
 			else loop (ct+1) xs in
 		  loop 0 infiles
 		else
@@ -648,10 +645,7 @@ let main () =
 			[] -> []
 		      | x::xs ->
 			  if this_min <= ct && ct < this_max
-			  then 
-			  (Printf.printf "%d %d: %s\n" ct index (List.hd x);
-			   flush stdout;
-			   x::(loop (ct+1) xs))
+			  then x::(loop (ct+1) xs)
 			  else loop (ct+1) xs in
 		    loop 0 infiles
 		  end
