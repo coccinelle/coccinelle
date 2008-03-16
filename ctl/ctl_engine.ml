@@ -489,6 +489,12 @@ let eq_trip (s,th,wit) (s',th',wit') =
 
 let triples_top states = map (fun s -> (s,top_subst,top_wit)) states;;
 
+let normalize trips =
+  List.map
+    (function (st,th,wit) -> (st,List.sort compare th,List.sort compare wit))
+    trips
+	
+
 (* conj opt doesn't work ((1,[],{{x=3}}) v (1,[],{{x=4}})) & (1,[],{{x=4}}) =
 (1,[],{{x=3},{x=4}}), not (1,[],{{x=4}}) *)
 let triples_conj trips trips' =
@@ -849,7 +855,8 @@ let pre_forall dir (grp,_,states) y all reqst =
       [] neighbors in
   match neighbor_triples with
     [] -> []
-  | _ -> foldl1 (@) (List.map (foldl1 triples_conj) neighbor_triples)
+  | _ ->
+      normalize (foldl1 (@) (List.map (foldl1 triples_conj) neighbor_triples))
 	
 let pre_forall_AW dir (grp,_,states) y all reqst =
   let check s =
@@ -1049,12 +1056,12 @@ let satAW dir ((grp,_,states) as m) s1 s2 reqst =
 	(satEU dir m negpsi (triples_conj negphi negpsi) (Some ostates))
     else
        *)
-      let ctr = ref 0 in
+      (*let ctr = ref 0 in*)
       let f y =
-	ctr := !ctr + 1;
+	(*ctr := !ctr + 1;
 	Printf.printf "iter %d y %d\n" !ctr (List.length y);
 	print_state "y" y;
-	flush stdout;
+	flush stdout;*)
 	let pre = pre_forall dir m y y reqst in
 	let conj = triples_conj s1 pre in (* or triples_conj_AW *)
 	triples_union s2 conj in
@@ -1275,18 +1282,19 @@ let satLabel label required p =
 	    (List.map (function (st,th,_) -> (st,th)) triples);
 	  triples
     else setify(label p) in
-  if !pREQUIRED_ENV_OPT
-  then
-    foldl
-      (function rest ->
-	function ((s,th,_) as t) ->
-	  if List.for_all
-	      (List.exists (function th' -> not(conj_subst th th' = None)))
-	      required
-	  then t::rest
-	  else rest)
-      [] triples
-  else triples)
+    normalize
+      (if !pREQUIRED_ENV_OPT
+      then
+	foldl
+	  (function rest ->
+	    function ((s,th,_) as t) ->
+	      if List.for_all
+		  (List.exists (function th' -> not(conj_subst th th' = None)))
+		  required
+	      then t::rest
+	      else rest)
+	  [] triples
+      else triples))
 
 let get_required_states l =
   if !pREQUIRED_STATES_OPT && not !Flag_ctl.partial_match
