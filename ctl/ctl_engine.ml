@@ -856,7 +856,7 @@ let pre_forall dir (grp,_,states) y all reqst =
   match neighbor_triples with
     [] -> []
   | _ ->
-      normalize (foldl1 (@) (List.map (foldl1 triples_conj) neighbor_triples))
+      (*normalize*) (foldl1 (@) (List.map (foldl1 triples_conj) neighbor_triples))
 	
 let pre_forall_AW dir (grp,_,states) y all reqst =
   let check s =
