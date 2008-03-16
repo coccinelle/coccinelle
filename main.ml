@@ -51,6 +51,7 @@ let quiet_profile = (
     (* Flag_cocci.show_diff;   just leave this as it is *)
 
     Flag.show_misc;
+    Flag.show_trying;
 
     Flag_cocci.show_c;
     Flag_cocci.show_cocci;
@@ -217,6 +218,8 @@ let other_options = [
     "-show_binding_in_out",  Arg.Set Flag_cocci.show_binding_in_out, " ";
     "-no_show_transinfo",    Arg.Clear Flag_cocci.show_transinfo, " ";
     "-no_show_misc",         Arg.Clear Flag.show_misc, " ";
+    "-show_trying",          Arg.Set Flag.show_trying,
+    " show the name of each function being processed";
   ];
 
   "verbose subsystems options",  

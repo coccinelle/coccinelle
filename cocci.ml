@@ -219,7 +219,7 @@ let show_or_not_ctl_text a b c =
 (* running information *)
 
 let show_or_not_celem2 prelude celem = 
-  if !Flag.show_misc then 
+  if !Flag.show_trying then 
   (match celem with 
   | Ast_c.Definition ((funcs,_,_,_c),_) -> 
       pr2 (prelude ^ " function: " ^ funcs);
@@ -878,8 +878,6 @@ let rec bigloop2 rs ccs =
 
 		      !children_e
 		    end in
-	      List.iter (function x -> show_or_not_binding "mid_in" x)
-		new_bindings;
 	      let old_bindings_to_keep =
 		e +> List.filter (fun (s,v) -> List.mem s r.used_after) in
 	      let new_e =
@@ -920,8 +918,6 @@ let rec bigloop2 rs ccs =
 	([],[]) reorganized_env in (* end iter es *)
     if !(r.was_matched)
     then Common.push2 r.rulename rules_that_have_ever_matched;
-
-      List.iter (function (x,_) -> show_or_not_binding "post_in" x) newes;
 
     es := newes;
 
@@ -1018,7 +1014,7 @@ and bigloop a b =
 (* does side effects on C ast and on Cocci info rule *)
 and process_a_ctl_a_env_a_toplevel2 r e c = 
  indent_do (fun () -> 
-  (* show_or_not_celem "trying" c.ast_c; *)
+  show_or_not_celem "trying" c.ast_c;
   let (trans_info, returned_any_states, newbindings) = 
     Common.save_excursion Flag_ctl.loop_in_src_code (fun () -> 
       Flag_ctl.loop_in_src_code := !Flag_ctl.loop_in_src_code||c.contain_loop;
