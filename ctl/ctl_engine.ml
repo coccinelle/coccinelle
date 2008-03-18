@@ -700,12 +700,21 @@ let triples_complement states (trips : ('pred, 'anno) triples) =
 (* END OF NEGATION (NegState style)   *)
 (* ********************************** *)
 
+(* now this is always true, so we could get rid of it *)
 let something_dropped = ref true
 
 let triples_union trips trips' =
   (*unionBy compare eq_trip trips trips';;*)
   (* returns -1 is t1 > t2, 1 if t2 >= t1, and 0 otherwise *)
   Common.profile_code "triples_union" (fun () -> 
+(*
+The following does not work.  Suppose we have ([x->3],{A}) and ([],{A,B}).
+Then, the following says that since the first is a more restrictive
+environment and has fewer witnesses, then it should be dropped. But having
+fewer witnesses is not necessarily less informative than having more,
+because fewer witnesses can mean the absence of the witness-causing thing.
+So the fewer witnesses have to be kept around.
+*)
   if !pNEW_INFO_OPT
   then
     begin
@@ -719,10 +728,10 @@ let triples_union trips trips' =
 	    (match conj_subst th1 th2 with
 	      Some conj ->
 		if conj = th1
-		then if subseteq wit1 wit2 then 1 else 0
+		then if (*subseteq*) wit1 = wit2 then 1 else 0
 		else
 		  if conj = th2
-		  then if subseteq wit2 wit1 then (-1) else 0
+		  then if (*subseteq*) wit2 = wit1 then (-1) else 0
 		  else 0
 	    | None -> 0)
 	  else 0 in
