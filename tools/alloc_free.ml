@@ -101,7 +101,12 @@ let sedify generic_file dir l =
 	  let _ =
 	    Sys.command
 	      (Printf.sprintf
-		 "echo \"spatch_linux %s-%s.cocci > %s-%s.out\" >> %s/files\n"
+		 "echo \"spatch_linux %s-%s.cocci\" >> %s/files\n"
+		 a f dir) in
+	  let _ =
+	    Sys.command
+	      (Printf.sprintf
+		 "echo \"mv %s-%s %s-%s.out\" >> %s/files\n"
 		 a f a f dir) in ()
       | _ -> ())
     l
@@ -150,7 +155,12 @@ let sedify_ors generic_file dir l =
 	  let _ =
 	    Sys.command
 	      (Printf.sprintf
-		 "echo \"spatch_linux %s-%s_et_al.cocci > %s-%s_et_al.out\" >> %s/files\n"
+		 "echo \"spatch_linux %s-%s_et_al.cocci\" >> %s/files\n"
+		 a f dir) in
+	  let _ =
+	    Sys.command
+	      (Printf.sprintf
+		 "echo \"mv %s-%s_et_al %s-%s_et_al.out\" >> %s/files\n"
 		 a f a f dir) in ())
     l
 
