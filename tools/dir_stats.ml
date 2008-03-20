@@ -119,20 +119,20 @@ let print_hashtable f tbl =
     l
 
 let print_range_int_hashtable range =
-  print_hashtable (function x -> Printf.printf "%d-%d" x (((x+1)*range)-1))
+  print_hashtable (function x -> Printf.printf "%d-%d" x (x + range - 1))
 let print_int_hashtable =
   print_hashtable (function x -> Printf.printf "%d" x)
 let print_string_hashtable =
   print_hashtable (function x -> Printf.printf "%s" x)
 
 let histify _ =
-  Printf.printf "files per protocol (by 10s)\n:";
+  Printf.printf "files per protocol (by 10s):\n";
   print_range_int_hashtable 10 files_per_protocol;
-  Printf.printf "dirs per protocol\n:";
+  Printf.printf "dirs per protocol:\n";
   print_int_hashtable dirs_per_protocol;
-  Printf.printf "subsystems per protocol\n:";
+  Printf.printf "subsystems per protocol:\n";
   print_int_hashtable subsystems_per_protocol;
-  Printf.printf "protocols per subsystem\n:";
+  Printf.printf "protocols per subsystem:\n";
   print_string_hashtable protocols_per_subsystem
 
 (* ------------------------------------------------------------------------ *)

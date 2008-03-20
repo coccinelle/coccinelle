@@ -15,7 +15,7 @@ let split l =
   let rec loop acc = function
     [] -> acc
   | x::xs ->
-      if String.get x 0 = '+'
+      if String.get x 0 = '+' (* the start of a new file *)
       then
 	(match Str.split (Str.regexp " ") x with
 	  _::x::_ -> loop ((x,[])::acc) xs
