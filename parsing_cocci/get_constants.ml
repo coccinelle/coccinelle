@@ -160,9 +160,12 @@ let check_inherited nm =
   let donothing r k e = k e in
   let option_default = false in
   let bind x y = x or y in
-  let mcode _ _ = option_default in
   let inherited (nm1,_) = not(nm = nm1) in
   let minherited mc = inherited (Ast.unwrap_mcode mc) in
+  let mcode _ x =
+    match Ast.get_pos_var x with
+      Ast.MetaPos(name,constraints,keep,inh) -> minherited name
+    | _ -> option_default in
 
   (* a case for everything for there is a metavariable, also disjunctions
      or optional things *)
@@ -170,7 +173,7 @@ let check_inherited nm =
   let strictident recursor k i =
     match Ast.unwrap i with
       Ast.MetaId(name,_,_,_) | Ast.MetaFunc(name,_,_,_)
-    | Ast.MetaLocalFunc(name,_,_,_) -> minherited name
+    | Ast.MetaLocalFunc(name,_,_,_) -> bind (k i) (minherited name)
     | _ -> k i in
 
   let rec type_collect res = function
@@ -184,10 +187,11 @@ let check_inherited nm =
       Ast.MetaExpr(name,_,_,Some type_list,_,_) ->
 	let types = List.fold_left type_collect option_default type_list in
 	bind (minherited name) types
-    | Ast.MetaErr(name,_,_,_) | Ast.MetaExpr(name,_,_,_,_,_) -> minherited name
-    | Ast.MetaExprList(name,None,_,_) -> minherited name
+    | Ast.MetaErr(name,_,_,_) | Ast.MetaExpr(name,_,_,_,_,_) ->
+	bind (k e) (minherited name)
+    | Ast.MetaExprList(name,None,_,_) -> bind (k e) (minherited name)
     | Ast.MetaExprList(name,Some (lenname,_,_),_,_) ->
-	bind (minherited name) (minherited lenname)
+	bind (k e) (bind (minherited name) (minherited lenname))
     | Ast.DisjExpr(exps) ->
 	(* could see if there are any variables that appear in all branches,
 	   but perhaps not worth it *)
@@ -206,22 +210,22 @@ let check_inherited nm =
 
   let stricttypeC recursor k ty =
     match Ast.unwrap ty with
-      Ast.MetaType(name,_,_) -> minherited name
+      Ast.MetaType(name,_,_) -> bind (k ty) (minherited name)
     | _ -> k ty in
 
   let strictparam recursor k p =
     match Ast.unwrap p with
-      Ast.MetaParam(name,_,_) -> minherited name
-    | Ast.MetaParamList(name,None,_,_) -> minherited name
+      Ast.MetaParam(name,_,_) -> bind (k p) (minherited name)
+    | Ast.MetaParamList(name,None,_,_) -> bind (k p) (minherited name)
     | Ast.MetaParamList(name,Some(lenname,_,_),_,_) ->
-	bind (minherited name) (minherited lenname)
+	bind (k p) (bind (minherited name) (minherited lenname))
     | _ -> k p in
 
   let strictrule_elem recursor k re =
     (*within a rule_elem, pattern3 manages the coherence of the bindings*)
     match Ast.unwrap re with
       Ast.MetaRuleElem(name,_,_) | Ast.MetaStmt(name,_,_,_)
-    | Ast.MetaStmtList(name,_,_) -> minherited name
+    | Ast.MetaStmtList(name,_,_) -> bind (k re) (minherited name)
     | _ -> k re in
 
   let strictstatement recursor k s =

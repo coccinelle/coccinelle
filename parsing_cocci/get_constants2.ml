@@ -100,10 +100,13 @@ let drop x = True
 let do_get_constants constants keywords env =
   let donothing r k e = k e in
   let option_default = True in
-  let mcode _ _ = option_default in
   let bind = build_and in
   let inherited (nm1,_) = try List.assoc nm1 env with Not_found -> False in
   let minherited name = inherited (Ast.unwrap_mcode name) in
+  let mcode _ x =
+    match Ast.get_pos_var x with
+      Ast.MetaPos(name,constraints,keep,inh) -> minherited name
+    | _ -> option_default in
 
   (* if one branch gives no information, then we have to take anything *)
   let disj_union_all = List.fold_left build_or False in
@@ -111,11 +114,12 @@ let do_get_constants constants keywords env =
   let ident r k i =
     match Ast.unwrap i with
       Ast.Id(name) ->
-	(match Ast.unwrap_mcode name with
-	  "NULL" -> keywords "NULL"
-	| nm -> constants nm)
+	bind (k i)
+	  (match Ast.unwrap_mcode name with
+	    "NULL" -> keywords "NULL"
+	  | nm -> constants nm)
     | Ast.MetaId(name,_,_,_) | Ast.MetaFunc(name,_,_,_)
-    | Ast.MetaLocalFunc(name,_,_,_) -> minherited name
+    | Ast.MetaLocalFunc(name,_,_,_) -> bind (k i) (minherited name)
     | _ -> k i in
 
   let rec type_collect res = function
@@ -131,21 +135,23 @@ let do_get_constants constants keywords env =
   let expression r k e =
     match Ast.unwrap e with
       Ast.Constant(const) ->
-	(match Ast.unwrap_mcode const with
-	  Ast.String s -> constants s
-	| Ast.Char "\\0" -> option_default (* glimpse doesn't like it *)
-	| Ast.Char s -> constants s
-	| Ast.Int "0" -> keywords "0"
-	| Ast.Int "1" -> keywords "1"
-	| Ast.Int s -> constants s
-	| Ast.Float s -> constants s)
+	bind (k e)
+	  (match Ast.unwrap_mcode const with
+	    Ast.String s -> constants s
+	  | Ast.Char "\\0" -> option_default (* glimpse doesn't like it *)
+	  | Ast.Char s -> constants s
+	  | Ast.Int "0" -> keywords "0"
+	  | Ast.Int "1" -> keywords "1"
+	  | Ast.Int s -> constants s
+	  | Ast.Float s -> constants s)
     | Ast.MetaExpr(name,_,_,Some type_list,_,_) ->
 	let types = List.fold_left type_collect option_default type_list in
-	bind (minherited name) types
-    | Ast.MetaErr(name,_,_,_) | Ast.MetaExpr(name,_,_,_,_,_) -> minherited name
+	bind (k e) (bind (minherited name) types)
+    | Ast.MetaErr(name,_,_,_) | Ast.MetaExpr(name,_,_,_,_,_) ->
+	bind (k e) (minherited name)
     | Ast.MetaExprList(name,None,_,_) -> minherited name
     | Ast.MetaExprList(name,Some (lenname,_,_),_,_) ->
-	bind (minherited name) (minherited lenname)
+	bind (k e) (bind (minherited name) (minherited lenname))
     | Ast.SizeOfExpr(sizeof,exp) -> bind (keywords "sizeof") (k e)
     | Ast.SizeOfType(sizeof,lp,ty,rp) -> bind (keywords "sizeof") (k e)
     | Ast.NestExpr(expr_dots,wc,false) -> option_default
@@ -156,14 +162,14 @@ let do_get_constants constants keywords env =
     | Ast.OptExp(exp) -> option_default
     | Ast.Edots(_,_) | Ast.Ecircles(_,_) | Ast.Estars(_,_) -> option_default
     | _ -> k e in
-
+  
   let fullType r k ft =
     match Ast.unwrap ft with
       Ast.DisjType(decls) ->
 	disj_union_all (List.map r.V.combiner_fullType decls)
     | Ast.OptType(ty) -> option_default
     | _ -> k ft in
-
+  
   let baseType = function
       Ast.VoidType -> keywords "void "
     | Ast.CharType -> keywords "char "
@@ -175,16 +181,17 @@ let do_get_constants constants keywords env =
 
   let typeC r k ty =
     match Ast.unwrap ty with
-      Ast.BaseType(ty,sgn) -> baseType (Ast.unwrap_mcode ty)
-    | Ast.TypeName(name) -> constants (Ast.unwrap_mcode name)
-    | Ast.MetaType(name,_,_) -> minherited name
+      Ast.BaseType(ty1,sgn) -> bind (k ty) (baseType (Ast.unwrap_mcode ty1))
+    | Ast.TypeName(name) -> bind (k ty) (constants (Ast.unwrap_mcode name))
+    | Ast.MetaType(name,_,_) -> bind (minherited name) (k ty)
     | _ -> k ty in
 
   let declaration r k d =
     match Ast.unwrap d with
       Ast.DisjDecl(decls) ->
 	disj_union_all (List.map r.V.combiner_declaration decls)
-    | Ast.MacroDecl(nm,lp,args,rp,pv) -> constants (Ast.unwrap_mcode nm)
+    | Ast.MacroDecl(nm,lp,args,rp,pv) ->
+	bind (k d) (constants (Ast.unwrap_mcode nm))
     | Ast.OptDecl(decl) -> option_default
     | Ast.Ddots(dots,whencode) -> option_default
     | _ -> k d in
@@ -197,16 +204,16 @@ let do_get_constants constants keywords env =
   let parameter r k p =
     match Ast.unwrap p with
       Ast.OptParam(param) -> option_default
-    | Ast.MetaParam(name,_,_) -> minherited name
-    | Ast.MetaParamList(name,None,_,_) -> minherited name
+    | Ast.MetaParam(name,_,_) -> bind (k p) (minherited name)
+    | Ast.MetaParamList(name,None,_,_) -> bind (k p) (minherited name)
     | Ast.MetaParamList(name,Some(lenname,_,_),_,_) ->
-	bind (minherited name) (minherited lenname)
+	bind (minherited name) (bind (minherited lenname) (k p))
     | _ -> k p in
-
+  
   let rule_elem r k re =
     match Ast.unwrap re with
       Ast.MetaRuleElem(name,_,_) | Ast.MetaStmt(name,_,_,_)
-    | Ast.MetaStmtList(name,_,_) -> minherited name
+    | Ast.MetaStmtList(name,_,_) -> bind (minherited name) (k re)
     | Ast.WhileHeader(whl,lp,exp,rp) ->
 	bind (keywords "while") (k re)
     | Ast.WhileTail(whl,lp,exp,rp,sem) ->
@@ -218,30 +225,31 @@ let do_get_constants constants keywords env =
     | Ast.SwitchHeader(switch,lp,exp,rp) ->
 	bind (keywords "switch") (k re)
     | Ast.Break(br,sem) ->
-	keywords "break"
+	bind (keywords "break") (k re)
     | Ast.Continue(cont,sem) ->
-	keywords "continue"
+	bind (keywords "continue") (k re)
     | Ast.Goto(_,i,_) ->
 	bind (keywords "goto") (k re)
     | Ast.Default(def,colon) ->
-	keywords "default"
+	bind (keywords "default") (k re)
     | Ast.Include(inc,s) ->
-	(match Ast.unwrap_mcode s with
-	  Ast.Local l | Ast.NonLocal l ->
-	    let strings =
-	      List.fold_left
-		(function prev ->
-		  function
-		      Ast.IncPath s -> (Elem s)::prev
-		    | Ast.IncDots -> prev)
-		[] l in
-	    (match strings with
-	      [] -> True
-	    | x::xs -> List.fold_left bind x xs))
+	bind (k re)
+	  (match Ast.unwrap_mcode s with
+	    Ast.Local l | Ast.NonLocal l ->
+	      let strings =
+		List.fold_left
+		  (function prev ->
+		    function
+			Ast.IncPath s -> (Elem s)::prev
+		      | Ast.IncDots -> prev)
+		  [] l in
+	      (match strings with
+		[] -> True
+	      | x::xs -> List.fold_left bind x xs))
     | Ast.DisjRuleElem(res) ->
 	disj_union_all (List.map r.V.combiner_rule_elem res)
     | _ -> k re in
-
+  
   let statement r k s =
     match Ast.unwrap s with
       Ast.Disj(stmt_dots) ->
