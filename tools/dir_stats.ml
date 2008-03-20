@@ -68,9 +68,7 @@ let rec iterate str = function
 
 (* ------------------------------------------------------------------------ *)
 
-let get_dir d =
-  let pieces = Str.split (Str.regexp "/") d in
-  List.hd (List.tl pieces)
+let get_dir d = Filename.dirname d
 
 let get_subsystem d =
   let pieces = Str.split (Str.regexp "/") d in
@@ -126,7 +124,7 @@ let print_string_hashtable =
   print_hashtable (function x -> Printf.printf "%s" x)
 
 let histify _ =
-  Printf.printf "files per protocol (by 10s):\n";
+  Printf.printf "files per protocol:\n";
   print_range_int_hashtable 10 files_per_protocol;
   Printf.printf "dirs per protocol:\n";
   print_int_hashtable dirs_per_protocol;
