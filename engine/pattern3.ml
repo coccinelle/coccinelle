@@ -334,8 +334,8 @@ module XMATCH = struct
 	(match Ast_cocci.get_pos_var k with
 	  Ast_cocci.MetaPos(name,constraints,keep,inherited) ->
 	    let pvalu =
-	      let (max,min) = get_max_min() in
-	      Ast_c.MetaPosValList[(max,min)] in
+	      let (min,max) = get_max_min() in
+	      Ast_c.MetaPosValList[(min,max)] in
 	    (* check constraints.  success means that there is a match with
 	       one of the constraints, which will ultimately result in
 	       failure. *)
