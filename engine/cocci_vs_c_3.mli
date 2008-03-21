@@ -140,7 +140,8 @@ module type PARAM =
       Ast_cocci.keep_binding ->
       Ast_cocci.inherited ->
       Ast_cocci.meta_name Ast_cocci.mcode * Ast_c.metavar_binding_kind *
-	  (unit -> Ast_c.posl * Ast_c.posl) (* pos info, if needed *) ->
+	  (* pos info, if needed *)
+	  (unit -> Common.filename * Ast_c.posl * Ast_c.posl) ->
       (unit -> tin -> 'x tout) -> (tin -> 'x tout)
 
     val check_constraints :
