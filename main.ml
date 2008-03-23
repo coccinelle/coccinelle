@@ -611,8 +611,8 @@ let main () =
 	      | true, "", _ -> 
 		  Common.cmd_to_list
 		    (if !include_headers
-		    then ("find "^(join " " (x::xs))^" -name \"*.c\"")
-		    else ("find "^(join " " (x::xs))^" -name \"*.[ch]\""))
+		    then ("find "^(join " " (x::xs))^" -name \"*.[ch]\"")
+		    else ("find "^(join " " (x::xs))^" -name \"*.c\""))
 		  +> List.map (fun x -> [x])
 
               (* kbuild *)
