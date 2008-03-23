@@ -603,7 +603,9 @@ let main () =
 		    match glimpse_filter (!cocci_file, !Config.std_iso) x with
 		      None ->
 			Common.cmd_to_list (* same as "true, "", _" case *)
-			  ("find "^(join " " (x::xs))^" -name \"*.c\"")
+			  (if !include_headers
+			  then ("find "^(join " " (x::xs))^" -name \"*.[ch]\"")
+			  else ("find "^(join " " (x::xs))^" -name \"*.c\""))
 		    | Some files -> files in
                   files +> List.map (fun x -> [x])
               (* normal *)
