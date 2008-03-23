@@ -2091,7 +2091,8 @@ let top_level ua t =
 	      | Ast.Stars(_,_,_,_) -> true
 	      | _ -> false)
 	  | _ -> false in
-	let res = statement_list unopt Tail ua [] None None None false false in
+	let res =
+	  statement_list unopt Tail ua [] None None None false false in
 	cleanup
 	  (if starts_with_dots
 	  then

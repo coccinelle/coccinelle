@@ -349,26 +349,24 @@ let eq_sub sub sub' = eq_subBy SUB.eq_mvar SUB.eq_val sub sub'
 let eq_subst th th' = setequalBy eq_sub th th';;
 
 let merge_subBy eqx (===) (>+<) sub sub' =
-  if eqx (dom_sub sub) (dom_sub sub')
-  then
-    match (sub,sub') with
-      (A.Subst (x,v),A.Subst (x',v')) -> 
-	if (v === v')
-	then Some [A.Subst(x, v >+< v')]
-	else None
-    | (A.NegSubst(x,v),A.Subst(x',v')) ->
-	if (not (v === v'))
-	then Some [A.Subst(x',v')]
-	else None
-    | (A.Subst(x,v),A.NegSubst(x',v')) ->
-	if (not (v === v'))
-	then Some [A.Subst(x,v)]
-	else None
-    | (A.NegSubst(x,v),A.NegSubst(x',v')) ->
-	if (v === v')
-	then Some [A.NegSubst(x,v)]
-	else Some [A.NegSubst(x,v);A.NegSubst(x',v')]
-  else Some [sub;sub']
+  (* variable part is guaranteed to be the same *)
+  match (sub,sub') with
+    (A.Subst (x,v),A.Subst (x',v')) -> 
+      if (v === v')
+      then Some [A.Subst(x, v >+< v')]
+      else None
+  | (A.NegSubst(x,v),A.Subst(x',v')) ->
+      if (not (v === v'))
+      then Some [A.Subst(x',v')]
+      else None
+  | (A.Subst(x,v),A.NegSubst(x',v')) ->
+      if (not (v === v'))
+      then Some [A.Subst(x,v)]
+      else None
+  | (A.NegSubst(x,v),A.NegSubst(x',v')) ->
+      if (v === v')
+      then Some [A.NegSubst(x,v)]
+      else Some [A.NegSubst(x,v);A.NegSubst(x',v')]
 ;;
 
 (* NOTE: functor *)
@@ -414,20 +412,40 @@ let conj_subst theta theta' =
     | ([],_) -> Some theta'
     | (_,[]) -> Some theta
     | _ ->
-	try
-	  Some (clean_subst (
-		  foldl
-		    (function rest ->
-		       function sub ->
-			 foldl
-			   (function rest ->
-			      function sub' ->
-				match (merge_sub sub sub') with
-				  | Some subs -> 
-				      subs @ rest
-				  | _       -> raise SUBST_MISMATCH)
-			   rest theta')
-		    [] theta))
+	let rec classify = function
+	    [] -> []
+	  | [x] -> [(dom_sub x,[x])]
+	  | x::xs ->
+	      (match classify xs with
+		((nm,y)::ys) as res ->
+		  if dom_sub x = nm
+		  then (nm,x::y)::ys
+		  else (dom_sub x,[x])::res
+	      |	_ -> failwith "not possible") in
+	let merge_all theta theta' =
+	  foldl
+	    (function rest ->
+	      function sub ->
+		foldl
+		  (function rest ->
+		    function sub' ->
+		      match (merge_sub sub sub') with
+			Some subs -> subs @ rest
+		      | _         -> raise SUBST_MISMATCH)
+		  rest theta')
+	    [] theta in
+	let rec loop = function
+	    ([],ctheta') ->
+	      List.concat (List.map (function (_,ths) -> ths) ctheta')
+	  | (ctheta,[]) ->
+	      List.concat (List.map (function (_,ths) -> ths) ctheta)
+	  | ((x,ths)::xs,(y,ths')::ys) ->
+	      (match compare x y with
+		0 -> (merge_all ths ths') @ loop (xs,ys)
+	      |	-1 -> ths @ loop (xs,((y,ths')::ys))
+	      |	1 -> ths' @ loop (((x,ths)::xs),ys)
+	      |	_ -> failwith "not possible") in
+	try Some (clean_subst(loop (classify theta, classify theta')))
 	with SUBST_MISMATCH -> None
 ;;
 
@@ -500,7 +518,7 @@ let normalize trips =
 let triples_conj trips trips' =
   Common.profile_code "triples_conj" (fun () -> 
   let (trips,shared,trips') =
-    if false && !pTRIPLES_CONJ_OPT
+    if false && !pTRIPLES_CONJ_OPT (* see comment above *)
     then
       let (shared,trips) =
 	List.partition (function t -> List.mem t trips') trips in
@@ -865,7 +883,8 @@ let pre_forall dir (grp,_,states) y all reqst =
   match neighbor_triples with
     [] -> []
   | _ ->
-      (*normalize*) (foldl1 (@) (List.map (foldl1 triples_conj) neighbor_triples))
+      (*normalize*)
+        (foldl1 (@) (List.map (foldl1 triples_conj) neighbor_triples))
 	
 let pre_forall_AW dir (grp,_,states) y all reqst =
   let check s =

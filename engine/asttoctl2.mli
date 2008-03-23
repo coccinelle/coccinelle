@@ -3,7 +3,8 @@ type formula =
     (cocci_predicate,Ast_cocci.meta_name, Wrapper_ctl.info) Ast_ctl.generic_ctl
 
 val asttoctl :
-    Ast_cocci.rule -> Ast_cocci.meta_name list list -> formula list
+    Ast_cocci.rule -> Ast_cocci.meta_name list list (* used after *) ->
+      formula list
 
 val pp_cocci_predicate : cocci_predicate -> unit
 

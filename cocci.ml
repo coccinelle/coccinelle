@@ -84,7 +84,7 @@ let ctls_of_ast2 ast ua =
 	(Asttomember.asttomember ast ua))
     ast ua
 
-let ctls_of_ast ast ua  =
+let ctls_of_ast ast ua =
   Common.profile_code "asttoctl2" (fun () -> ctls_of_ast2 ast ua)
 
 (*****************************************************************************)
