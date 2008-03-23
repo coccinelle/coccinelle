@@ -261,7 +261,9 @@ module XMATCH = struct
 	  Some valu' ->
 	    if Cocci_vs_c_3.equal_metavarval exp valu'
 	    then success else failure
-	| None -> failure))
+	| None ->
+	    (* if the variable is not there, it puts no constraints *)
+	    failure))
       constraints pvalu f tin
 
   (* ------------------------------------------------------------------------*)

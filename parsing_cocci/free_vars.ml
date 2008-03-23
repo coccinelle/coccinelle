@@ -32,7 +32,7 @@ let collect_unitary_nonunitary free_usage =
 	  (x::unitary,non_unitary) in
   loop2 free_usage
 
-let collect_all_refs =
+let collect_refs include_constraints =
   let bind x y = x @ y in
   let option_default = [] in
 
@@ -128,9 +128,12 @@ let collect_all_refs =
       | _ -> option_default) in
 
   let mcode r mc =
-    match Ast.get_pos_var mc with
-      Ast.MetaPos(name,constraints,_,_) -> (metaid name)::constraints
-    | _ -> option_default in
+    if include_constraints
+    then
+      match Ast.get_pos_var mc with
+	Ast.MetaPos(name,constraints,_,_) -> (metaid name)::constraints
+      | _ -> option_default
+    else option_default in
 
   V.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
@@ -138,6 +141,9 @@ let collect_all_refs =
     donothing donothing donothing donothing
     astfvident astfvexpr astfvfullType astfvtypeC donothing astfvparam
     astfvdecls astfvrule_elem astfvstatement donothing donothing donothing_a
+
+let collect_all_refs = collect_refs true
+let collect_non_constraint_refs = collect_refs false
 
 let collect_all_rule_refs minirules =
   List.fold_left (@) []
@@ -458,6 +464,9 @@ are referenced.  Store them in a hash table. *)
 multiple times.  But we get the advantage of not having too many variants
 of the same functions. *)
 
+(* Inherited doesn't include position constraints.  If they are not bound
+then there is no constraint. *)
+
 let astfvs metavars bound =
   let fresh =
     List.fold_left
@@ -472,11 +481,15 @@ let astfvs metavars bound =
   (* cases for the elements of anything *)
   let astfvrule_elem recursor k re =
     let minus_free = nub (collect_all_refs.V.combiner_rule_elem re) in
-    let free =
-      Common.union_set minus_free
-	(collect_in_plus_term.V.combiner_rule_elem re) in
-    let (unbound,inherited) =
-      List.partition (function x -> not(List.mem x bound)) free in
+    let minus_nc_free =
+      nub (collect_non_constraint_refs.V.combiner_rule_elem re) in
+    let plus_free = collect_in_plus_term.V.combiner_rule_elem re in
+    let free = Common.union_set minus_free plus_free in
+    let nc_free = Common.union_set minus_nc_free plus_free in
+    let unbound =
+      List.filter (function x -> not(List.mem x bound)) free in
+    let inherited =
+      List.filter (function x -> List.mem x bound) nc_free in
     let munbound =
       List.filter (function x -> not(List.mem x bound)) minus_free in
     {(k re) with
@@ -488,9 +501,11 @@ let astfvs metavars bound =
 
   let astfvstatement recursor k s =
     let minus_free = nub (collect_all_refs.V.combiner_statement s) in
-    let free =
-      Common.union_set minus_free
-	(collect_in_plus_term.V.combiner_statement s) in
+    let minus_nc_free =
+      nub (collect_non_constraint_refs.V.combiner_statement s) in
+    let plus_free = collect_in_plus_term.V.combiner_statement s in
+    let free = Common.union_set minus_free plus_free in
+    let nc_free = Common.union_set minus_nc_free plus_free in
     let classify free minus_free =
       let (unbound,inherited) =
 	List.partition (function x -> not(List.mem x bound)) free in
@@ -523,7 +538,9 @@ let astfvs metavars bound =
 	    classify (cip_mcodekind collect_in_plus_term aft) [] in
 	  Ast.Iterator(header,body,(unbound,fresh,inherited,aft))
       |	s -> s in
-    let (unbound,munbound,fresh,inherited) = classify free minus_free in
+    let (unbound,munbound,fresh,_) = classify free minus_free in
+    let inherited =
+      List.filter (function x -> List.mem x bound) nc_free in
     {res with
       Ast.node = s;
       Ast.free_vars = unbound;
@@ -534,11 +551,15 @@ let astfvs metavars bound =
 
   let astfvstatement_dots recursor k sd =
     let minus_free = nub (collect_all_refs.V.combiner_statement_dots sd) in
-    let free =
-      Common.union_set minus_free 
-	(collect_in_plus_term.V.combiner_statement_dots sd) in
-    let (unbound,inherited) =
-      List.partition (function x -> not(List.mem x bound)) free in
+    let minus_nc_free =
+      nub (collect_non_constraint_refs.V.combiner_statement_dots sd) in
+    let plus_free = collect_in_plus_term.V.combiner_statement_dots sd in
+    let free = Common.union_set minus_free plus_free in
+    let nc_free = Common.union_set minus_nc_free plus_free in
+    let unbound =
+      List.filter (function x -> not(List.mem x bound)) free in
+    let inherited =
+      List.filter (function x -> List.mem x bound) nc_free in
     let munbound =
       List.filter (function x -> not(List.mem x bound)) minus_free in
     {(k sd) with

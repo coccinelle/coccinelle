@@ -594,11 +594,11 @@ let for_unparser xs =
   )
 
 (* --------------------------------------------------------------------- *)
-let prepare_cocci ctls free_var_lists used_after_lists positions_list
-    astcocci = 
+let prepare_cocci ctls free_var_lists
+    used_after_lists positions_list astcocci = 
 
   let gathered = Common.index_list_1
-    (zip (zip (zip (zip ctls astcocci) free_var_lists) used_after_lists)
+      (zip (zip (zip (zip ctls astcocci) free_var_lists) used_after_lists)
        positions_list)
   in
   gathered +> List.map 
@@ -943,7 +943,7 @@ and reassociate_positions free_vars envs =
      occurrences of E should see both bindings of p, not just its own.
      Otherwise, a position constraint for something that matches in two
      places will never be useful, because the position can always be
-     different gfrom the other one. *)
+     different from the other one. *)
    let relevant =
      List.map
        (function (e,_) ->
@@ -1023,8 +1023,7 @@ and process_a_ctl_a_env_a_toplevel2 r e c =
       (* !Main point! The call to the engine *)
       (***************************************)
       let model_ctl  = CCI.model_for_ctl r.dropped_isos (Common.some c.flow) e
-      in
-      CCI.mysat model_ctl r.ctl (r.used_after, r.positions, e)
+      in CCI.mysat model_ctl r.ctl (r.used_after, r.positions, e)
     ) 
   in
   if not returned_any_states 
@@ -1107,8 +1106,8 @@ let full_engine2 (coccifile, isofile) cfiles =
     check_macro_in_sp_and_adjust toks;
 
     let cocci_infos =
-      prepare_cocci ctls free_var_lists used_after_lists positions_lists
-	astcocci in
+      prepare_cocci ctls free_var_lists
+	used_after_lists positions_lists astcocci in
     let c_infos  = prepare_c cfiles in
 
     show_or_not_ctl_tex astcocci ctls;
