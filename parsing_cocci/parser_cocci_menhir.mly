@@ -1133,11 +1133,22 @@ basic_expr(recurser,primary_extra):
 
 assign_expr(r,pe):
     cond_expr(r,pe)                        { $1 }
-  | unary_expr(r,pe) TAssign assign_expr(r,pe)
+  | unary_expr(r,pe) TAssign assign_expr_bis
       { let (op,clt) = $2 in
       Ast0.wrap(Ast0.Assignment($1,P.clt2mcode op clt,
 				Ast0.set_arg_exp $3,false)) }
-  | unary_expr(r,pe) TEq assign_expr(r,pe)
+  | unary_expr(r,pe) TEq assign_expr_bis
+      { Ast0.wrap
+	  (Ast0.Assignment
+	     ($1,P.clt2mcode Ast.SimpleAssign $2,Ast0.set_arg_exp $3,false)) }
+
+assign_expr_bis:
+    cond_expr(eexpr,dot_expressions)                        { $1 }
+  | unary_expr(eexpr,dot_expressions) TAssign assign_expr_bis
+      { let (op,clt) = $2 in
+      Ast0.wrap(Ast0.Assignment($1,P.clt2mcode op clt,
+				Ast0.set_arg_exp $3,false)) }
+  | unary_expr(eexpr,dot_expressions) TEq assign_expr_bis
       { Ast0.wrap
 	  (Ast0.Assignment
 	     ($1,P.clt2mcode Ast.SimpleAssign $2,Ast0.set_arg_exp $3,false)) }
