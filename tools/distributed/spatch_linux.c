@@ -96,8 +96,8 @@ int main(unsigned int argc, char **argv) {
   signal(SIGQUIT,exit_sighandler); // Quit from keyboard
   // interpret the arguments
   max = MAX;
-  if (argv[1] == "-processes") {max = atoi(argv[2]); start = 2;}
-  if (argv[1] == "--help") {
+  if (!strcmp(argv[1],"-processes")) {max = atoi(argv[2]); start = 2;}
+  if (!strcmp(argv[1],"--help")) {
     printf("spatch_linux [-processes n] foo.cocci ...\n");
     exit (0);
   }
