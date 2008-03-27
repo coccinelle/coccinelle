@@ -1008,6 +1008,14 @@ let rec bigloop2 rs ccs =
 
   if !Flag.sgrep_mode2
   then begin
+    (* sgrep can lead to code that is not parsable, but we must
+     * still call rebuild_info_c_and_headers to pretty print the 
+     * action (MINUS), so that later the diff will show what was
+     * matched by sgrep. But we don't want the parsing error message
+     * hence the following flag setting. So this code propably
+     * will generate a NotParsedCorrectly for the matched parts
+     * and the very final pretty print and diff will work
+     *)
     Flag_parsing_c.verbose_parsing := false;
     ccs := rebuild_info_c_and_headers !ccs
   end;
