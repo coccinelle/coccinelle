@@ -1,0 +1,23 @@
+OCAMLMAKEFILE = /usr/share/ocaml-tools/OCamlMakefile
+PY_PREFIX = $(shell python getprefix.py)
+PY_VERSION = $(shell python getversion.py)
+CLIBS = python2.4 pthread dl util m c
+
+SOURCES = pycaml.ml pycaml_ml.c
+RESULT = pycaml
+THREADS = yes
+NO_CUSTOM = NO_CUSTOM
+CFLAGS = -fPIC
+
+LIBDIRS = $(PY_PREFIX)/lib/python$(PY_VERSION)/config
+INCDIRS = $(PY_PREFIX)/include/python$(PY_VERSION)
+OCAMLLDFLAGS = -linkall
+
+allopt: native-code-library byte-code-library pycaml.customtop
+
+all: byte-code-library pycaml.customtop
+
+pycaml.customtop: pycaml.cma
+	ocamlmktop -o pycaml.customtop pycaml.cma
+
+-include $(OCAMLMAKEFILE)

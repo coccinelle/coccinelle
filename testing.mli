@@ -56,8 +56,10 @@ val sp_of_file :
       Ast_cocci.meta_name list list list * Ast_cocci.meta_name list list list *
       string list list *
       string option
-val rule_elem_of_string : string -> filename option -> Ast_cocci.rule_elem
 
+(* TODO: Remove
+val rule_elem_of_string : string -> filename option -> Ast_cocci.rule_elem
+*)
 
 (*
 val flows_of_ast : Ast_c.program -> Control_flow_c.cflow list

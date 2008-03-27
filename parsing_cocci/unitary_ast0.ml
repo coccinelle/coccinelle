@@ -201,6 +201,39 @@ let rec combine3 = function
 (* ----------------------------------------------------------------------- *)
 (* process all rules *)
 
+let do_unitary rules =
+  let rec loop = function
+      [] -> ([],[])
+    | (r::rules) ->
+      match r with
+        Ast0_cocci.ScriptRule (a,b,c) ->
+          let (x,rules) = loop rules in
+          (x, (Ast0_cocci.ScriptRule (a,b,c))::rules)
+      | Ast0_cocci.CocciRule (minus,plusz) ->
+          let (minus,metavars,chosen_isos) = match minus with (a,b,c) -> (a,b,c) in
+          let plus = match plusz with (a,_) -> a in
+          let mm1 = List.map Ast.get_meta_name metavars in
+          let (used_after, rest) = loop rules in
+          let (m_unitary, m_nonunitary) = get_free minus_checker minus in
+          let (p_unitary, p_nonunitary) = get_free plus_checker plus in
+          let p_free = 
+            if !Flag.sgrep_mode2 then []
+            else p_unitary @ p_nonunitary in
+          let (in_p, m_unitary) =
+            List.partition (function x -> List.mem x p_free) m_unitary in
+          let m_nonunitary = in_p @ m_nonunitary in
+          let (m_unitary, not_local) =
+            List.partition (function x -> List.mem x mm1) m_unitary in
+          let m_unitary =
+            List.filter (function x -> not (List.mem x used_after)) m_unitary in
+          let rebuilt = update_unitary m_unitary minus in
+          (set_minus (m_nonunitary @ used_after) mm1,
+             (Ast0_cocci.CocciRule ((rebuilt, metavars, chosen_isos),plusz))::rest)
+      | _ -> failwith "not possible" in
+  let (_,rules) = loop rules in
+  rules
+
+(*
 let do_unitary minus plus =
   let (minus,metavars,chosen_isos) = split3 minus in
   let (plus,_) = List.split plus in
@@ -228,3 +261,4 @@ let do_unitary minus plus =
     | _ -> failwith "not possible" in
   let (_,rules) = loop (metavars,minus,plus) in
   combine3 (rules,metavars,chosen_isos)
+*)

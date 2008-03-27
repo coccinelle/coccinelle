@@ -7,3 +7,6 @@ let show_trying = ref false
 let track_iso_usage = ref false
 
 let use_glimpse = ref false
+
+let pyoutput = ref "coccilib.output.Console"
+

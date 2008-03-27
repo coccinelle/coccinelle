@@ -1,4 +1,5 @@
 open Common open Commonop
+open Parse_cocci
 
 (*****************************************************************************)
 (* Flags *)
@@ -163,6 +164,8 @@ let short_options = [
    "    \"\" for a file in the current directory");
   "-kbuild_info", Arg.Set_string kbuild_info, 
   "    <file> improve -dir by grouping related c files";
+  "-pyoutput", Arg.Set_string Flag.pyoutput,
+  "    Sets output routine: Standard values: <coccilib.output.Gtk|coccilib.output.Console>";
 
 
   "-version",   Arg.Unit (fun () -> 
@@ -729,6 +732,9 @@ let main () =
     | [] -> short_usage()
         
   ));
+    if (Pycaml.py_isinitialized ()) != 0 then
+	(Printf.printf "Finalizing python\n%!";
+	Pycaml.py_finalize ());
   end
 
 (*****************************************************************************)

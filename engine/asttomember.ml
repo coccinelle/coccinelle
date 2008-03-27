@@ -267,32 +267,39 @@ worthwhile. *)
 
 (* lists are sorted such that smaller DisjRuleElem are first, because they
 are cheaper to test *)
-let asttomember (_,_,l) used_after =
+
+let asttomemberz (_,_,l) used_after =
   let process_one (l : (int * Ast_cocci.rule_elem) list list) =
     if debug
     then print_info l;
     List.map
       (function info ->
-	let info =
-	  List.sort (function (n1,_) -> function (n2,_) -> compare n1 n2)
-	    info in
-	List.map (function (_,x) -> (Lib_engine.Match(x),CTL.Control)) info)
+        let info =
+          List.sort (function (n1,_) -> function (n2,_) -> compare n1 n2)
+            info in
+        List.map (function (_,x) -> (Lib_engine.Match(x),CTL.Control)) info)
       l in
   List.map2
     (function min -> function (max,big_max) ->
       match min with
-	[] ->
-	  (match max() with
-	    [] -> process_one (big_max())
-	  | max -> process_one max)
-      |	_ -> process_one min)
+        [] ->
+          (match max() with
+            [] -> process_one (big_max())
+          | max -> process_one max)
+      | _ -> process_one min)
     (List.map (top_level contains_constant no_mcode) l)
     (List.combine
-	(List.map2
-	   (function x -> function ua -> function _ ->
-	     top_level (contains_modif ua) mcode x)
-	   l used_after)
-	(List.map
-	   (function x -> function _ ->
-	     top_level (function _ -> true) no_mcode x)
-	   l))
+        (List.map2
+           (function x -> function ua -> function _ ->
+             top_level (contains_modif ua) mcode x)
+           l used_after)
+        (List.map
+           (function x -> function _ ->
+             top_level (function _ -> true) no_mcode x)
+           l))
+
+let asttomember r used_after =
+  match r with
+    Ast.ScriptRule _ -> []
+  | Ast.CocciRule (a,b,c) -> asttomemberz (a,b,c) used_after
+

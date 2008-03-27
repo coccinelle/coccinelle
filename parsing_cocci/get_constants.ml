@@ -282,18 +282,21 @@ let get_constants rules =
   try
     let (info,_) =
       List.fold_left
-	(function (rest_info,in_plus) ->
-	  function (nm,(dep,_,_),cur) ->
-	    let (cur_info,cur_plus) = rule_fn cur in_plus in
-	    let cur_info =
-	    (* no dependencies if dependent on another rule; then we need to
-	       find the constants of that rule *)
-	      if dependent dep or
-		List.for_all (check_inherited nm).V.combiner_top_level cur
-	      then []
-	      else
-		if cur_info = [] then raise No_info else cur_info in
-	    (Common.union_set [cur_info] rest_info,cur_plus))
-	([],[]) (rules : Ast.rule list) in
+        (function (rest_info,in_plus) ->
+          function r ->
+            match r with
+              Ast.ScriptRule _ -> (rest_info, in_plus)
+            | Ast.CocciRule (nm, (dep,_,_), cur) ->
+                let (cur_info,cur_plus) = rule_fn cur in_plus in
+	        let cur_info =
+	          (* no dependencies if dependent on another rule; then we need to
+	             find the constants of that rule *)
+	          if dependent dep or
+	            List.for_all (check_inherited nm).V.combiner_top_level cur
+	          then []
+	          else
+		  if cur_info = [] then raise No_info else cur_info in
+	        (Common.union_set [cur_info] rest_info,cur_plus))
+        ([],[]) rules in
     List.rev info
   with No_info -> List.map (function _ -> []) rules

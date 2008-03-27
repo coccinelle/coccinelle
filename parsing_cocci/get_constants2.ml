@@ -407,7 +407,10 @@ let get_constants rules =
     let (info,_,_,_) =
       List.fold_left
 	(function (rest_info,in_plus,env,locals(*dom of env*)) ->
-	  function (nm,(dep,_,_),cur) ->
+          function r ->
+            match r with
+              Ast.ScriptRule _ -> (rest_info, in_plus, env, locals)
+            | Ast.CocciRule (nm,(dep,_,_),cur) ->
 	    let (cur_info,cur_plus) = rule_fn cur in_plus ((nm,True)::env) in
 	    if List.for_all all_context.V.combiner_top_level cur
 	    then

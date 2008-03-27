@@ -888,4 +888,4 @@ let ast0toast_toplevel x =
 
 let ast0toast name deps dropped exists x =
   List.iter inline_mcodes.V0.combiner_top_level x;
-  (name,(deps,dropped,exists),List.map top_level x)
+  Ast.CocciRule (name,(deps,dropped,exists),List.map top_level x)

@@ -145,7 +145,6 @@ let testall () =
 
   end
 
-
 (* ------------------------------------------------------------------------ *)
 
 type okfailed = Ok | SpatchOK | Failed
@@ -590,6 +589,7 @@ let (cexpression_of_string: string -> Ast_c.expression) = fun s ->
 (* no point to memoize this one *)
 let sp_of_file file iso    = Parse_cocci.process file iso false
 
+(* TODO: Remove
 let (rule_elem_of_string: string -> filename option -> Ast_cocci.rule_elem) =
  fun s iso -> 
   begin
@@ -606,6 +606,7 @@ let (rule_elem_of_string: string -> filename option -> Ast_cocci.rule_elem) =
     | Ast_cocci.Atomic(re) -> re
     | _ -> failwith "only atomic patterns allowed"
   end
+*)
 
 (*
 let flows_of_ast astc = 

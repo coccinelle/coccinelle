@@ -772,24 +772,35 @@ let rec dep in_and = function
       else (print_string "("; print_or(); print_string ")")
   | Ast.NoDep -> failwith "not possible"
 
-let unparse (nm,(deps,drops,exists),x) =
-  print_string "@@";
-  force_newline();
-  print_string nm;
-  (match deps with
-    Ast.NoDep -> ()
-  | _ -> print_string " depends on "; dep true deps);
-  (*
-  print_string "line ";
-  print_int (Ast.get_line (List.hd x));
-  *)
-  force_newline();
-  print_string "@@";
-  print_newlines_disj := true;
-  force_newline();
-  force_newline();
-  rule x;
-  force_newline()
+let unparse z =
+  match z with
+    Ast.ScriptRule (lang,bindings,code) ->
+    print_string "@@";
+    force_newline();
+    print_string ("script:" ^ lang);
+    force_newline();
+    print_string "@@";
+    force_newline();
+    print_string code;
+    force_newline()
+  | Ast.CocciRule (nm, (deps, drops, exists), x) ->
+    print_string "@@";
+    force_newline();
+    print_string nm;
+    (match deps with
+      Ast.NoDep -> ()
+    | _ -> print_string " depends on "; dep true deps);
+    (*
+    print_string "line ";
+    print_int (Ast.get_line (List.hd x));
+    *)
+    force_newline();
+    print_string "@@";
+    print_newlines_disj := true;
+    force_newline();
+    force_newline();
+    rule x;
+    force_newline()
 
 let rule_elem_to_string x =
   print_newlines_disj := true;

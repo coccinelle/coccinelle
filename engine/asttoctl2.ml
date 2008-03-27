@@ -2104,7 +2104,7 @@ let top_level ua t =
 (* --------------------------------------------------------------------- *)
 (* Entry points *)
 
-let asttoctl (name,(_,_,exists_flag),l) used_after =
+let asttoctlz (name,(_,_,exists_flag),l) used_after =
   letctr := 0;
   labelctr := 0;
   (match exists_flag with
@@ -2121,6 +2121,11 @@ let asttoctl (name,(_,_,exists_flag),l) used_after =
   let res = List.map2 top_level used_after l in
   exists := false;
   res
+
+let asttoctl r used_after =
+  match r with
+    Ast.ScriptRule _ -> []
+  | Ast.CocciRule (a,b,c) -> asttoctlz (a,b,c) used_after
 
 let pp_cocci_predicate (pred,modif) =
   Pretty_print_engine.pp_predicate pred

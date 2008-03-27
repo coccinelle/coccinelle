@@ -351,7 +351,10 @@ let collect_iso_info =
 
 let disj rules =
   List.map
-    (function (mv,(nm,rule_info,r)) ->
+    (function (mv,r) ->
+      match r with
+        Ast.ScriptRule _ -> (mv, r)
+      | Ast.CocciRule (nm, rule_info, r) ->
       let res =
 	List.map
 	  (function x ->
@@ -360,5 +363,5 @@ let disj rules =
 	    then collect_iso_info.V.rebuilder_top_level res
 	    else res)
 	  r in
-      (mv,(nm,rule_info,res)))
+      (mv, Ast.CocciRule (nm,rule_info,res)))
     rules

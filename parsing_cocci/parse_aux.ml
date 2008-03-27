@@ -415,3 +415,26 @@ let seq lb s rb =
   Ast0.wrap(Ast0.Seq(clt2mcode "{" lb,s,clt2mcode "}" rb))
 
 (* ---------------------------------------------------------------------- *)
+
+let make_iso_rule_name_result n =
+    (try let _ =  Hashtbl.find Data.all_metadecls n in
+    raise (Semantic_cocci.Semantic ("repeated rule name"))
+    with Not_found -> ());
+    Ast_cocci.CocciRulename (Some n,Ast.NoDep,[],[],Ast.Undetermined,false (*discarded*))
+
+let make_cocci_rule_name_result nm d i a e ee =
+    match nm with
+      Some nm ->
+	let n = id2name nm in
+	(try let _ =  Hashtbl.find Data.all_metadecls n in
+	raise (Semantic_cocci.Semantic ("repeated rule name"))
+	with Not_found -> ());
+	Ast_cocci.CocciRulename (Some n,d,i,a,e,ee)
+    | None -> Ast_cocci.CocciRulename (None,d,i,a,e,ee)
+
+let make_script_rule_name_result scr lang =
+      let s = id2name scr in
+      let l = id2name lang in
+      if s <> "script" then 
+        raise (Semantic_cocci.Semantic ("malform script rule"));
+      Ast_cocci.ScriptRulename l

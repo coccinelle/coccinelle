@@ -1,4 +1,5 @@
 open Common open Commonop
+open Pycaml
 
 module CCI = Ctlcocci_integration
 module TAC = Type_annoter_c
@@ -42,6 +43,7 @@ let sp_of_file2 file iso   =
     Parse_cocci.process file iso false)
 let sp_of_file file iso    = 
   Common.profile_code "parse cocci" (fun () -> sp_of_file2 file iso)
+
 
 (* --------------------------------------------------------------------- *)
 (* Flow related *)
@@ -211,8 +213,8 @@ let show_or_not_ctl_text2 ctl ast rulenb =
       );
     pr "";
   end
-let show_or_not_ctl_text a b c = 
-  Common.profile_code "show_xxx" (fun () -> show_or_not_ctl_text2 a b c)
+let show_or_not_ctl_text a b c =
+      Common.profile_code "show_xxx" (fun () -> show_or_not_ctl_text2 a b c)
 
 
 
@@ -332,7 +334,7 @@ let contain_loop gopt =
 
 
 
-let sp_contain_typed_metavar toplevel_list_list = 
+let sp_contain_typed_metavar_z toplevel_list_list = 
   let bind x y = x or y in
   let option_default = false in
   let mcode _ _ = option_default in
@@ -357,6 +359,11 @@ let sp_contain_typed_metavar toplevel_list_list =
     (function (nm,_,rule) ->
       (List.exists combiner.Visitor_ast.combiner_top_level rule))
     
+
+let sp_contain_typed_metavar rules =
+  sp_contain_typed_metavar_z 
+  (List.map (function x -> match x with Ast_cocci.CocciRule (a,b,c) -> (a,b,c) | _ -> failwith "error in filter")
+    (List.filter (function x -> match x with Ast_cocci.CocciRule _ -> true | _ -> false) rules))
 
 
 
@@ -548,7 +555,14 @@ type toplevel_c_info = {
   (* id: int *)
 }
 
-type toplevel_cocci_info = {
+type toplevel_cocci_info_script_rule = {
+  scr_ast_rule: string * (string * (string * string)) list * string;
+  language: string;
+  scr_ruleid: int;
+  script_code: string;
+}
+
+type toplevel_cocci_info_cocci_rule = {
   ctl: Lib_engine.ctlcocci * (CCI.pred list list);
   ast_rule: Ast_cocci.rule;
 
@@ -566,6 +580,10 @@ type toplevel_cocci_info = {
 
   was_matched: bool ref;
 }
+
+type toplevel_cocci_info = 
+    ScriptRuleCocciInfo of toplevel_cocci_info_script_rule
+  | CocciRuleCocciInfo of toplevel_cocci_info_cocci_rule
 
 type kind_file = Header | Source 
 type file_info = { 
@@ -605,22 +623,36 @@ let prepare_cocci ctls free_var_lists
     (fun (((((ctl_toplevel_list,ast),free_var_list),used_after_list),
 	   positions_list),rulenb) -> 
       
-      if not (List.length ctl_toplevel_list = 1)
+      let is_script_rule r =
+        match r with Ast_cocci.ScriptRule _ -> true | _ -> false in
+
+      if not (List.length ctl_toplevel_list = 1) && not (is_script_rule ast)
       then failwith "not handling multiple minirules";
 
-      let (rulename, (dependencies, dropped_isos, _), restast) = ast in
-      { 
-        ctl = List.hd ctl_toplevel_list;
-        ast_rule = ast;
-        rulename = rulename;
-        dependencies = dependencies;
-        dropped_isos = dropped_isos;
-        free_vars = List.hd free_var_list;
-        used_after = List.hd used_after_list;
-        positions = List.hd positions_list;
-        ruleid = rulenb;
-        was_matched = ref false;
-      }
+      match ast with
+        Ast_cocci.ScriptRule (lang,mv,code) ->
+          let r = 
+          {
+            scr_ast_rule = (lang, mv, code);
+            language = lang;
+            scr_ruleid = rulenb;
+            script_code = code;
+          }
+          in ScriptRuleCocciInfo r
+      | Ast_cocci.CocciRule (rulename, (dependencies, dropped_isos, z), restast) ->
+          CocciRuleCocciInfo (
+          {
+            ctl = List.hd ctl_toplevel_list;
+            ast_rule = ast;
+            rulename = rulename;
+            dependencies = dependencies;
+            dropped_isos = dropped_isos;
+            free_vars = List.hd free_var_list;
+            used_after = List.hd used_after_list;
+            positions = List.hd positions_list;
+            ruleid = rulenb;
+            was_matched = ref false;
+          })
     )
 
 
@@ -820,6 +852,53 @@ let rec bigloop2 rs ccs =
 
   (* looping over the rules *)
   rs +> List.iter (fun r -> 
+    match r with
+      ScriptRuleCocciInfo r -> 
+        pr_xxxxxxxxxxxxxxxxx ();
+        Printf.printf "script:%s\n" r.language;
+        pr_xxxxxxxxxxxxxxxxx ();
+
+        adjust_pp_with_indent (fun () -> 
+          Format.force_newline();
+          let (l,mv,code) = r.scr_ast_rule in
+          Pretty_print_cocci.unparse (Ast_cocci.ScriptRule (l,mv,code));
+        );
+
+        print_endline "RESULT =";
+
+        let (_, newes) =
+          List.fold_left
+            (function (cache, newes) ->
+              function (e, rules_that_have_matched) ->
+                let (_, mv, _) = r.scr_ast_rule in
+                if r.language = "python" then (
+                  if List.for_all (Pycocci.contains_binding e) mv then (
+                    Pycocci.build_classes (List.map (function (x,y) -> x) e);
+                    Pycocci.construct_variables mv e;
+                    let _ = pyrun_simplestring ("import coccinelle\nfrom coccinelle import *\ncocci = Cocci()\n" ^ r.script_code) in
+		    if !Pycocci.inc_match then
+                      (cache, (e, rules_that_have_matched)::newes)
+		    else (cache, newes)
+                  ) else (
+                    (cache, newes)
+                  )
+		) else if r.language = "test" then (
+			concat_headers_and_c !ccs +> List.iter (fun c -> 
+			if c.flow <> None 
+			then
+				Printf.printf "Flow: %s\r\nFlow!\r\n%!" c.fullstring
+			);
+			(cache, newes)
+                ) else (
+                  Printf.printf "Unknown language: %s\n" r.language;
+                  (cache, newes)
+                )
+            )
+            ([],[]) !es
+        in
+
+        es := newes;
+    | CocciRuleCocciInfo r -> (
     Common.profile_code r.rulename (fun () -> 
     show_or_not_ctl_text r.ctl r.ast_rule r.ruleid;
 
@@ -925,7 +1004,7 @@ let rec bigloop2 rs ccs =
     if not !Flag.sgrep_mode2
     then ccs := rebuild_info_c_and_headers !ccs;
 
-  )); (* end iter rs *)
+  ))); (* end iter rs *)
 
   if !Flag.sgrep_mode2
   then begin
@@ -1068,6 +1147,7 @@ let full_engine2 (coccifile, isofile) cfiles =
 
   show_or_not_cfiles  cfiles;
   show_or_not_cocci   coccifile isofile;
+  Pycocci.set_coccifile coccifile;
 
   let isofile = 
     if not (Common.lfile_exists isofile)
@@ -1145,6 +1225,7 @@ let full_engine2 (coccifile, isofile) cfiles =
 
 let full_engine a b = 
   Common.profile_code "full_engine" (fun () -> full_engine2 a b)
+
 
 (*****************************************************************************)
 (* check duplicate from result of full_engine *)

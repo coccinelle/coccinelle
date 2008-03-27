@@ -44,6 +44,7 @@ module P = Parse_aux
 %token <Parse_aux.pos_info>   TMetaPos
 
 %token TArob TArobArob TPArob
+%token <string> TScriptData
 
 %token <Data.clt> TEllipsis TOEllipsis TCEllipsis TPOEllipsis TPCEllipsis
 %token <Data.clt> TWhen TAny TStrict TLineEnd
@@ -125,17 +126,17 @@ module P = Parse_aux
 %type <(string,string) Common.either list> include_main
 
 %start iso_rule_name
-%type <string option * Ast_cocci.dependency * string list * string list *
-  Ast_cocci.exists * bool>
+%type <Ast_cocci.rulename>
 iso_rule_name
 
 %start rule_name
-%type <string option * Ast_cocci.dependency * string list * string list *
-  Ast_cocci.exists * bool (* true if the whole thing is an expression *)>
+%type <Ast_cocci.rulename>
 rule_name
 
 %start meta_main
 %type <(Ast_cocci.metavar,Ast_cocci.metavar) Common.either list> meta_main
+
+%start <string * (string * string)> script_meta_main
 
 %start iso_main
 %type <Ast0_cocci.anything list list> iso_main
@@ -173,24 +174,12 @@ pure:
 | /* empty */    { Ast0.Impure }
 
 iso_rule_name:
-  nm=pure_ident TArob
-    { let n = P.id2name nm in
-    (try let _ =  Hashtbl.find Data.all_metadecls n in
-    raise (Semantic_cocci.Semantic ("repeated rule name"))
-    with Not_found -> ());
-    (Some n,Ast.NoDep,[],[],Ast.Undetermined,false (*discarded*)) }
+  nm=pure_ident TArob { P.make_iso_rule_name_result (P.id2name nm) }
 
 rule_name:
   nm=ioption(pure_ident) extends d=depends i=loption(choose_iso)
-    a=loption(disable) e=exists ee=is_expression TArob
-    { match nm with
-      Some nm ->
-	let n = P.id2name nm in
-	(try let _ =  Hashtbl.find Data.all_metadecls n in
-	raise (Semantic_cocci.Semantic ("repeated rule name"))
-	with Not_found -> ());
-	(Some n,d,i,a,e,ee)
-    | None -> (None,d,i,a,e,ee) }
+    a=loption(disable) e=exists ee=is_expression TArob { P.make_cocci_rule_name_result nm d i a e ee }
+  | scr=pure_ident TDotDot lang=pure_ident { P.make_script_rule_name_result scr lang }
 
 extends:
   /* empty */                                     { () }
@@ -1763,3 +1752,6 @@ iso(term):
 
 never_used: TPragma { () }
   | TPArob TMetaPos { () }
+
+script_meta_main: py=pure_ident TShOp TRuleName TDot cocci=pure_ident TMPtVirg
+  { (P.id2name py, ($3, P.id2name cocci)) }

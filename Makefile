@@ -3,17 +3,17 @@
 ##############################################################################
 TARGET=spatch
 
-SRC=flag_cocci.ml cocci.ml testing.ml test.ml main.ml
+SRC=flag_cocci.ml pycocci_aux.ml pycocci.ml cocci.ml testing.ml test.ml main.ml
 
 SYSLIBS=str.cma unix.cma
 LIBS=commons/commons.cma globals/globals.cma\
      ctl/ctl.cma \
      parsing_cocci/cocci_parser.cma parsing_c/parsing_c.cma \
      engine/cocciengine.cma popl/popl.cma \
-     extra/extra.cma
+     extra/extra.cma pycaml/pycaml.cma
 
 MAKESUBDIRS=commons globals ctl parsing_cocci parsing_c engine popl extra
-INCLUDEDIRS=commons globals ctl parsing_cocci parsing_c engine popl extra
+INCLUDEDIRS=commons globals ctl parsing_cocci parsing_c engine popl extra pycaml
 
 ##############################################################################
 # Generic variables
@@ -60,8 +60,10 @@ opt: rec.opt $(EXEC).opt
 
 rec:
 	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i all; done 
+	$(MAKE) -C pycaml -f Makefile.deb-pycaml
 rec.opt:
 	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i all.opt; done 
+	$(MAKE) -C pycaml -f Makefile.deb-pycaml
 
 $(EXEC): $(LIBS) $(OBJS)
 	$(OCAMLC) -o $@ $(SYSLIBS) $^
@@ -172,6 +174,8 @@ beforedepend:: test.ml
 .ml.mldepend: 
 	$(OCAMLC) -i $<
 
+pycocci.ml: pycaml/pycaml.ml pycaml/pycaml_ml.c
+pycocci_aux.ml:  pycaml/pycaml.ml pycaml/pycaml_ml.c
 
 clean::
 	rm -f *.cm[iox] *.o *.annot

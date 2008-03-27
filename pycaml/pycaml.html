@@ -1,0 +1,321 @@
+<html>
+<head>
+<title>Module Pycaml</title>
+</head>
+<body>
+<table border=0 width="100%"><tr><td bgcolor="#c0c0c0">
+<h1>Pycaml</h1>
+</td></tr></table>
+<p>
+<h2>What is Pycaml</h2>
+A library written by <a href=mailto:arty@users.sourceforge.net>
+arty@users.sourceforge.net</a> which follows the Python/C API as
+closely as possible, while
+providing equivalent functionality for objective caml.  This is built
+against python 2.x and Ocaml 3.04.<p>  It is intended to allow users to
+build native ocaml libraries and use them from python, and alternately,
+in order to allow ocaml users to benefit from linkable libraries provided
+for python.<p>
+I created this library in order to take advantage of python binding for
+certain native libraries from ocaml.  While it is true that I could have
+written new interfaces specifically for ocaml, the python interface is
+sufficient for my needs, and this project was easier.<p>
+
+<b>Note:</b> Unfortunately, the symbol <tt>init_exceptions</tt> exists in
+both compiled ocaml code, and the python runtime.  In order to proceed, you
+must rename this symbol either in the ocaml distribution (in byterun/fail.c,
+and byterun/startup.c), or in the python distribution, and rebuild the 
+software appropriately.<p>
+
+Please edit the <tt>Makefile</tt> to put in your system's libraries used for
+compiling programs embedded with python.  This library compiles on most
+linux boxes without modification.  The python interpreter is used to determine
+the path to the python library and must be in your path when you run make.
+<p>
+
+<b>Get the distribution here:</b><a href=pycaml.tar.gz>pycaml.tar.gz</a><p>
+
+Because these are made to closely mirror the python API, the user should
+become familiar with the python API.<p>
+Given Ocaml parameter passing convention, it was convenient to pass multiple
+arguments as members of a tuple, but single arguments without.  Consequently,
+functions with arity 1, such as pytuple_new are called as<p>
+<pre>
+  pytuple_new 3 ;;
+</pre><p>
+And functions with more arguments are called as<p>
+<pre>
+  pydict_getitemstring (dict,"keystring") ;;
+</pre>
+
+<h2>Module Pycaml</h2>
+
+<h3>Visible Types</h3>
+
+<table border=0>
+<tr bgcolor="#c0c0c0"><td>type</td><td width="100%">pyobject</td></tr>
+<tr><td colspan=2>
+The abstract type of python objects.
+</td></tr>
+<tr bgcolor="#c0c0c0"><td>type</td><td>pyobject_type =</td></tr>
+<tr><td align=right></td><td>TupleType</td></tr>
+<tr><td align=right>|</td><td>StringType</td></tr>
+<tr><td align=right>|</td><td>IntType</td></tr>
+<tr><td align=right>|</td><td>FloatType</td></tr>
+<tr><td align=right>|</td><td>ListType</td></tr>
+<tr><td align=right>|</td><td>NoneType</td></tr>
+<tr><td align=right>|</td><td>CallableType</td></tr>
+<tr><td align=right>|</td><td>ModuleType</td></tr>
+<tr><td align=right>|</td><td>ClassType</td></tr>
+<tr><td align=right>|</td><td>TypeType</td></tr>
+<tr><td align=right>|</td><td>OtherType</td></tr>
+<tr><td colspan=2>
+The type representing the range of types available to python programs.
+Values of this type are provided by the pytype function, and identify the
+python type of opaque pyobject objects.
+</td></tr></table>
+
+<h3>Supported Functions from the Python/C API</h3>
+In each case, the signature of the function is unchanged from the Python/C
+API except for the case of 'out' pointer to pointer parameters; 
+in the case of a single return, the returned value is copied, otherwise, 
+a tuple is created with copies of all output parameters.  In the case of
+zero parameter, or void return, unit is used.<p>
+In python API functions that take a FILE *, an int file descriptor is used
+instead such as those returned by the Unix library.<p>
+
+<h4>fun unit -> unit</h4>
+py_initialize, py_finalize, pyerr_print, pyerr_clear, pyimport_cleanup
+<h4>fun int -> unit</h4>
+py_exit, pyerr_printex
+<h4>fun string -> unit</h4>
+py_setprogramname, py_setpythonhome
+<h4>fun unit -> int</h4>
+py_isinitialized, pyeval_getrestricted
+<h4>fun string -> int</h4>
+pyrun_simplestring, pyimport_importfrozenmodule,
+<h4>fun (int * string) -> int</h4>
+pyrun_anyfile, pyrun_simplefile, pyrun_interactiveone, pyrun_interactiveloop,
+py_fdisinteractive
+<h4>fun (int * string * int) -> int</h4>
+pyrun_anyfileex, pyrun_simplefileex
+<h4>fun unit -> string</h4>
+py_getprogramname, py_getpthonhome, py_getprogramfullpath, py_getprefix,
+py_getexecprefix, py_getpath, py_getversion, py_getplatform, py_getcopyright,
+py_getcompiler, py_getbuildinfo
+<h4>fun (string * int * pyobject * pyobject) -> pyobject</h4>
+pyrun_string
+<h4>fun (int * string * int * pyobject * pyobject) -> pyobject</h4>
+pyrun_file
+<h4>fun (int * string * int * pyobject * pyobject * int) -> pyobject</h4>
+pyrun_fileex
+<h4>fun (string * string * int) -> pyobject</h4>
+py_compilestring
+<h4>fun (pyobject * int * int) -> int</h4>
+pyobject_print, pytuple_getslice, pysequence_getslice</h4>
+<h4>fun pyobject -> pyobject</h4>
+pyobject_repr, pyobject_str, pyobject_unicode, pydict_keys, pydict_values,
+pydict_items, pydict_copy, pymodule_getdict, pymethod_function, pymethod_self,
+pymethod_class, pymodule_getdict, pyimport_reloadmodule, pyobject_type, 
+pynumber_negative, pynumber_positive, pynumber_absolute, pynumber_invert,
+pynumber_int, pynumber_long, pynumber_float, pysequence_tuple, pysequence_list
+<h4>fun (pyobject * pyobject * int) -> pyobject</h4>
+pyobject_richcompare
+<h4>fun (pyobject * string) -> pyobject</h4>
+pyobject_getattrstring, pydict_getitemstring, pysequence_fast, 
+pymapping_haskeystring, pymapping_getitemstring
+<h4>fun (pyobject * pyobject) -> pyobject</h4>
+pyobject_getattr, pystring_format, pydict_getitem, pyinstance_newraw, 
+pyeval_callobject, pyobject_getitem, pyobject_delitem, pynumber_add,
+pynumber_subtract, pynumber_multiply, pynumber_divide, pynumber_remainder,
+pynumber_divmod, pynumber_lshift, pynumber_rshift, pynumber_and, pynumber_xor,
+pynumber_or, pynumber_inplaceadd, pynumber_inplacesubtract, pynumber_inplacemultiply, pynumber_inplacedivide, pynumber_inplaceremainder, pynumber_inplacelshift, pynumber_inplacershift, pynumber_inplaceand, pynumber_inplacexor, pynumber_inplaceor, pysequence_concat, pysequence_inplaceconcat
+<h4>fun pyobject -> int</h4>
+pyobject_istrue, pyobject_not, pycalable_check, pystring_size, pydict_size,
+pytuple_new, pyerr_exceptionmatches, pyobject_size, pynumber_check, 
+pysequence_check, pysequence_size, pysequence_length, pymapping_check,
+pymapping_size, pymapping_length, pyint_asint
+<h4>fun (pyobject * pyobject) -> int</h4>
+pyobject_compare, pyobject_hasattr, pydict_delitem, 
+pyerr_givenexceptionmatches, pysequence_count, pysequence_contains, 
+pysequence_in, pysequence_index, pymapping_haskey
+<h4>fun (pyobject * pyobject * int) -> int</h4>
+pyobject_richcomparebool, pysequence_delitem
+<h4>fun (pyobject * string * pyobject) -> int</h4>
+pyobject_setattrstring, pydict_setitemstring
+<h4>fun (pyobject * string) -> int</h4>
+pyobject_hasattrstring, pydict_delitemstring, pysequence_inplacerepeat
+<h4>fun (pyobject * pyobject) -> (pyobject * pyobject)</h4>
+pynumber_coerce, pynumber_coerceex
+<h4>fun (pyobject * pyobject * pyobject) -> int</h4>
+pyobject_setattr, pydict_setitem, pyobject_setitem
+<h4>fun pyobject -> int64</h4>
+pyobject_hash, pyint_aslong
+<h4>fun pyobject -> string</h4>
+pystring_asstring, pymodule_getname, pymodule_getfilename
+<h4>fun (pyobject * pyobject) -> pyobject</h4>
+pystring_concat, pystring_concatanddel
+<h4>fun string -> pyobject</h4>
+pystring_fromstring, pymodule_new, pyimport_addmodule, pyimport_importmodule,
+pyimport_import
+<h4>fun unit -> pyobject</h4>
+pydict_new, pyerr_occurred, pyimport_getmoduledict, pyeval_getbuiltins,
+pyeval_getglobals, pyeval_getlocals, pyeval_getframe
+<h4>fun pyobject -> unit</h4>
+pydict_clear, pyerr_setnone
+<h4>fun (pyobject * int) -> (pyobject * pyobject * int)</h4>
+pydict_next
+<h4>fun int64 -> pyobject</h4>
+pyint_fromlong
+<h4>fun unit -> int64</h4>
+pyint_getmax
+<h4>fun float -> pyobject</h4>
+pyfloat_fromdouble
+<h4>fun pyobject -> float</h4>
+pyfloat_asdouble
+<h4>fun int -> pyobject</h4>
+pytuple_new, pyint_fromint
+<h4>fun (pyobject * int) -> pyobject</h4>
+pytuple_getitem, pysequence_repeat, pysequence_getitem
+<h4>fun (pyobject * int * pyobject) -> int</h4>
+pytuple_setitem, pysequence_setitem, pymapping_setitem
+<h4>fun (pyobject * pyobject * pyobject) -> pyobject</h4>
+pyslice_new, pyclass_new, pyinstance_new, pymethod_new, 
+pyeval_callobjectwithkeywords, pynumber_power, pynumber_inplacepower
+<h4>fun (pyobject * int) -> (int * int * int)</h4>
+pyslice_getindices
+<h4>fun (int * int * int * int) -> pyobject</h4>
+pyrange_new
+<h4>fun (pyobject * pyobject) -> unit</h4>
+pyerr_setobject
+<h4>fun (pyobject * string) -> unit</h4>
+pyerr_setstring
+<h4>fun (pyobject * pyobject * pyobject) -> (pyobject * pyobject * pyobject)</h4>
+pyerr_fetch, pyerr_normalizeexception
+<h4>fun (pyobject * pyobject * pyobject) -> unit</h4>
+pyerr_restore
+<h4>fun (pyobject * string) -> pyobject</h4>
+pyimport_execcodemodule
+<h4>fun (string * pyobject * string) -> pyobject</h4>
+pyimport_execcodemoduleex
+<h4>fun (string * pyobject * pyobject * pyobject) -> pyobject</h4>
+pyimport_importmoduleex
+<h4>fun pyobject -> string</h4>
+pyobject_ascharbuffer, pyobject_asreadbuffer, pyobject_aswritebuffer
+<h4>fun (pyobject * int * int * pyobject) -> int</h4>
+pysequence_setslice
+<h4>fun (pyobject * int * int) -> int</h4>
+pysequence_delslice
+
+<h3>Unique Functions Needed for Ocaml</h3>
+In addition to the functions in the usual library, several new functions are
+provided which give specific support for ocaml.<p>
+
+<table border=0 width=100%>
+<tr bgcolor="#c0c0c0">
+<td><b>pytuple_toarray</b></td>
+<td>pyobject -> pyobject array</td></tr>
+<tr><td colspan=2>
+Convert a python tuple to an ocaml array containing the same items.
+</td></tr>
+<tr bgcolor="#c0c0c0">
+<td><b>pywrap_closure</b></td><td>(pyobject -> pyobject) -> pyobject</td></tr>
+<tr><td colspan=2>
+Create a python callable object from a closure.  The closure receives the
+argument tuple from the invocation and returns a pyobject.
+</td></tr>
+<tr bgcolor="#c0c0c0">
+<td><b>pywrap_value</b></td><td>'a -> pyobject</td></tr>
+<tr><td colspan=2>
+Create a simple void * style wrapping around an ocaml object.  The object
+may be retrieved with <tt>pyunwrap_value : pyobject -> 'a</tt>.  Use this
+to enclose an ocaml data structure in python to be used later.
+</td></tr>
+<tr bgcolor="#c0c0c0">
+<td><b>pynull</b></td><td>unit -> pyobject</td></tr>
+<tr><td colspan=2>
+Generate the null PyObject * and return it.  This may sound dangerous, but
+it is used by library calls to indicate errors to the python system.
+</td></tr>
+<tr bgcolor="#c0c0c0">
+<td><b>pynone</b></td><td>unit -> pyobject</td></tr>
+<tr><td colspan=2>
+Generate a reference to the Py_None object.
+</td></tr>
+<tr bgcolor="#c0c0c0">
+<td><b>pytuple_fromarray</b></td>
+<td>pyobject array -> pyobject</td></tr>
+<tr><td colspan=2>
+Create a pytuple (as would be used for a function call) from the given
+array.  This may be used to implement varargs calls on python functions,
+and for other purposes.
+</td></tr>
+<tr bgcolor="#c0c0c0">
+<td><b>pytuple_empty</b></td>
+<td>pyobject array -> pyobject</td></tr>
+<tr><td colspan=2>
+Shortcut for <tt>pytuple_new 0</tt>
+</td></tr>
+
+<tr bgcolor="#c0c0c0">
+<td><b>pytuple_fromsingle</b></td>
+<td>pyobject -> pyobject</tt></td></tr>
+<tr><td colspan=2>
+Create a tuple with the single given object inside.  Use this to create
+single element tuples as for a function call with one argument.
+</td></tr>
+
+<tr bgcolor="#c0c0c0">
+<td><b>pytuple<i>1-5</i></b></td>
+<td>(pyobject * ...) -> pyobject</tt></td></tr>
+<tr><td colspan=2>
+Create a python tuple that has the same contents as the given ocaml tuple.
+</td></tr>
+
+<tr bgcolor="#c0c0c0">
+<td><b>pytype</b></td>
+<td>pyobject -> pyobject_type</tt></td></tr>
+<tr><td colspan=2>
+Determine roughly which type family the given value belongs to.  For example,
+<tt>pytype (pystring_fromstring "hi")</tt> yields <tt>StringType</tt>.
+</td></tr>
+</table>
+
+<h3>Sample Application</h3>
+This is the sample application that I developed the library with.  It 
+illustrates a python function call, as well as a call back into ocaml.
+The first form is used in cases where python libraries are to be used
+from ocaml, and the second would be used to produce native libraries in
+ocaml.<p>
+
+<pre>
+open Pycaml ;;
+
+let colorsys = pyimport_importmodule "colorsys"
+let dict = pymodule_getdict colorsys
+
+let triplet = pytuple3 (pyfloat_fromdouble 1.0,
+			pyfloat_fromdouble 0.5,
+			pyfloat_fromdouble 0.2) ;;
+
+let rgbtoyiq = pydict_getitemstring (dict,"rgb_to_yiq")
+let triplet = pyeval_callobject (rgbtoyiq,triplet)
+
+let _ = print_endline ((string_of_float
+			  (pyfloat_asdouble (pytuple_getitem (triplet,0)))) ^ 
+		       " " ^
+		       (string_of_float
+			  (pyfloat_asdouble (pytuple_getitem (triplet,1)))) ^
+		       " " ^
+		       (string_of_float
+			  (pyfloat_asdouble (pytuple_getitem (triplet,2))))) ;;
+
+let x = pywrap_closure 
+    (fun x -> print_string (pystring_asstring (pytuple_getitem (x,0))) ; 
+      pynone ())
+
+let _ = pyeval_callobject 
+    (x,pytuple_fromsingle (pystring_fromstring "hi there"))
+</pre>
+</body>
+</html>
