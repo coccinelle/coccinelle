@@ -4,7 +4,7 @@ You must first install a recent version of
  - the Menhir parser generator (at least 20071212),
    see http://cristal.inria.fr/~fpottier/menhir/
 
- - Python
+ - Python and its development files (python-dev)
    
 
 Then simply type 

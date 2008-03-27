@@ -1,1 +1,5 @@
 first public release of the source code:
+
+
+* Feature: embeded python scripting
+* Feature: position
