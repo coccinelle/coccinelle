@@ -1,0 +1,2 @@
+Send a mail to julia@diku.dk or padator@wanadoo.fr with [Bug-Cocci] in
+the subject of your mail.

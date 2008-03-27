@@ -1,0 +1,13 @@
+You must first install a recent version of 
+ - OCaml (at least 3.09.2), 
+   see http://caml.inria.fr/download.en.html
+ - the Menhir parser generator (at least 20071212),
+   see http://cristal.inria.fr/~fpottier/menhir/
+
+ - Python
+   
+
+Then simply type 
+ make depend
+ make
+
