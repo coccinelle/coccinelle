@@ -1,7 +1,7 @@
-OCAMLMAKEFILE = /usr/share/ocaml-tools/OCamlMakefile
+OCAMLMAKEFILE = OCamlMakefile
 PY_PREFIX = $(shell python getprefix.py)
 PY_VERSION = $(shell python getversion.py)
-CLIBS = python2.4 pthread dl util m c
+CLIBS = python$(PY_VERSION) pthread dl util m c
 
 SOURCES = pycaml.ml pycaml_ml.c
 RESULT = pycaml

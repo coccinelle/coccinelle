@@ -79,6 +79,7 @@ clean::
 
 clean::
 	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i clean; done 
+	$(MAKE) -C pycaml -f Makefile.deb-pycaml clean
 
 
 
@@ -88,6 +89,11 @@ tools:
 	$(MAKE) -C tools
 clean::
 	$(MAKE) -C tools clean
+
+
+pycocci.ml: pycaml/pycaml.ml pycaml/pycaml_ml.c
+pycocci_aux.ml:  pycaml/pycaml.ml pycaml/pycaml_ml.c
+
 
 ##############################################################################
 # Developer rules
@@ -173,9 +179,6 @@ beforedepend:: test.ml
 
 .ml.mldepend: 
 	$(OCAMLC) -i $<
-
-pycocci.ml: pycaml/pycaml.ml pycaml/pycaml_ml.c
-pycocci_aux.ml:  pycaml/pycaml.ml pycaml/pycaml_ml.c
 
 clean::
 	rm -f *.cm[iox] *.o *.annot

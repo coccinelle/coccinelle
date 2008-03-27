@@ -42,30 +42,32 @@ my $error = 0;
 
 $error += 
     check_config("echo \"1;;\\n\" | ocaml |",
-                 "Objective(.*) 3.0[9]",
+#                 "Objective(.*) 3.0[9]",
+                 "Objective(.*) 3.",
                  "OCaml (the wonderful language) is present.",
                  "The program ocaml is missing or is not a good version. We need at least 3.09",
                  );
 
 $error += 
     check_config("menhir --version |",
-                 "menhir, version 2006.*",
+                 "menhir, version 20071212",
+#                 "menhir, version 2006.*",
                  "Menhir (the parser generator) is present.",
                  "The program menhir is missing or is not a good version.",
                  );
 
 
 if($error) { 
-    pr2 "
+    printf STDERR "
 ----------------------------------------------------------------------
-!!!! There seems to have problem, we have found $error missing package" . 
-plural($error) . ".
-" . (($error > 1) ? "Some of those packages" : "This package") . 
-    " may be installed by picking " . ($error > 1 ? "them" : "it") . 
-    " in cocci-dependencies.tgz available
+!!!! There seems to have problem, we have found $error missing package%s.
+%s may be installed by picking %s in cocci-dependencies.tgz available
 on the coccinelle website. !!!!
 ----------------------------------------------------------------------
-";
+", (plural($error)),
+  (($error > 1) ? "Some of those packages" : "This package"),
+  ($error > 1 ? "them" : "it");
+
 } else { 
 
     pr2 "
