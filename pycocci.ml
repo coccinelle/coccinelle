@@ -17,6 +17,8 @@ let check_int_return_value v =
 	  raise Pycocciexception)
   else ()
 
+let initialised = ref false
+
 let coccinelle_module = ref (pynone ())
 let cocci_file_name = ref ""
 
@@ -44,6 +46,8 @@ let load_module module_name =
 (* initialisation routines *)
 let pycocci_init () =
   (* initialize *)
+  if not !initialised then (
+  initialised := true;
   Printf.printf "Initializing python\n%!";
   let _ = if not (py_isinitialized () != 0) then 
   	(Printf.printf "Initializing python\n%!"; 
@@ -57,10 +61,11 @@ let pycocci_init () =
   module_map := StringMap.add "coccinelle" !coccinelle_module !module_map;
   let _ = load_module "coccilib.elems" in
   let _ = load_module "coccilib.output" in
+  ()) else
 
   ()
 
-let _ = pycocci_init ()
+(*let _ = pycocci_init ()*)
 (* end initialisation routines *)
 
 (* python interaction *)
@@ -124,6 +129,7 @@ let get_cocci_file args =
 	pystring_fromstring (!cocci_file_name)
 
 let build_classes env =
+	let _ = pycocci_init () in
 	let module_dictionary = pyimport_getmoduledict() in
         coccinelle_module := pymodule_new "coccinelle";
 	let mx = !coccinelle_module in
@@ -195,3 +201,4 @@ let construct_variables mv e =
 
 let set_coccifile cocci_file =
 	cocci_file_name := cocci_file;
+	()

@@ -43,5 +43,4 @@ let stringrep mvb = match mvb with
 | Ast_c.MetaListlenVal n -> string_of_int n
 | Ast_c.MetaPosVal (pos1, pos2) -> Common.sprintf ("pos(%d,%d)") pos1 pos2
 | Ast_c.MetaPosValList positions -> "TODO: <<postvallist>>"
-| Ast_c.MetaListlenVal len -> "TODO: <<metalistlenval>>"
 

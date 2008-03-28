@@ -25,6 +25,9 @@ class Output:
 		meta_variable.location = locations[0]
 		return meta_variable
 
+	def finalise(self):
+		pass
+
 class Console(Output):
 	def __init__(self):
 		pass
@@ -101,3 +104,7 @@ class Gtk(Output):
 		if include:
 			globals()['gtk_thread'].add_row(self.cocci_file, messages)
 
+	def finalise(self):
+		self.check_availability()
+
+		globals()['gtk_thread'].join()

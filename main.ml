@@ -732,8 +732,9 @@ let main () =
     | [] -> short_usage()
         
   ));
-    if (Pycaml.py_isinitialized ()) != 0 then
-	(Printf.printf "Finalizing python\n%!";
+    if !Pycocci.initialised && (Pycaml.py_isinitialized ()) != 0 then
+	(let _ = Pycaml.pyrun_simplestring "cocci.finalise()" in
+	Printf.printf "Finalizing python\n%!";
 	Pycaml.py_finalize ());
   end
 

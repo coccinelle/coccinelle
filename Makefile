@@ -12,7 +12,7 @@ LIBS=commons/commons.cma globals/globals.cma\
      engine/cocciengine.cma popl/popl.cma \
      extra/extra.cma pycaml/pycaml.cma
 
-MAKESUBDIRS=commons globals ctl parsing_cocci parsing_c engine popl extra
+MAKESUBDIRS=commons globals ctl parsing_cocci parsing_c engine popl extra coccilib
 INCLUDEDIRS=commons globals ctl parsing_cocci parsing_c engine popl extra pycaml
 
 ##############################################################################
