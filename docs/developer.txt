@@ -1,0 +1,48 @@
+-*- org -*-
+
+* How to install coccinelle 
+------------------------------
+
+** CVS 
+
+cvs release -d, cvs update -d -P
+
+** Dependencies
+
+** Tools
+
+** Compile
+
+
+* How to use coccinelle 
+------------------------------
+
+** Test
+
+** Tutorial 
+
+** Emacs mode
+
+** spatch, sgrep
+
+** Manual
+
+
+* Software architecture 
+------------------------------
+
+* coccinelle/ organization 
+------------------------------
+
+* Coding conventions 
+------------------------------
+
+ open
+ makefile
+
+
+* How to contribute to Linux 
+------------------------------
+
+git
+

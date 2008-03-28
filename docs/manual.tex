@@ -1,0 +1,52 @@
+\title{spatch user manual}
+
+
+\chapter{Tutorial}
+
+\section{SmPL piece by pieces}
+
+
+
+
+
+\chapter{spatch command line options}
+
+
+
+
+
+\chapter{Advanced features}
+
+\subsection{Position}
+%src: a mail from julia
+
+Tu peux maintenant mettre des positions partout.  C'est interdit d'heriter
+une position a travers une regle qui fait une modif.
+
+Tu peux declarer une position avec des contraintes, eg
+
+position p1 != {x.p2, y.p3};
+
+Entre les premiers @@ d'une regle, tu peux mettre "expression" et avoir
+une meilleure parsing.  Ca permet par exemple de faire:
+
+<... f() ...> + <... g() ...>
+
+pour decrire un + qui a f() et g() quelquepart comme arguements.
+
+Pour les }, j'ai mis un champ "is_fake" dans les noeuds, avec is_loop,
+etc.
+
+\subsection{Embeded Python scripting}
+
+
+
+
+\chapter{Developing a semantic patch}
+
+\subsection{emacs mode}
+
+\subsection{process}
+
+\subsection{Linux workflow}
+
