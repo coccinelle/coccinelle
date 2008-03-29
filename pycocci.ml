@@ -169,12 +169,26 @@ let construct_variables mv e =
     let line = pystring_fromstring (Printf.sprintf "%d" x.pinfo.line) in
     let column = pystring_fromstring (Printf.sprintf "%d" x.pinfo.column) in
     let file = pystring_fromstring x.pinfo.file in
-    pycocci_instantiate_class "coccilib.elems.Location" (pytuple3 (file, line, column))
+    pycocci_instantiate_class "coccilib.elems.Location"
+      (pytuple3 (file, line, column))
+    (*obj*) in
+
+  let instantiate_no_location(x) =
+    let line = pystring_fromstring "0" in
+    let column = pystring_fromstring "0" in
+    let file = pystring_fromstring "" in
+    pycocci_instantiate_class "coccilib.elems.Location"
+      (pytuple3 (file, line, column))
     (*obj*) in
 
   let instantiate_Expression(x, loc) =
     let str = pystring_fromstring (Pycocci_aux.exprrep x) in
     pycocci_instantiate_class "coccilib.elems.Expression" (pytuple2 (str, loc))
+  in
+
+  let instantiate_Identifier(x, loc) =
+    let str = pystring_fromstring x in
+    pycocci_instantiate_class "coccilib.elems.Identifier" (pytuple2 (str, loc))
   in
 
   List.iter (function (py,(r,m)) ->
@@ -184,6 +198,11 @@ let construct_variables mv e =
        let loc = instantiate_location (List.hd info_list) in
        let expr_repr = instantiate_Expression(expr, loc) in
        let _ = build_variable py expr_repr in
+       ()
+    | Some (_, Ast_c.MetaIdVal id) ->
+       let loc = instantiate_no_location () in
+       let id_repr = instantiate_Identifier(id, loc) in
+       let _ = build_variable py id_repr in
        ()
     | Some (_, Ast_c.MetaPosValList l) ->
        let locs = List.map (function (fname,(line,col),min) ->

@@ -888,40 +888,52 @@ DL_IMPORT(char*) PyOS_Readline(char*);
 /* HST FIXUP */
 #if (PY_MAJOR_VERSION >= 2 && PY_MINOR_VERSION > 4)
 #undef PyRun_SimpleString
-int PyRun_SimpleString(const char* command) { return PyRun_SimpleStringFlags(command, NULL); }
+#define PyRun_SimpleString PyRun_SimpleString_redo
+int PyRun_SimpleString_redo(const char* command) { return PyRun_SimpleStringFlags(command, NULL); }
 
 #undef PyRun_AnyFile
-int PyRun_AnyFile(FILE* fp, const char* filename) { return PyRun_AnyFileExFlags(fp, filename, 0, NULL); }
+#define PyRun_AnyFile PyRun_AnyFile_redo
+int PyRun_AnyFile_redo(FILE* fp, const char* filename) { return PyRun_AnyFileExFlags(fp, filename, 0, NULL); }
 
 #undef PyRun_SimpleFile
-int PyRun_SimpleFile(FILE* fp, const char* filename) { return PyRun_SimpleFileExFlags(fp, filename, 0, NULL); }
+#define PyRun_SimpleFile PyRun_SimpleFile_redo
+int PyRun_SimpleFile_redo(FILE* fp, const char* filename) { return PyRun_SimpleFileExFlags(fp, filename, 0, NULL); }
 
 #undef PyRun_InteractiveOne
-int PyRun_InteractiveOne(FILE* fp, const char* filename) { return PyRun_InteractiveOneFlags(fp, filename, NULL); }
+#define PyRun_InteractiveOne PyRun_InteractiveOne_redo
+int PyRun_InteractiveOne_redo(FILE* fp, const char* filename) { return PyRun_InteractiveOneFlags(fp, filename, NULL); }
 
 #undef PyRun_InteractiveLoop
-int PyRun_InteractiveLoop(FILE* fp, const char* filename) { return PyRun_InteractiveLoopFlags(fp, filename, NULL); }
+#define PyRun_InteractiveLoop PyRun_InteractiveLoop_redo
+int PyRun_InteractiveLoop_redo(FILE* fp, const char* filename) { return PyRun_InteractiveLoopFlags(fp, filename, NULL); }
 
 #undef PyRun_AnyFileEx
-int PyRun_AnyFileEx(FILE* fp, const char* filename, int closeit) { return PyRun_AnyFileExFlags(fp, filename, closeit, NULL); }
+#define PyRun_AnyFileEx PyRun_AnyFileEx_redo
+int PyRun_AnyFileEx_redo(FILE* fp, const char* filename, int closeit) { return PyRun_AnyFileExFlags(fp, filename, closeit, NULL); }
 
 #undef PyRun_SimpleFileEx
-int PyRun_SimpleFileEx(FILE* fp, const char* filename, int closeit) { return PyRun_SimpleFileExFlags(fp, filename, closeit, NULL); }
+#define PyRun_SimpleFileEx PyRun_SimpleFileEx_redo
+int PyRun_SimpleFileEx_redo(FILE* fp, const char* filename, int closeit) { return PyRun_SimpleFileExFlags(fp, filename, closeit, NULL); }
 
 #undef PyRun_String
-PyObject* PyRun_String(const char* str, int start, PyObject* globals, PyObject* locals) { return PyRun_StringFlags(str, start, globals, locals, NULL); }
+#define PyRun_String PyRun_String_redo
+PyObject* PyRun_String_redo(const char* str, int start, PyObject* globals, PyObject* locals) { return PyRun_StringFlags(str, start, globals, locals, NULL); }
 
 #undef PyRun_File
-PyObject* PyRun_File(FILE* fp, const char* filename, int start, PyObject* globals, PyObject* locals) { return PyRun_FileExFlags(fp, filename, start, globals, locals, 0, NULL); }
+#define PyRun_File PyRun_File_redo
+PyObject* PyRun_File_redo(FILE* fp, const char* filename, int start, PyObject* globals, PyObject* locals) { return PyRun_FileExFlags(fp, filename, start, globals, locals, 0, NULL); }
 
 #undef PyRun_FileEx
-PyObject* PyRun_FileEx(FILE* fp, const char* filename, int start, PyObject* globals, PyObject* locals, int closeit) { return PyRun_FileExFlags(fp, filename, start, globals, locals, closeit, NULL); }
+#define PyRun_FileEx PyRun_FileEx_redo
+PyObject* PyRun_FileEx_redo(FILE* fp, const char* filename, int start, PyObject* globals, PyObject* locals, int closeit) { return PyRun_FileExFlags(fp, filename, start, globals, locals, closeit, NULL); }
 
 #undef Py_CompileString
-PyObject* Py_CompileString(const char* str, const char* filename, int start) { return Py_CompileStringFlags(str, filename, start, NULL); }
+#define Py_CompileString Py_CompileString_redo
+PyObject* Py_CompileString_redo(const char* str, const char* filename, int start) { return Py_CompileStringFlags(str, filename, start, NULL); }
 
 #undef PyRange_New
-PyObject* PyRange_New(PyObject* start, PyObject* stop, PyObject* step) { return PyObject_CallFunction((PyObject*)&PyRange_Type, "lll", start, stop, step); }
+#define PyRange_New PyRange_New_redo
+PyObject* PyRange_New_redo(PyObject* start, PyObject* stop, PyObject* step) { return PyObject_CallFunction((PyObject*)&PyRange_Type, "lll", start, stop, step); }
 #endif /* PYTHON 2.4 */
 
 #undef PyTuple_Check
