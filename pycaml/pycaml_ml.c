@@ -922,10 +922,10 @@ PyObject* Py_CompileString(const char* str, const char* filename, int start) { r
 
 #undef PyRange_New
 PyObject* PyRange_New(PyObject* start, PyObject* stop, PyObject* step) { return PyObject_CallFunction((PyObject*)&PyRange_Type, "lll", start, stop, step); }
+#endif /* PYTHON 2.4 */
 
 #undef PyTuple_Check
 int PyTuple_Check(PyObject* op) { return PyObject_TypeCheck(op, &PyTuple_Type); }
-#endif /* PYTHON 2.4 */
 /* END HST FIXUP */
 
 /* Value -> Pyobject */
