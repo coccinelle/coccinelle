@@ -80,7 +80,7 @@ let print_output l =
 (* ------------------------------------------------------------------------ *)
 (* The following makes a semantic patch for that information *)
 
-let sedify generic_file dir l =
+let sedify o generic_file dir l =
   List.iter
     (function (files,(a,fs)) ->
       match fs with
@@ -92,22 +92,10 @@ let sedify generic_file dir l =
 		 a generic_file f dir a f) in ()
       | _ -> ())
     l;
-  let _ = Sys.command (Printf.sprintf "/bin/rm -f %s/files" dir) in
-  let _ = Sys.command (Printf.sprintf "touch %s/files" dir) in
   List.iter
     (function (files,(a,fs)) ->
       match fs with
-	[f] ->
-	  let _ =
-	    Sys.command
-	      (Printf.sprintf
-		 "echo \"spatch_linux %s-%s.cocci\" >> %s/files\n"
-		 a f dir) in
-	  let _ =
-	    Sys.command
-	      (Printf.sprintf
-		 "echo \"mv %s-%s %s-%s.out\" >> %s/files\n"
-		 a f a f dir) in ()
+	[f] -> Printf.fprintf o "mono_spatch_linux %s-%s.cocci &\n" a f
       | _ -> ())
     l
 
@@ -127,7 +115,7 @@ let collect_allocs l =
 	| _ -> failwith "not possible")
     [] l
 
-let sedify_ors generic_file dir l =
+let sedify_ors o generic_file dir l =
   let l = collect_allocs l in
   List.iter
     (function (a,fs) ->
@@ -143,25 +131,12 @@ let sedify_ors generic_file dir l =
 		 "sed s/ALLOC/%s/ %s | sed s/FREE/%s/ > %s/%s-%s_et_al.cocci\n"
 		 a generic_file sfs dir a f) in ())
     l;
-(* done by sedify
-  let _ = Sys.command (Printf.sprintf "/bin/rm -f %s/files" dir) in
-  let _ = Sys.command (Printf.sprintf "touch %s/files" dir) in
-*)
   List.iter
     (function (a,fs) ->
       match fs with
 	[_] | [] -> ()
       |	(f::_) ->
-	  let _ =
-	    Sys.command
-	      (Printf.sprintf
-		 "echo \"spatch_linux %s-%s_et_al.cocci\" >> %s/files\n"
-		 a f dir) in
-	  let _ =
-	    Sys.command
-	      (Printf.sprintf
-		 "echo \"mv %s-%s_et_al %s-%s_et_al.out\" >> %s/files\n"
-		 a f a f dir) in ())
+	  Printf.fprintf o "mono_spatch_linux %s-%s_et_al.cocci &\n" a f)
     l
 
 (* ------------------------------------------------------------------------ *)
@@ -188,6 +163,14 @@ let _ =
   close_in i;
   let l = split l in
   let l = iterate !str l in
-  if !sed then (sedify !gen !dir l; sedify_ors !gen !dir l);
+  (if !sed
+  then
+    begin
+      let o = open_out (Printf.sprintf "%s/files" !dir) in
+      Printf.fprintf o "#!/bin/bash\n\n";
+      sedify o !gen !dir l;
+      sedify_ors o !gen !dir l;
+      Printf.fprintf o "\nwait\n/bin/rm tmp*out\n";
+      close_out o
+    end);
   if not !sed then print_output l
-

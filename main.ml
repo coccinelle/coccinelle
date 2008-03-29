@@ -487,11 +487,12 @@ let glimpse_filter (coccifile, isofile) dir =
   match query with
     None -> pr2 "no glimpse keyword infered from snippet"; None
   | Some query ->
+      let suffixes = if !include_headers then ["c";"h"] else ["c"] in
       pr2 ("glimpse request = " ^ query);
       Some
 	(Common.cmd_to_list (spf "glimpse -y -H %s -N -W -w '%s'" dir query)
 	   +>
-	 List.filter (fun file -> List.mem (Common.filesuffix file) ["c"]))
+	 List.filter (fun file -> List.mem (Common.filesuffix file) suffixes))
 
 
 (*****************************************************************************)
@@ -503,6 +504,9 @@ let main () =
 
     arg_parse2 (Arg.align all_options) (fun x -> args := x::!args) usage_msg;
     args := List.rev !args;
+
+    (if !Flag_cocci.all_includes && !Flag_cocci.no_includes
+    then failwith "cannot set both all_includes and no_includes");
 
     if !cocci_file <> "" && (not (!cocci_file =~ ".*\\.\\(sgrep\\|spatch\\)$"))
     then cocci_file := Common.adjust_ext_if_needed !cocci_file ".cocci";

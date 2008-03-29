@@ -225,11 +225,12 @@ let do_unitary rules =
           let (m_unitary, not_local) =
             List.partition (function x -> List.mem x mm1) m_unitary in
           let m_unitary =
-            List.filter (function x -> not (List.mem x used_after)) m_unitary in
+            List.filter (function x -> not (List.mem x used_after))
+	      m_unitary in
           let rebuilt = update_unitary m_unitary minus in
           (set_minus (m_nonunitary @ used_after) mm1,
-             (Ast0_cocci.CocciRule ((rebuilt, metavars, chosen_isos),plusz))::rest)
-      | _ -> failwith "not possible" in
+             (Ast0_cocci.CocciRule
+		((rebuilt, metavars, chosen_isos),plusz))::rest) in
   let (_,rules) = loop rules in
   rules
 

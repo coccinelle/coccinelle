@@ -1088,7 +1088,7 @@ let satAW dir ((grp,_,states) as m) s1 s2 reqst =
       let f y =
 	(*ctr := !ctr + 1;
 	Printf.printf "iter %d y %d\n" !ctr (List.length y);
-	print_state "y" y;
+	(*print_state "y" y;*)
 	flush stdout;*)
 	let pre = pre_forall dir m y y reqst in
 	let conj = triples_conj s1 pre in (* or triples_conj_AW *)

@@ -333,7 +333,7 @@ than dots or a nest. *)
 
 (* what is the difference between tail and end??? *)
 
-type after = After of formula | Guard of formula | Tail | End
+type after = After of formula | Guard of formula | Tail | End | VeryEnd
 
 let a2n = function After x -> Guard x | a -> a
 
@@ -347,6 +347,7 @@ let print_after = function
     After ctl -> Printf.printf "After:\n"; print_ctl ctl
   | Guard ctl -> Printf.printf "Guard:\n"; print_ctl ctl
   | Tail -> Printf.printf "Tail\n"
+  | VeryEnd -> Printf.printf "Very End\n"
   | End -> Printf.printf "End\n"
 
 (* --------------------------------------------------------------------- *)
@@ -1295,6 +1296,11 @@ let rec dots_and_nests plus nest whencodes bef aft dotcode after label
     match after with
       After f -> f
     | Guard f -> ctl_uncheck f
+    | VeryEnd ->
+	let exit = endpred label in
+	let errorexit = exitpred label in
+	ctl_or exit errorexit
+    (* not at all sure what the next two mean... *)
     | End -> CTL.True
     | Tail ->
 	(match label with
@@ -1310,7 +1316,8 @@ let rec dots_and_nests plus nest whencodes bef aft dotcode after label
 	then ctl_or exit errorexit (* end anywhere *)
 	else exit (* end at the real end of the function *) *) in
   plus_modifier
-    (dots_au is_strict (after = Tail) label (guard_to_strict guard) wrapcode
+    (dots_au is_strict ((after = Tail) or (after = VeryEnd))
+       label (guard_to_strict guard) wrapcode
       (ctl_and_ns dotcode (ctl_and_ns ornest labelled))
       aft ender)
 
@@ -2079,7 +2086,7 @@ let top_level ua t =
     | Ast.DECL(stmt) ->
 	let unopt = elim_opt.V.rebuilder_statement stmt in
 	let unopt = preprocess_dots_e unopt in
-	cleanup(statement unopt Tail ua [] None None None false)
+	cleanup(statement unopt VeryEnd ua [] None None None false)
     | Ast.CODE(stmt_dots) ->
 	let unopt = elim_opt.V.rebuilder_statement_dots stmt_dots in
 	let unopt = preprocess_dots unopt in
@@ -2092,7 +2099,7 @@ let top_level ua t =
 	      | _ -> false)
 	  | _ -> false in
 	let res =
-	  statement_list unopt Tail ua [] None None None false false in
+	  statement_list unopt VeryEnd ua [] None None None false false in
 	cleanup
 	  (if starts_with_dots
 	  then

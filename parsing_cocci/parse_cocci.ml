@@ -329,7 +329,7 @@ let get_clt (tok,_) =
   | PC.TMetaId(_,_,_,clt)
   | PC.TMetaType(_,_,clt) | PC.TMetaStm(_,_,clt)  
   | PC.TMetaStmList(_,_,clt)  | PC.TMetaFunc(_,_,_,clt) 
-  | PC.TMetaLocalFunc(_,_,_,clt)
+  | PC.TMetaLocalFunc(_,_,_,clt) | PC.TMetaPos(_,_,clt)
 
   | PC.TWhen(clt) | PC.TAny(clt) | PC.TStrict(clt) | PC.TEllipsis(clt)
   (* | PC.TCircles(clt) | PC.TStars(clt) *)
@@ -801,7 +801,7 @@ let token2line (tok,_) =
   | PC.TMetaIdExp(_,_,_,_,clt) | PC.TMetaExpList(_,_,_,clt) 
   | PC.TMetaId(_,_,_,clt) | PC.TMetaType(_,_,clt)
   | PC.TMetaStm(_,_,clt) | PC.TMetaStmList(_,_,clt) | PC.TMetaFunc(_,_,_,clt)
-  | PC.TMetaLocalFunc(_,_,_,clt)
+  | PC.TMetaLocalFunc(_,_,_,clt) | PC.TMetaPos(_,_,clt)
 
   | PC.TFunDecl(clt)
   | PC.TWhen(clt) | PC.TAny(clt) | PC.TStrict(clt) | PC.TEllipsis(clt)
@@ -849,6 +849,8 @@ and find_line_end inwhen line clt q = function
       (PC.TAny(clt),a) :: (find_line_end inwhen line clt q xs)
   | ((PC.TIdent("ANY",clt),a) as x)::xs when token2line x = line ->
       (PC.TAny(clt),a) :: (find_line_end inwhen line clt q xs)
+  | ((PC.TPArob,a) as x)::xs -> (* no line #, just assume on the same line *)
+      x :: (find_line_end inwhen line clt q xs)
   | x::xs when token2line x = line -> x :: (find_line_end inwhen line clt q xs)
   | xs -> (PC.TLineEnd(clt),q)::(insert_line_end xs)
 
@@ -1036,14 +1038,6 @@ let rec consume_minus_positions = function
 	  (arity,ln,lln,offset,col,strbef,straft,
 	   Ast0.MetaPos(name,constraints)) in
       x::(consume_minus_positions xs)
-  | x::xs -> x::consume_minus_positions xs
-
-let rec consume_plus_positions = function
-    [] -> []
-  | x::(PC.TPArob,_)::(PC.TMetaPos(_,_,clt),_)::xs
-    when not (((line_type (get_clt x)) = D.PLUS) or
-	      ((line_type clt) = D.PLUS)) ->
-      x::consume_minus_positions xs
   | x::xs -> x::consume_minus_positions xs
 
 let any_modif rule =
@@ -1234,10 +1228,9 @@ let parse file =
             let (more, tokens) = get_tokens [PC.TArobArob; PC.TArob] in
             let (minus_tokens, plus_tokens) = split_token_stream tokens in
 
-	    let minus_tokens = prepare_tokens minus_tokens in
 	    let minus_tokens = consume_minus_positions minus_tokens in
+	    let minus_tokens = prepare_tokens minus_tokens in
 	    let plus_tokens = prepare_tokens plus_tokens in
-	    let minus_tokens = consume_plus_positions minus_tokens in
             (*
 	       print_tokens "minus tokens" minus_tokens;
 	       print_tokens "plus tokens" plus_tokens;
@@ -1436,3 +1429,4 @@ let process file isofile verbose =
     Common.profile_code "get_glimpse_constants"
       (fun () -> Get_constants2.get_constants code) in (* for glimpse *)
   (code,fvs,ua,pos,grep_tokens,glimpse_tokens2)
+

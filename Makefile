@@ -171,9 +171,9 @@ beforedepend:: test.ml
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
 
 .ml.cmo:
-	$(OCAMLC)  -c $<
+	$(OCAMLC)    -c $<
 .mli.cmi:
-	$(OCAMLC)  -c $<
+	$(OCAMLC)    -c $<
 .ml.cmx:
 	$(OCAMLOPT)  -c $<
 

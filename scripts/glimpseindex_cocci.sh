@@ -1,3 +1,3 @@
 #!/bin/sh
 
-find `pwd`/* -name "*.c" | glimpseindex -o -H . -F
+find `pwd`/* -name "*.[ch]" | glimpseindex -o -H . -F

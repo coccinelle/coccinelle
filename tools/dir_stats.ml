@@ -98,7 +98,11 @@ let collect_counts l =
       let how_many_files = List.length files in
       let how_many_dirs = remdup (List.map get_dir files) in
       let how_many_subsystems = remdup (List.map get_subsystem files) in
-      inc files_per_protocol ((how_many_files / 10) * 10);
+      let ct =
+	if how_many_files < 10
+	then how_many_files
+	else ((how_many_files / 10) * 10) in
+      inc files_per_protocol ct;
       inc dirs_per_protocol (List.length how_many_dirs);
       inc subsystems_per_protocol (List.length how_many_subsystems);
       List.iter (inc protocols_per_subsystem) how_many_subsystems)
@@ -117,7 +121,11 @@ let print_hashtable f tbl =
     l
 
 let print_range_int_hashtable range =
-  print_hashtable (function x -> Printf.printf "%d-%d" x (x + range - 1))
+  print_hashtable
+    (function x ->
+      if x < range
+      then Printf.printf "%d" x
+      else Printf.printf "%d-%d" x (x + range - 1))
 let print_int_hashtable =
   print_hashtable (function x -> Printf.printf "%d" x)
 let print_string_hashtable =

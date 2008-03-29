@@ -1,6 +1,7 @@
 MAKESUBDIRS=coccigui
 
 all:
+all.opt:
 
 depend:
 
