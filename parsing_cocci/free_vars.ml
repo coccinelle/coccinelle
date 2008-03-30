@@ -601,12 +601,14 @@ let collect_astfvs rules =
       [] -> []
     | (metavars, rule)::rules ->
         match rule with
-          Ast_cocci.ScriptRule (a,b,c) -> (Ast_cocci.ScriptRule (a,b,c))::(loop ((List.map Ast.get_meta_name metavars)) rules)  
-        | Ast_cocci.CocciRule (nm, rule_info, minirules) ->
+          Ast.ScriptRule (_,_,_,_) ->
+	    rule::(loop ((List.map Ast.get_meta_name metavars)) rules)  
+        | Ast.CocciRule (nm, rule_info, minirules) ->
           let bound =
             Common.minus_set bound (List.map Ast.get_meta_name metavars) in
           (Ast.CocciRule (nm, rule_info,
-            (List.map (astfvs metavars bound).V.rebuilder_top_level minirules)))::
+            (List.map (astfvs metavars bound).V.rebuilder_top_level
+	       minirules)))::
             (loop ((List.map Ast.get_meta_name metavars)@bound) rules) in
   loop [] rules
 
@@ -633,9 +635,9 @@ let collect_top_level_used_after metavar_rule_list =
 	      used_after in
 	  let free_vars =
             match r with
-              Ast_cocci.ScriptRule (_,mv,_) ->
+              Ast.ScriptRule (_,_,mv,_) ->
                 List.map (function (_,(r,v)) -> (r,v)) mv
-            | Ast_cocci.CocciRule (_,_,rule) ->
+            | Ast.CocciRule (_,_,rule) ->
 	        Common.union_set (nub (collect_all_rule_refs rule))
 	          (collect_in_plus rule) in
 	  let inherited =
@@ -681,7 +683,7 @@ let collect_used_after metavar_rule_list =
     (function (metavars,r) ->
       function used_after ->
         match r with
-          Ast.ScriptRule (_,mv,_) -> ([], [used_after])
+          Ast.ScriptRule (_,_,mv,_) -> ([], [used_after])
         | Ast.CocciRule (name, rule_info, minirules) ->
           collect_local_used_after metavars minirules used_after
     )

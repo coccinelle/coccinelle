@@ -1101,14 +1101,15 @@ let get_rule_name parse_fn starts_with_name get_tokens file prefix =
     then
       let (_,tokens) = get_tokens [PC.TArob] in
       match parse_one "rule name" parse_fn file tokens with
-	Ast_cocci.CocciRulename (None,a,b,c,d,e) -> 
-          Ast_cocci.CocciRulename (Some (mknm()),a,b,c,d,e)
-      |	Ast_cocci.CocciRulename (Some nm,a,b,c,d,e) ->
+	Ast.CocciRulename (None,a,b,c,d,e) -> 
+          Ast.CocciRulename (Some (mknm()),a,b,c,d,e)
+      |	Ast.CocciRulename (Some nm,a,b,c,d,e) ->
 	  (if List.mem nm reserved_names
 	  then failwith (Printf.sprintf "invalid name %s\n" nm));
-	  Ast_cocci.CocciRulename (Some nm,a,b,c,d,e)
-      | Ast_cocci.ScriptRulename s -> Ast_cocci.ScriptRulename s
-    else Ast_cocci.CocciRulename (Some (mknm()),Ast_cocci.NoDep,[],[],Ast_cocci.Undetermined,false) in
+	  Ast.CocciRulename (Some nm,a,b,c,d,e)
+      | Ast.ScriptRulename(s,deps) -> Ast.ScriptRulename(s,deps)
+    else
+      Ast.CocciRulename(Some(mknm()),Ast.NoDep,[],[],Ast.Undetermined,false) in
   Data.in_rule_name := false;
   name_res
 
@@ -1132,10 +1133,10 @@ let parse_iso file =
 	    let (rule_name,_,_,_,_,_) =
               match get_rule_name PC.iso_rule_name starts_with_name get_tokens
 		file ("iso file "^file) with
-                Ast_cocci.CocciRulename (Some n,a,b,c,d,e) -> (n,a,b,c,d,e)
+                Ast.CocciRulename (Some n,a,b,c,d,e) -> (n,a,b,c,d,e)
               | _ -> failwith "Script rules cannot appear in isomorphism rules"
               in
-	    Ast0_cocci.rule_name := rule_name;
+	    Ast0.rule_name := rule_name;
 	    Data.in_meta := true;
 	    let iso_metavars =
 	      match get_metavars PC.iso_meta_main table file lexbuf with
@@ -1209,8 +1210,9 @@ let parse file =
 	  let iso_files =
 	    parse_one "iso file names" PC.include_main file data in
 
-          let parse_cocci_rule old_metas (rule_name, dependencies, iso, dropiso, exists, is_expression) =
-            Ast0_cocci.rule_name := rule_name;
+          let parse_cocci_rule old_metas
+	      (rule_name, dependencies, iso, dropiso, exists, is_expression) =
+            Ast0.rule_name := rule_name;
             Data.inheritable_positions :=
 		rule_name :: !Data.inheritable_positions;
 
@@ -1222,7 +1224,9 @@ let parse file =
             Hashtbl.add Data.all_metadecls rule_name metavars;
             Hashtbl.add Lexer_cocci.rule_names rule_name ();
             Hashtbl.add Lexer_cocci.all_metavariables rule_name
-              (Hashtbl.fold (fun key v rest -> (key,v)::rest) Lexer_cocci.metavariables []);
+              (Hashtbl.fold
+		 (fun key v rest -> (key,v)::rest)
+		 Lexer_cocci.metavariables []);
 
             (* get transformation rules *)
             let (more, tokens) = get_tokens [PC.TArobArob; PC.TArob] in
@@ -1272,48 +1276,46 @@ let parse file =
 	    Check_meta.check_meta rule_name old_metas inherited_metavars
 	      metavars minus_res plus_res;
 
-            (more, Ast0_cocci.CocciRule ((minus_res, metavars,
+            (more, Ast0.CocciRule ((minus_res, metavars,
               (iso, dropiso, dependencies, rule_name, exists)),
-              (plus_res, metavars)), metavars, tokens)
-            in
+              (plus_res, metavars)), metavars, tokens) in
 
-          let parse_script_rule language old_metas =
-              let get_tokens = tokens_script_all table file false lexbuf in
+          let parse_script_rule language old_metas deps =
+            let get_tokens = tokens_script_all table file false lexbuf in
 
               (* meta-variables *)
-              Data.in_meta := true;
-              let metavars = get_script_metavars PC.script_meta_main table file lexbuf in
-              Data.in_meta := false;
+            Data.in_meta := true;
+            let metavars =
+	      get_script_metavars PC.script_meta_main table file lexbuf in
+            Data.in_meta := false;
 
-              let exists_in old_metas (py,(r,m)) =
-                let test = function (rr,mr) ->
-                  function x ->
-                    let (ro,vo) = Ast_cocci.get_meta_name x in
-                    ro = rr && vo = mr
-                in
-                List.exists (test (r,m)) old_metas
-                in
+            let exists_in old_metas (py,(r,m)) =
+              let test (rr,mr) x =
+                let (ro,vo) = Ast.get_meta_name x in
+                ro = rr && vo = mr in
+              List.exists (test (r,m)) old_metas in
 
-	      List.iter (function x -> if not (exists_in old_metas x) then
-		failwith "Script references unknown meta-variable") metavars;
+	    List.iter (function x -> if not (exists_in old_metas x) then
+	      failwith "Script references unknown meta-variable") metavars;
 
               (* script code *)
-              let (more, tokens) = get_tokens [PC.TArobArob; PC.TArob] in
-              let data =
-                match List.hd tokens with
-                  (PC.TScriptData(s),_) -> s
-                | (PC.TArobArob,_) | (PC.TArob,_) -> ""
-                | _ -> failwith "Malform script rule" in
-              (more, Ast0_cocci.ScriptRule (language, metavars, data), [], tokens)
-            in
+            let (more, tokens) = get_tokens [PC.TArobArob; PC.TArob] in
+            let data =
+              match List.hd tokens with
+                (PC.TScriptData(s),_) -> s
+              | (PC.TArobArob,_) | (PC.TArob,_) -> ""
+              | _ -> failwith "Malformed script rule" in
+            (more,Ast0.ScriptRule(language, deps, metavars, data),[],tokens) in
 
           let parse_rule old_metas starts_with_name =
-            let rulename = get_rule_name PC.rule_name starts_with_name get_tokens file "rule" in
+            let rulename =
+	      get_rule_name PC.rule_name starts_with_name get_tokens file
+		"rule" in
             match rulename with
-              Ast_cocci.CocciRulename (Some s, a, b, c, d, e) -> 
+              Ast.CocciRulename (Some s, a, b, c, d, e) -> 
                 parse_cocci_rule old_metas (s, a, b, c, d, e)
-            | Ast_cocci.ScriptRulename l -> parse_script_rule l old_metas
-            | _ -> failwith "Malform rule name"
+            | Ast.ScriptRulename (l,deps) -> parse_script_rule l old_metas deps
+            | _ -> failwith "Malformed rule name"
             in
 
 	  let rec loop old_metas starts_with_name =
@@ -1330,14 +1332,16 @@ let parse file =
             let (more, rule, metavars, tokens) =
               parse_rule old_metas starts_with_name in
             if more then
-              rule::(loop (metavars @ old_metas) (gen_starts_with_name more tokens))
+              rule::
+	      (loop (metavars @ old_metas) (gen_starts_with_name more tokens))
             else [rule];
 
             in
 
 	  (iso_files, loop [] (x = PC.TArob))
       |	_ -> failwith "unexpected code before the first rule\n")
-  | (false,[(PC.TArobArob,_)]) | (false,[(PC.TArob,_)]) -> ([],([] : Ast0_cocci.parsed_rule list))
+  | (false,[(PC.TArobArob,_)]) | (false,[(PC.TArob,_)]) ->
+      ([],([] : Ast0.parsed_rule list))
   | _ -> failwith "unexpected code before the first rule\n" in
   res)
 
@@ -1353,74 +1357,82 @@ let process file isofile verbose =
   let global_isos = parse_iso_files std_isos iso_files extra_path in
   let rules = Unitary_ast0.do_unitary rules in
   let parsed =
-    List.concat (
-    List.map (function rule -> match rule with
-        Ast0_cocci.ScriptRule (a,b,c) -> [([],Ast_cocci.ScriptRule (a,b,c))]
-      | Ast0_cocci.CocciRule ((minus, metavarsm, (iso, dropiso, dependencies, rule_name, exists)), (plus, metavars)) ->
-          let chosen_isos =
-            parse_iso_files global_isos
-              (List.map (function x -> Common.Left x) iso) extra_path in
-          let chosen_isos =
+    List.map
+      (function
+          Ast0.ScriptRule (a,b,c,d) -> [([],Ast.ScriptRule (a,b,c,d))]
+	| Ast0.CocciRule
+	    ((minus, metavarsm,
+	      (iso, dropiso, dependencies, rule_name, exists)),
+	     (plus, metavars)) ->
+	       let chosen_isos =
+		 parse_iso_files global_isos
+		   (List.map (function x -> Common.Left x) iso)
+		   extra_path in
+	       let chosen_isos =
             (* check that dropped isos are actually available *)
-            (try
-              let iso_names =
-                List.map (function (_,_,nm) -> nm) chosen_isos in
-              let local_iso_names = reserved_names @ iso_names in
-              let bad_dropped =
-                List.find
-                  (function dropped ->
-                    not (List.mem dropped local_iso_names))
-                  dropiso in
-              failwith ("invalid iso name " ^ bad_dropped ^ "in " ^ rule_name)
-            with Not_found -> ());
-            if List.mem "all" dropiso 
-            then 
-              if List.length dropiso = 1
-              then []
-              else failwith "disable all should only be by itself"
-            else (* drop those isos *)
-              List.filter (function (_,_,nm) -> not (List.mem nm dropiso))
-                chosen_isos
-          in
-          List.iter Iso_compile.process chosen_isos;
-          let dropped_isos =
-            match reserved_names with
-              "all"::others ->
-                (match dropiso with
-                  ["all"] -> others
-                | _ ->
-                    List.filter (function x -> List.mem x dropiso) others)
-            | _ -> failwith "bad list of reserved names - all must be at start" in
-          let minus = Compute_lines.compute_lines minus in
-          let plus = Compute_lines.compute_lines plus in
-          let minus = Arity.minus_arity minus in
-          let ((metavars,minus),function_prototypes) =
-            Function_prototypes.process
-              rule_name metavars dropped_isos minus plus in
+		 (try
+		   let iso_names =
+		     List.map (function (_,_,nm) -> nm) chosen_isos in
+		   let local_iso_names = reserved_names @ iso_names in
+		   let bad_dropped =
+		     List.find
+		       (function dropped ->
+			 not (List.mem dropped local_iso_names))
+		       dropiso in
+		   failwith
+		     ("invalid iso name " ^ bad_dropped ^ "in " ^ rule_name)
+		 with Not_found -> ());
+		 if List.mem "all" dropiso 
+		 then 
+		   if List.length dropiso = 1
+		   then []
+		   else failwith "disable all should only be by itself"
+		 else (* drop those isos *)
+		   List.filter
+		     (function (_,_,nm) -> not (List.mem nm dropiso))
+		     chosen_isos in
+	       List.iter Iso_compile.process chosen_isos;
+	       let dropped_isos =
+		 match reserved_names with
+		   "all"::others ->
+		     (match dropiso with
+		       ["all"] -> others
+		     | _ ->
+			 List.filter (function x -> List.mem x dropiso) others)
+		 | _ ->
+		     failwith
+		       "bad list of reserved names - all must be at start" in
+	       let minus = Compute_lines.compute_lines minus in
+	       let plus = Compute_lines.compute_lines plus in
+	       let minus = Arity.minus_arity minus in
+	       let ((metavars,minus),function_prototypes) =
+		 Function_prototypes.process
+		   rule_name metavars dropped_isos minus plus in
           (* warning! context_neg side-effects its arguments *)
-          let (m,p) = List.split (Context_neg.context_neg minus plus) in 
-          Type_infer.type_infer p;
-          (if not !Flag.sgrep_mode2 then Insert_plus.insert_plus m p);
-          Type_infer.type_infer minus;
-          let (extra_meta, minus) =
-            Iso_pattern.apply_isos chosen_isos minus rule_name in
-          let minus =
-            if !Flag.sgrep_mode2 then minus
-            else Single_statement.single_statement minus in
-          let minus = Simple_assignments.simple_assignments minus in
-          let minus_ast =
-            Ast0toast.ast0toast rule_name dependencies dropped_isos exists
-              minus in
-          match function_prototypes with
-            None -> [(extra_meta @ metavars, minus_ast)]
-          | Some mv_fp -> [(extra_meta @ metavars, minus_ast); mv_fp]
-(*          Ast0_cocci.CocciRule ((minus, metavarsm, (iso, dropiso, dependencies, rule_name, exists)), (plus, metavars))*)
-    ) rules)
-  in
+	       let (m,p) = List.split (Context_neg.context_neg minus plus) in 
+	       Type_infer.type_infer p;
+	       (if not !Flag.sgrep_mode2 then Insert_plus.insert_plus m p);
+	       Type_infer.type_infer minus;
+	       let (extra_meta, minus) =
+		 Iso_pattern.apply_isos chosen_isos minus rule_name in
+	       let minus =
+		 if !Flag.sgrep_mode2 then minus
+		 else Single_statement.single_statement minus in
+	       let minus = Simple_assignments.simple_assignments minus in
+	       let minus_ast =
+		 Ast0toast.ast0toast rule_name dependencies dropped_isos
+		   exists minus in
+	       match function_prototypes with
+		 None -> [(extra_meta @ metavars, minus_ast)]
+	       | Some mv_fp -> [(extra_meta @ metavars, minus_ast); mv_fp])
+(*          Ast0.CocciRule ((minus, metavarsm, (iso, dropiso, dependencies, rule_name, exists)), (plus, metavars))*)
+      rules in
+  let parsed = List.concat parsed in
   let disjd = Disjdistr.disj parsed in
-
+  
   let (code,fvs,ua,pos) = Free_vars.free_vars disjd in
-  if !Flag_parsing_cocci.show_SP then List.iter Pretty_print_cocci.unparse code;
+  if !Flag_parsing_cocci.show_SP
+  then List.iter Pretty_print_cocci.unparse code;
   
   let grep_tokens =
     Common.profile_code "get_constants"
@@ -1429,4 +1441,3 @@ let process file isofile verbose =
     Common.profile_code "get_glimpse_constants"
       (fun () -> Get_constants2.get_constants code) in (* for glimpse *)
   (code,fvs,ua,pos,grep_tokens,glimpse_tokens2)
-

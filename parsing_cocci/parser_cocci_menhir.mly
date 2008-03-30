@@ -178,8 +178,10 @@ iso_rule_name:
 
 rule_name:
   nm=ioption(pure_ident) extends d=depends i=loption(choose_iso)
-    a=loption(disable) e=exists ee=is_expression TArob { P.make_cocci_rule_name_result nm d i a e ee }
-  | scr=pure_ident TDotDot lang=pure_ident { P.make_script_rule_name_result scr lang }
+    a=loption(disable) e=exists ee=is_expression TArob
+      { P.make_cocci_rule_name_result nm d i a e ee }
+  | scr=pure_ident TDotDot lang=pure_ident d=depends TArob
+      { P.make_script_rule_name_result scr lang d }
 
 extends:
   /* empty */                                     { () }

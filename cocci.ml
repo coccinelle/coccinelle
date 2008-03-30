@@ -558,6 +558,7 @@ type toplevel_c_info = {
 type toplevel_cocci_info_script_rule = {
   scr_ast_rule: string * (string * (string * string)) list * string;
   language: string;
+  scr_dependencies: Ast_cocci.dependency;
   scr_ruleid: int;
   script_code: string;
 }
@@ -630,16 +631,17 @@ let prepare_cocci ctls free_var_lists
       then failwith "not handling multiple minirules";
 
       match ast with
-        Ast_cocci.ScriptRule (lang,mv,code) ->
+        Ast_cocci.ScriptRule (lang,deps,mv,code) ->
           let r = 
           {
             scr_ast_rule = (lang, mv, code);
             language = lang;
+            scr_dependencies = deps;
             scr_ruleid = rulenb;
             script_code = code;
           }
           in ScriptRuleCocciInfo r
-      | Ast_cocci.CocciRule (rulename, (dependencies, dropped_isos, z), restast) ->
+      | Ast_cocci.CocciRule(rulename,(dependencies,dropped_isos,z),restast) ->
           CocciRuleCocciInfo (
           {
             ctl = List.hd ctl_toplevel_list;
@@ -845,63 +847,39 @@ let prepare_c files =
 
 (* r(ule), c(element in C code), e(nvironment) *)
 
-let rec bigloop2 rs ccs = 
-  let es = ref [(Ast_c.emptyMetavarsBinding,[])] in
-  let ccs = ref ccs in
-  let rules_that_have_ever_matched = ref [] in
-
-  (* looping over the rules *)
-  rs +> List.iter (fun r -> 
-    match r with
-      ScriptRuleCocciInfo r -> 
-	if !Flag_cocci.show_ctl_text then begin
-          Common.pr_xxxxxxxxxxxxxxxxx ();
-          pr ("script: " ^ r.language);
-          Common.pr_xxxxxxxxxxxxxxxxx ();
-	  
-          adjust_pp_with_indent (fun () -> 
-            Format.force_newline();
-            let (l,mv,code) = r.scr_ast_rule in
-            Pretty_print_cocci.unparse (Ast_cocci.ScriptRule (l,mv,code)));
+let rec apply_python_rule r cache newes e rules_that_have_matched
+    rules_that_have_ever_matched =
+  if not(interpret_dependencies rules_that_have_matched
+	   !rules_that_have_ever_matched r.scr_dependencies)
+  then
+    begin
+      if !Flag.show_misc
+      then
+	begin
+	  pr2 ("dependencies for script not satisfied:");
+	  print_dependencies rules_that_have_matched
+	    !rules_that_have_ever_matched r.scr_dependencies;
+	  show_or_not_binding "in environment" e
 	end;
+      (cache, (e, rules_that_have_matched)::newes)
+    end
+  else
+    let (_, mv, _) = r.scr_ast_rule in
+    show_or_not_binding "in" e;
+    if List.for_all (Pycocci.contains_binding e) mv
+    then (
+      Pycocci.build_classes (List.map (function (x,y) -> x) e);
+      Pycocci.construct_variables mv e;
+      let _ = pyrun_simplestring
+	  ("import coccinelle\nfrom coccinelle import *\ncocci = Cocci()\n" ^
+	   r.script_code) in
+      if !Pycocci.inc_match
+      then (cache, (e, rules_that_have_matched)::newes)
+      else (cache, newes))
+    else (cache, (e, rules_that_have_matched)::newes)
 
-	if !Flag.show_misc then print_endline "RESULT =";
-
-        let (_, newes) =
-          List.fold_left
-            (function (cache, newes) ->
-              function (e, rules_that_have_matched) ->
-                let (_, mv, _) = r.scr_ast_rule in
-                if r.language = "python" then (
-                  if List.for_all (Pycocci.contains_binding e) mv then (
-                    Pycocci.build_classes (List.map (function (x,y) -> x) e);
-                    Pycocci.construct_variables mv e;
-                    let _ = pyrun_simplestring
-			("import coccinelle\nfrom coccinelle import *\ncocci = Cocci()\n" ^ r.script_code) in
-		    if !Pycocci.inc_match then
-                      (cache, (e, rules_that_have_matched)::newes)
-		    else (cache, newes)
-                  ) else (
-                    (cache, newes)
-                  )
-		) else if r.language = "test" then (
-			concat_headers_and_c !ccs +> List.iter (fun c -> 
-			if c.flow <> None 
-			then
-			  Printf.printf "Flow: %s\r\nFlow!\r\n%!" c.fullstring
-			);
-			(cache, newes)
-                ) else (
-                  Printf.printf "Unknown language: %s\n" r.language;
-                  (cache, newes)
-                )
-            )
-            ([],[]) !es
-        in
-
-        es := newes;
-    | CocciRuleCocciInfo r -> (
-    Common.profile_code r.rulename (fun () -> 
+and apply_cocci_rule r rules_that_have_ever_matched es ccs =
+  Common.profile_code r.rulename (fun () -> 
     show_or_not_ctl_text r.ctl r.ast_rule r.ruleid;
 
     let reorganized_env = reassociate_positions r.free_vars !es in
@@ -1004,9 +982,56 @@ let rec bigloop2 rs ccs =
 
     (* apply the tagged modifs and reparse *)
     if not !Flag.sgrep_mode2
-    then ccs := rebuild_info_c_and_headers !ccs;
+    then ccs := rebuild_info_c_and_headers !ccs
+  )
 
-  ))); (* end iter rs *)
+and bigloop2 rs ccs = 
+  let es = ref [(Ast_c.emptyMetavarsBinding,[])] in
+  let ccs = ref ccs in
+  let rules_that_have_ever_matched = ref [] in
+
+  (* looping over the rules *)
+  rs +> List.iter (fun r -> 
+    match r with
+      ScriptRuleCocciInfo r -> 
+	if !Flag_cocci.show_ctl_text then begin
+          Common.pr_xxxxxxxxxxxxxxxxx ();
+          pr ("script: " ^ r.language);
+          Common.pr_xxxxxxxxxxxxxxxxx ();
+	  
+          adjust_pp_with_indent (fun () -> 
+            Format.force_newline();
+            let (l,mv,code) = r.scr_ast_rule in
+	    let deps = r.scr_dependencies in
+            Pretty_print_cocci.unparse
+	      (Ast_cocci.ScriptRule (l,deps,mv,code)));
+	end;
+
+	if !Flag.show_misc then print_endline "RESULT =";
+
+        let (_, newes) =
+          List.fold_left
+            (function (cache, newes) ->
+              function (e, rules_that_have_matched) ->
+		match r.language with
+                  "python" ->
+		    apply_python_rule r cache newes e rules_that_have_matched
+		      rules_that_have_ever_matched
+		| "test" ->
+		    concat_headers_and_c !ccs +> List.iter (fun c -> 
+		      if c.flow <> None 
+		      then
+			Printf.printf "Flow: %s\r\nFlow!\r\n%!" c.fullstring);
+		    (cache, newes)
+		| _ ->
+                    Printf.printf "Unknown language: %s\n" r.language;
+                    (cache, newes)
+		      )
+            ([],[]) !es in
+
+        es := newes;
+    | CocciRuleCocciInfo r ->
+	apply_cocci_rule r rules_that_have_ever_matched es ccs);
 
   if !Flag.sgrep_mode2
   then begin

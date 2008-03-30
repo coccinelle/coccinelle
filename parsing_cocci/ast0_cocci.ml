@@ -346,8 +346,12 @@ and top_level = base_top_level wrap
 and rule = top_level list
 
 and parsed_rule =
-    CocciRule of (rule * Ast_cocci.metavar list * (string list * string list * Ast_cocci.dependency * string * Ast_cocci.exists)) * (rule * Ast_cocci.metavar list)
-  | ScriptRule of string * (string * (string * string)) list * string
+    CocciRule of
+      (rule * Ast.metavar list *
+	 (string list * string list * Ast.dependency * string * Ast.exists)) *
+	(rule * Ast.metavar list)
+  | ScriptRule of
+      string * Ast.dependency * (string * Ast.meta_name) list * string
 
 (* --------------------------------------------------------------------- *)
 

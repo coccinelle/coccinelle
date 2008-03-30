@@ -408,13 +408,13 @@ let get_constants rules =
       List.fold_left
 	(function (rest_info,in_plus,env,locals(*dom of env*)) ->
           function
-              Ast.ScriptRule (_,mv,_) ->
-		let dep =
+              Ast.ScriptRule (_,deps,mv,_) ->
+		let extra_deps =
 		  List.fold_left
 		    (function prev ->
 		      function (_,(rule,_)) -> Ast.AndDep (Ast.Dep rule,prev))
-		    Ast.NoDep mv in
-		(match dependencies env dep with
+		    deps mv in
+		(match dependencies env extra_deps with
 		  False -> (rest_info, in_plus, env, locals)
 		| dependencies ->
 		    (build_or dependencies rest_info, in_plus, env, locals))

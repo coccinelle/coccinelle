@@ -774,10 +774,13 @@ let rec dep in_and = function
 
 let unparse z =
   match z with
-    Ast.ScriptRule (lang,bindings,code) ->
+    Ast.ScriptRule (lang,deps,bindings,code) ->
     print_string "@@";
     force_newline();
     print_string ("script:" ^ lang);
+    (match deps with
+      Ast.NoDep -> ()
+    | _ -> print_string " depends on "; dep true deps);
     force_newline();
     print_string "@@";
     force_newline();

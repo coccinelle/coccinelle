@@ -463,13 +463,14 @@ and base_top_level =
 and top_level = base_top_level wrap
 
 and rulename =
-    CocciRulename of string option * dependency * string list * string list * exists * bool
-  | ScriptRulename of string
+    CocciRulename of string option * dependency *
+	string list * string list * exists * bool
+  | ScriptRulename of string * dependency
 
 and rule =
     CocciRule of string (* name *) * 
 	(dependency * string list (* dropped isos *) * exists) * top_level list
-  | ScriptRule of string * (string * meta_name) list * string
+  | ScriptRule of string * dependency * (string * meta_name) list * string
 
 and dependency =
     Dep of string (* rule applies for the current binding *)
