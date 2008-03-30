@@ -854,17 +854,18 @@ let rec bigloop2 rs ccs =
   rs +> List.iter (fun r -> 
     match r with
       ScriptRuleCocciInfo r -> 
-        Common.pr_xxxxxxxxxxxxxxxxx ();
-        pr ("script: " ^ r.language);
-        Common.pr_xxxxxxxxxxxxxxxxx ();
+	if !Flag_cocci.show_ctl_text then begin
+          Common.pr_xxxxxxxxxxxxxxxxx ();
+          pr ("script: " ^ r.language);
+          Common.pr_xxxxxxxxxxxxxxxxx ();
+	  
+          adjust_pp_with_indent (fun () -> 
+            Format.force_newline();
+            let (l,mv,code) = r.scr_ast_rule in
+            Pretty_print_cocci.unparse (Ast_cocci.ScriptRule (l,mv,code)));
+	end;
 
-        adjust_pp_with_indent (fun () -> 
-          Format.force_newline();
-          let (l,mv,code) = r.scr_ast_rule in
-          Pretty_print_cocci.unparse (Ast_cocci.ScriptRule (l,mv,code));
-        );
-
-        print_endline "RESULT =";
+	if !Flag.show_misc then print_endline "RESULT =";
 
         let (_, newes) =
           List.fold_left

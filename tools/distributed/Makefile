@@ -1,7 +1,7 @@
 spatch_linux: spatch_linux.c
 	gcc -o spatch_linux spatch_linux.c
 
-install: spatch_linux
+install: spatch_linux cleanup
 	cp spatch_linux ~/bin
 
 cleanup: cleanup.ml

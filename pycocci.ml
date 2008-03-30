@@ -50,9 +50,8 @@ let pycocci_init () =
   initialised := true;
   Unix.putenv "PYTHONPATH"
       (Printf.sprintf "%s/coccinelle" (Unix.getenv "HOME"));
-  Printf.printf "Initializing python\n%!";
   let _ = if not (py_isinitialized () != 0) then 
-  	(Printf.printf "Initializing python\n%!"; 
+  	(if !Flag.show_misc then Common.pr2 "Initializing python\n%!"; 
 	py_initialize()) in
 
   (* set argv *)
