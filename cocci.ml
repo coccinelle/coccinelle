@@ -854,9 +854,9 @@ let rec bigloop2 rs ccs =
   rs +> List.iter (fun r -> 
     match r with
       ScriptRuleCocciInfo r -> 
-        pr_xxxxxxxxxxxxxxxxx ();
-        Printf.printf "script:%s\n" r.language;
-        pr_xxxxxxxxxxxxxxxxx ();
+        Common.pr2_xxxxxxxxxxxxxxxxx ();
+        pr2 ("script: " ^ r.language);
+        Common.pr2_xxxxxxxxxxxxxxxxx ();
 
         adjust_pp_with_indent (fun () -> 
           Format.force_newline();

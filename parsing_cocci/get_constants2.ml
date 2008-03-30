@@ -407,22 +407,20 @@ let get_constants rules =
     let (info,_,_,_) =
       List.fold_left
 	(function (rest_info,in_plus,env,locals(*dom of env*)) ->
-          function r ->
-            match r with
+          function
               Ast.ScriptRule _ -> (rest_info, in_plus, env, locals)
             | Ast.CocciRule (nm,(dep,_,_),cur) ->
-	    let (cur_info,cur_plus) = rule_fn cur in_plus ((nm,True)::env) in
-	    if List.for_all all_context.V.combiner_top_level cur
-	    then
-	      (rest_info,cur_plus,(nm,cur_info)::env,nm::locals)
-	    else
-	    (* no constants if dependent on another rule; then we need to
-	       find the constants of that rule *)
-	      match dependencies env dep with
-		False ->
-		  (rest_info,cur_plus,env,locals)
-	      |	dependencies ->
-		  (build_or (build_and dependencies cur_info) rest_info,
-		   cur_plus,env,locals))
+		let (cur_info,cur_plus) =
+		  rule_fn cur in_plus ((nm,True)::env) in
+		if List.for_all all_context.V.combiner_top_level cur
+		then (rest_info,cur_plus,(nm,cur_info)::env,nm::locals)
+		else
+	       (* no constants if dependent on another rule; then we need to
+	          find the constants of that rule *)
+		  match dependencies env dep with
+		    False -> (rest_info,cur_plus,env,locals)
+		  | dependencies ->
+		      (build_or (build_and dependencies cur_info) rest_info,
+		       cur_plus,env,locals))
 	(False,[],[],[]) (rules : Ast.rule list) in
     interpret true info
