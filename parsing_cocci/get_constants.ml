@@ -285,12 +285,12 @@ let get_constants rules =
         (function (rest_info,in_plus) ->
           function r ->
             match r with
-              Ast.ScriptRule _ -> (rest_info, in_plus)
+              Ast.ScriptRule (_,mv,_) -> (rest_info, in_plus)
             | Ast.CocciRule (nm, (dep,_,_), cur) ->
                 let (cur_info,cur_plus) = rule_fn cur in_plus in
 	        let cur_info =
-	          (* no dependencies if dependent on another rule; then we need to
-	             find the constants of that rule *)
+	          (* no dependencies if dependent on another rule; then we
+	             need to find the constants of that rule *)
 	          if dependent dep or
 	            List.for_all (check_inherited nm).V.combiner_top_level cur
 	          then []

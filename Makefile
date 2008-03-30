@@ -63,7 +63,7 @@ rec:
 	$(MAKE) -C pycaml -f Makefile.deb-pycaml
 rec.opt:
 	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i all.opt; done 
-	$(MAKE) -C pycaml -f Makefile.deb-pycaml
+	$(MAKE) -C pycaml -f Makefile.deb-pycaml allopt
 
 $(EXEC): $(LIBS) $(OBJS)
 	$(OCAMLC) -o $@ $(SYSLIBS) $^

@@ -453,8 +453,9 @@ and rulename =
   | ScriptRulename of string
 
 and rule =
-    CocciRule of string (* name *) * (dependency * string list (* dropped isos *) * exists) * top_level list
-  | ScriptRule of string * (string * (string * string)) list * string
+    CocciRule of string (* name *) *
+	(dependency * string list (* dropped isos *) * exists) * top_level list
+  | ScriptRule of string * (string * meta_name) list * string
 
 and dependency =
     Dep of string (* rule applies for the current binding *)

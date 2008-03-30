@@ -1752,6 +1752,7 @@ iso(term):
 
 never_used: TPragma { () }
   | TPArob TMetaPos { () }
+  | TScriptData     { () }
 
 script_meta_main: py=pure_ident TShOp TRuleName TDot cocci=pure_ident TMPtVirg
   { (P.id2name py, ($3, P.id2name cocci)) }
