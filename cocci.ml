@@ -854,9 +854,9 @@ let rec bigloop2 rs ccs =
   rs +> List.iter (fun r -> 
     match r with
       ScriptRuleCocciInfo r -> 
-        Common.pr2_xxxxxxxxxxxxxxxxx ();
-        pr2 ("script: " ^ r.language);
-        Common.pr2_xxxxxxxxxxxxxxxxx ();
+        Common.pr_xxxxxxxxxxxxxxxxx ();
+        pr ("script: " ^ r.language);
+        Common.pr_xxxxxxxxxxxxxxxxx ();
 
         adjust_pp_with_indent (fun () -> 
           Format.force_newline();
@@ -875,7 +875,8 @@ let rec bigloop2 rs ccs =
                   if List.for_all (Pycocci.contains_binding e) mv then (
                     Pycocci.build_classes (List.map (function (x,y) -> x) e);
                     Pycocci.construct_variables mv e;
-                    let _ = pyrun_simplestring ("import coccinelle\nfrom coccinelle import *\ncocci = Cocci()\n" ^ r.script_code) in
+                    let _ = pyrun_simplestring
+			("import coccinelle\nfrom coccinelle import *\ncocci = Cocci()\n" ^ r.script_code) in
 		    if !Pycocci.inc_match then
                       (cache, (e, rules_that_have_matched)::newes)
 		    else (cache, newes)
@@ -886,7 +887,7 @@ let rec bigloop2 rs ccs =
 			concat_headers_and_c !ccs +> List.iter (fun c -> 
 			if c.flow <> None 
 			then
-				Printf.printf "Flow: %s\r\nFlow!\r\n%!" c.fullstring
+			  Printf.printf "Flow: %s\r\nFlow!\r\n%!" c.fullstring
 			);
 			(cache, newes)
                 ) else (
