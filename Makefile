@@ -35,7 +35,8 @@ OCAMLCFLAGS=-g -dtypes -custom # -w A
 # for profiling add  -p -inline 0
 # but 'make forprofiling' below does that for you.
 # This flag is also used in subdirectories so don't change its name here.
-OPTFLAGS=-cclib pycaml/dllpycaml_stubs.so
+OPTFLAGS=
+OPTLIBFLAGS=-cclib dllpycaml_stubs.so
 
 # the OPTBIN variable is here to allow to use ocamlc.opt instead of 
 # ocaml, when it is available, which speeds up compilation. So
@@ -69,18 +70,18 @@ $(EXEC): $(LIBS) $(OBJS)
 	$(OCAMLC) -o $@ $(SYSLIBS) $^
 
 $(EXEC).opt: $(LIBS:.cma=.cmxa) $(OPTOBJS) 
-	$(OCAMLOPT) -o $@ $(SYSLIBS:.cma=.cmxa) $^
+	$(OCAMLOPT) -o $@ $(SYSLIBS:.cma=.cmxa) $(OPTLIBFLAGS) $^
 
 $(EXEC).top: $(LIBS) $(OBJS) 
 	$(OCAMLMKTOP) -o $@ $(SYSLIBS) $^
 
 clean::
 	rm -f $(TARGET) $(TARGET).opt $(TARGET).top
+	rm -f dllpycaml_stubs.so
 
 clean::
 	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i clean; done 
 	$(MAKE) -C pycaml -f Makefile.deb-pycaml clean
-
 
 
 .PHONY: tools
