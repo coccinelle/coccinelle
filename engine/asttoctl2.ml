@@ -418,21 +418,9 @@ let contains_modif =
       do_nothing rule_elem do_nothing do_nothing do_nothing do_nothing in
   recursor.V.combiner_rule_elem
 
-let drop_positions =
-  let mcode x = Ast.set_pos_var Ast.NoMetaPos x in
-  let donothing r k e = k e in
-  V.rebuilder
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    mcode
-    donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing
-
 (* code is not a DisjRuleElem *)
 let make_match label guard code =
   let v = fresh_var() in
-  let code =
-    if guard then drop_positions.V.rebuilder_rule_elem code else code in
   let matcher = Lib_engine.Match(code) in
   if contains_modif code && not guard
   then CTL.Exists(true,v,predmaker guard (matcher,CTL.Modif v) label)
