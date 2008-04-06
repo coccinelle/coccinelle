@@ -675,10 +675,13 @@ let rec pp_any = function
   | Ast.Token(x,Some info) -> 
       mcode
 	(function x ->
+	  (match x with
+	    "else" -> pr "\n"
+	  | _ -> ());
 	  print_string x;
 	  (* if x ==~ Common.regexp_alpha then print_string " "; *)
 	  (match x with
-	    "return" -> print_string " "
+	    "return" | "else" -> print_string " "
 	  | _ -> ()))
 	(x,info,(),Ast.NoMetaPos);
       if_open_brace x
