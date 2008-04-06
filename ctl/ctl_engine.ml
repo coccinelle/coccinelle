@@ -365,7 +365,13 @@ let merge_subBy eqx (===) (>+<) sub sub' =
       else None
   | (A.NegSubst(x,v),A.NegSubst(x',v')) ->
       if (v === v')
-      then Some [A.NegSubst(x,v)]
+      then
+	let merged = v >+< v' in
+	if merged = v && merged = v'
+	then Some [A.NegSubst(x,v >+< v')]
+	else
+	  (* positions are compatible, but not identical. keep apart. *)
+	  Some [A.NegSubst(x,v);A.NegSubst(x',v')]
       else Some [A.NegSubst(x,v);A.NegSubst(x',v')]
 ;;
 
@@ -732,6 +738,7 @@ environment and has fewer witnesses, then it should be dropped. But having
 fewer witnesses is not necessarily less informative than having more,
 because fewer witnesses can mean the absence of the witness-causing thing.
 So the fewer witnesses have to be kept around.
+subseteq changed to = to make it hopefully work
 *)
   if !pNEW_INFO_OPT
   then
@@ -760,7 +767,7 @@ So the fewer witnesses have to be kept around.
 	    [] -> [x]
 	  | (y::ys) as all ->
 	      match subsumes x y with
-		1 -> (something_dropped := true; all)
+		1 -> something_dropped := true; all
 	      | (-1) -> second_loop x ys
 	      | _ -> y::(second_loop x ys) in
 	first_loop trips trips'
