@@ -574,6 +574,7 @@ statement:
 
  /* cppext: */
  | TMacroStmt { MacroStmt, [$1] }
+ | TMacroStmt TPtVirg { MacroStmt, [$1;$2] }
 
 
 
@@ -925,6 +926,7 @@ parameter_decl2:
      { let ((returnType,hasreg), iihasreg) = fixDeclSpecForParam $1 
        in (hasreg, None, returnType),           (iihasreg ++ []) 
      }
+
 
 /*----------------------------*/
 /* workarounds */

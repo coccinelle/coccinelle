@@ -96,6 +96,7 @@
     "function" "local" "list" 
     "fresh" 
     "position"
+    "idexpression"
 
     "typedef" 
     "declarer" "iterator"
@@ -267,7 +268,7 @@
 
 ;;; Code
 
-;; helper functions for the cocci programmeur 
+;; helper functions for the cocci programmer 
 
 (defun cocci-replace-modifiers (beg end str)
   "TODO"

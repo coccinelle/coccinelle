@@ -22,4 +22,7 @@ all: byte-code-library pycaml.customtop
 pycaml.customtop: pycaml.cma
 	ocamlmktop -o pycaml.customtop pycaml.cma
 
+clean:: 
+	rm -f pycaml.customtop
+
 -include $(OCAMLMAKEFILE)

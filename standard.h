@@ -539,10 +539,13 @@ do {									\
 // may lose code sites with coccinelle. If expand correctly, will
 // still don't transform correctly but at least will detect the place.
 
-// cooperation with parsing_hack.ml, MACROSTATEMENT is a magic string
-// can't just expand into a   'whatever();' because I need 
-// to generate a TMacroStmt for solving some ambiguity in the grammar
-// for the toplevel stuff I think
+
+
+
+// Cooperation with parsing_hack.ml: MACROSTATEMENT is a magic string.
+// I can't just expand those macros into some 'whatever();' because I need 
+// to generate a TMacroStmt for solving some ambiguities in the grammar
+// for the toplevel stuff I think.
 #define ASSERT(x) MACROSTATEMENT
 #define IRDA_ASSERT(x) MACROSTATEMENT
 
