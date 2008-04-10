@@ -59,6 +59,10 @@ let _ =
   let arg = Filename.chop_extension arg in
   let files = get_files arg in
   process_all_files files arg;
+  let tmp_files =
+    String.concat " "
+      (List.map (function x -> "tmp."^x) (List.sort compare files)) in
+  let _ = Sys.command (Printf.sprintf "cat %s > tmp.%s" tmp_files arg) in
   List.iter
     (function file ->
       let _ = Sys.command (Printf.sprintf "/bin/rm %s" file) in
