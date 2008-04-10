@@ -366,13 +366,10 @@ let (satbis_to_trans_info:
 let (mysat2:
   Lib_engine.model ->
   (Lib_engine.ctlcocci * (pred list list)) -> 
-  (Lib_engine.mvar list*Lib_engine.mvar list*Lib_engine.metavars_binding) ->
+  (Lib_engine.mvar list*Lib_engine.metavars_binding) ->
   (Lib_engine.transformation_info * bool * Lib_engine.metavars_binding list)) =
-  fun (flow, label, states) ctl (used_after, positions, binding) -> 
+  fun (flow, label, states) ctl (used_after, binding) -> 
     let binding2 = metavars_binding_to_binding2 binding in
-    (* the following could be dropped if the python code would make visible
-       its position variables *)
-    let used_after = Common.union_set positions used_after in
     let (triples,(trans_info2, returned_any_states, used_after_envs)) = 
       WRAPPED_ENGINE.satbis (flow, label, states) ctl (used_after, binding2)
     in

@@ -1137,7 +1137,7 @@ and process_a_ctl_a_env_a_toplevel2 r e c =
       (* !Main point! The call to the engine *)
       (***************************************)
       let model_ctl  = CCI.model_for_ctl r.dropped_isos (Common.some c.flow) e
-      in CCI.mysat model_ctl r.ctl (r.used_after, r.positions, e)
+      in CCI.mysat model_ctl r.ctl (r.used_after, e)
     ) 
   in
   if not returned_any_states 
