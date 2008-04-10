@@ -1098,17 +1098,14 @@ let satAW dir ((grp,_,states) as m) s1 s2 reqst =
 	(satEU dir m negpsi (triples_conj negphi negpsi) (Some ostates))
     else
        *)
-      let ctr = ref 0 in
+      (*let ctr = ref 0 in*)
       let f y =
-	ctr := !ctr + 1;
+	(*ctr := !ctr + 1;
 	Printf.printf "iter %d y %d\n" !ctr (List.length y);
 	print_state "y" y;
-	flush stdout;
+	flush stdout;*)
 	let pre = pre_forall dir m y y reqst in
-	print_state "s1" s1;
-	print_state "pre" pre;
 	let conj = triples_conj s1 pre in (* or triples_conj_AW *)
-	print_state "conj" conj;
 	triples_union s2 conj in
       setgfix f (triples_union s1 s2)
 ;;
