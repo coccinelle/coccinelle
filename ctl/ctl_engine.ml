@@ -364,15 +364,14 @@ let merge_subBy eqx (===) (>+<) sub sub' =
       then Some [A.Subst(x,v)]
       else None
   | (A.NegSubst(x,v),A.NegSubst(x',v')) ->
-      Printf.printf "merging neg neg\n";
       if (v === v')
       then
 	let merged = v >+< v' in
 	if merged = v && merged = v'
-	then (Printf.printf "just one answer\n"; Some [A.NegSubst(x,v >+< v')])
+	then Some [A.NegSubst(x,v >+< v')]
 	else
 	  (* positions are compatible, but not identical. keep apart. *)
-	  (Printf.printf "keeping apart\n"; Some [A.NegSubst(x,v);A.NegSubst(x',v')])
+	  Some [A.NegSubst(x,v);A.NegSubst(x',v')]
       else Some [A.NegSubst(x,v);A.NegSubst(x',v')]
 ;;
 
@@ -540,17 +539,11 @@ let triples_conj trips trips' =
 	  (function rest ->
 	    function (s2,th2,wit2) ->
 	      if (s1 = s2) then
-		(Printf.printf "conjunction of:\n";
-		 print_generic_triple (s1,th1,wit1); Format.print_newline();
-		 Printf.printf "and:\n";
-		 print_generic_triple (s2,th2,wit2); Format.print_newline();
-		 Printf.printf "gives:\n";
-		match (conj_subst th1 th2) with
+		(match (conj_subst th1 th2) with
 		  Some th ->
-		 print_generic_substitution th; Format.print_newline();
 		    let t = (s1,th,union_wit wit1 wit2) in
 		    if List.mem t rest then rest else t::rest
-		| _       -> Printf.printf "nothing\n"; rest)
+		| _       -> rest)
 	      else rest)
 	  rest trips')
     shared trips)

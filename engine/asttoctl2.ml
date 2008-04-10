@@ -2065,16 +2065,17 @@ let rec cleanup = function
 (* --------------------------------------------------------------------- *)
 (* Function declaration *)
 
-let top_level ua t =
+let top_level (ua,pos) t =
   used_after := ua;
   saved := Ast.get_saved t;
-  quantify false ua
+  let quantified = Common.minus_set ua pos in
+  quantify false quantified
     (match Ast.unwrap t with
       Ast.FILEINFO(old_file,new_file) -> failwith "not supported fileinfo"
     | Ast.DECL(stmt) ->
 	let unopt = elim_opt.V.rebuilder_statement stmt in
 	let unopt = preprocess_dots_e unopt in
-	cleanup(statement unopt VeryEnd ua [] None None None false)
+	cleanup(statement unopt VeryEnd quantified [] None None None false)
     | Ast.CODE(stmt_dots) ->
 	let unopt = elim_opt.V.rebuilder_statement_dots stmt_dots in
 	let unopt = preprocess_dots unopt in
@@ -2087,7 +2088,8 @@ let top_level ua t =
 	      | _ -> false)
 	  | _ -> false in
 	let res =
-	  statement_list unopt VeryEnd ua [] None None None false false in
+	  statement_list unopt VeryEnd quantified [] None None None
+	    false false in
 	cleanup
 	  (if starts_with_dots
 	  then
@@ -2099,7 +2101,7 @@ let top_level ua t =
 (* --------------------------------------------------------------------- *)
 (* Entry points *)
 
-let asttoctlz (name,(_,_,exists_flag),l) used_after =
+let asttoctlz (name,(_,_,exists_flag),l) used_after positions =
   letctr := 0;
   labelctr := 0;
   (match exists_flag with
@@ -2112,15 +2114,15 @@ let asttoctlz (name,(_,_,exists_flag),l) used_after =
       (List.filter
 	 (function (t,_) ->
 	   match Ast.unwrap t with Ast.ERRORWORDS(exps) -> false | _ -> true)
-	 (List.combine l used_after)) in
+	 (List.combine l (List.combine used_after positions))) in
   let res = List.map2 top_level used_after l in
   exists := false;
   res
 
-let asttoctl r used_after =
+let asttoctl r used_after positions =
   match r with
     Ast.ScriptRule _ -> []
-  | Ast.CocciRule (a,b,c) -> asttoctlz (a,b,c) used_after
+  | Ast.CocciRule (a,b,c) -> asttoctlz (a,b,c) used_after positions
 
 let pp_cocci_predicate (pred,modif) =
   Pretty_print_engine.pp_predicate pred

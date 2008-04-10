@@ -4,6 +4,7 @@ type formula =
 
 val asttoctl :
     Ast_cocci.rule -> Ast_cocci.meta_name list list (* used after *) ->
+      Ast_cocci.meta_name list list (* positions *) ->
       formula list
 
 val pp_cocci_predicate : cocci_predicate -> unit

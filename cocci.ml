@@ -76,15 +76,15 @@ let ast_to_flow_with_error_messages a =
 (* --------------------------------------------------------------------- *)
 (* Ctl related *)
 (* --------------------------------------------------------------------- *)
-let ctls_of_ast2 ast ua =
+let ctls_of_ast2 ast ua pos =
   List.map2
-    (function ast -> function ua ->
+    (function ast -> function (ua,pos) ->
       List.combine
 	(if !Flag_cocci.popl
 	then Popl.popl ast
-	else Asttoctl2.asttoctl ast ua)
+	else Asttoctl2.asttoctl ast ua pos)
 	(Asttomember.asttomember ast ua))
-    ast ua
+    ast (List.combine ua pos)
 
 let ctls_of_ast ast ua =
   Common.profile_code "asttoctl2" (fun () -> ctls_of_ast2 ast ua)
@@ -1199,7 +1199,7 @@ let full_engine2 (coccifile, isofile) cfiles =
   in
   let ctls = 
     Common.memoized _hctl (coccifile, isofile) (fun () -> 
-      ctls_of_ast  astcocci used_after_lists)
+      ctls_of_ast  astcocci used_after_lists positions_lists)
   in
 
   let contain_typedmetavar = sp_contain_typed_metavar astcocci in

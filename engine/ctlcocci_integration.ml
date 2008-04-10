@@ -277,10 +277,6 @@ module ENV =
 	 Lib_engine.NormalMetaVal(Ast_c.MetaPosVal(min2,max2))) ->
 	   ((min1 <= min2) && (max1 >= max2)) or
 	   ((min2 <= min1) && (max2 >= max1))
-      |	(Lib_engine.NormalMetaVal(Ast_c.MetaPosValList(_)),
-	 Lib_engine.NormalMetaVal(Ast_c.MetaPosValList(_))) ->
-	   (* always compatible *)
-	   true
       |	(Lib_engine.NormalMetaVal(Ast_c.MetaTypeVal a),
 	 Lib_engine.NormalMetaVal(Ast_c.MetaTypeVal b)) ->
           C_vs_c.eq_type a b
@@ -296,10 +292,6 @@ module ENV =
 	     if (min2 <= min1) && (max2 >= max1)
 	     then Lib_engine.NormalMetaVal(Ast_c.MetaPosVal(min2,max2))
 	     else failwith "incompatible positions give to merge"
-      |	(Lib_engine.NormalMetaVal(Ast_c.MetaPosValList(l1)),
-	 Lib_engine.NormalMetaVal(Ast_c.MetaPosValList(l2))) ->
-	   let l3 = List.sort compare (Common.union_set l1 l2) in
-	   Lib_engine.NormalMetaVal(Ast_c.MetaPosValList(l3))
       |	(Lib_engine.NormalMetaVal(Ast_c.MetaTypeVal a),
 	 Lib_engine.NormalMetaVal(Ast_c.MetaTypeVal b)) ->
           Lib_engine.NormalMetaVal (Ast_c.MetaTypeVal (C_vs_c.merge_type a b))
@@ -361,6 +353,23 @@ let (satbis_to_trans_info:
          ) []
 
 (*****************************************************************************)
+
+let rec coalesce_positions = function
+    [] -> []
+  | (x,Ast_c.MetaPosValList l)::rest ->
+      let (same,others) = List.partition (function (x1,_) -> x = x1) rest in
+      let ls =
+	List.concat
+	  (List.map
+	     (function
+		 (_,Ast_c.MetaPosValList l) -> l
+	       | _ -> failwith "unexpected non-position")
+	     same) in
+      let new_ls = List.sort compare (l@ls) in
+      (x,Ast_c.MetaPosValList new_ls) :: coalesce_positions others
+  | x::rest -> x :: coalesce_positions rest
+
+(*****************************************************************************)
 (* Call ctl engine *)
 (*****************************************************************************)
 let (mysat2:
@@ -382,6 +391,7 @@ let (mysat2:
       Common.uniq(List.map2 (@) used_after_fresh_envs used_after_envs) in
     let trans_info = satbis_to_trans_info trans_info2 in
     let newbindings = List.map metavars_binding2_to_binding used_after_envs in
+    let newbindings = List.map coalesce_positions newbindings in
     (trans_info, returned_any_states, newbindings)
 
 let mysat a b c = 
