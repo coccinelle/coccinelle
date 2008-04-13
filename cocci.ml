@@ -864,19 +864,21 @@ let rec apply_python_rule r cache newes e rules_that_have_matched
       (cache, (e, rules_that_have_matched)::newes)
     end
   else
-    let (_, mv, _) = r.scr_ast_rule in
-    show_or_not_binding "in" e;
-    if List.for_all (Pycocci.contains_binding e) mv
-    then (
-      Pycocci.build_classes (List.map (function (x,y) -> x) e);
-      Pycocci.construct_variables mv e;
-      let _ = pyrun_simplestring
-	  ("import coccinelle\nfrom coccinelle import *\ncocci = Cocci()\n" ^
-	   r.script_code) in
-      if !Pycocci.inc_match
-      then (cache, (e, rules_that_have_matched)::newes)
-      else (cache, newes))
-    else (cache, (e, rules_that_have_matched)::newes)
+    begin
+      let (_, mv, _) = r.scr_ast_rule in
+      show_or_not_binding "in" e;
+      if List.for_all (Pycocci.contains_binding e) mv
+      then (
+	Pycocci.build_classes (List.map (function (x,y) -> x) e);
+	Pycocci.construct_variables mv e;
+	let _ = pyrun_simplestring
+	    ("import coccinelle\nfrom coccinelle import *\ncocci = Cocci()\n" ^
+	     r.script_code) in
+	if !Pycocci.inc_match
+	then (cache, (e, rules_that_have_matched)::newes)
+	else (cache, newes))
+      else (cache, (e, rules_that_have_matched)::newes)
+    end
 
 and apply_cocci_rule r rules_that_have_ever_matched es ccs =
   Common.profile_code r.rulename (fun () -> 
