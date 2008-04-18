@@ -1,0 +1,129 @@
+From 12o3l@tiscali.nl Fri Apr 18 18:13:39 2008
+Date: Fri, 18 Apr 2008 18:15:06 +0200
+From: Roel Kluin <12o3l@tiscali.nl>
+To: kernel-janitors@vger.kernel.org, kernelnewbies-bounce@nl.linux.org
+Subject: script to find incorrect tests on unsigneds
+
+A bash script to find incorrect tests on unsigned values. for instance:
+
+unsigned int i;
+...
+i = neg_ret_function();
+...
+if (i < 0) ...
+
+#!/bin/bash
+# (c) roel kluin 2008 GPL v2
+#
+# TODO: make this working also for 
+#                              ... $unsigned_var == $signed_var ...
+#                              ... $unsigned_var == \(-POSITIVE_DEF\|NEGATIVE_DEF\) ...
+#                              ... ( $unsigned_var [+*/%^&~-]?= ... ) < 0 ...
+
+# a number
+int="[0-9]"
+hex="[a-f0-9]"
+hEx="[A-Fa-f0-9]"
+HEX="[A-F0-9]"
+upp="[A-Z]"
+up_="[A-Z_]"
+low="[a-z0-9]"
+lo_="[a-z0-9_]"
+alp="[A-Za-z]"
+al_="[A-Za-z_]"
+ALN="[A-Z0-9]"
+AN_="[A-Z0-9_]"
+aln="[A-Za-z0-9]"
+an_="[A-Za-z0-9_]"
+# to match something like 1ul, floats or hexes as well:
+D="$int*\.\?$int\+x\?$hex*[uUlL]\{0,3\}[fF]\?"
+
+# more strict and catches it (costs one backreference for (git-)grep)
+d="\($int\+[uUlLfF]\?\|$int\+[uU]\?[lL][lL]\?\|0x$hex\+\|0x$HEX\+\|$i\+[lL][lL][uU]\|$i*\.$i\+[fF]\?\)"
+
+# capital: can be used to catch a definition or config option
+K="$UP_\+$AN_*";
+
+# can be used for a variable/function name:
+V="$an_\+$an_*"
+
+# works the same as above, but also for members and arrays: one backreference
+# is more strict
+W="$V\(\[$s$V$s\]\|\[$s$D$s\]\|\.$V\|->$V\)*"
+# catches it at once (less strict)
+w="\($V\|${V}\[$s$an_*${s}\]\|$V\.\|$V->\)\+"
+
+# seperators:
+s="[[:space:]]*";
+S="[[:space:]]\+"
+
+# useful to delimit a variable name:
+Q="[^[:alnum:]_]"
+
+# match the end of the line, including comments: one backreference (but at eol)
+cendl="$s\(\/[\*\/].*\)\?$"
+
+# match something that is not comment, string or character: 2 backreferences
+ccode="\([^\/\"']*\|\/[^\*\/]\|\/\*\([^\*]*\|\**[^\/\*]\)*\*\+\/\|'[^']*'\|\"[^\"]*\"\)*"
+
+# resp function open and end (only works when indentation is correct.
+fo="^[\{]$cendl"
+fe="^[\}]$cendl"
+se="^[\}];$cendl"
+
+# to match nested parentheses
+nps="[^()]*"
+nstdps="\(($nps\(($nps\(($nps\(($nps\(($nps)$nps\)*)$nps\)*)$nps\)*)$nps\)*)$nps\)*"
+
+
+# first determine unsigned typedefs
+arr="\(\[[^\]]*\]$s\)*"
+attr="__attribute__$s(([^;]*))"
+utype="${s}typedef${S}unsigned$S\($V$S\)*"
+uns="unsigned$(
+git-grep "^$utype\($V$s$arr\|$attr$S$V$s$arr\|$V$s$arr$S$attr\)$s;$cendl" | sed -n "s/^[^.]*\.[hc]:$utype\(\($V\)$s$arr\|$attr$S\($V\)$s$arr\|\($V\)$s$arr$S$attr\)$s;$cendl/\\\\|\3\5\7/p" | sort | uniq | tr -d "\n")"
+
+# define left and right operators
+# to decrease the number backrefences, these are assigned in loops
+opl=
+for op in "[;,|^?:(]" "[\!+*/%&|~^-]=" ">>=" "<<=" "\[" "&&" "$an_$s&"; do 
+ opl="$opl$op\|$op$s++\|$op$s--\|"
+done
+opl="\(${opl%|})"
+opr=
+for op in "[;,&|^?:)]" "[\!+*/%&|~^<>-]=" ">>=" "<<=" ">[^>]" "<[^<]" "\]"; do 
+ opr="$opr$op\|$op$s++\|$op$s--\|"
+done
+opr="\(${opr%|})"
+
+# string catches invalid comparison
+q1="$opl$s\($w$s\(>=${s}0\|<${s}0\|[><\!=]=$s-$s$D\|[<>]$s-$s$D\)\|\(0$s>\|0$s<=\|-$s$D${s}[><\!=]=\|-$s$D${s}[<>]\)$s$w\)$s$opr"
+
+start=0
+end=$(echo $uns | tr -cd "|" | wc -c)
+
+# main function
+while [ $start -lt $end ]; do
+  # we match 30 typedefs at a time
+  tuns="$(echo $uns | cut -d "\\" -f$start-$(($start+29)))"
+
+  # catch candidate files 
+  for f in $(git-grep -l "^\(${ccode}[,;]$s\)\?\($tuns\)$S" | grep "[^.]*\.[ch]" | xargs grep -l "$q1"); do
+    for n in $(sed -n "/^.*$q1/=" $f); do # lines
+      for v in $(sed -n "${n}s/^.*$q1.*$/\3\6/p" $f); do
+        # n2 = wine there
+        head -n$n $f | tac | sed -n "/^[{]/q; /^\(.*$Q\)\?\($tuns\)$S\($V$S\)*$v$Q.*$/=" | while read n2;        
+        do
+          echo "# --- invalid test on unsigned variable '$v' --- #"
+          echo "vi $f +$n2 # unsigned declaration"
+          echo "vi $f +$n # invalid test"
+        done
+      done
+    done
+  done
+  start=$(($start+30))
+done | less
+--
+To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
+the body of a message to majordomo@vger.kernel.org
+More majordomo info at  http://vger.kernel.org/majordomo-info.html

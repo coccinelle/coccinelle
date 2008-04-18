@@ -1534,11 +1534,24 @@ pre_post_decl_statement_and_expression_opt_mid:
     pre_post_decl_statement_and_expression       { ($1,[]) }
   | /* empty */                          { (Ast0.wrap(Ast0.DOTS([])),[]) }
   | pre_post_decl_statement_and_expression TMid0
-      pre_post_decl_statement_and_expression_opt_mid
+      pre_post_decl_statement_and_expression_opt_midp
       { let (first,rest) = $3 in
         ($1,(P.clt2mcode "|" $2,first)::rest) }
   | TMid0
-      pre_post_decl_statement_and_expression_opt_mid
+      pre_post_decl_statement_and_expression_opt_midp
+      { let (first,rest) = $2 in
+        (Ast0.wrap(Ast0.DOTS([])),
+	 (P.clt2mcode "|" $1,first)::rest) }
+
+pre_post_decl_statement_and_expression_opt_midp:
+    pre_post_decl_statement_or_expression       { ($1,[]) }
+  | /* empty */                          { (Ast0.wrap(Ast0.DOTS([])),[]) }
+  | pre_post_decl_statement_or_expression TMid0
+      pre_post_decl_statement_and_expression_opt_midp
+      { let (first,rest) = $3 in
+        ($1,(P.clt2mcode "|" $2,first)::rest) }
+  | TMid0
+      pre_post_decl_statement_and_expression_opt_midp
       { let (first,rest) = $2 in
         (Ast0.wrap(Ast0.DOTS([])),
 	 (P.clt2mcode "|" $1,first)::rest) }

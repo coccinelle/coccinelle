@@ -140,8 +140,9 @@ let do_get_constants constants keywords env =
 	    Ast.String s -> constants s
 	  | Ast.Char "\\0" -> option_default (* glimpse doesn't like it *)
 	  | Ast.Char s -> constants s
-	  | Ast.Int "0" -> keywords "0"
-	  | Ast.Int "1" -> keywords "1"
+	  (* the following were eg keywords "1", but not good for glimpse *)
+	  | Ast.Int "0" -> option_default (* glimpse doesn't like it *)
+	  | Ast.Int "1" -> option_default (* glimpse doesn't like it *)
 	  | Ast.Int s -> constants s
 	  | Ast.Float s -> constants s)
     | Ast.MetaExpr(name,_,_,Some type_list,_,_) ->

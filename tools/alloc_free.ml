@@ -149,7 +149,7 @@ let str = ref "detected allocator"
 
 let options = [ "-sed", Arg.Set sed, "sed output";
 		"-sp", Arg.String (function x -> gen := x),
-		"detectiuon string";
+		"detection string";
 		"-str", Arg.String (function x -> str := x),
 		"cocci file for use with sed";
 		"-dir", Arg.String (function x -> dir := x),

@@ -291,6 +291,7 @@ let rec propagate_types env =
 	let _ = k s in
 	(match (Ast0.unwrap exp,Ast0.get_type exp) with
 	  (Ast0.Edots(_,_),_) -> ()
+	| (Ast0.NestExpr(_,_,_,_,_),_) -> ()
 	| (Ast0.MetaExpr(_,_,_,_,_),_) ->
 	    (* if a type is known, it is specified in the decl *)
 	    ()

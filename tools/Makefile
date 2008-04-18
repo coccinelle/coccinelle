@@ -17,6 +17,13 @@ isoprof: process_isoprofile.ml
 alloc_free: alloc_free.ml
 	ocamlopt -o alloc_free str.cmxa alloc_free.ml
 
+# more flexible version of alloc_free
+bridge: bridge.ml
+	ocamlopt -o bridge str.cmxa bridge.ml
+
+install_bridge: bridge
+	cp -f bridge /usr/local/bin
+
 
 SYSLIBS = str.cma unix.cma 
 
