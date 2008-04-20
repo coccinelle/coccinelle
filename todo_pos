@@ -1,0 +1,25 @@
+Suppose we have a rule like:
+
+@protected depends on def0@
+expression x;
+identifier fld;
+position p;
+statement S;
+@@
+
+if (x != NULL) {
+<...
+x@p->fld
+...>
+} else S
+
+Some ifs will have field references in them and some will not.  Thus we
+will eg end up with some envs that have bindings for p and some that are
+empty.  Then in the next rule, that checks for p1 != p, we will first run
+with respect to an env that contains bindings for p (which are compatible
+with the empty env also) but then when we consider the empty env itself, we
+will not be motivated to include p, so we will end up with another
+unconstrained environment.  This is in general a problem when one env has
+fewer sucessful position bindings than another.  It seems we should take
+the union of the position bindings for a particular normal binding, and not
+just all the values for the position variables present in the current binding.
