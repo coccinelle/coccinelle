@@ -1,12 +1,10 @@
 Thanks to
  - Didier Le Botlan for the name of the tool: spatch.
- - A guy from Cornell for finding the term "semantic patch".
+ - A guy from Cornell for suggesting the term "semantic patch".
 
 Thanks to 
  - arty@users.sourceforge.net for pycaml
  - Richard Jones for his dumper module, 
- - Brian Hurt and Nicolas Cannasse for their dynArray module,
- - Troestler Christophe for his ANSITerminal module,
 
 Thanks of course also to Stallman, Linus, Leroy, Knuth and their
 acolytes for respectively Emacs, Linux, Ocaml, and (La)Tex.

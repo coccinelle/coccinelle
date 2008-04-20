@@ -299,13 +299,18 @@ and (pp_base_type_gen:
           +> List.iter pr_elem;
           
         in
-        (* TODO in fact for pointer, the qualifier is after the type *)
         let print_sto_qu_ty (sto, (qu, iiqu), iity) = 
           let all_ii = get_sto sto ++ iiqu ++ iity in
           let all_ii2 = all_ii +> List.sort Ast_c.compare_pos in
 
           if all_ii <> all_ii2 
-          then begin pr2 "STRANGEORDER"; all_ii2 +> List.iter pr_elem end
+          then begin 
+            (* TODO in fact for pointer, the qualifier is after the type 
+             * cf -test strangeorder
+             *)
+            pr2 "STRANGEORDER"; 
+            all_ii2 +> List.iter pr_elem 
+          end
           else all_ii2 +> List.iter pr_elem
         in
 

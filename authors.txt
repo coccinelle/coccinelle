@@ -1,0 +1,31 @@
+Here are the authors and maintainers of the different parts of coccinelle:
+
+* Julia Lawall <julia@diku.dk>
+
+- parsing_cocci/ (parsing cocci, isomorphism handling)
+- engine/ (ast_cocci to ctl, sgrep)
+- ctl/ (symbolic model checker)
+- popl/
+- tools/ 
+
+* Yoann Padioleau <padator@wanadoo.fr>
+
+- parsing_c/ (parsing c, unparsing c, type checking, control flow, C diff)
+- engine/ (pattern matching and transforming, unparsing, ctl integration)
+- cocci.ml
+- main.ml, testing.ml, globals/
+- extra/
+- commons/
+- emacs/
+- tools/ 
+- scripts/
+
+
+* Rene Rydhof Hansen <rrhansen@diku.dk>
+
+- Original version of the model checker in ctl/
+- emacs/cocci-ediff.el
+
+* Henrik stuart <henrik@hstuart.dk>
+
+- Python integration, coccilib/ pycaml/ pycocci.ml
