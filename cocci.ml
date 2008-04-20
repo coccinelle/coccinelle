@@ -1083,42 +1083,55 @@ and reassociate_positions free_vars envs =
        (function (non_pos,pos) ->
 	 (List.sort compare non_pos,List.sort compare pos))
        splitted_relevant in
+   let non_poss =
+     List.fold_left
+       (function non_pos ->
+	 function (np,_) ->
+	   if List.mem np non_pos then non_pos else np::non_pos)
+       [] splitted_relevant in
    let extended_relevant =
      (* extend the position variables with the values found at other identical
 	variable bindings *)
      List.map
-       (function (non_pos,pos) ->
+       (function non_pos ->
 	 let others =
 	   List.filter
 	     (function (other_non_pos,other_pos) ->
                (* do we want equal? or just somehow compatible? eg non_pos
 	       binds only E, but other_non_pos binds both E and E1 *)
-	       non_pos = other_non_pos && not (pos = other_pos))
+	       non_pos = other_non_pos)
 	     splitted_relevant in
-	 List.sort compare (non_pos @ (combine_pos pos others)))
-       splitted_relevant in
-   List.combine envs extended_relevant
+	 (non_pos,
+	  List.sort compare
+	    (non_pos @ (combine_pos (List.map (function (_,x) -> x) others)))))
+       non_poss in
+   List.combine envs
+     (List.map (function (non_pos,_) -> List.assoc non_pos extended_relevant)
+	splitted_relevant)
 
-and combine_pos poslist others =
+and combine_pos others =
+  let posvars =
+    List.fold_left
+      (function posvars ->
+	function (posvar,posval) ->
+	  if List.mem posvar posvars then posvars else posvar::posvars)
+      [] (List.concat others) in
   List.map
-    (function (posvar,posval) ->
-      match posval with
-	Ast_c.MetaPosValList l ->
-	  (posvar,
-	   Ast_c.MetaPosValList
-	     (List.sort compare
-		(List.fold_left
-		   (function positions ->
-		     function (_,other_list) ->
-		       try
-			 match List.assoc posvar other_list with
-			   Ast_c.MetaPosValList l1 ->
-			     Common.union_set l1 positions
-			 | _ -> failwith "bad value for a position variable"
-		       with Not_found -> positions)
-		   l others)))
-      |	_ -> failwith "bad value for a position variable")
-    poslist
+    (function posvar ->
+      (posvar,
+       Ast_c.MetaPosValList
+	 (List.sort compare
+	    (List.fold_left
+	       (function positions ->
+		 function other_list ->
+		   try
+		     match List.assoc posvar other_list with
+		       Ast_c.MetaPosValList l1 ->
+			 Common.union_set l1 positions
+		     | _ -> failwith "bad value for a position variable"
+		   with Not_found -> positions)
+	       [] others))))
+    posvars
 
 and bigloop a b = 
   Common.profile_code "bigloop" (fun () -> bigloop2 a b)
