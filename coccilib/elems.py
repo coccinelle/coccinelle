@@ -8,6 +8,7 @@ class ElemBase:
 	def __init__(self, loc):
 		self.location = loc
 
+
 class Expression(ElemBase):
 	def __init__(self, expr, loc):
 		ElemBase.__init__(self, loc)

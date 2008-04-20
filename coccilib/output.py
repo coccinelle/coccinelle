@@ -4,6 +4,7 @@ import coccilib.coccigui
 import coccilib.coccigui.coccigui
 from threading import Thread, Lock
 import time
+from copy import deepcopy
 
 class Output:
 	"""In order to implement an output class for use with Coccinelle,
@@ -22,8 +23,12 @@ class Output:
 		pass
 
 	def combine(self, meta_variable, locations):
-		meta_variable.location = locations[0]
-		return meta_variable
+		nmv = deepcopy(meta_variable)
+		nloc = [deepcopy(loc) for loc in locations]
+		nmv.location = nloc[0]
+		nmv.locations = nloc
+
+		return nmv
 
 	def finalise(self):
 		pass
