@@ -177,7 +177,7 @@ let get_fakeInfo_and_tokens celem toks =
         toks_in := after;
     | AbstractLineTok -> raise Impossible (* at this stage *) in
 
-  let pr_space _ = () in
+  let pr_space _ = () in (* use the spacing that is there already *)
 
   Pretty_print_c.pp_program_gen pr_elem pr_space celem;
 
