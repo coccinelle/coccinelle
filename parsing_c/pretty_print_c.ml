@@ -194,9 +194,10 @@ and pp_statement_gen pr_elem pr_space =
         pr_elem iifakend
           
     | Jump (Goto s), [i1;i2;i3]               -> 
-        pr_elem i1; pr_elem i2; pr_elem i3;
+        pr_elem i1; pr_space(); pr_elem i2; pr_elem i3;
     | Jump ((Continue|Break|Return)), [i1;i2] -> pr_elem i1; pr_elem i2;
-    | Jump (ReturnExpr e), [i1;i2] -> pr_elem i1; pp_expression e; pr_elem i2
+    | Jump (ReturnExpr e), [i1;i2] ->
+	pr_elem i1; pr_space(); pp_expression e; pr_elem i2
     | Jump (GotoComputed e), [i1;i2;i3] -> 
         pr_elem i1; pr_elem i2; pp_expression e; pr_elem i3
 

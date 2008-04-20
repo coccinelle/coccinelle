@@ -713,7 +713,7 @@ let pp_program2 xs outfile  =
           let toks = expand_mcode toks in
           (* assert Origin;ExpandedTok; + Cocci + C (was AbstractLineTok)
            * and no tag information, just NOTHING. *)
-
+	  
           (* phase2: can now start to filter and adjust *)
           let toks = adjust_indentation toks in
           let toks = remove_minus_and_between_and_expanded_and_fake toks in
@@ -725,7 +725,6 @@ let pp_program2 xs outfile  =
            * apply some SP. Not before cos julia may have generated
            * not parsable file. Need do unparsing_tricks call before being
            * ready to reparse. *)
-
           print_all_tokens2 pr toks;
 
       | PPviastr -> pr str
