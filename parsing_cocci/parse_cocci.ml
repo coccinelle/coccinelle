@@ -1295,8 +1295,15 @@ let parse file =
                 ro = rr && vo = mr in
               List.exists (test (r,m)) old_metas in
 
-	    List.iter (function x -> if not (exists_in old_metas x) then
-	      failwith "Script references unknown meta-variable") metavars;
+	    List.iter
+	      (function x ->
+		let meta2c (r,n) = Printf.sprintf "%s.%s" r n in
+		if not (exists_in old_metas x) then
+		  failwith
+		    (Printf.sprintf
+		       "Script references unknown meta-variable: %s"
+		       (meta2c(snd x))))
+	      metavars;
 
               (* script code *)
             let (more, tokens) = get_tokens [PC.TArobArob; PC.TArob] in
