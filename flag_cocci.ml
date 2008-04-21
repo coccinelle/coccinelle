@@ -36,6 +36,3 @@ let relax_include_path = ref false
 let timeout = ref (None : int option)
 
 let worth_trying_opt = ref true
-
-(*"Some" value is the path with respect to which the patch should be created*)
-let patch = ref (None : string option)

@@ -111,12 +111,14 @@ let patch_or_match = function
       (match !pm with
 	MATCH -> lexerr "- or + not allowed in the first column for a match" ""
       |	PATCH -> ()
-      |	UNKNOWN -> Flag.sgrep_mode2 := false; pm := PATCH)
+      |	UNKNOWN -> Flag.sgrep_mode2 := false; Flag.patch := None;
+	  pm := PATCH)
   | MATCH ->
       (match !pm with
 	PATCH -> lexerr "* not allowed in the first column for a patch" ""
       |	MATCH -> ()
-      |	UNKNOWN -> Flag.sgrep_mode2 := true; pm := MATCH)
+      |	UNKNOWN -> Flag.sgrep_mode2 := true; Flag.patch := None;
+	  pm := MATCH)
   | _ -> failwith "unexpected argument"
 
 (* ---------------------------------------------------------------------- *)

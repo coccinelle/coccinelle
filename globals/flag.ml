@@ -10,3 +10,5 @@ let use_glimpse = ref false
 
 let pyoutput = ref "coccilib.output.Console"
 
+(*"Some" value is the path with respect to which the patch should be created*)
+let patch = ref (None : string option)

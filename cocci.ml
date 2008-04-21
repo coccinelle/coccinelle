@@ -137,7 +137,7 @@ let show_or_not_diff2 cfile outfile show_only_minus =
 	  | Some n -> "diff -U "^n^" -p "^cfile^" "^outfile in
 	let xs =
 	  let res = Common.cmd_to_list line in
-	  match (!Flag_cocci.patch,res) with
+	  match (!Flag.patch,res) with
 	(* create something that looks like the output of patch *)
 	    (Some prefix,minus_file::plus_file::rest) ->
 	      let drop_prefix file =
