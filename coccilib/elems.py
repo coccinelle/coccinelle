@@ -1,8 +1,10 @@
 class Location:
-	def __init__(self, file, line, column):
+	def __init__(self, file, line, column, line_end, column_end):
 		self.file = file
 		self.line = line
 		self.column = column
+		self.line_end = line_end
+		self.column_end = column_end
 
 class ElemBase:
 	def __init__(self, loc):

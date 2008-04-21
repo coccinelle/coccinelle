@@ -177,7 +177,7 @@ let construct_variables mv e =
     let column = pystring_fromstring "0" in
     let file = pystring_fromstring "" in
     pycocci_instantiate_class "coccilib.elems.Location"
-      (pytuple3 (file, line, column))
+      (pytuple5 (file, line, column, line, column))
     (*obj*) in
 
   let instantiate_Expression(x, loc) =
@@ -204,11 +204,13 @@ let construct_variables mv e =
        let _ = build_variable py id_repr in
        ()
     | Some (_, Ast_c.MetaPosValList l) ->
-       let locs = List.map (function (fname,(line,col),min) ->
-		pycocci_instantiate_class "coccilib.elems.Location" (pytuple3
+       let locs = List.map (function (fname,(line,col),(line_end,col_end)) ->
+		pycocci_instantiate_class "coccilib.elems.Location" (pytuple5
 		(pystring_fromstring fname,
 		pystring_fromstring (Printf.sprintf "%d" line),
-		pystring_fromstring (Printf.sprintf "%d" col)))) l in
+		pystring_fromstring (Printf.sprintf "%d" col),
+		pystring_fromstring (Printf.sprintf "%d" line_end),
+		pystring_fromstring (Printf.sprintf "%d" col_end)))) l in
        let pylocs = pytuple_fromarray (Array.of_list locs) in
        let _ = build_variable py pylocs in
        ()
