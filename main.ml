@@ -585,10 +585,10 @@ let main () =
           if !cocci_file = ""
           then failwith "I need a cocci file,  use -sp_file <file>";
 
-	  if !dir && !Flag_cocci.patch = None
+	  if !dir && !Flag.patch = None
 	  then
 	    (match xs with
-	    | [] -> Flag_cocci.patch := Some x
+	    | [] -> Flag.patch := Some x
 	    | _ ->
 		pr2
 		  ("warning: patch output can only be created when only one\n"^
