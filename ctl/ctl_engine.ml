@@ -455,6 +455,47 @@ let conj_subst theta theta' =
 	with SUBST_MISMATCH -> None
 ;;
 
+(* theta' must be a subset of theta *)
+let conj_subst_none theta theta' =
+  match (theta,theta') with
+    | (_,[]) -> Some theta
+    | ([],_) -> None
+    | _ ->
+	let rec classify = function
+	    [] -> []
+	  | [x] -> [(dom_sub x,[x])]
+	  | x::xs ->
+	      (match classify xs with
+		((nm,y)::ys) as res ->
+		  if dom_sub x = nm
+		  then (nm,x::y)::ys
+		  else (dom_sub x,[x])::res
+	      |	_ -> failwith "not possible") in
+	let merge_all theta theta' =
+	  foldl
+	    (function rest ->
+	      function sub ->
+		foldl
+		  (function rest ->
+		    function sub' ->
+		      match (merge_sub sub sub') with
+			Some subs -> subs @ rest
+		      | _         -> raise SUBST_MISMATCH)
+		  rest theta')
+	    [] theta in
+	let rec loop = function
+	    (ctheta,[]) ->
+	      List.concat (List.map (function (_,ths) -> ths) ctheta)
+	  | ([],ctheta') -> raise SUBST_MISMATCH
+	  | ((x,ths)::xs,(y,ths')::ys) ->
+	      (match compare x y with
+		0 -> (merge_all ths ths') @ loop (xs,ys)
+	      |	-1 -> ths @ loop (xs,((y,ths')::ys))
+	      |	1 -> raise SUBST_MISMATCH
+	      |	_ -> failwith "not possible") in
+	try Some (clean_subst(loop (classify theta, classify theta')))
+	with SUBST_MISMATCH -> None
+;;
 
 let negate_sub sub =
   match sub with
@@ -545,6 +586,35 @@ let triples_conj trips trips' =
 		    if List.mem t rest then rest else t::rest
 		| _       -> rest)
 	      else rest)
+	  rest trips')
+    shared trips)
+;;
+
+(* ignore the state in the right argument.  always pretend it is the same as
+the left one *)
+(* env on right has to be a subset of env on left *)
+let triples_conj_none trips trips' =
+  Common.profile_code "triples_conj" (fun () -> 
+  let (trips,shared,trips') =
+    if false && !pTRIPLES_CONJ_OPT (* see comment above *)
+    then
+      let (shared,trips) =
+	List.partition (function t -> List.mem t trips') trips in
+      let trips' =
+	List.filter (function t -> not(List.mem t shared)) trips' in
+      (trips,shared,trips')
+    else (trips,[],trips') in
+  foldl (* returns a set - setify inlined *)
+    (function rest ->
+      function (s1,th1,wit1) ->
+	foldl
+	  (function rest ->
+	    function (s2,th2,wit2) ->
+	      match (conj_subst_none th1 th2) with
+		Some th ->
+		  let t = (s1,th,union_wit wit1 wit2) in
+		  if List.mem t rest then rest else t::rest
+	      | _       -> rest)
 	  rest trips')
     shared trips)
 ;;
@@ -1181,6 +1251,16 @@ let strict_triples_conj strict states trips trips' =
     triples_union res ors
   else res
 
+let strict_triples_conj_none strict states trips trips' =
+  let res = triples_conj_none trips trips' in
+  if !Flag_ctl.partial_match && strict = A.STRICT
+  then
+    let fail_left = filter_conj states trips trips' in
+    let fail_right = filter_conj states trips' trips in
+    let ors = triples_union fail_left fail_right in
+    triples_union res ors
+  else res
+
 let left_strict_triples_conj strict states trips trips' =
   let res = triples_conj trips trips' in
   if !Flag_ctl.partial_match && strict = A.STRICT
@@ -1496,6 +1576,39 @@ let rec satloop unchecked required required_states
 		| _ ->
 		    failwith
 		      "only one result allowed for the left arg of AndAny")))
+    | A.HackForStmt(dir,strict,phi1,phi2)     ->
+	(* phi2 can appear anywhere that is reachable *)
+	let pm = !Flag_ctl.partial_match in
+	(match (pm,loop unchecked required required_states phi1) with
+	  (false,[]) -> []
+	| (_,phi1res) ->
+	    let new_required = extend_required phi1res required in
+	    let new_required_states = get_required_states phi1res in
+	    let new_required_states =
+	      get_reachable dir m new_required_states in
+	    (match (pm,loop unchecked new_required new_required_states phi2)
+	    with
+	      (false,[]) -> phi1res
+	    | (_,phi2res) ->
+		    (* if there is more than one state, something about the
+		       environment has to ensure that the right triples of
+		       phi2 get associated with the triples of phi1.
+		       the asttoctl2 has to ensure that that is the case.
+		       these should thus be structural properties.
+		       env of phi2 has to be a proper subset of env of phi1
+		       to ensure all end up being consistent.  no new triples
+		       should be generated.  strict_triples_conj_none takes
+		       care of this.
+		    *)
+		    let s = mkstates states required_states in
+		    List.fold_left
+		      (function acc ->
+			function (st,th,_) as phi2_elem ->
+			  let inverse =
+			    triples_complement [st] [(st,th,[])] in
+			  strict_triples_conj_none strict s acc
+			    (phi2_elem::inverse))
+		      phi1res phi2res))
     | A.InnerAnd(phi) ->
 	inner_and(loop unchecked required required_states phi)
     | A.EX(dir,phi)      ->
@@ -1708,6 +1821,33 @@ let rec sat_verbose_loop unchecked required required_states annot maxlvl lvl
 		| _ ->
 		    failwith
 		      "only one result allowed for the left arg of AndAny")))
+    | A.HackForStmt(dir,strict,phi1,phi2)     ->
+	let pm = !Flag_ctl.partial_match in 
+	(match (pm,satv unchecked required required_states phi1 env) with
+	  (false,(child1,[])) ->
+	    Printf.printf "and\n"; flush stdout; anno [] [child1]
+	| (_,(child1,res1)) ->
+	    let new_required = extend_required res1 required in
+	    let new_required_states = get_required_states res1 in
+	    let new_required_states =
+	      get_reachable dir m new_required_states in
+	    (match (pm,satv unchecked new_required new_required_states phi2
+		env) with
+	      (false,(child2,[])) ->
+		Printf.printf "andany\n"; flush stdout;
+		anno res1 [child1;child2]
+	    | (_,(child2,res2)) ->
+		let res =
+		  let s = mkstates states required_states in
+		  List.fold_left
+		    (function acc ->
+		      function (st,th,_) as phi2_elem ->
+			let inverse =
+			  triples_complement [st] [(st,th,[])] in
+			strict_triples_conj_none strict s acc
+			  (phi2_elem::inverse))
+		    res1 res2 in
+		anno res [child1; child2]))
     | A.InnerAnd(phi1) ->
 	let (child1,res1) = satv unchecked required required_states phi1 env in
 	Printf.printf "uncheck\n"; flush stdout;
@@ -1888,6 +2028,7 @@ let simpleanno l phi res =
     | A.Exists(_,v,phi)    -> pp ("Exists " ^ (Dumper.dump(v)))
     | A.And(_,phi1,phi2)   -> pp "And"
     | A.AndAny(dir,_,phi1,phi2) -> pp "AndAny"
+    | A.HackForStmt(dir,_,phi1,phi2) -> pp "HackForStmt"
     | A.Or(phi1,phi2)      -> pp "Or"
     | A.SeqOr(phi1,phi2)   -> pp "SeqOr"
     | A.Implies(phi1,phi2) -> pp "Implies"

@@ -18,6 +18,8 @@ type ('pred,'mvar,'anno) generic_ctl =
       (('pred,'mvar,'anno) generic_ctl)
   | AndAny of direction * strict * (('pred,'mvar,'anno) generic_ctl) * 
       (('pred,'mvar,'anno) generic_ctl)
+  | HackForStmt of direction * strict * (('pred,'mvar,'anno) generic_ctl) * 
+      (('pred,'mvar,'anno) generic_ctl)
   | Or  of (('pred,'mvar,'anno) generic_ctl) * 
       (('pred,'mvar,'anno) generic_ctl)
   | Implies of (('pred,'mvar,'anno) generic_ctl) * 

@@ -9,6 +9,7 @@ open Ast_ctl
 
 let char_and  = "&"
 let char_and_any  = "&+"
+let char_hack  = "&h+"
 let char_or   = "v"
 let char_seqor   = "|"
 let char_not  = "!"
@@ -47,6 +48,8 @@ let rec (pp_ctl:
 	 pp ")";
      | AndAny(dir,s,phi1,phi2) ->
 	 pp_2args env (char_and_any^(pp_dirc dir)^(pp_sc s)) phi1 phi2; 
+     | HackForStmt(dir,s,phi1,phi2) ->
+	 pp_2args env (char_hack^(pp_dirc dir)^(pp_sc s)) phi1 phi2; 
      | And(s,phi1,phi2)      -> pp_2args env (char_and^(pp_sc s)) phi1 phi2; 
      | Or(phi1,phi2)         -> pp_2args env char_or phi1 phi2; 
      | SeqOr(phi1,phi2)      -> pp_2args env char_seqor phi1 phi2; 
