@@ -289,14 +289,20 @@ let rec propagate_types env =
     | Ast0.While(_,_,exp,_,_,_) | Ast0.Do(_,_,_,_,exp,_,_)
     | Ast0.For(_,_,_,_,Some exp,_,_,_,_,_) | Ast0.Switch(_,_,exp,_,_,_,_) ->
 	let _ = k s in
-	(match (Ast0.unwrap exp,Ast0.get_type exp) with
-	  (Ast0.Edots(_,_),_) -> ()
-	| (Ast0.NestExpr(_,_,_,_,_),_) -> ()
-	| (Ast0.MetaExpr(_,_,_,_,_),_) ->
+	let rec process_test exp =
+	  match (Ast0.unwrap exp,Ast0.get_type exp) with
+	    (Ast0.Edots(_,_),_) -> None
+	  | (Ast0.NestExpr(_,_,_,_,_),_) -> None
+	  | (Ast0.MetaExpr(_,_,_,_,_),_) ->
 	    (* if a type is known, it is specified in the decl *)
-	    ()
-	| (_,None) -> Ast0.set_type exp (Some (T.BaseType(T.IntType,None)))
-	| _ -> ());
+	      None
+	  | (Ast0.Paren(lp,exp,rp),None) -> process_test exp
+	  | (_,None) -> Some (T.BaseType(T.IntType,None))
+	  | _ -> None in
+	let new_expty = process_test exp in
+	(match new_expty with
+	  None -> () (* leave things as they are *)
+	| Some ty -> Ast0.set_type exp new_expty);
 	None
     |  _ -> k s
 
