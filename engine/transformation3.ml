@@ -182,6 +182,7 @@ module XTRANS = struct
           then ib (* safe *)
           else 
             begin
+	      Format.set_formatter_out_channel stderr;
               Common.pr2 "SP mcode ";
               Pretty_print_cocci.print_mcodekind oldmcode;
               Format.print_newline();
