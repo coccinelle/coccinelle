@@ -574,6 +574,7 @@ type toplevel_cocci_info_cocci_rule = {
    *)
   dropped_isos: string list;
   free_vars:  Ast_cocci.meta_name list;
+  negated_pos_vars:  Ast_cocci.meta_name list;
   used_after: Ast_cocci.meta_name list;
   positions: Ast_cocci.meta_name list;
 
@@ -613,15 +614,16 @@ let for_unparser xs =
   )
 
 (* --------------------------------------------------------------------- *)
-let prepare_cocci ctls free_var_lists
+let prepare_cocci ctls free_var_lists negated_pos_lists
     used_after_lists positions_list astcocci = 
 
   let gathered = Common.index_list_1
-      (zip (zip (zip (zip ctls astcocci) free_var_lists) used_after_lists)
-       positions_list)
+      (zip (zip (zip (zip (zip ctls astcocci) free_var_lists)
+		   negated_pos_lists) used_after_lists) positions_list)
   in
   gathered +> List.map 
-    (fun (((((ctl_toplevel_list,ast),free_var_list),used_after_list),
+    (fun ((((((ctl_toplevel_list,ast),free_var_list),negated_pos_list),
+	   used_after_list),
 	   positions_list),rulenb) -> 
       
       let is_script_rule r =
@@ -650,6 +652,7 @@ let prepare_cocci ctls free_var_lists
             dependencies = dependencies;
             dropped_isos = dropped_isos;
             free_vars = List.hd free_var_list;
+            negated_pos_vars = List.hd negated_pos_list;
             used_after = List.hd used_after_list;
             positions = List.hd positions_list;
             ruleid = rulenb;
@@ -884,7 +887,8 @@ and apply_cocci_rule r rules_that_have_ever_matched es ccs =
   Common.profile_code r.rulename (fun () -> 
     show_or_not_ctl_text r.ctl r.ast_rule r.ruleid;
 
-    let reorganized_env = reassociate_positions r.free_vars !es in
+    let reorganized_env =
+      reassociate_positions r.free_vars r.negated_pos_vars !es in
 
     (* looping over the environments *)
     let (_,newes (* envs for next round/rule *)) =
@@ -1050,7 +1054,7 @@ and bigloop2 rs ccs =
   end;
   !ccs (* return final C asts *)
 
-and reassociate_positions free_vars envs =
+and reassociate_positions free_vars negated_pos_vars envs =
   (* issues: isolate the bindings that are relevant to a given rule.
      separate out the position variables
      associate all of the position variables for a given set of relevant
@@ -1072,10 +1076,10 @@ and reassociate_positions free_vars envs =
        (function r ->
 	 List.fold_left
 	   (function (non_pos,pos) ->
-	     function (_,v) as x ->
-	       match v with
-		 Ast_c.MetaPosValList l -> (non_pos,x::pos)
-	       | _ -> (x::non_pos,pos))
+	     function (v,_) as x ->
+	       if List.mem v negated_pos_vars
+	       then (non_pos,x::pos)
+	       else (x::non_pos,pos))
 	   ([],[]) r)
        relevant in
    let splitted_relevant =
@@ -1209,7 +1213,8 @@ let full_engine2 (coccifile, isofile) cfiles =
   in
 
   (* useful opti when use -dir *)
-  let (astcocci,free_var_lists,used_after_lists,positions_lists,toks,_) = 
+  let (astcocci,free_var_lists,negated_pos_lists,used_after_lists,
+       positions_lists,toks,_) = 
       sp_of_file coccifile isofile
   in
   let ctls = 
@@ -1236,7 +1241,7 @@ let full_engine2 (coccifile, isofile) cfiles =
     check_macro_in_sp_and_adjust toks;
 
     let cocci_infos =
-      prepare_cocci ctls free_var_lists
+      prepare_cocci ctls free_var_lists negated_pos_lists
 	used_after_lists positions_lists astcocci in
     let c_infos  = prepare_c cfiles in
 

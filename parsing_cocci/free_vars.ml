@@ -613,6 +613,42 @@ let collect_astfvs rules =
   loop [] rules
 
 (* ---------------------------------------------------------------- *)
+(* position variables that appear as a constraint on another position variable.
+a position variable also cannot appear both positively and negatively in a
+single rule. *)
+
+let get_neg_pos_list (_,rule) =
+  let donothing r k e = k e in
+  let bind (p1,np1) (p2,np2) =
+    (Common.union_set p1 p2, Common.union_set np1 np2) in
+  let option_default = ([],[]) in
+  let metaid (x,_,_,_) = x in
+  let mcode r mc =
+    match Ast.get_pos_var mc with
+      Ast.MetaPos(name,constraints,_,_) ->
+	([metaid name],constraints)
+    | _ -> option_default in
+  let v =
+    V.combiner bind option_default
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode
+    donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing in
+  match rule with
+    Ast.CocciRule(_,_,minirules) ->
+      List.map
+	(function toplevel ->
+	  let (positions,neg_positions) = v.V.combiner_top_level toplevel in
+	  (if List.exists (function p -> List.mem p neg_positions) positions
+	  then
+	    failwith
+	      "a variable cannot be used both as a position and a constraint");
+	  neg_positions)
+	minirules
+  | Ast.ScriptRule _ -> [] (*no negated positions*)
+
+(* ---------------------------------------------------------------- *)
 
 (* collect used after lists, per minirule *)
 
@@ -689,15 +725,13 @@ let collect_used_after metavar_rule_list =
     )
     metavar_rule_list used_after_lists
 
-
-
 (* ---------------------------------------------------------------- *)
-
 (* entry point *)
 
 let free_vars rules =
   let metavars = List.map (function (mv,rule) -> mv) rules in
   let (fvs_lists,used_after_lists) = List.split (collect_used_after rules) in
+  let neg_pos_lists = List.map get_neg_pos_list rules in
   let positions_list = (* for all rules, assume all positions are used after *)
     List.map
       (function (mv, r) ->
@@ -721,4 +755,4 @@ let free_vars rules =
               (nm, rule_info, classify_variables mv r (List.concat ua)))
       rules used_after_lists in
   let new_rules = collect_astfvs (List.combine metavars new_rules) in
-  (new_rules,fvs_lists,used_after_lists,positions_list)
+  (new_rules,fvs_lists,neg_pos_lists,used_after_lists,positions_list)

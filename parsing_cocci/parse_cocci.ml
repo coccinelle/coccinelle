@@ -1437,7 +1437,7 @@ let process file isofile verbose =
   let parsed = List.concat parsed in
   let disjd = Disjdistr.disj parsed in
   
-  let (code,fvs,ua,pos) = Free_vars.free_vars disjd in
+  let (code,fvs,neg_pos,ua,pos) = Free_vars.free_vars disjd in
   if !Flag_parsing_cocci.show_SP
   then List.iter Pretty_print_cocci.unparse code;
   
@@ -1447,4 +1447,4 @@ let process file isofile verbose =
   let glimpse_tokens2 =
     Common.profile_code "get_glimpse_constants"
       (fun () -> Get_constants2.get_constants code) in (* for glimpse *)
-  (code,fvs,ua,pos,grep_tokens,glimpse_tokens2)
+  (code,fvs,neg_pos,ua,pos,grep_tokens,glimpse_tokens2)

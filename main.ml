@@ -481,7 +481,7 @@ let adjust_stdin cfile k =
     Common.redirect_stdin_opt newin k
 
 let glimpse_filter (coccifile, isofile) dir = 
-  let (astcocci,_free_var_lists,
+  let (astcocci,_free_var_lists,_negated_positions,
        _used_after_lists,_positions_lists,_,query) =
     Cocci.sp_of_file coccifile (Some isofile) in
   match query with
