@@ -182,12 +182,12 @@ module XTRANS = struct
           then ib (* safe *)
           else 
             begin
-              Format.printf "SP mcode ";
+              Common.pr2 "SP mcode ";
               Pretty_print_cocci.print_mcodekind oldmcode;
-              Format.force_newline();
-              Format.printf "C code mcode ";
+              Format.print_newline();
+              Common.pr2 "C code mcode ";
               Pretty_print_cocci.print_mcodekind mck;
-              Format.force_newline();
+              Format.print_newline();
               Format.print_flush();
               failwith
 	        (Common.sprintf "%s: already tagged token:\n%s"
