@@ -1553,6 +1553,8 @@ and statement stmt after quantified minus_quantified
 	Common.union_set mb1fvs (Common.union_set mb2fvs minus_quantified) in
       let new_mquantified3 = Common.union_set mb3fvs new_mquantified2 in
       let pattern_as_given =
+	let new_quantified2 = Common.union_set [pv] new_quantified2 in
+	let new_quantified3 = Common.union_set [pv] new_quantified3 in
 	quantify true [pv;lv]
 	  (quantify guard b1fvs
 	     (make_seq
