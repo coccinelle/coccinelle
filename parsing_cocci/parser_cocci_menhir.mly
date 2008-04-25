@@ -19,7 +19,7 @@ module P = Parse_aux
 %token TIdExpression
 %token Tlist TFresh TConstant TError TWords TWhy0 TPlus0 TBang0
 %token TPure TContext
-%token TTypedef TDeclarer TIterator TPosition
+%token TTypedef TDeclarer TIterator TPosition TPosAny
 %token TUsing TDisable TExtends TDepends TOn TEver TNever TExists TForall
 %token TNothing
 %token<string> TRuleName
@@ -243,11 +243,12 @@ metadec:
   kindfn=metakind_atomic_expe
   ids=comma_list(pure_ident_or_meta_ident_with_not_eq(not_ceq)) TMPtVirg
     { P.create_metadec_ne ar ispure kindfn ids }
-| ar=arity TPosition
+| ar=arity TPosition a=option(TPosAny)
     ids=comma_list(pure_ident_or_meta_ident_with_not_eq(not_pos)) TMPtVirg
     { let kindfn arity name pure check_meta constraints =
       let tok = check_meta(Ast.MetaPosDecl(arity,name)) in
-      !Data.add_pos_meta name constraints; tok in
+      let any = match a with None -> Ast.PER | Some _ -> Ast.ALL in
+      !Data.add_pos_meta name constraints any; tok in
     P.create_metadec_ne ar false kindfn ids }
 | ar=arity ispure=pure
     TParameter Tlist TOCro id=pure_ident_or_meta_ident TCCro
@@ -826,7 +827,7 @@ rule_elem_statement:
 | TReturn TPtVirg { P.ret $1 $2 }
 | TBreak TPtVirg { P.break $1 $2 }
 | TContinue TPtVirg { P.cont $1 $2 }
-| TOPar0 midzero_list(rule_elem_statement) TCPar0
+| TOPar0 midzero_list(rule_elem_statement,rule_elem_statement) TCPar0
     { let (mids,code) = $2 in
     Ast0.wrap
       (Ast0.Disj(P.clt2mcode "(" $1,
@@ -843,7 +844,7 @@ statement_dots(dotter):
 /* a statement on its own */
 single_statement:
     statement                         { $1 }
-  | TOPar0 midzero_list(statement) TCPar0
+  | TOPar0 midzero_list(statement,statement) TCPar0
       /* degenerate case, elements are single statements and thus don't
 	contain dots */
       { let (mids,code) = $2 in
@@ -1262,7 +1263,7 @@ primary_expr(recurser,primary_extra):
  | TOPar eexpr TCPar
      { Ast0.wrap(Ast0.Paren(P.clt2mcode "(" $1,$2,
 			    P.clt2mcode ")" $3)) }
- | TOPar0 midzero_list(recurser) TCPar0
+ | TOPar0 midzero_list(recurser,eexpr) TCPar0
      { let (mids,code) = $2 in
        Ast0.wrap(Ast0.DisjExpr(P.clt2mcode "(" $1,
 			       code, mids,
@@ -1443,7 +1444,7 @@ fun_exp_decl_statement_list:
          it to be in a... sequence.  But it is not clear whether that makes
          sense, so for now it is here. */
       { [Ast0.wrap(Ast0.OTHER(Ast0.wrap(Ast0.Ty(t))))] }
-  | lp=TOPar0 t=midzero_list(ctype) rp=TCPar0
+  | lp=TOPar0 t=midzero_list(ctype,ctype) rp=TCPar0
       /* more hacks */
     { let (mids,code) = t in
     let s =
@@ -1622,8 +1623,8 @@ eexpr_list_option: eexpr_list { $1 }
 comma_list(elem):
   separated_nonempty_list(TComma,elem) { $1 }
 
-midzero_list(elem):
-  a=elem b=list(mzl(elem))
+midzero_list(elem,aft):
+  a=elem b=list(mzl(aft))
      { let (mids,code) = List.split b in (mids,(a::code)) }
 
 mzl(elem):

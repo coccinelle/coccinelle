@@ -329,7 +329,7 @@ and case_line = base_case_line wrap
 (* Positions *)
 
 and meta_pos =
-    MetaPos of Ast.meta_name mcode * Ast.meta_name list
+    MetaPos of Ast.meta_name mcode * Ast.meta_name list * Ast.meta_collect
   | NoMetaPos
 
 (* --------------------------------------------------------------------- *)

@@ -35,6 +35,7 @@ let token2c (tok,_) =
   | PC.TIdExpression -> "idexpression"
   | PC.TStatement -> "statement"
   | PC.TPosition -> "position"
+  | PC.TPosAny -> "any"
   | PC.TFunction -> "function"
   | PC.TLocal -> "local"
   | PC.Tlist -> "list"
@@ -161,7 +162,7 @@ let token2c (tok,_) =
   | PC.TMetaStmList(_,_,clt)   -> "stmlistmeta"^(line_type2c clt)
   | PC.TMetaFunc(_,_,_,clt)  -> "funcmeta"^(line_type2c clt)
   | PC.TMetaLocalFunc(_,_,_,clt) -> "funcmeta"^(line_type2c clt)
-  | PC.TMetaPos(_,_,clt)   -> "posmeta"
+  | PC.TMetaPos(_,_,_,clt)   -> "posmeta"
   | PC.TMPtVirg -> ";"
   | PC.TArobArob -> "@@"
   | PC.TArob -> "@"
@@ -291,7 +292,7 @@ let plus_attachable (tok,_) =
   | PC.TOEllipsis(clt) | PC.TCEllipsis(clt) 
   | PC.TPOEllipsis(clt) | PC.TPCEllipsis(clt) (* | PC.TOCircles(clt)
   | PC.TCCircles(clt) | PC.TOStars(clt) | PC.TCStars(clt) *) -> NOTPLUS
-  | PC.TMetaPos(nm,_,_) -> NOTPLUS
+  | PC.TMetaPos(nm,_,_,_) -> NOTPLUS
 
   | _ -> SKIP
 
@@ -329,7 +330,7 @@ let get_clt (tok,_) =
   | PC.TMetaId(_,_,_,clt)
   | PC.TMetaType(_,_,clt) | PC.TMetaStm(_,_,clt)  
   | PC.TMetaStmList(_,_,clt)  | PC.TMetaFunc(_,_,_,clt) 
-  | PC.TMetaLocalFunc(_,_,_,clt) | PC.TMetaPos(_,_,clt)
+  | PC.TMetaLocalFunc(_,_,_,clt) | PC.TMetaPos(_,_,_,clt)
 
   | PC.TWhen(clt) | PC.TAny(clt) | PC.TStrict(clt) | PC.TEllipsis(clt)
   (* | PC.TCircles(clt) | PC.TStars(clt) *)
@@ -538,7 +539,7 @@ let split t clt =
 let split_token ((tok,_) as t) =
   match tok with
     PC.TIdentifier | PC.TConstant | PC.TExpression | PC.TIdExpression
-  | PC.TStatement | PC.TPosition
+  | PC.TStatement | PC.TPosition | PC.TPosAny
   | PC.TFunction | PC.TTypedef | PC.TDeclarer | PC.TIterator
   | PC.TType | PC.TParameter | PC.TLocal | PC.Tlist | PC.TFresh | PC.TPure
   | PC.TContext | PC.TRuleName(_) | PC.TUsing | PC.TDisable | PC.TExtends
@@ -572,7 +573,7 @@ let split_token ((tok,_) as t) =
   | PC.TMetaStm(_,_,clt) | PC.TMetaStmList(_,_,clt) | PC.TMetaErr(_,_,_,clt)
   | PC.TMetaFunc(_,_,_,clt) | PC.TMetaLocalFunc(_,_,_,clt) -> split t clt
   | PC.TMPtVirg | PC.TArob | PC.TArobArob -> ([t],[t])
-  | PC.TPArob | PC.TMetaPos(_,_,_) -> ([t],[])
+  | PC.TPArob | PC.TMetaPos(_,_,_,_) -> ([t],[])
 
   | PC.TFunDecl(clt)
   | PC.TWhen(clt) | PC.TAny(clt) | PC.TStrict(clt) | PC.TLineEnd(clt)
@@ -716,7 +717,7 @@ let detect_types in_meta_decls l =
     | (PC.TMetaType(_,_,_),_)
     | (PC.TMetaStm(_,_,_),_)
     | (PC.TMetaStmList(_,_,_),_)
-    | (PC.TMetaPos(_,_,_),_) -> in_meta_decls 
+    | (PC.TMetaPos(_,_,_,_),_) -> in_meta_decls 
     | _ -> false in
   let redo_id ident clt v =
     !Data.add_type_name ident;
@@ -801,7 +802,7 @@ let token2line (tok,_) =
   | PC.TMetaIdExp(_,_,_,_,clt) | PC.TMetaExpList(_,_,_,clt) 
   | PC.TMetaId(_,_,_,clt) | PC.TMetaType(_,_,clt)
   | PC.TMetaStm(_,_,clt) | PC.TMetaStmList(_,_,clt) | PC.TMetaFunc(_,_,_,clt)
-  | PC.TMetaLocalFunc(_,_,_,clt) | PC.TMetaPos(_,_,clt)
+  | PC.TMetaLocalFunc(_,_,_,clt) | PC.TMetaPos(_,_,_,clt)
 
   | PC.TFunDecl(clt)
   | PC.TWhen(clt) | PC.TAny(clt) | PC.TStrict(clt) | PC.TEllipsis(clt)
@@ -1030,13 +1031,13 @@ let prepare_tokens tokens =
 
 let rec consume_minus_positions = function
     [] -> []
-  | x::(PC.TPArob,_)::(PC.TMetaPos(name,constraints,clt),_)::xs ->
+  | x::(PC.TPArob,_)::(PC.TMetaPos(name,constraints,per,clt),_)::xs ->
       let (arity,ln,lln,offset,col,strbef,straft,_) = get_clt x in
       let name = Parse_aux.clt2mcode name clt in
       let x =
 	update_clt x
 	  (arity,ln,lln,offset,col,strbef,straft,
-	   Ast0.MetaPos(name,constraints)) in
+	   Ast0.MetaPos(name,constraints,per)) in
       x::(consume_minus_positions xs)
   | x::xs -> x::consume_minus_positions xs
 

@@ -334,7 +334,7 @@ module XMATCH = struct
     | Some binding ->
 	let new_tin = {extra = tin.extra; binding = binding} in
 	(match Ast_cocci.get_pos_var k with
-	  Ast_cocci.MetaPos(name,constraints,keep,inherited) ->
+	  Ast_cocci.MetaPos(name,constraints,per,keep,inherited) ->
 	    let pvalu =
 	      let (file,min,max) = get_max_min() in
 	      Ast_c.MetaPosValList[(file,min,max)] in
@@ -393,7 +393,7 @@ module XMATCH = struct
     let posmck = Ast_cocci.FixPos (pos, pos) in
     let finish tin = tag_mck_pos_mcode ia posmck ib tin in
     match Ast_cocci.get_pos_var ia with
-      Ast_cocci.MetaPos(name,constraints,keep,inherited) ->
+      Ast_cocci.MetaPos(name,constraints,per,keep,inherited) ->
 	let mpos = Lib_parsing_c.lin_col_by_pos [ib] in
 	let pvalu = Ast_c.MetaPosValList [mpos] in
 	check_pos_constraints constraints pvalu

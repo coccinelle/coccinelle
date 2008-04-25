@@ -180,6 +180,7 @@ let id_tokens lexbuf =
   | "declarer" when in_meta ->   check_arity_context_linetype s; TDeclarer
   | "iterator" when in_meta ->   check_arity_context_linetype s; TIterator
   | "position" when in_meta ->   check_arity_context_linetype s; TPosition
+  | "any" when in_meta ->        check_arity_context_linetype s; TPosAny
   | "pure" when in_meta && in_iso ->
       check_arity_context_linetype s; TPure
   | "context" when in_meta && in_iso ->
@@ -318,13 +319,13 @@ let init _ =
       let fn clt = TMetaLocalFunc(name,constraints,pure,clt) in
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_pos_meta :=
-    (fun name constraints ->
+    (fun name constraints any ->
       let fn ((d,ln,_,_,_,_,_,_) as clt) =
 	(if d = Data.PLUS
 	then
 	  failwith
 	    (Printf.sprintf "%d: positions only allowed in minus code" ln));
-	TMetaPos(name,constraints,clt) in
+	TMetaPos(name,constraints,any,clt) in
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_type_name :=
     (function name ->

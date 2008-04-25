@@ -372,7 +372,7 @@ let rule old_metas table minus rules =
 let positions table rules =
   let mcode x =
     match Ast0.get_pos x with
-      Ast0.MetaPos(name,constraints) ->
+      Ast0.MetaPos(name,constraints,_) ->
 	let pos = Ast0.unwrap_mcode name in
 	(find_loop table pos) := true
     | _ -> () in
@@ -392,7 +392,7 @@ let positions table rules =
 let dup_positions rules =
   let mcode x =
     match Ast0.get_pos x with
-      Ast0.MetaPos(name,constraints) ->
+      Ast0.MetaPos(name,constraints,_) ->
 	let pos = Ast0.unwrap_mcode name in [pos]
     | _ -> [] in
   let option_default = [] in

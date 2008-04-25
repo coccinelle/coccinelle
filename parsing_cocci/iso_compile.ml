@@ -1,5 +1,6 @@
 module V0 = Visitor_ast0
 module Ast0 = Ast0_cocci
+module Ast = Ast_cocci
 
 (* Detects where position variables can be present in the match of an
 isomorpshims.  This is allowed if all elements of an isomorphism have only
@@ -40,7 +41,7 @@ let get_p _ =
   let c = !pctr in
   pctr := c + 1;
   let name = ("",Printf.sprintf "p%d" c) in
-  Ast0.MetaPos(Ast0.make_mcode name,[])
+  Ast0.MetaPos(Ast0.make_mcode name,[],Ast.PER)
 
 let process_info l =
    let rec loop = function

@@ -280,9 +280,9 @@ let match_maker checks_needed context_required whencode_allowed =
     if checks_needed
     then
       match Ast0.get_pos cmc with
-	(Ast0.MetaPos (name,_)) as x ->
+	(Ast0.MetaPos (name,_,_)) as x ->
 	  (match Ast0.get_pos pmc with
-	    Ast0.MetaPos (name1,_) ->
+	    Ast0.MetaPos (name1,_,_) ->
 	      add_binding name1 (Ast0.MetaPosTag x) binding
 	  | Ast0.NoMetaPos ->
 	      let (rule,name) = Ast0.unwrap_mcode name in
@@ -1386,7 +1386,7 @@ isomorphism *)
 let instantiate bindings mv_bindings =
   let mcode x =
     match Ast0.get_pos x with
-      Ast0.MetaPos(name,_) ->
+      Ast0.MetaPos(name,_,_) ->
 	(try
 	  match lookup name bindings mv_bindings with
 	    Common.Left(Ast0.MetaPosTag(id)) -> Ast0.set_pos id x
@@ -1537,7 +1537,10 @@ let instantiate bindings mv_bindings =
 	    then
 	      let rec negate e (*for rewrapping*) res (*code to process*) =
 		match Ast0.unwrap res with
-		  Ast0.Binary(e1,op,e2) ->
+		  Ast0.Unary(e1,op) when Ast0.unwrap_mcode op = Ast.Not ->
+		    Ast0.rewrap e (Ast0.unwrap e1)
+		| Ast0.Edots(_,_) -> Ast0.rewrap e (Ast0.unwrap res)
+		| Ast0.Binary(e1,op,e2) ->
 		    let reb nop = Ast0.rewrap_mcode op (Ast.Logical(nop)) in
 		    let invop =
 		      match Ast0.unwrap_mcode op with

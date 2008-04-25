@@ -69,7 +69,8 @@ val add_func_meta:
 val add_local_func_meta:
     (Ast_cocci.meta_name -> iconstraints -> Ast0_cocci.pure -> unit) ref
 
-val add_pos_meta: (Ast_cocci.meta_name -> pconstraints -> unit) ref
+val add_pos_meta:
+    (Ast_cocci.meta_name -> pconstraints -> Ast_cocci.meta_collect -> unit) ref
 
 val add_type_name: (string -> unit) ref
 

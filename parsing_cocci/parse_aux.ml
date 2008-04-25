@@ -11,7 +11,7 @@ type list_info = Ast.meta_name * Ast.meta_name option * Ast0.pure * Data.clt
 type typed_info =
     Ast.meta_name * Data.econstraints * Ast0.pure *
       Type_cocci.typeC list option * Data.clt
-type pos_info = Ast.meta_name * Data.pconstraints * Data.clt
+type pos_info = Ast.meta_name * Data.pconstraints * Ast.meta_collect * Data.clt
 
 
 let get_option fn = function

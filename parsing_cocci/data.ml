@@ -91,7 +91,8 @@ let add_local_func_meta:
     (Ast.meta_name -> iconstraints -> Ast0.pure -> unit) ref = 
   ref (fun _ -> failwith "uninitialized add_meta") 
 
-let add_pos_meta: (Ast.meta_name -> pconstraints -> unit) ref = 
+let add_pos_meta:
+    (Ast.meta_name -> pconstraints -> Ast.meta_collect -> unit) ref = 
   ref (fun _ -> failwith "uninitialized add_meta") 
 
 let add_type_name: (string -> unit) ref = 

@@ -315,8 +315,12 @@ and define_parameters = base_define_parameters wrap
 (* --------------------------------------------------------------------- *)
 (* positions *)
 
+(* PER = keep bindings separate, ALL = collect them *)
+and meta_collect = PER | ALL
+
 and meta_pos =
-    MetaPos of meta_name mcode * meta_name list * keep_binding * inherited
+    MetaPos of meta_name mcode * meta_name list *
+	meta_collect * keep_binding * inherited
   | NoMetaPos
 
 (* --------------------------------------------------------------------- *)

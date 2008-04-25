@@ -67,7 +67,7 @@ let print_string_befaft fn x info =
 let print_meta (r,x) = print_string r; print_string ":"; print_string x
 
 let print_pos = function
-    Ast.MetaPos(name,_,_,_) ->
+    Ast.MetaPos(name,_,_,_,_) ->
       let name = Ast.unwrap_mcode name in
       print_string "@"; print_meta name
   | _ -> ()

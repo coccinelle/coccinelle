@@ -164,7 +164,7 @@ let check_inherited nm =
   let minherited mc = inherited (Ast.unwrap_mcode mc) in
   let mcode _ x =
     match Ast.get_pos_var x with
-      Ast.MetaPos(name,constraints,keep,inh) -> minherited name
+      Ast.MetaPos(name,constraints,_,keep,inh) -> minherited name
     | _ -> option_default in
 
   (* a case for everything for there is a metavariable, also disjunctions

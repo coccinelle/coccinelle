@@ -226,8 +226,8 @@ let pos_mcode(term,_,info,mcodekind,pos) =
 let mcode(term,_,info,mcodekind,pos) =
   let pos =
     match !pos with
-      Ast0.MetaPos(pos,constraints) ->
-	Ast.MetaPos(pos_mcode pos,constraints,unitary,false)
+      Ast0.MetaPos(pos,constraints,per) ->
+	Ast.MetaPos(pos_mcode pos,constraints,per,unitary,false)
     | _ -> Ast.NoMetaPos in
   (term,convert_info info,convert_mcodekind mcodekind,pos)
 

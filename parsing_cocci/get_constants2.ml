@@ -105,7 +105,7 @@ let do_get_constants constants keywords env =
   let minherited name = inherited (Ast.unwrap_mcode name) in
   let mcode _ x =
     match Ast.get_pos_var x with
-      Ast.MetaPos(name,constraints,keep,inh) -> minherited name
+      Ast.MetaPos(name,constraints,_,keep,inh) -> minherited name
     | _ -> option_default in
 
   (* if one branch gives no information, then we have to take anything *)

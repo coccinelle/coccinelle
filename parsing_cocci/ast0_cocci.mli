@@ -324,7 +324,8 @@ and case_line = base_case_line wrap
 (* Positions *)
 
 and meta_pos =
-    MetaPos of Ast_cocci.meta_name mcode * Ast_cocci.meta_name list
+    MetaPos of Ast_cocci.meta_name mcode * Ast_cocci.meta_name list *
+	Ast_cocci.meta_collect
   | NoMetaPos
 
 (* --------------------------------------------------------------------- *)

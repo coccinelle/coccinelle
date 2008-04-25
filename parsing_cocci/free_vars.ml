@@ -131,7 +131,7 @@ let collect_refs include_constraints =
     if include_constraints
     then
       match Ast.get_pos_var mc with
-	Ast.MetaPos(name,constraints,_,_) -> (metaid name)::constraints
+	Ast.MetaPos(name,constraints,_,_,_) -> (metaid name)::constraints
       | _ -> option_default
     else option_default in
 
@@ -225,7 +225,7 @@ let collect_saved =
 
   let mcode r e =
     match Ast.get_pos_var e with
-      Ast.MetaPos(name,_,TC.Saved,_) -> [metaid name]
+      Ast.MetaPos(name,_,_,TC.Saved,_) -> [metaid name]
     | _ -> option_default in
 
   V.combiner bind option_default
@@ -354,9 +354,10 @@ let classify_variables metavars minirules used_after =
 
   let mcode mc =
     match Ast.get_pos_var mc with
-      Ast.MetaPos(name,constraints,unitary,inherited) ->
+      Ast.MetaPos(name,constraints,per,unitary,inherited) ->
 	let (unitary,inherited) = classify name in
-	Ast.set_pos_var (Ast.MetaPos(name,constraints,unitary,inherited)) mc
+	Ast.set_pos_var (Ast.MetaPos(name,constraints,per,unitary,inherited))
+	  mc
     | _ -> mc in
 
   let ident r k e =
@@ -617,7 +618,7 @@ let collect_astfvs rules =
 a position variable also cannot appear both positively and negatively in a
 single rule. *)
 
-let get_neg_pos_list (_,rule) =
+let get_neg_pos_list (_,rule) used_after_list =
   let donothing r k e = k e in
   let bind (p1,np1) (p2,np2) =
     (Common.union_set p1 p2, Common.union_set np1 np2) in
@@ -625,8 +626,10 @@ let get_neg_pos_list (_,rule) =
   let metaid (x,_,_,_) = x in
   let mcode r mc =
     match Ast.get_pos_var mc with
-      Ast.MetaPos(name,constraints,_,_) ->
+      Ast.MetaPos(name,constraints,Ast.PER,_,_) ->
 	([metaid name],constraints)
+    | Ast.MetaPos(name,constraints,Ast.ALL,_,_) ->
+	([],(metaid name)::constraints)
     | _ -> option_default in
   let v =
     V.combiner bind option_default
@@ -731,7 +734,7 @@ let collect_used_after metavar_rule_list =
 let free_vars rules =
   let metavars = List.map (function (mv,rule) -> mv) rules in
   let (fvs_lists,used_after_lists) = List.split (collect_used_after rules) in
-  let neg_pos_lists = List.map get_neg_pos_list rules in
+  let neg_pos_lists = List.map2 get_neg_pos_list rules used_after_lists in
   let positions_list = (* for all rules, assume all positions are used after *)
     List.map
       (function (mv, r) ->

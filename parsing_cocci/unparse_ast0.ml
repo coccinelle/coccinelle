@@ -17,7 +17,7 @@ let print_between = Common.print_between
 (* Positions *)
 
 let meta_pos = function
-    Ast0.MetaPos(name,_) ->
+    Ast0.MetaPos(name,_,_) ->
       print_string "@";
       let (_,name) = Ast0.unwrap_mcode name in
       print_string name
