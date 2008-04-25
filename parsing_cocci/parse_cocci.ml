@@ -1193,7 +1193,7 @@ let parse_iso_files existing_isos iso_files extra_path =
 	  (current::prev,new_names @ names))
       ([],old_names) iso_files in
   Data.in_iso := false;
-  (List.concat (List.rev res))@existing_isos
+  existing_isos@(List.concat (List.rev res))
 
 let parse file =
   let table = Common.full_charpos_to_pos file in
