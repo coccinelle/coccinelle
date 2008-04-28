@@ -503,6 +503,13 @@ let main () =
     let args = ref [] in
 
     arg_parse2 (Arg.align all_options) (fun x -> args := x::!args) usage_msg;
+    (if !dir && List.length !args > 1
+    then
+      begin
+	let chosen = List.hd !args in
+	pr2 ("ignoring all but the last specified directory: "^chosen);
+	args := [chosen]
+      end);
     args := List.rev !args;
 
     (if !Flag_cocci.all_includes && !Flag_cocci.no_includes

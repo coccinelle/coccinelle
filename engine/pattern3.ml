@@ -263,6 +263,7 @@ module XMATCH = struct
 	    then success else failure
 	| None ->
 	    (* if the variable is not there, it puts no constraints *)
+	    (* not sure this is still useful *)
 	    failure))
       constraints pvalu f tin
 

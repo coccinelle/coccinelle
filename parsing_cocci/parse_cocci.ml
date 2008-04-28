@@ -1447,5 +1447,5 @@ let process file isofile verbose =
       (fun () -> Get_constants.get_constants code) in (* for grep *)
   let glimpse_tokens2 =
     Common.profile_code "get_glimpse_constants"
-      (fun () -> Get_constants2.get_constants code) in (* for glimpse *)
+      (fun () -> Get_constants2.get_constants code neg_pos) in(* for glimpse *)
   (code,fvs,neg_pos,ua,pos,grep_tokens,glimpse_tokens2)

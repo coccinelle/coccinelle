@@ -29,6 +29,13 @@ and constantrep c = match c with
 | Ast_c.Int s -> s 
 | Ast_c.Float (s,t) -> s
 
+let call_pretty f a =
+  let str = ref ([] : string list) in
+  let pr_elem info = str := (Ast_c.str_of_info info) :: !str in
+  let pr_sp _ = () in
+  f pr_elem pr_sp a;
+  String.concat " " (List.rev !str)
+
 let stringrep mvb = match mvb with
   Ast_c.MetaIdVal        s -> s
 | Ast_c.MetaFuncVal      s -> s
@@ -36,7 +43,7 @@ let stringrep mvb = match mvb with
 | Ast_c.MetaExprVal      ((expr,_),[il]) -> (exprrep expr)
 | Ast_c.MetaExprVal	 e -> "TODO: <<MetaExprVal>>"
 | Ast_c.MetaExprListVal  expr_list -> "TODO: <<exprlist>>"
-| Ast_c.MetaTypeVal      typ -> "TODO: type"
+| Ast_c.MetaTypeVal      typ -> call_pretty Pretty_print_c.pp_type_gen typ
 | Ast_c.MetaStmtVal      statement -> "TODO: stmt"
 | Ast_c.MetaParamVal     params -> "TODO: <<param>>"
 | Ast_c.MetaParamListVal params -> "TODO: <<paramlist>>"

@@ -97,11 +97,14 @@ let build_or x y =
 let keep x = Elem x
 let drop x = True
 
-let do_get_constants constants keywords env =
+let do_get_constants constants keywords env neg_pos =
   let donothing r k e = k e in
   let option_default = True in
   let bind = build_and in
-  let inherited (nm1,_) = try List.assoc nm1 env with Not_found -> False in
+  let inherited ((nm1,_) as x) =
+    (* perhaps inherited, but value not required *)
+    if List.mem x neg_pos then False
+    else try List.assoc nm1 env with Not_found -> False in
   let minherited name = inherited (Ast.unwrap_mcode name) in
   let mcode _ x =
     match Ast.get_pos_var x with
@@ -368,12 +371,12 @@ let all_context =
 
 (* ------------------------------------------------------------------------ *)
 
-let rule_fn tls in_plus env =
+let rule_fn tls in_plus env neg_pos =
   List.fold_left
     (function (rest_info,in_plus) ->
-      function cur ->
+      function (cur,neg_pos) ->
 	let minuses =
-	  (do_get_constants keep drop env).V.combiner_top_level cur in
+	  (do_get_constants keep drop env neg_pos).V.combiner_top_level cur in
 	let all_minuses =
 	  if !Flag.sgrep_mode2
 	  then [] (* nothing removed for sgrep *)
@@ -394,14 +397,15 @@ let rule_fn tls in_plus env =
 	match new_minuses with
 	  True ->
 	    let retry =
-	      (do_get_constants drop keep env).V.combiner_top_level cur in
+	      (do_get_constants drop keep env neg_pos).V.combiner_top_level
+		cur in
 	    (match retry with
 	      True when not was_bot -> (rest_info, new_plusses)
 	    | x -> (build_or x rest_info, new_plusses))
 	| x -> (build_or x rest_info, new_plusses))
-    (False,in_plus) tls
+    (False,in_plus) (List.combine tls neg_pos)
 
-let get_constants rules =
+let get_constants rules neg_pos_vars =
   if not !Flag.use_glimpse
   then None
   else
@@ -409,7 +413,7 @@ let get_constants rules =
       List.fold_left
 	(function (rest_info,in_plus,env,locals(*dom of env*)) ->
           function
-              Ast.ScriptRule (_,deps,mv,_) ->
+              (Ast.ScriptRule (_,deps,mv,_),_) ->
 		let extra_deps =
 		  List.fold_left
 		    (function prev ->
@@ -419,9 +423,9 @@ let get_constants rules =
 		  False -> (rest_info, in_plus, env, locals)
 		| dependencies ->
 		    (build_or dependencies rest_info, in_plus, env, locals))
-            | Ast.CocciRule (nm,(dep,_,_),cur) ->
+            | (Ast.CocciRule (nm,(dep,_,_),cur),neg_pos_vars) ->
 		let (cur_info,cur_plus) =
-		  rule_fn cur in_plus ((nm,True)::env) in
+		  rule_fn cur in_plus ((nm,True)::env) neg_pos_vars in
 		if List.for_all all_context.V.combiner_top_level cur
 		then (rest_info,cur_plus,(nm,cur_info)::env,nm::locals)
 		else
@@ -432,5 +436,5 @@ let get_constants rules =
 		  | dependencies ->
 		      (build_or (build_and dependencies cur_info) rest_info,
 		       cur_plus,env,locals))
-	(False,[],[],[]) (rules : Ast.rule list) in
+	(False,[],[],[]) (List.combine (rules : Ast.rule list) neg_pos_vars) in
     interpret true info

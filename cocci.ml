@@ -16,6 +16,10 @@ module TAC = Type_annoter_c
  *)
 (*****************************************************************************)
 
+let rec nub = function
+    [] -> []
+  | x::xs -> if List.mem x xs then nub xs else x::(nub xs)
+
 (* --------------------------------------------------------------------- *)
 (* C related *)
 (* --------------------------------------------------------------------- *)
@@ -150,22 +154,32 @@ let show_or_not_diff2 cfile outfile show_only_minus =
 	      let diff_line =
 		match List.rev(Str.split (Str.regexp " ") line) with
 		  new_file::old_file::cmdrev ->
-		    let old_base_file = drop_prefix old_file in
-		    String.concat " "
-		      (List.rev
-			 (("b"^old_base_file)::("a"^old_base_file)::cmdrev))
+		    if !Flag.sgrep_mode2
+		    then
+		      String.concat " "
+			(List.rev ("/tmp/nothing" :: old_file :: cmdrev))
+		    else
+		      let old_base_file = drop_prefix old_file in
+		      String.concat " "
+			(List.rev
+			   (("b"^old_base_file)::("a"^old_base_file)::cmdrev))
 		| _ -> failwith "bad command" in
 	      let (minus_line,plus_line) =
-		match (Str.split (Str.regexp "[ \t]") minus_file,
-		       Str.split (Str.regexp "[ \t]") plus_file) with
-		  ("---"::old_file::old_rest,"+++"::new_file::new_rest) ->
-		    let old_base_file = drop_prefix old_file in
-		    (String.concat " " ("---"::("a"^old_base_file)::old_rest),
-		     String.concat " " ("+++"::("b"^old_base_file)::new_rest))
-		| (l1,l2) ->
-		    failwith
-		      (Printf.sprintf "bad diff header lines: %s %s"
-			 (String.concat ":" l1) (String.concat ":" l2)) in
+		if !Flag.sgrep_mode2
+		then (minus_file,plus_file)
+		else
+		  match (Str.split (Str.regexp "[ \t]") minus_file,
+			 Str.split (Str.regexp "[ \t]") plus_file) with
+		    ("---"::old_file::old_rest,"+++"::new_file::new_rest) ->
+		      let old_base_file = drop_prefix old_file in
+		      (String.concat " "
+			 ("---"::("a"^old_base_file)::old_rest),
+		       String.concat " "
+			 ("+++"::("b"^old_base_file)::new_rest))
+		  | (l1,l2) ->
+		      failwith
+			(Printf.sprintf "bad diff header lines: %s %s"
+			   (String.concat ":" l1) (String.concat ":" l2)) in
 	      diff_line::minus_line::plus_line::rest
 	  |	_ -> res in
 	xs +> List.iter (fun s -> 
@@ -871,15 +885,30 @@ let rec apply_python_rule r cache newes e rules_that_have_matched
       let (_, mv, _) = r.scr_ast_rule in
       show_or_not_binding "in" e;
       if List.for_all (Pycocci.contains_binding e) mv
-      then (
-	Pycocci.build_classes (List.map (function (x,y) -> x) e);
-	Pycocci.construct_variables mv e;
-	let _ = pyrun_simplestring
-	    ("import coccinelle\nfrom coccinelle import *\ncocci = Cocci()\n" ^
-	     r.script_code) in
-	if !Pycocci.inc_match
-	then (cache, (e, rules_that_have_matched)::newes)
-	else (cache, newes))
+      then
+	begin
+	  let relevant_bindings =
+	    List.filter
+	      (function ((re,rm),_) ->
+		List.exists (function (_,(r,m)) -> r = re && m = rm) mv)
+	      e in
+	  let new_cache =
+	    if List.mem relevant_bindings cache
+	    then cache
+	    else
+	      begin
+		Pycocci.build_classes (List.map (function (x,y) -> x) e);
+		Pycocci.construct_variables mv e;
+		pyrun_simplestring
+		  ("import coccinelle\nfrom coccinelle "^
+		   "import *\ncocci = Cocci()\n" ^
+		   r.script_code);
+		relevant_bindings :: cache
+	      end in
+	  if !Pycocci.inc_match
+	  then (new_cache, (e, rules_that_have_matched)::newes)
+	  else (new_cache, newes)
+	end
       else (cache, (e, rules_that_have_matched)::newes)
     end
 
@@ -944,7 +973,8 @@ and apply_cocci_rule r rules_that_have_ever_matched es ccs =
 		      !children_e
 		    end in
 	      let old_bindings_to_keep =
-		e +> List.filter (fun (s,v) -> List.mem s r.used_after) in
+		nub
+		  (e +> List.filter (fun (s,v) -> List.mem s r.used_after)) in
 	      let new_e =
 		if null new_bindings
 		then
@@ -966,12 +996,13 @@ and apply_cocci_rule r rules_that_have_ever_matched es ccs =
 		     reassociate_positions. want to reassociate freshly
 		     according to the free variables of each rule. *)
 		  let new_bindings_to_add =
-		    new_bindings +>
-		    List.map
-		      (List.filter
-			 (fun (s,v) ->
-			   List.mem s r.used_after &&
-			   not (List.mem s old_variables))) in
+		    nub
+		      (new_bindings +>
+		       List.map
+			 (List.filter
+			    (fun (s,v) ->
+			      List.mem s r.used_after &&
+			      not (List.mem s old_variables)))) in
 		  List.map
 		    (function new_binding_to_add ->
 		      (Common.union_set
@@ -1107,19 +1138,15 @@ and reassociate_positions free_vars negated_pos_vars envs =
 	     splitted_relevant in
 	 (non_pos,
 	  List.sort compare
-	    (non_pos @ (combine_pos (List.map (function (_,x) -> x) others)))))
+	    (non_pos @
+	     (combine_pos negated_pos_vars
+		(List.map (function (_,x) -> x) others)))))
        non_poss in
    List.combine envs
      (List.map (function (non_pos,_) -> List.assoc non_pos extended_relevant)
 	splitted_relevant)
 
-and combine_pos others =
-  let posvars =
-    List.fold_left
-      (function posvars ->
-	function (posvar,posval) ->
-	  if List.mem posvar posvars then posvars else posvar::posvars)
-      [] (List.concat others) in
+and combine_pos negated_pos_vars others =
   List.map
     (function posvar ->
       (posvar,
@@ -1135,7 +1162,7 @@ and combine_pos others =
 		     | _ -> failwith "bad value for a position variable"
 		   with Not_found -> positions)
 	       [] others))))
-    posvars
+    negated_pos_vars
 
 and bigloop a b = 
   Common.profile_code "bigloop" (fun () -> bigloop2 a b)
