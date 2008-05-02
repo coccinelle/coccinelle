@@ -47,7 +47,9 @@ let process_fp fl =
   let i = open_in fl in
   let lines = ref ([] : string list) in
   let rec loop _ =
-    lines := (input_line i) :: !lines;
+    let l = input_line i in
+    (if not(Str.string_match (Str.regexp "#") l 0)
+    then lines := l :: !lines);
     loop() in
   (try loop() with End_of_file -> ());
   close_in i;
@@ -78,6 +80,57 @@ let discard_ambiguous lines =
 	      ((cocci,tags)::same);
 	    loop others in
   loop lines
+
+(* --------------------------------------------------------------------- *)
+(* only actually collects the rightmost element into ors *)
+
+let split_or (cocci,line) =
+  let rev = List.rev line in
+  (cocci,List.rev(List.tl rev), List.hd rev)
+
+let collect_ors fp lines =
+  let rec loop = function
+      [] -> failwith "no lines"
+    | [line] ->
+	let (c,k,v) = split_or line in
+	((c,k,[v]),[])
+    | line::xs ->
+	let (c,k,v) = split_or line in
+	let ((c1,k1,v1),rest) = loop xs in
+	if c = c1 && k = k1
+	then
+	  if List.mem v v1
+	  then ((c1,k1,v1),rest)
+	  else ((c1,k1,v::v1),rest)
+	else ((c,k,[v]),((c1,k1,v1)::rest)) in
+  let ((c,k,v),rest) = loop lines in
+  let res = (c,k,v)::rest in
+  List.fold_left
+    (function prev ->
+      function (c,k,v) ->
+	match v with
+	  [] -> failwith "not possible"
+	| [x] -> (c,k@v) :: prev
+	| (tag,_)::_ ->
+	    let vs =
+	      Printf.sprintf "%s:(%s)" tag
+		(String.concat "|"
+		   (List.sort compare
+		      (List.map (function (_,vl) -> vl) v))) in
+	    let attempt =
+	      Printf.sprintf "%s: %s %s" c
+		(String.concat " " (List.map (function (k,v) -> k^":"^v) k))
+		vs in
+	    if List.mem attempt fp
+	    then
+	      let vs =
+		Printf.sprintf "\\\\\\\\\\(%s\\\\\\\\\\)"
+		  (String.concat "\\\\\\\\\\|"
+		     (List.sort compare
+			(List.map (function (_,vl) -> vl) v))) in
+	      (c,k@[(tag,vs)]) :: prev
+	    else (List.map (function vi -> (c,k@[vi])) v) @ prev)
+    [] res
 
 (* --------------------------------------------------------------------- *)
 
@@ -180,6 +233,7 @@ let _ =
   let fp = List.fold_left (@) [] (List.map process_fp fp) in
   let i = open_in file in
   let lines = collect_lines fp i in
+  let lines = collect_ors fp lines in
   close_in i;
   let lines = discard_ambiguous lines in
   List.iter (process_line env) lines;
