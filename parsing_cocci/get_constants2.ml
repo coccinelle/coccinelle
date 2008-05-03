@@ -102,8 +102,8 @@ let do_get_constants constants keywords env neg_pos =
   let option_default = True in
   let bind = build_and in
   let inherited ((nm1,_) as x) =
-    (* perhaps inherited, but value not required *)
-    if List.mem x neg_pos then False
+    (* perhaps inherited, but value not required, so no constraints *)
+    if List.mem x neg_pos then option_default
     else try List.assoc nm1 env with Not_found -> False in
   let minherited name = inherited (Ast.unwrap_mcode name) in
   let mcode _ x =
