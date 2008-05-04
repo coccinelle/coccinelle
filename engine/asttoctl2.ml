@@ -1588,6 +1588,7 @@ and statement stmt after quantified minus_quantified
 	      Ast.SeqEnd((data,info,_,pos)) ->
 		Ast.rewrap rbrace(Ast.SeqEnd(Ast.make_mcode data))
 	    | _ -> failwith "unexpected close brace" in
+	  let body = preprocess_dots body in (* redo, to drop braces *)
 	  make_seq
 	    [gotopred label;
 	      ctl_au
@@ -1598,7 +1599,9 @@ and statement stmt after quantified minus_quantified
 			 new_quantified3 new_mquantified3 None llabel slabel
 			 true guard)))] in
 	let pattern3 =
-	  quantify true [lv]
+	  let new_quantified2 = Common.union_set [pv] new_quantified2 in
+	  let new_quantified3 = Common.union_set [pv] new_quantified3 in
+	  quantify true [pv;lv]
 	    (quantify guard b1fvs
 	       (make_seq
 		  [start_brace;
