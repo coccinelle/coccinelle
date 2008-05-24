@@ -8,7 +8,7 @@ type nodei = int
  * 
  * How ? matrix ? but no growing array :(
  * 
- * When need index ? Must have an index when can't just use nodevalue
+ * When need index ? Must have an index when can't just use the nodevalue
  * as a key, cos sometimes may have 2 times the same key, but it must
  * be 2 different nodes. For instance in a C program 'f(); f();' we want 2
  * nodes, one per 'f();' hence the index. If each node is different, then
@@ -60,10 +60,14 @@ val dfs_iter_with_path :
 
 
 val print_ograph_extended : 
-  ('node * string, 'edge) ograph_extended -> filename (* output file *) -> 
-  bool (* launch gv ? *) -> unit
+  ('node * string, 'edge) ograph_extended -> 
+  filename (* output file *) -> 
+  bool (* launch gv ? *) -> 
+  unit
 
 val print_ograph_mutable : 
-  ('node * string, 'edge) ograph_mutable -> filename (* output file *) -> 
-  bool (* launch gv ? *) -> unit
+  ('node * string, 'edge) ograph_mutable -> 
+  filename (* output file *) -> 
+  bool (* launch gv ? *) -> 
+  unit
 

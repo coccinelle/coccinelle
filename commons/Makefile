@@ -3,17 +3,18 @@
 ##############################################################################
 TARGET=commons
 
-#note: if you add a file (a .mli or .ml), dont forget to redo a 'make depend'
+# note: if you add a file (a .mli or .ml), dont forget to redo a 'make depend'
 MYSRC=commonop.ml common.ml \
       seti.ml \
       objet.ml ocollection.ml \
       oset.ml oassoc.ml osequence.ml ograph.ml \
       oseti.ml oseth.ml osetb.ml osetpt.ml \
-      oassocb.ml oassoch.ml oassoc_buffer.ml oassocid.ml oassocdbm.ml \
+      oassocb.ml oassoch.ml oassoc_buffer.ml oassocid.ml \
       oarray.ml \
       ograph2way.ml ograph_extended.ml \
       fullcommon.ml 
 
+# src from other authors, got from the web or caml hump
 SRC=dumper.ml 
 SRC+=ANSITerminal.ml 
 SRC+=setb.ml mapb.ml # defunctorized version of standard set/map
@@ -22,7 +23,19 @@ SRC+=$(MYSRC)
 SRC+=enum.ml dynArray.ml
 SRC+=suffix_tree.ml suffix_tree_ext.ml 
 
-SYSLIBS=str.cma unix.cma   dbm.cma
+SYSLIBS=str.cma unix.cma   
+
+
+# other common libraries
+
+#gdbm
+MYGDBMSRC=oassocdbm.ml
+GDBMSYSLIBS=dbm.cma
+
+#berkeley db
+BDBINCLUDES=-I ../ocamlbdb
+MYBDBSRC=oassocbdb.ml
+BDBSYSLIBS=bdb.cma
 
 ##############################################################################
 # Generic variables
@@ -65,16 +78,40 @@ opt: all.opt
 top: $(TARGET).top
 
 $(LIB): $(OBJS)
-	$(OCAMLC) -a -o $(LIB) $(OBJS)
+	$(OCAMLC) -a -o $@ $^
 
 $(OPTLIB): $(OPTOBJS)
-	$(OCAMLOPT) -a -o $(OPTLIB) $(OPTOBJS)
+	$(OCAMLOPT) -a -o $@ $^
 
 $(TARGET).top: $(OBJS)
-	$(OCAMLMKTOP) -o $(TARGET).top $(SYSLIBS) $(OBJS)
+	$(OCAMLMKTOP) -o $@ $(SYSLIBS) $^
 
 clean::
-	rm -f $(LIB) $(OPTLIB) $(LIB:.cma=.a) $(TARGET).top
+	rm -f $(TARGET).top
+
+##############################################################################
+# Other commons libs target
+##############################################################################
+
+gdbm: commons_gdbm.cma
+gdbm.opt: commons_gdbm.cmxa
+
+bdb: 
+	$(MAKE) INCLUDES="$(BDBINCLUDES)" commons_bdb.cma
+bdb.opt: 
+	$(MAKE) INCLUDES="$(BDBINCLUDES)" commons_bdb.cmxa
+
+commons_gdbm.cma: $(MYGDBMSRC:.ml=.cmo)
+	$(OCAMLC) -a -o $@ $^
+
+commons_gdbm.cmxa: $(MYGDBMSRC:.ml=.cmx)
+	$(OCAMLOPT) -a -o $@ $^
+
+commons_bdb.cma: $(MYBDBSRC:.ml=.cmo)
+	$(OCAMLC) -a -o $@ $^
+
+commons_bdb.cmxa: $(MYBDBSRC:.ml=.cmx)
+	$(OCAMLOPT) -a -o $@ $^
 
 
 ##############################################################################
@@ -115,7 +152,7 @@ dependencygraph2:
 	$(OCAMLOPT) $(INCLUDES) -c $<
 
 clean::
-	rm -f *.cm[iox] *.o *.annot
+	rm -f *.cm[iox] *.o *.a *.cma *.cmxa *.annot
 	rm -f *~ .*~ #*# 
 
 depend: 

@@ -7,6 +7,7 @@ Here are the authors and maintainers of the different parts of coccinelle:
 - ctl/ (symbolic model checker)
 - popl/
 - tools/ 
+- standard.iso
 
 * Yoann Padioleau <padator@wanadoo.fr>
 
@@ -16,16 +17,22 @@ Here are the authors and maintainers of the different parts of coccinelle:
 - main.ml, testing.ml, globals/
 - extra/
 - commons/
-- emacs/
+- emacs/cocci.el
 - tools/ 
 - scripts/
+- standard.h
 
 
 * Rene Rydhof Hansen <rrhansen@diku.dk>
 
 - Original version of the model checker in ctl/
 - emacs/cocci-ediff.el
+- scripts/extractor.awk
 
 * Henrik stuart <henrik@hstuart.dk>
 
 - Python integration, coccilib/ pycaml/ pycocci.ml
+
+* All
+
+- tests/ demos/

@@ -4,7 +4,7 @@ open Commonop
 (* We use *)
 (*****************************************************************************)
 (* functions: 
- *   - =, <=, max min, ... 
+ *   - =, <=, max min, abs, ... 
  *   - List.rev, List.mem, List.partition,
  *   - List.fold*, List.concat, ... 
  *   - Str.global_replace
@@ -14,11 +14,20 @@ open Commonop
  *   - Arg
  *   - Format 
  *   - Buffer
+ *   - Str
  * 
  * The Format library allows to hide passing an indent_level variable.
  * You use as usual the print_string function except that there is
  * this automatic indent_level variable handled for you (and maybe
  * more services). src: julia in coccinelle unparse_cocci.
+ * 
+ * Extra packages 
+ *  - ocamlbdb
+ *  - ocamlgtk
+ *  - ocamlcalendar
+ *  - ocamlmpi
+ *  - ocamlagrep
+ *  - ocamlfuse
 *)
 
 (*****************************************************************************)
@@ -210,6 +219,11 @@ let redirect_stdin_opt optfile f =
 
 include Printf
 
+(* ex of printf: 
+ printf "%02d" i
+ for padding
+*)
+
 let spf = sprintf
 
 let _chan = ref stderr
@@ -383,6 +397,19 @@ let report_if_take_time timethreshold s f =
   then pr2 (sprintf "NOTE: this code takes more than: %ds %s" timethreshold s);
   res
 
+let profile_code2 category f = 
+  profile_code category (fun () -> 
+    if !profile = PALL
+    then pr2 ("starting: " ^ category);
+    let t = Unix.gettimeofday () in
+    let res = f () in
+    let t' = Unix.gettimeofday () in
+    if !profile = PALL
+    then pr2 (spf "ending: %s, %fs" category (t' -. t));
+    res
+  )
+    
+
 (*****************************************************************************)
 (* Test *)
 (*****************************************************************************)
@@ -436,6 +463,42 @@ let _ = example3 "++" ([1;2]++[3;4;5] = [1;2;3;4;5])
 
 
 
+(* from julien signoles in calendar-2.0.2/tests *)
+(*
+
+(* Generic functions used in the tests. *)
+
+val reset : unit -> unit
+val nb_ok : unit -> int
+val nb_bug : unit -> int
+val test : bool -> string -> unit
+val test_exn : 'a Lazy.t -> string -> unit
+
+
+let ok_ref = ref 0
+let ok () = incr ok_ref
+let nb_ok () = !ok_ref
+
+let bug_ref = ref 0
+let bug () = incr bug_ref
+let nb_bug () = !bug_ref
+
+let reset () =
+  ok_ref := 0;
+  bug_ref := 0
+
+let test x s = 
+  if x then ok () else begin Printf.printf "%s\n" s; bug () end;;
+
+let test_exn x s =
+  try
+    ignore (Lazy.force x);
+    Printf.printf "%s\n" s;
+    bug ()
+  with _ ->
+    ok ();;
+*)
+
 
 (*****************************************************************************)
 (* Quickcheck like (sfl) *)
@@ -460,6 +523,9 @@ let _ = example3 "++" ([1;2]++[3;4;5] = [1;2;3;4;5])
  * listg take as a param a type generator. Morover I have not the pb of
  * monad. I can do random independently, so my code is more simple 
  * I think than the haskell code of quickcheck.
+ * 
+ * update: apparently Jane Street have copied some of my code for their
+ * Ounit_util.ml and quichcheck.ml in their Core library :)
  *)
 
 (*---------------------------------------------------------------------------*)
@@ -762,7 +828,7 @@ let t = macro_expand "type 'a bintree = Leaf of 'a | Branch of ('a bintree * 'a 
 (*****************************************************************************)
 
 (* I like the obj.func object notation. In OCaml cant use '.' so I use +>
- * update: it seems that F# agrees with me, but they use |>
+ * update: it seems that F# agrees with me :) but they use |>
  *)
 
 let (+>) o f = f o
@@ -876,7 +942,66 @@ let once f =
 
 (* cache_file, cf below *)
 
-    
+let before_leaving f x = 
+  f x;
+  x
+
+(* finalize, cf prelude *)
+
+(*****************************************************************************)
+(* Concurrency *)
+(*****************************************************************************)
+
+(* from http://en.wikipedia.org/wiki/File_locking
+ * 
+ * "When using file locks, care must be taken to ensure that operations
+ * are atomic. When creating the lock, the process must verify that it
+ * does not exist and then create it, but without allowing another
+ * process the opportunity to create it in the meantime. Various
+ * schemes are used to implement this, such as taking advantage of
+ * system calls designed for this purpose (but such system calls are
+ * not usually available to shell scripts) or by creating the lock file
+ * under a temporary name and then attempting to move it into place."
+ * 
+ * => can't use 'if(not (file_exist xxx)) then create_file xxx' because
+ * file_exist/create_file are not in atomic section (classic problem).
+ * 
+ * from man open:
+ * 
+ * "O_EXCL When used with O_CREAT, if the file already exists it
+ * is an error and the open() will fail. In this context, a
+ * symbolic link exists, regardless of where it points to.
+ * O_EXCL is broken on NFS file systems; programs which
+ * rely on it for performing locking tasks will contain a
+ * race condition. The solution for performing atomic file
+ * locking using a lockfile is to create a unique file on
+ * the same file system (e.g., incorporating host- name and
+ * pid), use link(2) to make a link to the lockfile. If
+ * link(2) returns 0, the lock is successful. Otherwise,
+ * use stat(2) on the unique file to check if its link
+ * count has increased to 2, in which case the lock is also
+ * successful."
+
+ *)
+
+exception FileAlreadyLocked 
+
+(* Racy if lock file on NFS!!! But still racy with recent Linux ? *)
+let acquire_file_lock filename = 
+  pr2 ("Locking file: " ^ filename);
+  try 
+    let _fd = Unix.openfile filename [Unix.O_CREAT;Unix.O_EXCL] 0o777 in
+    ()
+  with Unix.Unix_error (e, fm, argm) -> 
+    pr2 (spf "exn Unix_error: %s %s %s\n" (Unix.error_message e) fm argm);
+    raise FileAlreadyLocked
+
+
+let release_file_lock filename =
+  pr2 ("Releasing file: " ^ filename);
+  Unix.unlink filename;
+  ()
+
 (*****************************************************************************)
 (* Error managment *)
 (*****************************************************************************)
@@ -1094,6 +1219,14 @@ let int_of_all s =
 let (+=) ref v = ref := !ref + v
 let (-=) ref v = ref := !ref - v
 
+let pourcent x total = 
+  (x * 100) / total
+let pourcent_float x total = 
+  ((float_of_int x) *. 100.0) /. (float_of_int total)
+
+let pourcent_float_of_floats x total = 
+  (x *. 100.0) /. total
+
 (*****************************************************************************)
 (* Numeric/overloading *)
 (*****************************************************************************)
@@ -1132,6 +1265,8 @@ type 'a triple = 'a * 'a * 'a
 let fst3 (x,_,_) = x
 let snd3 (_,y,_) = y
 let thd3 (_,_,z) = z
+
+let sndthd (a,b,c) = (b,c)
 
 let map_fst f (x, y) = f x, y
 let map_snd f (x, y) = x, f y
@@ -1270,6 +1405,19 @@ let lowercase = String.lowercase
 
 let quote s = "\"" ^ s ^ "\""  
 
+(* easier to have this to be passed as hof, because ocaml dont have
+ * haskell "section" operators
+ *)
+let null_string s = 
+  s = "" 
+
+let is_blank_string s = 
+  s =~ "^\\([ \t]\\)*$"
+
+(* src: lablgtk2/examples/entrycompletion.ml *)
+let is_string_prefix s1 s2 =
+  (String.length s1 <= String.length s2) && (String.sub s2 0 (String.length s1) = s1)
+
 (*****************************************************************************)
 (* Regexp *)
 (*****************************************************************************)
@@ -1306,7 +1454,7 @@ let string_match_substring re s =
   with Not_found -> false
 
 let (regexp_match: string -> string -> string) = fun s re -> 
-  let _ = assert(s =~ re) in
+  assert(s =~ re);
   Str.matched_group 1 s
 
 (* beurk, side effect code, but hey, it is convenient *)
@@ -1354,6 +1502,22 @@ let (split_list_regexp: string -> string list -> (string * string list) list) =
 let regexp_alpha =  Str.regexp
   "^[a-zA-Z_][A-Za-z_0-9]*$"
 
+
+let all_match re s = 
+  let regexp = Str.regexp re in
+  let res = ref [] in
+  let _ = Str.global_substitute regexp (fun _s -> 
+    let substr = Str.matched_string s in
+    assert(substr ==~ regexp); (* @Effect: also use it's side effect *)
+    let paren_matched = matched1 substr in
+    push2 paren_matched res;
+    "" (* @Dummy *)
+  ) s in
+  List.rev !res
+
+let _ = example (all_match "\\(@[A-Za-z]+\\)" "ca va @Et toi @Comment" 
+                  = ["@Et";"@Comment"])
+  
 (*****************************************************************************)
 (* Filenames *)
 (*****************************************************************************)
@@ -1387,6 +1551,16 @@ let adjust_ext_if_needed filename ext =
   then filename ^ ext
   else filename
 
+
+
+let db_of_filename file = 
+  dirname file, basename file
+
+let filename_of_db (basedir, file) = 
+  Filename.concat basedir file
+
+
+
 let dbe_of_filename file = 
   (* raise Invalid_argument if no ext, so safe to use later the unsafe
    * fileprefix and filesuffix functions.
@@ -1399,10 +1573,21 @@ let dbe_of_filename file =
 let filename_of_dbe (dir, base, ext) = 
   Filename.concat dir (base ^ "." ^ ext)
 
+
 let dbe_of_filename_safe file = 
   try Left (dbe_of_filename file)
   with Invalid_argument _ -> 
     Right (Filename.dirname file, Filename.basename file)
+
+
+let dbe_of_filename_nodot file = 
+  let (d,b,e) = dbe_of_filename file in
+  let d = if d = "." then "" else d in
+  d,b,e
+
+
+
+
 
 let replace_ext file oldext newext = 
   let (d,b,e) = dbe_of_filename file in
@@ -1447,10 +1632,140 @@ let relative_to_absolute s =
   else s
 
 
+
+(* @Pre: prj_path must not contain regexp symbol *)
+let filename_without_leading_path prj_path s = 
+  let prj_path = chop_dirsymbol prj_path in
+  if s =~ ("^" ^ prj_path ^ "/\\(.*\\)$")
+  then matched1 s
+  else 
+    failwith 
+      (spf "cant find filename_without_project_path: %s  %s" prj_path s)
+
+
 (*****************************************************************************)
 (* Dates *)
 (*****************************************************************************)
 
+type month = 
+  | Jan  | Feb  | Mar  | Apr  | May  | Jun
+  | Jul  | Aug  | Sep  | Oct  | Nov  | Dec
+type year = Year of int
+type day = Day of int
+
+type date_dmy = DMY of day * month * year
+
+(* intervalle *)
+type days = Days of int
+
+type time_dmy = TimeDMY of day * month * year
+
+
+
+
+let check_date_dmy (DMY (day, month, year)) = 
+  raise Todo
+
+let check_time_dmy (TimeDMY (day, month, year)) = 
+  raise Todo
+
+
+let month_info = [
+  1  , Jan, "Jan", "January", 31;
+  2  , Feb, "Feb", "February", 28;
+  3  , Mar, "Mar", "March", 31;
+  4  , Apr, "Apr", "April", 30;
+  5  , May, "May", "May", 31;
+  6  , Jun, "Jun", "June", 30;
+  7  , Jul, "Jul", "July", 31;
+  8  , Aug, "Aug", "August", 31;
+  9  , Sep, "Sep", "September", 30;
+  10 , Oct, "Oct", "October", 31;
+  11 , Nov, "Nov", "November", 30;
+  12 , Dec, "Dec", "December", 31;
+]
+let i_to_month_h = 
+  month_info +> List.map (fun (i,month,monthstr,mlong,days) -> i, month)
+let s_to_month_h = 
+  month_info +> List.map (fun (i,month,monthstr,mlong,days) -> monthstr, month)
+let slong_to_month_h = 
+  month_info +> List.map (fun (i,month,monthstr,mlong,days) -> mlong, month)
+let month_to_s_h = 
+  month_info +> List.map (fun (i,month,monthstr,mlong,days) -> month, monthstr)
+let month_to_i_h = 
+  month_info +> List.map (fun (i,month,monthstr,mlong,days) -> month, i)
+
+let month_of_string s = 
+  List.assoc s s_to_month_h
+
+let month_of_string_long s = 
+  List.assoc s slong_to_month_h
+
+let string_of_month s = 
+  List.assoc s month_to_s_h
+
+let month_of_int i = 
+  List.assoc i i_to_month_h
+
+let int_of_month m = 
+  List.assoc m month_to_i_h
+
+
+let string_of_date_dmy (DMY (Day n, month, Year y)) = 
+  (spf "%02d-%s-%d" n (string_of_month month) y)
+
+
+
+
+(* (modified) copy paste from ocamlcalendar/src/date.ml *)
+let days_month = 
+  [| 0;    31; 59; 90; 120; 151; 181; 212; 243; 273; 304; 334(*; 365*) |]
+
+let rough_days_since_jesus (DMY (Day nday, month, Year year)) = 
+  let n = 
+    nday + 
+      (days_month.(int_of_month month -1)) +
+      year * 365
+  in
+  Days n
+
+
+
+
+let rough_days_between_dates d1 d2 = 
+  let (Days n1) = rough_days_since_jesus d1 in
+  let (Days n2) = rough_days_since_jesus d2 in
+  if (n2 < n1) 
+  then pr2 (spf "wierd date, d1 < d2: %s  vs %s " 
+               (string_of_date_dmy d1)
+               (string_of_date_dmy d2));
+
+  Days (n2 - n1)
+
+let _ = example 
+  (rough_days_between_dates 
+      (DMY (Day 7, Jan, Year 1977))
+      (DMY (Day 13, Jan, Year 1977)) = Days 6)
+
+(* because of rough days, it is a bit buggy, here it should return 1 *)
+(*
+let _ = assert_equal
+  (rough_days_between_dates 
+      (DMY (Day 29, Feb, Year 1977))
+      (DMY (Day 1, Mar , Year 1977))) 
+  (Days 1)
+*)
+
+let mk_date_dmy day month year = 
+  let date = DMY (Day day, month_of_int month, Year year) in
+  (* check_date_dmy date *)
+  date
+
+
+
+
+
+(* older code *)
 let int_to_month i = 
   assert (i <= 12 && i >= 1);
   match i with
@@ -1467,6 +1782,49 @@ let int_to_month i =
   | 11 -> "November"
   | 12 -> "December"
   | _ -> raise Impossible
+
+
+(* from julia, in gitsort.ml *)
+
+(*
+let antimonths =
+  [(1,31);(2,28);(3,31);(4,30);(5,31); (6,6);(7,7);(8,31);(9,30);(10,31);
+    (11,30);(12,31);(0,31)]
+
+let normalize (year,month,day,hour,minute,second) =
+  if hour < 0
+  then
+    let (day,hour) = (day - 1,hour + 24) in
+    if day = 0
+    then
+      let month = month - 1 in
+      let day = List.assoc month antimonths in
+      let day =
+	if month = 2 && year / 4 * 4 = year && not (year / 100 * 100 = year)
+	then 29
+	else day in
+      if month = 0
+      then (year-1,12,day,hour,minute,second)
+      else (year,month,day,hour,minute,second)
+    else (year,month,day,hour,minute,second)
+  else (year,month,day,hour,minute,second)
+*)
+
+(* conversion to unix.tm *)
+
+let dmy_to_unixtime (DMY (Day n, month, Year year)) = 
+  let tm = { 
+    Unix.tm_sec = 0;      (** Seconds 0..60 *)
+    tm_min = 0;           (** Minutes 0..59 *)
+    tm_hour = 12;           (** Hours 0..23 *)
+    tm_mday = n;              (** Day of month 1..31 *)
+    tm_mon = (int_of_month month -1);               (** Month of year 0..11 *)
+    tm_year = year - 1900;              (** Year - 1900 *)
+    tm_wday = 0;              (** Day of week (Sunday is 0) *)
+    tm_yday = 0;              (** Day of year 0..365 *)
+    tm_isdst = false;            (** Daylight time savings in effect *)
+  } in
+  Unix.mktime tm
 
 
 (*****************************************************************************)
@@ -1531,6 +1889,19 @@ let (words: string -> string list)   = fun s ->
 let (unwords: string list -> string) = fun s -> 
   String.concat "" s
 
+let (split_space: string -> string list)   = fun s -> 
+  Str.split (Str.regexp "[ \t\n]+") s
+
+
+(* todo opti ? *)
+let nblines s = 
+  lines s +> List.length
+let _ = example (nblines "" = 0)
+let _ = example (nblines "toto" = 1)
+let _ = example (nblines "toto\n" = 1)
+let _ = example (nblines "toto\ntata" = 2)
+let _ = example (nblines "toto\ntata\n" = 2)
+
 (*****************************************************************************)
 (* Process/Files *)
 (*****************************************************************************)
@@ -1566,6 +1937,12 @@ let interpolate str =
 let echo s = printf "%s" s; flush stdout; s 
 
 let usleep s = for i = 1 to s do () done
+
+let sleep_little () =
+  (*old:  *) 
+  Unix.sleep 1
+  (*ignore(Sys.command ("usleep " ^ !_sleep_time))*)
+
 
 (* now in prelude 
 let command2 s = ignore(Sys.command s)
@@ -1610,6 +1987,9 @@ let command2_y_or_no cmd =
 
 
 
+let mkdir ?(mode=0o770) file = 
+  Unix.mkdir file mode
+
 let read_file_orig file = cat file +> unlines
 let read_file file =
   let ic = open_in file  in
@@ -1630,6 +2010,9 @@ let filesize file =
 let filemtime file = 
   (Unix.stat file).Unix.st_mtime
 
+(* opti? use wc -l ? *)
+let nblines_file file = 
+  cat file +> List.length
 
 let lfile_exists filename = 
   try 
@@ -1684,13 +2067,16 @@ let (readdir_to_dir_size_list: string -> (string * int) list) = fun path ->
     )
 
 
-let cache_computation file ext_cache f = 
+let cache_computation ?(verbose=false) file ext_cache f = 
   if not (Sys.file_exists file) 
   then failwith ("can't find: "  ^ file);
   let file_cache = (file ^ ext_cache) in
   if Sys.file_exists file_cache && 
     filemtime file_cache >= filemtime file
-  then get_value file_cache
+  then begin
+    if verbose then pr2 ("using cache: " ^ file_cache);
+    get_value file_cache
+  end
   else begin
     let res = f () in
     write_value res file_cache;
@@ -1745,6 +2131,7 @@ let files_of_dir_or_files ext xs =
     else [x]
   ) +> List.concat
 
+
   
 (* taken from mlfuse, the predecessor of ocamlfuse *)
 type rwx = [`R|`W|`X] list
@@ -1784,6 +2171,17 @@ let (with_open_infile: filename -> ((in_channel) -> 'a) -> 'a) = fun file f ->
     close_in chan;
     res)
     (fun e -> close_in chan)
+
+
+let (with_open_outfile_append: filename -> (((string -> unit) * out_channel) -> 'a) -> 'a) = 
+ fun file f ->
+  let chan = open_out_gen [Open_creat;Open_append] 0o666 file in
+  let pr s = output_string chan s in
+  unwind_protect (fun () -> 
+    let res = f (pr, chan) in
+    close_out chan;
+    res)
+    (fun e -> close_out chan)
 
 
 (* now in prelude
@@ -1953,11 +2351,25 @@ let _ = example ((span (fun x -> x <= 3) [1;2;3;4;1;2] = ([1;2;3],[4;1;2])))
 
 let rec groupBy eq l =
   match l with
-  |  [] -> []
-  | (x::xs) -> 
+  | [] -> []
+  | x::xs -> 
       let (xs1,xs2) = List.partition (fun x' -> eq x x') xs in
       (x::xs1)::(groupBy eq xs2)
 
+let (exclude_but_keep_attached: ('a -> bool) -> 'a list -> ('a * 'a list) list)=
+ fun f xs -> 
+   let rec aux_filter acc = function
+   | [] -> [] (* drop what was accumulated because nothing to attach to *)
+   | x::xs -> 
+       if f x 
+       then aux_filter (x::acc) xs
+       else (x, List.rev acc)::aux_filter [] xs
+   in
+   aux_filter [] xs
+let _ = example
+  (exclude_but_keep_attached (fun x -> x = 3) [3;3;1;3;2;3;3;3] = 
+      [(1,[3;3]);(2,[3])])
+                                           
 
 let rec (split_when: ('a -> bool) -> 'a list -> 'a list * 'a * 'a list) = 
  fun p -> function
@@ -2027,7 +2439,7 @@ let _ = assert_equal (head_middle_tail [1;2;3]) (1, [2], 3)
 
 let remove x xs = 
   let newxs = List.filter (fun y -> y <> x) xs in
-  let _ = assert (List.length newxs = List.length xs - 1) in
+  assert (List.length newxs = List.length xs - 1);
   newxs
 
 
@@ -2260,6 +2672,18 @@ let iter_with_previous f = function
 	| [] -> ()
 	| e::l -> f previous e ; iter_with_previous_ e l
       in iter_with_previous_ e l
+
+
+let iter_with_before_after f xs = 
+  let rec aux before_rev after = 
+    match after with
+    | [] -> ()
+    | x::xs ->
+        f   before_rev x xs;
+        aux (x::before_rev) xs
+  in
+  aux [] xs
+
 
 
 (* kind of cartesian product of x*x  *)
@@ -2686,6 +3110,10 @@ let (lookup_list2: 'a -> ('a , 'b) assoc list -> ('b * int)) = fun el xxs ->
 
 let _ = example (lookup_list2 "c" [["a",1;"b",2];["a",1;"b",3];["a",1;"c",7]] = (7,2))
 
+
+let assoc_option  k l = 
+  optionise (fun () -> List.assoc k l)
+
 (*****************************************************************************)
 (* Assoc int -> xxx with binary tree.  Have a look too at Mapb.mli *)
 (*****************************************************************************)
@@ -2728,6 +3156,9 @@ let hash_to_list h =
   Hashtbl.fold (fun k v acc -> (k,v)::acc) h [] 
   +> List.sort compare 
 
+let hash_to_list_unsorted h = 
+  Hashtbl.fold (fun k v acc -> (k,v)::acc) h [] 
+
 let hash_of_list xs = 
   let h = Hashtbl.create 101 in
   begin
@@ -2747,18 +3178,21 @@ let hfind_default key value_if_not_found h =
   with Not_found -> 
     (Hashtbl.add h key (value_if_not_found ()); Hashtbl.find h key)
 
+(* not as easy as Perl  $h->{key}++; but still possible *)
+let hupdate_default key op value_if_not_found h = 
+  let old = hfind_default key value_if_not_found h in
+  Hashtbl.replace h key (op old)
+  
+
+let hfind_option key h =
+  optionise (fun () -> Hashtbl.find h key)
+
 
 (*****************************************************************************)
 (* Hash sets *)
 (*****************************************************************************)
 
 type 'a hashset = ('a, bool) Hashtbl.t 
-
-let find_hash_set key value_if_not_found h = 
-  try Hashtbl.find h key
-  with Not_found -> 
-    (Hashtbl.add h key (value_if_not_found ()); Hashtbl.find h key)
-
 
 
 let hash_hashset_add k e h = 
@@ -2776,6 +3210,8 @@ let hashset_to_set baseset h =
 
 let hashset_to_list h = hash_to_list h +> List.map fst
 
+let hashset_of_list xs = 
+  xs +> List.map (fun x -> x, true) +> hash_of_list
 
 
 
@@ -2797,14 +3233,76 @@ let push2 v l =
 
 let pop2 l = 
   let v = List.hd !l in
-  let _ = l := List.tl !l in
-  v
+  begin
+    l := List.tl !l;
+    v
+  end
 
 
 (*****************************************************************************)
 (* Binary tree *)
 (*****************************************************************************)
 type 'a bintree = Leaf of 'a | Branch of ('a bintree * 'a bintree)
+
+
+(*****************************************************************************)
+(* N-ary tree *)
+(*****************************************************************************)
+
+(* no empty tree, must have one root at list *)
+type 'a tree = Tree of 'a * ('a tree) list
+
+let rec (tree_iter: ('a -> unit) -> 'a tree -> unit) = fun f tree ->
+  match tree with 
+  | Tree (node, xs) -> 
+      f node;
+      xs +> List.iter (tree_iter f)
+
+
+(*****************************************************************************)
+(* N-ary tree with updatable childrens *)
+(*****************************************************************************)
+
+(* Leaf can seem redundant, but sometimes want to directly see if 
+ * a children is a leaf without looking if the list is empty.
+ *)
+type ('a, 'b) treeref = 
+  | NodeRef of 'a * ('a, 'b) treeref list ref 
+  | LeafRef of 'b
+
+let rec (treeref_node_iter: 
+   (('a * ('a, 'b) treeref list ref) -> unit) -> 
+   ('a, 'b) treeref -> unit) = fun f tree -> 
+  match tree with
+  | LeafRef _ -> ()
+  | NodeRef (n, xs) -> 
+      f (n, xs);
+      !xs +> List.iter (treeref_node_iter f)
+
+
+let rec (treeref_node_iter_with_parents: 
+   (('a * ('a, 'b) treeref list ref) -> ('a list) -> unit) -> 
+   ('a, 'b) treeref -> unit) = fun f tree -> 
+  let rec aux acc tree = 
+    match tree with
+    | LeafRef _ -> ()
+    | NodeRef (n, xs) -> 
+        f (n, xs) acc ;
+        !xs +> List.iter (aux (n::acc))
+  in
+  aux [] tree
+
+
+let find_treeref f tree = 
+  let res = ref [] in
+
+  tree +> treeref_node_iter (fun (n, xs) -> 
+    if f (n,xs)
+    then push2 (n, xs) res;
+  );
+  match !res with
+  | [n,xs] -> NodeRef (n, xs)
+  | _ -> raise Not_found
 
 (*****************************************************************************)
 (* Graph. Have a look too at Ograph_*.mli  *)
@@ -3164,17 +3662,17 @@ let (info_from_charpos2: int -> filename -> (int * int * string)) =
   let posl   = ref 0 in
   let rec charpos_to_pos_aux () =
     let s = (input_line chan) in
-    let _ = incr linen in
+    incr linen;
     let s = s ^ "\n" in
     if (!posl + slength s > charpos)
-    then
-      let _ = close_in chan in
+    then begin
+      close_in chan;
       (!linen, charpos - !posl, s)
-    else 
-      begin
-        posl := !posl + slength s;
-        charpos_to_pos_aux ();
-      end
+    end
+    else begin
+      posl := !posl + slength s;
+      charpos_to_pos_aux ();
+    end
   in 
   let res = charpos_to_pos_aux () in
   close_in chan;
@@ -3197,7 +3695,7 @@ let (full_charpos_to_pos2: filename -> (int * int) array ) = fun filename ->
     let rec full_charpos_to_pos_aux () =
      try
        let s = (input_line chan) in
-       let _ = incr line in
+       incr line;
 
        (* '... +1 do'  cos input_line dont return the trailing \n *)
        for i = 0 to (slength s - 1) + 1 do 
@@ -3493,6 +3991,8 @@ let add_in_scope_h x (k,v) =
 (* Terminal *)
 (*****************************************************************************)
 
+(* let ansi_terminal = ref true *)
+
 let execute_and_show_progress len f = 
   let _count = ref 0 in
   (* kind of continuation passed to f *)
@@ -3504,6 +4004,67 @@ let execute_and_show_progress len f =
   ANSITerminal.printf [] "0 / %d" len; flush stdout;
   f continue_pourcentage;
   pr2 ""
+
+
+(*****************************************************************************)
+(* Random *)
+(*****************************************************************************)
+
+let _ = Random.self_init ()
+(*
+let random_insert i l = 
+    let p = Random.int (length l +1)
+    in let rec insert i p l = 
+      if (p = 0) then i::l else (hd l)::insert i (p-1) (tl l)
+    in insert i p l
+
+let rec randomize_list = function 
+  []  -> []
+  | a::l -> random_insert a (randomize_list l)
+*)
+let random_list xs = 
+  List.nth xs (Random.int (length xs))                                           
+
+(* todo_opti: use fisher/yates algorithm.
+ * ref: http://en.wikipedia.org/wiki/Knuth_shuffle 
+ * 
+ * public static void shuffle (int[] array) 
+ * {
+ *  Random rng = new Random ();
+ *  int n = array.length;
+ *  while (--n > 0) 
+ *  {
+ *    int k = rng.nextInt(n + 1);  // 0 <= k <= n (!)
+ *    int temp = array[n];
+ *    array[n] = array[k];
+ *    array[k] = temp;
+ *   }
+ * }
+
+ *)
+let randomize_list xs = 
+  let permut = permutation xs in
+  random_list permut
+
+
+
+let random_subset_of_list num xs =
+  let array = Array.of_list xs in
+  let len = Array.length array in
+    
+  let h = Hashtbl.create 101 in 
+  let cnt = ref num in
+  while !cnt > 0 do
+    let x = Random.int len in
+    if not (Hashtbl.mem h (array.(x))) (* bugfix2: not just x :) *)
+    then begin
+      Hashtbl.add h (array.(x)) true; (* bugfix1: not just x :) *)
+      decr cnt;
+    end
+  done;
+  let objs = hash_to_list h +> List.map fst in
+  objs
+
 
 
 (*****************************************************************************)
@@ -3548,7 +4109,14 @@ let test_group_assoc xs =
  *)
 let _ =    Gc.set {(Gc.get ()) with Gc.stack_limit = 100 * 1024 * 1024}
 
-let _ = Random.self_init ()
+let check_stack_size limit = 
+  let rec aux i = 
+    if i = limit
+    then 0
+    else 1 + aux (i + 1)
+  in
+  assert(aux 0 = limit);
+  ()
 
 
 let showCodeHex xs = List.iter (fun i -> printf "%02x" i) xs
@@ -3581,24 +4149,6 @@ let sec_to_days sec =
   (if mins > 0  then plural mins "min"   ^ " " else "") ^
   ""
 
-
-(*
-let random_insert i l = 
-    let p = Random.int (length l +1)
-    in let rec insert i p l = 
-      if (p = 0) then i::l else (hd l)::insert i (p-1) (tl l)
-    in insert i p l
-
-let rec randomize_list = function 
-  []  -> []
-  | a::l -> random_insert a (randomize_list l)
-*)
-let random_list xs = 
-  List.nth xs (Random.int (length xs))                                           
-
-let randomize_list xs = 
-  let permut = permutation xs in
-  random_list permut
 
 (* let (test: 'a osetb -> 'a ocollection) = fun o -> (o :> 'a ocollection) *)
 (* let _ = test (new osetb (Setb.empty)) *)

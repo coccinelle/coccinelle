@@ -4,12 +4,13 @@ open Oassoc
 
 (* !!take care!!: this class does side effect, not a pure oassoc *)
 class ['a,'b] oassoch xs = 
+  let h = Common.hash_of_list xs in
   object(o)
     inherit ['a,'b] oassoc
 
-    val data = Hashtbl.create 100
+    val data = h
 
-    method empty = {< data = Hashtbl.create 100 >}
+    method empty = {< data = Hashtbl.create 101 >}
     method add (k,v) = (Hashtbl.replace data k v; o) (* not add cos add make iter sux *)
 
     (* redefine replkey to be more efficient than default. With hash, don't need

@@ -1,5 +1,9 @@
 type filename = string
 
+(*###########################################################################*)
+(* Basic features *)
+(*###########################################################################*)
+
 (*****************************************************************************)
 (* Debugging/logging *)
 (*****************************************************************************)
@@ -105,6 +109,9 @@ val profile_code : string -> (unit -> 'a) -> 'a
 val profile_diagnostic : unit -> string
 
 val report_if_take_time : int -> string -> (unit -> 'a) -> 'a
+
+(* similar to profile_code but print some information during execution too *)
+val profile_code2 : string -> (unit -> 'a) -> 'a
 
 (*****************************************************************************)
 (* Test *)
@@ -270,7 +277,7 @@ val memoized : ('a, 'b) Hashtbl.t -> 'a -> (unit -> 'b) -> 'b
  * file ^ extension
  *)
 val cache_computation : 
-  filename  -> string (* extension *) -> (unit -> 'a) -> 'a
+  ?verbose:bool -> filename  -> string (* extension *) -> (unit -> 'a) -> 'a
 
 (* a more robust version where describes the dependencies of the 
  * computation so it will relaunch the computation in 'f' if needed. 
@@ -288,6 +295,17 @@ val cache_computation_robust :
 val once : ('a -> unit) -> ('a -> unit)
 
 (* cf also the timeout function below that are control related too *)
+
+val before_leaving : ('a -> unit) -> 'a -> 'a
+
+(*****************************************************************************)
+(* Concurrency *)
+(*****************************************************************************)
+
+(* how ensure really atomic file creation ? hehe :) *)
+exception FileAlreadyLocked 
+val acquire_file_lock : filename -> unit
+val release_file_lock : filename -> unit
 
 (*****************************************************************************)
 (* Error managment *)
@@ -337,8 +355,9 @@ val (=): int -> int -> bool
 
 
 
-
+(*###########################################################################*)
 (* And now basic types *)
+(*###########################################################################*)
 
 (*****************************************************************************)
 (* Bool *)
@@ -422,6 +441,10 @@ val int_of_all : string -> int
 val ( += ) : int ref -> int -> unit
 val ( -= ) : int ref -> int -> unit
 
+val pourcent: int -> int -> int 
+val pourcent_float: int -> int -> float
+val pourcent_float_of_floats: float -> float -> float
+
 (*****************************************************************************)
 (* Numeric/overloading *)
 (*****************************************************************************)
@@ -449,6 +472,8 @@ type 'a triple = 'a * 'a * 'a
 val fst3 : 'a * 'b * 'c -> 'a
 val snd3 : 'a * 'b * 'c -> 'b
 val thd3 : 'a * 'b * 'c -> 'c
+
+val sndthd : 'a * 'b * 'c -> 'b * 'c
 
 val map_fst : ('a -> 'b) -> 'a * 'c -> 'b * 'c
 val map_snd : ('a -> 'b) -> 'c * 'a -> 'c * 'b
@@ -522,6 +547,10 @@ val lowercase : string -> string
 
 val quote : string -> string
 
+val null_string : string -> bool
+val is_blank_string : string -> bool
+val is_string_prefix : string -> string -> bool
+
 (*****************************************************************************)
 (* Regexp *)
 (*****************************************************************************)
@@ -554,6 +583,8 @@ val join : string (* sep *) -> string list -> string
 
 val split_list_regexp : string -> string list -> (string * string list) list
 
+val all_match : string (* regexp *) -> string -> string list
+
 (*****************************************************************************)
 (* Filenames *)
 (*****************************************************************************)
@@ -567,12 +598,17 @@ val fileprefix : filename -> string
 
 val adjust_ext_if_needed : filename -> string -> filename
 
+val db_of_filename : filename -> (string * filename)
+val filename_of_db : (string * filename) -> filename
+
 (* dbe for dir, base, ext *)
 val dbe_of_filename : filename -> string * string * string
-val filename_of_dbe : string * string * string -> filename
+val dbe_of_filename_nodot : filename -> string * string * string
 (* Left (d,b,e) | Right (d,b)  if file has no extension *)
 val dbe_of_filename_safe : 
   filename -> (string * string * string,  string * string) either
+
+val filename_of_dbe : string * string * string -> filename
 
 (* ex: replace_ext "toto.c" "c" "var" *)
 val replace_ext: filename -> string -> string -> filename
@@ -582,12 +618,49 @@ val normalize_path : filename -> filename
 
 val relative_to_absolute : filename -> filename
 
+val filename_without_leading_path : string -> filename -> filename
+
 (*****************************************************************************)
 (* Dates *)
 (*****************************************************************************)
 
+(* can also use ocamlcalendar, but heavier, use many modules ... *)
+
+type month = 
+  | Jan  | Feb  | Mar  | Apr  | May  | Jun
+  | Jul  | Aug  | Sep  | Oct  | Nov  | Dec
+type year = Year of int
+type day = Day of int
+
+type date_dmy = DMY of day * month * year
+
+(* intervalle *)
+type days = Days of int
+
+type time_dmy = TimeDMY of day * month * year
+
+
+
+val mk_date_dmy : int -> int -> int -> date_dmy
+
+
+val check_date_dmy : date_dmy -> unit
+val check_time_dmy : time_dmy -> unit
+
 val int_to_month : int -> string
 
+val int_of_month : month -> int
+val month_of_string : string -> month
+val month_of_string_long : string -> month
+val string_of_month : month -> string
+
+val string_of_date_dmy : date_dmy -> string
+
+
+val rough_days_since_jesus : date_dmy -> days
+val rough_days_between_dates : date_dmy -> date_dmy -> days
+
+val dmy_to_unixtime: date_dmy -> float * Unix.tm
 
 (*****************************************************************************)
 (* Lines/Words/Strings *)
@@ -601,8 +674,11 @@ val unlines : string list -> string
 val words : string -> string list
 val unwords : string list -> string
 
+val split_space : string -> string list
+
 val lines_with_nl : string -> string list
 
+val nblines : string -> int
 
 (*****************************************************************************)
 (* Process/Files *)
@@ -624,11 +700,15 @@ val command2_y_or_no : string -> unit
 
 val do_in_fork : (unit -> unit) -> int
 
+val mkdir: ?mode:Unix.file_perm -> string -> unit
+
 val read_file : filename -> string
 val write_file : filename -> string -> unit
 
 val filesize : filename -> int
 val filemtime : filename -> float
+
+val nblines_file : filename -> int
 
 val lfile_exists : filename -> bool
 val is_directory : filename -> bool
@@ -654,6 +734,8 @@ val with_open_outfile :
   filename -> ((string -> unit) * out_channel -> 'a) -> 'a
 val with_open_infile : 
   filename -> (in_channel -> 'a) -> 'a
+val with_open_outfile_append : 
+  filename -> ((string -> unit) * out_channel -> 'a) -> 'a
 
 exception Timeout
 
@@ -694,7 +776,9 @@ val exn_to_real_unixexit : (unit -> 'a) -> 'a
 
 
 
+(*###########################################################################*)
 (* And now collection like types. See also ocollection.mli *)
+(*###########################################################################*)
 
 (*****************************************************************************)
 (* List *)
@@ -726,6 +810,7 @@ val skipfirst : 'a -> 'a list -> 'a list
 val fpartition : ('a -> 'b option) -> 'a list -> 'b list * 'a list
 
 val groupBy : ('a -> 'a -> bool) -> 'a list -> 'a list list
+val exclude_but_keep_attached: ('a -> bool) -> 'a list -> ('a * 'a list) list
 
 (* use hash internally to not be in O(n2) *)
 val group_assoc_bykey_eff : ('a * 'b) list -> ('a * 'b list) list
@@ -828,6 +913,9 @@ val return_when : ('a -> 'b option) -> 'a list -> 'b
 val grep_with_previous : ('a -> 'a -> bool) -> 'a list -> 'a list
 val iter_with_previous : ('a -> 'a -> 'b) -> 'a list -> unit
 
+val iter_with_before_after : 
+ ('a list -> 'a -> 'a list -> unit) -> 'a list -> unit
+
 val get_pair : 'a list -> ('a * 'a) list
 
 val permutation : 'a list -> 'a list list
@@ -865,7 +953,7 @@ val array_find_index : ('a -> bool) -> 'a array -> int
 (* ?? *)
 
 (*****************************************************************************)
-(* Set. But have a look too at set*.mli. It's better. Or use Hashtbl. *)
+(* Set. But have a look too at set*.mli; it's better. Or use Hashtbl. *)
 (*****************************************************************************)
 
 type 'a set = 'a list
@@ -937,7 +1025,7 @@ module StringSet = Set.Make(struct type t = string let compare = compare end)
  
 
 (*****************************************************************************)
-(* Assoc. But have a look too at Mapb.mli. It's better. Or use Hashtbl. *)
+(* Assoc. But have a look too at Mapb.mli; it's better. Or use Hashtbl. *)
 (*****************************************************************************)
 
 type ('a, 'b) assoc = ('a * 'b) list
@@ -966,6 +1054,8 @@ val assoc_map : ('a * 'b) list -> ('a * 'b) list -> ('a * 'a) list
 
 val lookup_list : 'a -> ('a, 'b) assoc list -> 'b
 val lookup_list2 : 'a -> ('a, 'b) assoc list -> 'b * int
+
+val assoc_option : 'a -> ('a, 'b) assoc -> 'b option
 
 (*****************************************************************************)
 (* Assoc, specialized. *)
@@ -1016,11 +1106,12 @@ val intintmap_string_of_t : 'a -> 'b -> string
 (* Hash *)
 (*****************************************************************************)
 
-(* note that Hashtbl keep old binding to a key so if want a hash
- * of a list, then can use the Hashtbl as is. use Hashtbl.find_all then
+(* Note that Hashtbl keep old binding to a key so if want a hash
+ * of a list, then can use the Hashtbl as is. Use Hashtbl.find_all then
  * to get the list of bindings
  *)
 
+(* obsolete: can use directly the Hashtbl module *)
 val hcreate : unit -> ('a, 'b) Hashtbl.t
 val hadd : 'a * 'b -> ('a, 'b) Hashtbl.t -> unit
 val hmem : 'a -> ('a, 'b) Hashtbl.t -> bool
@@ -1032,9 +1123,12 @@ val hremove : 'a -> ('a, 'b) Hashtbl.t -> unit
 
 
 val hfind_default : 'a -> (unit -> 'b) -> ('a, 'b) Hashtbl.t -> 'b
+val hfind_option : 'a -> ('a, 'b) Hashtbl.t -> 'b option
+val hupdate_default : 
+  'a -> ('b -> 'b) -> (unit -> 'b) -> ('a, 'b) Hashtbl.t -> unit
 
-val find_hash_set : 'a -> (unit -> 'b) -> ('a, 'b) Hashtbl.t -> 'b
 val hash_to_list : ('a, 'b) Hashtbl.t -> ('a * 'b) list
+val hash_to_list_unsorted : ('a, 'b) Hashtbl.t -> ('a * 'b) list
 val hash_of_list : ('a * 'b) list -> ('a, 'b) Hashtbl.t
 
 
@@ -1046,11 +1140,16 @@ val hkeys : ('a, 'b) Hashtbl.t -> 'a list
 
 type 'a hashset = ('a, bool) Hashtbl.t 
 
+
+(* common use of hashset, in a hash of hash *)
 val hash_hashset_add : 'a -> 'b -> ('a, 'b hashset) Hashtbl.t -> unit
+
 val hashset_to_set : 
  < fromlist : ('a ) list -> 'c; .. > -> ('a, 'b) Hashtbl.t -> 'c
 
 val hashset_to_list : 'a hashset -> 'a list
+val hashset_of_list : 'a list -> 'a hashset
+
 
 (*****************************************************************************)
 (* Stack *)
@@ -1072,7 +1171,42 @@ val pop2: 'a stack ref -> 'a
 type 'a bintree = Leaf of 'a | Branch of ('a bintree * 'a bintree)
 
 (*****************************************************************************)
-(* Graph. But have a look too at Ograph_*.mli. It's better *)
+(* N-ary tree *)
+(*****************************************************************************)
+
+(* no empty tree, must have one root at least *)
+type 'a tree = Tree of 'a * ('a tree) list
+
+val tree_iter : ('a -> unit) -> 'a tree -> unit
+
+
+(*****************************************************************************)
+(* N-ary tree with updatable childrens *)
+(*****************************************************************************)
+
+(* Leaf can seem redundant, but sometimes want to directly see if 
+ * a children is a leaf without looking if the list is empty.
+ *)
+type ('a, 'b) treeref = 
+  | NodeRef of 'a * ('a, 'b) treeref list ref 
+  | LeafRef of 'b
+
+val treeref_node_iter: 
+  (('a * ('a, 'b) treeref list ref) -> unit) -> ('a, 'b) treeref -> unit
+val treeref_node_iter_with_parents: 
+  (('a * ('a, 'b) treeref list ref) -> ('a list) -> unit) -> 
+  ('a, 'b) treeref -> unit
+
+val find_treeref: 
+  (('a * ('a, 'b) treeref list ref) -> bool) -> 
+  ('a, 'b) treeref -> ('a, 'b) treeref
+
+
+
+
+
+(*****************************************************************************)
+(* Graph. But have a look too at Ograph_*.mli; it's better *)
 (*****************************************************************************)
 
 type 'a graph = 'a set * ('a * 'a) set
@@ -1135,10 +1269,24 @@ val is_singleton : 'a list -> bool
 
 
 
+(*###########################################################################*)
 (* And now misc functions *)
+(*###########################################################################*)
 
 (*****************************************************************************)
-(* Geometry (raytracer) *)
+(* DB *)
+(*****************************************************************************)
+
+(* cf oassocbdb.ml or oassocdbm.ml  *)
+
+(*****************************************************************************)
+(* GUI (LFS, CComment) *)
+(*****************************************************************************)
+
+(* cf ocamlgtk and gCommon.ml *)
+
+(*****************************************************************************)
+(* Geometry (ICFP raytracer) *)
 (*****************************************************************************)
 
 type vector = float * float * float
@@ -1164,14 +1312,14 @@ val sum_vector : vector list -> vector
 
 
 (*****************************************************************************)
-(* Pics (raytracer) *)
+(* Pics (ICFP raytracer) *)
 (*****************************************************************************)
 type pixel = int * int * int
 val write_ppm : int -> int -> pixel list -> filename -> unit
 val test_ppm1 : unit -> unit
 
 (*****************************************************************************)
-(* Diff (lfs) *)
+(* Diff (LFS) *)
 (*****************************************************************************)
 
 type diff = Match | BnotinA | AnotinB
@@ -1207,7 +1355,6 @@ type parse_info = {
     line: int; column: int;
     file: filename;
   } 
-
 val fake_parse_info : parse_info
 
 
@@ -1234,7 +1381,7 @@ val error_message_short : filename -> (string * int) -> string
 val error_messagebis : filename -> (string * int) -> int -> string
 
 (*****************************************************************************)
-(* Scope managment *)
+(* Scope managment (cocci) *)
 (*****************************************************************************)
 
 (* for example of use, see the code used in coccinelle *)
@@ -1272,23 +1419,30 @@ val do_in_new_scope_h : ('a, 'b) scoped_h_env ref -> (unit -> unit) -> unit
 val add_in_scope_h : ('a, 'b) scoped_h_env ref -> 'a * 'b -> unit
 
 (*****************************************************************************)
-(* Terminal *)
+(* Terminal (LFS) *)
 (*****************************************************************************)
 
 val execute_and_show_progress : 
  int (* length *) -> ((unit -> unit) -> unit) -> unit
 
+(*****************************************************************************)
+(* Random *)
+(*****************************************************************************)
+
+val random_list : 'a list -> 'a
+val randomize_list : 'a list -> 'a list
+val random_subset_of_list : int -> 'a list -> 'a list
 
 (*****************************************************************************)
 (* Misc/test *)
 (*****************************************************************************)
 
+val check_stack_size: int -> unit
+
 val showCodeHex : int list -> unit
 val size_mo_ko : int -> string
 val plural : int -> string -> string
 val sec_to_days : int -> string
-val random_list : 'a list -> 'a
-val randomize_list : 'a list -> 'a list
 val generic_print : 'a -> string -> string
 class ['a] olist :
   'a list ->

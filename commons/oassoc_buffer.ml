@@ -1,15 +1,18 @@
 open Common
 
 open Oassoc
+
 open Oassocb
 open Osetb
 
 (* todo: limit number of entries, and erase all (then better do a ltu) 
  * todo: another cache that behave as in lfs1, 
  * every 100 operation do a flush 
+ * 
+ * todo: choose between oassocb and oassoch ? 
  *)
 
-(* !!take care!!: this classe have side effect, not a pure oassoc *)
+(* !!take care!!: this class has side effect, not a pure oassoc *)
 (* can not make it pure, cos the assoc have side effect on the cache *)
 class ['a,'b] oassoc_buffer   max cached = 
 object(o)
