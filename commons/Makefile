@@ -183,6 +183,11 @@ clean::
 	rm -f *.cm[iox] *.o *.a *.cma *.cmxa *.annot
 	rm -f *~ .*~ #*# 
 
+clean::
+	rm -f $(SUBDIR)/*.cm[iox] $(SUBDIR)/*.o $(SUBDIR)/*.a 
+	rm -f $(SUBDIR)/*.cma $(SUBDIR)/*.cmxa $(SUBDIR)/*.annot
+	rm -f $(SUBDIR)/*~ $(SUBDIR)/.*~ #*# 
+
 depend: 
 	$(OCAMLDEP) *.mli *.ml $(SUBDIR)/*.ml $(SUBDIR)/*.mli  > .depend
 
