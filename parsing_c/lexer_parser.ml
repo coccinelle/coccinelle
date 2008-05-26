@@ -1,5 +1,4 @@
 open Common
-open Commonop
 
 (* Tricks used to handle the ambiguity in the grammar with the typedef
  * which impose a cooperation between the lexer and the parser.

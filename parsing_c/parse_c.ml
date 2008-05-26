@@ -1,4 +1,4 @@
-open Common open Commonop
+open Common
 
 module TH = Token_helpers 
 module LP = Lexer_parser
@@ -761,7 +761,7 @@ let rec lexer_function tr = fun lexbuf ->
     tr.rest <- xs;
     tr.current <- v;
 
-    if !Flag_parsing_c.debug_lexer then pr2 (Dumper.dump v);
+    if !Flag_parsing_c.debug_lexer then Common.pr2_gen v;
 
     if TH.is_comment v
     then begin

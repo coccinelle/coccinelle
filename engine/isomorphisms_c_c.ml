@@ -1,4 +1,4 @@
-open Common open Commonop
+open Common
 
 (* When in a semantic patch there is f(X) ... f(X) we want to force
  * the two X to be equal in the concrete code, but we would like that

@@ -2023,9 +2023,9 @@ let simpleanno l phi res =
   match phi with
     | A.False              -> pp "False"
     | A.True               -> pp "True"
-    | A.Pred(p)            -> pp ("Pred" ^ (Dumper.dump p))
+    | A.Pred(p)            -> pp ("Pred" ^ (Common.dump p))
     | A.Not(phi)           -> pp "Not"
-    | A.Exists(_,v,phi)    -> pp ("Exists " ^ (Dumper.dump(v)))
+    | A.Exists(_,v,phi)    -> pp ("Exists " ^ (Common.dump(v)))
     | A.And(_,phi1,phi2)   -> pp "And"
     | A.AndAny(dir,_,phi1,phi2) -> pp "AndAny"
     | A.HackForStmt(dir,_,phi1,phi2) -> pp "HackForStmt"

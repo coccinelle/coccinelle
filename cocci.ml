@@ -1,4 +1,4 @@
-open Common open Commonop
+open Common
 open Pycaml
 
 module CCI = Ctlcocci_integration

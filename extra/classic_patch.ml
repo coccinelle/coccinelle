@@ -1,4 +1,4 @@
-open Common open Commonop 
+open Common
 
 type patch = patchitem list
  and patchitem = File of filename * string (* header line *) * string list

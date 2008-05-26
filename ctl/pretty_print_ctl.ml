@@ -1,4 +1,4 @@
-open Common open Commonop
+open Common
 open Format
 
 open Ast_ctl

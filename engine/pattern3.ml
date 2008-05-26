@@ -1,4 +1,4 @@
-open Common open Commonop
+open Common
 
 (*****************************************************************************)
 (* The functor argument  *) 

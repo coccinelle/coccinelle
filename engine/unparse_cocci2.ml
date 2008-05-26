@@ -1,4 +1,4 @@
-open Common open Commonop
+open Common
 
 (*****************************************************************************)
 (* mostly a copy paste of parsing_cocci/pretty_print_cocci.ml 

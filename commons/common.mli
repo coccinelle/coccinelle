@@ -37,6 +37,7 @@ val pr2_xxxxxxxxxxxxxxxxx : unit -> unit
 
 (* use Dumper.dump *)
 val pr2_gen: 'a -> unit
+val dump: 'a -> string
 
 val _already_printed : (string, bool) Hashtbl.t
 val _disable_once : bool ref

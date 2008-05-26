@@ -173,6 +173,7 @@ let reset_pr_indent () =
 (* let pr2 s = (prerr_string s; prerr_string "\n"; flush stderr) *)
 
 let pr2_gen x = pr2 (Dumper.dump x)
+let dump x = Dumper.dump x
 
 
 

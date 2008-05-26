@@ -13,8 +13,9 @@ Here are the authors and maintainers of the different parts of coccinelle:
 
 - parsing_c/ (parsing c, unparsing c, type checking, control flow, C diff)
 - engine/ (pattern matching and transforming, unparsing, ctl integration)
-- cocci.ml
-- main.ml, testing.ml, globals/
+- cocci.ml (driver)
+- main.ml, testing.ml
+- globals/
 - extra/
 - commons/
 - emacs/cocci.el
@@ -31,7 +32,9 @@ Here are the authors and maintainers of the different parts of coccinelle:
 
 * Henrik stuart <henrik@hstuart.dk>
 
-- Python integration, coccilib/ pycaml/ pycocci.ml
+Python integration
+
+- coccilib/ pycaml/ pycocci.ml, pycocci_aux.ml
 
 * All
 

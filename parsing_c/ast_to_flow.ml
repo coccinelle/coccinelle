@@ -1,4 +1,4 @@
-open Common open Commonop
+open Common
 
 open Ast_c
 open Control_flow_c
@@ -1225,7 +1225,7 @@ let (check_control_flow: cflow -> unit) = fun g ->
   let starti = first_node g in
   let visited = ref (new oassocb []) in
 
-  let print_trace_error xs =  pr2 "PB with flow:";  pr2 (Dumper.dump xs); in
+  let print_trace_error xs =  pr2 "PB with flow:";  Common.pr2_gen xs; in
 
   let rec dfs (nodei, (* Depth depth,*) startbraces,  trace)  = 
     let trace2 = nodei::trace in

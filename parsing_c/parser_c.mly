@@ -1,5 +1,5 @@
 %{
-open Common open Commonop
+open Common
 
 open Ast_c
 

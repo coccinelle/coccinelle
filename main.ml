@@ -1,4 +1,5 @@
-open Common open Commonop
+open Common
+
 open Parse_cocci
 
 (*****************************************************************************)

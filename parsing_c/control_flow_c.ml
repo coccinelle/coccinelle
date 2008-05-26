@@ -1,4 +1,4 @@
-open Commonop open Common
+open Common
 
 open Ast_c
 

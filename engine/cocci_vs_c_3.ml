@@ -1,4 +1,4 @@
-open Common open Commonop
+open Common
 
 module A = Ast_cocci
 module B = Ast_c
