@@ -1,4 +1,4 @@
-open Common open Commonop 
+open Common
 
 class virtual objet =
 object(o:'o)

@@ -1,5 +1,3 @@
-open Commonop
-
 (*****************************************************************************)
 (* We use *)
 (*****************************************************************************)
@@ -28,6 +26,7 @@ open Commonop
  *  - ocamlmpi
  *  - ocamlagrep
  *  - ocamlfuse
+ *  - ocamlpython
 *)
 
 (*****************************************************************************)
@@ -41,9 +40,8 @@ open Commonop
  * ability to declare prototype, enabling some form of forward
  * reference. *)
 
-(* now in Commonop
-   let (+>) o f = f o
-*)
+let (+>) o f = f o
+
 
 exception Timeout
 
@@ -828,10 +826,13 @@ let t = macro_expand "type 'a bintree = Leaf of 'a | Branch of ('a bintree * 'a 
 (*****************************************************************************)
 
 (* I like the obj.func object notation. In OCaml cant use '.' so I use +>
+ * 
  * update: it seems that F# agrees with me :) but they use |>
  *)
 
-let (+>) o f = f o
+(* now in prelude:
+ let (+>) o f = f o
+*)
 let (+!>) refo f = refo := f !refo 
 (* alternatives: 
  *  let ((@): 'a -> ('a -> 'b) -> 'b) = fun a b -> b a
@@ -1357,70 +1358,11 @@ let map_find f xs =
 *)
 
 
-
-(*****************************************************************************)
-(* Strings *)
-(*****************************************************************************)
-
-let slength = String.length
-let concat = String.concat
-
-let i_to_s = string_of_int
-let s_to_i = int_of_string
-
-
-(* strings take space in memory. Better when can share the space used by
-   similar strings *)
-let _shareds = Hashtbl.create 100
-let (shared_string: string -> string) = fun s -> 
-  try Hashtbl.find _shareds s 
-  with Not_found -> (Hashtbl.add _shareds s s; s)
-
-let chop = function
-  | "" -> ""
-  | s -> String.sub s 0 (String.length s - 1)
-
-
-let chop_dirsymbol = function
-  | s when s =~ "\\(.*\\)/$" -> matched1 s
-  | s -> s
-
-
-let (<!!>) s (i,j) = 
-  String.sub s i (if j < 0 then String.length s - i + j + 1 else j - i)
-(* let _ = example  ( "tototati"<!!>(3,-2) = "otat" ) *)
-
-let (<!>) s i = String.get s i 
-
-(* pix *)
-let rec split_on_char c s =
-  try
-    let sp = String.index s c in
-    String.sub s 0 sp :: 
-    split_on_char c (String.sub s (sp+1) (String.length s - sp - 1))
-  with Not_found -> [s]
-
-
-let lowercase = String.lowercase
-
-let quote s = "\"" ^ s ^ "\""  
-
-(* easier to have this to be passed as hof, because ocaml dont have
- * haskell "section" operators
- *)
-let null_string s = 
-  s = "" 
-
-let is_blank_string s = 
-  s =~ "^\\([ \t]\\)*$"
-
-(* src: lablgtk2/examples/entrycompletion.ml *)
-let is_string_prefix s1 s2 =
-  (String.length s1 <= String.length s2) && (String.sub s2 0 (String.length s1) = s1)
-
 (*****************************************************************************)
 (* Regexp *)
 (*****************************************************************************)
+
+(* put before String section because String section use some =~ *)
 
 (* let gsubst = global_replace *)
 
@@ -1431,10 +1373,7 @@ let is_string_prefix s1 s2 =
  * Str.string_match.
  *)
 
-(* now in commonop.ml
--let (=~) s re = Str.string_match (Str.regexp re) s 0 
--let (==~) s re = Str.string_match re s 0 
-*)
+let (==~) s re = Str.string_match re s 0 
 
 let _memo_compiled_regexp = Hashtbl.create 101
 let candidate_match_func s re = 
@@ -1447,7 +1386,12 @@ let candidate_match_func s re =
 let match_func s re = 
   profile_code "Common.=~" (fun () -> candidate_match_func s re)
 
-let _ = Commonop._match_func := match_func
+let (=~) s re = 
+  match_func s re
+
+
+
+
 
 let string_match_substring re s = 
   try let _i = Str.search_forward re s 0 in true 
@@ -1518,6 +1462,68 @@ let all_match re s =
 let _ = example (all_match "\\(@[A-Za-z]+\\)" "ca va @Et toi @Comment" 
                   = ["@Et";"@Comment"])
   
+
+
+(*****************************************************************************)
+(* Strings *)
+(*****************************************************************************)
+
+let slength = String.length
+let concat = String.concat
+
+let i_to_s = string_of_int
+let s_to_i = int_of_string
+
+
+(* strings take space in memory. Better when can share the space used by
+   similar strings *)
+let _shareds = Hashtbl.create 100
+let (shared_string: string -> string) = fun s -> 
+  try Hashtbl.find _shareds s 
+  with Not_found -> (Hashtbl.add _shareds s s; s)
+
+let chop = function
+  | "" -> ""
+  | s -> String.sub s 0 (String.length s - 1)
+
+
+let chop_dirsymbol = function
+  | s when s =~ "\\(.*\\)/$" -> matched1 s
+  | s -> s
+
+
+let (<!!>) s (i,j) = 
+  String.sub s i (if j < 0 then String.length s - i + j + 1 else j - i)
+(* let _ = example  ( "tototati"<!!>(3,-2) = "otat" ) *)
+
+let (<!>) s i = String.get s i 
+
+(* pix *)
+let rec split_on_char c s =
+  try
+    let sp = String.index s c in
+    String.sub s 0 sp :: 
+    split_on_char c (String.sub s (sp+1) (String.length s - sp - 1))
+  with Not_found -> [s]
+
+
+let lowercase = String.lowercase
+
+let quote s = "\"" ^ s ^ "\""  
+
+(* easier to have this to be passed as hof, because ocaml dont have
+ * haskell "section" operators
+ *)
+let null_string s = 
+  s = "" 
+
+let is_blank_string s = 
+  s =~ "^\\([ \t]\\)*$"
+
+(* src: lablgtk2/examples/entrycompletion.ml *)
+let is_string_prefix s1 s2 =
+  (String.length s1 <= String.length s2) && (String.sub s2 0 (String.length s1) = s1)
+
 (*****************************************************************************)
 (* Filenames *)
 (*****************************************************************************)
@@ -1526,6 +1532,11 @@ let dirname = Filename.dirname
 let basename = Filename.basename
 
 type filename = string (* TODO could check that exist :) type sux *)
+
+module BasicType = struct
+  type filename = string
+end
+
 
 let (filesuffix: filename -> string) = fun s -> 
   (try regexp_match s ".+\\.\\([a-zA-Z0-9_]+\\)$" with _ ->  "NOEXT")
@@ -4098,6 +4109,13 @@ let test_group_assoc xs =
   end
     
 
+
+(* Infix trick, seen in jane street lib and harrop's code, and maybe in GMP *)
+module Infix = struct
+  let (+>) = (+>)
+  let (==~) = (==~)
+  let (=~) = (=~)
+end
 
 
 (*****************************************************************************)

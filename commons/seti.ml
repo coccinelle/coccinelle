@@ -1,4 +1,4 @@
-open Common open Commonop
+open Common
 
 (* todo: could take an incr/decr func in param, to make it generic
  * opti: remember the min/max (optimisation to have intersect biggest x -> x)

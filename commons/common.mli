@@ -1,8 +1,19 @@
-type filename = string
-
 (*###########################################################################*)
 (* Basic features *)
 (*###########################################################################*)
+
+type filename = string
+
+module BasicType : sig
+  type filename = string
+end
+
+module Infix : sig
+  val ( +> ) : 'a -> ('a -> 'b) -> 'b
+  val ( =~ ) : string -> string -> bool
+  val ( ==~ ) : string -> Str.regexp -> bool
+end
+
 
 (*****************************************************************************)
 (* Debugging/logging *)
@@ -125,6 +136,7 @@ val _list_bool : (string * bool) list ref
 val example3 : string -> bool -> unit
 val test_all : unit -> unit
 
+(* regression testing *)
 type score_result = Ok | Pb of string 
 type score = (string (* usually a filename *), score_result) Hashtbl.t
 val empty_score : unit -> score
@@ -223,7 +235,7 @@ val macro_expand : string -> unit
 (* Composition/Control *)
 (*****************************************************************************)
 
-(* now in Commonop: val ( +> ) : 'a -> ('a -> 'b) -> 'b *)
+val ( +> ) : 'a -> ('a -> 'b) -> 'b
 val ( +!> ) : 'a ref -> ('a -> 'a) -> unit
 val ( $ ) : ('a -> 'b) -> ('b -> 'c) -> 'a -> 'c
 
@@ -330,10 +342,10 @@ val exn_to_s : exn -> string
 
 (* To infer all the code that use an equal, and that should be
  * transformed, is not that easy, because (=) is used by many
- * functions, such as List.find, List.mem, and so on, so the strategy
- * is to turn what you were previously using into a function, because
+ * functions, such as List.find, List.mem, and so on. The strategy to find
+ * them is to turn what you were previously using into a function, because
  * (=) return an exception when applied to a function, then you simply
- * use ocamldebug to infer where the code has to be transformed by
+ * use ocamldebug to detect where the code has to be transformed by
  * finding where the exception was launched from.
  *)
 
@@ -345,12 +357,12 @@ val (=:=) : bool   -> bool   -> bool
 val (=*=): 'a -> 'a -> bool
 
 (* if want to restrict the use of '=', uncomment this:
-val (=): int -> int -> bool
+
+     val (=): int -> int -> bool
+
+But it will not forbid you to use caml functions like List.find, List.mem
+which internaly use this convenient but evolution-unfriendly (=)
 *)
-
-
-
-
 
 
 
@@ -557,12 +569,11 @@ val is_string_prefix : string -> string -> bool
 
 val regexp_alpha : Str.regexp
 
-
-(* now in Commonop:
- val ( =~ ) : string -> string -> bool
- val ( ==~ ) : string -> Str.regexp -> bool
-*)
 val _memo_compiled_regexp : (string, Str.regexp) Hashtbl.t
+val ( =~ ) : string -> string -> bool
+val ( ==~ ) : string -> Str.regexp -> bool
+
+
 
 val regexp_match : string -> string -> string
 
@@ -1285,6 +1296,9 @@ val is_singleton : 'a list -> bool
 
 (* cf ocamlgtk and gCommon.ml *)
 
+
+
+
 (*****************************************************************************)
 (* Geometry (ICFP raytracer) *)
 (*****************************************************************************)
@@ -1342,9 +1356,11 @@ val getDoubleParser :
 (* Currently lexing.ml does not handle the line number position.
  * Even if there is some fields in the lexing structure, they are not 
  * maintained by the lexing engine :( So the following code does not work:
+ * 
  *   let pos = Lexing.lexeme_end_p lexbuf in 
  *   sprintf "at file %s, line %d, char %d" pos.pos_fname pos.pos_lnum  
  *      (pos.pos_cnum - pos.pos_bol) in 
+ * 
  * Hence those functions to overcome the previous limitation.
  *)
 
@@ -1451,5 +1467,9 @@ class ['a] olist :
     method fold : ('b -> 'a -> 'b) -> 'b -> 'b
     method view : 'a list
   end
+
+
 val typing_sux_test : unit -> unit
+
+
 

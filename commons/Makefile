@@ -4,7 +4,7 @@
 TARGET=commons
 
 # note: if you add a file (a .mli or .ml), dont forget to redo a 'make depend'
-MYSRC=commonop.ml common.ml \
+MYSRC=common.ml \
       seti.ml \
       objet.ml ocollection.ml \
       oset.ml oassoc.ml osequence.ml ograph.ml \
@@ -15,18 +15,20 @@ MYSRC=commonop.ml common.ml \
       fullcommon.ml 
 
 # src from other authors, got from the web or caml hump
-SRC=dumper.ml 
-SRC+=ANSITerminal.ml 
-SRC+=setb.ml mapb.ml # defunctorized version of standard set/map
-SRC+=setPt.ml
+SRC=ocamlextra/dumper.ml 
+SRC+=ocamlextra/ANSITerminal.ml 
+SRC+=ocamlextra/setb.ml ocamlextra/mapb.ml # defunctorized version of standard set/map
+SRC+=ocamlextra/setPt.ml
 SRC+=$(MYSRC)
-SRC+=enum.ml dynArray.ml
-SRC+=suffix_tree.ml suffix_tree_ext.ml 
+SRC+=ocamlextra/enum.ml ocamlextra/dynArray.ml
+SRC+=ocamlextra/suffix_tree.ml ocamlextra/suffix_tree_ext.ml 
 
 SYSLIBS=str.cma unix.cma   
 
+INCLUDEDIRS=ocamlextra
+SUBDIR=ocamlextra
 
-# other common libraries
+# other common (thin wrapper) libraries
 
 #gdbm
 MYGDBMSRC=oassocdbm.ml
@@ -37,9 +39,22 @@ BDBINCLUDES=-I ../ocamlbdb
 MYBDBSRC=oassocbdb.ml
 BDBSYSLIBS=bdb.cma
 
+
+#ocamlgtk
+GUIINCLUDES=-I +lablgtk2 -I +lablgtksourceview -I ../ocamlgtk/src
+MYGUISRC=gCommon.ml
+GUISYSLIBS=lablgtk.cma lablgtksourceview.cma
+
 ##############################################################################
 # Generic variables
 ##############################################################################
+
+INCLUDES=$(INCLUDEDIRS:%=-I %) $(INCLUDESEXTRA)
+
+##############################################################################
+# Generic ocaml variables
+##############################################################################
+
 # for warning:  -w A 
 OCAMLCFLAGS=-g -dtypes
 
@@ -54,12 +69,12 @@ OPTFLAGS=
 OPTBIN= #.opt
 
 # The OCaml tools.
-OCAMLC =ocamlc$(OPTBIN) $(OCAMLCFLAGS)
-OCAMLOPT=ocamlopt$(OPTBIN) $(OPTFLAGS)
+OCAMLC =ocamlc$(OPTBIN) $(OCAMLCFLAGS) $(INCLUDES)
+OCAMLOPT=ocamlopt$(OPTBIN) $(OPTFLAGS) $(INCLUDES)
 OCAMLLEX = ocamllex$(OPTBIN)
 OCAMLYACC= ocamlyacc -v
-OCAMLDEP = ocamldep
-OCAMLMKTOP=ocamlmktop -g -custom
+OCAMLDEP = ocamldep $(INCLUDES)
+OCAMLMKTOP=ocamlmktop -g -custom $(INCLUDES)
 
 
 ##############################################################################
@@ -96,16 +111,17 @@ clean::
 gdbm: commons_gdbm.cma
 gdbm.opt: commons_gdbm.cmxa
 
-bdb: 
-	$(MAKE) INCLUDES="$(BDBINCLUDES)" commons_bdb.cma
-bdb.opt: 
-	$(MAKE) INCLUDES="$(BDBINCLUDES)" commons_bdb.cmxa
-
 commons_gdbm.cma: $(MYGDBMSRC:.ml=.cmo)
 	$(OCAMLC) -a -o $@ $^
 
 commons_gdbm.cmxa: $(MYGDBMSRC:.ml=.cmx)
 	$(OCAMLOPT) -a -o $@ $^
+
+
+bdb: 
+	$(MAKE) INCLUDESEXTRA="$(BDBINCLUDES)" commons_bdb.cma
+bdb.opt: 
+	$(MAKE) INCLUDESEXTRA="$(BDBINCLUDES)" commons_bdb.cmxa
 
 commons_bdb.cma: $(MYBDBSRC:.ml=.cmo)
 	$(OCAMLC) -a -o $@ $^
@@ -113,6 +129,18 @@ commons_bdb.cma: $(MYBDBSRC:.ml=.cmo)
 commons_bdb.cmxa: $(MYBDBSRC:.ml=.cmx)
 	$(OCAMLOPT) -a -o $@ $^
 
+
+
+gui:
+	$(MAKE) INCLUDESEXTRA="$(GUIINCLUDES)" commons_gui.cma
+gui.opt:
+	$(MAKE) INCLUDESEXTRA="$(GUIINCLUDES)" commons_gui.cma
+
+commons_gui.cma: $(MYGUISRC:.ml=.cmo)
+	$(OCAMLC) -a -o $@ $^
+
+commons_gui.cmxa: $(MYGUISRC:.ml=.cmx)
+	$(OCAMLOPT) -a -o $@ $^
 
 ##############################################################################
 # Developer rules
@@ -145,18 +173,18 @@ dependencygraph2:
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
 
 .ml.cmo:
-	$(OCAMLC) $(INCLUDES) -c $<
+	$(OCAMLC)  -c $<
 .mli.cmi:
-	$(OCAMLC) $(INCLUDES) -c $<
+	$(OCAMLC)  -c $<
 .ml.cmx:
-	$(OCAMLOPT) $(INCLUDES) -c $<
+	$(OCAMLOPT)  -c $<
 
 clean::
 	rm -f *.cm[iox] *.o *.a *.cma *.cmxa *.annot
 	rm -f *~ .*~ #*# 
 
 depend: 
-	$(OCAMLDEP) *.mli *.ml > .depend
+	$(OCAMLDEP) *.mli *.ml $(SUBDIR)/*.ml $(SUBDIR)/*.mli  > .depend
 
 distclean::
 	rm -f .depend
