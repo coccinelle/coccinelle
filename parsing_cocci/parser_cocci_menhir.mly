@@ -1574,7 +1574,7 @@ eexpr_list:
 
 /* arg expr.  may contain a type or a explist metavariable */
 aexpr:
-    dexpr
+    eexpr
       { Ast0.set_arg_exp $1 }
   | TMetaExpList
       { let (nm,lenname,pure,clt) = $1 in
@@ -1591,11 +1591,11 @@ eexpr_list_start:
     aexpr { [$1] }
   | aexpr TComma eexpr_list_start
       { $1::Ast0.wrap(Ast0.EComma(P.clt2mcode "," $2))::$3 }
+/*
   | d=edots_when(TEllipsis,eexpr)
 	r=list(comma_args(edots_when(TEllipsis,eexpr)))
       { (P.mkedots "..." d)::
 	(List.concat (List.map (function x -> x (P.mkedots "...")) r)) }
-/*
   | d=edots_when(TCircles,eexpr)
 	r=list(comma_args(edots_when(TCircles,eexpr)))
       { (P.mkedots "ooo" d)::
