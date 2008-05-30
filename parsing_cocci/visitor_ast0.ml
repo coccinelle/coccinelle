@@ -117,6 +117,8 @@ let combiner bind option_default
       | Ast0.Unary(exp,op) -> bind (unary_mcode op) (expression exp)
       | Ast0.Binary(left,op,right) ->
 	  multibind [expression left; binary_mcode op; expression right]
+      | Ast0.Nested(left,op,right) ->
+	  multibind [expression left; binary_mcode op; expression right]
       | Ast0.Paren(lp,exp,rp) ->
 	  multibind [string_mcode lp; expression exp; string_mcode rp]
       | Ast0.ArrayAccess(exp1,lb,exp2,rb) ->
@@ -635,6 +637,8 @@ let rebuilder = fun
 	| Ast0.Unary(exp,op) -> Ast0.Unary(expression exp, unary_mcode op)
 	| Ast0.Binary(left,op,right) ->
 	    Ast0.Binary(expression left, binary_mcode op, expression right)
+	| Ast0.Nested(left,op,right) ->
+	    Ast0.Nested(expression left, binary_mcode op, expression right)
 	| Ast0.Paren(lp,exp,rp) ->
 	    Ast0.Paren(string_mcode lp, expression exp, string_mcode rp)
 	| Ast0.ArrayAccess(exp1,lb,exp2,rb) ->

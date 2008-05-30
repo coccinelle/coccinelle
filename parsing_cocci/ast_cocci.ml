@@ -117,6 +117,7 @@ and base_expression =
   | Infix          of expression * fixOp mcode
   | Unary          of expression * unaryOp mcode
   | Binary         of expression * binaryOp mcode * expression
+  | Nested         of expression * binaryOp mcode * expression
   | ArrayAccess    of expression * string mcode (* [ *) * expression *
 	              string mcode (* ] *)
   | RecordAccess   of expression * string mcode (* . *) * ident

@@ -195,6 +195,9 @@ let rec expression e =
   | Ast.Binary(left,op,right) ->
       expression left; print_string " "; mcode binaryOp op; print_string " ";
       expression right
+  | Ast.Nested(left,op,right) ->
+      expression left; print_string " "; mcode binaryOp op; print_string " ";
+      expression right
   | Ast.Paren(lp,exp,rp) ->
       mcode print_string_box lp; expression exp; close_box();
       mcode print_string rp

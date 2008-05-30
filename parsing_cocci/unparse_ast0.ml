@@ -149,6 +149,11 @@ let rec expression e =
 	  expression left; print_string " "; mcode U.binaryOp op;
 	  print_string " "; expression right;
 	  print_string ")"
+      | Ast0.Nested(left,op,right) ->
+	  print_string "(";
+	  expression left; print_string " "; mcode U.binaryOp op;
+	  print_string " "; expression right;
+	  print_string ")"
       | Ast0.Paren(lp,exp,rp) ->
 	  mcode print_string_box lp; expression exp; close_box();
 	  mcode print_string rp

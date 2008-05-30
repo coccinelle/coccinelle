@@ -92,6 +92,7 @@ and base_expression =
   | Infix          of expression * Ast.fixOp mcode
   | Unary          of expression * Ast.unaryOp mcode
   | Binary         of expression * Ast.binaryOp mcode * expression
+  | Nested         of expression * Ast.binaryOp mcode * expression
   | Paren          of string mcode (* ( *) * expression *
                       string mcode (* ) *)
   | ArrayAccess    of expression * string mcode (* [ *) * expression *

@@ -72,6 +72,7 @@ let expression e =
   | Ast0.Infix(exp,op) -> [23]
   | Ast0.Unary(exp,op) -> [24]
   | Ast0.Binary(left,op,right) -> [25]
+  | Ast0.Nested(left,op,right) -> failwith "nested in index not possible"
   | Ast0.Paren(lp,exp,rp) -> [26]
   | Ast0.ArrayAccess(exp1,lb,exp2,rb) -> [27]
   | Ast0.RecordAccess(exp,pt,field) -> [28]

@@ -226,6 +226,7 @@ let rec top_expression opt_allowed tgt expr =
       let op = mcode op in
       let right = expression arity right in
       make_exp expr tgt arity (Ast0.Binary(left,op,right))
+  | Ast0.Nested(left,op,right) -> failwith "nested in arity not possible"
   | Ast0.Paren(lp,exp,rp) ->
       let arity = exp_same (mcode2line lp) [mcode2arity lp;mcode2arity rp] in
       let lp = mcode lp in

@@ -84,6 +84,7 @@ let dumb_astcocci_expr = function
  | A.Infix (ea, opa) -> ()
  | A.Unary (ea, opa) -> ()
  | A.Binary (ea1, opa, ea2) -> ()
+ | A.Nested (ea1, opa, ea2) -> ()
  | A.ArrayAccess (ea1, _, ea2, _) -> ()
  | A.RecordAccess (ea, _, ida) -> ()
  | A.RecordPtAccess (ea, _, ida) -> ()

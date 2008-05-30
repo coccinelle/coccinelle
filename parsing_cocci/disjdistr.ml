@@ -113,6 +113,10 @@ and disjexp e =
       disjmult2 (disjexp left) (disjexp right)
 	(function left -> function right ->
 	  Ast.rewrap e (Ast.Binary(left,op,right)))
+  | Ast.Nested(exp,op,right) ->
+      (* disj not possible in right *)
+      let exp = disjexp exp in
+      List.map (function exp -> Ast.rewrap e (Ast.Nested(exp,op,right))) exp
   | Ast.Paren(lp,exp,rp) ->
       let exp = disjexp exp in
       List.map (function exp -> Ast.rewrap e (Ast.Paren(lp,exp,rp))) exp

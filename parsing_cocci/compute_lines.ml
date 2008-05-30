@@ -214,6 +214,10 @@ let rec expression e =
       let left = expression left in
       let right = expression right in
       mkres e (Ast0.Binary(left,op,right)) left right
+  | Ast0.Nested(left,op,right) ->
+      let left = expression left in
+      let right = expression right in
+      mkres e (Ast0.Nested(left,op,right)) left right
   | Ast0.Paren(lp,exp,rp) ->
       mkres e (Ast0.Paren(lp,expression exp,rp))
 	(promote_mcode lp) (promote_mcode rp)

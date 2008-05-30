@@ -86,6 +86,7 @@ and base_expression =
   | Infix          of expression * Ast_cocci.fixOp mcode
   | Unary          of expression * Ast_cocci.unaryOp mcode
   | Binary         of expression * Ast_cocci.binaryOp mcode * expression
+  | Nested         of expression * Ast_cocci.binaryOp mcode * expression
   | Paren          of string mcode (* ( *) * expression *
                       string mcode (* ) *)
   | ArrayAccess    of expression * string mcode (* [ *) * expression *

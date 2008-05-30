@@ -305,6 +305,8 @@ and expression e =
 	Ast.Unary(expression exp,mcode op)
     | Ast0.Binary(left,op,right) ->
 	Ast.Binary(expression left,mcode op,expression right)
+    | Ast0.Nested(left,op,right) ->
+	Ast.Nested(expression left,mcode op,expression right)
     | Ast0.Paren(lp,exp,rp) ->
 	Ast.Paren(mcode lp,expression exp,mcode rp)
     | Ast0.ArrayAccess(exp1,lb,exp2,rb) ->

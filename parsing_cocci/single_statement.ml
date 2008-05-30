@@ -109,6 +109,7 @@ let rec left_expression e =
   | Ast0.Infix(exp,op) -> modif_before_mcode op
   | Ast0.Unary(exp,op) -> modif_before_mcode op
   | Ast0.Binary(left,op,right) -> left_expression left
+  | Ast0.Nested(left,op,right) -> left_expression left
   | Ast0.Paren(lp,exp,rp) -> modif_before_mcode lp
   | Ast0.ArrayAccess(exp1,lb,exp2,rb) -> left_expression exp1
   | Ast0.RecordAccess(exp,pt,field) -> left_expression exp

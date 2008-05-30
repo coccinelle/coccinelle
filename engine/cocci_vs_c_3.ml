@@ -828,8 +828,6 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
         )))
       else fail
 
-
-
   | A.Binary (ea1, opa, ea2), ((B.Binary (eb1, opb, eb2), typ),ii) -> 
       let opbi = tuple_of_list1 ii in
       if equal_binaryOp (term opa) opb
@@ -843,6 +841,48 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
           )))))
       else fail
 
+  | A.Nested (ea1, opa, ea2), eb -> 
+      let rec loop eb =
+	expression ea1 eb >|+|>
+	(match eb with
+	  ((B.Binary (eb1, opb, eb2), typ),ii)
+	  when equal_binaryOp (term opa) opb ->
+	    let opbi = tuple_of_list1 ii in
+	    let left_to_right =
+              (expression ea1 eb1 >>= (fun ea1 eb1 -> 
+		expression ea2 eb2 >>= (fun ea2 eb2 -> 
+		  tokenf opa opbi >>= (fun opa opbi -> 
+		    return (
+		    ((A.Nested (ea1, opa, ea2))) +> wa,
+		    ((B.Binary (eb1, opb, eb2), typ),[opbi]
+		       )))))) in
+	    let right_to_left =
+              (expression ea2 eb1 >>= (fun ea2 eb1 -> 
+		expression ea1 eb2 >>= (fun ea1 eb2 -> 
+		  tokenf opa opbi >>= (fun opa opbi -> 
+		    return (
+		    ((A.Nested (ea1, opa, ea2))) +> wa,
+		    ((B.Binary (eb1, opb, eb2), typ),[opbi]
+		       )))))) in
+	    let in_left =
+              (loop eb1 >>= (fun ea1 eb1 -> 
+		expression ea2 eb2 >>= (fun ea2 eb2 -> 
+		  tokenf opa opbi >>= (fun opa opbi -> 
+		    return (
+		    ((A.Nested (ea1, opa, ea2))) +> wa,
+		    ((B.Binary (eb1, opb, eb2), typ),[opbi]
+		       )))))) in
+	    let in_right =
+              (expression ea2 eb1 >>= (fun ea2 eb1 -> 
+		loop eb2 >>= (fun ea1 eb2 -> 
+		  tokenf opa opbi >>= (fun opa opbi -> 
+		    return (
+		    ((A.Nested (ea1, opa, ea2))) +> wa,
+		    ((B.Binary (eb1, opb, eb2), typ),[opbi]
+		       )))))) in
+	    left_to_right >|+|> right_to_left >|+|> in_left >|+|> in_right
+	| _ -> fail) in
+      loop eb
 
   (* todo?: handle some isomorphisms here ?  (with pointers = Unary Deref) *)
   | A.ArrayAccess (ea1, ia1, ea2, ia2),((B.ArrayAccess (eb1, eb2), typ),ii) -> 

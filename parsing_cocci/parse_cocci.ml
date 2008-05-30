@@ -12,7 +12,7 @@ let pr2 s = Printf.printf "%s\n" s
 
 (* for isomorphisms.  all should be at the front!!! *)
 let reserved_names = 
-  ["all";"optional_storage";"optional_qualifier";"value_format"]
+  ["all";"optional_storage";"optional_qualifier";"value_format";"comm_assoc"]
 
 (* ----------------------------------------------------------------------- *)
 (* Debugging... *)
@@ -1423,6 +1423,7 @@ let process file isofile verbose =
 	       Type_infer.type_infer minus;
 	       let (extra_meta, minus) =
 		 Iso_pattern.apply_isos chosen_isos minus rule_name in
+	       let minus = Comm_assoc.comm_assoc minus rule_name dropiso in
 	       let minus =
 		 if !Flag.sgrep_mode2 then minus
 		 else Single_statement.single_statement minus in
