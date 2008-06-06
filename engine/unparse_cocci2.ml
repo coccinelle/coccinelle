@@ -682,7 +682,7 @@ let rec pp_any = function
 	  print_string x;
 	  (* if x ==~ Common.regexp_alpha then print_string " "; *)
 	  (match x with
-	    "return" | "else" -> print_string " "
+	    (*"return" |*) "else" -> print_string " "
 	  | _ -> ()))
 	(x,info,(),Ast.NoMetaPos);
       if_open_brace x
