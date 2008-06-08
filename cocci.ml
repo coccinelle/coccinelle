@@ -429,9 +429,15 @@ let includes_to_parse xs =
       
 let rec interpret_dependencies local global = function
     Ast_cocci.Dep s      -> List.mem s local
-  | Ast_cocci.AntiDep s  -> not (List.mem s local)
+  | Ast_cocci.AntiDep s  ->
+      (if !Flag_ctl.steps != None
+      then failwith "steps and ! dependency incompatible");
+      not (List.mem s local)
   | Ast_cocci.EverDep s  -> List.mem s global
-  | Ast_cocci.NeverDep s -> not (List.mem s global)
+  | Ast_cocci.NeverDep s ->
+      (if !Flag_ctl.steps != None
+      then failwith "steps and ! dependency incompatible");
+      not (List.mem s global)
   | Ast_cocci.AndDep(s1,s2) ->
       (interpret_dependencies local global s1) &&
       (interpret_dependencies local global s2)

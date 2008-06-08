@@ -294,6 +294,8 @@ let other_options = [
     "   <level> for profiling the CTL engine";
     "-timeout", Arg.Int (fun x -> Flag_cocci.timeout := Some x), 
     "   <sec> timeout in seconds";
+    "-steps", Arg.Int (fun x -> Flag_ctl.steps := Some x), 
+    "   max number of model checking steps per code unit";
     "-track_iso", Arg.Set Flag.track_iso_usage,
     "   gather information about isomorphism usage";
     "-profile_iso",

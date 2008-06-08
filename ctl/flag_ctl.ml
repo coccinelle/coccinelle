@@ -11,3 +11,6 @@ let poswits_only = ref false
 let loop_in_src_code = ref false
 
 let bench = ref 0
+
+let steps = ref (None : int option)
+

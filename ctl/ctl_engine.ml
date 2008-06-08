@@ -22,6 +22,16 @@ let pREQUIRED_STATES_OPT = ref true
 (* Drop negative witnesses at Uncheck *)
 let pUNCHECK_OPT = ref true
 
+let step_count = ref 0
+exception Steps
+let inc_step _ =
+  if not (!step_count = 0)
+  then
+    begin
+      step_count := !step_count - 1;
+      if !step_count = 0 then raise Steps
+    end
+
 let inc cell = cell := !cell + 1
 
 let satEU_calls = ref 0
@@ -1017,6 +1027,7 @@ let satEU dir ((_,_,states) as m) s1 s2 reqst =
     if !pNEW_INFO_OPT
     then
       let rec f y new_info =
+	inc_step();
 	match new_info with
 	  [] -> y
 	| new_info ->
@@ -1031,6 +1042,7 @@ let satEU dir ((_,_,states) as m) s1 s2 reqst =
       f s2 s2
     else
       let f y =
+	inc_step();
 	let pre = pre_exist dir m y reqst in
 	triples_union s2 (triples_conj s1 pre) in
       setfix f s2
@@ -1043,6 +1055,7 @@ let satEF dir m s2 reqst =
   if !pNEW_INFO_OPT
   then
     let rec f y new_info =
+      inc_step();
       match new_info with
 	[] -> y
       | new_info ->
@@ -1060,6 +1073,7 @@ let satEF dir m s2 reqst =
     f s2 s2
   else
     let f y =
+      inc_step();
       let pre = pre_exist dir m y reqst in
       triples_union s2 pre in
     setfix f s2
@@ -1083,6 +1097,7 @@ let satAU dir ((cfg,_,states) as m) s1 s2 reqst =
     if !pNEW_INFO_OPT
     then
       let rec f y newinfo =
+	inc_step();
 	match newinfo with
 	  [] -> AUok y
 	| new_info ->
@@ -1114,6 +1129,7 @@ let satAU dir ((cfg,_,states) as m) s1 s2 reqst =
       f s2 s2
     else
       let f y =
+	inc_step();
 	let pre = pre_forall dir m y y reqst in
 	triples_union s2 (triples_conj s1 pre) in
       AUok (setfix f s2))
@@ -1163,6 +1179,7 @@ let satAW dir ((grp,_,states) as m) s1 s2 reqst =
        *)
       (*let ctr = ref 0 in*)
       let f y =
+	inc_step();
 	(*ctr := !ctr + 1;
 	Printf.printf "iter %d y %d\n" !ctr (List.length y);
 	print_state "y" y;
@@ -1178,6 +1195,7 @@ let satAF dir m s reqst =
   if !pNEW_INFO_OPT
   then
     let rec f y newinfo =
+      inc_step();
       match newinfo with
 	[] -> y
       | new_info ->
@@ -1188,6 +1206,7 @@ let satAF dir m s reqst =
     f s s
   else
     let f y =
+      inc_step();
       let pre = pre_forall dir m y y reqst in
       triples_union s pre in
     setfix f s
@@ -1195,6 +1214,7 @@ let satAF dir m s reqst =
 let satAG dir ((_,_,states) as m) s reqst =
   inc satAG_calls;
   let f y =
+    inc_step();
     let pre = pre_forall dir m y y reqst in
     triples_conj y pre in
   setgfix f s
@@ -1202,6 +1222,7 @@ let satAG dir ((_,_,states) as m) s reqst =
 let satEG dir ((_,_,states) as m) s reqst =
   inc satEG_calls;
   let f y =
+    inc_step();
     let pre = pre_exist dir m y reqst in
     triples_conj y pre in
   setgfix f s
@@ -2305,34 +2326,39 @@ let filter_partial_matches trips =
 (* ---------------------------------------------------------------------- *)
 (* Main entry point for engine *)
 let sat m phi reqopt = 
-  Hashtbl.clear reachable_table;
-  Hashtbl.clear memo_label;
-  let (x,label,states) = m in
-  if (!Flag_ctl.bench > 0) or (preprocess m label reqopt)
-  then
-    ((* to drop when Yoann initialized this flag *)
-    if List.exists (G.extract_is_loop x) states
-    then Flag_ctl.loop_in_src_code := true;
-    let m = (x,label,List.sort compare states) in
-    let res =
-      if(!Flag_ctl.verbose_ctl_engine)
-      then
-	let fn _ = snd (sat_annotree simpleanno2 m phi) in
-	if !Flag_ctl.bench > 0
-	then bench_sat m fn
-	else fn()
-      else
-	let fn _ = satloop false [] None m phi [] in
-	if !Flag_ctl.bench > 0
-	then bench_sat m fn
-	else fn() in
-    let res = filter_partial_matches res in
+  try
+    (match !Flag_ctl.steps with
+      None -> step_count := 0
+    | Some x -> step_count := x);
+    Hashtbl.clear reachable_table;
+    Hashtbl.clear memo_label;
+    let (x,label,states) = m in
+    if (!Flag_ctl.bench > 0) or (preprocess m label reqopt)
+    then
+      ((* to drop when Yoann initialized this flag *)
+      if List.exists (G.extract_is_loop x) states
+      then Flag_ctl.loop_in_src_code := true;
+      let m = (x,label,List.sort compare states) in
+      let res =
+	if(!Flag_ctl.verbose_ctl_engine)
+	then
+	  let fn _ = snd (sat_annotree simpleanno2 m phi) in
+	  if !Flag_ctl.bench > 0
+	  then bench_sat m fn
+	  else fn()
+	else
+	  let fn _ = satloop false [] None m phi [] in
+	  if !Flag_ctl.bench > 0
+	  then bench_sat m fn
+	  else fn() in
+      let res = filter_partial_matches res in
     (*print_state "final result" res;*)
-    res)
-  else
-    (if !Flag_ctl.verbose_ctl_engine
-    then Common.pr2 "missing something required";
-     [])
+      res)
+    else
+      (if !Flag_ctl.verbose_ctl_engine
+      then Common.pr2 "missing something required";
+       [])
+  with Steps -> []
 ;;
 
 (* ********************************************************************** *)
