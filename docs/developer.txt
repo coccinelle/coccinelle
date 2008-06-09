@@ -1,5 +1,6 @@
 -*- org -*-
 
+
 * How to install coccinelle 
 ------------------------------
 
@@ -34,6 +35,8 @@ make
 
 ** Tutorial 
 
+I have put demos/examples.
+
 ** spatch, sgrep
 
 ** Emacs coccinelle mode
@@ -46,6 +49,9 @@ See docs/manual.tex
 
 * How to extend coccinelle 
 ------------------------------
+
+
+Send us a semantic patch :)
 
 
 * Documentation on coccinelle internals

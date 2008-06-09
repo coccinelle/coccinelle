@@ -1,6 +1,8 @@
 open Ocollection
 open Oset
 
+let empty = Setb.empty
+
 class ['a] osetb xs   = 
   object(o)
     inherit ['a] oset

@@ -1260,7 +1260,8 @@ val forall : ('a -> bool) -> 'a list -> bool
 
 val big_union : ('a -> 'b set) -> 'a list -> 'b set
 
-val empty : 'a list
+(* same than [] but easier to search for, because [] can also be a pattern *)
+val empty_list : 'a list
 
 val sort : ('a -> 'a -> int) -> 'a list -> 'a list
 
