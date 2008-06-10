@@ -9,11 +9,13 @@ SYSLIBS=str.cma unix.cma
 LIBS=commons/commons.cma globals/globals.cma\
      ctl/ctl.cma \
      parsing_cocci/cocci_parser.cma parsing_c/parsing_c.cma \
-     engine/cocciengine.cma popl/popl.cma \
+     engine/cocciengine.cma popl09/popl.cma \
      extra/extra.cma pycaml/pycaml.cma 
 
-MAKESUBDIRS=commons globals ctl parsing_cocci parsing_c engine popl extra coccilib
-INCLUDEDIRS=commons globals ctl parsing_cocci parsing_c engine popl extra pycaml
+MAKESUBDIRS=commons globals ctl parsing_cocci parsing_c engine popl09 \
+extra coccilib
+INCLUDEDIRS=commons globals ctl parsing_cocci parsing_c engine popl09 \
+extra pycaml
 
 ##############################################################################
 # Generic variables
@@ -139,7 +141,7 @@ tags:
 	otags -no-mli-tags -r  .
 
 dependencygraph:
-	find  -name "*.ml" |grep -v "scripts" | xargs ocamldep -I commons -I globals -I ctl -I parsing_cocci -I parsing_c -I engine -I popl -I extra > /tmp/dependfull.depend
+	find  -name "*.ml" |grep -v "scripts" | xargs ocamldep -I commons -I globals -I ctl -I parsing_cocci -I parsing_c -I engine -I popl09 -I extra > /tmp/dependfull.depend
 	ocamldot -fullgraph /tmp/dependfull.depend > /tmp/dependfull.dot
 	dot -Tps /tmp/dependfull.dot > /tmp/dependfull.ps
 

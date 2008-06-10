@@ -64,9 +64,13 @@ let rec merge l1 l2 =
       |	1  -> y::(merge l1 ys)
       |	_ -> failwith "not possible")
 
+let intersect l1 l2 = List.filter (function l1e -> List.mem l1e l2) l1
+
+let minus_set l1 l2 = List.filter (function l1e -> not (List.mem l1e l2)) l1
+
 let rec insert x l = merge [x] l
 
-let build_and x y =
+let rec build_and x y =
   if x = y
   then x
   else
@@ -76,11 +80,26 @@ let build_and x y =
     | (And l1,And l2) -> And (merge l1 l2)
     | (x,Or l) when List.mem x l -> x
     | (Or l,x) when List.mem x l -> x
+    | (Or l1,Or l2) when not ((intersect l1 l2) = []) ->
+	let inner =
+	  build_and
+	    (List.fold_left build_or False (minus_set l1 l2))
+	    (List.fold_left build_or False (minus_set l2 l1)) in
+	List.fold_left build_or inner (intersect l1 l2)
     | (x,And l) | (And l,x) ->
-	if List.mem x l then And l else And (insert x l)
+	if List.mem x l
+	then And l
+	else
+	  let others =
+	    List.filter
+	      (function
+		  Or l -> not(List.mem x l)
+		| _ -> true)
+	      l in
+	  And (insert x others)
     | (x,y) -> norm(And [x;y])
 
-let build_or x y =
+and build_or x y =
   if x = y
   then x
   else
@@ -90,8 +109,23 @@ let build_or x y =
     | (Or l1,Or l2) -> Or (merge l1 l2)
     | (x,And l) when List.mem x l -> x
     | (And l,x) when List.mem x l -> x
+    | (And l1,And l2) when not ((intersect l1 l2) = []) ->
+	let inner =
+	  build_or
+	    (List.fold_left build_and True (minus_set l1 l2))
+	    (List.fold_left build_and True (minus_set l2 l1)) in
+	List.fold_left build_and inner (intersect l1 l2)
     | (x,Or l) | (Or l,x) ->
-	if List.mem x l then Or l else Or (insert x l)
+	if List.mem x l
+	then Or l
+	else
+	  let others =
+	    List.filter
+	      (function
+		  And l -> not(List.mem x l)
+		| _ -> true)
+	      l in
+	  Or (insert x others)
     | (x,y) -> norm(Or [x;y])
 
 let keep x = Elem x
@@ -244,7 +278,9 @@ let do_get_constants constants keywords env neg_pos =
 		List.fold_left
 		  (function prev ->
 		    function
-			Ast.IncPath s -> (Elem s)::prev
+			(* just take the last thing, probably the most
+			   specific.  everything is necessary anyway. *)
+			Ast.IncPath s -> [Elem s]
 		      | Ast.IncDots -> prev)
 		  [] l in
 	      (match strings with
