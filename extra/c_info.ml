@@ -73,7 +73,7 @@ let defined_stuff xs =
 
   (* look only for toplevel definition: don't recurse, don't call k *)
   let bigf = { Visitor_c.default_visitor_c with
-    Visitor_c.kprogram = (fun (k,bigf) t -> 
+    Visitor_c.ktoplevel = (fun (k,bigf) t -> 
       match t with
       | Declaration decl -> 
           (match decl with
@@ -124,7 +124,7 @@ let defined_stuff xs =
     );
 
   } in
-  xs +> List.iter (fun (p, info_item) -> Visitor_c.vk_program bigf p);
+  xs +> List.iter (fun (p, info_item) -> Visitor_c.vk_toplevel bigf p);
   e
 
 
@@ -185,7 +185,7 @@ let used_stuff xs =
       | _ -> ()
       );
     );
-    Visitor_c.kprogram = (fun (k, bigf) elem -> 
+    Visitor_c.ktoplevel = (fun (k, bigf) elem -> 
       match elem with
       | Definition def -> 
           let (funcs, ((returnt, (paramst, b))), sto, statxs),ii = def in
@@ -256,7 +256,7 @@ let used_stuff xs =
     );
 
   } in
-  xs +> List.iter (fun (p, info_item) -> Visitor_c.vk_program bigf p);
+  xs +> List.iter (fun (p, info_item) -> Visitor_c.vk_toplevel bigf p);
   e
 
 
@@ -268,7 +268,7 @@ let extra_stuff xs =
 
   (* look only for toplevel definition: don't recurse, don't call k *)
   let bigf = { Visitor_c.default_visitor_c with
-    Visitor_c.kprogram = (fun (k,bigf) t -> 
+    Visitor_c.ktoplevel = (fun (k,bigf) t -> 
       match t with
       | MacroTop (s, args, ii) -> 
           if s = "module_init"
@@ -281,7 +281,7 @@ let extra_stuff xs =
       | _ -> ()
     );
   } in
-  xs +> List.iter (fun (p, info_item) -> Visitor_c.vk_program bigf p);
+  xs +> List.iter (fun (p, info_item) -> Visitor_c.vk_toplevel bigf p);
   !is_module
 
 

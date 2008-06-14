@@ -144,7 +144,7 @@ let remove_useless_fakeInfo_struct program =
       | x -> x
     )
   } in
-  Visitor_c.vk_program_s bigf program
+  Visitor_c.vk_toplevel_s bigf program
 
 
 (*****************************************************************************)
