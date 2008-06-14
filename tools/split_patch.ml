@@ -4,6 +4,10 @@ module CP = Classic_patch
 
 (* ./split_patch ../demos/janitorings/patch-kzalloc-vnew3.patch /tmp/xx "0 -> NULL" ../bodymail.doc  
 ./split_patch /tmp/badzero.patch /tmp/xx ../mailbody.doc ../kernel_dirs.meta
+
+update: see  http://lwn.net/Articles/284469/
+for a script using git annotate to find automatically to who send
+a patch (by looking at authors of lines close concerning the patch I guess
 *)
 
 (*****************************************************************************)
