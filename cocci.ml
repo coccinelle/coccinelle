@@ -16,10 +16,6 @@ module TAC = Type_annoter_c
  *)
 (*****************************************************************************)
 
-let rec nub = function
-    [] -> []
-  | x::xs -> if List.mem x xs then nub xs else x::(nub xs)
-
 (* --------------------------------------------------------------------- *)
 (* C related *)
 (* --------------------------------------------------------------------- *)
@@ -979,7 +975,7 @@ and apply_cocci_rule r rules_that_have_ever_matched es ccs =
 		      !children_e
 		    end in
 	      let old_bindings_to_keep =
-		nub
+		Common.nub
 		  (e +> List.filter (fun (s,v) -> List.mem s r.used_after)) in
 	      let new_e =
 		if null new_bindings
@@ -1002,7 +998,7 @@ and apply_cocci_rule r rules_that_have_ever_matched es ccs =
 		     reassociate_positions. want to reassociate freshly
 		     according to the free variables of each rule. *)
 		  let new_bindings_to_add =
-		    nub
+		    Common.nub
 		      (new_bindings +>
 		       List.map
 			 (List.filter
