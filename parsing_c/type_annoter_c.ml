@@ -534,7 +534,7 @@ let rec (annotate_program2 :
           
     );    
 
-    Visitor_c.kprogram = (fun (k, bigf) elem -> 
+    Visitor_c.ktoplevel = (fun (k, bigf) elem -> 
       _notyped_var := Hashtbl.create 100;
       match elem with
       | Definition def -> 
@@ -564,7 +564,7 @@ let rec (annotate_program2 :
 
   prog +> List.map (fun elem -> 
     let beforeenv = !_scoped_env in
-    Visitor_c.vk_program bigf elem;
+    Visitor_c.vk_toplevel bigf elem;
     let afterenv = !_scoped_env in
     (elem, (beforeenv, afterenv))
   )

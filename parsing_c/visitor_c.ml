@@ -118,7 +118,7 @@ type visitor_c =
    (* CFG *)
    knode: (F.node -> unit) * visitor_c -> F.node -> unit;
    (* AST *)
-   kprogram: (toplevel -> unit) * visitor_c -> toplevel -> unit;
+   ktoplevel: (toplevel -> unit) * visitor_c -> toplevel -> unit;
  } 
 
 let default_visitor_c = 
@@ -130,7 +130,7 @@ let default_visitor_c =
     kini       = (fun (k,_) ie  -> k ie);
     kinfo      = (fun (k,_) ii  -> k ii);
     knode      = (fun (k,_) n  -> k n);
-    kprogram      = (fun (k,_) p  -> k p);
+    ktoplevel  = (fun (k,_) p  -> k p);
   } 
 
 let rec vk_expr = fun bigf expr ->
@@ -383,16 +383,20 @@ and vk_struct_fields = fun bigf fields ->
     iif ii;
     match xfield with 
     | FieldDeclList onefield_multivars -> 
-        onefield_multivars +> List.iter (fun (field, iicomma) ->
-          iif iicomma;
-          match field with
-          | Simple (s, t), ii -> iif ii; vk_type bigf t;
-          | BitField (sopt, t, expr), ii -> 
-              iif ii;
-              vk_expr bigf expr;
-              vk_type bigf t 
-        )
+        vk_struct_field bigf onefield_multivars
     | EmptyField -> ()
+  )
+
+and vk_struct_field = fun bigf onefield_multivars -> 
+  let iif ii = vk_ii bigf ii in
+  onefield_multivars +> List.iter (fun (field, iicomma) ->
+    iif iicomma;
+    match field with
+    | Simple (s, t), ii -> iif ii; vk_type bigf t;
+    | BitField (sopt, t, expr), ii -> 
+        iif ii;
+        vk_expr bigf expr;
+        vk_type bigf t 
   )
 
 
@@ -417,8 +421,8 @@ and vk_def = fun bigf d ->
 
 
 
-and vk_program = fun bigf p -> 
-  let f = bigf.kprogram in
+and vk_toplevel = fun bigf p -> 
+  let f = bigf.ktoplevel in
   let iif ii =  vk_ii bigf ii in
   let rec k p = 
     match p with
@@ -647,7 +651,7 @@ type visitor_c_s = {
   kdecl_s: (declaration  inout * visitor_c_s) -> declaration inout;
   kdef_s:  (definition   inout * visitor_c_s) -> definition  inout; 
 
-  kprogram_s: (toplevel inout * visitor_c_s) -> toplevel inout;
+  ktoplevel_s: (toplevel inout * visitor_c_s) -> toplevel inout;
   knode_s: (F.node inout * visitor_c_s) -> F.node inout;
 
   kdefineval_s: (define_val inout * visitor_c_s) -> define_val inout;
@@ -662,7 +666,7 @@ let default_visitor_c_s =
     kdecl_s      = (fun (k,_) d  -> k d);
     kdef_s       = (fun (k,_) d  -> k d);
     kini_s       = (fun (k,_) d  -> k d);
-    kprogram_s   = (fun (k,_) p  -> k p);
+    ktoplevel_s  = (fun (k,_) p  -> k p);
     knode_s      = (fun (k,_) n  -> k n);
     kinfo_s      = (fun (k,_) i  -> k i);
     kdefineval_s = (fun (k,_) x  -> k x);
@@ -976,8 +980,8 @@ and vk_def_s = fun bigf d ->
 
   in f (k, bigf) d 
 
-and vk_program_s = fun bigf p -> 
-  let f = bigf.kprogram_s in
+and vk_toplevel_s = fun bigf p -> 
+  let f = bigf.ktoplevel_s in
   let iif ii = vk_ii_s bigf ii in
   let rec k p = 
     match p with

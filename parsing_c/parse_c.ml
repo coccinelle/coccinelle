@@ -440,7 +440,7 @@ let consistency_checking2 xs =
     );
   } 
   in
-  xs +> List.iter (fun (p, info_item) -> Visitor_c.vk_program bigf p);
+  xs +> List.iter (fun (p, info_item) -> Visitor_c.vk_toplevel bigf p);
 
 
   let ident_to_type = ref [] in
@@ -511,7 +511,7 @@ let consistency_checking2 xs =
       );
     } in
     xs +> List.map (fun (p, info_item) -> 
-      Visitor_c.vk_program_s bigf p, info_item
+      Visitor_c.vk_toplevel_s bigf p, info_item
     )
 
 
@@ -979,9 +979,12 @@ let parse_print_error_heuristic2 file =
 let parse_print_error_heuristic a  = 
   Common.profile_code "C parsing" (fun () -> parse_print_error_heuristic2 a)
 
+(* alias *)
+let parse_c_and_cpp a = parse_print_error_heuristic a
 
-
-(* same but faster cos memoize stuff *)
+(*****************************************************************************)
+(* Same but faster cos memoize stuff *)
+(*****************************************************************************)
 let parse_cache file = 
   if not !Flag_parsing_c.use_cache then parse_print_error_heuristic file 
   else 
@@ -1003,3 +1006,18 @@ let parse_cache file =
     file ".ast_raw" 
     (need_no_changed_files, need_no_changed_variables) ".depend_raw" 
     (fun () -> parse_print_error_heuristic file)
+
+
+
+(*****************************************************************************)
+(*****************************************************************************)
+
+(* can not be put in parsing_hack, cos then mutually recursive problem as
+ * we also want to parse the standard.h file.
+ *)
+let init_defs std_h =     
+  if not (Common.lfile_exists std_h)
+  then pr2 ("warning: Can't find default macro file: " ^ std_h)
+  else 
+    Parsing_hacks._defs := Common.hash_of_list (parse_cpp_define_file std_h)
+  ;

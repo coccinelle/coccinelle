@@ -1050,8 +1050,7 @@ tobrace_ini: TOBrace { !LP._lexer_hint.toplevel <- false; $1 }
 
 /*---------------------------------------------------------------------------*/
 s_or_u_spec2: 
- | struct_or_union 
-     ident tobrace_struct struct_decl_list_gcc tcbrace_struct
+ | struct_or_union ident tobrace_struct struct_decl_list_gcc tcbrace_struct
      { StructUnion (fst $1, Some (fst $2), $4),  [snd $1;snd $2;$3;$5]  }
  | struct_or_union       tobrace_struct struct_decl_list_gcc tcbrace_struct
      { StructUnion (fst $1, None, $3), [snd $1;$2;$4] }

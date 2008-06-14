@@ -1,6 +1,5 @@
 open Common
 
-
 (*****************************************************************************)
 (* Abstract line *)
 (*****************************************************************************)
@@ -40,7 +39,7 @@ let al_param     = Visitor_c.vk_param_s     strip_info_visitor
 let al_params    = Visitor_c.vk_params_s    strip_info_visitor
 let al_arguments = Visitor_c.vk_arguments_s strip_info_visitor
 
-let al_program  = List.map (Visitor_c.vk_program_s  strip_info_visitor)
+let al_program  = List.map (Visitor_c.vk_toplevel_s  strip_info_visitor)
 
 let semi_strip_info_visitor = (* keep position information *)
   { Visitor_c.default_visitor_c_s with
@@ -60,7 +59,7 @@ let semi_al_param     = Visitor_c.vk_param_s     semi_strip_info_visitor
 let semi_al_params    = Visitor_c.vk_params_s    semi_strip_info_visitor
 let semi_al_arguments = Visitor_c.vk_arguments_s semi_strip_info_visitor
 
-let semi_al_program = List.map (Visitor_c.vk_program_s semi_strip_info_visitor)
+let semi_al_program = List.map (Visitor_c.vk_toplevel_s semi_strip_info_visitor)
 
 (*****************************************************************************)
 (* Extract infos *)
@@ -81,14 +80,15 @@ let extract_info_visitor recursor x =
 let ii_of_decl = extract_info_visitor Visitor_c.vk_decl
 let ii_of_node = extract_info_visitor Visitor_c.vk_node
 let ii_of_expr = extract_info_visitor Visitor_c.vk_expr
+let ii_of_stmt = extract_info_visitor Visitor_c.vk_statement
 let ii_of_args = extract_info_visitor Visitor_c.vk_args_splitted
 let ii_of_type = extract_info_visitor Visitor_c.vk_type
 let ii_of_ini  = extract_info_visitor Visitor_c.vk_ini
 let ii_of_param = extract_info_visitor Visitor_c.vk_param
 let ii_of_params = extract_info_visitor Visitor_c.vk_params_splitted
 let ii_of_struct_fields = extract_info_visitor Visitor_c.vk_struct_fields
+let ii_of_struct_field = extract_info_visitor Visitor_c.vk_struct_field
 let ii_of_cst = extract_info_visitor Visitor_c.vk_cst
-let ii_of_stmt = extract_info_visitor Visitor_c.vk_statement
 let ii_of_define_params = 
   extract_info_visitor Visitor_c.vk_define_params_splitted
 

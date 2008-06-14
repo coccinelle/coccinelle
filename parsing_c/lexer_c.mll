@@ -252,6 +252,9 @@ rule token = parse
   (* #define, #undef *)
   (* ---------------------- *)
 
+  (* the rest of the lexing/parsing of define is done in fix_tokens_define 
+   * where we parse until a TCppEscapedNewline and generate a TDefEol
+   *)
   | "#" [' ' '\t']* "define" { TDefine (tokinfo lexbuf) } 
 
   | "#" [' ' '\t']* "undef" [' ' '\t']+ id

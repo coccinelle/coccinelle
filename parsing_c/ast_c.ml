@@ -1,3 +1,15 @@
+(* Copyright (C) 2004-2008 Yoann Padioleau
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * version 2.1 as published by the Free Software Foundation, with the
+ * special exception on linking described in file license.txt.
+ * 
+ * This library is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the file
+ * license.txt for more details.
+ *)
 open Common
 
 (*****************************************************************************)
@@ -29,6 +41,8 @@ open Common
  * convention: I often use 'ii' for the name of a list of info. 
  * 
  *)
+
+
 
 (* forunparser: *)
 

@@ -1,5 +1,11 @@
 open Common
 
+(* The main function is parse_c_and_cpp. It uses globals in Lexer_Parser and 
+ * Parsing_hacks. Especially Parsing_hacks._defs which often comes
+ * from a standard.h macro file. Cf also init_defs below.
+ *)
+
+
 val tokens:      filename -> Parser_c.token list
 val tokens_string: string -> Parser_c.token list
 
@@ -27,12 +33,16 @@ type parsing_stat = {
   } 
 
 
-(* This is the main function. It uses globals in Lexer_Parser and 
- * Parsing_hacks. Especially Parsing_hacks._defs which often comes
- * from a standard.h macro file.
- *)
+
+
+(* The is the main function *)
 val parse_print_error_heuristic:  
   filename (*cfile*) -> (program2 * parsing_stat)
+val parse_c_and_cpp : (* alias of previous func *)
+  filename (*cfile*) -> (program2 * parsing_stat)
+
+val init_defs : filename -> unit
+
 
 (* use some .ast_raw memoized version, and take care if obsolete *)
 val parse_cache:
@@ -46,3 +56,4 @@ val print_commentized       : Parser_c.token list -> unit
 
 val parse_cpp_define_file : 
   filename -> (string, Parsing_hacks.define_body) assoc
+

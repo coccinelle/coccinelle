@@ -65,7 +65,7 @@ let normal_form_program xs =
       | _ -> k e    
 
     );
-    Visitor_c.kprogram_s = (fun (k,bigf) p -> 
+    Visitor_c.ktoplevel_s = (fun (k,bigf) p -> 
       match p with
       | Define _ -> 
           raise Todo
@@ -93,7 +93,7 @@ let normal_form_program xs =
 
   }
   in
-  xs +> List.map (fun p -> Visitor_c.vk_program_s  bigf p)
+  xs +> List.map (fun p -> Visitor_c.vk_toplevel_s  bigf p)
 
 
 

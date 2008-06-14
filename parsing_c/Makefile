@@ -24,12 +24,12 @@ INCLUDES= -I ../commons -I ../globals -I  ../parsing_cocci
 ##############################################################################
 # Generic variables
 ##############################################################################
+
 #for warning:  -w A 
 #for profiling:  -p -inline 0   with OCAMLOPT
 OCAMLC=ocamlc$(OPTBIN) -g -dtypes   $(INCLUDES) 
 OCAMLOPT=ocamlopt$(OPTBIN)   $(INCLUDES) $(OPTFLAGS)
-#OCAMLLEX=ocamllex$(OPTBIN) -ml
-OCAMLLEX=ocamllex$(OPTBIN)
+OCAMLLEX=ocamllex$(OPTBIN) #-ml
 OCAMLYACC=ocamlyacc -v
 OCAMLDEP=ocamldep$(OPTBIN)  $(INCLUDES)
 OCAMLMKTOP=ocamlmktop -g -custom $(INCLUDES)
@@ -43,14 +43,7 @@ OPTOBJS = $(SRC:.ml=.cmx)
 # Top rules
 ##############################################################################
 all: $(TARGET).cma
-
 all.opt: $(TARGET).cmxa
-
-$(TARGET).byte: $(OBJS) $(LIBS)
-	$(OCAMLC) -o $(TARGET).byte $(SYSLIBS) $(LIBS) $(OBJS)
-
-$(TARGET).opt: $(OPTOBJS) $(LIBS:.cma=.cmxa)
-	$(OCAMLOPT) -o $(TARGET).opt   $(SYSLIBS:.cma=.cmxa) $(LIBS:.cma=.cmxa)  $(OPTOBJS)
 
 $(TARGET).cma: $(OBJS)
 	$(OCAMLC) -a -o $(TARGET).cma $(OBJS)
@@ -62,7 +55,7 @@ $(TARGET).top: $(OBJS) $(LIBS)
 	$(OCAMLMKTOP) -o $(TARGET).top $(SYSLIBS) $(LIBS) $(OBJS)
 
 clean::
-	rm -f $(TARGET).byte $(TARGET).opt rm -f $(TARGET).top
+	rm -f $(TARGET).top
 
 
 
@@ -78,6 +71,7 @@ parser_c.ml parser_c.mli: parser_c.mly
 clean::
 	rm -f parser_c.ml parser_c.mli parser_c.output
 beforedepend:: parser_c.ml parser_c.mli
+
 
 ##############################################################################
 # Generic rules
