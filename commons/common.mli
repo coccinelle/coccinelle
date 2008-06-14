@@ -1,18 +1,76 @@
 (*###########################################################################*)
+(* Globals *)
+(*###########################################################################*)
+
+(* Some conventions:
+ *
+ * When I have some _xxx variables before some functions, it's 
+ * because I want to show that those functions internally use a global 
+ * variable. That does not mean I want people to modify this global.
+ * In fact they are kind of private, but I still want to show them
+ * (maybe one day OCaml will have an effect type system so I don't need this).
+ * 
+ * The variables that are called _init_xxx show the internal init 
+ * side effect of the module (like static var trick used in C/C++)
+ *)
+
+
+(*****************************************************************************)
+(* Flags *)
+(*****************************************************************************)
+(* see the corresponding section for the use of those flags *)
+
+(* if set then will not do certain finalize so faster to go back in replay *)
+val debugger : bool ref
+
+type prof = PALL | PNONE | PSOME of string list
+val profile : prof ref
+
+val verbose_level : int ref
+
+(* forbid pr2_once to do the once "optimisation" *)
+val disable_pr2_once : bool ref
+
+val save_tmp_files : bool ref
+
+
+
+(*****************************************************************************)
+(* Module side effect *)
+(*****************************************************************************)
+(* 
+ * I define a few unit_test via some let _ = example (... = ...).
+ * I also initialize the random seed, cf _init_random .
+ * I also set Gc.stack_size, cf _init_gc_stack .
+*)
+
+(*****************************************************************************)
+(* Semi globals *)
+(*****************************************************************************)
+(* cf the _xxx variables in this file *)
+
+(*###########################################################################*)
 (* Basic features *)
 (*###########################################################################*)
 
 type filename = string
 
+(* Trick in case you dont want to do an 'open Common' while still wanting
+ * more pervasive types than the one in Pervasives. Just do the selective
+ * open Common.BasicType
+ *)
 module BasicType : sig
   type filename = string
 end
 
+(* Same spirit. Trick found in Jane Street core lib, but originated somewhere
+ * else I think *)
 module Infix : sig
   val ( +> ) : 'a -> ('a -> 'b) -> 'b
   val ( =~ ) : string -> string -> bool
   val ( ==~ ) : string -> Str.regexp -> bool
 end
+
 
 
 (*****************************************************************************)
@@ -39,8 +97,8 @@ val pr2_xxxxxxxxxxxxxxxxx : unit -> unit
 val pr2_gen: 'a -> unit
 val dump: 'a -> string
 
+(* see flag: val disable_pr2_once : bool ref *)
 val _already_printed : (string, bool) Hashtbl.t
-val _disable_once : bool ref
 val pr2_once : string -> unit
 
 val redirect_stdout_stderr : filename -> (unit -> unit) -> unit
@@ -51,15 +109,16 @@ val fprintf : out_channel -> ('a, out_channel, unit) format -> 'a
 val printf : ('a, out_channel, unit) format -> 'a
 val eprintf : ('a, out_channel, unit) format -> 'a
 val sprintf : ('a, unit, string) format -> 'a
-val bprintf : Buffer.t -> ('a, Buffer.t, unit) format -> 'a
-val kprintf : (string -> 'a) -> ('b, unit, string, 'a) format4 -> 'b
 
+(* alias *)
 val spf : ('a, unit, string) format -> 'a
 
-val _chan : out_channel ref (* default = stderr *)
-val start_log_file : unit -> unit (* generate & use a /tmp/debugml-xxx file *)
+(* default = stderr *)
+val _chan : out_channel ref 
+(* generate & use a /tmp/debugml-xxx file *)
+val start_log_file : unit -> unit 
 
-val verbose_level : int ref
+(* see flag: val verbose_level : int ref *)
 val log : string -> unit
 val log2 : string -> unit
 val log3 : string -> unit
@@ -86,8 +145,8 @@ val debugon : unit -> unit
 val debugoff : unit -> unit
 val debug : (unit -> unit) -> unit
 
-(* if set then will not do certain finalize so faster to go back in replay *)
-val debugger : bool ref
+(* see flag: val debugger : bool ref *)
+
 
 (*****************************************************************************)
 (* Profiling (cpu/mem) *)
@@ -113,8 +172,10 @@ val profile_diagnostic_basic : unit -> string
 
 val time_func : (unit -> 'a) -> 'a
 
-type prof = PALL | PNONE | PSOME of string list
-val profile : prof ref
+
+
+(* see flag: type prof = PALL | PNONE | PSOME of string list *)
+(* see flag: val profile : prof ref *)
 
 val _profile_table : (string, (float ref * int ref)) Hashtbl.t ref
 val profile_code : string -> (unit -> 'a) -> 'a
@@ -130,8 +191,10 @@ val profile_code2 : string -> (unit -> 'a) -> 'a
 (*****************************************************************************)
 
 val example : bool -> unit
-val example2 : string -> bool -> unit (* generate failwith <string> when pb *)
-val assert_equal : 'a -> 'a -> unit (* use Dumper to report when pb *)
+(* generate failwith <string> when pb *)
+val example2 : string -> bool -> unit 
+(* use Dumper to report when pb *)
+val assert_equal : 'a -> 'a -> unit 
 
 val _list_bool : (string * bool) list ref
 val example3 : string -> bool -> unit
@@ -178,6 +241,7 @@ val laws2 :
 (* Persistence *)
 (*****************************************************************************)
 
+(* just wrappers around Marshall *)
 val get_value : filename -> 'a
 val write_value : 'a -> filename -> unit
 val write_back : ('a -> 'b) -> filename -> unit
@@ -230,6 +294,7 @@ val adjust_pp_with_indent_and_header : string -> (unit -> unit) -> unit
 (* Macro *)
 (*****************************************************************************)
 
+(* was working with my macro.ml4 *)
 val macro_expand : string -> unit
 
 (*****************************************************************************)
@@ -264,8 +329,8 @@ class ['a] shared_variable_hook :
     method set : 'a -> unit
   end
 
-val ptFix : ('a -> 'a) -> 'a -> 'a
-val ptFixForObjetct : ((< equal : 'a -> bool; .. > as 'a) -> 'a) -> 'a -> 'a
+val fixpoint : ('a -> 'a) -> 'a -> 'a
+val fixpoint_for_object : ((< equal : 'a -> bool; .. > as 'a) -> 'a) -> 'a -> 'a
 
 val add_hook : ('a -> ('a -> 'b) -> 'b) ref -> ('a -> ('a -> 'b) -> 'b) -> unit
 val add_hook_action : ('a -> unit) ->   ('a -> unit) list ref -> unit
@@ -311,6 +376,9 @@ val once : ('a -> unit) -> ('a -> unit)
 
 val before_leaving : ('a -> unit) -> 'a -> 'a
 
+(* do some finalize, signal handling, unix exit conversion, etc *)
+val main_boilerplate : (unit -> unit) -> unit
+
 (*****************************************************************************)
 (* Concurrency *)
 (*****************************************************************************)
@@ -336,6 +404,78 @@ val error_cant_have : 'a -> 'b
 val exn_to_s : exn -> string
 
 (*****************************************************************************)
+(* Environment *)
+(*****************************************************************************)
+
+val check_stack_size: int -> unit
+
+(* internally common.ml set Gc. parameters *)
+val _init_gc_stack : unit
+
+(*****************************************************************************)
+(* Arguments and command line *)
+(*****************************************************************************)
+
+type arg_spec_full = Arg.key * Arg.spec * Arg.doc
+type cmdline_options = arg_spec_full list
+
+
+type options_with_title = string * string * arg_spec_full list
+type cmdline_sections = options_with_title list
+
+
+(* A wrapper around Arg modules that have more logical argument order, 
+ * and returns the remaining args.
+ *)
+val parse_options : 
+  cmdline_options -> Arg.usage_msg -> string array -> string list
+
+(* Another wrapper that does Arg.align automatically *)
+val usage : Arg.usage_msg -> cmdline_options -> unit
+
+
+
+(* Work with the options_with_title type way to organize a long
+ * list of command line switches.
+ *)
+val short_usage : 
+  Arg.usage_msg -> short_opt:cmdline_options -> unit
+val long_usage : 
+  Arg.usage_msg -> short_opt:cmdline_options -> long_opt:cmdline_sections -> 
+  unit
+
+(* With the options_with_title way, we don't want the default -help and --help
+ * so need adapter of Arg module, not just wrapper.
+ *)
+val arg_align2 : cmdline_options -> cmdline_options
+val arg_parse2 : 
+  cmdline_options -> Arg.usage_msg -> (unit -> unit) (* short_usage func *) -> 
+  string list
+
+
+
+
+
+
+type flag_spec   = Arg.key * Arg.spec * Arg.doc
+type action_spec = Arg.key * Arg.doc * action_func 
+   and action_func = (string list -> unit)
+
+type cmdline_actions = action_spec list
+exception WrongNumberOfArguments
+
+val mk_action_1_arg : (string -> unit)                     -> action_func
+val mk_action_2_arg : (string -> string -> unit)           -> action_func
+val mk_action_3_arg : (string -> string -> string -> unit) -> action_func
+
+val options_of_actions: 
+  string ref (* the action ref *) -> cmdline_actions -> cmdline_options
+val action_list: 
+  cmdline_actions -> Arg.key list
+val do_action: 
+  Arg.key -> string list (* args *) -> cmdline_actions -> unit
+
+(*****************************************************************************)
 (* Equality *)
 (*****************************************************************************)
 
@@ -358,11 +498,11 @@ val (=:=) : bool   -> bool   -> bool
 val (=*=): 'a -> 'a -> bool
 
 (* if want to restrict the use of '=', uncomment this:
-
-     val (=): int -> int -> bool
-
-But it will not forbid you to use caml functions like List.find, List.mem
-which internaly use this convenient but evolution-unfriendly (=)
+ *
+ * val (=): int -> int -> bool
+ * 
+ * But it will not forbid you to use caml functions like List.find, List.mem
+ * which internaly use this convenient but evolution-unfriendly (=)
 *)
 
 
@@ -476,6 +616,16 @@ val numd_float : float numdict
 val testd : 'a numdict -> 'a -> 'a
 
 (*****************************************************************************)
+(* Random *)
+(*****************************************************************************)
+
+val _init_random : unit
+val random_list : 'a list -> 'a
+val randomize_list : 'a list -> 'a list
+val random_subset_of_list : int -> 'a list -> 'a list
+
+
+(*****************************************************************************)
 (* Tuples *)
 (*****************************************************************************)
 
@@ -499,6 +649,7 @@ val fst : 'a * 'b -> 'a (* alias *)
 val double : 'a -> 'a * 'a
 val swap : 'a * 'b -> 'b * 'a
 
+(* maybe a sign of bad programming if use those functions :) *)
 val tuple_of_list1 : 'a list -> 'a
 val tuple_of_list2 : 'a list -> 'a * 'a
 val tuple_of_list3 : 'a list -> 'a * 'a * 'a
@@ -564,6 +715,13 @@ val null_string : string -> bool
 val is_blank_string : string -> bool
 val is_string_prefix : string -> string -> bool
 
+
+val plural : int -> string -> string
+
+val showCodeHex : int list -> unit
+
+val size_mo_ko : int -> string
+
 (*****************************************************************************)
 (* Regexp *)
 (*****************************************************************************)
@@ -580,6 +738,7 @@ val regexp_match : string -> string -> string
 
 val matched : int -> string -> string
 
+(* not yet politypic functions in ocaml *)
 val matched1 : string -> string
 val matched2 : string -> string * string
 val matched3 : string -> string * string * string
@@ -610,6 +769,7 @@ val fileprefix : filename -> string
 
 val adjust_ext_if_needed : filename -> string -> filename
 
+(* db for dir, base *)
 val db_of_filename : filename -> (string * filename)
 val filename_of_db : (string * filename) -> filename
 
@@ -674,6 +834,9 @@ val rough_days_between_dates : date_dmy -> date_dmy -> days
 
 val dmy_to_unixtime: date_dmy -> float * Unix.tm
 
+val sec_to_days : int -> string
+
+
 (*****************************************************************************)
 (* Lines/Words/Strings *)
 (*****************************************************************************)
@@ -715,7 +878,7 @@ val do_in_fork : (unit -> unit) -> int
 val mkdir: ?mode:Unix.file_perm -> string -> unit
 
 val read_file : filename -> string
-val write_file : filename -> string -> unit
+val write_file : file:filename -> string -> unit
 
 val filesize : filename -> int
 val filemtime : filename -> float
@@ -749,6 +912,9 @@ val with_open_infile :
 val with_open_outfile_append : 
   filename -> ((string -> unit) * out_channel -> 'a) -> 'a
 
+val with_open_stringbuf : 
+  (((string -> unit) * Buffer.t) -> unit) -> string
+
 exception Timeout
 
 (* subtil: have to make sure that Timeout is not intercepted before here. So 
@@ -767,6 +933,7 @@ val timeout_function_opt : int option -> (unit -> 'a) -> 'a
  * ex: new_temp_file "cocci" ".c" will give "/tmp/cocci-3252-434465.c" 
  *)
 val _temp_files_created : string list ref
+(* see flag: val save_tmp_files : bool ref *)
 val new_temp_file : string (* prefix *) -> string (* suffix *) -> filename
 val erase_temp_files : unit -> unit
 
@@ -789,7 +956,7 @@ val exn_to_real_unixexit : (unit -> 'a) -> 'a
 
 
 (*###########################################################################*)
-(* And now collection like types. See also ocollection.mli *)
+(* And now collection-like types. See also ocollection.mli *)
 (*###########################################################################*)
 
 (*****************************************************************************)
@@ -945,6 +1112,7 @@ val sorted_keep_best : ('a -> 'a -> 'a option) -> 'a list -> 'a list
 
 val cartesian_product : 'a list -> 'b list -> ('a * 'b) list
 
+(* old stuff *)
 val surEnsemble : 'a list -> 'a list list -> 'a list list
 val realCombinaison : 'a list -> 'a list list
 val combinaison : 'a list -> ('a * 'a) list
@@ -1005,6 +1173,7 @@ val include_set : 'a set -> 'a set -> bool
 val equal_set : 'a set -> 'a set -> bool
 val include_set_strict : 'a set -> 'a set -> bool
 
+(* could put them in Common.Infix *)
 val ( $*$ ) : 'a set -> 'a set -> 'a set
 val ( $+$ ) : 'a set -> 'a set -> 'a set
 val ( $-$ ) : 'a set -> 'a set -> 'a set
@@ -1015,6 +1184,8 @@ val ( $<=$ ) : 'a set -> 'a set -> bool
 val ( $=$ ) : 'a set -> 'a set -> bool
 
 val ( $@$ ) : 'a list -> 'a list -> 'a list
+
+val nub : 'a list -> 'a list
 
 (*****************************************************************************)
 (* Set as normal list *)
@@ -1121,6 +1292,9 @@ val intintmap_string_of_t : 'a -> 'b -> string
 (* Note that Hashtbl keep old binding to a key so if want a hash
  * of a list, then can use the Hashtbl as is. Use Hashtbl.find_all then
  * to get the list of bindings
+ * 
+ * Note that Hashtbl module use different convention :( the object is 
+ * the first argument, not last as for List or Map.
  *)
 
 (* obsolete: can use directly the Hashtbl module *)
@@ -1296,7 +1470,7 @@ val is_singleton : 'a list -> bool
 (* GUI (LFS, CComment) *)
 (*****************************************************************************)
 
-(* cf ocamlgtk and gCommon.ml *)
+(* cf ocamlgtk and my gCommon.ml *)
 
 
 
@@ -1440,27 +1614,24 @@ val add_in_scope_h : ('a, 'b) scoped_h_env ref -> 'a * 'b -> unit
 (* Terminal (LFS) *)
 (*****************************************************************************)
 
+val _execute_and_show_progress_func :
+  (int (* length *) -> ((unit -> unit) -> unit) -> unit) ref 
 val execute_and_show_progress : 
  int (* length *) -> ((unit -> unit) -> unit) -> unit
 
 (*****************************************************************************)
-(* Random *)
+(* Flags and actions *)
 (*****************************************************************************)
 
-val random_list : 'a list -> 'a
-val randomize_list : 'a list -> 'a list
-val random_subset_of_list : int -> 'a list -> 'a list
+val cmdline_flags_devel : unit -> cmdline_options
+val cmdline_flags_verbose : unit -> cmdline_options
+val cmdline_flags_other : unit -> cmdline_options
 
 (*****************************************************************************)
 (* Misc/test *)
 (*****************************************************************************)
 
-val check_stack_size: int -> unit
 
-val showCodeHex : int list -> unit
-val size_mo_ko : int -> string
-val plural : int -> string -> string
-val sec_to_days : int -> string
 val generic_print : 'a -> string -> string
 class ['a] olist :
   'a list ->
@@ -1472,6 +1643,4 @@ class ['a] olist :
 
 
 val typing_sux_test : unit -> unit
-
-
 

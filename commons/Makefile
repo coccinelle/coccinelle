@@ -4,7 +4,7 @@
 TARGET=commons
 
 # note: if you add a file (a .mli or .ml), dont forget to redo a 'make depend'
-MYSRC=common.ml \
+MYSRC=common.ml common_extra.ml \
       seti.ml \
       objet.ml ocollection.ml \
       oset.ml oassoc.ml osequence.ml ograph.ml \
@@ -28,7 +28,9 @@ SYSLIBS=str.cma unix.cma
 INCLUDEDIRS=ocamlextra
 SUBDIR=ocamlextra
 
-# other common (thin wrapper) libraries
+#-----------------------------------------------------------------------------
+# Other common (thin wrapper) libraries
+#-----------------------------------------------------------------------------
 
 #gdbm
 MYGDBMSRC=oassocdbm.ml
@@ -44,6 +46,15 @@ BDBSYSLIBS=bdb.cma
 GUIINCLUDES=-I +lablgtk2 -I +lablgtksourceview -I ../ocamlgtk/src
 MYGUISRC=gCommon.ml
 GUISYSLIBS=lablgtk.cma lablgtksourceview.cma
+
+
+#-----------------------------------------------------------------------------
+# Other stuff
+#-----------------------------------------------------------------------------
+
+#backtrace
+BACKTRACEINCLUDES=-I $(shell ocamlc -where)
+MYBACKTRACESRC=backtrace.ml
 
 ##############################################################################
 # Generic variables
@@ -76,6 +87,9 @@ OCAMLYACC= ocamlyacc -v
 OCAMLDEP = ocamldep $(INCLUDES)
 OCAMLMKTOP=ocamlmktop -g -custom $(INCLUDES)
 
+# if need C code
+OCAMLMKLIB=ocamlmklib
+CC=gcc 
 
 ##############################################################################
 # Top rules
@@ -108,6 +122,8 @@ clean::
 # Other commons libs target
 ##############################################################################
 
+all_libs: gdbm bdb gui backtrace
+
 gdbm: commons_gdbm.cma
 gdbm.opt: commons_gdbm.cmxa
 
@@ -134,13 +150,34 @@ commons_bdb.cmxa: $(MYBDBSRC:.ml=.cmx)
 gui:
 	$(MAKE) INCLUDESEXTRA="$(GUIINCLUDES)" commons_gui.cma
 gui.opt:
-	$(MAKE) INCLUDESEXTRA="$(GUIINCLUDES)" commons_gui.cma
+	$(MAKE) INCLUDESEXTRA="$(GUIINCLUDES)" commons_gui.cmxa
 
 commons_gui.cma: $(MYGUISRC:.ml=.cmo)
 	$(OCAMLC) -a -o $@ $^
 
 commons_gui.cmxa: $(MYGUISRC:.ml=.cmx)
 	$(OCAMLOPT) -a -o $@ $^
+
+
+
+
+
+
+backtrace: commons_backtrace.cma
+backtrace.opt: commons_backtrace.cmxa
+
+backtrace_c.o: backtrace_c.c
+	$(CC) $(BACKTRACEINCLUDES) -c $^
+
+commons_backtrace.cma: $(MYBACKTRACESRC:.ml=.cmo) backtrace_c.o
+	$(OCAMLMKLIB) -o commons_backtrace $^
+
+commons_backtrace.cmxa: $(MYBACKTRACESRC:.ml=.cmx) backtrace_c.o
+	$(OCAMLMKLIB) -o commons_backtrace  $^
+
+clean::
+	rm -f dllcommons_backtrace.so
+
 
 ##############################################################################
 # Developer rules

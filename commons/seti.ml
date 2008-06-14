@@ -1,5 +1,8 @@
 open Common
 
+(*****************************************************************************)
+(* coded for LFS *)
+
 (* todo: could take an incr/decr func in param, to make it generic
  * opti: remember the min/max (optimisation to have intersect biggest x -> x)
  * opti: avoid all those rev, and avoid the intervise 
@@ -7,6 +10,7 @@ open Common
  * opti: balanced set intervalle 
 *)
 
+(*****************************************************************************)
 type seti = elt list (* last elements is in first pos, ordered reverse *)
   and elt = Exact of int | Interv of int * int
 
@@ -37,6 +41,7 @@ let string_of_seti xs =
     | (Interv (i,j)) -> Printf.sprintf "%d - %d" i j)) ^
     "]"
 
+(*****************************************************************************)
 let empty = []
 
 let pack newi j = function
@@ -153,6 +158,7 @@ let rec cardinal = function
   | (Exact _)::xs -> 1+cardinal xs
   | (Interv (i,j)::xs) -> (j-i) +1 + cardinal xs
       
+(*****************************************************************************)
 (*  TODO: could return corresponding osetb ? *)
 let rec inter xs ys = 
   let rec aux = fun xs ys -> 
@@ -311,11 +317,13 @@ let diff xs ys =
 
 (*     let _ = Example (diff [Interv (3,7)] [Interv (4,5)] = [Interv (6, 7); Exact 3]) *)
  
+(*****************************************************************************)
 let rec debug = function
   | [] -> ""
   | (Exact i)::xs -> (Printf.sprintf "Exact:%d;" i) ^  (debug xs)
   | (Interv (i,j)::xs) -> (Printf.sprintf "Interv:(%d,%d);" i j) ^ debug xs
 
+(*****************************************************************************)
 (* if operation return wrong result, then may later have to patch them *)
 let patch1 xs = List.map exactize xs
 let patch2 xs = xs +> List.map (fun e -> 

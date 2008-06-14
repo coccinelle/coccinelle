@@ -48,6 +48,8 @@ open Common
  * class
  * todo: make ostack (FIFO), oqueue (LIFO)
  * 
+ * 
+ * influences: okasaki, merd (pixel), java classes, smalltalk classes
  *)
 
 (*---------------------------------------------------------------------------*)

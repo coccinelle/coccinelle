@@ -4,3 +4,5 @@ Thanks to
  - Brian Hurt and Nicolas Cannasse for their dynArray module,
  - Troestler Christophe for his ANSITerminal module,
  - Sebastien ferre for his suffix tree module
+
+ - Jane street for backtrace module
