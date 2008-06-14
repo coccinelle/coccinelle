@@ -1,16 +1,13 @@
 open Common
 
-open Parse_cocci
-
 (*****************************************************************************)
 (* Flags *)
 (*****************************************************************************)
 
 (* In addition to flags that can be tweaked via -xxx options (cf the
- * full list of options in "the spatch options" section), the spatch
- * program also depends on external files, described in
- * globals/config.ml, mainly a standard.h and standard.iso file 
- *)
+ * full list of options in "the spatch options" section below), the
+ * spatch program also depends on external files, described in
+ * globals/config.ml, mainly a standard.h and standard.iso file *)
 
 let cocci_file = ref ""
 
@@ -18,7 +15,9 @@ let output_file = ref ""
 let inplace_modif = ref false  (* but keeps a .cocci_orig *)
 let outplace_modif = ref false (* generates a .cocci_res  *)
 
-let dir = ref false
+(* could be avoided by using Common.files_of_dir_or_files instead *)
+let dir = ref false 
+
 let include_headers = ref false
 let kbuild_info = ref ""
 
@@ -35,7 +34,6 @@ let action = ref ""
 (* works with -test but also in "normal" spatch mode *)
 let compare_with_expected = ref false
 
-let save_tmp_files = ref false
 
 let distrib_index = ref (None : int option)
 let distrib_max   = ref (None : int option)
@@ -156,6 +154,7 @@ let short_options = [
 
   "-dir", Arg.Set dir,
   "    <dir> process all files in directory recursively";
+
   "-include_headers", Arg.Set include_headers,
   "    process header files independently";
   "-use_glimpse", Arg.Set Flag.use_glimpse,
@@ -235,8 +234,10 @@ let other_options = [
     "-verbose_ctl_engine",   Arg.Set Flag_ctl.verbose_ctl_engine, " ";
     "-verbose_match",   Arg.Set Flag_ctl.verbose_match, " ";
     "-verbose_engine",       Arg.Set Flag_engine.debug_engine,    " ";
+
     "-no_parse_error_msg", Arg.Clear Flag_parsing_c.verbose_parsing, " ";
     "-no_type_error_msg",  Arg.Clear Flag_parsing_c.verbose_type, " ";
+    (* could also use Flag_parsing_c.options_verbose *)
   ];
 
   "other show options",
@@ -248,6 +249,7 @@ let other_options = [
     "-show_ctl_tex"           , Arg.Set Flag_cocci.show_ctl_tex,     " ";
     "-show_SP_julia"       ,    Arg.Set Flag_parsing_cocci.show_SP,  " ";
   ];
+
 
   "debug C parsing/unparsing",
   "",
@@ -266,6 +268,8 @@ let other_options = [
     "-debug_unparsing",      Arg.Set  Flag_engine.debug_unparsing, "  ";
 
   ];
+  (* could use Flag_parsing_c.options_debug_with_title instead *)
+
 
   "shortcut for enabling/disabling a set of debugging options at once",
   "",
@@ -314,12 +318,16 @@ let other_options = [
     "    simplified SmPL, for the popl paper";
 
     "-loop",              Arg.Set Flag_ctl.loop_in_src_code,    " ";
+
     "-l1",                Arg.Clear Flag_parsing_c.label_strategy_2, " ";
     "-ifdef",              Arg.Set Flag_parsing_c.ifdef_to_if, 
     "   convert ifdef to if (buggy!)";
     "-noif0_passing",   Arg.Clear Flag_parsing_c.if0_passing, 
     " ";
     "-noadd_typedef_root",   Arg.Clear Flag_parsing_c.add_typedef_root, " ";
+    (* could use Flag_parsing_c.options_algo instead *)
+
+
     "-disallow_nested_exps", Arg.Set Flag_engine.disallow_nested_exps,
        "disallow an expresion pattern from matching a term and its subterm";
     "-disable_worth_trying_opt", Arg.Clear Flag_cocci.worth_trying_opt,
@@ -340,9 +348,9 @@ let other_options = [
   [
     "-debugger",         Arg.Set Common.debugger , 
     "   option to set if launch spatch in ocamldebug";
-    "-disable_once",     Arg.Set Common._disable_once, 
+    "-disable_once",     Arg.Set Common.disable_pr2_once, 
     "   to print more messages";
-    "-save_tmp_files",   Arg.Set save_tmp_files,   " ";
+    "-save_tmp_files",   Arg.Set Common.save_tmp_files,   " ";
   ];
 
   "concurrency",
@@ -361,6 +369,7 @@ let other_options = [
   [
     "-use_cache", Arg.Set Flag_parsing_c.use_cache, 
     "   use .ast_raw pre-parsed cached C file";
+    (* could use Flag_parsing_c.options_pad instead *)
   ];
 
 
@@ -389,28 +398,12 @@ let other_options = [
    "It's for the other (internal) uses of the spatch program."
   ),
   [
-    (let s = "-tokens_c" in s, Arg.Unit (fun () -> action := s),
-    "   <file>");
-    (let s = "-parse_c"  in s, Arg.Unit (fun () -> action := s),
-    "   <file or dir> can work with -dir");
-    (let s = "-parse_h"  in s, Arg.Unit (fun () -> action := s),
-    "   <file or dir> can work with -dir");
-    (let s = "-parse_ch"  in s, Arg.Unit (fun () -> action := s),
-    "   <file or dir> can work with -dir");
+    (* could add Test_parsing_c.option_actions stuff such as all the
+     * -token_c, -parse_c, etc 
+     *)
+
     (let s = "-parse_cocci"  in s, Arg.Unit (fun () -> action := s),
     "   <file>");
-    (let s = "-show_flow"  in s, Arg.Unit (fun () -> action := s),
-    "   <file> or <file:function>");
-    (let s = "-control_flow"  in s, Arg.Unit (fun () -> action := s),
-    "   <file> or <file:function>");
-    (let s = "-parse_unparse"  in s, Arg.Unit (fun () -> action := s),
-    "   <file>");
-    (let s = "-type_c"  in s, Arg.Unit (fun () -> action := s),
-    "   <file>");
-    (let s = "-compare_c"  in s, Arg.Unit (fun () -> action := s),
-    "  <file1> <file2>");
-    (let s = "-xxx"  in s, Arg.Unit (fun () -> action := s),
-    "  ");
   ];
 ]
 
@@ -419,6 +412,7 @@ let all_options =
   short_options ++ List.concat (List.map Common.thd3 other_options)
  
 
+  
 (* I don't want the -help and --help that are appended by Arg.align *)
 let arg_align2 xs =
   Arg.align xs +> List.rev +> Common.drop 2 +> List.rev
@@ -437,32 +431,20 @@ let arg_parse2 l f msg =
   | Arg.Help msg -> (* printf "%s" msg; exit 0; *)
       raise Impossible  (* -help is specified in speclist *)
   )
-  
+
 
 let short_usage () =
  begin
-  Arg.usage (Arg.align short_options) usage_msg; 
+  Common.short_usage usage_msg short_options; 
   pr2 "";
   pr2 "Example of use:";
   pr2 "  ./spatch -sp_file foo.cocci foo.c -o /tmp/newfoo.c";
   pr2 "";
  end
 
+
 let long_usage () = 
- begin
-  pr usage_msg;
-  pr "";
-  (("main options", "", short_options)::other_options) +> List.iter 
-    (fun (title, explanations, xs) -> 
-      pr title;
-      pr_xxxxxxxxxxxxxxxxx();
-      if explanations <> "" 
-      then begin pr explanations; pr "" end;
-      arg_align2 xs +> List.iter (fun (key,action,s) -> pr ("  " ^ key ^ s));
-      pr "";
-    );
- end
-      
+  Common.long_usage usage_msg short_options other_options
 
 let _ = short_usage_func := short_usage
 let _ = long_usage_func := long_usage
@@ -506,6 +488,7 @@ let main () =
     let args = ref [] in
 
     arg_parse2 (Arg.align all_options) (fun x -> args := x::!args) usage_msg;
+
     (if !dir && List.length !args > 1
     then
       begin
@@ -564,28 +547,11 @@ let main () =
     (* --------------------------------------------------------- *)
     (* Actions, useful to debug subpart of coccinelle *)
     (* --------------------------------------------------------- *)
-    | [file] when !action = "-tokens_c" -> 
-        Testing.test_tokens_c file
-    | x::xs when  !action = "-parse_c" -> 
-        Testing.test_parse_c  (x::xs) !dir 
-    | x::xs when  !action = "-parse_h" -> 
-        Testing.test_parse_h  (x::xs) !dir 
-    | x::xs when  !action = "-parse_ch" -> 
-        Testing.test_parse_ch  (x::xs) !dir 
     | [file] when !action = "-parse_cocci" -> 
         Testing.test_parse_cocci file
-    | [filefunc] when !action = "-control_flow" || !action = "-show_flow" -> 
-        Testing.test_cfg filefunc
-    | [file] when !action = "-parse_unparse" -> 
-       Testing.test_parse_unparse file
-    | [file] when !action = "-type_c" -> 
-        Testing.test_type_c file
-    | [file1;file2] when !action = "-compare_c" -> 
-       Testing.test_compare_c file1 file2 (* result is in unix code *)
-    | [] when !action = "-compare_c_hardcoded" -> 
-        Testing.test_compare_c_hardcoded ()
-    | xs when !action = "-xxx" -> 
-        Testing.test_xxx xs !dir
+
+    (* could add the Test_parsing_c.test_actions such as -parse_c & co *)
+
 
     (* --------------------------------------------------------- *)
     (* This is the main entry *)
@@ -746,47 +712,20 @@ let main () =
     | [] -> short_usage()
         
   ));
-    if !Pycocci.initialised && (Pycaml.py_isinitialized ()) != 0 then
-	(let _ = Pycaml.pyrun_simplestring "cocci.finalise()" in
-	if !Flag.show_misc then Common.pr2 "Finalizing python\n";
-	Pycaml.py_finalize ());
+    if !Pycocci.initialised && (Pycaml.py_isinitialized ()) != 0 then begin
+      ignore(Pycaml.pyrun_simplestring "cocci.finalise()");
+      if !Flag.show_misc 
+      then Common.pr2 "Finalizing python\n";
+      Pycaml.py_finalize ();
+    end
   end
 
 (*****************************************************************************)
 let _ =
-  if not (!Sys.interactive) then 
-    Common.exn_to_real_unixexit (fun () -> 
+  Common.main_boilerplate (fun () -> 
+    main ();
+    Ctlcocci_integration.print_bench();
+  )
+    
 
-      Sys.set_signal Sys.sigint (Sys.Signal_handle   (fun _ -> 
-        pr2 "C-c intercepted, will do some cleaning before exiting";
-        (* But if do some try ... with e -> and if do not reraise the exn,
-         * the bubble never goes at top and so I cant really C-c.
-         * 
-         * A solution would be to not raise, but do the erase_temp_file in the
-         * syshandler, here, and then exit.
-         * The current solution is to not do some wild  try ... with e
-         * by having in the exn handler a case: UnixExit x -> raise ... | e ->
-         *)
-        Sys.set_signal Sys.sigint Sys.Signal_default;
-        raise (Common.UnixExit (-1))
-      ));
-
-      (* The finalize below makes it tedious to go back to exn when use
-       * 'back' in the debugger. Hence this special case. But the 
-       * Common.debugger will be set in main(), so too late, so 
-       * have to be quicker
-       *)
-      if Sys.argv +> Array.to_list +> List.exists (fun x -> x ="-debugger")
-      then Common.debugger := true;
-
-      Common.finalize          (fun ()-> 
-        Common.pp_do_in_zero_box (fun () -> 
-          main ();
-          Ctlcocci_integration.print_bench();
-        ))
-       (fun()-> 
-         pr2 (Common.profile_diagnostic ());
-         if not !save_tmp_files then Common.erase_temp_files ();
-       )
-    )
       

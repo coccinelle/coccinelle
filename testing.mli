@@ -24,23 +24,12 @@ val compare_with_expected : (filename * filename option) list -> unit
 (* to test/debug the coccinelle subsystems *)
 (*****************************************************************************)
 
-val test_tokens_c : filename -> unit
-(* parse and handle some regression information when called with dirmode *)
-val test_parse_c  : filename list -> bool (* dirmode *) -> unit
-val test_parse_h  : filename list -> bool (* dirmode *) -> unit
-val test_parse_ch : filename list -> bool (* dirmode *) -> unit
-
-val test_parse_unparse : filename -> unit
-
-val test_cfg : filename (* foo.c or foo.c:main *) -> unit
-val test_type_c : filename -> unit
-
-val test_compare_c : filename -> filename -> unit (* result is in unix code *)
-val test_compare_c_hardcoded : unit -> unit
+(* pad: 
+ * I moved the parsing_c/ subsystem testing in parsing_c/test_parsing_c.ml
+ * as I need it for other projects too.
+ *)
 
 val test_parse_cocci : filename -> unit
-
-val test_xxx : string list -> bool (* dirmode *) -> unit
 
 (*****************************************************************************)
 (* to be called by ocaml toplevel, to test. *)

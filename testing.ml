@@ -1,6 +1,5 @@
 open Common
 
-
 (*****************************************************************************)
 (* Test framework *)
 (*****************************************************************************)
@@ -351,73 +350,6 @@ let compare_with_expected outfiles =
 (* Subsystem testing *)
 (*****************************************************************************)
 
-let tmpfile = "/tmp/output.c" 
-
-let test_tokens_c file = 
-  if not (file =~ ".*\\.c") 
-  then pr2 "warning: seems not a .c file";
-
-  Flag_parsing_c.debug_lexer := true; 
-  Flag_parsing_c.verbose_parsing := true;
-
-  Parse_c.tokens file +> Common.pr2_gen
-
-
-        
-
-let test_parse_gen xs dirmode ext = 
-        
-  Flag_parsing_c.debug_typedef := true;
-  Flag_parsing_c.debug_cpp := true;
-
-  let fullxs = 
-    if dirmode
-    then Common.cmd_to_list ("find " ^(join " " xs) ^" -name \"*." ^ext^"\"")
-    else xs 
-  in
-      
-  let stat_list = ref [] in
-  let newscore  = Common.empty_score () in
-
-  fullxs +> List.iter (fun file -> 
-    if not (file =~ (".*\\."^ext))
-    then pr2 ("warning: seems not a ."^ext^" file");
-
-    pr2 "";
-    pr2 ("PARSING: " ^ file);
-
-    let (xs, stat) = Parse_c.parse_print_error_heuristic file in
-    xs +> List.iter (fun (ast, (s, toks)) -> 
-      Parse_c.print_commentized toks
-    );
-
-    Common.push2 stat stat_list;
-    let s = 
-      sprintf "bad = %d, timeout = %B" 
-        stat.Parse_c.bad stat.Parse_c.have_timeout
-    in
-    if stat.Parse_c.bad = 0 && not stat.Parse_c.have_timeout
-    then Hashtbl.add newscore file (Common.Ok)
-    else Hashtbl.add newscore file (Common.Pb s)
-  );
-  
-  if not (null !stat_list) 
-  then Parse_c.print_parsing_stat_list !stat_list;
-  
-  if dirmode
-  then begin 
-    pr2 "--------------------------------";
-    pr2 "regression testing  information";
-    pr2 "--------------------------------";
-    let str = Str.global_replace (Str.regexp "/") "__" (List.hd xs) in
-    let def = if !Flag_parsing_c.filter_define_error then "_def_" else "" in
-    let ext = if ext = "c" then "" else ext in
-    Common.regression_testing newscore 
-      (Filename.concat Config.path 
-       ("parsing_c/tests/score_parsing__" ^str ^ def ^ ext ^ ".marshalled"))
-  end
-        
-
 let test_parse_cocci file = 
   if not (file =~ ".*\\.cocci") 
   then pr2 "warning: seems not a .cocci file";
@@ -433,115 +365,7 @@ let test_parse_cocci file =
 
 
 
-(* file can be   "foo.c"  or "foo.c:main" *)
-let test_cfg file = 
 
-  let (file, specific_func) = 
-    if file =~ "\\(.*\\.c\\):\\(.*\\)"
-    then 
-      let (a,b) = matched2 file in 
-      a, Some b
-    else 
-      file, None
-  in
-
-  if not (file =~ ".*\\.c") 
-  then pr2 "warning: seems not a .c file";
-
-  let (program, _stat) = Parse_c.parse_print_error_heuristic file in
-
-  program +> List.iter (fun (e,_) -> 
-    let toprocess = 
-      match specific_func, e with
-      | None, _ -> true
-      | Some s, Ast_c.Definition (((funcs, _, _, c),_))  -> 
-          s = funcs
-      | _, _ -> false 
-    in
-          
-    if toprocess
-    then 
-      (* old: Flow_to_ast.test !Flag.show_flow def *)
-      (try 
-          let flow = Ast_to_flow.ast_to_control_flow e in
-          flow +> do_option (fun flow -> 
-            Ast_to_flow.deadcode_detection flow;
-            let flow = Ast_to_flow.annotate_loop_nodes flow in
-
-            let flow' = 
-              if !Flag_cocci.show_before_fixed_flow 
-              then flow
-              else Ctlcocci_integration.fix_flow_ctl flow
-            in
-            Ograph_extended.print_ograph_mutable flow' ("/tmp/output.dot") true
-          )
-        with Ast_to_flow.Error (x) -> Ast_to_flow.report_error x
-      )
-  )
-
-let test_parse_c xs dirmode = test_parse_gen xs dirmode "c"
-let test_parse_h xs dirmode = test_parse_gen xs dirmode "h"
-let test_parse_ch xs dirmode = test_parse_gen xs dirmode "[ch]"
-
-
-
-let test_parse_unparse infile = 
-  if not (infile =~ ".*\\.c") 
-  then pr2 "warning: seems not a .c file";
-
-  let (program2, _stat) = Parse_c.parse_print_error_heuristic infile in
-  let program2_with_ppmethod = 
-    program2 +> List.map (fun x -> x, Unparse_c2.PPnormal)
-  in
-  Unparse_c2.pp_program program2_with_ppmethod tmpfile;
-  Common.command2 ("cat " ^ tmpfile)
-
-
-
-
-let test_type_c infile = 
-  if not (infile =~ ".*\\.c") 
-  then pr2 "warning: seems not a .c file";
-
-  Flag_parsing_c.pretty_print_type_info := true;
-
-  let (program2, _stat) =  Parse_c.parse_print_error_heuristic infile in
-  let program2 =
-    program2 
-    +> Common.unzip 
-    +> (fun (program, infos) -> 
-      Type_annoter_c.annotate_program Type_annoter_c.initial_env
-        program +> List.map fst,
-      infos
-    )
-    +> Common.uncurry Common.zip
-  in
-  let program2_with_ppmethod = 
-    program2 +> List.map (fun x -> x, Unparse_c2.PPnormal)
-  in
-  Unparse_c2.pp_program program2_with_ppmethod tmpfile;
-  Common.command2 ("cat " ^ tmpfile)
-
-
-(* used by generic_makefile now *)
-let test_compare_c file1 file2 = 
-  let (correct, diffxs) = Compare_c.compare_default file1 file2 in
-  let res = Compare_c.compare_result_to_bool correct in
-  if res 
-  then raise (Common.UnixExit 0)
-  else raise (Common.UnixExit (-1))
-
-
-let test_compare_c_hardcoded () =
-  Compare_c.compare_default 
-    "parsing_c/tests/compare1.c" 
-    "parsing_c/tests/compare2.c" 
-    (*
-      "parsing_c/tests/equal_modulo1.c" 
-      "parsing_c/tests/equal_modulo2.c" 
-    *)
-  +> Compare_c.compare_result_to_string 
-  +> pr2
 
 
 
@@ -616,23 +440,5 @@ let one_flow flows =
   List.hd flows
 
 let one_ctl ctls = List.hd (List.hd ctls)
-*)
-
-(*****************************************************************************)
-(* xxx *)
-(*****************************************************************************)
-
-let test_xxx a dir = 
-  ()
-
-(*
-  ignore(Parse_c.parse_cpp_define_file "standard.h")
-  pr2 "pr2";
-  pr  "pr"
-
-  Format.print_newline();
-  Format.printf "@[<v 5>--@,--@,@[<v 5>--@,--@,@]--@,--@,@]";
-  Format.print_newline();
-  Format.printf "@[<v>(---@[<v>(---@[<v>(---@,)@]@,)@]@,)@]"
 *)
 
