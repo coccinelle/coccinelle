@@ -3,7 +3,7 @@
 TARGET = popl
 
 SRC = ast_popl.ml asttopopl.ml insert_quantifiers.ml \
-pretty_print_popl.ml popltoctl.ml popl.ml
+pretty_print_popl.ml flag_popl.ml popltoctl.ml popl.ml
 
 SYSLIBS=str.cma unix.cma
 LIBS=../commons/commons.cma ../globals/globals.cma

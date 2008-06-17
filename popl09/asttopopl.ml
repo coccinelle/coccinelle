@@ -3,20 +3,29 @@ module Past = Ast_popl
 
 (* --------------------------------------------------------------------- *)
 
-let rec stm s inif =
+let term s inif =
+  let fail _ =
+    Pretty_print_cocci.statement "" s;
+    Format.print_newline();
+    failwith "complex statements not supported" in
   match Ast.unwrap s with
     Ast.Atomic(ast) ->
-      let term =
-	match Ast.unwrap ast with
-	  Ast.ExprStatement(_,_) -> Past.Term ast
-	| Ast.Exp(_) -> Past.Term ast
-	| Ast.Decl(_,_,_) -> Past.Term ast
-	| Ast.ReturnExpr(_,_,_) -> Past.Term ast
-	| Ast.MetaStmt(_,Type_cocci.Unitary,_,false) when inif -> Past.Term ast
-	| _ ->
-	    Pretty_print_cocci.statement "" s;
-	    failwith "complex statements not supported" in
-      Past.Atomic(term,dots_bef_aft s inif)
+      (match Ast.unwrap ast with
+	Ast.ExprStatement(_,_) -> Past.Atomic ast
+      | Ast.Exp(_) -> Past.Atomic ast
+      | Ast.Decl(_,_,_) -> Past.Atomic ast
+      | Ast.ReturnExpr(_,_,_) -> Past.Atomic ast
+      | Ast.MetaStmt(_,_,_,_) when inif -> Past.Atomic ast
+      | _ -> fail())
+  | _ -> fail()
+
+let rec stm s =
+  match Ast.unwrap s with
+    Ast.Atomic(ast) -> Past.Term(term s false,dots_bef_aft s false)
+  | Ast.IfThen(header,body,aft) ->
+      Past.Term(
+      Past.IfThen(Past.Atomic header,term body true,aft),
+      dots_bef_aft s true)
   | Ast.Disj(stm1::stm2::stmts) ->
       List.fold_left
 	(function prev ->
@@ -40,8 +49,6 @@ let rec stm s inif =
 		 Ast.WhenNot(a) -> Past.When(prev,stm_list a)
 	       | _ -> failwith "only when != supported")
 	   nest whencodes)
-  | Ast.IfThen(header,body,aft) ->
-      Past.IfThen(Past.Term header,stm body true,aft,dots_bef_aft s inif)
   | _ ->
       Pretty_print_cocci.statement "" s;
       failwith "unsupported statement3"
@@ -49,16 +56,16 @@ let rec stm s inif =
 and dots_bef_aft s inif =
   match Ast.get_dots_bef_aft s with
     Ast.AddingBetweenDots (brace_term,n) ->
-      Past.AddingBetweenDots (stm brace_term inif,n)
+      Past.AddingBetweenDots (term brace_term inif,n)
   | Ast.DroppingBetweenDots (brace_term,n) ->
-      Past.DroppingBetweenDots (stm brace_term inif,n)
+      Past.DroppingBetweenDots (term brace_term inif,n)
   | Ast.NoDots -> Past.NoDots
 
 and stm_list s =
   match Ast.unwrap s with
     Ast.DOTS(d) ->
       List.fold_right
-	(function cur -> function rest -> Past.Seq(stm cur false, rest))
+	(function cur -> function rest -> Past.Seq(stm cur, rest))
 	d Past.Empty
   | _ -> failwith "only DOTS handled"
 

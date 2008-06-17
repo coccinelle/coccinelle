@@ -10,14 +10,14 @@ let rec fvs_sequence = function
   | Past.SExists(var,seq) -> failwith "not possible"
 
 and fvs_term = function
-    Past.Term(term) -> Ast.get_fvs term
+    Past.Atomic(term) -> Ast.get_fvs term
+  | Past.IfThen(test,thn,(afvs,_,_,_)) ->
+      Common.union_set afvs
+	(Common.union_set (fvs_term test) (fvs_term thn))
   | Past.TExists(var,term) -> failwith "not possible"
 
 and fvs_element = function
-    Past.Atomic(term,_) -> fvs_term term
-  | Past.IfThen(test,thn,(afvs,_,_,_),_) ->
-      Common.union_set afvs
-	(Common.union_set (fvs_term test) (fvs_element thn))
+    Past.Term(term,_) -> fvs_term term
   | Past.Or(seq1,seq2) ->
       Common.union_set (fvs_sequence seq1) (fvs_sequence seq2)
   | Past.DInfo(dots) -> fvs_dots dots
@@ -48,25 +48,25 @@ let rec quant_sequence bound = function
   | Past.SExists(var,seq) -> failwith "not possible"
 
 and quant_term bound = function
-    (Past.Term(term)) as x ->
+    (Past.Atomic(term)) as x ->
       let free = minus_set (Ast.get_fvs term) bound in
       List.fold_right (function cur -> function rest -> Past.TExists(cur,rest))
 	free x
-  | Past.TExists(var,term) -> failwith "not possible"
-
-and quant_element bound = function
-    Past.Atomic(term,ba) ->
-      Past.Atomic(quant_term bound term,dots_bef_aft bound ba)
-  | Past.IfThen(test,thn,((afvs,_,_,_) as aft),ba) ->
+  | Past.IfThen(test,thn,((afvs,_,_,_) as aft)) ->
       let fts = fvs_term test in
-      let fth = fvs_element thn in
+      let fth = fvs_term thn in
       let inter = inter_set fts fth in
       let free = minus_set inter bound in
       let new_bound = free @ bound in
-      List.fold_right (function cur -> function rest -> Past.EExists(cur,rest))
+      List.fold_right (function cur -> function rest -> Past.TExists(cur,rest))
 	free (Past.IfThen(quant_term new_bound test,
-			  quant_element new_bound thn,
-			  aft,dots_bef_aft bound ba))
+			  quant_term new_bound thn,
+			  aft))
+  | Past.TExists(var,term) -> failwith "not possible"
+
+and quant_element bound = function
+    Past.Term(term,ba) ->
+      Past.Term(quant_term bound term,dots_bef_aft bound ba)
   | Past.Or(seq1,seq2) ->
       Past.Or(quant_sequence bound seq1,quant_sequence bound seq2)
   | Past.DInfo(dots) ->
@@ -75,9 +75,9 @@ and quant_element bound = function
 
 and dots_bef_aft bound = function
     Past.AddingBetweenDots (brace_term,n) ->
-      Past.AddingBetweenDots (quant_element bound brace_term,n)
+      Past.AddingBetweenDots (quant_term bound brace_term,n)
   | Past.DroppingBetweenDots (brace_term,n) ->
-      Past.DroppingBetweenDots (quant_element bound brace_term,n)
+      Past.DroppingBetweenDots (quant_term bound brace_term,n)
   | Past.NoDots -> Past.NoDots
 
 and quant_dots bound = function

@@ -37,10 +37,12 @@ let contains_modif =
       do_nothing rule_elem do_nothing do_nothing do_nothing do_nothing in
   recursor.V.combiner_rule_elem
 
-let ctl_exists v x keep_wit = CTL.Exists(v,x,keep_wit)
+let ctl_exists keep_wit v x =
+  CTL.Exists(!Flag_popl.keep_all_wits or keep_wit,v,x)
 
-let predmaker guard term =
-  if guard && contains_modif term
+let predmaker keep_wit term =
+  if (!Flag_popl.keep_all_wits or keep_wit) &&
+     (!Flag_popl.mark_all or contains_modif term)
   then
     let v = ("","_v") in
     ctl_exists true v
@@ -113,18 +115,14 @@ let rec ctl_seq keep_wit a = function
   | Past.SExists(var,seq) -> ctl_exists keep_wit var (ctl_seq keep_wit a seq)
 
 and ctl_term keep_wit a = function
-    Past.Term(term) ->
-      (match Ast.unwrap term with
-	Ast.MetaStmt(_,_,_,_) -> ctl_true
-      |	_ -> ctl_and (predmaker keep_wit term) (ctl_ax a))
+    Past.Atomic(term) -> ctl_and (predmaker keep_wit term) (ctl_ax a)
+  | Past.IfThen(test,thn,(_,_,_,aft)) -> ifthen keep_wit (Some a) test thn aft
   | Past.TExists(var,term) ->
       ctl_exists keep_wit var (ctl_term keep_wit a term)
 
 and ctl_element keep_wit a = function
-    Past.Atomic(term,ba) ->
+    Past.Term(term,ba) ->
       do_between_dots keep_wit ba (ctl_term keep_wit a term) a
-  | Past.IfThen(test,thn,(_,_,_,aft),ba) ->
-      do_between_dots keep_wit ba (ifthen keep_wit (Some a) test thn aft) a
   | Past.Or(seq1,seq2) ->
       ctl_seqor (ctl_seq keep_wit a seq1) (ctl_seq keep_wit a seq2)
   | Past.DInfo(dots) -> ctl_au (guard_ctl_dots keep_wit a dots) a
@@ -141,17 +139,14 @@ and guard_ctl_seq keep_wit a = function
   | Past.SExists(var,seq) ->
       ctl_exists keep_wit var (guard_ctl_seq keep_wit a seq)
 
-and guard_ctl_term keep_wit a = function
-    Past.Term(term) ->
-      (match Ast.unwrap term with
-	Ast.MetaStmt(_,_,_,_) -> ctl_true
-      |	_ -> predmaker keep_wit term)
+and guard_ctl_term keep_wit = function
+    Past.Atomic(term) -> predmaker keep_wit term
+  | Past.IfThen(test,thn,(_,_,_,aft)) -> ifthen keep_wit None test thn aft
   | Past.TExists(var,term) ->
-      ctl_exists keep_wit var (guard_ctl_term keep_wit a term)
+      ctl_exists keep_wit var (guard_ctl_term keep_wit term)
 
 and guard_ctl_element keep_wit a = function
-    Past.Atomic(term,_) -> guard_ctl_term keep_wit a term
-  | Past.IfThen(test,thn,(_,_,_,aft),_) -> ifthen keep_wit None test thn aft
+    Past.Term(term,_) -> guard_ctl_term keep_wit term
   | Past.Or(seq1,seq2) ->
       ctl_seqor
 	(guard_ctl_seq keep_wit a seq1) (guard_ctl_seq keep_wit a seq2)
@@ -161,7 +156,8 @@ and guard_ctl_element keep_wit a = function
 
 and guard_ctl_dots keep_wit a = function
     Past.Dots -> ctl_true
-  | Past.Nest(_) when not keep_wit -> ctl_true
+(* | Past.Nest(_) when not keep_wit -> ctl_true
+   a possible optimization, but irrelevant to popl example *)
   | Past.Nest(seq) ->
       ctl_or
 	(guard_ctl_seq true a seq)
@@ -193,7 +189,7 @@ and ifthen keep_wit a test thn aft =
     ctl_or
       (ctl_and truepred
 	 (ctl_ax
-	    (guard_ctl_element keep_wit ctl_true (* not used *) thn)))
+	    (guard_ctl_term keep_wit thn)))
       (ctl_or fall
 	 (ctl_and after end_code)) in
   ctl_and (ctl_term keep_wit body test) (ctl_ex after)
@@ -203,7 +199,7 @@ and do_between_dots keep_wit ba term after =
       Past.AddingBetweenDots (brace_term,n)
     | Past.DroppingBetweenDots (brace_term,n) ->
 	(* not sure at all what to do here for after... *)
-	let match_brace = ctl_element keep_wit after brace_term in
+	let match_brace = ctl_term keep_wit after brace_term in
 	let v = Printf.sprintf "_r_%d" n in
 	let case1 = ctl_and (CTL.Ref v) match_brace in
 	let case2 = ctl_and (ctl_not (CTL.Ref v)) term in

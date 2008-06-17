@@ -37,15 +37,15 @@ let rec print_sequence = function
       print_string " ."; force_newline(); print_sequence seq
 
 and print_term = function
-    Past.Term(term) -> Pretty_print_cocci.rule_elem "" term
+    Past.Atomic(term) -> Pretty_print_cocci.rule_elem "" term
+  | Past.IfThen(test,thn,(_,_,_,aft)) ->
+      print_term test; print_term thn;
+      mcode (function _ -> ()) ((),Ast.no_info,aft,Ast.NoMetaPos)
   | Past.TExists((_,v),term) -> print_string "exists "; print_string v;
       print_string " ."; force_newline(); print_term term
 
 and print_element = function
-    Past.Atomic(term,_) -> print_term term
-  | Past.IfThen(test,thn,(_,_,_,aft),_) ->
-      print_term test; print_element thn;
-      mcode (function _ -> ()) ((),Ast.no_info,aft,Ast.NoMetaPos)
+    Past.Term(term,_) -> print_term term
   | Past.Or(seq1,seq2) ->
       force_newline(); print_string "("; force_newline(); print_sequence seq1;
       print_string "|"; force_newline(); print_sequence seq2; print_string ")"

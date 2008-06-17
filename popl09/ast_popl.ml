@@ -4,12 +4,12 @@ type sequence =
   | SExists of Ast_cocci.meta_name * sequence
 
 and term =
-    Term of Ast_cocci.rule_elem
+    Atomic of Ast_cocci.rule_elem
+  | IfThen of term * term * Ast_cocci.end_info
   | TExists of Ast_cocci.meta_name * term
 
 and element =
-    Atomic of term * dots_bef_aft
-  | IfThen of term * element * Ast_cocci.end_info * dots_bef_aft
+    Term of term * dots_bef_aft
   | Or of sequence * sequence
   | DInfo of dots
   | EExists of Ast_cocci.meta_name * element
@@ -21,6 +21,6 @@ and dots =
 
 and dots_bef_aft =
     NoDots
-  | AddingBetweenDots of element * int (*index of let var*)
-  | DroppingBetweenDots of element * int (*index of let var*)
+  | AddingBetweenDots of term * int (*index of let var*)
+  | DroppingBetweenDots of term * int (*index of let var*)
 
