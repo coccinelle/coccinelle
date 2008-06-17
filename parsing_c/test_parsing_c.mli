@@ -1,6 +1,5 @@
 open Common.BasicType
 
-
 val test_tokens_c : filename -> unit
 (* parse and handle some regression information when called with dirmode *)
 val test_parse_c  : filename list -> unit
@@ -18,3 +17,5 @@ val test_compare_c_hardcoded : unit -> unit
 
 val test_xxx : string list ->  unit
 
+
+val actions: unit -> Common.cmdline_actions

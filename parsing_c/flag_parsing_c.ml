@@ -4,7 +4,7 @@
 let path = Filename.concat (Sys.getenv "HOME") "coccinelle"
 let std_h   = ref (Filename.concat path "standard.h")
 
-let arg_flags_macrofile () = 
+let cmdline_flags_macrofile () = 
   [
     "-macro_file", Arg.Set_string std_h,
     " <file> (default=" ^ !std_h ^ ")";
@@ -29,7 +29,7 @@ let pretty_print_type_info = ref false
 let show_flow_labels = ref true
 
 
-let arg_flags_verbose () = 
+let cmdline_flags_verbose () = 
   [
     "-no_parse_error_msg", Arg.Clear verbose_parsing, " ";
     "-no_verbose_parsing", Arg.Clear verbose_parsing , "  ";
@@ -57,7 +57,7 @@ let debug_unparsing = ref false
 let debug_cfg = ref false
 
 (*   "debug C parsing/unparsing", "" *)
-let arg_flags_debugging () = 
+let cmdline_flags_debugging () = 
   [
   "-debug_cpp",          Arg.Set  debug_cpp, " ";
   "-debug_lexer",        Arg.Set  debug_lexer , " ";
@@ -81,7 +81,7 @@ let add_typedef_root = ref true
 (* cocci specific *)
 let label_strategy_2 = ref false
 
-let arg_flags_algos () =
+let cmdline_flags_algos () =
   [
     "-l1",                Arg.Clear label_strategy_2, " ";
     "-ifdef",              Arg.Set ifdef_to_if, 
@@ -99,7 +99,7 @@ let diff_lines = ref (None : string option) (* number of lines of context *)
 
 let use_cache = ref false
 
-let arg_flags_other () = 
+let cmdline_flags_other () = 
   [
     "-U", Arg.Int (fun n -> diff_lines := Some (Common.i_to_s n)), 
     "  set number of diff context lines";

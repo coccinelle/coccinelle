@@ -2,11 +2,12 @@
  * as much as possible dependencies in common.ml so can more easily
  * make ocaml script that just do a load common.ml without the need
  * to load many other files (like dumper.ml, or ANSITerminal.ml and
- * other recursive dependencies)
+ * other recursive dependencies).
+ * 
+ * Note that can still use the function from a open Common. Don't
+ * need to do a 'open Common_extra'. Loading the commons.cma is
+ * enough to make the connexions.
  *)
-
-
-
 
 
 

@@ -5,14 +5,15 @@ TARGET=commons
 
 # note: if you add a file (a .mli or .ml), dont forget to redo a 'make depend'
 MYSRC=common.ml common_extra.ml \
+      interfaces.ml objet.ml \
+      ocollection.ml \
       seti.ml \
-      objet.ml ocollection.ml \
       oset.ml oassoc.ml osequence.ml ograph.ml \
       oseti.ml oseth.ml osetb.ml osetpt.ml \
       oassocb.ml oassoch.ml oassoc_buffer.ml oassocid.ml \
       oarray.ml \
       ograph2way.ml ograph_extended.ml \
-      fullcommon.ml 
+      ofullcommon.ml 
 
 # src from other authors, got from the web or caml hump
 SRC=ocamlextra/dumper.ml 

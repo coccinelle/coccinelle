@@ -1,6 +1,8 @@
 open Common
 
-(* todo? get inspiration from Java to put fundamental interfaces
+(* TypeClass via objects. Cf also now interfaces.ml
+ * 
+ * todo? get more inspiration from Java to put fundamental interfaces
  * here ? such as cloneable, equaable, showable, debugable, etc
  *)
 

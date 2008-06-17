@@ -1,42 +1,8 @@
 open Common
 
-let main_path = "/home/pad/c-yacfe/"
+let score_path = "/home/pad/c-yacfe/tmp"
 
-(*
-        let xs = if !Flag.dir then 
-          process_output_to_list ("find " ^ x ^" -name \"*.c\"") else x::xs in
-        
-        (xs) +> List.iter (fun file -> 
-          pr2 ("PARSING: " ^ file);
-          (match !Flag.action with
-
-          | "parse_c" -> 
-              if not (file =~ ".*\\.c") then pr2 "warning: seems not a .c file";
-              file +> Parse_c.parse_print_error_heuristic 
-              +> (fun (x, stat) -> 
-                push2 stat _stat_list;
-              )
-
-          | "parse_c_and_pp" -> 
-              if not (file =~ ".*\\.c") then pr2 "warning: seems not a .c file";
-              file +> Parse_c.parse_print_error_heuristic 
-              +> (fun (x, stat) -> 
-                push2 stat _stat_list;
-                Unparse_c.pp_program file (x +> List.map (fun (x, info) -> ((x, Unparse_c.PPnormal))));
-                ignore(Unix.system (sprintf "diff -u -p  %s %s" file "/tmp/output.c" )); (*want see diff of space => no -b -B *)
-                (* +> Transformation.test_simple_trans1;*)
-              )
-
-          | "tokens" -> 
-              Flag.debug_lexer := true; Flag.verbose_parsing := true;
-              Parse_c.tokens file +> List.iter (fun x -> pr2 (Dumper.dump x))
-          | _ -> failwith "no action for this"
-          );
-          
-        );
-        (* pr2 (profiling_diagnostic ()); *)
-        if not (null !_stat_list) then print_stat !_stat_list;
-*)
+let tmpfile = "/tmp/output.c" 
 
 (*****************************************************************************)
 (* Subsystem testing *)
@@ -49,9 +15,12 @@ let test_tokens_c file =
   Flag_parsing_c.debug_lexer := true; 
   Flag_parsing_c.verbose_parsing := true;
 
-  Parse_c.tokens file +> Common.pr2_gen
+  Parse_c.tokens file +> List.iter (fun x -> pr2_gen x);
+  ()
         
 
+
+(* ---------------------------------------------------------------------- *)
 let test_parse_gen xs ext = 
         
   Flag_parsing_c.debug_typedef := true;
@@ -62,7 +31,11 @@ let test_parse_gen xs ext =
     | [x] when is_directory x -> Some x
     | _ -> None
   in
-    
+
+  (* old:
+     let xs = if !Flag.dir then 
+     process_output_to_list ("find " ^ x ^" -name \"*.c\"") else x::xs in
+  *)
   let fullxs = Common.files_of_dir_or_files ext xs in
 
   let stat_list = ref [] in
@@ -71,6 +44,7 @@ let test_parse_gen xs ext =
   fullxs +> List.iter (fun file -> 
     if not (file =~ (".*\\."^ext))
     then pr2 ("warning: seems not a ."^ext^" file");
+
 
     pr2 "";
     pr2 ("PARSING: " ^ file);
@@ -101,8 +75,8 @@ let test_parse_gen xs ext =
     let def = if !Flag_parsing_c.filter_define_error then "_def_" else "" in
     let ext = if ext = "c" then "" else ext in
     Common.regression_testing newscore 
-      (Filename.concat main_path
-       ("tests/score_parsing__" ^str ^ def ^ ext ^ ".marshalled"))
+      (Filename.concat score_path
+       ("score_parsing__" ^str ^ def ^ ext ^ ".marshalled"))
   )
 
 
@@ -122,10 +96,9 @@ let test_parse_ch xs =
 
 
 
-let tmpfile = "/tmp/output.c" 
 
 
-
+(* ---------------------------------------------------------------------- *)
 (* file can be   "foo.c"  or "foo.c:main" *)
 let test_cfg file = 
 
@@ -178,16 +151,23 @@ let test_cfg file =
 
 
 
+(* ---------------------------------------------------------------------- *)
 let test_parse_unparse infile = 
   if not (infile =~ ".*\\.c") 
   then pr2 "warning: seems not a .c file";
 
+(* for cocci: to remove one day
   let (program2, _stat) = Parse_c.parse_print_error_heuristic infile in
   let program2_with_ppmethod = 
     program2 +> List.map (fun x -> x, Unparse_c2.PPnormal)
   in
   Unparse_c2.pp_program program2_with_ppmethod tmpfile;
-  Common.command2 ("cat " ^ tmpfile)
+  Common.command2 ("cat " ^ tmpfile);
+  (* if want see diff of space => no -b -B *)
+  Common.command2 (spf "diff -u -p  %s %s" infile tmpfile);
+  (* +> Transformation.test_simple_trans1;*)
+*)
+  ()
 
 
 
@@ -209,13 +189,17 @@ let test_type_c infile =
     )
     +> Common.uncurry Common.zip
   in
+(* for cocci: to remove one day
   let program2_with_ppmethod = 
     program2 +> List.map (fun x -> x, Unparse_c2.PPnormal)
   in
   Unparse_c2.pp_program program2_with_ppmethod tmpfile;
-  Common.command2 ("cat " ^ tmpfile)
+  Common.command2 ("cat " ^ tmpfile);
+*)
+  ();;
 
 
+(* ---------------------------------------------------------------------- *)
 (* used by generic_makefile now *)
 let test_compare_c file1 file2 = 
   let (correct, diffxs) = Compare_c.compare_default file1 file2 in
@@ -238,10 +222,7 @@ let test_compare_c_hardcoded () =
 
 
 
-(*****************************************************************************)
-(* xxx *)
-(*****************************************************************************)
-
+(* ---------------------------------------------------------------------- *)
 let test_xxx a  = 
   ()
 
@@ -258,62 +239,35 @@ let test_xxx a  =
 
 
 
-
-
 (*****************************************************************************)
 (* Main entry for Arg *)
 (*****************************************************************************)
 
-(*
+let actions () = [
+  "-tokens_c", "   <file>", 
+  Common.mk_action_1_arg test_tokens_c;
+  "-parse_c", "   <file or dir>", 
+  Common.mk_action_n_arg test_parse_c;
+  "-parse_h", "   <file or dir>", 
+  Common.mk_action_n_arg test_parse_h;
+  "-parse_ch", "   <file or dir>", 
+  Common.mk_action_n_arg test_parse_ch;
 
-    (let s = "-tokens_c" in s, Arg.Unit (fun () -> action := s),
-    "   <file>");
-    (let s = "-parse_c"  in s, Arg.Unit (fun () -> action := s),
-    "   <file or dir> can work with -dir");
+  "-show_flow", "   <file or file:function>", 
+  Common.mk_action_1_arg test_cfg;
+  "-control_flow", "   <file or file:function>", 
+  Common.mk_action_1_arg test_cfg;
+  "-parse_unparse", "   <file>", 
+  Common.mk_action_1_arg test_parse_unparse;
+  "-type_c", "   <file>", 
+  Common.mk_action_1_arg test_type_c;
+  "-compare_c", "   <file1> <file2>", 
+  Common.mk_action_2_arg test_compare_c (* result is in unix code *);
 
-    (let s = "-parse_h"  in s, Arg.Unit (fun () -> action := s),
-    "   <file or dir> can work with -dir");
-    (let s = "-parse_ch"  in s, Arg.Unit (fun () -> action := s),
-    "   <file or dir> can work with -dir");
+  "-compare_c_hardcoded", "  ", 
+  Common.mk_action_0_arg test_compare_c_hardcoded;
 
-    (let s = "-show_flow"  in s, Arg.Unit (fun () -> action := s),
-    "   <file> or <file:function>");
-    (let s = "-control_flow"  in s, Arg.Unit (fun () -> action := s),
-    "   <file> or <file:function>");
-    (let s = "-parse_unparse"  in s, Arg.Unit (fun () -> action := s),
-    "   <file>");
-    (let s = "-type_c"  in s, Arg.Unit (fun () -> action := s),
-    "   <file>");
-    (let s = "-compare_c"  in s, Arg.Unit (fun () -> action := s),
-    "  <file1> <file2>");
+  "-xxx", "   <file1> <>", 
+  Common.mk_action_n_arg test_xxx;
+]
 
-    (let s = "-xxx"  in s, Arg.Unit (fun () -> action := s),
-    "  ");
-
-    | x::xs when  !action = "-parse_c" -> 
-        Test.test_parse_ch (x::xs)
-    | [file] when !action = "-tokens_c" -> 
-        Test.test_tokens_c file
-    | x::xs when  !action = "-parse_h" -> 
-        Testing.test_parse_h  (x::xs) !dir 
-    | x::xs when  !action = "-parse_ch" -> 
-        Testing.test_parse_ch  (x::xs) !dir 
-
-    | [filefunc] when !action = "-control_flow" || !action = "-show_flow" -> 
-        Testing.test_cfg filefunc
-    | [file] when !action = "-parse_unparse" -> 
-       Testing.test_parse_unparse file
-    | [file] when !action = "-type_c" -> 
-        Testing.test_type_c file
-    | [file1;file2] when !action = "-compare_c" -> 
-       Testing.test_compare_c file1 file2 (* result is in unix code *)
-    | [] when !action = "-compare_c_hardcoded" -> 
-        Testing.test_compare_c_hardcoded ()
-
-
-
-    | xs when !action = "-xxx" -> 
-        Testing.test_xxx xs !dir
-
-
-*)

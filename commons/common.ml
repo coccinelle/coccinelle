@@ -15,14 +15,19 @@
 (* Notes *)
 (*****************************************************************************)
 
-(* Maybe could split common.ml and use include tricks as in Fullcommon.ml or
- * Jane Street core lib. But then harder to bundle simple scripts like 
- * make_full_linux_kernel.ml because would need to pass either
- * to ocamlc or in #load all the files
+(* ---------------------------------------------------------------------- *)
+(* Maybe could split common.ml and use include tricks as in ofullcommon.ml or
+ * Jane Street core lib. But then harder to bundle simple scripts like my
+ * make_full_linux_kernel.ml because would then need to pass all the files
+ * either to ocamlc or either to some #load. Also as the code of many
+ * functions depends on other functions from this common, it would
+ * be tedious to add those dependencies. Here simpler (have just the
+ * pb of the Prelude, but it's a small problem).
  * 
- * pixel means code from pascal rigaux
+ * pixel means code from Pascal Rigaux
  * julia means code from Julia Lawall
  *)
+(* ---------------------------------------------------------------------- *)
 
 (*****************************************************************************)
 (* We use *)
@@ -1430,7 +1435,33 @@ let arg_parse2 l msg short_usage_fun =
 
 (* ---------------------------------------------------------------------- *)
 (* kind of unit testing framework, or toplevel like functionnality 
- * at shell command line.
+ * at shell command line. Not-perfect-but-basic-feels-right: an action
+ * spec looks like this:
+ * 
+ *    let actions () = [
+ *      "-parse_taxo", "   <file>", 
+ *      Common.mk_action_1_arg test_parse_taxo;
+ *      ...
+ *     ]
+ * 
+ * Not-perfect-but-basic-feels-right because for such functionality we
+ * need a way to transform a string into a caml function and pass argument
+ * and the preceding design does exactly that, even if then the
+ * functions that use this design are not so convenient to use (there
+ * is 2 places where we need to pass those data, in the options and in the
+ * main dispatcher). 
+ * 
+ * Also it's not too much intrusive. Still have an
+ * action ref variable in the main.ml and can still use the previous 
+ * simpler way to do where the match args with in main.ml do the
+ * dispatch.
+ * 
+ * Use like this at option place: 
+ *   (Common.options_of_actions actionref (Test_parsing_c.actions())) ++
+ * Use like this at dispatch action place: 
+ *   | xs when List.mem !action (Common.action_list all_actions) -> 
+ *        Common.do_action !action xs all_actions
+ * 
  *)
 
 type flag_spec   = Arg.key * Arg.spec * Arg.doc
@@ -1455,8 +1486,11 @@ let (do_action: Arg.key -> string list (* args *) -> cmdline_actions -> unit) =
     action_func args
 
 
-let flags_spec_from_actions_spec xs = 
-  raise Todo
+let mk_action_0_arg f = 
+  (function 
+  | [] -> f ()
+  | _ -> raise WrongNumberOfArguments
+  )
 
 let mk_action_1_arg f = 
   (function 
@@ -1475,6 +1509,8 @@ let mk_action_3_arg f =
   | [file1;file2;file3] -> f file1 file2 file3
   | _ -> raise WrongNumberOfArguments
   )
+
+let mk_action_n_arg f = f
 
 
 (*****************************************************************************)
@@ -2310,6 +2346,12 @@ let sec_to_days sec =
   (if mins > 0  then plural mins "min"   ^ " " else "") ^
   ""
 
+
+let test_date_1 () =
+  let date = DMY (Day 17, Sep, Year 1991) in
+  let float, tm = dmy_to_unixtime date in
+  pr2 (spf "date: %.0f" float);
+  ()
 
 (*****************************************************************************)
 (* Lines/words/strings *)
@@ -4586,7 +4628,7 @@ let cmdline_flags_other () =
    * of the main.ml file, not common.ml
    *)
   "-version",   Arg.Unit (fun () -> 
-    pr2 "version: $Date$";
+    pr2 "version: _dollar_Date: 2008/06/14 00:54:22 _dollar_";
     raise (Common.UnixExit 0)
     ), 
   "   guess what";

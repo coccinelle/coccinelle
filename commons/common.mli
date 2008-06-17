@@ -7,18 +7,24 @@
  * When I have some _xxx variables before some functions, it's 
  * because I want to show that those functions internally use a global 
  * variable. That does not mean I want people to modify this global.
- * In fact they are kind of private, but I still want to show them
- * (maybe one day OCaml will have an effect type system so I don't need this).
+ * In fact they are kind of private, but I still want to show them.
+ * Maybe one day OCaml will have an effect type system so I don't need this.
  * 
  * The variables that are called _init_xxx show the internal init 
  * side effect of the module (like static var trick used in C/C++)
+ * 
+ * Why not split the functionnalities of this file in different files ?
+ * Because when I write ocaml script I want simply to load one 
+ * file, common.ml, and that's it. Cf common_extra.ml for more on this.
  *)
 
 
 (*****************************************************************************)
 (* Flags *)
 (*****************************************************************************)
-(* see the corresponding section for the use of those flags *)
+(* see the corresponding section for the use of those flags. See also 
+ * the "Flags and actions" section at the end of this file.
+ *)
 
 (* if set then will not do certain finalize so faster to go back in replay *)
 val debugger : bool ref
@@ -31,6 +37,7 @@ val verbose_level : int ref
 (* forbid pr2_once to do the once "optimisation" *)
 val disable_pr2_once : bool ref
 
+(* works with new_temp_file *)
 val save_tmp_files : bool ref
 
 
@@ -57,19 +64,32 @@ type filename = string
 
 (* Trick in case you dont want to do an 'open Common' while still wanting
  * more pervasive types than the one in Pervasives. Just do the selective
- * open Common.BasicType
+ * open Common.BasicType.
  *)
 module BasicType : sig
   type filename = string
 end
 
 (* Same spirit. Trick found in Jane Street core lib, but originated somewhere
- * else I think *)
+ * else I think: the ability to open nested modules *)
 module Infix : sig
   val ( +> ) : 'a -> ('a -> 'b) -> 'b
   val ( =~ ) : string -> string -> bool
   val ( ==~ ) : string -> Str.regexp -> bool
 end
+
+
+(*
+ * Another related trick, found via Jon Harrop to have an extended standard
+ * lib is to do something like
+ * 
+ * module List = struct
+ *  include List
+ *  val map2 : ...
+ * end
+ * 
+ * And then can put this "module extension" somewhere to open it.
+ *)
 
 
 
@@ -456,7 +476,8 @@ val arg_parse2 :
 
 
 
-
+(* The action lib. Useful to debug supart of your system. cf some of
+ * my main.ml for example of use. *)
 type flag_spec   = Arg.key * Arg.spec * Arg.doc
 type action_spec = Arg.key * Arg.doc * action_func 
    and action_func = (string list -> unit)
@@ -464,9 +485,12 @@ type action_spec = Arg.key * Arg.doc * action_func
 type cmdline_actions = action_spec list
 exception WrongNumberOfArguments
 
+val mk_action_0_arg : (unit -> unit)                       -> action_func
 val mk_action_1_arg : (string -> unit)                     -> action_func
 val mk_action_2_arg : (string -> string -> unit)           -> action_func
 val mk_action_3_arg : (string -> string -> string -> unit) -> action_func
+
+val mk_action_n_arg : (string list -> unit) -> action_func
 
 val options_of_actions: 
   string ref (* the action ref *) -> cmdline_actions -> cmdline_options

@@ -404,6 +404,8 @@ let other_options = [
 
     (let s = "-parse_cocci"  in s, Arg.Unit (fun () -> action := s),
     "   <file>");
+    (let s = "-compare_c"  in s, Arg.Unit (fun () -> action := s),
+    "   <file1> <file2>");
   ];
 ]
 
@@ -510,13 +512,8 @@ let main () =
     then Config.std_h := Common.adjust_ext_if_needed !Config.std_h ".h";
 
     if !Config.std_h <> "" 
-    then 
-      if not (Common.lfile_exists !Config.std_h)
-      then pr2 ("warning: Can't find default macro file: " ^ !Config.std_h)
-      else 
-        Parsing_hacks._defs := Common.hash_of_list
-          (Parse_c.parse_cpp_define_file !Config.std_h)
-    ;
+    then Parse_c.init_defs !Config.std_h;
+
 
     (* must be done after Arg.parse, because Common.profile is set by it *)
     Common.profile_code "Main total" (fun () -> 
@@ -549,6 +546,12 @@ let main () =
     (* --------------------------------------------------------- *)
     | [file] when !action = "-parse_cocci" -> 
         Testing.test_parse_cocci file
+
+     (* I think this is used by some scripts in some Makefile for our
+      * big-tests. So dont remove.
+      *)
+    | [file1;file2] when !action = "-compare_c" -> 
+       Test_parsing_c.test_compare_c file1 file2 (* result = unix code *)
 
     (* could add the Test_parsing_c.test_actions such as -parse_c & co *)
 
@@ -726,6 +729,3 @@ let _ =
     main ();
     Ctlcocci_integration.print_bench();
   )
-    
-
-      

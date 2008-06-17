@@ -360,9 +360,15 @@ as there is very few chances that I do it one day"
 
 
 
+
+
+(* ---------------------------------------------------------------------- *)
+
 (* Taken from uigtk2.ml from unison. Quite hard to communicate info between
  * windows. I tried stuff but it does not work. 
  * update: look also at dialog_ask_filename, use a different mechanism.
+ * 
+ * @obsolete? no need to callerw with functions below
  *)
 let dialog_ask_with_y_or_no_bis ~text ~title callerw = 
   let w = GWindow.dialog ~modal:true ~border_width:1 ~title () in
@@ -396,6 +402,8 @@ let dialog_ask_with_y_or_no_bis ~text ~title callerw =
 
 (* Note that polymorphism and inference works very well here.
  * The 'answer' can be of any type.
+ * 
+ * @obsolete? no need to callerw with functions below
  *)
 let dialog_ask_generic_bis ~title callerw fbuild fget_val  = 
   let w = GWindow.dialog ~modal:true ~border_width:1 ~title () in
@@ -431,6 +439,7 @@ let dialog_ask_generic_bis ~title callerw fbuild fget_val  =
   )
 
 
+(* ---------------------------------------------------------------------- *)
 
 (* no need to callerw. src: cameleon ? *)
 let dialog_ask_generic ~title fbuild fget_val  = 

@@ -1,0 +1,9 @@
+Thanks to Julia Lawall for the idea to better parse C+CPP by using
+indentation information for heuristic-based parsing. Thanks to Julia
+again for many other things too long to enumerate.
+
+Inspiration:
+ - C grammar found on the web
+ - CIL ?
+ - EDG ?
+
