@@ -407,16 +407,15 @@ let other_options = [
   ("The action options don't work with the -sp_file and so on." ^ "\n" ^
    "It's for the other (internal) uses of the spatch program."
   ),
-  [
-    (* could add Test_parsing_c.option_actions stuff such as all the
-     * -token_c, -parse_c, etc 
-     *)
 
+    (* -token_c, -parse_c, etc  *)
+  ((Common.options_of_actions action (Test_parsing_c.actions())) ++
+    [
     (let s = "-parse_cocci"  in s, Arg.Unit (fun () -> action := s),
     "   <file>");
     (let s = "-compare_c"  in s, Arg.Unit (fun () -> action := s),
     "   <file1> <file2>");
-  ];
+    ]);
 ]
 
 
@@ -528,6 +527,9 @@ let main () =
     (* must be done after Arg.parse, because Common.profile is set by it *)
     Common.profile_code "Main total" (fun () -> 
 
+
+    let all_actions = Test_parsing_c.actions() in
+
     (match (!args) with
 
     (* --------------------------------------------------------- *)
@@ -554,6 +556,10 @@ let main () =
     (* --------------------------------------------------------- *)
     (* Actions, useful to debug subpart of coccinelle *)
     (* --------------------------------------------------------- *)
+
+    | xs when List.mem !action (Common.action_list all_actions) -> 
+        Common.do_action !action xs all_actions
+
     | [file] when !action = "-parse_cocci" -> 
         Testing.test_parse_cocci file
 
