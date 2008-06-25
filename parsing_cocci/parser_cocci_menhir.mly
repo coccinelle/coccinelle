@@ -48,10 +48,6 @@ module P = Parse_aux
 
 %token <Data.clt> TEllipsis TOEllipsis TCEllipsis TPOEllipsis TPCEllipsis
 %token <Data.clt> TWhen TAny TStrict TLineEnd
-/*
-%token <Data.clt> TCircles TOCircles TCCircles
-%token <Data.clt> TStars TOStars TCStars
-*/
 
 %token <Data.clt> TWhy TDotDot TBang TOPar TOPar0
 %token <Data.clt> TMid0 TCPar TCPar0
@@ -486,6 +482,12 @@ ctype:
          { let ty =
 	     Ast0.wrap(Ast0.BaseType(P.clt2mcode Ast.VoidType t, None)) in
 	   P.pointerify (P.make_cv cv ty) m }
+   | lp=TOPar0 t=midzero_list(ctype,ctype) rp=TCPar0
+      /* more hacks */
+    { let (mids,code) = t in
+      Ast0.wrap
+	(Ast0.DisjType(P.clt2mcode "(" lp,code,mids, P.clt2mcode ")" rp)) }
+
 
 fn_ctype: // allows metavariables
        ty=generic_ctype m=list(TMul) { P.pointerify ty m }
@@ -505,7 +507,7 @@ declarations, statements, and expressions for the subterms */
 
 minus_body: 
     f=loption(filespec)
-    b=loption(minus_function_decl_statement_or_expression)
+    b=loption(minus_start)
     ew=loption(error_words)
     { match f@b@ew with
       [] -> raise (Semantic_cocci.Semantic "minus slice can't be empty")
@@ -513,7 +515,7 @@ minus_body:
 
 plus_body: 
     f=loption(filespec)
-    b=loption(plus_function_decl_statement_or_expression)
+    b=loption(plus_start)
     ew=loption(error_words)
     { Top_level.top_level (f@b@ew) }
 
@@ -561,16 +563,15 @@ includes:
 | d=defineop t=ctype TLineEnd
     { let ty = Ast0.wrap(Ast0.TopExp(Ast0.wrap(Ast0.TypeExp(t)))) in
       d (Ast0.wrap(Ast0.DOTS([ty]))) }
-| defineop b=statement_dots(TEllipsis) TLineEnd
-    { let body = b (P.mkdots "...") in
-      let body =
-	match body with
+| defineop b=toplevel_seq_start(toplevel_after_dots) TLineEnd
+    { let body =
+	match b with
 	  [e] ->
 	    (match Ast0.unwrap e with
 	      Ast0.Exp(e1) ->
 		[Ast0.rewrap e (Ast0.TopExp(Ast0.set_arg_exp (e1)))]
-	    | _ -> body)
-	| _ -> body in
+	    | _ -> b)
+	| _ -> b in
       $1 (Ast0.wrap(Ast0.DOTS(body))) }
 
 defineop:
@@ -628,12 +629,6 @@ define_param_list_start:
   | d=TEllipsis r=list(dp_comma_args(TEllipsis))
       { (P.mkdpdots "..." d)::
 	(List.concat (List.map (function x -> x (P.mkdpdots "...")) r)) }
-/*
-  | d=edots_when(TCircles,ident)
-	r=list(dp_comma_args(edots_when(TCircles,ident)))
-      { (P.mkdpdots "ooo" d)::
-	(List.concat (List.map (function x -> x (P.mkdpdots "ooo")) r)) }
-*/
 
 dp_comma_args(dotter):
   c=TComma d=dotter
@@ -674,7 +669,7 @@ funproto:
 fundecl:
   f=fninfo
   TFunDecl i=func_ident lp=TOPar d=decl_list(decl) rp=TCPar
-  lb=TOBrace b=pre_post_decl_statement_and_expression_opt rb=TCBrace
+  lb=TOBrace b=fun_start rb=TCBrace
       { Ast0.wrap(Ast0.FunDecl((Ast0.default_info(),Ast0.context_befaft()),
 			       f, i,
 			       P.clt2mcode "(" lp, d,
@@ -789,32 +784,20 @@ statement:
 | TContinue TPtVirg { P.cont $1 $2 }
 | ident TDotDot { P.label $1 $2 }
 | TGoto ident TPtVirg { P.goto $1 $2 $3 }
-| TOBrace pre_post_decl_statement_and_expression_opt TCBrace
+| TOBrace fun_start TCBrace
     { P.seq $1 $2 $3 }
-| statement_nest { $1 }
-/*
-| TOCircles w=option(whenppdecs) b=statement_dots(TCircles) c=TCCircles
-    { Ast0.wrap(Ast0.Nest(P.clt2mcode "<ooo" $1,
-			  Ast0.wrap(Ast0.CIRCLES(b (P.mkdots "ooo"))),
-			  P.clt2mcode "ooo>" c, w)) }
-| TOStars w=option(whenppdecs) b=statement_dots(TStars) c=TCStars
-    { Ast0.wrap(Ast0.Nest(P.clt2mcode "<***" $1,
-			  Ast0.wrap(Ast0.STARS(b (P.mkdots "***"))),
-			  P.clt2mcode "***>" c, w)) }
-*/
 
-statement_nest:
-  TOEllipsis w=list(whenppdecs) b=statement_dots(TEllipsis) c=TCEllipsis
-    { Ast0.wrap(Ast0.Nest(P.clt2mcode "<..." $1,
-			  Ast0.wrap(Ast0.DOTS(b (P.mkdots "..."))),
+stm_dots:
+  TEllipsis w=list(whenppdecs)
+    { Ast0.wrap(Ast0.Dots(P.clt2mcode "..." $1, w)) }
+| TOEllipsis w=list(whenppdecs) b=nest_start c=TCEllipsis
+    { Ast0.wrap(Ast0.Nest(P.clt2mcode "<..." $1, b,
 			  P.clt2mcode "...>" c, w, false)) }
-| TPOEllipsis w=list(whenppdecs) b=statement_dots(TEllipsis) c=TPCEllipsis
-    { Ast0.wrap(Ast0.Nest(P.clt2mcode "<+..." $1,
-			  Ast0.wrap(Ast0.DOTS(b (P.mkdots "..."))),
+| TPOEllipsis w=list(whenppdecs) b=nest_start c=TPCEllipsis
+    { Ast0.wrap(Ast0.Nest(P.clt2mcode "<+..." $1, b,
 			  P.clt2mcode "...+>" c, w, true)) }
 
-whenppdecs: w=whens(pre_post_decl_statement_or_expression,
-		  rule_elem_statement)
+whenppdecs: w=whens(when_start,rule_elem_statement)
     { w }
 
 /* a statement that fits into a single rule_elem.  should nests be included?
@@ -834,13 +817,6 @@ rule_elem_statement:
 		 List.map (function x -> Ast0.wrap(Ast0.DOTS([x]))) code,
 		 mids, P.clt2mcode ")" $3)) }
 
-statement_dots(dotter):
-  r=no_dot_start_end(exp_decl_statement_list,
-		     dots_when(dotter,pre_post_decl_statement_or_expression,
-			       rule_elem_statement))
-  { function dot_builder ->
-    List.concat (r (function x -> [dot_builder x])) }
-
 /* a statement on its own */
 single_statement:
     statement                         { $1 }
@@ -854,9 +830,9 @@ single_statement:
 		     mids, P.clt2mcode ")" $3)) }
 
 case_line:
-    TDefault TDotDot pre_post_decl_statement_and_expression_opt
+    TDefault TDotDot fun_start
       { Ast0.wrap(Ast0.Default(P.clt2mcode "default" $1,P.clt2mcode ":" $2,$3)) }
-  | TCase eexpr TDotDot pre_post_decl_statement_and_expression_opt
+  | TCase eexpr TDotDot fun_start
       { Ast0.wrap(Ast0.Case(P.clt2mcode "case" $1,$2,P.clt2mcode ":" $3,$4)) }
 
 /* In the following, an identifier as a type is not fully supported.  Indeed,
@@ -1062,18 +1038,16 @@ decl_statement:
     allow this.  One case where this would be useful is for a when.  Now
 	we allow a sequence of whens, so one can be on only statements and
     one can be on only expressions. */
-  | TOPar0 pre_post_decl_statement_and_expression_opt_mid TCPar0
-      { let (first,rest) = $2 in
-        let (mids,code) = List.split rest in
-	let code = first :: code in
+  | TOPar0 t=midzero_list(fun_start,fun_start) TCPar0
+      { let (mids,code) = t in
 	if List.for_all
 	    (function x ->
 	      match Ast0.unwrap x with Ast0.DOTS([]) -> true | _ -> false)
 	    code
       then []
-      else [Ast0.wrap(Ast0.Disj(P.clt2mcode "(" $1,
-				code, mids,
-				P.clt2mcode ")" $3))] }
+      else
+	  [Ast0.wrap(Ast0.Disj(P.clt2mcode "(" $1, code, mids,
+			       P.clt2mcode ")" $3))] }
 
 /*****************************************************************************/
 
@@ -1107,16 +1081,6 @@ nest_expressions:
     { Ast0.wrap(Ast0.NestExpr(P.clt2mcode "<+..." $1,
 			      Ast0.wrap(Ast0.DOTS(e (P.mkedots "..."))),
 			      P.clt2mcode "...+>" c, w, true)) }
-/*
-| TOCircles w=option(whenexp) e=expr_dots(TCircles) c=TCCircles
-    { Ast0.wrap(Ast0.NestExpr(P.clt2mcode "<ooo" $1,
-			      Ast0.wrap(Ast0.CIRCLES(e (P.mkedots "ooo"))),
-			      P.clt2mcode "ooo>" c, w)) }
-| TOStars w=option(whenexp) e=expr_dots(TStars) c=TCStars
-    { Ast0.wrap(Ast0.NestExpr(P.clt2mcode "<***" $1,
-			      Ast0.wrap(Ast0.STARS(e (P.mkedots "***"))),
-			      P.clt2mcode "***>" c, w)) }
-*/
 
 whenexp: TWhen TNotEq w=eexpr TLineEnd { w }
 
@@ -1273,6 +1237,12 @@ primary_expr(recurser,primary_extra):
 expr_dots(dotter):
     r=no_dot_start_end(dexpr,edots_when(dotter,eexpr)) { r }
 
+// used in NEST
+no_dot_start_end(grammar,dotter):
+  g=grammar dg=list(pair(dotter,grammar))
+  { function dot_builder ->
+      g :: (List.concat(List.map (function (d,g) -> [dot_builder d;g]) dg)) }
+
 /*****************************************************************************/
 
 pure_ident:
@@ -1393,11 +1363,6 @@ decl_list_start(decl):
 | TEllipsis list(comma_decls(TEllipsis,decl))
     { Ast0.wrap(Ast0.Pdots(P.clt2mcode "..." $1))::
       (List.concat(List.map (function x -> x (P.mkpdots "...")) $2)) }
-/*
-| TCircles list(comma_decls(TCircles,decl))
-    { Ast0.wrap(Ast0.Pdots(P.clt2mcode "ooo" $1))::
-      (List.concat(List.map (function x -> x (P.mkpdots "ooo")) $2)) }
-*/
 
 one_dec(decl):
   decl  { $1 }
@@ -1419,55 +1384,6 @@ comma_decls(dotter,decl):
     { function dot_builder ->
       [Ast0.wrap(Ast0.PComma(P.clt2mcode "," $1)); $2] }
 
-/* must be a list of declarations or statements, with no ... or expressions
-for "and" case */
-pure_decl_statement_list:
-    nonempty_list(decl_statement)           { List.concat $1 }
-
-/* as above, but allows a single expression - for "or" case */
-exp_decl_statement_list:
-    TNothing { [] } /* only in + code, between dots */
-  | expr { [Ast0.wrap(Ast0.Exp(Ast0.set_arg_exp($1)))] }
-  | expr statement_nest exp_decl_statement_list
-      /* HACK!!! */
-    { (Ast0.wrap(Ast0.Exp(Ast0.set_arg_exp($1))))::$2::$3 }
-  | expr statement_nest
-      /* HACK!!! */
-    { [(Ast0.wrap(Ast0.Exp(Ast0.set_arg_exp($1))));$2] }
-
-  | pure_decl_statement_list                { $1 }
-
-fun_exp_decl_statement_list:
-    TNothing { [] } /* only in + code, between dots */
-  | t=ctype
-      /* This rule could be in exp_decl_statement_list, which would allow
-         it to be in a... sequence.  But it is not clear whether that makes
-         sense, so for now it is here. */
-      { [Ast0.wrap(Ast0.OTHER(Ast0.wrap(Ast0.Ty(t))))] }
-  | lp=TOPar0 t=midzero_list(ctype,ctype) rp=TCPar0
-      /* more hacks */
-    { let (mids,code) = t in
-    let s =
-      Ast0.wrap
-	(Ast0.DisjType(P.clt2mcode "(" lp,code,mids, P.clt2mcode ")" rp)) in
-    [Ast0.wrap(Ast0.OTHER(Ast0.wrap(Ast0.Ty(s))))]}
-  | expr { [Ast0.wrap(Ast0.OTHER(Ast0.wrap(Ast0.Exp(Ast0.set_arg_exp($1)))))] }
-  | expr statement_nest fun_exp_decl_statement_list
-      /* HACK!!! */
-    { (Ast0.wrap(Ast0.OTHER(Ast0.wrap(Ast0.Exp(Ast0.set_arg_exp($1))))))::
-      (Ast0.wrap (Ast0.OTHER $2)):: $3 }
-
-  | expr statement_nest
-      /* HACK!!! */
-    { [(Ast0.wrap(Ast0.OTHER(Ast0.wrap(Ast0.Exp(Ast0.set_arg_exp($1))))));
-      (Ast0.wrap (Ast0.OTHER $2))] }
-
-  | f=nonempty_list(fun_decl_statement)        { List.concat f }
-
-fun_decl_statement:
-    d=decl_statement { List.map (function x -> Ast0.wrap(Ast0.OTHER x)) d }
-  | f=fundecl        { [Ast0.wrap(Ast0.DECL(f))] }
-
 /* ---------------------------------------------------------------------- */
 
 error_words:
@@ -1477,85 +1393,146 @@ error_words:
 /* ---------------------------------------------------------------------- */
 /* sequences of statements and expressions */
 
-/* a mix of declarations, statements and expressions.  an expression may
-appear by itself.  always nonempty and cannot just be dots.  allows fns too. */
+/* There are number of cases that must be considered:
 
-minus_function_decl_statement_or_expression: /* doesn't allow just ... */
-    opt_dot_start_end(fun_exp_decl_statement_list,
-		      pre_post_decl_statement_or_expression,
-		      rule_elem_statement,
-		      fun_exp_decl_statement_list)
-    { List.concat
-	($1 (function x -> function y ->
-	      [Ast0.wrap(Ast0.OTHER (P.mkdots x y))])) }
+1. Top level:
+   Dots and nests allowed at the beginning or end
+   Expressions allowed at the beginning or end
+   One function allowed, by itself
+2. A function body:
+   Dots and nests allowed at the beginning or end
+   Expressions not allowed at the beginning or end
+   Functions not allowed
+3. The body of a nest:
+   Dots and nests not allowed at the beginning or end
+   Expressions allowed at the beginning or end
+   Functions not allowed
+4. Whencode:
+   Dots and nests not allowed at the beginning but allowed at the end
+   Expressions allowed at the beginning or end
+   Functions not allowed
 
-plus_function_decl_statement_or_expression: /* does allow just ... */
-    first=fun_exp_decl_statement_list { first }
-  | first=loption(fun_exp_decl_statement_list)
-      second=required_dot_start_with_ender(fun_exp_decl_statement_list,
-				    pre_post_decl_statement_or_expression,
-				    rule_elem_statement,
-				    fun_exp_decl_statement_list)
-      { List.concat
-	   (first ::
-	    (second
-	       (function x -> function y ->
-		 [Ast0.wrap(Ast0.OTHER (P.mkdots x y))]))) }
+These are implemented by the rules minus_toplevel_sequence,
+plus_toplevel_sequence, function_body_sequence, nest_body_sequence, and
+when_body_sequence.
+*/
+/* ------------------------------------------------------------------------ */
+/* Minus top level */
 
+/* doesn't allow only ... */
+minus_start:
+  fundecl                { [Ast0.wrap(Ast0.DECL($1))] }
+| ctype                  { [Ast0.wrap(Ast0.OTHER(Ast0.wrap(Ast0.Ty($1))))] }
+| toplevel_seq_start(toplevel_after_dots_init)
+    { List.map (function x -> Ast0.wrap(Ast0.OTHER(x))) $1 }
 
-/* a mix of declarations, statements and expressions.  an expression may
-appear by itself.  always nonempty and cannot just be dots. */
+toplevel_seq_start(after_dots_init):
+  stm_dots after_dots_init           { $1::$2 }
+| expr toplevel_after_exp            { (Ast0.wrap(Ast0.Exp($1)))::$2 }
+| decl_statement toplevel_after_stm  { $1@$2 }
 
-pre_post_decl_statement_or_expression:
-  opt_dot_start_end(exp_decl_statement_list,
-		    pre_post_decl_statement_or_expression,
-		    rule_elem_statement,
-		    exp_decl_statement_list)
-  { P.top_dots(List.concat ($1 (function x -> function y -> [P.mkdots x y]))) }
+toplevel_after_dots_init:
+  TNothing toplevel_after_exp        {$2}
+| expr toplevel_after_exp            {(Ast0.wrap(Ast0.Exp($1)))::$2}
+| decl_statement toplevel_after_stm  {$1@$2}
 
-/* a mix of declarations, statements and expressions.  an expression must
-be surrounded by ... */
+toplevel_after_exp:
+  /* empty */                        {[]}
+| stm_dots toplevel_after_dots       {$1::$2}
 
-pre_post_decl_statement_and_expression:
-    first=pure_decl_statement_list { P.top_dots first }
-  | first=loption(pure_decl_statement_list)
-      second=required_dot_start_with_ender(exp_decl_statement_list,
-				    pre_post_decl_statement_or_expression,
-				    rule_elem_statement,
-				    pure_decl_statement_list)
-      { P.top_dots
-	  (List.concat
-	     (first::(second (function x -> function y -> [P.mkdots x y])))) }
+toplevel_after_dots:
+  /* empty */                        {[]}
+| TNothing toplevel_after_exp        {$2}
+| expr toplevel_after_exp            {(Ast0.wrap(Ast0.Exp($1)))::$2}
+| decl_statement toplevel_after_stm  {$1@$2}
 
-pre_post_decl_statement_and_expression_opt:
-    /* empty */                             { Ast0.wrap(Ast0.DOTS([])) }
-  | pre_post_decl_statement_and_expression  { $1 }
+toplevel_after_stm:
+  /* empty */                        {[]}
+| stm_dots toplevel_after_dots       {$1::$2}
+| decl_statement toplevel_after_stm  {$1@$2}
 
-pre_post_decl_statement_and_expression_opt_mid:
-    pre_post_decl_statement_and_expression       { ($1,[]) }
-  | /* empty */                          { (Ast0.wrap(Ast0.DOTS([])),[]) }
-  | pre_post_decl_statement_and_expression TMid0
-      pre_post_decl_statement_and_expression_opt_midp
-      { let (first,rest) = $3 in
-        ($1,(P.clt2mcode "|" $2,first)::rest) }
-  | TMid0
-      pre_post_decl_statement_and_expression_opt_midp
-      { let (first,rest) = $2 in
-        (Ast0.wrap(Ast0.DOTS([])),
-	 (P.clt2mcode "|" $1,first)::rest) }
+/* ------------------------------------------------------------------------ */
+/* Plus top level */
 
-pre_post_decl_statement_and_expression_opt_midp:
-    pre_post_decl_statement_or_expression       { ($1,[]) }
-  | /* empty */                          { (Ast0.wrap(Ast0.DOTS([])),[]) }
-  | pre_post_decl_statement_or_expression TMid0
-      pre_post_decl_statement_and_expression_opt_midp
-      { let (first,rest) = $3 in
-        ($1,(P.clt2mcode "|" $2,first)::rest) }
-  | TMid0
-      pre_post_decl_statement_and_expression_opt_midp
-      { let (first,rest) = $2 in
-        (Ast0.wrap(Ast0.DOTS([])),
-	 (P.clt2mcode "|" $1,first)::rest) }
+/* does allow only ... also allows multiple top-level functions */
+plus_start:
+  ctype                   { [Ast0.wrap(Ast0.OTHER(Ast0.wrap(Ast0.Ty($1))))] }
+| stm_dots plus_after_dots
+                                          { (Ast0.wrap(Ast0.OTHER($1)))::$2 }
+| expr plus_after_exp
+                     { (Ast0.wrap(Ast0.OTHER(Ast0.wrap(Ast0.Exp($1)))))::$2 }
+| fundecl plus_after_stm                     { Ast0.wrap(Ast0.DECL($1))::$2 }
+| decl_statement plus_after_stm
+                { (List.map (function x -> Ast0.wrap(Ast0.OTHER(x))) $1)@$2 }
+
+plus_after_exp:
+  /* empty */                                                            {[]}
+| stm_dots plus_after_dots                { (Ast0.wrap(Ast0.OTHER($1)))::$2 }
+
+plus_after_dots:
+  /* empty */                                                            {[]}
+| TNothing plus_after_exp                                                {$2}
+| expr plus_after_exp
+                     { (Ast0.wrap(Ast0.OTHER(Ast0.wrap(Ast0.Exp($1)))))::$2 }
+| fundecl plus_after_stm                     { Ast0.wrap(Ast0.DECL($1))::$2 }
+| decl_statement plus_after_stm
+                { (List.map (function x -> Ast0.wrap(Ast0.OTHER(x))) $1)@$2 }
+
+plus_after_stm:
+  /* empty */                                                            {[]}
+| stm_dots plus_after_dots                { (Ast0.wrap(Ast0.OTHER($1)))::$2 }
+| fundecl plus_after_stm                     { Ast0.wrap(Ast0.DECL($1))::$2 }
+| decl_statement plus_after_stm
+                { (List.map (function x -> Ast0.wrap(Ast0.OTHER(x))) $1)@$2 }
+
+/* ------------------------------------------------------------------------ */
+/* Function body */
+
+fun_start:
+  fun_after_stm  { Ast0.wrap(Ast0.DOTS($1)) }
+
+fun_after_stm:
+  /* empty */                  {[]}
+| stm_dots fun_after_dots      {$1::$2}
+| decl_statement fun_after_stm {$1@$2}
+
+fun_after_dots:
+  /* empty */                  {[]}
+| TNothing fun_after_exp       {$2}
+| expr fun_after_exp           {Ast0.wrap(Ast0.Exp($1))::$2}
+| decl_statement fun_after_stm {$1@$2}
+
+fun_after_exp:
+  stm_dots fun_after_dots      {$1::$2}
+
+/* ------------------------------------------------------------------------ */
+/* Nest body */
+
+nest_start:
+  nest_after_dots  { Ast0.wrap(Ast0.DOTS($1)) }
+
+nest_after_dots:
+  decl_statement nest_after_stm {$1@$2}
+| TNothing nest_after_exp       {$2}
+| expr nest_after_exp           {(Ast0.wrap(Ast0.Exp($1)))::$2}
+
+nest_after_stm:
+  /* empty */                   {[]}
+| stm_dots nest_after_dots      {$1::$2}
+| decl_statement nest_after_stm {$1@$2}
+
+nest_after_exp:
+  /* empty */                   {[]}
+| stm_dots nest_after_dots      {$1::$2}
+
+/* ------------------------------------------------------------------------ */
+/*Whencode*/
+
+when_start:
+  expr toplevel_after_exp
+    { Ast0.wrap(Ast0.DOTS((Ast0.wrap(Ast0.Exp($1)))::$2)) }
+| decl_statement toplevel_after_stm
+    { Ast0.wrap(Ast0.DOTS($1@$2)) }
 
 /* ---------------------------------------------------------------------- */
 
@@ -1591,20 +1568,6 @@ eexpr_list_start:
     aexpr { [$1] }
   | aexpr TComma eexpr_list_start
       { $1::Ast0.wrap(Ast0.EComma(P.clt2mcode "," $2))::$3 }
-/*
-  | d=edots_when(TEllipsis,eexpr)
-	r=list(comma_args(edots_when(TEllipsis,eexpr)))
-      { (P.mkedots "..." d)::
-	(List.concat (List.map (function x -> x (P.mkedots "...")) r)) }
-  | d=edots_when(TCircles,eexpr)
-	r=list(comma_args(edots_when(TCircles,eexpr)))
-      { (P.mkedots "ooo" d)::
-	(List.concat (List.map (function x -> x (P.mkedots "ooo")) r)) }
-  | d=edots_when(TStars,eexpr)
-	r=list(comma_args(edots_when(TStars,eexpr)))
-      { (P.mkedots "***" d)::
-	(List.concat (List.map (function x -> x (P.mkedots "***")) r)) }
-*/
 
 comma_args(dotter):
   c=TComma d=dotter
@@ -1630,75 +1593,6 @@ midzero_list(elem,aft):
 mzl(elem):
   a=TMid0 b=elem { (P.clt2mcode "|" a, b) }
 
-// SEQ1
-// at least one instance of grammar/ender
-
-opt_dot_start_end(grammar,when_grammar,simple_when_grammar,ender):
-   start=ender { function dot_builder -> [start] }
- | r=opt_dot_start_end_pattern(grammar,
-			       dots_when(TEllipsis,when_grammar,
-					 simple_when_grammar),
-     ender,opt_dot_end_dots(TEllipsis,grammar,when_grammar,
-				simple_when_grammar,ender))
-   { function dot_builder -> r (dot_builder "...") }
-/*
- | r=opt_dot_start_end_pattern(grammar,dots_when(TCircles,when_grammar,
-						 simple_when_grammar),
-     ender,opt_dot_end_dots(TCircles,grammar,when_grammar,
-			       simple_when_grammar,ender))
-   { function dot_builder -> r (dot_builder "ooo") }
- | r=opt_dot_start_end_pattern(grammar,dots_when(TStars,when_grammar,
-						 simple_when_grammar),
-     ender,opt_dot_end_dots(TStars,grammar,when_grammar,
-			     simple_when_grammar,ender))
-   { function dot_builder -> r (dot_builder "***") }
-*/
-
-opt_dot_start_end_pattern(grammar,dotter,ender,continue):
-   g=grammar d=dotter
-     { function dot_builder -> [g; (dot_builder d)] }
- | g=grammar d=dotter c=continue
-     { function dot_builder -> g :: (dot_builder d) :: (c dot_builder) }
- | d=dotter c=continue // continue is never empty
-     { function dot_builder -> (dot_builder d) :: (c dot_builder) }
-
-opt_dot_end_dots(dots,grammar,when_grammar,simple_when_grammar,ender):
-   g=ender { function dot_builder -> [g] }
- | g=grammar d=dots_when(dots,when_grammar,simple_when_grammar)
-     { function dot_builder -> [g ; dot_builder d ] }
- | g=grammar d=dots_when(dots,when_grammar,simple_when_grammar)
-     r=opt_dot_end_dots(dots,grammar,when_grammar,simple_when_grammar,ender)
-     { function dot_builder -> g :: (dot_builder d) :: (r dot_builder) }
-
-// SEQ2, ender optional
-required_dot_start_with_ender(grammar,when_grammar,
-				      simple_when_grammar,ender):
- | start=dots_when(TEllipsis,when_grammar,simple_when_grammar)
-     finish=no_dot_start_dots
-       (TEllipsis,grammar,when_grammar,simple_when_grammar,ender)
-   { (function dot_builder ->
-       (dot_builder "..." start) :: (finish (dot_builder "..."))) }
-/*
- | start=dots_when(TCircles,when_grammar,simple_when_grammar)
-     finish=no_dot_start_dots
-       (TCircles,grammar,when_grammar,simple_when_grammar,ender)
-   { (function dot_builder ->
-       (dot_builder "ooo" start) :: (finish (dot_builder "ooo"))) }
- | start=dots_when(TStars,when_grammar,simple_when_grammar)
-     finish=no_dot_start_dots
-       (TStars,grammar,when_grammar,simple_when_grammar,ender)
-   { (function dot_builder ->
-       (dot_builder "***" start) :: (finish (dot_builder "***"))) }
-*/
-
-no_dot_start_dots(dots,grammar,when_grammar,simple_when_grammar,ender):
-   /* empty */    { function dot_builder -> [] }
- | e=ender
-       { function dot_builder -> [e] }
- | g=grammar d=dots_when(dots,when_grammar,simple_when_grammar) 
-       r=no_dot_start_dots(dots,grammar,when_grammar,simple_when_grammar,ender)
-       { function dot_builder -> g::(dot_builder d)::(r dot_builder) }
-
 edots_when(dotter,when_grammar):
     d=dotter                                      { (d,None) }
   | d=dotter TWhen TNotEq w=when_grammar TLineEnd { (d,Some w) }
@@ -1712,12 +1606,6 @@ whens(when_grammar,simple_when_grammar):
   | TWhen TEq w=simple_when_grammar TLineEnd { Ast0.WhenAlways w }
   | TWhen TAny TLineEnd { Ast0.WhenAny }
   | TWhen TStrict TLineEnd { Ast0.WhenStrict }
-
-// used in NEST
-no_dot_start_end(grammar,dotter):
-  g=grammar dg=list(pair(dotter,grammar))
-  { function dot_builder ->
-      g :: (List.concat(List.map (function (d,g) -> [dot_builder d;g]) dg)) }
 
 /*****************************************************************************
 *
@@ -1735,8 +1623,7 @@ iso_main:
     { P.iso_adjust (function x -> Ast0.StmtTag x) s1 sl }
 | TIsoType t1=ctype tl=list(iso(ctype)) EOF
     { P.iso_adjust (function x -> Ast0.TypeCTag x) t1 tl }
-| TIsoTopLevel e1=xstatement_dots(TEllipsis)
-    el=list(iso(xstatement_dots(TEllipsis))) EOF
+| TIsoTopLevel e1=nest_start el=list(iso(nest_start)) EOF
     { P.iso_adjust (function x -> Ast0.DotsStmtTag x) e1 el }
 | TIsoDeclaration d1=decl_var dl=list(iso(decl_var)) EOF
     { let check_one = function
@@ -1753,9 +1640,6 @@ iso_main:
 	  | Common.Right x -> Common.Right(check_one x))
 	dl in
     P.iso_adjust (function x -> Ast0.DeclTag x) d1 dl }
-
-xstatement_dots(dotter): b=statement_dots(dotter)
-    { Ast0.wrap(Ast0.DOTS(b (P.mkdots "..."))) }
 
 iso(term):
     TIso t=term { Common.Left t }
