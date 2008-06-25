@@ -8,5 +8,14 @@ struct device {
 
 struct device *dev;
 
+
+struct netdev_private *np = (struct netdev_private *) 
+   dev->priv;
+
+
+struct netdev_private *np2 = (struct netdev_private *)
+   dev->priv2;
+
+
 struct netdev_private *np3 = (struct netdev_private *) 
    dev;
