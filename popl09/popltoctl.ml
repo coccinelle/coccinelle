@@ -192,7 +192,8 @@ and ifthen keep_wit a test thn aft =
 	    (guard_ctl_term keep_wit thn)))
       (ctl_or fall
 	 (ctl_and after end_code)) in
-  ctl_and (ctl_term keep_wit body test) (ctl_ex after)
+  ctl_and (ctl_term keep_wit body test)
+    (match a with Some CTL.True | None -> ctl_true | Some _ -> ctl_ex after)
 
 and do_between_dots keep_wit ba term after =
     match ba with
