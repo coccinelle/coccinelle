@@ -1049,6 +1049,35 @@ decl_statement:
 	  [Ast0.wrap(Ast0.Disj(P.clt2mcode "(" $1, code, mids,
 			       P.clt2mcode ")" $3))] }
 
+/* a statement that is part of a list */
+decl_statement_expr:
+    TMetaStmList
+      { let (nm,pure,clt) = $1 in
+      [Ast0.wrap(Ast0.MetaStmt(P.clt2mcode nm clt,pure))] }
+  | decl_var
+      { List.map
+	  (function x ->
+	    Ast0.wrap
+	      (Ast0.Decl((Ast0.default_info(),Ast0.context_befaft()),x)))
+	  $1 }
+  | statement { [$1] }
+  /* this doesn't allow expressions at top level, because the parser doesn't
+	know whether there is one.  If there is one, this is not sequencible.
+	If there is not one, then it is.  It seems complicated to get around
+    this at the parser level.  We would have to have a check afterwards to
+    allow this.  One case where this would be useful is for a when.  Now
+	we allow a sequence of whens, so one can be on only statements and
+    one can be on only expressions. */
+  | TOPar0 t=midzero_list(fun_after_stm,fun_after_dots_or) TCPar0
+      { let (mids,code) = t in
+	if List.for_all (function [] -> true | _ -> false) code
+      then []
+      else
+	  let dot_code =
+	    List.map (function x -> Ast0.wrap(Ast0.DOTS x)) code in
+	  [Ast0.wrap(Ast0.Disj(P.clt2mcode "(" $1, dot_code, mids,
+			       P.clt2mcode ")" $3))] }
+
 /*****************************************************************************/
 
 /* The following cannot contain <... ...> at the top level.  This can only
@@ -1429,12 +1458,12 @@ minus_start:
 toplevel_seq_start(after_dots_init):
   stm_dots after_dots_init           { $1::$2 }
 | expr toplevel_after_exp            { (Ast0.wrap(Ast0.Exp($1)))::$2 }
-| decl_statement toplevel_after_stm  { $1@$2 }
+| decl_statement_expr toplevel_after_stm  { $1@$2 }
 
 toplevel_after_dots_init:
   TNothing toplevel_after_exp        {$2}
 | expr toplevel_after_exp            {(Ast0.wrap(Ast0.Exp($1)))::$2}
-| decl_statement toplevel_after_stm  {$1@$2}
+| decl_statement_expr toplevel_after_stm  {$1@$2}
 
 toplevel_after_exp:
   /* empty */                        {[]}
@@ -1444,7 +1473,7 @@ toplevel_after_dots:
   /* empty */                        {[]}
 | TNothing toplevel_after_exp        {$2}
 | expr toplevel_after_exp            {(Ast0.wrap(Ast0.Exp($1)))::$2}
-| decl_statement toplevel_after_stm  {$1@$2}
+| decl_statement_expr toplevel_after_stm  {$1@$2}
 
 toplevel_after_stm:
   /* empty */                        {[]}
@@ -1462,7 +1491,7 @@ plus_start:
 | expr plus_after_exp
                      { (Ast0.wrap(Ast0.OTHER(Ast0.wrap(Ast0.Exp($1)))))::$2 }
 | fundecl plus_after_stm                     { Ast0.wrap(Ast0.DECL($1))::$2 }
-| decl_statement plus_after_stm
+| decl_statement_expr plus_after_stm
                 { (List.map (function x -> Ast0.wrap(Ast0.OTHER(x))) $1)@$2 }
 
 plus_after_exp:
@@ -1475,7 +1504,7 @@ plus_after_dots:
 | expr plus_after_exp
                      { (Ast0.wrap(Ast0.OTHER(Ast0.wrap(Ast0.Exp($1)))))::$2 }
 | fundecl plus_after_stm                     { Ast0.wrap(Ast0.DECL($1))::$2 }
-| decl_statement plus_after_stm
+| decl_statement_expr plus_after_stm
                 { (List.map (function x -> Ast0.wrap(Ast0.OTHER(x))) $1)@$2 }
 
 plus_after_stm:
@@ -1500,10 +1529,21 @@ fun_after_dots:
   /* empty */                  {[]}
 | TNothing fun_after_exp       {$2}
 | expr fun_after_exp           {Ast0.wrap(Ast0.Exp($1))::$2}
-| decl_statement fun_after_stm {$1@$2}
+| decl_statement_expr fun_after_stm {$1@$2}
 
 fun_after_exp:
   stm_dots fun_after_dots      {$1::$2}
+
+/* hack to allow mixing statements and expressions in an or */
+fun_after_dots_or:
+  /* empty */                  {[]}
+| TNothing fun_after_exp_or    {$2}
+| expr fun_after_exp_or        {Ast0.wrap(Ast0.Exp($1))::$2}
+| decl_statement_expr fun_after_stm {$1@$2}
+
+fun_after_exp_or:
+  /* empty */                  {[]}
+| stm_dots fun_after_dots      {$1::$2}
 
 /* ------------------------------------------------------------------------ */
 /* Nest body */
@@ -1512,7 +1552,7 @@ nest_start:
   nest_after_dots  { Ast0.wrap(Ast0.DOTS($1)) }
 
 nest_after_dots:
-  decl_statement nest_after_stm {$1@$2}
+  decl_statement_expr nest_after_stm {$1@$2}
 | TNothing nest_after_exp       {$2}
 | expr nest_after_exp           {(Ast0.wrap(Ast0.Exp($1)))::$2}
 

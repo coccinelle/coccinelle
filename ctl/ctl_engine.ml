@@ -21,6 +21,24 @@ let pSATLABEL_MEMO_OPT = ref true
 let pREQUIRED_STATES_OPT = ref true
 (* Drop negative witnesses at Uncheck *)
 let pUNCHECK_OPT = ref true
+let pANY_NEG_OPT = ref true
+let pLazyOpt = ref true
+
+
+(*
+let pTRIPLES_CONJ_OPT = ref false
+let pTRIPLES_COMPLEMENT_OPT = ref false
+let pTRIPLES_COMPLEMENT_SIMPLE_OPT = ref false
+let pDOUBLE_NEGATE_OPT = ref false
+let pNEW_INFO_OPT = ref false
+let pREQUIRED_ENV_OPT = ref false
+let pSATLABEL_MEMO_OPT = ref false
+let pREQUIRED_STATES_OPT = ref false
+let pUNCHECK_OPT = ref false
+let pANY_NEG_OPT = ref false
+let pLazyOpt = ref false
+*)
+
 
 let step_count = ref 0
 exception Steps
@@ -534,7 +552,6 @@ let union_wit wit wit' =
   then List.filter (function A.NegWit _ -> true | A.Wit _ -> false) res
   else res
 
-
 let negate_wit wit = A.NegWit wit (*
   match wit with
     | A.Wit(s,th,anno,ws)    -> A.NegWitWit(s,th,anno,ws)
@@ -573,7 +590,6 @@ let normalize trips =
 (* conj opt doesn't work ((1,[],{{x=3}}) v (1,[],{{x=4}})) & (1,[],{{x=4}}) =
 (1,[],{{x=3},{x=4}}), not (1,[],{{x=4}}) *)
 let triples_conj trips trips' =
-  Common.profile_code "triples_conj" (fun () -> 
   let (trips,shared,trips') =
     if false && !pTRIPLES_CONJ_OPT (* see comment above *)
     then
@@ -597,14 +613,13 @@ let triples_conj trips trips' =
 		| _       -> rest)
 	      else rest)
 	  rest trips')
-    shared trips)
+    shared trips
 ;;
 
 (* ignore the state in the right argument.  always pretend it is the same as
 the left one *)
 (* env on right has to be a subset of env on left *)
 let triples_conj_none trips trips' =
-  Common.profile_code "triples_conj" (fun () -> 
   let (trips,shared,trips') =
     if false && !pTRIPLES_CONJ_OPT (* see comment above *)
     then
@@ -626,13 +641,12 @@ let triples_conj_none trips trips' =
 		  if List.mem t rest then rest else t::rest
 	      | _       -> rest)
 	  rest trips')
-    shared trips)
+    shared trips
 ;;
 
 exception AW
 
 let triples_conj_AW trips trips' =
-  Common.profile_code "triples_conj" (fun () -> 
   let (trips,shared,trips') =
     if false && !pTRIPLES_CONJ_OPT
     then
@@ -656,7 +670,7 @@ let triples_conj_AW trips trips' =
 		| _ -> raise AW)
 	      else rest)
 	  rest trips')
-    shared trips)
+    shared trips
 ;;
 
 (* *************************** *)
@@ -774,7 +788,6 @@ let print_compl_state str (n,p) =
   print_state "pos" p
 
 let triples_complement states (trips : ('pred, 'anno) triples) =
-  Common.profile_code "triples_complement" (fun () -> 
   if trips = []
   then map (function st -> (st,top_subst,top_wit)) states
   else
@@ -798,7 +811,7 @@ let triples_complement states (trips : ('pred, 'anno) triples) =
     let rec outer_loop = function
 	[x] -> x
       | l -> outer_loop (inner_loop l) in
-    cleanup (outer_loop all_negated))
+    cleanup (outer_loop all_negated)
 
 (* ********************************** *)
 (* END OF NEGATION (NegState style)   *)
@@ -810,7 +823,6 @@ let something_dropped = ref true
 let triples_union trips trips' =
   (*unionBy compare eq_trip trips trips';;*)
   (* returns -1 is t1 > t2, 1 if t2 >= t1, and 0 otherwise *)
-  Common.profile_code "triples_union" (fun () -> 
 (*
 The following does not work.  Suppose we have ([x->3],{A}) and ([],{A,B}).
 Then, the following says that since the first is a more restrictive
@@ -852,11 +864,10 @@ subseteq changed to = to make it hopefully work
 	      | _ -> y::(second_loop x ys) in
 	first_loop trips trips'
     end
-  else unionBy compare eq_trip trips trips')
+  else unionBy compare eq_trip trips trips'
 
 
 let triples_witness x unchecked not_keep trips =
-  Common.profile_code "triples_witness" (fun () -> 
   let anyneg = (* if any is neg, then all are *)
     List.exists (function A.NegSubst _ -> true | A.Subst _ -> false) in
   let anynegwit = (* if any is neg, then all are *)
@@ -880,7 +891,7 @@ let triples_witness x unchecked not_keep trips =
 		(SUB.print_mvar x; Format.print_flush();
 		 print_state ": empty witness from" [t]);
 	      t::prev
-	  | l when anyneg l -> prev
+	  | l when anyneg l && !pANY_NEG_OPT -> prev
 	      (* see tests/nestseq for how neg bindings can come up even
 		 without eg partial matches
               (* negated substitution only allowed with negwits.
@@ -902,7 +913,7 @@ let triples_witness x unchecked not_keep trips =
       [] trips in
   if unchecked || !Flag_ctl.partial_match (* the only way to have a NegWit *)
   then setify res
-  else List.rev res)
+  else List.rev res
 ;;
 
 
@@ -1084,7 +1095,6 @@ type ('pred,'anno) auok =
 
 (* A[phi1 U phi2] == phi2 \/ (phi1 /\ AXA[phi1 U phi2]) *)
 let satAU dir ((cfg,_,states) as m) s1 s2 reqst =
-  Common.profile_code "AU" (fun () -> 
   inc satAU_calls;
   if s1 = []
   then AUok s2
@@ -1132,7 +1142,7 @@ let satAU dir ((cfg,_,states) as m) s1 s2 reqst =
 	inc_step();
 	let pre = pre_forall dir m y y reqst in
 	triples_union s2 (triples_conj s1 pre) in
-      AUok (setfix f s2))
+      AUok (setfix f s2)
 ;;
 
 
@@ -1350,7 +1360,6 @@ let extend_required trips required =
   if !Flag_ctl.partial_match
   then required
   else
-    Common.profile_code "extend_required" (fun () -> 
       if !pREQUIRED_ENV_OPT
       then
     (* make it a set *)
@@ -1383,7 +1392,7 @@ let extend_required trips required =
 	      merged :: tl
 	    with Too_long -> envs :: required)
 	| (envs,_) -> envs :: required
-      else required)
+      else required
 
 let drop_required v required =
   if !pREQUIRED_ENV_OPT
@@ -1404,7 +1413,6 @@ let memo_label =
   (Hashtbl.create(50) : (P.t, (G.node * substitution) list) Hashtbl.t)
 
 let satLabel label required p =
-  Common.profile_code "satLabel" (fun () -> 
     let triples =
     if !pSATLABEL_MEMO_OPT
     then
@@ -1430,7 +1438,7 @@ let satLabel label required p =
 	      then t::rest
 	      else rest)
 	  [] triples
-      else triples))
+      else triples)
 
 let get_required_states l =
   if !pREQUIRED_STATES_OPT && not !Flag_ctl.partial_match
@@ -1486,7 +1494,6 @@ let reachsatEF dir (grp,_,_) s2 =
   List.rev(f s2 s2) (* put root first *)
 
 let get_reachable dir m required_states =
-  Common.profile_code "get_reachable" (fun () -> 
   match required_states with
     None -> None
   | Some states ->
@@ -1505,7 +1512,7 @@ let get_reachable dir m required_states =
 		       Hashtbl.add reachable_table (cur,dir) states;
 		       states)
 		   rest)
-	   [] states))
+	   [] states)
 
 let ctr = ref 0
 let new_var _ =
@@ -1522,6 +1529,7 @@ type ('code,'value) cell = Frozen of 'code | Thawed of 'value
 let rec satloop unchecked required required_states
     ((grp,label,states) as m) phi env =
   let rec loop unchecked required required_states phi =
+    (*Common.profile_code "satloop" (fun _ -> *)
     let res =
       match phi with
       A.False              -> []
@@ -1531,8 +1539,11 @@ let rec satloop unchecked required required_states
 	let unchecked = if !pUNCHECK_OPT then true else false in
 	loop unchecked required required_states phi1
     | A.Not(phi)           ->
+	let phires = loop unchecked required required_states phi in
+	(*let phires =
+	  List.map (function (s,th,w) -> (s,th,[])) phires in*)
 	triples_complement (mkstates states required_states)
-	  (loop unchecked required required_states phi)
+	  phires
     | A.Or(phi1,phi2)      ->
 	triples_union
 	  (loop unchecked required required_states phi1)
@@ -1551,13 +1562,13 @@ let rec satloop unchecked required required_states
 	   the term *)
 	let pm = !Flag_ctl.partial_match in
 	(match (pm,loop unchecked required required_states phi1) with
-	  (false,[]) -> []
+	  (false,[]) when !pLazyOpt -> []
 	| (_,phi1res) ->
 	    let new_required = extend_required phi1res required in
 	    let new_required_states = get_required_states phi1res in
 	    (match (pm,loop unchecked new_required new_required_states phi2)
 	    with
-	      (false,[]) -> []
+	      (false,[]) when !pLazyOpt -> []
 	    | (_,phi2res) ->
 		strict_triples_conj strict
 		  (mkstates states required_states)
@@ -1666,7 +1677,7 @@ let rec satloop unchecked required required_states
     | A.EU(dir,phi1,phi2)      ->
 	let new_required_states = get_reachable dir m required_states in
 	(match loop unchecked required new_required_states phi2 with
-	  [] -> []
+	  [] when !pLazyOpt -> []
 	| s2 ->
 	    let new_required = extend_required s2 required in
 	    let s1 = loop unchecked new_required new_required_states phi1 in
@@ -1674,7 +1685,7 @@ let rec satloop unchecked required required_states
     | A.AW(dir,strict,phi1,phi2) ->
 	let new_required_states = get_reachable dir m required_states in
 	(match loop unchecked required new_required_states phi2 with
-	  [] -> []
+	  [] when !pLazyOpt -> []
 	| s2 ->
 	    let new_required = extend_required s2 required in
 	    let s1 = loop unchecked new_required new_required_states phi1 in
@@ -1683,7 +1694,7 @@ let rec satloop unchecked required required_states
 	(*Printf.printf "using AU\n"; flush stdout;*)
 	let new_required_states = get_reachable dir m required_states in
 	(match loop unchecked required new_required_states phi2 with
-	  [] -> []
+	  [] when !pLazyOpt -> []
 	| s2 ->
 	    let new_required = extend_required s2 required in
 	    let s1 = loop unchecked new_required new_required_states phi1 in
@@ -1726,8 +1737,8 @@ let rec satloop unchecked required required_states
 	if unchecked
 	then List.map (function (s,th,_) -> (s,th,[])) res
 	else res in
-    if !Flag_ctl.bench > 0 then triples := !triples + (List.length res);
-    drop_wits required_states res phi in
+    (**)if !Flag_ctl.bench > 0 then(**) triples := !triples + (List.length res);
+    drop_wits required_states res phi (* ) *) in
   
   loop unchecked required required_states phi
 ;;    
@@ -2350,9 +2361,15 @@ let sat m phi reqopt =
 	  let fn _ = satloop false [] None m phi [] in
 	  if !Flag_ctl.bench > 0
 	  then bench_sat m fn
-	  else fn() in
+	  else Common.profile_code "ctl" (fun _ -> fn()) in
       let res = filter_partial_matches res in
-    (*print_state "final result" res;*)
+      (*
+      Printf.printf "steps: start %d, stop %d\n"
+	(match !Flag_ctl.steps with Some x -> x | _ -> 0)
+	!step_count;
+      Printf.printf "triples: %d\n" !triples;
+      print_state "final result" res;
+      *)
       res)
     else
       (if !Flag_ctl.verbose_ctl_engine
