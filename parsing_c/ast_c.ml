@@ -594,20 +594,27 @@ let str_of_info ii =
   | FakeTok (s,_) -> s
   | AbstractLineTok pi -> pi.Common.str
 
-let get_info d f ii =
+let get_info f ii =
   match ii.pinfo with
     OriginTok pi -> f pi
   | ExpandedTok (_,(pi,_)) -> f pi
-  | FakeTok (_,_) -> d
+  | FakeTok (_,(pi,_)) -> f pi
+  | AbstractLineTok pi -> f pi
+
+let get_orig_info d f ii =
+  match ii.pinfo with
+    OriginTok pi -> f pi
+  | ExpandedTok (_,(pi,_)) -> f pi
+  | FakeTok (_,(pi,_)) -> f pi
   | AbstractLineTok pi -> f pi
 
 let make_expanded ii =
   {ii with pinfo = ExpandedTok (get_pi ii.pinfo,no_virt_pos)}
 
-let pos_of_info   ii = get_info (-1) (function x -> x.Common.charpos) ii
-let line_of_info  ii = get_info (-1) (function x -> x.Common.line)    ii
-let col_of_info   ii = get_info (-1) (function x -> x.Common.column)  ii
-let file_of_info  ii = get_info ""   (function x -> x.Common.file)    ii
+let pos_of_info   ii = get_info (function x -> x.Common.charpos) ii
+let line_of_info  ii = get_orig_info (-1) (function x -> x.Common.line)    ii
+let col_of_info   ii = get_orig_info (-1) (function x -> x.Common.column)  ii
+let file_of_info  ii = get_orig_info ""   (function x -> x.Common.file)    ii
 let mcode_of_info ii = fst (!(ii.cocci_tag))
 let pinfo_of_info ii = ii.pinfo
 let parse_info_of_info ii = get_pi ii.pinfo
