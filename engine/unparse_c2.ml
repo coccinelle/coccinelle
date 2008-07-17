@@ -273,7 +273,7 @@ let expand_mcode toks =
     let pr_c info = 
       match Ast_c.pinfo_of_info info with
 	Ast_c.AbstractLineTok _ -> push2 (C2 (Ast_c.str_of_info info)) toks_out
-      |	Ast_c.FakeTok s -> push2 (C2 s) toks_out
+      |	Ast_c.FakeTok (s,_) -> push2 (C2 s) toks_out
       |	_ ->
 	  Printf.printf "line: %s\n" (Dumper.dump info);
 	  failwith "not an abstract line" in

@@ -201,7 +201,7 @@ let count_lines_commentized xs =
     commentized xs +>
     List.iter
       (function
-	  Ast_c.OriginTok pinfo | Ast_c.ExpandedTok pinfo -> 
+	  Ast_c.OriginTok pinfo | Ast_c.ExpandedTok (_,(pinfo,_)) -> 
 	    let newline = pinfo.Common.line in
 	    if newline <> !line
 	    then begin
@@ -221,7 +221,7 @@ let print_commentized xs =
     ys +>
     List.iter
       (function
-	  Ast_c.OriginTok pinfo | Ast_c.ExpandedTok pinfo -> 
+	  Ast_c.OriginTok pinfo | Ast_c.ExpandedTok (_,(pinfo,_)) -> 
 	    let newline = pinfo.Common.line in
 	    let s = pinfo.Common.str in
 	    let s = Str.global_substitute 
@@ -261,9 +261,9 @@ let tokens2 file =
 	  match Ast_c.pinfo_of_info ii with
 	    Ast_c.OriginTok pi ->
               Ast_c.OriginTok (Common.complete_parse_info file table pi)
-	  | Ast_c.ExpandedTok pi ->
-              Ast_c.ExpandedTok (Common.complete_parse_info file table pi)
-	  | Ast_c.FakeTok s -> Ast_c.FakeTok s
+	  | Ast_c.ExpandedTok (pi,vpi) ->
+              Ast_c.ExpandedTok((Common.complete_parse_info file table pi),vpi)
+	  | Ast_c.FakeTok (s,vpi) -> Ast_c.FakeTok (s,vpi)
 	  | Ast_c.AbstractLineTok pi -> failwith "should not occur"
       })
       in

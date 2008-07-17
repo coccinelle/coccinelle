@@ -1399,6 +1399,36 @@ let filter_cpp_stuff xs =
   in
   aux xs
 
+let insert_virtual_positions l =
+  let strlen x = String.length (Ast_c.str_of_info x) in
+  let rec loop prev offset = function
+      [] -> []
+    | x::xs ->
+	let ii = TH.info_of_tok x in
+	let inject pi =
+	  TH.visitor_info_of_tok (function ii -> Ast_c.rewrap_pinfo pi ii) x in
+	match Ast_c.pinfo_of_info ii with
+	  Ast_c.OriginTok pi ->
+	    let prev = Ast_c.parse_info_of_info ii in
+	    x::(loop prev (strlen ii) xs)
+	| Ast_c.ExpandedTok (pi,_) ->
+	    inject (Ast_c.ExpandedTok (pi,(prev,offset))) ::
+	    (loop prev (offset + (strlen ii)) xs)
+	| Ast_c.FakeTok (s,_) ->
+	    inject (Ast_c.FakeTok (s,(prev,offset))) ::
+	    (loop prev (offset + (strlen ii)) xs)
+	| Ast_c.AbstractLineTok _ -> failwith "abstract not expected" in
+  let rec skip_fake = function
+      [] -> []
+    | x::xs ->
+	let ii = TH.info_of_tok x in
+	match Ast_c.pinfo_of_info ii with
+	  Ast_c.OriginTok pi ->
+	    let prev = Ast_c.parse_info_of_info ii in
+	    x::(loop prev (strlen ii) xs)
+	| _ -> x::skip_fake xs in
+  skip_fake l
+
 let fix_tokens_cpp2 tokens = 
   let tokens2 = ref (tokens +> acc_map mk_token_extended) in
   
@@ -1462,7 +1492,7 @@ let fix_tokens_cpp2 tokens =
     find_actions  paren_grouped;
 
 
-    !tokens2 +> acc_map (fun x -> x.tok)
+    insert_virtual_positions (!tokens2 +> acc_map (fun x -> x.tok))
   end
 
 let fix_tokens_cpp a = 

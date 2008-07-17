@@ -48,14 +48,15 @@ open Common
 
 type pos = int (* position, for MetaPosVal, for managing expressions *)
 type posl = int * int (* lin-col, for MetaPosValList, for position variables *)
+type virtual_position = Common.parse_info * int (* character offset *)
 type parse_info = 
   (* Present both in ast and list of tokens *)
   | OriginTok of Common.parse_info
   (* Present only in ast and generated after parsing. Used mainly
    * by Julia, to add stuff at virtual places, beginning of func or decl *)
-  | FakeTok of string
+  | FakeTok of string * virtual_position
   (* Present both in ast and list of tokens.  *)
-  | ExpandedTok of Common.parse_info
+  | ExpandedTok of Common.parse_info * virtual_position
   (* Present neither in ast nor in list of tokens
    * but only in the '+' of the mcode of some tokens. Those kind of tokens
    * are used to be able to use '=' to compare big ast portions.
@@ -537,8 +538,10 @@ let noInIfdef () =
  * old: or when don't want 'synchronize' on it in unparse_c.ml
  * (now have other mark for tha matter).
  *)
-let fakeInfo ()  = 
-  { pinfo = FakeTok "";
+let no_virt_pos = ({str="";charpos=0;line=0;column=0;file=""},-1)
+
+let fakeInfo pi  = 
+  { pinfo = FakeTok ("",no_virt_pos);
     cocci_tag = ref emptyAnnot;
   }
 
@@ -566,42 +569,45 @@ let rewrap_str s ii =
   {ii with pinfo =
     (match ii.pinfo with
       OriginTok pi -> OriginTok { pi with Common.str = s;}
-    | ExpandedTok pi -> ExpandedTok { pi with Common.str = s;}
-    | FakeTok _ -> FakeTok s
+    | ExpandedTok (pi,vpi) -> ExpandedTok ({ pi with Common.str = s;},vpi)
+    | FakeTok (_,vpi) -> FakeTok (s,vpi)
     | AbstractLineTok pi -> failwith "should not be rewrapped")}
+
+let rewrap_pinfo pi ii =  
+  {ii with pinfo = pi}
 
 let get_pi = function
     OriginTok pi -> pi
-  | ExpandedTok pi -> pi
-  | FakeTok _ -> failwith "no position information"
+  | ExpandedTok (pi,_) -> pi
+  | FakeTok (_,_) -> failwith "no position information"
   | AbstractLineTok pi -> pi
 
 let is_fake ii =
   match ii.pinfo with
-    FakeTok _ -> true
+    FakeTok (_,_) -> true
   | _ -> false
 
 let str_of_info ii =
   match ii.pinfo with
     OriginTok pi -> pi.Common.str
-  | ExpandedTok pi -> pi.Common.str
-  | FakeTok s -> s
+  | ExpandedTok (pi,_) -> pi.Common.str
+  | FakeTok (s,_) -> s
   | AbstractLineTok pi -> pi.Common.str
 
 let get_info d f ii =
   match ii.pinfo with
     OriginTok pi -> f pi
-  | ExpandedTok pi -> f pi
-  | FakeTok _ -> d
+  | ExpandedTok (_,(pi,_)) -> f pi
+  | FakeTok (_,_) -> d
   | AbstractLineTok pi -> f pi
 
 let make_expanded ii =
-  {ii with pinfo = ExpandedTok (get_pi ii.pinfo)}
+  {ii with pinfo = ExpandedTok (get_pi ii.pinfo,no_virt_pos)}
 
 let pos_of_info   ii = get_info (-1) (function x -> x.Common.charpos) ii
-let line_of_info  ii = get_info (-1) (function x -> x.Common.line) ii
-let col_of_info   ii = get_info (-1) (function x -> x.Common.column) ii
-let file_of_info  ii = get_info "" (function x -> x.Common.file) ii
+let line_of_info  ii = get_info (-1) (function x -> x.Common.line)    ii
+let col_of_info   ii = get_info (-1) (function x -> x.Common.column)  ii
+let file_of_info  ii = get_info ""   (function x -> x.Common.file)    ii
 let mcode_of_info ii = fst (!(ii.cocci_tag))
 let pinfo_of_info ii = ii.pinfo
 let parse_info_of_info ii = get_pi ii.pinfo
@@ -627,15 +633,12 @@ let equal_posl (l1,c1) (l2,c2) =
 
 let al_info tokenindex x = 
   { pinfo =
-    (match x.pinfo with
-      FakeTok s -> FakeTok s
-    | _ ->
-	AbstractLineTok
-	  {(parse_info_of_info x) with
-	    charpos = tokenindex;
-	    line = tokenindex;
-	    column = tokenindex;
-	    file = ""});
+    (AbstractLineTok
+       {charpos = tokenindex;
+	 line = tokenindex;
+	 column = tokenindex;
+	 file = "";
+	 str = str_of_info x});
     cocci_tag = ref emptyAnnot;
   }
 
