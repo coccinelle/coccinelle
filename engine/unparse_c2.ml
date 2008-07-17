@@ -134,7 +134,7 @@ let remove_useless_fakeInfo_struct program =
           | [_i1;_i2] -> ini
           | [i1;i2;iicommaopt] -> 
               if (not (contain_plus iicommaopt)) && (not (contain_plus i2))
-                 && (Ast_c.mark_of_info iicommaopt = FakeTok)
+                 && (Ast_c.is_fake iicommaopt)
                  (* sometimes the guy put a normal iicommaopt *)
 
               then InitList args, [i1;i2]
@@ -157,10 +157,10 @@ let get_fakeInfo_and_tokens celem toks =
 
   (* todo? verify good order of position ? *)
   let pr_elem info = 
-    match Ast_c.mark_of_info info with
-    | FakeTok -> 
+    match Ast_c.pinfo_of_info info with
+    | FakeTok _ -> 
         Common.push2 (Fake1 info) toks_out
-    | OriginTok | ExpandedTok -> 
+    | OriginTok _ | ExpandedTok _ -> 
         (* get the associated comments/space/cppcomment tokens *)
         let (before, x, after) = !toks_in +> Common.split_when (fun tok -> 
 	  info =*= TH.info_of_tok tok)
@@ -175,7 +175,7 @@ let get_fakeInfo_and_tokens celem toks =
         before +> List.iter (fun x -> Common.push2 (T1 x) toks_out);
         push2 (T1 x) toks_out;
         toks_in := after;
-    | AbstractLineTok -> raise Impossible (* at this stage *) in
+    | AbstractLineTok _ -> raise Impossible (* at this stage *) in
 
   let pr_space _ = () in (* use the spacing that is there already *)
 
@@ -245,7 +245,7 @@ let expand_mcode toks =
   
     | T1 tok -> 
         (* no tag on expandedTok ! *)
-        assert(not (TH.mark_of_tok tok = ExpandedTok && 
+        assert(not (TH.is_expanded tok && 
             !((TH.info_of_tok tok).cocci_tag) <> Ast_c.emptyAnnot));
 
         let tok' = tok +> TH.visitor_info_of_tok (fun i -> 
@@ -253,7 +253,7 @@ let expand_mcode toks =
         ) in
 
         let optindex = 
-          if TH.mark_of_tok tok = OriginTok && not (TH.is_real_comment tok)
+          if TH.is_origin tok && not (TH.is_real_comment tok)
           then begin
               incr index;
               Some !index
@@ -271,8 +271,12 @@ let expand_mcode toks =
       push2 (Cocci2 s) toks_out 
     in
     let pr_c info = 
-      assert(Ast_c.mark_of_info info = AbstractLineTok);
-      push2 (C2 (Ast_c.str_of_info info)) toks_out in
+      match Ast_c.pinfo_of_info info with
+	Ast_c.AbstractLineTok _ -> push2 (C2 (Ast_c.str_of_info info)) toks_out
+      |	Ast_c.FakeTok s -> push2 (C2 s) toks_out
+      |	_ ->
+	  Printf.printf "line: %s\n" (Dumper.dump info);
+	  failwith "not an abstract line" in
 
     let pr_space _ = push2 (C2 " ") toks_out in
 
@@ -370,7 +374,7 @@ let remove_minus_and_between_and_expanded_and_fake xs =
 
   (* get rid of exampled and fake tok *)
   let xs = xs +> Common.exclude (function 
-    | T2 (t,_,_) when TH.mark_of_tok t = ExpandedTok -> true
+    | T2 (t,_,_) when TH.is_expanded t -> true
     | Fake2 -> true
 
     | _ -> false
@@ -612,12 +616,12 @@ let kind_of_token2 = function
   | Fake2 -> KFake
   | Cocci2 _ -> KCocci
   | C2 _ -> KC
-  | T2 (t,_,_) -> 
-      (match TH.mark_of_tok t with
-      | ExpandedTok -> KExpanded
-      | OriginTok -> KOrigin
-      | FakeTok -> raise Impossible (* now a Fake2 *)
-      | AbstractLineTok -> raise Impossible (* now a KC *)
+  | T2 (t,_,_) ->
+      (match TH.pinfo_of_tok t with
+      | ExpandedTok _ -> KExpanded
+      | OriginTok _ -> KOrigin
+      | FakeTok _ -> raise Impossible (* now a Fake2 *)
+      | AbstractLineTok _ -> raise Impossible (* now a KC *)
       )
   | Unindent_cocci2 | Indent_cocci2 -> raise Impossible
   
@@ -705,7 +709,7 @@ let pp_program2 xs outfile  =
 
           (* phase1: just get all the tokens, all the information *)
           assert(toks_e +> List.for_all (fun t -> 
-            List.mem (TH.mark_of_tok t) [OriginTok;ExpandedTok;]
+	    TH.is_origin t or TH.is_expanded t
           ));
           let toks = get_fakeInfo_and_tokens e toks_e in
 	  let toks = displace_fake_nodes toks in

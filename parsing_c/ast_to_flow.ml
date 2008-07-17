@@ -53,7 +53,7 @@ let add_arc_opt (starti, nodei) g =
 
 let lbl_0 = [] 
 
-let pinfo_of_ii ii = (List.hd ii).Ast_c.pinfo
+let pinfo_of_ii ii = Ast_c.get_pi (List.hd ii).Ast_c.pinfo
 
 
 

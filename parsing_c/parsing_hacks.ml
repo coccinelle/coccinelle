@@ -878,8 +878,7 @@ let rec apply_macro_defs xs =
           then
             let xxs' = xxs +> List.map (fun x -> 
               (tokens_of_paren_ordered x) +> List.map (fun x -> 
-                TH.visitor_info_of_tok (Ast_c.rewrap_mark Ast_c.ExpandedTok) 
-                  x.tok
+                TH.visitor_info_of_tok Ast_c.make_expanded x.tok
               )
             ) in
             id.new_tokens_before <-
@@ -1493,12 +1492,11 @@ let fix_tokens_cpp a =
  *)
 let mark_end_define ii = 
   let ii' = 
-    { Ast_c.pinfo = { ii.Ast_c.pinfo with 
+    { Ast_c.pinfo = Ast_c.OriginTok { (Ast_c.parse_info_of_info ii) with 
         Common.str = ""; 
-        Common.charpos = ii.Ast_c.pinfo.Common.charpos + 1
+        Common.charpos = Ast_c.pos_of_info ii + 1
       };
       cocci_tag = ref Ast_c.emptyAnnot;
-      mark = Ast_c.OriginTok;
     } 
   in
   TDefEOL (ii')
@@ -1602,7 +1600,7 @@ let rec define_parse xs =
         | x -> error_cant_have x
         ) in
       let body = body +> List.map 
-        (TH.visitor_info_of_tok (Ast_c.rewrap_mark Ast_c.ExpandedTok)) in
+        (TH.visitor_info_of_tok Ast_c.make_expanded) in
       let def = (s, (Right params, body)) in
       def::define_parse xs
 
@@ -1610,7 +1608,7 @@ let rec define_parse xs =
       let (body, _, xs) = 
         xs +> Common.split_when (function TDefEOL _ -> true | _ -> false) in
       let body = body +> List.map 
-        (TH.visitor_info_of_tok (Ast_c.rewrap_mark Ast_c.ExpandedTok)) in
+        (TH.visitor_info_of_tok Ast_c.make_expanded) in
       let def = (s, (Left (), body)) in
       def::define_parse xs
 

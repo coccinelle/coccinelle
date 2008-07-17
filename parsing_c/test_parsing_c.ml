@@ -179,7 +179,7 @@ let test_type_c infile =
   Flag_parsing_c.pretty_print_type_info := true;
 
   let (program2, _stat) =  Parse_c.parse_print_error_heuristic infile in
-  let program2 =
+  let _program2 =
     program2 
     +> Common.unzip 
     +> (fun (program, infos) -> 

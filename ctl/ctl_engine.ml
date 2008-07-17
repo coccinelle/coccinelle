@@ -24,7 +24,6 @@ let pUNCHECK_OPT = ref true
 let pANY_NEG_OPT = ref true
 let pLazyOpt = ref true
 
-
 (*
 let pTRIPLES_CONJ_OPT = ref false
 let pTRIPLES_COMPLEMENT_OPT = ref false
@@ -544,7 +543,7 @@ let top_wit = ([] : (('pred, 'anno) witness list));;
 
 let eq_wit wit wit' = wit = wit';;
 
-let union_wit wit wit' =
+let union_wit wit wit' = (*List.sort compare (wit' @ wit) for popl*)
   let res = unionBy compare (=) wit wit' in
   let anynegwit = (* if any is neg, then all are *)
     List.exists (function A.NegWit _ -> true | A.Wit _ -> false) in
@@ -1138,11 +1137,19 @@ let satAU dir ((cfg,_,states) as m) s1 s2 reqst =
 		    f res new_info in
       f s2 s2
     else
-      let f y =
-	inc_step();
-	let pre = pre_forall dir m y y reqst in
-	triples_union s2 (triples_conj s1 pre) in
-      AUok (setfix f s2)
+      if !Flag_ctl.loop_in_src_code
+      then AUfailed s2
+      else
+	(*let setfix =
+	  fix (function s1 -> function s2 ->
+	    let s1 = List.map (function (s,th,w) -> (s,th,nub w)) s1 in
+	    let s2 = List.map (function (s,th,w) -> (s,th,nub w)) s2 in
+	    subseteq s1 s2) in for popl *)
+	let f y =
+	  inc_step();
+	  let pre = pre_forall dir m y y reqst in
+	  triples_union s2 (triples_conj s1 pre) in
+	AUok (setfix f s2)
 ;;
 
 
@@ -1737,7 +1744,7 @@ let rec satloop unchecked required required_states
 	if unchecked
 	then List.map (function (s,th,_) -> (s,th,[])) res
 	else res in
-    (**)if !Flag_ctl.bench > 0 then(**) triples := !triples + (List.length res);
+    if !Flag_ctl.bench > 0 then triples := !triples + (List.length res);
     drop_wits required_states res phi (* ) *) in
   
   loop unchecked required required_states phi

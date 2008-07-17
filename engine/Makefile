@@ -14,7 +14,7 @@ SOURCES = flag_engine.ml lib_engine.ml pretty_print_engine.ml \
 # CTLSOURCES = lib_engine.ml pretty_print_engine.ml asttoctl.ml ctltotex.ml \
 #	main.ml
 
-INCLUDE_PATH = -I ../commons -I ../globals \
+INCLUDE_PATH = -I ../commons -I ../commons/ocamlextra -I ../globals \
 	       -I ../ctl -I ../parsing_c -I ../parsing_cocci
 
 SYSLIBS = str.cma unix.cma

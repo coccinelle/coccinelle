@@ -148,18 +148,18 @@ module XTRANS = struct
 
   let tag_with_mck mck ib = fun tin -> 
 
-    let (s2, cocciinforef) = ib.Ast_c.pinfo, ib.Ast_c.cocci_tag in
+    let cocciinforef = ib.Ast_c.cocci_tag in
     let (oldmcode, oldenv) = !cocciinforef in
 
     let mck =
       if !Flag_parsing_cocci.sgrep_mode
-      then Sgrep.process_sgrep s2 mck
+      then Sgrep.process_sgrep ib mck
       else mck 
     in
-    (match mck, ib.Ast_c.mark with
-    | _,                  Ast_c.AbstractLineTok -> raise Impossible
-    | Ast_cocci.MINUS(_), Ast_c.ExpandedTok -> 
-        failwith ("try to delete an expanded token: " ^ s2.str)
+    (match mck, Ast_c.pinfo_of_info ib with
+    | _,                  Ast_c.AbstractLineTok _ -> raise Impossible
+    | Ast_cocci.MINUS(_), Ast_c.ExpandedTok _ -> 
+        failwith ("try to delete an expanded token: " ^ (Ast_c.str_of_info ib))
     | _ -> ()
     );
 
@@ -193,7 +193,8 @@ module XTRANS = struct
               failwith
 	        (Common.sprintf "%s: already tagged token:\n%s"
 		   tin.extra.current_rule_name
-	           (Common.error_message s2.file (s2.str, s2.charpos)))
+	           (Common.error_message (Ast_c.file_of_info ib)
+		      (Ast_c.str_of_info ib, Ast_c.pos_of_info ib)))
             end
 
 

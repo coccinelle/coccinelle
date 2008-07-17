@@ -362,12 +362,20 @@ let visitor_info_of_tok f = function
 
 let linecol_of_tok tok =
   let info = info_of_tok tok in
-  info.Ast_c.pinfo.Common.line, info.Ast_c.pinfo.Common.column
+  Ast_c.line_of_info info, Ast_c.col_of_info info
 
 let col_of_tok x = snd (linecol_of_tok x)
 let line_of_tok x = fst (linecol_of_tok x)
 let pos_of_tok x =  Ast_c.pos_of_info (info_of_tok x)
 let str_of_tok x =  Ast_c.str_of_info (info_of_tok x)
-let mark_of_tok x = Ast_c.mark_of_info (info_of_tok x)
 let file_of_tok x = Ast_c.file_of_info (info_of_tok x)
+let pinfo_of_tok x = Ast_c.pinfo_of_info (info_of_tok x)
 
+let is_origin x =
+  match pinfo_of_tok x with Ast_c.OriginTok _ -> true | _ -> false
+let is_expanded x =
+  match pinfo_of_tok x with Ast_c.ExpandedTok _ -> true | _ -> false
+let is_fake x =
+  match pinfo_of_tok x with Ast_c.FakeTok _ -> true | _ -> false
+let is_abstract x =
+  match pinfo_of_tok x with Ast_c.AbstractLineTok _ -> true | _ -> false

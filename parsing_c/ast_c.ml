@@ -48,23 +48,22 @@ open Common
 
 type pos = int (* position, for MetaPosVal, for managing expressions *)
 type posl = int * int (* lin-col, for MetaPosValList, for position variables *)
-type mark_token = 
+type parse_info = 
   (* Present both in ast and list of tokens *)
-  | OriginTok 
+  | OriginTok of Common.parse_info
   (* Present only in ast and generated after parsing. Used mainly
    * by Julia, to add stuff at virtual places, beginning of func or decl *)
-  | FakeTok   
+  | FakeTok of string
   (* Present both in ast and list of tokens.  *)
-  | ExpandedTok 
+  | ExpandedTok of Common.parse_info
   (* Present neither in ast nor in list of tokens
    * but only in the '+' of the mcode of some tokens. Those kind of tokens
    * are used to be able to use '=' to compare big ast portions.
    *)
-  | AbstractLineTok  
+  | AbstractLineTok of Common.parse_info (* local to the abstracted thing *)
 
 type info = { 
-  pinfo : Common.parse_info;
-  mark : mark_token;
+  pinfo : parse_info;
   cocci_tag: (Ast_cocci.mcodekind * metavars_binding) ref;
   }
 and il = info list
@@ -539,9 +538,8 @@ let noInIfdef () =
  * (now have other mark for tha matter).
  *)
 let fakeInfo ()  = 
-  { pinfo = Common.fake_parse_info;
+  { pinfo = FakeTok "";
     cocci_tag = ref emptyAnnot;
-    mark = FakeTok;
   }
 
 
@@ -565,21 +563,52 @@ let rewrap_typeC (qu, (typeC, ii)) newtypeC  = (qu, (newtypeC, ii))
 
 
 let rewrap_str s ii =  
-  {ii with pinfo = { ii.pinfo with Common.str = s;}}
-let rewrap_mark mark ii =  
-  {ii with mark = mark}
+  {ii with pinfo =
+    (match ii.pinfo with
+      OriginTok pi -> OriginTok { pi with Common.str = s;}
+    | ExpandedTok pi -> ExpandedTok { pi with Common.str = s;}
+    | FakeTok _ -> FakeTok s
+    | AbstractLineTok pi -> failwith "should not be rewrapped")}
 
-let pos_of_info   ii = ii.pinfo.Common.charpos
-let line_of_info  ii = ii.pinfo.Common.line
-let col_of_info   ii = ii.pinfo.Common.column
-let str_of_info   ii = ii.pinfo.Common.str
-let file_of_info  ii = ii.pinfo.Common.file
-let mark_of_info  ii = ii.mark
-let mcode_of_info ii  = fst (!(ii.cocci_tag))
+let get_pi = function
+    OriginTok pi -> pi
+  | ExpandedTok pi -> pi
+  | FakeTok _ -> failwith "no position information"
+  | AbstractLineTok pi -> pi
+
+let is_fake ii =
+  match ii.pinfo with
+    FakeTok _ -> true
+  | _ -> false
+
+let str_of_info ii =
+  match ii.pinfo with
+    OriginTok pi -> pi.Common.str
+  | ExpandedTok pi -> pi.Common.str
+  | FakeTok s -> s
+  | AbstractLineTok pi -> pi.Common.str
+
+let get_info d f ii =
+  match ii.pinfo with
+    OriginTok pi -> f pi
+  | ExpandedTok pi -> f pi
+  | FakeTok _ -> d
+  | AbstractLineTok pi -> f pi
+
+let make_expanded ii =
+  {ii with pinfo = ExpandedTok (get_pi ii.pinfo)}
+
+let pos_of_info   ii = get_info (-1) (function x -> x.Common.charpos) ii
+let line_of_info  ii = get_info (-1) (function x -> x.Common.line) ii
+let col_of_info   ii = get_info (-1) (function x -> x.Common.column) ii
+let file_of_info  ii = get_info "" (function x -> x.Common.file) ii
+let mcode_of_info ii = fst (!(ii.cocci_tag))
+let pinfo_of_info ii = ii.pinfo
+let parse_info_of_info ii = get_pi ii.pinfo
 
 (* todo: use virtual pos ? *)
 let compare_pos i1 i2 = 
-  compare i1.pinfo.charpos i2.pinfo.charpos
+  compare (pos_of_info i1) (pos_of_info i2)
 let equal_pos p1 p2 = 
   p1 =|= p2
 let equal_posl (l1,c1) (l2,c2) = 
@@ -596,21 +625,23 @@ let equal_posl (l1,c1) (l2,c2) =
  * information, to "abstract those line" information.
  *)
 
-let al_info x = 
-  let _Magic_info_number = -10 in
-  { pinfo = 
-      { charpos = _Magic_info_number; 
-        str = x.pinfo.str;
-        line = -1; column = -1; file = "";
-      };
+let al_info tokenindex x = 
+  { pinfo =
+    (match x.pinfo with
+      FakeTok s -> FakeTok s
+    | _ ->
+	AbstractLineTok
+	  {(parse_info_of_info x) with
+	    charpos = tokenindex;
+	    line = tokenindex;
+	    column = tokenindex;
+	    file = ""});
     cocci_tag = ref emptyAnnot;
-    mark = AbstractLineTok;
   }
 
 let semi_al_info x = 
   { x with
     cocci_tag = ref emptyAnnot;
-    mark = AbstractLineTok;
   }
 
 (*****************************************************************************)

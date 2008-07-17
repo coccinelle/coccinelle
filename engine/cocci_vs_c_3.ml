@@ -254,7 +254,7 @@ let equal_metavarval valu valu' =
 (*---------------------------------------------------------------------------*)
 (* could put in ast_c.ml, next to the split/unsplit_comma *)
 let split_signb_baseb_ii (baseb, ii) = 
-  let iis = ii +> List.map (fun info -> info.B.pinfo.Common.str, info) in
+  let iis = ii +> List.map (fun info -> (B.str_of_info info), info) in
   match baseb, iis with
   
   | B.Void, ["void",i1] -> None, [i1]

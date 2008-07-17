@@ -33,7 +33,7 @@ let tok     lexbuf  = Lexing.lexeme lexbuf
 
 let tokinfo lexbuf  = 
   { 
-    pinfo = {
+    pinfo = Ast_c.OriginTok {
       Common.charpos = Lexing.lexeme_start lexbuf; 
       Common.str     = Lexing.lexeme lexbuf;
       (* info filled in a post-lexing phase *)
@@ -43,11 +43,9 @@ let tokinfo lexbuf  =
     };
    (* must generate a new ref each time, otherwise share *)
     cocci_tag = ref Ast_c.emptyAnnot;
-    mark = Ast_c.OriginTok;
   }
 
-let tok_add_s s ii = 
-  {ii with pinfo = { ii.pinfo with Common.str = ii.pinfo.str ^ s}}
+let tok_add_s s ii = Ast_c.rewrap_str ((Ast_c.str_of_info ii) ^ s) ii
     
 
 (* opti: less convenient, but using a hash is faster than using a match *)

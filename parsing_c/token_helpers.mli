@@ -20,5 +20,10 @@ val col_of_tok     : Parser_c.token -> int
 val line_of_tok    : Parser_c.token -> int
 val pos_of_tok     : Parser_c.token -> int
 val str_of_tok     :  Parser_c.token -> string
-val mark_of_tok    : Parser_c.token -> Ast_c.mark_token
 val file_of_tok    : Parser_c.token -> Common.filename
+val pinfo_of_tok   : Parser_c.token -> Ast_c.parse_info
+
+val is_origin : Parser_c.token -> bool
+val is_expanded : Parser_c.token -> bool
+val is_fake : Parser_c.token -> bool
+val is_abstract : Parser_c.token -> bool

@@ -107,7 +107,7 @@ let normal_form_token x =
     | x -> x
   in
   x' +> Token_helpers.visitor_info_of_tok (fun info -> 
-    let info = Ast_c.al_info info in
+    let info = Ast_c.al_info 0 info in
     let str = Ast_c.str_of_info info in
     if Common.string_match_substring cvs_keyword_regexp str
     then 

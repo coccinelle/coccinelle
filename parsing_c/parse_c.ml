@@ -48,9 +48,9 @@ let mk_info_item2 filename toks =
     (* old: get_slice_file filename (line1, line2) *)
     begin
       toks +> List.iter (fun tok -> 
-        match TH.mark_of_tok tok with
-        | Ast_c.OriginTok -> Buffer.add_string buf (TH.str_of_tok tok)
-        | Ast_c.AbstractLineTok -> raise Impossible
+        match TH.pinfo_of_tok tok with
+        | Ast_c.OriginTok _ -> Buffer.add_string buf (TH.str_of_tok tok)
+        | Ast_c.AbstractLineTok _ -> raise Impossible
         | _ -> ()
       );
       Buffer.contents buf
@@ -198,14 +198,17 @@ let count_lines_commentized xs =
   let line = ref (-1) in
   let count = ref 0 in
   begin
-    commentized xs +> List.iter (fun pinfo -> 
-      let newline = pinfo.Common.line in
-      if newline <> !line
-      then begin
-        line := newline;
-        incr count
-      end
-    );
+    commentized xs +>
+    List.iter
+      (function
+	  Ast_c.OriginTok pinfo | Ast_c.ExpandedTok pinfo -> 
+	    let newline = pinfo.Common.line in
+	    if newline <> !line
+	    then begin
+              line := newline;
+              incr count
+	    end
+	| _ -> ());
     !count
   end
 
@@ -215,22 +218,25 @@ let print_commentized xs =
   let line = ref (-1) in
   begin
     let ys = commentized xs in
-    ys +> List.iter (fun pinfo -> 
-      let newline = pinfo.Common.line in
-      let s = pinfo.Common.str in
-      let s = Str.global_substitute 
-        (Str.regexp "\n") (fun s -> "") s 
-      in
-      if newline = !line
-      then prerr_string (s ^ " ")
-      else begin
-        if !line = -1 
-        then pr2_no_nl "passed:" 
-        else pr2_no_nl "\npassed:";
-        line := newline;
-        pr2_no_nl (s ^ " ");
-      end
-    );
+    ys +>
+    List.iter
+      (function
+	  Ast_c.OriginTok pinfo | Ast_c.ExpandedTok pinfo -> 
+	    let newline = pinfo.Common.line in
+	    let s = pinfo.Common.str in
+	    let s = Str.global_substitute 
+		(Str.regexp "\n") (fun s -> "") s 
+	    in
+	    if newline = !line
+	    then prerr_string (s ^ " ")
+	    else begin
+              if !line = -1 
+              then pr2_no_nl "passed:" 
+              else pr2_no_nl "\npassed:";
+              line := newline;
+              pr2_no_nl (s ^ " ");
+	    end
+	| _ -> ());
     if not (null ys) then pr2 "";
   end
       
@@ -252,7 +258,13 @@ let tokens2 file =
       let tok = Lexer_c.token lexbuf in
       (* add the line x col information *)
       let tok = tok +> TH.visitor_info_of_tok (fun ii -> { ii with Ast_c.pinfo=
-          Common.complete_parse_info file table ii.Ast_c.pinfo
+	  match Ast_c.pinfo_of_info ii with
+	    Ast_c.OriginTok pi ->
+              Ast_c.OriginTok (Common.complete_parse_info file table pi)
+	  | Ast_c.ExpandedTok pi ->
+              Ast_c.ExpandedTok (Common.complete_parse_info file table pi)
+	  | Ast_c.FakeTok s -> Ast_c.FakeTok s
+	  | Ast_c.AbstractLineTok pi -> failwith "should not occur"
       })
       in
       if TH.is_eof tok
@@ -648,14 +660,13 @@ and find_next_synchro_orig next already_passed =
 (* used to generate new token from existing one *)
 let new_info posadd str ii = 
   { Ast_c.pinfo = 
-      { ii.Ast_c.pinfo with 
-        charpos = ii.Ast_c.pinfo.charpos + posadd;
+      Ast_c.OriginTok { (Ast_c.parse_info_of_info ii) with 
+        charpos = Ast_c.pos_of_info ii + posadd;
         str     = str;
-        column = ii.Ast_c.pinfo.column + posadd;
+        column = Ast_c.col_of_info ii + posadd;
       };
     (* must generate a new ref each time, otherwise share *)
     cocci_tag = ref Ast_c.emptyAnnot;
-    mark = Ast_c.OriginTok;
   }
 
 

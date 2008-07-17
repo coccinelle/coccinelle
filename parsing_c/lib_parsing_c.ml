@@ -10,9 +10,13 @@ open Common
 
 (* drop all info information *)
 
-let strip_info_visitor = 
+let strip_info_visitor _ = 
   { Visitor_c.default_visitor_c_s with
-    Visitor_c.kinfo_s = (fun (k,_) i -> Ast_c.al_info i);
+    Visitor_c.kinfo_s =
+    (* traversal should be deterministic... *)
+    (let ctr = ref 0 in 
+    (function (k,_) ->
+    function i -> ctr := !ctr + 1; Ast_c.al_info !ctr i));
 
     Visitor_c.kexpr_s = (fun (k,_) e -> 
       let (e', _),ii' = k e in
@@ -32,14 +36,14 @@ let strip_info_visitor =
     
   }
 
-let al_expr      = Visitor_c.vk_expr_s      strip_info_visitor 
-let al_statement = Visitor_c.vk_statement_s strip_info_visitor
-let al_type      = Visitor_c.vk_type_s      strip_info_visitor
-let al_param     = Visitor_c.vk_param_s     strip_info_visitor
-let al_params    = Visitor_c.vk_params_s    strip_info_visitor
-let al_arguments = Visitor_c.vk_arguments_s strip_info_visitor
+let al_expr      x = Visitor_c.vk_expr_s      (strip_info_visitor()) x
+let al_statement x = Visitor_c.vk_statement_s (strip_info_visitor()) x
+let al_type      x = Visitor_c.vk_type_s      (strip_info_visitor()) x
+let al_param     x = Visitor_c.vk_param_s     (strip_info_visitor()) x
+let al_params    x = Visitor_c.vk_params_s    (strip_info_visitor()) x
+let al_arguments x = Visitor_c.vk_arguments_s (strip_info_visitor()) x
 
-let al_program  = List.map (Visitor_c.vk_toplevel_s  strip_info_visitor)
+let al_program  x = List.map (Visitor_c.vk_toplevel_s (strip_info_visitor())) x
 
 let semi_strip_info_visitor = (* keep position information *)
   { Visitor_c.default_visitor_c_s with
@@ -93,17 +97,19 @@ let ii_of_define_params =
   extract_info_visitor Visitor_c.vk_define_params_splitted
 
 let max_min_ii_by_pos xs = 
+  let non_origin_tok x =
+    match Ast_c.pinfo_of_info x with Ast_c.OriginTok _ -> false | _ -> true in
 
   match xs with
   | [] -> failwith "empty list, max_min_ii_by_pos"
-  | [x] when Ast_c.mark_of_info x <> Ast_c.OriginTok -> 
+  | [x] when non_origin_tok x ->
       pr2_once "PB: no max or min, have fake info, should not happen";
       (x, x)
   | x::xs -> 
       xs +> List.fold_left (fun (maxii,minii) e -> 
         let posf x = Ast_c.pos_of_info x in
 
-        if (Ast_c.mark_of_info e <> Ast_c.OriginTok)
+        if non_origin_tok e
         then begin 
           pr2_once "PB: no max or min, have fake info, should not happen";
           (maxii, minii)
