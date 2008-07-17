@@ -1568,7 +1568,8 @@ type parse_info = {
     str: string;
     charpos: int;
 
-    line: int; column: int;
+    line: int;
+    column: int;
     file: filename;
   } 
 val fake_parse_info : parse_info

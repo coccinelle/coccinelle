@@ -658,7 +658,7 @@ and find_next_synchro_orig next already_passed =
 (* ------------------------------------------------------------------------- *)
 
 (* used to generate new token from existing one *)
-let new_info posadd str ii = 
+let new_info posadd str ii =
   { Ast_c.pinfo = 
       Ast_c.OriginTok { (Ast_c.parse_info_of_info ii) with 
         charpos = Ast_c.pos_of_info ii + posadd;

@@ -34,7 +34,9 @@ and 'a mcode = 'a * info * mcodekind * meta_pos (* pos variable *)
     MINUS       of pos * anything list list
   | CONTEXT     of pos * anything befaft
   | PLUS
- and pos = NoPos | DontCarePos | FixPos of (int * int)
+ and fixpos =
+    Real of int (* charpos *) | Virt of int * int (* charpos + offset *)
+ and pos = NoPos | DontCarePos | FixPos of (fixpos * fixpos)
 
 and dots_bef_aft =
     NoDots
@@ -612,6 +614,10 @@ let make_meta_decl s d (fvs,fresh,inh) =
     free_vars = fvs; fresh_vars = fresh; inherited = inh}
 
 let make_mcode x = (x,no_info,CONTEXT(NoPos,NOTHING),NoMetaPos)
+
+(* --------------------------------------------------------------------- *)
+
+let equal_pos x y = x = y
 
 (* --------------------------------------------------------------------- *)
 

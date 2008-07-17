@@ -31,7 +31,9 @@ and 'a mcode = 'a * info * mcodekind * meta_pos (* pos variable *)
     MINUS       of pos * anything list list
   | CONTEXT     of pos * anything befaft
   | PLUS
- and pos = NoPos | DontCarePos | FixPos of (int * int)
+ and fixpos =
+    Real of int (* charpos *) | Virt of int * int (* charpos + offset *)
+ and pos = NoPos | DontCarePos | FixPos of (fixpos * fixpos)
 
 and dots_bef_aft =
     NoDots
@@ -559,3 +561,5 @@ val make_meta_decl :
 
 val make_term : 'a -> 'a wrap
 val make_mcode : 'a -> 'a mcode
+
+val equal_pos : fixpos -> fixpos -> bool

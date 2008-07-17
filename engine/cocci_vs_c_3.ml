@@ -236,7 +236,7 @@ let equal_metavarval valu valu' =
       Lib_parsing_c.al_params a =*= Lib_parsing_c.al_params b
 
   | Ast_c.MetaPosVal (posa1,posa2), Ast_c.MetaPosVal (posb1,posb2) -> 
-      Ast_c.equal_pos posa1 posb1 && Ast_c.equal_pos posa2 posb2
+      Ast_cocci.equal_pos posa1 posb1 && Ast_cocci.equal_pos posa2 posb2
         
   | Ast_c.MetaPosValList l1, Ast_c.MetaPosValList l2 ->
       List.exists

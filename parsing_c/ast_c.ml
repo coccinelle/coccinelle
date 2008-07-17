@@ -46,7 +46,6 @@ open Common
 
 (* forunparser: *)
 
-type pos = int (* position, for MetaPosVal, for managing expressions *)
 type posl = int * int (* lin-col, for MetaPosValList, for position variables *)
 type virtual_position = Common.parse_info * int (* character offset *)
 type parse_info = 
@@ -492,7 +491,7 @@ and metavars_binding = (Ast_cocci.meta_name, metavar_binding_kind) assoc
    * a '+'. But ParenVal or LabelVal are used only by CTL, they are not
    * variables accessible via SmPL whereas the position can be one day
    * so I think it's better to put MetaPosVal here *)
-  | MetaPosVal       of (pos * pos) (* max, min *)
+  | MetaPosVal       of (Ast_cocci.fixpos * Ast_cocci.fixpos) (* max, min *)
   | MetaPosValList   of (Common.filename * posl * posl) list (* min, max *)
   | MetaListlenVal   of int
 
@@ -576,7 +575,15 @@ let rewrap_str s ii =
 let rewrap_pinfo pi ii =  
   {ii with pinfo = pi}
 
+(* info about the current location *)
 let get_pi = function
+    OriginTok pi -> pi
+  | ExpandedTok (_,(pi,_)) -> pi
+  | FakeTok (_,(pi,_)) -> pi
+  | AbstractLineTok pi -> pi
+
+(* original info *)
+let get_opi = function
     OriginTok pi -> pi
   | ExpandedTok (pi,_) -> pi
   | FakeTok (_,_) -> failwith "no position information"
@@ -601,31 +608,59 @@ let get_info f ii =
   | FakeTok (_,(pi,_)) -> f pi
   | AbstractLineTok pi -> f pi
 
-let get_orig_info d f ii =
+let get_orig_info f ii =
   match ii.pinfo with
     OriginTok pi -> f pi
-  | ExpandedTok (_,(pi,_)) -> f pi
+  | ExpandedTok (pi,_) -> f pi
   | FakeTok (_,(pi,_)) -> f pi
   | AbstractLineTok pi -> f pi
 
 let make_expanded ii =
-  {ii with pinfo = ExpandedTok (get_pi ii.pinfo,no_virt_pos)}
+  {ii with pinfo = ExpandedTok (get_opi ii.pinfo,no_virt_pos)}
 
-let pos_of_info   ii = get_info (function x -> x.Common.charpos) ii
-let line_of_info  ii = get_orig_info (-1) (function x -> x.Common.line)    ii
-let col_of_info   ii = get_orig_info (-1) (function x -> x.Common.column)  ii
-let file_of_info  ii = get_orig_info ""   (function x -> x.Common.file)    ii
+let pos_of_info   ii = get_info      (function x -> x.Common.charpos) ii
+let opos_of_info  ii = get_orig_info (function x -> x.Common.charpos) ii
+let line_of_info  ii = get_orig_info (function x -> x.Common.line)    ii
+let col_of_info   ii = get_orig_info (function x -> x.Common.column)  ii
+let file_of_info  ii = get_orig_info (function x -> x.Common.file)    ii
 let mcode_of_info ii = fst (!(ii.cocci_tag))
 let pinfo_of_info ii = ii.pinfo
 let parse_info_of_info ii = get_pi ii.pinfo
 
-(* todo: use virtual pos ? *)
-let compare_pos i1 i2 = 
-  compare (pos_of_info i1) (pos_of_info i2)
-let equal_pos p1 p2 = 
-  p1 =|= p2
+type posrv = Real of Common.parse_info | Virt of virtual_position
+let compare_pos ii1 ii2 =
+  let get_pos = function
+      OriginTok pi -> Real pi
+    | FakeTok (s,vpi) -> Virt vpi
+    | ExpandedTok (pi,vpi) -> Virt vpi
+    | AbstractLineTok pi -> Real pi in (* used for printing *)
+  let pos1 = get_pos (pinfo_of_info ii1) in
+  let pos2 = get_pos (pinfo_of_info ii2) in
+  match (pos1,pos2) with
+    (Real p1, Real p2) -> compare p1.Common.charpos p2.Common.charpos
+  | (Virt (p1,_), Real p2) ->
+      if (compare p1.Common.charpos p2.Common.charpos) = (-1) then (-1) else 1
+  | (Real p1, Virt (p2,_)) ->
+      if (compare p1.Common.charpos p2.Common.charpos) = 1 then 1 else (-1)
+  | (Virt (p1,o1), Virt (p2,o2)) ->
+      let poi1 = p1.Common.charpos in
+      let poi2 = p2.Common.charpos in
+      match compare poi1 poi2 with
+	-1 -> -1
+      |	0 -> compare o1 o2
+      |	x -> x
+
 let equal_posl (l1,c1) (l2,c2) = 
   (l1 =|= l2) && (c1 =|= c2)
+
+let info_to_fixpos ii =
+  match pinfo_of_info ii with
+    OriginTok pi -> Ast_cocci.Real pi.Common.charpos
+  | ExpandedTok (_,(pi,offset)) ->
+      Ast_cocci.Virt (pi.Common.charpos,offset)
+  | FakeTok (_,(pi,offset)) ->
+      Ast_cocci.Virt (pi.Common.charpos,offset)
+  | AbstractLineTok pi -> failwith "unexpected abstract"
 
 (*****************************************************************************)
 (* Abstract line *)

@@ -194,20 +194,18 @@ module XTRANS = struct
 	        (Common.sprintf "%s: already tagged token:\n%s"
 		   tin.extra.current_rule_name
 	           (Common.error_message (Ast_c.file_of_info ib)
-		      (Ast_c.str_of_info ib, Ast_c.pos_of_info ib)))
+		      (Ast_c.str_of_info ib, Ast_c.opos_of_info ib)))
             end
-
-
 
   let tokenf ia ib = fun tin -> 
     let (_,i,mck,_) = ia in
-    let pos = Ast_c.pos_of_info ib in
+    let pos = Ast_c.info_to_fixpos ib in
     if check_pos (Some i) mck pos 
     then return (ia, tag_with_mck mck ib tin) tin
     else fail tin
 
   let tokenf_mck mck ib = fun tin -> 
-    let pos = Ast_c.pos_of_info ib in
+    let pos = Ast_c.info_to_fixpos ib in
     if check_pos None mck pos 
     then return (mck, tag_with_mck mck ib tin) tin
     else fail tin
@@ -285,11 +283,12 @@ module XTRANS = struct
     let bigf = { 
       Visitor_c.default_visitor_c_s with
         Visitor_c.kinfo_s = (fun (k,bigf) i -> 
-          let pos = Ast_c.pos_of_info i in
+          let pos = Ast_c.info_to_fixpos i in
           match () with
-          | _ when pos =|= maxpos && pos =|= minpos -> bop i
-          | _ when pos =|= maxpos -> rop i
-          | _ when pos =|= minpos -> lop i
+          | _ when Ast_cocci.equal_pos pos maxpos &&
+	      Ast_cocci.equal_pos pos minpos -> bop i
+          | _ when Ast_cocci.equal_pos pos maxpos -> rop i
+          | _ when Ast_cocci.equal_pos pos minpos -> lop i
           | _ -> mop i
         )
     } in

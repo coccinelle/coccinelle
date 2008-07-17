@@ -96,40 +96,30 @@ let ii_of_cst = extract_info_visitor Visitor_c.vk_cst
 let ii_of_define_params = 
   extract_info_visitor Visitor_c.vk_define_params_splitted
 
-type pos = Real of Common.parse_info | Virt of Ast_c.virtual_position
-let pos_leq ii1 ii2 =
-  let get_pos = function
-      Ast_c.OriginTok pi -> Real pi
-    | Ast_c.FakeTok (s,vpi) -> Virt vpi
-    | Ast_c.ExpandedTok (pi,vpi) -> Virt vpi
-    | Ast_c.AbstractLineTok _ -> failwith "unexpected abstract" in
-  let pos1 = get_pos (Ast_c.pinfo_of_info ii1) in
-  let pos2 = get_pos (Ast_c.pinfo_of_info ii2) in
-  match (pos1,pos2) with
-    (Real p1, Real p2) -> p1.Common.charpos <= p2.Common.charpos
-  | (Virt (p1,_), Real p2) -> p1.Common.charpos < p2.Common.charpos
-  | (Real p1, Virt (p2,_)) -> p1.Common.charpos <= p2.Common.charpos
-  | (Virt (p1,o1), Virt (p2,o2)) ->
-      let poi1 = p1.Common.charpos in
-      let poi2 = p2.Common.charpos in
-      (poi1 < poi2) or (poi1 = poi2 && o1 <= o2)
-
 let max_min_ii_by_pos xs = 
   match xs with
   | [] -> failwith "empty list, max_min_ii_by_pos"
   | [x] -> (x, x)
   | x::xs -> 
+      let pos_leq p1 p2 = (Ast_c.compare_pos p1 p2) = (-1) in
       xs +> List.fold_left (fun (maxii,minii) e -> 
         let maxii' = if pos_leq maxii e then e else maxii in
         let minii' = if pos_leq e minii then e else minii in
         maxii', minii'
       ) (x,x)
+
+let info_to_fixpos ii =
+  match Ast_c.pinfo_of_info ii with
+    Ast_c.OriginTok pi -> Ast_cocci.Real pi.Common.charpos
+  | Ast_c.ExpandedTok (_,(pi,offset)) ->
+      Ast_cocci.Virt (pi.Common.charpos,offset)
+  | Ast_c.FakeTok (_,(pi,offset)) ->
+      Ast_cocci.Virt (pi.Common.charpos,offset)
+  | Ast_c.AbstractLineTok pi -> failwith "unexpected abstract"
   
 let max_min_by_pos xs = 
   let (i1, i2) = max_min_ii_by_pos xs in
-  let posf x = Ast_c.pos_of_info x in
-  let mposf x = Ast_c.pos_of_info x in
-  (mposf i1, posf i2)
+  (info_to_fixpos i1, info_to_fixpos i2)
 
 let lin_col_by_pos xs = 
   (* put min before max; no idea why they are backwards above *)

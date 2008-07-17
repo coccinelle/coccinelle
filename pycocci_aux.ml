@@ -48,6 +48,10 @@ let stringrep mvb = match mvb with
 | Ast_c.MetaParamVal     params -> "TODO: <<param>>"
 | Ast_c.MetaParamListVal params -> "TODO: <<paramlist>>"
 | Ast_c.MetaListlenVal n -> string_of_int n
-| Ast_c.MetaPosVal (pos1, pos2) -> Common.sprintf ("pos(%d,%d)") pos1 pos2
+| Ast_c.MetaPosVal (pos1, pos2) ->
+    let print_pos = function
+	Ast_cocci.Real x -> string_of_int x
+      | Ast_cocci.Virt(x,off) -> Printf.sprintf "%d+%d" x off in
+    Common.sprintf ("pos(%s,%s)") (print_pos pos1) (print_pos pos2)
 | Ast_c.MetaPosValList positions -> "TODO: <<postvallist>>"
 

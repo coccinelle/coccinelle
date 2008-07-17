@@ -390,7 +390,7 @@ module XMATCH = struct
   (* Tokens *) 
   (* ------------------------------------------------------------------------*)
   let tokenf ia ib = fun tin ->
-    let pos = Ast_c.pos_of_info ib in
+    let pos = Ast_c.info_to_fixpos ib in
     let posmck = Ast_cocci.FixPos (pos, pos) in
     let finish tin = tag_mck_pos_mcode ia posmck ib tin in
     match Ast_cocci.get_pos_var ia with
@@ -412,7 +412,7 @@ module XMATCH = struct
     | _ -> finish tin
 
   let tokenf_mck mck ib = fun tin -> 
-    let pos = Ast_c.pos_of_info ib in
+    let pos = Ast_c.info_to_fixpos ib in
     let posmck = Ast_cocci.FixPos (pos, pos) in
     [(tag_mck_pos mck posmck, ib), tin.binding]
     
