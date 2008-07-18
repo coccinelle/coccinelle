@@ -81,7 +81,7 @@ type parsing_stat = {
      * mutable passing_through_lines: int;
      * 
      * it differs from bad by starting from the error to
-     * the synchro point instead of strating from start of
+     * the synchro point instead of starting from start of
      * function to end of function.
      *)
 
@@ -182,7 +182,8 @@ let commentized xs = xs +> Common.map_filter (function
             | _ -> Some (ii.Ast_c.pinfo)
             )
              
-        | _ -> None
+        | Ast_c.CppDirective | Ast_c.CppAttr | Ast_c.CppMacro
+            -> None
         )
       else Some (ii.Ast_c.pinfo)
       
@@ -256,8 +257,10 @@ let tokens2 file =
   try 
     let rec tokens_aux acc = 
       let tok = Lexer_c.token lexbuf in
-      (* add the line x col information *)
-      let tok = tok +> TH.visitor_info_of_tok (fun ii -> { ii with Ast_c.pinfo=
+      (* fill in the line and col information *)
+      let tok = tok +> TH.visitor_info_of_tok (fun ii -> 
+        { ii with Ast_c.pinfo=
+          (* could assert pinfo.filename = file ? *)
 	  match Ast_c.pinfo_of_info ii with
 	    Ast_c.OriginTok pi ->
               Ast_c.OriginTok (Common.complete_parse_info file table pi)
@@ -267,6 +270,7 @@ let tokens2 file =
 	  | Ast_c.AbstractLineTok pi -> failwith "should not occur"
       })
       in
+
       if TH.is_eof tok
       then List.rev (tok::acc)
       else tokens_aux (tok::acc)
@@ -305,6 +309,9 @@ let tokens_string string =
 (*
  * !!!Those function use refs, and are not reentrant !!! so take care.
  * It use globals defined in Lexer_parser.
+ * 
+ * update: because now lexer return comments tokens, those functions
+ * may not work anymore.
  *)
 
 let parse file = 
@@ -343,15 +350,21 @@ let parse_print_error file =
 
 
 (* old: 
- * let parse_gen parsefunc s = 
- *   let lexbuf = Lexing.from_string s in
- *   let result = parsefunc Lexer_c.token lexbuf in
- *   result
-*)
+ *   let parse_gen parsefunc s = 
+ *     let lexbuf = Lexing.from_string s in
+ *     let result = parsefunc Lexer_c.token lexbuf in
+ *     result
+ *)
 
 let parse_gen parsefunc s = 
   let toks = tokens_string s +> List.filter TH.is_not_comment in
 
+
+  (* Why use this lexing scheme ? Why not classically give lexer func
+   * to parser ? Because I now keep comments in lexer. Could 
+   * just do a simple wrapper that when comment ask again for a token,
+   * but maybe simpler to use cur_tok technique.
+   *)
   let all_tokens = ref toks in
   let cur_tok    = ref (List.hd !all_tokens) in
 
@@ -667,7 +680,8 @@ let new_info posadd str ii =
       };
     (* must generate a new ref each time, otherwise share *)
     cocci_tag = ref Ast_c.emptyAnnot;
-  }
+    comments_tag = ref Ast_c.emptyComments;
+   }
 
 
 let rec comment_until_defeol xs = 

@@ -27,6 +27,16 @@ open Ast_c (* to factorise tokens, OpAssign, ... *)
  *)
 (*****************************************************************************)
 
+(*****************************************************************************)
+(* Wrappers *)
+(*****************************************************************************)
+let pr2 s = 
+  if !Flag_parsing_c.verbose_lexing 
+  then Common.pr2 s
+
+(*****************************************************************************)
+
+
 exception Lexical of string
 
 let tok     lexbuf  = Lexing.lexeme lexbuf
@@ -43,6 +53,7 @@ let tokinfo lexbuf  =
     };
    (* must generate a new ref each time, otherwise share *)
     cocci_tag = ref Ast_c.emptyAnnot;
+    comments_tag = ref Ast_c.emptyComments;
   }
 
 let tok_add_s s ii = Ast_c.rewrap_str ((Ast_c.str_of_info ii) ^ s) ii
@@ -165,6 +176,12 @@ rule token = parse
   (* ----------------------------------------------------------------------- *)
   (* spacing/comments *)
   (* ----------------------------------------------------------------------- *)
+
+  (* note: this lexer generate tokens for comments!! so can not give 
+   * this lexer as-is to the parsing function. Must preprocess it, hence
+   * use techniques like cur_tok ref in parse_c.ml
+   *)
+
   | ['\n'] [' ' '\t' '\r' '\011' '\012' ]*
       (* starting a new line; the newline character followed by whitespace *)
       { TCommentNewline (tokinfo lexbuf) }
@@ -298,6 +315,9 @@ rule token = parse
   (* #include *)
   (* ---------------------- *)
 
+  (* The difference between a local "" and standard <> include is computed
+   * later in parser_c.mly. So redo a little bit of lexing there. Ugly but
+   * simpler to generate a single token here.  *)
   | (("#" [' ''\t']* "include" [' ' '\t']*) as includes) 
     (('"' ([^ '"']+) '"' | 
      '<' [^ '>']+ '>' | 
@@ -483,11 +503,11 @@ rule token = parse
            (* parse_typedef_fix. note: now this is no more useful, cos
             * as we use tokens_all, it first parse all as an ident and
             * later transform an indent in a typedef. so this job is
-            * now done in parse_c.ml 
+            * now done in parse_c.ml.
             * 
-            * if Lexer_parser.is_typedef s 
-            * then TypedefIdent (s, info)
-            * else TIdent (s, info)
+            *    if Lexer_parser.is_typedef s 
+            *    then TypedefIdent (s, info)
+            *    else TIdent (s, info)
             *)
 
           | None -> TIdent (s, info)
@@ -521,7 +541,7 @@ rule token = parse
       }
 
 
-  (* take care of the order ? no because lex try the longest match. The
+  (* Take care of the order ? No because lex try the longest match. The
    * strange diff between decimal and octal constant semantic is not
    * understood too by refman :) refman:11.1.4, and ritchie.
    *)
@@ -551,22 +571,28 @@ rule token = parse
       }
 
 
- (* special, !!! to put after other rules such  !! otherwise 0xff
-  * will be parsed as an ident  
+ (* !!! to put after other rules !!! otherwise 0xff
+  * will be parsed as an ident.
   *)
   | ['0'-'9']+ letter (letter | digit) *  
       { pr2 ("LEXER: ZARB integer_string, certainly a macro:" ^ tok lexbuf);
         TIdent (tok lexbuf, tokinfo lexbuf)
       } 
 
-(*  | ['0'-'1']+'b' { TInt (((tok lexbuf)<!!>(0,-2)) +> int_of_stringbits) } *)
+(* gccext: http://gcc.gnu.org/onlinedocs/gcc/Binary-constants.html *)
+(*
+ | "0b" ['0'-'1'] { TInt (((tok lexbuf)<!!>(??,??)) +> int_of_stringbits) } 
+ | ['0'-'1']+'b' { TInt (((tok lexbuf)<!!>(0,-2)) +> int_of_stringbits) } 
+*)
 
 
   (*------------------------------------------------------------------------ *)
   | eof { EOF (tokinfo lexbuf +> Ast_c.rewrap_str "") }
 
   | _ 
-      { pr2_once ("LEXER:unrecognised symbol, in token rule:"^tok lexbuf);
+      { 
+        if !Flag_parsing_c.verbose_lexing 
+        then pr2_once ("LEXER:unrecognised symbol, in token rule:"^tok lexbuf);
         TUnknown (tokinfo lexbuf)
       }
 
@@ -615,20 +641,23 @@ and string  = parse
          | 'f' -> () | 'a' -> ()
 	 | '\\' -> () | '?'  -> () | '\'' -> ()  | '"' -> ()
          | 'e' -> () (* linuxext: ? *)
-         (*| "x" -> 10 (* gccext ? todo ugly, I put a fake value *)*)
+
+         (* old: "x" -> 10 gccext ? todo ugly, I put a fake value *)
+
          (* cppext:  can have   \ for multiline in string too *)
          | '\n' -> () 
          | _ -> pr2 ("LEXER: unrecognised symbol in string:"^tok lexbuf);
 	 );
           x ^ string lexbuf
        }
- (* bug if add that, cos match also the '"' that is needed
-  *  to finish the string, and so go until end of file
+
+ (* Bug if add following code, cos match also the '"' that is needed
+  * to finish the string, and so go until end of file.
   *)
  (*
   | [^ '\\']+ 
     { let cs = lexbuf +> tok +> list_of_string +> List.map Char.code in
-    cs ++ string lexbuf  
+      cs ++ string lexbuf  
     }
   *)
 
@@ -636,7 +665,7 @@ and string  = parse
 
 (*****************************************************************************)
 
-(* todo?: allow only char-'*' *)
+(* less: allow only char-'*' ? *)
 and comment = parse
   | "*/"     { tok lexbuf }
   (* noteopti: *)
@@ -652,28 +681,28 @@ and comment = parse
 
 (*****************************************************************************)
 
-(* CPP recognize C comments, so when #define xx (yy) /* comment \n ... */
- * then he has already erased the /* comment. 
- * 
- * So:
- * 
- * - dont eat the start of the comment and then get afterwards in the middle
- *  of a comment (and so a parse error).
- * 
+(* cpp recognize C comments, so when #define xx (yy) /* comment \n ... */
+ * then he has already erased the /* comment. So:
+ * - dont eat the start of the comment otherwiseafterwards we are in the middle
+ *   of a comment and so will problably get a parse error somewhere.
  * - have to recognize comments in cpp_eat_until_nl.
- * 
  *)
 
 and cpp_eat_until_nl = parse
+  (* bugfix: *)
   | "/*"          
       { let s = tok lexbuf in 
         let s2 = comment lexbuf in 
         let s3 = cpp_eat_until_nl lexbuf in 
         s ^ s2 ^ s3  
-      } (* fix *)
-  | "\n"      { tok lexbuf } 
+      } 
   | '\\' "\n" { let s = tok lexbuf in s ^ cpp_eat_until_nl lexbuf }
+
+  | "\n"      { tok lexbuf } 
+  (* noteopti: 
+   * update: need also deal with comments chars now 
+   *)
   | [^ '\n' '\\'      '/' '*'  ]+ 
-      { let s = tok lexbuf in s ^ cpp_eat_until_nl lexbuf } (* need fix too *)
+     { let s = tok lexbuf in s ^ cpp_eat_until_nl lexbuf } 
   | eof { pr2 "LEXER: end of file in cpp_eat_until_nl"; ""}
   | _   { let s = tok lexbuf in s ^ cpp_eat_until_nl lexbuf }  

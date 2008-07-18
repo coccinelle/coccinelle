@@ -1,4 +1,4 @@
-(* Copyright (C) 2004-2008 Yoann Padioleau
+(* Copyright (C) 2002-2008 Yoann Padioleau
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -42,8 +42,6 @@ open Common
  * 
  *)
 
-
-
 (* forunparser: *)
 
 type posl = int * int (* lin-col, for MetaPosValList, for position variables *)
@@ -65,6 +63,8 @@ type parse_info =
 type info = { 
   pinfo : parse_info;
   cocci_tag: (Ast_cocci.mcodekind * metavars_binding) ref;
+  comments_tag: comments_around ref; (* set in comment_annotater.ml *)
+  (* todo? token_info : sometimes useful to know what token it was *)
   }
 and il = info list
 
@@ -191,7 +191,8 @@ and expression = (expressionbis * fullType option ref (* semantic: *)) wrap
 and expressionbis = 
 
   (* Ident can be a enumeration constant, a simple variable, a name of a func.
-   * With cppext, Ident can also be the name of a macro.
+   * With cppext, Ident can also be the name of a macro. Sparse says
+   * "an identifier with a meaning is a symbol".
    *)
   | Ident          of string  (* todo? more semantic info such as LocalFunc *)
   | Constant       of constant                                  
@@ -459,6 +460,8 @@ and toplevel =
          
   | EmptyDef of il      (* gccext: allow redundant ';' *)
   | NotParsedCorrectly of il
+
+
   | FinalDef of info (* EOF *)
 
 (* ------------------------------------------------------------------------- *)
@@ -496,17 +499,52 @@ and metavars_binding = (Ast_cocci.meta_name, metavar_binding_kind) assoc
   | MetaListlenVal   of int
 
 
+(*****************************************************************************)
+(* C comments *)
+(*****************************************************************************)
+
+(* I often use m for comments as I can not use c (already use for c stuff) 
+ * and com is too long.
+ *)
+
+(* this type will be associated to each token *)
+and comments_around = {
+  mbefore: comment_and_relative_pos list;
+  mafter:  comment_and_relative_pos list;
+}
+  and comment_and_relative_pos = {
+
+   minfo: Common.parse_info;
+   (* the int represent the number of lines of difference between the
+    * current token and the comment. When on same line, this number is 0.
+    * When previous line, -1. In some way the after/before in previous
+    * record is useless because the sign of the integer can helps
+    * do the difference too, but I keep it that way.
+    *)
+   mpos: int;
+   (* todo?
+    *  cppbetween: bool; touse? if false positive 
+    *  is_alone_in_line: bool; (*for labels, to avoid false positive*)
+   *)
+ }
+
+and comment = Common.parse_info
+and com = comment list ref
+
 
 (*****************************************************************************)
-(* Cpp comments *)
+(* Cpp constructs, put it comments in lexer *)
 (*****************************************************************************)
+
 (* This type is not in the Ast but is associated with the TCommentCpp token.
  * I put this enum here because parser_c.mly need it. I could have put
  * it also in lexer_parser.
-*)
-
+ *)
 type cppcommentkind = 
   CppDirective | CppAttr | CppMacro | CppOther
+
+
+
 
 (*****************************************************************************)
 (* Some constructors *)
@@ -515,15 +553,23 @@ let nullQualif = ({const=false; volatile= false}, [])
 let nQ = nullQualif 
 
 let defaultInt = (BaseType (IntType (Si (Signed, CInt))))
+
 let noType () = ref None (* old: None, old: [] *)
 let noInstr = (ExprStatement (None), [])
 let noTypedefDef () = None
 
 let emptyMetavarsBinding = 
   ([]: metavars_binding)
+
 let emptyAnnot = 
   (Ast_cocci.CONTEXT (Ast_cocci.NoPos,Ast_cocci.NOTHING),
   emptyMetavarsBinding)
+
+let emptyComments= {
+  mbefore = [];
+  mafter = [];
+}
+
 
 (* for include, some meta information needed by cocci *)
 let noRelPos () = 
@@ -542,6 +588,7 @@ let no_virt_pos = ({str="";charpos=0;line=0;column=0;file=""},-1)
 let fakeInfo pi  = 
   { pinfo = FakeTok ("",no_virt_pos);
     cocci_tag = ref emptyAnnot;
+    comments_tag = ref emptyComments;
   }
 
 
@@ -670,7 +717,7 @@ let info_to_fixpos ii =
  * such as its line number in the file, we can not use anymore the
  * ocaml '=' to compare Ast elements. To overcome this problem, to be
  * able to use again '=', we just have to get rid of all those extra
- * information, to "abstract those line" information.
+ * information, to "abstract those line" (al) information.
  *)
 
 let al_info tokenindex x = 
@@ -682,11 +729,13 @@ let al_info tokenindex x =
 	 file = "";
 	 str = str_of_info x});
     cocci_tag = ref emptyAnnot;
+    comments_tag = ref emptyComments;
   }
 
 let semi_al_info x = 
   { x with
     cocci_tag = ref emptyAnnot;
+    comments_tag = ref emptyComments;
   }
 
 (*****************************************************************************)
