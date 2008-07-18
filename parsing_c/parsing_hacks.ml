@@ -24,12 +24,14 @@ let pr2_cpp s =
   then Common.pr2_once ("CPP-" ^ s)
 
 
-(* In the following, there is some harcoded names of types or macros
+(* In the following, there are some harcoded names of types or macros
  * but they are not used by our heuristics! They are just here to
  * enable to detect false positive by printing only the typedef/macros
  * that we don't know yet. If we print everything, then we can easily
  * get lost with too much verbose tracing information. So those
- * functions "filter" some messages. *)
+ * functions "filter" some messages. So our heuristics are still good,
+ * there is no more (or not that much) hardcoded linux stuff.
+ *)
 
 let msg_gen cond is_known printer s = 
   if cond
@@ -60,6 +62,10 @@ let msg_typedef s =
           
       | "acpi_handle" 
       | "acpi_status" 
+        -> true
+
+      | "FILE" 
+      | "DIR" 
         -> true
           
       | s when s =~ ".*_t$" -> true
@@ -205,7 +211,7 @@ let (_defs : (string, define_body) Hashtbl.t ref)  =
  * the action) but it is tedious too. Simpler to use mutable/ref. We
  * use the same idea that we use when working on the Ast_c. *)
 
-(* old: when I using the list of "actions" next to the views, the hash
+(* old: when I was using the list of "actions" next to the views, the hash
  * indexed by the charpos, there could have been some problems:
  * how my fake_pos interact with the way I tag and adjust token ?
  * because I base my tagging on the position of the token ! so sometimes
@@ -213,6 +219,7 @@ let (_defs : (string, define_body) Hashtbl.t ref)  =
  * fortunately I don't use anymore this technique.
  *)
 
+(* update: quite close to the Place_c.Inxxx *)
 type context = 
   InFunction | InEnum | InStruct | InInitializer | NoContext
 
@@ -220,7 +227,7 @@ type token_extended = {
   mutable tok: Parser_c.token;
   mutable where: context;
 
-  (* todo: after ? *)
+  (* less: need also a after ? *)
   mutable new_tokens_before : Parser_c.token list;
 
   (* line x col  cache, more easily accessible, of the info in the token *)
@@ -700,9 +707,9 @@ let (count_open_close_stuff_ifdef_clause: ifdef_grouped list -> (int * int)) =
    let cnt_paren, cnt_brace = ref 0, ref 0 in
    xs +> iter_token_ifdef (fun x -> 
      (match x.tok with
-     | TOPar _ | TOParDefine _ -> incr cnt_paren
+     | x when TH.is_opar x  -> incr cnt_paren
      | TOBrace _ -> incr cnt_brace
-     | TCPar _ | TCParEOL _ -> decr cnt_paren
+     | x when TH.is_cpar x  -> decr cnt_paren
      | TCBrace _ -> decr cnt_brace
      | _ -> ()
      )
@@ -841,9 +848,12 @@ let rec adjust_inifdef_include xs =
 
 
 (* ------------------------------------------------------------------------- *)
-(* macro, using standard.h or other defs *)
+(* cpp-builtin part1, macro, using standard.h or other defs *)
 (* ------------------------------------------------------------------------- *)
 
+(* Thanks to this function many stuff are not anymore hardcoded in ocaml code
+ * (but they are now hardcoded in standard.h ...)
+ *)
 
 let rec (cpp_engine: (string , Parser_c.token list) assoc -> 
           Parser_c.token list -> Parser_c.token list) = fun env xs ->
@@ -1527,6 +1537,7 @@ let mark_end_define ii =
         Common.charpos = Ast_c.pos_of_info ii + 1
       };
       cocci_tag = ref Ast_c.emptyAnnot;
+      comments_tag = ref Ast_c.emptyComments;
     } 
   in
   TDefEOL (ii')
@@ -1612,7 +1623,7 @@ let fix_tokens_define a =
       
 
 (*****************************************************************************)
-(* cpp built-in *)
+(* for the cpp-builtin *)
 (*****************************************************************************)
 
 let rec define_parse xs = 
@@ -1659,6 +1670,18 @@ let extract_cpp_define xs =
 (*****************************************************************************)
 (* Lexing with lookahead *)
 (*****************************************************************************)
+
+(* Why using yet another parsing_hack technique ? The fix_xxx where do
+ * some pre-processing on the full list of tokens is not enough ? 
+ * No cos sometimes we need more contextual info, and even if
+ * set_context() tries to give some contextual info, it's not completely
+ * accurate so the following code give yet another alternative, yet another
+ * chance to transform some tokens.
+ * 
+ * todo?: maybe could try to get rid of this technique. Maybe a better
+ * set_context() would make possible to move this code using a fix_xx
+ * technique.
+ *)
 
 open Lexer_parser (* for the fields of lexer_hint type *)
 

@@ -13,6 +13,7 @@ let test_tokens_c file =
   then pr2 "warning: seems not a .c file";
 
   Flag_parsing_c.debug_lexer := true; 
+  Flag_parsing_c.verbose_lexing := true;
   Flag_parsing_c.verbose_parsing := true;
 
   Parse_c.tokens file +> List.iter (fun x -> pr2_gen x);
@@ -25,6 +26,8 @@ let test_parse_gen xs ext =
         
   Flag_parsing_c.debug_typedef := true;
   Flag_parsing_c.debug_cpp := true;
+  Flag_parsing_c.debug_etdt := false;
+  Flag_parsing_c.filter_msg := true;
 
   let dirname_opt = 
     match xs with
@@ -40,6 +43,8 @@ let test_parse_gen xs ext =
 
   let stat_list = ref [] in
   let newscore  = Common.empty_score () in
+
+  (*cocci: Common.check_stack_nbfiles (List.length fullxs); *)
 
   fullxs +> List.iter (fun file -> 
     if not (file =~ (".*\\."^ext))

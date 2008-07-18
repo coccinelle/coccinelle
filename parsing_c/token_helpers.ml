@@ -6,6 +6,24 @@ open Parser_c
 (* Is_xxx, categories *)
 (*****************************************************************************)
 
+let is_space = function
+  | TCommentSpace _ -> true
+  | _ -> false
+
+let is_comment_or_space = function
+  | TComment _ -> true
+  | TCommentSpace _ -> true
+
+  | _ -> false
+
+let is_just_comment = function
+  | TComment _ -> true
+  | _ -> false
+
+
+
+
+
 let is_comment = function
   | TComment _    | TCommentSpace _ | TCommentNewline _ 
   | TCommentCpp _ 
@@ -37,6 +55,15 @@ let is_cpp_instruction = function
 
 
 
+
+let is_opar = function
+  | TOPar _ | TOParDefine _ -> true
+  | _ -> false
+
+let is_cpar = function
+  | TCPar _ | TCParEOL _ -> true
+  | _ -> false
+
 let is_eof = function
   | EOF x -> true
   | _ -> false
@@ -50,7 +77,10 @@ let is_statement = function
       -> true
   | _ -> false
 
-(* would like to put TIdent or TDefine, TIfdef but they can be in the
+(* is_start_of_something is used in parse_c for error recovery, to find
+ * a synchronisation token.
+ * 
+ * Would like to put TIdent or TDefine, TIfdef but they can be in the
  * middle of a function, for instance with label:.
  * 
  * Could put Typedefident but fired ? it would work in error recovery
