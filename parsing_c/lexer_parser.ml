@@ -36,7 +36,7 @@ type identkind = TypeDefI | IdentI
  * un typedef nested ? oui car Hashtbl (dans scoped_h_env) gere l'historique. 
  * 
  * oldsimple:  but slow,  take 2 secondes on some C files 
- * let (typedef: typedef list list ref) = ref [[]]
+ *    let (typedef: typedef list list ref) = ref [[]]
  *)
 let (_typedef : (string, identkind) Common.scoped_h_env ref) = 
   ref (Common.empty_scoped_h_env ())
@@ -62,6 +62,9 @@ let add_typedef_root s =
   else add_typedef s (* have far more .failed without this *)
 
 
+(* Used by parse_c when do some error recovery. The parse error may
+ * have some bad side effects on typedef hash, so recover this.
+ *)
 let _old_state = ref (Common.clone_scoped_h_env !_typedef)
 
 let save_typedef_state () = 

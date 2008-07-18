@@ -12,6 +12,7 @@ SRC= \
  compare_c.ml type_annoter_c.ml  pretty_print_c.ml \
  test_parsing_c.ml
 
+
 SYSLIBS= str.cma unix.cma 
 
 # parsing_c now depends on cocci_parser because in addition to decorate the
@@ -21,6 +22,7 @@ LIBS=../commons/commons.cma ../globals/globals.cma \
      ../parsing_cocci/cocci_parser.cma
 
 INCLUDES= -I ../commons -I ../globals -I  ../parsing_cocci 
+
 
 ##############################################################################
 # Generic variables

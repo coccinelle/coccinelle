@@ -16,6 +16,7 @@ let cmdline_flags_macrofile () =
 (* verbose *)
 (*****************************************************************************)
 
+let verbose_lexing = ref true
 let verbose_parsing = ref true
 let verbose_type    = ref true
 
@@ -33,6 +34,7 @@ let cmdline_flags_verbose () =
   [
     "-no_parse_error_msg", Arg.Clear verbose_parsing, " ";
     "-no_verbose_parsing", Arg.Clear verbose_parsing , "  ";
+    "-no_verbose_lexing", Arg.Clear verbose_lexing , "  ";
     "-no_type_error_msg",  Arg.Clear verbose_type, " ";
     
     
@@ -73,9 +75,7 @@ let cmdline_flags_debugging () =
 (*****************************************************************************)
 
 let ifdef_to_if = ref false
-
 let if0_passing = ref true
-
 let add_typedef_root = ref true
 
 (* cocci specific *)
@@ -83,20 +83,23 @@ let label_strategy_2 = ref false
 
 let cmdline_flags_algos () =
   [
-    "-l1",                Arg.Clear label_strategy_2, " ";
     "-ifdef",              Arg.Set ifdef_to_if, 
     "   convert ifdef to if (buggy!)";
     "-noif0_passing",   Arg.Clear if0_passing, 
     " ";
     "-noadd_typedef_root",   Arg.Clear add_typedef_root, " ";
+
+    "-l1",                Arg.Clear label_strategy_2, " ";
   ]
 
 (*****************************************************************************)
 (* other *)
 (*****************************************************************************)
 
+(* for compare_c *)
 let diff_lines = ref (None : string option) (* number of lines of context *)
 
+(* for parse_c *)
 let use_cache = ref false
 
 let cmdline_flags_other () = 
