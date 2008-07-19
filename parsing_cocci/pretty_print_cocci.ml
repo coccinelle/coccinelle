@@ -789,7 +789,7 @@ let unparse z =
     force_newline();
     print_string code;
     force_newline()
-  | Ast.CocciRule (nm, (deps, drops, exists), x) ->
+  | Ast.CocciRule (nm, (deps, drops, exists), x, _) ->
     print_string "@@";
     force_newline();
     print_string nm;

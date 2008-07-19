@@ -372,8 +372,15 @@ let sp_contain_typed_metavar_z toplevel_list_list =
 
 let sp_contain_typed_metavar rules =
   sp_contain_typed_metavar_z 
-  (List.map (function x -> match x with Ast_cocci.CocciRule (a,b,c) -> (a,b,c) | _ -> failwith "error in filter")
-    (List.filter (function x -> match x with Ast_cocci.CocciRule _ -> true | _ -> false) rules))
+    (List.map
+       (function x ->
+	 match x with
+	   Ast_cocci.CocciRule (a,b,c,d) -> (a,b,c)
+	 | _ -> failwith "error in filter")
+    (List.filter
+       (function x ->
+	 match x with Ast_cocci.CocciRule _ -> true | _ -> false)
+       rules))
 
 
 
@@ -582,6 +589,7 @@ type toplevel_cocci_info_script_rule = {
 type toplevel_cocci_info_cocci_rule = {
   ctl: Lib_engine.ctlcocci * (CCI.pred list list);
   ast_rule: Ast_cocci.rule;
+  isexp: bool; (* true if + code is an exp, only for Flag.make_hrule *)
 
   rulename: string;
   dependencies: Ast_cocci.dependency;
@@ -606,6 +614,7 @@ type toplevel_cocci_info =
 type kind_file = Header | Source 
 type file_info = { 
   fname : string;
+  full_fname : string;
   was_modified_once: bool ref;
   asts: toplevel_c_info list;
   fpath : string;
@@ -659,11 +668,13 @@ let prepare_cocci ctls free_var_lists negated_pos_lists
             script_code = code;
           }
           in ScriptRuleCocciInfo r
-      | Ast_cocci.CocciRule(rulename,(dependencies,dropped_isos,z),restast) ->
+      | Ast_cocci.CocciRule
+	  (rulename,(dependencies,dropped_isos,z),restast,isexp) ->
           CocciRuleCocciInfo (
           {
             ctl = List.hd ctl_toplevel_list;
             ast_rule = ast;
+	    isexp = List.hd isexp;
             rulename = rulename;
             dependencies = dependencies;
             dropped_isos = dropped_isos;
@@ -723,37 +734,43 @@ let build_info_program cprogram env =
 
 
 (* Optimisation. Try not unparse/reparse the whole file when have modifs  *)
-let rebuild_info_program cs = 
+let rebuild_info_program cs file isexp = 
   cs +> List.map (fun c ->
     if !(c.was_modified)
-    then begin
-      let file = Common.new_temp_file "cocci_small_output" ".c" in
-      cfile_of_program 
-        [(c.ast_c, (c.fullstring, c.tokens_c)), Unparse_c2.PPnormal] 
-        file;
-
-      (* Common.command2 ("cat " ^ file); *)
-      let cprogram = cprogram_of_file file in
-      let xs = build_info_program cprogram c.env_typing_before in
-
-      (* TODO: assert env has not changed,
-       * if yes then must also reparse what follows even if not modified.
-       * Do that only if contain_typedmetavar of course, so good opti.
-       *)
-      (* Common.list_init xs *) (* get rid of the FinalDef *)
-      xs
-    end
+    then
+      (match !Flag.make_hrule with
+	Some dir ->
+	  Unparse_hrule.pp_program (c.ast_c, (c.fullstring, c.tokens_c))
+	    dir file isexp;
+	  []
+      |	None ->
+	  let file = Common.new_temp_file "cocci_small_output" ".c" in
+	  cfile_of_program 
+            [(c.ast_c, (c.fullstring, c.tokens_c)), Unparse_c2.PPnormal] 
+            file;
+	  
+          (* Common.command2 ("cat " ^ file); *)
+	  let cprogram = cprogram_of_file file in
+	  let xs = build_info_program cprogram c.env_typing_before in
+	  
+          (* TODO: assert env has not changed,
+           * if yes then must also reparse what follows even if not modified.
+           * Do that only if contain_typedmetavar of course, so good opti.
+          *)
+          (* Common.list_init xs *) (* get rid of the FinalDef *)
+	  xs)
     else [c]
   ) +> List.concat
 
 
-let rebuild_info_c_and_headers ccs = 
+let rebuild_info_c_and_headers ccs isexp =
   ccs +> List.iter (fun c_or_h -> 
     if c_or_h.asts +> List.exists (fun c -> !(c.was_modified))
     then c_or_h.was_modified_once := true;
   );
   ccs +> List.map (fun c_or_h -> 
-    { c_or_h with asts = rebuild_info_program c_or_h.asts }
+    { c_or_h with
+      asts = rebuild_info_program c_or_h.asts c_or_h.full_fname isexp }
   )
 
 
@@ -793,6 +810,7 @@ let prepare_c files =
           ;
           Some { 
             fname = Common.basename hpath;
+            full_fname = hpath;
             asts = info_h_cs;
             was_modified_once = ref false;
             fpath = hpath;
@@ -805,6 +823,7 @@ let prepare_c files =
         ignore(update_include_rel_pos (cs +> List.map (fun x -> x.ast_c)));
         Some { 
           fname = Common.basename file;
+          full_fname = file;
           asts = cs;
           was_modified_once = ref false;
           fpath = file;
@@ -1021,7 +1040,7 @@ and apply_cocci_rule r rules_that_have_ever_matched es ccs =
 
     (* apply the tagged modifs and reparse *)
     if not !Flag.sgrep_mode2
-    then ccs := rebuild_info_c_and_headers !ccs
+    then ccs := rebuild_info_c_and_headers !ccs r.isexp
   )
 
 and bigloop2 rs ccs = 
@@ -1083,7 +1102,7 @@ and bigloop2 rs ccs =
      * and the very final pretty print and diff will work
      *)
     Flag_parsing_c.verbose_parsing := false;
-    ccs := rebuild_info_c_and_headers !ccs
+    ccs := rebuild_info_c_and_headers !ccs false
   end;
   !ccs (* return final C asts *)
 

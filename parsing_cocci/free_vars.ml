@@ -604,12 +604,14 @@ let collect_astfvs rules =
         match rule with
           Ast.ScriptRule (_,_,_,_) ->
 	    rule::(loop ((List.map Ast.get_meta_name metavars)) rules)  
-        | Ast.CocciRule (nm, rule_info, minirules) ->
+        | Ast.CocciRule (nm, rule_info, minirules, isexp) ->
           let bound =
             Common.minus_set bound (List.map Ast.get_meta_name metavars) in
-          (Ast.CocciRule (nm, rule_info,
-            (List.map (astfvs metavars bound).V.rebuilder_top_level
-	       minirules)))::
+          (Ast.CocciRule
+	     (nm, rule_info,
+	      (List.map (astfvs metavars bound).V.rebuilder_top_level
+		 minirules),
+	      isexp))::
             (loop ((List.map Ast.get_meta_name metavars)@bound) rules) in
   loop [] rules
 
@@ -639,7 +641,7 @@ let get_neg_pos_list (_,rule) used_after_list =
     donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing in
   match rule with
-    Ast.CocciRule(_,_,minirules) ->
+    Ast.CocciRule(_,_,minirules,_) ->
       List.map
 	(function toplevel ->
 	  let (positions,neg_positions) = v.V.combiner_top_level toplevel in
@@ -676,7 +678,7 @@ let collect_top_level_used_after metavar_rule_list =
             match r with
               Ast.ScriptRule (_,_,mv,_) ->
                 List.map (function (_,(r,v)) -> (r,v)) mv
-            | Ast.CocciRule (_,_,rule) ->
+            | Ast.CocciRule (_,_,rule,_) ->
 	        Common.union_set (nub (collect_all_rule_refs rule))
 	          (collect_in_plus rule) in
 	  let inherited =
@@ -723,7 +725,7 @@ let collect_used_after metavar_rule_list =
       function used_after ->
         match r with
           Ast.ScriptRule (_,_,mv,_) -> ([], [used_after])
-        | Ast.CocciRule (name, rule_info, minirules) ->
+        | Ast.CocciRule (name, rule_info, minirules, _) ->
           collect_local_used_after metavars minirules used_after
     )
     metavar_rule_list used_after_lists
@@ -740,7 +742,7 @@ let free_vars rules =
       (function (mv, r) ->
          match r with
            Ast.ScriptRule _ -> []
-         | Ast.CocciRule (_,_,rule) ->
+         | Ast.CocciRule (_,_,rule,_) ->
            let positions =
              List.fold_left
                (function prev ->
@@ -754,8 +756,10 @@ let free_vars rules =
 	function ua ->
           match r with
             Ast.ScriptRule _ -> r
-          | Ast.CocciRule (nm, rule_info, r) -> Ast.CocciRule
-              (nm, rule_info, classify_variables mv r (List.concat ua)))
+          | Ast.CocciRule (nm, rule_info, r, is_exp) ->
+	      Ast.CocciRule
+		(nm, rule_info, classify_variables mv r (List.concat ua),
+		 is_exp))
       rules used_after_lists in
   let new_rules = collect_astfvs (List.combine metavars new_rules) in
   (new_rules,fvs_lists,neg_pos_lists,used_after_lists,positions_list)

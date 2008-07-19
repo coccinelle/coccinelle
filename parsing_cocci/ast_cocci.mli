@@ -455,13 +455,15 @@ and base_top_level =
 and top_level = base_top_level wrap
 
 and rulename =
-    CocciRulename of string option * dependency * string list * string list * exists * bool
+    CocciRulename of string option * dependency * string list * string list *
+	exists * bool
       (* true if the whole thing is an expression *)
   | ScriptRulename of string * dependency
 
 and rule =
     CocciRule of string (* name *) *
-	(dependency * string list (* dropped isos *) * exists) * top_level list
+	(dependency * string list (* dropped isos *) * exists) *
+	top_level list * bool list (* true if generates an exp *)
   | ScriptRule of string * dependency * (string * meta_name) list * string
 
 and dependency =

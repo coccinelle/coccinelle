@@ -327,6 +327,9 @@ let other_options = [
     (function _ -> Flag_cocci.popl := true; Flag_popl.keep_all_wits := true), 
     "    simplified SmPL, for the popl paper";
 
+    "-hrule", Arg.String (function s -> Flag.make_hrule := Some s),
+    "    semantic patch generation";
+
     "-loop",              Arg.Set Flag_ctl.loop_in_src_code,    " ";
 
     "-l1",                Arg.Clear Flag_parsing_c.label_strategy_2, " ";

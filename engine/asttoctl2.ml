@@ -2146,7 +2146,7 @@ let asttoctlz (name,(_,_,exists_flag),l) used_after positions =
 let asttoctl r used_after positions =
   match r with
     Ast.ScriptRule _ -> []
-  | Ast.CocciRule (a,b,c) -> asttoctlz (a,b,c) used_after positions
+  | Ast.CocciRule (a,b,c,_) -> asttoctlz (a,b,c) used_after positions
 
 let pp_cocci_predicate (pred,modif) =
   Pretty_print_engine.pp_predicate pred

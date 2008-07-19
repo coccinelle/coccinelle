@@ -7,6 +7,7 @@ val pp_expression_gen :
 val pp_statement_gen : pr_elem_func -> pr_space_func -> Ast_c.statement -> unit
 val pp_decl_gen : pr_elem_func -> pr_space_func -> Ast_c.declaration -> unit
 val pp_init_gen : pr_elem_func -> pr_space_func -> Ast_c.initialiser -> unit
+val pp_param_gen : pr_elem_func -> pr_space_func -> Ast_c.parameterType -> unit
 
 val pp_type_gen : pr_elem_func -> pr_space_func -> Ast_c.fullType -> unit
 val pp_type_with_ident_gen :

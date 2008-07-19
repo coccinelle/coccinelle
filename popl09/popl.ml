@@ -12,5 +12,5 @@ let poplz (name,_,ast) =
 
 let popl r =
   match r with
-    Ast_cocci.CocciRule (a,b,c) -> poplz (a,b,c)
+    Ast_cocci.CocciRule (a,b,c,_) -> poplz (a,b,c)
   | _ -> []

@@ -386,9 +386,12 @@ let process rule_name rule_metavars dropped_isos minus plus =
 	     variables and the version without *)
 	  ((mdef_metavars,minus),
 	   Some 
-	     (metavars, Ast.CocciRule ("proto for "^rule_name,
-			(Ast.Dep rule_name,dropped_isos,Ast.Forall),
-			[Ast.rewrap x (Ast.DECL x)])))
+	     (metavars,
+	      Ast.CocciRule
+		("proto for "^rule_name,
+		 (Ast.Dep rule_name,dropped_isos,Ast.Forall),
+		 [Ast.rewrap x (Ast.DECL x)],
+		 [false])))
       |	x::_ ->
 	  let drules =
 	    List.map (function x -> Ast.rewrap x (Ast.DOTS [x])) rules in
@@ -396,5 +399,6 @@ let process rule_name rule_metavars dropped_isos minus plus =
             Ast.CocciRule
 	    ("proto for "^rule_name,
 	     (Ast.Dep rule_name,dropped_isos,Ast.Forall),
-	     [Ast.rewrap x (Ast.DECL (Ast.rewrap x (Ast.Disj drules)))]) in
+	     [Ast.rewrap x (Ast.DECL (Ast.rewrap x (Ast.Disj drules)))],
+	     [false]) in
 	  ((mdef_metavars,minus),Some(metavars,res))

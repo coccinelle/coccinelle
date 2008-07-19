@@ -477,6 +477,7 @@ and rulename =
 and rule =
     CocciRule of string (* name *) * 
 	(dependency * string list (* dropped isos *) * exists) * top_level list
+	* bool list
   | ScriptRule of string * dependency * (string * meta_name) list * string
 
 and dependency =

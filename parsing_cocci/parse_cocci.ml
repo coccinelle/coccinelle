@@ -1412,6 +1412,16 @@ let process file isofile verbose =
 		       "bad list of reserved names - all must be at start" in
 	       let minus = Compute_lines.compute_lines minus in
 	       let plus = Compute_lines.compute_lines plus in
+	       let is_exp =
+		 (* only relevant to Flag.make_hrule *)
+		 List.map
+		   (function p ->
+		     match Ast0.unwrap p with
+		       Ast0.CODE c ->
+			 (match List.map Ast0.unwrap (Ast0.undots c) with
+			   [Ast0.Exp e] -> true | _ -> false)
+		     | _ -> false)
+		   plus in
 	       let minus = Arity.minus_arity minus in
 	       let ((metavars,minus),function_prototypes) =
 		 Function_prototypes.process
@@ -1430,10 +1440,11 @@ let process file isofile verbose =
 	       let minus = Simple_assignments.simple_assignments minus in
 	       let minus_ast =
 		 Ast0toast.ast0toast rule_name dependencies dropped_isos
-		   exists minus in
+		   exists minus is_exp in
 	       match function_prototypes with
 		 None -> [(extra_meta @ metavars, minus_ast)]
-	       | Some mv_fp -> [(extra_meta @ metavars, minus_ast); mv_fp])
+	       | Some mv_fp ->
+		   [(extra_meta @ metavars, minus_ast); mv_fp])
 (*          Ast0.CocciRule ((minus, metavarsm, (iso, dropiso, dependencies, rule_name, exists)), (plus, metavars))*)
       rules in
   let parsed = List.concat parsed in

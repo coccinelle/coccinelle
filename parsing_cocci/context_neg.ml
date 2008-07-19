@@ -857,7 +857,7 @@ let rec is_decl s =
 let rec is_fndecl s =
   match Ast0.unwrap s with
     Ast0.FunDecl(_,_,_,_,_,_,_,_,_) -> true
-  | Ast0.Disj(_,stmts,_,_) -> isall is_decl stmts
+  | Ast0.Disj(_,stmts,_,_) -> isall is_fndecl stmts
   | _ -> false
 
 let rec is_toplevel s =
@@ -897,7 +897,8 @@ let check_compatible m p =
 	(function tester ->
 	  let v1 = isonly tester code1 in
 	  let v2 = isonly tester code2 in
-	  if (v1 && not v2) or (v2 && not v1) then fail())
+	  if (v1 && not v2) or (!Flag.make_hrule = None && v2 && not v1)
+	  then fail())
 	testers;
       let v1 = isonly is_fndecl code1 in
       let v2 = List.for_all is_toplevel (Ast0.undots code2) in
