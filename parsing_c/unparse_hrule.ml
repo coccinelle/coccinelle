@@ -135,4 +135,4 @@ let pp_program (e,(str, toks_e)) outdir srcfile isexp =
 	pr "+ ";
 	pp_def_gen pr defn isexp;
 	pr "\n")
-  | _ -> failwith "only functions accepted"
+  | _ -> Common.pr2_once "warning: function expected"; ()
