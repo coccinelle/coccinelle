@@ -35,10 +35,6 @@ val test_parse_cocci : filename -> unit
 (* to be called by ocaml toplevel, to test. *)
 (*****************************************************************************)
 
-val cprogram_of_file : filename -> Parse_c.program2
-val cstatement_of_string  : string -> Ast_c.statement
-val cexpression_of_string : string -> Ast_c.expression
-
 val sp_of_file :
   filename (* coccifile *)  -> filename option (* isofile *) ->
   Ast_cocci.rule list * Ast_cocci.meta_name list list list *

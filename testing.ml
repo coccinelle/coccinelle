@@ -374,42 +374,6 @@ let test_parse_cocci file =
 (* to be called by ocaml toplevel, to test. *)
 (*****************************************************************************)
 
-let cprogram_of_file file = 
-  (* useful only when called from toplevel *)
-  Parsing_hacks._defs := Common.hash_of_list
-    (Parse_c.parse_cpp_define_file !Config.std_h);
-
-  let (program2, _stat) = Parse_c.parse_print_error_heuristic file in
-  program2 
-
-let (cstatement_of_string: string -> Ast_c.statement) = fun s ->
-  begin
-    Common.write_file ("/tmp/__cocci.c") ("void main() { \n" ^ s ^ "\n}");
-    let program = cprogram_of_file ("/tmp/__cocci.c") in
-    program +> Common.find_some (fun (e,_) -> 
-      match e with
-      | Ast_c.Definition ((funcs, _, _, [st]),_) -> Some st
-      | _ -> None
-      )
-  end
-
-let (cexpression_of_string: string -> Ast_c.expression) = fun s ->
-  begin
-    Common.write_file ("/tmp/__cocci.c") ("void main() { \n" ^ s ^ ";\n}");
-    let program = cprogram_of_file ("/tmp/__cocci.c") in
-    program +> Common.find_some (fun (e,_) -> 
-      match e with
-      | Ast_c.Definition ((funcs, _, _, compound),_) -> 
-          (match compound with
-          | [(Ast_c.ExprStatement (Some e),ii)] -> Some e
-          | _ -> None
-          )
-      | _ -> None
-      )
-  end
-  
-
-
 (* no point to memoize this one *)
 let sp_of_file file iso    = Parse_cocci.process file iso false
 

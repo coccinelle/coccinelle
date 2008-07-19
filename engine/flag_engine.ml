@@ -1,5 +1,4 @@
 let debug_engine = ref false
-let debug_unparsing = ref false
 
 (* false = simpler formulas, only for debugging *)
 let useEU = ref true

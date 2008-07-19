@@ -275,7 +275,7 @@ let expand_mcode toks =
 	Ast_c.AbstractLineTok _ -> push2 (C2 (Ast_c.str_of_info info)) toks_out
       |	Ast_c.FakeTok (s,_) -> push2 (C2 s) toks_out
       |	_ ->
-	  Printf.printf "line: %s\n" (Dumper.dump info);
+	  Printf.printf "line: %s\n" (Common.dump info);
 	  failwith "not an abstract line" in
 
     let pr_space _ = push2 (C2 " ") toks_out in
@@ -635,7 +635,7 @@ let start_mark = function
   | KOrigin -> ""
 
 let print_all_tokens2 pr xs =
-  if !Flag_engine.debug_unparsing
+  if !Flag_parsing_c.debug_unparsing
   then
     let current_kind = ref KOrigin in
     xs +> List.iter (fun t -> 
@@ -691,7 +691,7 @@ type ppmethod = PPnormal | PPviastr
 let pp_program2 xs outfile  = 
   Common.with_open_outfile outfile (fun (pr,chan) -> 
     let pr s = 
-      if !Flag_engine.debug_unparsing 
+      if !Flag_parsing_c.debug_unparsing 
       then begin pr2_no_nl s; flush stderr end
       else pr s  
         (* flush chan; *)
