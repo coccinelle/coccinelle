@@ -886,7 +886,7 @@ let check_compatible m p =
   | (Ast0.DECL(decl1),Ast0.CODE(code2)) ->
       let v1 = is_decl decl1 in
       let v2 = List.for_all is_toplevel (Ast0.undots code2) in
-      if v1 && not v2 then fail()
+      if !Flag.make_hrule = None && v1 && not v2 then fail()
   | (Ast0.CODE(code1),Ast0.DECL(decl2)) ->
       let v1 = List.for_all is_toplevel (Ast0.undots code1) in
       let v2 = is_decl decl2 in
