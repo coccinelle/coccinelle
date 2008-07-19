@@ -3,19 +3,20 @@
 ##############################################################################
 TARGET=spatch
 
-SRC=flag_cocci.ml pycocci_aux.ml pycocci.ml cocci.ml testing.ml test.ml main.ml
+SRC=flag_cocci.ml cocci.ml testing.ml test.ml main.ml
 
 SYSLIBS=str.cma unix.cma
 LIBS=commons/commons.cma globals/globals.cma\
      ctl/ctl.cma \
      parsing_cocci/cocci_parser.cma parsing_c/parsing_c.cma \
      engine/cocciengine.cma popl09/popl.cma \
-     extra/extra.cma pycaml/pycaml.cma 
+     extra/extra.cma pycaml/pycaml.cma python/coccipython.cma
 
+# rec and rec.opt have special options for pycaml/
 MAKESUBDIRS=commons globals ctl parsing_cocci parsing_c engine popl09 \
-extra coccilib
+extra python
 INCLUDEDIRS=commons globals ctl parsing_cocci parsing_c engine popl09 \
-extra pycaml
+extra pycaml python
 
 ##############################################################################
 # Generic variables
@@ -62,11 +63,11 @@ all: rec $(EXEC)
 opt: rec.opt $(EXEC).opt
 
 rec:
-	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i all; done 
 	$(MAKE) -C pycaml -f Makefile.deb-pycaml
+	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i all; done 
 rec.opt:
-	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i all.opt; done 
 	$(MAKE) -C pycaml -f Makefile.deb-pycaml allopt
+	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i all.opt; done 
 
 $(EXEC): $(LIBS) $(OBJS)
 	$(OCAMLC) -o $@ $(SYSLIBS) $^
@@ -79,11 +80,13 @@ $(EXEC).top: $(LIBS) $(OBJS)
 
 clean::
 	rm -f $(TARGET) $(TARGET).opt $(TARGET).top
-	rm -f dllpycaml_stubs.so
 
 clean::
 	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i clean; done 
+
+clean::
 	$(MAKE) -C pycaml -f Makefile.deb-pycaml clean
+	rm -f dllpycaml_stubs.so
 
 
 .PHONY: tools
@@ -92,10 +95,6 @@ tools:
 	$(MAKE) -C tools
 clean::
 	$(MAKE) -C tools clean
-
-
-pycocci.ml: pycaml/pycaml.ml pycaml/pycaml_ml.c
-pycocci_aux.ml:  pycaml/pycaml.ml pycaml/pycaml_ml.c
 
 
 ##############################################################################
