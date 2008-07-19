@@ -902,7 +902,7 @@ let check_compatible m p =
 	testers;
       let v1 = isonly is_fndecl code1 in
       let v2 = List.for_all is_toplevel (Ast0.undots code2) in
-      if v1 && not v2 then fail()
+      if !Flag.make_hrule = None && v1 && not v2 then fail()
   | (Ast0.FILEINFO(_,_),Ast0.FILEINFO(_,_)) -> ()
   | (Ast0.OTHER(_),Ast0.OTHER(_)) -> ()
   | _ -> fail()
