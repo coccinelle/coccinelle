@@ -68,7 +68,7 @@ let quiet_profile = (
     Flag_ctl.verbose_ctl_engine;
     Flag_ctl.verbose_match;
     Flag_engine.debug_engine;
-    Flag_engine.debug_unparsing;
+    Flag_parsing_c.debug_unparsing;
     Flag_parsing_c.verbose_type;
     Flag_parsing_c.verbose_parsing;
   ])
@@ -95,7 +95,7 @@ let pad_profile = (
     Flag_ctl.verbose_ctl_engine;
     Flag_ctl.verbose_match;
     Flag_engine.debug_engine;
-    Flag_engine.debug_unparsing;
+    Flag_parsing_c.debug_unparsing;
     Flag_parsing_c.verbose_type;
     Flag_parsing_c.verbose_parsing;
   ])
@@ -265,7 +265,7 @@ let other_options = [
     "-filter_classic_passed",Arg.Set Flag_parsing_c.filter_classic_passed,"  ";
 
     "-debug_cfg",          Arg.Set Flag_parsing_c.debug_cfg , "  ";
-    "-debug_unparsing",      Arg.Set  Flag_engine.debug_unparsing, "  ";
+    "-debug_unparsing",      Arg.Set  Flag_parsing_c.debug_unparsing, "  ";
 
   ];
   (* could use Flag_parsing_c.options_debug_with_title instead *)
