@@ -1283,6 +1283,9 @@ meta_ident:
 pure_ident_or_meta_ident:
        pure_ident                { (None,P.id2name $1) }
      | meta_ident                { $1 }
+     | Tlist                     { (None,"list") }
+     | TError                    { (None,"error") }
+     | TType                     { (None,"type") }
 
 pure_ident_or_meta_ident_with_not_eq(not_eq):
        i=pure_ident_or_meta_ident l=loption(not_eq) { (i,l) }

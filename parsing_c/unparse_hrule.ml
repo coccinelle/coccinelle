@@ -58,16 +58,19 @@ let print_header_rule pr srcfile =
 (* ----------------------------------------------------------------------- *)
 (* Print metavariable declarations *)
 
+let rec print_typedef typedefs pr = function
+    (Ast_c.TypeName(s,_),_) ->
+      if not (List.mem s !typedefs)
+      then (typedefs := s::!typedefs; pr "typedef "; pr s; pr ";\n")
+  | (Ast_c.Pointer(_,ty),_) -> print_typedef typedefs pr ty
+  | _ -> ()
+
 let print_metavar pr typedefs = function
     ((_,Some param,(_,(Ast_c.Pointer(_,(Ast_c.BaseType(Ast_c.Void),_)),_))),_)
     ->
       pr "expression "; pr param
   | (((_,Some param,(_,ty)),il) : Ast_c.parameterType) ->
-      (match ty with
-	(Ast_c.TypeName(s,_),_) ->
-	  if not (List.mem s !typedefs)
-	  then (typedefs := s::!typedefs; pr "typedef "; pr s; pr ";\n")
-      |	_ -> ());
+      print_typedef typedefs pr ty;
       Pretty_print_c.pp_param_gen
 	(function x ->
 	  let str = Ast_c.str_of_info x in
