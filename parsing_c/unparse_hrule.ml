@@ -65,7 +65,7 @@ let print_metavar pr typedefs = function
       (match ty with
 	(Ast_c.TypeName(s,_),_) ->
 	  if not (List.mem s !typedefs)
-	  then (typedefs := s::!typedefs; pr "typedef "; pr s)
+	  then (typedefs := s::!typedefs; pr "typedef "; pr s; pr ";\n")
       |	_ -> ());
       Pretty_print_c.pp_param_gen
 	(function x ->
