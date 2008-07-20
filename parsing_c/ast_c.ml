@@ -617,7 +617,7 @@ let rewrap_str s ii =
       OriginTok pi -> OriginTok { pi with Common.str = s;}
     | ExpandedTok (pi,vpi) -> ExpandedTok ({ pi with Common.str = s;},vpi)
     | FakeTok (_,vpi) -> FakeTok (s,vpi)
-    | AbstractLineTok pi -> failwith "should not be rewrapped")}
+    | AbstractLineTok pi -> OriginTok { pi with Common.str = s;})}
 
 let rewrap_pinfo pi ii =  
   {ii with pinfo = pi}
