@@ -61,6 +61,7 @@ let normal_form_program xs =
       | (Constant (String (s,kind)), typ), [ii] 
           when Common.string_match_substring cvs_keyword_regexp s -> 
           let newstr = cvs_compute_newstr s in
+	  Printf.printf "doing newstr\n";
           (Constant (String (newstr,kind)), typ), [rewrap_str newstr ii]
       | _ -> k e    
 
@@ -112,6 +113,7 @@ let normal_form_token x =
     if Common.string_match_substring cvs_keyword_regexp str
     then 
       let newstr = cvs_compute_newstr str in
+      Printf.printf "normal form";
       rewrap_str newstr info
     else info
   )

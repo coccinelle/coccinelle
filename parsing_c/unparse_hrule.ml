@@ -42,7 +42,9 @@ let print_header_rule pr srcfile =
       pr "@header@\n@@\n\n#include \""; pr x; pr "\"\n\n"; true
   | l ->
       let rec loop = function
-	  [] | [_] -> false
+	  [] -> false
+	| [x] ->
+	    pr "@header@\n@@\n\n#include \""; pr x; pr "\"\n\n"; true
 	| "include"::(x::xs) ->
 	    pr "@header@\n@@\n\n#include <";
 	    let x =
