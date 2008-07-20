@@ -1414,14 +1414,17 @@ let process file isofile verbose =
 	       let plus = Compute_lines.compute_lines plus in
 	       let is_exp =
 		 (* only relevant to Flag.make_hrule *)
-		 List.map
-		   (function p ->
-		     match Ast0.unwrap p with
+		 (* doesn't handle multiple minirules properly, but since
+		    we don't really handle them in lots of other ways, it
+		    doesn't seem very important *)
+		 match plus with
+		   [] -> [false]
+		 | p::_ ->
+		     [match Ast0.unwrap p with
 		       Ast0.CODE c ->
 			 (match List.map Ast0.unwrap (Ast0.undots c) with
 			   [Ast0.Exp e] -> true | _ -> false)
-		     | _ -> false)
-		   plus in
+		     | _ -> false] in
 	       let minus = Arity.minus_arity minus in
 	       let ((metavars,minus),function_prototypes) =
 		 Function_prototypes.process

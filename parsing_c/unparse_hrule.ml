@@ -31,7 +31,8 @@ let strip_comments toks =
     (function t ->
       (TH.info_of_tok t).Ast_c.comments_tag :=
 	{Ast_c.mbefore = []; Ast_c.mafter = [];})
-    toks
+    toks;
+ toks
 
 (* ----------------------------------------------------------------------- *)
 (* Create rule to check for header include *)
@@ -128,7 +129,7 @@ let pp_program (e,(str, toks_e)) outdir srcfile isexp =
     Ast_c.Definition(((name,_,_,_) as defn),_) ->
       (* generate the - code *)
       drop_header_toks toks_e;
-      strip_comments toks_e;
+      let toks_e = strip_comments toks_e in
       let tmp_file = Common.new_temp_file "cocci_small_output" ".c" in
       Unparse_c2.pp_program [((e,(str, toks_e)), Unparse_c2.PPnormal)]
 	tmp_file;
