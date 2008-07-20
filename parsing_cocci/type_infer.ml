@@ -35,6 +35,8 @@ let rec lub_type t1 t2 =
 	| (ty1,T.Pointer(ty2)) -> T.Pointer(ty2)
 	| (T.Pointer(ty1),ty2) -> T.Pointer(ty1)
 	| (T.Array(ty1),T.Array(ty2)) -> T.Array(loop(ty1,ty2))
+	| (T.TypeName(s1),t2) -> t2
+	| (t1,T.TypeName(s1)) -> t1
 	| (t1,_) -> t1 in (* arbitrarily pick the first, assume type correct *)
       Some (loop (t1,t2))
 
@@ -149,6 +151,7 @@ let rec propagate_types env =
 	    None -> Ast0.set_type exp2 (Some(T.BaseType(T.IntType,None)))
 	  | Some(T.BaseType(T.IntType,None)) -> ()
 	  | Some (T.MetaType(_,_,_)) -> ()
+	  | Some (T.TypeName _) -> ()
 	  | Some ty -> err exp2 ty "bad type for an array index");
 	  (match strip_cv (Ast0.get_type exp1) with
 	    None -> None

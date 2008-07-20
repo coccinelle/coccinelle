@@ -43,9 +43,11 @@ let print_header_rule pr srcfile =
   | l ->
       let rec loop = function
 	  [] | [_] -> false
-	| "include"::xs ->
+	| "include"::(x::xs) ->
 	    pr "@header@\n@@\n\n#include <";
-	    pr (String.concat "/" xs);
+	    let x =
+	      if Str.string_match (Str.regexp "asm-") x 0 then "asm" else x in
+	    pr (String.concat "/" (x::xs));
 	    pr ">\n\n"; true
 	| x::xs -> loop xs in
       loop l
@@ -53,13 +55,21 @@ let print_header_rule pr srcfile =
 (* ----------------------------------------------------------------------- *)
 (* Print metavariable declarations *)
 
-let print_metavar pr = function
+let print_metavar pr typedefs = function
     ((_,Some param,(_,(Ast_c.Pointer(_,(Ast_c.BaseType(Ast_c.Void),_)),_))),_)
     ->
       pr "expression "; pr param
   | (((_,Some param,(_,ty)),il) : Ast_c.parameterType) ->
+      (match ty with
+	(Ast_c.TypeName(s,_),_) ->
+	  if not (List.mem s !typedefs)
+	  then (typedefs := s::!typedefs; pr "typedef "; pr s)
+      |	_ -> ());
       Pretty_print_c.pp_param_gen
-	(function x -> pr (Ast_c.str_of_info x); pr " ")
+	(function x ->
+	  let str = Ast_c.str_of_info x in
+	  if not (List.mem str ["const";"volatile"])
+	  then (pr str; pr " "))
 	(function _ -> pr " ")
 	((false,Some param,
 	  (({Ast_c.const = false; Ast_c.volatile = false},[]),ty)),
@@ -71,11 +81,13 @@ let print_metavariables pr (s, (_, (paramst, (b, iib))), _, _) header_req =
   then pr "@depends on header@\n"
   else pr "@@\n");
   (if b then failwith "not handling variable argument functions");
+  let typedefs = ref ([] : string list) in
   (match paramst with
     [] | [(((_,_,(_,(Ast_c.BaseType(Ast_c.Void),_))),_),_)] -> ()
   | (first,_)::rest ->
-      print_metavar pr first; pr ";\n";
-      List.iter (function (x,_) -> print_metavar pr x; pr ";\n") rest);
+      print_metavar pr typedefs first; pr ";\n";
+      List.iter (function (x,_) -> print_metavar pr typedefs x; pr ";\n")
+	rest);
   pr "@@\n\n"
 
 (* ----------------------------------------------------------------------- *)
