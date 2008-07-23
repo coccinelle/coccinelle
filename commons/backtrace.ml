@@ -1,9 +1,17 @@
 open Common
 
-
-(* src: jane street core lib *)
+(* This function is especially useful with lablgtk which intercepts
+ * the exception and forbid them to reach the toplevel, or with LFS
+ * where I can not allow any exception to stop mount.lfs.
+ * 
+ * src: Jane Street Core library.
+ *)
 external print : unit -> unit = "print_exception_backtrace_stub" "noalloc"
 
+
+(* ---------------------------------------------------------------------- *)
+(* testing *)
+(* ---------------------------------------------------------------------- *)
 
 exception MyNot_Found
 
@@ -25,14 +33,8 @@ let test_backtrace () =
   print_string "ok cool\n";
   ()
 
-
-(*
-  (let s = "-test_backtrace" in s, Arg.Unit (fun () -> action := s),
-  "   <file>");
-
-  | [] when !action = "-test_backtrace" -> 
-  Test.test_backtrace ()
-
-*)
-
-
+let actions () = 
+  [
+  "-test_backtrace", "   ",
+  Common.mk_action_0_arg test_backtrace;
+  ]

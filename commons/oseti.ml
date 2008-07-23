@@ -29,7 +29,7 @@ class ['a] oseti xs   =
     method minus s = {< data = Seti.diff  data s#toseti >}
         
     method invariant () = Seti.invariant data
-    method string_of () = Seti.string_of_seti data
+    method to_string () = Seti.string_of_seti data
 
     method misc_op_hook () = {< data = Seti.patch3 data >}
   end

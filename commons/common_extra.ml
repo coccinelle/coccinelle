@@ -1,11 +1,11 @@
 (* I put those functions here and not in common.ml to try to avoid
- * as much as possible dependencies in common.ml so can more easily
+ * as much as possible dependencies in common.ml so I can more easily
  * make ocaml script that just do a load common.ml without the need
  * to load many other files (like dumper.ml, or ANSITerminal.ml and
  * other recursive dependencies).
  * 
- * Note that can still use the function from a open Common. Don't
- * need to do a 'open Common_extra'. Loading the commons.cma is
+ * Note that you can still use the functions below from an open Common. 
+ * You don't need to do a 'open Common_extra'; loading the commons.cma is
  * enough to make the connexions.
  *)
 
@@ -23,9 +23,9 @@ let execute_and_show_progress len f =
   f continue_pourcentage;
   Common.pr2 ""
 
+let set_link () = 
+  Common._execute_and_show_progress_func := execute_and_show_progress
+
 
 let _init_execute = 
-  begin
-    Common._execute_and_show_progress_func := execute_and_show_progress;
-  end
-
+  set_link ()

@@ -14,7 +14,9 @@ object(o:'o)
     assert(o#invariant());
   *)
 
-  method string_of: unit -> string = 
+  method of_string: string -> unit = 
+    raise Todo
+  method to_string: unit -> string = 
     raise Todo
   method debug: unit -> unit = 
     raise Todo

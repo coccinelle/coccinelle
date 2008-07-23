@@ -15,6 +15,8 @@
 (* Notes *)
 (*****************************************************************************)
 
+
+
 (* ---------------------------------------------------------------------- *)
 (* Maybe could split common.ml and use include tricks as in ofullcommon.ml or
  * Jane Street core lib. But then harder to bundle simple scripts like my
@@ -32,18 +34,23 @@
 (*****************************************************************************)
 (* We use *)
 (*****************************************************************************)
-(* functions: 
+(* 
+ * modules:
+ *   - Pervasives, of course
+ *   - List
+ *   - Str
+ *   - Hashtbl
+ *   - Format 
+ *   - Buffer
+ *   - Unix and Sys
+ *   - Arg
+ * 
+ * functions: 
  *   - =, <=, max min, abs, ... 
  *   - List.rev, List.mem, List.partition,
  *   - List.fold*, List.concat, ... 
  *   - Str.global_replace
  * 
- * modules:
- *   - Hashtbl
- *   - Arg
- *   - Format 
- *   - Buffer
- *   - Str
  * 
  * The Format library allows to hide passing an indent_level variable.
  * You use as usual the print_string function except that there is
@@ -53,18 +60,20 @@
  * Extra packages 
  *  - ocamlbdb
  *  - ocamlgtk
- *  - ocamlcalendar
- *  - ocamlmpi
+ *  - ocamlgl
+ *  - ocamlpython
  *  - ocamlagrep
  *  - ocamlfuse
- *  - ocamlpython
+ *  - ocamlmpi
+ *  - ocamlcalendar
  * 
  * Many functions were inspired by Haskell or Lisp librairies.
-*)
+ *)
 
 (*****************************************************************************)
 (* Prelude *)
 (*****************************************************************************)
+
 (* The following functions should be in their respective sections but
  * because some functions in some sections use functions in other
  * sections, and because I don't want to take care of the order of
@@ -86,7 +95,7 @@ let rec (foldn: ('a -> int -> 'a) -> 'a -> int -> 'a) = fun f acc i ->
 
 let sum_int   = List.fold_left (+) 0
 
-(* could really call it for :) *)
+(* could really call it 'for' :) *)
 let fold_left_with_index f acc =
   let rec fold_lwi_aux acc n = function
     | [] -> acc
@@ -185,6 +194,9 @@ let (with_open_stringbuf: (((string -> unit) * Buffer.t) -> unit) -> string) =
 let _tab_level_print = ref 0
 let _tab_indent = 5
 
+
+let _prefix_pr = ref ""
+
 let indent_do f = 
   _tab_level_print := !_tab_level_print + _tab_indent;
   finalize f 
@@ -192,24 +204,28 @@ let indent_do f =
 
 
 let pr s = 
+  print_string !_prefix_pr;
   do_n !_tab_level_print (fun () -> print_string " ");
   print_string s;
   print_string "\n"; 
   flush stdout
 
 let pr_no_nl s = 
+  print_string !_prefix_pr;
   do_n !_tab_level_print (fun () -> print_string " ");
   print_string s;
   flush stdout
 
 
 let pr2 s = 
+  prerr_string !_prefix_pr;
   do_n !_tab_level_print (fun () -> prerr_string " ");
   prerr_string s;
   prerr_string "\n"; 
   flush stderr
 
 let pr2_no_nl s = 
+  prerr_string !_prefix_pr;
   do_n !_tab_level_print (fun () -> prerr_string " ");
   prerr_string s;
   flush stderr
@@ -231,8 +247,8 @@ let reset_pr_indent () =
 
 (* ---------------------------------------------------------------------- *)
 
-(* can not use the _xxx ref tech that I use for common_extra.ml because 
- * ocaml don't like the polymorphism of Dumper mixed with refs
+(* I can not use the _xxx ref tech that I use for common_extra.ml here because 
+ * ocaml don't like the polymorphism of Dumper mixed with refs.
  * 
  * let (_dump_func : ('a -> string) ref) = ref 
  * (fun x -> failwith "no dump yet, have you included common_extra.cmo?")
@@ -441,7 +457,7 @@ let if_log4 f = if !verbose_level >= 4 then f()
 
 let pause () = (pr2 "pause: type return"; ignore(read_line ()))
 
-(* from getopt from frish *)
+(* src: from getopt from frish *)
 let bip ()  = Printf.printf "\007"; flush stdout
 let wait () = Unix.sleep 1 
 
@@ -604,7 +620,7 @@ let profile_code2 category f =
 (*****************************************************************************)
 let example b = assert b
 
-let _ = example (enum 1 4 = [1;2;3;4])
+let _ex1 = example (enum 1 4 = [1;2;3;4])
 
 let assert_equal a b = 
   if not (a = b) 
@@ -639,7 +655,7 @@ let (test: string -> unit) = fun s ->
   Printf.printf "%s: %s\n" s 
     (if (List.assoc s (!_list_bool)) then "passed" else "failed")
 
-let _ = example3 "++" ([1;2]++[3;4;5] = [1;2;3;4;5])
+let _ex = example3 "++" ([1;2]++[3;4;5] = [1;2;3;4;5])
 
 (*-------------------------------------------------------------------*)
 (* Regression testing *)
@@ -651,7 +667,7 @@ let _ = example3 "++" ([1;2]++[3;4;5] = [1;2;3;4;5])
 
 
 
-(* from julien signoles in calendar-2.0.2/tests *)
+(* todo? take code from julien signoles in calendar-2.0.2/tests *)
 (*
 
 (* Generic functions used in the tests. *)
@@ -693,10 +709,10 @@ let test_exn x s =
 (*****************************************************************************)
 
 (* Better than quickcheck, cos cant do a test_all_prop in haskell cos
- * prop were function, whereas here we have not prop_Unix x = ... but
+ * prop were functions, whereas here we have not prop_Unix x = ... but
  * laws "unit" ... 
  *
- * How do without overloading ? objet ? can pass a generator as a
+ * How to do without overloading ? objet ? can pass a generator as a
  * parameter, mais lourd, prefer automatic inferring of the
  * generator? But at the same time quickcheck does not do better cos
  * we must explictly type the property. So between a 
@@ -704,11 +720,11 @@ let test_exn x s =
  *    prop_unit x = reverse [x] == [x] 
  * and 
  *    let _ = laws "unit" (fun x -> reverse [x] = [x]) (listg intg) 
- * no real differences.  
+ * there is no real differences.  
  *
  * Yes I define typeg generator but quickcheck too, he must define
  * class instance. I emulate the context Gen a => Gen [a] by making
- * listg take as a param a type generator. Morover I have not the pb of
+ * listg take as a param a type generator. Moreover I have not the pb of
  * monad. I can do random independently, so my code is more simple 
  * I think than the haskell code of quickcheck.
  * 
@@ -1197,6 +1213,8 @@ let release_file_lock filename =
   Unix.unlink filename;
   ()
 
+
+
 (*****************************************************************************)
 (* Error managment *)
 (*****************************************************************************)
@@ -1205,6 +1223,8 @@ exception Todo
 exception Impossible
 exception Here
 exception ReturnExn
+
+exception WrongFormat of string
 
 (* old: let _TODO () = failwith "TODO",  now via fix_caml with raise Todo *)
 
@@ -1251,7 +1271,7 @@ let (|||) a b = try a with _ -> b
 (* Environment *)
 (*****************************************************************************)
 
-let check_stack = ref false
+let check_stack = ref true
 let check_stack_size limit = 
   if !check_stack then begin
     pr2 "checking stack size (do ulimit -s 50000 if problem)";
@@ -1264,14 +1284,29 @@ let check_stack_size limit =
     ()
   end
 
+let test_check_stack_size limit = 
+  (* bytecode: 100000000 *)
+  (* native:   10000000 *)
+  check_stack_size (int_of_string limit)
+
+
 (* only relevant in bytecode, in native the stacklimit is the os stacklimit
  * (adjustable by ulimit -s) 
  *)
 let _init_gc_stack = 
   Gc.set {(Gc.get ()) with Gc.stack_limit = 100 * 1024 * 1024}
 
+
+(* if process a big set of files then dont want get overflow in the middle
+ * so for this we are ready to spend some extra time at the beginning that
+ * could save far more later.
+ *)
+let check_stack_nbfiles nbfiles = 
+  if nbfiles > 100
+  then check_stack_size 10000000
+
 (*****************************************************************************)
-(* Arguments/options and command line (cocci and aComment) *)
+(* Arguments/options and command line (cocci and acomment) *)
 (*****************************************************************************)
 
 (* 
@@ -1295,17 +1330,17 @@ let _init_gc_stack =
  * -taxo_file arg2 -sample_file arg3 -parse_c arg1.
  * 
  * 
- * Why not use the toplevel ? because to debug ocamldebug if far superior
+ * Why not use the toplevel ? because to debug ocamldebug is far superior
  * to the toplevel (can go back, can go directly to a specific point, etc).
- * I want kind of unit testing at cmdline level.
+ * I want a kind of testing at cmdline level.
  * 
  * 
  * Why having variable flags ? Why use 'if !verbose_parsing then ...' ? 
  * why not use strings and do stuff like the following
  * 'if (get_config "verbose_parsing") then ...'
  * Because I want to make the interface for flags easier for the code
- * that use it. The programmer should not be bothered without this
- * flag is set via args cmd line or config file, so I want to make it 
+ * that use it. The programmer should not be bothered wether this
+ * flag is set via args cmd line or a config file, so I want to make it 
  * as simple as possible, just use a global plain caml ref variable.
  * 
  * Same spirit a little for the action. Instead of having function such as
@@ -1365,16 +1400,20 @@ type cmdline_sections = options_with_title list
 
 (* ---------------------------------------------------------------------- *)
 
-(* right now I dont use argv but I like at the call sites to show that 
- * this function internally use argv (but it does not show that it 
- * does lots of side effects)
+(* now I use argv as I like at the call sites to show that 
+ * this function internally use argv.
  *)
-let parse_options options usage_msg _argv =
+let parse_options options usage_msg argv =
   let args = ref [] in
+  (try
+    Arg.parse_argv argv options (fun file -> args := file::!args) usage_msg;
+    args := List.rev !args;
+    !args
+  with
+  | Arg.Bad msg -> eprintf "%s" msg; exit 2
+  | Arg.Help msg -> printf "%s" msg; exit 0
+  )
 
-  Arg.parse options (fun file -> args := file::!args) usage_msg;
-  args := List.rev !args;
-  !args
 
 
 
@@ -1435,7 +1474,13 @@ let arg_parse2 l msg short_usage_fun =
 
 (* ---------------------------------------------------------------------- *)
 (* kind of unit testing framework, or toplevel like functionnality 
- * at shell command line. Not-perfect-but-basic-feels-right: an action
+ * at shell command line. I realize than in fact It follows a current trend
+ * to have a main cmdline program where can then select different actions, 
+ * as in cvs/hg/git where do  hg <action> <arguments>, and the shell even
+ * use a curried syntax :)
+ * 
+ * 
+ * Not-perfect-but-basic-feels-right: an action
  * spec looks like this:
  * 
  *    let actions () = [
@@ -1445,10 +1490,10 @@ let arg_parse2 l msg short_usage_fun =
  *     ]
  * 
  * Not-perfect-but-basic-feels-right because for such functionality we
- * need a way to transform a string into a caml function and pass argument
+ * need a way to transform a string into a caml function and pass arguments
  * and the preceding design does exactly that, even if then the
  * functions that use this design are not so convenient to use (there
- * is 2 places where we need to pass those data, in the options and in the
+ * are 2 places where we need to pass those data, in the options and in the
  * main dispatcher). 
  * 
  * Also it's not too much intrusive. Still have an
@@ -1485,6 +1530,10 @@ let (do_action: Arg.key -> string list (* args *) -> cmdline_actions -> unit) =
     let action_func = List.assoc key assoc in
     action_func args
 
+
+(* todo? if have a function with default argument ? would like a 
+ *  mk_action_0_or_1_arg ? 
+ *)
 
 let mk_action_0_arg f = 
   (function 
@@ -1733,6 +1782,24 @@ let testd dict n =
 
 
 
+module ArithFloatInfix = struct 
+    let (+..) = (+)
+    let (-..) = (-)
+    let (/..) = (/)
+    let ( *.. ) = ( * )
+
+
+    let (+) = (+.)
+    let (-) = (-.)
+    let (/) = (/.)
+    let ( * ) = ( *. )
+
+    let (+=) ref v = ref := !ref + v
+    let (-=) ref v = ref := !ref - v
+
+end
+
+
 
 (*****************************************************************************)
 (* Tuples *)
@@ -1948,6 +2015,7 @@ let _ = example (all_match "\\(@[A-Za-z]+\\)" "ca va @Et toi @Comment"
 let slength = String.length
 let concat = String.concat
 
+(* ruby *)
 let i_to_s = string_of_int
 let s_to_i = int_of_string
 
@@ -2009,6 +2077,7 @@ let plural i s =
 let showCodeHex xs = List.iter (fun i -> printf "%02x" i) xs
 
 
+(* used by LFS *)
 let size_mo_ko i = 
   let ko = (i / 1024) mod 1024 in
   let mo = (i / 1024) / 1024 in
@@ -2016,6 +2085,10 @@ let size_mo_ko i =
   then sprintf "%dMo%dKo" mo ko
   else sprintf "%dKo" ko
   )
+
+let size_ko i = 
+  let ko = i / 1024 in
+  sprintf "%dKo" ko
 
 (*****************************************************************************)
 (* Filenames *)
@@ -2148,6 +2221,17 @@ let filename_without_leading_path prj_path s =
 
 
 (*****************************************************************************)
+(* i18n *)
+(*****************************************************************************)
+type langage = 
+  | English
+  | Francais
+  | Deutsch
+
+(* gettext ? *)
+
+
+(*****************************************************************************)
 (* Dates *)
 (*****************************************************************************)
 
@@ -2156,8 +2240,18 @@ type month =
   | Jul  | Aug  | Sep  | Oct  | Nov  | Dec
 type year = Year of int
 type day = Day of int
+type wday = Sunday | Monday | Tuesday | Wednesday | Thursday | Friday | Saturday
 
 type date_dmy = DMY of day * month * year
+
+type hour = Hour of int
+type minute = Min of int
+type second = Sec of int
+
+type time_hms = HMS of hour * minute * second
+
+type full_date = date_dmy * time_hms
+
 
 (* intervalle *)
 type days = Days of int
@@ -2172,6 +2266,12 @@ let check_date_dmy (DMY (day, month, year)) =
 
 let check_time_dmy (TimeDMY (day, month, year)) = 
   raise Todo
+
+let check_time_hms (HMS (x,y,a)) =
+  raise Todo
+
+
+
 
 
 let month_info = [
@@ -2188,6 +2288,17 @@ let month_info = [
   11 , Nov, "Nov", "November", 30;
   12 , Dec, "Dec", "December", 31;
 ]
+
+let week_day_info = [
+  0 , Sunday    , "Sun" , "Dim" , "Sunday";
+  1 , Monday    , "Mon" , "Lun" , "Monday";
+  2 , Tuesday   , "Tue" , "Mar" , "Tuesday";
+  3 , Wednesday , "Wed" , "Mer" , "Wednesday";
+  4 , Thursday  , "Thu" ,"Jeu"  ,"Thursday";
+  5 , Friday    , "Fri" , "Ven" , "Friday";
+  6 , Saturday  , "Sat" ,"Sam"  , "Saturday";
+]
+
 let i_to_month_h = 
   month_info +> List.map (fun (i,month,monthstr,mlong,days) -> i, month)
 let s_to_month_h = 
@@ -2198,6 +2309,13 @@ let month_to_s_h =
   month_info +> List.map (fun (i,month,monthstr,mlong,days) -> month, monthstr)
 let month_to_i_h = 
   month_info +> List.map (fun (i,month,monthstr,mlong,days) -> month, i)
+
+let i_to_wday_h = 
+  week_day_info +> List.map (fun (i,day,dayen,dayfr,daylong) -> i, day)
+let wday_to_en_h =
+  week_day_info +> List.map (fun (i,day,dayen,dayfr,daylong) -> day, dayen)
+let wday_to_fr_h =
+  week_day_info +> List.map (fun (i,day,dayen,dayfr,daylong) -> day, dayfr)
 
 let month_of_string s = 
   List.assoc s s_to_month_h
@@ -2215,10 +2333,95 @@ let int_of_month m =
   List.assoc m month_to_i_h
 
 
+let wday_of_int i = 
+  List.assoc i i_to_wday_h
+
+let string_en_of_wday wday = 
+  List.assoc wday wday_to_en_h
+let string_fr_of_wday wday = 
+  List.assoc wday wday_to_fr_h
+
+let wday_str_of_int ~langage i = 
+  let wday = wday_of_int i in
+  match langage with
+  | English -> string_en_of_wday wday
+  | Francais -> string_fr_of_wday wday
+  | Deutsch -> raise Todo
+  
+
+
 let string_of_date_dmy (DMY (Day n, month, Year y)) = 
   (spf "%02d-%s-%d" n (string_of_month month) y)
 
 
+let string_of_unix_time ?(langage=English) tm = 
+  let y = tm.Unix.tm_year + 1900 in
+  let mon = string_of_month (month_of_int (tm.Unix.tm_mon + 1)) in
+  let d = tm.Unix.tm_mday in
+  let h = tm.Unix.tm_hour in
+  let min = tm.Unix.tm_min in
+  let s = tm.Unix.tm_sec in
+
+  let wday = wday_str_of_int ~langage tm.Unix.tm_wday in
+  
+  spf "%02d/%03s/%04d (%s) %02d:%02d:%02d" d mon y wday h min s
+
+
+
+
+(* older code *)
+let int_to_month i = 
+  assert (i <= 12 && i >= 1);
+  match i with
+
+  | 1 -> "Jan"
+  | 2 -> "Feb"
+  | 3 -> "Mar"
+  | 4 -> "Apr"
+  | 5 -> "May"
+  | 6 -> "Jun"
+  | 7 -> "Jul"
+  | 8 -> "Aug"
+  | 9 -> "Sep"
+  | 10 -> "Oct"
+  | 11 -> "Nov"
+  | 12 -> "Dec"
+(*
+  | 1 -> "January"
+  | 2 -> "February"
+  | 3 -> "March"
+  | 4 -> "April"
+  | 5 -> "May"
+  | 6 -> "June"
+  | 7 -> "July"
+  | 8 -> "August"
+  | 9 -> "September"
+  | 10 -> "October"
+  | 11 -> "November"
+  | 12 -> "December"
+*)
+  | _ -> raise Impossible
+
+
+let string_of_unix_time_lfs time = 
+  spf "%02d--%s--%d" 
+    time.Unix.tm_mday 
+    (int_to_month (time.Unix.tm_mon + 1)) 
+    (time.Unix.tm_year + 1900)
+
+
+
+(* cf above *)
+let regexp_full_date = 
+  ""
+let unix_time_of_string s = 
+  raise Todo
+
+let string_of_floattime ?langage i = 
+  let tm = Unix.localtime i in
+  string_of_unix_time ?langage tm
+
+  
 
 
 (* (modified) copy paste from ocamlcalendar/src/date.ml *)
@@ -2269,23 +2472,6 @@ let mk_date_dmy day month year =
 
 
 
-(* older code *)
-let int_to_month i = 
-  assert (i <= 12 && i >= 1);
-  match i with
-  | 1 -> "January"
-  | 2 -> "February"
-  | 3 -> "March"
-  | 4 -> "April"
-  | 5 -> "May"
-  | 6 -> "June"
-  | 7 -> "July"
-  | 8 -> "August"
-  | 9 -> "September"
-  | 10 -> "October"
-  | 11 -> "November"
-  | 12 -> "December"
-  | _ -> raise Impossible
 
 
 (* from julia, in gitsort.ml *)
@@ -2340,11 +2526,13 @@ let sec_to_days sec =
   let days  =  sec / dayfactor in
   let hours = (sec mod dayfactor) / hourfactor in
   let mins  = (sec mod hourfactor) / minfactor in
+  let sec = (sec mod 60) in
   (* old:   Printf.sprintf "%d days, %d hours, %d minutes" days hours mins *)
   (if days > 0  then plural days "day" ^ " "    else "") ^ 
   (if hours > 0 then plural hours "hour" ^ " " else "") ^
   (if mins > 0  then plural mins "min"   ^ " " else "") ^
-  ""
+  (spf "%dsec" sec)
+  
 
 
 let test_date_1 () =
@@ -2352,6 +2540,16 @@ let test_date_1 () =
   let float, tm = dmy_to_unixtime date in
   pr2 (spf "date: %.0f" float);
   ()
+
+
+(* src: ferre in logfun/.../date.ml *)
+
+let day_secs : float = 86400.
+let today : unit -> float = fun () ->  (Unix.time ())
+let yesterday : unit -> float = fun () ->  (Unix.time () -. day_secs)
+let tomorrow : unit -> float = fun () ->  (Unix.time () +. day_secs)
+
+
 
 (*****************************************************************************)
 (* Lines/words/strings *)
@@ -2502,10 +2700,11 @@ let cmd_to_list = process_output_to_list
 let command2_y_or_no cmd = 
   pr2 (cmd ^ " [y/n] ?");
   match read_line () with
-  | "y" | "yes" | "Y" -> command2 cmd
-  | "n" | "no"  | "N" -> ()
+  | "y" | "yes" | "Y" -> command2 cmd; true
+  | "n" | "no"  | "N" -> false
   | _ -> failwith "answer by yes or no"
 
+  
 
 
 let mkdir ?(mode=0o770) file = 
@@ -2587,22 +2786,35 @@ let (readdir_to_dir_size_list: string -> (string * int) list) = fun path ->
     else None
     )
 
+(* could be in control section too *)
 
-let cache_computation ?(verbose=false) file ext_cache f = 
-  if not (Sys.file_exists file) 
-  then failwith ("can't find: "  ^ file);
-  let file_cache = (file ^ ext_cache) in
-  if Sys.file_exists file_cache && 
-    filemtime file_cache >= filemtime file
-  then begin
-    if verbose then pr2 ("using cache: " ^ file_cache);
-    get_value file_cache
-  end
+(* Why a use_cache argument ? because sometimes want disable it but dont
+ * want put the cache_computation funcall in comment, so just easier to
+ * pass this extra option.
+ *)
+let cache_computation2 ?(verbose=false) ?(use_cache=true) file ext_cache f = 
+  if not use_cache 
+  then f ()
   else begin
-    let res = f () in
-    write_value res file_cache;
-    res
+    if not (Sys.file_exists file) 
+    then failwith ("can't find: "  ^ file);
+    let file_cache = (file ^ ext_cache) in
+    if Sys.file_exists file_cache && 
+      filemtime file_cache >= filemtime file
+    then begin
+      if verbose then pr2 ("using cache: " ^ file_cache);
+      get_value file_cache
+    end
+    else begin
+      let res = f () in
+      write_value res file_cache;
+      res
+    end
   end
+let cache_computation ?verbose ?use_cache a b c = 
+  profile_code "Common.cache_computation" (fun () -> 
+    cache_computation2 ?verbose ?use_cache a b c)
+  
 
 let cache_computation_robust2 
  file ext_cache 
@@ -2645,12 +2857,58 @@ let glob pattern =
   cmd_to_list ("ls -1 " ^ pattern)
 
 
+(* update: have added the -type f, so normally need less the sanity_check_xxx
+ * function below *)
 let files_of_dir_or_files ext xs = 
   xs +> List.map (fun x -> 
     if is_directory x
-    then cmd_to_list ("find " ^ x  ^" -name \"*." ^ext^"\"")
+    then cmd_to_list ("find " ^ x  ^" -noleaf -type f -name \"*." ^ext^"\"")
     else [x]
   ) +> List.concat
+
+
+let files_of_dir_or_files_no_vcs ext xs = 
+  xs +> List.map (fun x -> 
+    if is_directory x
+    then 
+      cmd_to_list 
+        ("find " ^ x  ^" -noleaf -type f -name \"*." ^ext^"\"" ^
+            "| grep -v /.hg/ |grep -v /CVS/ | grep -v /.git/ |grep -v /_darcs/"
+        )
+    else [x]
+  ) +> List.concat
+
+
+let files_of_dir_or_files_no_vcs_post_filter regex xs = 
+  xs +> List.map (fun x -> 
+    if is_directory x
+    then 
+      cmd_to_list 
+        ("find " ^ x  ^
+         " -noleaf -type f | grep -v /.hg/ |grep -v /CVS/ | grep -v /.git/"
+        )
+        +> List.filter (fun s -> s =~ regex)
+    else [x]
+  ) +> List.concat
+
+
+let sanity_check_files_and_adjust ext files =
+  let files = files +> List.filter (fun file -> 
+    if not (file =~ (".*\\."^ext))
+    then begin 
+      pr2 ("warning: seems not a ."^ext^" file");
+      false
+    end
+    else 
+      if is_directory file
+      then begin
+        pr2 (spf "warning: %s is a directory" file);
+        false
+      end 
+    else true
+  ) in
+  files
+        
 
 
   
@@ -2713,6 +2971,8 @@ let (with_open_outfile_append: filename -> (((string -> unit) * out_channel) -> 
  *  command :( 
  *  let _ = Unix.sigprocmask Unix.SIG_UNBLOCK [Sys.sigalrm]
  *)
+
+(* could be in Control section *)
 
 (* subtil: have to make sure that timeout is not intercepted before here, so 
  * avoid exn handle such as try (...) with _ -> cos timeout will not bubble up
@@ -2901,6 +3161,29 @@ let rec (split_when: ('a -> bool) -> 'a list -> 'a list * 'a * 'a list) =
 let _ = example (split_when (fun x -> x = 3) [1;2;3;4;1;2] = ([1;2],3,[4;1;2]))
 
 
+(* not so easy to come up with ... used in aComment for split_paragraph *)
+let rec split_gen_when_aux f acc xs = 
+  match xs with
+  | [] -> 
+      if acc = []
+      then []
+      else [List.rev acc]
+  | (x::xs) -> 
+      (match f (x::xs) with
+      | None -> 
+          split_gen_when_aux f (x::acc) xs 
+      | Some (rest) -> 
+          let before = List.rev acc in
+          if before = []
+          then split_gen_when_aux f [] rest
+          else before::split_gen_when_aux f [] rest
+      )
+(* could avoid introduce extra aux function by using ?(acc = []) *)
+let split_gen_when f xs = 
+  split_gen_when_aux f [] xs
+
+
+
 (* generate exception (Failure "tl") if there is no element satisfying p *)
 let rec (skip_until: ('a list -> bool) -> 'a list -> 'a list) = fun p xs ->
   if p xs then xs else skip_until p (List.tl xs)
@@ -2920,6 +3203,12 @@ let rec skipfirst e = function
 let index_list xs = 
   if xs = [] then [] (* enum 0 (-1) generate an exception *)
   else zip xs (enum 0 ((List.length xs) -1))
+
+let index_list_and_total xs = 
+  let total = List.length xs in
+  if xs = [] then [] (* enum 0 (-1) generate an exception *)
+  else zip xs (enum 0 ((List.length xs) -1)) 
+    +> List.map (fun (a,b) -> (a,b,total))
 
 let index_list_1 xs = 
   xs +> index_list +> List.map (fun (x,i) -> x, i+1)
@@ -3735,6 +4024,49 @@ let hkeys h =
   h +> Hashtbl.iter (fun k v -> Hashtbl.replace hkey k true);
   hashset_to_list hkey
 
+
+
+let group_assoc_bykey_eff xs = 
+  let h = Hashtbl.create 101 in 
+  xs +> List.iter (fun (k, v) -> Hashtbl.add h k v);
+  let keys = hkeys h in
+  keys +> List.map (fun k -> k, Hashtbl.find_all h k)
+  
+
+let test_group_assoc () = 
+  let xs = enum 0 10000 +> List.map (fun i -> i_to_s i, i) in
+  let xs = ("0", 2)::xs in
+(*    let _ys = xs +> Common.groupBy (fun (a,resa) (b,resb) -> a =$= b)  *)
+  let ys = xs +> group_assoc_bykey_eff 
+  in
+  pr2_gen ys
+
+
+
+
+let diff_two_say_set_eff xs1 xs2 = 
+  let h1 = hashset_of_list xs1 in
+  let h2 = hashset_of_list xs2 in
+  
+  let hcommon = Hashtbl.create 101 in
+  let honly_in_h1 = Hashtbl.create 101 in
+  let honly_in_h2 = Hashtbl.create 101 in
+  
+  h1 +> Hashtbl.iter (fun k _ -> 
+    if Hashtbl.mem h2 k
+    then Hashtbl.replace hcommon k true
+    else Hashtbl.add honly_in_h1 k true
+  );
+  h2 +> Hashtbl.iter (fun k _ -> 
+    if Hashtbl.mem h1 k
+    then Hashtbl.replace hcommon k true
+    else Hashtbl.add honly_in_h2 k true
+  );
+  hashset_to_list hcommon,
+  hashset_to_list honly_in_h1,
+  hashset_to_list honly_in_h2
+
+  
 (*****************************************************************************)
 (* Stack *)
 (*****************************************************************************)
@@ -4145,9 +4477,20 @@ let getDoubleParser parserer lexer =
    ))
 
 
+(*****************************************************************************)
+(* parser combinators *)
+(*****************************************************************************)
+
+(* cf parser_combinators.ml
+ * 
+ * Could also use ocaml stream. but not backtrack and forced to do LL, 
+ * so combinators are better.
+ * 
+ *)
+
 
 (*****************************************************************************)
-(* parser related (cocci) *)
+(* Parser related (cocci) *)
 (*****************************************************************************)
 
 type parse_info = {
@@ -4290,7 +4633,7 @@ let error_message_short = fun filename (lexeme, lexstart) ->
 
 
 (*****************************************************************************)
-(* Regression testing bis *)
+(* Regression testing bis (cocci) *)
 (*****************************************************************************)
 
 (* todo: keep also size of file, compute md5sum ? cos maybe the file
@@ -4301,6 +4644,8 @@ let error_message_short = fun filename (lexeme, lexstart) ->
  * was ok, and then first date when found fail. So the 
  * Common.Ok would have more information that would be passed
  * to the Common.Pb of date * date * date * string   peut etre.
+ * 
+ * todo? maybe use plain text file instead of marshalling.
  *)
 
 type score_result = Ok | Pb of string 
@@ -4385,7 +4730,7 @@ let print_score score =
 
 
 (*****************************************************************************)
-(* Scope managment *)
+(* Scope managment (cocci) *)
 (*****************************************************************************)
 
 (* could also make a function Common.make_scope_functions that return
@@ -4658,14 +5003,7 @@ let cmdline_flags_other () =
 let cmdline_actions () = 
   [
     "-test_check_stack", "  <limit>",
-    (fun xs -> 
-      match xs with 
-      | [limit] -> 
-          (* bytecode: 100000000 *)
-          (* native:   10000000 *)
-            check_stack_size (s_to_i limit)
-      | _ -> raise WrongNumberOfArguments
-    );
+    mk_action_1_arg test_check_stack_size;
   ]
 
 
@@ -4674,26 +5012,7 @@ let cmdline_actions () =
 (*****************************************************************************)
 (* stuff put here cos of of forward definition limitation of ocaml *)
 
-
-let group_assoc_bykey_eff xs = 
-  let h = Hashtbl.create 101 in 
-  xs +> List.iter (fun (k, v) -> Hashtbl.add h k v);
-  let keys = hkeys h in
-  keys +> List.map (fun k -> k, Hashtbl.find_all h k)
-  
-
-let test_group_assoc xs = 
-  begin
-    let xs = enum 0 10000 +> List.map (fun i -> i_to_s i, i) in
-    let xs = ("0", 2)::xs in
-(*    let _ys = xs +> Common.groupBy (fun (a,resa) (b,resb) -> a =$= b)  *)
-    let ys = xs +> group_assoc_bykey_eff 
-    in
-    pr2_gen ys;
-  end
     
-
-
 (* Infix trick, seen in jane street lib and harrop's code, and maybe in GMP *)
 module Infix = struct
   let (+>) = (+>)
@@ -4733,7 +5052,8 @@ let main_boilerplate f =
           f(); (* <---- here it is *)
         ))
        (fun()-> 
-         pr2 (profile_diagnostic ());
+         if !profile <> PNONE 
+         then pr2 (profile_diagnostic ());
          erase_temp_files ();
        )
     )

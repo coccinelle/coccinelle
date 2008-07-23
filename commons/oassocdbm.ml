@@ -62,3 +62,11 @@ object(o)
     with Dbm.Dbm_error "dbm_delete" -> 
       raise Not_found
 end
+
+
+let create_dbm metapath dbname =
+  let x_db = Dbm.opendbm (metapath^dbname) [Dbm.Dbm_create;Dbm.Dbm_rdwr] 0o777 
+  in
+  let assoc = new oassocdbm [] x_db id id in
+  x_db, assoc
+

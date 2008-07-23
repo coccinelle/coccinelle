@@ -5,4 +5,4 @@ Thanks to
  - Troestler Christophe for his ANSITerminal module,
  - Sebastien ferre for his suffix tree module
 
- - Jane street for backtrace module
+ - Jane street for the backtrace module

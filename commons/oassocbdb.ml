@@ -104,7 +104,7 @@ object(o)
       (* minsky ? Db.get data ~txn:(transact() *)
       unv (Marshal.from_string vget  0)
     with Not_found -> 
-      log2 ("pb assoc with k = " ^ (Dumper.dump k)); 
+      log3 ("pb assoc with k = " ^ (Dumper.dump k)); 
       raise Not_found
   method assoc x = 
     Common.profile_code ("Btree.assoc" ^ namedb) (fun () -> o#assoc2 x)

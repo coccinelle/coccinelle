@@ -37,6 +37,8 @@ val verbose_level : int ref
 (* forbid pr2_once to do the once "optimisation" *)
 val disable_pr2_once : bool ref
 
+
+
 (* works with new_temp_file *)
 val save_tmp_files : bool ref
 
@@ -46,7 +48,7 @@ val save_tmp_files : bool ref
 (* Module side effect *)
 (*****************************************************************************)
 (* 
- * I define a few unit_test via some let _ = example (... = ...).
+ * I define a few unit tests via some let _ = example (... = ...).
  * I also initialize the random seed, cf _init_random .
  * I also set Gc.stack_size, cf _init_gc_stack .
 *)
@@ -71,7 +73,7 @@ module BasicType : sig
 end
 
 (* Same spirit. Trick found in Jane Street core lib, but originated somewhere
- * else I think: the ability to open nested modules *)
+ * else I think: the ability to open nested modules. *)
 module Infix : sig
   val ( +> ) : 'a -> ('a -> 'b) -> 'b
   val ( =~ ) : string -> string -> bool
@@ -93,6 +95,14 @@ end
 
 
 
+(* This module defines the Timeout and UnixExit exceptions.  
+ * You  have to make sure that those exn are not intercepted. So 
+ * avoid exn handler such as try (...) with _ -> cos Timeout will not bubble up
+ * enough. In such case, add a case before such as  
+ * with Timeout -> raise Timeout | _ -> ... 
+ * The same is true for UnixExit (see below).
+ *)
+
 (*****************************************************************************)
 (* Debugging/logging *)
 (*****************************************************************************)
@@ -102,10 +112,13 @@ val indent_do : (unit -> 'a) -> 'a
 val reset_pr_indent : unit -> unit
 
 (* The following functions first indent _tab_level_print spaces.
+ * They also add the _prefix_pr, for instance used in MPI to show which
+ * worker is talking.
  * 
  * The use of 2 in pr2 is because 2 is under UNIX the second descriptor
  * which corresponds to stderr. 
  *)
+val _prefix_pr : string ref
 val pr : string -> unit
 val pr2 : string -> unit
 val pr_no_nl : string -> unit
@@ -370,14 +383,15 @@ val finalize :       (unit -> 'a) -> (unit -> 'b) -> 'a
 val memoized : ('a, 'b) Hashtbl.t -> 'a -> (unit -> 'b) -> 'b
 
 
-(* take file from which computation is done, extension, and function
+(* take file from which computation is done, an extension, and the function
  * and will compute the function only once and then save result in 
  * file ^ extension
  *)
 val cache_computation : 
-  ?verbose:bool -> filename  -> string (* extension *) -> (unit -> 'a) -> 'a
+  ?verbose:bool -> ?use_cache:bool -> filename  -> string (* extension *) -> 
+  (unit -> 'a) -> 'a
 
-(* a more robust version where describes the dependencies of the 
+(* a more robust version where the client describes the dependencies of the 
  * computation so it will relaunch the computation in 'f' if needed. 
  *)
 val cache_computation_robust :
@@ -392,12 +406,14 @@ val cache_computation_robust :
 
 val once : ('a -> unit) -> ('a -> unit)
 
-(* cf also the timeout function below that are control related too *)
-
 val before_leaving : ('a -> unit) -> 'a -> 'a
 
 (* do some finalize, signal handling, unix exit conversion, etc *)
 val main_boilerplate : (unit -> unit) -> unit
+
+
+(* cf also the timeout function below that are control related too *)
+
 
 (*****************************************************************************)
 (* Concurrency *)
@@ -416,6 +432,9 @@ exception Impossible
 exception Here
 exception ReturnExn
 
+exception WrongFormat of string
+
+
 val internal_error : string -> 'a
 val myassert : bool -> unit
 val warning : string -> 'a -> 'a
@@ -428,7 +447,8 @@ val exn_to_s : exn -> string
 (*****************************************************************************)
 
 val check_stack_size: int -> unit
-
+val check_stack_nbfiles: int -> unit
+ 
 (* internally common.ml set Gc. parameters *)
 val _init_gc_stack : unit
 
@@ -639,6 +659,22 @@ val numd_float : float numdict
 
 val testd : 'a numdict -> 'a -> 'a
 
+
+module ArithFloatInfix : sig 
+    val (+) : float -> float -> float
+    val (-) : float -> float -> float
+    val (/) : float -> float -> float
+    val ( * ) : float -> float -> float
+
+
+    val (+..) : int -> int -> int
+    val (-..) : int -> int -> int
+    val (/..) : int -> int -> int
+    val ( *..) : int -> int -> int
+
+    val (+=) : float ref -> float -> unit
+end
+
 (*****************************************************************************)
 (* Random *)
 (*****************************************************************************)
@@ -745,6 +781,7 @@ val plural : int -> string -> string
 val showCodeHex : int list -> unit
 
 val size_mo_ko : int -> string
+val size_ko : int -> string
 
 (*****************************************************************************)
 (* Regexp *)
@@ -817,6 +854,14 @@ val relative_to_absolute : filename -> filename
 val filename_without_leading_path : string -> filename -> filename
 
 (*****************************************************************************)
+(* i18n *)
+(*****************************************************************************)
+type langage = 
+  | English
+  | Francais
+  | Deutsch
+
+(*****************************************************************************)
 (* Dates *)
 (*****************************************************************************)
 
@@ -830,6 +875,15 @@ type day = Day of int
 
 type date_dmy = DMY of day * month * year
 
+type hour = Hour of int
+type minute = Min of int
+type second = Sec of int
+
+type time_hms = HMS of hour * minute * second
+
+type full_date = date_dmy * time_hms
+
+
 (* intervalle *)
 type days = Days of int
 
@@ -842,6 +896,7 @@ val mk_date_dmy : int -> int -> int -> date_dmy
 
 val check_date_dmy : date_dmy -> unit
 val check_time_dmy : time_dmy -> unit
+val check_time_hms : time_hms -> unit
 
 val int_to_month : int -> string
 
@@ -851,7 +906,9 @@ val month_of_string_long : string -> month
 val string_of_month : month -> string
 
 val string_of_date_dmy : date_dmy -> string
-
+val string_of_unix_time : ?langage:langage -> Unix.tm -> string
+val string_of_unix_time_lfs : Unix.tm -> string
+val string_of_floattime: ?langage:langage -> float -> string
 
 val rough_days_since_jesus : date_dmy -> days
 val rough_days_between_dates : date_dmy -> date_dmy -> days
@@ -859,6 +916,11 @@ val rough_days_between_dates : date_dmy -> date_dmy -> days
 val dmy_to_unixtime: date_dmy -> float * Unix.tm
 
 val sec_to_days : int -> string
+
+val day_secs: float
+val today : unit -> float
+val yesterday : unit -> float
+val tomorrow : unit -> float
 
 
 (*****************************************************************************)
@@ -895,7 +957,7 @@ val process_output_to_list : string -> string list
 val cmd_to_list :            string -> string list (* alias *)
 
 val command2 : string -> unit
-val command2_y_or_no : string -> unit
+val command2_y_or_no : string -> bool
 
 val do_in_fork : (unit -> unit) -> int
 
@@ -921,7 +983,18 @@ val readdir_to_link_list : string -> string list
 val readdir_to_dir_size_list : string -> (string * int) list
 
 val glob : string -> filename list
-val files_of_dir_or_files : string (* ext *) -> string list -> filename list
+val files_of_dir_or_files : 
+  string (* ext *) -> string list -> filename list
+val files_of_dir_or_files_no_vcs :
+  string (* ext *) -> string list -> filename list
+(* use a post filter =~ for the ext filtering *)
+val files_of_dir_or_files_no_vcs_post_filter :
+  string (* regexp *) -> string list -> filename list
+
+
+val sanity_check_files_and_adjust :
+  string (* ext *) -> string list -> filename list
+
 
 type rwx = [ `R | `W | `X ] list
 val file_perm_of : u:rwx -> g:rwx -> o:rwx -> Unix.file_perm
@@ -1021,6 +1094,7 @@ val group_assoc_bykey_eff : ('a * 'b) list -> ('a * 'b list) list
 val splitAt : int -> 'a list -> 'a list * 'a list
 
 val split_when: ('a -> bool) -> 'a list -> 'a list * 'a * 'a list
+val split_gen_when: ('a list -> 'a list option) -> 'a list -> 'a list list
 
 val pack : int -> 'a list -> 'a list list
 
@@ -1033,6 +1107,7 @@ val generate : int -> 'a -> 'a list
 
 val index_list   : 'a list -> ('a * int) list
 val index_list_1 : 'a list -> ('a * int) list
+val index_list_and_total   : 'a list -> ('a * int * int) list
 
 val iter_index : ('a -> int -> 'b) -> 'a list -> unit
 val map_index : ('a -> int -> 'b) -> 'a list -> 'b list
@@ -1210,6 +1285,14 @@ val ( $=$ ) : 'a set -> 'a set -> bool
 val ( $@$ ) : 'a list -> 'a list -> 'a list
 
 val nub : 'a list -> 'a list
+
+(* use internally a hash and return 
+ * - the common part, 
+ * - part only in a, 
+ * - part only in b
+ *)
+val diff_two_say_set_eff : 'a list -> 'a list -> 
+  'a list * 'a list * 'a list
 
 (*****************************************************************************)
 (* Set as normal list *)
@@ -1485,17 +1568,23 @@ val is_singleton : 'a list -> bool
 (*###########################################################################*)
 
 (*****************************************************************************)
-(* DB *)
+(* DB (LFS) *)
 (*****************************************************************************)
 
 (* cf oassocbdb.ml or oassocdbm.ml  *)
 
 (*****************************************************************************)
-(* GUI (LFS, CComment) *)
+(* GUI (LFS, CComment, otimetracker) *)
 (*****************************************************************************)
 
-(* cf ocamlgtk and my gCommon.ml *)
+(* cf ocamlgtk and my gui.ml *)
 
+
+(*****************************************************************************)
+(* Graphics (otimetracker) *)
+(*****************************************************************************)
+
+(* cf ocamlgl and my opengl.ml *)
 
 
 
@@ -1656,8 +1745,8 @@ val cmdline_flags_other : unit -> cmdline_options
 (* Misc/test *)
 (*****************************************************************************)
 
-
 val generic_print : 'a -> string -> string
+
 class ['a] olist :
   'a list ->
   object
@@ -1665,7 +1754,6 @@ class ['a] olist :
     method fold : ('b -> 'a -> 'b) -> 'b -> 'b
     method view : 'a list
   end
-
 
 val typing_sux_test : unit -> unit
 

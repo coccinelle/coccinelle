@@ -3,7 +3,8 @@ object('o)
   method invariant: unit -> unit
   (* method check: unit -> unit *)
 
-  method string_of: unit -> string
+  method of_string: string -> unit
+  method to_string: unit -> string
   method debug: unit -> unit
 
   (* ugly (but convenient): those methods allow to extend an interface without

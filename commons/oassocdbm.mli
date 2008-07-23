@@ -23,3 +23,6 @@ object ('o)
   method delkey : 'a -> 'o
 
 end
+
+val create_dbm : 
+  Common.filename -> string -> Dbm.t * ('a, 'b) oassocdbm
