@@ -131,7 +131,8 @@ let predmaker guard pred label =
 
 let aftpred     = predmaker false (Lib_engine.After,       CTL.Control)
 let retpred     = predmaker false (Lib_engine.Return,      CTL.Control)
-let enterpred   = predmaker false (Lib_engine.Enter,       CTL.Control)
+let funpred     = predmaker false (Lib_engine.FunHeader,   CTL.Control)
+let toppred     = predmaker false (Lib_engine.Top,         CTL.Control)
 let exitpred    = predmaker false (Lib_engine.ErrorExit,   CTL.Control)
 let endpred     = predmaker false (Lib_engine.Exit,        CTL.Control)
 let gotopred    = predmaker false (Lib_engine.Goto,        CTL.Control)
@@ -2111,6 +2112,13 @@ let top_level (ua,pos) t =
 	      | Ast.Stars(_,_,_,_) -> true
 	      | _ -> false)
 	  | _ -> false in
+	let starts_with_brace =
+	  match Ast.undots stmt_dots with
+	    d::ds ->
+	      (match Ast.unwrap d with
+		Ast.Seq(_) -> true
+	      | _ -> false)
+	  | _ -> false in
 	let res =
 	  statement_list unopt VeryEnd quantified [] None None None
 	    false false in
@@ -2118,7 +2126,11 @@ let top_level (ua,pos) t =
 	  (if starts_with_dots
 	  then
 	  (* EX because there is a loop on enter/top *)
-	    ctl_and CTL.NONSTRICT (enterpred None) (ctl_ex res)
+	    ctl_and CTL.NONSTRICT (toppred None) (ctl_ex res)
+	  else if starts_with_brace
+	  then
+	     ctl_and CTL.NONSTRICT
+	      (ctl_not(CTL.EX(CTL.BACKWARD,(funpred None)))) res
 	  else res)
     | Ast.ERRORWORDS(exps) -> failwith "not supported errorwords")
 

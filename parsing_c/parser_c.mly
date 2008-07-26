@@ -511,10 +511,9 @@ postfix_expr:
  | primary_expr               { $1 }
  | postfix_expr TOCro expr TCCro                
      { mk_e(ArrayAccess ($1, $3)) [$2;$4] }
- | postfix_expr TOPar argument_list TCPar  
+ | postfix_expr TOPar argument_list_ne TCPar  
      { mk_e(FunCall ($1, $3)) [$2;$4] }
-/* (* no need - argument list can be empty *)
- | postfix_expr TOPar  TCPar  { mk_e(FunCall ($1, [])) [$2;$3] } */
+ | postfix_expr TOPar  TCPar  { mk_e(FunCall ($1, [])) [$2;$3] }
  | postfix_expr TDot   ident  { mk_e(RecordAccess   ($1,fst $3)) [$2;snd $3] }
  | postfix_expr TPtrOp ident  { mk_e(RecordPtAccess ($1,fst $3)) [$2;snd $3] }
  | postfix_expr TInc          { mk_e(Postfix ($1, Inc)) [$2] }
@@ -544,10 +543,22 @@ primary_expr:
 
 
 /*(* cppext: *)*/
+argument_ne: 
+ | assign_expr { Left $1 }
+ | parameter_decl { Right (ArgType $1)  }
+ | action_higherordermacro_ne { Right (ArgAction $1) }
+
 argument: 
  | assign_expr { Left $1 }
  | parameter_decl { Right (ArgType $1)  }
  | action_higherordermacro { Right (ArgAction $1) }
+
+action_higherordermacro_ne: 
+ | taction_list_ne 
+     { if null $1
+       then ActMisc [Ast_c.fakeInfo()]
+       else ActMisc $1
+     }
 
 action_higherordermacro: 
  | taction_list 
@@ -703,10 +714,10 @@ iteration:
      }
 *)*/
  /*(* cppext: *)*/
- | TMacroIterator TOPar argument_list TCPar statement
+ | TMacroIterator TOPar argument_list_ne TCPar statement
      { MacroIteration (fst $1, $3, $5), [snd $1;$2;$4] }
-/* | TMacroIterator TOPar TCPar statement (* no need - arg list can be empty *)
-     { MacroIteration (fst $1, [], $4), [snd $1;$2;$3] } */
+ | TMacroIterator TOPar TCPar statement
+     { MacroIteration (fst $1, [], $4), [snd $1;$2;$3] }
 
 /*(* the ';' in the caller grammar rule will be appended to the infos *)*/
 jump: 
@@ -1244,6 +1255,10 @@ colon_option_list:
 
 
 
+argument_list_ne: 
+ | argument_ne                           { [$1, []] }
+ | argument_list_ne TComma argument { $1 ++ [$3,    [$2]] }
+
 argument_list: 
  | argument                           { [$1, []] }
  | argument_list TComma argument { $1 ++ [$3,    [$2]] }
@@ -1279,8 +1294,12 @@ parameter_list:
  | parameter_decl                       { [$1, []] }
  | parameter_list TComma parameter_decl { $1 ++ [$3,  [$2]] }
 
+taction_list_ne: 
+ | TAction                 { [$1] }
+ | TAction taction_list_ne { $1 :: $2 }
+
 taction_list: 
- | /*(* empty *)*/ { [] }
+ |                      { [] }
  | TAction taction_list { $1 :: $2 }
 
 param_define_list: 
