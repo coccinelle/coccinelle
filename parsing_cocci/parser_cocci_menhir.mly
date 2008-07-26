@@ -789,13 +789,13 @@ statement:
 
 stm_dots:
   TEllipsis w=list(whenppdecs)
-    { Ast0.wrap(Ast0.Dots(P.clt2mcode "..." $1, w)) }
+    { Ast0.wrap(Ast0.Dots(P.clt2mcode "..." $1, List.concat w)) }
 | TOEllipsis w=list(whenppdecs) b=nest_start c=TCEllipsis
     { Ast0.wrap(Ast0.Nest(P.clt2mcode "<..." $1, b,
-			  P.clt2mcode "...>" c, w, false)) }
+			  P.clt2mcode "...>" c, List.concat w, false)) }
 | TPOEllipsis w=list(whenppdecs) b=nest_start c=TPCEllipsis
     { Ast0.wrap(Ast0.Nest(P.clt2mcode "<+..." $1, b,
-			  P.clt2mcode "...+>" c, w, true)) }
+			  P.clt2mcode "...+>" c, List.concat w, true)) }
 
 whenppdecs: w=whens(when_start,rule_elem_statement)
     { w }
@@ -1642,13 +1642,16 @@ edots_when(dotter,when_grammar):
 
 dots_when(dotter,when_grammar,simple_when_grammar):
     d=dotter w=list(whens(when_grammar,simple_when_grammar))
-      { (d,w) }
+      { (d,List.concat w) }
 
 whens(when_grammar,simple_when_grammar):
-    TWhen TNotEq w=when_grammar TLineEnd { Ast0.WhenNot w }
-  | TWhen TEq w=simple_when_grammar TLineEnd { Ast0.WhenAlways w }
-  | TWhen TAny TLineEnd { Ast0.WhenAny }
-  | TWhen TStrict TLineEnd { Ast0.WhenStrict }
+    TWhen TNotEq w=when_grammar TLineEnd { [Ast0.WhenNot w] }
+  | TWhen TEq w=simple_when_grammar TLineEnd { [Ast0.WhenAlways w] }
+  | TWhen comma_list(any_strict) TLineEnd { $2 }
+
+any_strict:
+    TAny    { Ast0.WhenAny }
+  | TStrict { Ast0.WhenStrict }
 
 /*****************************************************************************
 *
