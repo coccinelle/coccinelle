@@ -629,10 +629,10 @@ end_labeled:
 
 
 
-compound: TOBrace tobrace compound2 TCBrace tcbrace { $3 [$1; $4  }
+compound: tobrace compound2 tcbrace { $2, [$1; $3]  }
 
-tobrace:                             {  LP.new_scope () }
-tcbrace:                             {  LP.del_scope () }
+tobrace:  TOBrace                    {  LP.new_scope (); $1 }
+tcbrace:  TCBrace                    {  LP.del_scope (); $1 }
 
 /*(* old:
 compound2: 
@@ -1224,7 +1224,7 @@ statement_list:
 
 stat_or_decl_list: 
  | stat_or_decl { [$1] }
- | end_labeled  { [$1] }
+ | end_labeled  { [Labeled      (fst $1), snd $1] }
  | stat_or_decl stat_or_decl_list { $1 :: $2 }
 
 
@@ -1401,7 +1401,7 @@ external_declaration:
 
 function_definition: function_def    { fixFunc $1 }
 
-function_def: start_fun attributes compound { LP.del_scope(); ($1, $2, $3) }
+function_def: start_fun attributes compound { LP.del_scope(); ($1, $3) }
 
 start_fun: start_fun2                        
   { LP.new_scope(); 
