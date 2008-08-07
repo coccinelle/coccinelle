@@ -4,8 +4,8 @@ int main() {
 }
 
 int main() { 
-	h(1); 
-	h(2); 
+	g(1); 
+	g(2); 
 }
 
 
