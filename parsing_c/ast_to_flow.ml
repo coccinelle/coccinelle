@@ -945,7 +945,8 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
   | Ast_c.Decl decl, ii -> 
      let s = 
        match decl with
-       | (Ast_c.DeclList ([(Some ((s, _),_), typ, sto), _], _)) -> "decl:" ^ s
+       | (Ast_c.DeclList ([(Some ((s, _),_), typ, sto, _), _], _)) ->
+	   "decl:" ^ s
        | _ -> "decl_novar_or_multivar"
      in
             

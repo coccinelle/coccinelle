@@ -56,6 +56,7 @@ let process_all_files files out =
 
 let _ =
   let arg = List.hd(List.tl(Array.to_list Sys.argv)) in
+  Printf.printf "arg %s\n" arg;
   let arg = Filename.chop_extension arg in
   let files = get_files arg in
   process_all_files files arg;

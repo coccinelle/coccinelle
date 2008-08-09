@@ -1,6 +1,6 @@
 
 type namedef = 
-  | VarOrFunc of string * Ast_c.fullType
+  | VarOrFunc of string * Ast_c.exp_type
   | TypeDef   of string * Ast_c.fullType
   | StructUnionNameDef of 
       string * (Ast_c.structUnion * Ast_c.structType) Ast_c.wrap

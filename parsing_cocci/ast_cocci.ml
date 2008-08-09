@@ -70,6 +70,8 @@ and metavar =
       arity * meta_name (* name *) * Type_cocci.typeC list option
   | MetaIdExpDecl of
       arity * meta_name (* name *) * Type_cocci.typeC list option
+  | MetaLocalIdExpDecl of
+      arity * meta_name (* name *) * Type_cocci.typeC list option
   | MetaExpListDecl of arity * meta_name (*name*) * meta_name option (*len*)
   | MetaStmDecl of arity * meta_name (* name *)
   | MetaStmListDecl of arity * meta_name (* name *)
@@ -158,7 +160,7 @@ and base_expression =
   | UniqueExp      of expression
 
 (* ANY = int E; ID = idexpression int X; CONST = constant int X; *)
-and form = ANY | ID | CONST (* form for MetaExp *)
+and form = ANY | ID | LocalID | CONST (* form for MetaExp *)
 
 and expression = base_expression wrap
 
@@ -581,6 +583,7 @@ let get_meta_name = function
   | MetaErrDecl(ar,nm) -> nm
   | MetaExpDecl(ar,nm,ty) -> nm
   | MetaIdExpDecl(ar,nm,ty) -> nm
+  | MetaLocalIdExpDecl(ar,nm,ty) -> nm
   | MetaExpListDecl(ar,nm,nm1) -> nm
   | MetaStmDecl(ar,nm) -> nm
   | MetaStmListDecl(ar,nm) -> nm

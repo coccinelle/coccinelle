@@ -339,7 +339,7 @@ let mk_e e ii = ((e, Ast_c.noType()), ii)
 %token <(string * Ast_c.isWchar) * Ast_c.info>   TChar
 %token <(string * Ast_c.isWchar) * Ast_c.info>   TString
 
-%token <string * Ast_c.info> TIdent TypedefIdent TAttr
+%token <string * Ast_c.info> TIdent TypedefIdent
 
 
 /*
@@ -582,7 +582,6 @@ ident:
 
 identifier:
  | TIdent       { $1 }
- | TAttr        { $1 }
 
 /*(* would like evalInt $1 but require too much info *)*/
 const_expr: cond_expr { $1  }
@@ -669,7 +668,7 @@ compound2:
  | stat_or_decl_list { $1 }
 
 stat_or_decl: 
- | decl      { Decl $1, [] }
+ | decl      { Decl ($1 Ast_c.LocalVar), [] }
  | statement { $1 }
 
   /*(* cppext: if -ifdef_to_if is enabled for parsing_hack *)*/
@@ -765,13 +764,15 @@ asm_expr: assign_expr { $1 }
 
 decl2: 
  | decl_spec TPtVirg
-     { let (returnType,storage) = fixDeclSpecForDecl $1 in 
+     { function local ->
+       let (returnType,storage) = fixDeclSpecForDecl $1 in 
        let iistart = Ast_c.fakeInfo () in
-       DeclList ([(None, returnType, unwrap storage),[]],  
+       DeclList ([(None, returnType, unwrap storage, local),[]],  
                 ($2::iistart::snd storage))
      } 
  | decl_spec init_declarator_list TPtVirg 
-     { let (returnType,storage) = fixDeclSpecForDecl $1 in
+     { function local ->
+       let (returnType,storage) = fixDeclSpecForDecl $1 in
        let iistart = Ast_c.fakeInfo () in
        DeclList (
          ($2 +> List.map (fun ((((s,iis),f), ini), iivirg) -> 
@@ -782,7 +783,7 @@ decl2:
            in
 	   if fst (unwrap storage) = StoTypedef 
 	   then LP.add_typedef s;
-           (Some ((s, ini), iis::iini), f returnType, unwrap storage),
+           (Some ((s, ini), iis::iini), f returnType, unwrap storage, local),
            iivirg 
          )
          ),  ($3::iistart::snd storage))
@@ -790,11 +791,14 @@ decl2:
  /*(* cppext: *)*/
 
  | TMacroDecl TOPar argument_list TCPar TPtVirg 
-     { MacroDecl ((fst $1, $3), [snd $1;$2;$4;$5;fakeInfo()]) }
+     { function _ ->
+       MacroDecl ((fst $1, $3), [snd $1;$2;$4;$5;fakeInfo()]) }
  | Tstatic TMacroDecl TOPar argument_list TCPar TPtVirg 
-     { MacroDecl ((fst $2, $4), [snd $2;$3;$5;$6;fakeInfo();$1]) }
+     { function _ ->
+       MacroDecl ((fst $2, $4), [snd $2;$3;$5;$6;fakeInfo();$1]) }
  | Tstatic TMacroDeclConst TMacroDecl TOPar argument_list TCPar TPtVirg 
-     { MacroDecl ((fst $3, $5), [snd $3;$4;$6;$7;fakeInfo();$1;$2])}
+     { function _ ->
+       MacroDecl ((fst $3, $5), [snd $3;$4;$6;$7;fakeInfo();$1;$2])}
 
 
 
@@ -1389,7 +1393,7 @@ cpp_directive:
 define_val: 
  | expr      { DefineExpr $1 }
  | statement { DefineStmt $1 }
- | decl      { DefineStmt (Decl $1, []) }
+ | decl      { DefineStmt (Decl ($1 Ast_c.NotLocalVar), []) }
  | TypedefIdent { DefineType (nQ,(TypeName(fst $1,noTypedefDef()),[snd $1]))}
  | function_definition { DefineFunction $1 }
 
@@ -1416,11 +1420,11 @@ param_define:
 
 external_declaration: 
  | function_definition               { Definition $1 }
- | decl                              { Declaration $1 }
+ | decl                              { Declaration ($1 Ast_c.NotLocalVar) }
 
 function_definition: function_def    { fixFunc $1 }
 
-function_def: start_fun attributes compound { LP.del_scope(); ($1, $3) }
+function_def: start_fun compound { LP.del_scope(); ($1, $2) }
 
 start_fun: start_fun2                        
   { LP.new_scope(); 
@@ -1433,11 +1437,6 @@ start_fun2: decl_spec declaratorfd
      { let (returnType,storage) = fixDeclSpecForFuncDef $1 in
        (fst $2, fixOldCDecl ((snd $2) returnType) , storage) 
      }
-
-attributes:
-  /* empty */                                   { [] }
-| TAttr attributes                              { [] }
-| TAttr TOPar argument_list TCPar attributes    { [] }
 
 celem: 
  | external_declaration                         { $1 }

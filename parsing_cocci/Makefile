@@ -17,7 +17,7 @@ get_constants.ml get_constants2.ml parse_cocci.ml
 LIBS=../commons/commons.cma ../globals/globals.cma
 SYSLIBS = str.cma unix.cma
 
-INCLUDE_PATH = -I ../commons -I ../globals
+INCLUDE_PATH = -I ../commons -I ../commons/ocamlextra -I ../globals
 
 
 # The Caml compilers.

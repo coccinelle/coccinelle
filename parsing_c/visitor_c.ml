@@ -334,7 +334,7 @@ and vk_decl = fun bigf d ->
           );
 
         
-  and aux ((var, t, sto), iicomma) = 
+  and aux ((var, t, _sto, _local), iicomma) = 
     iif iicomma;
     vk_type bigf t;
     var +> do_option (fun ((s, ini), ii_s_ini) -> 
@@ -887,14 +887,14 @@ and vk_decl_s = fun bigf d ->
           iif ii)
 
 
-  and aux ((var, t, sto), iicomma) = 
+  and aux ((var, t, sto, local), iicomma) = 
     ((var +> map_option (fun ((s, ini), ii_s_ini) -> 
       (s, ini +> map_option (fun init -> vk_ini_s bigf init)),
       iif ii_s_ini
     )
     ),
     vk_type_s bigf t, 
-    sto),
+    sto, local),
   iif iicomma
 
   in f (k, bigf) d 

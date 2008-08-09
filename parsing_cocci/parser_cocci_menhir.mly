@@ -40,7 +40,7 @@ module P = Parse_aux
 %token <Parse_aux.expinfo>    TMetaErr 
 %token <Parse_aux.info>       TMetaParam TMetaStm TMetaStmList TMetaType
 %token <Parse_aux.list_info>  TMetaParamList TMetaExpList
-%token <Parse_aux.typed_info> TMetaExp TMetaIdExp TMetaConst
+%token <Parse_aux.typed_info> TMetaExp TMetaIdExp TMetaLocalIdExp TMetaConst
 %token <Parse_aux.pos_info>   TMetaPos
 
 %token TArob TArobArob TPArob
@@ -331,15 +331,25 @@ metadec:
     { (fun arity name pure check_meta constraints ->
       let tok = check_meta(Ast.MetaErrDecl(arity,name)) in
       !Data.add_err_meta name constraints pure; tok) }
-| TIdExpression ty=ioption(meta_exp_type)
+| l=option(TLocal) TIdExpression ty=ioption(meta_exp_type)
     { (fun arity name pure check_meta constraints ->
-      let tok = check_meta(Ast.MetaExpDecl(arity,name,ty)) in
-      !Data.add_idexp_meta ty name constraints pure; tok) }
-| TIdExpression m=nonempty_list(TMul)
+      match l with
+	None ->
+	  !Data.add_idexp_meta ty name constraints pure;
+	  check_meta(Ast.MetaIdExpDecl(arity,name,ty))
+      | Some _ ->
+	  !Data.add_local_idexp_meta ty name constraints pure;
+	  check_meta(Ast.MetaLocalIdExpDecl(arity,name,ty))) }
+| l=option(TLocal) TIdExpression m=nonempty_list(TMul)
     { (fun arity name pure check_meta constraints ->
       let ty = Some [P.ty_pointerify Type_cocci.Unknown m] in
-      let tok = check_meta(Ast.MetaIdExpDecl(arity,name,ty)) in
-      !Data.add_idexp_meta ty name constraints pure; tok) }
+      match l with
+	None ->
+	  !Data.add_idexp_meta ty name constraints pure;
+	  check_meta(Ast.MetaIdExpDecl(arity,name,ty))
+      | Some _ ->
+	  !Data.add_local_idexp_meta ty name constraints pure;
+	  check_meta(Ast.MetaLocalIdExpDecl(arity,name,ty))) }
 | TExpression m=nonempty_list(TMul)
     { (fun arity name pure check_meta constraints ->
       let ty = Some [P.ty_pointerify Type_cocci.Unknown m] in
@@ -1253,6 +1263,10 @@ primary_expr(recurser,primary_extra):
      { let (nm,constraints,pure,ty,clt) = $1 in
      Ast0.wrap
        (Ast0.MetaExpr(P.clt2mcode nm clt,constraints,ty,Ast.ID,pure)) }
+ | TMetaLocalIdExp
+     { let (nm,constraints,pure,ty,clt) = $1 in
+     Ast0.wrap
+       (Ast0.MetaExpr(P.clt2mcode nm clt,constraints,ty,Ast.LocalID,pure)) }
  | TOPar eexpr TCPar
      { Ast0.wrap(Ast0.Paren(P.clt2mcode "(" $1,$2,
 			    P.clt2mcode ")" $3)) }

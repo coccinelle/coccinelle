@@ -7,6 +7,7 @@
 #include <errno.h>
 #include <sys/time.h>
 #include <signal.h>
+#include <string.h>
 
 #define MAX 9
 
@@ -47,7 +48,8 @@ void exit_sighandler(int x) {
   exit(0);
 }
 
-void do_child(int sem, int id, unsigned int argc, char **argv, int max) {
+void do_child(int sem, int id, unsigned int argc, char **argv, int max,
+	      char *script) {
   int pid,status;
   if (!(pid=fork())) {
     // child
@@ -66,7 +68,7 @@ void do_child(int sem, int id, unsigned int argc, char **argv, int max) {
     new_args[4] = "-max";
     sprintf(string2, "%d", max);
     new_args[5] = string2;
-    execvp(HOME "spatch_linux_script",new_args);
+    execvp(script,new_args);
     printf("tried to execute %s\n",HOME "spatch_linux_script");
     perror("exec failure");
     exit(0);
@@ -86,6 +88,7 @@ void cleanup(char **argv) {
 
 int main(unsigned int argc, char **argv) {
   int pid, i, start=0, max;
+  char script[150];
   // initialize the semaphore
   sem = semget(0,1/* only one sem */,(IPC_CREAT|0666));
   if (sem < 0) { perror("semget"); exit(0); }
@@ -97,6 +100,11 @@ int main(unsigned int argc, char **argv) {
   // interpret the arguments
   max = MAX;
   if (!strcmp(argv[1],"-processes")) {max = atoi(argv[2]); start = 2;}
+  if (!strcmp(argv[1],"-script")) {
+    strcpy(script,HOME);
+    strcat(script,argv[2]);
+    start = 2;
+  } else strcpy(script,HOME "spatch_linux_script");
   if (!strcmp(argv[1],"--help")) {
     printf("spatch_linux [-processes n] foo.cocci ...\n");
     exit (0);
@@ -108,7 +116,7 @@ int main(unsigned int argc, char **argv) {
   for(i=0;i!=max;i++) {
     if (!(pid=fork())) {
       // child
-      do_child(sem,i,argc-start,&argv[start],max);
+      do_child(sem,i,argc-start,&argv[start],max,script);
       exit(0);
     }
   }

@@ -77,7 +77,7 @@ let pr2 s =
  * the string, the structUnion and the structType
  *)
 type namedef = 
-  | VarOrFunc of string * fullType
+  | VarOrFunc of string * Ast_c.exp_type
   | TypeDef of string * fullType
   | StructUnionNameDef of string * (structUnion * structType) wrap
   (* todo: EnumConstant *)
@@ -87,7 +87,8 @@ type namedef =
 type environment = namedef list list 
 
 let initial_env = [
-  [VarOrFunc ("NULL", Lib.al_type (Parse_c.type_of_string "void *"))]
+  [VarOrFunc("NULL",(Lib.al_type (Parse_c.type_of_string "void *"),
+		     Ast_c.NotLocalVar))]
 ]
 
 
@@ -321,8 +322,12 @@ let do_in_new_scope f =
 let add_in_scope namedef =
   let (current, older) = Common.uncons !_scoped_env in
   _scoped_env := (namedef::current)::older
-  
-  
+
+(* sort of hackish... *)
+let islocal _ =
+  if List.length (!_scoped_env) = List.length initial_env
+  then Ast_c.NotLocalVar
+  else Ast_c.LocalVar
 
 (* the warning argument is here to allow some binding to overwrite an 
  * existing one. With function, we first have the protype and then the def
@@ -362,14 +367,14 @@ let add_binding namedef warning =
 (*****************************************************************************)
 
 let type_of_s s = 
-  Lib.al_type (Parse_c.type_of_string s)
+  (Lib.al_type (Parse_c.type_of_string s), Ast_c.NotLocalVar)
 
 let noTypeHere = None 
 
 let do_with_type f t = 
   match t with
   | None -> None
-  | Some t -> 
+  | Some (t,_local) -> 
       f t
 
   
@@ -399,7 +404,8 @@ let rec (annotate_program2 :
         | Constant (Int (s)) ->          Some (type_of_s "int")
         | Constant (Float (s,kind)) -> 
             let iinull = [] in
-            Some (Ast_c.nQ, (BaseType (FloatType kind), iinull))
+            Some ((Ast_c.nQ, (BaseType (FloatType kind), iinull)),
+		  Ast_c.NotLocalVar)
 
         (* don't want a warning on the Ident that are a FunCall *)
         | FunCall (((Ident f, typ), ii), args) -> 
@@ -410,8 +416,8 @@ let rec (annotate_program2 :
             
         | Ident (s) -> 
           (match (Common.optionise (fun () -> lookup_var s !_scoped_env)) with
-          | Some (typ,_nextenv) -> 
-              Some (typedef_fix typ !_scoped_env)
+          | Some ((typ,local),_nextenv) -> 
+              Some ((typedef_fix typ !_scoped_env),local)
           | None  -> 
               if not (s =~ "[A-Z_]+") (* if macro then no warning *)
               then 
@@ -430,7 +436,7 @@ let rec (annotate_program2 :
             match Ast_c.unwrap_typeC (type_unfold_one_step t !_scoped_env) with
             | Pointer x  
             | Array (_, x) -> 
-                Some (typedef_fix x !_scoped_env)
+                Some ((typedef_fix x !_scoped_env),Ast_c.NotLocalVar)
             | _ -> noTypeHere
           )
 
@@ -440,7 +446,9 @@ let rec (annotate_program2 :
             | StructUnion (su, sopt, fields) -> 
                 (try 
                   (* todo: which env ? *)
-                  Some (typedef_fix (type_field fld (su, fields)) !_scoped_env)
+                  Some
+		    ((typedef_fix (type_field fld (su, fields)) !_scoped_env),
+		     Ast_c.NotLocalVar)
                 with Not_found -> 
                   pr2 
                     ("TYPE-ERROR: field '" ^ fld ^ "' does not belong in" ^
@@ -460,7 +468,9 @@ let rec (annotate_program2 :
               | StructUnion (su, sopt, fields) -> 
                 (try 
                   (* todo: which env ? *)
-                  Some (typedef_fix (type_field fld (su, fields)) !_scoped_env)
+                  Some
+		    ((typedef_fix (type_field fld (su, fields)) !_scoped_env),
+		     Ast_c.NotLocalVar)
                  with Not_found -> 
                   pr2 
                     ("TYPE-ERROR: field '" ^ fld ^ "' does not belong in" ^
@@ -475,7 +485,7 @@ let rec (annotate_program2 :
           )
         | Cast (t, e) -> 
             (* todo: add_types_expr [t] e ? *)
-            Some (typedef_fix (Lib.al_type t) !_scoped_env)
+            Some ((typedef_fix (Lib.al_type t) !_scoped_env),Ast_c.NotLocalVar)
 
          (* todo: check e2 ? *)
         | Assignment (e1, op, e2) -> 
@@ -498,7 +508,7 @@ let rec (annotate_program2 :
     Visitor_c.kdecl = (fun (k, bigf) d -> 
       (match d with
       | (DeclList (xs, ii)) -> 
-          xs +> List.iter (fun ((var, t, sto), iicomma) -> 
+          xs +> List.iter (fun ((var, t, sto, local), iicomma) -> 
 
             (* to add possible definition in type found in Decl *)
             Visitor_c.vk_type bigf t;
@@ -508,7 +518,7 @@ let rec (annotate_program2 :
               | StoTypedef, _inline -> 
                   add_binding (TypeDef (s,Lib.al_type t)) true;
               | _ -> 
-                  add_binding (VarOrFunc (s, Lib.al_type t)) true;
+                  add_binding (VarOrFunc (s, (Lib.al_type t, local))) true;
                   (* int x = sizeof(x) is legal so need process ini *)
                   ini +> Common.do_option (fun ini -> 
                     Visitor_c.vk_ini bigf ini);
@@ -548,11 +558,13 @@ let rec (annotate_program2 :
           in
           let typ' = Lib.al_type (Ast_c.nQ, (FunctionType ftyp, [i1;i2])) in
 
-          add_binding (VarOrFunc (funcs, typ')) false;
+          add_binding (VarOrFunc (funcs, (typ',islocal()))) false;
           do_in_new_scope (fun () -> 
             paramst +> List.iter (fun (((b, s, t), _),_) -> 
               match s with 
-              | Some s -> add_binding (VarOrFunc (s,Lib.al_type t)) true
+              | Some s ->
+		  add_binding (VarOrFunc (s,(Lib.al_type t,Ast_c.LocalVar)))
+		    true
               | None -> pr2 "no type, certainly because Void type ?"
             );
             k elem

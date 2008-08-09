@@ -3,6 +3,8 @@
 setenv PYTHONPATH ${HOME}/coccinelle
 setenv LD_LIBRARY_PATH ${HOME}/coccinelle
 
-(~/coccinelle/spatch.opt -allow_inconsistent_paths -quiet -timeout 120 \
+#  -allow_inconsistent_paths
+
+(~/coccinelle/spatch.opt -quiet -timeout 120 \
 -dir /home/julia/linux-2.6 -use_glimpse -cocci_file $* > ${1:r}.${3}.out) \
 >& tmp.${1:r}.${3}.out

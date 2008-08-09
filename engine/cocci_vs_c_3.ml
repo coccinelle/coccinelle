@@ -400,13 +400,14 @@ let initialisation_to_affectation decl =
       (match xs with
       | [] -> raise Impossible
       | [x] -> 
-          let ((var, returnType, storage),iisep) = x in
+          let ((var, returnType, storage, local),iisep) = x in
           
           (match var with
           | Some ((s, ini),  iis::iini) -> 
               (match ini with
               | Some (B.InitExpr e, ii_empty2) -> 
-                  let typ = ref (Some (Lib_parsing_c.al_type returnType)) in
+                  let typ =
+		    ref (Some ((Lib_parsing_c.al_type returnType),local)) in
                   let id = (B.Ident s, typ),[iis] in
                   F.DefineExpr
                     ((B.Assignment (id, B.SimpleAssign, e), 
@@ -601,6 +602,10 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
 
       (* old: before have a MetaConst. Now we factorize and use 'form' to 
        * differentiate between different cases *)
+      let rec matches_id = function
+	  B.Ident(c) -> true
+	| B.Cast(ty,e) -> matches_id (B.unwrap_expr e)
+	| _ -> false in
       let form_ok =
 	match (form,expr) with
 	  (A.ANY,_) -> true
@@ -616,12 +621,12 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
 	      | B.SizeOfType(ty) -> true
 	      | _ -> false in
 	    matches e
-	| (A.ID,e) ->
-	    let rec matches = function
-		B.Ident(c) -> true
-	      | B.Cast(ty,e) -> matches (B.unwrap_expr e)
-	      | _ -> false in
-	    matches e in
+	| (A.LocalID,e) ->
+	    (matches_id e) &&
+	    (match !opttypb with
+	      Some (_,Ast_c.LocalVar) -> true
+	    | _ -> false)
+	| (A.ID,e) -> matches_id e in
 
       if form_ok
       then
@@ -1571,7 +1576,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
   * T { }; that we want to match against typedef struct { } xx_t;
   *)
  | A.TyDecl (tya0, ptvirga), 
-   ((Some ((idb, None),[iidb]), typb0, (B.StoTypedef, inl)), iivirg)  ->
+   ((Some ((idb, None),[iidb]), typb0, (B.StoTypedef, inl), local), iivirg) ->
 
    (match A.unwrap tya0, typb0 with
    | A.Type(cv1,tya1), ((qu,il),typb1) ->
@@ -1629,7 +1634,8 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
 
                      return (
                      (A.TyDecl (tya0, ptvirga)) +> A.rewrap decla,
-                     (((Some ((idb, None),[iidb]), typb0, (B.StoTypedef, inl)),
+                     (((Some ((idb, None),[iidb]), typb0, (B.StoTypedef, inl),
+			local),
                        iivirg),iiptvirgb,iistob)
                      )
 		 | _ -> raise Impossible    
@@ -1652,7 +1658,8 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
                
                    return (
                      (A.TyDecl (tya0, ptvirga)) +> A.rewrap decla,
-                     (((Some ((idb, None),[iidb]), typb0, (B.StoTypedef, inl)),
+                     (((Some ((idb, None),[iidb]), typb0,
+			(B.StoTypedef, inl), local),
                       iivirg),iiptvirgb,iistob)
                    )
                | _ -> raise Impossible    
@@ -1667,18 +1674,18 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
    )
          
    | A.UnInit (stoa, typa, ida, ptvirga), 
-     ((Some ((idb, _),[iidb]), typb, (B.StoTypedef,_)), iivirg) -> 
+     ((Some ((idb, _),[iidb]), typb, (B.StoTypedef,_), _local), iivirg) -> 
        fail
 
    | A.Init (stoa, typa, ida, eqa, inia, ptvirga), 
-     ((Some ((idb, _),[iidb]), typb, (B.StoTypedef,_)), iivirg) -> 
+     ((Some ((idb, _),[iidb]), typb, (B.StoTypedef,_), _local), iivirg) -> 
        fail
 
 
 
     (* could handle iso here but handled in standard.iso *)
    | A.UnInit (stoa, typa, ida, ptvirga), 
-     ((Some ((idb, None),[iidb]), typb, stob), iivirg) -> 
+     ((Some ((idb, None),[iidb]), typb, stob, local), iivirg) -> 
        tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb -> 
        fullType typa typb >>= (fun typa typb -> 
        ident DontKnow ida (idb, iidb) >>= (fun ida (idb, iidb) -> 
@@ -1686,11 +1693,12 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
         (fun stoa (stob, iistob) -> 
          return (
            (A.UnInit (stoa, typa, ida, ptvirga)) +>  A.rewrap decla,
-           (((Some ((idb,None),[iidb]),typb,stob),iivirg),iiptvirgb,iistob)
+           (((Some ((idb,None),[iidb]),typb,stob,local),iivirg),
+	    iiptvirgb,iistob)
          )))))
 
    | A.Init (stoa, typa, ida, eqa, inia, ptvirga), 
-     ((Some((idb,Some inib),[iidb;iieqb]),typb,stob),iivirg)
+     ((Some((idb,Some inib),[iidb;iieqb]),typb,stob,local),iivirg)
        ->
        tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb -> 
        tokenf eqa iieqb >>= (fun eqa iieqb -> 
@@ -1701,25 +1709,25 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
        initialiser inia inib >>= (fun inia inib -> 
          return (
            (A.Init (stoa, typa, ida, eqa, inia, ptvirga)) +> A.rewrap decla,
-           (((Some((idb,Some inib),[iidb;iieqb]),typb,stob),iivirg),
+           (((Some((idb,Some inib),[iidb;iieqb]),typb,stob,local),iivirg),
            iiptvirgb,iistob)
          )))))))
            
    (* do iso-by-absence here ? allow typedecl and var ? *)
-   | A.TyDecl (typa, ptvirga), ((None, typb, stob), iivirg)  ->
+   | A.TyDecl (typa, ptvirga), ((None, typb, stob, local), iivirg)  ->
        if stob = (B.NoSto, false)
        then
          tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb -> 
          fullType typa typb >>= (fun typa typb -> 
            return (
              (A.TyDecl (typa, ptvirga)) +> A.rewrap decla,
-             (((None, typb, stob), iivirg), iiptvirgb, iistob)
+             (((None, typb, stob, local), iivirg), iiptvirgb, iistob)
            )))
        else fail
 
 
    | A.Typedef (stoa, typa, ida, ptvirga), 
-     ((Some ((idb, None),[iidb]), typb, (B.StoTypedef,inline)), iivirg) -> 
+     ((Some ((idb, None),[iidb]),typb,(B.StoTypedef,inline),local),iivirg) ->
 
        tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb -> 
        fullType typa typb >>= (fun typa typb -> 
@@ -1757,13 +1765,14 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
        ) >>= (fun ida (idb, iidb) ->
          return (
            (A.Typedef (stoa, typa, ida, ptvirga)) +> A.rewrap decla,
-           (((Some ((idb, None),[iidb]), typb, (B.StoTypedef,inline)), iivirg),
+           (((Some ((idb, None),[iidb]), typb, (B.StoTypedef,inline),local),
+	     iivirg),
             iiptvirgb, iistob)
          )
        ))))
              
        
-   | _, ((None, typb, sto), _) -> 
+   | _, ((None, typb, sto, _local), _) -> 
        (* old:   failwith "no variable in this declaration, wierd" *)
        fail
 
@@ -2058,13 +2067,14 @@ and (struct_field: (A.declaration, B.field B.wrap) matcher) = fun fa fb ->
           let iisto = [] in
           let stob = B.NoSto, false in
           let fake_var = 
-            ((Some ((idb, None),[iidb]), typb, stob), iivirg)            
+            ((Some ((idb, None),[iidb]), typb, stob, Ast_c.NotLocalVar),
+	     iivirg)            
           in
           onedecl allminus fa (fake_var,iiptvirgb,iisto) >>= 
             (fun fa (var,iiptvirgb,iisto) -> 
 
               match fake_var with
-              | ((Some ((idb, None),[iidb]), typb, stob), iivirg) -> 
+              | ((Some ((idb, None),[iidb]), typb, stob, local), iivirg) -> 
                   let onevar = B.Simple (Some idb, typb), [iidb] in
                   
                   return (
@@ -2586,95 +2596,98 @@ and fullType_optional_allminus allminus tya retb =
 
 
 (*---------------------------------------------------------------------------*)
-and compatible_type a b = 
+and compatible_type a (b,_local) = 
   let ok  = return ((),()) in
 
-  match a, b with
-  | Type_cocci.BaseType (a, signa), (qua, (B.BaseType b,ii)) -> 
-      (match a, b with
-      | Type_cocci.VoidType, B.Void -> 
-          assert (signa = None);
-          ok
-      | Type_cocci.CharType, B.IntType B.CChar when signa = None -> 
-          ok
-      | Type_cocci.CharType, B.IntType (B.Si (signb, B.CChar2)) -> 
-          compatible_sign signa signb 
-      | Type_cocci.ShortType, B.IntType (B.Si (signb, B.CShort)) -> 
-          compatible_sign signa signb
-      | Type_cocci.IntType, B.IntType (B.Si (signb, B.CInt)) -> 
-          compatible_sign signa signb
-      | Type_cocci.LongType, B.IntType (B.Si (signb, B.CLong)) -> 
-          compatible_sign signa signb
-      | _, B.IntType (B.Si (signb, B.CLongLong)) -> 
-          pr2_once "no longlong in cocci";
-          fail
-      | Type_cocci.FloatType, B.FloatType B.CFloat -> assert (signa = None); 
-          ok
-      | Type_cocci.DoubleType, B.FloatType B.CDouble -> assert (signa = None); 
-          ok
-      | _, B.FloatType B.CLongDouble -> 
-          pr2_once "no longdouble in cocci";
-          fail
-      | Type_cocci.BoolType, _ -> failwith "no booltype in C"
-      | _ -> fail
-  
+  let rec loop = function
+    | Type_cocci.BaseType (a, signa), (qua, (B.BaseType b,ii)) -> 
+	(match a, b with
+	| Type_cocci.VoidType, B.Void -> 
+            assert (signa = None);
+            ok
+	| Type_cocci.CharType, B.IntType B.CChar when signa = None -> 
+            ok
+	| Type_cocci.CharType, B.IntType (B.Si (signb, B.CChar2)) -> 
+            compatible_sign signa signb 
+	| Type_cocci.ShortType, B.IntType (B.Si (signb, B.CShort)) -> 
+            compatible_sign signa signb
+	| Type_cocci.IntType, B.IntType (B.Si (signb, B.CInt)) -> 
+            compatible_sign signa signb
+	| Type_cocci.LongType, B.IntType (B.Si (signb, B.CLong)) -> 
+            compatible_sign signa signb
+	| _, B.IntType (B.Si (signb, B.CLongLong)) -> 
+            pr2_once "no longlong in cocci";
+            fail
+	| Type_cocci.FloatType, B.FloatType B.CFloat ->
+	    assert (signa = None); 
+            ok
+	| Type_cocci.DoubleType, B.FloatType B.CDouble ->
+	    assert (signa = None); 
+            ok
+	| _, B.FloatType B.CLongDouble -> 
+            pr2_once "no longdouble in cocci";
+            fail
+	| Type_cocci.BoolType, _ -> failwith "no booltype in C"
+	| _ -> fail
+	      
       )
-  | Type_cocci.Pointer  a, (qub, (B.Pointer b, ii)) -> 
-      compatible_type a b
-  | Type_cocci.FunctionPointer a, _ ->
-      failwith
-	"TODO: function pointer type doesn't store enough information to determine compatability"
-  | Type_cocci.Array   a, (qub, (B.Array (eopt, b),ii)) ->
+    | Type_cocci.Pointer  a, (qub, (B.Pointer b, ii)) -> 
+	loop (a,b)
+    | Type_cocci.FunctionPointer a, _ ->
+	failwith
+	  "TODO: function pointer type doesn't store enough information to determine compatability"
+    | Type_cocci.Array   a, (qub, (B.Array (eopt, b),ii)) ->
       (* no size info for cocci *)
-      compatible_type a b
-  | Type_cocci.StructUnionName (sua, _, sa),
-      (qub, (B.StructUnionName (sub, sb),ii)) -> 
-      if equal_structUnion_type_cocci sua sub && sa = sb
-      then ok
-      else fail
+	loop (a,b)
+    | Type_cocci.StructUnionName (sua, _, sa),
+	(qub, (B.StructUnionName (sub, sb),ii)) -> 
+	  if equal_structUnion_type_cocci sua sub && sa = sb
+	  then ok
+	  else fail
 
-  | Type_cocci.TypeName sa, (qub, (B.TypeName (sb,_typb), ii)) -> 
-      if sa = sb 
-      then ok
-      else fail
+    | Type_cocci.TypeName sa, (qub, (B.TypeName (sb,_typb), ii)) -> 
+	if sa = sb 
+	then ok
+	else fail
 
-  | Type_cocci.ConstVol (qua, a),      (qub, b) -> 
-      if (fst qub).B.const && (fst qub).B.volatile 
-      then
-	begin
-	  pr2_once ("warning: the type is both const & volatile but cocci " ^
-                    "does not handle that");
-          fail
-      end
-      else 
-        if 
-          (match qua with 
-          | Type_cocci.Const -> (fst qub).B.const
-          | Type_cocci.Volatile -> (fst qub).B.volatile
-          )
-        then compatible_type a (Ast_c.nQ, b)
-        else fail
+    | Type_cocci.ConstVol (qua, a),      (qub, b) -> 
+	if (fst qub).B.const && (fst qub).B.volatile 
+	then
+	  begin
+	    pr2_once ("warning: the type is both const & volatile but cocci " ^
+                      "does not handle that");
+            fail
+	  end
+	else 
+          if 
+            (match qua with 
+            | Type_cocci.Const -> (fst qub).B.const
+            | Type_cocci.Volatile -> (fst qub).B.volatile
+  	    )
+          then loop (a,(Ast_c.nQ, b))
+          else fail
 
-  | Type_cocci.MetaType (ida,keep,inherited),     typb -> 
-      let max_min _ =
-	Lib_parsing_c.lin_col_by_pos (Lib_parsing_c.ii_of_type typb) in
-      X.envf keep inherited (A.make_mcode ida, B.MetaTypeVal typb, max_min)
-	(fun () -> ok
+    | Type_cocci.MetaType (ida,keep,inherited),     typb -> 
+	let max_min _ =
+	  Lib_parsing_c.lin_col_by_pos (Lib_parsing_c.ii_of_type typb) in
+	X.envf keep inherited (A.make_mcode ida, B.MetaTypeVal typb, max_min)
+	  (fun () -> ok
         )
 
   (* subtil: must be after the MetaType case *)
-  | a, (qub, (B.TypeName (sb,Some b), ii)) -> 
+    | a, (qub, (B.TypeName (sb,Some b), ii)) -> 
       (* kind of typedef iso *)
-      compatible_type a b
+	loop (a,b)
 
 
 
 
 
   (* for metavariables of type expression *^* *)
-  | Type_cocci.Unknown , _ -> ok
+    | Type_cocci.Unknown , _ -> ok
 
-  | _ -> fail
+    | _ -> fail in
+  loop (a,b)
 
 and compatible_sign signa signb = 
   let ok  = return ((),()) in

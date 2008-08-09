@@ -67,6 +67,8 @@ and metavar =
       arity * meta_name (* name *) * Type_cocci.typeC list option
   | MetaIdExpDecl of
       arity * meta_name (* name *) * Type_cocci.typeC list option
+  | MetaLocalIdExpDecl of
+      arity * meta_name (* name *) * Type_cocci.typeC list option
   | MetaExpListDecl of arity * meta_name (*name*) * meta_name option (*len*)
   | MetaStmDecl of arity * meta_name (* name *)
   | MetaStmListDecl of arity * meta_name (* name *)
@@ -153,7 +155,7 @@ and base_expression =
   | OptExp         of expression
   | UniqueExp      of expression
 
-and form = ANY | ID | CONST (* form for MetaExp *)
+and form = ANY | ID | LocalID | CONST (* form for MetaExp *)
 
 and expression = base_expression wrap
 

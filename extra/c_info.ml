@@ -78,7 +78,7 @@ let defined_stuff xs =
       | Declaration decl -> 
           (match decl with
           | DeclList (xs, ii) -> 
-              xs +> List.iter (fun ((var, t, sto), iicomma) -> 
+              xs +> List.iter (fun ((var, t, sto, _local), iicomma) -> 
                 Visitor_c.vk_type bigf t;
                 match var, sto with 
                 | None, _ -> ()
@@ -172,7 +172,7 @@ let used_stuff xs =
       k d; (* to add possible definition in type found in Decl *)
       (match d with
       | (DeclList (xs, ii)) -> 
-          xs +> List.iter (fun ((var, t, sto), iicomma) -> 
+          xs +> List.iter (fun ((var, t, sto, _local), iicomma) -> 
             var +> do_option (fun ((s, ini), ii_s_ini) -> 
               match sto with 
               | StoTypedef, _inline -> 

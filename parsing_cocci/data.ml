@@ -73,6 +73,12 @@ let add_idexp_meta:
     ref =
   ref (fun _ -> failwith "uninitialized add_meta") 
 
+let add_local_idexp_meta:
+    (Type_cocci.typeC list option -> Ast.meta_name -> econstraints ->
+      Ast0.pure -> unit)
+    ref =
+  ref (fun _ -> failwith "uninitialized add_meta") 
+
 let add_explist_meta:
     (Ast.meta_name -> Ast.meta_name option -> Ast0.pure -> unit) ref = 
   ref (fun _ -> failwith "uninitialized add_meta") 

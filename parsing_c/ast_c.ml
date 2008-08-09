@@ -187,7 +187,9 @@ and typeQualifierbis = {const: bool; volatile: bool}
 (* ------------------------------------------------------------------------- *)
 (* C expression *)
 (* ------------------------------------------------------------------------- *)
-and expression = (expressionbis * fullType option ref (* semantic: *)) wrap
+and expression = (expressionbis * exp_type option ref (* semantic: *)) wrap
+and local = LocalVar | NotLocalVar
+and exp_type = fullType * local
 and expressionbis = 
 
   (* Ident can be a enumeration constant, a simple variable, a name of a func.
@@ -367,8 +369,7 @@ and declaration =
 
      and onedecl = 
        ((string * initialiser option) wrap (* s = *) option) * 
-         fullType * 
-         storage
+         fullType * storage * local
      and storage       = storagebis * bool (* inline or not, gccext: *)
      and storagebis    = NoSto | StoTypedef | Sto of storageClass
      and storageClass  = Auto  | Static | Register | Extern

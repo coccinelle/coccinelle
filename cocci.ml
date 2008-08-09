@@ -235,7 +235,8 @@ let show_or_not_celem2 prelude celem =
   (match celem with 
   | Ast_c.Definition ((funcs,_,_,_c),_) -> 
       pr2 (prelude ^ " function: " ^ funcs);
-  | Ast_c.Declaration (Ast_c.DeclList ([(Some ((s, _),_), typ, sto), _], _)) ->
+  | Ast_c.Declaration
+      (Ast_c.DeclList ([(Some ((s, _),_), typ, sto, _local), _], _)) ->
       pr2 (prelude ^ " variable " ^ s);
   | _ -> 
       pr2 (prelude ^ " something else");

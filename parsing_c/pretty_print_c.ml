@@ -101,7 +101,13 @@ let rec pp_expression_gen pr_elem pr_space =
     if !Flag_parsing_c.pretty_print_type_info
     then begin
       pr_elem (Ast_c.fakeInfo() +> Ast_c.rewrap_str "/*");
-      !typ +> Common.do_option (fun x -> pp_type_gen pr_elem pr_space x);
+      !typ +>
+      Common.do_option
+	(fun (x,l) -> pp_type_gen pr_elem pr_space x;
+	  let s = match l with
+	    Ast_c.LocalVar -> ", local"
+	  | _ -> "" in
+	  pr_elem (Ast_c.fakeInfo() +> Ast_c.rewrap_str s));
       pr_elem (Ast_c.fakeInfo() +> Ast_c.rewrap_str "*/");
     end
 
@@ -664,7 +670,7 @@ and pp_type_gen pr_elem pr_space t =
 
 (* ---------------------- *)
 and pp_decl_gen pr_elem pr_space = function
-  | DeclList ((((var, returnType, storage),[])::xs), 
+  | DeclList ((((var, returnType, storage, _local),[])::xs), 
              iivirg::ifakestart::iisto) -> 
 
       pr_elem ifakestart;
@@ -686,7 +692,7 @@ and pp_decl_gen pr_elem pr_space = function
 
       (* for other vars, we just call pp_type_with_ident_rest. *)
       xs +> List.iter (function
-      | ((Some ((s, ini), iis::iini), returnType, storage2), iivirg) -> 
+      | ((Some ((s, ini), iis::iini), returnType, storage2, _local), iivirg) ->
           assert (storage2 = storage);
           iivirg +> List.iter pr_elem;
           pp_type_with_ident_rest_gen pr_elem pr_space

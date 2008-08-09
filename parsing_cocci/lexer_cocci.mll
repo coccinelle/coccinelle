@@ -296,6 +296,10 @@ let init _ =
     (fun tyopt name constraints pure ->
       let fn clt = TMetaIdExp(name,constraints,pure,tyopt,clt) in
       Hashtbl.replace metavariables (get_name name) fn);
+  Data.add_local_idexp_meta :=
+    (fun tyopt name constraints pure ->
+      let fn clt = TMetaLocalIdExp(name,constraints,pure,tyopt,clt) in
+      Hashtbl.replace metavariables (get_name name) fn);
   Data.add_explist_meta :=
     (function name -> function lenname -> function pure ->
       let fn clt = TMetaExpList(name,lenname,pure,clt) in
