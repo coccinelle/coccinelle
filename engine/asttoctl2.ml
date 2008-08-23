@@ -1362,7 +1362,8 @@ let rec statement_list stmt_list after quantified minus_quantified
   let compute_label l e db = if db or isdots e then l else None in
   match Ast.unwrap stmt_list with
     Ast.DOTS(x) ->
-      let rec loop quantified minus_quantified dots_before = function
+      let rec loop quantified minus_quantified dots_before label llabel slabel
+	  = function
 	  ([],_,_) -> (match after with After f -> f | _ -> CTL.True)
 	| ([e],_,_) ->
 	    statement e after quantified minus_quantified
@@ -1380,12 +1381,21 @@ let rec statement_list stmt_list after quantified minus_quantified
 	    quantify guard unqshared
 	      (statement e
 		 (After
-		    (loop new_quantified new_mquantified (isdots e)
-		       (sl,fvs,mfvs)))
+		    (let (label1,llabel1,slabel1) =
+		      match Ast.unwrap e with
+			Ast.Atomic(re) ->
+			  (match Ast.unwrap re with
+			    Ast.Goto _ -> (None,None,None)
+			  | _ -> (label,llabel,slabel))
+		      |	_ -> (label,llabel,slabel) in
+		    loop new_quantified new_mquantified (isdots e)
+		      label1 llabel1 slabel1
+		      (sl,fvs,mfvs)))
 		 new_quantified new_mquantified
 		 (compute_label label e dots_before) llabel slabel guard)
 	| _ -> failwith "not possible" in
       loop quantified minus_quantified dots_before
+	label llabel slabel
 	(x,List.map Ast.get_fvs x,List.map Ast.get_mfvs x)
   | Ast.CIRCLES(x) -> failwith "not supported"
   | Ast.STARS(x) -> failwith "not supported"
