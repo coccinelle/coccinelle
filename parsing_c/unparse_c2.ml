@@ -178,7 +178,12 @@ let get_fakeInfo_and_tokens celem toks =
         before +> List.iter (fun x -> Common.push2 (T1 x) toks_out);
         push2 (T1 x) toks_out;
         toks_in := after;
-    | AbstractLineTok _ -> raise Impossible (* at this stage *) in
+    | AbstractLineTok _ -> 
+        (* can be called on type info when for instance use -type_c *)
+        if !Flag_parsing_c.pretty_print_type_info
+        then Common.push2 (Fake1 info) toks_out
+        else raise Impossible (* at this stage *) 
+  in
 
   let pr_space _ = () in (* use the spacing that is there already *)
 

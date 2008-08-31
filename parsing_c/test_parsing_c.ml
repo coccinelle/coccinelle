@@ -194,13 +194,12 @@ let test_type_c infile =
     )
     +> Common.uncurry Common.zip
   in
-(* for cocci: to remove one day
+(* for cocci: to remove one day *)
   let program2_with_ppmethod = 
     program2 +> List.map (fun x -> x, Unparse_c2.PPnormal)
   in
   Unparse_c2.pp_program program2_with_ppmethod tmpfile;
   Common.command2 ("cat " ^ tmpfile);
-*)
   ();;
 
 
