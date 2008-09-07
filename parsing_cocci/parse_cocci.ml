@@ -56,6 +56,7 @@ let token2c (tok,_) =
   | PC.TNever -> "never"
   | PC.TExists -> "exists"
   | PC.TForall -> "forall"
+  | PC.TReverse -> "reverse"
   | PC.TError -> "error"
   | PC.TWords -> "words"
 
@@ -549,6 +550,7 @@ let split_token ((tok,_) as t) =
   | PC.TContext | PC.TRuleName(_) | PC.TUsing | PC.TDisable | PC.TExtends
   | PC.TPathIsoFile(_)
   | PC.TDepends | PC.TOn | PC.TEver | PC.TNever | PC.TExists | PC.TForall
+  | PC.TReverse
   | PC.TError | PC.TWords | PC.TNothing -> ([t],[t])
 
   | PC.Tchar(clt) | PC.Tshort(clt) | PC.Tint(clt) | PC.Tdouble(clt)

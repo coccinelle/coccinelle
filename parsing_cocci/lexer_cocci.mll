@@ -195,6 +195,7 @@ let id_tokens lexbuf =
   | "never" when in_rule_name   -> check_context_linetype s; TNever
   | "exists" when in_rule_name  -> check_context_linetype s; TExists
   | "forall" when in_rule_name  -> check_context_linetype s; TForall
+  | "reverse" when in_rule_name -> check_context_linetype s; TReverse
 
   | "char" ->       Tchar     linetype
   | "short" ->      Tshort    linetype

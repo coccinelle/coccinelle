@@ -3,7 +3,8 @@
 (* true = don't see all matched nodes, only modified ones *)
 let onlyModif = ref true(*false*)
 
-let exists = ref false
+type ex = Exists | Forall | ReverseForall
+let exists = ref Forall
 
 module Ast = Ast_cocci
 module V = Visitor_ast
@@ -66,9 +67,10 @@ let ctl_ax s = function
     CTL.True -> CTL.True
   | CTL.False -> CTL.False
   | x ->
-      if !exists
-      then CTL.EX(CTL.FORWARD,x)
-      else CTL.AX(CTL.FORWARD,s,x)
+      match !exists with
+	Exists -> CTL.EX(CTL.FORWARD,x)
+      |	Forall -> CTL.AX(CTL.FORWARD,s,x)
+      |	ReverseForall -> failwith "not supported"
 
 let ctl_ax_absolute s = function
     CTL.True -> CTL.True
@@ -104,10 +106,11 @@ let ctl_ag s = function
 
 let ctl_au s x y =
   match (x,!exists) with
-    (CTL.True,true) -> CTL.EF(CTL.FORWARD,y)
-  | (CTL.True,false) -> CTL.AF(CTL.FORWARD,s,y)
-  | (_,true) -> CTL.EU(CTL.FORWARD,x,y)
-  | (_,false) -> CTL.AU(CTL.FORWARD,s,x,y)
+    (CTL.True,Exists) -> CTL.EF(CTL.FORWARD,y)
+  | (CTL.True,Forall) -> CTL.AF(CTL.FORWARD,s,y)
+  | (_,Exists) -> CTL.EU(CTL.FORWARD,x,y)
+  | (_,Forall) -> CTL.AU(CTL.FORWARD,s,x,y)
+  | (_,ReverseForall) -> failwith "not supported"
 
 let ctl_uncheck = function
     CTL.True -> CTL.True
@@ -1189,7 +1192,7 @@ let dots_au is_strict toend label s wrapcode x seq_after y =
       (wrapcode
 	 (Ast.Continue(Ast.make_mcode "continue",Ast.make_mcode ";"))) in
   let stop_early v =
-    if !exists
+    if !exists = Exists
     then CTL.False
     else if toend
     then CTL.Or(aftpred label,exitpred label)
@@ -2151,9 +2154,11 @@ let asttoctlz (name,(_,_,exists_flag),l) used_after positions =
   letctr := 0;
   labelctr := 0;
   (match exists_flag with
-    Ast.Exists -> exists := true
-  | Ast.Forall -> exists := false
-  | Ast.Undetermined -> exists := !Flag.sgrep_mode2);
+    Ast.Exists -> exists := Exists
+  | Ast.Forall -> exists := Forall
+  | Ast.ReverseForall -> exists := ReverseForall
+  | Ast.Undetermined ->
+      exists := if !Flag.sgrep_mode2 then Exists else Forall);
 
   let (l,used_after) =
     List.split
@@ -2162,7 +2167,7 @@ let asttoctlz (name,(_,_,exists_flag),l) used_after positions =
 	   match Ast.unwrap t with Ast.ERRORWORDS(exps) -> false | _ -> true)
 	 (List.combine l (List.combine used_after positions))) in
   let res = List.map2 top_level used_after l in
-  exists := false;
+  exists := Forall;
   res
 
 let asttoctl r used_after positions =

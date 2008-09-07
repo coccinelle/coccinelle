@@ -21,7 +21,7 @@ module P = Parse_aux
 %token TPure TContext
 %token TTypedef TDeclarer TIterator TPosition TPosAny
 %token TUsing TDisable TExtends TDepends TOn TEver TNever TExists TForall
-%token TNothing
+%token TReverse TNothing
 %token<string> TRuleName
 
 %token<Data.clt> Tchar Tshort Tint Tdouble Tfloat Tlong
@@ -209,6 +209,7 @@ disable:
 exists:
   TExists { Ast.Exists }
 | TForall { Ast.Forall }
+| TReverse TForall { Ast.ReverseForall }
 |         { Ast.Undetermined }
 
 is_expression: // for more flexible parsing of top level expressions
