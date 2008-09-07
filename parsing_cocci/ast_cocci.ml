@@ -436,10 +436,17 @@ and base_statement =
 and ('a,'b) whencode =
     WhenNot of 'a
   | WhenAlways of 'b
+  | WhenModifier of when_modifier
+
+and when_modifier =
   (* The following removes the shortest path constraint.  It can be used
      with other when modifiers *)
-  | WhenAny
+    WhenAny
+  (* The following removes the special consideration of error paths.  It
+     can be used with other when modifiers *)
   | WhenStrict
+  | WhenForall
+  | WhenExists
 
 (* only used with asttoctl *)
 and dots_whencode =
@@ -566,8 +573,7 @@ let get_wcfvs (whencode : ('a wrap, 'b wrap) whencode list) =
        (function
 	   WhenNot(a) -> get_fvs a
 	 | WhenAlways(a) -> get_fvs a
-	 | WhenAny -> []
-	 | WhenStrict -> [])
+	 | WhenModifier(_) -> [])
        whencode)
 
 (* --------------------------------------------------------------------- *)

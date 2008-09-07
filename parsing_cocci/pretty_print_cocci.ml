@@ -675,8 +675,13 @@ and whencode notfn alwaysfn = function
       print_string "   WHEN != "; open_box 0; notfn a; close_box()
   | Ast.WhenAlways a ->
       print_string "   WHEN = "; open_box 0; alwaysfn a; close_box()
-  | Ast.WhenAny -> print_string "   WHEN ANY"
-  | Ast.WhenStrict -> print_string "   WHEN STRICT"
+  | Ast.WhenModifier x -> print_string "   WHEN "; print_when_modif x
+
+and print_when_modif = function
+  | Ast.WhenAny    -> print_string "ANY"
+  | Ast.WhenStrict -> print_string "STRICT"
+  | Ast.WhenForall -> print_string "FORALL"
+  | Ast.WhenExists -> print_string "EXISTS"
 
 and case_line arity c =
   match Ast.unwrap c with

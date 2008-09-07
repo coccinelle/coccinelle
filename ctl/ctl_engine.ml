@@ -1743,7 +1743,8 @@ let rec satloop unchecked required required_states
 	let res = List.assoc v env in
 	if unchecked
 	then List.map (function (s,th,_) -> (s,th,[])) res
-	else res in
+	else res
+    | A.XX(phi) -> failwith "should have been removed" in
     if !Flag_ctl.bench > 0 then triples := !triples + (List.length res);
     drop_wits required_states res phi (* ) *) in
   
@@ -2024,7 +2025,8 @@ let rec sat_verbose_loop unchecked required required_states annot maxlvl lvl
 	  if unchecked
 	  then List.map (function (s,th,_) -> (s,th,[])) res
 	  else res in
-	anno res [] in
+	anno res []
+    | A.XX(phi) -> failwith "should have been removed" in
     let res1 = drop_wits required_states res phi in
     if not(res1 = res)
     then
@@ -2084,7 +2086,8 @@ let simpleanno l phi res =
     | A.LetR (dir,x,phi1,phi2) -> pp ("LetR"^" "^x); pp_dir dir
     | A.Ref(s)             -> pp ("Ref("^s^")")
     | A.Uncheck(s)         -> pp "Uncheck"
-    | A.InnerAnd(s)         -> pp "InnerAnd"
+    | A.InnerAnd(s)        -> pp "InnerAnd"
+    | A.XX(phi1)           -> pp "XX"
 ;;
 
 

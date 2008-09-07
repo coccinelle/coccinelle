@@ -533,8 +533,7 @@ and whencode notfn alwaysfn = function
       print_string "   WHEN != "; open_box 0; notfn a; close_box()
   | Ast0.WhenAlways a ->
       print_string "   WHEN = "; open_box 0; alwaysfn a; close_box()
-  | Ast0.WhenAny -> print_string "   WHEN ANY"
-  | Ast0.WhenStrict -> print_string "   WHEN STRICT"
+  | Ast0.WhenModifier x -> print_string "   WHEN "; U.print_when_modif x
 
 and case_line arity c =
   print_context c
@@ -615,8 +614,7 @@ let unparse_anything x =
       case_line "" d
   | Ast0.TopTag(d) ->
       top_level d
-  | Ast0.AnyTag -> print_string "any"
-  | Ast0.StrictTag -> print_string "strict"
+  | Ast0.IsoWhenTag(x) -> U.print_when_modif x
   | Ast0.MetaPosTag(var) -> meta_pos var);
   quiet := q;
   print_newline()

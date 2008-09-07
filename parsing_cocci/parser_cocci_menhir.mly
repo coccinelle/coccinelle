@@ -1662,11 +1662,14 @@ dots_when(dotter,when_grammar,simple_when_grammar):
 whens(when_grammar,simple_when_grammar):
     TWhen TNotEq w=when_grammar TLineEnd { [Ast0.WhenNot w] }
   | TWhen TEq w=simple_when_grammar TLineEnd { [Ast0.WhenAlways w] }
-  | TWhen comma_list(any_strict) TLineEnd { $2 }
+  | TWhen comma_list(any_strict) TLineEnd
+      { List.map (function x -> Ast0.WhenModifier(x)) $2 }
 
 any_strict:
-    TAny    { Ast0.WhenAny }
-  | TStrict { Ast0.WhenStrict }
+    TAny    { Ast.WhenAny }
+  | TStrict { Ast.WhenStrict }
+  | TForall { Ast.WhenForall }
+  | TExists { Ast.WhenExists }
 
 /*****************************************************************************
 *

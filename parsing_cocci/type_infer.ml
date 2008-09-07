@@ -228,8 +228,7 @@ let rec propagate_types env =
   let process_whencode notfn allfn = function
       Ast0.WhenNot(x) -> let _ = notfn x in ()
     | Ast0.WhenAlways(x) -> let _ = allfn x in ()
-    | Ast0.WhenAny -> ()
-    | Ast0.WhenStrict -> () in
+    | Ast0.WhenModifier(_) -> () in
 
   (* assume that all of the declarations are at the beginning of a statement
      list, which is required by C, but not actually required by the cocci

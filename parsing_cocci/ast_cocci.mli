@@ -424,8 +424,13 @@ and base_statement =
 and ('a,'b) whencode =
     WhenNot of 'a
   | WhenAlways of 'b
-  | WhenAny
+  | WhenModifier of when_modifier
+
+and when_modifier =
+    WhenAny
   | WhenStrict
+  | WhenForall
+  | WhenExists
 
 and dots_whencode =
     WParen of rule_elem * meta_name (*pren_var*)

@@ -108,9 +108,20 @@ let ctl_au s x y =
   match (x,!exists) with
     (CTL.True,Exists) -> CTL.EF(CTL.FORWARD,y)
   | (CTL.True,Forall) -> CTL.AF(CTL.FORWARD,s,y)
+  | (CTL.True,ReverseForall) -> failwith "not supported"
   | (_,Exists) -> CTL.EU(CTL.FORWARD,x,y)
   | (_,Forall) -> CTL.AU(CTL.FORWARD,s,x,y)
   | (_,ReverseForall) -> failwith "not supported"
+
+let ctl_anti_au s x y = (* only for ..., where the quantifier is changed *)
+  CTL.XX
+    (match (x,!exists) with
+      (CTL.True,Exists) -> CTL.AF(CTL.FORWARD,s,y)
+    | (CTL.True,Forall) -> CTL.EF(CTL.FORWARD,y)
+    | (CTL.True,ReverseForall) -> failwith "not supported"
+    | (_,Exists) -> CTL.AU(CTL.FORWARD,s,x,y)
+    | (_,Forall) -> CTL.EU(CTL.FORWARD,x,y)
+    | (_,ReverseForall) -> failwith "not supported")
 
 let ctl_uncheck = function
     CTL.True -> CTL.True
@@ -544,8 +555,7 @@ and get_before_whencode wc =
     (function
 	Ast.WhenNot w -> let (w,_) = get_before w [] in Ast.WhenNot w
       | Ast.WhenAlways w -> let (w,_) = get_before_e w [] in Ast.WhenAlways w
-      |	Ast.WhenAny -> Ast.WhenAny
-      |	Ast.WhenStrict -> Ast.WhenStrict)
+      |	Ast.WhenModifier(x) -> Ast.WhenModifier(x))
     wc
 
 and get_before_e s a =
@@ -646,8 +656,7 @@ and get_after_whencode a wc =
     (function
 	Ast.WhenNot w -> let (w,_) = get_after w a (*?*) in Ast.WhenNot w
       | Ast.WhenAlways w -> let (w,_) = get_after_e w a in Ast.WhenAlways w
-      |	Ast.WhenAny -> Ast.WhenAny
-      |	Ast.WhenStrict -> Ast.WhenStrict)
+      |	Ast.WhenModifier(x) -> Ast.WhenModifier(x))
     wc
 
 and get_after_e s a =
@@ -1181,7 +1190,7 @@ let svar_minus_or_no_add_after stmt s label quantified d ast
 (* --------------------------------------------------------------------- *)
 (* dots and nests *)
 
-let dots_au is_strict toend label s wrapcode x seq_after y =
+let dots_au is_strict toend label s wrapcode x seq_after y quantifier =
   let matchgoto = gotopred None in
   let matchbreak =
     make_match None false
@@ -1218,7 +1227,8 @@ let dots_au is_strict toend label s wrapcode x seq_after y =
 			       (ctl_or matchgoto matchbreak)
 			       (ctl_ag s (ctl_not seq_after)))))))))) in
   let v = get_let_ctr() in
-  ctl_au s x (CTL.Let(v,y,ctl_or (CTL.Ref v) (stop_early (CTL.Ref v))))
+  let op = if quantifier = !exists then ctl_au else ctl_anti_au in
+  op s x (CTL.Let(v,y,ctl_or (CTL.Ref v) (stop_early (CTL.Ref v))))
 
 let rec dots_and_nests plus nest whencodes bef aft dotcode after label
     process_bef_aft statement_list statement guard wrapcode =
@@ -1229,11 +1239,33 @@ let rec dots_and_nests plus nest whencodes bef aft dotcode after label
   let bef_aft = (* to be negated *)
     try
       let _ =
-	List.find (function Ast.WhenAny -> true | _ -> false) whencodes in
+	List.find
+	  (function Ast.WhenModifier(Ast.WhenAny) -> true | _ -> false)
+	  whencodes in
       CTL.False
     with Not_found -> shortest (Common.union_set bef aft) in
   let is_strict =
-    List.exists (function Ast.WhenStrict -> true | _ -> false) whencodes in
+    List.exists
+      (function Ast.WhenModifier(Ast.WhenStrict) -> true | _ -> false)
+      whencodes in
+  let check_quantifier quant other =
+    if List.exists
+	(function Ast.WhenModifier(x) -> x = quant | _ -> false)
+	whencodes
+    then
+      if List.exists
+	  (function Ast.WhenModifier(x) -> x = other | _ -> false)
+	  whencodes
+      then failwith "inconsistent annotation on dots"
+      else true
+    else false in
+  let quantifier =
+    if check_quantifier Ast.WhenExists Ast.WhenForall
+    then Exists
+    else
+      if check_quantifier Ast.WhenExists Ast.WhenForall
+      then Forall
+      else !exists in
   (* the following is used when we find a goto, etc and consider accepting
      without finding the rest of the pattern *)
   let aft = shortest aft in
@@ -1248,8 +1280,7 @@ let rec dots_and_nests plus nest whencodes bef aft dotcode after label
 		(poswhen,ctl_or (statement_list whencodes) negwhen)
 	    | Ast.WhenAlways stm ->
 		(ctl_and CTL.NONSTRICT (statement stm) poswhen,negwhen)
-	    | Ast.WhenAny -> (poswhen,negwhen)
-	    | Ast.WhenStrict -> (poswhen,negwhen))
+	    | Ast.WhenModifier(_) -> (poswhen,negwhen))
 	(CTL.True,bef_aft) (List.rev whencodes) in
     let poswhen = ctl_and_ns arg poswhen in
     let negwhen =
@@ -1328,30 +1359,7 @@ let rec dots_and_nests plus nest whencodes bef aft dotcode after label
     (dots_au is_strict ((after = Tail) or (after = VeryEnd))
        label (guard_to_strict guard) wrapcode
       (ctl_and_ns dotcode (ctl_and_ns ornest labelled))
-      aft ender)
-
-and do_plus_dots is_strict toend label guard wrapcode ornest nest whencodes
-    aft ender =
-  (* f(); <... \+ g(); ...> h(); after 
-     becomes:
-        f(); & AX(A[!f(); & !h() & (!g(); v g();) U h(); after] &
-        E[!f(); & !h() U (g() & AXA[!f(); & !h() U h(); after])])
-  *)
-  let nest =
-    match nest with
-      Some n -> n
-    | None -> failwith "nest expected" in
-  let v = get_let_ctr() in
-  CTL.LetR
-    (CTL.FORWARD,v,whencodes,
-     ctl_and CTL.NONSTRICT
-       (dots_au is_strict toend label (guard_to_strict guard) wrapcode
-	  (ctl_and CTL.NONSTRICT (CTL.Ref v) ornest) aft ender)
-       (CTL.EU(CTL.FORWARD,CTL.Ref v,
-	       ctl_and CTL.NONSTRICT (ctl_uncheck nest)
-		 (CTL.AX(CTL.FORWARD,CTL.NONSTRICT,
-			 (dots_au is_strict toend label (guard_to_strict guard)
-			    wrapcode (CTL.Ref v) aft ender))))))
+      aft ender quantifier)
 
 (* --------------------------------------------------------------------- *)
 (* the main translation loop *)
@@ -1962,8 +1970,8 @@ and statement stmt after quantified minus_quantified
 					  new_quantified4 new_mquantified4
 					  label llabel slabel true true in
 				      ctl_or prev x
-				  | Ast.WhenAny -> CTL.False
-				  | Ast.WhenStrict -> prev)
+				  | Ast.WhenModifier(Ast.WhenAny) -> CTL.False
+				  | Ast.WhenModifier(_) -> prev)
 			      CTL.False whencode))
 			 (List.fold_left
 			   (function prev ->
@@ -1975,8 +1983,8 @@ and statement stmt after quantified minus_quantified
 				       label llabel slabel true in
 				   ctl_and prev x
 			       | Ast.WhenNot(sl) -> prev
-			       | Ast.WhenAny -> CTL.True
-			       | Ast.WhenStrict -> prev)
+			       | Ast.WhenModifier(Ast.WhenAny) -> CTL.True
+			       | Ast.WhenModifier(_) -> prev)
 			   CTL.True whencode) in
 		    ctl_au leftarg (make_match stripped_rbrace)]
 	| None ->
@@ -2062,8 +2070,13 @@ Concretely: AX(A[...] & E[...]) becomes AX(A[...]) & EX(E[...])
 This is what we wanted in the first place, but it wasn't possible to make
 because the AX and its argument are not created in the same place.
 Rather clunky... *)
+(* also cleanup XX, which is a marker for the case where the programmer
+specifies to change the quantifier on .... Assumed to only occur after one AX
+or EX, or at top level. *)
 
-let rec cleanup = function
+let rec cleanup c =
+  let c = match c with CTL.XX(c) -> c | _ -> c in
+  match c with
     CTL.False    -> CTL.False
   | CTL.True     -> CTL.True
   | CTL.Pred(p)  -> CTL.Pred(p)
@@ -2086,6 +2099,10 @@ let rec cleanup = function
 	    CTL.And(CTL.NONSTRICT,
 		    CTL.AX(CTL.FORWARD,s,CTL.AU(CTL.FORWARD,s2,e2,e3)),
 		    CTL.EX(CTL.FORWARD,CTL.EU(CTL.FORWARD,e4,e5))))
+  | CTL.AX(dir,s,CTL.XX(phi)) -> CTL.EX(dir,CTL.XX(cleanup phi))
+  | CTL.EX(dir,CTL.XX((CTL.AU(_,s,_,_)) as phi)) ->
+      CTL.AX(dir,s,CTL.XX(cleanup phi))
+  | CTL.XX(phi)               -> failwith "bad XX"
   | CTL.AX(dir,s,phi1) -> CTL.AX(dir,s,cleanup phi1)
   | CTL.AG(dir,s,phi1) -> CTL.AG(dir,s,cleanup phi1)
   | CTL.EF(dir,phi1)   -> CTL.EF(dir,cleanup phi1)

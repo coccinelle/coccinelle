@@ -979,8 +979,7 @@ and fninfo2arity fninfo =
 and whencode notfn alwaysfn = function
     Ast0.WhenNot a -> Ast0.WhenNot (notfn a)
   | Ast0.WhenAlways a -> Ast0.WhenAlways (alwaysfn a)
-  | Ast0.WhenAny -> Ast0.WhenAny
-  | Ast0.WhenStrict -> Ast0.WhenStrict
+  | Ast0.WhenModifier(x) -> Ast0.WhenModifier(x)
 
 and make_case_line =
   make_opt_unique

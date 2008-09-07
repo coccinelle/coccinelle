@@ -313,8 +313,7 @@ and fninfo =
 and ('a,'b) whencode =
     WhenNot of 'a
   | WhenAlways of 'b
-  | WhenAny
-  | WhenStrict
+  | WhenModifier of Ast.when_modifier
 
 and statement = base_statement wrap
 
@@ -374,8 +373,7 @@ and anything =
   | StmtTag of statement
   | CaseLineTag of case_line
   | TopTag of top_level
-  | AnyTag
-  | StrictTag
+  | IsoWhenTag of Ast.when_modifier
   | MetaPosTag of meta_pos
 
 let dotsExpr x = DotsExprTag x

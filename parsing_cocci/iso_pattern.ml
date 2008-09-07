@@ -78,10 +78,8 @@ let anything_equal = function
   | (Ast0.TopTag(d1),Ast0.TopTag(d2)) ->
       (strip_info.V0.rebuilder_top_level d1) =
       (strip_info.V0.rebuilder_top_level d2)
-  | (Ast0.AnyTag,_) | (_,Ast0.AnyTag) ->
-      failwith "anytag only for isos within iso phase"
-  | (Ast0.StrictTag,_) | (_,Ast0.StrictTag) ->
-      failwith "stricttag only for isos within iso phase"
+  | (Ast0.IsoWhenTag(_),_) | (_,Ast0.IsoWhenTag(_)) ->
+      failwith "only for isos within iso phase"
   | _ -> false
 
 let term (var1,_,_,_,_) = var1
@@ -1026,12 +1024,10 @@ let match_maker checks_needed context_required whencode_allowed =
 			     | Ast0.WhenAlways wc ->
 				 conjunct_bindings prev
 				   (add_multi_dot_binding d (Ast0.StmtTag wc))
-			     | Ast0.WhenAny ->
+			     | Ast0.WhenModifier(x) ->
 				 conjunct_bindings prev
-				   (add_multi_dot_binding d Ast0.AnyTag)
-			     | Ast0.WhenStrict ->
-				 conjunct_bindings prev
-				   (add_multi_dot_binding d Ast0.StrictTag))
+				   (add_multi_dot_binding d
+				      (Ast0.IsoWhenTag x)))
 			 (return true) wc)
 		  else
 		    (Printf.printf
@@ -1655,8 +1651,7 @@ let instantiate bindings mv_bindings =
 		  match v with
 		    Ast0.DotsStmtTag(stms) -> Ast0.WhenNot stms
 		  | Ast0.StmtTag(stm) -> Ast0.WhenAlways stm
-		  | Ast0.AnyTag -> Ast0.WhenAny
-		  | Ast0.StrictTag -> Ast0.WhenStrict
+		  | Ast0.IsoWhenTag(x) -> Ast0.WhenModifier(x)
 		  | _ -> failwith "unexpected binding")
 		(List.filter (function (x,v) -> x = (dot_term d)) bindings)))
     | Ast0.Circles(d,_) ->
@@ -1668,8 +1663,7 @@ let instantiate bindings mv_bindings =
 		  match v with
 		    Ast0.DotsStmtTag(stms) -> Ast0.WhenNot stms
 		  | Ast0.StmtTag(stm) -> Ast0.WhenAlways stm
-		  | Ast0.AnyTag -> Ast0.WhenAny
-		  | Ast0.StrictTag -> Ast0.WhenStrict
+		  | Ast0.IsoWhenTag(x) -> Ast0.WhenModifier(x)
 		  | _ -> failwith "unexpected binding")
 		(List.filter (function (x,v) -> x = (dot_term d)) bindings)))
     | Ast0.Stars(d,_) ->
@@ -1681,8 +1675,7 @@ let instantiate bindings mv_bindings =
 		  match v with
 		    Ast0.DotsStmtTag(stms) -> Ast0.WhenNot stms
 		  | Ast0.StmtTag(stm) -> Ast0.WhenAlways stm
-		  | Ast0.AnyTag -> Ast0.WhenAny
-		  | Ast0.StrictTag -> Ast0.WhenStrict
+		  | Ast0.IsoWhenTag(x) -> Ast0.WhenModifier(x)
 		  | _ -> failwith "unexpected binding")
 		(List.filter (function (x,v) -> x = (dot_term d)) bindings)))
     | _ -> e in
@@ -2229,8 +2222,7 @@ let rewrap_anything = function
   | Ast0.StmtTag(d) -> Ast0.StmtTag(rewrap.V0.rebuilder_statement d)
   | Ast0.CaseLineTag(d) -> Ast0.CaseLineTag(rewrap.V0.rebuilder_case_line d)
   | Ast0.TopTag(d) -> Ast0.TopTag(rewrap.V0.rebuilder_top_level d)
-  | Ast0.AnyTag -> failwith "anytag only for isos within iso phase"
-  | Ast0.StrictTag -> failwith "stricttag only for isos within iso phase"
+  | Ast0.IsoWhenTag(_) -> failwith "only for isos within iso phase"
   | Ast0.MetaPosTag(p) -> Ast0.MetaPosTag(p)
 
 (* --------------------------------------------------------------------- *)

@@ -115,6 +115,7 @@ let rec (pp_ctl:
 	 pp "Uncheck"; pp_arg_paren env phi1
      | InnerAnd(phi1) ->
 	 pp "InnerAnd"; pp_arg_paren env phi1
+     | XX _ -> failwith "should be removed"
 
    and pp_dir = function
        FORWARD -> ()

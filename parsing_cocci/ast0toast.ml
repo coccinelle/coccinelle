@@ -744,8 +744,7 @@ and statement s =
   and whencode notfn alwaysfn = function
       Ast0.WhenNot a -> Ast.WhenNot (notfn a)
     | Ast0.WhenAlways a -> Ast.WhenAlways (alwaysfn a)
-    | Ast0.WhenAny -> Ast.WhenAny
-    | Ast0.WhenStrict -> Ast.WhenStrict
+    | Ast0.WhenModifier(x) -> Ast.WhenModifier(x)
 
   and process_list seqible isos = function
       [] -> []
@@ -859,8 +858,7 @@ and anything = function
   | Ast0.StmtTag(d) -> Ast.StatementTag(statement d)
   | Ast0.CaseLineTag(d) -> Ast.CaseLineTag(case_line d)
   | Ast0.TopTag(d) -> Ast.Code(top_level d)
-  | Ast0.AnyTag -> failwith "not possible"
-  | Ast0.StrictTag -> failwith "not possible"
+  | Ast0.IsoWhenTag(_) -> failwith "not possible"
   | Ast0.MetaPosTag _ -> failwith "not possible"
 
 (* --------------------------------------------------------------------- *)

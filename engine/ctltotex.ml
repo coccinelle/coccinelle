@@ -164,6 +164,7 @@ let rec ctl2c ct pp pv = function
   | CTL.InnerAnd(f) ->
       let (res,ct) = pathwrap ct pp pv f
       in ("("^res^")^{innerAnd}",ct+10)
+  | CTL.XX(_) -> failwith "should not be printed"
 
 and make_var x = ("",x)
 

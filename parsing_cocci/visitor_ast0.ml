@@ -445,8 +445,7 @@ let combiner bind option_default
   and whencode notfn alwaysfn = function
       Ast0.WhenNot a -> notfn a
     | Ast0.WhenAlways a -> alwaysfn a
-    | Ast0.WhenAny -> option_default
-    | Ast0.WhenStrict -> option_default
+    | Ast0.WhenModifier(_) -> option_default
 
   and case_line c =
     let k c =
@@ -478,8 +477,7 @@ let combiner bind option_default
       | Ast0.StmtTag(stmt) -> statement stmt
       | Ast0.CaseLineTag(c) -> case_line c
       | Ast0.TopTag(top) -> top_level top
-      | Ast0.AnyTag -> option_default
-      | Ast0.StrictTag -> option_default
+      | Ast0.IsoWhenTag(_) -> option_default
       |	Ast0.MetaPosTag(var) -> failwith "not supported" in
     k a
 
@@ -932,8 +930,7 @@ let rebuilder = fun
   and whencode notfn alwaysfn = function
       Ast0.WhenNot a -> Ast0.WhenNot (notfn a)
     | Ast0.WhenAlways a -> Ast0.WhenAlways (alwaysfn a)
-    | Ast0.WhenAny -> Ast0.WhenAny
-    | Ast0.WhenStrict -> Ast0.WhenStrict
+    | Ast0.WhenModifier(x)    -> Ast0.WhenModifier(x)
 
   and case_line c =
     let k c =

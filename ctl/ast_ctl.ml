@@ -49,6 +49,7 @@ type ('pred,'mvar,'anno) generic_ctl =
       (('pred,'mvar,'anno) generic_ctl)
   | Uncheck of (('pred,'mvar,'anno) generic_ctl)
   | InnerAnd of (('pred,'mvar,'anno) generic_ctl)
+  | XX of (('pred,'mvar,'anno) generic_ctl) (* fake, used in asttoctl *)
 
 and direction = FORWARD (* the normal way *) | BACKWARD (* toward the start *)
 

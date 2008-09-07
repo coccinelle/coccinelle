@@ -201,12 +201,23 @@ let show_or_not_ctl_tex a b  =
     
     
     
+let show_or_not_rule_name ctl ast rulenb =
+  if !Flag_cocci.show_ctl_text or !Flag.show_trying or
+    !Flag_cocci.show_transinfo or !Flag_cocci.show_binding_in_out
+  then
+    begin
+      let name =
+	match ast with
+	  Ast_cocci.CocciRule (nm, (deps, drops, exists), x, _) -> nm
+	| _ -> i_to_s rulenb in
+      Common.pr_xxxxxxxxxxxxxxxxx ();
+      pr (name ^ " = ");
+      Common.pr_xxxxxxxxxxxxxxxxx ()
+    end
+
 let show_or_not_ctl_text2 ctl ast rulenb =
   if !Flag_cocci.show_ctl_text then begin
     
-    Common.pr_xxxxxxxxxxxxxxxxx ();
-    pr ("rule " ^ i_to_s rulenb ^ " = ");
-    Common.pr_xxxxxxxxxxxxxxxxx ();
     adjust_pp_with_indent (fun () -> 
       Format.force_newline();
       Pretty_print_cocci.print_plus_flag := true;
@@ -937,6 +948,7 @@ let rec apply_python_rule r cache newes e rules_that_have_matched
 
 and apply_cocci_rule r rules_that_have_ever_matched es ccs =
   Common.profile_code r.rulename (fun () -> 
+    show_or_not_rule_name r.ctl r.ast_rule r.ruleid;
     show_or_not_ctl_text r.ctl r.ast_rule r.ruleid;
 
     let reorganized_env =
