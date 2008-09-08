@@ -230,6 +230,13 @@ let check_meta tok =
 	  raise
 	    (Semantic_cocci.Semantic
 	       ("incompatible inheritance declaration "^name)))
+  | Ast.MetaLocalIdExpDecl(Ast.NONE,(rule,name),ty) ->
+      (match lookup rule name with
+	Ast.MetaLocalIdExpDecl(_,_,ty1) when ty = ty1 -> ()
+      | _ ->
+	  raise
+	    (Semantic_cocci.Semantic
+	       ("incompatible inheritance declaration "^name)))
   | Ast.MetaExpListDecl(Ast.NONE,(rule,name),len_name) ->
       (match lookup rule name with
 	Ast.MetaExpListDecl(_,_,_) -> ()
