@@ -1232,7 +1232,6 @@ let dots_au is_strict toend label s wrapcode x seq_after y quantifier =
 
 let rec dots_and_nests plus nest whencodes bef aft dotcode after label
     process_bef_aft statement_list statement guard wrapcode =
-  Printf.printf "starting dots and nests %s\n" (Dumper.dump nest);
   let ctl_and_ns = ctl_and CTL.NONSTRICT in
   (* proces bef_aft *)
   let shortest l =
