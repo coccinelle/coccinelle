@@ -17,14 +17,15 @@ get_constants.ml get_constants2.ml parse_cocci.ml
 LIBS=../commons/commons.cma ../globals/globals.cma
 SYSLIBS = str.cma unix.cma
 
-INCLUDE_PATH = -I ../commons -I ../commons/ocamlextra -I ../globals
+INCLUDE_PATH = -I ../commons -I ../commons/ocamlextra -I ../globals \
+-I /usr/local/share/menhir
 
 
 # The Caml compilers.
 CAMLC =ocamlc$(OPTBIN) -g
 CAMLOPT = ocamlopt$(OPTBIN) $(OPTFLAGS)
 CAMLLEX = ocamllex$(OPTBIN)
-CAMLYACC= menhir --enable-code-sharing
+CAMLYACC= menhir --table
 CAMLDEP = ocamldep$(OPTBIN)
 EXEC=$(TARGET).byte
 EXEC=$(TARGET)

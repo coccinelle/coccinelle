@@ -54,6 +54,9 @@ OCAMLYACC=ocamlyacc -v
 OCAMLDEP=ocamldep $(INCLUDES)
 OCAMLMKTOP=ocamlmktop -g -custom $(INCLUDES)
 
+MENHIR=/usr/local/share/menhir/menhirLib.cmo
+MENHIRO=/usr/local/share/menhir/menhirLib.cmx
+
 
 ##############################################################################
 # Top rules
@@ -70,10 +73,10 @@ rec.opt:
 	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i all.opt; done 
 
 $(EXEC): $(LIBS) $(OBJS)
-	$(OCAMLC) -o $@ $(SYSLIBS) $^
+	$(OCAMLC) -o $@ $(SYSLIBS) $(MENHIR) $^
 
 $(EXEC).opt: $(LIBS:.cma=.cmxa) $(OPTOBJS) 
-	$(OCAMLOPT) -o $@ $(SYSLIBS:.cma=.cmxa) $(OPTLIBFLAGS) $^
+	$(OCAMLOPT) -o $@ $(SYSLIBS:.cma=.cmxa) $(OPTLIBFLAGS) $(MENHIRO) $^
 
 $(EXEC).top: $(LIBS) $(OBJS) 
 	$(OCAMLMKTOP) -o $@ $(SYSLIBS) $^

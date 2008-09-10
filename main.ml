@@ -488,19 +488,16 @@ let glimpse_filter (coccifile, isofile) dir =
   | Some query ->
       let suffixes = if !include_headers then ["c";"h"] else ["c"] in
       pr2 ("glimpse request = " ^ query);
-      let glimpse_res =
-	Common.cmd_to_list (spf "glimpse -y -H %s -N -W -w '%s'" dir query) in
-      (* glimpse often gives an error because the pattern is too complicated
-	 it's not clear how to detect this in the definition of cmd_to_list,
-	 so we just assume that a [] result is an error, and not because
-	 there was no match *)
-      if glimpse_res = []
-      then None
-      else
-	Some
-	  (glimpse_res +>
-	   List.filter
-	     (fun file -> List.mem (Common.filesuffix file) suffixes))
+      let command = spf "glimpse -y -H %s -N -W -w '%s'" dir query in
+      let (glimpse_res,stat) = Common.cmd_to_list_and_status command in
+      match stat with
+	Unix.WEXITED(0) | Unix.WEXITED(1) ->
+	  Some
+	    (glimpse_res +>
+	     List.filter
+	       (fun file -> List.mem (Common.filesuffix file) suffixes))
+      |	_ -> None (* error, eg due to pattern too big *)
+	
 	
 
 

@@ -2683,15 +2683,20 @@ let do_in_fork f =
   else pid
 
 
-let process_output_to_list = fun command -> 
+let process_output_to_list2 = fun command -> 
   let chan = Unix.open_process_in command in
+  let res = ref ([] : string list) in
   let rec process_otl_aux () =  
-    try 
-      let e = input_line chan in
-      e::process_otl_aux()
-    with End_of_file -> begin ignore(Unix.close_process_in chan); [] end
-  in process_otl_aux ()
-let cmd_to_list = process_output_to_list
+    let e = input_line chan in
+    res := e::!res;
+    process_otl_aux() in
+  try process_otl_aux ()
+  with End_of_file ->
+    let stat = Unix.close_process_in chan in (List.rev !res,stat)
+let cmd_to_list command =
+  let (l,_) = process_output_to_list2 command in l
+let process_output_to_list = cmd_to_list
+let cmd_to_list_and_status = process_output_to_list2
 
 (* now in prelude:
  * let command2 s = ignore(Sys.command s)

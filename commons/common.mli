@@ -955,6 +955,7 @@ val usleep : int -> unit
 
 val process_output_to_list : string -> string list
 val cmd_to_list :            string -> string list (* alias *)
+val cmd_to_list_and_status : string -> string list * Unix.process_status
 
 val command2 : string -> unit
 val command2_y_or_no : string -> bool
