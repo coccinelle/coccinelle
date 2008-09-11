@@ -91,7 +91,7 @@ let pycocci_instantiate_class fqn args =
 
 (* end python interaction *)
 
-let inc_match = ref false
+let inc_match = ref true
 
 let include_match v =
   let truth = pyobject_istrue v in
@@ -134,7 +134,7 @@ let build_classes env =
 	let module_dictionary = pyimport_getmoduledict() in
         coccinelle_module := pymodule_new "coccinelle";
 	let mx = !coccinelle_module in
-	inc_match := false;
+	inc_match := true;
         let (cd, cx) = build_class "Cocci" (!Flag.pyoutput) 
 		[("include_match", include_match, (pynull()));
 		 ("has_env_binding", has_environment_binding env, (pynull()))] mx in

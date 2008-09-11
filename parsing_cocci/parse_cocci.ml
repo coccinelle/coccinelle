@@ -859,6 +859,12 @@ and find_line_end inwhen line clt q = function
       (PC.TAny(clt),a) :: (find_line_end inwhen line clt q xs)
   | ((PC.TIdent("ANY",clt),a) as x)::xs when token2line x = line ->
       (PC.TAny(clt),a) :: (find_line_end inwhen line clt q xs)
+  | ((PC.TIdent("forall",clt),a) as x)::xs when token2line x = line ->
+      (PC.TForall,a) :: (find_line_end inwhen line clt q xs)
+  | ((PC.TIdent("exists",clt),a) as x)::xs when token2line x = line ->
+      (PC.TExists,a) :: (find_line_end inwhen line clt q xs)
+  | ((PC.TComma(clt),a) as x)::xs when token2line x = line ->
+      (PC.TComma(clt),a) :: (find_line_end inwhen line clt q xs)
   | ((PC.TPArob,a) as x)::xs -> (* no line #, just assume on the same line *)
       x :: (find_line_end inwhen line clt q xs)
   | x::xs when token2line x = line -> x :: (find_line_end inwhen line clt q xs)
