@@ -188,7 +188,7 @@ let test_type_c infile =
     program2 
     +> Common.unzip 
     +> (fun (program, infos) -> 
-      Type_annoter_c.annotate_program Type_annoter_c.initial_env
+      Type_annoter_c.annotate_program Type_annoter_c.initial_env true
         program +> List.map fst,
       infos
     )

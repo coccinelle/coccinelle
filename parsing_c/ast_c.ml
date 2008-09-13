@@ -187,9 +187,11 @@ and typeQualifierbis = {const: bool; volatile: bool}
 (* ------------------------------------------------------------------------- *)
 (* C expression *)
 (* ------------------------------------------------------------------------- *)
-and expression = (expressionbis * exp_type option ref (* semantic: *)) wrap
+and expression = (expressionbis * exp_info ref (* semantic: *)) wrap
 and local = LocalVar | NotLocalVar
+and test = Test | NotTest
 and exp_type = fullType * local
+and exp_info = exp_type option * test
 and expressionbis = 
 
   (* Ident can be a enumeration constant, a simple variable, a name of a func.
@@ -555,7 +557,7 @@ let nQ = nullQualif
 
 let defaultInt = (BaseType (IntType (Si (Signed, CInt))))
 
-let noType () = ref None (* old: None, old: [] *)
+let noType () = ref (None,NotTest) (* old: None, old: [] *)
 let noInstr = (ExprStatement (None), [])
 let noTypedefDef () = None
 
@@ -709,6 +711,11 @@ let info_to_fixpos ii =
   | FakeTok (_,(pi,offset)) ->
       Ast_cocci.Virt (pi.Common.charpos,offset)
   | AbstractLineTok pi -> failwith "unexpected abstract"
+
+let is_test (e : expression) =
+  let (_,info) = unwrap e in
+  let (_,test) = !info in
+  test = Test
 
 (*****************************************************************************)
 (* Abstract line *)

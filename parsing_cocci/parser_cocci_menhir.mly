@@ -1168,11 +1168,11 @@ arith_expr(r,pe):
   | arith_expr(r,pe) TShOp    arith_expr(r,pe)
       { let (op,clt) = $2 in P.arith_op op $1 clt $3 }
   | arith_expr(r,pe) TLogOp    arith_expr(r,pe)
-      { let (op,clt) = $2 in Ast0.set_test_exp(P.logic_op op $1 clt $3) }
+      { let (op,clt) = $2 in P.logic_op op $1 clt $3 }
   | arith_expr(r,pe) TEqEq   arith_expr(r,pe)
-      { Ast0.set_test_exp(P.logic_op Ast.Eq $1 $2 $3) }
+      { P.logic_op Ast.Eq $1 $2 $3 }
   | arith_expr(r,pe) TNotEq  arith_expr(r,pe)
-      { Ast0.set_test_exp(P.logic_op Ast.NotEq $1 $2 $3) }
+      { P.logic_op Ast.NotEq $1 $2 $3 }
   | arith_expr(r,pe) TAnd    arith_expr(r,pe)
       { P.arith_op Ast.And $1 $2 $3 }
   | arith_expr(r,pe) TOr     arith_expr(r,pe)

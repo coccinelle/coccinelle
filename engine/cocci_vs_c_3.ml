@@ -407,7 +407,8 @@ let initialisation_to_affectation decl =
               (match ini with
               | Some (B.InitExpr e, ii_empty2) -> 
                   let typ =
-		    ref (Some ((Lib_parsing_c.al_type returnType),local)) in
+		    ref (Some ((Lib_parsing_c.al_type returnType),local),
+			       Ast_c.NotTest) in
                   let id = (B.Ident s, typ),[iis] in
                   F.DefineExpr
                     ((B.Assignment (id, B.SimpleAssign, e), 
@@ -592,6 +593,7 @@ let metavar2dots (_,info,mcodekind,pos) = ("...",info,mcodekind,pos)
 (*---------------------------------------------------------------------------*)
 let rec (expression: (A.expression, Ast_c.expression) matcher) =
  fun ea eb -> 
+  if A.get_test_exp ea && not (Ast_c.is_test eb) then fail else
   X.all_bound (A.get_inherited ea) >&&>
   let wa x = A.rewrap ea x  in
   match A.unwrap ea, eb with
@@ -624,13 +626,14 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
 	| (A.LocalID,e) ->
 	    (matches_id e) &&
 	    (match !opttypb with
-	      Some (_,Ast_c.LocalVar) -> true
+	      (Some (_,Ast_c.LocalVar),_) -> true
 	    | _ -> false)
 	| (A.ID,e) -> matches_id e in
 
       if form_ok
       then
-	(match opttypa, !opttypb with
+	(let (opttypb,_testb) = !opttypb in
+	match opttypa, opttypb with
         | None, _ -> return ((),())
         | Some _, None -> 
             pr2_once ("Missing type information. Certainly a pb in " ^

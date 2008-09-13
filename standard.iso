@@ -325,10 +325,16 @@ expression X;
 X == NULL <=> NULL == X => !X
 
 Expression
-@ isnt_null @ 
+@ isnt_null1 @ 
 expression X; 
 @@
-X != NULL <=> NULL != X => X
+X != NULL <=> NULL != X
+
+TestExpression
+@ isnt_null1 @ 
+expression X; 
+@@
+NULL != X => X
 
 // pointer arithmetic equivalences
 

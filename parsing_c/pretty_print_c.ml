@@ -102,12 +102,13 @@ let rec pp_expression_gen pr_elem pr_space =
     then begin
       pr_elem (Ast_c.fakeInfo() +> Ast_c.rewrap_str "/*");
       !typ +>
+      (fun (ty,_test) -> ty +>
       Common.do_option
 	(fun (x,l) -> pp_type_gen pr_elem pr_space x;
 	  let s = match l with
 	    Ast_c.LocalVar -> ", local"
 	  | _ -> "" in
-	  pr_elem (Ast_c.fakeInfo() +> Ast_c.rewrap_str s));
+	  pr_elem (Ast_c.fakeInfo() +> Ast_c.rewrap_str s)));
       pr_elem (Ast_c.fakeInfo() +> Ast_c.rewrap_str "*/");
     end
 

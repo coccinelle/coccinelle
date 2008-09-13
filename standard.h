@@ -750,4 +750,5 @@ do {									\
 // #define OUT
 // #define OPTIONAL
 
-
+#define likely(x) x
+#define unlikely(x) x

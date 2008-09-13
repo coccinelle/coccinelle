@@ -13,5 +13,5 @@ val initial_env : environment
  * to None during parsing 
  *)
 val annotate_program : 
-  environment -> Ast_c.toplevel list -> 
+  environment -> bool (*true if types needed*) -> Ast_c.toplevel list -> 
   (Ast_c.toplevel * environment Common.pair) list

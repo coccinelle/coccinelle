@@ -427,7 +427,7 @@ val get_dots_bef_aft : 'a wrap -> dots_bef_aft
 val set_arg_exp : expression -> expression
 val get_arg_exp : expression -> bool
 val set_test_exp : expression -> expression
-val get_test_exp : expression -> bool
+val get_test_exp : 'a wrap -> bool
 val set_iso : 'a wrap -> (string*anything) list -> 'a wrap
 val get_iso : 'a wrap -> (string*anything) list
 val fresh_index : unit -> int

@@ -1536,6 +1536,8 @@ let instantiate bindings mv_bindings =
 		  Ast0.Unary(e1,op) when Ast0.unwrap_mcode op = Ast.Not ->
 		    Ast0.rewrap e (Ast0.unwrap e1)
 		| Ast0.Edots(_,_) -> Ast0.rewrap e (Ast0.unwrap res)
+		| Ast0.Paren(lp,e,rp) ->
+		    Ast0.rewrap res (Ast0.Paren(lp,negate e e,rp))
 		| Ast0.Binary(e1,op,e2) ->
 		    let reb nop = Ast0.rewrap_mcode op (Ast.Logical(nop)) in
 		    let invop =

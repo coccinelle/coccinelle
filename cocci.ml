@@ -201,7 +201,7 @@ let show_or_not_ctl_tex a b  =
     
     
     
-let show_or_not_rule_name ctl ast rulenb =
+let show_or_not_rule_name ast rulenb =
   if !Flag_cocci.show_ctl_text or !Flag.show_trying or
     !Flag_cocci.show_transinfo or !Flag_cocci.show_binding_in_out
   then
@@ -212,6 +212,17 @@ let show_or_not_rule_name ctl ast rulenb =
 	| _ -> i_to_s rulenb in
       Common.pr_xxxxxxxxxxxxxxxxx ();
       pr (name ^ " = ");
+      Common.pr_xxxxxxxxxxxxxxxxx ()
+    end
+
+let show_or_not_scr_rule_name rulenb =
+  if !Flag_cocci.show_ctl_text or !Flag.show_trying or
+    !Flag_cocci.show_transinfo or !Flag_cocci.show_binding_in_out
+  then
+    begin
+      let name = i_to_s rulenb in
+      Common.pr_xxxxxxxxxxxxxxxxx ();
+      pr ("script rule " ^ name ^ " = ");
       Common.pr_xxxxxxxxxxxxxxxxx ()
     end
 
@@ -636,9 +647,6 @@ type file_info = {
 
 let g_contain_typedmetavar = ref false 
 
-let fake_env = TAC.initial_env
-
-
 
 let last_env_toplevel_c_info xs =
   (Common.last xs).env_typing_after
@@ -705,11 +713,8 @@ let prepare_cocci ctls free_var_lists negated_pos_lists
 
 let build_info_program cprogram env = 
   let (cs, parseinfos) = Common.unzip cprogram in
-  let (cs, envs) = 
-    if !g_contain_typedmetavar 
-    then Common.unzip (TAC.annotate_program env cs)
-    else Common.unzip (cs +> List.map (fun c -> c, (fake_env, fake_env)))
-  in
+  let (cs, envs) =
+    Common.unzip (TAC.annotate_program env !g_contain_typedmetavar cs) in
 
   zip (zip cs parseinfos) envs +> List.map (fun ((c, parseinfo), (enva,envb))->
     let (fullstr, tokens) = parseinfo in
@@ -900,6 +905,7 @@ let prepare_c files =
 
 let rec apply_python_rule r cache newes e rules_that_have_matched
     rules_that_have_ever_matched =
+  show_or_not_scr_rule_name r.scr_ruleid;
   if not(interpret_dependencies rules_that_have_matched
 	   !rules_that_have_ever_matched r.scr_dependencies)
   then
@@ -948,7 +954,7 @@ let rec apply_python_rule r cache newes e rules_that_have_matched
 
 and apply_cocci_rule r rules_that_have_ever_matched es ccs =
   Common.profile_code r.rulename (fun () -> 
-    show_or_not_rule_name r.ctl r.ast_rule r.ruleid;
+    show_or_not_rule_name r.ast_rule r.ruleid;
     show_or_not_ctl_text r.ctl r.ast_rule r.ruleid;
 
     let reorganized_env =
