@@ -7,7 +7,7 @@ SOURCES = flag_parsing_cocci.ml type_cocci.ml ast_cocci.ml ast0_cocci.ml \
 pretty_print_cocci.ml unparse_ast0.ml \
 visitor_ast.ml visitor_ast0.ml compute_lines.ml comm_assoc.ml \
 iso_pattern.ml iso_compile.ml single_statement.ml simple_assignments.ml \
-ast0toast.ml check_meta.ml top_level.ml type_infer.ml \
+ast0toast.ml check_meta.ml top_level.ml type_infer.ml test_exps.ml \
 unitary_ast0.ml arity.ml index.ml context_neg.ml \
 insert_plus.ml function_prototypes.ml \
 unify_ast.ml semantic_cocci.ml data.ml free_vars.ml parse_aux.ml disjdistr.ml \

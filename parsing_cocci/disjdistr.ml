@@ -280,7 +280,7 @@ let disj_rule_elem r k re =
       generic_orify_rule_elem (disjmult (disjoption disjexp)) re [e1;e2;e3]
 	(function
 	    [exp1;exp2;exp3] ->
-	      Ast.rewrap re (Ast.ForHeader(fr,lp,e1,sem1,e2,sem2,e3,rp))
+	      Ast.rewrap re (Ast.ForHeader(fr,lp,exp1,sem1,exp2,sem2,exp3,rp))
 	  | _ -> failwith "not possible")
   | Ast.IteratorHeader(whl,lp,args,rp) ->
       generic_orify_rule_elem (disjdots disjexp) re args

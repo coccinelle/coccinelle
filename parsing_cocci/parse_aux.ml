@@ -363,31 +363,30 @@ let exp_stm exp pv =
   Ast0.wrap(Ast0.ExprStatement (exp, clt2mcode ";" pv))
 
 let ifthen iff lp tst rp thn =
-  let tst = Ast0.set_test_exp tst in
   Ast0.wrap(Ast0.IfThen(clt2mcode "if" iff,
     clt2mcode "(" lp,tst,clt2mcode ")" rp,thn,
     (Ast0.default_info(),Ast0.context_befaft())))
 
 let ifthenelse iff lp tst rp thn e els =
   Ast0.wrap(Ast0.IfThenElse(clt2mcode "if" iff,
-    clt2mcode "(" lp,Ast0.set_test_exp tst,clt2mcode ")" rp,thn,
+    clt2mcode "(" lp,tst,clt2mcode ")" rp,thn,
     clt2mcode "else" e,els,
     (Ast0.default_info(),Ast0.context_befaft())))
 
 let forloop fr lp e1 sc1 e2 sc2 e3 rp s =
   Ast0.wrap(Ast0.For(clt2mcode "for" fr,clt2mcode "(" lp,e1,
-		     clt2mcode ";" sc1,get_option Ast0.set_test_exp e2,
+		     clt2mcode ";" sc1,e2,
 		     clt2mcode ";" sc2,e3,clt2mcode ")" rp,s,
 		     (Ast0.default_info(),Ast0.context_befaft())))
 
 let whileloop w lp e rp s =
   Ast0.wrap(Ast0.While(clt2mcode "while" w,clt2mcode "(" lp,
-		       Ast0.set_test_exp e,clt2mcode ")" rp,s,
+		       e,clt2mcode ")" rp,s,
 		       (Ast0.default_info(),Ast0.context_befaft())))
 
 let doloop d s w lp e rp pv =
   Ast0.wrap(Ast0.Do(clt2mcode "do" d,s,clt2mcode "while" w,
-		    clt2mcode "(" lp,Ast0.set_test_exp e,clt2mcode ")" rp,
+		    clt2mcode "(" lp,e,clt2mcode ")" rp,
 		    clt2mcode ";" pv))
 
 let iterator i lp e rp s =

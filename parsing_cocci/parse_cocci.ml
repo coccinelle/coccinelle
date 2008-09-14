@@ -1427,6 +1427,7 @@ let process file isofile verbose =
 		 | _ ->
 		     failwith
 		       "bad list of reserved names - all must be at start" in
+	       let minus = Test_exps.process minus in
 	       let minus = Compute_lines.compute_lines minus in
 	       let plus = Compute_lines.compute_lines plus in
 	       let is_exp =

@@ -1180,11 +1180,9 @@ arith_expr(r,pe):
   | arith_expr(r,pe) TXor    arith_expr(r,pe)
       { P.arith_op Ast.Xor $1 $2 $3 }
   | arith_expr(r,pe) TAndLog arith_expr(r,pe)
-      { P.logic_op Ast.AndLog
-	  (Ast0.set_test_exp $1) $2 (Ast0.set_test_exp $3) }
+      { P.logic_op Ast.AndLog $1 $2 $3 }
   | arith_expr(r,pe) TOrLog  arith_expr(r,pe)
-      { P.logic_op Ast.OrLog
-	  (Ast0.set_test_exp $1) $2 (Ast0.set_test_exp $3) }
+      { P.logic_op Ast.OrLog $1 $2 $3 }
 
 cast_expr(r,pe):
     unary_expr(r,pe)                      { $1 }
