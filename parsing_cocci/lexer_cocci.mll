@@ -177,6 +177,7 @@ let id_tokens lexbuf =
   | "typedef" when in_meta ->    check_arity_context_linetype s; TTypedef
   | "declarer" when in_meta ->   check_arity_context_linetype s; TDeclarer
   | "iterator" when in_meta ->   check_arity_context_linetype s; TIterator
+  | "name" when in_meta ->       check_arity_context_linetype s; TName
   | "position" when in_meta ->   check_arity_context_linetype s; TPosition
   | "any" when in_meta ->        check_arity_context_linetype s; TPosAny
   | "pure" when in_meta && in_iso ->
@@ -342,6 +343,14 @@ let init _ =
     (function name ->
       let fn clt = TIteratorId(name,clt) in
       Hashtbl.replace iterator_names name fn);
+  Data.add_declarer_meta :=
+    (function name -> function pure ->
+      let fn clt = TMetaDeclarer(name,pure,clt) in
+      Hashtbl.replace metavariables (get_name name) fn);
+  Data.add_iterator_meta :=
+    (function name -> function pure ->
+      let fn clt = TMetaIterator(name,pure,clt) in
+      Hashtbl.replace metavariables (get_name name) fn);
   Data.init_rule := (function _ -> Hashtbl.clear metavariables);
   Data.install_bindings :=
     (function parent ->

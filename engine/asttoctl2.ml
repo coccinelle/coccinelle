@@ -1346,7 +1346,7 @@ let rec dots_and_nests plus nest whencodes bef aft dotcode after label
 	(match label with
 	  Some (lv,used) -> used := true;
 	    ctl_or (CTL.Pred(Lib_engine.Label lv,CTL.Control))
-	      (ctl_back_ex (retpred label))
+	      (ctl_back_ex (ctl_or (retpred label) (gotopred label)))
 	| None -> endpred label)
 	  (* was the following, but not clear why sgrep should allow
 	     incomplete patterns

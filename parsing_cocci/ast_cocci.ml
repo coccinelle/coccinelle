@@ -79,6 +79,8 @@ and metavar =
   | MetaFuncDecl of arity * meta_name (* name *)
   | MetaLocalFuncDecl of arity * meta_name (* name *)
   | MetaPosDecl of arity * meta_name (* name *)
+  | MetaDeclarerDecl of arity * meta_name (* name *)
+  | MetaIteratorDecl of arity * meta_name (* name *)
 
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)
@@ -599,6 +601,8 @@ let get_meta_name = function
   | MetaFuncDecl(ar,nm) -> nm
   | MetaLocalFuncDecl(ar,nm) -> nm
   | MetaPosDecl(ar,nm) -> nm
+  | MetaDeclarerDecl(ar,nm) -> nm
+  | MetaIteratorDecl(ar,nm) -> nm
 
 (* --------------------------------------------------------------------- *)
 

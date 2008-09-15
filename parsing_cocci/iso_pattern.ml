@@ -1529,7 +1529,19 @@ let instantiate bindings mv_bindings =
 		    Ast0.MetaExpr(name,constraints,x,form,pure) -> true
 		  | _ -> false)
 	      |	_ -> failwith "not possible" in
-	    if was_meta
+	    let nomodif e =
+	      let mc = Ast0.get_mcodekind exp in
+	      match mc with
+		Ast0.MINUS(x) ->
+		  (match !x with
+		    ([],_) -> true
+		  | _ -> false)
+	      |	Ast0.CONTEXT(x) | Ast0.MIXED(x) ->
+		  (match !x with
+		    (Ast.NOTHING,_,_) -> true
+		  | _ -> false)
+	      |	_ -> failwith "plus not possible" in
+	    if was_meta && nomodif exp && nomodif e
 	    then
 	      let rec negate e (*for rewrapping*) res (*code to process*) =
 		match Ast0.unwrap res with
@@ -1860,6 +1872,10 @@ let get_name = function
       (nm,function nm -> Ast.MetaLocalFuncDecl(ar,nm))
   | Ast.MetaPosDecl(ar,nm) ->
       (nm,function nm -> Ast.MetaPosDecl(ar,nm))
+  | Ast.MetaDeclarerDecl(ar,nm) ->
+      (nm,function nm -> Ast.MetaDeclarerDecl(ar,nm))
+  | Ast.MetaIteratorDecl(ar,nm) ->
+      (nm,function nm -> Ast.MetaIteratorDecl(ar,nm))
 
 let make_new_metavars metavars bindings =
   let new_metavars =

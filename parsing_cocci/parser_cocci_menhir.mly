@@ -19,7 +19,7 @@ module P = Parse_aux
 %token TIdExpression
 %token Tlist TFresh TConstant TError TWords TWhy0 TPlus0 TBang0
 %token TPure TContext
-%token TTypedef TDeclarer TIterator TPosition TPosAny
+%token TTypedef TDeclarer TIterator TName TPosition TPosAny
 %token TUsing TDisable TExtends TDepends TOn TEver TNever TExists TForall
 %token TReverse TNothing
 %token<string> TRuleName
@@ -37,6 +37,7 @@ module P = Parse_aux
 %token <string * Data.clt> TIdent TTypeId TDeclarerId TIteratorId
 
 %token <Parse_aux.idinfo>     TMetaId TMetaFunc TMetaLocalFunc
+%token <Parse_aux.info>       TMetaIterator TMetaDeclarer
 %token <Parse_aux.expinfo>    TMetaErr 
 %token <Parse_aux.info>       TMetaParam TMetaStm TMetaStmList TMetaType
 %token <Parse_aux.list_info>  TMetaParamList TMetaExpList
@@ -300,16 +301,24 @@ metadec:
       if arity = Ast.NONE && pure = Ast0.Impure
       then (!Data.add_type_name name; [])
       else raise (Semantic_cocci.Semantic "bad typedef")) }
-| TDeclarer
+| TDeclarer TName
     { (fun arity (_,name) pure check_meta ->
       if arity = Ast.NONE && pure = Ast0.Impure
       then (!Data.add_declarer_name name; [])
       else raise (Semantic_cocci.Semantic "bad declarer")) }
-| TIterator
+| TIterator TName
     { (fun arity (_,name) pure check_meta ->
       if arity = Ast.NONE && pure = Ast0.Impure
       then (!Data.add_iterator_name name; [])
       else raise (Semantic_cocci.Semantic "bad iterator")) }
+| TDeclarer
+    { (fun arity name pure check_meta ->
+      let tok = check_meta(Ast.MetaDeclarerDecl(arity,name)) in
+      !Data.add_declarer_meta name pure; tok) }
+| TIterator
+    { (fun arity name pure check_meta ->
+      let tok = check_meta(Ast.MetaIteratorDecl(arity,name)) in
+      !Data.add_iterator_meta name pure; tok) }
 
 
 %inline metakind_atomic:

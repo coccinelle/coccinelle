@@ -108,7 +108,13 @@ let add_declarer_name: (string -> unit) ref =
   ref (fun _ -> failwith "uninitialized add_decl") 
 
 let add_iterator_name: (string -> unit) ref = 
+  ref (fun _ -> failwith "uninitialized add_iter") 
+
+let add_declarer_meta: (Ast.meta_name -> Ast0.pure -> unit) ref = 
   ref (fun _ -> failwith "uninitialized add_decl") 
+
+let add_iterator_meta: (Ast.meta_name -> Ast0.pure -> unit) ref = 
+  ref (fun _ -> failwith "uninitialized add_iter") 
 
 let init_rule: (unit -> unit) ref =
   ref (fun _ -> failwith "uninitialized install_bindings") 
