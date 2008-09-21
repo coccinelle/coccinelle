@@ -390,8 +390,7 @@ let doloop d s w lp e rp pv =
 		    clt2mcode ";" pv))
 
 let iterator i lp e rp s =
-  Ast0.wrap(Ast0.Iterator(id2mcode i,clt2mcode "(" lp,e,
-			  clt2mcode ")" rp,s,
+  Ast0.wrap(Ast0.Iterator(i,clt2mcode "(" lp,e,clt2mcode ")" rp,s,
 			  (Ast0.default_info(),Ast0.context_befaft())))
 
 let switch s lp e rp lb c rb =

@@ -164,7 +164,7 @@ and left_declaration d =
   | Ast0.Init(None,ty,id,eq,ini,sem) -> left_typeC ty
   | Ast0.UnInit(Some stg,ty,id,sem) -> modif_before_mcode stg
   | Ast0.UnInit(None,ty,id,sem) -> left_typeC ty
-  | Ast0.MacroDecl(name,lp,args,rp,sem) -> modif_before_mcode name
+  | Ast0.MacroDecl(name,lp,args,rp,sem) -> left_ident name
   | Ast0.TyDecl(ty,sem) -> left_typeC ty
   | Ast0.Typedef(stg,ty,id,sem) -> modif_before_mcode stg
   | Ast0.DisjDecl(_,decls,_,_) -> List.exists left_declaration decls
@@ -203,8 +203,7 @@ and left_statement s =
   | Ast0.Do(d,body,whl,lp,exp,rp,sem) -> modif_before_mcode d
   | Ast0.For(fr,lp,e1,sem1,e2,sem2,e3,rp,body,(info,aft)) ->
       modif_before_mcode fr
-  | Ast0.Iterator(nm,lp,args,rp,body,(info,aft)) ->
-      modif_before_mcode nm
+  | Ast0.Iterator(nm,lp,args,rp,body,(info,aft)) -> left_ident nm
   | Ast0.Switch(switch,lp,exp,rp,lb,cases,rb) -> modif_before_mcode switch
   | Ast0.Break(br,sem) -> modif_before_mcode br
   | Ast0.Continue(cont,sem) -> modif_before_mcode cont

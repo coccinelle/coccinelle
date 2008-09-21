@@ -111,8 +111,8 @@ let token2c (tok,_) =
   | PC.TTypeId(s,clt) -> (pr "typename-%s" s)^(line_type2c clt)
   | PC.TDeclarerId(s,clt) -> (pr "declarername-%s" s)^(line_type2c clt)
   | PC.TIteratorId(s,clt) -> (pr "iteratorname-%s" s)^(line_type2c clt)
-  | PC.TMetaDeclarer(_,_,clt) -> "declmeta"^(line_type2c clt)
-  | PC.TMetaIterator(_,_,clt) -> "itermeta"^(line_type2c clt)
+  | PC.TMetaDeclarer(_,_,_,clt) -> "declmeta"^(line_type2c clt)
+  | PC.TMetaIterator(_,_,_,clt) -> "itermeta"^(line_type2c clt)
 
   | PC.TSizeof(clt) -> "sizeof"^(line_type2c clt)
 
@@ -582,7 +582,7 @@ let split_token ((tok,_) as t) =
   | PC.TMetaId(_,_,_,clt) | PC.TMetaType(_,_,clt)
   | PC.TMetaStm(_,_,clt) | PC.TMetaStmList(_,_,clt) | PC.TMetaErr(_,_,_,clt)
   | PC.TMetaFunc(_,_,_,clt) | PC.TMetaLocalFunc(_,_,_,clt)
-  | PC.TMetaDeclarer(_,_,clt) | PC.TMetaIterator(_,_,clt) -> split t clt
+  | PC.TMetaDeclarer(_,_,_,clt) | PC.TMetaIterator(_,_,_,clt) -> split t clt
   | PC.TMPtVirg | PC.TArob | PC.TArobArob -> ([t],[t])
   | PC.TPArob | PC.TMetaPos(_,_,_,_) -> ([t],[])
 

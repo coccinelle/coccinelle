@@ -462,9 +462,8 @@ and declaration tgt decl =
       make_decl decl tgt arity (Ast0.UnInit(stg,ty,id,sem))
   | Ast0.MacroDecl(name,lp,args,rp,sem) ->
       let arity =
-	all_same true tgt
-	  (mcode2line lp) (List.map mcode2arity [name;lp;rp;sem]) in
-      let name = mcode name in
+	all_same true tgt (mcode2line lp) (List.map mcode2arity [lp;rp;sem]) in
+      let name = ident false arity name in
       let lp = mcode lp in
       let args = dots (expression arity) args in
       let rp = mcode rp in
@@ -721,10 +720,8 @@ and statement tgt stm =
       make_rule_elem stm tgt arity
 	(Ast0.For(fr,lp,exp1,sem1,exp2,sem2,exp3,rp,body,aft))
   | Ast0.Iterator(nm,lp,args,rp,body,aft) ->
-      let arity =
-	stm_same (mcode2line nm)
-	  (List.map mcode2arity [nm;lp;rp]) in
-      let nm = mcode nm in
+      let arity = stm_same (mcode2line lp) (List.map mcode2arity [lp;rp]) in
+      let nm = ident false arity nm in
       let lp = mcode lp in
       let args = dots (expression arity) args in
       let rp = mcode rp in

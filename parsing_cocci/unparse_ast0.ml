@@ -296,7 +296,7 @@ and declaration d =
 	  print_option (mcode U.storage) stg; print_named_type ty id;
 	  mcode print_string sem
       | Ast0.MacroDecl(name,lp,args,rp,sem) ->
-	  mcode print_string name; mcode print_string_box lp;
+	  ident name; mcode print_string_box lp;
 	  let _ = dots (function _ -> ()) expression args in
 	  close_box(); mcode print_string rp; mcode print_string sem
       | Ast0.TyDecl(ty,sem) -> typeC ty; mcode print_string sem
@@ -434,7 +434,7 @@ and statement arity s =
 	  mcode (function _ -> ()) ((),(),info,aft,ref Ast0.NoMetaPos)
       | Ast0.Iterator(nm,lp,args,rp,body,(info,aft)) ->
 	  print_string arity;
-	  mcode print_string nm; print_string " "; mcode print_string_box lp;
+	  ident nm; print_string " "; mcode print_string_box lp;
 	  let _ = dots (function _ -> ()) expression args in
 	  close_box(); mcode print_string rp; print_string " ";
 	  statement arity body;

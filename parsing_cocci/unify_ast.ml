@@ -255,9 +255,8 @@ and unify_declaration d1 d2 =
       else return false
   | (Ast.MacroDecl(n1,lp1,args1,rp1,sem1),
      Ast.MacroDecl(n2,lp2,args2,rp2,sem2)) ->
-       if unify_mcode n1 n2
-       then unify_dots unify_expression edots args1 args2
-       else return false
+       conjunct_bindings (unify_ident n1 n2)
+	 (unify_dots unify_expression edots args1 args2)
   | (Ast.TyDecl(ft1,s1),Ast.TyDecl(ft2,s2)) -> unify_fullType ft1 ft2
   | (Ast.Typedef(stg1,ft1,id1,s1),Ast.Typedef(stg2,ft2,id2,s2)) ->
       conjunct_bindings (unify_fullType ft1 ft2) (unify_typeC id1 id2)
@@ -396,9 +395,8 @@ and unify_rule_elem re1 re2 =
 	    (unify_option unify_expression e31 e32))
   | (Ast.IteratorHeader(nm1,lp1,args1,rp1),
      Ast.IteratorHeader(nm2,lp2,args2,rp2)) ->
-      if unify_mcode nm1 nm2
-      then unify_dots unify_expression edots args1 args2
-      else return false
+      conjunct_bindings (unify_ident nm1 nm2)
+	 (unify_dots unify_expression edots args1 args2)
   | (Ast.DefineHeader(_,n1,p1),Ast.DefineHeader(_,n2,p2)) ->
       conjunct_bindings (unify_ident n1 n2)
 	(unify_define_parameters p1 p2)

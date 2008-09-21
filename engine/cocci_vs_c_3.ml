@@ -1541,17 +1541,14 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
         | iisb::lpb::rpb::iiendb::iifakestart::iisto -> 
             (iisb,lpb,rpb,iiendb, iifakestart,iisto)
         | _ -> raise Impossible
-        )
-      in
-      if term sa = sb 
-      then 
-        (if allminus 
-        then minusize_list iistob
-        else return ((), iistob)
-        ) >>= (fun () iistob ->
+        ) in
+      (if allminus 
+      then minusize_list iistob
+      else return ((), iistob)
+      ) >>= (fun () iistob ->
 
         X.tokenf_mck mckstart iifakestart >>= (fun mckstart iifakestart -> 
-        tokenf sa iisb >>= (fun sa iisb -> 
+	ident DontKnow sa (sb, iisb) >>= (fun sa (sb, iisb) ->
         tokenf lpa lpb >>= (fun lpa lpb -> 
         tokenf rpa rpb >>= (fun rpa rpb -> 
         tokenf enda iiendb >>= (fun enda iiendb -> 
@@ -1564,8 +1561,6 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
             (B.MacroDecl ((sb,ebs),
                          [iisb;lpb;rpb;iiendb;iifakestart] ++ iistob))
           ))))))))
-
-     else fail
   
   | _ -> fail
 
@@ -3184,18 +3179,15 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
       -> 
       let (ib1, ib2, ib3) = tuple_of_list3 ii in
 
-      if (term ia1) =$= s then
-
-       tokenf ia1 ib1 >>= (fun ia1 ib1 -> 
-       tokenf ia2 ib2 >>= (fun ia2 ib2 -> 
-       tokenf ia3 ib3 >>= (fun ia3 ib3 -> 
-       arguments (seqstyle eas) (A.undots eas) ebs >>= (fun easundots ebs -> 
-        let eas = redots eas easundots in
-        return (
-          A.IteratorHeader (ia1, ia2, eas, ia3), 
-          F.MacroIterHeader (st, ((s,ebs), [ib1;ib2;ib3]))
-        )))))
-      else fail
+      ident DontKnow ia1 (s, ib1) >>= (fun ia1 (s, ib1) -> 
+      tokenf ia2 ib2 >>= (fun ia2 ib2 -> 
+      tokenf ia3 ib3 >>= (fun ia3 ib3 -> 
+      arguments (seqstyle eas) (A.undots eas) ebs >>= (fun easundots ebs -> 
+       let eas = redots eas easundots in
+       return (
+         A.IteratorHeader (ia1, ia2, eas, ia3), 
+         F.MacroIterHeader (st, ((s,ebs), [ib1;ib2;ib3]))
+       )))))
 
      
 

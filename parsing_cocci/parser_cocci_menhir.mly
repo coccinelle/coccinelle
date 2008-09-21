@@ -37,7 +37,7 @@ module P = Parse_aux
 %token <string * Data.clt> TIdent TTypeId TDeclarerId TIteratorId
 
 %token <Parse_aux.idinfo>     TMetaId TMetaFunc TMetaLocalFunc
-%token <Parse_aux.info>       TMetaIterator TMetaDeclarer
+%token <Parse_aux.idinfo>     TMetaIterator TMetaDeclarer
 %token <Parse_aux.expinfo>    TMetaErr 
 %token <Parse_aux.info>       TMetaParam TMetaStm TMetaStmList TMetaType
 %token <Parse_aux.list_info>  TMetaParamList TMetaExpList
@@ -311,14 +311,6 @@ metadec:
       if arity = Ast.NONE && pure = Ast0.Impure
       then (!Data.add_iterator_name name; [])
       else raise (Semantic_cocci.Semantic "bad iterator")) }
-| TDeclarer
-    { (fun arity name pure check_meta ->
-      let tok = check_meta(Ast.MetaDeclarerDecl(arity,name)) in
-      !Data.add_declarer_meta name pure; tok) }
-| TIterator
-    { (fun arity name pure check_meta ->
-      let tok = check_meta(Ast.MetaIteratorDecl(arity,name)) in
-      !Data.add_iterator_meta name pure; tok) }
 
 
 %inline metakind_atomic:
@@ -335,6 +327,14 @@ metadec:
       let tok = check_meta(Ast.MetaLocalFuncDecl(arity,name)) in
       !Data.add_local_func_meta name constraints pure;
       tok) }
+| TDeclarer
+    { (fun arity name pure check_meta constraints ->
+      let tok = check_meta(Ast.MetaDeclarerDecl(arity,name)) in
+      !Data.add_declarer_meta name constraints pure; tok) }
+| TIterator
+    { (fun arity name pure check_meta constraints ->
+      let tok = check_meta(Ast.MetaIteratorDecl(arity,name)) in
+      !Data.add_iterator_meta name constraints pure; tok) }
 
 %inline metakind_atomic_expi:
   TError
@@ -794,7 +794,7 @@ statement:
     { P.whileloop $1 $2 $3 $4 $5 }
 | TDo single_statement TWhile TOPar eexpr TCPar TPtVirg
     { P.doloop $1 $2 $3 $4 $5 $6 $7 }
-| TIteratorId TOPar eexpr_list_option TCPar single_statement
+| iter_ident TOPar eexpr_list_option TCPar single_statement
     { P.iterator $1 $2 $3 $4 $5 }
 | TSwitch TOPar eexpr TCPar TOBrace list(case_line) TCBrace
     { P.switch $1 $2 $3 $4 $5 $6 $7 }
@@ -899,8 +899,8 @@ decl_var:
 	       (t,P.clt2mcode "(" lp1,P.clt2mcode "*" st,P.clt2mcode ")" rp1,
 		P.clt2mcode "(" lp2,p,P.clt2mcode ")" rp2)) in
         [Ast0.wrap(Ast0.UnInit(s,fn t,id,P.clt2mcode ";" pv))] }
-  | TDeclarerId TOPar eexpr_list_option TCPar TPtVirg
-      { [Ast0.wrap(Ast0.MacroDecl(P.id2mcode $1,P.clt2mcode "(" $2,$3,
+  | decl_ident TOPar eexpr_list_option TCPar TPtVirg
+      { [Ast0.wrap(Ast0.MacroDecl($1,P.clt2mcode "(" $2,$3,
 				  P.clt2mcode ")" $4,P.clt2mcode ";" $5))] } 
   | s=ioption(storage)
     t=fn_ctype lp1=TOPar st=TMul d=d_ident rp1=TCPar
@@ -952,8 +952,8 @@ one_decl_var:
 	       (t,P.clt2mcode "(" lp1,P.clt2mcode "*" st,P.clt2mcode ")" rp1,
 		P.clt2mcode "(" lp2,p,P.clt2mcode ")" rp2)) in
         Ast0.wrap(Ast0.UnInit(s,fn t,id,P.clt2mcode ";" pv)) }
-  | TDeclarerId TOPar eexpr_list_option TCPar TPtVirg
-      { Ast0.wrap(Ast0.MacroDecl(P.id2mcode $1,P.clt2mcode "(" $2,$3,
+  | decl_ident TOPar eexpr_list_option TCPar TPtVirg
+      { Ast0.wrap(Ast0.MacroDecl($1,P.clt2mcode "(" $2,$3,
 				  P.clt2mcode ")" $4,P.clt2mcode ";" $5)) } 
   | s=ioption(storage)
     t=fn_ctype lp1=TOPar st=TMul d=d_ident rp1=TCPar
@@ -1390,6 +1390,20 @@ func_ident: pure_ident
 ident: pure_ident
          { Ast0.wrap(Ast0.Id(P.id2mcode $1)) }
      | TMetaId
+         { let (nm,constraints,pure,clt) = $1 in
+         Ast0.wrap(Ast0.MetaId(P.clt2mcode nm clt,constraints,pure)) }
+
+decl_ident:
+       TDeclarerId
+         { Ast0.wrap(Ast0.Id(P.id2mcode $1)) }
+     | TMetaDeclarer
+         { let (nm,constraints,pure,clt) = $1 in
+         Ast0.wrap(Ast0.MetaId(P.clt2mcode nm clt,constraints,pure)) }
+
+iter_ident:
+       TIteratorId
+         { Ast0.wrap(Ast0.Id(P.id2mcode $1)) }
+     | TMetaIterator
          { let (nm,constraints,pure,clt) = $1 in
          Ast0.wrap(Ast0.MetaId(P.clt2mcode nm clt,constraints,pure)) }
 

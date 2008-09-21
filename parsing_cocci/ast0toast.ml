@@ -453,7 +453,7 @@ and declaration d =
 		       ident id,mcode sem)
 	| _ -> Ast.UnInit(get_option mcode stg,typeC ty,ident id,mcode sem))
     | Ast0.MacroDecl(name,lp,args,rp,sem) ->
-	let name = mcode name in
+	let name = ident name in
 	let lp = mcode lp in
 	let args = dots expression args in
 	let rp = mcode rp in
@@ -619,7 +619,7 @@ and statement s =
       | Ast0.Iterator(nm,lp,args,rp,body,(_,aft)) ->
 	  Ast.Iterator(rewrap_rule_elem s
 		      (Ast.IteratorHeader
-			 (mcode nm,mcode lp,
+			 (ident nm,mcode lp,
 			  dots expression args,
 			  mcode rp)),
 		    statement Ast.NotSequencible body,

@@ -381,9 +381,9 @@ and declaration d =
 	  mkres d (Ast0.UnInit(stg,ty,id,sem))
 	    (promote_mcode x) (promote_mcode sem))
   | Ast0.MacroDecl(name,lp,args,rp,sem) ->
+      let name = ident name in
       let args = dots is_exp_dots (Some(promote_mcode lp)) expression args in
-      mkres d (Ast0.MacroDecl(name,lp,args,rp,sem))
-	(promote_mcode name) (promote_mcode sem)
+      mkres d (Ast0.MacroDecl(name,lp,args,rp,sem)) name (promote_mcode sem)
   | Ast0.TyDecl(ty,sem) ->
       let ty = typeC ty in
       mkres d (Ast0.TyDecl(ty,sem)) ty (promote_mcode sem)
@@ -569,11 +569,12 @@ let rec statement s =
 			  (Ast0.get_info right,aft)))
 	  (promote_mcode fr) right
     | Ast0.Iterator(nm,lp,args,rp,body,(_,aft)) ->
+	let nm = ident nm in
 	let args = dots is_exp_dots (Some(promote_mcode lp)) expression args in
 	let body = statement body in
 	let right = promote_to_statement body aft in
 	mkres s (Ast0.Iterator(nm,lp,args,rp,body,(Ast0.get_info right,aft)))
-	  (promote_mcode nm) right
+	  nm right
     | Ast0.Switch(switch,lp,exp,rp,lb,cases,rb) ->
 	let exp = expression exp in
 	let cases =

@@ -97,6 +97,14 @@ let add_local_func_meta:
     (Ast.meta_name -> iconstraints -> Ast0.pure -> unit) ref = 
   ref (fun _ -> failwith "uninitialized add_meta") 
 
+let add_declarer_meta:
+    (Ast.meta_name -> iconstraints -> Ast0.pure -> unit) ref =
+  ref (fun _ -> failwith "uninitialized add_decl") 
+
+let add_iterator_meta:
+    (Ast.meta_name -> iconstraints -> Ast0.pure -> unit) ref =
+  ref (fun _ -> failwith "uninitialized add_iter") 
+
 let add_pos_meta:
     (Ast.meta_name -> pconstraints -> Ast.meta_collect -> unit) ref = 
   ref (fun _ -> failwith "uninitialized add_meta") 
@@ -108,12 +116,6 @@ let add_declarer_name: (string -> unit) ref =
   ref (fun _ -> failwith "uninitialized add_decl") 
 
 let add_iterator_name: (string -> unit) ref = 
-  ref (fun _ -> failwith "uninitialized add_iter") 
-
-let add_declarer_meta: (Ast.meta_name -> Ast0.pure -> unit) ref = 
-  ref (fun _ -> failwith "uninitialized add_decl") 
-
-let add_iterator_meta: (Ast.meta_name -> Ast0.pure -> unit) ref = 
   ref (fun _ -> failwith "uninitialized add_iter") 
 
 let init_rule: (unit -> unit) ref =

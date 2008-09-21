@@ -230,7 +230,7 @@ let combiner bind option_default
 	    (bind (named_type ty id) (string_mcode sem))
       | Ast.MacroDecl(name,lp,args,rp,sem) ->
 	  multibind
-	    [string_mcode name; string_mcode lp; expression_dots args;
+	    [ident name; string_mcode lp; expression_dots args;
 	      string_mcode rp; string_mcode sem]
       | Ast.TyDecl(ty,sem) -> bind (fullType ty) (string_mcode sem)
       | Ast.Typedef(stg,ty,id,sem) ->
@@ -318,7 +318,7 @@ let combiner bind option_default
 		      get_option expression e2; string_mcode sem2; 
 		      get_option expression e3; string_mcode rp]
       | Ast.IteratorHeader(nm,lp,args,rp) ->
-	  multibind [string_mcode nm; string_mcode lp;
+	  multibind [ident nm; string_mcode lp;
 		      expression_dots args; string_mcode rp]
       | Ast.SwitchHeader(switch,lp,exp,rp) ->
 	  multibind [string_mcode switch; string_mcode lp; expression exp; 
@@ -712,8 +712,7 @@ let rebuilder
 	    Ast.UnInit(get_option storage_mcode stg, fullType ty, ident id,
 		       string_mcode sem)
 	| Ast.MacroDecl(name,lp,args,rp,sem) ->
-	    Ast.MacroDecl(string_mcode name, string_mcode lp,
-			  expression_dots args,
+	    Ast.MacroDecl(ident name, string_mcode lp, expression_dots args,
 			  string_mcode rp,string_mcode sem)
 	| Ast.TyDecl(ty,sem) -> Ast.TyDecl(fullType ty, string_mcode sem)
 	| Ast.Typedef(stg,ty,id,sem) ->
@@ -803,7 +802,7 @@ let rebuilder
 			  get_option expression e2, string_mcode sem2, 
 			  get_option expression e3, string_mcode rp)
 	| Ast.IteratorHeader(whl,lp,args,rp) ->
-	    Ast.IteratorHeader(string_mcode whl, string_mcode lp,
+	    Ast.IteratorHeader(ident whl, string_mcode lp,
 			       expression_dots args, string_mcode rp)
 	| Ast.SwitchHeader(switch,lp,exp,rp) ->
 	    Ast.SwitchHeader(string_mcode switch, string_mcode lp,

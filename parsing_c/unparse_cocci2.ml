@@ -361,7 +361,7 @@ and declaration d =
       print_named_type ty id;
       mcode print_string sem
   | Ast.MacroDecl(name,lp,args,rp,sem) ->
-      mcode print_string name; mcode print_string_box lp;
+      ident name; mcode print_string_box lp;
       dots (function _ -> ()) expression args;
       close_box(); mcode print_string rp; mcode print_string sem
   | Ast.TyDecl(ty,sem) -> fullType ty; mcode print_string sem
@@ -498,7 +498,7 @@ and rule_elem arity re =
       mcode print_string rp; print_string " "
   | Ast.IteratorHeader(nm,lp,args,rp) ->
       print_string arity;
-      mcode print_string nm; print_string " "; mcode print_string_box lp;
+      ident nm; print_string " "; mcode print_string_box lp;
       dots (function _ -> ()) expression args; close_box();
       mcode print_string rp; print_string " "
 

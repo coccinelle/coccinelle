@@ -76,7 +76,6 @@ let get_minus_constants bind orbind =
     match Ast.unwrap e with
       Ast.DisjDecl(decls) ->
 	disj_union_all (List.map r.V.combiner_declaration decls)
-    | Ast.MacroDecl(nm,lp,args,rp,pv) -> [Ast.unwrap_mcode nm]
     | Ast.Ddots(dots,whencode) -> []
     | _ -> k e in
 
@@ -84,7 +83,6 @@ let get_minus_constants bind orbind =
     match Ast.unwrap e with
       Ast.DisjRuleElem(res) ->
 	disj_union_all (List.map r.V.combiner_rule_elem res)
-    | Ast.IteratorHeader(it,_,_,_) -> bind (k e) [Ast.unwrap_mcode it]
     | _ -> k e in
 
   let statement r k e =

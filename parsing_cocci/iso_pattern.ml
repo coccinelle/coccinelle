@@ -757,14 +757,12 @@ let match_maker checks_needed context_required whencode_allowed =
 	  else return false
       | (Ast0.MacroDecl(namea,lp1,argsa,rp1,sc1),
 	 Ast0.MacroDecl(nameb,lp,argsb,rp,sc)) ->
-	   if mcode_equal namea nameb
-	   then
-	     conjunct_many_bindings
-	       [check_mcode lp1 lp; check_mcode rp1 rp;
-		 check_mcode sc1 sc; check_mcode namea nameb;
-		 match_dots match_expr is_elist_matcher do_elist_match
-		   argsa argsb]
-	   else return false
+	   conjunct_many_bindings
+	     [match_ident namea nameb;
+	       check_mcode lp1 lp; check_mcode rp1 rp;
+	       check_mcode sc1 sc;
+	       match_dots match_expr is_elist_matcher do_elist_match
+		 argsa argsb]
       | (Ast0.TyDecl(tya,sc1),Ast0.TyDecl(tyb,sc)) ->
 	  conjunct_bindings (check_mcode sc1 sc) (match_typeC tya tyb)
       | (Ast0.Typedef(stga,tya,ida,sc1),Ast0.Typedef(stgb,tyb,idb,sc)) ->
@@ -966,15 +964,12 @@ let match_maker checks_needed context_required whencode_allowed =
 		   match_statement bodya bodyb]
 	  | (Ast0.Iterator(nma,lp1,argsa,rp1,bodya,_),
 	     Ast0.Iterator(nmb,lp,argsb,rp,bodyb,_)) ->
-	       if mcode_equal nma nmb
-	       then
-		 conjunct_many_bindings
-		   [check_mcode nma nmb;
-		     check_mcode lp1 lp; check_mcode rp1 rp;
-		     match_dots match_expr is_elist_matcher do_elist_match
-		       argsa argsb;
-		     match_statement bodya bodyb]
-	       else return false
+	       conjunct_many_bindings
+		 [match_ident nma nmb;
+		   check_mcode lp1 lp; check_mcode rp1 rp;
+		   match_dots match_expr is_elist_matcher do_elist_match
+		     argsa argsb;
+		   match_statement bodya bodyb]
 	  | (Ast0.Switch(s1,lp1,expa,rp1,lb1,casesa,rb1),
 	     Ast0.Switch(s,lp,expb,rp,lb,casesb,rb)) ->
 	       conjunct_many_bindings

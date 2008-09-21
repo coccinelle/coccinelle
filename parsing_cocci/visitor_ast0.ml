@@ -240,7 +240,7 @@ let combiner bind option_default
 	    (bind (named_type ty id) (string_mcode sem))
       | Ast0.MacroDecl(name,lp,args,rp,sem) ->
 	  multibind
-	    [string_mcode name; string_mcode lp; expression_dots args;
+	    [ident name; string_mcode lp; expression_dots args;
 	      string_mcode rp; string_mcode sem]
       | Ast0.TyDecl(ty,sem) -> bind (typeC ty) (string_mcode sem)
       | Ast0.Typedef(stg,ty,id,sem) ->
@@ -357,7 +357,7 @@ let combiner bind option_default
 	      string_mcode rp; statement body]
       | Ast0.Iterator(nm,lp,args,rp,body,_) ->
 	  multibind
-	    [string_mcode nm; string_mcode lp; expression_dots args;
+	    [ident nm; string_mcode lp; expression_dots args;
 	      string_mcode rp; statement body]
       |	Ast0.Switch(switch,lp,exp,rp,lb,cases,rb) ->
 	  multibind
@@ -727,7 +727,7 @@ let rebuilder = fun
 	    Ast0.UnInit(get_option storage_mcode stg,
 			typeC ty, ident id, string_mcode sem)
 	| Ast0.MacroDecl(name,lp,args,rp,sem) ->
-	    Ast0.MacroDecl(string_mcode name,string_mcode lp,
+	    Ast0.MacroDecl(ident name,string_mcode lp,
 			   expression_dots args,
 			   string_mcode rp,string_mcode sem)
 	| Ast0.TyDecl(ty,sem) -> Ast0.TyDecl(typeC ty, string_mcode sem)
@@ -834,7 +834,7 @@ let rebuilder = fun
 		     get_option expression e3,
 		     string_mcode rp, statement body, aft)
 	| Ast0.Iterator(nm,lp,args,rp,body,aft) ->
-	    Ast0.Iterator(string_mcode nm, string_mcode lp,
+	    Ast0.Iterator(ident nm, string_mcode lp,
 			  expression_dots args,
 			  string_mcode rp, statement body, aft)
 	| Ast0.Switch(switch,lp,exp,rp,lb,cases,rb) ->

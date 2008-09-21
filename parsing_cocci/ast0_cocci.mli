@@ -158,7 +158,7 @@ and base_declaration =
   | UnInit     of Ast_cocci.storage mcode option * typeC * ident *
 	string mcode (* ; *)
   | TyDecl of typeC * string mcode (* ; *)
-  | MacroDecl of string mcode (* name *) * string mcode (* ( *) *
+  | MacroDecl of ident (* name *) * string mcode (* ( *) *
         expression dots * string mcode (* ) *) * string mcode (* ; *)
   | Typedef of string mcode (* typedef *) * typeC * typeC * string mcode (*;*)
   | DisjDecl   of string mcode * declaration list * string mcode list *
@@ -259,7 +259,7 @@ and base_statement =
 	             expression option * string mcode (*;*) *
                      expression option * string mcode (* ) *) * statement *
 	             (info * mcodekind) (* after info *)
-  | Iterator      of string mcode (* name *) * string mcode (* ( *) *
+  | Iterator      of ident (* name *) * string mcode (* ( *) *
 	             expression dots * string mcode (* ) *) *
 	             statement * (info * mcodekind) (* after info *)
   | Switch        of string mcode (* switch *) * string mcode (* ( *) *

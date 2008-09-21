@@ -322,6 +322,14 @@ let init _ =
     (fun name constraints pure ->
       let fn clt = TMetaLocalFunc(name,constraints,pure,clt) in
       Hashtbl.replace metavariables (get_name name) fn);
+  Data.add_iterator_meta :=
+    (fun name constraints pure ->
+      let fn clt = TMetaIterator(name,constraints,pure,clt) in
+      Hashtbl.replace metavariables (get_name name) fn);
+  Data.add_declarer_meta :=
+    (fun name constraints pure ->
+      let fn clt = TMetaDeclarer(name,constraints,pure,clt) in
+      Hashtbl.replace metavariables (get_name name) fn);
   Data.add_pos_meta :=
     (fun name constraints any ->
       let fn ((d,ln,_,_,_,_,_,_) as clt) =
@@ -343,14 +351,6 @@ let init _ =
     (function name ->
       let fn clt = TIteratorId(name,clt) in
       Hashtbl.replace iterator_names name fn);
-  Data.add_declarer_meta :=
-    (function name -> function pure ->
-      let fn clt = TMetaDeclarer(name,pure,clt) in
-      Hashtbl.replace metavariables (get_name name) fn);
-  Data.add_iterator_meta :=
-    (function name -> function pure ->
-      let fn clt = TMetaIterator(name,pure,clt) in
-      Hashtbl.replace metavariables (get_name name) fn);
   Data.init_rule := (function _ -> Hashtbl.clear metavariables);
   Data.install_bindings :=
     (function parent ->

@@ -238,7 +238,7 @@ and base_declaration =
 	initialiser * string mcode (*;*)
   | UnInit of storage mcode option * fullType * ident * string mcode (* ; *)
   | TyDecl of fullType * string mcode (* ; *)
-  | MacroDecl of string mcode (* name *) * string mcode (* ( *) *
+  | MacroDecl of ident (* name *) * string mcode (* ( *) *
         expression dots * string mcode (* ) *) * string mcode (* ; *)
   | Typedef of string mcode (*typedef*) * fullType * 
                typeC (* either TypeName or metavar *) * string mcode (*;*)
@@ -365,7 +365,7 @@ and base_rule_elem =
                      expression option * string mcode (*;*) *
 	             expression option * string mcode (*;*) *
                      expression option * string mcode (* ) *)
-  | IteratorHeader of string mcode (* name *) * string mcode (* ( *) *
+  | IteratorHeader of ident (* name *) * string mcode (* ( *) *
 	             expression dots * string mcode (* ) *)
   | SwitchHeader  of string mcode (* switch *) * string mcode (* ( *) *
 	             expression * string mcode (* ) *)

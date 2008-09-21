@@ -228,8 +228,6 @@ let do_get_constants constants keywords env neg_pos =
     match Ast.unwrap d with
       Ast.DisjDecl(decls) ->
 	disj_union_all (List.map r.V.combiner_declaration decls)
-    | Ast.MacroDecl(nm,lp,args,rp,pv) ->
-	bind (k d) (constants (Ast.unwrap_mcode nm))
     | Ast.OptDecl(decl) -> option_default
     | Ast.Ddots(dots,whencode) -> option_default
     | _ -> k d in
@@ -258,8 +256,6 @@ let do_get_constants constants keywords env neg_pos =
 	bind (keywords "do") (k re)
     | Ast.ForHeader(fr,lp,e1,sem1,e2,sem2,e3,rp) ->
 	bind (keywords "for") (k re)
-    | Ast.IteratorHeader(nm,lp,args,rp) ->
-	bind (constants (Ast.unwrap_mcode nm)) (k re)
     | Ast.SwitchHeader(switch,lp,exp,rp) ->
 	bind (keywords "switch") (k re)
     | Ast.Break(br,sem) ->
