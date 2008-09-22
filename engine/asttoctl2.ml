@@ -2120,7 +2120,8 @@ let rec cleanup c =
 (* --------------------------------------------------------------------- *)
 (* Function declaration *)
 
-let top_level (ua,pos) t =
+let top_level name (ua,pos) t =
+  let ua = List.filter (function (nm,_) -> nm = name) ua in
   used_after := ua;
   saved := Ast.get_saved t;
   let quantified = Common.minus_set ua pos in
@@ -2183,7 +2184,7 @@ let asttoctlz (name,(_,_,exists_flag),l) used_after positions =
 	 (function (t,_) ->
 	   match Ast.unwrap t with Ast.ERRORWORDS(exps) -> false | _ -> true)
 	 (List.combine l (List.combine used_after positions))) in
-  let res = List.map2 top_level used_after l in
+  let res = List.map2 (top_level name) used_after l in
   exists := Forall;
   res
 
