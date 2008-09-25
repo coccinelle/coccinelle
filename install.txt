@@ -3,6 +3,8 @@ You must first install a recent version of
    see http://caml.inria.fr/download.en.html
  - the Menhir parser generator (at least 20071212),
    see http://cristal.inria.fr/~fpottier/menhir/
+   (unless you got a version of the coccinelle source with
+   the SmPL parser pre-generated)
 
  - Python and its development files (python-dev)
    

@@ -14,10 +14,10 @@ INCDIRS = $(PY_PREFIX)/include/python$(PY_VERSION)
 OCAMLLDFLAGS = -linkall
 
 allopt: native-code-library byte-code-library pycaml.customtop
-	cp -f dllpycaml_stubs.so ../
+	cp -f dllpycaml_stubs.so ../lib
 
 all: byte-code-library pycaml.customtop
-	cp -f dllpycaml_stubs.so ../
+	cp -f dllpycaml_stubs.so ../lib
 
 pycaml.customtop: pycaml.cma
 	ocamlmktop -o pycaml.customtop pycaml.cma

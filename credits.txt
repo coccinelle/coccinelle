@@ -3,8 +3,9 @@ Thanks to
  - A guy from Cornell for suggesting the term "semantic patch".
 
 Thanks to 
+ - Francois Pottier and Yann Regis-Gianas for menhir
  - arty@users.sourceforge.net for pycaml
  - Richard Jones for his dumper module, 
 
 Thanks of course also to Stallman, Linus, Leroy, Knuth and their
-acolytes for respectively Emacs, Linux, Ocaml, and (La)Tex.
+acolytes for respectively Emacs, Linux, OCaml, and (La)TeX.

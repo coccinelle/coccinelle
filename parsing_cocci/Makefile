@@ -14,11 +14,16 @@ unify_ast.ml semantic_cocci.ml data.ml free_vars.ml parse_aux.ml disjdistr.ml \
 $(LEXER_SOURCES:.mll=.ml) $(PARSER_SOURCES:.mly=.ml) $(SCRIPT_LEXER_SOURCES:.mll=.ml) \
 get_constants.ml get_constants2.ml parse_cocci.ml
 
-LIBS=../commons/commons.cma ../globals/globals.cma
+LIBS=../commons/commons.cma ../globals/globals.cma 
 SYSLIBS = str.cma unix.cma
 
-INCLUDE_PATH = -I ../commons -I ../commons/ocamlextra -I ../globals \
--I /usr/local/share/menhir
+#MENHIR_PATH=$(shell ocamlfind query menhirLib)
+MENHIR_PATH=../menhirlib
+
+INCLUDE_PATH = -I ../commons -I ../commons/ocamlextra -I ../globals -I $(MENHIR_PATH)
+
+MENHIR=$(MENHIR_PATH)/menhirLib.cmo
+MENHIRO=$(MENHIR_PATH)/menhirLib.cmx
 
 
 # The Caml compilers.
@@ -45,23 +50,21 @@ all.opt: $(OPTLIB)
 
 
 $(LIB): $(GENERATED) $(OBJS)
-	$(CAMLC) -a -o $(LIB) $(OBJS)
-
-# clean rule for LIB
-clean::
-	rm -f $(LIB)
+	$(CAMLC) -I $(MENHIR_PATH) -a -o $(LIB) $(MENHIR) $(OBJS)
 
 
 $(OPTLIB): $(GENERATED) $(OPTOBJS) 
-	$(CAMLOPT) -a -o $(OPTLIB) $(OPTOBJS)
+	$(CAMLOPT) -I $(MENHIR_PATH) -a -o $(OPTLIB) $(MENHIRO) $(OPTOBJS)
 
 
 $(EXEC): $(OBJS) main.cmo $(LIBS)
 	$(CAMLC) -o $(EXEC) $(SYSLIBS) $(LIBS) $(OBJS) main.cmo
 
 
-# clean rule for LIB.opt
+
+
 clean::
+	rm -f $(LIB)
 	rm -f $(OPTLIB) $(LIB:.cma=.a) 	
 	rm -f $(TARGET)
 

@@ -1,12 +1,29 @@
 #!/usr/bin/perl
+######################################################################
+# Prelude
+######################################################################
+
 # Yes I know about autoconf ... and autoconf sux.
 
 # assume standard: diff
 # assume standard: perl
 
-#TODO should take --prefix and adjust config.ml to indicate
-# where to found standard.h and standard.iso
+#TODO python 2.5 and perhaps a --disable-python 
 
+#old: --with-menhir=/path/to/menhirLib or `ocamlfind query menhirLib`
+
+my $project = 
+    "coccinelle";
+my $projectcmdline = 
+    "spatch -cocci_file demos/simple.cocci demos/simple.c";
+
+######################################################################
+# Side effects
+######################################################################
+
+
+######################################################################
+# Helpers
 ######################################################################
 #BEGIN { die "need Perl 5 or greater" if $] < 5 ; }
 
@@ -35,11 +52,16 @@ sub check_config { my ($command, $expect, $msggood, $msgbad) = @_;
 }
 
 ######################################################################
+# Let's go
+######################################################################
 pr2 "Checking your configuration.\n";
 
 my $error = 0;
-######################################################################
 
+
+#---------------------------------------------------------------------
+# Compilers and runtimes
+#---------------------------------------------------------------------
 $error += 
     check_config("echo \"1;;\\n\" | ocaml |",
 #                 "Objective(.*) 3.0[9]",
@@ -48,41 +70,119 @@ $error +=
                  "The program ocaml is missing or is not a good version. We need at least 3.09",
                  );
 
-$error += 
-    check_config("menhir --version |",
-                 "menhir, version 20071212",
-#                 "menhir, version 2006.*",
-                 "Menhir (the parser generator) is present.",
-                 "The program menhir is missing or is not a good version.",
-                 );
+#we have cached the result of menhir in the tgz we build.
+
+#$error += 
+#    check_config("menhir --version |",
+#                 "menhir, version 20071212",
+##                 "menhir, version 2006.*",
+#                 "Menhir (the parser generator) is present.",
+#                 "The program menhir is missing or is not a good version.",
+#                 );
+
+
+#---------------------------------------------------------------
+# Developers tools
+#---------------------------------------------------------------
+
+pr2 "";
+
+$error += check_config(
+  "make -v 2>&1 |grep Make|",
+  "GNU Make 3\.[0-9]+", #version 3.81
+  "make (gnu version) is present.",
+  "The program gnu make is missing or is not a good version.
+We need  3.XX",
+);
+
+
+#---------------------------------------------------------------------
+# More developers tools
+#---------------------------------------------------------------------
+
+#---------------------------------------------------------------------
+# Librairies
+#---------------------------------------------------------------------
+
+######################################################################
+# Generate config files (platform/portability issues)
+######################################################################
+
+
+######################################################################
+# Generate globals files (features issues)
+######################################################################
+
+######################################################################
+# Diagnostic 
+######################################################################
 
 
 if($error) { 
-    printf STDERR "
+    pr2 "
 ----------------------------------------------------------------------
-!!!! There seems to have problem, we have found $error missing package%s.
-%s may be installed by picking %s in cocci-dependencies.tgz available
-on the coccinelle website. !!!!
+!!!! There seems to have problem, we have found $error missing package" . 
+plural($error) . ".
+" . (($error > 1) ? "Some of those packages" : "This package") . 
+    " may be installed by picking " . ($error > 1 ? "them" : "it") . 
+    " in $project-dependencies.tgz available
+on the $project website. !!!!
 ----------------------------------------------------------------------
-", (plural($error)),
-  (($error > 1) ? "Some of those packages" : "This package"),
-  ($error > 1 ? "them" : "it");
-
+";
 } else { 
 
     pr2 "
 ----------------------------------------------------------------------
 
-All seems fine for coccinelle.
+All seems fine for $project.
 
-To compile coccinelle type:
+To compile $project type:
  make depend; make
 
-Then, to test coccinelle simply type:
- ./spatch -iso_file standard.iso -cocci_file demos/simple.cocci demos/simple.c
+To install type:
+ make install
+
+Then, to test $project simply type:
+ $projectcmdline
 
 ----------------------------------------------------------------------
 ";
 
 }
+
+######################################################################
+# Prefix
+######################################################################
+
+my $prefix="/usr/local";
+if($ARGV[0] =~ "--prefix=(.*)") {
+    $prefix = $1;
+}
+my $src="$prefix/share/$project";
+
+pr2 "$project target prefix: $prefix (you can use --prefix to override it)";
+pr2 "Generating Makefile.config";
+open(CONFIG, ">Makefile.config");
+print CONFIG "# autogenerated by configure
+
+# Where to install the binary
+BINDIR=$prefix/bin
+
+# Where to install the man pages
+MANDIR=$prefix/man
+
+# Where to install the lib
+LIBDIR=$prefix/lib
+
+# Where to install the configuration files
+SHAREDIR=$src
+";
+
+pr2 "Modifying globals/config.ml";
+my $command = "perl -p -i -e 's#Not_found.\*#Not_found->\\\"$src\\\"#' globals/config.ml";
+`$command`;
+
+
+
+
 

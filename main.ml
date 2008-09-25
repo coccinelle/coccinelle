@@ -169,6 +169,12 @@ let short_options = [
 
 
   "-version",   Arg.Unit (fun () -> 
+    pr2 (spf "spatch version: %s" Config.version);
+    exit 0;
+  ), 
+    "  guess what";
+
+  "-date",   Arg.Unit (fun () -> 
     pr2 "version: $Date$";
     raise (Common.UnixExit 0)
     ), 

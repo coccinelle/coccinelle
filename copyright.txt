@@ -1,6 +1,6 @@
 Coccinelle - Julia Lawall, Yoann Padioleau, Rene Rydhof Hansen, Henrik Stuart
 
-Copyright (C) 2005-2008 Univeristy of Cophenagen DIKU, Ecode des Mines de Nantes
+Copyright (C) 2005-2008 University of Copenhagen DIKU, Ecole des Mines de Nantes
 
   This program is free software; you can redistribute it and/or
   modify it under the terms of the GNU General Public License (GPL)
@@ -15,3 +15,7 @@ Copyright (C) 2005-2008 Univeristy of Cophenagen DIKU, Ecode des Mines de Nantes
 The contents of some files in this directory was derived from external
 sources with compatible licenses.  The original copyright and license
 notice was preserved in the affected files.
+
+This software can be distributed under a dual license making
+it possible to use coccinelle in a commercial software.
+Contact one of the author for more information.

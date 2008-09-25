@@ -9,7 +9,7 @@ Here are the authors and maintainers of the different parts of coccinelle:
 - tools/ 
 - standard.iso
 
-* Yoann Padioleau <padator@wanadoo.fr>
+* Yoann Padioleau <yoann.padioleau@gmail.com>
 
 - parsing_c/ (parsing c, unparsing c, type checking, control flow, C diff)
 - engine/ (pattern matching and transforming, unparsing, ctl integration)
@@ -32,9 +32,7 @@ Here are the authors and maintainers of the different parts of coccinelle:
 
 * Henrik stuart <henrik@hstuart.dk>
 
-Python integration
-
-- coccilib/ pycaml/ pycocci.ml, pycocci_aux.ml
+- python/ (python SmPL extension and another cocci gui)
 
 * All
 

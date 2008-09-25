@@ -1,3 +1,11 @@
+#############################################################################
+# Configuration section
+#############################################################################
+
+-include Makefile.config
+
+VERSION=$(shell cat globals/config.ml |grep version |perl -p -e 's/.*"(.*)".*/$$1/;')
+
 ##############################################################################
 # Variables
 ##############################################################################
@@ -13,10 +21,10 @@ LIBS=commons/commons.cma globals/globals.cma\
      extra/extra.cma pycaml/pycaml.cma python/coccipython.cma
 
 # rec and rec.opt have special options for pycaml/
-MAKESUBDIRS=commons globals ctl parsing_cocci parsing_c engine popl09 \
-extra python
-INCLUDEDIRS=commons globals ctl parsing_cocci parsing_c engine popl09 \
-extra pycaml python
+MAKESUBDIRS=commons globals menhirlib ctl parsing_cocci parsing_c engine popl09 \
+ extra python
+INCLUDEDIRS=commons globals menhirlib ctl parsing_cocci parsing_c engine popl09 \
+ extra pycaml python
 
 ##############################################################################
 # Generic variables
@@ -39,7 +47,6 @@ OCAMLCFLAGS=-g -dtypes -custom # -w A
 # but 'make forprofiling' below does that for you.
 # This flag is also used in subdirectories so don't change its name here.
 OPTFLAGS=
-OPTLIBFLAGS=-cclib dllpycaml_stubs.so
 
 # the OPTBIN variable is here to allow to use ocamlc.opt instead of 
 # ocaml, when it is available, which speeds up compilation. So
@@ -54,16 +61,13 @@ OCAMLYACC=ocamlyacc -v
 OCAMLDEP=ocamldep $(INCLUDES)
 OCAMLMKTOP=ocamlmktop -g -custom $(INCLUDES)
 
-MENHIR=/usr/local/share/menhir/menhirLib.cmo
-MENHIRO=/usr/local/share/menhir/menhirLib.cmx
-
-
 ##############################################################################
 # Top rules
 ##############################################################################
 
 all: rec $(EXEC)
 opt: rec.opt $(EXEC).opt
+all.opt: opt
 
 rec:
 	$(MAKE) -C pycaml -f Makefile.deb-pycaml
@@ -73,10 +77,10 @@ rec.opt:
 	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i all.opt; done 
 
 $(EXEC): $(LIBS) $(OBJS)
-	$(OCAMLC) -o $@ $(SYSLIBS) $(MENHIR) $^
+	$(OCAMLC) -o $@ $(SYSLIBS)  $^
 
 $(EXEC).opt: $(LIBS:.cma=.cmxa) $(OPTOBJS) 
-	$(OCAMLOPT) -o $@ $(SYSLIBS:.cma=.cmxa) $(OPTLIBFLAGS) $(MENHIRO) $^
+	$(OCAMLOPT) -o $@ $(SYSLIBS:.cma=.cmxa) $(OPTLIBFLAGS)  $^
 
 $(EXEC).top: $(LIBS) $(OBJS) 
 	$(OCAMLMKTOP) -o $@ $(SYSLIBS) $^
@@ -89,7 +93,7 @@ clean::
 
 clean::
 	$(MAKE) -C pycaml -f Makefile.deb-pycaml clean
-	rm -f dllpycaml_stubs.so
+	rm -f lib/dllpycaml_stubs.so
 
 
 .PHONY: tools
@@ -99,6 +103,89 @@ tools:
 clean::
 	$(MAKE) -C tools clean
 
+
+##############################################################################
+# Install
+##############################################################################
+
+# DESTDIR can be set by package build system like ebuild
+install: all
+	mkdir -p $(DESTDIR)$(BINDIR)
+	mkdir -p $(DESTDIR)$(LIBDIR)
+	mkdir -p $(DESTDIR)$(SHAREDIR)
+	cp spatch $(DESTDIR)$(BINDIR)	
+	cp lib/dllpycaml_stubs.so $(DESTDIR)$(LIBDIR)	
+	cp standard.h $(DESTDIR)$(SHAREDIR)
+	cp standard.iso $(DESTDIR)$(SHAREDIR)
+	mkdir -p $(DESTDIR)$(SHAREDIR)/python
+	@echo "you can also install spatch by copying the program spatch"
+	@echo "(available in this directory) anywhere you want"
+	@echo "and give it the right options to find its configuration files"
+
+uninstall:
+	rm -f $(BINDIR)/spatch
+	rm -f $(LIBDIR)/dllpycaml_stubs.so
+	rm -f $(DESTDIR)$(SHAREDIR)/standard.h
+	rm -f $(DESTDIR)$(SHAREDIR)/standard.iso
+	rm -i -r $(DESTDIR)$(SHAREDIR)/python
+
+
+
+version:
+	@echo $(VERSION)
+
+
+##############################################################################
+# Package rules, pad's specific
+##############################################################################
+
+
+PACKAGE=coccinelle-$(VERSION)
+
+BINSRC=spatch env.sh env.csh standard.h standard.iso lib/ python/coccilib/  *.txt 
+BINSRC2=$(BINSRC:%=$(PACKAGE)/%)
+
+TXT=$(wildcard *.txt)
+
+TOP=/home/pad/mobile/project-coccinelle
+WEBSITE=/home/pad/mobile/homepage/software/project-coccinelle
+
+package: bintar srctar
+
+# I currently pre-generate the parser so the user do not have to 
+# install menhir on his machine.
+srctar:
+	make clean
+	cd parsing_cocci/; make parser_cocci_menhir.ml
+	mv $(TOP)/code $(TOP)/$(PACKAGE)
+	cd $(TOP); tar cvfz $(PACKAGE).tgz $(PACKAGE)
+	mv $(TOP)/$(PACKAGE) $(TOP)/code
+
+bintar: all all.opt
+	rm -f $(TOP)/$(PACKAGE)
+	ln -s $(TOP)/code $(TOP)/$(PACKAGE)
+	cd $(TOP); tar cvfz $(PACKAGE)-bin.tgz $(BINSRC2)
+#	make static
+#	cd $(TOP); tar cvfz $(PACKAGE)-bin-static.tgz $(BINSRC2)
+	rm -f $(TOP)/$(PACKAGE)
+
+
+clean::
+	rm -f $(PACKAGE) $(PACKAGE)-bin.tgz $(PACKAGE)-bin-static.tgz 
+
+
+website:
+	cp $(TOP)/$(PACKAGE).tgz            $(WEBSITE)
+	cp $(TOP)/$(PACKAGE)-bin.tgz        $(WEBSITE)
+#	cp $(TOP)/$(PACKAGE)-bin-static.tgz $(WEBSITE)
+
+syncwiki:
+#	unison ~/public_html/wiki/wiki-LFS/data/pages/ docs/wiki/
+#	set -e; for i in $(TXT); do unison $$i docs/wiki/$$i; done 
+
+
+darcsweb:
+	@echo pull from ~/public_html/darcs/c-coccinelle and c-commons and lib-xxx
 
 ##############################################################################
 # Developer rules
