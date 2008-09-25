@@ -211,6 +211,7 @@ and declaration context old_metas table minus d =
   | Ast0.UnInit(stg,ty,id,sem) ->
       typeC old_metas table minus ty; ident context old_metas table minus id
   | Ast0.MacroDecl(name,lp,args,rp,sem) ->
+      ident ID old_metas table minus name;
       dots (expression ID old_metas table minus) args
   | Ast0.TyDecl(ty,sem) -> typeC old_metas table minus ty
   | Ast0.Typedef(stg,ty,id,sem) ->
@@ -299,6 +300,7 @@ and statement old_metas table minus s =
       get_opt (expression ID old_metas table minus) exp3;
       statement old_metas table minus body
   | Ast0.Iterator(nm,lp,args,rp,body,_) ->
+      ident ID old_metas table minus nm;
       dots (expression ID old_metas table minus) args;
       statement old_metas table minus body
   | Ast0.Switch(switch,lp,exp,rp,lb,cases,rb) ->

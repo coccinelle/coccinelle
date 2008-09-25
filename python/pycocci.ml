@@ -94,7 +94,7 @@ let pycocci_instantiate_class fqn args =
 let inc_match = ref true
 
 let include_match v =
-  let truth = pyobject_istrue v in
+  let truth = pyobject_istrue (pytuple_getitem (v, 1)) in
   check_int_return_value truth;
   inc_match := truth != 0;
   pynone ()
