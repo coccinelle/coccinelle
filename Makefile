@@ -93,7 +93,7 @@ clean::
 
 clean::
 	$(MAKE) -C pycaml -f Makefile.deb-pycaml clean
-	rm -f lib/dllpycaml_stubs.so
+	rm -f dllpycaml_stubs.so
 
 
 .PHONY: tools
@@ -114,7 +114,7 @@ install: all
 	mkdir -p $(DESTDIR)$(LIBDIR)
 	mkdir -p $(DESTDIR)$(SHAREDIR)
 	cp spatch $(DESTDIR)$(BINDIR)	
-	cp lib/dllpycaml_stubs.so $(DESTDIR)$(LIBDIR)	
+	cp dllpycaml_stubs.so $(DESTDIR)$(LIBDIR)	
 	cp standard.h $(DESTDIR)$(SHAREDIR)
 	cp standard.iso $(DESTDIR)$(SHAREDIR)
 	mkdir -p $(DESTDIR)$(SHAREDIR)/python
@@ -144,7 +144,7 @@ version:
 
 PACKAGE=coccinelle-$(VERSION)
 
-BINSRC=spatch env.sh env.csh standard.h standard.iso lib/ python/coccilib/  *.txt 
+BINSRC=spatch env.sh env.csh standard.h standard.iso dllpycaml_stubs.so python/coccilib/  *.txt 
 BINSRC2=$(BINSRC:%=$(PACKAGE)/%)
 
 TXT=$(wildcard *.txt)
