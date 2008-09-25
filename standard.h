@@ -1,5 +1,7 @@
+// clone: yacfe(master), coccinelle, acomment, 
+
 // ****************************************************************************
-// Prelude
+// Prelude, this file is to be used with the -macro_file option of the C parser
 // ****************************************************************************
 
 /* This file contains:
@@ -14,6 +16,13 @@
  *
  * Some of those macros could be deleted and the C code rewritten because
  * they are "bad" macros.
+ * 
+ * todo? perhaps better if could enable/disable some of those expansions
+ * as different software may use conflicting macros.
+ *
+ *
+ * can maybe have a look in sparse/lib.c to see a list of default #define
+ * handled builtin apparently by gcc.
  */
 
 // ****************************************************************************
@@ -28,13 +37,25 @@
 // Generic macros
 // ****************************************************************************
 
-
 // ****************************************************************************
 // Yacc macros 
 // ****************************************************************************
 
 #define YY_PROTO(x) x 
 #define yyconst const 
+
+
+// ****************************************************************************
+// GNU Hello macros 
+// ****************************************************************************
+
+#define __getopt_argv_const const
+
+
+// ****************************************************************************
+// Gcc (as in the source of gcc code) macros 
+// ****************************************************************************
+
 
 // ****************************************************************************
 // Linux macros 
@@ -129,6 +150,18 @@
 // maybe only in old kernel
 #define  __openfirmware
 
+
+#define __extension__
+
+#define __thread
+#define __used
+#define __pure 
+
+#define __ref
+#define __refdata
+
+#define __uses_jump_to_uncached
+
 // ----------------------------------------------------------------------------
 // String macros
 // ----------------------------------------------------------------------------
@@ -217,15 +250,9 @@
 #define  TRACE_EXIT return
 
 
-
 // ----------------------------------------------------------------------------
+// linkage
 // ----------------------------------------------------------------------------
-
-#define  INITSECTION
-
-#define  NORET_TYPE
-
-#define  compat_init_data
 
 #define  fastcall
 #define  asmlinkage
@@ -235,6 +262,16 @@
 
 // pb
 //#define  near
+
+
+// ----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
+
+#define  INITSECTION
+
+#define  NORET_TYPE
+
+#define  compat_init_data
 
 #define  DIVA_EXIT_FUNCTION
 #define  DIVA_INIT_FUNCTION
@@ -274,6 +311,13 @@
 #define  IDI_CALL_ENTITY_T
 #define  IDI_CALL_LINK_T
 
+/* cf gcc-linux.h
+ * A trick to suppress uninitialized variable warning without generating any
+ * code
+ */
+#define uninitialized_var(x) x = x
+// as in u16 uninitialized_var(ioboard_type);	/* GCC be quiet */ 
+
 // ----------------------------------------------------------------------------
 // ----------------------------------------------------------------------------
 
@@ -287,7 +331,8 @@
 // ----------------------------------------------------------------------------
 
 
-#define FASTCALL(x) x
+//conflict with a macro of firefox
+//#define FASTCALL(x) x
 #define PARAMS(x) x
 
 
@@ -660,9 +705,13 @@ do {									\
 #define ifdebug(flag)          if (0)
 
 
-// ****************************************************************************
+
+// ----------------------------------------------------------------------------
+//#define __PROM_O32
+
+// ----------------------------------------------------------------------------
 // for tests-big/ macros, may be obsolete now cos fixed in latest kernel 
-// ****************************************************************************
+// ----------------------------------------------------------------------------
 
 // rule10
 //#define	 ACPI_MODULE_NAME(x)
@@ -670,25 +719,8 @@ do {									\
 
 
 
-
-
-
 // ****************************************************************************
-// Gnu Hello macros 
-// ****************************************************************************
-
-#define __getopt_argv_const const
-
-// ****************************************************************************
-// Sparse macros 
-// ****************************************************************************
-
-#define FORMAT_ATTR(pos)
-
-// END_FOR_EACH_PTR_REVERSE
-
-// ****************************************************************************
-// Httpd (apatch) macros 
+// Httpd (apache) macros 
 // ****************************************************************************
 
 #define AP_DECLARE(x) x
@@ -734,6 +766,7 @@ do {									\
 #define APIENTRY
 #define __declspec(x) 
 #define __stdcall
+
 
 //#define module struct xxx
 
