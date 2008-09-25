@@ -118,16 +118,18 @@ install: all
 	cp standard.h $(DESTDIR)$(SHAREDIR)
 	cp standard.iso $(DESTDIR)$(SHAREDIR)
 	mkdir -p $(DESTDIR)$(SHAREDIR)/python
-	@echo "you can also install spatch by copying the program spatch"
-	@echo "(available in this directory) anywhere you want"
-	@echo "and give it the right options to find its configuration files"
+	cp -a python/coccilib $(DESTDIR)$(SHAREDIR)/python
+	@echo ""
+	@echo "You can also install spatch by copying the program spatch"
+	@echo "(available in this directory) anywhere you want and"
+	@echo "give it the right options to find its configuration files."
 
 uninstall:
 	rm -f $(BINDIR)/spatch
 	rm -f $(LIBDIR)/dllpycaml_stubs.so
 	rm -f $(DESTDIR)$(SHAREDIR)/standard.h
 	rm -f $(DESTDIR)$(SHAREDIR)/standard.iso
-	rm -i -r $(DESTDIR)$(SHAREDIR)/python
+	rm -rf $(DESTDIR)$(SHAREDIR)/python/coccilib
 
 
 
@@ -156,10 +158,12 @@ package: bintar srctar
 # install menhir on his machine.
 srctar:
 	make clean
-	cd parsing_cocci/; make parser_cocci_menhir.ml
-	mv $(TOP)/code $(TOP)/$(PACKAGE)
+	cp -a .  $(TOP)/$(PACKAGE)
+	cd $(TOP)/$(PACKAGE); cd parsing_cocci/; make parser_cocci_menhir.ml
+	cd $(TOP)/$(PACKAGE); rm todo_pos
 	cd $(TOP); tar cvfz $(PACKAGE).tgz $(PACKAGE)
-	mv $(TOP)/$(PACKAGE) $(TOP)/code
+	rm -i -r  $(TOP)/$(PACKAGE)
+
 
 bintar: all all.opt
 	rm -f $(TOP)/$(PACKAGE)
@@ -168,6 +172,11 @@ bintar: all all.opt
 #	make static
 #	cd $(TOP); tar cvfz $(PACKAGE)-bin-static.tgz $(BINSRC2)
 	rm -f $(TOP)/$(PACKAGE)
+
+#	ln -s $(TOP)/code $(TOP)/$(PACKAGE)
+#	rm -f $(TOP)/$(PACKAGE)
+#	mv $(TOP)/code $(TOP)/$(PACKAGE)
+#	mv $(TOP)/$(PACKAGE) $(TOP)/code
 
 
 clean::
