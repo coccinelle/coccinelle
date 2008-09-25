@@ -162,7 +162,7 @@ srctar:
 	cd $(TOP)/$(PACKAGE); cd parsing_cocci/; make parser_cocci_menhir.ml
 	cd $(TOP)/$(PACKAGE); rm todo_pos
 	cd $(TOP); tar cvfz $(PACKAGE).tgz $(PACKAGE)
-	rm -i -r  $(TOP)/$(PACKAGE)
+	rm -rf  $(TOP)/$(PACKAGE)
 
 
 bintar: all all.opt
