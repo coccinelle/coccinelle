@@ -59,3 +59,13 @@ let construct_variables mv e = failwith "no python"
 let set_coccifile cocci_file =
 	cocci_file_name := cocci_file;
 	()
+
+
+let pyrun_simplestring s = 
+  failwith "no python"
+ 
+let py_isinitialized () = 
+  failwith "no python"
+ 
+let py_finalize () =
+  failwith "no python"

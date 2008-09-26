@@ -206,3 +206,14 @@ let construct_variables mv e =
 let set_coccifile cocci_file =
 	cocci_file_name := cocci_file;
 	()
+
+
+let pyrun_simplestring s = 
+  Pycaml.pyrun_simplestring s
+
+let py_isinitialized () = 
+  Pycaml.py_isinitialized ()
+
+
+let py_finalize () =
+  Pycaml.py_finalize ()

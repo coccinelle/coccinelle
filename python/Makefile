@@ -1,7 +1,11 @@
+#############################################################################
+# Configuration section
+#############################################################################
+-include ../Makefile.config
+
 ##############################################################################
 # Variables
 ##############################################################################
-
 TARGET=coccipython
 
 SOURCES= pycocci_aux.ml pycocci.ml 
@@ -63,7 +67,6 @@ ctl: $(CTLEXEC)
 $(LIB): $(OBJS)
 	$(CAMLC) -a -o $(LIB) $(OBJS)
 
-# clean rule for LIB
 clean::
 	rm -f $(LIB)
 
@@ -79,7 +82,6 @@ $(CTLEXEC): $(CTLOBJS) $(LIBS)
 	$(CAMLC) -o $(CTLEXEC) $(SYSLIBS) $(LIBS) $(CTLOBJS)
 
 
-# clean rule for LIB.opt
 clean::
 	rm -f $(OPTLIB) $(LIB:.cma=.a) 	
 	rm -f $(TARGET) rm -f $(TARGET).byte
