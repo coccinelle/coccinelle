@@ -17,6 +17,28 @@ my $project =
 my $projectcmdline = 
     "spatch -cocci_file demos/simple.cocci demos/simple.c";
 
+
+######################################################################
+# Options
+######################################################################
+
+my $prefix="/usr/local";
+my $python=1;
+
+local $_ = join ' ', @ARGV;
+
+# Parse options
+/-h/ || /--help/ and die "usage: $0 [--prefix=path] [--without-python]\n";
+/--prefix=([^ ]*)/ and $prefix = $1;
+/--without-python/ and $python = 0;
+
+#if($ARGV[0] =~ "--prefix=(.*)") {
+#    $prefix = $1;
+#}
+#if($ARGV[1] =~ "--without-python") {
+#    $python = 0;
+#}
+
 ######################################################################
 # Side effects
 ######################################################################
@@ -151,13 +173,8 @@ Then, to test $project simply type:
 }
 
 ######################################################################
-# Prefix
+# Generating the configuration
 ######################################################################
-
-my $prefix="/usr/local";
-if($ARGV[0] =~ "--prefix=(.*)") {
-    $prefix = $1;
-}
 my $src="$prefix/share/$project";
 
 pr2 "$project target prefix: $prefix (you can use --prefix to override it)";
@@ -176,9 +193,19 @@ LIBDIR=$prefix/lib
 
 # Where to install the configuration files
 SHAREDIR=$src
+
+# Features
+FEATURE_PYTHON=$python
 ";
 
 pr2 "Modifying globals/config.ml";
+pr2 "Generating appropriate links in python/";
+my $pythonprefix = $python ? "yes_" : "no_";
+`cd python; rm -f  pycocci.ml pycocci_aux.ml;`;
+`cd python; ln -s ${pythonprefix}pycocci.ml pycocci.ml; `;
+`cd python; ln -s ${pythonprefix}pycocci_aux.ml pycocci_aux.ml;`;
+`cd python; make depend`;
+
 my $command = "perl -p -i -e 's#Not_found.\*#Not_found->\\\"$src\\\"#' globals/config.ml";
 `$command`;
 

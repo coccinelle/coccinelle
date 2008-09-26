@@ -747,11 +747,11 @@ let main () =
     | [] -> short_usage()
         
   ));
-    if !Pycocci.initialised && (Pycaml.py_isinitialized ()) != 0 then begin
-      ignore(Pycaml.pyrun_simplestring "cocci.finalise()");
+    if !Pycocci.initialised && (Pycocci.py_isinitialized ()) != 0 then begin
+      ignore(Pycocci.pyrun_simplestring "cocci.finalise()");
       if !Flag.show_misc 
       then Common.pr2 "Finalizing python\n";
-      Pycaml.py_finalize ();
+      Pycocci.py_finalize ();
     end
   end
 

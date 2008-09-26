@@ -91,6 +91,8 @@ clean::
 #pycocci.ml: ../pycaml/pycaml.ml ../pycaml/pycaml_ml.c
 #pycocci_aux.ml:  ../pycaml/pycaml.ml ../pycaml/pycaml_ml.c
 
+rmlinks:
+	rm -f pycocci.ml pycocci_aux.ml
 
 ##############################################################################
 # Generic ocaml rules

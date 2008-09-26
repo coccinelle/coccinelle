@@ -1,3 +1,5 @@
+#pad: was called Makefile.deb-pycaml before
+
 OCAMLMAKEFILE = OCamlMakefile
 PY_PREFIX = $(shell python getprefix.py)
 PY_VERSION = $(shell python getversion.py)
@@ -13,7 +15,7 @@ LIBDIRS = $(PY_PREFIX)/lib/python$(PY_VERSION)/config
 INCDIRS = $(PY_PREFIX)/include/python$(PY_VERSION)
 OCAMLLDFLAGS = -linkall
 
-allopt: native-code-library byte-code-library pycaml.customtop
+all.opt: native-code-library byte-code-library pycaml.customtop
 	cp -f dllpycaml_stubs.so ../
 
 all: byte-code-library pycaml.customtop

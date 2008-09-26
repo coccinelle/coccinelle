@@ -13,18 +13,27 @@ TARGET=spatch
 
 SRC=flag_cocci.ml cocci.ml testing.ml test.ml main.ml
 
+
+ifeq (FEATURE_PYTHON,1)
+PYCMA=pycaml/pycaml.cma
+PYDIR=pycaml
+else
+PYCMA=
+PYDIR=
+endif
+
+
 SYSLIBS=str.cma unix.cma
 LIBS=commons/commons.cma globals/globals.cma\
      ctl/ctl.cma \
      parsing_cocci/cocci_parser.cma parsing_c/parsing_c.cma \
      engine/cocciengine.cma popl09/popl.cma \
-     extra/extra.cma pycaml/pycaml.cma python/coccipython.cma
+     extra/extra.cma $(PYCMA) python/coccipython.cma
 
-# rec and rec.opt have special options for pycaml/
-MAKESUBDIRS=commons globals menhirlib ctl parsing_cocci parsing_c engine popl09 \
+MAKESUBDIRS=commons globals menhirlib $(PYDIR) ctl parsing_cocci parsing_c engine popl09 \
  extra python
-INCLUDEDIRS=commons globals menhirlib ctl parsing_cocci parsing_c engine popl09 \
- extra pycaml python
+INCLUDEDIRS=commons globals menhirlib $(PYDIR) ctl parsing_cocci parsing_c engine popl09 \
+ extra python
 
 ##############################################################################
 # Generic variables
@@ -70,10 +79,8 @@ opt: rec.opt $(EXEC).opt
 all.opt: opt
 
 rec:
-	$(MAKE) -C pycaml -f Makefile.deb-pycaml
 	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i all; done 
 rec.opt:
-	$(MAKE) -C pycaml -f Makefile.deb-pycaml allopt
 	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i all.opt; done 
 
 $(EXEC): $(LIBS) $(OBJS)
@@ -92,7 +99,6 @@ clean::
 	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i clean; done 
 
 clean::
-	$(MAKE) -C pycaml -f Makefile.deb-pycaml clean
 	rm -f dllpycaml_stubs.so
 
 
@@ -114,7 +120,7 @@ install: all
 	mkdir -p $(DESTDIR)$(LIBDIR)
 	mkdir -p $(DESTDIR)$(SHAREDIR)
 	cp spatch $(DESTDIR)$(BINDIR)	
-	cp dllpycaml_stubs.so $(DESTDIR)$(LIBDIR)	
+	cp -f dllpycaml_stubs.so $(DESTDIR)$(LIBDIR)	
 	cp standard.h $(DESTDIR)$(SHAREDIR)
 	cp standard.iso $(DESTDIR)$(SHAREDIR)
 	mkdir -p $(DESTDIR)$(SHAREDIR)/python
@@ -165,7 +171,7 @@ srctar:
 	rm -rf  $(TOP)/$(PACKAGE)
 
 
-bintar: all all.opt
+bintar: all
 	rm -f $(TOP)/$(PACKAGE)
 	ln -s $(TOP)/code $(TOP)/$(PACKAGE)
 	cd $(TOP); tar cvfz $(PACKAGE)-bin.tgz $(BINSRC2)

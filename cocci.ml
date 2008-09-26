@@ -1,5 +1,4 @@
 open Common
-open Pycaml
 
 module CCI = Ctlcocci_integration
 module TAC = Type_annoter_c
@@ -939,7 +938,7 @@ let rec apply_python_rule r cache newes e rules_that_have_matched
 	      begin
 		Pycocci.build_classes (List.map (function (x,y) -> x) e);
 		Pycocci.construct_variables mv e;
-		let _ = pyrun_simplestring
+		let _ = Pycocci.pyrun_simplestring
 		  ("import coccinelle\nfrom coccinelle "^
 		   "import *\ncocci = Cocci()\n" ^
 		   r.script_code) in
