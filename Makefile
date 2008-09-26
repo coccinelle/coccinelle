@@ -173,7 +173,7 @@ WEBSITE=/home/pad/mobile/homepage/software/project-coccinelle
 
 package: bintar srctar
 
-# I currently pre-generate the parser so the user do not have to 
+# I currently pre-generate the parser so the user does not have to 
 # install menhir on his machine.
 srctar:
 	make clean
