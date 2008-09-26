@@ -593,7 +593,6 @@ let metavar2dots (_,info,mcodekind,pos) = ("...",info,mcodekind,pos)
 (*---------------------------------------------------------------------------*)
 let rec (expression: (A.expression, Ast_c.expression) matcher) =
  fun ea eb -> 
-  if A.get_test_exp ea && not (Ast_c.is_test eb) then fail else
   X.all_bound (A.get_inherited ea) >&&>
   let wa x = A.rewrap ea x  in
   match A.unwrap ea, eb with
@@ -851,7 +850,7 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
 
   | A.Nested (ea1, opa, ea2), eb -> 
       let rec loop eb =
-	expression ea1 eb >|+|>
+	(if not (Ast_c.is_test eb) then fail else expression ea1 eb) >|+|>
 	(match eb with
 	  ((B.Binary (eb1, opb, eb2), typ),ii)
 	  when equal_binaryOp (term opa) opb ->

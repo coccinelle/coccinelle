@@ -363,18 +363,20 @@ let classify is_minus all_marked table code =
 	  disj_cases s starter statement_dots_list r.V0.combiner_statement_dots
 	    ender
 (*  Why? There is nothing there
-	(* cases for everyhing with extra mcode *)
+	(* cases for everything with extra mcode *)
       |	Ast0.FunDecl((info,bef),_,_,_,_,_,_,_,_)
       | Ast0.Decl((info,bef),_) ->
 	  bind (mcode ((),(),info,bef)) (k s)
       | Ast0.IfThen(_,_,_,_,_,(info,aft))
       | Ast0.IfThenElse(_,_,_,_,_,_,_,(info,aft))
-      | Ast0.While(_,_,_,_,_,(info,aft))
+      | Ast0.While(_,_,_,_,_,(info,aft)) ->
       | Ast0.For(_,_,_,_,_,_,_,_,_,(info,aft)) ->
 	  bind (k s) (mcode ((),(),info,aft))
       | Ast0.Iterator(_,_,_,_,_,(info,aft))
 *)
-      |	_ -> k s) in
+      |	_ -> k s
+
+) in
 
   let do_top builder r k e = compute_result builder e (k e) in
 
@@ -581,7 +583,7 @@ let rec equal_statement s1 s2 =
   | (Ast0.For(fr1,lp1,_,sem11,_,sem21,_,rp1,_,_),
      Ast0.For(fr2,lp2,_,sem12,_,sem22,_,rp2,_,_)) ->
        equal_mcode fr1 fr2 && equal_mcode lp1 lp2 &&
-       equal_mcode sem11 sem21 && equal_mcode sem12 sem22 &&
+       equal_mcode sem11 sem12 && equal_mcode sem21 sem22 &&
        equal_mcode rp1 rp2
   | (Ast0.Iterator(nm1,lp1,_,rp1,_,_),Ast0.Iterator(nm2,lp2,_,rp2,_,_)) ->
       equal_mcode lp1 lp2 && equal_mcode rp1 rp2

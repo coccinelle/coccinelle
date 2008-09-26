@@ -1178,6 +1178,7 @@ let parse_iso file =
 	       print_tokens "iso tokens" tokens;
 	    *)
 	    let entry = parse_one "iso main" PC.iso_main file tokens in
+	    let entry = List.map (List.map Test_exps.process_anything) entry in
 	    if more
 	    then (* The code below allows a header like Statement list,
 		    which is more than one word.  We don't have that any more,
@@ -1410,7 +1411,7 @@ let process file isofile verbose =
 			 not (List.mem dropped local_iso_names))
 		       dropiso in
 		   failwith
-		     ("invalid iso name " ^ bad_dropped ^ "in " ^ rule_name)
+		     ("invalid iso name " ^ bad_dropped ^ " in " ^ rule_name)
 		 with Not_found -> ());
 		 if List.mem "all" dropiso 
 		 then 

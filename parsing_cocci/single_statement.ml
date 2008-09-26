@@ -448,6 +448,7 @@ let rec statement dots_before dots_after s =
       else if adding_something s
       then
 	(let with_braces = add_braces s in
+	Unparse_ast0.statement "" s; Format.print_newline();
 	Ast0.set_dots_bef_aft s (Ast0.AddingBetweenDots(with_braces)))
       else s
     else s in

@@ -538,7 +538,9 @@ type rebuilder =
 	      Ast0.declaration Ast0.dots;
 	  rebuilder_case_line_dots :
 	    Ast0.case_line Ast0.dots ->
-	      Ast0.case_line Ast0.dots}
+	      Ast0.case_line Ast0.dots;
+	  rebuilder_anything :
+	    Ast0.anything -> Ast0.anything}
 
 type 'mc rmcode = 'mc Ast0.mcode inout
 type 'cd rcode = rebuilder -> ('cd inout) -> 'cd inout
@@ -958,6 +960,29 @@ let rebuilder = fun
 	| Ast0.OTHER(_) -> failwith "unexpected code") in
     topfn all_functions k t
 
+  and anything a = (* for compile_iso, not parameterisable *)
+    let k = function
+	Ast0.DotsExprTag(exprs) -> Ast0.DotsExprTag(expression_dots exprs)
+      | Ast0.DotsInitTag(inits) -> Ast0.DotsInitTag(initialiser_list inits)
+      | Ast0.DotsParamTag(params) -> Ast0.DotsParamTag(parameter_list params)
+      | Ast0.DotsStmtTag(stmts) -> Ast0.DotsStmtTag(statement_dots stmts)
+      | Ast0.DotsDeclTag(decls) -> Ast0.DotsDeclTag(declaration_dots decls)
+      | Ast0.DotsCaseTag(cases) -> Ast0.DotsCaseTag(case_line_dots cases)
+      | Ast0.IdentTag(id) -> Ast0.IdentTag(ident id)
+      | Ast0.ExprTag(exp) -> Ast0.ExprTag(expression exp)
+      | Ast0.ArgExprTag(exp) -> Ast0.ArgExprTag(expression exp)
+      | Ast0.TestExprTag(exp) -> Ast0.TestExprTag(expression exp)
+      | Ast0.TypeCTag(ty) -> Ast0.TypeCTag(typeC ty)
+      | Ast0.ParamTag(param) -> Ast0.ParamTag(parameterTypeDef param)
+      | Ast0.InitTag(init) -> Ast0.InitTag(initialiser init)
+      | Ast0.DeclTag(decl) -> Ast0.DeclTag(declaration decl)
+      | Ast0.StmtTag(stmt) -> Ast0.StmtTag(statement stmt)
+      | Ast0.CaseLineTag(c) -> Ast0.CaseLineTag(case_line c)
+      | Ast0.TopTag(top) -> Ast0.TopTag(top_level top)
+      | Ast0.IsoWhenTag(x) -> Ast0.IsoWhenTag(x)
+      |	Ast0.MetaPosTag(var) -> failwith "not supported" in
+    k a
+
   (* not done for combiner, because the statement is assumed to be already
      represented elsewhere in the code *)
 
@@ -976,5 +1001,6 @@ let rebuilder = fun
       rebuilder_expression_dots = expression_dots;
       rebuilder_statement_dots = statement_dots;
       rebuilder_declaration_dots = declaration_dots;
-      rebuilder_case_line_dots = case_line_dots} in
+      rebuilder_case_line_dots = case_line_dots;
+      rebuilder_anything = anything} in
   all_functions

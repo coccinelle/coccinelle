@@ -83,7 +83,8 @@ type rebuilder =
 	      Ast0_cocci.declaration Ast0_cocci.dots;
 	  rebuilder_case_line_dots :
 	    Ast0_cocci.case_line Ast0_cocci.dots ->
-	      Ast0_cocci.case_line Ast0_cocci.dots}
+	      Ast0_cocci.case_line Ast0_cocci.dots;
+          rebuilder_anything : Ast0_cocci.anything -> Ast0_cocci.anything}
 
 type 'mc rmcode = 'mc Ast0_cocci.mcode inout
 type 'cd rcode = rebuilder -> ('cd inout) -> 'cd inout

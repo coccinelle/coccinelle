@@ -27,4 +27,6 @@ pycaml.customtop: pycaml.cma
 clean:: 
 	rm -f pycaml.customtop
 
+depend: # added by julia, undoubtedly wrong
+
 -include $(OCAMLMAKEFILE)

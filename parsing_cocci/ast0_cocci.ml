@@ -37,7 +37,7 @@ and 'a wrap =
       exp_ty : Type_cocci.typeC option ref; (* only for expressions *)
       bef_aft : dots_bef_aft; (* only for statements *)
       true_if_arg : bool; (* true if "arg_exp", only for exprs *)
-      true_if_test : bool; (* true if "test_exp", only for exprs *)
+      true_if_test : bool; (* true if "test_exp from iso", only for exprs *)
       (*nonempty if this represents the use of an iso*)
       iso_info : (string*anything) list }
 

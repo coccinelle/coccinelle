@@ -4,19 +4,17 @@ module V0 = Visitor_ast0
 
 (* call set_test_exp on test expressions *)
 
+(* The goal of this is to identify test expressions in the SmPL file, so that
+isomorphisms like X != NULL => X are only applied in a test expression context.
+
+There is a related check in cocci_vs_c3.ml that in x || ..., a match
+without the || is only accepted in a test expression context.  This uses
+the annotations in the C file. *)
+
 let rec process_exp e =
   let e = Ast0.set_test_exp e in
   match Ast0.unwrap e with
-    Ast0.Binary(e1,op,e2) ->
-      (match Ast0.unwrap_mcode op with
-	Ast.Logical(Ast.AndLog) | Ast.Logical(Ast.OrLog) ->
-	  Ast0.rewrap e (Ast0.Binary(process_exp e1,op,process_exp e2))
-      |	_ -> e)
-  | Ast0.Unary(e1,op) ->
-      (match Ast0.unwrap_mcode op with
-	Ast.Not -> Ast0.rewrap e (Ast0.Unary(process_exp e1,op))
-      | _ -> e)
-  | Ast0.Paren(lp,e,rp) ->
+    Ast0.Paren(lp,e,rp) ->
       Ast0.rewrap e (Ast0.Paren(lp,process_exp e,rp))
   | _ -> e
 
@@ -29,6 +27,15 @@ let set_test_exps =
     match Ast0.unwrap e with
       Ast0.CondExpr(e1,q,e2,c,e3) ->
 	Ast0.rewrap e (Ast0.CondExpr(process_exp e1,q,e2,c,e3))
+    | Ast0.Binary(e1,op,e2) ->
+	(match Ast0.unwrap_mcode op with
+	  Ast.Logical(Ast.AndLog) | Ast.Logical(Ast.OrLog) ->
+	    Ast0.rewrap e (Ast0.Binary(process_exp e1,op,process_exp e2))
+	| _ -> e)
+    | Ast0.Unary(e1,op) ->
+	(match Ast0.unwrap_mcode op with
+	  Ast.Not -> Ast0.rewrap e (Ast0.Unary(process_exp e1,op))
+	| _ -> e)
     | _ -> e in
 
   let statement r k s =
@@ -55,4 +62,6 @@ let set_test_exps =
       donothing donothing
 
 let process = List.map set_test_exps.V0.rebuilder_top_level
+
+let process_anything = set_test_exps.V0.rebuilder_anything
 
