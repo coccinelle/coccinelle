@@ -17,9 +17,11 @@ SRC=flag_cocci.ml cocci.ml testing.ml test.ml main.ml
 ifeq (FEATURE_PYTHON,1)
 PYCMA=pycaml/pycaml.cma
 PYDIR=pycaml
+PYLIB=dllpycaml_stubs.so
 else
 PYCMA=
 PYDIR=
+PYLIB=
 endif
 
 
@@ -70,6 +72,9 @@ OCAMLYACC=ocamlyacc -v
 OCAMLDEP=ocamldep $(INCLUDES)
 OCAMLMKTOP=ocamlmktop -g -custom $(INCLUDES)
 
+# can also be set via 'make static'
+STATIC= #-ccopt -static
+
 ##############################################################################
 # Top rules
 ##############################################################################
@@ -87,7 +92,7 @@ $(EXEC): $(LIBS) $(OBJS)
 	$(OCAMLC) -o $@ $(SYSLIBS)  $^
 
 $(EXEC).opt: $(LIBS:.cma=.cmxa) $(OPTOBJS) 
-	$(OCAMLOPT) -o $@ $(SYSLIBS:.cma=.cmxa) $(OPTLIBFLAGS)  $^
+	$(OCAMLOPT) $(STATIC) -o $@ $(SYSLIBS:.cma=.cmxa) $(OPTLIBFLAGS)  $^
 
 $(EXEC).top: $(LIBS) $(OBJS) 
 	$(OCAMLMKTOP) -o $@ $(SYSLIBS) $^
@@ -108,6 +113,12 @@ tools:
 	$(MAKE) -C tools
 clean::
 	$(MAKE) -C tools clean
+
+
+static:
+	rm -f spatch.opt spatch
+	$(MAKE) STATIC="-ccopt -static" spatch.opt
+	cp spatch.opt spatch
 
 
 ##############################################################################
@@ -150,7 +161,9 @@ version:
 
 PACKAGE=coccinelle-$(VERSION)
 
-BINSRC=spatch env.sh env.csh standard.h standard.iso dllpycaml_stubs.so python/coccilib/  *.txt 
+BINSRC=spatch env.sh env.csh standard.h standard.iso \
+       $(PYLIB) python/coccilib/  \
+       *.txt demos/foo.*
 BINSRC2=$(BINSRC:%=$(PACKAGE)/%)
 
 TXT=$(wildcard *.txt)
@@ -175,9 +188,15 @@ bintar: all
 	rm -f $(TOP)/$(PACKAGE)
 	ln -s $(TOP)/code $(TOP)/$(PACKAGE)
 	cd $(TOP); tar cvfz $(PACKAGE)-bin.tgz $(BINSRC2)
-#	make static
-#	cd $(TOP); tar cvfz $(PACKAGE)-bin-static.tgz $(BINSRC2)
 	rm -f $(TOP)/$(PACKAGE)
+
+staticbintar: all all.opt
+	rm -f $(TOP)/$(PACKAGE)
+	ln -s $(TOP)/code $(TOP)/$(PACKAGE)
+	make static
+	cd $(TOP); tar cvfz $(PACKAGE)-bin-static.tgz $(BINSRC2)
+	rm -f $(TOP)/$(PACKAGE)
+
 
 #	ln -s $(TOP)/code $(TOP)/$(PACKAGE)
 #	rm -f $(TOP)/$(PACKAGE)
@@ -192,7 +211,7 @@ clean::
 website:
 	cp $(TOP)/$(PACKAGE).tgz            $(WEBSITE)
 	cp $(TOP)/$(PACKAGE)-bin.tgz        $(WEBSITE)
-#	cp $(TOP)/$(PACKAGE)-bin-static.tgz $(WEBSITE)
+	cp $(TOP)/$(PACKAGE)-bin-static.tgz $(WEBSITE)
 
 syncwiki:
 #	unison ~/public_html/wiki/wiki-LFS/data/pages/ docs/wiki/
