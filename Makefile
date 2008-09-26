@@ -14,7 +14,7 @@ TARGET=spatch
 SRC=flag_cocci.ml cocci.ml testing.ml test.ml main.ml
 
 
-ifeq (FEATURE_PYTHON,1)
+ifeq ($(FEATURE_PYTHON),1)
 PYCMA=pycaml/pycaml.cma
 PYDIR=pycaml
 PYLIB=dllpycaml_stubs.so
