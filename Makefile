@@ -93,6 +93,9 @@ rec:
 	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i all; done 
 rec.opt:
 	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i all.opt; done 
+clean::
+	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i clean; done 
+
 
 $(EXEC): $(LIBS) $(OBJS)
 	$(OCAMLC) $(BYTECODE_STATIC) -o $@ $(SYSLIBS)  $^
@@ -106,8 +109,6 @@ $(EXEC).top: $(LIBS) $(OBJS)
 clean::
 	rm -f $(TARGET) $(TARGET).opt $(TARGET).top
 
-clean::
-	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i clean; done 
 
 clean::
 	rm -f dllpycaml_stubs.so
@@ -135,7 +136,7 @@ purebytecode:
 # Install
 ##############################################################################
 
-# DESTDIR can be set by package build system like ebuild
+# don't remove DESTDIR, it can be set by package build system like ebuild
 install: all
 	mkdir -p $(DESTDIR)$(BINDIR)
 	mkdir -p $(DESTDIR)$(LIBDIR)
@@ -152,8 +153,8 @@ install: all
 	@echo "give it the right options to find its configuration files."
 
 uninstall:
-	rm -f $(BINDIR)/spatch
-	rm -f $(LIBDIR)/dllpycaml_stubs.so
+	rm -f $(DESTDIR)$(BINDIR)/spatch
+	rm -f $(DESTDIR)$(LIBDIR)/dllpycaml_stubs.so
 	rm -f $(DESTDIR)$(SHAREDIR)/standard.h
 	rm -f $(DESTDIR)$(SHAREDIR)/standard.iso
 	rm -rf $(DESTDIR)$(SHAREDIR)/python/coccilib
@@ -165,43 +166,42 @@ version:
 
 
 ##############################################################################
-# Package rules, pad's specific
+# Package rules
 ##############################################################################
 
-# To test you can try compile and run spatch from different instances 
-# like my ~/coccinelle, ~/release/coccinelle, and the /tmp/coccinelle-0.X 
-# downloaded from the website. For 'make srctar' I must do it from a clean
-# repo such as ~/release/coccinelle. It must also be a repo where 
-# the scripts/licensify have been run at least once. You can
-# use 'cvs export -DNOW coccinelle'.
-# For the 'make bintar' I can do it from my original repo.
-
-# cd ~/release
-# cvs checkout coccinelle
-# cd coccinelle
-# cvs update -d -P
-# touch **/*
-# ./configure --without-python
-# rm -rf **/CVS
-# make package
-# make website
-
-
 PACKAGE=coccinelle-$(VERSION)
-
-# $(PYLIB) python/coccilib/ demos/printloc.*
 
 BINSRC=spatch env.sh env.csh standard.h standard.iso \
        *.txt docs/* \
        demos/foo.* demos/simple.* 
+#      $(PYLIB) python/coccilib/ demos/printloc.*
 BINSRC2=$(BINSRC:%=$(PACKAGE)/%)
 
-TXT=$(wildcard *.txt)
-
-# really pad specific
-#TOP=/home/pad/mobile/project-coccinelle
 TMP=/tmp
-WEBSITE=/home/pad/mobile/homepage/software/project-coccinelle
+
+
+# Procedure:
+#  cd ~/release
+#  cvs checkout coccinelle
+#  cd coccinelle
+#  cvs update -d -P
+#  touch **/*
+#  make licensify
+#  rm -rf **/CVS
+#
+#  ./configure --without-python
+#  make package
+#  make website
+
+# To test you can try compile and run spatch from different instances 
+# like my ~/coccinelle, ~/release/coccinelle, and the /tmp/coccinelle-0.X 
+# downloaded from the website. 
+
+# For 'make srctar' it must done from a clean
+# repo such as ~/release/coccinelle. It must also be a repo where 
+# the scripts/licensify has been run at least once. 
+# For the 'make bintar' I can do it from my original repo.
+
 
 package: 
 	make srctar 
@@ -241,12 +241,6 @@ bytecodetar: all
 	cd $(TMP); tar cvfz $(PACKAGE)-bin-bytecode.tgz $(BINSRC2)
 	rm -f $(TMP)/$(PACKAGE)
 
-#	ln -s $(TOP)/code $(TOP)/$(PACKAGE)
-#	rm -f $(TOP)/$(PACKAGE)
-#	mv $(TOP)/code $(TOP)/$(PACKAGE)
-#	mv $(TOP)/$(PACKAGE) $(TOP)/code
-
-
 clean::
 	rm -f $(PACKAGE) 
 	rm -f $(PACKAGE)-bin-x86.tgz 
@@ -254,18 +248,6 @@ clean::
 	rm -f $(PACKAGE)-bin-bytecode.tgz
 
 
-website:
-	cp $(TMP)/$(PACKAGE).tgz                $(WEBSITE)
-	cp $(TMP)/$(PACKAGE)-bin-x86.tgz        $(WEBSITE)
-	cp $(TMP)/$(PACKAGE)-bin-x86-static.tgz $(WEBSITE)
-	cp $(TMP)/$(PACKAGE)-bin-bytecode.tgz   $(WEBSITE)
-
-syncwiki:
-#	unison ~/public_html/wiki/wiki-LFS/data/pages/ docs/wiki/
-#	set -e; for i in $(TXT); do unison $$i docs/wiki/$$i; done 
-
-darcsweb:
-#	@echo pull from ~/public_html/darcs/c-coccinelle and c-commons and lib-xxx
 
 TOLICENSIFY=ctl engine parsing_cocci popl popl09 python
 licensify:
@@ -282,6 +264,31 @@ fixCVS:
 	echo do 'rm -rf **/CVS'
 
 
+
+
+##############################################################################
+# Pad specific rules
+##############################################################################
+
+#TOP=/home/pad/mobile/project-coccinelle
+WEBSITE=/home/pad/mobile/homepage/software/project-coccinelle
+
+website:
+	cp $(TMP)/$(PACKAGE).tgz                $(WEBSITE)
+	cp $(TMP)/$(PACKAGE)-bin-x86.tgz        $(WEBSITE)
+	cp $(TMP)/$(PACKAGE)-bin-x86-static.tgz $(WEBSITE)
+	cp $(TMP)/$(PACKAGE)-bin-bytecode.tgz   $(WEBSITE)
+
+
+#TXT=$(wildcard *.txt)
+syncwiki:
+#	unison ~/public_html/wiki/wiki-LFS/data/pages/ docs/wiki/
+#	set -e; for i in $(TXT); do unison $$i docs/wiki/$$i; done 
+
+darcsweb:
+#	@echo pull from ~/public_html/darcs/c-coccinelle and c-commons and lib-xxx
+
+
 ##############################################################################
 # Developer rules
 ##############################################################################
@@ -290,30 +297,7 @@ test: $(TARGET)
 	./$(TARGET) -testall
 
 testparsing:
-	./$(TARGET) -D standard.h -parse_c -dir parsing_c/tests
-#	./$(TARGET) -D standard.h -parse_c -dir tests/
-# -parse_c big-files/
-# -parse_c pb_parsing/ 
-# -parse_c pb_parsing_ecoop/
-
-
-#-filter_define_error
-PARSECMD=./spatch.opt -D standard.h -filter_define_error -filter_classic_passed \
-	  -dir
-
-testparsing2: 
-	$(PARSECMD) -parse_c ~/kernels/git/linux-2.6/sound/ > /tmp/parse_sound_filter 2>&1 
-	$(PARSECMD) -parse_c ~/kernels/git/linux-2.6/drivers/  > /tmp/parse_drivers_filter 2>&1 
-	$(PARSECMD) -parse_c ~/kernels/git/linux-2.6/  > /tmp/parse_c_filter 2>&1 
-	$(PARSECMD) -parse_h ~/kernels/git/linux-2.6/  > /tmp/parse_h_filter 2>&1 
-	$(PARSECMD) -parse_ch ~/kernels/git/linux-2.6/ > /tmp/parse_ch_filter 2>&1
-
-testparsing3:
-	./spatch.opt -D standard.h -parse_ch -dir ~/kernels/git/linux-2.6/ > /tmp/parse_ch_all 2>&1
-
-testparsing4:
-	./spatch.opt -D standard.h -parse_c -dir tests-big/ > /tmp/parse_big_c 2>&1
-
+	./$(TARGET) -D standard.h -parse_c -dir tests/
 
 
 
