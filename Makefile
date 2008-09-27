@@ -253,10 +253,10 @@ syncwiki:
 darcsweb:
 #	@echo pull from ~/public_html/darcs/c-coccinelle and c-commons and lib-xxx
 
-TOLICENSIFY=
+TOLICENSIFY=ctl engine parsing_cocci popl popl09 python
 licensify:
 	ocaml tools/licensify.ml 
-	set -e; for i in $(TOLICENSIFY); do cd $$i; ocaml ../tools/licensify; done 
+	set -e; for i in $(TOLICENSIFY); do cd $$i; ocaml ../tools/licensify.ml; cd ..; done 
 
 
 ##############################################################################
