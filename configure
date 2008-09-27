@@ -39,6 +39,8 @@ local $_ = join ' ', @ARGV;
 #    $python = 0;
 #}
 
+my $src="$prefix/share/$project";
+
 ######################################################################
 # Side effects
 ######################################################################
@@ -167,15 +169,26 @@ To install type:
 Then, to test $project simply type:
  $projectcmdline
 
-----------------------------------------------------------------------
 ";
 
+    if($python) {
+        pr2 
+"To use the python SmPL feature you may have to set some environment variables.
+For bash do:
+export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:$prefix/lib
+export PYTHONPATH=\$PYTHONPATH:$src/python
+"
+    }
+    pr2 "
+----------------------------------------------------------------------
+";
 }
+
+
 
 ######################################################################
 # Generating the configuration
 ######################################################################
-my $src="$prefix/share/$project";
 
 pr2 "$project target prefix: $prefix (you can use --prefix to override it)";
 pr2 "Generating Makefile.config";
@@ -208,7 +221,6 @@ my $pythonprefix = $python ? "yes_" : "no_";
 
 my $command = "perl -p -i -e 's#Not_found.\*#Not_found->\\\"$src\\\"#' globals/config.ml";
 `$command`;
-
 
 
 

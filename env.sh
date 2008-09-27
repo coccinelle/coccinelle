@@ -27,5 +27,6 @@ export COCCINELLE_HOME=`pwd`
 echo setting LD_LIBRARY_PATH
 export LD_LIBRARY_PATH=$COCCINELLE_HOME/lib:$LD_LIBRARY_PATH
 
-
-#export PYTHONPATH=$COCCINELLE_HOME/lib:$PYTHONPATH
+# To find .py files like the one in python/coccib
+echo setting PYTHONPATH
+export PYTHONPATH=$COCCINELLE_HOME/python:$PYTHONPATH

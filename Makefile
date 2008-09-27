@@ -160,6 +160,11 @@ version:
 # Package rules, pad's specific
 ##############################################################################
 
+# To test you can try compile and run spatch from different instances 
+# like my ~/coccinelle, ~/release/coccinelle, and the /tmp/coccinelle-0.X 
+# downloaded from my website. For 'make srctar' I must do it from a clean
+# repo such as ~/release/coccinelle, for the 'make bintar' I can do it 
+# from my original repo.
 
 PACKAGE=coccinelle-$(VERSION)
 
