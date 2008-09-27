@@ -1,15 +1,17 @@
 ;;; cocci.el --- a major mode for editing semantic patches
 
-;; Copyright (C) 2006-2007 The Cocci Gang
+;; Copyright (C) 2006-2007 Yoann Padioleau
+
+;; Please imagine a long and boring gnu-style copyright notice 
+;; appearing just here.
+
 
 ;; Emacs Lisp Archive Entry
-;; Author: Padioleau Yoann <padator@wanadoo.fr>, 
+;; Author: Padioleau Yoann <yoann.padioleau@gmail.com>, 
 ;; Version: 0.2
 ;; Keywords: coccinelle patch refactoring program transformation
 ;; URL: http://www.emn.fr/x-info/coccinelle/
 
-;; Please imagine a long and boring gnu-style copyright notice 
-;; appearing just here.
 
 ;;; Usage
 
@@ -25,6 +27,9 @@
 ;;           (cons '("\\.iso$" . cocci-mode) auto-mode-alist))
 ;;
 
+;;; History 
+
+;; Some cleanups done by Rene Rydhof Hansen
 
 ;;; Utilities 
 
