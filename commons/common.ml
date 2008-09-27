@@ -119,6 +119,16 @@ let enum x n =
   in
   List.rev (enum_aux [] x n)
 
+let rec take n xs = 
+  match (n,xs) with
+  | (0,_) -> []
+  | (_,[]) -> failwith "take: not enough"
+  | (n,x::xs) -> x::take (n-1) xs
+
+
+let last_n n l = List.rev (take n (List.rev l))
+let last l = List.hd (last_n 1 l)
+
 
 let (list_of_string: string -> char list) = function
     "" -> []
@@ -1302,7 +1312,7 @@ let _init_gc_stack =
  * could save far more later.
  *)
 let check_stack_nbfiles nbfiles = 
-  if nbfiles > 100
+  if nbfiles > 200
   then check_stack_size 10000000
 
 (*****************************************************************************)
@@ -1631,6 +1641,8 @@ let is_upper = cbetween 'A' 'Z'
 let is_lower = cbetween 'a' 'z'
 let is_alpha c = is_upper c || is_lower c
 let is_digit = cbetween '0' '9'
+
+let string_of_chars cs = cs +> List.map (String.make 1) +> String.concat ""
 
 
 
@@ -2090,6 +2102,66 @@ let size_ko i =
   let ko = i / 1024 in
   sprintf "%dKo" ko
 
+
+
+(* done in summer 2007 for julia 
+ * Reference: P216 of gusfeld book
+ * For two strings S1 and S2, D(i,j) is defined to be the edit distance of S1[1..i] to S2[1..j]
+ * So edit distance of S1 (of length n) and S2 (of length m) is D(n,m)
+ * 
+ * Dynamic programming technique
+ * base: 
+ * D(i,0) = i  for all i (cos to go from S1[1..i] to 0 characteres of S2 you have to delete all characters from S1[1..i]
+ * D(0,j) = j  for all j (cos j characters must be inserted)
+ * recurrence:
+ * D(i,j) = min([D(i-1, j)+1, D(i, j - 1 + 1), D(i-1, j-1) + t(i,j)])
+ * where t(i,j) is equal to 1 if S1(i) != S2(j) and  0 if equal
+ * intuition = there is 4 possible action =  deletion, insertion, substitution, or match
+ * so Lemma =
+ * 
+ * D(i,j) must be one of the three
+ *  D(i, j-1) + 1
+ *  D(i-1, j)+1 
+ *  D(i-1, j-1) + 
+ *  t(i,j) 
+ * 
+ * 
+ *)
+let matrix_distance s1 s2 = 
+  let n = (String.length s1) in
+  let m = (String.length s2) in 
+  let mat = Array.make_matrix (n+1) (m+1) 0 in
+  let t i j = 
+    if String.get s1 (i-1) = String.get s2 (j-1)
+    then 0
+    else 1 
+  in
+  let min3 a b c = min (min a b) c in
+
+  begin
+    for i = 0 to n do
+      mat.(i).(0) <- i
+    done;
+    for j = 0 to m do
+      mat.(0).(j) <- j;
+    done;
+    for i = 1 to n do
+      for j = 1 to m do
+        mat.(i).(j) <- 
+          min3 (mat.(i).(j-1) + 1) (mat.(i-1).(j) + 1) (mat.(i-1).(j-1) + t i j)
+      done
+    done;
+    mat
+  end
+let edit_distance s1 s2 = 
+  (matrix_distance s1 s2).(String.length s1).(String.length s2)
+
+
+let test = edit_distance "vintner" "writers"
+let _ = assert (edit_distance "winter" "winter" = 0)
+let _ = assert (edit_distance "vintner" "writers" = 5)
+
+
 (*****************************************************************************)
 (* Filenames *)
 (*****************************************************************************)
@@ -2259,6 +2331,8 @@ type days = Days of int
 type time_dmy = TimeDMY of day * month * year
 
 
+type float_time = float
+
 
 
 let check_date_dmy (DMY (day, month, year)) = 
@@ -2272,6 +2346,40 @@ let check_time_hms (HMS (x,y,a)) =
 
 
 
+(* ---------------------------------------------------------------------- *)
+
+(* older code *)
+let int_to_month i = 
+  assert (i <= 12 && i >= 1);
+  match i with
+
+  | 1 -> "Jan"
+  | 2 -> "Feb"
+  | 3 -> "Mar"
+  | 4 -> "Apr"
+  | 5 -> "May"
+  | 6 -> "Jun"
+  | 7 -> "Jul"
+  | 8 -> "Aug"
+  | 9 -> "Sep"
+  | 10 -> "Oct"
+  | 11 -> "Nov"
+  | 12 -> "Dec"
+(*
+  | 1 -> "January"
+  | 2 -> "February"
+  | 3 -> "March"
+  | 4 -> "April"
+  | 5 -> "May"
+  | 6 -> "June"
+  | 7 -> "July"
+  | 8 -> "August"
+  | 9 -> "September"
+  | 10 -> "October"
+  | 11 -> "November"
+  | 12 -> "December"
+*)
+  | _ -> raise Impossible
 
 
 let month_info = [
@@ -2341,6 +2449,8 @@ let string_en_of_wday wday =
 let string_fr_of_wday wday = 
   List.assoc wday wday_to_fr_h
 
+(* ---------------------------------------------------------------------- *)
+
 let wday_str_of_int ~langage i = 
   let wday = wday_of_int i in
   match langage with
@@ -2366,41 +2476,43 @@ let string_of_unix_time ?(langage=English) tm =
   
   spf "%02d/%03s/%04d (%s) %02d:%02d:%02d" d mon y wday h min s
 
+(* ex: 21/Jul/2008 (Lun) 21:25:12 *)
+let unix_time_of_string s = 
+  if s =~ 
+    ("\\([0-9][0-9]\\)/\\(...\\)/\\([0-9][0-9][0-9][0-9]\\) " ^
+     "\\(.*\\) \\([0-9][0-9]\\):\\([0-9][0-9]\\):\\([0-9][0-9]\\)")
+  then
+    let (sday, smonth, syear, _sday, shour, smin, ssec) = matched7 s in
+
+    let y = s_to_i syear - 1900 in
+    let mon = 
+      smonth +> month_of_string +> int_of_month +> (fun i -> i -1)
+    in
+
+    let tm = Unix.localtime (Unix.time ()) in
+    { tm with 
+      Unix.tm_year = y;
+      Unix.tm_mon = mon;
+      Unix.tm_mday = s_to_i sday;
+      Unix.tm_hour = s_to_i shour;
+      Unix.tm_min = s_to_i smin;
+      Unix.tm_sec = s_to_i ssec;
+    }
+  else failwith ("unix_time_of_string: " ^ s)
 
 
 
-(* older code *)
-let int_to_month i = 
-  assert (i <= 12 && i >= 1);
-  match i with
+let short_string_of_unix_time ?(langage=English) tm = 
+  let y = tm.Unix.tm_year + 1900 in
+  let mon = string_of_month (month_of_int (tm.Unix.tm_mon + 1)) in
+  let d = tm.Unix.tm_mday in
+  let _h = tm.Unix.tm_hour in
+  let _min = tm.Unix.tm_min in
+  let _s = tm.Unix.tm_sec in
 
-  | 1 -> "Jan"
-  | 2 -> "Feb"
-  | 3 -> "Mar"
-  | 4 -> "Apr"
-  | 5 -> "May"
-  | 6 -> "Jun"
-  | 7 -> "Jul"
-  | 8 -> "Aug"
-  | 9 -> "Sep"
-  | 10 -> "Oct"
-  | 11 -> "Nov"
-  | 12 -> "Dec"
-(*
-  | 1 -> "January"
-  | 2 -> "February"
-  | 3 -> "March"
-  | 4 -> "April"
-  | 5 -> "May"
-  | 6 -> "June"
-  | 7 -> "July"
-  | 8 -> "August"
-  | 9 -> "September"
-  | 10 -> "October"
-  | 11 -> "November"
-  | 12 -> "December"
-*)
-  | _ -> raise Impossible
+  let wday = wday_str_of_int ~langage tm.Unix.tm_wday in
+  
+  spf "%02d/%03s/%04d (%s)" d mon y wday
 
 
 let string_of_unix_time_lfs time = 
@@ -2410,23 +2522,50 @@ let string_of_unix_time_lfs time =
     (time.Unix.tm_year + 1900)
 
 
-
-(* cf above *)
-let regexp_full_date = 
-  ""
-let unix_time_of_string s = 
-  raise Todo
-
+(* ---------------------------------------------------------------------- *)
 let string_of_floattime ?langage i = 
   let tm = Unix.localtime i in
   string_of_unix_time ?langage tm
 
-  
+let short_string_of_floattime ?langage i = 
+  let tm = Unix.localtime i in
+  short_string_of_unix_time ?langage tm
 
+let floattime_of_string s = 
+  let tm = unix_time_of_string s in
+  let (sec,_tm) = Unix.mktime tm in
+  sec
+
+
+(* ---------------------------------------------------------------------- *)
+let days_in_week_of_day day = 
+  let tm = Unix.localtime day in 
+  
+  let wday = tm.Unix.tm_wday in
+  let wday = if wday = 0 then 6 else wday -1 in
+
+  let mday = tm.Unix.tm_mday in
+
+  let start_d = mday - wday in
+  let end_d = mday + (6 - wday) in
+
+  enum start_d end_d +> List.map (fun mday -> 
+    Unix.mktime {tm with Unix.tm_mday = mday} +> fst
+  )
+
+let first_day_in_week_of_day day = 
+  List.hd (days_in_week_of_day day)
+
+let last_day_in_week_of_day day = 
+  last (days_in_week_of_day day)
+
+
+(* ---------------------------------------------------------------------- *)
 
 (* (modified) copy paste from ocamlcalendar/src/date.ml *)
 let days_month = 
   [| 0;    31; 59; 90; 120; 151; 181; 212; 243; 273; 304; 334(*; 365*) |]
+
 
 let rough_days_since_jesus (DMY (Day nday, month, Year year)) = 
   let n = 
@@ -2463,16 +2602,6 @@ let _ = assert_equal
   (Days 1)
 *)
 
-let mk_date_dmy day month year = 
-  let date = DMY (Day day, month_of_int month, Year year) in
-  (* check_date_dmy date *)
-  date
-
-
-
-
-
-
 
 (* from julia, in gitsort.ml *)
 
@@ -2498,8 +2627,17 @@ let normalize (year,month,day,hour,minute,second) =
       else (year,month,day,hour,minute,second)
     else (year,month,day,hour,minute,second)
   else (year,month,day,hour,minute,second)
+
 *)
 
+
+let mk_date_dmy day month year = 
+  let date = DMY (Day day, month_of_int month, Year year) in
+  (* check_date_dmy date *)
+  date
+
+
+(* ---------------------------------------------------------------------- *)
 (* conversion to unix.tm *)
 
 let dmy_to_unixtime (DMY (Day n, month, Year year)) = 
@@ -2516,6 +2654,16 @@ let dmy_to_unixtime (DMY (Day n, month, Year year)) =
   } in
   Unix.mktime tm
 
+let unixtime_to_dmy tm = 
+  let n = tm.Unix.tm_mday  in
+  let month = month_of_int (tm.Unix.tm_mon + 1) in
+  let year = tm.Unix.tm_year + 1900 in
+ 
+  DMY (Day n, month, Year year)
+
+
+let unixtime_to_floattime tm = 
+  Unix.mktime tm +> fst
 
 
 let sec_to_days sec = 
@@ -2532,6 +2680,18 @@ let sec_to_days sec =
   (if hours > 0 then plural hours "hour" ^ " " else "") ^
   (if mins > 0  then plural mins "min"   ^ " " else "") ^
   (spf "%dsec" sec)
+
+let sec_to_hours sec = 
+  let minfactor = 60 in
+  let hourfactor = 60 * 60 in
+
+  let hours = sec / hourfactor in
+  let mins  = (sec mod hourfactor) / minfactor in
+  let sec = (sec mod 60) in
+  (* old:   Printf.sprintf "%d days, %d hours, %d minutes" days hours mins *)
+  (if hours > 0 then plural hours "hour" ^ " " else "") ^
+  (if mins > 0  then plural mins "min"   ^ " " else "") ^
+  (spf "%dsec" sec)
   
 
 
@@ -2545,9 +2705,22 @@ let test_date_1 () =
 (* src: ferre in logfun/.../date.ml *)
 
 let day_secs : float = 86400.
-let today : unit -> float = fun () ->  (Unix.time ())
+
+let today     : unit -> float = fun () ->  (Unix.time () )
 let yesterday : unit -> float = fun () ->  (Unix.time () -. day_secs)
-let tomorrow : unit -> float = fun () ->  (Unix.time () +. day_secs)
+let tomorrow  : unit -> float = fun () ->  (Unix.time () +. day_secs)
+
+let lastweek  : unit -> float = fun () ->  (Unix.time () -. (7.0 *. day_secs))
+let lastmonth  : unit -> float = fun () ->  (Unix.time () -. (30.0 *. day_secs))
+
+
+let week_before  : float_time -> float_time = fun d ->  
+  (d -. (7.0 *. day_secs))
+let month_before  : float_time -> float_time = fun d ->  
+  (d -. (30.0 *. day_secs))
+
+let week_after  : float_time -> float_time = fun d ->  
+  (d +. (7.0 *. day_secs))
 
 
 
@@ -3087,11 +3260,13 @@ let rec unzip zs =
     (fst e::xs), (snd e::ys)) zs ([],[])
 
 
-let rec take n xs = 
-  match (n,xs) with
-  | (0,_) -> []
-  | (_,[]) -> failwith "take: not enough"
-  | (n,x::xs) -> x::take (n-1) xs
+(* now in prelude
+ * let rec take n xs = 
+ * match (n,xs) with
+ * | (0,_) -> []
+ * | (_,[]) -> failwith "take: not enough"
+ * | (n,x::xs) -> x::take (n-1) xs
+ *)
 
 let rec take_safe n xs =
   match (n,xs) with
@@ -3275,8 +3450,10 @@ let rec list_last = function
   | x::y::xs -> list_last (y::xs)
 
 (* pixel *)
-let last_n n l = List.rev (take n (List.rev l))
-let last l = List.hd (last_n 1 l)
+(* now in prelude
+ *   let last_n n l = List.rev (take n (List.rev l))
+ *   let last l = List.hd (last_n 1 l)
+ *)
 
 let rec join_gen a = function
   | [] -> []
@@ -3384,6 +3561,13 @@ let map_eff_rev = fun f l ->
       |	x::xs -> map_eff_aux ((f x)::acc) xs
   in
   map_eff_aux [] l
+
+let acc_map f l =
+  let rec loop acc = function
+    [] -> List.rev acc
+  | x::xs -> loop ((f x)::acc) xs in
+  loop [] l
+
 
 let rec (generate: int -> 'a -> 'a list) = fun i el ->
   if i = 0 then []
@@ -3702,6 +3886,13 @@ let array_find_index f a =
     if f a.(i) then i else array_find_index_ (i+1)
   in
   try array_find_index_ 0 with _ -> raise Not_found
+
+
+type 'a matrix = 'a array array
+
+let map_matrix f mat = 
+  mat +> Array.map (fun arr -> arr +> Array.map f)
+
 
 (*****************************************************************************)
 (* Fast array *)
@@ -4158,7 +4349,8 @@ let find_treeref f tree =
   );
   match !res with
   | [n,xs] -> NodeRef (n, xs)
-  | _ -> raise Not_found
+  | [] -> raise Not_found
+  | x::y::zs -> failwith "multi found"
 
 (*****************************************************************************)
 (* Graph. Have a look too at Ograph_*.mli  *)
@@ -4512,6 +4704,8 @@ let fake_parse_info = {
   line = -1; column = -1; file = "";
 }
 
+let string_of_parse_info x = 
+  spf "%s at %s:%d:%d" x.str x.file x.line x.column
 
 
 let (info_from_charpos2: int -> filename -> (int * int * string)) = 

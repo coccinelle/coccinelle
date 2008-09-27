@@ -10,7 +10,7 @@
  * article explains how parser combinators may be designed and
  * implemented in OCaml, using the standard example of a calculator."
  * 
- * pad: a few bugfix. I also put more restrictive and descriptive types.
+ * pad: a few bugfixes. I also put more restrictive and descriptive types.
  * 
  *)
 
@@ -66,6 +66,10 @@ val symbol   : char -> bool
 val alphanum : char -> bool
 val space    : char -> bool
 
+val alphanum_underscore : char -> bool
+val alphanum_minus : char -> bool
+val alphanum_under_minus : char -> bool
+
 val collect : char * char list -> string
 val list_of_string : string -> char list
 
@@ -76,6 +80,7 @@ type token =
   | KWD of string
   | INT of string
   | SYM of string
+  | STR of string
 
 val string_of_token : token -> string
 
@@ -91,6 +96,8 @@ val rawsymbol : lexer
 (* not space, not digit *)
 val rawkeyword : lexer
 (* char list -> token * char list *)
+
+val rawstring : lexer
 
 val lex_gen : lexer -> string -> token list
 
@@ -114,6 +121,7 @@ val ident : string pparser
 (* token list -> string * token list *)
 val int :  string pparser
 (* token list -> string * token list *)
+val string : string pparser
 
 type expr =
     | Int of int

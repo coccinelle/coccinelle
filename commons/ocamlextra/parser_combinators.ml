@@ -152,6 +152,8 @@ let symbol = function
   | '<' | '>' 
   | '+' | '-' | '*' | '/' 
   | '&' | '|' | '!' 
+
+  | '=' | '~' | '@'
       -> true
   | _ -> false
 
@@ -159,8 +161,27 @@ let space = function
   | ' ' | '\t' | '\n' -> true
   | _ -> false
 
+let stringquote = function
+  | '"' -> true
+  | _ -> false
+
+let quote = function
+  | '\'' -> true
+  | _ -> false
+
+
 let alphanum c = digit c || alpha c
 
+
+let alphanum_underscore c = digit c || alpha c || (c = '_')
+let alphanum_minus c = digit c || alpha c || (c = '-')
+let alphanum_under_minus c = digit c || alpha c || (c = '-') || (c = '_')
+
+
+
+let (+>) o f = f o
+let string_of_chars cs = 
+  cs +> List.map (String.make 1) +> String.concat ""
 
 
 let collect(h, t) =
@@ -184,27 +205,40 @@ type token =
   | KWD of string
   | INT of string
   | SYM of string
+  | STR of string
 
 let string_of_token = function
   | IDENT string -> "IDENT:" ^ string
   | KWD string -> "KWD:" ^ string
   | INT string -> "INT:" ^ string
   | SYM string -> "SYM:" ^ string
+  | STR string -> "STR:" ^ string
 
 
 type lexer = (char, token) genp
 
 
 let rawnumber =
-    pred digit +++ several digit >| fun x -> INT(collect x)
+  pred digit +++ several digit >| fun x -> INT(collect x)
 let rawident =
-    pred alpha +++ several alphanum >| fun x -> IDENT(collect x)
+  pred alpha +++ several alphanum >| fun x -> IDENT(collect x)
 let rawsymbol =
-    pred symbol +++ several symbol >| fun x -> SYM(collect x)
+  pred symbol +++ several symbol >| fun x -> SYM(collect x)
 
 let rawkeyword =
-    let p c = not(space c) && not(digit c) in
-    pred p +++ several p >| fun x -> KWD(collect x)
+  let p c = not(space c) && not(digit c) in
+  pred p +++ several p >| fun x -> KWD(collect x)
+
+
+(* todo: handle antislash *)
+let rawstring = 
+  pred stringquote +++ 
+  several (fun c -> not (stringquote c)) +++
+  pred stringquote
+   >| (fun ((c1, cs), c3) -> 
+        let s = string_of_chars cs in
+        STR s (* exclude the marker *)
+   )
 
 
 let lex_gen tokenf str = 
@@ -273,6 +307,10 @@ let ident = function
 
 let int = function
     | INT n :: t -> n, t
+    | _ -> raise Not_found
+
+let string = function
+    | STR x :: t -> x, t
     | _ -> raise Not_found
 
 (* src: Jon Harrop

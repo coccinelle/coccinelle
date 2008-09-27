@@ -570,6 +570,7 @@ val xor : 'a -> 'a -> bool
 (*****************************************************************************)
 
 val string_of_char : char -> string
+val string_of_chars : char list -> string
 
 val is_single : char -> bool
 val is_symbol : char -> bool
@@ -783,6 +784,8 @@ val showCodeHex : int list -> unit
 val size_mo_ko : int -> string
 val size_ko : int -> string
 
+val edit_distance: string -> string -> int 
+
 (*****************************************************************************)
 (* Regexp *)
 (*****************************************************************************)
@@ -890,6 +893,9 @@ type days = Days of int
 type time_dmy = TimeDMY of day * month * year
 
 
+(* from Unix *)
+type float_time = float
+
 
 val mk_date_dmy : int -> int -> int -> date_dmy
 
@@ -899,7 +905,6 @@ val check_time_dmy : time_dmy -> unit
 val check_time_hms : time_hms -> unit
 
 val int_to_month : int -> string
-
 val int_of_month : month -> int
 val month_of_string : string -> month
 val month_of_string_long : string -> month
@@ -907,20 +912,41 @@ val string_of_month : month -> string
 
 val string_of_date_dmy : date_dmy -> string
 val string_of_unix_time : ?langage:langage -> Unix.tm -> string
-val string_of_unix_time_lfs : Unix.tm -> string
-val string_of_floattime: ?langage:langage -> float -> string
+val short_string_of_unix_time : ?langage:langage -> Unix.tm -> string
+val string_of_floattime: ?langage:langage -> float_time -> string
+val short_string_of_floattime: ?langage:langage -> float_time -> string
+
+val floattime_of_string: string -> float_time
+
+val dmy_to_unixtime: date_dmy -> float_time * Unix.tm
+val unixtime_to_dmy: Unix.tm -> date_dmy
+val unixtime_to_floattime: Unix.tm -> float_time
+
+val sec_to_days : int -> string
+val sec_to_hours : int -> string
+
+val today : unit -> float_time
+val yesterday : unit -> float_time
+val tomorrow : unit -> float_time
+
+val lastweek : unit -> float_time
+val lastmonth : unit -> float_time
+
+val week_before: float_time -> float_time
+val month_before: float_time -> float_time
+val week_after: float_time -> float_time
+
+val days_in_week_of_day : float_time -> float_time list
+
+val first_day_in_week_of_day : float_time -> float_time
+val last_day_in_week_of_day : float_time -> float_time
+
+val day_secs: float_time
 
 val rough_days_since_jesus : date_dmy -> days
 val rough_days_between_dates : date_dmy -> date_dmy -> days
 
-val dmy_to_unixtime: date_dmy -> float * Unix.tm
-
-val sec_to_days : int -> string
-
-val day_secs: float
-val today : unit -> float
-val yesterday : unit -> float
-val tomorrow : unit -> float
+val string_of_unix_time_lfs : Unix.tm -> string
 
 
 (*****************************************************************************)
@@ -1063,6 +1089,8 @@ val exn_to_real_unixexit : (unit -> 'a) -> 'a
 
 (* tail recursive efficient map (but that also reverse the element!) *)
 val map_eff_rev : ('a -> 'b) -> 'a list -> 'b list
+(* tail recursive efficient map, use accumulator  *)
+val acc_map : ('a -> 'b) -> 'a list -> 'b list
 
 
 val zip : 'a list -> 'b list -> ('a * 'b) list
@@ -1225,6 +1253,10 @@ val fusionneListeContenant : 'a * 'a -> 'a list list -> 'a list list
 (*****************************************************************************)
 
 val array_find_index : ('a -> bool) -> 'a array -> int
+
+type 'a matrix = 'a array array
+
+val map_matrix : ('a -> 'b) -> 'a matrix -> 'b matrix
 
 (*****************************************************************************)
 (* Fast array *)
@@ -1663,7 +1695,7 @@ type parse_info = {
     file: filename;
   } 
 val fake_parse_info : parse_info
-
+val string_of_parse_info : parse_info -> string
 
 (* array[i] will contain the (line x col) of the i char position *)
 val full_charpos_to_pos : filename -> (int * int) array
