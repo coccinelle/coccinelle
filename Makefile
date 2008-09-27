@@ -18,10 +18,13 @@ ifeq ($(FEATURE_PYTHON),1)
 PYCMA=pycaml/pycaml.cma
 PYDIR=pycaml
 PYLIB=dllpycaml_stubs.so
+# the following is essential for Coccinelle to compile under gentoo (wierd)
+OPTLIBFLAGS=-cclib dllpycaml_stubs.so
 else
 PYCMA=
 PYDIR=
 PYLIB=
+OPTLIBFLAGS=
 endif
 
 
@@ -52,14 +55,12 @@ EXEC=$(TARGET)
 # Generic ocaml variables
 ##############################################################################
 
-OCAMLCFLAGS=-g -dtypes -custom # -w A
+OCAMLCFLAGS=-g -dtypes # -w A
 
 # for profiling add  -p -inline 0
 # but 'make forprofiling' below does that for you.
 # This flag is also used in subdirectories so don't change its name here.
 OPTFLAGS=
-# the following is essential for Coccinelle to compile under gentoo
-OPTLIBFLAGS=-cclib dllpycaml_stubs.so
 
 # the OPTBIN variable is here to allow to use ocamlc.opt instead of 
 # ocaml, when it is available, which speeds up compilation. So
@@ -77,6 +78,9 @@ OCAMLMKTOP=ocamlmktop -g -custom $(INCLUDES)
 # can also be set via 'make static'
 STATIC= #-ccopt -static
 
+# can also be unset via 'make purebytecode'
+BYTECODE_STATIC=-custom
+
 ##############################################################################
 # Top rules
 ##############################################################################
@@ -91,13 +95,13 @@ rec.opt:
 	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i all.opt; done 
 
 $(EXEC): $(LIBS) $(OBJS)
-	$(OCAMLC) -o $@ $(SYSLIBS)  $^
+	$(OCAMLC) $(BYTECODE_STATIC) -o $@ $(SYSLIBS)  $^
 
 $(EXEC).opt: $(LIBS:.cma=.cmxa) $(OPTOBJS) 
 	$(OCAMLOPT) $(STATIC) -o $@ $(SYSLIBS:.cma=.cmxa) $(OPTLIBFLAGS)  $^
 
 $(EXEC).top: $(LIBS) $(OBJS) 
-	$(OCAMLMKTOP) -o $@ $(SYSLIBS) $^
+	$(OCAMLMKTOP) -custom -o $@ $(SYSLIBS) $^
 
 clean::
 	rm -f $(TARGET) $(TARGET).opt $(TARGET).top
@@ -121,6 +125,10 @@ static:
 	rm -f spatch.opt spatch
 	$(MAKE) STATIC="-ccopt -static" spatch.opt
 	cp spatch.opt spatch
+
+purebytecode:
+	rm -f spatch.opt spatch
+	$(MAKE) BYTECODE_STATIC="" spatch
 
 
 ##############################################################################
@@ -163,25 +171,32 @@ version:
 # To test you can try compile and run spatch from different instances 
 # like my ~/coccinelle, ~/release/coccinelle, and the /tmp/coccinelle-0.X 
 # downloaded from my website. For 'make srctar' I must do it from a clean
-# repo such as ~/release/coccinelle, for the 'make bintar' I can do it 
-# from my original repo.
+# repo such as ~/release/coccinelle. It must also be a repo where 
+# the scripts/licensify have been run at least once.
+# For the 'make bintar' I can do it from my original repo.
 
 PACKAGE=coccinelle-$(VERSION)
 
 BINSRC=spatch env.sh env.csh standard.h standard.iso \
        $(PYLIB) python/coccilib/  \
-       *.txt demos/foo.*
+       *.txt docs/* \
+       demos/foo.* demos/simple.* demos/printloc.*
 BINSRC2=$(BINSRC:%=$(PACKAGE)/%)
 
 TXT=$(wildcard *.txt)
 
+# really pad specific
 TOP=/home/pad/mobile/project-coccinelle
 WEBSITE=/home/pad/mobile/homepage/software/project-coccinelle
 
-package: bintar srctar
+package: 
+	make srctar 
+	make bintar 
+	make staticbintar 
+	make bytecodetar
 
 # I currently pre-generate the parser so the user does not have to 
-# install menhir on his machine.
+# install menhir on his machine. I also do a few cleanups like 'rm todo_pos'.
 srctar:
 	make clean
 	cp -a .  $(TOP)/$(PACKAGE)
@@ -194,16 +209,22 @@ srctar:
 bintar: all
 	rm -f $(TOP)/$(PACKAGE)
 	ln -s $(TOP)/code $(TOP)/$(PACKAGE)
-	cd $(TOP); tar cvfz $(PACKAGE)-bin.tgz $(BINSRC2)
+	cd $(TOP); tar cvfz $(PACKAGE)-bin-x86.tgz $(BINSRC2)
 	rm -f $(TOP)/$(PACKAGE)
 
-staticbintar: all all.opt
+staticbintar: all.opt
 	rm -f $(TOP)/$(PACKAGE)
 	ln -s $(TOP)/code $(TOP)/$(PACKAGE)
 	make static
-	cd $(TOP); tar cvfz $(PACKAGE)-bin-static.tgz $(BINSRC2)
+	cd $(TOP); tar cvfz $(PACKAGE)-bin-x86-static.tgz $(BINSRC2)
 	rm -f $(TOP)/$(PACKAGE)
 
+bytecodetar: all
+	rm -f $(TOP)/$(PACKAGE)
+	ln -s $(TOP)/code $(TOP)/$(PACKAGE)
+	make purebytecode
+	cd $(TOP); tar cvfz $(PACKAGE)-bin-bytecode.tgz $(BINSRC2)
+	rm -f $(TOP)/$(PACKAGE)
 
 #	ln -s $(TOP)/code $(TOP)/$(PACKAGE)
 #	rm -f $(TOP)/$(PACKAGE)
@@ -212,21 +233,28 @@ staticbintar: all all.opt
 
 
 clean::
-	rm -f $(PACKAGE) $(PACKAGE)-bin.tgz $(PACKAGE)-bin-static.tgz 
+	rm -f $(PACKAGE) 
+	rm -f $(PACKAGE)-bin-x86.tgz 
+	rm -f $(PACKAGE)-bin-x86-static.tgz 
+	rm -f $(PACKAGE)-bin-bytecode.tgz
 
 
 website:
-	cp $(TOP)/$(PACKAGE).tgz            $(WEBSITE)
-	cp $(TOP)/$(PACKAGE)-bin.tgz        $(WEBSITE)
-	cp $(TOP)/$(PACKAGE)-bin-static.tgz $(WEBSITE)
+	cp $(TOP)/$(PACKAGE).tgz                $(WEBSITE)
+	cp $(TOP)/$(PACKAGE)-bin-x86.tgz        $(WEBSITE)
+	cp $(TOP)/$(PACKAGE)-bin-x86-static.tgz $(WEBSITE)
+	cp $(TOP)/$(PACKAGE)-bin-bytecode.tgz   $(WEBSITE)
 
 syncwiki:
 #	unison ~/public_html/wiki/wiki-LFS/data/pages/ docs/wiki/
 #	set -e; for i in $(TXT); do unison $$i docs/wiki/$$i; done 
 
-
 darcsweb:
-	@echo pull from ~/public_html/darcs/c-coccinelle and c-commons and lib-xxx
+#	@echo pull from ~/public_html/darcs/c-coccinelle and c-commons and lib-xxx
+
+licensify:
+	echo todo
+
 
 ##############################################################################
 # Developer rules
@@ -260,7 +288,12 @@ testparsing3:
 testparsing4:
 	./spatch.opt -D standard.h -parse_c -dir tests-big/ > /tmp/parse_big_c 2>&1
 
-# -inline 0  to see all the functions in the profile.
+
+
+
+# -inline 0  to see all the functions in the profile. 
+# Can also use the profile framework in commons/ and run your program 
+# with -profile.
 forprofiling:
 	$(MAKE) OPTFLAGS="-p -inline 0 " opt
 

@@ -2,25 +2,25 @@ Here are the authors and maintainers of the different parts of coccinelle:
 
 * Julia Lawall <julia@diku.dk>
 
-- parsing_cocci/ (parsing cocci, isomorphism handling)
+- parsing_cocci/ (parsing SmPL, isomorphism handling)
 - engine/ (ast_cocci to ctl, sgrep)
 - ctl/ (symbolic model checker)
-- popl/
+- popl/ popl09/
 - tools/ 
 - standard.iso
 
 * Yoann Padioleau <yoann.padioleau@gmail.com>
 
-- parsing_c/ (parsing c, unparsing c, type checking, control flow, C diff)
+- parsing_c/ (parsing C, unparsing C, type checking, control flow, C diff)
 - engine/ (pattern matching and transforming, unparsing, ctl integration)
 - cocci.ml (driver)
 - main.ml, testing.ml
+- emacs/cocci.el
 - globals/
 - extra/
-- commons/
-- emacs/cocci.el
 - tools/ 
 - scripts/
+- commons/ (utility functions)
 - standard.h
 
 
@@ -32,7 +32,7 @@ Here are the authors and maintainers of the different parts of coccinelle:
 
 * Henrik stuart <henrik@hstuart.dk>
 
-- python/ (python SmPL extension and another cocci gui)
+- python/ (python SmPL extension and a coccinelle GUI)
 
 * All
 

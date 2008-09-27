@@ -16,6 +16,6 @@ The contents of some files in this directory was derived from external
 sources with compatible licenses.  The original copyright and license
 notice was preserved in the affected files.
 
-This software can be distributed under a dual license making
-it possible to use coccinelle in a commercial software.
+This software can be distributed under another license (dual license) making
+it possible to use Coccinelle in a commercial software.
 Contact one of the author for more information.

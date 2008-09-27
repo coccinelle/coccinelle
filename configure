@@ -212,7 +212,7 @@ FEATURE_PYTHON=$python
 ";
 
 pr2 "Modifying globals/config.ml";
-pr2 "Generating appropriate links in python/";
+pr2 "Generating appropriate links in python/ (python=$python)";
 my $pythonprefix = $python ? "yes_" : "no_";
 `cd python; rm -f  pycocci.ml pycocci_aux.ml;`;
 `cd python; ln -s ${pythonprefix}pycocci.ml pycocci.ml; `;

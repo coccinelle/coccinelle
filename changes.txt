@@ -15,4 +15,4 @@
 * alpha
 
 ** Features
- - lots of features ... look at coccinelle research papers and tutorial
+ - lots of features ... look at coccinelle research papers and tutorials.

@@ -5,9 +5,9 @@
 #!!!!You need to source me with "source env.sh" from the good directory!!!!
 if [ ! -r standard.iso ]
     then echo "There is no standard.iso here. 
-Are you sure you run this script from the coccinelle source directory ?
+Are you sure you run this script from the coccinelle directory ?
 ";
-fi
+else
 
 
 ##############################################################################
@@ -30,3 +30,5 @@ export LD_LIBRARY_PATH=$COCCINELLE_HOME/lib:$LD_LIBRARY_PATH
 # To find .py files like the one in python/coccib
 echo setting PYTHONPATH
 export PYTHONPATH=$COCCINELLE_HOME/python:$PYTHONPATH
+
+fi

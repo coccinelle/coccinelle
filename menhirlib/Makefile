@@ -43,6 +43,12 @@ $(TARGET).cma: $(OBJS) $(LIBS)
 $(TARGET).cmxa: $(OPTOBJS) $(LIBS:.cma=.cmxa)
 	$(OCAMLOPT) -a -o $@ $(OPTOBJS)
 
+# I thought at first that only one file menhirLib.ml 
+# was needed but in fact it's a wierd cos menhirLib.cmo results from multi
+# files. They used the -pack ocamlc option, and for strange reason 
+# decided to produce a .cma instead of a classical .cma.
+# So I put all the necesseray files in this directory.
+
 # copy what the menhir authors do in their own makefile
 menhirLib.cmo: $(OBJS)
 	$(OCAMLC) -pack -o menhirLib.cmo $^
