@@ -58,6 +58,8 @@ OCAMLCFLAGS=-g -dtypes -custom # -w A
 # but 'make forprofiling' below does that for you.
 # This flag is also used in subdirectories so don't change its name here.
 OPTFLAGS=
+# the following is essential for Coccinelle to compile under gentoo
+OPTLIBFLAGS=-cclib dllpycaml_stubs.so
 
 # the OPTBIN variable is here to allow to use ocamlc.opt instead of 
 # ocaml, when it is available, which speeds up compilation. So
