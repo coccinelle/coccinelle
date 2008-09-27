@@ -10,9 +10,9 @@ fi
 
 if [ -z ${LD_LIBRARY_PATH} ]
 then
-export LD_LIBRARY_PATH=${DN}/python
+export LD_LIBRARY_PATH=${DN}
 else
-export LD_LIBRARY_PATH=${PYTHONPATH}:${DN}/python
+export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${DN}
 fi
 
 ${DN}/spatch.opt $*

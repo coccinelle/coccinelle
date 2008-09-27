@@ -222,20 +222,20 @@ srctar:
 
 bintar: all
 	rm -f $(TOP)/$(PACKAGE)
-	ln -s $(TOP)/code $(TOP)/$(PACKAGE)
+	ln -s `pwd` $(TOP)/$(PACKAGE)
 	cd $(TOP); tar cvfz $(PACKAGE)-bin-x86.tgz $(BINSRC2)
 	rm -f $(TOP)/$(PACKAGE)
 
 staticbintar: all.opt
 	rm -f $(TOP)/$(PACKAGE)
-	ln -s $(TOP)/code $(TOP)/$(PACKAGE)
+	ln -s `pwd` $(TOP)/$(PACKAGE)
 	make static
 	cd $(TOP); tar cvfz $(PACKAGE)-bin-x86-static.tgz $(BINSRC2)
 	rm -f $(TOP)/$(PACKAGE)
 
 bytecodetar: all
 	rm -f $(TOP)/$(PACKAGE)
-	ln -s $(TOP)/code $(TOP)/$(PACKAGE)
+	ln -s `pwd` $(TOP)/$(PACKAGE)
 	make purebytecode
 	cd $(TOP); tar cvfz $(PACKAGE)-bin-bytecode.tgz $(BINSRC2)
 	rm -f $(TOP)/$(PACKAGE)
