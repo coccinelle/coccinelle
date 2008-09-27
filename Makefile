@@ -199,7 +199,8 @@ BINSRC2=$(BINSRC:%=$(PACKAGE)/%)
 TXT=$(wildcard *.txt)
 
 # really pad specific
-TOP=/home/pad/mobile/project-coccinelle
+#TOP=/home/pad/mobile/project-coccinelle
+TMP=/tmp
 WEBSITE=/home/pad/mobile/homepage/software/project-coccinelle
 
 package: 
@@ -213,32 +214,32 @@ package:
 # You may have first to do a 'make licensify'.
 srctar:
 	make clean
-	cp -a .  $(TOP)/$(PACKAGE)
-	cd $(TOP)/$(PACKAGE); cd parsing_cocci/; make parser_cocci_menhir.ml
-	cd $(TOP)/$(PACKAGE); rm todo_pos
-	cd $(TOP); tar cvfz $(PACKAGE).tgz $(PACKAGE)
-	rm -rf  $(TOP)/$(PACKAGE)
+	cp -a .  $(TMP)/$(PACKAGE)
+	cd $(TMP)/$(PACKAGE); cd parsing_cocci/; make parser_cocci_menhir.ml
+	cd $(TMP)/$(PACKAGE); rm todo_pos
+	cd $(TMP); tar cvfz $(PACKAGE).tgz $(PACKAGE)
+	rm -rf  $(TMP)/$(PACKAGE)
 
 
 bintar: all
-	rm -f $(TOP)/$(PACKAGE)
-	ln -s `pwd` $(TOP)/$(PACKAGE)
-	cd $(TOP); tar cvfz $(PACKAGE)-bin-x86.tgz $(BINSRC2)
-	rm -f $(TOP)/$(PACKAGE)
+	rm -f $(TMP)/$(PACKAGE)
+	ln -s `pwd` $(TMP)/$(PACKAGE)
+	cd $(TMP); tar cvfz $(PACKAGE)-bin-x86.tgz $(BINSRC2)
+	rm -f $(TMP)/$(PACKAGE)
 
 staticbintar: all.opt
-	rm -f $(TOP)/$(PACKAGE)
-	ln -s `pwd` $(TOP)/$(PACKAGE)
+	rm -f $(TMP)/$(PACKAGE)
+	ln -s `pwd` $(TMP)/$(PACKAGE)
 	make static
-	cd $(TOP); tar cvfz $(PACKAGE)-bin-x86-static.tgz $(BINSRC2)
-	rm -f $(TOP)/$(PACKAGE)
+	cd $(TMP); tar cvfz $(PACKAGE)-bin-x86-static.tgz $(BINSRC2)
+	rm -f $(TMP)/$(PACKAGE)
 
 bytecodetar: all
-	rm -f $(TOP)/$(PACKAGE)
-	ln -s `pwd` $(TOP)/$(PACKAGE)
+	rm -f $(TMP)/$(PACKAGE)
+	ln -s `pwd` $(TMP)/$(PACKAGE)
 	make purebytecode
-	cd $(TOP); tar cvfz $(PACKAGE)-bin-bytecode.tgz $(BINSRC2)
-	rm -f $(TOP)/$(PACKAGE)
+	cd $(TMP); tar cvfz $(PACKAGE)-bin-bytecode.tgz $(BINSRC2)
+	rm -f $(TMP)/$(PACKAGE)
 
 #	ln -s $(TOP)/code $(TOP)/$(PACKAGE)
 #	rm -f $(TOP)/$(PACKAGE)
@@ -254,10 +255,10 @@ clean::
 
 
 website:
-	cp $(TOP)/$(PACKAGE).tgz                $(WEBSITE)
-	cp $(TOP)/$(PACKAGE)-bin-x86.tgz        $(WEBSITE)
-	cp $(TOP)/$(PACKAGE)-bin-x86-static.tgz $(WEBSITE)
-	cp $(TOP)/$(PACKAGE)-bin-bytecode.tgz   $(WEBSITE)
+	cp $(TMP)/$(PACKAGE).tgz                $(WEBSITE)
+	cp $(TMP)/$(PACKAGE)-bin-x86.tgz        $(WEBSITE)
+	cp $(TMP)/$(PACKAGE)-bin-x86-static.tgz $(WEBSITE)
+	cp $(TMP)/$(PACKAGE)-bin-bytecode.tgz   $(WEBSITE)
 
 syncwiki:
 #	unison ~/public_html/wiki/wiki-LFS/data/pages/ docs/wiki/
