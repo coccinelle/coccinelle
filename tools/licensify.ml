@@ -41,13 +41,44 @@ let do_one file =
   let _ = Sys.command (Printf.sprintf "cat /tmp/tmpfl >> %s" file) in
   ()
 
+(* pad's modif *)
+let (+>) o f = f o
+let cat file = 
+  let chan = open_in file in
+  let rec cat_aux acc ()  = 
+      (* cant do input_line chan::aux() cos ocaml eval from right to left ! *)
+    let (b, l) = try (true, input_line chan) with End_of_file -> (false, "") in
+    if b 
+    then cat_aux (l::acc) ()
+    else acc 
+  in
+  cat_aux [] () +> List.rev +> (fun x -> close_in chan; x)
+
+
 let rec process dir =
   let files =
     try
       List.map (function fl -> dir^"/"^fl)
 	(Array.to_list(Sys.readdir dir))
     with Sys_error _ -> [] in
-  List.iter (function file -> try do_one file with _ -> ()) files;
-  List.iter process files
+  List.iter (function file -> 
+    try 
+      let xs = cat file in 
+      if List.exists (fun s -> 
+        s = "* This file is part of Coccinelle."
+        || 
+        s = "# This file is part of Coccinelle."
+      ) xs 
+      then print_string ("already processed: " ^ file ^ "\n")
+      else begin
+        do_one file;
+        print_string ("processed: " ^ file ^ "\n");
+      end
+    with _ -> 
+      print_string ("skipped: " ^ file ^ "\n");
+      ()
+  ) files;
+  (* pad: no recursive call in directory List.iter process files *)
+  ()
 
 let _ = process "."

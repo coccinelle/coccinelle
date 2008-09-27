@@ -197,6 +197,7 @@ package:
 
 # I currently pre-generate the parser so the user does not have to 
 # install menhir on his machine. I also do a few cleanups like 'rm todo_pos'.
+# You may have first to do a 'make licensify'.
 srctar:
 	make clean
 	cp -a .  $(TOP)/$(PACKAGE)
@@ -252,8 +253,10 @@ syncwiki:
 darcsweb:
 #	@echo pull from ~/public_html/darcs/c-coccinelle and c-commons and lib-xxx
 
+TOLICENSIFY=
 licensify:
-	echo todo
+	ocaml tools/licensify.ml 
+	set -e; for i in $(TOLICENSIFY); do cd $$i; ocaml ../tools/licensify; done 
 
 
 ##############################################################################
