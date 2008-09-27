@@ -189,10 +189,11 @@ version:
 
 PACKAGE=coccinelle-$(VERSION)
 
+# $(PYLIB) python/coccilib/ demos/printloc.*
+
 BINSRC=spatch env.sh env.csh standard.h standard.iso \
-       $(PYLIB) python/coccilib/  \
        *.txt docs/* \
-       demos/foo.* demos/simple.* demos/printloc.*
+       demos/foo.* demos/simple.* 
 BINSRC2=$(BINSRC:%=$(PACKAGE)/%)
 
 TXT=$(wildcard *.txt)
