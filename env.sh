@@ -25,7 +25,7 @@ export COCCINELLE_HOME=`pwd`
 
 # To find pycaml dynamic library
 echo setting LD_LIBRARY_PATH
-export LD_LIBRARY_PATH=$COCCINELLE_HOME/lib:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=$COCCINELLE_HOME:$LD_LIBRARY_PATH
 
 # To find .py files like the one in python/coccib
 echo setting PYTHONPATH

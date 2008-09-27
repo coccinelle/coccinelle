@@ -170,10 +170,22 @@ version:
 
 # To test you can try compile and run spatch from different instances 
 # like my ~/coccinelle, ~/release/coccinelle, and the /tmp/coccinelle-0.X 
-# downloaded from my website. For 'make srctar' I must do it from a clean
+# downloaded from the website. For 'make srctar' I must do it from a clean
 # repo such as ~/release/coccinelle. It must also be a repo where 
-# the scripts/licensify have been run at least once.
+# the scripts/licensify have been run at least once. You can
+# use 'cvs export -DNOW coccinelle'.
 # For the 'make bintar' I can do it from my original repo.
+
+# cd ~/release
+# cvs checkout coccinelle
+# cd coccinelle
+# cvs update -d -P
+# touch **/*
+# ./configure --without-python
+# rm -rf **/CVS
+# make package
+# make website
+
 
 PACKAGE=coccinelle-$(VERSION)
 
@@ -257,6 +269,15 @@ TOLICENSIFY=ctl engine parsing_cocci popl popl09 python
 licensify:
 	ocaml tools/licensify.ml 
 	set -e; for i in $(TOLICENSIFY); do cd $$i; ocaml ../tools/licensify.ml; cd ..; done 
+
+# When checking out the source from diku sometimes I have some "X in the future"
+# error messages.
+fixdates:
+	echo do 'touch **/*.*'
+
+fixCVS:
+	cvs update -d -P
+	echo do 'rm -rf **/CVS'
 
 
 ##############################################################################
