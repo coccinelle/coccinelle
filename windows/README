@@ -1,3 +1,0 @@
-For windows, ie for compiling without menhir, copy the files in this
-directory into the directory coccinelle/parsing_cocci
-
