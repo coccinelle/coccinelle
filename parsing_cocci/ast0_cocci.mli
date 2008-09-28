@@ -33,7 +33,8 @@ and 'a wrap =
       exp_ty : Type_cocci.typeC option ref; (* only for expressions *)
       bef_aft : dots_bef_aft; (* only for statements *)
       true_if_arg : bool; (* true if "arg_exp", only for exprs *)
-      true_if_test : bool; (* true if "test_exp", only for exprs *)
+      true_if_test : bool; (* true if "test position", only for exprs *)
+      true_if_test_exp : bool;(* true if "test_exp from iso", only for exprs *)
       (*nonempty if this represents the use of an iso*)
       iso_info : (string*anything) list }
 
@@ -426,6 +427,8 @@ val set_dots_bef_aft : statement -> dots_bef_aft -> statement
 val get_dots_bef_aft : 'a wrap -> dots_bef_aft
 val set_arg_exp : expression -> expression
 val get_arg_exp : expression -> bool
+val set_test_pos : expression -> expression
+val get_test_pos : 'a wrap -> bool
 val set_test_exp : expression -> expression
 val get_test_exp : 'a wrap -> bool
 val set_iso : 'a wrap -> (string*anything) list -> 'a wrap

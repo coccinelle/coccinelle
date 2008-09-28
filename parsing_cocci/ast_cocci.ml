@@ -18,6 +18,7 @@ type 'a wrap =
       bef_aft : dots_bef_aft;
       (* the following is for or expressions *)
       pos_info : meta_name mcode option; (* pos info, try not to duplicate *)
+      true_if_test_exp : bool;(* true if "test_exp from iso", only for exprs *)
       (* isos relevant to the term; ultimately only used for rule_elems *)
       iso_info : (string*anything) list }
 
@@ -563,6 +564,8 @@ let get_dots_bef_aft x     = x.bef_aft
 let set_dots_bef_aft d x   = {x with bef_aft = d}
 let get_pos x              = x.pos_info
 let set_pos x pos          = {x with pos_info = pos}
+let get_test_exp x      = x.true_if_test_exp
+let set_test_exp x      = {x with true_if_test_exp = true}
 let get_isos x             = x.iso_info
 let set_isos x isos        = {x with iso_info = isos}
 let get_pos_var (_,_,_,p)  = p
@@ -615,6 +618,7 @@ let make_term x =
     saved_witness = [];
     bef_aft = NoDots;
     pos_info = None;
+    true_if_test_exp = false;
     iso_info = [] }
 
 let make_meta_rule_elem s d (fvs,fresh,inh) =

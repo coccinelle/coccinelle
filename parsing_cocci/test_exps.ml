@@ -2,7 +2,7 @@ module Ast = Ast_cocci
 module Ast0 = Ast0_cocci
 module V0 = Visitor_ast0
 
-(* call set_test_exp on test expressions *)
+(* call set_test_pos on test expressions *)
 
 (* The goal of this is to identify test expressions in the SmPL file, so that
 isomorphisms like X != NULL => X are only applied in a test expression context.
@@ -12,13 +12,13 @@ without the || is only accepted in a test expression context.  This uses
 the annotations in the C file. *)
 
 let rec process_exp e =
-  let e = Ast0.set_test_exp e in
+  let e = Ast0.set_test_pos e in
   match Ast0.unwrap e with
     Ast0.Paren(lp,e,rp) ->
       Ast0.rewrap e (Ast0.Paren(lp,process_exp e,rp))
   | _ -> e
 
-let set_test_exps =
+let set_test_poss =
   let donothing r k e = k e in
   let mcode x = x in
 
@@ -61,7 +61,7 @@ let set_test_exps =
       donothing expression donothing donothing donothing donothing statement
       donothing donothing
 
-let process = List.map set_test_exps.V0.rebuilder_top_level
+let process = List.map set_test_poss.V0.rebuilder_top_level
 
-let process_anything = set_test_exps.V0.rebuilder_anything
+let process_anything = set_test_poss.V0.rebuilder_anything
 

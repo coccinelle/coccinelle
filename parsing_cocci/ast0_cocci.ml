@@ -37,7 +37,8 @@ and 'a wrap =
       exp_ty : Type_cocci.typeC option ref; (* only for expressions *)
       bef_aft : dots_bef_aft; (* only for statements *)
       true_if_arg : bool; (* true if "arg_exp", only for exprs *)
-      true_if_test : bool; (* true if "test_exp from iso", only for exprs *)
+      true_if_test : bool; (* true if "test position", only for exprs *)
+      true_if_test_exp : bool;(* true if "test_exp from iso", only for exprs *)
       (*nonempty if this represents the use of an iso*)
       iso_info : (string*anything) list }
 
@@ -416,6 +417,7 @@ let wrap x =
     bef_aft = NoDots;
     true_if_arg = false;
     true_if_test = false;
+    true_if_test_exp = false;
     iso_info = [] }
 let context_wrap x =
   { node = x;
@@ -426,6 +428,7 @@ let context_wrap x =
     bef_aft = NoDots;
     true_if_arg = false;
     true_if_test = false;
+    true_if_test_exp = false;
     iso_info = [] }
 let unwrap x = x.node
 let unwrap_mcode (x,_,_,_,_) = x
@@ -453,8 +456,10 @@ let get_dots_bef_aft x  = x.bef_aft
 let set_dots_bef_aft x dots_bef_aft = {x with bef_aft = dots_bef_aft}
 let get_arg_exp x       = x.true_if_arg
 let set_arg_exp x       = {x with true_if_arg = true}
-let get_test_exp x      = x.true_if_test
-let set_test_exp x      = {x with true_if_test = true}
+let get_test_pos x      = x.true_if_test
+let set_test_pos x      = {x with true_if_test = true}
+let get_test_exp x      = x.true_if_test_exp
+let set_test_exp x      = {x with true_if_test_exp = true}
 let get_iso x           = x.iso_info
 let set_iso x i = if !Flag.track_iso_usage then {x with iso_info = i} else x
 let set_mcode_data data (_,ar,info,mc,pos) = (data,ar,info,mc,pos)

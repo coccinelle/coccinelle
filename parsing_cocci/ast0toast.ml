@@ -278,6 +278,7 @@ and ident i =
 (* Expression *)
 
 and expression e =
+  let e1 =
   rewrap e (do_isos (Ast0.get_iso e))
     (match Ast0.unwrap e with
       Ast0.Ident(id) -> Ast.Ident(ident id)
@@ -352,7 +353,8 @@ and expression e =
 	let whencode = get_option expression whencode in
 	Ast.Estars(dots,whencode)
     | Ast0.OptExp(exp) -> Ast.OptExp(expression exp)
-    | Ast0.UniqueExp(exp) -> Ast.UniqueExp(expression exp))
+    | Ast0.UniqueExp(exp) -> Ast.UniqueExp(expression exp)) in
+  if Ast0.get_test_exp e then Ast.set_test_exp e1 else e1
 
 and expression_dots ed = dots expression ed
   

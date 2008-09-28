@@ -1473,6 +1473,7 @@ let instantiate bindings mv_bindings =
 
   let exprfn r k old_e = (* need to keep the original code for ! optim *)
     let e = k old_e in
+    let e1 =
     match Ast0.unwrap e with
       Ast0.MetaExpr(name,constraints,x,form,pure) ->
 	(rebuild_mcode None).V0.rebuilder_expression
@@ -1599,6 +1600,7 @@ let instantiate bindings mv_bindings =
 	  | _ -> failwith "unexpected binding")
 	with Not_found -> e)
     | _ -> e in
+    if Ast0.get_test_exp old_e then Ast0.set_test_exp e1 else e1 in
 
   let tyfn r k e =
     let e = k e in
@@ -1889,8 +1891,10 @@ let make_new_metavars metavars bindings =
 
 (* --------------------------------------------------------------------- *)
 
+let do_nothing x = x
+
 let mkdisj matcher metavars alts e instantiater mkiso disj_maker minusify
-    rebuild_mcodes name printer extra_plus =
+    rebuild_mcodes name printer extra_plus update_others =
   let call_instantiate bindings mv_bindings alts =
     List.concat
       (List.map
@@ -1926,6 +1930,19 @@ let mkdisj matcher metavars alts e instantiater mkiso disj_maker minusify
 	    inner_loop all_alts (prev_ecount + ecount) (prev_icount + icount)
 	      (prev_dcount + dcount) rest
 	| OK (bindings : (((string * string) * 'a) list list)) ->
+	    let all_alts =
+	      (* apply update_others to all patterns other than the matched
+		 one.  This is used to desigate the others as test
+		 expressions in the TestExpression case *)
+	      (List.map
+		 (function (x,e,i,d) as all ->
+		   if x = pattern
+		   then all
+		   else (update_others x,e,i,d))
+		 (List.hd all_alts)) ::
+	      (List.map
+		 (List.map (function (x,e,i,d) -> (update_others x,e,i,d)))
+		 (List.tl all_alts)) in
 	    (match List.concat all_alts with
 	      [x] -> Common.Left (prev_ecount, prev_icount, prev_dcount)
 	    | all_alts ->
@@ -1990,6 +2007,7 @@ let make_disj_expr model el =
   let update_arg x =
     if Ast0.get_arg_exp model then Ast0.set_arg_exp x else x in
   let update_test x =
+    let x = if Ast0.get_test_pos model then Ast0.set_test_pos x else x in
     if Ast0.get_test_exp model then Ast0.set_test_exp x else x in
   let el = List.map update_arg (List.map update_test el) in
   Ast0.context_wrap (Ast0.DisjExpr(disj_starter el,el,mids,disj_ender el))
@@ -2029,12 +2047,12 @@ let transform_type (metavars,alts,name) e =
 	(function t -> Ast0.TypeCTag t)
 	make_disj_type make_minus.V0.rebuilder_typeC
 	(rebuild_mcode start_line).V0.rebuilder_typeC
-	name Unparse_ast0.typeC extra_copy_other_plus
+	name Unparse_ast0.typeC extra_copy_other_plus do_nothing
   | _ -> ([],e)
 
 
 let transform_expr (metavars,alts,name) e =
-  let process _ =
+  let process update_others =
       (* start line is given to any leaves in the iso code *)
     let start_line = Some ((Ast0.get_info e).Ast0.line_start) in
     let alts =
@@ -2053,11 +2071,12 @@ let transform_expr (metavars,alts,name) e =
       (function e -> Ast0.ExprTag e)
       (make_disj_expr e) make_minus.V0.rebuilder_expression
       (rebuild_mcode start_line).V0.rebuilder_expression
-      name Unparse_ast0.expression extra_copy_other_plus in
+      name Unparse_ast0.expression extra_copy_other_plus update_others in
   match alts with
-    (Ast0.ExprTag(_)::_)::_ -> process()
-  | (Ast0.ArgExprTag(_)::_)::_ when Ast0.get_arg_exp e -> process()
-  | (Ast0.TestExprTag(_)::_)::_ when Ast0.get_test_exp e -> process()
+    (Ast0.ExprTag(_)::_)::_ -> process do_nothing
+  | (Ast0.ArgExprTag(_)::_)::_ when Ast0.get_arg_exp e -> process do_nothing
+  | (Ast0.TestExprTag(_)::_)::_ when Ast0.get_test_pos e ->
+      process Ast0.set_test_exp
   | _ -> ([],e)
 
 let transform_decl (metavars,alts,name) e =
@@ -2082,7 +2101,7 @@ let transform_decl (metavars,alts,name) e =
 	make_disj_decl
 	make_minus.V0.rebuilder_declaration
 	(rebuild_mcode start_line).V0.rebuilder_declaration
-	name Unparse_ast0.declaration extra_copy_other_plus
+	name Unparse_ast0.declaration extra_copy_other_plus do_nothing
   | _ -> ([],e)
 
 let transform_stmt (metavars,alts,name) e =
@@ -2106,7 +2125,7 @@ let transform_stmt (metavars,alts,name) e =
 	(function s -> Ast0.StmtTag s)
 	make_disj_stmt make_minus.V0.rebuilder_statement
 	(rebuild_mcode start_line).V0.rebuilder_statement
-	name (Unparse_ast0.statement "") extra_copy_stmt_plus
+	name (Unparse_ast0.statement "") extra_copy_stmt_plus do_nothing
   | _ -> ([],e)
 
 (* sort of a hack, because there is no disj at top level *)
@@ -2151,7 +2170,7 @@ let transform_top (metavars,alts,name) e =
 		Ast0.rewrap e (Ast0.DOTS([make_disj_stmt_list x])))
 	      make_minus.V0.rebuilder_statement_dots
 	      (rebuild_mcode start_line).V0.rebuilder_statement_dots
-	      name Unparse_ast0.statement_dots extra_copy_other_plus
+	      name Unparse_ast0.statement_dots extra_copy_other_plus do_nothing
 	| _ -> ([],stmts) in
       (mv,Ast0.rewrap e (Ast0.CODE res))
   | _ -> ([],e)

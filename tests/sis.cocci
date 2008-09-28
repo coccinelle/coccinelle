@@ -1,6 +1,6 @@
 @@
-declarer DECLARE_MUTEX;
-declarer DEFINE_MUTEX;
+declarer name DECLARE_MUTEX;
+declarer name DEFINE_MUTEX;
 identifier I;
 //fresh identifier I1;
 @@
