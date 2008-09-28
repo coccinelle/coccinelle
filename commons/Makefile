@@ -84,10 +84,6 @@ INCLUDES=$(INCLUDEDIRS:%=-I %) $(INCLUDESEXTRA)
 # Generic ocaml variables
 ##############################################################################
 
-# for warning:  -w A 
-OCAMLCFLAGS=-g -dtypes 
-#-thread
-
 # This flag can also be used in subdirectories so don't change its name here.
 # For profiling use:  -p -inline 0
 OPTFLAGS= 
@@ -100,11 +96,12 @@ OPTFLAGS=
 OPTBIN= #.opt
 
 # The OCaml tools.
+OCAMLCFLAGS ?= -g -dtypes
 OCAMLC =ocamlc$(OPTBIN) $(OCAMLCFLAGS) $(INCLUDES)
 OCAMLOPT=ocamlopt$(OPTBIN) $(OPTFLAGS) $(INCLUDES)
 OCAMLLEX = ocamllex$(OPTBIN)
 OCAMLYACC= ocamlyacc -v
-OCAMLDEP = ocamldep $(INCLUDES)
+OCAMLDEP = ocamldep$(OPTBIN) $(INCLUDES)
 OCAMLMKTOP=ocamlmktop -g -custom $(INCLUDES)
 
 # if need C code

@@ -11,7 +11,8 @@ ast0toast.ml check_meta.ml top_level.ml type_infer.ml test_exps.ml \
 unitary_ast0.ml arity.ml index.ml context_neg.ml \
 insert_plus.ml function_prototypes.ml \
 unify_ast.ml semantic_cocci.ml data.ml free_vars.ml parse_aux.ml disjdistr.ml \
-$(LEXER_SOURCES:.mll=.ml) $(PARSER_SOURCES:.mly=.ml) $(SCRIPT_LEXER_SOURCES:.mll=.ml) \
+$(LEXER_SOURCES:.mll=.ml) $(PARSER_SOURCES:.mly=.ml) \
+$(SCRIPT_LEXER_SOURCES:.mll=.ml) \
 get_constants.ml get_constants2.ml parse_cocci.ml
 
 LIBS=../commons/commons.cma ../globals/globals.cma 
@@ -20,18 +21,20 @@ SYSLIBS = str.cma unix.cma
 #MENHIR_PATH=$(shell ocamlfind query menhirLib)
 MENHIR_PATH=../menhirlib
 
-INCLUDE_PATH = -I ../commons -I ../commons/ocamlextra -I ../globals -I $(MENHIR_PATH)
+INCLUDES = -I ../commons -I ../commons/ocamlextra -I ../globals \
+-I $(MENHIR_PATH)
 
 MENHIR=$(MENHIR_PATH)/menhirLib.cmo
 MENHIRO=$(MENHIR_PATH)/menhirLib.cmx
 
 
 # The Caml compilers.
-CAMLC =ocamlc$(OPTBIN) -g
-CAMLOPT = ocamlopt$(OPTBIN) $(OPTFLAGS)
-CAMLLEX = ocamllex$(OPTBIN)
-CAMLYACC= menhir --table
-CAMLDEP = ocamldep$(OPTBIN)
+OCAMLCFLAGS ?= -g -dtypes
+OCAMLC =ocamlc$(OPTBIN) $(OCAMLCFLAGS) $(INCLUDES)
+OCAMLOPT = ocamlopt$(OPTBIN) $(OPTFLAGS) $(INCLUDES)
+OCAMLLEX = ocamllex$(OPTBIN)
+OCAMLYACC= menhir --table
+OCAMLDEP = ocamldep$(OPTBIN) $(INCLUDES)
 EXEC=$(TARGET).byte
 EXEC=$(TARGET)
 LIB=$(TARGET).cma
@@ -50,15 +53,15 @@ all.opt: $(OPTLIB)
 
 
 $(LIB): $(GENERATED) $(OBJS)
-	$(CAMLC) -I $(MENHIR_PATH) -a -o $(LIB) $(MENHIR) $(OBJS)
+	$(OCAMLC) -I $(MENHIR_PATH) -a -o $(LIB) $(MENHIR) $(OBJS)
 
 
 $(OPTLIB): $(GENERATED) $(OPTOBJS) 
-	$(CAMLOPT) -I $(MENHIR_PATH) -a -o $(OPTLIB) $(MENHIRO) $(OPTOBJS)
+	$(OCAMLOPT) -I $(MENHIR_PATH) -a -o $(OPTLIB) $(MENHIRO) $(OPTOBJS)
 
 
 $(EXEC): $(OBJS) main.cmo $(LIBS)
-	$(CAMLC) -o $(EXEC) $(SYSLIBS) $(LIBS) $(OBJS) main.cmo
+	$(OCAMLC) -o $(EXEC) $(SYSLIBS) $(LIBS) $(OBJS) main.cmo
 
 
 
@@ -75,22 +78,22 @@ clean::
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
 
 .ml.cmo:
-	$(CAMLC) $(INCLUDE_PATH) -c $<
+	$(OCAMLC) -c $<
 
 .mli.cmi:
-	$(CAMLC) $(INCLUDE_PATH) -c $<
+	$(OCAMLC) -c $<
 
 .ml.cmx:
-	$(CAMLOPT) $(INCLUDE_PATH) -c $<
+	$(OCAMLOPT) -c $<
 
 $(LEXER_SOURCES:.mll=.ml) :	$(LEXER_SOURCES)
-	$(CAMLLEX) $(LEXER_SOURCES)
+	$(OCAMLLEX) $(LEXER_SOURCES)
 
 $(PARSER_SOURCES:.mly=.ml) $(PARSER_SOURCES:.mly=.mli) : $(PARSER_SOURCES)
-	$(CAMLYACC) $(PARSER_SOURCES)
+	$(OCAMLYACC) $(PARSER_SOURCES)
 
 $(SCRIPT_LEXER_SOURCES:.mll=.ml): $(SCRIPT_LEXER_SOURCES)
-	$(CAMLLEX) $(SCRIPT_LEXER_SOURCES)
+	$(OCAMLLEX) $(SCRIPT_LEXER_SOURCES)
 
 clean::
 	rm -f $(GENERATED)
@@ -101,10 +104,10 @@ clean::
 	rm -f *~ .*~ #*# 
 
 depend: $(GENERATED)
-	$(CAMLDEP) $(INCLUDE_PATH) *.mli *.ml > .depend
+	$(OCAMLDEP) *.mli *.ml > .depend
 
 .depend:
-	$(CAMLDEP) $(INCLUDE_PATH) *.mli *.ml > .depend
+	$(OCAMLDEP) *.mli *.ml > .depend
 
 -include .depend
 

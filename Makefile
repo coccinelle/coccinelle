@@ -35,10 +35,10 @@ LIBS=commons/commons.cma globals/globals.cma\
      engine/cocciengine.cma popl09/popl.cma \
      extra/extra.cma $(PYCMA) python/coccipython.cma
 
-MAKESUBDIRS=commons globals menhirlib $(PYDIR) ctl parsing_cocci parsing_c engine popl09 \
- extra python
-INCLUDEDIRS=commons globals menhirlib $(PYDIR) ctl parsing_cocci parsing_c engine popl09 \
- extra python
+MAKESUBDIRS=commons globals menhirlib $(PYDIR) ctl parsing_cocci parsing_c \
+ engine popl09 extra python
+INCLUDEDIRS=commons globals menhirlib $(PYDIR) ctl parsing_cocci parsing_c \
+ engine popl09 extra python
 
 ##############################################################################
 # Generic variables
@@ -55,12 +55,14 @@ EXEC=$(TARGET)
 # Generic ocaml variables
 ##############################################################################
 
-OCAMLCFLAGS=-g -dtypes # -w A
+OCAMLCFLAGS=# -g # -dtypes # -w A
 
 # for profiling add  -p -inline 0
 # but 'make forprofiling' below does that for you.
 # This flag is also used in subdirectories so don't change its name here.
 OPTFLAGS=
+# the following is essential for Coccinelle to compile under gentoo
+OPTLIBFLAGS=-cclib dllpycaml_stubs.so
 
 # the OPTBIN variable is here to allow to use ocamlc.opt instead of 
 # ocaml, when it is available, which speeds up compilation. So
@@ -90,7 +92,8 @@ opt: rec.opt $(EXEC).opt
 all.opt: opt
 
 rec:
-	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i all; done 
+	set -e; for i in $(MAKESUBDIRS); \
+	do $(MAKE) -C $$i OCAMLCFLAGS="$(OCAMLCFLAGS)" all; done 
 rec.opt:
 	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i all.opt; done 
 clean::

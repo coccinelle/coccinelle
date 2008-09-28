@@ -13,7 +13,7 @@ SOURCES = flag_engine.ml lib_engine.ml pretty_print_engine.ml \
 # CTLSOURCES = lib_engine.ml pretty_print_engine.ml asttoctl.ml ctltotex.ml \
 #	main.ml
 
-INCLUDE_PATH = -I ../commons -I ../commons/ocamlextra -I ../globals \
+INCLUDES = -I ../commons -I ../commons/ocamlextra -I ../globals \
 	       -I ../ctl -I ../parsing_c -I ../parsing_cocci
 
 SYSLIBS = str.cma unix.cma
@@ -22,11 +22,10 @@ LIBS=../commons/commons.cma ../globals/globals.cma \
 
 
 # The Caml compilers.
-CAMLC =ocamlc$(OPTBIN) -g -dtypes 
-CAMLOPT = ocamlopt$(OPTBIN) $(OPTFLAGS)
-CAMLLEX = ocamllex$(OPTBIN)
-CAMLYACC= ocamlyacc -v
-CAMLDEP = ocamldep$(OPTBIN)
+OCAMLCFLAGS ?= -g -dtypes
+OCAMLC =ocamlc$(OPTBIN) $(OCAMLCFLAGS) $(INCLUDES)
+OCAMLOPT = ocamlopt$(OPTBIN) $(OPTFLAGS) $(INCLUDES)
+OCAMLDEP = ocamldep$(OPTBIN) $(INCLUDES)
 
 EXEC=$(TARGET).byte
 LIB=$(TARGET).cma
@@ -50,7 +49,7 @@ ctl: $(CTLEXEC)
 
 
 $(LIB): $(OBJS)
-	$(CAMLC) -a -o $(LIB) $(OBJS)
+	$(OCAMLC) -a -o $(LIB) $(OBJS)
 
 # clean rule for LIB
 clean::
@@ -58,14 +57,14 @@ clean::
 
 
 $(OPTLIB): $(OPTOBJS) 
-	$(CAMLOPT) -a -o $(OPTLIB) $(OPTOBJS)
+	$(OCAMLOPT) -a -o $(OPTLIB) $(OPTOBJS)
 
 
 $(EXEC): $(OBJS) main.cmo $(LIBS)
-	$(CAMLC) -o $(EXEC) $(SYSLIBS) $(LIBS) $(OBJS) main.cmo
+	$(OCAMLC) -o $(EXEC) $(SYSLIBS) $(LIBS) $(OBJS) main.cmo
 
 $(CTLEXEC): $(CTLOBJS) $(LIBS)
-	$(CAMLC) -o $(CTLEXEC) $(SYSLIBS) $(LIBS) $(CTLOBJS)
+	$(OCAMLC) -o $(CTLEXEC) $(SYSLIBS) $(LIBS) $(CTLOBJS)
 
 
 # clean rule for LIB.opt
@@ -79,13 +78,13 @@ clean::
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
 
 .ml.cmo:
-	$(CAMLC) $(INCLUDE_PATH) -c $<
+	$(OCAMLC) -c $<
 
 .mli.cmi:
-	$(CAMLC) $(INCLUDE_PATH) -c $<
+	$(OCAMLC) -c $<
 
 .ml.cmx:
-	$(CAMLOPT) $(INCLUDE_PATH) -c $<
+	$(OCAMLOPT) -c $<
 
 
 # clean rule for others files
@@ -96,9 +95,9 @@ clean::
 beforedepend:
 
 depend: beforedepend
-	$(CAMLDEP) $(INCLUDE_PATH) *.mli *.ml > .depend
+	$(OCAMLDEP) *.mli *.ml > .depend
 
 .depend: 
-	$(CAMLDEP) $(INCLUDE_PATH) *.mli *.ml > .depend
+	$(OCAMLDEP) *.mli *.ml > .depend
 
 -include .depend

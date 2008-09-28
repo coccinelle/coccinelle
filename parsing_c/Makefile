@@ -32,11 +32,12 @@ INCLUDES= -I ../commons -I ../commons/ocamlextra \
 
 #for warning:  -w A 
 #for profiling:  -p -inline 0   with OCAMLOPT
-OCAMLC=ocamlc$(OPTBIN) -g -dtypes   $(INCLUDES) 
-OCAMLOPT=ocamlopt$(OPTBIN)   $(INCLUDES) $(OPTFLAGS)
+OCAMLCFLAGS ?= -g -dtypes
+OCAMLC =ocamlc$(OPTBIN) $(OCAMLCFLAGS) $(INCLUDES)
+OCAMLOPT = ocamlopt$(OPTBIN) $(OPTFLAGS) $(INCLUDES)
 OCAMLLEX=ocamllex$(OPTBIN) #-ml
 OCAMLYACC=ocamlyacc -v
-OCAMLDEP=ocamldep$(OPTBIN)  $(INCLUDES)
+OCAMLDEP = ocamldep$(OPTBIN) $(INCLUDES)
 OCAMLMKTOP=ocamlmktop -g -custom $(INCLUDES)
 
 

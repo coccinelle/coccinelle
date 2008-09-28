@@ -11,12 +11,10 @@ INCLUDES= -I ../commons
 ##############################################################################
 # Generic variables
 ##############################################################################
-OCAMLC=ocamlc$(OPTBIN) -g -dtypes   $(INCLUDES) 
-OCAMLOPT=ocamlopt$(OPTBIN)   $(INCLUDES) $(OPTFLAGS)
-#OCAMLLEX=ocamllex$(OPTBIN) -ml
-OCAMLLEX=ocamllex$(OPTBIN)
-OCAMLYACC=ocamlyacc -v
-OCAMLDEP=ocamldep$(OPTBIN)  $(INCLUDES)
+OCAMLCFLAGS ?= -g -dtypes
+OCAMLC =ocamlc$(OPTBIN) $(OCAMLCFLAGS) $(INCLUDES)
+OCAMLOPT = ocamlopt$(OPTBIN) $(OPTFLAGS) $(INCLUDES)
+OCAMLDEP = ocamldep$(OPTBIN) $(INCLUDES)
 OCAMLMKTOP=ocamlmktop -g -custom $(INCLUDES)
 
 OBJS= $(SRC:.ml=.cmo)

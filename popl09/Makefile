@@ -8,18 +8,17 @@ pretty_print_popl.ml flag_popl.ml popltoctl.ml popl.ml
 SYSLIBS=str.cma unix.cma
 LIBS=../commons/commons.cma ../globals/globals.cma
 
-INCLUDE_PATH = -I ../commons -I ../globals \
+INCLUDES = -I ../commons -I ../globals \
 	       -I ../ctl -I ../parsing_c -I ../parsing_cocci -I ../engine
 
 #The Caml compilers.
 #for warning:  -w A 
 #for profiling:  -p -inline 0   with OCAMLOPT
-CAMLC =ocamlc$(OPTBIN) -dtypes -g 
-CAMLOPT=ocamlopt$(OPTBIN)   $(OPTFLAGS)
-CAMLLEX = ocamllex$(OPTBIN)
-CAMLYACC= ocamlyacc
-CAMLDEP = ocamldep$(OPTBIN) 
-CAMLMKTOP=ocamlmktop -g -custom
+OCAMLCFLAGS ?= -g -dtypes
+OCAMLC =ocamlc$(OPTBIN) $(OCAMLCFLAGS) $(INCLUDES)
+OCAMLOPT = ocamlopt$(OPTBIN) $(OPTFLAGS) $(INCLUDES)
+OCAMLDEP = ocamldep$(OPTBIN) $(INCLUDES)
+OCAMLMKTOP=ocamlmktop -g -custom
 
 
 
@@ -33,17 +32,17 @@ all: $(LIB)
 all.opt: $(OPTLIB)
 
 $(TARGET).top: $(LIB)
-	$(CAMLMKTOP) -o $(TARGET).top $(SYSLIBS) $(LIBS) $(OBJS)
+	$(OCAMLMKTOP) -o $(TARGET).top $(SYSLIBS) $(LIBS) $(OBJS)
 
 $(LIB):  $(OBJS)
-	$(CAMLC) -a -o $(LIB) $(OBJS)
+	$(OCAMLC) -a -o $(LIB) $(OBJS)
 
 clean::
 	rm -f $(LIB) $(TARGET).top
 
 
 $(OPTLIB): $(OPTOBJS)
-	$(CAMLOPT) -a -o $(OPTLIB) $(OPTOBJS)
+	$(OCAMLOPT) -a -o $(OPTLIB) $(OPTOBJS)
 
 # clean rule for LIB.opt
 clean::
@@ -54,13 +53,13 @@ clean::
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
 
 .ml.cmo:
-	$(CAMLC) $(INCLUDE_PATH) -c $<
+	$(OCAMLC) -c $<
 
 .mli.cmi:
-	$(CAMLC) $(INCLUDE_PATH) -c $<
+	$(OCAMLC) -c $<
 
 .ml.cmx:
-	$(CAMLOPT) $(INCLUDE_PATH) -c $<
+	$(OCAMLOPT) -c $<
 
 
 
@@ -71,12 +70,12 @@ clean::
 	rm -f *~ .*~ #*# 
 
 depend: 
-	$(CAMLDEP) $(INCLUDE_PATH) *.mli *.ml > .depend
+	$(OCAMLDEP) *.mli *.ml > .depend
 
 #clean::
 #	rm -f .depend
 
 .depend:
-	$(CAMLDEP) $(INCLUDE_PATH) *.mli *.ml > .depend
+	$(OCAMLDEP) $(INCLUDE_PATH) *.mli *.ml > .depend
 
 -include .depend

@@ -5,17 +5,15 @@ SOURCES = classic_patch.ml kbuild.ml maintainers.ml c_info.ml
 SYSLIBS = str.cma unix.cma 
 
 LIBS=../commons/commons.cma ../parsing_c/parsing_c.cma ../globals/globals.cma 
-ADDONSPATH= -I ../commons -I ../globals -I  ../parsing_cocci -I  ../parsing_c
+INCLUDES= -I ../commons -I ../globals -I  ../parsing_cocci -I  ../parsing_c
 
 #for warning:  -w A 
 #for profiling:  -p -inline 0   with OCAMLOPT
-OCAMLC=ocamlc$(OPTBIN) -g -dtypes   $(ADDONSPATH) 
-OCAMLOPT=ocamlopt$(OPTBIN)   $(ADDONSPATH) $(OPTFLAGS)
-#OCAMLLEX=ocamllex$(OPTBIN) -ml
-OCAMLLEX=ocamllex$(OPTBIN)
-OCAMLYACC=ocamlyacc -v
-OCAMLDEP=ocamldep$(OPTBIN)  $(ADDONSPATH)
-OCAMLMKTOP=ocamlmktop -g -custom $(ADDONSPATH)
+OCAMLCFLAGS ?= -g -dtypes
+OCAMLC =ocamlc$(OPTBIN) $(OCAMLCFLAGS) $(INCLUDES)
+OCAMLOPT = ocamlopt$(OPTBIN) $(OPTFLAGS) $(INCLUDES)
+OCAMLDEP = ocamldep$(OPTBIN) $(INCLUDES)
+OCAMLMKTOP=ocamlmktop -g -custom $(INCLUDES)
 
 
 OBJS = $(SOURCES:.ml=.cmo)
