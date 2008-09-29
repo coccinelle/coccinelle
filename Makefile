@@ -62,7 +62,8 @@ OCAMLCFLAGS= #-g -dtypes # -w A
 # This flag is also used in subdirectories so don't change its name here.
 OPTFLAGS=
 # the following is essential for Coccinelle to compile under gentoo
-OPTLIBFLAGS=-cclib dllpycaml_stubs.so
+# but is now defined above in this file
+#OPTLIBFLAGS=-cclib dllpycaml_stubs.so
 
 # the OPTBIN variable is here to allow to use ocamlc.opt instead of 
 # ocaml, when it is available, which speeds up compilation. So
@@ -181,9 +182,9 @@ BINSRC=spatch env.sh env.csh standard.h standard.iso \
 BINSRC2=$(BINSRC:%=$(PACKAGE)/%)
 
 TMP=/tmp
+OCAMLVERSION=$(shell ocaml -version |perl -p -e 's/.*version (.*)/$$1/;')
 
-
-# Procedure:
+# Procedure to do first time:
 #  cd ~/release
 #  cvs checkout coccinelle
 #  cd coccinelle
@@ -191,7 +192,9 @@ TMP=/tmp
 #  touch **/*
 #  make licensify
 #  rm -rf **/CVS
-#
+
+# Procedure to do each time:
+#  cvs update
 #  ./configure --without-python
 #  make package
 #  make website
@@ -237,18 +240,19 @@ staticbintar: all.opt
 	cd $(TMP); tar cvfz $(PACKAGE)-bin-x86-static.tgz $(BINSRC2)
 	rm -f $(TMP)/$(PACKAGE)
 
+# add ocaml version in name ?
 bytecodetar: all
 	rm -f $(TMP)/$(PACKAGE)
 	ln -s `pwd` $(TMP)/$(PACKAGE)
 	make purebytecode
-	cd $(TMP); tar cvfz $(PACKAGE)-bin-bytecode.tgz $(BINSRC2)
+	cd $(TMP); tar cvfz $(PACKAGE)-bin-bytecode-$(OCAMLVERSION).tgz $(BINSRC2)
 	rm -f $(TMP)/$(PACKAGE)
 
 clean::
 	rm -f $(PACKAGE) 
 	rm -f $(PACKAGE)-bin-x86.tgz 
 	rm -f $(PACKAGE)-bin-x86-static.tgz 
-	rm -f $(PACKAGE)-bin-bytecode.tgz
+	rm -f $(PACKAGE)-bin-bytecode-$(OCAMLVERSION).tgz
 
 
 
@@ -266,7 +270,8 @@ fixCVS:
 	cvs update -d -P
 	echo do 'rm -rf **/CVS'
 
-
+ocamlversion:
+	@echo $(OCAMLVERSION)
 
 
 ##############################################################################

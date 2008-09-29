@@ -95,8 +95,9 @@ OPTFLAGS=
 # or setenv it to ".opt" in your startup script.
 OPTBIN= #.opt
 
-# The OCaml tools.
 OCAMLCFLAGS ?= -g -dtypes
+
+# The OCaml tools.
 OCAMLC =ocamlc$(OPTBIN) $(OCAMLCFLAGS) $(INCLUDES)
 OCAMLOPT=ocamlopt$(OPTBIN) $(OPTFLAGS) $(INCLUDES)
 OCAMLLEX = ocamllex$(OPTBIN)
