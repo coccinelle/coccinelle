@@ -223,7 +223,7 @@ srctar:
 	cp -a .  $(TMP)/$(PACKAGE)
 	cd $(TMP)/$(PACKAGE); cd parsing_cocci/; make parser_cocci_menhir.ml
 	cd $(TMP)/$(PACKAGE); rm todo_pos
-	cd $(TMP); tar cvfz --exclude=CVS $(PACKAGE).tgz $(PACKAGE)
+	cd $(TMP); tar cvfz $(PACKAGE).tgz  --exclude=CVS  $(PACKAGE)
 	rm -rf  $(TMP)/$(PACKAGE)
 
 
