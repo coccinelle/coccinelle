@@ -223,7 +223,7 @@ srctar:
 	cp -a .  $(TMP)/$(PACKAGE)
 	cd $(TMP)/$(PACKAGE); cd parsing_cocci/; make parser_cocci_menhir.ml
 	cd $(TMP)/$(PACKAGE); rm todo_pos
-	cd $(TMP); tar cvfz $(PACKAGE).tgz $(PACKAGE)
+	cd $(TMP); tar cvfz --exclude=CVS $(PACKAGE).tgz $(PACKAGE)
 	rm -rf  $(TMP)/$(PACKAGE)
 
 
@@ -285,7 +285,7 @@ website:
 	cp $(TMP)/$(PACKAGE).tgz                $(WEBSITE)
 	cp $(TMP)/$(PACKAGE)-bin-x86.tgz        $(WEBSITE)
 	cp $(TMP)/$(PACKAGE)-bin-x86-static.tgz $(WEBSITE)
-	cp $(TMP)/$(PACKAGE)-bin-bytecode.tgz   $(WEBSITE)
+	cp $(TMP)/$(PACKAGE)-bin-bytecode-$(OCAMLVERSION).tgz   $(WEBSITE)
 
 
 #TXT=$(wildcard *.txt)
