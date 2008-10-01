@@ -191,7 +191,6 @@ OCAMLVERSION=$(shell ocaml -version |perl -p -e 's/.*version (.*)/$$1/;')
 #  cvs update -d -P
 #  touch **/*
 #  make licensify
-#  rm -rf **/CVS
 
 # Procedure to do each time:
 #  cvs update
@@ -266,9 +265,9 @@ licensify:
 fixdates:
 	echo do 'touch **/*.*'
 
-fixCVS:
-	cvs update -d -P
-	echo do 'rm -rf **/CVS'
+#fixCVS:
+#	cvs update -d -P
+#	echo do 'rm -rf **/CVS'
 
 ocamlversion:
 	@echo $(OCAMLVERSION)
