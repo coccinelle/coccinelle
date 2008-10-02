@@ -300,7 +300,7 @@ let show_or_not_trans_info a  =
 let show_or_not_binding2 s binding =
   if !Flag_cocci.show_binding_in_out then begin
     adjust_pp_with_indent_and_header ("binding " ^ s ^ " = ") (fun () -> 
-      Pretty_print_engine.pp_binding binding;
+      Pretty_print_engine.pp_binding binding
     )
   end
 let show_or_not_binding a b  = 

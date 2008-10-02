@@ -187,7 +187,7 @@ and typeQualifierbis = {const: bool; volatile: bool}
 (* C expression *)
 (* ------------------------------------------------------------------------- *)
 and expression = (expressionbis * exp_info ref (* semantic: *)) wrap
-and local = LocalVar | NotLocalVar
+and local = LocalVar of parse_info | NotLocalVar
 and test = Test | NotTest
 and exp_type = fullType * local
 and exp_info = exp_type option * test
@@ -363,6 +363,8 @@ and statementbis =
  * accepts it. 
  *)
 
+and local_decl = LocalDecl | NotLocalDecl
+
 and declaration = 
   | DeclList of onedecl wrap2 (* , *) list wrap (* ; fakestart sto *)
   (* cppext: *)
@@ -370,7 +372,7 @@ and declaration =
 
      and onedecl = 
        ((string * initialiser option) wrap (* s = *) option) * 
-         fullType * storage * local
+         fullType * storage * local_decl
      and storage       = storagebis * bool (* inline or not, gccext: *)
      and storagebis    = NoSto | StoTypedef | Sto of storageClass
      and storageClass  = Auto  | Static | Register | Extern
@@ -556,7 +558,7 @@ let nQ = nullQualif
 
 let defaultInt = (BaseType (IntType (Si (Signed, CInt))))
 
-let noType () = ref (None,NotTest) (* old: None, old: [] *)
+let noType () = ref (None,NotTest)
 let noInstr = (ExprStatement (None), [])
 let noTypedefDef () = None
 

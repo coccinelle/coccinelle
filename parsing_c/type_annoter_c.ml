@@ -335,10 +335,10 @@ let add_in_scope namedef =
   _scoped_env := (namedef::current)::older
 
 (* sort of hackish... *)
-let islocal _ =
+let islocal info =
   if List.length (!_scoped_env) = List.length initial_env
   then Ast_c.NotLocalVar
-  else Ast_c.LocalVar
+  else Ast_c.LocalVar info
 
 (* the warning argument is here to allow some binding to overwrite an 
  * existing one. With function, we first have the protype and then the def
@@ -523,6 +523,10 @@ let rec (annotate_program2 :
       (match d with
       | (DeclList (xs, ii)) -> 
           xs +> List.iter (fun ((var, t, sto, local), iicomma) -> 
+	    let local =
+	      match local with
+		Ast_c.NotLocalDecl -> Ast_c.NotLocalVar
+	      |	Ast_c.LocalDecl -> Ast_c.LocalVar (offset t) in
 
             (* to add possible definition in type found in Decl *)
             Visitor_c.vk_type bigf t;
@@ -572,13 +576,13 @@ let rec (annotate_program2 :
           in
           let typ' = Lib.al_type (Ast_c.nQ, (FunctionType ftyp, [i1;i2])) in
 
-          add_binding (VarOrFunc (funcs, (typ',islocal()))) false;
+          add_binding (VarOrFunc (funcs, (typ',islocal i1.Ast_c.pinfo))) false;
           do_in_new_scope (fun () -> 
             paramst +> List.iter (fun (((b, s, t), _),_) -> 
               match s with 
               | Some s ->
-		  add_binding (VarOrFunc (s,(Lib.al_type t,Ast_c.LocalVar)))
-		    true
+		  let local = Ast_c.LocalVar (offset t) in
+		  add_binding (VarOrFunc (s,(Lib.al_type t,local))) true
               | None -> pr2 "no type, certainly because Void type ?"
             );
             k elem
@@ -594,6 +598,12 @@ let rec (annotate_program2 :
     let afterenv = !_scoped_env in
     (elem, (beforeenv, afterenv))
   )
+
+and offset (_,(ty,iis)) =
+  match iis with
+    ii::_ -> ii.Ast_c.pinfo
+  | _ -> failwith "type has no text; need to think again"
+  
     
 let annotate_test_expressions prog =
   let rec propagate_test e =
@@ -635,7 +645,7 @@ let annotate_program a types_needed =
   Common.profile_code "annotate_type"
     (fun () prog ->
       let res =
-	if types_needed
+	if true (*types_needed*)
 	then annotate_program2 a prog
 	else prog +> List.map (fun c -> c, (initial_env, initial_env)) in
       annotate_test_expressions prog;

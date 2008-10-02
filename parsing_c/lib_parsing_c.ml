@@ -30,8 +30,8 @@ let strip_info_visitor _ =
     function i -> ctr := !ctr + 1; Ast_c.al_info !ctr i));
 
     Visitor_c.kexpr_s = (fun (k,_) e -> 
-      let (e', _),ii' = k e in
-      (e', Ast_c.noType()), ii'
+      let (e', ty),ii' = k e in
+      (e', Ast_c.noType()(*ref !ty*)), ii' (* keep type - jll *)
     );
 
 (*
@@ -61,8 +61,8 @@ let semi_strip_info_visitor = (* keep position information *)
     Visitor_c.kinfo_s = (fun (k,_) i -> Ast_c.semi_al_info i);
 
     Visitor_c.kexpr_s = (fun (k,_) e -> 
-      let (e', _),ii' = k e in
-      (e', Ast_c.noType()), ii'
+      let (e', ty),ii' = k e in
+      (e', Ast_c.noType()(*ref !ty*)), ii' (* keep type - jll *)
     );
     
   }

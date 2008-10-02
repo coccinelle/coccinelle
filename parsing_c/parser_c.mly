@@ -679,7 +679,7 @@ compound2:
  | stat_or_decl_list { $1 }
 
 stat_or_decl: 
- | decl      { Decl ($1 Ast_c.LocalVar), [] }
+ | decl      { Decl ($1 Ast_c.LocalDecl), [] }
  | statement { $1 }
 
   /*(* cppext: if -ifdef_to_if is enabled for parsing_hack *)*/
@@ -1404,7 +1404,7 @@ cpp_directive:
 define_val: 
  | expr      { DefineExpr $1 }
  | statement { DefineStmt $1 }
- | decl      { DefineStmt (Decl ($1 Ast_c.NotLocalVar), []) }
+ | decl      { DefineStmt (Decl ($1 Ast_c.NotLocalDecl), []) }
  | TypedefIdent { DefineType (nQ,(TypeName(fst $1,noTypedefDef()),[snd $1]))}
  | function_definition { DefineFunction $1 }
 
@@ -1431,7 +1431,7 @@ param_define:
 
 external_declaration: 
  | function_definition               { Definition $1 }
- | decl                              { Declaration ($1 Ast_c.NotLocalVar) }
+ | decl                              { Declaration ($1 Ast_c.NotLocalDecl) }
 
 function_definition: function_def    { fixFunc $1 }
 

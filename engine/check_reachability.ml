@@ -53,6 +53,8 @@ let build_modified (n,_,wits) =
     
 (* Step 2: For each node in the hash table, create the error and warning
    formulas *)
+
+type 'a nodes = Node of 'a | After
     
 let create_formulas _ =
   Hashtbl.fold
@@ -63,16 +65,17 @@ let create_formulas _ =
 	    wrap
 	      (Ast_ctl.EX
 		 (Ast_ctl.BACKWARD,wrap(Ast_ctl.EF(Ast_ctl.BACKWARD,f)))) in*)
-	  let match_node = Ast_ctl.Pred(node) in
+	  let match_node = Ast_ctl.Pred(Node(node)) in
 	  let match_roots =
-	    List.map (function n -> Ast_ctl.Pred(n))
+	    List.map (function n -> Ast_ctl.Pred(Node(n)))
 	      (List.sort compare !roots) in
 	  let roots =
 	    List.fold_left
 	      (function prev -> function cur -> Ast_ctl.Or(prev,cur))
 	      (List.hd match_roots) (List.tl match_roots) in
 	  (node,
-	   Ast_ctl.AF(Ast_ctl.BACKWARD,Ast_ctl.NONSTRICT,roots),
+	   Ast_ctl.AF(Ast_ctl.BACKWARD,Ast_ctl.NONSTRICT,
+		      Ast_ctl.Or(roots,Ast_ctl.Pred(After))),
 	   Ast_ctl.And
 	     (Ast_ctl.NONSTRICT,
 	      Ast_ctl.Not(roots),
@@ -88,8 +91,10 @@ let create_formulas _ =
 
 module PRED = 
   struct
-    type t = Ograph_extended.nodei
-    let print_predicate x = Format.print_string (string_of_int x)
+    type t = Ograph_extended.nodei nodes
+    let print_predicate = function
+	After -> Format.print_string "after"
+      |	Node x -> Format.print_string (string_of_int x)
   end
 
 module ENV =
@@ -122,15 +127,24 @@ module CFG =
 module ENGINE = Ctl_engine.CTL_ENGINE (ENV) (CFG) (PRED)
 
 let test_formula state formula cfg =
-    let label pred = [(pred,[],[])] in
+    let label = function
+	Node pred -> [(pred,[],[])]
+      |	After ->
+	  List.concat
+	    (List.map
+	       (fun (nodei, node) ->
+		 match Control_flow_c.unwrap node with
+		   Control_flow_c.AfterNode -> [(nodei,[],[])]
+		 | _ -> [])
+	       cfg#nodes#tolist) in
     let verbose = !Flag_ctl.verbose_ctl_engine in
     let pm = !Flag_ctl.partial_match in
     Flag_ctl.verbose_ctl_engine := false;
     Flag_ctl.partial_match := false;
     let res =
       ENGINE.sat (cfg,label,List.map fst cfg#nodes#tolist)
-	(CTL.And(CTL.NONSTRICT,CTL.Pred(state),formula))
-	[[state]] in
+	(CTL.And(CTL.NONSTRICT,CTL.Pred(Node(state)),formula))
+	[[Node(state)]] in
     Flag_ctl.verbose_ctl_engine := verbose;
     Flag_ctl.partial_match := pm;
     match res with [] -> false | _ -> true

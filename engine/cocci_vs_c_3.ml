@@ -401,11 +401,16 @@ let initialisation_to_affectation decl =
       | [] -> raise Impossible
       | [x] -> 
           let ((var, returnType, storage, local),iisep) = x in
-          
+
           (match var with
           | Some ((s, ini),  iis::iini) -> 
               (match ini with
               | Some (B.InitExpr e, ii_empty2) -> 
+		  let local =
+		    match local with
+		      Ast_c.NotLocalDecl -> Ast_c.NotLocalVar
+		    | Ast_c.LocalDecl -> Ast_c.LocalVar (iis.Ast_c.pinfo) in
+          
                   let typ =
 		    ref (Some ((Lib_parsing_c.al_type returnType),local),
 			       Ast_c.NotTest) in
@@ -625,7 +630,7 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
 	| (A.LocalID,e) ->
 	    (matches_id e) &&
 	    (match !opttypb with
-	      (Some (_,Ast_c.LocalVar),_) -> true
+	      (Some (_,Ast_c.LocalVar _),_) -> true
 	    | _ -> false)
 	| (A.ID,e) -> matches_id e in
 
@@ -2065,7 +2070,7 @@ and (struct_field: (A.declaration, B.field B.wrap) matcher) = fun fa fb ->
           let iisto = [] in
           let stob = B.NoSto, false in
           let fake_var = 
-            ((Some ((idb, None),[iidb]), typb, stob, Ast_c.NotLocalVar),
+            ((Some ((idb, None),[iidb]), typb, stob, Ast_c.NotLocalDecl),
 	     iivirg)            
           in
           onedecl allminus fa (fake_var,iiptvirgb,iisto) >>= 

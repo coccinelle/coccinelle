@@ -1,7 +1,8 @@
 #!/bin/tcsh
 
-setenv PYTHONPATH ${HOME}/coccinelle
-setenv LD_LIBRARY_PATH ${HOME}/coccinelle
+setenv PYTHONPATH ${HOME}/coccinelle/python
+setenv LD_LIBRARY_PATH ${HOME}/coccinelle/pycaml
+setenv COCCINELLE_HOME ${HOME}/coccinelle
 
 #  -allow_inconsistent_paths
 

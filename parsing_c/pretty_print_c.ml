@@ -117,7 +117,7 @@ let rec pp_expression_gen pr_elem pr_space =
       Common.do_option
 	(fun (x,l) -> pp_type_gen pr_elem pr_space x;
 	  let s = match l with
-	    Ast_c.LocalVar -> ", local"
+	    Ast_c.LocalVar _ -> ", local"
 	  | _ -> "" in
 	  pr_elem (Ast_c.fakeInfo() +> Ast_c.rewrap_str s)));
       pr_elem (Ast_c.fakeInfo() +> Ast_c.rewrap_str "*/");

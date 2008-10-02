@@ -2346,7 +2346,7 @@ let filter_partial_matches trips =
 
 (* ---------------------------------------------------------------------- *)
 (* Main entry point for engine *)
-let sat m phi reqopt = 
+let sat m phi reqopt =
   try
     (match !Flag_ctl.steps with
       None -> step_count := 0
