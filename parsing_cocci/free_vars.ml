@@ -519,7 +519,6 @@ let astfvs metavars bound =
 	Ast.IfThen(header,branch,(_,_,_,aft)) ->
 	  let (unbound,_,fresh,inherited) =
 	    classify (cip_mcodekind collect_in_plus_term aft) [] in
-
 	  Ast.IfThen(header,branch,(unbound,fresh,inherited,aft))
       | Ast.IfThenElse(header,branch1,els,branch2,(_,_,_,aft)) ->
 	  let (unbound,_,fresh,inherited) =
@@ -539,6 +538,7 @@ let astfvs metavars bound =
 	    classify (cip_mcodekind collect_in_plus_term aft) [] in
 	  Ast.Iterator(header,body,(unbound,fresh,inherited,aft))
       |	s -> s in
+    
     let (unbound,munbound,fresh,_) = classify free minus_free in
     let inherited =
       List.filter (function x -> List.mem x bound) nc_free in
@@ -603,7 +603,9 @@ let collect_astfvs rules =
     | (metavars, rule)::rules ->
         match rule with
           Ast.ScriptRule (_,_,_,_) ->
-	    rule::(loop ((List.map Ast.get_meta_name metavars)) rules)  
+	    (* bound stays as is because script rules have no names, so no
+	       inheritance is possible *)
+	    rule::(loop bound rules)
         | Ast.CocciRule (nm, rule_info, minirules, isexp) ->
           let bound =
             Common.minus_set bound (List.map Ast.get_meta_name metavars) in
