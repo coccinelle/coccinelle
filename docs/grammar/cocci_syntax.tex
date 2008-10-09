@@ -1,0 +1,492 @@
+\documentclass{article}
+\usepackage{hevea}
+\usepackage{fullpage}
+\usepackage{alltt}
+\usepackage{xspace}
+\usepackage[pdfborder={0 0 0}]{hyperref}
+\usepackage{listings}
+\usepackage{color}
+\lstset{basicstyle=\ttfamily,numbers=left, numberstyle=\tiny, stepnumber=1, numbersep=5pt}
+
+\newif\iflanguagestyle
+\languagestylefalse
+\input{grammar}
+
+\newcommand{\sizecodebis}[0]{\scriptsize}
+
+\newcommand{\mita}[1]{\mbox{\it{{#1}}}}
+\newcommand{\mtt}[1]{\mbox{\tt{{#1}}}}
+\newcommand{\msf}[1]{\mbox{\sf{{#1}}}}
+\newcommand{\stt}[1]{\mbox{\scriptsize\tt{{#1}}}}
+\newcommand{\ssf}[1]{\mbox{\scriptsize\sf{{#1}}}}
+\newcommand{\sita}[1]{\mbox{\scriptsize\it{{#1}}}}
+\newcommand{\mrm}[1]{\mbox{\rm{{#1}}}}
+\newcommand{\mth}[1]{\({#1}\)}
+\newcommand{\entails}[2]{\begin{array}{@{}c@{}}{#1}\\\hline{#2}\end{array}}
+\newcommand{\ttlb}{\mbox{\tt \char'173}}
+\newcommand{\ttrb}{\mbox{\tt \char'175}}
+\newcommand{\ttmid}{\mbox{\tt \char'174}}
+\newcommand{\tttld}{\mbox{\tt \char'176}}
+
+\newcommand{\fixme}[1]{{\textcolor{red}{#1}}}
+
+\ifhevea
+\newcommand{\phantom}{}
+\newcommand{\air}{   }
+\else
+\newcommand{\air}{\phantom{xxx}}
+\fi
+
+\title{The SmPL Grammar}
+\author{Research group on Coccinelle}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+%\section{The SmPL Grammar}
+
+% This section presents the SmPL grammar.  This definition follows closely
+% our implementation using the Menhir parser generator \cite{menhir}.
+
+The grammar uses some rules where the left-hand side is in all capital
+letters.  These are macros, which take one or more grammar rule
+right-hand-sides as arguments.  The grammar also uses some unspecified
+nonterminals, such as {\sf id}, {\sf const}, etc.  These refer to the sets
+suggested by the name, {\em i.e.}, {\sf id} refers to the set of possible
+C-language identifiers, while {\sf const} refers to the set of possible
+C-language constants.
+
+\section{Program}
+
+\begin{grammar}
+  \RULE{program}
+  \CASE{\some{\NT{changeset}}}
+  
+  \RULE{changeset}
+  \CASE{\NT{metavariables} \OPT{--- filename +++ filename} \NT{transformation}}
+\end{grammar}
+
+Between the metavariables and the transformation rule, there can be a
+specification of constraints on the names of the old and new files,
+analogous to the filename specifications in the standard patch syntax.
+%(see Figure \ref{scsiglue_patch}).
+
+\section{Metavariables}
+
+Fresh metavariables must only be used in {\tt +} code.  Metavariables must
+occur at least once in the transformation immediately following their
+declaration.  These properties are not expressed in the grammar, but are
+checked by a subsequent analysis.
+
+\fixme{Is \mtt{fresh} optional in \mtt{metakind} ?}
+
+\begin{grammar}
+  \RULE{metavariables}
+  \CASE{@@ \any{\NT{metadecl}} @@}
+  \CASE{@ \NT{rulename} @ \any{\NT{metadecl}} @@}
+
+  \RULE{metadecl}
+  \CASE{\OPT{! \OR ? \OR +} \opt{pure} \opt{context} \NT{metakind} \ANY{\T{id} ,} \T{id} ;}
+  
+  \RULE{metakind}
+  \CASE{\opt{fresh} identifier}
+  \CASE{type}
+  \CASE{parameter \opt{list}}
+  \CASE{error}
+  \CASE{expression \opt{list}}
+  \CASE{statement \opt{list}}
+  \CASE{\opt{local} function}
+  \CASE{\opt{constant} \NT{metaexptype}}
+  \CASE{constant}
+  \CASE{typedef}
+  \CASE{declarer name}
+  \CASE{iterator name}
+
+  \RULE{metaexptype}
+  \CASE{type}
+  \CASE{\ttlb~\ANY{\NT{type} ,} \NT{type} \ttrb}
+
+  \RULE{rulename}
+  \CASE{\T{id} \OPT{extends \T{id}} \OPT{depends on \NT{dep}} \any{\NT{iso}} \any{\NT{disable}} \opt{\NT{exists}} \opt{\NT{exp}}}
+  \CASE{script:\T{language} \OPT{depends on \NT{dep}}}
+
+  \RULE{dep}
+  \CASE{\NT{pnrule}}
+\end{grammar}
+
+%\vspace{\baselineskip}
+
+Subsequently, we refer to arbitrary metavariables as
+\mth{\msf{metaid}^{\mbox{\scriptsize{\it{ty}}}}}, where {\it{ty}} indicates
+the {\it metakind} used in the declaration of the variable.  For example,
+\mth{\msf{metaid}^{\ssf{Type}}} refers to a metavariable that stands for
+any type.
+
+The {\it type} nonterminal is used by both the grammar of metavariable
+declarations and the grammar of transformations, and is defined on the next
+page.
+
+\section{Transformation}
+
+The grammar of the transformation is not actually the grammar of the SmPL
+code that can be written by the programmer, but the grammar of the slice of
+this consisting of the {\tt -} annotated and the unannotated code (the
+context of the transformed lines), or the {\tt +} annotated code and the
+unannotated code.  For example, for parsing purposes, the transformation
+%presented in Section \ref{sec:seq2}
+is split into the two variants shown below and each is parsed
+separately.
+
+
+{%\sizecodebis
+\begin{center}
+\begin{tabular}{p{3cm}p{5cm}p{3cm}}
+\begin{verbatim}
+  proc_info_func(...) {        
+    <...
+    hostno
+    ...>
+ }
+\end{verbatim}
+&&
+\begin{verbatim}
+  proc_info_func(...) {        
+    <...
+    hostptr->host_no
+    ...>
+ }
+\end{verbatim}
+\end{tabular}
+\end{center}
+}
+
+\noindent
+Requiring that both slices parse correctly ensures that the rule matches
+syntactically valid C code and that it produces syntactically valid C code.
+The generated parse trees are then merged for use in the subsequent
+matching and transformation process.
+
+The grammar rule for the minus or plus slice of a transformation is as follows:
+
+%\vspace{\baselineskip}
+
+\noindent{\footnotesize\begin{tabular}{r@{\,\,\,}c@{\,\,\,}l}
+\mita{transformation} & ::= &
+   \begin{tabular}[t]{@{}l}
+   \ANY{\mtt{\#include} \msf{include\_string}} \\
+   \opt{OPTDOTSEQ(\some{\mita{fun\_decl\_statement}} \(\mid\) \mita{expr},
+   \mita{stmt\_whencode})}\end{tabular} \\
+\mita{fun\_decl\_statement} & ::= & \mita{decl\_statement} \(\mid\)
+\mita{fun\_decl}
+\end{tabular}
+
+\noindent\begin{tabular}{r@{\,\,\,}c@{\,\,\,}l}
+OPTDOTSEQ(\mita{grammar},\mita{whencode}) & ::= &\\
+ \multicolumn{3}{l}{\air\air\phantom{\(\mid\)}
+\opt{\mtt{\ldots} \opt{\mita{whencode}}} \mita{grammar}
+ \ANY{\mtt{\ldots} \opt{\mita{whencode}} \mita{grammar}}
+ \opt{\mtt{\ldots} \opt{\mita{whencode}}}}
+\\ \multicolumn{3}{l}{\air\air\(\mid\)
+ \opt{\mtt{ooo} \opt{\mita{whencode}}} \mita{grammar} \ANY{\mtt{ooo}
+ \opt{\mita{whencode}} \mita{grammar}}
+ \opt{\mtt{ooo} \opt{\mita{whencode}}}}
+\\ \multicolumn{3}{l}{\air\air\(\mid\)
+ \opt{\mtt{***} \opt{\mita{whencode}}} \mita{grammar} \ANY{\mtt{***}
+ \opt{\mita{whencode}} \mita{grammar}}
+ \opt{\mtt{***} \opt{\mita{whencode}}}}
+\end{tabular}}
+
+%\vspace{\baselineskip}
+
+\noindent
+{\tt ooo} is analogous to {\tt \ldots}, but the terms may appear in any
+order.  {\tt ***} is also analogous to {\tt \ldots}, but expresses
+interprocedural sequences.
+Lines may be annotated with an element of the set $\{\mtt{-}, \mtt{+}\}$ or
+an element of the set $\{\mtt{!}, \mtt{?}, \verb-\+-\}$, or one of each.
+\mtt{!}, \mtt{?}, \verb-\+- represent exactly one, at most one, and at
+least one match of the given pattern.  There are some constraints on the
+use of these annotations:
+\begin{itemize}
+\item Dots, {\em i.e.} {\tt \ldots}, {\tt ooo}, or {\tt ***}, cannot occur
+  on a line marked {\tt +}.
+\item Nested dots, {\em i.e.} dots enclosed in {\tt <} and {\tt >}, cannot
+  occur on a line with any marking.
+\end{itemize}
+
+
+\section{Types}
+
+\noindent{\footnotesize\begin{tabular}{r@{\,\,\,}c@{\,\,\,}l}
+\mita{type} & ::= & \opt{\mtt{const} \(\mid\) \mtt{volatile}}
+                    \mita{type\_desc} \ANY{\mtt{*}}\\
+\mita{type\_desc} & ::= & \mita{simple\_type} \(\mid\) \opt{\mtt{signed} \(\mid\)
+       \mtt{unsigned}} \mita{signable\_type} \(\mid\) \opt{\mtt{struct} \(\mid\)
+       \mtt{union}} \msf{id}
+\\&\multicolumn{1}{r}{\(\mid\)}&
+       \mth{\msf{metaid}^{\ssf{Type}}}
+\end{tabular}}
+
+\noindent{\footnotesize\begin{tabular}{r@{\,\,\,}c@{\,\,\,}l}
+\mita{simple\_type} & ::= & \mtt{void} \(\mid\) \mtt{double} \(\mid\)
+ \mtt{float} \\
+\mita{signable\_type} & ::= & \mtt{char} \(\mid\) \mtt{short} \(\mid\)
+ \mtt{int} \(\mid\) \mtt{long}
+\end{tabular}}
+
+\section{Function declarations}
+
+\noindent{\footnotesize\begin{tabular}{r@{\,\,\,}c@{\,\,\,}l}
+\mita{fundecl} & ::= &
+  \opt{\mtt{static}} \mita{funid}
+  \mtt{(} \opt{PARAMSEQ(\mita{param},\mth{\varepsilon})} \mtt{)}
+  \ttlb~\opt{\mita{statement\_sequence}} \ttrb
+\\
+\mita{funid} & ::= & \mita{id} \(\mid\) \mth{\msf{metaid}^{\ssf{Func}}}
+\(\mid\) \mth{\msf{metaid}^{\ssf{LocalFunc}}}
+\\
+\mita{param} & ::= &
+             \mita{type} \mita{id}
+    \(\mid\) \mth{\msf{metaid}^{\ssf{Param}}}
+    \(\mid\) \mth{\msf{metaid}^{\ssf{ParamList}}}
+\end{tabular}
+
+\noindent\begin{tabular}{r@{\,\,\,}c@{\,\,\,}l}
+PARAMSEQ(\mita{grammar},\mita{whencode}) & ::= &
+\\ \multicolumn{3}{l}{\air\air\phantom{\(\mid\)}
+\ANY{\mita{grammar} \mtt{,} \(\mid\) {\ldots} \opt{\mita{whencode}} \mtt{,}}
+    (\mita{grammar} \(\mid\) {\ldots} \opt{\mita{whencode}})}
+\\ \multicolumn{3}{l}{\air\air\(\mid\)
+\ANY{\mita{grammar} \mtt{,} \(\mid\) {\mtt{ooo}} \opt{\mita{whencode}}
+ \mtt{,}}
+    (\mita{grammar} \(\mid\) {\mtt{ooo}} \opt{\mita{whencode}})}
+\end{tabular}}
+
+\section{Declarations}
+
+\noindent{\footnotesize\begin{tabular}{r@{\,\,\,}c@{\,\,\,}l}
+\mita{decl\_var} & ::= &
+   \mita{type} \opt{\ANY{\mita{id} \opt{\mtt{[} \opt{\mita{dot\_expr}}
+   \mtt{]}} \mtt{,}} \mita{id} \opt{\mtt{[} \opt{\mita{dot\_expr}} \mtt{]}}}
+   \mtt{;}
+\\&\multicolumn{1}{r}{\(\mid\)}&
+ \mita{type} \mita{id} \opt{\mtt{[} \opt{\mita{dot\_expr}} \mtt{]}}
+   \mtt{=} \mita{nest\_expr} \mtt{;}
+\end{tabular}}
+
+\section{Statements}
+
+The first rule {\em statement} describes the various forms of a statement.
+The remaining rules implement the constraints that are sensitive to the
+context in which the statement occurs: {\em single\_statement} for a
+context in which only one statement is allowed, and {\em decl\_statement}
+for a context in which a declaration, statement, or sequence thereof is
+allowed.
+
+%\vspace{\baselineskip}
+
+\noindent{\footnotesize\begin{tabular}{r@{\,\,\,}c@{\,\,\,}l}
+\mita{statement} & ::= &
+  \mth{\msf{metaid}^{\ssf{Stmt}}}
+\\&\multicolumn{1}{r}{\(\mid\)}&
+  \mita{expr} \mtt{;}
+\\&\multicolumn{1}{r}{\(\mid\)}&
+  \mtt{if} \mtt{(} \mita{dot\_expr} \mtt{)} \mita{single\_statement}
+  \opt{\mtt{else} \mita{single\_statement}}
+\\&\multicolumn{1}{r}{\(\mid\)}&
+  \mtt{for} \mtt{(} \opt{\mita{dot\_expr}} \mtt{;} \opt{\mita{dot\_expr}} \mtt{;}
+  \opt{\mita{dot\_expr}} \mtt{)} \mita{single\_statement}
+\\&\multicolumn{1}{r}{\(\mid\)}&
+  \mtt{while} \mtt{(} \mita{dot\_expr} \mtt{)} \mita{single\_statement}
+\\&\multicolumn{1}{r}{\(\mid\)}&
+  \mtt{do} \mita{single\_statement} \mtt{while} \mtt{(} \mita{dot\_expr} \mtt{)}
+  \mtt{;}
+\\&\multicolumn{1}{r}{\(\mid\)}&
+  \mtt{return} \opt{\mita{dot\_expr}} \mtt{;}
+\\&\multicolumn{1}{r}{\(\mid\)}&
+  \ttlb~\opt{\mita{statement\_sequence}} \ttrb
+\\&\multicolumn{1}{r}{\(\mid\)}&
+  NEST(\some{\mita{decl\_statement}} \(\mid\) \mita{expr}, \mita{stmt\_whencode})
+\end{tabular}}
+
+\noindent{\footnotesize\begin{tabular}{r@{\,\,\,}c@{\,\,\,}l}
+\mita{single\_statement} & ::= &
+     \mita{statement} \(\mid\) OR(\mita{statement})
+\\
+\mita{decl\_statement} & ::= &
+  \mth{\msf{metaid}^{\ssf{StmtList}}} \(\mid\)
+  \mita{decl\_var} \(\mid\) \mita{statement} \(\mid\)
+  OR(\mita{statement\_sequence})
+\\
+\mita{statement\_sequence} & ::= &\\
+  \multicolumn{3}{r}{\air\air\any{\mita{decl\_statement}}
+  \opt{DOTSEQ(\some{\mita{decl\_statement}} \(\mid\) \mita{expr},
+  \mita{stmt\_whencode}) \any{\mita{decl\_statement}}}}
+\\
+\mita{stmt\_whencode} & ::= & \mtt{WHEN} \mtt{!=}
+OPTDOTSEQ(\some{\mita{decl\_statement}} \(\mid\) \mita{expr},\mita{stmt\_whencode})
+\\
+OR(\mita{grammar}) & ::= &
+ \mtt{(} \mita{grammar} \ANY{\ttmid \mita{grammar}} \mtt{)}
+\end{tabular}}
+
+\noindent{\footnotesize\begin{tabular}{r@{\,\,\,}c@{\,\,\,}l}
+DOTSEQ(\mita{grammar},\mita{whencode}) & ::= &
+\\ \multicolumn{3}{l}{\air\air\phantom{\(\mid\)}
+ \mtt{\ldots} \opt{\mita{whencode}} \ANY{\mita{grammar} \mtt{\ldots}
+ \opt{\mita{whencode}}}}
+\\ \multicolumn{3}{l}{\air\air\(\mid\)
+ \mtt{ooo} \opt{\mita{whencode}} \ANY{\mita{grammar} \mtt{ooo}
+ \opt{\mita{whencode}}}}
+\\ \multicolumn{3}{l}{\air\air\(\mid\)
+ \mtt{***} \opt{\mita{whencode}} \ANY{\mita{grammar} \mtt{***}
+ \opt{\mita{whencode}}}}
+\end{tabular}}
+
+\noindent{\footnotesize\begin{tabular}{r@{\,\,\,}c@{\,\,\,}l}
+NEST(\mita{grammar},\mita{whencode}) & ::= &
+\\ \multicolumn{3}{l}{\air\air\phantom{\(\mid\)}
+ \mtt{<\ldots} \mita{grammar} \ANY{\ldots \opt{\mita{whencode}}
+ \mita{grammar}} \mtt{\ldots>}}
+\\ \multicolumn{3}{l}{\air\air\(\mid\)
+ \mtt{<ooo} \mita{grammar} \ANY{ooo \opt{\mita{whencode}} \mita{grammar}}
+ \mtt{ooo>}}
+\\ \multicolumn{3}{l}{\air\air\(\mid\)
+ \mtt{<***} \mita{grammar} \ANY{*** \opt{\mita{whencode}} \mita{grammar}}
+ \mtt{***>}}
+\end{tabular}}
+
+%\vspace{\baselineskip}
+
+\noindent
+OR is a macro that generates a disjunction of patterns.  The tokens {\tt
+(}, {\ttmid}, and {\tt )} must appear in the leftmost column, to
+differentiate them from the parentheses and bit-or tokens that can appear
+within expressions (and cannot appear in the leftmost column).  These
+tokens are furthermore different from (, \(\mid\), and ), which are part of
+the grammar metalanguage.
+
+\section{Expressions}
+
+A nest or a single ellipsis is allowed in some expression contexts, and
+causes ambiguity in others.  For example, in a sequence \mtt{\ldots
+\mita{expr} \ldots}, the nonterminal \mita{expr} must be instantiated as an
+explicit C-language expression, while in an array reference,
+\mtt{\mth{\mita{expr}_1} \mtt{[} \mth{\mita{expr}_2} \mtt{]}}, the
+nonterminal \mth{\mita{expr}_2}, because it is delimited by brackets, can
+be also instantiated as \mtt{\ldots}, representing an arbitrary expression.  To
+distinguish between the various possibilities, we define three nonterminals
+for expressions: {\em expr} does not allow either top-level nests or
+ellipses, {\em nest\_expr} allows a nest but not an ellipsis, and {\em
+dot\_expr} allows both.  The EXPR macro is used to express these variants
+in a concise way.
+
+%\vspace{\baselineskip}
+
+\noindent{\footnotesize\begin{tabular}{r@{\,\,\,}c@{\,\,\,}l}
+\mita{expr} & ::= & EXPR(\mita{expr}) \\
+\mita{nest\_expr} & ::= & EXPR(\mita{nest\_expr}) \(\mid\)
+NEST(\mita{nest\_expr}, \mita{exp\_whencode}) \\
+\mita{dot\_expr} & ::= & EXPR(\mita{dot\_expr}) \(\mid\)
+NEST(\mita{dot\_expr}, \mita{exp\_whencode}) \(\mid\)
+\mtt{\ldots} \opt{\mita{exp\_whencode}} \\
+EXPR(\mita{exp}) & ::= &
+  \mita{exp} \mita{assign\_op} \mita{exp} \(\mid\)
+  \mita{exp} \mita{binary\_op} \mita{exp} \(\mid\)
+  \mita{exp} \mtt{?}~\opt{\mita{dot\_expr}} \mtt{:}~\mita{exp}
+\\&\multicolumn{1}{r}{\(\mid\)}&
+  \mtt{(} \mita{type} \mtt{)} \mita{exp} \(\mid\)
+  \mita{unary\_op} \mita{exp}
+\(\mid\)
+  \mita{exp} \mtt{[} \mita{dot\_expr} \mtt{]}
+\(\mid\)
+  \mita{exp} \mtt{.} \mita{id}
+\\&\multicolumn{1}{r}{\(\mid\)}&
+  \mita{exp} \mtt{->} \mita{id}
+\(\mid\)
+  \mita{exp} \mtt{++}
+\(\mid\)
+  \mita{exp} \mtt{--}
+\(\mid\)
+  \mita{exp} \mtt{(} \opt{PARAMSEQ(\mita{arg},\mita{exp\_whencode})} \mtt{)}
+\\&\multicolumn{1}{r}{\(\mid\)}&
+  \mita{id} \(\mid\)
+ \mth{\msf{metaid}^{\ssf{Func}}} \(\mid\) \mth{\msf{metaid}^{\ssf{LocalFunc}}}
+ \(\mid\)
+  \mth{\msf{metaid}^{\ssf{Exp}}} \(\mid\)
+  \mth{\msf{metaid}^{\ssf{Err}}} \(\mid\)
+  \mth{\msf{metaid}^{\ssf{Const}}}
+\\&\multicolumn{1}{r}{\(\mid\)}&
+  \msf{const}
+\(\mid\)
+  \mtt{(} \mita{dot\_expr} \mtt{)}
+\(\mid\)
+  OR(\mita{exp})
+\\
+\mita{arg} & ::= & \mita{nest\_expr} \(\mid\) \mth{\msf{metaid}^{\ssf{ExpList}}}
+\end{tabular}}
+
+\noindent{\footnotesize\begin{tabular}{r@{\,\,\,}c@{\,\,\,}l}
+\mita{exp\_whencode} & ::= & \mtt{WHEN} \mtt{!=} \mita{dot\_expr}
+\\
+\mita{assign\_op} & ::= &
+           \mtt{=}
+  \(\mid\) \mtt{-=}
+  \(\mid\) \mtt{+=}
+  \(\mid\) \mtt{*=}
+  \(\mid\) \mtt{/=}
+  \(\mid\) \mtt{\%=}
+  \(\mid\) \mtt{\&=}
+  \(\mid\) \verb+|=+
+  \(\mid\) \verb+^=+
+  \(\mid\) \mtt{<<=}
+  \(\mid\) \mtt{>>=} \\
+\mita{binary\_op} & ::= &
+   \mtt{*} \(\mid\) \mtt{/} \(\mid\) \mtt{\%} \(\mid\) \mtt{+} \(\mid\)
+   \mtt{-} \(\mid\) \mtt{<<} \(\mid\) \mtt{>>} \(\mid\) \mtt{<} \(\mid\)
+   \mtt{>} \(\mid\) \mtt{<=} \(\mid\) \mtt{>=} \(\mid\) \mtt{==} \(\mid\)
+   \mtt{!=} \(\mid\) \mtt{\&} \(\mid\) \mtt{\ttmid} \(\mid\) \verb+^+ \(\mid\)
+   \mtt{\&\&} \(\mid\) \mtt{\ttmid\ttmid}
+\end{tabular}}
+
+\noindent{\footnotesize\begin{tabular}{r@{\,\,\,}c@{\,\,\,}l}
+\mita{unary\_op} & ::= & \mtt{++} \(\mid\) \mtt{--} \(\mid\)
+   \mtt{\&} \(\mid\) \mtt{*} \(\mid\) \mtt{+} \(\mid\) \mtt{-} \(\mid\) \mtt{!}
+\end{tabular}}
+
+\section{Identifiers}
+
+\noindent{\footnotesize\begin{tabular}{r@{\,\,\,}c@{\,\,\,}l}
+\mita{id} & ::= & \msf{id} \(\mid\) \mth{\msf{metaid}^{\ssf{Id}}}
+\end{tabular}}
+
+\section{Examples}
+\label{sec:examples}
+
+\begin{lstlisting}
+int main(int i) {
+
+  int k = foo();
+
+  if(1) {
+    foo();
+  } else { 
+    foo();
+  }
+
+  foo();
+
+
+}
+\end{lstlisting}
+
+\begin{lstlisting}
+@@
+@@
+
+- foo()
++ bar()
+\end{lstlisting}
+
+\end{document}
