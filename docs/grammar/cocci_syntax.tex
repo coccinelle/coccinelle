@@ -79,7 +79,7 @@ occur at least once in the transformation immediately following their
 declaration.  These properties are not expressed in the grammar, but are
 checked by a subsequent analysis.
 
-\fixme{Is \mtt{fresh} optional in \mtt{metakind} ?}
+\fixme{Does \mtt{expression list} exist ?}
 
 \begin{grammar}
   \RULE{metavariables}
@@ -94,14 +94,15 @@ checked by a subsequent analysis.
   \CASE{type}
   \CASE{parameter \opt{list}}
   \CASE{error}
-  \CASE{expression \opt{list}}
+  \CASE{expression \any{*}}
   \CASE{statement \opt{list}}
   \CASE{\opt{local} function}
+  \CASE{\opt{local} idexpression \OPT{\some{*} \OR \ttlb \NT{ctypes}\ttrb\any{*}}}
   \CASE{\opt{constant} \NT{metaexptype}}
   \CASE{constant}
   \CASE{typedef}
-  \CASE{declarer name}
-  \CASE{iterator name}
+  \CASE{declarer \opt{name}}
+  \CASE{iterator \opt{name}}
 
   \RULE{metaexptype}
   \CASE{type}
@@ -170,6 +171,12 @@ matching and transformation process.
 The grammar rule for the minus or plus slice of a transformation is as follows:
 
 %\vspace{\baselineskip}
+\begin{grammar}
+
+  \RULE{transformation}
+  \CASE{}
+
+\end{grammar}
 
 \noindent{\footnotesize\begin{tabular}{r@{\,\,\,}c@{\,\,\,}l}
 \mita{transformation} & ::= &
