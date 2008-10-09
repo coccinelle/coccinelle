@@ -20,7 +20,7 @@ module P = Parse_aux
 %token Tlist TFresh TConstant TError TWords TWhy0 TPlus0 TBang0
 %token TPure TContext
 %token TTypedef TDeclarer TIterator TName TPosition TPosAny
-%token TUsing TDisable TExtends TDepends TOn TEver TNever TExists TForall
+%token TUsing TDisable TExtends TDepends TOn TEver TNever TExists TForall TScript
 %token TReverse TNothing
 %token<string> TRuleName
 
@@ -177,8 +177,8 @@ rule_name:
   nm=ioption(pure_ident) extends d=depends i=loption(choose_iso)
     a=loption(disable) e=exists ee=is_expression TArob
       { P.make_cocci_rule_name_result nm d i a e ee }
-  | scr=pure_ident TDotDot lang=pure_ident d=depends TArob
-      { P.make_script_rule_name_result scr lang d }
+  | TScript TDotDot lang=pure_ident d=depends TArob
+      { P.make_script_rule_name_result lang d }
 
 extends:
   /* empty */                                     { () }
