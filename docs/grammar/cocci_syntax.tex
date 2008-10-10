@@ -107,16 +107,35 @@ checked by a subsequent analysis.
   \RULE{metaexptype}
   \CASE{type}
   \CASE{\ttlb~\ANY{\NT{type} ,} \NT{type} \ttrb}
+\end{grammar}
 
+\begin{grammar}
   \RULE{rulename}
-  \CASE{\T{id} \OPT{extends \T{id}} \OPT{depends on \NT{dep}} \any{\NT{iso}} \any{\NT{disable}} \opt{\NT{exists}} \opt{\NT{exp}}}
+  \CASE{\T{id} \OPT{extends \T{id}} \OPT{depends on \NT{dep}} \opt{\NT{iso}} \opt{\NT{disable}} \opt{\NT{exists}} \opt{\NT{exp}}}
   \CASE{script:\T{language} \OPT{depends on \NT{dep}}}
 
   \RULE{dep}
   \CASE{\NT{pnrule}}
-\end{grammar}
+  \CASE{\NT{dep} \&\& \NT{dep}}
+  \CASE{\NT{dep} || \NT{dep}}
 
-%\vspace{\baselineskip}
+  \RULE{pnrule}
+  \CASE{\T{id}}
+  \CASE{!\T{id}}
+  \CASE{ever \T{id}}
+  \CASE{never \T{id}}
+  \CASE{(\NT{dep})}
+
+  \RULE{iso}
+  \CASE{using "\T{str}" \ANY{, "\T{str}"}}
+
+  \RULE{disable}
+  \CASE{disable \T{id} \ANY{, \T{id}}}
+
+  \RULE{exists}
+  \CASE{exists}
+  \CASE{\opt{reverse} forall}
+\end{grammar}
 
 Subsequently, we refer to arbitrary metavariables as
 \mth{\msf{metaid}^{\mbox{\scriptsize{\it{ty}}}}}, where {\it{ty}} indicates
@@ -170,7 +189,6 @@ matching and transformation process.
 
 The grammar rule for the minus or plus slice of a transformation is as follows:
 
-%\vspace{\baselineskip}
 \begin{grammar}
 
   \RULE{transformation}
