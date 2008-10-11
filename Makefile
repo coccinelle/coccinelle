@@ -37,8 +37,8 @@ LIBS=commons/commons.cma globals/globals.cma\
 
 MAKESUBDIRS=commons globals menhirlib $(PYDIR) ctl parsing_cocci parsing_c \
  engine popl09 extra python
-INCLUDEDIRS=commons globals menhirlib $(PYDIR) ctl parsing_cocci parsing_c \
- engine popl09 extra python
+INCLUDEDIRS=commons commons/ocamlextra globals menhirlib $(PYDIR) ctl \
+ parsing_cocci parsing_c engine popl09 extra python
 
 ##############################################################################
 # Generic variables

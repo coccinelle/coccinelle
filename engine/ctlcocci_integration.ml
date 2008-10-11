@@ -378,7 +378,8 @@ let (mysat2:
   Lib_engine.model ->
   (Lib_engine.ctlcocci * (pred list list)) -> 
   (Lib_engine.mvar list*Lib_engine.metavars_binding) ->
-  (Lib_engine.transformation_info * bool * Lib_engine.metavars_binding list)) =
+  (Lib_engine.transformation_info * bool * Lib_engine.metavars_binding *
+     Lib_engine.metavars_binding list)) =
   fun (flow, label, states) ctl (used_after, binding) -> 
     let binding2 = metavars_binding_to_binding2 binding in
     let (triples,(trans_info2, returned_any_states, used_after_envs)) = 
@@ -394,7 +395,7 @@ let (mysat2:
     let trans_info = satbis_to_trans_info trans_info2 in
     let newbindings = List.map metavars_binding2_to_binding used_after_envs in
     let newbindings = List.map coalesce_positions newbindings in
-    (trans_info, returned_any_states, newbindings)
+    (trans_info, returned_any_states, binding, newbindings)
 
 let mysat a b c = 
   Common.profile_code "mysat" (fun () -> mysat2 a b c)

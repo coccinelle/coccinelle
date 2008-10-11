@@ -785,9 +785,12 @@ let rec ends_in_return stmt_list =
 	x::_ ->
 	  (match Ast.unwrap x with
 	    Ast.Atomic(x) ->
-	      (match Ast.unwrap x with
-		Ast.Return(_,_) | Ast.ReturnExpr(_,_,_) -> true
-	      | _ -> false)
+	      let rec loop x =
+		match Ast.unwrap x with
+		  Ast.Return(_,_) | Ast.ReturnExpr(_,_,_) -> true
+		| Ast.DisjRuleElem((_::_) as l) -> List.for_all loop l
+		| _ -> false in
+	      loop x
 	  | Ast.Disj(disjs) -> List.for_all ends_in_return disjs
 	  | _ -> false)
       |	_ -> false)

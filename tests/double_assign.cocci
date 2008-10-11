@@ -14,7 +14,7 @@ i =@p0 ...;
 ...
 i =@p <+... i ...+>;
 
-@@
+@x@
 identifier s.i;
 position s.p0;
 position p != r.p;

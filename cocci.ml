@@ -472,36 +472,40 @@ let rec interpret_dependencies local global = function
       (interpret_dependencies local global s2)
   | Ast_cocci.NoDep -> true
 	
-let rec print_dependencies local global =
-  let seen = ref [] in
-  let rec loop = function
-      Ast_cocci.Dep s | Ast_cocci.AntiDep s ->
-	if not (List.mem s !seen)
-	then
-	  begin
-	    if List.mem s local
-	    then pr2 (s^" satisfied")
-	    else pr2 (s^" not satisfied");
-	    seen := s :: !seen
-	  end 
-    | Ast_cocci.EverDep s | Ast_cocci.NeverDep s ->
-	if not (List.mem s !seen)
-	then
-	  begin
-	    if List.mem s global
-	    then pr2 (s^" satisfied")
-	    else pr2 (s^" not satisfied");
-	    seen := s :: !seen
-	  end
-    | Ast_cocci.AndDep(s1,s2) ->
-	print_dependencies local global s1;
-	print_dependencies local global s2
-    | Ast_cocci.OrDep(s1,s2)  ->
-	print_dependencies local global s1;
-	print_dependencies local global s2
-    | Ast_cocci.NoDep -> () in
-  loop
-    
+let rec print_dependencies str local global dep =
+  if !Flag_cocci.show_dependencies
+  then
+    begin
+      pr2 str;
+      let seen = ref [] in
+      let rec loop = function
+	  Ast_cocci.Dep s | Ast_cocci.AntiDep s ->
+	    if not (List.mem s !seen)
+	    then
+	      begin
+		if List.mem s local
+		then pr2 (s^" satisfied")
+		else pr2 (s^" not satisfied");
+		seen := s :: !seen
+	      end 
+	| Ast_cocci.EverDep s | Ast_cocci.NeverDep s ->
+	    if not (List.mem s !seen)
+	    then
+	      begin
+		if List.mem s global
+		then pr2 (s^" satisfied")
+		else pr2 (s^" not satisfied");
+		seen := s :: !seen
+	      end
+	| Ast_cocci.AndDep(s1,s2) ->
+	    loop s1;
+	    loop s2
+	| Ast_cocci.OrDep(s1,s2)  ->
+	    loop s1;
+	    loop s2
+	| Ast_cocci.NoDep -> () in
+      loop dep
+    end
     
     
     
@@ -909,20 +913,15 @@ let rec apply_python_rule r cache newes e rules_that_have_matched
 	   !rules_that_have_ever_matched r.scr_dependencies)
   then
     begin
-      if !Flag.show_misc
-      then
-	begin
-	  pr2 ("dependencies for script not satisfied:");
-	  print_dependencies rules_that_have_matched
-	    !rules_that_have_ever_matched r.scr_dependencies;
-	  show_or_not_binding "in environment" e
-	end;
+      print_dependencies "dependencies for script not satisfied:"
+	rules_that_have_matched
+	!rules_that_have_ever_matched r.scr_dependencies;
+      show_or_not_binding "in environment" e;
       (cache, (e, rules_that_have_matched)::newes)
     end
   else
     begin
       let (_, mv, _) = r.scr_ast_rule in
-      show_or_not_binding "in" e;
       if List.for_all (Pycocci.contains_binding e) mv
       then
 	begin
@@ -936,6 +935,10 @@ let rec apply_python_rule r cache newes e rules_that_have_matched
 	    then cache
 	    else
 	      begin
+		print_dependencies "dependencies for script satisfied:"
+		  rules_that_have_matched
+		  !rules_that_have_ever_matched r.scr_dependencies;
+		show_or_not_binding "in" e;
 		Pycocci.build_classes (List.map (function (x,y) -> x) e);
 		Pycocci.construct_variables mv e;
 		let _ = Pycocci.pyrun_simplestring
@@ -945,10 +948,10 @@ let rec apply_python_rule r cache newes e rules_that_have_matched
 		relevant_bindings :: cache
 	      end in
 	  if !Pycocci.inc_match
-	  then (new_cache, (e, rules_that_have_matched)::newes)
+	  then (new_cache, merge_env [(e, rules_that_have_matched)] newes)
 	  else (new_cache, newes)
 	end
-      else (cache, (e, rules_that_have_matched)::newes)
+      else (cache, merge_env [(e, rules_that_have_matched)] newes)
     end
 
 and apply_cocci_rule r rules_that_have_ever_matched es ccs =
@@ -968,50 +971,49 @@ and apply_cocci_rule r rules_that_have_ever_matched es ccs =
 		     !rules_that_have_ever_matched r.dependencies)
 	    then
 	      begin
-		if !Flag.show_misc
-		then
-		  begin
-		    pr2
-		      ("dependencies for rule "^r.rulename^" not satisfied:");
-		    print_dependencies rules_that_have_matched
-		      !rules_that_have_ever_matched r.dependencies;
-		    show_or_not_binding "in environment" e
-		  end;
+		print_dependencies
+		  ("dependencies for rule "^r.rulename^" not satisfied:")
+		  rules_that_have_matched
+		  !rules_that_have_ever_matched r.dependencies;
+		show_or_not_binding "in environment" e;
 		(cache,
-		 Common.union_set newes
+		 merge_env
 		   [(e +> List.filter (fun (s,v) -> List.mem s r.used_after),
-		     rules_that_have_matched)])
+		     rules_that_have_matched)]
+		   newes)
 	      end
 	    else
 	      let new_bindings =
 		try List.assoc relevant_bindings cache
 		with
 		  Not_found ->
-		    begin
-		      show_or_not_binding "in" e;
-		      show_or_not_binding "relevant in" relevant_bindings;
+		    print_dependencies
+		      ("dependencies for rule "^r.rulename^" satisfied:")
+		      rules_that_have_matched
+		      !rules_that_have_ever_matched r.dependencies;
+		    show_or_not_binding "in" e;
+		    show_or_not_binding "relevant in" relevant_bindings;
 
-		      let children_e = ref [] in
+		    let children_e = ref [] in
       
                       (* looping over the functions and toplevel elements in
 			 .c and .h *)
-		      concat_headers_and_c !ccs +> List.iter (fun c -> 
-			if c.flow <> None 
-			then
+		    concat_headers_and_c !ccs +> List.iter (fun c -> 
+		      if c.flow <> None 
+		      then
                         (* does also some side effects on c and r *)
-			  let processed =
-			    process_a_ctl_a_env_a_toplevel r relevant_bindings
-			      c in
-			  match processed with
-			  | None -> ()
-			  | Some newbindings -> 
-			      newbindings +> List.iter (fun newbinding -> 
-				children_e :=
-				  Common.insert_set newbinding !children_e)
-				); (* end iter cs *)
+			let processed =
+			  process_a_ctl_a_env_a_toplevel r relevant_bindings
+			    c in
+			match processed with
+			| None -> ()
+			| Some newbindings -> 
+			    newbindings +> List.iter (fun newbinding -> 
+			      children_e :=
+				Common.insert_set newbinding !children_e)
+			      ); (* end iter cs *)
 
-		      !children_e
-		    end in
+		    !children_e in
 	      let old_bindings_to_keep =
 		Common.nub
 		  (e +> List.filter (fun (s,v) -> List.mem s r.used_after)) in
@@ -1045,12 +1047,13 @@ and apply_cocci_rule r rules_that_have_ever_matched es ccs =
 			      not (List.mem s old_variables)))) in
 		  List.map
 		    (function new_binding_to_add ->
-		      (Common.union_set
-			 old_bindings_to_keep new_binding_to_add,
+		      (List.sort compare
+			 (Common.union_set
+			    old_bindings_to_keep new_binding_to_add),
 		       r.rulename::rules_that_have_matched))
 		    new_bindings_to_add in
 	      ((relevant_bindings,new_bindings)::cache,
-	       Common.union_set new_e newes))
+	       merge_env new_e newes))
 	([],[]) reorganized_env in (* end iter es *)
     if !(r.was_matched)
     then Common.push2 r.rulename rules_that_have_ever_matched;
@@ -1061,6 +1064,17 @@ and apply_cocci_rule r rules_that_have_ever_matched es ccs =
     if not !Flag.sgrep_mode2
     then ccs := rebuild_info_c_and_headers !ccs r.isexp
   )
+
+and merge_env new_e old_e =
+  List.fold_left
+    (function old_e ->
+      function (e,rules) as elem ->
+	let (same,diff) = List.partition (function (e1,_) -> e = e1) old_e in
+	match same with
+	  [] -> elem :: old_e
+	| [(_,old_rules)] -> (e,Common.union_set rules old_rules) :: diff
+	| _ -> failwith "duplicate environment entries")
+    old_e new_e
 
 and bigloop2 rs ccs = 
   let es = ref [(Ast_c.emptyMetavarsBinding,[])] in
@@ -1215,7 +1229,7 @@ and bigloop a b =
 and process_a_ctl_a_env_a_toplevel2 r e c = 
  indent_do (fun () -> 
   show_or_not_celem "trying" c.ast_c;
-  let (trans_info, returned_any_states, newbindings) = 
+  let (trans_info, returned_any_states, inherited_bindings, newbindings) = 
     Common.save_excursion Flag_ctl.loop_in_src_code (fun () -> 
       Flag_ctl.loop_in_src_code := !Flag_ctl.loop_in_src_code||c.contain_loop;
       
@@ -1246,11 +1260,11 @@ and process_a_ctl_a_env_a_toplevel2 r e c =
 
         (* modify ast via side effect *)
         ignore(Transformation3.transform r.rulename r.dropped_isos
-                  trans_info (Common.some c.flow));
+                  inherited_bindings trans_info (Common.some c.flow));
       with Timeout -> raise Timeout | UnixExit i -> raise (UnixExit i)
     end;
 
-    Some newbindings
+    Some (List.map (function x -> x@inherited_bindings) newbindings)
   end
  )
    
