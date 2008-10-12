@@ -853,7 +853,8 @@ and statement tgt stm =
 	concat_dots (statement Ast0.NONE) rule_elem_dots in
       let whn =
 	List.map
-	  (whencode (concat_dots (statement Ast0.NONE)) (statement Ast0.NONE))
+	  (whencode (concat_dots (statement Ast0.NONE)) (statement Ast0.NONE)
+	     (expression Ast0.NONE))
 	  whn in
       Ast0.rewrap stm
 	(Ast0.Nest(starter,new_rule_elem_dots,ender,whn,multi))
@@ -862,7 +863,8 @@ and statement tgt stm =
       let dots = mcode dots in
       let whn =
 	List.map
-	  (whencode (concat_dots (statement Ast0.NONE)) (statement Ast0.NONE))
+	  (whencode (concat_dots (statement Ast0.NONE)) (statement Ast0.NONE)
+	     (expression Ast0.NONE))
 	  whn in
       make_rule_elem stm tgt arity (Ast0.Dots(dots,whn))
   | Ast0.Circles(dots,whn) ->
@@ -870,7 +872,8 @@ and statement tgt stm =
       let dots = mcode dots in
       let whn =
 	List.map
-	  (whencode (concat_dots (statement Ast0.NONE)) (statement Ast0.NONE))
+	  (whencode (concat_dots (statement Ast0.NONE)) (statement Ast0.NONE)
+	     (expression Ast0.NONE))
 	  whn in
       make_rule_elem stm tgt arity (Ast0.Circles(dots,whn))
   | Ast0.Stars(dots,whn)   ->
@@ -878,7 +881,8 @@ and statement tgt stm =
       let dots = mcode dots in
       let whn =
 	List.map
-	  (whencode (concat_dots (statement Ast0.NONE)) (statement Ast0.NONE))
+	  (whencode (concat_dots (statement Ast0.NONE)) (statement Ast0.NONE)
+	     (expression Ast0.NONE))
 	  whn in
       make_rule_elem stm tgt arity (Ast0.Stars(dots,whn))
   | Ast0.FunDecl(bef,fi,name,lp,params,rp,lbrace,body,rbrace) ->
@@ -973,10 +977,12 @@ and fninfo2arity fninfo =
 	 | Ast0.FAttr(attr) -> [mcode2arity attr])
        fninfo)
 
-and whencode notfn alwaysfn = function
+and whencode notfn alwaysfn expression = function
     Ast0.WhenNot a -> Ast0.WhenNot (notfn a)
   | Ast0.WhenAlways a -> Ast0.WhenAlways (alwaysfn a)
   | Ast0.WhenModifier(x) -> Ast0.WhenModifier(x)
+  | Ast0.WhenNotTrue a -> Ast0.WhenNotTrue (expression a)
+  | Ast0.WhenNotFalse a -> Ast0.WhenNotFalse (expression a)
 
 and make_case_line =
   make_opt_unique

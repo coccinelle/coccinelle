@@ -172,8 +172,11 @@ let token2c (tok,_) =
   | PC.TArobArob -> "@@"
   | PC.TArob -> "@"
   | PC.TPArob -> "P@"
+  | PC.TScript -> "script"
 
   | PC.TWhen(clt) -> "WHEN"^(line_type2c clt)
+  | PC.TWhenTrue(clt) -> "WHEN TRUE"^(line_type2c clt)
+  | PC.TWhenFalse(clt) -> "WHEN FALSE"^(line_type2c clt)
   | PC.TAny(clt) -> "ANY"^(line_type2c clt)
   | PC.TStrict(clt) -> "STRICT"^(line_type2c clt)
   | PC.TEllipsis(clt) -> "..."^(line_type2c clt)
@@ -280,7 +283,8 @@ let plus_attachable (tok,_) =
   | PC.TMetaStmList(_,_,clt)  | PC.TMetaFunc(_,_,_,clt) 
   | PC.TMetaLocalFunc(_,_,_,clt)
 
-  | PC.TWhen(clt) | PC.TAny(clt) | PC.TStrict(clt) | PC.TEllipsis(clt)
+  | PC.TWhen(clt) |  PC.TWhenTrue(clt) |  PC.TWhenFalse(clt)
+  | PC.TAny(clt) | PC.TStrict(clt) | PC.TEllipsis(clt)
   (* | PC.TCircles(clt) | PC.TStars(clt) *)
 
   | PC.TWhy(clt) | PC.TDotDot(clt) | PC.TBang(clt) | PC.TOPar(clt) 
@@ -339,7 +343,8 @@ let get_clt (tok,_) =
   | PC.TMetaStmList(_,_,clt)  | PC.TMetaFunc(_,_,_,clt) 
   | PC.TMetaLocalFunc(_,_,_,clt) | PC.TMetaPos(_,_,_,clt)
 
-  | PC.TWhen(clt) | PC.TAny(clt) | PC.TStrict(clt) | PC.TEllipsis(clt)
+  | PC.TWhen(clt) | PC.TWhenTrue(clt) | PC.TWhenFalse(clt) |
+    PC.TAny(clt) | PC.TStrict(clt) | PC.TEllipsis(clt)
   (* | PC.TCircles(clt) | PC.TStars(clt) *)
 
   | PC.TWhy(clt) | PC.TDotDot(clt) | PC.TBang(clt) | PC.TOPar(clt) 
@@ -447,6 +452,8 @@ let update_clt (tok,x) clt =
   | PC.TMetaLocalFunc(a,b,c,_) -> (PC.TMetaLocalFunc(a,b,c,clt),x)
 
   | PC.TWhen(_) -> (PC.TWhen(clt),x)
+  | PC.TWhenTrue(_) -> (PC.TWhenTrue(clt),x)
+  | PC.TWhenFalse(_) -> (PC.TWhenFalse(clt),x)
   | PC.TAny(_) -> (PC.TAny(clt),x)
   | PC.TStrict(_) -> (PC.TStrict(clt),x)
   | PC.TEllipsis(_) -> (PC.TEllipsis(clt),x)
@@ -583,11 +590,12 @@ let split_token ((tok,_) as t) =
   | PC.TMetaStm(_,_,clt) | PC.TMetaStmList(_,_,clt) | PC.TMetaErr(_,_,_,clt)
   | PC.TMetaFunc(_,_,_,clt) | PC.TMetaLocalFunc(_,_,_,clt)
   | PC.TMetaDeclarer(_,_,_,clt) | PC.TMetaIterator(_,_,_,clt) -> split t clt
-  | PC.TMPtVirg | PC.TArob | PC.TArobArob -> ([t],[t])
+  | PC.TMPtVirg | PC.TArob | PC.TArobArob | PC.TScript -> ([t],[t])
   | PC.TPArob | PC.TMetaPos(_,_,_,_) -> ([t],[])
 
   | PC.TFunDecl(clt)
-  | PC.TWhen(clt) | PC.TAny(clt) | PC.TStrict(clt) | PC.TLineEnd(clt)
+  | PC.TWhen(clt) | PC.TWhenTrue(clt) | PC.TWhenFalse(clt)
+  | PC.TAny(clt) | PC.TStrict(clt) | PC.TLineEnd(clt)
   | PC.TEllipsis(clt) (* | PC.TCircles(clt) | PC.TStars(clt) *) -> split t clt
 
   | PC.TOEllipsis(_) | PC.TCEllipsis(_) (* clt must be context *)
@@ -819,7 +827,8 @@ let token2line (tok,_) =
   | PC.TMetaLocalFunc(_,_,_,clt) | PC.TMetaPos(_,_,_,clt)
 
   | PC.TFunDecl(clt)
-  | PC.TWhen(clt) | PC.TAny(clt) | PC.TStrict(clt) | PC.TEllipsis(clt)
+  | PC.TWhen(clt) | PC.TWhenTrue(clt) | PC.TWhenFalse(clt)
+  | PC.TAny(clt) | PC.TStrict(clt) | PC.TEllipsis(clt)
   (* | PC.TCircles(clt) | PC.TStars(clt) *)
 
   | PC.TOEllipsis(clt) | PC.TCEllipsis(clt) 
@@ -874,6 +883,14 @@ and find_line_end inwhen line clt q = function
       x :: (find_line_end inwhen line clt q xs)
   | x::xs when token2line x = line -> x :: (find_line_end inwhen line clt q xs)
   | xs -> (PC.TLineEnd(clt),q)::(insert_line_end xs)
+
+let rec translate_when_true_false = function
+    [] -> []
+  | (PC.TWhen(clt),q)::((PC.TNotEq(_),_) as x)::(PC.TIdent("true",_),_)::xs ->
+      (PC.TWhenTrue(clt),q)::x::xs
+  | (PC.TWhen(clt),q)::((PC.TNotEq(_),_) as x)::(PC.TIdent("false",_),_)::xs ->
+      (PC.TWhenFalse(clt),q)::x::xs
+  | x::xs -> x :: (translate_when_true_false xs)
 
 (* ----------------------------------------------------------------------- *)
 (* process pragmas: they can only be used in + code, and adjacent to
@@ -1046,8 +1063,9 @@ let parse_one str parsefn file toks =
   | e -> raise e
 
 let prepare_tokens tokens =
-  insert_line_end
-    (detect_types false (find_function_names (detect_attr tokens)))
+  translate_when_true_false (* after insert_line_end *)
+    (insert_line_end
+       (detect_types false (find_function_names (detect_attr tokens))))
 
 let rec consume_minus_positions = function
     [] -> []

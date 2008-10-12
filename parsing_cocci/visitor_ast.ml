@@ -434,6 +434,8 @@ let combiner bind option_default
       Ast.WhenNot a -> notfn a
     | Ast.WhenAlways a -> alwaysfn a
     | Ast.WhenModifier(_) -> option_default
+    | Ast.WhenNotTrue(e) -> rule_elem e
+    | Ast.WhenNotFalse(e) -> rule_elem e
  
   and case_line c =
     let k c =
@@ -945,6 +947,8 @@ let rebuilder
       Ast.WhenNot a -> Ast.WhenNot (notfn a)
     | Ast.WhenAlways a -> Ast.WhenAlways (alwaysfn a)
     | Ast.WhenModifier(x)    -> Ast.WhenModifier(x)
+    | Ast.WhenNotTrue(e) -> Ast.WhenNotTrue(rule_elem e)
+    | Ast.WhenNotFalse(e) -> Ast.WhenNotFalse(rule_elem e)
 
   and case_line c =
     let k c =

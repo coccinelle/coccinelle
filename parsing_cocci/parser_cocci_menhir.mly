@@ -48,7 +48,7 @@ module P = Parse_aux
 %token <string> TScriptData
 
 %token <Data.clt> TEllipsis TOEllipsis TCEllipsis TPOEllipsis TPCEllipsis
-%token <Data.clt> TWhen TAny TStrict TLineEnd
+%token <Data.clt> TWhen TWhenTrue TWhenFalse TAny TStrict TLineEnd
 
 %token <Data.clt> TWhy TDotDot TBang TOPar TOPar0
 %token <Data.clt> TMid0 TCPar TCPar0
@@ -1676,15 +1676,13 @@ edots_when(dotter,when_grammar):
     d=dotter                                      { (d,None) }
   | d=dotter TWhen TNotEq w=when_grammar TLineEnd { (d,Some w) }
 
-dots_when(dotter,when_grammar,simple_when_grammar):
-    d=dotter w=list(whens(when_grammar,simple_when_grammar))
-      { (d,List.concat w) }
-
 whens(when_grammar,simple_when_grammar):
     TWhen TNotEq w=when_grammar TLineEnd { [Ast0.WhenNot w] }
   | TWhen TEq w=simple_when_grammar TLineEnd { [Ast0.WhenAlways w] }
   | TWhen comma_list(any_strict) TLineEnd
       { List.map (function x -> Ast0.WhenModifier(x)) $2 }
+  | TWhenTrue TNotEq e = eexpr TLineEnd { [Ast0.WhenNotTrue e] }
+  | TWhenFalse TNotEq e = eexpr TLineEnd { [Ast0.WhenNotFalse e] }
 
 any_strict:
     TAny    { Ast.WhenAny }

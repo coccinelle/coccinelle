@@ -38,6 +38,11 @@ let set_test_poss =
 	| _ -> e)
     | _ -> e in
 
+  let process_wc = function
+      Ast0.WhenNotTrue(e) -> Ast0.WhenNotTrue(process_exp e)
+    | Ast0.WhenNotFalse(e) -> Ast0.WhenNotFalse(process_exp e)
+    | wc -> wc in
+
   let statement r k s =
     let s = k s in
     match Ast0.unwrap s with
@@ -52,6 +57,10 @@ let set_test_poss =
     | Ast0.For(f,lp,e1,sc1,Some e2,sc2,e3,rp,s1,aft) ->
 	Ast0.rewrap s
 	  (Ast0.For(f,lp,e1,sc1,Some (process_exp e2),sc2,e3,rp,s1,aft))
+    | Ast0.Dots(d,wc) ->
+	Ast0.rewrap s (Ast0.Dots(d,List.map process_wc wc))
+    | Ast0.Nest(l,s1,r,wc,m) ->
+	Ast0.rewrap s (Ast0.Nest(l,s1,r,List.map process_wc wc,m))
     | _ -> s in
 
   V0.rebuilder

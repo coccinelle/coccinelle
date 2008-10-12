@@ -555,7 +555,9 @@ and get_before_whencode wc =
     (function
 	Ast.WhenNot w -> let (w,_) = get_before w [] in Ast.WhenNot w
       | Ast.WhenAlways w -> let (w,_) = get_before_e w [] in Ast.WhenAlways w
-      |	Ast.WhenModifier(x) -> Ast.WhenModifier(x))
+      |	Ast.WhenModifier(x) -> Ast.WhenModifier(x)
+      | Ast.WhenNotTrue w -> Ast.WhenNotTrue w
+      | Ast.WhenNotFalse w -> Ast.WhenNotFalse w)
     wc
 
 and get_before_e s a =
@@ -656,7 +658,9 @@ and get_after_whencode a wc =
     (function
 	Ast.WhenNot w -> let (w,_) = get_after w a (*?*) in Ast.WhenNot w
       | Ast.WhenAlways w -> let (w,_) = get_after_e w a in Ast.WhenAlways w
-      |	Ast.WhenModifier(x) -> Ast.WhenModifier(x))
+      |	Ast.WhenModifier(x) -> Ast.WhenModifier(x)
+      | Ast.WhenNotTrue w -> Ast.WhenNotTrue w
+      | Ast.WhenNotFalse w -> Ast.WhenNotFalse w)
     wc
 
 and get_after_e s a =
@@ -1234,7 +1238,7 @@ let dots_au is_strict toend label s wrapcode x seq_after y quantifier =
   op s x (CTL.Let(v,y,ctl_or (CTL.Ref v) (stop_early (CTL.Ref v))))
 
 let rec dots_and_nests plus nest whencodes bef aft dotcode after label
-    process_bef_aft statement_list statement guard wrapcode =
+    process_bef_aft statement_list statement guard quantified wrapcode =
   let ctl_and_ns = ctl_and CTL.NONSTRICT in
   (* proces bef_aft *)
   let shortest l =
@@ -1283,7 +1287,13 @@ let rec dots_and_nests plus nest whencodes bef aft dotcode after label
 		(poswhen,ctl_or (statement_list whencodes) negwhen)
 	    | Ast.WhenAlways stm ->
 		(ctl_and CTL.NONSTRICT (statement stm) poswhen,negwhen)
-	    | Ast.WhenModifier(_) -> (poswhen,negwhen))
+	    | Ast.WhenModifier(_) -> (poswhen,negwhen)
+	    | Ast.WhenNotTrue(e) ->
+		(poswhen,
+		  ctl_or (whencond_true e label guard quantified) negwhen)
+	    | Ast.WhenNotFalse(e) ->
+		(poswhen,
+		  ctl_or (whencond_false e label guard quantified) negwhen))
 	(CTL.True,bef_aft) (List.rev whencodes) in
     let poswhen = ctl_and_ns arg poswhen in
     let negwhen =
@@ -1363,6 +1373,62 @@ let rec dots_and_nests plus nest whencodes bef aft dotcode after label
        label (guard_to_strict guard) wrapcode
       (ctl_and_ns dotcode (ctl_and_ns ornest labelled))
       aft ender quantifier)
+
+and get_whencond_exps e =
+  match Ast.unwrap e with
+    Ast.Exp e -> [e]
+  | Ast.DisjRuleElem(res) ->
+      List.fold_left Common.union_set [] (List.map get_whencond_exps res)
+  | _ -> failwith "not possible"
+
+and make_whencond_headers e e1 label guard quantified =
+  let fvs = Ast.get_fvs e in
+  let header_pred h =
+    quantify guard (get_unquantified quantified fvs)
+      (make_match label guard h) in
+  let if_header e1 =
+    header_pred
+      (Ast.rewrap e
+	 (Ast.IfHeader
+	    (Ast.make_mcode "if",
+	     Ast.make_mcode "(",e1,Ast.make_mcode ")"))) in
+  let while_header e1 =
+    header_pred
+      (Ast.rewrap e
+	 (Ast.WhileHeader
+	    (Ast.make_mcode "while",
+	     Ast.make_mcode "(",e1,Ast.make_mcode ")"))) in
+  let for_header e1 =
+    header_pred
+      (Ast.rewrap e
+	 (Ast.ForHeader
+	    (Ast.make_mcode "for",Ast.make_mcode "(",None,Ast.make_mcode ";",
+	     Some e1,Ast.make_mcode ";",None,Ast.make_mcode ")"))) in
+  let if_headers =
+    List.fold_left ctl_or CTL.False (List.map if_header e1) in
+  let while_headers =
+    List.fold_left ctl_or CTL.False (List.map while_header e1) in
+  let for_headers =
+    List.fold_left ctl_or CTL.False (List.map for_header e1) in
+  (if_headers, while_headers, for_headers)
+
+and whencond_true e label guard quantified =
+  let e1 = get_whencond_exps e in
+  let (if_headers, while_headers, for_headers) =
+    make_whencond_headers e e1 label guard quantified in
+  ctl_or
+    (ctl_and CTL.NONSTRICT (truepred label) (ctl_back_ex if_headers))
+    (ctl_and CTL.NONSTRICT
+       (inlooppred label) (ctl_back_ex (ctl_or while_headers for_headers)))
+
+and whencond_false e label guard quantified =
+  let e1 = get_whencond_exps e in
+  let (if_headers, while_headers, for_headers) =
+    make_whencond_headers e e1 label guard quantified in
+  ctl_or (ctl_and CTL.NONSTRICT (falsepred label) (ctl_back_ex if_headers))
+    (ctl_and CTL.NONSTRICT (fallpred label)
+       (ctl_or (ctl_back_ex if_headers)
+	  (ctl_or (ctl_back_ex while_headers) (ctl_back_ex for_headers))))
 
 (* --------------------------------------------------------------------- *)
 (* the main translation loop *)
@@ -1707,7 +1773,8 @@ and statement stmt after quantified minus_quantified
 	  (function x ->
 	    statement x Tail new_quantified minus_quantified None
 	      llabel slabel true)
-	  guard (function x -> Ast.set_fvs [] (Ast.rewrap stmt x)))
+	  guard quantified
+	  (function x -> Ast.set_fvs [] (Ast.rewrap stmt x)))
 
   | Ast.Dots((_,i,d,_),whencodes,bef,aft) ->
       let dot_code =
@@ -1724,7 +1791,8 @@ and statement stmt after quantified minus_quantified
 	    None llabel slabel true true)
 	(function x ->
 	  statement x Tail quantified minus_quantified None llabel slabel true)
-	guard (function x -> Ast.set_fvs [] (Ast.rewrap stmt x))
+	guard quantified
+	(function x -> Ast.set_fvs [] (Ast.rewrap stmt x))
 
   | Ast.Switch(header,lb,cases,rb) ->
       let rec intersect_all = function

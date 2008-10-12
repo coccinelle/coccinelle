@@ -310,6 +310,8 @@ and ('a,'b) whencode =
     WhenNot of 'a
   | WhenAlways of 'b
   | WhenModifier of Ast_cocci.when_modifier
+  | WhenNotTrue of expression
+  | WhenNotFalse of expression
 
 and statement = base_statement wrap
 
@@ -373,6 +375,8 @@ and anything =
   | CaseLineTag of case_line
   | TopTag of top_level
   | IsoWhenTag of Ast_cocci.when_modifier (*only for when code, in iso phase*)
+  | IsoWhenTTag of expression(*only for when code, in iso phase*)
+  | IsoWhenFTag of expression(*only for when code, in iso phase*)
   | MetaPosTag of meta_pos (* only in iso phase *)
 
 val dotsExpr : expression dots -> anything

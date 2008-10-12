@@ -115,6 +115,8 @@ let create_root_token_table minus =
 	  | Ast0.CaseLineTag(d) -> Ast0.get_index d
 	  | Ast0.TopTag(d) -> Ast0.get_index d
 	  | Ast0.IsoWhenTag(_) -> failwith "only within iso phase"
+	  | Ast0.IsoWhenTTag(_) -> failwith "only within iso phase"
+	  | Ast0.IsoWhenFTag(_) -> failwith "only within iso phase"
 	  | Ast0.MetaPosTag(p) -> failwith "metapostag only within iso phase"
 	in
 	Hashtbl.add root_token_table key tokens)
@@ -337,6 +339,8 @@ let call_collect_minus context_nodes :
 	  (Ast0.get_index e,
 	   (collect_minus_join_points e).V0.combiner_top_level e)
       | Ast0.IsoWhenTag(_) -> failwith "only within iso phase"
+      | Ast0.IsoWhenTTag(_) -> failwith "only within iso phase"
+      | Ast0.IsoWhenFTag(_) -> failwith "only within iso phase"
       | Ast0.MetaPosTag(p) -> failwith "metapostag only within iso phase")
     context_nodes
 
@@ -529,6 +533,8 @@ let call_collect_plus context_nodes :
 	  (Ast0.get_index e,
 	   (collect_plus_nodes e).V0.combiner_top_level e)
       | Ast0.IsoWhenTag(_) -> failwith "only within iso phase"
+      | Ast0.IsoWhenTTag(_) -> failwith "only within iso phase"
+      | Ast0.IsoWhenFTag(_) -> failwith "only within iso phase"
       | Ast0.MetaPosTag(p) -> failwith "metapostag only within iso phase")
     context_nodes
 
@@ -652,8 +658,6 @@ let insert thing thinginfo into intoinfo =
   let into_end = intoinfo.Ast0.tline_end in
   let into_left_offset = intoinfo.Ast0.left_offset in
   let into_right_offset = intoinfo.Ast0.right_offset in
-  Printf.printf "thing start %d thing end %d into start %d into end %d\n"
-    thing_start thing_end into_start into_end;
   if thing_end < into_start && thing_start < into_start
   then (thing@into,
 	{{intoinfo with Ast0.tline_start = thing_start}
@@ -683,6 +687,7 @@ let insert thing thinginfo into intoinfo =
       Printf.printf "thing offset %d left offset %d right offset %d\n"
 	thing_offset into_left_offset into_right_offset;
       Pretty_print_cocci.print_anything "" thing;
+      Pretty_print_cocci.print_anything "" into;
       failwith "can't figure out where to put the + code"
     end
 

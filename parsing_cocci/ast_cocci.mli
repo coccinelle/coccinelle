@@ -428,6 +428,8 @@ and ('a,'b) whencode =
     WhenNot of 'a
   | WhenAlways of 'b
   | WhenModifier of when_modifier
+  | WhenNotTrue of rule_elem
+  | WhenNotFalse of rule_elem
 
 and when_modifier =
     WhenAny

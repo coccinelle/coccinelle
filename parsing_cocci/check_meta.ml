@@ -317,12 +317,14 @@ and statement old_metas table minus s =
   | Ast0.Nest(_,rule_elem_dots,_,w,_) ->
       dots (statement old_metas table minus) rule_elem_dots;
       List.iter (whencode (dots (statement old_metas table minus))
-		   (statement old_metas table minus))
+		   (statement old_metas table minus)
+		   (expression ID old_metas table minus))
 	w
   | Ast0.Dots(_,x) | Ast0.Circles(_,x) | Ast0.Stars(_,x) ->
       List.iter
 	(whencode (dots (statement old_metas table minus))
-	   (statement old_metas table minus)) x
+	   (statement old_metas table minus)
+	   (expression ID old_metas table minus)) x
   | Ast0.FunDecl(_,fi,name,lp,params,rp,lbrace,body,rbrace) ->
       ident FN old_metas table minus name;
       List.iter (fninfo old_metas table minus) fi;
@@ -341,10 +343,12 @@ and fninfo old_metas table minus = function
   | Ast0.FInline(inline) -> ()
   | Ast0.FAttr(attr) -> ()
 
-and whencode notfn alwaysfn = function
+and whencode notfn alwaysfn expression = function
     Ast0.WhenNot a -> notfn a
   | Ast0.WhenAlways a -> alwaysfn a
   | Ast0.WhenModifier(_) -> ()
+  | Ast0.WhenNotTrue a -> expression a
+  | Ast0.WhenNotFalse a -> expression a
 
 and case_line old_metas table minus c =
   match Ast0.unwrap c with

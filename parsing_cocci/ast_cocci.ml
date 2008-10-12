@@ -440,6 +440,8 @@ and ('a,'b) whencode =
     WhenNot of 'a
   | WhenAlways of 'b
   | WhenModifier of when_modifier
+  | WhenNotTrue of rule_elem (* useful for fvs *)
+  | WhenNotFalse of rule_elem
 
 and when_modifier =
   (* The following removes the shortest path constraint.  It can be used
@@ -578,7 +580,9 @@ let get_wcfvs (whencode : ('a wrap, 'b wrap) whencode list) =
        (function
 	   WhenNot(a) -> get_fvs a
 	 | WhenAlways(a) -> get_fvs a
-	 | WhenModifier(_) -> [])
+	 | WhenModifier(_) -> []
+	 | WhenNotTrue(e) -> get_fvs e
+	 | WhenNotFalse(e) -> get_fvs e)
        whencode)
 
 (* --------------------------------------------------------------------- *)

@@ -315,6 +315,8 @@ and ('a,'b) whencode =
     WhenNot of 'a
   | WhenAlways of 'b
   | WhenModifier of Ast.when_modifier
+  | WhenNotTrue of expression
+  | WhenNotFalse of expression
 
 and statement = base_statement wrap
 
@@ -375,6 +377,8 @@ and anything =
   | CaseLineTag of case_line
   | TopTag of top_level
   | IsoWhenTag of Ast.when_modifier
+  | IsoWhenTTag of expression
+  | IsoWhenFTag of expression
   | MetaPosTag of meta_pos
 
 let dotsExpr x = DotsExprTag x
