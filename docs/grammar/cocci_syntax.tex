@@ -6,6 +6,7 @@
 \usepackage[pdfborder={0 0 0}]{hyperref}
 \usepackage{listings}
 \usepackage{color}
+\usepackage[T1]{fontenc}
 \lstset{basicstyle=\ttfamily,numbers=left, numberstyle=\tiny, stepnumber=1, numbersep=5pt}
 
 \newif\iflanguagestyle
@@ -69,6 +70,7 @@ C-language constants.
   
   \RULE{changeset}
   \CASE{\NT{metavariables} \OPT{--- filename +++ filename} \NT{transformation}}
+
 \end{grammar}
 
 Between the metavariables and the transformation rule, there can be a
@@ -82,9 +84,6 @@ Fresh metavariables must only be used in {\tt +} code.  Metavariables must
 occur at least once in the transformation immediately following their
 declaration.  These properties are not expressed in the grammar, but are
 checked by a subsequent analysis.
-
-\fixme{Does \mtt{expression list} exist ?}
-\fixme{Difference between [] for arrays and alternative ?!}
 
 \begin{grammar}
   \RULE{metavariables}
@@ -170,6 +169,7 @@ checked by a subsequent analysis.
   \CASE{}
 
   \RULE{struct\_decl\_list}
+  \CASE{}
 \end{grammar}
 
 \begin{grammar}
