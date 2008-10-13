@@ -61,7 +61,11 @@ C-language constants.
 
 \begin{grammar}
   \RULE{program}
-  \CASE{\some{\NT{changeset}}}
+  \CASE{\any{\NT{include}} \some{\NT{changeset}}}
+
+  \RULE{include}
+  \CASE{using "\NT{string}"}
+  \CASE{using <\NT{pathToIsoFile}>}
   
   \RULE{changeset}
   \CASE{\NT{metavariables} \OPT{--- filename +++ filename} \NT{transformation}}
@@ -80,38 +84,15 @@ declaration.  These properties are not expressed in the grammar, but are
 checked by a subsequent analysis.
 
 \fixme{Does \mtt{expression list} exist ?}
+\fixme{Difference between [] for arrays and alternative ?!}
 
 \begin{grammar}
   \RULE{metavariables}
   \CASE{@@ \any{\NT{metadecl}} @@}
   \CASE{@ \NT{rulename} @ \any{\NT{metadecl}} @@}
 
-  \RULE{metadecl}
-  \CASE{\OPT{! \OR ? \OR +} \opt{pure} \opt{context} \NT{metakind} \ANY{\T{id} ,} \T{id} ;}
-  
-  \RULE{metakind}
-  \CASE{\opt{fresh} identifier}
-  \CASE{type}
-  \CASE{parameter \opt{list}}
-  \CASE{error}
-  \CASE{expression \any{*}}
-  \CASE{statement \opt{list}}
-  \CASE{\opt{local} function}
-  \CASE{\opt{local} idexpression \OPT{\some{*} \OR \ttlb \NT{ctypes}\ttrb\any{*}}}
-  \CASE{\opt{constant} \NT{metaexptype}}
-  \CASE{constant}
-  \CASE{typedef}
-  \CASE{declarer \opt{name}}
-  \CASE{iterator \opt{name}}
-
-  \RULE{metaexptype}
-  \CASE{type}
-  \CASE{\ttlb~\ANY{\NT{type} ,} \NT{type} \ttrb}
-\end{grammar}
-
-\begin{grammar}
   \RULE{rulename}
-  \CASE{\T{id} \OPT{extends \T{id}} \OPT{depends on \NT{dep}} \opt{\NT{iso}} \opt{\NT{disable}} \opt{\NT{exists}} \opt{\NT{exp}}}
+  \CASE{\T{id} \OPT{extends \T{id}} \OPT{depends on \NT{dep}} \opt{\NT{iso}} \opt{\NT{disable}} \opt{\NT{exists}} \opt{expression}}
   \CASE{script:\T{language} \OPT{depends on \NT{dep}}}
 
   \RULE{dep}
@@ -135,6 +116,63 @@ checked by a subsequent analysis.
   \RULE{exists}
   \CASE{exists}
   \CASE{\opt{reverse} forall}
+\end{grammar}
+
+\begin{grammar}
+  \RULE{metadecl}
+  \CASE{\OPT{! \OR ? \OR +} \opt{pure} \opt{context} \NT{metakind} \ANY{\T{id} ,} \T{id} ;}
+  \CASE{\OPT{! \OR ? \OR +} position \opt{any} \ANY{\T{id} ,} \T{id} ;}
+  \CASE{\OPT{! \OR ? \OR +} parameter list [\T{id}] \ANY{\T{id} ,} \T{id} ;}
+  \CASE{\OPT{! \OR ? \OR +} expression list [\T{id}] \ANY{\T{id} ,} \T{id} ;}
+  
+  \RULE{metakind}
+  \CASE{\opt{fresh} identifier}
+  \CASE{type}
+  \CASE{parameter \opt{list}}
+  \CASE{error}
+  \CASE{expression \any{*}}
+  \CASE{statement \opt{list}}
+  \CASE{\opt{local} function}
+  \CASE{\opt{local} idexpression \OPT{\some{*} \OR \ttlb \NT{ctypes}\ttrb\any{*}}}
+  \CASE{\NT{ctype}}
+  \CASE{\NT{ctype}[]}
+  \CASE{\ttlb \NT{ctypes}\ttrb\any{*}}
+  \CASE{\ttlb \NT{ctypes}\ttrb\any{*}[]}
+  \CASE{\opt{constant} \NT{metaexptype}}
+  \CASE{constant}
+  \CASE{typedef}
+  \CASE{declarer \opt{name}}
+  \CASE{iterator \opt{name}}
+
+  \RULE{metaexptype}
+  \CASE{type}
+  \CASE{\ttlb~\ANY{\NT{type} ,} \NT{type} \ttrb}
+  
+  \RULE{ctypes}
+  \CASE{\NT{ctype} \ANY{, \NT{ctype}}}
+
+  \RULE{ctype}
+  \CASE{\opt{\NT{const\_vol}} \NT{generic\_ctype} \ANY{*}}
+  \CASE{\opt{\NT{const\_vol}} void \SOME{*}}
+  \CASE{(\NT{ctype} \ANY{| \NT{ctype}})}
+
+  \RULE{generic\_ctype}
+  \CASE{\NT{ctype\_qualif}}
+  \CASE{\opt{\NT{ctype\_qualif}} char}
+  \CASE{\opt{\NT{ctype\_qualif}} short}
+  \CASE{\opt{\NT{ctype\_qualif}} int}
+  \CASE{\opt{\NT{ctype\_qualif}} long}
+  \CASE{double}
+  \CASE{float}
+  \CASE{\OPT{\T{struct}\OR \T{union}} \T{id} \OPT{\{ \ANY{\NT{struct\_decl\_list}} \}}}
+
+  \RULE{ctype\_qualif}
+  \CASE{}
+
+  \RULE{struct\_decl\_list}
+\end{grammar}
+
+\begin{grammar}
 \end{grammar}
 
 Subsequently, we refer to arbitrary metavariables as
