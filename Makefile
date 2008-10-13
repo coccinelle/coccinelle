@@ -87,6 +87,9 @@ BYTECODE_STATIC=-custom
 ##############################################################################
 # Top rules
 ##############################################################################
+eclipse: depend all
+configure:
+	./configure
 
 all: rec $(EXEC)
 opt: rec.opt $(EXEC).opt
@@ -118,7 +121,7 @@ clean::
 	rm -f dllpycaml_stubs.so
 
 
-.PHONY: tools
+.PHONY: tools all configure
 
 tools:
 	$(MAKE) -C tools
