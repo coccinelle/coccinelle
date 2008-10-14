@@ -1270,7 +1270,7 @@ let rec dots_and_nests plus nest whencodes bef aft dotcode after label
     if check_quantifier Ast.WhenExists Ast.WhenForall
     then Exists
     else
-      if check_quantifier Ast.WhenExists Ast.WhenForall
+      if check_quantifier Ast.WhenForall Ast.WhenExists
       then Forall
       else !exists in
   (* the following is used when we find a goto, etc and consider accepting
@@ -1632,11 +1632,18 @@ and statement stmt after quantified minus_quantified
 	ctl_and
 	  (quantify guard lbfvs (make_match lbrace))
 	  (ctl_and paren_pred label_pred) in
+      let empty_rbrace =
+	match Ast.unwrap rbrace with
+	  Ast.SeqEnd((data,info,_,pos)) ->
+	    Ast.rewrap rbrace(Ast.SeqEnd(Ast.make_mcode data))
+	| _ -> failwith "unexpected close brace" in
       let end_brace =
 	(* label is not needed; paren_pred is enough *)
-	ctl_and
-	  (quantify guard rbfvs (real_make_match None guard rbrace))
-	  paren_pred in
+	quantify guard rbfvs
+	  (ctl_au (make_match empty_rbrace)
+	     (ctl_and
+		(real_make_match None guard rbrace)
+		paren_pred)) in
       let new_quantified2 =
 	Common.union_set b1fvs (Common.union_set b2fvs quantified) in
       let new_quantified3 = Common.union_set b3fvs new_quantified2 in
@@ -1674,11 +1681,6 @@ and statement stmt after quantified minus_quantified
 	   a goto within the current braces.  checking for a goto at every
 	   point in the pattern seems expensive and not worthwhile. *)
 	let pattern2 =
-	  let empty_rbrace =
-	    match Ast.unwrap rbrace with
-	      Ast.SeqEnd((data,info,_,pos)) ->
-		Ast.rewrap rbrace(Ast.SeqEnd(Ast.make_mcode data))
-	    | _ -> failwith "unexpected close brace" in
 	  let body = preprocess_dots body in (* redo, to drop braces *)
 	  make_seq
 	    [gotopred label;
@@ -2170,9 +2172,9 @@ let rec cleanup c =
 	    CTL.And(CTL.NONSTRICT,
 		    CTL.AX(CTL.FORWARD,s,CTL.AU(CTL.FORWARD,s2,e2,e3)),
 		    CTL.EX(CTL.FORWARD,CTL.EU(CTL.FORWARD,e4,e5))))
-  | CTL.AX(dir,s,CTL.XX(phi)) -> CTL.EX(dir,CTL.XX(cleanup phi))
+  | CTL.AX(dir,s,CTL.XX(phi)) -> CTL.EX(dir,cleanup phi)
   | CTL.EX(dir,CTL.XX((CTL.AU(_,s,_,_)) as phi)) ->
-      CTL.AX(dir,s,CTL.XX(cleanup phi))
+      CTL.AX(dir,s,cleanup phi)
   | CTL.XX(phi)               -> failwith "bad XX"
   | CTL.AX(dir,s,phi1) -> CTL.AX(dir,s,cleanup phi1)
   | CTL.AG(dir,s,phi1) -> CTL.AG(dir,s,cleanup phi1)
