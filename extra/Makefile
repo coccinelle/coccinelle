@@ -1,6 +1,6 @@
 TARGET=extra
 
-SOURCES = classic_patch.ml kbuild.ml maintainers.ml c_info.ml
+SOURCES = classic_patch.ml kbuild.ml maintainers.ml
 
 SYSLIBS = str.cma unix.cma 
 
