@@ -2005,7 +2005,13 @@ and statement stmt after quantified minus_quantified
 		if multi
 		then None (* not sure how to optimize this case *)
 		else Some (Common.Left stmt_dots)
-	    | Ast.Dots(_,whencode,_,_) -> Some (Common.Right whencode)
+	    | Ast.Dots(_,whencode,_,_) when
+		(List.for_all
+		   (* flow sensitive, so not optimizable *)
+		   (function Ast.WhenNotTrue(_) | Ast.WhenNotFalse(_) ->
+		      false
+		 | _ -> true) whencode) ->
+		Some (Common.Right whencode)
 	    | _ -> None)
 	| _ -> None in
       let body_code =
@@ -2043,6 +2049,8 @@ and statement stmt after quantified minus_quantified
 					  new_quantified4 new_mquantified4
 					  label llabel slabel true true in
 				      ctl_or prev x
+				  | Ast.WhenNotTrue(_) | Ast.WhenNotFalse(_) ->
+				      failwith "unexpected"
 				  | Ast.WhenModifier(Ast.WhenAny) -> CTL.False
 				  | Ast.WhenModifier(_) -> prev)
 			      CTL.False whencode))
@@ -2056,6 +2064,8 @@ and statement stmt after quantified minus_quantified
 				       label llabel slabel true in
 				   ctl_and prev x
 			       | Ast.WhenNot(sl) -> prev
+			       | Ast.WhenNotTrue(_) | Ast.WhenNotFalse(_) ->
+				   failwith "unexpected"
 			       | Ast.WhenModifier(Ast.WhenAny) -> CTL.True
 			       | Ast.WhenModifier(_) -> prev)
 			   CTL.True whencode) in
