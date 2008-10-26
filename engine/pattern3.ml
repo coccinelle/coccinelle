@@ -202,6 +202,23 @@ module XMATCH = struct
       (a, node), binding
     )
 
+  let cocciInit = fun expf expa node -> fun tin -> 
+
+    let globals = ref [] in
+    let bigf = { 
+      Visitor_c.default_visitor_c with 
+        Visitor_c.kini = (fun (k, bigf) expb -> 
+	match expf expa expb tin with
+	| [] -> (* failed *) k expb
+	| xs -> globals := xs @ !globals);
+
+    } 
+    in
+    Visitor_c.vk_node bigf node;
+    !globals +> List.map (fun ((a, _exp), binding) -> 
+      (a, node), binding
+    )
+
 
   (* ------------------------------------------------------------------------*)
   (* Distribute mcode *) 

@@ -447,6 +447,7 @@ let collect_plus_nodes root =
       Ast0.Exp(exp) -> r.V0.combiner_expression exp
     | Ast0.TopExp(exp) -> r.V0.combiner_expression exp
     | Ast0.Ty(ty) -> r.V0.combiner_typeC ty
+    | Ast0.TopInit(init) -> r.V0.combiner_initialiser init
     | Ast0.Decl(_,decl) -> r.V0.combiner_declaration decl
     | _ -> do_nothing mk_statement r k e in
 

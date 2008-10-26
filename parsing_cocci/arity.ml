@@ -809,6 +809,15 @@ and statement tgt stm =
 	| Ast0.UniqueType(ty) ->
 	    Ast0.UniqueStm(Ast0.rewrap stm (Ast0.Ty(ty)))
 	| _ -> Ast0.Ty(new_ty))
+  | Ast0.TopInit(init) ->
+      let new_init = initialiser tgt init in
+      Ast0.rewrap stm
+	(match Ast0.unwrap new_init with
+	  Ast0.OptIni(init) ->
+	    Ast0.OptStm(Ast0.rewrap stm (Ast0.TopInit(init)))
+	| Ast0.UniqueIni(init) ->
+	    Ast0.UniqueStm(Ast0.rewrap stm (Ast0.TopInit(init)))
+	| _ -> Ast0.TopInit(new_init))
   | Ast0.Disj(starter,rule_elem_dots_list,mids,ender) ->
       let stms =
 	List.map (function x -> concat_dots (statement tgt) x)

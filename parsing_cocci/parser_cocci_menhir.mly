@@ -75,7 +75,7 @@ module P = Parse_aux
 %token <Data.clt> TPlus TMinus
 %token <Data.clt> TMul TTilde
 
-%token <Data.clt> TOBrace TCBrace
+%token <Data.clt> TOBrace TCBrace TOInit
 %token <Data.clt> TOCro TCCro
 
 %token <Data.clt> TPtrOp
@@ -1491,6 +1491,7 @@ when_body_sequence.
 minus_start:
   fundecl                { [Ast0.wrap(Ast0.DECL($1))] }
 | ctype                  { [Ast0.wrap(Ast0.OTHER(Ast0.wrap(Ast0.Ty($1))))] }
+| top_init          { [Ast0.wrap(Ast0.OTHER(Ast0.wrap(Ast0.TopInit($1))))] }
 | toplevel_seq_start(toplevel_after_dots_init)
     { List.map (function x -> Ast0.wrap(Ast0.OTHER(x))) $1 }
 
@@ -1519,12 +1520,17 @@ toplevel_after_stm:
 | stm_dots toplevel_after_dots       {$1::$2}
 | decl_statement toplevel_after_stm  {$1@$2}
 
+top_init:
+  TOInit initialize_list TCBrace
+    { Ast0.wrap(Ast0.InitList(P.clt2mcode "{" $1,$2,P.clt2mcode "}" $3)) }
+
 /* ------------------------------------------------------------------------ */
 /* Plus top level */
 
 /* does allow only ... also allows multiple top-level functions */
 plus_start:
   ctype                   { [Ast0.wrap(Ast0.OTHER(Ast0.wrap(Ast0.Ty($1))))] }
+| top_init           { [Ast0.wrap(Ast0.OTHER(Ast0.wrap(Ast0.TopInit($1))))] }
 | stm_dots plus_after_dots
                                           { (Ast0.wrap(Ast0.OTHER($1)))::$2 }
 | expr plus_after_exp

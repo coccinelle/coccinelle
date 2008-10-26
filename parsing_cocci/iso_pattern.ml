@@ -1002,6 +1002,7 @@ let match_maker checks_needed context_required whencode_allowed =
 	  | (Ast0.Exp(expa),Ast0.Exp(expb)) -> match_expr expa expb
 	  | (Ast0.TopExp(expa),Ast0.TopExp(expb)) -> match_expr expa expb
 	  | (Ast0.Exp(expa),Ast0.TopExp(expb)) -> match_expr expa expb
+	  | (Ast0.TopInit(inita),Ast0.TopInit(initb)) -> match_init inita initb
 	  | (Ast0.Ty(tya),Ast0.Ty(tyb)) -> match_typeC tya tyb
 	  | (Ast0.Dots(d,[]),Ast0.Dots(d1,wc))
 	  | (Ast0.Circles(d,[]),Ast0.Circles(d1,wc))

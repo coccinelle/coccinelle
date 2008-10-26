@@ -661,6 +661,8 @@ and statement s =
 	  Ast.Atomic(rewrap_rule_elem s (Ast.TopExp(expression exp)))
       | Ast0.Exp(exp) ->
 	  Ast.Atomic(rewrap_rule_elem s (Ast.Exp(expression exp)))
+      | Ast0.TopInit(init) ->
+	  Ast.Atomic(rewrap_rule_elem s (Ast.TopInit(initialiser init)))
       | Ast0.Ty(ty) ->
 	  Ast.Atomic(rewrap_rule_elem s (Ast.Ty(typeC ty)))
       | Ast0.Disj(_,rule_elem_dots_list,_,_) ->

@@ -374,6 +374,7 @@ and base_rule_elem =
   | Exp           of expression
   | TopExp        of expression (* for macros body *)
   | Ty            of fullType (* only at top level *)
+  | TopInit       of initialiser (* only at top level *)
   | Include       of string mcode (*#include*) * inc_file mcode (*file *)
   | DefineHeader  of string mcode (* #define *) * ident (* name *) *
 	             define_parameters (*params*)

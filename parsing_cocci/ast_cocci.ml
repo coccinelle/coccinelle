@@ -386,6 +386,7 @@ and base_rule_elem =
   | TopExp        of expression (* for macros body, exp at top level,
 				   not subexp *)
   | Ty            of fullType (* only at SP top level, matches a subterm *)
+  | TopInit       of initialiser (* only at top level *)
   | Include       of string mcode (*#include*) * inc_file mcode (*file *)
   | DefineHeader  of string mcode (* #define *) * ident (* name *) *
 	             define_parameters (*params*)

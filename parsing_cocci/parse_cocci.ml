@@ -212,6 +212,7 @@ let token2c (tok,_) =
   | PC.TCBrace(clt) -> "}"^(line_type2c clt)
   | PC.TOCro(clt) -> "["^(line_type2c clt)
   | PC.TCCro(clt) -> "]"^(line_type2c clt)
+  | PC.TOInit(clt) -> "{"^(line_type2c clt)
 
   | PC.TPtrOp(clt) -> "->"^(line_type2c clt)
 
@@ -291,6 +292,7 @@ let plus_attachable (tok,_) =
   | PC.TCPar(clt)
 
   | PC.TOBrace(clt) | PC.TCBrace(clt) | PC.TOCro(clt) | PC.TCCro(clt)
+  | PC.TOInit(clt) 
 
   | PC.TPtrOp(clt)
 
@@ -351,6 +353,7 @@ let get_clt (tok,_) =
   | PC.TCPar(clt)
 
   | PC.TOBrace(clt) | PC.TCBrace(clt) | PC.TOCro(clt) | PC.TCCro(clt)
+  | PC.TOInit(clt)
 
   | PC.TPtrOp(clt)
 
@@ -486,6 +489,7 @@ let update_clt (tok,x) clt =
   | PC.TCBrace(_) -> (PC.TCBrace(clt),x)
   | PC.TOCro(_) -> (PC.TOCro(clt),x)
   | PC.TCCro(_) -> (PC.TCCro(clt),x)
+  | PC.TOInit(_) -> (PC.TOInit(clt),x)
 
   | PC.TPtrOp(_) -> (PC.TPtrOp(clt),x)
 
@@ -621,7 +625,7 @@ let split_token ((tok,_) as t) =
   | PC.TShOp(_,clt) | PC.TPlus(clt) | PC.TMinus(clt) | PC.TMul(clt)
   | PC.TDmOp(_,clt) | PC.TTilde (clt) -> split t clt
 
-  | PC.TOBrace(clt) | PC.TCBrace(clt) -> split t clt
+  | PC.TOBrace(clt) | PC.TCBrace(clt) | PC.TOInit(clt) -> split t clt
   | PC.TOCro(clt) | PC.TCCro(clt) -> split t clt
 
   | PC.TPtrOp(clt) -> split t clt
@@ -714,7 +718,8 @@ let detect_types in_meta_decls l =
       (PC.TOEllipsis(_),_) (* | (PC.TOCircles(_),_) | (PC.TOStars(_),_) *)
     | (PC.TPOEllipsis(_),_) (* | (PC.TOCircles(_),_) | (PC.TOStars(_),_) *)
     | (PC.TEllipsis(_),_) (* | (PC.TCircles(_),_) | (PC.TStars(_),_) *)
-    | (PC.TPtVirg(_),_) | (PC.TOBrace(_),_) | (PC.TCBrace(_),_)
+    | (PC.TPtVirg(_),_) | (PC.TOBrace(_),_) | (PC.TOInit(_),_)
+    | (PC.TCBrace(_),_)
     | (PC.TPure,_) | (PC.TContext,_)
     | (PC.Tstatic(_),_) | (PC.Textern(_),_)
     | (PC.Tinline(_),_) | (PC.Ttypedef(_),_) | (PC.Tattr(_),_) -> true
@@ -840,6 +845,7 @@ let token2line (tok,_) =
   | PC.TCPar0(clt) 
 
   | PC.TOBrace(clt) | PC.TCBrace(clt) | PC.TOCro(clt) | PC.TCCro(clt) 
+  | PC.TOInit(clt)
 
   | PC.TPtrOp(clt) 
 
@@ -891,6 +897,35 @@ let rec translate_when_true_false = function
   | (PC.TWhen(clt),q)::((PC.TNotEq(_),_) as x)::(PC.TIdent("false",_),_)::xs ->
       (PC.TWhenFalse(clt),q)::x::xs
   | x::xs -> x :: (translate_when_true_false xs)
+
+(* ----------------------------------------------------------------------- *)
+(* top level initializers: a sequence of braces followed by a dot *)
+
+let find_top_init tokens =
+  match tokens with
+    (PC.TOBrace(clt),q) :: rest ->
+      let rec dot_start acc = function
+	  ((PC.TOBrace(_),_) as x) :: rest ->
+	    dot_start (x::acc) rest
+	| ((PC.TDot(_),_) :: rest) as x ->
+	    Some ((PC.TOInit(clt),q) :: (List.rev acc) @ x)
+	| l -> None in
+      let rec comma_end acc = function
+	  ((PC.TCBrace(_),_) as x) :: rest ->
+	    comma_end (x::acc) rest
+	| ((PC.TComma(_),_) :: rest) as x ->
+	    Some ((PC.TOInit(clt),q) :: (List.rev x) @ acc)
+	| l -> None in
+      (match dot_start [] rest with
+	Some x -> x
+      |	None ->
+	  (match List.rev rest with
+	    ((PC.EOF,_) as x)::rest ->
+	      (match comma_end [x] rest with
+		Some x -> x
+	      | None -> tokens)
+	  | _ -> failwith "unexpected empty token list"))
+  | _ -> tokens
 
 (* ----------------------------------------------------------------------- *)
 (* process pragmas: they can only be used in + code, and adjacent to
@@ -1063,9 +1098,10 @@ let parse_one str parsefn file toks =
   | e -> raise e
 
 let prepare_tokens tokens =
-  translate_when_true_false (* after insert_line_end *)
-    (insert_line_end
-       (detect_types false (find_function_names (detect_attr tokens))))
+  find_top_init
+    (translate_when_true_false (* after insert_line_end *)
+       (insert_line_end
+	  (detect_types false (find_function_names (detect_attr tokens)))))
 
 let rec consume_minus_positions = function
     [] -> []

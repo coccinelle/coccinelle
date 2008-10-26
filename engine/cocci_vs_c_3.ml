@@ -521,6 +521,9 @@ module type PARAM =
     val cocciTy : 
       (A.fullType, B.fullType) matcher -> (A.fullType, F.node) matcher
 
+    val cocciInit : 
+      (A.initialiser, B.initialiser) matcher -> (A.initialiser, F.node) matcher
+
     val envf :
       A.keep_binding -> A.inherited -> 
       A.meta_name A.mcode * Ast_c.metavar_binding_kind *
@@ -3019,12 +3022,18 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
         )
       )
 
-
-
   | A.Ty ty, nodeb -> 
       X.cocciTy fullType ty node >>= (fun ty node -> 
         return (
           A.Ty ty,
+          F.unwrap node
+        )
+      )
+
+  | A.TopInit init, nodeb -> 
+      X.cocciInit initialiser init node >>= (fun init node -> 
+        return (
+          A.TopInit init,
           F.unwrap node
         )
       )

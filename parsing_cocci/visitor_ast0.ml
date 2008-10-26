@@ -397,6 +397,7 @@ let combiner bind option_default
       | Ast0.Exp(exp) -> expression exp
       | Ast0.TopExp(exp) -> expression exp
       | Ast0.Ty(ty) -> typeC ty
+      | Ast0.TopInit(init) -> initialiser init
       | Ast0.Dots(d,whn) | Ast0.Circles(d,whn) | Ast0.Stars(d,whn) ->
 	  bind (string_mcode d)
 	    (multibind (List.map (whencode statement_dots statement) whn))
@@ -875,6 +876,7 @@ let rebuilder = fun
 	| Ast0.Exp(exp) -> Ast0.Exp(expression exp)
 	| Ast0.TopExp(exp) -> Ast0.TopExp(expression exp)
 	| Ast0.Ty(ty) -> Ast0.Ty(typeC ty)
+	| Ast0.TopInit(init) -> Ast0.TopInit(initialiser init)
 	| Ast0.Dots(d,whn) ->
 	    Ast0.Dots(string_mcode d,
 		      List.map (whencode statement_dots statement) whn)

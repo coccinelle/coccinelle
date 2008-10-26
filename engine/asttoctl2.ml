@@ -1208,7 +1208,7 @@ let dots_au is_strict toend label s wrapcode x seq_after y quantifier =
       (wrapcode
 	 (Ast.Continue(Ast.make_mcode "continue",Ast.make_mcode ";"))) in
   let stop_early v =
-    if !exists = Exists
+    if quantifier = Exists
     then CTL.False
     else if toend
     then CTL.Or(aftpred label,exitpred label)
