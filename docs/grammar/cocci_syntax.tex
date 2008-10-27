@@ -135,17 +135,17 @@ checked by a subsequent analysis.
   \CASE{\NT{arity} \NT{purity} declarer \NT{pmid\_with\_not\_eq\_list} ;}
   \CASE{\NT{arity} \NT{purity} iterator \NT{pmid\_with\_not\_eq\_list} ;}
   \CASE{\NT{arity} \NT{purity} error \NT{pmid\_with\_not\_eq\_list} ; }
-  \CASE{\NT{arity} \NT{purity} \opt{local} idexpression \opt{ctype} \NT{pmid\_with\_not\_eq\_list} ;}
-  \CASE{\NT{arity} \NT{purity} \opt{local} idexpression \OPT{\ttlb \NT{ctypes} \ttrb list(*)} \NT{pmid\_with\_not\_eq\_list} ;}
+  \CASE{\NT{arity} \NT{purity} \opt{local} idexpression \opt{\NT{ctype}} \NT{pmid\_with\_not\_eq\_list} ;}
+  \CASE{\NT{arity} \NT{purity} \opt{local} idexpression \OPT{\ttlb \NT{ctypes} \ttrb \any{*}} \NT{pmid\_with\_not\_eq\_list} ;}
   \CASE{\NT{arity} \NT{purity} \opt{local} idexpression \some{*} \NT{pmid\_with\_not\_eq\_list} ;}
   \CASE{\NT{arity} \NT{purity} expression \some{*} \NT{pmid\_with\_not\_eq\_list} ;}
-  \CASE{\NT{arity} \NT{purity} ctype [ ] \NT{pmid\_with\_not\_eq\_list} ;}
+  \CASE{\NT{arity} \NT{purity} \NT{ctype} [ ] \NT{pmid\_with\_not\_eq\_list} ;}
   \CASE{\NT{arity} \NT{purity} \ttlb \NT{ctypes} \ttrb \any{*} [ ] \NT{pmid\_with\_not\_eq\_list} ;}
-  \CASE{\NT{arity} \NT{purity} constant \opt{ctype} \NT{pmid\_with\_not\_eq\_list} ;}
+  \CASE{\NT{arity} \NT{purity} constant \opt{\NT{ctype}} \NT{pmid\_with\_not\_eq\_list} ;}
   \CASE{\NT{arity} \NT{purity} constant \OPT{\ttlb \NT{ctypes} \ttrb \any{*}} \NT{pmid\_with\_not\_eq\_list} ;}
   \CASE{\NT{arity} \NT{purity} expression \NT{pmid\_with\_not\_ceq\_list} ;}
-  \CASE{\NT{arity} \NT{purity} ctype \NT{pmid\_with\_not\_ceq\_list} ;}
-  \CASE{\NT{arity} \NT{purity} \ttlb ctypes \ttrb \any{*} \NT{pmid\_with\_not\_ceq\_list} ;}
+  \CASE{\NT{arity} \NT{purity} \NT{ctype} \NT{pmid\_with\_not\_ceq\_list} ;}
+  \CASE{\NT{arity} \NT{purity} \ttlb \NT{ctypes} \ttrb \any{*} \NT{pmid\_with\_not\_ceq\_list} ;}
   \CASE{\NT{arity} position \opt{any} \NT{pmid\_with\_not\_eq\_mid\_list} ;}
   \CASE{\NT{arity} \NT{purity} parameter list [ ident ] \NT{ids} ;}
   \CASE{\NT{arity} \NT{purity} expression list [ ident ] \NT{ids} ;}
@@ -159,9 +159,13 @@ checked by a subsequent analysis.
   \CASE{\NT{ctype} \ANY{, \NT{ctype}}}
 
   \RULE{ctype}
-  \CASE{\opt{\NT{const\_vol}} \NT{generic\_ctype} \ANY{*}}
-  \CASE{\opt{\NT{const\_vol}} void \SOME{*}}
+  \CASE{\opt{\NT{const\_vol}} \NT{generic\_ctype} \any{*}}
+  \CASE{\opt{\NT{const\_vol}} void \some{*}}
   \CASE{(\NT{ctype} \ANY{| \NT{ctype}})}
+
+  \RULE{const\_vol}
+  \CASE{const}
+  \CASE{volatile}
 
   \RULE{generic\_ctype}
   \CASE{\NT{ctype\_qualif}}
@@ -171,10 +175,11 @@ checked by a subsequent analysis.
   \CASE{\opt{\NT{ctype\_qualif}} long}
   \CASE{double}
   \CASE{float}
-  \CASE{\OPT{\T{struct}\OR \T{union}} \T{id} \OPT{\{ \ANY{\NT{struct\_decl\_list}} \}}}
+  \CASE{\OPT{\T{struct}\OR \T{union}} \T{id} \OPT{\{ \any{\NT{struct\_decl\_list}} \}}}
 
   \RULE{ctype\_qualif}
-  \CASE{}
+  \CASE{unsigned}
+  \CASE{signed}
 
   \RULE{struct\_decl\_list}
   \CASE{}
@@ -215,10 +220,6 @@ checked by a subsequent analysis.
   \RULE{pmid\_with\_not\_eq\_mid}
   \CASE{\NT{pmid} \OPT{!= \NT{mid}}}
   \CASE{\NT{pmid} \OPT{!= \ttlb \NT{mid} \ANY{, \NT{mid}} \ttrb}}
-
-\end{grammar}
-
-\begin{grammar}
 \end{grammar}
 
 Subsequently, we refer to arbitrary metavariables as
