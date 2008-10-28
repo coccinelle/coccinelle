@@ -103,6 +103,7 @@ module type GRAPH =
     val extract_is_loop : cfg -> node -> bool
     val print_node :      node -> unit
     val size :            cfg -> int
+    val print_graph :     cfg -> (node * string) list -> unit
   end
 ;;
 
@@ -1746,7 +1747,12 @@ let rec satloop unchecked required required_states
 	else res
     | A.XX(phi) -> failwith "should have been removed" in
     if !Flag_ctl.bench > 0 then triples := !triples + (List.length res);
-    drop_wits required_states res phi (* ) *) in
+    let res = drop_wits required_states res phi (* ) *) in
+
+    (if !Flag_ctl.graphical_trace
+    then
+      G.print_graph grp (List.map (function (s,_,_) -> (s,"red")) res));
+    res in
   
   loop unchecked required required_states phi
 ;;    

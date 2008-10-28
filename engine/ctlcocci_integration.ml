@@ -313,6 +313,10 @@ module CFG =
       Control_flow_c.extract_is_loop (cfg#nodes#find n)
     let print_node i = Format.print_string (i_to_s i)
     let size cfg = cfg#nodes#length
+    let print_graph cfg special_nodes =
+      Ograph_extended.print_ograph_mutable_colored cfg
+	(Filename.temp_file "/tmp" "sat")
+	true special_nodes
   end
 
 
