@@ -87,10 +87,6 @@ BYTECODE_STATIC=-custom
 ##############################################################################
 # Top rules
 ##############################################################################
-eclipse: depend all
-configure:
-	./configure
-
 all: rec $(EXEC)
 opt: rec.opt $(EXEC).opt
 all.opt: opt
@@ -103,6 +99,9 @@ rec.opt:
 clean::
 	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i clean; done 
 
+eclipse: depend all
+configure:
+	./configure
 
 $(EXEC): $(LIBS) $(OBJS)
 	$(OCAMLC) $(BYTECODE_STATIC) -o $@ $(SYSLIBS)  $^
