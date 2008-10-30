@@ -1,5 +1,18 @@
 -*- org -*-
 
+* 0.1.2
+
+** Bugfix:
+- better handling of ifdef on statements in control flow graph.
+
+** Internals: 
+- merge code of yacfe
+
+* 0.1.1
+
+** Langage: 
+ - support for initializer at toplevel, cf -test substruct
+
 * 0.1
 
 ** first public release of the source code:

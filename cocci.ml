@@ -24,11 +24,15 @@ let cprogram_of_file file =
 
 let cprogram_of_file_cached file = 
   let (program2, _stat) = Parse_c.parse_cache file in
-  program2
-
+  if !Flag_cocci.ifdef_to_if
+  then 
+    program2 +> Parse_c.with_program2 (fun asts -> 
+      Cpp_ast_c.cpp_ifdef_statementize asts
+    )
+  else program2
 
 let cfile_of_program program2_with_ppmethod outf = 
-  Unparse_c2.pp_program program2_with_ppmethod outf
+  Unparse_c.pp_program program2_with_ppmethod outf
 
 (* for memoization, contains only one entry, the one for the SP *)
 let _hparse = Hashtbl.create 101
@@ -254,10 +258,10 @@ let show_or_not_ctl_text a b c =
 let show_or_not_celem2 prelude celem = 
   if !Flag.show_trying then 
   (match celem with 
-  | Ast_c.Definition ((funcs,_,_,_c),_) -> 
+  | Ast_c.Definition ({Ast_c.f_name = funcs;},_) -> 
       pr2 (prelude ^ " function: " ^ funcs);
   | Ast_c.Declaration
-      (Ast_c.DeclList ([(Some ((s, _),_), typ, sto, _local), _], _)) ->
+      (Ast_c.DeclList ([{Ast_c.v_namei = Some ((s, _),_);}, _], _)) ->
       pr2 (prelude ^ " variable " ^ s);
   | _ -> 
       pr2 (prelude ^ " something else");
@@ -415,7 +419,7 @@ let sp_contain_typed_metavar rules =
  * serio.c is related we think to #include <linux/serio.h> 
  *)
 
-let includes_to_parse xs = 
+let (includes_to_parse: (Common.filename * Parse_c.program2) list -> 'a) = fun xs ->
   if !Flag_cocci.no_includes
   then []
   else
@@ -424,7 +428,8 @@ let includes_to_parse xs =
       
       cs +> Common.map_filter (fun (c,_info_item) -> 
 	match c with
-	| Ast_c.Include ((x,ii),info_h_pos)  -> 
+	| Ast_c.CppTop (Ast_c.Include {Ast_c.i_include = ((x,ii));
+                         i_rel_pos = info_h_pos;})  -> 
             (match x with
             | Ast_c.Local xs -> 
 		let f = Filename.concat dir (Common.join "/" xs) in
@@ -545,7 +550,9 @@ let compute_new_prefixes xs =
 let rec update_include_rel_pos cs =
   let only_include = cs +> Common.map_filter (fun c -> 
     match c with 
-    | Ast_c.Include ((x,_),(aref, inifdef)) ->
+    | Ast_c.CppTop (Ast_c.Include {Ast_c.i_include = ((x,_));
+                     i_rel_pos = aref;
+                     i_is_in_ifdef = inifdef}) ->
         (match x with
         | Ast_c.Wierd _ -> None
         | _ -> 
@@ -659,7 +666,7 @@ let concat_headers_and_c ccs =
 
 let for_unparser xs = 
   xs +> List.map (fun x -> 
-    (x.ast_c, (x.fullstring, x.tokens_c)), Unparse_c2.PPviastr
+    (x.ast_c, (x.fullstring, x.tokens_c)), Unparse_c.PPviastr
   )
 
 (* --------------------------------------------------------------------- *)
@@ -767,7 +774,7 @@ let rebuild_info_program cs file isexp =
       |	None ->
 	  let file = Common.new_temp_file "cocci_small_output" ".c" in
 	  cfile_of_program 
-            [(c.ast_c, (c.fullstring, c.tokens_c)), Unparse_c2.PPnormal] 
+            [(c.ast_c, (c.fullstring, c.tokens_c)), Unparse_c.PPnormal] 
             file;
 	  
           (* Common.command2 ("cat " ^ file); *)
@@ -1259,7 +1266,7 @@ and process_a_ctl_a_env_a_toplevel2 r e c =
          * trasformation au fichier concerne. *)
 
         (* modify ast via side effect *)
-        ignore(Transformation3.transform r.rulename r.dropped_isos
+        ignore(Transformation_c.transform r.rulename r.dropped_isos
                   inherited_bindings trans_info (Common.some c.flow));
       with Timeout -> raise Timeout | UnixExit i -> raise (UnixExit i)
     end;
