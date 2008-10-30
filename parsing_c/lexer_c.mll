@@ -240,16 +240,16 @@ rule token = parse
   (* misc *)
   (* ---------------------- *)
       
-   (* #pragma pack
-    * #pragma GCC set_debug_pwd
-    * #pragma alloc_text
-    * #pragma options align=packed
-    * #pragma options align=reset
-    * #pragma options align=power
-    * #pragma	pack(2)
-    * etc
+   (* bugfix: I want to keep comments so cant do a    sp [^'\n']+ '\n' 
+    * http://gcc.gnu.org/onlinedocs/gcc/Pragmas.html
     *)
-  | "#pragma" sp  [^'\n']* '\n'  
+  | "#pragma" sp "ident"
+  | "#pragma" sp "pack"
+  | "#pragma" sp "pack(2)"
+  | "#pragma" sp "GCC" sp "set_debug_pwd"
+  | "#pragma" sp "alloc_text"
+  | "#pragma" sp "options" sp "align=packed"
+  | "#pragma" sp "options" sp "align=power"
       { TCommentCpp (CppDirective, tokinfo lexbuf) }
 
   | "#" [' ' '\t']* "ident"   [' ' '\t']+  [^'\n']+ '\n' 
@@ -285,41 +285,8 @@ rule token = parse
 
   | "#" [' ' '\t']* "undef" [' ' '\t']+ id
       { let info = tokinfo lexbuf in 
-        TCommentCpp (CppDirective,info +> tok_add_s (cpp_eat_until_nl lexbuf))
+        TCommentCpp (CppDirective,info)(*+> tok_add_s (cpp_eat_until_nl lexbuf))*)
       }
-
-
-  (* could generate separate token for #, ## and then exten grammar,
-   * but there can be ident in many different places, in expression
-   * but also in declaration, in function name. So having 3 tokens
-   * for an ident does not work well with how we add info in
-   * ast_c. So better to generate just one token, just one info,
-   * even if have later to reanalyse those tokens and unsplit.
-   *)
-
-  | ((id as s)  "...")
-      { TDefParamVariadic (s, tokinfo lexbuf) }
-
-  (* cppext: string concatenation *)
-  |  id   ([' ''\t']* "##" [' ''\t']* id)+ 
-      { let info = tokinfo lexbuf in
-        TIdent (tok lexbuf, info)
-      }
-
-  (* cppext: stringification *)
-  |  "#" id  
-      { let info = tokinfo lexbuf in
-        TIdent (tok lexbuf, info)
-      }
-
-  (* cppext: gccext: ##args for variadic macro *)
-  |  "##" [' ''\t']* id
-      { let info = tokinfo lexbuf in
-        TIdent (tok lexbuf, info)
-      }
-
-  (* only in cpp directives normally *)
-  | "\\" '\n' { TCppEscapedNewline (tokinfo lexbuf) }
 
 
   (* ---------------------- *)
@@ -351,10 +318,10 @@ rule token = parse
   (* '0'+ because sometimes it is a #if 000 *)
   | "#" [' ' '\t']* "if" [' ' '\t']* '0'+           (* [^'\n']*  '\n' *)
       { let info = tokinfo lexbuf in 
-        TIfdefBool (false, info +> tok_add_s (cpp_eat_until_nl lexbuf)) 
+        TIfdefBool (false, info(* +> tok_add_s (cpp_eat_until_nl lexbuf)*)) 
       }
 
-  | "#" [' ' '\t']* "if" [' ' '\t']* '1'   [^'\n']*  '\n'
+  | "#" [' ' '\t']* "if" [' ' '\t']* '1'   (* [^'\n']*  '\n' *)
       { let info = tokinfo lexbuf in 
         TIfdefBool (true, info) 
 
@@ -425,16 +392,61 @@ rule token = parse
       } 
 
 
-  (* can have #endif LINUX *)
-  | "#" [' ' '\t']* "endif" [^'\n']* '\n'    { TEndif     (tokinfo lexbuf) }
+  (* bugfix: can have #endif LINUX  but at the same time if I eat everything
+   * until next line, I may miss some TComment which for some tools
+   * are important such as aComment 
+   *)
+  | "#" [' ' '\t']* "endif" (*[^'\n']* '\n'*) { 
+      TEndif     (tokinfo lexbuf) 
+    }
   (* can be at eof *)
-  | "#" [' ' '\t']* "endif"                  { TEndif     (tokinfo lexbuf) }
+  (*| "#" [' ' '\t']* "endif"                { TEndif     (tokinfo lexbuf) }*)
 
   | "#" [' ' '\t']* "else" [' ' '\t' '\n']   { TIfdefelse (tokinfo lexbuf) }
   (* there is a file in 2.6 that have this *)
   | "##" [' ' '\t']* "else" [' ' '\t' '\n']  { TIfdefelse (tokinfo lexbuf) }
 
 
+
+
+  (* ---------------------- *)
+  (* #define body *)
+  (* ---------------------- *)
+
+  (* could generate separate token for #, ## and then exten grammar,
+   * but there can be ident in many different places, in expression
+   * but also in declaration, in function name. So having 3 tokens
+   * for an ident does not work well with how we add info in
+   * ast_c. So better to generate just one token, just one info,
+   * even if have later to reanalyse those tokens and unsplit.
+   *)
+
+  | ((id as s)  "...")
+      { TDefParamVariadic (s, tokinfo lexbuf) }
+
+  (* cppext: string concatenation *)
+  |  id   ([' ''\t']* "##" [' ''\t']* id)+ 
+      { let info = tokinfo lexbuf in
+        TIdent (tok lexbuf, info)
+      }
+
+  (* cppext: stringification 
+   * bugfix: this case must be after the other cases such as #endif
+   * otherwise take precedent.
+   *)
+  |  "#" id  
+      { let info = tokinfo lexbuf in
+        TIdent (tok lexbuf, info)
+      }
+
+  (* cppext: gccext: ##args for variadic macro *)
+  |  "##" [' ''\t']* id
+      { let info = tokinfo lexbuf in
+        TIdent (tok lexbuf, info)
+      }
+
+  (* only in cpp directives normally *)
+  | "\\" '\n' { TCppEscapedNewline (tokinfo lexbuf) }
 
 
   (* ----------------------------------------------------------------------- *)
@@ -661,6 +673,8 @@ and string  = parse
 	 );
           x ^ string lexbuf
        }
+
+  | eof { pr2 "LEXER: WIERD end of file in string"; ""}
 
  (* Bug if add following code, cos match also the '"' that is needed
   * to finish the string, and so go until end of file.

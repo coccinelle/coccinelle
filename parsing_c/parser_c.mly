@@ -395,10 +395,6 @@ let mk_e e ii = ((e, Ast_c.noType()), ii)
 %token <Ast_c.info> EOF
 
 
-/* operator precedence */
-%nonassoc Tif
-%nonassoc Telse
-
 %left TOrLog
 %left TAndLog
 %left TOr
@@ -522,7 +518,7 @@ postfix_expr:
  | primary_expr               { $1 }
  | postfix_expr TOCro expr TCCro                
      { mk_e(ArrayAccess ($1, $3)) [$2;$4] }
- | postfix_expr TOPar argument_list_ne TCPar  
+ | postfix_expr TOPar argument_list TCPar  
      { mk_e(FunCall ($1, $3)) [$2;$4] }
  | postfix_expr TOPar  TCPar  { mk_e(FunCall ($1, [])) [$2;$3] }
  | postfix_expr TDot   ident  { mk_e(RecordAccess   ($1,fst $3)) [$2;snd $3] }
@@ -554,22 +550,10 @@ primary_expr:
 
 
 /*(* cppext: *)*/
-argument_ne: 
- | assign_expr { Left $1 }
- | parameter_decl { Right (ArgType $1)  }
- | action_higherordermacro_ne { Right (ArgAction $1) }
-
 argument: 
  | assign_expr { Left $1 }
  | parameter_decl { Right (ArgType $1)  }
  | action_higherordermacro { Right (ArgAction $1) }
-
-action_higherordermacro_ne: 
- | taction_list_ne 
-     { if null $1
-       then ActMisc [Ast_c.fakeInfo()]
-       else ActMisc $1
-     }
 
 action_higherordermacro: 
  | taction_list 
@@ -590,9 +574,6 @@ action_higherordermacro:
 ident: 
  | TIdent       { $1 }
  | TypedefIdent { $1 }
-
-identifier:
- | TIdent       { $1 }
 
 /*(* would like evalInt $1 but require too much info *)*/
 const_expr: cond_expr { $1  }
@@ -621,7 +602,6 @@ statement:
 
  /*(* cppext: *)*/
  | TMacroStmt { MacroStmt, [$1] }
- | TMacroStmt TPtVirg { MacroStmt, [$1;$2] }
 
 
 
@@ -636,7 +616,6 @@ labeled:
      { CaseRange ($2, $4, $6), [$1;$3;$5] } /*(* gccext: allow range *)*/
  | Tdefault         TDotDot statement   { Default $3,             [$1; $2] } 
 
-end_labeled: 
  /*(* gccext:  allow toto: }
     * generate each 30 shift/Reduce conflicts,  mais ca va, ca fait ce qu'il
     * faut
@@ -652,8 +631,8 @@ end_labeled:
 
 compound: tobrace compound2 tcbrace { $2, [$1; $3]  }
 
-tobrace:  TOBrace                    {  LP.new_scope (); $1 }
-tcbrace:  TCBrace                    {  LP.del_scope (); $1 }
+tobrace: TOBrace                     {  LP.new_scope (); $1 }
+tcbrace: TCBrace                     {  LP.del_scope (); $1 }
 
 /*(* old:
 compound2: 
@@ -701,7 +680,7 @@ expr_statement:
  | expr TPtVirg { Some $1, [$2] }
 
 selection: 
- | Tif TOPar expr TCPar statement %prec Tif           
+ | Tif TOPar expr TCPar statement                 
      { If ($3, $5, (ExprStatement None, [])),   [$1;$2;$4] }
  | Tif TOPar expr TCPar statement Telse statement 
      { If ($3, $5, $7),  [$1;$2;$4;$6] }
@@ -724,7 +703,7 @@ iteration:
      }
 *)*/
  /*(* cppext: *)*/
- | TMacroIterator TOPar argument_list_ne TCPar statement
+ | TMacroIterator TOPar argument_list TCPar statement
      { MacroIteration (fst $1, $3, $5), [snd $1;$2;$4] }
  | TMacroIterator TOPar TCPar statement
      { MacroIteration (fst $1, [], $4), [snd $1;$2;$3] }
@@ -760,9 +739,9 @@ colon_option:
  | TString                      { ColonMisc, [snd $1] }
  | TString TOPar asm_expr TCPar { ColonExpr $3, [snd $1; $2;$4] } 
  /*(* cppext: certainly a macro *)*/
- | TOCro identifier TCCro TString TOPar asm_expr TCPar
+ | TOCro TIdent TCCro TString TOPar asm_expr TCPar
      { ColonExpr $6, [$1;snd $2;$3;snd $4; $5; $7 ] }
- | identifier                       { ColonMisc, [snd $1] }
+ | TIdent                           { ColonMisc, [snd $1] }
  | /*(* empty *)*/                  { ColonMisc, [] }
 
 asm_expr: assign_expr { $1 }
@@ -958,7 +937,7 @@ type_qualif_list:
  | type_qualif_list type_qualif { addQualifD ($2,$1) }
 
 direct_d: 
- | identifier                                  
+ | TIdent                                  
      { ($1, fun x -> x) }
  | TOPar declarator TCPar      /*(* forunparser: old: $2 *)*/ 
      { (fst $2, fun x -> (nQ, (ParenType ((snd $2) x), [$1;$3]))) }
@@ -1249,9 +1228,8 @@ statement_list:
 *)*/
 
 stat_or_decl_list: 
- | stat_or_decl { [$1] }
- | end_labeled  { [Labeled      (fst $1), snd $1] }
- | stat_or_decl stat_or_decl_list { $1 :: $2 }
+ | stat_or_decl { [$1] }                          
+ | stat_or_decl_list stat_or_decl { $1 ++ [$2] }
 
 
 
@@ -1269,10 +1247,6 @@ colon_option_list:
  | colon_option_list TComma colon_option { $1 ++ [$3, [$2]] }
 
 
-
-argument_list_ne: 
- | argument_ne                           { [$1, []] }
- | argument_list_ne TComma argument { $1 ++ [$3,    [$2]] }
 
 argument_list: 
  | argument                           { [$1, []] }
@@ -1309,13 +1283,10 @@ parameter_list:
  | parameter_decl                       { [$1, []] }
  | parameter_list TComma parameter_decl { $1 ++ [$3,  [$2]] }
 
-taction_list_ne: 
- | TAction                 { [$1] }
- | TAction taction_list_ne { $1 :: $2 }
-
 taction_list: 
- |                      { [] }
- | TAction taction_list { $1 :: $2 }
+ | /*(* empty *)*/ { [] }
+ | TAction { [$1] }
+ | taction_list TAction { $1 ++ [$2] }
 
 param_define_list: 
  | /*(* empty *)*/ { [] }
@@ -1356,15 +1327,15 @@ opt_ptvirg:
 /*(* cppext: *)*/
 cpp_directive: 
 
- | identifier TOPar argument_list TCPar TPtVirg
+ | TIdent TOPar argument_list TCPar TPtVirg
      { MacroTop (fst $1, $3,    [snd $1;$2;$4;$5]) } 
 
  /*(* TCParEOL to fix the end-of-stream bug of ocamlyacc *)*/
- | identifier TOPar argument_list TCParEOL
+ | TIdent TOPar argument_list TCParEOL
      { MacroTop (fst $1, $3,    [snd $1;$2;$4;fakeInfo()]) } 
 
   /*(* ex: EXPORT_NO_SYMBOLS; *)*/
- | identifier TPtVirg { EmptyDef [snd $1;$2] }
+ | TIdent TPtVirg { EmptyDef [snd $1;$2] }
 
  | TIncludeStart TIncludeFilename 
      { 
@@ -1417,7 +1388,7 @@ define_val:
  | /*(* empty *)*/ { DefineEmpty }
 
 param_define:
- | identifier           { fst $1, [snd $1] } 
+ | TIdent               { fst $1, [snd $1] } 
  | TypedefIdent         { fst $1, [snd $1] } 
  | TDefParamVariadic    { fst $1, [snd $1] } 
  | TEllipsis            { "...", [$1] }
@@ -1435,7 +1406,15 @@ external_declaration:
 
 function_definition: function_def    { fixFunc $1 }
 
-function_def: start_fun compound { LP.del_scope(); ($1, $2) }
+decl_list: 
+ | decl           { [$1]   }
+ | decl_list decl { $1 ++ [$2] }
+
+function_def: start_fun compound      { LP.del_scope(); ($1, $2) }
+ | start_fun decl_list compound      { 
+     pr2 "OLD STYLE DECL NOT WELL SUPPORTED";
+     LP.del_scope(); ($1, $3) 
+   }
 
 start_fun: start_fun2                        
   { LP.new_scope(); 

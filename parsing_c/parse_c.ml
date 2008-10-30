@@ -41,14 +41,15 @@ let error_msg_tok tok =
 
 
 let print_bad line_error (start_line, end_line) filelines  = 
-  if !Flag_parsing_c.verbose_parsing
-  then
   begin
     pr2 ("badcount: " ^ i_to_s (end_line - start_line));
+
     for i = start_line to end_line do 
+      let line = filelines.(i) in 
+
       if i = line_error 
-      then  pr2 ("BAD:!!!!!" ^ " " ^ filelines.(i)) 
-      else  pr2 ("bad:" ^ " " ^      filelines.(i)) 
+      then  pr2 ("BAD:!!!!!" ^ " " ^ line) 
+      else  pr2 ("bad:" ^ " " ^      line) 
     done
   end
 
@@ -123,8 +124,8 @@ let print_parsing_stat_list = fun statxs ->
           {have_timeout = false; bad = 0} -> true | _ -> false)
       +> List.length 
   in
-  pr2 "\n\n\n---------------------------------------------------------------";
-  pr2 "pbs with files:";
+  pr "\n\n\n---------------------------------------------------------------";
+  pr "pbs with files:";
   statxs 
     +> List.filter (function 
       | {have_timeout = true} -> true 
@@ -132,11 +133,11 @@ let print_parsing_stat_list = fun statxs ->
       | _ -> false)
     +> List.iter (function 
         {filename = file; have_timeout = timeout; bad = n} -> 
-          pr2 (file ^ "  " ^ (if timeout then "TIMEOUT" else i_to_s n));
+          pr (file ^ "  " ^ (if timeout then "TIMEOUT" else i_to_s n));
         );
 
-  pr2 "\n\n\n";
-  pr2 "files with lots of tokens passed/commentized:";
+  pr "\n\n\n";
+  pr "files with lots of tokens passed/commentized:";
   let threshold_passed = 100 in
   statxs 
     +> List.filter (function 
@@ -144,11 +145,11 @@ let print_parsing_stat_list = fun statxs ->
       | _ -> false)
     +> List.iter (function 
         {filename = file; commentized = n} -> 
-          pr2 (file ^ "  " ^ (i_to_s n));
+          pr (file ^ "  " ^ (i_to_s n));
         );
 
-  pr2 "\n\n\n---------------------------------------------------------------";
-  pr2 (
+  pr "\n\n\n---------------------------------------------------------------";
+  pr (
   (sprintf "NB total files = %d; " total) ^
   (sprintf "perfect = %d; " perfect) ^
   (sprintf "pbs = %d; "     (statxs +> List.filter (function 
@@ -166,11 +167,11 @@ let print_parsing_stat_list = fun statxs ->
   in
   let gf, badf = float_of_int good, float_of_int bad in
   let passedf = float_of_int passed in
-  pr2 (
+  pr (
   (sprintf "nb good = %d,  nb passed = %d " good passed) ^
   (sprintf "=========> %f"  (100.0 *. (passedf /. gf)) ^ "%")
    );
-  pr2 (
+  pr (
   (sprintf "nb good = %d,  nb bad = %d " good bad) ^
   (sprintf "=========> %f"  (100.0 *. (gf /. (gf +. badf))) ^ "%"
    )
@@ -705,8 +706,13 @@ let rec comment_until_defeol xs =
           Parser_c.TCommentCpp (Ast_c.CppDirective, TH.info_of_tok x)
           ::xs
       | _ -> 
-          Parser_c.TCommentCpp (Ast_c.CppOther, TH.info_of_tok x)
-          ::comment_until_defeol xs
+          let x' = 
+            (* bugfix: otherwise may lose a TComment token *)
+            if TH.is_real_comment x
+            then x
+            else Parser_c.TCommentCpp (Ast_c.CppOther, TH.info_of_tok x)
+          in
+          x'::comment_until_defeol xs
       )
 
 let drop_until_defeol xs = 
@@ -892,9 +898,9 @@ let parse_print_error_heuristic2 file =
   (* call lexer and get all the tokens *)
   (* -------------------------------------------------- *)
   LP.lexer_reset_typedef(); 
-  let toks = tokens file in
+  let toks_orig = tokens file in
 
-  let toks = Parsing_hacks.fix_tokens_define toks in
+  let toks = Parsing_hacks.fix_tokens_define toks_orig in
   let toks = Parsing_hacks.fix_tokens_cpp toks in
 
   let filelines = (""::Common.cat file) +> Array.of_list in
@@ -930,6 +936,11 @@ let parse_print_error_heuristic2 file =
      *  cos we know that they are the last symbols of external_declaration2.
      *)
     let checkpoint = TH.line_of_tok tr.current in
+    (* bugfix: may not be equal to 'file' as after macro expansions we can
+     * start to parse a new entity from the body of a macro, for instance
+     * when parsing a define_machine() body, cf standard.h
+     *)
+    let checkpoint_file = TH.file_of_tok tr.current in
 
     tr.passed <- [];
     let was_define = ref false in
@@ -966,6 +977,7 @@ let parse_print_error_heuristic2 file =
             tr.rest_clean <- (tr.rest +> List.filter TH.is_not_comment);
 
             let checkpoint2 = TH.line_of_tok tr.current in (* <> line_error *)
+            let checkpoint2_file = TH.file_of_tok tr.current in
 
             (* was a define ? *)
             let xs = tr.passed +> List.rev +> List.filter TH.is_not_comment in
@@ -980,7 +992,12 @@ let parse_print_error_heuristic2 file =
             
             if !was_define && !Flag_parsing_c.filter_define_error
             then ()
-            else print_bad line_error (checkpoint, checkpoint2) filelines;
+            else 
+              (* bugfix: *)
+              if (checkpoint_file = checkpoint2_file) && checkpoint_file = file
+              then print_bad line_error (checkpoint, checkpoint2) filelines
+              else pr2 "PB: bad: but on tokens not from original file"
+              ;
 
 
             let info_of_bads = Common.map_eff_rev TH.info_of_tok tr.passed in 
@@ -991,7 +1008,18 @@ let parse_print_error_heuristic2 file =
 
     (* again not sure if checkpoint2 corresponds to end of bad region *)
     let checkpoint2 = TH.line_of_tok tr.current in
-    let diffline = (checkpoint2 - checkpoint) in
+    let checkpoint2_file = TH.file_of_tok tr.current in
+    let diffline = 
+      if (checkpoint_file = checkpoint2_file) && (checkpoint_file = file)
+      then (checkpoint2 - checkpoint) 
+      else 0
+        (* TODO? so if error come in middle of something ? where the
+         * start token was from original file but synchro found in body
+         * of macro ? then can have wrong number of lines stat.
+         * Maybe simpler just to look at tr.passed and count
+         * the lines in the token from the correct file ?
+         *)
+    in
     let info = mk_info_item file (List.rev tr.passed) in 
 
     stat.commentized <- stat.commentized + count_lines_commentized (snd info);
@@ -1025,14 +1053,19 @@ let parse_c_and_cpp a = parse_print_error_heuristic a
 let parse_cache file = 
   if not !Flag_parsing_c.use_cache then parse_print_error_heuristic file 
   else 
+  let _ = pr2 "TOFIX" in
   let need_no_changed_files = 
     (* should use Sys.argv.(0), would be safer. *)
-    [Config.path ^ "/parsing_c/c_parser.cma";
-     (* we may also depend now on the semantic patch because 
-        the SP may use macro and so we will disable some of the
-        macro expansions from standard.h. 
-     *)
-     !Config.std_h;
+
+    [
+      (* TOFIX
+      Config.path ^ "/parsing_c/c_parser.cma";
+      (* we may also depend now on the semantic patch because 
+         the SP may use macro and so we will disable some of the
+         macro expansions from standard.h. 
+      *)
+      !Config.std_h;
+      *)
     ] 
   in
   let need_no_changed_variables = 
