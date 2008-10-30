@@ -90,6 +90,7 @@ BYTECODE_STATIC=-custom
 all: rec $(EXEC)
 opt: rec.opt $(EXEC).opt
 all.opt: opt
+top: $(EXEC).top
 
 rec:
 	set -e; for i in $(MAKESUBDIRS); \
@@ -193,12 +194,14 @@ OCAMLVERSION=$(shell ocaml -version |perl -p -e 's/.*version (.*)/$$1/;')
 #  cvs update -d -P
 #  touch **/*
 #  make licensify
+#  remember to comment the -g -dtypes in this Makefile
 
 # Procedure to do each time:
 #  cvs update
 #  ./configure --without-python
 #  make package
 #  make website
+# Check also that run an ocaml in /usr/bin
 
 # To test you can try compile and run spatch from different instances 
 # like my ~/coccinelle, ~/release/coccinelle, and the /tmp/coccinelle-0.X 
@@ -231,14 +234,14 @@ srctar:
 bintar: all
 	rm -f $(TMP)/$(PACKAGE)
 	ln -s `pwd` $(TMP)/$(PACKAGE)
-	cd $(TMP); tar cvfz $(PACKAGE)-bin-x86.tgz $(BINSRC2)
+	cd $(TMP); tar cvfz $(PACKAGE)-bin-x86.tgz --exclude=CVS $(BINSRC2)
 	rm -f $(TMP)/$(PACKAGE)
 
 staticbintar: all.opt
 	rm -f $(TMP)/$(PACKAGE)
 	ln -s `pwd` $(TMP)/$(PACKAGE)
 	make static
-	cd $(TMP); tar cvfz $(PACKAGE)-bin-x86-static.tgz $(BINSRC2)
+	cd $(TMP); tar cvfz $(PACKAGE)-bin-x86-static.tgz --exclude=CVS $(BINSRC2)
 	rm -f $(TMP)/$(PACKAGE)
 
 # add ocaml version in name ?
@@ -246,7 +249,7 @@ bytecodetar: all
 	rm -f $(TMP)/$(PACKAGE)
 	ln -s `pwd` $(TMP)/$(PACKAGE)
 	make purebytecode
-	cd $(TMP); tar cvfz $(PACKAGE)-bin-bytecode-$(OCAMLVERSION).tgz $(BINSRC2)
+	cd $(TMP); tar cvfz $(PACKAGE)-bin-bytecode-$(OCAMLVERSION).tgz --exclude=CVS $(BINSRC2)
 	rm -f $(TMP)/$(PACKAGE)
 
 clean::
