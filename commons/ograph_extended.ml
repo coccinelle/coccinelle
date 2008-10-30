@@ -255,6 +255,36 @@ let generate_ograph_xxx g filename special_nodes =
     Unix.system ("dot " ^ filename ^ " -Tps  -o " ^ filename ^ ".ps;") in
   ()
 
+
+
+(* to fix!!! *)
+let generate_ograph_xxx_notext g filename special_nodes =
+  with_open_outfile filename (fun (pr,_) ->
+    pr "digraph misc {\n" ;
+    pr "size = \"10,10\";\n" ;
+
+    let nodes = g#nodes in
+    nodes#iter (fun (k,node) -> 
+     (* so can see if nodes without arcs were created *) 
+      try
+	let color = List.assoc node special_nodes in
+	pr (sprintf "%d [label=\"[%d]\",color=%s];" k k color)
+      with Not_found ->
+	pr (sprintf "%d [label=\"[%d]\"];" k k)
+    );
+
+    nodes#iter (fun (k,node) -> 
+      let succ = g#successors k in
+      succ#iter (fun (j,edge) ->
+        pr (sprintf "%d -> %d;\n" k j);
+      );
+    );
+    pr "}\n" ;
+    );
+  let _status = 
+    Unix.system ("dot " ^ filename ^ " -Tps  -o " ^ filename ^ ".ps;") in
+  ()
+
 let launch_gv filename =
   let _status = Unix.system ("gv " ^ filename ^ ".ps &")
   in
@@ -272,9 +302,9 @@ let print_ograph_mutable g filename launchgv =
   if launchgv then launch_gv filename
 
 let print_ograph_extended_colored g filename launchgv special_nodes =
-  generate_ograph_xxx g filename special_nodes;
+  generate_ograph_xxx_notext g filename special_nodes;
   if launchgv then launch_gv filename
 
 let print_ograph_mutable_colored g filename launchgv special_nodes = 
-  generate_ograph_xxx g filename special_nodes;
+  generate_ograph_xxx_notext g filename special_nodes;
   if launchgv then launch_gv filename

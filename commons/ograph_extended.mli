@@ -73,14 +73,14 @@ val print_ograph_mutable :
 
 
 val print_ograph_extended_colored : 
-  ('node * string, 'edge) ograph_extended -> 
+  ('node, 'edge) ograph_extended -> 
   filename (* output file *) -> 
   bool (* launch gv ? *) -> 
   ('node * string) list (* nodes and colors *) ->
   unit
 
 val print_ograph_mutable_colored : 
-  ('node * string, 'edge) ograph_mutable -> 
+  ('node, 'edge) ograph_mutable -> 
   filename (* output file *) -> 
   bool (* launch gv ? *) ->
   ('node * string) list (* nodes and colors *) ->
