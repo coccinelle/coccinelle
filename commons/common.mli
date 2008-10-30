@@ -31,6 +31,8 @@ val debugger : bool ref
 
 type prof = PALL | PNONE | PSOME of string list
 val profile : prof ref
+val show_trace_profile : bool ref
+
 
 val verbose_level : int ref
 
@@ -63,6 +65,7 @@ val save_tmp_files : bool ref
 (*###########################################################################*)
 
 type filename = string
+type dirname = string
 
 (* Trick in case you dont want to do an 'open Common' while still wanting
  * more pervasive types than the one in Pervasives. Just do the selective
@@ -214,6 +217,9 @@ val _profile_table : (string, (float ref * int ref)) Hashtbl.t ref
 val profile_code : string -> (unit -> 'a) -> 'a
 val profile_diagnostic : unit -> string
 
+val profile_code_exclusif : string -> (unit -> 'a) -> 'a
+val profile_code_inside_exclusif_ok : string -> (unit -> 'a) -> 'a
+
 val report_if_take_time : int -> string -> (unit -> 'a) -> 'a
 
 (* similar to profile_code but print some information during execution too *)
@@ -276,6 +282,7 @@ val laws2 :
 
 (* just wrappers around Marshall *)
 val get_value : filename -> 'a
+val read_value : filename -> 'a (* alias *)
 val write_value : 'a -> filename -> unit
 val write_back : ('a -> 'b) -> filename -> unit
 
@@ -591,9 +598,6 @@ val ( /! ) : int -> int -> int
 val do_n : int -> (unit -> unit) -> unit
 val foldn : ('a -> int -> 'a) -> 'a -> int -> 'a
 
-val sum_float : float list -> float
-val sum_int : int list -> int
-
 val pi : float
 val pi2 : float
 val pi4 : float
@@ -786,11 +790,14 @@ val size_ko : int -> string
 
 val edit_distance: string -> string -> int 
 
+val md5sum_of_string : string -> string 
+
 (*****************************************************************************)
 (* Regexp *)
 (*****************************************************************************)
 
 val regexp_alpha : Str.regexp
+val regexp_word : Str.regexp
 
 val _memo_compiled_regexp : (string, Str.regexp) Hashtbl.t
 val ( =~ ) : string -> string -> bool
@@ -819,6 +826,11 @@ val join : string (* sep *) -> string list -> string
 val split_list_regexp : string -> string list -> (string * string list) list
 
 val all_match : string (* regexp *) -> string -> string list
+val global_replace_regexp : 
+  string (* regexp *) -> (string -> string) -> string -> string
+
+val regular_words: string -> string list
+val contain_regular_word: string -> bool
 
 (*****************************************************************************)
 (* Filenames *)
@@ -948,6 +960,11 @@ val rough_days_between_dates : date_dmy -> date_dmy -> days
 
 val string_of_unix_time_lfs : Unix.tm -> string
 
+val is_more_recent : date_dmy -> date_dmy -> bool
+val max_dmy : date_dmy -> date_dmy -> date_dmy
+val min_dmy : date_dmy -> date_dmy -> date_dmy
+val maximum_dmy : date_dmy list -> date_dmy
+val minimum_dmy : date_dmy list -> date_dmy
 
 (*****************************************************************************)
 (* Lines/Words/Strings *)
@@ -1087,6 +1104,7 @@ val exn_to_real_unixexit : (unit -> 'a) -> 'a
 (* List *)
 (*****************************************************************************)
 
+
 (* tail recursive efficient map (but that also reverse the element!) *)
 val map_eff_rev : ('a -> 'b) -> 'a list -> 'b list
 (* tail recursive efficient map, use accumulator  *)
@@ -1116,6 +1134,7 @@ val fpartition : ('a -> 'b option) -> 'a list -> 'b list * 'a list
 
 val groupBy : ('a -> 'a -> bool) -> 'a list -> 'a list list
 val exclude_but_keep_attached: ('a -> bool) -> 'a list -> ('a * 'a list) list
+val group_by_post: ('a -> bool) -> 'a list -> ('a list * 'a) list * 'a list
 
 (* use hash internally to not be in O(n2) *)
 val group_assoc_bykey_eff : ('a * 'b) list -> ('a * 'b list) list
@@ -1213,6 +1232,10 @@ val prepare_want_all_assoc : ('a * 'b) list -> ('a * 'b list) list
 
 val or_list : bool list -> bool
 val and_list : bool list -> bool
+
+val sum_float : float list -> float
+val sum_int : int list -> int
+val avg_list: int list -> float 
 
 val return_when : ('a -> 'b option) -> 'a list -> 'b
 
@@ -1379,6 +1402,7 @@ val lookup_list : 'a -> ('a, 'b) assoc list -> 'b
 val lookup_list2 : 'a -> ('a, 'b) assoc list -> 'b * int
 
 val assoc_option : 'a -> ('a, 'b) assoc -> 'b option
+val assoc_with_err_msg : 'a -> ('a, 'b) assoc -> 'b
 
 (*****************************************************************************)
 (* Assoc, specialized. *)
@@ -1696,6 +1720,7 @@ type parse_info = {
   } 
 val fake_parse_info : parse_info
 val string_of_parse_info : parse_info -> string
+val string_of_parse_info_bis : parse_info -> string
 
 (* array[i] will contain the (line x col) of the i char position *)
 val full_charpos_to_pos : filename -> (int * int) array

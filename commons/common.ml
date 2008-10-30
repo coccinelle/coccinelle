@@ -190,6 +190,8 @@ let (with_open_stringbuf: (((string -> unit) * Buffer.t) -> unit) -> string) =
   Buffer.contents buf
 
 
+let foldl1 p = function x::xs -> List.fold_left p x xs | _ -> failwith "foldl1"
+
 (*****************************************************************************)
 (* Debugging/logging *)
 (*****************************************************************************)
@@ -545,6 +547,7 @@ let time_func f =
 
 type prof = PALL | PNONE | PSOME of string list
 let profile = ref PNONE
+let show_trace_profile = ref false
 
 let check_profile category =
   match !profile with
@@ -553,23 +556,8 @@ let check_profile category =
   | PSOME l -> List.mem category l
 
 let _profile_table = ref (Hashtbl.create 100)
-let profile_start category = failwith "todo"
-let profile_end category = failwith "todo"
 
-(* subtil: don't forget to give all argumens to f, otherwise partial app
- * and will profile nothing.
- *)  
-let profile_code category f = 
-  if not (check_profile category)
-  then f() 
-  else begin
-  let t = Unix.gettimeofday () in
-  let res, prefix = 
-    try Some (f ()), ""
-    with Timeout -> None, "*"
-  in
-  let category = prefix ^ category in (* add a '*' to indicate timeout func *)
-  let t' = Unix.gettimeofday () in
+let adjust_profile_entry category difftime =
   let (xtime, xcount) = 
     (try Hashtbl.find !_profile_table category
     with Not_found -> 
@@ -578,13 +566,63 @@ let profile_code category f =
       Hashtbl.add !_profile_table category (xtime, xcount);
       (xtime, xcount)
     ) in
-  xtime := !xtime +. (t' -. t);
+  xtime := !xtime +. difftime;
   xcount := !xcount + 1;
+  ()
+
+let profile_start category = failwith "todo"
+let profile_end category = failwith "todo"
+
+
+(* subtil: don't forget to give all argumens to f, otherwise partial app
+ * and will profile nothing.
+ *)  
+let profile_code category f = 
+  if not (check_profile category)
+  then f() 
+  else begin
+  if !show_trace_profile then pr2 (spf "p: %s" category);
+  let t = Unix.gettimeofday () in
+  let res, prefix = 
+    try Some (f ()), ""
+    with Timeout -> None, "*"
+  in
+  let category = prefix ^ category in (* add a '*' to indicate timeout func *)
+  let t' = Unix.gettimeofday () in
+
+  adjust_profile_entry category (t' -. t);
   (match res with
   | Some res -> res
   | None -> raise Timeout
   );
   end
+
+
+let _is_in_exclusif = ref (None: string option) 
+
+let profile_code_exclusif category f = 
+  if not (check_profile category)
+  then f() 
+  else begin
+
+  match !_is_in_exclusif with
+  | Some s -> 
+      failwith (spf "profile_code_exclusif: %s but already in %s " category s);
+  | None -> 
+      _is_in_exclusif := (Some category);
+      finalize 
+        (fun () -> 
+          profile_code category f
+        ) 
+        (fun () -> 
+          _is_in_exclusif := None
+        )
+
+  end
+
+let profile_code_inside_exclusif_ok category f = 
+  failwith "Todo"
+
 
 (* todo: also put  % ? also add % to see if coherent numbers *)
 let profile_diagnostic () = 
@@ -891,6 +929,8 @@ let write_value valu filename =
 let write_back func filename = 
   write_value (func (get_value filename)) filename
 
+
+let read_value f = get_value f
 
 
 (*****************************************************************************)
@@ -2017,7 +2057,28 @@ let all_match re s =
 
 let _ = example (all_match "\\(@[A-Za-z]+\\)" "ca va @Et toi @Comment" 
                   = ["@Et";"@Comment"])
-  
+
+
+let global_replace_regexp re f_on_substr s = 
+  let regexp = Str.regexp re in
+  Str.global_substitute regexp (fun _wholestr -> 
+
+    let substr = Str.matched_string s in
+    f_on_substr substr
+  ) s
+
+
+let regexp_word_str = 
+  "\\([a-zA-Z_][A-Za-z_0-9]*\\)"
+let regexp_word = Str.regexp regexp_word_str
+
+let regular_words s = 
+  all_match regexp_word_str s
+
+let contain_regular_word s = 
+  let xs = regular_words s in
+  List.length xs >= 1
+
 
 
 (*****************************************************************************)
@@ -2104,6 +2165,9 @@ let size_ko i =
 
 
 
+ 
+
+
 (* done in summer 2007 for julia 
  * Reference: P216 of gusfeld book
  * For two strings S1 and S2, D(i,j) is defined to be the edit distance of S1[1..i] to S2[1..j]
@@ -2170,6 +2234,7 @@ let dirname = Filename.dirname
 let basename = Filename.basename
 
 type filename = string (* TODO could check that exist :) type sux *)
+type dirname = string (* TODO could check that exist :) type sux *)
 
 module BasicType = struct
   type filename = string
@@ -2577,15 +2642,34 @@ let rough_days_since_jesus (DMY (Day nday, month, Year year)) =
 
 
 
+let is_more_recent d1 d2 = 
+  let (Days n1) = rough_days_since_jesus d1 in
+  let (Days n2) = rough_days_since_jesus d2 in
+  (n1 > n2) 
+
+
+let max_dmy d1 d2 = 
+  if is_more_recent d1 d2 
+  then d1
+  else d2
+
+let min_dmy d1 d2 = 
+  if is_more_recent d1 d2 
+  then d2
+  else d1
+
+
+let maximum_dmy ds = 
+  foldl1 max_dmy ds
+
+let minimum_dmy ds = 
+  foldl1 min_dmy ds
+  
+
 
 let rough_days_between_dates d1 d2 = 
   let (Days n1) = rough_days_since_jesus d1 in
   let (Days n2) = rough_days_since_jesus d2 in
-  if (n2 < n1) 
-  then pr2 (spf "wierd date, d1 < d2: %s  vs %s " 
-               (string_of_date_dmy d1)
-               (string_of_date_dmy d2));
-
   Days (n2 - n1)
 
 let _ = example 
@@ -3327,6 +3411,25 @@ let (exclude_but_keep_attached: ('a -> bool) -> 'a list -> ('a * 'a list) list)=
 let _ = example
   (exclude_but_keep_attached (fun x -> x = 3) [3;3;1;3;2;3;3;3] = 
       [(1,[3;3]);(2,[3])])
+
+let (group_by_post: ('a -> bool) -> 'a list -> ('a list * 'a) list * 'a list)=
+ fun f xs -> 
+   let rec aux_filter grouped_acc acc = function
+   | [] -> 
+       List.rev grouped_acc, List.rev acc
+   | x::xs -> 
+       if f x 
+       then 
+         aux_filter ((List.rev acc,x)::grouped_acc) [] xs
+       else 
+         aux_filter grouped_acc (x::acc) xs
+   in
+   aux_filter [] [] xs
+
+let _ = example
+  (group_by_post (fun x -> x = 3) [1;1;3;2;3;4;5;3;6;6;6] = 
+      ([([1;1],3);([2],3);[4;5],3], [6;6;6]))
+
                                            
 
 let rec (split_when: ('a -> bool) -> 'a list -> 'a list * 'a * 'a list) = 
@@ -3396,6 +3499,10 @@ let index_list_1 xs =
 let or_list  = List.fold_left (||) false
 let and_list = List.fold_left (&&) true
 
+let avg_list xs = 
+  let sum = sum_int xs in
+  (float_of_int sum) /. (float_of_int (List.length xs))
+
 let snoc x xs = xs @ [x]
 let cons x xs = x::xs
 
@@ -3428,7 +3535,8 @@ let remove x xs =
 let exclude p xs = 
   List.filter (fun x -> not (p x)) xs
 
-let foldl1 p = function x::xs -> List.fold_left p x xs | _ -> failwith "foldl1"
+(* now in prelude 
+*)
 
 let fold_k f lastk acc xs = 
   let rec fold_k_aux acc = function
@@ -4111,6 +4219,12 @@ let _ = example (lookup_list2 "c" [["a",1;"b",2];["a",1;"b",3];["a",1;"c",7]] = 
 let assoc_option  k l = 
   optionise (fun () -> List.assoc k l)
 
+let assoc_with_err_msg k l =
+  try List.assoc k l 
+  with Not_found -> 
+    pr2 (spf "pb assoc_with_err_msg: %s" (dump k));
+    raise Not_found
+
 (*****************************************************************************)
 (* Assoc int -> xxx with binary tree.  Have a look too at Mapb.mli *)
 (*****************************************************************************)
@@ -4706,6 +4820,8 @@ let fake_parse_info = {
 
 let string_of_parse_info x = 
   spf "%s at %s:%d:%d" x.str x.file x.line x.column
+let string_of_parse_info_bis x = 
+  spf "%s:%d:%d" x.file x.line x.column
 
 
 let (info_from_charpos2: int -> filename -> (int * int * string)) = 
@@ -5155,6 +5271,8 @@ let cmdline_flags_verbose () =
     " <int> guess what";
     "-disable_pr2_once",     Arg.Set disable_pr2_once, 
     "   to print more messages";
+    "-show_trace_profile",          Arg.Set show_trace_profile, 
+    "   show trace";
   ]
 
 let cmdline_flags_other () = 
@@ -5257,6 +5375,18 @@ let main_boilerplate f =
        )
     )
 (* let _ = if not !Sys.interactive then (main ()) *)
+
+
+(* based on code found in cameleon from maxence guesdon *)
+let md5sum_of_string s =
+  let com = spf "echo %s | md5sum | cut -d\" \" -f 1"
+      (Filename.quote s)
+  in
+  match cmd_to_list com with
+  | [s] -> 
+      (*pr2 s;*)
+      s
+  | _ -> failwith "md5sum_of_string wrong output"
 
 
 (*****************************************************************************)

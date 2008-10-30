@@ -71,6 +71,11 @@ object(o: 'o)
   method virtual null: bool      (* can do default with: lenght(tolist)= 0 *)
 
 
+  method add2: 'a -> unit = fun a -> 
+    o#add a +> ignore;
+    ()
+
+
 
   method fold: 'b. ('b -> 'a -> 'b) -> 'b -> 'b = fun f a -> 
     let a = ref a in 

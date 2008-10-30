@@ -14,7 +14,7 @@ MYSRC=common.ml common_extra.ml \
       oarray.ml \
       ograph2way.ml ograph_extended.ml \
       ofullcommon.ml \
-      glimpse.ml
+      glimpse.ml parser_combinators.ml
 
 # src from other authors, got from the web or caml hump
 SRC=ocamlextra/dumper.ml 
@@ -23,7 +23,6 @@ SRC+=ocamlextra/setb.ml ocamlextra/mapb.ml # defunctorized version of standard s
 SRC+=ocamlextra/setPt.ml
 SRC+=$(MYSRC)
 SRC+=ocamlextra/enum.ml ocamlextra/dynArray.ml
-SRC+=ocamlextra/parser_combinators.ml
 SRC+=ocamlextra/suffix_tree.ml ocamlextra/suffix_tree_ext.ml 
 
 SYSLIBS=str.cma unix.cma   
@@ -59,12 +58,6 @@ PYSYSLIBS=python.cma
 MPIINCLUDES=-I ../ocamlmpi -I ../../ocamlmpi -I +ocamlmpi 
 MYMPISRC=distribution.ml
 MPISYSLIBS=mpi.cma
-
-#ocamlmpi
-MPIINCLUDES=-I ../ocamlmpi -I ../../ocamlmpi -I +ocamlmpi 
-MYMPISRC=distribution.ml
-MPISYSLIBS=mpi.cma
-
 
 #-----------------------------------------------------------------------------
 # Other stuff
