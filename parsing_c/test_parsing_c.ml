@@ -161,7 +161,6 @@ let test_parse_unparse infile =
   if not (infile =~ ".*\\.c") 
   then pr2 "warning: seems not a .c file";
 
-(* for cocci: to remove one day
   let (program2, _stat) = Parse_c.parse_print_error_heuristic infile in
   let program2_with_ppmethod = 
     program2 +> List.map (fun x -> x, Unparse_c2.PPnormal)
@@ -171,7 +170,6 @@ let test_parse_unparse infile =
   (* if want see diff of space => no -b -B *)
   Common.command2 (spf "diff -u -p  %s %s" infile tmpfile);
   (* +> Transformation.test_simple_trans1;*)
-*)
   ()
 
 
@@ -194,7 +192,6 @@ let test_type_c infile =
     )
     +> Common.uncurry Common.zip
   in
-(* for cocci: to remove one day *)
   let program2_with_ppmethod = 
     program2 +> List.map (fun x -> x, Unparse_c2.PPnormal)
   in
