@@ -1,8 +1,8 @@
 open Common 
 
-(* Try detect some cpp idioms so can parse as is files by adjusting or
+(* Try detect some cpp idioms so can parse as-is files by adjusting or
  * commenting some tokens. Parsing hack style. Sometime use indentation info,
- * Sometimes do some kind of lalr(k) by finding patterns. Often try to
+ * sometimes do some kind of lalr(k) by finding patterns. Often try to
  * work on better token representation, like ifdef-paren-ized, brace-ized,
  * paren-ized, so can do easier pattern matching to more easily match
  * complex cpp idiom pattern. Also try to get context info such as
@@ -32,18 +32,38 @@ open Common
  * end-of-line token.
  *)
 
-(* the either is to differentialte macro-variables from macro-functions *)
-type define_body = (unit,string list) either * Parser_c.token list
+(* corresponds to what is in the yacfe configuration file (e.g. standard.h) *)
+type define_def = string * define_param * define_body 
+ and define_param = 
+   | NoParam
+   | Params of string list
+ and define_body = 
+   | DefineBody of Parser_c.token list
+   | DefineHint of parsinghack_hint
 
-val _defs : (string, define_body) Hashtbl.t ref
+   (* strongly corresponds to the TMacroXxx in the grammar and lexer and the
+    * MacroXxx in the ast.
+    *)
+   and parsinghack_hint = 
+     | HintIterator
+     | HintDeclarator
+     | HintMacroString
+     | HintMacroStatement
+     | HintAttribute
 
+val _defs : (string, define_def) Hashtbl.t ref
+
+(* can reset it *)
+val ifdef_paren_cnt: int ref
 
 val fix_tokens_define : Parser_c.token list -> Parser_c.token list
-val extract_cpp_define : Parser_c.token list -> (string, define_body) assoc
+val extract_cpp_define : Parser_c.token list -> (string, define_def) assoc
 
 
 val fix_tokens_cpp : Parser_c.token list -> Parser_c.token list
 
 (* next stream tokens -> passed stream tokens -> final next token *)
-val lookahead : Parser_c.token list -> Parser_c.token list -> Parser_c.token
+val lookahead : 
+  pass:int -> 
+  Parser_c.token list -> Parser_c.token list -> Parser_c.token
 

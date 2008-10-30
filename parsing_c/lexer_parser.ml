@@ -87,25 +87,42 @@ let restore_typedef_state () =
 
 
 
+type context = 
+  | InTopLevel
+  | InFunction
+  | InStruct
+  | InParameter
+  | InInitializer
+  | InEnum
+
+let is_top_or_struct = function
+  | InTopLevel
+  | InStruct 
+      -> true
+  | _ -> false
+
 type lexer_hint = { 
-    mutable parameterDeclaration: bool;
-    mutable structDefinition: int; (* depth in struct def, 0 = not in struct *)
-    mutable toplevel: bool;
-  }
+  mutable context_stack: context Common.stack;
+ }
 
 let default_hint () = { 
-  parameterDeclaration = false;
-  structDefinition = 0;
-  toplevel = false;
+  context_stack = [InTopLevel];
 }
 
 let _lexer_hint = ref (default_hint())
+
+let current_context () = List.hd !_lexer_hint.context_stack 
+let push_context ctx = 
+  !_lexer_hint.context_stack <- ctx::!_lexer_hint.context_stack
+let pop_context () = 
+  !_lexer_hint.context_stack <- List.tl !_lexer_hint.context_stack
+
 
 
 let lexer_reset_typedef () = 
   begin
   _handle_typedef := true;
   _typedef := Common.empty_scoped_h_env ();
-  _lexer_hint := { (default_hint ()) with toplevel = true; } ;
+  _lexer_hint := (default_hint ());
   end
 

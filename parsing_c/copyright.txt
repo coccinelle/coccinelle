@@ -1,6 +1,6 @@
 parsing_c library - Yoann Padioleau
 
-Copyright (C) 2002-2008 Yoann Padioleau
+Copyright (C) 2002, 2005, 2006, 2007, 2008 Yoann Padioleau
 
   This program is free software; you can redistribute it and/or
   modify it under the terms of the GNU General Public License (GPL)
@@ -10,9 +10,3 @@ Copyright (C) 2002-2008 Yoann Padioleau
   but WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
   file license.txt for more details.
-
-
-The contents of some files in this directory was derived from external
-sources with compatible licenses.  The original copyright and license
-notice was preserved in the affected files.
-

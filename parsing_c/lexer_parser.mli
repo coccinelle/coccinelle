@@ -27,13 +27,23 @@ val save_typedef_state : unit -> unit
 val restore_typedef_state : unit -> unit
 
 
+type context = 
+  | InTopLevel
+  | InFunction
+  | InStruct
+  | InParameter
+  | InInitializer
+  | InEnum
+
+val is_top_or_struct : context -> bool
+
 type lexer_hint = { 
-    mutable parameterDeclaration: bool;
-    mutable structDefinition: int; (* depth in struct def, 0 = not in struct *)
-(*    mutable statements: bool; *)
-    mutable toplevel: bool;
-  }
+  mutable context_stack: context Common.stack;
+ }
 
 val _lexer_hint : lexer_hint ref
+val current_context: unit -> context
+val push_context: context -> unit
+val pop_context: unit -> unit
 
 val default_hint : unit -> lexer_hint

@@ -8,33 +8,30 @@ open Parser_c
 
 let is_space = function
   | TCommentSpace _ -> true
+  | TCommentNewline _ -> true
   | _ -> false
+
+let is_whitespace = is_space
 
 let is_comment_or_space = function
   | TComment _ -> true
   | TCommentSpace _ -> true
-
+  | TCommentNewline _ -> true
   | _ -> false
+let is_real_comment = is_comment_or_space
 
 let is_just_comment = function
   | TComment _ -> true
   | _ -> false
 
-
-
-
-
 let is_comment = function
-  | TComment _    | TCommentSpace _ | TCommentNewline _ 
+  | TComment _    
+  | TCommentSpace _ | TCommentNewline _ 
   | TCommentCpp _ 
   | TCommentMisc _ -> true
   | _ -> false
 
 
-let is_real_comment = function
-  | TComment _    | TCommentSpace _ | TCommentNewline _ 
-      -> true
-  | _ -> false
 
 let is_fake_comment = function
   | TCommentCpp _    | TCommentMisc _ 
@@ -45,11 +42,25 @@ let is_not_comment x =
   not (is_comment x)
 
 
+
+
+
 let is_cpp_instruction = function
-  | TInclude _ | TDefine _
-  | TIfdef _   | TIfdefelse _ | TIfdefelif _
-  | TEndif _ 
+  | TInclude _ 
+  | TDefine _
+  | TIfdef _   | TIfdefelse _ | TIfdefelif _ | TEndif _ 
   | TIfdefBool _ | TIfdefMisc _ | TIfdefVersion _
+  | TUndef _ 
+  | TCppDirectiveOther _
+      -> true
+  | _ -> false
+
+
+let is_gcc_token = function
+  | Tasm _ 
+  | Tinline _ 
+  | Tattribute _ 
+  | Ttypeof _ 
       -> true
   | _ -> false
 
@@ -64,9 +75,23 @@ let is_cpar = function
   | TCPar _ | TCParEOL _ -> true
   | _ -> false
 
+
+let is_obrace = function
+  | TOBrace _ | TOBraceDefineInit _ -> true
+  | _ -> false
+
+let is_cbrace = function
+  | TCBrace _ -> true
+  | _ -> false 
+
+
+
+
 let is_eof = function
   | EOF x -> true
   | _ -> false
+
+
 
 let is_statement = function
   | Tfor _ | Tdo _ | Tif _ | Twhile _ | Treturn _ 
@@ -145,6 +170,9 @@ let info_of_tok = function
   | TDefine (ii) -> ii 
   | TInclude (includes, filename, inifdef, i1) ->     i1
 
+  | TUndef (s, ii) -> ii
+  | TCppDirectiveOther (ii) -> ii
+
   | TIncludeStart (i1, inifdef) ->     i1
   | TIncludeFilename (s, i1) ->     i1
 
@@ -154,11 +182,16 @@ let info_of_tok = function
   | TCppEscapedNewline (ii) -> ii
   | TDefParamVariadic (s, i1) ->     i1
 
+  | TOBraceDefineInit (i1) ->     i1
+
   | TUnknown             (i) -> i
 
-  | TMacroStmt             (i) -> i
-  | TMacroString             (i) -> i
+  | TMacroAttr             (s, i) -> i
+  | TMacroAttrStorage             (s, i) -> i
+  | TMacroStmt             (s, i) -> i
+  | TMacroString             (s, i) -> i
   | TMacroDecl             (s, i) -> i
+  | TMacroStructDecl             (s, i) -> i
   | TMacroDeclConst             (i) -> i
   | TMacroIterator             (s,i) -> i
 (*  | TMacroTop             (s,i) -> i *)
@@ -172,13 +205,13 @@ let info_of_tok = function
   | TCommentCpp          (cppkind, i) -> i
   | TCommentMisc         (i) -> i
 
-  | TIfdef               (i) -> i
-  | TIfdefelse           (i) -> i
-  | TIfdefelif           (i) -> i
-  | TEndif               (i) -> i
-  | TIfdefBool           (b, i) -> i
-  | TIfdefMisc           (b, i) -> i
-  | TIfdefVersion           (b, i) -> i
+  | TIfdef               (_, i) -> i
+  | TIfdefelse           (_, i) -> i
+  | TIfdefelif           (_, i) -> i
+  | TEndif               (_, i) -> i
+  | TIfdefBool           (b, _, i) -> i
+  | TIfdefMisc           (b, _, i) -> i
+  | TIfdefVersion           (b, _, i) -> i
 
   | TOPar                (i) -> i
   | TCPar                (i) -> i
@@ -232,6 +265,9 @@ let info_of_tok = function
   | Tstatic              (i) -> i
   | Tconst               (i) -> i
   | Tvolatile            (i) -> i
+
+  | Trestrict            (i) -> i
+
   | Tstruct              (i) -> i
   | Tenum                (i) -> i
   | Ttypedef             (i) -> i
@@ -258,6 +294,7 @@ let info_of_tok = function
   
 
 
+
 (* used by tokens to complete the parse_info with filename, line, col infos *)
 let visitor_info_of_tok f = function
   | TString ((s, isWchar), i)  -> TString ((s, isWchar), f i) 
@@ -270,6 +307,9 @@ let visitor_info_of_tok f = function
   | TInt  (s, i)         -> TInt  (s, f i) 
 
   | TDefine (i1) -> TDefine(f i1) 
+
+  | TUndef (s,i1) -> TUndef(s, f i1) 
+  | TCppDirectiveOther (i1) -> TCppDirectiveOther(f i1) 
 
   | TInclude (includes, filename, inifdef, i1) -> 
       TInclude (includes, filename, inifdef, f i1)
@@ -284,14 +324,19 @@ let visitor_info_of_tok f = function
 
   | TDefParamVariadic (s, i1) -> TDefParamVariadic (s, f i1)
 
+  | TOBraceDefineInit (i1) -> TOBraceDefineInit (f i1)
+
 
   | TUnknown             (i) -> TUnknown                (f i)
 
-  | TMacroStmt           (i)   -> TMacroStmt            (f i)
-  | TMacroString         (i)   -> TMacroString          (f i)
-  | TMacroDecl           (s,i) -> TMacroDecl            (s, f i)
+  | TMacroAttr           (s, i)   -> TMacroAttr            (s, f i)
+  | TMacroAttrStorage           (s, i)   -> TMacroAttrStorage         (s, f i)
+  | TMacroStmt           (s, i)   -> TMacroStmt            (s, f i)
+  | TMacroString         (s, i)   -> TMacroString          (s, f i)
+  | TMacroDecl           (s, i) -> TMacroDecl            (s, f i)
+  | TMacroStructDecl     (s, i) -> TMacroStructDecl      (s, f i)
   | TMacroDeclConst      (i)   -> TMacroDeclConst       (f i)
-  | TMacroIterator       (s,i) -> TMacroIterator        (s,f i)
+  | TMacroIterator       (s, i) -> TMacroIterator        (s, f i)
 (*  | TMacroTop          (s,i) -> TMacroTop             (s,f i) *)
   | TCParEOL (i) ->     TCParEOL (f i)
 
@@ -303,13 +348,14 @@ let visitor_info_of_tok f = function
   | TCommentNewline      (i) -> TCommentNewline      (f i) 
   | TCommentCpp          (cppkind, i) -> TCommentCpp (cppkind, f i) 
   | TCommentMisc         (i) -> TCommentMisc         (f i) 
-  | TIfdef               (i) -> TIfdef               (f i) 
-  | TIfdefelse           (i) -> TIfdefelse           (f i) 
-  | TIfdefelif           (i) -> TIfdefelif           (f i) 
-  | TEndif               (i) -> TEndif               (f i) 
-  | TIfdefBool           (b, i) -> TIfdefBool        (b, f i) 
-  | TIfdefMisc           (b, i) -> TIfdefMisc        (b, f i) 
-  | TIfdefVersion        (b, i) -> TIfdefVersion     (b, f i) 
+
+  | TIfdef               (t, i) -> TIfdef               (t, f i) 
+  | TIfdefelse           (t, i) -> TIfdefelse           (t, f i) 
+  | TIfdefelif           (t, i) -> TIfdefelif           (t, f i) 
+  | TEndif               (t, i) -> TEndif               (t, f i) 
+  | TIfdefBool           (b, t, i) -> TIfdefBool        (b, t, f i) 
+  | TIfdefMisc           (b, t, i) -> TIfdefMisc        (b, t, f i) 
+  | TIfdefVersion        (b, t, i) -> TIfdefVersion     (b, t, f i) 
 
   | TOPar                (i) -> TOPar                (f i) 
   | TCPar                (i) -> TCPar                (f i) 
@@ -362,6 +408,9 @@ let visitor_info_of_tok f = function
   | Tstatic              (i) -> Tstatic              (f i) 
   | Tconst               (i) -> Tconst               (f i) 
   | Tvolatile            (i) -> Tvolatile            (f i) 
+
+  | Trestrict            (i) -> Trestrict            (f i) 
+
   | Tstruct              (i) -> Tstruct              (f i) 
   | Tenum                (i) -> Tenum                (f i) 
   | Ttypedef             (i) -> Ttypedef             (f i) 

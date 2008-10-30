@@ -1,4 +1,4 @@
-(* Copyright (C) 2002-2008 Yoann Padioleau
+(* Copyright (C) 2006, 2007, 2008 Yoann Padioleau
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License (GPL)
@@ -15,12 +15,18 @@ open Common
 module TH = Token_helpers 
 module LP = Lexer_parser
 
+module Stat = Parsing_stat
+
 (*****************************************************************************)
 (* Wrappers *)
 (*****************************************************************************)
 let pr2 s = 
   if !Flag_parsing_c.verbose_parsing 
   then Common.pr2 s
+
+let pr2_once s = 
+  if !Flag_parsing_c.verbose_parsing 
+  then Common.pr2_once s
     
 (*****************************************************************************)
 (* Helpers *)
@@ -77,106 +83,6 @@ let mk_info_item a b =
 
 
 
-(*****************************************************************************)
-(* Stat *)
-(*****************************************************************************)
-type parsing_stat = {
-    filename: filename;
-    mutable have_timeout: bool;
-
-    mutable correct: int;  
-    mutable bad: int;
-
-    mutable commentized: int; (* by our cpp commentizer *)
-
-    (* if want to know exactly what was passed through, uncomment:
-     *  
-     * mutable passing_through_lines: int;
-     * 
-     * it differs from bad by starting from the error to
-     * the synchro point instead of starting from start of
-     * function to end of function.
-     *)
-
-  } 
-
-let default_stat file =  { 
-    filename = file;
-    have_timeout = false;
-    correct = 0; bad = 0;
-    commentized = 0;
-  }
-
-(* todo: stat per dir ?  give in terms of func_or_decl numbers:   
- * nbfunc_or_decl pbs / nbfunc_or_decl total ?/ 
- *
- * note: cela dit si y'a des fichiers avec des #ifdef dont on connait pas les 
- * valeurs alors on parsera correctement tout le fichier et pourtant y'aura 
- * aucune def  et donc aucune couverture en fait.   
- * ==> TODO evaluer les parties non parsé ? 
- *)
-
-let print_parsing_stat_list = fun statxs -> 
-  let total = (List.length statxs) in
-  let perfect = 
-    statxs 
-      +> List.filter (function 
-          {have_timeout = false; bad = 0} -> true | _ -> false)
-      +> List.length 
-  in
-  pr "\n\n\n---------------------------------------------------------------";
-  pr "pbs with files:";
-  statxs 
-    +> List.filter (function 
-      | {have_timeout = true} -> true 
-      | {bad = n} when n > 0 -> true 
-      | _ -> false)
-    +> List.iter (function 
-        {filename = file; have_timeout = timeout; bad = n} -> 
-          pr (file ^ "  " ^ (if timeout then "TIMEOUT" else i_to_s n));
-        );
-
-  pr "\n\n\n";
-  pr "files with lots of tokens passed/commentized:";
-  let threshold_passed = 100 in
-  statxs 
-    +> List.filter (function 
-      | {commentized = n} when n > threshold_passed -> true
-      | _ -> false)
-    +> List.iter (function 
-        {filename = file; commentized = n} -> 
-          pr (file ^ "  " ^ (i_to_s n));
-        );
-
-  pr "\n\n\n---------------------------------------------------------------";
-  pr (
-  (sprintf "NB total files = %d; " total) ^
-  (sprintf "perfect = %d; " perfect) ^
-  (sprintf "pbs = %d; "     (statxs +> List.filter (function 
-      {have_timeout = b; bad = n} when n > 0 -> true | _ -> false) 
-                               +> List.length)) ^
-  (sprintf "timeout = %d; " (statxs +> List.filter (function 
-      {have_timeout = true; bad = n} -> true | _ -> false) 
-                               +> List.length)) ^
-  (sprintf "=========> %d" ((100 * perfect) / total)) ^ "%"
-                                                          
- );
-  let good = statxs +> List.fold_left (fun acc {correct = x} -> acc+x) 0 in
-  let bad  = statxs +> List.fold_left (fun acc {bad = x} -> acc+x) 0  in
-  let passed = statxs +> List.fold_left (fun acc {commentized = x} -> acc+x) 0
-  in
-  let gf, badf = float_of_int good, float_of_int bad in
-  let passedf = float_of_int passed in
-  pr (
-  (sprintf "nb good = %d,  nb passed = %d " good passed) ^
-  (sprintf "=========> %f"  (100.0 *. (passedf /. gf)) ^ "%")
-   );
-  pr (
-  (sprintf "nb good = %d,  nb bad = %d " good bad) ^
-  (sprintf "=========> %f"  (100.0 *. (gf /. (gf +. badf))) ^ "%"
-   )
-  )
-
 
 (*****************************************************************************)
 (* Stats on what was passed/commentized  *)
@@ -184,21 +90,50 @@ let print_parsing_stat_list = fun statxs ->
 
 let commentized xs = xs +> Common.map_filter (function
   | Parser_c.TCommentCpp (cppkind, ii) -> 
-      if !Flag_parsing_c.filter_classic_passed
-      then 
-        (match cppkind with
+      let s = Ast_c.str_of_info ii in
+      let legal_passing = 
+        match !Flag_parsing_c.filter_passed_level with 
+        | 0 -> false
+        | 1 -> 
+            List.mem cppkind [Ast_c.CppAttr]
+            || 
+            (s =~ "__.*")
+        | 2 -> 
+            List.mem cppkind [Ast_c.CppAttr;Ast_c.CppPassingNormal]
+            || 
+            (s =~ "__.*")
+        | 3 -> 
+            List.mem cppkind [Ast_c.CppAttr;Ast_c.CppPassingNormal;Ast_c.CppDirective]
+            || 
+            (s =~ "__.*")
+        | 4 -> 
+            List.mem cppkind [Ast_c.CppAttr;Ast_c.CppPassingNormal;Ast_c.CppMacro]
+            || 
+            (s =~ "__.*")
+
+
+        | 5 -> 
+            List.mem cppkind [Ast_c.CppAttr;Ast_c.CppPassingNormal;Ast_c.CppDirective;Ast_c.CppMacro]
+            || 
+            (s =~ "__.*")
+
+
+
+
+        | _ -> failwith "not valid level passing number"
+      in
+      if legal_passing then None else Some (ii.Ast_c.pinfo)
+
+        (*
         | Ast_c.CppOther -> 
-            let s = Ast_c.str_of_info ii in
             (match s with
             | s when s =~ "KERN_.*" -> None
             | s when s =~ "__.*" -> None
-            | _ -> Some (ii.Ast_c.pinfo)
+            | _ -> 
+                Some (ii.Ast_c.pinfo)
             )
-             
-        | Ast_c.CppDirective | Ast_c.CppAttr | Ast_c.CppMacro
-            -> None
-        )
-      else Some (ii.Ast_c.pinfo)
+        *)
+
       
   | Parser_c.TCommentMisc ii
   | Parser_c.TAction ii 
@@ -296,8 +231,12 @@ let tokens2 file =
     | e -> raise e
  )
 
-let tokens a = 
-  Common.profile_code "C parsing.tokens" (fun () -> tokens2 a)
+let time_lexing ?(profile=true) a = 
+  if profile 
+  then Common.profile_code_exclusif "LEXING" (fun () -> tokens2 a)
+  else tokens2 a 
+let tokens ?profile a = 
+  Common.profile_code "C parsing.tokens" (fun () -> time_lexing ?profile a)
 
 
 let tokens_string string = 
@@ -510,7 +449,11 @@ let consistency_checking2 xs =
     end
   );
 
-  (* third phase, update ast *)
+  (* third phase, update ast. 
+   * todo? but normally should try to handle correctly scope ? maybe sometime
+   * sizeof(id) and even if id was for a long time an identifier, maybe 
+   * a few time, because of the scope it's actually really a type.
+   *)
   if (null !ident_to_type)
   then xs 
   else 
@@ -614,7 +557,7 @@ and find_next_synchro_define next already_passed =
       pr2 "ERROR-RECOV: end of file while in recovery mode"; 
       already_passed, []
   | (Parser_c.TDefEOL i as v)::xs  -> 
-      pr2 ("ERROR-RECOV: found sync end of #define "^i_to_s(TH.line_of_tok v));
+      pr2 ("ERROR-RECOV: found sync end of #define, line "^i_to_s(TH.line_of_tok v));
       v::already_passed, xs
   | v::xs -> 
       find_next_synchro_define xs (v::already_passed)
@@ -679,6 +622,20 @@ and find_next_synchro_orig next already_passed =
 (* Include/Define hacks *)
 (*****************************************************************************)
 
+(* Sometimes I prefer to generate a single token for a list of things in the
+ * lexer so that if I have to passed them, like for passing TInclude then
+ * it's easy. Also if I don't do a single token, then I need to 
+ * parse the rest which may not need special stuff, like detecting 
+ * end of line which the parser is not really ready for. So for instance
+ * could I parse a #include <a/b/c/xxx.h> as 2 or more tokens ? just
+ * lex #include ? so then need recognize <a/b/c/xxx.h> as one token ? 
+ * but this kind of token is valid only after a #include and the
+ * lexing and parsing rules are different for such tokens so not that
+ * easy to parse such things in parser_c.mly. Hence the following hacks.
+ * 
+ * less?: maybe could get rid of this like I get rid of some of fix_define.
+ *)
+
 (* ------------------------------------------------------------------------- *)
 (* helpers *)
 (* ------------------------------------------------------------------------- *)
@@ -710,7 +667,7 @@ let rec comment_until_defeol xs =
             (* bugfix: otherwise may lose a TComment token *)
             if TH.is_real_comment x
             then x
-            else Parser_c.TCommentCpp (Ast_c.CppOther, TH.info_of_tok x)
+            else Parser_c.TCommentCpp (Ast_c.CppPassingNormal (*good?*), TH.info_of_tok x)
           in
           x'::comment_until_defeol xs
       )
@@ -732,13 +689,27 @@ let tokens_include (info, includes, filename, inifdef) =
   ]
 
 (*****************************************************************************)
-(* Parsing default define, standard.h *)
+(* Parsing default define macros, usually in a standard.h file *)
 (*****************************************************************************)
 
-let parse_cpp_define_file file = 
-  let toks = tokens file in
+let parse_cpp_define_file2 file = 
+  let toks = tokens ~profile:false file in
   let toks = Parsing_hacks.fix_tokens_define toks in
   Parsing_hacks.extract_cpp_define toks
+
+let parse_cpp_define_file a = 
+  Common.profile_code_exclusif "HACK" (fun () -> parse_cpp_define_file2 a)
+
+(* can not be put in parsing_hack, cos then mutually recursive problem as
+ * we also want to parse the standard.h file.
+ *)
+let init_defs std_h =     
+  if not (Common.lfile_exists std_h)
+  then pr2 ("warning: Can't find default macro file: " ^ std_h)
+  else begin
+    pr2 ("init_defs: " ^ std_h);
+    Parsing_hacks._defs := Common.hash_of_list (parse_cpp_define_file std_h);
+  end
 
 
 (*****************************************************************************)
@@ -749,6 +720,18 @@ type info_item =  string * Parser_c.token list
 
 type program2 = toplevel2 list
      and toplevel2 = Ast_c.toplevel * info_item
+
+let program_of_program2 xs = 
+  xs +> List.map fst
+
+let with_program2 f program2 = 
+  program2 
+  +> Common.unzip 
+  +> (fun (program, infos) -> 
+    f program, infos
+  )
+  +> Common.uncurry Common.zip
+
 
 
 (* The use of local refs (remaining_tokens, passed_tokens, ...) makes
@@ -762,7 +745,7 @@ type program2 = toplevel2 list
  * provide enough context information for powerful lex trick.
  * 
  * - passed_tokens_last_ckp stores the passed tokens since last
- *   checkpoint. Used for NotParsedCorrectly and also for build the
+ *   checkpoint. Used for NotParsedCorrectly and also to build the
  *   info_item attached to each program_element.
  * - passed_tokens_clean is used for lookahead, in fact for lookback.
  * - remaining_tokens_clean is used for lookahead. Now remaining_tokens
@@ -785,6 +768,9 @@ type program2 = toplevel2 list
  * At the end of lexer_function call,  cur_tok  overlap  with passed_tok.
  * 
  * convention: I use "tr"  for "tokens refs"
+ * 
+ * I now also need this lexing trick because the lexer return comment
+ * tokens.
  *)
 
 type tokens_state = {
@@ -795,9 +781,46 @@ type tokens_state = {
   mutable passed :       Parser_c.token list;
   mutable passed_clean : Parser_c.token list;
 }
+let clone_tokens_stat tr = 
+  { rest = tr.rest;
+    rest_clean = tr.rest_clean;
+    current = tr.current;
+    passed = tr.passed;
+    passed_clean = tr.passed_clean;
+  }
+let copy_tokens_stat ~src ~dst = 
+  dst.rest <- src.rest;
+  dst.rest_clean <- src.rest_clean;
+  dst.current <- src.current;
+  dst.passed <- src.passed;
+  dst.passed_clean <-  src.passed_clean;
+  ()
 
-(* Hacked lex. This function use refs passed by parse_print_error_heuristic *)
-let rec lexer_function tr = fun lexbuf -> 
+let rec filter_noise n xs =
+  match n, xs with
+  | _, [] -> []
+  | 0, xs -> xs
+  | n, x::xs -> 
+      (match x with
+      | Parser_c.TMacroAttr _ -> 
+          filter_noise (n-1) xs
+      | _ -> 
+          x::filter_noise (n-1) xs
+      )
+
+let clean_for_lookahead xs = 
+  match xs with
+  | [] -> []
+  | [x] -> [x]
+  | x::xs -> 
+      x::filter_noise 10 xs
+
+
+
+(* Hacked lex. This function use refs passed by parse_print_error_heuristic 
+ * tr means token refs.
+ *)
+let rec lexer_function ~pass tr = fun lexbuf -> 
   match tr.rest with
   | [] -> pr2 "ALREADY AT END"; tr.current
   | v::xs -> 
@@ -809,7 +832,7 @@ let rec lexer_function tr = fun lexbuf ->
     if TH.is_comment v
     then begin
       tr.passed <- v::tr.passed;
-      lexer_function tr lexbuf
+      lexer_function ~pass tr lexbuf
     end
     else begin
       let x = List.hd tr.rest_clean  in
@@ -817,16 +840,22 @@ let rec lexer_function tr = fun lexbuf ->
       assert (x = v);
       
       (match v with
+      (* fix_define1. Why not in parsing_hacks lookahead and do passing like
+       * I do for some ifdef directives ? Because here I also need to 
+       * generate some tokens sometimes. 
+       *)
       | Parser_c.TDefine (tok) -> 
-          if not !LP._lexer_hint.LP.toplevel 
+          if not (LP.current_context () = LP.InTopLevel) && 
+            (!Flag_parsing_c.cpp_directive_passing || (pass = 2))
           then begin
+            incr Stat.nDefinePassing;
             pr2_once ("CPP-DEFINE: inside function, I treat it as comment");
             let v' = Parser_c.TCommentCpp (Ast_c.CppDirective,TH.info_of_tok v)
             in
             tr.passed <- v'::tr.passed;
             tr.rest       <- comment_until_defeol tr.rest;
             tr.rest_clean <- drop_until_defeol tr.rest_clean;
-            lexer_function tr lexbuf
+            lexer_function ~pass tr lexbuf
           end
           else begin
             tr.passed <- v::tr.passed;
@@ -835,12 +864,14 @@ let rec lexer_function tr = fun lexbuf ->
           end
             
       | Parser_c.TInclude (includes, filename, inifdef, info) -> 
-          if not !LP._lexer_hint.LP.toplevel 
+          if not (LP.current_context () = LP.InTopLevel)  &&
+            (!Flag_parsing_c.cpp_directive_passing || (pass = 2))
           then begin
+            incr Stat.nIncludePassing;
             pr2_once ("CPP-INCLUDE: inside function, I treat it as comment");
             let v = Parser_c.TCommentCpp(Ast_c.CppDirective, info) in
             tr.passed <- v::tr.passed;
-            lexer_function tr lexbuf
+            lexer_function ~pass tr lexbuf
           end
           else begin
             let (v,new_tokens) = 
@@ -860,21 +891,26 @@ let rec lexer_function tr = fun lexbuf ->
           (* typedef_fix1 *)
           let v = match v with
             | Parser_c.TIdent (s, ii) -> 
-                if LP.is_typedef s 
+                if 
+                  LP.is_typedef s && 
+                    not (!Flag_parsing_c.disable_add_typedef) &&
+                    pass = 1
                 then Parser_c.TypedefIdent (s, ii)
                 else Parser_c.TIdent (s, ii)
             | x -> x
           in
           
-          let v = Parsing_hacks.lookahead (v::tr.rest_clean) tr.passed_clean in
+          let v = Parsing_hacks.lookahead ~pass
+            (clean_for_lookahead (v::tr.rest_clean))
+            tr.passed_clean in
 
           tr.passed <- v::tr.passed;
           
-          (* the lookahead may have change the status of the token and
+          (* the lookahead may have changed the status of the token and
            * consider it as a comment, for instance some #include are
-           * turned into comments hence this code. *)
+           * turned into comments, hence this code. *)
           match v with
-          | Parser_c.TCommentCpp _ -> lexer_function tr lexbuf
+          | Parser_c.TCommentCpp _ -> lexer_function ~pass tr lexbuf
           | v -> 
               tr.passed_clean <- v::tr.passed_clean;
               v
@@ -883,28 +919,96 @@ let rec lexer_function tr = fun lexbuf ->
 
 
 
+let get_one_elem ~pass tr (file, filelines) = 
+
+  if not (LP.is_enabled_typedef()) && !Flag_parsing_c.debug_typedef
+  then pr2 "TYPEDEF:_handle_typedef=false. Not normal if dont come from exn";
+
+  (* normally have to do that only when come from an exception in which
+   * case the dt() may not have been done 
+   * TODO but if was in scoped scope ? have to let only the last scope
+   * so need do a LP.lexer_reset_typedef ();
+   *)
+  LP.enable_typedef();  
+  LP._lexer_hint := (LP.default_hint ());
+  LP.save_typedef_state();
+
+  tr.passed <- [];
+
+  let lexbuf_fake = Lexing.from_function (fun buf n -> raise Impossible) in
+  
+  (try 
+      (* -------------------------------------------------- *)
+      (* Call parser *)
+      (* -------------------------------------------------- *)
+      Common.profile_code_exclusif "YACC" (fun () -> 
+        Left (Parser_c.celem (lexer_function ~pass tr) lexbuf_fake)
+      )
+    with e -> begin
+      if (pass = 1 && !Flag_parsing_c.disable_two_pass)|| (pass = 2) 
+      then begin 
+        (match e with
+        (* Lexical is not anymore launched I think *)
+        | Lexer_c.Lexical s -> 
+            pr2 ("lexical error " ^s^ "\n =" ^ error_msg_tok tr.current)
+        | Parsing.Parse_error -> 
+            pr2 ("parse error \n = " ^ error_msg_tok tr.current)
+        | Semantic_c.Semantic (s, i) -> 
+            pr2 ("semantic error " ^s^ "\n ="^ error_msg_tok tr.current)
+        | e -> raise e
+        )
+      end;
+      LP.restore_typedef_state();
+
+      (* must keep here, before the code that adjusts the tr fields *)
+      let line_error = TH.line_of_tok tr.current in
+        
+        
+      (*  error recovery, go to next synchro point *)
+      let (passed', rest') = find_next_synchro tr.rest tr.passed in
+      tr.rest <- rest';
+      tr.passed <- passed';
+      
+      tr.current <- List.hd passed';
+      tr.passed_clean <- [];           (* enough ? *)
+      (* with error recovery, rest and rest_clean may not be in sync *)
+      tr.rest_clean <- (tr.rest +> List.filter TH.is_not_comment);
+      
+      
+      let info_of_bads = Common.map_eff_rev TH.info_of_tok tr.passed in 
+      Right (info_of_bads,  line_error)
+    end
+  )
+
+
+
+
 (* note: as now we go in 2 passes, there is first all the error message of
- * the lexer, and then the error of the parser. It is no more
+ * the lexer, and then the error of the parser. It is not anymore
  * interwinded.
  * 
  * !!!This function use refs, and is not reentrant !!! so take care.
  * It use globals defined in Lexer_parser and also the _defs global
- * in parsing_hack.ml.
+ * in parsing_hack.ml. 
+ * 
+ * This function uses internally some semi globals in the
+ * tokens_stat record and parsing_stat record.
  *)
 
 let parse_print_error_heuristic2 file = 
+
+  let filelines = (""::Common.cat file) +> Array.of_list in
+  let stat = Parsing_stat.default_stat file in
 
   (* -------------------------------------------------- *)
   (* call lexer and get all the tokens *)
   (* -------------------------------------------------- *)
   LP.lexer_reset_typedef(); 
+  Parsing_hacks.ifdef_paren_cnt := 0;
   let toks_orig = tokens file in
 
   let toks = Parsing_hacks.fix_tokens_define toks_orig in
   let toks = Parsing_hacks.fix_tokens_cpp toks in
-
-  let filelines = (""::Common.cat file) +> Array.of_list in
-  let stat = default_stat file in
 
   let tr = { 
     rest       = toks;
@@ -913,102 +1017,78 @@ let parse_print_error_heuristic2 file =
     passed = []; 
     passed_clean = [];
   } in
-  let lexbuf_fake = Lexing.from_function (fun buf n -> raise Impossible) in
 
-  let rec loop () =
 
-    if not (LP.is_enabled_typedef()) && !Flag_parsing_c.debug_typedef
-    then pr2 "TYPEDEF:_handle_typedef=false. Not normal if dont come from exn";
 
-    (* normally have to do that only when come from an exception in which
-     * case the dt() may not have been done 
-     * TODO but if was in scoped scope ? have to let only the last scope
-     * so need do a LP.lexer_reset_typedef ();
-     *)
-    LP.enable_typedef();  
-    LP._lexer_hint := { (LP.default_hint ()) with LP.toplevel = true; };
-    LP.save_typedef_state();
+
+  let rec loop tr =
 
     (* todo?: I am not sure that it represents current_line, cos maybe
      * tr.current partipated in the previous parsing phase, so maybe tr.current
      * is not the first token of the next parsing phase. Same with checkpoint2.
      * It would be better to record when we have a } or ; in parser.mly,
      *  cos we know that they are the last symbols of external_declaration2.
-     *)
-    let checkpoint = TH.line_of_tok tr.current in
-    (* bugfix: may not be equal to 'file' as after macro expansions we can
+     *
+     * bugfix: may not be equal to 'file' as after macro expansions we can
      * start to parse a new entity from the body of a macro, for instance
      * when parsing a define_machine() body, cf standard.h
      *)
+    let checkpoint = TH.line_of_tok tr.current in
     let checkpoint_file = TH.file_of_tok tr.current in
 
-    tr.passed <- [];
-    let was_define = ref false in
-
+    let tr_save = clone_tokens_stat tr in
+    
+    (* call the parser *)
     let elem = 
-      (try 
-          (* -------------------------------------------------- *)
-          (* Call parser *)
-          (* -------------------------------------------------- *)
-          Parser_c.celem (lexer_function tr) lexbuf_fake
-        with e -> 
-          begin
-            (match e with
-            (* Lexical is no more launched I think *)
-            | Lexer_c.Lexical s -> 
-                pr2 ("lexical error " ^s^ "\n =" ^ error_msg_tok tr.current)
-            | Parsing.Parse_error -> 
-                pr2 ("parse error \n = " ^ error_msg_tok tr.current)
-            | Semantic_c.Semantic (s, i) -> 
-                pr2 ("semantic error " ^s^ "\n ="^ error_msg_tok tr.current)
-            | e -> raise e
-            );
-            LP.restore_typedef_state();
-            let line_error = TH.line_of_tok tr.current in
+      let pass1 = get_one_elem ~pass:1 tr (file, filelines) in
+      match pass1 with
+      | Left e -> Left e
+      | Right res -> 
+          if !Flag_parsing_c.disable_two_pass
+          then Right res
+          else begin
+            pr2 "parsing pass2: try again";
+            copy_tokens_stat ~src:tr_save ~dst: tr;
+            let pass2 = get_one_elem ~pass:2 tr (file, filelines) in
+            pass2
+          end
+    in
 
-            (*  error recovery, go to next synchro point *)
-            let (passed', rest') = find_next_synchro tr.rest tr.passed in
-            tr.rest <- rest';
-            tr.passed <- passed';
 
-            tr.current <- List.hd passed';
-            tr.passed_clean <- [];           (* enough ? *)
-            (* with error recovery, rest and rest_clean may not be in sync *)
-            tr.rest_clean <- (tr.rest +> List.filter TH.is_not_comment);
+    (* again not sure if checkpoint2 corresponds to end of bad region *)
+    let checkpoint2 = TH.line_of_tok tr.current in (* <> line_error *)
+    let checkpoint2_file = TH.file_of_tok tr.current in
 
-            let checkpoint2 = TH.line_of_tok tr.current in (* <> line_error *)
-            let checkpoint2_file = TH.file_of_tok tr.current in
-
-            (* was a define ? *)
+    let was_define = 
+      (match elem with
+      | Left _ -> false
+      | Right (_, line_error) -> 
+          let was_define = 
             let xs = tr.passed +> List.rev +> List.filter TH.is_not_comment in
             if List.length xs >= 2 
             then 
               (match Common.head_middle_tail xs with
               | Parser_c.TDefine _, _, Parser_c.TDefEOL _ -> 
-                  was_define := true
-              | _ -> ()
+                  true
+              | _ -> false
               )
-            else pr2 "WIERD: lenght list of error recovery tokens < 2 ";
-            
-            if !was_define && !Flag_parsing_c.filter_define_error
-            then ()
-            else 
-              (* bugfix: *)
-              if (checkpoint_file = checkpoint2_file) && checkpoint_file = file
-              then print_bad line_error (checkpoint, checkpoint2) filelines
-              else pr2 "PB: bad: but on tokens not from original file"
-              ;
+            else begin
+              pr2 "WIERD: length list of error recovery tokens < 2 ";
+              false 
+            end
+          in
+          (if was_define && !Flag_parsing_c.filter_msg_define_error
+          then ()
+          else 
+            (* bugfix: *)
+            if (checkpoint_file = checkpoint2_file) && checkpoint_file = file
+            then print_bad line_error (checkpoint, checkpoint2) filelines
+            else pr2 "PB: bad: but on tokens not from original file"
+          );
+          was_define
+      ) in
+    
 
-
-            let info_of_bads = Common.map_eff_rev TH.info_of_tok tr.passed in 
-            Ast_c.NotParsedCorrectly info_of_bads
-          end
-      ) 
-    in
-
-    (* again not sure if checkpoint2 corresponds to end of bad region *)
-    let checkpoint2 = TH.line_of_tok tr.current in
-    let checkpoint2_file = TH.file_of_tok tr.current in
     let diffline = 
       if (checkpoint_file = checkpoint2_file) && (checkpoint_file = file)
       then (checkpoint2 - checkpoint) 
@@ -1022,27 +1102,41 @@ let parse_print_error_heuristic2 file =
     in
     let info = mk_info_item file (List.rev tr.passed) in 
 
-    stat.commentized <- stat.commentized + count_lines_commentized (snd info);
+    (* some stat updates *)
+    stat.Stat.commentized <- 
+      stat.Stat.commentized + count_lines_commentized (snd info);
+
+    let elem = 
+      match elem with
+      | Left e -> e
+      | Right (info_of_bads, _line_error) -> 
+          Ast_c.NotParsedCorrectly info_of_bads
+    in
     (match elem with
     | Ast_c.NotParsedCorrectly xs -> 
-        if !was_define && !Flag_parsing_c.filter_define_error
-        then stat.correct <- stat.correct + diffline
-        else stat.bad     <- stat.bad     + diffline
-    | _ -> stat.correct <- stat.correct + diffline
+        if was_define && !Flag_parsing_c.filter_define_error
+        then stat.Stat.correct <- stat.Stat.correct + diffline
+        else stat.Stat.bad     <- stat.Stat.bad     + diffline
+    | _ -> stat.Stat.correct <- stat.Stat.correct + diffline
     );
 
     (match elem with
     | Ast_c.FinalDef x -> [(Ast_c.FinalDef x, info)]
-    | xs -> (xs, info):: loop () (* recurse *)
+    | xs -> (xs, info):: loop tr (* recurse *)
     )
   in
-  let v = loop() in
+  let v = loop tr in
+
   let v = consistency_checking v in
   (v, stat)
 
 
+let time_total_parsing a  = 
+  Common.profile_code "TOTAL" (fun () -> parse_print_error_heuristic2 a)
+
 let parse_print_error_heuristic a  = 
-  Common.profile_code "C parsing" (fun () -> parse_print_error_heuristic2 a)
+  Common.profile_code "C parsing" (fun () -> time_total_parsing a)
+
 
 (* alias *)
 let parse_c_and_cpp a = parse_print_error_heuristic a
@@ -1076,18 +1170,3 @@ let parse_cache file =
     file ".ast_raw" 
     (need_no_changed_files, need_no_changed_variables) ".depend_raw" 
     (fun () -> parse_print_error_heuristic file)
-
-
-
-(*****************************************************************************)
-(*****************************************************************************)
-
-(* can not be put in parsing_hack, cos then mutually recursive problem as
- * we also want to parse the standard.h file.
- *)
-let init_defs std_h =     
-  if not (Common.lfile_exists std_h)
-  then pr2 ("warning: Can't find default macro file: " ^ std_h)
-  else 
-    Parsing_hacks._defs := Common.hash_of_list (parse_cpp_define_file std_h)
-  ;

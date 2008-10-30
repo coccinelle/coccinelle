@@ -82,7 +82,8 @@ let print_metavar pr typedefs = function
 	 il)
   | _ -> failwith "function must have named parameters"
 
-let print_metavariables pr (s, (_, (paramst, (b, iib))), _, _) header_req =
+let print_metavariables pr defn header_req =
+  let {Ast_c.f_name = s; f_type = (_, (paramst, (b, iib))); } = defn in
   (if header_req
   then pr "@depends on header@\n"
   else pr "@@\n");
@@ -114,7 +115,8 @@ let print_param_name pr = function
     ((_,Some param,_),_) -> pr param
   | _ -> failwith "function must have named parameters"
 
-let pp_def_gen pr (s, (_, (paramst, (b, iib))), _, _) isexp =
+let pp_def_gen pr defn isexp =
+  let {Ast_c.f_name = s; f_type = (_, (paramst, (b, iib))); } = defn in
   pr s; pr "(";
   (if b then failwith "not handling variable argument functions");
   (match paramst with
@@ -129,12 +131,12 @@ let pp_def_gen pr (s, (_, (paramst, (b, iib))), _, _) isexp =
 
 let pp_program (e,(str, toks_e)) outdir srcfile isexp =
   match e with
-    Ast_c.Definition(((name,_,_,_) as defn),_) ->
+    Ast_c.Definition(({Ast_c.f_name = name;} as defn),_) ->
       (* generate the - code *)
       drop_header_toks toks_e;
       let toks_e = strip_comments toks_e in
       let tmp_file = Common.new_temp_file "cocci_small_output" ".c" in
-      Unparse_c2.pp_program [((e,(str, toks_e)), Unparse_c2.PPnormal)]
+      Unparse_c.pp_program [((e,(str, toks_e)), Unparse_c.PPnormal)]
 	tmp_file;
       let outfile = outdir ^ "/" ^ name in
       let outfile =

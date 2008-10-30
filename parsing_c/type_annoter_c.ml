@@ -1,4 +1,4 @@
-(* Copyright (C) 2002-2008 Yoann Padioleau
+(* Copyright (C) 2007, 2008 Yoann Padioleau
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License (GPL)
@@ -246,7 +246,7 @@ let (type_field:
   fun fld (su, fields) -> 
     fields +> Common.find_some (fun x -> 
       match Ast_c.unwrap x with
-      | FieldDeclList onefield_multivars -> 
+      | DeclarationField (FieldDeclList (onefield_multivars, iiptvirg)) -> 
           Common.optionise (fun () -> 
             onefield_multivars +> Common.find_some (fun fieldkind -> 
 
@@ -257,6 +257,9 @@ let (type_field:
             )
           )
       | EmptyField -> None
+      | MacroStructDeclTodo -> pr2 "DeclTodo"; None
+      | CppDirectiveStruct _
+      | IfdefStruct _ -> pr2 "StructCpp"; None
     )
 
 
@@ -522,7 +525,9 @@ let rec (annotate_program2 :
     Visitor_c.kdecl = (fun (k, bigf) d -> 
       (match d with
       | (DeclList (xs, ii)) -> 
-          xs +> List.iter (fun ((var, t, sto, local), iicomma) -> 
+          xs +> List.iter (fun ({v_namei = var; v_type = t;
+                                 v_storage = sto; v_local = local}, iicomma) -> 
+
 	    let local =
 	      match local with
 		Ast_c.NotLocalDecl -> Ast_c.NotLocalVar
@@ -566,7 +571,10 @@ let rec (annotate_program2 :
       _notyped_var := Hashtbl.create 100;
       match elem with
       | Definition def -> 
-          let (funcs, ((returnt, (paramst, b)) as ftyp), sto, statxs),ii = def
+          let {f_name = funcs;
+               f_type = ((returnt, (paramst, b)) as ftyp);
+               f_storage = sto;
+               f_body = statxs},ii = def
           in
           let (i1, i2) = 
             match ii with 
