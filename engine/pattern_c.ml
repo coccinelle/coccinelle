@@ -1,5 +1,19 @@
+(* Copyright (C) 2006, 2007 Yoann Padioleau
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License (GPL)
+ * version 2 as published by the Free Software Foundation.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * file license.txt for more details.
+ * 
+ * This file was part of Coccinelle.
+ *)
 open Common
 
+module Flag_engine = Flag_matcher
 (*****************************************************************************)
 (* The functor argument  *) 
 (*****************************************************************************)
@@ -124,7 +138,7 @@ module XMATCH = struct
     else fail tin
 
 
-  let mode = Cocci_vs_c_3.PatternMode
+  let mode = Cocci_vs_c.PatternMode
 
   (* ------------------------------------------------------------------------*)
   (* Exp  *) 
@@ -279,7 +293,7 @@ module XMATCH = struct
 	   inherited variables *)
 	(match Common.optionise (fun () -> tin.binding0 +> List.assoc c) with
 	  Some valu' ->
-	    if Cocci_vs_c_3.equal_metavarval exp valu'
+	    if Cocci_vs_c.equal_metavarval exp valu'
 	    then success else failure
 	| None ->
 	    (* if the variable is not there, it puts no constraints *)
@@ -302,14 +316,14 @@ module XMATCH = struct
     then
       match Common.optionise (fun () -> tin.binding0 +> List.assoc k) with
       | Some (valu') ->
-          if Cocci_vs_c_3.equal_metavarval valu valu'
+          if Cocci_vs_c.equal_metavarval valu valu'
           then Some tin.binding
           else None
       |	None -> None
     else
       match Common.optionise (fun () -> tin.binding +> List.assoc k) with
       | Some (valu') ->
-          if Cocci_vs_c_3.equal_metavarval valu valu'
+          if Cocci_vs_c.equal_metavarval valu valu'
           then Some tin.binding
           else None
 	      
@@ -446,7 +460,7 @@ end
 (*****************************************************************************)
 (* Entry point  *) 
 (*****************************************************************************)
-module MATCH  = Cocci_vs_c_3.COCCI_VS_C (XMATCH)
+module MATCH  = Cocci_vs_c.COCCI_VS_C (XMATCH)
 
 
 let match_re_node2 dropped_isos a b binding0 = 

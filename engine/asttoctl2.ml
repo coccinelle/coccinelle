@@ -1226,7 +1226,7 @@ let dots_au is_strict toend label s wrapcode x seq_after y quantifier =
 		 (ctl_and CTL.NONSTRICT (ctl_not v) preflabelpred)
 		 (ctl_and CTL.NONSTRICT preflabelpred
 		    (ctl_or (retpred None)
-		       (if !Flag_engine.only_return_is_error_exit
+		       (if !Flag_matcher.only_return_is_error_exit
 		       then CTL.True
 		       else
 			 (ctl_or matchcontinue

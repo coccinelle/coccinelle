@@ -20,6 +20,7 @@ type predicate =
   | BindBad  of Ast_cocci.meta_name
   | FakeBrace
 
+(* coccionly: *)
 type ctlcocci = (predicate, Ast_cocci.meta_name) Wrapper_ctl.wrapped_ctl
 
 
@@ -42,6 +43,7 @@ and metavars_binding2 = (mvar, metavar_binding_kind2) Common.assoc
 (*****************************************************************************)
 (* the CTL model related types *)
 (*****************************************************************************)
+(* coccionly: *)
 type label_ctlcocci = 
  predicate -> 
  (nodei * 

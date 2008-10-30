@@ -1,7 +1,21 @@
+(* Copyright (C) 2006, 2007 Yoann Padioleau
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License (GPL)
+ * version 2 as published by the Free Software Foundation.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * file license.txt for more details.
+ * 
+ * This file was part of Coccinelle.
+ *)
 open Common
 
 module F = Control_flow_c
 
+module Flag = Flag_matcher
 (*****************************************************************************)
 (* The functor argument  *) 
 (*****************************************************************************)
@@ -78,7 +92,7 @@ module XTRANS = struct
   let value_format_flag f = fun tin -> 
     f (tin.extra.value_format_iso) tin
 
-  let mode = Cocci_vs_c_3.TransformMode
+  let mode = Cocci_vs_c.TransformMode
 
   (* ------------------------------------------------------------------------*)
   (* Exp  *) 
@@ -165,9 +179,12 @@ module XTRANS = struct
     let (oldmcode, oldenv) = !cocciinforef in
 
     let mck =
+      (* coccionly: 
       if !Flag_parsing_cocci.sgrep_mode
       then Sgrep.process_sgrep ib mck
-      else mck 
+      else 
+      *)
+        mck 
     in
     (match mck, Ast_c.pinfo_of_info ib with
     | _,                  Ast_c.AbstractLineTok _ -> raise Impossible
@@ -191,10 +208,13 @@ module XTRANS = struct
           ib
         end
         else 
+          (* coccionly: 
           if !Flag.sgrep_mode2
           then ib (* safe *)
           else 
-            begin
+          *)
+             begin
+            (* coccionly:
 	      Format.set_formatter_out_channel stderr;
               Common.pr2 "SP mcode ";
               Pretty_print_cocci.print_mcodekind oldmcode;
@@ -203,6 +223,7 @@ module XTRANS = struct
               Pretty_print_cocci.print_mcodekind mck;
               Format.print_newline();
               Format.print_flush();
+            *)
               failwith
 	        (Common.sprintf "%s: already tagged token:\n%s"
 		   tin.extra.current_rule_name
@@ -438,7 +459,7 @@ module XTRANS = struct
          *)
 
         (*f () tin*)
-        if Cocci_vs_c_3.equal_metavarval value value' 
+        if Cocci_vs_c.equal_metavarval value value' 
         then f () tin
         else fail tin
 
@@ -456,7 +477,7 @@ end
 (*****************************************************************************)
 (* Entry point  *) 
 (*****************************************************************************)
-module TRANS  = Cocci_vs_c_3.COCCI_VS_C (XTRANS)
+module TRANS  = Cocci_vs_c.COCCI_VS_C (XTRANS)
 
 
 let transform_re_node a b tin = 

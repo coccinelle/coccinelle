@@ -109,7 +109,7 @@ module type PARAM =
       matcher
 
     val distrf_struct_fields :
-      (Ast_cocci.meta_name Ast_cocci.mcode, Ast_c.field Ast_c.wrap list) 
+      (Ast_cocci.meta_name Ast_cocci.mcode, Ast_c.field list) 
       matcher
 
     val distrf_cst :

@@ -8,7 +8,7 @@ module F = Control_flow_c
 (* Debugging functions *)
 (*****************************************************************************)
 let show_or_not_predicate pred = 
-  if !Flag_engine.debug_engine then begin 
+  if !Flag_matcher.debug_engine then begin 
     indent_do (fun () -> 
       adjust_pp_with_indent_and_header "labeling: pred = " (fun () -> 
         Pretty_print_engine.pp_predicate pred;
@@ -17,7 +17,7 @@ let show_or_not_predicate pred =
   end
 
 let show_or_not_nodes nodes =
-  if !Flag_engine.debug_engine  then begin 
+  if !Flag_matcher.debug_engine  then begin 
     indent_do (fun () -> 
       adjust_pp_with_indent_and_header "labeling: result = " (fun () -> 
         Common.pp_do_in_box (fun () -> 
@@ -94,7 +94,7 @@ let (labels_for_ctl: string list (* dropped isos *) ->
 
       | Lib_engine.Match (re), _unwrapnode -> 
           let substs = 
-            Pattern3.match_re_node dropped_isos re node binding
+            Pattern_c.match_re_node dropped_isos re node binding
             +> List.map (fun (re', subst) -> 
               Lib_engine.Match (re'), subst
             )
@@ -386,7 +386,7 @@ let (mysat2:
       WRAPPED_ENGINE.satbis (flow, label, states) ctl (used_after, binding2)
     in
     if not (!Flag_parsing_cocci.sgrep_mode || !Flag.sgrep_mode2 ||
-            !Flag_engine.allow_inconsistent_paths)
+            !Flag_matcher.allow_inconsistent_paths)
     then Check_reachability.check_reachability triples flow;
     let (trans_info2,used_after_fresh_envs) =
       Postprocess_transinfo.process used_after binding2 trans_info2 in

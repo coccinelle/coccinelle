@@ -1,9 +1,25 @@
+(* Copyright (C) 2006, 2007, 2008 Yoann Padioleau
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License (GPL)
+ * version 2 as published by the Free Software Foundation.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * file license.txt for more details.
+ * 
+ * This file was part of Coccinelle.
+ *)
+
 open Common
 
 module A = Ast_cocci
 module B = Ast_c
 
 module F = Control_flow_c
+
+module Flag = Flag_matcher
 
 (*****************************************************************************)
 (* Wrappers *)
@@ -101,7 +117,12 @@ let generalize_mcode ia =
 	A.CONTEXT (A.DontCarePos,x)
     | A.MINUS   (A.NoPos,x) -> 
 	A.MINUS   (A.DontCarePos,x)
-    | _ -> raise Impossible in
+
+    | A.CONTEXT ((A.FixPos _|A.DontCarePos), _) 
+    | A.MINUS ((A.FixPos _|A.DontCarePos), _)
+        ->
+        raise Impossible
+  in
   (s1, i, new_mck, pos)
 
 
@@ -134,7 +155,10 @@ let equal_unaryOp a b =
   | A.UnMinus  , B.UnMinus -> true
   | A.Tilde    , B.Tilde   -> true
   | A.Not      , B.Not     -> true
-  | _, _ -> false
+  | _, B.GetRefLabel -> false (* todo cocci? *)
+  | _, (B.Not|B.Tilde|B.UnMinus|B.UnPlus|B.DeRef|B.GetRef) -> false
+      
+
 
 let equal_arithOp a b = 
   match a, b with
@@ -148,7 +172,8 @@ let equal_arithOp a b =
   | A.And      , B.And      -> true
   | A.Or       , B.Or       -> true
   | A.Xor      , B.Xor      -> true
-  | _          , _          -> false
+  | _, (B.Xor|B.Or|B.And|B.DecRight|B.DecLeft|B.Mod|B.Div|B.Mul|B.Minus|B.Plus)
+      -> false
 
 let equal_logicalOp a b = 
   match a, b with
@@ -160,37 +185,38 @@ let equal_logicalOp a b =
   | A.NotEq  , B.NotEq  -> true
   | A.AndLog , B.AndLog -> true
   | A.OrLog  , B.OrLog  -> true
-  | _          , _          -> false
+  | _, (B.OrLog|B.AndLog|B.NotEq|B.Eq|B.SupEq|B.InfEq|B.Sup|B.Inf)
+      -> false
 
 let equal_assignOp a b = 
   match a, b with
   | A.SimpleAssign, B.SimpleAssign -> true
   | A.OpAssign a,   B.OpAssign b -> equal_arithOp a b
-  | _ -> false
+  | _, (B.OpAssign _|B.SimpleAssign) -> false
 
 let equal_fixOp a b = 
   match a, b with
   | A.Dec, B.Dec -> true
   | A.Inc, B.Inc -> true
-  | _ -> false
+  | _, (B.Inc|B.Dec) -> false
 
 let equal_binaryOp a b = 
   match a, b with
   | A.Arith a,    B.Arith b ->   equal_arithOp a b
   | A.Logical a,  B.Logical b -> equal_logicalOp a b
-  | _ -> false
+  | _, (B.Logical _ | B.Arith _) -> false
 
 let equal_structUnion a b = 
   match a, b with
   | A.Struct, B.Struct -> true
   | A.Union,  B.Union -> true
-  | _, _ -> false
+  | _, (B.Struct|B.Union) -> false
 
 let equal_sign a b = 
   match a, b with
   | A.Signed,    B.Signed   -> true
   | A.Unsigned,  B.UnSigned -> true
-  | _, _ -> false
+  | _, (B.UnSigned|B.Signed) -> false
 
 let equal_storage a b = 
   match a, b with
@@ -199,7 +225,9 @@ let equal_storage a b =
   | A.Register , B.Sto B.Register
   | A.Extern   , B.Sto B.Extern 
       -> true
-  | _ -> false
+  | _, (B.NoSto | B.StoTypedef) -> false
+  | _, (B.Sto (B.Register|B.Static|B.Auto|B.Extern)) -> false
+
 
 (*---------------------------------------------------------------------------*)
 
@@ -247,8 +275,13 @@ let equal_metavarval valu valu' =
 	      Ast_c.equal_posl posa1 posb1 && Ast_c.equal_posl posa2 posb2)
             l2)
 	l1
-  | _ -> raise Impossible
 
+  | (B.MetaPosValList _|B.MetaListlenVal _|B.MetaPosVal _|B.MetaStmtVal _
+      |B.MetaTypeVal _
+      |B.MetaParamListVal _|B.MetaParamVal _|B.MetaExprListVal _
+      |B.MetaExprVal _|B.MetaLocalFuncVal _|B.MetaFuncVal _|B.MetaIdVal _
+    ), _
+      -> raise Impossible
 
 
 (*---------------------------------------------------------------------------*)
@@ -400,7 +433,11 @@ let initialisation_to_affectation decl =
       (match xs with
       | [] -> raise Impossible
       | [x] -> 
-          let ((var, returnType, storage, local),iisep) = x in
+          let ({B.v_namei = var;
+                B.v_type = returnType;
+                B.v_storage = storage;
+                B.v_local = local},
+              iisep) = x in
 
           (match var with
           | Some ((s, ini),  iis::iini) -> 
@@ -506,7 +543,7 @@ module type PARAM =
       matcher
 
     val distrf_struct_fields : 
-      (A.meta_name A.mcode, B.field B.wrap list) matcher
+      (A.meta_name A.mcode, B.field list) matcher
 
     val distrf_cst : 
       (A.meta_name A.mcode, (B.constant, string) either B.wrap) matcher
@@ -704,7 +741,7 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
 	
 	
 
-  | A.MetaErr _, _ -> failwith "not handling MetaErr"
+  | A.MetaErr _,     _ -> failwith "not handling MetaErr"
 
   (* todo?: handle some isomorphisms in int/float ? can have different
    * format : 1l can match a 1.
@@ -750,7 +787,9 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
               ))
           | _ -> fail (* multi string, not handled *)
           )
-      | _, _ -> fail
+
+      | _, B.MultiString -> (* todo cocci? *) fail
+      | _, (B.String _ | B.Float _ | B.Char _ | B.Int _) -> fail
       )
 
 
@@ -997,17 +1036,17 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
 	  failwith
 	    "for nestexpr, only handling the case with dots and only one exp")
 
-  | A.NestExpr _, _ ->
+  | A.NestExpr _,     _ ->
       failwith "only handling multi and no when code in a nest expr"
 
   (* only in arg lists or in define body *)  
-  | A.TypeExp _, _ -> fail
+  | A.TypeExp _,    _ -> fail
 
   (* only in arg lists *)
-  | A.MetaExprList _, _   
-  | A.EComma _, _  
-  | A.Ecircles _, _ 
-  | A.Estars _, _   
+  | A.MetaExprList _,    _   
+  | A.EComma _,    _  
+  | A.Ecircles _,    _ 
+  | A.Estars _,    _   
       ->
 	raise Impossible
 
@@ -1025,7 +1064,20 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
   | _, ((B.Constructor _,_),_) 
     -> fail
 
-  | _, _ -> fail
+
+  | _, 
+     (((B.Cast (_, _)|B.ParenExpr _|B.SizeOfType _|B.SizeOfExpr _|
+     B.RecordPtAccess (_, _)|
+     B.RecordAccess (_, _)|B.ArrayAccess (_, _)|
+     B.Binary (_, _, _)|B.Unary (_, _)|
+     B.Infix (_, _)|B.Postfix (_, _)|
+     B.Assignment (_, _, _)|B.CondExpr (_, _, _)|
+     B.FunCall (_, _)|B.Constant _|B.Ident _),
+     _),_)
+       -> fail
+
+
+
 
 
 
@@ -1569,8 +1621,8 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
             (B.MacroDecl ((sb,ebs),
                          [iisb;lpb;rpb;iiendb;iifakestart] ++ iistob))
           ))))))))
-  
-  | _ -> fail
+
+  | _, (B.MacroDecl _ |B.DeclList _) -> fail
 
 
 
@@ -1582,7 +1634,12 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
   * T { }; that we want to match against typedef struct { } xx_t;
   *)
  | A.TyDecl (tya0, ptvirga), 
-   ((Some ((idb, None),[iidb]), typb0, (B.StoTypedef, inl), local), iivirg) ->
+   ({B.v_namei = Some ((idb, None),[iidb]);
+     B.v_type = typb0;
+     B.v_storage = (B.StoTypedef, inl);
+     B.v_local = local; 
+     B.v_attr = attrs;
+   }, iivirg) ->
 
    (match A.unwrap tya0, typb0 with
    | A.Type(cv1,tya1), ((qu,il),typb1) ->
@@ -1640,8 +1697,12 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
 
                      return (
                      (A.TyDecl (tya0, ptvirga)) +> A.rewrap decla,
-                     (((Some ((idb, None),[iidb]), typb0, (B.StoTypedef, inl),
-			local),
+                     (({B.v_namei = Some ((idb, None),[iidb]);
+                        B.v_type = typb0;
+                        B.v_storage = (B.StoTypedef, inl);
+                        B.v_local = local;
+                        B.v_attr = attrs;
+                     },
                        iivirg),iiptvirgb,iistob)
                      )
 		 | _ -> raise Impossible    
@@ -1664,8 +1725,12 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
                
                    return (
                      (A.TyDecl (tya0, ptvirga)) +> A.rewrap decla,
-                     (((Some ((idb, None),[iidb]), typb0,
-			(B.StoTypedef, inl), local),
+                     (({B.v_namei = Some ((idb, None),[iidb]);
+                        B.v_type = typb0;
+                        B.v_storage = (B.StoTypedef, inl);
+                        B.v_local = local;
+                        B.v_attr = attrs;
+                     },
                       iivirg),iiptvirgb,iistob)
                    )
                | _ -> raise Impossible    
@@ -1680,18 +1745,28 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
    )
          
    | A.UnInit (stoa, typa, ida, ptvirga), 
-     ((Some ((idb, _),[iidb]), typb, (B.StoTypedef,_), _local), iivirg) -> 
+     ({B.v_namei = Some ((idb, _),[iidb]);
+       B.v_storage = (B.StoTypedef,_);
+     }, iivirg) -> 
        fail
 
    | A.Init (stoa, typa, ida, eqa, inia, ptvirga), 
-     ((Some ((idb, _),[iidb]), typb, (B.StoTypedef,_), _local), iivirg) -> 
+     ({B.v_namei = Some ((idb, _),[iidb]);
+       B.v_storage = (B.StoTypedef,_);
+     }, iivirg) -> 
        fail
 
 
 
     (* could handle iso here but handled in standard.iso *)
    | A.UnInit (stoa, typa, ida, ptvirga), 
-     ((Some ((idb, None),[iidb]), typb, stob, local), iivirg) -> 
+     ({B.v_namei = Some ((idb, None),[iidb]);
+       B.v_type = typb;
+       B.v_storage = stob;
+       B.v_local = local;
+       B.v_attr = attrs;
+     }, iivirg) -> 
+
        tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb -> 
        fullType typa typb >>= (fun typa typb -> 
        ident DontKnow ida (idb, iidb) >>= (fun ida (idb, iidb) -> 
@@ -1699,12 +1774,22 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
         (fun stoa (stob, iistob) -> 
          return (
            (A.UnInit (stoa, typa, ida, ptvirga)) +>  A.rewrap decla,
-           (((Some ((idb,None),[iidb]),typb,stob,local),iivirg),
+           (({B.v_namei = Some ((idb,None),[iidb]);
+              B.v_type = typb;
+              B.v_storage = stob;
+              B.v_local = local;
+              B.v_attr = attrs;
+           },iivirg),
 	    iiptvirgb,iistob)
          )))))
 
    | A.Init (stoa, typa, ida, eqa, inia, ptvirga), 
-     ((Some((idb,Some inib),[iidb;iieqb]),typb,stob,local),iivirg)
+     ({B.v_namei = Some((idb,Some inib),[iidb;iieqb]);
+       B.v_type = typb;
+       B.v_storage = stob;
+       B.v_local = local;
+       B.v_attr = attrs;
+     },iivirg)
        ->
        tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb -> 
        tokenf eqa iieqb >>= (fun eqa iieqb -> 
@@ -1715,25 +1800,46 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
        initialiser inia inib >>= (fun inia inib -> 
          return (
            (A.Init (stoa, typa, ida, eqa, inia, ptvirga)) +> A.rewrap decla,
-           (((Some((idb,Some inib),[iidb;iieqb]),typb,stob,local),iivirg),
+           (({B.v_namei = Some((idb,Some inib),[iidb;iieqb]);
+              B.v_type = typb;
+              B.v_storage = stob;
+              B.v_local = local;
+              B.v_attr = attrs;
+           },iivirg),
            iiptvirgb,iistob)
          )))))))
            
    (* do iso-by-absence here ? allow typedecl and var ? *)
-   | A.TyDecl (typa, ptvirga), ((None, typb, stob, local), iivirg)  ->
+   | A.TyDecl (typa, ptvirga), 
+     ({B.v_namei = None; B.v_type = typb; 
+       B.v_storage = stob; 
+       B.v_local = local;
+       B.v_attr = attrs;
+     }, iivirg)  ->
+
        if stob = (B.NoSto, false)
        then
          tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb -> 
          fullType typa typb >>= (fun typa typb -> 
            return (
              (A.TyDecl (typa, ptvirga)) +> A.rewrap decla,
-             (((None, typb, stob, local), iivirg), iiptvirgb, iistob)
+             (({B.v_namei = None;
+                B.v_type = typb;
+                B.v_storage = stob;
+                B.v_local = local;
+                B.v_attr = attrs;
+             }, iivirg), iiptvirgb, iistob)
            )))
        else fail
 
 
    | A.Typedef (stoa, typa, ida, ptvirga), 
-     ((Some ((idb, None),[iidb]),typb,(B.StoTypedef,inline),local),iivirg) ->
+     ({B.v_namei = Some ((idb, None),[iidb]);
+       B.v_type = typb;
+       B.v_storage = (B.StoTypedef,inline);
+       B.v_local = local;
+       B.v_attr = attrs;
+     },iivirg) ->
 
        tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb -> 
        fullType typa typb >>= (fun typa typb -> 
@@ -1771,14 +1877,19 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
        ) >>= (fun ida (idb, iidb) ->
          return (
            (A.Typedef (stoa, typa, ida, ptvirga)) +> A.rewrap decla,
-           (((Some ((idb, None),[iidb]), typb, (B.StoTypedef,inline),local),
+           (({B.v_namei = Some ((idb, None),[iidb]);
+              B.v_type = typb;
+              B.v_storage = (B.StoTypedef,inline);
+              B.v_local = local;
+              B.v_attr = attrs;
+           },
 	     iivirg),
             iiptvirgb, iistob)
          )
        ))))
              
        
-   | _, ((None, typb, sto, _local), _) -> 
+   | _, ({B.v_namei = None;}, _) -> 
        (* old:   failwith "no variable in this declaration, wierd" *)
        fail
 
@@ -1797,11 +1908,12 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
    | A.Ddots(dots,whencode), _ ->
        raise Impossible
             
-   | A.OptDecl _, _ | A.UniqueDecl _, _ -> 
+   | A.OptDecl _,    _ | A.UniqueDecl _,     _ -> 
        failwith "not handling Opt/Unique Decl"
 
+   | _, ({B.v_namei=Some _}, _)
+       -> fail
 
-   | _, _ -> fail
 
 
 
@@ -1927,8 +2039,13 @@ and (initialiser: (A.initialiser, Ast_c.initialiser) matcher) =  fun ia ib ->
 
     | A.UniqueIni _,_ | A.OptIni _,_ -> 
       failwith "not handling Opt/Unique on initialisers"
-          
-    | _, _ -> fail
+
+    | _, (B.InitIndexOld (_, _), _) -> fail 
+    | _, (B.InitFieldOld (_, _), _) -> fail 
+
+    | _, ((B.InitDesignators (_, _)|B.InitList _|B.InitExpr _), _)
+        -> fail
+
 
 
 
@@ -2004,7 +2121,7 @@ and initialisers_unordered2 = fun ias ibs ->
        
 
 (* ------------------------------------------------------------------------- *)
-and (struct_fields: (A.declaration list, B.field B.wrap list) matcher) =
+and (struct_fields: (A.declaration list, B.field list) matcher) =
  fun eas ebs -> 
   match eas, ebs with
   | [], [] -> return ([], [])
@@ -2047,12 +2164,13 @@ and (struct_fields: (A.declaration list, B.field B.wrap list) matcher) =
       | _unwrapx, [] -> fail
       )
 
-and (struct_field: (A.declaration, B.field B.wrap) matcher) = fun fa fb -> 
-  let (xfield, ii) = fb in
-  let iiptvirgb = tuple_of_list1 ii in
+and (struct_field: (A.declaration, B.field) matcher) = fun fa fb -> 
+  let (xfield, iifield) = fb in
 
   match xfield with 
-  | B.FieldDeclList onefield_multivars -> 
+  | B.DeclarationField (B.FieldDeclList (onefield_multivars,iiptvirg)) -> 
+
+    let iiptvirgb = tuple_of_list1 iiptvirg in
 
     (match onefield_multivars with
     | [] -> raise Impossible
@@ -2073,19 +2191,29 @@ and (struct_field: (A.declaration, B.field B.wrap) matcher) = fun fa fb ->
           let iisto = [] in
           let stob = B.NoSto, false in
           let fake_var = 
-            ((Some ((idb, None),[iidb]), typb, stob, Ast_c.NotLocalDecl),
+            ({B.v_namei = Some ((idb, None),[iidb]);
+              B.v_type = typb;
+              B.v_storage = stob;
+              B.v_local = Ast_c.NotLocalDecl;
+              B.v_attr = Ast_c.noattr;
+            },
 	     iivirg)            
           in
           onedecl allminus fa (fake_var,iiptvirgb,iisto) >>= 
             (fun fa (var,iiptvirgb,iisto) -> 
 
               match fake_var with
-              | ((Some ((idb, None),[iidb]), typb, stob, local), iivirg) -> 
+              | ({B.v_namei = Some ((idb, None),[iidb]);
+                  B.v_type = typb;
+                  B.v_storage = stob;
+                }, iivirg) -> 
                   let onevar = B.Simple (Some idb, typb), [iidb] in
                   
                   return (
                     (fa),
-                    (B.FieldDeclList [onevar, iivirg], [iiptvirgb])
+                    ((B.DeclarationField 
+                        (B.FieldDeclList ([onevar, iivirg], [iiptvirgb]))),
+                    iifield)
                   )
               | _ -> raise Impossible
             )
@@ -2095,7 +2223,13 @@ and (struct_field: (A.declaration, B.field B.wrap) matcher) = fun fa fb ->
       pr2_once "PB: More that one variable in decl. Have to split";
       fail
     )
-  | B.EmptyField -> fail
+  | B.EmptyField -> 
+      let _iiptvirgb = tuple_of_list1 iifield in
+      fail
+
+  | B.MacroStructDeclTodo -> fail
+  | B.CppDirectiveStruct directive -> fail
+  | B.IfdefStruct directive -> fail
 
 
 
@@ -2291,10 +2425,9 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
           pr2_once 
             "warning: long long or long double not handled by ast_cocci";
           fail
-          
-          
-      | _, _ -> fail
-          
+
+      | _, (B.Void|B.FloatType _|B.IntType _) -> fail
+
           
       )
 
@@ -2512,8 +2645,19 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
 
     | _, (B.TypeOfExpr e, ii) -> fail
     | _, (B.TypeOfType e, ii) -> fail
-          
-    | _, _ -> fail
+
+    | _, (B.ParenType e, ii) -> fail (* todo ?*)
+    | _, (B.EnumName _, _) -> fail (* todo cocci ?*)
+    | _, (B.Enum _, _) -> fail (* todo cocci ?*)
+
+    | _,
+     ((B.TypeName (_, _)|B.StructUnionName (_, _)|
+      B.StructUnion (_, _, _)|
+      B.FunctionType _|B.Array (_, _)|B.Pointer _|
+      B.BaseType _),
+     _)
+     -> fail
+
 
 (* todo: iso on sign, if not mentioned then free.  tochange? 
  * but that require to know if signed int because explicit
@@ -2634,9 +2778,13 @@ and compatible_type a (b,_local) =
             pr2_once "no longdouble in cocci";
             fail
 	| Type_cocci.BoolType, _ -> failwith "no booltype in C"
-	| _ -> fail
-	      
+
+
+        | _, (B.Void|B.FloatType _|B.IntType _) -> fail
       )
+
+
+
     | Type_cocci.Pointer  a, (qub, (B.Pointer b, ii)) -> 
 	loop (a,b)
     | Type_cocci.FunctionPointer a, _ ->
@@ -2692,7 +2840,26 @@ and compatible_type a (b,_local) =
   (* for metavariables of type expression *^* *)
     | Type_cocci.Unknown , _ -> ok
 
-    | _ -> fail in
+    | (_,
+      (_,
+      ((
+       B.TypeOfType _|B.TypeOfExpr _|B.ParenType _|
+       B.EnumName _|B.StructUnion (_, _, _)|B.Enum (_, _)
+      ),
+      _))) -> fail
+
+    | (_,
+      (_,
+      ((
+       B.StructUnionName (_, _)|
+       B.FunctionType _|
+       B.Array (_, _)|B.Pointer _|B.TypeName _|
+       B.BaseType _
+      ),
+      _))) -> fail
+
+
+  in
   loop (a,b)
 
 and compatible_sign signa signb = 
@@ -2709,7 +2876,7 @@ and equal_structUnion_type_cocci a b =
   match a, b with
   | Type_cocci.Struct, B.Struct -> true
   | Type_cocci.Union,  B.Union -> true
-  | _, _ -> false
+  | _, (B.Struct | B.Union) -> false
 
 
 
@@ -3040,7 +3207,13 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
 
 
   | A.FunHeader (mckstart, allminus, fninfoa, ida, oparen, paramsa, cparen),
-    F.FunHeader ((idb, (retb, (paramsb, (isvaargs, iidotsb))), stob), ii) -> 
+    F.FunHeader ({B.f_name = idb;
+                  f_type = (retb, (paramsb, (isvaargs, iidotsb)));
+                  f_storage = stob;
+                  f_attr = attrs;
+                  f_body = body;
+                  }, ii) -> 
+      assert (null body);
 
       (* fninfoa records the order in which the SP specified the various
 	 information, but this isn't taken into account in the matching.
@@ -3098,8 +3271,12 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
              return (
                A.FunHeader(mckstart,allminus,fninfoa,ida,oparen,
                           paramsa,cparen),
-               F.FunHeader ((idb, (retb, (paramsb, (isvaargs, iidotsb))), 
-                            stob), 
+               F.FunHeader ({B.f_name = idb;
+                             f_type = (retb, (paramsb, (isvaargs, iidotsb)));
+                             f_storage = stob;
+                             f_attr = attrs;
+                             f_body = body;
+                           },
                            iidb::ioparenb::icparenb::iifakestart::iistob)
                 )
               ))))))))
@@ -3279,8 +3456,14 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
 
 
 
-  | A.Include(incla,filea), F.Include ((fileb, ii), (h_rel_pos, inifdef)) ->
-
+  | A.Include(incla,filea), 
+    F.Include {B.i_include = (fileb, ii);
+               B.i_rel_pos = h_rel_pos;
+               B.i_is_in_ifdef = inifdef;
+               B.i_content = copt;
+              } ->
+      assert (copt = None);
+      
       let include_requirment = 
         match mcodekind incla, mcodekind filea with
         | A.CONTEXT (_, A.BEFORE _), _ -> 
@@ -3298,7 +3481,11 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
         tokenf filea iifileb >>= (fun filea iifileb -> 
           return (
             A.Include(incla, filea),
-            F.Include ((fileb, [inclb;iifileb]), (h_rel_pos, inifdef))
+            F.Include {B.i_include = (fileb, [inclb;iifileb]);
+                       B.i_rel_pos = h_rel_pos;
+                       B.i_is_in_ifdef = inifdef;
+                       B.i_content = copt;
+            }
           )))
       else fail
 
@@ -3395,12 +3582,27 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
   (* todo?: print a warning at least ? *)
   | _, F.CaseRange _  
   | _, F.Asm _
-  | _, F.Ifdef _
   | _, F.MacroTop _
     -> fail2()
 
+  | _, (F.IfdefEndif _|F.IfdefElse _|F.IfdefHeader _)
+    -> fail2 ()
 
-  | _, _ -> fail  
+  | _, 
+    (F.MacroStmt (_, _)| F.DefineDoWhileZeroHeader _| F.EndNode|F.TopNode)
+      -> fail
+  | _, 
+    (F.Label (_, _)|F.Break (_, _)|F.Continue (_, _)|F.Default (_, _)|
+    F.Case (_, _)|F.Include _|F.Goto _|F.ExprStatement _|
+    F.DefineType _|F.DefineExpr _|
+    F.DefineHeader (_, _)|F.ReturnExpr (_, _)|F.Return (_, _)|F.MacroIterHeader (_, _)|
+    F.SwitchHeader (_, _)|F.ForHeader (_, _)|F.DoWhileTail _|F.DoHeader (_, _)|
+    F.WhileHeader (_, _)|F.Else _|F.IfHeader (_, _)|
+    F.SeqEnd (_, _)|F.SeqStart (_, _, _)|
+    F.Decl _|F.FunHeader _)
+      -> fail
+
+
   )
 end
 
