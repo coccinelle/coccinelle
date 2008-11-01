@@ -305,7 +305,7 @@ module ENV =
 
 module CFG = 
   struct
-    type node = int
+    type node = Ograph_extended.nodei
     type cfg = (F.node, F.edge) Ograph_extended.ograph_mutable
     let predecessors cfg n = List.map fst ((cfg#predecessors n)#tolist)
     let successors   cfg n = List.map fst ((cfg#successors n)#tolist)
@@ -313,7 +313,23 @@ module CFG =
       Control_flow_c.extract_is_loop (cfg#nodes#find n)
     let print_node i = Format.print_string (i_to_s i)
     let size cfg = cfg#nodes#length
-    let print_graph cfg special_nodes = ()
+
+    (* In ctl_engine, we use 'node' for the node but in the Ograph_extended 
+     * terminology, this 'node' is in fact an index to access the real
+     * node information (that ctl/ wants to abstract away to be more generic),
+     * the 'Ograph_extended.nodei'.
+     *)
+    let print_graph cfg special_nodes = 
+      Ograph_extended.print_ograph_mutable_generic cfg 
+        (fun (nodei, (node: F.node)) -> 
+          (* the string julia wants to put ? *)
+          let str1 = List.assoc nodei special_nodes in
+          (* the string yoann put as debug information in the cfg *)
+          let str2 = snd node in
+          spf "%s (julia: %s)" str2 str1
+        )
+        ~output_file:"/tmp/cocci.dot"
+        ~launch_gv:true
   end
 
 
