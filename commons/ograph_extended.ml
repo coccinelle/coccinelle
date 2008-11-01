@@ -227,6 +227,31 @@ let dfs_iter_with_path xi f g =
   
     
 
+let generate_ograph_generic g fnode filename =
+
+  with_open_outfile filename (fun (pr,_) ->
+    pr "digraph misc {\n" ;
+    pr "size = \"10,10\";\n" ;
+
+    let nodes = g#nodes in
+    nodes#iter (fun (k,node) -> 
+      let str = fnode (k, node) in
+     (* so can see if nodes without arcs were created *) 
+      pr (sprintf "%d [label=\"%s   [%d]\"];" k str k)
+    );
+
+    nodes#iter (fun (k,node) -> 
+      let succ = g#successors k in
+      succ#iter (fun (j,edge) ->
+        pr (sprintf "%d -> %d;\n" k j);
+      );
+    );
+    pr "}\n" ;
+    );
+  let _status = 
+    Unix.system ("dot " ^ filename ^ " -Tps  -o " ^ filename ^ ".ps;") in
+  ()
+
 
 let generate_ograph_xxx g filename =
   with_open_outfile filename (fun (pr,_) ->
@@ -252,7 +277,7 @@ let generate_ograph_xxx g filename =
   ()
 
 
-let launch_gv filename =
+let launch_gv_cmd filename =
   let _status = Unix.system ("gv " ^ filename ^ ".ps &")
   in
   (* zarb: I need this when I launch the program via eshell, otherwise gv
@@ -262,8 +287,14 @@ let launch_gv filename =
 
 let print_ograph_extended g filename launchgv = 
   generate_ograph_xxx g filename;
-  if launchgv then launch_gv filename
+  if launchgv then launch_gv_cmd filename
+
+
 
 let print_ograph_mutable g filename launchgv = 
   generate_ograph_xxx g filename;
-  if launchgv then launch_gv filename
+  if launchgv then launch_gv_cmd filename
+
+let print_ograph_mutable_generic g fnode ~output_file ~launch_gv = 
+  generate_ograph_generic g fnode output_file;
+  if launch_gv then launch_gv_cmd output_file

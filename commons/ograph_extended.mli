@@ -58,6 +58,13 @@ val dfs_iter_with_path :
   nodei -> (nodei -> nodei list -> unit) -> ('node, 'edge) ograph_mutable -> 
   unit
 
+val print_ograph_mutable_generic : 
+  ('node, 'edge) ograph_mutable -> 
+  ((nodei * 'node) -> string) (* what string to print for a node *) ->
+  output_file:filename -> 
+  launch_gv:bool -> 
+  unit
+
 
 val print_ograph_extended : 
   ('node * string, 'edge) ograph_extended -> 
