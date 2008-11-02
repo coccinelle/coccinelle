@@ -60,7 +60,9 @@ val dfs_iter_with_path :
 
 val print_ograph_mutable_generic : 
   ('node, 'edge) ograph_mutable -> 
-  ((nodei * 'node) -> string) (* what string to print for a node *) ->
+  string option -> (* label for the entire graph *)
+  (* what string to print for a node and how to color it *)
+  ((nodei * 'node) -> (string * string option * string option)) ->
   output_file:filename -> 
   launch_gv:bool -> 
   unit

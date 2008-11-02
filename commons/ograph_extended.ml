@@ -227,17 +227,27 @@ let dfs_iter_with_path xi f g =
   
     
 
-let generate_ograph_generic g fnode filename =
+let generate_ograph_generic g label fnode filename =
 
   with_open_outfile filename (fun (pr,_) ->
     pr "digraph misc {\n" ;
     pr "size = \"10,10\";\n" ;
+    (match label with
+      None -> ()
+    | Some x -> pr (Printf.sprintf "label = \"%s\";\n" x));
 
     let nodes = g#nodes in
     nodes#iter (fun (k,node) -> 
-      let str = fnode (k, node) in
+      let (str,border_color,inner_color) = fnode (k, node) in
+      let color =
+	match inner_color with
+	  None ->
+	    (match border_color with
+	      None -> ""
+	    | Some x -> Printf.sprintf ", color = %s" x)
+	| Some x -> Printf.sprintf ", style=filled, color = %s" x in
      (* so can see if nodes without arcs were created *) 
-      pr (sprintf "%d [label=\"%s   [%d]\"];" k str k)
+      pr (sprintf "%d [label=\"%s   [%d]\"%s];" k str k color)
     );
 
     nodes#iter (fun (k,node) -> 
@@ -295,6 +305,6 @@ let print_ograph_mutable g filename launchgv =
   generate_ograph_xxx g filename;
   if launchgv then launch_gv_cmd filename
 
-let print_ograph_mutable_generic g fnode ~output_file ~launch_gv = 
-  generate_ograph_generic g fnode output_file;
+let print_ograph_mutable_generic g label fnode ~output_file ~launch_gv = 
+  generate_ograph_generic g label fnode output_file;
   if launch_gv then launch_gv_cmd output_file

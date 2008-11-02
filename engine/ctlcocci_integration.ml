@@ -319,14 +319,15 @@ module CFG =
      * node information (that ctl/ wants to abstract away to be more generic),
      * the 'Ograph_extended.nodei'.
      *)
-    let print_graph cfg special_nodes = 
-      Ograph_extended.print_ograph_mutable_generic cfg 
+    let print_graph cfg label border_colors fill_colors = 
+      Ograph_extended.print_ograph_mutable_generic cfg label
         (fun (nodei, (node: F.node)) -> 
           (* the string julia wants to put ? *)
-          let str1 = List.assoc nodei special_nodes in
+          let bc = try Some(List.assoc nodei border_colors) with _ -> None in
+          let fc = try Some(List.assoc nodei fill_colors) with _ -> None in
           (* the string yoann put as debug information in the cfg *)
-          let str2 = snd node in
-          spf "%s (julia: %s)" str2 str1
+          let str = snd node in
+          (str,bc,fc)
         )
         ~output_file:"/tmp/cocci.dot"
         ~launch_gv:true
