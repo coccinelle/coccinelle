@@ -261,7 +261,7 @@ let generate_ograph_xxx g filename =
     let nodes = g#nodes in
     nodes#iter (fun (k,(node, s)) -> 
      (* so can see if nodes without arcs were created *) 
-      pr (sprintf "%d [label=\"%s   [%d]\"];" k s k)
+      pr (sprintf "%d [label=\"%s   [%d]\"];\n" k s k)
     );
 
     nodes#iter (fun (k,node) -> 
