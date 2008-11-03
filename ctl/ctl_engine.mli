@@ -21,7 +21,7 @@ module type GRAPH =
     val print_node :      node -> unit
     val size :            cfg -> int
     val print_graph :     cfg -> string option ->
-      (node * string) list -> (node * string) list -> unit
+      (node * string) list -> (node * string) list -> string -> unit
   end
 
 module OGRAPHEXT_GRAPH :

@@ -122,7 +122,7 @@ module CFG =
       Control_flow_c.extract_is_loop (cfg#nodes#find n)
     let print_node i = Format.print_string (string_of_int i)
     let size cfg = cfg#nodes#length
-    let print_graph cfg label border_nodes fill_nodes = ()
+    let print_graph cfg label border_nodes fill_nodes filename = ()
   end
 
 module ENGINE = Ctl_engine.CTL_ENGINE (ENV) (CFG) (PRED)

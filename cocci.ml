@@ -254,6 +254,12 @@ let show_or_not_ctl_text a b c =
 
 
 (* running information *)
+let get_celem celem : string = 
+  match celem with 
+      Ast_c.Definition ({Ast_c.f_name = funcs;},_) -> funcs
+    | Ast_c.Declaration
+	(Ast_c.DeclList ([{Ast_c.v_namei = Some ((s, _),_);}, _], _)) -> s
+    | _ -> ""
 
 let show_or_not_celem2 prelude celem = 
   if !Flag.show_trying then 
@@ -661,8 +667,11 @@ let g_contain_typedmetavar = ref false
 let last_env_toplevel_c_info xs =
   (Common.last xs).env_typing_after
 
-let concat_headers_and_c ccs = 
-  (List.concat (ccs +> List.map (fun x -> x.asts)))
+let concat_headers_and_c (ccs: file_info list) 
+    : (toplevel_c_info * string) list = 
+  (List.concat (ccs +> List.map (fun x -> 
+				   x.asts +> List.map (fun x' ->
+							 (x', x.fname)))))
 
 let for_unparser xs = 
   xs +> List.map (fun x -> 
@@ -807,7 +816,7 @@ let rebuild_info_c_and_headers ccs isexp =
 
 
 
-let prepare_c files = 
+let prepare_c files : file_info list = 
   let cprograms = List.map cprogram_of_file_cached files in
   let includes = includes_to_parse (zip files cprograms) in
 
@@ -961,7 +970,7 @@ let rec apply_python_rule r cache newes e rules_that_have_matched
       else (cache, merge_env [(e, rules_that_have_matched)] newes)
     end
 
-and apply_cocci_rule r rules_that_have_ever_matched es ccs =
+and apply_cocci_rule r rules_that_have_ever_matched es (ccs:file_info list ref) =
   Common.profile_code r.rulename (fun () -> 
     show_or_not_rule_name r.ast_rule r.ruleid;
     show_or_not_ctl_text r.ctl r.ast_rule r.ruleid;
@@ -1005,13 +1014,13 @@ and apply_cocci_rule r rules_that_have_ever_matched es ccs =
       
                       (* looping over the functions and toplevel elements in
 			 .c and .h *)
-		    concat_headers_and_c !ccs +> List.iter (fun c -> 
+		    concat_headers_and_c !ccs +> List.iter (fun (c,f) -> 
 		      if c.flow <> None 
 		      then
                         (* does also some side effects on c and r *)
 			let processed =
 			  process_a_ctl_a_env_a_toplevel r relevant_bindings
-			    c in
+			    c f in
 			match processed with
 			| None -> ()
 			| Some newbindings -> 
@@ -1083,7 +1092,7 @@ and merge_env new_e old_e =
 	| _ -> failwith "duplicate environment entries")
     old_e new_e
 
-and bigloop2 rs ccs = 
+and bigloop2 rs (ccs: file_info list) = 
   let es = ref [(Ast_c.emptyMetavarsBinding,[])] in
   let ccs = ref ccs in
   let rules_that_have_ever_matched = ref [] in
@@ -1116,7 +1125,7 @@ and bigloop2 rs ccs =
 		    apply_python_rule r cache newes e rules_that_have_matched
 		      rules_that_have_ever_matched
 		| "test" ->
-		    concat_headers_and_c !ccs +> List.iter (fun c -> 
+		    concat_headers_and_c !ccs +> List.iter (fun (c,_) -> 
 		      if c.flow <> None 
 		      then
 			Printf.printf "Flow: %s\r\nFlow!\r\n%!" c.fullstring);
@@ -1233,9 +1242,10 @@ and bigloop a b =
 
 
 (* does side effects on C ast and on Cocci info rule *)
-and process_a_ctl_a_env_a_toplevel2 r e c = 
+and process_a_ctl_a_env_a_toplevel2 r e c f = 
  indent_do (fun () -> 
   show_or_not_celem "trying" c.ast_c;
+  Flag.currentfile := Some (f ^ ":" ^get_celem c.ast_c);
   let (trans_info, returned_any_states, inherited_bindings, newbindings) = 
     Common.save_excursion Flag_ctl.loop_in_src_code (fun () -> 
       Flag_ctl.loop_in_src_code := !Flag_ctl.loop_in_src_code||c.contain_loop;
@@ -1275,9 +1285,9 @@ and process_a_ctl_a_env_a_toplevel2 r e c =
   end
  )
    
-and process_a_ctl_a_env_a_toplevel  a b c = 
+and process_a_ctl_a_env_a_toplevel  a b c f= 
   Common.profile_code "process_a_ctl_a_env_a_toplevel" 
-    (fun () -> process_a_ctl_a_env_a_toplevel2 a b c)
+    (fun () -> process_a_ctl_a_env_a_toplevel2 a b c f)
    
 
 

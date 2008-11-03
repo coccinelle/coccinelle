@@ -24,6 +24,10 @@ let pUNCHECK_OPT = ref true
 let pANY_NEG_OPT = ref true
 let pLazyOpt = ref true
 
+(* Nico: This counter and stack are use for graphical trace *)
+let stepcnt = ref 0
+let graph_stack = ref ([] : string list)
+
 (*
 let pTRIPLES_CONJ_OPT = ref false
 let pTRIPLES_COMPLEMENT_OPT = ref false
@@ -104,7 +108,7 @@ module type GRAPH =
     val print_node :      node -> unit
     val size :            cfg -> int
     val print_graph :     cfg -> string option ->
-      (node * string) list -> (node * string) list -> unit
+      (node * string) list -> (node * string) list -> string -> unit
   end
 ;;
 
@@ -1761,13 +1765,20 @@ let rec satloop unchecked required required_states
 		 (function _ ->
 		   Pretty_print_ctl.pp_ctl (P.print_predicate, SUB.print_mvar)
 		     false phi)) in
-	  G.print_graph grp None (*(Some label)*)
-	    (match required_states with
-	      None -> []
-	    | Some required_states ->
-		(List.map (function s -> (s,"blue")) required_states))
-	    (List.map (function (s,_,_) -> (s,"red")) res)));
-    res in
+	  let file = (match !Flag.currentfile with
+			  None -> "graphical_trace"
+			| Some f -> f
+		     ) in
+	  let filename = "/tmp/" ^ file ^ ":" ^ (Printf.sprintf "%03d" !stepcnt) ^ ".dot" in
+	    graph_stack := filename :: !graph_stack;
+	    stepcnt := !stepcnt +1;
+	    G.print_graph grp (* None *) (Some label)
+	      (match required_states with
+		   None -> []
+		 | Some required_states ->
+		     (List.map (function s -> (s,"blue")) required_states))
+	      (List.map (function (s,_,_) -> (s,"\"#FF8080\"")) res)  filename));
+      res in
   
   loop unchecked required required_states phi
 ;;    

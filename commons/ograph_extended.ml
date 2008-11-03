@@ -232,6 +232,7 @@ let generate_ograph_generic g label fnode filename =
   with_open_outfile filename (fun (pr,_) ->
     pr "digraph misc {\n" ;
     pr "size = \"10,10\";\n" ;
+    pr "penwidth=3.0;\n" ;
     (match label with
       None -> ()
     | Some x -> pr (Printf.sprintf "label = \"%s\";\n" x));
@@ -244,10 +245,13 @@ let generate_ograph_generic g label fnode filename =
 	  None ->
 	    (match border_color with
 	      None -> ""
-	    | Some x -> Printf.sprintf ", color = %s" x)
-	| Some x -> Printf.sprintf ", style=filled, color = %s" x in
+	    | Some x -> Printf.sprintf ", style=\"setlinewidth(3)\", color = %s" x)
+	| Some x ->
+	    (match border_color with
+	      None -> Printf.sprintf ", style=\"setlinewidth(3),filled\", fillcolor = %s" x 
+	    | Some x' -> Printf.sprintf ", style=\"setlinewidth(3),filled\", fillcolor = %s, color = %s" x x') in
      (* so can see if nodes without arcs were created *) 
-      pr (sprintf "%d [label=\"%s   [%d]\"%s];" k str k color)
+      pr (sprintf "%d [label=\"%s   [%d]\"%s];\n" k str k color)
     );
 
     nodes#iter (fun (k,node) -> 
@@ -258,8 +262,6 @@ let generate_ograph_generic g label fnode filename =
     );
     pr "}\n" ;
     );
-  let _status = 
-    Unix.system ("dot " ^ filename ^ " -Tps  -o " ^ filename ^ ".ps;") in
   ()
 
 
@@ -282,12 +284,12 @@ let generate_ograph_xxx g filename =
     );
     pr "}\n" ;
     );
-  let _status = 
-    Unix.system ("dot " ^ filename ^ " -Tps  -o " ^ filename ^ ".ps;") in
   ()
 
 
 let launch_gv_cmd filename =
+  let _status = 
+    Unix.system ("dot " ^ filename ^ " -Tps  -o " ^ filename ^ ".ps;") in
   let _status = Unix.system ("gv " ^ filename ^ ".ps &")
   in
   (* zarb: I need this when I launch the program via eshell, otherwise gv
@@ -298,8 +300,6 @@ let launch_gv_cmd filename =
 let print_ograph_extended g filename launchgv = 
   generate_ograph_xxx g filename;
   if launchgv then launch_gv_cmd filename
-
-
 
 let print_ograph_mutable g filename launchgv = 
   generate_ograph_xxx g filename;
