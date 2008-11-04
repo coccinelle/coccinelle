@@ -685,8 +685,8 @@ let gen_pdf_graph () =
   List.iter (fun filename ->
     ignore (Unix.system ("dot " ^ filename ^ " -Tpdf  -o " ^ filename ^ ".pdf;"))
 	    ) filename_stack;
-  let first::tail = filename_stack in
-    Unix.system ("cp " ^ first ^ ".pdf " ^ outfile ^ ";");
+  let (head,tail) = (List.hd filename_stack, List.tl filename_stack) in
+    ignore(Unix.system ("cp " ^ head ^ ".pdf " ^ outfile ^ ";"));
     tail +> List.iter (fun filename ->
       ignore(Unix.system ("mv " ^ outfile ^ " /tmp/tmp.pdf;"));
       ignore(Unix.system ("pdftk " ^ filename ^ ".pdf /tmp/tmp.pdf cat output " ^ outfile ^ ""));
