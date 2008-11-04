@@ -355,7 +355,7 @@ let mkstates states = function
 let print_graph grp required_states res str = function
     A.Exists (keep,v,phi)     -> ()
   | phi ->
-      if !Flag_ctl.graphical_trace != ""
+      if !Flag_ctl.graphical_trace != ""  && not !Flag_ctl.checking_reachability
       then
 	(match phi with
 	| A.Exists (keep,v,phi)     -> ()
@@ -378,7 +378,8 @@ let print_graph grp required_states res str = function
 	      (Printf.sprintf "%03d" !stepcnt) ^ ".dot" in	   
 	    graph_stack := filename :: !graph_stack;
 	    stepcnt := !stepcnt +1;
-	    G.print_graph grp (* None *) (Some label)
+	    G.print_graph grp
+	      (if !Flag_ctl.gt_without_label then None else (Some label))
 	      (match required_states with
 		None -> []
 	      | Some required_states ->

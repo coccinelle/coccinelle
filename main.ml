@@ -245,6 +245,7 @@ let other_options = [
     "-verbose_match",        Arg.Set Flag_ctl.verbose_match, " ";
     "-verbose_engine",       Arg.Set Flag_matcher.debug_engine,    " ";
     "-graphical_trace",      Arg.Set_string Flag_ctl.graphical_trace, "  <file> the output pdf file";
+    "-gt_without_label",     Arg.Set Flag_ctl.gt_without_label, "  remove graph label";
 
     "-no_parse_error_msg", Arg.Clear Flag_parsing_c.verbose_parsing, " ";
     "-no_type_error_msg",  Arg.Clear Flag_parsing_c.verbose_type, " ";

@@ -15,3 +15,6 @@ let bench = ref 0
 let steps = ref (None : int option)
 
 let graphical_trace = ref ""
+let gt_without_label = ref false
+
+let checking_reachability = ref false
