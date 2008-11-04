@@ -6,6 +6,6 @@ setenv COCCINELLE_HOME ${HOME}/coccinelle
 
 #  -allow_inconsistent_paths
 
-(~/coccinelle/spatch.opt -quiet -timeout 120 \
+(spatch.opt -quiet -timeout 120 \
 -dir /home/julia/linux-2.6 -use_glimpse -cocci_file $* > ${1:r}.${3}.out) \
 >& tmp.${1:r}.${3}.out
