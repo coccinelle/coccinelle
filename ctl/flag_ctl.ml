@@ -14,4 +14,4 @@ let bench = ref 0
 
 let steps = ref (None : int option)
 
-let graphical_trace = ref false
+let graphical_trace = ref ""

@@ -66,7 +66,6 @@ let quiet_profile = (
     Flag_parsing_cocci.show_SP;
     Flag_parsing_cocci.show_iso_failures;
     Flag_ctl.verbose_ctl_engine;
-    Flag_ctl.graphical_trace;
     Flag_ctl.verbose_match;
     Flag_matcher.debug_engine;
     Flag_parsing_c.debug_unparsing;
@@ -94,7 +93,6 @@ let pad_profile = (
     Flag_parsing_cocci.show_SP;
     Flag_parsing_cocci.show_iso_failures;
     Flag_ctl.verbose_ctl_engine;
-    Flag_ctl.graphical_trace;
     Flag_ctl.verbose_match;
     Flag_matcher.debug_engine;
     Flag_parsing_c.debug_unparsing;
@@ -246,7 +244,7 @@ let other_options = [
     "-verbose_ctl_engine",   Arg.Set Flag_ctl.verbose_ctl_engine, " ";
     "-verbose_match",        Arg.Set Flag_ctl.verbose_match, " ";
     "-verbose_engine",       Arg.Set Flag_matcher.debug_engine,    " ";
-    "-graphical_trace",      Arg.Set Flag_ctl.graphical_trace, " ";
+    "-graphical_trace",      Arg.Set_string Flag_ctl.graphical_trace, "  <file> the output pdf file";
 
     "-no_parse_error_msg", Arg.Clear Flag_parsing_c.verbose_parsing, " ";
     "-no_type_error_msg",  Arg.Clear Flag_parsing_c.verbose_type, " ";

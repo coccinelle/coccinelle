@@ -405,7 +405,7 @@ let (mysat2:
     in
     if not (!Flag_parsing_cocci.sgrep_mode || !Flag.sgrep_mode2 ||
             !Flag_matcher.allow_inconsistent_paths ||
-	    !Flag_ctl.graphical_trace)
+	    !Flag_ctl.graphical_trace != "")
     then Check_reachability.check_reachability triples flow;
     let (trans_info2,used_after_fresh_envs) =
       Postprocess_transinfo.process used_after binding2 trans_info2 in

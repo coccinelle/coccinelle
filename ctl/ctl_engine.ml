@@ -1758,7 +1758,7 @@ let rec satloop unchecked required required_states
     if !Flag_ctl.bench > 0 then triples := !triples + (List.length res);
     let res = drop_wits required_states res phi (* ) *) in
 
-    (if !Flag_ctl.graphical_trace
+    (if !Flag_ctl.graphical_trace != ""
     then
       (match phi with
       | A.Exists (keep,v,phi)     -> ()
