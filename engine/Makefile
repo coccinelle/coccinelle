@@ -24,7 +24,7 @@ SRC= flag_matcher.ml lib_engine.ml pretty_print_engine.ml \
 INCLUDES = -I ../commons -I ../commons/ocamlextra -I ../globals \
 	       -I ../ctl -I ../parsing_cocci -I ../parsing_c 
 LIBS=../commons/commons.cma ../globals/globals.cma \
-     ../ctl/ctl.cma ../parsing_c/c_parser.cma ../parsing_cocci/cocci_parser.cma
+     ../ctl/ctl.cma ../parsing_c/parsing_c.cma ../parsing_cocci/cocci_parser.cma
 
 SYSLIBS= str.cma unix.cma 
 
