@@ -152,35 +152,6 @@ checked by a subsequent analysis.
 \end{grammar}
 
 \begin{grammar}
-  \RULE{ctypes}
-  \CASE{\NT{ctype} \ANY{, \NT{ctype}}}
-
-  \RULE{ctype}
-  \CASE{\opt{\NT{const\_vol}} \NT{generic\_ctype} \any{*}}
-  \CASE{\opt{\NT{const\_vol}} void \some{*}}
-  \CASE{(\NT{ctype} \ANY{| \NT{ctype}})}
-
-  \RULE{const\_vol}
-  \CASE{const}
-  \CASE{volatile}
-
-  \RULE{generic\_ctype}
-  \CASE{\NT{ctype\_qualif}}
-  \CASE{\opt{\NT{ctype\_qualif}} char}
-  \CASE{\opt{\NT{ctype\_qualif}} short}
-  \CASE{\opt{\NT{ctype\_qualif}} int}
-  \CASE{\opt{\NT{ctype\_qualif}} long}
-  \CASE{double}
-  \CASE{float}
-  \CASE{\OPT{\T{struct}\OR \T{union}} \T{id} \OPT{\{ \any{\NT{struct\_decl\_list}} \}}}
-
-  \RULE{ctype\_qualif}
-  \CASE{unsigned}
-  \CASE{signed}
-
-  \RULE{struct\_decl\_list}
-  \CASE{}
-
   \RULE{ids}
   \CASE{\NT{pmid} \ANY{, \NT{pmid}}}
 
@@ -325,22 +296,53 @@ use of these annotations:
 
 \section{Types}
 
-\noindent{\footnotesize\begin{tabular}{r@{\,\,\,}c@{\,\,\,}l}
-\mita{type} & ::= & \opt{\mtt{const} \(\mid\) \mtt{volatile}}
-                    \mita{type\_desc} \ANY{\mtt{*}}\\
-\mita{type\_desc} & ::= & \mita{simple\_type} \(\mid\) \opt{\mtt{signed} \(\mid\)
-       \mtt{unsigned}} \mita{signable\_type} \(\mid\) \opt{\mtt{struct} \(\mid\)
-       \mtt{union}} \msf{id}
-\\&\multicolumn{1}{r}{\(\mid\)}&
-       \mth{\msf{metaid}^{\ssf{Type}}}
-\end{tabular}}
+\begin{grammar}
+    \RULE{ctypes}
+  \CASE{\NT{ctype} \ANY{, \NT{ctype}}}
 
-\noindent{\footnotesize\begin{tabular}{r@{\,\,\,}c@{\,\,\,}l}
-\mita{simple\_type} & ::= & \mtt{void} \(\mid\) \mtt{double} \(\mid\)
- \mtt{float} \\
-\mita{signable\_type} & ::= & \mtt{char} \(\mid\) \mtt{short} \(\mid\)
- \mtt{int} \(\mid\) \mtt{long}
-\end{tabular}}
+  \RULE{ctype}
+  \CASE{\opt{\NT{const\_vol}} \NT{generic\_ctype} \any{*}}
+  \CASE{\opt{\NT{const\_vol}} void \some{*}}
+  \CASE{(\NT{ctype} \ANY{| \NT{ctype}})}
+
+  \RULE{const\_vol}
+  \CASE{const}
+  \CASE{volatile}
+
+  \RULE{generic\_ctype}
+  \CASE{\NT{ctype\_qualif}}
+  \CASE{\opt{\NT{ctype\_qualif}} char}
+  \CASE{\opt{\NT{ctype\_qualif}} short}
+  \CASE{\opt{\NT{ctype\_qualif}} int}
+  \CASE{\opt{\NT{ctype\_qualif}} long}
+  \CASE{double}
+  \CASE{float}
+  \CASE{\OPT{\T{struct}\OR \T{union}} \T{id} \OPT{\{ \any{\NT{struct\_decl\_list}} \}}}
+
+  \RULE{ctype\_qualif}
+  \CASE{unsigned}
+  \CASE{signed}
+
+  \RULE{struct\_decl\_list}
+  \CASE{}
+\end{grammar}
+
+% \noindent{\footnotesize\begin{tabular}{r@{\,\,\,}c@{\,\,\,}l}
+% \mita{type} & ::= & \opt{\mtt{const} \(\mid\) \mtt{volatile}}
+%                     \mita{type\_desc} \ANY{\mtt{*}}\\
+% \mita{type\_desc} & ::= & \mita{simple\_type} \(\mid\) \opt{\mtt{signed} \(\mid\)
+%        \mtt{unsigned}} \mita{signable\_type} \(\mid\) \opt{\mtt{struct} \(\mid\)
+%        \mtt{union}} \msf{id}
+% \\&\multicolumn{1}{r}{\(\mid\)}&
+%        \mth{\msf{metaid}^{\ssf{Type}}}
+% \end{tabular}}
+
+% \noindent{\footnotesize\begin{tabular}{r@{\,\,\,}c@{\,\,\,}l}
+% \mita{simple\_type} & ::= & \mtt{void} \(\mid\) \mtt{double} \(\mid\)
+%  \mtt{float} \\
+% \mita{signable\_type} & ::= & \mtt{char} \(\mid\) \mtt{short} \(\mid\)
+%  \mtt{int} \(\mid\) \mtt{long}
+% \end{tabular}}
 
 \section{Function declarations}
 
@@ -571,9 +573,13 @@ EXPR(\mita{exp}) & ::= &
 \section{Examples}
 %\label{sec:examples}
 
-\begin{lstlisting}
-int main(int i) {
+\begin{lstlisting}[language=C,commentstyle=\color{red},keywordstyle=\color{blue},stringstyle=\color{green}]
+#DEFINE TEST "Foo"
 
+printf("Foo");
+
+int main(int i) {
+//Test
   int k = foo();
 
   if(1) {
@@ -583,8 +589,6 @@ int main(int i) {
   }
 
   foo();
-
-
 }
 \end{lstlisting}
 
