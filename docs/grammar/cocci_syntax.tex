@@ -119,42 +119,39 @@ checked by a subsequent analysis.
 
 \begin{grammar}
   \RULE{metadecl}
-  \CASE{\NT{arity} \NT{purity} fresh identifier \NT{ids} ;}
-  \CASE{\NT{arity} \NT{purity} parameter \NT{ids} ;}
-  \CASE{\NT{arity} \NT{purity} parameter list \NT{ids} ;}
-  \CASE{\NT{arity} \NT{purity} expression list \NT{ids} ;}
-  \CASE{\NT{arity} \NT{purity} type \NT{ids} ;}
-  \CASE{\NT{arity} \NT{purity} statement \NT{ids} ;}
-  \CASE{\NT{arity} \NT{purity} statement list \NT{ids} ;}
-  \CASE{\NT{arity} \NT{purity} typedef \NT{ids} ;}
-  \CASE{\NT{arity} \NT{purity} declarer name \NT{ids} ;}
-  \CASE{\NT{arity} \NT{purity} iterator name \NT{ids} ;}
-  \CASE{\NT{arity} \NT{purity} identifier \NT{pmid\_with\_not\_eq\_list} ;}
-  \CASE{\NT{arity} \NT{purity} function \NT{pmid\_with\_not\_eq\_list} ;}
-  \CASE{\NT{arity} \NT{purity} local function \NT{pmid\_with\_not\_eq\_list} ;}
-  \CASE{\NT{arity} \NT{purity} declarer \NT{pmid\_with\_not\_eq\_list} ;}
-  \CASE{\NT{arity} \NT{purity} iterator \NT{pmid\_with\_not\_eq\_list} ;}
-  \CASE{\NT{arity} \NT{purity} error \NT{pmid\_with\_not\_eq\_list} ; }
-  \CASE{\NT{arity} \NT{purity} \opt{local} idexpression \opt{\NT{ctype}} \NT{pmid\_with\_not\_eq\_list} ;}
-  \CASE{\NT{arity} \NT{purity} \opt{local} idexpression \OPT{\ttlb \NT{ctypes} \ttrb \any{*}} \NT{pmid\_with\_not\_eq\_list} ;}
-  \CASE{\NT{arity} \NT{purity} \opt{local} idexpression \some{*} \NT{pmid\_with\_not\_eq\_list} ;}
-  \CASE{\NT{arity} \NT{purity} expression \some{*} \NT{pmid\_with\_not\_eq\_list} ;}
-  \CASE{\NT{arity} \NT{purity} \NT{ctype} [ ] \NT{pmid\_with\_not\_eq\_list} ;}
-  \CASE{\NT{arity} \NT{purity} \ttlb \NT{ctypes} \ttrb \any{*} [ ] \NT{pmid\_with\_not\_eq\_list} ;}
-  \CASE{\NT{arity} \NT{purity} constant \opt{\NT{ctype}} \NT{pmid\_with\_not\_eq\_list} ;}
-  \CASE{\NT{arity} \NT{purity} constant \OPT{\ttlb \NT{ctypes} \ttrb \any{*}} \NT{pmid\_with\_not\_eq\_list} ;}
-  \CASE{\NT{arity} \NT{purity} expression \NT{pmid\_with\_not\_ceq\_list} ;}
-  \CASE{\NT{arity} \NT{purity} \NT{ctype} \NT{pmid\_with\_not\_ceq\_list} ;}
-  \CASE{\NT{arity} \NT{purity} \ttlb \NT{ctypes} \ttrb \any{*} \NT{pmid\_with\_not\_ceq\_list} ;}
-  \CASE{\NT{arity} position \opt{any} \NT{pmid\_with\_not\_eq\_mid\_list} ;}
-  \CASE{\NT{arity} \NT{purity} parameter list [ ident ] \NT{ids} ;}
-  \CASE{\NT{arity} \NT{purity} expression list [ ident ] \NT{ids} ;}
+  \CASE{fresh identifier \NT{ids} ;}
+  \CASE{parameter \NT{ids} ;}
+  \CASE{parameter list \NT{ids} ;}
+  \CASE{expression list \NT{ids} ;}
+  \CASE{type \NT{ids} ;}
+  \CASE{statement \NT{ids} ;}
+  \CASE{statement list \NT{ids} ;}
+  \CASE{typedef \NT{ids} ;}
+  \CASE{declarer name \NT{ids} ;}
+  \CASE{iterator name \NT{ids} ;}
+  \CASE{identifier \NT{pmid\_with\_not\_eq\_list} ;}
+  \CASE{function \NT{pmid\_with\_not\_eq\_list} ;}
+  \CASE{local function \NT{pmid\_with\_not\_eq\_list} ;}
+  \CASE{declarer \NT{pmid\_with\_not\_eq\_list} ;}
+  \CASE{iterator \NT{pmid\_with\_not\_eq\_list} ;}
+  \CASE{error \NT{pmid\_with\_not\_eq\_list} ; }
+  \CASE{\opt{local} idexpression \opt{\NT{ctype}} \NT{pmid\_with\_not\_eq\_list} ;}
+  \CASE{\opt{local} idexpression \OPT{\ttlb \NT{ctypes} \ttrb \any{*}} \NT{pmid\_with\_not\_eq\_list} ;}
+  \CASE{\opt{local} idexpression \some{*} \NT{pmid\_with\_not\_eq\_list} ;}
+  \CASE{expression \some{*} \NT{pmid\_with\_not\_eq\_list} ;}
+  \CASE{\NT{ctype} [ ] \NT{pmid\_with\_not\_eq\_list} ;}
+  \CASE{\ttlb \NT{ctypes} \ttrb \any{*} [ ] \NT{pmid\_with\_not\_eq\_list} ;}
+  \CASE{constant \opt{\NT{ctype}} \NT{pmid\_with\_not\_eq\_list} ;}
+  \CASE{constant \OPT{\ttlb \NT{ctypes} \ttrb \any{*}} \NT{pmid\_with\_not\_eq\_list} ;}
+  \CASE{expression \NT{pmid\_with\_not\_ceq\_list} ;}
+  \CASE{\NT{ctype} \NT{pmid\_with\_not\_ceq\_list} ;}
+  \CASE{\ttlb \NT{ctypes} \ttrb \any{*} \NT{pmid\_with\_not\_ceq\_list} ;}
+  \CASE{position \opt{any} \NT{pmid\_with\_not\_eq\_mid\_list} ;}
+  \CASE{parameter list [ ident ] \NT{ids} ;}
+  \CASE{expression list [ ident ] \NT{ids} ;}
 \end{grammar}
 
 \begin{grammar}
-  \RULE{arity}\CASE{\OPT{! \OR ? \OR +}}
-  \RULE{purity}\CASE{\opt{pure} \opt{context}}
-  
   \RULE{ctypes}
   \CASE{\NT{ctype} \ANY{, \NT{ctype}}}
 
