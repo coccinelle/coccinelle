@@ -678,6 +678,25 @@ let for_unparser xs =
     (x.ast_c, (x.fullstring, x.tokens_c)), Unparse_c.PPviastr
   )
 
+let gen_pdf_graph () =
+  Printf.printf "Generation of /tmp/result.pdf%!";
+  let filename_stack = Ctl_engine.get_graph_files () in
+  List.iter (fun filename ->
+    ignore (Unix.system ("dot " ^ filename ^ " -Tpdf  -o " ^ filename ^ ".pdf;"))
+	    ) filename_stack;
+  let first::tail = filename_stack in
+    Unix.system ("cp " ^ first ^ ".pdf /tmp/result.pdf;");
+    tail +> List.iter (fun filename ->
+      ignore(Unix.system ("mv /tmp/result.pdf /tmp/tmp.pdf;"));
+      ignore(Unix.system ("pdftk " ^ filename ^ ".pdf /tmp/tmp.pdf cat output /tmp/result.pdf"));
+	      );
+    ignore(Unix.system ("rm /tmp/tmp.pdf;"));
+    List.iter (fun filename ->
+	ignore (Unix.system ("rm " ^ filename ^ " " ^ filename ^ ".pdf;"))
+	    ) filename_stack;
+  Printf.printf " - Done\n"
+
+
 (* --------------------------------------------------------------------- *)
 let prepare_cocci ctls free_var_lists negated_pos_lists
     used_after_lists positions_list astcocci = 
@@ -1350,6 +1369,7 @@ let full_engine2 (coccifile, isofile) cfiles =
 
     if !Flag.show_misc then Common.pr_xxxxxxxxxxxxxxxxx ();
     if !Flag.show_misc then pr "Finished";
+    if !Flag_ctl.graphical_trace then gen_pdf_graph ();
     if !Flag.show_misc then Common.pr_xxxxxxxxxxxxxxxxx();
 
     c_infos' +> List.map (fun c_or_h -> 

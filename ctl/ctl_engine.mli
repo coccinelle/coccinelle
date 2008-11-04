@@ -64,3 +64,6 @@ module CTL_ENGINE :
 
 	val print_bench : unit -> unit
       end
+
+val get_graph_files : unit -> string list
+	  

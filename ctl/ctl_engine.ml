@@ -24,8 +24,10 @@ let pUNCHECK_OPT = ref true
 let pANY_NEG_OPT = ref true
 let pLazyOpt = ref true
 
-(* Nico: This counter and stack are use for graphical trace *)
+(* Nico: This counter and stacks are use for graphical traces *)
 let stepcnt = ref 0
+(* Not used yet... will be to support multiple C files and functions *)
+(* let graph_stacks = ref ([] : string list list) *)
 let graph_stack = ref ([] : string list)
 
 (*
@@ -137,6 +139,8 @@ end
 (* ---------------------------------------------------------------------- *)
 (* Misc. useful generic functions                                         *)
 (* ---------------------------------------------------------------------- *)
+
+let get_graph_files _ = !graph_stack
 
 let head = List.hd
 
@@ -1769,7 +1773,7 @@ let rec satloop unchecked required required_states
 			  None -> "graphical_trace"
 			| Some f -> f
 		     ) in
-	  let filename = "/tmp/" ^ file ^ ":" ^ (Printf.sprintf "%03d" !stepcnt) ^ ".dot" in
+	  let filename = "/tmp/" ^ file ^ ":" ^ (Printf.sprintf "%03d" !stepcnt) ^ ".dot" in	   
 	    graph_stack := filename :: !graph_stack;
 	    stepcnt := !stepcnt +1;
 	    G.print_graph grp (* None *) (Some label)
