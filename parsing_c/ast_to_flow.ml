@@ -949,11 +949,11 @@ and aux_statement_list starti (xi, newxi) statxs =
         aux_statement (starti, newxi') statement
 
     | Ast_c.CppDirectiveStmt directive -> 
-        pr2 ("ast_to_flow: filter a directive");
+        pr2_once ("ast_to_flow: filter a directive");
         starti
 
     | Ast_c.IfdefStmt ifdef -> 
-        pr2 ("ast_to_flow: filter a directive");
+        pr2_once ("ast_to_flow: filter a directive");
         starti
 
     | Ast_c.IfdefStmt2 (ifdefs, xxs) -> 
