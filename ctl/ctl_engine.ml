@@ -373,9 +373,7 @@ let print_graph grp required_states res str = function
 	      None -> "graphical_trace"
 	    | Some f -> f
 		  ) in
-	    let filename =
-	      "/tmp/" ^ file ^ ":" ^
-	      (Printf.sprintf "%03d" !stepcnt) ^ ".dot" in	   
+	    let filename = Filename.temp_file file ".dot" in	   
 	    graph_stack := filename :: !graph_stack;
 	    stepcnt := !stepcnt +1;
 	    G.print_graph grp
