@@ -1370,7 +1370,7 @@ let full_engine2 (coccifile, isofile) cfiles =
 
     if !Flag.show_misc then Common.pr_xxxxxxxxxxxxxxxxx ();
     if !Flag.show_misc then pr "Finished";
-    if !Flag_ctl.graphical_trace != "" then gen_pdf_graph ();
+    if !Flag_ctl.graphical_trace <> "" then gen_pdf_graph ();
     if !Flag.show_misc then Common.pr_xxxxxxxxxxxxxxxxx();
 
     c_infos' +> List.map (fun c_or_h -> 
