@@ -24,9 +24,9 @@ let pUNCHECK_OPT = ref true
 let pANY_NEG_OPT = ref true
 let pLazyOpt = ref true
 
-(* Nico: This counter and stack are use for graphical traces *)
-let stepcnt = ref 0
+(* Nico: This stack is use for graphical traces *)
 let graph_stack = ref ([] : string list)
+let graph_hash = (Hashtbl.create 101)
 
 (*
 let pTRIPLES_CONJ_OPT = ref false
@@ -138,7 +138,8 @@ end
 (* Misc. useful generic functions                                         *)
 (* ---------------------------------------------------------------------- *)
 
-let get_graph_files _ = !graph_stack
+let get_graph_files () = !graph_stack
+let get_graph_comp_files outfile = Hashtbl.find_all graph_hash outfile
 
 let head = List.hd
 
@@ -353,7 +354,7 @@ let mkstates states = function
 let print_graph grp required_states res str = function
     A.Exists (keep,v,phi)     -> ()
   | phi ->
-      if !Flag_ctl.graphical_trace != ""  && not !Flag_ctl.checking_reachability
+      if !Flag_ctl.graphical_trace && not !Flag_ctl.checking_reachability
       then
 	(match phi with
 	| A.Exists (keep,v,phi)     -> ()
@@ -371,9 +372,10 @@ let print_graph grp required_states res str = function
 	      None -> "graphical_trace"
 	    | Some f -> f
 		  ) in
+	      (if not (List.mem file !graph_stack) then
+		graph_stack := file :: !graph_stack);
 	    let filename = Filename.temp_file (file^":") ".dot" in	   
-	    graph_stack := filename :: !graph_stack;
-	    stepcnt := !stepcnt +1;
+	    Hashtbl.add graph_hash file filename;  
 	    G.print_graph grp
 	      (if !Flag_ctl.gt_without_label then None else (Some label))
 	      (match required_states with

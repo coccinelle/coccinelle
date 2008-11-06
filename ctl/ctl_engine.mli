@@ -66,4 +66,5 @@ module CTL_ENGINE :
       end
 
 val get_graph_files : unit -> string list
+val get_graph_comp_files : string -> string list
 	  

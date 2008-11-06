@@ -679,23 +679,23 @@ let for_unparser xs =
   )
 
 let gen_pdf_graph () =
-  let outfile = !Flag_ctl.graphical_trace in
+  (Ctl_engine.get_graph_files ()) +> List.iter (fun outfile -> 
   Printf.printf "Generation of %s%!" outfile;
-  let filename_stack = Ctl_engine.get_graph_files () in
+  let filename_stack = Ctl_engine.get_graph_comp_files outfile in
   List.iter (fun filename ->
     ignore (Unix.system ("dot " ^ filename ^ " -Tpdf  -o " ^ filename ^ ".pdf;"))
 	    ) filename_stack;
   let (head,tail) = (List.hd filename_stack, List.tl filename_stack) in
-    ignore(Unix.system ("cp " ^ head ^ ".pdf " ^ outfile ^ ";"));
+    ignore(Unix.system ("cp " ^ head ^ ".pdf " ^ outfile ^ ".pdf;"));
     tail +> List.iter (fun filename ->
-      ignore(Unix.system ("mv " ^ outfile ^ " /tmp/tmp.pdf;"));
-      ignore(Unix.system ("pdftk " ^ filename ^ ".pdf /tmp/tmp.pdf cat output " ^ outfile ^ ""));
+      ignore(Unix.system ("mv " ^ outfile ^ ".pdf /tmp/tmp.pdf;"));
+      ignore(Unix.system ("pdftk " ^ filename ^ ".pdf /tmp/tmp.pdf cat output " ^ outfile ^ ".pdf"));
 	      );
     ignore(Unix.system ("rm /tmp/tmp.pdf;"));
     List.iter (fun filename ->
 	ignore (Unix.system ("rm " ^ filename ^ " " ^ filename ^ ".pdf;"))
 	    ) filename_stack;
-  Printf.printf " - Done\n"
+  Printf.printf " - Done\n")
 
 
 (* --------------------------------------------------------------------- *)
@@ -1370,7 +1370,7 @@ let full_engine2 (coccifile, isofile) cfiles =
 
     if !Flag.show_misc then Common.pr_xxxxxxxxxxxxxxxxx ();
     if !Flag.show_misc then pr "Finished";
-    if !Flag_ctl.graphical_trace <> "" then gen_pdf_graph ();
+    if !Flag_ctl.graphical_trace then gen_pdf_graph ();
     if !Flag.show_misc then Common.pr_xxxxxxxxxxxxxxxxx();
 
     c_infos' +> List.map (fun c_or_h -> 
