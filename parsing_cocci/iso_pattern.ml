@@ -320,14 +320,18 @@ let match_maker checks_needed context_required whencode_allowed =
   let pure_sp_code =
     let bind = Ast0.lub_pure in
     let option_default = Ast0.Context in
-    let pure_mcodekind = function
-	Ast0.CONTEXT(mc) ->
-	  (match !mc with
-	    (Ast.NOTHING,_,_) -> Ast0.PureContext
-	  | _ -> Ast0.Context)
-      | Ast0.MINUS(mc) ->
-	  (match !mc with ([],_) -> Ast0.Pure | _ ->  Ast0.Impure)
-      | _ -> Ast0.Impure in
+    let pure_mcodekind mc =
+      if !Flag.sgrep_mode2
+      then Ast0.PureContext
+      else
+	match mc with
+	  Ast0.CONTEXT(mc) ->
+	    (match !mc with
+	      (Ast.NOTHING,_,_) -> Ast0.PureContext
+	    | _ -> Ast0.Context)
+	| Ast0.MINUS(mc) ->
+	    (match !mc with ([],_) -> Ast0.Pure | _ ->  Ast0.Impure)
+	| _ -> Ast0.Impure in
     let donothing r k e =
       bind (pure_mcodekind (Ast0.get_mcodekind e)) (k e) in
 
