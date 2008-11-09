@@ -97,8 +97,9 @@ type reason =
   | NonMatch
   | Braces of Ast0.statement
   | Position of string * string
+  | TypeMatch of reason list
 
-let interpret_reason name line reason printer =
+let rec interpret_reason name line reason printer =
   Printf.printf
     "warning: iso %s does not match the code below on line %d\n" name line;
   printer(); Format.print_newline();
@@ -133,6 +134,9 @@ let interpret_reason name line reason printer =
   | Position(rule,name) ->
       Printf.printf "position variable %s.%s conflicts with an isomorphism\n"
 	rule name;
+  | TypeMatch reason_list ->
+      List.iter (function r -> interpret_reason name line r printer)
+	reason_list
   | _ -> failwith "not possible"
 
 type 'a either = OK of 'a | Fail of reason
@@ -525,15 +529,24 @@ let match_maker checks_needed context_required whencode_allowed =
 				      "warning: unconvertible type";
 				    return false bindings))
 				expty in
-			    match
-			      (* not sure why this is ok. can there be more
+			    if List.exists
+				(function Fail _ -> false | OK x -> true)
+				attempts
+			    then
+				(* not sure why this is ok. can there be more
 				 than one OK? *)
-			      List.concat
-				(List.map (function Fail _ -> [] | OK x -> x)
-				   attempts)
-			    with
-			      [] -> Fail NonMatch
-			    | x -> OK x)
+			      OK (List.concat
+				    (List.map
+				       (function Fail _ -> [] | OK x -> x)
+				       attempts))
+			    else
+			      Fail
+				(TypeMatch
+				   (List.map
+				      (function
+					  Fail r -> r
+					| OK x -> failwith "not possible")
+				      attempts)))
 		    | _ ->
 		  (*Printf.printf
 		     "warning: type metavar can only match one type";*)
