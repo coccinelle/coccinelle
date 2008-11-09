@@ -504,34 +504,37 @@ let match_maker checks_needed context_required whencode_allowed =
 		    (match expty with
 		      Some expty ->
 			let tyname = Ast0.rewrap_mcode name tyname in
-			(function bindings ->
-			  let attempts =
-			    List.map
-			      (function expty ->
-				(try
-				  conjunct_bindings
-				    (add_pure_binding tyname Ast0.Impure
-				       (function _ -> Ast0.Impure)
-				       (function ty -> Ast0.TypeCTag ty)
-				       (Ast0.rewrap expr
-					  (Ast0.reverse_type expty)))
-				    (add_pure_binding name pure
-				       pure_sp_code.V0.combiner_expression
-				       (function expr -> Ast0.ExprTag expr)
-				       expr)
-				    bindings
-				with Ast0.TyConv ->
-				  Printf.printf "warning: unconvertible type";
-				  return false bindings))
-			      expty in
-			  match
-			    List.concat
-			      (List.map (function Fail _ -> [] | OK x -> x)
-				 attempts)
-			  with
-			    [] -> Fail NonMatch
-			  | x -> OK x)
-		    |	_ ->
+			conjunct_bindings
+			  (add_pure_binding name pure
+			     pure_sp_code.V0.combiner_expression
+			     (function expr -> Ast0.ExprTag expr)
+			     expr)
+			  (function bindings ->
+			    let attempts =
+			      List.map
+				(function expty ->
+				  (try
+				    add_pure_binding tyname Ast0.Impure
+				      (function _ -> Ast0.Impure)
+				      (function ty -> Ast0.TypeCTag ty)
+				      (Ast0.rewrap expr
+					 (Ast0.reverse_type expty))
+				      bindings
+				  with Ast0.TyConv ->
+				    Printf.printf
+				      "warning: unconvertible type";
+				    return false bindings))
+				expty in
+			    match
+			      (* not sure why this is ok. can there be more
+				 than one OK? *)
+			      List.concat
+				(List.map (function Fail _ -> [] | OK x -> x)
+				   attempts)
+			    with
+			      [] -> Fail NonMatch
+			    | x -> OK x)
+		    | _ ->
 		  (*Printf.printf
 		     "warning: type metavar can only match one type";*)
 			return false)
