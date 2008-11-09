@@ -2176,7 +2176,8 @@ let transform_top (metavars,alts,name) e =
 	      (function s -> Ast0.DotsStmtTag s)
 	      (function x ->
 		Ast0.rewrap e (Ast0.DOTS([make_disj_stmt_list x])))
-	      make_minus.V0.rebuilder_statement_dots
+	      (function x ->
+		make_minus.V0.rebuilder_statement_dots x)
 	      (rebuild_mcode start_line).V0.rebuilder_statement_dots
 	      name Unparse_ast0.statement_dots extra_copy_other_plus do_nothing
 	| _ -> ([],stmts) in
