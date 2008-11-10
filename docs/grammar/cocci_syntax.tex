@@ -5,7 +5,7 @@
 \usepackage{xspace}
 \usepackage[pdfborder={0 0 0}]{hyperref}
 \usepackage{listings}
-\usepackage{color}
+\usepackage[usenames,dvipsnames]{color}
 \usepackage[T1]{fontenc}
 \lstset{basicstyle=\ttfamily,numbers=left, numberstyle=\tiny, stepnumber=1, numbersep=5pt}
 
@@ -69,7 +69,7 @@ C-language constants.
   \CASE{using <\NT{pathToIsoFile}>}
   
   \RULE{changeset}
-  \CASE{\NT{metavariables} \OPT{--- filename +++ filename} \NT{transformation}}
+  \CASE{\NT{metavariables} \ANY{--- filename +++ filename} \NT{transformation}}
 
 \end{grammar}
 
@@ -197,8 +197,8 @@ the {\it metakind} used in the declaration of the variable.  For example,
 any type.
 
 The {\it type} nonterminal is used by both the grammar of metavariable
-declarations and the grammar of transformations, and is defined on the next
-page.
+declarations and the grammar of transformations, and is defined on
+page~\pageref{types}.
 
 \section{Transformation}
 
@@ -245,59 +245,113 @@ The grammar rule for the minus or plus slice of a transformation is as follows:
 \begin{grammar}
 
   \RULE{transformation}
+  \CASE{\NT{fundecl}}
+  \CASE{\NT{ctype}}
+  \CASE{\ttlb \NT{initialize\_list} \ttrb}
+  \CASE{\NT{toplevel\_seq\_start\_after\_dots\_init}}
+
+  \RULE{toplevel\_seq\_start\_after\_dots\_init}
+  \CASE{\NT{stmt\_dots} \NT{toplevel\_after\_dots\_init}}
+  \CASE{\NT{expr} \NT{toplevel\_after\_exp}}
+  \CASE{\NT{decl\_stmt\_expr} \opt{\NT{toplevel\_after\_stmt}}}
+
+  \RULE{stmt\_dots}
+  \CASE{... \any{\NT{whenppdecls}}}
+  \CASE{<... \any{\NT{whenppdecls}} \NT{nest\_after\_dots} ...>}
+  \CASE{<+... \any{\NT{whenppdecls}} \NT{nest\_after\_dots} ...+>}
+
+  \RULE{whenppdecls}
+  \CASE{when != \NT{when\_start}$^\dag$}
+  \CASE{when = \NT{rule\_elem\_stmt}$^\dag$}
+  \CASE{when \NT{any\_strict} \ANY{, \NT{any\_strict}} $^\dag$}
+  \CASE{when true != \NT{exp} $^\ddag$}
+  \CASE{when false != \NT{exp} $^\ddag$}
+  
+  \RULE{any\_strict}
+  \CASE{any}
+  \CASE{strict}
+  \CASE{forall}
+  \CASE{exists}
+
+  \RULE{nest\_after\_dots}
+  \CASE{\NT{decl\_stmt\_exp} \opt{\NT{nest\_after\_stmt}}}
+  \CASE{\opt{\NT{exp}} \opt{\NT{nest\_after\_exp}}}
+
+  \RULE{nest\_after\_stmt}
+  \CASE{\NT{stmt\_dots} \NT{nest\_after\_dots}}
+  \CASE{\NT{decl\_stmt} \opt{\NT{nest\_after\_stmt}}}
+
+  \RULE{nest\_after\_exp}
+  \CASE{\NT{stmt\_dots} \NT{nest\_after\_dots}}
+
+  \RULE{toplevel\_after\_dots\_init}
   \CASE{}
+
+  \RULE{toplevel\_after\_exp}
+  \CASE{}
+
+  \RULE{decl\_stmt\_expr}
+  \CASE{}
+
+  \RULE{toplevel\_after\_stmt}
+  \CASE{\NT{stmt\_dots} \NT{toplevel\_after\_dots}}
+  \CASE{\NT{decl\_stmt} \NT{toplevel\_after\_stmt}}
 
 \end{grammar}
 
-\noindent{\footnotesize\begin{tabular}{r@{\,\,\,}c@{\,\,\,}l}
-\mita{transformation} & ::= &
-   \begin{tabular}[t]{@{}l}
-   \ANY{\mtt{\#include} \msf{include\_string}} \\
-   \opt{OPTDOTSEQ(\some{\mita{fun\_decl\_statement}} \(\mid\) \mita{expr},
-   \mita{stmt\_whencode})}\end{tabular} \\
-\mita{fun\_decl\_statement} & ::= & \mita{decl\_statement} \(\mid\)
-\mita{fun\_decl}
-\end{tabular}
+$^\dag$ Note
+$^\ddag$ Check and fix me
 
-\noindent\begin{tabular}{r@{\,\,\,}c@{\,\,\,}l}
-OPTDOTSEQ(\mita{grammar},\mita{whencode}) & ::= &\\
- \multicolumn{3}{l}{\air\air\phantom{\(\mid\)}
-\opt{\mtt{\ldots} \opt{\mita{whencode}}} \mita{grammar}
- \ANY{\mtt{\ldots} \opt{\mita{whencode}} \mita{grammar}}
- \opt{\mtt{\ldots} \opt{\mita{whencode}}}}
-\\ \multicolumn{3}{l}{\air\air\(\mid\)
- \opt{\mtt{ooo} \opt{\mita{whencode}}} \mita{grammar} \ANY{\mtt{ooo}
- \opt{\mita{whencode}} \mita{grammar}}
- \opt{\mtt{ooo} \opt{\mita{whencode}}}}
-\\ \multicolumn{3}{l}{\air\air\(\mid\)
- \opt{\mtt{***} \opt{\mita{whencode}}} \mita{grammar} \ANY{\mtt{***}
- \opt{\mita{whencode}} \mita{grammar}}
- \opt{\mtt{***} \opt{\mita{whencode}}}}
-\end{tabular}}
-
-%\vspace{\baselineskip}
-
-\noindent
-{\tt ooo} is analogous to {\tt \ldots}, but the terms may appear in any
-order.  {\tt ***} is also analogous to {\tt \ldots}, but expresses
-interprocedural sequences.
-Lines may be annotated with an element of the set $\{\mtt{-}, \mtt{+}\}$ or
-an element of the set $\{\mtt{!}, \mtt{?}, \verb-\+-\}$, or one of each.
-\mtt{!}, \mtt{?}, \verb-\+- represent exactly one, at most one, and at
-least one match of the given pattern.  There are some constraints on the
-use of these annotations:
-\begin{itemize}
-\item Dots, {\em i.e.} {\tt \ldots}, {\tt ooo}, or {\tt ***}, cannot occur
-  on a line marked {\tt +}.
-\item Nested dots, {\em i.e.} dots enclosed in {\tt <} and {\tt >}, cannot
-  occur on a line with any marking.
-\end{itemize}
-
+% \noindent{\footnotesize\begin{tabular}{r@{\,\,\,}c@{\,\,\,}l}
+% \mita{transformation} & ::= &
+%    \begin{tabular}[t]{@{}l}
+%    \ANY{\mtt{\#include} \msf{include\_string}} \\
+%    \opt{OPTDOTSEQ(\some{\mita{fun\_decl\_statement}} \(\mid\) \mita{expr},
+%    \mita{stmt\_whencode})}\end{tabular} \\
+% \mita{fun\_decl\_statement} & ::= & \mita{decl\_statement} \(\mid\)
+% \mita{fun\_decl}
+% \end{tabular}
+% 
+% \noindent\begin{tabular}{r@{\,\,\,}c@{\,\,\,}l}
+% OPTDOTSEQ(\mita{grammar},\mita{whencode}) & ::= &\\
+%  \multicolumn{3}{l}{\air\air\phantom{\(\mid\)}
+% \opt{\mtt{\ldots} \opt{\mita{whencode}}} \mita{grammar}
+%  \ANY{\mtt{\ldots} \opt{\mita{whencode}} \mita{grammar}}
+%  \opt{\mtt{\ldots} \opt{\mita{whencode}}}}
+% \\ \multicolumn{3}{l}{\air\air\(\mid\)
+%  \opt{\mtt{ooo} \opt{\mita{whencode}}} \mita{grammar} \ANY{\mtt{ooo}
+%  \opt{\mita{whencode}} \mita{grammar}}
+%  \opt{\mtt{ooo} \opt{\mita{whencode}}}}
+% \\ \multicolumn{3}{l}{\air\air\(\mid\)
+%  \opt{\mtt{***} \opt{\mita{whencode}}} \mita{grammar} \ANY{\mtt{***}
+%  \opt{\mita{whencode}} \mita{grammar}}
+%  \opt{\mtt{***} \opt{\mita{whencode}}}}
+% \end{tabular}}
+% 
+% %\vspace{\baselineskip}
+% 
+% \noindent
+% {\tt ooo} is analogous to {\tt \ldots}, but the terms may appear in any
+% order.  {\tt ***} is also analogous to {\tt \ldots}, but expresses
+% interprocedural sequences.
+% Lines may be annotated with an element of the set $\{\mtt{-}, \mtt{+}\}$ or
+% an element of the set $\{\mtt{!}, \mtt{?}, \verb-\+-\}$, or one of each.
+% \mtt{!}, \mtt{?}, \verb-\+- represent exactly one, at most one, and at
+% least one match of the given pattern.  There are some constraints on the
+% use of these annotations:
+% \begin{itemize}
+% \item Dots, {\em i.e.} {\tt \ldots}, {\tt ooo}, or {\tt ***}, cannot occur
+%   on a line marked {\tt +}.
+% \item Nested dots, {\em i.e.} dots enclosed in {\tt <} and {\tt >}, cannot
+%   occur on a line with any marking.
+% \end{itemize}
+% 
 
 \section{Types}
+\label{types}
 
 \begin{grammar}
-    \RULE{ctypes}
+  \RULE{ctypes}
   \CASE{\NT{ctype} \ANY{, \NT{ctype}}}
 
   \RULE{ctype}
@@ -317,15 +371,38 @@ use of these annotations:
   \CASE{\opt{\NT{ctype\_qualif}} long}
   \CASE{double}
   \CASE{float}
-  \CASE{\OPT{\T{struct}\OR \T{union}} \T{id} \OPT{\{ \any{\NT{struct\_decl\_list}} \}}}
+  \CASE{\OPT{struct\OR union} \T{id} \OPT{\{ \any{\NT{struct\_decl\_list}} \}}}
 
   \RULE{ctype\_qualif}
   \CASE{unsigned}
   \CASE{signed}
 
   \RULE{struct\_decl\_list}
-  \CASE{}
+  \CASE{\NT{struct\_decl\_list\_start}}
+
+  \RULE{struct\_decl\_list\_start}
+  \CASE{\NT{struct\_decl}}
+  \CASE{\NT{struct\_decl} \NT{struct\_decl\_list\_start}}
+  \CASE{... \opt{when != \NT{struct\_decl}}$^\dag$ \opt{\NT{continue\_struct\_decl\_list}}}
+
+  \RULE{continue\_struct\_decl\_list}
+  \CASE{\NT{struct\_decl} \NT{struct\_decl\_list\_start}}
+  \CASE{\NT{struct\_decl}}
+
+  \RULE{struct\_decl}
+  \CASE{\NT{ctype} \NT{d\_ident};}
+  \CASE{\NT{fn\_ctype} (* \NT{d\_ident}) (\NT{});)}
+  \CASE{\opt{\NT{const\_vol}} \NT{pure\_ident} \NT{d\_ident};}
+
+  \RULE{d\_ident}
+  \CASE{\NT{ident} \any{[\opt{\NT{eexpr}}]}}
+
+  \RULE{fn\_ctype}
+  \CASE{\NT{generic\_ctype} \any{*}}
+  \CASE{void \any{*}}
 \end{grammar}
+
+$^\dag$ The optional \texttt{when} construct ends at the end of the line.
 
 % \noindent{\footnotesize\begin{tabular}{r@{\,\,\,}c@{\,\,\,}l}
 % \mita{type} & ::= & \opt{\mtt{const} \(\mid\) \mtt{volatile}}
@@ -345,6 +422,11 @@ use of these annotations:
 % \end{tabular}}
 
 \section{Function declarations}
+
+\begin{grammar}
+  \RULE{fundecl}
+  \CASE{\opt{static} }
+\end{grammar}
 
 \noindent{\footnotesize\begin{tabular}{r@{\,\,\,}c@{\,\,\,}l}
 \mita{fundecl} & ::= &
@@ -374,6 +456,12 @@ PARAMSEQ(\mita{grammar},\mita{whencode}) & ::= &
 
 \section{Declarations}
 
+\begin{grammar}
+  \RULE{decl}
+  \CASE{}
+    
+\end{grammar}
+
 \noindent{\footnotesize\begin{tabular}{r@{\,\,\,}c@{\,\,\,}l}
 \mita{decl\_var} & ::= &
    \mita{type} \opt{\ANY{\mita{id} \opt{\mtt{[} \opt{\mita{dot\_expr}}
@@ -394,6 +482,10 @@ for a context in which a declaration, statement, or sequence thereof is
 allowed.
 
 %\vspace{\baselineskip}
+\begin{grammar}
+  \RULE{stmt}  
+  \CASE{}
+\end{grammar}
 
 \noindent{\footnotesize\begin{tabular}{r@{\,\,\,}c@{\,\,\,}l}
 \mita{statement} & ::= &
@@ -492,6 +584,11 @@ dot\_expr} allows both.  The EXPR macro is used to express these variants
 in a concise way.
 
 %\vspace{\baselineskip}
+\begin{grammar}
+  \RULE{expr}
+  \CASE{}
+  
+\end{grammar}
 
 \noindent{\footnotesize\begin{tabular}{r@{\,\,\,}c@{\,\,\,}l}
 \mita{expr} & ::= & EXPR(\mita{expr}) \\
@@ -573,7 +670,7 @@ EXPR(\mita{exp}) & ::= &
 \section{Examples}
 %\label{sec:examples}
 
-\begin{lstlisting}[language=C,commentstyle=\color{red},keywordstyle=\color{blue},stringstyle=\color{green}]
+\begin{lstlisting}[language=C,commentstyle=\color{BrickRed},keywordstyle=\color{blue},stringstyle=\color{OliveGreen}]
 #DEFINE TEST "Foo"
 
 printf("Foo");
