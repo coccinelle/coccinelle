@@ -51,9 +51,10 @@
 \fi
 
 \newenvironment{grammar}{\begin{center}\begin{tabular}{l@{}c@{}l}}{\end{tabular}\end{center}}
-\def\RULE#1\CASE#2{\hypertarget{#1}{\NTS{#1}} & \grameq & \KW{#2} \\}
+\def\RULE#1\CASE#2{\NTS{#1} & \grameq & \KW{#2} \\}
 \def\CASE#1{& \gramor & \KW{#1} \\}
 
+\newcommand{\rt}[1]{\hypertarget{#1}{#1}}
 
 \def\lb{\char123}
 \def\rb{\char125}
