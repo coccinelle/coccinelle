@@ -523,6 +523,8 @@ external pytuple4 : (pyobject * pyobject * pyobject * pyobject) ->
   pyobject = "pytuple_fromarray"
 external pytuple5 : (pyobject * pyobject * pyobject * pyobject * pyobject) ->
   pyobject = "pytuple_fromarray"
+external pytuple6 : (pyobject * pyobject * pyobject * pyobject * pyobject * pyobject) ->
+  pyobject = "pytuple_fromarray"
 
 let pyint_fromint i = pyint_fromlong (Int64.of_int i)
 let pyint_asint obj = Int64.to_int (pyint_aslong obj)

@@ -268,10 +268,10 @@ let equal_metavarval valu valu' =
         
   | Ast_c.MetaPosValList l1, Ast_c.MetaPosValList l2 ->
       List.exists
-	(function (fla,posa1,posa2) ->
+	(function (fla,cea,posa1,posa2) ->
 	  List.exists
-	    (function (flb,posb1,posb2) ->
-	      fla = flb &&
+	    (function (flb,ceb,posb1,posb2) ->
+	      fla = flb && cea = ceb &&
 	      Ast_c.equal_posl posa1 posb1 && Ast_c.equal_posl posa2 posb2)
             l2)
 	l1
@@ -564,7 +564,7 @@ module type PARAM =
     val envf :
       A.keep_binding -> A.inherited -> 
       A.meta_name A.mcode * Ast_c.metavar_binding_kind *
-	  (unit -> Common.filename * Ast_c.posl * Ast_c.posl) ->
+	  (unit -> Common.filename * string * Ast_c.posl * Ast_c.posl) ->
       (unit -> tin -> 'x tout) -> (tin -> 'x tout)
 
     val check_constraints :

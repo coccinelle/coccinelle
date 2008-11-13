@@ -140,7 +140,7 @@ let lin_col_by_pos xs =
   let (i2, i1) = max_min_ii_by_pos xs in
   let posf x = Ast_c.col_of_info x in
   let mposf x = Ast_c.col_of_info x + String.length (Ast_c.str_of_info x) in
-  (Ast_c.file_of_info i1,
+  (Ast_c.file_of_info i1,!Flag.current_element,
    (Ast_c.line_of_info i1, posf i1), (Ast_c.line_of_info i2, mposf i2))
 
 

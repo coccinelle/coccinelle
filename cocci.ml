@@ -262,16 +262,21 @@ let get_celem celem : string =
     | _ -> ""
 
 let show_or_not_celem2 prelude celem = 
-  if !Flag.show_trying then 
+  let (tag,trying) =
   (match celem with 
   | Ast_c.Definition ({Ast_c.f_name = funcs;},_) -> 
-      pr2 (prelude ^ " function: " ^ funcs);
+      Flag.current_element := funcs;
+      (" function: ",funcs)
   | Ast_c.Declaration
       (Ast_c.DeclList ([{Ast_c.v_namei = Some ((s, _),_);}, _], _)) ->
-      pr2 (prelude ^ " variable " ^ s);
-  | _ -> 
-      pr2 (prelude ^ " something else");
-  )
+      Flag.current_element := s;
+      (" variable ",s);
+  | _ ->
+      Flag.current_element := "something_else";
+      (" ","something else");
+  ) in
+  if !Flag.show_trying then pr2 (prelude ^ tag ^ trying)
+  
 let show_or_not_celem a b  = 
   Common.profile_code "show_xxx" (fun () -> show_or_not_celem2 a b)
 

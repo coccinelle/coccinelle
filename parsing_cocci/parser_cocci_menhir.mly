@@ -1132,7 +1132,7 @@ nest_expressions:
 			      Ast0.wrap(Ast0.DOTS(e (P.mkedots "..."))),
 			      P.clt2mcode "...+>" c, None, true)) }
 
-whenexp: TWhen TNotEq w=eexpr TLineEnd { w }
+//whenexp: TWhen TNotEq w=eexpr TLineEnd { w }
 
 basic_expr(recurser,primary_extra):
   assign_expr(recurser,primary_extra)                        { $1 }

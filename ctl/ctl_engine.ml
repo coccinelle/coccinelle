@@ -356,7 +356,7 @@ let print_graph grp required_states res str = function
   | phi ->
       if !Flag_ctl.graphical_trace && not !Flag_ctl.checking_reachability
       then
-	(match phi with
+	 match phi with
 	| A.Exists (keep,v,phi)     -> ()
 	| _ ->
 	    let label =
@@ -382,7 +382,7 @@ let print_graph grp required_states res str = function
 		None -> []
 	      | Some required_states ->
 		  (List.map (function s -> (s,"blue")) required_states))
-	      (List.map (function (s,_,_) -> (s,"\"#FF8080\"")) res)  filename)
+	      (List.map (function (s,_,_) -> (s,"\"#FF8080\"")) res)  filename
 
 let print_graph_c grp required_states res ctr phi =
   let str = "iter: "^(string_of_int !ctr) in

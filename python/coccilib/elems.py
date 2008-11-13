@@ -1,6 +1,7 @@
 class Location:
-	def __init__(self, file, line, column, line_end, column_end):
+	def __init__(self, file, current_element, line, column, line_end, column_end):
 		self.file = file
+		self.current_element = current_element
 		self.line = line
 		self.column = column
 		self.line_end = line_end
