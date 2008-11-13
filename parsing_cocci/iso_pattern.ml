@@ -1251,8 +1251,8 @@ let make_minus =
 	| _ ->
 	    failwith
 	      (Printf.sprintf
-		 "%d: make_minus donothingxxx: unexpected mcodekind"
-		 info.Ast0.line_start))
+		 "%d: make_minus donothingxxx: unexpected mcodekind: %s"
+		 info.Ast0.line_start (Dumper.dump e)))
     | _ -> donothing r k e in
   
   V0.rebuilder
@@ -2093,7 +2093,8 @@ let transform_expr (metavars,alts,name) e =
       (function b -> function mv_b ->
 	(instantiate b mv_b).V0.rebuilder_expression)
       (function e -> Ast0.ExprTag e)
-      (make_disj_expr e) make_minus.V0.rebuilder_expression
+      (make_disj_expr e)
+      (function x -> Printf.printf "new expression\n"; Unparse_ast0.expression x; Format.print_newline(); make_minus.V0.rebuilder_expression x)
       (rebuild_mcode start_line).V0.rebuilder_expression
       name Unparse_ast0.expression extra_copy_other_plus update_others in
   match alts with
