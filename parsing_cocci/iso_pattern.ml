@@ -1237,10 +1237,11 @@ let make_minus =
       Ast0.DOTS([]) ->
 	(* if context is - this should be - as well.  There are no tokens
 	   here though, so the bottom-up minusifier in context_neg leaves it
-	   as mixed.  It would be better to fix context_neg, but that would
+	   as mixed (or context for sgrep2).  It would be better to fix
+	   context_neg, but that would
 	   require a special case for each term with a dots subterm. *)
 	(match !mcodekind with
-	  Ast0.MIXED(mc) ->
+	  Ast0.MIXED(mc) | Ast0.CONTEXT(mc) ->
 	    (match !mc with
 	      (Ast.NOTHING,_,_) ->
 		mcodekind := Ast0.MINUS(ref([],Ast0.default_token_info));
@@ -2094,7 +2095,7 @@ let transform_expr (metavars,alts,name) e =
 	(instantiate b mv_b).V0.rebuilder_expression)
       (function e -> Ast0.ExprTag e)
       (make_disj_expr e)
-      (function x -> Printf.printf "new expression\n"; Unparse_ast0.expression x; Format.print_newline(); make_minus.V0.rebuilder_expression x)
+      make_minus.V0.rebuilder_expression
       (rebuild_mcode start_line).V0.rebuilder_expression
       name Unparse_ast0.expression extra_copy_other_plus update_others in
   match alts with

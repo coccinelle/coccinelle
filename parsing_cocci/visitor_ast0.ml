@@ -560,8 +560,6 @@ let rebuilder = fun
       Some x -> Some (f x)
     | None -> None in
   let rec expression_dots d =
-    Printf.printf "dots\n";
-    Unparse_ast0.expression_dots d; Format.print_newline();
     let k d =
       Ast0.rewrap d
 	(match Ast0.unwrap d with
