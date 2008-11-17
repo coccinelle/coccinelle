@@ -1,4 +1,4 @@
-PROGS=gitgrep split_patch extract_c_and_res generate_dependencies #meta_files
+PROGS=gitgrep split_patch extract_c_and_res #generate_dependencies
 
 all: $(PROGS)
 
@@ -44,9 +44,6 @@ split_patch: split_patch.cmo
 
 extract_c_and_res: extract_c_and_res.cmo
 	$(OCAMLC) -o $@ $(SYSLIBS) $(INCLUDE) $(LIBS)  $+
-
-# meta_files: meta_files.cmo
-# 	$(OCAMLC) -o $@ $(SYSLIBS) $(INCLUDE) $(LIBS)  $+
 
 generate_dependencies: generate_dependencies.cmo
 	$(OCAMLC) -o $@ $(SYSLIBS) $(INCLUDE) $(LIBS)  $+
