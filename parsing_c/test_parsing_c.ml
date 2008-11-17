@@ -146,7 +146,8 @@ let test_cfg file =
 *)
               flow
             in
-            Ograph_extended.print_ograph_mutable flow' ("/tmp/output.dot") true
+	    let filename = Filename.temp_file "output" ".dot" in
+            Ograph_extended.print_ograph_mutable flow' (filename) true
           )
         with Ast_to_flow.Error (x) -> Ast_to_flow.report_error x
       )
