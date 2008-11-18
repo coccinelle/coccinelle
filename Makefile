@@ -300,6 +300,17 @@ syncwiki:
 darcsweb:
 #	@echo pull from ~/public_html/darcs/c-coccinelle and c-commons and lib-xxx
 
+DARCSFORESTS=commons \
+ parsing_c parsing_cocci engine
+
+update_darcs:
+	darcs pull
+	set -e; for i in $(DARCSFORESTS); do cd $$i; darcs pull; cd ..; done 
+
+#darcs diff -u
+diff_darcs:
+	set -e; for i in $(DARCSFORESTS); do cd $$i; darcs diff -u; cd ..; done 
+
 
 ##############################################################################
 # Developer rules
