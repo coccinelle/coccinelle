@@ -49,6 +49,8 @@ type node = node1 * string (* For debugging. Used by print_graph *)
   | DefineType of fullType
   | DefineDoWhileZeroHeader of unit wrap
 
+  | DefineTodo
+
   | Include of includ
 
   | MacroTop of string * argument wrap2 list * il 

@@ -628,6 +628,10 @@ and vk_node = fun bigf node ->
         vk_define_kind bigf defkind;
 
     | F.DefineDoWhileZeroHeader (((),ii)) -> iif ii
+    | F.DefineTodo -> 
+        pr2 "DefineTodo";
+        ()
+
 
     | F.Include {i_include = (s, ii);} -> iif ii;
 
@@ -1372,6 +1376,7 @@ and vk_node_s = fun bigf node ->
     | F.DefineType ft -> F.DefineType (vk_type_s bigf ft)
     | F.DefineDoWhileZeroHeader ((),ii) -> 
         F.DefineDoWhileZeroHeader ((),iif ii)
+    | F.DefineTodo -> F.DefineTodo
 
     | F.Include {i_include = (s, ii);
                  i_rel_pos = h_rel_pos;

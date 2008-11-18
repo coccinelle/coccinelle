@@ -239,7 +239,7 @@ let tokens ?profile a =
   Common.profile_code "C parsing.tokens" (fun () -> time_lexing ?profile a)
 
 
-let tokens_string string = 
+let tokens_of_string string = 
   let lexbuf = Lexing.from_string string in
   try 
     let rec tokens_s_aux () = 
@@ -309,7 +309,7 @@ let parse_print_error file =
  *)
 
 let parse_gen parsefunc s = 
-  let toks = tokens_string s +> List.filter TH.is_not_comment in
+  let toks = tokens_of_string s +> List.filter TH.is_not_comment in
 
 
   (* Why use this lexing scheme ? Why not classically give lexer func
@@ -1170,3 +1170,31 @@ let parse_cache file =
     file ".ast_raw" 
     (need_no_changed_files, need_no_changed_variables) ".depend_raw" 
     (fun () -> parse_print_error_heuristic file)
+
+
+
+(*****************************************************************************)
+(* Some special cases *)
+(*****************************************************************************)
+
+let (cstatement_of_string: string -> Ast_c.statement) = fun s ->
+  Common.write_file ("/tmp/__cocci.c") ("void main() { \n" ^ s ^ "\n}");
+  let program = parse_c_and_cpp ("/tmp/__cocci.c") +> fst in
+  program +> Common.find_some (fun (e,_) -> 
+    match e with
+    | Ast_c.Definition ({Ast_c.f_body = [Ast_c.StmtElem st]},_) -> Some st
+    | _ -> None
+  )
+
+let (cexpression_of_string: string -> Ast_c.expression) = fun s ->
+  Common.write_file ("/tmp/__cocci.c") ("void main() { \n" ^ s ^ ";\n}");
+  let program = parse_c_and_cpp ("/tmp/__cocci.c") +> fst in
+  program +> Common.find_some (fun (e,_) -> 
+    match e with
+    | Ast_c.Definition ({Ast_c.f_body = compound},_) -> 
+        (match compound with
+        | [Ast_c.StmtElem (Ast_c.ExprStatement (Some e),ii)] -> Some e
+        | _ -> None
+        )
+    | _ -> None
+  )

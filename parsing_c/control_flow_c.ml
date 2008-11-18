@@ -199,6 +199,7 @@ type node = node1 * string
   | DefineExpr of expression 
   | DefineType of fullType
   | DefineDoWhileZeroHeader of unit wrap
+  | DefineTodo
 
   | Include of includ
 
@@ -325,6 +326,7 @@ let extract_fullstatement node =
 
   | Include _ 
   | DefineHeader _ | DefineType _ | DefineExpr  _ | DefineDoWhileZeroHeader _
+  | DefineTodo
   | MacroTop _
       -> None
 
