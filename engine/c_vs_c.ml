@@ -121,6 +121,7 @@ and typeC tya tyb =
             let sxopt = saopt in
             let ii_b_sx = ii_b_sa in
 
+            (* todo?  iso on name or argument ? *)
             (ba =:= bb && saopt =*= sbopt) >&&>
             fullType ta tb >>= (fun tx -> 
               let paramx = (((bx, sxopt, tx), ii_b_sx)) in

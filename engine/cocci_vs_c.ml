@@ -3594,7 +3594,7 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
   | _, 
     (F.Label (_, _)|F.Break (_, _)|F.Continue (_, _)|F.Default (_, _)|
     F.Case (_, _)|F.Include _|F.Goto _|F.ExprStatement _|
-    F.DefineType _|F.DefineExpr _|
+    F.DefineType _|F.DefineExpr _|F.DefineTodo|
     F.DefineHeader (_, _)|F.ReturnExpr (_, _)|F.Return (_, _)|F.MacroIterHeader (_, _)|
     F.SwitchHeader (_, _)|F.ForHeader (_, _)|F.DoWhileTail _|F.DoHeader (_, _)|
     F.WhileHeader (_, _)|F.Else _|F.IfHeader (_, _)|
