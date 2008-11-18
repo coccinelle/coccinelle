@@ -485,11 +485,14 @@ let adjust_stdin cfile k =
   then k()
   else
     let newin = 
-      let (dir, base, ext) = Common.dbe_of_filename cfile in
-      let varfile = Common.filename_of_dbe (dir, base, "var") in
-      if ext = "c" && Common.lfile_exists varfile
-      then Some varfile
-      else None in
+      try
+        let (dir, base, ext) = Common.dbe_of_filename cfile in
+        let varfile = Common.filename_of_dbe (dir, base, "var") in
+        if ext = "c" && Common.lfile_exists varfile
+        then Some varfile
+        else None 
+      with Invalid_argument("Filename.chop_extension") -> None
+    in
     Common.redirect_stdin_opt newin k
 
 let glimpse_filter (coccifile, isofile) dir = 
