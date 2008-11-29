@@ -5,6 +5,7 @@
 ** Bugfix:
 - positions no longer allowed on \(, \|, and \)
 - improved propagation of negation for isos in the presence of parens
+- convert Todos in flow graph construction to recoverable errors
 
 ** Internals: 
 

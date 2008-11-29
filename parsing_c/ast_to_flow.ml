@@ -40,6 +40,7 @@ type error =
   | DuplicatedLabel of string
   | NestedFunc
   | ComputedGoto
+  | Define of Common.parse_info
 
 exception Error of error
 
@@ -1155,15 +1156,15 @@ let ast_to_control_flow e =
       | Ast_c.DefineFunction def -> 
           aux_definition headeri def;
 
-      | Ast_c.DefineText (s, ii) -> 
-          raise Todo
+      | Ast_c.DefineText (s, s_ii) -> 
+          raise (Error(Define(pinfo_of_ii ii)))
       | Ast_c.DefineEmpty -> 
           let endi = !g +> add_node EndNode lbl_0 "[end]" in
           !g#add_arc ((headeri, endi),Direct);
       | Ast_c.DefineInit _ -> 
-          raise Todo
+          raise (Error(Define(pinfo_of_ii ii)))
       | Ast_c.DefineTodo -> 
-          raise Todo
+          raise (Error(Define(pinfo_of_ii ii)))
       );
 
       Some !g
@@ -1347,3 +1348,5 @@ let report_error error =
       pr2 ("FLOW: not handling yet nested function")
   | ComputedGoto -> 
       pr2 ("FLOW: not handling computed goto yet")
+  | Define info ->
+      pr2 ("Unsupported form of #define" ^ error_from_info info)
