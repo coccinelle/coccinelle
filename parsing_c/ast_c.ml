@@ -942,7 +942,7 @@ let rec stmt_elems_of_sequencable xs =
     | CppDirectiveStmt _
     | IfdefStmt _ 
         -> 
-        pr2 ("stmt_elems_of_sequencable: filter a directive");
+        pr2_once ("stmt_elems_of_sequencable: filter a directive");
         []
     | IfdefStmt2 (_ifdef, xxs) -> 
         pr2 ("stmt_elems_of_sequencable: IfdefStm2 TODO?");

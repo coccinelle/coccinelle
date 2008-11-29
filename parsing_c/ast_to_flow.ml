@@ -1349,4 +1349,4 @@ let report_error error =
   | ComputedGoto -> 
       pr2 ("FLOW: not handling computed goto yet")
   | Define info ->
-      pr2 ("Unsupported form of #define" ^ error_from_info info)
+      pr2 ("Unsupported form of #define: " ^ error_from_info info)
