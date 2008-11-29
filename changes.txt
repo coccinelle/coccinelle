@@ -1,5 +1,13 @@
 -*- org -*-
 
+* 0.1.3
+
+** Bugfix:
+- positions no longer allowed on \(, \|, and \)
+- improved propagation of negation for isos in the presence of parens
+
+** Internals: 
+
 * 0.1.2
 
 ** Bugfix:

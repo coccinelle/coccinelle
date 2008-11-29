@@ -18,4 +18,4 @@ notice was preserved in the affected files.
 
 This software can be distributed under another license (dual license) making
 it possible to use Coccinelle in a commercial software.
-Contact one of the author for more information.
+Contact one of the authors for more information.

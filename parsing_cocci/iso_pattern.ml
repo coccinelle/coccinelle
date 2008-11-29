@@ -1573,46 +1573,52 @@ let instantiate bindings mv_bindings =
 	      |	_ -> failwith "plus not possible" in
 	    if was_meta && nomodif exp && nomodif e
 	    then
-	      let rec negate e (*for rewrapping*) res (*code to process*) =
+	      let idcont x = x in
+	      let rec negate e (*for rewrapping*) res (*code to process*) k =
+		(* k accumulates parens, to keep negation outside if no
+		   propagation is possible *)
 		match Ast0.unwrap res with
 		  Ast0.Unary(e1,op) when Ast0.unwrap_mcode op = Ast.Not ->
-		    Ast0.rewrap e (Ast0.unwrap e1)
-		| Ast0.Edots(_,_) -> Ast0.rewrap e (Ast0.unwrap res)
+		    k (Ast0.rewrap e (Ast0.unwrap e1))
+		| Ast0.Edots(_,_) -> k (Ast0.rewrap e (Ast0.unwrap res))
 		| Ast0.Paren(lp,e,rp) ->
-		    Ast0.rewrap res (Ast0.Paren(lp,negate e e,rp))
+		    negate e e
+		      (function x ->
+			k (Ast0.rewrap res (Ast0.Paren(lp,x,rp))))
 		| Ast0.Binary(e1,op,e2) ->
 		    let reb nop = Ast0.rewrap_mcode op (Ast.Logical(nop)) in
-		    let invop =
-		      match Ast0.unwrap_mcode op with
-			Ast.Logical(Ast.Inf) ->
-			  Ast0.Binary(e1,reb Ast.SupEq,e2)
-		      | Ast.Logical(Ast.Sup) ->
-			  Ast0.Binary(e1,reb Ast.InfEq,e2)
-		      | Ast.Logical(Ast.InfEq) ->
-			  Ast0.Binary(e1,reb Ast.Sup,e2)
-		      | Ast.Logical(Ast.SupEq) ->
-			  Ast0.Binary(e1,reb Ast.Inf,e2)
-		      | Ast.Logical(Ast.Eq) ->
-			  Ast0.Binary(e1,reb Ast.NotEq,e2)
-		      | Ast.Logical(Ast.NotEq) ->
-			  Ast0.Binary(e1,reb Ast.Eq,e2)
-		      | Ast.Logical(Ast.AndLog) ->
-			  Ast0.Binary(negate e1 e1,reb Ast.OrLog,
-				      negate e2 e2)
-		      | Ast.Logical(Ast.OrLog) ->
-			  Ast0.Binary(negate e1 e1,reb Ast.AndLog,
-				      negate e2 e2)
-		      | _ -> Ast0.Unary(res,Ast0.rewrap_mcode op Ast.Not) in
-		    Ast0.rewrap e invop
+		    let k1 x = k (Ast0.rewrap e x) in
+		    (match Ast0.unwrap_mcode op with
+		      Ast.Logical(Ast.Inf) ->
+			k1 (Ast0.Binary(e1,reb Ast.SupEq,e2))
+		    | Ast.Logical(Ast.Sup) ->
+			k1 (Ast0.Binary(e1,reb Ast.InfEq,e2))
+		    | Ast.Logical(Ast.InfEq) ->
+			k1 (Ast0.Binary(e1,reb Ast.Sup,e2))
+		    | Ast.Logical(Ast.SupEq) ->
+			k1 (Ast0.Binary(e1,reb Ast.Inf,e2))
+		    | Ast.Logical(Ast.Eq) ->
+			k1 (Ast0.Binary(e1,reb Ast.NotEq,e2))
+		    | Ast.Logical(Ast.NotEq) ->
+			k1 (Ast0.Binary(e1,reb Ast.Eq,e2))
+		    | Ast.Logical(Ast.AndLog) ->
+			k1 (Ast0.Binary(negate e1 e1 idcont,reb Ast.OrLog,
+				       negate e2 e2 idcont))
+		    | Ast.Logical(Ast.OrLog) ->
+			k1 (Ast0.Binary(negate e1 e1 idcont,reb Ast.AndLog,
+				       negate e2 e2 idcont))
+		    | _ ->
+			Ast0.rewrap e
+			  (Ast0.Unary(k res,Ast0.rewrap_mcode op Ast.Not)))
 		| Ast0.DisjExpr(lp,exps,mids,rp) ->
 		      (* use res because it is the transformed argument *)
-		    let exps = List.map (function e -> negate e e) exps in
+		    let exps = List.map (function e -> negate e e k) exps in
 		    Ast0.rewrap res (Ast0.DisjExpr(lp,exps,mids,rp))
 		| _ ->
 		      (*use e, because this might be the toplevel expression*)
 		    Ast0.rewrap e
-		      (Ast0.Unary(res,Ast0.rewrap_mcode unop Ast.Not)) in
-	      negate e exp
+		      (Ast0.Unary(k res,Ast0.rewrap_mcode unop Ast.Not)) in
+	      negate e exp idcont
 	    else e
 	| _ -> e)
     | Ast0.Edots(d,_) ->

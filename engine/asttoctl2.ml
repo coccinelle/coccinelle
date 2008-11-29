@@ -636,7 +636,9 @@ and get_before_e s a =
       let (de,dea) = get_before decls [] in
       let (bd,_) = get_before body dea in
       (Ast.rewrap s (Ast.FunDecl(header,lbrace,de,bd,rbrace)),[])
-  | _ -> failwith "get_before_e: not supported"
+  | _ ->
+      Pretty_print_cocci.statement "" s; Format.print_newline();
+      failwith "get_before_e: not supported"
 
 let rec get_after sl a =
   match Ast.unwrap sl with
