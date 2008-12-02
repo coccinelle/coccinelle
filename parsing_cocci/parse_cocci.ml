@@ -893,9 +893,9 @@ and find_line_end inwhen line clt q = function
 let rec translate_when_true_false = function
     [] -> []
   | (PC.TWhen(clt),q)::((PC.TNotEq(_),_) as x)::(PC.TIdent("true",_),_)::xs ->
-      (PC.TWhenTrue(clt),q)::x::xs
+      (PC.TWhenTrue(clt),q)::x::(translate_when_true_false xs)
   | (PC.TWhen(clt),q)::((PC.TNotEq(_),_) as x)::(PC.TIdent("false",_),_)::xs ->
-      (PC.TWhenFalse(clt),q)::x::xs
+      (PC.TWhenFalse(clt),q)::x::(translate_when_true_false xs)
   | x::xs -> x :: (translate_when_true_false xs)
 
 (* ----------------------------------------------------------------------- *)

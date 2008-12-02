@@ -6,6 +6,8 @@
 - positions no longer allowed on \(, \|, and \)
 - improved propagation of negation for isos in the presence of parens
 - convert Todos in flow graph construction to recoverable errors
+- fixed bug in treatment of when != true and when != false, to allow more
+  than one of them per ...
 
 ** Internals: 
 
