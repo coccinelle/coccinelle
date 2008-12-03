@@ -67,7 +67,7 @@ C-language constants.
   \RULE{\rt{include}}
   \CASE{using "\NT{string}"}
   \CASE{using <\NT{pathToIsoFile}>}
-  
+
   \RULE{\rt{changeset}}
   \CASE{\NT{metavariables} \ANY{--- filename +++ filename} \NT{transformation}}
 
@@ -216,7 +216,7 @@ separately.
 \begin{center}
 \begin{tabular}{p{3cm}p{5cm}p{3cm}}
 \begin{verbatim}
-  proc_info_func(...) {        
+  proc_info_func(...) {
     <...
     hostno
     ...>
@@ -224,7 +224,7 @@ separately.
 \end{verbatim}
 &&
 \begin{verbatim}
-  proc_info_func(...) {        
+  proc_info_func(...) {
     <...
     hostptr->host_no
     ...>
@@ -266,7 +266,7 @@ The grammar rule for the minus or plus slice of a transformation is as follows:
   \CASE{when \NT{any\_strict} \ANY{, \NT{any\_strict}} $^\dag$}
   \CASE{when true != \NT{exp} $^\ddag$}
   \CASE{when false != \NT{exp} $^\ddag$}
-  
+
   \RULE{\rt{any\_strict}}
   \CASE{any}
   \CASE{strict}
@@ -400,22 +400,22 @@ annotations:
 
 $^\dag$ The optional \texttt{when} construct ends at the end of the line.
 
-\noindent{\footnotesize\begin{tabular}{r@{\,\,\,}c@{\,\,\,}l}
-\mita{type} & ::= & \opt{\mtt{const} \(\mid\) \mtt{volatile}}
-                    \mita{type\_desc} \ANY{\mtt{*}}\\
-\mita{type\_desc} & ::= & \mita{simple\_type} \(\mid\) \opt{\mtt{signed} \(\mid\)
-       \mtt{unsigned}} \mita{signable\_type} \(\mid\) \opt{\mtt{struct} \(\mid\)
-       \mtt{union}} \msf{id}
-\\&\multicolumn{1}{r}{\(\mid\)}&
-       \mth{\msf{metaid}^{\ssf{Type}}}
-\end{tabular}}
+% \noindent{\footnotesize\begin{tabular}{r@{\,\,\,}c@{\,\,\,}l}
+% \mita{type} & ::= & \opt{\mtt{const} \(\mid\) \mtt{volatile}}
+%                     \mita{type\_desc} \ANY{\mtt{*}}\\
+% \mita{type\_desc} & ::= & \mita{simple\_type} \(\mid\) \opt{\mtt{signed} \(\mid\)
+%        \mtt{unsigned}} \mita{signable\_type} \(\mid\) \opt{\mtt{struct} \(\mid\)
+%        \mtt{union}} \msf{id}
+% \\&\multicolumn{1}{r}{\(\mid\)}&
+%        \mth{\msf{metaid}^{\ssf{Type}}}
+% \end{tabular}}
 
-\noindent{\footnotesize\begin{tabular}{r@{\,\,\,}c@{\,\,\,}l}
-\mita{simple\_type} & ::= & \mtt{void} \(\mid\) \mtt{double} \(\mid\)
- \mtt{float} \\
-\mita{signable\_type} & ::= & \mtt{char} \(\mid\) \mtt{short} \(\mid\)
- \mtt{int} \(\mid\) \mtt{long}
-\end{tabular}}
+% \noindent{\footnotesize\begin{tabular}{r@{\,\,\,}c@{\,\,\,}l}
+% \mita{simple\_type} & ::= & \mtt{void} \(\mid\) \mtt{double} \(\mid\)
+%  \mtt{float} \\
+% \mita{signable\_type} & ::= & \mtt{char} \(\mid\) \mtt{short} \(\mid\)
+%  \mtt{int} \(\mid\) \mtt{long}
+% \end{tabular}}
 
 \section{Function declarations}
 
@@ -439,37 +439,29 @@ $^\dag$ The optional \texttt{when} construct ends at the end of the line.
 
 \begin{grammar}
   \RULE{\rt{PARAMSEQ}(\NT{grammar},\NT{whencode})}
-  \CASE{}
+  \CASE{\mth{(}\NT{grammar}\OR \ldots \opt{\NT{whencode}}\mth{)} \ANY{, \NT{grammar}\OR , \ldots \opt{\NT{whencode}}}}
 \end{grammar}
 
-\noindent\begin{tabular}{r@{\,\,\,}c@{\,\,\,}l}
- & ::= &
-\\ \multicolumn{3}{l}{\air\air\phantom{\(\mid\)}
-\ANY{\mita{grammar} \mtt{,} \(\mid\) {\ldots} \opt{\mita{whencode}} \mtt{,}}
-    (\mita{grammar} \(\mid\) {\ldots} \opt{\mita{whencode}})}
-\\ \multicolumn{3}{l}{\air\air\(\mid\)
-\ANY{\mita{grammar} \mtt{,} \(\mid\) {\mtt{ooo}} \opt{\mita{whencode}}
- \mtt{,}}
-    (\mita{grammar} \(\mid\) {\mtt{ooo}} \opt{\mita{whencode}})}
-\end{tabular}
+%\newpage
 
 \section{Declarations}
 
 \begin{grammar}
-  \RULE{decl}
-  \CASE{}
-    
+  \RULE{\rt{decl}}
+  \CASE{\NT{type} \opt{\NT{id} \opt{[\opt{\NT{dot\_expr}}]}
+      \ANY{, \NT{id} \opt{[ \opt{\NT{dot\_expr}}]}}};}
+  \CASE{\NT{type} \NT{id} \opt{[\opt{\NT{dot\_expr}}]}= \NT{nest\_expr};}
 \end{grammar}
 
-\noindent{\footnotesize\begin{tabular}{r@{\,\,\,}c@{\,\,\,}l}
-\mita{decl\_var} & ::= &
-   \mita{type} \opt{\ANY{\mita{id} \opt{\mtt{[} \opt{\mita{dot\_expr}}
-   \mtt{]}} \mtt{,}} \mita{id} \opt{\mtt{[} \opt{\mita{dot\_expr}} \mtt{]}}}
-   \mtt{;}
-\\&\multicolumn{1}{r}{\(\mid\)}&
- \mita{type} \mita{id} \opt{\mtt{[} \opt{\mita{dot\_expr}} \mtt{]}}
-   \mtt{=} \mita{nest\_expr} \mtt{;}
-\end{tabular}}
+% \noindent{\footnotesize\begin{tabular}{r@{\,\,\,}c@{\,\,\,}l}
+% \mita{decl\_var} & ::= &
+%    \mita{type} \opt{\ANY{\mita{id} \opt{\mtt{[} \opt{\mita{dot\_expr}}
+%    \mtt{]}} \mtt{,}} \mita{id} \opt{\mtt{[} \opt{\mita{dot\_expr}} \mtt{]}}}
+%    \mtt{;}
+% \\&\multicolumn{1}{r}{\(\mid\)}&
+%  \mita{type} \mita{id} \opt{\mtt{[} \opt{\mita{dot\_expr}} \mtt{]}}
+%    \mtt{=} \mita{nest\_expr} \mtt{;}
+% \end{tabular}}
 
 \section{Statements}
 
@@ -482,90 +474,134 @@ allowed.
 
 %\vspace{\baselineskip}
 \begin{grammar}
-  \RULE{stmt}  
-  \CASE{}
+  \RULE{\rt{stmt}}
+  \CASE{\mth{\T{metaid}^{\ssf{Stmt}}}}
+  \CASE{\NT{expr};}
+  \CASE{if (\NT{dot\_expr}) \NT{single\_stmt} \opt{else \NT{single\_stmt}}}
+  \CASE{for (\opt{\NT{dot\_expr}}; \opt{\NT{dot\_expr}}; \opt{\NT{dot\_expr}})
+    \NT{single\_stmt}}
+  \CASE{while (\NT{dot\_expr}) \NT{single\_stmt}}
+  \CASE{do \NT{single\_stmt} while (\NT{dot\_expr});}
+  \CASE{return \opt{\NT{dot\_expr}};}
+  \CASE{\ttlb~\opt{\NT{stmt\_sequence}} \ttrb}
+  \CASE{\NT{NEST}(\some{\NT{decl\_stmt}}, \NT{stmt\_whencode})}
+  \CASE{\NT{NEST}(\NT{expr}, \NT{stmt\_whencode})}
+
+% \noindent{\footnotesize\begin{tabular}{r@{\,\,\,}c@{\,\,\,}l}
+% \mita{statement} & ::= &
+%   \mth{\msf{metaid}^{\ssf{Stmt}}}
+% \\&\multicolumn{1}{r}{\(\mid\)}&
+%   \mita{expr} \mtt{;}
+% \\&\multicolumn{1}{r}{\(\mid\)}&
+%   \mtt{if} \mtt{(} \mita{dot\_expr} \mtt{)} \mita{single\_statement}
+%   \opt{\mtt{else} \mita{single\_statement}}
+% \\&\multicolumn{1}{r}{\(\mid\)}&
+%   \mtt{for} \mtt{(} \opt{\mita{dot\_expr}} \mtt{;} \opt{\mita{dot\_expr}} \mtt{;}
+%   \opt{\mita{dot\_expr}} \mtt{)} \mita{single\_statement}
+% \\&\multicolumn{1}{r}{\(\mid\)}&
+%   \mtt{while} \mtt{(} \mita{dot\_expr} \mtt{)} \mita{single\_statement}
+% \\&\multicolumn{1}{r}{\(\mid\)}&
+%   \mtt{do} \mita{single\_statement} \mtt{while} \mtt{(} \mita{dot\_expr} \mtt{)}
+%   \mtt{;}
+% \\&\multicolumn{1}{r}{\(\mid\)}&
+%   \mtt{return} \opt{\mita{dot\_expr}} \mtt{;}
+% \\&\multicolumn{1}{r}{\(\mid\)}&
+%   \ttlb~\opt{\mita{statement\_sequence}} \ttrb
+% \\&\multicolumn{1}{r}{\(\mid\)}&
+%   NEST(\some{\mita{decl\_statement}} \(\mid\) \mita{expr}, \mita{stmt\_whencode})
+% \end{tabular}}
+
+  \RULE{\rt{single\_stmt}}
+  \CASE{\NT{stmt}}
+  \CASE{\NT{OR}(\NT{stmt})}
+
+  \RULE{\rt{decl\_stmt}}
+  \CASE{\mth{\T{metaid}^{\ssf{StmtList}}}}
+  \CASE{\NT{decl\_var}}
+  \CASE{\NT{stmt}}
+  \CASE{\NT{OR}(\NT{stmt\_seq})}
+
+  \RULE{\rt{stmt\_seq}}
+  \CASE{\any{\NT{decl\_stmt}}
+    \opt{\NT{DOTSEQ}(\some{\NT{decl\_stmt}},
+      \NT{stmt\_whencode}) \any{\NT{decl\_stmt}}}}
+  \CASE{\any{\NT{decl\_stmt}}
+    \opt{\NT{DOTSEQ}(\NT{expr},
+      \NT{stmt\_whencode}) \any{\NT{decl\_stmt}}}}
+
+  \RULE{\rt{stmt\_whencode}}
+  \CASE{WHEN != \NT{XXXDOTSEQXXX}(\some{\NT{decl\_stmt}}, \NT{stmt\_whencode})}
+  \CASE{WHEN != \NT{XXXDOTSEQXXX}(\NT{expr}, \NT{stmt\_whencode})}
 \end{grammar}
 
 \noindent{\footnotesize\begin{tabular}{r@{\,\,\,}c@{\,\,\,}l}
-\mita{statement} & ::= &
-  \mth{\msf{metaid}^{\ssf{Stmt}}}
-\\&\multicolumn{1}{r}{\(\mid\)}&
-  \mita{expr} \mtt{;}
-\\&\multicolumn{1}{r}{\(\mid\)}&
-  \mtt{if} \mtt{(} \mita{dot\_expr} \mtt{)} \mita{single\_statement}
-  \opt{\mtt{else} \mita{single\_statement}}
-\\&\multicolumn{1}{r}{\(\mid\)}&
-  \mtt{for} \mtt{(} \opt{\mita{dot\_expr}} \mtt{;} \opt{\mita{dot\_expr}} \mtt{;}
-  \opt{\mita{dot\_expr}} \mtt{)} \mita{single\_statement}
-\\&\multicolumn{1}{r}{\(\mid\)}&
-  \mtt{while} \mtt{(} \mita{dot\_expr} \mtt{)} \mita{single\_statement}
-\\&\multicolumn{1}{r}{\(\mid\)}&
-  \mtt{do} \mita{single\_statement} \mtt{while} \mtt{(} \mita{dot\_expr} \mtt{)}
-  \mtt{;}
-\\&\multicolumn{1}{r}{\(\mid\)}&
-  \mtt{return} \opt{\mita{dot\_expr}} \mtt{;}
-\\&\multicolumn{1}{r}{\(\mid\)}&
-  \ttlb~\opt{\mita{statement\_sequence}} \ttrb
-\\&\multicolumn{1}{r}{\(\mid\)}&
-  NEST(\some{\mita{decl\_statement}} \(\mid\) \mita{expr}, \mita{stmt\_whencode})
-\end{tabular}}
-
-\noindent{\footnotesize\begin{tabular}{r@{\,\,\,}c@{\,\,\,}l}
-\mita{single\_statement} & ::= &
-     \mita{statement} \(\mid\) OR(\mita{statement})
-\\
-\mita{decl\_statement} & ::= &
-  \mth{\msf{metaid}^{\ssf{StmtList}}} \(\mid\)
-  \mita{decl\_var} \(\mid\) \mita{statement} \(\mid\)
-  OR(\mita{statement\_sequence})
-\\
-\mita{statement\_sequence} & ::= &\\
-  \multicolumn{3}{r}{\air\air\any{\mita{decl\_statement}}
-  \opt{DOTSEQ(\some{\mita{decl\_statement}} \(\mid\) \mita{expr},
-  \mita{stmt\_whencode}) \any{\mita{decl\_statement}}}}
-\\
+% \mita{single\_statement} & ::= &
+%      \mita{statement} \(\mid\) OR(\mita{statement})
+% \\
+% \mita{decl\_statement} & ::= &
+%   \mth{\msf{metaid}^{\ssf{StmtList}}} \(\mid\)
+%   \mita{decl\_var} \(\mid\) \mita{statement} \(\mid\)
+%   OR(\mita{statement\_sequence})
+% \\
+% \mita{statement\_sequence} & ::= &\\
+%   \multicolumn{3}{r}{\air\air\any{\mita{decl\_statement}}
+%   \opt{DOTSEQ(\some{\mita{decl\_statement}} \(\mid\) \mita{expr},
+%   \mita{stmt\_whencode}) \any{\mita{decl\_statement}}}}
+% \\
 \mita{stmt\_whencode} & ::= & \mtt{WHEN} \mtt{!=}
 OPTDOTSEQ(\some{\mita{decl\_statement}} \(\mid\) \mita{expr},\mita{stmt\_whencode})
-\\
-OR(\mita{grammar}) & ::= &
- \mtt{(} \mita{grammar} \ANY{\ttmid \mita{grammar}} \mtt{)}
+% \\
+% OR(\mita{grammar}) & ::= &
+%  \mtt{(} \mita{grammar} \ANY{\ttmid \mita{grammar}} \mtt{)}
 \end{tabular}}
 
-\noindent{\footnotesize\begin{tabular}{r@{\,\,\,}c@{\,\,\,}l}
-DOTSEQ(\mita{grammar},\mita{whencode}) & ::= &
-\\ \multicolumn{3}{l}{\air\air\phantom{\(\mid\)}
- \mtt{\ldots} \opt{\mita{whencode}} \ANY{\mita{grammar} \mtt{\ldots}
- \opt{\mita{whencode}}}}
-\\ \multicolumn{3}{l}{\air\air\(\mid\)
- \mtt{ooo} \opt{\mita{whencode}} \ANY{\mita{grammar} \mtt{ooo}
- \opt{\mita{whencode}}}}
-\\ \multicolumn{3}{l}{\air\air\(\mid\)
- \mtt{***} \opt{\mita{whencode}} \ANY{\mita{grammar} \mtt{***}
- \opt{\mita{whencode}}}}
-\end{tabular}}
+\begin{grammar}
+  \RULE{\rt{OR}(\NT{grammar})}
+  \CASE{( \NT{grammar} \ANY{\ttmid \NT{grammar}})}
 
-\noindent{\footnotesize\begin{tabular}{r@{\,\,\,}c@{\,\,\,}l}
-NEST(\mita{grammar},\mita{whencode}) & ::= &
-\\ \multicolumn{3}{l}{\air\air\phantom{\(\mid\)}
- \mtt{<\ldots} \mita{grammar} \ANY{\ldots \opt{\mita{whencode}}
- \mita{grammar}} \mtt{\ldots>}}
-\\ \multicolumn{3}{l}{\air\air\(\mid\)
- \mtt{<ooo} \mita{grammar} \ANY{ooo \opt{\mita{whencode}} \mita{grammar}}
- \mtt{ooo>}}
-\\ \multicolumn{3}{l}{\air\air\(\mid\)
- \mtt{<***} \mita{grammar} \ANY{*** \opt{\mita{whencode}} \mita{grammar}}
- \mtt{***>}}
-\end{tabular}}
+  \RULE{\rt{DOTSEQ}(\NT{grammar},\NT{whencode})}
+  \CASE{\ldots \opt{\NT{whencode}} \ANY{\NT{grammar} \ldots \opt{\NT{whencode}}}}
+
+% \noindent{\footnotesize\begin{tabular}{r@{\,\,\,}c@{\,\,\,}l}
+% DOTSEQ(\mita{grammar},\mita{whencode}) & ::= &
+% \\ \multicolumn{3}{l}{\air\air\phantom{\(\mid\)}
+%  \mtt{\ldots} \opt{\mita{whencode}} \ANY{\mita{grammar} \mtt{\ldots}
+%  \opt{\mita{whencode}}}}
+% \\ \multicolumn{3}{l}{\air\air\(\mid\)
+%  \mtt{ooo} \opt{\mita{whencode}} \ANY{\mita{grammar} \mtt{ooo}
+%  \opt{\mita{whencode}}}}
+% \\ \multicolumn{3}{l}{\air\air\(\mid\)
+%  \mtt{***} \opt{\mita{whencode}} \ANY{\mita{grammar} \mtt{***}
+%  \opt{\mita{whencode}}}}
+% \end{tabular}}
+
+  \RULE{\rt{NEST}(\NT{grammar},\NT{whencode})}
+  \CASE{<\ldots \NT{grammar} \ANY{\ldots \opt{\NT{whencode}} \NT{grammar}} \ldots>}
+
+% \noindent{\footnotesize\begin{tabular}{r@{\,\,\,}c@{\,\,\,}l}
+% NEST(\mita{grammar},\mita{whencode}) & ::= &
+% \\ \multicolumn{3}{l}{\air\air\phantom{\(\mid\)}
+%  \mtt{<\ldots} \mita{grammar} \ANY{\ldots \opt{\mita{whencode}}
+%  \mita{grammar}} \mtt{\ldots>}}
+% \\ \multicolumn{3}{l}{\air\air\(\mid\)
+%  \mtt{<ooo} \mita{grammar} \ANY{ooo \opt{\mita{whencode}} \mita{grammar}}
+%  \mtt{ooo>}}
+% \\ \multicolumn{3}{l}{\air\air\(\mid\)
+%  \mtt{<***} \mita{grammar} \ANY{*** \opt{\mita{whencode}} \mita{grammar}}
+%  \mtt{***>}}
+% \end{tabular}}
+
+\end{grammar}
 
 %\vspace{\baselineskip}
 
 \noindent
-OR is a macro that generates a disjunction of patterns.  The tokens {\tt
-(}, {\ttmid}, and {\tt )} must appear in the leftmost column, to
-differentiate them from the parentheses and bit-or tokens that can appear
-within expressions (and cannot appear in the leftmost column).  These
-tokens are furthermore different from (, \(\mid\), and ), which are part of
-the grammar metalanguage.
+OR is a macro that generates a disjunction of patterns.  The three
+tokens \T{(}, \T{\ttmid}, and \T{)} must appear in the leftmost
+column, to differentiate them from the parentheses and bit-or tokens
+that can appear within expressions (and cannot appear in the leftmost
+column).  These tokens are furthermore different from (, \(\mid\), and
+), which are part of the grammar metalanguage.
 
 \section{Expressions}
 
@@ -586,7 +622,7 @@ in a concise way.
 \begin{grammar}
   \RULE{expr}
   \CASE{}
-  
+
 \end{grammar}
 
 \noindent{\footnotesize\begin{tabular}{r@{\,\,\,}c@{\,\,\,}l}
@@ -680,7 +716,7 @@ int main(int i) {
 
   if(1) {
     foo();
-  } else { 
+  } else {
     foo();
   }
 
