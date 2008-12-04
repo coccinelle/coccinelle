@@ -7,7 +7,21 @@
 \usepackage{listings}
 \usepackage[usenames,dvipsnames]{color}
 \usepackage[T1]{fontenc}
-\lstset{basicstyle=\ttfamily,numbers=left, numberstyle=\tiny, stepnumber=1, numbersep=5pt,language=C,commentstyle=\color{BrickRed},keywordstyle=\color{blue},stringstyle=\color{OliveGreen}}
+
+\lstset{basicstyle=\ttfamily,numbers=left, numberstyle=\tiny, stepnumber=1, numbersep=5pt,language=C,commentstyle=\color{OliveGreen},keywordstyle=\color{blue},stringstyle=\color{BrickRed}}
+
+\lstdefinelanguage{Cocci}{
+morekeywords={when,strict,any,forall,exists},
+keywordstyle=\color{Bittersweet}\bfseries,
+sensitive=false,
+morecomment=[s][\color{OliveGreen}]{@}{@@},
+morecomment=[s][\color{OliveGreen}]{@@}{@@},
+% You must prefix the +/- lines of
+% cocci files with @+/@- respectively.
+% This will enable the automatic coloration.
+moredelim=[il][\color{blue}]{@+},
+moredelim=[il][\color{BrickRed}]{@-}
+}
 
 \newif\iflanguagestyle
 \languagestylefalse
@@ -475,6 +489,7 @@ allowed.
 %\vspace{\baselineskip}
 \begin{grammar}
   \RULE{\rt{stmt}}
+  \CASE{\NT{includes}}
   \CASE{\mth{\T{metaid}^{\ssf{Stmt}}}}
   \CASE{\NT{expr};}
   \CASE{if (\NT{dot\_expr}) \NT{single\_stmt} \opt{else \NT{single\_stmt}}}
@@ -482,10 +497,17 @@ allowed.
     \NT{single\_stmt}}
   \CASE{while (\NT{dot\_expr}) \NT{single\_stmt}}
   \CASE{do \NT{single\_stmt} while (\NT{dot\_expr});}
+  \CASE{\NT{iter\_ident} (\any{\NT{dot\_expr}}) \NT{single\_stmt}}
+  \CASE{switch (\opt{\NT{dot\_expr}}) \ttlb \any{\NT{case\_line}} \ttrb}
   \CASE{return \opt{\NT{dot\_expr}};}
   \CASE{\ttlb~\opt{\NT{stmt\_sequence}} \ttrb}
   \CASE{\NT{NEST}(\some{\NT{decl\_stmt}}, \NT{stmt\_whencode})}
   \CASE{\NT{NEST}(\NT{expr}, \NT{stmt\_whencode})}
+  \CASE{break;}
+  \CASE{continue;}
+  \CASE{\NT{ident}:}
+  \CASE{goto \NT{ident};}
+  \CASE{\ttlb \NT{fun\_start} \ttrb}
 
 % \noindent{\footnotesize\begin{tabular}{r@{\,\,\,}c@{\,\,\,}l}
 % \mita{statement} & ::= &
@@ -530,8 +552,19 @@ allowed.
       \NT{stmt\_whencode}) \any{\NT{decl\_stmt}}}}
 
   \RULE{\rt{stmt\_whencode}}
-  \CASE{WHEN != \NT{XXXDOTSEQXXX}(\some{\NT{decl\_stmt}}, \NT{stmt\_whencode})}
-  \CASE{WHEN != \NT{XXXDOTSEQXXX}(\NT{expr}, \NT{stmt\_whencode})}
+  \CASE{when != \NT{XXXDOTSEQXXX}(\some{\NT{decl\_stmt}}, \NT{stmt\_whencode})}
+  \CASE{when != \NT{XXXDOTSEQXXX}(\NT{expr}, \NT{stmt\_whencode})}
+
+  \RULE{\rt{case\_line}}
+  \CASE{default : \NT{fun\_start}}
+  \CASE{case \NT{dot\_expr} : \NT{fun\_start}}
+
+  \RULE{\rt{fun\_start}}
+  \CASE{}
+
+  \RULE{\rt{iter\_ident}}
+  \CASE{\T{IteratorId}}
+  \CASE{\T{MetaIterator}}
 \end{grammar}
 
 \noindent{\footnotesize\begin{tabular}{r@{\,\,\,}c@{\,\,\,}l}
@@ -577,6 +610,7 @@ OPTDOTSEQ(\some{\mita{decl\_statement}} \(\mid\) \mita{expr},\mita{stmt\_whencod
 
   \RULE{\rt{NEST}(\NT{grammar},\NT{whencode})}
   \CASE{<\ldots \NT{grammar} \ANY{\ldots \opt{\NT{whencode}} \NT{grammar}} \ldots>}
+  \CASE{<+\ldots \NT{grammar} \ANY{\ldots \opt{\NT{whencode}} \NT{grammar}} \ldots+>}
 
 % \noindent{\footnotesize\begin{tabular}{r@{\,\,\,}c@{\,\,\,}l}
 % NEST(\mita{grammar},\mita{whencode}) & ::= &
@@ -705,6 +739,9 @@ EXPR(\mita{exp}) & ::= &
 \section{Examples}
 %\label{sec:examples}
 
+\begin{tabular}{ccc}
+Before & Semantic patch & After \\
+\begin{minipage}[t]{.3\linewidth}
 \begin{lstlisting}
 #DEFINE TEST "Foo"
 
@@ -723,14 +760,41 @@ int main(int i) {
   foo();
 }
 \end{lstlisting}
-
-\begin{lstlisting}
+\end{minipage}
+&
+\begin{minipage}[t]{.3\linewidth}
+\begin{lstlisting}[language=Cocci]
 @@
+
 @@
 
-- foo()
-+ bar()
+
+@-- foo()
+@++ bar()
 \end{lstlisting}
+\end{minipage}
+&
+\begin{minipage}[t]{.3\linewidth}
+\begin{lstlisting}
+#DEFINE TEST "Foo"
+
+printf("Foo");
+
+int main(int i) {
+//Test
+  int k = bar();
+
+  if(1) {
+    bar();
+  } else {
+    bar();
+  }
+
+  bar();
+}
+\end{lstlisting}
+\end{minipage}\\
+\end{tabular}
 
 \end{document}
 
