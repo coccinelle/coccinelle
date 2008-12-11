@@ -21,4 +21,12 @@ check: $(HTML)
 .SUFFIXES: .html .tex
 
 .tex.html:
-	hevea -exec /usr/share/hevea/xxdate.exe $<
+# For Gentoo: /usr/lib64/hevea
+# For Ubuntu family: /usr/share/hevea
+	if [ -f /usr/lib64/hevea/xxdate.exe ]; then \
+	hevea -exec /usr/lib64/hevea/xxdate.exe  $< ; \
+	elif [ -f /usr/share/hevea/xxdate.exe ]; then \
+	hevea -exec /usr/share/hevea/xxdate.exe $< ; \
+	else \
+	echo -e "\n\n *** Hevea: Unable to find xxdate.exe ***\n\n"; \
+	fi
