@@ -23,7 +23,7 @@ check: $(HTML)
 .tex.html:
 # For Gentoo: /usr/lib64/hevea
 # For Ubuntu family: /usr/share/hevea
-	if [ -f /usr/lib64/hevea/xxdate.exe ]; then \
+	@if [ -f /usr/lib64/hevea/xxdate.exe ]; then \
 	hevea -exec /usr/lib64/hevea/xxdate.exe  $< ; \
 	elif [ -f /usr/share/hevea/xxdate.exe ]; then \
 	hevea -exec /usr/share/hevea/xxdate.exe $< ; \
