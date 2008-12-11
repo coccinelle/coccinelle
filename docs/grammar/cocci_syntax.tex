@@ -654,81 +654,59 @@ in a concise way.
 
 %\vspace{\baselineskip}
 \begin{grammar}
-  \RULE{expr}
-  \CASE{}
+  \RULE{\rt{expr}}
+  \CASE{\NT{EXPR}(\NT{expr})}
 
+  \RULE{\rt{nest\_expr}}
+  \CASE{\NT{EXPR}(\NT{nest\_expr})}
+  \CASE{\NT{NEST}(\NT{nest\_expr}, \NT{exp\_whencode})}
+
+  \RULE{\rt{dot\_expr}}
+  \CASE{\NT{EXPR}(\NT{dot\_expr})}
+  \CASE{\NT{NEST}(\NT{dot\_expr}, \NT{exp\_whencode})}
+  \CASE{... \opt{\NT{exp\_whencode}}}
+
+  \RULE{\rt{EXPR}(exp)}
+  \CASE{\NT{exp} \NT{assign\_op} \NT{exp}}
+  \CASE{\NT{exp}++}
+  \CASE{\NT{exp}--}
+  \CASE{\NT{unary\_op} \NT{exp}}
+  \CASE{\NT{exp} \NT{bin\_op} \NT{exp}}
+  \CASE{\NT{exp} ? \NT{dot\_expr} : \NT{exp}}
+  \CASE{(\NT{type}) \NT{exp}}
+  \CASE{\NT{exp} [\NT{dot\_expr}]}
+  \CASE{\NT{exp} . \NT{id}}
+  \CASE{\NT{exp} -> \NT{id}}
+  \CASE{\NT{exp}(\opt{\NT{PARAMSEQ}(\NT{arg}, \NT{exp\_whencode})})}
+  \CASE{\NT{id}}
+  \CASE{\mth{\T{metaid}^{\ssf{Func}}}}
+  \CASE{\mth{\T{metaid}^{\ssf{LocalFunc}}}}
+  \CASE{\mth{\T{metaid}^{\ssf{Exp}}}}
+  \CASE{\mth{\T{metaid}^{\ssf{Err}}}}
+  \CASE{\mth{\T{metaid}^{\ssf{Const}}}}
+  \CASE{\NT{const}}
+  \CASE{(\NT{dot\_expr})}
+  \CASE{\NT{OR}(\NT{exp})}
+
+  \RULE{\rt{arg}}
+  \CASE{\NT{nest\_expr}}
+  \CASE{\mth{\T{metaid}^{\ssf{ExpList}}}}
+
+  \RULE{\rt{exp\_whencode}}
+  \CASE{WHEN != \NT{dot\_expr}}
+
+  \RULE{\rt{assign\_op}}
+  \CASE{= \OR -= \OR += \OR *= \OR /= \OR \%=}
+  & \OR & \KW{\&=} \OR \KW{|=} \OR \verb!^=! \OR \verb!<<=! \OR \verb!>>=! \\
+
+  \RULE{\rt{bin\_op}}
+  \CASE{* \OR / \OR \% \OR + \OR -}
+  & \OR & \verb!<<! \OR \verb!>>! \OR \verb+^+ \OR \KW{\&} \OR \KW{\ttmid}\\
+  \CASE{< \OR   > \OR <= \OR >= \OR == \OR != \OR \&\& \OR \ttmid\ttmid}
+
+  \RULE{\rt{unary\_op}}
+  \CASE{++ \OR -- \OR \& \OR * \OR + \OR - \OR !}
 \end{grammar}
-
-\noindent{\footnotesize\begin{tabular}{r@{\,\,\,}c@{\,\,\,}l}
-\mita{expr} & ::= & EXPR(\mita{expr}) \\
-\mita{nest\_expr} & ::= & EXPR(\mita{nest\_expr}) \(\mid\)
-NEST(\mita{nest\_expr}, \mita{exp\_whencode}) \\
-\mita{dot\_expr} & ::= & EXPR(\mita{dot\_expr}) \(\mid\)
-NEST(\mita{dot\_expr}, \mita{exp\_whencode}) \(\mid\)
-\mtt{\ldots} \opt{\mita{exp\_whencode}} \\
-EXPR(\mita{exp}) & ::= &
-  \mita{exp} \mita{assign\_op} \mita{exp} \(\mid\)
-  \mita{exp} \mita{binary\_op} \mita{exp} \(\mid\)
-  \mita{exp} \mtt{?}~\opt{\mita{dot\_expr}} \mtt{:}~\mita{exp}
-\\&\multicolumn{1}{r}{\(\mid\)}&
-  \mtt{(} \mita{type} \mtt{)} \mita{exp} \(\mid\)
-  \mita{unary\_op} \mita{exp}
-\(\mid\)
-  \mita{exp} \mtt{[} \mita{dot\_expr} \mtt{]}
-\(\mid\)
-  \mita{exp} \mtt{.} \mita{id}
-\\&\multicolumn{1}{r}{\(\mid\)}&
-  \mita{exp} \mtt{->} \mita{id}
-\(\mid\)
-  \mita{exp} \mtt{++}
-\(\mid\)
-  \mita{exp} \mtt{--}
-\(\mid\)
-  \mita{exp} \mtt{(} \opt{PARAMSEQ(\mita{arg},\mita{exp\_whencode})} \mtt{)}
-\\&\multicolumn{1}{r}{\(\mid\)}&
-  \mita{id} \(\mid\)
- \mth{\msf{metaid}^{\ssf{Func}}} \(\mid\) \mth{\msf{metaid}^{\ssf{LocalFunc}}}
- \(\mid\)
-  \mth{\msf{metaid}^{\ssf{Exp}}} \(\mid\)
-  \mth{\msf{metaid}^{\ssf{Err}}} \(\mid\)
-  \mth{\msf{metaid}^{\ssf{Const}}}
-\\&\multicolumn{1}{r}{\(\mid\)}&
-  \msf{const}
-\(\mid\)
-  \mtt{(} \mita{dot\_expr} \mtt{)}
-\(\mid\)
-  OR(\mita{exp})
-\\
-\mita{arg} & ::= & \mita{nest\_expr} \(\mid\) \mth{\msf{metaid}^{\ssf{ExpList}}}
-\end{tabular}}
-
-\noindent{\footnotesize\begin{tabular}{r@{\,\,\,}c@{\,\,\,}l}
-\mita{exp\_whencode} & ::= & \mtt{WHEN} \mtt{!=} \mita{dot\_expr}
-\\
-\mita{assign\_op} & ::= &
-           \mtt{=}
-  \(\mid\) \mtt{-=}
-  \(\mid\) \mtt{+=}
-  \(\mid\) \mtt{*=}
-  \(\mid\) \mtt{/=}
-  \(\mid\) \mtt{\%=}
-  \(\mid\) \mtt{\&=}
-  \(\mid\) \verb+|=+
-  \(\mid\) \verb+^=+
-  \(\mid\) \mtt{<<=}
-  \(\mid\) \mtt{>>=} \\
-\mita{binary\_op} & ::= &
-   \mtt{*} \(\mid\) \mtt{/} \(\mid\) \mtt{\%} \(\mid\) \mtt{+} \(\mid\)
-   \mtt{-} \(\mid\) \mtt{<<} \(\mid\) \mtt{>>} \(\mid\) \mtt{<} \(\mid\)
-   \mtt{>} \(\mid\) \mtt{<=} \(\mid\) \mtt{>=} \(\mid\) \mtt{==} \(\mid\)
-   \mtt{!=} \(\mid\) \mtt{\&} \(\mid\) \mtt{\ttmid} \(\mid\) \verb+^+ \(\mid\)
-   \mtt{\&\&} \(\mid\) \mtt{\ttmid\ttmid}
-\end{tabular}}
-
-\noindent{\footnotesize\begin{tabular}{r@{\,\,\,}c@{\,\,\,}l}
-\mita{unary\_op} & ::= & \mtt{++} \(\mid\) \mtt{--} \(\mid\)
-   \mtt{\&} \(\mid\) \mtt{*} \(\mid\) \mtt{+} \(\mid\) \mtt{-} \(\mid\) \mtt{!}
-\end{tabular}}
 
 \section{Identifiers}
 
