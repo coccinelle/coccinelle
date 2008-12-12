@@ -1,3 +1,5 @@
 .depend
+test.ml
 Makefile.config
 spatch
+spatch.opt
