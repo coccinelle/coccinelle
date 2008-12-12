@@ -15,13 +15,12 @@ LIBDIRS = $(PY_PREFIX)/lib/python$(PY_VERSION)/config
 INCDIRS = $(PY_PREFIX)/include/python$(PY_VERSION)
 OCAMLLDFLAGS = -linkall
 
-all.opt: native-code-library byte-code-library pycaml.customtop
-	cp -f dllpycaml_stubs.so ../
+all.opt: native-code-library pycaml.customtop
 
-all: byte-code-library pycaml.customtop
-	cp -f dllpycaml_stubs.so ../
+all: pycaml.customtop
 
-pycaml.customtop: pycaml.cma
+pycaml.customtop: byte-code-library
+	cp -f dllpycaml_stubs.so ../
 	ocamlmktop -o pycaml.customtop pycaml.cma
 
 clean:: 
