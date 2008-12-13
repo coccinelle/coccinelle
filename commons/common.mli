@@ -389,6 +389,8 @@ val finalize :       (unit -> 'a) -> (unit -> 'b) -> 'a
 
 val memoized : ('a, 'b) Hashtbl.t -> 'a -> (unit -> 'b) -> 'b
 
+val cache_in_ref : 'a option ref -> (unit -> 'a) -> 'a
+
 
 (* take file from which computation is done, an extension, and the function
  * and will compute the function only once and then save result in 
@@ -439,6 +441,8 @@ exception Impossible
 exception Here
 exception ReturnExn
 
+exception MultiFound
+
 exception WrongFormat of string
 
 
@@ -448,6 +452,8 @@ val warning : string -> 'a -> 'a
 val error_cant_have : 'a -> 'b
 
 val exn_to_s : exn -> string
+(* alias *)
+val string_of_exn : exn -> string
 
 (*****************************************************************************)
 (* Environment *)
@@ -647,6 +653,12 @@ val pourcent: int -> int -> int
 val pourcent_float: int -> int -> float
 val pourcent_float_of_floats: float -> float -> float
 
+val pourcent_good_bad: int -> int -> int
+val pourcent_good_bad_float: int -> int -> float
+
+type 'a max_with_elem = int ref * 'a ref
+val update_max_with_elem: 
+  'a max_with_elem -> is_better:(int -> int ref -> bool) -> int * 'a -> unit
 (*****************************************************************************)
 (* Numeric/overloading *)
 (*****************************************************************************)
@@ -770,6 +782,9 @@ val chop_dirsymbol : string -> string
 val ( <!!> ) : string -> int * int -> string
 val ( <!> ) : string -> int -> char
 
+val take_string: int -> string -> string
+val take_string_safe: int -> string -> string
+
 val split_on_char : char -> string -> string list
 
 val lowercase : string -> string
@@ -865,6 +880,9 @@ val replace_ext: filename -> string -> string -> filename
 val normalize_path : filename -> filename
 
 val relative_to_absolute : filename -> filename
+
+val is_relative: filename -> bool
+val is_absolute: filename -> bool
 
 val filename_without_leading_path : string -> filename -> filename
 
@@ -989,6 +1007,9 @@ val nblines : string -> int
 (*****************************************************************************)
 val cat :      filename -> string list
 val cat_orig : filename -> string list
+val cat_array: filename -> string array
+
+val uncat: string list -> filename -> unit
 
 val interpolate : string -> string list
 
@@ -1001,6 +1022,7 @@ val cmd_to_list :            string -> string list (* alias *)
 val cmd_to_list_and_status : string -> string list * Unix.process_status
 
 val command2 : string -> unit
+val _batch_mode: bool ref
 val command2_y_or_no : string -> bool
 
 val do_in_fork : (unit -> unit) -> int
@@ -1136,7 +1158,10 @@ val groupBy : ('a -> 'a -> bool) -> 'a list -> 'a list list
 val exclude_but_keep_attached: ('a -> bool) -> 'a list -> ('a * 'a list) list
 val group_by_post: ('a -> bool) -> 'a list -> ('a list * 'a) list * 'a list
 
-(* use hash internally to not be in O(n2) *)
+(* Use hash internally to not be in O(n2). If you want to use it on a
+ * simple list, then first do a List.map to generate a key, for instance the
+ * first char of the element, and then use this function.
+ *)
 val group_assoc_bykey_eff : ('a * 'b) list -> ('a * 'b list) list
 
 val splitAt : int -> 'a list -> 'a list * 'a list
@@ -1209,6 +1234,8 @@ val exclude : ('a -> bool) -> 'a list -> 'a list
  * line. Here we delete any repeated line (here list element).
  *)
 val uniq : 'a list -> 'a list
+val uniq_eff: 'a list -> 'a list 
+
 val doublon : 'a list -> bool
 
 val reverse : 'a list -> 'a list (* alias *)
@@ -1261,6 +1288,7 @@ val pack_sorted : ('a -> 'a -> bool) -> 'a list -> 'a list list
 val keep_best : ('a * 'a -> 'a option) -> 'a list -> 'a list
 val sorted_keep_best : ('a -> 'a -> 'a option) -> 'a list -> 'a list
 
+
 val cartesian_product : 'a list -> 'b list -> ('a * 'b) list
 
 (* old stuff *)
@@ -1277,9 +1305,27 @@ val fusionneListeContenant : 'a * 'a -> 'a list list -> 'a list list
 
 val array_find_index : ('a -> bool) -> 'a array -> int
 
+(*****************************************************************************)
+(* Matrix *)
+(*****************************************************************************)
+
 type 'a matrix = 'a array array
 
 val map_matrix : ('a -> 'b) -> 'a matrix -> 'b matrix
+
+val make_matrix_init: 
+  nrow:int -> ncolumn:int -> (int -> int -> 'a) -> 'a matrix
+
+val iter_matrix: 
+  (int -> int -> 'a -> unit) -> 'a matrix -> unit
+
+val nb_rows_matrix: 'a matrix -> int 
+val nb_columns_matrix: 'a matrix -> int
+
+val rows_of_matrix: 'a matrix -> 'a list list
+val columns_of_matrix: 'a matrix -> 'a list list
+
+val all_elems_matrix_by_row: 'a matrix -> 'a list
 
 (*****************************************************************************)
 (* Fast array *)
@@ -1404,6 +1450,8 @@ val lookup_list2 : 'a -> ('a, 'b) assoc list -> 'b * int
 val assoc_option : 'a -> ('a, 'b) assoc -> 'b option
 val assoc_with_err_msg : 'a -> ('a, 'b) assoc -> 'b
 
+val sort_by_val_descending: ('a,'b) assoc -> ('a * 'b) list
+
 (*****************************************************************************)
 (* Assoc, specialized. *)
 (*****************************************************************************)
@@ -1511,8 +1559,24 @@ val push : 'a -> 'a stack -> 'a stack
 val top : 'a stack -> 'a
 val pop : 'a stack -> 'a stack
 
+val top_option: 'a stack -> 'a option
+
 val push2 : 'a -> 'a stack ref -> unit
 val pop2: 'a stack ref -> 'a
+
+(*****************************************************************************)
+(* Stack with undo/redo support *)
+(*****************************************************************************)
+
+type 'a undo_stack = 'a list * 'a list
+val empty_undo_stack : 'a undo_stack
+val push_undo : 'a -> 'a undo_stack -> 'a undo_stack
+val top_undo : 'a undo_stack -> 'a
+val pop_undo : 'a undo_stack -> 'a undo_stack
+val redo_undo: 'a undo_stack -> 'a undo_stack
+val undo_pop: 'a undo_stack -> 'a undo_stack
+
+val top_undo_option: 'a undo_stack -> 'a option
 
 
 (*****************************************************************************)
@@ -1551,8 +1615,15 @@ val find_treeref:
   (('a * ('a, 'b) treeref list ref) -> bool) -> 
   ('a, 'b) treeref -> ('a, 'b) treeref
 
+val treeref_children_ref: ('a, 'b) treeref -> ('a, 'b) treeref list ref 
 
+val find_treeref_with_parents_some:
+ ('a * ('a, 'b) treeref list ref -> 'a list -> 'c option) ->
+ ('a, 'b) treeref -> 'c
 
+val find_multi_treeref_with_parents_some:
+ ('a * ('a, 'b) treeref list ref -> 'a list -> 'c option) ->
+ ('a, 'b) treeref -> 'c list
 
 
 (*****************************************************************************)
@@ -1785,6 +1856,8 @@ val add_in_scope_h : ('a, 'b) scoped_h_env ref -> 'a * 'b -> unit
 (*****************************************************************************)
 (* Terminal (LFS) *)
 (*****************************************************************************)
+
+(* don't forget to call Common_extra.set_link () *)
 
 val _execute_and_show_progress_func :
   (int (* length *) -> ((unit -> unit) -> unit) -> unit) ref 

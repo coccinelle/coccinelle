@@ -1,9 +1,30 @@
 open Common
 
 (*****************************************************************************)
-(* Glimpse *)
+(* Types *)
 (*****************************************************************************)
 (* was first used for LFS, then a little for cocci, and then for aComment *)
+
+type glimpse_search = 
+  (* -i insensitive search *)
+  | GlimpseCaseInsensitive
+  (* -w match on complete words. But not always good idea, for instance 
+   * if file contain chazarain_j then dont work with -w 
+   *)
+  | GlimpseWholeWord
+
+let default_glimpse_search = [GlimpseWholeWord] 
+
+let s_of_glimpse_search = function
+  | GlimpseCaseInsensitive -> "-i"
+  | GlimpseWholeWord -> "-w" 
+
+
+type glimpsedir = Common.dirname
+
+(*****************************************************************************)
+(* Helpers *)
+(*****************************************************************************)
 
 let check_have_glimpse () = 
   let xs = 
@@ -14,6 +35,13 @@ let check_have_glimpse () =
   | _ -> failwith "glimpse not found or bad version"
   )
 
+let s_of_glimpse_options xs = 
+  xs +> List.map s_of_glimpse_search +> Common.join " "
+
+
+(*****************************************************************************)
+(* Indexing *)
+(*****************************************************************************)
 
 (*  
  * note:
@@ -30,6 +58,8 @@ let check_have_glimpse () =
  *    the case of compressed file first 
  *  - -F  receive  the list of files to index from stdin
  *  - -H target index dir
+ *  - -n for indexing numbers as sometimes some glimpse request are looking
+ *    for a number
  * 
  * 
  * Note que glimpseindex index pas forcement tous les fichiers texte. 
@@ -43,34 +73,32 @@ let check_have_glimpse () =
  * ex: glimpseindex -o -H . home 
  * 
  *)
+let glimpse_cmd s = spf "glimpseindex -o -H %s -n -F" s
+
 let glimpseindex ext dir indexdir = 
   check_have_glimpse ();
   Common.command2(spf "mkdir -p %s" indexdir);
   Common.command2 
-    (spf "find %s -name \"*.%s\" | glimpseindex -o -H %s -F"
-        dir ext indexdir
+    (spf "find %s -name \"*.%s\" | %s"
+        dir ext (glimpse_cmd indexdir)
     );
   ()
 
+let _tmpfile = "/tmp/pad_glimpseindex_files.list" 
 
-type glimpse_search = 
-  (* -i insensitive search *)
-  | GlimpseCaseInsensitive
-  (* -w match on complete words. But not always good idea, for instance 
-   * if file contain chazarain_j then dont work with -w 
-   *)
-  | GlimpseWholeWord
-
-let default_glimpse_search = [GlimpseWholeWord] 
-
+let glimpseindex_files files indexdir = 
+  check_have_glimpse ();
+  Common.command2(spf "mkdir -p %s" indexdir);
+  
+  Common.uncat files _tmpfile;
+  Common.command2 
+    (spf "cat %s | %s" _tmpfile (glimpse_cmd indexdir));
+  ()
 
 
-let s_of_glimpse_search = function
-  | GlimpseCaseInsensitive -> "-i"
-  | GlimpseWholeWord -> "-w" 
-
-let s_of_glimpse_options xs = 
-  xs +> List.map s_of_glimpse_search +> Common.join " "
+(*****************************************************************************)
+(* Searching *)
+(*****************************************************************************)
 
 
 (* note:
@@ -98,7 +126,7 @@ let s_of_glimpse_options xs =
  *  ex: glimpse -y -H . -N -W -w pattern;pattern2
  * 
  *)
-let glimpse query ?(options= default_glimpse_search) dir = 
+let glimpse query ?(options=default_glimpse_search) dir = 
   let str_options = s_of_glimpse_options options in
   let res = 
     Common.cmd_to_list 
@@ -108,3 +136,11 @@ let glimpse query ?(options= default_glimpse_search) dir =
 (* grep -i -l -I  *)
 let grep query = 
   raise Todo
+
+
+(*
+check_have_position_index
+
+let glimpseindex_position: string -> ... (filename * int) list
+let glimpse_position: string -> ... (filename * int) list
+*)

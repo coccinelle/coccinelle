@@ -50,6 +50,7 @@
  *   - List.rev, List.mem, List.partition,
  *   - List.fold*, List.concat, ... 
  *   - Str.global_replace
+ *   - Filename.is_relative
  * 
  * 
  * The Format library allows to hide passing an indent_level variable.
@@ -59,7 +60,7 @@
  * 
  * Extra packages 
  *  - ocamlbdb
- *  - ocamlgtk
+ *  - ocamlgtk, and gtksourceview
  *  - ocamlgl
  *  - ocamlpython
  *  - ocamlagrep
@@ -67,7 +68,10 @@
  *  - ocamlmpi
  *  - ocamlcalendar
  * 
- * Many functions were inspired by Haskell or Lisp librairies.
+ *  - pcre
+ *  - sdl
+ * 
+ * Many functions in this file were inspired by Haskell or Lisp librairies.
  *)
 
 (*****************************************************************************)
@@ -1190,6 +1194,14 @@ let memoized h k f =
       v
     end
 
+let cache_in_ref myref f = 
+  match !myref with
+  | Some e -> e
+  | None -> 
+      let e = f () in
+      myref := Some e;
+      e
+
 let once f = 
   let already = ref false in
   (fun x -> 
@@ -1274,6 +1286,8 @@ exception Impossible
 exception Here
 exception ReturnExn
 
+exception MultiFound
+
 exception WrongFormat of string
 
 (* old: let _TODO () = failwith "TODO",  now via fix_caml with raise Todo *)
@@ -1304,6 +1318,8 @@ let warning s v = (pr2 ("Warning: " ^ s ^ "; value = " ^ (dump v)); v)
 let exn_to_s exn = 
   Printexc.to_string exn
 
+(* alias *)
+let string_of_exn exn = exn_to_s exn
 
 
 (* want or of merd, but cant cos cant put die ... in b (strict call) *)
@@ -1380,9 +1396,12 @@ let check_stack_nbfiles nbfiles =
  * -taxo_file arg2 -sample_file arg3 -parse_c arg1.
  * 
  * 
- * Why not use the toplevel ? because to debug ocamldebug is far superior
- * to the toplevel (can go back, can go directly to a specific point, etc).
- * I want a kind of testing at cmdline level.
+ * Why not use the toplevel ? 
+ * - because to debug, ocamldebug is far superior to the toplevel
+ *   (can go back, can go directly to a specific point, etc).
+ *   I want a kind of testing at cmdline level. 
+ * - Also I don't have file completion when in the ocaml toplevel. 
+ *   I have to type "/path/to/xxx" without help.
  * 
  * 
  * Why having variable flags ? Why use 'if !verbose_parsing then ...' ? 
@@ -1807,6 +1826,21 @@ let pourcent_float x total =
 let pourcent_float_of_floats x total = 
   (x *. 100.0) /. total
 
+
+let pourcent_good_bad good bad = 
+  (good * 100) / (good + bad)
+
+let pourcent_good_bad_float good bad = 
+  (float_of_int good *. 100.0) /. (float_of_int good +. float_of_int bad)
+
+type 'a max_with_elem = int ref * 'a ref
+let update_max_with_elem (aref, aelem) ~is_better (newv, newelem) = 
+  if is_better newv aref 
+  then begin
+    aref := newv;
+    aelem := newelem;
+  end
+
 (*****************************************************************************)
 (* Numeric/overloading *)
 (*****************************************************************************)
@@ -1956,19 +1990,31 @@ let map_find f xs =
 
 
 (*****************************************************************************)
-(* Regexp *)
+(* Regexp, can also use PCRE *)
 (*****************************************************************************)
+
+(* Note: OCaml Str regexps are different from Perl regexp:
+ *  - The OCaml regexp must match the entire way. 
+ *    So  "testBee" =~ "Bee" is wrong  
+ *    but "testBee" =~ ".*Bee" is right
+ *    Can have the perl behavior if use  Str.search_forward instead of 
+ *    Str.string_match.
+ *  - Must add some additional \ in front of some special char. So use 
+ *    \\( \\|  and also \\b
+ *  - It does not always handle newlines very well.
+ *  - \\b does consider _ but not numbers in indentifiers.
+ * 
+ * Note: PCRE regexps are then different from Str regexps ...
+ *  - just use '(' ')' for grouping, not '\\)'
+ *  - still need \\b for word boundary, but this time it works ...
+ *    so can match some word that have some digits in them.
+ * 
+ *)
 
 (* put before String section because String section use some =~ *)
 
 (* let gsubst = global_replace *)
 
-(* Different from Perl a little. Must match the entire way. 
- *  So  "testBee" =~ "Bee" is wrong  
- *  but "testBee" =~ ".*Bee" is right
- * Can have the perl behavior if use  Str.search_forward instead of 
- * Str.string_match.
- *)
 
 let (==~) s re = Str.string_match re s 0 
 
@@ -1993,6 +2039,21 @@ let (=~) s re =
 let string_match_substring re s = 
   try let _i = Str.search_forward re s 0 in true 
   with Not_found -> false
+
+let _ = 
+  example(string_match_substring (Str.regexp "foo") "a foo b")
+let _ = 
+  example(string_match_substring (Str.regexp "\\bfoo\\b") "a foo b")
+let _ = 
+  example(string_match_substring (Str.regexp "\\bfoo\\b") "a\n\nfoo b")
+let _ = 
+  example(string_match_substring (Str.regexp "\\bfoo_bar\\b") "a\n\nfoo_bar b")
+(* does not work :( 
+let _ = 
+  example(string_match_substring (Str.regexp "\\bfoo_bar2\\b") "a\n\nfoo_bar2 b")
+*)
+
+
 
 let (regexp_match: string -> string -> string) = fun s re -> 
   assert(s =~ re);
@@ -2148,6 +2209,15 @@ let plural i s =
   else Printf.sprintf "%d %ss" i s
 
 let showCodeHex xs = List.iter (fun i -> printf "%02x" i) xs
+
+let take_string n s =
+  String.sub s 0 (n-1)
+
+let take_string_safe n s = 
+  if n > String.length s
+  then s
+  else take_string n s
+
 
 
 (* used by LFS *)
@@ -2345,6 +2415,8 @@ let relative_to_absolute s =
   then Sys.getcwd () ^ "/" ^ s
   else s
 
+let is_relative s = Filename.is_relative s
+let is_absolute s = not (is_relative s)
 
 
 (* @Pre: prj_path must not contain regexp symbol *)
@@ -2371,6 +2443,8 @@ type langage =
 (*****************************************************************************)
 (* Dates *)
 (*****************************************************************************)
+
+(* maybe I should use ocamlcalendar, but I don't like all those functors ... *)
 
 type month = 
   | Jan  | Feb  | Mar  | Apr  | May  | Jun
@@ -2903,6 +2977,10 @@ let cat file =
   in
   cat_aux [] () +> List.rev +> (fun x -> close_in chan; x)
 
+let cat_array file = 
+  (""::cat file) +> Array.of_list 
+
+
 let interpolate str = 
   begin
     command2 ("printf \"%s\\n\" " ^ str ^ ">/tmp/caml");
@@ -2959,12 +3037,18 @@ let cmd_to_list_and_status = process_output_to_list2
  * let command2 s = ignore(Sys.command s)
  *) 
 
+
+let _batch_mode = ref false 
 let command2_y_or_no cmd = 
-  pr2 (cmd ^ " [y/n] ?");
-  match read_line () with
-  | "y" | "yes" | "Y" -> command2 cmd; true
-  | "n" | "no"  | "N" -> false
-  | _ -> failwith "answer by yes or no"
+  if !_batch_mode then begin command2 cmd; true end
+  else begin
+
+    pr2 (cmd ^ " [y/n] ?");
+    match read_line () with
+    | "y" | "yes" | "Y" -> command2 cmd; true
+    | "n" | "no"  | "N" -> false
+    | _ -> failwith "answer by yes or no"
+  end
 
   
 
@@ -3307,6 +3391,14 @@ let exn_to_real_unixexit f =
   try f() 
   with UnixExit x -> exit x
 
+
+
+
+let uncat xs file = 
+  with_open_outfile file (fun (pr,_chan) -> 
+    xs +> List.iter (fun s -> pr s; pr "\n");
+
+  )
 
 
 
@@ -3921,6 +4013,10 @@ let _ = assert_equal
     (cartesian_product [1;2] ["3";"4";"5"]) 
     [1,"3";1,"4";1,"5";  2,"3";2,"4";2,"5"]
 
+
+let sort_by_val_descending xs = 
+  List.sort (fun (k1,v1) (k2,v2) -> compare v2 v1) xs
+
 (*----------------------------------*)
 
 (* sur surEnsemble [p1;p2] [[p1;p2;p3] [p1;p2] ....] -> [[p1;p2;p3] ...      *)
@@ -3996,10 +4092,78 @@ let array_find_index f a =
   try array_find_index_ 0 with _ -> raise Not_found
 
 
+(*****************************************************************************)
+(* Matrix *)
+(*****************************************************************************)
+
 type 'a matrix = 'a array array
 
 let map_matrix f mat = 
   mat +> Array.map (fun arr -> arr +> Array.map f)
+
+let (make_matrix_init: 
+        nrow:int -> ncolumn:int -> (int -> int -> 'a) -> 'a matrix) = 
+ fun ~nrow ~ncolumn f ->
+  Array.init nrow (fun i -> 
+    Array.init ncolumn (fun j -> 
+      f i j
+    )
+  )
+
+let iter_matrix f m = 
+  Array.iteri (fun i e -> 
+    Array.iteri (fun j x -> 
+      f i j x
+    ) e
+  ) m
+
+let nb_rows_matrix m = 
+  Array.length m
+
+let nb_columns_matrix m =
+  assert(Array.length m > 0);
+  Array.length m.(0)
+  
+(* check all nested arrays have the same size *)
+let invariant_matrix m =
+  raise Todo
+
+let (rows_of_matrix: 'a matrix -> 'a list list) = fun m -> 
+  Array.to_list m +> List.map Array.to_list
+  
+let (columns_of_matrix: 'a matrix -> 'a list list) = fun m -> 
+  let nbcols = nb_columns_matrix m in
+  let nbrows = nb_rows_matrix m in
+  (enum 0 (nbcols -1)) +> List.map (fun j -> 
+    (enum 0 (nbrows -1)) +> List.map (fun i -> 
+      m.(i).(j)
+    ))
+
+
+let all_elems_matrix_by_row m = 
+  rows_of_matrix m +> List.flatten 
+
+
+let ex_matrix1 = 
+  [|
+    [|0;1;2|];
+    [|3;4;5|];
+    [|6;7;8|];
+  |]
+let ex_rows1 = 
+  [
+    [0;1;2];
+    [3;4;5];
+    [6;7;8];
+  ]
+let ex_columns1 = 
+  [
+    [0;3;6];
+    [1;4;7];
+    [2;5;8];
+  ]
+let _ = example (rows_of_matrix ex_matrix1 = ex_rows1)
+let _ = example (columns_of_matrix ex_matrix1 = ex_columns1)
 
 
 (*****************************************************************************)
@@ -4336,11 +4500,15 @@ let hkeys h =
 
 
 
-let group_assoc_bykey_eff xs = 
+let group_assoc_bykey_eff2 xs = 
   let h = Hashtbl.create 101 in 
   xs +> List.iter (fun (k, v) -> Hashtbl.add h k v);
   let keys = hkeys h in
   keys +> List.map (fun k -> k, Hashtbl.find_all h k)
+
+let group_assoc_bykey_eff xs = 
+  profile_code2 "Common.group_assoc_bykey_eff" (fun () -> 
+    group_assoc_bykey_eff2 xs)
   
 
 let test_group_assoc () = 
@@ -4351,6 +4519,13 @@ let test_group_assoc () =
   in
   pr2_gen ys
 
+
+let uniq_eff xs = 
+  let h = Hashtbl.create 101 in
+  xs +> List.iter (fun k -> 
+    Hashtbl.add h k true
+  );
+  hkeys h
 
 
 
@@ -4387,6 +4562,12 @@ let (push: 'a -> 'a stack -> 'a stack) = fun x xs -> x::xs
 let (top: 'a stack -> 'a) = List.hd
 let (pop: 'a stack -> 'a stack) = List.tl
 
+let top_option = function
+  | [] -> None
+  | x::xs -> Some x
+
+
+  
 
 (* now in prelude:
  * let push2 v l = l := v :: !l
@@ -4399,6 +4580,46 @@ let pop2 l =
     v
   end
 
+
+(*****************************************************************************)
+(* Undoable Stack *)
+(*****************************************************************************)
+
+(* Okasaki use such structure also for having efficient data structure
+ * supporting fast append.
+ *)
+
+type 'a undo_stack = 'a list * 'a list (* redo *)
+
+let (empty_undo_stack: 'a undo_stack) = 
+  [], []
+
+(* push erase the possible redo *)
+let (push_undo: 'a -> 'a undo_stack -> 'a undo_stack) = fun x (undo,redo) -> 
+  x::undo, [] 
+
+let (top_undo: 'a undo_stack -> 'a) = fun (undo, redo) -> 
+  List.hd undo 
+
+let (pop_undo: 'a undo_stack -> 'a undo_stack) = fun (undo, redo) -> 
+  match undo with
+  | [] ->  failwith "empty undo stack"
+  | x::xs -> 
+      xs, x::redo
+
+let (undo_pop: 'a undo_stack -> 'a undo_stack) = fun (undo, redo) -> 
+  match redo with
+  | [] -> failwith "empty redo, nothing to redo"
+  | x::xs -> 
+      x::undo, xs
+
+let redo_undo x = undo_pop x 
+
+
+let top_undo_option = fun (undo, redo) -> 
+  match undo with
+  | [] -> None
+  | x::xs -> Some x
 
 (*****************************************************************************)
 (* Binary tree *)
@@ -4431,9 +4652,17 @@ type ('a, 'b) treeref =
   | NodeRef of 'a * ('a, 'b) treeref list ref 
   | LeafRef of 'b
 
+let treeref_children_ref tree = 
+  match tree with
+  | LeafRef _ -> failwith "treeref_tail: leaf"
+  | NodeRef (n, x) -> x
+
+
+
 let rec (treeref_node_iter: 
    (('a * ('a, 'b) treeref list ref) -> unit) -> 
-   ('a, 'b) treeref -> unit) = fun f tree -> 
+   ('a, 'b) treeref -> unit) = 
+ fun f tree -> 
   match tree with
   | LeafRef _ -> ()
   | NodeRef (n, xs) -> 
@@ -4443,7 +4672,8 @@ let rec (treeref_node_iter:
 
 let rec (treeref_node_iter_with_parents: 
    (('a * ('a, 'b) treeref list ref) -> ('a list) -> unit) -> 
-   ('a, 'b) treeref -> unit) = fun f tree -> 
+   ('a, 'b) treeref -> unit) = 
+ fun f tree -> 
   let rec aux acc tree = 
     match tree with
     | LeafRef _ -> ()
@@ -4464,7 +4694,35 @@ let find_treeref f tree =
   match !res with
   | [n,xs] -> NodeRef (n, xs)
   | [] -> raise Not_found
-  | x::y::zs -> failwith "multi found"
+  | x::y::zs -> raise MultiFound
+
+
+let find_treeref_with_parents_some f tree = 
+  let res = ref [] in
+
+  tree +> treeref_node_iter_with_parents (fun (n, xs) parents -> 
+    match f (n,xs) parents with
+    | Some v -> push2 v res;
+    | None -> ()
+  );
+  match !res with
+  | [v] -> v
+  | [] -> raise Not_found
+  | x::y::zs -> raise MultiFound
+
+let find_multi_treeref_with_parents_some f tree = 
+  let res = ref [] in
+
+  tree +> treeref_node_iter_with_parents (fun (n, xs) parents -> 
+    match f (n,xs) parents with
+    | Some v -> push2 v res;
+    | None -> ()
+  );
+  match !res with
+  | [v] -> !res
+  | [] -> raise Not_found
+  | x::y::zs -> !res 
+
 
 (*****************************************************************************)
 (* Graph. Have a look too at Ograph_*.mli  *)
@@ -5279,6 +5537,8 @@ let cmdline_flags_other () =
   [
     "-nocheck_stack",      Arg.Clear check_stack, 
     " ";
+    "-batch_mode", Arg.Set _batch_mode,
+    " no interactivity"
   ]
 
 (* potentially other common options but not yet integrated:
