@@ -18,4 +18,3 @@ let make_hrule = ref (None : string (*dir*) option)
 let currentfile = ref (None : string option)
 
 let current_element = ref ""
-
