@@ -758,7 +758,7 @@ let prepare_cocci ctls free_var_lists negated_pos_lists
 let build_info_program cprogram env = 
   let (cs, parseinfos) = Common.unzip cprogram in
   let (cs, envs) =
-    Common.unzip (TAC.annotate_program env !g_contain_typedmetavar cs) in
+    Common.unzip (TAC.annotate_program env (*!g_contain_typedmetavar*) cs) in
 
   zip (zip cs parseinfos) envs +> List.map (fun ((c, parseinfo), (enva,envb))->
     let (fullstr, tokens) = parseinfo in
@@ -852,7 +852,7 @@ let prepare_c files : file_info list =
     ((zip files cprograms) +> List.map (fun (file, asts) -> Left (file, asts)))
   in
 
-  let env = ref TAC.initial_env in
+  let env = ref !TAC.initial_env in
 
   let ccs = all +> Common.map_filter (fun x -> 
     match x with 
