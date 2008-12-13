@@ -973,7 +973,7 @@ and aux_statement_list starti (xi, newxi) statxs =
             elsei
           ) in
 
-        let finalxs = 
+        let _finalxs = 
           Common.zip (newi::elsenodes) xxs +> List.map (fun (start_nodei, xs)-> 
             let finalthen = 
               aux_statement_list (Some start_nodei) (newxi, newxi) xs in
@@ -998,6 +998,7 @@ let (aux_definition: nodei -> definition -> unit) = fun topi funcdef ->
         f_storage= sto; 
         f_body= compound;
         f_attr= attrs;
+        f_old_c_style = oldstyle;
         }, ii) = funcdef in
   let iifunheader, iicompound = 
     (match ii with 
@@ -1016,7 +1017,8 @@ let (aux_definition: nodei -> definition -> unit) = fun topi funcdef ->
       f_type = functype;
       f_storage = sto;
       f_attr = attrs;
-      f_body = [] (* empty body *)
+      f_body = [] (* empty body *);
+      f_old_c_style = oldstyle;
       }, iifunheader))
     lbl_start ("function " ^ funcs) in
   let enteri     = !g +> add_node Enter     lbl_0 "[enter]"     in

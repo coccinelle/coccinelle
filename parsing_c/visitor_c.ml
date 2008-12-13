@@ -16,6 +16,14 @@ open Ast_c
 module F = Control_flow_c
 
 (*****************************************************************************)
+(* Prelude *)
+(*****************************************************************************)
+
+(* todo? dont go in Include. Have a visitor flag ? disable_go_include ?
+ * disable_go_type_annotation ?
+ *)
+
+(*****************************************************************************)
 (* Functions to visit the Ast, and now also the CFG nodes *)
 (*****************************************************************************)
 
@@ -162,7 +170,7 @@ let rec vk_expr = fun bigf expr ->
   let iif ii = vk_ii bigf ii in
 
   let rec exprf e = bigf.kexpr (k,bigf) e
-  (* dont go in _typ *)
+  (* !!! dont go in _typ !!! *)
   and k ((e,_typ), ii) = 
     iif ii;
     match e with
@@ -344,22 +352,28 @@ and vk_decl = fun bigf d ->
   let f = bigf.kdecl in 
   let rec k decl = 
     match decl with 
-    | DeclList (xs,ii) -> iif ii; List.iter aux xs 
+    | DeclList (xs,ii) -> xs +> List.iter (fun (x,ii) -> 
+        iif ii;
+        vk_onedecl bigf x;
+      );
     | MacroDecl ((s, args),ii) -> 
         iif ii;
         vk_argument_list bigf args;
+  in f (k, bigf) d 
 
-        
-  and aux ({v_namei = var; v_type = t; 
-            v_storage = _sto; v_attr = attrs}, iicomma) = 
-    iif iicomma;
+
+and vk_onedecl = fun bigf onedecl -> 
+  let iif ii = vk_ii bigf ii in
+  match onedecl with
+  | ({v_namei = var; v_type = t; 
+            v_storage = _sto; v_attr = attrs})  -> 
+
     vk_type bigf t;
     attrs +> List.iter (vk_attribute bigf);
     var +> do_option (fun ((s, ini), ii_s_ini) -> 
       iif ii_s_ini;
       ini +> do_option (vk_ini bigf)
         );
-  in f (k, bigf) d 
 
 and vk_ini = fun bigf ini -> 
   let iif ii = vk_ii bigf ii in
@@ -410,7 +424,7 @@ and vk_struct_fields = fun bigf fields ->
           iif iiptvirg;
     | EmptyField -> ()
     | MacroStructDeclTodo -> 
-        pr2 "MacroStructDeclTodo";
+        pr2_once "MacroStructDeclTodo";
         ()
 
     | CppDirectiveStruct directive -> 
@@ -446,6 +460,7 @@ and vk_def = fun bigf d ->
        f_storage = sto;
        f_body = statxs;
        f_attr = attrs;
+       f_old_c_style = oldstyle;
       }, ii 
         -> 
         iif ii;
@@ -456,6 +471,10 @@ and vk_def = fun bigf d ->
           vk_param bigf param;
           iif iicomma;
         );
+        oldstyle +> Common.do_option (fun decls -> 
+          decls +> List.iter (vk_decl bigf);
+        );
+
         statxs +> List.iter (vk_statement_sequencable bigf)
   in f (k, bigf) d 
 
@@ -499,7 +518,11 @@ and vk_cpp_directive bigf directive =
                i_content = copt;
               }
       -> 
-        (* go inside ? *)
+        (* go inside ? yes, can be useful, for instance for type_annotater.
+         * The only pb may be that when we want to unparse the code we
+         * don't want to unparse the included file but the unparser 
+         * and pretty_print do not use visitor_c so no problem.
+         *)
         iif ii;
         copt +> Common.do_option (fun (file, asts) -> 
           vk_program bigf asts
@@ -544,7 +567,7 @@ and vk_define_val bigf defval =
   | DefineInit ini -> vk_ini bigf ini
 
   | DefineTodo -> 
-      pr2 "DefineTodo";
+      pr2_once "DefineTodo";
       ()
   in f (k, bigf) defval
   
@@ -573,22 +596,9 @@ and vk_node = fun bigf node ->
   let rec k n = 
     match F.unwrap n with
 
-    | F.FunHeader ({f_name =idb;
-                   f_type = (rett, (paramst,(isvaargs,iidotsb)));
-                   f_storage = stob;
-                   f_body = body;
-                   f_attr = attrs},ii) ->
-
-        assert(null body);
-        iif ii;
-        iif iidotsb;
-        attrs +> List.iter (vk_attribute bigf);
-        vk_type bigf rett;
-        paramst +> List.iter (fun (param, iicomma) ->
-          vk_param bigf param;
-          iif iicomma;
-        );
-
+    | F.FunHeader (def) ->
+        assert(null (fst def).f_body);
+        vk_def bigf def;
 
     | F.Decl decl -> vk_decl bigf decl 
     | F.ExprStatement (st, (eopt, ii)) ->  
@@ -629,7 +639,7 @@ and vk_node = fun bigf node ->
 
     | F.DefineDoWhileZeroHeader (((),ii)) -> iif ii
     | F.DefineTodo -> 
-        pr2 "DefineTodo";
+        pr2_once "DefineTodo";
         ()
 
 
@@ -830,7 +840,7 @@ let rec vk_expr_s = fun bigf expr ->
   let rec exprf e = bigf.kexpr_s  (k, bigf) e
   and k e = 
     let ((unwrap_e, typ), ii) = e in
-    (* don't analyse optional type
+    (* !!! don't analyse optional type !!!
      * old:  typ +> map_option (vk_type_s bigf) in 
      *)
     let typ' = typ in 
@@ -1156,7 +1166,7 @@ and vk_struct_fields_s = fun bigf fields ->
               (vk_struct_fieldkinds_s bigf onefield_multivars, iif iiptvirg))
     | EmptyField -> EmptyField
     | MacroStructDeclTodo -> 
-        pr2 "MacroStructDeclTodo";
+        pr2_once "MacroStructDeclTodo";
         MacroStructDeclTodo
 
     | CppDirectiveStruct directive -> 
@@ -1178,6 +1188,7 @@ and vk_def_s = fun bigf d ->
        f_storage = sto;
        f_body = statxs;
        f_attr = attrs;
+       f_old_c_style = oldstyle;
       }, ii  
         -> 
         {f_name = s;
@@ -1190,7 +1201,11 @@ and vk_def_s = fun bigf d ->
          f_body = 
             vk_statement_sequencable_list_s bigf statxs;
          f_attr = 
-            attrs +> List.map (vk_attribute_s bigf)
+            attrs +> List.map (vk_attribute_s bigf);
+         f_old_c_style = 
+            oldstyle +> Common.map_option (fun decls -> 
+              decls +> List.map (vk_decl_s bigf)
+            );
         },
         iif ii
 
@@ -1286,7 +1301,7 @@ and vk_define_val_s = fun bigf x ->
     | DefineInit ini -> DefineInit (vk_ini_s bigf ini)
 
     | DefineTodo -> 
-        pr2 "DefineTodo";
+        pr2_once "DefineTodo";
         DefineTodo
   in
   f (k, bigf) x
@@ -1310,28 +1325,9 @@ and vk_node_s = fun bigf node ->
   and k node = 
     F.rewrap node (
     match F.unwrap node with
-    | F.FunHeader ({f_name = idb;
-                   f_type =(rett, (paramst,(isvaargs,iidotsb)));
-                   f_storage = stob;
-                   f_body = body;
-                   f_attr = attrs;
-      },ii) ->
-        assert(null body);
-
-        F.FunHeader 
-          ({f_name =idb;
-            f_type =
-              (vk_type_s bigf rett,
-              (paramst +> List.map (fun (param, iicomma) ->
-                (vk_param_s bigf param, iif iicomma)
-              ), (isvaargs,iif iidotsb)));
-            f_storage = stob;
-            f_body = body;
-            f_attr = 
-              attrs +> List.map (vk_attribute_s bigf)
-          },
-          iif ii)
-          
+    | F.FunHeader (def) -> 
+        assert (null (fst def).f_body);
+        F.FunHeader (vk_def_s bigf def)
           
     | F.Decl declb -> F.Decl (vk_decl_s bigf declb)
     | F.ExprStatement (st, (eopt, ii)) ->  

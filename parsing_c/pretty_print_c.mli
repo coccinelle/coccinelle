@@ -24,3 +24,8 @@ val pp_statement_simple : Ast_c.statement -> unit
 val pp_type_simple : Ast_c.fullType -> unit
 val pp_toplevel_simple : Ast_c.toplevel -> unit
 val pp_flow_simple: Control_flow_c.node -> unit
+
+
+val debug_info_of_node: Ograph_extended.nodei -> Control_flow_c.cflow -> string
+
+val string_of_expression: Ast_c.expression -> string

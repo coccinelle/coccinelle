@@ -9,6 +9,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * file license.txt for more details.
  *)
+
 open Common
 
 open Ast_c
@@ -16,31 +17,71 @@ open Ast_c
 module Lib = Lib_parsing_c
 
 (*****************************************************************************)
-(* can either:
- *
- *  - do a kind of inferer
- *     * can first do a simple inferer, that just pass context
- *     * then a real inferer, managing partial info.
+(* Prelude *)
+(*****************************************************************************)
+(* History: 
+ *  - Done a first type checker in 2002, cf typing-semantic/, but
+ *    was assuming that have all type info, and so was assuming had called
+ *    cpp and everything was right.
+ *  - Wrote this file, in 2006?, as we added pattern matching on type 
+ *    in coccinelle. Partial type annotater.
+ *  - Julia extended it in 2008? to have localvar/notlocalvar and 
+ *    test/notest information, again used by coccinelle.
+ *  - I extended it Fall 2008 to have more type information for the 
+ *    global analysis. I also added some optimisations to process
+ *    included code faster.
+ * 
+ *  
+ * Design choices. Can either do:
+ *  - a kind of inferer
+ *     - can first do a simple inferer, that just pass context
+ *     - then a real inferer, managing partial info.
  *    type context = fullType option
  *
  *  - extract the information from the .h files
- *   (so no inference at all needed)
+ *    (so no inference at all needed)
+ * 
+ * Difference with julia's code in parsing_cocci/type_infer.ml:
+ *  - She handles just the variable namespace. She does not type
+ *    field access or enum or macros. This is because cocci programs are
+ *     usually simple and have no structure definition or macro definitions
+ *     that we need to type anyway.
+ *  - She does more propagation.
+ *  - She does not have to handle the typedef isomorphism which force me 
+ *    to use those typedef_fix and type_unfold_one_step
+ *  - She does not handle I think the function pointer C isomorphism.
+ * 
+ *  - She has a cleaner type_cocci without any info. In my case 
+ *    I need to do those ugly al_type, or generate fake infos.
+ *  - She has more compact code. Perhaps because she does not have to 
+ *    handle the extra exp_info that she added on me :) So I need those
+ *    do_with_type, make_info_xxx, etc.
+ * 
+ * Note: if need to debug this annotater, use -show_trace_profile, it can
+ * help. You can also set the typedef_debug flag below.
+ * 
+ * 
  * 
  * todo: expression contain types, and statements,   which in turn can contain
  * expression, so need recurse. Need define an annote_statement and 
  * annotate_type.
-
+ * 
  * todo: how deal with typedef isomorphisms ? How store them in Ast_c ?
  * store all posible variations in ast_c ? a list of type instead of just
  * the type ?
  * 
  * todo: define a new type ? like type_cocci ? where have a bool ?
  * 
- * How handle scope ? When search for type of field, we return 
+ * semi: How handle scope ? When search for type of field, we return 
  * a type, but this type makes sense only in a certain scope.
  * We could add a tag to each typedef, structUnionName to differentiate 
  * them and also associate in ast_c to the type the scope
  * of this type, the env that were used to define this type.
+ * 
+ * todo: handle better the search in previous env, the env'. Cf the 
+ * termination problem in typedef_fix when I was searching in the same
+ * env.
+ * 
  *)
 
 (*****************************************************************************)
@@ -54,13 +95,22 @@ let pr2 s =
 (* Environment *)
 (*****************************************************************************)
 
-(* the different namespaces from stdC manual:
+(* The different namespaces from stdC manual:
  * 
  * You introduce two new name spaces with every block that you write.
- * One name space includes all functions, objects, type definitions,
- * and enumeration constants that you declare or define within the
- * block. The other name space includes all enumeration, structure, and
- * union tags that you define within the block.
+ * 
+ * One name space includes all 
+ *  - functions, 
+ *  - objects, 
+ *  - type definitions,
+ *  - and enumeration constants 
+ * that you declare or define within the  block. 
+ * 
+ * The other name space includes all 
+ *  - enumeration, 
+ *  - structure, 
+ *  - and union 
+ *  *tags* that you define within the block.
  * 
  * You introduce a new member name space with every structure or union
  * whose content you define. You identify a member name space by the
@@ -84,35 +134,94 @@ let pr2 s =
  *)
 
 
-(* the wrap for StructUnionNameDef contain the whole ii, the i for
- * the string, the structUnion and the structType
+(* This type contains all "ident" like notion of C. Each time in Ast_c
+ * you have a string type (as in expression, function name, fields) 
+ * then you need to manage the scope of this ident.
+ * 
+ * The wrap for StructUnionNameDef contain the whole ii, the i for
+ * the string, the structUnion and the structType.
+ * 
+ * Put Macro here ? after all the scoping rules for cpp macros is different
+ * and so does not vanish after the closing '}'.
+ * 
+ * todo: EnumDef
  *)
 type namedef = 
   | VarOrFunc of string * Ast_c.exp_type
-  | TypeDef of string * fullType
-  | StructUnionNameDef of string * (structUnion * structType) wrap
-  (* todo: EnumConstant *)
-  (* todo: EnumDef *)
+  | EnumConstant of string * string option
 
-(* because have nested scope, have nested list, hence the list list *)
+  | TypeDef   of string * fullType
+  (* the structType contains nested "idents" with struct scope *)
+  | StructUnionNameDef of string * (structUnion * structType) wrap
+
+  (* cppext: *)
+  | Macro        of string * define_body
+
+
+(* Because have nested scope, have nested list, hence the list list.
+ *
+ * opti? use a hash to accelerate ? hmm but may have some problems
+ * with hash to handle recursive lookup. For instance for the typedef
+ * example where have mutually recursive definition of the type, 
+ * we must take care to not loop by starting the second search 
+ * from the previous environment. With the list scheme in 
+ * lookup_env below it's quite easy to do. With hash it may be
+ * more complicated.
+*)
 type environment = namedef list list 
 
-let initial_env = [
-  [VarOrFunc("NULL",(Lib.al_type (Parse_c.type_of_string "void *"),
-		     Ast_c.NotLocalVar))]
+
+(* ------------------------------------------------------------ *)
+(* can be modified by the init_env function below, by 
+ * the file environment_unix.h 
+ *)
+let initial_env = ref [
+  [VarOrFunc("NULL",
+            (Lib.al_type (Parse_c.type_of_string "void *"),
+	    Ast_c.NotLocalVar));
+
+  (*   
+   VarOrFunc("malloc",
+            (Lib.al_type(Parse_c.type_of_string "void* (*)(int size)"),
+	    Ast_c.NotLocalVar));
+   VarOrFunc("free",
+            (Lib.al_type(Parse_c.type_of_string "void (*)(void *ptr)"),
+	    Ast_c.NotLocalVar));
+  *)
+  ]
 ]
 
 
-let rec lookup_env f env = 
+let typedef_debug = ref false 
+
+
+(* ------------------------------------------------------------ *)
+(* generic, lookup and also return remaining env for further lookup *)
+let rec lookup_env2 f env = 
   match env with 
   | [] -> raise Not_found
-  | []::zs -> lookup_env f zs
+  | []::zs -> lookup_env2 f zs
   | (x::xs)::zs -> 
-      match f x with
-      | None -> lookup_env f (xs::zs)
+      (match f x with
+      | None -> lookup_env2 f (xs::zs)
       | Some y -> y, xs::zs
+      )
+let lookup_env a b = 
+  Common.profile_code "TAC.lookup_env" (fun () -> lookup_env2  a b)
 
-    
+
+
+let member_env lookupf env = 
+  try 
+    let _ = lookupf env in
+    true
+  with Not_found -> false
+
+
+
+
+(* ------------------------------------------------------------ *)
+
 
 let lookup_var s env = 
   let f = function
@@ -122,6 +231,7 @@ let lookup_var s env =
   lookup_env f env
 
 let lookup_typedef s env = 
+  if !typedef_debug then pr2 ("looking for: " ^ s);
   let f = function
     | TypeDef (s2, typ) -> if s2 = s then Some typ else None
     | _ -> None
@@ -135,11 +245,25 @@ let lookup_structunion (_su, s) env =
   in
   lookup_env f env
 
-let member_env lookupf env = 
-  try 
-    let _ = lookupf env in
-    true
-  with Not_found -> false
+let lookup_macro s env = 
+  let f = function
+    | Macro (s2, typ) -> if s2 = s then Some typ else None
+    | _ -> None
+  in
+  lookup_env f env
+
+let lookup_enum s env = 
+  let f = function
+    | EnumConstant (s2, typ) -> if s2 = s then Some typ else None
+    | _ -> None
+  in
+  lookup_env f env
+
+
+let lookup_typedef a b = 
+  Common.profile_code "TAC.lookup_typedef" (fun () -> lookup_typedef  a b)
+
+
 
 (*****************************************************************************)
 (* "type-lookup"  *)
@@ -201,17 +325,20 @@ let rec find_final_type ty env =
 
 
 
+(* ------------------------------------------------------------ *)
 let rec type_unfold_one_step ty env = 
 
   match Ast_c.unwrap_typeC ty with 
-  | BaseType x  -> ty
-  | Pointer t -> ty
-  | Array (e, t) -> ty
+  | BaseType x    -> ty
+  | Pointer t     -> ty
+  | Array (e, t)  -> ty
+
   | StructUnion (sopt, su, fields) -> ty
       
-  | FunctionType t -> ty
+  | FunctionType t   -> ty
   | Enum  (s, enumt) -> ty
-  | EnumName s -> ty
+
+  | EnumName s       -> ty (* todo: look in env when will have EnumDef *)
       
   | StructUnionName (su, s) -> 
       (try 
@@ -227,9 +354,10 @@ let rec type_unfold_one_step ty env =
       
   | TypeName (s,_typ) -> 
       (try 
+          if !typedef_debug then pr2 "type_unfold_one_step: lookup_typedef";
           let (t', env') = lookup_typedef s env in
           type_unfold_one_step t' env'
-        with Not_found -> 
+       with Not_found -> 
           ty
       )
       
@@ -241,52 +369,28 @@ let rec type_unfold_one_step ty env =
 
 
 
-let (type_field: 
-  string -> (Ast_c.structUnion * Ast_c.structType) -> Ast_c.fullType) = 
-  fun fld (su, fields) -> 
-    fields +> Common.find_some (fun x -> 
-      match Ast_c.unwrap x with
-      | DeclarationField (FieldDeclList (onefield_multivars, iiptvirg)) -> 
-          Common.optionise (fun () -> 
-            onefield_multivars +> Common.find_some (fun fieldkind -> 
-
-              match Ast_c.unwrap (Ast_c.unwrap fieldkind) with
-              | Simple (Some s, t) | BitField (Some s, t, _) -> 
-                  if s = fld then Some t else None
-              | _ -> None
-            )
-          )
-      | EmptyField -> None
-      | MacroStructDeclTodo -> pr2 "DeclTodo"; None
-      | CppDirectiveStruct _
-      | IfdefStruct _ -> pr2 "StructCpp"; None
-    )
 
 
 
 
-let structdef_to_struct_name ty = 
-  match ty with 
-  | qu, (StructUnion (su, sopt, fields), iis) -> 
-      (match sopt,iis with
-      | Some s , [i1;i2;i3;i4] -> 
-          qu, (StructUnionName (su, s), [i1;i2])
-      | None, _ -> 
-          ty
-          
-      | x -> raise Impossible
-      )
-  | _ -> raise Impossible
 
 
-
+(* normalizer. can be seen as the opposite of the previous function as 
+ * we "fold" at least for the structUnion.
+ *)
 let rec typedef_fix ty env = 
-
   match Ast_c.unwrap_typeC ty with 
-  | BaseType x  -> ty
-  | Pointer t -> Pointer (typedef_fix t env)  +> Ast_c.rewrap_typeC ty
-  | Array (e, t) -> Array (e, typedef_fix t env) +> Ast_c.rewrap_typeC ty
-  | StructUnion (su, sopt, fields) -> structdef_to_struct_name ty
+  | BaseType x  ->  
+      ty
+  | Pointer t ->    
+      Pointer (typedef_fix t env)  +> Ast_c.rewrap_typeC ty
+  | Array (e, t) -> 
+      Array (e, typedef_fix t env) +> Ast_c.rewrap_typeC ty
+  | StructUnion (su, sopt, fields) -> 
+      (* normalize, fold. 
+       * todo? but what if correspond to a nested struct def ? 
+       *)
+      Type_c.structdef_to_struct_name ty
   | FunctionType ft -> 
       (FunctionType ft) (* todo ? *) +> Ast_c.rewrap_typeC ty
   | Enum  (s, enumt) -> 
@@ -296,28 +400,88 @@ let rec typedef_fix ty env =
 
   (* we prefer StructUnionName to StructUnion when it comes to typed metavar *)
   | StructUnionName (su, s) -> ty
-      
+
+  (* keep the typename but complete with more information *)
   | TypeName (s, _typ) -> 
       (try 
+          if !typedef_debug then pr2 "typedef_fix: lookup_typedef";
           let (t', env') = lookup_typedef s env in
-          TypeName (s, Some (typedef_fix t' env)) +> Ast_c.rewrap_typeC ty
-       with Not_found -> 
+
+          (* bugfix: termination bug if use env instead of env' below, because
+           * can have some wierd mutually recursive typedef which
+           * each new type alias search for its mutual def.
+           *)
+          TypeName (s, Some (typedef_fix t' env')) +> Ast_c.rewrap_typeC ty
+        with Not_found -> 
           ty
       )
-      
-  | ParenType t -> typedef_fix t env
+  (* remove paren for better matching with typed metavar. kind of iso again *)
+  | ParenType t -> 
+      typedef_fix t env
   | TypeOfExpr e -> 
       pr2_once ("Type_annoter: not handling typeof");
       ty
 
-  | TypeOfType t -> typedef_fix t env
+  | TypeOfType t -> 
+      typedef_fix t env
+
+
+(*****************************************************************************)
+(* Helpers, part 1 *)
+(*****************************************************************************)
+
+let type_of_s2 s = 
+  (Lib.al_type (Parse_c.type_of_string s))
+let type_of_s a = 
+  Common.profile_code "Type_c.type_of_s" (fun () -> type_of_s2 a)
+
+
+(* pad: pb on:
+ * /home/pad/software-os-src2/freebsd/contrib/ipfilter/netinet/ip_fil_freebsd.c
+ * because in the code there is:
+ *  	static iss_seq_off = 0;
+ * which in the parser was generating a default int without a parse_info.
+ * I now add a fake parse_info for such default int so no more failwith
+ * normally.
+ *)
+let offset (_,(ty,iis)) =
+  match iis with
+    ii::_ -> ii.Ast_c.pinfo
+  | _ -> failwith "type has no text; need to think again"
+  
+
+
+let rec is_simple_expr expr = 
+  match Ast_c.unwrap_expr expr with
+  (* todo? handle more special cases ? *) 
+  
+  | Ident _ -> 
+      true
+  | Constant (_)         -> 
+      true
+  | Unary (op, e) -> 
+      true
+  | Binary (e1, op, e2) -> 
+      true
+  | Cast (t, e) -> 
+      true
+  | ParenExpr (e) -> is_simple_expr e
+
+  | _ -> false
+
+(*****************************************************************************)
+(* Typing rules *)
+(*****************************************************************************)
+(* now in type_c.ml *)
+
+
 
 (*****************************************************************************)
 (* (Semi) Globals, Julia's style *)
 (*****************************************************************************)
 
 (* opti: cache ? use hash ? *)
-let _scoped_env = ref initial_env
+let _scoped_env = ref !initial_env
 
 (* memoise unnanoted var, to avoid too much warning messages *)
 let _notyped_var = ref (Hashtbl.create 100)
@@ -337,236 +501,584 @@ let add_in_scope namedef =
   let (current, older) = Common.uncons !_scoped_env in
   _scoped_env := (namedef::current)::older
 
+
+(* ------------------------------------------------------------ *)
+
 (* sort of hackish... *)
 let islocal info =
-  if List.length (!_scoped_env) = List.length initial_env
+  if List.length (!_scoped_env) = List.length !initial_env
   then Ast_c.NotLocalVar
   else Ast_c.LocalVar info
 
+(* ------------------------------------------------------------ *)
 (* the warning argument is here to allow some binding to overwrite an 
- * existing one. With function, we first have the protype and then the def
- * and the def binding the same string is not an error.
+ * existing one. With function, we first have the prototype and then the def,
+ * and the def binding with the same string is not an error.
+ * 
  * todo?: but if we define two times the same function, then we will not
- * detect it :( would require to make a diff between adding a binding 
+ * detect it :( it would require to make a diff between adding a binding 
  * from a prototype and from a definition.
+ * 
+ * opti: disabling the check_annotater flag have some important 
+ * performance benefit.
+ * 
  *)
-let add_binding namedef warning = 
+let add_binding2 namedef warning = 
   let (current_scope, _older_scope) = Common.uncons !_scoped_env in
 
-  (match namedef with
-  | VarOrFunc (s, typ) -> 
-      if Hashtbl.mem !_notyped_var s
-      then pr2 ("warning: found typing information for a variable that was" ^
-                   "previously unknown:" ^ s);
-  | _ -> ()
-  );
-
-  let (memberf, s) = 
+  if !Flag_parsing_c.check_annotater then begin
     (match namedef with
-    | VarOrFunc (s, typ) -> member_env (lookup_var s), s
-    | TypeDef   (s, typ) -> member_env (lookup_typedef s), s
-    | StructUnionNameDef (s, (su, typ)) -> 
-        member_env (lookup_structunion (su, s)), s
-    ) in
-
-  if  memberf [current_scope] && warning
-  then pr2 ("Type_annoter: warning, " ^ s ^ 
-            " is already in current binding" ^ "\n" ^
-           " so there is a wierd shadowing");
+    | VarOrFunc (s, typ) -> 
+        if Hashtbl.mem !_notyped_var s
+        then pr2 ("warning: found typing information for a variable that was" ^
+                     "previously unknown:" ^ s);
+    | _ -> ()
+    );
+    
+    let (memberf, s) = 
+      (match namedef with
+      | VarOrFunc (s, typ) -> 
+          member_env (lookup_var s), s
+      | TypeDef   (s, typ) -> 
+          member_env (lookup_typedef s), s
+      | StructUnionNameDef (s, (su, typ)) -> 
+          member_env (lookup_structunion (su, s)), s
+      | Macro (s, body) -> 
+          member_env (lookup_macro s), s
+      | EnumConstant (s, body) -> 
+          member_env (lookup_enum s), s
+      ) in
+    
+    if  memberf [current_scope] && warning
+    then pr2 ("Type_annoter: warning, " ^ s ^ 
+                 " is already in current binding" ^ "\n" ^
+                 " so there is a wierd shadowing");
+  end;
   add_in_scope namedef
+
+let add_binding namedef warning = 
+  Common.profile_code "TAC.add_binding" (fun () -> add_binding2 namedef warning)
   
 
+
 (*****************************************************************************)
-(* Helpers *)
+(* Helpers, part 2 *)
 (*****************************************************************************)
 
-let make_info t = (Some t,Ast_c.NotTest)
+let lookup_opt_env lookupf s = 
+  Common.optionise (fun () ->
+    lookupf s !_scoped_env
+  )
 
-let type_of_s s = 
-  (Lib.al_type (Parse_c.type_of_string s), Ast_c.NotLocalVar)
+let unwrap_unfold_env2 typ = 
+  Ast_c.unwrap_typeC 
+    (type_unfold_one_step typ !_scoped_env) 
+let unwrap_unfold_env typ = 
+  Common.profile_code "TAC.unwrap_unfold_env" (fun () -> unwrap_unfold_env2 typ)
 
-let noTypeHere = (None,Ast_c.NotTest)
+let typedef_fix a b = 
+  Common.profile_code "TAC.typedef_fix" (fun () -> typedef_fix a b)
 
-let do_with_type f (t,_test) = 
-  match t with
-  | None -> noTypeHere
-  | Some (t,_local) -> f t
+let make_info_def_fix x = 
+  Type_c.make_info_def (typedef_fix x !_scoped_env)  
 
-  
+let make_info_fix (typ, local) =
+  Type_c.make_info ((typedef_fix typ !_scoped_env),local)
+
+      
+let make_info_def = Type_c.make_info_def 
+
 (*****************************************************************************)
-(* Entry point *)
+(* Main typer code, put later in a visitor *)
 (*****************************************************************************)
-(* catch all the decl to grow the environment *)
 
-let rec (annotate_program2 : 
- environment -> toplevel list -> (toplevel * environment Common.pair) list
- ) = fun env prog ->
+let annotater_expr_visitor_subpart = (fun (k,bigf) expr -> 
 
-  (* globals (re)initialialisation *) 
-  _scoped_env := env;
-  _notyped_var := (Hashtbl.create 100);
+  let ty = 
+    match Ast_c.unwrap_expr expr with
+    
+    (* -------------------------------------------------- *)
+    (* todo: should analyse the 's' for int to know if unsigned or not *)
+    | Constant (String (s,kind)) -> make_info_def (type_of_s "char *")
+    | Constant MultiString       -> make_info_def (type_of_s "char *")
+    | Constant (Char   (s,kind)) -> make_info_def (type_of_s "char")
+    | Constant (Int (s))         -> make_info_def (type_of_s "int")
+    | Constant (Float (s,kind)) -> 
+        let fake = Ast_c.fakeInfo (Common.fake_parse_info) in
+        let fake = Ast_c.rewrap_str "float" fake in
+        let iinull = [fake] in
+        make_info_def
+	  (Ast_c.nQ, (BaseType (FloatType kind), iinull))
+          
+          
+    (* -------------------------------------------------- *)
+    (* note: could factorize this code with the code for Ident 
+     * and the other code for Funcall below. But as the Ident can be 
+     * a macro-func, I prefer to handle it separately. So
+     * this rule can handle the macro-func, the Ident-rule can handle
+     * the macro-var, and the other FunCall-rule the regular
+     * function calls through fields.
+     * Also as I don't want a warning on the Ident that are a FunCall,
+     * easier to have a rule separate from the Ident rule.
+     *)
+    | FunCall (((Ident s, typ), ii) as e1, args) -> 
+        
+        (* recurse *)
+        args +> List.iter (fun (e,ii) -> 
+          (* could typecheck if arguments agree with prototype *)
+          Visitor_c.vk_argument bigf e
+        );
+        
+        (match lookup_opt_env lookup_var s with
+        | Some ((typ,local),_nextenv) -> 
+            
+            (* set type for ident *)
+            let tyinfo = make_info_fix (typ, local) in
+            Ast_c.set_type_expr e1 tyinfo;
 
+            (match unwrap_unfold_env typ  with
+            | FunctionType (ret, params) -> make_info_def ret
+
+            (* can be function pointer, C have an iso for that, 
+             * same pfn() syntax than regular function call.
+             *)
+            | Pointer (typ2) -> 
+                (match unwrap_unfold_env typ2 with
+                | FunctionType (ret, params) -> make_info_def ret
+                | _ -> Type_c.noTypeHere
+                )
+            | _ -> Type_c.noTypeHere
+            )
+        | None  -> 
+
+            (match lookup_opt_env lookup_macro s with
+            | Some ((defkind, defval), _nextenv) -> 
+                (match defkind, defval with
+                | DefineFunc _, DefineExpr e -> 
+                    let rettype = Ast_c.get_onlytype_expr e in
+
+                    (* todo: could also set type for ident ?
+                       have return type and at least type of concrete
+                       parameters so can generate a fake FunctionType
+                    *)
+                    let macrotype_opt = 
+                      Type_c.fake_function_type rettype args
+                    in
+
+                    macrotype_opt +> Common.do_option (fun t -> 
+                      pr2 ("Type_annotater: generate fake function type" ^
+                              "for macro: " ^ s);
+                      let tyinfo = make_info_def_fix t in
+                      Ast_c.set_type_expr e1 tyinfo;
+                    );
+
+                    Ast_c.get_type_expr e
+                | DefineVar, _ -> 
+                    pr2 ("Type_annoter: not a macro-func: " ^ s);
+                    Type_c.noTypeHere
+                | DefineFunc _, _ -> 
+                    (* normally the FunCall case should have catch it *)
+                    pr2 ("Type_annoter: not a macro-func-expr: " ^ s);
+                    Type_c.noTypeHere
+                )
+            | None -> 
+                pr2 ("type_annotater: no type for function ident: " ^ s);
+                Type_c.noTypeHere
+            )
+        )
+
+
+    | FunCall (e, args) -> 
+        k expr;
+        
+        (Ast_c.get_type_expr e) +> Type_c.do_with_type (fun typ -> 
+          (* copy paste of above *)   
+          (match unwrap_unfold_env typ with
+          | FunctionType (ret, params) -> make_info_def ret
+          | Pointer (typ) -> 
+              (match unwrap_unfold_env typ with
+              | FunctionType (ret, params) -> make_info_def ret
+              | _ -> Type_c.noTypeHere
+              )
+          | _ -> Type_c.noTypeHere
+          )
+        )
+
+
+    (* -------------------------------------------------- *)
+    | Ident (s) -> 
+        (match lookup_opt_env lookup_var s with
+        | Some ((typ,local),_nextenv) -> 
+            make_info_fix (typ,local)
+        | None  -> 
+            (match lookup_opt_env lookup_macro s with
+            | Some ((defkind, defval), _nextenv) -> 
+                (match defkind, defval with
+                | DefineVar, DefineExpr e -> 
+                    Ast_c.get_type_expr e
+                | DefineVar, _ -> 
+                    pr2 ("Type_annoter: not a expression: " ^ s);
+                    Type_c.noTypeHere
+                | DefineFunc _, _ -> 
+                    (* normally the FunCall case should have catch it *)
+                    pr2 ("Type_annoter: not a macro-var: " ^ s);
+                    Type_c.noTypeHere
+                )
+            | None -> 
+                (match lookup_opt_env lookup_enum s with
+                | Some (_, _nextenv) -> 
+                    make_info_def (type_of_s "int")                       
+                | None -> 
+                    if not (s =~ "[A-Z_]+") (* if macro then no warning *)
+                    then 
+                      if !Flag_parsing_c.check_annotater then 
+                        if not (Hashtbl.mem !_notyped_var s)
+                        then begin 
+                          pr2 ("Type_annoter: not finding type for: " ^ s);
+                          Hashtbl.add !_notyped_var s true;
+                        end
+                        else ()
+                      else 
+                        pr2 ("Type_annoter: not finding type for: " ^ s)
+                    ;
+                    Type_c.noTypeHere
+                )
+            )
+        )
+          
+    (* -------------------------------------------------- *)
+    (* C isomorphism on type on array and pointers *)
+    | Unary (e, DeRef)
+    | ArrayAccess (e, _) ->
+        k expr; (* recurse to set the types-ref of sub expressions *)
+
+        (Ast_c.get_type_expr e) +> Type_c.do_with_type (fun t -> 
+          (* todo: maybe not good env !! *)
+          match unwrap_unfold_env t with
+          | Pointer x  
+          | Array (_, x) -> 
+              make_info_def_fix x
+          | _ -> Type_c.noTypeHere
+
+        )
+
+    | Unary (e, GetRef) -> 
+        k expr; (* recurse to set the types-ref of sub expressions *)
+
+        (Ast_c.get_type_expr e) +> Type_c.do_with_type (fun t -> 
+          (* must generate an element so that '=' can be used 
+           * to compare type ?
+           *)
+          let fake = Ast_c.fakeInfo Common.fake_parse_info in
+          let fake = Ast_c.rewrap_str "*" fake in
+          
+          let ft = (Ast_c.nQ, (Pointer t, [fake])) in
+          make_info_def_fix ft
+        )
+
+
+    (* -------------------------------------------------- *)
+    (* fields *)
+    | RecordAccess  (e, fld) 
+    | RecordPtAccess (e, fld) as x -> 
+
+        k expr; (* recurse to set the types-ref of sub expressions *)
+        
+        (Ast_c.get_type_expr e) +> Type_c.do_with_type (fun t -> 
+
+          let topt = 
+            match x with
+            | RecordAccess _ -> Some t
+            | RecordPtAccess _ -> 
+                (match unwrap_unfold_env t with 
+                | Pointer (t) -> Some t
+                | _ -> None
+                )
+            | _ -> raise Impossible
+                
+          in
+          (match topt with
+          | None -> Type_c.noTypeHere
+          | Some t -> 
+              match unwrap_unfold_env t with
+              | StructUnion (su, sopt, fields) -> 
+                  (try 
+                      (* todo: which env ? *)
+                      make_info_def_fix 
+                        (Type_c.type_field fld (su, fields))
+                    with 
+                    | Not_found -> 
+                        pr2 (spf 
+                                "TYPE-ERROR: field '%s' does not belong in struct %s"
+                                fld (match sopt with Some s -> s |_ -> "<anon>"));
+                        Type_c.noTypeHere
+                    | MultiFound -> 
+                        pr2 "TAC:MultiFound";
+                        Type_c.noTypeHere
+                  )
+              | _ -> Type_c.noTypeHere
+          )
+        )
+         
+
+
+    (* -------------------------------------------------- *)
+    | Cast (t, e) -> 
+        k expr;
+        (* todo: if infer, can "push" info ? add_types_expr [t] e ? *)
+        make_info_def_fix (Lib.al_type t)
+
+    (* todo? lub, hmm maybe not, cos type must be e1 *)
+    | Assignment (e1, op, e2) -> 
+        k expr; 
+        Ast_c.get_type_expr e1
+    | Sequence (e1, e2) -> 
+        k expr; 
+        Ast_c.get_type_expr e2
+          
+    (* todo: lub *)
+    | Binary (e1, op, e2) -> 
+        k expr;
+        Type_c.lub (Type_c.get_opt_type e1) (Type_c.get_opt_type e2)
+
+    | CondExpr (cond, e1opt, e2) -> 
+        k expr;
+        Ast_c.get_type_expr e2
+
+
+    | ParenExpr e -> 
+        k expr;
+        Ast_c.get_type_expr e
+
+    | Infix (e, op)  | Postfix (e, op) -> 
+        k expr;
+        Ast_c.get_type_expr e
+          
+    (* pad: julia wrote this ? *)
+    | Unary (e, UnPlus) -> 
+        k expr; (* recurse to set the types-ref of sub expressions *)
+        make_info_def (type_of_s "int")
+          (* todo? can convert from unsigned to signed if UnMinus ? *)
+    | Unary (e, UnMinus) -> 
+        k expr; (* recurse to set the types-ref of sub expressions *)
+        make_info_def (type_of_s "int")
+          
+    | SizeOfType _|SizeOfExpr _ -> 
+        k expr; (* recurse to set the types-ref of sub expressions *)
+        make_info_def (type_of_s "int")
+          
+    | Constructor (ft, ini) -> 
+        k expr; (* recurse to set the types-ref of sub expressions *)
+        make_info_def (Lib.al_type ft)
+          
+    | Unary (e, Not) -> 
+        k expr; (* recurse to set the types-ref of sub expressions *)
+        Ast_c.get_type_expr e
+    | Unary (e, Tilde) -> 
+        k expr; (* recurse to set the types-ref of sub expressions *)
+        Ast_c.get_type_expr e
+          
+    (* -------------------------------------------------- *)
+    (* todo *)
+    | Unary (_, GetRefLabel) -> 
+        k expr; (* recurse to set the types-ref of sub expressions *)
+        pr2_once "Type annotater:not handling GetRefLabel";
+        Type_c.noTypeHere
+          (* todo *)
+    | StatementExpr _ ->  
+        k expr; (* recurse to set the types-ref of sub expressions *)
+        pr2_once "Type annotater:not handling GetRefLabel";
+        Type_c.noTypeHere
+          (*
+            | _ -> k expr; Type_c.noTypeHere
+          *)
+          
+  in
+  Ast_c.set_type_expr expr ty
+
+)
+
+      
+(*****************************************************************************)
+(* Visitor *)
+(*****************************************************************************)
+
+(* Processing includes that were added after a cpp_ast_c makes the
+ * type annotater quite slow, especially when the depth of cpp_ast_c is
+ * big. But for such includes the only thing we really want is to modify
+ * the environment to have enough type information. We don't need
+ * to type the expressions inside those includes (they will be typed
+ * when we process the include file directly). Here the goal is 
+ * to not recurse.
+ * 
+ * Note that as usually header files contain mostly structure
+ * definitions and defines, that means we still have to do lots of work.
+ * We only win on function definition bodies, but usually header files 
+ * have just prototypes, or inline function definitions which anyway have
+ * usually a small body. But still, we win. It also makes clearer
+ * that when processing include as we just need the environment, the caller
+ * of this module can do further optimisations such as memorising the 
+ * state of the environment after each header files.
+ * 
+ * 
+ * For sparse its makes the annotating speed goes from 9s to 4s
+ * For Linux the speedup is even better, from ??? to ???.
+ * 
+ * Because There would be some copy paste with annotate_program, it is
+ * better to factorize code hence the just_add_in_env parameter below.
+ * 
+ * todo? alternative optimisation for the include problem:
+ *  - processing all headers files one time and construct big env
+ *  - use hashtbl for env (but apparently not biggest problem)
+ *)
+    
+let rec visit_toplevel ~just_add_in_env ~depth elem = 
+  let need_annotate_body = not just_add_in_env in
 
   let bigf = { Visitor_c.default_visitor_c with 
 
-    Visitor_c.kexpr = (fun (k,bigf) expr -> 
-      k expr; (* recurse to set the types-ref of sub expressions *)
-      let ty = 
-        match Ast_c.unwrap_expr expr with
-        (* todo: should analyse the 's' for int to know if unsigned or not *)
-        | Constant (String (s,kind)) ->  make_info (type_of_s "char *")
-        | Constant (Char   (s,kind)) ->  make_info (type_of_s "char")
-        | Constant (Int (s)) ->          make_info (type_of_s "int")
-        | Constant (Float (s,kind)) -> 
-            let iinull = [] in
-            make_info
-	      ((Ast_c.nQ, (BaseType (FloatType kind), iinull)),
-	       Ast_c.NotLocalVar)
+    (* ------------------------------------------------------------ *)
+    Visitor_c.kcppdirective = (fun (k, bigf) directive -> 
+      match directive with
+      (* do error messages for type annotater only for the real body of the
+       * file, not inside include.
+       *)
+      | Include {i_content = opt} -> 
+          opt +> Common.do_option (fun (filename, program) -> 
+            Common.save_excursion Flag_parsing_c.verbose_type (fun () -> 
+              Flag_parsing_c.verbose_type := false;
 
-        (* don't want a warning on the Ident that are a FunCall *)
-        | FunCall (((Ident f, typ), ii), args) -> 
-            args +> List.iter (fun (e,ii) -> 
-              Visitor_c.vk_argument bigf e
-            );
-            noTypeHere
-            
-        | Ident (s) -> 
-          (match (Common.optionise (fun () -> lookup_var s !_scoped_env)) with
-          | Some ((typ,local),_nextenv) -> 
-              make_info ((typedef_fix typ !_scoped_env),local)
-          | None  -> 
-              if not (s =~ "[A-Z_]+") (* if macro then no warning *)
-              then 
-                if not (Hashtbl.mem !_notyped_var s)
-                then begin 
-                  pr2 ("Type_annoter: not finding type for " ^ s);
-                  Hashtbl.add !_notyped_var s true;
-                end;
-              noTypeHere
-          )
-        | Unary (e, UnMinus) | Unary (e, UnPlus) -> make_info (type_of_s "int")
-        | Unary (e, DeRef)
-        | ArrayAccess (e, _) ->
-          (Ast_c.get_type_expr e) +> do_with_type (fun t -> 
-            (* todo: maybe not good env !! *)
-            match Ast_c.unwrap_typeC (type_unfold_one_step t !_scoped_env) with
-            | Pointer x  
-            | Array (_, x) -> 
-                make_info ((typedef_fix x !_scoped_env),Ast_c.NotLocalVar)
-            | _ -> noTypeHere
-          )
-
-        | RecordAccess  (e, fld) ->  
-          (Ast_c.get_type_expr e) +> do_with_type (fun t -> 
-            match Ast_c.unwrap_typeC (type_unfold_one_step t !_scoped_env) with
-            | StructUnion (su, sopt, fields) -> 
-                (try 
-                  (* todo: which env ? *)
-                  make_info
-		    ((typedef_fix (type_field fld (su, fields)) !_scoped_env),
-		     Ast_c.NotLocalVar)
-                with Not_found -> 
-                  pr2 
-                    ("TYPE-ERROR: field '" ^ fld ^ "' does not belong in" ^
-                     " struct '"^(match sopt with Some s -> s |_ -> "<anon>")^
-                     "'");
-                  noTypeHere
-                )
-            | _ -> noTypeHere
-          )
-
-        | RecordPtAccess (e, fld) -> 
-          (Ast_c.get_type_expr e) +> do_with_type (fun t ->
-          match Ast_c.unwrap_typeC (type_unfold_one_step t !_scoped_env) with 
-          | Pointer (t) -> 
-              (match Ast_c.unwrap_typeC (type_unfold_one_step t !_scoped_env) 
-               with
-              | StructUnion (su, sopt, fields) -> 
-                (try 
-                  (* todo: which env ? *)
-                  make_info
-		    ((typedef_fix (type_field fld (su, fields)) !_scoped_env),
-		     Ast_c.NotLocalVar)
-                 with Not_found -> 
-                  pr2 
-                    ("TYPE-ERROR: field '" ^ fld ^ "' does not belong in" ^
-                     " struct '"^(match sopt with Some s -> s |_ -> "<anon>")^
-                     "'");
-                  noTypeHere
-                )
-
-              | _ -> noTypeHere
+              (* old: Visitor_c.vk_program bigf program; 
+               * opti: set the just_add_in_env
+               *)
+              program +> List.iter (fun elem -> 
+                visit_toplevel ~just_add_in_env:true ~depth:(depth+1) elem
               )
-          | _ -> noTypeHere
+            )
           )
-        | Cast (t, e) -> 
-            (* todo: add_types_expr [t] e ? *)
-            make_info
-	      ((typedef_fix (Lib.al_type t) !_scoped_env),Ast_c.NotLocalVar)
 
-         (* todo: check e2 ? *)
-        | Assignment (e1, op, e2) -> 
-            Ast_c.get_type_expr e1
-        | ParenExpr e -> 
-            Ast_c.get_type_expr e
+      | Define ((s,ii), (defkind, defval)) -> 
 
-        | _ -> noTypeHere
-      in
-      Ast_c.set_type_expr expr ty
-      
+
+          (* even if we are in a just_add_in_env phase, such as when
+           * we process include, as opposed to the body of functions, 
+           * with macros we still to type the body of the macro as 
+           * the macro has no type and so we infer its type from its
+           * body (and one day later maybe from its use).
+           *)
+          (match defval with
+          (* can try to optimize and recurse only when the define body
+           * is simple ? 
+           *)
+
+          | DefineExpr expr -> 
+              if is_simple_expr expr
+             (* even if not need_annotate_body, still recurse*)
+              then k directive 
+              else 
+                if need_annotate_body
+                then k directive;
+          | _ -> 
+              if need_annotate_body
+              then k directive;
+          );
+
+          add_binding (Macro (s, (defkind, defval) )) true;
+
+      | Undef _
+      | PragmaAndCo _ -> ()
     );
 
+    (* ------------------------------------------------------------ *)
+    (* main typer code *)
+    (* ------------------------------------------------------------ *)
+    Visitor_c.kexpr = annotater_expr_visitor_subpart;
+
+    (* ------------------------------------------------------------ *)
     Visitor_c.kstatement = (fun (k, bigf) st -> 
       match st with 
       | Compound statxs, ii -> do_in_new_scope (fun () -> k st);
       | _ -> k st
-
     );
+    (* ------------------------------------------------------------ *)
     Visitor_c.kdecl = (fun (k, bigf) d -> 
       (match d with
       | (DeclList (xs, ii)) -> 
           xs +> List.iter (fun ({v_namei = var; v_type = t;
                                  v_storage = sto; v_local = local}, iicomma) -> 
 
-	    let local =
-	      match local with
-		Ast_c.NotLocalDecl -> Ast_c.NotLocalVar
-	      |	Ast_c.LocalDecl -> Ast_c.LocalVar (offset t) in
-
             (* to add possible definition in type found in Decl *)
             Visitor_c.vk_type bigf t;
+
+
+	    let local =
+	      match local with
+	      | Ast_c.NotLocalDecl -> Ast_c.NotLocalVar
+	      |	Ast_c.LocalDecl -> Ast_c.LocalVar (offset t) 
+            in
             
-            var +> do_option (fun ((s, ini), ii_s_ini) -> 
+            var +> Common.do_option (fun ((s, ini), ii_s_ini) -> 
               match sto with 
               | StoTypedef, _inline -> 
                   add_binding (TypeDef (s,Lib.al_type t)) true;
               | _ -> 
                   add_binding (VarOrFunc (s, (Lib.al_type t, local))) true;
-                  (* int x = sizeof(x) is legal so need process ini *)
-                  ini +> Common.do_option (fun ini -> 
-                    Visitor_c.vk_ini bigf ini);
+
+
+                  if need_annotate_body then begin
+                    (* int x = sizeof(x) is legal so need process ini *)
+                    ini +> Common.do_option (fun ini -> 
+                      Visitor_c.vk_ini bigf ini
+                    );
+                  end
             );
           );
-      | _ -> k d
+      | MacroDecl _ -> 
+          if need_annotate_body
+          then k d
       );
         
     );
 
+    (* ------------------------------------------------------------ *)
     Visitor_c.ktype = (fun (k, bigf) typ -> 
-      let (q, t) = Lib.al_type typ in
+      (* bugfix: have a 'Lib.al_type typ' before, but because we can 
+       * have enum with possible expression, we don't want to change
+       * the ref of abstract-lined types, but the real one, so 
+       * don't al_type here
+       *)
+      let (_q, t) = typ in
       match t with 
       | StructUnion  (su, Some s, structType),ii -> 
-          add_binding (StructUnionNameDef (s, ((su, structType),ii))) true;
-          k typ (* todo: restrict ? new scope so use do_in_scope ? *)
+          let structType' = Lib.al_fields structType in 
+          let ii' = Lib.al_ii ii in
+          add_binding (StructUnionNameDef (s, ((su, structType'),ii')))  true;
+
+          if need_annotate_body
+          then k typ (* todo: restrict ? new scope so use do_in_scope ? *)
+
+      | Enum (sopt, enums), ii -> 
+
+          enums +> List.iter (fun (((s, eopt),ii_s_eq), iicomma) -> 
+
+            if need_annotate_body
+            then eopt +> Common.do_option (fun e -> 
+              Visitor_c.vk_expr bigf e
+            );
+            add_binding (EnumConstant (s, sopt)) true;
+          );
 
 
       (* TODO: if have a TypeName, then maybe can fill the option
        * information.
        *)
-      | _ -> k typ
+      | _ -> 
+          if need_annotate_body
+          then k typ
           
     );    
 
+    (* ------------------------------------------------------------ *)
     Visitor_c.ktoplevel = (fun (k, bigf) elem -> 
       _notyped_var := Hashtbl.create 100;
       match elem with
@@ -574,7 +1086,10 @@ let rec (annotate_program2 :
           let {f_name = funcs;
                f_type = ((returnt, (paramst, b)) as ftyp);
                f_storage = sto;
-               f_body = statxs},ii = def
+               f_body = statxs;
+               f_old_c_style = oldstyle;
+               },ii 
+            = def
           in
           let (i1, i2) = 
             match ii with 
@@ -582,37 +1097,94 @@ let rec (annotate_program2 :
                 iifunc1, iifunc2
             | _ -> raise Impossible
           in
-          let typ' = Lib.al_type (Ast_c.nQ, (FunctionType ftyp, [i1;i2])) in
 
-          add_binding (VarOrFunc (funcs, (typ',islocal i1.Ast_c.pinfo))) false;
-          do_in_new_scope (fun () -> 
-            paramst +> List.iter (fun (((b, s, t), _),_) -> 
-              match s with 
-              | Some s ->
-		  let local = Ast_c.LocalVar (offset t) in
-		  add_binding (VarOrFunc (s,(Lib.al_type t,local))) true
-              | None -> pr2 "no type, certainly because Void type ?"
-            );
-            k elem
+          (match oldstyle with 
+          | None -> 
+              let typ' = 
+                Lib.al_type (Ast_c.nQ, (FunctionType ftyp, [i1;i2])) in
+
+              add_binding (VarOrFunc (funcs, (typ',islocal i1.Ast_c.pinfo))) 
+                false;
+
+              if need_annotate_body then
+                do_in_new_scope (fun () -> 
+                  paramst +> List.iter (fun (((b, s, t), _),_) -> 
+                    match s with 
+                    | Some s ->
+		        let local = Ast_c.LocalVar (offset t) in
+		        add_binding (VarOrFunc (s,(Lib.al_type t,local))) true
+                    | None -> 
+                    pr2 "no type, certainly because Void type ?"
+                  );
+                  (* recurse *)
+                  k elem
+                );
+          | Some oldstyle -> 
+              (* generate regular function type *)
+
+              pr2 "TODO generate type for function"; 
+              (* add bindings *)
+              if need_annotate_body then
+                do_in_new_scope (fun () -> 
+                  (* recurse. should naturally call the kdecl visitor and
+                   * add binding 
+                   *)
+                  k elem;
+                );
+
           );
-      | _ -> k elem
+      | Declaration _
+
+      | CppTop _ 
+      | IfdefTop _
+      | MacroTop _ 
+      | EmptyDef _
+      | NotParsedCorrectly _
+      | FinalDef _
+          -> 
+          k elem
     );
   } 
   in
+  if just_add_in_env
+  then 
+    if depth > 1 
+    then Visitor_c.vk_toplevel bigf elem
+    else 
+      Common.profile_code "TAC.annotate_only_included" (fun () -> 
+        Visitor_c.vk_toplevel bigf elem
+      )
+  else Visitor_c.vk_toplevel bigf elem
+
+(*****************************************************************************)
+(* Entry point *)
+(*****************************************************************************)
+(* catch all the decl to grow the environment *)
+
+
+let rec (annotate_program2 : 
+  environment -> toplevel list -> (toplevel * environment Common.pair) list) =
+ fun env prog ->
+
+  (* globals (re)initialialisation *) 
+  _scoped_env := env;
+  _notyped_var := (Hashtbl.create 100);
 
   prog +> List.map (fun elem -> 
     let beforeenv = !_scoped_env in
-    Visitor_c.vk_toplevel bigf elem;
+    visit_toplevel ~just_add_in_env:false ~depth:0 elem;
     let afterenv = !_scoped_env in
     (elem, (beforeenv, afterenv))
   )
 
-and offset (_,(ty,iis)) =
-  match iis with
-    ii::_ -> ii.Ast_c.pinfo
-  | _ -> failwith "type has no text; need to think again"
-  
-    
+
+
+
+(*****************************************************************************)
+(* Annotate test *)
+(*****************************************************************************)
+
+(* julia: for coccinelle *)    
 let annotate_test_expressions prog =
   let rec propagate_test e =
     let ((e_term,info),_) = e in
@@ -629,8 +1201,10 @@ let annotate_test_expressions prog =
     Visitor_c.kexpr = (fun (k,bigf) expr ->
       (match unwrap expr with
 	(CondExpr(e,_,_),_) -> propagate_test e
-      |	_ -> ());
-      k expr);
+      |	_ -> ()
+      );
+      k expr
+    );
     Visitor_c.kstatement = (fun (k, bigf) st ->
       match unwrap st with 
 	Selection(s) ->
@@ -644,17 +1218,42 @@ let annotate_test_expressions prog =
 	      (match unwrap es with Some e -> propagate_test e | None -> ())
 	  | _ -> ());
 	  k st
-      | _ -> k st) } in
+      | _ -> k st
+    ) 
+  } in
   (prog +> List.iter (fun elem -> 
     Visitor_c.vk_toplevel bigf elem
   ))
 
-let annotate_program a types_needed = 
-  Common.profile_code "annotate_type"
-    (fun () prog ->
-      let res =
-	if true (*types_needed*)
-	then annotate_program2 a prog
-	else prog +> List.map (fun c -> c, (initial_env, initial_env)) in
+
+
+(*****************************************************************************)
+(* Annotate types *)
+(*****************************************************************************)
+let annotate_program env prog = 
+  Common.profile_code "TAC.annotate_program"
+    (fun () ->
+      let res = annotate_program2 env prog in
       annotate_test_expressions prog;
-      res)
+      res
+    )
+
+let annotate_type_and_localvar env prog = 
+  Common.profile_code "TAC.annotate_type"
+    (fun () -> annotate_program2 env prog)
+
+
+(*****************************************************************************)
+(* changing default typing environment, do concatenation *)
+let init_env filename = 
+  pr2 ("init_env: " ^ filename);
+  let (ast2, _stat) = Parse_c.parse_c_and_cpp filename in
+  let ast = Parse_c.program_of_program2 ast2 in
+
+  let res = annotate_type_and_localvar !initial_env ast in
+  match List.rev res with
+  | [] -> pr2 "empty environment"
+  | (_top,(env1,env2))::xs -> 
+      initial_env := !initial_env ++ env2;
+      ()
+

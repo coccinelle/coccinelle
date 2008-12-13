@@ -1076,17 +1076,17 @@ let pp_flow_gen pr_elem pr_space n =
       pr2 "Def";
 
 
-    | F.Decl decl -> 
+  | F.Decl decl -> 
         (* vk_decl bigf decl *)
         pr2 "Decl" 
 
-    | F.ExprStatement (st, (eopt, ii)) ->  
+  | F.ExprStatement (st, (eopt, ii)) ->  
         pp_statement_gen pr_elem pr_space (ExprStatement eopt, ii) 
 
-    | F.IfHeader (_, (e,ii)) 
-    | F.SwitchHeader (_, (e,ii))
-    | F.WhileHeader (_, (e,ii))
-    | F.DoWhileTail (e,ii) -> 
+  | F.IfHeader (_, (e,ii)) 
+  | F.SwitchHeader (_, (e,ii))
+  | F.WhileHeader (_, (e,ii))
+  | F.DoWhileTail (e,ii) -> 
         (*
         iif ii;
         vk_expr bigf e
@@ -1094,7 +1094,7 @@ let pp_flow_gen pr_elem pr_space n =
         pr2 "XXX";
 
 
-    | F.ForHeader (_st, (((e1opt,i1), (e2opt,i2), (e3opt,i3)), ii)) -> 
+  | F.ForHeader (_st, (((e1opt,i1), (e2opt,i2), (e3opt,i3)), ii)) -> 
         (*
         iif i1; iif i2; iif i3;
         iif ii;
@@ -1104,7 +1104,7 @@ let pp_flow_gen pr_elem pr_space n =
         *)
         pr2 "XXX";
 
-    | F.MacroIterHeader (_s, ((s,es), ii)) -> 
+  | F.MacroIterHeader (_s, ((s,es), ii)) -> 
         (*
         iif ii;
         vk_argument_list bigf es;
@@ -1112,32 +1112,32 @@ let pp_flow_gen pr_elem pr_space n =
         pr2 "XXX";
 
         
-    | F.ReturnExpr (_st, (e,ii)) -> 
+  | F.ReturnExpr (_st, (e,ii)) -> 
         (* iif ii; vk_expr bigf e*)
         pr2 "XXX";
 
         
-    | F.Case  (_st, (e,ii)) -> 
-        (* iif ii; vk_expr bigf e *)
+  | F.Case  (_st, (e,ii)) -> 
+      (* iif ii; vk_expr bigf e *)
         pr2 "XXX";
-        
-    | F.CaseRange (_st, ((e1, e2),ii)) -> 
+      
+  | F.CaseRange (_st, ((e1, e2),ii)) -> 
         (* iif ii; vk_expr bigf e1; vk_expr bigf e2 *)
         pr2 "XXX";
 
 
 
-    | F.CaseNode i -> ()
+  | F.CaseNode i -> ()
 
-    | F.DefineExpr e  -> 
+  | F.DefineExpr e  -> 
         (* vk_expr bigf e *)
         pr2 "XXX";
 
-    | F.DefineType ft  -> 
+  | F.DefineType ft  -> 
         (* vk_type bigf ft *)
         pr2 "XXX";
 
-    | F.DefineHeader ((s,ii), (defkind))  -> 
+  | F.DefineHeader ((s,ii), (defkind))  -> 
         (*
         iif ii;
         vk_define_kind bigf defkind;
@@ -1145,17 +1145,17 @@ let pp_flow_gen pr_elem pr_space n =
         pr2 "XXX";
 
 
-    | F.DefineDoWhileZeroHeader (((),ii)) -> 
+  | F.DefineDoWhileZeroHeader (((),ii)) -> 
         (* iif ii *)
         pr2 "XXX";
 
 
-    | F.Include {i_include = (s, ii);} -> 
+  | F.Include {i_include = (s, ii);} -> 
         (* iif ii; *)
         pr2 "XXX";
         
 
-    | F.MacroTop (s, args, ii) -> 
+  | F.MacroTop (s, args, ii) -> 
         (* iif ii;
         vk_argument_list bigf args *)
         pr2 "XXX";
@@ -1213,6 +1213,9 @@ let pp_flow_gen pr_elem pr_space n =
     | F.IfdefEndif (info) -> 
         pp_ifdef_gen pr_elem pr_space info
 
+    | F.DefineTodo -> 
+        pr2 "XXX";
+
 
     | (
         F.TopNode|F.EndNode|
@@ -1244,3 +1247,18 @@ let pp_type_simple  = pp_type_gen pr_elem pr_space
 let pp_toplevel_simple = pp_program_gen pr_elem pr_space
 let pp_flow_simple = pp_flow_gen pr_elem pr_space
 
+
+
+let string_of_expression e = 
+  Common.format_to_string (fun () ->
+    pp_expression_simple e
+  )
+
+let (debug_info_of_node: Ograph_extended.nodei -> Control_flow_c.cflow -> string) = 
+ fun nodei flow -> 
+  let node = flow#nodes#assoc nodei in
+  let s = Common.format_to_string (fun () ->
+    pp_flow_simple node
+  ) in
+  let pos = Lib_parsing_c.min_pinfo_of_node node in
+  (spf "%s(n%d)--> %s" (Common.string_of_parse_info_bis pos) nodei s)

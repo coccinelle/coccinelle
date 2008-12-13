@@ -21,6 +21,7 @@ val is_cpar : Parser_c.token -> bool
 val is_obrace : Parser_c.token -> bool
 val is_cbrace : Parser_c.token -> bool
 
+val is_ident_like: Parser_c.token -> bool
 
 val info_of_tok : Parser_c.token -> Ast_c.info
 
@@ -40,3 +41,5 @@ val is_origin : Parser_c.token -> bool
 val is_expanded : Parser_c.token -> bool
 val is_fake : Parser_c.token -> bool
 val is_abstract : Parser_c.token -> bool
+
+val is_same_line: int -> Parser_c.token -> bool

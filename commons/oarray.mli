@@ -20,6 +20,8 @@ object ('o)
   method assoc : int -> 'a
   method delkey : int -> 'o
 
+  method keys: int list
+
   (* osequence concrete instantiation of virtual methods *)
   method first : 'a
   method last : 'a

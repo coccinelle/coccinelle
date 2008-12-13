@@ -1,8 +1,9 @@
 open Common 
 
-(* Try detect some cpp idioms so can parse as-is files by adjusting or
- * commenting some tokens. Parsing hack style. Sometime use indentation info,
- * sometimes do some kind of lalr(k) by finding patterns. Often try to
+(* This module tries to detect some cpp idioms so that we can parse as-is
+ * files by adjusting or commenting some tokens. Parsing hack style. 
+ * Sometime we use some indentation information,
+ * sometimes we do some kind of lalr(k) by finding patterns. Often try to
  * work on better token representation, like ifdef-paren-ized, brace-ized,
  * paren-ized, so can do easier pattern matching to more easily match
  * complex cpp idiom pattern. Also try to get context info such as
@@ -23,6 +24,7 @@ open Common
  *  - macro no ptvirg
  *  - macro string, and macro function string taking param and ##
  *  - macro attribute
+ * 
  * Cf the TMacroXxx in parser_c.mly and MacroXxx in ast_c.ml
  * 
  * Also try infer typedef.
@@ -51,6 +53,12 @@ type define_def = string * define_param * define_body
      | HintMacroStatement
      | HintAttribute
 
+val regexp_macro: Str.regexp
+val regexp_annot: Str.regexp
+val regexp_declare: Str.regexp
+val regexp_foreach: Str.regexp
+val regexp_typedef: Str.regexp
+
 val _defs : (string, define_def) Hashtbl.t ref
 
 (* can reset it *)
@@ -66,4 +74,5 @@ val fix_tokens_cpp : Parser_c.token list -> Parser_c.token list
 val lookahead : 
   pass:int -> 
   Parser_c.token list -> Parser_c.token list -> Parser_c.token
+
 

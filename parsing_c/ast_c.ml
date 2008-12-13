@@ -73,7 +73,7 @@ open Common
 
 (* forunparser: *)
 
-type posl = int * int (* lin-col, for MetaPosValList, for position variables *)
+type posl = int * int (* line-col, for MetaPosValList, for position variables *)
 
 (* the virtual position is set in Parsing_hacks.insert_virtual_positions *)
 type virtual_position = Common.parse_info * int (* character offset *)
@@ -94,7 +94,7 @@ type parse_info =
 
 type info = { 
   pinfo : parse_info;
-  (* this tag can be changed, which is how we can express some progra
+  (* this tag can be changed, which is how we can express some program
    * transformations by tagging the tokens involved in this transformation. 
    *)
   cocci_tag: (Ast_cocci.mcodekind * metavars_binding) ref;
@@ -116,14 +116,15 @@ and 'a wrap2 = 'a * il
 (* Could have more precise type in fullType, in expression, etc, but
  * it requires to do too much things in parsing such as checking no
  * conflicting structname, computing value, etc. Better to separate
- * concern, so I put '=>' to mean what we would really like. In fact
+ * concern. So I put '=>' to mean what we would really like. In fact
  * what we really like is defining another fullType, expression, etc
  * from scratch, because many stuff are just sugar.
  * 
  * invariant: Array and FunctionType have also typeQualifier but they
  * dont have sense. I put this to factorise some code. If you look in
- * grammar, you see that we can never specify const for the array
- * himself (but we can do it for pointer).
+ * the grammar, you see that we can never specify const for the array
+ * himself (but we can do it for pointer) or function, we always 
+ * have in the action rule of the grammar a { (nQ, FunctionType ...) }.
  * 
  * 
  * Because of ExprStatement, we can have more 'new scope' events, but
@@ -267,12 +268,16 @@ and expression = (expressionbis * exp_info ref (* semantic: *)) wrap
   | Sequence       of expression * expression                   
   | Assignment     of expression * assignOp * expression        
 
-  | Postfix        of expression * fixOp                        
-  | Infix          of expression * fixOp                        
+
+  | Postfix        of expression * fixOp
+  | Infix          of expression * fixOp
+
   | Unary          of expression * unaryOp                      
   | Binary         of expression * binaryOp * expression        
 
-  | ArrayAccess    of expression * expression                   
+  | ArrayAccess    of expression * expression
+
+  (* field ident access *)
   | RecordAccess   of expression * string 
   | RecordPtAccess of expression * string 
   (* redundant normally, could replace it by DeRef RecordAcces *)
@@ -484,6 +489,7 @@ and declaration =
  * parameter wheras a function definition can not. But, in some cases such
  * as 'f(void) {', there is no name too, so I simplified and reused the 
  * same functionType type for both declaration and function definition.
+ * Also old style C does not have type in the parameter.
  *)
 and definition = definitionbis wrap (* s ( ) { } fakestart sto *)
   and definitionbis = 
@@ -492,6 +498,7 @@ and definition = definitionbis wrap (* s ( ) { } fakestart sto *)
     f_storage: storage;
     f_body: compound;
     f_attr: attribute list; (* gccext: *)
+    f_old_c_style: declaration list option;
   }
   (* cppext: IfdefFunHeader TODO *)
 
@@ -526,10 +533,12 @@ and define = string wrap * define_body   (* #define s *)
    | DefineVar
    | DefineFunc   of ((string wrap) wrap2 list) wrap (* () *)
    and define_val = 
-     | DefineExpr of expression
+     | DefineExpr of expression (* most common case, to define int constant *)
+
      | DefineStmt of statement
      | DefineType of fullType
      | DefineDoWhileZero of (statement * expression) wrap (* do { } while(0) *)
+
      | DefineFunction of definition
      | DefineInit of initialiser (* in practice only { } with possible ',' *)
      (* TODO DefineMulti of define_val list *)
@@ -744,11 +753,17 @@ let set_type_expr ((unwrap_e, oldtyp), iie) newtyp =
   oldtyp := newtyp
   (* old: (unwrap_e, newtyp), iie *)
 
+let get_onlytype_expr ((unwrap_e, typ), iie) = 
+  match !typ with
+  | Some (ft,_local), _test -> Some ft
+  | None, _ -> None
+
 
 let unwrap_typeC (qu, (typeC, ii)) = typeC
 let rewrap_typeC (qu, (typeC, ii)) newtypeC  = (qu, (newtypeC, ii))
 
 
+(* ------------------------------------------------------------------------- *)
 let rewrap_str s ii =  
   {ii with pinfo =
     (match ii.pinfo with
@@ -817,6 +832,7 @@ let is_origintok ii =
   | OriginTok pi -> true
   | _ -> false
 
+(* ------------------------------------------------------------------------- *)
 type posrv = Real of Common.parse_info | Virt of virtual_position
 
 let compare_pos ii1 ii2 =
@@ -868,6 +884,9 @@ let is_test (e : expression) =
  * ocaml '=' to compare Ast elements. To overcome this problem, to be
  * able to use again '=', we just have to get rid of all those extra
  * information, to "abstract those line" (al) information.
+ * 
+ * Julia then modifies it a little to have a tokenindex, so the original
+ * true al_info is in fact real_al_info.
  *)
 
 let al_info tokenindex x = 
@@ -887,6 +906,21 @@ let semi_al_info x =
     cocci_tag = ref emptyAnnot;
     comments_tag = ref emptyComments;
   }
+
+let magic_real_number = -10 
+
+let real_al_info x = 
+  { pinfo =
+    (AbstractLineTok
+       {charpos = magic_real_number;
+	 line = magic_real_number;
+	 column = magic_real_number;
+	 file = "";
+	 str = str_of_info x});
+    cocci_tag = ref emptyAnnot;
+    comments_tag = ref emptyComments;
+  }
+
 
 (*****************************************************************************)
 (* Views *)
@@ -955,6 +989,8 @@ let rec stmt_elems_of_sequencable xs =
   
 
 
+(* should maybe be in pretty_print_c ? *)
+
 let s_of_inc_file inc_file = 
   match inc_file with
   | Local xs -> xs +> Common.join "/"
@@ -972,3 +1008,9 @@ let fieldname_of_fieldkind fieldkind =
   | Simple (sopt, ft) -> sopt
   | BitField (sopt, ft, expr) -> sopt
 
+
+let s_of_attr attr = 
+  attr
+  +> List.map (fun (Attribute s, ii) -> s)
+  +> Common.join ","
+  

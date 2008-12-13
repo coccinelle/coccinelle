@@ -32,6 +32,9 @@ object(o: 'o)
   method last = raise Todo
   method first = raise Todo
   method delkey = raise Todo
+
+  method keys = raise Todo 
+
   method del = raise Todo
   method fromlist = raise Todo
   method length = 

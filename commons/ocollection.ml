@@ -74,6 +74,12 @@ object(o: 'o)
   method add2: 'a -> unit = fun a -> 
     o#add a +> ignore;
     ()
+  method del2: 'a -> unit = fun a -> 
+    o#del a +> ignore;
+    ()
+  method clear: unit = 
+    o#iter (fun e -> o#del2 e);
+    
 
 
 

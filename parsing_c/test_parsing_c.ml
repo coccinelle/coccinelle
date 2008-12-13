@@ -1,8 +1,11 @@
 open Common
 
+open Ast_c
+
 let score_path = "/home/pad/c-yacfe/tmp"
 
 let tmpfile = "/tmp/output.c" 
+
 
 (*****************************************************************************)
 (* Subsystem testing *)
@@ -70,7 +73,10 @@ let test_parse_gen xs ext =
   );
   
   if not (null !stat_list) 
-  then Parsing_stat.print_parsing_stat_list !stat_list;
+  then begin 
+    Parsing_stat.print_recurring_problematic_tokens !stat_list;
+    Parsing_stat.print_parsing_stat_list !stat_list;
+  end;
   
   dirname_opt +> Common.do_option (fun dirname -> 
     pr2 "--------------------------------";
@@ -155,6 +161,24 @@ let test_cfg file =
 
 
 
+let test_cfg_ifdef file = 
+  let (ast2, _stat) = Parse_c.parse_print_error_heuristic file in
+  let ast = Parse_c.program_of_program2 ast2 in
+
+  let ast = Cpp_ast_c.cpp_ifdef_statementize ast in
+
+  ast +> List.iter (fun e -> 
+    (try 
+        let flow = Ast_to_flow.ast_to_control_flow e in
+        flow +> do_option (fun flow -> 
+          Ast_to_flow.deadcode_detection flow;
+          let flow = Ast_to_flow.annotate_loop_nodes flow in
+          Ograph_extended.print_ograph_mutable flow ("/tmp/output.dot") true
+        )
+      with Ast_to_flow.Error (x) -> Ast_to_flow.report_error x
+    )
+  )
+
 (* ---------------------------------------------------------------------- *)
 let test_parse_unparse infile = 
   if not (infile =~ ".*\\.c") 
@@ -185,7 +209,7 @@ let test_type_c infile =
     program2 
     +> Common.unzip 
     +> (fun (program, infos) -> 
-      Type_annoter_c.annotate_program Type_annoter_c.initial_env true
+      Type_annoter_c.annotate_program !Type_annoter_c.initial_env 
         program +> List.map fst,
       infos
     )
@@ -219,6 +243,53 @@ let test_compare_c_hardcoded () =
     *)
   +> Compare_c.compare_result_to_string 
   +> pr2
+
+
+
+(* ---------------------------------------------------------------------- *)
+let test_attributes file = 
+  let (ast2, _stat) = Parse_c.parse_c_and_cpp file in
+  let ast = Parse_c.program_of_program2 ast2 in
+
+  Visitor_c.vk_program { Visitor_c.default_visitor_c with
+    Visitor_c.kdef = (fun (k, bigf) (defbis, ii) -> 
+      let sattr  = Ast_c.s_of_attr defbis.f_attr in
+      pr2 (spf "%-30s: %s" defbis.f_name sattr);
+    );
+    Visitor_c.kdecl = (fun (k, bigf) decl -> 
+      match decl with
+      | DeclList (xs, ii) -> 
+          xs +> List.iter (fun (onedecl, iicomma) -> 
+            
+            let sattr  = Ast_c.s_of_attr onedecl.v_attr in
+            let idname = 
+              match onedecl.v_namei with
+              | Some ((s,ini), _) -> s
+              | None -> "novar"
+            in
+            pr2 (spf "%-30s: %s" idname sattr);
+          );
+      | _ -> ()
+          
+    );
+  } ast;
+  ()
+
+
+let cpp_options () = [
+  Cpp_ast_c.I "/home/yyzhou/pad/linux/include";
+] ++ 
+  Cpp_ast_c.cpp_option_of_cmdline 
+  (!Flag_parsing_c.cpp_i_opts,!Flag_parsing_c.cpp_d_opts)
+
+let test_cpp file = 
+  let (ast2, _stat) = Parse_c.parse_c_and_cpp file in
+  let dirname = Filename.dirname file in
+  let ast = Parse_c.program_of_program2 ast2 in
+  let _ast' = Cpp_ast_c.cpp_expand_include (cpp_options()) dirname ast in
+  
+  ()
+
 
 
 
@@ -257,6 +328,8 @@ let actions () = [
   Common.mk_action_1_arg test_cfg;
   "-control_flow", "   <file or file:function>", 
   Common.mk_action_1_arg test_cfg;
+  "-test_cfg_ifdef", " <file>",
+  Common.mk_action_1_arg test_cfg_ifdef;
   "-parse_unparse", "   <file>", 
   Common.mk_action_1_arg test_parse_unparse;
   "-type_c", "   <file>", 
@@ -266,6 +339,13 @@ let actions () = [
 
   "-compare_c_hardcoded", "  ", 
   Common.mk_action_0_arg test_compare_c_hardcoded;
+
+  "-test_attributes", " <file>",
+  Common.mk_action_1_arg test_attributes;
+  "-test_cpp", " <file>",
+  Common.mk_action_1_arg test_cpp;
+
+
 
   "-xxx", "   <file1> <>", 
   Common.mk_action_n_arg test_xxx;

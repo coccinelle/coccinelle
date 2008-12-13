@@ -6,6 +6,12 @@ open Parser_c
 (* Is_xxx, categories *)
 (*****************************************************************************)
 
+(* todo? could define a type 
+ *   token_class = Comment | Ident | Operator | ... 
+ * but sometimes tokens belon to multiple classes. Could maybe return then 
+ * a set of classes
+ *)
+
 let is_space = function
   | TCommentSpace _ -> true
   | TCommentNewline _ -> true
@@ -147,6 +153,28 @@ let is_stuff_taking_parenthized = function
   | TMacroIterator _
     -> true 
   | _ -> false
+
+
+let is_ident_like = function
+  | TIdent _
+  | TypedefIdent _
+  | TIdentDefine  _
+  | TDefParamVariadic _
+
+  | TUnknown _
+
+  | TMacroAttr _
+  | TMacroAttrStorage _
+  | TMacroStmt _
+  | TMacroString _
+  | TMacroDecl _
+  | TMacroStructDecl _
+  | TMacroDeclConst _
+  | TMacroIterator _
+      -> true
+
+  | _ -> false 
+
 
 (*****************************************************************************)
 (* Visitors *)
@@ -458,3 +486,9 @@ let is_fake x =
   match pinfo_of_tok x with Ast_c.FakeTok _ -> true | _ -> false
 let is_abstract x =
   match pinfo_of_tok x with Ast_c.AbstractLineTok _ -> true | _ -> false
+
+(*****************************************************************************)
+(* Helpers *)
+(*****************************************************************************)
+let is_same_line line tok = 
+  line_of_tok tok = line
