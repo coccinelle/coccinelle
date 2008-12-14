@@ -141,18 +141,20 @@ let print_recurring_problematic_tokens xs =
           (fun (old, example)  -> old + 1, example) 
           (fun() -> 0, (file, line_error)) h;
       )));
-  
-  pr2 ("-- maybe 10 most problematic tokens --");
+  pr2_xxxxxxxxxxxxxxxxx();
+  pr2 ("maybe 10 most problematic tokens");
+  pr2_xxxxxxxxxxxxxxxxx();
   Common.hash_to_list h
   +> List.sort (fun (k1,(v1,_)) (k2,(v2,_)) -> compare v2 v1) 
   +> Common.take_safe 10
   +> List.iter (fun (k,(i, (file_ex, line_ex))) -> 
-    pr2 (spf "%s: %d" k i);
+    pr2 (spf "%s: present in %d parsing errors" k i);
     pr2 ("example: ");
     let lines = lines_around_error_line ~context:2 (file_ex, line_ex) in
     lines +> List.iter (fun s -> pr2 ("       " ^ s));
     
   );
+  pr2_xxxxxxxxxxxxxxxxx();
   ()
 
   

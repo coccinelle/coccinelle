@@ -29,7 +29,7 @@ SRC= flag_parsing_c.ml parsing_stat.ml \
 LIBS=../commons/commons.cma ../globals/globals.cma \
      ../parsing_cocci/cocci_parser.cma
 
-INCLUDES= -I ../commons -I ../commons/ocollection \
+INCLUDES= -I ../commons -I ../commons/ocamlextra -I ../commons/ocollection \
   -I ../globals -I  ../parsing_cocci 
 
 #LIBS=../commons/commons.cma

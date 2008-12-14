@@ -79,9 +79,9 @@ let test_parse_gen xs ext =
   end;
   
   dirname_opt +> Common.do_option (fun dirname -> 
-    pr2 "--------------------------------";
+    pr2_xxxxxxxxxxxxxxxxx();
     pr2 "regression testing  information";
-    pr2 "--------------------------------";
+    pr2_xxxxxxxxxxxxxxxxx();
     let str = Str.global_replace (Str.regexp "/") "__" dirname in
     let def = if !Flag_parsing_c.filter_define_error then "_def_" else "" in
     let ext = if ext = "c" then "" else ext in
