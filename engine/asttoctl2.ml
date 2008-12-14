@@ -411,11 +411,17 @@ let and_after guard first rest =
 let contains_modif =
   let bind x y = x or y in
   let option_default = false in
-  let mcode r (_,_,kind,_) =
-    match kind with
-      Ast.MINUS(_,_) -> true
-    | Ast.PLUS -> failwith "not possible"
-    | Ast.CONTEXT(_,info) -> not (info = Ast.NOTHING) in
+  let mcode r (_,_,kind,metapos) =
+    let modif =
+      match kind with
+	Ast.MINUS(_,_) -> true
+      | Ast.PLUS -> failwith "not possible"
+      | Ast.CONTEXT(_,info) -> not (info = Ast.NOTHING) in
+    let pos =
+      match metapos with
+	Ast.MetaPos(_,_,_,_,_) -> true
+      |	Ast.NoMetaPos -> false in
+    modif or pos in
   let do_nothing r k e = k e in
   let rule_elem r k re =
     let res = k re in

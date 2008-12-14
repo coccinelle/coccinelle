@@ -112,7 +112,7 @@ let collect_ors fp lines =
 	  [] -> failwith "not possible"
 	| [x] -> (c,k@v) :: prev
 	| (tag,_)::_ ->
-	    let vs =
+	    (*let vs =
 	      Printf.sprintf "%s:(%s)" tag
 		(String.concat "|"
 		   (List.sort compare
@@ -120,8 +120,8 @@ let collect_ors fp lines =
 	    let attempt =
 	      Printf.sprintf "%s: %s %s" c
 		(String.concat " " (List.map (function (k,v) -> k^":"^v) k))
-		vs in
-	    if List.mem attempt fp
+		vs in*)
+	    if true (*List.mem attempt fp*)
 	    then
 	      let vs =
 		Printf.sprintf "\\\\\\\\\\(%s\\\\\\\\\\)"
