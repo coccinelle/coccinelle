@@ -16,6 +16,8 @@
 - improve parsing of typedef of function pointer. 
 - improve typing.
 - parsing and typing support for old style C function declaration.
+- consider position variables as modifications when optimizing the
+  translation into CTL of function definitions
 
 ** Internals: 
 
