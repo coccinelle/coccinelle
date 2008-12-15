@@ -412,16 +412,34 @@ let contains_modif =
   let bind x y = x or y in
   let option_default = false in
   let mcode r (_,_,kind,metapos) =
-    let modif =
-      match kind with
-	Ast.MINUS(_,_) -> true
-      | Ast.PLUS -> failwith "not possible"
-      | Ast.CONTEXT(_,info) -> not (info = Ast.NOTHING) in
-    let pos =
-      match metapos with
-	Ast.MetaPos(_,_,_,_,_) -> true
-      |	Ast.NoMetaPos -> false in
-    modif or pos in
+    match kind with
+      Ast.MINUS(_,_) -> true
+    | Ast.PLUS -> failwith "not possible"
+    | Ast.CONTEXT(_,info) -> not (info = Ast.NOTHING) in
+  let do_nothing r k e = k e in
+  let rule_elem r k re =
+    let res = k re in
+    match Ast.unwrap re with
+      Ast.FunHeader(bef,_,fninfo,name,lp,params,rp) ->
+	bind (mcode r ((),(),bef,Ast.NoMetaPos)) res
+    | Ast.Decl(bef,_,decl) -> bind (mcode r ((),(),bef,Ast.NoMetaPos)) res
+    | _ -> res in
+  let recursor =
+    V.combiner bind option_default
+      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      mcode
+      do_nothing do_nothing do_nothing do_nothing
+      do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
+      do_nothing rule_elem do_nothing do_nothing do_nothing do_nothing in
+  recursor.V.combiner_rule_elem
+
+let contains_pos =
+  let bind x y = x or y in
+  let option_default = false in
+  let mcode r (_,_,kind,metapos) =
+    match metapos with
+      Ast.MetaPos(_,_,_,_,_) -> true
+    | Ast.NoMetaPos -> false in
   let do_nothing r k e = k e in
   let rule_elem r k re =
     let res = k re in
@@ -2012,7 +2030,8 @@ and statement stmt after quantified minus_quantified
 	     (Common.union_set mb3fvs minus_quantified)) in
       let new_mquantified4 = Common.union_set mb4fvs new_mquantified3 in
       let fn_nest =
-	match (Ast.undots decls,Ast.undots body,contains_modif rbrace) with
+	match (Ast.undots decls,Ast.undots body,
+	       contains_modif rbrace or contains_pos rbrace) with
 	  ([],[body],false) ->
 	    (match Ast.unwrap body with
 	      Ast.Nest(stmt_dots,[],multi,_,_) ->
