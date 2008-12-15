@@ -706,6 +706,7 @@ in a concise way.
 
   \RULE{\rt{unary\_op}}
   \CASE{++ \OR -- \OR \& \OR * \OR + \OR - \OR !}
+
 \end{grammar}
 
 \section{Identifiers}
@@ -714,66 +715,7 @@ in a concise way.
 \mita{id} & ::= & \msf{id} \(\mid\) \mth{\msf{metaid}^{\ssf{Id}}}
 \end{tabular}}
 
-\section{Examples}
-%\label{sec:examples}
-
-\begin{tabular}{ccc}
-Before & Semantic patch & After \\
-\begin{minipage}[t]{.3\linewidth}
-\begin{lstlisting}
-#DEFINE TEST "Foo"
-
-printf("Foo");
-
-int main(int i) {
-//Test
-  int k = foo();
-
-  if(1) {
-    foo();
-  } else {
-    foo();
-  }
-
-  foo();
-}
-\end{lstlisting}
-\end{minipage}
-&
-\begin{minipage}[t]{.3\linewidth}
-\begin{lstlisting}[language=Cocci]
-@@
-
-@@
-
-
-@-- foo()
-@++ bar()
-\end{lstlisting}
-\end{minipage}
-&
-\begin{minipage}[t]{.3\linewidth}
-\begin{lstlisting}
-#DEFINE TEST "Foo"
-
-printf("Foo");
-
-int main(int i) {
-//Test
-  int k = bar();
-
-  if(1) {
-    bar();
-  } else {
-    bar();
-  }
-
-  bar();
-}
-\end{lstlisting}
-\end{minipage}\\
-\end{tabular}
-
+\include{examples}
 \end{document}
 
 %%% Local Variables:

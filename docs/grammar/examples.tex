@@ -1,0 +1,125 @@
+
+\section{Examples}
+%\label{sec:examples}
+
+\subsection{Function renaming}
+
+\begin{tabular}{ccc}
+Before & Semantic patch & After \\
+\begin{minipage}[t]{.3\linewidth}
+\begin{lstlisting}
+#DEFINE TEST "Foo"
+
+printf("Foo");
+
+int main(int i) {
+//Test
+  int k = foo();
+
+  if(1) {
+    foo();
+  } else {
+    foo();
+  }
+
+  foo();
+}
+\end{lstlisting}
+\end{minipage}
+&
+\begin{minipage}[t]{.3\linewidth}
+\begin{lstlisting}[language=Cocci]
+@@
+
+@@
+
+
+@-- foo()
+@++ bar()
+\end{lstlisting}
+\end{minipage}
+&
+\begin{minipage}[t]{.3\linewidth}
+\begin{lstlisting}
+#DEFINE TEST "Foo"
+
+printf("Foo");
+
+int main(int i) {
+//Test
+  int k = bar();
+
+  if(1) {
+    bar();
+  } else {
+    bar();
+  }
+
+  bar();
+}
+\end{lstlisting}
+\end{minipage}\\
+\end{tabular}
+
+\subsection{Look for \texttt{NULL} dereference}
+
+\begin{tabular}{cc}
+Original & Semantic match \\
+\begin{minipage}[t]{.5\linewidth}
+\begin{lstlisting}
+foo = kmalloc(1024);
+if (!foo) {
+  printk ("Error %s", foo->here);
+  return;
+}
+foo->ok = 1;
+return;
+\end{lstlisting}
+\end{minipage}
+&
+\begin{minipage}[t]{.5\linewidth}
+\begin{lstlisting}[language=Cocci]
+@@
+expression E, E1;
+identifier f;
+statement S1,S2,S3;
+@@
+
+@-* if (E == NULL)
+{
+  ... when != if (E == NULL) S1 else S2
+      when != E = E1
+@-* E->f
+  ... when any
+  return ...;
+}
+else S3
+\end{lstlisting}
+\end{minipage}\\
+\end{tabular}
+
+% \begin{tabular}{ccc}
+% Before & Semantic patch & After \\
+% \begin{minipage}[t]{.3\linewidth}
+% \begin{lstlisting}
+% \end{lstlisting}
+% \end{minipage}
+% &
+% \begin{minipage}[t]{.3\linewidth}
+% \begin{lstlisting}[language=Cocci]
+% \end{lstlisting}
+% \end{minipage}
+% &
+% \begin{minipage}[t]{.3\linewidth}
+% \begin{lstlisting}
+% \end{lstlisting}
+% \end{minipage}\\
+% \end{tabular}
+
+%%% Local Variables:
+%%% mode: LaTeX
+%%% TeX-master: "cocci_syntax"
+%%% coding: latin-9
+%%% TeX-PDF-mode: t
+%%% ispell-local-dictionary: "english"
+%%% End:
