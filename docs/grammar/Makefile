@@ -1,4 +1,7 @@
 TEX=cocci_syntax.tex
+WEB=/var/www/localhost/htdocs/coccinelle/
+
+PDF=$(TEX:.tex=.pdf)
 HTML=$(TEX:.tex=.html)
 
 
@@ -15,6 +18,16 @@ clean:
 check: $(HTML)
 	checklink $<
 
+world: all html
+
+universe: world install
+
+install:
+	cp $(HTML) $(WEB)
+	cp $(PDF) $(WEB)
+	chown apache:apache -R $(WEB)
+	chmod a-w -R $(WEB)
+
 ############################################
 ############################################
 
@@ -25,7 +38,9 @@ check: $(HTML)
 # For Ubuntu family: /usr/share/hevea
 	@if [ -f /usr/lib64/hevea/xxdate.exe ]; then \
 	hevea -exec /usr/lib64/hevea/xxdate.exe  $< ; \
+	hevea -exec /usr/lib64/hevea/xxdate.exe  $< ; \
 	elif [ -f /usr/share/hevea/xxdate.exe ]; then \
+	hevea -exec /usr/share/hevea/xxdate.exe $< ; \
 	hevea -exec /usr/share/hevea/xxdate.exe $< ; \
 	else \
 	echo -e "\n\n *** Hevea: Unable to find xxdate.exe ***\n\n"; \
