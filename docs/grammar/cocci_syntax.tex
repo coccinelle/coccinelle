@@ -19,8 +19,11 @@ keywordstyle=\color{Bittersweet}\bfseries,
 sensitive=false,
 morecomment=[s][\color{OliveGreen}]{@}{@@},
 morecomment=[s][\color{OliveGreen}]{@@}{@@},
+\ifhevea
+\else
 moredelim=[il][\color{blue}]{@+},
 moredelim=[il][\color{BrickRed}]{@-}
+\fi
 }
 
 \newif\iflanguagestyle
@@ -67,10 +70,12 @@ moredelim=[il][\color{BrickRed}]{@-}
 The grammar uses some rules where the left-hand side is in all capital
 letters.  These are macros, which take one or more grammar rule
 right-hand-sides as arguments.  The grammar also uses some unspecified
-nonterminals, such as {\sf id}, {\sf const}, etc.  These refer to the sets
-suggested by the name, {\em i.e.}, {\sf id} refers to the set of possible
-C-language identifiers, while {\sf const} refers to the set of possible
-C-language constants.
+nonterminals, such as {\sf id}, {\sf const}, etc.  These refer to the
+sets suggested by the name, {\em i.e.}, {\sf id} refers to the set of
+possible C-language identifiers, while {\sf const} refers to the set
+of possible C-language constants. \ifhevea A PDF version of this
+documention is available at
+\url{http://localhost:8080/coccinelle/cocci_syntax.pdf}.  \fi
 
 \section{Program}
 
