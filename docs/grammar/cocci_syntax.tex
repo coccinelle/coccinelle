@@ -13,20 +13,27 @@
 % You must prefix the +/- lines of
 % cocci files with @+/@- respectively.
 % This will enable the automatic coloration.
+\ifhevea
 \lstdefinelanguage{Cocci}{
 morekeywords={when,strict,any,forall,exists},
 keywordstyle=\color{Bittersweet}\bfseries,
 sensitive=false,
 morecomment=[s][\color{OliveGreen}]{@}{@@},
 morecomment=[s][\color{OliveGreen}]{@@}{@@},
-\ifhevea
 moredelim=[l][\color{blue}]{@+},
 moredelim=[l][\color{BrickRed}]{@-}
+}
 \else
+\lstdefinelanguage{Cocci}{
+morekeywords={when,strict,any,forall,exists},
+keywordstyle=\color{Bittersweet}\bfseries,
+sensitive=false,
+morecomment=[s][\color{OliveGreen}]{@}{@@},
+morecomment=[s][\color{OliveGreen}]{@@}{@@},
 moredelim=[il][\color{blue}]{@+},
 moredelim=[il][\color{BrickRed}]{@-}
-\fi
 }
+\fi
 
 \newif\iflanguagestyle
 \languagestylefalse
