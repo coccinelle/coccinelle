@@ -743,9 +743,34 @@ in a concise way.
   \CASE{\NT{ctype} \OR \mth{\T{metaid}^{\ssf{Type}}}}
 \end{grammar}
 
-% \noindent{\footnotesize\begin{tabular}{r@{\,\,\,}c@{\,\,\,}l}
-% \mita{id} & ::= & \msf{id} \(\mid\) \mth{\msf{metaid}^{\ssf{Id}}}
-% \end{tabular}}
+\section{To be fixed}
+
+\subsection{From Toplevel Transformation}
+
+\begin{grammar}
+  \RULE{initialize\_list}\CASE{}
+  \RULE{TMetaStmList}\CASE{}
+  \RULE{fun\_start}\CASE{Also in statements}
+  \RULE{decl\_stmt}\CASE{}
+  \RULE{exp}\CASE{}
+  \RULE{when\_start}\CASE{}
+  \RULE{rule\_elem\_stmt}\CASE{}
+\end{grammar}
+
+\subsection{From Types}
+
+\begin{grammar}
+  \RULE{ident}\CASE{}
+  \RULE{pure\_ident}\CASE{}
+  \RULE{eexpr}\CASE{}
+\end{grammar}
+
+\subsection{...}
+
+\begin{grammar}
+  \RULE{decl\_var}\CASE{From statements::decl\_stmt}
+  \RULE{includes}\CASE{From statements}
+\end{grammar}
 
 \include{examples}
 \end{document}
