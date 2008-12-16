@@ -134,18 +134,15 @@ checked by a subsequent analysis.
 \begin{grammar}
   \RULE{\rt{metadecl}}
   \CASE{fresh identifier \NT{ids} ;}
-  \CASE{parameter \NT{ids} ;}
-  \CASE{parameter list \NT{ids} ;}
+  \CASE{parameter \opt{list} \NT{ids} ;}
   \CASE{expression list \NT{ids} ;}
   \CASE{type \NT{ids} ;}
-  \CASE{statement \NT{ids} ;}
-  \CASE{statement list \NT{ids} ;}
+  \CASE{statement \opt{list} \NT{ids} ;}
   \CASE{typedef \NT{ids} ;}
   \CASE{declarer name \NT{ids} ;}
   \CASE{iterator name \NT{ids} ;}
   \CASE{identifier \NT{pmid\_with\_not\_eq\_list} ;}
-  \CASE{function \NT{pmid\_with\_not\_eq\_list} ;}
-  \CASE{local function \NT{pmid\_with\_not\_eq\_list} ;}
+  \CASE{\opt{local} function \NT{pmid\_with\_not\_eq\_list} ;}
   \CASE{declarer \NT{pmid\_with\_not\_eq\_list} ;}
   \CASE{iterator \NT{pmid\_with\_not\_eq\_list} ;}
   \CASE{error \NT{pmid\_with\_not\_eq\_list} ; }
@@ -225,25 +222,37 @@ unannotated code.  For example, for parsing purposes, the transformation
 is split into the two variants shown below and each is parsed
 separately.
 
+\begin{center}
+\begin{tabular}{c}
+\begin{lstlisting}[language=Cocci]
+  proc_info_func(...) {
+    <...
+@--    hostno
+@++    hostptr->host_no
+    ...>
+ }
+\end{lstlisting}\\
+\end{tabular}
+\end{center}
 
 {%\sizecodebis
 \begin{center}
-\begin{tabular}{p{3cm}p{5cm}p{3cm}}
-\begin{verbatim}
+\begin{tabular}{p{5cm}p{3cm}p{5cm}}
+\begin{lstlisting}[language=Cocci]
   proc_info_func(...) {
     <...
-    hostno
+@--    hostno
     ...>
  }
-\end{verbatim}
+\end{lstlisting}
 &&
-\begin{verbatim}
+\begin{lstlisting}[language=Cocci]
   proc_info_func(...) {
     <...
-    hostptr->host_no
+@++    hostptr->host_no
     ...>
  }
-\end{verbatim}
+\end{lstlisting}
 \end{tabular}
 \end{center}
 }
@@ -693,27 +702,39 @@ in a concise way.
   \CASE{\mth{\T{metaid}^{\ssf{ExpList}}}}
 
   \RULE{\rt{exp\_whencode}}
-  \CASE{WHEN != \NT{dot\_expr}}
+  \CASE{when != \NT{dot\_expr}}
 
   \RULE{\rt{assign\_op}}
   \CASE{= \OR -= \OR += \OR *= \OR /= \OR \%=}
-  & \OR & \KW{\&=} \OR \KW{|=} \OR \verb!^=! \OR \verb!<<=! \OR \verb!>>=! \\
+  \CASE{\&= \OR |= \OR \caret= \OR \lt\lt= \OR \gt\gt=}
 
   \RULE{\rt{bin\_op}}
   \CASE{* \OR / \OR \% \OR + \OR -}
-  & \OR & \verb!<<! \OR \verb!>>! \OR \verb+^+ \OR \KW{\&} \OR \KW{\ttmid}\\
-  \CASE{< \OR   > \OR <= \OR >= \OR == \OR != \OR \&\& \OR \ttmid\ttmid}
+  \CASE{\lt\lt \OR \gt\gt \OR \caret\xspace \OR \& \OR \ttmid}
+  \CASE{< \OR > \OR <= \OR >= \OR == \OR != \OR \&\& \OR \ttmid\ttmid}
 
   \RULE{\rt{unary\_op}}
   \CASE{++ \OR -- \OR \& \OR * \OR + \OR - \OR !}
 
 \end{grammar}
 
-\section{Identifiers}
+\section{Constant, Identifiers and Types for Transformations}
 
-\noindent{\footnotesize\begin{tabular}{r@{\,\,\,}c@{\,\,\,}l}
-\mita{id} & ::= & \msf{id} \(\mid\) \mth{\msf{metaid}^{\ssf{Id}}}
-\end{tabular}}
+\begin{grammar}
+  \RULE{const}
+%  \CASE{"\any{[^"]}"}
+  \CASE{[0-9]+}
+
+  \RULE{id}
+  \CASE{\T{id} \OR \mth{\T{metaid}^{\ssf{Id}}}}
+
+  \RULE{type}
+  \CASE{\NT{ctype} \OR \mth{\T{metaid}^{\ssf{Type}}}}
+\end{grammar}
+
+% \noindent{\footnotesize\begin{tabular}{r@{\,\,\,}c@{\,\,\,}l}
+% \mita{id} & ::= & \msf{id} \(\mid\) \mth{\msf{metaid}^{\ssf{Id}}}
+% \end{tabular}}
 
 \include{examples}
 \end{document}
