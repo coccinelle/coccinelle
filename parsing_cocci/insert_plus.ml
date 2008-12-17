@@ -710,7 +710,7 @@ let attachbefore (infop,p) = function
 	Ast.BEFORE(bef) ->
 	  let (bef,ti1) = insert p infop bef ti1 in
 	  neighbors := (Ast.BEFORE(bef),ti1,ti2)
-      |	Ast.AFTER(aft) -> 
+      |	Ast.AFTER(aft) ->
 	  let (bef,ti1) = init p infop in
 	  neighbors := (Ast.BEFOREAFTER(bef,aft),ti1,ti2)
       |	Ast.BEFOREAFTER(bef,aft) ->
@@ -732,7 +732,7 @@ let attachafter (infop,p) = function
 	Ast.BEFORE(bef) ->
 	  let (aft,ti2) = init p infop in
 	  neighbors := (Ast.BEFOREAFTER(bef,aft),ti1,ti2)
-      |	Ast.AFTER(aft) -> 
+      |	Ast.AFTER(aft) ->
 	  let (aft,ti2) = insert p infop aft ti2 in
 	  neighbors := (Ast.AFTER(aft),ti1,ti2)
       |	Ast.BEFOREAFTER(bef,aft) ->

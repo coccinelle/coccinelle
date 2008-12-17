@@ -200,14 +200,14 @@ let do_get_constants constants keywords env neg_pos =
     | Ast.OptExp(exp) -> option_default
     | Ast.Edots(_,_) | Ast.Ecircles(_,_) | Ast.Estars(_,_) -> option_default
     | _ -> k e in
-  
+
   let fullType r k ft =
     match Ast.unwrap ft with
       Ast.DisjType(decls) ->
 	disj_union_all (List.map r.V.combiner_fullType decls)
     | Ast.OptType(ty) -> option_default
     | _ -> k ft in
-  
+
   let baseType = function
       Ast.VoidType -> keywords "void "
     | Ast.CharType -> keywords "char "
@@ -245,7 +245,7 @@ let do_get_constants constants keywords env neg_pos =
     | Ast.MetaParamList(name,Some(lenname,_,_),_,_) ->
 	bind (minherited name) (bind (minherited lenname) (k p))
     | _ -> k p in
-  
+
   let rule_elem r k re =
     match Ast.unwrap re with
       Ast.MetaRuleElem(name,_,_) | Ast.MetaStmt(name,_,_,_)
@@ -285,7 +285,7 @@ let do_get_constants constants keywords env neg_pos =
     | Ast.DisjRuleElem(res) ->
 	disj_union_all (List.map r.V.combiner_rule_elem res)
     | _ -> k re in
-  
+
   let statement r k s =
     match Ast.unwrap s with
       Ast.Disj(stmt_dots) ->

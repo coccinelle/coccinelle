@@ -34,92 +34,92 @@ let inheritable_positions =
 let all_metadecls =
   (Hashtbl.create(100) : (string, Ast.metavar list) Hashtbl.t)
 
-let clear_meta: (unit -> unit) ref = 
-  ref (fun _ -> failwith "uninitialized add_meta") 
+let clear_meta: (unit -> unit) ref =
+  ref (fun _ -> failwith "uninitialized add_meta")
 
 let add_id_meta:
-    (Ast.meta_name -> iconstraints -> Ast0.pure -> unit) ref = 
-  ref (fun _ -> failwith "uninitialized add_meta") 
+    (Ast.meta_name -> iconstraints -> Ast0.pure -> unit) ref =
+  ref (fun _ -> failwith "uninitialized add_meta")
 
-let add_type_meta: (Ast.meta_name -> Ast0.pure -> unit) ref = 
-  ref (fun _ -> failwith "uninitialized add_meta") 
+let add_type_meta: (Ast.meta_name -> Ast0.pure -> unit) ref =
+  ref (fun _ -> failwith "uninitialized add_meta")
 
-let add_param_meta: (Ast.meta_name -> Ast0.pure -> unit) ref = 
-  ref (fun _ -> failwith "uninitialized add_meta") 
+let add_param_meta: (Ast.meta_name -> Ast0.pure -> unit) ref =
+  ref (fun _ -> failwith "uninitialized add_meta")
 
 let add_paramlist_meta:
-    (Ast.meta_name -> Ast.meta_name option -> Ast0.pure -> unit) ref = 
-  ref (fun _ -> failwith "uninitialized add_meta") 
+    (Ast.meta_name -> Ast.meta_name option -> Ast0.pure -> unit) ref =
+  ref (fun _ -> failwith "uninitialized add_meta")
 
 let add_const_meta:
     (Type_cocci.typeC list option -> Ast.meta_name -> econstraints ->
       Ast0.pure -> unit)
     ref =
-  ref (fun _ -> failwith "uninitialized add_meta") 
+  ref (fun _ -> failwith "uninitialized add_meta")
 
 let add_err_meta:
     (Ast.meta_name -> econstraints -> Ast0.pure -> unit) ref =
-  ref (fun _ -> failwith "uninitialized add_meta") 
+  ref (fun _ -> failwith "uninitialized add_meta")
 
 let add_exp_meta:
     (Type_cocci.typeC list option -> Ast.meta_name -> econstraints ->
       Ast0.pure -> unit)
     ref =
-  ref (fun _ -> failwith "uninitialized add_meta") 
+  ref (fun _ -> failwith "uninitialized add_meta")
 
 let add_idexp_meta:
     (Type_cocci.typeC list option -> Ast.meta_name -> econstraints ->
       Ast0.pure -> unit)
     ref =
-  ref (fun _ -> failwith "uninitialized add_meta") 
+  ref (fun _ -> failwith "uninitialized add_meta")
 
 let add_local_idexp_meta:
     (Type_cocci.typeC list option -> Ast.meta_name -> econstraints ->
       Ast0.pure -> unit)
     ref =
-  ref (fun _ -> failwith "uninitialized add_meta") 
+  ref (fun _ -> failwith "uninitialized add_meta")
 
 let add_explist_meta:
-    (Ast.meta_name -> Ast.meta_name option -> Ast0.pure -> unit) ref = 
-  ref (fun _ -> failwith "uninitialized add_meta") 
+    (Ast.meta_name -> Ast.meta_name option -> Ast0.pure -> unit) ref =
+  ref (fun _ -> failwith "uninitialized add_meta")
 
-let add_stm_meta: (Ast.meta_name -> Ast0.pure -> unit) ref = 
-  ref (fun _ -> failwith "uninitialized add_meta") 
+let add_stm_meta: (Ast.meta_name -> Ast0.pure -> unit) ref =
+  ref (fun _ -> failwith "uninitialized add_meta")
 
-let add_stmlist_meta: (Ast.meta_name -> Ast0.pure -> unit) ref = 
-  ref (fun _ -> failwith "uninitialized add_meta") 
+let add_stmlist_meta: (Ast.meta_name -> Ast0.pure -> unit) ref =
+  ref (fun _ -> failwith "uninitialized add_meta")
 
 let add_func_meta:
-    (Ast.meta_name -> iconstraints -> Ast0.pure -> unit) ref = 
-  ref (fun _ -> failwith "uninitialized add_meta") 
+    (Ast.meta_name -> iconstraints -> Ast0.pure -> unit) ref =
+  ref (fun _ -> failwith "uninitialized add_meta")
 
 let add_local_func_meta:
-    (Ast.meta_name -> iconstraints -> Ast0.pure -> unit) ref = 
-  ref (fun _ -> failwith "uninitialized add_meta") 
+    (Ast.meta_name -> iconstraints -> Ast0.pure -> unit) ref =
+  ref (fun _ -> failwith "uninitialized add_meta")
 
 let add_declarer_meta:
     (Ast.meta_name -> iconstraints -> Ast0.pure -> unit) ref =
-  ref (fun _ -> failwith "uninitialized add_decl") 
+  ref (fun _ -> failwith "uninitialized add_decl")
 
 let add_iterator_meta:
     (Ast.meta_name -> iconstraints -> Ast0.pure -> unit) ref =
-  ref (fun _ -> failwith "uninitialized add_iter") 
+  ref (fun _ -> failwith "uninitialized add_iter")
 
 let add_pos_meta:
-    (Ast.meta_name -> pconstraints -> Ast.meta_collect -> unit) ref = 
-  ref (fun _ -> failwith "uninitialized add_meta") 
+    (Ast.meta_name -> pconstraints -> Ast.meta_collect -> unit) ref =
+  ref (fun _ -> failwith "uninitialized add_meta")
 
-let add_type_name: (string -> unit) ref = 
-  ref (fun _ -> failwith "uninitialized add_type") 
+let add_type_name: (string -> unit) ref =
+  ref (fun _ -> failwith "uninitialized add_type")
 
-let add_declarer_name: (string -> unit) ref = 
-  ref (fun _ -> failwith "uninitialized add_decl") 
+let add_declarer_name: (string -> unit) ref =
+  ref (fun _ -> failwith "uninitialized add_decl")
 
-let add_iterator_name: (string -> unit) ref = 
-  ref (fun _ -> failwith "uninitialized add_iter") 
+let add_iterator_name: (string -> unit) ref =
+  ref (fun _ -> failwith "uninitialized add_iter")
 
 let init_rule: (unit -> unit) ref =
-  ref (fun _ -> failwith "uninitialized install_bindings") 
+  ref (fun _ -> failwith "uninitialized install_bindings")
 
 let install_bindings: (string -> unit) ref =
-  ref (fun _ -> failwith "uninitialized install_bindings") 
+  ref (fun _ -> failwith "uninitialized install_bindings")

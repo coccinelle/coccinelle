@@ -64,7 +64,7 @@ let mcodekind brackets fn x info = function
 	if !quiet
 	then ("","")
 	else
-	  let n = 
+	  let n =
 	    match brackets with Some x -> "^"^(string_of_int x) | None -> "" in
 	  ("§","½"^n) in
       let (plus_streams,_,_) = !plus_streams in
@@ -315,7 +315,7 @@ and declaration d =
 	    (function _ -> print_string "\n|"; force_newline())
 	    declaration decls;
 	  print_string "\n)"
-      | Ast0.Ddots(dots,Some whencode) -> 
+      | Ast0.Ddots(dots,Some whencode) ->
 	  mcode print_string dots; print_string "   when != ";
 	  declaration whencode
       | Ast0.Ddots(dots,None) -> mcode print_string dots

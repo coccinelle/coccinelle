@@ -377,7 +377,7 @@ let match_maker checks_needed context_required whencode_allowed =
 	  Ast0.MetaStmt(name,pure) | Ast0.MetaStmtList(name,pure) -> pure
 	| _ -> Ast0.Impure) in
 
-    V0.combiner bind option_default 
+    V0.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       mcode
       donothing donothing donothing donothing donothing donothing
@@ -678,7 +678,7 @@ let match_maker checks_needed context_required whencode_allowed =
 	  | (_,Ast0.UniqueExp(expb)) -> match_expr pattern expb
 	  | _ -> return false
 	else return_false (ContextRequired (Ast0.ExprTag expr))
-	    
+
 (* the special case for function types prevents the eg T X; -> T X = E; iso
    from applying, which doesn't seem very relevant, but it also avoids a
    mysterious bug that is obtained with eg int attach(...); *)
@@ -757,7 +757,7 @@ let match_maker checks_needed context_required whencode_allowed =
 	  | (_,Ast0.UniqueType(tyb)) -> match_typeC pattern tyb
 	  | _ -> return false
 	else return_false (ContextRequired (Ast0.TypeCTag t))
-	    
+
   and match_decl pattern d =
     if not(checks_needed) or not(context_required) or is_context d
     then
@@ -806,7 +806,7 @@ let match_maker checks_needed context_required whencode_allowed =
 	       return false))
       | (Ast0.Ddots(_,Some _),_) ->
 	  failwith "whencode not allowed in a pattern1"
-	    
+
       | (Ast0.OptDecl(decla),Ast0.OptDecl(declb))
       | (Ast0.UniqueDecl(decla),Ast0.UniqueDecl(declb)) ->
 	  match_decl decla declb
@@ -815,7 +815,7 @@ let match_maker checks_needed context_required whencode_allowed =
 	  match_decl pattern declb
       | _ -> return false
     else return_false (ContextRequired (Ast0.DeclTag d))
-	
+
   and match_init pattern i =
     if not(checks_needed) or not(context_required) or is_context i
     then
@@ -867,7 +867,7 @@ let match_maker checks_needed context_required whencode_allowed =
       | (_,Ast0.UniqueIni(ib)) -> match_init pattern ib
       | _ -> return false
     else return_false (ContextRequired (Ast0.InitTag i))
-	
+
   and match_param pattern p =
     match Ast0.unwrap pattern with
       Ast0.MetaParam(name,pure) ->
@@ -893,7 +893,7 @@ let match_maker checks_needed context_required whencode_allowed =
 	  | (_,Ast0.UniqueParam(paramb)) -> match_param pattern paramb
 	  | _ -> return false
 	else return_false (ContextRequired (Ast0.ParamTag p))
-	    
+
   and match_statement pattern s =
     match Ast0.unwrap pattern with
       Ast0.MetaStmt(name,pure) ->
@@ -1071,7 +1071,7 @@ let match_maker checks_needed context_required whencode_allowed =
 	  | (_,Ast0.UniqueStm(reb)) -> match_statement pattern reb
 	  |	_ -> return false
 	else return_false (ContextRequired (Ast0.StmtTag s))
-	    
+
   (* first should provide a subset of the information in the second *)
   and match_fninfo patterninfo cinfo =
     let patterninfo = List.sort compare patterninfo in
@@ -1098,7 +1098,7 @@ let match_maker checks_needed context_required whencode_allowed =
 	  | _ -> failwith "not possible")
       |	_ -> return false in
     loop (patterninfo,cinfo)
-      
+
   and match_case_line pattern c =
     if not(checks_needed) or not(context_required) or is_context c
     then
@@ -1117,36 +1117,36 @@ let match_maker checks_needed context_required whencode_allowed =
       |	(_,Ast0.OptCase(cb)) -> match_case_line pattern cb
       |	_ -> return false
     else return_false (ContextRequired (Ast0.CaseLineTag c)) in
-  
+
   let match_statement_dots x y =
     match_dots match_statement is_slist_matcher do_slist_match x y in
-  
+
   (match_expr, match_decl, match_statement, match_typeC,
    match_statement_dots)
-    
+
 let match_expr dochecks context_required whencode_allowed =
   let (fn,_,_,_,_) = match_maker dochecks context_required whencode_allowed in
   fn
-    
+
 let match_decl dochecks context_required whencode_allowed =
   let (_,fn,_,_,_) = match_maker dochecks context_required whencode_allowed in
   fn
-    
+
 let match_statement dochecks context_required whencode_allowed =
   let (_,_,fn,_,_) = match_maker dochecks context_required whencode_allowed in
   fn
-    
+
 let match_typeC dochecks context_required whencode_allowed =
   let (_,_,_,fn,_) = match_maker dochecks context_required whencode_allowed in
   fn
-    
+
 let match_statement_dots dochecks context_required whencode_allowed =
   let (_,_,_,_,fn) = match_maker dochecks context_required whencode_allowed in
   fn
-    
+
 (* --------------------------------------------------------------------- *)
 (* make an entire tree MINUS *)
-    
+
 let make_minus =
   let mcode (term,arity,info,mcodekind,pos) =
     let new_mcodekind =
@@ -1158,7 +1158,7 @@ let make_minus =
      | Ast0.MINUS(mc) -> mcodekind (* in the part copied from the src term *)
      | _ -> failwith "make_minus mcode: unexpected mcodekind" in
     (term,arity,info,new_mcodekind,pos) in
-  
+
   let update_mc mcodekind e =
     match !mcodekind with
       Ast0.CONTEXT(mc) ->
@@ -1169,11 +1169,11 @@ let make_minus =
     | Ast0.MINUS(_mc) -> () (* in the part copied from the src term *)
     | Ast0.PLUS -> failwith "make_minus donothing: unexpected plus mcodekind"
     | _ -> failwith "make_minus donothing: unexpected mcodekind" in
-  
+
   let donothing r k e =
     let mcodekind = Ast0.get_mcodekind_ref e in
     let e = k e in update_mc mcodekind e; e in
-  
+
   (* special case for whencode, because it isn't processed by contextneg,
      since it doesn't appear in the + code *)
   (* cases for dots and nests *)
@@ -1196,7 +1196,7 @@ let make_minus =
 			 r.V0.rebuilder_expression_dots expr_dots,
 			 mcode ender,whencode,multi))
     | _ -> donothing r k e in
-  
+
   let declaration r k e =
     let mcodekind = Ast0.get_mcodekind_ref e in
     match Ast0.unwrap e with
@@ -1204,7 +1204,7 @@ let make_minus =
 	(*don't recurse because whencode hasn't been processed by context_neg*)
 	update_mc mcodekind e; Ast0.rewrap e (Ast0.Ddots(mcode d,whencode))
     | _ -> donothing r k e in
-  
+
   let statement r k e =
     let mcodekind = Ast0.get_mcodekind_ref e in
     match Ast0.unwrap e with
@@ -1221,7 +1221,7 @@ let make_minus =
 	  (Ast0.Nest(mcode starter,r.V0.rebuilder_statement_dots stmt_dots,
 		     mcode ender,whencode,multi))
     | _ -> donothing r k e in
-  
+
   let initialiser r k e =
     let mcodekind = Ast0.get_mcodekind_ref e in
     match Ast0.unwrap e with
@@ -1229,7 +1229,7 @@ let make_minus =
 	(*don't recurse because whencode hasn't been processed by context_neg*)
 	update_mc mcodekind e; Ast0.rewrap e (Ast0.Idots(mcode d,whencode))
     | _ -> donothing r k e in
-  
+
   let dots r k e =
     let info = Ast0.get_info e in
     let mcodekind = Ast0.get_mcodekind_ref e in
@@ -1255,17 +1255,17 @@ let make_minus =
 		 "%d: make_minus donothingxxx: unexpected mcodekind: %s"
 		 info.Ast0.line_start (Dumper.dump e)))
     | _ -> donothing r k e in
-  
+
   V0.rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode
     dots dots dots dots dots dots
     donothing expression donothing initialiser donothing declaration
     statement donothing donothing
-    
+
 (* --------------------------------------------------------------------- *)
 (* rebuild mcode cells in an instantiated alt *)
-    
+
 (* mcodes will be side effected later with plus code, so we have to copy
    them on instantiating an isomorphism.  One could wonder whether it would
    be better not to use side-effects, but they are convenient for insert_plus
@@ -1281,14 +1281,14 @@ let rebuild_mcode start_line =
 	(* this function is used elsewhere where we need to rebuild the
 	   indices, and so we allow PLUS code as well *)
         Ast0.PLUS in
-  
+
   let mcode (term,arity,info,mcodekind,pos) =
     let info =
       match start_line with
 	Some x -> {info with Ast0.line_start = x; Ast0.line_end = x}
       |	None -> info in
     (term,arity,info,copy_mcodekind mcodekind,pos) in
-  
+
   let copy_one x =
     let old_info = Ast0.get_info x in
     let info =
@@ -1297,9 +1297,9 @@ let rebuild_mcode start_line =
       |	None -> old_info in
     {x with Ast0.info = info; Ast0.index = ref(Ast0.get_index x);
       Ast0.mcodekind = ref (copy_mcodekind (Ast0.get_mcodekind x))} in
-  
+
   let donothing r k e = copy_one (k e) in
-  
+
   (* case for control operators (if, etc) *)
   let statement r k e =
     let s = k e in
@@ -1334,20 +1334,20 @@ let rebuild_mcode start_line =
 	  Ast0.AddingBetweenDots(r.V0.rebuilder_statement s)
       | Ast0.DroppingBetweenDots s ->
 	  Ast0.DroppingBetweenDots(r.V0.rebuilder_statement s)) in
-  
+
   V0.rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode
     donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing
     donothing statement donothing donothing
-    
+
 (* --------------------------------------------------------------------- *)
 (* The problem of whencode.  If an isomorphism contains dots in multiple
    rules, then the code that is matched cannot contain whencode, because we
    won't know which dots it goes with. Should worry about nests, but they
    aren't allowed in isomorphisms for the moment. *)
-    
+
 let count_edots =
   let mcode x = 0 in
   let option_default = 0 in
@@ -1357,14 +1357,14 @@ let count_edots =
     match Ast0.unwrap e with
       Ast0.Edots(_,_) | Ast0.Ecircles(_,_) | Ast0.Estars(_,_) -> 1
     | _ -> 0 in
-  
+
   V0.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode
     donothing donothing donothing donothing donothing donothing
     donothing exprfn donothing donothing donothing donothing donothing
     donothing donothing
-    
+
 let count_idots =
   let mcode x = 0 in
   let option_default = 0 in
@@ -1372,14 +1372,14 @@ let count_idots =
   let donothing r k e = k e in
   let initfn r k e =
     match Ast0.unwrap e with Ast0.Idots(_,_) -> 1 | _ -> 0 in
-  
+
   V0.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode
     donothing donothing donothing donothing donothing donothing
     donothing donothing donothing initfn donothing donothing donothing
     donothing donothing
-    
+
 let count_dots =
   let mcode x = 0 in
   let option_default = 0 in
@@ -1389,16 +1389,16 @@ let count_dots =
     match Ast0.unwrap e with
       Ast0.Dots(_,_) | Ast0.Circles(_,_) | Ast0.Stars(_,_) -> 1
     | _ -> 0 in
-  
+
   V0.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode
     donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing stmtfn
     donothing donothing
-    
+
 (* --------------------------------------------------------------------- *)
-    
+
 let lookup name bindings mv_bindings =
   try Common.Left (List.assoc (term name) bindings)
   with
@@ -2229,17 +2229,17 @@ let transform (alts : isomorphism) t =
     let (extra_meta,stm) = transform_stmt alts (k e) in
     extra_meta_decls := extra_meta @ !extra_meta_decls;
     stm in
-  
+
   let typefn r k e =
     let (extra_meta,ty) = transform_type alts (k e) in
     extra_meta_decls := extra_meta @ !extra_meta_decls;
     ty in
-  
+
   let topfn r k e =
     let (extra_meta,ty) = transform_top alts (k e) in
     extra_meta_decls := extra_meta @ !extra_meta_decls;
     ty in
-  
+
   let res =
     V0.rebuilder
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode

@@ -81,7 +81,7 @@ let modif_after x =
       (match !mc with
 	(Ast.AFTER _,_,_) -> true
       |	(Ast.BEFOREAFTER _,_,_) -> true
-      |	_ -> false)    
+      |	_ -> false)
 
 (* Identifier *)
 let rec left_ident i =
@@ -528,7 +528,7 @@ let rec statement dots_before dots_after s =
   | Ast0.Dots(d,whn) | Ast0.Circles(d,whn) | Ast0.Stars(d,whn) -> s
   | Ast0.Include(inc,string) -> s (* doesn't affect the need for braces *)
   | Ast0.Define(def,id,params,body) -> s (* same as include *)
-  | Ast0.OptStm(re) -> 
+  | Ast0.OptStm(re) ->
       Ast0.rewrap s
 	(Ast0.OptStm(statement dots_before dots_after re))
   | Ast0.UniqueStm(re) ->
@@ -543,7 +543,7 @@ and case_line c =
     | Ast0.Case(case,exp,colon,code) ->
 	Ast0.Case(case,exp,colon,statement_dots false false code)
     | Ast0.OptCase(case) -> Ast0.OptCase(case_line c))
-  
+
 and do_statement_dots dots_before dots_after = function
     [] -> []
   | [x] -> [statement dots_before dots_after x]
@@ -555,7 +555,7 @@ and do_statement_dots dots_before dots_after = function
   | x::rest ->
       (statement dots_before false x)::
       do_statement_dots false dots_after rest
-	
+
 and statement_dots dots_before dots_after d =
   Ast0.rewrap d
     (match Ast0.unwrap d with

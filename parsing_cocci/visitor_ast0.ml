@@ -35,7 +35,7 @@ type 'a combiner =
 type ('mc,'a) cmcode = 'mc Ast0.mcode -> 'a
 type ('cd,'a) ccode = 'a combiner -> ('cd -> 'a) -> 'cd -> 'a
 
-let combiner bind option_default 
+let combiner bind option_default
     meta_mcode string_mcode const_mcode assign_mcode fix_mcode unary_mcode
     binary_mcode cv_mcode base_mcode sign_mcode struct_mcode storage_mcode
     inc_mcode
@@ -435,7 +435,7 @@ let combiner bind option_default
       | Ast0.DPcircles(c) -> string_mcode c
       | Ast0.OptDParam(dp) -> define_param dp
       | Ast0.UniqueDParam(dp) -> define_param dp in
-    k p 
+    k p
 
   and fninfo = function
       Ast0.FStorage(stg) -> storage_mcode stg
@@ -659,7 +659,7 @@ let rebuilder = fun
 	| Ast0.SizeOfExpr(szf,exp) ->
 	    Ast0.SizeOfExpr(string_mcode szf, expression exp)
 	| Ast0.SizeOfType(szf,lp,ty,rp) ->
-	    Ast0.SizeOfType(string_mcode szf,string_mcode lp, typeC ty, 
+	    Ast0.SizeOfType(string_mcode szf,string_mcode lp, typeC ty,
                             string_mcode rp)
 	| Ast0.TypeExp(ty) -> Ast0.TypeExp(typeC ty)
 	| Ast0.MetaErr(name,constraints,pure) ->

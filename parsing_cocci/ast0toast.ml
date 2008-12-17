@@ -193,10 +193,10 @@ let check_allminus =
     donothing donothing donothing donothing donothing donothing
     donothing expression typeC donothing donothing declaration
     statement donothing donothing
-    
+
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)
-    
+
 let get_option fn = function
     None -> None
   | Some x -> Some (fn x)
@@ -204,7 +204,7 @@ let get_option fn = function
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)
 (* Mcode *)
-	
+
 let convert_info info =
   { Ast.line = info.Ast0.line_start; Ast.column = info.Ast0.column;
     Ast.strbef = info.Ast0.strings_before;
@@ -212,7 +212,7 @@ let convert_info info =
 
 let convert_mcodekind = function
     Ast0.MINUS(replacements) ->
-      let (replacements,_) = !replacements in 
+      let (replacements,_) = !replacements in
       Ast.MINUS(Ast.NoPos,replacements)
   | Ast0.PLUS -> Ast.PLUS
   | Ast0.CONTEXT(befaft) ->
@@ -357,7 +357,7 @@ and expression e =
   if Ast0.get_test_exp e then Ast.set_test_exp e1 else e1
 
 and expression_dots ed = dots expression ed
-  
+
 (* --------------------------------------------------------------------- *)
 (* Types *)
 
@@ -393,7 +393,7 @@ and typeC t =
     | Ast0.DisjType(_,types,_,_) -> Ast.DisjType(List.map typeC types)
     | Ast0.OptType(ty) -> Ast.OptType(typeC ty)
     | Ast0.UniqueType(ty) -> Ast.UniqueType(typeC ty))
-    
+
 and base_typeC t =
   match Ast0.unwrap t with
     Ast0.BaseType(ty,sign) ->
@@ -421,12 +421,12 @@ and base_typeC t =
   | Ast0.MetaType(name,_) ->
       Ast.MetaType(mcode name,unitary,false)
   | _ -> failwith "ast0toast: unexpected type"
-	
+
 (* --------------------------------------------------------------------- *)
 (* Variable declaration *)
 (* Even if the Cocci program specifies a list of declarations, they are
    split out into multiple declarations of a single variable each. *)
-    
+
 and declaration d =
   rewrap d (do_isos (Ast0.get_iso d))
     (match Ast0.unwrap d with
@@ -482,7 +482,7 @@ and declaration_dots l = dots declaration l
 and strip_idots initlist =
   match Ast0.unwrap initlist with
     Ast0.DOTS(x) ->
-      let (whencode,init) = 
+      let (whencode,init) =
 	List.fold_left
 	  (function (prevwhen,previnit) ->
 	    function cur ->
@@ -520,7 +520,7 @@ and initialiser i =
 
 (* --------------------------------------------------------------------- *)
 (* Parameter *)
-    
+
 and parameterTypeDef p =
   rewrap p no_isos
     (match Ast0.unwrap p with
@@ -564,7 +564,7 @@ and statement s =
 		       (Ast.Decl(convert_mcodekind bef,
 				 check_allminus.V0.combiner_statement s,
 				 declaration decl)))
-      | Ast0.Seq(lbrace,body,rbrace) -> 
+      | Ast0.Seq(lbrace,body,rbrace) ->
 	  let lbrace = mcode lbrace in
 	  let (decls,body) = separate_decls seqible body in
 	  let rbrace = mcode rbrace in
@@ -850,7 +850,7 @@ and case_line c =
     | Ast0.OptCase(case) -> Ast.OptCase(case_line case))
 
 and statement_dots l = dots statement l
-    
+
 (* --------------------------------------------------------------------- *)
 
 (* what is possible is only what is at the top level in an iso *)
@@ -880,7 +880,7 @@ and anything = function
 (* --------------------------------------------------------------------- *)
 (* Function declaration *)
 (* top level isos are probably lost to tracking *)
-    
+
 and top_level t =
   rewrap t no_isos
     (match Ast0.unwrap t with

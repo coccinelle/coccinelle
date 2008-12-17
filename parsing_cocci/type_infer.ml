@@ -94,8 +94,8 @@ let rec propagate_types env =
 	  | Ast.Char(_) -> Some (T.BaseType(T.CharType,None))
 	  | Ast.Int(_) -> Some (T.BaseType(T.IntType,None))
 	  | Ast.Float(_) ->  Some (T.BaseType(T.FloatType,None)))
-        (* pad: note that in C can do either ptr(...) or ( *ptr)(...) 
-         * so I am not sure this code is enough. 
+        (* pad: note that in C can do either ptr(...) or ( *ptr)(...)
+         * so I am not sure this code is enough.
          *)
       | Ast0.FunCall(fn,lp,args,rp) ->
 	  (match Ast0.get_type fn with
@@ -262,7 +262,7 @@ let rec propagate_types env =
 	      | Ast0.MacroDecl(_,_,_,_,_) -> []
 	      | Ast0.TyDecl(ty,_) -> []
               (* pad: should handle typedef one day and add a binding *)
-	      | Ast0.Typedef(_,_,_,_) -> [] 
+	      | Ast0.Typedef(_,_,_,_) -> []
 	      | Ast0.DisjDecl(_,disjs,_,_) ->
 		  List.concat(List.map process_decl disjs)
 	      | Ast0.Ddots(_,_) -> [] (* not in a statement list anyway *)

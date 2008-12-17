@@ -38,7 +38,7 @@ let conjunct_bindings b1 b2 =
 let disjunct_bindings b1 b2 =
   match b1 with MAYBE -> b1 | NO -> b2
 
-let disjunct_all_bindings = List.fold_left disjunct_bindings NO 
+let disjunct_all_bindings = List.fold_left disjunct_bindings NO
 
 (* --------------------------------------------------------------------- *)
 
@@ -301,7 +301,7 @@ and unify_initialiser i1 i2 =
        conjunct_bindings (unify_expression exp1a exp1b)
 	 (conjunct_bindings (unify_expression exp2a exp2b)
 	    (unify_initialiser inia inib))
-	
+
   | (Ast.OptIni(_),_)
   | (Ast.UniqueIni(_),_)
   | (_,Ast.OptIni(_))

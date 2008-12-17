@@ -77,9 +77,9 @@ let mcode fn = function
       if !print_minus_flag
       then print_string (if !Flag.sgrep_mode2 then "*" else "-");
       fn x; print_pos pos;
-      if !print_plus_flag 
+      if !print_plus_flag
       then print_anything ">>> " plus_stream
-  | (x, _, Ast.CONTEXT(_,plus_streams), pos) -> 
+  | (x, _, Ast.CONTEXT(_,plus_streams), pos) ->
       if !print_plus_flag
       then
 	let fn x = fn x; print_pos pos in
@@ -89,7 +89,7 @@ let mcode fn = function
       let fn x = fn x; print_pos pos in
       print_string_befaft fn x info
 
-let print_mcodekind = function 
+let print_mcodekind = function
     Ast.MINUS(_,plus_stream) ->
       print_string "MINUS";
       print_anything ">>> " plus_stream
@@ -421,7 +421,7 @@ and declaration d =
       mcode print_string stg; print_string " "; fullType ty; typeC id;
       mcode print_string sem
   | Ast.DisjDecl(decls) -> print_disj_list declaration decls
-  | Ast.Ddots(dots,Some whencode) -> 
+  | Ast.Ddots(dots,Some whencode) ->
       mcode print_string dots; print_string "   when != "; declaration whencode
   | Ast.Ddots(dots,None) -> mcode print_string dots
   | Ast.MetaDecl(name,_,_) -> mcode print_meta name

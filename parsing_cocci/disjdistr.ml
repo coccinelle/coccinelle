@@ -203,10 +203,10 @@ and disjini i =
 	(function exp1 -> function exp2 -> function ini ->
 	  Ast.rewrap i (Ast.InitGccRange(lb,exp1,dots,exp2,rb,eq,ini)))
   | Ast.IComma(comma) -> [i]
-  | Ast.OptIni(ini) -> 
+  | Ast.OptIni(ini) ->
       let ini = disjini ini in
       List.map (function ini -> Ast.rewrap i (Ast.OptIni(ini))) ini
-  | Ast.UniqueIni(ini) -> 
+  | Ast.UniqueIni(ini) ->
       let ini = disjini ini in
       List.map (function ini -> Ast.rewrap i (Ast.UniqueIni(ini))) ini
 
@@ -252,7 +252,7 @@ let orify_rule_elem_decl = generic_orify_rule_elem disjdecl
 let orify_rule_elem_ini = generic_orify_rule_elem disjini
 
 let disj_rule_elem r k re =
-  match Ast.unwrap re with      
+  match Ast.unwrap re with
     Ast.FunHeader(bef,allminus,fninfo,name,lp,params,rp) ->
       generic_orify_rule_elem (disjdots disjparam) re params
 	(function params ->

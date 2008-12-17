@@ -38,7 +38,7 @@ module P = Parse_aux
 
 %token <Parse_aux.idinfo>     TMetaId TMetaFunc TMetaLocalFunc
 %token <Parse_aux.idinfo>     TMetaIterator TMetaDeclarer
-%token <Parse_aux.expinfo>    TMetaErr 
+%token <Parse_aux.expinfo>    TMetaErr
 %token <Parse_aux.info>       TMetaParam TMetaStm TMetaStmList TMetaType
 %token <Parse_aux.list_info>  TMetaParamList TMetaExpList
 %token <Parse_aux.typed_info> TMetaExp TMetaIdExp TMetaLocalIdExp TMetaConst
@@ -67,7 +67,7 @@ module P = Parse_aux
 %token <Data.clt> TAndLog
 %token <Data.clt> TOr
 %token <Data.clt> TXor
-%token <Data.clt> TAnd 
+%token <Data.clt> TAnd
 %token <Data.clt> TEqEq TNotEq
 %token <Ast_cocci.logicalOp * Data.clt> TLogOp /* TInf TSup TInfEq TSupEq */
 %token <Ast_cocci.arithOp * Data.clt>   TShOp  /* TShl TShr */
@@ -97,7 +97,7 @@ module P = Parse_aux
 %left TAndLog
 %left TOr
 %left TXor
-%left TAnd 
+%left TAnd
 %left TEqEq TNotEq
 %left TLogOp /* TInf TSup TInfEq TSupEq */
 %left TShOp /* TShl TShr */
@@ -287,7 +287,7 @@ metadec:
 | TType
     { (fun arity name pure check_meta ->
       let tok = check_meta(Ast.MetaTypeDecl(arity,name)) in
-      !Data.add_type_meta name pure; tok) } 
+      !Data.add_type_meta name pure; tok) }
 | TStatement
     { (fun arity name pure check_meta ->
       let tok = check_meta(Ast.MetaStmDecl(arity,name)) in
@@ -525,7 +525,7 @@ ctype_qualif:
 /* have to inline everything to avoid conflicts? switch to proper
 declarations, statements, and expressions for the subterms */
 
-minus_body: 
+minus_body:
     f=loption(filespec)
     b=loption(minus_start)
     ew=loption(error_words)
@@ -533,7 +533,7 @@ minus_body:
       [] -> raise (Semantic_cocci.Semantic "minus slice can't be empty")
     | code -> Top_level.top_level code }
 
-plus_body: 
+plus_body:
     f=loption(filespec)
     b=loption(plus_start)
     ew=loption(error_words)
@@ -901,7 +901,7 @@ decl_var:
         [Ast0.wrap(Ast0.UnInit(s,fn t,id,P.clt2mcode ";" pv))] }
   | decl_ident TOPar eexpr_list_option TCPar TPtVirg
       { [Ast0.wrap(Ast0.MacroDecl($1,P.clt2mcode "(" $2,$3,
-				  P.clt2mcode ")" $4,P.clt2mcode ";" $5))] } 
+				  P.clt2mcode ")" $4,P.clt2mcode ";" $5))] }
   | s=ioption(storage)
     t=fn_ctype lp1=TOPar st=TMul d=d_ident rp1=TCPar
     lp2=TOPar p=decl_list(name_opt_decl) rp2=TCPar
@@ -954,7 +954,7 @@ one_decl_var:
         Ast0.wrap(Ast0.UnInit(s,fn t,id,P.clt2mcode ";" pv)) }
   | decl_ident TOPar eexpr_list_option TCPar TPtVirg
       { Ast0.wrap(Ast0.MacroDecl($1,P.clt2mcode "(" $2,$3,
-				  P.clt2mcode ")" $4,P.clt2mcode ";" $5)) } 
+				  P.clt2mcode ")" $4,P.clt2mcode ";" $5)) }
   | s=ioption(storage)
     t=fn_ctype lp1=TOPar st=TMul d=d_ident rp1=TCPar
     lp2=TOPar p=decl_list(name_opt_decl) rp2=TCPar
@@ -1443,7 +1443,7 @@ one_dec(decl):
 	Some nm -> Some(P.clt2mcode nm clt)
       | None -> None in
     Ast0.wrap(Ast0.MetaParamList(nm,lenname,pure)) }
- 
+
 comma_decls(dotter,decl):
   TComma dotter
     { function dot_builder ->

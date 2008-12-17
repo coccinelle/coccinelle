@@ -12,8 +12,8 @@ parameter needs both a type and an identifier *)
 module Ast0 = Ast0_cocci
 module Ast = Ast_cocci
 
-(*let warning s v = 
-  if !Flag.verbose_parsing 
+(*let warning s v =
+  if !Flag.verbose_parsing
   then Common.warning s v
   else v*)
 
@@ -111,12 +111,12 @@ TMetaExp TMetaConst
 %token <Data.line_type * int * int> TAndLog
 %token <Data.line_type * int * int> TOr
 %token <Data.line_type * int * int> TXor
-%token <Data.line_type * int * int> TAnd 
+%token <Data.line_type * int * int> TAnd
 %token <Data.line_type * int * int> TEqEq TNotEq
-%token <Data.line_type * int * int> TInf TSup TInfEq TSupEq 
+%token <Data.line_type * int * int> TInf TSup TInfEq TSupEq
 %token <Data.line_type * int * int> TShl TShr
 %token <Data.line_type * int * int> TPlus TMinus
-%token <Data.line_type * int * int> TMul TDiv TMod 
+%token <Data.line_type * int * int> TMul TDiv TMod
 
 %token <Data.line_type * int * int> TOBrace TCBrace
 %token <Data.line_type * int * int> TOCro TCCro
@@ -134,14 +134,14 @@ TMetaExp TMetaConst
 %left TAndLog
 %left TOr
 %left TXor
-%left TAnd 
+%left TAnd
 %left TEqEq TNotEq
-%left TInf TSup TInfEq TSupEq 
+%left TInf TSup TInfEq TSupEq
 %left TShl TShr
 %left TPlus TMinus
-%left TMul TDiv TMod 
+%left TMul TDiv TMod
 
-%start main 
+%start main
 %type <Ast0_cocci.rule> main
 
 %start meta_main
@@ -177,19 +177,19 @@ meta_var:
 	(function name ->
 	  !Data.add_type_meta name;
 	  Ast.MetaTypeDecl($1,name))
-	$3 } 
+	$3 }
 | arity TParameter pure_ident_or_meta_ident_list TPtVirg
     { List.map
 	(function name ->
 	  !Data.add_param_meta name;
 	  Ast.MetaParamDecl($1,name))
-	$3 } 
+	$3 }
 | arity TParameter Tlist pure_ident_or_meta_ident_list TPtVirg
     { List.map
 	(function name ->
 	  !Data.add_paramlist_meta name;
 	  Ast.MetaParamListDecl($1,name))
-	$4 } 
+	$4 }
 | arity TError pure_ident_or_meta_ident_list TPtVirg
     { List.map
 	(function name ->
@@ -536,7 +536,7 @@ eassign_expr: econd_expr                         { $1 }
 	    | eunary_expr TEq eassign_expr
 		{ Ast0.Assignment($1,clt2mcode Ast.SimpleAssign $2,$3)  }
 
-econd_expr: earith_expr                          { $1 } 
+econd_expr: earith_expr                          { $1 }
 	  | earith_expr TWhy eexpr_opt TDotDot econd_expr
 	     { Ast0.CondExpr ($1, clt2mcode "?" $2, $3, clt2mcode "?" $4, $5) }
 
@@ -628,7 +628,7 @@ dassign_expr: dcond_expr                         { $1 }
 	    | dunary_expr TEq dassign_expr
 		{ Ast0.Assignment($1,clt2mcode Ast.SimpleAssign $2,$3)  }
 
-dcond_expr: darith_expr                          { $1 } 
+dcond_expr: darith_expr                          { $1 }
 	  | darith_expr TWhy eexpr_opt TDotDot dcond_expr
 	     { Ast0.CondExpr ($1, clt2mcode "?" $2, $3, clt2mcode "?" $4, $5) }
 

@@ -298,7 +298,7 @@ let classify is_minus all_marked table code =
 	  k (Ast0.rewrap e (Ast0.Ecircles(dots,None)))
       | Ast0.Estars(dots,whencode) ->
 	  k (Ast0.rewrap e (Ast0.Estars(dots,None)))
-      | Ast0.DisjExpr(starter,expr_list,_,ender) -> 
+      | Ast0.DisjExpr(starter,expr_list,_,ender) ->
 	  disj_cases e starter expr_list r.V0.combiner_expression ender
       |	_ -> k e) in
 
@@ -386,7 +386,7 @@ let classify is_minus all_marked table code =
 
   let do_top builder r k e = compute_result builder e (k e) in
 
-  let combiner = 
+  let combiner =
     V0.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       mcode
@@ -468,7 +468,7 @@ let rec equal_expression e1 e2 =
   | (Ast0.EComma(cm1),Ast0.EComma(cm2)) -> equal_mcode cm1 cm2
   | (Ast0.DisjExpr(starter1,_,mids1,ender1),
      Ast0.DisjExpr(starter2,_,mids2,ender2)) ->
-       equal_mcode starter1 starter2 && 
+       equal_mcode starter1 starter2 &&
        List.for_all2 equal_mcode mids1 mids2 &&
        equal_mcode ender1 ender2
   | (Ast0.NestExpr(starter1,_,ender1,_,m1),
@@ -504,7 +504,7 @@ let rec equal_typeC t1 t2 =
       equal_mcode name1 name2
   | (Ast0.DisjType(starter1,_,mids1,ender1),
      Ast0.DisjType(starter2,_,mids2,ender2)) ->
-       equal_mcode starter1 starter2 && 
+       equal_mcode starter1 starter2 &&
        List.for_all2 equal_mcode mids1 mids2 &&
        equal_mcode ender1 ender2
   | (Ast0.OptType(_),Ast0.OptType(_)) -> true
@@ -547,7 +547,7 @@ let equal_initialiser i1 i2 =
   | (Ast0.OptIni(_),Ast0.OptIni(_)) -> true
   | (Ast0.UniqueIni(_),Ast0.UniqueIni(_)) -> true
   | _ -> false
-	
+
 let equal_parameterTypeDef p1 p2 =
   match (Ast0.unwrap p1,Ast0.unwrap p2) with
     (Ast0.VoidParam(_),Ast0.VoidParam(_)) -> true
@@ -614,7 +614,7 @@ let rec equal_statement s1 s2 =
   | (Ast0.MetaStmtList(name1,_),Ast0.MetaStmtList(name2,_)) ->
       equal_mcode name1 name2
   | (Ast0.Disj(starter1,_,mids1,ender1),Ast0.Disj(starter2,_,mids2,ender2)) ->
-      equal_mcode starter1 starter2 && 
+      equal_mcode starter1 starter2 &&
       List.for_all2 equal_mcode mids1 mids2 &&
       equal_mcode ender1 ender2
   | (Ast0.Nest(starter1,_,ender1,_,m1),Ast0.Nest(starter2,_,ender2,_,m2)) ->
@@ -757,7 +757,7 @@ let contextify_whencode =
 	List.iter whencode whn
     | _ -> () in
 
-  let combiner = 
+  let combiner =
     V0.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       mcode
@@ -813,7 +813,7 @@ let collect_up_to m plus =
   let mend = minfo.Ast0.logical_end in
   let rec loop = function
       [] -> ([],[])
-    | p::plus -> 
+    | p::plus ->
 	let pinfo = Ast0.get_info p in
 	let pstart = pinfo.Ast0.logical_start in
 	if pstart > mend

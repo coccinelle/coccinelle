@@ -30,7 +30,7 @@ type ('mc,'a) cmcode = 'a combiner -> 'mc Ast_cocci.mcode -> 'a
 type ('cd,'a) ccode = 'a combiner -> ('cd -> 'a) -> 'cd -> 'a
 
 
-let combiner bind option_default 
+let combiner bind option_default
     meta_mcodefn string_mcodefn const_mcodefn assign_mcodefn fix_mcodefn
     unary_mcodefn binary_mcodefn
     cv_mcodefn base_mcodefn sign_mcodefn struct_mcodefn storage_mcodefn
@@ -100,7 +100,7 @@ let combiner bind option_default
       | Ast.OptIdent(id) -> ident id
       | Ast.UniqueIdent(id) -> ident id in
     identfn all_functions k i
-    
+
   and expression e =
     let k e =
       match Ast.unwrap e with
@@ -154,7 +154,7 @@ let combiner bind option_default
       | Ast.OptExp(exp) | Ast.UniqueExp(exp) ->
 	  expression exp in
     exprfn all_functions k e
-	  
+
   and fullType ft =
     let k ft =
       match Ast.unwrap ft with
@@ -170,7 +170,7 @@ let combiner bind option_default
       ([fullType ty; string_mcode lp1; string_mcode star] @ extra @
        [string_mcode rp1;
 	 string_mcode lp2; parameter_dots params; string_mcode rp2])
-	  
+
   and function_type (ty,lp1,params,rp1) extra =
     (* have to put the treatment of the identifier into the right position *)
     multibind
@@ -181,7 +181,7 @@ let combiner bind option_default
     multibind
       ([fullType ty] @ extra @
        [string_mcode lb; get_option expression size; string_mcode rb])
-	  
+
   and typeC ty =
     let k ty =
       match Ast.unwrap ty with
@@ -306,22 +306,22 @@ let combiner bind option_default
 		      string_mcode rp]
       | Ast.Else(els) -> string_mcode els
       | Ast.WhileHeader(whl,lp,exp,rp) ->
-	  multibind [string_mcode whl; string_mcode lp; expression exp; 
+	  multibind [string_mcode whl; string_mcode lp; expression exp;
 		      string_mcode rp]
       | Ast.DoHeader(d) -> string_mcode d
       | Ast.WhileTail(whl,lp,exp,rp,sem) ->
-	  multibind [string_mcode whl; string_mcode lp; expression exp; 
+	  multibind [string_mcode whl; string_mcode lp; expression exp;
 		      string_mcode rp; string_mcode sem]
       | Ast.ForHeader(fr,lp,e1,sem1,e2,sem2,e3,rp) ->
-	  multibind [string_mcode fr; string_mcode lp; 
-		      get_option expression e1; string_mcode sem1; 
-		      get_option expression e2; string_mcode sem2; 
+	  multibind [string_mcode fr; string_mcode lp;
+		      get_option expression e1; string_mcode sem1;
+		      get_option expression e2; string_mcode sem2;
 		      get_option expression e3; string_mcode rp]
       | Ast.IteratorHeader(nm,lp,args,rp) ->
 	  multibind [ident nm; string_mcode lp;
 		      expression_dots args; string_mcode rp]
       | Ast.SwitchHeader(switch,lp,exp,rp) ->
-	  multibind [string_mcode switch; string_mcode lp; expression exp; 
+	  multibind [string_mcode switch; string_mcode lp; expression exp;
 		      string_mcode rp]
       | Ast.Break(br,sem) -> bind (string_mcode br) (string_mcode sem)
       | Ast.Continue(cont,sem) -> bind (string_mcode cont) (string_mcode sem)
@@ -373,7 +373,7 @@ let combiner bind option_default
       | Ast.DPcircles(c) -> string_mcode c
       | Ast.OptDParam(dp) -> define_param dp
       | Ast.UniqueDParam(dp) -> define_param dp in
-    k p 
+    k p
 
   (* discard the result, because the statement is assumed to be already
      represented elsewhere in the code *)
@@ -382,7 +382,7 @@ let combiner bind option_default
       Ast.NoDots -> ()
     | Ast.DroppingBetweenDots(stm,ind) -> let _ = statement stm in ()
     | Ast.AddingBetweenDots(stm,ind) -> let _ = statement stm in ()
-	  
+
   and statement s =
     process_bef_aft s;
     let k s =
@@ -437,7 +437,7 @@ let combiner bind option_default
     | Ast.WhenModifier(_) -> option_default
     | Ast.WhenNotTrue(e) -> rule_elem e
     | Ast.WhenNotFalse(e) -> rule_elem e
- 
+
   and case_line c =
     let k c =
       match Ast.unwrap c with
@@ -600,7 +600,7 @@ let rebuilder
 	| Ast.OptIdent(id) -> Ast.OptIdent(ident id)
 	| Ast.UniqueIdent(id) -> Ast.UniqueIdent(ident id)) in
     identfn all_functions k i
-      
+
   and expression e =
     let k e =
       Ast.rewrap e
@@ -639,7 +639,7 @@ let rebuilder
 	| Ast.SizeOfExpr(szf,exp) ->
 	    Ast.SizeOfExpr(string_mcode szf, expression exp)
 	| Ast.SizeOfType(szf,lp,ty,rp) ->
-	    Ast.SizeOfType(string_mcode szf,string_mcode lp, fullType ty, 
+	    Ast.SizeOfType(string_mcode szf,string_mcode lp, fullType ty,
                            string_mcode rp)
 	| Ast.TypeExp(ty) -> Ast.TypeExp(fullType ty)
 	| Ast.MetaErr(name,constraints,keep,inherited) ->
@@ -662,7 +662,7 @@ let rebuilder
 	| Ast.OptExp(exp) -> Ast.OptExp(expression exp)
 	| Ast.UniqueExp(exp) -> Ast.UniqueExp(expression exp)) in
     exprfn all_functions k e
-	  
+
   and fullType ft =
     let k ft =
       Ast.rewrap ft
@@ -672,7 +672,7 @@ let rebuilder
 	| Ast.OptType(ty) -> Ast.OptType(fullType ty)
 	| Ast.UniqueType(ty) -> Ast.UniqueType(fullType ty)) in
     ftfn all_functions k ft
-	  
+
   and typeC ty =
     let k ty =
       Ast.rewrap ty
@@ -703,7 +703,7 @@ let rebuilder
 	| Ast.MetaType(name,keep,inherited) ->
 	    Ast.MetaType(meta_mcode name,keep,inherited)) in
     tyfn all_functions k ty
-	  
+
   and declaration d =
     let k d =
       Ast.rewrap d
@@ -756,7 +756,7 @@ let rebuilder
 	| Ast.OptIni(i) -> Ast.OptIni(initialiser i)
 	| Ast.UniqueIni(i) -> Ast.UniqueIni(initialiser i)) in
     initfn all_functions k i
-	  
+
   and parameterTypeDef p =
     let k p =
       Ast.rewrap p
@@ -793,16 +793,16 @@ let rebuilder
 	      string_mcode rp)
 	| Ast.Else(els) -> Ast.Else(string_mcode els)
 	| Ast.WhileHeader(whl,lp,exp,rp) ->
-	    Ast.WhileHeader(string_mcode whl, string_mcode lp, expression exp, 
+	    Ast.WhileHeader(string_mcode whl, string_mcode lp, expression exp,
 			    string_mcode rp)
 	| Ast.DoHeader(d) -> Ast.DoHeader(string_mcode d)
 	| Ast.WhileTail(whl,lp,exp,rp,sem) ->
-	    Ast.WhileTail(string_mcode whl, string_mcode lp, expression exp, 
+	    Ast.WhileTail(string_mcode whl, string_mcode lp, expression exp,
 			  string_mcode rp, string_mcode sem)
 	| Ast.ForHeader(fr,lp,e1,sem1,e2,sem2,e3,rp) ->
-	    Ast.ForHeader(string_mcode fr, string_mcode lp, 
-			  get_option expression e1, string_mcode sem1, 
-			  get_option expression e2, string_mcode sem2, 
+	    Ast.ForHeader(string_mcode fr, string_mcode lp,
+			  get_option expression e1, string_mcode sem1,
+			  get_option expression e2, string_mcode sem2,
 			  get_option expression e3, string_mcode rp)
 	| Ast.IteratorHeader(whl,lp,args,rp) ->
 	    Ast.IteratorHeader(ident whl, string_mcode lp,

@@ -189,7 +189,7 @@ let drop_names dec =
 
 let ct = ref 0
 
-let new_name name = 
+let new_name name =
   let n = !ct in
   ct := !ct + 1;
   name^"__"^(string_of_int n)
@@ -385,7 +385,7 @@ let process rule_name rule_metavars dropped_isos minus plus =
 	  (* probably not possible, since there is always the version with
 	     variables and the version without *)
 	  ((mdef_metavars,minus),
-	   Some 
+	   Some
 	     (metavars,
 	      Ast.CocciRule
 		("proto for "^rule_name,

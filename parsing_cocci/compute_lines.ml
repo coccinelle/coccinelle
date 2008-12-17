@@ -3,7 +3,7 @@ expressions.  every node gets an index as well. *)
 
 module Ast0 = Ast0_cocci
 module Ast = Ast_cocci
-    
+
 (* --------------------------------------------------------------------- *)
 (* Result *)
 
@@ -44,11 +44,11 @@ let mkmultires x e left right (astart,start_mcodes) (aend,end_mcodes) =
   {x with Ast0.node = e; Ast0.info = info}
 
 (* --------------------------------------------------------------------- *)
-    
+
 let get_option fn = function
     None -> None
   | Some x -> Some (fn x)
-	
+
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)
 (* Mcode *)
@@ -138,7 +138,7 @@ let dot_list is_dots fn = function
       let first = Ast0.set_info first first_info in
       let last = Ast0.set_info last last_info in
       (forward,first,last)
-      
+
 let dots is_dots prev fn d =
   match (prev,Ast0.unwrap d) with
     (Some prev,Ast0.DOTS([])) ->
@@ -159,7 +159,7 @@ let dots is_dots prev fn d =
 
 (* --------------------------------------------------------------------- *)
 (* Identifier *)
-	
+
 let rec ident i =
   match Ast0.unwrap i with
     Ast0.Id(name) as ui ->
@@ -171,7 +171,7 @@ let rec ident i =
       let id = ident id in mkres i (Ast0.OptIdent(id)) id id
   | Ast0.UniqueIdent(id) ->
       let id = ident id in mkres i (Ast0.UniqueIdent(id)) id id
-	
+
 (* --------------------------------------------------------------------- *)
 (* Expression *)
 
@@ -240,7 +240,7 @@ let rec expression e =
       let exp = expression exp in
       mkres e (Ast0.SizeOfExpr(szf,exp)) (promote_mcode szf) exp
   | Ast0.SizeOfType(szf,lp,ty,rp) ->
-      mkres e (Ast0.SizeOfType(szf,lp,typeC ty,rp)) 
+      mkres e (Ast0.SizeOfType(szf,lp,typeC ty,rp))
         (promote_mcode szf)  (promote_mcode rp)
   | Ast0.TypeExp(ty) ->
       let ty = typeC ty in mkres e (Ast0.TypeExp(ty)) ty ty
@@ -285,10 +285,10 @@ let rec expression e =
       mkres e (Ast0.UniqueExp(exp)) exp exp
 
 and expression_dots x = dots is_exp_dots None expression x
-	
+
 (* --------------------------------------------------------------------- *)
 (* Types *)
-	
+
 and typeC t =
   match Ast0.unwrap t with
     Ast0.ConstVol(cv,ty) ->
@@ -348,7 +348,7 @@ and typeC t =
       let ty = typeC ty in mkres t (Ast0.OptType(ty)) ty ty
   | Ast0.UniqueType(ty) ->
       let ty = typeC ty in mkres t (Ast0.UniqueType(ty)) ty ty
-	
+
 (* --------------------------------------------------------------------- *)
 (* Variable declaration *)
 (* Even if the Cocci program specifies a list of declarations, they are
@@ -358,7 +358,7 @@ and is_decl_dots s =
   match Ast0.unwrap s with
     Ast0.Ddots(_,_) -> true
   | _ -> false
-	
+
 and declaration d =
   match Ast0.unwrap d with
     Ast0.Init(stg,ty,id,eq,exp,sem) ->
@@ -368,7 +368,7 @@ and declaration d =
       (match stg with
 	None ->
 	  mkres d (Ast0.Init(stg,ty,id,eq,exp,sem)) ty (promote_mcode sem)
-      | Some x -> 
+      | Some x ->
 	  mkres d (Ast0.Init(stg,ty,id,eq,exp,sem))
 	    (promote_mcode x) (promote_mcode sem))
   | Ast0.UnInit(stg,ty,id,sem) ->
@@ -418,7 +418,7 @@ and is_init_dots i =
   match Ast0.unwrap i with
     Ast0.Idots(_,_) -> true
   | _ -> false
-	
+
 and initialiser i =
   match Ast0.unwrap i with
     Ast0.InitExpr(exp) ->
@@ -472,7 +472,7 @@ and is_param_dots p =
   match Ast0.unwrap p with
     Ast0.Pdots(_) | Ast0.Pcircles(_) -> true
   | _ -> false
-	
+
 and parameterTypeDef p =
   match Ast0.unwrap p with
     Ast0.VoidParam(ty) ->
@@ -517,7 +517,7 @@ let is_stm_dots s =
   match Ast0.unwrap s with
     Ast0.Dots(_,_) | Ast0.Circles(_,_) | Ast0.Stars(_,_) -> true
   | _ -> false
-    
+
 let rec statement s =
   let res =
     match Ast0.unwrap s with
@@ -525,7 +525,7 @@ let rec statement s =
 	let decl = declaration decl in
 	let left = promote_to_statement_start decl bef in
 	mkres s (Ast0.Decl((Ast0.get_info left,bef),decl)) decl decl
-    | Ast0.Seq(lbrace,body,rbrace) -> 
+    | Ast0.Seq(lbrace,body,rbrace) ->
 	let body =
 	  dots is_stm_dots (Some(promote_mcode lbrace)) statement body in
 	mkres s (Ast0.Seq(lbrace,body,rbrace))
@@ -591,13 +591,13 @@ let rec statement s =
 	mkres s (Ast0.Label(l,dd)) l (promote_mcode dd)
     | Ast0.Goto(goto,id,sem) ->
 	let id = ident id in
-	mkres s (Ast0.Goto(goto,id,sem)) 
+	mkres s (Ast0.Goto(goto,id,sem))
 	  (promote_mcode goto) (promote_mcode sem)
     | Ast0.Return(ret,sem) as us ->
 	mkres s us (promote_mcode ret) (promote_mcode sem)
     | Ast0.ReturnExpr(ret,exp,sem) ->
 	let exp = expression exp in
-	mkres s (Ast0.ReturnExpr(ret,exp,sem)) 
+	mkres s (Ast0.ReturnExpr(ret,exp,sem))
 	  (promote_mcode ret) (promote_mcode sem)
     | Ast0.MetaStmt(name,_)
     | Ast0.MetaStmtList(name,_) as us ->
@@ -687,7 +687,7 @@ let rec statement s =
 	    mkres s res (promote_mcode inline) (promote_mcode rbrace)
 	| Ast0.FAttr(attr)::_ ->
 	    mkres s res (promote_mcode attr) (promote_mcode rbrace))
-	  
+
     | Ast0.Include(inc,stm) ->
 	mkres s (Ast0.Include(inc,stm)) (promote_mcode inc) (promote_mcode stm)
     | Ast0.Define(def,id,params,body) ->
@@ -719,10 +719,10 @@ and case_line c =
       let case = case_line case in mkres c (Ast0.OptCase(case)) case case
 
 and statement_dots x = dots is_stm_dots None statement x
-	
+
 (* --------------------------------------------------------------------- *)
 (* Function declaration *)
-	
+
 let top_level t =
   match Ast0.unwrap t with
     Ast0.FILEINFO(old_file,new_file) -> t
@@ -733,9 +733,9 @@ let top_level t =
       mkres t (Ast0.CODE(rule_elem_dots)) rule_elem_dots rule_elem_dots
   | Ast0.ERRORWORDS(exps) -> t
   | Ast0.OTHER(_) -> failwith "eliminated by top_level"
-	
+
 (* --------------------------------------------------------------------- *)
 (* Entry points *)
-	
+
 let compute_lines = List.map top_level
-    
+

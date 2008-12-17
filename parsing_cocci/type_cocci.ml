@@ -3,7 +3,7 @@ type inherited = bool (* true if inherited *)
 type keep_binding = Unitary (* need no info *)
   | Nonunitary (* need an env entry *) | Saved (* need a witness *)
 
-type typeC = 
+type typeC =
     ConstVol        of const_vol * typeC
   | BaseType        of baseType * sign option
   | Pointer         of typeC
@@ -15,7 +15,7 @@ type typeC =
   | Unknown (* for metavariables of type expression *^* *)
 
 and tagged_string = string
-     
+
 and baseType = VoidType | CharType | ShortType | IntType | DoubleType
 | FloatType | LongType | BoolType
 
@@ -27,8 +27,8 @@ and const_vol = Const | Volatile
 
 (* --------------------------------------------------------------------- *)
 (* Printer *)
-open Format 
-	
+open Format
+
 let rec typeC = function
     ConstVol(cv,ty) -> const_vol cv; typeC ty
   | BaseType(ty,None) -> baseType ty

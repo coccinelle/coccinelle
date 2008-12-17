@@ -584,7 +584,7 @@ and parameterTypeDef tgt param =
   | Ast0.Param(ty,Some id) ->
       let ty = top_typeC tgt true ty in
       let id = ident true tgt id in
-      Ast0.rewrap param 
+      Ast0.rewrap param
 	(match (Ast0.unwrap ty,Ast0.unwrap id) with
 	  (Ast0.OptType(ty),Ast0.OptIdent(id)) ->
 	    Ast0.OptParam(Ast0.rewrap param (Ast0.Param(ty,Some id)))
@@ -597,7 +597,7 @@ and parameterTypeDef tgt param =
 	| _ -> Ast0.Param(ty,Some id))
   | Ast0.Param(ty,None) ->
       let ty = top_typeC tgt true ty in
-      Ast0.rewrap param 
+      Ast0.rewrap param
 	(match Ast0.unwrap ty with
 	  Ast0.OptType(ty) ->
 	    Ast0.OptParam(Ast0.rewrap param (Ast0.Param(ty,None)))
@@ -643,14 +643,14 @@ and statement tgt stm =
   match Ast0.unwrap stm with
     Ast0.Decl(bef,decl) ->
       let new_decl = declaration tgt decl in
-      Ast0.rewrap stm 
+      Ast0.rewrap stm
 	(match Ast0.unwrap new_decl with
 	  Ast0.OptDecl(decl) ->
 	    Ast0.OptStm(Ast0.rewrap stm (Ast0.Decl(bef,decl)))
 	| Ast0.UniqueDecl(decl) ->
 	    Ast0.UniqueStm(Ast0.rewrap stm (Ast0.Decl(bef,decl)))
 	| _ -> Ast0.Decl(bef,new_decl))
-  | Ast0.Seq(lbrace,body,rbrace) -> 
+  | Ast0.Seq(lbrace,body,rbrace) ->
       let arity =
 	stm_same (mcode2line lbrace)
 	  [mcode2arity lbrace; mcode2arity rbrace] in
@@ -784,7 +784,7 @@ and statement tgt stm =
       make_rule_elem stm tgt arity (Ast0.MetaStmtList(name,pure))
   | Ast0.Exp(exp) ->
       let new_exp = top_expression true tgt exp in
-      Ast0.rewrap stm 
+      Ast0.rewrap stm
 	(match Ast0.unwrap new_exp with
 	  Ast0.OptExp(exp) ->
 	    Ast0.OptStm(Ast0.rewrap stm (Ast0.Exp(exp)))
@@ -793,7 +793,7 @@ and statement tgt stm =
 	| _ -> Ast0.Exp(new_exp))
   | Ast0.TopExp(exp) ->
       let new_exp = top_expression true tgt exp in
-      Ast0.rewrap stm 
+      Ast0.rewrap stm
 	(match Ast0.unwrap new_exp with
 	  Ast0.OptExp(exp) ->
 	    Ast0.OptStm(Ast0.rewrap stm (Ast0.TopExp(exp)))
@@ -802,7 +802,7 @@ and statement tgt stm =
 	| _ -> Ast0.TopExp(new_exp))
   | Ast0.Ty(ty) ->
       let new_ty = typeC tgt ty in (* opt makes no sense alone at top level *)
-      Ast0.rewrap stm 
+      Ast0.rewrap stm
 	(match Ast0.unwrap new_ty with
 	  Ast0.OptType(ty) ->
 	    Ast0.OptStm(Ast0.rewrap stm (Ast0.Ty(ty)))
@@ -908,7 +908,7 @@ and statement tgt stm =
       let rbrace = mcode rbrace in
       make_rule_elem stm tgt arity
 	(Ast0.FunDecl(bef,fi,name,lp,params,rp,lbrace,body,rbrace))
-  | Ast0.Include(inc,s) -> 
+  | Ast0.Include(inc,s) ->
       let arity =
 	all_same true tgt (mcode2line inc) [mcode2arity inc; mcode2arity s] in
       let inc = mcode inc in
@@ -1026,7 +1026,7 @@ and case_line tgt c =
 let top_level tgt t =
   Ast0.rewrap t
     (match Ast0.unwrap t with
-      Ast0.FILEINFO(old_file,new_file) -> 
+      Ast0.FILEINFO(old_file,new_file) ->
 	if mcode2arity old_file = Ast0.NONE && mcode2arity new_file = Ast0.NONE
 	then Ast0.FILEINFO(mcode old_file,mcode new_file)
 	else fail t "unexpected arity for file info"

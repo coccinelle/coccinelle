@@ -43,7 +43,7 @@ let process_binops rule_name =
 	       Unparse_ast0.expression e1;
 	       Format.print_newline();
 	       e)
-	| Ast0.Edots(d,_) -> 
+	| Ast0.Edots(d,_) ->
 	    (Printf.printf
 	       "%s: whencode interferes with comm_assoc iso" rule_name;
 	     Unparse_ast0.expression e1;

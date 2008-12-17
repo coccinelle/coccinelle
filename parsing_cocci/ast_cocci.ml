@@ -111,7 +111,7 @@ and ident = base_ident wrap
 (* --------------------------------------------------------------------- *)
 (* Expression *)
 
-and base_expression = 
+and base_expression =
     Ident          of ident
   | Constant       of constant mcode
   | FunCall        of expression * string mcode (* ( *) *
@@ -193,7 +193,7 @@ and base_fullType =
   | OptType         of fullType
   | UniqueType      of fullType
 
-and base_typeC = 
+and base_typeC =
     BaseType        of baseType mcode * sign mcode option
   | ImplicitInt     of sign mcode
   | Pointer         of fullType * string mcode (* * *)
@@ -218,7 +218,7 @@ and base_typeC =
 
 and fullType = base_fullType wrap
 and typeC = base_typeC wrap
-     
+
 and baseType = VoidType | CharType | ShortType | IntType | DoubleType
 | FloatType | LongType
 
@@ -240,7 +240,7 @@ and base_declaration =
   | TyDecl of fullType * string mcode (* ; *)
   | MacroDecl of ident (* name *) * string mcode (* ( *) *
         expression dots * string mcode (* ) *) * string mcode (* ; *)
-  | Typedef of string mcode (*typedef*) * fullType * 
+  | Typedef of string mcode (*typedef*) * fullType *
                typeC (* either TypeName or metavar *) * string mcode (*;*)
   | DisjDecl of declaration list
   (* Ddots is for a structure declaration *)
@@ -257,7 +257,7 @@ and declaration = base_declaration wrap
 (* Initializers *)
 
 and base_initialiser =
-    InitExpr of expression 
+    InitExpr of expression
   | InitList of string mcode (*{*) * initialiser list * string mcode (*}*) *
 	initialiser list (* whencode: elements that shouldn't appear in init *)
   | InitGccDotName of
@@ -490,7 +490,7 @@ and rulename =
   | ScriptRulename of string * dependency
 
 and rule =
-    CocciRule of string (* name *) * 
+    CocciRule of string (* name *) *
 	(dependency * string list (* dropped isos *) * exists) * top_level list
 	* bool list
   | ScriptRule of string * dependency * (string * meta_name) list * string

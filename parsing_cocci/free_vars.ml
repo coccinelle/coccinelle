@@ -337,7 +337,7 @@ let classify_variables metavars minirules used_after =
   let metavars = List.map Ast.get_meta_name metavars in
   let (unitary,nonunitary) = collect_all_multirefs minirules in
   let inplus = collect_in_plus minirules in
-  
+
   let donothing r k e = k e in
   let check_unitary name inherited =
     if List.mem name inplus or List.mem name used_after
@@ -538,7 +538,7 @@ let astfvs metavars bound =
 	    classify (cip_mcodekind collect_in_plus_term aft) [] in
 	  Ast.Iterator(header,body,(unbound,fresh,inherited,aft))
       |	s -> s in
-    
+
     let (unbound,munbound,fresh,_) = classify free minus_free in
     let inherited =
       List.filter (function x -> List.mem x bound) nc_free in
@@ -695,7 +695,7 @@ let collect_top_level_used_after metavar_rule_list =
       failwith
 	(Printf.sprintf "collect_top_level_used_after: unbound variables %s"
 	   (String.concat " " (List.map (function (_,x) -> x) used_after)))
-	
+
 let collect_local_used_after metavars minirules used_after =
   let locally_defined = List.map Ast.get_meta_name metavars in
   let rec loop defined = function
