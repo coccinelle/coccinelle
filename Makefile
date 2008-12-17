@@ -148,12 +148,14 @@ install: all
 	mkdir -p $(DESTDIR)$(BINDIR)
 	mkdir -p $(DESTDIR)$(LIBDIR)
 	mkdir -p $(DESTDIR)$(SHAREDIR)
+	mkdir -p $(DESTDIR)$(MANDIR)/man1
 	cp spatch $(DESTDIR)$(BINDIR)	
-	cp -f dllpycaml_stubs.so $(DESTDIR)$(LIBDIR)	
 	cp standard.h $(DESTDIR)$(SHAREDIR)
 	cp standard.iso $(DESTDIR)$(SHAREDIR)
+	cp docs/spatch.1 $(DESTDIR)$(MANDIR)/man1/
 	mkdir -p $(DESTDIR)$(SHAREDIR)/python
 	cp -a python/coccilib $(DESTDIR)$(SHAREDIR)/python
+	cp -f dllpycaml_stubs.so $(DESTDIR)$(LIBDIR)	
 	@echo ""
 	@echo "You can also install spatch by copying the program spatch"
 	@echo "(available in this directory) anywhere you want and"
@@ -165,6 +167,7 @@ uninstall:
 	rm -f $(DESTDIR)$(SHAREDIR)/standard.h
 	rm -f $(DESTDIR)$(SHAREDIR)/standard.iso
 	rm -rf $(DESTDIR)$(SHAREDIR)/python/coccilib
+	rm -f $(DESTDIR)$(MANDIR)/man1/spatch.1
 
 
 
