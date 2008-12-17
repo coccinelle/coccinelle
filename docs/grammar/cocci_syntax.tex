@@ -1,4 +1,5 @@
 \documentclass{article}
+%\usepackage[latin9]{inputenc}
 \usepackage{hevea}
 \usepackage{fullpage}
 \usepackage{alltt}
@@ -10,16 +11,24 @@
 
 \lstset{basicstyle=\ttfamily,numbers=left, numberstyle=\tiny, stepnumber=1, numbersep=5pt,language=C,commentstyle=\color{OliveGreen},keywordstyle=\color{blue},stringstyle=\color{BrickRed}}
 
+%
 % You must prefix the +/- lines of
 % cocci files with @+/@- respectively.
 % This will enable the automatic coloration.
+%
+% Note: You need at least the following version of hevea
+% http://hevea.inria.fr/distri/unstable/hevea-2008-12-17.tar.gz
+%
 \ifhevea
 \lstdefinelanguage{Cocci}{
 morekeywords={idexpression,expression,statement,identifier,
 parameter,list,when,strict,any,forall,exists},
 keywordstyle=\color{Bittersweet}\bfseries,
-sensitive=false
-}
+sensitive=false,
+morecomment=[s][\color{OliveGreen}]{@}{@@},
+morecomment=[s][\color{OliveGreen}]{@@}{@@},
+moredelim=[il][\color{blue}]{@+},
+moredelim=[il][\color{BrickRed}]{@-}}
 \else
 \lstdefinelanguage{Cocci}{
 morekeywords={idexpression,expression,statement,identifier,
@@ -293,16 +302,19 @@ The grammar rule for the minus or plus slice of a transformation is as follows:
   \CASE{\NT{decl\_stmt\_expr} \opt{\NT{toplevel\_after\_stmt}}}
 
   \RULE{\rt{stmt\_dots}}
-  \CASE{... \any{\NT{whenppdecls}}}
-  \CASE{<... \any{\NT{whenppdecls}} \NT{nest\_after\_dots} ...>}
-  \CASE{<+... \any{\NT{whenppdecls}} \NT{nest\_after\_dots} ...+>}
+  \CASE{... \any{\NT{when}}}
+  \CASE{<... \any{\NT{when}} \NT{nest\_after\_dots} ...>}
+  \CASE{<+... \any{\NT{when}} \NT{nest\_after\_dots} ...+>}
 
-  \RULE{\rt{whenppdecls}}
-  \CASE{when != \NT{when\_start}$^\dag$}
-  \CASE{when = \NT{rule\_elem\_stmt}$^\dag$}
-  \CASE{when \NT{any\_strict} \ANY{, \NT{any\_strict}} $^\dag$}
+  \RULE{\rt{when}}
+  \CASE{when != \NT{when\_start}}
+  \CASE{when = \NT{rule\_elem\_stmt}}
+  \CASE{when \NT{any\_strict} \ANY{, \NT{any\_strict}}}
   \CASE{when true != \NT{exp} $^\ddag$}
   \CASE{when false != \NT{exp} $^\ddag$}
+
+  \RULE{\rt{rule\_elem\_stmt}}
+  \CASE{}
 
   \RULE{\rt{any\_strict}}
   \CASE{any}
@@ -341,25 +353,27 @@ The grammar rule for the minus or plus slice of a transformation is as follows:
 
 \end{grammar}
 
-$^\dag$ Note
 $^\ddag$ Check and fix me
 
-% \noindent{\footnotesize\begin{tabular}{r@{\,\,\,}c@{\,\,\,}l}
-% \mita{transformation} & ::= &
-%    \begin{tabular}[t]{@{}l}
-%    \ANY{\mtt{\#include} \msf{include\_string}} \\
-%    \opt{OPTDOTSEQ(\some{\mita{fun\_decl\_statement}} \(\mid\) \mita{expr},
-%    \mita{stmt\_whencode})}\end{tabular} \\
-% \mita{fun\_decl\_statement} & ::= & \mita{decl\_statement} \(\mid\)
-% \mita{fun\_decl}
-% \end{tabular}
+{\color{red}
+\noindent
+\footnotesize\begin{tabular}{r@{\,\,\,}c@{\,\,\,}l}
+\mita{transformation} & ::= &
+   \begin{tabular}[t]{@{}l}
+   \ANY{\mtt{\#include} \msf{include\_string}} \\
+   \opt{OPTDOTSEQ(\some{\mita{fun\_decl\_statement}} \(\mid\) \mita{expr},
+   \mita{stmt\_whencode})}\end{tabular}\\
+\mita{fun\_decl\_statement} & ::= & \mita{decl\_statement} \(\mid\)
+\mita{fun\_decl}
+\end{tabular}
 
-% \begin{grammar}
-%   \PRULE{OPTDOTSEQ(\NT{grammar},\NT{whencode})}
-%   \CASE{\opt{... \opt{\NT{whencode}}} \NT{grammar}
-%  \ANY{... \opt{\NT{whencode}} \NT{grammar}}
-%  \opt{... \opt{\NT{whencode}}}}
-% \end{grammar}
+\begin{grammar}
+  \RULE{OPTDOTSEQ(\NT{grammar},\NT{whencode})}
+  \CASE{\opt{... \opt{\NT{whencode}}} \NT{grammar}
+ \ANY{... \opt{\NT{whencode}} \NT{grammar}}
+ \opt{... \opt{\NT{whencode}}}}
+\end{grammar}
+}
 
 \noindent
 Lines may be annotated with an element of the set $\{\mtt{-},
