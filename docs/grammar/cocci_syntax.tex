@@ -102,7 +102,7 @@ version of this documention is online at
   \CASE{\any{\NT{include\_cocci}} \some{\NT{changeset}}}
 
   \RULE{\rt{include\_cocci}}
-  \CASE{using "\NT{string}"}
+  \CASE{using \NT{string}}
   \CASE{using <\NT{pathToIsoFile}>}
 
   \RULE{\rt{changeset}}
@@ -671,15 +671,21 @@ in a concise way.
 
 \begin{grammar}
   \RULE{\rt{const}}
-  \CASE{"\any{[\^{}"]}"}
+  \CASE{\NT{string}}
   \CASE{[0-9]+}
   \CASE{\mth{\cdots}}
+
+  \RULE{\rt{string}}
+  \CASE{"\any{[\^{}"]}"}
 
   \RULE{\rt{id}}
   \CASE{\T{id} \OR \mth{\T{metaid}^{\ssf{Id}}}}
 
   \RULE{\rt{type}}
   \CASE{\NT{ctype} \OR \mth{\T{metaid}^{\ssf{Type}}}}
+
+  \RULE{\rt{pathToIsoFile}}
+  \CASE{FIXME}
 \end{grammar}
 
 \include{examples}
