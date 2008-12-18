@@ -99,9 +99,9 @@ version of this documention is online at
 
 \begin{grammar}
   \RULE{\rt{program}}
-  \CASE{\any{\NT{include}} \some{\NT{changeset}}}
+  \CASE{\any{\NT{include\_cocci}} \some{\NT{changeset}}}
 
-  \RULE{\rt{include}}
+  \RULE{\rt{include\_cocci}}
   \CASE{using "\NT{string}"}
   \CASE{using <\NT{pathToIsoFile}>}
 
@@ -291,30 +291,48 @@ The grammar rule for the minus or plus slice of a transformation is as follows:
 \begin{grammar}
 
   \RULE{\rt{transformation}}
+  \CASE{\any{\NT{include}} \opt{\NT{OPTDOTSEQ}(\some{\NT{fun\_decl\_stmt}} \OR \NT{expr}, \NT{when})}}
+
+  \RULE{\rt{include}}
+  \CASE{\#include \T{include\_string}}
+
+  \RULE{\rt{fun\_decl\_stmt}}
+  \CASE{\NT{decl\_stmt}}
   \CASE{\NT{fundecl}}
-  \CASE{\NT{ctype}}
-  \CASE{\ttlb \NT{initialize\_list} \ttrb}
-  \CASE{\NT{toplevel\_seq\_start\_after\_dots\_init}}
 
-  \RULE{\rt{toplevel\_seq\_start\_after\_dots\_init}}
-  \CASE{\NT{stmt\_dots} \NT{toplevel\_after\_dots}}
-  \CASE{\NT{expr} \opt{\NT{toplevel\_after\_exp}}}
-  \CASE{\NT{decl\_stmt\_expr} \opt{\NT{toplevel\_after\_stmt}}}
-
-  \RULE{\rt{stmt\_dots}}
-  \CASE{... \any{\NT{when}}}
-  \CASE{<... \any{\NT{when}} \NT{nest\_after\_dots} ...>}
-  \CASE{<+... \any{\NT{when}} \NT{nest\_after\_dots} ...+>}
+%  \CASE{\NT{fundecl}}
+%  \CASE{\NT{ctype}}
+%  \CASE{\ttlb \NT{initialize\_list} \ttrb}
+%  \CASE{\NT{toplevel\_seq\_start\_after\_dots\_init}}
+%
+%  \RULE{\rt{toplevel\_seq\_start\_after\_dots\_init}}
+%  \CASE{\NT{stmt\_dots} \NT{toplevel\_after\_dots}}
+%  \CASE{\NT{expr} \opt{\NT{toplevel\_after\_exp}}}
+%  \CASE{\NT{decl\_stmt\_expr} \opt{\NT{toplevel\_after\_stmt}}}
+%
+%  \RULE{\rt{stmt\_dots}}
+%  \CASE{... \any{\NT{when}}}
+%  \CASE{<... \any{\NT{when}} \NT{nest\_after\_dots} ...>}
+%  \CASE{<+... \any{\NT{when}} \NT{nest\_after\_dots} ...+>}
 
   \RULE{\rt{when}}
-  \CASE{when != \NT{when\_start}}
+  \CASE{when != \NT{when\_code}}
   \CASE{when = \NT{rule\_elem\_stmt}}
   \CASE{when \NT{any\_strict} \ANY{, \NT{any\_strict}}}
-  \CASE{when true != \NT{exp} $^\ddag$}
-  \CASE{when false != \NT{exp} $^\ddag$}
+  \CASE{when true != \NT{expr}}
+  \CASE{when false != \NT{expr}}
+
+  \RULE{\rt{when\_code}}
+  \CASE{\NT{OPTDOTSEQ}(\some{\NT{decl\_stmt}}, \NT{when})}
+  \CASE{\NT{OPTDOTSEQ}(\NT{expr}, \NT{when})}
 
   \RULE{\rt{rule\_elem\_stmt}}
-  \CASE{}
+  \CASE{\NT{one\_decl}}
+  \CASE{\NT{expr};}
+  \CASE{return \opt{\NT{expr}};}
+  \CASE{break;}
+  \CASE{continue;}
+  \CASE{(\NT{rule\_elem\_stmt} \SOME{| \NT{rule\_elem\_stmt}})}
 
   \RULE{\rt{any\_strict}}
   \CASE{any}
@@ -322,58 +340,51 @@ The grammar rule for the minus or plus slice of a transformation is as follows:
   \CASE{forall}
   \CASE{exists}
 
-  \RULE{\rt{nest\_after\_dots}}
-  \CASE{\NT{decl\_stmt\_exp} \opt{\NT{nest\_after\_stmt}}}
-  \CASE{\opt{\NT{exp}} \opt{\NT{nest\_after\_exp}}}
-
-  \RULE{\rt{nest\_after\_stmt}}
-  \CASE{\NT{stmt\_dots} \NT{nest\_after\_dots}}
-  \CASE{\NT{decl\_stmt} \opt{\NT{nest\_after\_stmt}}}
-
-  \RULE{\rt{nest\_after\_exp}}
-  \CASE{\NT{stmt\_dots} \NT{nest\_after\_dots}}
-
-  \RULE{\rt{toplevel\_after\_dots}}
-  \CASE{\opt{\NT{toplevel\_after\_exp}}}
-  \CASE{\NT{exp} \opt{\NT{toplevel\_after\_exp}}}
-  \CASE{\NT{decl\_stmt\_expr} \NT{toplevel\_after\_stmt}}
-
-  \RULE{\rt{toplevel\_after\_exp}}
-  \CASE{\NT{stmt\_dots} \opt{\NT{toplevel\_after\_dots}}}
-
-  \RULE{\rt{decl\_stmt\_expr}}
-  \CASE{TMetaStmList$^\ddag$}
-  \CASE{\NT{decl\_var}}
-  \CASE{\NT{stmt}}
-  \CASE{(\NT{fun\_start} \ANY{| \NT{fun\_start}})}
-
-  \RULE{\rt{toplevel\_after\_stmt}}
-  \CASE{\NT{stmt\_dots} \opt{\NT{toplevel\_after\_dots}}}
-  \CASE{\NT{decl\_stmt} \NT{toplevel\_after\_stmt}}
+%  \RULE{\rt{nest\_after\_dots}}
+%  \CASE{\NT{decl\_stmt\_exp} \opt{\NT{nest\_after\_stmt}}}
+%  \CASE{\opt{\NT{exp}} \opt{\NT{nest\_after\_exp}}}
+%
+%  \RULE{\rt{nest\_after\_stmt}}
+%  \CASE{\NT{stmt\_dots} \NT{nest\_after\_dots}}
+%  \CASE{\NT{decl\_stmt} \opt{\NT{nest\_after\_stmt}}}
+%
+%  \RULE{\rt{nest\_after\_exp}}
+%  \CASE{\NT{stmt\_dots} \NT{nest\_after\_dots}}
+%
+%  \RULE{\rt{toplevel\_after\_dots}}
+%  \CASE{\opt{\NT{toplevel\_after\_exp}}}
+%  \CASE{\NT{exp} \opt{\NT{toplevel\_after\_exp}}}
+%  \CASE{\NT{decl\_stmt\_expr} \NT{toplevel\_after\_stmt}}
+%
+%  \RULE{\rt{toplevel\_after\_exp}}
+%  \CASE{\NT{stmt\_dots} \opt{\NT{toplevel\_after\_dots}}}
+%
+%  \RULE{\rt{decl\_stmt\_expr}}
+%  \CASE{TMetaStmList$^\ddag$}
+%  \CASE{\NT{decl\_var}}
+%  \CASE{\NT{stmt}}
+%  \CASE{(\NT{stmt\_seq} \ANY{| \NT{stmt\_seq}})}
+%
+%  \RULE{\rt{toplevel\_after\_stmt}}
+%  \CASE{\NT{stmt\_dots} \opt{\NT{toplevel\_after\_dots}}}
+%  \CASE{\NT{decl\_stmt} \NT{toplevel\_after\_stmt}}
 
 \end{grammar}
-
-$^\ddag$ Check and fix me
-
-{\color{red}
-\noindent
-\footnotesize\begin{tabular}{r@{\,\,\,}c@{\,\,\,}l}
-\mita{transformation} & ::= &
-   \begin{tabular}[t]{@{}l}
-   \ANY{\mtt{\#include} \msf{include\_string}} \\
-   \opt{OPTDOTSEQ(\some{\mita{fun\_decl\_statement}} \(\mid\) \mita{expr},
-   \mita{stmt\_whencode})}\end{tabular}\\
-\mita{fun\_decl\_statement} & ::= & \mita{decl\_statement} \(\mid\)
-\mita{fun\_decl}
-\end{tabular}
 
 \begin{grammar}
-  \RULE{OPTDOTSEQ(\NT{grammar},\NT{whencode})}
-  \CASE{\opt{... \opt{\NT{whencode}}} \NT{grammar}
- \ANY{... \opt{\NT{whencode}} \NT{grammar}}
- \opt{... \opt{\NT{whencode}}}}
+  \RULE{\rt{OPTDOTSEQ}(\NT{grammar}, \NT{when})}
+  \CASE{\opt{... \opt{\NT{when}}} \NT{grammar}
+    \ANY{... \opt{\NT{when}} \NT{grammar}}
+    \opt{... \opt{\NT{when}}}}
+  \CASE{<... \any{\NT{when}} \NT{grammar} ...>}
+  \CASE{<+... \any{\NT{when}} \NT{grammar} ...+>}
+
+%  \CASE{}\multicolumn{3}{r}{\hspace{1cm}
+%  \KW{\opt{... \opt{\NT{when}}} \NT{grammar}
+%    \ANY{... \opt{\NT{when}} \NT{grammar}}
+%    \opt{... \opt{\NT{when}}}}
+%  }
 \end{grammar}
-}
 
 \noindent
 Lines may be annotated with an element of the set $\{\mtt{-},
@@ -435,10 +446,10 @@ the use of these annotations:
   \RULE{\rt{struct\_decl}}
   \CASE{\NT{ctype} \NT{d\_ident};}
   \CASE{\NT{fn\_ctype} (* \NT{d\_ident}) (\NT{});)}
-  \CASE{\opt{\NT{const\_vol}} \NT{pure\_ident} \NT{d\_ident};}
+  \CASE{\opt{\NT{const\_vol}} \T{id} \NT{d\_ident};}
 
   \RULE{\rt{d\_ident}}
-  \CASE{\NT{ident} \any{[\opt{\NT{eexpr}}]}}
+  \CASE{\NT{id} \any{[\opt{\NT{expr}}]}}
 
   \RULE{\rt{fn\_ctype}}
   \CASE{\NT{generic\_ctype} \any{*}}
@@ -446,23 +457,6 @@ the use of these annotations:
 \end{grammar}
 
 $^\dag$ The optional \texttt{when} construct ends at the end of the line.
-
-% \noindent{\footnotesize\begin{tabular}{r@{\,\,\,}c@{\,\,\,}l}
-% \mita{type} & ::= & \opt{\mtt{const} \(\mid\) \mtt{volatile}}
-%                     \mita{type\_desc} \ANY{\mtt{*}}\\
-% \mita{type\_desc} & ::= & \mita{simple\_type} \(\mid\) \opt{\mtt{signed} \(\mid\)
-%        \mtt{unsigned}} \mita{signable\_type} \(\mid\) \opt{\mtt{struct} \(\mid\)
-%        \mtt{union}} \msf{id}
-% \\&\multicolumn{1}{r}{\(\mid\)}&
-%        \mth{\msf{metaid}^{\ssf{Type}}}
-% \end{tabular}}
-
-% \noindent{\footnotesize\begin{tabular}{r@{\,\,\,}c@{\,\,\,}l}
-% \mita{simple\_type} & ::= & \mtt{void} \(\mid\) \mtt{double} \(\mid\)
-%  \mtt{float} \\
-% \mita{signable\_type} & ::= & \mtt{char} \(\mid\) \mtt{short} \(\mid\)
-%  \mtt{int} \(\mid\) \mtt{long}
-% \end{tabular}}
 
 \section{Function declarations}
 
@@ -494,21 +488,14 @@ $^\dag$ The optional \texttt{when} construct ends at the end of the line.
 \section{Declarations}
 
 \begin{grammar}
-  \RULE{\rt{decl}}
+  \RULE{\rt{decl\_var}}
   \CASE{\NT{type} \opt{\NT{id} \opt{[\opt{\NT{dot\_expr}}]}
       \ANY{, \NT{id} \opt{[ \opt{\NT{dot\_expr}}]}}};}
+  \CASE{\NT{one\_decl}}
+
+  \RULE{\rt{one\_decl}}
   \CASE{\NT{type} \NT{id} \opt{[\opt{\NT{dot\_expr}}]}= \NT{nest\_expr};}
 \end{grammar}
-
-% \noindent{\footnotesize\begin{tabular}{r@{\,\,\,}c@{\,\,\,}l}
-% \mita{decl\_var} & ::= &
-%    \mita{type} \opt{\ANY{\mita{id} \opt{\mtt{[} \opt{\mita{dot\_expr}}
-%    \mtt{]}} \mtt{,}} \mita{id} \opt{\mtt{[} \opt{\mita{dot\_expr}} \mtt{]}}}
-%    \mtt{;}
-% \\&\multicolumn{1}{r}{\(\mid\)}&
-%  \mita{type} \mita{id} \opt{\mtt{[} \opt{\mita{dot\_expr}} \mtt{]}}
-%    \mtt{=} \mita{nest\_expr} \mtt{;}
-% \end{tabular}}
 
 \section{Statements}
 
@@ -522,7 +509,7 @@ allowed.
 %\vspace{\baselineskip}
 \begin{grammar}
   \RULE{\rt{stmt}}
-  \CASE{\NT{includes}}
+  \CASE{\NT{include}}
   \CASE{\mth{\T{metaid}^{\ssf{Stmt}}}}
   \CASE{\NT{expr};}
   \CASE{if (\NT{dot\_expr}) \NT{single\_stmt} \opt{else \NT{single\_stmt}}}
@@ -534,13 +521,13 @@ allowed.
   \CASE{switch (\opt{\NT{dot\_expr}}) \ttlb \any{\NT{case\_line}} \ttrb}
   \CASE{return \opt{\NT{dot\_expr}};}
   \CASE{\ttlb~\opt{\NT{stmt\_seq}} \ttrb}
-  \CASE{\NT{NEST}(\some{\NT{decl\_stmt}}, \NT{stmt\_whencode})}
-  \CASE{\NT{NEST}(\NT{expr}, \NT{stmt\_whencode})}
+  \CASE{\NT{NEST}(\some{\NT{decl\_stmt}}, \NT{when})}
+  \CASE{\NT{NEST}(\NT{expr}, \NT{when})}
   \CASE{break;}
   \CASE{continue;}
   \CASE{\NT{ident}:}
   \CASE{goto \NT{ident};}
-  \CASE{\ttlb \NT{fun\_start} \ttrb}
+  \CASE{\ttlb \NT{stmt\_seq} \ttrb}
 
 % \noindent{\footnotesize\begin{tabular}{r@{\,\,\,}c@{\,\,\,}l}
 % \mita{statement} & ::= &
@@ -563,7 +550,7 @@ allowed.
 % \\&\multicolumn{1}{r}{\(\mid\)}&
 %   \ttlb~\opt{\mita{statement\_sequence}} \ttrb
 % \\&\multicolumn{1}{r}{\(\mid\)}&
-%   NEST(\some{\mita{decl\_statement}} \(\mid\) \mita{expr}, \mita{stmt\_whencode})
+%   NEST(\some{\mita{decl\_statement}} \(\mid\) \mita{expr}, \mita{when})
 % \end{tabular}}
 
   \RULE{\rt{single\_stmt}}
@@ -579,47 +566,19 @@ allowed.
   \RULE{\rt{stmt\_seq}}
   \CASE{\any{\NT{decl\_stmt}}
     \opt{\NT{DOTSEQ}(\some{\NT{decl\_stmt}},
-      \NT{stmt\_whencode}) \any{\NT{decl\_stmt}}}}
+      \NT{when}) \any{\NT{decl\_stmt}}}}
   \CASE{\any{\NT{decl\_stmt}}
     \opt{\NT{DOTSEQ}(\NT{expr},
-      \NT{stmt\_whencode}) \any{\NT{decl\_stmt}}}}
-
-  \RULE{\rt{stmt\_whencode}}
-  \CASE{when != \NT{XXXDOTSEQXXX}(\some{\NT{decl\_stmt}}, \NT{stmt\_whencode})}
-  \CASE{when != \NT{XXXDOTSEQXXX}(\NT{expr}, \NT{stmt\_whencode})}
+      \NT{when}) \any{\NT{decl\_stmt}}}}
 
   \RULE{\rt{case\_line}}
-  \CASE{default : \NT{fun\_start}}
-  \CASE{case \NT{dot\_expr} : \NT{fun\_start}}
-
-  \RULE{\rt{fun\_start}}
-  \CASE{}
+  \CASE{default : \NT{stmt\_seq}}
+  \CASE{case \NT{dot\_expr} : \NT{stmt\_seq}}
 
   \RULE{\rt{iter\_ident}}
   \CASE{\T{IteratorId}}
   \CASE{\T{MetaIterator}}
 \end{grammar}
-
-\noindent{\footnotesize\begin{tabular}{r@{\,\,\,}c@{\,\,\,}l}
-% \mita{single\_statement} & ::= &
-%      \mita{statement} \(\mid\) OR(\mita{statement})
-% \\
-% \mita{decl\_statement} & ::= &
-%   \mth{\msf{metaid}^{\ssf{StmtList}}} \(\mid\)
-%   \mita{decl\_var} \(\mid\) \mita{statement} \(\mid\)
-%   OR(\mita{statement\_sequence})
-% \\
-% \mita{statement\_sequence} & ::= &\\
-%   \multicolumn{3}{r}{\air\air\any{\mita{decl\_statement}}
-%   \opt{DOTSEQ(\some{\mita{decl\_statement}} \(\mid\) \mita{expr},
-%   \mita{stmt\_whencode}) \any{\mita{decl\_statement}}}}
-% \\
-\mita{stmt\_whencode} & ::= & \mtt{WHEN} \mtt{!=}
-OPTDOTSEQ(\some{\mita{decl\_statement}} \(\mid\) \mita{expr},\mita{stmt\_whencode})
-% \\
-% OR(\mita{grammar}) & ::= &
-%  \mtt{(} \mita{grammar} \ANY{\ttmid \mita{grammar}} \mtt{)}
-\end{tabular}}
 
 \begin{grammar}
   \RULE{\rt{OR}(\NT{grammar})}
@@ -628,36 +587,9 @@ OPTDOTSEQ(\some{\mita{decl\_statement}} \(\mid\) \mita{expr},\mita{stmt\_whencod
   \RULE{\rt{DOTSEQ}(\NT{grammar},\NT{whencode})}
   \CASE{\ldots \opt{\NT{whencode}} \ANY{\NT{grammar} \ldots \opt{\NT{whencode}}}}
 
-% \noindent{\footnotesize\begin{tabular}{r@{\,\,\,}c@{\,\,\,}l}
-% DOTSEQ(\mita{grammar},\mita{whencode}) & ::= &
-% \\ \multicolumn{3}{l}{\air\air\phantom{\(\mid\)}
-%  \mtt{\ldots} \opt{\mita{whencode}} \ANY{\mita{grammar} \mtt{\ldots}
-%  \opt{\mita{whencode}}}}
-% \\ \multicolumn{3}{l}{\air\air\(\mid\)
-%  \mtt{ooo} \opt{\mita{whencode}} \ANY{\mita{grammar} \mtt{ooo}
-%  \opt{\mita{whencode}}}}
-% \\ \multicolumn{3}{l}{\air\air\(\mid\)
-%  \mtt{***} \opt{\mita{whencode}} \ANY{\mita{grammar} \mtt{***}
-%  \opt{\mita{whencode}}}}
-% \end{tabular}}
-
   \RULE{\rt{NEST}(\NT{grammar},\NT{whencode})}
   \CASE{<\ldots \NT{grammar} \ANY{\ldots \opt{\NT{whencode}} \NT{grammar}} \ldots>}
   \CASE{<+\ldots \NT{grammar} \ANY{\ldots \opt{\NT{whencode}} \NT{grammar}} \ldots+>}
-
-% \noindent{\footnotesize\begin{tabular}{r@{\,\,\,}c@{\,\,\,}l}
-% NEST(\mita{grammar},\mita{whencode}) & ::= &
-% \\ \multicolumn{3}{l}{\air\air\phantom{\(\mid\)}
-%  \mtt{<\ldots} \mita{grammar} \ANY{\ldots \opt{\mita{whencode}}
-%  \mita{grammar}} \mtt{\ldots>}}
-% \\ \multicolumn{3}{l}{\air\air\(\mid\)
-%  \mtt{<ooo} \mita{grammar} \ANY{ooo \opt{\mita{whencode}} \mita{grammar}}
-%  \mtt{ooo>}}
-% \\ \multicolumn{3}{l}{\air\air\(\mid\)
-%  \mtt{<***} \mita{grammar} \ANY{*** \opt{\mita{whencode}} \mita{grammar}}
-%  \mtt{***>}}
-% \end{tabular}}
-
 \end{grammar}
 
 %\vspace{\baselineskip}
@@ -755,35 +687,6 @@ in a concise way.
 
   \RULE{type}
   \CASE{\NT{ctype} \OR \mth{\T{metaid}^{\ssf{Type}}}}
-\end{grammar}
-
-\section{To be fixed}
-
-\subsection{From Toplevel Transformation}
-
-\begin{grammar}
-  \RULE{initialize\_list}\CASE{}
-  \RULE{TMetaStmList}\CASE{}
-  \RULE{fun\_start}\CASE{Also in statements}
-  \RULE{decl\_stmt}\CASE{}
-  \RULE{exp}\CASE{}
-  \RULE{when\_start}\CASE{}
-  \RULE{rule\_elem\_stmt}\CASE{}
-\end{grammar}
-
-\subsection{From Types}
-
-\begin{grammar}
-  \RULE{ident}\CASE{}
-  \RULE{pure\_ident}\CASE{}
-  \RULE{eexpr}\CASE{}
-\end{grammar}
-
-\subsection{...}
-
-\begin{grammar}
-  \RULE{decl\_var}\CASE{From statements::decl\_stmt}
-  \RULE{includes}\CASE{From statements}
 \end{grammar}
 
 \include{examples}
