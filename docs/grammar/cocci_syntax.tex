@@ -447,7 +447,7 @@ the use of these annotations:
 
   \RULE{\rt{struct\_decl}}
   \CASE{\NT{ctype} \NT{d\_ident};}
-  \CASE{\NT{fn\_ctype} (* \NT{d\_ident}) (\NT{DECL\_LIST}\mth{(}\NT{name\_opt\_decl}\mth{)});)}
+  \CASE{\NT{fn\_ctype} (* \NT{d\_ident}) (\NT{PARAMSEQ}\mth{(}\NT{name\_opt\_decl}, \mth{\varepsilon)});)}
   \CASE{\opt{\NT{const\_vol}} \T{id} \NT{d\_ident};}
 
   \RULE{\rt{d\_ident}}
@@ -456,6 +456,11 @@ the use of these annotations:
   \RULE{\rt{fn\_ctype}}
   \CASE{\NT{generic\_ctype} \any{*}}
   \CASE{void \any{*}}
+
+  \RULE{\rt{name\_opt\_decl}}
+  \CASE{\NT{decl}}
+  \CASE{\NT{ctype}}
+  \CASE{\NT{fn\_ctype}}
 \end{grammar}
 
 $^\dag$ The optional \texttt{when} construct ends at the end of the line.
@@ -465,9 +470,17 @@ $^\dag$ The optional \texttt{when} construct ends at the end of the line.
 \begin{grammar}
 
   \RULE{\rt{fundecl}}
-  \CASE{\opt{static} \NT{funid}
+  \CASE{\opt{\NT{fn\_ctype}} \any{\NT{funinfo}} \NT{funid}
     (\opt{\NT{PARAMSEQ}\mth{(}\NT{param},\mth{\varepsilon)}})
     \ttlb~\opt{\NT{stmt\_seq}} \ttrb}
+
+  \RULE{\rt{funinfo}}
+  \CASE{static}
+  \CASE{auto}
+  \CASE{register}
+  \CASE{extern}
+  \CASE{inline}
+  \CASE{\color{red} \NT{attr}}
 
   \RULE{\rt{funid}}
   \CASE{\T{id}}
@@ -497,6 +510,12 @@ $^\dag$ The optional \texttt{when} construct ends at the end of the line.
 
   \RULE{\rt{one\_decl}}
   \CASE{\NT{type} \NT{id} \opt{[\opt{\NT{dot\_expr}}]}= \NT{nest\_expr};}
+
+  \RULE{\rt{decl}}
+  \CASE{\NT{ctype} \NT{id}}
+  \CASE{\NT{fn\_ctype} (* \NT{id}) (\NT{PARAMSEQ}\mth{(}\NT{name\_opt\_decl}, \mth{\varepsilon)})}
+  \CASE{void}
+  \CASE{\mth{\T{metaid}^{\ssf{Param}}}}
 \end{grammar}
 
 \section{Statements}
