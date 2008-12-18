@@ -3,6 +3,8 @@
 *.haux
 *.html
 *.htoc
+*.gif
+*.css
 *.log
 *.out
 *.pdf
