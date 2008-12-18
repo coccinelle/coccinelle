@@ -292,7 +292,7 @@ The grammar rule for the minus or plus slice of a transformation is as follows:
 \begin{grammar}
 
   \RULE{\rt{transformation}}
-  \CASE{\any{\NT{include}} \opt{\NT{OPTDOTSEQ}(\some{\NT{fun\_decl\_stmt}} \OR \NT{expr}, \NT{when})}}
+  \CASE{\any{\NT{include}} \opt{\NT{OPTDOTSEQ}\mth{(}\some{\NT{fun\_decl\_stmt}} \OR \NT{expr}, \NT{when}\mth{)}}}
 
   \RULE{\rt{include}}
   \CASE{\#include \T{include\_string}}
@@ -324,8 +324,8 @@ The grammar rule for the minus or plus slice of a transformation is as follows:
   \CASE{when false != \NT{expr}}
 
   \RULE{\rt{when\_code}}
-  \CASE{\NT{OPTDOTSEQ}(\some{\NT{decl\_stmt}}, \NT{when})}
-  \CASE{\NT{OPTDOTSEQ}(\NT{expr}, \NT{when})}
+  \CASE{\NT{OPTDOTSEQ}\mth{(}\some{\NT{decl\_stmt}}, \NT{when}\mth{)}}
+  \CASE{\NT{OPTDOTSEQ}\mth{(}\NT{expr}, \NT{when}\mth{)}}
 
   \RULE{\rt{rule\_elem\_stmt}}
   \CASE{\NT{one\_decl}}
@@ -373,7 +373,7 @@ The grammar rule for the minus or plus slice of a transformation is as follows:
 \end{grammar}
 
 \begin{grammar}
-  \RULE{\rt{OPTDOTSEQ}(\rt{grammar}, \rt{when\_ds})}
+  \RULE{\rt{OPTDOTSEQ}\mth{(}\rt{grammar}, \rt{when\_ds}\mth{)}}
   \CASE{}\multicolumn{3}{r}{\hspace{1cm}
   \KW{\opt{... \opt{\NT{when\_ds}}} \NT{grammar}
     \ANY{... \opt{\NT{when\_ds}} \NT{grammar}}
@@ -447,7 +447,7 @@ the use of these annotations:
 
   \RULE{\rt{struct\_decl}}
   \CASE{\NT{ctype} \NT{d\_ident};}
-  \CASE{\NT{fn\_ctype} (* \NT{d\_ident}) (\NT{});)}
+  \CASE{\NT{fn\_ctype} (* \NT{d\_ident}) (\NT{DECL\_LIST}\mth{(}\NT{name\_opt\_decl}\mth{)});)}
   \CASE{\opt{\NT{const\_vol}} \T{id} \NT{d\_ident};}
 
   \RULE{\rt{d\_ident}}
@@ -466,7 +466,7 @@ $^\dag$ The optional \texttt{when} construct ends at the end of the line.
 
   \RULE{\rt{fundecl}}
   \CASE{\opt{static} \NT{funid}
-    (\opt{\NT{PARAMSEQ}(\NT{param},\mth{\varepsilon})})
+    (\opt{\NT{PARAMSEQ}\mth{(}\NT{param},\mth{\varepsilon)}})
     \ttlb~\opt{\NT{stmt\_seq}} \ttrb}
 
   \RULE{\rt{funid}}
@@ -481,7 +481,7 @@ $^\dag$ The optional \texttt{when} construct ends at the end of the line.
 \end{grammar}
 
 \begin{grammar}
-  \RULE{\rt{PARAMSEQ}(\rt{grammar\_p}, \rt{when\_p})}
+  \RULE{\rt{PARAMSEQ}\mth{(}\rt{grammar\_p}, \rt{when\_p}\mth{)}}
   \CASE{\mth{(}\NT{grammar\_p}\OR \ldots \opt{\NT{when\_p}}\mth{)} \ANY{, \NT{grammar\_p}\OR , \ldots \opt{\NT{when\_p}}}}
 \end{grammar}
 
@@ -522,8 +522,8 @@ allowed.
   \CASE{switch (\opt{\NT{dot\_expr}}) \ttlb \any{\NT{case\_line}} \ttrb}
   \CASE{return \opt{\NT{dot\_expr}};}
   \CASE{\ttlb~\opt{\NT{stmt\_seq}} \ttrb}
-  \CASE{\NT{NEST}(\some{\NT{decl\_stmt}}, \NT{when})}
-  \CASE{\NT{NEST}(\NT{expr}, \NT{when})}
+  \CASE{\NT{NEST}\mth{(}\some{\NT{decl\_stmt}}, \NT{when}\mth{)}}
+  \CASE{\NT{NEST}\mth{(}\NT{expr}, \NT{when}\mth{)}}
   \CASE{break;}
   \CASE{continue;}
   \CASE{\NT{id}:}
@@ -532,21 +532,21 @@ allowed.
 
   \RULE{\rt{single\_stmt}}
   \CASE{\NT{stmt}}
-  \CASE{\NT{OR}(\NT{stmt})}
+  \CASE{\NT{OR}\mth{(}\NT{stmt}\mth{)}}
 
   \RULE{\rt{decl\_stmt}}
   \CASE{\mth{\T{metaid}^{\ssf{StmtList}}}}
   \CASE{\NT{decl\_var}}
   \CASE{\NT{stmt}}
-  \CASE{\NT{OR}(\NT{stmt\_seq})}
+  \CASE{\NT{OR}\mth{(}\NT{stmt\_seq}\mth{)}}
 
   \RULE{\rt{stmt\_seq}}
   \CASE{\any{\NT{decl\_stmt}}
-    \opt{\NT{DOTSEQ}(\some{\NT{decl\_stmt}},
-      \NT{when}) \any{\NT{decl\_stmt}}}}
+    \opt{\NT{DOTSEQ}\mth{(}\some{\NT{decl\_stmt}},
+      \NT{when}\mth{)} \any{\NT{decl\_stmt}}}}
   \CASE{\any{\NT{decl\_stmt}}
-    \opt{\NT{DOTSEQ}(\NT{expr},
-      \NT{when}) \any{\NT{decl\_stmt}}}}
+    \opt{\NT{DOTSEQ}\mth{(}\NT{expr},
+      \NT{when}\mth{)} \any{\NT{decl\_stmt}}}}
 
   \RULE{\rt{case\_line}}
   \CASE{default : \NT{stmt\_seq}}
@@ -558,13 +558,13 @@ allowed.
 \end{grammar}
 
 \begin{grammar}
-  \RULE{\rt{OR}(\rt{grammar\_o})}
+  \RULE{\rt{OR}\mth{(}\rt{grammar\_o}\mth{)}}
   \CASE{( \NT{grammar\_o} \ANY{\ttmid \NT{grammar\_o}})}
 
-  \RULE{\rt{DOTSEQ}(\rt{grammar\_d}, \rt{when\_d})}
+  \RULE{\rt{DOTSEQ}\mth{(}\rt{grammar\_d}, \rt{when\_d}\mth{)}}
   \CASE{\ldots \opt{\NT{when\_d}} \ANY{\NT{grammar\_d} \ldots \opt{\NT{when\_d}}}}
 
-  \RULE{\rt{NEST}(\rt{grammar\_n}, \rt{when\_n})}
+  \RULE{\rt{NEST}\mth{(}\rt{grammar\_n}, \rt{when\_n}\mth{)}}
   \CASE{<\ldots \NT{grammar\_n} \ANY{\ldots \opt{\NT{when\_n}} \NT{grammar\_n}} \ldots>}
   \CASE{<+\ldots \NT{grammar\_n} \ANY{\ldots \opt{\NT{when\_n}} \NT{grammar\_n}} \ldots+>}
 \end{grammar}
@@ -594,18 +594,18 @@ in a concise way.
 
 \begin{grammar}
   \RULE{\rt{expr}}
-  \CASE{\NT{EXPR}(\NT{expr})}
+  \CASE{\NT{EXPR}\mth{(}\NT{expr}\mth{)}}
 
   \RULE{\rt{nest\_expr}}
-  \CASE{\NT{EXPR}(\NT{nest\_expr})}
-  \CASE{\NT{NEST}(\NT{nest\_expr}, \NT{exp\_whencode})}
+  \CASE{\NT{EXPR}\mth{(}\NT{nest\_expr}\mth{)}}
+  \CASE{\NT{NEST}\mth{(}\NT{nest\_expr}, \NT{exp\_whencode}\mth{)}}
 
   \RULE{\rt{dot\_expr}}
-  \CASE{\NT{EXPR}(\NT{dot\_expr})}
-  \CASE{\NT{NEST}(\NT{dot\_expr}, \NT{exp\_whencode})}
+  \CASE{\NT{EXPR}\mth{(}\NT{dot\_expr}\mth{)}}
+  \CASE{\NT{NEST}\mth{(}\NT{dot\_expr}, \NT{exp\_whencode}\mth{)}}
   \CASE{... \opt{\NT{exp\_whencode}}}
 
-  \RULE{\rt{EXPR}(\rt{exp})}
+  \RULE{\rt{EXPR}\mth{(}\rt{exp}\mth{)}}
   \CASE{\NT{exp} \NT{assign\_op} \NT{exp}}
   \CASE{\NT{exp}++}
   \CASE{\NT{exp}--}
@@ -616,7 +616,7 @@ in a concise way.
   \CASE{\NT{exp} [\NT{dot\_expr}]}
   \CASE{\NT{exp} . \NT{id}}
   \CASE{\NT{exp} -> \NT{id}}
-  \CASE{\NT{exp}(\opt{\NT{PARAMSEQ}(\NT{arg}, \NT{exp\_whencode})})}
+  \CASE{\NT{exp}(\opt{\NT{PARAMSEQ}\mth{(}\NT{arg}, \NT{exp\_whencode}\mth{)}})}
   \CASE{\NT{id}}
   \CASE{\mth{\T{metaid}^{\ssf{Func}}}}
   \CASE{\mth{\T{metaid}^{\ssf{LocalFunc}}}}
@@ -625,7 +625,7 @@ in a concise way.
   \CASE{\mth{\T{metaid}^{\ssf{Const}}}}
   \CASE{\NT{const}}
   \CASE{(\NT{dot\_expr})}
-  \CASE{\NT{OR}(\NT{exp})}
+  \CASE{\NT{OR}\mth{(}\NT{exp}\mth{)}}
 
   \RULE{\rt{arg}}
   \CASE{\NT{nest\_expr}}
