@@ -23,7 +23,7 @@ world: all html
 universe: world install
 
 install:
-	cp $(HTML) $(WEB)
+	cp *.gif *.html $(WEB)
 	cp $(PDF) $(WEB)
 	chown apache:apache -R $(WEB)
 	chmod a-w -R $(WEB)
