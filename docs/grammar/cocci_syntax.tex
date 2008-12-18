@@ -128,7 +128,8 @@ checked by a subsequent analysis.
   \CASE{@ \NT{rulename} @ \any{\NT{metadecl}} @@}
 
   \RULE{\rt{rulename}}
-  \CASE{\T{id} \OPT{extends \T{id}} \OPT{depends on \NT{dep}} \opt{\NT{iso}} \opt{\NT{disable}} \opt{\NT{exists}} \opt{expression}}
+  \CASE{\T{id} \OPT{extends \T{id}} \OPT{depends on \NT{dep}} \opt{\NT{iso}}
+    \opt{\NT{disable}} \opt{\NT{exists}} \opt{expression}}
   \CASE{script:\T{language} \OPT{depends on \NT{dep}}}
 
   \RULE{\rt{dep}}
@@ -506,7 +507,6 @@ context in which only one statement is allowed, and {\em decl\_statement}
 for a context in which a declaration, statement, or sequence thereof is
 allowed.
 
-%\vspace{\baselineskip}
 \begin{grammar}
   \RULE{\rt{stmt}}
   \CASE{\NT{include}}
@@ -528,30 +528,6 @@ allowed.
   \CASE{\NT{ident}:}
   \CASE{goto \NT{ident};}
   \CASE{\ttlb \NT{stmt\_seq} \ttrb}
-
-% \noindent{\footnotesize\begin{tabular}{r@{\,\,\,}c@{\,\,\,}l}
-% \mita{statement} & ::= &
-%   \mth{\msf{metaid}^{\ssf{Stmt}}}
-% \\&\multicolumn{1}{r}{\(\mid\)}&
-%   \mita{expr} \mtt{;}
-% \\&\multicolumn{1}{r}{\(\mid\)}&
-%   \mtt{if} \mtt{(} \mita{dot\_expr} \mtt{)} \mita{single\_statement}
-%   \opt{\mtt{else} \mita{single\_statement}}
-% \\&\multicolumn{1}{r}{\(\mid\)}&
-%   \mtt{for} \mtt{(} \opt{\mita{dot\_expr}} \mtt{;} \opt{\mita{dot\_expr}} \mtt{;}
-%   \opt{\mita{dot\_expr}} \mtt{)} \mita{single\_statement}
-% \\&\multicolumn{1}{r}{\(\mid\)}&
-%   \mtt{while} \mtt{(} \mita{dot\_expr} \mtt{)} \mita{single\_statement}
-% \\&\multicolumn{1}{r}{\(\mid\)}&
-%   \mtt{do} \mita{single\_statement} \mtt{while} \mtt{(} \mita{dot\_expr} \mtt{)}
-%   \mtt{;}
-% \\&\multicolumn{1}{r}{\(\mid\)}&
-%   \mtt{return} \opt{\mita{dot\_expr}} \mtt{;}
-% \\&\multicolumn{1}{r}{\(\mid\)}&
-%   \ttlb~\opt{\mita{statement\_sequence}} \ttrb
-% \\&\multicolumn{1}{r}{\(\mid\)}&
-%   NEST(\some{\mita{decl\_statement}} \(\mid\) \mita{expr}, \mita{when})
-% \end{tabular}}
 
   \RULE{\rt{single\_stmt}}
   \CASE{\NT{stmt}}
@@ -592,8 +568,6 @@ allowed.
   \CASE{<+\ldots \NT{grammar} \ANY{\ldots \opt{\NT{whencode}} \NT{grammar}} \ldots+>}
 \end{grammar}
 
-%\vspace{\baselineskip}
-
 \noindent
 OR is a macro that generates a disjunction of patterns.  The three
 tokens \T{(}, \T{\ttmid}, and \T{)} must appear in the leftmost
@@ -617,7 +591,6 @@ ellipses, {\em nest\_expr} allows a nest but not an ellipsis, and {\em
 dot\_expr} allows both.  The EXPR macro is used to express these variants
 in a concise way.
 
-%\vspace{\baselineskip}
 \begin{grammar}
   \RULE{\rt{expr}}
   \CASE{\NT{EXPR}(\NT{expr})}
