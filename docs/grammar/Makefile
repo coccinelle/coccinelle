@@ -49,3 +49,4 @@ install:
 	else \
 	echo -e "\n\n *** Hevea: Unable to find xxdate.exe ***\n\n"; \
 	fi
+	hacha -o index.html cocci_syntax.html
