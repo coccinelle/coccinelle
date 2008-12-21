@@ -541,9 +541,6 @@ let main () =
       end);
     args := List.rev !args;
 
-    (if !FC.all_includes && !FC.no_includes
-    then failwith "cannot set both all_includes and no_includes");
-
     if !cocci_file <> "" && (not (!cocci_file =~ ".*\\.\\(sgrep\\|spatch\\)$"))
     then cocci_file := Common.adjust_ext_if_needed !cocci_file ".cocci";
 
