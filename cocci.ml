@@ -430,32 +430,37 @@ let sp_contain_typed_metavar rules =
  * serio.c is related we think to #include <linux/serio.h> 
  *)
 
-let (includes_to_parse: (Common.filename * Parse_c.program2) list -> 'a) = fun xs ->
-  if !Flag_cocci.no_includes
-  then []
-  else
-    xs +> List.map (fun (file, cs) -> 
-      let dir = Common.dirname file in
-      
-      cs +> Common.map_filter (fun (c,_info_item) -> 
-	match c with
-	| Ast_c.CppTop (Ast_c.Include {Ast_c.i_include = ((x,ii));
-                         i_rel_pos = info_h_pos;})  -> 
-            (match x with
+let (includes_to_parse:
+       (Common.filename * Parse_c.program2) list ->
+	 Flag_cocci.include_options -> 'a) = fun xs choose_includes ->
+  match choose_includes with
+    Flag_cocci.I_UNSPECIFIED -> failwith "not possible"
+  | Flag_cocci.I_NO_INCLUDES -> []
+  | x ->
+      let all_includes = x = Flag_cocci.I_ALL_INCLUDES in
+      xs +> List.map (fun (file, cs) -> 
+	let dir = Common.dirname file in
+	
+	cs +> Common.map_filter (fun (c,_info_item) -> 
+	  match c with
+	  | Ast_c.CppTop
+	      (Ast_c.Include
+		 {Ast_c.i_include = ((x,ii)); i_rel_pos = info_h_pos;})  -> 
+	    (match x with
             | Ast_c.Local xs -> 
 		let f = Filename.concat dir (Common.join "/" xs) in
 	      (* for our tests, all the files are flat in the current dir *)
 		if not (Sys.file_exists f) && !Flag_cocci.relax_include_path
 		then
 		  let attempt2 = Filename.concat dir (Common.last xs) in
-		  if not (Sys.file_exists f) && !Flag_cocci.all_includes
+		  if not (Sys.file_exists f) && all_includes
 		  then Some (Filename.concat !Flag_cocci.include_path 
                                (Common.join "/" xs))
 		  else Some attempt2
 		else Some f
-		    
+
             | Ast_c.NonLocal xs -> 
-		if !Flag_cocci.all_includes ||
+		if all_includes ||
 	        Common.fileprefix (Common.last xs) = Common.fileprefix file
 		then 
                   Some (Filename.concat !Flag_cocci.include_path 
@@ -463,11 +468,9 @@ let (includes_to_parse: (Common.filename * Parse_c.program2) list -> 'a) = fun x
 		else None
             | Ast_c.Wierd _ -> None
 		  )
-	| _ -> None
-	      )
-	)
-      +> List.concat
-      +> Common.uniq
+	  | _ -> None))
+	+> List.concat
+	+> Common.uniq
       
 let rec interpret_dependencies local global = function
     Ast_cocci.Dep s      -> List.mem s local
@@ -841,9 +844,9 @@ let rebuild_info_c_and_headers ccs isexp =
 
 
 
-let prepare_c files : file_info list = 
+let prepare_c files choose_includes : file_info list = 
   let cprograms = List.map cprogram_of_file_cached files in
-  let includes = includes_to_parse (zip files cprograms) in
+  let includes = includes_to_parse (zip files cprograms) choose_includes in
 
   (* todo?: may not be good to first have all the headers and then all the c *)
   let all = 
@@ -1363,10 +1366,19 @@ let full_engine2 (coccifile, isofile) cfiles =
 
     check_macro_in_sp_and_adjust toks;
 
+    
+
     let cocci_infos =
       prepare_cocci ctls free_var_lists negated_pos_lists
 	used_after_lists positions_lists astcocci in
-    let c_infos  = prepare_c cfiles in
+    let choose_includes =
+      match !Flag_cocci.include_options with
+	Flag_cocci.I_UNSPECIFIED ->
+	  if contain_typedmetavar
+	  then Flag_cocci.I_NORMAL_INCLUDES
+	  else Flag_cocci.I_NO_INCLUDES
+      |	x -> x in
+    let c_infos  = prepare_c cfiles choose_includes in
 
     show_or_not_ctl_tex astcocci ctls;
 

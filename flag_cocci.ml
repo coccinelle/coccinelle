@@ -26,13 +26,14 @@ let popl = ref false
 
 let ifdef_to_if = ref false
 
-let all_includes = ref false
+type include_options =
+    I_UNSPECIFIED | I_NO_INCLUDES | I_NORMAL_INCLUDES | I_ALL_INCLUDES
+let include_options = ref I_UNSPECIFIED
+
 let include_path = ref "include"
 (* if true then when have a #include "../../xx.h", we look also for xx.h in
  * current directory. This is because of how works extract_c_and_res
  *)
-
-let no_includes = ref false (* no includes at all, not even the local ones *)
 
 let relax_include_path = ref false 
 

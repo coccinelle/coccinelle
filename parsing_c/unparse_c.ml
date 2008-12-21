@@ -468,6 +468,18 @@ let remove_minus_and_between_and_expanded_and_fake xs =
   ) in
   xs
 
+(* normally, in C code, a semicolon is not preceded by a space or newline *)
+let adjust_before_semicolon toks =
+  let toks = List.rev toks in
+  let rec loop = function
+      [] -> []
+    | x::xs ->
+      if str_of_token2 x = ";" or str_of_token2 x = ")"
+      then
+	let (spaces, rest) = Common.span is_minusable_comment xs in
+	x :: loop rest
+      else x :: loop xs in
+  List.rev (loop toks)
 
 let is_ident_like s = s ==~ Common.regexp_alpha
 
@@ -758,6 +770,7 @@ let pp_program2 xs outfile  =
           (* phase2: can now start to filter and adjust *)
           let toks = adjust_indentation toks in
           let toks = remove_minus_and_between_and_expanded_and_fake toks in
+	  let toks = adjust_before_semicolon toks in
           (* assert Origin + Cocci + C and no minus *)
           let toks = add_space toks in
           let toks = fix_tokens toks in
