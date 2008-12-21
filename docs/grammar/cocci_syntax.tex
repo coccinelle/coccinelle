@@ -8,6 +8,7 @@
 \usepackage{listings}
 \usepackage[usenames,dvipsnames]{color}
 \usepackage[T1]{fontenc}
+\usepackage{multirow}
 
 \lstset{basicstyle=\ttfamily,numbers=left, numberstyle=\tiny, stepnumber=1, numbersep=5pt,language=C,commentstyle=\color{OliveGreen},keywordstyle=\color{blue},stringstyle=\color{BrickRed}}
 
@@ -22,21 +23,21 @@
 \ifhevea
 \lstdefinelanguage{Cocci}{
 morekeywords={idexpression,expression,statement,identifier,
-parameter,list,when,strict,any,forall,exists},
+parameter,list,when,strict,any,forall,exists,disable,unlikely,
+local,position,typedef,script,python},
 keywordstyle=\color{Bittersweet}\bfseries,
 sensitive=false,
-morecomment=[s][\color{OliveGreen}]{@}{@@},
-morecomment=[s][\color{OliveGreen}]{@@}{@@},
+moredelim=[is][\color{OliveGreen}]{@M}{@M},
 moredelim=[il][\color{blue}]{@+},
 moredelim=[il][\color{BrickRed}]{@-}}
 \else
 \lstdefinelanguage{Cocci}{
 morekeywords={idexpression,expression,statement,identifier,
-parameter,list,when,strict,any,forall,exists},
+parameter,list,when,strict,any,forall,exists,disable,unlikely,
+local,position,typedef,script,python},
 keywordstyle=\color{Bittersweet}\bfseries,
 sensitive=false,
-morecomment=*[s][\color{OliveGreen}]{@}{@@},
-morecomment=*[s][\color{OliveGreen}]{@@}{@@},
+moredelim=*[is][\color{OliveGreen}]{@M}{@M},
 moredelim=[il][\color{blue}]{@+},
 moredelim=[il][\color{BrickRed}]{@-}
 }
@@ -117,10 +118,13 @@ analogous to the filename specifications in the standard patch syntax.
 
 \section{Metavariables}
 
-Fresh metavariables must only be used in {\tt +} code.  Metavariables must
-occur at least once in the transformation immediately following their
-declaration.  These properties are not expressed in the grammar, but are
-checked by a subsequent analysis.
+Fresh metavariables must only be used in {\tt +} code.  Metavariables
+must occur at least once in the transformation immediately following
+their declaration.  These properties are not expressed in the grammar,
+but are checked by a subsequent analysis.  The metavariables are
+designated according to the kind of terms they can match, such as a
+statement, an identifier, or an expression.  An expression
+metavariable can be further constrained by its type.
 
 \begin{grammar}
   \RULE{\rt{metavariables}}
@@ -236,6 +240,17 @@ declarations and the grammar of transformations, and is defined on
 page~\pageref{types}.
 
 \section{Transformation}
+
+The transformation specification essentially has the form of C code,
+except that lines to remove are annotated with \verb+-+ in the first
+column, and lines to add are annotated with \verb-+-.  A
+transformation specification can also use {\em dots}, ``\verb-...-'',
+describing an arbitrary sequence of function arguments or instructions
+within a control-flow path.  Dots may be modified with a {\tt when}
+clause, indicating a pattern that should not occur anywhere within the
+matched sequence.  Finally, specify a disjunction of patterns, of the
+form \mtt{( \mth{\mita{pat}_1} | \mita{\ldots} | \mth{\mita{pat}_n}
+  )}.
 
 The grammar of the transformation is not actually the grammar of the SmPL
 code that can be written by the programmer, but the grammar of the slice of
@@ -400,7 +415,6 @@ the use of these annotations:
 \item Nested dots, {\em i.e.} dots enclosed in {\tt <} and {\tt >}, cannot
   occur on a line with any marking.
 \end{itemize}
-
 
 \section{Types}
 \label{types}
