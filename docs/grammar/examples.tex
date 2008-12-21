@@ -2,15 +2,25 @@
 \section{Examples}
 %\label{sec:examples}
 
+We provide some real or reallistic examples in the following section.
+Each example is detailled with some C code on which its applied. The
+description explains the matching process and when applicable the
+rewriting rules.
+
 \subsection{Function renaming}
+
+One of the primary goal of Coccinelle is to perform software
+evolution.  For instance, Coccinelle could be used to perform function
+renaming. In the following example, every occurrence of function call
+to \texttt{foo} is replaced by a call to the \texttt{bar} function.
 
 \begin{tabular}{ccc}
 Before & Semantic patch & After \\
 \begin{minipage}[t]{.3\linewidth}
 \begin{lstlisting}
-#DEFINE TEST "Foo"
+#DEFINE TEST "foo"
 
-printf("Foo");
+printf("foo");
 
 int main(int i) {
 //Test
@@ -29,9 +39,9 @@ int main(int i) {
 &
 \begin{minipage}[t]{.3\linewidth}
 \begin{lstlisting}[language=Cocci]
-@@
+@M@@
 
-@@
+@@@M
 
 
 @-- foo()
@@ -41,9 +51,9 @@ int main(int i) {
 &
 \begin{minipage}[t]{.3\linewidth}
 \begin{lstlisting}
-#DEFINE TEST "Foo"
+#DEFINE TEST "foo"
 
-printf("Foo");
+printf("foo");
 
 int main(int i) {
 //Test
@@ -61,9 +71,92 @@ int main(int i) {
 \end{minipage}\\
 \end{tabular}
 
+\subsection{Removing a function argument}
+
+Another important kind of evolution is the introduction or deletion of
+function argument. In the following example, the \texttt{rule1} rule
+looks for functions of type \texttt{irqreturn\_t} with two arguments. A
+second anonymous rule, then looks for calls of the previously matched
+functions which provides three arguments. The third argument is then
+removed.
+
+\begin{tabular}{c@{\hspace{1cm}}c}
+\begin{lstlisting}[language=Cocci,name=arg]
+@M@ rule1 @
+identifier fn;
+identifier irq, dev_id;
+typedef irqreturn_t;
+@@@M
+
+static irqreturn_t fn (int irq, void *dev_id)
+{
+   ...
+}
+
+\end{lstlisting}
+&
+\begin{lstlisting}[language=Cocci,name=arg]
+@M@@
+identifier rule1.fn;
+expression E1, E2, E3;
+@@@M
+
+ fn(E1, E2
+@--  ,E3
+   )
+\end{lstlisting}\\
+\end{tabular}
+
+\subsection{Introduction of a macro}
+
+Finally, to avoid code duplication or error prone code, macros or
+functions are introduced such as \texttt{BUG\_ON},
+\texttt{DIV\_ROUND\_UP} ou \texttt{FIELD\_SIZE}. In these cases, the
+semantic patch looks for the old code pattern and replaces it by the
+new code.
+
+For instance, the \texttt{BUG\_ON} macro enables to place some
+assertion on expressions. However, the \texttt{BUG\_ON} macro could
+not be used when the asserted expression may have some side-effects,
+such as a function call, as a macro may evaluate more than once theirs
+arguments.
+
+\begin{tabular}{c@{\hspace{1cm}}c}
+\begin{lstlisting}[language=Cocci,name=bugon]
+@M@@
+expression E,f;
+@@@M
+
+(
+  if (<... f(...) ...>) { BUG(); }
+|
+@-- if (E) { BUG(); }
+@++ BUG_ON(E);
+)
+
+\end{lstlisting}
+&
+\begin{lstlisting}[language=Cocci,name=bugon]
+@M@ disable unlikely @
+expression E,f;
+@@@M
+
+(
+  if (<... f(...) ...>) { BUG(); }
+|
+@-- if (unlikely(E)) { BUG(); }
+@++ BUG_ON(E);
+)
+\end{lstlisting}\\
+\end{tabular}
+
 \subsection{Look for \texttt{NULL} dereference}
 
-\begin{tabular}{cc}
+This SmPL match looks for \texttt{NULL} dereferences. Once an
+expression has been compared to \texttt{NULL}, a dereference to this
+expression is prohibited unless the variable is reaffected.
+
+\begin{tabular}{c@{\hspace{5mm}}p{.5\linewidth}}
 Original & Semantic match \\
 \begin{minipage}[t]{.5\linewidth}
 \begin{lstlisting}
@@ -75,28 +168,103 @@ if (!foo) {
 foo->ok = 1;
 return;
 \end{lstlisting}
+%
+  \begin{center}
+    Matched lines
+  \end{center}
+
+\begin{lstlisting}[language=Cocci]
+foo = kmalloc(1024);
+@-if (!foo) {
+@-  printk ("Error %s", foo->here);
+  return;
+}
+foo->ok = 1;
+return;
+\end{lstlisting}
 \end{minipage}
 &
 \begin{minipage}[t]{.5\linewidth}
 \begin{lstlisting}[language=Cocci]
-@@
+@M@@
 expression E, E1;
 identifier f;
 statement S1,S2,S3;
-@@
+@@@M
 
-@-* if (E == NULL)
+@+* if (E == NULL)
 {
   ... when != if (E == NULL) S1 else S2
       when != E = E1
-@-* E->f
+@+* E->f
   ... when any
   return ...;
 }
 else S3
 \end{lstlisting}
-\end{minipage}\\
+\end{minipage}
 \end{tabular}
+
+\subsection{Reference counter: the of\_xxx API}
+
+Coccinelle could be used in conjunction with Python. Python code is
+used inside special SmPL rule annoted with \texttt{script:python}.
+Python rules inherit metavariables, such as identifier or token
+positions, from other SmPL rules. The inherited metavariables could
+then be manipulated by Python code.
+
+The following semantic match looks for a call to the
+\texttt{of\_find\_node\_by\_name} function. This call increment a
+counter which must be decremented to release the resource. Then,
+\texttt{when} there is no call to \texttt{of_node_put}, no new
+affectation to the \texttt{device_node} variable \texttt{n} and a
+\texttt{return} statement is reached, a bug is detected and the
+position \texttt{p1} and \texttt{p2} are initiliazed. As the python
+only depends on these two position, it is evaluated. In the following
+case, some emacs Org mode data are produced.
+
+\begin{lstlisting}[language=Cocci]
+@M@ r exists @
+local idexpression struct device_node *n;
+position p1, p2;
+statement S1,S2;
+expression E,E1;
+@@@M
+
+(
+if (!(n@p1 = of_find_node_by_name(...))) S1
+|
+n@p1 = of_find_node_by_name(...)
+)
+<... when != of_node_put(n)
+    when != if (...) { <+... of_node_put(n) ...+> }
+    when != true !n  || ...
+    when != n = E
+    when != E = n
+if (!n || ...) S2
+...>
+(
+  return <+...n...+>;
+|
+return@p2 ...;
+|
+n = E1
+|
+E1 = n
+)
+
+@M@ script:python @
+p1 << r.p1;
+p2 << r.p2;
+@@@M
+
+print "* TODO [[view:%s::face=ovl-face1::linb=%s::colb=%s::cole=%s]
+  [inc. counter:%s::%s]]"
+    % (p1[0].file,p1[0].line,p1[0].column,p1[0].column_end,
+      p1[0].file,p1[0].line)
+print "[[view:%s::face=ovl-face2::linb=%s::colb=%s::cole=%s][return]]"
+  % (p2[0].file,p2[0].line,p2[0].column,p2[0].column_end)
+\end{lstlisting}
 
 % \begin{tabular}{ccc}
 % Before & Semantic patch & After \\
