@@ -3,7 +3,7 @@
 %\label{sec:examples}
 
 We provide some real or reallistic examples in the following section.
-Each example is detailled with some C code on which its applied. The
+Each example is detailled with some C code on which it is applied. The
 description explains the matching process and when applicable the
 rewriting rules.
 
@@ -11,8 +11,8 @@ rewriting rules.
 
 One of the primary goal of Coccinelle is to perform software
 evolution.  For instance, Coccinelle could be used to perform function
-renaming. In the following example, every occurrence of function call
-to \texttt{foo} is replaced by a call to the \texttt{bar} function.
+renaming. In the following example, every occurrence of a function
+call \texttt{foo} is replaced by a call to the \texttt{bar} function.\\
 
 \begin{tabular}{ccc}
 Before & Semantic patch & After \\
@@ -71,16 +71,17 @@ int main(int i) {
 \end{minipage}\\
 \end{tabular}
 
+\newpage
 \subsection{Removing a function argument}
 
 Another important kind of evolution is the introduction or deletion of
-function argument. In the following example, the \texttt{rule1} rule
-looks for functions of type \texttt{irqreturn\_t} with two arguments. A
-second anonymous rule, then looks for calls of the previously matched
-functions which provides three arguments. The third argument is then
-removed.
+a function argument. In the following example, the \texttt{rule1} rule
+looks for functions of type \texttt{irqreturn\_t} with two
+arguments. A second \emph{anonymous} rule, then looks for calls of the
+previously matched functions which provides three arguments. The third
+argument is then removed to correspond to the new function prototype.\\
 
-\begin{tabular}{c@{\hspace{1cm}}c}
+\begin{tabular}{c}
 \begin{lstlisting}[language=Cocci,name=arg]
 @M@ rule1 @
 identifier fn;
@@ -93,9 +94,6 @@ static irqreturn_t fn (int irq, void *dev_id)
    ...
 }
 
-\end{lstlisting}
-&
-\begin{lstlisting}[language=Cocci,name=arg]
 @M@@
 identifier rule1.fn;
 expression E1, E2, E3;
@@ -106,6 +104,8 @@ expression E1, E2, E3;
    )
 \end{lstlisting}\\
 \end{tabular}
+
+\vspace{1cm}
 
 \begin{tabular}{c}
   \texttt{/drivers/atm/firestream.c} at line 1653 before\\
@@ -119,7 +119,10 @@ static void fs_poll (unsigned long data)
         add_timer (&dev->timer);
 }
 \end{lstlisting}\\
+\vspace{1cm}
 \\
+
+
   \texttt{/drivers/atm/firestream.c} at line 1653 after\\
 \begin{lstlisting}[language=PatchC]
 static void fs_poll (unsigned long data)
@@ -133,21 +136,21 @@ static void fs_poll (unsigned long data)
 \end{lstlisting}\\
 \end{tabular}
 
+\newpage
 \subsection{Introduction of a macro}
 
-Finally, to avoid code duplication or error prone code, macros or
-functions are introduced such as \texttt{BUG\_ON},
-\texttt{DIV\_ROUND\_UP} ou \texttt{FIELD\_SIZE}. In these cases, the
-semantic patch looks for the old code pattern and replaces it by the
-new code.
+To avoid code duplication or error prone code, macros or functions are
+introduced such as \texttt{BUG\_ON}, \texttt{DIV\_ROUND\_UP} or
+\texttt{FIELD\_SIZE}. In these cases, the semantic patches look for the
+old code pattern and replace it by the new code.
 
 For instance, the \texttt{BUG\_ON} macro enables to place some
 assertion on expressions. However, the \texttt{BUG\_ON} macro could
 not be used when the asserted expression may have some side-effects,
 such as a function call, as a macro may evaluate more than once theirs
-arguments.
+arguments.\\
 
-\begin{tabular}{c@{\hspace{1cm}}c}
+\begin{tabular}{c}
 \begin{lstlisting}[language=Cocci,name=bugon]
 @M@@
 expression E,f;
@@ -160,9 +163,6 @@ expression E,f;
 @++ BUG_ON(E);
 )
 
-\end{lstlisting}
-&
-\begin{lstlisting}[language=Cocci,name=bugon]
 @M@ disable unlikely @
 expression E,f;
 @@@M
@@ -174,17 +174,43 @@ expression E,f;
 @++ BUG_ON(E);
 )
 \end{lstlisting}\\
+\end{tabular}\\
+
+{\color{red} To avoid miss interpretation of the \texttt{unlikely}
+  construction, its corresponding isomorphism is desactivated to find
+  more sites where the rewriting rule may apply.\\}
+
+
+For instance, with the previously shown example, Coccinelle generates
+patches like the following one.
+
+\begin{tabular}{c}
+\begin{lstlisting}[language=PatchC]
+@---- a/fs/ext3/balloc.c
+@++++ b/fs/ext3/balloc.c
+@@ -232,8 +232,7 @@ restart:
+                prev = rsv;
+        }
+        printk("Window map complete.\n");
+@--       if (bad)
+@--               BUG();
+@++       BUG_ON(bad);
+ }
+ #define rsv_window_dump(root, verbose) \
+        __rsv_window_dump((root), (verbose), __FUNCTION__)
+\end{lstlisting}
 \end{tabular}
 
+\newpage
 \subsection{Look for \texttt{NULL} dereference}
 
 This SmPL match looks for \texttt{NULL} dereferences. Once an
 expression has been compared to \texttt{NULL}, a dereference to this
-expression is prohibited unless the variable is reaffected.
+expression is prohibited unless the pointer variable is reaffected.\\
 
-\begin{tabular}{c@{\hspace{5mm}}p{.5\linewidth}}
-Original & Semantic match \\
-\begin{minipage}[t]{.5\linewidth}
+\begin{tabular}{c}
+    Original \\
+
 \begin{lstlisting}
 foo = kmalloc(1024);
 if (!foo) {
@@ -193,24 +219,14 @@ if (!foo) {
 }
 foo->ok = 1;
 return;
-\end{lstlisting}
-%
-  \begin{center}
-    Matched lines
-  \end{center}
+\end{lstlisting}\\
+  \end{tabular}
 
-\begin{lstlisting}[language=Cocci]
-foo = kmalloc(1024);
-@-if (!foo) {
-@-  printk ("Error %s", foo->here);
-  return;
-}
-foo->ok = 1;
-return;
-\end{lstlisting}
-\end{minipage}
-&
-\begin{minipage}[t]{.5\linewidth}
+\vspace{1cm}
+
+\begin{tabular}{c}
+  Semantic match\\
+
 \begin{lstlisting}[language=Cocci]
 @M@@
 expression E, E1;
@@ -227,10 +243,26 @@ statement S1,S2,S3;
   return ...;
 }
 else S3
-\end{lstlisting}
-\end{minipage}
+\end{lstlisting}\\
 \end{tabular}
 
+\vspace{1cm}
+
+\begin{tabular}{c}
+  Matched lines\\
+
+\begin{lstlisting}[language=PatchC]
+foo = kmalloc(1024);
+@-if (!foo) {
+@-  printk ("Error %s", foo->here);
+  return;
+}
+foo->ok = 1;
+return;
+\end{lstlisting}\\
+\end{tabular}
+
+\newpage
 \subsection{Reference counter: the of\_xxx API}
 
 Coccinelle could be used in conjunction with Python. Python code is
@@ -249,7 +281,8 @@ position \texttt{p1} and \texttt{p2} are initiliazed. As the python
 only depends on these two position, it is evaluated. In the following
 case, some emacs Org mode data are produced.
 
-\begin{lstlisting}[language=Cocci]
+\begin{tabular}{c}
+\begin{lstlisting}[language=Cocci,breaklines=true]
 @M@ r exists @
 local idexpression struct device_node *n;
 position p1, p2;
@@ -284,12 +317,23 @@ p1 << r.p1;
 p2 << r.p2;
 @@@M
 
-print "* TODO [[view:%s::face=ovl-face1::linb=%s::colb=%s::cole=%s]
-  [inc. counter:%s::%s]]"
-    % (p1[0].file,p1[0].line,p1[0].column,p1[0].column_end,
-      p1[0].file,p1[0].line)
-print "[[view:%s::face=ovl-face2::linb=%s::colb=%s::cole=%s][return]]"
-  % (p2[0].file,p2[0].line,p2[0].column,p2[0].column_end)
+print "* TODO [[view:%s::face=ovl-face1::linb=%s::colb=%s::cole=%s][inc. counter:%s::%s]]" % (p1[0].file,p1[0].line,p1[0].column,p1[0].column_end,p1[0].file,p1[0].line)
+print "[[view:%s::face=ovl-face2::linb=%s::colb=%s::cole=%s][return]]" % (p2[0].file,p2[0].line,p2[0].column,p2[0].column_end)
+\end{lstlisting}
+\end{tabular}
+
+
+{\newpage\color{red} Nested dots must be explained.}
+
+The previously semantic match has been used to generate the following
+lines. They may be edited using the emacs Org mode to navigate in the code
+from a site to another.
+
+\begin{lstlisting}[breaklines=true]
+* TODO [[view:/linux-next/arch/powerpc/platforms/pseries/setup.c::face=ovl-face1::linb=236::colb=18::cole=20][inc. counter:/linux-next/arch/powerpc/platforms/pseries/setup.c::236]]
+[[view:/linux-next/arch/powerpc/platforms/pseries/setup.c::face=ovl-face2::linb=250::colb=3::cole=9][return]]
+* TODO [[view:/linux-next/arch/powerpc/platforms/pseries/setup.c::face=ovl-face1::linb=236::colb=18::cole=20][inc. counter:/linux-next/arch/powerpc/platforms/pseries/setup.c::236]]
+[[view:/linux-next/arch/powerpc/platforms/pseries/setup.c::face=ovl-face2::linb=245::colb=3::cole=9][return]]
 \end{lstlisting}
 
 % \begin{tabular}{ccc}
@@ -315,5 +359,5 @@ print "[[view:%s::face=ovl-face2::linb=%s::colb=%s::cole=%s][return]]"
 %%% TeX-master: "cocci_syntax"
 %%% coding: latin-9
 %%% TeX-PDF-mode: t
-%%% ispell-local-dictionary: "english"
+%%% ispell-local-dictionary: "american"
 %%% End:
