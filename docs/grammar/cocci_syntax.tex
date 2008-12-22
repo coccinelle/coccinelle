@@ -20,7 +20,7 @@
 % Note: You need at least the following version of hevea
 % http://hevea.inria.fr/distri/unstable/hevea-2008-12-17.tar.gz
 %
-\ifhevea
+\ifhevea % For HTML generation
 \lstdefinelanguage{Cocci}{
 morekeywords={idexpression,expression,statement,identifier,
 parameter,list,when,strict,any,forall,exists,disable,unlikely,
@@ -30,7 +30,11 @@ sensitive=false,
 moredelim=[is][\color{OliveGreen}]{@M}{@M},
 moredelim=[il][\color{blue}]{@+},
 moredelim=[il][\color{BrickRed}]{@-}}
-\else
+
+\lstdefinelanguage{PatchC}[ANSI]{C}{
+moredelim=[il][\color{BrickRed}]{@-}}
+
+\else % For DVI/PS/PDF generation
 \lstdefinelanguage{Cocci}{
 morekeywords={idexpression,expression,statement,identifier,
 parameter,list,when,strict,any,forall,exists,disable,unlikely,
@@ -39,8 +43,10 @@ keywordstyle=\color{Bittersweet}\bfseries,
 sensitive=false,
 moredelim=*[is][\color{OliveGreen}]{@M}{@M},
 moredelim=[il][\color{blue}]{@+},
-moredelim=[il][\color{BrickRed}]{@-}
-}
+moredelim=[il][\color{BrickRed}]{@-}}
+
+\lstdefinelanguage{PatchC}[ANSI]{C}{
+moredelim=[il][\color{BrickRed}]{@-}}
 \fi
 
 \newif\iflanguagestyle
@@ -91,9 +97,9 @@ nonterminals, such as {\sf id}, {\sf const}, etc.  These refer to the
 sets suggested by the name, {\em i.e.}, {\sf id} refers to the set of
 possible C-language identifiers, while {\sf const} refers to the set
 of possible C-language constants. \ifhevea A PDF version of this
-documention is available at
+documentation is available at
 \url{http://localhost:8080/coccinelle/cocci_syntax.pdf}.\else A HTML
-version of this documention is online at
+version of this documentation is available online at
 \url{http://localhost:8080/coccinelle/cocci_syntax.html}. \fi
 
 \section{Program}
@@ -107,24 +113,23 @@ version of this documention is online at
   \CASE{using \NT{pathToIsoFile}}
 
   \RULE{\rt{changeset}}
-  \CASE{\NT{metavariables} \ANY{--- filename +++ filename} \NT{transformation}}
+  \CASE{\NT{metavariables} \NT{transformation}}
+%  \CASE{\NT{metavariables} \ANY{--- filename +++ filename} \NT{transformation}}
 
 \end{grammar}
 
-Between the metavariables and the transformation rule, there can be a
-specification of constraints on the names of the old and new files,
-analogous to the filename specifications in the standard patch syntax.
-%(see Figure \ref{scsiglue_patch}).
+% Between the metavariables and the transformation rule, there can be a
+% specification of constraints on the names of the old and new files,
+% analogous to the filename specifications in the standard patch syntax.
+% (see Figure \ref{scsiglue_patch}).
 
 \section{Metavariables}
 
-Fresh metavariables must only be used in {\tt +} code.  Metavariables
-must occur at least once in the transformation immediately following
-their declaration.  These properties are not expressed in the grammar,
-but are checked by a subsequent analysis.  The metavariables are
-designated according to the kind of terms they can match, such as a
-statement, an identifier, or an expression.  An expression
-metavariable can be further constrained by its type.
+The metavariable section enables to name rules, inherit from others
+and define metavariables which will be used for matching in the next
+transformation section. The metavariable section also allows to
+refine the isomorphisms that should be used during the matching
+process.
 
 \begin{grammar}
   \RULE{\rt{metavariables}}
@@ -133,7 +138,7 @@ metavariable can be further constrained by its type.
 
   \RULE{\rt{rulename}}
   \CASE{\T{id} \OPT{extends \T{id}} \OPT{depends on \NT{dep}} \opt{\NT{iso}}
-    \opt{\NT{disable}} \opt{\NT{exists}} \opt{expression}}
+    \opt{\NT{disable-iso}} \opt{\NT{exists}} \opt{expression}}
   \CASE{script:\T{language} \OPT{depends on \NT{dep}}}
 
   \RULE{\rt{dep}}
@@ -149,93 +154,96 @@ metavariable can be further constrained by its type.
   \CASE{(\NT{dep})}
 
   \RULE{\rt{iso}}
-  \CASE{using "\T{str}" \ANY{, "\T{str}"}}
+  \CASE{using \NT{string} \ANY{, \NT{string}}}
 
-  \RULE{\rt{disable}}
-  \CASE{disable \T{id} \ANY{, \T{id}}}
+  \RULE{\rt{disable-iso}}
+  \CASE{disable \NT{COMMA\_LIST}\mth{(}\T{id}\mth{)}}
 
   \RULE{\rt{exists}}
   \CASE{exists}
-  \CASE{\opt{reverse} forall}
+  \CASE{forall}
+%  \CASE{\opt{reverse} forall}
+
+  \RULE{\rt{COMMA\_LIST}\mth{(}\rt{elem}\mth{)}}
+  \CASE{\NT{elem} \ANY{, \NT{elem}}}
 \end{grammar}
+
+Fresh metavariables must only be used in {\tt +} code.  Metavariables
+should occur at least once in the transformation immediately following
+their declaration.  These properties are not expressed in the grammar,
+but are checked by a subsequent analysis.  The metavariables are
+designated according to the kind of terms they can match, such as a
+statement, an identifier, or an expression.  An expression
+metavariable can be further constrained by its type.
 
 \begin{grammar}
   \RULE{\rt{metadecl}}
   \CASE{fresh identifier \NT{ids} ;}
+  \CASE{identifier \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq}\mth{)} ;}
   \CASE{parameter \opt{list} \NT{ids} ;}
-  \CASE{expression list \NT{ids} ;}
+  \CASE{parameter list [ \NT{id} ] \NT{ids} ;}
   \CASE{type \NT{ids} ;}
   \CASE{statement \opt{list} \NT{ids} ;}
   \CASE{typedef \NT{ids} ;}
   \CASE{declarer name \NT{ids} ;}
+%  \CASE{\opt{local} function \NT{pmid\_with\_not\_eq\_list} ;}
+  \CASE{declarer \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq}\mth{)} ;}
   \CASE{iterator name \NT{ids} ;}
-  \CASE{identifier \NT{pmid\_with\_not\_eq\_list} ;}
-  \CASE{\opt{local} function \NT{pmid\_with\_not\_eq\_list} ;}
-  \CASE{declarer \NT{pmid\_with\_not\_eq\_list} ;}
-  \CASE{iterator \NT{pmid\_with\_not\_eq\_list} ;}
-  \CASE{error \NT{pmid\_with\_not\_eq\_list} ; }
-  \CASE{\opt{local} idexpression \opt{\NT{ctype}} \NT{pmid\_with\_not\_eq\_list} ;}
-  \CASE{\opt{local} idexpression \OPT{\ttlb \NT{ctypes} \ttrb \any{*}} \NT{pmid\_with\_not\_eq\_list} ;}
-  \CASE{\opt{local} idexpression \some{*} \NT{pmid\_with\_not\_eq\_list} ;}
-  \CASE{expression \some{*} \NT{pmid\_with\_not\_eq\_list} ;}
-  \CASE{\NT{ctype} [ ] \NT{pmid\_with\_not\_eq\_list} ;}
-  \CASE{\ttlb \NT{ctypes} \ttrb \any{*} [ ] \NT{pmid\_with\_not\_eq\_list} ;}
-  \CASE{constant \opt{\NT{ctype}} \NT{pmid\_with\_not\_eq\_list} ;}
-  \CASE{constant \OPT{\ttlb \NT{ctypes} \ttrb \any{*}} \NT{pmid\_with\_not\_eq\_list} ;}
-  \CASE{expression \NT{pmid\_with\_not\_ceq\_list} ;}
-  \CASE{\NT{ctype} \NT{pmid\_with\_not\_ceq\_list} ;}
-  \CASE{\ttlb \NT{ctypes} \ttrb \any{*} \NT{pmid\_with\_not\_ceq\_list} ;}
-  \CASE{position \opt{any} \NT{pmid\_with\_not\_eq\_mid\_list} ;}
-  \CASE{parameter list [ ident ] \NT{ids} ;}
+  \CASE{iterator \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq}\mth{)} ;}
+%  \CASE{error \NT{pmid\_with\_not\_eq\_list} ; }
+  \CASE{\opt{local} idexpression \opt{\NT{ctype}} \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq}\mth{)} ;}
+  \CASE{\opt{local} idexpression \OPT{\ttlb \NT{ctypes}\ttrb~\any{*}} \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq}\mth{)} ;}
+  \CASE{\opt{local} idexpression \some{*} \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq}\mth{)} ;}
+  \CASE{expression list \NT{ids} ;}
+  \CASE{expression \some{*} \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq}\mth{)} ;}
+  \CASE{expression \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_ceq}\mth{)} ;}
   \CASE{expression list [ ident ] \NT{ids} ;}
+  \CASE{\NT{ctype} [ ] \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq}\mth{)} ;}
+  \CASE{\NT{ctype} \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_ceq}\mth{)} ;}
+  \CASE{\ttlb \NT{ctypes}\ttrb~\any{*} \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_ceq}\mth{)} ;}
+  \CASE{\ttlb \NT{ctypes}\ttrb~\any{*} [ ] \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq}\mth{)} ;}
+  \CASE{constant \opt{\NT{ctype}} \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq}\mth{)} ;}
+  \CASE{constant \OPT{\ttlb \NT{ctypes}\ttrb~\any{*}} \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq}\mth{)} ;}
+  \CASE{position \opt{any} \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq\_mid}\mth{)} ;}
 \end{grammar}
 
 \begin{grammar}
   \RULE{\rt{ids}}
-  \CASE{\NT{pmid} \ANY{, \NT{pmid}}}
+  \CASE{\NT{COMMA\_LIST}\mth{(}\NT{pmid}\mth{)}}
 
   \RULE{\rt{pmid}}
   \CASE{\T{id}}
   \CASE{\NT{mid}}
-  \CASE{list}
-  \CASE{error}
-  \CASE{type}
+%   \CASE{list}
+%   \CASE{error}
+%   \CASE{type}
 
   \RULE{\rt{mid}}  \CASE{\T{rulename\_id}.\T{id}}
 
-  \RULE{\rt{pmid\_with\_not\_eq\_list}}
-  \CASE{\NT{pmid\_with\_not\_eq} \ANY{, \NT{pmid\_with\_not\_eq}}}
-
   \RULE{\rt{pmid\_with\_not\_eq}}
   \CASE{\NT{pmid} \OPT{!= \T{id}}}
-  \CASE{\NT{pmid} \OPT{!= \ttlb \T{id} \ANY{, \T{id}} \ttrb}}
-
-  \RULE{\rt{pmid\_with\_not\_ceq\_list}}
-  \CASE{\NT{pmid\_with\_not\_ceq} \ANY{, \NT{pmid\_with\_not\_ceq}}}
+  \CASE{\NT{pmid} \OPT{!= \ttlb~\NT{COMMA\_LIST}\mth{(}\T{id}\mth{)} \ttrb}}
 
   \RULE{\rt{pmid\_with\_not\_ceq}}
   \CASE{\NT{pmid} \OPT{!= \NT{id\_or\_cst}}}
-  \CASE{\NT{pmid} \OPT{!= \ttlb \NT{id\_or\_cst} \ANY{, \NT{id\_or\_cst}} \ttrb}}
+  \CASE{\NT{pmid} \OPT{!= \ttlb~\NT{COMMA\_LIST}\mth{(}\NT{id\_or\_cst}\mth{)} \ttrb}}
 
   \RULE{\rt{id\_or\_cst}}
   \CASE{\T{id}}
   \CASE{\T{integer}}
 
-  \RULE{\rt{pmid\_with\_not\_eq\_mid\_list}}
-  \CASE{\NT{pmid\_with\_not\_eq\_mid} \ANY{, \NT{pmid\_with\_not\_eq\_mid}}}
-
   \RULE{\rt{pmid\_with\_not\_eq\_mid}}
   \CASE{\NT{pmid} \OPT{!= \NT{mid}}}
-  \CASE{\NT{pmid} \OPT{!= \ttlb \NT{mid} \ANY{, \NT{mid}} \ttrb}}
+  \CASE{\NT{pmid} \OPT{!= \ttlb~\NT{COMMA\_LIST}\mth{(}\NT{mid}\mth{)} \ttrb}}
 \end{grammar}
 
 Subsequently, we refer to arbitrary metavariables as
-\mth{\msf{metaid}^{\mbox{\scriptsize{\it{ty}}}}}, where {\it{ty}} indicates
-the {\it metakind} used in the declaration of the variable.  For example,
-\mth{\msf{metaid}^{\ssf{Type}}} refers to a metavariable that stands for
-any type.
+\mth{\msf{metaid}^{\mbox{\scriptsize{\it{ty}}}}}, where {\it{ty}}
+indicates the {\it metakind} used in the declaration of the variable.
+For example, \mth{\msf{metaid}^{\ssf{Type}}} refers to a metavariable
+that was declared usgin \texttt{type} and stands for any type.
 
-The {\it type} nonterminal is used by both the grammar of metavariable
+The \NT{ctype} nonterminal is used by both the grammar of metavariable
 declarations and the grammar of transformations, and is defined on
 page~\pageref{types}.
 
@@ -248,15 +256,17 @@ transformation specification can also use {\em dots}, ``\verb-...-'',
 describing an arbitrary sequence of function arguments or instructions
 within a control-flow path.  Dots may be modified with a {\tt when}
 clause, indicating a pattern that should not occur anywhere within the
-matched sequence.  Finally, specify a disjunction of patterns, of the
-form \mtt{( \mth{\mita{pat}_1} | \mita{\ldots} | \mth{\mita{pat}_n}
-  )}.
+matched sequence.  Finally, a transformation can specify a disjunction
+of patterns, of the form \mtt{( \mth{\mita{pat}_1} | \mita{\ldots} |
+  \mth{\mita{pat}_n} )} where each \texttt{(}, \texttt{|} or
+\texttt{)} is in column 0 or preceded by \texttt{\textbackslash}.
 
-The grammar of the transformation is not actually the grammar of the SmPL
-code that can be written by the programmer, but the grammar of the slice of
-this consisting of the {\tt -} annotated and the unannotated code (the
-context of the transformed lines), or the {\tt +} annotated code and the
-unannotated code.  For example, for parsing purposes, the transformation
+The grammar of the transformation is not actually the grammar of the
+SmPL code that can be written by the programmer, but the grammar of
+the slice of this consisting of the {\tt -} annotated and the
+unannotated code (the context of the transformed lines), or the {\tt
+  +} annotated code and the unannotated code.  For example, for
+parsing purposes, the following transformation
 %presented in Section \ref{sec:seq2}
 is split into the two variants shown below and each is parsed
 separately.
@@ -307,16 +317,18 @@ The grammar rule for the minus or plus slice of a transformation is as follows:
 \begin{grammar}
 
   \RULE{\rt{transformation}}
-  \CASE{\any{\NT{include}} \opt{\NT{OPTDOTSEQ}\mth{(}\some{\NT{fun\_decl\_stmt}} \OR \NT{expr}, \NT{when}\mth{)}}}
+  \CASE{\some{\NT{include}}}
+  \CASE{\NT{OPTDOTSEQ}\mth{(}\NT{expr}, \NT{when}\mth{)}}
+  \CASE{\NT{OPTDOTSEQ}\mth{(}\some{\NT{decl\_stmt}}, \NT{when}\mth{)}}
+  \CASE{\NT{OPTDOTSEQ}\mth{(}\NT{fundecl}, \NT{when}\mth{)}}
 
   \RULE{\rt{include}}
   \CASE{\#include \T{include\_string}}
 
-  \RULE{\rt{fun\_decl\_stmt}}
-  \CASE{\NT{decl\_stmt}}
-  \CASE{\NT{fundecl}}
-
+%  \RULE{\rt{fun\_decl\_stmt}}
+%  \CASE{\NT{decl\_stmt}}
 %  \CASE{\NT{fundecl}}
+
 %  \CASE{\NT{ctype}}
 %  \CASE{\ttlb \NT{initialize\_list} \ttrb}
 %  \CASE{\NT{toplevel\_seq\_start\_after\_dots\_init}}
@@ -334,7 +346,7 @@ The grammar rule for the minus or plus slice of a transformation is as follows:
   \RULE{\rt{when}}
   \CASE{when != \NT{when\_code}}
   \CASE{when = \NT{rule\_elem\_stmt}}
-  \CASE{when \NT{any\_strict} \ANY{, \NT{any\_strict}}}
+  \CASE{when \NT{COMMA\_LIST}\mth{(}\NT{any\_strict}\mth{)}}
   \CASE{when true != \NT{expr}}
   \CASE{when false != \NT{expr}}
 
@@ -348,7 +360,7 @@ The grammar rule for the minus or plus slice of a transformation is as follows:
   \CASE{return \opt{\NT{expr}};}
   \CASE{break;}
   \CASE{continue;}
-  \CASE{(\NT{rule\_elem\_stmt} \SOME{| \NT{rule\_elem\_stmt}})}
+  \CASE{\bs(\NT{rule\_elem\_stmt} \SOME{\bs| \NT{rule\_elem\_stmt}}\bs)}
 
   \RULE{\rt{any\_strict}}
   \CASE{any}
@@ -388,10 +400,10 @@ The grammar rule for the minus or plus slice of a transformation is as follows:
 \end{grammar}
 
 \begin{grammar}
-  \RULE{\rt{OPTDOTSEQ}\mth{(}\rt{grammar}, \rt{when\_ds}\mth{)}}
+  \RULE{\rt{OPTDOTSEQ}\mth{(}\rt{grammar\_ds}, \rt{when\_ds}\mth{)}}
   \CASE{}\multicolumn{3}{r}{\hspace{1cm}
-  \KW{\opt{... \opt{\NT{when\_ds}}} \NT{grammar}
-    \ANY{... \opt{\NT{when\_ds}} \NT{grammar}}
+  \KW{\opt{... \opt{\NT{when\_ds}}} \NT{grammar\_ds}
+    \ANY{... \opt{\NT{when\_ds}} \NT{grammar\_ds}}
     \opt{... \opt{\NT{when\_ds}}}}
   }
 
@@ -404,11 +416,11 @@ The grammar rule for the minus or plus slice of a transformation is as follows:
 \end{grammar}
 
 \noindent
-Lines may be annotated with an element of the set $\{\mtt{-},
-\mtt{+}\}$ or an element of the set $\{\mtt{*}, \mtt{?}\}$, or one of
-each. \mtt{?} and \mtt{*} represent respectively at most one, and at
-least one match of the given pattern.  There are some constraints on
-the use of these annotations:
+Lines may be annotated with an element of the set $\{\mtt{-}, \mtt{+},
+\mtt{*}\}$ or the singleton $\mtt{?}$, or one of each set. \mtt{?}
+represent at most one match of the given pattern. \mtt{*} is used for
+semantic match, \emph{i.e.}, without modification of the matched
+code. There are some constraints on the use of these annotations:
 \begin{itemize}
 \item Dots, {\em i.e.} \texttt{...}, cannot occur on a line marked
   \texttt{+}.
@@ -422,7 +434,7 @@ the use of these annotations:
 \begin{grammar}
 
   \RULE{\rt{ctypes}}
-  \CASE{\NT{ctype} \ANY{, \NT{ctype}}}
+  \CASE{\NT{COMMA\_LIST}\mth{(}\NT{ctype}\mth{)}}
 
   \RULE{\rt{ctype}}
   \CASE{\opt{\NT{const\_vol}} \NT{generic\_ctype} \any{*}}
@@ -485,31 +497,45 @@ $^\dag$ The optional \texttt{when} construct ends at the end of the line.
 
   \RULE{\rt{fundecl}}
   \CASE{\opt{\NT{fn\_ctype}} \any{\NT{funinfo}} \NT{funid}
-    (\opt{\NT{PARAMSEQ}\mth{(}\NT{param},\mth{\varepsilon)}})
+    (\opt{\NT{PARAMSEQ}\mth{(}\NT{param}, \mth{\varepsilon)}})
     \ttlb~\opt{\NT{stmt\_seq}} \ttrb}
 
+  \RULE{\rt{funproto}}
+  \CASE{\opt{\NT{fn\_ctype}} \any{\NT{funinfo}} \NT{funid}
+    (\opt{\NT{PARAMSEQ}\mth{(}\NT{param}, \mth{\varepsilon)}});}
+
   \RULE{\rt{funinfo}}
+  \CASE{inline}
+  \CASE{\NT{storage}}
+%   \CASE{\NT{attr}}
+
+  \RULE{\rt{storage}}
   \CASE{static}
   \CASE{auto}
   \CASE{register}
   \CASE{extern}
-  \CASE{inline}
-  \CASE{\color{red} \NT{attr}}
 
   \RULE{\rt{funid}}
   \CASE{\T{id}}
-  \CASE{\mth{\T{metaid}^{\ssf{Func}}}}
-  \CASE{\mth{\T{metaid}^{\ssf{LocalFunc}}}}
+  \CASE{\mth{\T{metaid}^{\ssf{Id}}}}
+%   \CASE{\mth{\T{metaid}^{\ssf{Func}}}}
+%   \CASE{\mth{\T{metaid}^{\ssf{LocalFunc}}}}
 
   \RULE{\rt{param}}
   \CASE{\NT{type} \T{id}}
   \CASE{\mth{\T{metaid}^{\ssf{Param}}}}
   \CASE{\mth{\T{metaid}^{\ssf{ParamList}}}}
+
+  \RULE{\rt{decl}}
+  \CASE{\NT{ctype} \NT{id}}
+  \CASE{\NT{fn\_ctype} (* \NT{id}) (\NT{PARAMSEQ}\mth{(}\NT{name\_opt\_decl}, \mth{\varepsilon)})}
+  \CASE{void}
+  \CASE{\mth{\T{metaid}^{\ssf{Param}}}}
 \end{grammar}
 
 \begin{grammar}
-  \RULE{\rt{PARAMSEQ}\mth{(}\rt{grammar\_p}, \rt{when\_p}\mth{)}}
-  \CASE{\mth{(}\NT{grammar\_p}\OR \ldots \opt{\NT{when\_p}}\mth{)} \ANY{, \NT{grammar\_p}\OR , \ldots \opt{\NT{when\_p}}}}
+  \RULE{\rt{PARAMSEQ}\mth{(}\rt{gram\_p}, \rt{when\_p}\mth{)}}
+  \CASE{\NT{COMMA\_LIST}\mth{(}\NT{gram\_p} \OR \ldots \opt{\NT{when\_p}}\mth{)}}
 \end{grammar}
 
 %\newpage
@@ -518,18 +544,34 @@ $^\dag$ The optional \texttt{when} construct ends at the end of the line.
 
 \begin{grammar}
   \RULE{\rt{decl\_var}}
-  \CASE{\NT{type} \opt{\NT{id} \opt{[\opt{\NT{dot\_expr}}]}
-      \ANY{, \NT{id} \opt{[ \opt{\NT{dot\_expr}}]}}};}
-  \CASE{\NT{one\_decl}}
+%  \CASE{\NT{type} \opt{\NT{id} \opt{[\opt{\NT{dot\_expr}}]}
+%      \ANY{, \NT{id} \opt{[ \opt{\NT{dot\_expr}}]}}};}
+  \CASE{\NT{common\_decl}}
+  \CASE{\opt{\NT{storage}} \NT{ctype} \NT{COMMA\_LIST}\mth{(}\NT{d\_ident}\mth{)} ;}
+  \CASE{\opt{\NT{storage}} \opt{\NT{const\_vol}} \T{id} \NT{COMMA\_LIST}\mth{(}\NT{d\_ident}\mth{)} ;}
+  \CASE{\opt{\NT{storage}} \NT{fn\_ctype} ( * \NT{d\_ident} ) ( \NT{PARAMSEQ}\mth{(}\NT{name\_opt\_decl}, \mth{\varepsilon)} ) = \NT{initialize} ;}
+  \CASE{typedef \NT{ctype} \NT{typedef\_ident} ;}
 
   \RULE{\rt{one\_decl}}
-  \CASE{\NT{type} \NT{id} \opt{[\opt{\NT{dot\_expr}}]}= \NT{nest\_expr};}
+  \CASE{\NT{common\_decl}}
+  \CASE{\opt{\NT{storage}} \NT{ctype} \NT{id};}
+%  \CASE{\NT{storage} \NT{ctype} \NT{id} \opt{[\opt{\NT{dot\\_expr}}]} = \NT{nest\\_expr};}
+  \CASE{\opt{\NT{storage}} \opt{\NT{const\_vol}} \T{id} \NT{d\_ident} ;}
 
-  \RULE{\rt{decl}}
-  \CASE{\NT{ctype} \NT{id}}
-  \CASE{\NT{fn\_ctype} (* \NT{id}) (\NT{PARAMSEQ}\mth{(}\NT{name\_opt\_decl}, \mth{\varepsilon)})}
-  \CASE{void}
-  \CASE{\mth{\T{metaid}^{\ssf{Param}}}}
+  \RULE{\rt{common\_decl}}
+  \CASE{\NT{ctype};}
+  \CASE{\NT{funproto}}
+  \CASE{\opt{\NT{storage}} \NT{ctype} \NT{d\_ident} = \NT{initialize} ;}
+  \CASE{\opt{\NT{storage}} \opt{\NT{const\_vol}} \T{id} \NT{d\_ident} = \NT{initialize} ;}
+  \CASE{\opt{\NT{storage}} \NT{fn\_ctype} ( * \NT{d\_ident} ) ( \NT{PARAMSEQ}\mth{(}\NT{name\_opt\_decl}, \mth{\varepsilon)} ) ;}
+  \CASE{\NT{decl\_ident} ( \OPT{\NT{COMMA\_LIST}\mth{(}\NT{expr}\mth{)}} ) ;}
+
+  \RULE{\rt{initialize}}
+  \CASE{}
+
+  \RULE{\rt{decl\_ident}}
+  \CASE{\T{DeclarerId}}
+  \CASE{\mth{\T{metaid}^{\ssf{Declarer}}}}
 \end{grammar}
 
 \section{Statements}
@@ -582,24 +624,24 @@ allowed.
       \NT{when}\mth{)} \any{\NT{decl\_stmt}}}}
 
   \RULE{\rt{case\_line}}
-  \CASE{default : \NT{stmt\_seq}}
-  \CASE{case \NT{dot\_expr} : \NT{stmt\_seq}}
+  \CASE{default :~\NT{stmt\_seq}}
+  \CASE{case \NT{dot\_expr} :~\NT{stmt\_seq}}
 
   \RULE{\rt{iter\_ident}}
   \CASE{\T{IteratorId}}
-  \CASE{\T{MetaIterator}}
+  \CASE{\mth{\T{metaid}^{\ssf{Iterator}}}}
 \end{grammar}
 
 \begin{grammar}
-  \RULE{\rt{OR}\mth{(}\rt{grammar\_o}\mth{)}}
-  \CASE{( \NT{grammar\_o} \ANY{\ttmid \NT{grammar\_o}})}
+  \RULE{\rt{OR}\mth{(}\rt{gram\_o}\mth{)}}
+  \CASE{( \NT{gram\_o} \ANY{\ttmid \NT{gram\_o}})}
 
-  \RULE{\rt{DOTSEQ}\mth{(}\rt{grammar\_d}, \rt{when\_d}\mth{)}}
-  \CASE{\ldots \opt{\NT{when\_d}} \ANY{\NT{grammar\_d} \ldots \opt{\NT{when\_d}}}}
+  \RULE{\rt{DOTSEQ}\mth{(}\rt{gram\_d}, \rt{when\_d}\mth{)}}
+  \CASE{\ldots \opt{\NT{when\_d}} \ANY{\NT{gram\_d} \ldots \opt{\NT{when\_d}}}}
 
-  \RULE{\rt{NEST}\mth{(}\rt{grammar\_n}, \rt{when\_n}\mth{)}}
-  \CASE{<\ldots \NT{grammar\_n} \ANY{\ldots \opt{\NT{when\_n}} \NT{grammar\_n}} \ldots>}
-  \CASE{<+\ldots \NT{grammar\_n} \ANY{\ldots \opt{\NT{when\_n}} \NT{grammar\_n}} \ldots+>}
+  \RULE{\rt{NEST}\mth{(}\rt{gram\_n}, \rt{when\_n}\mth{)}}
+  \CASE{<\ldots \opt{\NT{when\_n}} \NT{gram\_n} \ANY{\ldots \opt{\NT{when\_n}} \NT{gram\_n}} \ldots>}
+  \CASE{<+\ldots \opt{\NT{when\_n}} \NT{gram\_n} \ANY{\ldots \opt{\NT{when\_n}} \NT{gram\_n}} \ldots+>}
 \end{grammar}
 
 \noindent
@@ -607,8 +649,10 @@ OR is a macro that generates a disjunction of patterns.  The three
 tokens \T{(}, \T{\ttmid}, and \T{)} must appear in the leftmost
 column, to differentiate them from the parentheses and bit-or tokens
 that can appear within expressions (and cannot appear in the leftmost
-column).  These tokens are furthermore different from (, \(\mid\), and
-), which are part of the grammar metalanguage.
+column). These token may also be preceded by \texttt{\bs}
+when they are used in an other column.  These tokens are furthermore
+different from (, \(\mid\), and ), which are part of the grammar
+metalanguage.
 
 \section{Expressions}
 
@@ -636,7 +680,7 @@ in a concise way.
   \RULE{\rt{dot\_expr}}
   \CASE{\NT{EXPR}\mth{(}\NT{dot\_expr}\mth{)}}
   \CASE{\NT{NEST}\mth{(}\NT{dot\_expr}, \NT{exp\_whencode}\mth{)}}
-  \CASE{... \opt{\NT{exp\_whencode}}}
+  \CASE{...~\opt{\NT{exp\_whencode}}}
 
   \RULE{\rt{EXPR}\mth{(}\rt{exp}\mth{)}}
   \CASE{\NT{exp} \NT{assign\_op} \NT{exp}}
@@ -644,17 +688,17 @@ in a concise way.
   \CASE{\NT{exp}--}
   \CASE{\NT{unary\_op} \NT{exp}}
   \CASE{\NT{exp} \NT{bin\_op} \NT{exp}}
-  \CASE{\NT{exp} ? \NT{dot\_expr} : \NT{exp}}
+  \CASE{\NT{exp} ?~\NT{dot\_expr} :~\NT{exp}}
   \CASE{(\NT{type}) \NT{exp}}
   \CASE{\NT{exp} [\NT{dot\_expr}]}
-  \CASE{\NT{exp} . \NT{id}}
+  \CASE{\NT{exp} .~\NT{id}}
   \CASE{\NT{exp} -> \NT{id}}
   \CASE{\NT{exp}(\opt{\NT{PARAMSEQ}\mth{(}\NT{arg}, \NT{exp\_whencode}\mth{)}})}
   \CASE{\NT{id}}
-  \CASE{\mth{\T{metaid}^{\ssf{Func}}}}
-  \CASE{\mth{\T{metaid}^{\ssf{LocalFunc}}}}
+%   \CASE{\mth{\T{metaid}^{\ssf{Func}}}}
+%   \CASE{\mth{\T{metaid}^{\ssf{LocalFunc}}}}
   \CASE{\mth{\T{metaid}^{\ssf{Exp}}}}
-  \CASE{\mth{\T{metaid}^{\ssf{Err}}}}
+%   \CASE{\mth{\T{metaid}^{\ssf{Err}}}}
   \CASE{\mth{\T{metaid}^{\ssf{Const}}}}
   \CASE{\NT{const}}
   \CASE{(\NT{dot\_expr})}
@@ -665,7 +709,7 @@ in a concise way.
   \CASE{\mth{\T{metaid}^{\ssf{ExpList}}}}
 
   \RULE{\rt{exp\_whencode}}
-  \CASE{when != \NT{dot\_expr}}
+  \CASE{when != \NT{expr}}
 
   \RULE{\rt{assign\_op}}
   \CASE{= \OR -= \OR += \OR *= \OR /= \OR \%=}
@@ -695,6 +739,9 @@ in a concise way.
   \RULE{\rt{id}}
   \CASE{\T{id} \OR \mth{\T{metaid}^{\ssf{Id}}}}
 
+  \RULE{\rt{typedef\_ident}}
+  \CASE{\T{id} \OR \mth{\T{metaid}^{\ssf{Type}}}}
+
   \RULE{\rt{type}}
   \CASE{\NT{ctype} \OR \mth{\T{metaid}^{\ssf{Type}}}}
 
@@ -710,5 +757,5 @@ in a concise way.
 %%% TeX-master: "cocci_syntax"
 %%% coding: latin-9
 %%% TeX-PDF-mode: t
-%%% ispell-local-dictionary: "english"
+%%% ispell-local-dictionary: "american"
 %%% End:
