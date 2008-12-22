@@ -216,8 +216,8 @@ then be manipulated by Python code.
 The following semantic match looks for a call to the
 \texttt{of\_find\_node\_by\_name} function. This call increment a
 counter which must be decremented to release the resource. Then,
-\texttt{when} there is no call to \texttt{of_node_put}, no new
-affectation to the \texttt{device_node} variable \texttt{n} and a
+\texttt{when} there is no call to \texttt{of\_node\_put}, no new
+affectation to the \texttt{device\_node} variable \texttt{n} and a
 \texttt{return} statement is reached, a bug is detected and the
 position \texttt{p1} and \texttt{p2} are initiliazed. As the python
 only depends on these two position, it is evaluated. In the following
