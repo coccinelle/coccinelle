@@ -9,6 +9,7 @@ HTML=$(TEX:.tex=.html)
 
 all: $(TEX)
 	pdflatex $<
+	pdflatex $<
 
 html: $(HTML)
 
