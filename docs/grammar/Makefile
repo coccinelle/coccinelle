@@ -14,7 +14,10 @@ all: $(TEX)
 html: $(HTML)
 
 clean:
-	rm -f *.aux *.dvi *.haux *.html *.htoc *.log *.out *.pdf *~
+	rm -f *.aux *.dvi *.haux *.htoc *.log *.out *~
+
+distclean: clean
+	rm -f *.pdf *.html *.gif *.css
 
 check: $(HTML)
 	checklink $<
