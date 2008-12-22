@@ -567,7 +567,8 @@ $^\dag$ The optional \texttt{when} construct ends at the end of the line.
   \CASE{\NT{decl\_ident} ( \OPT{\NT{COMMA\_LIST}\mth{(}\NT{expr}\mth{)}} ) ;}
 
   \RULE{\rt{initialize}}
-  \CASE{}
+  \CASE{\NT{dot\_expr}}
+  \CASE{\ttlb~\opt{\NT{COMMA\_LIST}\mth{(}\NT{dot\_expr}\mth{)}}~\ttrb}
 
   \RULE{\rt{decl\_ident}}
   \CASE{\T{DeclarerId}}
