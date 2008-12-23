@@ -11,6 +11,10 @@
 - better treatment of error exit when the searched for code matches the
   error exit condition.
 
+** Internals: 
+- isomorphisms don't apply under signed/unsigned, to prevent the creation
+  of things like unsigned signed int.  Need a better solution for this.
+
 * 0.1.3
 
 ** Features: 

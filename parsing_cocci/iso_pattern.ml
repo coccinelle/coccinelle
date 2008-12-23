@@ -2230,9 +2230,16 @@ let transform (alts : isomorphism) t =
     stm in
 
   let typefn r k e =
-    let (extra_meta,ty) = transform_type alts (k e) in
-    extra_meta_decls := extra_meta @ !extra_meta_decls;
-    ty in
+   let continue =
+     match Ast0.unwrap e with
+       Ast0.Signed(signb,tyb) ->
+       (* Hack!  How else to prevent iso from applying under an
+	  unsigned??? *)
+	 e
+     | _ -> k e in
+   let (extra_meta,ty) = transform_type alts continue in
+   extra_meta_decls := extra_meta @ !extra_meta_decls;
+   ty in
 
   let topfn r k e =
     let (extra_meta,ty) = transform_top alts (k e) in
