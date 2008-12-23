@@ -23,32 +23,34 @@
 \ifhevea % For HTML generation
 \lstdefinelanguage{Cocci}{
 morekeywords={idexpression,expression,statement,identifier,
-parameter,list,when,strict,any,forall,exists,disable,unlikely,
-local,position,typedef,script,python},
-keywordstyle=\color{Bittersweet}\bfseries,
+parameter,list,when,strict,any,forall,local,position,typedef},
+keywordstyle=\color{OliveGreen}\bfseries,
 sensitive=false,
-moredelim=[is][\color{OliveGreen}]{@M}{@M},
-moredelim=[il][\color{blue}]{@+},
+moredelim=[is][\color{blue}]{@M}{@M},
+moredelim=[il][\color{OliveGreen}]{@+},
 moredelim=[il][\color{BrickRed}]{@-}}
 
 \lstdefinelanguage{PatchC}[ANSI]{C}{
-moredelim=[il][\color{blue}]{@+},
-moredelim=[il][\color{BrickRed}]{@-}}
+stringstyle=\color{black},
+moredelim=[il][\color{OliveGreen}]{@+},
+moredelim=[il][\color{BrickRed}]{@-},
+moredelim=[il][\color{Plum}]{@M}}
 
 \else % For DVI/PS/PDF generation
 \lstdefinelanguage{Cocci}{
 morekeywords={idexpression,expression,statement,identifier,
-parameter,list,when,strict,any,forall,exists,disable,unlikely,
-local,position,typedef,script,python},
-keywordstyle=\color{Bittersweet}\bfseries,
+parameter,list,when,strict,any,forall,local,position,typedef},
+keywordstyle=\color{OliveGreen}\bfseries,
 sensitive=false,
-moredelim=*[is][\color{OliveGreen}]{@M}{@M},
-moredelim=[il][\color{blue}]{@+},
+moredelim=*[is][\color{blue}]{@M}{@M},
+moredelim=[il][\color{OliveGreen}]{@+},
 moredelim=[il][\color{BrickRed}]{@-}}
 
 \lstdefinelanguage{PatchC}[ANSI]{C}{
-moredelim=[il][\color{blue}]{@+},
-moredelim=[il][\color{BrickRed}]{@-}}
+stringstyle=\color{black},
+moredelim=[il][\color{OliveGreen}]{@+},
+moredelim=[il][\color{BrickRed}]{@-},
+moredelim=[il][\color{Plum}]{@M}}
 \fi
 
 \newif\iflanguagestyle
