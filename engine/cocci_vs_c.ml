@@ -2839,8 +2839,26 @@ and compatible_base_type a signa b =
 	
   | _, (B.Void|B.FloatType _|B.IntType _) -> fail
 
+and compatible_base_type_meta a signa qua b ii local =
+  match a, b with
+  | Type_cocci.MetaType(ida,keep,inherited),
+    B.IntType (B.Si (signb, B.CChar2)) -> 
+      compatible_sign signa signb >>= fun _ _ ->
+	let newb = ((qua, (B.BaseType (B.IntType B.CChar),ii)),local) in
+	compatible_type a newb
+  | Type_cocci.MetaType(ida,keep,inherited), B.IntType (B.Si (signb, ty)) -> 
+      compatible_sign signa signb >>= fun _ _ ->
+	let newb =
+	  ((qua, (B.BaseType (B.IntType (B.Si (B.Signed, ty))),ii)),local) in
+	compatible_type a newb
+  | _, B.FloatType B.CLongDouble -> 
+      pr2_once "no longdouble in cocci";
+      fail
+	
+  | _, (B.Void|B.FloatType _|B.IntType _) -> fail
 
-and compatible_type a (b,_local) = 
+
+and compatible_type a (b,local) = 
   let ok  = return ((),()) in
 
   let rec loop = function
@@ -2850,9 +2868,13 @@ and compatible_type a (b,_local) =
     | Type_cocci.SignedT (signa,None), (qua, (B.BaseType b,ii)) -> 
 	compatible_base_type Type_cocci.IntType (Some signa) b
 
-    | Type_cocci.SignedT (signa,Some(Type_cocci.BaseType ty)),
-	(qua, (B.BaseType b,ii)) -> 
-	compatible_base_type ty (Some signa) b
+    | Type_cocci.SignedT (signa,Some ty), (qua, (B.BaseType b,ii)) -> 
+	(match ty with
+	  Type_cocci.BaseType ty ->
+	    compatible_base_type ty (Some signa) b
+	| Type_cocci.MetaType(ida,keep,inherited) ->
+	    compatible_base_type_meta ty (Some signa) qua b ii local
+	| _ -> failwith "not possible")
 
     | Type_cocci.Pointer  a, (qub, (B.Pointer b, ii)) -> 
 	loop (a,b)

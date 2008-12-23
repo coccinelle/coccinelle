@@ -94,17 +94,25 @@ moredelim=[il][\color{Plum}]{@M}}
 % This section presents the SmPL grammar.  This definition follows closely
 % our implementation using the Menhir parser generator \cite{menhir}.
 
-The grammar uses some rules where the left-hand side is in all capital
-letters.  These are macros, which take one or more grammar rule
-right-hand-sides as arguments.  The grammar also uses some unspecified
-nonterminals, such as {\sf id}, {\sf const}, etc.  These refer to the
-sets suggested by the name, {\em i.e.}, {\sf id} refers to the set of
-possible C-language identifiers, while {\sf const} refers to the set
-of possible C-language constants. \ifhevea A PDF version of this
-documentation is available at
-\url{http://localhost:8080/coccinelle/cocci_syntax.pdf}.\else A HTML
+This document presents the grammar of the SmPL language.  For the most
+part, the grammar is written using standard notation.  In some rules,
+however, the left-hand side is in all uppercase letters.  These are macros,
+which take one or more grammar rule right-hand-sides as arguments.  The
+grammar also uses some unspecified nonterminals, such as {\sf id}, {\sf
+const}, etc.  These refer to the sets suggested by the name, {\em i.e.},
+{\sf id} refers to the set of possible C-language identifiers, while {\sf
+const} refers to the set of possible C-language constants.
+\ifhevea A PDF
+version of this documentation is available at
+\url{http://www.emn.fr/x-info/coccinelle/docs/cocci_syntax.pdf}.\else A HTML
 version of this documentation is available online at
-\url{http://localhost:8080/coccinelle/cocci_syntax.html}. \fi
+\url{http://www.emn.fr/x-info/coccinelle/docs/cocci_syntax.html}. \fi
+
+%% \ifhevea A PDF
+%% version of this documentation is available at
+%% \url{http://localhost:8080/coccinelle/cocci_syntax.pdf}.\else A HTML
+%% version of this documentation is available online at
+%% \url{http://localhost:8080/coccinelle/cocci_syntax.html}. \fi
 
 \section{Program}
 
@@ -129,11 +137,17 @@ version of this documentation is available online at
 
 \section{Metavariables}
 
-The metavariable section enables to name rules, inherit from others
-and define metavariables which will be used for matching in the next
-transformation section. The metavariable section also allows to
-refine the isomorphisms that should be used during the matching
-process.
+The \NT{rulename} portion of the metavariable declaration can specify
+properties of a rule such as its name, the names of the rules that it
+depends on, the isomorphisms to be used in processing the rule, and whether
+quantification over paths should be universal or existential.  The optional
+annotation {\tt expression} indicates that the pattern is to be considered
+as matching an expression, and thus can be used to avoid some parsing
+problems.
+
+The \NT{metadecl} portion of the metavariable declaration defines various
+types of metavariables that will be used for matching in the transformation
+section.
 
 \begin{grammar}
   \RULE{\rt{metavariables}}
@@ -172,13 +186,14 @@ process.
   \CASE{\NT{elem} \ANY{, \NT{elem}}}
 \end{grammar}
 
-Fresh metavariables must only be used in {\tt +} code.  Metavariables
-should occur at least once in the transformation immediately following
-their declaration.  These properties are not expressed in the grammar,
-but are checked by a subsequent analysis.  The metavariables are
-designated according to the kind of terms they can match, such as a
-statement, an identifier, or an expression.  An expression
-metavariable can be further constrained by its type.
+The possible types of metavariable declarations are defined by the grammar
+rule below.  Metavariables should occur at least once in the transformation
+immediately following their declaration.  Fresh metavariables must only be
+used in {\tt +} code.  These properties are not expressed in the grammar,
+but are checked by a subsequent analysis.  The metavariables are designated
+according to the kind of terms they can match, such as a statement, an
+identifier, or an expression.  An expression metavariable can be further
+constrained by its type.
 
 \begin{grammar}
   \RULE{\rt{metadecl}}
@@ -245,11 +260,11 @@ Subsequently, we refer to arbitrary metavariables as
 \mth{\msf{metaid}^{\mbox{\scriptsize{\it{ty}}}}}, where {\it{ty}}
 indicates the {\it metakind} used in the declaration of the variable.
 For example, \mth{\msf{metaid}^{\ssf{Type}}} refers to a metavariable
-that was declared usgin \texttt{type} and stands for any type.
+that was declared using \texttt{type} and stands for any type.
 
-The \NT{ctype} nonterminal is used by both the grammar of metavariable
-declarations and the grammar of transformations, and is defined on
-page~\pageref{types}.
+The \NT{ctype} and \NT{ctypes} nonterminals are used by both the grammar of
+metavariable declarations and the grammar of transformations, and are
+defined on page~\pageref{types}.
 
 \section{Transformation}
 
@@ -265,11 +280,11 @@ of patterns, of the form \mtt{( \mth{\mita{pat}_1} | \mita{\ldots} |
   \mth{\mita{pat}_n} )} where each \texttt{(}, \texttt{|} or
 \texttt{)} is in column 0 or preceded by \texttt{\textbackslash}.
 
-The grammar of the transformation is not actually the grammar of the
-SmPL code that can be written by the programmer, but the grammar of
-the slice of this consisting of the {\tt -} annotated and the
-unannotated code (the context of the transformed lines), or the {\tt
-  +} annotated code and the unannotated code.  For example, for
+The grammar that we present for the transformation is not actually the
+grammar of the SmPL code that can be written by the programmer, but is
+instead the grammar of the slice of this consisting of the {\tt -}
+annotated and the unannotated code (the context of the transformed lines),
+or the {\tt +} annotated code and the unannotated code.  For example, for
 parsing purposes, the following transformation
 %presented in Section \ref{sec:seq2}
 is split into the two variants shown below and each is parsed
@@ -316,7 +331,7 @@ syntactically valid C code and that it produces syntactically valid C code.
 The generated parse trees are then merged for use in the subsequent
 matching and transformation process.
 
-The grammar rule for the minus or plus slice of a transformation is as follows:
+The grammar for the minus or plus slice of a transformation is as follows:
 
 \begin{grammar}
 
@@ -422,13 +437,15 @@ The grammar rule for the minus or plus slice of a transformation is as follows:
 \noindent
 Lines may be annotated with an element of the set $\{\mtt{-}, \mtt{+},
 \mtt{*}\}$ or the singleton $\mtt{?}$, or one of each set. \mtt{?}
-represent at most one match of the given pattern. \mtt{*} is used for
-semantic match, \emph{i.e.}, without modification of the matched
-code. There are some constraints on the use of these annotations:
+represents at most one match of the given pattern. \mtt{*} is used for
+semantic match, \emph{i.e.}, a pattern that highlights the fragments
+annotated with \mtt{*}, but does not perform any modification of the
+matched code. \mtt{*} cannot be mixed with \mtt{-} and \mtt{+}.  There are
+some constraints on the use of these annotations:
 \begin{itemize}
 \item Dots, {\em i.e.} \texttt{...}, cannot occur on a line marked
   \texttt{+}.
-\item Nested dots, {\em i.e.} dots enclosed in {\tt <} and {\tt >}, cannot
+\item Nested dots, {\em i.e.}, dots enclosed in {\tt <} and {\tt >}, cannot
   occur on a line with any marking.
 \end{itemize}
 

@@ -1,5 +1,6 @@
 TEX=cocci_syntax.tex
 WEB=/var/www/localhost/htdocs/coccinelle/
+EMNWEB=~/website/docs/
 
 PDF=$(TEX:.tex=.pdf)
 HTML=$(TEX:.tex=.html)
@@ -31,6 +32,10 @@ install:
 	cp $(PDF) $(WEB)
 	chown apache:apache -R $(WEB)
 	chmod a-w -R $(WEB)
+
+emn_install:
+	cp *.css *.gif *.html $(EMNWEB)
+	cp $(PDF) $(EMNWEB)
 
 ############################################
 ############################################

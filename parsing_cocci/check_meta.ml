@@ -153,7 +153,8 @@ let rec expression context old_metas table minus e =
   | _ -> () (* no metavariable subterms *)
 
 and get_type_name = function
-    Type_cocci.ConstVol(_,ty) | Type_cocci.Pointer(ty)
+    Type_cocci.ConstVol(_,ty) | Type_cocci.SignedT(_,Some ty)
+  | Type_cocci.Pointer(ty)
   | Type_cocci.FunctionPointer(ty) | Type_cocci.Array(ty) -> get_type_name ty
   | Type_cocci.MetaType(nm,_,_) -> Some nm
   | _ -> None
@@ -164,6 +165,8 @@ and get_type_name = function
 and typeC old_metas table minus t =
   match Ast0.unwrap t with
     Ast0.ConstVol(cv,ty) -> typeC old_metas table minus ty
+  | Ast0.Signed(sgn,ty) ->
+      get_opt (typeC old_metas table minus) ty
   | Ast0.Pointer(ty,star) -> typeC old_metas table minus ty
   | Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
       typeC old_metas table minus ty;

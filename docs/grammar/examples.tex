@@ -2,18 +2,17 @@
 \section{Examples}
 %\label{sec:examples}
 
-We provide some realistic examples in the following section.  Each
-example is presented along with some C code on which it is
-applied. The description explains the matching process and when
-applicable the rewriting rules.
+This section presents a range of examples.  Each
+example is presented along with some C code to which it is
+applied. The description explains the rules and the matching process.
 
 \subsection{Function renaming}
 
 One of the primary goals of Coccinelle is to perform software
 evolution.  For instance, Coccinelle could be used to perform function
 renaming. In the following example, every occurrence of a call to the
-\texttt{foo}function is replaced by a call to the \texttt{bar}
-function.\\
+function \texttt{foo} is replaced by a call to the
+function \texttt{bar}.\\
 
 \begin{tabular}{ccc}
 Before & Semantic patch & After \\
@@ -75,12 +74,12 @@ int main(int i) {
 \newpage
 \subsection{Removing a function argument}
 
-Another important kind of evolution is the introduction or deletion of
-a function argument. In the following example, the \texttt{rule1} rule
-looks for functions of type \texttt{irqreturn\_t} with two
-arguments. A second \emph{anonymous} rule then looks for calls of the
-previously matched functions that have three arguments. The third
-argument is then removed to correspond to the new function prototype.\\
+Another important kind of evolution is the introduction or deletion of a
+function argument. In the following example, the rule \texttt{rule1} looks
+for definitions of functions having return type \texttt{irqreturn\_t} and
+two parameters. A second \emph{anonymous} rule then looks for calls to the
+previously matched functions that have three arguments. The third argument
+is then removed to correspond to the new function prototype.\\
 
 \begin{tabular}{c}
 \begin{lstlisting}[language=Cocci,name=arg]
@@ -109,7 +108,7 @@ expression E1, E2, E3;
 \vspace{1cm}
 
 \begin{tabular}{c}
-  \texttt{/drivers/atm/firestream.c} at line 1653 before transformation\\
+  \texttt{drivers/atm/firestream.c} at line 1653 before transformation\\
 \begin{lstlisting}[language=PatchC]
 static void fs_poll (unsigned long data)
 {
@@ -124,7 +123,7 @@ static void fs_poll (unsigned long data)
 \\
 
 
-  \texttt{/drivers/atm/firestream.c} at line 1653 after transformation\\
+  \texttt{drivers/atm/firestream.c} at line 1653 after transformation\\
 \begin{lstlisting}[language=PatchC]
 static void fs_poll (unsigned long data)
 {
@@ -145,15 +144,15 @@ macros such as \texttt{BUG\_ON}, \texttt{DIV\_ROUND\_UP} and
 \texttt{FIELD\_SIZE}. In these cases, the semantic patches look for
 the old code pattern and replace it by the new code.\\
 
-In the case of the \texttt{DIV\_ROUND\_UP} macro, the corresponding
-expression, \emph{i.e.}, $(n + d - 1) / d$, is looked for. When some
-code are matched, the metavariables \texttt{n} and \texttt{d} are
-bound to their corresponding expressions. Finally, Coccinelle rewrites
-the code with the \texttt{DIV\_ROUND\_UP} macro using the values bound
-to \texttt{n} and \texttt{d} as shown in the following patch.\\
+A semantic patch to introduce uses of the \texttt{DIV\_ROUND\_UP} macro
+looks for the corresponding expression, \emph{i.e.}, $(n + d - 1) /
+d$. When some code is matched, the metavariables \texttt{n} and \texttt{d}
+are bound to their corresponding expressions. Finally, Coccinelle rewrites
+the code with the \texttt{DIV\_ROUND\_UP} macro using the values bound to
+\texttt{n} and \texttt{d}, as illustrated in the patch that follows.\\
 
 \begin{tabular}{c}
-Semantic patch to introduce the \texttt{DIV\_ROUND\_UP} macro\\
+Semantic patch to introduce uses of the \texttt{DIV\_ROUND\_UP} macro\\
 \begin{lstlisting}[language=Cocci,name=divround]
 @M@ haskernel @
 @@@M
@@ -195,16 +194,21 @@ Example of a generated patch hunk\\
 
 \newpage
 
-The \texttt{BUG\_ON} macro enables to place some assertion on
-expressions. However, the \texttt{BUG\_ON} macro could not be used
-when the asserted expression may have some side-effects, such as a
-function call. Indeed, when the kernel is build without debugging
-support, the \texttt{BUG\_ON} macro is redefined to do nothing,
-thus removing desirable side-effects.
+The \texttt{BUG\_ON} macro makes a assertion about the value of an
+expression. However, because some parts of the kernel define
+\texttt{BUG\_ON} to be the empty statement when debugging is not wanted,
+care must be taken when the asserted expression may have some side-effects,
+as is the case of a function call. Thus, we create a rule introducing
+\texttt{BUG\_ON} only in the case when the asserted expression does not
+perform a function call.
 
-Normally there is an isomorphism associated with \texttt{unlikely} that
-rewrites it as its argument. Here we do not want this behavior, so we
-disable the isomorphism to enable matching on this construct.\\
+On particular piece of code that has the form of a function call is a use
+of \texttt{unlikely}, which informs the compiler that a particular
+expression is unlikely to be true.  In this case, because \texttt{unlikely}
+does not perform any side effects, it is safe to use \texttt{BUG\_ON}.  The
+second rule takes care of this case.  It furthermore disables the
+isomorphism that allows a call to \texttt{unlikely} be replaced with its
+argument, as then the second rule would be the same as the first one.\\
 
 \begin{tabular}{c}
 \begin{lstlisting}[language=Cocci,name=bugon]
@@ -317,7 +321,7 @@ return;
 \subsection{Reference counter: the of\_xxx API}
 
 Coccinelle can embed Python code. Python code is used inside special
-SmPL rule annoted with \texttt{script:python}.  Python rules inherit
+SmPL rule annotated with \texttt{script:python}.  Python rules inherit
 metavariables, such as identifier or token positions, from other SmPL
 rules. The inherited metavariables can then be manipulated by Python
 code.
@@ -325,12 +329,14 @@ code.
 The following semantic match looks for a call to the
 \texttt{of\_find\_node\_by\_name} function. This call increments a
 counter which must be decremented to release the resource. Then, when
-there is no call to \texttt{of\_node\_put}, no new assignement to the
+there is no call to \texttt{of\_node\_put}, no new assignment to the
 \texttt{device\_node} variable \texttt{n} and a \texttt{return}
 statement is reached, a bug is detected and the position \texttt{p1}
 and \texttt{p2} are initialized. As the Python only depends on the
 positions \texttt{p1} and \texttt{p2}, it is evaluated. In the
-following case, some emacs Org mode data are produced.
+following case, some emacs Org mode data are produced.  This example
+illustrates the various fields that can be accessed in the Python code from
+a position variable.
 
 \begin{tabular}{c}
 \begin{lstlisting}[language=Cocci,breaklines=true]
@@ -380,11 +386,11 @@ Lines 13 to 17 list a variety of constructs that should not appear
 between a call to \texttt{of\_find\_node\_by\_name} and a buggy return
 site. Examples are a call to \texttt{of\_node\_put} (line 13) and a
 transition into the then branch of a conditional testing whether
-\texttt{n} is \texttt{NULL} (line 15). Any number of contidional
+\texttt{n} is \texttt{NULL} (line 15). Any number of conditionals
 testing whether \texttt{n} is \texttt{NULL} are allowed as indicated
 by the use of a nest \texttt{<...~~...>} to describe the path between
 the call to \texttt{of\_find\_node\_by\_name}, the return and the
-conditional in the pattern on line 18.
+conditional in the pattern on line 18.\\
 
 The previously semantic match has been used to generate the following
 lines. They may be edited using the emacs Org mode to navigate in the code
