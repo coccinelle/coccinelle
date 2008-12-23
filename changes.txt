@@ -2,8 +2,14 @@
 
 * 0.1.4
 
+** Features: 
+- can match patterns of the form unsigned T or signed T, where T is a
+  metavariable
+
 ** Bugfix:
 - trailing ; and ) no longer left on a line by themselves
+- better treatment of error exit when the searched for code matches the
+  error exit condition.
 
 * 0.1.3
 

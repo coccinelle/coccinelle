@@ -231,9 +231,8 @@ and typeC t =
       match Ast0.unwrap t with
 	Ast0.ConstVol(cv,ty) ->
 	  mcode U.const_vol cv; print_string " "; typeC ty
-      |	Ast0.BaseType(ty,sgn) ->
-	  print_option (mcode U.sign) sgn; mcode U.baseType ty
-      |	Ast0.ImplicitInt(sgn) -> mcode U.sign sgn
+      |	Ast0.BaseType(ty) -> mcode U.baseType ty
+      |	Ast0.Signed(sgn,ty) -> mcode U.sign sgn; print_option typeC ty
       | Ast0.Pointer(ty,star) -> typeC ty; mcode print_string star
       | Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
 	  print_function_pointer (ty,lp1,star,rp1,lp2,params,rp2)

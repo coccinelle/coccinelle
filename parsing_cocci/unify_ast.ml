@@ -198,10 +198,12 @@ and unify_fullType ft1 ft2 =
 
 and unify_typeC t1 t2 =
   match (Ast.unwrap t1,Ast.unwrap t2) with
-    (Ast.BaseType(ty1,sgn1),Ast.BaseType(ty2,sgn2)) ->
-      return (unify_mcode ty1 ty2 && bool_unify_option unify_mcode sgn1 sgn2)
-  | (Ast.ImplicitInt(sgn1),Ast.ImplicitInt(sgn2)) ->
-      return (unify_mcode sgn1 sgn2)
+    (Ast.BaseType(ty1),Ast.BaseType(ty2)) ->
+      return (unify_mcode ty1 ty2)
+  | (Ast.SignedT(sgn1,ty1),Ast.SignedT(sgn2,ty2)) ->
+      if unify_mcode sgn1 sgn2
+      then unify_option unify_typeC ty1 ty2
+      else return false
   | (Ast.Pointer(ty1,s1),Ast.Pointer(ty2,s2)) -> unify_fullType ty1 ty2
   | (Ast.FunctionPointer(tya,lp1a,stara,rp1a,lp2a,paramsa,rp2a),
      Ast.FunctionPointer(tyb,lp1b,starb,rp1b,lp2b,paramsb,rp2b)) ->

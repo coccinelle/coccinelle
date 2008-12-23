@@ -700,16 +700,15 @@ let match_maker checks_needed context_required whencode_allowed =
 	      then
 		conjunct_bindings (check_mcode cva cvb) (match_typeC tya tyb)
 	      else return false
-	  | (Ast0.BaseType(tya,signa),Ast0.BaseType(tyb,signb)) ->
-	      if (mcode_equal tya tyb &&
-		  bool_match_option mcode_equal signa signb)
-	      then
-		conjunct_bindings (check_mcode tya tyb)
-		  (match_option check_mcode signa signb)
+	  | (Ast0.BaseType(tya),Ast0.BaseType(tyb)) ->
+	      if mcode_equal tya tyb
+	      then check_mcode tya tyb
 	      else return false
-	  | (Ast0.ImplicitInt(signa),Ast0.ImplicitInt(signb)) ->
+	  | (Ast0.Signed(signa,tya),Ast0.Signed(signb,tyb)) ->
 	      if mcode_equal signa signb
-	      then check_mcode signa signb
+	      then
+		conjunct_bindings (check_mcode signa signb)
+		  (match_option match_typeC tya tyb)
 	      else return false
 	  | (Ast0.Pointer(tya,star1),Ast0.Pointer(tyb,star)) ->
 	      conjunct_bindings (check_mcode star1 star) (match_typeC tya tyb)

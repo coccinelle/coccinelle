@@ -233,7 +233,7 @@ let other_options = [
     (* works in conjunction with -show_ctl *)
     "-ctl_inline_let",       Arg.Set FC.inline_let_ctl, " ";
     "-ctl_show_mcodekind",   Arg.Set FC.show_mcodekind_in_ctl, " ";
-    "-show_binding_in_out",  Arg.Set FC.show_binding_in_out, " ";
+    "-show_bindings",        Arg.Set FC.show_binding_in_out, " ";
     "-no_show_transinfo",    Arg.Clear FC.show_transinfo, " ";
     "-no_show_misc",         Arg.Clear Flag.show_misc, " ";
     "-show_trying",          Arg.Set Flag.show_trying,
@@ -265,7 +265,7 @@ let other_options = [
     "-show_cocci"             , Arg.Set FC.show_cocci,       " ";
     "-show_before_fixed_flow" , Arg.Set FC.show_before_fixed_flow,  " ";
     "-show_ctl_tex"           , Arg.Set FC.show_ctl_tex,     " ";
-    "-show_SP_julia"       ,    Arg.Set Flag_parsing_cocci.show_SP,  " ";
+    "-show_SP"             ,    Arg.Set Flag_parsing_cocci.show_SP,  " ";
   ];
 
 

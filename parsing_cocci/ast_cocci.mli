@@ -189,8 +189,8 @@ and base_fullType =
   | UniqueType      of fullType
 
 and base_typeC =
-    BaseType        of baseType mcode * sign mcode option
-  | ImplicitInt     of sign mcode
+    BaseType        of baseType mcode
+  | SignedT         of sign mcode * typeC option
   | Pointer         of fullType * string mcode (* * *)
   | FunctionPointer of fullType *
 	          string mcode(* ( *)*string mcode(* * *)*string mcode(* ) *)*

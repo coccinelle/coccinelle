@@ -136,9 +136,8 @@ and left_typeC t =
   modif_before t or
   match Ast0.unwrap t with
     Ast0.ConstVol(cv,ty) -> modif_before_mcode cv
-  | Ast0.BaseType(ty,Some sgn) -> modif_before_mcode sgn
-  | Ast0.BaseType(ty,None) -> modif_before_mcode ty
-  | Ast0.ImplicitInt(sgn) -> modif_before_mcode sgn
+  | Ast0.BaseType(ty) -> modif_before_mcode ty
+  | Ast0.Signed(sgn,ty) -> modif_before_mcode sgn
   | Ast0.Pointer(ty,star) -> left_typeC ty
   | Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) -> left_typeC ty
   | Ast0.FunctionType(Some ty,lp1,params,rp1) -> left_typeC ty

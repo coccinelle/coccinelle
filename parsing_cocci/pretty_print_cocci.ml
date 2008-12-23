@@ -327,8 +327,8 @@ and print_fninfo = function
 
 and typeC ty =
   match Ast.unwrap ty with
-    Ast.BaseType(ty,sgn) -> print_option (mcode sign) sgn; mcode baseType ty
-  | Ast.ImplicitInt(sgn) -> mcode sign sgn
+    Ast.BaseType(ty) -> mcode baseType ty
+  | Ast.SignedT(sgn,ty) -> mcode sign sgn; print_option typeC ty
   | Ast.Pointer(ty,star) -> fullType ty; mcode print_string star
   | Ast.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
       print_function_pointer (ty,lp1,star,rp1,lp2,params,rp2)

@@ -219,7 +219,7 @@ let do_get_constants constants keywords env neg_pos =
 
   let typeC r k ty =
     match Ast.unwrap ty with
-      Ast.BaseType(ty1,sgn) -> bind (k ty) (baseType (Ast.unwrap_mcode ty1))
+      Ast.BaseType(ty1) -> bind (k ty) (baseType (Ast.unwrap_mcode ty1))
     | Ast.TypeName(name) -> bind (k ty) (constants (Ast.unwrap_mcode name))
     | Ast.MetaType(name,_,_) -> bind (minherited name) (k ty)
     | _ -> k ty in

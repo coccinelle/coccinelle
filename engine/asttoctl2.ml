@@ -1253,14 +1253,18 @@ let dots_au is_strict toend label s wrapcode x seq_after y quantifier =
 		  (ctl_au CTL.NONSTRICT
 		     (ctl_and CTL.NONSTRICT (ctl_not v) preflabelpred)
 		     (ctl_and CTL.NONSTRICT preflabelpred
-			(ctl_or (retpred None)
-			   (if !Flag_matcher.only_return_is_error_exit
-			   then CTL.True
-			   else
-			     (ctl_or matchcontinue
-				(ctl_and CTL.NONSTRICT
-				   (ctl_or matchgoto matchbreak)
-				   (ctl_ag s (ctl_not seq_after))))))))))) in
+			(if !Flag_matcher.only_return_is_error_exit
+			then
+			  (ctl_and CTL.NONSTRICT
+			     (retpred None) (ctl_not seq_after))
+			else
+			  (ctl_or
+			     (ctl_and CTL.NONSTRICT
+				(ctl_or (retpred None) matchcontinue)
+				(ctl_not seq_after))
+			     (ctl_and CTL.NONSTRICT
+				(ctl_or matchgoto matchbreak)
+				(ctl_ag s (ctl_not seq_after)))))))))) in
   let op = if quantifier = !exists then ctl_au else ctl_anti_au in
   let v = get_let_ctr() in
   op s x

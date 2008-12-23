@@ -339,23 +339,17 @@ and top_typeC tgt opt_allowed typ =
       let cv = mcode cv in
       let ty = typeC arity ty in
       make_typeC typ tgt arity (Ast0.ConstVol(cv,ty))
-  | Ast0.BaseType(ty,Some sign) ->
-      let arity =
-	all_same opt_allowed tgt (mcode2line ty)
-	  [mcode2arity ty; mcode2arity sign] in
-      let ty = mcode ty in
-      let sign = mcode sign in
-      make_typeC typ tgt arity (Ast0.BaseType(ty,Some sign))
-  | Ast0.BaseType(ty,None) ->
+  | Ast0.BaseType(ty) ->
       let arity =
 	all_same opt_allowed tgt (mcode2line ty) [mcode2arity ty] in
       let ty = mcode ty in
-      make_typeC typ tgt arity (Ast0.BaseType(ty,None))
-  | Ast0.ImplicitInt(sign) ->
+      make_typeC typ tgt arity (Ast0.BaseType(ty))
+  | Ast0.Signed(sign,ty) ->
       let arity =
 	all_same opt_allowed tgt (mcode2line sign) [mcode2arity sign] in
       let sign = mcode sign in
-      make_typeC typ tgt arity (Ast0.ImplicitInt(sign))
+      let ty = get_option (typeC arity) ty in
+      make_typeC typ tgt arity (Ast0.Signed(sign,ty))
   | Ast0.Pointer(ty,star) ->
       let arity =
 	all_same opt_allowed tgt (mcode2line star) [mcode2arity star] in

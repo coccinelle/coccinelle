@@ -4,7 +4,8 @@ type keep_binding = Unitary (* need no info *)
 
 type typeC =
     ConstVol        of const_vol * typeC
-  | BaseType        of baseType * sign option
+  | BaseType        of baseType
+  | SignedT         of sign * typeC option
   | Pointer         of typeC
   | FunctionPointer of typeC (* only return type *)
   | Array           of typeC (* drop size info *)

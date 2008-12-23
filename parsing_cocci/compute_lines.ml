@@ -294,12 +294,13 @@ and typeC t =
     Ast0.ConstVol(cv,ty) ->
       let ty = typeC ty in
       mkres t (Ast0.ConstVol(cv,ty)) (promote_mcode cv) ty
-  | Ast0.BaseType(ty,None) as ut ->
+  | Ast0.BaseType(ty) as ut ->
       mkres t ut (promote_mcode ty) (promote_mcode ty)
-  | Ast0.BaseType(ty,Some sgn) as ut ->
-      mkres t ut (promote_mcode sgn) (promote_mcode ty)
-  | Ast0.ImplicitInt(sgn) as ut ->
+  | Ast0.Signed(sgn,None) as ut ->
       mkres t ut (promote_mcode sgn) (promote_mcode sgn)
+  | Ast0.Signed(sgn,Some ty) ->
+      let ty = typeC ty in
+      mkres t (Ast0.Signed(sgn,Some ty)) (promote_mcode sgn) ty
   | Ast0.Pointer(ty,star) ->
       let ty = typeC ty in
       mkres t (Ast0.Pointer(ty,star)) ty (promote_mcode star)

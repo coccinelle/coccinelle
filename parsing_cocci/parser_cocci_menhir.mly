@@ -390,9 +390,9 @@ metadec:
 	      if not
 		  (List.exists
 		     (function
-			 Type_cocci.BaseType(Type_cocci.IntType,_) -> true
-		       | Type_cocci.BaseType(Type_cocci.ShortType,_) -> true
-		       | Type_cocci.BaseType(Type_cocci.LongType,_) -> true
+			 Type_cocci.BaseType(Type_cocci.IntType) -> true
+		       | Type_cocci.BaseType(Type_cocci.ShortType) -> true
+		       | Type_cocci.BaseType(Type_cocci.LongType) -> true
 		       | _ -> false)
 		     vl)
 	      then failwith "metavariable with int constraint must be an int"
@@ -415,21 +415,19 @@ arity: TBang0 { Ast.UNIQUE }
      | TPlus0 { Ast.MULTI }
      | /* empty */ { Ast.NONE }
 
-generic_ctype:
-       q=ctype_qualif
-         { Ast0.wrap(Ast0.ImplicitInt(q)) }
-     | q=ioption(ctype_qualif) ty=Tchar
-         { Ast0.wrap(Ast0.BaseType(P.clt2mcode Ast.CharType ty, q)) }
-     | q=ioption(ctype_qualif) ty=Tshort
-         { Ast0.wrap(Ast0.BaseType(P.clt2mcode Ast.ShortType ty, q)) }
-     | q=ioption(ctype_qualif) ty=Tint
-         { Ast0.wrap(Ast0.BaseType(P.clt2mcode Ast.IntType ty, q)) }
+generic_ctype_full:
+       q=ctype_qualif_opt ty=Tchar
+         { q (Ast0.wrap(Ast0.BaseType(P.clt2mcode Ast.CharType ty))) }
+     | q=ctype_qualif_opt ty=Tshort
+         { q (Ast0.wrap(Ast0.BaseType(P.clt2mcode Ast.ShortType ty))) }
+     | q=ctype_qualif_opt ty=Tint
+         { q (Ast0.wrap(Ast0.BaseType(P.clt2mcode Ast.IntType ty))) }
      | t=Tdouble
-         { Ast0.wrap(Ast0.BaseType(P.clt2mcode Ast.DoubleType t, None)) }
+         { Ast0.wrap(Ast0.BaseType(P.clt2mcode Ast.DoubleType t)) }
      | t=Tfloat
-         { Ast0.wrap(Ast0.BaseType(P.clt2mcode Ast.FloatType t, None)) }
-     | q=ioption(ctype_qualif) ty=Tlong
-         { Ast0.wrap(Ast0.BaseType(P.clt2mcode Ast.LongType ty, q)) }
+         { Ast0.wrap(Ast0.BaseType(P.clt2mcode Ast.FloatType t)) }
+     | q=ctype_qualif_opt ty=Tlong
+         { q (Ast0.wrap(Ast0.BaseType(P.clt2mcode Ast.LongType ty))) }
      | s=struct_or_union i=ident
 	 { Ast0.wrap(Ast0.StructUnionName(s, Some i)) }
      | s=struct_or_union i=ioption(ident)
@@ -454,9 +452,13 @@ generic_ctype:
 				 Ast0.Impure (*will be ignored*))) }
      | p=TTypeId
 	 { Ast0.wrap(Ast0.TypeName(P.id2mcode p)) }
-     | p=TMetaType
+     | q=ctype_qualif_opt p=TMetaType
 	 { let (nm,pure,clt) = p in
-	 Ast0.wrap(Ast0.MetaType(P.clt2mcode nm clt,pure)) }
+	 q (Ast0.wrap(Ast0.MetaType(P.clt2mcode nm clt,pure))) }
+
+generic_ctype:
+       q=ctype_qualif     { q None }
+     | generic_ctype_full { $1 }
 
 struct_or_union:
        s=Tstruct { P.clt2mcode Ast.Struct s }
@@ -500,7 +502,20 @@ ctype:
 	 { P.pointerify (P.make_cv cv ty) m }
      | cv=ioption(const_vol) t=Tvoid m=nonempty_list(TMul)
          { let ty =
-	     Ast0.wrap(Ast0.BaseType(P.clt2mcode Ast.VoidType t, None)) in
+	     Ast0.wrap(Ast0.BaseType(P.clt2mcode Ast.VoidType t)) in
+	   P.pointerify (P.make_cv cv ty) m }
+   | lp=TOPar0 t=midzero_list(ctype,ctype) rp=TCPar0
+      /* more hacks */
+    { let (mids,code) = t in
+      Ast0.wrap
+	(Ast0.DisjType(P.clt2mcode "(" lp,code,mids, P.clt2mcode ")" rp)) }
+
+ctype_full:
+       cv=ioption(const_vol) ty=generic_ctype_full m=list(TMul)
+	 { P.pointerify (P.make_cv cv ty) m }
+     | cv=ioption(const_vol) t=Tvoid m=nonempty_list(TMul)
+         { let ty =
+	     Ast0.wrap(Ast0.BaseType(P.clt2mcode Ast.VoidType t)) in
 	   P.pointerify (P.make_cv cv ty) m }
    | lp=TOPar0 t=midzero_list(ctype,ctype) rp=TCPar0
       /* more hacks */
@@ -513,12 +528,18 @@ fn_ctype: // allows metavariables
        ty=generic_ctype m=list(TMul) { P.pointerify ty m }
      | t=Tvoid m=list(TMul)
          { P.pointerify
-	     (Ast0.wrap(Ast0.BaseType(P.clt2mcode Ast.VoidType t, None)))
+	     (Ast0.wrap(Ast0.BaseType(P.clt2mcode Ast.VoidType t)))
 	     m }
 
-ctype_qualif:
-       Tunsigned   { P.clt2mcode Ast.Unsigned $1 }
-     | Tsigned     { P.clt2mcode Ast.Signed $1 }
+%inline ctype_qualif:
+  r=Tunsigned
+   { function x -> Ast0.wrap(Ast0.Signed(P.clt2mcode Ast.Unsigned r,x)) }
+| r=Tsigned
+   { function x -> Ast0.wrap(Ast0.Signed(P.clt2mcode Ast.Signed r,x)) }
+
+%inline ctype_qualif_opt:
+  s=ctype_qualif  { function x -> s (Some x) }
+| /* empty */   { function x -> x }
 
 /*****************************************************************************/
 
@@ -676,7 +697,7 @@ funproto:
 	      id, P.clt2mcode ";" pt)) }
 | s=ioption(storage) t=Tvoid
   id=func_ident lp=TOPar d=decl_list(name_opt_decl) rp=TCPar pt=TPtVirg
-    { let t = Ast0.wrap(Ast0.BaseType(P.clt2mcode Ast.VoidType t, None)) in
+    { let t = Ast0.wrap(Ast0.BaseType(P.clt2mcode Ast.VoidType t)) in
       Ast0.wrap
         (Ast0.UnInit
 	   (s,
@@ -753,7 +774,7 @@ decl: t=ctype i=ident
 		P.clt2mcode "(" lp1,d,P.clt2mcode ")" rp1)) in
 	Ast0.wrap(Ast0.Param(fnptr, Some i)) }
     | t=Tvoid
-	{ let ty = Ast0.wrap(Ast0.BaseType(P.clt2mcode Ast.VoidType t, None)) in
+	{ let ty = Ast0.wrap(Ast0.BaseType(P.clt2mcode Ast.VoidType t)) in
           Ast0.wrap(Ast0.VoidParam(ty)) }
     | TMetaParam
 	{ let (nm,pure,clt) = $1 in
@@ -913,7 +934,7 @@ decl_var:
 	       (t,P.clt2mcode "(" lp1,P.clt2mcode "*" st,P.clt2mcode ")" rp1,
 		P.clt2mcode "(" lp2,p,P.clt2mcode ")" rp2)) in
       [Ast0.wrap(Ast0.Init(s,fn t,id,P.clt2mcode "=" q,e,P.clt2mcode ";" pv))]}
-  | s=Ttypedef t=ctype id=typedef_ident pv=TPtVirg
+  | s=Ttypedef t=ctype_full id=typedef_ident pv=TPtVirg
       { let s = P.clt2mcode "typedef" s in
         [Ast0.wrap(Ast0.Typedef(s,t,id,P.clt2mcode ";" pv))] }
 

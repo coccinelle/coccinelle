@@ -361,6 +361,8 @@ and expression_dots ed = dots expression ed
 (* --------------------------------------------------------------------- *)
 (* Types *)
 
+and rewrap_iso t t1 = rewrap t (do_isos (Ast0.get_iso t)) t1
+
 and typeC t =
   rewrap t (do_isos (Ast0.get_iso t))
     (match Ast0.unwrap t with
@@ -376,8 +378,7 @@ and typeC t =
 	  List.map
 	    (function ty ->
 	      Ast.Type
-		(Some (mcode cv),
-		 rewrap ty (do_isos (Ast0.get_iso ty)) (base_typeC ty)))
+		(Some (mcode cv),rewrap_iso ty (base_typeC ty)))
 	    (collect_disjs ty) in
 	(* one could worry that isos are lost because we flatten the
 	   disjunctions.  but there should not be isos on the disjunctions
@@ -385,7 +386,7 @@ and typeC t =
 	(match res with
 	  [ty] -> ty
 	| types -> Ast.DisjType(List.map (rewrap t no_isos) types))
-    | Ast0.BaseType(_,_) | Ast0.ImplicitInt(_) | Ast0.Pointer(_,_)
+    | Ast0.BaseType(_) | Ast0.Signed(_,_) | Ast0.Pointer(_,_)
     | Ast0.FunctionPointer(_,_,_,_,_,_,_) | Ast0.FunctionType(_,_,_,_)
     | Ast0.Array(_,_,_,_) | Ast0.StructUnionName(_,_)
     | Ast0.StructUnionDef(_,_,_,_) | Ast0.TypeName(_) | Ast0.MetaType(_,_) ->
@@ -396,9 +397,10 @@ and typeC t =
 
 and base_typeC t =
   match Ast0.unwrap t with
-    Ast0.BaseType(ty,sign) ->
-      Ast.BaseType(mcode ty,get_option mcode sign)
-  | Ast0.ImplicitInt(sgn) -> Ast.ImplicitInt(mcode sgn)
+    Ast0.BaseType(ty) -> Ast.BaseType(mcode ty)
+  | Ast0.Signed(sgn,ty) ->
+      Ast.SignedT(mcode sgn,
+		  get_option (function x -> rewrap_iso x (base_typeC x)) ty)
   | Ast0.Pointer(ty,star) -> Ast.Pointer(typeC ty,mcode star)
   | Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
       Ast.FunctionPointer

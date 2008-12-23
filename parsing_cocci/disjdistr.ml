@@ -50,7 +50,7 @@ let rec disjty ft =
 
 and disjtypeC bty =
   match Ast.unwrap bty with
-    Ast.BaseType(_,_) | Ast.ImplicitInt(_) -> [bty]
+    Ast.BaseType(_) | Ast.SignedT(_,_) -> [bty]
   | Ast.Pointer(ty,star) ->
       let ty = disjty ty in
       List.map (function ty -> Ast.rewrap bty (Ast.Pointer(ty,star))) ty

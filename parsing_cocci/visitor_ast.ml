@@ -185,9 +185,8 @@ let combiner bind option_default
   and typeC ty =
     let k ty =
       match Ast.unwrap ty with
-	Ast.BaseType(ty,sgn) ->
-	  bind (get_option sign_mcode sgn) (base_mcode ty)
-      | Ast.ImplicitInt(sgn) -> sign_mcode sgn
+	Ast.BaseType(ty) -> base_mcode ty
+      | Ast.SignedT(sgn,ty) -> bind (sign_mcode sgn) (get_option typeC ty)
       | Ast.Pointer(ty,star) ->
 	  bind (fullType ty) (string_mcode star)
       | Ast.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
@@ -677,9 +676,9 @@ let rebuilder
     let k ty =
       Ast.rewrap ty
 	(match Ast.unwrap ty with
-	  Ast.BaseType(ty,sgn) ->
-	    Ast.BaseType (base_mcode ty,get_option sign_mcode sgn)
-	| Ast.ImplicitInt(sgn) -> Ast.ImplicitInt (sign_mcode sgn)
+	  Ast.BaseType(ty) -> Ast.BaseType (base_mcode ty)
+	| Ast.SignedT(sgn,ty) ->
+	    Ast.SignedT(sign_mcode sgn,get_option typeC ty)
 	| Ast.Pointer(ty,star) ->
 	    Ast.Pointer (fullType ty, string_mcode star)
 	| Ast.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->

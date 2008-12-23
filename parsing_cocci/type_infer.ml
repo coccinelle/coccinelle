@@ -19,6 +19,11 @@ let err wrapped ty s =
 
 type id = Id of string | Meta of (string * string)
 
+let int_type = T.BaseType(T.IntType)
+let bool_type = T.BaseType(T.BoolType)
+let char_type = T.BaseType(T.CharType)
+let float_type = T.BaseType(T.FloatType)
+
 let rec lub_type t1 t2 =
   match (t1,t2) with
     (None,None) -> None
@@ -90,10 +95,10 @@ let rec propagate_types env =
 	Ast0.Ident(id) -> Ast0.set_type e res; res
       | Ast0.Constant(const) ->
 	  (match Ast0.unwrap_mcode const with
-	    Ast.String(_) -> Some (T.Pointer(T.BaseType(T.CharType,None)))
-	  | Ast.Char(_) -> Some (T.BaseType(T.CharType,None))
-	  | Ast.Int(_) -> Some (T.BaseType(T.IntType,None))
-	  | Ast.Float(_) ->  Some (T.BaseType(T.FloatType,None)))
+	    Ast.String(_) -> Some (T.Pointer(char_type))
+	  | Ast.Char(_) -> Some (char_type)
+	  | Ast.Int(_) -> Some (int_type)
+	  | Ast.Float(_) ->  Some (float_type))
         (* pad: note that in C can do either ptr(...) or ( *ptr)(...)
          * so I am not sure this code is enough.
          *)
@@ -106,7 +111,7 @@ let rec propagate_types env =
 		  (match Ast0.unwrap id with
 		    Ast0.Id(id) ->
 		      if List.mem (Ast0.unwrap_mcode id) bool_functions
-		      then Some(T.BaseType(T.BoolType,None))
+		      then Some(bool_type)
 		      else None
 		  | _ -> None)
 	      |	_ -> None))
@@ -132,13 +137,13 @@ let rec propagate_types env =
 	  | Ast.UnPlus -> Ast0.get_type exp
 	  | Ast.UnMinus -> Ast0.get_type exp
 	  | Ast.Tilde -> Ast0.get_type exp
-	  | Ast.Not -> Some(T.BaseType(T.BoolType,None)))
+	  | Ast.Not -> Some(bool_type))
       | Ast0.Nested(exp1,op,exp2) -> failwith "nested in type inf not possible"
       | Ast0.Binary(exp1,op,exp2) ->
 	  let ty1 = Ast0.get_type exp1 in
 	  let ty2 = Ast0.get_type exp2 in
 	  let same_type = function
-	      (None,None) -> Some (T.BaseType(T.IntType,None))
+	      (None,None) -> Some (int_type)
 
             (* pad: pointer arithmetic handling as in ptr+1 *)
 	    | (Some (T.Pointer ty1),Some ty2) ->
@@ -154,12 +159,12 @@ let rec propagate_types env =
 	  | Ast.Logical(op) ->
 	      let ty = lub_type ty1 ty2 in
 	      Ast0.set_type exp1 ty; Ast0.set_type exp2 ty;
-	      Some(T.BaseType(T.BoolType,None)))
+	      Some(bool_type))
       | Ast0.Paren(lp,exp,rp) -> Ast0.get_type exp
       | Ast0.ArrayAccess(exp1,lb,exp2,rb) ->
 	  (match strip_cv (Ast0.get_type exp2) with
-	    None -> Ast0.set_type exp2 (Some(T.BaseType(T.IntType,None)))
-	  | Some(T.BaseType(T.IntType,None)) -> ()
+	    None -> Ast0.set_type exp2 (Some(int_type))
+	  | Some(T.BaseType(T.IntType)) -> ()
 	  | Some (T.MetaType(_,_,_)) -> ()
 	  | Some (T.TypeName _) -> ()
 	  | Some ty -> err exp2 ty "bad type for an array index");
@@ -194,8 +199,8 @@ let rec propagate_types env =
 	  | Some (T.TypeName(_)) -> None
 	  | Some x -> err exp x "non-structure pointer type in field ref")
       | Ast0.Cast(lp,ty,rp,exp) -> Some(Ast0.ast0_type_to_type ty)
-      | Ast0.SizeOfExpr(szf,exp) -> Some(T.BaseType(T.IntType,None))
-      | Ast0.SizeOfType(szf,lp,ty,rp) -> Some(T.BaseType(T.IntType,None))
+      | Ast0.SizeOfExpr(szf,exp) -> Some(int_type)
+      | Ast0.SizeOfType(szf,lp,ty,rp) -> Some(int_type)
       | Ast0.TypeExp(ty) -> None
       | Ast0.MetaErr(name,_,_) -> None
       | Ast0.MetaExpr(name,_,Some [ty],_,_) -> Some ty
@@ -315,7 +320,7 @@ let rec propagate_types env =
 	    (* if a type is known, it is specified in the decl *)
 	      None
 	  | (Ast0.Paren(lp,exp,rp),None) -> process_test exp
-	  | (_,None) -> Some (T.BaseType(T.IntType,None))
+	  | (_,None) -> Some (int_type)
 	  | _ -> None in
 	let new_expty = process_test exp in
 	(match new_expty with
@@ -330,7 +335,7 @@ let rec propagate_types env =
     | Ast0.Case(case,exp,colon,code) ->
 	let _ = k c in
 	(match Ast0.get_type exp with
-	  None -> Ast0.set_type exp (Some (T.BaseType(T.IntType,None)))
+	  None -> Ast0.set_type exp (Some (int_type))
 	| _ -> ());
 	None
     | Ast0.OptCase(case) -> k c in

@@ -484,9 +484,9 @@ let rec equal_expression e1 e2 =
 let rec equal_typeC t1 t2 =
   match (Ast0.unwrap t1,Ast0.unwrap t2) with
     (Ast0.ConstVol(cv1,_),Ast0.ConstVol(cv2,_)) -> equal_mcode cv1 cv2
-  | (Ast0.BaseType(ty1,sign1),Ast0.BaseType(ty2,sign2)) ->
-      equal_mcode ty1 ty2 && equal_option sign1 sign2
-  | (Ast0.ImplicitInt(sign1),Ast0.ImplicitInt(sign2)) ->
+  | (Ast0.BaseType(ty1),Ast0.BaseType(ty2)) ->
+      equal_mcode ty1 ty2
+  | (Ast0.Signed(sign1,_),Ast0.Signed(sign2,_)) ->
       equal_mcode sign1 sign2
   | (Ast0.Pointer(_,star1),Ast0.Pointer(_,star2)) ->
       equal_mcode star1 star2

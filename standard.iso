@@ -558,6 +558,12 @@ return ...; => return;
 // todo: isomorphism avec les () around ? cf sizeof 3.
 // (E) => E    with some conditions.
 
+Expression
+@ paren @
+expression E;
+@@
+
+ (E) => E
 
 // ---------------------------------------------------------------------------
 // Pointer/Array isomorphisms

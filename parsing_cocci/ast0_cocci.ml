@@ -131,8 +131,8 @@ and listlen = Ast.meta_name mcode option
 
 and base_typeC =
     ConstVol        of Ast.const_vol mcode * typeC
-  | BaseType        of Ast.baseType mcode * Ast.sign mcode option
-  | ImplicitInt     of Ast.sign mcode
+  | BaseType        of Ast.baseType mcode
+  | Signed          of Ast.sign mcode * typeC option
   | Pointer         of typeC * string mcode (* * *)
   | FunctionPointer of typeC *
 	          string mcode(* ( *)*string mcode(* * *)*string mcode(* ) *)*
@@ -488,13 +488,13 @@ let undots d =
 let rec ast0_type_to_type ty =
   match unwrap ty with
     ConstVol(cv,ty) -> Type_cocci.ConstVol(const_vol cv,ast0_type_to_type ty)
-  | BaseType(bty,None) ->
-      Type_cocci.BaseType(baseType bty,None)
-  | BaseType(bty,Some sgn) ->
-      Type_cocci.BaseType(baseType bty,Some (sign sgn))
-  | ImplicitInt(sgn) ->
-      let bty = Type_cocci.IntType in
-      Type_cocci.BaseType(bty,Some (sign sgn))
+  | BaseType(bty) ->
+      Type_cocci.BaseType(baseType bty)
+  | Signed(sgn,None) ->
+      Type_cocci.SignedT(sign sgn,None)
+  | Signed(sgn,Some ty) ->
+      let bty = ast0_type_to_type ty in
+      Type_cocci.SignedT(sign sgn,Some bty)
   | Pointer(ty,_) -> Type_cocci.Pointer(ast0_type_to_type ty)
   | FunctionPointer(ty,_,_,_,_,params,_) ->
       Type_cocci.FunctionPointer(ast0_type_to_type ty)
@@ -559,10 +559,11 @@ let rec reverse_type ty =
   match ty with
     Type_cocci.ConstVol(cv,ty) ->
       ConstVol(reverse_const_vol cv,context_wrap(reverse_type ty))
-  | Type_cocci.BaseType(bty,None) ->
-      BaseType(reverse_baseType bty,None)
-  | Type_cocci.BaseType(bty,Some sgn) ->
-      BaseType(reverse_baseType bty,Some (reverse_sign sgn))
+  | Type_cocci.BaseType(bty) ->
+      BaseType(reverse_baseType bty)
+  | Type_cocci.SignedT(sgn,None) -> Signed(reverse_sign sgn,None)
+  | Type_cocci.SignedT(sgn,Some bty) ->
+      Signed(reverse_sign sgn,Some (context_wrap(reverse_type ty)))
   | Type_cocci.Pointer(ty) ->
       Pointer(context_wrap(reverse_type ty),make_mcode "*")
   | Type_cocci.StructUnionName(su,mv,tag) ->

@@ -111,8 +111,8 @@ let dumb_astcocci_fulltype = function
 
 let dumb_astcocci_type = function
  | A.MetaType(ida,_,_) -> ()
- | A.BaseType (basea, signaopt) -> ()
- | A.ImplicitInt (signa) -> ()
+ | A.BaseType (basea) -> ()
+ | A.SignedT (signa,tya) -> ()
  | A.Pointer (typa, _) -> ()
  | A.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) -> ()
  | A.FunctionType _ -> ()

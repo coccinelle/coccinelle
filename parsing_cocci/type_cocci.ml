@@ -5,7 +5,8 @@ type keep_binding = Unitary (* need no info *)
 
 type typeC =
     ConstVol        of const_vol * typeC
-  | BaseType        of baseType * sign option
+  | BaseType        of baseType
+  | SignedT         of sign * typeC option
   | Pointer         of typeC
   | FunctionPointer of typeC (* only return type *)
   | Array           of typeC (* drop size info *)
@@ -31,8 +32,9 @@ open Format
 
 let rec typeC = function
     ConstVol(cv,ty) -> const_vol cv; typeC ty
-  | BaseType(ty,None) -> baseType ty
-  | BaseType(ty,Some sgn) -> sign sgn; baseType ty
+  | BaseType(ty) -> baseType ty
+  | SignedT(sgn,None) -> sign sgn
+  | SignedT(sgn,Some ty) -> sign sgn; typeC ty
   | Pointer(ty) -> typeC ty; print_string "*"
   | FunctionPointer(ty) -> typeC ty; print_string "(*)(...)"
   | Array(ty) -> typeC ty; print_string "[] "
