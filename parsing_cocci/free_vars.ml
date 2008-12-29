@@ -69,6 +69,7 @@ let collect_refs include_constraints =
       TC.ConstVol(_,ty) | TC.Pointer(ty) | TC.FunctionPointer(ty)
     | TC.Array(ty) -> type_collect res ty
     | TC.MetaType(tyname,_,_) -> bind [tyname] res
+    | TC.SignedT(_,Some ty) -> type_collect res ty
     | ty -> res in
 
   let astfvexpr recursor k e =
@@ -173,6 +174,7 @@ let collect_saved =
       TC.ConstVol(_,ty) | TC.Pointer(ty) | TC.FunctionPointer(ty)
     | TC.Array(ty) -> type_collect res ty
     | TC.MetaType(tyname,TC.Saved,_) -> bind [tyname] res
+    | TC.SignedT(_,Some ty) -> type_collect res ty
     | ty -> res in
 
   let astfvexpr recursor k e =
@@ -382,6 +384,7 @@ let classify_variables metavars minirules used_after =
     | TC.MetaType(name,_,_) ->
 	let (unitary,inherited) = classify (name,(),(),Ast.NoMetaPos) in
 	Type_cocci.MetaType(name,unitary,inherited)
+    | TC.SignedT(sgn,Some ty) -> TC.SignedT(sgn,Some (type_infos ty))
     | ty -> ty in
 
   let expression r k e =

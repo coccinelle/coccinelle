@@ -473,11 +473,15 @@ let adjust_before_semicolon toks =
   let toks = List.rev toks in
   let rec loop = function
       [] -> []
-    | ((T2(_,true,_)) as x)::xs ->
-	if str_of_token2 x = ";" or str_of_token2 x = ")"
+    | ((T2(_,false,_)) as x)::xs ->
+	if List.mem (str_of_token2 x) [";";")";","]
 	then
 	  let (spaces, rest) = Common.span is_minusable_comment xs in
-	  x :: loop rest
+	  (match rest with
+	    (T2(_,true,_))::_ | (Cocci2 _)::_ ->
+	      (* only drop spaces if something was actually changed before *)
+	      x :: loop rest
+	  | _ -> x :: loop xs)
 	else x :: loop xs
     | x::xs -> x :: loop xs in
   List.rev (loop toks)

@@ -621,12 +621,13 @@ E.fld => E1->fld
 // sizeof isomorphisms
 // ---------------------------------------------------------------------------
 
-Expression
-@ sizeof_parens @
-expression E;
-@@
+// The following is made redundant by the paren isomorphism
+// Expression
+// @ sizeof_parens @
+// expression E;
+// @@
 
-sizeof(E) => sizeof E
+// sizeof(E) => sizeof E
 
 
 Expression

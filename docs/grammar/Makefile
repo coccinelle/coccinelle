@@ -33,7 +33,7 @@ install:
 	chown apache:apache -R $(WEB)
 	chmod a-w -R $(WEB)
 
-emn_install:
+emn_install: all html
 	cp *.css *.gif *.html $(EMNWEB)
 	cp $(PDF) $(EMNWEB)
 

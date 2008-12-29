@@ -12,10 +12,11 @@ without the || is only accepted in a test expression context.  This uses
 the annotations in the C file. *)
 
 let rec process_exp e =
-  let e = Ast0.set_test_pos e in
+  let e = Ast0.set_test_pos e in(* allow test isos *)
+  let e = Ast0.set_test_exp e in(* require that a test expression is matched *)
   match Ast0.unwrap e with
-    Ast0.Paren(lp,e,rp) ->
-      Ast0.rewrap e (Ast0.Paren(lp,process_exp e,rp))
+    Ast0.Paren(lp,e1,rp) ->
+      Ast0.rewrap e (Ast0.Paren(lp,process_exp e1,rp))
   | _ -> e
 
 let set_test_poss =
