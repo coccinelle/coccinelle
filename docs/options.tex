@@ -63,9 +63,21 @@ directory {\tt foodir}:
   previous case, but print out some information about the matching process.
 \item {\tt spatch -sp\_file foo.cocci -dir foodir}:  Apply the semantic
   patch {\tt foo.cocci} to all of the C files in the directory {\tt foodir}.
-\item {\tt spatch -sp\_file foo.cocci -dir foodir -include_headers}:  Apply
+\item {\tt spatch -sp\_file foo.cocci -dir foodir -include\_headers}:  Apply
   the semantic patch {\tt foo.cocci} to all of the C files and header files
   in the directory {\tt foodir}. 
+\end{itemize}
+
+In the rest of this document, the options are annotated as follows:
+\begin{itemize}
+\item \FilledBigDiamondshape: a basic option, that is most likely of
+  interest to all users.
+\item \BigLowerDiamond: an option that is frequently used, often for better
+understanding the effect of a semantic patch.
+\item \BigDiamondshape: an option that is likely to be rarely used, but
+  whose effect is still comprehensible to a user.
+\item An option with no annotation is likely of interest only to
+  developers.
 \end{itemize}
 
 \section{Selecting and parsing the semantic patch}
@@ -73,8 +85,7 @@ directory {\tt foodir}:
 \subsection{Standalone options}
 
 \normal{-parse\_cocci $\langle$file$\rangle$}{ This option parses a semantic
-patch file and prints out some information about it.  \jl{add some show
-options}}
+patch file and prints out some information about it.}
 
 \subsection{The semantic patch}
 
@@ -99,7 +110,7 @@ isomorphism expansion.}
 \rare{-show\_cocci}{Show the semantic patch that is being processed before
   expanding isomorphisms.}
 
-\rare{\show\_SP}{Show the semantic patch that is being processed after
+\rare{-show\_SP}{Show the semantic patch that is being processed after
   expanding isomorphisms.}
 
 \rare{-show\_ctl\_text}{ Show the representation
@@ -150,7 +161,7 @@ version including type information.}
   -compare\_c\_hardcoded}{Compares one C file to another, or compare the
 file tests/compare1.c to the file tests/compare1.c.}
 
-\developer{-test\_cfg\_ifdef $\langle$file$\rangle$} Do some special
+\developer{-test\_cfg\_ifdef $\langle$file$\rangle$}{Do some special
 processing of \#ifdef and display the resulting control-flow graph.  This
 requires {\tt dot} and {\tt gv}.}
 
@@ -203,11 +214,11 @@ keeping track of tests that have succeeded and failed.
 
 \developer{-compare\_with\_expected}{Compare the result of applying
   Coccinelle to file{\tt{.c}} to the file file{\tt{.res}} representing the
-  expected result.
+  expected result.}
 
 \subsection{Parsing C files}
 
-\rare{\show\_c}{Show the C code that is being processed.}
+\rare{-show\_c}{Show the C code that is being processed.}
 
 \rare{-parse\_error\_msg}{Show parsing errors in the C file.}
 
@@ -429,13 +440,13 @@ commands.}
   second instance the second $n$ files, etc.  With this option, the files
   are distributed among the instances in a round-robin fashion.}
 
-\developer{\debugger}{Option for running Coccinelle from within the ocaml
+\developer{-debugger}{Option for running Coccinelle from within the ocaml
   debugger.}
 
 \developer{-profile}{ Gather timing information about the main coccinelle
 functions.}
 
-\developer{-disable\_once} Print various warning messages every time some
+\developer{-disable\_once}{Print various warning messages every time some
 condition occurs, rather than only once.}
 
 \subsection{Miscellaneous}
