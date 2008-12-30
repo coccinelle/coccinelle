@@ -1,6 +1,6 @@
 .\"  -*- nroff -*-
 .\" Please adjust this date whenever revising the manpage.
-.TH SPATCH 1 "December 15, 2008"
+.TH SPATCH 1 "December 30, 2008"
 
 .\" see http://www.fnal.gov/docs/products/ups/ReferenceManual/html/manpages.html
 .\" see http://www.linuxjournal.com/article/1158
@@ -136,11 +136,12 @@ a directory:
 
   ./spatch -cocci_file foo.cocci -dir foodir . 
 
-In this case, it is useful to add the option -quiet. 
-
 If the semantic patch is not working as expected, it can 
-be useful to use the option -show_binding_in_out after -quiet to 
+be useful to use the option -show_bindings to 
 get a trace of the metavariable bindings used for each rule.
+
+The option -debug shows a selection of information about the application of
+a semantic patch to a file or directory.
 
 .SH FILES
 .I /usr/local/share/coccinelle/standard.iso
@@ -167,7 +168,8 @@ Glasgow, Scotland (April 2008) pp. 247-260.
 <yoann.padioleau@gmail.com>, Rene Rydhof Hansen <rrhansen@diku.dk> and
 Henrik stuart <henrik@hstuart.dk>.
 .PP
-This manual page was written by Yoann Padioleau <yoann.padioleau@gmail.com>.
+This manual page was written by Yoann Padioleau <yoann.padioleau@gmail.com>
+and Julia Lawall <julia@diku.dk>.
 
 .SH REPORTING BUGS
 Send a mail to <julia@diku.dk> or <yoann.padioleau@gmail.com>
