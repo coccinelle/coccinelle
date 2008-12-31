@@ -54,6 +54,7 @@ let quiet_profile = (
 
     Flag.show_misc;
     Flag.show_trying;
+    Flag.show_transinfo;
 
     FC.show_c;
     FC.show_cocci;
@@ -61,11 +62,41 @@ let quiet_profile = (
     FC.show_before_fixed_flow;
     FC.show_ctl_tex;
     FC.show_ctl_text;
-    FC.show_transinfo;
     FC.show_binding_in_out;
 
     Flag_parsing_cocci.show_SP;
     Flag_parsing_cocci.show_iso_failures;
+    Flag_ctl.verbose_ctl_engine;
+    Flag_ctl.verbose_match;
+    Flag_matcher.debug_engine;
+    Flag_parsing_c.debug_unparsing;
+    Flag_parsing_c.verbose_type;
+    Flag_parsing_c.verbose_parsing;
+  ])
+
+(* some information that is useful in seeing why a semantic patch doesn't
+work properly *)
+let debug_profile = (
+  [
+    Flag.show_misc;
+    FC.show_diff;
+    FC.show_cocci;
+    FC.show_binding_in_out;
+    FC.show_dependencies;
+    Flag.show_transinfo;
+    Flag_parsing_cocci.show_iso_failures;
+  ],
+  [
+
+    Flag.show_misc;
+
+    FC.show_c;
+    FC.show_flow;
+    FC.show_before_fixed_flow;
+    FC.show_ctl_tex;
+    FC.show_ctl_text;
+
+    Flag_parsing_cocci.show_SP;
     Flag_ctl.verbose_ctl_engine;
     Flag_ctl.verbose_match;
     Flag_matcher.debug_engine;
@@ -81,6 +112,7 @@ let pad_profile = (
   [
 
     Flag.show_misc;
+    Flag.show_transinfo;
 
     FC.show_c;
     FC.show_cocci;
@@ -88,7 +120,6 @@ let pad_profile = (
     FC.show_before_fixed_flow;
     FC.show_ctl_tex;
     FC.show_ctl_text;
-    FC.show_transinfo;
     FC.show_binding_in_out;
 
     Flag_parsing_cocci.show_SP;
@@ -100,6 +131,11 @@ let pad_profile = (
     Flag_parsing_c.verbose_type;
     Flag_parsing_c.verbose_parsing;
   ])
+
+let run_profile p =
+  let (set_to_true, set_to_false) = p in
+  List.iter (fun x -> x := false) set_to_false;
+  List.iter (fun x -> x := true) set_to_true
 
 (*****************************************************************************)
 (* The spatch options *)
@@ -229,13 +265,12 @@ let other_options = [
     "-show_diff"           , Arg.Set FC.show_diff, " ";
     "-no_show_diff"           , Arg.Clear FC.show_diff, " ";
     "-show_flow"              , Arg.Set FC.show_flow,        " ";
-    "-no_show_ctl_text"       , Arg.Clear FC.show_ctl_text,  " ";
-    (* works in conjunction with -show_ctl *)
+    (* works in conjunction with -show_ctl_text *)
     "-ctl_inline_let",       Arg.Set FC.inline_let_ctl, " ";
     "-ctl_show_mcodekind",   Arg.Set FC.show_mcodekind_in_ctl, " ";
     "-show_bindings",        Arg.Set FC.show_binding_in_out, " ";
-    "-no_show_transinfo",    Arg.Clear FC.show_transinfo, " ";
-    "-no_show_misc",         Arg.Clear Flag.show_misc, " ";
+    "-show_transinfo",    Arg.Set Flag.show_transinfo, " ";
+    "-show_misc",         Arg.Set Flag.show_misc, " ";
     "-show_trying",          Arg.Set Flag.show_trying,
     " show the name of each function being processed";
     "-show_dependencies",
@@ -247,14 +282,19 @@ let other_options = [
   "verbose subsystems options",  
   "",
   [
-    "-verbose_ctl_engine",   Arg.Set Flag_ctl.verbose_ctl_engine, " ";
+    "-verbose_ctl_engine",
+    Arg.Unit (function _ ->
+      Flag_ctl.verbose_ctl_engine := true; FC.show_ctl_text := true) , " ";
     "-verbose_match",        Arg.Set Flag_ctl.verbose_match, " ";
     "-verbose_engine",       Arg.Set Flag_matcher.debug_engine,    " ";
     "-graphical_trace",      Arg.Set Flag_ctl.graphical_trace, "  generate a pdf file representing the matching process";
-    "-gt_without_label",     Arg.Set Flag_ctl.gt_without_label, "  remove graph label (requires option -graphical_trace)";
+    "-gt_without_label",
+     Arg.Unit (function _ ->
+       Flag_ctl.graphical_trace := true; Flag_ctl.gt_without_label := true),
+       "  remove graph label (requires option -graphical_trace)";
 
-    "-no_parse_error_msg", Arg.Clear Flag_parsing_c.verbose_parsing, " ";
-    "-no_type_error_msg",  Arg.Clear Flag_parsing_c.verbose_type, " ";
+    "-parse_error_msg", Arg.Set Flag_parsing_c.verbose_parsing, " ";
+    "-type_error_msg",  Arg.Set Flag_parsing_c.verbose_type, " ";
     (* could also use Flag_parsing_c.options_verbose *)
   ];
 
@@ -265,6 +305,7 @@ let other_options = [
     "-show_cocci"             , Arg.Set FC.show_cocci,       " ";
     "-show_before_fixed_flow" , Arg.Set FC.show_before_fixed_flow,  " ";
     "-show_ctl_tex"           , Arg.Set FC.show_ctl_tex,     " ";
+    "-show_ctl_text"          , Arg.Set FC.show_ctl_text,     " ";
     "-show_SP"             ,    Arg.Set Flag_parsing_cocci.show_SP,  " ";
   ];
 
@@ -281,8 +322,8 @@ let other_options = [
     "  filter some cpp message when the macro is a \"known\" cpp construct";
     "-filter_define_error",Arg.Set Flag_parsing_c.filter_define_error,"  ";
     "-filter_passed_level", Arg.Set_int Flag_parsing_c.filter_passed_level,"  ";
-
-    "-debug_cfg",          Arg.Set Flag_parsing_c.debug_cfg , "  ";
+(*  debug cfg doesn't seem to have any effect, so drop it as an option *)
+(*  "-debug_cfg",          Arg.Set Flag_parsing_c.debug_cfg , "  "; *)
     "-debug_unparsing",      Arg.Set  Flag_parsing_c.debug_unparsing, "  ";
 
   ];
@@ -293,17 +334,9 @@ let other_options = [
   "",
   [
     (* todo: other profile ? *)
-    "-quiet",   Arg.Unit (fun () -> 
-      let (set_to_true, set_to_false) = quiet_profile in
-      List.iter (fun x -> x := false) set_to_false;
-      List.iter (fun x -> x := true) set_to_true;
-    ), " ";
-
-    "-pad",   Arg.Unit (fun () -> 
-      let (set_to_true, set_to_false) = pad_profile in
-      List.iter (fun x -> x := false) set_to_false;
-      List.iter (fun x -> x := true) set_to_true;
-    ), " ";
+    "-quiet",   Arg.Unit (fun () -> run_profile quiet_profile), " ";
+    "-debug",   Arg.Unit (fun () -> run_profile debug_profile), " ";
+    "-pad",     Arg.Unit (fun () -> run_profile pad_profile),   " ";
 
   ];
 
@@ -771,6 +804,7 @@ let main () =
 (*****************************************************************************)
 let _ =
   Common.main_boilerplate (fun () -> 
+    run_profile quiet_profile;
     main ();
     Ctlcocci_integration.print_bench();
   )

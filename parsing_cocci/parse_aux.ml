@@ -437,6 +437,16 @@ let make_cocci_rule_name_result nm d i a e ee =
       Ast.CocciRulename (Some n,d,i,a,e,ee)
   | None -> Ast.CocciRulename (None,d,i,a,e,ee)
 
+let make_generated_rule_name_result nm d i a e ee =
+  match nm with
+    Some nm ->
+      let n = id2name nm in
+      (try let _ =  Hashtbl.find Data.all_metadecls n in
+      raise (Semantic_cocci.Semantic ("repeated rule name"))
+      with Not_found -> ());
+      Ast.GeneratedRulename (Some n,d,i,a,e,ee)
+  | None -> Ast.GeneratedRulename (None,d,i,a,e,ee)
+
 let make_script_rule_name_result lang deps =
   let l = id2name lang in
   	Ast.ScriptRulename (l,deps)

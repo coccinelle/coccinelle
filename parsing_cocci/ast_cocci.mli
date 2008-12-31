@@ -471,12 +471,17 @@ and rulename =
     CocciRulename of string option * dependency * string list * string list *
 	exists * bool
       (* true if the whole thing is an expression *)
+  | GeneratedRulename of string option * dependency *
+	string list * string list * exists * bool
+      (* true if the whole thing is an expression *)
   | ScriptRulename of string * dependency
+
+and ruletype = Normal | Generated
 
 and rule =
     CocciRule of string (* name *) *
 	(dependency * string list (* dropped isos *) * exists) *
-	top_level list * bool list (* true if generates an exp *)
+	top_level list * bool list (* true if generates an exp *) * ruletype
   | ScriptRule of string * dependency * (string * meta_name) list * string
 
 and dependency =

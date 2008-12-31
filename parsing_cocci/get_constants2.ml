@@ -455,7 +455,7 @@ let get_constants rules neg_pos_vars =
 		  False -> (rest_info, in_plus, env, locals)
 		| dependencies ->
 		    (build_or dependencies rest_info, in_plus, env, locals))
-            | (Ast.CocciRule (nm,(dep,_,_),cur,_),neg_pos_vars) ->
+            | (Ast.CocciRule (nm,(dep,_,_),cur,_,_),neg_pos_vars) ->
 		let (cur_info,cur_plus) =
 		  rule_fn cur in_plus ((nm,True)::env) neg_pos_vars in
 		if List.for_all all_context.V.combiner_top_level cur

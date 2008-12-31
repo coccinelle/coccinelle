@@ -12,6 +12,8 @@ module Ast0 = Ast0_cocci
 module V0 = Visitor_ast0
 module CN = Context_neg
 
+let empty_isos = ref false
+
 let get_option f = function
     None -> []
   | Some x -> f x
@@ -783,7 +785,7 @@ and after_m1 ((f1,infom1,m1) as x1) ((f2,infom2,m2) as x2) rest = function
 	 what it can infer from something being CONTEXT with no top-level
 	 modifications.  for the moment, we thus give an error, asking the
 	 user to rewrite the semantic patch. *)
-      if greater_than_end infop infom1
+      if greater_than_end infop infom1 or !empty_isos
       then
 	if less_than_start infop infom2
 	then
@@ -918,7 +920,8 @@ let reevaluate_contextness =
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)
 
-let insert_plus minus plus =
+let insert_plus minus plus ei =
+  empty_isos := ei;
   let minus_stream = process_minus minus in
   let plus_stream = process_plus plus in
   merge minus_stream plus_stream;

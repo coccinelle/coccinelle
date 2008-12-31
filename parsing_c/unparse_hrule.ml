@@ -56,6 +56,18 @@ let print_header_rule pr srcfile =
       loop l
 
 (* ----------------------------------------------------------------------- *)
+(* Print check that we are not in the defining function *)
+
+let print_check_rule pr defn header_req =
+  let {Ast_c.f_name = s; f_type = (_, (paramst, (b, iib))); } = defn in
+  (if header_req
+  then pr "@same depends on header@\n"
+  else pr "@same@\n");
+  pr "position p;\n";
+  pr "@@\n\n";
+  pr s; pr "@p(...) { ... }\n\n"
+
+(* ----------------------------------------------------------------------- *)
 (* Print metavariable declarations *)
 
 let rec print_typedef typedefs pr = function
@@ -82,7 +94,7 @@ let print_metavar pr typedefs = function
 	 il)
   | _ -> failwith "function must have named parameters"
 
-let print_metavariables pr defn header_req =
+let print_metavariables pr defn header_req isexp =
   let {Ast_c.f_name = s; f_type = (_, (paramst, (b, iib))); } = defn in
   (if header_req
   then pr "@depends on header@\n"
@@ -95,7 +107,19 @@ let print_metavariables pr defn header_req =
       print_metavar pr typedefs first; pr ";\n";
       List.iter (function (x,_) -> print_metavar pr typedefs x; pr ";\n")
 	rest);
+  pr "position _p!=same.p;\n";
+  pr "identifier _f;\n";
+  (if isexp then pr "expression _E1;");
   pr "@@\n\n"
+
+(* ----------------------------------------------------------------------- *)
+(* print_start/end *)
+
+let print_start pr =
+  pr "_f@_p(...) { <+...\n"
+
+let print_end pr =
+  pr "\n...+> }\n"
 
 (* ----------------------------------------------------------------------- *)
 (* copy a file, adding - at the beginning of every line *)
@@ -150,9 +174,12 @@ let pp_program (e,(str, toks_e)) outdir srcfile isexp =
       let outfile = outfile ^ ".cocci" in
       Common.with_open_outfile outfile (fun (pr,chan) ->
 	let header_req = print_header_rule pr srcfile in
-	print_metavariables pr defn header_req;
+	print_check_rule pr defn header_req;
+	print_metavariables pr defn header_req isexp;
+	print_start pr;
 	minus_file pr tmp_file;
 	pr "+ ";
 	pp_def_gen pr defn isexp;
+	print_end pr;
 	pr "\n")
   | _ -> Common.pr2_once "warning: function expected"; ()

@@ -15,7 +15,6 @@ open Common
 
 module F = Control_flow_c
 
-module Flag = Flag_matcher
 (*****************************************************************************)
 (* The functor argument  *) 
 (*****************************************************************************)
@@ -203,7 +202,7 @@ module XTRANS = struct
     | _ -> 
         if (oldmcode, oldenv) = (mck, tin.binding)
         then begin
-          if !Flag.show_misc 
+          if !Flag_matcher.show_misc 
           then pr2 "already tagged but with same mcode, so safe";
           ib
         end
@@ -503,7 +502,7 @@ let (transform2: string (* rule name *) -> string list (* dropped_isos *) ->
       (* subtil: not cflow#nodes but acc#nodes *)
       let node  = acc#nodes#assoc nodei in 
 
-      if !Flag.show_misc 
+      if !Flag.show_transinfo
       then pr2 "transform one node";
       
       let tin = {

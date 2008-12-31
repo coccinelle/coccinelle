@@ -60,6 +60,7 @@ let token2c (tok,_) =
   | PC.TReverse -> "reverse"
   | PC.TError -> "error"
   | PC.TWords -> "words"
+  | PC.TGenerated -> "generated"
 
   | PC.TNothing -> "nothing"
 
@@ -565,7 +566,7 @@ let split_token ((tok,_) as t) =
   | PC.TPathIsoFile(_)
   | PC.TDepends | PC.TOn | PC.TEver | PC.TNever | PC.TExists | PC.TForall
   | PC.TReverse
-  | PC.TError | PC.TWords | PC.TNothing -> ([t],[t])
+  | PC.TError | PC.TWords | PC.TGenerated | PC.TNothing -> ([t],[t])
 
   | PC.Tchar(clt) | PC.Tshort(clt) | PC.Tint(clt) | PC.Tdouble(clt)
   | PC.Tfloat(clt) | PC.Tlong(clt) | PC.Tvoid(clt) | PC.Tstruct(clt)
@@ -1177,13 +1178,17 @@ let get_rule_name parse_fn starts_with_name get_tokens file prefix =
     if starts_with_name
     then
       let (_,tokens) = get_tokens [PC.TArob] in
+      let check_name = function
+	  None -> Some (mknm())
+	| Some nm ->
+	    (if List.mem nm reserved_names
+	    then failwith (Printf.sprintf "invalid name %s\n" nm));
+	    Some nm in
       match parse_one "rule name" parse_fn file tokens with
-	Ast.CocciRulename (None,a,b,c,d,e) ->
-          Ast.CocciRulename (Some (mknm()),a,b,c,d,e)
-      |	Ast.CocciRulename (Some nm,a,b,c,d,e) ->
-	  (if List.mem nm reserved_names
-	  then failwith (Printf.sprintf "invalid name %s\n" nm));
-	  Ast.CocciRulename (Some nm,a,b,c,d,e)
+	Ast.CocciRulename (nm,a,b,c,d,e) ->
+          Ast.CocciRulename (check_name nm,a,b,c,d,e)
+      | Ast.GeneratedRulename (nm,a,b,c,d,e) ->
+          Ast.GeneratedRulename (check_name nm,a,b,c,d,e)
       | Ast.ScriptRulename(s,deps) -> Ast.ScriptRulename(s,deps)
     else
       Ast.CocciRulename(Some(mknm()),Ast.NoDep,[],[],Ast.Undetermined,false) in
@@ -1288,7 +1293,7 @@ let parse file =
 	  let iso_files =
 	    parse_one "iso file names" PC.include_main file data in
 
-          let parse_cocci_rule old_metas
+          let parse_cocci_rule ruletype old_metas
 	      (rule_name, dependencies, iso, dropiso, exists, is_expression) =
             Ast0.rule_name := rule_name;
             Data.inheritable_positions :=
@@ -1358,7 +1363,7 @@ let parse file =
 
             (more, Ast0.CocciRule ((minus_res, metavars,
               (iso, dropiso, dependencies, rule_name, exists)),
-              (plus_res, metavars)), metavars, tokens) in
+              (plus_res, metavars), ruletype), metavars, tokens) in
 
           let parse_script_rule language old_metas deps =
             let get_tokens = tokens_script_all table file false lexbuf in
@@ -1400,7 +1405,9 @@ let parse file =
 		"rule" in
             match rulename with
               Ast.CocciRulename (Some s, a, b, c, d, e) ->
-                parse_cocci_rule old_metas (s, a, b, c, d, e)
+                parse_cocci_rule Ast.Normal old_metas (s, a, b, c, d, e)
+            | Ast.GeneratedRulename (Some s, a, b, c, d, e) ->
+                parse_cocci_rule Ast.Generated old_metas (s, a, b, c, d, e)
             | Ast.ScriptRulename (l,deps) -> parse_script_rule l old_metas deps
             | _ -> failwith "Malformed rule name"
             in
@@ -1450,7 +1457,7 @@ let process file isofile verbose =
 	| Ast0.CocciRule
 	    ((minus, metavarsm,
 	      (iso, dropiso, dependencies, rule_name, exists)),
-	     (plus, metavars)) ->
+	     (plus, metavars),ruletype) ->
 	       let chosen_isos =
 		 parse_iso_files global_isos
 		   (List.map (function x -> Common.Left x) iso)
@@ -1508,14 +1515,19 @@ let process file isofile verbose =
 	       let minus = Arity.minus_arity minus in
 	       let ((metavars,minus),function_prototypes) =
 		 Function_prototypes.process
-		   rule_name metavars dropped_isos minus plus in
+		   rule_name metavars dropped_isos minus plus ruletype in
           (* warning! context_neg side-effects its arguments *)
 	       let (m,p) = List.split (Context_neg.context_neg minus plus) in
 	       Type_infer.type_infer p;
-	       (if not !Flag.sgrep_mode2 then Insert_plus.insert_plus m p);
+	       (if not !Flag.sgrep_mode2
+	       then Insert_plus.insert_plus m p (chosen_isos = []));
 	       Type_infer.type_infer minus;
 	       let (extra_meta, minus) =
-		 Iso_pattern.apply_isos chosen_isos minus rule_name in
+		 match chosen_isos with
+		   (* separate case for [] because applying isos puts
+		      some restrictions on the -+ code *)
+		   [] -> ([],minus)
+		 | _ -> Iso_pattern.apply_isos chosen_isos minus rule_name in
 	       let minus = Comm_assoc.comm_assoc minus rule_name dropiso in
 	       let minus =
 		 if !Flag.sgrep_mode2 then minus
@@ -1523,7 +1535,7 @@ let process file isofile verbose =
 	       let minus = Simple_assignments.simple_assignments minus in
 	       let minus_ast =
 		 Ast0toast.ast0toast rule_name dependencies dropped_isos
-		   exists minus is_exp in
+		   exists minus is_exp ruletype in
 	       match function_prototypes with
 		 None -> [(extra_meta @ metavars, minus_ast)]
 	       | Some mv_fp ->

@@ -206,12 +206,12 @@ let show_or_not_ctl_tex a b  =
     
 let show_or_not_rule_name ast rulenb =
   if !Flag_cocci.show_ctl_text or !Flag.show_trying or
-    !Flag_cocci.show_transinfo or !Flag_cocci.show_binding_in_out
+    !Flag.show_transinfo or !Flag_cocci.show_binding_in_out
   then
     begin
       let name =
 	match ast with
-	  Ast_cocci.CocciRule (nm, (deps, drops, exists), x, _) -> nm
+	  Ast_cocci.CocciRule (nm, (deps, drops, exists), x, _, _) -> nm
 	| _ -> i_to_s rulenb in
       Common.pr_xxxxxxxxxxxxxxxxx ();
       pr (name ^ " = ");
@@ -220,7 +220,7 @@ let show_or_not_rule_name ast rulenb =
 
 let show_or_not_scr_rule_name rulenb =
   if !Flag_cocci.show_ctl_text or !Flag.show_trying or
-    !Flag_cocci.show_transinfo or !Flag_cocci.show_binding_in_out
+    !Flag.show_transinfo or !Flag_cocci.show_binding_in_out
   then
     begin
       let name = i_to_s rulenb in
@@ -282,7 +282,7 @@ let show_or_not_celem a b  =
 
 
 let show_or_not_trans_info2 trans_info = 
-  if !Flag_cocci.show_transinfo then begin
+  if !Flag.show_transinfo then begin
     if null trans_info then pr2 "transformation info is empty"
     else begin
       pr2 "transformation info returned:";
@@ -413,11 +413,13 @@ let sp_contain_typed_metavar rules =
     (List.map
        (function x ->
 	 match x with
-	   Ast_cocci.CocciRule (a,b,c,d) -> (a,b,c)
+	   Ast_cocci.CocciRule (a,b,c,d,_) -> (a,b,c)
 	 | _ -> failwith "error in filter")
     (List.filter
        (function x ->
-	 match x with Ast_cocci.CocciRule _ -> true | _ -> false)
+	 match x with
+	   Ast_cocci.CocciRule (a,b,c,d,Ast_cocci.Normal) -> true
+	 | _ -> false)
        rules))
 
 
@@ -651,6 +653,7 @@ type toplevel_cocci_info_cocci_rule = {
   positions: Ast_cocci.meta_name list;
 
   ruleid: int;
+  ruletype: Ast_cocci.ruletype;
 
   was_matched: bool ref;
 }
@@ -737,7 +740,7 @@ let prepare_cocci ctls free_var_lists negated_pos_lists
           }
           in ScriptRuleCocciInfo r
       | Ast_cocci.CocciRule
-	  (rulename,(dependencies,dropped_isos,z),restast,isexp) ->
+	  (rulename,(dependencies,dropped_isos,z),restast,isexp,ruletype) ->
           CocciRuleCocciInfo (
           {
             ctl = List.hd ctl_toplevel_list;
@@ -751,6 +754,7 @@ let prepare_cocci ctls free_var_lists negated_pos_lists
             used_after = List.hd used_after_list;
             positions = List.hd positions_list;
             ruleid = rulenb;
+	    ruletype = ruletype;
             was_matched = ref false;
           })
     )
@@ -1047,8 +1051,13 @@ and apply_cocci_rule r rules_that_have_ever_matched es (ccs:file_info list ref) 
 		      then
                         (* does also some side effects on c and r *)
 			let processed =
-			  process_a_ctl_a_env_a_toplevel r relevant_bindings
-			    c f in
+			  match r.ruletype with
+			    Ast_cocci.Normal ->
+			      process_a_ctl_a_env_a_toplevel r
+				relevant_bindings c f
+			  | Ast_cocci.Generated ->
+			      process_a_generated_a_env_a_toplevel r
+				relevant_bindings c f in
 			match processed with
 			| None -> ()
 			| Some newbindings -> 
@@ -1316,6 +1325,13 @@ and process_a_ctl_a_env_a_toplevel2 r e c f =
 and process_a_ctl_a_env_a_toplevel  a b c f= 
   Common.profile_code "process_a_ctl_a_env_a_toplevel" 
     (fun () -> process_a_ctl_a_env_a_toplevel2 a b c f)
+
+and process_a_generated_a_env_a_toplevel2 r e c f =
+  failwith "not yet implemented"
+   
+and process_a_generated_a_env_a_toplevel  a b c f= 
+  Common.profile_code "process_a_ctl_a_env_a_toplevel" 
+    (fun () -> process_a_generated_a_env_a_toplevel2 a b c f)
    
 
 

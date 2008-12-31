@@ -284,7 +284,7 @@ let get_constants rules =
           function r ->
             match r with
               Ast.ScriptRule (_,mv,deps,_) -> (rest_info, in_plus)
-            | Ast.CocciRule (nm, (dep,_,_), cur, _) ->
+            | Ast.CocciRule (nm, (dep,_,_), cur, _, _) ->
                 let (cur_info,cur_plus) = rule_fn cur in_plus in
 	        let cur_info =
 	          (* no dependencies if dependent on another rule; then we

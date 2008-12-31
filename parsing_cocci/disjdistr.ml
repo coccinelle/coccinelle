@@ -362,14 +362,14 @@ let disj rules =
     (function (mv,r) ->
       match r with
         Ast.ScriptRule _ -> (mv, r)
-      | Ast.CocciRule (nm, rule_info, r, isexp) ->
-      let res =
-	List.map
-	  (function x ->
-	    let res = disj_all.V.rebuilder_top_level x in
-	    if !Flag.track_iso_usage
-	    then collect_iso_info.V.rebuilder_top_level res
-	    else res)
-	  r in
-      (mv, Ast.CocciRule (nm,rule_info,res,isexp)))
+      | Ast.CocciRule (nm, rule_info, r, isexp, ruletype) ->
+	  let res =
+	    List.map
+	      (function x ->
+		let res = disj_all.V.rebuilder_top_level x in
+		if !Flag.track_iso_usage
+		then collect_iso_info.V.rebuilder_top_level res
+		else res)
+	      r in
+	  (mv, Ast.CocciRule (nm,rule_info,res,isexp,ruletype)))
     rules

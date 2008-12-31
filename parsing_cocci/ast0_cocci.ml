@@ -353,7 +353,7 @@ and parsed_rule =
     CocciRule of
       (rule * Ast.metavar list *
 	 (string list * string list * Ast.dependency * string * Ast.exists)) *
-	(rule * Ast.metavar list)
+	(rule * Ast.metavar list) * Ast.ruletype
   | ScriptRule of
       string * Ast.dependency * (string * Ast.meta_name) list * string
 

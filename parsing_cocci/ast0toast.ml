@@ -904,6 +904,7 @@ let ast0toast_toplevel x =
   inline_mcodes.V0.combiner_top_level x;
   top_level x
 
-let ast0toast name deps dropped exists x is_exp =
+let ast0toast name deps dropped exists x is_exp ruletype =
   List.iter inline_mcodes.V0.combiner_top_level x;
-  Ast.CocciRule (name,(deps,dropped,exists),List.map top_level x,is_exp)
+  Ast.CocciRule
+    (name,(deps,dropped,exists),List.map top_level x,is_exp,ruletype)
