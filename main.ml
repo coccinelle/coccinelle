@@ -266,8 +266,13 @@ let other_options = [
     "-no_show_diff"           , Arg.Clear FC.show_diff, " ";
     "-show_flow"              , Arg.Set FC.show_flow,        " ";
     (* works in conjunction with -show_ctl_text *)
-    "-ctl_inline_let",       Arg.Set FC.inline_let_ctl, " ";
-    "-ctl_show_mcodekind",   Arg.Set FC.show_mcodekind_in_ctl, " ";
+    "-ctl_inline_let",   
+    Arg.Unit
+    (function _ -> FC.show_ctl_text := true; FC.inline_let_ctl := true), " ";
+    "-ctl_show_mcodekind",
+    Arg.Unit
+    (function _ -> FC.show_ctl_text := true; FC.show_mcodekind_in_ctl := true),
+    " ";
     "-show_bindings",        Arg.Set FC.show_binding_in_out, " ";
     "-show_transinfo",    Arg.Set Flag.show_transinfo, " ";
     "-show_misc",         Arg.Set Flag.show_misc, " ";
@@ -378,7 +383,9 @@ let other_options = [
     (function _ -> FC.popl := true; Flag_popl.keep_all_wits := true), 
     "    simplified SmPL, for the popl paper";
 
-    "-hrule", Arg.String (function s -> Flag.make_hrule := Some s),
+    "-hrule", Arg.String
+    (function s ->
+      Flag.make_hrule := Some s; FC.include_options := FC.I_NO_INCLUDES),
     "    semantic patch generation";
 
     "-loop",              Arg.Set Flag_ctl.loop_in_src_code,    " ";
@@ -535,7 +542,7 @@ let adjust_stdin cfile k =
     Common.redirect_stdin_opt newin k
 
 let glimpse_filter (coccifile, isofile) dir = 
-  let (astcocci,_free_var_lists,_negated_positions,
+  let (_metavars,astcocci,_free_var_lists,_negated_positions,
        _used_after_lists,_positions_lists,_,query) =
     Cocci.sp_of_file coccifile (Some isofile) in
   match query with

@@ -785,7 +785,7 @@ and after_m1 ((f1,infom1,m1) as x1) ((f2,infom2,m2) as x2) rest = function
 	 what it can infer from something being CONTEXT with no top-level
 	 modifications.  for the moment, we thus give an error, asking the
 	 user to rewrite the semantic patch. *)
-      if greater_than_end infop infom1 or !empty_isos
+      if greater_than_end infop infom1 or is_minus m1 or !empty_isos
       then
 	if less_than_start infop infom2
 	then
@@ -819,6 +819,12 @@ and after_m1 ((f1,infom1,m1) as x1) ((f2,infom2,m2) as x2) rest = function
 	  failwith
 	    "The semantic patch is structured in a way that may give bad results with isomorphisms.  Please try to rewrite it by moving + code out from -/context terms."
 	end
+
+(* not sure this is safe.  if have iso problems, consider changing this
+to always return false *)
+and is_minus = function
+    Ast0.MINUS _ -> true
+  | _ -> false
 
 and before_m2 ((f2,infom2,m2) as x2) rest
     (p : (Ast0.info * Ast.anything list list) list) =

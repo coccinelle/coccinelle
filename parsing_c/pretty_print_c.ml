@@ -42,11 +42,7 @@ let rec pp_expression_gen pr_elem pr_space =
     | Constant (c),         [i]     -> pr_elem i 
     | FunCall  (e, es),     [i1;i2] -> 
         pp_expression e; pr_elem i1; 
-        es +> List.iter (fun (e, opt) -> 
-          assert (List.length opt <= 1); (* opt must be a comma? *)
-          opt +> List.iter (function x -> pr_elem x; pr_space());
-          pp_argument_gen pr_elem pr_space e;
-        );
+	pp_arg_list_gen pr_elem pr_space es;
         pr_elem i2;
         
     | CondExpr (e1, e2, e3),    [i1;i2]    -> 
@@ -130,6 +126,11 @@ let rec pp_expression_gen pr_elem pr_space =
   in
   pp_expression
 
+and pp_arg_list_gen pr_elem pr_space es =
+  es +> List.iter (fun (e, opt) -> 
+    assert (List.length opt <= 1); (* opt must be a comma? *)
+    opt +> List.iter (function x -> pr_elem x; pr_space());
+    pp_argument_gen pr_elem pr_space e)
 
 and pp_argument_gen pr_elem pr_space argument = 
   let rec pp_action = function 
@@ -348,7 +349,7 @@ and (pp_base_type_gen:
           let all_ii = get_sto sto ++ iiqu in
           all_ii 
           +> List.sort Ast_c.compare_pos
-          +> List.iter pr_elem;
+          +> Common.print_between pr_space pr_elem(*List.iter pr_elem*);
           
         in
         let print_sto_qu_ty (sto, (qu, iiqu), iity) = 
@@ -361,9 +362,9 @@ and (pp_base_type_gen:
              * cf -test strangeorder
              *)
             pr2 "STRANGEORDER"; 
-            all_ii2 +> List.iter pr_elem 
+            all_ii2 +> Common.print_between pr_space pr_elem(*List.iter pr_elem*)
           end
-          else all_ii2 +> List.iter pr_elem
+          else all_ii2 +> Common.print_between pr_space pr_elem(*List.iter pr_elem*)
         in
 
         match ty, iity with

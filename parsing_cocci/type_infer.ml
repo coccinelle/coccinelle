@@ -87,6 +87,17 @@ let rec propagate_types env =
       Some (T.ConstVol(_,t)) -> Some t
     | t -> t in
 
+  (* types that might be integer types.  should char be allowed? *)
+  let rec is_int_type = function
+      T.BaseType(T.IntType)
+    | T.BaseType(T.LongType)
+    | T.BaseType(T.ShortType)
+    | T.MetaType(_,_,_)
+    | T.TypeName _
+    | T.SignedT(_,None) -> true
+    | T.SignedT(_,Some ty) -> is_int_type ty
+    | _ -> false in
+
   let expression r k e =
     let res = k e in
     let ty =
@@ -146,9 +157,9 @@ let rec propagate_types env =
 	      (None,None) -> Some (int_type)
 
             (* pad: pointer arithmetic handling as in ptr+1 *)
-	    | (Some (T.Pointer ty1),Some ty2) ->
+	    | (Some (T.Pointer ty1),Some ty2) when is_int_type ty2 ->
 		Some (T.Pointer ty1)
-	    | (Some ty1,Some (T.Pointer ty2)) ->
+	    | (Some ty1,Some (T.Pointer ty2)) when is_int_type ty1 ->
 		Some (T.Pointer ty2)
 
 	    | (t1,t2) ->
@@ -164,9 +175,7 @@ let rec propagate_types env =
       | Ast0.ArrayAccess(exp1,lb,exp2,rb) ->
 	  (match strip_cv (Ast0.get_type exp2) with
 	    None -> Ast0.set_type exp2 (Some(int_type))
-	  | Some(T.BaseType(T.IntType)) -> ()
-	  | Some (T.MetaType(_,_,_)) -> ()
-	  | Some (T.TypeName _) -> ()
+	  | Some(ty) when is_int_type ty -> ()
 	  | Some ty -> err exp2 ty "bad type for an array index");
 	  (match strip_cv (Ast0.get_type exp1) with
 	    None -> None

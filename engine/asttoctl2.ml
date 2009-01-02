@@ -2313,7 +2313,7 @@ let asttoctl r used_after positions =
     Ast.ScriptRule _ -> []
   | Ast.CocciRule (a,b,c,_,Ast_cocci.Normal) ->
       asttoctlz (a,b,c) used_after positions
-  | Ast.CocciRule (a,b,c,_,Ast_cocci.Generated) -> []
+  | Ast.CocciRule (a,b,c,_,Ast_cocci.Generated) -> [CTL.True]
 
 let pp_cocci_predicate (pred,modif) =
   Pretty_print_engine.pp_predicate pred

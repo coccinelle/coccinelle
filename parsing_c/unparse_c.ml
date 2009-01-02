@@ -315,27 +315,28 @@ let expand_mcode toks =
     *)
 
     (* patch: when need full coccinelle transformation *)
+    let unparser = Unparse_cocci.pp_list_list_any args_pp false in
     match mcode with
     | Ast_cocci.MINUS (_,any_xxs) -> 
         (* Why adding ? because I want to have all the information, the whole
          * set of tokens, so I can then process and remove the 
          * is_between_two_minus for instance *)
         add_elem t true;
-        Unparse_cocci.pp_list_list_any args_pp any_xxs Unparse_cocci.InPlace
+        unparser any_xxs Unparse_cocci.InPlace
     | Ast_cocci.CONTEXT (_,any_befaft) -> 
         (match any_befaft with
         | Ast_cocci.NOTHING -> 
             add_elem t false
         | Ast_cocci.BEFORE xxs -> 
-            Unparse_cocci.pp_list_list_any args_pp xxs Unparse_cocci.Before;
+            unparser xxs Unparse_cocci.Before;
             add_elem t false
         | Ast_cocci.AFTER xxs -> 
             add_elem t false;
-            Unparse_cocci.pp_list_list_any args_pp xxs Unparse_cocci.After;
+            unparser xxs Unparse_cocci.After;
         | Ast_cocci.BEFOREAFTER (xxs, yys) -> 
-            Unparse_cocci.pp_list_list_any args_pp xxs Unparse_cocci.Before;
+            unparser xxs Unparse_cocci.Before;
             add_elem t false;
-            Unparse_cocci.pp_list_list_any args_pp yys Unparse_cocci.After;
+            unparser yys Unparse_cocci.After;
         )
     | Ast_cocci.PLUS -> raise Impossible
 
@@ -495,7 +496,7 @@ let rec add_space xs =
   | x::y::xs -> 
       let sx = str_of_token2 x in
       let sy = str_of_token2 y in
-      if is_ident_like sx && is_ident_like sy 
+      if is_ident_like sx && is_ident_like sy
       then x::C2 " "::(add_space (y::xs))
       else x::(add_space (y::xs))
 

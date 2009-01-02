@@ -767,4 +767,5 @@ let free_vars rules =
 		 is_exp,ruletype))
       rules used_after_lists in
   let new_rules = collect_astfvs (List.combine metavars new_rules) in
-  (new_rules,fvs_lists,neg_pos_lists,used_after_lists,positions_list)
+  (metavars,new_rules,
+   fvs_lists,neg_pos_lists,used_after_lists,positions_list)

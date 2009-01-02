@@ -37,7 +37,8 @@ val test_parse_cocci : filename -> unit
 
 val sp_of_file :
   filename (* coccifile *)  -> filename option (* isofile *) ->
-  Ast_cocci.rule list * Ast_cocci.meta_name list list list *
+  Ast_cocci.metavar list list * Ast_cocci.rule list *
+      Ast_cocci.meta_name list list list *
       Ast_cocci.meta_name list list list *
       Ast_cocci.meta_name list list list * Ast_cocci.meta_name list list list *
       string list list *

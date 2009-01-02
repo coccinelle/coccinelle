@@ -638,6 +638,7 @@ type toplevel_cocci_info_script_rule = {
 
 type toplevel_cocci_info_cocci_rule = {
   ctl: Lib_engine.ctlcocci * (CCI.pred list list);
+  metavars: Ast_cocci.metavar list;
   ast_rule: Ast_cocci.rule;
   isexp: bool; (* true if + code is an exp, only for Flag.make_hrule *)
 
@@ -711,16 +712,15 @@ let gen_pdf_graph () =
 
 (* --------------------------------------------------------------------- *)
 let prepare_cocci ctls free_var_lists negated_pos_lists
-    used_after_lists positions_list astcocci = 
+    used_after_lists positions_list metavars astcocci = 
 
   let gathered = Common.index_list_1
-      (zip (zip (zip (zip (zip ctls astcocci) free_var_lists)
+      (zip (zip (zip (zip (zip (zip ctls metavars) astcocci) free_var_lists)
 		   negated_pos_lists) used_after_lists) positions_list)
   in
   gathered +> List.map 
-    (fun ((((((ctl_toplevel_list,ast),free_var_list),negated_pos_list),
-	   used_after_list),
-	   positions_list),rulenb) -> 
+    (fun (((((((ctl_toplevel_list,metavars),ast),free_var_list),
+	     negated_pos_list),used_after_list),positions_list),rulenb) -> 
       
       let is_script_rule r =
         match r with Ast_cocci.ScriptRule _ -> true | _ -> false in
@@ -744,6 +744,7 @@ let prepare_cocci ctls free_var_lists negated_pos_lists
           CocciRuleCocciInfo (
           {
             ctl = List.hd ctl_toplevel_list;
+            metavars = metavars;
             ast_rule = ast;
 	    isexp = List.hd isexp;
             rulename = rulename;
@@ -807,27 +808,21 @@ let rebuild_info_program cs file isexp =
   cs +> List.map (fun c ->
     if !(c.was_modified)
     then
-      (match !Flag.make_hrule with
-	Some dir ->
-	  Unparse_hrule.pp_program (c.ast_c, (c.fullstring, c.tokens_c))
-	    dir file isexp;
-	  []
-      |	None ->
-	  let file = Common.new_temp_file "cocci_small_output" ".c" in
-	  cfile_of_program 
-            [(c.ast_c, (c.fullstring, c.tokens_c)), Unparse_c.PPnormal] 
-            file;
+      let file = Common.new_temp_file "cocci_small_output" ".c" in
+      cfile_of_program 
+        [(c.ast_c, (c.fullstring, c.tokens_c)), Unparse_c.PPnormal] 
+        file;
 	  
-          (* Common.command2 ("cat " ^ file); *)
-	  let cprogram = cprogram_of_file file in
-	  let xs = build_info_program cprogram c.env_typing_before in
+      (* Common.command2 ("cat " ^ file); *)
+      let cprogram = cprogram_of_file file in
+      let xs = build_info_program cprogram c.env_typing_before in
 	  
-          (* TODO: assert env has not changed,
-           * if yes then must also reparse what follows even if not modified.
-           * Do that only if contain_typedmetavar of course, so good opti.
-          *)
-          (* Common.list_init xs *) (* get rid of the FinalDef *)
-	  xs)
+      (* TODO: assert env has not changed,
+      * if yes then must also reparse what follows even if not modified.
+      * Do that only if contain_typedmetavar of course, so good opti.
+      *)
+      (* Common.list_init xs *) (* get rid of the FinalDef *)
+      xs
     else [c]
   ) +> List.concat
 
@@ -1042,31 +1037,34 @@ and apply_cocci_rule r rules_that_have_ever_matched es (ccs:file_info list ref) 
 		    show_or_not_binding "in" e;
 		    show_or_not_binding "relevant in" relevant_bindings;
 
-		    let children_e = ref [] in
+		    (* applying the rule *)
+		    (match r.ruletype with
+		      Ast_cocci.Normal ->
+			let children_e = ref [] in
       
                       (* looping over the functions and toplevel elements in
 			 .c and .h *)
-		    concat_headers_and_c !ccs +> List.iter (fun (c,f) -> 
-		      if c.flow <> None 
-		      then
-                        (* does also some side effects on c and r *)
-			let processed =
-			  match r.ruletype with
-			    Ast_cocci.Normal ->
+			concat_headers_and_c !ccs +> List.iter (fun (c,f) -> 
+			  if c.flow <> None 
+			  then
+                          (* does also some side effects on c and r *)
+			    let processed =
 			      process_a_ctl_a_env_a_toplevel r
-				relevant_bindings c f
-			  | Ast_cocci.Generated ->
-			      process_a_generated_a_env_a_toplevel r
 				relevant_bindings c f in
-			match processed with
-			| None -> ()
-			| Some newbindings -> 
-			    newbindings +> List.iter (fun newbinding -> 
-			      children_e :=
-				Common.insert_set newbinding !children_e)
-			      ); (* end iter cs *)
+			    match processed with
+			    | None -> ()
+			    | Some newbindings -> 
+				newbindings +> List.iter (fun newbinding -> 
+				  children_e :=
+				    Common.insert_set newbinding !children_e)
+				  ); (* end iter cs *)
 
-		    !children_e in
+			!children_e
+		    | Ast_cocci.Generated ->
+			process_a_generated_a_env_a_toplevel r
+			  relevant_bindings !ccs;
+			[]) in
+
 	      let old_bindings_to_keep =
 		Common.nub
 		  (e +> List.filter (fun (s,v) -> List.mem s r.used_after)) in
@@ -1326,12 +1324,29 @@ and process_a_ctl_a_env_a_toplevel  a b c f=
   Common.profile_code "process_a_ctl_a_env_a_toplevel" 
     (fun () -> process_a_ctl_a_env_a_toplevel2 a b c f)
 
-and process_a_generated_a_env_a_toplevel2 r e c f =
-  failwith "not yet implemented"
+and process_a_generated_a_env_a_toplevel2 r env = function
+    [cfile] ->
+      let free_vars =
+	List.filter
+	  (function
+	      (rule,_) when rule = r.rulename -> false
+	    | (_,"ARGS") -> false
+	    | _ -> true)
+	  r.free_vars in
+      let env_domain = List.map (function (nm,vl) -> nm) env in
+      let metavars =
+	List.filter
+	  (function md ->
+	    let (rl,_) = Ast_cocci.get_meta_name md in
+	    rl = r.rulename)
+	  r.metavars in
+      if Common.include_set free_vars env_domain
+      then Unparse_hrule.pp_rule metavars r.ast_rule env cfile.full_fname
+  | _ -> failwith "multiple files not supported"
    
-and process_a_generated_a_env_a_toplevel  a b c f= 
+and process_a_generated_a_env_a_toplevel rule env ccs = 
   Common.profile_code "process_a_ctl_a_env_a_toplevel" 
-    (fun () -> process_a_generated_a_env_a_toplevel2 a b c f)
+    (fun () -> process_a_generated_a_env_a_toplevel2 rule env ccs)
    
 
 
@@ -1355,13 +1370,13 @@ let full_engine2 (coccifile, isofile) cfiles =
   in
 
   (* useful opti when use -dir *)
-  let (astcocci,free_var_lists,negated_pos_lists,used_after_lists,
+  let (metavars,astcocci,free_var_lists,negated_pos_lists,used_after_lists,
        positions_lists,toks,_) = 
       sp_of_file coccifile isofile
   in
   let ctls = 
     Common.memoized _hctl (coccifile, isofile) (fun () -> 
-      ctls_of_ast  astcocci used_after_lists positions_lists)
+      ctls_of_ast astcocci used_after_lists positions_lists)
   in
 
   let contain_typedmetavar = sp_contain_typed_metavar astcocci in
@@ -1386,7 +1401,7 @@ let full_engine2 (coccifile, isofile) cfiles =
 
     let cocci_infos =
       prepare_cocci ctls free_var_lists negated_pos_lists
-	used_after_lists positions_lists astcocci in
+	used_after_lists positions_lists metavars astcocci in
     let choose_includes =
       match !Flag_cocci.include_options with
 	Flag_cocci.I_UNSPECIFIED ->

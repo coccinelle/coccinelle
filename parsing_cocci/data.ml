@@ -27,6 +27,7 @@ type pconstraints = Ast.meta_name list
 let in_rule_name = ref false
 let in_meta = ref false
 let in_iso = ref false
+let in_generating = ref false
 let in_prolog = ref false
 let inheritable_positions =
   ref ([] : string list) (* rules from which posns can be inherited *)

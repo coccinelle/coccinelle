@@ -1407,7 +1407,11 @@ let parse file =
               Ast.CocciRulename (Some s, a, b, c, d, e) ->
                 parse_cocci_rule Ast.Normal old_metas (s, a, b, c, d, e)
             | Ast.GeneratedRulename (Some s, a, b, c, d, e) ->
-                parse_cocci_rule Ast.Generated old_metas (s, a, b, c, d, e)
+		Data.in_generating := true;
+                let res =
+		  parse_cocci_rule Ast.Generated old_metas (s,a,b,c,d,e) in
+		Data.in_generating := false;
+		res
             | Ast.ScriptRulename (l,deps) -> parse_script_rule l old_metas deps
             | _ -> failwith "Malformed rule name"
             in
@@ -1545,7 +1549,7 @@ let process file isofile verbose =
   let parsed = List.concat parsed in
   let disjd = Disjdistr.disj parsed in
 
-  let (code,fvs,neg_pos,ua,pos) = Free_vars.free_vars disjd in
+  let (metavars,code,fvs,neg_pos,ua,pos) = Free_vars.free_vars disjd in
   if !Flag_parsing_cocci.show_SP
   then List.iter Pretty_print_cocci.unparse code;
 
@@ -1555,4 +1559,4 @@ let process file isofile verbose =
   let glimpse_tokens2 =
     Common.profile_code "get_glimpse_constants"
       (fun () -> Get_constants2.get_constants code neg_pos) in(* for glimpse *)
-  (code,fvs,neg_pos,ua,pos,grep_tokens,glimpse_tokens2)
+  (metavars,code,fvs,neg_pos,ua,pos,grep_tokens,glimpse_tokens2)

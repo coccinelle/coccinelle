@@ -30,19 +30,17 @@ and const_vol = Const | Volatile
 (* Printer *)
 open Format
 
-let rec typeC = function
-    ConstVol(cv,ty) -> const_vol cv; typeC ty
+let rec type2c = function
+    ConstVol(cv,ty) -> (const_vol cv) ^ (type2c ty)
   | BaseType(ty) -> baseType ty
   | SignedT(sgn,None) -> sign sgn
-  | SignedT(sgn,Some ty) -> sign sgn; typeC ty
-  | Pointer(ty) -> typeC ty; print_string "*"
-  | FunctionPointer(ty) -> typeC ty; print_string "(*)(...)"
-  | Array(ty) -> typeC ty; print_string "[] "
-  | StructUnionName(kind,mv,name) ->
-      structUnion kind; print_string name; print_string " "
-  | TypeName(name) -> print_string name; print_string " "
-  | MetaType((rule,name),keep,inherited) ->
-      print_string "<"; print_string name; print_string ">"; print_string " ";
+  | SignedT(sgn,Some ty) -> (sign sgn) ^ (type2c ty)
+  | Pointer(ty) -> (type2c ty) ^ "*"
+  | FunctionPointer(ty) -> (type2c ty) ^ "(*)(...)"
+  | Array(ty) -> (type2c ty) ^ "[] "
+  | StructUnionName(kind,mv,name) -> (structUnion kind) ^ name ^ " "
+  | TypeName(name) -> name ^ " "
+  | MetaType((rule,name),keep,inherited) -> name ^ " "
       (*
       let print_unitary = function
 	  Unitary -> print_string "unitary"
@@ -53,29 +51,31 @@ let rec typeC = function
       print_string " inherited:"; print_bool inherited;
       print_string " */"
       *)
-  | Unknown -> print_string "unknown "
+  | Unknown -> "unknown "
 
 and baseType = function
-    VoidType -> print_string "void "
-  | CharType -> print_string "char "
-  | ShortType -> print_string "short "
-  | IntType -> print_string "int "
-  | DoubleType -> print_string "double "
-  | FloatType -> print_string "float "
-  | LongType -> print_string "long "
-  | BoolType -> print_string "bool "
+    VoidType -> "void "
+  | CharType -> "char "
+  | ShortType -> "short "
+  | IntType -> "int "
+  | DoubleType -> "double "
+  | FloatType -> "float "
+  | LongType -> "long "
+  | BoolType -> "bool "
 
 and structUnion = function
-    Struct -> print_string "struct "
-  | Union -> print_string "union "
+    Struct -> "struct "
+  | Union -> "union "
 
 and sign = function
-    Signed -> print_string "signed "
-  | Unsigned -> print_string "unsigned "
+    Signed -> "signed "
+  | Unsigned -> "unsigned "
 
 and const_vol = function
-    Const -> print_string "const "
-  | Volatile -> print_string "volatile "
+    Const -> "const "
+  | Volatile -> "volatile "
+
+let typeC t = print_string (type2c t)
 
 (* t1 should be less informative than t1, eg t1 = Pointer(Unknown) and t2 =
 Pointer(int) *)
@@ -94,4 +94,3 @@ let compatible t1 = function
 	| (Array(ty1),Array(ty2)) -> loop(ty1,ty2)
 	| (_,_) -> t1=t2 in
       loop (t1,t2)
-

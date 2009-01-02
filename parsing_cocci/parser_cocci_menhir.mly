@@ -20,8 +20,8 @@ module P = Parse_aux
 %token Tlist TFresh TConstant TError TWords TWhy0 TPlus0 TBang0
 %token TPure TContext TGenerated
 %token TTypedef TDeclarer TIterator TName TPosition TPosAny
-%token TUsing TDisable TExtends TDepends TOn TEver TNever TExists TForall TScript
-%token TReverse TNothing
+%token TUsing TDisable TExtends TDepends TOn TEver TNever TExists TForall
+%token TScript TReverse TNothing
 %token<string> TRuleName
 
 %token<Data.clt> Tchar Tshort Tint Tdouble Tfloat Tlong
@@ -177,11 +177,11 @@ rule_name:
   nm=ioption(pure_ident) extends d=depends i=loption(choose_iso)
     a=loption(disable) e=exists ee=is_expression TArob
       { P.make_cocci_rule_name_result nm d i a e ee }
-  | TGenerated i=loption(choose_iso)
+  | TGenerated extends d=depends i=loption(choose_iso)
     a=loption(disable) e=exists ee=is_expression TArob
       /* these rules have no name as a cheap way to ensure that no normal
       rule inherits their metavariables or depends on them */
-      { P.make_generated_rule_name_result None Ast.NoDep i a e ee }
+      { P.make_generated_rule_name_result None d i a e ee }
   | TScript TDotDot lang=pure_ident d=depends TArob
       { P.make_script_rule_name_result lang d }
 
@@ -248,7 +248,12 @@ metadec:
     { P.create_metadec_ne ar ispure kindfn ids }
 | ar=arity TPosition a=option(TPosAny)
     ids=comma_list(pure_ident_or_meta_ident_with_not_eq(not_pos)) TMPtVirg
-    { let kindfn arity name pure check_meta constraints =
+    (* pb: position variables can't be inherited from normal rules, and then
+       there is no way to inherit from a generated rule, so there is no point
+       to have a position variable *)
+    { (if !Data.in_generating
+      then failwith "position variables not allowed in a generated rule file");
+      let kindfn arity name pure check_meta constraints =
       let tok = check_meta(Ast.MetaPosDecl(arity,name)) in
       let any = match a with None -> Ast.PER | Some _ -> Ast.ALL in
       !Data.add_pos_meta name constraints any; tok in
@@ -1343,20 +1348,30 @@ not_eq:
        TNotEq i=pure_ident
          { (if !Data.in_iso
 	   then failwith "constraints not allowed in iso file");
+	   (if !Data.in_generating
+           (* pb: constraints not stored with metavars; too lazy to search for
+	      them in the pattern *)
+	   then failwith "constraints not allowed in a generated rule file");
 	   [Ast0.wrap(Ast0.Id(P.id2mcode i))] }
      | TNotEq TOBrace l=comma_list(pure_ident) TCBrace
 	 { (if !Data.in_iso
 	   then failwith "constraints not allowed in iso file");
+	   (if !Data.in_generating
+	   then failwith "constraints not allowed in a generated rule file");
 	   List.map (function i -> Ast0.wrap(Ast0.Id(P.id2mcode i))) l }
 
 not_eqe:
        TNotEq i=pure_ident
          { (if !Data.in_iso
 	   then failwith "constraints not allowed in iso file");
+	   (if !Data.in_generating
+	   then failwith "constraints not allowed in a generated rule file");
 	   [Ast0.wrap(Ast0.Ident(Ast0.wrap(Ast0.Id(P.id2mcode i))))] }
      | TNotEq TOBrace l=comma_list(pure_ident) TCBrace
 	 { (if !Data.in_iso
 	   then failwith "constraints not allowed in iso file");
+	   (if !Data.in_generating
+	   then failwith "constraints not allowed in a generated rule file");
 	   List.map
 	     (function i ->
 	       Ast0.wrap(Ast0.Ident(Ast0.wrap(Ast0.Id(P.id2mcode i)))))
@@ -1366,10 +1381,14 @@ not_ceq:
        TNotEq i=ident_or_const
          { (if !Data.in_iso
 	   then failwith "constraints not allowed in iso file");
+	   (if !Data.in_generating
+	   then failwith "constraints not allowed in a generated rule file");
 	   [i] }
      | TNotEq TOBrace l=comma_list(ident_or_const) TCBrace
 	 { (if !Data.in_iso
 	   then failwith "constraints not allowed in iso file");
+	   (if !Data.in_generating
+	   then failwith "constraints not allowed in a generated rule file");
 	   l }
 
 ident_or_const:
@@ -1382,6 +1401,8 @@ not_pos:
        TNotEq i=meta_ident
          { (if !Data.in_iso
 	   then failwith "constraints not allowed in iso file");
+	   (if !Data.in_generating
+	   then failwith "constraints not allowed in a generated rule file");
 	   match i with
 	     (None,_) -> failwith "constraint must be an inherited variable"
 	   | (Some rule,name) ->
@@ -1391,6 +1412,8 @@ not_pos:
      | TNotEq TOBrace l=comma_list(meta_ident) TCBrace
 	 { (if !Data.in_iso
 	   then failwith "constraints not allowed in iso file");
+	   (if !Data.in_generating
+	   then failwith "constraints not allowed in a generated rule file");
 	   List.map
 	     (function
 		 (None,_) ->

@@ -25,6 +25,7 @@ and sign = Signed | Unsigned
 
 and const_vol = Const | Volatile
 
+val type2c : typeC -> string
 val typeC : typeC -> unit
 
 val compatible : typeC -> typeC option -> bool

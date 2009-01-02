@@ -4,6 +4,8 @@ type pr_space_func = unit -> unit
 
 val pp_expression_gen :
     pr_elem_func -> pr_space_func -> Ast_c.expression -> unit
+val pp_arg_list_gen :
+    pr_elem_func -> pr_space_func -> Ast_c.argument Ast_c.wrap2 list -> unit
 val pp_statement_gen : pr_elem_func -> pr_space_func -> Ast_c.statement -> unit
 val pp_decl_gen : pr_elem_func -> pr_space_func -> Ast_c.declaration -> unit
 val pp_init_gen : pr_elem_func -> pr_space_func -> Ast_c.initialiser -> unit

@@ -240,6 +240,7 @@ let check_meta tok =
   | Ast.MetaExpListDecl(Ast.NONE,(rule,name),len_name) ->
       (match lookup rule name with
 	Ast.MetaExpListDecl(_,_,_) -> ()
+      | Ast.MetaParamListDecl(_,_,_) when not (!Flag.make_hrule = None) -> ()
       | _ ->
 	  raise
 	    (Semantic_cocci.Semantic

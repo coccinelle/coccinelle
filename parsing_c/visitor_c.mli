@@ -31,9 +31,10 @@ val vk_toplevel : visitor_c -> toplevel -> unit
 val vk_program  : visitor_c -> program -> unit
 
 val vk_argument : visitor_c -> argument -> unit
-
+val vk_argument_list : visitor_c -> argument wrap2 list -> unit
 val vk_args_splitted : visitor_c -> (argument, il) Common.either list -> unit
 val vk_param : visitor_c -> parameterType -> unit
+val vk_param_list : visitor_c -> parameterType wrap2 list -> unit
 val vk_params_splitted : 
   visitor_c -> (parameterType, il) Common.either list -> unit
 

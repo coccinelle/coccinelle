@@ -20,7 +20,7 @@ exception CantBeInPlus
 type pos = Before | After | InPlace
 
 let rec pp_list_list_any (env, pr, pr_elem, pr_space, indent, unindent)
-    xxs before =
+    generating xxs before =
 
 (* Just to be able to copy paste the code from pretty_print_cocci.ml. *)
 let print_string = pr in
@@ -36,31 +36,105 @@ let print_option = Common.do_option in
 let print_between = Common.print_between in
 
 (* --------------------------------------------------------------------- *)
+(* Only for make_hrule, print plus code, unbound metavariables *)
 
-let handle_metavar name fn = 
+(* avoid polyvariance problems *)
+let anything : (Ast.anything -> unit) ref = ref (function _ -> ()) in
+
+let rec print_anything = function
+    [] -> ()
+  | stream ->
+      start_block();
+      print_between force_newline print_anything_list stream;
+      end_block()
+
+and print_anything_list = function
+    [] -> ()
+  | [x] -> !anything x
+  | bef::((aft::_) as rest) ->
+      !anything bef;
+      let space =
+	(match bef with
+	  Ast.Rule_elemTag(_) | Ast.AssignOpTag(_) | Ast.BinaryOpTag(_)
+	| Ast.ArithOpTag(_) | Ast.LogicalOpTag(_)
+	| Ast.Token("if",_) | Ast.Token("while",_) -> true | _ -> false) or
+	(match aft with
+	  Ast.Rule_elemTag(_) | Ast.AssignOpTag(_) | Ast.BinaryOpTag(_)
+	| Ast.ArithOpTag(_) | Ast.LogicalOpTag(_) | Ast.Token("{",_) -> true
+	| _ -> false) in
+      if space then print_string " ";
+      print_anything_list rest in
+
+let print_around printer term = function
+    Ast.NOTHING -> printer term
+  | Ast.BEFORE(bef) -> print_anything bef; printer term
+  | Ast.AFTER(aft) -> printer term; print_anything aft
+  | Ast.BEFOREAFTER(bef,aft) ->
+      print_anything bef; printer term; print_anything aft in
+
+let print_string_befaft fn x info =
+  List.iter (function s -> print_string s; force_newline())
+    info.Ast.strbef;
+  fn x;
+  List.iter (function s -> force_newline(); print_string s)
+    info.Ast.straft in
+
+let print_meta (r,x) = print_string x in
+
+let print_pos = function
+    Ast.MetaPos(name,_,_,_,_) ->
+      let name = Ast.unwrap_mcode name in
+      print_string "@"; print_meta name
+  | _ -> () in
+
+(* --------------------------------------------------------------------- *)
+
+let mcode fn arg =
+  match (generating,arg) with
+    (false,(s,info,_,_)) ->
+    (* printing for transformation *)
+    (* Here we don't care about the annotation on s. *)
+      List.iter (function str -> print_string str; print_string "\n")
+	info.Ast.strbef;
+      if info.Ast.column > 0 && not(info.Ast.strbef = [])
+      then print_string (String.make info.Ast.column ' ');
+      fn s;
+      (match info.Ast.straft with
+	[] -> ()
+      | aft ->
+	  List.iter (function str -> print_string "\n"; print_string str) aft;
+	  print_string "\n") (*XXX pr current_tabbing *)
+      (* printing for rule generation *)
+  | (true, (x, _, Ast.MINUS(_,plus_stream), pos)) ->
+      print_string "\n- ";
+      fn x; print_pos pos;
+      print_anything plus_stream
+  | (true, (x, _, Ast.CONTEXT(_,plus_streams), pos)) ->
+      let fn x = fn x; print_pos pos in
+      print_around fn x plus_streams
+  | (true,( x, info, Ast.PLUS, pos)) ->
+      let fn x = print_string "\n+ "; fn x; print_pos pos in
+      print_string_befaft fn x info
+in
+
+
+(* --------------------------------------------------------------------- *)
+
+let handle_metavar name fn =
   match (Common.optionise (fun () -> List.assoc (term name) env)) with
   | None ->
       let name_string (_,s) = s in
-      failwith (Printf.sprintf "SP line %d: Not found a value in env for: %s"
-		  (Ast_cocci.get_mcode_line name) (name_string (term name)))
-  | Some e  -> fn e
+      if generating
+      then pr (name_string (term name))
+      else
+	failwith
+	  (Printf.sprintf "SP line %d: Not found a value in env for: %s"
+	     (Ast_cocci.get_mcode_line name) (name_string (term name)))
+  | Some e  ->
+      if generating
+      then mcode (function _ -> fn e) name
+      else fn e
 in
-
-(* --------------------------------------------------------------------- *)
-(* Here we don't care about the annotation on s. *)
-let mcode fn (s,info,_,_) =
-  List.iter (function str -> print_string str; print_string "\n")
-    info.Ast.strbef;
-  if info.Ast.column > 0 && not(info.Ast.strbef = [])
-  then print_string (String.make info.Ast.column ' ');
-  fn s;
-  match info.Ast.straft with
-    [] -> ()
-  | aft ->
-      List.iter (function str -> print_string "\n"; print_string str) aft;
-      print_string "\n"; (*XXX pr current_tabbing *)
-in
-
 (* --------------------------------------------------------------------- *)
 let dots between fn d =
   match Ast.unwrap d with
@@ -99,6 +173,14 @@ in
 
 (* --------------------------------------------------------------------- *)
 (* Expression *)
+
+let print_disj_list fn l =
+  force_newline(); print_string "("; force_newline();
+  print_between
+    (function _ ->
+      force_newline(); print_string "|"; force_newline())
+    fn l;
+  force_newline(); print_string ")"; force_newline() in
 
 let rec expression e =
   match Ast.unwrap e with
@@ -150,21 +232,39 @@ let rec expression e =
   | Ast.MetaExpr (name,_,_,_typedontcare,_formdontcare,_) ->
       handle_metavar name  (function
         | Ast_c.MetaExprVal exp -> 
-            Pretty_print_c.pp_expression_gen pr_elem pr_space  exp
+            Pretty_print_c.pp_expression_gen pr_elem pr_space exp
         | _ -> raise Impossible
       )
 
   | Ast.MetaExprList (name,_,_,_) -> 
-      failwith "not handling MetaExprList"
-      
+      handle_metavar name  (function
+        | Ast_c.MetaExprListVal args -> 
+            Pretty_print_c.pp_arg_list_gen pr_elem pr_space args
+        | _ -> raise Impossible
+      )
+
   | Ast.EComma(cm) -> mcode print_string cm; print_space()
 
-  | Ast.DisjExpr _ 
-  | Ast.NestExpr(_) 
-  | Ast.Edots(_)
-  | Ast.Ecircles(_)
-  | Ast.Estars(_) 
-    -> raise CantBeInPlus
+  | Ast.DisjExpr(exp_list) ->
+      if generating
+      then print_disj_list expression exp_list
+      else raise CantBeInPlus
+  | Ast.NestExpr(_) -> raise CantBeInPlus
+  | Ast.Edots(dots,Some whencode)
+  | Ast.Ecircles(dots,Some whencode)
+  | Ast.Estars(dots,Some whencode) ->
+      if generating
+      then
+	(mcode print_string dots;
+	 print_string "   when != ";
+	 expression whencode)
+      else raise CantBeInPlus
+  | Ast.Edots(dots,None)
+  | Ast.Ecircles(dots,None)
+  | Ast.Estars(dots,None) ->
+      if generating
+      then mcode print_string dots
+      else raise CantBeInPlus
 
   | Ast.OptExp(exp) | Ast.UniqueExp(exp) -> 
       raise CantBeInPlus
@@ -536,7 +636,17 @@ and rule_elem arity re =
   | Ast.Case(case,exp,colon) ->
       mcode print_string case; print_string " "; expression exp;
       mcode print_string colon; print_string " "
-  | Ast.DisjRuleElem(res) -> raise CantBeInPlus
+  | Ast.DisjRuleElem(res) ->
+      if generating
+      then
+	(print_string arity;
+	 force_newline(); print_string "("; force_newline();
+	 print_between
+	   (function _ -> force_newline(); print_string "|"; force_newline())
+	   (rule_elem arity)
+	   res;
+	 force_newline(); print_string ")")
+      else raise CantBeInPlus
 
   | Ast.MetaRuleElem(name,_,_) ->
       raise Impossible
@@ -614,12 +724,52 @@ let rec statement arity s =
       rule_elem arity header; print_string " ";
       dots force_newline (statement arity) body
 
-  | Ast.Disj(_)| Ast.Nest(_)
-  | Ast.Dots(_) | Ast.Circles(_) | Ast.Stars(_) ->
-      raise CantBeInPlus
+  | Ast.Disj([stmt_dots]) ->
+      if generating
+      then
+	(print_string arity;
+	 dots force_newline (statement arity) stmt_dots)
+      else raise CantBeInPlus
+  | Ast.Disj(stmt_dots_list) -> (* ignores newline directive for readability *)
+      if generating
+      then
+	(print_string arity;
+	 force_newline(); print_string "("; force_newline();
+	 print_between
+	   (function _ -> force_newline();print_string "|"; force_newline())
+	   (dots force_newline (statement arity))
+	   stmt_dots_list;
+	 force_newline(); print_string ")")
+      else raise CantBeInPlus
+  | Ast.Nest(_) -> raise CantBeInPlus
+  | Ast.Dots(d,whn,_,_) | Ast.Circles(d,whn,_,_) | Ast.Stars(d,whn,_,_) ->
+      if generating
+      then
+	(print_string arity; mcode print_string d;
+	 print_between force_newline
+	   (whencode (dots force_newline (statement "")) (statement "")) whn;
+	 force_newline())
+      else raise CantBeInPlus
 
   | Ast.OptStm(s) | Ast.UniqueStm(s) -> 
       raise CantBeInPlus
+
+and whencode notfn alwaysfn = function
+    Ast.WhenNot a ->
+      print_string "   WHEN != "; notfn a
+  | Ast.WhenAlways a ->
+      print_string "   WHEN = "; alwaysfn a
+  | Ast.WhenModifier x -> print_string "   WHEN "; print_when_modif x
+  | Ast.WhenNotTrue a ->
+      print_string "   WHEN != TRUE "; rule_elem "" a
+  | Ast.WhenNotFalse a ->
+      print_string "   WHEN != FALSE "; rule_elem "" a
+
+and print_when_modif = function
+  | Ast.WhenAny    -> print_string "ANY"
+  | Ast.WhenStrict -> print_string "STRICT"
+  | Ast.WhenForall -> print_string "FORALL"
+  | Ast.WhenExists -> print_string "EXISTS"
 
 and case_line arity c =
   match Ast.unwrap c with
@@ -686,7 +836,8 @@ let rec pp_any = function
 	  (match x with
 	    (*"return" |*) "else" -> print_string " "
 	  | _ -> ()))
-	(x,info,(),Ast.NoMetaPos);
+	(let nomcodekind = Ast.CONTEXT(Ast.DontCarePos,Ast.NOTHING) in
+	(x,info,nomcodekind,Ast.NoMetaPos));
       if_open_brace x
 
   | Ast.Code(x) -> let _ = top_level x in false
@@ -703,6 +854,8 @@ let rec pp_any = function
   | Ast.SgrepStartTag(x) -> failwith "unexpected start tag"
   | Ast.SgrepEndTag(x) -> failwith "unexpected end tag"
 in
+
+  anything := (function x -> let _ = pp_any x in ());
 
   (* todo? imitate what is in pretty_print_cocci ? *)
   match xxs with
