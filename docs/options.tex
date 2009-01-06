@@ -57,7 +57,7 @@ directory {\tt foodir}:
   cause for concern, unless it occurs in a function that is relevant to the
   semantic patch.
 \item {\tt spatch -sp\_file foo.cocci foo.c}: Apply the semantic patch {\tt
-    foo.c} to the file {\tt foo.c} and print out any transformations as a
+    foo.cocci} to the file {\tt foo.c} and print out any transformations as a
   diff.
 \item {\tt spatch -sp\_file foo.cocci foo.c -debug}:  The same as the
   previous case, but print out some information about the matching process.
@@ -89,9 +89,10 @@ patch file and print out some information about it.}
 
 \subsection{The semantic patch}
 
-\minimum{-c $\langle$file$\rangle$, -sp\_file $\langle$file$\rangle$,
+\minimum{-sp\_file $\langle$file$\rangle$, -c $\langle$file$\rangle$, 
 -cocci\_file $\langle$file$\rangle$}{ Specify the name of the file
-  containing the semantic patch.  The file name should end in {\tt .cocci}.}
+  containing the semantic patch.  The file name should end in {\tt .cocci}.
+All three options do the same thing; the last two are deprecated.}
 
 \subsection{Isomorphisms}
 
@@ -147,7 +148,7 @@ of the semantic patch in CTL.}
 \normal{-control\_flow $\langle$file$\rangle$, -control\_flow
 $\langle$file$\rangle$:$\langle$function$\rangle$}{ Print a control-flow
 graph for all of the functions in a file or for a specific function in a
-file.  This requires {\tt dot} and {\tt gv}.}
+file.  This requires {\tt dot} (http://www.graphviz.org/) and {\tt gv}.}
 
 \rare{-type\_c $\langle$file$\rangle$}{ Parse a C file and pretty-print a
 version including type information.}
@@ -334,7 +335,9 @@ graph before and after the application of each rule.
 \rare{-graphical\_trace}{Create a pdf file containing the control flow
   graph annotated with the various nodes matched during the CTL matching
   process.  Unfortunately, except for the most simple examples, the output
-  is voluminous, and so the option is not really practical for most examples.}
+  is voluminous, and so the option is not really practical for most
+  examples.  This requires {\tt dot} (http://www.graphviz.org/) and {\tt
+  pdftk}.}
 
 \rare{-gt\_without\_label}{The same as {\bf -graphical\_trace}, but the PDF
   file does not contain the CTL code.}
