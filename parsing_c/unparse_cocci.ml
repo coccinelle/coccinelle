@@ -110,7 +110,7 @@ let mcode fn arg =
       fn x; print_pos pos;
       print_anything plus_stream
   | (true, (x, _, Ast.CONTEXT(_,plus_streams), pos)) ->
-      let fn x = fn x; print_pos pos in
+      let fn x = print_string "\n "; fn x; print_pos pos in
       print_around fn x plus_streams
   | (true,( x, info, Ast.PLUS, pos)) ->
       let fn x = print_string "\n+ "; fn x; print_pos pos in

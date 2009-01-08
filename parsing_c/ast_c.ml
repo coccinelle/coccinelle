@@ -844,7 +844,8 @@ let compare_pos ii1 ii2 =
   let pos1 = get_pos (pinfo_of_info ii1) in
   let pos2 = get_pos (pinfo_of_info ii2) in
   match (pos1,pos2) with
-    (Real p1, Real p2) -> compare p1.Common.charpos p2.Common.charpos
+    (Real p1, Real p2) ->
+      compare p1.Common.charpos p2.Common.charpos
   | (Virt (p1,_), Real p2) ->
       if (compare p1.Common.charpos p2.Common.charpos) = (-1) then (-1) else 1
   | (Real p1, Virt (p2,_)) ->

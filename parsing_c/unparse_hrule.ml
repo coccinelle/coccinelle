@@ -128,11 +128,26 @@ let rec print_typedef pr typedefs = function
   | (Ast_c.Pointer(_,ty),_) -> print_typedef pr typedefs ty
   | _ -> ()
 
+let rewrap_str s ii =
+  {ii with Ast_c.pinfo =
+    (match ii.Ast_c.pinfo with
+      Ast_c.OriginTok pi ->
+	Ast_c.OriginTok { pi with Common.str = s;}
+    | Ast_c.ExpandedTok (pi,vpi) ->
+	Ast_c.ExpandedTok ({ pi with Common.str = s;},vpi)
+    | Ast_c.FakeTok (_,vpi) -> Ast_c.FakeTok (s,vpi)
+    | Ast_c.AbstractLineTok pi ->
+	Ast_c.AbstractLineTok { pi with Common.str = s;})}
+
 let print_metavar pr typedefs = function
     ((_,Some param,(_,(Ast_c.Pointer(_,(Ast_c.BaseType(Ast_c.Void),_)),_))),_)
     ->
-      pr "expression "; pr param
+      pr "expression _"; pr param
   | (((_,Some param,(_,ty)),il) : Ast_c.parameterType) ->
+      let il =
+	match List.rev il with
+	  name::rest -> (rewrap_str ("_"^param) name) :: rest
+	| _ -> failwith "no name" in
       print_typedef pr typedefs ty;
       Pretty_print_c.pp_param_gen
 	(function x ->
@@ -148,9 +163,11 @@ let print_metavar pr typedefs = function
 let make_exp = function
     (((_,Some name,ty),param_ii),comma_ii) ->
       let no_info = (None,Ast_c.NotTest) in
+      let nm = "_"^name in
       let exp =
-	((Ast_c.Ident name,ref no_info),[List.hd(List.rev param_ii)]) in
-      (Common.Left exp,comma_ii)
+	((Ast_c.Ident nm,ref no_info),
+	 [rewrap_str nm (List.hd(List.rev param_ii))]) in
+      (name,(Common.Left exp,comma_ii))
   | _ -> failwith "bad parameter"
 
 let print_extra_typedefs pr typedefs env =
@@ -174,6 +191,40 @@ let print_extra_typedefs pr typedefs env =
       | Ast_c.MetaStmtVal(stm) -> Visitor_c.vk_statement bigf stm
       | Ast_c.MetaPosVal _ | Ast_c.MetaPosValList _
       | Ast_c.MetaListlenVal _ -> ())
+    env
+
+let rename argids env =
+  let argenv = List.map (function arg -> (arg,"_"^arg)) argids in
+  let lookup x = try List.assoc x argenv with Not_found -> x in
+  let bigf =
+    { Visitor_c.default_visitor_c_s with
+    Visitor_c.kexpr_s = (fun (k,bigf) e -> 
+      match e with
+	((Ast_c.Ident s, info), [ii]) ->
+	  let new_name = lookup s in
+	  ((Ast_c.Ident new_name, info), [rewrap_str new_name ii])
+      | _ -> k e) } in
+  List.map
+    (function (x,vl) ->
+      (x,
+       match vl with
+	 Ast_c.MetaIdVal(_) | Ast_c.MetaFuncVal(_)
+       | Ast_c.MetaLocalFuncVal(_) -> vl
+       | Ast_c.MetaExprVal(exp) ->
+	   Ast_c.MetaExprVal(Visitor_c.vk_expr_s bigf exp)
+       | Ast_c.MetaExprListVal(args) ->
+	   Ast_c.MetaExprListVal(Visitor_c.vk_arguments_s bigf args)
+       | Ast_c.MetaParamVal(param) ->
+	   Ast_c.MetaParamVal(Visitor_c.vk_param_s bigf param)
+       | Ast_c.MetaParamListVal(params) ->
+	   Ast_c.MetaParamListVal(Visitor_c.vk_params_s bigf params)
+
+       | Ast_c.MetaTypeVal(ty) ->
+	   Ast_c.MetaTypeVal(Visitor_c.vk_type_s bigf ty)
+       | Ast_c.MetaStmtVal(stm) ->
+	   Ast_c.MetaStmtVal(Visitor_c.vk_statement_s bigf stm)
+       | Ast_c.MetaPosVal _ | Ast_c.MetaPosValList _
+       | Ast_c.MetaListlenVal _ -> vl))
     env
 
 let print_types pr = function
@@ -318,6 +369,8 @@ let pp_rule local_metas ast env srcfile =
     let header_req = print_header_rule pr srcfile in
     print_check_rule pr function_name header_req;
     let args = print_metavariables pr local_metas paramst env header_req in
+    let (argids,args) = List.split args in
+    let env = rename argids env in
     let env = (args_name,Ast_c.MetaExprListVal args)::env in
     print_start pr;
     (* for printing C tokens *)

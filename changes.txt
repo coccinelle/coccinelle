@@ -21,6 +21,7 @@
 - short and long allowed for array index types in SmPL
 - more restrictions on type inference for pointer arithmetic in SmPL
 - allow isomorphisms to apply when + code is anywhere within all - terms
+- changed order of printing const and volatile
 
 ** Internals: 
 - isomorphisms don't apply under signed/unsigned, to prevent the creation

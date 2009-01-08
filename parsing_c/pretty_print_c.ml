@@ -327,8 +327,9 @@ and (pp_type_with_ident_gen:
       fullType -> attribute list ->
       unit) = 
   fun pr_elem pr_space ->
-    fun ident sto ((qu, iiqu), (ty, iity)) attrs -> 
+    fun ident sto ((qu, iiqu), (ty, iity)) attrs ->
       pp_base_type_gen pr_elem pr_space ((qu, iiqu), (ty, iity))  sto;
+      (match ident with None -> () | Some _ -> pr_space());
       pp_type_with_ident_rest_gen pr_elem pr_space ident
 	((qu, iiqu), (ty, iity)) attrs
 
@@ -361,7 +362,7 @@ and (pp_base_type_gen:
             (* TODO in fact for pointer, the qualifier is after the type 
              * cf -test strangeorder
              *)
-            pr2 "STRANGEORDER"; 
+            pr2 "STRANGEORDER";
             all_ii2 +> Common.print_between pr_space pr_elem(*List.iter pr_elem*)
           end
           else all_ii2 +> Common.print_between pr_space pr_elem(*List.iter pr_elem*)

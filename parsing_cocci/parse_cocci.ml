@@ -1527,10 +1527,10 @@ let process file isofile verbose =
 	       then Insert_plus.insert_plus m p (chosen_isos = []));
 	       Type_infer.type_infer minus;
 	       let (extra_meta, minus) =
-		 match chosen_isos with
+		 match (chosen_isos,ruletype) with
 		   (* separate case for [] because applying isos puts
 		      some restrictions on the -+ code *)
-		   [] -> ([],minus)
+		   ([],_) | (_,Ast.Generated) -> ([],minus)
 		 | _ -> Iso_pattern.apply_isos chosen_isos minus rule_name in
 	       let minus = Comm_assoc.comm_assoc minus rule_name dropiso in
 	       let minus =
