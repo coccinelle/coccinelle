@@ -215,11 +215,11 @@ let do_get_constants constants keywords env neg_pos =
     | Ast.IntType -> keywords "int "
     | Ast.DoubleType -> keywords "double "
     | Ast.FloatType -> keywords "float "
-    | Ast.LongType -> keywords "long " in
+    | Ast.LongType | Ast.LongLongType -> keywords "long " in
 
   let typeC r k ty =
     match Ast.unwrap ty with
-      Ast.BaseType(ty1) -> bind (k ty) (baseType (Ast.unwrap_mcode ty1))
+      Ast.BaseType(ty1,strings) -> bind (k ty) (baseType ty1)
     | Ast.TypeName(name) -> bind (k ty) (constants (Ast.unwrap_mcode name))
     | Ast.MetaType(name,_,_) -> bind (minherited name) (k ty)
     | _ -> k ty in
@@ -300,7 +300,6 @@ let do_get_constants constants keywords env neg_pos =
 
   V.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    mcode
     donothing donothing donothing donothing
     ident expression fullType typeC initialiser parameter declaration
     rule_elem statement donothing donothing donothing
@@ -333,7 +332,6 @@ let get_all_constants minus_only =
 
   V.combiner bind option_default
     other mcode other other other other other other other other other other
-    other
 
     donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
@@ -364,7 +362,6 @@ let get_plus_constants =
 
   V.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    mcode
     donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing
@@ -396,7 +393,6 @@ let all_context =
 
   V.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    mcode
     donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing

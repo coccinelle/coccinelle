@@ -37,7 +37,7 @@ type ('cd,'a) ccode = 'a combiner -> ('cd -> 'a) -> 'cd -> 'a
 
 let combiner bind option_default
     meta_mcode string_mcode const_mcode assign_mcode fix_mcode unary_mcode
-    binary_mcode cv_mcode base_mcode sign_mcode struct_mcode storage_mcode
+    binary_mcode cv_mcode sign_mcode struct_mcode storage_mcode
     inc_mcode
     dotsexprfn dotsinitfn dotsparamfn dotsstmtfn dotsdeclfn dotscasefn
     identfn exprfn
@@ -184,7 +184,7 @@ let combiner bind option_default
     let k t =
       match Ast0.unwrap t with
 	Ast0.ConstVol(cv,ty) -> bind (cv_mcode cv) (typeC ty)
-      |	Ast0.BaseType(ty) -> base_mcode ty
+      |	Ast0.BaseType(ty,strings) -> multibind (List.map string_mcode strings)
       |	Ast0.Signed(sign,ty) -> bind (sign_mcode sign) (get_option typeC ty)
       | Ast0.Pointer(ty,star) -> bind (typeC ty) (string_mcode star)
       | Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
@@ -551,7 +551,7 @@ type 'cd rcode = rebuilder -> ('cd inout) -> 'cd inout
 
 let rebuilder = fun
     meta_mcode string_mcode const_mcode assign_mcode fix_mcode unary_mcode
-    binary_mcode cv_mcode base_mcode sign_mcode struct_mcode storage_mcode
+    binary_mcode cv_mcode sign_mcode struct_mcode storage_mcode
     inc_mcode
     dotsexprfn dotsinitfn dotsparamfn dotsstmtfn dotsdeclfn dotscasefn
     identfn exprfn tyfn initfn paramfn declfn stmtfn casefn topfn ->
@@ -689,7 +689,8 @@ let rebuilder = fun
       Ast0.rewrap t
 	(match Ast0.unwrap t with
 	  Ast0.ConstVol(cv,ty) -> Ast0.ConstVol(cv_mcode cv,typeC ty)
-	| Ast0.BaseType(ty) -> Ast0.BaseType(base_mcode ty)
+	| Ast0.BaseType(ty,strings) ->
+	    Ast0.BaseType(ty, List.map string_mcode strings)
 	| Ast0.Signed(sign,ty) ->
 	    Ast0.Signed(sign_mcode sign,get_option typeC ty)
 	| Ast0.Pointer(ty,star) ->

@@ -104,8 +104,6 @@ let get_function_name rule env =
   let names =
     (V.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      mcode
-
       donothing donothing donothing donothing
       donothing expression donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing).V.combiner_top_level

@@ -327,7 +327,8 @@ and print_fninfo = function
 
 and typeC ty =
   match Ast.unwrap ty with
-    Ast.BaseType(ty) -> mcode baseType ty
+    Ast.BaseType(ty,strings) ->
+      List.iter (function s -> mcode print_string s; print_string " ") strings
   | Ast.SignedT(sgn,ty) -> mcode sign sgn; print_option typeC ty
   | Ast.Pointer(ty,star) -> fullType ty; mcode print_string star
   | Ast.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
@@ -357,6 +358,7 @@ and baseType = function
   | Ast.DoubleType -> print_string "double "
   | Ast.FloatType -> print_string "float "
   | Ast.LongType -> print_string "long "
+  | Ast.LongLongType -> print_string "long long "
 
 and structUnion = function
     Ast.Struct -> print_string "struct "

@@ -339,11 +339,12 @@ and top_typeC tgt opt_allowed typ =
       let cv = mcode cv in
       let ty = typeC arity ty in
       make_typeC typ tgt arity (Ast0.ConstVol(cv,ty))
-  | Ast0.BaseType(ty) ->
+  | Ast0.BaseType(ty,strings) ->
       let arity =
-	all_same opt_allowed tgt (mcode2line ty) [mcode2arity ty] in
-      let ty = mcode ty in
-      make_typeC typ tgt arity (Ast0.BaseType(ty))
+	all_same opt_allowed tgt (mcode2line (List.hd strings))
+	  (List.map mcode2arity strings) in
+      let strings = List.map mcode strings in
+      make_typeC typ tgt arity (Ast0.BaseType(ty,strings))
   | Ast0.Signed(sign,ty) ->
       let arity =
 	all_same opt_allowed tgt (mcode2line sign) [mcode2arity sign] in

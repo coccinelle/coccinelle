@@ -2338,7 +2338,7 @@ and (fullTypebis: (A.typeC, Ast_c.fullType) matcher) =
         return (ta, (qub, typb))
       )
 
-and simulate_signed ta basea signaopt tb baseb ii rebuilda =
+and simulate_signed ta basea stringsa signaopt tb baseb ii rebuilda =
       (* In ii there is a list, sometimes of length 1 or 2 or 3.
        * And even if in baseb we have a Signed Int, that does not mean
        * that ii is of length 2, cos Signed is the default, so if in signa
@@ -2351,49 +2351,53 @@ and simulate_signed ta basea signaopt tb baseb ii rebuilda =
         
       (* handle some iso on type ? (cf complex C rule for possible implicit
 	 casting) *)
-      match term basea, baseb with
+      match basea, baseb with
       | A.VoidType,  B.Void 
       | A.FloatType, B.FloatType (B.CFloat)
       | A.DoubleType, B.FloatType (B.CDouble) -> 
            assert (signaopt = None); 
+	   let stringa = tuple_of_list1 stringsa in
            let (ibaseb) = tuple_of_list1 ii in 
-           tokenf basea ibaseb >>= (fun basea ibaseb -> 
+           tokenf stringa ibaseb >>= (fun stringa ibaseb -> 
              return (
-               (rebuilda (basea, signaopt)) +> A.rewrap ta,
+               (rebuilda ([stringa], signaopt)) +> A.rewrap ta,
                (B.BaseType baseb, [ibaseb])
              ))
             
       | A.CharType,  B.IntType B.CChar when signaopt = None -> 
+	  let stringa = tuple_of_list1 stringsa in
           let ibaseb = tuple_of_list1 ii in
-           tokenf basea ibaseb >>= (fun basea ibaseb -> 
+           tokenf stringa ibaseb >>= (fun stringa ibaseb -> 
              return (
-               (rebuilda (basea, signaopt)) +> A.rewrap ta,
+               (rebuilda ([stringa], signaopt)) +> A.rewrap ta,
                (B.BaseType (B.IntType B.CChar), [ibaseb])
              ))
             
       | A.CharType,B.IntType (B.Si (_sign, B.CChar2)) when signaopt <> None -> 
+	  let stringa = tuple_of_list1 stringsa in
           let ibaseb = tuple_of_list1 iibaseb in
           sign signaopt signbopt >>= (fun signaopt iisignbopt -> 
-          tokenf basea ibaseb >>= (fun basea ibaseb -> 
+          tokenf stringa ibaseb >>= (fun stringa ibaseb -> 
             return (
-               (rebuilda (basea, signaopt)) +> A.rewrap ta,
+               (rebuilda ([stringa], signaopt)) +> A.rewrap ta,
                (B.BaseType (baseb), iisignbopt ++ [ibaseb])
                )))
           
       | A.ShortType, B.IntType (B.Si (_, B.CShort)) 
       | A.IntType,   B.IntType (B.Si (_, B.CInt))   
       | A.LongType,  B.IntType (B.Si (_, B.CLong))  ->
+	  let stringa = tuple_of_list1 stringsa in
           (match iibaseb with 
           | [] -> 
               (* iso-by-presence ? *)
               (* when unsigned int in SP,  allow have just unsigned in C ? *)
-              if mcode_contain_plus (mcodekind basea)
+              if mcode_contain_plus (mcodekind stringa)
               then fail
               else 
                 
                 sign signaopt signbopt >>= (fun signaopt iisignbopt -> 
                     return (
-                      (rebuilda (basea, signaopt)) +> A.rewrap ta,
+                      (rebuilda ([stringa], signaopt)) +> A.rewrap ta,
                       (B.BaseType (baseb), iisignbopt ++ [])
                     ))
               
@@ -2405,9 +2409,9 @@ and simulate_signed ta basea signaopt tb baseb ii rebuilda =
 
           | [ibaseb] -> 
           sign signaopt signbopt >>= (fun signaopt iisignbopt -> 
-          tokenf basea ibaseb >>= (fun basea ibaseb -> 
+          tokenf stringa ibaseb >>= (fun stringa ibaseb -> 
             return (
-               (rebuilda (basea, signaopt)) +> A.rewrap ta,
+               (rebuilda ([stringa], signaopt)) +> A.rewrap ta,
                (B.BaseType (baseb), iisignbopt ++ [ibaseb])
                )))
           | _ -> raise Impossible
@@ -2415,11 +2419,25 @@ and simulate_signed ta basea signaopt tb baseb ii rebuilda =
           )
 
             
-      | _, B.IntType (B.Si (_, B.CLongLong)) 
+      | A.LongLongType, B.IntType (B.Si (_, B.CLongLong)) ->
+	  let (string1a,string2a) = tuple_of_list2 stringsa in
+          (match iibaseb with 
+            [ibase1b;ibase2b] -> 
+              sign signaopt signbopt >>= (fun signaopt iisignbopt -> 
+              tokenf string1a ibase1b >>= (fun base1a ibase1b -> 
+              tokenf string2a ibase2b >>= (fun base2a ibase2b -> 
+              return (
+		(rebuilda ([base1a;base2a], signaopt)) +> A.rewrap ta,
+		(B.BaseType (baseb), iisignbopt ++ [ibase1b;ibase2b])
+              ))))
+	  | [] -> fail (* should something be done in this case? *)
+	  | _ -> raise Impossible)
+
+
       | _, B.FloatType B.CLongDouble 
           -> 
           pr2_once 
-            "warning: long long or long double not handled by ast_cocci";
+            "warning: long double not handled by ast_cocci";
           fail
 
       | _, (B.Void|B.FloatType _|B.IntType _) -> fail
@@ -2474,15 +2492,17 @@ and simulate_signed_meta ta basea signaopt tb baseb ii rebuilda =
 and (typeC: (A.typeC, Ast_c.typeC) matcher) = 
   fun ta tb -> 
   match A.unwrap ta, tb with
-    | A.BaseType (basea), (B.BaseType baseb, ii) -> 
-	simulate_signed ta basea None tb baseb ii
-	  (function (basea, signaopt) -> A.BaseType (basea))
+    | A.BaseType (basea,stringsa), (B.BaseType baseb, ii) -> 
+	simulate_signed ta basea stringsa None tb baseb ii
+	  (function (stringsa, signaopt) -> A.BaseType (basea,stringsa))
     | A.SignedT (signaopt, Some basea), (B.BaseType baseb, ii) -> 
 	(match A.unwrap basea with
-	  A.BaseType (basea1) ->
-	    simulate_signed ta basea1 (Some signaopt) tb baseb ii
-	      (function (basea1, Some signaopt) ->
-		A.SignedT(signaopt,Some (A.rewrap basea (A.BaseType (basea1))))
+	  A.BaseType (basea1,strings1) ->
+	    simulate_signed ta basea1 strings1 (Some signaopt) tb baseb ii
+	      (function (strings1, Some signaopt) ->
+		A.SignedT
+		  (signaopt,
+		   Some (A.rewrap basea (A.BaseType (basea1,strings1))))
 		| _ -> failwith "not possible")
 	| A.MetaType(ida,keep,inherited) ->
 	    simulate_signed_meta ta basea (Some signaopt) tb baseb ii

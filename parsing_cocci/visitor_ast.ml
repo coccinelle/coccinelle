@@ -33,7 +33,7 @@ type ('cd,'a) ccode = 'a combiner -> ('cd -> 'a) -> 'cd -> 'a
 let combiner bind option_default
     meta_mcodefn string_mcodefn const_mcodefn assign_mcodefn fix_mcodefn
     unary_mcodefn binary_mcodefn
-    cv_mcodefn base_mcodefn sign_mcodefn struct_mcodefn storage_mcodefn
+    cv_mcodefn sign_mcodefn struct_mcodefn storage_mcodefn
     inc_file_mcodefn
     expdotsfn paramdotsfn stmtdotsfn decldotsfn
     identfn exprfn ftfn tyfn initfn paramfn declfn rulefn stmtfn casefn
@@ -56,7 +56,6 @@ let combiner bind option_default
   and unary_mcode x = unary_mcodefn all_functions x
   and binary_mcode x = binary_mcodefn all_functions x
   and cv_mcode x = cv_mcodefn all_functions x
-  and base_mcode x = base_mcodefn all_functions x
   and sign_mcode x = sign_mcodefn all_functions x
   and struct_mcode x = struct_mcodefn all_functions x
   and storage_mcode x = storage_mcodefn all_functions x
@@ -185,7 +184,7 @@ let combiner bind option_default
   and typeC ty =
     let k ty =
       match Ast.unwrap ty with
-	Ast.BaseType(ty) -> base_mcode ty
+	Ast.BaseType(ty,strings) -> multibind (List.map string_mcode strings)
       | Ast.SignedT(sgn,ty) -> bind (sign_mcode sgn) (get_option typeC ty)
       | Ast.Pointer(ty,star) ->
 	  bind (fullType ty) (string_mcode star)
@@ -541,7 +540,7 @@ type 'cd rcode = rebuilder -> ('cd inout) -> 'cd inout
 
 let rebuilder
     meta_mcode string_mcode const_mcode assign_mcode fix_mcode unary_mcode
-    binary_mcode cv_mcode base_mcode sign_mcode struct_mcode storage_mcode
+    binary_mcode cv_mcode sign_mcode struct_mcode storage_mcode
     inc_file_mcode
     expdotsfn paramdotsfn stmtdotsfn decldotsfn
     identfn exprfn ftfn tyfn initfn paramfn declfn rulefn stmtfn casefn
@@ -676,7 +675,8 @@ let rebuilder
     let k ty =
       Ast.rewrap ty
 	(match Ast.unwrap ty with
-	  Ast.BaseType(ty) -> Ast.BaseType (base_mcode ty)
+	  Ast.BaseType(ty,strings) ->
+	    Ast.BaseType (ty, List.map string_mcode strings)
 	| Ast.SignedT(sgn,ty) ->
 	    Ast.SignedT(sign_mcode sgn,get_option typeC ty)
 	| Ast.Pointer(ty,star) ->

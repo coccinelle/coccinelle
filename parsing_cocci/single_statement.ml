@@ -136,7 +136,7 @@ and left_typeC t =
   modif_before t or
   match Ast0.unwrap t with
     Ast0.ConstVol(cv,ty) -> modif_before_mcode cv
-  | Ast0.BaseType(ty) -> modif_before_mcode ty
+  | Ast0.BaseType(ty,strings) -> modif_before_mcode (List.hd strings)
   | Ast0.Signed(sgn,ty) -> modif_before_mcode sgn
   | Ast0.Pointer(ty,star) -> left_typeC ty
   | Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) -> left_typeC ty
@@ -342,7 +342,6 @@ and contains_only_minus =
 
   V0.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    mcode
     dots dots dots dots dots dots
     donothing expression typeC donothing donothing declaration
     statement donothing donothing

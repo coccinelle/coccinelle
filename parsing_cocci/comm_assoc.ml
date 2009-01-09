@@ -53,7 +53,6 @@ let process_binops rule_name =
     | _ -> e in
   V0.rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    mcode
     donothing donothing donothing donothing donothing donothing
     donothing expr donothing donothing donothing donothing donothing
     donothing donothing

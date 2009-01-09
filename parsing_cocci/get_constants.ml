@@ -96,7 +96,6 @@ let get_minus_constants bind orbind =
 
   V.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    mcode
     donothing donothing donothing donothing
     ident expression fullType typeC donothing donothing declaration
     rule_elem statement donothing donothing donothing
@@ -115,7 +114,6 @@ let get_all_minus_constants =
 
   V.combiner bind option_default
     other mcode other other other other other other other other other other
-    other
 
     donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
@@ -145,7 +143,6 @@ let get_plus_constants =
 
   V.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    mcode
     donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing
@@ -233,7 +230,6 @@ let check_inherited nm =
 
   V.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    mcode
     donothing donothing donothing donothing
     strictident strictexpr strictfullType stricttypeC donothing strictparam
     strictdecls strictrule_elem strictstatement donothing donothing donothing

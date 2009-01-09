@@ -131,7 +131,7 @@ and listlen = Ast.meta_name mcode option
 
 and base_typeC =
     ConstVol        of Ast.const_vol mcode * typeC
-  | BaseType        of Ast.baseType mcode
+  | BaseType        of Ast.baseType * string mcode list
   | Signed          of Ast.sign mcode * typeC option
   | Pointer         of typeC * string mcode (* * *)
   | FunctionPointer of typeC *
@@ -488,7 +488,7 @@ let undots d =
 let rec ast0_type_to_type ty =
   match unwrap ty with
     ConstVol(cv,ty) -> Type_cocci.ConstVol(const_vol cv,ast0_type_to_type ty)
-  | BaseType(bty) ->
+  | BaseType(bty,strings) ->
       Type_cocci.BaseType(baseType bty)
   | Signed(sgn,None) ->
       Type_cocci.SignedT(sign sgn,None)
@@ -521,8 +521,7 @@ let rec ast0_type_to_type ty =
   | OptType(ty) | UniqueType(ty) ->
       ast0_type_to_type ty
 
-and baseType t =
-  match unwrap_mcode t with
+and baseType = function
     Ast.VoidType -> Type_cocci.VoidType
   | Ast.CharType -> Type_cocci.CharType
   | Ast.ShortType -> Type_cocci.ShortType
@@ -530,6 +529,7 @@ and baseType t =
   | Ast.DoubleType -> Type_cocci.DoubleType
   | Ast.FloatType -> Type_cocci.FloatType
   | Ast.LongType -> Type_cocci.LongType
+  | Ast.LongLongType -> Type_cocci.LongLongType
 
 and structUnion t =
   match unwrap_mcode t with
@@ -550,7 +550,7 @@ and const_vol t =
 (* this function is a rather minimal attempt.  the problem is that information
 has been lost.  but since it is only used for metavariable types in the isos,
 perhaps it doesn't matter *)
-let make_mcode x = (x,NONE,default_info(),context_befaft(),ref NoMetaPos)
+and make_mcode x = (x,NONE,default_info(),context_befaft(),ref NoMetaPos)
 let make_mcode_info x info = (x,NONE,info,context_befaft(),ref NoMetaPos)
 
 exception TyConv
@@ -560,7 +560,7 @@ let rec reverse_type ty =
     Type_cocci.ConstVol(cv,ty) ->
       ConstVol(reverse_const_vol cv,context_wrap(reverse_type ty))
   | Type_cocci.BaseType(bty) ->
-      BaseType(reverse_baseType bty)
+      BaseType(reverse_baseType bty,[(* not used *)])
   | Type_cocci.SignedT(sgn,None) -> Signed(reverse_sign sgn,None)
   | Type_cocci.SignedT(sgn,Some bty) ->
       Signed(reverse_sign sgn,Some (context_wrap(reverse_type ty)))
@@ -582,17 +582,16 @@ let rec reverse_type ty =
       MetaType(make_mcode name,Impure(*not really right*))
   | _ -> raise TyConv
 
-and reverse_baseType t =
-  make_mcode
-    (match t with
-      Type_cocci.VoidType -> Ast.VoidType
-    | Type_cocci.CharType -> Ast.CharType
-    | Type_cocci.BoolType -> Ast.IntType
-    | Type_cocci.ShortType -> Ast.ShortType
-    | Type_cocci.IntType -> Ast.IntType
-    | Type_cocci.DoubleType -> Ast.DoubleType
-    | Type_cocci.FloatType -> Ast.FloatType
-    | Type_cocci.LongType -> Ast.LongType)
+and reverse_baseType = function
+    Type_cocci.VoidType -> Ast.VoidType
+  | Type_cocci.CharType -> Ast.CharType
+  | Type_cocci.BoolType -> Ast.IntType
+  | Type_cocci.ShortType -> Ast.ShortType
+  | Type_cocci.IntType -> Ast.IntType
+  | Type_cocci.DoubleType -> Ast.DoubleType
+  | Type_cocci.FloatType -> Ast.FloatType
+  | Type_cocci.LongType -> Ast.LongType
+  | Type_cocci.LongLongType -> Ast.LongLongType
 
 and reverse_structUnion t =
   make_mcode

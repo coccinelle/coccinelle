@@ -14,6 +14,8 @@ let return b = if b then MAYBE else NO
 
 let unify_mcode (x,_,_,_) (y,_,_,_) = x = y
 
+let ret_unify_mcode a b = return (unify_mcode a b)
+
 let unify_option f t1 t2 =
   match (t1,t2) with
     (Some t1, Some t2) -> f t1 t2
@@ -198,8 +200,12 @@ and unify_fullType ft1 ft2 =
 
 and unify_typeC t1 t2 =
   match (Ast.unwrap t1,Ast.unwrap t2) with
-    (Ast.BaseType(ty1),Ast.BaseType(ty2)) ->
-      return (unify_mcode ty1 ty2)
+    (Ast.BaseType(ty1,stringsa),Ast.BaseType(ty2,stringsb)) ->
+      if ty1 = ty2
+      then
+	unify_lists ret_unify_mcode (function _ -> false (* not dots*))
+	  stringsa stringsb
+      else return false
   | (Ast.SignedT(sgn1,ty1),Ast.SignedT(sgn2,ty2)) ->
       if unify_mcode sgn1 sgn2
       then unify_option unify_typeC ty1 ty2
@@ -466,7 +472,6 @@ and subexp f =
   let donothing r k e = k e in
   let recursor = V.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      mcode
       donothing donothing donothing donothing
       donothing expr donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing in
@@ -480,7 +485,6 @@ and subtype f =
   let donothing r k e = k e in
   let recursor = V.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      mcode
       donothing donothing donothing donothing
       donothing donothing fullType donothing donothing donothing donothing
       donothing donothing donothing donothing donothing in

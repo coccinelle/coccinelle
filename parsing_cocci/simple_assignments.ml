@@ -90,7 +90,6 @@ let simple_assignments l =
   let fn =
     V0.rebuilder
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      mcode
       donothing donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing donothing statement
       donothing donothing in

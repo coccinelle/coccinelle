@@ -125,7 +125,7 @@ and listlen = Ast_cocci.meta_name mcode option
 
 and base_typeC =
     ConstVol        of Ast_cocci.const_vol mcode * typeC
-  | BaseType        of Ast_cocci.baseType mcode
+  | BaseType        of Ast_cocci.baseType * string mcode list
   | Signed          of Ast_cocci.sign mcode * typeC option
   | Pointer         of typeC * string mcode (* * *)
   | FunctionPointer of typeC *

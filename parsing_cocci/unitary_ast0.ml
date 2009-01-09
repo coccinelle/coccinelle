@@ -116,7 +116,6 @@ let get_free checker t =
 
   let res = V0.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      mcode
       donothing donothing donothing donothing donothing donothing
       ident expression typeC donothing parameter declaration statement
       donothing donothing in
@@ -183,7 +182,6 @@ let update_unitary unitary =
 
   let res = V0.rebuilder
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      mcode
       donothing donothing donothing donothing donothing donothing
       ident expression typeC donothing parameter donothing statement
       donothing donothing in

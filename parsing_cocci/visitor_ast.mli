@@ -32,7 +32,6 @@ val combiner :
       ((Ast_cocci.unaryOp,'a) cmcode) ->
       ((Ast_cocci.binaryOp,'a) cmcode) ->
       ((Ast_cocci.const_vol,'a) cmcode) ->
-      ((Ast_cocci.baseType,'a) cmcode) ->
       ((Ast_cocci.sign,'a) cmcode) ->
       ((Ast_cocci.structUnion,'a) cmcode) ->
       ((Ast_cocci.storage,'a) cmcode) ->
@@ -90,7 +89,6 @@ val rebuilder :
     (Ast_cocci.unaryOp rmcode) ->
     (Ast_cocci.binaryOp rmcode) ->
     (Ast_cocci.const_vol rmcode) ->
-    (Ast_cocci.baseType rmcode) ->
     (Ast_cocci.sign rmcode) ->
     (Ast_cocci.structUnion rmcode) ->
     (Ast_cocci.storage rmcode) ->

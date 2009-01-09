@@ -294,8 +294,10 @@ and typeC t =
     Ast0.ConstVol(cv,ty) ->
       let ty = typeC ty in
       mkres t (Ast0.ConstVol(cv,ty)) (promote_mcode cv) ty
-  | Ast0.BaseType(ty) as ut ->
-      mkres t ut (promote_mcode ty) (promote_mcode ty)
+  | Ast0.BaseType(ty,strings) as ut ->
+      let first = List.hd strings in
+      let last = List.hd (List.rev strings) in
+      mkres t ut (promote_mcode first) (promote_mcode last)
   | Ast0.Signed(sgn,None) as ut ->
       mkres t ut (promote_mcode sgn) (promote_mcode sgn)
   | Ast0.Signed(sgn,Some ty) ->

@@ -18,7 +18,7 @@ type typeC =
 and tagged_string = string
 
 and baseType = VoidType | CharType | ShortType | IntType | DoubleType
-| FloatType | LongType | BoolType
+| FloatType | LongType | LongLongType | BoolType
 
 and structUnion = Struct | Union
 
@@ -61,6 +61,7 @@ and baseType = function
   | DoubleType -> "double "
   | FloatType -> "float "
   | LongType -> "long "
+  | LongLongType -> "long long "
   | BoolType -> "bool "
 
 and structUnion = function

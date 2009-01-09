@@ -66,7 +66,6 @@ let set_test_poss =
 
   V0.rebuilder
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      mcode
       donothing donothing donothing donothing donothing donothing
       donothing expression donothing donothing donothing donothing statement
       donothing donothing

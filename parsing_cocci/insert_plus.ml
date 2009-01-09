@@ -68,7 +68,6 @@ it *)
   let res =
     V0.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      mcode
       (donothing Ast0.dotsExpr) (donothing Ast0.dotsInit)
       (donothing Ast0.dotsParam) (donothing Ast0.dotsStmt)
       (donothing Ast0.dotsDecl) (donothing Ast0.dotsCase)
@@ -283,7 +282,6 @@ bind to that; not good for isomorphisms *)
 
   V0.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    mcode
     edots idots pdots sdots ddots cdots
     ident expression typeC initialiser param decl statement case_line do_top
 
@@ -391,7 +389,6 @@ let process_minus minus =
 (* --------------------------------------------------------------------- *)
 (* collect the plus tokens *)
 
-let mk_baseType x         = Ast.BaseTypeTag x
 let mk_structUnion x      = Ast.StructUnionTag x
 let mk_sign x             = Ast.SignTag x
 let mk_ident x            = Ast.IdentTag (Ast0toast.ident x)
@@ -473,7 +470,7 @@ let collect_plus_nodes root =
     (imcode mk_meta) (imcode mk_token) (mcode mk_constant) (mcode mk_assignOp)
     (mcode mk_fixOp)
     (mcode mk_unaryOp) (mcode mk_binaryOp) (mcode mk_const_vol)
-    (mcode mk_baseType) (mcode mk_sign) (mcode mk_structUnion)
+    (mcode mk_sign) (mcode mk_structUnion)
     (mcode mk_storage) (mcode mk_inc_file)
     (do_nothing mk_exprdots) initdots
     (do_nothing mk_paramdots) stmt_dots (do_nothing mk_decldots)
@@ -917,7 +914,6 @@ let reevaluate_contextness =
   let res =
     V0.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      mcode
       donothing donothing donothing donothing donothing donothing donothing
       donothing
       donothing donothing donothing donothing donothing donothing donothing in

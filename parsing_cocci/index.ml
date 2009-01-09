@@ -96,7 +96,7 @@ let expression e =
 let typeC t =
   match Ast0.unwrap t with
     Ast0.ConstVol(cv,ty) -> [44]
-  | Ast0.BaseType(ty) -> [48]
+  | Ast0.BaseType(ty,strings) -> [48]
   | Ast0.Signed(sign,ty) -> [129]
   | Ast0.Pointer(ty,star) -> [49]
   | Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) -> [131]

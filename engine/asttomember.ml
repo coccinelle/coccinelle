@@ -31,7 +31,7 @@ let contains_modif used_after x =
     let recursor =
       V.combiner bind option_default
 	mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-	mcode mcode
+	mcode
 	do_nothing do_nothing do_nothing do_nothing
 	do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
 	do_nothing rule_elem do_nothing do_nothing do_nothing do_nothing in
@@ -56,7 +56,7 @@ let contains_constant x =
       let recursor =
 	V.combiner bind option_default
 	  mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-	  mcode mcode
+	  mcode
 	  do_nothing do_nothing do_nothing do_nothing
 	  ident expr do_nothing do_nothing do_nothing do_nothing
 	  do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing in
@@ -98,7 +98,6 @@ let strip =
   let recursor =
     V.rebuilder
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      mcode
       do_nothing do_nothing do_nothing do_nothing
       do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
       do_nothing rule_elem do_nothing do_nothing

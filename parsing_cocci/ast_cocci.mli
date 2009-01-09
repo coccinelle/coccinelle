@@ -189,7 +189,7 @@ and base_fullType =
   | UniqueType      of fullType
 
 and base_typeC =
-    BaseType        of baseType mcode
+    BaseType        of baseType * string mcode list (* Yoann style *)
   | SignedT         of sign mcode * typeC option
   | Pointer         of fullType * string mcode (* * *)
   | FunctionPointer of fullType *
@@ -212,7 +212,7 @@ and fullType = base_fullType wrap
 and typeC = base_typeC wrap
 
 and baseType = VoidType | CharType | ShortType | IntType | DoubleType
-| FloatType | LongType
+  | FloatType | LongType | LongLongType
 
 and structUnion = Struct | Union
 
