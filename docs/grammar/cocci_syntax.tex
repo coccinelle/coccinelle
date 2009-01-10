@@ -82,7 +82,7 @@ moredelim=[il][\color{Plum}]{@M}}
 \newcommand{\air}{\phantom{xxx}}
 \fi
 
-\title{The SmPL Grammar}
+\title{The SmPL Grammar (version 0.1.4)}
 \author{Research group on Coccinelle}
 \date{\today}
 
@@ -473,6 +473,7 @@ some constraints on the use of these annotations:
   \CASE{\opt{\NT{ctype\_qualif}} short}
   \CASE{\opt{\NT{ctype\_qualif}} int}
   \CASE{\opt{\NT{ctype\_qualif}} long}
+  \CASE{\opt{\NT{ctype\_qualif}} long long}
   \CASE{double}
   \CASE{float}
   \CASE{\OPT{struct\OR union} \T{id} \OPT{\{ \any{\NT{struct\_decl\_list}} \}}}

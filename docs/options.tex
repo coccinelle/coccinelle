@@ -4,7 +4,7 @@
 \usepackage{amssymb}
 \usepackage{ifthen}
 \usepackage[geometry]{ifsym}
-\title{Coccinelle Usage}
+\title{Coccinelle Usage (version 0.1.4)}
 \newcommand{\minimum}[2]{\paragraph*{\makebox[0in][r]{\FilledBigDiamondshape\,\,} {{#1}}} {#2}}
 \newcommand{\normal}[2]{\paragraph*{\makebox[0in][r]{\BigLowerDiamond\,\,} {{#1}}} {#2}}
 \newcommand{\rare}[2]{\paragraph*{\makebox[0in][r]{\BigDiamondshape\,\,} {{#1}}} {#2}}
@@ -466,6 +466,6 @@ condition occurs, rather than only once.}
 
 \rare{-quiet}{Suppress most output.  This is the default.}
 
-\developer{-pad, -hrule, -xxx, -l1}{}
+\developer{-pad, -hrule $\langle$dir$\rangle$, -xxx, -l1}{}
 
 \end{document}
