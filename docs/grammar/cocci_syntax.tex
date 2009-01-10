@@ -187,6 +187,30 @@ section.
   \CASE{\NT{elem} \ANY{, \NT{elem}}}
 \end{grammar}
 
+The keyword \rt{disable-iso} is normally used with the names of
+isomorphisms defined in standard.iso or whatever isomorphism file has been
+included.  There are, however, some other isomorphisms that are built into
+the implementation of Coccinelle and that can be disabled as well.  Their
+names are given below.  In each case, the text descibes the standard
+behavior.  Using \rt{disable-iso} with the given name disables this behavior.
+
+\begin{itemize}
+\item \KW{optional_storage}: A SmPL function definition that does not
+  specify any visibility (i.e., static or extern), or a SmPL variable
+  declaration that does not specify any storage (i.e., auto, static,
+  register, or extern), matches a function declaration or variable
+  declaration with any visibility or storage, respectively.
+\item \KW{optional_qualifier}: This is similar to \KW{optional_storage},
+  except that here is it the qualifier (i.e., const or volatile) that does
+  not have to be specified in the SmPL code, but may be present in the C code.
+\item \KW{value_format}: Integers in various formats, e.g., 1 and 0x1, are
+  considered to be equivalent in the matching process.
+\item \KW{comm_assoc}: An expression of the form \NT{exp} \NT{bin\_op}
+  \KW{...}, where \NT{bin\_op} is commutative and associative, is
+  considered to match any top-level sequence of \NT{bin\_op} operators
+  containing \NT{exp} as the top-level argument.
+\end{itemize}
+
 The possible types of metavariable declarations are defined by the grammar
 rule below.  Metavariables should occur at least once in the transformation
 immediately following their declaration.  Fresh metavariables must only be
