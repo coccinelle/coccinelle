@@ -8,6 +8,7 @@
 - dropped the sizeof_parens isomorphism, which was made redundant by the
   paren isomorphism
 - simple rule generation
+- long long added to SmPL
 
 ** Bugfix:
 - trailing , ; and ) no longer left on a line by themselves
