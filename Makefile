@@ -100,7 +100,6 @@ rec.opt:
 clean::
 	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i clean; done 
 
-eclipse: depend all
 configure:
 	./configure
 
