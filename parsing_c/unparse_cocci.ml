@@ -143,6 +143,23 @@ let dots between fn d =
   | Ast.STARS(l) -> print_between between fn l
 in
 
+let nest_dots multi fn f d =
+  let mo s = if multi then "<+"^s else "<"^s in
+  let mc s = if multi then s^"+>" else s^">" in
+  match Ast.unwrap d with
+    Ast.DOTS(l) ->
+      print_string (mo "..."); f(); start_block();
+      print_between force_newline fn l;
+      end_block(); print_string (mc "...")
+  | Ast.CIRCLES(l) ->
+      print_string (mo "ooo"); f(); start_block();
+      print_between force_newline fn l;
+      end_block(); print_string (mc "ooo")
+  | Ast.STARS(l) ->
+      print_string (mo "***"); f(); start_block();
+      print_between force_newline fn l;
+      end_block(); print_string (mc "***")
+in
 
 (* --------------------------------------------------------------------- *)
 (* Identifier *)
@@ -528,9 +545,9 @@ and parameterTypeDef p =
       failwith "not handling MetaParamList"
 
   | Ast.PComma(cm) -> mcode print_string cm; print_space()
-  | Ast.Pdots(dots) 
-  | Ast.Pcircles(dots) 
-    ->  raise CantBeInPlus
+  | Ast.Pdots(dots) | Ast.Pcircles(dots) when generating ->
+      mcode print_string dots
+  | Ast.Pdots(dots) | Ast.Pcircles(dots) -> raise CantBeInPlus
   | Ast.OptParam(param) | Ast.UniqueParam(param) -> raise CantBeInPlus
 
 and parameter_list l = dots (function _ -> ()) parameterTypeDef l
@@ -743,6 +760,14 @@ let rec statement arity s =
 	   stmt_dots_list;
 	 force_newline(); print_string ")")
       else raise CantBeInPlus
+  | Ast.Nest(stmt_dots,whn,multi,_,_) when generating ->
+      print_string arity;
+      nest_dots multi (statement arity)
+	(function _ ->
+	  print_between force_newline
+	    (whencode (dots force_newline (statement "")) (statement "")) whn;
+	  force_newline())
+	stmt_dots
   | Ast.Nest(_) -> raise CantBeInPlus
   | Ast.Dots(d,whn,_,_) | Ast.Circles(d,whn,_,_) | Ast.Stars(d,whn,_,_) ->
       if generating
