@@ -143,6 +143,7 @@ and left_typeC t =
   | Ast0.FunctionType(Some ty,lp1,params,rp1) -> left_typeC ty
   | Ast0.FunctionType(None,lp1,params,rp1) -> modif_before_mcode lp1
   | Ast0.Array(ty,lb,size,rb) -> left_typeC ty
+  | Ast0.EnumName(kind,name) -> modif_before_mcode kind
   | Ast0.StructUnionName(kind,name) -> modif_before_mcode kind
   | Ast0.StructUnionDef(ty,lb,decls,rb) -> left_typeC ty
   | Ast0.TypeName(name) -> modif_before_mcode name

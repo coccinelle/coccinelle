@@ -10,6 +10,7 @@ type typeC =
   | Pointer         of typeC
   | FunctionPointer of typeC (* only return type *)
   | Array           of typeC (* drop size info *)
+  | EnumName        of bool (* true if a metaId *) * string
   | StructUnionName of structUnion * bool (* true if a metaId *) * string
   | TypeName        of string
   | MetaType        of (string * string) * keep_binding * inherited
@@ -38,6 +39,7 @@ let rec type2c = function
   | Pointer(ty) -> (type2c ty) ^ "*"
   | FunctionPointer(ty) -> (type2c ty) ^ "(*)(...)"
   | Array(ty) -> (type2c ty) ^ "[] "
+  | EnumName(mv,name) -> "enum " ^ name ^ " "
   | StructUnionName(kind,mv,name) -> (structUnion kind) ^ name ^ " "
   | TypeName(name) -> name ^ " "
   | MetaType((rule,name),keep,inherited) -> name ^ " "

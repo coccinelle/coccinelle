@@ -230,6 +230,8 @@ and unify_typeC t1 t2 =
   | (Ast.Array(ty1,lb1,e1,rb1),Ast.Array(ty2,lb2,e2,rb2)) ->
       conjunct_bindings
 	(unify_fullType ty1 ty2) (unify_option unify_expression e1 e2)
+  | (Ast.EnumName(s1,ts1),Ast.EnumName(s2,ts2)) ->
+      if unify_mcode s1 s2 then unify_ident ts1 ts2 else return false
   | (Ast.StructUnionName(s1,Some ts1),Ast.StructUnionName(s2,Some ts2)) ->
       if unify_mcode s1 s2 then unify_ident ts1 ts2 else return false
   | (Ast.StructUnionName(s1,None),Ast.StructUnionName(s2,None)) ->

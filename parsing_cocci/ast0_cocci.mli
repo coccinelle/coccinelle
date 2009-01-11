@@ -136,6 +136,7 @@ and base_typeC =
                        string mcode (* ) *)
   | Array           of typeC * string mcode (* [ *) *
 	               expression option * string mcode (* ] *)
+  | EnumName        of string mcode (*enum*) * ident (* name *)
   | StructUnionName of Ast_cocci.structUnion mcode * ident option (* name *)
   | StructUnionDef  of typeC (* either StructUnionName or metavar *) *
 	string mcode (* { *) * declaration dots * string mcode (* } *)

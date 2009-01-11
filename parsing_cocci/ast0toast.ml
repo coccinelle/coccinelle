@@ -388,7 +388,7 @@ and typeC t =
 	| types -> Ast.DisjType(List.map (rewrap t no_isos) types))
     | Ast0.BaseType(_) | Ast0.Signed(_,_) | Ast0.Pointer(_,_)
     | Ast0.FunctionPointer(_,_,_,_,_,_,_) | Ast0.FunctionType(_,_,_,_)
-    | Ast0.Array(_,_,_,_) | Ast0.StructUnionName(_,_)
+    | Ast0.Array(_,_,_,_) | Ast0.EnumName(_,_) | Ast0.StructUnionName(_,_)
     | Ast0.StructUnionDef(_,_,_,_) | Ast0.TypeName(_) | Ast0.MetaType(_,_) ->
 	Ast.Type(None,rewrap t no_isos (base_typeC t))
     | Ast0.DisjType(_,types,_,_) -> Ast.DisjType(List.map typeC types)
@@ -413,6 +413,8 @@ and base_typeC t =
 	 parameter_list params,mcode rp)
   | Ast0.Array(ty,lb,size,rb) ->
       Ast.Array(typeC ty,mcode lb,get_option expression size,mcode rb)
+  | Ast0.EnumName(kind,name) ->
+      Ast.EnumName(mcode kind,ident name)
   | Ast0.StructUnionName(kind,name) ->
       Ast.StructUnionName(mcode kind,get_option ident name)
   | Ast0.StructUnionDef(ty,lb,decls,rb) ->

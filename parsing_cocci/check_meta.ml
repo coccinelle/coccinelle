@@ -181,6 +181,7 @@ and typeC old_metas table minus t =
       check_table table minus name
   | Ast0.DisjType(_,types,_,_) ->
       List.iter (typeC old_metas table minus) types
+  | Ast0.EnumName(en,id) -> ident GLOBAL old_metas table minus id
   | Ast0.StructUnionName(su,Some id) -> ident GLOBAL old_metas table minus id
   | Ast0.StructUnionDef(ty,lb,decls,rb) ->
       typeC old_metas table minus ty;

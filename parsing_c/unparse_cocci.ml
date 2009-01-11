@@ -266,6 +266,12 @@ let rec expression e =
       if generating
       then print_disj_list expression exp_list
       else raise CantBeInPlus
+  | Ast.NestExpr(expr_dots,Some whencode,multi) when generating ->
+      nest_dots multi expression
+	(function _ -> print_string "   when != "; expression whencode)
+	expr_dots
+  | Ast.NestExpr(expr_dots,None,multi) when generating ->
+      nest_dots multi expression (function _ -> ()) expr_dots
   | Ast.NestExpr(_) -> raise CantBeInPlus
   | Ast.Edots(dots,Some whencode)
   | Ast.Ecircles(dots,Some whencode)
@@ -371,6 +377,8 @@ and typeC ty =
   | Ast.Array(ty,lb,size,rb) ->
       fullType ty; mcode print_string lb; print_option expression size;
       mcode print_string rb
+  | Ast.EnumName(kind,name) -> mcode print_string kind; print_string " ";
+      ident name
   | Ast.StructUnionName(kind,name) ->
       mcode structUnion kind;
       print_option ident name

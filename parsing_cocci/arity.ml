@@ -381,6 +381,12 @@ and top_typeC tgt opt_allowed typ =
       let size = get_option (expression arity) size in
       let rb = mcode rb in
       make_typeC typ tgt arity (Ast0.Array(ty,lb,size,rb))
+  | Ast0.EnumName(kind,name) ->
+      let arity =
+	all_same opt_allowed tgt (mcode2line kind) [mcode2arity kind] in
+      let kind = mcode kind in
+      let name = ident false arity name in
+      make_typeC typ tgt arity (Ast0.EnumName(kind,name))
   | Ast0.StructUnionName(kind,name) ->
       let arity =
 	all_same opt_allowed tgt (mcode2line kind)

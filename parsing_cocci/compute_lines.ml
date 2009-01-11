@@ -324,6 +324,9 @@ and typeC t =
       let ty = typeC ty in
       mkres t (Ast0.Array(ty,lb,get_option expression size,rb))
 	ty (promote_mcode rb)
+  | Ast0.EnumName(kind,name) ->
+      let name = ident name in
+      mkres t (Ast0.EnumName(kind,name)) (promote_mcode kind) name
   | Ast0.StructUnionName(kind,Some name) ->
       let name = ident name in
       mkres t (Ast0.StructUnionName(kind,Some name)) (promote_mcode kind) name

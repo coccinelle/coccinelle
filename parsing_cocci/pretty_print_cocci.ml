@@ -339,6 +339,8 @@ and typeC ty =
   | Ast.Array(ty,lb,size,rb) ->
       fullType ty; mcode print_string lb; print_option expression size;
       mcode print_string rb
+  | Ast.EnumName(kind,name) -> mcode print_string kind; print_string " ";
+      ident name
   | Ast.StructUnionName(kind,name) ->
       mcode structUnion kind;
       print_option (function x -> ident x; print_string " ") name

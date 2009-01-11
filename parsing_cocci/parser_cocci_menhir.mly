@@ -25,7 +25,7 @@ module P = Parse_aux
 %token<string> TRuleName
 
 %token<Data.clt> Tchar Tshort Tint Tdouble Tfloat Tlong
-%token<Data.clt> Tvoid Tstruct Tunion
+%token<Data.clt> Tvoid Tstruct Tunion Tenum
 %token<Data.clt> Tunsigned Tsigned
 
 %token<Data.clt> Tstatic Tauto Tregister Textern Tinline Ttypedef
@@ -443,6 +443,8 @@ generic_ctype_full:
 		(Ast0.BaseType
 		   (Ast.LongLongType,
 		      [P.clt2mcode "long" ty;P.clt2mcode "long" ty1]))) }
+     | s=Tenum i=ident
+	 { Ast0.wrap(Ast0.EnumName(P.clt2mcode "enum" s, i)) }
      | s=struct_or_union i=ident
 	 { Ast0.wrap(Ast0.StructUnionName(s, Some i)) }
      | s=struct_or_union i=ioption(ident)

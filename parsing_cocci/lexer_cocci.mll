@@ -210,6 +210,7 @@ let id_tokens lexbuf =
   | "void" ->       Tvoid     linetype
   | "struct" ->     Tstruct   linetype
   | "union" ->      Tunion    linetype
+  | "enum" ->       Tenum     linetype
   | "unsigned" ->   Tunsigned linetype
   | "signed" ->     Tsigned   linetype
 

@@ -142,6 +142,7 @@ and base_typeC =
                        string mcode (* ) *)
   | Array           of typeC * string mcode (* [ *) *
 	               expression option * string mcode (* ] *)
+  | EnumName        of string mcode (*enum*) * ident (* name *)
   | StructUnionName of Ast.structUnion mcode * ident option (* name *)
   | StructUnionDef  of typeC (* either StructUnionName or metavar *) *
 	string mcode (* { *) * declaration dots * string mcode (* } *)
@@ -500,6 +501,18 @@ let rec ast0_type_to_type ty =
       Type_cocci.FunctionPointer(ast0_type_to_type ty)
   | FunctionType _ -> failwith "not supported"
   | Array(ety,_,_,_) -> Type_cocci.Array(ast0_type_to_type ety)
+  | EnumName(su,tag) ->
+      (match unwrap tag with
+	Id(tag) ->
+	  Type_cocci.EnumName(false,unwrap_mcode tag)
+      | MetaId(tag,_,_) ->
+	  (Printf.printf
+	     "warning: enum with a metavariable name detected.\n";
+	   Printf.printf
+	     "For type checking assuming the name of the metavariable is the name of the type\n";
+	   let (rule,tag) = unwrap_mcode tag in
+	   Type_cocci.EnumName(true,rule^tag))
+      | _ -> failwith "unexpected enum type name")
   | StructUnionName(su,Some tag) ->
       (match unwrap tag with
 	Id(tag) ->
@@ -566,6 +579,15 @@ let rec reverse_type ty =
       Signed(reverse_sign sgn,Some (context_wrap(reverse_type ty)))
   | Type_cocci.Pointer(ty) ->
       Pointer(context_wrap(reverse_type ty),make_mcode "*")
+  | Type_cocci.EnumName(mv,tag) ->
+      if mv
+      then
+	(* not right... *)
+	EnumName
+	  (make_mcode "enum",
+	   context_wrap(MetaId(make_mcode ("",tag),[],Impure)))
+      else
+	EnumName(make_mcode "enum",context_wrap(Id(make_mcode tag)))
   | Type_cocci.StructUnionName(su,mv,tag) ->
       if mv
       then

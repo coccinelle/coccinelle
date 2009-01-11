@@ -490,6 +490,8 @@ let rec equal_typeC t1 t2 =
       equal_mcode star1 star2
   | (Ast0.Array(_,lb1,_,rb1),Ast0.Array(_,lb2,_,rb2)) ->
       equal_mcode lb1 lb2 && equal_mcode rb1 rb2
+  | (Ast0.EnumName(kind1,_),Ast0.EnumName(kind2,_)) ->
+      equal_mcode kind1 kind2
   | (Ast0.StructUnionName(kind1,_),Ast0.StructUnionName(kind2,_)) ->
       equal_mcode kind1 kind2
   | (Ast0.FunctionType(ty1,lp1,p1,rp1),Ast0.FunctionType(ty2,lp2,p2,rp2)) ->

@@ -1,17 +1,3 @@
-(* Copyright (C) 2006, 2007, 2008 Yoann Padioleau
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License (GPL)
- * version 2 as published by the Free Software Foundation.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * file license.txt for more details.
- * 
- * This file was part of Coccinelle.
- *)
-
 open Common
 
 module A = Ast_cocci
@@ -2726,13 +2712,21 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
     | _, (B.TypeOfType e, ii) -> fail
 
     | _, (B.ParenType e, ii) -> fail (* todo ?*)
-    | _, (B.EnumName _, _) -> fail (* todo cocci ?*)
+    | A.EnumName(en,namea), (B.EnumName nameb, ii) ->
+        let (ib1,ib2) = tuple_of_list2 ii in
+	ident DontKnow namea (nameb, ib2) >>= (fun namea (nameb, ib2) -> 
+          tokenf en ib1 >>= (fun en ib1 -> 
+          return (
+          (A.EnumName (en, namea)) +> A.rewrap ta,
+          (B.EnumName nameb, [ib1;ib2])
+          )))
+
     | _, (B.Enum _, _) -> fail (* todo cocci ?*)
 
     | _,
-     ((B.TypeName (_, _)|B.StructUnionName (_, _)|
-      B.StructUnion (_, _, _)|
-      B.FunctionType _|B.Array (_, _)|B.Pointer _|
+     ((B.TypeName (_, _) | B.StructUnionName (_, _) | B.EnumName _ |
+      B.StructUnion (_, _, _) |
+      B.FunctionType _ | B.Array (_, _) | B.Pointer _ |
       B.BaseType _),
      _)
      -> fail

@@ -1,5 +1,5 @@
 (* create an index for each constructor *)
-(* current max is 146 *)
+(* current max is 147 *)
 
 (* doesn't really work - requires that identical terms with no token
 subterms (eg dots) not appear on the same line *)
@@ -102,6 +102,7 @@ let typeC t =
   | Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) -> [131]
   | Ast0.FunctionType(ty,lp1,params,rp1) -> [132]
   | Ast0.Array(ty,lb,size,rb) -> [50]
+  | Ast0.EnumName(kind,name) -> [146]
   | Ast0.StructUnionName(kind,name) -> [51]
   | Ast0.StructUnionDef(ty,lb,decls,rb) -> [117]
   | Ast0.TypeName(name) -> [52]

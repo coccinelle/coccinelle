@@ -70,7 +70,7 @@ and disjtypeC bty =
       disjmult2 (disjty ty) (disjoption disjexp size)
 	(function ty -> function size ->
 	  Ast.rewrap bty (Ast.Array(ty,lb,size,rb)))
-  | Ast.StructUnionName(kind,name) -> [bty]
+  | Ast.EnumName(_,_) | Ast.StructUnionName(_,_) -> [bty]
   | Ast.StructUnionDef(ty,lb,decls,rb) ->
       disjmult2 (disjty ty) (disjdots disjdecl decls)
 	(function ty -> function decls ->

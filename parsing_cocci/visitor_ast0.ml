@@ -193,6 +193,7 @@ let combiner bind option_default
 	  function_type (ty,lp1,params,rp1) []
       | Ast0.Array(ty,lb,size,rb) ->
 	  array_type (ty,lb,size,rb) []
+      | Ast0.EnumName(kind,name) -> bind (string_mcode kind) (ident name)
       | Ast0.StructUnionName(kind,name) ->
 	  bind (struct_mcode kind) (get_option ident name)
       | Ast0.StructUnionDef(ty,lb,decls,rb) ->
@@ -707,6 +708,8 @@ let rebuilder = fun
 	| Ast0.Array(ty,lb,size,rb) ->
 	    Ast0.Array(typeC ty, string_mcode lb,
 		       get_option expression size, string_mcode rb)
+	| Ast0.EnumName(kind,name) ->
+	    Ast0.EnumName(string_mcode kind, ident name)
 	| Ast0.StructUnionName(kind,name) ->
 	    Ast0.StructUnionName (struct_mcode kind, get_option ident name)
 	| Ast0.StructUnionDef(ty,lb,decls,rb) ->

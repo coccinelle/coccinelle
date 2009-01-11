@@ -732,6 +732,9 @@ let match_maker checks_needed context_required whencode_allowed =
 	      conjunct_many_bindings
 		[check_mcode lb1 lb; check_mcode rb1 rb;
 		  match_typeC tya tyb; match_option match_expr sizea sizeb]
+	  | (Ast0.EnumName(kinda,namea),Ast0.EnumName(kindb,nameb)) ->
+	      conjunct_bindings (check_mcode kinda kindb)
+		(match_ident namea nameb)
 	  | (Ast0.StructUnionName(kinda,Some namea),
 	     Ast0.StructUnionName(kindb,Some nameb)) ->
 	       if mcode_equal kinda kindb

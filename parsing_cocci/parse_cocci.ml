@@ -73,6 +73,7 @@ let token2c (tok,_) =
   | PC.Tvoid(clt) -> "void"^(line_type2c clt)
   | PC.Tstruct(clt) -> "struct"^(line_type2c clt)
   | PC.Tunion(clt) -> "union"^(line_type2c clt)
+  | PC.Tenum(clt) -> "enum"^(line_type2c clt)
   | PC.Tunsigned(clt) -> "unsigned"^(line_type2c clt)
   | PC.Tsigned(clt) -> "signed"^(line_type2c clt)
   | PC.Tstatic(clt) -> "static"^(line_type2c clt)
@@ -251,7 +252,8 @@ let plus_attachable (tok,_) =
   match tok with
     PC.Tchar(clt) | PC.Tshort(clt) | PC.Tint(clt) | PC.Tdouble(clt)
   | PC.Tfloat(clt) | PC.Tlong(clt) | PC.Tvoid(clt) | PC.Tstruct(clt)
-  | PC.Tunion(clt) | PC.Tunsigned(clt) | PC.Tsigned(clt) | PC.Tstatic(clt)
+  | PC.Tunion(clt) | PC.Tenum(clt) | PC.Tunsigned(clt) | PC.Tsigned(clt)
+  | PC.Tstatic(clt)
   | PC.Tinline(clt) | PC.Ttypedef(clt) | PC.Tattr(_,clt)
   | PC.Tauto(clt) | PC.Tregister(clt)
   | PC.Textern(clt) | PC.Tconst(clt) | PC.Tvolatile(clt)
@@ -313,7 +315,8 @@ let get_clt (tok,_) =
   match tok with
     PC.Tchar(clt) | PC.Tshort(clt) | PC.Tint(clt) | PC.Tdouble(clt)
   | PC.Tfloat(clt) | PC.Tlong(clt) | PC.Tvoid(clt) | PC.Tstruct(clt)
-  | PC.Tunion(clt) | PC.Tunsigned(clt) | PC.Tsigned(clt) | PC.Tstatic(clt)
+  | PC.Tunion(clt) | PC.Tenum(clt) | PC.Tunsigned(clt) | PC.Tsigned(clt)
+  | PC.Tstatic(clt)
   | PC.Tinline(clt) | PC.Tattr(_,clt) | PC.Tauto(clt) | PC.Tregister(clt)
   | PC.Textern(clt) | PC.Tconst(clt) | PC.Tvolatile(clt)
 
@@ -379,6 +382,7 @@ let update_clt (tok,x) clt =
   | PC.Tvoid(_) -> (PC.Tvoid(clt),x)
   | PC.Tstruct(_) -> (PC.Tstruct(clt),x)
   | PC.Tunion(_) -> (PC.Tunion(clt),x)
+  | PC.Tenum(_) -> (PC.Tenum(clt),x)
   | PC.Tunsigned(_) -> (PC.Tunsigned(clt),x)
   | PC.Tsigned(_) -> (PC.Tsigned(clt),x)
   | PC.Tstatic(_) -> (PC.Tstatic(clt),x)
@@ -570,7 +574,7 @@ let split_token ((tok,_) as t) =
 
   | PC.Tchar(clt) | PC.Tshort(clt) | PC.Tint(clt) | PC.Tdouble(clt)
   | PC.Tfloat(clt) | PC.Tlong(clt) | PC.Tvoid(clt) | PC.Tstruct(clt)
-  | PC.Tunion(clt) | PC.Tunsigned(clt) | PC.Tsigned(clt)
+  | PC.Tunion(clt) | PC.Tenum(clt) | PC.Tunsigned(clt) | PC.Tsigned(clt)
   | PC.Tstatic(clt) | PC.Tauto(clt) | PC.Tregister(clt) | PC.Textern(clt)
   | PC.Tinline(clt) | PC.Ttypedef(clt) | PC.Tattr(_,clt)
   | PC.Tconst(clt) | PC.Tvolatile(clt) -> split t clt
@@ -803,7 +807,7 @@ let token2line (tok,_) =
   match tok with
     PC.Tchar(clt) | PC.Tshort(clt) | PC.Tint(clt) | PC.Tdouble(clt)
   | PC.Tfloat(clt) | PC.Tlong(clt) | PC.Tvoid(clt) | PC.Tstruct(clt)
-  | PC.Tunion(clt) | PC.Tunsigned(clt) | PC.Tsigned(clt)
+  | PC.Tunion(clt) | PC.Tenum(clt) | PC.Tunsigned(clt) | PC.Tsigned(clt)
   | PC.Tstatic(clt) | PC.Tauto(clt) | PC.Tregister(clt) | PC.Textern(clt)
   | PC.Tinline(clt) | PC.Ttypedef(clt) | PC.Tattr(_,clt) | PC.Tconst(clt)
   | PC.Tvolatile(clt)

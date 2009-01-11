@@ -9,6 +9,7 @@ type typeC =
   | Pointer         of typeC
   | FunctionPointer of typeC (* only return type *)
   | Array           of typeC (* drop size info *)
+  | EnumName        of bool (* true if a metaId *) * string
   | StructUnionName of structUnion * bool (* true if type metavar *) * string
   | TypeName        of string
   | MetaType        of (string * string) * keep_binding * inherited

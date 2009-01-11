@@ -1,16 +1,3 @@
-(* Copyright (C) 2006, 2007 Yoann Padioleau
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License (GPL)
- * version 2 as published by the Free Software Foundation.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * file license.txt for more details.
- * 
- * This file was part of Coccinelle.
- *)
 open Common
 
 module Flag_engine = Flag_matcher
