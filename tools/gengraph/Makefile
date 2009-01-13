@@ -1,7 +1,7 @@
-PDFVIEWER=gv
+#PDFVIEWER=gv
 #PDFVIEWER=xpdf
 #PDFVIEWER=evince
-#PDFVIEWER=kpdf
+PDFVIEWER=kpdf
 #PDFVIEWER=acroread
 TARGET = gengraph
 

@@ -17,4 +17,5 @@ let _ =
   let (max_ver, fileexist) = Exists.compute_exist ast_exist in
 (*     List.iter show_entry fileexist; *)
   let bfl = List.map (Bugs.compute_bug max_ver) bugs in
+(*     Graph.show_stat fileexist bfl; *)
     Graph.draw_graph max_ver fileexist bfl

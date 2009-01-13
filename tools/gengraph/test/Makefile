@@ -31,6 +31,9 @@ $(JGR): $(CSV) $(BUGS)
 .jgr.ps:
 	jgraph -P $< > $@
 
+.jgr.pdf:
+	jgraph -P $< | ps2pdf - $@
+
 .ps.eps:
 	ps2epsi $< $@
 
@@ -56,4 +59,7 @@ $(CSV): $(LIST)
 
 $(EPS): $(JGR)
 
-$(PDF): $(EPS)
+#$(PDF): $(EPS)
+
+$(PDF): $(JGR)
+
