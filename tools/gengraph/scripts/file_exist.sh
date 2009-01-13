@@ -4,6 +4,17 @@ PREFIX=/var/linuxes/linux-2.6.
 MAJOR=28
 OUT=`basename $1 .list`.csv
 
+if [ -z `grep true $1` ]; then
+	echo "`dirname $PREFIX` not found."
+	ORIG=`basename $1 .list`.orig.csv
+	if [ -f $ORIG ]; then
+		echo "Using $ORIG."
+		cp $ORIG $OUT
+	else
+		echo "$ORIG not found."
+	fi
+else
+
 > $OUT
 
 echo -n "file;" >> $OUT
@@ -25,4 +36,5 @@ for f in `cat $1`; do
     done
     echo "" >> $OUT
 done
+fi
       
