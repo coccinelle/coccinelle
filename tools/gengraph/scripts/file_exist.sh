@@ -4,7 +4,7 @@ PREFIX=/var/linuxes/linux-2.6.
 MAJOR=28
 OUT=`basename $1 .list`.csv
 
-if [ -z `grep true $1` ]; then
+if [ ! -d `dirname $PREFIX` ]; then
 	echo "`dirname $PREFIX` not found."
 	ORIG=`basename $1 .list`.orig.csv
 	if [ -f $ORIG ]; then
