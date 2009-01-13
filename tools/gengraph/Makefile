@@ -23,7 +23,7 @@ OCAMLDEP = ocamldep$(OPTBIN) $(INCLUDES)
 
 .PHONY: all all.opt test clean depend subdirs $(SUBDIRS)
 
-all: $(EXEC)
+all: .depend $(EXEC)
 all.opt: $(EXEC).opt
 
 test: all
@@ -70,7 +70,6 @@ depend:
 	make -C bugs $@
 	$(OCAMLDEP) *.mli *.ml > .depend
 
-.depend:
-	$(OCAMLDEP) *.mli *.ml > .depend
+.depend: depend
 
 -include .depend
