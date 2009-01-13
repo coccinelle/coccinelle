@@ -1,7 +1,7 @@
 TARGET = gengraph
 
 SOURCES = graph.ml gengraph.ml
-SUBDIRS = commons exists bugs
+SUBDIRS = commons exists bugs org
 
 # Loading configuration/fallback to default
 -include .config
@@ -47,7 +47,7 @@ bugs: commons
 	$(OCAMLOPT) -c $<
 
 $(EXEC): $(LIBS) $(OBJS)
-	$(OCAMLC) -o $@ $^
+	$(OCAMLC) -o $@ str.cma $^
 
 $(LIBS): $(SUBDIRS)
 
