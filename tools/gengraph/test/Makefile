@@ -1,0 +1,59 @@
+.PHONY: all
+
+TEST=test
+
+###############
+ORIG = $(TEST:%=%.orig.org)
+EDIT = $(TEST:%=%.edit.org)
+ORG = $(TEST:%=%.org)
+LIST = $(TEST:%=%.list)
+CSV = $(TEST:%=%.csv)
+BUGS = $(TEST:%=%.bugs)
+JGR = $(TEST:%=%.jgr)
+PS = $(TEST:%=%.ps)
+EPS = $(TEST:%=%.eps)
+PDF = $(TEST:%=%.pdf)
+
+.PHONY: all clean
+
+all: clean $(PDF)
+#all: clean $(JGR)
+
+clean:
+	rm -f *~
+	rm -f $(JGR) $(PS) $(EPS) $(PDF) $(BUGS) $(CSV) $(LIST) $(EDIT)
+
+.SUFFIXES: .csv .jgr .ps .eps .pdf .bugs .org .list
+
+$(JGR): $(CSV) $(BUGS)
+	../gengraph -e $(TEST).csv -b $(TEST).bugs > $@
+
+.jgr.ps:
+	jgraph -P $< > $@
+
+.ps.eps:
+	ps2epsi $< $@
+
+.eps.pdf:
+	epstopdf $<
+
+$(EDIT): $(ORIG)
+	../scripts/bug_exist.sh test.orig.org 
+
+.org.bugs:
+	../scripts/bug_ver.sh $<
+
+.list.csv:
+	../scripts/file_exist.sh $<
+
+$(ORG): $(EDIT)
+
+$(BUGS): $(ORG)
+
+$(LIST): $(BUGS)
+
+$(CSV): $(LIST)
+
+$(EPS): $(JGR)
+
+$(PDF): $(EPS)
