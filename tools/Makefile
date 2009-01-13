@@ -1,6 +1,7 @@
+SUBDIRS=gengraph
 PROGS=gitgrep split_patch extract_c_and_res #generate_dependencies
 
-all: $(PROGS)
+all: $(SUBDIRS) $(PROGS)
 
 # for recursive make
 all.opt: $(PROGS)
@@ -24,6 +25,10 @@ bridge: bridge.ml
 install_bridge: bridge
 	cp -f bridge /usr/local/bin
 
+.PHONY: $(SUBDIRS)
+
+gengraph:
+	make -C $@
 
 SYSLIBS = str.cma unix.cma 
 
@@ -48,12 +53,6 @@ extract_c_and_res: extract_c_and_res.cmo
 generate_dependencies: generate_dependencies.cmo
 	$(OCAMLC) -o $@ $(SYSLIBS) $(INCLUDE) $(LIBS)  $+
 
-
-clean::
-	rm -f $(PROGS)
-
-
-
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
 
 .ml.cmo:
@@ -63,9 +62,10 @@ clean::
 .ml.cmx:
 	$(OCAMLOPT) -c $<
 
-clean::
+clean:
+	make -C gengraph $@
+	rm -f $(PROGS)
 	rm -f *.cm[ioxa] *.o *.a *.cmxa *.annot
-
 
 beforedepend::
 
