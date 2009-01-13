@@ -1,12 +1,11 @@
-#PDFVIEWER=gv
-#PDFVIEWER=xpdf
-#PDFVIEWER=evince
-PDFVIEWER=kpdf
-#PDFVIEWER=acroread
 TARGET = gengraph
 
 SOURCES = graph.ml gengraph.ml
 SUBDIRS = commons exists bugs
+
+# Loading configuration/fallback to default
+-include .config
+PDFVIEWER ?= gv
 
 # Automatic computation
 OBJS = $(SOURCES:.ml=.cmo)
@@ -23,7 +22,7 @@ OCAMLDEP = ocamldep$(OPTBIN) $(INCLUDES)
 
 .PHONY: all all.opt test clean depend subdirs $(SUBDIRS)
 
-all: .depend $(EXEC)
+all: .config .depend $(EXEC)
 all.opt: $(EXEC).opt
 
 test: all
@@ -73,3 +72,12 @@ depend:
 .depend: depend
 
 -include .depend
+
+.config:
+	@echo "PDFVIEWER=gv" >> .config
+	@echo "#PDFVIEWER=xpdf" >> .config
+	@echo "#PDFVIEWER=evince" >> .config
+	@echo "#PDFVIEWER=kpdf" >> .config
+	@echo "#PDFVIEWER=acroread" >> .config
+	@echo "A default .config file have been generated."
+	@echo "You may want to edit this file."
