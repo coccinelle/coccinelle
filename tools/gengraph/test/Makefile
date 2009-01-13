@@ -16,7 +16,13 @@ PDF = $(TEST:%=%.pdf)
 
 .PHONY: all clean
 
-all: clean $(PDF)
+all: test-pdf test-org
+
+test-pdf: clean $(PDF)
+
+test-org:
+	../gengraph -p /var/linuxes/linux-2.6. -o test.orig.org
+
 #all: clean $(JGR)
 
 clean:

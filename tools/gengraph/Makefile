@@ -28,7 +28,13 @@ all.opt: $(EXEC).opt
 test: all
 	make -C $@
 
-view: test
+test-pdf: $(EXEC)
+	make -C test $@
+
+test-org: $(EXEC)
+	make -C test $@
+
+view: test-pdf
 	$(PDFVIEWER) test/test.pdf
 
 exists: commons
