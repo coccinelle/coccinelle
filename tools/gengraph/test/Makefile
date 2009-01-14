@@ -1,6 +1,6 @@
 .PHONY: all
 
-TEST=test
+TEST=not #test
 
 ###############
 ORIG = $(TEST:%=%.orig.org)
