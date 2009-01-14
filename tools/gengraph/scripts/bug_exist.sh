@@ -21,6 +21,7 @@ rm -f file_list.tmp
 echo "$OUT have been generated."
 if [ ! -f $EDIT ]; then
 	echo "$EDIT does not exist. Create a copy of $OUT."
+	cp $OUT $EDIT
 else
 	echo "$EDIT exists. Not overwritten."
 fi
