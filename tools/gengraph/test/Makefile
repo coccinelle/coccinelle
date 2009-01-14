@@ -1,6 +1,7 @@
 .PHONY: all
 
-TEST=not #test
+TEST=not
+#TEST=test
 
 ###############
 ORIG = $(TEST:%=%.orig.org)
@@ -20,8 +21,8 @@ all: test-pdf test-org
 
 test-pdf: clean $(PDF)
 
-test-org:
-	../gengraph -p /var/linuxes/linux-2.6. -o test.orig.org
+test-org: $(ORIG)
+	../gengraph -p /var/linuxes/linux-2.6. -o $<
 
 #all: clean $(JGR)
 
@@ -47,7 +48,7 @@ $(JGR): $(CSV) $(BUGS)
 	epstopdf $<
 
 $(EDIT): $(ORIG)
-	../scripts/bug_exist.sh test.orig.org 
+	../scripts/bug_exist.sh $<
 
 .org.bugs:
 	../scripts/bug_ver.sh $<
