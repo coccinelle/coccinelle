@@ -3,6 +3,10 @@
 TEST=not
 #TEST=test
 
+# Loading configuration/fallback to default
+-include ../.config
+PDFVIEWER ?= gv
+
 ###############
 ORIG = $(TEST:%=%.orig.org)
 EDIT = $(TEST:%=%.edit.org)
@@ -23,6 +27,9 @@ test-pdf: clean $(PDF)
 
 test-org: $(ORIG)
 	../gengraph -p /var/linuxes/linux-2.6. -o $<
+
+view:
+	 $(PDFVIEWER) $(PDF)
 
 #all: clean $(JGR)
 

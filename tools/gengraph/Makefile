@@ -3,10 +3,6 @@ TARGET = gengraph
 SOURCES = graph.ml gengraph.ml
 SUBDIRS = commons exists bugs org
 
-# Loading configuration/fallback to default
--include .config
-PDFVIEWER ?= gv
-
 # Automatic computation
 OBJS = $(SOURCES:.ml=.cmo)
 OPTOBJS = $(OBJS:.cmo=.cmx)
@@ -35,7 +31,7 @@ test-org: $(EXEC)
 	make -C test $@
 
 view: test-pdf
-	$(PDFVIEWER) test/test.pdf
+	make -C test $@
 
 exists: commons
 bugs: commons
