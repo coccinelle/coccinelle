@@ -36,12 +36,16 @@ let cd_ratio max_ver bugs =
     ) (0,0) bugs
 
 let sl_ratio bugs =
-  List.fold_left
-    (fun (i,j) (fc, c, fmin, bmin, bmax, fmax) ->
+  let (shortest, sum, longest) =  List.fold_left
+    (fun (i,j,k) (fc, c, fmin, bmin, bmax, fmax) ->
        let duration = bmax - bmin + 1 in
        ((if (duration < i) then duration else i),
-	(if (duration > j) then duration else j))
-    ) (max_int, 0) bugs
+	j + duration,
+	(if (duration > k) then duration else k))
+    ) (max_int, 0, 0) bugs
+  in
+  let mean = float_of_int sum /. float_of_int (List.length bugs) in
+    (shortest, mean, longest)
 
 let verbose_stat bugs =
   List.iter (fun (fc, c, fmin, bmin, bmax, fmax) ->
@@ -57,7 +61,7 @@ let show_stat verbose max_ver fel fbl =
   let bn = List.length fbl in
   let bugs = compute_graph fel fbl in
   let (create, delete) = cd_ratio max_ver bugs in
-  let (shortest, longest) = sl_ratio bugs in
+  let (shortest, mean, longest) = sl_ratio bugs in
     (if verbose then
        verbose_stat bugs; prerr_newline ()
     );
@@ -76,7 +80,9 @@ let show_stat verbose max_ver fel fbl =
     prerr_int shortest;
     prerr_endline " version(s) for the shortest bug life.";
     prerr_int longest;
-    prerr_endline " version(s) for the longest bug life."
+    prerr_endline " version(s) for the longest bug life.";
+    prerr_float mean;
+    prerr_endline " version(s) for the mean bug life."
 
 let draw_graph max fel fbl =
   let size = List.length fbl in
