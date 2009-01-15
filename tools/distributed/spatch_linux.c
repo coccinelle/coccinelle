@@ -13,7 +13,7 @@
 
 #define DONE_SEM 0 // index of the semaphore on which to wait for children
 
-#define HOME "/home/julia/coccinelle/tools/distributed/"
+//#define HOME "/home/linebp/cvs/coccinelle/tools/distributed/"
 
 int sem;
 
