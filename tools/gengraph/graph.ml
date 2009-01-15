@@ -82,24 +82,27 @@ let draw_graph max fel fbl =
   let size = List.length fbl in
   Printf.printf "
 newgraph
-xaxis min 0 max %02d size 7 hash 1 mhash 0 label : kernel versions
+xaxis min 0 max %02d size 5 hash 1 mhash 0 label : kernel versions
 draw_at -1
-yaxis min 0 max %02d size 5 label : bugs
-no_draw_hash_marks no_draw_hash_labels
+yaxis min 0 max %02d size 7 label : bugs
+no_draw_hash_marks no_draw_hash_labels no_draw_axis
 
 newcurve marktype ybar color 0 0 0
 pts\n" (max+1) (size - 1);
-  for i = 0 to size - 1 do
-    Printf.printf " %02d %02d\n" (max+1) i;
-  done;
+  ignore(List.fold_left (fun i bug ->
+			   let femax = get_femax fel bug in
+			     (if (femax < max) then
+			       Printf.printf " %02d %02d\n" (max+1) i;
+			     );
+			     i+1) 0 fbl);
   Printf.printf "
 newcurve marktype ybar color 1 1 1
 pts\n";
   ignore(List.fold_left (fun i bug ->
 			   let femax = get_femax fel bug in
-			   let (_,_,bmax,_) = bug in
+			   let (_,_,_,bmax) = bug in
 			     (if (femax > bmax) then
-			       Printf.printf " %02d %02d\n" (femax+1) i;
+			       Printf.printf " %02d %02d\n" (femax+1) i
 			     );
 			     i+1) 0 fbl);
   Printf.printf "
@@ -111,15 +114,30 @@ pts";
   Printf.printf "
 newcurve marktype ybar color 1 1 1
 pts";
-  ignore(List.fold_left (fun i (_,_,bmin,_) ->
-		    Printf.printf " %02d %02d\n" bmin i;
-		    i+1) 0 fbl);
+  ignore(List.fold_left (fun i bug ->
+			   let femin = get_femin fel bug in
+			   let (_,_,bmin,_) = bug in
+			     (if (femin < bmin) then
+				Printf.printf " %02d %02d\n" bmin i
+			     );
+			      i+1) 0 fbl);
   Printf.printf "
 newcurve marktype ybar color 0 0 0
 pts\n";
   ignore(List.fold_left (fun i bug ->
-			   let m = get_femin fel bug in
-			     (if (m > 0) then
-				Printf.printf " %02d %02d\n" m i
+			   let femin = get_femin fel bug in
+			     (if (femin > 0) then
+				Printf.printf " %02d %02d\n" femin i
 			     );
-			     i+1) 0 fbl)
+			     i+1) 0 fbl);
+  Printf.printf "
+newstring
+hjl vjc
+(* fonsize 9 *)
+font Helvetica-Narrow\n";
+  let (f0, _, _,_) = List.hd fbl in
+  Printf.printf " x %02d y 00 : %s\n" (max+2) f0;
+  ignore(List.fold_left (fun i (f, _, _,_) ->
+			   Printf.printf " copystring y %02d : %s\n"  i f;
+			   i+1) 1 (List.tl fbl))
+
