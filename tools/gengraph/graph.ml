@@ -28,6 +28,24 @@ let compute_bug_info fel bug =
 let compute_graph fel fbl =
     List.map (compute_bug_info fel) fbl
 
+let update_dir dir assoc =
+  try
+    let v = List.assoc dir assoc in
+    let res = List.remove_assoc dir assoc in
+      (dir, v+1)::res
+  with Not_found ->
+    (dir, 1)::assoc
+
+let compute_bydir bugs =
+  let p1_re = Str.regexp "^\\([^/]+\\)/.*$" in
+    List.fold_left (fun res (fb, _, _, _) ->
+		      if(Str.string_match p1_re fb 0) then
+			let dir = Str.matched_group 1 fb in
+			  update_dir dir res
+		      else
+			update_dir "" res
+		   ) [] bugs
+
 let cd_ratio max_ver bugs =
   List.fold_left
     (fun (i,j) (fc, c, fmin, bmin, bmax, fmax) ->
@@ -82,7 +100,16 @@ let show_stat verbose max_ver fel fbl =
     prerr_int longest;
     prerr_endline " version(s) for the longest bug life.";
     prerr_float mean;
-    prerr_endline " version(s) for the mean bug life."
+    prerr_endline " version(s) for the mean bug life.";
+    List.iter (fun (dir, v) ->
+		 prerr_int v;
+		 if ((String.compare dir "") == 0) then
+		   prerr_endline "in root directory"
+		 else
+		   (prerr_string " in dir ";
+		    prerr_endline dir
+		   )
+	      ) (compute_bydir fbl)
 
 let draw_graph max fel fbl =
   let size = List.length fbl in
