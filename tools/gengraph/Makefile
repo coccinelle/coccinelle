@@ -2,6 +2,7 @@ TARGET = gengraph
 
 SOURCES = graph.ml gengraph.ml
 SUBDIRS = commons exists bugs org
+DEPDIRS = ../../menhirlib
 
 # Automatic computation
 OBJS = $(SOURCES:.ml=.cmo)
@@ -9,14 +10,15 @@ OPTOBJS = $(OBJS:.cmo=.cmx)
 INCLUDES=$(SUBDIRS:%=-I %)
 LIBS = $(SUBDIRS:%=%.cma)
 EXEC = $(TARGET)
+DEP = $(SUBDIRS) $(DEPDIRS)
 
 # The Caml compilers.
 OCAMLCFLAGS ?= -g -dtypes
 OCAMLC =ocamlc$(OPTBIN) $(OCAMLCFLAGS) $(INCLUDES)
 OCAMLOPT = ocamlopt$(OPTBIN) $(OPTFLAGS) $(INCLUDES)
-OCAMLDEP = ocamldep$(OPTBIN) $(INCLUDES)
+OCAMLDEP = ocamldep$(OPTBIN) #$(INCLUDES)
 
-.PHONY: all all.opt test clean depend subdirs $(SUBDIRS)
+.PHONY: all all.opt test clean depend $(DEP)
 
 all: .config .depend $(EXEC)
 all.opt: $(EXEC).opt
@@ -33,8 +35,13 @@ test-org: $(EXEC)
 view: test-pdf
 	make -C test $@
 
-exists: commons
-bugs: commons
+#########################
+## Dependencies        ##
+#########################
+exists: ../../menhirlib commons
+bugs: ../../menhirlib commons
+orgs: ../../menhirlib commons
+#########################
 
 .SUFFIXES:
 .SUFFIXES: .ml .mli .cmo .cmi .cmx .cma
@@ -51,9 +58,9 @@ bugs: commons
 $(EXEC): $(LIBS) $(OBJS)
 	$(OCAMLC) -o $@ str.cma $^
 
-$(LIBS): $(SUBDIRS)
-
-$(SUBDIRS):
+$(LIBS): $(DEP)
+$(OBJS): $(DEP)
+$(DEP):
 	$(MAKE) -C $@
 
 clean:
