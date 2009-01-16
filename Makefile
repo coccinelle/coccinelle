@@ -141,11 +141,11 @@ $(LIBS:.cma=.cmxa): $(MAKESUBDIRS:%=%.opt)
 
 subdirs: 
 	echo "$(SRC:.ml=.cmi): $(MAKESUBDIRS)" > .subdirs
-	make $(EXEC)
+	$(MAKE) $(EXEC)
 
 subdirs.opt:
 	echo "$(SRC:.ml=.cmi): $(MAKESUBDIRS:%=%.opt)" > .subdirs
-	make $(EXEC).opt
+	$(MAKE) $(EXEC).opt
 
 -include .subdirs
 
