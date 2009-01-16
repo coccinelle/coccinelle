@@ -3,3 +3,4 @@ test.ml
 Makefile.config
 spatch
 spatch.opt
+.subdirs

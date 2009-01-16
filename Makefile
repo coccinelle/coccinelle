@@ -75,7 +75,7 @@ OCAMLC=ocamlc$(OPTBIN) $(OCAMLCFLAGS)  $(INCLUDES)
 OCAMLOPT=ocamlopt$(OPTBIN) $(OPTFLAGS) $(INCLUDES) 
 OCAMLLEX=ocamllex #-ml # -ml for debugging lexer, but slightly slower
 OCAMLYACC=ocamlyacc -v
-OCAMLDEP=ocamldep $(INCLUDES)
+OCAMLDEP=ocamldep #$(INCLUDES)
 OCAMLMKTOP=ocamlmktop -g -custom $(INCLUDES)
 
 # can also be set via 'make static'
@@ -87,21 +87,70 @@ BYTECODE_STATIC=-custom
 ##############################################################################
 # Top rules
 ##############################################################################
-all: rec $(EXEC)
-opt: rec.opt $(EXEC).opt
+all: subdirs
+opt: subdirs.opt
 all.opt: opt
 top: $(EXEC).top
 
-rec:
-	set -e; for i in $(MAKESUBDIRS); \
-	do $(MAKE) -C $$i OCAMLCFLAGS="$(OCAMLCFLAGS)" all; done 
-rec.opt:
-	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i all.opt; done 
+.PHONY: $(MAKESUBDIRS) $(MAKESUBDIRS:%=%.opt)
+
+$(MAKESUBDIRS):
+	$(MAKE) -C $@ OCAMLCFLAGS="$(OCAMLCFLAGS)" all
+
+$(MAKESUBDIRS:%=%.opt):
+	$(MAKE) -C $(@:%.opt=%) OCAMLCFLAGS="$(OCAMLCFLAGS)" all.opt
+
+commons:
+globals:
+menhirlib:
+parsing_cocci:globals menhirlib
+parsing_c:parsing_cocci
+ctl:globals commons
+engine: parsing_cocci parsing_c ctl 
+popl09:engine
+extra: parsing_cocci parsing_c ctl
+pycaml:
+python:pycaml parsing_cocci parsing_c
+
+commons.opt:
+globals.opt:
+menhirlib.opt:
+parsing_cocci.opt:globals.opt menhirlib.opt
+parsing_c.opt:parsing_cocci.opt
+ctl.opt:globals.opt commons.opt
+engine.opt: parsing_cocci.opt parsing_c.opt ctl.opt
+popl09.opt:engine.opt
+extra.opt: parsing_cocci.opt parsing_c.opt ctl.opt
+pycaml.opt:
+python.opt:pycaml.opt parsing_cocci.opt parsing_c.opt
+
+#	set -e; for i in $(MAKESUBDIRS); \
+#	do $(MAKE) -C $$i OCAMLCFLAGS="$(OCAMLCFLAGS)" all; done 
+#
+#rec.opt:
+#	set -e; for i in $(MAKESUBDIRS); \
+#	do $(MAKE) -C $$i OCAMLCFLAGS="$(OCAMLCFLAGS)" all.opt; done 
 clean::
 	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i clean; done 
 
 configure:
 	./configure
+
+$(LIBS): $(MAKESUBDIRS)
+$(LIBS:.cma=.cmxa): $(MAKESUBDIRS:%=%.opt)
+
+subdirs: 
+	echo "$(SRC:.ml=.cmi): $(MAKESUBDIRS)" > .subdirs
+	make $(EXEC)
+
+subdirs.opt:
+	echo "$(SRC:.ml=.cmi): $(MAKESUBDIRS:%=%.opt)" > .subdirs
+	make $(EXEC).opt
+
+-include .subdirs
+
+$(OBJS):$(LIBS)
+$(OPTOBJS):$(LIBS:.cma=.cmxa)
 
 $(EXEC): $(LIBS) $(OBJS)
 	$(OCAMLC) $(BYTECODE_STATIC) -o $@ $(SYSLIBS)  $^
@@ -114,7 +163,6 @@ $(EXEC).top: $(LIBS) $(OBJS)
 
 clean::
 	rm -f $(TARGET) $(TARGET).opt $(TARGET).top
-
 
 clean::
 	rm -f dllpycaml_stubs.so

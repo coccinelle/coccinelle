@@ -34,7 +34,7 @@ OCAMLC =ocamlc$(OPTBIN) $(OCAMLCFLAGS) $(INCLUDES)
 OCAMLOPT = ocamlopt$(OPTBIN) $(OPTFLAGS) $(INCLUDES)
 OCAMLLEX = ocamllex$(OPTBIN)
 OCAMLYACC= menhir --table
-OCAMLDEP = ocamldep$(OPTBIN) $(INCLUDES)
+OCAMLDEP = ocamldep$(OPTBIN) #$(INCLUDES)
 EXEC=$(TARGET).byte
 EXEC=$(TARGET)
 LIB=$(TARGET).cma
@@ -50,7 +50,6 @@ all: $(LIB)
 local: $(EXEC)
 
 all.opt: $(OPTLIB)
-
 
 $(LIB): $(GENERATED) $(OBJS)
 	$(OCAMLC) -I $(MENHIR_PATH) -a -o $(LIB) $(MENHIR) $(OBJS)

@@ -41,7 +41,7 @@ OCAMLOPT=ocamlopt$(OPTBIN)   $(INCLUDE) $(OPTFLAGS)
 #OCAMLLEX=ocamllex$(OPTBIN) -ml
 OCAMLLEX=ocamllex$(OPTBIN)
 OCAMLYACC=ocamlyacc -v
-OCAMLDEP=ocamldep$(OPTBIN)  $(INCLUDE)
+OCAMLDEP=ocamldep$(OPTBIN) #$(INCLUDE)
 OCAMLMKTOP=ocamlmktop -g -custom $(INCLUDE)
 
 split_patch: split_patch.cmo
