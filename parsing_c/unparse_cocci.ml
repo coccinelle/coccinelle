@@ -710,6 +710,13 @@ and print_fninfo = function
   | Ast.FInline(inline) -> mcode print_string inline; print_string " "
   | Ast.FAttr(attr) -> mcode print_string attr; print_string " " in
 
+let indent_if_needed s f =
+  match Ast.unwrap s with
+    Ast.Seq(lbrace,decls,body,rbrace) -> f()
+  | _ ->
+      (*no newline at the end - someone else will do that*)
+      start_block(); f(); unindent() in
+
 let rec statement arity s =
   match Ast.unwrap s with
     Ast.Seq(lbrace,decls,body,rbrace) ->
@@ -719,20 +726,28 @@ let rec statement arity s =
       rule_elem arity rbrace
 
   | Ast.IfThen(header,branch,_) ->
-      rule_elem arity header; statement arity branch
+      rule_elem arity header;
+      indent_if_needed branch (function _ -> statement arity branch)
   | Ast.IfThenElse(header,branch1,els,branch2,_) ->
-      rule_elem arity header; statement arity branch1; print_string " ";
-      rule_elem arity els; statement arity branch2
+      rule_elem arity header;
+      indent_if_needed branch1 (function _ -> statement arity branch1);
+      print_string " ";
+      rule_elem arity els;
+      indent_if_needed branch2 (function _ -> statement arity branch2)
 
   | Ast.While(header,body,_) ->
-      rule_elem arity header; statement arity body
+      rule_elem arity header;
+      indent_if_needed body (function _ -> statement arity body)
   | Ast.Do(header,body,tail) ->
-      rule_elem arity header; statement arity body;
+      rule_elem arity header;
+      indent_if_needed body (function _ -> statement arity body);
       rule_elem arity tail
   | Ast.For(header,body,_) ->
-      rule_elem arity header; statement arity body
+      rule_elem arity header;
+      indent_if_needed body (function _ -> statement arity body)
   | Ast.Iterator(header,body,(_,_,_,aft)) ->
-      rule_elem arity header; statement arity body;
+      rule_elem arity header;
+      indent_if_needed body (function _ -> statement arity body);
       mcode (function _ -> ()) ((),Ast.no_info,aft,Ast.NoMetaPos)
 
   | Ast.Switch(header,lb,cases,rb) ->

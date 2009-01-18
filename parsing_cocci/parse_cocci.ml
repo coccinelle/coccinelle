@@ -1014,12 +1014,10 @@ let rec drop_double_dots l =
  (* | (PC.TCCircles(_),_) | (PC.TCStars(_),_) *) ->
 	true
     | _ -> false in
+  let any x = start x or middle x or final x in
   let rec loop ((_,i) as prev) = function
       [] -> []
-    | x::rest when middle prev && middle x -> (PC.TNothing,i)::x::(loop x rest)
-    | x::rest when start prev && middle x ->  (PC.TNothing,i)::x::(loop x rest)
-    | x::rest when start prev && final x ->   (PC.TNothing,i)::x::(loop x rest)
-    | x::rest when middle prev && final x ->  (PC.TNothing,i)::x::(loop x rest)
+    | x::rest when any prev && any x -> (PC.TNothing,i)::x::(loop x rest)
     | x::rest -> x :: (loop x rest) in
   match l with
     [] -> []

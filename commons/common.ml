@@ -5081,7 +5081,6 @@ let string_of_parse_info x =
 let string_of_parse_info_bis x = 
   spf "%s:%d:%d" x.file x.line x.column
 
-
 let (info_from_charpos2: int -> filename -> (int * int * string)) = 
  fun charpos filename ->
 
@@ -5096,21 +5095,26 @@ let (info_from_charpos2: int -> filename -> (int * int * string)) =
   let chan = open_in filename in
   let linen  = ref 0 in
   let posl   = ref 0 in
-  let rec charpos_to_pos_aux () =
-    let s = (input_line chan) in
+  let rec charpos_to_pos_aux last_valid =
+    let s =
+      try Some (input_line chan)
+      with End_of_file when charpos = last_valid -> None in
     incr linen;
-    let s = s ^ "\n" in
-    if (!posl + slength s > charpos)
-    then begin
-      close_in chan;
-      (!linen, charpos - !posl, s)
-    end
-    else begin
-      posl := !posl + slength s;
-      charpos_to_pos_aux ();
-    end
+    match s with
+      Some s ->
+	let s = s ^ "\n" in
+	if (!posl + slength s > charpos)
+	then begin
+	  close_in chan;
+	  (!linen, charpos - !posl, s)
+	end
+	else begin
+	  posl := !posl + slength s;
+	  charpos_to_pos_aux !posl;
+	end
+    | None -> (!linen, charpos - !posl, "\n")
   in 
-  let res = charpos_to_pos_aux () in
+  let res = charpos_to_pos_aux 0 in
   close_in chan;
   res
 
@@ -5181,13 +5185,11 @@ let (error_messagebis: filename -> (string * int) -> int -> string)=
     filename line pos charpos tok (chop linecontent)
 
 let error_message = fun filename (lexeme, lexstart) -> 
-  try 
-    error_messagebis filename (lexeme, lexstart) 0    
-  with End_of_file -> 
-    begin
+  try error_messagebis filename (lexeme, lexstart) 0    
+  with
+    End_of_file ->
       ("PB in Common.error_message, position " ^ i_to_s lexstart ^
-              " given out of file:" ^ filename);
-    end
+       " given out of file:" ^ filename)
 
 
 

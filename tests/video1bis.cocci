@@ -1,10 +1,7 @@
 @@
-local function ioctlfn;
-identifier dev, cmd, arg;
+identifier arg;
 identifier v;
-type T;
-statement S1, S2;
-identifier fld;
+statement S1;
 @@
 
 -     if (copy_from_user(v,arg,sizeof(v)) != 0) S1 else {}
