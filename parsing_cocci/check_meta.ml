@@ -507,7 +507,7 @@ let check_meta rname old_metas inherited_metavars metavars minus plus =
   dup_positions minus;
   check_all_marked rname "metavariable" other_table "in the - or context code";
   rule old_metas [iother_table;fresh_table;err_table] false plus;
-  check_all_marked rname "fresh identifier metavariable" iother_table
+  check_all_marked rname "inherited metavariable" iother_table
     "in the -, +, or context code";
   check_all_marked rname "metavariable" fresh_table "in the + code";
   check_all_marked rname "error metavariable" err_table ""

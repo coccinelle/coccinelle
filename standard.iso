@@ -173,17 +173,17 @@ expression X,Y;
 X & Y => Y & X
 
 // only if side effect free in theory ...
-Expression
-@ and_comm @ 
-expression X,Y; 
-@@
-X && Y => Y && X
+// Expression
+// @ and_comm @ 
+// expression X,Y; 
+// @@
+// X && Y => Y && X
 
-Expression
-@ or_comm @ 
-expression X,Y; 
-@@
-X || Y => Y || X
+// Expression
+// @ or_comm @ 
+// expression X,Y; 
+// @@
+// X || Y => Y || X
 
 
 // ---------------------------------------------------------------------------

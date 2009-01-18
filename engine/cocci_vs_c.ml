@@ -2903,7 +2903,11 @@ and compatible_type a (b,local) =
 	  if equal_structUnion_type_cocci sua sub && sa = sb
 	  then ok
 	  else fail
-
+    | Type_cocci.EnumName (_, sa),
+	(qub, (B.EnumName (sb),ii)) -> 
+	  if sa = sb
+	  then ok
+	  else fail
     | Type_cocci.TypeName sa, (qub, (B.TypeName (sb,_typb), ii)) -> 
 	if sa = sb 
 	then ok

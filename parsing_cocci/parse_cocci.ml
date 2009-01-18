@@ -953,7 +953,7 @@ let rec collect_up_to_pragmas skipped = function
       |	SKIP -> collect_up_to_pragmas (x::skipped) xs
 
 let rec collect_up_to_plus skipped = function
-    [] -> failwith "nothing to attach a pragma to"
+    [] -> failwith "nothing to attach a pragma to (empty)"
   | x::xs ->
       match plus_attachable x with
 	PLUS -> (List.rev skipped,x,xs)
