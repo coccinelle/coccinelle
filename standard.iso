@@ -172,7 +172,7 @@ expression X,Y;
 @@
 X & Y => Y & X
 
-// only if side effect free in theory ...
+// only if side effect free in theory, perhaps makes no sense
 // Expression
 // @ and_comm @ 
 // expression X,Y; 

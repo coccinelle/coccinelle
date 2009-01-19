@@ -925,11 +925,15 @@ let find_top_init tokens =
 	Some x -> x
       |	None ->
 	  (match List.rev rest with
-	    ((PC.EOF,_) as x)::rest ->
+	    (* not super sure what this does, but EOF, @, and @@ should be
+	       the same, markind the end of a rule *)
+	    ((PC.EOF,_) as x)::rest | ((PC.TArob,_) as x)::rest
+	  | ((PC.TArobArob,_) as x)::rest ->
 	      (match comma_end [x] rest with
 		Some x -> x
 	      | None -> tokens)
-	  | _ -> failwith "unexpected empty token list"))
+	  | _ ->
+	      failwith "unexpected empty token list"))
   | _ -> tokens
 
 (* ----------------------------------------------------------------------- *)
@@ -1009,15 +1013,20 @@ let rec drop_double_dots l =
   let middle = function
       (PC.TEllipsis(_),_) (* | (PC.TCircles(_),_) | (PC.TStars(_),_) *) -> true
     | _ -> false in
+  let whenline = function
+      (PC.TLineEnd(_),_) -> true
+    | _ -> false in
   let final = function
       (PC.TCEllipsis(_),_) | (PC.TPCEllipsis(_),_)
  (* | (PC.TCCircles(_),_) | (PC.TCStars(_),_) *) ->
 	true
     | _ -> false in
-  let any x = start x or middle x or final x in
+  let any_before x = start x or middle x or final x or whenline x in
+  let any_after x = start x or middle x or final x in
   let rec loop ((_,i) as prev) = function
       [] -> []
-    | x::rest when any prev && any x -> (PC.TNothing,i)::x::(loop x rest)
+    | x::rest when any_before prev && any_after x ->
+	(PC.TNothing,i)::x::(loop x rest)
     | x::rest -> x :: (loop x rest) in
   match l with
     [] -> []
@@ -1106,6 +1115,9 @@ let prepare_tokens tokens =
        (insert_line_end
 	  (detect_types false (find_function_names (detect_attr tokens)))))
 
+let prepare_mv_tokens tokens =
+  detect_types false (detect_attr tokens)
+
 let rec consume_minus_positions = function
     [] -> []
   | ((PC.TOPar0(_),_) as x)::xs | ((PC.TCPar0(_),_) as x)::xs
@@ -1151,7 +1163,7 @@ let get_metavars parse_fn table file lexbuf =
   let rec meta_loop acc (* read one decl at a time *) =
     let (_,tokens) =
       tokens_all table file true lexbuf [PC.TArobArob;PC.TMPtVirg] in
-    let tokens = prepare_tokens tokens in
+    let tokens = prepare_mv_tokens tokens in
     match tokens with
       [(PC.TArobArob,_)] -> List.rev acc
     | _ ->

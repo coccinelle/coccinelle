@@ -9,6 +9,6 @@ struct aic7xxx_host {
 #define MSG_TYPE_INITIATOR_MSGOUT  0x01
 #define MSG_TYPE_INITIATOR_MSGIN   0x02
 	unsigned char	msg_len;	/* Length of message */
-	unsigned char	xmsg_index;	/* Index into msg_buf array */
+	unsigned char	msg_index;	/* Index into msg_buf array */
 };
 

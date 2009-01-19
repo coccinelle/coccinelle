@@ -240,7 +240,7 @@ let classify is_minus all_marked table code =
 	  try
 	    let _ = Hashtbl.find table index in
 	    failwith
-	      (Printf.sprintf "%d: index %s already used\n"
+	      (Printf.sprintf "line %d: index %s already used\n"
 		 (Ast0.get_info e).Ast0.line_start
 		 (String.concat " " (List.map string_of_int index)))
 	  with Not_found -> Hashtbl.add table index (e1,l)) in

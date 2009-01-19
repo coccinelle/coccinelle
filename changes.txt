@@ -23,6 +23,9 @@
 - more restrictions on type inference for pointer arithmetic in SmPL
 - allow isomorphisms to apply when + code is anywhere within all - terms
 - changed order of printing const and volatile
+- allow  eg ... <... in plus code
+- better formatting of generated if/while/etc. code
+- better parse error reporting when the problem is at the end of the file
 
 ** Internals: 
 - isomorphisms don't apply under signed/unsigned, to prevent the creation
