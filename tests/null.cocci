@@ -11,7 +11,6 @@ expression f;
 (
      return x;
 |
-     ...
 (
      *x
 |
@@ -21,7 +20,6 @@ expression f;
 |
      f(...,(T)x,...)
 )
-     ...
 )
     ...
   }
@@ -38,7 +36,6 @@ statement S;
 (
     return x;
 |
-    ...
 (
     *x
 |
@@ -48,7 +45,6 @@ statement S;
 |
     f(...,(T)x,...)
 )
-    ...
 )
     ...
   }
@@ -65,7 +61,6 @@ statement S;
 (
     return x;
 |
-    ...
 (
     *x
 |
@@ -75,5 +70,4 @@ statement S;
 |
     f(...,(T3)x,...)
 )
-    ...
 )
