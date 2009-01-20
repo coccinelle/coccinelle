@@ -1015,6 +1015,7 @@ let rec drop_double_dots l =
     | _ -> false in
   let whenline = function
       (PC.TLineEnd(_),_) -> true
+    | (PC.TMid0(_),_) -> true
     | _ -> false in
   let final = function
       (PC.TCEllipsis(_),_) | (PC.TPCEllipsis(_),_)
