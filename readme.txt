@@ -28,4 +28,3 @@ have to install OCaml (which contains the 'ocamlrun' bytecode interpreter,
 the equivalent of 'java', the Java virtual machine, but for OCaml) and then do:
 
  ocamlrun spatch -sp_file demos/simple.cocci demos/simple.c
-

@@ -856,6 +856,18 @@ stm_dots:
     { Ast0.wrap(Ast0.Nest(P.clt2mcode "<+..." $1, b,
 			  P.clt2mcode "...+>" c, List.concat w, true)) }
 
+%inline stm_dots_ell:
+  a=TEllipsis w=list(whenppdecs)
+    { Ast0.wrap(Ast0.Dots(P.clt2mcode "..." a, List.concat w)) }
+
+%inline stm_dots_nest:
+  a=TOEllipsis w=list(whenppdecs) b=nest_start c=TCEllipsis
+    { Ast0.wrap(Ast0.Nest(P.clt2mcode "<..." a, b,
+			  P.clt2mcode "...>" c, List.concat w, false)) }
+| a=TPOEllipsis w=list(whenppdecs) b=nest_start c=TPCEllipsis
+    { Ast0.wrap(Ast0.Nest(P.clt2mcode "<+..." a, b,
+			  P.clt2mcode "...+>" c, List.concat w, true)) }
+
 whenppdecs: w=whens(when_start,rule_elem_statement)
     { w }
 
@@ -1551,8 +1563,15 @@ minus_start:
   fundecl                { [Ast0.wrap(Ast0.DECL($1))] }
 | ctype                  { [Ast0.wrap(Ast0.OTHER(Ast0.wrap(Ast0.Ty($1))))] }
 | top_init          { [Ast0.wrap(Ast0.OTHER(Ast0.wrap(Ast0.TopInit($1))))] }
-| toplevel_seq_start(toplevel_after_dots_init)
+| toplevel_seq_startne(toplevel_after_dots_init)
     { List.map (function x -> Ast0.wrap(Ast0.OTHER(x))) $1 }
+
+toplevel_seq_startne(after_dots_init):
+  a=stm_dots_ell b=after_dots_init           { a::b }
+| a=stm_dots_nest b=after_dots_init           { a::b }
+| a=stm_dots_nest                      { [a] }
+| expr toplevel_after_exp            { (Ast0.wrap(Ast0.Exp($1)))::$2 }
+| decl_statement_expr toplevel_after_stm  { $1@$2 }
 
 toplevel_seq_start(after_dots_init):
   stm_dots after_dots_init           { $1::$2 }
