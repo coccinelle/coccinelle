@@ -265,8 +265,8 @@ and expression = (expressionbis * exp_info ref (* semantic: *)) wrap
   | CondExpr       of expression * expression option * expression
 
   (* should be considered as statements, bad C langage *)
-  | Sequence       of expression * expression                   
-  | Assignment     of expression * assignOp * expression        
+  | Sequence       of expression * expression
+  | Assignment     of expression * assignOp * expression
 
 
   | Postfix        of expression * fixOp
