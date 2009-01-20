@@ -248,6 +248,8 @@ OCAMLVERSION=$(shell ocaml -version |perl -p -e 's/.*version (.*)/$$1/;')
 
 # Procedure to do each time:
 #  cvs update
+#  modify globals/config.ml
+#  cd globals/; cvs commit -m"new version"  (do not commit from the root!)
 #  ./configure --without-python
 #  make package
 #  make website
