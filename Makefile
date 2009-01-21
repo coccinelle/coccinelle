@@ -87,12 +87,22 @@ BYTECODE_STATIC=-custom
 ##############################################################################
 # Top rules
 ##############################################################################
-all: subdirs
-opt: subdirs.opt
+.PHONY: all all.opt opt top clean configure
+.PHONY: $(MAKESUBDIRS) $(MAKESUBDIRS:%=%.opt)
+
+all:
+	$(MAKE) subdirs
+	$(MAKE) $(EXEC)
+
+opt:
+	$(MAKE) subdirs.opt
+	$(MAKE) $(EXEC).opt
+
 all.opt: opt
 top: $(EXEC).top
 
-.PHONY: $(MAKESUBDIRS) $(MAKESUBDIRS:%=%.opt)
+subdirs: $(MAKESUBDIRS)
+subdirs.opt: $(MAKESUBDIRS:%=%.opt)
 
 $(MAKESUBDIRS):
 	$(MAKE) -C $@ OCAMLCFLAGS="$(OCAMLCFLAGS)" all
@@ -124,12 +134,6 @@ extra.opt: parsing_cocci.opt parsing_c.opt ctl.opt
 pycaml.opt:
 python.opt:pycaml.opt parsing_cocci.opt parsing_c.opt
 
-#	set -e; for i in $(MAKESUBDIRS); \
-#	do $(MAKE) -C $$i OCAMLCFLAGS="$(OCAMLCFLAGS)" all; done
-#
-#rec.opt:
-#	set -e; for i in $(MAKESUBDIRS); \
-#	do $(MAKE) -C $$i OCAMLCFLAGS="$(OCAMLCFLAGS)" all.opt; done
 clean::
 	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i clean; done
 
@@ -138,16 +142,6 @@ configure:
 
 $(LIBS): $(MAKESUBDIRS)
 $(LIBS:.cma=.cmxa): $(MAKESUBDIRS:%=%.opt)
-
-subdirs:
-	echo "$(SRC:.ml=.cmi): $(MAKESUBDIRS)" > .subdirs
-	$(MAKE) $(EXEC)
-
-subdirs.opt:
-	echo "$(SRC:.ml=.cmi): $(MAKESUBDIRS:%=%.opt)" > .subdirs
-	$(MAKE) $(EXEC).opt
-
--include .subdirs
 
 $(OBJS):$(LIBS)
 $(OPTOBJS):$(LIBS:.cma=.cmxa)
