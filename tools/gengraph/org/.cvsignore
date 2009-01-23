@@ -1,5 +1,5 @@
 .depend
 *.cma
-bugs_lexer.ml
-bugs_parser.ml
-bugs_parser.mli
+org_lexer.ml
+org_parser.ml
+org_parser.mli

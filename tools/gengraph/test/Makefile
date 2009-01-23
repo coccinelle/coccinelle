@@ -26,7 +26,7 @@ all: test-pdf test-org
 test-pdf: clean $(PDF)
 
 test-org: $(ORIG)
-	../gengraph -p /var/linuxes/linux-2.6. -o $<
+	../gengraph -p /var/linuxes/linux-2.6. -d patchset.not.orig -o $<
 
 view:
 	 $(PDFVIEWER) $(PDF)

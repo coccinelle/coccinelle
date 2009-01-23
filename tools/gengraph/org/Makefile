@@ -4,7 +4,7 @@ LEXER_SOURCES = org_lexer.mll
 PARSER_SOURCES = org_parser.mly
 SOURCES = data.ml $(PARSER_SOURCES:.mly=.ml) $(LEXER_SOURCES:.mll=.ml) org.ml
 MENHIR_PATH=../../../menhirlib
-INCLUDES = -I $(MENHIR_PATH) -I ../commons
+INCLUDES = -I $(MENHIR_PATH) -I ../commons -I ../diff
 
 # Automatic computation
 OBJS = $(SOURCES:.ml=.cmo)
@@ -23,7 +23,7 @@ OCAMLC =ocamlc$(OPTBIN) $(OCAMLCFLAGS) $(INCLUDES)
 OCAMLOPT = ocamlopt$(OPTBIN) $(OPTFLAGS) $(INCLUDES)
 OCAMLLEX = ocamllex$(OPTBIN)
 OCAMLYACC= menhir --table
-OCAMLDEP = ocamldep$(OPTBIN) #$(INCLUDES)
+OCAMLDEP = ocamldep$(OPTBIN) $(INCLUDES)
 
 all: $(LIB)
 all.opt: $(OPTLIB)
@@ -48,7 +48,7 @@ $(PARSER_SOURCES:.mly=.ml) $(PARSER_SOURCES:.mly=.mli) : $(PARSER_SOURCES)
 	$(OCAMLYACC) $(PARSER_SOURCES)
 
 $(LIB): $(GENERATED) $(OBJS)
-	$(OCAMLC) -a -o $(LIB) $(MENHIR) $(OBJS)
+	$(OCAMLC) -a -o $(LIB) $(OBJS)
 
 clean::
 	rm -f $(TARGET)

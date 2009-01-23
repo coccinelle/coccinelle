@@ -47,7 +47,7 @@ $(PARSER_SOURCES:.mly=.ml) $(PARSER_SOURCES:.mly=.mli) : $(PARSER_SOURCES)
 	$(OCAMLYACC) $(PARSER_SOURCES)
 
 $(LIB): $(GENERATED) $(OBJS)
-	$(OCAMLC) -a -o $(LIB) $(MENHIR) $(OBJS)
+	$(OCAMLC) -a -o $(LIB) $(OBJS)
 
 clean::
 	rm -f $(TARGET)

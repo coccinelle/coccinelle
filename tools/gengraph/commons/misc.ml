@@ -31,3 +31,10 @@ let init filename lexbuf =
    			 pos_bol   = curp.pos_bol;
    			 pos_cnum  = curp.pos_cnum}
 
+let strip_prefix prefix path =
+  let p2 = Str.replace_first (Str.regexp_string prefix) "" path in
+  let re = Str.regexp "^\\([0-9]+\\)/\\(.*\\)$" in
+    ignore(Str.string_match re p2 0);
+    let ver = int_of_string (Str.matched_group 1 p2) in
+    let file = Str.matched_group 2 p2 in
+      (ver, file)
