@@ -1,4 +1,3 @@
-SUBDIRS=gengraph
 PROGS=gitgrep split_patch extract_c_and_res #generate_dependencies
 
 all: $(SUBDIRS) $(PROGS)
@@ -27,8 +26,6 @@ install_bridge: bridge
 
 .PHONY: $(SUBDIRS)
 
-gengraph:
-	make -C $@
 
 SYSLIBS = str.cma unix.cma 
 
@@ -63,7 +60,6 @@ generate_dependencies: generate_dependencies.cmo
 	$(OCAMLOPT) -c $<
 
 clean:
-	make -C gengraph $@
 	rm -f $(PROGS)
 	rm -f *.cm[ioxa] *.o *.a *.cmxa *.annot
 
