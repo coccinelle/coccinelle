@@ -1,5 +1,0 @@
-.depend
-*.cma
-bugs_lexer.ml
-bugs_parser.ml
-bugs_parser.mli
