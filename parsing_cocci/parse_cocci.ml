@@ -1004,6 +1004,30 @@ these vanish after the parser, but keeping all the ...s in the + code makes
 it easier to align the + and - code in context_neg and in preparation for the
 isomorphisms.  This shouldn't matter because the context code of the +
 slice is mostly ignored anyway *)
+let minus_to_nothing l =
+  (* for cases like | <..., which may or may not arise from removing minus
+     code, depending on whether <... is a statement or expression *)
+  let is_minus tok =
+    try
+      let (d,_,_,_,_,_,_,_) = get_clt tok in
+      (match d with
+	D.MINUS | D.OPTMINUS | D.UNIQUEMINUS -> true
+      | D.PLUS -> false
+      | D.CONTEXT | D.UNIQUE | D.OPT -> false)
+    with _ -> false in
+  let rec minus_loop = function
+      [] -> []
+    | (d::ds) as l -> if is_minus d then minus_loop ds else l in
+  let rec loop = function
+      [] -> []
+    | ((PC.TMid0(clt),i) as x)::t1::ts when is_minus t1 ->
+	(match minus_loop ts with
+	  ((PC.TOEllipsis(_),_)::_) | ((PC.TPOEllipsis(_),_)::_)
+	| ((PC.TEllipsis(_),_)::_) as l -> x::(PC.TNothing,i)::(loop l)
+	| l -> x::(loop l))
+    | t::ts -> t::(loop ts) in
+  loop l
+
 let rec drop_double_dots l =
   let start = function
       (PC.TOEllipsis(_),_) | (PC.TPOEllipsis(_),_)
@@ -1015,7 +1039,7 @@ let rec drop_double_dots l =
     | _ -> false in
   let whenline = function
       (PC.TLineEnd(_),_) -> true
-    | (PC.TMid0(_),_) -> true
+    (*| (PC.TMid0(_),_) -> true*)
     | _ -> false in
   let final = function
       (PC.TCEllipsis(_),_) | (PC.TPCEllipsis(_),_)
@@ -1327,7 +1351,9 @@ let parse file =
 
             (* get transformation rules *)
             let (more, tokens) = get_tokens [PC.TArobArob; PC.TArob] in
-            let (minus_tokens, plus_tokens) = split_token_stream tokens in
+            let (minus_tokens, _) = split_token_stream tokens in
+            let (_, plus_tokens) =
+	      split_token_stream (minus_to_nothing tokens) in
 
 	    let minus_tokens = consume_minus_positions minus_tokens in
 	    let minus_tokens = prepare_tokens minus_tokens in
