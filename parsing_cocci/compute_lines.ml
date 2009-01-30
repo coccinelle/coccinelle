@@ -427,7 +427,9 @@ and is_init_dots i =
 
 and initialiser i =
   match Ast0.unwrap i with
-    Ast0.InitExpr(exp) ->
+    Ast0.MetaInit(name,_) as ut ->
+      let ln = promote_mcode name in mkres t ut ln ln
+  | Ast0.InitExpr(exp) ->
       let exp = expression exp in
       mkres i (Ast0.InitExpr(exp)) exp exp
   | Ast0.InitList(lb,initlist,rb) ->

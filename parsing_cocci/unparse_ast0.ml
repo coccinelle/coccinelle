@@ -334,7 +334,8 @@ and initialiser i =
   print_context i
     (function _ ->
       match Ast0.unwrap i with
-	Ast0.InitExpr(exp) -> expression exp
+	Ast0.MetaInit(name,_)-> mcode print_meta name; print_string " "
+      |	Ast0.InitExpr(exp) -> expression exp
       | Ast0.InitList(lb,initlist,rb) ->
 	  mcode print_string lb; open_box 0;
 	  let _ = dots (function _ -> ()) initialiser initlist in

@@ -1869,6 +1869,8 @@ let get_name = function
       (nm,function nm -> Ast.MetaFreshIdDecl(ar,nm))
   | Ast.MetaTypeDecl(ar,nm) ->
       (nm,function nm -> Ast.MetaTypeDecl(ar,nm))
+  | Ast.MetaInitDecl(ar,nm) ->
+      (nm,function nm -> Ast.MetaInitDecl(ar,nm))
   | Ast.MetaListlenDecl(nm) ->
       failwith "should not be rebuilt"
   | Ast.MetaParamDecl(ar,nm) ->

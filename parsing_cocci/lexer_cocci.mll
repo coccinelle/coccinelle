@@ -169,6 +169,10 @@ let id_tokens lexbuf =
       check_arity_context_linetype s; TGenerated
   | "expression" when in_meta || in_rule_name ->
       check_arity_context_linetype s; TExpression
+  | "initialiser" when in_meta || in_rule_name ->
+      check_arity_context_linetype s; TInitialiser
+  | "initializer" when in_meta || in_rule_name ->
+      check_arity_context_linetype s; TInitialiser
   | "idexpression" when in_meta ->
       check_arity_context_linetype s; TIdExpression
   | "statement" when in_meta ->  check_arity_context_linetype s; TStatement

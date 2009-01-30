@@ -246,7 +246,8 @@ let combiner bind option_default
   and initialiser i =
     let k i =
       match Ast.unwrap i with
-	Ast.InitExpr(exp) -> expression exp
+	Ast.MetaInit(name,_,_) -> meta_mcode name
+      |	Ast.InitExpr(exp) -> expression exp
       | Ast.InitList(lb,initlist,rb,whencode) ->
 	  multibind
 	    [string_mcode lb;
@@ -736,7 +737,9 @@ let rebuilder
     let k i =
       Ast.rewrap i
 	(match Ast.unwrap i with
-	  Ast.InitExpr(exp) -> Ast.InitExpr(expression exp)
+	  Ast.MetaInit(name,keep,inherited) ->
+	    Ast.MetaInit(meta_mcode name,keep,inherited)
+	| Ast.InitExpr(exp) -> Ast.InitExpr(expression exp)
 	| Ast.InitList(lb,initlist,rb,whencode) ->
 	    Ast.InitList(string_mcode lb, List.map initialiser initlist,
 			 string_mcode rb, List.map initialiser whencode)

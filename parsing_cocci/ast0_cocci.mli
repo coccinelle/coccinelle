@@ -175,7 +175,8 @@ and declaration = base_declaration wrap
 (* Initializers *)
 
 and base_initialiser =
-    InitExpr of expression
+    MetaInit of Ast.meta_name mcode * pure
+  | InitExpr of expression
   | InitList of string mcode (*{*) * initialiser_list * string mcode (*}*)
   | InitGccDotName of
       string mcode (*.*) * ident (* name *) * string mcode (*=*) *

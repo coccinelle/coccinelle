@@ -58,6 +58,7 @@ and metavar =
     MetaIdDecl of arity * meta_name (* name *)
   | MetaFreshIdDecl of arity * meta_name (* name *)
   | MetaTypeDecl of arity * meta_name (* name *)
+  | MetaInitDecl of arity * meta_name (* name *)
   | MetaListlenDecl of meta_name (* name *)
   | MetaParamDecl of arity * meta_name (* name *)
   | MetaParamListDecl of arity * meta_name (*name*) * meta_name option (*len*)
@@ -248,7 +249,8 @@ and declaration = base_declaration wrap
 (* Initializers *)
 
 and base_initialiser =
-    InitExpr of expression
+    MetaInit of meta_name mcode * keep_binding * inherited
+  | InitExpr of expression
   | InitList of string mcode (*{*) * initialiser list * string mcode (*}*) *
 	initialiser list (* whencode: elements that shouldn't appear in init *)
   | InitGccDotName of

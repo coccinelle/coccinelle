@@ -268,7 +268,8 @@ let combiner bind option_default
   and initialiser i =
     let k i =
       match Ast0.unwrap i with
-	Ast0.InitExpr(exp) -> expression exp
+	Ast0.MetaInit(name,_) -> meta_mcode name
+      |	Ast0.InitExpr(exp) -> expression exp
       | Ast0.InitList(lb,initlist,rb) ->
 	  multibind
 	    [string_mcode lb; initialiser_dots initlist; string_mcode rb]
@@ -756,7 +757,9 @@ let rebuilder = fun
     let k i =
       Ast0.rewrap i
 	(match Ast0.unwrap i with
-	  Ast0.InitExpr(exp) -> Ast0.InitExpr(expression exp)
+	  Ast0.MetaInit(name,pure) ->
+	    Ast0.MetaInit(meta_mcode name,pure)
+	| Ast0.InitExpr(exp) -> Ast0.InitExpr(expression exp)
 	| Ast0.InitList(lb,initlist,rb) ->
 	    Ast0.InitList(string_mcode lb, initialiser_list initlist,
 			  string_mcode rb)

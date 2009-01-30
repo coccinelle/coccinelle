@@ -16,7 +16,7 @@ module P = Parse_aux
 %token EOF
 
 %token TIdentifier TExpression TStatement TFunction TLocal TType TParameter
-%token TIdExpression
+%token TIdExpression TInitializer TInitialiser
 %token Tlist TFresh TConstant TError TWords TWhy0 TPlus0 TBang0
 %token TPure TContext TGenerated
 %token TTypedef TDeclarer TIterator TName TPosition TPosAny
@@ -36,7 +36,7 @@ module P = Parse_aux
 %token <Data.clt> TBreak TContinue TGoto TSizeof TFunDecl
 %token <string * Data.clt> TIdent TTypeId TDeclarerId TIteratorId
 
-%token <Parse_aux.idinfo>     TMetaId TMetaFunc TMetaLocalFunc
+%token <Parse_aux.idinfo>     TMetaId TMetaFunc TMetaLocalFunc TMetaInit
 %token <Parse_aux.idinfo>     TMetaIterator TMetaDeclarer
 %token <Parse_aux.expinfo>    TMetaErr
 %token <Parse_aux.info>       TMetaParam TMetaStm TMetaStmList TMetaType
@@ -297,6 +297,10 @@ metadec:
 | TType
     { (fun arity name pure check_meta ->
       let tok = check_meta(Ast.MetaTypeDecl(arity,name)) in
+      !Data.add_type_meta name pure; tok) }
+| TInitialiser
+    { (fun arity name pure check_meta ->
+      let tok = check_meta(Ast.MetaInitDecl(arity,name)) in
       !Data.add_type_meta name pure; tok) }
 | TStatement
     { (fun arity name pure check_meta ->
@@ -1041,6 +1045,9 @@ initialize:
       { Ast0.wrap
 	  (Ast0.InitList(P.clt2mcode "{" $1,Ast0.wrap(Ast0.DOTS []),
 			 P.clt2mcode "}" $2)) }
+  | TMetaInit
+      {let (nm,pure,clt) = $1 in
+      Ast0.wrap(P.clt2mcode nm clt,pure) }
 
 initialize2:
   /*arithexpr and not eexpr because can have ambiguity with comma*/
