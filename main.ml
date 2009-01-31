@@ -645,6 +645,11 @@ let main () =
     (* This is the main entry *)
     (* --------------------------------------------------------- *)
     | x::xs -> 
+        
+        (* bugfix: better to put it here than at the top of main, so
+         * it does not influcence -parse_c, -compare_c, etc *)
+        run_profile quiet_profile;
+
 	adjust_stdin x (fun () ->
           if !cocci_file = ""
           then failwith "I need a cocci file,  use -sp_file <file>";
@@ -811,7 +816,6 @@ let main () =
 (*****************************************************************************)
 let _ =
   Common.main_boilerplate (fun () -> 
-    run_profile quiet_profile;
     main ();
     Ctlcocci_integration.print_bench();
   )
