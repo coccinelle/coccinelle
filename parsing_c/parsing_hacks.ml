@@ -2511,6 +2511,15 @@ let lookahead2 ~pass next before =
         end
         else x
 
+  | (TCppDirectiveOther (ii) as x)::_, _ 
+      -> 
+        if (pass = 2)
+        then begin
+          pr2_once ("CPP-OTHER: I treat it as comment");
+          TCommentCpp (Ast_c.CppDirective, ii)
+        end
+        else x
+
    (* If ident contain a for_each, then certainly a macro. But to be
     * sure should look if there is a '{' after the ')', but it requires
     * to count the '('. Because this can be expensive, we do that only

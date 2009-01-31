@@ -844,9 +844,13 @@ let rec lexer_function ~pass tr = fun lexbuf ->
       assert (x = v);
       
       (match v with
-      (* fix_define1. Why not in parsing_hacks lookahead and do passing like
+
+      (* fix_define1. 
+       *
+       * Why not in parsing_hacks lookahead and do passing like
        * I do for some ifdef directives ? Because here I also need to 
-       * generate some tokens sometimes. 
+       * generate some tokens sometimes and so I need access to the 
+       * tr.passed, tr.rest, etc.
        *)
       | Parser_c.TDefine (tok) -> 
           if not (LP.current_context () = LP.InTopLevel) && 
