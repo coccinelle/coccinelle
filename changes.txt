@@ -6,6 +6,8 @@
 - added initialiser metavariable
 - added sequences of designators in structures
 - improved printing of the C code corresponding to metavariables
+- improved printing when code (eg declarations) is removed at the beginning
+  of a block, and then is followed by a blank line
 
 ** Bugfix:
 

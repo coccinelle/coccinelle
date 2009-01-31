@@ -1,4 +1,4 @@
-(* Copyright (C) 2006, 2007, 2008 Ecole des Mines de Nantes
+(* Copyright (C) 2006, 2007, 2008, 2009 Ecole des Mines de Nantes and DIKU
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License (GPL)
@@ -416,14 +416,15 @@ let remove_minus_and_between_and_expanded_and_fake xs =
   in
 
   (*This drops the space before each completely minused block (no plus code).*)
+  let minus_or_comment = function
+      T2(_,true,_) -> true
+    | T2(Parser_c.TCommentNewline _,_b,_i) -> false
+    | x -> is_minusable_comment x in
+
   let rec adjust_before_minus = function
       [] -> []
 (* patch: coccinelle  *)
     | (T2(Parser_c.TCommentNewline c,_b,_i) as x)::((T2(_,true,_)::_) as xs) ->
-	let minus_or_comment = function
-	    T2(_,true,_) -> true
-	  | T2(Parser_c.TCommentNewline _,_b,_i) -> false
-	  | x -> is_minusable_comment x in
 	let (between_minus,rest) = Common.span minus_or_comment xs in
 	(match rest with
 	  [] -> (set_minus_comment x) :: between_minus
@@ -434,6 +435,34 @@ let remove_minus_and_between_and_expanded_and_fake xs =
     | x::xs -> x::adjust_before_minus xs in
 
   let xs = adjust_before_minus xs in
+
+  (* this drops blank lines after a brace introduced by removing code *)
+  let rec adjust_after_brace = function
+      [] -> []
+    | ((T2(_,false,_)) as x)::((T2(_,true,_)::_) as xs)
+       when str_of_token2 x = "{" ->
+	 let (between_minus,rest) = Common.span minus_or_comment xs in
+	 let is_whitespace = function
+	     T2(Parser_c.TCommentSpace _,_b,_i)
+	     (* patch: cocci    *)
+	   | T2(Parser_c.TCommentNewline _,_b,_i) -> true
+	   | _ -> false in
+	 let (newlines,rest) = Common.span is_whitespace rest in
+	 let (drop_newlines,last_newline) =
+	   let rec loop = function
+	       [] -> ([],[])
+	     | ((T2(Parser_c.TCommentNewline _,_b,_i)) as x) :: rest ->
+		 (List.rev rest,[x])
+	     | x::xs ->
+		 let (drop_newlines,last_newline) = loop xs in
+		 (drop_newlines,x::last_newline) in
+	   loop (List.rev newlines) in
+	 x::between_minus@(List.map set_minus_comment drop_newlines)@
+	 last_newline@
+	 adjust_after_brace rest
+    | x::xs -> x::adjust_after_brace xs in
+
+  let xs = adjust_after_brace xs in
 
   (* this deals with any stuff that is between the minused code, eg
      spaces, comments, attributes, etc. *)
