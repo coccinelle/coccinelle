@@ -502,25 +502,29 @@ and strip_idots initlist =
 and initialiser i =
   rewrap i no_isos
     (match Ast0.unwrap i with
-      Ast0.InitExpr(exp) -> Ast.InitExpr(expression exp)
+      Ast0.MetaInit(name,_) -> Ast.MetaInit(mcode name,unitary,false)
+    | Ast0.InitExpr(exp) -> Ast.InitExpr(expression exp)
     | Ast0.InitList(lb,initlist,rb) ->
 	let (whencode,initlist) =  strip_idots initlist in
 	Ast.InitList(mcode lb,List.map initialiser initlist,mcode rb,
 		     List.map initialiser whencode)
-    | Ast0.InitGccDotName(dot,name,eq,ini) ->
-	Ast.InitGccDotName(mcode dot,ident name,mcode eq,initialiser ini)
+    | Ast0.InitGccExt(designators,eq,ini) ->
+	Ast.InitGccExt(List.map designator designators,mcode eq,
+		       initialiser ini)
     | Ast0.InitGccName(name,eq,ini) ->
 	Ast.InitGccName(ident name,mcode eq,initialiser ini)
-    | Ast0.InitGccIndex(lb,exp,rb,eq,ini) ->
-	Ast.InitGccIndex(mcode lb,expression exp,mcode rb,mcode eq,
-			  initialiser ini)
-    | Ast0.InitGccRange(lb,exp1,dots,exp2,rb,eq,ini) ->
-	Ast.InitGccRange(mcode lb,expression exp1,mcode dots,
-			  expression exp2,mcode rb,mcode eq,initialiser ini)
     | Ast0.IComma(comma) -> Ast.IComma(mcode comma)
     | Ast0.Idots(_,_) -> failwith "Idots should have been removed"
     | Ast0.OptIni(ini) -> Ast.OptIni(initialiser ini)
     | Ast0.UniqueIni(ini) -> Ast.UniqueIni(initialiser ini))
+
+and designator = function
+    Ast0.DesignatorField(dot,id) -> Ast.DesignatorField(mcode dot,ident id)
+  | Ast0.DesignatorIndex(lb,exp,rb) ->
+      Ast.DesignatorIndex(mcode lb, expression exp, mcode rb)
+  | Ast0.DesignatorRange(lb,min,dots,max,rb) ->
+      Ast.DesignatorRange(mcode lb,expression min,mcode dots,expression max,
+			  mcode rb)
 
 (* --------------------------------------------------------------------- *)
 (* Parameter *)

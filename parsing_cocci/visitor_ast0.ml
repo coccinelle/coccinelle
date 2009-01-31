@@ -273,26 +273,28 @@ let combiner bind option_default
       | Ast0.InitList(lb,initlist,rb) ->
 	  multibind
 	    [string_mcode lb; initialiser_dots initlist; string_mcode rb]
-      | Ast0.InitGccDotName(dot,name,eq,ini) ->
+      | Ast0.InitGccExt(designators,eq,ini) ->
 	  multibind
-	    [string_mcode dot; ident name; string_mcode eq; initialiser ini]
+	    ((List.map designator designators) @
+	     [string_mcode eq; initialiser ini])
       | Ast0.InitGccName(name,eq,ini) ->
 	  multibind [ident name; string_mcode eq; initialiser ini]
-      | Ast0.InitGccIndex(lb,exp,rb,eq,ini) ->
-	  multibind
-	    [string_mcode lb; expression exp; string_mcode rb;
-	      string_mcode eq; initialiser ini]
-      | Ast0.InitGccRange(lb,exp1,dots,exp2,rb,eq,ini) ->
-	  multibind
-	    [string_mcode lb; expression exp1; string_mcode dots;
-	      expression exp2; string_mcode rb; string_mcode eq;
-	      initialiser ini]
       | Ast0.IComma(cm) -> string_mcode cm
       | Ast0.Idots(dots,whencode) ->
 	  bind (string_mcode dots) (get_option initialiser whencode)
       | Ast0.OptIni(i) -> initialiser i
       | Ast0.UniqueIni(i) -> initialiser i in
     initfn all_functions k i
+
+  and designator = function
+      Ast0.DesignatorField(dot,id) -> bind (string_mcode dot) (ident id)
+    | Ast0.DesignatorIndex(lb,exp,rb) ->
+	bind (string_mcode lb) (bind (expression exp) (string_mcode rb))
+    | Ast0.DesignatorRange(lb,min,dots,max,rb) ->
+	multibind
+	  [string_mcode lb; expression min; string_mcode dots;
+	    expression max; string_mcode rb]
+
   and parameterTypeDef p =
     let k p =
       match Ast0.unwrap p with
@@ -763,26 +765,28 @@ let rebuilder = fun
 	| Ast0.InitList(lb,initlist,rb) ->
 	    Ast0.InitList(string_mcode lb, initialiser_list initlist,
 			  string_mcode rb)
-	| Ast0.InitGccDotName(dot,name,eq,ini) ->
-	    Ast0.InitGccDotName
-	      (string_mcode dot, ident name, string_mcode eq, initialiser ini)
+	| Ast0.InitGccExt(designators,eq,ini) ->
+	    Ast0.InitGccExt
+	      (List.map designator designators, string_mcode eq,
+	       initialiser ini)
 	| Ast0.InitGccName(name,eq,ini) ->
 	    Ast0.InitGccName(ident name, string_mcode eq, initialiser ini)
-	| Ast0.InitGccIndex(lb,exp,rb,eq,ini) ->
-	    Ast0.InitGccIndex
-	      (string_mcode lb, expression exp, string_mcode rb,
-	       string_mcode eq, initialiser ini)
-	| Ast0.InitGccRange(lb,exp1,dots,exp2,rb,eq,ini) ->
-	    Ast0.InitGccRange
-	      (string_mcode lb, expression exp1, string_mcode dots,
-	       expression exp2, string_mcode rb, string_mcode eq,
-	       initialiser ini)
 	| Ast0.IComma(cm) -> Ast0.IComma(string_mcode cm)
 	| Ast0.Idots(d,whencode) ->
 	    Ast0.Idots(string_mcode d, get_option initialiser whencode)
 	| Ast0.OptIni(i) -> Ast0.OptIni(initialiser i)
 	| Ast0.UniqueIni(i) -> Ast0.UniqueIni(initialiser i)) in
     initfn all_functions k i
+
+  and designator = function
+      Ast0.DesignatorField(dot,id) ->
+	Ast0.DesignatorField(string_mcode dot,ident id)
+    | Ast0.DesignatorIndex(lb,exp,rb) ->
+	Ast0.DesignatorIndex(string_mcode lb,expression exp,string_mcode rb)
+    | Ast0.DesignatorRange(lb,min,dots,max,rb) ->
+	Ast0.DesignatorRange(string_mcode lb,expression min,string_mcode dots,
+			     expression max,string_mcode rb)
+
   and parameterTypeDef p =
     let k p =
       Ast0.rewrap p

@@ -342,6 +342,12 @@ module XMATCH = struct
 		  then Lib_parsing_c.al_type a
 		  else Lib_parsing_c.semi_al_type a)
 		  
+            | Ast_c.MetaInitVal a -> 
+		Ast_c.MetaInitVal
+		  (if strip
+		  then Lib_parsing_c.al_init a
+		  else Lib_parsing_c.semi_al_init a)
+		  
             | Ast_c.MetaListlenVal a -> Ast_c.MetaListlenVal a
 		  
             | Ast_c.MetaParamVal a -> failwith "not handling MetaParamVal"

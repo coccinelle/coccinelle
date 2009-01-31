@@ -16,7 +16,7 @@ module P = Parse_aux
 %token EOF
 
 %token TIdentifier TExpression TStatement TFunction TLocal TType TParameter
-%token TIdExpression TInitializer TInitialiser
+%token TIdExpression TInitialiser
 %token Tlist TFresh TConstant TError TWords TWhy0 TPlus0 TBang0
 %token TPure TContext TGenerated
 %token TTypedef TDeclarer TIterator TName TPosition TPosAny
@@ -36,10 +36,11 @@ module P = Parse_aux
 %token <Data.clt> TBreak TContinue TGoto TSizeof TFunDecl
 %token <string * Data.clt> TIdent TTypeId TDeclarerId TIteratorId
 
-%token <Parse_aux.idinfo>     TMetaId TMetaFunc TMetaLocalFunc TMetaInit
+%token <Parse_aux.idinfo>     TMetaId TMetaFunc TMetaLocalFunc
 %token <Parse_aux.idinfo>     TMetaIterator TMetaDeclarer
 %token <Parse_aux.expinfo>    TMetaErr
 %token <Parse_aux.info>       TMetaParam TMetaStm TMetaStmList TMetaType
+%token <Parse_aux.info>       TMetaInit
 %token <Parse_aux.list_info>  TMetaParamList TMetaExpList
 %token <Parse_aux.typed_info> TMetaExp TMetaIdExp TMetaLocalIdExp TMetaConst
 %token <Parse_aux.pos_info>   TMetaPos
@@ -301,7 +302,7 @@ metadec:
 | TInitialiser
     { (fun arity name pure check_meta ->
       let tok = check_meta(Ast.MetaInitDecl(arity,name)) in
-      !Data.add_type_meta name pure; tok) }
+      !Data.add_init_meta name pure; tok) }
 | TStatement
     { (fun arity name pure check_meta ->
       let tok = check_meta(Ast.MetaStmDecl(arity,name)) in
@@ -1047,7 +1048,7 @@ initialize:
 			 P.clt2mcode "}" $2)) }
   | TMetaInit
       {let (nm,pure,clt) = $1 in
-      Ast0.wrap(P.clt2mcode nm clt,pure) }
+      Ast0.wrap(Ast0.MetaInit(P.clt2mcode nm clt,pure)) }
 
 initialize2:
   /*arithexpr and not eexpr because can have ambiguity with comma*/
@@ -1060,16 +1061,19 @@ initialize2:
 	(Ast0.InitList(P.clt2mcode "{" $1,Ast0.wrap(Ast0.DOTS []),
 		       P.clt2mcode "}" $2)) }
            /* gccext:, labeled elements */
-| TDot ident TEq initialize2
-    { Ast0.wrap(Ast0.InitGccDotName(P.clt2mcode "." $1,$2,P.clt2mcode "=" $3,$4)) }
+| list(designator) TEq initialize2
+    { Ast0.wrap(Ast0.InitGccExt($1,P.clt2mcode "=" $2,$3)) }
 | ident TDotDot initialize2
     { Ast0.wrap(Ast0.InitGccName($1,P.clt2mcode ":" $2,$3)) } /* in old kernel */
-| TOCro eexpr TCCro TEq initialize2
-    { Ast0.wrap(Ast0.InitGccIndex(P.clt2mcode "[" $1,$2,P.clt2mcode "]" $3,
-				  P.clt2mcode "=" $4,$5)) }
-| TOCro eexpr TEllipsis eexpr TCCro TEq initialize2
-    { Ast0.wrap(Ast0.InitGccRange(P.clt2mcode "[" $1,$2,P.clt2mcode "..." $3,
-				  $4,P.clt2mcode "]" $5,P.clt2mcode "=" $6,$7)) }
+
+designator: 
+ | TDot ident 
+     { Ast0.DesignatorField (P.clt2mcode "." $1,$2) } 
+ | TOCro eexpr TCCro 
+     { Ast0.DesignatorIndex (P.clt2mcode "[" $1,$2,P.clt2mcode "]" $3) }
+ | TOCro eexpr TEllipsis eexpr TCCro 
+     { Ast0.DesignatorRange (P.clt2mcode "[" $1,$2,P.clt2mcode "..." $3,
+			     $4,P.clt2mcode "]" $5) }
 
 initialize_list:
    initialize_list_start { Ast0.wrap(Ast0.DOTS($1)) }
@@ -1495,7 +1499,8 @@ typedef_ident:
 /*****************************************************************************/
 
 decl_list(decl):
-   decl_list_start(decl)
+  /* empty */ { Ast0.wrap(Ast0.DOTS([])) }
+| decl_list_start(decl)
      {let circle x =
        match Ast0.unwrap x with Ast0.Pcircles(_) -> true | _ -> false in
      if List.exists circle $1

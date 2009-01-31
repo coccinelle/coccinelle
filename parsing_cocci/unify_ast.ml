@@ -290,32 +290,38 @@ and unify_declaration d1 d2 =
 
 and unify_initialiser i1 i2 =
   match (Ast.unwrap i1,Ast.unwrap i2) with
-    (Ast.InitExpr(expa),Ast.InitExpr(expb)) ->
+    (Ast.MetaInit(_,_,_),_) | (_,Ast.MetaInit(_,_,_)) -> return true
+  | (Ast.InitExpr(expa),Ast.InitExpr(expb)) ->
       unify_expression expa expb
   | (Ast.InitList(_,initlista,_,whena),
      Ast.InitList(_,initlistb,_,whenb)) ->
       (* ignore whencode - returns true safely *)
       unify_lists unify_initialiser (function _ -> false) initlista initlistb
-  | (Ast.InitGccDotName(_,namea,_,inia),
-     Ast.InitGccDotName(_,nameb,_,inib)) ->
+  | (Ast.InitGccExt(designatorsa,_,inia),
+     Ast.InitGccExt(designatorsb,_,inib)) ->
        conjunct_bindings
-	 (unify_ident namea nameb) (unify_initialiser inia inib)
+	 (unify_lists unify_designator (function _ -> false)
+	    designatorsa designatorsb)
+	 (unify_initialiser inia inib)
   | (Ast.InitGccName(namea,_,inia),Ast.InitGccName(nameb,_,inib)) ->
       conjunct_bindings (unify_ident namea nameb) (unify_initialiser inia inib)
-  | (Ast.InitGccIndex(_,expa,_,_,inia),
-     Ast.InitGccIndex(_,expb,_,_,inib)) ->
-       conjunct_bindings
-	 (unify_expression expa expb) (unify_initialiser inia inib)
-  | (Ast.InitGccRange(_,exp1a,_,exp2a,_,_,inia),
-     Ast.InitGccRange(_,exp1b,_,exp2b,_,_,inib)) ->
-       conjunct_bindings (unify_expression exp1a exp1b)
-	 (conjunct_bindings (unify_expression exp2a exp2b)
-	    (unify_initialiser inia inib))
 
   | (Ast.OptIni(_),_)
   | (Ast.UniqueIni(_),_)
   | (_,Ast.OptIni(_))
   | (_,Ast.UniqueIni(_)) -> failwith "unsupported decl"
+  | _ -> return false
+
+and unify_designator d1 d2 =
+  match (d1,d2) with
+    (Ast.DesignatorField(_,idb),Ast.DesignatorField(_,ida)) ->
+      unify_ident ida idb
+  | (Ast.DesignatorIndex(_,expa,_),Ast.DesignatorIndex(_,expb,_)) ->
+      unify_expression expa expb
+  | (Ast.DesignatorRange(_,mina,_,maxa,_),
+     Ast.DesignatorRange(_,minb,_,maxb,_)) ->
+       conjunct_bindings (unify_expression mina minb)
+	 (unify_expression maxa maxb)
   | _ -> return false
 
 (* --------------------------------------------------------------------- *)

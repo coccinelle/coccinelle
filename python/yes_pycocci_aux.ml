@@ -44,6 +44,7 @@ let stringrep mvb = match mvb with
 | Ast_c.MetaExprVal	 e -> "TODO: <<MetaExprVal>>"
 | Ast_c.MetaExprListVal  expr_list -> "TODO: <<exprlist>>"
 | Ast_c.MetaTypeVal      typ -> call_pretty Pretty_print_c.pp_type_gen typ
+| Ast_c.MetaInitVal      ini -> "TODO: <<initiliser>>"
 | Ast_c.MetaStmtVal      statement -> "TODO: stmt"
 | Ast_c.MetaParamVal     params -> "TODO: <<param>>"
 | Ast_c.MetaParamListVal params -> "TODO: <<paramlist>>"

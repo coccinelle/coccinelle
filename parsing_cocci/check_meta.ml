@@ -238,23 +238,25 @@ and initialiser old_metas table minus ini =
   | Ast0.InitExpr(exp) -> expression ID old_metas table minus exp
   | Ast0.InitList(lb,initlist,rb) ->
       dots (initialiser old_metas table minus) initlist
-  | Ast0.InitGccDotName(dot,name,eq,ini) ->
-      ident FIELD old_metas table minus name;
+  | Ast0.InitGccExt(designators,eq,ini) ->
+      List.iter (designator old_metas table minus) designators;
       initialiser old_metas table minus ini
   | Ast0.InitGccName(name,eq,ini) ->
       ident FIELD old_metas table minus name;
-      initialiser old_metas table minus ini
-  | Ast0.InitGccIndex(lb,exp,rb,eq,ini) ->
-      expression ID old_metas table minus exp;
-      initialiser old_metas table minus ini
-  | Ast0.InitGccRange(lb,exp1,dots,exp2,rb,eq,ini) ->
-      expression ID old_metas table minus exp1;
-      expression ID old_metas table minus exp2;
       initialiser old_metas table minus ini
   | Ast0.Idots(_,Some x) -> initialiser old_metas table minus x
   | Ast0.OptIni(_) | Ast0.UniqueIni(_) ->
       failwith "unexpected code"
   | _ -> () (* no metavariable subterms *)
+
+and designator old_metas table minus = function
+    Ast0.DesignatorField(dot,id) ->
+      ident FIELD old_metas table minus id
+  | Ast0.DesignatorIndex(lb,exp,rb) ->
+      expression ID old_metas table minus exp
+  | Ast0.DesignatorRange(lb,min,dots,max,rb) ->
+      expression ID old_metas table minus min;
+      expression ID old_metas table minus max
 
 and initialiser_list old_metas table minus =
   dots (initialiser old_metas table minus)

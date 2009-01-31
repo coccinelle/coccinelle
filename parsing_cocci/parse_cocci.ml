@@ -33,6 +33,7 @@ let token2c (tok,_) =
   | PC.TConstant -> "constant"
   | PC.TExpression -> "expression"
   | PC.TIdExpression -> "idexpression"
+  | PC.TInitialiser -> "initialiser"
   | PC.TStatement -> "statement"
   | PC.TPosition -> "position"
   | PC.TPosAny -> "any"
@@ -165,6 +166,7 @@ let token2c (tok,_) =
   | PC.TMetaExpList(_,_,_,clt) -> "explistmeta"^(line_type2c clt)
   | PC.TMetaId(_,_,_,clt)    -> "idmeta"^(line_type2c clt)
   | PC.TMetaType(_,_,clt)    -> "typemeta"^(line_type2c clt)
+  | PC.TMetaInit(_,_,clt)    -> "initmeta"^(line_type2c clt)
   | PC.TMetaStm(_,_,clt)   -> "stmmeta"^(line_type2c clt)
   | PC.TMetaStmList(_,_,clt)   -> "stmlistmeta"^(line_type2c clt)
   | PC.TMetaFunc(_,_,_,clt)  -> "funcmeta"^(line_type2c clt)
@@ -283,7 +285,7 @@ let plus_attachable (tok,_) =
   | PC.TMetaLocalIdExp(_,_,_,_,clt)
   | PC.TMetaExpList(_,_,_,clt)
   | PC.TMetaId(_,_,_,clt)
-  | PC.TMetaType(_,_,clt) | PC.TMetaStm(_,_,clt)
+  | PC.TMetaType(_,_,clt) | PC.TMetaInit(_,_,clt) | PC.TMetaStm(_,_,clt)
   | PC.TMetaStmList(_,_,clt)  | PC.TMetaFunc(_,_,_,clt)
   | PC.TMetaLocalFunc(_,_,_,clt)
 
@@ -345,7 +347,7 @@ let get_clt (tok,_) =
   | PC.TMetaLocalIdExp(_,_,_,_,clt)
   | PC.TMetaExpList(_,_,_,clt)
   | PC.TMetaId(_,_,_,clt)
-  | PC.TMetaType(_,_,clt) | PC.TMetaStm(_,_,clt)
+  | PC.TMetaType(_,_,clt) | PC.TMetaInit(_,_,clt) | PC.TMetaStm(_,_,clt)
   | PC.TMetaStmList(_,_,clt)  | PC.TMetaFunc(_,_,_,clt)
   | PC.TMetaLocalFunc(_,_,_,clt) | PC.TMetaPos(_,_,_,clt)
 
@@ -454,6 +456,7 @@ let update_clt (tok,x) clt =
   | PC.TMetaExpList(a,b,c,_) -> (PC.TMetaExpList(a,b,c,clt),x)
   | PC.TMetaId(a,b,c,_)    -> (PC.TMetaId(a,b,c,clt),x)
   | PC.TMetaType(a,b,_)    -> (PC.TMetaType(a,b,clt),x)
+  | PC.TMetaInit(a,b,_)    -> (PC.TMetaInit(a,b,clt),x)
   | PC.TMetaStm(a,b,_)   -> (PC.TMetaStm(a,b,clt),x)
   | PC.TMetaStmList(a,b,_)   -> (PC.TMetaStmList(a,b,clt),x)
   | PC.TMetaFunc(a,b,c,_)  -> (PC.TMetaFunc(a,b,c,clt),x)
@@ -563,7 +566,7 @@ let split t clt =
 let split_token ((tok,_) as t) =
   match tok with
     PC.TIdentifier | PC.TConstant | PC.TExpression | PC.TIdExpression
-  | PC.TStatement | PC.TPosition | PC.TPosAny
+  | PC.TStatement | PC.TPosition | PC.TPosAny | PC.TInitialiser
   | PC.TFunction | PC.TTypedef | PC.TDeclarer | PC.TIterator | PC.TName
   | PC.TType | PC.TParameter | PC.TLocal | PC.Tlist | PC.TFresh | PC.TPure
   | PC.TContext | PC.TRuleName(_) | PC.TUsing | PC.TDisable | PC.TExtends
@@ -595,7 +598,7 @@ let split_token ((tok,_) as t) =
   | PC.TMetaIdExp(_,_,_,_,clt) | PC.TMetaLocalIdExp(_,_,_,_,clt)
   | PC.TMetaExpList(_,_,_,clt)
   | PC.TMetaParam(_,_,clt) | PC.TMetaParamList(_,_,_,clt)
-  | PC.TMetaId(_,_,_,clt) | PC.TMetaType(_,_,clt)
+  | PC.TMetaId(_,_,_,clt) | PC.TMetaType(_,_,clt) | PC.TMetaInit(_,_,clt)
   | PC.TMetaStm(_,_,clt) | PC.TMetaStmList(_,_,clt) | PC.TMetaErr(_,_,_,clt)
   | PC.TMetaFunc(_,_,_,clt) | PC.TMetaLocalFunc(_,_,_,clt)
   | PC.TMetaDeclarer(_,_,_,clt) | PC.TMetaIterator(_,_,_,clt) -> split t clt
@@ -745,6 +748,7 @@ let detect_types in_meta_decls l =
     | (PC.TMetaLocalIdExp(_,_,_,_,_),_)
     | (PC.TMetaExpList(_,_,_,_),_)
     | (PC.TMetaType(_,_,_),_)
+    | (PC.TMetaInit(_,_,_),_)
     | (PC.TMetaStm(_,_,_),_)
     | (PC.TMetaStmList(_,_,_),_)
     | (PC.TMetaPos(_,_,_,_),_) -> in_meta_decls
@@ -832,7 +836,7 @@ let token2line (tok,_) =
   | PC.TMetaConst(_,_,_,_,clt) | PC.TMetaExp(_,_,_,_,clt)
   | PC.TMetaIdExp(_,_,_,_,clt) | PC.TMetaLocalIdExp(_,_,_,_,clt)
   | PC.TMetaExpList(_,_,_,clt)
-  | PC.TMetaId(_,_,_,clt) | PC.TMetaType(_,_,clt)
+  | PC.TMetaId(_,_,_,clt) | PC.TMetaType(_,_,clt) | PC.TMetaInit(_,_,clt)
   | PC.TMetaStm(_,_,clt) | PC.TMetaStmList(_,_,clt) | PC.TMetaFunc(_,_,_,clt)
   | PC.TMetaLocalFunc(_,_,_,clt) | PC.TMetaPos(_,_,_,clt)
 

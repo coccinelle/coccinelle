@@ -263,21 +263,22 @@ and base_initialiser =
   | InitExpr of expression
   | InitList of string mcode (*{*) * initialiser list * string mcode (*}*) *
 	initialiser list (* whencode: elements that shouldn't appear in init *)
-  | InitGccDotName of
-      string mcode (*.*) * ident (* name *) * string mcode (*=*) *
+  | InitGccExt of
+      designator list (* name *) * string mcode (*=*) *
 	initialiser (* gccext: *)
   | InitGccName of ident (* name *) * string mcode (*:*) *
 	initialiser
-  | InitGccIndex of
-      string mcode (*[*) * expression * string mcode (*]*) *
-	string mcode (*=*) * initialiser
-  | InitGccRange of
-      string mcode (*[*) * expression * string mcode (*...*) *
-        expression * string mcode (*]*) * string mcode (*=*) * initialiser
   | IComma of string mcode (* , *)
 
   | OptIni    of initialiser
   | UniqueIni of initialiser
+
+and designator =
+    DesignatorField of string mcode (* . *) * ident
+  | DesignatorIndex of string mcode (* [ *) * expression * string mcode (* ] *)
+  | DesignatorRange of
+      string mcode (* [ *) * expression * string mcode (* ... *) *
+      expression * string mcode (* ] *)
 
 and initialiser = base_initialiser wrap
 
@@ -599,6 +600,7 @@ let get_meta_name = function
     MetaIdDecl(ar,nm) -> nm
   | MetaFreshIdDecl(ar,nm) -> nm
   | MetaTypeDecl(ar,nm) -> nm
+  | MetaInitDecl(ar,nm) -> nm
   | MetaListlenDecl(nm) -> nm
   | MetaParamDecl(ar,nm) -> nm
   | MetaParamListDecl(ar,nm,nm1) -> nm

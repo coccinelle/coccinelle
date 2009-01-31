@@ -45,6 +45,9 @@ let add_id_meta:
 let add_type_meta: (Ast.meta_name -> Ast0.pure -> unit) ref =
   ref (fun _ -> failwith "uninitialized add_meta")
 
+let add_init_meta: (Ast.meta_name -> Ast0.pure -> unit) ref =
+  ref (fun _ -> failwith "uninitialized add_meta")
+
 let add_param_meta: (Ast.meta_name -> Ast0.pure -> unit) ref =
   ref (fun _ -> failwith "uninitialized add_meta")
 

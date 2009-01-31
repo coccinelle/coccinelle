@@ -1,5 +1,16 @@
 -*- org -*-
 
+* 0.1.5
+
+** Features: 
+- added initialiser metavariable
+- added sequences of designators in structures
+- improved printing of the C code corresponding to metavariables
+
+** Bugfix:
+
+** Internals: 
+
 * 0.1.4
 
 ** Features: 

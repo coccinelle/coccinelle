@@ -175,24 +175,25 @@ and declaration = base_declaration wrap
 (* Initializers *)
 
 and base_initialiser =
-    MetaInit of Ast.meta_name mcode * pure
+    MetaInit of Ast_cocci.meta_name mcode * pure
   | InitExpr of expression
   | InitList of string mcode (*{*) * initialiser_list * string mcode (*}*)
-  | InitGccDotName of
-      string mcode (*.*) * ident (* name *) * string mcode (*=*) *
+  | InitGccExt of
+      designator list (* name *) * string mcode (*=*) *
 	initialiser (* gccext: *)
   | InitGccName of ident (* name *) * string mcode (*:*) *
 	initialiser
-  | InitGccIndex of
-      string mcode (*[*) * expression * string mcode (*]*) *
-	string mcode (*=*) * initialiser
-  | InitGccRange of
-      string mcode (*[*) * expression * string mcode (*...*) *
-        expression * string mcode (*]*) * string mcode (*=*) * initialiser
   | IComma of string mcode
   | Idots  of string mcode (* ... *) * initialiser option (* whencode *)
   | OptIni    of initialiser
   | UniqueIni of initialiser
+
+and designator =
+    DesignatorField of string mcode (* . *) * ident
+  | DesignatorIndex of string mcode (* [ *) * expression * string mcode (* ] *)
+  | DesignatorRange of
+      string mcode (* [ *) * expression * string mcode (* ... *) *
+      expression * string mcode (* ] *)
 
 and initialiser = base_initialiser wrap
 

@@ -14,6 +14,8 @@ let rec pp_binding_kind = function
   | Ast_c.MetaExprVal      expr -> 
       Pretty_print_c.pp_expression_simple expr
   | Ast_c.MetaExprListVal  expr_list -> pp "<<exprlist>>"
+  | Ast_c.MetaInitVal      ini -> 
+      Pretty_print_c.pp_init_simple ini
   | Ast_c.MetaTypeVal      typ -> 
       Pretty_print_c.pp_type_simple typ
   | Ast_c.MetaStmtVal      statement -> 

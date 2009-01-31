@@ -437,7 +437,9 @@ and declaration d =
 
 and initialiser i =
   match Ast.unwrap i with
-    Ast.InitExpr(exp) -> expression exp
+    Ast.MetaInit(name,_,_) ->
+      mcode print_meta name; print_string " "
+  | Ast.InitExpr(exp) -> expression exp
   | Ast.InitList(lb,initlist,rb,whencode) ->
       mcode print_string lb; open_box 0;
       if not (whencode = [])
@@ -448,23 +450,22 @@ and initialiser i =
 	 force_newline());
       List.iter initialiser initlist; close_box();
       mcode print_string rb
-  | Ast.InitGccDotName(dot,name,eq,ini) ->
-      mcode print_string dot; ident name; print_string " ";
+  | Ast.InitGccExt(designators,eq,ini) ->
+      List.iter designator designators; print_string " ";
       mcode print_string eq; print_string " "; initialiser ini
   | Ast.InitGccName(name,eq,ini) ->
       ident name; mcode print_string eq; initialiser ini
-  | Ast.InitGccIndex(lb,exp,rb,eq,ini) ->
-      mcode print_string lb; expression exp; mcode print_string rb;
-      print_string " "; mcode print_string eq; print_string " ";
-      initialiser ini
-  | Ast.InitGccRange(lb,exp1,dots,exp2,rb,eq,ini) ->
-      mcode print_string lb; expression exp1; mcode print_string dots;
-      expression exp2; mcode print_string rb;
-      print_string " "; mcode print_string eq; print_string " ";
-      initialiser ini
   | Ast.IComma(comma) -> mcode print_string comma; force_newline()
   | Ast.OptIni(ini) -> print_string "?"; initialiser ini
   | Ast.UniqueIni(ini) -> print_string "!"; initialiser ini
+
+and designator = function
+    Ast.DesignatorField(dot,id) -> mcode print_string dot; ident id
+  | Ast.DesignatorIndex(lb,exp,rb) ->
+      mcode print_string lb; expression exp; mcode print_string rb
+  | Ast.DesignatorRange(lb,min,dots,max,rb) ->
+      mcode print_string lb; expression min; mcode print_string dots;
+      expression max; mcode print_string rb
 
 (* --------------------------------------------------------------------- *)
 (* Parameter *)

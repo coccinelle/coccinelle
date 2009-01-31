@@ -35,6 +35,12 @@ let print_string_box s = print_string s in
 let print_option = Common.do_option in
 let print_between = Common.print_between in
 
+let outdent _ = () (* should go to leftmost col, does nothing now *) in
+
+let pretty_print_c =
+  Pretty_print_c.pretty_print_c pr_elem pr_space
+    force_newline indent outdent unindent in
+
 (* --------------------------------------------------------------------- *)
 (* Only for make_hrule, print plus code, unbound metavariables *)
 
@@ -249,14 +255,14 @@ let rec expression e =
   | Ast.MetaExpr (name,_,_,_typedontcare,_formdontcare,_) ->
       handle_metavar name  (function
         | Ast_c.MetaExprVal exp -> 
-            Pretty_print_c.pp_expression_gen pr_elem pr_space exp
+            pretty_print_c.Pretty_print_c.expression exp
         | _ -> raise Impossible
       )
 
   | Ast.MetaExprList (name,_,_,_) -> 
       handle_metavar name  (function
         | Ast_c.MetaExprListVal args -> 
-            Pretty_print_c.pp_arg_list_gen pr_elem pr_space args
+            pretty_print_c.Pretty_print_c.arg_list args
         | _ -> raise Impossible
       )
 
@@ -347,7 +353,7 @@ and constant = function
 and fullType ft =
   match Ast.unwrap ft with
     Ast.Type(cv,ty) ->
-      print_option (function x -> mcode const_vol x; print_string " ") cv;
+      print_option (mcode const_vol) cv;
       typeC ty
   | Ast.DisjType _ -> failwith "can't be in plus"
   | Ast.OptType(_) | Ast.UniqueType(_) ->
@@ -391,7 +397,7 @@ and typeC ty =
   | Ast.MetaType(name,_,_) -> 
       handle_metavar name  (function
           Ast_c.MetaTypeVal exp -> 
-            Pretty_print_c.pp_type_gen pr_elem pr_space exp
+            pretty_print_c.Pretty_print_c.ty exp
         | _ -> raise Impossible)
 
 and baseType = function
@@ -507,7 +513,12 @@ and declaration d =
 
 and initialiser nlcomma i =
   match Ast.unwrap i with
-    Ast.InitExpr(exp) -> expression exp
+    Ast.MetaInit(name,_,_) -> 
+      handle_metavar name  (function
+          Ast_c.MetaInitVal ini ->
+            pretty_print_c.Pretty_print_c.init ini
+        | _ -> raise Impossible)
+  | Ast.InitExpr(exp) -> expression exp
   | Ast.InitList(lb,initlist,rb,[]) ->
       mcode print_string lb; start_block();
       (* awkward, because the comma is separate from the initialiser *)
@@ -518,25 +529,24 @@ and initialiser nlcomma i =
       loop initlist;
       end_block(); mcode print_string rb
   | Ast.InitList(lb,initlist,rb,_) -> failwith "unexpected whencode in plus"
-  | Ast.InitGccDotName(dot,name,eq,ini) ->
-      mcode print_string dot; ident name; print_string " ";
+  | Ast.InitGccExt(designators,eq,ini) ->
+      List.iter designator designators; print_string " ";
       mcode print_string eq; print_string " "; initialiser nlcomma ini
   | Ast.InitGccName(name,eq,ini) ->
       ident name; mcode print_string eq; initialiser nlcomma ini
-  | Ast.InitGccIndex(lb,exp,rb,eq,ini) ->
-      mcode print_string lb; expression exp; mcode print_string rb;
-      print_string " "; mcode print_string eq; print_string " ";
-      initialiser nlcomma ini
-  | Ast.InitGccRange(lb,exp1,dots,exp2,rb,eq,ini) ->
-      mcode print_string lb; expression exp1; mcode print_string dots;
-      expression exp2; mcode print_string rb;
-      print_string " "; mcode print_string eq; print_string " ";
-      initialiser nlcomma ini
   | Ast.IComma(comma) ->
       mcode print_string comma;
       if nlcomma then force_newline()
   | Ast.OptIni(ini) | Ast.UniqueIni(ini) ->
       raise CantBeInPlus
+
+and designator = function
+    Ast.DesignatorField(dot,id) -> mcode print_string dot; ident id
+  | Ast.DesignatorIndex(lb,exp,rb) ->
+      mcode print_string lb; expression exp; mcode print_string rb
+  | Ast.DesignatorRange(lb,min,dots,max,rb) ->
+      mcode print_string lb; expression min; mcode print_string dots;
+      expression max; mcode print_string rb
 
 (* --------------------------------------------------------------------- *)
 (* Parameter *)
@@ -602,16 +612,16 @@ and rule_elem arity re =
   | Ast.IfHeader(iff,lp,exp,rp) ->
       print_string arity;
       mcode print_string iff; print_string " "; mcode print_string_box lp;
-      expression exp; close_box(); mcode print_string rp; print_string " "
+      expression exp; close_box(); mcode print_string rp
   | Ast.Else(els) ->
-      print_string arity; mcode print_string els; print_string " "
+      print_string arity; mcode print_string els
 
   | Ast.WhileHeader(whl,lp,exp,rp) ->
       print_string arity;
       mcode print_string whl; print_string " "; mcode print_string_box lp;
-      expression exp; close_box(); mcode print_string rp; print_string " "
+      expression exp; close_box(); mcode print_string rp
   | Ast.DoHeader(d) ->
-      print_string arity; mcode print_string d; print_string " "
+      print_string arity; mcode print_string d
   | Ast.WhileTail(whl,lp,exp,rp,sem) ->
       print_string arity;
       mcode print_string whl; print_string " "; mcode print_string_box lp;
@@ -623,17 +633,17 @@ and rule_elem arity re =
       print_option expression e1; mcode print_string sem1;
       print_option expression e2; mcode print_string sem2;
       print_option expression e3; close_box();
-      mcode print_string rp; print_string " "
+      mcode print_string rp
   | Ast.IteratorHeader(nm,lp,args,rp) ->
       print_string arity;
       ident nm; print_string " "; mcode print_string_box lp;
       dots (function _ -> ()) expression args; close_box();
-      mcode print_string rp; print_string " "
+      mcode print_string rp
 
   | Ast.SwitchHeader(switch,lp,exp,rp) ->
       print_string arity;
       mcode print_string switch; print_string " "; mcode print_string_box lp;
-      expression exp; close_box(); mcode print_string rp; print_string " "
+      expression exp; close_box(); mcode print_string rp
 
   | Ast.Break(br,sem) ->
       print_string arity; mcode print_string br; mcode print_string sem
@@ -680,8 +690,8 @@ and rule_elem arity re =
 
   | Ast.MetaStmt(name,_,_,_) ->
       handle_metavar name  (function
-        | Ast_c.MetaStmtVal exp -> 
-            Pretty_print_c.pp_statement_gen pr_elem pr_space  exp
+        | Ast_c.MetaStmtVal stm ->
+            pretty_print_c.Pretty_print_c.statement stm
         | _ -> raise Impossible
                            )
   | Ast.MetaStmtList(name,_,_) ->
@@ -712,7 +722,7 @@ and print_fninfo = function
 
 let indent_if_needed s f =
   match Ast.unwrap s with
-    Ast.Seq(lbrace,decls,body,rbrace) -> f()
+    Ast.Seq(lbrace,decls,body,rbrace) -> pr_space(); f()
   | _ ->
       (*no newline at the end - someone else will do that*)
       start_block(); f(); unindent() in
@@ -751,7 +761,7 @@ let rec statement arity s =
       mcode (function _ -> ()) ((),Ast.no_info,aft,Ast.NoMetaPos)
 
   | Ast.Switch(header,lb,cases,rb) ->
-      rule_elem arity header; rule_elem arity lb;
+      rule_elem arity header; print_string " "; rule_elem arity lb;
       List.iter (function x -> case_line arity x; force_newline()) cases;
       rule_elem arity rb
 

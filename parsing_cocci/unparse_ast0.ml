@@ -340,20 +340,11 @@ and initialiser i =
 	  mcode print_string lb; open_box 0;
 	  let _ = dots (function _ -> ()) initialiser initlist in
 	  close_box(); mcode print_string rb
-      | Ast0.InitGccDotName(dot,name,eq,ini) ->
-	  mcode print_string dot; ident name; print_string " ";
+      | Ast0.InitGccExt(designators,eq,ini) ->
+	  List.iter designator designators; print_string " ";
 	  mcode print_string eq; print_string " "; initialiser ini
       | Ast0.InitGccName(name,eq,ini) ->
 	  ident name; mcode print_string eq; initialiser ini
-      | Ast0.InitGccIndex(lb,exp,rb,eq,ini) ->
-	  mcode print_string lb; expression exp; mcode print_string rb;
-	  print_string " "; mcode print_string eq; print_string " ";
-	  initialiser ini
-      | Ast0.InitGccRange(lb,exp1,dots,exp2,rb,eq,ini) ->
-	  mcode print_string lb; expression exp1; mcode print_string dots;
-	  expression exp2; mcode print_string rb;
-	  print_string " "; mcode print_string eq; print_string " ";
-	  initialiser ini
       | Ast0.IComma(cm) -> mcode print_string cm; force_newline()
       | Ast0.Idots(d,Some whencode) ->
 	  mcode print_string d; print_string "   WHEN != ";
@@ -361,6 +352,14 @@ and initialiser i =
       | Ast0.Idots(d,None) -> mcode print_string d
       | Ast0.OptIni(ini) -> print_string "?"; initialiser ini
       | Ast0.UniqueIni(ini) -> print_string "!"; initialiser ini)
+
+and designator = function
+      Ast0.DesignatorField(dot,id) -> mcode print_string dot; ident id
+    | Ast0.DesignatorIndex(lb,exp,rb) ->
+	mcode print_string lb; expression exp; mcode print_string rb
+    | Ast0.DesignatorRange(lb,min,dots,max,rb) ->
+	mcode print_string lb; expression min; mcode print_string dots;
+	expression max; mcode print_string rb
 
 and initialiser_list l = dots (function _ -> ()) initialiser l
 

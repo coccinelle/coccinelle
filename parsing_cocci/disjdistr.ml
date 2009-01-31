@@ -177,7 +177,8 @@ and disjparam p =
 
 and disjini i =
   match Ast.unwrap i with
-    Ast.InitExpr(exp) ->
+    Ast.MetaInit(_,_,_) -> [i]
+  | Ast.InitExpr(exp) ->
       let exp = disjexp exp in
       List.map (function exp -> Ast.rewrap i (Ast.InitExpr(exp))) exp
   | Ast.InitList(lb,initlist,rb,whencode) ->
@@ -185,24 +186,17 @@ and disjini i =
 	(function initlist ->
 	  Ast.rewrap i (Ast.InitList(lb,initlist,rb,whencode)))
 	(disjmult disjini initlist)
-  | Ast.InitGccDotName(dot,name,eq,ini) ->
+  | Ast.InitGccExt(designators,eq,ini) ->
+      let designators = disjmult designator designators in
       let ini = disjini ini in
-      List.map
-	(function ini -> Ast.rewrap i (Ast.InitGccDotName(dot,name,eq,ini)))
-	ini
+      disjmult2 designators ini
+	(function designators -> function ini ->
+	  Ast.rewrap i (Ast.InitGccExt(designators,eq,ini)))
   | Ast.InitGccName(name,eq,ini) ->
       let ini = disjini ini in
       List.map
 	(function ini -> Ast.rewrap i (Ast.InitGccName(name,eq,ini)))
 	ini
-  | Ast.InitGccIndex(lb,exp,rb,eq,ini) ->
-      disjmult2 (disjexp exp) (disjini ini)
-	(function exp -> function ini ->
-	  Ast.rewrap i (Ast.InitGccIndex(lb,exp,rb,eq,ini)))
-  | Ast.InitGccRange(lb,exp1,dots,exp2,rb,eq,ini) ->
-      disjmult3 (disjexp exp1) (disjexp exp2) (disjini ini)
-	(function exp1 -> function exp2 -> function ini ->
-	  Ast.rewrap i (Ast.InitGccRange(lb,exp1,dots,exp2,rb,eq,ini)))
   | Ast.IComma(comma) -> [i]
   | Ast.OptIni(ini) ->
       let ini = disjini ini in
@@ -210,6 +204,16 @@ and disjini i =
   | Ast.UniqueIni(ini) ->
       let ini = disjini ini in
       List.map (function ini -> Ast.rewrap i (Ast.UniqueIni(ini))) ini
+
+and designator = function
+    Ast.DesignatorField(dot,id) -> [Ast.DesignatorField(dot,id)]
+  | Ast.DesignatorIndex(lb,exp,rb) ->
+      let exp = disjexp exp in
+      List.map (function exp -> Ast.DesignatorIndex(lb,exp,rb)) exp
+  | Ast.DesignatorRange(lb,min,dots,max,rb) ->
+      disjmult2 (disjexp min) (disjexp max)
+	(function min -> function max ->
+	  Ast.DesignatorRange(lb,min,dots,max,rb))
 
 and disjdecl d =
   match Ast.unwrap d with
