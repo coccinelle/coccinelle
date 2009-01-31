@@ -10,6 +10,7 @@
   of a block, and then is followed by a blank line
 
 ** Bugfix:
+- fixed some problems with parsing SmPL code where a nest appears after a |
 
 ** Internals: 
 
