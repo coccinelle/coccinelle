@@ -651,7 +651,7 @@ let main () =
     | x::xs -> 
         
         (* bugfix: better to put it here than at the top of main, so
-         * it does not influecence -parse_c, -compare_c, etc *)
+         * it does not influence -parse_c, -compare_c, etc *)
         run_profile quiet_profile;
 
 	adjust_stdin x (fun () ->
