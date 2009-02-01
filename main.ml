@@ -605,17 +605,21 @@ let main () =
     (* The test framework. Works with tests/ or .ok and .failed  *)
     (* --------------------------------------------------------- *)
     | [x] when !test_mode    -> 
+        run_profile quiet_profile;
         FC.include_path := "tests/include";
         Testing.testone x !compare_with_expected
 
     | []  when !test_all -> 
+        run_profile quiet_profile;
         FC.include_path := "tests/include";
         Testing.testall ()
 
     | [] when !test_regression_okfailed -> 
+        run_profile quiet_profile;
         Testing.test_regression_okfailed ()
 
     | x::xs when !test_okfailed -> 
+        run_profile quiet_profile;
         (* do its own timeout on FC.timeout internally *)
         FC.relax_include_path := true;
 	adjust_stdin x (fun () -> 
@@ -647,7 +651,7 @@ let main () =
     | x::xs -> 
         
         (* bugfix: better to put it here than at the top of main, so
-         * it does not influcence -parse_c, -compare_c, etc *)
+         * it does not influecence -parse_c, -compare_c, etc *)
         run_profile quiet_profile;
 
 	adjust_stdin x (fun () ->
