@@ -13,6 +13,7 @@
 ** Bugfix:
 - fixed some problems with parsing SmPL code where a nest appears after a |
 - better treatment of { }, form in macros wrt unparse_c
+- less quiet for -parse_c
 
 ** Internals: 
 

@@ -568,6 +568,7 @@ let glimpse_filter (coccifile, isofile) dir =
 (*****************************************************************************)
 let main () = 
   begin
+    run_profile quiet_profile;
     let args = ref [] in
 
     arg_parse2 (Arg.align all_options) (fun x -> args := x::!args) usage_msg;
@@ -605,21 +606,17 @@ let main () =
     (* The test framework. Works with tests/ or .ok and .failed  *)
     (* --------------------------------------------------------- *)
     | [x] when !test_mode    -> 
-        run_profile quiet_profile;
         FC.include_path := "tests/include";
         Testing.testone x !compare_with_expected
 
     | []  when !test_all -> 
-        run_profile quiet_profile;
         FC.include_path := "tests/include";
         Testing.testall ()
 
     | [] when !test_regression_okfailed -> 
-        run_profile quiet_profile;
         Testing.test_regression_okfailed ()
 
     | x::xs when !test_okfailed -> 
-        run_profile quiet_profile;
         (* do its own timeout on FC.timeout internally *)
         FC.relax_include_path := true;
 	adjust_stdin x (fun () -> 
@@ -630,7 +627,9 @@ let main () =
     (* Actions, useful to debug subpart of coccinelle *)
     (* --------------------------------------------------------- *)
 
-    | xs when List.mem !action (Common.action_list all_actions) -> 
+    | xs when List.mem !action (Common.action_list all_actions) ->
+	Flag_parsing_c.verbose_parsing := true;
+	Flag_parsing_c.verbose_type := true;
         Common.do_action !action xs all_actions
 
     | [file] when !action = "-parse_cocci" -> 
@@ -650,10 +649,6 @@ let main () =
     (* --------------------------------------------------------- *)
     | x::xs -> 
         
-        (* bugfix: better to put it here than at the top of main, so
-         * it does not influence -parse_c, -compare_c, etc *)
-        run_profile quiet_profile;
-
 	adjust_stdin x (fun () ->
           if !cocci_file = ""
           then failwith "I need a cocci file,  use -sp_file <file>";

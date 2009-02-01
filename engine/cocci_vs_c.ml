@@ -793,10 +793,10 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
        * ... could match type. 
        *)
       let (ib1, ib2) = tuple_of_list2 ii in
-      expression ea eb >>= (fun ea eb -> 
-      tokenf ia1 ib1 >>= (fun ia1 ib1 -> 
-      tokenf ia2 ib2 >>= (fun ia2 ib2 -> 
-      arguments (seqstyle eas) (A.undots eas) ebs >>= (fun easundots ebs -> 
+      expression ea eb >>= (fun ea eb ->
+      tokenf ia1 ib1 >>= (fun ia1 ib1 ->
+      tokenf ia2 ib2 >>= (fun ia2 ib2 ->
+      arguments (seqstyle eas) (A.undots eas) ebs >>= (fun easundots ebs ->
         let eas = redots eas easundots in
         return (
           ((A.FunCall (ea, ia1, eas, ia2)) +> wa,
@@ -1297,7 +1297,7 @@ and arguments_bis = fun eas ebs ->
       )
             
       
-and argument arga argb = 
+and argument arga argb =
   X.all_bound (A.get_inherited arga) >&&>
    match A.unwrap arga, argb with
   | A.TypeExp tya,  Right (B.ArgType (((b, sopt, tyb), ii_b_s))) ->
@@ -1315,8 +1315,8 @@ and argument arga argb =
 
   | A.TypeExp tya,  _                                  -> fail
   | _,              Right (B.ArgType (tyb, sto_iisto)) -> fail
-  | _, Left argb -> 
-      expression arga argb >>= (fun arga argb -> 
+  | _, Left argb ->
+      expression arga argb >>= (fun arga argb ->
         return (arga, Left argb)
       )
   | _, Right (B.ArgAction y) -> fail
