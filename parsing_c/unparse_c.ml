@@ -147,16 +147,24 @@ let remove_useless_fakeInfo_struct program =
   let bigf = { Visitor_c.default_visitor_c_s with
     Visitor_c.kini_s = (fun (k,bigf) ini -> 
       match k ini with
-      | InitList args, ii -> 
+      | InitList args, ii ->
           (match ii with
           | [_i1;_i2] -> ini
-          | [i1;i2;iicommaopt] -> 
+          | [i1;i2;iicommaopt] ->
               if (not (contain_plus iicommaopt)) && (not (contain_plus i2))
                  && (Ast_c.is_fake iicommaopt)
                  (* sometimes the guy put a normal iicommaopt *)
-
               then InitList args, [i1;i2]
               else InitList args, [i1;i2;iicommaopt]
+          | [i1;i2;iicommaopt;end_comma_opt] -> 
+	      (* only in #define. end_comma_opt canot be fake *)
+	      (* not sure if this will be considered ambiguous with a previous
+		 case? *)
+              if (not (contain_plus iicommaopt)) && (not (contain_plus i2))
+                 && (Ast_c.is_fake iicommaopt)
+                 (* sometimes the guy put a normal iicommaopt *)
+              then InitList args, [i1;i2;end_comma_opt]
+              else InitList args, [i1;i2;iicommaopt;end_comma_opt]
           | _ -> raise Impossible
           )
       | x -> x
