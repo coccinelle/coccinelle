@@ -27,6 +27,10 @@ let pr2 s =
   if !Flag_parsing_c.verbose_parsing 
   then Common.pr2 s
 
+let pr2_once s = 
+  if !Flag_parsing_c.verbose_parsing 
+  then Common.pr2_once s
+
 let pr2_cpp s = 
   if !Flag_parsing_c.debug_cpp
   then Common.pr2_once ("CPP-" ^ s)
@@ -89,7 +93,8 @@ let msg_typedef s =
 let msg_maybe_dangereous_typedef s =
   if not (is_known_typdef s)
   then 
-    pr2 ("PB MAYBE: dangerous typedef inference, maybe not a typedef: " ^ s)
+    pr2
+      ("PB MAYBE: dangerous typedef inference, maybe not a typedef: " ^ s)
 
 
 
@@ -1133,7 +1138,7 @@ let rec apply_macro_defs xs =
       | Params params -> 
           if List.length params != List.length xxs
           then begin 
-            pr2 ("WIERD: macro with wrong number of arguments: " ^ s);
+            pr2_once ("WIERD: macro with wrong number of arguments: " ^ s);
             (* old: id.new_tokens_before <- bodymacro; *)
             ()
           end
