@@ -568,7 +568,11 @@ let glimpse_filter (coccifile, isofile) dir =
 (*****************************************************************************)
 let main () = 
   begin
-    run_profile quiet_profile;
+    let arglist = Array.to_list Sys.argv in
+    (if not(Common.inter_set arglist
+	      ["-cocci_file";"-sp_file";"-test";"-testall";"-test_okfailed";
+		"-test_regression_okfailed"] = [])
+    then run_profile quiet_profile);
     let args = ref [] in
 
     arg_parse2 (Arg.align all_options) (fun x -> args := x::!args) usage_msg;
@@ -628,8 +632,6 @@ let main () =
     (* --------------------------------------------------------- *)
 
     | xs when List.mem !action (Common.action_list all_actions) ->
-	Flag_parsing_c.verbose_parsing := true;
-	Flag_parsing_c.verbose_type := true;
         Common.do_action !action xs all_actions
 
     | [file] when !action = "-parse_cocci" -> 
