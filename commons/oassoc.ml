@@ -26,6 +26,12 @@ object(o: 'o)
   method find: 'a -> 'b = fun k -> 
     o#assoc k
 
+  method find_opt: 'a -> 'b option = fun k -> 
+    try 
+      let res = o#assoc k in
+      Some res
+    with Not_found -> None
+
   method haskey: 'a -> bool = fun k -> 
     try (ignore(o#assoc k); true) 
     with Not_found -> false

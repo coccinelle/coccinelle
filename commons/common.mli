@@ -1222,6 +1222,7 @@ val join_gen : 'a -> 'a list -> 'a list
 val do_withenv :
   (('a -> 'b) -> 'c -> 'd) -> ('e -> 'a -> 'b * 'e) -> 'e -> 'c -> 'd * 'e
 val map_withenv : ('a -> 'b -> 'c * 'a) -> 'a -> 'b list -> 'c list * 'a
+val map_withkeep: ('a -> 'b) -> 'a list -> ('b * 'a) list
 
 val collect_accu : ('a -> 'b list) -> 'b list -> 'a list -> 'b list
 val collect : ('a -> 'b list) -> 'a list -> 'b list
@@ -1235,6 +1236,10 @@ val exclude : ('a -> bool) -> 'a list -> 'a list
  *)
 val uniq : 'a list -> 'a list
 val uniq_eff: 'a list -> 'a list 
+
+val has_no_duplicate: 'a list -> bool
+val is_set_as_list: 'a list -> bool
+val get_duplicates: 'a list -> 'a list
 
 val doublon : 'a list -> bool
 
@@ -1345,6 +1350,8 @@ val insert_set : 'a -> 'a set -> 'a set
 val single_set : 'a -> 'a set
 val set : 'a list -> 'a set
 
+val is_set: 'a list -> bool
+
 val exists_set : ('a -> bool) -> 'a set -> bool
 val forall_set : ('a -> bool) -> 'a set -> bool
 
@@ -1450,7 +1457,11 @@ val lookup_list2 : 'a -> ('a, 'b) assoc list -> 'b * int
 val assoc_option : 'a -> ('a, 'b) assoc -> 'b option
 val assoc_with_err_msg : 'a -> ('a, 'b) assoc -> 'b
 
-val sort_by_val_descending: ('a,'b) assoc -> ('a * 'b) list
+val sort_by_val_lowfirst: ('a,'b) assoc -> ('a * 'b) list
+val sort_by_val_highfirst: ('a,'b) assoc -> ('a * 'b) list
+
+val sort_by_key_lowfirst: (int,'b) assoc -> (int * 'b) list
+val sort_by_key_highfirst: (int,'b) assoc -> (int * 'b) list
 
 (*****************************************************************************)
 (* Assoc, specialized. *)

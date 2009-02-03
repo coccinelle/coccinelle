@@ -6,7 +6,9 @@ object ('o)
   method virtual assoc : 'a -> 'b
   method virtual delkey : 'a -> 'o
 
+  (* may raise NotFound *)
   method find : 'a -> 'b
+  method find_opt: 'a -> 'b option
 
   method haskey : 'a -> bool
   method replkey : 'a * 'b -> 'o
