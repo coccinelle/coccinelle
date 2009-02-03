@@ -569,12 +569,15 @@ let glimpse_filter (coccifile, isofile) dir =
 let main () = 
   begin
     let arglist = Array.to_list Sys.argv in
-    (if not(Common.inter_set arglist
-	      ["-cocci_file";"-sp_file";"-test";"-testall";"-test_okfailed";
-		"-test_regression_okfailed"] = [])
-    then run_profile quiet_profile);
+
+    if not (null (Common.inter_set arglist
+	             ["-cocci_file";"-sp_file";"-test";"-testall";
+                      "-test_okfailed";"-test_regression_okfailed"]))
+    then run_profile quiet_profile;
+
     let args = ref [] in
 
+    (* this call can set up many global flag variables via the cmd line *)
     arg_parse2 (Arg.align all_options) (fun x -> args := x::!args) usage_msg;
 
     (if !dir && List.length !args > 1
