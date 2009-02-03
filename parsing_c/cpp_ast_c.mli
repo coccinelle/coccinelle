@@ -9,11 +9,12 @@ val show_cpp_d_opts: string list -> unit
 
 
 (* ---------------------------------------------------------------------- *)
-(* cpp_expand_include below internally use cache of header file to
- * speedup as reinclude very often the same basic header file. But that
- * means that the asts of those headers are then shared so take
+(* cpp_expand_include below must internally use a cache of header files to
+ * speedup as programs very often reinclude the same basic set of 
+ * header files.  
+ * note: that also means that the asts of those headers are then shared so take
  * care. 
-*)
+ *)
 val _headers_hash: 
   (Common.filename, Parse_c.program2 * Parsing_stat.parsing_stat) Hashtbl.t
 val threshold_cache_nb_files: int ref
