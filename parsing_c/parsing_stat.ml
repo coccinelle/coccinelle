@@ -104,11 +104,11 @@ let print_parsing_stat_list ?(verbose=false) = fun statxs ->
   let passedf = float_of_int passed in
   pr (
   (sprintf "nb good = %d,  nb passed = %d " good passed) ^
-  (sprintf "=========> %f"  (100.0 *. (passedf /. gf)) ^ "%")
+  (sprintf "=========> %f"  (100.0 *. (passedf /. gf)) ^ "% passed")
    );
   pr (
   (sprintf "nb good = %d,  nb bad = %d " good bad) ^
-  (sprintf "=========> %f"  (100.0 *. (gf /. (gf +. badf))) ^ "%"
+  (sprintf "=========> %f"  (100.0 *. (gf /. (gf +. badf))) ^ "% good"
    )
   )
 
@@ -124,7 +124,7 @@ let lines_around_error_line ~context (file, line) =
   let endl   = min (Array.length arr) (line + context) in
   let res = ref [] in 
 
-  for i = startl to endl do 
+  for i = startl to endl -1 do 
     Common.push2 arr.(i) res
   done;
   List.rev !res
