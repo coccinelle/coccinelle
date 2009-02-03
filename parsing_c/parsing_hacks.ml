@@ -1136,15 +1136,21 @@ let rec apply_macro_defs xs =
               id.tok <- token_from_parsinghack_hint (s,i1) hint;
           )
       | Params params -> 
-          if List.length params != List.length xxs
-          then begin 
-            pr2_once ("WIERD: macro with wrong number of arguments: " ^ s);
-            (* old: id.new_tokens_before <- bodymacro; *)
-            ()
-          end
-          else 
-            (match body with
-            | DefineBody bodymacro -> 
+          (match body with
+          | DefineBody bodymacro -> 
+
+              (* bugfix: better to put this that before the match body, 
+               * cos our macrostatement hint can have variable number of
+               * arguments and so it's ok if it does not match exactly
+               * the number of arguments. *)
+              if List.length params != List.length xxs
+              then begin 
+                pr2_once ("WIERD: macro with wrong number of arguments: " ^ s);
+                (* old: id.new_tokens_before <- bodymacro; *)
+                ()
+              end
+              else 
+
                 let xxs' = xxs +> List.map (fun x -> 
                   (tokens_of_paren_ordered x) +> List.map (fun x -> 
                     TH.visitor_info_of_tok Ast_c.make_expanded x.tok
@@ -1165,6 +1171,10 @@ let rec apply_macro_defs xs =
                 (* important to do that after have apply the macro, otherwise
                  * will pass as argument to the macro some tokens that
                  * are all TCommentCpp
+                 * 
+                 * note: such macrostatement can have a variable number of
+                 * arguments but here we don't care, we just pass all the
+                 * parameters.
                  *)
                 msg_apply_known_macro_hint s;
                 id.tok <- token_from_parsinghack_hint (s,i1) hint;
