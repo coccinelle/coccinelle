@@ -1,4 +1,4 @@
-(* Copyright (C) 2006, 2007, 2008 Ecole des Mines de Nantes
+(* Copyright (C) 2006, 2007, 2008, 2009 Ecole des Mines de Nantes
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License (GPL)
@@ -27,6 +27,88 @@ module F = Control_flow_c
 (* Functions to visit the Ast, and now also the CFG nodes *)
 (*****************************************************************************)
 
+(* Why this module ? 
+ *  
+ * The problem is that we manipulate the AST of C programs 
+ * and some of our analysis need only to specify an action for 
+ * specific cases, such as the function call case, and recurse
+ * for the other cases. 
+ * Here is an simplification of our AST: 
+ *  
+ * type ctype = 
+ *  | Basetype of ...
+ *  | Pointer of ctype
+ *  | Array of expression option * ctype
+ *  | ...
+ * and expression = 
+ *  | Ident of string
+ *  | FunCall of expression * expression list
+ *  | Postfix of ...
+ *  | RecordAccess of ..
+ *  | ...
+ * and statement = 
+ *  ...
+ * and declaration =
+ *  ...
+ * and program = 
+ *  ...
+ *
+ * What we want is really write code like 
+ * 
+ *  let my_analysis program = 
+ *    analyze_all_expressions program (fun expr ->
+ *      match expr with
+ *      | FunCall (e, es) -> do_something()
+ *      | _ -> <find_a_way_to_recurse_for_all_the_other_cases> 
+ *      )
+ * 
+ * The problem is how to write analyze_all_expressions
+ * and find_a_way_to_recurse_for_all_the_other_cases.
+ * 
+ * Our solution is to mix the ideas of visitor, pattern matching, 
+ * and continuation. Here is how it looks like
+ * using our hybrid-visitor API: 
+ * 
+ *     let my_analysis program = 
+ *      Visitor.visit_iter program {
+ *        Visitor.kexpr = (fun k e -> 
+ *         match e with
+ *         | FunCall (e, es) -> do_something()
+ *         | _ -> k e
+ *        );
+ *       }
+ * 
+ * You can of course also give action "hooks" for 
+ * kstatement, ktype, or kdeclaration. But we don't overuse
+ * visitors and so it would be stupid to provide
+ * kfunction_call, kident, kpostfix hooks as one can just
+ * use pattern matching with kexpr to achieve the same effect.
+ * 
+ * 
+ * 
+ * 
+ * Alternatives: from the caml mailing list:
+ *  "You should have a look at the Camlp4 metaprogramming facilities :
+ *   http://brion.inria.fr/gallium/index.php/Camlp4MapGenerator
+ *   You would write something like" :
+ *     let my_analysis program =
+ *     let analysis = object (self)
+ *      inherit fold as super
+ *       method expr = function
+ *       | FunCall (e, es) -> do_something (); self
+ *       | other -> super#expr other
+ *      end in analysis#expr
+ * 
+ * Problem is that you don't have control about what is generated 
+ * and in our case we sometimes dont want to visit too much. For instance
+ * our visitor don't recuse on the type annotation of expressions
+ * Ok, this could be worked around, but the pb remain, you 
+ * don't have control and at some point you may want. In the same
+ * way we want to enforce a certain order in the visit (ok this is not good,
+ * but it's convenient) of ast elements. For instance first
+ * processing the left part 'e' of a Funcall(e,es), then the arguments 'es'.
+ * 
+ *)
 
 (* Visitor based on continuation. Cleaner than the one based on mutable 
  * pointer functions that I had before. 
