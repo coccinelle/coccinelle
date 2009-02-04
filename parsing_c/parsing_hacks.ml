@@ -218,10 +218,6 @@ let msg_ifdef_funheaders () =
   incr Stat.nIfdefFunheader;
   ()
 
-let msg_ifdef_passing () = 
-  pr2_cpp("IFDEF: or related outside function. I treat it as comment");
-  incr Stat.nIfdefPassing;
-  ()
 
 let msg_attribute s = 
   incr Stat.nMacroAttribute;
@@ -2524,29 +2520,28 @@ let lookahead2 ~pass next before =
       then TCommentCpp (Ast_c.CppDirective, ii)
       else 
       *)
-         (* not !LP._lexer_hint.toplevel *)
-        if !Flag_parsing_c.ifdef_directive_passing
-            || (pass = 2)
-        then begin
-
-          if (LP.current_context () = LP.InInitializer)
-          then begin 
-            pr2 "In Initializer passing"; (* cheat: dont count in stat *)
-            incr Stat.nIfdefInitializer;
-            
-          end
-          else msg_ifdef_passing ()
-          ;
-
-          TCommentCpp (Ast_c.CppDirective, ii)
-        end
-        else x
-
+      (* not !LP._lexer_hint.toplevel *)
+      if !Flag_parsing_c.ifdef_directive_passing
+        || (pass = 2)
+      then begin
+        
+        if (LP.current_context () = LP.InInitializer)
+        then begin 
+          pr2_cpp "In Initializer passing"; (* cheat: dont count in stat *)
+          incr Stat.nIfdefInitializer;
+        end else begin 
+          pr2_cpp("IFDEF: or related insde function. I treat it as comment");
+          incr Stat.nIfdefPassing;
+        end;
+        TCommentCpp (Ast_c.CppDirective, ii)
+      end
+      else x
+        
   | (TUndef (id, ii) as x)::_, _ 
       -> 
         if (pass = 2)
         then begin
-          pr2_once ("CPP-UNDEF: I treat it as comment");
+          pr2_cpp("UNDEF: I treat it as comment");
           TCommentCpp (Ast_c.CppDirective, ii)
         end
         else x
@@ -2555,7 +2550,7 @@ let lookahead2 ~pass next before =
       -> 
         if (pass = 2)
         then begin
-          pr2_once ("CPP-OTHER: I treat it as comment");
+          pr2_cpp ("OTHER directive: I treat it as comment");
           TCommentCpp (Ast_c.CppDirective, ii)
         end
         else x
