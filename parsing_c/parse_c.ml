@@ -353,6 +353,12 @@ let expression_of_string = parse_gen Parser_c.expr
 (* Consistency checking *)
 (*****************************************************************************)
 
+(* todo:
+ *  could check that an ident has always the same class, be it a typedef
+ *  (but sometimes do 'acpi_val acpi_val;'), an ident, a TMacroStatement, 
+ *  etc.
+ *)
+
 type class_ident = 
   | CIdent (* can be var, func, field, tag, enum constant *)
   | CTypedef

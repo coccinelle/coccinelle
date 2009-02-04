@@ -1176,10 +1176,28 @@ let rec apply_macro_defs xs =
                  * arguments but here we don't care, we just pass all the
                  * parameters.
                  *)
-                msg_apply_known_macro_hint s;
-                id.tok <- token_from_parsinghack_hint (s,i1) hint;
-                [Parenthised (xxs, info_parens)] +> 
-                  iter_token_paren (set_as_comment Ast_c.CppMacro);
+
+                (match xs with
+                | PToken ({tok = TPtVirg _} as id2)::_ -> 
+                    pr2_once 
+                      ("macro stmt with trailing ';', passing also ';' for: "^
+                       s);
+                    (* sometimes still want pass its params ... as in
+                     *  DEBUGPOLL(static unsigned int prev_mask = 0);
+                     *)
+
+                    msg_apply_known_macro_hint s;
+                    id.tok <- token_from_parsinghack_hint (s,i1) hint;
+                    [Parenthised (xxs, info_parens)] +> 
+                      iter_token_paren (set_as_comment Ast_c.CppMacro);
+                    set_as_comment Ast_c.CppMacro id2;
+
+                | _ ->
+                    msg_apply_known_macro_hint s;
+                    id.tok <- token_from_parsinghack_hint (s,i1) hint;
+                    [Parenthised (xxs, info_parens)] +> 
+                      iter_token_paren (set_as_comment Ast_c.CppMacro);
+                )
                 
 
             | DefineHint hint -> 
@@ -1581,11 +1599,16 @@ let rec find_macro_lineparen xs =
         ) 
         || 
         (col2 <= col1 &&
-              (match other.tok with
-              | TCBrace _ when ctx = InFunction -> true
-              | Treturn _ -> true
-              | Tif _ -> true
-              | Telse _ -> true
+              (match other.tok, restline2 with
+              | TCBrace _, _ when ctx = InFunction -> true
+              | Treturn _, _ -> true
+              | Tif _, _ -> true
+              | Telse _, _ -> true
+
+              (* case of label, usually put in first line *)
+              | TIdent _, (PToken ({tok = TDotDot _}))::_ -> 
+                  true
+
 
               | _ -> false
               )
@@ -1609,6 +1632,8 @@ let rec find_macro_lineparen xs =
    * ex: LOCK
    *     foo();
    *     UNLOCK
+   * 
+   * todo: factorize code with previous rule ?
    *)
   | (Line 
         ([PToken ({tok = TIdent (s,ii); col = col1; where = ctx} as macro);
