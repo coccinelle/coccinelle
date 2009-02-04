@@ -337,6 +337,8 @@ website:
 	cp $(TMP)/$(PACKAGE)-bin-x86.tgz        $(WEBSITE)
 	cp $(TMP)/$(PACKAGE)-bin-x86-static.tgz $(WEBSITE)
 	cp $(TMP)/$(PACKAGE)-bin-bytecode-$(OCAMLVERSION).tgz   $(WEBSITE)
+	rm -f $(WEBSITE)/LATEST* $(WEBSITE)/coccinelle-latest.tgz
+	cd $(WEBSITE); touch LATEST_IS_$(VERSION); ln -s $(PACKAGE).tgz coccinelle-latest.tgz
 
 
 #TXT=$(wildcard *.txt)
