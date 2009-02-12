@@ -5,6 +5,10 @@ import coccilib.coccigui.coccigui
 from threading import Thread, Lock
 import time
 from copy import deepcopy
+import psycopg2
+from datetime import date, datetime
+from trac.util.datefmt import to_timestamp, utc
+
 
 class Output:
 	"""In order to implement an output class for use with Coccinelle,
@@ -42,6 +46,16 @@ class Output:
 	def print_secs(self, msg, ps) :
 		for i in ps:
 			print "[[view:%s::face=ovl-face2::linb=%s::colb=%s::cole=%s][%s]]" % (i.file,i.line,i.column,i.column_end,msg)
+
+	def add_ticket(self, dbinfo, summary, desc) :
+		conn = psycopg2.connect(dbinfo)
+		curs = conn.cursor()
+		created = to_timestamp(datetime.now(utc))
+		curs.execute("INSERT INTO ticket \
+ (type,time,changetime,component,priority,owner,reporter,cc,version,milestone,status,summary,description, keywords) \
+ VALUES \
+ ('defect', %s, %s, 'other','major','somebody','Coccinelle','','next','','new','%s','%s', '')" % (created, created, summary, desc) )
+		conn.commit()
 
 class Console(Output):
 	def __init__(self):
