@@ -314,8 +314,8 @@ and expression = (expressionbis * exp_info ref (* semantic: *)) wrap
    * integer only. *)
 
   and constant = 
-    | String of (string * isWchar) 
-    | MultiString  (* can contain MacroString, todo: more info *)
+    | String of (string * isWchar)
+    | MultiString of string list (* can contain MacroString, todo: more info *)
     | Char   of (string * isWchar) (* normally it is equivalent to Int *)
     | Int    of (string  (* * intType*)) 
     | Float  of (string * floatType)

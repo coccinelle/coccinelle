@@ -642,12 +642,12 @@ postfix_expr:
  | postfix_expr TDec          { mk_e(Postfix ($1, Dec)) [$2] }
 
  /*(* gccext: also called compound literals *)*/
- | topar2 type_name tcpar2 TOBrace TCBrace 
+ | topar2 type_name tcpar2 TOBrace TCBrace
      { mk_e(Constructor ($2, [])) [$1;$3;$4;$5] }
  | topar2 type_name tcpar2 TOBrace initialize_list gcc_comma_opt TCBrace
      { mk_e(Constructor ($2, List.rev $5)) ([$1;$3;$4;$7] ++ $6) }
 
-primary_expr: 
+primary_expr:
  | identifier  { mk_e(Ident  (fst $1)) [snd $1] }
  | TInt    { mk_e(Constant (Int    (fst $1))) [snd $1] }
  | TFloat  { mk_e(Constant (Float  (fst $1))) [snd $1] }
@@ -656,11 +656,12 @@ primary_expr:
  | TOPar expr TCPar { mk_e(ParenExpr ($2)) [$1;$3] }  /*(* forunparser: *)*/
 
  /*(* gccext: cppext: TODO better ast ? *)*/
- | TMacroString { mk_e(Constant (MultiString)) [snd $1] }
- | string_elem string_list { mk_e(Constant (MultiString)) ($1 ++ $2) }
+ | TMacroString { mk_e(Constant (MultiString [fst $1])) [snd $1] }
+ | string_elem string_list
+     { mk_e(Constant (MultiString ["TODO: MultiString"])) ($1 ++ $2) }
 
  /*(* gccext: allow statement as expressions via ({ statement }) *)*/
- | TOPar compound TCPar  { mk_e(StatementExpr ($2)) [$1;$3] } 
+ | TOPar compound TCPar  { mk_e(StatementExpr ($2)) [$1;$3] }
 
 
 
@@ -670,7 +671,7 @@ primary_expr:
 
 /*(* cppext: *)*/
 /*(* to avoid conflicts have to introduce a _not_empty (ne) version *)*/
-argument_ne: 
+argument_ne:
  | assign_expr { Left $1 }
  | parameter_decl { Right (ArgType $1)  }
  | action_higherordermacro_ne { Right (ArgAction $1) }

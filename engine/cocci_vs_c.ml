@@ -776,7 +776,7 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
           | _ -> fail (* multi string, not handled *)
           )
 
-      | _, B.MultiString -> (* todo cocci? *) fail
+      | _, B.MultiString _ -> (* todo cocci? *) fail
       | _, (B.String _ | B.Float _ | B.Char _ | B.Int _) -> fail
       )
 

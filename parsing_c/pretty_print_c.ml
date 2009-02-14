@@ -76,7 +76,7 @@ let pretty_print_c pr_elem pr_space pr_nl pr_indent pr_outdent pr_unindent =
     (match exp, ii with
     | Ident (c),         [i]     -> pr_elem i
     (* only a MultiString can have multiple ii *)
-    | Constant (MultiString), is     -> is +> List.iter pr_elem
+    | Constant (MultiString _), is     -> is +> List.iter pr_elem
     | Constant (c),         [i]     -> pr_elem i 
     | FunCall  (e, es),     [i1;i2] -> 
         pp_expression e; pr_elem i1; 

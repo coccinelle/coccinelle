@@ -23,10 +23,10 @@ let rec exprrep expr = match expr with
 | Ast_c.Constructor (t,i) -> "TODO: Constructor"
 | Ast_c.ParenExpr e -> "TODO: ParenExpr"
 and constantrep c = match c with
-  Ast_c.String (s,isWchar) -> s 
-| Ast_c.MultiString -> "TODO: MultiString"
+  Ast_c.String (s,isWchar) -> s
+| Ast_c.MultiString sl -> String.concat "" sl
 | Ast_c.Char (s,isWchar) -> s
-| Ast_c.Int s -> s 
+| Ast_c.Int s -> s
 | Ast_c.Float (s,t) -> s
 
 let call_pretty f a =
