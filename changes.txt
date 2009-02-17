@@ -1,5 +1,14 @@
 -*- org -*-
 
+* 0.1.6
+
+** Features: 
+- grouping of generated rules with -hrule option
+
+** Bugfix:
+
+** Internals: 
+
 * 0.1.5
 
 ** Features: 

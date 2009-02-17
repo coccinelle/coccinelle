@@ -16,6 +16,7 @@ let pyoutput = ref "coccilib.output.Console"
 let patch = ref (None : string option)
 
 let make_hrule = ref (None : string (*dir*) option)
+let hrule_per_file = ref true (* if false, then a rule per function *)
 
 let currentfile = ref (None : string option)
 

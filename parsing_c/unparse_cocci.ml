@@ -131,7 +131,7 @@ let handle_metavar name fn =
   | None ->
       let name_string (_,s) = s in
       if generating
-      then pr (name_string (term name))
+      then mcode (function _ -> pr (name_string (term name))) name
       else
 	failwith
 	  (Printf.sprintf "SP line %d: Not found a value in env for: %s"
