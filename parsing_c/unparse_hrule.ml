@@ -396,7 +396,9 @@ let pp_rule local_metas ast env srcfile =
     (if !Flag.hrule_per_file
     then Filename.chop_extension (Filename.basename srcfile)
     else function_name_count) in
-  let outfile = outfile ^ ".cocci" in
+  let escape_re = Str.regexp_string "/" in
+  let outdirfile = Str.global_replace escape_re "_"(Filename.dirname srcfile) in
+  let outfile = outfile ^ outdirfile ^ ".cocci" in
   let saved_header_req =
     try let res = List.assoc outfile !started_files in Some res
     with Not_found -> None in
