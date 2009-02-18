@@ -67,5 +67,5 @@ let _ =
   List.iter
     (function file ->
       let _ = Sys.command (Printf.sprintf "/bin/rm %s" file) in
-      let _ = Sys.command (Printf.sprintf "/bin/rm %s.tmp" file) in ())
+      let _ = Sys.command (Printf.sprintf "/bin/rm tmp.%s" file) in ())
     files
