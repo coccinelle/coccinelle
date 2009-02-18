@@ -16,7 +16,9 @@ let get_files prefix =
   let files = Array.to_list(Sys.readdir(Sys.getcwd())) in
   let is_number n = try let _ = int_of_string n in true with _ -> false in
   let relevant name =
-    match Str.split (Str.regexp "\\.") name with
+    match Str.split (Str.regexp "\\.") name with(* Not enough generic - Should use reg & match
+   "\(.*\)\.[0-9]\.out" 
+    *)
       [pref;mid;ext] -> prefix = pref && is_number mid && ext = "out"
     | _ -> false in
   List.filter relevant files
@@ -43,7 +45,7 @@ let process_all_files files out =
   match elements with
     [] -> (* only python output *)
       let fl = String.concat " " (List.sort compare files) in
-      let _ = Sys.command (Printf.sprintf "cat %s > %s.out" fl out) in
+      let _ = Sys.command (Printf.sprintf "cat %s > %s" fl out) in
       ()
   | _ ->
       let o = open_out out in
@@ -59,7 +61,7 @@ let _ =
   Printf.printf "arg %s\n" arg;
   let arg = Filename.chop_extension arg in
   let files = get_files arg in
-  process_all_files files arg;
+  process_all_files files (arg^".out");
   let tmp_files =
     String.concat " "
       (List.map (function x -> "tmp."^x) (List.sort compare files)) in
