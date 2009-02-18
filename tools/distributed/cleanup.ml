@@ -43,7 +43,7 @@ let process_all_files files out =
   match elements with
     [] -> (* only python output *)
       let fl = String.concat " " (List.sort compare files) in
-      let _ = Sys.command (Printf.sprintf "cat %s > %s" fl out) in
+      let _ = Sys.command (Printf.sprintf "cat %s > %s.out" fl out) in
       ()
   | _ ->
       let o = open_out out in
@@ -63,9 +63,9 @@ let _ =
   let tmp_files =
     String.concat " "
       (List.map (function x -> "tmp."^x) (List.sort compare files)) in
-  let _ = Sys.command (Printf.sprintf "cat %s > tmp.%s" tmp_files arg) in
+  let _ = Sys.command (Printf.sprintf "cat %s > %s.tmp" tmp_files arg) in
   List.iter
     (function file ->
       let _ = Sys.command (Printf.sprintf "/bin/rm %s" file) in
-      let _ = Sys.command (Printf.sprintf "/bin/rm tmp.%s" file) in ())
+      let _ = Sys.command (Printf.sprintf "/bin/rm %s.tmp" file) in ())
     files
