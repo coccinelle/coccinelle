@@ -88,7 +88,7 @@ BYTECODE_STATIC=-custom
 # Top rules
 ##############################################################################
 .PHONY: all all.opt opt top clean configure
-.PHONY: $(MAKESUBDIRS) $(MAKESUBDIRS:%=%.opt)
+.PHONY: $(MAKESUBDIRS) $(MAKESUBDIRS:%=%.opt) subdirs subdirs.opt
 
 all:
 	$(MAKE) subdirs
@@ -101,8 +101,11 @@ opt:
 all.opt: opt
 top: $(EXEC).top
 
-subdirs: $(MAKESUBDIRS)
-subdirs.opt: $(MAKESUBDIRS:%=%.opt)
+subdirs:
+	+for D in $(MAKESUBDIRS); do make $$D ; done
+
+subdirs.opt:
+	+for D in $(MAKESUBDIRS); do make $$D.opt ; done
 
 $(MAKESUBDIRS):
 	$(MAKE) -C $@ OCAMLCFLAGS="$(OCAMLCFLAGS)" all
@@ -110,29 +113,29 @@ $(MAKESUBDIRS):
 $(MAKESUBDIRS:%=%.opt):
 	$(MAKE) -C $(@:%.opt=%) OCAMLCFLAGS="$(OCAMLCFLAGS)" all.opt
 
-commons:
-globals:
-menhirlib:
-parsing_cocci:globals menhirlib
-parsing_c:parsing_cocci
-ctl:globals commons
-engine: parsing_cocci parsing_c ctl
-popl09:engine
-extra: parsing_cocci parsing_c ctl
-pycaml:
-python:pycaml parsing_cocci parsing_c
-
-commons.opt:
-globals.opt:
-menhirlib.opt:
-parsing_cocci.opt:globals.opt menhirlib.opt
-parsing_c.opt:parsing_cocci.opt
-ctl.opt:globals.opt commons.opt
-engine.opt: parsing_cocci.opt parsing_c.opt ctl.opt
-popl09.opt:engine.opt
-extra.opt: parsing_cocci.opt parsing_c.opt ctl.opt
-pycaml.opt:
-python.opt:pycaml.opt parsing_cocci.opt parsing_c.opt
+# commons:
+# globals:
+# menhirlib:
+# parsing_cocci:globals menhirlib
+# parsing_c:parsing_cocci
+# ctl:globals commons
+# engine: parsing_cocci parsing_c ctl
+# popl09:engine
+# extra: parsing_cocci parsing_c ctl
+# pycaml:
+# python:pycaml parsing_cocci parsing_c
+#
+# commons.opt:
+# globals.opt:
+# menhirlib.opt:
+# parsing_cocci.opt:globals.opt menhirlib.opt
+# parsing_c.opt:parsing_cocci.opt
+# ctl.opt:globals.opt commons.opt
+# engine.opt: parsing_cocci.opt parsing_c.opt ctl.opt
+# popl09.opt:engine.opt
+# extra.opt: parsing_cocci.opt parsing_c.opt ctl.opt
+# pycaml.opt:
+# python.opt:pycaml.opt parsing_cocci.opt parsing_c.opt
 
 clean::
 	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i clean; done
