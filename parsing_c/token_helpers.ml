@@ -155,6 +155,7 @@ let is_stuff_taking_parenthized = function
   | _ -> false
 
 
+(* used in the algorithms for "10 most problematic errors" *)
 let is_ident_like = function
   | TIdent _
   | TypedefIdent _
@@ -496,5 +497,8 @@ let is_abstract x =
 (*****************************************************************************)
 (* Helpers *)
 (*****************************************************************************)
-let is_same_line line tok = 
-  line_of_tok tok = line
+let is_same_line_or_close line tok = 
+  line_of_tok tok = line || 
+  line_of_tok tok = line - 1 ||
+  line_of_tok tok = line - 2
+

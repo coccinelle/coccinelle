@@ -1132,7 +1132,7 @@ let parse_print_error_heuristic2 file =
 
           let pbline = 
             toks_of_bads 
-            +> Common.filter (TH.is_same_line line_error)
+            +> Common.filter (TH.is_same_line_or_close line_error)
             +> Common.filter TH.is_ident_like 
           in
           let error_info = 
