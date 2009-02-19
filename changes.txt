@@ -11,6 +11,8 @@
   Thx to Flavien@lebarbe.net for the idea.
 
 ** Bugfix:
+- consider the ident tokens also in the 2 lines before the error line for the 
+  10-most-problematic-parsing-errors diagnostic.
 
 ** Internals: 
 
