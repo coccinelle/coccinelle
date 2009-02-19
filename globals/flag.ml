@@ -21,3 +21,4 @@ let hrule_per_file = ref true (* if false, then a rule per function *)
 let currentfile = ref (None : string option)
 
 let current_element = ref ""
+let dir = ref ""

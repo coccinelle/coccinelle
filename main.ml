@@ -679,14 +679,21 @@ let main () =
               | true, "", true -> 
                   if not (null xs)
                   then failwith "-use_glimpse can accept only one dir";
-                  
+
+		  Flag.dir := x;
                   let files =
 		    match glimpse_filter (!cocci_file, !Config.std_iso) x with
 		      None ->
 			Common.cmd_to_list (* same as "true, "", _" case *)
 			  (if !include_headers
+			     (* FIXME : Could we remove xs ?
+				-use_glimpse requires a singleton.
+				This is checked some lines before.
 			  then ("find "^(join " " (x::xs))^" -name \"*.[ch]\"")
 			  else ("find "^(join " " (x::xs))^" -name \"*.c\""))
+			     *)
+			  then ("find "^ x ^" -name \"*.[ch]\"")
+			  else ("find "^ x ^" -name \"*.c\""))
 		    | Some files -> files in
                   files +> List.map (fun x -> [x])
               (* normal *)
