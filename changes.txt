@@ -16,9 +16,11 @@
 
 * 0.1.5
 
-** Features: 
+** Language: 
 - added initialiser metavariable
 - added sequences of designators in structures
+
+** Features: 
 - improved printing of the C code corresponding to metavariables
 - improved printing when code (eg declarations) is removed at the beginning
   of a block, and then is followed by a blank line
@@ -34,13 +36,15 @@
 
 * 0.1.4
 
+** Language: 
+- long long added to SmPL
+
 ** Features: 
 - can match patterns of the form unsigned T or signed T, where T is a
   metavariable
 - dropped the sizeof_parens isomorphism, which was made redundant by the
   paren isomorphism
 - simple rule generation
-- long long added to SmPL
 
 ** Bugfix:
 - trailing , ; and ) no longer left on a line by themselves
@@ -95,16 +99,18 @@
 
 * 0.1.1
 
-** Langage: 
+** Language: 
  - support for initializer at toplevel, cf -test substruct
 
 * 0.1
 
 ** first public release of the source code:
 
-** Features
+** Language: 
  - embeded python scripting
  - position
+
+** Features
 
 * beta 
 
