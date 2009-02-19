@@ -687,6 +687,7 @@ type cppcommentkind =
   | CppMacro 
   | CppPassingNormal (* ifdef 0, cplusplus, etc *) 
   | CppPassingCosWouldGetError (* expr passsing *)
+  | CppPassingExplicit (* skip_start/end tag *)
 
 
 

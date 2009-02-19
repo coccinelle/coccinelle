@@ -4,6 +4,11 @@
 
 ** Features: 
 - grouping of generated rules with -hrule option
+- handling of special coccinelle comments 
+  /* {{coccinelle:skip_start}} */ and
+  /* {{coccinelle:skip_end}} */
+  allowing to give more hints to the C parser.
+  Thx to Flavien@lebarbe.net for the idea.
 
 ** Bugfix:
 

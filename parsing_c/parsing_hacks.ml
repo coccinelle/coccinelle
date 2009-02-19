@@ -903,6 +903,43 @@ let rec set_ifdef_parenthize_info xs =
 (*****************************************************************************)
 
 (* ------------------------------------------------------------------------- *)
+(* special skip_start skip_end handling *)
+(* ------------------------------------------------------------------------- *)
+
+(* note: after this normally the token list should not contain any more the
+ * TCommentSkipTagStart and End tokens.
+ *)
+let rec commentize_skip_start_to_end xs =
+  match xs with
+  | [] -> ()
+  | x::xs -> 
+      (match x with
+      | {tok = TCommentSkipTagStart info} -> 
+          (try 
+            let (before, x2, after) = 
+              xs +> Common.split_when (function
+              | {tok = TCommentSkipTagEnd _ } -> true
+              | _ -> false 
+              )
+            in
+            let topass = x::x2::before in
+            topass +> List.iter (fun tok -> 
+              set_as_comment Ast_c.CppPassingExplicit tok
+            );
+            commentize_skip_start_to_end after
+          with Not_found -> 
+            failwith "could not find end of skip_start special comment"
+          )
+      | {tok = TCommentSkipTagEnd info} -> 
+            failwith "found skip_end comment but no skip_start"
+      | _ -> 
+          commentize_skip_start_to_end xs
+      )
+         
+            
+
+
+(* ------------------------------------------------------------------------- *)
 (* ifdef keeping/passing *)
 (* ------------------------------------------------------------------------- *)
 
@@ -1864,8 +1901,12 @@ let fix_tokens_cpp2 tokens =
      * 
      *)
 
+    commentize_skip_start_to_end !tokens2;
+
     (* ifdef *)
     let cleaner = !tokens2 +> List.filter (fun x -> 
+      (* is_comment will also filter the TCommentCpp created in 
+       * commentize_skip_start_to_end *)
       not (TH.is_comment x.tok) (* could filter also #define/#include *)
     ) in
     let ifdef_grouped = mk_ifdef cleaner in

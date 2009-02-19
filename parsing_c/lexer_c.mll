@@ -1,5 +1,7 @@
 {
-(* Copyright (C) 2002, 2006, 2007, 2008 Yoann Padioleau
+(* Yoann Padioleau
+ * 
+ * Copyright (C) 2002, 2006, 2007, 2008, 2009, Ecole des Mines de Nantes
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License (GPL)
@@ -213,7 +215,15 @@ rule token = parse
   | "/*" 
       { let info = tokinfo lexbuf in 
         let com = comment lexbuf in
-        TComment(info +> tok_add_s com) 
+
+        let info' = info +> tok_add_s com in
+        let s = Ast_c.str_of_info info' in
+        match s with
+        | "/* {{coccinelle:skip_start}} */" -> 
+            TCommentSkipTagStart (info')
+        | "/* {{coccinelle:skip_end}} */" -> 
+            TCommentSkipTagEnd (info')
+        | _ -> TComment(info') 
       }
 
 

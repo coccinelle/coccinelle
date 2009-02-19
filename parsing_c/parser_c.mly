@@ -456,6 +456,11 @@ let mk_e e ii = ((e, Ast_c.noType()), ii)
 /*(* other         *)*/
 /*(*---------------*)*/
 
+
+/*(* should disappear after parsing_hack *)*/
+%token <Ast_c.info> TCommentSkipTagStart TCommentSkipTagEnd
+
+
 /*(* appear after parsing_hack *)*/
 %token <Ast_c.info> TCParEOL   
 

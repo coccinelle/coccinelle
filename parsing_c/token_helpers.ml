@@ -233,6 +233,9 @@ let info_of_tok = function
   | TCommentCpp          (cppkind, i) -> i
   | TCommentMisc         (i) -> i
 
+  | TCommentSkipTagStart (i) -> i
+  | TCommentSkipTagEnd (i) -> i
+
   | TIfdef               (_, i) -> i
   | TIfdefelse           (_, i) -> i
   | TIfdefelif           (_, i) -> i
@@ -376,6 +379,9 @@ let visitor_info_of_tok f = function
   | TCommentNewline      (i) -> TCommentNewline      (f i) 
   | TCommentCpp          (cppkind, i) -> TCommentCpp (cppkind, f i) 
   | TCommentMisc         (i) -> TCommentMisc         (f i) 
+
+  | TCommentSkipTagStart         (i) -> TCommentSkipTagStart         (f i) 
+  | TCommentSkipTagEnd         (i) -> TCommentSkipTagEnd         (f i) 
 
   | TIfdef               (t, i) -> TIfdef               (t, f i) 
   | TIfdefelse           (t, i) -> TIfdefelse           (t, f i) 
