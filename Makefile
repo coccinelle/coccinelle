@@ -75,7 +75,7 @@ OCAMLC=ocamlc$(OPTBIN) $(OCAMLCFLAGS)  $(INCLUDES)
 OCAMLOPT=ocamlopt$(OPTBIN) $(OPTFLAGS) $(INCLUDES)
 OCAMLLEX=ocamllex #-ml # -ml for debugging lexer, but slightly slower
 OCAMLYACC=ocamlyacc -v
-OCAMLDEP=ocamldep #$(INCLUDES)
+OCAMLDEP=ocamldep $(INCLUDES)
 OCAMLMKTOP=ocamlmktop -g -custom $(INCLUDES)
 
 # can also be set via 'make static'

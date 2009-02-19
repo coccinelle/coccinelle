@@ -45,7 +45,7 @@ OCAMLC=ocamlc$(OPTBIN) $(OCAMLCFLAGS) $(INCLUDES)
 OCAMLOPT=ocamlopt$(OPTBIN) $(OPTFLAGS) $(INCLUDES)
 OCAMLLEX=ocamllex$(OPTBIN) #-ml
 OCAMLYACC=ocamlyacc -v
-OCAMLDEP=ocamldep$(OPTBIN) #$(INCLUDES)
+OCAMLDEP=ocamldep$(OPTBIN) $(INCLUDES)
 OCAMLMKTOP=ocamlmktop -g -custom $(INCLUDES)
 
 

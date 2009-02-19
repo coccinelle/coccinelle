@@ -35,7 +35,7 @@ INCLUDES=$(INCLUDEDIRS:%=-I %) $(INCLUDESEXTRA)
 OCAMLCFLAGS ?= -g -dtypes
 OCAMLC =ocamlc$(OPTBIN) $(OCAMLCFLAGS) $(INCLUDES)
 OCAMLOPT = ocamlopt$(OPTBIN) $(OPTFLAGS) $(INCLUDES)
-OCAMLDEP = ocamldep$(OPTBIN) #$(INCLUDES)
+OCAMLDEP = ocamldep$(OPTBIN) $(INCLUDES)
 
 
 ##############################################################################
