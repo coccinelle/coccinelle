@@ -23,7 +23,7 @@ let rec exprrep expr = match expr with
 | Ast_c.ParenExpr e -> "TODO: ParenExpr"
 and constantrep c = match c with
   Ast_c.String (s,isWchar) -> s 
-| Ast_c.MultiString -> "TODO: MultiString"
+| Ast_c.MultiString _ -> "TODO: MultiString"
 | Ast_c.Char (s,isWchar) -> s
 | Ast_c.Int s -> s 
 | Ast_c.Float (s,t) -> s
@@ -51,4 +51,5 @@ let stringrep mvb = match mvb with
     (* Common.sprintf ("pos(%d,%d)") pos1 pos2 *)
     "TODO: <<posval>>"
 | Ast_c.MetaPosValList positions -> "TODO: <<postvallist>>"
+| Ast_c.MetaInitVal _ -> "TODO: <<metainitval>>"
 
