@@ -102,10 +102,10 @@ all.opt: opt
 top: $(EXEC).top
 
 subdirs:
-	+for D in $(MAKESUBDIRS); do make $$D ; done
+	+for D in $(MAKESUBDIRS); do $(MAKE) $$D ; done
 
 subdirs.opt:
-	+for D in $(MAKESUBDIRS); do make $$D.opt ; done
+	+for D in $(MAKESUBDIRS); do $(MAKE) $$D.opt ; done
 
 $(MAKESUBDIRS):
 	$(MAKE) -C $@ OCAMLCFLAGS="$(OCAMLCFLAGS)" all
