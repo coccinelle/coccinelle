@@ -14,13 +14,14 @@ let get_file l = (* l is a diff line *)
 
 let get_files prefix =
   let files = Array.to_list(Sys.readdir(Sys.getcwd())) in
-  let is_number n = try let _ = int_of_string n in true with _ -> false in
   let relevant name =
-    match Str.split (Str.regexp "\\.") name with(* Not enough generic - Should use reg & match
-   "\(.*\)\.[0-9]\.out" 
-    *)
-      [pref;mid;ext] -> prefix = pref && is_number mid && ext = "out"
-    | _ -> false in
+    let rel_re = Str.regexp "\\(.*\\)\\.[0-9]+\\.out" in
+      if Str.string_match rel_re name 0 then
+	let pref = Str.matched_group 1 name in
+	  pref = prefix
+      else
+	false
+  in
   List.filter relevant files
 
 let process_file fl =
