@@ -1,60 +1,16 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
-#include <sys/types.h>
-#include <sys/ipc.h>
-#include <sys/sem.h>
-#include <errno.h>
-#include <sys/time.h>
-#include <signal.h>
 #include <string.h>
 
 #define MAX 9
-
-#define DONE_SEM 0 // index of the semaphore on which to wait for children
 
 #ifndef HOME
 #define HOME "/home/julia/coccinelle/tools/distributed/"
 #endif
 
-int sem;
-
-void inc_sem(int sem, int sem_num, int inc) {
-  struct sembuf sops;
-  sops.sem_num = sem_num;
-  sops.sem_op = inc;
-  sops.sem_flg = 0;
-  semop(sem,&sops,1);
-}
-
-void dec_sem(int sem, int sem_num) {
-  struct sembuf sops;
-  sops.sem_num = sem_num;
-  sops.sem_op = -1;
-  sops.sem_flg = 0;
-  semop(sem,&sops,1);
-}
-
-void wait_sem(int sem, int sem_num) {
-  struct sembuf sops;
-  int err;
-  sops.sem_num = sem_num;
-  sops.sem_op = 0;
-  sops.sem_flg = 0;
-  err = semop(sem,&sops,1);
-  if (err < 0) {printf("error in %d\n",sem);perror("wait_sem");}
-}
-
-void exit_sighandler(int x) {
-  semctl(sem,DONE_SEM,IPC_RMID);
-  exit(0);
-}
-
-void do_child(int sem, int id, unsigned int argc, char **argv, int max,
+void do_child(int id, unsigned int argc, char **argv, int max,
 	      char *script) {
-  int pid,status;
-  if (!(pid=fork())) {
-    // child
     int i;
     char **new_args = malloc(sizeof(char*) * (argc + 5));
     char string1[50],string2[50];
@@ -73,10 +29,7 @@ void do_child(int sem, int id, unsigned int argc, char **argv, int max,
     execvp(script,new_args);
     printf("tried to execute %s\n",HOME "spatch_linux_script");
     perror("exec failure");
-    exit(0);
-  }
-  wait(&status);
-  dec_sem(sem,DONE_SEM);  // indicate that this child is done
+    _exit(0);
 }
 
 void cleanup(char **argv) {
@@ -85,20 +38,12 @@ void cleanup(char **argv) {
   new_args[1] = argv[1];
   new_args[2] = NULL;
   printf ("doing cleanup on %s\n",argv[1]);
-  execvp(HOME "cleanup_script",new_args);
+  execvp(HOME "cleanup",new_args);
 }
 
 int main(unsigned int argc, char **argv) {
-  int pid, i, start=0, max;
+  int i, start=0, max;
   char script[150];
-  // initialize the semaphore
-  sem = semget(0,1/* only one sem */,(IPC_CREAT|0666));
-  if (sem < 0) { perror("semget"); exit(0); }
-  // set up signal handlers so we can delete the semaphore
-  signal(SIGTERM,exit_sighandler); // kill
-  signal(SIGHUP,exit_sighandler);  // kill -HUP  /  xterm closed
-  signal(SIGINT,exit_sighandler);  // Interrupt from keyboard
-  signal(SIGQUIT,exit_sighandler); // Quit from keyboard
   // interpret the arguments
   max = MAX;
   if (!strcmp(argv[1],"-processes")) {max = atoi(argv[2]); start = 2;}
@@ -112,19 +57,23 @@ int main(unsigned int argc, char **argv) {
     exit (0);
   }
 
-  inc_sem(sem,0,max);
-
   // run the child processes
+  int pid;
   for(i=0;i!=max;i++) {
     if (!(pid=fork())) {
       // child
-      do_child(sem,i,argc-start,&argv[start],max,script);
-      exit(0);
+      do_child(i,argc-start,&argv[start],max,script);
     }
+    else if (pid > 0) {
+  //  	printf("Child born: %d\n", pid);
+    }
+    else
+    	printf("*** forking error ***\n");
   }
-
-  wait_sem(sem,DONE_SEM); // wait for the children to end
-  int err = semctl(sem,DONE_SEM,IPC_RMID);
-  if (err < 0) perror ("couldn't remove");
+  int status;
+  for(i=0;i!=max;i++) {
+  	pid = wait(&status);
+  //  	printf("Child dead: %d -- %d\n", pid,status);
+  }
   cleanup(&argv[start]);
 }
