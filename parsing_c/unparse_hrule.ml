@@ -11,6 +11,8 @@ let started_files = ref ([] : (string * bool) list)
 let typedefs = ref ([] : (string * string list ref) list)
 let current_outfile = ref ""
 
+let prefix = "_cocci_"
+
 (* ----------------------------------------------------------------------- *)
 (* Create rule to check for header include *)
 
@@ -152,11 +154,11 @@ let rewrap_str s ii =
 let print_metavar pr = function
     ((_,Some param,(_,(Ast_c.Pointer(_,(Ast_c.BaseType(Ast_c.Void),_)),_))),_)
     ->
-      pr "expression _"; pr param
+      pr ("expression "^prefix); pr param
   | (((_,Some param,(_,ty)),il) : Ast_c.parameterType) ->
       let il =
 	match List.rev il with
-	  name::rest -> (rewrap_str ("_"^param) name) :: rest
+	  name::rest -> (rewrap_str (prefix^param) name) :: rest
 	| _ -> failwith "no name" in
       print_typedef pr ty;
       Pretty_print_c.pp_param_gen
@@ -173,7 +175,7 @@ let print_metavar pr = function
 let make_exp = function
     (((_,Some name,ty),param_ii),comma_ii) ->
       let no_info = (None,Ast_c.NotTest) in
-      let nm = "_"^name in
+      let nm = prefix^name in
       let exp =
 	((Ast_c.Ident nm,ref no_info),
 	 [rewrap_str nm (List.hd(List.rev param_ii))]) in
@@ -205,7 +207,7 @@ let print_extra_typedefs pr env =
     env
 
 let rename argids env =
-  let argenv = List.map (function arg -> (arg,"_"^arg)) argids in
+  let argenv = List.map (function arg -> (arg,prefix^arg)) argids in
   let lookup x = try List.assoc x argenv with Not_found -> x in
   let bigf =
     { Visitor_c.default_visitor_c_s with

@@ -1268,7 +1268,7 @@ unary_expr(r,pe):
       { Ast0.wrap(Ast0.Infix ($2, P.clt2mcode Ast.Inc $1)) }
   | TDec unary_expr(r,pe)
       { Ast0.wrap(Ast0.Infix ($2, P.clt2mcode Ast.Dec $1)) }
-  | unary_op unary_expr(r,pe)
+  | unary_op cast_expr(r,pe)
       { let mcode = $1 in Ast0.wrap(Ast0.Unary($2, mcode)) }
   | TBang unary_expr(r,pe)
       { let mcode = P.clt2mcode Ast.Not $1 in

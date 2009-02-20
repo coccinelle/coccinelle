@@ -13,6 +13,9 @@
 ** Bugfix:
 - consider the ident tokens also in the 2 lines before the error line for the 
   10-most-problematic-parsing-errors diagnostic.
+- SmPL parser allows cast as the argument of a pointer
+- SmPL type checker allows enum as an array index
+- Better generation of fresh metavariables names in hrule
 
 ** Internals: 
 
