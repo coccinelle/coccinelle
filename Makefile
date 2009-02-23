@@ -143,8 +143,8 @@ clean::
 configure:
 	./configure
 
-$(LIBS): #$(MAKESUBDIRS)
-$(LIBS:.cma=.cmxa): #$(MAKESUBDIRS:%=%.opt)
+$(LIBS): $(MAKESUBDIRS)
+$(LIBS:.cma=.cmxa): $(MAKESUBDIRS:%=%.opt)
 
 $(OBJS):$(LIBS)
 $(OPTOBJS):$(LIBS:.cma=.cmxa)
