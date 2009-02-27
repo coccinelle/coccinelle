@@ -10,7 +10,7 @@ MYSRC=common.ml common_extra.ml \
       seti.ml \
       oset.ml oassoc.ml osequence.ml ograph.ml \
       ocollection/oseti.ml ocollection/oseth.ml ocollection/osetb.ml ocollection/osetpt.ml \
-      ocollection/oassocb.ml ocollection/oassoch.ml ocollection/oassoc_buffer.ml ocollection/oassocid.ml \
+      ocollection/oassocb.ml ocollection/oassoch.ml ocollection/oassoc_buffer.ml ocollection/oassoc_cache.ml ocollection/oassocid.ml \
       oarray.ml \
       ocollection/ograph2way.ml ograph_extended.ml \
       ofullcommon.ml \
