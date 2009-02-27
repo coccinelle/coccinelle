@@ -10,6 +10,10 @@ open Oassoc
  * the dbm, before marshalling. Cf oassocdbm.mli for more about this.
  * 
  * Quite similar to oassocdbm.ml. New: Take transact argument.
+ * 
+ * How to optimize when using this oassoc is slow ?
+ *   - use oassoc_buffer as a front-end of this oassoc
+ *   - reduce the size of the key or value
  *)
 class ['a,'b] oassoc_btree db namedb transact (*fkey unkey*) fv unv = 
 let namedb = if namedb = "" then "" else "(" ^ namedb ^ ")" in
@@ -29,10 +33,10 @@ object(o)
        (Marshal.to_string k []) [] 
        with Not_found -> ());
     *)
-    let k' = Marshal.to_string k [] in
+    let k' = Common.marshal__to_string k [] in
     let v' = 
       try
-        Marshal.to_string (fv v) [(*Marshal.Closures*)] 
+        Common.marshal__to_string (fv v) [(*Marshal.Closures*)] 
       with Out_of_memory -> 
         pr2 ("PBBBBBBB Out_of_memory in: " ^ namedb);
         raise Out_of_memory
@@ -55,8 +59,8 @@ object(o)
 	(try 
 	    let a = Cursor.dbc_get dbc [Cursor.DB_NEXT] in
             (* minsky ? Cursor.get dbc Cursor.NEXT [] *)
-	    let key  = (* unkey *) Marshal.from_string (fst a) 0 in 
-	    let valu = unv (Marshal.from_string (snd a) 0) in
+	    let key  = (* unkey *) Common.marshal__from_string (fst a) 0 in 
+	    let valu = unv (Common.marshal__from_string (snd a) 0) in
 	    f (key, valu);
             true
 	 with Failure "ending" -> false
@@ -106,10 +110,10 @@ object(o)
 
   method private assoc2 k = 
     try 
-      let k' = Marshal.to_string k [] in
+      let k' = Common.marshal__to_string k [] in
       let vget = Db.get data (transact()) k' [] in
       (* minsky ? Db.get data ~txn:(transact() *)
-      unv (Marshal.from_string vget  0)
+      unv (Common.marshal__from_string vget  0)
     with Not_found -> 
       log3 ("pb assoc with k = " ^ (Dumper.dump k)); 
       raise Not_found
@@ -117,7 +121,7 @@ object(o)
     Common.profile_code ("Btree.assoc" ^ namedb) (fun () -> o#assoc2 x)
 
   method private delkey2 k = 
-    let k' = Marshal.to_string k [] in
+    let k' = Common.marshal__to_string k [] in
     Db.del data (transact()) k'  []; 
     o
   method delkey x = 
@@ -132,9 +136,9 @@ object(o)
 	(try 
 	    let a = Cursor.dbc_get dbc [Cursor.DB_NEXT] in
             (* minsky ? Cursor.get dbc Cursor.NEXT [] *)
-	    let key  = (* unkey *) Marshal.from_string (fst a) 0 in 
+	    let key  = (* unkey *) Common.marshal__from_string (fst a) 0 in 
 	    (* 
-               let valu = unv (Marshal.from_string (snd a) 0) in
+               let valu = unv (Common.marshal__from_string (snd a) 0) in
 	       f (key, valu);
             *)
             Common.push2 key res;

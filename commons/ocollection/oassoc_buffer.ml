@@ -5,7 +5,12 @@ open Oassoc
 open Oassocb
 open Osetb
 
-(* todo: limit number of entries, and erase all (then better do a ltu) 
+(* todo: gather stat of use per key, so when flush, try keep
+ * entries that are used above a certain threshold, and if after
+ * this step, there is still too much, then erase also those keys.
+ * 
+ * todo: limit number of entries, and erase all (then better do a ltu) 
+ * 
  * todo: another cache that behave as in lfs1, 
  * every 100 operation do a flush 
  * 

@@ -30,8 +30,8 @@ object(o)
        (Marshal.to_string k []) [] 
        with Not_found -> ());
     *)
-    let k' = Marshal.to_string k [] in
-    let v' = (Marshal.to_string (fv v) [(*Marshal.Closures*)]) in
+    let k' = Common.marshal__to_string k [] in
+    let v' = (Common.marshal__to_string (fv v) [(*Common.marshal__Closures*)]) in
     (try Dbm.add db k' v' 
       with _ -> Dbm.replace db k' v'
     );
@@ -39,8 +39,8 @@ object(o)
 
   method iter f = 
     db +> Dbm.iter (fun key data -> 
-      let k' = (* unkey *) Marshal.from_string key 0 in 
-      let v' = unv (Marshal.from_string data 0) in
+      let k' = (* unkey *) Common.marshal__from_string key 0 in 
+      let v' = unv (Common.marshal__from_string data 0) in
       f (k', v')
     ) 
      
@@ -51,11 +51,11 @@ object(o)
   method null = raise Todo
     
   method assoc k = 
-    let k' = Marshal.to_string k [] in
-    unv (Marshal.from_string (Dbm.find db k') 0)
+    let k' = Common.marshal__to_string k [] in
+    unv (Common.marshal__from_string (Dbm.find db k') 0)
 
   method delkey k = 
-    let k' = Marshal.to_string k [] in
+    let k' = Common.marshal__to_string k [] in
     try 
       Dbm.remove db k';
       o
@@ -65,9 +65,9 @@ object(o)
   method keys = 
     let res = ref [] in 
     db +> Dbm.iter (fun key data -> 
-      let k' = (* unkey *) Marshal.from_string key 0 in 
+      let k' = (* unkey *) Common.marshal__from_string key 0 in 
       (* 
-         let v' = unv (Marshal.from_string data 0) in
+         let v' = unv (Common.marshal__from_string data 0) in
          f (k', v')
       *)
       Common.push2 k' res;
