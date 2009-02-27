@@ -1,4 +1,6 @@
-(* Copyright (C) 2007, 2008 Yoann Padioleau
+(* Yoann Padioleau
+ * 
+ * Copyright (C) 2007, 2008, 2009 Ecole des Mines de Nantes
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License (GPL)
@@ -90,7 +92,8 @@ let semi_al_program = List.map (Visitor_c.vk_toplevel_s semi_strip_info_visitor)
 
 
 
-
+(* really strip, do not keep position nor anything specificities, true
+ * abstracted form. *)
 let real_strip_info_visitor _ = 
   { Visitor_c.default_visitor_c_s with
     Visitor_c.kinfo_s = (fun (k,_) i ->
@@ -211,3 +214,60 @@ let (range_of_origin_ii: Ast_c.info list -> (int * int) option) =
       (Ast_c.pos_of_info min, Ast_c.pos_of_info max + String.length strmax)
   with _ -> 
     None
+
+(*****************************************************************************)
+(* Basic_query *)
+(*****************************************************************************)
+
+(* used in yacfe gui *)
+let (expr_at_pos: int -> Ast_c.toplevel -> Ast_c.expression) = fun pos top -> 
+
+  let res = ref [] in
+  Visitor_c.vk_toplevel { Visitor_c.default_visitor_c with
+    Visitor_c.kexpr = (fun (k, bigf) e -> 
+
+      let ((unwrape,_typ), ii) = e in
+      if ii +> List.exists (fun ii -> 
+        let startoffset =
+          Ast_c.pos_of_info ii in
+        let endoffset =
+          startoffset + String.length (Ast_c.str_of_info ii)
+        in
+          
+        Ast_c.is_origintok ii &&
+          pos >= startoffset &&
+
+          pos <= endoffset
+        
+      )
+      then Common.push2 e res;
+
+      k e
+    );
+  } top;
+  Common.list_to_single_or_exn !res
+
+                        
+
+
+(*****************************************************************************)
+(* Ast getters *)
+(*****************************************************************************)
+
+let names_of_parameters_in_def def = 
+  match def.Ast_c.f_old_c_style with
+  | Some _ -> 
+      pr2_once "names_of_parameters_in_def: f_old_c_style not handled";
+      []
+  | None -> 
+      let ftyp = def.Ast_c.f_type in
+      let (ret, (params, bwrap)) = ftyp in
+      params +> Common.map_filter (fun (param,ii) -> 
+        Ast_c.name_of_parameter param
+      )
+
+let names_of_parameters_in_macro xs = 
+  xs +> List.map (fun (xx, ii) -> 
+    let (s, ii2) = xx in
+    s
+  )

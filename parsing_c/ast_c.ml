@@ -1,4 +1,6 @@
-(* Copyright (C) 2002, 2006, 2007, 2008 Yoann Padioleau
+(* Yoann Padioleau
+ * 
+ * Copyright (C) 2002, 2006, 2007, 2008, 2009 Yoann Padioleau
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License (GPL)
@@ -86,6 +88,7 @@ type parse_info =
   | FakeTok of string * virtual_position
   (* Present both in ast and list of tokens.  *)
   | ExpandedTok of Common.parse_info * virtual_position
+
   (* Present neither in ast nor in list of tokens
    * but only in the '+' of the mcode of some tokens. Those kind of tokens
    * are used to be able to use '=' to compare big ast portions.
@@ -248,7 +251,7 @@ and attribute = attributebis wrap
 (* ------------------------------------------------------------------------- *)
 and expression = (expressionbis * exp_info ref (* semantic: *)) wrap
  and exp_info = exp_type option * test
-  and exp_type = fullType * local
+  and exp_type = fullType (* Type_c.completed_and_simplified *) * local
     and local = LocalVar of parse_info | NotLocalVar (* cocci: *)
   and test = Test | NotTest (* cocci: *)
 
@@ -748,6 +751,7 @@ let unwrap = fst
 
 let unwrap2 = fst
 
+
 let unwrap_expr ((unwrap_e, typ), iie) = unwrap_e
 let rewrap_expr ((_old_unwrap_e, typ), iie)  newe = ((newe, typ), iie)
 
@@ -760,6 +764,12 @@ let get_onlytype_expr ((unwrap_e, typ), iie) =
   match !typ with
   | Some (ft,_local), _test -> Some ft
   | None, _ -> None
+
+let get_onlylocal_expr ((unwrap_e, typ), iie) = 
+  match !typ with
+  | Some (ft,local), _test -> Some local
+  | None, _ -> None
+
 
 
 let unwrap_typeC (qu, (typeC, ii)) = typeC
@@ -1022,3 +1032,6 @@ let s_of_attr attr =
 let type_of_parameter param = 
   let ((b, sopt, typ), ii) = param in 
   typ
+let name_of_parameter param = 
+  let ((b, sopt, typ), ii) = param in 
+  sopt

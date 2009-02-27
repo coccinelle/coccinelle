@@ -1,4 +1,6 @@
-(* Copyright (C) 2008, 2009 University of Urbana Champaign
+(* Yoann Padioleau
+ * 
+ * Copyright (C) 2008, 2009 University of Urbana Champaign
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License (GPL)

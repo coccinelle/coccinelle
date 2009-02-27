@@ -1,4 +1,6 @@
-(* Copyright (C) 2007, 2008 Yoann Padioleau
+(* Yoann Padioleau 
+ *
+ * Copyright (C) 2007, 2008, 2009 University of Urbana Champaign
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License (GPL)
@@ -18,7 +20,30 @@ open Ast_c
 (* Types *)
 (*****************************************************************************)
 
-(* todo? define a new clean fulltype ? as julia did with type_cocci.ml
+(* What info do we want in a clean C type ? Normally it would help
+ * if we remove some of the complexity of C with for instance typedefs
+ * by expanding those typedefs or structname and enumname to their
+ * final value. Then, when we do pattern matching we can conveniently forget
+ * to handle the typedef, enumname and similar cases. But sometimes,
+ * in coccinelle for instance, we want to keep some of those original
+ * info. So right now we have a in-the-middle solution by keeping
+ * the original typename in the ast and expanding some of them
+ * in the type_annotation phase. We don't do this expansion for
+ * structname because usually when we have a struct we actually
+ * prefer to just have the structname. It's only when we access
+ * field that we need that information, but the type_annotater has
+ * already done this job so no need in the parent expression to know
+ * the full definition of the structure. But for typedef, this is different.
+ * 
+ * So really the finalType we want, the completed_type notion below,
+ * corresponds to a type we think is useful enough to work on, to do
+ * pattern matching on, and one where we have all the needed information
+ * and we don't need to look again somewhere else to get the information.
+ *
+ * 
+ * 
+ * 
+ * todo? define a new clean fulltype ? as julia did with type_cocci.ml
  * without the parsing info, with some normalization (for instance have
  * only structUnionName and enumName, and remove the ParenType), some
  * abstractions (don't care for instance about name in parameters of
@@ -32,6 +57,68 @@ open Ast_c
  *)
 
 type finalType = Ast_c.fullType
+
+type completed_and_simplified = Ast_c.fullType
+
+type completed_typedef = Ast_c.fullType
+type removed_typedef = Ast_c.fullType
+
+
+(* normally if the type annotated has done a good job, this should always
+ * return true. Cf type_annotater_c.typedef_fix.
+ *)
+let rec is_completed_and_simplified ty = 
+  match Ast_c.unwrap_typeC ty with 
+  | BaseType x  -> true
+  | Pointer t -> is_completed_and_simplified t
+  | Array (e, t) -> is_completed_and_simplified t
+  | StructUnion (su, sopt, fields) -> 
+      (* recurse fields ? Normally actually don't want, 
+       * prefer to have a StructUnionName when it's possible *)
+      (match sopt with
+      | None -> true
+      | Some _ -> false (* should have transformed it in a StructUnionName *)
+      )
+  | FunctionType ft -> 
+      (* todo? return type is completed ? params completed ? *)
+      true
+  | Enum  (s, enumt) -> 
+      true
+  | EnumName s -> 
+      true
+
+  (* we prefer StructUnionName to StructUnion when it comes to typed metavar *)
+  | StructUnionName (su, s) -> true
+
+  (* should have completed with more information *)
+  | TypeName (s, typ) -> 
+      (match typ with
+      | None -> false
+      | Some t -> 
+          (* recurse cos what if it's an alias of an alias ? *)
+          is_completed_and_simplified t
+      )
+
+  (* should have removed paren, for better matching with typed metavar.
+   * kind of iso again *)
+  | ParenType t -> 
+      false
+  (* same *)
+  | TypeOfType t -> 
+      false
+
+  | TypeOfExpr e -> 
+      true (* well we don't handle it, so can't really say it's completed *)
+
+
+let is_completed_typedef_fullType x = raise Todo  
+
+let is_removed_typedef_fullType x = raise Todo
+  
+(*****************************************************************************)
+(* more "virtual" fulltype, the fullType_with_no_typename *)
+(*****************************************************************************)
+let remove_typedef x = raise Todo
 
 (*****************************************************************************)
 (* expression exp_info annotation vs finalType *)
@@ -305,5 +392,49 @@ let (type_field:
       pr2 ("MultiFound field: " ^ fld) ;
       x
     
+
+
+(*****************************************************************************)
+(* helpers *)
+(*****************************************************************************)
+
+
+(* was in aliasing_function_c.ml before*)
+
+(* assume normalized/completed ? so no ParenType handling to do ? 
+*)
+let rec is_function_type x = 
+  match Ast_c.unwrap_typeC x with
+  | FunctionType _ -> true
+  | _ -> false
+
+
+(* assume normalized/completed ? so no ParenType handling to do ? *)
+let rec function_pointer_type_opt x = 
+  match Ast_c.unwrap_typeC x with
+  | Pointer y -> 
+      (match Ast_c.unwrap_typeC y with
+      | FunctionType ft -> Some ft
+
+      (* fix *)
+      | TypeName (_s, Some ft2) -> 
+          (match Ast_c.unwrap_typeC ft2 with
+          | FunctionType ft -> Some ft
+          | _ -> None
+          )
+
+      | _ -> None
+      )
+  (* bugfix: for many fields in structure, the field is a typename 
+   * like irq_handler_t to a function pointer 
+   *)
+  | TypeName (s, Some ft) -> 
+      function_pointer_type_opt ft
+  (* bugfix: in field, usually it has some ParenType *)
+
+  | ParenType ft -> 
+      function_pointer_type_opt ft
+
+  | _ -> None
 
 
