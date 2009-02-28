@@ -230,8 +230,26 @@ let test_comment_annotater infile =
   let asts = program2 +> List.map (fun (ast,_) -> ast) in
   let toks = program2 +> List.map (fun (ast, (s, toks)) -> toks) +> 
     List.flatten in
+
+  Flag_parsing_c.pretty_print_comment_info := true;
+
+  pr2 "pretty print, before comment annotation: --->";
+  Common.adjust_pp_with_indent (fun () -> 
+  asts +> List.iter (fun ast -> 
+    Pretty_print_c.pp_toplevel_simple ast;
+  );
+  );
+
   Comment_annotater_c.annotate_program toks asts;
-  pr2_gen asts;
+
+  Common.adjust_pp_with_indent (fun () -> 
+  pr2 "pretty print, after comment annotation: --->";
+  asts +> List.iter (fun ast -> 
+    Pretty_print_c.pp_toplevel_simple ast;
+  );
+  );
+
+
   ()
   
   

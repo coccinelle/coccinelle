@@ -58,6 +58,7 @@ let filter_define_error = ref false
 let filter_passed_level = ref 0
 
 let pretty_print_type_info = ref false
+let pretty_print_comment_info = ref false
 
 (* cocci specific *)
 let show_flow_labels = ref true

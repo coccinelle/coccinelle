@@ -1215,6 +1215,17 @@ and pp_init (init, iinit) =
 (* Here we do not use (mcode, env). It is a simple C pretty printer. *)
 let pr_elem info =
   let s = Ast_c.str_of_info info in
+  if !Flag_parsing_c.pretty_print_comment_info then begin
+    let before = !(info.comments_tag).mbefore in
+    if not (null before) then begin
+      pp "-->";
+      before +> List.iter (fun (comment_like, pinfo) -> 
+        let s = pinfo.Common.str in
+        pp s
+      );
+      pp "<--";
+    end;
+  end;
   pp s
     
 let pr_space _ = Format.print_space()
