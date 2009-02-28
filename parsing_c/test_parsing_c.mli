@@ -12,6 +12,8 @@ val test_parse_unparse : filename -> unit
 val test_cfg : filename (* foo.c or foo.c:main *) -> unit
 val test_type_c : filename -> unit
 
+val test_comment_annotater : filename -> unit
+
 val test_compare_c : filename -> filename -> unit (* result is in unix code *)
 val test_compare_c_hardcoded : unit -> unit
 

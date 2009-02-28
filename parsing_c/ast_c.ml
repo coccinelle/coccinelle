@@ -24,6 +24,12 @@ open Common
  * 
  * Update: Now I use a ref! in those 'info' so take care.
  * 
+ * That means that modifications of the info of tokens can have
+ * an effect on the info stored in the ast (which is sometimes 
+ * convenient, cf unparse_c.ml or comment_annotater_c.ml)
+ * 
+ * 
+ * 
  * Sometimes we want to add someting at the beginning or at the end 
  * of a construct. For 'function' and 'decl' we want to add something
  * to their left and for 'if' 'while' et 'for' and so on at their right.
@@ -101,7 +107,7 @@ type info = {
    * transformations by tagging the tokens involved in this transformation. 
    *)
   cocci_tag: (Ast_cocci.mcodekind * metavars_binding) ref;
-  (* set in comment_annotater.ml *)
+  (* set in comment_annotater_c.ml *)
   comments_tag: comments_around ref;
   (* todo? token_info : sometimes useful to know what token it was *)
   }
@@ -651,11 +657,15 @@ and metavars_binding = (Ast_cocci.meta_name, metavar_binding_kind) assoc
  * (already use for c stuff) and "com" is too long.
  *)
 
-(* this type will be associated to each token *)
+(* this type will be associated to each token.
+ *)
 and comments_around = {
+  mbefore: Token_c.comment_like_token list;
+  mafter:  Token_c.comment_like_token list;
+}
+(* old: can do something simpler than CComment for coccinelle, cf above.
   mbefore: comment_and_relative_pos list;
   mafter:  comment_and_relative_pos list;
-}
   and comment_and_relative_pos = {
 
    minfo: Common.parse_info;
@@ -674,23 +684,7 @@ and comments_around = {
 
 and comment = Common.parse_info
 and com = comment list ref
-
-
-(*****************************************************************************)
-(* Cpp constructs put it comments in lexer or parsing_hack *)
-(*****************************************************************************)
-
-(* This type is not in the Ast but is associated with the TCommentCpp token.
- * I put this enum here because parser_c.mly need it. I could have put
- * it also in lexer_parser.
- *)
-type cppcommentkind = 
-  | CppDirective 
-  | CppAttr 
-  | CppMacro 
-  | CppPassingNormal (* ifdef 0, cplusplus, etc *) 
-  | CppPassingCosWouldGetError (* expr passsing *)
-  | CppPassingExplicit (* skip_start/end tag *)
+*)
 
 
 

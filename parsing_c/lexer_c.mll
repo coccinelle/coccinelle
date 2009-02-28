@@ -532,7 +532,7 @@ rule token = parse
   | "%=" { TAssign (OpAssign Mod, (tokinfo lexbuf))} 
   | "&=" { TAssign (OpAssign And, (tokinfo lexbuf))}  
   | "|=" { TAssign (OpAssign Or, (tokinfo lexbuf)) } 
-  | "^=" { TAssign(OpAssign Xor, (tokinfo lexbuf))} 
+  | "^=" { TAssign (OpAssign Xor, (tokinfo lexbuf))} 
   | "<<=" {TAssign (OpAssign DecLeft, (tokinfo lexbuf)) } 
   | ">>=" {TAssign (OpAssign DecRight, (tokinfo lexbuf))}
 

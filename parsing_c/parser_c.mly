@@ -469,8 +469,9 @@ let mk_e e ii = ((e, Ast_c.noType()), ii)
 %token <Ast_c.info> TAction
 
 
+/*(* TCommentMisc still useful ? obsolete ? *)*/
 %token <Ast_c.info> TCommentMisc
-%token <(Ast_c.cppcommentkind * Ast_c.info)> TCommentCpp
+%token <(Token_c.cppcommentkind * Ast_c.info)> TCommentCpp
 
 
 /*(*-----------------------------------------*)*/

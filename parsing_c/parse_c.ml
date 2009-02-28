@@ -101,25 +101,25 @@ let commentized xs = xs +> Common.map_filter (function
         match !Flag_parsing_c.filter_passed_level with 
         | 0 -> false
         | 1 -> 
-            List.mem cppkind [Ast_c.CppAttr]
+            List.mem cppkind [Token_c.CppAttr]
             || 
             (s =~ "__.*")
         | 2 -> 
-            List.mem cppkind [Ast_c.CppAttr;Ast_c.CppPassingNormal]
+            List.mem cppkind [Token_c.CppAttr;Token_c.CppPassingNormal]
             || 
             (s =~ "__.*")
         | 3 -> 
-            List.mem cppkind [Ast_c.CppAttr;Ast_c.CppPassingNormal;Ast_c.CppDirective]
+            List.mem cppkind [Token_c.CppAttr;Token_c.CppPassingNormal;Token_c.CppDirective]
             || 
             (s =~ "__.*")
         | 4 -> 
-            List.mem cppkind [Ast_c.CppAttr;Ast_c.CppPassingNormal;Ast_c.CppMacro]
+            List.mem cppkind [Token_c.CppAttr;Token_c.CppPassingNormal;Token_c.CppMacro]
             || 
             (s =~ "__.*")
 
 
         | 5 -> 
-            List.mem cppkind [Ast_c.CppAttr;Ast_c.CppPassingNormal;Ast_c.CppDirective;Ast_c.CppMacro]
+            List.mem cppkind [Token_c.CppAttr;Token_c.CppPassingNormal;Token_c.CppDirective;Token_c.CppMacro]
             || 
             (s =~ "__.*")
 
@@ -672,14 +672,14 @@ let rec comment_until_defeol xs =
   | x::xs -> 
       (match x with
       | Parser_c.TDefEOL i -> 
-          Parser_c.TCommentCpp (Ast_c.CppDirective, TH.info_of_tok x)
+          Parser_c.TCommentCpp (Token_c.CppDirective, TH.info_of_tok x)
           ::xs
       | _ -> 
           let x' = 
             (* bugfix: otherwise may lose a TComment token *)
             if TH.is_real_comment x
             then x
-            else Parser_c.TCommentCpp (Ast_c.CppPassingNormal (*good?*), TH.info_of_tok x)
+            else Parser_c.TCommentCpp (Token_c.CppPassingNormal (*good?*), TH.info_of_tok x)
           in
           x'::comment_until_defeol xs
       )
@@ -866,7 +866,7 @@ let rec lexer_function ~pass tr = fun lexbuf ->
           then begin
             incr Stat.nDefinePassing;
             pr2_once ("CPP-DEFINE: inside function, I treat it as comment");
-            let v' = Parser_c.TCommentCpp (Ast_c.CppDirective,TH.info_of_tok v)
+            let v' = Parser_c.TCommentCpp (Token_c.CppDirective,TH.info_of_tok v)
             in
             tr.passed <- v'::tr.passed;
             tr.rest       <- comment_until_defeol tr.rest;
@@ -885,7 +885,7 @@ let rec lexer_function ~pass tr = fun lexbuf ->
           then begin
             incr Stat.nIncludePassing;
             pr2_once ("CPP-INCLUDE: inside function, I treat it as comment");
-            let v = Parser_c.TCommentCpp(Ast_c.CppDirective, info) in
+            let v = Parser_c.TCommentCpp(Token_c.CppDirective, info) in
             tr.passed <- v::tr.passed;
             lexer_function ~pass tr lexbuf
           end

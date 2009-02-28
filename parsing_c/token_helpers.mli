@@ -1,11 +1,15 @@
 
 val is_space               : Parser_c.token -> bool
-val is_comment_or_space    : Parser_c.token -> bool
 val is_just_comment        : Parser_c.token -> bool
+val is_just_comment_or_space    : Parser_c.token -> bool
+
 val is_comment             : Parser_c.token -> bool
+val is_not_comment         : Parser_c.token -> bool
+
 val is_real_comment        : Parser_c.token -> bool
 val is_fake_comment        : Parser_c.token -> bool
-val is_not_comment         : Parser_c.token -> bool
+val is_not_in_ast          : Parser_c.token -> bool
+
 
 val is_cpp_instruction     : Parser_c.token -> bool
 val is_gcc_token           : Parser_c.token -> bool

@@ -1,4 +1,6 @@
-(* Copyright (C) 2006, 2007, 2008, 2009 Ecole des Mines de Nantes and DIKU
+(* Yoann Padioleau, Julia Lawall
+ * 
+ * Copyright (C) 2006, 2007, 2008, 2009 Ecole des Mines de Nantes and DIKU
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License (GPL)
@@ -365,13 +367,13 @@ let is_minusable_comment = function
       (* patch: coccinelle *)      
       | Parser_c.TCommentNewline _ (* newline plus whitespace *)
       | Parser_c.TComment _ 
-      | Parser_c.TCommentCpp (Ast_c.CppAttr, _) 
-      | Parser_c.TCommentCpp (Ast_c.CppMacro, _) 
+      | Parser_c.TCommentCpp (Token_c.CppAttr, _) 
+      | Parser_c.TCommentCpp (Token_c.CppMacro, _) 
         -> true
 
       | Parser_c.TCommentMisc _ 
-      | Parser_c.TCommentCpp (Ast_c.CppDirective, _)
-      | Parser_c.TCommentCpp (Ast_c.CppPassingCosWouldGetError, _)
+      | Parser_c.TCommentCpp (Token_c.CppDirective, _)
+      | Parser_c.TCommentCpp (Token_c.CppPassingCosWouldGetError, _)
         -> false
 
       | _ -> false
@@ -396,8 +398,8 @@ let set_minus_comment = function
       | Parser_c.TCommentNewline _ -> ()
 
       | Parser_c.TComment _ 
-      | Parser_c.TCommentCpp (Ast_c.CppAttr, _) 
-      | Parser_c.TCommentCpp (Ast_c.CppMacro, _) 
+      | Parser_c.TCommentCpp (Token_c.CppAttr, _) 
+      | Parser_c.TCommentCpp (Token_c.CppMacro, _) 
         -> 
           pr2 ("ERASING_COMMENTS: " ^ str)
       | _ -> raise Impossible
