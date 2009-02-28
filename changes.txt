@@ -9,6 +9,8 @@
   /* {{coccinelle:skip_end}} */
   allowing to give more hints to the C parser.
   Thx to Flavien@lebarbe.net for the idea.
+- new vim SmPL mode 
+  Thx to Alexander Faroy.
 
 ** Bugfix:
 - consider the ident tokens also in the 2 lines before the error line for the 
