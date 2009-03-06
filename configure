@@ -139,7 +139,7 @@ We need  3.XX",
 # Generate globals files (features issues)
 ######################################################################
 
-`cd python/coccilib; ln -s output_base.py output.py;`;
+`cd python/coccilib; ln -sf output_base.py output.py;`;
 if($trac) {
 # Switch between implementation
 # in python/coccilib
