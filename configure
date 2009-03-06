@@ -24,13 +24,15 @@ my $projectcmdline =
 
 my $prefix="/usr/local";
 my $python=1;
+my $trac=1;
 
 local $_ = join ' ', @ARGV;
 
 # Parse options
-/-h/ || /--help/ and die "usage: $0 [--prefix=path] [--without-python]\n";
+/-h/ || /--help/ and die "usage: $0 [--prefix=path] [--without-python] [--without-trac]\n";
 /--prefix=([^ ]*)/ and $prefix = $1;
 /--without-python/ and $python = 0;
+/--without-trac/ and $trac = 0;
 
 #if($ARGV[0] =~ "--prefix=(.*)") {
 #    $prefix = $1;
@@ -137,6 +139,14 @@ We need  3.XX",
 # Generate globals files (features issues)
 ######################################################################
 
+`cd python/coccilib; ln -s output_base.py output.py;`;
+if($trac) {
+# Switch between implementation
+# in python/coccilib
+pr2 "Selecting python trac extension";
+`cd python/coccilib; ln -sf output_trac.py output.py;`;
+}
+ 
 ######################################################################
 # Diagnostic 
 ######################################################################
