@@ -474,6 +474,47 @@ some constraints on the use of these annotations:
   occur on a line with any marking.
 \end{itemize}
 
+Each element of a disjonction must been a proper term like an
+expression, a statement, an identifier or a declaration. It means the
+following left rule is not a syntaxically correct SmPL rule. One may
+use the rule on the right instead.
+
+\begin{center}
+  \begin{tabular}{l@{\hspace{5cm}}r}
+\begin{lstlisting}[language=Cocci]
+@@
+type T;
+T b;
+@@
+
+(
+ writeb(...,
+|
+ readb(
+)
+@--(T)
+ b)
+\end{lstlisting}
+    &
+\begin{lstlisting}[language=Cocci]
+@@
+type T;
+T b;
+@@
+
+(
+read
+|
+write
+)
+ (...,
+@-- (T)
+  b)
+\end{lstlisting}
+    \\
+  \end{tabular}
+\end{center}
+
 \section{Types}
 \label{types}
 
