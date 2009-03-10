@@ -215,40 +215,6 @@ let (range_of_origin_ii: Ast_c.info list -> (int * int) option) =
   with _ -> 
     None
 
-(*****************************************************************************)
-(* Basic_query *)
-(*****************************************************************************)
-
-(* used in yacfe gui *)
-let (expr_at_pos: int -> Ast_c.toplevel -> Ast_c.expression) = fun pos top -> 
-
-  let res = ref [] in
-  Visitor_c.vk_toplevel { Visitor_c.default_visitor_c with
-    Visitor_c.kexpr = (fun (k, bigf) e -> 
-
-      let ((unwrape,_typ), ii) = e in
-      if ii +> List.exists (fun ii -> 
-        let startoffset =
-          Ast_c.pos_of_info ii in
-        let endoffset =
-          startoffset + String.length (Ast_c.str_of_info ii)
-        in
-          
-        Ast_c.is_origintok ii &&
-          pos >= startoffset &&
-
-          pos <= endoffset
-        
-      )
-      then Common.push2 e res;
-
-      k e
-    );
-  } top;
-  Common.list_to_single_or_exn !res
-
-                        
-
 
 (*****************************************************************************)
 (* Ast getters *)

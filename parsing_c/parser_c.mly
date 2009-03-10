@@ -1022,11 +1022,20 @@ direct_abstract_declarator:
      { fun x ->$1 (nQ, (Array (Some $3,x),    [$2;$4])) }
  | TOPar TCPar                                       
      { fun x ->   (nQ, (FunctionType (x, ([], (false,  []))),   [$1;$2])) }
- | TOPar parameter_type_list TCPar
+ | topar parameter_type_list tcpar
      { fun x ->   (nQ, (FunctionType (x, $2),           [$1;$3]))}
- | direct_abstract_declarator TOPar TCPar
+/*(* subtle: here must also use topar, not TOPar, otherwise if have for
+   * instance   (xxx (*)(xxx)) cast, then the second xxx may still be a Tident
+   * but we want to reduce topar, to set the InParameter so that 
+   * parsing_hack can get a chance to change the type of xxx into a typedef.
+   * That's an example where parsing_hack and the lookahead of ocamlyacc does
+   * not go very well together ... we got the info too late. We got 
+   * a similar pb with xxx xxx; declaration, cf parsing_hack.ml and the
+   * "disable typedef cos special case ..." message.
+*)*/
+ | direct_abstract_declarator topar tcpar
      { fun x ->$1 (nQ, (FunctionType (x, (([], (false, [])))),[$2;$3])) }
- | direct_abstract_declarator TOPar parameter_type_list TCPar
+ | direct_abstract_declarator topar parameter_type_list tcpar
      { fun x -> $1 (nQ, (FunctionType (x, $3), [$2;$4])) }
 
 /*(*-----------------------------------------------------------------------*)*/
