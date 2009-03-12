@@ -16,13 +16,14 @@ you will end up with \verb|bar = readb((foo))| as the extra
 parentheses around \texttt{foo} are capture by the metavariable
 \texttt{b}.
 
-In order to generate better output code, you should use the following
+In order to generate better output code, you can use the following
 semantic patch instead.
 \begin{lstlisting}[language=Cocci]
 @-- a = *(b)
 @++ a = readb(b)
 \end{lstlisting}
 
+\noindent
 And rely on your standard.iso isomorphism file which should contain:
 \begin{lstlisting}[language=Cocci]
 Expression
@@ -33,8 +34,8 @@ expression E;
  (E) => E
 \end{lstlisting}
 
-Coccinelle will then considered \verb|bar = *(foo)| as equivalent to
-\verb|bar = *foo| (but not the other way around) and captures both.
+Coccinelle will then consider \verb|bar = *(foo)| as equivalent to
+\verb|bar = *foo| (but not the other way around) and capture both.
 Finally, it will generate \verb|bar = readb(foo)| as expected.
 
 %%% Local Variables:
