@@ -193,13 +193,14 @@ install: all
 	mkdir -p $(DESTDIR)$(LIBDIR)
 	mkdir -p $(DESTDIR)$(SHAREDIR)
 	mkdir -p $(DESTDIR)$(MANDIR)/man1
-	cp spatch $(DESTDIR)$(BINDIR)
+	cp spatch $(DESTDIR)$(SHAREDIR)
 	cp standard.h $(DESTDIR)$(SHAREDIR)
 	cp standard.iso $(DESTDIR)$(SHAREDIR)
 	cp docs/spatch.1 $(DESTDIR)$(MANDIR)/man1/
 	mkdir -p $(DESTDIR)$(SHAREDIR)/python
 	cp -a python/coccilib $(DESTDIR)$(SHAREDIR)/python
 	cp -f dllpycaml_stubs.so $(DESTDIR)$(LIBDIR)
+	cat scripts/spatch.sh | sed "s|SHAREDIR|$(DESTDIR)$(SHAREDIR)|g" > $(DESTDIR)$(BINDIR)/spatch
 	@echo ""
 	@echo "You can also install spatch by copying the program spatch"
 	@echo "(available in this directory) anywhere you want and"
