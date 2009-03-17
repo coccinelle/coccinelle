@@ -58,10 +58,10 @@ let print_around printer term = function
       print_anything "<<< " bef; printer term; print_anything ">>> " aft
 
 let print_string_befaft fn x info =
-  List.iter (function s -> print_string s; force_newline())
+  List.iter (function (s,_,_) -> print_string s; force_newline())
     info.Ast.strbef;
   fn x;
-  List.iter (function s -> force_newline(); print_string s)
+  List.iter (function (s,_,_) -> force_newline(); print_string s)
     info.Ast.straft
 
 let print_meta (r,x) = print_string r; print_string ":"; print_string x
@@ -763,6 +763,7 @@ let _ =
     | Ast.ConstVolTag(x) -> const_vol x
     | Ast.Token(x,Some info) -> print_string_befaft print_string x info
     | Ast.Token(x,None) -> print_string x
+    | Ast.Pragma(xs) -> print_between force_newline print_string xs
     | Ast.Code(x) -> let _ = top_level x in ()
     | Ast.ExprDotsTag(x) -> dots (function _ -> ()) expression x
     | Ast.ParamDotsTag(x) -> parameter_list x

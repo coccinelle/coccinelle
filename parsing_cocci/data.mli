@@ -5,7 +5,8 @@ type fresh = bool
 
 type clt =
     line_type * int * int * int * int (* starting spaces *) *
-      string list (* code before *) * string list (* code after *) *
+      (string * Ast0_cocci.position_info) list (* code before *) *
+      (string * Ast0_cocci.position_info) list (* code after *) *
       Ast0_cocci.meta_pos (* position variable, minus only *)
 
 (* ---------------------------------------------------------------------- *)

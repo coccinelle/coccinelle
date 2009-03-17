@@ -9,6 +9,9 @@
   /* {{coccinelle:skip_end}} */
   allowing to give more hints to the C parser.
   Thx to Flavien@lebarbe.net for the idea.
+- the ability to add comments
+- the ability to print the values of more (but not all) kinds of
+  metavariables from python
 - new vim SmPL mode 
   Thx to Alexander Faroy.
 

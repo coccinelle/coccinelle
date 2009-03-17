@@ -26,7 +26,9 @@ let meta_pos = function
 (* --------------------------------------------------------------------- *)
 (* Modified code *)
 
-let mcodekind brackets fn x info = function
+let mcodekind brackets fn x info mc =
+  List.iter (function (s,_) -> print_string s) info.Ast0.strings_before;
+  (match mc with
     Ast0.MINUS(plus_stream) ->
       let (lb,rb) =
 	if !quiet
@@ -53,12 +55,7 @@ let mcodekind brackets fn x info = function
 	(function x ->
 	  print_string lb; fn x; print_string rb)
 	x plus_streams
-  | Ast0.PLUS ->
-      List.iter (function s -> print_string s; force_newline())
-	info.Ast0.strings_before;
-      fn x;
-      List.iter (function s -> force_newline(); print_string s)
-	info.Ast0.strings_after
+  | Ast0.PLUS -> fn x
   | Ast0.MIXED(plus_streams) ->
       let (lb,rb) =
 	if !quiet
@@ -69,11 +66,12 @@ let mcodekind brackets fn x info = function
 	  ("§","½"^n) in
       let (plus_streams,_,_) = !plus_streams in
       U.print_around (function x -> print_string lb; fn x; print_string rb)
-	x plus_streams
+	x plus_streams);
+  List.iter (function (s,_) -> print_string s) info.Ast0.strings_after
 
 let mcode fn (x,_,info,mc,pos) =
   let fn x = fn x; meta_pos !pos in
-  mcodekind (Some info.Ast0.line_start)(*None*) fn x info mc
+  mcodekind (Some info.Ast0.pos_info.Ast0.line_start)(*None*) fn x info mc
 
 let print_context x fn =
   mcodekind (Some (Ast0.get_line x)) fn () (Ast0.get_info x)

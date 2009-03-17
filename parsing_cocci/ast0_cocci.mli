@@ -16,13 +16,16 @@ type mcodekind =
   | MIXED       of (Ast_cocci.anything Ast_cocci.befaft *
 		      token_info * token_info) ref
 
-type info = { line_start : int; line_end : int;
-	      logical_start : int; logical_end : int;
+type position_info = { line_start : int; line_end : int;
+		       logical_start : int; logical_end : int;
+		       column : int; offset : int; }
+
+type info = { pos_info : position_info;
 	      attachable_start : bool; attachable_end : bool;
 	      mcode_start : mcodekind list; mcode_end : mcodekind list;
-	      column : int; offset : int;
 	      (* the following are only for + code *)
-	      strings_before : string list; strings_after : string list }
+	      strings_before : (string * position_info) list;
+	      strings_after : (string * position_info) list }
 
 type 'a mcode = 'a * arity * info * mcodekind * meta_pos ref (* pos, - only *)
 and 'a wrap =

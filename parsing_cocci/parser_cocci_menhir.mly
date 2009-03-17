@@ -34,7 +34,7 @@ module P = Parse_aux
 
 %token <Data.clt> TIf TElse TWhile TFor TDo TSwitch TCase TDefault TReturn
 %token <Data.clt> TBreak TContinue TGoto TSizeof TFunDecl
-%token <string * Data.clt> TIdent TTypeId TDeclarerId TIteratorId
+%token <string * Data.clt> TIdent TTypeId TDeclarerId TIteratorId TPragma
 
 %token <Parse_aux.idinfo>     TMetaId TMetaFunc TMetaLocalFunc
 %token <Parse_aux.idinfo>     TMetaIterator TMetaDeclarer
@@ -54,7 +54,7 @@ module P = Parse_aux
 %token <Data.clt> TWhy TDotDot TBang TOPar TOPar0
 %token <Data.clt> TMid0 TCPar TCPar0
 
-%token <string>  TPragma TPathIsoFile
+%token <string>  TPathIsoFile
 %token <string * Data.clt> TIncludeL TIncludeNL
 %token <Data.clt * token> TDefine
 %token <Data.clt * token * int> TDefineParam
@@ -659,7 +659,8 @@ defineop:
     { let (clt,ident,parenoff) = $1 in
       let (arity,line,lline,offset,col,strbef,straft,pos) = clt in
       let lp =
-	P.clt2mcode "(" (arity,line,lline,parenoff,0,[],[],Ast0.NoMetaPos) in
+	P.clt2mcode "("
+	  (arity,line,lline,parenoff,0,[],[],Ast0.NoMetaPos) in
       function body ->
 	Ast0.wrap
 	  (Ast0.Define

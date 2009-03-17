@@ -609,7 +609,13 @@ rule token = parse
   | "#" [' ' '\t']* "endif" [^'\n']*
   | "#" [' ' '\t']* "error" [^'\n']*
       { start_line true; check_plus_linetype (tok lexbuf);
-	TPragma (tok lexbuf) }
+	TPragma (tok lexbuf, get_current_line_type lexbuf) }
+  | "/*"
+      { start_line true; check_plus_linetype (tok lexbuf);
+	(* second argument to TPragma is not quite right, because
+	   it represents only the first token of the comemnt, but that
+	   should be good enough *)
+	TPragma ("/*"^(comment lexbuf), get_current_line_type lexbuf) }
   | "---" [^'\n']*
       { (if !current_line_started
       then lexerr "--- must be at the beginning of the line" "");
@@ -688,3 +694,21 @@ and string  = parse
           x ^ string lexbuf
        }
   | _ { lexerr "unrecognised symbol: " (tok lexbuf) }
+
+and comment = parse
+  | "*/"     { start_line true; tok lexbuf }
+  | ['\n' '\r' '\011' '\012']
+      { reset_line lexbuf; let s = tok lexbuf in s ^ comment lexbuf }
+  | "+" { pass_zero();
+	  if !current_line_started
+	  then (start_line true; let s = tok lexbuf in s^(comment lexbuf))
+	  else comment lexbuf }
+  (* noteopti: *)
+  | [^ '*'] { start_line true; let s = tok lexbuf in s ^ comment lexbuf }
+  | [ '*']   { start_line true; let s = tok lexbuf in s ^ comment lexbuf }
+  | _  
+      { start_line true; let s = tok lexbuf in
+        Common.pr2 ("LEXER: unrecognised symbol in comment:"^s);
+        s ^ comment lexbuf
+      }
+

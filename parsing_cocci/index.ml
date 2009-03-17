@@ -11,42 +11,42 @@ module Ast0 = Ast0_cocci
 address.  Otherwise add 0.  An empty dot list should only match with another
 empty one. *)
 let expression_dots d =
-  let ln = (Ast0.get_info d).Ast0.line_start in
+  let ln = (Ast0.get_info d).Ast0.pos_info.Ast0.line_start in
   match Ast0.unwrap d with
     Ast0.DOTS(l) -> 1::(if l = [] then [ln] else [0])
   | Ast0.CIRCLES(l) -> 2::(if l = [] then [ln] else [0])
   | Ast0.STARS(l) -> 3::(if l = [] then [ln] else [0])
 
 let initialiser_dots d =
-  let ln = (Ast0.get_info d).Ast0.line_start in
+  let ln = (Ast0.get_info d).Ast0.pos_info.Ast0.line_start in
   match Ast0.unwrap d with
     Ast0.DOTS(l) -> 113::(if l = [] then [ln] else [0])
   | Ast0.CIRCLES(l) -> 114::(if l = [] then [ln] else [0])
   | Ast0.STARS(l) -> 115::(if l = [] then [ln] else [0])
 
 let parameter_dots d =
-  let ln = (Ast0.get_info d).Ast0.line_start in
+  let ln = (Ast0.get_info d).Ast0.pos_info.Ast0.line_start in
   match Ast0.unwrap d with
     Ast0.DOTS(l) -> 4::(if l = [] then [ln] else [0])
   | Ast0.CIRCLES(l) -> 5::(if l = [] then [ln] else [0])
   | Ast0.STARS(l) -> 6::(if l = [] then [ln] else [0])
 
 let statement_dots d =
-  let ln = (Ast0.get_info d).Ast0.line_start in
+  let ln = (Ast0.get_info d).Ast0.pos_info.Ast0.line_start in
   match Ast0.unwrap d with
     Ast0.DOTS(l) -> 7::(if l = [] then [ln] else [0])
   | Ast0.CIRCLES(l) -> 8::(if l = [] then [ln] else [0])
   | Ast0.STARS(l) -> 9::(if l = [] then [ln] else [0])
 
 let declaration_dots d =
-  let ln = (Ast0.get_info d).Ast0.line_start in
+  let ln = (Ast0.get_info d).Ast0.pos_info.Ast0.line_start in
   match Ast0.unwrap d with
     Ast0.DOTS(l) -> 134::(if l = [] then [ln] else [0])
   | Ast0.CIRCLES(l) -> 135::(if l = [] then [ln] else [0])
   | Ast0.STARS(l) -> 136::(if l = [] then [ln] else [0])
 
 let case_line_dots d =
-  let ln = (Ast0.get_info d).Ast0.line_start in
+  let ln = (Ast0.get_info d).Ast0.pos_info.Ast0.line_start in
   match Ast0.unwrap d with
     Ast0.DOTS(l) -> 138::(if l = [] then [ln] else [0])
   | Ast0.CIRCLES(l) -> 139::(if l = [] then [ln] else [0])

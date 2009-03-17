@@ -206,9 +206,14 @@ let get_option fn = function
 (* Mcode *)
 
 let convert_info info =
-  { Ast.line = info.Ast0.line_start; Ast.column = info.Ast0.column;
-    Ast.strbef = info.Ast0.strings_before;
-    Ast.straft = info.Ast0.strings_after; }
+  let strings_to_s l =
+    List.map
+      (function (s,info) -> (s,info.Ast0.line_start,info.Ast0.column))
+      l in
+  { Ast.line = info.Ast0.pos_info.Ast0.line_start;
+    Ast.column = info.Ast0.pos_info.Ast0.column;
+    Ast.strbef = strings_to_s info.Ast0.strings_before;
+    Ast.straft = strings_to_s info.Ast0.strings_after; }
 
 let convert_mcodekind = function
     Ast0.MINUS(replacements) ->
@@ -238,7 +243,7 @@ let wrap ast line isos =
     Ast.iso_info = isos}
 
 let rewrap ast0 isos ast =
-  wrap ast ((Ast0.get_info ast0).Ast0.line_start) isos
+  wrap ast ((Ast0.get_info ast0).Ast0.pos_info.Ast0.line_start) isos
 
 let no_isos = []
 

@@ -2,7 +2,8 @@
 (* Modified code *)
 
 type info = { line : int; column : int;
-	      strbef : string list; straft : string list }
+	      strbef : (string * int (* line *) * int (* col *)) list;
+	      straft : (string * int (* line *) * int (* col *)) list }
 type line = int
 type meta_name = string * string
 (* need to be careful about rewrapping, to avoid duplicating pos info
@@ -537,6 +538,7 @@ and anything =
   | CaseLineTag         of case_line
   | ConstVolTag         of const_vol
   | Token               of string * info option
+  | Pragma              of string list
   | Code                of top_level
   | ExprDotsTag         of expression dots
   | ParamDotsTag        of parameterTypeDef dots
@@ -617,6 +619,42 @@ let get_meta_name = function
   | MetaPosDecl(ar,nm) -> nm
   | MetaDeclarerDecl(ar,nm) -> nm
   | MetaIteratorDecl(ar,nm) -> nm
+
+(* --------------------------------------------------------------------- *)
+
+and tag2c = function
+    FullTypeTag _ -> "FullTypeTag"
+  | BaseTypeTag _ -> "BaseTypeTag"
+  | StructUnionTag _ -> "StructUnionTag"
+  | SignTag _ -> "SignTag"
+  | IdentTag _ -> "IdentTag"
+  | ExpressionTag _ -> "ExpressionTag"
+  | ConstantTag _ -> "ConstantTag"
+  | UnaryOpTag _ -> "UnaryOpTag"
+  | AssignOpTag _ -> "AssignOpTag"
+  | FixOpTag _ -> "FixOpTag"
+  | BinaryOpTag _ -> "BinaryOpTag"
+  | ArithOpTag _ -> "ArithOpTag"
+  | LogicalOpTag _ -> "LogicalOpTag"
+  | DeclarationTag _ -> "DeclarationTag"
+  | InitTag _ -> "InitTag"
+  | StorageTag _ -> "StorageTag"
+  | IncFileTag _ -> "IncFileTag"
+  | Rule_elemTag _ -> "Rule_elemTag"
+  | StatementTag _ -> "StatementTag"
+  | CaseLineTag _ -> "CaseLineTag"
+  | ConstVolTag _ -> "ConstVolTag"
+  | Token _ -> "Token"
+  | Pragma _ -> "Pragma"
+  | Code _ -> "Code"
+  | ExprDotsTag _ -> "ExprDotsTag"
+  | ParamDotsTag _ -> "ParamDotsTag"
+  | StmtDotsTag _ -> "StmtDotsTag"
+  | DeclDotsTag _ -> "DeclDotsTag"
+  | TypeCTag _ -> "TypeCTag"
+  | ParamTag _ -> "ParamTag"
+  | SgrepStartTag _ -> "SgrepStartTag"
+  | SgrepEndTag _ -> "SgrepEndTag"
 
 (* --------------------------------------------------------------------- *)
 

@@ -118,7 +118,7 @@ let collect_plus_lines top =
   let donothing r k e = k e in
   let mcode (_,_,info,mcodekind,_) =
     match mcodekind with
-      Ast0.PLUS -> insert info.Ast0.line_start
+      Ast0.PLUS -> insert info.Ast0.pos_info.Ast0.line_start
     | _ -> () in
   let fn =
     V0.combiner bind option_default
@@ -206,7 +206,7 @@ let option_default = (*Bind(Neutral,[],[],[],[],[])*)
   Recursor(Neutral,[],[],[])
 
 let mcode (_,_,info,mcodekind,pos) =
-  let offset = info.Ast0.offset in
+  let offset = info.Ast0.pos_info.Ast0.offset in
   match mcodekind with
     Ast0.MINUS(_) -> Token(AllMarked,offset,mcodekind,[])
   | Ast0.PLUS -> Token(AllMarked,offset,mcodekind,[])
@@ -214,10 +214,20 @@ let mcode (_,_,info,mcodekind,pos) =
   | _ -> failwith "not possible"
 
 let neutral_mcode (_,_,info,mcodekind,pos) =
-  let offset = info.Ast0.offset in
+  let offset = info.Ast0.pos_info.Ast0.offset in
   match mcodekind with
     Ast0.MINUS(_) -> Token(Neutral,offset,mcodekind,[])
   | Ast0.PLUS -> Token(Neutral,offset,mcodekind,[])
+  | Ast0.CONTEXT(_) -> Token(Neutral,offset,mcodekind,[offset])
+  | _ -> failwith "not possible"
+
+(* neutral for context; used for mcode in bef aft nodes that don't represent
+anything if they don't contain some information *)
+let nc_mcode (_,_,info,mcodekind,pos) =
+  let offset = info.Ast0.pos_info.Ast0.offset in
+  match mcodekind with
+    Ast0.MINUS(_) -> Token(AllMarked,offset,mcodekind,[])
+  | Ast0.PLUS -> Token(AllMarked,offset,mcodekind,[])
   | Ast0.CONTEXT(_) -> Token(Neutral,offset,mcodekind,[offset])
   | _ -> failwith "not possible"
 
@@ -241,7 +251,7 @@ let classify is_minus all_marked table code =
 	    let _ = Hashtbl.find table index in
 	    failwith
 	      (Printf.sprintf "line %d: index %s already used\n"
-		 (Ast0.get_info e).Ast0.line_start
+		 (Ast0.get_info e).Ast0.pos_info.Ast0.line_start
 		 (String.concat " " (List.map string_of_int index)))
 	  with Not_found -> Hashtbl.add table index (e1,l)) in
       if il = [] then check_index bil btl else check_index il tl);
@@ -367,18 +377,16 @@ let classify is_minus all_marked table code =
       | Ast0.Disj(starter,statement_dots_list,_,ender) ->
 	  disj_cases s starter statement_dots_list r.V0.combiner_statement_dots
 	    ender
-(*  Why? There is nothing there
 	(* cases for everything with extra mcode *)
       |	Ast0.FunDecl((info,bef),_,_,_,_,_,_,_,_)
       | Ast0.Decl((info,bef),_) ->
-	  bind (mcode ((),(),info,bef)) (k s)
+	  bind (nc_mcode ((),(),info,bef,())) (k s)
       | Ast0.IfThen(_,_,_,_,_,(info,aft))
       | Ast0.IfThenElse(_,_,_,_,_,_,_,(info,aft))
-      | Ast0.While(_,_,_,_,_,(info,aft)) ->
-      | Ast0.For(_,_,_,_,_,_,_,_,_,(info,aft)) ->
-	  bind (k s) (mcode ((),(),info,aft))
       | Ast0.Iterator(_,_,_,_,_,(info,aft))
-*)
+      | Ast0.While(_,_,_,_,_,(info,aft))
+      | Ast0.For(_,_,_,_,_,_,_,_,_,(info,aft)) ->
+	  bind (k s) (nc_mcode ((),(),info,aft,()))
       |	_ -> k s
 
 ) in
@@ -402,7 +410,7 @@ the same context children *)
 (* this is just a sanity check - really only need to look at the top-level
    structure *)
 let equal_mcode (_,_,info1,_,_) (_,_,info2,_,_) =
-  info1.Ast0.offset = info2.Ast0.offset
+  info1.Ast0.pos_info.Ast0.offset = info2.Ast0.pos_info.Ast0.offset
 
 let equal_option e1 e2 =
   match (e1,e2) with
@@ -818,12 +826,12 @@ let concat = function
 
 let collect_up_to m plus =
   let minfo = Ast0.get_info m in
-  let mend = minfo.Ast0.logical_end in
+  let mend = minfo.Ast0.pos_info.Ast0.logical_end in
   let rec loop = function
       [] -> ([],[])
     | p::plus ->
 	let pinfo = Ast0.get_info p in
-	let pstart = pinfo.Ast0.logical_start in
+	let pstart = pinfo.Ast0.pos_info.Ast0.logical_start in
 	if pstart > mend
 	then ([],p::plus)
 	else let (plus,rest) = loop plus in (p::plus,rest) in
@@ -958,10 +966,10 @@ let context_neg minus plus =
     | (((m::minus) as mall),((p::plus) as pall)) ->
 	let minfo = Ast0.get_info m in
 	let pinfo = Ast0.get_info p in
-	let mstart = minfo.Ast0.logical_start in
-	let mend = minfo.Ast0.logical_end in
-	let pstart = pinfo.Ast0.logical_start in
-	let pend = pinfo.Ast0.logical_end in
+	let mstart = minfo.Ast0.pos_info.Ast0.logical_start in
+	let mend = minfo.Ast0.pos_info.Ast0.logical_end in
+	let pstart = pinfo.Ast0.pos_info.Ast0.logical_start in
+	let pend = pinfo.Ast0.pos_info.Ast0.logical_end in
 	if (iscode m or iscode p) &&
 	  (mend + 1 = pstart or pend + 1 = mstart or (* adjacent *)
 	   (mstart <= pstart && mend >= pstart) or

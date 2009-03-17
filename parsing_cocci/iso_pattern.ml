@@ -86,7 +86,8 @@ let anything_equal = function
   | _ -> false
 
 let term (var1,_,_,_,_) = var1
-let dot_term (var1,_,info,_,_) = ("", var1 ^ (string_of_int info.Ast0.offset))
+let dot_term (var1,_,info,_,_) =
+  ("", var1 ^ (string_of_int info.Ast0.pos_info.Ast0.offset))
 
 
 type reason =
@@ -1278,7 +1279,7 @@ let make_minus =
 	    failwith
 	      (Printf.sprintf
 		 "%d: make_minus donothingxxx: unexpected mcodekind: %s"
-		 info.Ast0.line_start (Dumper.dump e)))
+		 info.Ast0.pos_info.Ast0.line_start (Dumper.dump e)))
     | _ -> donothing r k e in
 
   V0.rebuilder
@@ -1309,7 +1310,12 @@ let rebuild_mcode start_line =
   let mcode (term,arity,info,mcodekind,pos) =
     let info =
       match start_line with
-	Some x -> {info with Ast0.line_start = x; Ast0.line_end = x}
+	Some x ->
+	  let new_pos_info =
+	    {info.Ast0.pos_info with
+	      Ast0.line_start = x;
+	      Ast0.line_end = x; } in
+	  {info with Ast0.pos_info = new_pos_info}
       |	None -> info in
     (term,arity,info,copy_mcodekind mcodekind,pos) in
 
@@ -1317,7 +1323,12 @@ let rebuild_mcode start_line =
     let old_info = Ast0.get_info x in
     let info =
       match start_line with
-	Some x -> {old_info with Ast0.line_start = x; Ast0.line_end = x}
+	Some x ->
+	  let new_pos_info =
+	    {old_info.Ast0.pos_info with
+	      Ast0.line_start = x;
+	      Ast0.line_end = x; } in
+	  {old_info with Ast0.pos_info = new_pos_info}
       |	None -> old_info in
     {x with Ast0.info = info; Ast0.index = ref(Ast0.get_index x);
       Ast0.mcodekind = ref (copy_mcodekind (Ast0.get_mcodekind x))} in
@@ -2030,10 +2041,12 @@ let mkdisj matcher metavars alts e instantiater mkiso disj_maker minusify
 (* no one should ever look at the information stored in these mcodes *)
 let disj_starter lst =
   let old_info = Ast0.get_info(List.hd lst) in
+  let new_pos_info =
+    { old_info.Ast0.pos_info with
+      Ast0.line_end = old_info.Ast0.pos_info.Ast0.line_start;
+      Ast0.logical_end = old_info.Ast0.pos_info.Ast0.logical_start; } in
   let info =
-    { old_info with
-      Ast0.line_end = old_info.Ast0.line_start;
-      Ast0.logical_end = old_info.Ast0.logical_start;
+    { Ast0.pos_info = new_pos_info;
       Ast0.attachable_start = false; Ast0.attachable_end = false;
       Ast0.mcode_start = []; Ast0.mcode_end = [];
       Ast0.strings_before = []; Ast0.strings_after = [] } in
@@ -2041,10 +2054,12 @@ let disj_starter lst =
 
 let disj_ender lst =
   let old_info = Ast0.get_info(List.hd lst) in
+  let new_pos_info =
+    { old_info.Ast0.pos_info with
+      Ast0.line_start = old_info.Ast0.pos_info.Ast0.line_end;
+      Ast0.logical_start = old_info.Ast0.pos_info.Ast0.logical_end; } in
   let info =
-    { old_info with
-      Ast0.line_start = old_info.Ast0.line_end;
-      Ast0.logical_start = old_info.Ast0.logical_end;
+    { Ast0.pos_info = new_pos_info;
       Ast0.attachable_start = false; Ast0.attachable_end = false;
       Ast0.mcode_start = []; Ast0.mcode_end = [];
       Ast0.strings_before = []; Ast0.strings_after = [] } in
@@ -2095,7 +2110,8 @@ let transform_type (metavars,alts,name) e =
   match alts with
     (Ast0.TypeCTag(_)::_)::_ ->
       (* start line is given to any leaves in the iso code *)
-      let start_line = Some ((Ast0.get_info e).Ast0.line_start) in
+      let start_line =
+	Some ((Ast0.get_info e).Ast0.pos_info.Ast0.line_start) in
       let alts =
 	List.map
 	  (List.map
@@ -2119,7 +2135,8 @@ let transform_type (metavars,alts,name) e =
 let transform_expr (metavars,alts,name) e =
   let process update_others =
       (* start line is given to any leaves in the iso code *)
-    let start_line = Some ((Ast0.get_info e).Ast0.line_start) in
+    let start_line =
+      Some ((Ast0.get_info e).Ast0.pos_info.Ast0.line_start) in
     let alts =
       List.map
 	(List.map
@@ -2149,7 +2166,8 @@ let transform_decl (metavars,alts,name) e =
   match alts with
     (Ast0.DeclTag(_)::_)::_ ->
       (* start line is given to any leaves in the iso code *)
-      let start_line = Some (Ast0.get_info e).Ast0.line_start in
+      let start_line =
+	Some (Ast0.get_info e).Ast0.pos_info.Ast0.line_start in
       let alts =
 	List.map
 	  (List.map
@@ -2174,7 +2192,8 @@ let transform_stmt (metavars,alts,name) e =
   match alts with
     (Ast0.StmtTag(_)::_)::_ ->
       (* start line is given to any leaves in the iso code *)
-      let start_line = Some (Ast0.get_info e).Ast0.line_start in
+      let start_line =
+	Some (Ast0.get_info e).Ast0.pos_info.Ast0.line_start in
       let alts =
 	List.map
 	  (List.map
@@ -2217,7 +2236,8 @@ let transform_top (metavars,alts,name) e =
 	match alts with
 	  (Ast0.DotsStmtTag(_)::_)::_ ->
 	       (* start line is given to any leaves in the iso code *)
-	    let start_line = Some ((Ast0.get_info e).Ast0.line_start) in
+	    let start_line =
+	      Some ((Ast0.get_info e).Ast0.pos_info.Ast0.line_start) in
 	    let alts =
 	      List.map
 		(List.map

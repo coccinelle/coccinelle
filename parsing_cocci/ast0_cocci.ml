@@ -19,13 +19,16 @@ type mcodekind =
   | CONTEXT     of (Ast.anything Ast.befaft * token_info * token_info) ref
   | MIXED       of (Ast.anything Ast.befaft * token_info * token_info) ref
 
-type info = { line_start : int; line_end : int;
-	      logical_start : int; logical_end : int;
+type position_info = { line_start : int; line_end : int;
+		       logical_start : int; logical_end : int;
+		       column : int; offset : int; }
+
+type info = { pos_info : position_info;
 	      attachable_start : bool; attachable_end : bool;
 	      mcode_start : mcodekind list; mcode_end : mcodekind list;
-	      column : int; offset : int;
 	      (* the following are only for + code *)
-	      strings_before : string list; strings_after : string list }
+	      strings_before : (string * position_info) list;
+	      strings_after : (string * position_info) list }
 
 type 'a mcode = 'a * arity * info * mcodekind * meta_pos ref (* pos, - only *)
 (* int ref is an index *)
@@ -404,12 +407,16 @@ let top x = TopTag x
 (* --------------------------------------------------------------------- *)
 (* Avoid cluttering the parser.  Calculated in compute_lines.ml. *)
 
-let default_info _ = (* why is this a function? *)
+let pos_info =
   { line_start = -1; line_end = -1;
     logical_start = -1; logical_end = -1;
+    column = -1; offset = -1; }
+
+let default_info _ = (* why is this a function? *)
+  { pos_info = pos_info;
     attachable_start = true; attachable_end = true;
     mcode_start = []; mcode_end = [];
-    column = -1; offset = -1; strings_before = []; strings_after = [] }
+    strings_before = []; strings_after = [] }
 
 let default_befaft _ =
   MIXED(ref (Ast.NOTHING,default_token_info,default_token_info))
@@ -450,8 +457,8 @@ let get_pos_ref (_,_,_,_,x) = x
 let set_pos pos (m,arity,info,mcodekind,_) = (m,arity,info,mcodekind,ref pos)
 let get_info x      = x.info
 let set_info x info = {x with info = info}
-let get_line x      = x.info.line_start
-let get_line_end x  = x.info.line_end
+let get_line x      = x.info.pos_info.line_start
+let get_line_end x  = x.info.pos_info.line_end
 let get_index x     = !(x.index)
 let set_index x i   = x.index := i
 let get_mcodekind x = !(x.mcodekind)

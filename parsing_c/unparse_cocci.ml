@@ -78,11 +78,11 @@ let print_around printer term = function
   | Ast.BEFOREAFTER(bef,aft) ->
       print_anything bef; printer term; print_anything aft in
 
-let print_string_befaft fn x info =
-  List.iter (function s -> print_string s; force_newline())
+let print_string_befaft fn fn1 x info =
+  List.iter (function (s,_,_) -> fn1(); print_string s; force_newline())
     info.Ast.strbef;
   fn x;
-  List.iter (function s -> force_newline(); print_string s)
+  List.iter (function (s,_,_) -> force_newline(); fn1(); print_string s)
     info.Ast.straft in
 
 let print_meta (r,x) = print_string x in
@@ -100,16 +100,23 @@ let mcode fn arg =
     (false,(s,info,_,_)) ->
     (* printing for transformation *)
     (* Here we don't care about the annotation on s. *)
-      List.iter (function str -> print_string str; print_string "\n")
-	info.Ast.strbef;
-      if info.Ast.column > 0 && not(info.Ast.strbef = [])
-      then print_string (String.make info.Ast.column ' ');
+      let print_comments lb comments =
+	List.fold_left
+	  (function line_before ->
+	    function (str,line,col) ->
+	      match line_before with
+		None -> print_string str; Some line
+	      |	Some lb when line = lb -> print_string str; Some line
+	      |	_ -> print_string "\n"; print_string str; Some line)
+	  lb comments in
+      let line_before = print_comments None info.Ast.strbef in
+      (match line_before with
+	None -> ()
+      |	Some lb when lb = info.Ast.line -> ()
+      |	_ -> print_string "\n");
       fn s;
-      (match info.Ast.straft with
-	[] -> ()
-      | aft ->
-	  List.iter (function str -> print_string "\n"; print_string str) aft;
-	  print_string "\n") (*XXX pr current_tabbing *)
+      let _ = print_comments (Some info.Ast.line) info.Ast.straft in
+      ()
       (* printing for rule generation *)
   | (true, (x, _, Ast.MINUS(_,plus_stream), pos)) ->
       print_string "\n- ";
@@ -120,7 +127,7 @@ let mcode fn arg =
       print_around fn x plus_streams
   | (true,( x, info, Ast.PLUS, pos)) ->
       let fn x = print_string "\n+ "; fn x; print_pos pos in
-      print_string_befaft fn x info
+      print_string_befaft fn (function _ -> print_string "+ ") x info
 in
 
 
@@ -854,6 +861,7 @@ in
 
 let if_open_brace  = function "{" -> true | _ -> false in
 
+(* boolean result indicates whether an indent is needed *)
 let rec pp_any = function
   (* assert: normally there is only CONTEXT NOTHING tokens in any *)
     Ast.FullTypeTag(x) -> fullType x; false
@@ -884,6 +892,7 @@ let rec pp_any = function
   | Ast.CaseLineTag(x) -> case_line "" x; false
 
   | Ast.ConstVolTag(x) -> const_vol x; false
+  | Ast.Pragma(xs) -> print_between force_newline print_string xs; false
   | Ast.Token(x,None) -> print_string x; if_open_brace x
   | Ast.Token(x,Some info) -> 
       mcode
@@ -937,6 +946,7 @@ in
 	  let hd = List.hd xxs in
 	  match hd with
             (Ast.StatementTag s::_) when isfn s -> pr "\n\n"
+	  | (Ast.Pragma _::_)
           | (Ast.Rule_elemTag _::_) | (Ast.StatementTag _::_)
 	  | (Ast.InitTag _::_)
 	  | (Ast.DeclarationTag _::_) | (Ast.Token ("}",_)::_) -> prnl hd
@@ -945,9 +955,10 @@ in
 	if before = Before
 	then
 	  match List.rev(List.hd(List.rev xxs)) with
-	    (Ast.StatementTag s::_) when isfn s -> pr "\n\n"
-          | (Ast.Rule_elemTag _::_) | (Ast.StatementTag _::_)
-	  | (Ast.InitTag _::_)
+	    (Ast.StatementTag s::_) ->
+	      if isfn s then pr "\n\n" else pr "\n"
+	  | (Ast.Pragma _::_)
+          | (Ast.Rule_elemTag _::_) | (Ast.InitTag _::_)
 	  | (Ast.DeclarationTag _::_) | (Ast.Token ("{",_)::_) -> pr "\n"
           | _ -> () in
       (* print a newline at the beginning, if needed *)

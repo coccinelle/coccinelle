@@ -11,7 +11,8 @@ let warning s = Printf.printf "warning: %s\n" s
 
 let fail w str =
   failwith
-    (Printf.sprintf "cocci line %d: %s" ((Ast0.get_info w).Ast0.line_start)
+    (Printf.sprintf "cocci line %d: %s"
+       ((Ast0.get_info w).Ast0.pos_info.Ast0.line_start)
        str)
 
 let make_opt_unique optfn uniquefn info tgt arity term =
@@ -57,7 +58,7 @@ let allopt l fn =
 (* --------------------------------------------------------------------- *)
 (* Mcode *)
 
-let mcode2line (_,_,info,_,_) = info.Ast0.line_start
+let mcode2line (_,_,info,_,_) = info.Ast0.pos_info.Ast0.line_start
 let mcode2arity (_,arity,_,_,_) = arity
 
 let mcode x = x (* nothing to do ... *)
