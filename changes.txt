@@ -21,6 +21,8 @@
 - SmPL parser allows cast as the argument of a pointer
 - SmPL type checker allows enum as an array index
 - Better generation of fresh metavariables names in hrule
+- no more warnings about things that should be metavariables when there is
+  a disjunction in a function position
 
 ** Internals: 
 

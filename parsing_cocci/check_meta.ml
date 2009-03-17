@@ -144,7 +144,7 @@ let rec expression context old_metas table minus e =
       check_table table minus name;
       check_table table minus lenname
   | Ast0.DisjExpr(_,exps,_,_) ->
-      List.iter (expression ID old_metas table minus) exps
+      List.iter (expression context old_metas table minus) exps
   | Ast0.NestExpr(_,exp_dots,_,w,_) ->
       dots (expression ID old_metas table minus) exp_dots;
       get_opt (expression ID old_metas table minus) w
