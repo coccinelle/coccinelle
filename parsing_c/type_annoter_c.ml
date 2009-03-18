@@ -98,6 +98,10 @@ let pr2 s =
   if !Flag_parsing_c.verbose_type
   then Common.pr2 s
 
+let pr2_once s = 
+  if !Flag_parsing_c.verbose_type
+  then Common.pr2_once s
+
 (*****************************************************************************)
 (* Environment *)
 (*****************************************************************************)
