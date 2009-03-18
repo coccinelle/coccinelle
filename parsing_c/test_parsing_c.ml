@@ -240,7 +240,7 @@ let test_comment_annotater infile =
   );
   );
 
-  Comment_annotater_c.annotate_program toks asts;
+  let _ = Comment_annotater_c.annotate_program toks asts in
 
   Common.adjust_pp_with_indent (fun () -> 
   pr2 "pretty print, after comment annotation: --->";

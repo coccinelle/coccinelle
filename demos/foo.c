@@ -1,8 +1,8 @@
 void main()
 {
-	g();
-	foo();
-	g();
-	foo();
+	g(); // comment1
+	foo(); // comment2
+	g(); // comment3
+	foo(); // comment4
 
 }

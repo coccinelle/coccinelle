@@ -87,7 +87,10 @@ let (span_and_pack:
 *)
 
 
-let annotate_program toks _asts = 
+(* the asts is not really used, we do all via side effect on the tokens, 
+ * which share the info reference with the elements in the ast.
+ *)
+let annotate_program toks asts = 
    (* Common.exclude_but_keep_attached gather all comments before a
     * token and then associates to this token those comments. Note that
     * if reverse the list of tokens then this function can also be used
@@ -123,7 +126,11 @@ let annotate_program toks _asts =
        };
      
    );
-   ()
+   (* modified via side effect. I return it just to have a 
+    * clean signature.
+    *)
+   asts
+   
   
   
   
