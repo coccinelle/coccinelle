@@ -173,7 +173,7 @@ value pygencall( value format, value arg ) {
     int fd;
     int x;
     int ret_int;
-    char *rvs;
+    const char *rvs;
     int fmt = Int_val(Field(format,1));
     PyObject *ob1,*ob2,*ob3;
     void *func = getcustom(Field(format,0));
@@ -1184,7 +1184,12 @@ python_func_table the_python_func_table[] = {
 { (void *)PyImport_AddModule, 28, "PyImport_AddModule" },
 { (void *)PyImport_ImportModule, 28, "PyImport_ImportModule" },
 /* 51 */
+#if 0
+    /* In Python 2.6, this because a #define so we cannot take
+     * the address of the function.  - RWMJ.
+     */
 { (void *)PyImport_ImportModuleEx, 51, "PyImport_ImportModuleEx" },
+#endif
 /* 28 */
 { (void *)PyImport_Import, 28, "PyImport_Import" },
 /* 14 */
