@@ -1,5 +1,7 @@
 #note: if you add a file (a .mli or .ml), dont forget to do a   make depend
 
+-include ../Makefile.config
+
 TARGET=ctl
 
 SRC=flag_ctl.ml ast_ctl.ml pretty_print_ctl.ml ctl_engine.ml wrapper_ctl.ml

@@ -2,6 +2,8 @@
 # Variables
 ##############################################################################
 #TARGET=matcher
+-include ../Makefile.config
+
 TARGET=cocciengine
 CTLTARGET=engine
 

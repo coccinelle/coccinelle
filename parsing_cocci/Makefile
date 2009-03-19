@@ -1,3 +1,5 @@
+-include ../Makefile.config
+
 TARGET=cocci_parser
 
 LEXER_SOURCES = lexer_cocci.mll

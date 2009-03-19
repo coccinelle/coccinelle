@@ -1,3 +1,5 @@
+-include ../Makefile.config
+
 TARGET=extra
 
 SOURCES = classic_patch.ml kbuild.ml maintainers.ml

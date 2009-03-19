@@ -1,3 +1,5 @@
+-include ../Makefile.config
+
 PROGS=gitgrep split_patch extract_c_and_res #generate_dependencies
 
 all: $(SUBDIRS) $(PROGS)
