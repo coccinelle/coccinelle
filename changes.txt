@@ -8,12 +8,12 @@
   /* {{coccinelle:skip_start}} */ and
   /* {{coccinelle:skip_end}} */
   allowing to give more hints to the C parser.
-  Thx to Flavien@lebarbe.net for the idea.
+  Thanks to Flavien@lebarbe.net for the idea.
 - the ability to add comments
 - the ability to print the values of more (but not all) kinds of
   metavariables from python
-- new vim SmPL mode 
-  Thx to Alexander Faroy.
+- new vim SmPL mode.
+  Thanks to Alexander Faroy.
 
 ** Bugfix:
 - consider the ident tokens also in the 2 lines before the error line for the 
@@ -23,6 +23,8 @@
 - Better generation of fresh metavariables names in hrule
 - no more warnings about things that should be metavariables when there is
   a disjunction in a function position
+- bugfix in parser, better error message.
+  Thanks to Ali-Erdem OZCAN <ali-erdem.ozcan@st.com> for the bug report.
 
 ** Internals: 
 
