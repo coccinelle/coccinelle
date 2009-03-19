@@ -13,7 +13,7 @@ open Osetb
  * So better delegate all the methods and override even the method
  * with a default definition.
  * 
- * In the same way sometimes an exn can occur at wierd time. When
+ * In the same way sometimes an exn can occur at weird time. When
  * we add an element, sometimes this may raise an exn such as Out_of_memory,
  * but as we dont add directly but only at flush time, the exn
  * may happen far later the user added something in this oassoc.

@@ -992,7 +992,7 @@ and statement stmt used_after after quantified guard =
       let dot_code =
 	match d with
 	  Ast.MINUS(_) ->
-            (* no need for the fresh metavar, but ... is a bit wierd as a
+            (* no need for the fresh metavar, but ... is a bit weird as a
 	       variable name *)
 	    Some(make_match (make_meta_rule_elem d))
 	| _ -> None in

@@ -198,7 +198,7 @@ let test_okfailed cocci_file cfiles =
             match ext with
             | "c" -> "res"
             | "h" -> "h.res"
-            | s -> pr2 ("WIERD: not a .c or .h :" ^ base ^ "." ^ s);
+            | s -> pr2 ("WEIRD: not a .c or .h :" ^ base ^ "." ^ s);
                 "" (* no extension, will compare to same file *)
           in
           let expected_res =  
@@ -311,7 +311,7 @@ let compare_with_expected outfiles =
       match ext with
       | "c" -> "res"
       | "h" -> "h.res"
-      | s -> failwith ("wierd C file, not a .c or .h :" ^ s)
+      | s -> failwith ("weird C file, not a .c or .h :" ^ s)
     in
     let expected_res =  
       Common.filename_of_dbe  (dir, base, expected_suffix) in

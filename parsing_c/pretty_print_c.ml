@@ -168,8 +168,8 @@ let pretty_print_c pr_elem pr_space pr_nl pr_indent pr_outdent pr_unindent =
     let rec pp_action (ActMisc ii) = ii +> List.iter pr_elem in
     match argument with
     | Left e -> pp_expression e
-    | Right wierd -> 
-	(match wierd with
+    | Right weird -> 
+	(match weird with
 	| ArgType param -> pp_param param
 	| ArgAction action -> pp_action action)
 	  

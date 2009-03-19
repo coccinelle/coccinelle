@@ -1259,7 +1259,7 @@ initialize:
 
 /*
 (* opti: This time we use the weird order of non-terminal which requires in 
- * the "caller" to do a List.rev cos quite critical. With this wierd order it
+ * the "caller" to do a List.rev cos quite critical. With this weird order it
  * allows yacc to use a constant stack space instead of exploding if we would
  * do a  'initialize2 Tcomma initialize_list'.
  *)
@@ -1501,7 +1501,7 @@ cpp_directive:
          | _ when s =~ "^\\<\\(.*\\)\\>$" -> 
              NonLocal (Common.split "/" (matched1 s))
          | _ -> 
-             Wierd s 
+             Weird s 
        in
        Include { i_include = (inc_file, [i1;i2]);
                  i_rel_pos = Ast_c.noRelPos();
@@ -1546,7 +1546,7 @@ define_val:
      {
        (* TOREPUT 
        if fst $5 <> "0" 
-       then pr2 "WIERD: in macro and have not a while(0)";
+       then pr2 "WEIRD: in macro and have not a while(0)";
        *)
        DefineDoWhileZero (($2,$5),   [$1;$3;$4;$6])
      }

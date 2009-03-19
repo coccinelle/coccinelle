@@ -1250,7 +1250,7 @@ let deadcode_detection g =
       | x -> 
           (match Control_flow_c.extract_fullstatement node with
           | Some (st, ii) -> raise (Error (DeadCode (Some (pinfo_of_ii ii))))
-          | _ -> pr2 "CFG: orphelin nodes, maybe something wierd happened"
+          | _ -> pr2 "CFG: orphelin nodes, maybe something weird happened"
           )
       )
   )

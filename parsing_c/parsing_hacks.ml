@@ -1159,7 +1159,7 @@ let rec apply_macro_defs xs =
 
       (match params with
       | NoParam -> 
-          pr2 ("WIERD: macro without param used before parenthize: " ^ s);
+          pr2 ("WEIRD: macro without param used before parenthize: " ^ s);
           (* ex: PRINTP("NCR53C400 card%s detected\n" ANDP(((struct ... *)
 
           (match body with
@@ -1180,7 +1180,7 @@ let rec apply_macro_defs xs =
                * the number of arguments. *)
               if List.length params != List.length xxs
               then begin 
-                pr2_once ("WIERD: macro with wrong number of arguments: " ^ s);
+                pr2_once ("WEIRD: macro with wrong number of arguments: " ^ s);
                 (* old: id.new_tokens_before <- bodymacro; *)
                 ()
               end
@@ -1250,7 +1250,7 @@ let rec apply_macro_defs xs =
 
       (match params with
       | Params params -> 
-          pr2 ("WIERD: macro with params but no parens found: " ^ s);
+          pr2 ("WEIRD: macro with params but no parens found: " ^ s);
           (* dont apply the macro, perhaps a redefinition *)
           ()
       | NoParam -> 
@@ -1535,7 +1535,7 @@ let rec find_macro_lineparen xs =
    * not have positive is to restrict to .*DECLARE.* macros.
    *
    * but there is a grammar rule for that, so don't need this case anymore
-   * unless the parameter of the DECLARE_xxx are wierd and can not be mapped
+   * unless the parameter of the DECLARE_xxx are weird and can not be mapped
    * on a argument_list
    *)
         
@@ -1812,7 +1812,7 @@ and find_actions_params xxs =
           (* certainly because paren detection had a pb because of
            * some ifdef-exp
            *)
-          pr2 "PB: wierd, I try to tag an EOF token as action"
+          pr2 "PB: weird, I try to tag an EOF token as action"
         else 
           x.tok <- TAction (TH.info_of_tok x.tok);
       );
@@ -2009,7 +2009,7 @@ let rec define_line_1 acc xs =
       let acc = (TDefine ii) :: acc in
       define_line_2 acc line ii xs
   | TCppEscapedNewline ii::xs ->
-      pr2 "WIERD: a \\ outside a #define";
+      pr2 "WEIRD: a \\ outside a #define";
       let acc = (TCommentSpace ii) :: acc in
       define_line_1 acc xs
   | x::xs -> define_line_1 (x::acc) xs
@@ -2018,7 +2018,7 @@ and define_line_2 acc line lastinfo xs =
   match xs with 
   | [] -> 
       (* should not happened, should meet EOF before *)
-      pr2 "PB: WIERD";   
+      pr2 "PB: WEIRD";   
       List.rev (mark_end_define lastinfo::acc)
   | x::xs -> 
       let line' = TH.line_of_tok x in
@@ -2030,7 +2030,7 @@ and define_line_2 acc line lastinfo xs =
 	  let acc = (EOF ii) :: acc in
           define_line_1 acc xs
       | TCppEscapedNewline ii -> 
-          if (line' <> line) then pr2 "PB: WIERD: not same line number";
+          if (line' <> line) then pr2 "PB: WEIRD: not same line number";
 	  let acc = (TCommentSpace ii) :: acc in
           define_line_2 acc (line+1) info xs
       | x -> 
@@ -2064,7 +2064,7 @@ let rec define_ident acc xs =
 	  let acc = (TIdentDefine (s,i2)) :: acc in
           define_ident acc xs
       | _ -> 
-          pr2 "WIERD: wierd #define body"; 
+          pr2 "WEIRD: weird #define body"; 
           define_ident acc xs
       )
   | x::xs ->

@@ -153,10 +153,10 @@ module XTRANS = struct
 	   Some info ->
 	     failwith
 	       (Printf.sprintf
-		  "wierd: dont have position info for the mcodekind in line %d column %d"
+		  "weird: dont have position info for the mcodekind in line %d column %d"
 		  info.Ast_cocci.line info.Ast_cocci.column)
 	 | None ->
-	     failwith "wierd: dont have position info for the mcodekind"
+	     failwith "weird: dont have position info for the mcodekind"
 
 
   let tag_with_mck mck ib = fun tin -> 
@@ -363,7 +363,7 @@ module XTRANS = struct
      | Ast_cocci.CONTEXT (Ast_cocci.DontCarePos,_) 
      | Ast_cocci.MINUS   (Ast_cocci.DontCarePos,_) -> 
          Ast_cocci.DontCarePos
-     | _ -> failwith "wierd: dont have position info for the mcodekind"      
+     | _ -> failwith "weird: dont have position info for the mcodekind"      
       
   let distrf (ii_of_x_f, distribute_mck_x_f) = 
     fun ia x -> fun tin -> 

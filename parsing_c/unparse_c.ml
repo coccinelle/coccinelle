@@ -197,7 +197,7 @@ let get_fakeInfo_and_tokens celem toks =
         (*old: assert(before +> List.for_all (TH.is_comment)); *)
         before +> List.iter (fun x -> 
           if not (TH.is_comment x)
-          then pr2 ("WIERD: not a comment:" ^ TH.str_of_tok x)
+          then pr2 ("WEIRD: not a comment:" ^ TH.str_of_tok x)
           (* case such as  int asm d3("x"); not yet in ast *)
         );
         before +> List.iter (fun x -> Common.push2 (T1 x) toks_out);
@@ -215,7 +215,7 @@ let get_fakeInfo_and_tokens celem toks =
   Pretty_print_c.pp_program_gen pr_elem pr_space celem;
 
   if not (null !toks_in)
-  then failwith "WIERD: unparsing not finished";
+  then failwith "WEIRD: unparsing not finished";
 
   List.rev !toks_out
 
@@ -585,7 +585,7 @@ let rec adjust_indentation xs =
     let current_tab = List.rev(list_of_string current_tab) in
     let rec loop = function
 	([],new_tab) -> string_of_list (List.rev new_tab)
-      |	(_,[]) -> "" (*wierd; tabbing unit used up more than the current tab*)
+      |	(_,[]) -> "" (*weird; tabbing unit used up more than the current tab*)
       |	(t::ts,n::ns) when t = n -> loop (ts,ns)
       |	(_,ns) -> (* mismatch; remove what we can *)
 	  string_of_list (List.rev ns) in
@@ -645,7 +645,7 @@ let rec adjust_indentation xs =
     | ((T2 (tok,_,_)) as x)::xs when str_of_token2 x = "{" ->  x::aux true xs
     | (Cocci2 "{")::xs -> (Cocci2 "{")::aux true xs
     | ((Cocci2 "\n") as x)::xs -> 
-            (* dont inline in expr because of wierd eval order of ocaml *)
+            (* dont inline in expr because of weird eval order of ocaml *)
         let s = !_current_tabbing in 
         x::Cocci2 (s)::aux started xs
     | x::xs -> x::aux started xs in

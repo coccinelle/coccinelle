@@ -127,8 +127,8 @@ let find_header_file1 cppopts dirname inc_file =
         then Some finalfile
         else None
       )
-  | Wierd s -> 
-      pr2 ("CPPAST: wierd include not handled:" ^ s);
+  | Weird s -> 
+      pr2 ("CPPAST: weird include not handled:" ^ s);
       []
 
 (* todo? can try find most precise ? first just use basename but
@@ -150,7 +150,7 @@ let find_header_file2 inc_file =
           []
       | x::y::xs -> res
       )
-  | Wierd s -> 
+  | Weird s -> 
       []
 
 
@@ -373,8 +373,8 @@ let rec cpp_ifdef_statementize ast =
                       Visitor_c.vk_statement_sequencable_s bigf stseq::aux xs
                       
                 | IfdefDirective (((IfdefElseif|IfdefElse|IfdefEndif),b),ii) -> 
-                    pr2 "wierd: first directive is not a ifdef";
-                    (* maybe not wierd, just that should_ifdefize 
+                    pr2 "weird: first directive is not a ifdef";
+                    (* maybe not weird, just that should_ifdefize 
                      * returned false *)
                     Visitor_c.vk_statement_sequencable_s bigf stseq::aux xs
                 )

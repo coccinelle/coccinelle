@@ -427,7 +427,7 @@ let rec typedef_fix ty env =
           let (t', env') = lookup_typedef s env in
 
           (* bugfix: termination bug if use env instead of env' below, because
-           * can have some wierd mutually recursive typedef which
+           * can have some weird mutually recursive typedef which
            * each new type alias search for its mutual def.
            *)
           TypeName (s, Some (typedef_fix t' env')) +> Ast_c.rewrap_typeC ty
@@ -572,7 +572,7 @@ let add_binding2 namedef warning =
     if  memberf [current_scope] && warning
     then pr2 ("Type_annoter: warning, " ^ s ^ 
                  " is already in current binding" ^ "\n" ^
-                 " so there is a wierd shadowing");
+                 " so there is a weird shadowing");
   end;
   add_in_scope namedef
 

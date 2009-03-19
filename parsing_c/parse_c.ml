@@ -1089,7 +1089,7 @@ let parse_print_error_heuristic2 file =
               | _ -> false
               )
             else begin
-              pr2 "WIERD: length list of error recovery tokens < 2 ";
+              pr2 "WEIRD: length list of error recovery tokens < 2 ";
               false 
             end
           in

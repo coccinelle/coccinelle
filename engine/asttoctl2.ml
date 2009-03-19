@@ -1814,7 +1814,7 @@ and statement stmt after quantified minus_quantified
       let dot_code =
 	match d with
 	  Ast.MINUS(_,_) ->
-            (* no need for the fresh metavar, but ... is a bit wierd as a
+            (* no need for the fresh metavar, but ... is a bit weird as a
 	       variable name *)
 	    Some(make_match (make_meta_rule_elem d ([],[],[])))
 	| _ -> None in

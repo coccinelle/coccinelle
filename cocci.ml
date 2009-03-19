@@ -467,7 +467,7 @@ let (includes_to_parse:
                   Some (Filename.concat !Flag_cocci.include_path 
                           (Common.join "/" xs))
 		else None
-            | Ast_c.Wierd _ -> None
+            | Ast_c.Weird _ -> None
 		  )
 	  | _ -> None))
 	+> List.concat
@@ -569,7 +569,7 @@ let rec update_include_rel_pos cs =
                      i_rel_pos = aref;
                      i_is_in_ifdef = inifdef}) ->
         (match x with
-        | Ast_c.Wierd _ -> None
+        | Ast_c.Weird _ -> None
         | _ -> 
             if inifdef 
             then None
@@ -583,7 +583,7 @@ let rec update_include_rel_pos cs =
       match c with
       | Ast_c.Local x -> Left (x, aref)
       | Ast_c.NonLocal x -> Right (x, aref)
-      | Ast_c.Wierd x -> raise Impossible
+      | Ast_c.Weird x -> raise Impossible
     ) in
 
   update_rel_pos_bis locals;

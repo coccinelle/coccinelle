@@ -305,8 +305,8 @@ and expression = (expressionbis * exp_info ref (* semantic: *)) wrap
   (* cppext: IfdefExpr TODO *)
 
   (* cppext: normmally just expression *)
-  and argument = (expression, wierd_argument) either
-   and wierd_argument = 
+  and argument = (expression, weird_argument) either
+   and weird_argument = 
        | ArgType of parameterType
        | ArgAction of action_macro
       and action_macro = 
@@ -571,7 +571,7 @@ and includ =
  and inc_file = 
   | Local    of inc_elem list
   | NonLocal of inc_elem list
-  | Wierd of string (* ex: #include SYSTEM_H *)
+  | Weird of string (* ex: #include SYSTEM_H *)
   and inc_elem = string
 
  (* cocci: to tag the first of #include <xx/> and last of #include <yy/>
@@ -1003,13 +1003,13 @@ let s_of_inc_file inc_file =
   match inc_file with
   | Local xs -> xs +> Common.join "/"
   | NonLocal xs -> xs +> Common.join "/"
-  | Wierd s -> s
+  | Weird s -> s
 
 let s_of_inc_file_bis inc_file = 
   match inc_file with
   | Local xs -> "\"" ^ xs +> Common.join "/" ^ "\""
   | NonLocal xs -> "<" ^ xs +> Common.join "/" ^ ">"
-  | Wierd s -> s
+  | Weird s -> s
 
 let fieldname_of_fieldkind fieldkind = 
   match unwrap fieldkind with
