@@ -193,8 +193,9 @@ let fixDeclSpecForFuncDef x =
   (match fst (unwrap storage) with
   | StoTypedef -> 
       raise (Semantic ("function definition declared 'typedef'", fake_pi))
-  | x -> (returnType, storage)
+  | _ -> (returnType, storage)
   )
+  
 
 (* parameter: (this is the context where we give parameter only when
  * in func DEFINITION not in funct DECLARATION) We must have a name.
@@ -250,7 +251,32 @@ let fixFunc (typ, compound, old_style_opt) =
           | (((bool, Some s, fullt), _), _) -> ()
 	  | _ -> ()
                 (* failwith "internal errror: fixOldCDecl not good" *)
-          ));
+          )
+      );
+      (* bugfix: cf tests_c/function_pointer4.c. 
+       * Apparemment en C on peut syntaxiquement ecrire ca:
+       * 
+       *   void a(int)(int x);
+       * mais apres gcc gueule au niveau semantique avec:
+       *   xxx.c:1: error: 'a' declared as function returning a function
+       * Je ne faisais pas cette verif. Sur du code comme 
+       *   void METH(foo)(int x) { ...} , le parser croit (a tort) que foo 
+       * est un typedef, et donc c'est parsé comme l'exemple precedent, 
+       * ce qui ensuite confuse l'unparser qui n'est pas habitué
+       * a avoir dans le returnType un FunctionType et qui donc
+       * pr_elem les ii dans le mauvais sens ce qui genere au final
+       * une exception. Hence this fix to at least detect the error 
+       * at parsing time (not unparsing time).
+       *)
+      (match Ast_c.unwrap_typeC fullt with 
+      | FunctionType _ -> 
+          pr2 (spf "WEIRD: %s declared as function returning a function." s);
+          pr2 (spf "This is probably because of a macro. Extend standard.h");
+          raise (Semantic (spf "error: %s " s, Ast_c.parse_info_of_info iis))
+      | _ -> ()
+      );
+
+
       (* it must be nullQualif,cos parser construct only this*)
       {f_name = s;
        f_type = (fullt, (params, bool));
@@ -294,6 +320,8 @@ let fix_add_params_ident = function
              (* failwith "internal errror: fixOldCDecl not good" *)
       )) 
   | _ -> ()
+
+
 
 (*-------------------------------------------------------------------------- *)
 (* shortcuts *)
@@ -1025,7 +1053,7 @@ direct_abstract_declarator:
  | topar parameter_type_list tcpar
      { fun x ->   (nQ, (FunctionType (x, $2),           [$1;$3]))}
 /*(* subtle: here must also use topar, not TOPar, otherwise if have for
-   * instance   (xxx (*)(xxx)) cast, then the second xxx may still be a Tident
+   * instance   (xxx ( * )(xxx)) cast, then the second xxx may still be a Tident
    * but we want to reduce topar, to set the InParameter so that 
    * parsing_hack can get a chance to change the type of xxx into a typedef.
    * That's an example where parsing_hack and the lookahead of ocamlyacc does
