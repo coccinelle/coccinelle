@@ -17,7 +17,6 @@ my $project =
 my $projectcmdline =
     "spatch -cocci_file demos/simple.cocci demos/simple.c";
 
-
 ######################################################################
 # Options
 ######################################################################
@@ -25,15 +24,17 @@ my $projectcmdline =
 my $prefix="/usr/local";
 my $python=1;
 my $trac=0;
+my $opt=".opt";
 
 local $_ = join ' ', @ARGV;
 
 # Parse options
-/-h/ || /--help/ and die "usage: $0 [--prefix=path] [--without-python] [--with-trac]\n";
+/-h/ || /--help/ and die "usage: $0 [--prefix=path] [--without-python] [--with-trac] [--no-opt]\n\n\t--no-opt\tDo not use the optimimized version of OCaml\n\n";
 /--prefix=([^ ]*)/ and $prefix = $1;
 /--without-python/ and $python = 0;
 /--without-trac/ and $trac = 0;
 /--with-trac/ and $trac = 1;
+/--no-opt/ and $opt = "";
 
 #if($ARGV[0] =~ "--prefix=(.*)") {
 #    $prefix = $1;
@@ -85,7 +86,6 @@ pr2 "Checking your configuration.\n";
 
 my $error = 0;
 
-
 #---------------------------------------------------------------------
 # Compilers and runtimes
 #---------------------------------------------------------------------
@@ -96,6 +96,17 @@ $error +=
                  "OCaml (the wonderful language) is present.",
                  "The program ocaml is missing or is not a good version. We need at least 3.09",
                  );
+
+if ($opt eq ".opt") {
+   my $opt_check = `which ocamlc.opt 2>&1 | cut -d' ' -f2`; 
+   if($opt_check =~ "no") {
+   	$opt="";
+	pr2 "Native version of OCaml not found";
+   }
+   else {
+	pr2 "Native version of OCaml is present.";
+   }
+}
 
 #we have cached the result of menhir in the tgz we build.
 
@@ -159,6 +170,7 @@ on the $project website. !!!!
 } else {
 
     pr2 "
+
 ----------------------------------------------------------------------
 
 All seems fine for $project.
@@ -212,6 +224,12 @@ SHAREDIR=$src
 
 # Features
 FEATURE_PYTHON=$python
+
+# The OPTBIN variable is here to allow to use ocamlc.opt instead of
+# ocaml, when it is available, which speeds up compilation. So
+# if you want the fast version of the ocaml chain tools, set this var
+# or setenv it to \".opt\" in your startup script.
+OPTBIN=$opt
 ";
 
 pr2 "Modifying globals/config.ml";

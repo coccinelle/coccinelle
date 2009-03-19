@@ -16,5 +16,5 @@ else
 
 fi
 
-$COCCINELLE_HOME/spatch $*
+$COCCINELLE_HOME/spatch.opt $*
 

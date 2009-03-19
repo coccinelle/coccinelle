@@ -65,12 +65,6 @@ OPTFLAGS=
 # but is now defined above in this file
 #OPTLIBFLAGS=-cclib dllpycaml_stubs.so
 
-# the OPTBIN variable is here to allow to use ocamlc.opt instead of
-# ocaml, when it is available, which speeds up compilation. So
-# if you want the fast version of the ocaml chain tools, set this var
-# or setenv it to ".opt" in your startup script.
-OPTBIN= #.opt
-
 OCAMLC=ocamlc$(OPTBIN) $(OCAMLCFLAGS)  $(INCLUDES)
 OCAMLOPT=ocamlopt$(OPTBIN) $(OPTFLAGS) $(INCLUDES)
 OCAMLLEX=ocamllex #-ml # -ml for debugging lexer, but slightly slower
@@ -188,23 +182,36 @@ purebytecode:
 ##############################################################################
 
 # don't remove DESTDIR, it can be set by package build system like ebuild
-install: all
+install-common:
 	mkdir -p $(DESTDIR)$(BINDIR)
 	mkdir -p $(DESTDIR)$(LIBDIR)
 	mkdir -p $(DESTDIR)$(SHAREDIR)
 	mkdir -p $(DESTDIR)$(MANDIR)/man1
-	cp spatch $(DESTDIR)$(SHAREDIR)
 	cp standard.h $(DESTDIR)$(SHAREDIR)
 	cp standard.iso $(DESTDIR)$(SHAREDIR)
 	cp docs/spatch.1 $(DESTDIR)$(MANDIR)/man1/
 	mkdir -p $(DESTDIR)$(SHAREDIR)/python
 	cp -a python/coccilib $(DESTDIR)$(SHAREDIR)/python
 	cp -f dllpycaml_stubs.so $(DESTDIR)$(LIBDIR)
-	cat scripts/spatch.sh | sed "s|SHAREDIR|$(DESTDIR)$(SHAREDIR)|g" > $(DESTDIR)$(BINDIR)/spatch
 	@echo ""
 	@echo "You can also install spatch by copying the program spatch"
 	@echo "(available in this directory) anywhere you want and"
 	@echo "give it the right options to find its configuration files."
+
+# user will use spatch to run spatch.opt (native)
+install: all.opt install-common
+	cp spatch.opt $(DESTDIR)$(SHAREDIR)
+	cat scripts/spatch.sh | sed "s|SHAREDIR|$(DESTDIR)$(SHAREDIR)|g" > $(DESTDIR)$(BINDIR)/spatch
+
+# user will use spatch to run spatch (bytecode)
+install-byte: all install-common
+	cp spatch $(DESTDIR)$(SHAREDIR)
+	cat scripts/spatch.sh | sed "s|\.opt||" | sed "s|SHAREDIR|$(DESTDIR)$(SHAREDIR)|g" > $(DESTDIR)$(BINDIR)/spatch
+
+# user will use spatch.opt to run spatch.opt (native)
+install-opt: all.opt install-common
+	cp spatch.opt $(DESTDIR)$(SHAREDIR)
+	cat scripts/spatch.sh | sed "s|SHAREDIR|$(DESTDIR)$(SHAREDIR)|g" > $(DESTDIR)$(BINDIR)/spatch.opt
 
 uninstall:
 	rm -f $(DESTDIR)$(BINDIR)/spatch
