@@ -197,6 +197,7 @@ install-common:
 	@echo "You can also install spatch by copying the program spatch"
 	@echo "(available in this directory) anywhere you want and"
 	@echo "give it the right options to find its configuration files."
+	@echo ""
 
 # user will use spatch to run spatch.opt (native)
 install: all.opt install-common
