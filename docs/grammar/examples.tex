@@ -403,6 +403,30 @@ from a site to another.
 [[view:/linux-next/arch/powerpc/platforms/pseries/setup.c::face=ovl-face2::linb=245::colb=3::cole=9][return]]
 \end{lstlisting}
 
+Note~: Coccinelle provides some predefined Python functions,
+\emph{i.e.}, \texttt{cocci.print\_main}, \texttt{cocci.print\_sec} and
+\texttt{cocci.print\_secs}. One could alternatively write the following
+SmPL rule instead of the previously presented one.
+
+\begin{tabular}{c}
+\begin{lstlisting}[language=Cocci]
+@M@ script:python @
+p1 << r.p1;
+p2 << r.p2;
+@@@M
+
+cocci.print_main(p1)
+cocci.print_sec("return",p2)
+\end{lstlisting}
+\end{tabular}\\
+
+The function \texttt{cocci.print\_secs} is used when there are several
+positions which are matched by a single position variable and that
+every matched position should be printed.
+
+Any metavariable could be inherited in the Python code. However,
+accessible fields are not currently equally supported among them.
+
 % \begin{tabular}{ccc}
 % Before & Semantic patch & After \\
 % \begin{minipage}[t]{.3\linewidth}
