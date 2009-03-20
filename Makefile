@@ -110,7 +110,7 @@ $(MAKESUBDIRS:%=%.opt):
 # commons:
 # globals:
 # menhirlib:
-# parsing_cocci:globals menhirlib
+# parsing_cocci: commons globals menhirlib
 # parsing_c:parsing_cocci
 # ctl:globals commons
 # engine: parsing_cocci parsing_c ctl
@@ -122,7 +122,7 @@ $(MAKESUBDIRS:%=%.opt):
 # commons.opt:
 # globals.opt:
 # menhirlib.opt:
-# parsing_cocci.opt:globals.opt menhirlib.opt
+# parsing_cocci.opt: commons.opt globals.opt menhirlib.opt
 # parsing_c.opt:parsing_cocci.opt
 # ctl.opt:globals.opt commons.opt
 # engine.opt: parsing_cocci.opt parsing_c.opt ctl.opt
