@@ -33,8 +33,8 @@ class Output:
 	def finalise(self):
 		pass
 
-	def print_main(self, p) :
-		print "* TODO [[view:%s::face=ovl-face1::linb=%s::colb=%s::cole=%s][%s::%s]]" % (p[0].file,p[0].line,p[0].column,p[0].column_end,p[0].file,p[0].line)
+	def print_main(self, msg, p) :
+		print "* TODO [[view:%s::face=ovl-face1::linb=%s::colb=%s::cole=%s][%s %s::%s]]" % (p[0].file,p[0].line,p[0].column,p[0].column_end,msg,p[0].file,p[0].line)
 
 	def print_sec(self, msg, p) :
 		print "[[view:%s::face=ovl-face2::linb=%s::colb=%s::cole=%s][%s]]" % (p[0].file,p[0].line,p[0].column,p[0].column_end,msg)
