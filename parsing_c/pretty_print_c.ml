@@ -861,7 +861,6 @@ and pp_init (init, iinit) =
     let defbis, ii = def in
     match ii with 
     | is::iifunc1::iifunc2::i1::i2::ifakestart::isto -> 
-	
 	let {f_name = s;
               f_type = (returnt, (paramst, (b, iib)));
               f_storage = sto;
@@ -869,7 +868,6 @@ and pp_init (init, iinit) =
               f_attr = attrs;
 	    } = defbis
 	in
-	
         pr_elem ifakestart;
         
         pp_type_with_ident None (Some (sto, isto)) 
@@ -877,7 +875,6 @@ and pp_init (init, iinit) =
 	
         pp_attributes pr_elem pr_space attrs;
         pr_elem is;
-	
 	
         pr_elem iifunc1;
 	

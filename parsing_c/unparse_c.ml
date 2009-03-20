@@ -279,9 +279,15 @@ let expand_mcode toks =
           
   
     | T1 tok -> 
+	let (a,b) = !((TH.info_of_tok tok).cocci_tag) in
         (* no tag on expandedTok ! *)
-        assert(not (TH.is_expanded tok && 
-            !((TH.info_of_tok tok).cocci_tag) <> Ast_c.emptyAnnot));
+        (if (TH.is_expanded tok && 
+            !((TH.info_of_tok tok).cocci_tag) <> Ast_c.emptyAnnot)
+	then
+	  failwith
+	    (Printf.sprintf
+	       "expanded token %s on line %d is either modified or stored in a metavariable"
+	       (TH.str_of_tok tok) (TH.line_of_tok tok)));
 
         let tok' = tok +> TH.visitor_info_of_tok (fun i -> 
           { i with cocci_tag = ref Ast_c.emptyAnnot; }
