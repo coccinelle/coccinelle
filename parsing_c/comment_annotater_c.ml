@@ -105,10 +105,11 @@ let annotate_program toks asts =
 
   (* after phase. trick: reverse the tokens and reuse previous func *)
    let toks_with_after =
-     List.map
-       (function (x,l) -> (x,List.rev l))
-       (Common.exclude_but_keep_attached is_comment_or_space_or_stuff 
-          (List.rev toks))
+     List.rev
+       (List.map
+	  (function (x,l) -> (x,List.rev l))
+	  (Common.exclude_but_keep_attached is_comment_or_space_or_stuff 
+             (List.rev toks)))
    in
 
   (* merge *)
