@@ -182,6 +182,7 @@ purebytecode:
 ##############################################################################
 
 # don't remove DESTDIR, it can be set by package build system like ebuild
+# for staged installation.
 install-common:
 	mkdir -p $(DESTDIR)$(BINDIR)
 	mkdir -p $(DESTDIR)$(LIBDIR)
