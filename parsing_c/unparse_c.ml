@@ -1,3 +1,7 @@
+(* should keep comments and directives in between adjacent deleted terms,
+but not comments and directives within deleted terms.  should use the
+labels found in the control-flow graph *)
+
 (* Yoann Padioleau, Julia Lawall
  * 
  * Copyright (C) 2006, 2007, 2008, 2009 Ecole des Mines de Nantes and DIKU
@@ -263,6 +267,11 @@ let displace_fake_nodes toks =
 (* Tokens2 generation *)
 (*****************************************************************************)
 
+let comment2t2 = function
+    (Token_c.TCommentCpp x,(info : Token_c.info)) ->
+      C2("\n"^info.Common.str^"\n")
+  | x -> failwith (Printf.sprintf "unexpected comment %s" (Dumper.dump x))
+
 let expand_mcode toks = 
   let toks_out = ref [] in
 
@@ -312,12 +321,18 @@ let expand_mcode toks =
       push2 (Cocci2 s) toks_out 
     in
     let pr_c info = 
-      match Ast_c.pinfo_of_info info with
-	Ast_c.AbstractLineTok _ -> push2 (C2 (Ast_c.str_of_info info)) toks_out
-      |	Ast_c.FakeTok (s,_) -> push2 (C2 s) toks_out
+      (match Ast_c.pinfo_of_info info with
+	Ast_c.AbstractLineTok _ ->
+	  push2 (C2 (Ast_c.str_of_info info)) toks_out
+      |	Ast_c.FakeTok (s,_) ->
+	  push2 (C2 s) toks_out
       |	_ ->
 	  Printf.printf "line: %s\n" (Common.dump info);
-	  failwith "not an abstract line" in
+	  failwith "not an abstract line");
+      (!(info.Ast_c.comments_tag)).Ast_c.mafter +>
+      List.iter (fun x -> Common.push2 (comment2t2 x) toks_out) in
+
+
 
     let pr_space _ = push2 (C2 " ") toks_out in
 
@@ -367,18 +382,18 @@ let expand_mcode toks =
 (*****************************************************************************)
 
 let is_minusable_comment = function
-  | T2 (t,_b,_i) -> 
+  | (T2 (t,_b,_i)) as it -> 
       (match t with
       | Parser_c.TCommentSpace _   (* only whitespace *)
       (* patch: coccinelle *)      
       | Parser_c.TCommentNewline _ (* newline plus whitespace *)
       | Parser_c.TComment _ 
       | Parser_c.TCommentCpp (Token_c.CppAttr, _) 
-      | Parser_c.TCommentCpp (Token_c.CppMacro, _) 
+      | Parser_c.TCommentCpp (Token_c.CppMacro, _)
+      | Parser_c.TCommentCpp (Token_c.CppDirective, _) (* result was false *)
         -> true
 
-      | Parser_c.TCommentMisc _ 
-      | Parser_c.TCommentCpp (Token_c.CppDirective, _)
+      | Parser_c.TCommentMisc _
       | Parser_c.TCommentCpp (Token_c.CppPassingCosWouldGetError, _)
         -> false
 
@@ -390,10 +405,8 @@ let all_coccis = function
     Cocci2 _ | C2 _ | Indent_cocci2 | Unindent_cocci2 -> true
   | _ -> false
 
-let is_minusable_comment_or_plus = function
-(* patch: coccinelle *)
-    T2(Parser_c.TCommentNewline _,_b,_i) -> false
-  | x -> is_minusable_comment x or all_coccis x
+(*previously gave up if the first character was a newline, but not clear why*)
+let is_minusable_comment_or_plus x = is_minusable_comment x or all_coccis x
 
 let set_minus_comment = function
   | T2 (t,false,idx) -> 
@@ -405,9 +418,11 @@ let set_minus_comment = function
 
       | Parser_c.TComment _ 
       | Parser_c.TCommentCpp (Token_c.CppAttr, _) 
-      | Parser_c.TCommentCpp (Token_c.CppMacro, _) 
+      | Parser_c.TCommentCpp (Token_c.CppMacro, _)
+      | Parser_c.TCommentCpp (Token_c.CppDirective, _)
         -> 
-          pr2 ("ERASING_COMMENTS: " ^ str)
+          pr2 (Printf.sprintf "%d: ERASING_COMMENTS: %s"
+		 (TH.line_of_tok t) str)
       | _ -> raise Impossible
       );
       T2 (t, true, idx)
@@ -418,7 +433,6 @@ let set_minus_comment = function
 let set_minus_comment_or_plus = function
     Cocci2 _ | C2 _ | Indent_cocci2 | Unindent_cocci2 as x -> x
   | x -> set_minus_comment x
-      
 
 let remove_minus_and_between_and_expanded_and_fake xs =
 
@@ -485,7 +499,7 @@ let remove_minus_and_between_and_expanded_and_fake xs =
   (* The use of is_minusable_comment_or_plus and set_minus_comment_or_plus
      is because the + code can end up anywhere in the middle of the - code;
      it is not necessarily to the far left *)
-  let rec adjust_between_minus xs = 
+  let rec adjust_between_minus xs =
     match xs with
     | [] -> []
     | (T2 (t1,true,idx1))::xs -> 
@@ -496,12 +510,12 @@ let remove_minus_and_between_and_expanded_and_fake xs =
         | [] -> [(T2 (t1, true,idx1))]
 
         | (T2 (t2, true,idx2))::rest ->
-             (T2 (t1, true,idx1))::
-               (List.map set_minus_comment_or_plus between_comments @
-               adjust_between_minus ((T2 (t2, true, idx2))::rest))
-        | x::xs -> 
-             (T2 (t1, true, idx1))::
-               (between_comments @ adjust_between_minus (x::xs))
+            (T2 (t1, true,idx1))::
+            (List.map set_minus_comment_or_plus between_comments @
+             adjust_between_minus ((T2 (t2, true, idx2))::rest))
+        | x::xs ->
+            (T2 (t1, true, idx1))::
+            (between_comments @ adjust_between_minus (x::xs))
         )
 
     | x::xs -> x::adjust_between_minus xs in

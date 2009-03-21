@@ -929,6 +929,46 @@ let real_al_info x =
     comments_tag = ref emptyComments;
   }
 
+let al_comments x =
+  let keep_cpp l =
+    List.filter (function (Token_c.TCommentCpp _,_) -> true | _ -> false) l in
+  let al_com (x,i) =
+    (x,{i with Common.charpos = magic_real_number;
+	 Common.line = magic_real_number;
+	 Common.column = magic_real_number}) in
+  {mbefore = []; (* duplicates mafter of the previous token *)
+    mafter = List.map al_com (keep_cpp x.mafter)}
+
+let al_info_cpp tokenindex x = 
+  { pinfo =
+    (AbstractLineTok
+       {charpos = tokenindex;
+	 line = tokenindex;
+	 column = tokenindex;
+	 file = "";
+	 str = str_of_info x});
+    cocci_tag = ref emptyAnnot;
+    comments_tag = ref (al_comments !(x.comments_tag));
+  }
+
+let semi_al_info_cpp x = 
+  { x with
+    cocci_tag = ref emptyAnnot;
+    comments_tag = ref (al_comments !(x.comments_tag));
+  }
+
+let real_al_info_cpp x = 
+  { pinfo =
+    (AbstractLineTok
+       {charpos = magic_real_number;
+	 line = magic_real_number;
+	 column = magic_real_number;
+	 file = "";
+	 str = str_of_info x});
+    cocci_tag = ref emptyAnnot;
+    comments_tag =  ref (al_comments !(x.comments_tag));
+  }
+
 
 (*****************************************************************************)
 (* Views *)
