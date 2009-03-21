@@ -225,6 +225,7 @@ install-opt: all.opt install-common
 
 uninstall:
 	rm -f $(DESTDIR)$(BINDIR)/spatch
+	rm -f $(DESTDIR)$(BINDIR)/spatch.opt
 	rm -f $(DESTDIR)$(LIBDIR)/dllpycaml_stubs.so
 	rm -f $(DESTDIR)$(SHAREDIR)/standard.h
 	rm -f $(DESTDIR)$(SHAREDIR)/standard.iso
