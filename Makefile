@@ -188,9 +188,9 @@ install-common:
 	mkdir -p $(DESTDIR)$(LIBDIR)
 	mkdir -p $(DESTDIR)$(SHAREDIR)
 	mkdir -p $(DESTDIR)$(MANDIR)/man1
-	$(INSTALL) -m 644 standard.h $(DESTDIR)$(SHAREDIR)
-	$(INSTALL) -m 644 standard.iso $(DESTDIR)$(SHAREDIR)
-	$(INSTALL) -m 644 docs/spatch.1 $(DESTDIR)$(MANDIR)/man1/
+	$(INSTALL_DATA) standard.h $(DESTDIR)$(SHAREDIR)
+	$(INSTALL_DATA) standard.iso $(DESTDIR)$(SHAREDIR)
+	$(INSTALL_DATA) docs/spatch.1 $(DESTDIR)$(MANDIR)/man1/
 	@if [ $(FEATURE_PYTHON) -eq 1 ]; then $(MAKE) install-python; fi
 	@echo ""
 	@echo "You can also install spatch by copying the program spatch"
@@ -200,27 +200,27 @@ install-common:
 
 install-python:
 	mkdir -p $(DESTDIR)$(SHAREDIR)/python/coccilib/coccigui
-	$(INSTALL) -m 644 python/coccilib/*.py \
+	$(INSTALL_DATA) python/coccilib/*.py \
 		$(DESTDIR)$(SHAREDIR)/python/coccilib
-	$(INSTALL) -m 644 python/coccilib/coccigui/*.py \
+	$(INSTALL_DATA) python/coccilib/coccigui/*.py \
 		$(DESTDIR)$(SHAREDIR)/python/coccilib/coccigui
-	$(INSTALL) -m 755 dllpycaml_stubs.so $(DESTDIR)$(LIBDIR)
+	$(INSTALL_LIB) dllpycaml_stubs.so $(DESTDIR)$(LIBDIR)
 
 # user will use spatch to run spatch.opt (native)
 install: all.opt install-common
-	$(INSTALL) -m 755 spatch.opt $(DESTDIR)$(SHAREDIR)
+	$(INSTALL_PROGRAM) spatch.opt $(DESTDIR)$(SHAREDIR)
 	cat scripts/spatch.sh | sed "s|SHAREDIR|$(SHAREDIR)|g" > $(DESTDIR)$(BINDIR)/spatch
 	chmod 755 $(DESTDIR)$(BINDIR)/spatch
 
 # user will use spatch to run spatch (bytecode)
 install-byte: all install-common
-	$(INSTALL) -m 755 spatch $(DESTDIR)$(SHAREDIR)
+	$(INSTALL_PROGRAM) spatch $(DESTDIR)$(SHAREDIR)
 	cat scripts/spatch.sh | sed "s|\.opt||" | sed "s|SHAREDIR|$(SHAREDIR)|g" > $(DESTDIR)$(BINDIR)/spatch
 	chmod 755 $(DESTDIR)$(BINDIR)/spatch
 
 # user will use spatch.opt to run spatch.opt (native)
 install-opt: all.opt install-common
-	$(INSTALL) -m 755 spatch.opt $(DESTDIR)$(SHAREDIR)
+	$(INSTALL_PROGRAM) spatch.opt $(DESTDIR)$(SHAREDIR)
 	cat scripts/spatch.sh | sed "s|SHAREDIR|$(SHAREDIR)|g" > $(DESTDIR)$(BINDIR)/spatch.opt
 	chmod 755 $(DESTDIR)$(BINDIR)/spatch.opt
 
