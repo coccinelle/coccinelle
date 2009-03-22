@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 DN=`dirname $0`
 
 if [ -z ${PYTHONPATH} ]

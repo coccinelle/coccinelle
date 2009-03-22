@@ -1,6 +1,7 @@
 #!/bin/sh
 
-echo setting COCCINELLE_HOME=${COCCINELLE_HOME:=SHAREDIR}
+COCCINELLE_HOME=${COCCINELLE_HOME:=SHAREDIR}
+#echo setting COCCINELLE_HOME=${COCCINELLE_HOME:=SHAREDIR}
 
 if [ ! -r "$COCCINELLE_HOME"/standard.iso ] ; then
     echo "There is no standard.iso in SHAREDIR."
@@ -11,8 +12,8 @@ else
  export LD_LIBRARY_PATH="$COCCINELLE_HOME:$LD_LIBRARY_PATH"
  export PYTHONPATH="$COCCINELLE_HOME/python:$PYTHONPATH"
  
- echo setting LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
- echo setting PYTHONPATH="$PYTHONPATH"
+# echo setting LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
+# echo setting PYTHONPATH="$PYTHONPATH"
 
 fi
 
