@@ -296,7 +296,7 @@ srctar:
 	make clean
 	cp -a .  $(TMP)/$(PACKAGE)
 	cd $(TMP)/$(PACKAGE); cd parsing_cocci/; make parser_cocci_menhir.ml
-	cd $(TMP)/$(PACKAGE); rm todo_pos
+	cd $(TMP)/$(PACKAGE); rm -f todo_pos
 	cd $(TMP); tar cvfz $(PACKAGE).tgz --exclude-vcs $(PACKAGE)
 	rm -rf  $(TMP)/$(PACKAGE)
 
