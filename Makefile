@@ -18,7 +18,7 @@ ifeq ($(FEATURE_PYTHON),1)
 PYCMA=pycaml/pycaml.cma
 PYDIR=pycaml
 PYLIB=dllpycaml_stubs.so
-# the following is essential for Coccinelle to compile under gentoo (wierd)
+# the following is essential for Coccinelle to compile under gentoo (weird)
 OPTLIBFLAGS=-cclib dllpycaml_stubs.so
 else
 PYCMA=
@@ -210,20 +210,30 @@ install-python:
 		$(DESTDIR)$(SHAREDIR)/python/coccilib/coccigui
 	$(INSTALL_LIB) dllpycaml_stubs.so $(DESTDIR)$(LIBDIR)
 
+install:
+	@if test -x spatch -a ! -x spatch.opt ; then \
+		$(MAKE) install-byte;fi
+	@if test ! -x spatch -a -x spatch.opt ; then \
+		$(MAKE) install-def; $(MAKE) install-opt;fi
+	@if test -x spatch -a -x spatch.opt ; then \
+		$(MAKE) install-byte; $(MAKE) install-opt;fi
+	@if test ! -x spatch -a ! -x spatch.opt ; then \
+		echo "\n\n\t==> Run 'make', 'make opt', or both first. <==\n\n";fi
+
 # user will use spatch to run spatch.opt (native)
-install: spatch.opt install-common
+install-def: install-common
 	$(INSTALL_PROGRAM) spatch.opt $(DESTDIR)$(SHAREDIR)
 	cat scripts/spatch.sh | sed "s|SHAREDIR|$(SHAREDIR)|g" > $(DESTDIR)$(BINDIR)/spatch
 	chmod 755 $(DESTDIR)$(BINDIR)/spatch
 
 # user will use spatch to run spatch (bytecode)
-install-byte: spatch install-common
+install-byte: install-common
 	$(INSTALL_PROGRAM) spatch $(DESTDIR)$(SHAREDIR)
 	cat scripts/spatch.sh | sed "s|\.opt||" | sed "s|SHAREDIR|$(SHAREDIR)|g" > $(DESTDIR)$(BINDIR)/spatch
 	chmod 755 $(DESTDIR)$(BINDIR)/spatch
 
 # user will use spatch.opt to run spatch.opt (native)
-install-opt: spatch.opt install-common
+install-opt: install-common
 	$(INSTALL_PROGRAM) spatch.opt $(DESTDIR)$(SHAREDIR)
 	cat scripts/spatch.sh | sed "s|SHAREDIR|$(SHAREDIR)|g" > $(DESTDIR)$(BINDIR)/spatch.opt
 	chmod 755 $(DESTDIR)$(BINDIR)/spatch.opt
