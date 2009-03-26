@@ -204,6 +204,10 @@ install-python:
 		$(DESTDIR)$(SHAREDIR)/python/coccilib
 	$(INSTALL_DATA) python/coccilib/coccigui/*.py \
 		$(DESTDIR)$(SHAREDIR)/python/coccilib/coccigui
+	$(INSTALL_DATA) python/coccilib/coccigui/pygui.glade \
+		$(DESTDIR)$(SHAREDIR)/python/coccilib/coccigui
+	$(INSTALL_DATA) python/coccilib/coccigui/pygui.gladep \
+		$(DESTDIR)$(SHAREDIR)/python/coccilib/coccigui
 	$(INSTALL_LIB) dllpycaml_stubs.so $(DESTDIR)$(LIBDIR)
 
 # user will use spatch to run spatch.opt (native)
