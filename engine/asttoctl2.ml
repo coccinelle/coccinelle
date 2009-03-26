@@ -1084,7 +1084,8 @@ let forwhile header body ((afvs,_,_,_) as aft) after
     (Ast.Atomic(re),(_,_,_,Ast.CONTEXT(_,Ast.NOTHING))) ->
       (match Ast.unwrap re with
 	Ast.MetaStmt((_,_,Ast.CONTEXT(_,Ast.NOTHING),_),
-		     Type_cocci.Unitary,_,false) ->
+		     Type_cocci.Unitary,_,false)
+	when after = Tail or after = End or after = VeryEnd ->
 	  let (efvs) =
 	    match seq_fvs quantified [Ast.get_fvs header] with
 	      [(efvs,_)] -> efvs

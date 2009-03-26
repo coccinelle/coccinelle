@@ -1,5 +1,14 @@
 -*- org -*-
 
+* 0.1.7
+
+** Features: 
+
+** Bugfix:
+- drop excessive "optimization" in ctl generation for while and for loops
+
+** Internals: 
+   
 * 0.1.6
 
 ** Features: 
