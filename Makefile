@@ -211,19 +211,19 @@ install-python:
 	$(INSTALL_LIB) dllpycaml_stubs.so $(DESTDIR)$(LIBDIR)
 
 # user will use spatch to run spatch.opt (native)
-install: all.opt install-common
+install: spatch.opt install-common
 	$(INSTALL_PROGRAM) spatch.opt $(DESTDIR)$(SHAREDIR)
 	cat scripts/spatch.sh | sed "s|SHAREDIR|$(SHAREDIR)|g" > $(DESTDIR)$(BINDIR)/spatch
 	chmod 755 $(DESTDIR)$(BINDIR)/spatch
 
 # user will use spatch to run spatch (bytecode)
-install-byte: all install-common
+install-byte: spatch install-common
 	$(INSTALL_PROGRAM) spatch $(DESTDIR)$(SHAREDIR)
 	cat scripts/spatch.sh | sed "s|\.opt||" | sed "s|SHAREDIR|$(SHAREDIR)|g" > $(DESTDIR)$(BINDIR)/spatch
 	chmod 755 $(DESTDIR)$(BINDIR)/spatch
 
 # user will use spatch.opt to run spatch.opt (native)
-install-opt: all.opt install-common
+install-opt: spatch.opt install-common
 	$(INSTALL_PROGRAM) spatch.opt $(DESTDIR)$(SHAREDIR)
 	cat scripts/spatch.sh | sed "s|SHAREDIR|$(SHAREDIR)|g" > $(DESTDIR)$(BINDIR)/spatch.opt
 	chmod 755 $(DESTDIR)$(BINDIR)/spatch.opt
