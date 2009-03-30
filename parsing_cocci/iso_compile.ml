@@ -1,4 +1,5 @@
 module V0 = Visitor_ast0
+module VT0 = Visitor_ast0_types
 module Ast0 = Ast0_cocci
 module Ast = Ast_cocci
 
@@ -16,7 +17,7 @@ let sequence_tokens =
   let donothing r k e = k e in
   let bind x y = x @ y in
   let option_default = [] in
-  V0.combiner bind option_default
+  V0.flat_combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing donothing
     donothing donothing
@@ -78,5 +79,5 @@ let process_info l =
 
 let process (metavars,alts,name) =
   let toks =
-    List.map (List.map sequence_tokens.V0.combiner_anything) alts in
+    List.map (List.map sequence_tokens.VT0.combiner_rec_anything) alts in
   process_info toks

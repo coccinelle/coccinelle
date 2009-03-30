@@ -11,6 +11,7 @@ either - or + *)
 module Ast = Ast_cocci
 module Ast0 = Ast0_cocci
 module V0 = Visitor_ast0
+module VT0 = Visitor_ast0_types
 
 let current_rule = ref ""
 
@@ -27,7 +28,7 @@ let strip_info =
     {(Ast0.wrap (Ast0.unwrap x)) with
       Ast0.mcodekind = ref Ast0.PLUS;
       Ast0.true_if_test = x.Ast0.true_if_test} in
-  V0.rebuilder
+  V0.flat_rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
@@ -41,42 +42,42 @@ let anything_equal = function
   | (Ast0.DotsParamTag(d1),Ast0.DotsParamTag(d2)) ->
       failwith "not a possible variable binding"
   | (Ast0.DotsStmtTag(d1),Ast0.DotsStmtTag(d2)) ->
-      (strip_info.V0.rebuilder_statement_dots d1) =
-      (strip_info.V0.rebuilder_statement_dots d2)
+      (strip_info.VT0.rebuilder_rec_statement_dots d1) =
+      (strip_info.VT0.rebuilder_rec_statement_dots d2)
   | (Ast0.DotsDeclTag(d1),Ast0.DotsDeclTag(d2)) ->
       failwith "not a possible variable binding"
   | (Ast0.DotsCaseTag(d1),Ast0.DotsCaseTag(d2)) ->
       failwith "not a possible variable binding"
   | (Ast0.IdentTag(d1),Ast0.IdentTag(d2)) ->
-      (strip_info.V0.rebuilder_ident d1) = (strip_info.V0.rebuilder_ident d2)
+      (strip_info.VT0.rebuilder_rec_ident d1) = (strip_info.VT0.rebuilder_rec_ident d2)
   | (Ast0.ExprTag(d1),Ast0.ExprTag(d2)) ->
-      (strip_info.V0.rebuilder_expression d1) =
-      (strip_info.V0.rebuilder_expression d2)
+      (strip_info.VT0.rebuilder_rec_expression d1) =
+      (strip_info.VT0.rebuilder_rec_expression d2)
   | (Ast0.ArgExprTag(_),_) | (_,Ast0.ArgExprTag(_)) ->
       failwith "not possible - only in isos1"
   | (Ast0.TestExprTag(_),_) | (_,Ast0.TestExprTag(_)) ->
       failwith "not possible - only in isos1"
   | (Ast0.TypeCTag(d1),Ast0.TypeCTag(d2)) ->
-      (strip_info.V0.rebuilder_typeC d1) =
-      (strip_info.V0.rebuilder_typeC d2)
+      (strip_info.VT0.rebuilder_rec_typeC d1) =
+      (strip_info.VT0.rebuilder_rec_typeC d2)
   | (Ast0.InitTag(d1),Ast0.InitTag(d2)) ->
-      (strip_info.V0.rebuilder_initialiser d1) =
-      (strip_info.V0.rebuilder_initialiser d2)
+      (strip_info.VT0.rebuilder_rec_initialiser d1) =
+      (strip_info.VT0.rebuilder_rec_initialiser d2)
   | (Ast0.ParamTag(d1),Ast0.ParamTag(d2)) ->
-      (strip_info.V0.rebuilder_parameter d1) =
-      (strip_info.V0.rebuilder_parameter d2)
+      (strip_info.VT0.rebuilder_rec_parameter d1) =
+      (strip_info.VT0.rebuilder_rec_parameter d2)
   | (Ast0.DeclTag(d1),Ast0.DeclTag(d2)) ->
-      (strip_info.V0.rebuilder_declaration d1) =
-      (strip_info.V0.rebuilder_declaration d2)
+      (strip_info.VT0.rebuilder_rec_declaration d1) =
+      (strip_info.VT0.rebuilder_rec_declaration d2)
   | (Ast0.StmtTag(d1),Ast0.StmtTag(d2)) ->
-      (strip_info.V0.rebuilder_statement d1) =
-      (strip_info.V0.rebuilder_statement d2)
+      (strip_info.VT0.rebuilder_rec_statement d1) =
+      (strip_info.VT0.rebuilder_rec_statement d2)
   | (Ast0.CaseLineTag(d1),Ast0.CaseLineTag(d2)) ->
-      (strip_info.V0.rebuilder_case_line d1) =
-      (strip_info.V0.rebuilder_case_line d2)
+      (strip_info.VT0.rebuilder_rec_case_line d1) =
+      (strip_info.VT0.rebuilder_rec_case_line d2)
   | (Ast0.TopTag(d1),Ast0.TopTag(d2)) ->
-      (strip_info.V0.rebuilder_top_level d1) =
-      (strip_info.V0.rebuilder_top_level d2)
+      (strip_info.VT0.rebuilder_rec_top_level d1) =
+      (strip_info.VT0.rebuilder_rec_top_level d2)
   | (Ast0.IsoWhenTTag(_),_) | (_,Ast0.IsoWhenTTag(_)) ->
       failwith "only for isos within iso phase"
   | (Ast0.IsoWhenFTag(_),_) | (_,Ast0.IsoWhenFTag(_)) ->
@@ -383,7 +384,7 @@ let match_maker checks_needed context_required whencode_allowed =
 	  Ast0.MetaStmt(name,pure) | Ast0.MetaStmtList(name,pure) -> pure
 	| _ -> Ast0.Impure) in
 
-    V0.combiner bind option_default
+    V0.flat_combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing donothing donothing donothing
       ident expression typeC init param donothing stmt donothing
@@ -435,7 +436,7 @@ let match_maker checks_needed context_required whencode_allowed =
     match Ast0.unwrap sl with
       Ast0.MetaStmtList(name,pure) ->
 	add_pure_list_binding name pure
-	  pure_sp_code.V0.combiner_statement
+	  pure_sp_code.VT0.combiner_rec_statement
 	  (function lst -> Ast0.StmtTag(List.hd lst))
 	  (function lst -> Ast0.DotsStmtTag(build_dots builder lst))
 	  lst
@@ -446,7 +447,7 @@ let match_maker checks_needed context_required whencode_allowed =
   let rec match_ident pattern id =
     match Ast0.unwrap pattern with
       Ast0.MetaId(name,_,pure) ->
-	(add_pure_binding name pure pure_sp_code.V0.combiner_ident
+	(add_pure_binding name pure pure_sp_code.VT0.combiner_rec_ident
 	  (function id -> Ast0.IdentTag id) id)
     | Ast0.MetaFunc(name,_,pure) -> failwith "metafunc not supported"
     | Ast0.MetaLocalFunc(name,_,pure) -> failwith "metalocalfunc not supported"
@@ -515,7 +516,7 @@ let match_maker checks_needed context_required whencode_allowed =
 			let tyname = Ast0.rewrap_mcode name tyname in
 			conjunct_bindings
 			  (add_pure_binding name pure
-			     pure_sp_code.V0.combiner_expression
+			     pure_sp_code.VT0.combiner_rec_expression
 			     (function expr -> Ast0.ExprTag expr)
 			     expr)
 			  (function bindings ->
@@ -564,12 +565,12 @@ let match_maker checks_needed context_required whencode_allowed =
 		if List.exists (function t -> Type_cocci.compatible t expty) ts
 		then
 		  add_pure_binding name pure
-		    pure_sp_code.V0.combiner_expression
+		    pure_sp_code.VT0.combiner_rec_expression
 		    (function expr -> Ast0.ExprTag expr)
 		    expr
 		else return false
 	  | None ->
-	      add_pure_binding name pure pure_sp_code.V0.combiner_expression
+	      add_pure_binding name pure pure_sp_code.VT0.combiner_rec_expression
 		(function expr -> Ast0.ExprTag expr)
 		expr
 	else return false
@@ -693,7 +694,7 @@ let match_maker checks_needed context_required whencode_allowed =
 	(match Ast0.unwrap t with
 	  Ast0.FunctionType(tya,lp1a,paramsa,rp1a) -> return false
 	| _ ->
-	    add_pure_binding name pure pure_sp_code.V0.combiner_typeC
+	    add_pure_binding name pure pure_sp_code.VT0.combiner_rec_typeC
 	      (function ty -> Ast0.TypeCTag ty)
 	      t)
     | up ->
@@ -829,7 +830,7 @@ let match_maker checks_needed context_required whencode_allowed =
   and match_init pattern i =
     match Ast0.unwrap pattern with
       Ast0.MetaInit(name,pure) ->
-	add_pure_binding name pure pure_sp_code.V0.combiner_initialiser
+	add_pure_binding name pure pure_sp_code.VT0.combiner_rec_initialiser
 	  (function ini -> Ast0.InitTag ini)
 	  i
     | up ->
@@ -897,7 +898,7 @@ let match_maker checks_needed context_required whencode_allowed =
   and match_param pattern p =
     match Ast0.unwrap pattern with
       Ast0.MetaParam(name,pure) ->
-	add_pure_binding name pure pure_sp_code.V0.combiner_parameter
+	add_pure_binding name pure pure_sp_code.VT0.combiner_rec_parameter
 	  (function p -> Ast0.ParamTag p)
 	  p
     | Ast0.MetaParamList(name,_,pure) -> failwith "metaparamlist not supported"
@@ -927,7 +928,7 @@ let match_maker checks_needed context_required whencode_allowed =
 	  Ast0.Dots(_,_) | Ast0.Circles(_,_) | Ast0.Stars(_,_) ->
 	    return false (* ... is not a single statement *)
 	| _ ->
-	    add_pure_binding name pure pure_sp_code.V0.combiner_statement
+	    add_pure_binding name pure pure_sp_code.VT0.combiner_rec_statement
 	      (function ty -> Ast0.StmtTag ty)
 	      s)
     | Ast0.MetaStmtList(name,pure) -> failwith "metastmtlist not supported"
@@ -1219,7 +1220,7 @@ let make_minus =
 	update_mc mcodekind e;
 	Ast0.rewrap e
 	  (Ast0.NestExpr(mcode starter,
-			 r.V0.rebuilder_expression_dots expr_dots,
+			 r.VT0.rebuilder_rec_expression_dots expr_dots,
 			 mcode ender,whencode,multi))
     | _ -> donothing r k e in
 
@@ -1244,8 +1245,9 @@ let make_minus =
     | Ast0.Nest(starter,stmt_dots,ender,whencode,multi) ->
 	update_mc mcodekind e;
 	Ast0.rewrap e
-	  (Ast0.Nest(mcode starter,r.V0.rebuilder_statement_dots stmt_dots,
-		     mcode ender,whencode,multi))
+	  (Ast0.Nest
+	     (mcode starter,r.VT0.rebuilder_rec_statement_dots stmt_dots,
+	      mcode ender,whencode,multi))
     | _ -> donothing r k e in
 
   let initialiser r k e =
@@ -1282,7 +1284,7 @@ let make_minus =
 		 info.Ast0.pos_info.Ast0.line_start (Dumper.dump e)))
     | _ -> donothing r k e in
 
-  V0.rebuilder
+  V0.flat_rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     dots dots dots dots dots dots
     donothing expression donothing initialiser donothing declaration
@@ -1366,11 +1368,11 @@ let rebuild_mcode start_line =
       (match Ast0.get_dots_bef_aft res with
 	Ast0.NoDots -> Ast0.NoDots
       | Ast0.AddingBetweenDots s ->
-	  Ast0.AddingBetweenDots(r.V0.rebuilder_statement s)
+	  Ast0.AddingBetweenDots(r.VT0.rebuilder_rec_statement s)
       | Ast0.DroppingBetweenDots s ->
-	  Ast0.DroppingBetweenDots(r.V0.rebuilder_statement s)) in
+	  Ast0.DroppingBetweenDots(r.VT0.rebuilder_rec_statement s)) in
 
-  V0.rebuilder
+  V0.flat_rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing
@@ -1383,50 +1385,35 @@ let rebuild_mcode start_line =
    aren't allowed in isomorphisms for the moment. *)
 
 let count_edots =
-  let mcode x = 0 in
   let option_default = 0 in
   let bind x y = x + y in
-  let donothing r k e = k e in
   let exprfn r k e =
     match Ast0.unwrap e with
       Ast0.Edots(_,_) | Ast0.Ecircles(_,_) | Ast0.Estars(_,_) -> 1
     | _ -> 0 in
 
   V0.combiner bind option_default
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    donothing donothing donothing donothing donothing donothing
-    donothing exprfn donothing donothing donothing donothing donothing
-    donothing donothing
+    {V0.combiner_functions with VT0.combiner_exprfn = exprfn}
 
 let count_idots =
-  let mcode x = 0 in
   let option_default = 0 in
   let bind x y = x + y in
-  let donothing r k e = k e in
   let initfn r k e =
     match Ast0.unwrap e with Ast0.Idots(_,_) -> 1 | _ -> 0 in
 
   V0.combiner bind option_default
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing initfn donothing donothing donothing
-    donothing donothing
+    {V0.combiner_functions with VT0.combiner_initfn = initfn}
 
 let count_dots =
-  let mcode x = 0 in
   let option_default = 0 in
   let bind x y = x + y in
-  let donothing r k e = k e in
   let stmtfn r k e =
     match Ast0.unwrap e with
       Ast0.Dots(_,_) | Ast0.Circles(_,_) | Ast0.Stars(_,_) -> 1
     | _ -> 0 in
 
   V0.combiner bind option_default
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing donothing stmtfn
-    donothing donothing
+    {V0.combiner_functions with VT0.combiner_stmtfn = stmtfn}
 
 (* --------------------------------------------------------------------- *)
 
@@ -1456,7 +1443,7 @@ let instantiate bindings mv_bindings =
     let e = k e in
     match Ast0.unwrap e with
       Ast0.MetaId(name,constraints,pure) ->
-	(rebuild_mcode None).V0.rebuilder_ident
+	(rebuild_mcode None).VT0.rebuilder_rec_ident
 	  (match lookup name bindings mv_bindings with
 	    Common.Left(Ast0.IdentTag(id)) -> id
 	  | Common.Left(_) -> failwith "not possible 1"
@@ -1484,8 +1471,8 @@ let instantiate bindings mv_bindings =
 	    | Common.Left(_) -> failwith "not possible 1"
 	    | Common.Right(new_mv) ->
 		failwith "MetaExprList in SP not supported"*)
-	| _ -> [r.V0.rebuilder_expression x])
-    | x::xs -> (r.V0.rebuilder_expression x)::(elist r same_dots xs) in
+	| _ -> [r.VT0.rebuilder_rec_expression x])
+    | x::xs -> (r.VT0.rebuilder_rec_expression x)::(elist r same_dots xs) in
 
   let rec plist r same_dots = function
       [] -> []
@@ -1502,8 +1489,8 @@ let instantiate bindings mv_bindings =
 	    | Common.Left(_) -> failwith "not possible 1"
 	    | Common.Right(new_mv) ->
 		failwith "MetaExprList in SP not supported"*)
-	| _ -> [r.V0.rebuilder_parameter x])
-    | x::xs -> (r.V0.rebuilder_parameter x)::(plist r same_dots xs) in
+	| _ -> [r.VT0.rebuilder_rec_parameter x])
+    | x::xs -> (r.VT0.rebuilder_rec_parameter x)::(plist r same_dots xs) in
 
   let rec slist r same_dots = function
       [] -> []
@@ -1519,8 +1506,8 @@ let instantiate bindings mv_bindings =
 	    | Common.Left(_) -> failwith "not possible 1"
 	    | Common.Right(new_mv) ->
 		failwith "MetaExprList in SP not supported")
-	| _ -> [r.V0.rebuilder_statement x])
-    | x::xs -> (r.V0.rebuilder_statement x)::(slist r same_dots xs) in
+	| _ -> [r.VT0.rebuilder_rec_statement x])
+    | x::xs -> (r.VT0.rebuilder_rec_statement x)::(slist r same_dots xs) in
 
   let same_dots d =
     match Ast0.unwrap d with Ast0.DOTS(l) -> Some l |_ -> None in
@@ -1541,7 +1528,7 @@ let instantiate bindings mv_bindings =
     let e1 =
     match Ast0.unwrap e with
       Ast0.MetaExpr(name,constraints,x,form,pure) ->
-	(rebuild_mcode None).V0.rebuilder_expression
+	(rebuild_mcode None).VT0.rebuilder_rec_expression
 	  (match lookup name bindings mv_bindings with
 	    Common.Left(Ast0.ExprTag(exp)) -> exp
 	  | Common.Left(_) -> failwith "not possible 1"
@@ -1677,7 +1664,7 @@ let instantiate bindings mv_bindings =
     let e = k e in
     match Ast0.unwrap e with
       Ast0.MetaType(name,pure) ->
-	(rebuild_mcode None).V0.rebuilder_typeC
+	(rebuild_mcode None).VT0.rebuilder_rec_typeC
 	  (match lookup name bindings mv_bindings with
 	    Common.Left(Ast0.TypeCTag(ty)) -> ty
 	  | Common.Left(_) -> failwith "not possible 1"
@@ -1690,7 +1677,7 @@ let instantiate bindings mv_bindings =
     let e = k e in
     match Ast0.unwrap e with
       Ast0.MetaInit(name,pure) ->
-	(rebuild_mcode None).V0.rebuilder_initialiser
+	(rebuild_mcode None).VT0.rebuilder_rec_initialiser
 	  (match lookup name bindings mv_bindings with
 	    Common.Left(Ast0.InitTag(ty)) -> ty
 	  | Common.Left(_) -> failwith "not possible 1"
@@ -1714,7 +1701,7 @@ let instantiate bindings mv_bindings =
     let e = k e in
     match Ast0.unwrap e with
       Ast0.MetaParam(name,pure) ->
-	(rebuild_mcode None).V0.rebuilder_parameter
+	(rebuild_mcode None).VT0.rebuilder_rec_parameter
 	  (match lookup name bindings mv_bindings with
 	    Common.Left(Ast0.ParamTag(param)) -> param
 	  | Common.Left(_) -> failwith "not possible 1"
@@ -1738,7 +1725,7 @@ let instantiate bindings mv_bindings =
     let e = k e in
     match Ast0.unwrap e with
     Ast0.MetaStmt(name,pure) ->
-	(rebuild_mcode None).V0.rebuilder_statement
+	(rebuild_mcode None).VT0.rebuilder_rec_statement
 	  (match lookup name bindings mv_bindings with
 	    Common.Left(Ast0.StmtTag(stm)) -> stm
 	  | Common.Left(_) -> failwith "not possible 1"
@@ -1766,7 +1753,7 @@ let instantiate bindings mv_bindings =
 		(List.filter (function (x,v) -> x = (dot_term d)) bindings)))
     | _ -> e in
 
-  V0.rebuilder
+  V0.flat_rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     (dots elist) donothing (dots plist) (dots slist) donothing donothing
     identfn exprfn tyfn initfn paramfn declfn stmtfn donothing donothing
@@ -1984,7 +1971,7 @@ let mkdisj matcher metavars alts e instantiater mkiso disj_maker minusify
 		       (extra_plus e
 			  (instantiater bindings mv_bindings
 			     (rebuild_mcodes a))))
-		    (Common.union_set [(name,mkiso a)] (Ast0.get_iso e)))
+		    ((name,mkiso a)::(Ast0.get_iso e))) (* keep count, not U *)
 		bindings))
 	 alts) in
   let rec inner_loop all_alts prev_ecount prev_icount prev_dcount = function
@@ -2028,15 +2015,16 @@ let mkdisj matcher metavars alts e instantiater mkiso disj_maker minusify
 		  (new_metavars,
 		   call_instantiate bindings mv_bindings all_alts))) in
   let rec outer_loop prev_ecount prev_icount prev_dcount = function
-      [] | [[_]] (*only one alternative*)  -> ([],e) (* nothing matched *)
+      [] | [[_]] (*only one alternative*)  -> (0,[],e) (* nothing matched *)
     | (alts::rest) as all_alts ->
 	match inner_loop all_alts prev_ecount prev_icount prev_dcount alts with
 	  Common.Left(prev_ecount, prev_icount, prev_dcount) ->
 	    outer_loop prev_ecount prev_icount prev_dcount rest
 	| Common.Right (new_metavars,res) ->
-	    (new_metavars,
+	    (1,new_metavars,
 	     copy_minus printer minusify e (disj_maker res)) in
-  outer_loop 0 0 0 alts
+  let (count,metavars,e) = outer_loop 0 0 0 alts in
+  (count, metavars, e)
 
 (* no one should ever look at the information stored in these mcodes *)
 let disj_starter lst =
@@ -2117,19 +2105,19 @@ let transform_type (metavars,alts,name) e =
 	  (List.map
 	     (function
 		 Ast0.TypeCTag(p) ->
-		   (p,count_edots.V0.combiner_typeC p,
-		    count_idots.V0.combiner_typeC p,
-		    count_dots.V0.combiner_typeC p)
+		   (p,count_edots.VT0.combiner_rec_typeC p,
+		    count_idots.VT0.combiner_rec_typeC p,
+		    count_dots.VT0.combiner_rec_typeC p)
 	       | _ -> failwith "invalid alt"))
 	  alts in
       mkdisj match_typeC metavars alts e
 	(function b -> function mv_b ->
-	  (instantiate b mv_b).V0.rebuilder_typeC)
+	  (instantiate b mv_b).VT0.rebuilder_rec_typeC)
 	(function t -> Ast0.TypeCTag t)
-	make_disj_type make_minus.V0.rebuilder_typeC
-	(rebuild_mcode start_line).V0.rebuilder_typeC
+	make_disj_type make_minus.VT0.rebuilder_rec_typeC
+	(rebuild_mcode start_line).VT0.rebuilder_rec_typeC
 	name Unparse_ast0.typeC extra_copy_other_plus do_nothing
-  | _ -> ([],e)
+  | _ -> (0,[],e)
 
 
 let transform_expr (metavars,alts,name) e =
@@ -2142,25 +2130,25 @@ let transform_expr (metavars,alts,name) e =
 	(List.map
 	   (function
 	       Ast0.ExprTag(p) | Ast0.ArgExprTag(p) | Ast0.TestExprTag(p) ->
-		 (p,count_edots.V0.combiner_expression p,
-		  count_idots.V0.combiner_expression p,
-		  count_dots.V0.combiner_expression p)
+		 (p,count_edots.VT0.combiner_rec_expression p,
+		  count_idots.VT0.combiner_rec_expression p,
+		  count_dots.VT0.combiner_rec_expression p)
 	     | _ -> failwith "invalid alt"))
 	alts in
     mkdisj match_expr metavars alts e
       (function b -> function mv_b ->
-	(instantiate b mv_b).V0.rebuilder_expression)
+	(instantiate b mv_b).VT0.rebuilder_rec_expression)
       (function e -> Ast0.ExprTag e)
       (make_disj_expr e)
-      make_minus.V0.rebuilder_expression
-      (rebuild_mcode start_line).V0.rebuilder_expression
+      make_minus.VT0.rebuilder_rec_expression
+      (rebuild_mcode start_line).VT0.rebuilder_rec_expression
       name Unparse_ast0.expression extra_copy_other_plus update_others in
   match alts with
     (Ast0.ExprTag(_)::_)::_ -> process do_nothing
   | (Ast0.ArgExprTag(_)::_)::_ when Ast0.get_arg_exp e -> process do_nothing
   | (Ast0.TestExprTag(_)::_)::_ when Ast0.get_test_pos e ->
       process Ast0.set_test_exp
-  | _ -> ([],e)
+  | _ -> (0,[],e)
 
 let transform_decl (metavars,alts,name) e =
   match alts with
@@ -2173,20 +2161,20 @@ let transform_decl (metavars,alts,name) e =
 	  (List.map
 	     (function
 		 Ast0.DeclTag(p) ->
-		   (p,count_edots.V0.combiner_declaration p,
-		    count_idots.V0.combiner_declaration p,
-		    count_dots.V0.combiner_declaration p)
+		   (p,count_edots.VT0.combiner_rec_declaration p,
+		    count_idots.VT0.combiner_rec_declaration p,
+		    count_dots.VT0.combiner_rec_declaration p)
 	       | _ -> failwith "invalid alt"))
 	  alts in
       mkdisj match_decl metavars alts e
 	(function b -> function mv_b ->
-	  (instantiate b mv_b).V0.rebuilder_declaration)
+	  (instantiate b mv_b).VT0.rebuilder_rec_declaration)
 	(function d -> Ast0.DeclTag d)
 	make_disj_decl
-	make_minus.V0.rebuilder_declaration
-	(rebuild_mcode start_line).V0.rebuilder_declaration
+	make_minus.VT0.rebuilder_rec_declaration
+	(rebuild_mcode start_line).VT0.rebuilder_rec_declaration
 	name Unparse_ast0.declaration extra_copy_other_plus do_nothing
-  | _ -> ([],e)
+  | _ -> (0,[],e)
 
 let transform_stmt (metavars,alts,name) e =
   match alts with
@@ -2199,19 +2187,19 @@ let transform_stmt (metavars,alts,name) e =
 	  (List.map
 	     (function
 		 Ast0.StmtTag(p) ->
-		   (p,count_edots.V0.combiner_statement p,
-		    count_idots.V0.combiner_statement p,
-		    count_dots.V0.combiner_statement p)
+		   (p,count_edots.VT0.combiner_rec_statement p,
+		    count_idots.VT0.combiner_rec_statement p,
+		    count_dots.VT0.combiner_rec_statement p)
 	       | _ -> failwith "invalid alt"))
 	  alts in
       mkdisj match_statement metavars alts e
 	(function b -> function mv_b ->
-	  (instantiate b mv_b).V0.rebuilder_statement)
+	  (instantiate b mv_b).VT0.rebuilder_rec_statement)
 	(function s -> Ast0.StmtTag s)
-	make_disj_stmt make_minus.V0.rebuilder_statement
-	(rebuild_mcode start_line).V0.rebuilder_statement
+	make_disj_stmt make_minus.VT0.rebuilder_rec_statement
+	(rebuild_mcode start_line).VT0.rebuilder_rec_statement
 	name (Unparse_ast0.statement "") extra_copy_stmt_plus do_nothing
-  | _ -> ([],e)
+  | _ -> (0,[],e)
 
 (* sort of a hack, because there is no disj at top level *)
 let transform_top (metavars,alts,name) e =
@@ -2228,11 +2216,11 @@ let transform_top (metavars,alts,name) e =
 		     | _ -> raise (Failure ""))
 		 | _ -> raise (Failure "")))
 	    alts in
-	let (mv,s) = transform_stmt (metavars,strip alts,name) declstm in
-	(mv,Ast0.rewrap e (Ast0.DECL(s)))
-      with Failure _ -> ([],e))
+	let (count,mv,s) = transform_stmt (metavars,strip alts,name) declstm in
+	(count,mv,Ast0.rewrap e (Ast0.DECL(s)))
+      with Failure _ -> (0,[],e))
   | Ast0.CODE(stmts) ->
-      let (mv,res) =
+      let (count,mv,res) =
 	match alts with
 	  (Ast0.DotsStmtTag(_)::_)::_ ->
 	       (* start line is given to any leaves in the iso code *)
@@ -2243,71 +2231,97 @@ let transform_top (metavars,alts,name) e =
 		(List.map
 		   (function
 		       Ast0.DotsStmtTag(p) ->
-			 (p,count_edots.V0.combiner_statement_dots p,
-			  count_idots.V0.combiner_statement_dots p,
-			  count_dots.V0.combiner_statement_dots p)
+			 (p,count_edots.VT0.combiner_rec_statement_dots p,
+			  count_idots.VT0.combiner_rec_statement_dots p,
+			  count_dots.VT0.combiner_rec_statement_dots p)
 		     | _ -> failwith "invalid alt"))
 		alts in
 	    mkdisj match_statement_dots metavars alts stmts
 	      (function b -> function mv_b ->
-		(instantiate b mv_b).V0.rebuilder_statement_dots)
+		(instantiate b mv_b).VT0.rebuilder_rec_statement_dots)
 	      (function s -> Ast0.DotsStmtTag s)
 	      (function x ->
 		Ast0.rewrap e (Ast0.DOTS([make_disj_stmt_list x])))
 	      (function x ->
-		make_minus.V0.rebuilder_statement_dots x)
-	      (rebuild_mcode start_line).V0.rebuilder_statement_dots
+		make_minus.VT0.rebuilder_rec_statement_dots x)
+	      (rebuild_mcode start_line).VT0.rebuilder_rec_statement_dots
 	      name Unparse_ast0.statement_dots extra_copy_other_plus do_nothing
-	| _ -> ([],stmts) in
-      (mv,Ast0.rewrap e (Ast0.CODE res))
-  | _ -> ([],e)
+	| _ -> (0,[],stmts) in
+      (count,mv,Ast0.rewrap e (Ast0.CODE res))
+  | _ -> (0,[],e)
 
 (* --------------------------------------------------------------------- *)
 
 let transform (alts : isomorphism) t =
   (* the following ugliness is because rebuilder only returns a new term *)
   let extra_meta_decls = ref ([] : Ast_cocci.metavar list) in
-  let mcode x = x in
-  let donothing r k e = k e in
+  let in_limit n = function None -> true | Some n1 -> n < n1 in
+  let bind x y = x + y in
+  let option_default = 0 in
   let exprfn r k e =
-    let (extra_meta,exp) = transform_expr alts (k e) in
-    extra_meta_decls := extra_meta @ !extra_meta_decls;
-    exp in
+    let (e_count,e) = k e in
+    if in_limit e_count !Flag_parsing_cocci.iso_limit
+    then
+      let (count,extra_meta,exp) = transform_expr alts e in
+      extra_meta_decls := extra_meta @ !extra_meta_decls;
+      (bind count e_count,exp)
+    else (e_count,e) in
 
   let declfn r k e =
-    let (extra_meta,dec) = transform_decl alts (k e) in
-    extra_meta_decls := extra_meta @ !extra_meta_decls;
-    dec in
+    let (e_count,e) = k e in
+    if in_limit e_count !Flag_parsing_cocci.iso_limit
+    then
+      let (count,extra_meta,dec) = transform_decl alts e in
+      extra_meta_decls := extra_meta @ !extra_meta_decls;
+      (bind count e_count,dec)
+    else (e_count,e) in
 
   let stmtfn r k e =
-    let (extra_meta,stm) = transform_stmt alts (k e) in
-    extra_meta_decls := extra_meta @ !extra_meta_decls;
-    stm in
+    let (e_count,e) = k e in
+    if in_limit e_count !Flag_parsing_cocci.iso_limit
+    then
+      let (count,extra_meta,stm) = transform_stmt alts e in
+      extra_meta_decls := extra_meta @ !extra_meta_decls;
+      (bind count e_count,stm)
+    else (e_count,e) in
 
   let typefn r k e =
-   let continue =
-     match Ast0.unwrap e with
-       Ast0.Signed(signb,tyb) ->
+    let (continue,e_count,e) =
+      match Ast0.unwrap e with
+	Ast0.Signed(signb,tyb) ->
        (* Hack!  How else to prevent iso from applying under an
 	  unsigned??? *)
-	 e
-     | _ -> k e in
-   let (extra_meta,ty) = transform_type alts continue in
-   extra_meta_decls := extra_meta @ !extra_meta_decls;
-   ty in
+	  (true,0,e)
+      | _ ->
+	  let (e_count,e) = k e in
+	  if in_limit e_count !Flag_parsing_cocci.iso_limit
+	  then (true,e_count,e)
+	  else (false,e_count,e) in
+    if continue
+    then
+      let (count,extra_meta,ty) = transform_type alts e in
+      extra_meta_decls := extra_meta @ !extra_meta_decls;
+      (bind count e_count,ty)
+    else (e_count,e) in
 
   let topfn r k e =
-    let (extra_meta,ty) = transform_top alts (k e) in
-    extra_meta_decls := extra_meta @ !extra_meta_decls;
-    ty in
+    let (e_count,e) = k e in
+    if in_limit e_count !Flag_parsing_cocci.iso_limit
+    then
+      let (count,extra_meta,ty) = transform_top alts e in
+      extra_meta_decls := extra_meta @ !extra_meta_decls;
+      (bind count e_count,ty)
+    else (e_count,e) in
 
   let res =
-    V0.rebuilder
-      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      donothing donothing donothing donothing donothing donothing
-      donothing exprfn typefn donothing donothing declfn stmtfn
-      donothing topfn in
-  let res = res.V0.rebuilder_top_level t in
+    V0.combiner_rebuilder bind option_default
+      {V0.combiner_rebuilder_functions with
+	VT0.combiner_rebuilder_exprfn = exprfn;
+	VT0.combiner_rebuilder_tyfn = typefn;
+	VT0.combiner_rebuilder_declfn = declfn;
+	VT0.combiner_rebuilder_stmtfn = stmtfn;
+	VT0.combiner_rebuilder_topfn = topfn} in
+  let (_,res) = res.VT0.top_level t in
   (!extra_meta_decls,res)
 
 (* --------------------------------------------------------------------- *)
@@ -2316,7 +2330,7 @@ let transform (alts : isomorphism) t =
 let rewrap =
   let mcode (x,a,i,mc,pos) = (x,a,i,Ast0.context_befaft(),pos) in
   let donothing r k e = Ast0.context_wrap(Ast0.unwrap(k e)) in
-  V0.rebuilder
+  V0.flat_rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
@@ -2324,28 +2338,31 @@ let rewrap =
 
 let rewrap_anything = function
     Ast0.DotsExprTag(d) ->
-      Ast0.DotsExprTag(rewrap.V0.rebuilder_expression_dots d)
+      Ast0.DotsExprTag(rewrap.VT0.rebuilder_rec_expression_dots d)
   | Ast0.DotsInitTag(d) ->
-      Ast0.DotsInitTag(rewrap.V0.rebuilder_initialiser_list d)
+      Ast0.DotsInitTag(rewrap.VT0.rebuilder_rec_initialiser_list d)
   | Ast0.DotsParamTag(d) ->
-      Ast0.DotsParamTag(rewrap.V0.rebuilder_parameter_list d)
+      Ast0.DotsParamTag(rewrap.VT0.rebuilder_rec_parameter_list d)
   | Ast0.DotsStmtTag(d) ->
-      Ast0.DotsStmtTag(rewrap.V0.rebuilder_statement_dots d)
+      Ast0.DotsStmtTag(rewrap.VT0.rebuilder_rec_statement_dots d)
   | Ast0.DotsDeclTag(d) ->
-      Ast0.DotsDeclTag(rewrap.V0.rebuilder_declaration_dots d)
+      Ast0.DotsDeclTag(rewrap.VT0.rebuilder_rec_declaration_dots d)
   | Ast0.DotsCaseTag(d) ->
-      Ast0.DotsCaseTag(rewrap.V0.rebuilder_case_line_dots d)
-  | Ast0.IdentTag(d) -> Ast0.IdentTag(rewrap.V0.rebuilder_ident d)
-  | Ast0.ExprTag(d) -> Ast0.ExprTag(rewrap.V0.rebuilder_expression d)
-  | Ast0.ArgExprTag(d) -> Ast0.ArgExprTag(rewrap.V0.rebuilder_expression d)
-  | Ast0.TestExprTag(d) -> Ast0.TestExprTag(rewrap.V0.rebuilder_expression d)
-  | Ast0.TypeCTag(d) -> Ast0.TypeCTag(rewrap.V0.rebuilder_typeC d)
-  | Ast0.InitTag(d) -> Ast0.InitTag(rewrap.V0.rebuilder_initialiser d)
-  | Ast0.ParamTag(d) -> Ast0.ParamTag(rewrap.V0.rebuilder_parameter d)
-  | Ast0.DeclTag(d) -> Ast0.DeclTag(rewrap.V0.rebuilder_declaration d)
-  | Ast0.StmtTag(d) -> Ast0.StmtTag(rewrap.V0.rebuilder_statement d)
-  | Ast0.CaseLineTag(d) -> Ast0.CaseLineTag(rewrap.V0.rebuilder_case_line d)
-  | Ast0.TopTag(d) -> Ast0.TopTag(rewrap.V0.rebuilder_top_level d)
+      Ast0.DotsCaseTag(rewrap.VT0.rebuilder_rec_case_line_dots d)
+  | Ast0.IdentTag(d) -> Ast0.IdentTag(rewrap.VT0.rebuilder_rec_ident d)
+  | Ast0.ExprTag(d) -> Ast0.ExprTag(rewrap.VT0.rebuilder_rec_expression d)
+  | Ast0.ArgExprTag(d) ->
+      Ast0.ArgExprTag(rewrap.VT0.rebuilder_rec_expression d)
+  | Ast0.TestExprTag(d) ->
+      Ast0.TestExprTag(rewrap.VT0.rebuilder_rec_expression d)
+  | Ast0.TypeCTag(d) -> Ast0.TypeCTag(rewrap.VT0.rebuilder_rec_typeC d)
+  | Ast0.InitTag(d) -> Ast0.InitTag(rewrap.VT0.rebuilder_rec_initialiser d)
+  | Ast0.ParamTag(d) -> Ast0.ParamTag(rewrap.VT0.rebuilder_rec_parameter d)
+  | Ast0.DeclTag(d) -> Ast0.DeclTag(rewrap.VT0.rebuilder_rec_declaration d)
+  | Ast0.StmtTag(d) -> Ast0.StmtTag(rewrap.VT0.rebuilder_rec_statement d)
+  | Ast0.CaseLineTag(d) ->
+      Ast0.CaseLineTag(rewrap.VT0.rebuilder_rec_case_line d)
+  | Ast0.TopTag(d) -> Ast0.TopTag(rewrap.VT0.rebuilder_rec_top_level d)
   | Ast0.IsoWhenTag(_) | Ast0.IsoWhenTTag(_) | Ast0.IsoWhenFTag(_) ->
       failwith "only for isos within iso phase"
   | Ast0.MetaPosTag(p) -> Ast0.MetaPosTag(p)

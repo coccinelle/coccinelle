@@ -6,7 +6,7 @@ LEXER_SOURCES = lexer_cocci.mll
 SCRIPT_LEXER_SOURCES = lexer_script.mll
 PARSER_SOURCES = parser_cocci_menhir.mly
 SOURCES = flag_parsing_cocci.ml type_cocci.ml ast_cocci.ml ast0_cocci.ml \
-pretty_print_cocci.ml unparse_ast0.ml \
+pretty_print_cocci.ml unparse_ast0.ml visitor_ast0_types.ml \
 visitor_ast.ml visitor_ast0.ml compute_lines.ml comm_assoc.ml \
 iso_pattern.ml iso_compile.ml single_statement.ml simple_assignments.ml \
 ast0toast.ml check_meta.ml top_level.ml type_infer.ml test_exps.ml \

@@ -2,6 +2,7 @@
 module Ast0 = Ast0_cocci
 module Ast = Ast_cocci
 module V0 = Visitor_ast0
+module VT0 = Visitor_ast0_types
 
 let set_minus s minus = List.filter (function n -> not (List.mem n minus)) s
 
@@ -23,8 +24,6 @@ let plus_checker (nm,_,_,mc,_) =
 let get_free checker t =
   let bind x y = x @ y in
   let option_default = [] in
-  let donothing r k e = k e in
-  let mcode _ = option_default in
 
   (* considers a single list *)
   let collect_unitary_nonunitary free_usage =
@@ -73,14 +72,14 @@ let get_free checker t =
       Ast0.MetaErr(name,_,_) | Ast0.MetaExpr(name,_,_,_,_)
     | Ast0.MetaExprList(name,_,_) -> checker name
     | Ast0.DisjExpr(starter,expr_list,mids,ender) ->
-	detect_unitary_frees(List.map r.V0.combiner_expression expr_list)
+	detect_unitary_frees(List.map r.VT0.combiner_rec_expression expr_list)
     | _ -> k e in
 
   let typeC r k t =
     match Ast0.unwrap t with
       Ast0.MetaType(name,_) -> checker name
     | Ast0.DisjType(starter,types,mids,ender) ->
-	detect_unitary_frees(List.map r.V0.combiner_typeC types)
+	detect_unitary_frees(List.map r.VT0.combiner_rec_typeC types)
     | _ -> k t in
 
   let parameter r k p =
@@ -91,45 +90,49 @@ let get_free checker t =
   let declaration r k d =
     match Ast0.unwrap d with
       Ast0.DisjDecl(starter,decls,mids,ender) ->
-	detect_unitary_frees(List.map r.V0.combiner_declaration decls)
+	detect_unitary_frees(List.map r.VT0.combiner_rec_declaration decls)
     | _ -> k d in
 
   let statement r k s =
     match Ast0.unwrap s with
       Ast0.MetaStmt(name,_) | Ast0.MetaStmtList(name,_) -> checker name
     | Ast0.Disj(starter,stmt_list,mids,ender) ->
-	detect_unitary_frees(List.map r.V0.combiner_statement_dots stmt_list)
+	detect_unitary_frees
+	  (List.map r.VT0.combiner_rec_statement_dots stmt_list)
     | Ast0.Nest(starter,stmt_dots,ender,whn,multi) ->
-	bind (r.V0.combiner_statement_dots stmt_dots)
+	bind (r.VT0.combiner_rec_statement_dots stmt_dots)
 	  (detect_unitary_frees
 	     (List.map
-		(whencode r.V0.combiner_statement_dots r.V0.combiner_statement
-		    r.V0.combiner_expression)
+		(whencode
+		   r.VT0.combiner_rec_statement_dots 
+		   r.VT0.combiner_rec_statement
+		    r.VT0.combiner_rec_expression)
 		whn))
     | Ast0.Dots(d,whn) | Ast0.Circles(d,whn) | Ast0.Stars(d,whn) ->
 	detect_unitary_frees
 	  (List.map
-	     (whencode r.V0.combiner_statement_dots r.V0.combiner_statement
-		r.V0.combiner_expression)
+	     (whencode
+		r.VT0.combiner_rec_statement_dots r.VT0.combiner_rec_statement
+		r.VT0.combiner_rec_expression)
 	     whn)
     | _ -> k s in
 
   let res = V0.combiner bind option_default
-      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      donothing donothing donothing donothing donothing donothing
-      ident expression typeC donothing parameter declaration statement
-      donothing donothing in
+      {V0.combiner_functions with
+	VT0.combiner_identfn = ident;
+	VT0.combiner_exprfn = expression;
+	VT0.combiner_tyfn = typeC;
+	VT0.combiner_paramfn = parameter;
+	VT0.combiner_declfn = declaration;
+	VT0.combiner_stmtfn = statement} in
 
   collect_unitary_nonunitary
-    (List.concat (List.map res.V0.combiner_top_level t))
+    (List.concat (List.map res.VT0.combiner_rec_top_level t))
 
 (* ----------------------------------------------------------------------- *)
 (* update the variables that are unitary *)
 
 let update_unitary unitary =
-  let donothing r k e = k e in
-  let mcode x = x in
-
   let is_unitary name =
     match (List.mem (Ast0.unwrap_mcode name) unitary,
 	   !Flag.sgrep_mode2, Ast0.get_mcode_mcodekind name) with
@@ -181,12 +184,14 @@ let update_unitary unitary =
     | _ -> k s in
 
   let res = V0.rebuilder
-      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      donothing donothing donothing donothing donothing donothing
-      ident expression typeC donothing parameter donothing statement
-      donothing donothing in
+      {V0.rebuilder_functions with
+	VT0.rebuilder_identfn = ident;
+	VT0.rebuilder_exprfn = expression;
+	VT0.rebuilder_tyfn = typeC;
+	VT0.rebuilder_paramfn = parameter;
+	VT0.rebuilder_stmtfn = statement} in
 
-  List.map res.V0.rebuilder_top_level
+  List.map res.VT0.rebuilder_rec_top_level
 
 (* ----------------------------------------------------------------------- *)
 

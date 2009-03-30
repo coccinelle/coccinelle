@@ -10,6 +10,7 @@ tokens, and then merge them. *)
 module Ast = Ast_cocci
 module Ast0 = Ast0_cocci
 module V0 = Visitor_ast0
+module VT0 = Visitor_ast0_types
 module CN = Context_neg
 
 let empty_isos = ref false
@@ -66,7 +67,7 @@ it *)
   let topfn r k e = Ast0.TopTag(e) :: (k e) in
 
   let res =
-    V0.combiner bind option_default
+    V0.flat_combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       (donothing Ast0.dotsExpr) (donothing Ast0.dotsInit)
       (donothing Ast0.dotsParam) (donothing Ast0.dotsStmt)
@@ -74,7 +75,7 @@ it *)
       (donothing Ast0.ident) expression (donothing Ast0.typeC) initialiser
       (donothing Ast0.param) (donothing Ast0.decl) statement
       (donothing Ast0.case_line) topfn in
-  res.V0.combiner_top_level e
+  res.VT0.combiner_rec_top_level e
 
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)
@@ -166,12 +167,12 @@ bind to that; not good for isomorphisms *)
     | Ast0.CIRCLES(l) -> multibind (List.map f l)
     | Ast0.STARS(l) -> multibind (List.map f l) in
 
-  let edots r k d = dots r.V0.combiner_expression k d in
-  let idots r k d = dots r.V0.combiner_initialiser k d in
-  let pdots r k d = dots r.V0.combiner_parameter k d in
-  let sdots r k d = dots r.V0.combiner_statement k d in
-  let ddots r k d = dots r.V0.combiner_declaration k d in
-  let cdots r k d = dots r.V0.combiner_case_line k d in
+  let edots r k d = dots r.VT0.combiner_rec_expression k d in
+  let idots r k d = dots r.VT0.combiner_rec_initialiser k d in
+  let pdots r k d = dots r.VT0.combiner_rec_parameter k d in
+  let sdots r k d = dots r.VT0.combiner_rec_statement k d in
+  let ddots r k d = dots r.VT0.combiner_rec_declaration k d in
+  let cdots r k d = dots r.VT0.combiner_rec_case_line k d in
 
   (* a case for everything that has a Opt *)
 
@@ -215,45 +216,46 @@ bind to that; not good for isomorphisms *)
 	(Toplevel,info,bef)::(k s)
     | Ast0.Decl((info,bef),decl) -> (Decl,info,bef)::(k s)
     | Ast0.Nest(starter,stmt_dots,ender,whencode,multi) ->
-	mcode starter @ r.V0.combiner_statement_dots stmt_dots @ mcode ender
+	mcode starter @ r.VT0.combiner_rec_statement_dots stmt_dots @
+	mcode ender
     | Ast0.Dots(d,whencode) | Ast0.Circles(d,whencode)
     | Ast0.Stars(d,whencode) -> mcode d (* ignore whencode *)
     | Ast0.OptStm s | Ast0.UniqueStm s ->
 	(* put the + code on the thing, not on the opt *)
-	r.V0.combiner_statement s
+	r.VT0.combiner_rec_statement s
     | _ -> do_nothing r k s in
 
   let expression r k e =
     match Ast0.unwrap e with
       Ast0.NestExpr(starter,expr_dots,ender,whencode,multi) ->
 	mcode starter @
-	r.V0.combiner_expression_dots expr_dots @ mcode ender
+	r.VT0.combiner_rec_expression_dots expr_dots @ mcode ender
     | Ast0.Edots(d,whencode) | Ast0.Ecircles(d,whencode)
     | Ast0.Estars(d,whencode) -> mcode d (* ignore whencode *)
     | Ast0.OptExp e | Ast0.UniqueExp e ->
 	(* put the + code on the thing, not on the opt *)
-	r.V0.combiner_expression e
+	r.VT0.combiner_rec_expression e
     | _ -> do_nothing r k e in
 
   let ident r k e =
     match Ast0.unwrap e with
       Ast0.OptIdent i | Ast0.UniqueIdent i ->
 	(* put the + code on the thing, not on the opt *)
-	r.V0.combiner_ident i
+	r.VT0.combiner_rec_ident i
     | _ -> do_nothing r k e in
 
   let typeC r k e =
     match Ast0.unwrap e with
       Ast0.OptType t | Ast0.UniqueType t ->
 	(* put the + code on the thing, not on the opt *)
-	r.V0.combiner_typeC t
+	r.VT0.combiner_rec_typeC t
     | _ -> do_nothing r k e in
 
   let decl r k e =
     match Ast0.unwrap e with
       Ast0.OptDecl d | Ast0.UniqueDecl d ->
 	(* put the + code on the thing, not on the opt *)
-	r.V0.combiner_declaration d
+	r.VT0.combiner_rec_declaration d
     | _ -> do_nothing r k e in
 
   let initialiser r k e =
@@ -261,26 +263,26 @@ bind to that; not good for isomorphisms *)
       Ast0.Idots(d,whencode) -> mcode d (* ignore whencode *)
     | Ast0.OptIni i | Ast0.UniqueIni i ->
 	(* put the + code on the thing, not on the opt *)
-	r.V0.combiner_initialiser i
+	r.VT0.combiner_rec_initialiser i
     | _ -> do_nothing r k e in
 
   let param r k e =
     match Ast0.unwrap e with
       Ast0.OptParam p | Ast0.UniqueParam p ->
 	(* put the + code on the thing, not on the opt *)
-	r.V0.combiner_parameter p
+	r.VT0.combiner_rec_parameter p
     | _ -> do_nothing r k e in
 
   let case_line r k e =
     match Ast0.unwrap e with
       Ast0.OptCase c ->
 	(* put the + code on the thing, not on the opt *)
-	r.V0.combiner_case_line c
+	r.VT0.combiner_rec_case_line c
     | _ -> do_nothing r k e in
 
   let do_top r k (e: Ast0.top_level) = k e in
 
-  V0.combiner bind option_default
+  V0.flat_combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     edots idots pdots sdots ddots cdots
     ident expression typeC initialiser param decl statement case_line do_top
@@ -293,51 +295,51 @@ let call_collect_minus context_nodes :
       match e with
 	Ast0.DotsExprTag(e) ->
 	  (Ast0.get_index e,
-	   (collect_minus_join_points e).V0.combiner_expression_dots e)
+	   (collect_minus_join_points e).VT0.combiner_rec_expression_dots e)
       | Ast0.DotsInitTag(e) ->
 	  (Ast0.get_index e,
-	   (collect_minus_join_points e).V0.combiner_initialiser_list e)
+	   (collect_minus_join_points e).VT0.combiner_rec_initialiser_list e)
       | Ast0.DotsParamTag(e) ->
 	  (Ast0.get_index e,
-	   (collect_minus_join_points e).V0.combiner_parameter_list e)
+	   (collect_minus_join_points e).VT0.combiner_rec_parameter_list e)
       | Ast0.DotsStmtTag(e) ->
 	  (Ast0.get_index e,
-	   (collect_minus_join_points e).V0.combiner_statement_dots e)
+	   (collect_minus_join_points e).VT0.combiner_rec_statement_dots e)
       | Ast0.DotsDeclTag(e) ->
 	  (Ast0.get_index e,
-	   (collect_minus_join_points e).V0.combiner_declaration_dots e)
+	   (collect_minus_join_points e).VT0.combiner_rec_declaration_dots e)
       | Ast0.DotsCaseTag(e) ->
 	  (Ast0.get_index e,
-	   (collect_minus_join_points e).V0.combiner_case_line_dots e)
+	   (collect_minus_join_points e).VT0.combiner_rec_case_line_dots e)
       | Ast0.IdentTag(e) ->
 	  (Ast0.get_index e,
-	   (collect_minus_join_points e).V0.combiner_ident e)
+	   (collect_minus_join_points e).VT0.combiner_rec_ident e)
       | Ast0.ExprTag(e) ->
 	  (Ast0.get_index e,
-	   (collect_minus_join_points e).V0.combiner_expression e)
+	   (collect_minus_join_points e).VT0.combiner_rec_expression e)
       | Ast0.ArgExprTag(e) | Ast0.TestExprTag(e) ->
 	  failwith "not possible - iso only"
       | Ast0.TypeCTag(e) ->
 	  (Ast0.get_index e,
-	   (collect_minus_join_points e).V0.combiner_typeC e)
+	   (collect_minus_join_points e).VT0.combiner_rec_typeC e)
       | Ast0.ParamTag(e) ->
 	  (Ast0.get_index e,
-	   (collect_minus_join_points e).V0.combiner_parameter e)
+	   (collect_minus_join_points e).VT0.combiner_rec_parameter e)
       | Ast0.InitTag(e) ->
 	  (Ast0.get_index e,
-	   (collect_minus_join_points e).V0.combiner_initialiser e)
+	   (collect_minus_join_points e).VT0.combiner_rec_initialiser e)
       | Ast0.DeclTag(e) ->
 	  (Ast0.get_index e,
-	   (collect_minus_join_points e).V0.combiner_declaration e)
+	   (collect_minus_join_points e).VT0.combiner_rec_declaration e)
       | Ast0.StmtTag(e) ->
 	  (Ast0.get_index e,
-	   (collect_minus_join_points e).V0.combiner_statement e)
+	   (collect_minus_join_points e).VT0.combiner_rec_statement e)
       | Ast0.CaseLineTag(e) ->
 	  (Ast0.get_index e,
-	   (collect_minus_join_points e).V0.combiner_case_line e)
+	   (collect_minus_join_points e).VT0.combiner_rec_case_line e)
       | Ast0.TopTag(e) ->
 	  (Ast0.get_index e,
-	   (collect_minus_join_points e).V0.combiner_top_level e)
+	   (collect_minus_join_points e).VT0.combiner_rec_top_level e)
       | Ast0.IsoWhenTag(_) -> failwith "only within iso phase"
       | Ast0.IsoWhenTTag(_) -> failwith "only within iso phase"
       | Ast0.IsoWhenFTag(_) -> failwith "only within iso phase"
@@ -472,6 +474,13 @@ let collect_plus_nodes root =
   (* case for things with bef aft *)
   let stmt r k e =
     match Ast0.unwrap e with
+<<<<<<< insert_plus.ml
+      Ast0.Exp(exp) -> r.VT0.combiner_rec_expression exp
+    | Ast0.TopExp(exp) -> r.VT0.combiner_rec_expression exp
+    | Ast0.Ty(ty) -> r.VT0.combiner_rec_typeC ty
+    | Ast0.TopInit(init) -> r.VT0.combiner_rec_initialiser init
+    | Ast0.Decl(_,decl) -> r.VT0.combiner_rec_declaration decl
+=======
       Ast0.Exp(exp) -> r.V0.combiner_expression exp
     | Ast0.TopExp(exp) -> r.V0.combiner_expression exp
     | Ast0.Ty(ty) -> r.V0.combiner_typeC ty
@@ -490,6 +499,7 @@ let collect_plus_nodes root =
 	(do_nothing mk_statement r k e) @ (info aft)
     | Ast0.Iterator(nm,lp,args,rp,body,aft) ->
 	(do_nothing mk_statement r k e) @ (info aft)
+>>>>>>> 1.75
     | _ -> do_nothing mk_statement r k e in
 
   (* statementTag is preferred, because it indicates that one statement is
@@ -497,18 +507,18 @@ let collect_plus_nodes root =
   let stmt_dots r k e =
     match Ast0.unwrap e with
       Ast0.DOTS([s]) | Ast0.CIRCLES([s]) | Ast0.STARS([s]) ->
-	r.V0.combiner_statement s
+	r.VT0.combiner_rec_statement s
     | _ -> do_nothing mk_stmtdots r k e in
 
   let toplevel r k e =
     match Ast0.unwrap e with
-      Ast0.DECL(s) -> r.V0.combiner_statement s
-    | Ast0.CODE(sdots) -> r.V0.combiner_statement_dots sdots
+      Ast0.DECL(s) -> r.VT0.combiner_rec_statement s
+    | Ast0.CODE(sdots) -> r.VT0.combiner_rec_statement_dots sdots
     | _ -> do_nothing mk_code r k e in
 
   let initdots r k e = k e in
 
-  V0.combiner bind option_default
+  V0.flat_combiner bind option_default
     (imcode mk_meta) (imcode mk_token) (mcode mk_constant) (mcode mk_assignOp)
     (mcode mk_fixOp)
     (mcode mk_unaryOp) (mcode mk_binaryOp) (mcode mk_const_vol)
@@ -529,51 +539,51 @@ let call_collect_plus context_nodes :
       match e with
 	Ast0.DotsExprTag(e) ->
 	  (Ast0.get_index e,
-	   (collect_plus_nodes e).V0.combiner_expression_dots e)
+	   (collect_plus_nodes e).VT0.combiner_rec_expression_dots e)
       | Ast0.DotsInitTag(e) ->
 	  (Ast0.get_index e,
-	   (collect_plus_nodes e).V0.combiner_initialiser_list e)
+	   (collect_plus_nodes e).VT0.combiner_rec_initialiser_list e)
       | Ast0.DotsParamTag(e) ->
 	  (Ast0.get_index e,
-	   (collect_plus_nodes e).V0.combiner_parameter_list e)
+	   (collect_plus_nodes e).VT0.combiner_rec_parameter_list e)
       | Ast0.DotsStmtTag(e) ->
 	  (Ast0.get_index e,
-	   (collect_plus_nodes e).V0.combiner_statement_dots e)
+	   (collect_plus_nodes e).VT0.combiner_rec_statement_dots e)
       | Ast0.DotsDeclTag(e) ->
 	  (Ast0.get_index e,
-	   (collect_plus_nodes e).V0.combiner_declaration_dots e)
+	   (collect_plus_nodes e).VT0.combiner_rec_declaration_dots e)
       | Ast0.DotsCaseTag(e) ->
 	  (Ast0.get_index e,
-	   (collect_plus_nodes e).V0.combiner_case_line_dots e)
+	   (collect_plus_nodes e).VT0.combiner_rec_case_line_dots e)
       | Ast0.IdentTag(e) ->
 	  (Ast0.get_index e,
-	   (collect_plus_nodes e).V0.combiner_ident e)
+	   (collect_plus_nodes e).VT0.combiner_rec_ident e)
       | Ast0.ExprTag(e) ->
 	  (Ast0.get_index e,
-	   (collect_plus_nodes e).V0.combiner_expression e)
+	   (collect_plus_nodes e).VT0.combiner_rec_expression e)
       | Ast0.ArgExprTag(_) | Ast0.TestExprTag(_) ->
 	  failwith "not possible - iso only"
       | Ast0.TypeCTag(e) ->
 	  (Ast0.get_index e,
-	   (collect_plus_nodes e).V0.combiner_typeC e)
+	   (collect_plus_nodes e).VT0.combiner_rec_typeC e)
       | Ast0.InitTag(e) ->
 	  (Ast0.get_index e,
-	   (collect_plus_nodes e).V0.combiner_initialiser e)
+	   (collect_plus_nodes e).VT0.combiner_rec_initialiser e)
       | Ast0.ParamTag(e) ->
 	  (Ast0.get_index e,
-	   (collect_plus_nodes e).V0.combiner_parameter e)
+	   (collect_plus_nodes e).VT0.combiner_rec_parameter e)
       | Ast0.DeclTag(e) ->
 	  (Ast0.get_index e,
-	   (collect_plus_nodes e).V0.combiner_declaration e)
+	   (collect_plus_nodes e).VT0.combiner_rec_declaration e)
       | Ast0.StmtTag(e) ->
 	  (Ast0.get_index e,
-	   (collect_plus_nodes e).V0.combiner_statement e)
+	   (collect_plus_nodes e).VT0.combiner_rec_statement e)
       | Ast0.CaseLineTag(e) ->
 	  (Ast0.get_index e,
-	   (collect_plus_nodes e).V0.combiner_case_line e)
+	   (collect_plus_nodes e).VT0.combiner_rec_case_line e)
       | Ast0.TopTag(e) ->
 	  (Ast0.get_index e,
-	   (collect_plus_nodes e).V0.combiner_top_level e)
+	   (collect_plus_nodes e).VT0.combiner_rec_top_level e)
       | Ast0.IsoWhenTag(_) -> failwith "only within iso phase"
       | Ast0.IsoWhenTTag(_) -> failwith "only within iso phase"
       | Ast0.IsoWhenFTag(_) -> failwith "only within iso phase"
@@ -994,12 +1004,17 @@ let reevaluate_contextness =
      | _ -> donothing r k e in
 
   let res =
-    V0.combiner bind option_default
+    V0.flat_combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing donothing donothing donothing donothing
       donothing
+<<<<<<< insert_plus.ml
+      donothing donothing donothing donothing donothing donothing donothing in
+  res.VT0.combiner_rec_top_level
+=======
       donothing donothing donothing donothing stmt donothing donothing in
   res.V0.combiner_top_level
+>>>>>>> 1.75
 
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)

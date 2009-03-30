@@ -4,6 +4,7 @@ separately (thus duplicating work for the parsing of the context elements) *)
 module D = Data
 module PC = Parser_cocci_menhir
 module V0 = Visitor_ast0
+module VT0 = Visitor_ast0_types
 module Ast = Ast_cocci
 module Ast0 = Ast0_cocci
 let pr = Printf.sprintf
@@ -1193,12 +1194,12 @@ let any_modif rule =
   let bind x y = x or y in
   let option_default = false in
   let fn =
-    V0.combiner bind option_default
+    V0.flat_combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing donothing donothing
       donothing donothing in
-  List.exists fn.V0.combiner_top_level rule
+  List.exists fn.VT0.combiner_rec_top_level rule
 
 let drop_last extra l = List.rev(extra@(List.tl(List.rev l)))
 
@@ -1411,7 +1412,7 @@ let parse file =
 	      if !Flag.sgrep_mode2
 	      then (* not actually used for anything, except context_neg *)
 		List.map
-		  (Iso_pattern.rebuild_mcode None).V0.rebuilder_top_level
+		  (Iso_pattern.rebuild_mcode None).VT0.rebuilder_rec_top_level
 		  minus_res
 	      else
 		if is_expression

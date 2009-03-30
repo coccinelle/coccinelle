@@ -6,6 +6,7 @@ rule_elems, and on subterms if the context is ? also. *)
 module Ast0 = Ast0_cocci
 module Ast = Ast_cocci
 module V0 = Visitor_ast0
+module VT0 = Visitor_ast0_types
 module V = Visitor_ast
 
 let unitary = Type_cocci.Unitary
@@ -141,7 +142,7 @@ let inline_mcodes =
 	      (einfo.Ast0.attachable_end,einfo.Ast0.mcode_end)
 	| (Ast.NOTHING,_,_) -> ())
     | Ast0.PLUS -> () in
-  V0.combiner bind option_default
+  V0.flat_combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode mcode
     do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
@@ -166,28 +167,28 @@ let check_allminus =
   let expression r k e =
     match Ast0.unwrap e with
       Ast0.DisjExpr(starter,expr_list,mids,ender) ->
-	List.for_all r.V0.combiner_expression expr_list
+	List.for_all r.VT0.combiner_rec_expression expr_list
     | _ -> k e in
 
   let declaration r k e =
     match Ast0.unwrap e with
       Ast0.DisjDecl(starter,decls,mids,ender) ->
-	List.for_all r.V0.combiner_declaration decls
+	List.for_all r.VT0.combiner_rec_declaration decls
     | _ -> k e in
 
   let typeC r k e =
     match Ast0.unwrap e with
       Ast0.DisjType(starter,decls,mids,ender) ->
-	List.for_all r.V0.combiner_typeC decls
+	List.for_all r.VT0.combiner_rec_typeC decls
     | _ -> k e in
 
   let statement r k e =
     match Ast0.unwrap e with
       Ast0.Disj(starter,statement_dots_list,mids,ender) ->
-	List.for_all r.V0.combiner_statement_dots statement_dots_list
+	List.for_all r.VT0.combiner_rec_statement_dots statement_dots_list
     | _ -> k e in
 
-  V0.combiner bind option_default
+  V0.flat_combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode mcode
     donothing donothing donothing donothing donothing donothing
@@ -412,7 +413,7 @@ and base_typeC t =
 	(typeC ty,mcode lp1,mcode star,mcode rp1,
 	 mcode lp2,parameter_list params,mcode rp2)
   | Ast0.FunctionType(ret,lp,params,rp) ->
-      let allminus = check_allminus.V0.combiner_typeC t in
+      let allminus = check_allminus.VT0.combiner_rec_typeC t in
       Ast.FunctionType
 	(allminus,get_option typeC ret,mcode lp,
 	 parameter_list params,mcode rp)
@@ -450,7 +451,7 @@ and declaration d =
     | Ast0.UnInit(stg,ty,id,sem) ->
 	(match Ast0.unwrap ty with
 	  Ast0.FunctionType(tyx,lp1,params,rp1) ->
-	    let allminus = check_allminus.V0.combiner_declaration d in
+	    let allminus = check_allminus.VT0.combiner_rec_declaration d in
 	    Ast.UnInit(get_option mcode stg,
 		       rewrap ty (do_isos (Ast0.get_iso ty))
 			 (Ast.Type
@@ -575,7 +576,7 @@ and statement s =
 	Ast0.Decl((_,bef),decl) ->
 	  Ast.Atomic(rewrap_rule_elem s
 		       (Ast.Decl(convert_mcodekind bef,
-				 check_allminus.V0.combiner_statement s,
+				 check_allminus.VT0.combiner_rec_statement s,
 				 declaration decl)))
       | Ast0.Seq(lbrace,body,rbrace) ->
 	  let lbrace = mcode lbrace in
@@ -722,7 +723,7 @@ and statement s =
 	  let lbrace = mcode lbrace in
 	  let (decls,body) = separate_decls seqible body in
 	  let rbrace = mcode rbrace in
-	  let allminus = check_allminus.V0.combiner_statement s in
+	  let allminus = check_allminus.VT0.combiner_rec_statement s in
 	  Ast.FunDecl(rewrap_rule_elem s
 			(Ast.FunHeader(convert_mcodekind bef,
 				       allminus,fi,name,lp,params,rp)),
@@ -912,10 +913,14 @@ and top_level t =
 down to the mcodes.  The functions above can only be used when there is no
 attached + code, eg in + code itself. *)
 let ast0toast_toplevel x =
-  inline_mcodes.V0.combiner_top_level x;
+  Printf.printf "one %s\n" (Dumper.dump x);
+  inline_mcodes.VT0.combiner_rec_top_level x;
+  Printf.printf "two %s\n" (Dumper.dump x);
   top_level x
 
 let ast0toast name deps dropped exists x is_exp ruletype =
-  List.iter inline_mcodes.V0.combiner_top_level x;
+  Printf.printf "one %s\n" (Dumper.dump x);
+  List.iter inline_mcodes.VT0.combiner_rec_top_level x;
+  Printf.printf "two %s\n" (Dumper.dump x);
   Ast.CocciRule
     (name,(deps,dropped,exists),List.map top_level x,is_exp,ruletype)

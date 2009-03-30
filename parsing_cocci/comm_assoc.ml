@@ -6,6 +6,7 @@ Nested is not used before this phase. *)
 module Ast = Ast_cocci
 module Ast0 = Ast0_cocci
 module V0 = Visitor_ast0
+module VT0 = Visitor_ast0_types
 
 let comm_assoc =
   [Ast.Arith(Ast.Plus);Ast.Arith(Ast.Mul);Ast.Arith(Ast.And);Ast.Arith(Ast.Or);
@@ -24,8 +25,6 @@ let nopos mc =
   match Ast0.get_pos mc with Ast0.MetaPos _ -> false | Ast0.NoMetaPos -> true
 
 let process_binops rule_name =
-  let donothing r k e = k e in
-  let mcode x = x in
   let expr r k e1 =
     let e = k e1 in
     match Ast0.unwrap e with
@@ -51,13 +50,9 @@ let process_binops rule_name =
 	     e)
 	| _ -> e)
     | _ -> e in
-  V0.rebuilder
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    donothing donothing donothing donothing donothing donothing
-    donothing expr donothing donothing donothing donothing donothing
-    donothing donothing
+  V0.rebuilder {V0.rebuilder_functions with VT0.rebuilder_exprfn = expr}
 
 let comm_assoc rule rule_name dropped_isos =
   if List.mem "comm_assoc" dropped_isos
   then rule
-  else List.map (process_binops rule_name).V0.rebuilder_top_level rule
+  else List.map (process_binops rule_name).VT0.rebuilder_rec_top_level rule
