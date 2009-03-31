@@ -2255,7 +2255,13 @@ let transform_top (metavars,alts,name) e =
 let transform (alts : isomorphism) t =
   (* the following ugliness is because rebuilder only returns a new term *)
   let extra_meta_decls = ref ([] : Ast_cocci.metavar list) in
-  let in_limit n = function None -> true | Some n1 -> n < n1 in
+  let in_limit n = function
+      None -> true
+    | Some n1 ->
+	n < n1 or
+	((if !Flag_parsing_cocci.show_iso_failures
+	then Common.pr2_once "execeeded iso threshold, see -iso_limit option");
+	 false) in
   let bind x y = x + y in
   let option_default = 0 in
   let exprfn r k e =

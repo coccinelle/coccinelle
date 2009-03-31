@@ -356,6 +356,10 @@ let other_options = [
     "   <sec> timeout in seconds";
     "-steps", Arg.Int (fun x -> Flag_ctl.steps := Some x), 
     "   max number of model checking steps per code unit";
+    "-iso_limit", Arg.Int (fun x -> Flag_parsing_cocci.iso_limit := Some x),
+    "   max depth of iso application";
+    "-no_iso_limit", Arg.Unit (fun _ -> Flag_parsing_cocci.iso_limit := None),
+    "   disable limit on max depth of iso application";
     "-track_iso", Arg.Set Flag.track_iso_usage,
     "   gather information about isomorphism usage";
     "-profile_iso",

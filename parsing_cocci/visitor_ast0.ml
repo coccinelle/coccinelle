@@ -124,7 +124,6 @@ let visitor mode bind option_default
     identfn all_functions k i
 
   and expression e =
-    Unparse_ast0.expression e; Format.print_newline();
     let k e =
       rewrap e
 	(match Ast0.unwrap e with
@@ -133,7 +132,7 @@ let visitor mode bind option_default
 	| Ast0.Constant(const) ->
 	    let (n,const) = const_mcode const in (n,Ast0.Constant(const))
 	| Ast0.FunCall(fn,lp,args,rp) ->
-	    let (fn_n,n) = expression fn in
+	    let (fn_n,fn) = expression fn in
 	    let (lp_n,lp) = string_mcode lp in
 	    let (args_n,args) = expression_dots args in
 	    let (rp_n,rp) = string_mcode rp in
@@ -366,7 +365,6 @@ let visitor mode bind option_default
     | _ -> let (ty_n,ty) = typeC ty in ((bind ty_n id_n, ty), id)
 
   and declaration d =
-    Unparse_ast0.declaration d; Format.print_newline();
     let k d =
       rewrap d
 	(match Ast0.unwrap d with
@@ -520,7 +518,6 @@ let visitor mode bind option_default
 	  let (_,stm) = statement stm in Ast0.AddingBetweenDots(stm))
 
   and statement s =
-    Unparse_ast0.statement "" s; Format.print_newline();
     (if mode = COMBINER then let _ = process_bef_aft s in ());
     let k s =
       rewrap s

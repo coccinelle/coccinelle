@@ -913,14 +913,10 @@ and top_level t =
 down to the mcodes.  The functions above can only be used when there is no
 attached + code, eg in + code itself. *)
 let ast0toast_toplevel x =
-  Printf.printf "one %s\n" (Dumper.dump x);
   inline_mcodes.VT0.combiner_rec_top_level x;
-  Printf.printf "two %s\n" (Dumper.dump x);
   top_level x
 
 let ast0toast name deps dropped exists x is_exp ruletype =
-  Printf.printf "one %s\n" (Dumper.dump x);
   List.iter inline_mcodes.VT0.combiner_rec_top_level x;
-  Printf.printf "two %s\n" (Dumper.dump x);
   Ast.CocciRule
     (name,(deps,dropped,exists),List.map top_level x,is_exp,ruletype)

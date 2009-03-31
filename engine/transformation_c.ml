@@ -189,7 +189,7 @@ module XTRANS = struct
     | _ -> 
         if (oldmcode, oldenv) = (mck, tin.binding)
         then begin
-          if !Flag_matcher.show_misc 
+          if !Flag_matcher.show_misc
           then pr2 "already tagged but with same mcode, so safe";
           ib
         end
@@ -211,10 +211,13 @@ module XTRANS = struct
               Format.print_flush();
             *)
               failwith
-	        (Common.sprintf "%s: already tagged token:\n%s"
-		   tin.extra.current_rule_name
-	           (Common.error_message (Ast_c.file_of_info ib)
-		      (Ast_c.str_of_info ib, Ast_c.opos_of_info ib)))
+	        (match Ast_c.pinfo_of_info ib with
+		  Ast_c.FakeTok _ -> "already tagged fake token"
+		| _ ->
+		    Common.sprintf "%s: already tagged token:\n%s"
+		      tin.extra.current_rule_name
+	              (Common.error_message (Ast_c.file_of_info ib)
+			 (Ast_c.str_of_info ib, Ast_c.opos_of_info ib)))
             end
 
   let tokenf ia ib = fun tin -> 

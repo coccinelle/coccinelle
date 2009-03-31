@@ -3,6 +3,7 @@ given None, because they can accomodate their own directives or comments *)
 
 module Ast0 = Ast0_cocci
 module V0 = Visitor_ast0
+module VT0 = Visitor_ast0_types
 
 let call_right processor data s cont =
   match processor data with
@@ -243,9 +244,6 @@ let rec left_decl decl =
       call_right left_decl d decl (function decl -> Ast0.UniqueDecl(decl))
 
 let process =
-  let donothing r k e = k e in
-  let mcode x = x in
-
   let statement r k s =
     let s = k s in
     Ast0.rewrap s
@@ -295,9 +293,6 @@ let process =
       | _ -> Ast0.unwrap s) in
 
   let res = V0.rebuilder
-      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing donothing donothing statement
-      donothing donothing in
+      {V0.rebuilder_functions with VT0.rebuilder_stmtfn = statement} in
 
-  List.map res.V0.rebuilder_top_level
+  List.map res.VT0.rebuilder_rec_top_level

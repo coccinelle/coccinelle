@@ -474,17 +474,10 @@ let collect_plus_nodes root =
   (* case for things with bef aft *)
   let stmt r k e =
     match Ast0.unwrap e with
-<<<<<<< insert_plus.ml
       Ast0.Exp(exp) -> r.VT0.combiner_rec_expression exp
     | Ast0.TopExp(exp) -> r.VT0.combiner_rec_expression exp
     | Ast0.Ty(ty) -> r.VT0.combiner_rec_typeC ty
     | Ast0.TopInit(init) -> r.VT0.combiner_rec_initialiser init
-    | Ast0.Decl(_,decl) -> r.VT0.combiner_rec_declaration decl
-=======
-      Ast0.Exp(exp) -> r.V0.combiner_expression exp
-    | Ast0.TopExp(exp) -> r.V0.combiner_expression exp
-    | Ast0.Ty(ty) -> r.V0.combiner_typeC ty
-    | Ast0.TopInit(init) -> r.V0.combiner_initialiser init
     | Ast0.Decl(bef,decl) ->
 	(info bef) @ (do_nothing mk_statement r k e)
     | Ast0.FunDecl(bef,fi,name,lp,params,rp,lbrace,body,rbrace) ->
@@ -499,7 +492,6 @@ let collect_plus_nodes root =
 	(do_nothing mk_statement r k e) @ (info aft)
     | Ast0.Iterator(nm,lp,args,rp,body,aft) ->
 	(do_nothing mk_statement r k e) @ (info aft)
->>>>>>> 1.75
     | _ -> do_nothing mk_statement r k e in
 
   (* statementTag is preferred, because it indicates that one statement is
@@ -1008,13 +1000,8 @@ let reevaluate_contextness =
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing donothing donothing donothing donothing
       donothing
-<<<<<<< insert_plus.ml
-      donothing donothing donothing donothing donothing donothing donothing in
-  res.VT0.combiner_rec_top_level
-=======
       donothing donothing donothing donothing stmt donothing donothing in
-  res.V0.combiner_top_level
->>>>>>> 1.75
+  res.VT0.combiner_rec_top_level
 
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)

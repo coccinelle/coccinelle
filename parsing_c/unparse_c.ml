@@ -288,7 +288,7 @@ let expand_mcode toks =
           
   
     | T1 tok -> 
-	let (a,b) = !((TH.info_of_tok tok).cocci_tag) in
+	(*let (a,b) = !((TH.info_of_tok tok).cocci_tag) in*)
         (* no tag on expandedTok ! *)
         (if (TH.is_expanded tok && 
             !((TH.info_of_tok tok).cocci_tag) <> Ast_c.emptyAnnot)
@@ -382,7 +382,7 @@ let expand_mcode toks =
 (*****************************************************************************)
 
 let is_minusable_comment = function
-  | (T2 (t,_b,_i)) as it -> 
+  | (T2 (t,_b,_i)) -> 
       (match t with
       | Parser_c.TCommentSpace _   (* only whitespace *)
       (* patch: coccinelle *)      
