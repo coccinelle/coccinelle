@@ -403,6 +403,11 @@ update_darcs:
 diff_darcs:
 	set -e; for i in $(DARCSFORESTS); do cd $$i; darcs diff -u; cd ..; done
 
+##############################################################################
+# Git Developer rules
+##############################################################################
+gitupdate:
+	git cvsimport -d :ext:topps:/var/cvs/cocci  coccinelle
 
 ##############################################################################
 # Developer rules
