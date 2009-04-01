@@ -13,7 +13,6 @@ TARGET=spatch
 
 SRC=flag_cocci.ml cocci.ml testing.ml test.ml main.ml
 
-
 ifeq ($(FEATURE_PYTHON),1)
 PYCMA=pycaml/pycaml.cma
 PYDIR=pycaml
@@ -223,19 +222,26 @@ install:
 # user will use spatch to run spatch.opt (native)
 install-def: install-common
 	$(INSTALL_PROGRAM) spatch.opt $(DESTDIR)$(SHAREDIR)
-	cat scripts/spatch.sh | sed "s|SHAREDIR|$(SHAREDIR)|g" > $(DESTDIR)$(BINDIR)/spatch
+	cp scripts/spatch.sh $(DESTDIR)$(BINDIR)/spatch
+	sed -i "s|SHAREDIR|$(SHAREDIR)|g" $(DESTDIR)$(BINDIR)/spatch
+	sed -i "s|LIBDIR|$(LIBDIR)|g" $(DESTDIR)$(BINDIR)/spatch
 	chmod 755 $(DESTDIR)$(BINDIR)/spatch
 
 # user will use spatch to run spatch (bytecode)
 install-byte: install-common
 	$(INSTALL_PROGRAM) spatch $(DESTDIR)$(SHAREDIR)
-	cat scripts/spatch.sh | sed "s|\.opt||" | sed "s|SHAREDIR|$(SHAREDIR)|g" > $(DESTDIR)$(BINDIR)/spatch
+	cp scripts/spatch.sh $(DESTDIR)$(BINDIR)/spatch
+	sed -i "s|\.opt||" $(DESTDIR)$(BINDIR)/spatch
+	sed -i "s|SHAREDIR|$(SHAREDIR)|g" $(DESTDIR)$(BINDIR)/spatch
+	sed -i "s|LIBDIR|$(LIBDIR)|g" $(DESTDIR)$(BINDIR)/spatch
 	chmod 755 $(DESTDIR)$(BINDIR)/spatch
 
 # user will use spatch.opt to run spatch.opt (native)
 install-opt: install-common
 	$(INSTALL_PROGRAM) spatch.opt $(DESTDIR)$(SHAREDIR)
-	cat scripts/spatch.sh | sed "s|SHAREDIR|$(SHAREDIR)|g" > $(DESTDIR)$(BINDIR)/spatch.opt
+	cp scripts/spatch.sh $(DESTDIR)$(BINDIR)/spatch.opt
+	sed -i "s|SHAREDIR|$(SHAREDIR)|g" $(DESTDIR)$(BINDIR)/spatch.opt
+	sed -i "s|LIBDIR|$(LIBDIR)|g" $(DESTDIR)$(BINDIR)/spatch.opt
 	chmod 755 $(DESTDIR)$(BINDIR)/spatch.opt
 
 uninstall:
