@@ -180,6 +180,8 @@ purebytecode:
 # Install
 ##############################################################################
 
+world: all opt
+
 # don't remove DESTDIR, it can be set by package build system like ebuild
 # for staged installation.
 install-common:
