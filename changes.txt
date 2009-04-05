@@ -10,7 +10,7 @@
 - drop excessive "optimization" in ctl generation for while and for loops
 
 ** Internals: 
-- improve installation process (usable on BSD)
+- improve and fix installation process (usable on BSD)
 
 * 0.1.6
 
