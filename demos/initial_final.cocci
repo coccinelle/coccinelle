@@ -1,3 +1,5 @@
+// Options: -dir {directory}
+
 @initialize:python@
 counter = 0
 
