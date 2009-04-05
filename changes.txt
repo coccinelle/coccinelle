@@ -11,6 +11,7 @@
 
 ** Internals: 
 - improve and fix installation process (usable on BSD)
+- apply patches from Eugeniy Meshcheryakov
 
 * 0.1.6
 
