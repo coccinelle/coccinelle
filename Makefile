@@ -491,6 +491,7 @@ distclean: clean
 	rm -f python/coccilib/output.py
 	rm -f python/pycocci.ml
 	rm -f python/pycocci_aux.ml
+	rm -f globals/config.ml
 
 beforedepend::
 
