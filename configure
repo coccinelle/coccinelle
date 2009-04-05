@@ -210,6 +210,10 @@ All seems fine for $project.
 
 To compile $project type:
  make depend; make
+or alternatively, for the optimized version:
+ make depend; make opt
+If you want both, you could use:
+ make depend; make world
 
 To install type:
  make install
