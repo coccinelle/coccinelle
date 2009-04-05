@@ -323,13 +323,13 @@ Currently, the only scripting language that is supported is Python.  The
 set of available scripting languages may be extended at some point.
 
 Script rules declared with \KW{initialize} are run before the treatment of
-any file.  Script rules declared with \KW{finalize} are run after the
-treatment of every file.  There can be at most one of each per scripting
-language (thus currently at most one of each).  Initialize and finalize
-script rules do not have access to SmPL metavariables.  Nevertheless, a
-finalize script rule can access any variables initialized by the other
-script rules, allowing information to be transmitted from the matching
-process to the finalize rule.
+any file.  Script rules declared with \KW{finalize} are run when the
+treatment of all of the files has completed.  There can be at most one of
+each per scripting language (thus currently at most one of each).
+Initialize and finalize script rules do not have access to SmPL
+metavariables.  Nevertheless, a finalize script rule can access any
+variables initialized by the other script rules, allowing information to be
+transmitted from the matching process to the finalize rule.
 
 \section{Transformation}
 
