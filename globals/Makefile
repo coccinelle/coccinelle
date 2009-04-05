@@ -59,6 +59,7 @@ clean::
 
 clean::
 	rm -f *~ .*~ gmon.out #*#
+	rm -f .depend
 
 beforedepend::
 

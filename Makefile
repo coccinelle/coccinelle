@@ -484,6 +484,13 @@ clean::
 
 clean::
 	rm -f *~ .*~ *.exe #*#
+	rm -f .depend
+
+distclean: clean
+	rm -f Makefile.config
+	rm -f python/coccilib/output.py
+	rm -f python/pycocci.ml
+	rm -f python/pycocci_aux.ml
 
 beforedepend::
 

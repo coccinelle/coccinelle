@@ -141,6 +141,7 @@ clean::
 	rm -f *.cm[ioxa] *.o *.a *.cmxa *.annot
 clean::
 	rm -f *~ .*~ gmon.out #*#
+	rm -f .depend
 
 beforedepend::
 

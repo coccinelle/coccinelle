@@ -73,8 +73,8 @@ clean::
 depend: 
 	$(OCAMLDEP) *.mli *.ml > .depend
 
-#clean::
-#	rm -f .depend
+clean::
+	rm -f .depend
 
 .depend:
 	$(OCAMLDEP) $(INCLUDE_PATH) *.mli *.ml > .depend

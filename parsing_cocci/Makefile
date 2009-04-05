@@ -103,6 +103,7 @@ clean::
 clean::
 	rm -f *.cm[iox] *.o *.annot
 	rm -f *~ .*~ #*# 
+	rm -f .depend
 
 depend: $(GENERATED)
 	$(OCAMLDEP) *.mli *.ml > .depend

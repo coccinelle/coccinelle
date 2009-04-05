@@ -75,8 +75,8 @@ clean::
 depend: 
 	$(CAMLDEP) $(INCLUDE_PATH) *.mli *.ml > .depend
 
-#clean::
-#	rm -f .depend
+clean::
+	rm -f .depend
 
 .depend:
 	$(CAMLDEP) $(INCLUDE_PATH) *.mli *.ml > .depend

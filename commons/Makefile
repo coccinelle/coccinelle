@@ -279,6 +279,7 @@ dependencygraph2:
 clean::
 	rm -f *.cm[iox] *.o *.a *.cma *.cmxa *.annot
 	rm -f *~ .*~ #*# 
+	rm -f .depend
 
 clean::
 	for i in $(SUBDIRS); do (cd $$i; \
