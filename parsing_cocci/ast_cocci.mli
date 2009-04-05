@@ -480,6 +480,8 @@ and rulename =
 	string list * string list * exists * bool
       (* true if the whole thing is an expression *)
   | ScriptRulename of string * dependency
+  | InitialScriptRulename of string
+  | FinalScriptRulename of string
 
 and ruletype = Normal | Generated
 
@@ -488,6 +490,8 @@ and rule =
 	(dependency * string list (* dropped isos *) * exists) *
 	top_level list * bool list (* true if generates an exp *) * ruletype
   | ScriptRule of string * dependency * (string * meta_name) list * string
+  | InitialScriptRule of string * string
+  | FinalScriptRule of string * string
 
 and dependency =
     Dep of string (* rule applies for the current binding *)

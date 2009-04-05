@@ -2,13 +2,15 @@
 
 * 0.1.7
 
-** Features: 
+** Features:
+- initialize and finalize script code
+- -iso_limit option to limit the depth of isomorphism application
 
 ** Bugfix:
 - drop excessive "optimization" in ctl generation for while and for loops
 
 ** Internals: 
-   
+
 * 0.1.6
 
 ** Features: 

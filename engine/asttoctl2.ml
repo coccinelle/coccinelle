@@ -2307,7 +2307,7 @@ let asttoctlz (name,(_,_,exists_flag),l) used_after positions =
 
 let asttoctl r used_after positions =
   match r with
-    Ast.ScriptRule _ -> []
+    Ast.ScriptRule _ | Ast.InitialScriptRule _ | Ast.FinalScriptRule _ -> []
   | Ast.CocciRule (a,b,c,_,Ast_cocci.Normal) ->
       asttoctlz (a,b,c) used_after positions
   | Ast.CocciRule (a,b,c,_,Ast_cocci.Generated) -> [CTL.True]

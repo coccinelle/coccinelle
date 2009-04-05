@@ -19,7 +19,9 @@ let testone x compare_with_expected_flag =
 
   let expected_res   = "tests/" ^ x ^ ".res" in
   begin
-    let res = Cocci.full_engine (cocci_file, !Config.std_iso) [cfile] in
+    let cocci_infos = Cocci.pre_engine (cocci_file, !Config.std_iso) in
+    let res = Cocci.full_engine cocci_infos [cfile] in
+    Cocci.post_engine cocci_infos;
     let generated = 
       match Common.optionise (fun () -> List.assoc cfile res) with
       | Some (Some outfile) -> 
@@ -68,8 +70,10 @@ let testall () =
 
       try (
         Common.timeout_function timeout_testall  (fun () -> 
-          
-          let xs = Cocci.full_engine (cocci_file, !Config.std_iso) [cfile] in
+
+	  let cocci_infos = Cocci.pre_engine (cocci_file, !Config.std_iso) in
+          let xs = Cocci.full_engine cocci_infos [cfile] in
+	  Cocci.post_engine cocci_infos;
           let generated = 
             match List.assoc cfile xs with
             | Some generated -> generated
@@ -186,9 +190,9 @@ let test_okfailed cocci_file cfiles =
     try (
       Common.timeout_function_opt !Flag_cocci.timeout (fun () ->
 
-        
-        let outfiles = Cocci.full_engine (cocci_file, !Config.std_iso) cfiles
-        in
+	let cocci_infos = Cocci.pre_engine (cocci_file, !Config.std_iso) in
+        let outfiles = Cocci.full_engine cocci_infos cfiles in
+	Cocci.post_engine cocci_infos;
 
         let time_str = time_per_file_str () in
           

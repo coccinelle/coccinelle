@@ -460,3 +460,11 @@ let make_generated_rule_name_result nm d i a e ee =
 let make_script_rule_name_result lang deps =
   let l = id2name lang in
   	Ast.ScriptRulename (l,deps)
+
+let make_initial_script_rule_name_result lang =
+  let l = id2name lang in
+  Ast.InitialScriptRulename(l)
+
+let make_final_script_rule_name_result lang =
+  let l = id2name lang in
+  Ast.FinalScriptRulename(l)

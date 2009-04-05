@@ -21,7 +21,7 @@ module P = Parse_aux
 %token TPure TContext TGenerated
 %token TTypedef TDeclarer TIterator TName TPosition TPosAny
 %token TUsing TDisable TExtends TDepends TOn TEver TNever TExists TForall
-%token TScript TReverse TNothing
+%token TScript TInitialize TFinalize TReverse TNothing
 %token<string> TRuleName
 
 %token<Data.clt> Tchar Tshort Tint Tdouble Tfloat Tlong
@@ -185,6 +185,10 @@ rule_name:
       { P.make_generated_rule_name_result None d i a e ee }
   | TScript TDotDot lang=pure_ident d=depends TArob
       { P.make_script_rule_name_result lang d }
+  | TInitialize TDotDot lang=pure_ident TArob
+      { P.make_initial_script_rule_name_result lang }
+  | TFinalize TDotDot lang=pure_ident TArob
+      { P.make_final_script_rule_name_result lang }
 
 extends:
   /* empty */                                     { () }

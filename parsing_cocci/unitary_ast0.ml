@@ -212,7 +212,8 @@ let do_unitary rules =
       [] -> ([],[])
     | (r::rules) ->
       match r with
-        Ast0.ScriptRule (a,b,c,d) ->
+        Ast0.ScriptRule (_,_,_,_)
+      | Ast0.InitialScriptRule (_,_) | Ast0.FinalScriptRule (_,_) ->
           let (x,rules) = loop rules in
           (x, r::rules)
       | Ast0.CocciRule ((minus,metavars,chosen_isos),((plus,_) as plusz),rt) ->

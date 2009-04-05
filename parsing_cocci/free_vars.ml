@@ -620,7 +620,8 @@ let collect_astfvs rules =
       [] -> []
     | (metavars, rule)::rules ->
         match rule with
-          Ast.ScriptRule (_,_,_,_) ->
+          Ast.ScriptRule (_,_,_,_)
+	| Ast.InitialScriptRule (_,_) | Ast.FinalScriptRule (_,_) ->
 	    (* bound stays as is because script rules have no names, so no
 	       inheritance is possible *)
 	    rule::(loop bound rules)
@@ -670,7 +671,8 @@ let get_neg_pos_list (_,rule) used_after_list =
 	      "a variable cannot be used both as a position and a constraint");
 	  neg_positions)
 	minirules
-  | Ast.ScriptRule _ -> [] (*no negated positions*)
+  | Ast.ScriptRule _ | Ast.InitialScriptRule _ | Ast.FinalScriptRule _ ->
+      (*no negated positions*) []
 
 (* ---------------------------------------------------------------- *)
 
@@ -697,6 +699,7 @@ let collect_top_level_used_after metavar_rule_list =
             match r with
               Ast.ScriptRule (_,_,mv,_) ->
                 List.map (function (_,(r,v)) -> (r,v)) mv
+            | Ast.InitialScriptRule (_,_) | Ast.FinalScriptRule (_,_) -> []
             | Ast.CocciRule (_,_,rule,_,_) ->
 	        Common.union_set (nub (collect_all_rule_refs rule))
 	          (collect_in_plus rule) in
@@ -743,7 +746,9 @@ let collect_used_after metavar_rule_list =
     (function (metavars,r) ->
       function used_after ->
         match r with
-          Ast.ScriptRule (_,_,mv,_) -> ([], [used_after])
+          Ast.ScriptRule (_,_,_,_)
+	| Ast.InitialScriptRule (_,_) | Ast.FinalScriptRule (_,_) ->
+	    ([], [used_after])
         | Ast.CocciRule (name, rule_info, minirules, _,_) ->
           collect_local_used_after metavars minirules used_after
     )
@@ -760,7 +765,8 @@ let free_vars rules =
     List.map
       (function (mv, r) ->
          match r with
-           Ast.ScriptRule _ -> []
+           Ast.ScriptRule _
+	 | Ast.InitialScriptRule _ | Ast.FinalScriptRule _ -> []
          | Ast.CocciRule (_,_,rule,_,_) ->
            let positions =
              List.fold_left
@@ -774,7 +780,8 @@ let free_vars rules =
       (function (mv,r) ->
 	function ua ->
           match r with
-            Ast.ScriptRule _ -> r
+            Ast.ScriptRule _
+	  | Ast.InitialScriptRule _ | Ast.FinalScriptRule _ -> r
           | Ast.CocciRule (nm, rule_info, r, is_exp,ruletype) ->
 	      Ast.CocciRule
 		(nm, rule_info, classify_variables mv r (List.concat ua),

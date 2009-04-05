@@ -365,7 +365,9 @@ let other_options = [
     "-profile_iso",
     Arg.Unit
     (function () ->
-      Common.profile:=PSOME ["parse cocci";"mysat";"asttoctl2";"full_engine"]),
+      Common.profile :=
+	(*post_engine not included, because it doesn't use isos*)
+	PSOME ["parse cocci";"mysat";"asttoctl2";"pre_engine";"full_engine"]),
     "   gather information about the cost of isomorphism usage"
   ];
 
@@ -754,24 +756,29 @@ let main () =
 	    | _ -> failwith "inconsistent distribution information" in
 	    
           let outfiles = 
-            Common.profile_code "Main.outfiles computation" (fun () -> 
-	      infiles +> List.map (fun cfiles -> 
-		pr2 ("HANDLING: " ^ (join " " cfiles));
-		Common.timeout_function_opt !FC.timeout (fun () -> 
-  	        Common.report_if_take_time 10 (join " " cfiles) (fun () -> 
+            Common.profile_code "Main.outfiles computation" (fun () ->
+	      let cocci_infos =
+		Cocci.pre_engine (!cocci_file, !Config.std_iso) in
+	      let res =
+		infiles +> List.map (fun cfiles -> 
+		  pr2 ("HANDLING: " ^ (join " " cfiles));
+		  Common.timeout_function_opt !FC.timeout (fun () -> 
+  	            Common.report_if_take_time 10 (join " " cfiles) (fun () -> 
                     (* Unix.sleep 1; *)
-                  try 
+                      try 
                     (* this is the main call *)
-                    Cocci.full_engine (!cocci_file, !Config.std_iso) cfiles
-		  with 
-		  | Common.UnixExit x -> raise (Common.UnixExit x)
-		  | e -> 
-		      if !dir
-		      then begin
-			pr2 ("EXN:" ^ Printexc.to_string e); 
-			[] (* *)
-		      end
-		      else raise e)))
+			Cocci.full_engine cocci_infos cfiles
+		      with 
+		      | Common.UnixExit x -> raise (Common.UnixExit x)
+		      | e ->
+			  if !dir
+			  then begin
+			    pr2 ("EXN:" ^ Printexc.to_string e); 
+			    [] (* *)
+			  end
+			  else raise e))) in
+	      Cocci.post_engine cocci_infos;
+	      res
             ) +> List.concat 
           in
 

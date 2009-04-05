@@ -452,6 +452,8 @@ let get_constants rules neg_pos_vars =
 		  False -> (rest_info, in_plus, env, locals)
 		| dependencies ->
 		    (build_or dependencies rest_info, in_plus, env, locals))
+            | (Ast.InitialScriptRule (_,_),_)
+	    | (Ast.FinalScriptRule (_,_),_) -> (rest_info,in_plus,env,locals)
             | (Ast.CocciRule (nm,(dep,_,_),cur,_,_),neg_pos_vars) ->
 		let (cur_info,cur_plus) =
 		  rule_fn cur in_plus ((nm,True)::env) neg_pos_vars in

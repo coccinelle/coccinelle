@@ -79,6 +79,7 @@ let ast_to_flow_with_error_messages a =
 (* --------------------------------------------------------------------- *)
 (* Ctl related *)
 (* --------------------------------------------------------------------- *)
+
 let ctls_of_ast2 ast ua pos =
   List.map2
     (function ast -> function (ua,pos) ->
@@ -660,7 +661,11 @@ type toplevel_cocci_info_cocci_rule = {
 
 type toplevel_cocci_info = 
     ScriptRuleCocciInfo of toplevel_cocci_info_script_rule
+  | InitialScriptRuleCocciInfo of toplevel_cocci_info_script_rule
+  | FinalScriptRuleCocciInfo of toplevel_cocci_info_script_rule
   | CocciRuleCocciInfo of toplevel_cocci_info_cocci_rule
+
+type cocci_info = toplevel_cocci_info list * string list list (* tokens *)
 
 type kind_file = Header | Source 
 type file_info = { 
@@ -722,7 +727,10 @@ let prepare_cocci ctls free_var_lists negated_pos_lists
 	     negated_pos_list),used_after_list),positions_list),rulenb) -> 
       
       let is_script_rule r =
-        match r with Ast_cocci.ScriptRule _ -> true | _ -> false in
+        match r with
+	  Ast_cocci.ScriptRule _
+	| Ast_cocci.InitialScriptRule _ | Ast_cocci.FinalScriptRule _ -> true
+	| _ -> false in
 
       if not (List.length ctl_toplevel_list = 1) && not (is_script_rule ast)
       then failwith "not handling multiple minirules";
@@ -738,6 +746,30 @@ let prepare_cocci ctls free_var_lists negated_pos_lists
             script_code = code;
           }
           in ScriptRuleCocciInfo r
+      | Ast_cocci.InitialScriptRule (lang,code) ->
+	  let mv = [] in
+	  let deps = Ast_cocci.NoDep in
+          let r =
+          {
+            scr_ast_rule = (lang, mv, code);
+            language = lang;
+            scr_dependencies = deps;
+            scr_ruleid = rulenb;
+            script_code = code;
+          }
+          in InitialScriptRuleCocciInfo r
+      | Ast_cocci.FinalScriptRule (lang,code) ->
+	  let mv = [] in
+	  let deps = Ast_cocci.NoDep in
+          let r =
+          {
+            scr_ast_rule = (lang, mv, code);
+            language = lang;
+            scr_dependencies = deps;
+            scr_ruleid = rulenb;
+            script_code = code;
+          }
+          in FinalScriptRuleCocciInfo r
       | Ast_cocci.CocciRule
 	  (rulename,(dependencies,dropped_isos,z),restast,isexp,ruletype) ->
           CocciRuleCocciInfo (
@@ -958,7 +990,18 @@ let prepare_c files choose_includes : file_info list =
 
 (* r(ule), c(element in C code), e(nvironment) *)
 
-let rec apply_python_rule r cache newes e rules_that_have_matched
+let merge_env new_e old_e =
+  List.fold_left
+    (function old_e ->
+      function (e,rules) as elem ->
+	let (same,diff) = List.partition (function (e1,_) -> e = e1) old_e in
+	match same with
+	  [] -> elem :: old_e
+	| [(_,old_rules)] -> (e,Common.union_set rules old_rules) :: diff
+	| _ -> failwith "duplicate environment entries")
+    old_e new_e
+
+let apply_python_rule r cache newes e rules_that_have_matched
     rules_that_have_ever_matched =
   show_or_not_scr_rule_name r.scr_ruleid;
   if not(interpret_dependencies rules_that_have_matched
@@ -1006,7 +1049,8 @@ let rec apply_python_rule r cache newes e rules_that_have_matched
       else (cache, merge_env [(e, rules_that_have_matched)] newes)
     end
 
-and apply_cocci_rule r rules_that_have_ever_matched es (ccs:file_info list ref) =
+let rec apply_cocci_rule r rules_that_have_ever_matched es
+    (ccs:file_info list ref) =
   Common.profile_code r.rulename (fun () -> 
     show_or_not_rule_name r.ast_rule r.ruleid;
     show_or_not_ctl_text r.ctl r.ast_rule r.ruleid;
@@ -1122,82 +1166,7 @@ and apply_cocci_rule r rules_that_have_ever_matched es (ccs:file_info list ref) 
 
     (* apply the tagged modifs and reparse *)
     if not !Flag.sgrep_mode2
-    then ccs := rebuild_info_c_and_headers !ccs r.isexp
-  )
-
-and merge_env new_e old_e =
-  List.fold_left
-    (function old_e ->
-      function (e,rules) as elem ->
-	let (same,diff) = List.partition (function (e1,_) -> e = e1) old_e in
-	match same with
-	  [] -> elem :: old_e
-	| [(_,old_rules)] -> (e,Common.union_set rules old_rules) :: diff
-	| _ -> failwith "duplicate environment entries")
-    old_e new_e
-
-and bigloop2 rs (ccs: file_info list) = 
-  let es = ref [(Ast_c.emptyMetavarsBinding,[])] in
-  let ccs = ref ccs in
-  let rules_that_have_ever_matched = ref [] in
-
-  (* looping over the rules *)
-  rs +> List.iter (fun r -> 
-    match r with
-      ScriptRuleCocciInfo r -> 
-	if !Flag_cocci.show_ctl_text then begin
-          Common.pr_xxxxxxxxxxxxxxxxx ();
-          pr ("script: " ^ r.language);
-          Common.pr_xxxxxxxxxxxxxxxxx ();
-	  
-          adjust_pp_with_indent (fun () -> 
-            Format.force_newline();
-            let (l,mv,code) = r.scr_ast_rule in
-	    let deps = r.scr_dependencies in
-            Pretty_print_cocci.unparse
-	      (Ast_cocci.ScriptRule (l,deps,mv,code)));
-	end;
-
-	if !Flag.show_misc then print_endline "RESULT =";
-
-        let (_, newes) =
-          List.fold_left
-            (function (cache, newes) ->
-              function (e, rules_that_have_matched) ->
-		match r.language with
-                  "python" ->
-		    apply_python_rule r cache newes e rules_that_have_matched
-		      rules_that_have_ever_matched
-		| "test" ->
-		    concat_headers_and_c !ccs +> List.iter (fun (c,_) -> 
-		      if c.flow <> None 
-		      then
-			Printf.printf "Flow: %s\r\nFlow!\r\n%!" c.fullstring);
-		    (cache, newes)
-		| _ ->
-                    Printf.printf "Unknown language: %s\n" r.language;
-                    (cache, newes)
-		      )
-            ([],[]) !es in
-
-        es := newes;
-    | CocciRuleCocciInfo r ->
-	apply_cocci_rule r rules_that_have_ever_matched es ccs);
-
-  if !Flag.sgrep_mode2
-  then begin
-    (* sgrep can lead to code that is not parsable, but we must
-     * still call rebuild_info_c_and_headers to pretty print the 
-     * action (MINUS), so that later the diff will show what was
-     * matched by sgrep. But we don't want the parsing error message
-     * hence the following flag setting. So this code propably
-     * will generate a NotParsedCorrectly for the matched parts
-     * and the very final pretty print and diff will work
-     *)
-    Flag_parsing_c.verbose_parsing := false;
-    ccs := rebuild_info_c_and_headers !ccs false
-  end;
-  !ccs (* return final C asts *)
+    then ccs := rebuild_info_c_and_headers !ccs r.isexp)
 
 and reassociate_positions free_vars negated_pos_vars envs =
   (* issues: isolate the bindings that are relevant to a given rule.
@@ -1278,12 +1247,29 @@ and combine_pos negated_pos_vars others =
 	       [] others))))
     negated_pos_vars
 
-and bigloop a b = 
-  Common.profile_code "bigloop" (fun () -> bigloop2 a b)
+and process_a_generated_a_env_a_toplevel2 r env = function
+    [cfile] ->
+      let free_vars =
+	List.filter
+	  (function
+	      (rule,_) when rule = r.rulename -> false
+	    | (_,"ARGS") -> false
+	    | _ -> true)
+	  r.free_vars in
+      let env_domain = List.map (function (nm,vl) -> nm) env in
+      let metavars =
+	List.filter
+	  (function md ->
+	    let (rl,_) = Ast_cocci.get_meta_name md in
+	    rl = r.rulename)
+	  r.metavars in
+      if Common.include_set free_vars env_domain
+      then Unparse_hrule.pp_rule metavars r.ast_rule env cfile.full_fname
+  | _ -> failwith "multiple files not supported"
 
-
-
-
+and process_a_generated_a_env_a_toplevel rule env ccs = 
+  Common.profile_code "process_a_ctl_a_env_a_toplevel" 
+    (fun () -> process_a_generated_a_env_a_toplevel2 rule env ccs)
 
 (* does side effects on C ast and on Cocci info rule *)
 and process_a_ctl_a_env_a_toplevel2 r e c f = 
@@ -1333,40 +1319,105 @@ and process_a_ctl_a_env_a_toplevel  a b c f=
   Common.profile_code "process_a_ctl_a_env_a_toplevel" 
     (fun () -> process_a_ctl_a_env_a_toplevel2 a b c f)
 
-and process_a_generated_a_env_a_toplevel2 r env = function
-    [cfile] ->
-      let free_vars =
-	List.filter
-	  (function
-	      (rule,_) when rule = r.rulename -> false
-	    | (_,"ARGS") -> false
-	    | _ -> true)
-	  r.free_vars in
-      let env_domain = List.map (function (nm,vl) -> nm) env in
-      let metavars =
-	List.filter
-	  (function md ->
-	    let (rl,_) = Ast_cocci.get_meta_name md in
-	    rl = r.rulename)
-	  r.metavars in
-      if Common.include_set free_vars env_domain
-      then Unparse_hrule.pp_rule metavars r.ast_rule env cfile.full_fname
-  | _ -> failwith "multiple files not supported"
-   
-and process_a_generated_a_env_a_toplevel rule env ccs = 
-  Common.profile_code "process_a_ctl_a_env_a_toplevel" 
-    (fun () -> process_a_generated_a_env_a_toplevel2 rule env ccs)
-   
 
+let rec bigloop2 rs (ccs: file_info list) = 
+  let es = ref [(Ast_c.emptyMetavarsBinding,[])] in
+  let ccs = ref ccs in
+  let rules_that_have_ever_matched = ref [] in
+
+  (* looping over the rules *)
+  rs +> List.iter (fun r -> 
+    match r with
+      InitialScriptRuleCocciInfo r | FinalScriptRuleCocciInfo r -> ()
+    | ScriptRuleCocciInfo r -> 
+	if !Flag_cocci.show_ctl_text then begin
+          Common.pr_xxxxxxxxxxxxxxxxx ();
+          pr ("script: " ^ r.language);
+          Common.pr_xxxxxxxxxxxxxxxxx ();
+	  
+          adjust_pp_with_indent (fun () -> 
+            Format.force_newline();
+            let (l,mv,code) = r.scr_ast_rule in
+	    let deps = r.scr_dependencies in
+            Pretty_print_cocci.unparse
+	      (Ast_cocci.ScriptRule (l,deps,mv,code)));
+	end;
+
+	if !Flag.show_misc then print_endline "RESULT =";
+
+        let (_, newes) =
+          List.fold_left
+            (function (cache, newes) ->
+              function (e, rules_that_have_matched) ->
+		match r.language with
+                  "python" ->
+		    apply_python_rule r cache newes e rules_that_have_matched
+		      rules_that_have_ever_matched
+		| "test" ->
+		    concat_headers_and_c !ccs +> List.iter (fun (c,_) -> 
+		      if c.flow <> None 
+		      then
+			Printf.printf "Flow: %s\r\nFlow!\r\n%!" c.fullstring);
+		    (cache, newes)
+		| _ ->
+                    Printf.printf "Unknown language: %s\n" r.language;
+                    (cache, newes)
+		      )
+            ([],[]) !es in
+
+        es := newes;
+    | CocciRuleCocciInfo r ->
+	apply_cocci_rule r rules_that_have_ever_matched es ccs);
+
+  if !Flag.sgrep_mode2
+  then begin
+    (* sgrep can lead to code that is not parsable, but we must
+     * still call rebuild_info_c_and_headers to pretty print the 
+     * action (MINUS), so that later the diff will show what was
+     * matched by sgrep. But we don't want the parsing error message
+     * hence the following flag setting. So this code propably
+     * will generate a NotParsedCorrectly for the matched parts
+     * and the very final pretty print and diff will work
+     *)
+    Flag_parsing_c.verbose_parsing := false;
+    ccs := rebuild_info_c_and_headers !ccs false
+  end;
+  !ccs (* return final C asts *)
+
+let bigloop a b = 
+  Common.profile_code "bigloop" (fun () -> bigloop2 a b)
+
+let initial_final_bigloop2 ty rebuild r = 
+  if !Flag_cocci.show_ctl_text then
+    begin
+      Common.pr_xxxxxxxxxxxxxxxxx ();
+      pr (ty ^ ": " ^ r.language);
+      Common.pr_xxxxxxxxxxxxxxxxx ();
+
+      adjust_pp_with_indent (fun () -> 
+	Format.force_newline();
+	Pretty_print_cocci.unparse(rebuild r.scr_ast_rule));
+    end;
+
+  match r.language with
+    "python" ->
+      (* include_match makes no sense in an initial or final rule, although
+	 er have no way to prevent it *)
+      let _ = apply_python_rule r [] [] [] [] (ref []) in ()
+  | _ ->
+      Printf.printf "Unknown language for initial/final script: %s\n"
+	r.language
+
+let initial_final_bigloop a b c = 
+  Common.profile_code "initial_final_bigloop"
+    (fun () -> initial_final_bigloop2 a b c)
 
 (*****************************************************************************)
-(* The main function *)
+(* The main functions *)
 (*****************************************************************************)
 
-let full_engine2 (coccifile, isofile) cfiles = 
-
-  show_or_not_cfiles  cfiles;
-  show_or_not_cocci   coccifile isofile;
+let pre_engine2 (coccifile, isofile) =
+  show_or_not_cocci coccifile isofile;
   Pycocci.set_coccifile coccifile;
 
   let isofile = 
@@ -1375,88 +1426,120 @@ let full_engine2 (coccifile, isofile) cfiles =
       pr2 ("warning: Can't find default iso file: " ^ isofile);
       None
     end
-    else Some isofile
-  in
+    else Some isofile in
 
   (* useful opti when use -dir *)
   let (metavars,astcocci,free_var_lists,negated_pos_lists,used_after_lists,
        positions_lists,toks,_) = 
-      sp_of_file coccifile isofile
-  in
-  let ctls = 
-    Common.memoized _hctl (coccifile, isofile) (fun () -> 
-      ctls_of_ast astcocci used_after_lists positions_lists)
-  in
+      sp_of_file coccifile isofile in
+  let ctls = ctls_of_ast astcocci used_after_lists positions_lists in
 
-  let contain_typedmetavar = sp_contain_typed_metavar astcocci in
+  g_contain_typedmetavar := sp_contain_typed_metavar astcocci;
+
+  check_macro_in_sp_and_adjust toks;
+
+  show_or_not_ctl_tex astcocci ctls;
+
+  let cocci_infos =
+    prepare_cocci ctls free_var_lists negated_pos_lists
+      used_after_lists positions_lists metavars astcocci in
+
+  let _ =
+    List.fold_left
+      (function languages ->
+	function
+	    InitialScriptRuleCocciInfo(r) ->
+	      (if List.mem r.language languages
+	      then failwith ("double initializer found for "^r.language));
+	      initial_final_bigloop "initial"
+		(function(x,_,y) -> Ast_cocci.InitialScriptRule(x,y))
+		r;
+	      r.language::languages
+	  | _ -> languages)
+      [] cocci_infos in
+  (cocci_infos,toks)
+
+let pre_engine a = 
+  Common.profile_code "pre_engine" (fun () -> pre_engine2 a)
+
+let full_engine2 (cocci_infos,toks) cfiles = 
+
+  show_or_not_cfiles  cfiles;
 
   (* optimisation allowing to launch coccinelle on all the drivers *)
   if !Flag_cocci.worth_trying_opt && not (worth_trying cfiles toks)
-  then begin 
-    pr2 ("not worth trying:" ^ Common.join " " cfiles);
-    cfiles +> List.map (fun s -> s, None)
-  end
-  else begin
+  then
+    begin 
+      pr2 ("not worth trying:" ^ Common.join " " cfiles);
+      cfiles +> List.map (fun s -> s, None)
+    end
+  else
+    begin
 
-    if !Flag.show_misc then Common.pr_xxxxxxxxxxxxxxxxx();
-    if !Flag.show_misc then pr "let's go";
-    if !Flag.show_misc then Common.pr_xxxxxxxxxxxxxxxxx();
+      if !Flag.show_misc then Common.pr_xxxxxxxxxxxxxxxxx();
+      if !Flag.show_misc then pr "let's go";
+      if !Flag.show_misc then Common.pr_xxxxxxxxxxxxxxxxx();
 
-    g_contain_typedmetavar := contain_typedmetavar;
+      let choose_includes =
+	match !Flag_cocci.include_options with
+	  Flag_cocci.I_UNSPECIFIED ->
+	    if !g_contain_typedmetavar
+	    then Flag_cocci.I_NORMAL_INCLUDES
+	    else Flag_cocci.I_NO_INCLUDES
+	| x -> x in
+      let c_infos  = prepare_c cfiles choose_includes in
 
-    check_macro_in_sp_and_adjust toks;
+      (* ! the big loop ! *)
+      let c_infos' = bigloop cocci_infos c_infos in
 
-    
+      if !Flag.show_misc then Common.pr_xxxxxxxxxxxxxxxxx ();
+      if !Flag.show_misc then pr "Finished";
+      if !Flag.show_misc then Common.pr_xxxxxxxxxxxxxxxxx ();
+      if !Flag_ctl.graphical_trace then gen_pdf_graph ();
 
-    let cocci_infos =
-      prepare_cocci ctls free_var_lists negated_pos_lists
-	used_after_lists positions_lists metavars astcocci in
-    let choose_includes =
-      match !Flag_cocci.include_options with
-	Flag_cocci.I_UNSPECIFIED ->
-	  if contain_typedmetavar
-	  then Flag_cocci.I_NORMAL_INCLUDES
-	  else Flag_cocci.I_NO_INCLUDES
-      |	x -> x in
-    let c_infos  = prepare_c cfiles choose_includes in
+      c_infos' +> List.map (fun c_or_h -> 
+	if !(c_or_h.was_modified_once)
+	then
+	  begin
+            let outfile =
+	      Common.new_temp_file "cocci-output" ("-" ^ c_or_h.fname) in
 
-    show_or_not_ctl_tex astcocci ctls;
+            if c_or_h.fkind = Header
+            then pr2 ("a header file was modified: " ^ c_or_h.fname);
 
-    (* ! the big loop ! *)
-    let c_infos' = bigloop cocci_infos c_infos in
+            (* and now unparse everything *)
+            cfile_of_program (for_unparser c_or_h.asts) outfile;
 
-    if !Flag.show_misc then Common.pr_xxxxxxxxxxxxxxxxx ();
-    if !Flag.show_misc then pr "Finished";
-    if !Flag_ctl.graphical_trace then gen_pdf_graph ();
-    if !Flag.show_misc then Common.pr_xxxxxxxxxxxxxxxxx();
+            let show_only_minus = !Flag.sgrep_mode2 in
+            show_or_not_diff c_or_h.fpath outfile show_only_minus;
 
-    c_infos' +> List.map (fun c_or_h -> 
-      if !(c_or_h.was_modified_once)
-      then begin
-        let outfile = Common.new_temp_file "cocci-output" ("-" ^ c_or_h.fname) 
-        in
-
-        if c_or_h.fkind = Header 
-        then pr2 ("a header file was modified: " ^ c_or_h.fname);
-
-        (* and now unparse everything *)
-        cfile_of_program (for_unparser c_or_h.asts) outfile;
-
-        let show_only_minus = !Flag.sgrep_mode2 in
-        show_or_not_diff c_or_h.fpath outfile show_only_minus;
-
-        (c_or_h.fpath, 
-        if !Flag.sgrep_mode2 then None else Some outfile
-        )
-      end
-      else 
-        (c_or_h.fpath, None)
-    );
-  end
+            (c_or_h.fpath,
+             if !Flag.sgrep_mode2 then None else Some outfile)
+	  end
+	else (c_or_h.fpath, None))
+    end
 
 let full_engine a b = 
   Common.profile_code "full_engine" (fun () -> full_engine2 a b)
 
+let post_engine2 (cocci_infos,_) =
+  let _ =
+    List.fold_left
+      (function languages ->
+	function
+	    FinalScriptRuleCocciInfo(r) ->
+	      (if List.mem r.language languages
+	      then failwith ("double finalizer found for "^r.language));
+	      initial_final_bigloop "final"
+		(function(x,_,y) -> Ast_cocci.FinalScriptRule(x,y))
+		r;
+	      r.language::languages
+	  | _ -> languages)
+      [] cocci_infos in
+  ()
+
+let post_engine a = 
+  Common.profile_code "post_engine" (fun () -> post_engine2 a)
 
 (*****************************************************************************)
 (* check duplicate from result of full_engine *)
