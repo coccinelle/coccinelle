@@ -432,6 +432,11 @@ let sp_contain_typed_metavar rules =
  * serio.c is related we think to #include <linux/serio.h> 
  *)
 
+let interpret_include_path _ =
+  match !Flag_cocci.include_path with
+    None -> "include"
+  | Some x -> x
+
 let (includes_to_parse:
        (Common.filename * Parse_c.program2) list ->
 	 Flag_cocci.include_options -> 'a) = fun xs choose_includes ->
@@ -456,7 +461,7 @@ let (includes_to_parse:
 		then
 		  let attempt2 = Filename.concat dir (Common.last xs) in
 		  if not (Sys.file_exists f) && all_includes
-		  then Some (Filename.concat !Flag_cocci.include_path 
+		  then Some (Filename.concat (interpret_include_path())
                                (Common.join "/" xs))
 		  else Some attempt2
 		else Some f
@@ -465,7 +470,7 @@ let (includes_to_parse:
 		if all_includes ||
 	        Common.fileprefix (Common.last xs) = Common.fileprefix file
 		then 
-                  Some (Filename.concat !Flag_cocci.include_path 
+                  Some (Filename.concat (interpret_include_path())
                           (Common.join "/" xs))
 		else None
             | Ast_c.Weird _ -> None

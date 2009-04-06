@@ -101,6 +101,12 @@ place of the standard one.  Normally one should use the {\tt using}
 construct within a semantic patch to specify isomorphisms to be used {\em
   in addition to} the standard ones.}
 
+\rare{-iso\_limit $\langle$int$\rangle$} Limit the depth of application of
+isomorphisms to the specified integer.
+
+\rare{-no\_iso\_limit} Put no limit on the number of times that
+isomorphisms can be applied. This is the default.
+
 \developer{-track\_iso}{ Gather information about isomorphism usage.}
 
 \developer{-profile\_iso}{ Gather information about the time required for
@@ -182,7 +188,10 @@ semantic patch rule is applied to all functions in all files, etc.  If a
 directory is specified then no files may be specified and only the
 rightmost directory specified is used.
 
-\minimum{-dir}{ Specify a directory containing C files to process.}
+\minimum{-dir}{ Specify a directory containing C files to process.  By
+  default, the include path will be set to the ``include'' subdirectory of
+  this directory.  A different include path can be specified using the
+  option {\bf -I}.}
 
 \normal{-include\_headers}{ This option causes header files to be processed
 independently.  This option only makes sense if a directory is specified

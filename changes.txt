@@ -5,6 +5,8 @@
 ** Features:
 - initialize and finalize script code
 - -iso_limit option to limit the depth of isomorphism application
+- with the dir option, the include path is implicitly set to the "include"
+  subdirectory of the specified directory, if the option -I is not used.
 
 ** Bugfix:
 - drop excessive "optimization" in ctl generation for while and for loops

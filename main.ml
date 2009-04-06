@@ -192,8 +192,8 @@ let short_options = [
   "  causes local include files to be used";
   "-include_headers", Arg.Set include_headers,
   "    process header files independently";
-  "-I",   Arg.Set_string FC.include_path,
-  "  <dir> containing the Linux headers (optional)";
+  "-I",   Arg.String (function x -> FC.include_path := Some x),
+  "  <dir> containing the header files (optional)";
 
 
   "-dir", Arg.Set dir,
@@ -586,13 +586,20 @@ let main () =
     (* this call can set up many global flag variables via the cmd line *)
     arg_parse2 (Arg.align all_options) (fun x -> args := x::!args) usage_msg;
 
-    (if !dir && List.length !args > 1
+    (if !dir
     then
-      begin
-	let chosen = List.hd !args in
-	pr2 ("ignoring all but the last specified directory: "^chosen);
-	args := [chosen]
-      end);
+      let chosen_dir =
+	 if List.length !args > 1
+	 then
+	   begin
+	     let chosen = List.hd !args in
+	     pr2 ("ignoring all but the last specified directory: "^chosen);
+	     args := [chosen];
+	     chosen
+	   end
+	 else List.hd !args in
+      if !FC.include_path = None
+      then FC.include_path := Some (Filename.concat chosen_dir "include"));
     args := List.rev !args;
 
     if !cocci_file <> "" && (not (!cocci_file =~ ".*\\.\\(sgrep\\|spatch\\)$"))
@@ -619,11 +626,11 @@ let main () =
     (* The test framework. Works with tests/ or .ok and .failed  *)
     (* --------------------------------------------------------- *)
     | [x] when !test_mode    -> 
-        FC.include_path := "tests/include";
+        FC.include_path := Some "tests/include";
         Testing.testone x !compare_with_expected
 
     | []  when !test_all -> 
-        FC.include_path := "tests/include";
+        FC.include_path := Some "tests/include";
         Testing.testall ()
 
     | [] when !test_regression_okfailed -> 
