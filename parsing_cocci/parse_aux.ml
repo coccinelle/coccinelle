@@ -179,7 +179,7 @@ let check_meta tok =
 	  raise
 	    (Semantic_cocci.Semantic
 	       ("incompatible inheritance declaration "^name)))
-  | Ast.MetaFreshIdDecl(Ast.NONE,(rule,name)) ->
+  | Ast.MetaFreshIdDecl((rule,name),seed) ->
       raise
 	(Semantic_cocci.Semantic
 	   "can't inherit the freshness of an identifier")
@@ -316,6 +316,19 @@ let create_metadec ar ispure kindfn ids current_rule =
 	       ((rule,nm),
 		function x -> check_meta x; [Common.Right x]) in
 	 kindfn ar rule ispure checker)
+       ids)
+
+let create_fresh_metadec kindfn ids current_rule =
+  List.concat
+    (List.map
+       (function ((rule,nm),seed) ->
+	 let (rule,checker) =
+	   match rule with
+	     None -> ((current_rule,nm),function x -> [Common.Left x])
+	   | Some rule ->
+	       ((rule,nm),
+		function x -> check_meta x; [Common.Right x]) in
+	 kindfn rule checker seed)
        ids)
 
 let create_metadec_ne ar ispure kindfn ids current_rule =

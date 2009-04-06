@@ -280,6 +280,10 @@ let init _ =
     (fun name constraints pure ->
       let fn clt = TMetaId(name,constraints,pure,clt) in
       Hashtbl.replace metavariables (get_name name) fn);
+  Data.add_fresh_id_meta :=
+    (fun name ->
+      let fn clt = TMetaId(name,[],Ast0.Impure,clt) in
+      Hashtbl.replace metavariables (get_name name) fn);
   Data.add_type_meta :=
     (fun name pure ->
       let fn clt = TMetaType(name,pure,clt) in

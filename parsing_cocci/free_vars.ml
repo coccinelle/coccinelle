@@ -492,11 +492,19 @@ let astfvs metavars bound =
     List.fold_left
       (function prev ->
 	function
-	    Ast.MetaFreshIdDecl(_,_) as x -> (Ast.get_meta_name x)::prev
+	    Ast.MetaFreshIdDecl(_,seed) as x ->
+	      ((Ast.get_meta_name x),seed)::prev
 	  | _ -> prev)
       [] metavars in
 
-  let collect_fresh = List.filter (function x -> List.mem x fresh) in
+  let collect_fresh l =
+    List.rev
+      (List.fold_left
+	(function prev ->
+	  function x ->
+	    try let v = List.assoc x fresh in (x,v)::prev
+	    with Not_found -> prev)
+	[] l) in
 
   (* cases for the elements of anything *)
   let astfvrule_elem recursor k re =

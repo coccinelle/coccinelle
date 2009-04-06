@@ -11,7 +11,7 @@ type 'a wrap =
       node_line : line;
       free_vars : meta_name list; (*free vars*)
       minus_free_vars : meta_name list; (*minus free vars*)
-      fresh_vars : meta_name list; (*fresh vars*)
+      fresh_vars : (meta_name * string (*seed*) option) list; (*fresh vars*)
       inherited : meta_name list; (*inherited vars*)
       saved_witness : meta_name list; (*witness vars*)
       bef_aft : dots_bef_aft;
@@ -47,8 +47,8 @@ and keep_binding = Type_cocci.keep_binding
 and multi = bool (*true if a nest is one or more, false if it is zero or more*)
 
 and end_info =
-    meta_name list (*free vars*) * meta_name list (*inherited vars*) *
-      meta_name list (*witness vars*) * mcodekind
+    meta_name list (*free vars*) * (meta_name * string option) list (*fresh*) *
+      meta_name list (*inherited vars*) * mcodekind
 
 (* --------------------------------------------------------------------- *)
 (* Metavariables *)
@@ -57,7 +57,7 @@ and arity = UNIQUE | OPT | MULTI | NONE
 
 and metavar =
     MetaIdDecl of arity * meta_name (* name *)
-  | MetaFreshIdDecl of arity * meta_name (* name *)
+  | MetaFreshIdDecl of meta_name (* name *) * string option (* seed *)
   | MetaTypeDecl of arity * meta_name (* name *)
   | MetaInitDecl of arity * meta_name (* name *)
   | MetaListlenDecl of meta_name (* name *)
@@ -562,7 +562,7 @@ val get_wcfvs : ('a wrap,'b wrap) whencode list -> meta_name list
 val set_fvs : meta_name list -> 'a wrap -> 'a wrap
 val get_mfvs : 'a wrap -> meta_name list
 val set_mfvs : meta_name list -> 'a wrap -> 'a wrap
-val get_fresh : 'a wrap -> meta_name list
+val get_fresh : 'a wrap -> (meta_name * string option) list
 val get_inherited : 'a wrap -> meta_name list
 val get_saved : 'a wrap -> meta_name list
 val get_dots_bef_aft : statement -> dots_bef_aft
@@ -585,12 +585,12 @@ val no_info : info
 
 val make_meta_rule_elem :
     string -> mcodekind ->
-      (meta_name list * meta_name list * meta_name list) ->
+      (meta_name list * (meta_name * string option) list * meta_name list) ->
       rule_elem
 
 val make_meta_decl :
     string -> mcodekind ->
-      (meta_name list * meta_name list * meta_name list) ->
+      (meta_name list * (meta_name * string option) list * meta_name list) ->
       declaration
 
 val make_term : 'a -> 'a wrap

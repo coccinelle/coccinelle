@@ -1898,8 +1898,8 @@ let new_mv (_,s) =
 let get_name = function
     Ast.MetaIdDecl(ar,nm) ->
       (nm,function nm -> Ast.MetaIdDecl(ar,nm))
-  | Ast.MetaFreshIdDecl(ar,nm) ->
-      (nm,function nm -> Ast.MetaFreshIdDecl(ar,nm))
+  | Ast.MetaFreshIdDecl(nm,seed) ->
+      (nm,function nm -> Ast.MetaFreshIdDecl(nm,seed))
   | Ast.MetaTypeDecl(ar,nm) ->
       (nm,function nm -> Ast.MetaTypeDecl(ar,nm))
   | Ast.MetaInitDecl(ar,nm) ->

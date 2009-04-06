@@ -15,11 +15,17 @@ let get_extra _ =
   extra_counter := !extra_counter + 1;
   "__extra_counter__"^(string_of_int ctr)
 
-let read_fresh_id () =
+let get_seeded seed =
+  let ctr = !extra_counter in
+  extra_counter := !extra_counter + 1;
+  seed^(string_of_int ctr)
+
+let read_fresh_id _ =
   try 
     let s = read_line () in
     match Parse_c.tokens_of_string s with
       [Parser_c.TIdent _; Parser_c.EOF _] -> s
+    | [Parser_c.EOF _] -> get_extra()
     | _ -> failwith ("wrong fresh id: " ^ s)
   with End_of_file -> get_extra()
 
@@ -47,10 +53,13 @@ let process_tree inherited_env l =
   let new_triples = List.rev new_triples in
   let fresh_env =
     List.map
-      (function ((r,n) as fresh) ->
-	Printf.printf "%s: name for %s: " r n; (* not debugging code!!! *)
-	flush stdout;
-	(fresh,string2val(read_fresh_id())))
+      (function
+	  ((r,n) as fresh,None) ->
+	    Printf.printf "%s: name for %s: " r n; (* not debugging code!!! *)
+	    flush stdout;
+	    (fresh,string2val(read_fresh_id()))
+	| ((r,n) as fresh,Some seed) ->
+	    (fresh,string2val(get_seeded seed)))
       all_fresh in
   let (_,res) =
     List.split
@@ -59,9 +68,10 @@ let process_tree inherited_env l =
 	   function (fresh,_) as elem ->
 	     List.map
 	       (function (freshs,((node,env,pred) as cur)) ->
-		 if List.mem fresh freshs
-		 then (freshs,(node,elem::env,pred))
-		 else (freshs,cur))
+		 try
+		   let _ = List.assoc fresh freshs in
+		   (freshs,(node,elem::env,pred))
+		 with Not_found -> (freshs,cur))
 	       freshs_node_env_preds)
 	 (List.combine local_freshs new_triples)
 	 fresh_env) in

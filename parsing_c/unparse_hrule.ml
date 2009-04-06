@@ -270,8 +270,10 @@ let pp_meta_decl pr env decl =
   match decl with
     Ast.MetaIdDecl(ar, name) ->
       no_arity ar; pr "identifier "; pp_name name; pr ";\n"
-  | Ast.MetaFreshIdDecl(ar, name) ->
-      no_arity ar; pr "fresh identifier "; pp_name name; pr ";\n"
+  | Ast.MetaFreshIdDecl(name, None) ->
+      pr "fresh identifier "; pp_name name; pr ";\n"
+  | Ast.MetaFreshIdDecl(name, Some x) ->
+      pr "fresh identifier "; pp_name name; pr " = \""; pr x; pr "\";\n"
   | Ast.MetaTypeDecl(ar, name) ->
       no_arity ar; pr "type "; pp_name name; pr ";\n"
   | Ast.MetaInitDecl(ar, name) ->

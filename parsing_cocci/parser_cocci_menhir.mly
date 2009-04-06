@@ -239,6 +239,9 @@ metadec:
   ar=arity ispure=pure
   kindfn=metakind ids=comma_list(pure_ident_or_meta_ident) TMPtVirg
     { P.create_metadec ar ispure kindfn ids }
+| kindfn=metakind_fresh ids=comma_list(pure_ident_or_meta_ident_with_seed)
+    TMPtVirg
+    { P.create_fresh_metadec kindfn ids }
 | ar=arity ispure=pure
   kindfn=metakind_atomic
   ids=comma_list(pure_ident_or_meta_ident_with_not_eq(not_eq)) TMPtVirg
@@ -282,12 +285,14 @@ metadec:
 	  !Data.add_explist_meta name (Some lenname) pure; tok)
 	id ids }
 
-%inline metakind:
+%inline metakind_fresh:
   TFresh TIdentifier
-    { (fun arity name pure check_meta ->
-      let tok = check_meta(Ast.MetaFreshIdDecl(arity,name)) in
-      !Data.add_id_meta name [] pure; tok) }
-| TParameter
+    { (fun name check_meta seed ->
+      let tok = check_meta(Ast.MetaFreshIdDecl(name,seed)) in
+      !Data.add_fresh_id_meta name; tok) }
+
+%inline metakind:
+  TParameter
     { (fun arity name pure check_meta ->
       let tok = check_meta(Ast.MetaParamDecl(arity,name)) in
       !Data.add_param_meta name pure; tok) }
@@ -1377,6 +1382,10 @@ pure_ident_or_meta_ident:
      | TError                    { (None,"error") }
      | TType                     { (None,"type") }
      | TName                     { (None,"name") }
+
+pure_ident_or_meta_ident_with_seed:
+       pure_ident_or_meta_ident { ($1,None) }
+     | pure_ident_or_meta_ident TEq s=TString { ($1,Some (P.id2name s)) }
 
 pure_ident_or_meta_ident_with_not_eq(not_eq):
        i=pure_ident_or_meta_ident l=loption(not_eq) { (i,l) }
