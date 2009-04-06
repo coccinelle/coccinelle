@@ -89,6 +89,8 @@ clean::
 
 #pycocci.ml: ../pycaml/pycaml.ml ../pycaml/pycaml_ml.c
 #pycocci_aux.ml:  ../pycaml/pycaml.ml ../pycaml/pycaml_ml.c
+pycocci_aux.ml:
+	@echo "\n\n\t*** pycocci_aux.ml not found ! ***\n\n\tRun 'configure && make depend' first.\n\n"
 
 rmlinks:
 	rm -f pycocci.ml pycocci_aux.ml
