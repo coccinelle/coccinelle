@@ -7,7 +7,7 @@
 TARGET=parsing_c
 
 
-# - type_cocci.ml ast_cocci.ml  # + unparse_hrule 
+# - type_cocci.ml ast_cocci.ml  # + unparse_hrule
 SRC= flag_parsing_c.ml parsing_stat.ml \
  token_c.ml ast_c.ml control_flow_c.ml type_c.ml \
  visitor_c.ml lib_parsing_c.ml \
@@ -25,26 +25,26 @@ SRC= flag_parsing_c.ml parsing_stat.ml \
 
 
 # ast_cocci.ml and unparse_cocci.ml should be deleted in the futur
-# to make parsing_c really independent of coccinelle. 
+# to make parsing_c really independent of coccinelle.
 # control_flow_c have also coccinelle dependencies.
-# old: parsing_c now depends on cocci_parser because in addition to decorate 
+# old: parsing_c now depends on cocci_parser because in addition to decorate
 # the token in Ast_c with some parse info, we now also make some place to
 # welcome some mcodekind of Ast_cocci.
 LIBS=../commons/commons.cma ../globals/globals.cma \
      ../parsing_cocci/cocci_parser.cma
 
 INCLUDES= -I ../commons -I ../commons/ocamlextra -I ../commons/ocollection \
-  -I ../globals -I  ../parsing_cocci 
+  -I ../globals -I  ../parsing_cocci
 
 #LIBS=../commons/commons.cma
 #INCLUDES= -I ../commons
-SYSLIBS= str.cma unix.cma 
+SYSLIBS= str.cma unix.cma
 
 ##############################################################################
 # Generic variables
 ##############################################################################
 
-#for warning:  -w A 
+#for warning:  -w A
 #for profiling:  -p -inline 0   with OCAMLOPT
 OCAMLCFLAGS ?= -g -dtypes
 
@@ -134,13 +134,14 @@ locindiv:
 .ml.cmx:
 	$(OCAMLOPT) -c $<
 
-.ml.mldepend: 
+.ml.mldepend:
 	$(OCAMLC) -i $<
 
 clean::
 	rm -f *.cm[ioxa] *.o *.a *.cmxa *.annot
-clean::
 	rm -f *~ .*~ gmon.out #*#
+
+distclean::
 	rm -f .depend
 
 beforedepend::

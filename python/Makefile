@@ -8,17 +8,17 @@
 ##############################################################################
 TARGET=coccipython
 
-SOURCES= pycocci_aux.ml pycocci.ml 
+SOURCES= pycocci_aux.ml pycocci.ml
 
 INCLUDEDIRS = ../commons ../commons/ocamlextra ../globals ../pycaml \
 	      ../parsing_c ../parsing_cocci
 
 SYSLIBS = str.cma unix.cma
-LIBS=../commons/commons.cma ../globals/globals.cma 
+LIBS=../commons/commons.cma ../globals/globals.cma
 
 #     ../ctl/ctl.cma \
-#     ../parsing_c/c_parser.cma ../parsing_cocci/cocci_parser.cma 
-#pycaml/pycaml.cma 
+#     ../parsing_c/c_parser.cma ../parsing_cocci/cocci_parser.cma
+#pycaml/pycaml.cma
 
 
 ##############################################################################
@@ -70,7 +70,7 @@ clean::
 	rm -f $(LIB)
 
 
-$(OPTLIB): $(OPTOBJS) 
+$(OPTLIB): $(OPTOBJS)
 	$(OCAMLOPT) -a -o $(OPTLIB) $(OPTOBJS)
 
 
@@ -82,7 +82,7 @@ $(CTLEXEC): $(CTLOBJS) $(LIBS)
 
 
 clean::
-	rm -f $(OPTLIB) $(LIB:.cma=.a) 	
+	rm -f $(OPTLIB) $(LIB:.cma=.a)
 	rm -f $(TARGET) rm -f $(TARGET).byte
 	rm -f $(CTLTARGET)
 
@@ -113,7 +113,9 @@ rmlinks:
 # clean rule for others files
 clean::
 	rm -f *.cm[iox] *.o  *.annot
-	rm -f *~ .*~ #*# 
+	rm -f *~ .*~ #*#
+
+distclean::
 	rm -f .depend
 
 beforedepend:
@@ -121,7 +123,7 @@ beforedepend:
 depend: beforedepend
 	$(OCAMLDEP) *.mli *.ml > .depend
 
-.depend: 
+.depend:
 	$(OCAMLDEP) *.mli *.ml > .depend
 
 -include .depend

@@ -80,14 +80,14 @@ BYTECODE_STATIC=-custom
 ##############################################################################
 # Top rules
 ##############################################################################
-.PHONY: all all.opt opt top clean configure
+.PHONY: all all.opt opt top clean distclean configure
 .PHONY: $(MAKESUBDIRS) $(MAKESUBDIRS:%=%.opt) subdirs subdirs.opt
 
-all: .depend
+all:
 	$(MAKE) subdirs
 	$(MAKE) $(EXEC)
 
-opt: .depend
+opt:
 	$(MAKE) subdirs.opt
 	$(MAKE) $(EXEC).opt
 
@@ -131,7 +131,7 @@ $(MAKESUBDIRS:%=%.opt):
 # python.opt:pycaml.opt parsing_cocci.opt parsing_c.opt
 
 clean::
-	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i clean; done
+	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i $@; done
 
 configure:
 	./configure
@@ -481,12 +481,11 @@ beforedepend:: test.ml
 
 clean::
 	rm -f *.cm[iox] *.o *.annot
-
-clean::
 	rm -f *~ .*~ *.exe #*#
-	rm -f .depend
 
-distclean: clean
+distclean:: clean
+	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i $@; done
+	rm -f .depend
 	rm -f Makefile.config
 	rm -f python/coccilib/output.py
 	rm -f python/pycocci.ml
@@ -497,8 +496,6 @@ beforedepend::
 
 depend:: beforedepend
 	$(OCAMLDEP) *.mli *.ml > .depend
-	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i depend; done
-
-.depend: depend
+	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i $@; done
 
 -include .depend

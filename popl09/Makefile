@@ -13,7 +13,7 @@ INCLUDES = -I ../commons -I ../globals \
 	       -I ../ctl -I ../parsing_cocci -I ../parsing_c  -I ../engine
 
 #The Caml compilers.
-#for warning:  -w A 
+#for warning:  -w A
 #for profiling:  -p -inline 0   with OCAMLOPT
 OCAMLCFLAGS ?= -g -dtypes
 OCAMLC =ocamlc$(OPTBIN) $(OCAMLCFLAGS) $(INCLUDES)
@@ -47,7 +47,7 @@ $(OPTLIB): $(OPTOBJS)
 
 # clean rule for LIB.opt
 clean::
-	rm -f $(OPTLIB) $(LIB:.cma=.a) 	
+	rm -f $(OPTLIB) $(LIB:.cma=.a)
 
 
 .SUFFIXES:
@@ -68,12 +68,12 @@ clean::
 # clean rule for others files
 clean::
 	rm -f *.cm[iox] *.o *.annot
-	rm -f *~ .*~ #*# 
+	rm -f *~ .*~ #*#
 
-depend: 
+depend:
 	$(OCAMLDEP) *.mli *.ml > .depend
 
-clean::
+distclean::
 	rm -f .depend
 
 .depend:

@@ -19,15 +19,15 @@ MYSRC=common.ml common_extra.ml \
       glimpse.ml parser_combinators.ml
 
 # src from other authors, got from the web or caml hump
-SRC=ocamlextra/dumper.ml 
-SRC+=ocamlextra/ANSITerminal.ml 
+SRC=ocamlextra/dumper.ml
+SRC+=ocamlextra/ANSITerminal.ml
 SRC+=ocamlextra/setb.ml ocamlextra/mapb.ml # defunctorized version of standard set/map
 SRC+=ocamlextra/setPt.ml
 SRC+=$(MYSRC)
 SRC+=ocamlextra/enum.ml ocamlextra/dynArray.ml
-SRC+=ocamlextra/suffix_tree.ml ocamlextra/suffix_tree_ext.ml 
+SRC+=ocamlextra/suffix_tree.ml ocamlextra/suffix_tree_ext.ml
 
-SYSLIBS=str.cma unix.cma   
+SYSLIBS=str.cma unix.cma
 
 INCLUDEDIRS=ocamlextra ocollection
 SUBDIRS=ocamlextra ocollection
@@ -57,13 +57,13 @@ MYPYSRC=python.ml
 PYSYSLIBS=python.cma
 
 #ocamlmpi
-MPIINCLUDES=-I ../ocamlmpi -I ../../ocamlmpi -I +ocamlmpi 
+MPIINCLUDES=-I ../ocamlmpi -I ../../ocamlmpi -I +ocamlmpi
 MYMPISRC=distribution.ml
 MPISYSLIBS=mpi.cma
 
 
 #-----------------------------------------------------------------------------
-#pcre 
+#pcre
 #REGEXPINCLUDES=-I +pcre
 REGEXPINCLUDES=-I ../ocamlpcre/lib
 MYREGEXPSRC=regexp.ml
@@ -88,7 +88,7 @@ INCLUDES=$(INCLUDEDIRS:%=-I %) $(INCLUDESEXTRA)
 
 # This flag can also be used in subdirectories so don't change its name here.
 # For profiling use:  -p -inline 0
-OPTFLAGS= 
+OPTFLAGS=
 #-thread
 
 OCAMLCFLAGS ?= -g -dtypes
@@ -103,7 +103,7 @@ OCAMLMKTOP=ocamlmktop -g -custom $(INCLUDES)
 
 # if need C code
 OCAMLMKLIB=ocamlmklib
-CC=gcc 
+CC=gcc
 
 ##############################################################################
 # Top rules
@@ -150,9 +150,9 @@ commons_gdbm.cmxa: $(MYGDBMSRC:.ml=.cmx)
 
 
 #-----------------------------------------------------------------------------
-bdb: 
+bdb:
 	$(MAKE) INCLUDESEXTRA="$(BDBINCLUDES)" commons_bdb.cma
-bdb.opt: 
+bdb.opt:
 	$(MAKE) INCLUDESEXTRA="$(BDBINCLUDES)" commons_bdb.cmxa
 
 commons_bdb.cma: $(MYBDBSRC:.ml=.cmo)
@@ -178,9 +178,9 @@ commons_gui.cmxa: $(MYGUISRC:.ml=.cmx)
 
 
 #-----------------------------------------------------------------------------
-mpi: 
+mpi:
 	$(MAKE) INCLUDESEXTRA="$(MPIINCLUDES)" commons_mpi.cma
-mpi.opt: 
+mpi.opt:
 	$(MAKE) INCLUDESEXTRA="$(MPIINCLUDES)" commons_mpi.cmxa
 
 commons_mpi.cma: $(MYMPISRC:.ml=.cmo)
@@ -196,9 +196,9 @@ distribution.opt: mpi.opt
 
 
 #-----------------------------------------------------------------------------
-python: 
+python:
 	$(MAKE) INCLUDESEXTRA="$(PYINCLUDES)" commons_python.cma
-python.opt: 
+python.opt:
 	$(MAKE) INCLUDESEXTRA="$(PYINCLUDES)" commons_python.cmxa
 
 
@@ -247,7 +247,7 @@ tags:
 	otags -no-mli-tags -r  .
 
 clean::
-	rm -f gmon.out 
+	rm -f gmon.out
 
 forprofiling:
 	$(MAKE) OPTFLAGS="-p -inline 0 " opt
@@ -278,8 +278,7 @@ dependencygraph2:
 
 clean::
 	rm -f *.cm[iox] *.o *.a *.cma *.cmxa *.annot
-	rm -f *~ .*~ #*# 
-	rm -f .depend
+	rm -f *~ .*~ #*#
 
 clean::
 	for i in $(SUBDIRS); do (cd $$i; \
@@ -287,7 +286,7 @@ clean::
         cd ..; ) \
 	done
 
-depend: 
+depend:
 	$(OCAMLDEP) *.mli *.ml  > .depend
 	for i in $(SUBDIRS); do $(OCAMLDEP) $$i/*.ml $$i/*.mli >> .depend; done
 

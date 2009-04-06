@@ -17,7 +17,7 @@ $(LEXER_SOURCES:.mll=.ml) $(PARSER_SOURCES:.mly=.ml) \
 $(SCRIPT_LEXER_SOURCES:.mll=.ml) \
 get_constants.ml get_constants2.ml parse_cocci.ml
 
-LIBS=../commons/commons.cma ../globals/globals.cma 
+LIBS=../commons/commons.cma ../globals/globals.cma
 SYSLIBS = str.cma unix.cma
 
 #MENHIR_PATH=$(shell ocamlfind query menhirLib)
@@ -57,7 +57,7 @@ $(LIB): $(GENERATED) $(OBJS)
 	$(OCAMLC) -I $(MENHIR_PATH) -a -o $(LIB) $(MENHIR) $(OBJS)
 
 
-$(OPTLIB): $(GENERATED) $(OPTOBJS) 
+$(OPTLIB): $(GENERATED) $(OPTOBJS)
 	$(OCAMLOPT) -I $(MENHIR_PATH) -a -o $(OPTLIB) $(MENHIRO) $(OPTOBJS)
 
 
@@ -69,7 +69,7 @@ $(EXEC): $(OBJS) main.cmo $(LIBS)
 
 clean::
 	rm -f $(LIB)
-	rm -f $(OPTLIB) $(LIB:.cma=.a) 	
+	rm -f $(OPTLIB) $(LIB:.cma=.a)
 	rm -f $(TARGET)
 
 
@@ -102,7 +102,9 @@ clean::
 # clean rule for others files
 clean::
 	rm -f *.cm[iox] *.o *.annot
-	rm -f *~ .*~ #*# 
+	rm -f *~ .*~ #*#
+
+distclean::
 	rm -f .depend
 
 depend: $(GENERATED)

@@ -23,8 +23,10 @@ pycaml.customtop: byte-code-library
 	cp -f dllpycaml_stubs.so ../
 	ocamlmktop -o pycaml.customtop pycaml.cma
 
-clean:: 
+clean::
 	rm -f pycaml.customtop
+
+distclean::
 
 depend: # added by julia, undoubtedly wrong
 

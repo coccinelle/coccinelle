@@ -51,14 +51,14 @@ $(TARGET).cmxa: $(OPTOBJS) $(LIBS:.cma=.cmxa)
 .ml.cmx:
 	$(OCAMLOPT) -c $<
 
-.ml.mldepend: 
+.ml.mldepend:
 	$(OCAMLC) -i $<
 
 clean::
 	rm -f *.cm[ioxa] *.o *.a *.cmxa *.annot
-
-clean::
 	rm -f *~ .*~ gmon.out #*#
+
+distclean::
 	rm -f .depend
 
 beforedepend::
