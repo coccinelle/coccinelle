@@ -143,7 +143,6 @@ let show_or_not_diff2 cfile outfile show_only_minus =
 	  match (!Flag.patch,res) with
 	(* create something that looks like the output of patch *)
 	    (Some prefix,minus_file::plus_file::rest) ->
-	      Printf.printf "prefix is %s|\n" prefix;
 	      let drop_prefix file =
 		if prefix = ""
 		then "/"^file
@@ -180,7 +179,7 @@ let show_or_not_diff2 cfile outfile show_only_minus =
 			(Printf.sprintf "bad diff header lines: %s %s"
 			   (String.concat ":" l1) (String.concat ":" l2)) in
 	      diff_line::minus_line::plus_line::rest
-	  | _ -> Printf.printf "no prefix?\n"; res in
+	  | _ -> res in
 	xs +> List.iter (fun s -> 
 	  if s =~ "^\\+" && show_only_minus
 	  then ()
