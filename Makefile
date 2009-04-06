@@ -83,16 +83,18 @@ BYTECODE_STATIC=-custom
 .PHONY: all all.opt opt top clean distclean configure
 .PHONY: $(MAKESUBDIRS) $(MAKESUBDIRS:%=%.opt) subdirs subdirs.opt
 
-all:
+all: .depend
 	$(MAKE) subdirs
 	$(MAKE) $(EXEC)
 
-opt:
+opt: .depend
 	$(MAKE) subdirs.opt
 	$(MAKE) $(EXEC).opt
 
 all.opt: opt
 top: $(EXEC).top
+
+world: all opt
 
 subdirs:
 	+for D in $(MAKESUBDIRS); do $(MAKE) $$D ; done
@@ -133,9 +135,6 @@ $(MAKESUBDIRS:%=%.opt):
 clean::
 	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i $@; done
 
-configure:
-	./configure
-
 $(LIBS): $(MAKESUBDIRS)
 $(LIBS:.cma=.cmxa): $(MAKESUBDIRS:%=%.opt)
 
@@ -158,13 +157,16 @@ clean::
 	rm -f dllpycaml_stubs.so
 
 
-.PHONY: tools all configure
+.PHONY: tools configure
+
+configure:
+	./configure
 
 tools:
 	$(MAKE) -C tools
+
 clean::
 	$(MAKE) -C tools clean
-
 
 static:
 	rm -f spatch.opt spatch
@@ -179,8 +181,6 @@ purebytecode:
 ##############################################################################
 # Install
 ##############################################################################
-
-world: all opt
 
 # don't remove DESTDIR, it can be set by package build system like ebuild
 # for staged installation.
@@ -497,5 +497,8 @@ beforedepend::
 depend:: beforedepend
 	$(OCAMLDEP) *.mli *.ml > .depend
 	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i $@; done
+
+.depend::
+	@if [ ! -f .depend ] ; then $(MAKE) depend ; fi
 
 -include .depend
