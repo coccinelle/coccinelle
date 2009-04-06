@@ -10,6 +10,7 @@
 
 ** Bugfix:
 - drop excessive "optimization" in ctl generation for while and for loops
+- allow . as the name of the directory
 
 ** Internals: 
 - improve and fix installation process (usable on BSD)

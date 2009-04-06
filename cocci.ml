@@ -124,7 +124,6 @@ let show_or_not_cocci2 coccifile isofile =
 let show_or_not_cocci a b = 
   Common.profile_code "show_xxx" (fun () -> show_or_not_cocci2 a b)
 
-
 (* the output *)
 
 let show_or_not_diff2 cfile outfile show_only_minus = 
@@ -144,13 +143,13 @@ let show_or_not_diff2 cfile outfile show_only_minus =
 	  match (!Flag.patch,res) with
 	(* create something that looks like the output of patch *)
 	    (Some prefix,minus_file::plus_file::rest) ->
+	      Printf.printf "prefix is %s|\n" prefix;
 	      let drop_prefix file =
 		if prefix = ""
 		then "/"^file
 		else
-		  (match Str.split (Str.regexp prefix) file with
-		    [base_file] -> base_file
-		  | _ -> failwith "prefix not found in the old file name") in
+		  let lp = String.length prefix in
+		  String.sub file lp ((String.length file) - lp) in
 	      let diff_line =
 		match List.rev(Str.split (Str.regexp " ") line) with
 		  new_file::old_file::cmdrev ->
@@ -181,7 +180,7 @@ let show_or_not_diff2 cfile outfile show_only_minus =
 			(Printf.sprintf "bad diff header lines: %s %s"
 			   (String.concat ":" l1) (String.concat ":" l2)) in
 	      diff_line::minus_line::plus_line::rest
-	  |	_ -> res in
+	  | _ -> Printf.printf "no prefix?\n"; res in
 	xs +> List.iter (fun s -> 
 	  if s =~ "^\\+" && show_only_minus
 	  then ()
