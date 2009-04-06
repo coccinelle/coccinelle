@@ -83,11 +83,11 @@ BYTECODE_STATIC=-custom
 .PHONY: all all.opt opt top clean configure
 .PHONY: $(MAKESUBDIRS) $(MAKESUBDIRS:%=%.opt) subdirs subdirs.opt
 
-all:
+all: .depend
 	$(MAKE) subdirs
 	$(MAKE) $(EXEC)
 
-opt:
+opt: .depend
 	$(MAKE) subdirs.opt
 	$(MAKE) $(EXEC).opt
 
@@ -498,5 +498,7 @@ beforedepend::
 depend:: beforedepend
 	$(OCAMLDEP) *.mli *.ml > .depend
 	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i depend; done
+
+.depend: depend
 
 -include .depend
