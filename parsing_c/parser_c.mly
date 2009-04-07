@@ -861,7 +861,7 @@ iteration:
  | Tfor TOPar decl expr_statement expr_opt TCPar statement
      { 
        (* pr2 "DECL in for"; *)
-       MacroIteration ("toto", [], $7),[] (* TODOfake ast, TODO need decl2 ? *)
+       MacroIteration ("toto", [], $7),[$1;$2;$6] (* TODOfake ast, TODO need decl2 ? *)
      }
  /*(* cppext: *)*/
  | TMacroIterator TOPar argument_list_ne TCPar statement
