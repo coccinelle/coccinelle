@@ -851,7 +851,8 @@ let annotater_expr_visitor_subpart = (fun (k,bigf) expr ->
     (* todo? lub, hmm maybe not, cos type must be e1 *)
     | Assignment (e1, op, e2) -> 
         k expr; 
-        Ast_c.get_type_expr e1
+        (* value of an assignment is the value of the RHS expression *)
+        Ast_c.get_type_expr e2
     | Sequence (e1, e2) -> 
         k expr; 
         Ast_c.get_type_expr e2
