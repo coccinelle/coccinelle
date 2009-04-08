@@ -20,6 +20,7 @@
 - allow for matching against types that contain both short/long and int
 - allow the type metavariable in the SmPL code "unsigned T" to match a T
   that is a type consisting of more than one word, eg long int.
+- -ifdef_to_if option made to process nested ifdefs
 
 ** Internals: 
 - improve and fix installation process (usable on BSD)

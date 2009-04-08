@@ -1089,7 +1089,7 @@ and vk_statement_sequencable_s = fun bigf stseq ->
     | IfdefStmt2 (ifdef, xxs) -> 
         let ifdef' = List.map (vk_ifdef_directive_s bigf) ifdef in
         let xxs' = xxs +> List.map (fun xs -> 
-          xs +> List.map (vk_statement_sequencable_s bigf)
+          xs +> vk_statement_sequencable_list_s bigf
         )
         in
         IfdefStmt2(ifdef', xxs')

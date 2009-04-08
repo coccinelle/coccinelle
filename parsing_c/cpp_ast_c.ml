@@ -350,7 +350,6 @@ let group_ifdef tag xs =
 let rec cpp_ifdef_statementize ast = 
   Visitor_c.vk_program_s { Visitor_c.default_visitor_c_s with
     Visitor_c.kstatementseq_list_s = (fun (k, bigf) xs -> 
-      
       let rec aux xs = 
         match xs with
         | [] -> []
