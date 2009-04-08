@@ -2449,16 +2449,14 @@ and simulate_signed_meta ta basea signaopt tb baseb ii rebuilda =
 
       let match_to_type rebaseb = 
 	sign signaopt signbopt >>= (fun signaopt iisignbopt -> 
-	let ibaseb = tuple_of_list1 iibaseb in
 	let fta = A.rewrap basea (A.Type(None,basea)) in
-	let ftb = Ast_c.nQ,(B.BaseType (rebaseb), [ibaseb]) in
+	let ftb = Ast_c.nQ,(B.BaseType (rebaseb), iibaseb) in
 	fullType fta ftb >>= (fun fta (_,tb) ->
 	  (match A.unwrap fta,tb with
 	    A.Type(_,basea), (B.BaseType baseb, ii) ->
-	      let ibaseb = tuple_of_list1 ii in
 	      return (
 	      (rebuilda (basea, signaopt)) +> A.rewrap ta,
-	      (B.BaseType (baseb), iisignbopt ++ [ibaseb])
+	      (B.BaseType (baseb), iisignbopt ++ ii)
 		)
 	  | _ -> failwith "not possible"))) in
         
@@ -2472,13 +2470,7 @@ and simulate_signed_meta ta basea signaopt tb baseb ii rebuilda =
           (match iibaseb with 
           | [] -> fail (* metavariable has to match something *)
 
-          | [x;y] -> 
-              pr2_once 
-                "warning: long int or short int not handled by ast_cocci";
-              fail
-
-          | [ibaseb] -> match_to_type (B.IntType (B.Si (B.Signed, ty)))
-          | _ -> raise Impossible
+          | _ -> match_to_type (B.IntType (B.Si (B.Signed, ty)))
 
           )
 
