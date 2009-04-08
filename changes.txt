@@ -17,6 +17,7 @@
 - allow for with a declartion in the first header element, as in C++
 - allow for matching against variable declarations that include only
   storage, eg static, but no type at all.
+- allow for matching against types that contain both short/long and int
 
 ** Internals: 
 - improve and fix installation process (usable on BSD)

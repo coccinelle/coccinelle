@@ -287,63 +287,45 @@ let split_signb_baseb_ii (baseb, ii) =
   | B.IntType (B.CChar), ["char",i1] -> None, [i1]
 
 
-  | B.IntType (B.Si (sign, base)), xs -> 
-      (match sign, base, xs with
-      | B.Signed, B.CChar2,   ["signed",i1;"char",i2] -> 
-          Some (B.Signed, i1), [i2]
-      | B.UnSigned, B.CChar2,   ["unsigned",i1;"char",i2] -> 
-          Some (B.UnSigned, i1), [i2]
+  | B.IntType (B.Si (sign, base)), xs ->
+      let (signed,rest) =
+	match (sign,xs) with
+	  (_,[]) -> None,[]
+	| (B.Signed,(("signed",i1)::rest)) -> (Some (B.Signed,i1),rest)
+	| (B.Signed,rest) -> (None,rest)
+	| (B.UnSigned,(("unsigned",i1)::rest)) -> (Some (B.UnSigned,i1),rest)
+	| (B.UnSigned,rest) -> (* is this case possible? *) (None,rest)
+	| _ -> failwith ("strange type1, maybe because of weird order: "^
+			 (String.concat " " (List.map fst iis))) in
+      (* The original code only allowed explicit signed and unsigned for char,
+	 while this code allows char by itself.  Not sure that needs to be
+	 checked for here.  If it does, then add a special case. *)
+      let base_res =
+	match (base,rest) with
+	  B.CInt, ["int",i1] -> [i1]
+	| B.CInt, [] -> []
 
-      | B.Signed, B.CShort, ["short",i1] -> 
-          None, [i1]
-      | B.Signed, B.CShort, ["signed",i1;"short",i2] -> 
-          Some (B.Signed, i1), [i2]
-      | B.UnSigned, B.CShort, ["unsigned",i1;"short",i2] -> 
-          Some (B.UnSigned, i1), [i2]
-      | B.Signed, B.CShort, ["short",i1;"int",i2] -> 
-          None, [i1;i2]
+	| B.CInt, ["",i1] -> (* no type is specified at all *)
+	    (match i1.B.pinfo with
+	      B.FakeTok(_,_) -> []
+	    | _ -> failwith ("unrecognized signed int: "^
+			     (String.concat " "(List.map fst iis))))
 
-      | B.Signed, B.CInt, ["int",i1] -> 
-          None, [i1]
-      | B.Signed, B.CInt, ["signed",i1;"int",i2] -> 
-          Some (B.Signed, i1), [i2]
-      | B.UnSigned, B.CInt, ["unsigned",i1;"int",i2] -> 
-          Some (B.UnSigned, i1), [i2]
+	| B.CChar2, ["char",i2] -> [i2]
 
-      | B.Signed, B.CInt, ["signed",i1;] -> 
-          Some (B.Signed, i1), []
-      | B.UnSigned, B.CInt, ["unsigned",i1;] -> 
-          Some (B.UnSigned, i1), []
+	| B.CShort, ["short",i1] -> [i1]
+	| B.CShort, ["short",i1;"int",i2] -> [i1;i2]
 
-      | B.Signed, B.CInt, ["",i1] -> (* no type is specified at all *)
-	  (match i1.B.pinfo with
-	    B.FakeTok(_,_) -> None,[]
-	  | _ -> failwith ("unrecognized signed int: "^
-			   (String.concat " "(List.map fst iis))))
+	| B.CLong, ["long",i1] -> [i1]
+	| B.CLong, ["long",i1;"int",i2] -> [i1;i2]
 
-      | B.Signed, B.CLong, ["long",i1] -> 
-          None, [i1]
-      | B.Signed, B.CLong, ["long",i1;"int",i2] -> 
-          None, [i1;i2]
-      | B.Signed, B.CLong, ["signed",i1;"long",i2] -> 
-          Some (B.Signed, i1), [i2]
-      | B.UnSigned, B.CLong, ["unsigned",i1;"long",i2] -> 
-          Some (B.UnSigned, i1), [i2]
+	| B.CLongLong, ["long",i1;"long",i2] -> [i1;i2]
+	| B.CLongLong, ["long",i1;"long",i2;"int",i3] -> [i1;i2;i3]
 
-      | B.Signed, B.CLongLong, ["long",i1;"long",i2] -> None, [i1;i2]
-      | B.Signed, B.CLongLong, ["signed",i1;"long",i2;"long",i3] -> 
-          Some (B.Signed, i1), [i2;i3]
-      | B.UnSigned, B.CLongLong, ["unsigned",i1;"long",i2;"long",i3] -> 
-          Some (B.UnSigned, i1), [i2;i3]
-
-
-      | B.UnSigned, B.CShort, ["unsigned",i1;"short",i2; "int", i3] -> 
-          Some (B.UnSigned, i1), [i2;i3]
-
-      | _ ->
+	| _ ->
 	  failwith ("strange type1, maybe because of weird order: "^
-		    (String.concat " " (List.map fst iis)))
-      )
+		    (String.concat " " (List.map fst iis))) in
+      (signed,base_res)
   | _ -> failwith ("strange type2, maybe because of weird order: "^
 		   (String.concat " " (List.map fst iis)))
 
