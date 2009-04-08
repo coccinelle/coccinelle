@@ -15,6 +15,8 @@
 - for type inference for an assignment, take the type of the right-hand
   side expression, not the type of the assigned variable
 - allow for with a declartion in the first header element, as in C++
+- allow for matching against variable declarations that include only
+  storage, eg static, but no type at all.
 
 ** Internals: 
 - improve and fix installation process (usable on BSD)

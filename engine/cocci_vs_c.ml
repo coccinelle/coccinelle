@@ -315,6 +315,12 @@ let split_signb_baseb_ii (baseb, ii) =
       | B.UnSigned, B.CInt, ["unsigned",i1;] -> 
           Some (B.UnSigned, i1), []
 
+      | B.Signed, B.CInt, ["",i1] -> (* no type is specified at all *)
+	  (match i1.B.pinfo with
+	    B.FakeTok(_,_) -> None,[]
+	  | _ -> failwith ("unrecognized signed int: "^
+			   (String.concat " "(List.map fst iis))))
+
       | B.Signed, B.CLong, ["long",i1] -> 
           None, [i1]
       | B.Signed, B.CLong, ["long",i1;"int",i2] -> 
@@ -333,12 +339,13 @@ let split_signb_baseb_ii (baseb, ii) =
 
       | B.UnSigned, B.CShort, ["unsigned",i1;"short",i2; "int", i3] -> 
           Some (B.UnSigned, i1), [i2;i3]
-          
 
-
-      | _ -> failwith "strange type1, maybe because of weird order"
+      | _ ->
+	  failwith ("strange type1, maybe because of weird order: "^
+		    (String.concat " " (List.map fst iis)))
       )
-  | _ -> failwith "strange type2, maybe because of weird order"
+  | _ -> failwith ("strange type2, maybe because of weird order: "^
+		   (String.concat " " (List.map fst iis)))
 
 (*---------------------------------------------------------------------------*)
 
