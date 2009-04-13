@@ -353,13 +353,13 @@ let rec cpp_ifdef_statementize ast =
       let rec aux xs = 
         match xs with
         | [] -> []
-        | stseq::xs -> 
+        | stseq::xs ->
             (match stseq with
             | StmtElem st -> 
                 Visitor_c.vk_statement_sequencable_s bigf stseq::aux xs
             | CppDirectiveStmt directive -> 
                 Visitor_c.vk_statement_sequencable_s bigf stseq::aux xs
-            | IfdefStmt ifdef -> 
+            | IfdefStmt ifdef ->
                 (match ifdef with
                 | IfdefDirective ((Ifdef,tag),ii) -> 
 
@@ -368,10 +368,10 @@ let rec cpp_ifdef_statementize ast =
                     then
                       let res = IfdefStmt2 (ifdef::restifdefs, xxs) in
                       Visitor_c.vk_statement_sequencable_s bigf res::aux xs'
-                    else 
+                    else
                       Visitor_c.vk_statement_sequencable_s bigf stseq::aux xs
                       
-                | IfdefDirective (((IfdefElseif|IfdefElse|IfdefEndif),b),ii) -> 
+                | IfdefDirective (((IfdefElseif|IfdefElse|IfdefEndif),b),ii) ->
                     pr2 "weird: first directive is not a ifdef";
                     (* maybe not weird, just that should_ifdefize 
                      * returned false *)
