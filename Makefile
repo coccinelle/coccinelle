@@ -479,6 +479,7 @@ distclean:: clean
 	rm -f python/pycocci.ml
 	rm -f python/pycocci_aux.ml
 	rm -f globals/config.ml
+	find -name ".#*1.*" | xargs rm
 
 beforedepend::
 
