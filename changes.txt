@@ -37,6 +37,7 @@
 - reorganize the way we parse C identifiers, especially concatenated cpp 
   identifiers as in a##b. This may lead to some regressions as we may
   not parse as much code as before.
+- removed popl/ and popl09/ and popl related stuff from official distrib.
 
 * 0.1.6
 
