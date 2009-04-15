@@ -7,12 +7,12 @@ module StringMap = Map.Make (String)
 exception Pycocciexception
 
 let check_return_value v =
-  if v = (pynull ()) then 
+  if v =*= (pynull ()) then 
 	  (pyerr_print ();
 	  raise Pycocciexception)
   else ()
 let check_int_return_value v =
-  if v = -1 then
+  if v =|= -1 then
 	  (pyerr_print ();
 	  raise Pycocciexception)
   else ()
@@ -120,7 +120,7 @@ let has_environment_binding env name =
   let (rule, name) = (Array.get a 1, Array.get a 2) in
   let orule = pystring_asstring rule in
   let oname = pystring_asstring name in
-  let e = List.exists (function (x,y) -> orule = x && oname = y) env in
+  let e = List.exists (function (x,y) -> orule =$= x && oname =$= y) env in
   if e then pytrue () else pyfalse ()
 
 let pyoutputinstance = ref (pynone ())
@@ -153,13 +153,13 @@ let build_variable name value =
 
 let contains_binding e (_,(r,m)) =
   try
-    let _ = List.find (function ((re, rm), _) -> r = re && m = rm) e in true
+    let _ = List.find (function ((re, rm), _) -> r =$= re && m =$= rm) e in true
   with Not_found -> false
 
 let construct_variables mv e =
   let find_binding (r,m) =
     try
-      let elem = List.find (function ((re,rm),_) -> r = re && m = rm) e in
+      let elem = List.find (function ((re,rm),_) -> r =$= re && m =$= rm) e in
       Some elem
     with Not_found -> None
   in

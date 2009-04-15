@@ -2,7 +2,7 @@ open Ast_c
 open Common
 
 let rec exprrep expr = match expr with
-  Ast_c.Ident s -> s
+  Ast_c.Ident (ident) -> Ast_c.str_of_name ident
 | Ast_c.Constant c -> constantrep c
 | Ast_c.FunCall (e,args) -> "TODO: FunCall"
 | Ast_c.CondExpr (e1,e2,e3) -> "TODO: CondExpr"
