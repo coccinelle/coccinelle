@@ -158,7 +158,9 @@ let rewrap_prefix_name prefix name =
       let iis = Common.tuple_of_list1 iiname in 
       let iis' = rewrap_str (prefix^s) iis in
       Ast_c.RegularName (prefix ^ s, [iis'])
-  | Ast_c.CppConcatenatedName _ | Ast_c.CppVariadicName _ -> raise Common.Todo
+  | Ast_c.CppConcatenatedName _ | Ast_c.CppVariadicName _ 
+  | Ast_c.CppIdentBuilder _
+      -> raise Common.Todo
 
 
 let print_metavar pr = function

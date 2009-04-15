@@ -338,6 +338,12 @@ and vk_name = fun bigf ident ->
           iif ii1;
         );
     | CppVariadicName (s, ii) -> iif ii
+    | CppIdentBuilder ((s,iis), xs) -> 
+        iif iis;
+        xs +> List.iter (fun ((x,iix), iicomma) -> 
+          iif iicomma;
+          iif iix;
+        )
   in
   namef ident
 
@@ -1062,6 +1068,10 @@ and vk_name_s = fun bigf ident ->
           (x, iif ii1), iif ii2
         ))
     | CppVariadicName (s, ii) -> CppVariadicName (s, iif ii)
+    | CppIdentBuilder ((s,iis), xs) -> 
+        CppIdentBuilder ((s, iif iis),
+                        xs +> List.map (fun ((x,iix), iicomma) -> 
+                          ((x, iif iix), iif iicomma)))
     )
   in
   namef ident

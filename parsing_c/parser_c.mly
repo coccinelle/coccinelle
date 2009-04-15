@@ -478,6 +478,7 @@ let mk_string_wrap (s,info) = (s, [info])
 
 %token <(string * Ast_c.info)>            TMacroAttr
 %token <(string * Ast_c.info)>            TMacroStmt
+%token <(string * Ast_c.info)> TMacroIdentBuilder
 /*(* no need value for the moment *)*/
 %token <(string * Ast_c.info)>            TMacroString 
 %token <(string * Ast_c.info)> TMacroDecl
@@ -608,17 +609,18 @@ ident_cpp:
      { RegularName (mk_string_wrap $1) }
  | TIdent TCppConcatOp identifier_cpp_list 
      {  
-     CppConcatenatedName (
-       match $3 with
-       | [] -> raise Impossible
-       | (x,concatnull)::xs -> 
-           assert(null concatnull);
-           (mk_string_wrap $1, [])::(x,[$2])::xs
-     )
+       CppConcatenatedName (
+         match $3 with
+         | [] -> raise Impossible
+         | (x,concatnull)::xs -> 
+             assert(null concatnull);
+             (mk_string_wrap $1, [])::(x,[$2])::xs
+       )
    }
  | TCppConcatOp TIdent 
      { CppVariadicName (fst $2, [$1; snd $2]) }
-
+ | TMacroIdentBuilder TOPar param_define_list TCPar
+     { CppIdentBuilder ((fst $1, [snd $1;$2;$4]), $3) } 
 
 identifier_cpp_list:
  | TIdent { [mk_string_wrap $1, []] } 

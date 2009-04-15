@@ -10,6 +10,11 @@
 - with the dir option, the include path is implicitly set to the "include"
   subdirectory of the specified directory, if the option -I is not used.
 - give a seed for the name of a fresh identifier
+- better handling of cpp "constructed" identifiers as in a##b, that in
+  the futur will make it easier to match over those idents. 
+  cf tests/pb_parsing_macro.c. Thanks to Ali-Erdem Ozcan for pointing
+  out the problem. A new "parsing hack hint" is also available:
+  YACFE_IDENT_BUILDER, cf standard.h.
 
 ** Bugfix:
 - drop excessive "optimization" in ctl generation for while and for loops

@@ -52,6 +52,7 @@ type define_def = string * define_param * define_body
      | HintMacroString
      | HintMacroStatement
      | HintAttribute
+     | HintMacroIdentBuilder
 
 val regexp_macro: Str.regexp
 val regexp_annot: Str.regexp

@@ -1092,7 +1092,8 @@ and (ident_cpp: info_ident -> (A.ident, B.name) matcher) =
            ida, 
            (B.RegularName (s, [iis]))
          ))
-   | B.CppConcatenatedName _ | B.CppVariadicName _ -> raise Todo
+   | B.CppConcatenatedName _ | B.CppVariadicName _ |B.CppIdentBuilder _
+       -> raise Todo
 
 and (ident: info_ident -> (A.ident, string * Ast_c.info) matcher) = 
  fun infoidb ida ((idb, iib) as ib) -> 
@@ -1911,7 +1912,8 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
                    ))
                else fail
 
-           | B.CppConcatenatedName _ | B.CppVariadicName _ -> raise Todo
+           | B.CppConcatenatedName _ | B.CppVariadicName _ |B.CppIdentBuilder _
+               -> raise Todo
            )
 
        | _ -> raise Impossible
@@ -2779,7 +2781,8 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
                    ))
                else fail
 
-           | B.CppConcatenatedName _ | B.CppVariadicName _ -> raise Todo
+           | B.CppConcatenatedName _ | B.CppVariadicName _ |B.CppIdentBuilder _
+               -> raise Todo
         )
 
 

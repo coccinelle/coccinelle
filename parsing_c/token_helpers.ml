@@ -241,6 +241,7 @@ let info_of_tok = function
 
   | TUnknown             (i) -> i
 
+  | TMacroIdentBuilder             (s, i) -> i
   | TMacroAttr             (s, i) -> i
   | TMacroAttrStorage             (s, i) -> i
   | TMacroStmt             (s, i) -> i
@@ -390,6 +391,7 @@ let visitor_info_of_tok f = function
 
   | TUnknown             (i) -> TUnknown                (f i)
 
+  | TMacroIdentBuilder             (s, i) -> TMacroIdentBuilder (s, f i)
   | TMacroAttr           (s, i)   -> TMacroAttr            (s, f i)
   | TMacroAttrStorage           (s, i)   -> TMacroAttrStorage         (s, f i)
   | TMacroStmt           (s, i)   -> TMacroStmt            (s, f i)

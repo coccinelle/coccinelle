@@ -16,6 +16,15 @@ open Common
 (*****************************************************************************)
 (* The AST C related types *)
 (*****************************************************************************)
+(*
+ * Some stuff are tagged semantic: which means that they are computed
+ * after parsing. 
+ * 
+ * This means that some elements in this AST are present only if 
+ * some annotation/transformation has been done on the original AST returned
+ * by the parser. Cf type_annotater, comment_annotater, cpp_ast_c, etc.
+ *)
+
 
 (* ------------------------------------------------------------------------- *)
 (* Token/info *)
@@ -53,13 +62,6 @@ open Common
  * because the pending '+' may contain metavariables that refer to some
  * C code.
  * 
- * Some stuff are tagged semantic: which means that they are computed
- * after parsing. 
- * 
- * 
- * All of this means that some elements in this AST are present only if 
- * some annotation/transformation has been done on the original AST returned
- * by the parser. Cf type_annotater, comment_annotater, cpp_ast_c, etc.
  *)
 
 (* forunparser: *)
@@ -118,6 +120,8 @@ and name =
    (* normally only used inside list of things, as in parameters or arguments
     * in which case, cf cpp-manual, it has a special meaning *)
    | CppVariadicName of string wrap (* ## s *)
+   | CppIdentBuilder of string wrap (* s ( ) *) * 
+                       ((string wrap) wrap2 list) (* arguments *)
 
 
 (* ------------------------------------------------------------------------- *)
@@ -1091,7 +1095,11 @@ let str_of_name ident =
   | CppConcatenatedName xs -> 
       xs +> List.map (fun (x,iiop) -> unwrap x) +> Common.join "##"
   | CppVariadicName (s, ii) -> "##" ^ s
-  
+  | CppIdentBuilder ((s,iis), xs) -> 
+      s ^ "(" ^ 
+        (xs +> List.map (fun ((x,iix), iicomma) -> x) +> Common.join ",") ^
+        ")"
+
 let info_of_name ident = 
   match ident with
   | RegularName (s,ii) -> List.hd ii
@@ -1104,6 +1112,8 @@ let info_of_name ident =
   | CppVariadicName (s, ii) -> 
       let (iihash, iis) = Common.tuple_of_list2 ii in 
       iihash
+  | CppIdentBuilder ((s,iis),xs) -> 
+      List.hd iis
 
 let get_s_and_ii_of_name name = 
   match name with

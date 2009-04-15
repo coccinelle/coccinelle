@@ -280,6 +280,7 @@ type define_def = string * define_param * define_body
      | HintMacroString
      | HintMacroStatement
      | HintAttribute
+     | HintMacroIdentBuilder
 
 
 (* cf also data/test.h *)
@@ -289,6 +290,8 @@ let assoc_hint_string = [
   "YACFE_STRING"     , HintMacroString;
   "YACFE_STATEMENT"  , HintMacroStatement;
   "YACFE_ATTRIBUTE"  , HintAttribute;
+  "YACFE_IDENT_BUILDER"  , HintMacroIdentBuilder;
+
   "MACROSTATEMENT"   , HintMacroStatement; (* backward compatibility *)
 ]
 
@@ -313,6 +316,8 @@ let (token_from_parsinghack_hint:
        Parser_c.TMacroStmt (s, ii)
    | HintAttribute -> 
        Parser_c.TMacroAttr (s, ii)
+   | HintMacroIdentBuilder -> 
+       Parser_c.TMacroIdentBuilder (s, ii)
   
 
 

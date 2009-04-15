@@ -13,6 +13,7 @@
  *     but where we cant detect that it will be a "bad macro"
  *   - macros found in .c; macros correctly parsed
  *     but where we cant detect that it will be a "bad macro"
+ *   - hints, cf below.
  *
  * Some of those macros could be deleted and the C code rewritten because
  * they are "bad" macros.
@@ -26,12 +27,32 @@
  */
 
 // ****************************************************************************
+// Hints
+// ****************************************************************************
+
+/* Cooperation with parsing_hack.ml: some body of macros in this file, such  
+ * as MACROSTATEMENT, are considered as magic strings.
+ * I can't just expand those macros into some 'whatever();' because I need 
+ * to generate a TMacroStmt for solving some ambiguities in the grammar
+ * for the toplevel stuff I think.
+ * Right now a set of special strings are used as "hints" to the parser
+ * to help it parse code. Those hints are specified in parsing_hack.ml:
+ *
+ *   - YACFE_ITERATOR
+ *   - YACFE_DECLARATOR
+ *   - YACFE_STRING
+ *   - YACFE_STATEMENT, or MACROSTATEMENT
+ *   - YACFE_ATTRIBUTE
+ *   - YACFE_IDENT_BUILDER
+ */
+
+// ****************************************************************************
 // Test macros
 // ****************************************************************************
 
 // #define FOO(a, OP, b) a OP b
 // #define FOO(a,b) fn(a,b)
-
+#define FOO_METH_TEST(a) YACFE_IDENT_BUILDER
 
 // ****************************************************************************
 // Generic macros
@@ -587,10 +608,6 @@ do {									\
 
 
 
-// Cooperation with parsing_hack.ml: MACROSTATEMENT is a magic string.
-// I can't just expand those macros into some 'whatever();' because I need 
-// to generate a TMacroStmt for solving some ambiguities in the grammar
-// for the toplevel stuff I think.
 #define ASSERT(x) MACROSTATEMENT
 #define IRDA_ASSERT(x) MACROSTATEMENT
 

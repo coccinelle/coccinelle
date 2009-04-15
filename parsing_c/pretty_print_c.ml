@@ -185,6 +185,15 @@ let pretty_print_c pr_elem pr_space pr_nl pr_indent pr_outdent pr_unindent =
         )
     | CppVariadicName (s, ii) -> 
         ii +> List.iter pr_elem
+    | CppIdentBuilder ((s,iis), xs) -> 
+        let (iis, iop, icp) = Common.tuple_of_list3 iis in
+        pr_elem iis;
+        pr_elem iop;
+        xs +> List.iter (fun ((x,iix), iicomma) -> 
+          iicomma +> List.iter pr_elem;
+          iix +> List.iter pr_elem;
+        );
+        pr_elem icp
 
 (* ---------------------- *)
   and pp_statement = function
