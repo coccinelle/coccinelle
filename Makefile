@@ -273,6 +273,8 @@ OCAMLVERSION=$(shell ocaml -version |perl -p -e 's/.*version (.*)/$$1/;')
 #  touch **/*
 #  make licensify
 #  remember to comment the -g -dtypes in this Makefile
+#  You can also remove a few things, for instance I removed in this
+#   Makefile things related to popl/ and popl09/
 
 # Procedure to do each time:
 #  cvs update
@@ -479,7 +481,8 @@ distclean:: clean
 	rm -f python/pycocci.ml
 	rm -f python/pycocci_aux.ml
 	rm -f globals/config.ml
-	find -name ".#*1.*" | xargs rm
+	rm -f TAGS
+	find -name ".#*1.*" | xargs rm -f
 
 beforedepend::
 
