@@ -108,6 +108,7 @@ $(MAKESUBDIRS):
 $(MAKESUBDIRS:%=%.opt):
 	$(MAKE) -C $(@:%.opt=%) OCAMLCFLAGS="$(OCAMLCFLAGS)" all.opt
 
+#dependencies:
 # commons:
 # globals:
 # menhirlib:
@@ -119,18 +120,6 @@ $(MAKESUBDIRS:%=%.opt):
 # extra: parsing_cocci parsing_c ctl
 # pycaml:
 # python:pycaml parsing_cocci parsing_c
-#
-# commons.opt:
-# globals.opt:
-# menhirlib.opt:
-# parsing_cocci.opt: commons.opt globals.opt menhirlib.opt
-# parsing_c.opt:parsing_cocci.opt
-# ctl.opt:globals.opt commons.opt
-# engine.opt: parsing_cocci.opt parsing_c.opt ctl.opt
-# popl09.opt:engine.opt
-# extra.opt: parsing_cocci.opt parsing_c.opt ctl.opt
-# pycaml.opt:
-# python.opt:pycaml.opt parsing_cocci.opt parsing_c.opt
 
 clean::
 	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i $@; done
@@ -312,13 +301,12 @@ package:
 	make bytecodetar
 
 # I currently pre-generate the parser so the user does not have to
-# install menhir on his machine. I also do a few cleanups like 'rm todo_pos'.
+# install menhir on his machine. We could also do a few cleanups.
 # You may have first to do a 'make licensify'.
 srctar:
 	make clean
 	cp -a .  $(TMP)/$(PACKAGE)
 	cd $(TMP)/$(PACKAGE); cd parsing_cocci/; make parser_cocci_menhir.ml
-	cd $(TMP)/$(PACKAGE); rm -f todo_pos
 	cd $(TMP); tar cvfz $(PACKAGE).tgz --exclude-vcs $(PACKAGE)
 	rm -rf  $(TMP)/$(PACKAGE)
 
