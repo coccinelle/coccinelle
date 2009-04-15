@@ -165,7 +165,7 @@ let max_min_ii_by_pos xs =
   | [] -> failwith "empty list, max_min_ii_by_pos"
   | [x] -> (x, x)
   | x::xs -> 
-      let pos_leq p1 p2 = (Ast_c.compare_pos p1 p2) = (-1) in
+      let pos_leq p1 p2 = (Ast_c.compare_pos p1 p2) =|= (-1) in
       xs +> List.fold_left (fun (maxii,minii) e -> 
         let maxii' = if pos_leq maxii e then e else maxii in
         let minii' = if pos_leq e minii then e else minii in

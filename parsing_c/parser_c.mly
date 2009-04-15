@@ -1,7 +1,7 @@
 %{
 (* Yoann Padioleau
  * 
- * Copyright (C) 2002, 2006, 2007, 2008 Yoann Padioleau
+ * Copyright (C) 2002, 2006, 2007, 2008, 2009 Yoann Padioleau
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License (GPL)
@@ -67,7 +67,7 @@ let fake_pi = Common.fake_parse_info
 let addStorageD  = function 
   | ((x,ii), ({storageD = (NoSto,[])} as v)) -> { v with storageD = (x, [ii]) }
   | ((x,ii), ({storageD = (y, ii2)} as v)) ->  
-      if x = y then warning "duplicate storage classes" v
+      if x =*= y then warning "duplicate storage classes" v
       else raise (Semantic ("multiple storage classes", fake_pi))
 
 let addInlineD  = function 
@@ -215,17 +215,18 @@ let (fixOldCDecl: fullType -> fullType) = fun ty ->
        * definition), then you must write a name within the declarator.
        * Otherwise, you can omit the name. *)
       (match params with
-      | [((reg, None, ((_qua, (BaseType Void,_)))),_), _] ->  
+      | [{p_namei = None; p_type = ((_qua, (BaseType Void,_)))},_] ->  
           ty
       | params -> 
-          (params +> List.iter (function 
-          | (((b, None, _),  ii1),ii2) -> 
+          (params +> List.iter (fun (param,_) ->
+            match param with
+            | {p_namei = None} -> 
               (* if majuscule, then certainly macro-parameter *)
               pr2 ("SEMANTIC:parameter name omitted, but I continue"); 
-	  | _ -> ()
-          );
+	    | _ -> ()
+          ));
            ty)
-      )
+      
         (* todo? can we declare prototype in the decl or structdef,
            ... => length <> but good kan meme *)
   | _ -> 
@@ -237,7 +238,7 @@ let fixFunc (typ, compound, old_style_opt) =
   let (cp,iicp) = compound in
 
   match typ with
-  | ((s,iis), 
+  | (name, 
     (nQ, (FunctionType (fullt, (params,bool)),iifunc)), 
     (st,iist),
     attrs)
@@ -245,10 +246,10 @@ let fixFunc (typ, compound, old_style_opt) =
       let iistart = Ast_c.fakeInfo () in
       assert (nQ =*= nullQualif);
       (match params with
-      | [((reg, None, ((_qua, (BaseType Void,_)))),_), _] ->  ()
+      | [{p_namei= None; p_type =((_qua, (BaseType Void,_)))}, _] ->  ()
       | params -> 
           params +> List.iter (function 
-          | (((bool, Some s, fullt), _), _) -> ()
+          | ({p_namei = Some s}, _) -> ()
 	  | _ -> ()
                 (* failwith "internal errror: fixOldCDecl not good" *)
           )
@@ -270,22 +271,23 @@ let fixFunc (typ, compound, old_style_opt) =
        *)
       (match Ast_c.unwrap_typeC fullt with 
       | FunctionType _ -> 
+          let s = Ast_c.str_of_name name in
+          let iis = Ast_c.info_of_name name in
           pr2 (spf "WEIRD: %s declared as function returning a function." s);
           pr2 (spf "This is probably because of a macro. Extend standard.h");
           raise (Semantic (spf "error: %s " s, Ast_c.parse_info_of_info iis))
       | _ -> ()
       );
 
-
       (* it must be nullQualif,cos parser construct only this*)
-      {f_name = s;
+      {f_name = name;
        f_type = (fullt, (params, bool));
        f_storage = st;
        f_body = cp;
        f_attr = attrs;
        f_old_c_style = old_style_opt;
       }, 
-      ([iis]++iifunc++iicp++[iistart]++iist) 
+      (iifunc++iicp++[iistart]++iist) 
   | _ -> 
       raise 
         (Semantic 
@@ -310,15 +312,16 @@ let fix_add_params_ident = function
   | ((s, (nQ, (FunctionType (fullt, (params, bool)),_)), st, _attrs)) ->  
 
       (match params with
-      | [((reg, None, ((_qua, (BaseType Void,_)))),_), _] ->  ()
+      | [{p_namei=None; p_type=((_qua, (BaseType Void,_)))}, _] ->  ()
       | params -> 
-        params +> List.iter (function 
-         | (((bool, Some s, fullt), _), _) -> 
-            LP.add_ident s
-	 | _ -> 
-             ()
-             (* failwith "internal errror: fixOldCDecl not good" *)
-      )) 
+          params +> List.iter (function 
+          | ({p_namei= Some name}, _) -> 
+              LP.add_ident (Ast_c.str_of_name s)
+	  | _ -> 
+              ()
+                (* failwith "internal errror: fixOldCDecl not good" *)
+          )
+      ) 
   | _ -> ()
 
 
@@ -328,6 +331,8 @@ let fix_add_params_ident = function
 (*-------------------------------------------------------------------------- *)
 
 let mk_e e ii = ((e, Ast_c.noType()), ii)
+
+let mk_string_wrap (s,info) = (s, [info])
     
 %}
 
@@ -422,6 +427,8 @@ let mk_e e ii = ((e, Ast_c.noType()), ii)
 
 /*(* disappear after fix_tokens_define *)*/
 %token <Ast_c.info> TCppEscapedNewline 
+
+%token <Ast_c.info> TCppConcatOp
 
 /*(* appear    after fix_tokens_define *)*/
 %token <Ast_c.info> TOParDefine        
@@ -591,6 +598,32 @@ ident:
 identifier:
  | TIdent       { $1 }
 
+/*
+(* cppext: string concatenation of idents 
+ * also cppext: gccext: ##args for variadic macro
+ *)
+*/
+ident_cpp:
+ | TIdent       
+     { RegularName (mk_string_wrap $1) }
+ | TIdent TCppConcatOp identifier_cpp_list 
+     {  
+     CppConcatenatedName (
+       match $3 with
+       | [] -> raise Impossible
+       | (x,concatnull)::xs -> 
+           assert(null concatnull);
+           (mk_string_wrap $1, [])::(x,[$2])::xs
+     )
+   }
+ | TCppConcatOp TIdent 
+     { CppVariadicName (fst $2, [$1; snd $2]) }
+
+
+identifier_cpp_list:
+ | TIdent { [mk_string_wrap $1, []] } 
+ | identifier_cpp_list TCppConcatOp TIdent { $1 ++ [mk_string_wrap $3, [$2]] }
+
 /*(*************************************************************************)*/
 /*(* expr *)*/
 /*(*************************************************************************)*/
@@ -672,8 +705,8 @@ postfix_expr:
  | postfix_expr TOPar argument_list_ne TCPar  
      { mk_e(FunCall ($1, $3)) [$2;$4] }
  | postfix_expr TOPar  TCPar  { mk_e(FunCall ($1, [])) [$2;$3] }
- | postfix_expr TDot   ident  { mk_e(RecordAccess   ($1,fst $3)) [$2;snd $3] }
- | postfix_expr TPtrOp ident  { mk_e(RecordPtAccess ($1,fst $3)) [$2;snd $3] }
+ | postfix_expr TDot   ident_cpp { mk_e(RecordAccess   ($1,$3)) [$2] }
+ | postfix_expr TPtrOp ident_cpp { mk_e(RecordPtAccess ($1,$3)) [$2] }
  | postfix_expr TInc          { mk_e(Postfix ($1, Inc)) [$2] }
  | postfix_expr TDec          { mk_e(Postfix ($1, Dec)) [$2] }
 
@@ -684,7 +717,7 @@ postfix_expr:
      { mk_e(Constructor ($2, List.rev $5)) ([$1;$3;$4;$7] ++ $6) }
 
 primary_expr:
- | identifier  { mk_e(Ident  (fst $1)) [snd $1] }
+ | ident_cpp  { mk_e(Ident  ($1)) [] }
  | TInt    { mk_e(Constant (Int    (fst $1))) [snd $1] }
  | TFloat  { mk_e(Constant (Float  (fst $1))) [snd $1] }
  | TString { mk_e(Constant (String (fst $1))) [snd $1] }
@@ -941,7 +974,9 @@ type_spec2:
   * parse_typedef_fix4: try also to do now some consistency checking in
   * Parse_c
   *)*/                            
- | TypedefIdent   { Right3 (TypeName (fst $1,Ast_c.noTypedefDef())), [snd $1]}
+ | TypedefIdent   
+     { let name = RegularName (mk_string_wrap $1) in
+       Right3 (TypeName (name, Ast_c.noTypedefDef())),[] }
 
  | Ttypeof TOPar assign_expr TCPar { Right3 (TypeOfExpr ($3)), [$1;$2;$4] }
  | Ttypeof TOPar type_name   TCPar { Right3 (TypeOfType ($3)), [$1;$2;$4] }
@@ -1006,7 +1041,7 @@ pointer:
 
 
 direct_d: 
- | identifier
+ | ident_cpp
      { ($1, fun x -> x) }
  | TOPar declarator TCPar      /*(* forunparser: old: $2 *)*/ 
      { (fst $2, fun x -> (nQ, (ParenType ((snd $2) x), [$1;$3]))) }
@@ -1076,18 +1111,26 @@ parameter_type_list:
 
 parameter_decl2: 
  | decl_spec declaratorp
-     { let ((returnType,hasreg),iihasreg) = fixDeclSpecForParam $1 
-       in 
-       (hasreg, Some (fst (fst $2)), ((snd $2) returnType)),    
-        (iihasreg ++ [snd (fst $2)]) 
+     { let ((returnType,hasreg),iihasreg) = fixDeclSpecForParam $1 in
+       let (name, ftyp) = $2 in
+       { p_namei = Some (name);
+         p_type = ftyp returnType;
+         p_register = (hasreg, iihasreg);
+       }
      }
  | decl_spec abstract_declaratorp
-     { let ((returnType,hasreg), iihasreg) = fixDeclSpecForParam $1 
-       in (hasreg, None, ($2 returnType)),      (iihasreg ++ []) 
+     { let ((returnType,hasreg), iihasreg) = fixDeclSpecForParam $1 in 
+       { p_namei = None;
+         p_type = $2 returnType;
+         p_register = hasreg, iihasreg;
+       } 
      }
  | decl_spec
-     { let ((returnType,hasreg), iihasreg) = fixDeclSpecForParam $1 
-       in (hasreg, None, returnType),           (iihasreg ++ []) 
+     { let ((returnType,hasreg), iihasreg) = fixDeclSpecForParam $1 in
+       { p_namei = None;
+         p_type = returnType;
+         p_register = hasreg, iihasreg;
+       }
      }
 
 
@@ -1098,10 +1141,10 @@ parameter_decl2:
 parameter_decl: parameter_decl2 { et "param" ();  $1 }
 
 declaratorp: 
- | declarator  { LP.add_ident (fst (fst $1)); $1 }
+ | declarator  { LP.add_ident (str_of_name (fst $1)); $1 }
  /*(* gccext: *)*/
- | attributes declarator   { LP.add_ident (fst (fst $2)); $2 }
- | declarator attributes   { LP.add_ident (fst (fst $1)); $1 }
+ | attributes declarator   { LP.add_ident (str_of_name (fst $2)); $2 }
+ | declarator attributes   { LP.add_ident (str_of_name (fst $1)); $1 }
 
 abstract_declaratorp:
  | abstract_declarator { $1 }
@@ -1171,15 +1214,16 @@ decl2:
        let (returnType,storage) = fixDeclSpecForDecl $1 in
        let iistart = Ast_c.fakeInfo () in
        DeclList (
-         ($2 +> List.map (fun (((((s,iis),f),attrs), ini), iivirg) -> 
-           let ini, iini = 
+         ($2 +> List.map (fun ((((name,f),attrs), ini), iivirg) -> 
+           let s = str_of_name name in
+           let iniopt = 
              match ini with
-             | None -> None, []
-             | Some (ini, iini) -> Some ini, [iini]
+             | None -> None
+             | Some (ini, iini) -> Some (iini, ini)
            in
-	   if fst (unwrap storage) = StoTypedef 
+	   if fst (unwrap storage) =*= StoTypedef 
 	   then LP.add_typedef s;
-           {v_namei = Some ((s, ini), iis::iini);
+           {v_namei = Some (name, iniopt);
             v_type = f returnType;
             v_storage = unwrap storage;
             v_local = local;
@@ -1261,12 +1305,12 @@ init_declarator: init_declarator2  { dt "init" (); $1 }
 /*(*----------------------------*)*/
 
 declaratori: 
- | declarator              { LP.add_ident (fst (fst $1)); $1, Ast_c.noattr }
+ | declarator              { LP.add_ident (str_of_name (fst $1)); $1, Ast_c.noattr }
  /*(* gccext: *)*/
- | declarator gcc_asm_decl { LP.add_ident (fst (fst $1)); $1, Ast_c.noattr }
+ | declarator gcc_asm_decl { LP.add_ident (str_of_name (fst $1)); $1, Ast_c.noattr }
  /*(* gccext: *)*/
- | attributes declarator   { LP.add_ident (fst (fst $2)); $2, $1 }
- | declarator attributes   { LP.add_ident (fst (fst $1)); $1, Ast_c.noattr (* TODO *) }
+ | attributes declarator   { LP.add_ident (str_of_name (fst $2)); $2, $1 }
+ | declarator attributes   { LP.add_ident (str_of_name (fst $1)); $1, Ast_c.noattr (* TODO *) }
 
 
 
@@ -1400,7 +1444,7 @@ field_declaration:
        if fst (unwrap storage) <> NoSto 
        then internal_error "parsing dont allow this";
        
-       FieldDeclList ([(Simple (None, returnType), []) , []], [$2])
+       FieldDeclList ([(Simple (None, returnType)) , []], [$2])
      }
 
 
@@ -1409,15 +1453,11 @@ field_declaration:
 
 struct_declarator: 
  | declaratorsd                    
-     { (fun x -> Simple   (Some (fst (fst $1)), (snd $1) x), [snd (fst $1)]) }
+     { (fun x -> Simple   (Some (fst $1), (snd $1) x)) }
  | dotdot const_expr2            
-     { (fun x -> BitField (None, x, $2),              [$1]) }
+     { (fun x -> BitField (None, x, $1, $2)) }
  | declaratorsd dotdot const_expr2 
-     { (fun x -> BitField (Some (fst(fst $1)),
-                          ((snd $1) x), 
-                          $3),
-                          [snd (fst $1);$2]) 
-     }
+     { (fun x -> BitField (Some (fst $1), ((snd $1) x), $2, $3)) }
 
 
 /*(*----------------------------*)*/
@@ -1456,16 +1496,15 @@ enum_spec:
      { EnumName (fst $2),       [$1; snd $2] }
 
 enumerator: 
- | idente                 { (fst $1, None),      [snd $1]    }
- | idente  TEq const_expr { (fst $1, Some $3),   [snd $1; $2] }
-
+ | idente                 { $1, None     }
+ | idente  TEq const_expr { $1, Some ($2, $3) }
 
 
 /*(*----------------------------*)*/
 /*(* workarounds *)*/
 /*(*----------------------------*)*/
 
-idente: ident { LP.add_ident (fst $1); $1 }
+idente: ident_cpp { LP.add_ident (str_of_name $1); $1 }
 
 
 
@@ -1551,8 +1590,12 @@ cpp_directive:
            (DefineFunc ($4, [$3;$5]), $6)) 
      }
 
- | TUndef { Undef (fst $1, [snd $1]) }
+ | TUndef             { Undef (fst $1, [snd $1]) }
  | TCppDirectiveOther { PragmaAndCo ([$1]) }
+
+
+
+
 
 /*(* perhaps better to use assign_expr ? but in that case need 
    * do a assign_expr_of_string in parse_c
@@ -1598,10 +1641,12 @@ define_val:
  | /*(* empty *)*/ { DefineEmpty }
 
 
+
+
 param_define:
- | TIdent               { fst $1, [snd $1] } 
- | TypedefIdent         { fst $1, [snd $1] } 
- | TDefParamVariadic    { fst $1, [snd $1] } 
+ | TIdent               { mk_string_wrap $1 } 
+ | TypedefIdent         { mk_string_wrap $1 } 
+ | TDefParamVariadic    { mk_string_wrap $1 } 
  | TEllipsis            { "...", [$1] }
  /*(* they reuse keywords :(  *)*/
  | Tregister            { "register", [$1] }

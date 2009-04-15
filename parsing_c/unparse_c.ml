@@ -1,7 +1,3 @@
-(* should keep comments and directives in between adjacent deleted terms,
-but not comments and directives within deleted terms.  should use the
-labels found in the control-flow graph *)
-
 (* Yoann Padioleau, Julia Lawall
  * 
  * Copyright (C) 2006, 2007, 2008, 2009 Ecole des Mines de Nantes and DIKU
@@ -24,6 +20,10 @@ open Ast_c
 
 module TH = Token_helpers
 
+
+(* should keep comments and directives in between adjacent deleted terms,
+but not comments and directives within deleted terms.  should use the
+labels found in the control-flow graph *)
 
 
 
@@ -197,7 +197,7 @@ let get_fakeInfo_and_tokens celem toks =
         let (before, x, after) = !toks_in +> Common.split_when (fun tok -> 
 	  info =*= TH.info_of_tok tok)
         in
-        assert(info = TH.info_of_tok x);
+        assert(info =*= TH.info_of_tok x);
         (*old: assert(before +> List.for_all (TH.is_comment)); *)
         before +> List.iter (fun x -> 
           if not (TH.is_comment x)
@@ -281,7 +281,7 @@ let expand_mcode toks =
     match t with
     | Fake1 info -> 
         let str = Ast_c.str_of_info info in
-        if str = ""
+        if str =$= ""
         then push2 (Fake2) toks_out
         (* perhaps the fake ',' *)
         else push2 (C2 str) toks_out
@@ -470,7 +470,7 @@ let remove_minus_and_between_and_expanded_and_fake xs =
   let rec adjust_after_brace = function
       [] -> []
     | ((T2(_,false,_)) as x)::((T2(_,true,_)::_) as xs)
-       when str_of_token2 x = "{" ->
+       when str_of_token2 x =$= "{" ->
 	 let (between_minus,rest) = Common.span minus_or_comment xs in
 	 let is_whitespace = function
 	     T2(Parser_c.TCommentSpace _,_b,_i)
@@ -573,7 +573,7 @@ let rec add_space xs =
 let new_tabbing2 space = 
   (list_of_string space)
     +> List.rev
-    +> Common.take_until (fun c -> c = '\n')
+    +> Common.take_until (fun c -> c =<= '\n')
     +> List.rev
     +> List.map string_of_char
     +> String.concat ""
@@ -590,7 +590,7 @@ let rec adjust_indentation xs =
 
   (* try to pick a tabbing unit for the plus code *)
   let adjust_tabbing_unit old_tab new_tab =
-    if !tabbing_unit = None && String.length new_tab > String.length old_tab
+    if !tabbing_unit =*= None && String.length new_tab > String.length old_tab
     then
       let old_tab = list_of_string old_tab in
       let new_tab = list_of_string new_tab in
@@ -606,14 +606,14 @@ let rec adjust_indentation xs =
     let rec loop = function
 	([],new_tab) -> string_of_list (List.rev new_tab)
       |	(_,[]) -> "" (*weird; tabbing unit used up more than the current tab*)
-      |	(t::ts,n::ns) when t = n -> loop (ts,ns)
+      |	(t::ts,n::ns) when t =<= n -> loop (ts,ns)
       |	(_,ns) -> (* mismatch; remove what we can *)
 	  string_of_list (List.rev ns) in
     loop (tu,current_tab) in
 
   let rec find_first_tab started = function
       [] -> ()
-    | ((T2 (tok,_,_)) as x)::xs when str_of_token2 x = "{" ->
+    | ((T2 (tok,_,_)) as x)::xs when str_of_token2 x =$= "{" ->
 	find_first_tab true xs
 (* patch: coccinelle *)
     | ((T2 (Parser_c.TCommentNewline s, _, _)) as x)::_
@@ -628,7 +628,7 @@ let rec adjust_indentation xs =
     | [] ->  []
 (* patch: coccinelle *)
     | ((T2 (tok,_,_)) as x)::(T2 (Parser_c.TCommentNewline s, _, _))::
-      (Cocci2 "{")::xs when started && str_of_token2 x = ")" ->
+      (Cocci2 "{")::xs when started && str_of_token2 x =$= ")" ->
 	(* to be done for if, etc, but not for a function header *)
 	x::(Cocci2 " {")::(aux started xs)
     | ((T2 (Parser_c.TCommentNewline s, _, _)) as x)::xs ->
@@ -638,7 +638,7 @@ let rec adjust_indentation xs =
 	(if started then adjust_tabbing_unit old_tabbing !_current_tabbing);
 	let coccis_rest = Common.span all_coccis xs in
 	(match coccis_rest with
-	  (_::_,((T2 (tok,_,_)) as y)::_) when str_of_token2 y = "}" ->
+	  (_::_,((T2 (tok,_,_)) as y)::_) when str_of_token2 y =$= "}" ->
 	    (* the case where cocci code has been added before a close } *)
 	    x::aux started (Indent_cocci2::xs)
         | _ -> x::aux started xs)
@@ -656,13 +656,13 @@ let rec adjust_indentation xs =
 	    aux started xs)
     (* border between existing code and cocci code *)
     | ((T2 (tok,_,_)) as x)::((Cocci2 "\n") as y)::xs
-      when str_of_token2 x = "{" ->
+      when str_of_token2 x =$= "{" ->
 	x::aux true (y::Indent_cocci2::xs)
     | ((Cocci2 _) as x)::((T2 (tok,_,_)) as y)::xs
-      when str_of_token2 y = "}" ->
+      when str_of_token2 y =$= "}" ->
 	x::aux started (y::Unindent_cocci2::xs)
     (* starting the body of the function *)
-    | ((T2 (tok,_,_)) as x)::xs when str_of_token2 x = "{" ->  x::aux true xs
+    | ((T2 (tok,_,_)) as x)::xs when str_of_token2 x =$= "{" ->  x::aux true xs
     | (Cocci2 "{")::xs -> (Cocci2 "{")::aux true xs
     | ((Cocci2 "\n") as x)::xs -> 
             (* dont inline in expr because of weird eval order of ocaml *)
@@ -677,15 +677,15 @@ let rec find_paren_comma = function
 
   (* do nothing if was like this in original file *)
   | ({ str = "("; idx = Some p1 } as _x1)::({ str = ","; idx = Some p2} as x2)
-    ::xs when p2 = p1 + 1 -> 
+    ::xs when p2 =|= p1 + 1 -> 
       find_paren_comma (x2::xs)
 
   | ({ str = ","; idx = Some p1 } as _x1)::({ str = ","; idx = Some p2} as x2)
-    ::xs when p2 = p1 + 1 -> 
+    ::xs when p2 =|= p1 + 1 -> 
       find_paren_comma (x2::xs)
 
   | ({ str = ","; idx = Some p1 } as _x1)::({ str = ")"; idx = Some p2} as x2)
-    ::xs when p2 = p1 + 1 -> 
+    ::xs when p2 =|= p1 + 1 -> 
       find_paren_comma (x2::xs)
 
   (* otherwise yes can adjust *)
@@ -753,7 +753,7 @@ let print_all_tokens2 pr xs =
     let current_kind = ref KOrigin in
     xs +> List.iter (fun t -> 
       let newkind = kind_of_token2 t in
-      if newkind = !current_kind
+      if newkind =*= !current_kind
       then pr (str_of_token2 t)
       else begin
         pr (end_mark);

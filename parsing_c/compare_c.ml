@@ -211,7 +211,7 @@ let compare_ast filename1 filename2  =
     
         );
         (match () with
-        | _ when !pb_notparsed > 0 && !error = 0 -> 
+        | _ when !pb_notparsed > 0 && !error =|= 0 -> 
             PbOnlyInNotParsedCorrectly ""
         | _ when !error > 0 -> Pb ""
         | _ -> Correct
@@ -281,7 +281,7 @@ let compare_token filename1 filename2 =
     | x::xs, y::ys -> 
         let x' = normal_form_token x in
         let y' = normal_form_token y in
-        if x' = y' 
+        if x' =*= y' 
         then loop xs ys
         else 
           let str1, pos1 = 
@@ -378,4 +378,4 @@ let compare_result_to_string (correct, diffxs) =
 
 
 let compare_result_to_bool correct = 
-  correct = Correct
+  correct =*= Correct

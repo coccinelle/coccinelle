@@ -1,3 +1,18 @@
+(* Yoann Padioleau
+ *
+ * Copyright (C) 2006, 2007 Ecole des Mines de Nantes
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License (GPL)
+ * version 2 as published by the Free Software Foundation.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * file license.txt for more details.
+ * 
+ * This file was part of Coccinelle.
+ *)
 open Common
 
 module Flag_engine = Flag_matcher
@@ -228,10 +243,10 @@ module XMATCH = struct
     match mck with 
     | Ast_cocci.PLUS -> Ast_cocci.PLUS
     | Ast_cocci.CONTEXT (pos, xs) -> 
-        assert (pos = Ast_cocci.NoPos || pos = Ast_cocci.DontCarePos);
+        assert (pos =*= Ast_cocci.NoPos || pos =*= Ast_cocci.DontCarePos);
         Ast_cocci.CONTEXT (posmck, xs)
     | Ast_cocci.MINUS (pos, xs) -> 
-        assert (pos = Ast_cocci.NoPos || pos = Ast_cocci.DontCarePos);
+        assert (pos =*= Ast_cocci.NoPos || pos =*= Ast_cocci.DontCarePos);
         Ast_cocci.MINUS (posmck, xs)
   
 

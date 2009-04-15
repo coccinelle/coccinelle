@@ -301,7 +301,7 @@ let unparse_showing_include_content ?
 let is_ifdef_and_same_tag tag x = 
   match x with
   | IfdefStmt (IfdefDirective ((_, tag2),_)) -> 
-      tag = tag2
+      tag =*= tag2
   | StmtElem _ | CppDirectiveStmt _ -> false
   | IfdefStmt2 _ -> raise Impossible
 

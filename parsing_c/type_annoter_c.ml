@@ -166,7 +166,7 @@ type namedef =
   | StructUnionNameDef of string * (structUnion * structType) wrap
 
   (* cppext: *)
-  | Macro        of string * define_body
+  | Macro        of string * (define_kind * define_val)
 
 
 (* Because have nested scope, have nested list, hence the list list.
@@ -236,7 +236,7 @@ let member_env lookupf env =
 
 let lookup_var s env = 
   let f = function
-    | VarOrFunc (s2, typ) -> if s2 = s then Some typ else None
+    | VarOrFunc (s2, typ) -> if s2 =$= s then Some typ else None
     | _ -> None
   in
   lookup_env f env
@@ -244,28 +244,28 @@ let lookup_var s env =
 let lookup_typedef s env = 
   if !typedef_debug then pr2 ("looking for: " ^ s);
   let f = function
-    | TypeDef (s2, typ) -> if s2 = s then Some typ else None
+    | TypeDef (s2, typ) -> if s2 =$= s then Some typ else None
     | _ -> None
   in
   lookup_env f env
 
 let lookup_structunion (_su, s) env =
   let f = function
-    | StructUnionNameDef (s2, typ) -> if s2 = s then Some typ else None
+    | StructUnionNameDef (s2, typ) -> if s2 =$= s then Some typ else None
     | _ -> None
   in
   lookup_env f env
 
 let lookup_macro s env = 
   let f = function
-    | Macro (s2, typ) -> if s2 = s then Some typ else None
+    | Macro (s2, typ) -> if s2 =$= s then Some typ else None
     | _ -> None
   in
   lookup_env f env
 
 let lookup_enum s env = 
   let f = function
-    | EnumConstant (s2, typ) -> if s2 = s then Some typ else None
+    | EnumConstant (s2, typ) -> if s2 =$= s then Some typ else None
     | _ -> None
   in
   lookup_env f env
@@ -363,7 +363,8 @@ let rec type_unfold_one_step ty env =
          ty
       )
       
-  | TypeName (s,_typ) -> 
+  | TypeName (name, _typ) -> 
+      let s = Ast_c.str_of_name name in
       (try 
           if !typedef_debug then pr2 "type_unfold_one_step: lookup_typedef";
           let (t', env') = lookup_typedef s env in
@@ -416,7 +417,8 @@ let rec typedef_fix ty env =
   | StructUnionName (su, s) -> ty
 
   (* keep the typename but complete with more information *)
-  | TypeName (s, typ) -> 
+  | TypeName (name, typ) -> 
+      let s = Ast_c.str_of_name name in
       (match typ with
       | Some _ -> 
           pr2 ("typedef value already there:" ^ s);
@@ -430,7 +432,7 @@ let rec typedef_fix ty env =
            * can have some weird mutually recursive typedef which
            * each new type alias search for its mutual def.
            *)
-          TypeName (s, Some (typedef_fix t' env')) +> Ast_c.rewrap_typeC ty
+          TypeName (name, Some (typedef_fix t' env')) +> Ast_c.rewrap_typeC ty
         with Not_found -> 
           ty
       ))
@@ -465,8 +467,13 @@ let type_of_s a =
  * normally.
  *)
 let offset (_,(ty,iis)) =
-  match iis with
-    ii::_ -> ii.Ast_c.pinfo
+  match ty, iis with
+  | TypeName (name, _typ), [] -> 
+      (match name with
+      | RegularName (s, [ii]) -> ii.Ast_c.pinfo
+      | _ -> raise Todo
+      )
+  | _, ii::_ -> ii.Ast_c.pinfo
   | _ -> failwith "type has no text; need to think again"
   
 
@@ -526,7 +533,7 @@ let add_in_scope namedef =
 
 (* sort of hackish... *)
 let islocal info =
-  if List.length (!_scoped_env) = List.length !initial_env
+  if List.length (!_scoped_env) =|= List.length !initial_env
   then Ast_c.NotLocalVar
   else Ast_c.LocalVar info
 
@@ -641,14 +648,14 @@ let annotater_expr_visitor_subpart = (fun (k,bigf) expr ->
      * Also as I don't want a warning on the Ident that are a FunCall,
      * easier to have a rule separate from the Ident rule.
      *)
-    | FunCall (((Ident s, typ), ii) as e1, args) -> 
+    | FunCall (((Ident (ident), typ), _ii) as e1, args) -> 
         
         (* recurse *)
         args +> List.iter (fun (e,ii) -> 
           (* could typecheck if arguments agree with prototype *)
           Visitor_c.vk_argument bigf e
         );
-        
+        let s = Ast_c.str_of_name ident in
         (match lookup_opt_env lookup_var s with
         | Some ((typ,local),_nextenv) -> 
             
@@ -726,7 +733,8 @@ let annotater_expr_visitor_subpart = (fun (k,bigf) expr ->
 
 
     (* -------------------------------------------------- *)
-    | Ident (s) -> 
+    | Ident (ident) -> 
+        let s = Ast_c.str_of_name ident in
         (match lookup_opt_env lookup_var s with
         | Some ((typ,local),_nextenv) -> 
             make_info_fix (typ,local)
@@ -799,8 +807,10 @@ let annotater_expr_visitor_subpart = (fun (k,bigf) expr ->
 
     (* -------------------------------------------------- *)
     (* fields *)
-    | RecordAccess  (e, fld) 
-    | RecordPtAccess (e, fld) as x -> 
+    | RecordAccess  (e, namefld) 
+    | RecordPtAccess (e, namefld) as x -> 
+
+        let fld = Ast_c.str_of_name namefld in
 
         k expr; (* recurse to set the types-ref of sub expressions *)
         
@@ -1038,7 +1048,9 @@ let rec visit_toplevel ~just_add_in_env ~depth elem =
 	      |	Ast_c.LocalDecl -> Ast_c.LocalVar (offset t) 
             in
             
-            var +> Common.do_option (fun ((s, ini), ii_s_ini) -> 
+            var +> Common.do_option (fun (name, iniopt) -> 
+              let s = Ast_c.str_of_name name in
+
               match sto with 
               | StoTypedef, _inline -> 
                   add_binding (TypeDef (s,Lib.al_type t)) true;
@@ -1048,7 +1060,7 @@ let rec visit_toplevel ~just_add_in_env ~depth elem =
 
                   if need_annotate_body then begin
                     (* int x = sizeof(x) is legal so need process ini *)
-                    ini +> Common.do_option (fun ini -> 
+                    iniopt +> Common.do_option (fun (info, ini) -> 
                       Visitor_c.vk_ini bigf ini
                     );
                   end
@@ -1080,10 +1092,12 @@ let rec visit_toplevel ~just_add_in_env ~depth elem =
 
       | Enum (sopt, enums), ii -> 
 
-          enums +> List.iter (fun (((s, eopt),ii_s_eq), iicomma) -> 
+          enums +> List.iter (fun ((name, eopt), iicomma) -> 
+
+            let s = Ast_c.str_of_name name in
 
             if need_annotate_body
-            then eopt +> Common.do_option (fun e -> 
+            then eopt +> Common.do_option (fun (ieq, e) -> 
               Visitor_c.vk_expr bigf e
             );
             add_binding (EnumConstant (s, sopt)) true;
@@ -1104,7 +1118,7 @@ let rec visit_toplevel ~just_add_in_env ~depth elem =
       _notyped_var := Hashtbl.create 100;
       match elem with
       | Definition def -> 
-          let {f_name = funcs;
+          let {f_name = name;
                f_type = ((returnt, (paramst, b)) as ftyp);
                f_storage = sto;
                f_body = statxs;
@@ -1114,10 +1128,11 @@ let rec visit_toplevel ~just_add_in_env ~depth elem =
           in
           let (i1, i2) = 
             match ii with 
-            | is::iifunc1::iifunc2::ibrace1::ibrace2::ifakestart::isto -> 
+            | iifunc1::iifunc2::ibrace1::ibrace2::ifakestart::isto -> 
                 iifunc1, iifunc2
             | _ -> raise Impossible
           in
+          let funcs = Ast_c.str_of_name name in
 
           (match oldstyle with 
           | None -> 
@@ -1129,9 +1144,10 @@ let rec visit_toplevel ~just_add_in_env ~depth elem =
 
               if need_annotate_body then
                 do_in_new_scope (fun () -> 
-                  paramst +> List.iter (fun (((b, s, t), _),_) -> 
-                    match s with 
-                    | Some s ->
+                  paramst +> List.iter (fun ({p_namei= nameopt; p_type= t},_)-> 
+                    match nameopt with 
+                    | Some name ->
+                        let s = Ast_c.str_of_name name in
 		        let local = Ast_c.LocalVar (offset t) in
 		        add_binding (VarOrFunc (s,(Lib.al_type t,local))) true
                     | None -> 

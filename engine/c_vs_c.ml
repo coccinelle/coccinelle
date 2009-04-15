@@ -52,6 +52,16 @@ let (option: 'a matcher -> ('a option matcher)) = fun f t1 t2 ->
   | _ -> fail
 
 
+let same_s saopt sbopt = 
+  match saopt, sbopt with
+  | None, None -> true
+  | Some namea, Some nameb -> 
+      let sa = Ast_c.str_of_name namea in
+      let sb = Ast_c.str_of_name nameb in
+      sa =$= sb
+  | _ -> false 
+
+
 let rec fullType a b = 
   let ((qua,iiqa), tya) = a in
   let ((qub,iiqb), tyb) = b in
@@ -78,19 +88,24 @@ and typeC tya tyb =
       (sua =*= sub && sa =$= sb) >&&> 
         return (StructUnionName (sua, sa), iix)
 
-  | TypeName (sa, opta), TypeName (sb, optb) -> 
+  | TypeName (namea, opta), TypeName (nameb, optb) -> 
+      let sa = Ast_c.str_of_name namea in
+      let sb = Ast_c.str_of_name nameb in
+      
       (* assert compatible opta optb ? *)
       (*option fullType opta optb*)
       sa =$= sb >&&> 
        let opt = 
          (match opta, optb with
          | None, None -> None
+
          | Some x, _ 
          | _, Some x 
+
              -> Some x
          ) 
        in
-       return (TypeName (sa, opt), iix)
+       return (TypeName (namea, opt), iix)
       
 
   | Array (ea, a), Array (eb,b) -> 
@@ -106,7 +121,7 @@ and typeC tya tyb =
       let bx = ba in
       let iihas3dotsx = iihas3dotsa in
 
-      (ba = bb && List.length tsa = List.length tsb) >&&>
+      (ba =:= bb && List.length tsa =|= List.length tsb) >&&>
       fullType returna returnb >>= (fun returnx -> 
 
       Common.zip tsa tsb +> List.fold_left 
@@ -114,17 +129,23 @@ and typeC tya tyb =
           let iix = iia in
           acc >>= (fun xs -> 
 
-            let (((ba, saopt, ta), ii_b_sa)) = parama in
-            let (((bb, sbopt, tb), ii_b_sb)) = paramb in
+            let {p_register = (ba,iiba); p_namei = saopt; p_type = ta} = 
+              parama in
+            let {p_register = (bb,iibb); p_namei = sbopt; p_type = tb} = 
+              paramb in
 
             let bx = ba in
+            let iibx = iiba in
+
             let sxopt = saopt in
-            let ii_b_sx = ii_b_sa in
+
 
             (* todo?  iso on name or argument ? *)
-            (ba =:= bb && saopt =*= sbopt) >&&>
+            (ba =:= bb && same_s saopt sbopt) >&&>
             fullType ta tb >>= (fun tx -> 
-              let paramx = (((bx, sxopt, tx), ii_b_sx)) in
+              let paramx = { p_register = (bx, iibx);
+                             p_namei = sxopt;
+                             p_type = tx; } in
               return ((paramx,iix)::xs)
             )
           )
@@ -136,11 +157,14 @@ and typeC tya tyb =
 
   | Enum (saopt, enuma), Enum (sbopt, enumb) -> 
       (saopt =*= sbopt &&
-      List.length enuma = List.length enumb && 
+      List.length enuma =|= List.length enumb && 
       Common.zip enuma enumb +> List.for_all (fun 
-        ((((sa, eopta),ii_s_eqa), iicommaa), (((sb, eoptb),ii_s_eqb),iicommab))
+        (((namesa,eopta), iicommaa), ((namesb,eoptb),iicommab))
           -> 
+            let sa = str_of_name namesa in
+            let sb = str_of_name namesb in
             sa =$= sb && 
+            (* todo ? eopta and b can have some info so ok to use =*= ?  *)
             eopta =*= eoptb 
         )
       ) >&&>
@@ -168,7 +192,7 @@ and typeC tya tyb =
 
 
   | StructUnion (sua, saopt, sta), StructUnion (sub, sbopt, stb) -> 
-      (sua =*= sub && saopt =*= sbopt && List.length sta = List.length stb) 
+      (sua =*= sub && saopt =*= sbopt && List.length sta =|= List.length stb) 
       >&&> 
       Common.zip sta stb +> List.fold_left 
         (fun acc ((xfielda, iia), (xfieldb, iib)) -> 
@@ -186,20 +210,21 @@ and typeC tya tyb =
                   (fun acc2 ((fielda,iia),(fieldb,iib))-> 
                     let iix = iia in
                     acc2 >>= (fun xs -> 
-                      let (fa, ii2a) = fielda in
-                      let (fb, ii2b) = fieldb in
-                      let ii2x = ii2a in
-                      match fa, fb with
-                      | Simple (saopt, ta), Simple (sbopt, tb) -> 
-                          saopt =*= sbopt >&&> 
+                      match fielda, fieldb with
+                      | Simple (nameaopt, ta), Simple (namebopt, tb) -> 
+                          
+
+                          same_s nameaopt namebopt >&&> 
                           fullType ta tb >>= (fun tx -> 
-                            return (((Simple (saopt, tx), ii2x), iix)::xs)
+                            return (((Simple (nameaopt, tx)), iix)::xs)
                           )
                           
-                      | BitField (sopta, ta, ea), BitField (soptb, tb, eb) -> 
-                          (sopta =*= soptb && ea =*= eb) >&&> 
+                      | BitField (nameopta, ta, infoa, ea), 
+                        BitField (nameoptb, tb, infob, eb) -> 
+                          let infox = infoa in
+                          (same_s nameopta nameoptb && ea =*= eb) >&&> 
                           fullType ta tb >>= (fun tx -> 
-                            return (((BitField (sopta,tx,ea), ii2x), iix)::xs)
+                            return (((BitField (nameopta,tx,infox,ea)), iix)::xs)
                           )
                       | _,_ -> fail
                     )
@@ -224,14 +249,14 @@ and typeC tya tyb =
    * must put iib and not iix, because we want the token corresponding
    * to the typedef.
    *)
-  | TypeName (s, Some a), _ -> 
+  | TypeName (name, Some a), _ -> 
       fullType a (Ast_c.nQ, tyb) >>= (fun x -> 
-        return (TypeName (s, Some x), iia) 
+        return (TypeName (name, Some x), iia) 
       )
 
-  | _, TypeName (s, Some b) -> 
+  | _, TypeName (name, Some b) -> 
       fullType b (Ast_c.nQ, tya) >>= (fun x -> 
-        return (TypeName (s, Some x), iib) (* subtil: *)
+        return (TypeName (name, Some x), iib) (* subtil: *)
       )
 
   | _, _ -> fail

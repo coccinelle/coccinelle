@@ -1,3 +1,19 @@
+(* Yoann Padioleau, Julia Lawall
+ *
+ * Copyright (C) 2006, 2007, 2008 Ecole des Mines de Nantes
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License (GPL)
+ * version 2 as published by the Free Software Foundation.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * file license.txt for more details.
+ * 
+ * This file was part of Coccinelle.
+ *)
+
 open Common
 
 module A = Ast_cocci
@@ -118,7 +134,7 @@ let generalize_mcode ia =
 (* 0x0 is equivalent to 0,  value format isomorphism *)
 let equal_c_int s1 s2 = 
   try 
-    int_of_string s1 = int_of_string s2
+    int_of_string s1 =|= int_of_string s2
   with Failure("int_of_string") -> 
     s1 =$= s2
 
@@ -259,7 +275,7 @@ let equal_metavarval valu valu' =
 	(function (fla,cea,posa1,posa2) ->
 	  List.exists
 	    (function (flb,ceb,posb1,posb2) ->
-	      fla = flb && cea = ceb &&
+	      fla =$= flb && cea =$= ceb &&
 	      Ast_c.equal_posl posa1 posb1 && Ast_c.equal_posl posa2 posb2)
             l2)
 	l1
@@ -417,9 +433,10 @@ let initialisation_to_affectation decl =
               iisep) = x in
 
           (match var with
-          | Some ((s, ini),  iis::iini) -> 
-              (match ini with
-              | Some (B.InitExpr e, ii_empty2) -> 
+          | Some (name, iniopt) -> 
+              (match iniopt with
+              | Some (iini, (B.InitExpr e, ii_empty2)) -> 
+                  let iis = Ast_c.info_of_name name in
 		  let local =
 		    match local with
 		      Ast_c.NotLocalDecl -> Ast_c.NotLocalVar
@@ -428,10 +445,11 @@ let initialisation_to_affectation decl =
                   let typ =
 		    ref (Some ((Lib_parsing_c.al_type returnType),local),
 			       Ast_c.NotTest) in
-                  let id = (B.Ident s, typ),[iis] in
+                  let ident = name in
+                  let idexpr = (B.Ident (ident), typ),Ast_c.noii in
                   F.DefineExpr
-                    ((B.Assignment (id, B.SimpleAssign, e), 
-                     Ast_c.noType()), iini)
+                    ((B.Assignment (idexpr, B.SimpleAssign, e), 
+                     Ast_c.noType()), [iini])
               | _ -> F.Decl decl
               )
           | _ -> F.Decl decl
@@ -626,7 +644,7 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
       (* old: before have a MetaConst. Now we factorize and use 'form' to 
        * differentiate between different cases *)
       let rec matches_id = function
-	  B.Ident(c) -> true
+	  B.Ident(name) -> true
 	| B.Cast(ty,e) -> matches_id (B.unwrap_expr e)
 	| _ -> false in
       let form_ok =
@@ -635,9 +653,14 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
 	| (A.CONST,e) ->
 	    let rec matches = function
 		B.Constant(c) -> true
-              | B.Ident idb when idb =~ "^[A-Z_][A-Z_0-9]*$" -> 
-		  pr2_once ("warning: I consider " ^ idb ^ " as a constant");
-		  true
+              | B.Ident (nameidb) -> 
+                  let s = Ast_c.str_of_name nameidb in 
+                  if s =~ "^[A-Z_][A-Z_0-9]*$" 
+                  then begin
+		    pr2_once ("warning: I consider " ^ s ^ " as a constant");
+		    true
+                  end
+                  else false
 	      | B.Cast(ty,e) -> matches (B.unwrap_expr e)
 	      |	B.Unary(e,B.UnMinus) -> matches (B.unwrap_expr e)
 	      | B.SizeOfExpr(exp) -> true
@@ -707,12 +730,12 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
   | A.Edots (_, Some expr), _    -> failwith "not handling when on Edots"
 	
 	
-  | A.Ident ida,   ((B.Ident idb, typ),ii) ->
-      let ib1 = tuple_of_list1 ii in
-      ident DontKnow ida (idb, ib1) >>= (fun ida (idb, ib1) -> 
+  | A.Ident ida,   ((B.Ident (nameidb), typ),noii) ->
+      assert (null noii);
+      ident_cpp DontKnow ida nameidb >>= (fun ida nameidb -> 
         return (
         ((A.Ident ida)) +> wa, 
-        ((B.Ident idb, typ),[ib1])
+        ((B.Ident (nameidb), typ),Ast_c.noii)
           ))
         
 	
@@ -930,25 +953,25 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
 
   (* todo?: handle some isomorphisms here ? *)
   | A.RecordAccess (ea, ia1, ida), ((B.RecordAccess (eb, idb), typ),ii) ->
-      let (ib1, ib2) = tuple_of_list2 ii in
-      ident DontKnow ida (idb, ib2) >>= (fun ida (idb, ib2) -> 
+      let (ib1) = tuple_of_list1 ii in
+      ident_cpp DontKnow ida idb >>= (fun ida idb -> 
       tokenf ia1 ib1 >>= (fun ia1 ib1 -> 
       expression ea eb >>= (fun ea eb -> 
         return (
           ((A.RecordAccess (ea, ia1, ida))) +> wa,
-          ((B.RecordAccess (eb, idb), typ), [ib1;ib2])
+          ((B.RecordAccess (eb, idb), typ), [ib1])
         ))))
 
 
 
   | A.RecordPtAccess (ea,ia1,ida),((B.RecordPtAccess (eb, idb), typ), ii) ->
-      let (ib1, ib2) = tuple_of_list2 ii in
-      ident DontKnow ida (idb, ib2) >>= (fun ida (idb, ib2) -> 
+      let (ib1) = tuple_of_list1 ii in
+      ident_cpp DontKnow ida idb >>= (fun ida idb -> 
       tokenf ia1 ib1 >>= (fun ia1 ib1 -> 
       expression ea eb >>= (fun ea eb -> 
         return (
           ((A.RecordPtAccess (ea, ia1, ida))) +> wa,
-          ((B.RecordPtAccess (eb, idb), typ), [ib1;ib2])
+          ((B.RecordPtAccess (eb, idb), typ), [ib1])
         ))))
 
 
@@ -1059,6 +1082,18 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
 
 
 (* ------------------------------------------------------------------------- *)
+and (ident_cpp: info_ident -> (A.ident, B.name) matcher) = 
+ fun infoidb ida idb -> 
+   match idb with
+   | B.RegularName (s, iis) -> 
+       let iis = tuple_of_list1 iis in
+       ident infoidb ida (s, iis) >>= (fun ida (s,iis) -> 
+         return (
+           ida, 
+           (B.RegularName (s, [iis]))
+         ))
+   | B.CppConcatenatedName _ | B.CppVariadicName _ -> raise Todo
+
 and (ident: info_ident -> (A.ident, string * Ast_c.info) matcher) = 
  fun infoidb ida ((idb, iib) as ib) -> 
   X.all_bound (A.get_inherited ida) >&&>
@@ -1179,7 +1214,7 @@ and arguments_bis = fun eas ebs ->
                * for the associated ',' see below how we handle the EComma
                * to match nothing.
                *)
-              (if startxs = []
+              (if null startxs
               then
                 if mcode_contain_plus (mcodekind mcode)
                 then fail 
@@ -1228,7 +1263,7 @@ and arguments_bis = fun eas ebs ->
           startendxs +> List.fold_left (fun acc (startxs, endxs) -> 
             acc >||> (
               let ok =
-                if startxs = []
+                if null startxs
                 then
                   if mcode_contain_plus (mcodekind ida)
                   then false 
@@ -1260,7 +1295,7 @@ and arguments_bis = fun eas ebs ->
                   X.envf keep inherited
                     (ida, Ast_c.MetaExprListVal startxs', max_min)
                 (fun () -> 
-		  if startxs = []
+		  if null startxs
 		  then return (ida, [])
                   else X.distrf_args ida (Ast_c.split_comma startxs')
                 )
@@ -1289,21 +1324,25 @@ and arguments_bis = fun eas ebs ->
 and argument arga argb =
   X.all_bound (A.get_inherited arga) >&&>
    match A.unwrap arga, argb with
-  | A.TypeExp tya,  Right (B.ArgType (((b, sopt, tyb), ii_b_s))) ->
+  | A.TypeExp tya,  
+    Right (B.ArgType {B.p_register=b,iib; p_namei=sopt;p_type=tyb}) ->
 
       if b || sopt <> None
       then 
         (* failwith "the argument have a storage and ast_cocci does not have"*)
         fail
       else 
+        (* b = false and sopt = None *)
         fullType tya tyb >>= (fun tya tyb -> 
           return (
             (A.TypeExp tya) +> A.rewrap arga,
-            (Right (B.ArgType (((b, sopt, tyb), ii_b_s))))
+            (Right (B.ArgType {B.p_register=(b,iib);
+                               p_namei=sopt;
+                               p_type=tyb;}))
         ))
 
   | A.TypeExp tya,  _                                  -> fail
-  | _,              Right (B.ArgType (tyb, sto_iisto)) -> fail
+  | _,              Right (B.ArgType _) -> fail
   | _, Left argb ->
       expression arga argb >>= (fun arga argb ->
         return (arga, Left argb)
@@ -1341,7 +1380,7 @@ and parameters_bis eas ebs =
           startendxs +> List.fold_left (fun acc (startxs, endxs) -> 
             acc >||> (
 
-              (if startxs = []
+              (if null startxs
               then
                 if mcode_contain_plus (mcodekind mcode)
                 then fail 
@@ -1385,7 +1424,7 @@ and parameters_bis eas ebs =
           startendxs +> List.fold_left (fun acc (startxs, endxs) -> 
             acc >||> (
               let ok =
-                if startxs = []
+                if null startxs
                 then
                   if mcode_contain_plus (mcodekind ida)
                   then false 
@@ -1417,7 +1456,7 @@ and parameters_bis eas ebs =
                   X.envf keep inherited 
                     (ida, Ast_c.MetaParamListVal startxs', max_min)
                 (fun () -> 
-		  if startxs = []
+		  if null startxs
 		  then return (ida, [])
 		  else X.distrf_params ida (Ast_c.split_comma startxs')
 		) >>= (fun ida startxs -> 
@@ -1435,15 +1474,20 @@ and parameters_bis eas ebs =
       | A.VoidParam ta, ys -> 
           (match eas, ebs with
           | [], [Left eb] -> 
-              let ((hasreg, idbopt, tb), ii_b_s) = eb in
-              if idbopt = None && null ii_b_s 
+              let {B.p_register=(hasreg,iihasreg);
+                   p_namei = idbopt;
+                   p_type=tb; } = eb in
+              
+              if idbopt =*= None && not hasreg
               then 
                 match tb with 
                 | (qub, (B.BaseType B.Void,_)) -> 
                     fullType ta tb >>= (fun ta tb -> 
                       return (
                         [(A.VoidParam ta) +> A.rewrap ea],
-                        [Left ((hasreg, idbopt, tb), ii_b_s)]
+                        [Left {B.p_register=(hasreg, iihasreg);
+                               p_namei = idbopt;
+                               p_type = tb;}]
                       ))
                 | _ -> fail
               else fail
@@ -1485,23 +1529,40 @@ and parameters_bis eas ebs =
   
 
 
+(*
+let split_register_param = fun (hasreg, idb, ii_b_s) -> 
+  match hasreg, idb,  ii_b_s with
+  | false, Some s, [i1] -> Left (s, [], i1)
+  | true, Some s, [i1;i2] -> Left (s, [i1], i2)
+  | _, None, ii -> Right ii
+  | _ -> raise Impossible
+*)
 
 
-and parameter = fun (idaopt, typa)   ((hasreg, idbopt, typb), ii_b_s) ->
+and parameter = fun (idaopt, typa) paramb ->
+
+  let {B.p_register = (hasreg,iihasreg);
+       p_namei = nameidbopt;
+       p_type = typb;} = paramb in
+
   fullType typa typb >>= (fun typa typb -> 
-  match idaopt, Ast_c.split_register_param (hasreg, idbopt, ii_b_s) with
-  | Some ida, Left (idb, iihasreg, iidb) -> 
+  match idaopt, nameidbopt with
+  | Some ida, Some nameidb -> 
       (* todo: if minus on ida, should also minus the iihasreg ? *)
-      ident DontKnow ida (idb,iidb) >>= (fun ida (idb,iidb) -> 
+      ident_cpp DontKnow ida nameidb >>= (fun ida nameidb -> 
         return (
           (Some ida, typa),
-          ((hasreg, Some idb, typb), iihasreg++[iidb])
+          {B.p_register = (hasreg, iihasreg);
+           p_namei = Some (nameidb);
+           p_type = typb}
         ))
         
-  | None, Right iihasreg -> 
+  | None, None -> 
       return (
         (None, typa),
-        ((hasreg, None, typb), iihasreg)
+        {B.p_register=(hasreg,iihasreg);
+         p_namei = None;
+         p_type = typb;}
       )
       
 
@@ -1517,8 +1578,8 @@ and parameter = fun (idaopt, typa)   ((hasreg, idbopt, typb), ii_b_s) ->
       )
  *)
 
-  | Some _, Right _ -> fail
-  | None, Left _ -> fail
+  | Some _, None -> fail
+  | None, Some _ -> fail
   )
 
 
@@ -1557,7 +1618,7 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
           )))
         
   | _, (B.DeclList (xs, iiptvirgb::iifakestart::iisto)) -> 
-      if X.mode = PatternMode
+      if X.mode =*= PatternMode
       then
         xs +> List.fold_left (fun acc var -> 
           acc >||> (
@@ -1611,7 +1672,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
   * T { }; that we want to match against typedef struct { } xx_t;
   *)
  | A.TyDecl (tya0, ptvirga), 
-   ({B.v_namei = Some ((idb, None),[iidb]);
+   ({B.v_namei = Some (nameidb, None);
      B.v_type = typb0;
      B.v_storage = (B.StoTypedef, inl);
      B.v_local = local; 
@@ -1633,7 +1694,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
          | Some s -> 
              pr2 (sprintf 
               "warning: both a typedef (%s) and struct name introduction (%s)"
-              idb s
+              (Ast_c.str_of_name nameidb) s
              );
              pr2 "warning: I will consider only the typedef";
              let (iisub, iisb, lbb, rbb) = tuple_of_list4 ii in
@@ -1644,8 +1705,8 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
            (Ast_c.nQ, (B.StructUnion (sub, sbopt, declsb), ii))
        in
        let fake_typeb = 
-         Ast_c.nQ,((B.TypeName (idb, Some 
-           (Lib_parsing_c.al_type structnameb))), [iidb]) 
+         Ast_c.nQ,((B.TypeName (nameidb, Some 
+           (Lib_parsing_c.al_type structnameb))), []) 
        in
 
        tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb -> 
@@ -1670,11 +1731,11 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
 		 let typb0 = ((qu, il), typb1) in
                
 		 match fake_typeb with 
-		 | _nQ, ((B.TypeName (idb,_typ)), [iidb]) -> 
+		 | _nQ, ((B.TypeName (nameidb, _typ)),[]) -> 
 
                      return (
                      (A.TyDecl (tya0, ptvirga)) +> A.rewrap decla,
-                     (({B.v_namei = Some ((idb, None),[iidb]);
+                     (({B.v_namei = Some (nameidb, None);
                         B.v_type = typb0;
                         B.v_storage = (B.StoTypedef, inl);
                         B.v_local = local;
@@ -1702,7 +1763,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
                
                    return (
                      (A.TyDecl (tya0, ptvirga)) +> A.rewrap decla,
-                     (({B.v_namei = Some ((idb, None),[iidb]);
+                     (({B.v_namei = Some (nameidb, None);
                         B.v_type = typb0;
                         B.v_storage = (B.StoTypedef, inl);
                         B.v_local = local;
@@ -1722,22 +1783,18 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
    )
          
    | A.UnInit (stoa, typa, ida, ptvirga), 
-     ({B.v_namei = Some ((idb, _),[iidb]);
-       B.v_storage = (B.StoTypedef,_);
-     }, iivirg) -> 
-       fail
+     ({B.v_namei= Some (nameidb, _);B.v_storage= (B.StoTypedef,_);}, iivirg) 
+     -> fail
 
    | A.Init (stoa, typa, ida, eqa, inia, ptvirga), 
-     ({B.v_namei = Some ((idb, _),[iidb]);
-       B.v_storage = (B.StoTypedef,_);
-     }, iivirg) -> 
-       fail
+     ({B.v_namei=Some(nameidb, _);B.v_storage=(B.StoTypedef,_);}, iivirg)
+       -> fail
 
 
 
     (* could handle iso here but handled in standard.iso *)
    | A.UnInit (stoa, typa, ida, ptvirga), 
-     ({B.v_namei = Some ((idb, None),[iidb]);
+     ({B.v_namei = Some (nameidb, None);
        B.v_type = typb;
        B.v_storage = stob;
        B.v_local = local;
@@ -1746,12 +1803,12 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
 
        tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb -> 
        fullType typa typb >>= (fun typa typb -> 
-       ident DontKnow ida (idb, iidb) >>= (fun ida (idb, iidb) -> 
+       ident_cpp DontKnow ida nameidb >>= (fun ida nameidb -> 
        storage_optional_allminus allminus stoa (stob, iistob) >>= 
         (fun stoa (stob, iistob) -> 
          return (
            (A.UnInit (stoa, typa, ida, ptvirga)) +>  A.rewrap decla,
-           (({B.v_namei = Some ((idb,None),[iidb]);
+           (({B.v_namei = Some (nameidb, None);
               B.v_type = typb;
               B.v_storage = stob;
               B.v_local = local;
@@ -1761,7 +1818,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
          )))))
 
    | A.Init (stoa, typa, ida, eqa, inia, ptvirga), 
-     ({B.v_namei = Some((idb,Some inib),[iidb;iieqb]);
+     ({B.v_namei = Some(nameidb, Some (iieqb, inib));
        B.v_type = typb;
        B.v_storage = stob;
        B.v_local = local;
@@ -1771,13 +1828,13 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
        tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb -> 
        tokenf eqa iieqb >>= (fun eqa iieqb -> 
        fullType typa typb >>= (fun typa typb -> 
-       ident DontKnow ida (idb, iidb) >>= (fun ida (idb, iidb) -> 
+       ident_cpp DontKnow ida nameidb >>= (fun ida nameidb -> 
        storage_optional_allminus allminus stoa (stob, iistob) >>= 
        (fun stoa (stob, iistob) -> 
        initialiser inia inib >>= (fun inia inib -> 
          return (
            (A.Init (stoa, typa, ida, eqa, inia, ptvirga)) +> A.rewrap decla,
-           (({B.v_namei = Some((idb,Some inib),[iidb;iieqb]);
+           (({B.v_namei = Some(nameidb, Some (iieqb, inib));
               B.v_type = typb;
               B.v_storage = stob;
               B.v_local = local;
@@ -1794,7 +1851,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
        B.v_attr = attrs;
      }, iivirg)  ->
 
-       if stob = (B.NoSto, false)
+       if stob =*= (B.NoSto, false)
        then
          tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb -> 
          fullType typa typb >>= (fun typa typb -> 
@@ -1811,7 +1868,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
 
 
    | A.Typedef (stoa, typa, ida, ptvirga), 
-     ({B.v_namei = Some ((idb, None),[iidb]);
+     ({B.v_namei = Some (nameidb, None);
        B.v_type = typb;
        B.v_storage = (B.StoTypedef,inline);
        B.v_local = local;
@@ -1831,30 +1888,38 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
        | A.MetaType(_,_,_) -> 
 
            let fake_typeb = 
-             Ast_c.nQ, ((B.TypeName (idb, Ast_c.noTypedefDef())), [iidb]) 
+             Ast_c.nQ, ((B.TypeName (nameidb, Ast_c.noTypedefDef())), []) 
            in
            fullTypebis ida fake_typeb >>= (fun ida fake_typeb -> 
              match fake_typeb with
-             | _nQ, ((B.TypeName (idb,_typ)), [iidb]) -> 
-                 return (ida, (idb, iidb))
+             | _nQ, ((B.TypeName (nameidb, _typ)), []) ->
+                 return (ida, nameidb)
              | _ -> raise Impossible
            )
 
        | A.TypeName sa -> 
-           if (term sa) =$= idb
-           then 
-             tokenf sa iidb >>= (fun sa iidb -> 
-               return (
-                 (A.TypeName sa) +> A.rewrap ida,
-                 (idb, iidb)
-               ))
-             else fail
+           (match nameidb with
+           | B.RegularName (sb, iidb) -> 
+               let iidb1 = tuple_of_list1 iidb in
+               
+               if (term sa) =$= sb
+               then 
+                 tokenf sa iidb1 >>= (fun sa iidb1 -> 
+                   return (
+                     (A.TypeName sa) +> A.rewrap ida,
+                     B.RegularName (sb, [iidb1])
+                   ))
+               else fail
+
+           | B.CppConcatenatedName _ | B.CppVariadicName _ -> raise Todo
+           )
+
        | _ -> raise Impossible
 
-       ) >>= (fun ida (idb, iidb) ->
+       ) >>= (fun ida nameidb ->
          return (
            (A.Typedef (stoa, typa, ida, ptvirga)) +> A.rewrap decla,
-           (({B.v_namei = Some ((idb, None),[iidb]);
+           (({B.v_namei = Some (nameidb, None);
               B.v_type = typb;
               B.v_storage = (B.StoTypedef,inline);
               B.v_local = local;
@@ -1888,8 +1953,8 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
    | A.OptDecl _,    _ | A.UniqueDecl _,     _ -> 
        failwith "not handling Opt/Unique Decl"
 
-   | _, ({B.v_namei=Some _}, _)
-       -> fail
+   | _, ({B.v_namei=Some _}, _) -> 
+       fail
 
 
 
@@ -2132,7 +2197,7 @@ and (struct_fields: (A.declaration list, B.field list) matcher) =
           startendxs +> List.fold_left (fun acc (startxs, endxs) -> 
             acc >||> (
               
-              (if startxs = []
+              (if null startxs 
               then
                 if mcode_contain_plus (mcodekind mcode)
                 then fail 
@@ -2172,21 +2237,20 @@ and (struct_field: (A.declaration, B.field) matcher) = fun fa fb ->
     | [onevar,iivirg] -> 
       assert (null iivirg);
       (match onevar with
-      | B.BitField (sopt, typb, expr), ii -> 
+      | B.BitField (sopt, typb, _, expr) -> 
           pr2_once "warning: bitfield not handled by ast_cocci";
           fail
-      | B.Simple (None, typb), ii -> 
+      | B.Simple (None, typb) -> 
           pr2_once "warning: unamed struct field not handled by ast_cocci";
           fail
-      | B.Simple (Some idb, typb), ii -> 
-          let (iidb) = tuple_of_list1 ii in
+      | B.Simple (Some nameidb, typb) -> 
 
           (* build a declaration from a struct field *)
           let allminus = false in
           let iisto = [] in
           let stob = B.NoSto, false in
           let fake_var = 
-            ({B.v_namei = Some ((idb, None),[iidb]);
+            ({B.v_namei = Some (nameidb, None);
               B.v_type = typb;
               B.v_storage = stob;
               B.v_local = Ast_c.NotLocalDecl;
@@ -2198,11 +2262,12 @@ and (struct_field: (A.declaration, B.field) matcher) = fun fa fb ->
             (fun fa (var,iiptvirgb,iisto) -> 
 
               match fake_var with
-              | ({B.v_namei = Some ((idb, None),[iidb]);
+              | ({B.v_namei = Some (nameidb, None);
                   B.v_type = typb;
                   B.v_storage = stob;
                 }, iivirg) -> 
-                  let onevar = B.Simple (Some idb, typb), [iidb] in
+
+                  let onevar = B.Simple (Some nameidb, typb) in
                   
                   return (
                     (fa),
@@ -2350,7 +2415,7 @@ and simulate_signed ta basea stringsa signaopt tb baseb ii rebuilda =
       | A.VoidType,  B.Void 
       | A.FloatType, B.FloatType (B.CFloat)
       | A.DoubleType, B.FloatType (B.CDouble) -> 
-           assert (signaopt = None); 
+           assert (signaopt =*= None); 
 	   let stringa = tuple_of_list1 stringsa in
            let (ibaseb) = tuple_of_list1 ii in 
            tokenf stringa ibaseb >>= (fun stringa ibaseb -> 
@@ -2359,7 +2424,7 @@ and simulate_signed ta basea stringsa signaopt tb baseb ii rebuilda =
                (B.BaseType baseb, [ibaseb])
              ))
             
-      | A.CharType,  B.IntType B.CChar when signaopt = None -> 
+      | A.CharType,  B.IntType B.CChar when signaopt =*= None -> 
 	  let stringa = tuple_of_list1 stringsa in
           let ibaseb = tuple_of_list1 ii in
            tokenf stringa ibaseb >>= (fun stringa ibaseb -> 
@@ -2698,16 +2763,25 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
     * uint in the C code. But some CEs consists in renaming some types,
     * so we don't want apply isomorphisms every time. 
     *) 
-    | A.TypeName sa,  (B.TypeName (sb,typb), ii) ->
-        let (isb) = tuple_of_list1 ii in
-        if (term sa) =$= sb
-        then 
-          tokenf sa isb >>= (fun sa isb -> 
-          return (
-            (A.TypeName sa) +> A.rewrap ta,
-            (B.TypeName (sb,typb), [isb])
-          ))
-        else fail
+    | A.TypeName sa,  (B.TypeName (nameb, typb), noii) ->
+        assert (null noii);
+
+        (match nameb with
+        | B.RegularName (sb, iidb) -> 
+            let iidb1 = tuple_of_list1 iidb in
+               
+            if (term sa) =$= sb
+            then 
+              tokenf sa iidb1 >>= (fun sa iidb1 -> 
+                return (
+                  (A.TypeName sa) +> A.rewrap ta,
+                  (B.TypeName (B.RegularName (sb, [iidb1]), typb), noii)
+                   ))
+               else fail
+
+           | B.CppConcatenatedName _ | B.CppVariadicName _ -> raise Todo
+        )
+
 
     | _, (B.TypeOfExpr e, ii) -> fail
     | _, (B.TypeOfType e, ii) -> fail
@@ -2725,7 +2799,7 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
     | _, (B.Enum _, _) -> fail (* todo cocci ?*)
 
     | _,
-     ((B.TypeName (_, _) | B.StructUnionName (_, _) | B.EnumName _ |
+     ((B.TypeName _ | B.StructUnionName (_, _) | B.EnumName _ |
       B.StructUnion (_, _, _) |
       B.FunctionType _ | B.Array (_, _) | B.Pointer _ |
       B.BaseType _),
@@ -2826,9 +2900,9 @@ and compatible_base_type a signa b =
 
   match a, b with
   | Type_cocci.VoidType, B.Void -> 
-      assert (signa = None);
+      assert (signa =*= None);
       ok
-  | Type_cocci.CharType, B.IntType B.CChar when signa = None -> 
+  | Type_cocci.CharType, B.IntType B.CChar when signa =*= None -> 
       ok
   | Type_cocci.CharType, B.IntType (B.Si (signb, B.CChar2)) -> 
       compatible_sign signa signb 
@@ -2842,10 +2916,10 @@ and compatible_base_type a signa b =
       pr2_once "no longlong in cocci";
       fail
   | Type_cocci.FloatType, B.FloatType B.CFloat ->
-      assert (signa = None); 
+      assert (signa =*= None); 
       ok
   | Type_cocci.DoubleType, B.FloatType B.CDouble ->
-      assert (signa = None); 
+      assert (signa =*= None); 
       ok
   | _, B.FloatType B.CLongDouble -> 
       pr2_once "no longdouble in cocci";
@@ -2901,16 +2975,17 @@ and compatible_type a (b,local) =
 	loop (a,b)
     | Type_cocci.StructUnionName (sua, _, sa),
 	(qub, (B.StructUnionName (sub, sb),ii)) -> 
-	  if equal_structUnion_type_cocci sua sub && sa = sb
+	  if equal_structUnion_type_cocci sua sub && sa =$= sb
 	  then ok
 	  else fail
     | Type_cocci.EnumName (_, sa),
 	(qub, (B.EnumName (sb),ii)) -> 
-	  if sa = sb
+	  if sa =$= sb
 	  then ok
 	  else fail
-    | Type_cocci.TypeName sa, (qub, (B.TypeName (sb,_typb), ii)) -> 
-	if sa = sb 
+    | Type_cocci.TypeName sa, (qub, (B.TypeName (namesb, _typb),noii)) -> 
+        let sb = Ast_c.str_of_name namesb in
+	if sa =$= sb 
 	then ok
 	else fail
 
@@ -2939,7 +3014,7 @@ and compatible_type a (b,local) =
         )
 
   (* subtil: must be after the MetaType case *)
-    | a, (qub, (B.TypeName (sb,Some b), ii)) -> 
+    | a, (qub, (B.TypeName (_namesb, Some b), noii)) -> 
       (* kind of typedef iso *)
 	loop (a,b)
 
@@ -3011,7 +3086,7 @@ and inc_file (a, before_after) (b, h_rel_pos) =
         | _, None -> false 
         )
 
-    | (A.IncPath x)::xs, y::ys -> x = y && aux_inc (xs, ys) (x::passed)
+    | (A.IncPath x)::xs, y::ys -> x =$= y && aux_inc (xs, ys) (x::passed)
     | _ -> failwith "IncDots not in last place or other pb"
         
   in
@@ -3052,7 +3127,7 @@ and define_paramsbis = fun eas ebs ->
           startendxs +> List.fold_left (fun acc (startxs, endxs) -> 
             acc >||> (
 
-              (if startxs = []
+              (if null startxs
               then
                 if mcode_contain_plus (mcodekind mcode)
                 then fail 
@@ -3144,7 +3219,7 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
       | F.CaseNode _
       | F.TrueNode | F.FalseNode | F.AfterNode | F.FallThroughNode 
       | F.InLoopNode -> 
-          if X.mode = PatternMode 
+          if X.mode =*= PatternMode 
           then return default 
           else
             if mcode_contain_plus (mcodekind mcode)
@@ -3153,7 +3228,7 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
             else return default
 
       | F.EndStatement None -> 
-          if X.mode = PatternMode then return default 
+          if X.mode =*= PatternMode then return default 
           else 
               (* DEAD CODE NOW ? only useful in -no_cocci_vs_c_3 ?
                  if mcode_contain_plus (mcodekind mcode)
@@ -3173,10 +3248,10 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
             ))
 
       | F.FunHeader _ -> 
-          if X.mode = PatternMode then return default
+          if X.mode =*= PatternMode then return default
           else failwith "a MetaRuleElem can't transform a headfunc"
       | _n -> 
-          if X.mode = PatternMode then return default 
+          if X.mode =*= PatternMode then return default 
           else 
           X.distrf_node (generalize_mcode mcode) node >>= (fun mcode node -> 
             return (
@@ -3317,7 +3392,7 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
 
 
   | A.FunHeader (mckstart, allminus, fninfoa, ida, oparen, paramsa, cparen),
-    F.FunHeader ({B.f_name = idb;
+    F.FunHeader ({B.f_name = nameidb;
                   f_type = (retb, (paramsb, (isvaargs, iidotsb)));
                   f_storage = stob;
                   f_attr = attrs;
@@ -3348,13 +3423,13 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
       with [A.FAttr(a)] -> failwith "not checking attributes" | _ -> ());
 
       (match ii with
-      | iidb::ioparenb::icparenb::iifakestart::iistob -> 
+      | ioparenb::icparenb::iifakestart::iistob -> 
 
           (* maybe important to put ident as the first tokens to transform.
            * It's related to transform_proto. So don't change order
            * between the >>=.
            *)
-          ident LocalFunction ida (idb, iidb) >>= (fun ida (idb, iidb) -> 
+          ident_cpp LocalFunction ida nameidb >>= (fun ida nameidb -> 
           X.tokenf_mck mckstart iifakestart >>= (fun mckstart iifakestart -> 
           tokenf oparen ioparenb >>= (fun oparen ioparenb ->
           tokenf cparen icparenb >>= (fun cparen icparenb ->
@@ -3386,14 +3461,14 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
              return (
                A.FunHeader(mckstart,allminus,fninfoa,ida,oparen,
                           paramsa,cparen),
-               F.FunHeader ({B.f_name = idb;
+               F.FunHeader ({B.f_name = nameidb;
                              f_type = (retb, (paramsb, (isvaargs, iidotsb)));
                              f_storage = stob;
                              f_attr = attrs;
                              f_body = body;
                              f_old_c_style = oldstyle; (* TODO *)
                            },
-                           iidb::ioparenb::icparenb::iifakestart::iistob)
+                           ioparenb::icparenb::iifakestart::iistob)
                 )
               ))))))))
       | _ -> raise Impossible
@@ -3578,7 +3653,7 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
                B.i_is_in_ifdef = inifdef;
                B.i_content = copt;
               } ->
-      assert (copt = None);
+      assert (copt =*= None);
       
       let include_requirment = 
         match mcodekind incla, mcodekind filea with

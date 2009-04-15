@@ -119,7 +119,7 @@ module F = Control_flow_c
  * 
  * The problem is that you don't have control about what is generated 
  * and in our case we sometimes dont want to visit too much. For instance
- * our visitor don't recuse on the type annotation of expressions
+ * our visitor don't recurse on the type annotation of expressions
  * Ok, this could be worked around, but the pb remains, you 
  * don't have control and at some point you may want. In the same
  * way we want to enforce a certain order in the visit (ok this is not good,
@@ -233,13 +233,15 @@ type visitor_c =
 
    kdecl:      (declaration -> unit) * visitor_c -> declaration -> unit;
    kdef:       (definition  -> unit) * visitor_c -> definition  -> unit; 
+   kname     : (name -> unit)        * visitor_c -> name       -> unit;
+
    kini:       (initialiser  -> unit) * visitor_c -> initialiser  -> unit; 
+   kfield: (field -> unit) * visitor_c -> field -> unit;
 
    kcppdirective: (cpp_directive -> unit) * visitor_c -> cpp_directive -> unit;
    kdefineval : (define_val -> unit) * visitor_c -> define_val -> unit;
    kstatementseq: (statement_sequencable   -> unit) * visitor_c -> statement_sequencable   -> unit;
 
-   kfield: (field -> unit) * visitor_c -> field -> unit;
 
    (* CFG *)
    knode: (F.node -> unit) * visitor_c -> F.node -> unit;
@@ -250,19 +252,20 @@ type visitor_c =
  } 
 
 let default_visitor_c = 
-  { kexpr =      (fun (k,_) e  -> k e);
-    kstatement = (fun (k,_) st -> k st);
-    ktype      = (fun (k,_) t  -> k t);
-    kdecl      = (fun (k,_) d  -> k d);
-    kdef       = (fun (k,_) d  -> k d);
-    kini       = (fun (k,_) ie  -> k ie);
-    kinfo      = (fun (k,_) ii  -> k ii);
-    knode      = (fun (k,_) n  -> k n);
-    ktoplevel  = (fun (k,_) p  -> k p);
+  { kexpr         = (fun (k,_) e  -> k e);
+    kstatement    = (fun (k,_) st -> k st);
+    ktype         = (fun (k,_) t  -> k t);
+    kdecl         = (fun (k,_) d  -> k d);
+    kdef          = (fun (k,_) d  -> k d);
+    kini          = (fun (k,_) ie  -> k ie);
+    kname         = (fun (k,_) x -> k x);
+    kinfo         = (fun (k,_) ii  -> k ii);
+    knode         = (fun (k,_) n  -> k n);
+    ktoplevel     = (fun (k,_) p  -> k p);
     kcppdirective = (fun (k,_) p  -> k p);
-    kdefineval = (fun (k,_) p  -> k p);
-    kstatementseq    = (fun (k,_) p  -> k p);
-    kfield    = (fun (k,_) p  -> k p);
+    kdefineval    = (fun (k,_) p  -> k p);
+    kstatementseq = (fun (k,_) p  -> k p);
+    kfield        = (fun (k,_) p  -> k p);
   } 
 
 
@@ -277,7 +280,7 @@ let rec vk_expr = fun bigf expr ->
   and k ((e,_typ), ii) = 
     iif ii;
     match e with
-    | Ident (s) -> ()
+    | Ident (name) -> vk_name bigf name
     | Constant (c) -> ()
     | FunCall  (e, es)         -> 
         exprf e;  
@@ -293,8 +296,8 @@ let rec vk_expr = fun bigf expr ->
     | Binary   (e1, op, e2) -> exprf e1; exprf  e2;
         
     | ArrayAccess    (e1, e2) -> exprf e1; exprf e2;
-    | RecordAccess   (e, s) -> exprf e
-    | RecordPtAccess (e, s) -> exprf e
+    | RecordAccess   (e, name) -> exprf e; vk_name bigf name
+    | RecordPtAccess (e, name) -> exprf e; vk_name bigf name
 
     | SizeOfExpr  (e) -> exprf e
     | SizeOfType  (t) -> vk_type bigf t
@@ -321,7 +324,24 @@ let rec vk_expr = fun bigf expr ->
   in exprf expr
 
 
+(* ------------------------------------------------------------------------ *)
+and vk_name = fun bigf ident -> 
+  let iif ii = vk_ii bigf ii in
 
+  let rec namef x = bigf.kname (k,bigf) x 
+  and k id = 
+    match id with
+    | RegularName (s, ii) -> iif ii
+    | CppConcatenatedName xs -> 
+        xs +> List.iter (fun ((x,ii1), ii2) -> 
+          iif ii2;
+          iif ii1;
+        );
+    | CppVariadicName (s, ii) -> iif ii
+  in
+  namef ident
+
+(* ------------------------------------------------------------------------ *)
 
 
 and vk_statement = fun bigf (st: Ast_c.statement) -> 
@@ -416,10 +436,14 @@ and vk_type = fun bigf t ->
         )
 
     | Enum  (sopt, enumt) -> 
-        enumt +> List.iter (fun (((s, eopt),ii_s_eq), iicomma) -> 
-          iif ii_s_eq; iif iicomma;
-          eopt +> do_option (vk_expr bigf)
-          );    
+        enumt +> List.iter (fun ((name, eopt), iicomma) -> 
+          vk_name bigf name; 
+          iif iicomma;
+          eopt +> Common.do_option (fun (info, e) -> 
+            iif [info];
+            vk_expr bigf e
+          )
+        );    
         
     | StructUnion (sopt, _su, fields) -> 
         vk_struct_fields bigf fields
@@ -428,7 +452,8 @@ and vk_type = fun bigf t ->
     | EnumName  s -> ()
 
     (* dont go in _typ *)
-    | TypeName (s, _typ) -> ()
+    | TypeName (name,_typ) -> 
+        vk_name bigf name
 
     | ParenType t -> typef t
     | TypeOfExpr e -> vk_expr bigf e
@@ -465,15 +490,20 @@ and vk_decl = fun bigf d ->
 and vk_onedecl = fun bigf onedecl -> 
   let iif ii = vk_ii bigf ii in
   match onedecl with
-  | ({v_namei = var; v_type = t; 
-            v_storage = _sto; v_attr = attrs})  -> 
+  | ({v_namei = var; 
+      v_type = t; 
+      v_storage = _sto; 
+      v_attr = attrs})  -> 
 
     vk_type bigf t;
     attrs +> List.iter (vk_attribute bigf);
-    var +> do_option (fun ((s, ini), ii_s_ini) -> 
-      iif ii_s_ini;
-      ini +> do_option (vk_ini bigf)
-        );
+    var +> Common.do_option (fun (name, iniopt) -> 
+      vk_name bigf name;
+      iniopt +> Common.do_option (fun (info, ini) -> 
+      iif [info];
+      vk_ini bigf ini;
+      );
+    )
 
 and vk_ini = fun bigf ini -> 
   let iif ii = vk_ii bigf ii in
@@ -548,9 +578,12 @@ and vk_struct_fieldkinds = fun bigf onefield_multivars ->
   onefield_multivars +> List.iter (fun (field, iicomma) ->
     iif iicomma;
     match field with
-    | Simple (s, t), ii -> iif ii; vk_type bigf t;
-    | BitField (sopt, t, expr), ii -> 
-        iif ii;
+    | Simple (nameopt, t) -> 
+        Common.do_option (vk_name bigf) nameopt;
+        vk_type bigf t;
+    | BitField (nameopt, t, info, expr) -> 
+        Common.do_option (vk_name bigf) nameopt;
+        vk_info bigf info;
         vk_expr bigf expr;
         vk_type bigf t 
   )
@@ -824,10 +857,12 @@ and vk_argument_list = fun bigf es ->
 
 
 
-and vk_param = fun bigf (((b, s, t), ii_b_s)) ->  
+and vk_param = fun bigf param  ->
   let iif ii = vk_ii bigf ii in
-  iif ii_b_s;
-  vk_type bigf t
+  let {p_namei = swrapopt; p_register = (b, iib); p_type=ft} = param in
+  swrapopt +> Common.do_option (vk_name bigf);
+  iif iib;
+  vk_type bigf ft
 
 and vk_param_list = fun bigf ts -> 
   let iif ii = vk_ii bigf ii in
@@ -913,6 +948,7 @@ type visitor_c_s = {
 
   kdecl_s: (declaration  inout * visitor_c_s) -> declaration inout;
   kdef_s:  (definition   inout * visitor_c_s) -> definition  inout; 
+  kname_s: (name         inout * visitor_c_s) -> name        inout;
 
   kini_s:  (initialiser  inout * visitor_c_s) -> initialiser inout; 
 
@@ -934,6 +970,7 @@ let default_visitor_c_s =
     ktype_s      = (fun (k,_) t  -> k t);
     kdecl_s      = (fun (k,_) d  -> k d);
     kdef_s       = (fun (k,_) d  -> k d);
+    kname_s      = (fun (k,_) x ->  k x);
     kini_s       = (fun (k,_) d  -> k d);
     ktoplevel_s  = (fun (k,_) p  -> k p);
     knode_s      = (fun (k,_) n  -> k n);
@@ -955,7 +992,7 @@ let rec vk_expr_s = fun bigf expr ->
     let typ' = typ in 
     let e' = 
       match unwrap_e with
-      | Ident (s) -> Ident (s)
+      | Ident (name) -> Ident (vk_name_s bigf name)
       | Constant (c) -> Constant (c)
       | FunCall  (e, es)         -> 
           FunCall (exprf e,
@@ -973,8 +1010,10 @@ let rec vk_expr_s = fun bigf expr ->
       | Binary   (e1, op, e2) -> Binary (exprf e1, op, exprf e2)
           
       | ArrayAccess    (e1, e2) -> ArrayAccess (exprf e1, exprf e2)
-      | RecordAccess   (e, s) -> RecordAccess     (exprf e, s) 
-      | RecordPtAccess (e, s) -> RecordPtAccess   (exprf e, s) 
+      | RecordAccess   (e, name) -> 
+          RecordAccess     (exprf e, vk_name_s bigf name) 
+      | RecordPtAccess (e, name) -> 
+          RecordPtAccess   (exprf e, vk_name_s bigf name) 
 
       | SizeOfExpr  (e) -> SizeOfExpr   (exprf e)
       | SizeOfType  (t) -> SizeOfType (vk_type_s bigf t)
@@ -997,6 +1036,7 @@ let rec vk_expr_s = fun bigf expr ->
     (e', typ'), (iif ii)
   in exprf expr
 
+
 and vk_argument_s bigf argument = 
   let iif ii = vk_ii_s bigf ii in
   let rec do_action = function 
@@ -1008,8 +1048,25 @@ and vk_argument_s bigf argument =
   | Right (ArgAction action) -> Right (ArgAction (do_action action))
   )
 
+(* ------------------------------------------------------------------------ *)
 
 
+and vk_name_s = fun bigf ident -> 
+  let iif ii = vk_ii_s bigf ii in
+  let rec namef x = bigf.kname_s (k,bigf) x 
+  and k id = 
+    (match id with
+    | RegularName (s,ii) -> RegularName (s, iif ii)
+    | CppConcatenatedName xs -> 
+        CppConcatenatedName (xs +> List.map (fun ((x,ii1), ii2) -> 
+          (x, iif ii1), iif ii2
+        ))
+    | CppVariadicName (s, ii) -> CppVariadicName (s, iif ii)
+    )
+  in
+  namef ident
+
+(* ------------------------------------------------------------------------ *)
 
 
 
@@ -1150,18 +1207,23 @@ and vk_type_s = fun bigf t ->
 
       | Enum  (sopt, enumt) -> 
           Enum (sopt,
-               enumt +> List.map (fun (((s, eopt),ii_s_eq), iicomma) -> 
-                 ((s, fmap (vk_expr_s bigf) eopt), iif ii_s_eq),
-                 iif iicomma
+               enumt +> List.map (fun ((name, eopt), iicomma) -> 
+                 
+                 ((vk_name_s bigf name, 
+                  eopt +> Common.fmap (fun (info, e) -> 
+                    vk_info_s bigf info,
+                    vk_expr_s bigf e
+                 )), 
+                 iif iicomma)
                )
-          )
+               )
       | StructUnion (sopt, su, fields) -> 
           StructUnion (sopt, su, vk_struct_fields_s bigf fields)
 
 
       | StructUnionName (s, structunion) -> StructUnionName (s, structunion)
       | EnumName  s -> EnumName  s
-      | TypeName (s, typ) -> TypeName (s, typ)
+      | TypeName (name, typ) -> TypeName (vk_name_s bigf name, typ)
 
       | ParenType t -> ParenType (typef t)
       | TypeOfExpr e -> TypeOfExpr (vk_expr_s bigf e)
@@ -1196,14 +1258,18 @@ and vk_decl_s = fun bigf d ->
           iif ii)
 
 
-  and aux ({v_namei = var; v_type = t; 
-            v_storage = sto; v_local= local; v_attr = attrs}, iicomma) = 
+  and aux ({v_namei = var; 
+            v_type = t; 
+            v_storage = sto; 
+            v_local= local; 
+            v_attr = attrs}, iicomma) = 
     {v_namei = 
-        (var +> map_option (fun ((s, ini), ii_s_ini) -> 
-      (s, ini +> map_option (fun init -> vk_ini_s bigf init)),
-      iif ii_s_ini
-        )
-        );
+      (var +> map_option (fun (name, iniopt) -> 
+        vk_name_s bigf name, 
+        iniopt +> map_option (fun (info, init) -> 
+          vk_info_s bigf info,
+          vk_ini_s bigf init
+        )));
      v_type = vk_type_s bigf t;
      v_storage = sto;
      v_local = local;
@@ -1258,10 +1324,14 @@ and vk_struct_fieldkinds_s = fun bigf onefield_multivars ->
   
   onefield_multivars +> List.map (fun (field, iicomma) ->
     (match field with
-    | Simple (s, t), iis -> Simple (s, vk_type_s bigf t), iif iis
-    | BitField (sopt, t, expr), iis -> 
-        BitField (sopt, vk_type_s bigf t, vk_expr_s bigf expr), 
-        iif iis
+    | Simple (nameopt, t) -> 
+        Simple (Common.map_option (vk_name_s bigf) nameopt, 
+               vk_type_s bigf t)
+    | BitField (nameopt, t, info, expr) -> 
+        BitField (Common.map_option (vk_name_s bigf) nameopt, 
+                 vk_type_s bigf t, 
+                 vk_info_s bigf info,
+                 vk_expr_s bigf expr)
     ), iif iicomma
   )
 
@@ -1492,7 +1562,7 @@ and vk_node_s = fun bigf node ->
                  i_content = copt;
                  }     
       -> 
-        assert (copt = None);
+        assert (copt =*= None);
         F.Include {i_include = (s, iif ii);
                     i_rel_pos = h_rel_pos;
                     i_is_in_ifdef = b;
@@ -1539,9 +1609,13 @@ and vk_node_s = fun bigf node ->
   nodef node
   
 (* ------------------------------------------------------------------------ *)
-and vk_param_s = fun bigf ((b, s, t), ii_b_s) -> 
+and vk_param_s = fun bigf param -> 
   let iif ii = vk_ii_s bigf ii in
-  ((b, s, vk_type_s bigf t), iif ii_b_s)
+  let {p_namei = swrapopt; p_register = (b, iib); p_type=ft} = param in
+  { p_namei = swrapopt +> Common.map_option (vk_name_s bigf);
+    p_register = (b, iif iib);
+    p_type = vk_type_s bigf ft;
+  }
 
 let vk_args_splitted_s = fun bigf args_splitted -> 
   let iif ii = vk_ii_s bigf ii in

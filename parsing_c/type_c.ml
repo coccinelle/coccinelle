@@ -91,7 +91,7 @@ let rec is_completed_and_simplified ty =
   | StructUnionName (su, s) -> true
 
   (* should have completed with more information *)
-  | TypeName (s, typ) -> 
+  | TypeName (_name, typ) -> 
       (match typ with
       | None -> false
       | Some t -> 
@@ -260,7 +260,10 @@ let (fake_function_type:
           (match Ast_c.get_onlytype_expr e with
           | Some ft -> 
               let paramtype = 
-                (false, None, ft), []
+                { Ast_c.p_namei = None;
+                  p_register = false, Ast_c.noii;
+                  p_type = ft;
+                }
               in
               Some (paramtype, ii)
           | None -> None
@@ -348,10 +351,11 @@ let (type_field:
     fields +> List.iter (fun x -> 
       match Ast_c.unwrap x with
       | DeclarationField (FieldDeclList (onefield_multivars, iiptvirg)) -> 
-          onefield_multivars +> List.iter (fun fieldkind -> 
-            match Ast_c.unwrap (Ast_c.unwrap fieldkind) with
-            | Simple (Some s, t) | BitField (Some s, t, _) -> 
-                if s = fld 
+          onefield_multivars +> List.iter (fun (fieldkind, iicomma) -> 
+            match fieldkind with
+            | Simple (Some name, t) | BitField (Some name, t, _, _) -> 
+                let s = Ast_c.str_of_name name in
+                if s =$= fld 
                 then Common.push2 t res
                 else ()
                   
@@ -417,7 +421,7 @@ let rec function_pointer_type_opt x =
       | FunctionType ft -> Some ft
 
       (* fix *)
-      | TypeName (_s, Some ft2) -> 
+      | TypeName (_name, Some ft2) -> 
           (match Ast_c.unwrap_typeC ft2 with
           | FunctionType ft -> Some ft
           | _ -> None
@@ -428,7 +432,7 @@ let rec function_pointer_type_opt x =
   (* bugfix: for many fields in structure, the field is a typename 
    * like irq_handler_t to a function pointer 
    *)
-  | TypeName (s, Some ft) -> 
+  | TypeName (_name, Some ft) -> 
       function_pointer_type_opt ft
   (* bugfix: in field, usually it has some ParenType *)
 

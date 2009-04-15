@@ -191,15 +191,15 @@ let (fix_flow_ctl2: F.cflow -> F.cflow) = fun flow ->
 
   (* for the #define CFG who have no Exit but have at least a EndNode *)
   (try 
-      let endi  = F.find_node (fun x -> x = F.EndNode) !g in
+      let endi  = F.find_node (fun x -> x =*= F.EndNode) !g in
       !g#add_arc ((endi, endi), F.Direct);
     with Not_found -> ()
   );
 
   (* for the regular functions *)
   (try 
-    let exitnodei  = F.find_node (fun x -> x = F.Exit) !g in
-    let errornodei = F.find_node (fun x -> x = F.ErrorExit) !g in
+    let exitnodei  = F.find_node (fun x -> x =*= F.Exit) !g in
+    let errornodei = F.find_node (fun x -> x =*= F.ErrorExit) !g in
     
     !g#add_arc ((exitnodei, exitnodei), F.Direct);
     
@@ -271,7 +271,7 @@ module ENV =
   struct
     type value = Lib_engine.metavar_binding_kind2
     type mvar = Ast_cocci.meta_name
-    let eq_mvar x x' = x = x'
+    let eq_mvar x x' = x =*= x'
     let eq_val v v' =
       (* v = v' *)
       match (v,v') with
@@ -282,7 +282,7 @@ module ENV =
       |	(Lib_engine.NormalMetaVal(Ast_c.MetaTypeVal a),
 	 Lib_engine.NormalMetaVal(Ast_c.MetaTypeVal b)) ->
           C_vs_c.eq_type a b
-      |	_ -> v = v'
+      |	_ -> v =*= v'
     let merge_val v v' = (* values guaranteed to be compatible *)
       (* v *)
       match (v,v') with
@@ -377,7 +377,7 @@ let (satbis_to_trans_info:
 let rec coalesce_positions = function
     [] -> []
   | (x,Ast_c.MetaPosValList l)::rest ->
-      let (same,others) = List.partition (function (x1,_) -> x = x1) rest in
+      let (same,others) = List.partition (function (x1,_) -> x =*= x1) rest in
       let ls =
 	List.concat
 	  (List.map

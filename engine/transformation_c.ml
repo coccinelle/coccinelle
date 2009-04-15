@@ -1,3 +1,18 @@
+(* Yoann Padioleau 
+ *
+ * Copyright (C) 2006, 2007 Ecole des Mines de Nantes
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License (GPL)
+ * version 2 as published by the Free Software Foundation.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * file license.txt for more details.
+ * 
+ * This file was part of Coccinelle.
+ *)
 open Common
 
 module F = Control_flow_c
@@ -187,7 +202,7 @@ module XTRANS = struct
         ib
 
     | _ -> 
-        if (oldmcode, oldenv) = (mck, tin.binding)
+        if (oldmcode, oldenv) =*= (mck, tin.binding)
         then begin
           if !Flag_matcher.show_misc
           then pr2 "already tagged but with same mcode, so safe";
@@ -384,7 +399,7 @@ module XTRANS = struct
       (match get_pos mck with 
       | Ast_cocci.DontCarePos -> true
       | Ast_cocci.FixPos (i1, i2) -> 
-          i1 = min && i2 = max
+          i1 =*= min && i2 =*= max
       | _ -> raise Impossible
       )
 
@@ -420,7 +435,7 @@ module XTRANS = struct
   let envf keep _inherited = fun (s, value, _) f tin -> 
     let s = Ast_cocci.unwrap_mcode s in
     let v = 
-      if keep = Type_cocci.Saved
+      if keep =*= Type_cocci.Saved
       then (
         try Some (List.assoc s tin.binding)
         with Not_found -> 
