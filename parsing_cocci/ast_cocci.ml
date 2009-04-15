@@ -215,7 +215,7 @@ and base_typeC =
   | StructUnionName of structUnion mcode * ident option (* name *)
   | StructUnionDef  of fullType (* either StructUnionName or metavar *) *
 	string mcode (* { *) * declaration dots * string mcode (* } *)
-  | TypeName        of string mcode
+  | TypeName        of string mcode (* pad: should be 'of ident' ? *)
 
   | MetaType        of meta_name mcode * keep_binding * inherited
 

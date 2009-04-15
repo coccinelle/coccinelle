@@ -540,7 +540,7 @@ let adjust_stdin cfile k =
       try
         let (dir, base, ext) = Common.dbe_of_filename cfile in
         let varfile = Common.filename_of_dbe (dir, base, "var") in
-        if ext = "c" && Common.lfile_exists varfile
+        if ext =$= "c" && Common.lfile_exists varfile
         then Some varfile
         else None 
       with Invalid_argument("Filename.chop_extension") -> None
@@ -568,110 +568,18 @@ let glimpse_filter (coccifile, isofile) dir =
 	
 	
 
-
 (*****************************************************************************)
-(* The coccinelle main entry point *)
+(* Main action *)
 (*****************************************************************************)
-let main () = 
-  begin
-    let arglist = Array.to_list Sys.argv in
 
-    if not (null (Common.inter_set arglist
-	             ["-cocci_file";"-sp_file";"-test";"-testall";
-                      "-test_okfailed";"-test_regression_okfailed"]))
-    then run_profile quiet_profile;
-
-    let args = ref [] in
-
-    (* this call can set up many global flag variables via the cmd line *)
-    arg_parse2 (Arg.align all_options) (fun x -> args := x::!args) usage_msg;
-
-    (if !dir
-    then
-      let chosen_dir =
-	 if List.length !args > 1
-	 then
-	   begin
-	     let chosen = List.hd !args in
-	     pr2 ("ignoring all but the last specified directory: "^chosen);
-	     args := [chosen];
-	     chosen
-	   end
-	 else List.hd !args in
-      if !FC.include_path = None
-      then FC.include_path := Some (Filename.concat chosen_dir "include"));
-    args := List.rev !args;
-
-    if !cocci_file <> "" && (not (!cocci_file =~ ".*\\.\\(sgrep\\|spatch\\)$"))
-    then cocci_file := Common.adjust_ext_if_needed !cocci_file ".cocci";
-
-    if !Config.std_iso <> "" 
-    then Config.std_iso := Common.adjust_ext_if_needed !Config.std_iso ".iso";
-    if !Config.std_h <> "" 
-    then Config.std_h := Common.adjust_ext_if_needed !Config.std_h ".h";
-
-    if !Config.std_h <> "" 
-    then Parse_c.init_defs !Config.std_h;
-
-
-    (* must be done after Arg.parse, because Common.profile is set by it *)
-    Common.profile_code "Main total" (fun () -> 
-
-
-    let all_actions = Test_parsing_c.actions() in
-
-    (match (!args) with
-
-    (* --------------------------------------------------------- *)
-    (* The test framework. Works with tests/ or .ok and .failed  *)
-    (* --------------------------------------------------------- *)
-    | [x] when !test_mode    -> 
-        FC.include_path := Some "tests/include";
-        Testing.testone x !compare_with_expected
-
-    | []  when !test_all -> 
-        FC.include_path := Some "tests/include";
-        Testing.testall ()
-
-    | [] when !test_regression_okfailed -> 
-        Testing.test_regression_okfailed ()
-
-    | x::xs when !test_okfailed -> 
-        (* do its own timeout on FC.timeout internally *)
-        FC.relax_include_path := true;
-	adjust_stdin x (fun () -> 
-          Testing.test_okfailed !cocci_file (x::xs)
-        )
-
-    (* --------------------------------------------------------- *)
-    (* Actions, useful to debug subpart of coccinelle *)
-    (* --------------------------------------------------------- *)
-
-    | xs when List.mem !action (Common.action_list all_actions) ->
-        Common.do_action !action xs all_actions
-
-    | [file] when !action = "-parse_cocci" -> 
-        Testing.test_parse_cocci file
-
-     (* I think this is used by some scripts in some Makefile for our
-      * big-tests. So dont remove.
-      *)
-    | [file1;file2] when !action = "-compare_c" -> 
-       Test_parsing_c.test_compare_c file1 file2 (* result = unix code *)
-
-    (* could add the Test_parsing_c.test_actions such as -parse_c & co *)
-
-
-    (* --------------------------------------------------------- *)
-    (* This is the main entry *)
-    (* --------------------------------------------------------- *)
-    | x::xs -> 
-        
+let main_action xs = 
+  match xs with
+  | x::xs ->
 	adjust_stdin x (fun () ->
-          if !cocci_file = ""
+          if !cocci_file =$= ""
           then failwith "I need a cocci file,  use -sp_file <file>";
 
-	  if !dir && !Flag.patch = None
+	  if !dir && !Flag.patch =*= None
 	  then
 	    (match xs with
 	    | [] -> Flag.patch := Some x
@@ -742,7 +650,7 @@ let main () =
 		  let rec loop ct = function
 		      [] -> []
 		    | x::xs ->
-			if (ct mod max) = index
+			if (ct mod max) =|= index
 			then x::(loop (ct+1) xs)
 			else loop (ct+1) xs in
 		  loop 0 infiles
@@ -806,7 +714,7 @@ let main () =
 		if !outplace_modif
 		then Common.command2 ("cp "^outfile^" "^infile^".cocci_res");
 		  
-		if !output_file = "" 
+		if !output_file =$= "" 
 		then begin
                   let tmpfile = "/tmp/"^Common.basename infile in
                   pr2 (spf "One file modified. Result is here: %s" tmpfile);
@@ -815,9 +723,9 @@ let main () =
 	      ));
             if !output_file <> "" then
 	      (match outfiles with 
-	      | [infile, Some outfile] when infile = x && null xs -> 
+	      | [infile, Some outfile] when infile =$= x && null xs -> 
                   Common.command2 ("cp " ^outfile^ " " ^ !output_file);
-	      | [infile, None] when infile = x && null xs -> 
+	      | [infile, None] when infile =$= x && null xs -> 
                   Common.command2 ("cp " ^infile^ " " ^ !output_file);
 	      | _ -> 
                   failwith 
@@ -827,7 +735,109 @@ let main () =
             
             if !compare_with_expected
             then Testing.compare_with_expected outfiles))
-          
+
+  | [] -> raise Impossible
+
+
+(*****************************************************************************)
+(* The coccinelle main entry point *)
+(*****************************************************************************)
+let main () = 
+  begin
+    let arglist = Array.to_list Sys.argv in
+
+    if not (null (Common.inter_set arglist
+	             ["-cocci_file";"-sp_file";"-test";"-testall";
+                      "-test_okfailed";"-test_regression_okfailed"]))
+    then run_profile quiet_profile;
+
+    let args = ref [] in
+
+    (* this call can set up many global flag variables via the cmd line *)
+    arg_parse2 (Arg.align all_options) (fun x -> args := x::!args) usage_msg;
+
+    (if !dir
+    then
+      let chosen_dir =
+	 if List.length !args > 1
+	 then
+	   begin
+	     let chosen = List.hd !args in
+	     pr2 ("ignoring all but the last specified directory: "^chosen);
+	     args := [chosen];
+	     chosen
+	   end
+	 else List.hd !args in
+      if !FC.include_path =*= None
+      then FC.include_path := Some (Filename.concat chosen_dir "include"));
+    args := List.rev !args;
+
+    if !cocci_file <> "" && (not (!cocci_file =~ ".*\\.\\(sgrep\\|spatch\\)$"))
+    then cocci_file := Common.adjust_ext_if_needed !cocci_file ".cocci";
+
+    if !Config.std_iso <> "" 
+    then Config.std_iso := Common.adjust_ext_if_needed !Config.std_iso ".iso";
+    if !Config.std_h <> "" 
+    then Config.std_h := Common.adjust_ext_if_needed !Config.std_h ".h";
+
+    if !Config.std_h <> "" 
+    then Parse_c.init_defs !Config.std_h;
+
+
+    (* must be done after Arg.parse, because Common.profile is set by it *)
+    Common.profile_code "Main total" (fun () -> 
+
+
+    let all_actions = Test_parsing_c.actions() in
+
+    (match (!args) with
+
+    (* --------------------------------------------------------- *)
+    (* The test framework. Works with tests/ or .ok and .failed  *)
+    (* --------------------------------------------------------- *)
+    | [x] when !test_mode    -> 
+        FC.include_path := Some "tests/include";
+        Testing.testone x !compare_with_expected
+
+    | []  when !test_all -> 
+        FC.include_path := Some "tests/include";
+        Testing.testall ()
+
+    | [] when !test_regression_okfailed -> 
+        Testing.test_regression_okfailed ()
+
+    | x::xs when !test_okfailed -> 
+        (* do its own timeout on FC.timeout internally *)
+        FC.relax_include_path := true;
+	adjust_stdin x (fun () -> 
+          Testing.test_okfailed !cocci_file (x::xs)
+        )
+
+    (* --------------------------------------------------------- *)
+    (* Actions, useful to debug subpart of coccinelle *)
+    (* --------------------------------------------------------- *)
+
+    | xs when List.mem !action (Common.action_list all_actions) ->
+        Common.do_action !action xs all_actions
+
+    | [file] when !action =$= "-parse_cocci" -> 
+        Testing.test_parse_cocci file
+
+     (* I think this is used by some scripts in some Makefile for our
+      * big-tests. So dont remove.
+      *)
+    | [file1;file2] when !action =$= "-compare_c" -> 
+       Test_parsing_c.test_compare_c file1 file2 (* result = unix code *)
+
+    (* could add the Test_parsing_c.test_actions such as -parse_c & co *)
+
+
+    (* --------------------------------------------------------- *)
+    (* This is the main entry *)
+    (* --------------------------------------------------------- *)
+    | x::xs -> 
+        main_action (x::xs)
+
     (* --------------------------------------------------------- *)
     (* empty entry *)
     (* --------------------------------------------------------- *)

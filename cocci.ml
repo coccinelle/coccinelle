@@ -144,7 +144,7 @@ let show_or_not_diff2 cfile outfile show_only_minus =
 	(* create something that looks like the output of patch *)
 	    (Some prefix,minus_file::plus_file::rest) ->
 	      let drop_prefix file =
-		if prefix = ""
+		if prefix =$= ""
 		then "/"^file
 		else
 		  let lp = String.length prefix in
@@ -255,19 +255,23 @@ let show_or_not_ctl_text a b c =
 (* running information *)
 let get_celem celem : string = 
   match celem with 
-      Ast_c.Definition ({Ast_c.f_name = funcs;},_) -> funcs
+      Ast_c.Definition ({Ast_c.f_name = namefuncs;},_) -> 
+        Ast_c.str_of_name namefuncs
     | Ast_c.Declaration
-	(Ast_c.DeclList ([{Ast_c.v_namei = Some ((s, _),_);}, _], _)) -> s
+	(Ast_c.DeclList ([{Ast_c.v_namei = Some (name, _);}, _], _)) -> 
+        Ast_c.str_of_name name
     | _ -> ""
 
 let show_or_not_celem2 prelude celem = 
   let (tag,trying) =
   (match celem with 
-  | Ast_c.Definition ({Ast_c.f_name = funcs;},_) -> 
+  | Ast_c.Definition ({Ast_c.f_name = namefuncs},_) -> 
+      let funcs = Ast_c.str_of_name namefuncs in
       Flag.current_element := funcs;
       (" function: ",funcs)
   | Ast_c.Declaration
-      (Ast_c.DeclList ([{Ast_c.v_namei = Some ((s, _),_);}, _], _)) ->
+      (Ast_c.DeclList ([{Ast_c.v_namei = Some (name,_)}, _], _)) ->
+      let s = Ast_c.str_of_name name in
       Flag.current_element := s;
       (" variable ",s);
   | _ ->
@@ -442,7 +446,7 @@ let (includes_to_parse:
     Flag_cocci.I_UNSPECIFIED -> failwith "not possible"
   | Flag_cocci.I_NO_INCLUDES -> []
   | x ->
-      let all_includes = x = Flag_cocci.I_ALL_INCLUDES in
+      let all_includes = x =*= Flag_cocci.I_ALL_INCLUDES in
       xs +> List.map (fun (file, cs) -> 
 	let dir = Common.dirname file in
 	
@@ -466,7 +470,7 @@ let (includes_to_parse:
 
             | Ast_c.NonLocal xs -> 
 		if all_includes ||
-	        Common.fileprefix (Common.last xs) = Common.fileprefix file
+	        Common.fileprefix (Common.last xs) =$= Common.fileprefix file
 		then 
                   Some (Filename.concat (interpret_include_path())
                           (Common.join "/" xs))
@@ -735,7 +739,7 @@ let prepare_cocci ctls free_var_lists negated_pos_lists
 	| Ast_cocci.InitialScriptRule _ | Ast_cocci.FinalScriptRule _ -> true
 	| _ -> false in
 
-      if not (List.length ctl_toplevel_list = 1) && not (is_script_rule ast)
+      if not (List.length ctl_toplevel_list =|= 1) && not (is_script_rule ast)
       then failwith "not handling multiple minirules";
 
       match ast with
@@ -997,7 +1001,7 @@ let merge_env new_e old_e =
   List.fold_left
     (function old_e ->
       function (e,rules) as elem ->
-	let (same,diff) = List.partition (function (e1,_) -> e = e1) old_e in
+	let (same,diff) = List.partition (function (e1,_) -> e =*= e1) old_e in
 	match same with
 	  [] -> elem :: old_e
 	| [(_,old_rules)] -> (e,Common.union_set rules old_rules) :: diff
@@ -1026,7 +1030,7 @@ let apply_python_rule r cache newes e rules_that_have_matched
 	  let relevant_bindings =
 	    List.filter
 	      (function ((re,rm),_) ->
-		List.exists (function (_,(r,m)) -> r = re && m = rm) mv)
+		List.exists (function (_,(r,m)) -> r =$= re && m =$= rm) mv)
 	      e in
 	  let new_cache =
 	    if List.mem relevant_bindings cache
@@ -1220,7 +1224,7 @@ and reassociate_positions free_vars negated_pos_vars envs =
 	     (function (other_non_pos,other_pos) ->
                (* do we want equal? or just somehow compatible? eg non_pos
 	       binds only E, but other_non_pos binds both E and E1 *)
-	       non_pos = other_non_pos)
+	       non_pos =*= other_non_pos)
 	     splitted_relevant in
 	 (non_pos,
 	  List.sort compare
@@ -1255,7 +1259,7 @@ and process_a_generated_a_env_a_toplevel2 r env = function
       let free_vars =
 	List.filter
 	  (function
-	      (rule,_) when rule = r.rulename -> false
+	      (rule,_) when rule =$= r.rulename -> false
 	    | (_,"ARGS") -> false
 	    | _ -> true)
 	  r.free_vars in
@@ -1264,7 +1268,7 @@ and process_a_generated_a_env_a_toplevel2 r env = function
 	List.filter
 	  (function md ->
 	    let (rl,_) = Ast_cocci.get_meta_name md in
-	    rl = r.rulename)
+	    rl =$= r.rulename)
 	  r.metavars in
       if Common.include_set free_vars env_domain
       then Unparse_hrule.pp_rule metavars r.ast_rule env cfile.full_fname
@@ -1507,7 +1511,7 @@ let full_engine2 (cocci_infos,toks) cfiles =
             let outfile =
 	      Common.new_temp_file "cocci-output" ("-" ^ c_or_h.fname) in
 
-            if c_or_h.fkind = Header
+            if c_or_h.fkind =*= Header
             then pr2 ("a header file was modified: " ^ c_or_h.fname);
 
             (* and now unparse everything *)
@@ -1559,7 +1563,7 @@ let check_duplicate_modif2 xs =
     | res::xs -> 
         match res with 
         | None -> 
-            if not (List.for_all (fun res2 -> res2 = None) xs)
+            if not (List.for_all (fun res2 -> res2 =*= None) xs)
             then begin
               pr2 ("different modification result for " ^ file);
               None

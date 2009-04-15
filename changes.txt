@@ -2,8 +2,10 @@
 
 * 0.1.7
 
+** Language: 
+- initialize and finalize script code, cf demos/initial_final.cocci
+
 ** Features:
-- initialize and finalize script code
 - -iso_limit option to limit the depth of isomorphism application
 - with the dir option, the include path is implicitly set to the "include"
   subdirectory of the specified directory, if the option -I is not used.
@@ -28,6 +30,9 @@
 
 * 0.1.6
 
+** Language:
+- the ability to add comments
+
 ** Features: 
 - grouping of generated rules with -hrule option
 - handling of special coccinelle comments 
@@ -35,7 +40,6 @@
   /* {{coccinelle:skip_end}} */
   allowing to give more hints to the C parser.
   Thanks to Flavien@lebarbe.net for the idea.
-- the ability to add comments
 - the ability to print the values of more (but not all) kinds of
   metavariables from python
 - new vim SmPL mode.
