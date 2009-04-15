@@ -17,16 +17,21 @@
 - for type inference for an assignment, take the type of the right-hand
   side expression, not the type of the assigned variable
 - allow for with a declartion in the first header element, as in C++
+  (partial support)
 - allow for matching against variable declarations that include only
   storage, eg static, but no type at all.
 - allow for matching against types that contain both short/long and int
 - allow the type metavariable in the SmPL code "unsigned T" to match a T
   that is a type consisting of more than one word, eg long int.
 - -ifdef_to_if option made to process nested ifdefs
+  (partial support)
 
 ** Internals: 
 - improve and fix installation process (usable on BSD)
 - apply patches from Eugeniy Meshcheryakov
+- reorganize the way we parse C identifiers, especially concatenated cpp 
+  identifiers as in a##b. This may lead to some regressions as we may
+  not parse as much code as before.
 
 * 0.1.6
 
