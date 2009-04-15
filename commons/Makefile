@@ -1,6 +1,8 @@
 ##############################################################################
 # Variables
 ##############################################################################
+
+# The main library
 -include ../Makefile.config
 
 TARGET=commons
@@ -36,45 +38,53 @@ SUBDIRS=ocamlextra ocollection
 # Other common (thin wrapper) libraries
 #-----------------------------------------------------------------------------
 
+#format: XXXSRC, XXXINCLUDE, XXXSYSLIBS
+
 #gdbm
 MYGDBMSRC=ocollection/oassocdbm.ml
 GDBMSYSLIBS=dbm.cma
 
 #berkeley db (ocamlbdb)
-BDBINCLUDES=-I ../ocamlbdb
 MYBDBSRC=ocollection/oassocbdb.ml ocollection/oassocbdb_string.ml
+BDBINCLUDES=-I ../ocamlbdb
 BDBSYSLIBS=bdb.cma
 
 
 #lablgtk (ocamlgtk)
-GUIINCLUDES=-I +lablgtk2 -I +lablgtksourceview -I ../ocamlgtk/src
 MYGUISRC=gui.ml
+GUIINCLUDES=-I +lablgtk2 -I +lablgtksourceview -I ../ocamlgtk/src
 GUISYSLIBS=lablgtk.cma lablgtksourceview.cma
 
 #pycaml (ocamlpython)
-PYINCLUDES=-I ../ocamlpython -I ../../ocamlpython
 MYPYSRC=python.ml
+PYINCLUDES=-I ../ocamlpython -I ../../ocamlpython
 PYSYSLIBS=python.cma
 
 #ocamlmpi
-MPIINCLUDES=-I ../ocamlmpi -I ../../ocamlmpi -I +ocamlmpi
 MYMPISRC=distribution.ml
+MPIINCLUDES=-I ../ocamlmpi -I ../../ocamlmpi -I +ocamlmpi 
 MPISYSLIBS=mpi.cma
 
-
-#-----------------------------------------------------------------------------
-#pcre
+#pcre 
 #REGEXPINCLUDES=-I +pcre
-REGEXPINCLUDES=-I ../ocamlpcre/lib
 MYREGEXPSRC=regexp.ml
+REGEXPINCLUDES=-I ../ocamlpcre/lib  -I ../../ocamlpcre/lib
+
+#sexplib 
+MYSEXPSRC=sexp_common.ml
+SEXPINCLUDES=-I ../ocamljane/lib-sexp -I ../../ocamljane/lib-sexp
+#binprot
+MYBINSRC=bin_common.ml
+BININCLUDES=-I ../ocamljane/lib-binprot -I ../../ocamljane/lib-binprot
 
 #-----------------------------------------------------------------------------
 # Other stuff
 #-----------------------------------------------------------------------------
 
 #backtrace
-BACKTRACEINCLUDES=-I $(shell ocamlc -where)
 MYBACKTRACESRC=backtrace.ml
+BACKTRACEINCLUDES=-I $(shell ocamlc -where)
+
 
 ##############################################################################
 # Generic variables
@@ -136,7 +146,7 @@ clean::
 # Other commons libs target
 ##############################################################################
 
-all_libs: gdbm bdb gui mpi backtrace
+all_libs: gdbm bdb gui mpi regexp backtrace
 
 #-----------------------------------------------------------------------------
 gdbm: commons_gdbm.cma
@@ -237,6 +247,44 @@ commons_backtrace.cmxa: $(MYBACKTRACESRC:.ml=.cmx) backtrace_c.o
 
 clean::
 	rm -f dllcommons_backtrace.so
+
+
+
+#-----------------------------------------------------------------------------
+sexp:
+	$(MAKE) INCLUDESEXTRA="$(SEXPINCLUDES)" commons_sexp.cma
+sexp.opt:
+	$(MAKE) INCLUDESEXTRA="$(SEXPINCLUDES)" commons_sexp.cmxa
+
+commons_sexp.cma: $(MYSEXPSRC:.ml=.cmo)
+	$(OCAMLC) -a -o $@ $^
+
+commons_sexp.cmxa: $(MYSEXPSRC:.ml=.cmx)
+	$(OCAMLOPT) -a -o $@ $^
+
+binprot:
+	$(MAKE) INCLUDESEXTRA="$(BININCLUDES)" commons_bin.cma
+binprot.opt:
+	$(MAKE) INCLUDESEXTRA="$(BININCLUDES)" commons_bin.cmxa
+
+commons_bin.cma: $(MYBINSRC:.ml=.cmo)
+	$(OCAMLC) -a -o $@ $^
+
+commons_bin.cmxa: $(MYBINSRC:.ml=.cmx)
+	$(OCAMLOPT) -a -o $@ $^
+
+##############################################################################
+# The global "features" lib wrapper
+##############################################################################
+
+features: commons_features.cma
+features.opt: commons_features.cmxa
+
+commons_features.cma: features.cmo
+	$(OCAMLC) -a -o $@ $^
+
+commons_features.cmxa: features.cmx
+	$(OCAMLOPT) -a -o $@ $^
 
 
 ##############################################################################

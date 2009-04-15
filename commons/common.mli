@@ -463,6 +463,9 @@ val exn_to_s : exn -> string
 (* alias *)
 val string_of_exn : exn -> string
 
+type evotype = unit
+val evoval : evotype
+
 (*****************************************************************************)
 (* Environment *)
 (*****************************************************************************)
@@ -570,7 +573,7 @@ val (=*=): 'a -> 'a -> bool
  * which internaly use this convenient but evolution-unfriendly (=)
 *)
 
-
+val (=): unit -> unit -> bool
 
 
 (*###########################################################################*)
@@ -1168,14 +1171,15 @@ val drop_until : ('a -> bool) -> 'a list -> 'a list
 val span : ('a -> bool) -> 'a list -> 'a list * 'a list
 
 val skip_until : ('a list -> bool) -> 'a list -> 'a list
-val skipfirst : 'a -> 'a list -> 'a list
+val skipfirst : (* Eq a *) 'a -> 'a list -> 'a list
 
 (* cf also List.partition *)
 val fpartition : ('a -> 'b option) -> 'a list -> 'b list * 'a list
 
 val groupBy : ('a -> 'a -> bool) -> 'a list -> 'a list list
 val exclude_but_keep_attached: ('a -> bool) -> 'a list -> ('a * 'a list) list
-val group_by_post: ('a -> bool) -> 'a list -> ('a list * 'a) list * 'a list
+val group_by_post: ('a -> bool) -> 'a list -> ('a list * 'a) list *    'a list
+val group_by_pre:  ('a -> bool) -> 'a list -> 'a list *    ('a * 'a list) list
 val group_by_mapped_key: ('a -> 'b) -> 'a list -> ('b * 'a list) list
 
 (* Use hash internally to not be in O(n2). If you want to use it on a
@@ -1208,7 +1212,7 @@ val filter_index : (int -> 'a -> bool) -> 'a list -> 'a list
 val fold_left_with_index : ('a -> 'b -> int -> 'a) -> 'a -> 'b list -> 'a
 
 val nth : 'a list -> int -> 'a
-val rang : 'a -> 'a list -> int
+val rang : (* Eq a *) 'a -> 'a list -> int
 
 val last_n : int -> 'a list -> 'a list
 
@@ -1279,7 +1283,7 @@ val minimum : 'a list -> 'a
 val min_with : ('a -> 'b) -> 'a list -> 'a
 val two_mins_with : ('a -> 'b) -> 'a list -> 'a * 'a
 
-val all_assoc : 'a -> ('a * 'b) list -> 'b list
+val all_assoc : (* Eq a *) 'a -> ('a * 'b) list -> 'b list
 val prepare_want_all_assoc : ('a * 'b) list -> ('a * 'b list) list
 
 val or_list : bool list -> bool
@@ -1328,7 +1332,17 @@ val fusionneListeContenant : 'a * 'a -> 'a list list -> 'a list list
 (* Arrays *)
 (*****************************************************************************)
 
-val array_find_index : ('a -> bool) -> 'a array -> int
+val array_find_index : (int -> bool) -> 'a array -> int
+val array_find_index_via_elem : ('a -> bool) -> 'a array -> int
+
+(* for better type checking, as sometimes when have an 'int array', can
+ * easily mess up the index from the value.
+ *)
+type idx = Idx of int 
+val next_idx: idx -> idx
+val int_of_idx: idx -> int
+
+val array_find_index_typed : (idx -> bool) -> 'a array -> idx
 
 (*****************************************************************************)
 (* Matrix *)
@@ -1449,7 +1463,7 @@ module StringSet = Set.Make(struct type t = string let compare = compare end)
 
 type ('a, 'b) assoc = ('a * 'b) list
 
-val assoc_to_function : ('a, 'b) assoc -> ('a -> 'b)
+val assoc_to_function : (* Eq a *) ('a, 'b) assoc -> ('a -> 'b)
 
 val empty_assoc : ('a, 'b) assoc
 val fold_assoc : ('a -> 'b -> 'a) -> 'a -> 'b list -> 'a
@@ -1632,22 +1646,53 @@ val tree_iter : ('a -> unit) -> 'a tree -> unit
 (* N-ary tree with updatable childrens *)
 (*****************************************************************************)
 
+(* no empty tree, must have one root at least *)
+type 'a treeref = 
+  | NodeRef of 'a *   'a treeref list ref 
+
+val treeref_node_iter: 
+  (('a * 'a treeref list ref) -> unit) -> 'a treeref -> unit
+val treeref_node_iter_with_parents: 
+  (('a * 'a treeref list ref) -> ('a list) -> unit) -> 
+  'a treeref -> unit
+
+val find_treeref: 
+  (('a * 'a treeref list ref) -> bool) -> 
+  'a treeref -> 'a treeref
+
+val treeref_children_ref: 
+  'a treeref -> 'a treeref list ref 
+
+val find_treeref_with_parents_some:
+ ('a * 'a treeref list ref -> 'a list -> 'c option) ->
+ 'a treeref -> 'c
+
+val find_multi_treeref_with_parents_some:
+ ('a * 'a treeref list ref -> 'a list -> 'c option) ->
+ 'a treeref -> 'c list
+
+
 (* Leaf can seem redundant, but sometimes want to directly see if 
  * a children is a leaf without looking if the list is empty.
  *)
-type ('a, 'b) treeref = 
-  | NodeRef of 'a * ('a, 'b) treeref list ref 
-  | LeafRef of 'b
+type ('a, 'b) treeref2 = 
+  | NodeRef2 of 'a * ('a, 'b) treeref2 list ref 
+  | LeafRef2 of 'b
 
-val treeref_node_iter: 
-  (('a * ('a, 'b) treeref list ref) -> unit) -> ('a, 'b) treeref -> unit
-val treeref_node_iter_with_parents: 
-  (('a * ('a, 'b) treeref list ref) -> ('a list) -> unit) -> 
-  ('a, 'b) treeref -> unit
 
-val find_treeref: 
-  (('a * ('a, 'b) treeref list ref) -> bool) -> 
-  ('a, 'b) treeref -> ('a, 'b) treeref
+val find_treeref2: 
+  (('a * ('a, 'b) treeref2 list ref) -> bool) -> 
+  ('a, 'b) treeref2 -> ('a, 'b) treeref2
+
+val treeref_node_iter_with_parents2: 
+  (('a * ('a, 'b) treeref2 list ref) -> ('a list) -> unit) -> 
+  ('a, 'b) treeref2 -> unit
+
+val treeref_node_iter2: 
+  (('a * ('a, 'b) treeref2 list ref) -> unit) -> ('a, 'b) treeref2 -> unit
+
+(*
+
 
 val treeref_children_ref: ('a, 'b) treeref -> ('a, 'b) treeref list ref 
 
@@ -1658,7 +1703,7 @@ val find_treeref_with_parents_some:
 val find_multi_treeref_with_parents_some:
  ('a * ('a, 'b) treeref list ref -> 'a list -> 'c option) ->
  ('a, 'b) treeref -> 'c list
-
+*)
 
 (*****************************************************************************)
 (* Graph. But have a look too at Ograph_*.mli; it's better *)
@@ -1856,7 +1901,7 @@ val error_messagebis : filename -> (string * int) -> int -> string
 (* for example of use, see the code used in coccinelle *)
 type ('a, 'b) scoped_env = ('a, 'b) assoc list
 
-val lookup_env : 'a -> ('a, 'b) scoped_env -> 'b
+val lookup_env : (* Eq a *) 'a -> ('a, 'b) scoped_env -> 'b
 val member_env_key : 'a -> ('a, 'b) scoped_env -> bool
 
 val new_scope : ('a, 'b) scoped_env ref -> unit
