@@ -1362,6 +1362,7 @@ let (|||) a b = try a with _ -> b
  * let finalize f cleanup =  ...
  *)
 
+type error = Error of string
 
 (* sometimes to get help from ocaml compiler to tell me places where
  * I should update, we sometimes need to change some type from pair
@@ -5447,7 +5448,9 @@ let error_message_short = fun filename (lexeme, lexstart) ->
  *)
 
 type score_result = Ok | Pb of string 
+ (* with sexp *)
 type score = (string (* usually a filename *), score_result) Hashtbl.t
+ (* with sexp *)
 
 let empty_score () = (Hashtbl.create 101 : score)
 

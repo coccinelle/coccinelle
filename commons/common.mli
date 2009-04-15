@@ -463,6 +463,8 @@ val exn_to_s : exn -> string
 (* alias *)
 val string_of_exn : exn -> string
 
+type error = Error of string 
+
 type evotype = unit
 val evoval : evotype
 
@@ -567,13 +569,12 @@ val (=*=): 'a -> 'a -> bool
 
 (* if want to restrict the use of '=', uncomment this:
  *
- * val (=): int -> int -> bool
+ * val (=): unit -> unit -> bool
  * 
  * But it will not forbid you to use caml functions like List.find, List.mem
  * which internaly use this convenient but evolution-unfriendly (=)
 *)
 
-val (=): unit -> unit -> bool
 
 
 (*###########################################################################*)
