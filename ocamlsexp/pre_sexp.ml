@@ -174,8 +174,7 @@ let to_string_mach sexp =
   to_buffer_mach sexp ~buf;
   Buffer.contents buf
 
-let to_string = 
-  to_string_mach
+let to_string = to_string_mach
 
 
 (* Scan functions *)
