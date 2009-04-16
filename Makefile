@@ -318,7 +318,7 @@ package:
 # install menhir on his machine. We could also do a few cleanups.
 # You may have first to do a 'make licensify'.
 srctar:
-	make clean
+	make distclean
 	cp -a .  $(TMP)/$(PACKAGE)
 	cd $(TMP)/$(PACKAGE); cd parsing_cocci/; make parser_cocci_menhir.ml
 	cd $(TMP); tar cvfz $(PACKAGE).tgz --exclude-vcs $(PACKAGE)
