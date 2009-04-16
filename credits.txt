@@ -7,6 +7,7 @@ Thanks to
  - Francois Pottier and Yann Regis-Gianas for menhir
  - arty@users.sourceforge.net for pycaml
  - Richard Jones for his dumper module, 
+ - Jane Street for ocamlsexp
 
 Thanks of course also to Stallman, Linus, Leroy, Knuth and their
 acolytes for respectively Emacs, Linux, OCaml, and (La)TeX.
