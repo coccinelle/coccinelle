@@ -496,6 +496,8 @@ distclean:: clean
 	rm -f python/pycocci_aux.ml
 	rm -f globals/config.ml
 	rm -f TAGS
+	rm -f tests/SCORE_actual.sexp
+	rm -f tests/SCORE_best_of_both.sexp
 	find -name ".#*1.*" | xargs rm -f
 
 beforedepend::
