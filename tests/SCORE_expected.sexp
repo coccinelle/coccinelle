@@ -41,9 +41,6 @@
  (fnret.res Ok) (four.res Ok) (foura.res Ok) (fp.res Ok) (fun.res Ok)
  (gilles-question.res Ok) (gotobreak.res Ok) (hd.res Ok) (headers.res Ok)
  (hex.res Ok)
- (hex2.res
-  (Pb
-   "INCORRECT:diff token: f VS }\nFile \"tests/hex2.c\", line 2, column 2,  charpos = 15\n    around = 'f', whole content =   f(4294967295);\nFile \"tests/hex2.res\", line 2, column 0,  charpos = 13\n    around = '}', whole content = }\n\n    diff (result(<) vs expected_result(>)) = \n    @@ -1,3 +1,2 @@\n     int main() {\n    -  f(4294967295);\n     }\n"))
  (hil1.res Ok) (if.res Ok) (ifbr.res Ok) (ifdef1.res Ok) (ifdef2.res Ok)
  (ifdef3.res
   (Pb
