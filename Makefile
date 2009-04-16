@@ -26,17 +26,23 @@ PYLIB=
 OPTLIBFLAGS=
 endif
 
+SEXPSYSCMA=bigarray.cma nums.cma
 
-SYSLIBS=str.cma unix.cma
-LIBS=commons/commons.cma globals/globals.cma\
+SYSLIBS=str.cma unix.cma $(SEXPSYSCMA)
+LIBS=commons/commons.cma \
+     ocamlsexp/sexplib1.cma commons/commons_sexp.cma \
+     globals/globals.cma \
      ctl/ctl.cma \
      parsing_cocci/cocci_parser.cma parsing_c/parsing_c.cma \
      engine/cocciengine.cma popl09/popl.cma \
      extra/extra.cma $(PYCMA) python/coccipython.cma
 
-MAKESUBDIRS=commons globals menhirlib $(PYDIR) ctl parsing_cocci parsing_c \
+#used for clean: and depend: and a little for rec & rec.opt
+MAKESUBDIRS=commons ocamlsexp \
+ globals menhirlib $(PYDIR) ctl parsing_cocci parsing_c \
  engine popl09 extra python
-INCLUDEDIRS=commons commons/ocamlextra globals menhirlib $(PYDIR) ctl \
+INCLUDEDIRS=commons commons/ocamlextra ocamlsexp \
+ globals menhirlib $(PYDIR) ctl \
  parsing_cocci parsing_c engine popl09 extra python
 
 ##############################################################################
@@ -97,9 +103,15 @@ top: $(EXEC).top
 world: all opt
 
 subdirs:
+	$(MAKE) -C commons 
+	$(MAKE) -C ocamlsexp
+	$(MAKE) -C commons sexp
 	+for D in $(MAKESUBDIRS); do $(MAKE) $$D || exit 1 ; done
 
 subdirs.opt:
+	$(MAKE) all.opt -C commons 
+	$(MAKE) -C ocamlsexp all.opt
+	$(MAKE) -C commons sexp.opt
 	+for D in $(MAKESUBDIRS); do $(MAKE) $$D.opt || exit 1 ; done
 
 $(MAKESUBDIRS):
