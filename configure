@@ -209,11 +209,11 @@ on the $project website. !!!!
 All seems fine for $project.
 
 To compile $project type:
- make depend; make
+ (make depend); make all
 or alternatively, for the optimized version:
- make depend; make opt
+ (make depend); make all.opt
 If you want both, you could use:
- make depend; make world
+ (make depend); make world
 
 To install type:
  make install

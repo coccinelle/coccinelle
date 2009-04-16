@@ -17,7 +17,7 @@ Then simply type
  make install
 
 Note:	'make' will compile the bytecode version by default.
-	You could use 'make opt' to have the optimized version.
+	You could use 'make all.opt' to have the optimized version.
 	If you compile both, 'make install' will take care of that
 	and install both, spatch and spatch.opt.
 	If you use only one of them, 'make install' will install
