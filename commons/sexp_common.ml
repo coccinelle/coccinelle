@@ -290,3 +290,28 @@ let sexp_of_score v =
   Conv.sexp_of_hashtbl Conv.sexp_of_string sexp_of_score_result v
   
 
+let score_list_of_sexp__ =
+  let _loc = "Xxx.score_list"
+  in
+    fun sexp ->
+      Conv.list_of_sexp
+        (function
+         | Sexp.List ([ v1; v2 ]) ->
+             let v1 = Conv.string_of_sexp v1
+             and v2 = score_result_of_sexp v2
+             in (v1, v2)
+         | sexp -> Conv_error.tuple_of_size_n_expected _loc 2 sexp)
+        sexp
+  
+let score_list_of_sexp sexp =
+  try score_list_of_sexp__ sexp
+  with
+  | Conv_error.No_variant_match ((msg, sexp)) -> Conv.of_sexp_error msg sexp
+  
+let sexp_of_score_list v =
+  Conv.sexp_of_list
+    (fun (v1, v2) ->
+       let v1 = Conv.sexp_of_string v1
+       and v2 = sexp_of_score_result v2
+       in Sexp.List [ v1; v2 ])
+    v

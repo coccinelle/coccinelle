@@ -239,13 +239,18 @@ val _list_bool : (string * bool) list ref
 val example3 : string -> bool -> unit
 val test_all : unit -> unit
 
+
 (* regression testing *)
 type score_result = Ok | Pb of string 
-type score = (string (* usually a filename *), score_result) Hashtbl.t
+type score =      (string (* usually a filename *), score_result) Hashtbl.t
+type score_list = (string (* usually a filename *) * score_result) list
 val empty_score : unit -> score
 val regression_testing : 
   score -> filename (* old score file on disk (usually in /tmp) *) -> unit
+val regression_testing_vs: score -> score -> score
+val total_scores : score -> int (* good *) * int (* total *)
 val print_score : score -> unit
+val print_total_score: score -> unit
 
 
 (* quickcheck spirit *)

@@ -5451,19 +5451,15 @@ type score_result = Ok | Pb of string
  (* with sexp *)
 type score = (string (* usually a filename *), score_result) Hashtbl.t
  (* with sexp *)
+type score_list = (string (* usually a filename *) * score_result) list
+ (* with sexp *)
 
 let empty_score () = (Hashtbl.create 101 : score)
 
 
 
-let regression_testing newscore best_score_file = 
+let regression_testing_vs newscore bestscore = 
 
-  pr2 ("regression file: "^ best_score_file);
-  let (bestscore : score) = 
-    if not (Sys.file_exists best_score_file)
-    then write_value (empty_score()) best_score_file;
-    get_value best_score_file 
-  in
   let newbestscore = empty_score () in
 
   let allres = 
@@ -5506,28 +5502,51 @@ let regression_testing newscore best_score_file =
               end
           )
     );
-    write_value newbestscore (best_score_file ^ ".old");
-    write_value newbestscore best_score_file;
     flush stdout; flush stderr;
+    newbestscore
   end
+
+let regression_testing newscore best_score_file = 
+
+  pr2 ("regression file: "^ best_score_file);
+  let (bestscore : score) = 
+    if not (Sys.file_exists best_score_file)
+    then write_value (empty_score()) best_score_file;
+    get_value best_score_file 
+  in
+  let newbestscore = regression_testing_vs newscore bestscore in
+  write_value newbestscore (best_score_file ^ ".old");
+  write_value newbestscore best_score_file;
+  ()
+
+
+
 
 let string_of_score_result v = 
   match v with 
   | Ok -> "Ok" 
   | Pb s -> "Pb: " ^ s
 
+let total_scores score = 
+  let total = hash_to_list score +> List.length in
+  let good  = hash_to_list score +> List.filter
+    (fun (s, v) -> v =*= Ok) +> List.length in
+  good, total
+   
+
+let print_total_score score = 
+  pr2 "--------------------------------";
+  pr2 "total score";
+  pr2 "--------------------------------";
+  let (good, total) = total_scores score in
+  pr2 (sprintf "good = %d/%d" good total)
+
 let print_score score = 
   score +> hash_to_list +> List.iter (fun (k, v) -> 
     pr2 (sprintf "% s --> %s" k (string_of_score_result v))
   );
-  pr2 "--------------------------------";
-  pr2 "total score";
-  pr2 "--------------------------------";
-  let total = hash_to_list score +> List.length in
-  let good  = hash_to_list score +> List.filter 
-    (fun (s, v) -> v =*= Ok) +> List.length 
-  in
-  pr2 (sprintf "good = %d/%d" good total)
+  print_total_score score;
+  ()
 
 
 (*****************************************************************************)

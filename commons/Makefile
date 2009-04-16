@@ -72,10 +72,10 @@ REGEXPINCLUDES=-I ../ocamlpcre/lib  -I ../../ocamlpcre/lib
 
 #sexplib 
 MYSEXPSRC=sexp_common.ml
-SEXPINCLUDES=-I ../ocamljane/lib-sexp -I ../../ocamljane/lib-sexp
+SEXPINCLUDES=-I ../ocamlsexp -I ../ocamltarzan/lib-sexp -I ../../ocamltarzan/lib-sexp
 #binprot
 MYBINSRC=bin_common.ml
-BININCLUDES=-I ../ocamljane/lib-binprot -I ../../ocamljane/lib-binprot
+BININCLUDES=-I ../ocamltarzan/lib-binprot -I ../../ocamltarzan/lib-binprot
 
 #-----------------------------------------------------------------------------
 # Other stuff
