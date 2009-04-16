@@ -317,7 +317,9 @@ version:
 PACKAGE=coccinelle-$(VERSION)
 
 BINSRC=spatch env.sh env.csh standard.h standard.iso \
-       *.txt docs/* \
+       *.txt \
+       docs/options.pdf docs/grammar/cocci_syntax.pdf docs/spatch.1 \
+       docs/cocci-python.txt \
        demos/foo.* demos/simple.*
 #      $(PYLIB) python/coccilib/ demos/printloc.*
 BINSRC2=$(BINSRC:%=$(PACKAGE)/%)
@@ -359,6 +361,7 @@ OCAMLVERSION=$(shell ocaml -version |perl -p -e 's/.*version (.*)/$$1/;')
 package:
 	make srctar
 	./configure --without-python
+	make docs
 	make bintar
 	make staticbintar
 	make bytecodetar
@@ -366,8 +369,14 @@ package:
 # I currently pre-generate the parser so the user does not have to
 # install menhir on his machine. We could also do a few cleanups.
 # You may have first to do a 'make licensify'.
+#
+# update: make docs generates pdf but also some ugly .log files, so 
+# make clean is there to remove them while not removing the pdf
+# (only distclean remove the pdfs).
 srctar:
 	make distclean
+	make docs
+	make clean
 	cp -a .  $(TMP)/$(PACKAGE)
 	cd $(TMP)/$(PACKAGE); cd parsing_cocci/; make parser_cocci_menhir.ml
 	cd $(TMP); tar cvfz $(PACKAGE).tgz --exclude-vcs $(PACKAGE)
