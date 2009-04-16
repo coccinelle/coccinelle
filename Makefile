@@ -4,7 +4,7 @@
 
 -include Makefile.config
 
-VERSION=$(shell cat globals/config.ml |grep version |perl -p -e 's/.*"(.*)".*/$$1/;')
+VERSION=$(shell cat globals/config.ml.in |grep version |perl -p -e 's/.*"(.*)".*/$$1/;')
 
 ##############################################################################
 # Variables
@@ -310,6 +310,7 @@ OCAMLVERSION=$(shell ocaml -version |perl -p -e 's/.*version (.*)/$$1/;')
 
 package:
 	make srctar
+	./configure --without-python
 	make bintar
 	make staticbintar
 	make bytecodetar
@@ -385,6 +386,7 @@ website:
 	cp $(TMP)/$(PACKAGE)-bin-x86-static.tgz $(WEBSITE)
 	cp $(TMP)/$(PACKAGE)-bin-bytecode-$(OCAMLVERSION).tgz   $(WEBSITE)
 	rm -f $(WEBSITE)/LATEST* $(WEBSITE)/coccinelle-latest.tgz
+	cp changes.txt $(WEBSITE)/changes-$(VERSION).txt
 	cd $(WEBSITE); touch LATEST_IS_$(VERSION); ln -s $(PACKAGE).tgz coccinelle-latest.tgz
 
 
