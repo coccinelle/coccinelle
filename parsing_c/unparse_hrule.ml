@@ -233,9 +233,11 @@ let rename argids env =
     { Visitor_c.default_visitor_c_s with
     Visitor_c.kexpr_s = (fun (k,bigf) e -> 
       match e with
-	((Ast_c.Ident (ident), info), [ii]) ->
+	((Ast_c.Ident (name), info), []) ->
+
           (* pad: assert is_regular_ident ? *)
-          let s = Ast_c.str_of_name ident in
+          let s = Ast_c.str_of_name name in
+          let ii = Ast_c.info_of_name name in
 	  let new_name = lookup s in
           let new_id = Ast_c.RegularName (new_name, [rewrap_str new_name ii]) in
 	  ((Ast_c.Ident (new_id), info), Ast_c.noii)
