@@ -4,10 +4,10 @@ Thanks to
  - A guy from Cornell for suggesting the term "semantic patch".
 
 Thanks to 
- - Francois Pottier and Yann Regis-Gianas for menhir
- - arty@users.sourceforge.net for pycaml
+ - Francois Pottier and Yann Regis-Gianas for menhir and menhirlib/
+ - arty@users.sourceforge.net for pycaml/
+ - Jane Street for ocamlsexp/
  - Richard Jones for his dumper module, 
- - Jane Street for ocamlsexp
 
 Thanks of course also to Stallman, Linus, Leroy, Knuth and their
 acolytes for respectively Emacs, Linux, OCaml, and (La)TeX.
