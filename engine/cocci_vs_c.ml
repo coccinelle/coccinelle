@@ -310,9 +310,7 @@ let split_signb_baseb_ii (baseb, ii) =
 	| (B.Signed,(("signed",i1)::rest)) -> (Some (B.Signed,i1),rest)
 	| (B.Signed,rest) -> (None,rest)
 	| (B.UnSigned,(("unsigned",i1)::rest)) -> (Some (B.UnSigned,i1),rest)
-	| (B.UnSigned,rest) -> (* is this case possible? *) (None,rest)
-	| _ -> failwith ("strange type1, maybe because of weird order: "^
-			 (String.concat " " (List.map fst iis))) in
+	| (B.UnSigned,rest) -> (* is this case possible? *) (None,rest) in
       (* The original code only allowed explicit signed and unsigned for char,
 	 while this code allows char by itself.  Not sure that needs to be
 	 checked for here.  If it does, then add a special case. *)
