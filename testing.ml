@@ -156,8 +156,8 @@ let testall () =
     Common.write_file ~file:(actual_score_file) s_score;
 
     let xs2 = Common.hash_to_list new_bestscore in
-    let sexp2 = Sexp_common.sexp_of_score_list xs in
-    let s_score2 = Sexp.to_string_hum sexp in
+    let sexp2 = Sexp_common.sexp_of_score_list xs2 in
+    let s_score2 = Sexp.to_string_hum sexp2 in
     Common.write_file ~file:(best_of_both_file) s_score2;
 
     Common.print_total_score score;
@@ -183,9 +183,9 @@ let testall () =
       else begin
         pr2 "Current score is greater than expected, :)";
         pr2 "Generating new expected score file and saving old one";
-        Common.command2_y_or_no 
+        Common.command2_y_or_no_exit_if_no
           (spf "mv %s %s" expected_score_file (expected_score_file ^ ".save"));
-        Common.command2_y_or_no
+        Common.command2_y_or_no_exit_if_no
           (spf "mv %s %s" best_of_both_file expected_score_file);
         raise (UnixExit 0);
       end
