@@ -33,6 +33,7 @@
 
 ** Internals: 
 - improve and fix installation process (usable on BSD)
+- improve and fix testing process
 - apply patches from Eugeniy Meshcheryakov
 - reorganize the way we parse C identifiers, especially concatenated cpp 
   identifiers as in a##b. This may lead to some regressions as we may
