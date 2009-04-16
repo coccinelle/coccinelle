@@ -86,10 +86,19 @@ BYTECODE_STATIC=-custom
 ##############################################################################
 # Top rules
 ##############################################################################
-.PHONY: all all.opt opt top clean distclean configure
-.PHONY: $(MAKESUBDIRS) $(MAKESUBDIRS:%=%.opt) subdirs subdirs.opt
+.PHONY:: all all.opt byte opt top clean distclean configure
+.PHONY:: $(MAKESUBDIRS) $(MAKESUBDIRS:%=%.opt) subdirs subdirs.opt
 
-all: .depend
+all: byte
+	$(MAKE) preinstall
+
+all.opt: opt
+	$(MAKE) preinstall
+
+world: byte opt
+	$(MAKE) preinstall
+
+byte: .depend
 	$(MAKE) subdirs
 	$(MAKE) $(EXEC)
 
@@ -97,19 +106,16 @@ opt: .depend
 	$(MAKE) subdirs.opt
 	$(MAKE) $(EXEC).opt
 
-all.opt: opt
 top: $(EXEC).top
 
-world: all opt
-
 subdirs:
-	$(MAKE) -C commons 
+	$(MAKE) -C commons
 	$(MAKE) -C ocamlsexp
 	$(MAKE) -C commons sexp
 	+for D in $(MAKESUBDIRS); do $(MAKE) $$D || exit 1 ; done
 
 subdirs.opt:
-	$(MAKE) all.opt -C commons 
+	$(MAKE) all.opt -C commons
 	$(MAKE) -C ocamlsexp all.opt
 	$(MAKE) -C commons sexp.opt
 	+for D in $(MAKESUBDIRS); do $(MAKE) $$D.opt || exit 1 ; done
@@ -158,7 +164,7 @@ clean::
 	rm -f dllpycaml_stubs.so
 
 
-.PHONY: tools configure
+.PHONY:: tools configure
 
 configure:
 	./configure
@@ -178,6 +184,60 @@ purebytecode:
 	rm -f spatch.opt spatch
 	$(MAKE) BYTECODE_STATIC="" spatch
 
+
+##############################################################################
+# Build documentation
+##############################################################################
+.PHONY:: docs
+
+docs:
+	make -C docs
+
+clean::
+	make -C docs clean
+
+distclean::
+	make -C docs distclean
+
+##############################################################################
+# Pre-Install (customization of spatch frontend script)
+##############################################################################
+.PHONY:: preinstall preinstall-def preinstall-byte preinstall-opt
+
+preinstall:
+	@if test -x spatch -a ! -x spatch.opt ; then \
+		$(MAKE) preinstall-byte;fi
+	@if test ! -x spatch -a -x spatch.opt ; then \
+		$(MAKE) preinstall-def; $(MAKE) preinstall-opt;fi
+	@if test -x spatch -a -x spatch.opt ; then \
+		$(MAKE) preinstall-byte; $(MAKE) preinstall-opt;fi
+	@if test ! -x spatch -a ! -x spatch.opt ; then \
+		echo "\n\n\t==> Run 'make', 'make opt', or both first. <==\n\n";fi
+
+# user will use spatch to run spatch.opt (native)
+preinstall-def:
+	cp scripts/spatch.sh scripts/spatch.tmp2
+	sed "s|SHAREDIR|$(SHAREDIR)|g" scripts/spatch.tmp2 > scripts/spatch.tmp
+	sed "s|LIBDIR|$(LIBDIR)|g" scripts/spatch.tmp > scripts/spatch
+	rm -f scripts/spatch.tmp2 scripts/spatch.tmp
+
+# user will use spatch to run spatch (bytecode)
+preinstall-byte:
+	cp scripts/spatch.sh scripts/spatch.tmp3
+	sed "s|\.opt||" scripts/spatch.tmp3 > scripts/spatch.tmp2
+	sed "s|SHAREDIR|$(SHAREDIR)|g" scripts/spatch.tmp2 > scripts/spatch.tmp
+	sed "s|LIBDIR|$(LIBDIR)|g" scripts/spatch.tmp > scripts/spatch
+	rm -f scripts/spatch.tmp3 scripts/spatch.tmp2 scripts/spatch.tmp
+
+# user will use spatch.opt to run spatch.opt (native)
+preinstall-opt:
+	cp scripts/spatch.sh scripts/spatch.opt.tmp2
+	sed "s|SHAREDIR|$(SHAREDIR)|g" scripts/spatch.opt.tmp2 > scripts/spatch.opt.tmp
+	sed "s|LIBDIR|$(LIBDIR)|g" scripts/spatch.opt.tmp > scripts/spatch.opt
+	rm -f scripts/spatch.opt.tmp scripts/spatch.opt.tmp2
+
+clean::
+	rm -f scripts/spatch scripts/spatch.opt
 
 ##############################################################################
 # Install
@@ -225,27 +285,17 @@ install:
 # user will use spatch to run spatch.opt (native)
 install-def: install-common
 	$(INSTALL_PROGRAM) spatch.opt $(DESTDIR)$(SHAREDIR)
-	cp scripts/spatch.sh $(DESTDIR)$(BINDIR)/spatch
-	sed -i "s|SHAREDIR|$(SHAREDIR)|g" $(DESTDIR)$(BINDIR)/spatch
-	sed -i "s|LIBDIR|$(LIBDIR)|g" $(DESTDIR)$(BINDIR)/spatch
-	chmod 755 $(DESTDIR)$(BINDIR)/spatch
+	$(INSTALL_PROGRAM) scripts/spatch $(DESTDIR)$(BINDIR)/spatch
 
 # user will use spatch to run spatch (bytecode)
 install-byte: install-common
 	$(INSTALL_PROGRAM) spatch $(DESTDIR)$(SHAREDIR)
-	cp scripts/spatch.sh $(DESTDIR)$(BINDIR)/spatch
-	sed -i "s|\.opt||" $(DESTDIR)$(BINDIR)/spatch
-	sed -i "s|SHAREDIR|$(SHAREDIR)|g" $(DESTDIR)$(BINDIR)/spatch
-	sed -i "s|LIBDIR|$(LIBDIR)|g" $(DESTDIR)$(BINDIR)/spatch
-	chmod 755 $(DESTDIR)$(BINDIR)/spatch
+	$(INSTALL_PROGRAM) scripts/spatch $(DESTDIR)$(BINDIR)/spatch
 
 # user will use spatch.opt to run spatch.opt (native)
 install-opt: install-common
 	$(INSTALL_PROGRAM) spatch.opt $(DESTDIR)$(SHAREDIR)
-	cp scripts/spatch.sh $(DESTDIR)$(BINDIR)/spatch.opt
-	sed -i "s|SHAREDIR|$(SHAREDIR)|g" $(DESTDIR)$(BINDIR)/spatch.opt
-	sed -i "s|LIBDIR|$(LIBDIR)|g" $(DESTDIR)$(BINDIR)/spatch.opt
-	chmod 755 $(DESTDIR)$(BINDIR)/spatch.opt
+	$(INSTALL_PROGRAM) scripts/spatch.opt $(DESTDIR)$(BINDIR)/spatch.opt
 
 uninstall:
 	rm -f $(DESTDIR)$(BINDIR)/spatch
@@ -255,8 +305,6 @@ uninstall:
 	rm -f $(DESTDIR)$(SHAREDIR)/standard.iso
 	rm -rf $(DESTDIR)$(SHAREDIR)/python/coccilib
 	rm -f $(DESTDIR)$(MANDIR)/man1/spatch.1
-
-
 
 version:
 	@echo $(VERSION)
