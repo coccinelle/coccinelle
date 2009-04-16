@@ -95,7 +95,9 @@ all: byte
 all.opt: opt
 	$(MAKE) preinstall
 
-world: byte opt
+world: 
+	$(MAKE) byte
+	$(MAKE) opt
 	$(MAKE) preinstall
 
 byte: .depend
@@ -109,15 +111,15 @@ opt: .depend
 top: $(EXEC).top
 
 subdirs:
-	$(MAKE) -C commons
-	$(MAKE) -C ocamlsexp
-	$(MAKE) -C commons sexp
+	$(MAKE) -C commons OCAMLCFLAGS="$(OCAMLCFLAGS)"
+	$(MAKE) -C ocamlsexp OCAMLCFLAGS="$(OCAMLCFLAGS)"
+	$(MAKE) -C commons sexp OCAMLCFLAGS="$(OCAMLCFLAGS)"
 	+for D in $(MAKESUBDIRS); do $(MAKE) $$D || exit 1 ; done
 
 subdirs.opt:
-	$(MAKE) all.opt -C commons
-	$(MAKE) -C ocamlsexp all.opt
-	$(MAKE) -C commons sexp.opt
+	$(MAKE) -C commons all.opt OCAMLCFLAGS="$(OCAMLCFLAGS)"
+	$(MAKE) -C ocamlsexp all.opt OCAMLCFLAGS="$(OCAMLCFLAGS)"
+	$(MAKE) -C commons sexp.opt OCAMLCFLAGS="$(OCAMLCFLAGS)"
 	+for D in $(MAKESUBDIRS); do $(MAKE) $$D.opt || exit 1 ; done
 
 $(MAKESUBDIRS):

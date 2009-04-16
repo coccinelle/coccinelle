@@ -26,7 +26,7 @@ pycaml.customtop: byte-code-library
 clean::
 	rm -f pycaml.customtop
 
-distclean::
+distclean:: clean
 
 depend: # added by julia, undoubtedly wrong
 
