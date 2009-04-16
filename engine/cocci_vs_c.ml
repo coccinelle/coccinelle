@@ -3744,30 +3744,27 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
 
   | _, F.ExprStatement (_, (None, ii)) -> fail (* happen ? *)
 
-  | A.Label(id,dd), F.Label (st,(s,ii)) ->
-      let (ib1,ib2) = tuple_of_list2 ii in
-      let (string_of_id,rebuild) =
-	match A.unwrap id with
-	  A.Id(s) -> (s,function s -> A.rewrap id (A.Id(s)))
-	| _ -> failwith "labels with metavariables not supported" in
-      if (term string_of_id) =$= s
-      then
-	tokenf string_of_id ib1 >>= (fun string_of_id ib1 ->
+  | A.Label(id,dd), F.Label (st, nameb, ((),ii)) ->
+      let (ib2) = tuple_of_list1 ii in
+      (match A.unwrap id with
+      | A.Id(_s) ->
+	ident_cpp DontKnow id nameb >>= (fun ida nameb ->
 	tokenf dd ib2 >>= (fun dd ib2 ->
 	  return (
-	    A.Label(rebuild string_of_id,dd),
-	    F.Label (st,(s,[ib1;ib2]))
+	    A.Label (ida,dd),
+	    F.Label (st,nameb, ((),[ib2]))
 	  )))
-      else fail
+      | _ -> failwith "labels with metavariables not supported"
+      )
 
-  | A.Goto(goto,id,sem),          F.Goto (st,(s,ii))       ->
-      let (ib1,ib2,ib3) = tuple_of_list3 ii in
+  | A.Goto(goto,id,sem),          F.Goto (st,nameb, ((),ii))       ->
+      let (ib1,ib3) = tuple_of_list2 ii in
       tokenf goto ib1 >>= (fun goto ib1 ->
-      ident DontKnow id (s, ib2) >>= (fun id (s, ib2) ->
+      ident_cpp DontKnow id nameb >>= (fun id nameb ->
       tokenf sem ib3 >>= (fun sem ib3 ->
 	return(
 	    A.Goto(goto,id,sem),
-            F.Goto (st,(s,[ib1;ib2;ib3]))
+            F.Goto (st,nameb, ((),[ib1;ib3]))
           ))))
 
   (* have not a counter part in coccinelle, for the moment *)
@@ -3784,7 +3781,7 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
     (F.MacroStmt (_, _)| F.DefineDoWhileZeroHeader _| F.EndNode|F.TopNode)
       -> fail
   | _, 
-    (F.Label (_, _)|F.Break (_, _)|F.Continue (_, _)|F.Default (_, _)|
+    (F.Label (_, _, _)|F.Break (_, _)|F.Continue (_, _)|F.Default (_, _)|
     F.Case (_, _)|F.Include _|F.Goto _|F.ExprStatement _|
     F.DefineType _|F.DefineExpr _|F.DefineTodo|
     F.DefineHeader (_, _)|F.ReturnExpr (_, _)|F.Return (_, _)|F.MacroIterHeader (_, _)|

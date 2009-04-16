@@ -394,7 +394,7 @@ and statement = statementbis wrap
   
 
 
-  and labeled = Label   of string * statement
+  and labeled = Label   of name * statement
               | Case    of expression * statement 
               | CaseRange of expression * expression * statement (* gccext: *)
 	      |	Default of statement
@@ -455,7 +455,7 @@ and statement = statementbis wrap
     (* cppext: *)
     | MacroIteration of string * argument wrap2 list * statement
 
-  and jump  = Goto of string
+  and jump  = Goto of name
             | Continue | Break 
             | Return   | ReturnExpr of expression
             | GotoComputed of expression (* gccext: goto *exp ';' *)

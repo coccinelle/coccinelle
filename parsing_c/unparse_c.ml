@@ -270,7 +270,7 @@ let displace_fake_nodes toks =
 let comment2t2 = function
     (Token_c.TCommentCpp x,(info : Token_c.info)) ->
       C2("\n"^info.Common.str^"\n")
-  | x -> failwith (Printf.sprintf "unexpected comment %s" (Dumper.dump x))
+  | x -> failwith (Printf.sprintf "unexpected comment %s" (Common.dump x))
 
 let expand_mcode toks = 
   let toks_out = ref [] in

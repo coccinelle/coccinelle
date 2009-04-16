@@ -385,7 +385,7 @@ and vk_statement = fun bigf (st: Ast_c.statement) ->
         vk_argument_list bigf es;
         statf st;
           
-    | Jump (Goto s) -> ()
+    | Jump (Goto name) -> vk_name bigf name
     | Jump ((Continue|Break|Return)) -> ()
     | Jump (ReturnExpr e) -> vk_expr bigf e;
     | Jump (GotoComputed e) -> vk_expr bigf e;
@@ -805,8 +805,8 @@ and vk_node = fun bigf node ->
     | F.Continue (st,((),ii)) -> iif ii
     | F.Default  (st,((),ii)) -> iif ii
     | F.Return   (st,((),ii)) -> iif ii
-    | F.Goto  (st, (s,ii)) -> iif ii
-    | F.Label (st, (s,ii)) -> iif ii
+    | F.Goto  (st, name, ((),ii)) -> vk_name bigf name; iif ii
+    | F.Label (st, name, ((),ii)) -> vk_name bigf name; iif ii
 
     | F.DoHeader (st, info) -> infof info
 
@@ -1128,7 +1128,7 @@ and vk_statement_s = fun bigf st ->
                 ))
 
             
-      | Jump (Goto s) -> Jump (Goto s)
+      | Jump (Goto name) -> Jump (Goto (vk_name_s bigf name))
       | Jump (((Continue|Break|Return) as x)) -> Jump (x)
       | Jump (ReturnExpr e) -> Jump (ReturnExpr ((vk_expr_s bigf) e))
       | Jump (GotoComputed e) -> Jump (GotoComputed (vk_expr_s bigf e));
@@ -1593,8 +1593,10 @@ and vk_node_s = fun bigf node ->
     | F.Continue (st,((),ii)) -> F.Continue (st,((),iif ii))
     | F.Default  (st,((),ii)) -> F.Default  (st,((),iif ii))
     | F.Return   (st,((),ii)) -> F.Return   (st,((),iif ii))
-    | F.Goto  (st, (s,ii)) -> F.Goto  (st, (s,iif ii))
-    | F.Label (st, (s,ii)) -> F.Label (st, (s,iif ii))
+    | F.Goto  (st, name, ((),ii)) -> 
+        F.Goto  (st, vk_name_s bigf name, ((),iif ii))
+    | F.Label (st, name, ((),ii)) -> 
+        F.Label (st, vk_name_s bigf name, ((),iif ii))
     | F.EndStatement iopt -> F.EndStatement (map_option infof iopt)
     | F.DoHeader (st, info) -> F.DoHeader (st, infof info)
     | F.Else info -> F.Else (infof info)

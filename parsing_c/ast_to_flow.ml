@@ -174,10 +174,12 @@ let compute_labels_and_create_them st =
     st +> Visitor_c.vk_statement { Visitor_c.default_visitor_c with 
       Visitor_c.kstatement = (fun (k, bigf) st -> 
         match st with
-        | Labeled (Ast_c.Label (s, _st)),ii -> 
+        | Labeled (Ast_c.Label (name, _st)),ii -> 
             (* at this point I put a lbl_0, but later I will put the
              * good labels. *)
-            let newi = !g +> add_node (Label (st,(s,ii))) lbl_0  (s^":") in
+            let s = Ast_c.str_of_name name in
+            let newi = !g +> add_node (Label (st,name, ((),ii))) lbl_0  (s^":") 
+            in
             begin
               (* the C label already exists ? *)
               if (!h#haskey s) then raise (Error (DuplicatedLabel s));
@@ -342,7 +344,8 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
 
 
    (* ------------------------- *)        
-  | Labeled (Ast_c.Label (s, st)), ii -> 
+  | Labeled (Ast_c.Label (name, st)), ii -> 
+      let s = Ast_c.str_of_name name in
       let ilabel = xi.labels_assoc#find s in
       let node = mk_node (unwrap (!g#nodes#find ilabel)) lbl [] (s ^ ":") in
       !g#replace_node (ilabel, node);
@@ -350,9 +353,11 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
       aux_statement (Some ilabel, xi_lbl) st
 
 
-  | Jump (Ast_c.Goto s), ii -> 
+  | Jump (Ast_c.Goto name), ii -> 
+      let s = Ast_c.str_of_name name in
      (* special_cfg_ast: *)
-     let newi = !g +> add_node (Goto (stmt, (s,ii))) lbl ("goto " ^ s ^ ":") in
+     let newi = !g +> add_node (Goto (stmt, name, ((),ii))) lbl ("goto "^s^":")
+     in
      !g +> add_arc_opt (starti, newi);
 
      let ilabel = 

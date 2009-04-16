@@ -197,8 +197,9 @@ let pretty_print_c pr_elem pr_space pr_nl pr_indent pr_outdent pr_unindent =
 
 (* ---------------------- *)
   and pp_statement = function
-    | Labeled (Label (s, st)), [i1;i2] ->
-	pr_outdent(); pr_elem i1; pr_elem i2; pr_nl(); pp_statement st
+    | Labeled (Label (name, st)), ii ->
+        let (i2) = Common.tuple_of_list1 ii in
+	pr_outdent(); pp_name name; pr_elem i2; pr_nl(); pp_statement st
     | Labeled (Case  (e, st)), [i1;i2] -> 
 	pr_unindent();
         pr_elem i1; pp_expression e; pr_elem i2; pr_nl(); pr_indent();
@@ -274,8 +275,9 @@ let pretty_print_c pr_elem pr_space pr_nl pr_indent pr_outdent pr_unindent =
         indent_if_needed st (function _ -> pp_statement st);
         pr_elem iifakend
           
-    | Jump (Goto s), [i1;i2;i3]               -> 
-        pr_elem i1; pr_space(); pr_elem i2; pr_elem i3;
+    | Jump (Goto name), ii               -> 
+        let (i1, i3) = Common.tuple_of_list2 ii in
+        pr_elem i1; pr_space(); pp_name name; pr_elem i3;
     | Jump ((Continue|Break|Return)), [i1;i2] -> pr_elem i1; pr_elem i2;
     | Jump (ReturnExpr e), [i1;i2] ->
 	pr_elem i1; pr_space(); pp_expression e; pr_elem i2
@@ -302,14 +304,14 @@ let pretty_print_c pr_elem pr_space pr_nl pr_indent pr_outdent pr_unindent =
     | MacroStmt, ii -> 
         ii +> List.iter pr_elem ;
 	
-    | ( Labeled (Label (_,_)) | Labeled (Case  (_,_)) 
+    | (Labeled (Case  (_,_)) 
     | Labeled (CaseRange  (_,_,_)) | Labeled (Default _)
     | Compound _ | ExprStatement _ 
     | Selection  (If (_, _, _)) | Selection  (Switch (_, _))
     | Iteration  (While (_, _)) | Iteration  (DoWhile (_, _)) 
     | Iteration  (For ((_,_), (_,_), (_, _), _))
     | Iteration  (MacroIteration (_,_,_))
-    | Jump (Goto _) | Jump ((Continue|Break|Return)) | Jump (ReturnExpr _)
+    | Jump ((Continue|Break|Return)) | Jump (ReturnExpr _)
     | Jump (GotoComputed _)
     | Decl _ 
 	), _ -> raise Impossible
@@ -1173,10 +1175,10 @@ and pp_init (init, iinit) =
     | F.Return   (st,((),ii)) -> 
         (* iif ii *)
 	pr2 "XXX"
-    | F.Goto  (st, (s,ii)) -> 
+    | F.Goto  (st, name, ((),ii)) -> 
         (* iif ii *)
 	pr2 "XXX"
-    | F.Label (st, (s,ii)) -> 
+    | F.Label (st, name, ((),ii)) -> 
         (* iif ii *)
 	pr2 "XXX"
     | F.EndStatement iopt -> 

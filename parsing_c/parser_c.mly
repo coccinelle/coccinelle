@@ -809,7 +809,7 @@ statement:
    * a Case  (1, (Case (2, i++)))  :(  
    *)*/
 labeled: 
- | ident            TDotDot statement   { Label (fst $1, $3),  [snd $1; $2] }
+ | ident_cpp        TDotDot statement   { Label ($1, $3),  [$2] }
  | Tcase const_expr TDotDot statement   { Case ($2, $4),       [$1; $3] }
  | Tcase const_expr TEllipsis const_expr TDotDot statement 
      { CaseRange ($2, $4, $6), [$1;$3;$5] } /*(* gccext: allow range *)*/
@@ -822,8 +822,8 @@ end_labeled:
     * update: julia fixed the problem by introducing end_labeled 
     * and modifying below stat_or_decl_list
     *)*/
- | ident            TDotDot 
-     { Label (fst $1, (ExprStatement None, [])), [snd $1; $2] }
+ | ident_cpp            TDotDot 
+     { Label ($1, (ExprStatement None, [])), [$2] }
  | Tcase const_expr TDotDot { Case ($2, (ExprStatement None, [])), [$1;$3] }   
  | Tdefault         TDotDot { Default (ExprStatement None, []),    [$1; $2] }  
 
@@ -906,7 +906,7 @@ iteration:
 
 /*(* the ';' in the caller grammar rule will be appended to the infos *)*/
 jump: 
- | Tgoto ident  { Goto (fst $2),  [$1;snd $2] } 
+ | Tgoto ident_cpp  { Goto ($2),  [$1] } 
  | Tcontinue    { Continue,       [$1] }
  | Tbreak       { Break,          [$1] }
  | Treturn      { Return,         [$1] } 

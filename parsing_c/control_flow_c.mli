@@ -64,8 +64,8 @@ type node = node1 * string (* For debugging. Used by print_graph *)
 
   (* no counter part in cocci *)
   | CaseRange of statement * (expression * expression) wrap
-  | Label     of statement * string wrap
-  | Goto      of statement * string wrap
+  | Label     of statement * name * unit wrap
+  | Goto      of statement * name * unit wrap
 
 
   | Asm of statement * asmbody wrap
