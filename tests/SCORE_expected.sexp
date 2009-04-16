@@ -40,13 +40,8 @@
  (fieldsmin.res Ok) (fix_flow_need.res Ok) (fn_todo.res Ok) (fnptr.res Ok)
  (fnret.res Ok) (four.res Ok) (foura.res Ok) (fp.res Ok) (fun.res Ok)
  (gilles-question.res Ok) (gotobreak.res Ok) (hd.res Ok) (headers.res Ok)
-<<<<<<< SCORE_expected.sexp
- (hex.res Ok) (hex2.res Ok) (hil1.res Ok) (if.res Ok) (ifbr.res Ok)
- (ifdef1.res Ok) (ifdef2.res Ok)
-=======
  (hex.res Ok)
  (hil1.res Ok) (if.res Ok) (ifbr.res Ok) (ifdef1.res Ok) (ifdef2.res Ok)
->>>>>>> 1.2
  (ifdef3.res
   (Pb
    "PROBLEM\n   exn = Lexer_cocci.Lexical(\"unrecognised symbol, in token rule: #\")\n"))
