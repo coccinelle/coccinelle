@@ -160,4 +160,7 @@ beforedepend::
 depend:: beforedepend
 	$(OCAMLDEP) -pp cpp *.mli *.ml    > .depend
 
+distclean:
+	rm -f .depend
+
 -include .depend
