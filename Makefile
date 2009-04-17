@@ -92,7 +92,8 @@ BYTECODE_STATIC=-custom
 all: byte
 	$(MAKE) preinstall
 
-all.opt: opt
+opt: all.opt
+all.opt: opt-compil
 	$(MAKE) preinstall
 
 world: 
@@ -104,7 +105,7 @@ byte: .depend
 	$(MAKE) subdirs
 	$(MAKE) $(EXEC)
 
-opt: .depend
+opt-compil: .depend
 	$(MAKE) subdirs.opt
 	$(MAKE) $(EXEC).opt
 
@@ -206,15 +207,7 @@ distclean::
 ##############################################################################
 .PHONY:: preinstall preinstall-def preinstall-byte preinstall-opt
 
-preinstall:
-	@if test -x spatch -a ! -x spatch.opt ; then \
-		$(MAKE) preinstall-byte;fi
-	@if test ! -x spatch -a -x spatch.opt ; then \
-		$(MAKE) preinstall-def; $(MAKE) preinstall-opt;fi
-	@if test -x spatch -a -x spatch.opt ; then \
-		$(MAKE) preinstall-byte; $(MAKE) preinstall-opt;fi
-	@if test ! -x spatch -a ! -x spatch.opt ; then \
-		echo "\n\n\t==> Run 'make', 'make opt', or both first. <==\n\n";fi
+preinstall: preinstall-def preinstall-byte preinstall-opt
 
 # user will use spatch to run spatch.opt (native)
 preinstall-def:
@@ -228,7 +221,7 @@ preinstall-byte:
 	cp scripts/spatch.sh scripts/spatch.tmp3
 	sed "s|\.opt||" scripts/spatch.tmp3 > scripts/spatch.tmp2
 	sed "s|SHAREDIR|$(SHAREDIR)|g" scripts/spatch.tmp2 > scripts/spatch.tmp
-	sed "s|LIBDIR|$(LIBDIR)|g" scripts/spatch.tmp > scripts/spatch
+	sed "s|LIBDIR|$(LIBDIR)|g" scripts/spatch.tmp > scripts/spatch.byte
 	rm -f scripts/spatch.tmp3 scripts/spatch.tmp2 scripts/spatch.tmp
 
 # user will use spatch.opt to run spatch.opt (native)
@@ -239,7 +232,7 @@ preinstall-opt:
 	rm -f scripts/spatch.opt.tmp scripts/spatch.opt.tmp2
 
 clean::
-	rm -f scripts/spatch scripts/spatch.opt
+	rm -f scripts/spatch scripts/spatch.byte scripts/spatch.opt
 
 ##############################################################################
 # Install
@@ -292,7 +285,7 @@ install-def: install-common
 # user will use spatch to run spatch (bytecode)
 install-byte: install-common
 	$(INSTALL_PROGRAM) spatch $(DESTDIR)$(SHAREDIR)
-	$(INSTALL_PROGRAM) scripts/spatch $(DESTDIR)$(BINDIR)/spatch
+	$(INSTALL_PROGRAM) scripts/spatch.byte $(DESTDIR)$(BINDIR)/spatch
 
 # user will use spatch.opt to run spatch.opt (native)
 install-opt: install-common
