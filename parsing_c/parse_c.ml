@@ -717,8 +717,8 @@ let tokens_include (info, includes, filename, inifdef) =
 
 let parse_cpp_define_file2 file = 
   let toks = tokens ~profile:false file in
-  let toks = Parsing_hacks.fix_tokens_define toks in
-  Parsing_hacks.extract_cpp_define toks
+  let toks = Cpp_token_c.fix_tokens_define toks in
+  Cpp_token_c.extract_cpp_define toks
 
 let parse_cpp_define_file a = 
   Common.profile_code_exclusif "HACK" (fun () -> parse_cpp_define_file2 a)
@@ -1034,7 +1034,7 @@ let parse_print_error_heuristic2 file =
   Parsing_hacks.ifdef_paren_cnt := 0;
   let toks_orig = tokens file in
 
-  let toks = Parsing_hacks.fix_tokens_define toks_orig in
+  let toks = Cpp_token_c.fix_tokens_define toks_orig in
   let toks = Parsing_hacks.fix_tokens_cpp toks in
 
   let tr = { 

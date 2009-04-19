@@ -432,9 +432,9 @@ let pretty_print_c pr_elem pr_space pr_nl pr_indent pr_outdent pr_unindent =
 	  );
 	    
           fields +> List.iter 
-            (fun (xfield, iipttvirg_when_emptyfield) -> 
+            (fun (field) -> 
 		
-              match xfield with 
+              match field with 
               | DeclarationField(FieldDeclList(onefield_multivars,iiptvirg))->
                   (match onefield_multivars with
                   | x::xs -> 
@@ -497,10 +497,28 @@ let pretty_print_c pr_elem pr_space pr_nl pr_indent pr_outdent pr_unindent =
 		  iiptvirg +> List.iter pr_elem;
 		    
 		    
-	      | MacroStructDeclTodo -> pr2 "MacroTodo"
+	      | MacroDeclField ((s, es), ii)  -> 
+                 let (iis, lp, rp, iiend, ifakestart) = 
+                   Common.tuple_of_list5 ii in
+                 (* iis::lp::rp::iiend::ifakestart::iisto
+	         iisto +> List.iter pr_elem; (* static and const *)
+                 *)
+	         pr_elem ifakestart;
+	         pr_elem iis;
+	         pr_elem lp;
+	         es +> List.iter (fun (e, opt) -> 
+                   assert (List.length opt <= 1);
+                   opt +> List.iter pr_elem;
+                   pp_argument e;
+	         );
+	         
+	         pr_elem rp;
+	         pr_elem iiend;
+
 		      
 		      
-	      | EmptyField -> iipttvirg_when_emptyfield +> List.iter pr_elem
+	      | EmptyField iipttvirg_when_emptyfield -> 
+                  pr_elem iipttvirg_when_emptyfield
 		      
 	      | CppDirectiveStruct cpp -> pp_directive cpp
 	      | IfdefStruct ifdef -> pp_ifdef ifdef

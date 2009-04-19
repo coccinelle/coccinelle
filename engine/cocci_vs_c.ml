@@ -2225,9 +2225,8 @@ and (struct_fields: (A.declaration list, B.field list) matcher) =
       )
 
 and (struct_field: (A.declaration, B.field) matcher) = fun fa fb -> 
-  let (xfield, iifield) = fb in
 
-  match xfield with 
+  match fb with 
   | B.DeclarationField (B.FieldDeclList (onefield_multivars,iiptvirg)) -> 
 
     let iiptvirgb = tuple_of_list1 iiptvirg in
@@ -2272,8 +2271,8 @@ and (struct_field: (A.declaration, B.field) matcher) = fun fa fb ->
                   return (
                     (fa),
                     ((B.DeclarationField 
-                        (B.FieldDeclList ([onevar, iivirg], [iiptvirgb]))),
-                    iifield)
+                        (B.FieldDeclList ([onevar, iivirg], [iiptvirgb])))
+                    )
                   )
               | _ -> raise Impossible
             )
@@ -2283,11 +2282,12 @@ and (struct_field: (A.declaration, B.field) matcher) = fun fa fb ->
       pr2_once "PB: More that one variable in decl. Have to split";
       fail
     )
-  | B.EmptyField -> 
-      let _iiptvirgb = tuple_of_list1 iifield in
+  | B.EmptyField _iifield -> 
       fail
 
-  | B.MacroStructDeclTodo -> fail
+  | B.MacroDeclField _ -> 
+      raise Todo
+
   | B.CppDirectiveStruct directive -> fail
   | B.IfdefStruct directive -> fail
 

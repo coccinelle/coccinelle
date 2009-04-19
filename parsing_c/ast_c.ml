@@ -208,14 +208,14 @@ and fullType = typeQualifier * typeC
      (* -------------------------------------- *)    
      and structUnion = Struct | Union
      and structType  = field list 
-        and field = fieldbis wrap 
-         and fieldbis = 
+         and field = 
            | DeclarationField of field_declaration
            (* gccext: *)
-           | EmptyField 
+           | EmptyField of info
 
             (* cppext: *)
-           | MacroStructDeclTodo
+           | MacroDeclField of (string * argument wrap2 list) 
+                               wrap (* optional ';'*)
 
             (* cppext: *)
            | CppDirectiveStruct of cpp_directive
@@ -488,7 +488,7 @@ and statement = statementbis wrap
 and declaration = 
   | DeclList of onedecl wrap2 (* , *) list wrap (* ; fakestart sto *)
   (* cppext: *)
-  | MacroDecl of (string * argument wrap2 list) wrap
+  | MacroDecl of (string * argument wrap2 list) wrap (* fakestart *)
 
      and onedecl = 
        { v_namei: (name * (info (* = *) * initialiser) option) option;
@@ -535,7 +535,7 @@ and declaration =
 and definition = definitionbis wrap (* ( ) { } fakestart sto *)
   and definitionbis = 
   { f_name: name;
-    f_type: functionType; (* todo? a functionType2 ? *)
+    f_type: functionType; (* less? a functionType2 ? *)
     f_storage: storage;
     f_body: compound;
     f_attr: attribute list; (* gccext: *)

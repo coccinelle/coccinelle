@@ -27,7 +27,7 @@ val parse_cache:
 
 (* ---------------------------------------------------------------------- *)
 val parse_cpp_define_file : 
-  filename -> (string, Parsing_hacks.define_def) assoc
+  filename -> (string, Cpp_token_c.define_def) assoc
 
 val init_defs : filename -> unit
 

@@ -6,8 +6,9 @@ open Common
  * sometimes we do some kind of lalr(k) by finding patterns. Often try to
  * work on better token representation, like ifdef-paren-ized, brace-ized,
  * paren-ized, so can do easier pattern matching to more easily match
- * complex cpp idiom pattern. Also try to get context info such as
- * whether the token is in a initializer as some common patterns have different
+ * complex cpp idiom pattern (cf token_views_c.ml). 
+ * We also try to get more contextual information such as whether the 
+ * token is in a initializer as some common patterns have different
  * use depending on context.
  * 
  * 
@@ -27,32 +28,13 @@ open Common
  * 
  * Cf the TMacroXxx in parser_c.mly and MacroXxx in ast_c.ml
  * 
- * Also try infer typedef.
+ * Also try to infer typedef.
  * 
  * Also do other stuff involving cpp like expanding some macros, 
  * or try parse well define body by finding the end of define virtual 
- * end-of-line token.
+ * end-of-line token. But now most of the code is actually in cpp_token_c.ml
+ * It is related to what is in the yacfe configuration file (e.g. standard.h)
  *)
-
-(* corresponds to what is in the yacfe configuration file (e.g. standard.h) *)
-type define_def = string * define_param * define_body 
- and define_param = 
-   | NoParam
-   | Params of string list
- and define_body = 
-   | DefineBody of Parser_c.token list
-   | DefineHint of parsinghack_hint
-
-   (* strongly corresponds to the TMacroXxx in the grammar and lexer and the
-    * MacroXxx in the ast.
-    *)
-   and parsinghack_hint = 
-     | HintIterator
-     | HintDeclarator
-     | HintMacroString
-     | HintMacroStatement
-     | HintAttribute
-     | HintMacroIdentBuilder
 
 val regexp_macro: Str.regexp
 val regexp_annot: Str.regexp
@@ -60,14 +42,11 @@ val regexp_declare: Str.regexp
 val regexp_foreach: Str.regexp
 val regexp_typedef: Str.regexp
 
-val _defs : (string, define_def) Hashtbl.t ref
+(* usually correspond to what is inside your standard.h *)
+val _defs : (string, Cpp_token_c.define_def) Hashtbl.t ref
 
-(* can reset it *)
+(* can reset this global *)
 val ifdef_paren_cnt: int ref
-
-val fix_tokens_define : Parser_c.token list -> Parser_c.token list
-val extract_cpp_define : Parser_c.token list -> (string, define_def) assoc
-
 
 val fix_tokens_cpp : Parser_c.token list -> Parser_c.token list
 

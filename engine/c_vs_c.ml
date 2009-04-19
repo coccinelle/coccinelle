@@ -195,11 +195,12 @@ and typeC tya tyb =
       (sua =*= sub && saopt =*= sbopt && List.length sta =|= List.length stb) 
       >&&> 
       Common.zip sta stb +> List.fold_left 
-        (fun acc ((xfielda, iia), (xfieldb, iib)) -> 
-          let iix = iia in
+        (fun acc ((fielda), (fieldb)) -> 
           acc >>= (fun xs -> 
-            match xfielda, xfieldb with 
-            | EmptyField, EmptyField -> return ((EmptyField, iix)::xs)
+            match fielda, fieldb with 
+            | EmptyField iia, EmptyField iib -> 
+                let iix = iia in
+                return ((EmptyField iix)::xs)
 
             | DeclarationField (FieldDeclList (fa, iipta)), 
               DeclarationField (FieldDeclList (fb, iiptb)) -> 
@@ -231,7 +232,7 @@ and typeC tya tyb =
                   ) (return [])
                  >>= (fun fx -> 
                    return (((DeclarationField 
-                               (FieldDeclList (List.rev fx,iipt))), iix)::xs)
+                               (FieldDeclList (List.rev fx,iipt))))::xs)
                  )
             | _ -> fail
           )

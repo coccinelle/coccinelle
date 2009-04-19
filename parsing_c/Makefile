@@ -14,7 +14,8 @@ SRC= flag_parsing_c.ml parsing_stat.ml \
  ast_to_flow.ml \
  pretty_print_c.ml \
  semantic_c.ml lexer_parser.ml parser_c.ml lexer_c.ml \
- token_helpers.ml parsing_hacks.ml \
+ token_helpers.ml token_views_c.ml \
+ cpp_token_c.ml parsing_hacks.ml \
  unparse_cocci.ml unparse_c.ml unparse_hrule.ml  \
  parse_c.ml \
  cpp_ast_c.ml \

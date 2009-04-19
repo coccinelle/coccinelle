@@ -349,7 +349,7 @@ let (type_field:
     
   let rec aux_fields fields = 
     fields +> List.iter (fun x -> 
-      match Ast_c.unwrap x with
+      match x with
       | DeclarationField (FieldDeclList (onefield_multivars, iiptvirg)) -> 
           onefield_multivars +> List.iter (fun (fieldkind, iicomma) -> 
             match fieldkind with
@@ -380,8 +380,8 @@ let (type_field:
             | _ -> ()
           )
             
-      | EmptyField -> ()
-      | MacroStructDeclTodo -> pr2_once "DeclTodo"; ()
+      | EmptyField info -> ()
+      | MacroDeclField _ -> pr2_once "DeclTodo"; ()
           
       | CppDirectiveStruct _
       | IfdefStruct _ -> pr2_once "StructCpp"; 

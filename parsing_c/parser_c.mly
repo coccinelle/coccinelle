@@ -483,9 +483,12 @@ let mk_string_wrap (s,info) = (s, [info])
 %token <(string * Ast_c.info)>            TMacroString 
 %token <(string * Ast_c.info)> TMacroDecl
 %token <Ast_c.info>            TMacroDeclConst 
-%token <(string * Ast_c.info)> TMacroStructDecl
+
 %token <(string * Ast_c.info)> TMacroIterator
-/*(* %token <(string * Ast_c.info)> TMacroTop *)*/
+/*(* 
+%token <(string * Ast_c.info)> TMacroTop 
+%token <(string * Ast_c.info)> TMacroStructDecl
+*)*/
 
 %token <(string * Ast_c.info)>            TMacroAttrStorage
 
@@ -1413,15 +1416,20 @@ struct_or_union2:
 
 
 struct_decl2: 
- | field_declaration { DeclarationField $1, noii }
- | TPtVirg { EmptyField, [$1]  }
- | TMacroStructDecl { MacroStructDeclTodo, [] }
+ | field_declaration { DeclarationField $1 }
+ | TPtVirg { EmptyField $1  }
+
+ /*(* no conflict ? no need for a TMacroStruct ? apparently not as at struct
+    * the rule are slightly different.
+    *)*/
+ | identifier TOPar argument_list TCPar TPtVirg
+     { MacroDeclField ((fst $1, $3), [snd $1;$2;$4;$5;fakeInfo()]) }
 
  /*(* cppext: *)*/
  | cpp_directive 
-     { CppDirectiveStruct $1, noii }
+     { CppDirectiveStruct $1 }
  | cpp_ifdef_directive/*(* struct_decl_list ... *)*/ 
-     { IfdefStruct $1, noii }
+     { IfdefStruct $1 }
 
 
 field_declaration:
@@ -1688,7 +1696,10 @@ cpp_other:
     * at the top, only decl or function definition.
     *)*/
  | identifier TOPar argument_list TCPar TPtVirg
-     { MacroTop (fst $1, $3,    [snd $1;$2;$4;$5]) } 
+     { 
+       Declaration (MacroDecl ((fst $1, $3), [snd $1;$2;$4;$5;fakeInfo()])) 
+       (* old: MacroTop (fst $1, $3,    [snd $1;$2;$4;$5])  *)
+     }
 
  /*(* TCParEOL to fix the end-of-stream bug of ocamlyacc *)*/
  | identifier TOPar argument_list TCParEOL

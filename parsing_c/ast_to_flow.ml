@@ -1072,6 +1072,8 @@ let (aux_definition: nodei -> definition -> unit) = fun topi funcdef ->
  * the toplevel macro statement as in @@ toplevel_declarator MACRO_PARAM;@@
  * and so I would not need this hack and instead I would to a cleaner
  * match in cocci_vs_c_3.ml of a A.MacroTop vs B.MacroTop
+ * 
+ * todo: update: now I do what I just described, so can remove this code ?
  *)
 let specialdeclmacro_to_stmt (s, args, ii) =
   let (iis, iiopar, iicpar, iiptvirg) = tuple_of_list4 ii in
