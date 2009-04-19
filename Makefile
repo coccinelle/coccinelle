@@ -267,7 +267,7 @@ install-python:
 		$(DESTDIR)$(SHAREDIR)/python/coccilib/coccigui
 	$(INSTALL_LIB) dllpycaml_stubs.so $(DESTDIR)$(LIBDIR)
 
-install:
+install: install-common 
 	@if test -x spatch -a ! -x spatch.opt ; then \
 		$(MAKE) install-byte;fi
 	@if test ! -x spatch -a -x spatch.opt ; then \
@@ -278,17 +278,17 @@ install:
 		echo "\n\n\t==> Run 'make', 'make opt', or both first. <==\n\n";fi
 
 # user will use spatch to run spatch.opt (native)
-install-def: install-common
+install-def:
 	$(INSTALL_PROGRAM) spatch.opt $(DESTDIR)$(SHAREDIR)
 	$(INSTALL_PROGRAM) scripts/spatch $(DESTDIR)$(BINDIR)/spatch
 
 # user will use spatch to run spatch (bytecode)
-install-byte: install-common
+install-byte:
 	$(INSTALL_PROGRAM) spatch $(DESTDIR)$(SHAREDIR)
 	$(INSTALL_PROGRAM) scripts/spatch.byte $(DESTDIR)$(BINDIR)/spatch
 
 # user will use spatch.opt to run spatch.opt (native)
-install-opt: install-common
+install-opt:
 	$(INSTALL_PROGRAM) spatch.opt $(DESTDIR)$(SHAREDIR)
 	$(INSTALL_PROGRAM) scripts/spatch.opt $(DESTDIR)$(BINDIR)/spatch.opt
 
