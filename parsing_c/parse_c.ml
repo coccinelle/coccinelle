@@ -528,6 +528,29 @@ let consistency_checking a  =
 (* Error recovery *)
 (*****************************************************************************)
 
+let is_define_passed passed =
+  let xs = passed +> List.rev +> List.filter TH.is_not_comment in
+  if List.length xs >= 2 
+  then 
+    (match Common.head_middle_tail xs with
+    | Parser_c.TDefine _, _, Parser_c.TDefEOL _ -> 
+        true
+    | _ -> false
+    )
+  else begin
+    pr2 "WEIRD: length list of error recovery tokens < 2 ";
+    false 
+  end
+
+let is_defined_passed_bis last_round = 
+  let xs = last_round +> List.filter TH.is_not_comment in
+  match xs with
+  | Parser_c.TDefine _::_ -> true
+  | _ -> false
+
+(* ---------------------------------------------------------------------- *)
+
+
 (* todo: do something if find Parser_c.Eof ? *)
 let rec find_next_synchro next already_passed =
 
@@ -549,13 +572,7 @@ let rec find_next_synchro next already_passed =
    * first { I found, so quite sure we will not loop. *)
 
   let last_round = List.rev already_passed in
-  let is_define = 
-    let xs = last_round +> List.filter TH.is_not_comment in
-    match xs with
-    | Parser_c.TDefine _::_ -> true
-    | _ -> false
-  in
-  if is_define 
+  if is_defined_passed_bis last_round 
   then find_next_synchro_define (last_round ++ next) []
   else 
 
@@ -640,7 +657,58 @@ and find_next_synchro_orig next already_passed =
   | v::xs -> 
       find_next_synchro_orig xs (v::already_passed)
 
-      
+
+(*****************************************************************************)
+(* Macro problem recovery *)
+(*****************************************************************************)
+module TV = Token_views_c
+
+let find_optional_macro_to_expand 
+    ~defs_optional
+    ~passed ~passed_before_error toks =
+  let defs = Hashtbl.create 101 in 
+
+  let _candidate_macros = 
+    passed +> List.iter (function
+    | Parser_c.TIdent (s,_)
+    (* bugfix: may have to undo some infered things *)
+    | Parser_c.TMacroIterator (s,_)
+      -> 
+        if s ==~ Parsing_hacks.regexp_macro 
+        then
+          (match Common.hfind_option s defs_optional with
+          | Some def -> 
+              (* pr2 (spf "candidate: %s" s); *)
+              Hashtbl.replace defs    s def 
+          | None -> ()
+          )
+    | _ -> ()
+    )
+  in
+  let toks = toks +> Common.map (function
+    | Parser_c.TMacroIterator (s, ii) -> 
+        if Hashtbl.mem defs s
+        then Parser_c.TIdent (s, ii)
+        else Parser_c.TMacroIterator (s, ii)
+    | x -> x
+  ) in
+  
+
+  let tokens = toks in
+  let tokens2 = ref (tokens +> Common.acc_map TV.mk_token_extended) in
+  let cleaner = !tokens2 +> Parsing_hacks.filter_cpp_stuff in
+  let paren_grouped = TV.mk_parenthised  cleaner in
+  Cpp_token_c.apply_macro_defs
+    ~msg_apply_known_macro:(fun s -> pr2 (spf "APPLYING: %s" s))
+    ~msg_apply_known_macro_hint:(fun s -> pr2 "hint")
+    defs paren_grouped;
+  (* because the before field is used by apply_macro_defs *)
+  tokens2 := TV.rebuild_tokens_extented !tokens2; 
+  Parsing_hacks.insert_virtual_positions 
+    (!tokens2 +> Common.acc_map (fun x -> x.TV.tok))
+  
+
+
 (*****************************************************************************)
 (* Include/Define hacks *)
 (*****************************************************************************)
@@ -723,6 +791,15 @@ let parse_cpp_define_file2 file =
 let parse_cpp_define_file a = 
   Common.profile_code_exclusif "HACK" (fun () -> parse_cpp_define_file2 a)
 
+
+
+let (_defs : (string, Cpp_token_c.define_def) Hashtbl.t ref)  = 
+  ref (Hashtbl.create 101)
+
+let (_defs_optional : (string, Cpp_token_c.define_def) Hashtbl.t ref)  = 
+  ref (Hashtbl.create 101)
+
+
 (* can not be put in parsing_hack, cos then mutually recursive problem as
  * we also want to parse the standard.h file.
  *)
@@ -731,7 +808,16 @@ let init_defs std_h =
   then pr2 ("warning: Can't find default macro file: " ^ std_h)
   else begin
     pr2 ("init_defs: " ^ std_h);
-    Parsing_hacks._defs := Common.hash_of_list (parse_cpp_define_file std_h);
+    _defs := Common.hash_of_list (parse_cpp_define_file std_h);
+  end
+
+let init_optional_defs file_h =     
+  if not (Common.lfile_exists file_h)
+  then pr2 ("warning: Can't find optional macro file: " ^ file_h)
+  else begin
+    pr2 ("init_optional_defs: " ^ file_h);
+    _defs_optional := 
+      Common.hash_of_list (parse_cpp_define_file file_h);
   end
 
 
@@ -804,14 +890,26 @@ type tokens_state = {
   mutable passed :       Parser_c.token list;
   mutable passed_clean : Parser_c.token list;
 }
-let clone_tokens_stat tr = 
+
+let mk_tokens_state toks = 
+  { 
+    rest       = toks;
+    rest_clean = (toks +> List.filter TH.is_not_comment);
+    current    = (List.hd toks);
+    passed = []; 
+    passed_clean = [];
+  }
+
+
+
+let clone_tokens_state tr = 
   { rest = tr.rest;
     rest_clean = tr.rest_clean;
     current = tr.current;
     passed = tr.passed;
     passed_clean = tr.passed_clean;
   }
-let copy_tokens_stat ~src ~dst = 
+let copy_tokens_state ~src ~dst = 
   dst.rest <- src.rest;
   dst.rest_clean <- src.rest_clean;
   dst.current <- src.current;
@@ -819,6 +917,7 @@ let copy_tokens_stat ~src ~dst =
   dst.passed_clean <-  src.passed_clean;
   ()
 
+(* todo? agglomerate the x##b ? *)
 let rec filter_noise n xs =
   match n, xs with
   | _, [] -> []
@@ -873,7 +972,7 @@ let rec lexer_function ~pass tr = fun lexbuf ->
        *)
       | Parser_c.TDefine (tok) -> 
           if not (LP.current_context () =*= LP.InTopLevel) && 
-            (!Flag_parsing_c.cpp_directive_passing || (pass =|= 2))
+            (!Flag_parsing_c.cpp_directive_passing || (pass >= 2))
           then begin
             incr Stat.nDefinePassing;
             pr2_once ("CPP-DEFINE: inside function, I treat it as comment");
@@ -892,7 +991,7 @@ let rec lexer_function ~pass tr = fun lexbuf ->
             
       | Parser_c.TInclude (includes, filename, inifdef, info) -> 
           if not (LP.current_context () =*= LP.InTopLevel)  &&
-            (!Flag_parsing_c.cpp_directive_passing || (pass =|= 2))
+            (!Flag_parsing_c.cpp_directive_passing || (pass >= 2))
           then begin
             incr Stat.nIncludePassing;
             pr2_once ("CPP-INCLUDE: inside function, I treat it as comment");
@@ -945,6 +1044,8 @@ let rec lexer_function ~pass tr = fun lexbuf ->
     end
 
 
+let max_pass = 4
+
 
 let get_one_elem ~pass tr (file, filelines) = 
 
@@ -972,7 +1073,7 @@ let get_one_elem ~pass tr (file, filelines) =
         Left (Parser_c.celem (lexer_function ~pass tr) lexbuf_fake)
       )
     with e -> begin
-      if (pass =|= 1 && !Flag_parsing_c.disable_two_pass)|| (pass =|= 2) 
+      if (pass =|= 1 && !Flag_parsing_c.disable_two_pass)|| (pass =|= max_pass) 
       then begin 
         (match e with
         (* Lexical is not anymore launched I think *)
@@ -989,7 +1090,8 @@ let get_one_elem ~pass tr (file, filelines) =
 
       (* must keep here, before the code that adjusts the tr fields *)
       let line_error = TH.line_of_tok tr.current in
-        
+
+      let passed_before_error = tr.passed in
         
       (*  error recovery, go to next synchro point *)
       let (passed', rest') = find_next_synchro tr.rest tr.passed in
@@ -1003,7 +1105,7 @@ let get_one_elem ~pass tr (file, filelines) =
       
       
       let info_of_bads = Common.map_eff_rev TH.info_of_tok tr.passed in 
-      Right (info_of_bads,  line_error, tr.passed)
+      Right (info_of_bads,  line_error, tr.passed, passed_before_error)
     end
   )
 
@@ -1035,18 +1137,9 @@ let parse_print_error_heuristic2 file =
   let toks_orig = tokens file in
 
   let toks = Cpp_token_c.fix_tokens_define toks_orig in
-  let toks = Parsing_hacks.fix_tokens_cpp toks in
+  let toks = Parsing_hacks.fix_tokens_cpp ~macro_defs:!_defs toks in
 
-  let tr = { 
-    rest       = toks;
-    rest_clean = (toks +> List.filter TH.is_not_comment);
-    current    = (List.hd toks);
-    passed = []; 
-    passed_clean = [];
-  } in
-
-
-
+  let tr = mk_tokens_state toks in
 
   let rec loop tr =
 
@@ -1063,21 +1156,49 @@ let parse_print_error_heuristic2 file =
     let checkpoint = TH.line_of_tok tr.current in
     let checkpoint_file = TH.file_of_tok tr.current in
 
-    let tr_save = clone_tokens_stat tr in
-    
     (* call the parser *)
     let elem = 
       let pass1 = get_one_elem ~pass:1 tr (file, filelines) in
       match pass1 with
       | Left e -> Left e
-      | Right res -> 
+      | Right (info,line_err,passed,passed_before_error) -> 
           if !Flag_parsing_c.disable_two_pass
-          then Right res
+          then pass1
           else begin
             pr2 "parsing pass2: try again";
-            copy_tokens_stat ~src:tr_save ~dst: tr;
-            let pass2 = get_one_elem ~pass:2 tr (file, filelines) in
-            pass2
+            let toks = List.rev passed ++ tr.rest in
+            let new_tr = mk_tokens_state toks in
+            copy_tokens_state ~src:new_tr ~dst:tr;
+            let passx = get_one_elem ~pass:2 tr (file, filelines) in
+
+            (match passx with
+            | Left e -> passx
+            | Right (info,line_err,passed,passed_before_error) -> 
+                pr2 "parsing pass3: try again";
+                let toks = List.rev passed ++ tr.rest in
+                let toks' = 
+                  find_optional_macro_to_expand 
+                    ~defs_optional:!_defs_optional
+                    ~passed ~passed_before_error toks in
+                let new_tr = mk_tokens_state toks' in
+                copy_tokens_state ~src:new_tr ~dst:tr;
+                let passx = get_one_elem ~pass:3 tr (file, filelines) in
+
+                (match passx with
+                | Left e -> passx
+                | Right (info,line_err,passed,passed_before_error) -> 
+                    pr2 "parsing pass4: try again";
+                    let toks = List.rev passed ++ tr.rest in
+                    let toks' = 
+                      find_optional_macro_to_expand 
+                        ~defs_optional:!_defs_optional
+                        ~passed ~passed_before_error toks in
+                    let new_tr = mk_tokens_state toks' in
+                    copy_tokens_state ~src:new_tr ~dst:tr;
+                    let passx = get_one_elem ~pass:4 tr (file, filelines) in
+
+                    passx
+                ))
           end
     in
 
@@ -1089,21 +1210,8 @@ let parse_print_error_heuristic2 file =
     let was_define = 
       (match elem with
       | Left _ -> false
-      | Right (_, line_error, _) -> 
-          let was_define = 
-            let xs = tr.passed +> List.rev +> List.filter TH.is_not_comment in
-            if List.length xs >= 2 
-            then 
-              (match Common.head_middle_tail xs with
-              | Parser_c.TDefine _, _, Parser_c.TDefEOL _ -> 
-                  true
-              | _ -> false
-              )
-            else begin
-              pr2 "WEIRD: length list of error recovery tokens < 2 ";
-              false 
-            end
-          in
+      | Right (_, line_error, _, _) -> 
+          let was_define = is_define_passed tr.passed in
           (if was_define && !Flag_parsing_c.filter_msg_define_error
           then ()
           else 
@@ -1139,7 +1247,7 @@ let parse_print_error_heuristic2 file =
       | Left e -> 
           stat.Stat.correct <- stat.Stat.correct + diffline;
           e
-      | Right (info_of_bads, line_error, toks_of_bads) -> 
+      | Right (info_of_bads, line_error, toks_of_bads, _passed_before_error) -> 
           if was_define && !Flag_parsing_c.filter_define_error
           then stat.Stat.correct <- stat.Stat.correct + diffline
           else stat.Stat.bad     <- stat.Stat.bad     + diffline;

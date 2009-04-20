@@ -22,6 +22,8 @@ let dir = ref false
 let include_headers = ref false
 let kbuild_info = ref ""
 
+let macro_file = ref "" 
+
 (* test mode *)
 let test_mode = ref false
 let test_all = ref false
@@ -180,6 +182,8 @@ let short_options = [
   " <file> (default=" ^ !Config.std_iso ^")";
   "-macro_file", Arg.Set_string Config.std_h,
   " <file> (default=" ^ !Config.std_h ^ ")";
+  "-macro_file2", Arg.Set_string macro_file,
+  " <file>";
 
   "-all_includes",
   Arg.Unit (function _ -> FC.include_options := FC.I_ALL_INCLUDES),
@@ -326,6 +330,8 @@ let other_options = [
     "-filter_msg",      Arg.Set  Flag_parsing_c.filter_msg , 
     "  filter some cpp message when the macro is a \"known\" cpp construct";
     "-filter_define_error",Arg.Set Flag_parsing_c.filter_define_error,"  ";
+    "-filter_msg_define_error",Arg.Set Flag_parsing_c.filter_msg_define_error,
+    "  filter the error msg";
     "-filter_passed_level", Arg.Set_int Flag_parsing_c.filter_passed_level,"  ";
 (*  debug cfg doesn't seem to have any effect, so drop it as an option *)
 (*  "-debug_cfg",          Arg.Set Flag_parsing_c.debug_cfg , "  "; *)
@@ -782,6 +788,9 @@ let main () =
 
     if !Config.std_h <> "" 
     then Parse_c.init_defs !Config.std_h;
+
+    if !macro_file <> "" 
+    then Parse_c.init_optional_defs !macro_file;
 
 
     (* must be done after Arg.parse, because Common.profile is set by it *)

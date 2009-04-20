@@ -54,6 +54,8 @@
 // #define FOO(a,b) fn(a,b)
 #define FOO_METH_TEST(a) YACFE_IDENT_BUILDER
 
+//#define FOO YACFE_DECLARATOR
+
 // ****************************************************************************
 // Generic macros
 // ****************************************************************************

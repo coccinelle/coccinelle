@@ -266,9 +266,6 @@ let not_annot s =
 
 
 
-let (_defs : (string, Cpp_token_c.define_def) Hashtbl.t ref)  = 
-  ref (Hashtbl.create 101)
-
 
 (*****************************************************************************)
 (* Helpers *)
@@ -1186,8 +1183,8 @@ let insert_virtual_positions l =
   skip_fake l
 
 (* ------------------------------------------------------------------------- *)
-let fix_tokens_cpp2 tokens = 
-  let tokens2 = ref (tokens +> acc_map mk_token_extended) in
+let fix_tokens_cpp2 ~macro_defs tokens = 
+  let tokens2 = ref (tokens +> Common.acc_map TV.mk_token_extended) in
   
   begin 
     (* the order is important, if you put the action heuristic first,
@@ -1210,7 +1207,7 @@ let fix_tokens_cpp2 tokens =
        * commentize_skip_start_to_end *)
       not (TH.is_comment x.tok) (* could filter also #define/#include *)
     ) in
-    let ifdef_grouped = mk_ifdef cleaner in
+    let ifdef_grouped = TV.mk_ifdef cleaner in
     set_ifdef_parenthize_info ifdef_grouped;
 
     find_ifdef_funheaders ifdef_grouped;
@@ -1222,13 +1219,13 @@ let fix_tokens_cpp2 tokens =
     (* macro 1 *)
     let cleaner = !tokens2 +> filter_cpp_stuff in
 
-    let paren_grouped = mk_parenthised  cleaner in
+    let paren_grouped = TV.mk_parenthised  cleaner in
     Cpp_token_c.apply_macro_defs
       ~msg_apply_known_macro 
       ~msg_apply_known_macro_hint 
-      !_defs paren_grouped;
+      macro_defs paren_grouped;
     (* because the before field is used by apply_macro_defs *)
-    tokens2 := rebuild_tokens_extented !tokens2; 
+    tokens2 := TV.rebuild_tokens_extented !tokens2; 
 
     (* tagging contextual info (InFunc, InStruct, etc). Better to do
      * that after the "ifdef-simplification" phase.
@@ -1237,7 +1234,7 @@ let fix_tokens_cpp2 tokens =
       not (TH.is_comment x.tok) (* could filter also #define/#include *)
     ) in
 
-    let brace_grouped = mk_braceised cleaner in
+    let brace_grouped = TV.mk_braceised cleaner in
     set_context_tag   brace_grouped;
 
 
@@ -1245,8 +1242,8 @@ let fix_tokens_cpp2 tokens =
     (* macro *)
     let cleaner = !tokens2 +> filter_cpp_stuff in
 
-    let paren_grouped      = mk_parenthised  cleaner in
-    let line_paren_grouped = mk_line_parenthised paren_grouped in
+    let paren_grouped      = TV.mk_parenthised  cleaner in
+    let line_paren_grouped = TV.mk_line_parenthised paren_grouped in
     find_define_init_brace_paren paren_grouped;
     find_string_macro_paren paren_grouped;
     find_macro_lineparen    line_paren_grouped;
@@ -1255,18 +1252,18 @@ let fix_tokens_cpp2 tokens =
 
     (* actions *)
     let cleaner = !tokens2 +> filter_cpp_stuff in
-    let paren_grouped = mk_parenthised  cleaner in
+    let paren_grouped = TV.mk_parenthised  cleaner in
     find_actions  paren_grouped;
 
 
-    insert_virtual_positions (!tokens2 +> acc_map (fun x -> x.tok))
+    insert_virtual_positions (!tokens2 +> Common.acc_map (fun x -> x.tok))
   end
 
-let time_hack1 a = 
-  Common.profile_code_exclusif "HACK" (fun () -> fix_tokens_cpp2 a)
+let time_hack1 ~macro_defs a = 
+  Common.profile_code_exclusif "HACK" (fun () -> fix_tokens_cpp2 ~macro_defs a)
 
-let fix_tokens_cpp a = 
-  Common.profile_code "C parsing.fix_cpp" (fun () -> time_hack1 a)
+let fix_tokens_cpp ~macro_defs a = 
+  Common.profile_code "C parsing.fix_cpp" (fun () -> time_hack1 ~macro_defs a)
 
 
 
@@ -1704,7 +1701,7 @@ let lookahead2 ~pass next before =
       *)
       (* not !LP._lexer_hint.toplevel *)
       if !Flag_parsing_c.ifdef_directive_passing
-        || (pass =|= 2)
+        || (pass >= 2)
       then begin
         
         if (LP.current_context () =*= LP.InInitializer)
@@ -1721,7 +1718,7 @@ let lookahead2 ~pass next before =
         
   | (TUndef (id, ii) as x)::_, _ 
       -> 
-        if (pass =|= 2)
+        if (pass >= 2)
         then begin
           pr2_cpp("UNDEF: I treat it as comment");
           TCommentCpp (Token_c.CppDirective, ii)
@@ -1730,7 +1727,7 @@ let lookahead2 ~pass next before =
 
   | (TCppDirectiveOther (ii) as x)::_, _ 
       -> 
-        if (pass =|= 2)
+        if (pass >= 2)
         then begin
           pr2_cpp ("OTHER directive: I treat it as comment");
           TCommentCpp (Token_c.CppDirective, ii)

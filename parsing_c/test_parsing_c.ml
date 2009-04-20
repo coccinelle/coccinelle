@@ -321,7 +321,42 @@ let test_cpp file =
   ()
 
 
+let extract_macros x = 
+  let ext = "[ch]" in
+  let fullxs = Common.files_of_dir_or_files_no_vcs ext [x] in
+  fullxs +> List.iter (fun file -> 
+   
+    pr2 ("/* PARSING: " ^ file ^ " */");
+    let xs = Parse_c.parse_cpp_define_file file in
+    xs +> List.iter (fun (x, def) -> 
+      let (s, params, body) = def in 
+      assert(s = x);
+      (match params, body with
+      | Cpp_token_c.NoParam, Cpp_token_c.DefineBody [Parser_c.TInt _]
+      | Cpp_token_c.NoParam, Cpp_token_c.DefineBody [] -> 
+          ()
+      | _ -> 
 
+          let s1 = 
+            match params with
+            | Cpp_token_c.NoParam -> spf "#define %s " s
+            | Cpp_token_c.Params xs -> 
+                spf "#define %s(%s) "
+                  s (Common.join "," xs)
+          in
+          let s2 = 
+            match body with
+            | Cpp_token_c.DefineHint _ -> 
+                failwith "weird, hint in regular header file"
+            | Cpp_token_c.DefineBody xs -> 
+                Common.join " " (xs +> List.map Token_helpers.str_of_tok)
+          in
+          
+          pr2 (s1 ^ s2)
+      );
+    );
+  );
+  ()
 
 (* ---------------------------------------------------------------------- *)
 let test_xxx a  = 
@@ -377,6 +412,8 @@ let actions () = [
   "-test_cpp", " <file>",
   Common.mk_action_1_arg test_cpp;
 
+  "-extract_macros", " <file or dir>",
+  Common.mk_action_1_arg extract_macros;
 
 
   "-xxx", "   <file1> <>", 

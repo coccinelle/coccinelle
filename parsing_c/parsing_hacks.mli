@@ -42,13 +42,17 @@ val regexp_declare: Str.regexp
 val regexp_foreach: Str.regexp
 val regexp_typedef: Str.regexp
 
-(* usually correspond to what is inside your standard.h *)
-val _defs : (string, Cpp_token_c.define_def) Hashtbl.t ref
-
 (* can reset this global *)
 val ifdef_paren_cnt: int ref
 
-val fix_tokens_cpp : Parser_c.token list -> Parser_c.token list
+val filter_cpp_stuff : 
+  Token_views_c.token_extended list -> Token_views_c.token_extended list
+val insert_virtual_positions: 
+  Parser_c.token list -> Parser_c.token list
+
+val fix_tokens_cpp : 
+  macro_defs:(string, Cpp_token_c.define_def) Hashtbl.t ->
+  Parser_c.token list -> Parser_c.token list
 
 (* next stream tokens -> passed stream tokens -> final next token *)
 val lookahead : 

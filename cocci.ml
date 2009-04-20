@@ -365,11 +365,11 @@ let worth_trying cfiles tokens =
 let check_macro_in_sp_and_adjust tokens = 
   let tokens = Common.union_all tokens in
   tokens +> List.iter (fun s -> 
-    if Hashtbl.mem !Parsing_hacks._defs s
+    if Hashtbl.mem !Parse_c._defs s
     then begin
       pr2 "warning: macro in semantic patch was in macro definitions";
       pr2 ("disabling macro expansion for " ^ s);
-      Hashtbl.remove !Parsing_hacks._defs s
+      Hashtbl.remove !Parse_c._defs s
     end
   )
 

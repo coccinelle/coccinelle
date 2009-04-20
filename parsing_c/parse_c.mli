@@ -13,6 +13,20 @@ type program2 = toplevel2 list
     and info_item = (string * Parser_c.token list)
 
 (* ---------------------------------------------------------------------- *)
+(* a few globals *)
+val parse_cpp_define_file : 
+  filename -> (string, Cpp_token_c.define_def) assoc
+
+(* usually correspond to what is inside your standard.h *)
+val _defs : (string, Cpp_token_c.define_def) Hashtbl.t ref
+(* usually correspond to what is inside your optional_standard.h *)
+val _defs_optional : (string, Cpp_token_c.define_def) Hashtbl.t ref
+
+val init_defs : filename -> unit
+val init_optional_defs : filename -> unit
+
+
+(* ---------------------------------------------------------------------- *)
 (* This is the main function *)
 val parse_print_error_heuristic:  
   filename (*cfile*) -> (program2 * Parsing_stat.parsing_stat)
@@ -23,17 +37,6 @@ val parse_c_and_cpp :
 (* use some .ast_raw memoized version, and take care if obsolete *)
 val parse_cache:
   filename (*cfile*) -> (program2 * Parsing_stat.parsing_stat)
-
-
-(* ---------------------------------------------------------------------- *)
-val parse_cpp_define_file : 
-  filename -> (string, Cpp_token_c.define_def) assoc
-
-val init_defs : filename -> unit
-
-
-
-
 
 (* ---------------------------------------------------------------------- *)
 (* used also for the standard.h file *)
