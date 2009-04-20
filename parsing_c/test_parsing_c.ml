@@ -322,11 +322,15 @@ let test_cpp file =
 
 
 let extract_macros x = 
-  let ext = "[ch]" in
+  (* CONFIG [ch] ? also do for .c ? maybe less needed now that I 
+   * add local_macros.
+   *)
+
+  let ext = "h" in 
   let fullxs = Common.files_of_dir_or_files_no_vcs ext [x] in
   fullxs +> List.iter (fun file -> 
    
-    pr2 ("/* PARSING: " ^ file ^ " */");
+    pr ("/* PARSING: " ^ file ^ " */");
     let xs = Parse_c.parse_cpp_define_file file in
     xs +> List.iter (fun (x, def) -> 
       let (s, params, body) = def in 
@@ -352,7 +356,7 @@ let extract_macros x =
                 Common.join " " (xs +> List.map Token_helpers.str_of_tok)
           in
           
-          pr2 (s1 ^ s2)
+          pr (s1 ^ s2)
       );
     );
   );

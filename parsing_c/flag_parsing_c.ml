@@ -140,7 +140,7 @@ let cmdline_flags_algos () =
 let cpp_directive_passing = ref false
 let ifdef_directive_passing = ref false 
 
-let disable_two_pass = ref false
+let disable_multi_pass = ref false
 let disable_add_typedef = ref false
 
 let if0_passing = ref true
@@ -158,7 +158,7 @@ let cmdline_flags_parsing_algos () = [
     "-noadd_typedef_root",   Arg.Clear add_typedef_root, " ";
     "-noadd_typedef",   Arg.Set disable_add_typedef, " ";
 
-    "-disable_two_pass", Arg.Set disable_two_pass, " ";
+    "-disable_multi_pass", Arg.Set disable_multi_pass, " ";
 ]
 
 (*****************************************************************************)

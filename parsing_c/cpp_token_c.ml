@@ -24,7 +24,7 @@ open Token_views_c
 (*****************************************************************************)
 
 (* ------------------------------------------------------------------------- *)
-(* cpp part 1 for standard.h *)
+(* mimic standard.h *)
 (* ------------------------------------------------------------------------- *)
 
 type define_def = string * define_param * define_body 
@@ -95,6 +95,8 @@ let (token_from_parsinghack_hint:
  * Or to macro expansion in a strict manner, that is process first
  * the parameters, expands macro in params, and then process enclosing
  * macro call.
+ * 
+ * todo: do concatenation of a##b too
  *)
 let rec (cpp_engine: (string , Parser_c.token list) assoc -> 
           Parser_c.token list -> Parser_c.token list) = 
@@ -109,13 +111,13 @@ let rec (cpp_engine: (string , Parser_c.token list) assoc ->
 
 
 (* ------------------------------------------------------------------------- *)
-(* cpp-builtin part2, macro, using standard.h or other defs *)
+(* apply macro, using standard.h or other defs *)
 (* ------------------------------------------------------------------------- *)
 
-(* Thanks to this function many stuff are not anymore hardcoded in ocaml code
- * (but they are now hardcoded in standard.h ...)
- *
- * 
+(* Thanks to this function many stuff are not anymore hardcoded in ocaml code.
+ * At some point there were hardcoded in a standard.h file but now I 
+ * can even generate them on the fly on demand when there is actually
+ * a parsing problem.
  * 
  * No need to take care to not substitute the macro name itself
  * that occurs in the macro definition because the macro name is
@@ -178,6 +180,12 @@ let rec apply_macro_defs
               then begin 
                 pr2_once ("WEIRD: macro with wrong number of arguments: " ^ s);
                 (* old: id.new_tokens_before <- bodymacro; *)
+
+                (* update: if wrong number, then I just pass this macro *)
+                [Parenthised (xxs, info_parens)] +> 
+                  iter_token_paren (set_as_comment Token_c.CppMacro);
+                set_as_comment Token_c.CppMacro id;
+
                 ()
               end
               else 
@@ -436,9 +444,13 @@ let rec define_parse xs =
         (* TODO *)
         | TEllipsis _ -> Some "..." 
         | Tregister _ -> Some "register"
+        | Tdefault _ -> Some "default"
         | Tconst _ -> Some "const"
         | Tint _ -> Some "int"
+        | Tvoid _ -> Some "void"
+        | Tstruct _ -> Some "void"
         | Tsigned _ -> Some "signed"
+        | Tdo _ -> Some "do"
 
         | x -> error_cant_have x
         ) in

@@ -1144,6 +1144,7 @@ parameter_decl2:
 /*(*----------------------------*)*/
 
 parameter_decl: parameter_decl2 { et "param" ();  $1 }
+ | attributes parameter_decl2 { et "param" (); $2 }
 
 declaratorp: 
  | declarator  { LP.add_ident (str_of_name (fst $1)); $1 }

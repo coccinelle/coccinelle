@@ -663,28 +663,32 @@ and find_next_synchro_orig next already_passed =
 (*****************************************************************************)
 module TV = Token_views_c
 
-let find_optional_macro_to_expand 
-    ~defs_optional
-    ~passed ~passed_before_error toks =
-  let defs = Hashtbl.create 101 in 
+let candidate_macros_in_passed passed defs_optional = 
+  let res = ref [] in
 
-  let _candidate_macros = 
-    passed +> List.iter (function
-    | Parser_c.TIdent (s,_)
-    (* bugfix: may have to undo some infered things *)
-    | Parser_c.TMacroIterator (s,_)
-      -> 
-        if s ==~ Parsing_hacks.regexp_macro 
-        then
-          (match Common.hfind_option s defs_optional with
-          | Some def -> 
-              (* pr2 (spf "candidate: %s" s); *)
-              Hashtbl.replace defs    s def 
-          | None -> ()
-          )
-    | _ -> ()
-    )
-  in
+  passed +> List.iter (function
+  | Parser_c.TIdent (s,_)
+      (* bugfix: may have to undo some infered things *)
+  | Parser_c.TMacroIterator (s,_)
+    -> 
+      if s ==~ Parsing_hacks.regexp_macro 
+      then
+        (match Common.hfind_option s defs_optional with
+        | Some def -> 
+            (* pr2 (spf "candidate: %s" s); *)
+            Common.push2 (s, def) res 
+        | None -> ()
+        )
+  | _ -> ()
+  );
+  !res
+  
+
+
+let find_optional_macro_to_expand ~defs toks =
+
+  let defs = Common.hash_of_list defs in
+
   let toks = toks +> Common.map (function
     | Parser_c.TMacroIterator (s, ii) -> 
         if Hashtbl.mem defs s
@@ -692,9 +696,14 @@ let find_optional_macro_to_expand
         else Parser_c.TMacroIterator (s, ii)
     | x -> x
   ) in
-  
 
   let tokens = toks in
+  Parsing_hacks.fix_tokens_cpp ~macro_defs:defs tokens
+
+  (* just calling apply_macro_defs is not enough as some work such 
+   * as the passing of the body of attribute in Parsing_hacks.find_macro_paren
+   * will not get the chance to be run on the new expanded tokens.
+   *
   let tokens2 = ref (tokens +> Common.acc_map TV.mk_token_extended) in
   let cleaner = !tokens2 +> Parsing_hacks.filter_cpp_stuff in
   let paren_grouped = TV.mk_parenthised  cleaner in
@@ -706,6 +715,7 @@ let find_optional_macro_to_expand
   tokens2 := TV.rebuild_tokens_extented !tokens2; 
   Parsing_hacks.insert_virtual_positions 
     (!tokens2 +> Common.acc_map (fun x -> x.TV.tok))
+  *)
   
 
 
@@ -1072,26 +1082,14 @@ let get_one_elem ~pass tr (file, filelines) =
       Common.profile_code_exclusif "YACC" (fun () -> 
         Left (Parser_c.celem (lexer_function ~pass tr) lexbuf_fake)
       )
-    with e -> begin
-      if (pass =|= 1 && !Flag_parsing_c.disable_two_pass)|| (pass =|= max_pass) 
-      then begin 
-        (match e with
-        (* Lexical is not anymore launched I think *)
-        | Lexer_c.Lexical s -> 
-            pr2 ("lexical error " ^s^ "\n =" ^ error_msg_tok tr.current)
-        | Parsing.Parse_error -> 
-            pr2 ("parse error \n = " ^ error_msg_tok tr.current)
-        | Semantic_c.Semantic (s, i) -> 
-            pr2 ("semantic error " ^s^ "\n ="^ error_msg_tok tr.current)
-        | e -> raise e
-        )
-      end;
+    with e -> 
       LP.restore_typedef_state();
 
       (* must keep here, before the code that adjusts the tr fields *)
       let line_error = TH.line_of_tok tr.current in
 
       let passed_before_error = tr.passed in
+      let current = tr.current in
         
       (*  error recovery, go to next synchro point *)
       let (passed', rest') = find_next_synchro tr.rest tr.passed in
@@ -1105,8 +1103,9 @@ let get_one_elem ~pass tr (file, filelines) =
       
       
       let info_of_bads = Common.map_eff_rev TH.info_of_tok tr.passed in 
-      Right (info_of_bads,  line_error, tr.passed, passed_before_error)
-    end
+      Right (info_of_bads,  line_error, 
+            tr.passed, passed_before_error, 
+            current, e)
   )
 
 
@@ -1134,10 +1133,19 @@ let parse_print_error_heuristic2 file =
   (* -------------------------------------------------- *)
   LP.lexer_reset_typedef(); 
   Parsing_hacks.ifdef_paren_cnt := 0;
+
   let toks_orig = tokens file in
 
   let toks = Cpp_token_c.fix_tokens_define toks_orig in
+
   let toks = Parsing_hacks.fix_tokens_cpp ~macro_defs:!_defs toks in
+
+  (* expand macros on demand trick *)
+  let macros = Hashtbl.copy !_defs_optional in
+  let local_macros = parse_cpp_define_file file in
+  local_macros +> List.iter (fun (s, def) -> 
+    Hashtbl.replace macros   s def;
+  );
 
   let tr = mk_tokens_state toks in
 
@@ -1161,8 +1169,8 @@ let parse_print_error_heuristic2 file =
       let pass1 = get_one_elem ~pass:1 tr (file, filelines) in
       match pass1 with
       | Left e -> Left e
-      | Right (info,line_err,passed,passed_before_error) -> 
-          if !Flag_parsing_c.disable_two_pass
+      | Right (info,line_err, passed, passed_before_error, cur, exn) -> 
+          if !Flag_parsing_c.disable_multi_pass
           then pass1
           else begin
             pr2 "parsing pass2: try again";
@@ -1173,31 +1181,35 @@ let parse_print_error_heuristic2 file =
 
             (match passx with
             | Left e -> passx
-            | Right (info,line_err,passed,passed_before_error) -> 
+            | Right (info,line_err,passed,passed_before_error,cur,exn) -> 
                 pr2 "parsing pass3: try again";
-                let toks = List.rev passed ++ tr.rest in
-                let toks' = 
-                  find_optional_macro_to_expand 
-                    ~defs_optional:!_defs_optional
-                    ~passed ~passed_before_error toks in
-                let new_tr = mk_tokens_state toks' in
-                copy_tokens_state ~src:new_tr ~dst:tr;
-                let passx = get_one_elem ~pass:3 tr (file, filelines) in
+                let candidates = 
+                  candidate_macros_in_passed passed macros in
+                if null candidates
+                then passx 
+                else 
+                  let toks = List.rev passed ++ tr.rest in
+                  let toks' = 
+                    find_optional_macro_to_expand ~defs:candidates toks in
+                  let new_tr = mk_tokens_state toks' in
+                  copy_tokens_state ~src:new_tr ~dst:tr;
+                  let passx = get_one_elem ~pass:3 tr (file, filelines) in
 
-                (match passx with
-                | Left e -> passx
-                | Right (info,line_err,passed,passed_before_error) -> 
-                    pr2 "parsing pass4: try again";
-                    let toks = List.rev passed ++ tr.rest in
-                    let toks' = 
-                      find_optional_macro_to_expand 
-                        ~defs_optional:!_defs_optional
-                        ~passed ~passed_before_error toks in
-                    let new_tr = mk_tokens_state toks' in
-                    copy_tokens_state ~src:new_tr ~dst:tr;
-                    let passx = get_one_elem ~pass:4 tr (file, filelines) in
+                  (match passx with
+                  | Left e -> passx
+                  | Right (info,line_err,passed,passed_before_error,cur,exn) -> 
+                      pr2 "parsing pass4: try again";
 
-                    passx
+                      let candidates = 
+                        candidate_macros_in_passed passed macros in
+
+                      let toks = List.rev passed ++ tr.rest in
+                      let toks' = 
+                      find_optional_macro_to_expand ~defs:candidates toks in
+                      let new_tr = mk_tokens_state toks' in
+                      copy_tokens_state ~src:new_tr ~dst:tr;
+                      let passx = get_one_elem ~pass:4 tr (file, filelines) in
+                      passx
                 ))
           end
     in
@@ -1206,24 +1218,6 @@ let parse_print_error_heuristic2 file =
     (* again not sure if checkpoint2 corresponds to end of bad region *)
     let checkpoint2 = TH.line_of_tok tr.current in (* <> line_error *)
     let checkpoint2_file = TH.file_of_tok tr.current in
-
-    let was_define = 
-      (match elem with
-      | Left _ -> false
-      | Right (_, line_error, _, _) -> 
-          let was_define = is_define_passed tr.passed in
-          (if was_define && !Flag_parsing_c.filter_msg_define_error
-          then ()
-          else 
-            (* bugfix: *)
-            if (checkpoint_file =$= checkpoint2_file) && 
-                checkpoint_file =$= file
-            then print_bad line_error (checkpoint, checkpoint2) filelines
-            else pr2 "PB: bad: but on tokens not from original file"
-          );
-          was_define
-      ) in
-    
 
     let diffline = 
       if (checkpoint_file =$= checkpoint2_file) && (checkpoint_file =$= file)
@@ -1247,7 +1241,32 @@ let parse_print_error_heuristic2 file =
       | Left e -> 
           stat.Stat.correct <- stat.Stat.correct + diffline;
           e
-      | Right (info_of_bads, line_error, toks_of_bads, _passed_before_error) -> 
+      | Right (info_of_bads, line_error, toks_of_bads, 
+              _passed_before_error, cur, exn) -> 
+
+          let was_define = is_define_passed tr.passed in
+          
+          if was_define && !Flag_parsing_c.filter_msg_define_error
+          then ()
+          else begin
+            (match exn with
+            (* Lexical is not anymore launched I think *)
+            | Lexer_c.Lexical s -> 
+                pr2 ("lexical error " ^s^ "\n =" ^ error_msg_tok cur)
+            | Parsing.Parse_error -> 
+                pr2 ("parse error \n = " ^ error_msg_tok cur)
+            | Semantic_c.Semantic (s, i) -> 
+                pr2 ("semantic error " ^s^ "\n ="^ error_msg_tok cur)
+            | e -> raise e
+            );
+
+            (* bugfix: *)
+            if (checkpoint_file =$= checkpoint2_file) && 
+                checkpoint_file =$= file
+            then print_bad line_error (checkpoint, checkpoint2) filelines
+            else pr2 "PB: bad: but on tokens not from original file"
+          end;
+
           if was_define && !Flag_parsing_c.filter_define_error
           then stat.Stat.correct <- stat.Stat.correct + diffline
           else stat.Stat.bad     <- stat.Stat.bad     + diffline;
