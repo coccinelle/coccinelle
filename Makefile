@@ -205,19 +205,18 @@ distclean::
 ##############################################################################
 # Pre-Install (customization of spatch frontend script)
 ##############################################################################
-.PHONY:: preinstall preinstall-def preinstall-byte preinstall-opt
 
-preinstall: preinstall-def preinstall-byte preinstall-opt
+preinstall: scripts/spatch scripts/spatch.opt scripts/spatch.byte
 
 # user will use spatch to run spatch.opt (native)
-preinstall-def:
+scripts/spatch:
 	cp scripts/spatch.sh scripts/spatch.tmp2
 	sed "s|SHAREDIR|$(SHAREDIR)|g" scripts/spatch.tmp2 > scripts/spatch.tmp
 	sed "s|LIBDIR|$(LIBDIR)|g" scripts/spatch.tmp > scripts/spatch
 	rm -f scripts/spatch.tmp2 scripts/spatch.tmp
 
 # user will use spatch to run spatch (bytecode)
-preinstall-byte:
+scripts/spatch.byte:
 	cp scripts/spatch.sh scripts/spatch.tmp3
 	sed "s|\.opt||" scripts/spatch.tmp3 > scripts/spatch.tmp2
 	sed "s|SHAREDIR|$(SHAREDIR)|g" scripts/spatch.tmp2 > scripts/spatch.tmp
@@ -225,7 +224,7 @@ preinstall-byte:
 	rm -f scripts/spatch.tmp3 scripts/spatch.tmp2 scripts/spatch.tmp
 
 # user will use spatch.opt to run spatch.opt (native)
-preinstall-opt:
+scripts/spatch.opt:
 	cp scripts/spatch.sh scripts/spatch.opt.tmp2
 	sed "s|SHAREDIR|$(SHAREDIR)|g" scripts/spatch.opt.tmp2 > scripts/spatch.opt.tmp
 	sed "s|LIBDIR|$(LIBDIR)|g" scripts/spatch.opt.tmp > scripts/spatch.opt
