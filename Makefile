@@ -89,17 +89,14 @@ BYTECODE_STATIC=-custom
 .PHONY:: all all.opt byte opt top clean distclean configure
 .PHONY:: $(MAKESUBDIRS) $(MAKESUBDIRS:%=%.opt) subdirs subdirs.opt
 
-all: byte
-	$(MAKE) preinstall
+all: byte preinstall
 
 opt: all.opt
-all.opt: opt-compil
-	$(MAKE) preinstall
+all.opt: opt-compil preinstall
 
-world: 
+world: preinstall
 	$(MAKE) byte
-	$(MAKE) opt
-	$(MAKE) preinstall
+	$(MAKE) opt-compil
 
 byte: .depend
 	$(MAKE) subdirs
