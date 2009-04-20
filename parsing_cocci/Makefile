@@ -96,7 +96,7 @@ $(PARSER_SOURCES:.mly=.ml) $(PARSER_SOURCES:.mly=.mli) : $(PARSER_SOURCES)
 $(SCRIPT_LEXER_SOURCES:.mll=.ml): $(SCRIPT_LEXER_SOURCES)
 	$(OCAMLLEX) $(SCRIPT_LEXER_SOURCES)
 
-clean::
+distclean::
 	rm -f $(GENERATED)
 
 # clean rule for others files

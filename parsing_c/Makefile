@@ -79,8 +79,6 @@ $(TARGET).top: $(OBJS) $(LIBS)
 clean::
 	rm -f $(TARGET).top
 
-
-
 lexer_c.ml: lexer_c.mll
 	$(OCAMLLEX) $<
 clean::
