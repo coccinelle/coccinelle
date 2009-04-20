@@ -1,5 +1,19 @@
 -*- org -*-
 
+* 0.1.8
+
+** Language:
+
+** Features:
+- Metavariables now capture the cpp code contained within their definitions
+- When - fragments are separated by ... or nest boundaries in the semantic
+  patch, but end up matching adjacent source code, the comments, cpp code
+  and whitespace that are between them are not deleted.
+
+** Bugfix:
+
+** Internals:
+
 * 0.1.7
 
 ** Language: 

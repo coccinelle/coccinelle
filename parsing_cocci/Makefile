@@ -15,7 +15,7 @@ adjust_pragmas.ml insert_plus.ml function_prototypes.ml \
 unify_ast.ml semantic_cocci.ml data.ml free_vars.ml parse_aux.ml disjdistr.ml \
 $(LEXER_SOURCES:.mll=.ml) $(PARSER_SOURCES:.mly=.ml) \
 $(SCRIPT_LEXER_SOURCES:.mll=.ml) \
-get_constants.ml get_constants2.ml parse_cocci.ml
+get_constants.ml get_constants2.ml adjacency.ml parse_cocci.ml
 
 LIBS=../commons/commons.cma ../globals/globals.cma
 SYSLIBS = str.cma unix.cma

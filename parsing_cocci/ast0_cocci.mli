@@ -27,7 +27,10 @@ type info = { pos_info : position_info;
 	      strings_before : (string * position_info) list;
 	      strings_after : (string * position_info) list }
 
-type 'a mcode = 'a * arity * info * mcodekind * meta_pos ref (* pos, - only *)
+type 'a mcode =
+    'a * arity * info * mcodekind * meta_pos ref (* pos, - only *) *
+      int (* adjacency_index *)
+
 and 'a wrap =
     { node : 'a;
       info : info;

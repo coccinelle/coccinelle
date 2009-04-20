@@ -13,7 +13,7 @@ let fresh_table = (Hashtbl.create(50) : ((string * string), unit) Hashtbl.t)
 
 let warning s = Printf.fprintf stderr "warning: %s\n" s
 
-let promote name = (name,(),Ast0.default_info(),(),None)
+let promote name = (name,(),Ast0.default_info(),(),None,-1)
 
 (* --------------------------------------------------------------------- *)
 
@@ -23,7 +23,7 @@ let find_loop table name =
     | x::xs -> (try Hashtbl.find x name with Not_found -> loop xs) in
   loop table
 
-let check_table table minus (name,_,info,_,_) =
+let check_table table minus (name,_,info,_,_,_) =
   let rl = info.Ast0.pos_info.Ast0.line_start in
   if minus
   then
@@ -61,7 +61,7 @@ let is_ifdef name =
 
 let ident context old_metas table minus i =
   match Ast0.unwrap i with
-    Ast0.Id((name,_,info,_,_) : string Ast0.mcode) ->
+    Ast0.Id((name,_,info,_,_,_) : string Ast0.mcode) ->
       let rl = info.Ast0.pos_info.Ast0.line_start in
       let err =
 	if List.exists (function x -> x = name) old_metas

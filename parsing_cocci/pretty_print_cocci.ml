@@ -73,7 +73,7 @@ let print_pos = function
   | _ -> ()
 
 let mcode fn = function
-    (x, _, Ast.MINUS(_,plus_stream), pos) ->
+    (x, _, Ast.MINUS(_,_,plus_stream), pos) ->
       if !print_minus_flag
       then print_string (if !Flag.sgrep_mode2 then "*" else "-");
       fn x; print_pos pos;
@@ -90,7 +90,7 @@ let mcode fn = function
       print_string_befaft fn x info
 
 let print_mcodekind = function
-    Ast.MINUS(_,plus_stream) ->
+    Ast.MINUS(_,_,plus_stream) ->
       print_string "MINUS";
       print_anything ">>> " plus_stream
   | Ast.CONTEXT(_,plus_streams) ->

@@ -87,12 +87,12 @@ let mcodekind mc = A.get_mcodekind mc
 let mcode_contain_plus = function
   | A.CONTEXT (_,A.NOTHING) -> false
   | A.CONTEXT _ -> true
-  | A.MINUS (_,[]) -> false
-  | A.MINUS (_,x::xs) -> true
+  | A.MINUS (_,_,[]) -> false
+  | A.MINUS (_,_,x::xs) -> true
   | A.PLUS -> raise Impossible
 
 let mcode_simple_minus = function
-  | A.MINUS (_,[]) -> true
+  | A.MINUS (_,_,[]) -> true
   | _ -> false
 
 
@@ -106,8 +106,8 @@ let mcode_simple_minus = function
 
 let minusizer = 
   ("fake","fake"), 
-  {A.line = 0; column =0; A.strbef=[]; A.straft=[];},
-  (A.MINUS(A.DontCarePos, [])),
+  {A.line = 0; A.column =0; A.strbef=[]; A.straft=[];},
+  (A.MINUS(A.DontCarePos,-1,[])),
   A.NoMetaPos
 
 let generalize_mcode ia = 
@@ -117,11 +117,11 @@ let generalize_mcode ia =
     | A.PLUS -> raise Impossible
     | A.CONTEXT (A.NoPos,x) -> 
 	A.CONTEXT (A.DontCarePos,x)
-    | A.MINUS   (A.NoPos,x) -> 
-	A.MINUS   (A.DontCarePos,x)
+    | A.MINUS   (A.NoPos,adj,x) -> 
+	A.MINUS   (A.DontCarePos,adj,x)
 
     | A.CONTEXT ((A.FixPos _|A.DontCarePos), _) 
-    | A.MINUS ((A.FixPos _|A.DontCarePos), _)
+    | A.MINUS ((A.FixPos _|A.DontCarePos), _, _)
         ->
         raise Impossible
   in
@@ -1659,7 +1659,7 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
                          [iisb;lpb;rpb;iiendb;iifakestart] ++ iistob))
           ))))))))
 
-  | _, (B.MacroDecl _ |B.DeclList _) -> fail
+  | _, (B.MacroDecl _ |B.DeclList _) ->       fail
 
 
 

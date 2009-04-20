@@ -157,11 +157,11 @@ module XTRANS = struct
    let check_pos info mck pos = 
      match mck with
      | Ast_cocci.PLUS -> raise Impossible
-     | Ast_cocci.CONTEXT (Ast_cocci.FixPos (i1,i2),_) 
-     | Ast_cocci.MINUS   (Ast_cocci.FixPos (i1,i2),_) -> 
+     | Ast_cocci.CONTEXT (Ast_cocci.FixPos (i1,i2),_)
+     | Ast_cocci.MINUS   (Ast_cocci.FixPos (i1,i2),_,_) -> 
          pos <= i2 && pos >= i1
-     | Ast_cocci.CONTEXT (Ast_cocci.DontCarePos,_) 
-     | Ast_cocci.MINUS   (Ast_cocci.DontCarePos,_) -> 
+     | Ast_cocci.CONTEXT (Ast_cocci.DontCarePos,_)
+     | Ast_cocci.MINUS   (Ast_cocci.DontCarePos,_,_) -> 
          true
      | _ ->
 	 match info with
@@ -195,7 +195,7 @@ module XTRANS = struct
     );
 
     match (oldmcode,mck) with
-    | (Ast_cocci.CONTEXT(_,Ast_cocci.NOTHING),      _)
+    | (Ast_cocci.CONTEXT(_,Ast_cocci.NOTHING),  _)
     | (_,   Ast_cocci.CONTEXT(_,Ast_cocci.NOTHING)) 
       ->
         cocciinforef := (mck, tin.binding);
@@ -269,12 +269,12 @@ module XTRANS = struct
 
   let distribute_mck mcodekind distributef expr tin =
     match mcodekind with
-    | Ast_cocci.MINUS (pos,any_xxs) -> 
+    | Ast_cocci.MINUS (pos,adj,any_xxs) -> 
         distributef (
-          (fun ib -> tag_with_mck (Ast_cocci.MINUS (pos,any_xxs)) ib tin),
-          (fun ib -> tag_with_mck (Ast_cocci.MINUS (pos,[])) ib tin),
-          (fun ib -> tag_with_mck (Ast_cocci.MINUS (pos,[])) ib tin),
-          (fun ib -> tag_with_mck (Ast_cocci.MINUS (pos,any_xxs)) ib tin)
+          (fun ib -> tag_with_mck (Ast_cocci.MINUS (pos,adj,any_xxs)) ib tin),
+          (fun ib -> tag_with_mck (Ast_cocci.MINUS (pos,adj,[])) ib tin),
+          (fun ib -> tag_with_mck (Ast_cocci.MINUS (pos,adj,[])) ib tin),
+          (fun ib -> tag_with_mck (Ast_cocci.MINUS (pos,adj,any_xxs)) ib tin)
         ) expr
     | Ast_cocci.CONTEXT (pos,any_befaft) -> 
         (match any_befaft with
@@ -375,11 +375,11 @@ module XTRANS = struct
    let get_pos mck = 
      match mck with
      | Ast_cocci.PLUS -> raise Impossible
-     | Ast_cocci.CONTEXT (Ast_cocci.FixPos (i1,i2),_) 
-     | Ast_cocci.MINUS   (Ast_cocci.FixPos (i1,i2),_) -> 
+     | Ast_cocci.CONTEXT (Ast_cocci.FixPos (i1,i2),_)
+     | Ast_cocci.MINUS   (Ast_cocci.FixPos (i1,i2),_,_) -> 
          Ast_cocci.FixPos (i1,i2)
-     | Ast_cocci.CONTEXT (Ast_cocci.DontCarePos,_) 
-     | Ast_cocci.MINUS   (Ast_cocci.DontCarePos,_) -> 
+     | Ast_cocci.CONTEXT (Ast_cocci.DontCarePos,_)
+     | Ast_cocci.MINUS   (Ast_cocci.DontCarePos,_,_) -> 
          Ast_cocci.DontCarePos
      | _ -> failwith "weird: dont have position info for the mcodekind"      
       

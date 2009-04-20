@@ -22,7 +22,7 @@ let make_info line logical_line offset col strbef straft =
   let new_pos_info =
     {Ast0.line_start = line; Ast0.line_end = line;
       Ast0.logical_start = logical_line; Ast0.logical_end = logical_line;
-      Ast0.column = col; Ast0.offset = offset;} in
+      Ast0.column = col; Ast0.offset = offset; } in
   { Ast0.pos_info = new_pos_info;
     Ast0.attachable_start = true; Ast0.attachable_end = true;
     Ast0.mcode_start = []; Ast0.mcode_end = [];
@@ -40,31 +40,31 @@ let drop_aft (arity,line,lline,offset,col,strbef,straft,pos) =
 let clt2mcode str = function
     (Data.MINUS,line,lline,offset,col,strbef,straft,pos)       ->
       (str,Ast0.NONE,make_info line lline offset col strbef straft,
-       Ast0.MINUS(ref([],Ast0.default_token_info)),ref pos)
+       Ast0.MINUS(ref([],Ast0.default_token_info)),ref pos,-1)
   | (Data.OPTMINUS,line,lline,offset,col,strbef,straft,pos)    ->
       (str,Ast0.OPT,make_info line lline offset col strbef straft,
-       Ast0.MINUS(ref([],Ast0.default_token_info)),ref pos)
+       Ast0.MINUS(ref([],Ast0.default_token_info)),ref pos,-1)
   | (Data.UNIQUEMINUS,line,lline,offset,col,strbef,straft,pos) ->
       (str,Ast0.UNIQUE,make_info line lline offset col strbef straft,
-       Ast0.MINUS(ref([],Ast0.default_token_info)),ref pos)
+       Ast0.MINUS(ref([],Ast0.default_token_info)),ref pos,-1)
   | (Data.PLUS,line,lline,offset,col,strbef,straft,pos)        ->
       (str,Ast0.NONE,make_info line lline offset col strbef straft,Ast0.PLUS,
-       ref pos)
+       ref pos,-1)
   | (Data.CONTEXT,line,lline,offset,col,strbef,straft,pos)     ->
       (str,Ast0.NONE,make_info line lline offset col strbef straft,
        Ast0.CONTEXT(ref(Ast.NOTHING,
 			Ast0.default_token_info,Ast0.default_token_info)),
-       ref pos)
+       ref pos,-1)
   | (Data.OPT,line,lline,offset,col,strbef,straft,pos)         ->
       (str,Ast0.OPT,make_info line lline offset col strbef straft,
        Ast0.CONTEXT(ref(Ast.NOTHING,
 			Ast0.default_token_info,Ast0.default_token_info)),
-       ref pos)
+       ref pos,-1)
   | (Data.UNIQUE,line,lline,offset,col,strbef,straft,pos)      ->
       (str,Ast0.UNIQUE,make_info line lline offset col strbef straft,
        Ast0.CONTEXT(ref(Ast.NOTHING,
 			Ast0.default_token_info,Ast0.default_token_info)),
-       ref pos)
+       ref pos,-1)
 
 let id2name   (name, clt) = name
 let id2clt    (name, clt) = clt

@@ -118,7 +118,7 @@ let mcode fn arg =
       let _ = print_comments (Some info.Ast.line) info.Ast.straft in
       ()
       (* printing for rule generation *)
-  | (true, (x, _, Ast.MINUS(_,plus_stream), pos)) ->
+  | (true, (x, _, Ast.MINUS(_,_,plus_stream), pos)) ->
       print_string "\n- ";
       fn x; print_pos pos;
       print_anything plus_stream

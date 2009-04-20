@@ -158,7 +158,7 @@ let check_allminus =
   let donothing r k e = k e in
   let bind x y = x && y in
   let option_default = true in
-  let mcode (_,_,_,mc,_) =
+  let mcode (_,_,_,mc,_,_) =
     match mc with
       Ast0.MINUS(r) -> let (plusses,_) = !r in plusses = []
     | _ -> false in
@@ -214,28 +214,28 @@ let convert_info info =
   { Ast.line = info.Ast0.pos_info.Ast0.line_start;
     Ast.column = info.Ast0.pos_info.Ast0.column;
     Ast.strbef = strings_to_s info.Ast0.strings_before;
-    Ast.straft = strings_to_s info.Ast0.strings_after; }
+    Ast.straft = strings_to_s info.Ast0.strings_after;}
 
-let convert_mcodekind = function
+let convert_mcodekind adj = function
     Ast0.MINUS(replacements) ->
       let (replacements,_) = !replacements in
-      Ast.MINUS(Ast.NoPos,replacements)
+      Ast.MINUS(Ast.NoPos,adj,replacements)
   | Ast0.PLUS -> Ast.PLUS
   | Ast0.CONTEXT(befaft) ->
       let (befaft,_,_) = !befaft in Ast.CONTEXT(Ast.NoPos,befaft)
   | Ast0.MIXED(_) -> failwith "not possible for mcode"
 
-let pos_mcode(term,_,info,mcodekind,pos) =
+let pos_mcode(term,_,info,mcodekind,pos,adj) =
   (* avoids a recursion problem *)
-  (term,convert_info info,convert_mcodekind mcodekind,Ast.NoMetaPos)
+  (term,convert_info info,convert_mcodekind adj mcodekind,Ast.NoMetaPos)
 
-let mcode(term,_,info,mcodekind,pos) =
+let mcode (term,_,info,mcodekind,pos,adj) =
   let pos =
     match !pos with
       Ast0.MetaPos(pos,constraints,per) ->
 	Ast.MetaPos(pos_mcode pos,constraints,per,unitary,false)
     | _ -> Ast.NoMetaPos in
-  (term,convert_info info,convert_mcodekind mcodekind,pos)
+  (term,convert_info info,convert_mcodekind adj mcodekind,pos)
 
 (* --------------------------------------------------------------------- *)
 (* Dots *)
@@ -575,7 +575,7 @@ and statement s =
       (match Ast0.unwrap s with
 	Ast0.Decl((_,bef),decl) ->
 	  Ast.Atomic(rewrap_rule_elem s
-		       (Ast.Decl(convert_mcodekind bef,
+		       (Ast.Decl(convert_mcodekind (-1) bef,
 				 check_allminus.VT0.combiner_rec_statement s,
 				 declaration decl)))
       | Ast0.Seq(lbrace,body,rbrace) ->
@@ -594,7 +594,7 @@ and statement s =
 	    (rewrap_rule_elem s
 	       (Ast.IfHeader(mcode iff,mcode lp,expression exp,mcode rp)),
 	     statement Ast.NotSequencible branch,
-	     ([],[],[],convert_mcodekind aft))
+	     ([],[],[],convert_mcodekind (-1) aft))
       | Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2,(_,aft)) ->
 	  let els = mcode els in
 	  Ast.IfThenElse
@@ -603,13 +603,13 @@ and statement s =
 	     statement Ast.NotSequencible branch1,
 	     tokenwrap els s (Ast.Else(els)),
 	     statement Ast.NotSequencible branch2,
-	     ([],[],[],convert_mcodekind aft))
+	     ([],[],[],convert_mcodekind (-1) aft))
       | Ast0.While(wh,lp,exp,rp,body,(_,aft)) ->
 	  Ast.While(rewrap_rule_elem s
 		      (Ast.WhileHeader
 			 (mcode wh,mcode lp,expression exp,mcode rp)),
 		    statement Ast.NotSequencible body,
-		    ([],[],[],convert_mcodekind aft))
+		    ([],[],[],convert_mcodekind (-1) aft))
       | Ast0.Do(d,body,wh,lp,exp,rp,sem) ->
 	  let wh = mcode wh in
 	  Ast.Do(rewrap_rule_elem s (Ast.DoHeader(mcode d)),
@@ -629,7 +629,7 @@ and statement s =
 	  let body = statement Ast.NotSequencible body in
 	  Ast.For(rewrap_rule_elem s
 		    (Ast.ForHeader(fr,lp,exp1,sem1,exp2,sem2,exp3,rp)),
-		  body,([],[],[],convert_mcodekind aft))
+		  body,([],[],[],convert_mcodekind (-1) aft))
       | Ast0.Iterator(nm,lp,args,rp,body,(_,aft)) ->
 	  Ast.Iterator(rewrap_rule_elem s
 		      (Ast.IteratorHeader
@@ -637,7 +637,7 @@ and statement s =
 			  dots expression args,
 			  mcode rp)),
 		    statement Ast.NotSequencible body,
-		    ([],[],[],convert_mcodekind aft))
+		    ([],[],[],convert_mcodekind (-1) aft))
       |	Ast0.Switch(switch,lp,exp,rp,lb,cases,rb) ->
 	  let switch = mcode switch in
 	  let lp = mcode lp in
@@ -725,7 +725,7 @@ and statement s =
 	  let rbrace = mcode rbrace in
 	  let allminus = check_allminus.VT0.combiner_rec_statement s in
 	  Ast.FunDecl(rewrap_rule_elem s
-			(Ast.FunHeader(convert_mcodekind bef,
+			(Ast.FunHeader(convert_mcodekind (-1) bef,
 				       allminus,fi,name,lp,params,rp)),
 		      tokenwrap lbrace s (Ast.SeqStart(lbrace)),
 		      decls,body,

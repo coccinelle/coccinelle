@@ -21,7 +21,7 @@ let print_around printer term = function
       Pretty_print_cocci.print_anything ">>> " aft
 
 let mcode fn = function
-    (x, _, Ast.MINUS(_,plus_stream), pos) ->
+    (x, _, Ast.MINUS(_,_,plus_stream), pos) ->
       print_string "-"; fn x;
       Pretty_print_cocci.print_anything ">>> " plus_stream
   | (x, _, Ast.CONTEXT(_,plus_streams), pos) -> 

@@ -136,7 +136,7 @@ let collect_minus_join_points root =
   let bind x y = x @ y in
   let option_default = [] in
 
-  let mcode (_,_,info,mcodekind,_) =
+  let mcode (_,_,info,mcodekind,_,_) =
     if List.mem (info.Ast0.pos_info.Ast0.offset) unfavored_tokens
     then [(Unfavored,info,mcodekind)]
     else [(Favored,info,mcodekind)] in
@@ -450,13 +450,13 @@ let collect_plus_nodes root =
     let aft = extract info.Ast0.strings_after in
     (bef,aft) in
 
-  let mcode fn (term,_,info,mcodekind,_) =
+  let mcode fn (term,_,info,mcodekind,_,_) =
     match mcodekind with
       Ast0.PLUS -> [(info,fn term)]
     | Ast0.CONTEXT _ -> let (bef,aft) = extract_strings info in bef@aft
     | _ -> [] in
 
-  let imcode fn (term,_,info,mcodekind,_) =
+  let imcode fn (term,_,info,mcodekind,_,_) =
     match mcodekind with
       Ast0.PLUS -> [(info,fn term (Ast0toast.convert_info info))]
     | Ast0.CONTEXT _ -> let (bef,aft) = extract_strings info in bef@aft
@@ -958,7 +958,7 @@ let reevaluate_contextness =
    let bind = (@) in
    let option_default = [] in
 
-   let mcode (_,_,_,mc,_) =
+   let mcode (_,_,_,mc,_,_) =
      match mc with
        Ast0.CONTEXT(mc) -> let (ba,_,_) = !mc in [ba]
      | _ -> [] in

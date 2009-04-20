@@ -58,8 +58,8 @@ let allopt l fn =
 (* --------------------------------------------------------------------- *)
 (* Mcode *)
 
-let mcode2line (_,_,info,_,_) = info.Ast0.pos_info.Ast0.line_start
-let mcode2arity (_,arity,_,_,_) = arity
+let mcode2line (_,_,info,_,_,_) = info.Ast0.pos_info.Ast0.line_start
+let mcode2arity (_,arity,_,_,_,_) = arity
 
 let mcode x = x (* nothing to do ... *)
 
