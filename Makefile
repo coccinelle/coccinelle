@@ -245,11 +245,6 @@ install-common:
 	$(INSTALL_DATA) standard.iso $(DESTDIR)$(SHAREDIR)
 	$(INSTALL_DATA) docs/spatch.1 $(DESTDIR)$(MANDIR)/man1/
 	@if [ $(FEATURE_PYTHON) -eq 1 ]; then $(MAKE) install-python; fi
-	@echo ""
-	@echo "You can also install spatch by copying the program spatch"
-	@echo "(available in this directory) anywhere you want and"
-	@echo "give it the right options to find its configuration files."
-	@echo ""
 
 install-python:
 	mkdir -p $(DESTDIR)$(SHAREDIR)/python/coccilib/coccigui
@@ -272,6 +267,11 @@ install: install-common
 		$(MAKE) install-byte; $(MAKE) install-opt;fi
 	@if test ! -x spatch -a ! -x spatch.opt ; then \
 		echo "\n\n\t==> Run 'make', 'make opt', or both first. <==\n\n";fi
+	@echo ""
+	@echo "\tYou can also install spatch by copying the program spatch"
+	@echo "\t(available in this directory) anywhere you want and"
+	@echo "\tgive it the right options to find its configuration files."
+	@echo ""
 
 # user will use spatch to run spatch.opt (native)
 install-def:
