@@ -1091,6 +1091,8 @@ let rec find_define_init_brace_paren xs =
 (* action *)
 (* ------------------------------------------------------------------------- *)
 
+(* obsolete now with macro expansion 
+
 let rec find_actions = function
   | [] -> ()
 
@@ -1109,7 +1111,8 @@ let rec find_actions = function
 and find_actions_params xxs = 
   xxs +> List.fold_left (fun acc xs -> 
     let toks = tokens_of_paren xs in
-    if toks +> List.exists (fun x -> TH.is_statement x.tok)
+    if toks +> List.exists (fun x -> TH.is_statement x.tok) 
+      && List.length toks > 1
     then begin
       xs +> iter_token_paren (fun x -> 
         if TH.is_eof x.tok
@@ -1125,7 +1128,7 @@ and find_actions_params xxs =
     end
     else acc
   ) false
-
+*)
 
 
 (* ------------------------------------------------------------------------- *)
@@ -1250,10 +1253,11 @@ let fix_tokens_cpp2 ~macro_defs tokens =
     find_macro_paren        paren_grouped;
 
 
-    (* actions *)
-    let cleaner = !tokens2 +> filter_cpp_stuff in
+    (* obsolete: actions *)
+    (* let cleaner = !tokens2 +> filter_cpp_stuff in
     let paren_grouped = TV.mk_parenthised  cleaner in
     find_actions  paren_grouped;
+    *)
 
 
     insert_virtual_positions (!tokens2 +> Common.acc_map (fun x -> x.tok))

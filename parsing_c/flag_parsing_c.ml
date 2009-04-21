@@ -11,7 +11,7 @@ let common_h   = ref (Filename.concat !path "data/common_macros.h")
 
 let cmdline_flags_macrofile () = 
   [
-    "-macro_file", Arg.Set_string std_h,
+    "-macro_file_builtins", Arg.Set_string std_h,
     " <file> (default=" ^ !std_h ^ ")";
   ]
 

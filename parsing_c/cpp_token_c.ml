@@ -20,8 +20,29 @@ open Parser_c
 open Token_views_c
 
 (*****************************************************************************)
+(* Prelude *)
+(*****************************************************************************)
+(* cpp functions working at the token level. Note that I use a single lexer
+ * to work both at the C and cpp level, there are some inconveniences. 
+ * For instance 'for' is a valid name for a macro parameter and macro 
+ * body, but is interpreted in a special way our single lexer, and 
+ * so at some places where I expect a TIdent I may actually also 
+ * take care to handle special cases and accept Tfor, Tif, etc at
+ * those places.
+ *)
+
+(*****************************************************************************)
+(* Wrappers *)
+(*****************************************************************************)
+let pr2 s = 
+  if !Flag_parsing_c.verbose_parsing 
+  then Common.pr2 s
+
+
+(*****************************************************************************)
 (* Types *)
 (*****************************************************************************)
+
 
 (* ------------------------------------------------------------------------- *)
 (* mimic standard.h *)
@@ -89,24 +110,82 @@ let (token_from_parsinghack_hint:
 (* Helpers *)
 (*****************************************************************************)
 
+(* In some cases we can have macros like IDENT(if) that expands to some 
+ * 'int xxx_if(void)', but as the lexer will currently generate a Tif for 
+ * the expanded code, that may not be accepted as a token after a ##
+ * in the grammar. Hence this function to remap some tokens. This is because
+ * we should not use a single lexer for both working at the C level and
+ * cpp level.
+ *)
+let rec remap_keyword_tokens xs = 
+  match xs with
+  | [] -> []
+  | [x] -> [x]
+  | x::y::xs -> 
+      (match x, y with
+      | Parser_c.TCppConcatOp _, Parser_c.TIdent _ -> 
+          x::y::remap_keyword_tokens xs
+      | Parser_c.TIdent _, Parser_c.TCppConcatOp _ -> 
+          x::y::remap_keyword_tokens xs
+
+      | Parser_c.TCppConcatOp (i1), _ -> 
+
+          let s = TH.str_of_tok y in
+          let ii = TH.info_of_tok y in
+          if s ==~ Common.regexp_alpha
+          then begin
+            pr2 (spf "remaping: %s to an ident" s);
+            x::(Parser_c.TIdent (s, ii))::remap_keyword_tokens xs
+          end
+          else 
+            x::y::remap_keyword_tokens xs
+
+      | _, Parser_c.TCppConcatOp (i1) -> 
+          let s = TH.str_of_tok x in
+          let ii = TH.info_of_tok x in
+          if s ==~ Common.regexp_alpha
+          then begin
+            pr2 (spf "remaping: %s to an ident" s);
+            (Parser_c.TIdent (s, ii))::remap_keyword_tokens (y::xs)
+          end
+          else 
+            x::y::remap_keyword_tokens xs
+
+      | _, _ -> 
+          x::remap_keyword_tokens (y::xs)
+      )
+              
+          
+
 (* To expand the parameter of the macro. The env corresponds to the actual
  * code that is binded to the parameters of the macro.
- * TODO? recurse ? fixpoint ? the expansion may also contain macro.
+ * Recurse ? fixpoint ? the expansion may also contain macro.
  * Or to macro expansion in a strict manner, that is process first
  * the parameters, expands macro in params, and then process enclosing
  * macro call.
  * 
- * todo: do concatenation of a##b too
+ * note: do the concatenation job of a##b here ?
+ * normally this should be done in the grammar. Here just expand
+ * tokens. The only thing we handle here is we may have to remap
+ * some tokens.
+ * 
+ * todo: handle stringification here ? if #n
  *)
 let rec (cpp_engine: (string , Parser_c.token list) assoc -> 
           Parser_c.token list -> Parser_c.token list) = 
  fun env xs ->
   xs +> List.map (fun tok -> 
+    (* todo: expand only TIdent ? no cos the parameter of the macro
+     * can actually be some 'register' so may have to look for 
+     * any tokens candidates for the expansion.
+     * Only subtelity is maybe dont expand the TDefineIdent.
+     *)
     match tok with
     | TIdent (s,i1) when List.mem_assoc s env -> Common.assoc s env
     | x -> [x]
   )
   +> List.flatten
+  +> remap_keyword_tokens
 
 
 
@@ -196,6 +275,7 @@ let rec apply_macro_defs
                   )
                 ) in
                 id.new_tokens_before <-
+                  (* !!! cpp expansion job here  !!! *)
                   cpp_engine (Common.zip params xxs') bodymacro;
 
                 (* important to do that after have apply the macro, otherwise
@@ -386,7 +466,7 @@ let rec define_ident acc xs =
       (* todo, subst in body of define ? *)
       | TCommentSpace i1
         ::(Tinline i2|Tconst i2|Tvolatile i2|Tstatic i2
-          |Tattribute i2
+          |Tattribute i2|Tsigned i2
         )
         ::xs -> 
           let s2 = Ast_c.str_of_info i2 in
@@ -439,10 +519,13 @@ let rec define_parse xs =
         tokparams +> Common.map_filter (function
         | TComma _ -> None
         | TIdent (s, _) -> Some s
-        (* bugfix: param of macros can be tricky *)
+
+        (* TODO *)
         | TDefParamVariadic (s, _) -> Some s 
         (* TODO *)
         | TEllipsis _ -> Some "..." 
+
+        (* bugfix: param of macros can be tricky *)
         | Tregister _ -> Some "register"
         | Tdefault _ -> Some "default"
         | Tconst _ -> Some "const"

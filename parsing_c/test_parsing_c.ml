@@ -99,7 +99,59 @@ let test_parse_ch xs =
   test_parse_gen xs "[ch]"
 
 
+(* ---------------------------------------------------------------------- *)
 
+let test_parse xs = 
+
+  Flag_parsing_c.filter_msg_define_error := true;
+  Flag_parsing_c.filter_define_error := true;
+  Flag_parsing_c.verbose_parsing := false;
+
+  let dirname_opt = 
+    match xs with
+    | [x] when is_directory x -> Some x
+    | _ -> None
+  in
+  dirname_opt +> Common.do_option (fun dir -> 
+
+    let ext = "h" in 
+    let fullxs = Common.files_of_dir_or_files_no_vcs ext [dir] in
+    fullxs +> List.iter (fun file -> 
+      let xs = Parse_c.parse_cpp_define_file file in
+      xs +> List.iter (fun (x, def) -> 
+        let (s, params, body) = def in 
+        Hashtbl.replace !Parse_c._defs s (s, params, body);
+      );
+    );
+  );
+
+  let ext = "[ch]" in
+
+  let fullxs = Common.files_of_dir_or_files_no_vcs ext xs in
+
+  let stat_list = ref [] in
+  Common.check_stack_nbfiles (List.length fullxs);
+
+  fullxs +> List.iter (fun file -> 
+    if not (file =~ (".*\\."^ext))
+    then pr2 ("warning: seems not a ."^ext^" file");
+
+    pr2 "";
+    pr2 ("PARSING: " ^ file);
+
+    let (xs, stat) = Parse_c.parse_print_error_heuristic file in
+    xs +> List.iter (fun (ast, (s, toks)) -> 
+      Parse_c.print_commentized toks
+    );
+
+    Common.push2 stat stat_list;
+  );
+  
+  if not (null !stat_list) 
+  then begin 
+    Parsing_stat.print_parsing_stat_list !stat_list;
+  end;
+  ()
 
 
 
@@ -321,6 +373,7 @@ let test_cpp file =
   ()
 
 
+
 let extract_macros x = 
   (* CONFIG [ch] ? also do for .c ? maybe less needed now that I 
    * add local_macros.
@@ -362,6 +415,8 @@ let extract_macros x =
   );
   ()
 
+
+
 (* ---------------------------------------------------------------------- *)
 let test_xxx a  = 
   ()
@@ -392,6 +447,9 @@ let actions () = [
   Common.mk_action_n_arg test_parse_h;
   "-parse_ch", "   <file or dir>", 
   Common.mk_action_n_arg test_parse_ch;
+
+  "-parse", "   <file or dir>", 
+  Common.mk_action_n_arg test_parse;
 
   "-show_flow", "   <file or file:function>", 
   Common.mk_action_1_arg test_cfg;

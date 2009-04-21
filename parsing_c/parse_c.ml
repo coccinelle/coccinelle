@@ -22,7 +22,7 @@ module Stat = Parsing_stat
 (*****************************************************************************)
 (* Wrappers *)
 (*****************************************************************************)
-let pr2 s = 
+let pr2_err s = 
   if !Flag_parsing_c.verbose_parsing 
   then Common.pr2 s
 
@@ -45,7 +45,7 @@ let error_msg_tok tok =
   let file = TH.file_of_tok tok in
   if !Flag_parsing_c.verbose_parsing
   then Common.error_message file (token_to_strpos tok) 
-  else ("error in " ^ file  ^ "set verbose_parsing for more info")
+  else ("error in " ^ file  ^ "; set verbose_parsing for more info")
 
 
 let print_bad line_error (start_line, end_line) filelines  = 
@@ -329,7 +329,7 @@ let parse_gen parsefunc s =
   let lexer_function = 
     (fun _ -> 
       if TH.is_eof !cur_tok
-      then (pr2 "LEXER: ALREADY AT END"; !cur_tok)
+      then (pr2_err "LEXER: ALREADY AT END"; !cur_tok)
       else
         let v = Common.pop2 all_tokens in
         cur_tok := v;
@@ -446,7 +446,7 @@ let consistency_checking2 xs =
     let xs = Common.hash_to_list v in
     if List.length xs >= 2
     then begin 
-      pr2 ("CONFLICT:" ^ k);
+      pr2_err ("CONFLICT:" ^ k);
       let sorted = xs +> List.sort (fun (ka,va) (kb,vb) -> 
         if !va =|= !vb then
           (match ka, kb with
@@ -459,10 +459,10 @@ let consistency_checking2 xs =
       let sorted = List.rev sorted in
       match sorted with
       | [CTypedef, i1;CIdent, i2] -> 
-          pr2 ("transforming some ident in typedef");
+          pr2_err ("transforming some ident in typedef");
           push2 k ident_to_type;
       | _ -> 
-          pr2 ("TODO:other transforming?");
+          pr2_err ("TODO:other transforming?");
       
     end
   );
@@ -538,7 +538,7 @@ let is_define_passed passed =
     | _ -> false
     )
   else begin
-    pr2 "WEIRD: length list of error recovery tokens < 2 ";
+    pr2_err "WEIRD: length list of error recovery tokens < 2 ";
     false 
   end
 
@@ -594,10 +594,10 @@ let rec find_next_synchro next already_passed =
 and find_next_synchro_define next already_passed =
   match next with
   | [] ->  
-      pr2 "ERROR-RECOV: end of file while in recovery mode"; 
+      pr2_err "ERROR-RECOV: end of file while in recovery mode"; 
       already_passed, []
   | (Parser_c.TDefEOL i as v)::xs  -> 
-      pr2 ("ERROR-RECOV: found sync end of #define, line "^i_to_s(TH.line_of_tok v));
+      pr2_err ("ERROR-RECOV: found sync end of #define, line "^i_to_s(TH.line_of_tok v));
       v::already_passed, xs
   | v::xs -> 
       find_next_synchro_define xs (v::already_passed)
@@ -608,28 +608,28 @@ and find_next_synchro_define next already_passed =
 and find_next_synchro_orig next already_passed =
   match next with
   | [] ->  
-      pr2 "ERROR-RECOV: end of file while in recovery mode"; 
+      pr2_err "ERROR-RECOV: end of file while in recovery mode"; 
       already_passed, []
 
   | (Parser_c.TCBrace i as v)::xs when TH.col_of_tok v =|= 0 -> 
-      pr2 ("ERROR-RECOV: found sync '}' at line "^i_to_s (TH.line_of_tok v));
+      pr2_err ("ERROR-RECOV: found sync '}' at line "^i_to_s (TH.line_of_tok v));
 
       (match xs with
       | [] -> raise Impossible (* there is a EOF token normally *)
 
       (* still useful: now parser.mly allow empty ';' so normally no pb *)
       | Parser_c.TPtVirg iptvirg::xs -> 
-          pr2 "ERROR-RECOV: found sync bis, eating } and ;";
+          pr2_err "ERROR-RECOV: found sync bis, eating } and ;";
           (Parser_c.TPtVirg iptvirg)::v::already_passed, xs
 
       | Parser_c.TIdent x::Parser_c.TPtVirg iptvirg::xs -> 
-          pr2 "ERROR-RECOV: found sync bis, eating ident, }, and ;";
+          pr2_err "ERROR-RECOV: found sync bis, eating ident, }, and ;";
           (Parser_c.TPtVirg iptvirg)::(Parser_c.TIdent x)::v::already_passed, 
           xs
             
       | Parser_c.TCommentSpace sp::Parser_c.TIdent x::Parser_c.TPtVirg iptvirg
         ::xs -> 
-          pr2 "ERROR-RECOV: found sync bis, eating ident, }, and ;";
+          pr2_err "ERROR-RECOV: found sync bis, eating ident, }, and ;";
           (Parser_c.TCommentSpace sp)::
             (Parser_c.TPtVirg iptvirg)::
             (Parser_c.TIdent x)::
@@ -639,7 +639,7 @@ and find_next_synchro_orig next already_passed =
             
       | Parser_c.TCommentNewline sp::Parser_c.TIdent x::Parser_c.TPtVirg iptvirg
         ::xs -> 
-          pr2 "ERROR-RECOV: found sync bis, eating ident, }, and ;";
+          pr2_err "ERROR-RECOV: found sync bis, eating ident, }, and ;";
           (Parser_c.TCommentNewline sp)::
             (Parser_c.TPtVirg iptvirg)::
             (Parser_c.TIdent x)::
@@ -651,7 +651,7 @@ and find_next_synchro_orig next already_passed =
           v::already_passed, xs
       )
   | v::xs when TH.col_of_tok v =|= 0 && TH.is_start_of_something v  -> 
-      pr2 ("ERROR-RECOV: found sync col 0 at line "^ i_to_s(TH.line_of_tok v));
+      pr2_err ("ERROR-RECOV: found sync col 0 at line "^ i_to_s(TH.line_of_tok v));
       already_passed, v::xs
         
   | v::xs -> 
@@ -665,23 +665,30 @@ module TV = Token_views_c
 
 let candidate_macros_in_passed passed defs_optional = 
   let res = ref [] in
+  let res2 = ref [] in
 
   passed +> List.iter (function
   | Parser_c.TIdent (s,_)
-      (* bugfix: may have to undo some infered things *)
+   (* bugfix: may have to undo some infered things *)
   | Parser_c.TMacroIterator (s,_)
+  | Parser_c.TypedefIdent (s,_)
     -> 
-      if s ==~ Parsing_hacks.regexp_macro 
-      then
-        (match Common.hfind_option s defs_optional with
-        | Some def -> 
+      (match Common.hfind_option s defs_optional with
+      | Some def -> 
+          if s ==~ Parsing_hacks.regexp_macro 
+          then
             (* pr2 (spf "candidate: %s" s); *)
             Common.push2 (s, def) res 
+          else 
+            Common.push2 (s, def) res2
         | None -> ()
         )
+
   | _ -> ()
   );
-  !res
+  if null !res 
+  then !res2 
+  else !res
   
 
 
@@ -690,20 +697,31 @@ let find_optional_macro_to_expand ~defs toks =
   let defs = Common.hash_of_list defs in
 
   let toks = toks +> Common.map (function
+
+    (* special cases to undo *)
     | Parser_c.TMacroIterator (s, ii) -> 
         if Hashtbl.mem defs s
         then Parser_c.TIdent (s, ii)
         else Parser_c.TMacroIterator (s, ii)
+
+    | Parser_c.TypedefIdent (s, ii) -> 
+        if Hashtbl.mem defs s
+        then Parser_c.TIdent (s, ii)
+        else Parser_c.TypedefIdent (s, ii)
+
     | x -> x
   ) in
 
   let tokens = toks in
   Parsing_hacks.fix_tokens_cpp ~macro_defs:defs tokens
 
-  (* just calling apply_macro_defs is not enough as some work such 
+  (* just calling apply_macro_defs and having a specialized version
+   * of the code in fix_tokens_cpp is not enough as some work such 
    * as the passing of the body of attribute in Parsing_hacks.find_macro_paren
    * will not get the chance to be run on the new expanded tokens.
-   *
+   * Hence even if it's expensive, it's currently better to 
+   * just call directly fix_tokens_cpp again here.
+
   let tokens2 = ref (tokens +> Common.acc_map TV.mk_token_extended) in
   let cleaner = !tokens2 +> Parsing_hacks.filter_cpp_stuff in
   let paren_grouped = TV.mk_parenthised  cleaner in
@@ -806,7 +824,7 @@ let parse_cpp_define_file a =
 let (_defs : (string, Cpp_token_c.define_def) Hashtbl.t ref)  = 
   ref (Hashtbl.create 101)
 
-let (_defs_optional : (string, Cpp_token_c.define_def) Hashtbl.t ref)  = 
+let (_defs_builtins : (string, Cpp_token_c.define_def) Hashtbl.t ref)  = 
   ref (Hashtbl.create 101)
 
 
@@ -821,12 +839,12 @@ let init_defs std_h =
     _defs := Common.hash_of_list (parse_cpp_define_file std_h);
   end
 
-let init_optional_defs file_h =     
+let init_defs_builtins file_h =     
   if not (Common.lfile_exists file_h)
-  then pr2 ("warning: Can't find optional macro file: " ^ file_h)
+  then pr2 ("warning: Can't find macro file: " ^ file_h)
   else begin
-    pr2 ("init_optional_defs: " ^ file_h);
-    _defs_optional := 
+    pr2 ("init_defs_builtins: " ^ file_h);
+    _defs_builtins := 
       Common.hash_of_list (parse_cpp_define_file file_h);
   end
 
@@ -954,7 +972,7 @@ let clean_for_lookahead xs =
  *)
 let rec lexer_function ~pass tr = fun lexbuf -> 
   match tr.rest with
-  | [] -> pr2 "ALREADY AT END"; tr.current
+  | [] -> pr2_err "ALREADY AT END"; tr.current
   | v::xs -> 
     tr.rest <- xs;
     tr.current <- v;
@@ -1060,7 +1078,7 @@ let max_pass = 4
 let get_one_elem ~pass tr (file, filelines) = 
 
   if not (LP.is_enabled_typedef()) && !Flag_parsing_c.debug_typedef
-  then pr2 "TYPEDEF:_handle_typedef=false. Not normal if dont come from exn";
+  then pr2_err "TYPEDEF:_handle_typedef=false. Not normal if dont come from exn";
 
   (* normally have to do that only when come from an exception in which
    * case the dt() may not have been done 
@@ -1138,10 +1156,16 @@ let parse_print_error_heuristic2 file =
 
   let toks = Cpp_token_c.fix_tokens_define toks_orig in
 
-  let toks = Parsing_hacks.fix_tokens_cpp ~macro_defs:!_defs toks in
+  let toks = Parsing_hacks.fix_tokens_cpp ~macro_defs:!_defs_builtins toks in
 
   (* expand macros on demand trick *)
-  let macros = Hashtbl.copy !_defs_optional in
+  let macros = Hashtbl.copy !_defs in
+  (* include also builtins as some macros may generate some builtins too
+   * like __decl_spec or __stdcall
+   *)
+  !_defs_builtins +> Hashtbl.iter (fun s def -> 
+    Hashtbl.replace macros   s def;
+  );
   let local_macros = parse_cpp_define_file file in
   local_macros +> List.iter (fun (s, def) -> 
     Hashtbl.replace macros   s def;
@@ -1173,7 +1197,8 @@ let parse_print_error_heuristic2 file =
           if !Flag_parsing_c.disable_multi_pass
           then pass1
           else begin
-            pr2 "parsing pass2: try again";
+
+            pr2_err "parsing pass2: try again";
             let toks = List.rev passed ++ tr.rest in
             let new_tr = mk_tokens_state toks in
             copy_tokens_state ~src:new_tr ~dst:tr;
@@ -1182,12 +1207,15 @@ let parse_print_error_heuristic2 file =
             (match passx with
             | Left e -> passx
             | Right (info,line_err,passed,passed_before_error,cur,exn) -> 
-                pr2 "parsing pass3: try again";
                 let candidates = 
-                  candidate_macros_in_passed passed macros in
-                if null candidates
-                then passx 
-                else 
+                  candidate_macros_in_passed passed macros 
+                in
+                if is_define_passed passed || null candidates
+                then passx
+                else begin
+                  (* todo factorize code *)
+
+                  pr2_err "parsing pass3: try again";
                   let toks = List.rev passed ++ tr.rest in
                   let toks' = 
                     find_optional_macro_to_expand ~defs:candidates toks in
@@ -1198,7 +1226,7 @@ let parse_print_error_heuristic2 file =
                   (match passx with
                   | Left e -> passx
                   | Right (info,line_err,passed,passed_before_error,cur,exn) -> 
-                      pr2 "parsing pass4: try again";
+                      pr2_err "parsing pass4: try again";
 
                       let candidates = 
                         candidate_macros_in_passed passed macros in
@@ -1210,7 +1238,9 @@ let parse_print_error_heuristic2 file =
                       copy_tokens_state ~src:new_tr ~dst:tr;
                       let passx = get_one_elem ~pass:4 tr (file, filelines) in
                       passx
-                ))
+                  )
+                 end
+            )
           end
     in
 

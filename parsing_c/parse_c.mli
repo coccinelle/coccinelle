@@ -17,13 +17,13 @@ type program2 = toplevel2 list
 val parse_cpp_define_file : 
   filename -> (string, Cpp_token_c.define_def) assoc
 
-(* usually correspond to what is inside your standard.h *)
+(* usually correspond to what is inside your macros.h *)
 val _defs : (string, Cpp_token_c.define_def) Hashtbl.t ref
-(* usually correspond to what is inside your optional_standard.h *)
-val _defs_optional : (string, Cpp_token_c.define_def) Hashtbl.t ref
+(* usually correspond to what is inside your standard.h *)
+val _defs_builtins : (string, Cpp_token_c.define_def) Hashtbl.t ref
 
 val init_defs : filename -> unit
-val init_optional_defs : filename -> unit
+val init_defs_builtins : filename -> unit
 
 
 (* ---------------------------------------------------------------------- *)
