@@ -1091,7 +1091,7 @@ let rec find_define_init_brace_paren xs =
 (* action *)
 (* ------------------------------------------------------------------------- *)
 
-(* obsolete now with macro expansion 
+(* obsolete now with macro expansion ? get some regression if comment *)
 
 let rec find_actions = function
   | [] -> ()
@@ -1128,7 +1128,7 @@ and find_actions_params xxs =
     end
     else acc
   ) false
-*)
+
 
 
 (* ------------------------------------------------------------------------- *)
@@ -1253,11 +1253,11 @@ let fix_tokens_cpp2 ~macro_defs tokens =
     find_macro_paren        paren_grouped;
 
 
-    (* obsolete: actions *)
-    (* let cleaner = !tokens2 +> filter_cpp_stuff in
+    (* obsolete: actions ? not yet *)
+    let cleaner = !tokens2 +> filter_cpp_stuff in
     let paren_grouped = TV.mk_parenthised  cleaner in
     find_actions  paren_grouped;
-    *)
+    
 
 
     insert_virtual_positions (!tokens2 +> Common.acc_map (fun x -> x.tok))
