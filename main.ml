@@ -180,10 +180,10 @@ let short_options = [
 
   "-iso_file", Arg.Set_string Config.std_iso,   
   " <file> (default=" ^ !Config.std_iso ^")";
-  "-macro_file", Arg.Set_string Config.std_h,
-  " <file> (default=" ^ !Config.std_h ^ ")";
-  "-macro_file2", Arg.Set_string macro_file,
+  "-macro_file", Arg.Set_string macro_file,
   " <file>";
+  "-macro_file_builtins", Arg.Set_string Config.std_h,
+  " <file> (default=" ^ !Config.std_h ^ ")";
 
   "-all_includes",
   Arg.Unit (function _ -> FC.include_options := FC.I_ALL_INCLUDES),
@@ -405,6 +405,8 @@ let other_options = [
     "-l1",                Arg.Clear Flag_parsing_c.label_strategy_2, " ";
     "-ifdef_to_if",              Arg.Set FC.ifdef_to_if, 
     "   convert ifdef to if (experimental)";
+
+    "-disable_multi_pass", Arg.Set Flag_parsing_c.disable_multi_pass, " ";
 
     "-noif0_passing",   Arg.Clear Flag_parsing_c.if0_passing, 
     " ";
@@ -787,10 +789,10 @@ let main () =
     then Config.std_h := Common.adjust_ext_if_needed !Config.std_h ".h";
 
     if !Config.std_h <> "" 
-    then Parse_c.init_defs !Config.std_h;
+    then Parse_c.init_defs_builtins !Config.std_h;
 
     if !macro_file <> "" 
-    then Parse_c.init_optional_defs !macro_file;
+    then Parse_c.init_defs !macro_file;
 
 
     (* must be done after Arg.parse, because Common.profile is set by it *)
