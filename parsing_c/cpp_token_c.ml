@@ -22,13 +22,31 @@ open Token_views_c
 (*****************************************************************************)
 (* Prelude *)
 (*****************************************************************************)
-(* cpp functions working at the token level. Note that I use a single lexer
- * to work both at the C and cpp level, there are some inconveniences. 
+
+(* cpp functions working at the token level. Cf cpp_ast_c for cpp functions
+ * working at the AST level (which is very unusual but makes sense in 
+ * the coccinelle context for instance).
+ *  
+ * Note that as I use a single lexer  to work both at the C and cpp level
+ * there are some inconveniences. 
  * For instance 'for' is a valid name for a macro parameter and macro 
- * body, but is interpreted in a special way our single lexer, and 
- * so at some places where I expect a TIdent I may actually also 
- * take care to handle special cases and accept Tfor, Tif, etc at
- * those places.
+ * body, but is interpreted in a special way by our single lexer, and 
+ * so at some places where I expect a TIdent I need also to
+ * handle special cases and accept Tfor, Tif, etc at those places.
+ * 
+ * There are multiple issues related to those keywords incorrect tokens.
+ * Those keywords can be:
+ *   - (1) in the name of the macro as  in  #define inline
+ *   - (2) in a parameter of the macro as in #define foo(char)   char x;
+ *   - (3) in an argument to a macro call as in   IDENT(if);
+ * Case 1 is easy to fix in define_ident.
+ * Case 2 is easy to fix in define_parse where detect such toks in 
+ * the parameter and then replace their occurence in the body in a Tident.
+ * Case 3 is only an issue when the expanded token is not really use 
+ * as usual but use for instance in concatenation as in  a ## if
+ * when expanded. In the case the grammar this time will not be happy
+ * so this is also easy to fix in cpp_engine.
+ * 
  *)
 
 (*****************************************************************************)
@@ -63,6 +81,7 @@ type define_def = string * define_param * define_body
      | HintMacroStatement
      | HintAttribute
      | HintMacroIdentBuilder
+
 
 
 (* cf also data/test.h *)
@@ -107,7 +126,7 @@ let (token_from_parsinghack_hint:
 
 
 (*****************************************************************************)
-(* Helpers *)
+(* Expansion helpers *)
 (*****************************************************************************)
 
 (* In some cases we can have macros like IDENT(if) that expands to some 
@@ -134,7 +153,7 @@ let rec remap_keyword_tokens xs =
           let ii = TH.info_of_tok y in
           if s ==~ Common.regexp_alpha
           then begin
-            pr2 (spf "remaping: %s to an ident" s);
+            pr2 (spf "remaping: %s to an ident in expanded code" s);
             x::(Parser_c.TIdent (s, ii))::remap_keyword_tokens xs
           end
           else 
@@ -145,7 +164,7 @@ let rec remap_keyword_tokens xs =
           let ii = TH.info_of_tok x in
           if s ==~ Common.regexp_alpha
           then begin
-            pr2 (spf "remaping: %s to an ident" s);
+            pr2 (spf "remaping: %s to an ident in expanded code" s);
             (Parser_c.TIdent (s, ii))::remap_keyword_tokens (y::xs)
           end
           else 
@@ -170,15 +189,21 @@ let rec remap_keyword_tokens xs =
  * some tokens.
  * 
  * todo: handle stringification here ? if #n
+ * 
+ * todo? but could parsing_hacks then pass over the remapped tokens, 
+ * for instance transform some of the back into some TypedefIdent
+ * so cpp_engine may be fooled?
  *)
 let rec (cpp_engine: (string , Parser_c.token list) assoc -> 
           Parser_c.token list -> Parser_c.token list) = 
  fun env xs ->
   xs +> List.map (fun tok -> 
-    (* todo: expand only TIdent ? no cos the parameter of the macro
+    (* expand only TIdent ? no cos the parameter of the macro
      * can actually be some 'register' so may have to look for 
      * any tokens candidates for the expansion.
      * Only subtelity is maybe dont expand the TDefineIdent.
+     * update: in fact now the caller (define_parse) will have done 
+     * the job right and already replaced the macro parameter with a TIdent.
      *)
     match tok with
     | TIdent (s,i1) when List.mem_assoc s env -> Common.assoc s env
@@ -368,10 +393,21 @@ let rec apply_macro_defs
 
 
 (*****************************************************************************)
-(* The #define tricks *)
+(* The parsing hack for #define *)
 (*****************************************************************************)
 
-(* ugly hack, a better solution perhaps would be to erase TDefEOL 
+(* To parse macro definitions I need to do some tricks 
+ * as some information can be get only at the lexing level. For instance
+ * the space after the name of the macro in '#define foo (x)' is meaningful
+ * but the grammar can not get this information. So define_ident below
+ * look at such space and generate a special TOpardefine. In a similar
+ * way macro definitions can contain some antislash and newlines
+ * and the grammar need to know where the macro ends (which is 
+ * a line-level and so low token-level information). Hence the 
+ * function 'define_line' below and the TDefEol.
+ * 
+ * 
+ * ugly hack, a better solution perhaps would be to erase TDefEOL 
  * from the Ast and list of tokens in parse_c. 
  * 
  * note: I do a +1 somewhere, it's for the unparsing to correctly sync.
@@ -457,22 +493,34 @@ let rec define_ident acc xs =
 	  let acc = (TIdentDefine (s,i2)) :: acc in
 	  let acc = (TOParDefine i3) :: acc in
           define_ident acc xs
+
       | TCommentSpace i1::TIdent (s,i2)::xs -> 
 	  let acc = (TCommentSpace i1) :: acc in
 	  let acc = (TIdentDefine (s,i2)) :: acc in
           define_ident acc xs
 
-      (* bugfix: ident of macro (as well as params, cf below) can be tricky *)
-      (* todo, subst in body of define ? *)
-      | TCommentSpace i1
-        ::(Tinline i2|Tconst i2|Tvolatile i2|Tstatic i2
-          |Tattribute i2|Tsigned i2
-        )
-        ::xs -> 
-          let s2 = Ast_c.str_of_info i2 in
-	  let acc = (TCommentSpace i1) :: acc in
-	  let acc = (TIdentDefine (s2,i2)) :: acc in
-          define_ident acc xs
+      (* bugfix: ident of macro (as well as params, cf below) can be tricky
+       * note, do we need to subst in the body of the define ? no cos
+       * here the issue is the name of the macro, as in #define inline,
+       * so obviously the name of this macro will not be used in its 
+       * body (it would be a recursive macro, which is forbidden).
+       *)
+       
+      | TCommentSpace i1::t::xs -> 
+
+          let s = TH.str_of_tok t in
+          let ii = TH.info_of_tok t in
+          if s ==~ Common.regexp_alpha
+          then begin
+            pr2 (spf "remaping: %s to an ident in macro name" s);
+	    let acc = (TCommentSpace i1) :: acc in
+	    let acc = (TIdentDefine (s,ii)) :: acc in
+            define_ident acc xs
+          end
+          else begin
+            pr2 "WEIRD: weird #define body"; 
+            define_ident acc xs
+          end
 
       | _ -> 
           pr2 "WEIRD: weird #define body"; 
@@ -525,20 +573,33 @@ let rec define_parse xs =
         (* TODO *)
         | TEllipsis _ -> Some "..." 
 
-        (* bugfix: param of macros can be tricky *)
-        | Tregister _ -> Some "register"
-        | Tdefault _ -> Some "default"
-        | Tconst _ -> Some "const"
-        | Tint _ -> Some "int"
-        | Tvoid _ -> Some "void"
-        | Tstruct _ -> Some "void"
-        | Tsigned _ -> Some "signed"
-        | Tdo _ -> Some "do"
-
-        | x -> error_cant_have x
+        | x -> 
+            (* bugfix: param of macros can be tricky *)
+            let s = TH.str_of_tok x in
+            if s ==~ Common.regexp_alpha
+            then begin
+              pr2 (spf "remaping: %s to a macro parameter" s);
+              Some s
+            end
+            else 
+              error_cant_have x
         ) in
-      let body = body +> List.map 
-        (TH.visitor_info_of_tok Ast_c.make_expanded) in
+      (* bugfix: also substitute to ident in body so cpp_engine will 
+       * have an easy job.
+       *)
+      let body = body +> List.map (fun tok -> 
+        match tok with
+        | TIdent _ -> tok
+        | _ -> 
+            let s = TH.str_of_tok tok in
+            let ii = TH.info_of_tok tok in 
+            if s ==~ Common.regexp_alpha && List.mem s params
+            then begin
+              pr2 (spf "remaping: %s to an ident in macro body" s);
+              TIdent (s, ii)
+            end
+            else tok
+      ) +> List.map (TH.visitor_info_of_tok Ast_c.make_expanded) in
       let def = (s, (s, Params params, macro_body_to_maybe_hint body)) in
       def::define_parse xs
 

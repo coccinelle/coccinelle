@@ -204,7 +204,7 @@ let print_commentized xs =
 
 (* called by parse_print_error_heuristic *)
 let tokens2 file = 
- let table     = Common.full_charpos_to_pos file in
+ let table     = Common.full_charpos_to_pos_large file in
 
  Common.with_open_infile file (fun chan -> 
   let lexbuf = Lexing.from_channel chan in
@@ -217,9 +217,9 @@ let tokens2 file =
           (* could assert pinfo.filename = file ? *)
 	  match Ast_c.pinfo_of_info ii with
 	    Ast_c.OriginTok pi ->
-              Ast_c.OriginTok (Common.complete_parse_info file table pi)
+              Ast_c.OriginTok (Common.complete_parse_info_large file table pi)
 	  | Ast_c.ExpandedTok (pi,vpi) ->
-              Ast_c.ExpandedTok((Common.complete_parse_info file table pi),vpi)
+              Ast_c.ExpandedTok((Common.complete_parse_info_large file table pi),vpi)
 	  | Ast_c.FakeTok (s,vpi) -> Ast_c.FakeTok (s,vpi)
 	  | Ast_c.AbstractLineTok pi -> failwith "should not occur"
       })
@@ -663,7 +663,7 @@ and find_next_synchro_orig next already_passed =
 (*****************************************************************************)
 module TV = Token_views_c
 
-let candidate_macros_in_passed passed defs_optional = 
+let candidate_macros_in_passed2 passed defs_optional = 
   let res = ref [] in
   let res2 = ref [] in
 
@@ -689,10 +689,14 @@ let candidate_macros_in_passed passed defs_optional =
   if null !res 
   then !res2 
   else !res
+
+let candidate_macros_in_passed a b = 
+  Common.profile_code "MACRO managment" (fun () -> 
+    candidate_macros_in_passed2 a b)
   
 
 
-let find_optional_macro_to_expand ~defs toks =
+let find_optional_macro_to_expand2 ~defs toks =
 
   let defs = Common.hash_of_list defs in
 
@@ -734,6 +738,9 @@ let find_optional_macro_to_expand ~defs toks =
   Parsing_hacks.insert_virtual_positions 
     (!tokens2 +> Common.acc_map (fun x -> x.TV.tok))
   *)
+let find_optional_macro_to_expand ~defs a = 
+    Common.profile_code "MACRO managment" (fun () -> 
+      find_optional_macro_to_expand2 ~defs a)
   
 
 
@@ -812,9 +819,12 @@ let tokens_include (info, includes, filename, inifdef) =
 (*****************************************************************************)
 
 let parse_cpp_define_file2 file = 
-  let toks = tokens ~profile:false file in
-  let toks = Cpp_token_c.fix_tokens_define toks in
-  Cpp_token_c.extract_cpp_define toks
+  Common.save_excursion Flag_parsing_c.verbose_lexing (fun () -> 
+    Flag_parsing_c.verbose_lexing := false;
+    let toks = tokens ~profile:false file in
+    let toks = Cpp_token_c.fix_tokens_define toks in
+    Cpp_token_c.extract_cpp_define toks
+  )
 
 let parse_cpp_define_file a = 
   Common.profile_code_exclusif "HACK" (fun () -> parse_cpp_define_file2 a)
@@ -1158,17 +1168,24 @@ let parse_print_error_heuristic2 file =
 
   let toks = Parsing_hacks.fix_tokens_cpp ~macro_defs:!_defs_builtins toks in
 
-  (* expand macros on demand trick *)
-  let macros = Hashtbl.copy !_defs in
-  (* include also builtins as some macros may generate some builtins too
-   * like __decl_spec or __stdcall
-   *)
-  !_defs_builtins +> Hashtbl.iter (fun s def -> 
-    Hashtbl.replace macros   s def;
-  );
-  let local_macros = parse_cpp_define_file file in
-  local_macros +> List.iter (fun (s, def) -> 
-    Hashtbl.replace macros   s def;
+  (* expand macros on demand trick, preparation phase *)
+  let macros = 
+    Common.profile_code "MACRO mgmt prep 1" (fun () -> 
+      let macros = Hashtbl.copy !_defs in
+      (* include also builtins as some macros may generate some builtins too
+       * like __decl_spec or __stdcall
+       *)
+      !_defs_builtins +> Hashtbl.iter (fun s def -> 
+        Hashtbl.replace macros   s def;
+      );
+      macros
+    )
+  in
+  Common.profile_code "MACRO mgmt prep 2" (fun () -> 
+    let local_macros = parse_cpp_define_file file in
+    local_macros +> List.iter (fun (s, def) -> 
+      Hashtbl.replace macros   s def;
+    );
   );
 
   let tr = mk_tokens_state toks in
@@ -1190,13 +1207,17 @@ let parse_print_error_heuristic2 file =
 
     (* call the parser *)
     let elem = 
-      let pass1 = get_one_elem ~pass:1 tr (file, filelines) in
+      let pass1 = 
+        Common.profile_code "Parsing: 1st pass" (fun () -> 
+          get_one_elem ~pass:1 tr (file, filelines)
+        ) in
       match pass1 with
       | Left e -> Left e
       | Right (info,line_err, passed, passed_before_error, cur, exn) -> 
           if !Flag_parsing_c.disable_multi_pass
           then pass1
           else begin
+            Common.profile_code "Parsing: multi pass" (fun () -> 
 
             pr2_err "parsing pass2: try again";
             let toks = List.rev passed ++ tr.rest in
@@ -1240,6 +1261,7 @@ let parse_print_error_heuristic2 file =
                       passx
                   )
                  end
+            )
             )
           end
     in
@@ -1289,6 +1311,17 @@ let parse_print_error_heuristic2 file =
                 pr2 ("semantic error " ^s^ "\n ="^ error_msg_tok cur)
             | e -> raise e
             );
+            
+            let pbline = 
+              toks_of_bads 
+              +> Common.filter (TH.is_same_line_or_close line_error)
+              +> Common.filter TH.is_ident_like 
+            in
+            let error_info = 
+              (pbline +> List.map TH.str_of_tok), line_error
+            in
+            stat.Stat.problematic_lines <- 
+              error_info::stat.Stat.problematic_lines;
 
             (* bugfix: *)
             if (checkpoint_file =$= checkpoint2_file) && 
@@ -1300,17 +1333,6 @@ let parse_print_error_heuristic2 file =
           if was_define && !Flag_parsing_c.filter_define_error
           then stat.Stat.correct <- stat.Stat.correct + diffline
           else stat.Stat.bad     <- stat.Stat.bad     + diffline;
-
-          let pbline = 
-            toks_of_bads 
-            +> Common.filter (TH.is_same_line_or_close line_error)
-            +> Common.filter TH.is_ident_like 
-          in
-          let error_info = 
-            (pbline +> List.map TH.str_of_tok), line_error
-          in
-          stat.Stat.problematic_lines <- 
-            error_info::stat.Stat.problematic_lines;
 
           Ast_c.NotParsedCorrectly info_of_bads
     in

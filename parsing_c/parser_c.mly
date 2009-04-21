@@ -1278,7 +1278,7 @@ storage_class_spec2:
 storage_class_spec:
  /*(* gccext: *)*/
  | storage_class_spec2 { $1 }
- | storage_class_spec2 attributes_storage { $1 (* TODO *) }
+ | storage_class_spec2 attribute_storage_list { $1 (* TODO *) }
 
 
 
@@ -1895,7 +1895,6 @@ attribute_storage_list:
 
 attributes: attribute_list { $1 }
 
-attributes_storage: attribute_storage_list { $1 }
 
 
 /*(* gccext:  which allow a trailing ',' in enum, as in perl *)*/

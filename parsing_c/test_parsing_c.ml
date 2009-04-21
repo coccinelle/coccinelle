@@ -72,12 +72,6 @@ let test_parse_gen xs ext =
     else Hashtbl.add newscore file (Common.Pb s)
   );
   
-  if not (null !stat_list) 
-  then begin 
-    Parsing_stat.print_recurring_problematic_tokens !stat_list;
-    Parsing_stat.print_parsing_stat_list !stat_list;
-  end;
-  
   dirname_opt +> Common.do_option (fun dirname -> 
     pr2_xxxxxxxxxxxxxxxxx();
     pr2 "regression testing  information";
@@ -88,7 +82,14 @@ let test_parse_gen xs ext =
     Common.regression_testing newscore 
       (Filename.concat score_path
        ("score_parsing__" ^str ^ def ^ ext ^ ".marshalled"))
-  )
+  );
+
+  if not (null !stat_list) 
+  then begin 
+    Parsing_stat.print_recurring_problematic_tokens !stat_list;
+    Parsing_stat.print_parsing_stat_list !stat_list;
+  end;
+  ()
 
 
 let test_parse_c xs = 
@@ -105,6 +106,7 @@ let test_parse xs =
 
   Flag_parsing_c.filter_msg_define_error := true;
   Flag_parsing_c.filter_define_error := true;
+  Flag_parsing_c.verbose_lexing := false;
   Flag_parsing_c.verbose_parsing := false;
 
   let dirname_opt = 
@@ -149,6 +151,7 @@ let test_parse xs =
   
   if not (null !stat_list) 
   then begin 
+    Parsing_stat.print_recurring_problematic_tokens !stat_list;
     Parsing_stat.print_parsing_stat_list !stat_list;
   end;
   ()
@@ -374,7 +377,7 @@ let test_cpp file =
 
 
 
-let extract_macros x = 
+let extract_macros ~selection x = 
   (* CONFIG [ch] ? also do for .c ? maybe less needed now that I 
    * add local_macros.
    *)
@@ -401,15 +404,24 @@ let extract_macros x =
                 spf "#define %s(%s) "
                   s (Common.join "," xs)
           in
-          let s2 = 
+          let s2, bodytoks = 
             match body with
             | Cpp_token_c.DefineHint _ -> 
                 failwith "weird, hint in regular header file"
             | Cpp_token_c.DefineBody xs -> 
-                Common.join " " (xs +> List.map Token_helpers.str_of_tok)
+                Common.join " " (xs +> List.map Token_helpers.str_of_tok),
+                xs
           in
-          
-          pr (s1 ^ s2)
+
+          let print = 
+            match () with
+            | () when s ==~ Parsing_hacks.regexp_annot -> true
+            | () when List.exists (function
+              | Parser_c.Tattribute _ -> true
+              | _ -> false) bodytoks -> true
+            | () -> false
+          in
+          if print || not selection then pr (s1 ^ s2)
       );
     );
   );
@@ -475,7 +487,10 @@ let actions () = [
   Common.mk_action_1_arg test_cpp;
 
   "-extract_macros", " <file or dir>",
-  Common.mk_action_1_arg extract_macros;
+  Common.mk_action_1_arg (extract_macros ~selection:false) ;
+
+  "-extract_macros_select", " <file or dir>",
+  Common.mk_action_1_arg (extract_macros ~selection:true);
 
 
   "-xxx", "   <file1> <>", 
