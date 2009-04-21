@@ -5347,9 +5347,11 @@ let info_from_charpos a b =
 
 
 
-let (full_charpos_to_pos2: filename -> (int * int) array ) = fun filename ->
+let full_charpos_to_pos2 = fun filename ->
 
-    let arr = Array.create (filesize filename + 2) (0,0) in
+  let size = (filesize filename + 2) in
+
+    let arr = Array.create size  (0,0) in
 
     let chan = open_in filename in
 
@@ -5392,6 +5394,65 @@ let complete_parse_info filename table x =
     file = filename;
     line   = fst (table.(x.charpos));
     column = snd (table.(x.charpos));
+  }
+
+
+
+let full_charpos_to_pos_large2 = fun filename ->
+
+  let size = (filesize filename + 2) in
+
+    (* old: let arr = Array.create size  (0,0) in *)
+    let arr1 = Bigarray.Array1.create 
+      Bigarray.int Bigarray.c_layout size in
+    let arr2 = Bigarray.Array1.create 
+      Bigarray.int Bigarray.c_layout size in
+    Bigarray.Array1.fill arr1 0;
+    Bigarray.Array1.fill arr2 0;
+
+    let chan = open_in filename in
+
+    let charpos   = ref 0 in
+    let line  = ref 0 in
+
+    let rec full_charpos_to_pos_aux () =
+     try
+       let s = (input_line chan) in
+       incr line;
+
+       (* '... +1 do'  cos input_line dont return the trailing \n *)
+       for i = 0 to (slength s - 1) + 1 do 
+         (* old: arr.(!charpos + i) <- (!line, i); *)
+         arr1.{!charpos + i} <- (!line);
+         arr2.{!charpos + i} <- i;
+       done;
+       charpos := !charpos + slength s + 1;
+       full_charpos_to_pos_aux();
+       
+     with End_of_file -> 
+       for i = !charpos to (* old: Array.length arr *) 
+         Bigarray.Array1.dim arr1 - 1 do
+         (* old: arr.(i) <- (!line, 0); *)
+         arr1.{i} <- !line;
+         arr2.{i} <- 0;
+       done;
+       ();
+    in 
+    begin 
+      full_charpos_to_pos_aux ();
+      close_in chan;
+      (fun i -> arr1.{i}, arr2.{i})
+    end
+let full_charpos_to_pos_large a =
+  profile_code "Common.full_charpos_to_pos_large" 
+    (fun () -> full_charpos_to_pos_large2 a)
+
+
+let complete_parse_info_large filename table x = 
+  { x with 
+    file = filename;
+    line   = fst (table (x.charpos));
+    column = snd (table (x.charpos));
   }
 
 (*---------------------------------------------------------------------------*)

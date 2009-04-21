@@ -29,7 +29,7 @@ SRC+=$(MYSRC)
 SRC+=ocamlextra/enum.ml ocamlextra/dynArray.ml
 SRC+=ocamlextra/suffix_tree.ml ocamlextra/suffix_tree_ext.ml
 
-SYSLIBS=str.cma unix.cma
+SYSLIBS=str.cma bigarray.cma unix.cma
 
 INCLUDEDIRS=ocamlextra ocollection
 SUBDIRS=ocamlextra ocollection
