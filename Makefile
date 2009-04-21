@@ -446,7 +446,7 @@ syncwiki:
 darcsweb:
 #	@echo pull from ~/public_html/darcs/c-coccinelle and c-commons and lib-xxx
 
-DARCSFORESTS=commons \
+DARCSFORESTS=commons ocamlsexp \
  parsing_c parsing_cocci engine
 
 update_darcs:
