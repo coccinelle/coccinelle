@@ -1112,7 +1112,9 @@ and find_actions_params xxs =
   xxs +> List.fold_left (fun acc xs -> 
     let toks = tokens_of_paren xs in
     if toks +> List.exists (fun x -> TH.is_statement x.tok) 
-      && List.length toks > 1
+      (* undo:  && List.length toks > 1 
+       * good for sparse, not good for linux
+       *)
     then begin
       xs +> iter_token_paren (fun x -> 
         if TH.is_eof x.tok
