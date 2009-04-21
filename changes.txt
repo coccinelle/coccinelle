@@ -9,8 +9,20 @@
 - When - fragments are separated by ... or nest boundaries in the semantic
   patch, but end up matching adjacent source code, the comments, cpp code
   and whitespace that are between them are not deleted.
+- better parsing of C: do expansion of macros only when needed when
+  have actually a parse error and also leverage the definition of macros
+  in the parsed file (or in a optional_standard.h file passed as a parameter).
+  This should reduce the need for many hardcoded definitions in standard.h
+- new semantic for the -macro_file option, by default now expand macros
+  only when necessary. To force use the -macro_file_builtin option instead.
+- a new -extract_macros command line action to help the parser. Works with
+  the -macro_file option. e.g. 
+    $ ./spatch -extract_macros ~/linux > /tmp/alldefs.h
+    $ ./spatch -macro_file /tmp/alldefs.h -sp_file foo.cocci -dir ~/linux
 
 ** Bugfix:
+- better parsing of declare macro at toplevel and in structure. 
+  cf -text xfield
 
 ** Internals:
 
