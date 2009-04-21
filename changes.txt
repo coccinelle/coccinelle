@@ -14,7 +14,7 @@
   in the parsed file (or in a optional_standard.h file passed as a parameter).
   This should reduce the need for many hardcoded definitions in standard.h
 - new semantic for the -macro_file option, by default now expand macros
-  only when necessary. To force use the -macro_file_builtin option instead.
+  only when necessary. To force use the -macro_file_builtins option instead.
 - a new -extract_macros command line action to help the parser. Works with
   the -macro_file option. e.g. 
     $ ./spatch -extract_macros ~/linux > /tmp/alldefs.h
