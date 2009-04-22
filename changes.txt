@@ -23,6 +23,7 @@
 ** Bugfix:
 - better parsing of declare macro at toplevel and in structure. 
   cf -text xfield
+- better printing of else in generated code
 
 ** Internals:
 

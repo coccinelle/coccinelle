@@ -748,10 +748,9 @@ let rec statement arity s =
   | Ast.IfThenElse(header,branch1,els,branch2,_) ->
       rule_elem arity header;
       indent_if_needed branch1 (function _ -> statement arity branch1);
-      print_string " ";
+      force_newline();
       rule_elem arity els;
       indent_if_needed branch2 (function _ -> statement arity branch2)
-
   | Ast.While(header,body,_) ->
       rule_elem arity header;
       indent_if_needed body (function _ -> statement arity body)
