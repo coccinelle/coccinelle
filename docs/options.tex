@@ -259,8 +259,12 @@ stored in a cache.
 
 \subsubsection*{Macros and other preprocessor code}
 
-\normal{-D $\langle$file$\rangle$, -macro\_file $\langle$file$\rangle$}{
+\normal{-macro\_file $\langle$file$\rangle$}{
   Extra macro definitions to be taken into account when parsing the C
+  files.}
+
+\normal{-macro\_file\_builtins $\langle$file$\rangle$}{
+  Builtin macro definitions to be taken into account when parsing the C
   files.}
 
 \rare{-ifdef\_to\_if}{ This option constructs represents an \#ifdef in
