@@ -174,7 +174,7 @@ let testall () =
       if good < expected_good
       then begin 
         pr2 "Current score is lower than expected, :(";
-        pr2 (spf "Was expecting: %d expected_good but got %d" 
+        pr2 (spf "(was expecting %d but got %d)" 
                 expected_good good);
         pr2 "";
         pr2 "If you think it's normal, then maybe you need to update the";
