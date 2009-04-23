@@ -607,9 +607,19 @@ identifier:
  * also cppext: gccext: ##args for variadic macro
  *)
 */
-ident_cpp:
+identifier_cpp:
  | TIdent       
      { RegularName (mk_string_wrap $1) }
+ | ident_extra_cpp { $1 }
+
+ident_cpp:
+ | TIdent
+     { RegularName (mk_string_wrap $1) }
+ | TypedefIdent       
+     { RegularName (mk_string_wrap $1) }
+ | ident_extra_cpp { $1 }
+
+ident_extra_cpp:
  | TIdent TCppConcatOp identifier_cpp_list 
      {  
        CppConcatenatedName (
@@ -722,7 +732,7 @@ postfix_expr:
      { mk_e(Constructor ($2, List.rev $5)) ([$1;$3;$4;$7] ++ $6) }
 
 primary_expr:
- | ident_cpp  { mk_e(Ident  ($1)) [] }
+ | identifier_cpp  { mk_e(Ident  ($1)) [] }
  | TInt    { mk_e(Constant (Int    (fst $1))) [snd $1] }
  | TFloat  { mk_e(Constant (Float  (fst $1))) [snd $1] }
  | TString { mk_e(Constant (String (fst $1))) [snd $1] }
@@ -1046,7 +1056,7 @@ pointer:
 
 
 direct_d: 
- | ident_cpp
+ | identifier_cpp
      { ($1, fun x -> x) }
  | TOPar declarator TCPar      /*(* forunparser: old: $2 *)*/ 
      { (fst $2, fun x -> (nQ, (ParenType ((snd $2) x), [$1;$3]))) }
