@@ -867,10 +867,14 @@ let annotater_expr_visitor_subpart = (fun (k,bigf) expr ->
         k expr; 
         Ast_c.get_type_expr e2
           
-    (* todo: lub *)
-    | Binary (e1, op, e2) -> 
+    | Binary (e1, Logical _, e2) -> 
         k expr;
-        Type_c.lub (Type_c.get_opt_type e1) (Type_c.get_opt_type e2)
+        make_info_def (type_of_s "int")
+
+    (* todo: lub *)
+    | Binary (e1, Arith op, e2) -> 
+        k expr;
+        Type_c.lub op (Type_c.get_opt_type e1) (Type_c.get_opt_type e2)
 
     | CondExpr (cond, e1opt, e2) -> 
         k expr;

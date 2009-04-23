@@ -9,7 +9,7 @@ TARGET=parsing_c
 
 # - type_cocci.ml ast_cocci.ml  # + unparse_hrule
 SRC= flag_parsing_c.ml parsing_stat.ml \
- token_c.ml ast_c.ml control_flow_c.ml type_c.ml \
+ token_c.ml ast_c.ml control_flow_c.ml \
  visitor_c.ml lib_parsing_c.ml \
  ast_to_flow.ml \
  pretty_print_c.ml \
@@ -17,7 +17,7 @@ SRC= flag_parsing_c.ml parsing_stat.ml \
  token_helpers.ml token_views_c.ml \
  cpp_token_c.ml parsing_hacks.ml \
  unparse_cocci.ml unparse_c.ml unparse_hrule.ml  \
- parse_c.ml \
+ parse_c.ml type_c.ml \
  cpp_ast_c.ml \
  type_annoter_c.ml comment_annotater_c.ml \
  compare_c.ml \

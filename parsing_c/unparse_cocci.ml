@@ -179,8 +179,9 @@ in
 
 let rec ident i =
   match Ast.unwrap i with
-    Ast.Id(name) -> mcode print_string name
-  | Ast.MetaId(name,_,_,_) -> 
+    Ast.Id(name) ->
+      mcode print_string name
+  | Ast.MetaId(name,_,_,_) ->
       handle_metavar name (function
         | (Ast_c.MetaIdVal id) -> pr id
         | _ -> raise Impossible
@@ -215,7 +216,6 @@ let print_disj_list fn l =
 let rec expression e =
   match Ast.unwrap e with
     Ast.Ident(id) -> ident id
-
   | Ast.Constant(const) -> mcode constant const
   | Ast.FunCall(fn,lp,args,rp) ->
       expression fn; mcode print_string_box lp;

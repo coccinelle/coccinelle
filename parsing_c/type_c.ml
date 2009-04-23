@@ -63,6 +63,8 @@ type completed_and_simplified = Ast_c.fullType
 type completed_typedef = Ast_c.fullType
 type removed_typedef = Ast_c.fullType
 
+let int_type = Lib_parsing_c.al_type (Parse_c.type_of_string "int")
+
 
 (* normally if the type annotated has done a good job, this should always
  * return true. Cf type_annotater_c.typedef_fix.
@@ -141,9 +143,6 @@ let make_info_def t =
 
 let noTypeHere = 
   (None, Ast_c.NotTest)
-
-
-
 
 
 let do_with_type f (t,_test) = 
@@ -301,7 +300,7 @@ let (fake_function_type:
  * | (T.Pointer(ty1),ty2) -> T.Pointer(ty1)
  * 
 *)
-let lub t1 t2 = 
+let lub op t1 t2 =
   let ftopt = 
     match t1, t2 with
     | None, None -> None
@@ -321,9 +320,20 @@ let lub t1 t2 =
     | Some t1, Some t2 -> 
         let t1bis = Ast_c.unwrap_typeC t1 in
         let t2bis = Ast_c.unwrap_typeC t2 in
-        (match t1bis, t2bis with
+	(* a small attempt to do better, no consideration of typedefs *)
+        (match op, t1bis, t2bis with
+	  Ast_c.Plus,Ast_c.Pointer _,Ast_c.BaseType(Ast_c.IntType _) ->
+	    Some t1
+	| Ast_c.Plus,Ast_c.BaseType(Ast_c.IntType _),Ast_c.Pointer _ ->
+	    Some t2
+	| Ast_c.Minus,Ast_c.Pointer _,Ast_c.BaseType(Ast_c.IntType _) ->
+	    Some t1
+	| Ast_c.Minus,Ast_c.BaseType(Ast_c.IntType _),Ast_c.Pointer _ ->
+	    Some t2
+	| Ast_c.Minus,Ast_c.Pointer _,Ast_c.Pointer _ ->
+	    Some int_type
         (* todo, Pointer, Typedef, etc *)
-        | _, _ -> Some t1
+        | _, _, _ -> Some t1
         )
 
   in
