@@ -13,7 +13,7 @@
   have actually a parse error and also leverage the definition of macros
   in the parsed file (or in a optional_standard.h file passed as a parameter).
   This should reduce the need for many hardcoded definitions in standard.h
-- new semantic for the -macro_file option, by default now expand macros
+- new semantics for the -macro_file option, by default now expand macros
   only when necessary. To force use the -macro_file_builtins option instead.
 - a new -extract_macros command line action to help the parser. Works with
   the -macro_file option. e.g. 
@@ -24,6 +24,7 @@
 - better parsing of declare macro at toplevel and in structure. 
   cf -text xfield
 - better printing of else in generated code
+- slightly better type inference for binary operators.
 
 ** Internals:
 
