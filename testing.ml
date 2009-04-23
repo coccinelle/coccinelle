@@ -161,7 +161,7 @@ let testall ?(expected_score_file="tests/SCORE_expected.sexp") () =
       else 
         if Sys.file_exists expected_score_file_orig 
         then begin
-          pr2 spf "use expected orig file (%s)" expected_score_file_orig;
+          pr2 (spf "use expected orig file (%s)" expected_score_file_orig);
           Common.command2 (spf "cp %s %s" expected_score_file_orig 
                                           expected_score_file);
           let sexp = Sexp.load_sexp expected_score_file in
