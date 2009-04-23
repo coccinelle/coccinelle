@@ -1,30 +1,3 @@
-\documentclass{article}
-\usepackage{fullpage}
-\usepackage{amsmath}
-\usepackage{amssymb}
-\usepackage{ifthen}
-\usepackage[geometry]{ifsym}
-\title{Coccinelle Usage (version 0.1.4)}
-\newcommand{\minimum}[2]{\paragraph*{\makebox[0in][r]{\FilledBigDiamondshape\,\,} {{#1}}} {#2}}
-\newcommand{\normal}[2]{\paragraph*{\makebox[0in][r]{\BigLowerDiamond\,\,} {{#1}}} {#2}}
-\newcommand{\rare}[2]{\paragraph*{\makebox[0in][r]{\BigDiamondshape\,\,} {{#1}}} {#2}}
-\newcommand{\developer}[2]{\paragraph*{{#1}} {#2}}
-
-% Very convenient to add comments on the paper. Just set the boolean
-% to false before sending the paper:
-\newboolean{showcomments}
-\setboolean{showcomments}{true}
-\ifthenelse{\boolean{showcomments}}
-{ \newcommand{\mynote}[2]{
-    \fbox{\bfseries\sffamily\scriptsize#1}
-    {\small$\blacktriangleright$\textsf{\emph{#2}}$\blacktriangleleft$}}}
-{ \newcommand{\mynote}[2]{}}
-
-\newcommand\jl[1]{\mynote{Julia}{#1}}
-
-\begin{document}
-\maketitle
-
 \section{Introduction}
 
 This document describes the options provided by Coccinelle.  The options
@@ -484,4 +457,3 @@ condition occurs, rather than only once.}
 
 \developer{-pad, -hrule $\langle$dir$\rangle$, -xxx, -l1}{}
 
-\end{document}

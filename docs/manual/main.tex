@@ -1,0 +1,162 @@
+\documentclass{report}
+
+%******************************************************************************
+% Prelude
+%******************************************************************************
+%------------------------------------------------------------------------------
+% Packages
+%------------------------------------------------------------------------------
+
+\usepackage{ifthen}
+\usepackage{hevea}
+
+\usepackage{times}
+\usepackage{fullpage}
+
+\usepackage[T1]{fontenc}
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+
+% fancy symbol, but require latex-extra-fonts (huge) package
+\usepackage[geometry]{ifsym}
+
+
+
+\usepackage{graphics}
+\usepackage[pdftex]{graphicx} 
+
+
+\usepackage{epsfig}
+\usepackage{subfigure}
+\usepackage{wrapfig}
+
+\usepackage[all]{xy}
+
+
+\usepackage{fancyvrb}
+\usepackage{moreverb}
+\usepackage{alltt}
+
+\usepackage{boxedminipage}
+
+\usepackage{xspace}
+\usepackage{endnotes}
+
+\usepackage{multirow}
+%\usepackage{colortbl} % conflict with color package below
+
+\usepackage{listings}
+%\usepackage{code/lgrind}
+
+\usepackage[pdfborder={0 0 0}]{hyperref}
+%\usepackage{url}
+
+\usepackage[usenames,dvipsnames]{color}
+
+%------------------------------------------------------------------------------
+% Shortcuts
+%------------------------------------------------------------------------------
+
+\input{macros_common}
+%e.g: 
+%  \newcommand{\mita}[1]{\mbox{\it{{#1}}}}
+
+\input{macros_options}
+
+\input{macros_listing_cocci} % order is important 
+\input{macros_grammar}
+
+
+%------------------------------------------------------------------------------
+% Globals
+%------------------------------------------------------------------------------
+\input{macros}
+%e.g:
+% \newcommand{\avgcorrect}{96\%\xspace} % if consider all files
+% \newcommand{\MyTool}{aComment\xspace}
+% \newcommand{\bugsfound}{XXX\xspace}
+
+
+%******************************************************************************
+% Title
+%******************************************************************************
+\begin{document}
+%don't want date printed
+\date{}
+
+%------------------------------------------------------------------------------
+\title{Coccinelle}
+%\title{\spatch and \sgrep manual}
+
+\author{
+Julia Lawall and Yoann Padioleau
+}  
+%with contributions from
+%src: Xavier Leroy manual
+
+
+\maketitle
+\tableofcontents
+
+%******************************************************************************
+% Body
+%******************************************************************************
+
+\chapter{Introduction} 
+\input{introduction.tex}
+
+
+
+
+\part{User Manual}
+
+\input{installing} 
+
+\input{tutorial}
+
+\chapter{Examples}
+\input{examples}
+\input{tips}
+
+
+\input{isomorphisms}
+
+\input{parsing}
+
+
+\input{workflow}
+
+\input{advanced}
+
+
+
+
+\part{Reference Manual}
+
+\chapter{SmPL grammar}
+
+\input{cocci_syntax}
+
+\chapter{\spatch command line options}
+
+%coupling: ../spatch.1 
+\input{spatch_options}
+
+%******************************************************************************
+% Appendix
+%******************************************************************************
+
+%index
+
+{\small 
+\bibliographystyle{acm}
+\bibliography{main}
+}
+
+
+%******************************************************************************
+% Postlude
+%******************************************************************************
+
+\end{document}
