@@ -46,8 +46,18 @@ let testone x compare_with_expected_flag =
           
 
 (* ------------------------------------------------------------------------ *)
-let testall () =
-
+(* note: if you get some weird results in -testall, and not in -test, 
+ * it is possible that a test file work in -test but may not 
+ * work while used inside a -testall. If we have some bugs in our
+ * parser that modify some global state and that those states 
+ * are not reseted between each test file, then having run previous
+ * test files may have an influence on another test file which mean
+ * than a test may work in isolation (via -test) but not otherwise
+ * (via -testall). Fortunately such bugs are rare.
+ * 
+ *)
+let testall ?(expected_score_file="tests/SCORE_expected.sexp") () =
+ 
   let score  = empty_score () in
 
   let expected_result_files = 
@@ -71,6 +81,8 @@ let testall () =
       try (
         Common.timeout_function timeout_testall  (fun () -> 
 
+	  pr2 res;
+
 	  let cocci_infos = Cocci.pre_engine (cocci_file, !Config.std_iso) in
           let xs = Cocci.full_engine cocci_infos [cfile] in
 	  Cocci.post_engine cocci_infos;
@@ -84,7 +96,6 @@ let testall () =
           let (correct, diffxs) = Compare_c.compare_default generated expected
           in
 
-	  pr2 res;
           (* I don't use Compare_c.compare_result_to_string because
            * I want to indent a little more the messages.
            *)
@@ -133,18 +144,31 @@ let testall () =
     pr2 "--------------------------------";
     pr2 "regression testing  information";
     pr2 "--------------------------------";
-
+ 
+    (* now default argument of testall:
     let expected_score_file = "tests/SCORE_expected.sexp" in
+    *)
+    let expected_score_file_orig = "tests/SCORE_expected_orig.sexp" in
     let best_of_both_file = "tests/SCORE_best_of_both.sexp" in
     let actual_score_file = "tests/SCORE_actual.sexp" in
-    
+
     pr2 ("regression file: "^ expected_score_file);
     let (expected_score : score) = 
       if Sys.file_exists expected_score_file
       then 
         let sexp = Sexp.load_sexp expected_score_file in
         Sexp_common.score_of_sexp sexp
-      else empty_score()
+      else 
+        if Sys.file_exists expected_score_file_orig 
+        then begin
+          pr2 spf "use expected orig file (%s)" expected_score_file_orig;
+          Common.command2 (spf "cp %s %s" expected_score_file_orig 
+                                          expected_score_file);
+          let sexp = Sexp.load_sexp expected_score_file in
+          Sexp_common.score_of_sexp sexp
+        end
+       else 
+          empty_score()
     in
 
     let new_bestscore = Common.regression_testing_vs score expected_score in
@@ -173,9 +197,8 @@ let testall () =
     else 
       if good < expected_good
       then begin 
-        pr2 "Current score is lower than expected, :(";
-        pr2 (spf "(was expecting %d but got %d)" 
-                expected_good good);
+        pr2 "Current score is lower than expected :(";
+        pr2 (spf "(was expecting %d but got %d)" expected_good good);
         pr2 "";
         pr2 "If you think it's normal, then maybe you need to update the";
         pr2 (spf "score file %s, copying info from %s."
@@ -183,7 +206,8 @@ let testall () =
         raise (UnixExit 1);
       end
       else begin
-        pr2 "Current score is greater than expected, :)";
+        pr2 "Current score is greater than expected :)";
+        pr2 (spf "(was expecting %d but got %d)" expected_good good);
         pr2 "Generating new expected score file and saving old one";
         Common.command2_y_or_no_exit_if_no
           (spf "mv %s %s" expected_score_file (expected_score_file ^ ".save"));

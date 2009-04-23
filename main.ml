@@ -29,6 +29,7 @@ let test_mode = ref false
 let test_all = ref false
 let test_okfailed = ref false
 let test_regression_okfailed = ref false
+let expected_score_file = ref ""
 
 
 (* action mode *)
@@ -36,7 +37,6 @@ let action = ref ""
 
 (* works with -test but also in "normal" spatch mode *)
 let compare_with_expected = ref false
-
 
 let distrib_index = ref (None : int option)
 let distrib_max   = ref (None : int option)
@@ -260,7 +260,6 @@ let other_options = [
     "   <file> the semantic patch file";
     "-c", Arg.Set_string cocci_file,     " short option of -cocci_file";
     "-iso", Arg.Set_string Config.std_iso,   " short option of -iso_file";
-    "-D",   Arg.Set_string Config.std_h,     " short option of -macro_file";
   ];
 
   "most useful show options", 
@@ -474,6 +473,8 @@ let other_options = [
 
     "-compare_with_expected", Arg.Set compare_with_expected, 
     "   use also file.res"; 
+    "-expected_score_file", Arg.Set_string expected_score_file, 
+    "   which score file to compare with in -testall"; 
     "-relax_include_path", Arg.Set FC.relax_include_path,
     " ";
     
@@ -812,7 +813,9 @@ let main () =
 
     | []  when !test_all -> 
         FC.include_path := Some "tests/include";
-        Testing.testall ()
+        if !expected_score_file <> ""
+        then Testing.testall ~expected_score_file:!expected_score_file ()
+        else Testing.testall ()
 
     | [] when !test_regression_okfailed -> 
         Testing.test_regression_okfailed ()
