@@ -25,6 +25,8 @@
   cf -text xfield
 - better printing of else in generated code
 - slightly better type inference for binary operators.
+- clear out declarer names and iterator names between SmPL files (for
+  -testall)
 
 ** Internals:
 

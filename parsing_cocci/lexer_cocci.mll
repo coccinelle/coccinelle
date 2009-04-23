@@ -275,6 +275,8 @@ let init _ =
   Hashtbl.clear metavariables;
   Hashtbl.clear type_names;
   Hashtbl.clear rule_names;
+  Hashtbl.clear iterator_names;
+  Hashtbl.clear declarer_names;
   let get_name (_,x) = x in
   Data.add_id_meta :=
     (fun name constraints pure ->
