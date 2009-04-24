@@ -30,6 +30,8 @@
 - slightly better type inference for binary operators.
 - clear out declarer names and iterator names between SmPL files (for
   -testall)
+- better parsing and type checking of macro type aliases. Cf -test macro_int16.
+  Thanks to Li Yingtong for pointing out the problem.
 
 ** Internals:
 
