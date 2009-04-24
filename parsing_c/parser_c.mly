@@ -188,6 +188,16 @@ let fixDeclSpecForParam = function ({storageD = (st,iist)} as r) ->
         (Semantic ("storage class specified for parameter of function", 
                   fake_pi))
 
+let fixDeclSpecForMacro = function ({storageD = (st,iist)} as r) -> 
+  let ((qu,ty) as v,_st) = fixDeclSpecForDecl r in
+  match st with
+  | NoSto -> v
+  | _ -> 
+      raise 
+        (Semantic ("storage class specified for macro type decl", 
+                  fake_pi))
+
+
 let fixDeclSpecForFuncDef x =
   let (returnType,storage) = fixDeclSpecForDecl x in
   (match fst (unwrap storage) with
@@ -1626,8 +1636,39 @@ define_val:
  | statement { DefineStmt $1 }
  | decl      { DefineStmt (Decl ($1 Ast_c.NotLocalDecl), []) }
 
-/*(*old: | TypedefIdent { DefineType (nQ,(TypeName(fst $1,noTypedefDef()),[snd $1]))}*)*/
- | spec_qualif_list { DefineTodo }
+/*(*old: 
+  * | TypedefIdent { DefineType (nQ,(TypeName(fst $1,noTypedefDef()),[snd $1]))}
+  * get conflicts: 
+  * | spec_qualif_list TMul
+  *   { let (returnType, _) = fixDeclSpecForDecl $1 in  DefineType returnType }
+  *)
+*/
+ | decl_spec 
+     { let returnType = fixDeclSpecForMacro $1 in 
+       DefineType returnType
+     }
+ | decl_spec abstract_declarator 
+     { let returnType = fixDeclSpecForMacro $1 in 
+       let typ = $2 returnType in
+       DefineType typ
+     }
+
+/* can be in conflict with decl_spec, maybe change fixDeclSpecForMacro 
+ * to also allow storage ?
+ | storage_class_spec { DefineTodo }
+ | Tinline { DefineTodo }
+*/
+
+ /*(* a few special cases *)*/
+ | stat_or_decl stat_or_decl_list { DefineTodo }
+/*
+ | statement statement { DefineTodo }
+ | decl function_definition { DefineTodo }
+*/
+
+
+
+
  | function_definition { DefineFunction $1 }
 
  | TOBraceDefineInit initialize_list gcc_comma_opt_struct TCBrace comma_opt 
@@ -1643,21 +1684,11 @@ define_val:
        DefineDoWhileZero (($2,$5),   [$1;$3;$4;$6])
      }
 
- /*(* a few special cases *)*/
- | stat_or_decl stat_or_decl_list { DefineTodo }
-/*
- | statement statement { DefineTodo }
- | decl function_definition { DefineTodo }
-*/
-
  | Tasm TOPar asmbody TCPar              { DefineTodo }
  | Tasm Tvolatile TOPar asmbody TCPar    { DefineTodo }
 
-
  /*(* aliases macro *)*/
  | TMacroAttr { DefineTodo }
- | storage_class_spec { DefineTodo }
- | Tinline { DefineTodo }
 
  | /*(* empty *)*/ { DefineEmpty }
 

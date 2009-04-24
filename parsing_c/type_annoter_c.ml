@@ -161,6 +161,7 @@ type namedef =
   | VarOrFunc of string * Ast_c.exp_type
   | EnumConstant of string * string option
 
+  (* also used for macro type aliases *)
   | TypeDef   of string * fullType
   (* the structType contains nested "idents" with struct scope *)
   | StructUnionNameDef of string * (structUnion * structType) wrap
@@ -1174,9 +1175,17 @@ let rec visit_toplevel ~just_add_in_env ~depth elem =
                 );
 
           );
+      | CppTop x -> 
+          (match x with
+          | Define ((s,ii), (DefineVar, DefineType t)) -> 
+              add_binding (TypeDef (s,Lib.al_type t)) true;
+          | _ -> k elem
+          )   
+
       | Declaration _
 
-      | CppTop _ 
+
+
       | IfdefTop _
       | MacroTop _ 
       | EmptyDef _
