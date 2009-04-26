@@ -1159,8 +1159,8 @@ let filter_cpp_stuff xs =
 
 let insert_virtual_positions l =
   let strlen x = String.length (Ast_c.str_of_info x) in
-  let rec loop prev offset = function
-      [] -> []
+  let rec loop prev offset acc = function
+      [] -> List.rev acc
     | x::xs ->
 	let ii = TH.info_of_tok x in
 	let inject pi =
@@ -1168,24 +1168,24 @@ let insert_virtual_positions l =
 	match Ast_c.pinfo_of_info ii with
 	  Ast_c.OriginTok pi ->
 	    let prev = Ast_c.parse_info_of_info ii in
-	    x::(loop prev (strlen ii) xs)
+	    loop prev (strlen ii) xs (x::acc)
 	| Ast_c.ExpandedTok (pi,_) ->
-	    inject (Ast_c.ExpandedTok (pi,(prev,offset))) ::
-	    (loop prev (offset + (strlen ii)) xs)
+            let x' = inject (Ast_c.ExpandedTok (pi,(prev,offset))) in
+	    loop prev (offset + (strlen ii)) xs (x'::acc)
 	| Ast_c.FakeTok (s,_) ->
-	    inject (Ast_c.FakeTok (s,(prev,offset))) ::
-	    (loop prev (offset + (strlen ii)) xs)
+            let x' = inject (Ast_c.FakeTok (s,(prev,offset))) in
+	    loop prev (offset + (strlen ii)) xs (x'::acc)
 	| Ast_c.AbstractLineTok _ -> failwith "abstract not expected" in
-  let rec skip_fake = function
-      [] -> []
+  let rec skip_fake acc = function
+      [] -> List.rev acc
     | x::xs ->
 	let ii = TH.info_of_tok x in
 	match Ast_c.pinfo_of_info ii with
 	  Ast_c.OriginTok pi ->
 	    let prev = Ast_c.parse_info_of_info ii in
-	    x::(loop prev (strlen ii) xs)
-	| _ -> x::skip_fake xs in
-  skip_fake l
+	    loop prev (strlen ii) xs (x::acc)
+	| _ -> skip_fake xs (x::acc) in
+  skip_fake l []
 
 (* ------------------------------------------------------------------------- *)
 let fix_tokens_cpp2 ~macro_defs tokens = 
