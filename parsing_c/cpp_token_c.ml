@@ -52,10 +52,7 @@ open Token_views_c
 (*****************************************************************************)
 (* Wrappers *)
 (*****************************************************************************)
-let pr2 s = 
-  if !Flag_parsing_c.verbose_parsing 
-  then Common.pr2 s
-
+let pr2, pr2_once = Common.mk_pr2_wrappers Flag_parsing_c.verbose_parsing 
 
 (*****************************************************************************)
 (* Types *)

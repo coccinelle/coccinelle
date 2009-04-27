@@ -31,10 +31,7 @@ let warning s v =
   then Common.warning ("PARSING: " ^ s) v
   else v
 
-
-let pr2 s = 
-  if !Flag_parsing_c.verbose_parsing 
-  then Common.pr2 s
+let pr2, pr2_once = Common.mk_pr2_wrappers Flag_parsing_c.verbose_parsing 
 
 (*****************************************************************************)
 (* Parse helpers functions *)

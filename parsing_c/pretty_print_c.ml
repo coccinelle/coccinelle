@@ -13,8 +13,15 @@
  *)
 open Common
 
+
 open Ast_c
 
+(*****************************************************************************)
+(* Wrappers *)
+(*****************************************************************************)
+let pr2, pr2_once = Common.mk_pr2_wrappers Flag_parsing_c.verbose_unparsing
+
+(*****************************************************************************)
 
 type pr_elem_func = Ast_c.info -> unit
 type pr_space_func = unit -> unit

@@ -1,4 +1,6 @@
 let debug_engine = ref false
+let verbose_matcher = ref true
+
 
 (* false = simpler formulas, only for debugging *)
 let useEU = ref true

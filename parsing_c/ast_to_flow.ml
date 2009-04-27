@@ -20,6 +20,12 @@ open Ograph_extended
 open Oassoc
 open Oassocb
 
+module Lib = Lib_parsing_c
+
+(*****************************************************************************)
+(* Wrappers *)
+(*****************************************************************************)
+let pr2, pr2_once = Common.mk_pr2_wrappers Flag_parsing_c.verbose_cfg
 
 (*****************************************************************************)
 (* todo?: compute target level with goto (but rare that different I think)
@@ -512,7 +518,7 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
        let finalthen = 
          match st with
          | Ast_c.Compound statxs, ii -> 
-             let statxs = Ast_c.stmt_elems_of_sequencable statxs in
+             let statxs = Lib.stmt_elems_of_sequencable statxs in
              
              (* todo? we should not allow to match a stmt that corresponds
               * to a compound of a switch, so really SeqStart (stmt, ...)

@@ -66,14 +66,29 @@ let quiet_profile = (
     FC.show_ctl_text;
     FC.show_binding_in_out;
 
+    FC.verbose_cocci;
+
+    Flag_parsing_c.show_parsing_error;
+
+    Flag_parsing_c.verbose_lexing;
+    Flag_parsing_c.verbose_parsing;
+    Flag_parsing_c.verbose_type;
+    Flag_parsing_c.verbose_cfg;
+    Flag_parsing_c.verbose_unparsing;
+    Flag_parsing_c.verbose_visit;
+
+    Flag_matcher.verbose_matcher;
+    Flag_matcher.debug_engine;
+
+    Flag_parsing_c.debug_unparsing;
+
     Flag_parsing_cocci.show_SP;
     Flag_parsing_cocci.show_iso_failures;
+
     Flag_ctl.verbose_ctl_engine;
     Flag_ctl.verbose_match;
-    Flag_matcher.debug_engine;
-    Flag_parsing_c.debug_unparsing;
-    Flag_parsing_c.verbose_type;
-    Flag_parsing_c.verbose_parsing;
+
+
   ])
 
 (* some information that is useful in seeing why a semantic patch doesn't
@@ -81,12 +96,24 @@ work properly *)
 let debug_profile = (
   [
     Flag.show_misc;
+    Flag.show_transinfo;
+
     FC.show_diff;
     FC.show_cocci;
     FC.show_binding_in_out;
     FC.show_dependencies;
-    Flag.show_transinfo;
+
     Flag_parsing_cocci.show_iso_failures;
+
+    FC.verbose_cocci;
+
+    Flag_parsing_c.verbose_cfg;
+    Flag_parsing_c.verbose_unparsing;
+    Flag_parsing_c.verbose_visit;
+
+    Flag_matcher.verbose_matcher;
+
+    Flag_parsing_c.show_parsing_error;
   ],
   [
 
@@ -256,10 +283,12 @@ let other_options = [
   "aliases and obsolete options", 
   "",
   [ 
+    "-sp", Arg.Set_string cocci_file,     " short option of -sp_file";
+    "-iso", Arg.Set_string Config.std_iso,   " short option of -iso_file";
+
     "-cocci_file", Arg.Set_string cocci_file, 
     "   <file> the semantic patch file";
-    "-c", Arg.Set_string cocci_file,     " short option of -cocci_file";
-    "-iso", Arg.Set_string Config.std_iso,   " short option of -iso_file";
+    "-c", Arg.Set_string cocci_file,     " short option of -sp_file";
   ];
 
   "most useful show options", 
@@ -435,6 +464,8 @@ let other_options = [
     "   option to set if launch spatch in ocamldebug";
     "-disable_once",     Arg.Set Common.disable_pr2_once, 
     "   to print more messages";
+    "-show_trace_profile",          Arg.Set Common.show_trace_profile, 
+    "   show trace";
     "-save_tmp_files",   Arg.Set Common.save_tmp_files,   " ";
   ];
 
@@ -761,6 +792,8 @@ let main () =
     then run_profile quiet_profile;
 
     let args = ref [] in
+
+    (* Gc.set {(Gc.get ()) with Gc.stack_limit = 1024 * 1024};*)
 
     (* this call can set up many global flag variables via the cmd line *)
     arg_parse2 (Arg.align all_options) (fun x -> args := x::!args) usage_msg;

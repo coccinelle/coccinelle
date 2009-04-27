@@ -22,13 +22,7 @@ module Stat = Parsing_stat
 (*****************************************************************************)
 (* Wrappers *)
 (*****************************************************************************)
-let pr2_err s = 
-  if !Flag_parsing_c.verbose_parsing 
-  then Common.pr2 s
-
-let pr2_once s = 
-  if !Flag_parsing_c.verbose_parsing 
-  then Common.pr2_once s
+let pr2_err, pr2_once = Common.mk_pr2_wrappers Flag_parsing_c.verbose_parsing 
     
 (*****************************************************************************)
 (* Helpers *)
@@ -1301,16 +1295,33 @@ let parse_print_error_heuristic2 file =
           if was_define && !Flag_parsing_c.filter_msg_define_error
           then ()
           else begin
+
             (match exn with
-            (* Lexical is not anymore launched I think *)
-            | Lexer_c.Lexical s -> 
-                pr2 ("lexical error " ^s^ "\n =" ^ error_msg_tok cur)
-            | Parsing.Parse_error -> 
-                pr2 ("parse error \n = " ^ error_msg_tok cur)
-            | Semantic_c.Semantic (s, i) -> 
-                pr2 ("semantic error " ^s^ "\n ="^ error_msg_tok cur)
+            | Lexer_c.Lexical _ 
+            | Parsing.Parse_error
+            | Semantic_c.Semantic _ -> ()
             | e -> raise e
             );
+
+            if !Flag_parsing_c.show_parsing_error
+            then begin 
+              (match exn with
+              (* Lexical is not anymore launched I think *)
+              | Lexer_c.Lexical s -> 
+                  pr2 ("lexical error " ^s^ "\n =" ^ error_msg_tok cur)
+              | Parsing.Parse_error -> 
+                  pr2 ("parse error \n = " ^ error_msg_tok cur)
+              | Semantic_c.Semantic (s, i) -> 
+                  pr2 ("semantic error " ^s^ "\n ="^ error_msg_tok cur)
+              | e -> raise Impossible
+              );
+              (* bugfix: *)
+              if (checkpoint_file =$= checkpoint2_file) && 
+                checkpoint_file =$= file
+              then print_bad line_error (checkpoint, checkpoint2) filelines
+              else pr2 "PB: bad: but on tokens not from original file"
+            end;
+
             
             let pbline = 
               toks_of_bads 
@@ -1323,11 +1334,6 @@ let parse_print_error_heuristic2 file =
             stat.Stat.problematic_lines <- 
               error_info::stat.Stat.problematic_lines;
 
-            (* bugfix: *)
-            if (checkpoint_file =$= checkpoint2_file) && 
-                checkpoint_file =$= file
-            then print_bad line_error (checkpoint, checkpoint2) filelines
-            else pr2 "PB: bad: but on tokens not from original file"
           end;
 
           if was_define && !Flag_parsing_c.filter_define_error

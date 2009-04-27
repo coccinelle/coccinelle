@@ -396,6 +396,19 @@ let pr2_once s =
 
 
 (* ---------------------------------------------------------------------- *)
+let mk_pr2_wrappers aref = 
+  let fpr2 s = 
+    if !aref
+    then pr2 s
+  in
+  let fpr2_once s = 
+    if !aref
+    then pr2_once s
+  in
+  fpr2, fpr2_once
+
+
+(* ---------------------------------------------------------------------- *)
 (* could also be in File section *)
 
 let redirect_stdout_stderr file f = 
@@ -1399,6 +1412,8 @@ let test_check_stack_size limit =
  *)
 let _init_gc_stack = 
   Gc.set {(Gc.get ()) with Gc.stack_limit = 100 * 1024 * 1024}
+
+
 
 
 (* if process a big set of files then dont want get overflow in the middle

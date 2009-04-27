@@ -1044,26 +1044,6 @@ let rec (unsplit_comma: ('a, il) either list -> 'a wrap2 list) =
 (* Helpers, could also be put in lib_parsing_c.ml instead *)
 (*****************************************************************************)
 
-let rec stmt_elems_of_sequencable xs = 
-  xs +> Common.map (fun x -> 
-    match x with
-    | StmtElem e -> [e]
-    | CppDirectiveStmt _
-    | IfdefStmt _ 
-        -> 
-        pr2_once ("stmt_elems_of_sequencable: filter a directive");
-        []
-    | IfdefStmt2 (_ifdef, xxs) -> 
-        pr2 ("stmt_elems_of_sequencable: IfdefStm2 TODO?");
-        xxs +> List.map (fun xs -> 
-          let xs' = stmt_elems_of_sequencable xs in
-          xs'
-        ) +> List.flatten
-  ) +> List.flatten
-        
-  
-
-
 (* should maybe be in pretty_print_c ? *)
 
 let s_of_inc_file inc_file = 

@@ -367,8 +367,10 @@ let check_macro_in_sp_and_adjust tokens =
   tokens +> List.iter (fun s -> 
     if Hashtbl.mem !Parse_c._defs s
     then begin
-      pr2 "warning: macro in semantic patch was in macro definitions";
-      pr2 ("disabling macro expansion for " ^ s);
+      if !Flag_cocci.verbose_cocci then begin
+        pr2 "warning: macro in semantic patch was in macro definitions";
+        pr2 ("disabling macro expansion for " ^ s);
+      end;
       Hashtbl.remove !Parse_c._defs s
     end
   )
@@ -1554,7 +1556,9 @@ let post_engine a =
 
 let check_duplicate_modif2 xs = 
   (* opti: let groups = Common.groupBy (fun (a,resa) (b,resb) -> a =$= b) xs *)
-  pr2 ("Check duplication for " ^ i_to_s (List.length xs) ^ " files");
+  if !Flag_cocci.verbose_cocci
+  then pr2 ("Check duplication for " ^ i_to_s (List.length xs) ^ " files");
+
   let groups = Common.group_assoc_bykey_eff xs in
   groups +> Common.map_filter (fun (file, xs) -> 
     match xs with

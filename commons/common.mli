@@ -137,6 +137,9 @@ val dump: 'a -> string
 val _already_printed : (string, bool) Hashtbl.t
 val pr2_once : string -> unit
 
+val mk_pr2_wrappers: bool ref -> (string -> unit) * (string -> unit)
+
+
 val redirect_stdout_stderr : filename -> (unit -> unit) -> unit
 val redirect_stdin : filename -> (unit -> unit) -> unit
 val redirect_stdin_opt : filename option -> (unit -> unit) -> unit

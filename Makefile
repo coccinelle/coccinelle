@@ -65,6 +65,9 @@ OCAMLCFLAGS= -g -dtypes # -w A
 # for profiling add  -p -inline 0
 # but 'make forprofiling' below does that for you.
 # This flag is also used in subdirectories so don't change its name here.
+# To enable backtrace support for native code, you need to put -g in OPTFLAGS
+# to also link with -g, but even in 3.11 the backtrace support seems buggy so
+# not worth it.
 OPTFLAGS=
 # the following is essential for Coccinelle to compile under gentoo
 # but is now defined above in this file

@@ -40,6 +40,11 @@ let cmdline_flags_envfile () =
     " <file> (default=" ^ !std_envir ^ ")";
   ]
 
+(*****************************************************************************)
+(* show *)
+(*****************************************************************************)
+
+let show_parsing_error = ref true
 
 (*****************************************************************************)
 (* verbose *)
@@ -48,7 +53,10 @@ let cmdline_flags_envfile () =
 let verbose_lexing = ref true
 let verbose_parsing = ref true
 let verbose_type    = ref true
+let verbose_cfg    = ref true
 let verbose_annotater = ref true
+let verbose_unparsing = ref true
+let verbose_visit = ref true
 
 let filter_msg = ref false
 let filter_msg_define_error = ref false

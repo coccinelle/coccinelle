@@ -45,9 +45,7 @@ open Ast_c (* to factorise tokens, OpAssign, ... *)
 (*****************************************************************************)
 (* Wrappers *)
 (*****************************************************************************)
-let pr2 s = 
-  if !Flag_parsing_c.verbose_lexing 
-  then Common.pr2 s
+let pr2, pr2_once = Common.mk_pr2_wrappers Flag_parsing_c.verbose_lexing 
 
 (*****************************************************************************)
 
