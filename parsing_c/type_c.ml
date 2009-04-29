@@ -327,7 +327,42 @@ let lub op t1 t2 =
         let t2bis = Ast_c.unwrap_typeC t2 in
 	(* a small attempt to do better, no consideration of typedefs *)
         (match op, t1bis, t2bis with
-	  Ast_c.Plus,Ast_c.Pointer _,Ast_c.BaseType(Ast_c.IntType _) ->
+	  (* these rules follow ANSI C.  See eg:
+	     http://flexor.uwaterloo.ca/library/SGI_bookshelves/SGI_Developer/books/CLanguageRef/sgi_html/ch05.html *)
+	  _,Ast_c.BaseType(bt1),Ast_c.BaseType(bt2) ->
+	    (match bt1,bt2 with
+	      Ast_c.Void,_ -> Some t2 (* something has gone wrong *)
+	    | _,Ast_c.Void -> Some t1 (* something has gone wrong *)
+	    | Ast_c.FloatType(Ast_c.CLongDouble),_ -> Some t1
+	    | _,Ast_c.FloatType(Ast_c.CLongDouble) -> Some t2
+	    | Ast_c.FloatType(Ast_c.CDouble),_ -> Some t1
+	    | _,Ast_c.FloatType(Ast_c.CDouble) -> Some t2
+	    | Ast_c.FloatType(Ast_c.CFloat),_ -> Some t1
+	    | _,Ast_c.FloatType(Ast_c.CFloat) -> Some t2
+
+	    | Ast_c.IntType(Ast_c.Si(Ast_c.UnSigned,Ast_c.CLongLong)),_ ->
+		Some t1
+	    | _,Ast_c.IntType(Ast_c.Si(Ast_c.UnSigned,Ast_c.CLongLong)) ->
+		Some t2
+	    | Ast_c.IntType(Ast_c.Si(Ast_c.Signed,Ast_c.CLongLong)),_ ->
+		Some t1
+	    | _,Ast_c.IntType(Ast_c.Si(Ast_c.Signed,Ast_c.CLongLong)) ->
+		Some t2
+	    | Ast_c.IntType(Ast_c.Si(Ast_c.UnSigned,Ast_c.CLong)),_ ->
+		Some t1
+	    | _,Ast_c.IntType(Ast_c.Si(Ast_c.UnSigned,Ast_c.CLong)) ->
+		Some t2
+	    | Ast_c.IntType(Ast_c.Si(Ast_c.Signed,Ast_c.CLong)),_ ->
+		Some t1
+	    | _,Ast_c.IntType(Ast_c.Si(Ast_c.Signed,Ast_c.CLong)) ->
+		Some t2
+	    | Ast_c.IntType(Ast_c.Si(Ast_c.UnSigned,Ast_c.CInt)),_ ->
+		Some t1
+	    | _,Ast_c.IntType(Ast_c.Si(Ast_c.UnSigned,Ast_c.CInt)) ->
+		Some t2
+	    | _ -> Some int_type)
+
+	| Ast_c.Plus,Ast_c.Pointer _,Ast_c.BaseType(Ast_c.IntType _) ->
 	    Some t1
 	| Ast_c.Plus,Ast_c.BaseType(Ast_c.IntType _),Ast_c.Pointer _ ->
 	    Some t2

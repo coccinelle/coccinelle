@@ -33,7 +33,10 @@
 - better parsing and type checking of macro type aliases. Cf -test macro_int16.
   Thanks to Li Yingtong for pointing out the problem.
 - make insert_virtual_positions tail rec, avoid stack overflow pb.
-  Thanks to Diego Liziero <diegoliz@gmail.com> for pointing out the problem.
+  Thanks to Diego Liziero <diegoliz@gmail.com> for pointing out the
+  problem.
+- Better type inference for arithmetic binary operators
+  Thanks to Li Yingtong for pointing out the problem.
 
 ** Internals:
 - spatch is now less verbose on the things he does yet handle. Less confusing
