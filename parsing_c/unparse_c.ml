@@ -49,7 +49,9 @@ type token1 =
  * This type contains the whole information. Have all the tokens with this
  * type.
  *)
-type min = Min of int (* adjacency information *) | Ctx
+type min =
+    Min of int (* adjacency information *)
+  | Ctx
 
 type token2 = 
   | T2 of Parser_c.token * min * 

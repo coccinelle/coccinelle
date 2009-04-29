@@ -638,6 +638,7 @@ rule token = parse
    * understood too by refman :) refman:11.1.4, and ritchie.
    * 
    * todo: attach type info to constant, like for float
+   * now the string is decomposed in type_annoter.ml
    *)
 
   | (( decimal | hexa | octal) 

@@ -37,6 +37,8 @@
   problem.
 - Better type inference for arithmetic binary operators
   Thanks to Li Yingtong for pointing out the problem.
+- Better type inference for constants
+  Thanks to Li Yingtong for pointing out the problem.
 
 ** Internals:
 - spatch is now less verbose on the things he does yet handle. Less confusing

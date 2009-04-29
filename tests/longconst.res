@@ -4,5 +4,9 @@ long function1()
         int b;
         a = 27;
         a = 48;
+        a = 27;
+        a = 48;
+        a = 27;
+        a = 48;
         return a;
 }
