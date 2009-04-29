@@ -412,7 +412,7 @@ let contains_modif =
   let option_default = false in
   let mcode r (_,_,kind,metapos) =
     match kind with
-      Ast.MINUS(_,_,_) -> true
+      Ast.MINUS(_,_,_,_) -> true
     | Ast.PLUS -> failwith "not possible"
     | Ast.CONTEXT(_,info) -> not (info = Ast.NOTHING) in
   let do_nothing r k e = k e in
@@ -1134,19 +1134,19 @@ let svar_context_with_add_after stmt s label quantified d ast
 	Ast.CONTEXT(pos,Ast.BEFOREAFTER(bef,_)) ->
 	  Ast.CONTEXT(pos,Ast.BEFORE(bef))
       |	Ast.CONTEXT(pos,_) -> Ast.CONTEXT(pos,Ast.NOTHING)
-      | Ast.MINUS(_,_,_) | Ast.PLUS -> failwith "not possible") in
+      | Ast.MINUS(_,_,_,_) | Ast.PLUS -> failwith "not possible") in
   let middle_metamatch =
     matcher
       (match d with
 	Ast.CONTEXT(pos,_) -> Ast.CONTEXT(pos,Ast.NOTHING)
-      | Ast.MINUS(_,_,_) | Ast.PLUS -> failwith "not possible") in
+      | Ast.MINUS(_,_,_,_) | Ast.PLUS -> failwith "not possible") in
   let last_metamatch =
     matcher
       (match d with
 	Ast.CONTEXT(pos,Ast.BEFOREAFTER(_,aft)) ->
 	  Ast.CONTEXT(pos,Ast.AFTER(aft))
       |	Ast.CONTEXT(_,_) -> d
-      | Ast.MINUS(_,_,_) | Ast.PLUS -> failwith "not possible") in
+      | Ast.MINUS(_,_,_,_) | Ast.PLUS -> failwith "not possible") in
 
   let rest_nodes =
     ctl_and CTL.NONSTRICT middle_metamatch prelabel_pred in  
@@ -1185,7 +1185,7 @@ let svar_minus_or_no_add_after stmt s label quantified d ast
        just use the label. label ensures that found nodes match up with
        what they should because it is in the lhs of the andany. *)
     match d with
-	Ast.MINUS(pos,adj,[]) -> true
+	Ast.MINUS(pos,inst,adj,[]) -> true
       | Ast.CONTEXT(pos,Ast.NOTHING) -> true
       | _ -> false in
   let ender =
@@ -1202,7 +1202,7 @@ let svar_minus_or_no_add_after stmt s label quantified d ast
 	let rest_metamatch =
 	  matcher
 	    (match d with
-	      Ast.MINUS(pos,adj,_) -> Ast.MINUS(pos,adj,[])
+	      Ast.MINUS(pos,inst,adj,_) -> Ast.MINUS(pos,inst,adj,[])
 	    | Ast.CONTEXT(pos,_) -> Ast.CONTEXT(pos,Ast.NOTHING)
 	    | Ast.PLUS -> failwith "not possible") in
 	let rest_nodes = ctl_and CTL.NONSTRICT rest_metamatch prelabel_pred in
@@ -1583,11 +1583,11 @@ and statement stmt after quantified minus_quantified
 		 is absent *)
 	      let new_mc =
 		match (retmc,semmc) with
-		  (Ast.MINUS(_,adj1,l1),Ast.MINUS(_,_,l2))
+		  (Ast.MINUS(_,inst1,adj1,l1),Ast.MINUS(_,_,_,l2))
 		  when !Flag.sgrep_mode2 ->
 		    (* in sgrep mode, we can propagate the - *)
-		    Some (Ast.MINUS(Ast.NoPos,adj1,l1@l2))
-		| (Ast.MINUS(_,_,l1),Ast.MINUS(_,_,l2))
+		    Some (Ast.MINUS(Ast.NoPos,inst1,adj1,l1@l2))
+		| (Ast.MINUS(_,_,_,l1),Ast.MINUS(_,_,_,l2))
 		| (Ast.CONTEXT(_,Ast.BEFORE(l1)),
 		   Ast.CONTEXT(_,Ast.AFTER(l2))) ->
 		    Some (Ast.CONTEXT(Ast.NoPos,Ast.BEFORE(l1@l2)))
@@ -1816,7 +1816,7 @@ and statement stmt after quantified minus_quantified
   | Ast.Dots((_,i,d,_),whencodes,bef,aft) ->
       let dot_code =
 	match d with
-	  Ast.MINUS(_,_,_) ->
+	  Ast.MINUS(_,_,_,_) ->
             (* no need for the fresh metavar, but ... is a bit weird as a
 	       variable name *)
 	    Some(make_match (make_meta_rule_elem d ([],[],[])))

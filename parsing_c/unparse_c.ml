@@ -50,7 +50,7 @@ type token1 =
  * type.
  *)
 type min =
-    Min of int (* adjacency information *)
+    Min of (int list (* match numbers *) * int (* adjacency information *))
   | Ctx
 
 type token2 = 
@@ -97,7 +97,14 @@ let str_of_token2 = function
   | Unindent_cocci2 -> ""
 
 let print_token2 = function
-  | T2 (t,b,_) -> "T2:"^(match b with Min _ -> "-" | Ctx -> "")^TH.str_of_tok t
+  | T2 (t,b,_) ->
+      let b_str =
+	match b with
+	  Min (index,adj) ->
+	    Printf.sprintf "-%d[%s]" adj
+	      (String.concat " " (List.map string_of_int index))
+	| Ctx -> "" in
+      "T2:"^b_str^TH.str_of_tok t
   | Fake2 -> ""
   | Cocci2 s -> "Cocci2:"^s
   | C2 s -> "C2:"^s
@@ -141,8 +148,8 @@ let mcode_contain_plus = function
   | Ast_cocci.CONTEXT (_,Ast_cocci.NOTHING) -> false
   | Ast_cocci.CONTEXT _ -> true
 (* patch: when need full coccinelle transformation *)
-  | Ast_cocci.MINUS (_,_,[]) -> false
-  | Ast_cocci.MINUS (_,_,x::xs) -> true
+  | Ast_cocci.MINUS (_,_,_,[]) -> false
+  | Ast_cocci.MINUS (_,_,_,x::xs) -> true
   | Ast_cocci.PLUS -> raise Impossible
 
 let contain_plus info = 
@@ -357,11 +364,11 @@ let expand_mcode toks =
     (* patch: when need full coccinelle transformation *)
     let unparser = Unparse_cocci.pp_list_list_any args_pp false in
     match mcode with
-    | Ast_cocci.MINUS (_,adj,any_xxs) -> 
+    | Ast_cocci.MINUS (_,inst,adj,any_xxs) -> 
         (* Why adding ? because I want to have all the information, the whole
          * set of tokens, so I can then process and remove the 
          * is_between_two_minus for instance *)
-        add_elem t (Min adj);
+        add_elem t (Min (inst,adj));
         unparser any_xxs Unparse_cocci.InPlace
     | Ast_cocci.CONTEXT (_,any_befaft) -> 
         (match any_befaft with
@@ -509,6 +516,12 @@ let remove_minus_and_between_and_expanded_and_fake xs =
   (* The use of is_minusable_comment_or_plus and set_minus_comment_or_plus
      is because the + code can end up anywhere in the middle of the - code;
      it is not necessarily to the far left *)
+
+  let common_adj (index1,adj1) (index2,adj2) =
+    adj1 = adj2 (* same adjacency info *) &&
+    (* non-empty intersection of witness trees *)
+    not ((Common.inter_set index1 index2) = []) in
+
   let rec adjust_between_minus xs =
     match xs with
     | [] -> []
@@ -518,7 +531,7 @@ let remove_minus_and_between_and_expanded_and_fake xs =
         (match rest with
         | [] -> [t1]
 
-        | ((T2 (_,Min adj2,_)) as t2)::rest when adj1 = adj2 ->
+        | ((T2 (_,Min adj2,_)) as t2)::rest when common_adj adj1 adj2 ->
             t1::
             (List.map (set_minus_comment_or_plus adj1) between_comments @
              adjust_between_minus (t2::rest))

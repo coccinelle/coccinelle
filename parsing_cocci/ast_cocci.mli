@@ -30,7 +30,7 @@ and 'a mcode = 'a * info * mcodekind * meta_pos (* pos variable *)
  (* pos is an offset indicating where in the C code the mcodekind has an
  effect *)
  and mcodekind =
-    MINUS       of pos * int * anything list list
+    MINUS       of pos * int list * int * anything list list
   | CONTEXT     of pos * anything befaft
   | PLUS
  and fixpos =

@@ -358,14 +358,17 @@ let metavars_binding_to_binding2 binding =
 
 
 let (satbis_to_trans_info: 
-  (nodei * Lib_engine.metavars_binding2 * Lib_engine.predicate) list -> 
-  (nodei * Lib_engine.metavars_binding * Ast_cocci.rule_elem) list) = 
+  (int list *
+     (nodei * Lib_engine.metavars_binding2 * Lib_engine.predicate)) list -> 
+  (int list *
+     (nodei * Lib_engine.metavars_binding * Ast_cocci.rule_elem)) list) = 
   fun xs -> 
-    xs +> List.fold_left (fun prev (nodei, binding2, pred) -> 
+    xs +> List.fold_left (fun prev (index,(nodei, binding2, pred)) -> 
          match pred with
            | Lib_engine.Match (rule_elem) ->
 	       if !Flag.track_iso_usage then show_isos rule_elem;
-	       (nodei, metavars_binding2_to_binding binding2, rule_elem)
+	       (index,
+		(nodei, metavars_binding2_to_binding binding2, rule_elem))
 	       ::prev
 	     (* see BindGood in asttotctl2 *)
            | Lib_engine.BindGood (_) -> prev
@@ -396,8 +399,8 @@ let (mysat2:
   Lib_engine.model ->
   (Lib_engine.ctlcocci * (pred list list)) -> 
   (Lib_engine.mvar list*Lib_engine.metavars_binding) ->
-  (Lib_engine.transformation_info * bool * Lib_engine.metavars_binding *
-     Lib_engine.metavars_binding list)) =
+  (Lib_engine.numbered_transformation_info * bool *
+     Lib_engine.metavars_binding * Lib_engine.metavars_binding list)) =
   fun (flow, label, states) ctl (used_after, binding) -> 
     let binding2 = metavars_binding_to_binding2 binding in
     let (triples,(trans_info2, returned_any_states, used_after_envs)) = 

@@ -1619,7 +1619,6 @@ let process file isofile verbose =
 	       let ((metavars,minus),function_prototypes) =
 		 Function_prototypes.process
 		   rule_name metavars dropped_isos minus plus ruletype in
-	       let minus = Adjacency.compute_adjacency minus in
 	       let plus = Adjust_pragmas.process plus in
           (* warning! context_neg side-effects its arguments *)
 	       let (m,p) = List.split (Context_neg.context_neg minus plus) in
@@ -1633,6 +1632,8 @@ let process file isofile verbose =
 		      some restrictions on the -+ code *)
 		   ([],_) | (_,Ast.Generated) -> ([],minus)
 		 | _ -> Iso_pattern.apply_isos chosen_isos minus rule_name in
+	       (* after iso, because iso can intro ... *)
+	       let minus = Adjacency.compute_adjacency minus in
 	       let minus = Comm_assoc.comm_assoc minus rule_name dropiso in
 	       let minus =
 		 if !Flag.sgrep_mode2 then minus

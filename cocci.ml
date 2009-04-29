@@ -285,6 +285,9 @@ let show_or_not_celem a b  =
 
 
 let show_or_not_trans_info2 trans_info = 
+  (* drop witness tree indices for printing *)
+  let trans_info =
+    List.map (function (index,trans_info) -> trans_info) trans_info in
   if !Flag.show_transinfo then begin
     if null trans_info then pr2 "transformation info is empty"
     else begin

@@ -634,7 +634,7 @@ let annotater_expr_visitor_subpart = (fun (k,bigf) expr ->
 	| ["ll"] ->	make_info_def (type_of_s "long long")
 	| ["ul"] ->	make_info_def (type_of_s "unsigned long")
 	| ["l"] ->	make_info_def (type_of_s "long")
-	| ["u"] ->	make_info_def (type_of_s "unsigned long")
+	| ["u"] ->	make_info_def (type_of_s "unsigned")
 	| _ ->    	make_info_def (type_of_s "int"))
     | Constant (Float (s,kind)) -> 
         let fake = Ast_c.fakeInfo (Common.fake_parse_info) in

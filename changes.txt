@@ -19,8 +19,7 @@
   the -macro_file option. e.g. 
     $ ./spatch -extract_macros ~/linux > /tmp/alldefs.h
     $ ./spatch -macro_file /tmp/alldefs.h -sp_file foo.cocci -dir ~/linux
-- removed -D macro_file option, not consistent with what -D usually mean
-
+- removed -D macro_file option, not consistent with what -D usually means
 
 ** Bugfix:
 - better parsing of declare macro at toplevel and in structure. 
@@ -39,9 +38,16 @@
   Thanks to Li Yingtong for pointing out the problem.
 - Better type inference for constants
   Thanks to Li Yingtong for pointing out the problem.
+- move computing of adjacency information for semantic patches to after
+  application of isomorphisms, because isomorphisms can introduce "..."
+- compute adjacency information for negated ...
+- record with each transformation site the set of indices of the witness
+  trees that caused the transformation site to come about.  Whitespace and
+  comments between remove tokens associated with disjoint witness trees is
+  not removed.
 
 ** Internals:
-- spatch is now less verbose on the things he does yet handle. Less confusing
+- spatch is now less verbose on the things it does yet handle. Less confusing
   for new users.
 
 * 0.1.7

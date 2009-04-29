@@ -219,7 +219,7 @@ let convert_info info =
 let convert_mcodekind adj = function
     Ast0.MINUS(replacements) ->
       let (replacements,_) = !replacements in
-      Ast.MINUS(Ast.NoPos,adj,replacements)
+      Ast.MINUS(Ast.NoPos,[],adj,replacements)
   | Ast0.PLUS -> Ast.PLUS
   | Ast0.CONTEXT(befaft) ->
       let (befaft,_,_) = !befaft in Ast.CONTEXT(Ast.NoPos,befaft)

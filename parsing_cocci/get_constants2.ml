@@ -326,7 +326,7 @@ let get_all_constants minus_only =
   let option_default = [] in
   let mcode r (x,_,mcodekind,_) =
     match mcodekind with
-      Ast.MINUS(_,_,_) -> [x]
+      Ast.MINUS(_,_,_,_) -> [x]
     | _ when minus_only -> []
     | _ -> [x] in
   let other r _ = [] in
@@ -354,7 +354,7 @@ let get_plus_constants =
 	       bind ((get_all_constants false).V.combiner_anything cur) prev))
 	[] l in
     match mcodekind with
-      Ast.MINUS(_,_,anythings) -> recurse anythings
+      Ast.MINUS(_,_,_,anythings) -> recurse anythings
     | Ast.CONTEXT(_,Ast.BEFORE(a)) -> recurse a
     | Ast.CONTEXT(_,Ast.AFTER(a)) -> recurse a
     | Ast.CONTEXT(_,Ast.BEFOREAFTER(a1,a2)) ->

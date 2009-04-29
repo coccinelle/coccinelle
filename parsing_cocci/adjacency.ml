@@ -9,10 +9,9 @@ let compute_adjacency p =
     match str with
       "..." | "<..." | "...>" | "<+..." | "...+>" ->
 	(match mc with
-	  Ast0.MINUS _ -> () (* ... doesn't match code tokens *)
-	| Ast0.CONTEXT _ -> counter := !counter + 1
-	| _ -> failwith "unexpected mcode for ...");
-	x
+	  Ast0.MINUS _ -> mcode x
+	| Ast0.CONTEXT _ -> counter := !counter + 1; x
+	| _ -> failwith "unexpected mcode for ...")
     | _ -> mcode x in
   let fn =
     V0.rebuilder
@@ -30,3 +29,4 @@ let compute_adjacency p =
 	VT0.rebuilder_storage_mcode = mcode;
 	VT0.rebuilder_inc_mcode = mcode;} in
   List.map fn.VT0.rebuilder_rec_top_level p
+

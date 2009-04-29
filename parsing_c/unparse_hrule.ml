@@ -77,7 +77,7 @@ let get_function_name rule env =
       [] any_list_list in
   let mcode r mc =
     match Ast.get_mcodekind mc with
-      Ast.MINUS(_,_,any_list_list) -> do_any_list_list r any_list_list
+      Ast.MINUS(_,_,_,any_list_list) -> do_any_list_list r any_list_list
     | Ast.CONTEXT(_,any_befaft) ->
 	(match any_befaft with
 	  Ast.BEFORE(any_list_list) | Ast.AFTER(any_list_list) ->

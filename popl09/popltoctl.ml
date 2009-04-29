@@ -17,7 +17,7 @@ let contains_modif =
   let option_default = false in
   let mcode r (_,_,kind,_) =
     match kind with
-      Ast.MINUS(_,_,_) -> true
+      Ast.MINUS(_,_,_,_) -> true
     | Ast.PLUS -> failwith "not possible"
     | Ast.CONTEXT(_,info) -> not (info = Ast.NOTHING) in
   let do_nothing r k e = k e in
