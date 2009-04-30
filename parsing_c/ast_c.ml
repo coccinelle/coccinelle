@@ -336,7 +336,7 @@ and expression = (expressionbis * exp_info ref (* semantic: *)) wrap
     | String of (string * isWchar)
     | MultiString of string list (* can contain MacroString, todo: more info *)
     | Char   of (string * isWchar) (* normally it is equivalent to Int *)
-    | Int    of (string  (* * intType*)) 
+    | Int    of (string * intType)
     | Float  of (string * floatType)
 
     and isWchar = IsWchar | IsChar

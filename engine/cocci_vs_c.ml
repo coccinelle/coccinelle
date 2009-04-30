@@ -759,7 +759,7 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
           ))
       in
       (match term ia1, ib with 
-      | A.Int x, B.Int y -> 
+      | A.Int x, B.Int (y,_) -> 
           X.value_format_flag (fun use_value_equivalence -> 
             if use_value_equivalence 
             then 

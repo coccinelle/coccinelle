@@ -148,8 +148,10 @@ let (fixDeclSpecForDecl: decl -> (fullType * (storage wrap)))  = function
      BaseType(IntType (Si (Signed, [Short,CShort; Long, CLong; LongLong, CLongLong] +> List.assoc x))), iit
  | (Some UnSigned, Some x, (None| Some (BaseType (IntType (Si (_,CInt))))))-> 
      BaseType(IntType (Si (UnSigned, [Short,CShort; Long, CLong; LongLong, CLongLong] +> List.assoc x))), iit
- | (Some sign,   None, (Some (BaseType (IntType CChar))))   -> BaseType(IntType (Si (sign, CChar2))), iit
- | (None, Some Long,(Some(BaseType(FloatType CDouble))))    -> BaseType (FloatType (CLongDouble)), iit
+ | (Some sign,   None, (Some (BaseType (IntType CChar))))   ->
+     BaseType(IntType (Si (sign, CChar2))), iit
+ | (None, Some Long,(Some(BaseType(FloatType CDouble))))    ->
+     BaseType (FloatType (CLongDouble)), iit
 
  | (Some _,_, Some _) ->  
      (*mine*)
@@ -365,7 +367,7 @@ let mk_string_wrap (s,info) = (s, [info])
 /*(* the normal tokens *)*/
 /*(*-----------------------------------------*)*/
 
-%token <string * Ast_c.info>                     TInt
+%token <(string * (Ast_c.sign * Ast_c.base)) * Ast_c.info> TInt
 %token <(string * Ast_c.floatType) * Ast_c.info> TFloat
 %token <(string * Ast_c.isWchar) * Ast_c.info>   TChar
 %token <(string * Ast_c.isWchar) * Ast_c.info>   TString
@@ -740,7 +742,9 @@ postfix_expr:
 
 primary_expr:
  | identifier_cpp  { mk_e(Ident  ($1)) [] }
- | TInt    { mk_e(Constant (Int    (fst $1))) [snd $1] }
+ | TInt
+    { let (str,(sign,base)) = fst $1 in
+      mk_e(Constant (Int (str,Si(sign,base)))) [snd $1] }
  | TFloat  { mk_e(Constant (Float  (fst $1))) [snd $1] }
  | TString { mk_e(Constant (String (fst $1))) [snd $1] }
  | TChar   { mk_e(Constant (Char   (fst $1))) [snd $1] }

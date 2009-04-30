@@ -624,18 +624,19 @@ let annotater_expr_visitor_subpart = (fun (k,bigf) expr ->
     | Constant (String (s,kind)) -> make_info_def (type_of_s "char *")
     | Constant MultiString _  -> make_info_def (type_of_s "char *")
     | Constant (Char   (s,kind)) -> make_info_def (type_of_s "char")
-    | Constant (Int (s))         ->
-	(match
-	  List.map String.lowercase(Str.split (Str.regexp "[0-9a-fA-Fx]+") s)
-	with
-	  (* this could perhaps be done more automatically, but perhaps these
-	     are the only cases that are allowed? *)
-	  ["ull"] ->	make_info_def (type_of_s "unsigned long long")
-	| ["ll"] ->	make_info_def (type_of_s "long long")
-	| ["ul"] ->	make_info_def (type_of_s "unsigned long")
-	| ["l"] ->	make_info_def (type_of_s "long")
-	| ["u"] ->	make_info_def (type_of_s "unsigned")
-	| _ ->    	make_info_def (type_of_s "int"))
+    | Constant (Int (s,kind)) ->
+	(* this seems really unpleasant, but perhaps the type needs to be set
+	   up in some way that allows pretty printing *)
+	make_info_def
+	  (match kind with
+	  (* matches limited by what is generated in lexer_c.mll *)
+	    Si(Signed,CInt) -> type_of_s "int"
+	  | Si(UnSigned,CInt) -> type_of_s "unsigned int"
+	  | Si(Signed,CLong) -> type_of_s "long"
+	  | Si(UnSigned,CLong) -> type_of_s "unsigned long"
+	  | Si(Signed,CLongLong) -> type_of_s "long long"
+	  | Si(UnSigned,CLongLong) -> type_of_s "unsigned long long"
+	  | _ -> failwith "unexpected kind for constant")
     | Constant (Float (s,kind)) -> 
         let fake = Ast_c.fakeInfo (Common.fake_parse_info) in
         let fake = Ast_c.rewrap_str "float" fake in

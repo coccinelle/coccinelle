@@ -706,7 +706,7 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
       *)
       let is_zero = 
         match Ast_c.unwrap_expr e with
-        | Constant (Int "0") -> true
+        | Constant (Int ("0",_)) -> true
         | _ -> false
       in
 

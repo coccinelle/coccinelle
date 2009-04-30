@@ -39,7 +39,7 @@ INCLUDES= -I ../commons -I ../commons/ocamlextra -I ../commons/ocollection \
 
 #LIBS=../commons/commons.cma
 #INCLUDES= -I ../commons
-SYSLIBS= str.cma unix.cma
+SYSLIBS= str.cma unix.cma num.cma
 
 ##############################################################################
 # Generic variables

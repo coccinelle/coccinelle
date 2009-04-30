@@ -158,6 +158,59 @@ let keyword_table = Common.hash_of_list [
 let error_radix s = 
   ("numeric " ^ s ^ " constant contains digits beyond the radix:")
 
+(* functions for figuring out the type of integers *)
+
+let is_long_dec s int uint long ulong =
+  match !Flag_parsing_c.int_thresholds with
+    None -> int
+  | Some (_,_,uint_threshold,long_threshold,ulong_threshold) ->
+      let bn = Big_int.big_int_of_string s in
+      if Big_int.ge_big_int bn ulong_threshold
+      then ulong
+      else
+	if Big_int.ge_big_int bn long_threshold
+	then long
+	else
+	  if Big_int.ge_big_int bn uint_threshold
+	  then long
+	  else int
+
+let is_long_ho s int uint long ulong drop bpd count =
+  match !Flag_parsing_c.int_thresholds with
+    None -> int
+  | Some (uint_sz,ulong_sz,_,_,_) ->
+      let len = String.length s in
+      (* this assumes that all of the hex/oct digits are significant *)
+      (* drop is 2 for hex (0x) and 1 for oct (0) *)
+      let s = String.sub s drop (len - drop) in
+      let len =
+	((len-drop) * bpd) -
+	  (count (int_of_string("0x"^(String.sub s 0 1)))) in
+      if len < uint_sz
+      then int
+      else
+	if len = uint_sz
+	then uint
+	else
+	  if len < ulong_sz
+	  then long
+	  else ulong
+
+let is_long_oct s int uint long ulong =
+  is_long_ho s int uint long ulong 1 3
+    (* stupid, but probably more efficient than taking logs *)
+    (function 0 -> 3 | 1 -> 2 | n when n < 4 -> 1 | _ -> 0)
+let is_long_hex s int uint long ulong =
+  is_long_ho s int uint long ulong 2 4
+    (* stupid, but probably more efficient than taking logs *)
+    (function 0 -> 4 | 1 -> 3 | n when n < 4 -> 2 | n when n < 8 -> 1
+      | _ -> 0)
+
+let sint = (Signed,CInt)
+let uint = (UnSigned,CInt)
+let slong = (Signed,CLong)
+let ulong = (UnSigned,CLong)
+
 }
 
 (*****************************************************************************)
@@ -633,24 +686,36 @@ rule token = parse
       }
 
 
-  (* Take care of the order ? No because lex try the longest match. The
+  (* Take care of the order ? No because lex tries the longest match. The
    * strange diff between decimal and octal constant semantic is not
    * understood too by refman :) refman:11.1.4, and ritchie.
-   * 
-   * todo: attach type info to constant, like for float
-   * now the string is decomposed in type_annoter.ml
    *)
 
-  | (( decimal | hexa | octal) 
-        ( ['u' 'U'] 
-        | ['l' 'L']  
-        | (['l' 'L'] ['u' 'U'])
-        | (['u' 'U'] ['l' 'L'])
-        | (['u' 'U'] ['l' 'L'] ['l' 'L'])
-        | (['l' 'L'] ['l' 'L'])
-        )?
-    ) as x { TInt (x, tokinfo lexbuf) }
-
+  | decimal as x
+      { TInt ((x, is_long_dec x sint slong slong ulong), tokinfo lexbuf) }
+  | hexa as x
+      { TInt ((x, is_long_hex x sint uint slong ulong), tokinfo lexbuf) }
+  | octal as x
+      { TInt ((x, is_long_oct x sint uint slong ulong), tokinfo lexbuf) }
+  | ((decimal as s) ['u' 'U']) as x
+      { TInt ((x, is_long_dec s uint uint ulong ulong), tokinfo lexbuf) }
+  | ((hexa as s) ['u' 'U']) as x
+      { TInt ((x, is_long_hex s uint uint ulong ulong), tokinfo lexbuf) }
+  | ((octal as s) ['u' 'U']) as x
+      { TInt ((x, is_long_oct s uint uint ulong ulong), tokinfo lexbuf) }
+  | (( decimal as s) ['l' 'L']) as x
+      { TInt ((x, is_long_dec s slong slong slong ulong), tokinfo lexbuf) }
+  | ((hexa as s) ['l' 'L']) as x
+      { TInt ((x, is_long_hex s slong slong slong ulong), tokinfo lexbuf) }
+  | ((octal as s) ['l' 'L']) as x
+      { TInt ((x, is_long_oct s slong slong slong ulong), tokinfo lexbuf) }
+  | ((( decimal | hexa | octal) ['l' 'L'] ['u' 'U'])
+  | (( decimal | hexa | octal) ['u' 'U'] ['l' 'L'])) as x
+      { TInt ((x, (UnSigned,CLong)), tokinfo lexbuf) }
+  | (( decimal | hexa | octal) ['l' 'L'] ['l' 'L']) as x
+      { TInt ((x, (Signed,CLongLong)), tokinfo lexbuf) }
+  | (( decimal | hexa | octal) ['u' 'U'] ['l' 'L'] ['l' 'L']) as x
+      { TInt ((x, (UnSigned,CLongLong)), tokinfo lexbuf) }
 
   | (real ['f' 'F']) as x { TFloat ((x, CFloat),      tokinfo lexbuf) }
   | (real ['l' 'L']) as x { TFloat ((x, CLongDouble), tokinfo lexbuf) }

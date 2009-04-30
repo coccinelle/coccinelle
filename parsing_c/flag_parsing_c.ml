@@ -189,3 +189,39 @@ let cmdline_flags_other () =
   ]
 
 (*****************************************************************************)
+(* for lexing of integer constants *)
+(*****************************************************************************)
+
+let int_thresholds =
+  ref (None :
+	 (int (*int_sz*) * int (*long_sz*) *
+	    Big_int.big_int (*uint threshold*) *
+	    Big_int.big_int (*long threshold*) *
+	    Big_int.big_int (*ulong threshold*)) option)
+
+let set_int_bits n =
+  match !int_thresholds with
+    None ->
+      (*assume long is 2*int; this can be corrected by a subsequent long_bits*)
+      let uint_threshold  = Big_int.power_int_positive_int 2 (n-1) in
+      let long_threshold  = Big_int.power_int_positive_int 2 n in
+      let ulong_threshold = Big_int.power_int_positive_int 2 ((2*n)-1) in
+      int_thresholds :=
+	Some (n,2*n,uint_threshold,long_threshold,ulong_threshold)
+  | Some(int_sz,long_sz,uint_threshold,long_threshold,ulong_threshold) ->
+      let uint_threshold = Big_int.power_int_positive_int 2 (n-1) in
+      let long_threshold = Big_int.power_int_positive_int 2 n in
+      int_thresholds :=
+	Some (n,long_sz,uint_threshold,long_threshold,ulong_threshold)
+
+let set_long_bits n =
+  match !int_thresholds with
+    None ->
+      (*assume int is 1/2*int; this can be corrected by a subsequent int_bits*)
+      set_int_bits (n/2)
+  | Some(int_sz,long_sz,uint_threshold,long_threshold,ulong_threshold) ->
+      let ulong_threshold = Big_int.power_int_positive_int 2 (n-1) in
+      int_thresholds :=
+	Some (int_sz,n,uint_threshold,long_threshold,ulong_threshold)
+
+(*****************************************************************************)

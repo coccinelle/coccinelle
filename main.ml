@@ -454,7 +454,11 @@ let other_options = [
        any way of printing things out *)
     "-allow_inconsistent_paths",
     Arg.Set Flag_matcher.allow_inconsistent_paths,
-    "if this flag is set don't check for inconsistent paths; dangerous";    
+    "   if this flag is set don't check for inconsistent paths; dangerous";
+    "-int_bits", Arg.Int Flag_parsing_c.set_int_bits,
+    "  the number of bits in an unsigned int";
+    "-long_bits", Arg.Int Flag_parsing_c.set_long_bits,
+    "  the number of bits in an unsigned long";
   ];
 
   "misc options",

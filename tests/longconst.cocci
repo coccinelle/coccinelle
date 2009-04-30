@@ -1,23 +1,31 @@
-@  @
+@@
 expression E;
 long E1;
-{int, signed char, signed short} E2;
+int E2;
 @@
 - E1 = E2 << E;
-+ E1 = (long)(E2) << E;
++ E1 = f(E2,"int");
 
-@  @
+@@
 expression E;
 long E1;
-{long,unsigned} E2;
+unsigned int E2;
 @@
 - E1 = E2 << E;
-+ E1 = 27;
++ E1 = f(E2,"unsigned");
 
-@  @
+@@
 expression E;
 long E1;
-{unsigned long} E2;
+long E2;
 @@
 - E1 = E2 << E;
-+ E1 = 48;
++ E1 = f(E2,"long");
+
+@@
+expression E;
+long E1;
+unsigned long E2;
+@@
+- E1 = E2 << E;
++ E1 = f(E2,"unsigned long");
