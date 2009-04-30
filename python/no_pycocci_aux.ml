@@ -25,8 +25,8 @@ and constantrep c = match c with
   Ast_c.String (s,isWchar) -> s 
 | Ast_c.MultiString _ -> "TODO: MultiString"
 | Ast_c.Char (s,isWchar) -> s
-| Ast_c.Int s -> s 
-| Ast_c.Float (s,t) -> s
+| Ast_c.Int (s, _t) -> s 
+| Ast_c.Float (s, _t) -> s
 
 let call_pretty f a =
   let str = ref ([] : string list) in
