@@ -403,6 +403,10 @@ let rec apply_macro_defs
  * a line-level and so low token-level information). Hence the 
  * function 'define_line' below and the TDefEol.
  * 
+ * update: TDefEol is handled in a special way at different places, 
+ * a little bit like EOF, especially for error recovery, so this
+ * is an important token that should not be retagged!
+ * 
  * 
  * ugly hack, a better solution perhaps would be to erase TDefEOL 
  * from the Ast and list of tokens in parse_c. 
@@ -556,6 +560,9 @@ let rec define_parse xs =
   match xs with
   | [] -> []
   | TDefine i1::TIdentDefine (s,i2)::TOParDefine i3::xs -> 
+      (* note: the macro could be badly written and have no closing ')' for
+       * its param, which would make us go too far away, but I don't think
+       * it's important to handle such an error *)
       let (tokparams, _, xs) = 
         xs +> Common.split_when (function TCPar _ -> true | _ -> false) in
       let (body, _, xs) = 
@@ -608,9 +615,12 @@ let rec define_parse xs =
       let def = (s, (s, NoParam, macro_body_to_maybe_hint body)) in
       def::define_parse xs
 
-  | TDefine i1::_ -> 
-      pr2_gen i1;
-      raise Impossible
+  (* cf tests-bis/define_plus.c *)
+  | TDefine i1::xs -> 
+      let line = Ast_c.line_of_info i1 in
+      pr2 (spf "WEIRD: no ident in define at line %d" line);
+      define_parse xs
+        
   | x::xs -> define_parse xs 
       
 

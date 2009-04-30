@@ -64,6 +64,9 @@ type token_extended = {
   col : int;
 }
 
+(* todo? is it ok to reset as a comment a TDefEOL ? if do that, then
+ * can confuse the parser.
+ *)
 let set_as_comment cppkind x = 
   if TH.is_eof x.tok 
   then () (* otherwise parse_c will be lost if don't find a EOF token *)

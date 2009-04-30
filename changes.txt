@@ -54,6 +54,10 @@
   not removed.
 - correct treatment of function pointer typed parameters in the SmPL ast0
   visitor.
+- better parsing error message and error recovery when comments are not ended, 
+  when some macros have a weird body, and when some switch have a weird
+  Body. 
+  Thanks to Derek Jones for pointing out the problem.
 
 ** Internals:
 

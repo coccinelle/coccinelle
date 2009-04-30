@@ -306,7 +306,7 @@ and expression = (expressionbis * exp_info ref (* semantic: *)) wrap
   | Cast           of fullType * expression                     
 
   (* gccext: *)        
-  | StatementExpr of compound wrap (* ( )     new scope *) 
+  | StatementExpr of compound wrap (* ( )     new scope *) 
   | Constructor  of fullType * initialiser wrap2 (* , *) list 
 
   (* forunparser: *)
@@ -1098,7 +1098,16 @@ let info_of_name ident =
 let get_s_and_ii_of_name name = 
   match name with
   | RegularName (s, iis) -> s, List.hd iis 
-  | _ -> raise Todo
+  | CppIdentBuilder ((s, iis), xs) -> s, List.hd iis
+  | CppVariadicName (s,iis)  -> 
+      let (iop, iis) = Common.tuple_of_list2 iis in
+      s, iis
+  | CppConcatenatedName xs -> 
+      (match xs with
+      | [] -> raise Impossible
+      | ((s,iis),noiiop)::xs -> 
+          s, List.hd iis
+      )
 
 
 let name_of_parameter param = 

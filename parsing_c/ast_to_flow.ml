@@ -53,6 +53,7 @@ type error =
   | DeadCode          of Common.parse_info option
   | CaseNoSwitch      of Common.parse_info
   | OnlyBreakInSwitch of Common.parse_info
+  | WeirdSwitch       of Common.parse_info
   | NoEnclosingLoop   of Common.parse_info
   | GotoCantFindLabel of string * Common.parse_info
   | NoExit of Common.parse_info
@@ -561,7 +562,15 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
              } 
              in
              aux_statement (None (* no starti *), newxi) st
-         | x -> raise Impossible
+         | x -> 
+             (* apparently gcc allows some switch body such as 
+              *   switch (i) case 0 : printf("here\n");
+              *   cf tests-bis/switch_no_body.c
+              * but I don't think it's worthwile to handle
+              * such pathological and rare case. Not worth
+              * the complexity. Safe to assume a coumpound.
+              *)
+             raise (Error (WeirdSwitch (pinfo_of_ii [i1])))
        in
        !g +> add_arc_opt (finalthen, newendswitch);
 
@@ -1366,6 +1375,8 @@ let report_error error =
       pr2 ("FLOW: case without corresponding switch: " ^ error_from_info info)
   | OnlyBreakInSwitch info -> 
       pr2 ("FLOW: only break are allowed in switch: " ^ error_from_info info)
+  | WeirdSwitch info -> 
+      pr2 ("FLOW: weird switch: " ^ error_from_info info)
   | NoEnclosingLoop   (info) -> 
       pr2 ("FLOW: can't find enclosing loop: " ^ error_from_info info)
   | GotoCantFindLabel (s, info) ->

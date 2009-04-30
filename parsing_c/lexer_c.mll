@@ -833,6 +833,7 @@ and comment = parse
   (* noteopti: *)
   | [^ '*']+ { let s = tok lexbuf in s ^ comment lexbuf }
   | [ '*']   { let s = tok lexbuf in s ^ comment lexbuf }
+  | eof { pr2 "LEXER: end of file in comment"; "*/"}
   | _  
       { let s = tok lexbuf in
         pr2 ("LEXER: unrecognised symbol in comment:"^s);

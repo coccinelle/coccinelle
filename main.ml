@@ -811,6 +811,8 @@ let main () =
     (* this call can set up many global flag variables via the cmd line *)
     arg_parse2 (Arg.align all_options) (fun x -> args := x::!args) usage_msg;
 
+    (* julia hack so that one can override directories specified on
+     * the command line. *)
     (if !dir
     then
       let chosen_dir =
@@ -825,6 +827,7 @@ let main () =
 	 else List.hd !args in
       if !FC.include_path =*= None
       then FC.include_path := Some (Filename.concat chosen_dir "include"));
+
     args := List.rev !args;
 
     if !cocci_file <> "" && (not (!cocci_file =~ ".*\\.\\(sgrep\\|spatch\\)$"))

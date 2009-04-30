@@ -776,7 +776,9 @@ let new_info posadd str ii =
 
 let rec comment_until_defeol xs = 
   match xs with
-  | [] -> failwith "cant find end of define token TDefEOL"
+  | [] -> 
+      (* job not done in Cpp_token_c.define_parse ? *)
+      failwith "cant find end of define token TDefEOL"
   | x::xs -> 
       (match x with
       | Parser_c.TDefEOL i -> 

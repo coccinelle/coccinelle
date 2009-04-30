@@ -117,11 +117,17 @@ let is_cbrace = function
 
 
 (* ---------------------------------------------------------------------- *)
+
+(* end of file *)
 let is_eof = function
   | EOF x -> true
   | _ -> false
 
 
+(* end of macro *)
+let is_eom = function
+  | TDefEOL _ -> true
+  | _ -> false
 
 let is_statement = function
   | Tfor _ | Tdo _ | Tif _ | Twhile _ | Treturn _ 

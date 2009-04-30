@@ -15,6 +15,8 @@ val is_cpp_instruction     : Parser_c.token -> bool
 val is_gcc_token           : Parser_c.token -> bool
 
 val is_eof                 : Parser_c.token -> bool
+val is_eom                 : Parser_c.token -> bool
+
 val is_statement           : Parser_c.token -> bool
 val is_start_of_something  : Parser_c.token -> bool
 val is_binary_operator     : Parser_c.token -> bool

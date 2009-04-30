@@ -1085,7 +1085,12 @@ let rec find_define_init_brace_paren xs =
 (* action *)
 (* ------------------------------------------------------------------------- *)
 
-(* obsolete now with macro expansion ? get some regression if comment *)
+(* obsolete now with macro expansion ? get some regression if comment.
+ * todo: if do bad decision here, then it can influence other phases 
+ * and make it hard to parse. So maybe when have a parse error, should
+ * undo some of the guess those heuristics have done, and restore 
+ * the original token value.
+ *)
 
 let rec find_actions = function
   | [] -> ()
@@ -1114,11 +1119,17 @@ and find_actions_params xxs =
         if TH.is_eof x.tok
         then 
           (* certainly because paren detection had a pb because of
-           * some ifdef-exp
+           * some ifdef-exp. Do similar additional checking than
+           * what is done in set_as_comment.
            *)
-          pr2 "PB: weird, I try to tag an EOF token as action"
+          pr2 "PB: weird, I try to tag an EOF token as an action"
         else 
-          x.tok <- TAction (TH.info_of_tok x.tok);
+          (* cf tests-bis/no_cpar_macro.c *)
+          if TH.is_eom x.tok 
+          then 
+            pr2 "PB: weird, I try to tag an EOM token as an action"
+          else 
+            x.tok <- TAction (TH.info_of_tok x.tok);
       );
       true (* modified *)
     end
