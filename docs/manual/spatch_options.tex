@@ -213,6 +213,19 @@ which score file to compare with in the testall run}
 \rare{-type\_error\_msg}{Show information about where the C type checker
   was not able to determine the type of an expression.}
 
+\rare{-int\_bits $\langle$n$\rangle$, -long\_bits
+$\langle$n$\rangle$}{Provide integer size information} n is the number of
+bits in an unsigned integer or unsigned long, respectively.  If only the
+option {\bf -int\_bits} is used, unsigned longs will be assumed to have
+twice as many bits as unsigned integers.  If only the option {\bf
+-long\_bits} is used, unsigned ints will be assumed to have half as many
+bits as unsigned integers.  This information is only used in determining
+the types of integer constants, according to the ANSI C standard (C89).  If
+neither is provided, the type of an integer constant is determined by the
+sequence of ``u'' and ``l'' annotations following the constant.  If there
+is none, the constant is assumed to be a signed integer.  If there is only
+``u'', the constant is assumed to be an unsigned integer, etc.
+
 \developer{-use\_cache} Use preparsed versions of the C files that are
 stored in a cache.
 
