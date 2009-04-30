@@ -1179,19 +1179,16 @@ let svar_minus_or_no_add_after stmt s label quantified d ast
   let prelabel_pred =
     CTL.Pred (Lib_engine.PrefixLabel(label_var),CTL.Control) in
   let matcher d = make_match None guard (make_meta_rule_elem d fvinfo) in
-  let pure_d =
+  let ender =
+    match (d,after) with
+      (Ast.CONTEXT(pos,Ast.NOTHING),(Tail|End|VeryEnd)) ->
+	(* just match the root. don't care about label; always ok *)
+	make_raw_match None false ast
+    | (Ast.MINUS(pos,inst,adj,[]),(Tail|End|VeryEnd)) ->
     (* don't have to put anything before the beginning, so don't have to
        distinguish the first node.  so don't have to bother about paths,
        just use the label. label ensures that found nodes match up with
        what they should because it is in the lhs of the andany. *)
-    match d with
-	Ast.MINUS(pos,inst,adj,[]) -> true
-      | Ast.CONTEXT(pos,Ast.NOTHING) -> true
-      | _ -> false in
-  let ender =
-    match (pure_d,after) with
-      (true,Tail) | (true,End) | (true,VeryEnd) ->
-	(* the label sharing makes it safe to use AndAny *)
 	CTL.HackForStmt(CTL.FORWARD,CTL.NONSTRICT,
 			ctl_and CTL.NONSTRICT label_pred
 			  (make_raw_match label false ast),

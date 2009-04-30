@@ -20,6 +20,8 @@
     $ ./spatch -extract_macros ~/linux > /tmp/alldefs.h
     $ ./spatch -macro_file /tmp/alldefs.h -sp_file foo.cocci -dir ~/linux
 - removed -D macro_file option, not consistent with what -D usually means
+- reattempt to be more efficient for statement metavariables that are just
+  placeholders (ie, no modification, no reuse)
 
 ** Bugfix:
 - better parsing of declare macro at toplevel and in structure. 
