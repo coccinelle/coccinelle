@@ -1373,7 +1373,7 @@ let report_error error =
   | NoExit info -> 
       pr2 ("FLOW: can't find exit or error exit: " ^ error_from_info info)
   | DuplicatedLabel s -> 
-      pr2 ("FLOW: duplicate label" ^ s)
+      pr2 ("FLOW: duplicate label " ^ s)
   | NestedFunc  -> 
       pr2 ("FLOW: not handling yet nested function")
   | ComputedGoto -> 
