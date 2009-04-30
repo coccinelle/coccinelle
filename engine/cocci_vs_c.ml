@@ -1082,7 +1082,7 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
 
 (* ------------------------------------------------------------------------- *)
 and (ident_cpp: info_ident -> (A.ident, B.name) matcher) = 
- fun infoidb ida idb -> 
+ fun infoidb ida idb ->
    match idb with
    | B.RegularName (s, iis) -> 
        let iis = tuple_of_list1 iis in

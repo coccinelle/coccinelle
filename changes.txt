@@ -47,6 +47,8 @@
   trees that caused the transformation site to come about.  Whitespace and
   comments between remove tokens associated with disjoint witness trees is
   not removed.
+- correct treatment of function pointer typed parameters in the SmPL ast0
+  visitor.
 
 ** Internals:
 - spatch is now less verbose on the things it does yet handle. Less confusing

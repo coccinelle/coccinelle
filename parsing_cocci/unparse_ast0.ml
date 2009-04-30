@@ -4,6 +4,8 @@ module U = Pretty_print_cocci
 
 let quiet = ref true (* true = no decoration on - context, etc *)
 
+let full_ids = ref false (* true = print rule name as well *)
+
 let start_block str =
   force_newline(); print_string "  "; open_box 0
 
@@ -77,7 +79,9 @@ let print_context x fn =
   mcodekind (Some (Ast0.get_line x)) fn () (Ast0.get_info x)
     (Ast0.get_mcodekind x)
 
-let print_meta (_,name) = print_string name
+let print_meta (ctx,name) =
+  if !full_ids then (print_string ctx; print_string ":");
+  print_string name
 
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)
