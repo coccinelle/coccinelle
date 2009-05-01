@@ -595,6 +595,9 @@ let rec find_ifdef_cparen_else xs =
 
          (* found a closing ')' just after the #else *)
 
+          (* Too bad ocaml does not support better list pattern matching
+           * a la Prolog-III where can match the end of lists.
+           *)
           let condition = 
             if List.length first = 0 then false 
             else 
