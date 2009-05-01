@@ -58,6 +58,7 @@
   when some macros have a weird body, and when some switch have a weird
   Body. 
   Thanks to Derek Jones for pointing out the problem.
+- better detection and passing of "dangerous" ifdefs, cf -test double_switch.
 
 ** Internals:
 

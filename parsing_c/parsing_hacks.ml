@@ -217,6 +217,10 @@ let msg_ifdef_funheaders () =
   incr Stat.nIfdefFunheader;
   ()
 
+let msg_ifdef_cparen_else () = 
+  incr Stat.nIfdefPassing;
+  pr2_cpp("found ifdef-cparen-else")
+
 
 let msg_attribute s = 
   incr Stat.nMacroAttribute;
@@ -573,6 +577,53 @@ let rec adjust_inifdef_include xs =
       ));
   )
 
+
+
+
+
+
+
+let rec find_ifdef_cparen_else xs = 
+  let rec aux xs = 
+  xs +> List.iter (function 
+  | NotIfdefLine _ -> ()
+  | Ifdef (xxs, info_ifdef_stmt) -> 
+      (match xxs with 
+      | [] -> raise Impossible
+      | [first] -> ()
+      | first::second::rest -> 
+
+         (* found a closing ')' just after the #else *)
+
+          let condition = 
+            if List.length first = 0 then false 
+            else 
+              let last_line = Common.last first in
+              match last_line with
+              | NotIfdefLine xs -> 
+                  if List.length xs = 0 then false 
+                  else 
+                    let last_tok = Common.last xs in
+                    TH.is_cpar last_tok.tok
+              | Ifdef _ | Ifdefbool _ -> false 
+          in
+          if condition then begin
+            msg_ifdef_cparen_else();
+
+            (* keep only first, treat the rest as comment *)
+            info_ifdef_stmt +> List.iter (set_as_comment Token_c.CppDirective);
+            (second::rest) +> List.iter 
+              (iter_token_ifdef (set_as_comment Token_c.CppPassingCosWouldGetError));
+          end
+              
+      );
+      List.iter aux xxs
+        
+  (* no need complex analysis for ifdefbool *)
+  | Ifdefbool (_, xxs, info_ifdef_stmt) -> 
+      List.iter aux xxs
+  )
+  in aux xs
 
 
 (* ------------------------------------------------------------------------- *)
@@ -1225,6 +1276,10 @@ let fix_tokens_cpp2 ~macro_defs tokens =
     find_ifdef_funheaders ifdef_grouped;
     find_ifdef_bool       ifdef_grouped;
     find_ifdef_mid        ifdef_grouped;
+    (* change order ? maybe cparen_else heuristic make some of the funheaders 
+     * heuristics irrelevant ?
+     *)
+    find_ifdef_cparen_else        ifdef_grouped; 
     adjust_inifdef_include ifdef_grouped;
 
 
@@ -1722,7 +1777,7 @@ let lookahead2 ~pass next before =
           pr2_cpp "In Initializer passing"; (* cheat: dont count in stat *)
           incr Stat.nIfdefInitializer;
         end else begin 
-          pr2_cpp("IFDEF: or related insde function. I treat it as comment");
+          pr2_cpp("IFDEF: or related inside function. I treat it as comment");
           incr Stat.nIfdefPassing;
         end;
         TCommentCpp (Token_c.CppDirective, ii)
