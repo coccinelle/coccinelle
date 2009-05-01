@@ -1402,8 +1402,9 @@ let parse_cache file =
 (*****************************************************************************)
 
 let (cstatement_of_string: string -> Ast_c.statement) = fun s ->
-  Common.write_file ("/tmp/__cocci.c") ("void main() { \n" ^ s ^ "\n}");
-  let program = parse_c_and_cpp ("/tmp/__cocci.c") +> fst in
+  let tmpfile = Common.new_temp_file "cocci_stmt_of_s" "c" in
+  Common.write_file tmpfile ("void main() { \n" ^ s ^ "\n}");
+  let program = parse_c_and_cpp tmpfile +> fst in
   program +> Common.find_some (fun (e,_) -> 
     match e with
     | Ast_c.Definition ({Ast_c.f_body = [Ast_c.StmtElem st]},_) -> Some st
@@ -1411,8 +1412,9 @@ let (cstatement_of_string: string -> Ast_c.statement) = fun s ->
   )
 
 let (cexpression_of_string: string -> Ast_c.expression) = fun s ->
-  Common.write_file ("/tmp/__cocci.c") ("void main() { \n" ^ s ^ ";\n}");
-  let program = parse_c_and_cpp ("/tmp/__cocci.c") +> fst in
+  let tmpfile = Common.new_temp_file "cocci_expr_of_s" "c" in
+  Common.write_file tmpfile ("void main() { \n" ^ s ^ ";\n}");
+  let program = parse_c_and_cpp tmpfile +> fst in
   program +> Common.find_some (fun (e,_) -> 
     match e with
     | Ast_c.Definition ({Ast_c.f_body = compound},_) -> 

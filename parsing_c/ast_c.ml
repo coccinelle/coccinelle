@@ -67,9 +67,11 @@ open Common
 (* forunparser: *)
 
 type posl = int * int (* line-col, for MetaPosValList, for position variables *)
+ (* with sexp *)
 
 (* the virtual position is set in Parsing_hacks.insert_virtual_positions *)
 type virtual_position = Common.parse_info * int (* character offset *)
+ (* with sexp *)
 
 type parse_info = 
   (* Present both in ast and list of tokens *)
@@ -85,6 +87,7 @@ type parse_info =
    * are used to be able to use '=' to compare big ast portions.
    *)
   | AbstractLineTok of Common.parse_info (* local to the abstracted thing *)
+ (* with sexp *)
 
 type info = { 
   pinfo : parse_info;
@@ -315,7 +318,7 @@ and expression = (expressionbis * exp_info ref (* semantic: *)) wrap
   (* cppext: IfdefExpr TODO *)
 
   (* cppext: normmally just expression *)
-  and argument = (expression, weird_argument) either
+  and argument = (expression, weird_argument) Common.either
    and weird_argument = 
        | ArgType of parameterType
        | ArgAction of action_macro
@@ -553,7 +556,7 @@ and cpp_directive =
   | PragmaAndCo of il 
 (*| Ifdef ? no, ifdefs are handled differently, cf ifdef_directive below *)
 
-and define = string wrap (* #define s *) * (define_kind * define_val)
+and define = string wrap (* #define s eol *) * (define_kind * define_val)
    and define_kind =
    | DefineVar
    | DefineFunc   of ((string wrap) wrap2 list) wrap (* () *)
@@ -650,7 +653,6 @@ and toplevel =
 (* ------------------------------------------------------------------------- *)
 and program = toplevel list
 
-
 (*****************************************************************************)
 (* Cocci Bindings *)
 (*****************************************************************************)
@@ -716,12 +718,12 @@ and comments_around = {
     *  is_alone_in_line: bool; (*for labels, to avoid false positive*)
    *)
  }
+*)
 
 and comment = Common.parse_info
 and com = comment list ref
-*)
 
-
+ (* with sexp *)
 
 
 (*****************************************************************************)
