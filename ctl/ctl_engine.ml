@@ -2449,7 +2449,7 @@ let sat m phi reqopt =
       Printf.printf "triples: %d\n" !triples;
       print_state "final result" res;
       *)
-      res)
+      List.sort compare res)
     else
       (if !Flag_ctl.verbose_ctl_engine
       then Common.pr2 "missing something required";
@@ -2462,4 +2462,3 @@ let sat m phi reqopt =
 (* ********************************************************************** *)
 end
 ;;
-

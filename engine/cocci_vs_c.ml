@@ -1092,7 +1092,11 @@ and (ident_cpp: info_ident -> (A.ident, B.name) matcher) =
            (B.RegularName (s, [iis]))
          ))
    | B.CppConcatenatedName _ | B.CppVariadicName _ |B.CppIdentBuilder _
-       -> raise Todo
+       ->
+	 (* This should be moved to the Id case of ident.  Metavariables
+	 should be allowed to be bound to such variables.  But doing so
+	 would require implementing an appropriate distr function *)
+	 fail
 
 and (ident: info_ident -> (A.ident, string * Ast_c.info) matcher) = 
  fun infoidb ida ((idb, iib) as ib) -> 

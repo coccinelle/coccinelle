@@ -364,16 +364,16 @@ let (satbis_to_trans_info:
      (nodei * Lib_engine.metavars_binding * Ast_cocci.rule_elem)) list) = 
   fun xs -> 
     xs +> List.fold_left (fun prev (index,(nodei, binding2, pred)) -> 
-         match pred with
-           | Lib_engine.Match (rule_elem) ->
-	       if !Flag.track_iso_usage then show_isos rule_elem;
-	       (index,
-		(nodei, metavars_binding2_to_binding binding2, rule_elem))
-	       ::prev
+      match pred with
+      | Lib_engine.Match (rule_elem) ->
+	  if !Flag.track_iso_usage then show_isos rule_elem;
+	  (index,
+	   (nodei, metavars_binding2_to_binding binding2, rule_elem))
+	  ::prev
 	     (* see BindGood in asttotctl2 *)
-           | Lib_engine.BindGood (_) -> prev
-           | _ -> raise Impossible
-         ) []
+      | Lib_engine.BindGood (_) -> prev
+      | _ -> raise Impossible
+    ) []
 
 (*****************************************************************************)
 

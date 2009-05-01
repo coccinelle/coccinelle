@@ -22,11 +22,17 @@
 - removed -D macro_file option, not consistent with what -D usually means
 - reattempt to be more efficient for statement metavariables that are just
   placeholders (ie, no modification, no reuse)
+<<<<<<< changes.txt
+- triples now returned from ctl in sorted order.  The main key is the
+  state.  On the other hand, the state order does not always agree with the
+  order of appearance in the code.
+=======
 - spatch is now less verbose on the things it does yet handle. Less confusing
   for new users.
 - slightly better error report. Thanks to Derek Jones for the suggestion.
 - the -dir command line is now optional. Spatch can infer that the argument
   is a directory.
+>>>>>>> 1.73
 
 ** Bugfix:
 - better parsing of declare macro at toplevel and in structure. 
