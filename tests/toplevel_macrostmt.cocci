@@ -5,5 +5,5 @@ declarer name module_param;
 @@
 
 - MODULE_PARM(x,y);
-+ module_param(x,int,y);
++ module_param(x, int, y);
 

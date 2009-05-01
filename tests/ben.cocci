@@ -5,7 +5,7 @@ typedef GType, GTypeInfo;
 initialiser E ;
 @@
 + static GType this_type = 0;
-+ static const GTypeInfo this_info = E ;
++ static const GTypeInfo this_info = E;
 GType get_type () {
 - static GType this_type = 0;
   if (...) {

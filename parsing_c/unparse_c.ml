@@ -106,7 +106,7 @@ let print_token2 = function
 	| Ctx -> "" in
       "T2:"^b_str^TH.str_of_tok t
   | Fake2 -> ""
-  | Cocci2 (s,_,_,_) -> "Cocci2:"^s
+  | Cocci2 (s,_,lc,rc) -> Printf.sprintf "Cocci2:%d:%d%s" lc rc s
   | C2 s -> "C2:"^s
   | Indent_cocci2 -> "Indent"
   | Unindent_cocci2 -> "Unindent"
@@ -347,16 +347,26 @@ let expand_mcode toks =
       (!(info.Ast_c.comments_tag)).Ast_c.mafter +>
       List.iter (fun x -> Common.push2 (comment2t2 x) toks_out) in
 
-    let pr_barrier ln col = 
+    let pr_barrier ln col = (* marks a position, used around C code *)
       push2 (Cocci2("",ln,col,col)) toks_out  in
+    let pr_nobarrier ln col = () in (* not needed for linux spacing *)
 
-    let pr_space _ = push2 (C2 " ") toks_out in
+    let pr_cspace _ = push2 (C2 " ") toks_out in
+
+    let pr_space _ = () (* rely on add_space in cocci code *) in
+    let pr_arity _ = () (* not interested *) in
 
     let indent _   = push2 Indent_cocci2 toks_out in
     let unindent _ = push2 Unindent_cocci2 toks_out in
 
     let args_pp =
-      (env, pr_cocci, pr_c, pr_space, pr_barrier,indent, unindent) in
+      (env, pr_cocci, pr_c, pr_cspace,
+       (match !Flag_parsing_c.spacing with
+	 Flag_parsing_c.SMPL -> pr_space | _ -> pr_cspace),
+       pr_arity,
+       (match !Flag_parsing_c.spacing with
+	 Flag_parsing_c.SMPL -> pr_barrier | _ -> pr_nobarrier),
+       indent, unindent) in
 
     (* old: when for yacfe with partial cocci: 
      *    add_elem t false; 
@@ -574,14 +584,13 @@ let rec add_space xs =
   match xs with
   | [] -> []
   | [x] -> [x]
-  | (Cocci2(sx,lnx,_,rcolx) as x)::((Cocci2(sy,lny,lcoly,_)) as y)::xs ->
-      if lnx = lny && not (lnx = -1)
-      then
-	if rcolx < lcoly
-	then
-	  x::C2 (String.make (lcoly-rcolx) ' ')::add_space (y::xs)
-	else x::add_space (y::xs)
-      else x::add_space (y::xs)
+  | (Cocci2(sx,lnx,_,rcolx) as x)::((Cocci2(sy,lny,lcoly,_)) as y)::xs
+    when !Flag_parsing_c.spacing = Flag_parsing_c.SMPL &&
+      not (lnx = -1) && lnx = lny && not (rcolx = -1) && rcolx < lcoly ->
+	(* this only works within a line.  could consider whether
+	   something should be done to add newlines too, rather than
+	   printing them explicitly in unparse_cocci. *)
+	x::C2 (String.make (lcoly-rcolx) ' ')::add_space (y::xs)
   | x::y::xs -> 
       let sx = str_of_token2 x in
       let sy = str_of_token2 y in
@@ -661,7 +670,7 @@ let rec adjust_indentation xs =
       ((Cocci2 ("{",_,_,_)) as a)::xs
       when started && str_of_token2 x =$= ")" ->
 	(* to be done for if, etc, but not for a function header *)
-	x::a::(aux started xs)
+	x::(C2 " ")::a::(aux started xs)
     | ((T2 (Parser_c.TCommentNewline s, _, _)) as x)::xs ->
 	let old_tabbing = !_current_tabbing in 
         str_of_token2 x +> new_tabbing +> (fun s -> _current_tabbing := s);

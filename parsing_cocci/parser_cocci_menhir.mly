@@ -57,7 +57,7 @@ module P = Parse_aux
 %token <string>  TPathIsoFile
 %token <string * Data.clt> TIncludeL TIncludeNL
 %token <Data.clt * token> TDefine
-%token <Data.clt * token * int> TDefineParam
+%token <Data.clt * token * int * int> TDefineParam
 %token <string * Data.clt> TMinusFile TPlusFile
 
 %token <Data.clt> TInc TDec
@@ -665,11 +665,12 @@ defineop:
 	      Ast0.wrap Ast0.NoParams,
 	      body)) }
 | TDefineParam define_param_list_option TCPar
-    { let (clt,ident,parenoff) = $1 in
+    { let (clt,ident,parenoff,parencol) = $1 in
+      (* clt is the start of the #define itself *)
       let (arity,line,lline,offset,col,strbef,straft,pos) = clt in
       let lp =
 	P.clt2mcode "("
-	  (arity,line,lline,parenoff,0,[],[],Ast0.NoMetaPos) in
+	  (arity,line,lline,parenoff,parencol,[],[],Ast0.NoMetaPos) in
       function body ->
 	Ast0.wrap
 	  (Ast0.Define

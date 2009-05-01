@@ -17,6 +17,10 @@ let rec get_name name =
 (* collect all of the functions *)
 
 let brace_to_semi (_,arity,info,mcodekind,pos,adj) =
+  let info =
+    (* drop column information, so that with -smpl_spacing the semicolon
+       will come out right after the close parenthesis *)
+    {info with Ast0.pos_info = {info.Ast0.pos_info with Ast0.column = -1}} in
   (";",Ast0.NONE,info,mcodekind,pos,adj)
 
 let collect_function (stm : Ast0.statement) =

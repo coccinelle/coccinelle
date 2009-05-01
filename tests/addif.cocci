@@ -6,7 +6,7 @@ identifier f;
 + /* some comment */
 + int xxx() {
 +    /* a comment by itself */
-+    return 12; /* another comment */ }
++    return 12;/* another comment */ }
 + #endif
  int
  f(...)

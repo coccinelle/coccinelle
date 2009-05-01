@@ -4,4 +4,4 @@ statement S;
 
   f();
 - S
-+ foo(); S
++ foo();S

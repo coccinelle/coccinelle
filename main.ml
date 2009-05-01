@@ -459,6 +459,10 @@ let other_options = [
     "  the number of bits in an unsigned int";
     "-long_bits", Arg.Int Flag_parsing_c.set_long_bits,
     "  the number of bits in an unsigned long";
+    "-linux_spacing", Arg.Unit Flag_parsing_c.set_linux_spacing,
+    "  spacing of + code follows the conventions of Linux";
+    "-smpl_spacing", Arg.Unit Flag_parsing_c.set_smpl_spacing,
+    "  spacing of + code follows the semantic patch";
   ];
 
   "misc options",

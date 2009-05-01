@@ -457,8 +457,9 @@ let pp_rule local_metas ast env srcfile =
       |	_ ->
 	  Printf.printf "line: %s\n" (Common.dump info);
 	  error rule "not an abstract line" in
+    let pr_space _ = pr " " in
     Unparse_cocci.pp_list_list_any
-      (env, (fun s _ _ _ -> pr s), pr_c, (function _ -> pr " "),
+      (env, (fun s _ _ _ -> pr s), pr_c, pr_space, pr_space, pr,
        (fun _ _ -> ()), (function _ -> ()), (function _ -> ()))
       true printable Unparse_cocci.InPlace;
     print_end pr;

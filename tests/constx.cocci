@@ -3,5 +3,5 @@ constant X;
 @@
 
 - foo(X);
-+ foobar(X,X);
++ foobar(X, X);
 

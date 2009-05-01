@@ -571,30 +571,31 @@ rule token = parse
   | "&"            { start_line true; TAnd    (get_current_line_type lexbuf) }
   | "^"            { start_line true; TXor(get_current_line_type lexbuf) }
 
-  | ( ("#" [' ' '\t']*  "define" [' ' '\t']+))
+  | (( ("#" [' ' '\t']*  "define" [' ' '\t']+)) as def)
     ( (letter (letter |digit)*) as ident)
       { start_line true;
 	let (arity,line,lline,offset,col,strbef,straft,pos) as lt =
 	  get_current_line_type lexbuf in
-	let off = String.length "#define " in
+	let off = String.length def in
 	(* -1 in the code below because the ident is not at the line start *)
 	TDefine
 	  (lt,
 	   check_var ident
-	     (arity,line,lline,offset+off,(-1),[],[],Ast0.NoMetaPos)) }
-  | ( ("#" [' ' '\t']*  "define" [' ' '\t']+))
+	     (arity,line,lline,offset+off,col+off,[],[],Ast0.NoMetaPos)) }
+  | (( ("#" [' ' '\t']*  "define" [' ' '\t']+)) as def)
     ( (letter (letter | digit)*) as ident)
     '('
       { start_line true;
 	let (arity,line,lline,offset,col,strbef,straft,pos) as lt =
 	  get_current_line_type lexbuf in
-	let off = String.length "#define " in
+	let off = String.length def in
 	TDefineParam
         (lt,
 	 check_var ident
 	   (* why pos here but not above? *)
-	   (arity,line,lline,offset+off,(-1),strbef,straft,pos),
-	 offset + off + (String.length ident)) }
+	   (arity,line,lline,offset+off,col+off,strbef,straft,pos),
+	 offset + off + (String.length ident),
+	 col + off + (String.length ident)) }
   | "#" [' ' '\t']* "include" [' ' '\t']* '"' [^ '"']+ '"'
       { TIncludeL
 	  (let str = tok lexbuf in

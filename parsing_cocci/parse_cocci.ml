@@ -92,7 +92,7 @@ let token2c (tok,_) =
   | PC.TIncludeL(s,clt) -> (pr "#include \"%s\"" s)^(line_type2c clt)
   | PC.TIncludeNL(s,clt) -> (pr "#include <%s>" s)^(line_type2c clt)
   | PC.TDefine(clt,_) -> "#define"^(line_type2c clt)
-  | PC.TDefineParam(clt,_,_) -> "#define_param"^(line_type2c clt)
+  | PC.TDefineParam(clt,_,_,_) -> "#define_param"^(line_type2c clt)
   | PC.TMinusFile(s,clt) -> (pr "--- %s" s)^(line_type2c clt)
   | PC.TPlusFile(s,clt) -> (pr "+++ %s" s)^(line_type2c clt)
 
@@ -264,7 +264,7 @@ let plus_attachable only_plus (tok,_) =
   | PC.Textern(clt) | PC.Tconst(clt) | PC.Tvolatile(clt)
 
   | PC.TIncludeL(_,clt) | PC.TIncludeNL(_,clt) | PC.TDefine(clt,_)
-  | PC.TDefineParam(clt,_,_) | PC.TMinusFile(_,clt) | PC.TPlusFile(_,clt)
+  | PC.TDefineParam(clt,_,_,_) | PC.TMinusFile(_,clt) | PC.TPlusFile(_,clt)
 
   | PC.TInc(clt) | PC.TDec(clt)
 
@@ -329,7 +329,7 @@ let get_clt (tok,_) =
   | PC.Textern(clt) | PC.Tconst(clt) | PC.Tvolatile(clt)
 
   | PC.TIncludeL(_,clt) | PC.TIncludeNL(_,clt) | PC.TDefine(clt,_)
-  | PC.TDefineParam(clt,_,_) | PC.TMinusFile(_,clt) | PC.TPlusFile(_,clt)
+  | PC.TDefineParam(clt,_,_,_) | PC.TMinusFile(_,clt) | PC.TPlusFile(_,clt)
 
   | PC.TInc(clt) | PC.TDec(clt)
 
@@ -406,7 +406,7 @@ let update_clt (tok,x) clt =
   | PC.TIncludeL(s,_) -> (PC.TIncludeL(s,clt),x)
   | PC.TIncludeNL(s,_) -> (PC.TIncludeNL(s,clt),x)
   | PC.TDefine(_,a) -> (PC.TDefine(clt,a),x)
-  | PC.TDefineParam(_,a,b) -> (PC.TDefineParam(clt,a,b),x)
+  | PC.TDefineParam(_,a,b,c) -> (PC.TDefineParam(clt,a,b,c),x)
   | PC.TMinusFile(s,_) -> (PC.TMinusFile(s,clt),x)
   | PC.TPlusFile(s,_) -> (PC.TPlusFile(s,clt),x)
 
@@ -592,7 +592,7 @@ let split_token ((tok,_) as t) =
   | PC.TPlusFile(s,clt) | PC.TMinusFile(s,clt)
   | PC.TIncludeL(s,clt) | PC.TIncludeNL(s,clt) ->
       split t clt
-  | PC.TDefine(clt,_) | PC.TDefineParam(clt,_,_) -> split t clt
+  | PC.TDefine(clt,_) | PC.TDefineParam(clt,_,_,_) -> split t clt
 
   | PC.TIf(clt) | PC.TElse(clt)  | PC.TWhile(clt) | PC.TFor(clt) | PC.TDo(clt)
   | PC.TSwitch(clt) | PC.TCase(clt) | PC.TDefault(clt)
@@ -865,7 +865,7 @@ let token2line (tok,_) =
 
   | PC.TPtrOp(clt)
 
-  | PC.TDefine(clt,_) | PC.TDefineParam(clt,_,_)
+  | PC.TDefine(clt,_) | PC.TDefineParam(clt,_,_,_)
   | PC.TIncludeL(_,clt) | PC.TIncludeNL(_,clt)
 
   | PC.TEq(clt) | PC.TAssign(_,clt) | PC.TDot(clt) | PC.TComma(clt)
@@ -879,7 +879,7 @@ let rec insert_line_end = function
   | (((PC.TWhen(clt),q) as x)::xs) ->
       x::(find_line_end true (token2line x) clt q xs)
   | (((PC.TDefine(clt,_),q) as x)::xs)
-  | (((PC.TDefineParam(clt,_,_),q) as x)::xs) ->
+  | (((PC.TDefineParam(clt,_,_,_),q) as x)::xs) ->
       x::(find_line_end false (token2line x) clt q xs)
   | x::xs -> x::(insert_line_end xs)
 

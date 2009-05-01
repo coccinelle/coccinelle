@@ -225,3 +225,13 @@ let set_long_bits n =
 	Some (int_sz,n,uint_threshold,long_threshold,ulong_threshold)
 
 (*****************************************************************************)
+(* unparsing strategy *)
+(*****************************************************************************)
+
+type spacing = LINUX | SMPL
+let spacing = ref LINUX
+
+let set_linux_spacing _ = spacing := LINUX (*follow the conventions of Linux*)
+let set_smpl_spacing _ = spacing := SMPL   (*use spacing from the SP*)
+
+(*****************************************************************************)

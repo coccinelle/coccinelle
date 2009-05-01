@@ -666,7 +666,7 @@ and tag2c = function
 
 (* --------------------------------------------------------------------- *)
 
-let no_info = { line = 0; column = 0; strbef = []; straft = [] }
+let no_info = { line = 0; column = -1; strbef = []; straft = [] }
 
 let make_term x =
   {node = x;

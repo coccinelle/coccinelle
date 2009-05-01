@@ -8,6 +8,6 @@ expression X,Y;
    f(X);
    ...
 -  h(Y);
-+  h(X,Y); 
++  h(X, Y); 
    ...
  }

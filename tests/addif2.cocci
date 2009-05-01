@@ -3,7 +3,7 @@ identifier f;
 @@
 
 + #ifdef FOO
-+ int /*foo*/ xxx;
++ int/*foo*/ xxx;
 + #endif
  int
  f(...)

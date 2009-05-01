@@ -3,5 +3,5 @@ expression X;
 @@
 
 - f(X);
-+ f(X,"foo");
-+ f(X,"bar");
++ f(X, "foo");
++ f(X, "bar");

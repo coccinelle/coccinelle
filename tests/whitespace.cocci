@@ -3,4 +3,4 @@ expression E;
 @@
 
 - foo(E);
-+ foo(E,12);
++ foo(E, 12);

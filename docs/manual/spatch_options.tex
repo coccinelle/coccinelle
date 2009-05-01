@@ -220,7 +220,7 @@ which score file to compare with in the testall run}
   was not able to determine the type of an expression.}
 
 \rare{-int\_bits $\langle$n$\rangle$, -long\_bits
-$\langle$n$\rangle$}{Provide integer size information} n is the number of
+$\langle$n$\rangle$}{Provide integer size information. n is the number of
 bits in an unsigned integer or unsigned long, respectively.  If only the
 option {\bf -int\_bits} is used, unsigned longs will be assumed to have
 twice as many bits as unsigned integers.  If only the option {\bf
@@ -230,7 +230,7 @@ the types of integer constants, according to the ANSI C standard (C89).  If
 neither is provided, the type of an integer constant is determined by the
 sequence of ``u'' and ``l'' annotations following the constant.  If there
 is none, the constant is assumed to be a signed integer.  If there is only
-``u'', the constant is assumed to be an unsigned integer, etc.
+``u'', the constant is assumed to be an unsigned integer, etc.}
 
 \developer{-use\_cache} Use preparsed versions of the C files that are
 stored in a cache.
@@ -402,6 +402,13 @@ These options use a simplified version of the SmPL language.  {\bf
 \section{Generation of the result}
 
 Normally, the only output is a diff printed to standard output.
+
+\normal{-linux\_spacing, -smpl\_spacing}{Control the spacing within the code
+  added by the semantic patch.  The option {\bf -linux\_spacing} causes
+  spatch to follow the conventions of Linux, regardless of the spacing in
+  the semantic patch.  This is the default.  The option {\bf
+  -smpl\_spacing} causes spatch to follow the spacing given in the semantic
+  patch, within individual lines.}
 
 \rare{-o $\langle$file$\rangle$}{ The output file.}
 

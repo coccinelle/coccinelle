@@ -6,4 +6,4 @@ expression X,Y,Z;
    g(Z);
    ...
 -  h(Y);
-+  h(X,Y,Z); 
++  h(X, Y, Z); 

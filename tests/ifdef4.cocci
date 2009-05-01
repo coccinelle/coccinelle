@@ -4,7 +4,7 @@
   {
     <...
 +   #ifdef CONFIG_NKERNEL
-+   if (irq < IRQ_LIMIT)
++   if(irq < IRQ_LIMIT)
 +   #endif
     *desc = irq_desc;
     ...>
