@@ -26,7 +26,7 @@ let get_current_line_type lexbuf =
   let lex_start = Lexing.lexeme_start lexbuf in
   let preceeding_spaces =
     if !line_start < 0 then 0 else lex_start - !line_start in
-  line_start := -1;
+  (*line_start := -1;*)
   prev_plus := (c = D.PLUS);
   (c,l,ll,lex_start,preceeding_spaces,[],[],Ast0.NoMetaPos)
 let current_line_started = ref false

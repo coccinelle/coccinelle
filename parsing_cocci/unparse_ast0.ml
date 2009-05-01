@@ -57,7 +57,7 @@ let mcodekind brackets fn x info mc =
 	(function x ->
 	  print_string lb; fn x; print_string rb)
 	x plus_streams
-  | Ast0.PLUS -> fn x
+  | Ast0.PLUS -> print_int (info.Ast0.pos_info.Ast0.column); fn x
   | Ast0.MIXED(plus_streams) ->
       let (lb,rb) =
 	if !quiet

@@ -573,6 +573,7 @@ let unwrap_mcode (x,_,_,_)  = x
 let get_mcodekind (_,_,x,_) = x
 let get_line x             = x.node_line
 let get_mcode_line (_,l,_,_) = l.line
+let get_mcode_col (_,l,_,_)  = l.column
 let get_fvs x              = x.free_vars
 let set_fvs fvs x          = {x with free_vars = fvs}
 let get_mfvs x             = x.minus_free_vars

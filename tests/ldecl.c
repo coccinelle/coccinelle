@@ -1,5 +1,5 @@
-int main(){
+ int main(){
      int a, b;
-     long c = a + b;
+     int c = a + b;
      return 0;
 }

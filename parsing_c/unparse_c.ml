@@ -57,7 +57,7 @@ type token2 =
   | T2 of Parser_c.token * min * 
           int option (* orig index, abstracting away comments and space *)
   | Fake2
-  | Cocci2 of string
+  | Cocci2 of string * int (* line *) * int (* lcol *) * int (* rcol *)
   | C2 of string
   | Indent_cocci2
   | Unindent_cocci2
@@ -91,7 +91,7 @@ let info_of_token1 t =
 let str_of_token2 = function
   | T2 (t,_,_) -> TH.str_of_tok t
   | Fake2 -> ""
-  | Cocci2 s -> s
+  | Cocci2 (s,_,_,_) -> s
   | C2 s -> s
   | Indent_cocci2 -> ""
   | Unindent_cocci2 -> ""
@@ -106,12 +106,12 @@ let print_token2 = function
 	| Ctx -> "" in
       "T2:"^b_str^TH.str_of_tok t
   | Fake2 -> ""
-  | Cocci2 s -> "Cocci2:"^s
+  | Cocci2 (s,_,_,_) -> "Cocci2:"^s
   | C2 s -> "C2:"^s
   | Indent_cocci2 -> "Indent"
   | Unindent_cocci2 -> "Unindent"
 
-let print_all_tokens2 l =
+let simple_print_all_tokens2 l =
   List.iter (function x -> Printf.printf "%s " (print_token2 x)) l;
   Printf.printf "\n"
 
@@ -333,9 +333,8 @@ let expand_mcode toks =
   let expand_info t = 
     let (mcode,env) = !((info_of_token1 t).cocci_tag) in
 
-    let pr_cocci s = 
-      push2 (Cocci2 s) toks_out 
-    in
+    let pr_cocci s ln col rcol = 
+      push2 (Cocci2(s,ln,col,rcol)) toks_out  in
     let pr_c info = 
       (match Ast_c.pinfo_of_info info with
 	Ast_c.AbstractLineTok _ ->
@@ -348,14 +347,16 @@ let expand_mcode toks =
       (!(info.Ast_c.comments_tag)).Ast_c.mafter +>
       List.iter (fun x -> Common.push2 (comment2t2 x) toks_out) in
 
-
+    let pr_barrier ln col = 
+      push2 (Cocci2("",ln,col,col)) toks_out  in
 
     let pr_space _ = push2 (C2 " ") toks_out in
 
     let indent _   = push2 Indent_cocci2 toks_out in
     let unindent _ = push2 Unindent_cocci2 toks_out in
 
-    let args_pp = (env, pr_cocci, pr_c, pr_space, indent, unindent) in
+    let args_pp =
+      (env, pr_cocci, pr_c, pr_space, pr_barrier,indent, unindent) in
 
     (* old: when for yacfe with partial cocci: 
      *    add_elem t false; 
@@ -573,6 +574,14 @@ let rec add_space xs =
   match xs with
   | [] -> []
   | [x] -> [x]
+  | (Cocci2(sx,lnx,_,rcolx) as x)::((Cocci2(sy,lny,lcoly,_)) as y)::xs ->
+      if lnx = lny && not (lnx = -1)
+      then
+	if rcolx < lcoly
+	then
+	  x::C2 (String.make (lcoly-rcolx) ' ')::add_space (y::xs)
+	else x::add_space (y::xs)
+      else x::add_space (y::xs)
   | x::y::xs -> 
       let sx = str_of_token2 x in
       let sy = str_of_token2 y in
@@ -649,9 +658,10 @@ let rec adjust_indentation xs =
     | [] ->  []
 (* patch: coccinelle *)
     | ((T2 (tok,_,_)) as x)::(T2 (Parser_c.TCommentNewline s, _, _))::
-      (Cocci2 "{")::xs when started && str_of_token2 x =$= ")" ->
+      ((Cocci2 ("{",_,_,_)) as a)::xs
+      when started && str_of_token2 x =$= ")" ->
 	(* to be done for if, etc, but not for a function header *)
-	x::(Cocci2 " {")::(aux started xs)
+	x::a::(aux started xs)
     | ((T2 (Parser_c.TCommentNewline s, _, _)) as x)::xs ->
 	let old_tabbing = !_current_tabbing in 
         str_of_token2 x +> new_tabbing +> (fun s -> _current_tabbing := s);
@@ -668,7 +678,7 @@ let rec adjust_indentation xs =
 	  None -> aux started xs
 	| Some (tu,_) ->
 	    _current_tabbing := (!_current_tabbing)^tu;
-	    Cocci2 (tu)::aux started xs)
+	    Cocci2 (tu,-1,-1,-1)::aux started xs)
     | Unindent_cocci2::xs ->
 	(match !tabbing_unit with
 	  None -> aux started xs
@@ -676,7 +686,7 @@ let rec adjust_indentation xs =
 	    _current_tabbing := remtab tu (!_current_tabbing);
 	    aux started xs)
     (* border between existing code and cocci code *)
-    | ((T2 (tok,_,_)) as x)::((Cocci2 "\n") as y)::xs
+    | ((T2 (tok,_,_)) as x)::((Cocci2("\n",_,_,_)) as y)::xs
       when str_of_token2 x =$= "{" ->
 	x::aux true (y::Indent_cocci2::xs)
     | ((Cocci2 _) as x)::((T2 (tok,_,_)) as y)::xs
@@ -684,11 +694,11 @@ let rec adjust_indentation xs =
 	x::aux started (y::Unindent_cocci2::xs)
     (* starting the body of the function *)
     | ((T2 (tok,_,_)) as x)::xs when str_of_token2 x =$= "{" ->  x::aux true xs
-    | (Cocci2 "{")::xs -> (Cocci2 "{")::aux true xs
-    | ((Cocci2 "\n") as x)::xs -> 
+    | ((Cocci2("{",_,_,_)) as a)::xs -> a::aux true xs
+    | ((Cocci2("\n",_,_,_)) as x)::xs -> 
             (* dont inline in expr because of weird eval order of ocaml *)
         let s = !_current_tabbing in 
-        x::Cocci2 (s)::aux started xs
+        x::Cocci2 (s,-1,-1,-1)::aux started xs
     | x::xs -> x::aux started xs in
   aux false xs
 
