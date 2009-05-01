@@ -1,4 +1,7 @@
 #!/usr/bin/perl
+
+# Author: Yoann Padioleau 
+
 ######################################################################
 # Prelude
 ######################################################################
@@ -8,14 +11,14 @@
 # assume standard: diff
 # assume standard: perl
 
-#TODO python 2.5 and perhaps a --disable-python
+#TODO check python 2.5 ?
 
 #old: --with-menhir=/path/to/menhirLib or `ocamlfind query menhirLib`
 
 my $project =
     "coccinelle";
 my $projectcmdline =
-    "spatch -cocci_file demos/simple.cocci demos/simple.c";
+    "spatch -sp_file demos/simple.cocci demos/simple.c";
 
 ######################################################################
 # Options
@@ -202,6 +205,9 @@ on the $project website. !!!!
 ";
 } else {
 
+#pad: before the message was saying (make depend); make all
+# I found this confusing so I removed it.
+
     pr2 "
 
 ----------------------------------------------------------------------
@@ -209,17 +215,20 @@ on the $project website. !!!!
 All seems fine for $project.
 
 To compile $project type:
- (make depend); make all
-or alternatively, for the optimized version:
- (make depend); make all.opt
+  \$ make depend
+  \$ make all
+
+Or alternatively, for the optimized version:
+  \$ make all.opt
 If you want both, you could use:
- (make depend); make world
+  \$ make world
+
 
 To install type:
- make install
+  \$ make install
 
 Then, to test $project simply type:
- $projectcmdline
+  \$ $projectcmdline
 
 ";
 

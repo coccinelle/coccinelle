@@ -92,7 +92,7 @@ BYTECODE_STATIC=-custom
 .PHONY:: all all.opt byte opt top clean distclean configure
 .PHONY:: $(MAKESUBDIRS) $(MAKESUBDIRS:%=%.opt) subdirs subdirs.opt
 
-all: byte preinstall
+all: Makefile.config byte preinstall
 
 opt: all.opt
 all.opt: opt-compil preinstall
@@ -171,6 +171,10 @@ clean::
 
 configure:
 	./configure
+
+Makefile.config:    
+	@echo "Makefile.config is missing. Have you run ./configure?"
+	@exit 1
 
 tools:
 	$(MAKE) -C tools
