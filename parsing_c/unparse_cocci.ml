@@ -77,7 +77,7 @@ and print_anything_list = function
       if space then pr_space ();
       print_anything_list rest in
 
-let pr_arityound printer term = function
+let print_around printer term = function
     Ast.NOTHING -> printer term
   | Ast.BEFORE(bef) -> print_anything bef; printer term
   | Ast.AFTER(aft) -> printer term; print_anything aft
@@ -136,7 +136,7 @@ let mcode fn (s,info,mc,pos) =
       print_anything plus_stream
   | (true, Ast.CONTEXT(_,plus_streams)) ->
       let fn s = force_newline(); fn s line lcol; print_pos pos in
-      pr_arityound fn s plus_streams
+      print_around fn s plus_streams
   | (true,Ast.PLUS) ->
       let fn s =
 	force_newline(); print_text "+ "; fn s line lcol; print_pos pos in
