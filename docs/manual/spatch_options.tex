@@ -152,15 +152,13 @@ Test the parsing of cpp code and attributes, respectively.}
 
 \subsection{Selecting C files}
 
-An argument that ends in {\tt .c} is assumed to be a C file to process.  A
-directory can be specified as well and will be processed recursively.  This
-is done using the unix {\tt find} command, which does not follow symbolic
-links.  Normally, only one C file or one directory is specified.  If
-multiple C files are specified, they are treated in parallel, {\em i.e.}, the
-first semantic patch rule is applied to all functions in all files, then
-the second semantic patch rule is applied to all functions in all files,
-etc.  If a directory is specified then no files may be specified and only
-the rightmost directory specified is used.
+An argument that ends in {\tt .c} is assumed to be a C file to process.
+Normally, only one C file or one directory is specified.  If multiple C
+files are specified, they are treated in parallel, {\em i.e.}, the first
+semantic patch rule is applied to all functions in all files, then the
+second semantic patch rule is applied to all functions in all files, etc.
+If a directory is specified then no files may be specified and only the
+rightmost directory specified is used.
 
 \normal{-include\_headers}{ This option causes header files to be processed
 independently.  This option only makes sense if a directory is specified
@@ -178,10 +176,10 @@ this option prints the regular expression that will be passed to glimpse.}
   this directory.  A different include path can be specified using the
   option {\bf -I}.  {\bf -dir} only considers the rightmost directory in
   the argument list.  This behavior is convenient for creating a script
-  that always works on a single directory, but allows the user to override
-  the provided directory with another one.  If only one directory is to be
-  provided, the {\bf -dir} option is not needed.  Spatch will infer that a
-  directory argument should be treated recursively.}
+  that always works on a single directory, but allows the user of the
+  script to override the provided directory with another one.  Spatch
+  collects the files in the directory using {\tt find} and does not follow
+  symbolic links.}
 
 \developer{-kbuild\_info $\langle$file$\rangle$}{ The specified file
   contains information about which sets of files should be considered in
