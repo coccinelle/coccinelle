@@ -28,8 +28,6 @@
 - spatch is now less verbose on the things it does yet handle. Less confusing
   for new users.
 - slightly better error report. Thanks to Derek Jones for the suggestion.
-- the -dir command line is now optional. Spatch can infer that the argument
-  is a directory.
 - added the options -linux_spacing and -smpl_spacing.  -linux_spacing
   causes spatch to follow the spacing conventions of Linux, while
   -smpl_spacing causes spatch to follow the spacing in the semantic patch.
