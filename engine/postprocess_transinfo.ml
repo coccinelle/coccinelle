@@ -105,7 +105,6 @@ let numberify trees =
 (* entry point *)
 
 let process used_after inherited_env l =
-  extra_counter := 0;
   let (trees, fresh_envs) =
     List.split (List.map (process_tree inherited_env) l) in
   let trees = numberify trees in
