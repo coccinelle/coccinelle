@@ -66,6 +66,8 @@
 - better detection and passing of "dangerous" ifdefs, cf -test double_switch.
 
 ** Internals:
+- supress warning in compiling ocamlsexp (warning caused by a new behavior
+  of cpp used internally in processing files in ocamlsexp/)
 
 * 0.1.7
 

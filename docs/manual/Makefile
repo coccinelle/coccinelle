@@ -45,6 +45,16 @@ distclean:: clean
 	rm -f manual.pdf cocci_syntax.pdf options.pdf
 
 
+# lindig trick
+#RERUN =     Rerun (LaTeX|to get cross-references right)
+#
+#pdf:	    $(PDF)
+#
+#%.pdf:	%.tex 
+#	    $(PDFLATEX) $<
+#	    if egrep -s '$(RERUN)' $*.log ;then $(PDFLATEX) $<; fi
+#	    if egrep -s '$(RERUN)' $*.log ;then $(PDFLATEX) $<; fi
+
 ##############################################################################
 # Html version
 ##############################################################################
