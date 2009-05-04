@@ -865,10 +865,10 @@ statement:
 stm_dots:
   TEllipsis w=list(whenppdecs)
     { Ast0.wrap(Ast0.Dots(P.clt2mcode "..." $1, List.concat w)) }
-| TOEllipsis w=list(whenppdecs) b=nest_start c=TCEllipsis
+| TOEllipsis w=list(whenppdecsnest) b=nest_start c=TCEllipsis
     { Ast0.wrap(Ast0.Nest(P.clt2mcode "<..." $1, b,
 			  P.clt2mcode "...>" c, List.concat w, false)) }
-| TPOEllipsis w=list(whenppdecs) b=nest_start c=TPCEllipsis
+| TPOEllipsis w=list(whenppdecsnest) b=nest_start c=TPCEllipsis
     { Ast0.wrap(Ast0.Nest(P.clt2mcode "<+..." $1, b,
 			  P.clt2mcode "...+>" c, List.concat w, true)) }
 
@@ -884,7 +884,10 @@ stm_dots:
     { Ast0.wrap(Ast0.Nest(P.clt2mcode "<+..." a, b,
 			  P.clt2mcode "...+>" c, List.concat w, true)) }
 
-whenppdecs: w=whens(when_start,rule_elem_statement)
+whenppdecs: w=whens(when_start,rule_elem_statement,any_strict)
+    { w }
+
+whenppdecsnest: w=whens(when_start,rule_elem_statement,any_only)
     { w }
 
 /* a statement that fits into a single rule_elem.  should nests be included?
@@ -1787,7 +1790,7 @@ edots_when(dotter,when_grammar):
     d=dotter                                      { (d,None) }
   | d=dotter TWhen TNotEq w=when_grammar TLineEnd { (d,Some w) }
 
-whens(when_grammar,simple_when_grammar):
+whens(when_grammar,simple_when_grammar,any_strict):
     TWhen TNotEq w=when_grammar TLineEnd { [Ast0.WhenNot w] }
   | TWhen TEq w=simple_when_grammar TLineEnd { [Ast0.WhenAlways w] }
   | TWhen comma_list(any_strict) TLineEnd
@@ -1798,6 +1801,11 @@ whens(when_grammar,simple_when_grammar):
 any_strict:
     TAny    { Ast.WhenAny }
   | TStrict { Ast.WhenStrict }
+  | TForall { Ast.WhenForall }
+  | TExists { Ast.WhenExists }
+
+any_only:
+    TAny    { Ast.WhenAny }
   | TForall { Ast.WhenForall }
   | TExists { Ast.WhenExists }
 

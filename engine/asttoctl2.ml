@@ -1282,9 +1282,15 @@ let rec dots_and_nests plus nest whencodes bef aft dotcode after label
       CTL.False
     with Not_found -> shortest (Common.union_set bef aft) in
   let is_strict =
-    List.exists
-      (function Ast.WhenModifier(Ast.WhenStrict) -> true | _ -> false)
-      whencodes in
+    match nest with
+      None ->
+	List.exists
+	  (function Ast.WhenModifier(Ast.WhenStrict) -> true | _ -> false)
+	  whencodes
+    | Some _ ->
+	(* nest is always strict. avoiding error paths doesn't make sense,
+	   because the pattern is not obliged to appear anyway *)
+	true in
   let check_quantifier quant other =
     if List.exists
 	(function Ast.WhenModifier(x) -> x = quant | _ -> false)

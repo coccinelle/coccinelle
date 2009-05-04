@@ -63,7 +63,11 @@
   when some macros have a weird body, and when some switch have a weird
   Body. 
   Thanks to Derek Jones for pointing out the problem.
-- better detection and passing of "dangerous" ifdefs, cf -test double_switch.
+- better detection and passing of "dangerous" ifdefs, cf -test
+  double_switch.
+- more exhaustive treatment of nests - no point to give special treatment
+  to error paths.  when strict thus no longer allowed for nests, as it is
+  the default behavior.
 
 ** Internals:
 - supress warning in compiling ocamlsexp (warning caused by a new behavior
