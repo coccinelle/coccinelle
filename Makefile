@@ -316,8 +316,8 @@ PACKAGE=coccinelle-$(VERSION)
 
 BINSRC=spatch env.sh env.csh standard.h standard.iso \
        *.txt \
-       docs/options.pdf docs/grammar/cocci_syntax.pdf docs/spatch.1 \
-       docs/cocci-python.txt \
+       docs/manual/options.pdf docs/manual/cocci_syntax.pdf docs/spatch.1 \
+       docs/manual/cocci-python.txt \
        demos/foo.* demos/simple.*
 #      $(PYLIB) python/coccilib/ demos/printloc.*
 BINSRC2=$(BINSRC:%=$(PACKAGE)/%)
@@ -339,7 +339,7 @@ OCAMLVERSION=$(shell ocaml -version |perl -p -e 's/.*version (.*)/$$1/;')
 # Procedure to do each time:
 #  cvs update
 #  make sure that ocaml is the distribution ocaml of /usr/bin, not ~pad/...
-#  modify globals/config.ml
+#  modify globals/config.ml.in
 #  cd globals/; cvs commit -m"new version"  (do not commit from the root!)
 #  ./configure --without-python
 #  make package
