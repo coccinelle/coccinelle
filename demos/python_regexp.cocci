@@ -1,3 +1,7 @@
+@initialize:python@
+import re
+m = re.compile('_new$')
+
 @r_init@
 expression E;
 identifier id;
@@ -10,11 +14,8 @@ E = id@p();
 id << r_init.id;
 @@
 
-import re
-
 print "COCCI: Analyzing %s" % id
-m = re.search('_new$', id.ident)
-if m != None:
+if m.search(id.ident) != None:
 	print "COCCI: %s matchs '_new$'" % id
 else:
 	print "COCCI: %s discarded" % id
