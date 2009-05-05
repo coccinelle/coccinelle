@@ -12,7 +12,7 @@ id << r_init.id;
 
 import re
 
-print "COCCI: Analysing %s" % id
+print "COCCI: Analyzing %s" % id
 m = re.search('_new$', id.ident)
 if m != None:
 	print "COCCI: %s matchs '_new$'" % id
