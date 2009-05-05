@@ -221,17 +221,23 @@ scripts/spatch:
 
 # user will use spatch to run spatch (bytecode)
 scripts/spatch.byte:
-	cp scripts/spatch.sh scripts/spatch.tmp3
-	sed "s|\.opt||" scripts/spatch.tmp3 > scripts/spatch.tmp2
-	sed "s|SHAREDIR|$(SHAREDIR)|g" scripts/spatch.tmp2 > scripts/spatch.tmp
-	sed "s|LIBDIR|$(LIBDIR)|g" scripts/spatch.tmp > scripts/spatch.byte
-	rm -f scripts/spatch.tmp3 scripts/spatch.tmp2 scripts/spatch.tmp
+	cp scripts/spatch.sh scripts/spatch.byte.tmp3
+	sed "s|\.opt||" scripts/spatch.byte.tmp3 > scripts/spatch.byte.tmp2
+	sed "s|SHAREDIR|$(SHAREDIR)|g" scripts/spatch.byte.tmp2 \
+		> scripts/spatch.byte.tmp
+	sed "s|LIBDIR|$(LIBDIR)|g" scripts/spatch.byte.tmp \
+		> scripts/spatch.byte
+	rm -f   scripts/spatch.byte.tmp3 \
+		scripts/spatch.byte.tmp2 \
+		scripts/spatch.byte.tmp
 
 # user will use spatch.opt to run spatch.opt (native)
 scripts/spatch.opt:
 	cp scripts/spatch.sh scripts/spatch.opt.tmp2
-	sed "s|SHAREDIR|$(SHAREDIR)|g" scripts/spatch.opt.tmp2 > scripts/spatch.opt.tmp
-	sed "s|LIBDIR|$(LIBDIR)|g" scripts/spatch.opt.tmp > scripts/spatch.opt
+	sed "s|SHAREDIR|$(SHAREDIR)|g" scripts/spatch.opt.tmp2 \
+		> scripts/spatch.opt.tmp
+	sed "s|LIBDIR|$(LIBDIR)|g" scripts/spatch.opt.tmp \
+		> scripts/spatch.opt
 	rm -f scripts/spatch.opt.tmp scripts/spatch.opt.tmp2
 
 clean::
