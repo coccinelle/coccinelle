@@ -449,6 +449,7 @@ website:
 	rm -f $(WEBSITE)/LATEST* $(WEBSITE)/coccinelle-latest.tgz
 	cp changes.txt $(WEBSITE)/changes-$(VERSION).txt
 	cd $(WEBSITE); touch LATEST_IS_$(VERSION); ln -s $(PACKAGE).tgz coccinelle-latest.tgz
+	cp readme.txt $(WEBSITE)
 
 
 #TXT=$(wildcard *.txt)

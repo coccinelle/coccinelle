@@ -538,7 +538,6 @@ let other_options = [
 let all_options = 
   short_options ++ List.concat (List.map Common.thd3 other_options)
  
-
   
 (* I don't want the -help and --help that are appended by Arg.align *)
 let arg_align2 xs =
@@ -932,7 +931,7 @@ let main_with_better_error_report () =
     
 
 (*****************************************************************************)
-let _ =
+let start =
   Common.main_boilerplate (fun () -> 
     main_with_better_error_report ();
     Ctlcocci_integration.print_bench();
