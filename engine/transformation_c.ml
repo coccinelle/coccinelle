@@ -226,21 +226,33 @@ module XTRANS = struct
           else 
           *)
              begin
-            (* coccionly:
-	      Format.set_formatter_out_channel stderr;
-              Common.pr2 "SP mcode ";
-              Pretty_print_cocci.print_mcodekind oldmcode;
-              Format.print_newline();
-              Common.pr2 "C code mcode ";
-              Pretty_print_cocci.print_mcodekind mck;
-              Format.print_newline();
-              Format.print_flush();
-            *)
-              failwith
-	        (match Ast_c.pinfo_of_info ib with
-		  Ast_c.FakeTok _ -> "already tagged fake token"
+            (* coccionly: *)
+	       let pm str mcode env =
+		 Printf.sprintf
+		   "%s modification:\n%s\nAccording to environment:\n%s\n"
+		   str
+		   (Common.format_to_string
+		      (function _ ->
+			Pretty_print_cocci.print_mcodekind mcode))
+		   (String.concat "\n"
+		      (List.map
+			 (function ((_,vr),vl) ->
+			   Printf.sprintf "   %s -> %s" vr
+			     (Common.format_to_string
+				(function _ ->
+				  Pretty_print_engine.pp_binding_kind vl)))
+			 env)) in
+	       Common.pr2
+		 ("\n"^ (pm "previous" oldmcode oldenv) ^ "\n" ^
+		  (pm "current" mck tin.binding));
+               failwith
+	         (match Ast_c.pinfo_of_info ib with
+		   Ast_c.FakeTok _ ->
+		     Common.sprintf "%s: already tagged fake token\n"
+		       tin.extra.current_rule_name
 		| _ ->
-		    Common.sprintf "%s: already tagged token:\n%s"
+		    Printf.sprintf
+		      "%s: already tagged token:\nC code context\n%s"
 		      tin.extra.current_rule_name
 	              (Common.error_message (Ast_c.file_of_info ib)
 			 (Ast_c.str_of_info ib, Ast_c.opos_of_info ib)))

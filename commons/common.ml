@@ -1067,13 +1067,14 @@ let pp s = Format.print_string s
 
 (* julia: convert something printed using format to print into a string *)
 let format_to_string f =
-  let o = open_out "/tmp/out" in
+  let (nm,o) = Filename.open_temp_file "str" "out" in
   Format.set_formatter_out_channel o;
   let _ = f() in
+  Format.print_newline();
   Format.print_flush();
   Format.set_formatter_out_channel stdout;
   close_out o;
-  let i = open_in "/tmp/out" in
+  let i = open_in nm in
   let lines = ref [] in
   let rec loop _ =
     let cur = input_line i in
