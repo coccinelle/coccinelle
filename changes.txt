@@ -32,6 +32,8 @@
   causes spatch to follow the spacing conventions of Linux, while
   -smpl_spacing causes spatch to follow the spacing in the semantic patch.
   -linux_spacing is the default.
+- more informative error reporting for the already tagged token case.
+  Thanks to Erik Hovland for the suggestion.
 
 ** Bugfix:
 - better parsing of declare macro at toplevel and in structure. 
