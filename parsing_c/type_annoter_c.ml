@@ -349,7 +349,7 @@ let rec type_unfold_one_step ty env =
   | StructUnionName (su, s) -> 
       (try 
           let (((su,fields),ii), env') = lookup_structunion (su, s) env in
-          Ast_c.nQ, (StructUnion (su, Some s, fields), ii)
+          Ast_c.mk_ty (StructUnion (su, Some s, fields)) ii
           (* old: +> Ast_c.rewrap_typeC ty 
            * but must wrap with good ii, otherwise pretty_print_c
            * will be lost and raise some Impossible
@@ -461,15 +461,13 @@ let type_of_s a =
  * I now add a fake parse_info for such default int so no more failwith
  * normally.
  *)
-let offset (_,(ty,iis)) =
-  match ty, iis with
-  | TypeName (name, _typ), [] -> 
-      (match name with
-      | RegularName (s, [ii]) -> ii.Ast_c.pinfo
-      | _ -> raise Todo
-      )
-  | _, ii::_ -> ii.Ast_c.pinfo
-  | _ -> failwith "type has no text; need to think again"
+let offset ft = 
+  let (qu, ty) = ft in
+  (* bugfix: because of string->name, the ii can be deeper *)
+  let ii = Ast_c.get_local_ii_of_tybis_inlining_ii_of_name ty in
+  match ii with
+  | ii::_ -> ii.Ast_c.pinfo
+  | [] -> failwith "type has no text; need to think again"
   
 
 
@@ -641,8 +639,7 @@ let annotater_expr_visitor_subpart = (fun (k,bigf) expr ->
         let fake = Ast_c.fakeInfo (Common.fake_parse_info) in
         let fake = Ast_c.rewrap_str "float" fake in
         let iinull = [fake] in
-        make_info_def
-	  (Ast_c.nQ, (BaseType (FloatType kind), iinull))
+        make_info_def (Ast_c.mk_ty (BaseType (FloatType kind)) iinull)
           
           
     (* -------------------------------------------------- *)
@@ -655,7 +652,9 @@ let annotater_expr_visitor_subpart = (fun (k,bigf) expr ->
      * Also as I don't want a warning on the Ident that are a FunCall,
      * easier to have a rule separate from the Ident rule.
      *)
-    | FunCall (((Ident (ident), typ), _ii) as e1, args) -> 
+    | FunCall (e1, args) -> 
+     (match Ast_c.unwrap_expr e1 with
+     | Ident (ident) -> 
         
         (* recurse *)
         args +> List.iter (fun (e,ii) -> 
@@ -722,10 +721,10 @@ let annotater_expr_visitor_subpart = (fun (k,bigf) expr ->
         )
 
 
-    | FunCall (e, args) -> 
+      | _e -> 
         k expr;
         
-        (Ast_c.get_type_expr e) +> Type_c.do_with_type (fun typ -> 
+        (Ast_c.get_type_expr e1) +> Type_c.do_with_type (fun typ -> 
           (* copy paste of above *)   
           (match unwrap_unfold_env typ with
           | FunctionType (ret, params) -> make_info_def ret
@@ -737,6 +736,7 @@ let annotater_expr_visitor_subpart = (fun (k,bigf) expr ->
           | _ -> Type_c.noTypeHere
           )
         )
+     )
 
 
     (* -------------------------------------------------- *)
@@ -807,7 +807,7 @@ let annotater_expr_visitor_subpart = (fun (k,bigf) expr ->
           let fake = Ast_c.fakeInfo Common.fake_parse_info in
           let fake = Ast_c.rewrap_str "*" fake in
           
-          let ft = (Ast_c.nQ, (Pointer t, [fake])) in
+          let ft = Ast_c.mk_ty (Pointer t) [fake] in
           make_info_def_fix ft
         )
 
@@ -1038,8 +1038,8 @@ let rec visit_toplevel ~just_add_in_env ~depth elem =
 
     (* ------------------------------------------------------------ *)
     Visitor_c.kstatement = (fun (k, bigf) st -> 
-      match st with 
-      | Compound statxs, ii -> do_in_new_scope (fun () -> k st);
+      match Ast_c.unwrap_st st with 
+      | Compound statxs -> do_in_new_scope (fun () -> k st);
       | _ -> k st
     );
     (* ------------------------------------------------------------ *)
@@ -1056,7 +1056,7 @@ let rec visit_toplevel ~just_add_in_env ~depth elem =
 	    let local =
 	      match local with
 	      | Ast_c.NotLocalDecl -> Ast_c.NotLocalVar
-	      |	Ast_c.LocalDecl -> Ast_c.LocalVar (offset t) 
+	      |	Ast_c.LocalDecl -> Ast_c.LocalVar (offset t)
             in
             
             var +> Common.do_option (fun (name, iniopt) -> 
@@ -1091,17 +1091,18 @@ let rec visit_toplevel ~just_add_in_env ~depth elem =
        * the ref of abstract-lined types, but the real one, so 
        * don't al_type here
        *)
-      let (_q, t) = typ in
-      match t with 
-      | StructUnion  (su, Some s, structType),ii -> 
+      let (_q, tbis) = typ in
+      match Ast_c.unwrap_typeC typ with 
+      | StructUnion  (su, Some s, structType) -> 
           let structType' = Lib.al_fields structType in 
+          let ii = Ast_c.get_ii_typeC_take_care tbis in
           let ii' = Lib.al_ii ii in
           add_binding (StructUnionNameDef (s, ((su, structType'),ii')))  true;
 
           if need_annotate_body
           then k typ (* todo: restrict ? new scope so use do_in_scope ? *)
 
-      | Enum (sopt, enums), ii -> 
+      | Enum (sopt, enums) -> 
 
           enums +> List.iter (fun ((name, eopt), iicomma) -> 
 
@@ -1148,7 +1149,7 @@ let rec visit_toplevel ~just_add_in_env ~depth elem =
           (match oldstyle with 
           | None -> 
               let typ' = 
-                Lib.al_type (Ast_c.nQ, (FunctionType ftyp, [i1;i2])) in
+                Lib.al_type (Ast_c.mk_ty (FunctionType ftyp) [i1;i2]) in
 
               add_binding (VarOrFunc (funcs, (typ',islocal i1.Ast_c.pinfo))) 
                 false;
@@ -1255,14 +1256,14 @@ let annotate_test_expressions prog =
 
   let bigf = { Visitor_c.default_visitor_c with
     Visitor_c.kexpr = (fun (k,bigf) expr ->
-      (match unwrap expr with
-	(CondExpr(e,_,_),_) -> propagate_test e
+      (match unwrap_expr expr with
+	CondExpr(e,_,_) -> propagate_test e
       |	_ -> ()
       );
       k expr
     );
     Visitor_c.kstatement = (fun (k, bigf) st ->
-      match unwrap st with 
+      match unwrap_st st with 
 	Selection(s) ->
 	  (match s with If(e1,s1,s2) -> propagate_test e1 | _ -> ());
 	  k st;

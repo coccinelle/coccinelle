@@ -6,6 +6,7 @@ let score_path = "/home/pad/c-yacfe/tmp"
 
 let tmpfile = "/tmp/output.c" 
 
+module Ast_to_flow = Control_flow_c_build
 
 (*****************************************************************************)
 (* Subsystem testing *)

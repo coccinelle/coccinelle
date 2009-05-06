@@ -37,7 +37,7 @@ let strip_info_visitor _ =
     function i -> ctr := !ctr + 1; Ast_c.al_info_cpp !ctr i));
 
     Visitor_c.kexpr_s = (fun (k,_) e -> 
-      let (e', ty),ii' = k e in
+      let (e', ty), ii' = k e in
       (e', Ast_c.noType()(*ref !ty*)), ii' (* keep type - jll *)
     );
 

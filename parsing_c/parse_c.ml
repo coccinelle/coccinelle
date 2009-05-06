@@ -391,8 +391,8 @@ type class_token =
   | CReservedKwd (type | decl | qualif | flow | misc | attr)
 *)
 
-let ident_to_typename ident =
-  (Ast_c.nQ, (Ast_c.TypeName  (ident, Ast_c.noTypedefDef()), Ast_c.noii))
+let ident_to_typename ident : Ast_c.fullType =
+  Ast_c.mk_ty (Ast_c.TypeName  (ident, Ast_c.noTypedefDef())) Ast_c.noii
                   
 
 (* parse_typedef_fix4 *)
@@ -473,8 +473,8 @@ let consistency_checking2 xs =
       Visitor_c.kdefineval_s = (fun (k,bigf) x -> 
         match x with
         | Ast_c.DefineExpr e -> 
-            (match e with
-            | (Ast_c.Ident (ident), _), _ii  -> 
+            (match Ast_c.unwrap_expr e with
+            | Ast_c.Ident (ident)  -> 
                 let s = Ast_c.str_of_name ident in 
                 if List.mem s !ident_to_type
                 then
@@ -486,20 +486,20 @@ let consistency_checking2 xs =
         | _ -> k x
       );
       Visitor_c.kexpr_s = (fun (k, bigf) x -> 
-        match x with
+        match Ast_c.get_e_and_ii x with
         | (Ast_c.SizeOfExpr e, tref), isizeof -> 
             let i1 = tuple_of_list1 isizeof in
-            (match e with
+            (match Ast_c.get_e_and_ii e with
             | (Ast_c.ParenExpr e, _), iiparen -> 
-                (match e with
+                let (i2, i3) = tuple_of_list2 iiparen in
+                (match Ast_c.get_e_and_ii e with
                 | (Ast_c.Ident (ident), _), _ii  -> 
 
                     let s = Ast_c.str_of_name ident in 
                     if List.mem s !ident_to_type
                     then
                       let t = ident_to_typename ident in
-                      let (i2, i3) = tuple_of_list2 iiparen in
-                      (Ast_c.SizeOfType t, tref), [i1;i2;i3]
+                      (Ast_c.SizeOfType t, tref),[i1;i2;i3]
                     else  k x
                 | _ -> k x
                 )
@@ -837,7 +837,7 @@ let (_defs_builtins : (string, Cpp_token_c.define_def) Hashtbl.t ref)  =
 (* can not be put in parsing_hack, cos then mutually recursive problem as
  * we also want to parse the standard.h file.
  *)
-let init_defs std_h =     
+let init_defs_macros std_h =     
   if not (Common.lfile_exists std_h)
   then pr2 ("warning: Can't find default macro file: " ^ std_h)
   else begin
@@ -1419,7 +1419,11 @@ let (cexpression_of_string: string -> Ast_c.expression) = fun s ->
     match e with
     | Ast_c.Definition ({Ast_c.f_body = compound},_) -> 
         (match compound with
-        | [Ast_c.StmtElem (Ast_c.ExprStatement (Some e),ii)] -> Some e
+        | [Ast_c.StmtElem st] -> 
+            (match Ast_c.unwrap_st st with
+            | Ast_c.ExprStatement (Some e) -> Some e
+            | _ -> None
+            )
         | _ -> None
         )
     | _ -> None

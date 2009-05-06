@@ -74,8 +74,8 @@ let pretty_print_c pr_elem pr_space pr_nl pr_indent pr_outdent pr_unindent =
   let start_block () = pr_nl(); pr_indent() in
   let end_block   () = pr_unindent(); pr_nl() in
   
-  let indent_if_needed (s,_) f =
-    match s with
+  let indent_if_needed st f =
+    match Ast_c.unwrap_st st with
       Compound _ -> pr_space(); f()
     | _ ->
         (*no newline at the end - someone else will do that*)
@@ -203,7 +203,8 @@ let pretty_print_c pr_elem pr_space pr_nl pr_indent pr_outdent pr_unindent =
         pr_elem icp
 
 (* ---------------------- *)
-  and pp_statement = function
+  and pp_statement = fun st -> 
+    match Ast_c.get_st_and_ii st with
     | Labeled (Label (name, st)), ii ->
         let (i2) = Common.tuple_of_list1 ii in
 	pr_outdent(); pp_name name; pr_elem i2; pr_nl(); pp_statement st
@@ -233,10 +234,10 @@ let pretty_print_c pr_elem pr_space pr_nl pr_indent pr_outdent pr_unindent =
     | Selection  (If (e, st1, st2)), i1::i2::i3::is -> 
         pr_elem i1; pr_space(); pr_elem i2; pp_expression e; pr_elem i3;
 	indent_if_needed st1 (function _ -> pp_statement st1);
-        (match (st2, is) with
+        (match (Ast_c.get_st_and_ii st2, is) with
         | ((ExprStatement None, []), [])  -> ()
         | ((ExprStatement None, []), [iifakend])  -> pr_elem iifakend
-        | st2, [i4;iifakend] -> pr_elem i4;
+        | _st2, [i4;iifakend] -> pr_elem i4;
 	    indent_if_needed st2 (function _ -> pp_statement st2);
 	    pr_elem iifakend
         | x -> raise Impossible
@@ -260,10 +261,10 @@ let pretty_print_c pr_elem pr_space pr_nl pr_indent pr_outdent pr_unindent =
 	  
           pr_elem i1; pr_space();
           pr_elem i2;
-          pp_statement (ExprStatement e1opt, il1);
-          pp_statement (ExprStatement e2opt, il2);
+          pp_statement (Ast_c.mk_st (ExprStatement e1opt) il1);
+          pp_statement (Ast_c.mk_st (ExprStatement e2opt) il2);
           assert (null il3);
-          pp_statement (ExprStatement e3opt, il3);
+          pp_statement (Ast_c.mk_st (ExprStatement e3opt) il3);
           pr_elem i3;
           indent_if_needed st (function _ -> pp_statement st);
           pr_elem iifakend
@@ -383,12 +384,12 @@ let pretty_print_c pr_elem pr_space pr_nl pr_indent pr_outdent pr_unindent =
 	 (string * info) option -> (storage * il) option -> 
 	   fullType -> attribute list ->
 	     unit) = 
-    fun ident sto ((qu, iiqu), (ty, iity)) attrs ->
-      pp_base_type ((qu, iiqu), (ty, iity))  sto;
-      (match (ident,ty) with
+    fun ident sto ft attrs ->
+      pp_base_type ft  sto;
+      (match (ident, Ast_c.unwrap_typeC ft) with
 	(Some _,_) | (_,Pointer _) -> pr_space()
       |	_ -> ());
-      pp_type_with_ident_rest ident ((qu, iiqu), (ty, iity)) attrs
+      pp_type_with_ident_rest ident ft attrs
 	
 	
   and (pp_base_type: fullType -> (storage * il) option -> unit) = 
@@ -455,7 +456,7 @@ let pretty_print_c pr_elem pr_space pr_nl pr_indent pr_outdent pr_unindent =
 			  let identinfo = 
                             match nameopt with 
 			    | None -> None 
-                            | Some name -> Some (get_s_and_ii_of_name name)
+                            | Some name -> Some (get_s_and_info_of_name name)
                           in
 			  pp_type_with_ident identinfo None typ Ast_c.noattr;
 			    
@@ -466,7 +467,7 @@ let pretty_print_c pr_elem pr_space pr_nl pr_indent pr_outdent pr_unindent =
 			  | None -> 
 			      pp_type typ;
 			  | Some name -> 
-                              let (s, is) = get_s_and_ii_of_name name in
+                              let (s, is) = get_s_and_info_of_name name in
 			      pp_type_with_ident
 				(Some (s, is)) None typ Ast_c.noattr;
 			  );
@@ -475,14 +476,14 @@ let pretty_print_c pr_elem pr_space pr_nl pr_indent pr_outdent pr_unindent =
                             
                       ); (* match x, first onefield_multivars *)
 			
-                  (* for other vars *)
+                      (* for other vars *)
 		      xs +> List.iter (function
 			| (Simple (nameopt, typ)), iivirg -> 
 			    iivirg +> List.iter pr_elem;
 			    let identinfo = 
 			      match nameopt with 
 			      | None -> None 
-			      | Some name -> Some (get_s_and_ii_of_name name)
+			      | Some name -> Some (get_s_and_info_of_name name)
 			    in
 			    pp_type_with_ident_rest identinfo typ Ast_c.noattr
 
@@ -490,7 +491,7 @@ let pretty_print_c pr_elem pr_space pr_nl pr_indent pr_outdent pr_unindent =
 			    iivirg +> List.iter pr_elem;
 			    (match nameopt with
 			    | Some name -> 
-                                let (s,is) = get_s_and_ii_of_name name in
+                                let (s,is) = get_s_and_info_of_name name in
 				pp_type_with_ident_rest
 				  (Some (s, is)) typ Ast_c.noattr;
 				pr_elem iidot;
@@ -583,10 +584,19 @@ let pretty_print_c pr_elem pr_space pr_nl pr_indent pr_outdent pr_unindent =
           assert (List.length iis =|= 2);
           print_sto_qu_ty (sto, qu, iis);
 	    
-      | (TypeName (name,_typ), noii) -> 
+      | (TypeName (name,typ), noii) -> 
           assert (null noii);
-          let (_s, iis) = get_s_and_ii_of_name name in
+          let (_s, iis) = get_s_and_info_of_name name in
           print_sto_qu_ty (sto, qu, [iis]);
+
+          if !Flag_parsing_c.pretty_print_typedef_value
+          then begin
+            pr_elem (Ast_c.fakeInfo() +> Ast_c.rewrap_str "{*");
+            typ +> Common.do_option (fun typ -> 
+                pp_type typ;
+            );
+            pr_elem (Ast_c.fakeInfo() +> Ast_c.rewrap_str "*}");
+          end;
 	    
       | (TypeOfExpr (e), iis) -> 
           print_sto_qu (sto, qu);
@@ -622,6 +632,7 @@ let pretty_print_c pr_elem pr_space pr_nl pr_indent pr_outdent pr_unindent =
     fullType -> attribute list -> unit) = 
     
     fun ident (((qu, iiqu), (ty, iity)) as fullt) attrs -> 
+
       let print_ident ident = Common.do_option (fun (s, iis) -> 
         (* XXX attrs +> pp_attributes pr_elem pr_space; *)
         pr_elem iis
@@ -651,37 +662,51 @@ let pretty_print_c pr_elem pr_space pr_nl pr_indent pr_outdent pr_unindent =
           pp_type_with_ident_rest ident t attrs;
 	  
       (* ugly special case ... todo? maybe sufficient in practice *)       
-      | (ParenType (q1, (Pointer (q2, (FunctionType t, ii3))   , 
-                         [ipointer])  ), [i1;i2]) ->  
-			   pp_type_left (q2, (FunctionType t, ii3));
-			   pr_elem i1;
-			   pr_elem ipointer;
-			   print_ident ident;
-			   pr_elem i2;
-			   pp_type_right (q2, (FunctionType t, ii3));
-			   
-      (* another ugly special case *)
-      | (ParenType 
-           (q1, (Array (eopt,
-			(q2, (Pointer 
-				(q3, (FunctionType t, iifunc)), 
-			      [ipointer]))),
-		 [iarray1;iarray2])), [i1;i2]) -> 
-		   pp_type_left (q3, (FunctionType t, iifunc));
-		   pr_elem i1;
-		   pr_elem ipointer;
-		   print_ident ident;
-		   pr_elem iarray1;
-		   do_option pp_expression eopt;
-		   pr_elem iarray2;
-		   pr_elem i2;
-		   pp_type_right (q3, (FunctionType t, iifunc))
-		     
-		     
-		     
-      | (ParenType t, [i1;i2]) ->  
-          pr2 "PB PARENTYPE ZARB, I forget about the ()";
-          pp_type_with_ident_rest ident t attrs;
+      | (ParenType ttop, [i1;i2]) ->  
+          (match Ast_c.get_ty_and_ii ttop with
+          | (_q1, (Pointer t2, [ipointer])) -> 
+              (match Ast_c.get_ty_and_ii t2 with
+              | (q2, (FunctionType t, ii3)) -> 
+
+		  pp_type_left (q2, mk_tybis (FunctionType t) ii3);
+		  pr_elem i1;
+		  pr_elem ipointer;
+		  print_ident ident;
+		  pr_elem i2;
+		  pp_type_right (q2, mk_tybis (FunctionType t) ii3);
+              | _ -> 
+                  pr2 "PB PARENTYPE ZARB, I forget about the ()";
+                  pp_type_with_ident_rest ident ttop attrs;
+              )
+          (* another ugly special case *)
+          | _q1, (Array (eopt,t2 ), [iarray1;iarray2]) -> 
+              (match Ast_c.get_ty_and_ii t2 with 
+              | (_q2, (Pointer t3, [ipointer])) -> 
+                  (match Ast_c.get_ty_and_ii t3 with
+                  | (q3, (FunctionType t, iifunc)) -> 
+ 
+		      pp_type_left (q3, mk_tybis (FunctionType t) iifunc);
+		      pr_elem i1;
+		      pr_elem ipointer;
+		      print_ident ident;
+		      pr_elem iarray1;
+		      do_option pp_expression eopt;
+		      pr_elem iarray2;
+		      pr_elem i2;
+		      pp_type_right (q3, mk_tybis (FunctionType t) iifunc)
+                  | _ -> 
+                      pr2 "PB PARENTYPE ZARB, I forget about the ()";
+                      pp_type_with_ident_rest ident ttop attrs;
+                  )
+              | _ -> 
+                  pr2 "PB PARENTYPE ZARB, I forget about the ()";
+                  pp_type_with_ident_rest ident ttop attrs;
+              )
+          | _t -> 
+
+              pr2 "PB PARENTYPE ZARB, I forget about the ()";
+              pp_type_with_ident_rest ident ttop attrs;
+          )
           
 	  
       | (Array (eopt, t), [i1;i2]) -> 
@@ -744,7 +769,7 @@ let pretty_print_c pr_elem pr_space pr_nl pr_indent pr_outdent pr_unindent =
     | None -> 
         pp_type t
     | Some name -> 
-        let (s,i1) = get_s_and_ii_of_name name in
+        let (s,i1) = get_s_and_info_of_name name in
 	pp_type_with_ident
           (Some (s, i1)) None t Ast_c.noattr
           
@@ -808,7 +833,7 @@ let pretty_print_c pr_elem pr_space pr_nl pr_indent pr_outdent pr_unindent =
         (* handling the first var. Special case, we print the whole type *)
 	(match var with
 	| Some (name, iniopt) -> 
-            let (s,iis) = get_s_and_ii_of_name name in
+            let (s,iis) = get_s_and_info_of_name name in
 	    pp_type_with_ident
 	      (Some (s, iis)) (Some (storage, iisto))
 	      returnType attrs;
@@ -826,7 +851,7 @@ let pretty_print_c pr_elem pr_space pr_nl pr_indent pr_outdent pr_unindent =
 	    v_attr = attrs;
 	  }, iivirg) ->
 			 
-            let (s,iis) = get_s_and_ii_of_name name in
+            let (s,iis) = get_s_and_info_of_name name in
 	    assert (storage2 =*= storage);
 	    iivirg +> List.iter pr_elem;
 	    pp_type_with_ident_rest
@@ -1108,7 +1133,7 @@ and pp_init (init, iinit) =
 	pr2 "Decl" 
 	
     | F.ExprStatement (st, (eopt, ii)) ->  
-	pp_statement (ExprStatement eopt, ii) 
+	pp_statement (Ast_c.mk_st (ExprStatement eopt) ii) 
 	
     | F.IfHeader (_, (e,ii)) 
     | F.SwitchHeader (_, (e,ii))

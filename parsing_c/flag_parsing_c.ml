@@ -1,12 +1,23 @@
 (*****************************************************************************)
-(* convenient globals to pass to parse_c.init_defs *)
+(* convenient globals. *)
 (*****************************************************************************)
 let path = ref 
   (try (Sys.getenv "YACFE_HOME")
     with Not_found-> "/home/pad/c-yacfe"
   )
-let std_h   = ref (Filename.concat !path "data/standard.h")
-let common_h   = ref (Filename.concat !path "data/common_macros.h")
+
+(*****************************************************************************)
+(* macros *)
+(*****************************************************************************)
+
+let macro_dir = "config/macros/" 
+let mk_macro_path ~cocci_path file = 
+  Filename.concat cocci_path (macro_dir ^ file) 
+
+
+(* to pass to parse_c.init_defs *)
+let std_h   = ref (mk_macro_path ~cocci_path:!path "standard.h")
+let common_h   = ref (mk_macro_path ~cocci_path:!path "common_macros.h")
 
 
 let cmdline_flags_macrofile () = 
@@ -57,6 +68,7 @@ let verbose_cfg    = ref true
 let verbose_annotater = ref true
 let verbose_unparsing = ref true
 let verbose_visit = ref true
+let verbose_cpp_ast = ref true
 
 let filter_msg = ref false
 let filter_msg_define_error = ref false
@@ -67,6 +79,7 @@ let filter_passed_level = ref 0
 
 let pretty_print_type_info = ref false
 let pretty_print_comment_info = ref false
+let pretty_print_typedef_value = ref false
 
 (* cocci specific *)
 let show_flow_labels = ref true
@@ -101,6 +114,8 @@ let debug_lexer   = ref false
 let debug_etdt    = ref false
 let debug_typedef = ref false
 let debug_cpp     = ref false
+
+let debug_cpp_ast  = ref false
 
 let debug_unparsing = ref false
 

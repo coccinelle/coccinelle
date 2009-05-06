@@ -686,24 +686,34 @@ let rec find_macro_paren xs =
       find_macro_paren xs
 
 (*
-  (* attribute cpp, __xxx id() *)
+  (* attribute cpp, __xxx id *)
   | PToken ({tok = TIdent (s,i1)} as id)
-    ::PToken ({tok = TIdent (s2, i2)})
-    ::Parenthised(xxs,info_parens)
+    ::PToken ({tok = TIdent (s2, i2)} as id2)
     ::xs when s ==~ regexp_annot
      -> 
       msg_attribute s;
       id.tok <- TMacroAttr (s, i1);
-      find_macro_paren (Parenthised(xxs,info_parens)::xs)
+      find_macro_paren ((PToken id2)::xs); (* recurse also on id2 ? *)
 
-  (* attribute cpp, id __xxx =  *)
-  | PToken ({tok = TIdent (s,i1)})
-    ::PToken ({tok = TIdent (s2, i2)} as id)
-    ::xs when s2 ==~ regexp_annot
+  (* attribute cpp, id __xxx *)
+  | PToken ({tok = TIdent (s,i1)} as _id)
+    ::PToken ({tok = TIdent (s2, i2)} as id2)
+    ::xs when s2 ==~ regexp_annot && (not (s ==~ regexp_typedef))
      -> 
       msg_attribute s2;
-      id.tok <- TMacroAttr (s2, i2);
-      find_macro_paren (xs)
+      id2.tok <- TMacroAttr (s2, i2);
+      find_macro_paren xs
+
+  | PToken ({tok = (Tstatic _ | Textern _)} as tok1)
+    ::PToken ({tok = TIdent (s,i1)} as attr)
+    ::xs when s ==~ regexp_annot
+    -> 
+      pr2_cpp ("storage attribute: " ^ s);
+      attr.tok <- TMacroAttrStorage (s,i1);
+      (* recurse, may have other storage attributes *)
+      find_macro_paren (PToken (tok1)::xs)
+      
+
 *)
 
   (* storage attribute *)
@@ -714,7 +724,7 @@ let rec find_macro_paren xs =
       attr.tok <- TMacroAttrStorage (s,i1);
       (* recurse, may have other storage attributes *)
       find_macro_paren (PToken (tok1)::xs)
-      
+
 
   (* stringification
    * 

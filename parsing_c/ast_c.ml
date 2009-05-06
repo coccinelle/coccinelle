@@ -95,7 +95,7 @@ type info = {
   (* this cocci_tag can be changed, which is how we can express some program
    * transformations by tagging the tokens involved in this transformation. 
    *)
-  cocci_tag: (Ast_cocci.mcodekind * metavars_binding) ref;
+  cocci_tag: (Ast_cocci.mcodekind * metavars_binding) option ref;
   (* set in comment_annotater_c.ml *)
   comments_tag: comments_around ref;
 
@@ -105,9 +105,16 @@ and il = info list
 
 (* wrap2 is like wrap, except that I use it often for separator such
  * as ','. In that case the info is associated to the argument that
- * follows, so in 'a,b' I will have in the list [(a,[]); (b,[','])]. *)
+ * follows, so in 'a,b' I will have in the list [(a,[]); (b,[','])]. 
+ * 
+ * wrap3 is like wrap, except that I use it in case sometimes it 
+ * will be empty because the info will be included in a nested
+ * entity (e.g. for Ident in expr because it's inlined in the name)
+ * so user should never assume List.length wrap3 > 0.
+ *)
 and 'a wrap  = 'a * il
 and 'a wrap2 = 'a * il
+and 'a wrap3 = 'a * il (* * evotype*)
 
 (* ------------------------------------------------------------------------- *)
 (* Name *)
@@ -116,6 +123,14 @@ and 'a wrap2 = 'a * il
 (* was called 'ident' before, but 'name' is I think better
  * as concatenated strings can be used not only for identifiers and for 
  * declarators, but also for fields, for labels, etc.
+ * 
+ * Note: because now the info is embeded in the name, the info for
+ * expression like Ident, or types like Typename, are not anymore
+ * stored in the expression or type. Hence if you assume this,
+ * which was true before, you are now wrong. So never write code like
+ * let (unwrape,_), ii = e  and use 'ii' believing it contains
+ * the local ii to e. If you want to do that, use the appropiate
+ * wrapper get_local_ii_of_expr_inlining_ii_of_name.
  *)
 and name = 
    | RegularName of string wrap
@@ -153,7 +168,7 @@ and name =
 
 
 and fullType = typeQualifier * typeC
- and typeC = typeCbis wrap
+ and typeC = typeCbis wrap (* todo reput wrap3 *)
 
   and typeCbis =
   | BaseType        of baseType
@@ -268,7 +283,7 @@ and attribute = attributebis wrap
 (* ------------------------------------------------------------------------- *)
 (* C expression *)
 (* ------------------------------------------------------------------------- *)
-and expression = (expressionbis * exp_info ref (* semantic: *)) wrap
+and expression = (expressionbis * exp_info ref (* semantic: *)) wrap3
  and exp_info = exp_type option * test
   and exp_type = fullType (* Type_c.completed_and_simplified *) * local
     and local = LocalVar of parse_info | NotLocalVar (* cocci: *)
@@ -376,7 +391,7 @@ and expression = (expressionbis * exp_info ref (* semantic: *)) wrap
  * 
  *)
 
-and statement = statementbis wrap 
+and statement = statementbis wrap3
  and statementbis = 
   | Labeled       of labeled
   | Compound      of compound   (* new scope *)
@@ -699,10 +714,12 @@ and metavars_binding = (Ast_cocci.meta_name, metavar_binding_kind) assoc
 and comments_around = {
   mbefore: Token_c.comment_like_token list;
   mafter:  Token_c.comment_like_token list;
-}
-(* old: can do something simpler than CComment for coccinelle, cf above.
-  mbefore: comment_and_relative_pos list;
-  mafter:  comment_and_relative_pos list;
+
+  (* less: could remove ? do something simpler than CComment for
+   * coccinelle, cf above. *)
+  mbefore2: comment_and_relative_pos list;
+  mafter2:  comment_and_relative_pos list;
+  }
   and comment_and_relative_pos = {
 
    minfo: Common.parse_info;
@@ -717,8 +734,7 @@ and comments_around = {
     *  cppbetween: bool; touse? if false positive 
     *  is_alone_in_line: bool; (*for labels, to avoid false positive*)
    *)
- }
-*)
+  }
 
 and comment = Common.parse_info
 and com = comment list ref
@@ -738,17 +754,28 @@ let noType () = ref (None,NotTest)
 let noInstr = (ExprStatement (None), [])
 let noTypedefDef () = None
 
-
 let emptyMetavarsBinding = 
   ([]: metavars_binding)
 
-let emptyAnnot = 
+let emptyAnnotCocci =
   (Ast_cocci.CONTEXT (Ast_cocci.NoPos,Ast_cocci.NOTHING),
   emptyMetavarsBinding)
+
+let emptyAnnot = 
+  (None: (Ast_cocci.mcodekind * metavars_binding) option)
+
+(* compatibility mode *)
+let mcode_and_env_of_cocciref aref = 
+  match !aref with
+  | Some x -> x
+  | None -> emptyAnnotCocci
+
 
 let emptyComments= {
   mbefore = [];
   mafter = [];
+  mbefore2 = [];
+  mafter2 = [];
 }
 
 
@@ -783,10 +810,36 @@ let unwrap = fst
 
 let unwrap2 = fst
 
-
 let unwrap_expr ((unwrap_e, typ), iie) = unwrap_e
 let rewrap_expr ((_old_unwrap_e, typ), iie)  newe = ((newe, typ), iie)
 
+let unwrap_typeC (qu, (typeC, ii)) = typeC
+let rewrap_typeC (qu, (typeC, ii)) newtypeC  = (qu, (newtypeC, ii))
+
+let unwrap_typeCbis (typeC, ii) = typeC
+
+let unwrap_st (unwrap_st, ii) = unwrap_st
+
+(* ------------------------------------------------------------------------- *)
+let mk_e unwrap_e ii = (unwrap_e, noType()), ii
+let mk_e_bis unwrap_e ty ii = (unwrap_e, ty), ii
+
+let mk_ty typeC ii = nQ, (typeC, ii)
+let mk_tybis typeC ii = (typeC, ii)
+
+let mk_st unwrap_st ii = (unwrap_st, ii)
+
+(* ------------------------------------------------------------------------- *)
+let get_ii_typeC_take_care (typeC, ii) = ii
+let get_ii_st_take_care (st, ii) = ii
+let get_ii_expr_take_care (e, ii) = ii
+
+let get_st_and_ii (st, ii) = st, ii
+let get_ty_and_ii (qu, (typeC, ii)) = qu, (typeC, ii)
+let get_e_and_ii  (e, ii) = e, ii
+
+
+(* ------------------------------------------------------------------------- *)
 let get_type_expr ((unwrap_e, typ), iie) = !typ
 let set_type_expr ((unwrap_e, oldtyp), iie) newtyp =
   oldtyp := newtyp
@@ -802,12 +855,6 @@ let get_onlylocal_expr ((unwrap_e, typ), iie) =
   | Some (ft,local), _test -> Some local
   | None, _ -> None
 
-
-
-let unwrap_typeC (qu, (typeC, ii)) = typeC
-let rewrap_typeC (qu, (typeC, ii)) newtypeC  = (qu, (newtypeC, ii))
-
-
 (* ------------------------------------------------------------------------- *)
 let rewrap_str s ii =  
   {ii with pinfo =
@@ -820,6 +867,8 @@ let rewrap_str s ii =
 let rewrap_pinfo pi ii =  
   {ii with pinfo = pi}
 
+
+
 (* info about the current location *)
 let get_pi = function
     OriginTok pi -> pi
@@ -830,7 +879,7 @@ let get_pi = function
 (* original info *)
 let get_opi = function
     OriginTok pi -> pi
-  | ExpandedTok (pi,_) -> pi
+  | ExpandedTok (pi,_) -> pi (* diff with get_pi *)
   | FakeTok (_,_) -> failwith "no position information"
   | AbstractLineTok pi -> pi
 
@@ -851,7 +900,7 @@ let get_info f ii =
 let get_orig_info f ii =
   match ii.pinfo with
     OriginTok pi -> f pi
-  | ExpandedTok (pi,_) -> f pi
+  | ExpandedTok (pi,_) -> f pi (* diff with get_info *)
   | FakeTok (_,(pi,_)) -> f pi
   | AbstractLineTok pi -> f pi
 
@@ -863,7 +912,7 @@ let opos_of_info  ii = get_orig_info (function x -> x.Common.charpos) ii
 let line_of_info  ii = get_orig_info (function x -> x.Common.line)    ii
 let col_of_info   ii = get_orig_info (function x -> x.Common.column)  ii
 let file_of_info  ii = get_orig_info (function x -> x.Common.file)    ii
-let mcode_of_info ii = fst (!(ii.cocci_tag))
+let mcode_of_info ii = fst (mcode_and_env_of_cocciref ii.cocci_tag)
 let pinfo_of_info ii = ii.pinfo
 let parse_info_of_info ii = get_pi ii.pinfo
 
@@ -917,7 +966,7 @@ let info_to_fixpos ii =
 
 (* cocci: *)
 let is_test (e : expression) =
-  let (_,info) = unwrap e in
+  let (_,info), _ = e in
   let (_,test) = !info in
   test =*= Test
 
@@ -975,7 +1024,10 @@ let al_comments x =
 	 Common.line = magic_real_number;
 	 Common.column = magic_real_number}) in
   {mbefore = []; (* duplicates mafter of the previous token *)
-    mafter = List.map al_com (keep_cpp x.mafter)}
+   mafter = List.map al_com (keep_cpp x.mafter);
+   mbefore2=[];
+   mafter2=[];
+  }
 
 let al_info_cpp tokenindex x = 
   { pinfo =
@@ -1071,6 +1123,8 @@ let s_of_attr attr =
   +> List.map (fun (Attribute s, ii) -> s)
   +> Common.join ","
 
+
+(* ------------------------------------------------------------------------- *)
 let str_of_name ident = 
   match ident with
   | RegularName (s,ii) -> s
@@ -1082,36 +1136,64 @@ let str_of_name ident =
         (xs +> List.map (fun ((x,iix), iicomma) -> x) +> Common.join ",") ^
         ")"
 
-let info_of_name ident = 
-  match ident with
-  | RegularName (s,ii) -> List.hd ii
-  | CppConcatenatedName xs -> 
-      (match xs with
-      | [] -> raise Impossible
-      | ((x,ii1),ii2)::xs -> 
-          List.hd ii1
-      )
-  | CppVariadicName (s, ii) -> 
-      let (iihash, iis) = Common.tuple_of_list2 ii in 
-      iihash
-  | CppIdentBuilder ((s,iis),xs) -> 
-      List.hd iis
-
 let get_s_and_ii_of_name name = 
   match name with
-  | RegularName (s, iis) -> s, List.hd iis 
-  | CppIdentBuilder ((s, iis), xs) -> s, List.hd iis
+  | RegularName (s, iis) -> s, iis 
+  | CppIdentBuilder ((s, iis), xs) -> s, iis
   | CppVariadicName (s,iis)  -> 
       let (iop, iis) = Common.tuple_of_list2 iis in
-      s, iis
+      s, [iis]
   | CppConcatenatedName xs -> 
       (match xs with
       | [] -> raise Impossible
       | ((s,iis),noiiop)::xs -> 
-          s, List.hd iis
+          s, iis
       )
 
+let get_s_and_info_of_name name = 
+  let (s,ii) = get_s_and_ii_of_name name in
+  s, List.hd ii
 
+let info_of_name name = 
+  let (s,ii) = get_s_and_ii_of_name name in
+  List.hd ii
+
+let ii_of_name name = 
+  let (s,ii) = get_s_and_ii_of_name name in
+  ii
+
+
+
+let get_local_ii_of_expr_inlining_ii_of_name e = 
+  let (ebis,_),ii = e in
+  match ebis, ii with
+  | Ident name, noii -> 
+      assert(null noii);
+      ii_of_name name
+  | RecordAccess   (e, name), ii -> 
+      ii @ ii_of_name name
+  | RecordPtAccess (e, name), ii -> 
+      ii @ ii_of_name name
+  | _, ii -> ii
+
+
+let get_local_ii_of_tybis_inlining_ii_of_name ty =
+  match ty with
+  | TypeName (name, _typ), [] -> ii_of_name name
+  | _, ii -> ii
+
+(* only Label and Goto have name *)
+let get_local_ii_of_st_inlining_ii_of_name st =
+  match st with
+  | Labeled (Label (name, st)), ii -> ii_of_name name @ ii
+  | Jump (Goto name), ii -> 
+      let (i1, i3) = Common.tuple_of_list2 ii in
+      [i1] @ ii_of_name name @ [i3]
+  | _, ii -> ii
+
+  
+
+(* ------------------------------------------------------------------------- *)
 let name_of_parameter param = 
   param.p_namei +> Common.map_option (str_of_name)
 

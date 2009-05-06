@@ -178,7 +178,7 @@ module XTRANS = struct
   let tag_with_mck mck ib = fun tin -> 
 
     let cocciinforef = ib.Ast_c.cocci_tag in
-    let (oldmcode, oldenv) = !cocciinforef in
+    let (oldmcode, oldenv) = Ast_c.mcode_and_env_of_cocciref cocciinforef in
 
     let mck =
       (* coccionly: 
@@ -203,7 +203,7 @@ module XTRANS = struct
 	    Ast_cocci.MINUS (pos,_,adj,any_xxs) ->
 	      Ast_cocci.MINUS (pos,inst,adj,any_xxs)
 	  | mck -> mck in
-        cocciinforef := (update_inst tin.extra.index mck, tin.binding);
+        cocciinforef := Some (update_inst tin.extra.index mck, tin.binding);
         ib
 
     | (Ast_cocci.MINUS(old_pos,old_inst,old_adj,[]),
@@ -211,7 +211,7 @@ module XTRANS = struct
 	when old_pos = new_pos && oldenv =*= tin.binding
 	    (* no way to combine adjacency information, just drop one *)
       ->
-        cocciinforef :=
+        cocciinforef := Some
 	  (Ast_cocci.MINUS
 	     (old_pos,Common.union_set old_inst new_inst,old_adj,[]),
 	   tin.binding);

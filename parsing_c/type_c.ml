@@ -68,7 +68,27 @@ type completed_and_simplified = Ast_c.fullType
 type completed_typedef = Ast_c.fullType
 type removed_typedef = Ast_c.fullType
 
-let int_type = Lib_parsing_c.al_type (Parse_c.type_of_string "int")
+(* move in ast_c ? 
+ * use Ast_c.nQ, Ast_c.defaultInt, Ast_c.emptyAnnotCocci, 
+ * Ast_c.emptyMetavarsBinding, Ast_c.emptyComments
+*)
+let (int_type: Ast_c.fullType) = 
+  (* Lib_parsing_c.al_type   (Parse_c.type_of_string "int")*)
+  Ast_c.mk_ty
+   (Ast_c.BaseType (Ast_c.IntType (Ast_c.Si (Ast_c.Signed, Ast_c.CInt))))
+   [Ast_c.al_info 0 (* al *)
+    {Ast_c.pinfo =
+     Ast_c.OriginTok
+      {Common.str = "int"; Common.charpos = 0; Common.line = -1;
+       Common.column = -1; Common.file = ""};
+    Ast_c.cocci_tag = 
+     {contents = Some (Ast_cocci.CONTEXT (Ast_cocci.NoPos, Ast_cocci.NOTHING), [])};
+    Ast_c.comments_tag = {contents = 
+        {Ast_c.mbefore = []; Ast_c.mafter = [];
+         Ast_c.mbefore2 = []; Ast_c.mafter2 = []
+        }}}]
+
+
 
 
 (* normally if the type annotated has done a good job, this should always
@@ -168,12 +188,14 @@ let get_opt_type e =
 
 
 let structdef_to_struct_name ty = 
-  match ty with 
-  | qu, (StructUnion (su, sopt, fields), iis) -> 
-      (match sopt,iis with
+  let (qu, tybis) = ty in
+  match Ast_c.unwrap_typeC ty with 
+  | (StructUnion (su, sopt, fields)) -> 
+      let iis = Ast_c.get_ii_typeC_take_care tybis in
+      (match sopt, iis with
       (* todo? but what if correspond to a nested struct def ? *)
       | Some s , [i1;i2;i3;i4] -> 
-          qu, (StructUnionName (su, s), [i1;i2])
+          qu, Ast_c.mk_tybis (StructUnionName (su, s)) [i1;i2]
       | None, _ -> 
           ty
       | x -> raise Impossible
@@ -196,7 +218,7 @@ let type_of_function (def,ii) =
   let fake = Ast_c.fakeInfo (Common.fake_parse_info) in
   let fake_cparen = Ast_c.rewrap_str ")" fake in
 
-  Ast_c.nQ, (FunctionType ftyp, [fake_oparen;fake_cparen])
+  Ast_c.mk_ty (FunctionType ftyp) [fake_oparen;fake_cparen]
 
 
 (* pre: only a single variable *)
@@ -281,7 +303,7 @@ let (fake_function_type:
     rettype +> Common.map_option (fun rettype -> 
       let (ftyp: functionType) = (rettype, (tyargs, (false,[]))) in
       let (t: fullType) = 
-        (Ast_c.nQ, (FunctionType ftyp, [fake_oparen;fake_cparen]))  
+        Ast_c.mk_ty (FunctionType ftyp) [fake_oparen;fake_cparen]
       in
       t
     )

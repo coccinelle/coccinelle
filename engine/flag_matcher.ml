@@ -14,3 +14,7 @@ let only_return_is_error_exit = ref false
 let allow_inconsistent_paths = ref false
 
 let show_misc = ref true
+
+
+let show_transinfo = ref false
+

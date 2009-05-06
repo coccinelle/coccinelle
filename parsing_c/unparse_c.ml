@@ -258,6 +258,8 @@ let displace_fake_nodes toks =
     match fake_info with
       Some(bef,((Fake1 info) as fake),aft) ->
 	(match !(info.cocci_tag) with
+        | Some x -> 
+          (match x with
 	  (Ast_cocci.CONTEXT(_,Ast_cocci.BEFORE _),_) ->
 	    (* move the fake node forwards *)
 	    let (whitespace,rest) = Common.span is_whitespace aft in
@@ -274,6 +276,9 @@ let displace_fake_nodes toks =
 	| (Ast_cocci.CONTEXT(_,Ast_cocci.BEFOREAFTER _),_) ->
 	    failwith "fake node should not be before-after"
 	| _ -> bef @ fake :: (loop aft) (* old: was removed when have simpler yacfe *)
+        )
+        | None -> 
+            bef @ fake :: (loop aft)
         )
     | None -> toks
     | _ -> raise Impossible in
@@ -331,7 +336,8 @@ let expand_mcode toks =
   in
 
   let expand_info t = 
-    let (mcode,env) = !((info_of_token1 t).cocci_tag) in
+    let (mcode,env) = 
+      Ast_c.mcode_and_env_of_cocciref ((info_of_token1 t).cocci_tag) in
 
     let pr_cocci s ln col rcol = 
       push2 (Cocci2(s,ln,col,rcol)) toks_out  in

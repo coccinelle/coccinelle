@@ -3,6 +3,8 @@ open Common
 module CCI = Ctlcocci_integration
 module TAC = Type_annoter_c
 
+module Ast_to_flow = Control_flow_c_build
+
 (*****************************************************************************)
 (* This file is a kind of driver. It gathers all the important functions 
  * from coccinelle in one place. The different entities in coccinelle are:

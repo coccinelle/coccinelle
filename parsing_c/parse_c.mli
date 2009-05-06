@@ -22,7 +22,7 @@ val _defs : (string, Cpp_token_c.define_def) Hashtbl.t ref
 (* usually correspond to what is inside your standard.h *)
 val _defs_builtins : (string, Cpp_token_c.define_def) Hashtbl.t ref
 
-val init_defs : filename -> unit
+val init_defs_macros : filename -> unit
 val init_defs_builtins : filename -> unit
 
 

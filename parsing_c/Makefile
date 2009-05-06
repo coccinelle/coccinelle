@@ -11,7 +11,7 @@ TARGET=parsing_c
 SRC= flag_parsing_c.ml parsing_stat.ml \
  token_c.ml ast_c.ml control_flow_c.ml \
  visitor_c.ml lib_parsing_c.ml \
- ast_to_flow.ml \
+ control_flow_c_build.ml \
  pretty_print_c.ml \
  semantic_c.ml lexer_parser.ml parser_c.ml lexer_c.ml \
  token_helpers.ml token_views_c.ml \
@@ -144,6 +144,9 @@ distclean::
 	rm -f .depend
 
 beforedepend::
+
+distclean::
+	rm -f .depend
 
 depend:: beforedepend
 	$(OCAMLDEP) *.mli *.ml    > .depend

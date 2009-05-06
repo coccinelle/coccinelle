@@ -445,10 +445,14 @@ let initialisation_to_affectation decl =
 		    ref (Some ((Lib_parsing_c.al_type returnType),local),
 			       Ast_c.NotTest) in
                   let ident = name in
-                  let idexpr = (B.Ident (ident), typ),Ast_c.noii in
-                  F.DefineExpr
-                    ((B.Assignment (idexpr, B.SimpleAssign, e), 
-                     Ast_c.noType()), [iini])
+                  let idexpr = 
+                    Ast_c.mk_e_bis (B.Ident (ident)) typ Ast_c.noii
+                  in
+                  let assign = 
+                    Ast_c.mk_e 
+                      (B.Assignment (idexpr,B.SimpleAssign, e)) [iini] in
+                  F.DefineExpr assign
+                    
               | _ -> F.Decl decl
               )
           | _ -> F.Decl decl
@@ -1074,7 +1078,6 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
      B.FunCall (_, _)|B.Constant _|B.Ident _),
      _),_)
        -> fail
-
 
 
 

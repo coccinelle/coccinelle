@@ -16,6 +16,13 @@ open Common
 open Ast_c
 
 (*****************************************************************************)
+(* Wrappers *)
+(*****************************************************************************)
+let pr2, pr2_once = Common.mk_pr2_wrappers Flag_parsing_c.verbose_cpp_ast
+let pr2_debug,pr2_debug_once = 
+  Common.mk_pr2_wrappers Flag_parsing_c.debug_cpp_ast
+
+(*****************************************************************************)
 (* Cpp Ast Manipulations *)
 (*****************************************************************************)
 
@@ -103,7 +110,7 @@ let init_adjust_candidate_header_files dir =
 
   files +> List.iter (fun file -> 
     let base = Filename.basename file in
-    pr2 file;
+    pr2_debug file;
     Hashtbl.add _hcandidates base file;
   );
   ()
@@ -144,7 +151,7 @@ let find_header_file2 inc_file =
       let res = Hashtbl.find_all _hcandidates base in
       (match res with
       | [file] -> 
-          pr2 ("CPPAST: find header in other dir: " ^ file);
+          pr2_debug ("CPPAST: find header in other dir: " ^ file);
           res
       | [] -> 
           []
@@ -166,7 +173,7 @@ let find_header_file cppopts dirname inc_file =
 
 (* ---------------------------------------------------------------------- *)
 let trace_cpp_process depth mark inc_file =
-  pr2 (spf "%s>%s %s" 
+  pr2_debug (spf "%s>%s %s" 
           (Common.repeat "-" depth +> Common.join "")
           mark
           (s_of_inc_file_bis inc_file));
@@ -221,7 +228,9 @@ let (cpp_expand_include2:
  cpp_option list -> Common.dirname -> Ast_c.program -> Ast_c.program) =
  fun ?(depth_limit=None) iops dirname ast -> 
 
-  pr2_xxxxxxxxxxxxxxxxx();
+  if !Flag_parsing_c.debug_cpp_ast
+  then pr2_xxxxxxxxxxxxxxxxx();
+
   let already_included = ref [] in
 
   let rec aux stack dirname ast = 

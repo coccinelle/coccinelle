@@ -845,7 +845,7 @@ let main () =
     then Parse_c.init_defs_builtins !Config.std_h;
 
     if !macro_file <> "" 
-    then Parse_c.init_defs !macro_file;
+    then Parse_c.init_defs_macros !macro_file;
 
 
     (* must be done after Arg.parse, because Common.profile is set by it *)
