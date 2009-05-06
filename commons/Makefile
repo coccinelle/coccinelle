@@ -105,7 +105,7 @@ OPTFLAGS=
 # ocaml, when it is available, which speeds up compilation. So
 # if you want the fast version of the ocaml chain tools, set this var 
 # or setenv it to ".opt" in your startup script.
-#OPTBIN= #.opt
+OPTBIN ?= #.opt
 
 OCAMLCFLAGS ?= -g -dtypes
 

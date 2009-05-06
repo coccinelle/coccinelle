@@ -237,18 +237,37 @@ let pr_no_nl s =
   flush stdout
 
 
+
+
+
+
+let _chan_pr2 = ref (None: out_channel option)
+
+let out_chan_pr2 ?(newline=true) s = 
+  match !_chan_pr2 with
+  | None -> ()
+  | Some chan -> 
+      output_string chan (s ^ (if newline then "\n" else "")); 
+      flush chan
+
+
 let pr2 s = 
   prerr_string !_prefix_pr;
   do_n !_tab_level_print (fun () -> prerr_string " ");
   prerr_string s;
   prerr_string "\n"; 
-  flush stderr
+  flush stderr;
+  out_chan_pr2 s;
+  ()
 
 let pr2_no_nl s = 
   prerr_string !_prefix_pr;
   do_n !_tab_level_print (fun () -> prerr_string " ");
   prerr_string s;
-  flush stderr
+  flush stderr;
+  out_chan_pr2 ~newline:false s;
+  ()
+
 
 let pr_xxxxxxxxxxxxxxxxx () = 
   pr "-----------------------------------------------------------------------"
@@ -385,25 +404,32 @@ let pr2_gen x = pr2 (dump x)
 
 let _already_printed = Hashtbl.create 101
 let disable_pr2_once = ref false 
-let pr2_once s = 
+
+let xxx_once f s = 
   if !disable_pr2_once then pr2 s
   else 
     if not (Hashtbl.mem _already_printed s)
     then begin
       Hashtbl.add _already_printed s true;
-      pr2 ("(ONCE) " ^ s);
+      f ("(ONCE) " ^ s);
     end
 
+let pr2_once s = xxx_once pr2 s
 
 (* ---------------------------------------------------------------------- *)
 let mk_pr2_wrappers aref = 
   let fpr2 s = 
     if !aref
     then pr2 s
+    else 
+      (* just to the log file *)
+      out_chan_pr2 s
   in
   let fpr2_once s = 
     if !aref
     then pr2_once s
+    else 
+      xxx_once out_chan_pr2 s
   in
   fpr2, fpr2_once
 
@@ -446,6 +472,10 @@ let redirect_stdin_opt optfile f =
   | Some infile -> redirect_stdin infile f
 
 
+(* cf end 
+let with_pr2_to_string f = 
+*)
+  
 
 (* ---------------------------------------------------------------------- *)
 
@@ -1066,24 +1096,10 @@ let pp s = Format.print_string s
 
 
 (* julia: convert something printed using format to print into a string *)
+(* now at bottom of file
 let format_to_string f =
-  let (nm,o) = Filename.open_temp_file "str" "out" in
-  Format.set_formatter_out_channel o;
-  let _ = f() in
-  Format.print_newline();
-  Format.print_flush();
-  Format.set_formatter_out_channel stdout;
-  close_out o;
-  let i = open_in nm in
-  let lines = ref [] in
-  let rec loop _ =
-    let cur = input_line i in
-    lines := cur :: !lines;
-    loop() in
-  (try loop() with End_of_file -> ());
-  close_in i;
-  String.concat "\n" (List.rev !lines)
-
+ ...
+*)
 
 
 let mk_str_func_of_assoc_conv xs = 
@@ -1227,6 +1243,17 @@ let save_excursion reference f =
   reference := old;
   res
 
+let save_excursion_and_disable reference f = 
+  save_excursion reference (fun () -> 
+    reference := false;
+    f ()
+  )
+
+let save_excursion_and_enable reference f = 
+  save_excursion reference (fun () -> 
+    reference := true;
+    f ()
+  )
 
 
 let memoized h k f = 
@@ -3316,7 +3343,7 @@ let files_of_dir_or_files_no_vcs_post_filter regex xs =
     then 
       cmd_to_list 
         ("find " ^ x  ^
-         " -noleaf -type f | grep -v /.hg/ |grep -v /CVS/ | grep -v /.git/"
+         " -noleaf -type f | grep -v /.hg/ |grep -v /CVS/ | grep -v /.git/ |grep -v /_darcs/"
         )
         +> List.filter (fun s -> s =~ regex)
     else [x]
@@ -5971,6 +5998,37 @@ let md5sum_of_string s =
       (*pr2 s;*)
       s
   | _ -> failwith "md5sum_of_string wrong output"
+
+
+
+let with_pr2_to_string f = 
+  let file = new_temp_file "pr2" "out" in
+  redirect_stdout_stderr file f;
+  cat file
+
+
+let format_to_string f =
+(*
+  let tmpfile = new_temp_file "format_to_s" "out" in
+  let o = open_out tmpfile in
+*)
+  let (nm,o) = Filename.open_temp_file "str" "out" in
+  Format.set_formatter_out_channel o;
+  let _ = f() in
+  Format.print_newline();
+  Format.print_flush();
+  Format.set_formatter_out_channel stdout;
+  close_out o;
+  let i = open_in nm in
+  let lines = ref [] in
+  let rec loop _ =
+    let cur = input_line i in
+    lines := cur :: !lines;
+    loop() in
+  (try loop() with End_of_file -> ());
+  close_in i;
+  String.concat "\n" (List.rev !lines)
+
 
 
 (*****************************************************************************)
