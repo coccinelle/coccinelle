@@ -428,8 +428,9 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
    (* ------------------------- *)        
   | Selection  (Ast_c.If (e, st1, st2)) ->
 
+    let iist2 = Ast_c.get_ii_st_take_care st2 in
     (match Ast_c.unwrap_st st2 with
-    | Ast_c.ExprStatement (None) -> 
+    | Ast_c.ExprStatement (None) when null iist2 -> 
       (* sometome can have ExprStatement None but it is a if-then-else,
        * because something like   if() xx else ;
        * so must force to have [] in the ii associated with ExprStatement 
