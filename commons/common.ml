@@ -1093,15 +1093,6 @@ let pp_f_in_box f      =
 
 let pp s = Format.print_string s
 
-
-
-(* julia: convert something printed using format to print into a string *)
-(* now at bottom of file
-let format_to_string f =
- ...
-*)
-
-
 let mk_str_func_of_assoc_conv xs = 
   let swap (x,y) = (y,x) in
 
@@ -6006,13 +5997,9 @@ let with_pr2_to_string f =
   redirect_stdout_stderr file f;
   cat file
 
-
+(* julia: convert something printed using format to print into a string *)
 let format_to_string f =
-(*
-  let tmpfile = new_temp_file "format_to_s" "out" in
-  let o = open_out tmpfile in
-*)
-  let (nm,o) = Filename.open_temp_file "str" "out" in
+  let (nm,o) = Filename.open_temp_file "format_to_s" ".out" in
   Format.set_formatter_out_channel o;
   let _ = f() in
   Format.print_newline();
@@ -6027,6 +6014,7 @@ let format_to_string f =
     loop() in
   (try loop() with End_of_file -> ());
   close_in i;
+  command2 ("rm -f " ^ nm);
   String.concat "\n" (List.rev !lines)
 
 
