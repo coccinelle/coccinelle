@@ -1601,8 +1601,7 @@ let lookahead2 ~pass next before =
       (take_safe 1 !passed_tok <> [Tenum]))
       &&
       !LP._lexer_hint = Some LP.Toplevel -> 
-      msg_typedef s; 
-      LP.add_typedef_root s;
+      msg_typedef s; LP.add_typedef_root s;
       TypedefIdent s
      *)
 
@@ -1743,8 +1742,7 @@ let lookahead2 ~pass next before =
 
         (* can have sizeof on expression
            | (Tsizeof::TOPar::TIdent s::TCPar::_,   _) -> 
-           msg_typedef s; 
-           LP.add_typedef_root s;
+           msg_typedef s; LP.add_typedef_root s;
            Tsizeof
          *)
 

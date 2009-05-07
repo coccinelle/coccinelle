@@ -28,7 +28,7 @@ open Token_views_c
  * the coccinelle context for instance).
  *  
  * Note that as I use a single lexer  to work both at the C and cpp level
- * there are some inconveniences. 
+ * there are some inconveniencies. 
  * For instance 'for' is a valid name for a macro parameter and macro 
  * body, but is interpreted in a special way by our single lexer, and 
  * so at some places where I expect a TIdent I need also to
@@ -132,6 +132,9 @@ let (token_from_parsinghack_hint:
  * in the grammar. Hence this function to remap some tokens. This is because
  * we should not use a single lexer for both working at the C level and
  * cpp level.
+ * 
+ * update: it can also rename some TypedefIdent into TIdent, possibly 
+ * because of bad interaction with add_typedef_root in parsing_hacks.
  *)
 let rec remap_keyword_tokens xs = 
   match xs with
@@ -144,7 +147,7 @@ let rec remap_keyword_tokens xs =
       | Parser_c.TIdent _, Parser_c.TCppConcatOp _ -> 
           x::y::remap_keyword_tokens xs
 
-      | Parser_c.TCppConcatOp (i1), _ -> 
+      | Parser_c.TCppConcatOp (i1),   y -> 
 
           let s = TH.str_of_tok y in
           let ii = TH.info_of_tok y in
@@ -156,7 +159,7 @@ let rec remap_keyword_tokens xs =
           else 
             x::y::remap_keyword_tokens xs
 
-      | _, Parser_c.TCppConcatOp (i1) -> 
+      | x, Parser_c.TCppConcatOp (i1) -> 
           let s = TH.str_of_tok x in
           let ii = TH.info_of_tok x in
           if s ==~ Common.regexp_alpha

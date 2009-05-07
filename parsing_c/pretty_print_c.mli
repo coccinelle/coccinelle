@@ -62,3 +62,4 @@ val pp_flow_simple: flow_printer
 val debug_info_of_node: Ograph_extended.nodei -> Control_flow_c.cflow -> string
 
 val string_of_expression: Ast_c.expression -> string
+val string_of_toplevel: Ast_c.toplevel -> string

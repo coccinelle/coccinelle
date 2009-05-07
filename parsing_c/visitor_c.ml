@@ -608,7 +608,7 @@ and vk_def = fun bigf d ->
   let f = bigf.kdef in
   let rec k d = 
     match d with
-    | {f_name = s;
+    | {f_name = name;
        f_type = (returnt, (paramst, (b, iib)));
        f_storage = sto;
        f_body = statxs;
@@ -620,6 +620,7 @@ and vk_def = fun bigf d ->
         iif iib;
         attrs +> List.iter (vk_attribute bigf);
         vk_type bigf returnt;
+        vk_name bigf name;
         paramst +> List.iter (fun (param,iicomma) -> 
           vk_param bigf param;
           iif iicomma;
@@ -1391,7 +1392,7 @@ and vk_def_s = fun bigf d ->
   let iif ii = vk_ii_s bigf ii in
   let rec k d = 
     match d with
-    | {f_name = s;
+    | {f_name = name;
        f_type = (returnt, (paramst, (b, iib)));
        f_storage = sto;
        f_body = statxs;
@@ -1399,7 +1400,7 @@ and vk_def_s = fun bigf d ->
        f_old_c_style = oldstyle;
       }, ii  
         -> 
-        {f_name = s;
+        {f_name = vk_name_s bigf name;
          f_type = 
             (vk_type_s bigf returnt, 
             (paramst +> List.map (fun (param, iicomma) ->

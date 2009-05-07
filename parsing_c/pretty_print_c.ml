@@ -1358,6 +1358,11 @@ let string_of_expression e =
   Common.format_to_string (fun () ->
     pp_expression_simple e
       )
+
+let string_of_toplevel top = 
+  Common.format_to_string (fun () ->
+    pp_toplevel_simple top
+      )
     
 let (debug_info_of_node:
        Ograph_extended.nodei -> Control_flow_c.cflow -> string) = 
