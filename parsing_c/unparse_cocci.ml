@@ -742,16 +742,15 @@ and print_fninfo = function
 
 let indent_if_needed s f =
   match Ast.unwrap s with
-    Ast.Seq(lbrace,decls,body,rbrace) -> pr_space(); f()
+    Ast.Seq(lbrace,body,rbrace) -> pr_space(); f()
   | _ ->
       (*no newline at the end - someone else will do that*)
       start_block(); f(); unindent() in
 
 let rec statement arity s =
   match Ast.unwrap s with
-    Ast.Seq(lbrace,decls,body,rbrace) ->
+    Ast.Seq(lbrace,body,rbrace) ->
       rule_elem arity lbrace;
-      dots force_newline (statement arity) decls;
       dots force_newline (statement arity) body;
       rule_elem arity rbrace
 
@@ -786,9 +785,8 @@ let rec statement arity s =
 
   | Ast.Atomic(re) -> rule_elem arity re
 
-  | Ast.FunDecl(header,lbrace,decls,body,rbrace) ->
+  | Ast.FunDecl(header,lbrace,body,rbrace) ->
       rule_elem arity header; rule_elem arity lbrace;
-      dots force_newline (statement arity) decls;
       dots force_newline (statement arity) body; rule_elem arity rbrace
 
   | Ast.Define(header,body) ->

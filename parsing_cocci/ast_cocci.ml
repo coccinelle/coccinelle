@@ -414,7 +414,7 @@ and metaStmtInfo =
 and rule_elem = base_rule_elem wrap
 
 and base_statement =
-    Seq           of rule_elem (* { *) * statement dots *
+    Seq           of rule_elem (* { *) *
 	             statement dots * rule_elem (* } *)
   | IfThen        of rule_elem (* header *) * statement * end_info (* endif *)
   | IfThenElse    of rule_elem (* header *) * statement *
@@ -431,7 +431,7 @@ and base_statement =
 	             (statement dots,statement) whencode list * multi *
 	             dots_whencode list * dots_whencode list
   | FunDecl       of rule_elem (* header *) * rule_elem (* { *) *
-     	             statement dots * statement dots * rule_elem (* } *)
+     	             statement dots * rule_elem (* } *)
   | Define        of rule_elem (* header *) * statement dots
   | Dots          of string mcode (* ... *) *
 	             (statement dots,statement) whencode list *

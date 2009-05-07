@@ -865,10 +865,10 @@ statement:
 stm_dots:
   TEllipsis w=list(whenppdecs)
     { Ast0.wrap(Ast0.Dots(P.clt2mcode "..." $1, List.concat w)) }
-| TOEllipsis w=list(whenppdecsnest) b=nest_start c=TCEllipsis
+| TOEllipsis w=list(whenppdecs) b=nest_start c=TCEllipsis
     { Ast0.wrap(Ast0.Nest(P.clt2mcode "<..." $1, b,
 			  P.clt2mcode "...>" c, List.concat w, false)) }
-| TPOEllipsis w=list(whenppdecsnest) b=nest_start c=TPCEllipsis
+| TPOEllipsis w=list(whenppdecs) b=nest_start c=TPCEllipsis
     { Ast0.wrap(Ast0.Nest(P.clt2mcode "<+..." $1, b,
 			  P.clt2mcode "...+>" c, List.concat w, true)) }
 
@@ -885,9 +885,6 @@ stm_dots:
 			  P.clt2mcode "...+>" c, List.concat w, true)) }
 
 whenppdecs: w=whens(when_start,rule_elem_statement,any_strict)
-    { w }
-
-whenppdecsnest: w=whens(when_start,rule_elem_statement,any_only)
     { w }
 
 /* a statement that fits into a single rule_elem.  should nests be included?

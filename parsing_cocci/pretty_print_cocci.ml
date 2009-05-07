@@ -601,9 +601,8 @@ and print_define_param param =
 
 and statement arity s =
   match Ast.unwrap s with
-    Ast.Seq(lbrace,decls,body,rbrace) ->
+    Ast.Seq(lbrace,body,rbrace) ->
       rule_elem arity lbrace;
-      dots force_newline (statement arity) decls;
       dots force_newline (statement arity) body;
       rule_elem arity rbrace
   | Ast.IfThen(header,branch,(_,_,_,aft)) ->
@@ -630,9 +629,8 @@ and statement arity s =
       List.iter (function x -> case_line arity x; force_newline()) cases;
       rule_elem arity rb
   | Ast.Atomic(re) -> rule_elem arity re
-  | Ast.FunDecl(header,lbrace,decls,body,rbrace) ->
+  | Ast.FunDecl(header,lbrace,body,rbrace) ->
       rule_elem arity header; rule_elem arity lbrace;
-      dots force_newline (statement arity) decls;
       dots force_newline (statement arity) body;
       rule_elem arity rbrace
   | Ast.Disj([stmt_dots]) ->

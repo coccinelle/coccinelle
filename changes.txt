@@ -67,9 +67,9 @@
   Thanks to Derek Jones for pointing out the problem.
 - better detection and passing of "dangerous" ifdefs, cf -test
   double_switch.
-- more exhaustive treatment of nests - no point to give special treatment
-  to error paths.  when strict thus no longer allowed for nests, as it is
-  the default behavior.
+- dropped the separation of decls and body in Seq.  This gives better
+  positioning of the bindings of metavariables shared between them.
+  Thanks to Erik Hovland for an example that shows the problem.
 
 ** Internals:
 - supress warning in compiling ocamlsexp (warning caused by a new behavior

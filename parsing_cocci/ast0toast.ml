@@ -580,11 +580,11 @@ and statement s =
 				 declaration decl)))
       | Ast0.Seq(lbrace,body,rbrace) ->
 	  let lbrace = mcode lbrace in
-	  let (decls,body) = separate_decls seqible body in
+	  let body = dots (statement seqible) body in
 	  let rbrace = mcode rbrace in
 	  Ast.Seq(iso_tokenwrap lbrace s (Ast.SeqStart(lbrace))
 		    (do_isos (Ast0.get_iso s)),
-		  decls,body,
+		  body,
 		  tokenwrap rbrace s (Ast.SeqEnd(rbrace)))
       | Ast0.ExprStatement(exp,sem) ->
 	  Ast.Atomic(rewrap_rule_elem s
@@ -721,14 +721,14 @@ and statement s =
 	  let params = parameter_list params in
 	  let rp = mcode rp in
 	  let lbrace = mcode lbrace in
-	  let (decls,body) = separate_decls seqible body in
+	  let body = dots (statement seqible) body in
 	  let rbrace = mcode rbrace in
 	  let allminus = check_allminus.VT0.combiner_rec_statement s in
 	  Ast.FunDecl(rewrap_rule_elem s
 			(Ast.FunHeader(convert_mcodekind (-1) bef,
 				       allminus,fi,name,lp,params,rp)),
 		      tokenwrap lbrace s (Ast.SeqStart(lbrace)),
-		      decls,body,
+		      body,
 		      tokenwrap rbrace s (Ast.SeqEnd(rbrace)))
       |	Ast0.Include(inc,str) ->
 	  Ast.Atomic(rewrap_rule_elem s (Ast.Include(mcode inc,mcode str)))
@@ -796,6 +796,20 @@ and statement s =
       | Ast0.CIRCLES(x) -> Ast.CIRCLES(process_list seqible isos x)
       | Ast0.STARS(x) -> Ast.STARS(process_list seqible isos x))
 
+  (* the following is no longer used.
+   the goal was to let one put a statement at the very beginning of a function
+   pattern and have it skip over the declarations in the C code.
+   that feature was removed a long time ago, however, in favor of
+   ... when != S, which also causes whatever comes after it to match the
+   first real statement.
+   the separation of declarations from the rest of the body means that the
+   quantifier of any variable shared between them comes out too high, posing
+   problems when there is ... decl ... stmt, as the quantifier of any shared
+   variable will be around the whole thing, making variables not free enough
+   in the first ..., and thus not implementing the expected shortest path
+   condition.  example: f() { ... int A; ... foo(A); }.
+   the quantifier for A should start just before int A, not at the top of the
+   function.
   and separate_decls seqible d =
     let rec collect_decls = function
 	[] -> ([],[])
@@ -833,7 +847,7 @@ and statement s =
     match Ast0.unwrap d with
       Ast0.DOTS(x) -> process x d (function x -> Ast.DOTS x)
     | Ast0.CIRCLES(x) -> process x d (function x -> Ast.CIRCLES x)
-    | Ast0.STARS(x) -> process x d (function x -> Ast.STARS x) in
+    | Ast0.STARS(x) -> process x d (function x -> Ast.STARS x) *) in
 
   statement Ast.Sequencible s
 
