@@ -260,11 +260,13 @@ stored in a cache.
   Builtin macro definitions to be taken into account when parsing the C
   files.}
 
-\rare{-ifdef\_to\_if,-no_ifdef\_to\_if}{ The option {\bf -ifdef\_to\_if}
-represents an \#ifdef in the source code as a conditional in the
+\rare{-ifdef\_to\_if,-no\_ifdef\_to\_if}{
+The option {\bf -ifdef\_to\_if}
+represents an {\tt \#ifdef} in the source code as a conditional in the
 control-flow graph when doing so represents valid code.  {\bf
--no\_ifdef\_to\_if} disables this option.  {\bf -ifdef\_to\_if} is the
-default.}
+-no\_ifdef\_to\_if} disables this feature.  {\bf -ifdef\_to\_if} is the
+default.
+}
 
 \rare{-use\_if0\_code}{ Normally code under \#if 0 is ignored.  If this
 option is set then the code is considered, just like the code under any
