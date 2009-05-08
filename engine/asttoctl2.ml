@@ -1212,7 +1212,7 @@ let svar_minus_or_no_add_after stmt s label quantified d ast
 (* --------------------------------------------------------------------- *)
 (* dots and nests *)
 
-let dots_au is_strict toend label s wrapcode n x seq_after y quantifier =
+let dots_au is_strict toend label s wrapcode x seq_after y quantifier =
   let matchgoto = gotopred None in
   let matchbreak =
     make_match None false
@@ -1231,7 +1231,7 @@ let dots_au is_strict toend label s wrapcode n x seq_after y quantifier =
     then Common.Left(aftpred label)
     else
       Common.Right
-	(function vx -> function v ->
+	(function v ->
 	  let lv = get_label_ctr() in
 	  let labelpred = CTL.Pred(Lib_engine.Label lv,CTL.Control) in
 	  let preflabelpred = label_pred_maker (Some (lv,ref true)) in
@@ -1240,8 +1240,7 @@ let dots_au is_strict toend label s wrapcode n x seq_after y quantifier =
 	       (ctl_and CTL.NONSTRICT
 		  (ctl_and CTL.NONSTRICT (truepred label) labelpred)
 		  (ctl_au CTL.NONSTRICT
-		     (ctl_and CTL.NONSTRICT (ctl_not v)
-			(ctl_and CTL.NONSTRICT (ctl_not vx) preflabelpred))
+		     (ctl_and CTL.NONSTRICT (ctl_not v) preflabelpred)
 		     (ctl_and CTL.NONSTRICT preflabelpred
 			(if !Flag_matcher.only_return_is_error_exit
 			then
@@ -1259,11 +1258,9 @@ let dots_au is_strict toend label s wrapcode n x seq_after y quantifier =
   let v = get_let_ctr() in
   op s x
     (match stop_early with
-      Common.Left x1 -> ctl_or y x1
+      Common.Left x -> ctl_or y x
     | Common.Right stop_early ->
-	CTL.Let(v,y,
-		ctl_or (CTL.Ref v)
-		  (stop_early n (CTL.Ref v))))
+	CTL.Let(v,y,ctl_or (CTL.Ref v) (stop_early (CTL.Ref v))))
 
 let rec dots_and_nests plus nest whencodes bef aft dotcode after label
     process_bef_aft statement_list statement guard quantified wrapcode =
@@ -1363,10 +1360,6 @@ let rec dots_and_nests plus nest whencodes bef aft dotcode after label
         CTL.Let(v,nest,
 		CTL.Or(is_plus (CTL.Ref v),
 		       whencodes (CTL.Not(ctl_uncheck (CTL.Ref v))))) in
-  let just_nest =
-    match (nest,guard && not plus) with
-      (None,_) | (_,true) -> CTL.False
-    | (Some nest,false) -> nest in
   let plus_modifier x =
     if plus
     then
@@ -1402,7 +1395,7 @@ let rec dots_and_nests plus nest whencodes bef aft dotcode after label
 	else exit (* end at the real end of the function *) *) in
   plus_modifier
     (dots_au is_strict ((after = Tail) or (after = VeryEnd))
-       label (guard_to_strict guard) wrapcode just_nest
+       label (guard_to_strict guard) wrapcode
       (ctl_and_ns dotcode (ctl_and_ns ornest labelled))
       aft ender quantifier)
 
