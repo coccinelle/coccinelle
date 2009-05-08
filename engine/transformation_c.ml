@@ -226,7 +226,12 @@ module XTRANS = struct
           else 
           *)
              begin
-            (* coccionly: *)
+            (* coccionly: 
+               pad: if dont want cocci write:
+                failwith
+	        (match Ast_c.pinfo_of_info ib with
+		  Ast_c.FakeTok _ -> "already tagged fake token"
+             *)
 	       let pm str mcode env =
 		 Printf.sprintf
 		   "%s modification:\n%s\nAccording to environment:\n%s\n"
