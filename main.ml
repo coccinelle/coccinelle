@@ -433,6 +433,8 @@ let other_options = [
     "-l1",                Arg.Clear Flag_parsing_c.label_strategy_2, " ";
     "-ifdef_to_if",              Arg.Set FC.ifdef_to_if, 
     "   convert ifdef to if (experimental)";
+    "-no_ifdef_to_if",              Arg.Clear FC.ifdef_to_if, 
+    "   convert ifdef to if (experimental)";
 
     "-disable_multi_pass", Arg.Set Flag_parsing_c.disable_multi_pass, " ";
 
