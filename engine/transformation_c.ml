@@ -236,12 +236,13 @@ module XTRANS = struct
 			Pretty_print_cocci.print_mcodekind mcode))
 		   (String.concat "\n"
 		      (List.map
-			 (function ((_,vr),vl) ->
-			   Printf.sprintf "   %s -> %s" vr
+			 (function ((r,vr),vl) ->
+			   Printf.sprintf "   %s.%s -> %s" r vr
 			     (Common.format_to_string
 				(function _ ->
 				  Pretty_print_engine.pp_binding_kind vl)))
 			 env)) in
+	       flush stdout; flush stderr;
 	       Common.pr2
 		 ("\n"^ (pm "previous" oldmcode oldenv) ^ "\n" ^
 		  (pm "current" mck tin.binding));
