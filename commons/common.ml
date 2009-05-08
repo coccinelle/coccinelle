@@ -1104,6 +1104,16 @@ let mk_str_func_of_assoc_conv xs =
     List.assoc a xs
   )
 
+
+
+(* julia: convert something printed using format to print into a string *)
+(* now at bottom of file
+let format_to_string f =
+ ...
+*)
+
+
+
 (*****************************************************************************)
 (* Macro *)
 (*****************************************************************************)
