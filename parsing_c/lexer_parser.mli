@@ -13,6 +13,7 @@ val _typedef : (string, identkind) Common.scoped_h_env ref
 
 val add_ident   : string -> unit
 val add_typedef : string -> unit
+
 val add_typedef_root : string -> unit
 
 val new_scope : unit -> unit
@@ -35,8 +36,6 @@ type context =
   | InInitializer
   | InEnum
 
-val is_top_or_struct : context -> bool
-
 type lexer_hint = { 
   mutable context_stack: context Common.stack;
  }
@@ -47,3 +46,6 @@ val push_context: context -> unit
 val pop_context: unit -> unit
 
 val default_hint : unit -> lexer_hint
+
+val is_top_or_struct : context -> bool
+

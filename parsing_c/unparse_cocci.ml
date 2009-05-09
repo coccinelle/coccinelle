@@ -44,7 +44,7 @@ let print_between = Common.print_between in
 let outdent _ = () (* should go to leftmost col, does nothing now *) in
 
 let pretty_print_c =
-  Pretty_print_c.pretty_print_c pr_celem pr_cspace
+  Pretty_print_c.mk_pretty_printers pr_celem pr_cspace
     force_newline indent outdent unindent in
 
 (* --------------------------------------------------------------------- *)

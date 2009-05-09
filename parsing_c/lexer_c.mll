@@ -158,7 +158,7 @@ let keyword_table = Common.hash_of_list [
 let error_radix s = 
   ("numeric " ^ s ^ " constant contains digits beyond the radix:")
 
-(* functions for figuring out the type of integers *)
+(* julia: functions for figuring out the type of integers *)
 
 let is_long_dec s int uint long ulong =
   match !Flag_parsing_c.int_thresholds with
@@ -256,8 +256,13 @@ rule token = parse
   (* ----------------------------------------------------------------------- *)
 
   (* note: this lexer generate tokens for comments!! so can not give 
-   * this lexer as-is to the parsing function. Must preprocess it, hence
-   * use techniques like cur_tok ref in parse_c.ml
+   * this lexer as-is to the parsing function. The caller must preprocess 
+   * it, e.g. by using techniques like cur_tok ref in parse_c.ml.
+   * 
+   * update: we now also generate a separate token for newlines, so now
+   * the caller may also have to reagglomerate all those commentspace
+   * tokens if he was assuming that spaces were agglomerate in a single
+   * token. 
    *)
 
   | ['\n'] [' ' '\t' '\r' '\011' '\012' ]*

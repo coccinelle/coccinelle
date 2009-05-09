@@ -21,7 +21,6 @@ open Lexer_parser (* for the fields *)
 
 open Semantic_c (* Semantic exn *)
 
-module Stat = Parsing_stat
 
 (*****************************************************************************)
 (* Wrappers *)

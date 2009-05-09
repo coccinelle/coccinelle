@@ -35,28 +35,6 @@ let token_to_strpos tok =
   (TH.str_of_tok tok, TH.pos_of_tok tok)
 
 
-let error_msg_tok tok = 
-  let file = TH.file_of_tok tok in
-  if !Flag_parsing_c.verbose_parsing
-  then Common.error_message file (token_to_strpos tok) 
-  else ("error in " ^ file  ^ "; set verbose_parsing for more info")
-
-
-let print_bad line_error (start_line, end_line) filelines  = 
-  begin
-    pr2 ("badcount: " ^ i_to_s (end_line - start_line));
-
-    for i = start_line to end_line do 
-      let line = filelines.(i) in 
-
-      if i =|= line_error 
-      then  pr2 ("BAD:!!!!!" ^ " " ^ line) 
-      else  pr2 ("bad:" ^ " " ^      line) 
-    done
-  end
-
-
-
 let mk_info_item2 filename toks = 
   let buf = Buffer.create 100 in
   let s = 
@@ -82,6 +60,47 @@ let mk_info_item a b =
 
 let info_same_line line xs = 
   xs +> List.filter (fun info -> Ast_c.line_of_info info =|= line)
+
+
+(* move in cpp_token_c ? *)
+let is_define_passed passed =
+  let xs = passed +> List.rev +> List.filter TH.is_not_comment in
+  if List.length xs >= 2 
+  then 
+    (match Common.head_middle_tail xs with
+    | Parser_c.TDefine _, _, Parser_c.TDefEOL _ -> 
+        true
+    | _ -> false
+    )
+  else begin
+    pr2_err "WEIRD: length list of error recovery tokens < 2 ";
+    false 
+  end
+
+
+(*****************************************************************************)
+(* Error diagnostic  *)
+(*****************************************************************************)
+
+let error_msg_tok tok = 
+  let file = TH.file_of_tok tok in
+  if !Flag_parsing_c.verbose_parsing
+  then Common.error_message file (token_to_strpos tok) 
+  else ("error in " ^ file  ^ "; set verbose_parsing for more info")
+
+
+let print_bad line_error (start_line, end_line) filelines  = 
+  begin
+    pr2 ("badcount: " ^ i_to_s (end_line - start_line));
+
+    for i = start_line to end_line do 
+      let line = filelines.(i) in 
+
+      if i =|= line_error 
+      then  pr2 ("BAD:!!!!!" ^ " " ^ line) 
+      else  pr2 ("bad:" ^ " " ^      line) 
+    done
+  end
 
 
 (*****************************************************************************)
@@ -346,535 +365,24 @@ let expression_of_string = parse_gen Parser_c.expr
 
 
 (*****************************************************************************)
-(* Consistency checking *)
-(*****************************************************************************)
-
-(* todo:
- *  could check that an ident has always the same class, be it a typedef
- *  (but sometimes do 'acpi_val acpi_val;'), an ident, a TMacroStatement, 
- *  etc.
- *)
-
-type class_ident = 
-  | CIdent (* can be var, func, field, tag, enum constant *)
-  | CTypedef
-
-let str_of_class_ident = function
-  | CIdent -> "Ident"
-  | CTypedef -> "Typedef"
-
-(*
-  | CMacro
-  | CMacroString
-  | CMacroStmt
-  | CMacroDecl
-  | CMacroIterator
-  | CAttr
-
-(* but take care that must still be able to use '=' *)
-type context = InFunction | InEnum | InStruct | InInitializer | InParams
-type class_token = 
-  | CIdent of class_ident
-
-  | CComment 
-  | CSpace
-  | CCommentCpp of cppkind
-  | CCommentMisc
-  | CCppDirective
-
-  | COPar
-  | CCPar
-  | COBrace
-  | CCBrace
-
-  | CSymbol
-  | CReservedKwd (type | decl | qualif | flow | misc | attr)
-*)
-
-let ident_to_typename ident : Ast_c.fullType =
-  Ast_c.mk_ty (Ast_c.TypeName  (ident, Ast_c.noTypedefDef())) Ast_c.noii
-                  
-
-(* parse_typedef_fix4 *)
-let consistency_checking2 xs = 
-
-  (* first phase, gather data *)
-  let stat = Hashtbl.create 101 in 
-
-  (* default value for hash *)
-  let v1 () = Hashtbl.create 101 in
-  let v2 () = ref 0 in
-
-  let bigf = { Visitor_c.default_visitor_c with
-
-    Visitor_c.kexpr = (fun (k,bigf) x -> 
-      match Ast_c.unwrap_expr x with
-      | Ast_c.Ident (id) -> 
-          let s = Ast_c.str_of_name id in
-          stat +> 
-            Common.hfind_default s v1 +> Common.hfind_default CIdent v2 +> 
-            (fun aref -> incr aref)
-
-      | _ -> k x
-    );
-    Visitor_c.ktype = (fun (k,bigf) t -> 
-      match Ast_c.unwrap_typeC t with
-      | Ast_c.TypeName (name,_typ) -> 
-          let s = Ast_c.str_of_name name in
-          stat +> 
-            Common.hfind_default s v1 +> Common.hfind_default CTypedef v2 +> 
-            (fun aref -> incr aref)
-
-      | _ -> k t
-    );
-  } 
-  in
-  xs +> List.iter (fun (p, info_item) -> Visitor_c.vk_toplevel bigf p);
-
-
-  let ident_to_type = ref [] in
-  
-
-  (* second phase, analyze data *)
-  stat +> Hashtbl.iter (fun k v -> 
-    let xs = Common.hash_to_list v in
-    if List.length xs >= 2
-    then begin 
-      pr2_err ("CONFLICT:" ^ k);
-      let sorted = xs +> List.sort (fun (ka,va) (kb,vb) -> 
-        if !va =|= !vb then
-          (match ka, kb with
-          | CTypedef, _ -> 1 (* first is smaller *)
-          | _, CTypedef -> -1
-          | _ -> 0
-          )
-        else compare !va !vb
-      ) in
-      let sorted = List.rev sorted in
-      match sorted with
-      | [CTypedef, i1;CIdent, i2] -> 
-          pr2_err ("transforming some ident in typedef");
-          push2 k ident_to_type;
-      | _ -> 
-          pr2_err ("TODO:other transforming?");
-      
-    end
-  );
-
-  (* third phase, update ast. 
-   * todo? but normally should try to handle correctly scope ? maybe sometime
-   * sizeof(id) and even if id was for a long time an identifier, maybe 
-   * a few time, because of the scope it's actually really a type.
-   *)
-  if (null !ident_to_type)
-  then xs 
-  else 
-    let bigf = { Visitor_c.default_visitor_c_s with
-      Visitor_c.kdefineval_s = (fun (k,bigf) x -> 
-        match x with
-        | Ast_c.DefineExpr e -> 
-            (match Ast_c.unwrap_expr e with
-            | Ast_c.Ident (ident)  -> 
-                let s = Ast_c.str_of_name ident in 
-                if List.mem s !ident_to_type
-                then
-                  let t = ident_to_typename ident in
-                  Ast_c.DefineType t
-                else k x
-            | _ -> k x
-            )
-        | _ -> k x
-      );
-      Visitor_c.kexpr_s = (fun (k, bigf) x -> 
-        match Ast_c.get_e_and_ii x with
-        | (Ast_c.SizeOfExpr e, tref), isizeof -> 
-            let i1 = tuple_of_list1 isizeof in
-            (match Ast_c.get_e_and_ii e with
-            | (Ast_c.ParenExpr e, _), iiparen -> 
-                let (i2, i3) = tuple_of_list2 iiparen in
-                (match Ast_c.get_e_and_ii e with
-                | (Ast_c.Ident (ident), _), _ii  -> 
-
-                    let s = Ast_c.str_of_name ident in 
-                    if List.mem s !ident_to_type
-                    then
-                      let t = ident_to_typename ident in
-                      (Ast_c.SizeOfType t, tref),[i1;i2;i3]
-                    else  k x
-                | _ -> k x
-                )
-            | _ -> k x
-            )
-        | _ -> k x
-      );
-    } in
-    xs +> List.map (fun (p, info_item) -> 
-      Visitor_c.vk_toplevel_s bigf p, info_item
-    )
-
-
-let consistency_checking a  = 
-  Common.profile_code "C consistencycheck" (fun () -> consistency_checking2 a)
-
-
-
-(*****************************************************************************)
-(* Error recovery *)
-(*****************************************************************************)
-
-let is_define_passed passed =
-  let xs = passed +> List.rev +> List.filter TH.is_not_comment in
-  if List.length xs >= 2 
-  then 
-    (match Common.head_middle_tail xs with
-    | Parser_c.TDefine _, _, Parser_c.TDefEOL _ -> 
-        true
-    | _ -> false
-    )
-  else begin
-    pr2_err "WEIRD: length list of error recovery tokens < 2 ";
-    false 
-  end
-
-let is_defined_passed_bis last_round = 
-  let xs = last_round +> List.filter TH.is_not_comment in
-  match xs with
-  | Parser_c.TDefine _::_ -> true
-  | _ -> false
-
-(* ---------------------------------------------------------------------- *)
-
-
-(* todo: do something if find Parser_c.Eof ? *)
-let rec find_next_synchro next already_passed =
-
-  (* Maybe because not enough }, because for example an ifdef contains
-   * in both branch some opening {, we later eat too much, "on deborde
-   * sur la fonction d'apres". So already_passed may be too big and
-   * looking for next synchro point starting from next may not be the
-   * best. So maybe we can find synchro point inside already_passed
-   * instead of looking in next.
-   * 
-   * But take care! must progress. We must not stay in infinite loop!
-   * For instance now I have as a error recovery to look for 
-   * a "start of something", corresponding to start of function,
-   * but must go beyond this start otherwise will loop.
-   * So look at premier(external_declaration2) in parser.output and
-   * pass at least those first tokens.
-   * 
-   * I have chosen to start search for next synchro point after the
-   * first { I found, so quite sure we will not loop. *)
-
-  let last_round = List.rev already_passed in
-  if is_defined_passed_bis last_round 
-  then find_next_synchro_define (last_round ++ next) []
-  else 
-
-  let (before, after) = 
-    last_round +> Common.span (fun tok -> 
-      match tok with
-      (* by looking at TOBrace we are sure that the "start of something"
-       * will not arrive too early 
-       *)
-      | Parser_c.TOBrace _ -> false
-      | Parser_c.TDefine _ -> false
-      | _ -> true
-    ) 
-  in
-  find_next_synchro_orig (after ++ next)  (List.rev before)
-
-    
-
-and find_next_synchro_define next already_passed =
-  match next with
-  | [] ->  
-      pr2_err "ERROR-RECOV: end of file while in recovery mode"; 
-      already_passed, []
-  | (Parser_c.TDefEOL i as v)::xs  -> 
-      pr2_err ("ERROR-RECOV: found sync end of #define, line "^i_to_s(TH.line_of_tok v));
-      v::already_passed, xs
-  | v::xs -> 
-      find_next_synchro_define xs (v::already_passed)
-
-
-    
-
-and find_next_synchro_orig next already_passed =
-  match next with
-  | [] ->  
-      pr2_err "ERROR-RECOV: end of file while in recovery mode"; 
-      already_passed, []
-
-  | (Parser_c.TCBrace i as v)::xs when TH.col_of_tok v =|= 0 -> 
-      pr2_err ("ERROR-RECOV: found sync '}' at line "^i_to_s (TH.line_of_tok v));
-
-      (match xs with
-      | [] -> raise Impossible (* there is a EOF token normally *)
-
-      (* still useful: now parser.mly allow empty ';' so normally no pb *)
-      | Parser_c.TPtVirg iptvirg::xs -> 
-          pr2_err "ERROR-RECOV: found sync bis, eating } and ;";
-          (Parser_c.TPtVirg iptvirg)::v::already_passed, xs
-
-      | Parser_c.TIdent x::Parser_c.TPtVirg iptvirg::xs -> 
-          pr2_err "ERROR-RECOV: found sync bis, eating ident, }, and ;";
-          (Parser_c.TPtVirg iptvirg)::(Parser_c.TIdent x)::v::already_passed, 
-          xs
-            
-      | Parser_c.TCommentSpace sp::Parser_c.TIdent x::Parser_c.TPtVirg iptvirg
-        ::xs -> 
-          pr2_err "ERROR-RECOV: found sync bis, eating ident, }, and ;";
-          (Parser_c.TCommentSpace sp)::
-            (Parser_c.TPtVirg iptvirg)::
-            (Parser_c.TIdent x)::
-            v::
-            already_passed, 
-          xs
-            
-      | Parser_c.TCommentNewline sp::Parser_c.TIdent x::Parser_c.TPtVirg iptvirg
-        ::xs -> 
-          pr2_err "ERROR-RECOV: found sync bis, eating ident, }, and ;";
-          (Parser_c.TCommentNewline sp)::
-            (Parser_c.TPtVirg iptvirg)::
-            (Parser_c.TIdent x)::
-            v::
-            already_passed, 
-          xs
-            
-      | _ -> 
-          v::already_passed, xs
-      )
-  | v::xs when TH.col_of_tok v =|= 0 && TH.is_start_of_something v  -> 
-      pr2_err ("ERROR-RECOV: found sync col 0 at line "^ i_to_s(TH.line_of_tok v));
-      already_passed, v::xs
-        
-  | v::xs -> 
-      find_next_synchro_orig xs (v::already_passed)
-
-
-(*****************************************************************************)
-(* Macro problem recovery *)
-(*****************************************************************************)
-module TV = Token_views_c
-
-let candidate_macros_in_passed2 passed defs_optional = 
-  let res = ref [] in
-  let res2 = ref [] in
-
-  passed +> List.iter (function
-  | Parser_c.TIdent (s,_)
-   (* bugfix: may have to undo some infered things *)
-  | Parser_c.TMacroIterator (s,_)
-  | Parser_c.TypedefIdent (s,_)
-    -> 
-      (match Common.hfind_option s defs_optional with
-      | Some def -> 
-          if s ==~ Parsing_hacks.regexp_macro 
-          then
-            (* pr2 (spf "candidate: %s" s); *)
-            Common.push2 (s, def) res 
-          else 
-            Common.push2 (s, def) res2
-        | None -> ()
-        )
-
-  | _ -> ()
-  );
-  if null !res 
-  then !res2 
-  else !res
-
-let candidate_macros_in_passed a b = 
-  Common.profile_code "MACRO managment" (fun () -> 
-    candidate_macros_in_passed2 a b)
-  
-
-
-let find_optional_macro_to_expand2 ~defs toks =
-
-  let defs = Common.hash_of_list defs in
-
-  let toks = toks +> Common.map (function
-
-    (* special cases to undo *)
-    | Parser_c.TMacroIterator (s, ii) -> 
-        if Hashtbl.mem defs s
-        then Parser_c.TIdent (s, ii)
-        else Parser_c.TMacroIterator (s, ii)
-
-    | Parser_c.TypedefIdent (s, ii) -> 
-        if Hashtbl.mem defs s
-        then Parser_c.TIdent (s, ii)
-        else Parser_c.TypedefIdent (s, ii)
-
-    | x -> x
-  ) in
-
-  let tokens = toks in
-  Parsing_hacks.fix_tokens_cpp ~macro_defs:defs tokens
-
-  (* just calling apply_macro_defs and having a specialized version
-   * of the code in fix_tokens_cpp is not enough as some work such 
-   * as the passing of the body of attribute in Parsing_hacks.find_macro_paren
-   * will not get the chance to be run on the new expanded tokens.
-   * Hence even if it's expensive, it's currently better to 
-   * just call directly fix_tokens_cpp again here.
-
-  let tokens2 = ref (tokens +> Common.acc_map TV.mk_token_extended) in
-  let cleaner = !tokens2 +> Parsing_hacks.filter_cpp_stuff in
-  let paren_grouped = TV.mk_parenthised  cleaner in
-  Cpp_token_c.apply_macro_defs
-    ~msg_apply_known_macro:(fun s -> pr2 (spf "APPLYING: %s" s))
-    ~msg_apply_known_macro_hint:(fun s -> pr2 "hint")
-    defs paren_grouped;
-  (* because the before field is used by apply_macro_defs *)
-  tokens2 := TV.rebuild_tokens_extented !tokens2; 
-  Parsing_hacks.insert_virtual_positions 
-    (!tokens2 +> Common.acc_map (fun x -> x.TV.tok))
-  *)
-let find_optional_macro_to_expand ~defs a = 
-    Common.profile_code "MACRO managment" (fun () -> 
-      find_optional_macro_to_expand2 ~defs a)
-  
-
-
-(*****************************************************************************)
-(* Include/Define hacks *)
-(*****************************************************************************)
-
-(* Sometimes I prefer to generate a single token for a list of things in the
- * lexer so that if I have to passed them, like for passing TInclude then
- * it's easy. Also if I don't do a single token, then I need to 
- * parse the rest which may not need special stuff, like detecting 
- * end of line which the parser is not really ready for. So for instance
- * could I parse a #include <a/b/c/xxx.h> as 2 or more tokens ? just
- * lex #include ? so then need recognize <a/b/c/xxx.h> as one token ? 
- * but this kind of token is valid only after a #include and the
- * lexing and parsing rules are different for such tokens so not that
- * easy to parse such things in parser_c.mly. Hence the following hacks.
- * 
- * less?: maybe could get rid of this like I get rid of some of fix_define.
- *)
-
-(* ------------------------------------------------------------------------- *)
-(* helpers *)
-(* ------------------------------------------------------------------------- *)
-
-(* used to generate new token from existing one *)
-let new_info posadd str ii =
-  { Ast_c.pinfo = 
-      Ast_c.OriginTok { (Ast_c.parse_info_of_info ii) with 
-        charpos = Ast_c.pos_of_info ii + posadd;
-        str     = str;
-        column = Ast_c.col_of_info ii + posadd;
-      };
-    (* must generate a new ref each time, otherwise share *)
-    cocci_tag = ref Ast_c.emptyAnnot;
-    comments_tag = ref Ast_c.emptyComments;
-   }
-
-
-let rec comment_until_defeol xs = 
-  match xs with
-  | [] -> 
-      (* job not done in Cpp_token_c.define_parse ? *)
-      failwith "cant find end of define token TDefEOL"
-  | x::xs -> 
-      (match x with
-      | Parser_c.TDefEOL i -> 
-          Parser_c.TCommentCpp (Token_c.CppDirective, TH.info_of_tok x)
-          ::xs
-      | _ -> 
-          let x' = 
-            (* bugfix: otherwise may lose a TComment token *)
-            if TH.is_real_comment x
-            then x
-            else Parser_c.TCommentCpp (Token_c.CppPassingNormal (*good?*), TH.info_of_tok x)
-          in
-          x'::comment_until_defeol xs
-      )
-
-let drop_until_defeol xs = 
-  List.tl 
-    (Common.drop_until (function Parser_c.TDefEOL _ -> true | _ -> false) xs)
-
-
-
-(* ------------------------------------------------------------------------- *)
-(* returns a pair (replaced token, list of next tokens) *)
-(* ------------------------------------------------------------------------- *)
-
-let tokens_include (info, includes, filename, inifdef) = 
-  Parser_c.TIncludeStart (Ast_c.rewrap_str includes info, inifdef), 
-  [Parser_c.TIncludeFilename 
-      (filename, (new_info (String.length includes) filename info))
-  ]
-
-(*****************************************************************************)
 (* Parsing default define macros, usually in a standard.h file *)
 (*****************************************************************************)
 
-let parse_cpp_define_file2 file = 
+let extract_macros2 file = 
   Common.save_excursion Flag_parsing_c.verbose_lexing (fun () -> 
     Flag_parsing_c.verbose_lexing := false;
     let toks = tokens ~profile:false file in
-    let toks = Cpp_token_c.fix_tokens_define toks in
-    Cpp_token_c.extract_cpp_define toks
+    let toks = Parsing_hacks.fix_tokens_define toks in
+    Cpp_token_c.extract_macros toks
   )
 
-let parse_cpp_define_file a = 
-  Common.profile_code_exclusif "HACK" (fun () -> parse_cpp_define_file2 a)
-
-
-
-let (_defs : (string, Cpp_token_c.define_def) Hashtbl.t ref)  = 
-  ref (Hashtbl.create 101)
-
-let (_defs_builtins : (string, Cpp_token_c.define_def) Hashtbl.t ref)  = 
-  ref (Hashtbl.create 101)
-
-
-(* can not be put in parsing_hack, cos then mutually recursive problem as
- * we also want to parse the standard.h file.
- *)
-let init_defs_macros std_h =     
-  if not (Common.lfile_exists std_h)
-  then pr2 ("warning: Can't find default macro file: " ^ std_h)
-  else begin
-    pr2 ("init_defs: " ^ std_h);
-    _defs := Common.hash_of_list (parse_cpp_define_file std_h);
-  end
-
-let init_defs_builtins file_h =     
-  if not (Common.lfile_exists file_h)
-  then pr2 ("warning: Can't find macro file: " ^ file_h)
-  else begin
-    pr2 ("init_defs_builtins: " ^ file_h);
-    _defs_builtins := 
-      Common.hash_of_list (parse_cpp_define_file file_h);
-  end
+let extract_macros a = 
+  Common.profile_code_exclusif "HACK" (fun () -> extract_macros2 a)
 
 
 (*****************************************************************************)
-(* Main entry point *)
+(* Helper for main entry point *)
 (*****************************************************************************)
-
-type info_item =  string * Parser_c.token list
-
-type program2 = toplevel2 list
-     and toplevel2 = Ast_c.toplevel * info_item
-
-let program_of_program2 xs = 
-  xs +> List.map fst
-
-let with_program2 f program2 = 
-  program2 
-  +> Common.unzip 
-  +> (fun (program, infos) -> 
-    f program, infos
-  )
-  +> Common.uncurry Common.zip
-
 
 
 (* The use of local refs (remaining_tokens, passed_tokens, ...) makes
@@ -1013,8 +521,8 @@ let rec lexer_function ~pass tr = fun lexbuf ->
             let v' = Parser_c.TCommentCpp (Token_c.CppDirective,TH.info_of_tok v)
             in
             tr.passed <- v'::tr.passed;
-            tr.rest       <- comment_until_defeol tr.rest;
-            tr.rest_clean <- drop_until_defeol tr.rest_clean;
+            tr.rest       <- Parsing_hacks.comment_until_defeol tr.rest;
+            tr.rest_clean <- Parsing_hacks.drop_until_defeol tr.rest_clean;
             lexer_function ~pass tr lexbuf
           end
           else begin
@@ -1035,7 +543,7 @@ let rec lexer_function ~pass tr = fun lexbuf ->
           end
           else begin
             let (v,new_tokens) = 
-              tokens_include (info, includes, filename, inifdef) in
+              Parsing_hacks.tokens_include (info, includes, filename, inifdef) in
             let new_tokens_clean = 
               new_tokens +> List.filter TH.is_not_comment  in
 
@@ -1116,7 +624,8 @@ let get_one_elem ~pass tr (file, filelines) =
       let current = tr.current in
         
       (*  error recovery, go to next synchro point *)
-      let (passed', rest') = find_next_synchro tr.rest tr.passed in
+      let (passed', rest') = 
+        Parsing_recovery_c.find_next_synchro tr.rest tr.passed in
       tr.rest <- rest';
       tr.passed <- passed';
       
@@ -1131,6 +640,152 @@ let get_one_elem ~pass tr (file, filelines) =
             tr.passed, passed_before_error, 
             current, e)
   )
+
+
+
+(* Macro problem recovery *)
+(* used by the multi-pass error recovery expand-on-demand *)
+(*
+val candidate_macros_in_passed: 
+  defs: (string, define_def) Hashtbl.t -> 
+  Parser_c.token list -> (string * define_def) list
+*)
+
+let candidate_macros_in_passed2 ~defs passed  = 
+  let res = ref [] in
+  let res2 = ref [] in
+
+  passed +> List.iter (function
+  | Parser_c.TIdent (s,_)
+   (* bugfix: may have to undo some infered things *)
+  | Parser_c.TMacroIterator (s,_)
+  | Parser_c.TypedefIdent (s,_)
+    -> 
+      (match Common.hfind_option s defs with
+      | Some def -> 
+          if s ==~ Parsing_hacks.regexp_macro 
+          then
+            (* pr2 (spf "candidate: %s" s); *)
+            Common.push2 (s, def) res 
+          else 
+            Common.push2 (s, def) res2
+        | None -> ()
+        )
+
+  | _ -> ()
+  );
+  if null !res 
+  then !res2 
+  else !res
+
+let candidate_macros_in_passed ~defs b = 
+  Common.profile_code "MACRO managment" (fun () -> 
+    candidate_macros_in_passed2 ~defs b)
+  
+
+
+
+
+let find_optional_macro_to_expand2 ~defs toks =
+
+  let defs = Common.hash_of_list defs in
+
+  let toks = toks +> Common.map (function
+
+    (* special cases to undo *)
+    | Parser_c.TMacroIterator (s, ii) -> 
+        if Hashtbl.mem defs s
+        then Parser_c.TIdent (s, ii)
+        else Parser_c.TMacroIterator (s, ii)
+
+    | Parser_c.TypedefIdent (s, ii) -> 
+        if Hashtbl.mem defs s
+        then Parser_c.TIdent (s, ii)
+        else Parser_c.TypedefIdent (s, ii)
+
+    | x -> x
+  ) in
+
+  let tokens = toks in
+  Parsing_hacks.fix_tokens_cpp ~macro_defs:defs tokens
+
+  (* just calling apply_macro_defs and having a specialized version
+   * of the code in fix_tokens_cpp is not enough as some work such 
+   * as the passing of the body of attribute in Parsing_hacks.find_macro_paren
+   * will not get the chance to be run on the new expanded tokens.
+   * Hence even if it's expensive, it's currently better to 
+   * just call directly fix_tokens_cpp again here.
+
+  let tokens2 = ref (tokens +> Common.acc_map TV.mk_token_extended) in
+  let cleaner = !tokens2 +> Parsing_hacks.filter_cpp_stuff in
+  let paren_grouped = TV.mk_parenthised  cleaner in
+  Cpp_token_c.apply_macro_defs
+    ~msg_apply_known_macro:(fun s -> pr2 (spf "APPLYING: %s" s))
+    ~msg_apply_known_macro_hint:(fun s -> pr2 "hint")
+    defs paren_grouped;
+  (* because the before field is used by apply_macro_defs *)
+  tokens2 := TV.rebuild_tokens_extented !tokens2; 
+  Parsing_hacks.insert_virtual_positions 
+    (!tokens2 +> Common.acc_map (fun x -> x.TV.tok))
+  *)
+let find_optional_macro_to_expand ~defs a = 
+    Common.profile_code "MACRO managment" (fun () -> 
+      find_optional_macro_to_expand2 ~defs a)
+  
+
+
+
+
+(*****************************************************************************)
+(* Main entry points *)
+(*****************************************************************************)
+
+let (_defs : (string, Cpp_token_c.define_def) Hashtbl.t ref)  = 
+  ref (Hashtbl.create 101)
+
+let (_defs_builtins : (string, Cpp_token_c.define_def) Hashtbl.t ref)  = 
+  ref (Hashtbl.create 101)
+
+
+(* can not be put in parsing_hack, cos then mutually recursive problem as
+ * we also want to parse the standard.h file.
+ *)
+let init_defs_macros std_h =     
+  if not (Common.lfile_exists std_h)
+  then pr2 ("warning: Can't find default macro file: " ^ std_h)
+  else begin
+    pr2 ("init_defs: " ^ std_h);
+    _defs := Common.hash_of_list (extract_macros std_h);
+  end
+
+let init_defs_builtins file_h =     
+  if not (Common.lfile_exists file_h)
+  then pr2 ("warning: Can't find macro file: " ^ file_h)
+  else begin
+    pr2 ("init_defs_builtins: " ^ file_h);
+    _defs_builtins := 
+      Common.hash_of_list (extract_macros file_h);
+  end
+
+
+
+type info_item =  string * Parser_c.token list
+
+type program2 = toplevel2 list
+     and toplevel2 = Ast_c.toplevel * info_item
+
+let program_of_program2 xs = 
+  xs +> List.map fst
+
+let with_program2 f program2 = 
+  program2 
+  +> Common.unzip 
+  +> (fun (program, infos) -> 
+    f program, infos
+  )
+  +> Common.uncurry Common.zip
+
+
 
 
 
@@ -1159,9 +814,7 @@ let parse_print_error_heuristic2 file =
   Parsing_hacks.ifdef_paren_cnt := 0;
 
   let toks_orig = tokens file in
-
-  let toks = Cpp_token_c.fix_tokens_define toks_orig in
-
+  let toks = Parsing_hacks.fix_tokens_define toks_orig in
   let toks = Parsing_hacks.fix_tokens_cpp ~macro_defs:!_defs_builtins toks in
 
   (* expand macros on demand trick, preparation phase *)
@@ -1178,7 +831,7 @@ let parse_print_error_heuristic2 file =
     )
   in
   Common.profile_code "MACRO mgmt prep 2" (fun () -> 
-    let local_macros = parse_cpp_define_file file in
+    let local_macros = extract_macros file in
     local_macros +> List.iter (fun (s, def) -> 
       Hashtbl.replace macros   s def;
     );
@@ -1225,8 +878,10 @@ let parse_print_error_heuristic2 file =
             | Left e -> passx
             | Right (info,line_err,passed,passed_before_error,cur,exn) -> 
                 let candidates = 
-                  candidate_macros_in_passed passed macros 
+                  candidate_macros_in_passed ~defs:macros passed 
                 in
+               
+
                 if is_define_passed passed || null candidates
                 then passx
                 else begin
@@ -1246,7 +901,9 @@ let parse_print_error_heuristic2 file =
                       pr2_err "parsing pass4: try again";
 
                       let candidates = 
-                        candidate_macros_in_passed passed macros in
+                        candidate_macros_in_passed 
+                          ~defs:macros passed 
+                      in
 
                       let toks = List.rev passed ++ tr.rest in
                       let toks' = 
@@ -1351,7 +1008,7 @@ let parse_print_error_heuristic2 file =
     )
   in
   let v = loop tr in
-  let v = consistency_checking v in
+  let v = with_program2 Parsing_consistency_c.consistency_checking v in
   (v, stat)
 
 
