@@ -1342,10 +1342,10 @@ let pp_decl_gen pr_elem pr_space =
 let pp_init_gen pr_elem pr_space =
   (pp_elem_sp pr_elem pr_space).init
 
-let pp_param_gen pr_elem pr_space =
+let pp_param_gen ~pr_elem ~pr_space =
   (pp_elem_sp pr_elem pr_space).param
 
-let pp_type_gen pr_elem pr_space =
+let pp_type_gen ~pr_elem ~pr_space =
   (pp_elem_sp pr_elem pr_space).ty
 
 let pp_type_with_ident_gen pr_elem pr_space =

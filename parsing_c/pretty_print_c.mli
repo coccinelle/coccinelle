@@ -28,9 +28,19 @@ val mk_pretty_printers :
   pr_unindent: unit printer -> 
   pretty_printers
 
-val pp_program_gen : 
+val pp_param_gen:
   pr_elem:Ast_c.info printer -> 
   pr_space: unit printer -> 
+  Ast_c.parameterType printer 
+
+val pp_type_gen:
+  pr_elem:Ast_c.info printer -> 
+  pr_space:unit printer -> 
+  Ast_c.fullType printer 
+
+val pp_program_gen : 
+  pr_elem:Ast_c.info printer -> 
+  pr_space:unit printer -> 
   Ast_c.toplevel printer
 
 val pp_toplevel_simple : 
