@@ -916,6 +916,9 @@ let mcode_of_info ii = fst (mcode_and_env_of_cocciref ii.cocci_tag)
 let pinfo_of_info ii = ii.pinfo
 let parse_info_of_info ii = get_pi ii.pinfo
 
+let strloc_of_info ii = 
+  spf "%s:%d" (file_of_info ii) (line_of_info ii)
+
 let is_fake ii =
   match ii.pinfo with
     FakeTok (_,_) -> true

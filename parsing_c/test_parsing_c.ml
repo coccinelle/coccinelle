@@ -392,6 +392,7 @@ let extract_macros ~selection x =
   let fullxs = Common.files_of_dir_or_files_no_vcs ext [x] in
   let macros_and_filename = 
     fullxs +> List.map (fun file -> 
+      pr2 (spf "processing: %s" file);
       let xs = Parse_c.extract_macros file in
       file, xs
     )
