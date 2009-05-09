@@ -16,7 +16,7 @@ MYSRC=common.ml common_extra.ml \
       ocollection/oseti.ml ocollection/oseth.ml ocollection/osetb.ml ocollection/osetpt.ml \
       ocollection/oassocb.ml ocollection/oassoch.ml ocollection/oassoc_buffer.ml ocollection/oassoc_cache.ml ocollection/oassocid.ml \
       oarray.ml \
-      ocollection/ograph2way.ml ograph_extended.ml \
+      ocollection/ograph2way.ml ograph_simple.ml ograph_extended.ml \
       ofullcommon.ml \
       glimpse.ml parser_combinators.ml
 
