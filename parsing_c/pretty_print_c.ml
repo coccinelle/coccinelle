@@ -1327,19 +1327,19 @@ let pp_elem_sp ~pr_elem ~pr_space =
     ~pr_elem ~pr_space 
     ~pr_nl ~pr_outdent ~pr_indent ~pr_unindent
 
-let pp_expression_gen pr_elem pr_space =
+let pp_expression_gen ~pr_elem ~pr_space =
   (pp_elem_sp pr_elem pr_space).expression
 
 let pp_arg_list_gen pr_elem pr_space =
   (pp_elem_sp pr_elem pr_space).arg_list
 
-let pp_statement_gen pr_elem pr_space =
+let pp_statement_gen ~pr_elem ~pr_space =
   (pp_elem_sp pr_elem pr_space).statement
 
 let pp_decl_gen pr_elem pr_space =
   (pp_elem_sp pr_elem pr_space).decl
 
-let pp_init_gen pr_elem pr_space =
+let pp_init_gen ~pr_elem ~pr_space =
   (pp_elem_sp pr_elem pr_space).init
 
 let pp_param_gen ~pr_elem ~pr_space =

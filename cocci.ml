@@ -21,7 +21,7 @@ module Ast_to_flow = Control_flow_c_build
 (* C related *)
 (* --------------------------------------------------------------------- *)
 let cprogram_of_file file = 
-  let (program2, _stat) = Parse_c.parse_print_error_heuristic file in
+  let (program2, _stat) = Parse_c.parse_c_and_cpp file in
   program2 
 
 let cprogram_of_file_cached file = 

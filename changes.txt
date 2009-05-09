@@ -1,5 +1,13 @@
 -*- org -*-
 
+* 0.1.9
+
+** Language:
+
+** Features:
+- better handling of expanded code containing ##. Now compute the 
+  result.
+
 * 0.1.8
 
 ** Language:
