@@ -9,6 +9,8 @@
   result.
 - more precise warning message for the "'\' outside define".
   Thanks to Nicholas Mc Guire for pointing out the problem.
+- more precise warning message related to ifdefization.
+  Thanks to Derek Jones for pointing out the problem.
 
 ** Bugfix:
 

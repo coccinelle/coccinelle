@@ -18,11 +18,12 @@ For tcsh do:
 
   $ source env.csh 
 
-
-
 You can then test coccinelle with:
 
   $ spatch -sp_file demos/simple.cocci demos/simple.c
+
+
+
 
 If you downloaded the bytecode version of spatch you may first 
 have to install OCaml (which contains the 'ocamlrun' bytecode interpreter,

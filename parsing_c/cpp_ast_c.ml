@@ -129,6 +129,7 @@ let trace_cpp_process depth mark inc_file =
 (* Helpers *)
 (*****************************************************************************)
 
+
 let _hcandidates = Hashtbl.create 101
 
 let init_adjust_candidate_header_files dir = 
@@ -335,12 +336,14 @@ let is_ifdef_and_same_tag tag x =
  * indice. Or simply count  the number of directives with the same tag and
  * put this information in the tag. Hence the total_with_this_tag below.
  *)
-let should_ifdefize tag ifdefs_directives xxs = 
+let should_ifdefize (tag,ii) ifdefs_directives xxs = 
   let IfdefTag (_tag, total_with_this_tag) = tag in
   
   if total_with_this_tag <> List.length ifdefs_directives
   then begin
-    pr2 "CPPASTC: can not ifdefize, some of its directives were passed";
+    let strloc = Ast_c.strloc_of_info (List.hd ii) in
+    pr2 (spf "CPPASTC: can not ifdefize ifdef at %s" strloc);
+    pr2 "CPPASTC: some of its directives were passed";
     false 
   end else 
     (* todo? put more condition ? dont ifdefize declaration ? *)
@@ -383,7 +386,7 @@ let rec cpp_ifdef_statementize ast =
                 | IfdefDirective ((Ifdef,tag),ii) -> 
 
                     let (restifdefs, xxs, xs') = group_ifdef tag xs in
-                    if should_ifdefize tag (ifdef::restifdefs) xxs 
+                    if should_ifdefize (tag,ii) (ifdef::restifdefs) xxs 
                     then
                       let res = IfdefStmt2 (ifdef::restifdefs, xxs) in
                       Visitor_c.vk_statement_sequencable_s bigf res::aux xs'
