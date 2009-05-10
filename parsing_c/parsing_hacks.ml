@@ -418,7 +418,8 @@ let rec define_line_1 acc xs =
       let acc = (TDefine ii) :: acc in
       define_line_2 acc line ii xs
   | TCppEscapedNewline ii::xs ->
-      pr2 ("WEIRD: a \\ outside a #define at " ^ Ast_c.strloc_of_info ii);
+      pr2 ("SUSPICIOUS: a \\ character appears outside of a #define at");
+      pr2 (Ast_c.strloc_of_info ii);
       let acc = (TCommentSpace ii) :: acc in
       define_line_1 acc xs
   | x::xs -> define_line_1 (x::acc) xs

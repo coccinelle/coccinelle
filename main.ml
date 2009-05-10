@@ -771,13 +771,20 @@ let main_action xs =
 
 	      if !outplace_modif
 	      then Common.command2 ("cp "^outfile^" "^infile^".cocci_res");
-	      
-	      if !output_file =$= "" 
-	      then begin
-                let tmpfile = "/tmp/"^Common.basename infile in
-                pr2 (spf "One file modified. Result is here: %s" tmpfile);
-                Common.command2 ("cp "^outfile^" "^tmpfile);
-	      end
+
+	      (* potential source of security pb if the /tmp/ file is
+               * a symlink, so simpler to not produce any regular file 
+               * (files created by Common.new_temp_file are still ok)
+               * anymore in /tmp.
+               *)
+              (*
+	        if !output_file =$= "" 
+	        then begin
+                  let tmpfile = "/tmp/"^Common.basename infile in
+                  pr2 (spf "One file modified. Result is here: %s" tmpfile);
+                  Common.command2 ("cp "^outfile^" "^tmpfile);
+	         end
+              *)
 	    ));
           if !output_file <> "" then
 	    (match outfiles with 

@@ -11,6 +11,9 @@
   Thanks to Nicholas Mc Guire for pointing out the problem.
 - more precise warning message related to ifdefization.
   Thanks to Derek Jones for pointing out the problem.
+- we don't create any more certain files in /tmp (they may be a cause
+  of security problems).
+  Thanks to Eugeniy Meshcheryakov for pointing out the problem.
 
 ** Bugfix:
 

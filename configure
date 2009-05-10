@@ -18,7 +18,7 @@
 my $project =
     "coccinelle";
 my $projectcmdline =
-    "spatch -sp_file demos/simple.cocci demos/simple.c";
+    "spatch -sp_file demos/simple.cocci demos/simple.c -o /tmp/new_simple.c";
 
 ######################################################################
 # Options
