@@ -76,6 +76,7 @@ let quiet_profile = (
     Flag_parsing_c.verbose_cfg;
     Flag_parsing_c.verbose_unparsing;
     Flag_parsing_c.verbose_visit;
+    Flag_parsing_c.verbose_cpp_ast;
 
     Flag_matcher.verbose_matcher;
     Flag_matcher.debug_engine;
