@@ -68,10 +68,13 @@ let process_tree inherited_env l =
 		   (function
 		       Ast.SeedString s -> s
 		     | Ast.SeedId id ->
-			 (match List.assoc id env with
-			   Lib_engine.NormalMetaVal(Ast_c.MetaIdVal(str)) ->
-			     str
-			 | _ -> failwith "bad id value"))
+			 try
+			   (match List.assoc id env with
+			     Lib_engine.NormalMetaVal(Ast_c.MetaIdVal(str)) ->
+			       str
+			   | _ -> failwith "bad id value")
+			 with
+			   Not_found -> failwith "fresh: no binding for meta")
 		   seed in
 	    string2val(String.concat "" strings)))
       all_fresh in
