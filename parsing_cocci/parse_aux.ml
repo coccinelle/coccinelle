@@ -174,7 +174,11 @@ let check_meta tok =
   match tok with
     Ast.MetaIdDecl(Ast.NONE,(rule,name)) ->
       (match lookup rule name with
-	Ast.MetaIdDecl(_,_) | Ast.MetaFreshIdDecl(_,_) -> ()
+	Ast.MetaFreshIdDecl(_,Ast.ListSeed l) ->
+	  raise
+	    (Semantic_cocci.Semantic
+	       (name^": ListSeed fresh identifiers are position sensitive and cannot be inherited"))
+      |	Ast.MetaIdDecl(_,_) | Ast.MetaFreshIdDecl(_,_) -> ()
       | _ ->
 	  raise
 	    (Semantic_cocci.Semantic

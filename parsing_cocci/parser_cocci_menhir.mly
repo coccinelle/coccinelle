@@ -81,7 +81,7 @@ module P = Parse_aux
 
 %token <Data.clt> TPtrOp
 
-%token TMPtVirg
+%token TMPtVirg TCppConcatOp
 %token <Data.clt> TEq TDot TComma TPtVirg
 %token <Ast_cocci.assignOp * Data.clt> TAssign
 
@@ -1385,8 +1385,16 @@ pure_ident_or_meta_ident:
      | TName                     { (None,"name") }
 
 pure_ident_or_meta_ident_with_seed:
-       pure_ident_or_meta_ident { ($1,None) }
-     | pure_ident_or_meta_ident TEq s=TString { ($1,Some (P.id2name s)) }
+       pure_ident_or_meta_ident { ($1,Ast.NoVal) }
+     | pure_ident_or_meta_ident TEq
+	 separated_nonempty_list(TCppConcatOp,seed_elem)
+	 { match $3 with
+	   [Ast.SeedString s] -> ($1,Ast.StringSeed s)
+	 | _ -> ($1,Ast.ListSeed $3) }
+
+seed_elem:
+  TString { let (x,_) = $1 in Ast.SeedString x }
+| TMetaId { let (x,_,_,_) = $1 in Ast.SeedId x }
 
 pure_ident_or_meta_ident_with_not_eq(not_eq):
        i=pure_ident_or_meta_ident l=loption(not_eq) { (i,l) }
@@ -1798,11 +1806,6 @@ whens(when_grammar,simple_when_grammar,any_strict):
 any_strict:
     TAny    { Ast.WhenAny }
   | TStrict { Ast.WhenStrict }
-  | TForall { Ast.WhenForall }
-  | TExists { Ast.WhenExists }
-
-any_only:
-    TAny    { Ast.WhenAny }
   | TForall { Ast.WhenForall }
   | TExists { Ast.WhenExists }
 

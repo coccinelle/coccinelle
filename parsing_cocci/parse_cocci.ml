@@ -42,6 +42,7 @@ let token2c (tok,_) =
   | PC.TLocal -> "local"
   | PC.Tlist -> "list"
   | PC.TFresh -> "fresh"
+  | PC.TCppConcatOp -> "##"
   | PC.TPure -> "pure"
   | PC.TContext -> "context"
   | PC.TTypedef -> "typedef"
@@ -574,7 +575,8 @@ let split_token ((tok,_) as t) =
     PC.TIdentifier | PC.TConstant | PC.TExpression | PC.TIdExpression
   | PC.TStatement | PC.TPosition | PC.TPosAny | PC.TInitialiser
   | PC.TFunction | PC.TTypedef | PC.TDeclarer | PC.TIterator | PC.TName
-  | PC.TType | PC.TParameter | PC.TLocal | PC.Tlist | PC.TFresh | PC.TPure
+  | PC.TType | PC.TParameter | PC.TLocal | PC.Tlist | PC.TFresh
+  | PC.TCppConcatOp | PC.TPure
   | PC.TContext | PC.TRuleName(_) | PC.TUsing | PC.TDisable | PC.TExtends
   | PC.TPathIsoFile(_)
   | PC.TDepends | PC.TOn | PC.TEver | PC.TNever | PC.TExists | PC.TForall

@@ -3,6 +3,8 @@
 * 0.1.9
 
 ** Language:
+- allow fresh identifiers to be declared using ## such that the value mixes
+  both strings and previously declared metavariables
 
 ** Features:
 - better handling of expanded code containing ##. Now compute the 

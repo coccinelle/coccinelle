@@ -506,12 +506,34 @@ let astfvs metavars bound =
 	    with Not_found -> prev)
 	[] l) in
 
+  let collect_fresh_seed l =
+    List.rev
+      (List.fold_left
+	(function prev ->
+	  function x ->
+	    try
+	      (let v = List.assoc x fresh in
+	      match v with
+		Ast.ListSeed l ->
+		  let ids =
+		    List.fold_left
+		      (function prev ->
+			function
+			    Ast.SeedId(id) -> id::prev
+			  | _ -> prev)
+		      [] l in
+		  Common.union_set ids prev
+	      |	_ -> prev)
+	    with Not_found -> prev)
+	l l) in
+
   (* cases for the elements of anything *)
   let astfvrule_elem recursor k re =
     let minus_free = nub (collect_all_refs.V.combiner_rule_elem re) in
     let minus_nc_free =
       nub (collect_non_constraint_refs.V.combiner_rule_elem re) in
-    let plus_free = collect_in_plus_term.V.combiner_rule_elem re in
+    let plus_free =
+      collect_fresh_seed(collect_in_plus_term.V.combiner_rule_elem re) in
     let free = Common.union_set minus_free plus_free in
     let nc_free = Common.union_set minus_nc_free plus_free in
     let unbound =

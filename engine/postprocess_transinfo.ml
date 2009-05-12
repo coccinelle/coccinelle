@@ -54,23 +54,37 @@ let process_tree inherited_env l =
   let fresh_env =
     List.map
       (function
-	  ((r,n) as fresh,None) ->
+	  ((r,n) as fresh,Ast.NoVal) ->
 	    Printf.printf "%s: name for %s: " r n; (* not debugging code!!! *)
 	    flush stdout;
-	    (fresh,string2val(read_fresh_id()))
-	| ((r,n) as fresh,Some seed) ->
-	    (fresh,string2val(get_seeded seed)))
+	    (fresh,let v = string2val(read_fresh_id()) in function _ -> v)
+	| ((r,n) as fresh,Ast.StringSeed seed) ->
+	    (fresh,let v = string2val(get_seeded seed) in function _ -> v)
+	| ((r,n) as fresh,Ast.ListSeed seed) ->
+	    (fresh,
+	     function env ->
+	       let strings =
+		 List.map
+		   (function
+		       Ast.SeedString s -> s
+		     | Ast.SeedId id ->
+			 (match List.assoc id env with
+			   Lib_engine.NormalMetaVal(Ast_c.MetaIdVal(str)) ->
+			     str
+			 | _ -> failwith "bad id value"))
+		   seed in
+	    string2val(String.concat "" strings)))
       all_fresh in
   let (_,res) =
     List.split
       (List.fold_left
 	 (function freshs_node_env_preds ->
-	   function (fresh,_) as elem ->
+	   function (fresh,fn) ->
 	     List.map
 	       (function (freshs,((node,env,pred) as cur)) ->
 		 try
 		   let _ = List.assoc fresh freshs in
-		   (freshs,(node,elem::env,pred))
+		   (freshs,(node,(fresh,fn env)::env,pred))
 		 with Not_found -> (freshs,cur))
 	       freshs_node_env_preds)
 	 (List.combine local_freshs new_triples)
@@ -81,7 +95,12 @@ let process_tree inherited_env l =
 (* Create the environment to be used afterwards *)
 
 let collect_used_after used_after envs =
-  List.map (List.filter (function (v,vl) -> List.mem v used_after)) envs
+  List.map 
+    (function env ->
+      List.map
+	(function (v,vl) -> (v,vl []))
+	(List.filter (function (v,vl) -> List.mem v used_after) env))
+    envs
 
 (* ----------------------------------------------------------------------- *)
 (* distinguish between distinct witness trees, each gets an index n *)

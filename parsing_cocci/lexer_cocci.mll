@@ -571,6 +571,7 @@ rule token = parse
   | "&"            { start_line true; TAnd    (get_current_line_type lexbuf) }
   | "^"            { start_line true; TXor(get_current_line_type lexbuf) }
 
+  | "##"            { start_line true; TCppConcatOp }
   | (( ("#" [' ' '\t']*  "define" [' ' '\t']+)) as def)
     ( (letter (letter |digit)*) as ident)
       { start_line true;
