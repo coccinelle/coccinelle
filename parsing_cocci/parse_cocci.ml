@@ -1350,7 +1350,7 @@ let parse_iso_files existing_isos iso_files extra_path =
   Data.in_iso := false;
   existing_isos@(List.concat (List.rev res))
 
-let parse file =
+let rec parse file =
   let table = Common.full_charpos_to_pos file in
   Common.with_open_infile file (fun channel ->
   let lexbuf = Lexing.from_channel channel in
@@ -1358,13 +1358,25 @@ let parse file =
   Data.in_prolog := true;
   let initial_tokens = get_tokens [PC.TArobArob;PC.TArob] in
   Data.in_prolog := false;
+  Printf.printf "initial tokens %s\n" (Dumper.dump initial_tokens);
   let res =
     match initial_tokens with
     (true,data) ->
       (match List.rev data with
 	((PC.TArobArob as x),_)::_ | ((PC.TArob as x),_)::_ ->
-	  let iso_files =
-	    parse_one "iso file names" PC.include_main file data in
+	  let include_and_iso_files =
+	    parse_one "include and iso file names" PC.include_main file data in
+
+	  let (include_files,iso_files) =
+	    List.fold_left
+	      (function (include_files,iso_files) ->
+		function
+		    Data.Include s -> (s::include_files,iso_files)
+		  | Data.Iso s -> (include_files,s::iso_files))
+	      ([],[]) include_and_iso_files in
+
+	  let (extra_iso_files, extra_rules) =
+	    List.split (List.map parse include_files) in
 
           let parse_cocci_rule ruletype old_metas
 	      (rule_name, dependencies, iso, dropiso, exists, is_expression) =
@@ -1531,11 +1543,14 @@ let parse file =
             if more then
               rule::
 	      (loop (metavars @ old_metas) (gen_starts_with_name more tokens))
-            else [rule];
+            else [rule] in
 
-            in
-
-	  (iso_files, loop [] (x = PC.TArob))
+	  (List.fold_left
+	     (function prev -> function cur -> Common.union_set cur prev)
+	     iso_files extra_iso_files,
+	   List.fold_left
+	     (function prev -> function cur -> cur @ prev)
+	     (loop [] (x = PC.TArob)) extra_rules)
       |	_ -> failwith "unexpected code before the first rule\n")
   | (false,[(PC.TArobArob,_)]) | (false,[(PC.TArob,_)]) ->
       ([],([] : Ast0.parsed_rule list))

@@ -3,6 +3,8 @@
    metavariables *)
 type fresh = bool
 
+type incl_iso = Include of string | Iso of (string,string) Common.either
+
 type clt =
     line_type * int * int * int * int (* starting spaces *) *
       (string * Ast0_cocci.position_info) list (* code before *) *

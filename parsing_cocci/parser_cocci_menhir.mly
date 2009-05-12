@@ -121,7 +121,7 @@ module P = Parse_aux
 %type <Ast0_cocci.rule> plus_exp_main
 
 %start include_main
-%type <(string,string) Common.either list> include_main
+%type <Data.incl_iso list> include_main
 
 %start iso_rule_name
 %type <Ast_cocci.rulename>
@@ -232,8 +232,9 @@ include_main:
 | list(incl) TArobArob { $1 }
 
 incl:
-  TUsing TString      { Common.Left(P.id2name $2) }
-| TUsing TPathIsoFile { Common.Right $2 }
+  TIncludeL           { let (x,_) = $1 in Data.Include(x) }
+| TUsing TString      { Data.Iso(Common.Left(P.id2name $2)) }
+| TUsing TPathIsoFile { Data.Iso(Common.Right $2) }
 
 metadec:
   ar=arity ispure=pure
