@@ -1358,7 +1358,6 @@ let rec parse file =
   Data.in_prolog := true;
   let initial_tokens = get_tokens [PC.TArobArob;PC.TArob] in
   Data.in_prolog := false;
-  Printf.printf "initial tokens %s\n" (Dumper.dump initial_tokens);
   let res =
     match initial_tokens with
     (true,data) ->
