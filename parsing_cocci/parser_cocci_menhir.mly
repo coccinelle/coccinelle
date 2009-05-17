@@ -1396,6 +1396,10 @@ pure_ident_or_meta_ident_with_seed:
 seed_elem:
   TString { let (x,_) = $1 in Ast.SeedString x }
 | TMetaId { let (x,_,_,_) = $1 in Ast.SeedId x }
+| TRuleName TDot pure_ident
+    { let nm = ($1,P.id2name $3) in
+      P.check_meta(Ast.MetaIdDecl(Ast.NONE,nm));
+      Ast.SeedId nm }
 
 pure_ident_or_meta_ident_with_not_eq(not_eq):
        i=pure_ident_or_meta_ident l=loption(not_eq) { (i,l) }
