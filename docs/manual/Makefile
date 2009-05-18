@@ -18,7 +18,7 @@ SRC=$(wildcard *.tex)
 .PHONY: all clean distclean
 .SUFFIXES: .pdf .tex
 
-all: manual.pdf cocci_syntax.pdf options.pdf
+all: manual.pdf main_grammar.pdf options.pdf
 
 manual.pdf: $(SRC)
 	pdflatex main.tex
@@ -29,12 +29,11 @@ main_grammar.pdf: main_grammar.tex cocci_syntax.tex  macros_listing_cocci.tex ma
 	pdflatex main_grammar.tex
 	pdflatex main_grammar.tex
 
-cocci_syntax.pdf: main_grammar.pdf
-	ln -s main_grammar.pdf cocci_syntax.pdf
+main_options.pdf: main_options.tex spatch_options.tex   macros_options.tex
+	pdflatex main_options.tex
+	pdflatex main_options.tex
 
-options.pdf: main_options.tex spatch_options.tex   macros_options.tex
-	pdflatex main_options.tex
-	pdflatex main_options.tex
+options.pdf: main_options.pdf
 	mv main_options.pdf options.pdf
 
 distclean:: clean
@@ -60,7 +59,7 @@ distclean:: clean
 
 TEX=main_grammar.tex
 WEB=/var/www/localhost/htdocs/coccinelle/
-EMNWEB=~/website/docs/
+EMNWEB=~/website
 
 PDF=$(TEX:.tex=.pdf)
 HTML=$(TEX:.tex=.html)
@@ -87,8 +86,9 @@ install:
 	chmod a-w -R $(WEB)
 
 emn_install: world
-	cp *.css *.gif *.html $(EMNWEB)
-	cp $(PDF) $(EMNWEB)
+	cp *.css *.gif *.html $(EMNWEB)/docs
+	cp $(PDF) $(EMNWEB)/docs
+	cp options.pdf $(EMNWEB)/
 
 .tex.html:
 # For Gentoo: /usr/lib64/hevea
