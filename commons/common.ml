@@ -417,27 +417,46 @@ let xxx_once f s =
 let pr2_once s = xxx_once pr2 s
 
 (* ---------------------------------------------------------------------- *)
-let mk_pr2_wrappers aref = 
-  let fpr2 s = 
+let mk_pr2_wrappers aref =
+  let fpr2 s =
     if !aref
     then pr2 s
-    else 
+    else
       (* just to the log file *)
       out_chan_pr2 s
   in
-  let fpr2_once s = 
+  let fpr2_once s =
     if !aref
     then pr2_once s
-    else 
+    else
       xxx_once out_chan_pr2 s
   in
-  fpr2, fpr2_once
-
+    fpr2, fpr2_once
 
 (* ---------------------------------------------------------------------- *)
 (* could also be in File section *)
 
-let redirect_stdout_stderr file f = 
+let redirect_stdout file f =
+  begin
+    let chan = open_out file in
+    let descr = Unix.descr_of_out_channel chan in
+
+    let saveout = Unix.dup Unix.stdout in
+      Unix.dup2 descr Unix.stdout;
+      flush stdout;
+      let res = f() in
+	flush stdout;
+	Unix.dup2 saveout Unix.stdout;
+	close_out chan;
+	res
+  end
+
+let redirect_stdout_opt optfile f =
+  match optfile with
+    | None -> f()
+    | Some outfile -> redirect_stdout outfile f
+
+let redirect_stdout_stderr file f =
   begin
     let chan = open_out file in
     let descr = Unix.descr_of_out_channel chan in
@@ -454,7 +473,7 @@ let redirect_stdout_stderr file f =
     close_out chan;
   end
 
-let redirect_stdin file f = 
+let redirect_stdin file f =
   begin
     let chan = open_in file in
     let descr = Unix.descr_of_in_channel chan in
@@ -466,7 +485,7 @@ let redirect_stdin file f =
     close_in chan;
   end
 
-let redirect_stdin_opt optfile f = 
+let redirect_stdin_opt optfile f =
   match optfile with
   | None -> f()
   | Some infile -> redirect_stdin infile f

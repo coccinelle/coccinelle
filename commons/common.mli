@@ -145,6 +145,7 @@ val pr2_once : string -> unit
 val mk_pr2_wrappers: bool ref -> (string -> unit) * (string -> unit)
 
 
+val redirect_stdout_opt : filename option -> (unit -> 'a) -> 'a
 val redirect_stdout_stderr : filename -> (unit -> unit) -> unit
 val redirect_stdin : filename -> (unit -> unit) -> unit
 val redirect_stdin_opt : filename option -> (unit -> unit) -> unit
