@@ -1,7 +1,7 @@
 #CFLAGS=-sp_file test.cocci -no_show_diff
 #CFLAGS=-sp_file test.cocci
 CFLAGS=-sp_file testpy.cocci
-CC=../../spp
+CC=../../tools/spp
 LD=cat
 
 all: clean test
