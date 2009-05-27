@@ -868,8 +868,7 @@ let do_re_matches label guard res quantified minus_quantified =
 	if List.exists (function Ast.Exp(_) | Ast.Ty(_) -> true | _ -> false)
 	    all
 	then failwith "unexpected exp or ty";
-	List.fold_left ctl_seqor CTL.False
-	  (List.rev (List.map make_match res)))
+	List.fold_left ctl_seqor CTL.False (List.map make_match res))
 
 (* code might be a DisjRuleElem, in which case we break it apart
    code doesn't contain an Exp or Ty

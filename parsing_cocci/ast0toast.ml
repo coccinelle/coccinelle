@@ -342,7 +342,8 @@ and expression e =
     | Ast0.MetaExprList(name,None,_) ->
 	Ast.MetaExprList(mcode name,None,unitary,false)
     | Ast0.EComma(cm)         -> Ast.EComma(mcode cm)
-    | Ast0.DisjExpr(_,exps,_,_)     -> Ast.DisjExpr(List.map expression exps)
+    | Ast0.DisjExpr(_,exps,_,_)     ->
+	Ast.DisjExpr(List.map expression exps)
     | Ast0.NestExpr(_,exp_dots,_,whencode,multi) ->
 	let whencode = get_option expression whencode in
 	Ast.NestExpr(dots expression exp_dots,whencode,multi)
