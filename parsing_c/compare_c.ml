@@ -50,7 +50,7 @@ let cvs_compute_newstr s =
     let tag = matched1 substr in
 
     if not (List.mem tag cvs_keyword_list)
-    then failwith ("unknown CVS keyword: " ^ tag);
+    then pr2_once ("unknown CVS keyword: " ^ tag);
     
     "CVS_MAGIC_STRING" 
   ) s 
