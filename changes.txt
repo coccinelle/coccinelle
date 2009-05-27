@@ -18,6 +18,7 @@
   Thanks to Eugeniy Meshcheryakov for pointing out the problem.
 
 ** Bugfix:
+- keep disjunction in the proper order for structure initialization fields
 
 * 0.1.8
 
