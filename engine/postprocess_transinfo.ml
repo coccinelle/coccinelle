@@ -96,12 +96,14 @@ let process_tree inherited_env l =
 
 (* ----------------------------------------------------------------------- *)
 (* Create the environment to be used afterwards *)
+(* anything that a used after fresh variable refers to has to have a
+unique value, by virtue of the placement of the quantifier *)
 
-let collect_used_after used_after envs =
+let collect_used_after used_after envs l inherited_env =
   List.map 
     (function env ->
       List.map
-	(function (v,vl) -> (v,vl []))
+	(function (v,vl) -> (v,vl inherited_env))
 	(List.filter (function (v,vl) -> List.mem v used_after) env))
     envs
 
@@ -130,4 +132,4 @@ let process used_after inherited_env l =
   let (trees, fresh_envs) =
     List.split (List.map (process_tree inherited_env) l) in
   let trees = numberify trees in
-  (trees, collect_used_after used_after fresh_envs)
+  (trees, collect_used_after used_after fresh_envs l inherited_env)
