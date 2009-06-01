@@ -1258,7 +1258,13 @@ let satAW dir ((grp,_,states) as m) s1 s2 reqst =
 	let pre = pre_forall dir m y y reqst in
 	let conj = triples_conj s1 pre in (* or triples_conj_AW *)
 	triples_union s2 conj in
-      setgfix f (triples_union s1 s2)
+      let drop_wits = List.map (function (s,e,_) -> (s,e,[])) in
+      (* drop wits on s1 represents that we don't want any witnesses from
+	 the case that infinitely loops, only from the case that gets
+	 out of the loop. s1 is like a guard. To see the problem, consider
+	 an example where both s1 and s2 match some code after the loop.
+	 we only want the witness from s2. *)
+      setgfix f (triples_union (drop_wits s1) s2)
 ;;
 
 let satAF dir m s reqst = 

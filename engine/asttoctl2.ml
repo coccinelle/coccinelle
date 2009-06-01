@@ -1999,81 +1999,113 @@ and statement stmt after quantified minus_quantified
 	Common.union_set mb1fvs
 	  (Common.union_set mb2fvs
 	     (Common.union_set mb3fvs minus_quantified)) in
-      let fn_nest =
+      let optim1 =
 	match (Ast.undots body,
 	       contains_modif rbrace or contains_pos rbrace) with
 	  ([body],false) ->
 	    (match Ast.unwrap body with
-	      Ast.Nest(stmt_dots,[],multi,_,_) ->
-		if multi
-		then None (* not sure how to optimize this case *)
-		else Some (Common.Left stmt_dots)
-	    | Ast.Dots(_,whencode,_,_) when
+	      Ast.Nest(stmt_dots,[],false,_,_) ->
+            (* special case for function header + body - header is unambiguous
+	       and unique, so we can just look for the nested body anywhere
+	       else in the CFG *)
+		Some
+		  (CTL.AndAny
+		     (CTL.FORWARD,guard_to_strict guard,start_brace,
+		      statement_list stmt_dots
+		 (* discards match on right brace, but don't need it *)
+			(Guard (make_seq_after end_brace after))
+			new_quantified3 new_mquantified3
+			None llabel slabel true guard))
+	    | Ast.Dots((_,i,d,_),whencode,_,_) when
 		(List.for_all
 		   (* flow sensitive, so not optimizable *)
 		   (function Ast.WhenNotTrue(_) | Ast.WhenNotFalse(_) ->
 		      false
 		 | _ -> true) whencode) ->
-		Some (Common.Right whencode)
+     	    (* try to be more efficient for the case where the body is just
+	       ...  Perhaps this is too much of a special case, but useful
+	       for dropping a parameter and checking that it is never used. *)
+		     (match d with
+		       Ast.MINUS(_,_,_,_) -> None
+		     | _ ->
+			 Some (
+			 make_seq
+			   [start_brace;
+			     match whencode with
+			       [] -> CTL.True
+			     | _ ->
+				 let leftarg =
+				   ctl_and
+				     (ctl_not
+					(List.fold_left
+					   (function prev ->
+					     function
+						 Ast.WhenAlways(s) -> prev
+					       | Ast.WhenNot(sl) ->
+						   let x =
+						     statement_list sl Tail
+						       new_quantified3
+						       new_mquantified3
+						       label llabel slabel
+						       true true in
+						   ctl_or prev x
+					       | Ast.WhenNotTrue(_)
+					       | Ast.WhenNotFalse(_) ->
+						   failwith "unexpected"
+					       | Ast.WhenModifier
+						   (Ast.WhenAny) -> CTL.False
+					       | Ast.WhenModifier(_) -> prev)
+					   CTL.False whencode))
+				     (List.fold_left
+					(function prev ->
+					  function
+					      Ast.WhenAlways(s) ->
+						let x =
+						  statement s Tail
+						    new_quantified3
+						    new_mquantified3
+						    label llabel slabel true in
+						ctl_and prev x
+					    | Ast.WhenNot(sl) -> prev
+					    | Ast.WhenNotTrue(_)
+					    | Ast.WhenNotFalse(_) ->
+						failwith "unexpected"
+					    | Ast.WhenModifier(Ast.WhenAny) ->
+						CTL.True
+					    | Ast.WhenModifier(_) -> prev)
+					CTL.True whencode) in
+				 ctl_au leftarg (make_match stripped_rbrace)]))
+	    | _ -> None)
+	| _ -> None in
+      let optim2 =
+	(* function body is all minus, no whencode *)
+	match Ast.undots body with
+	  [body] ->
+	    (match Ast.unwrap body with 
+	      Ast.Dots
+		((_,i,(Ast.MINUS(_,_,_,[]) as d),_),[],_,_) ->
+		  (match (Ast.unwrap lbrace,Ast.unwrap rbrace) with
+		    (Ast.SeqStart((_,_,Ast.MINUS(_,_,_,[]),_)),
+		     Ast.SeqEnd((_,_,Ast.MINUS(_,_,_,[]),_)))
+		    when not (contains_pos rbrace) ->
+		      Some
+			(* andany drops everything to the end, including close
+			   braces - not just function body, could check
+			   label to keep braces *)
+			(ctl_and start_brace
+			   (ctl_ax
+			      (CTL.AndAny
+				 (CTL.FORWARD,guard_to_strict guard,CTL.True,
+				  make_match
+				    (make_meta_rule_elem d ([],[],[]))))))
+		  | _ -> None)
 	    | _ -> None)
 	| _ -> None in
       let body_code =
-	match fn_nest with
-	  Some (Common.Left stmt_dots) ->
-	    (* special case for function header + body - header is unambiguous
-	       and unique, so we can just look for the nested body anywhere
-	       else in the CFG *)
-	    CTL.AndAny
-	      (CTL.FORWARD,guard_to_strict guard,start_brace,
-	       statement_list stmt_dots
-		 (* discards match on right brace, but don't need it *)
-		 (Guard (make_seq_after end_brace after))
-		 new_quantified3 new_mquantified3
-		 None llabel slabel true guard)
-	| Some (Common.Right whencode) ->
-	    (* try to be more efficient for the case where the body is just
-	       ...  Perhaps this is too much of a special case, but useful
-	       for dropping a parameter and checking that it is never used. *)
-	    make_seq
-	      [start_brace;
-		match whencode with
-		  [] -> CTL.True
-		| _ ->
-		    let leftarg =
-		      ctl_and
-			(ctl_not
-			   (List.fold_left
-			      (function prev ->
-				function
-				    Ast.WhenAlways(s) -> prev
-				  | Ast.WhenNot(sl) ->
-				      let x =
-					statement_list sl Tail
-					  new_quantified3 new_mquantified3
-					  label llabel slabel true true in
-				      ctl_or prev x
-				  | Ast.WhenNotTrue(_) | Ast.WhenNotFalse(_) ->
-				      failwith "unexpected"
-				  | Ast.WhenModifier(Ast.WhenAny) -> CTL.False
-				  | Ast.WhenModifier(_) -> prev)
-			      CTL.False whencode))
-			 (List.fold_left
-			   (function prev ->
-			     function
-				 Ast.WhenAlways(s) ->
-				   let x =
-				     statement s Tail
-				       new_quantified3 new_mquantified3
-				       label llabel slabel true in
-				   ctl_and prev x
-			       | Ast.WhenNot(sl) -> prev
-			       | Ast.WhenNotTrue(_) | Ast.WhenNotFalse(_) ->
-				   failwith "unexpected"
-			       | Ast.WhenModifier(Ast.WhenAny) -> CTL.True
-			       | Ast.WhenModifier(_) -> prev)
-			   CTL.True whencode) in
-		    ctl_au leftarg (make_match stripped_rbrace)]
-	| None ->
+	match (optim1,optim2) with
+	  (Some o1,_) -> o1
+	| (_,Some o2) -> o2
+	| _ ->
 	    make_seq
 	      [start_brace;
 		quantify guard b3fvs

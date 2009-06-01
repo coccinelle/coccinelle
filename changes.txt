@@ -16,6 +16,9 @@
 - we don't create any more certain files in /tmp (they may be a cause
   of security problems).
   Thanks to Eugeniy Meshcheryakov for pointing out the problem.
+- More optimization for the case of just deleting a complete function.
+  Allows this to happen without tracing through all the control-flow
+  paths.  Thanks to Francois Bissyande for pointing out the problem.
 
 ** Bugfix:
 - keep disjunction in the proper order for structure initialization fields
