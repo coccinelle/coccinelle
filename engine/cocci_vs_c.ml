@@ -3754,16 +3754,12 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
 
   | A.Label(id,dd), F.Label (st, nameb, ((),ii)) ->
       let (ib2) = tuple_of_list1 ii in
-      (match A.unwrap id with
-      | A.Id(_s) ->
-	ident_cpp DontKnow id nameb >>= (fun ida nameb ->
-	tokenf dd ib2 >>= (fun dd ib2 ->
-	  return (
-	    A.Label (ida,dd),
-	    F.Label (st,nameb, ((),[ib2]))
-	  )))
-      | _ -> failwith "labels with metavariables not supported"
-      )
+      ident_cpp DontKnow id nameb >>= (fun ida nameb ->
+      tokenf dd ib2 >>= (fun dd ib2 ->
+	return (
+	A.Label (ida,dd),
+	F.Label (st,nameb, ((),[ib2]))
+      )))
 
   | A.Goto(goto,id,sem),          F.Goto (st,nameb, ((),ii))       ->
       let (ib1,ib3) = tuple_of_list2 ii in
