@@ -1616,8 +1616,8 @@ let process file isofile verbose =
 		     failwith
 		       "bad list of reserved names - all must be at start" in
 	       let minus = Test_exps.process minus in
-	       let minus = Compute_lines.compute_lines minus in
-	       let plus = Compute_lines.compute_lines plus in
+	       let minus = Compute_lines.compute_lines false minus in
+	       let plus = Compute_lines.compute_lines false plus in
 	       let is_exp =
 		 (* only relevant to Flag.make_hrule *)
 		 (* doesn't handle multiple minirules properly, but since
@@ -1660,8 +1660,7 @@ let process file isofile verbose =
 		   exists minus is_exp ruletype in
 	       match function_prototypes with
 		 None -> [(extra_meta @ metavars, minus_ast)]
-	       | Some mv_fp ->
-		   [(extra_meta @ metavars, minus_ast); mv_fp])
+	       | Some mv_fp -> [(extra_meta @ metavars, minus_ast); mv_fp])
 (*          Ast0.CocciRule ((minus, metavarsm, (iso, dropiso, dependencies, rule_name, exists)), (plus, metavars))*)
       rules in
   let parsed = List.concat parsed in

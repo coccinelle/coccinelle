@@ -786,6 +786,8 @@ val some_or : 'a option -> 'a -> 'a
 
 val partition_either :
   ('a -> ('b, 'c) either) -> 'a list -> 'b list * 'c list
+val partition_either3 :
+    ('a -> ('b, 'c, 'd) either3) -> 'a list -> 'b list * 'c list * 'd list
 
 val filter_some : 'a option list -> 'a list
 val map_filter : ('a -> 'b option) -> 'a list -> 'b list

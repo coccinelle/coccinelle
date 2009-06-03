@@ -479,14 +479,14 @@ and statement arity s =
 	  | Ast0.PureContext -> print_string "pure_context")*)
       | Ast0.MetaStmtList(name,_) ->
 	  print_string arity;  mcode print_meta name
-      | Ast0.Disj(_,statement_dots_list,_,_) ->
+      | Ast0.Disj(starter,statement_dots_list,_,ender) ->
 	  print_string arity;
-	  print_string "\n("; force_newline();
+	  print_string "\n"; mcode print_string starter; force_newline();
 	  print_between
 	    (function _ -> print_string "\n|"; force_newline())
 	    (dots force_newline (statement arity))
 	    statement_dots_list;
-	  print_string "\n)"
+	  print_string "\n"; mcode print_string ender
       | Ast0.Nest(starter,stmt_dots,ender,whn,multi) ->
 	  print_string arity;
 	  mcode print_string starter;

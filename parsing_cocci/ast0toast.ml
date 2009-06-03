@@ -98,8 +98,9 @@ let inline_mcodes =
 		  |	_ -> failwith "unexpected annotation")
 		mcl
 	  | _ ->
+	      Printf.printf "before %s\n" (Dumper.dump bef);
 	      failwith
-		"context tree should not have bad code on both sides" in
+		"context tree should not have bad code before" in
 	let attach_aft aft afterinfo = function
 	    (true,mcl) ->
 	      List.iter
@@ -127,7 +128,7 @@ let inline_mcodes =
 		mcl
 	  | _ ->
 	      failwith
-		"context tree should not have bad code on both sides" in
+		"context tree should not have bad code after" in
 	(match !befaft with
 	  (Ast.BEFORE(bef),beforeinfo,_) ->
 	    attach_bef bef beforeinfo

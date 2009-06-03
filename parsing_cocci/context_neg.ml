@@ -817,7 +817,7 @@ let concat = function
 		| _ -> failwith "no dots allowed in pure plus code")
 	    | _ -> failwith "plus code is being discarded") in
       let res =
-	Compute_lines.statement_dots
+	Compute_lines.compute_statement_dots_lines false
 	  (Ast0.rewrap (List.hd l) (Ast0.DOTS (loop l))) in
       [Ast0.rewrap res (Ast0.CODE res)]
 

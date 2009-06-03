@@ -2396,5 +2396,5 @@ let apply_isos isos rule rule_name =
 		   (new_extra_meta@extra_meta,t))
 		 ([],t) isos)
 	     rule) in
-      (List.concat extra_meta, Compute_lines.compute_lines rule)
+      (List.concat extra_meta, (Compute_lines.compute_lines true) rule)
     end

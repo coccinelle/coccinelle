@@ -313,9 +313,11 @@ let no_names dec =
 
 let merge mproto pproto =
   let mproto =
-    Compute_lines.compute_lines [Ast0.copywrap mproto (Ast0.DECL mproto)] in
+    Compute_lines.compute_lines true
+      [Ast0.copywrap mproto (Ast0.DECL mproto)] in
   let pproto =
-    Compute_lines.compute_lines [Ast0.copywrap pproto (Ast0.DECL pproto)] in
+    Compute_lines.compute_lines true
+      [Ast0.copywrap pproto (Ast0.DECL pproto)] in
   let (m,p) = List.split(Context_neg.context_neg mproto pproto) in
   Insert_plus.insert_plus m p true (* no isos for protos *);
   (* convert to ast so that the + code will fall down to the tokens

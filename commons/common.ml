@@ -2072,6 +2072,16 @@ let partition_either f l =
       | Right e -> part_either left (e :: right) l) in
   part_either [] [] l
 
+let partition_either3 f l =
+  let rec part_either left middle right = function
+  | [] -> (List.rev left, List.rev middle, List.rev right)
+  | x :: l -> 
+      (match f x with
+      | Left3  e -> part_either (e :: left) middle right l
+      | Middle3  e -> part_either left (e :: middle) right l
+      | Right3 e -> part_either left middle (e :: right) l) in
+  part_either [] [] [] l
+
 
 (* pixel *)
 let rec filter_some = function
