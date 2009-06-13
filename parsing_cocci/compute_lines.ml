@@ -279,7 +279,6 @@ let rec expression e =
       let exps = List.map expression exps in
       let mids = List.map bad_mcode mids in
       let ender = bad_mcode ender in
-      Printf.printf "disjexpr\n";
       mkmultires e (Ast0.DisjExpr(starter,exps,mids,ender))
 	(promote_mcode starter) (promote_mcode ender)
 	(get_all_start_info exps) (get_all_end_info exps)
