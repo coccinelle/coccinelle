@@ -461,15 +461,6 @@ let type_of_s a =
  * I now add a fake parse_info for such default int so no more failwith
  * normally.
  *)
-let offset ft = 
-  let (qu, ty) = ft in
-  (* bugfix: because of string->name, the ii can be deeper *)
-  let ii = Ast_c.get_local_ii_of_tybis_inlining_ii_of_name ty in
-  match ii with
-  | ii::_ -> ii.Ast_c.pinfo
-  | [] -> failwith "type has no text; need to think again"
-  
-
 
 let rec is_simple_expr expr = 
   match Ast_c.unwrap_expr expr with
@@ -1056,9 +1047,8 @@ let rec visit_toplevel ~just_add_in_env ~depth elem =
 	    let local =
 	      match local with
 	      | Ast_c.NotLocalDecl -> Ast_c.NotLocalVar
-	      |	Ast_c.LocalDecl -> Ast_c.LocalVar (offset t)
+	      |	Ast_c.LocalDecl -> Ast_c.LocalVar (Ast_c.info_of_type t)
             in
-            
             var +> Common.do_option (fun (name, iniopt) -> 
               let s = Ast_c.str_of_name name in
 
@@ -1140,6 +1130,7 @@ let rec visit_toplevel ~just_add_in_env ~depth elem =
           in
           let (i1, i2) = 
             match ii with 
+	      (* what is iifunc1?  it should be a type.  jll *)
             | iifunc1::iifunc2::ibrace1::ibrace2::ifakestart::isto -> 
                 iifunc1, iifunc2
             | _ -> raise Impossible
@@ -1160,7 +1151,7 @@ let rec visit_toplevel ~just_add_in_env ~depth elem =
                     match nameopt with 
                     | Some name ->
                         let s = Ast_c.str_of_name name in
-		        let local = Ast_c.LocalVar (offset t) in
+		        let local = Ast_c.LocalVar (Ast_c.info_of_type t) in
 		        add_binding (VarOrFunc (s,(Lib.al_type t,local))) true
                     | None -> 
                     pr2 "no type, certainly because Void type ?"

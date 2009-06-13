@@ -1165,8 +1165,6 @@ let ii_of_name name =
   let (s,ii) = get_s_and_ii_of_name name in
   ii
 
-
-
 let get_local_ii_of_expr_inlining_ii_of_name e = 
   let (ebis,_),ii = e in
   match ebis, ii with
@@ -1184,6 +1182,15 @@ let get_local_ii_of_tybis_inlining_ii_of_name ty =
   match ty with
   | TypeName (name, _typ), [] -> ii_of_name name
   | _, ii -> ii
+
+(* the following is used to obtain the argument to LocalVar *)
+let info_of_type ft = 
+  let (qu, ty) = ft in
+  (* bugfix: because of string->name, the ii can be deeper *)
+  let ii = get_local_ii_of_tybis_inlining_ii_of_name ty in
+  match ii with
+  | ii::_ -> ii.pinfo
+  | [] -> failwith "type has no text; need to think again"
 
 (* only Label and Goto have name *)
 let get_local_ii_of_st_inlining_ii_of_name st =

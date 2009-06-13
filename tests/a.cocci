@@ -7,7 +7,7 @@ expression a;
 -g(a);
 
 @@
-idexpression a;
+idexpression int a;
 @@
 
 -h(a);

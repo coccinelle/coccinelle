@@ -435,12 +435,12 @@ let initialisation_to_affectation decl =
           | Some (name, iniopt) -> 
               (match iniopt with
               | Some (iini, (B.InitExpr e, ii_empty2)) -> 
-                  let iis = Ast_c.info_of_name name in
+
 		  let local =
 		    match local with
 		      Ast_c.NotLocalDecl -> Ast_c.NotLocalVar
-		    | Ast_c.LocalDecl -> Ast_c.LocalVar (iis.Ast_c.pinfo) in
-          
+		    | Ast_c.LocalDecl ->
+			Ast_c.LocalVar (Ast_c.info_of_type returnType) in
                   let typ =
 		    ref (Some ((Lib_parsing_c.al_type returnType),local),
 			       Ast_c.NotTest) in

@@ -24,6 +24,11 @@ let pr2, pr2_once = Common.mk_pr2_wrappers Flag_parsing_c.verbose_parsing
 
 (* todo?: al_expr doit enlever les infos de type ? et doit remettre en
  *  emptyAnnot ? 
+
+No!  Keeping the type information is important to ensuring that variables
+of different type and declared in different places do not seem to match
+each other.
+
  *)
 
 (* drop all info information *)
@@ -38,7 +43,7 @@ let strip_info_visitor _ =
 
     Visitor_c.kexpr_s = (fun (k,_) e -> 
       let (e', ty), ii' = k e in
-      (e', Ast_c.noType()(*ref !ty*)), ii' (* keep type - jll *)
+      (e', (*Ast_c.noType()*)ref !ty), ii' (* keep type - jll *)
     );
 
 (*
@@ -79,7 +84,7 @@ let semi_strip_info_visitor = (* keep position information *)
 
     Visitor_c.kexpr_s = (fun (k,_) e -> 
       let (e', ty),ii' = k e in
-      (e', Ast_c.noType()(*ref !ty*)), ii' (* keep type - jll *)
+      (e', (*Ast_c.noType()*)ref !ty), ii' (* keep type - jll *)
     );
     
   }
@@ -100,6 +105,7 @@ let semi_al_program =
 
 (* really strip, do not keep position nor anything specificities, true
  * abstracted form. *)
+(* is this used for anything? jll *)
 let real_strip_info_visitor _ = 
   { Visitor_c.default_visitor_c_s with
     Visitor_c.kinfo_s = (fun (k,_) i ->
