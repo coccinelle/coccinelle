@@ -1142,6 +1142,7 @@ val _temp_files_created : string list ref
 (* see flag: val save_tmp_files : bool ref *)
 val new_temp_file : string (* prefix *) -> string (* suffix *) -> filename
 val erase_temp_files : unit -> unit
+val erase_this_temp_file : filename -> unit
 
 (* If the user use some exit 0 in his code, then no one can intercept this
  * exit and do something before exiting. There is exn handler for exit 0
