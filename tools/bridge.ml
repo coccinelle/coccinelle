@@ -97,7 +97,7 @@ let collect_ors fp lines =
     | line::xs ->
 	let (c,k,v) = split_or line in
 	let ((c1,k1,v1),rest) = loop xs in
-	if c = c1 && k = k1
+	if c = c1 && k = k1 && not (k = [])
 	then
 	  if List.mem v v1
 	  then ((c1,k1,v1),rest)

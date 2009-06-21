@@ -27,11 +27,18 @@ let pr2, pr2_once = Common.mk_pr2_wrappers Flag_parsing_c.verbose_parsing
 
 No!  Keeping the type information is important to ensuring that variables
 of different type and declared in different places do not seem to match
-each other.
+each other.  On the other hand, we don't want to keep around the
+information about whether the expression is a test expression, because a
+term that is a test expression should match one that is not.  The test
+information is only useful for matching to the CTL.
 
  *)
 
 (* drop all info information *)
+
+let drop_test ty =
+  let (ty,_) = !ty in
+  ref (ty,Ast_c.NotTest)
 
 let strip_info_visitor _ = 
   { Visitor_c.default_visitor_c_s with
@@ -43,7 +50,7 @@ let strip_info_visitor _ =
 
     Visitor_c.kexpr_s = (fun (k,_) e -> 
       let (e', ty), ii' = k e in
-      (e', (*Ast_c.noType()*)ref !ty), ii' (* keep type - jll *)
+      (e', drop_test ty), ii' (* keep type - jll *)
     );
 
 (*
@@ -84,7 +91,7 @@ let semi_strip_info_visitor = (* keep position information *)
 
     Visitor_c.kexpr_s = (fun (k,_) e -> 
       let (e', ty),ii' = k e in
-      (e', (*Ast_c.noType()*)ref !ty), ii' (* keep type - jll *)
+      (e', drop_test ty), ii' (* keep type - jll *)
     );
     
   }
