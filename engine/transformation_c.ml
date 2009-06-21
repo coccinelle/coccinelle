@@ -234,11 +234,12 @@ module XTRANS = struct
              *)
 	       let pm str mcode env =
 		 Printf.sprintf
-		   "%s modification:\n%s\nAccording to environment:\n%s\n"
+		   "%s modification:\n%s\nAccording to environment %d:\n%s\n"
 		   str
 		   (Common.format_to_string
 		      (function _ ->
 			Pretty_print_cocci.print_mcodekind mcode))
+		   (List.length env)
 		   (String.concat "\n"
 		      (List.map
 			 (function ((r,vr),vl) ->

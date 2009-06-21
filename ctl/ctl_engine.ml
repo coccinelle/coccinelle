@@ -1075,7 +1075,8 @@ let satAX dir m s reqst = pre_forall dir m s s reqst
 
 (* E[phi1 U phi2] == phi2 \/ (phi1 /\ EXE[phi1 U phi2]) *)
 let satEU dir ((_,_,states) as m) s1 s2 reqst print_graph = 
-  let ctr = ref 0 in
+  (*Printf.printf "EU\n";
+  let ctr = ref 0 in*)
   inc satEU_calls;
   if s1 = []
   then s2
@@ -1088,21 +1089,23 @@ let satEU dir ((_,_,states) as m) s1 s2 reqst print_graph =
 	match new_info with
 	  [] -> y
 	| new_info ->
-	    ctr := !ctr + 1;
-	    print_graph y ctr;
+	    (*ctr := !ctr + 1;
+	    print_graph y ctr;*)
 	    let first = triples_conj s1 (pre_exist dir m new_info reqst) in
 	    let res = triples_union first y in
 	    let new_info = setdiff res y in
 	    (*Printf.printf "iter %d res %d new_info %d\n"
 	    !ctr (List.length res) (List.length new_info);
+	    print_state "res" res;
+	    print_state "new_info" new_info;
 	    flush stdout;*)
 	    f res new_info in
       f s2 s2
     else
       let f y =
 	inc_step();
-	ctr := !ctr + 1;
-	print_graph y ctr;
+	(*ctr := !ctr + 1;
+	print_graph y ctr;*)
 	let pre = pre_exist dir m y reqst in
 	triples_union s2 (triples_conj s1 pre) in
       setfix f s2
@@ -1256,6 +1259,7 @@ let satAW dir ((grp,_,states) as m) s1 s2 reqst =
 	print_state "y" y;
 	flush stdout;*)
 	let pre = pre_forall dir m y y reqst in
+	(*print_state "pre" pre;*)
 	let conj = triples_conj s1 pre in (* or triples_conj_AW *)
 	triples_union s2 conj in
       let drop_wits = List.map (function (s,e,_) -> (s,e,[])) in
@@ -1785,7 +1789,8 @@ let rec satloop unchecked required required_states
 		       (* no graph, for the moment *)
 		       (fun y str -> ()))
 		    s1 in
-		strict_A2 strict satAW satEF dir m s1 s2 new_required_states)
+		strict_A2 strict satAW satEF dir m s1 s2 new_required_states
+		)
     | A.Implies(phi1,phi2) ->
 	loop unchecked required required_states (A.Or(A.Not phi1,phi2))
     | A.Exists (keep,v,phi)     ->
