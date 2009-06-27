@@ -24,10 +24,16 @@
 
 ** Bugfix:
 - keep disjunction in the proper order for structure initialization fields
+<<<<<<< changes.txt
+- variables declared in different places should not seem to match each
+  other
+- drop complaints about label metavariables not being used
+=======
 - variables declared in different places should not seem to match each
   other
 - drop test information from the type of an expression when the expression
   is bound to a metavariable
+>>>>>>> 1.91
 
 * 0.1.8
 

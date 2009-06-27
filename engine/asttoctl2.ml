@@ -2245,11 +2245,13 @@ let rec cleanup c =
 (* --------------------------------------------------------------------- *)
 (* Function declaration *)
 
-let top_level name (ua,pos) t =
+(* ua = used_after, fua = fresh_used_after, fuas = fresh_used_after_seeds *)
+
+let top_level name ((ua,pos),fua) (fuas,t) =
   let ua = List.filter (function (nm,_) -> nm = name) ua in
   used_after := ua;
   saved := Ast.get_saved t;
-  let quantified = Common.minus_set ua pos in
+  let quantified = Common.minus_set (Common.union_set ua fuas) pos in
   quantify false quantified
     (match Ast.unwrap t with
       Ast.FILEINFO(old_file,new_file) -> failwith "not supported fileinfo"
@@ -2293,7 +2295,8 @@ let top_level name (ua,pos) t =
 (* --------------------------------------------------------------------- *)
 (* Entry points *)
 
-let asttoctlz (name,(_,_,exists_flag),l) used_after positions =
+let asttoctlz (name,(_,_,exists_flag),l)
+    (used_after,fresh_used_after,fresh_used_after_seeds) positions =
   letctr := 0;
   labelctr := 0;
   (match exists_flag with
@@ -2309,7 +2312,10 @@ let asttoctlz (name,(_,_,exists_flag),l) used_after positions =
 	 (function (t,_) ->
 	   match Ast.unwrap t with Ast.ERRORWORDS(exps) -> false | _ -> true)
 	 (List.combine l (List.combine used_after positions))) in
-  let res = List.map2 (top_level name) used_after l in
+  let res =
+    List.map2 (top_level name)
+      (List.combine used_after fresh_used_after)
+      (List.combine fresh_used_after_seeds l) in
   exists := Forall;
   res
 

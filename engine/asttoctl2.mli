@@ -3,7 +3,10 @@ type formula =
     (cocci_predicate,Ast_cocci.meta_name, Wrapper_ctl.info) Ast_ctl.generic_ctl
 
 val asttoctl :
-    Ast_cocci.rule -> Ast_cocci.meta_name list list (* used after *) ->
+    Ast_cocci.rule ->
+      (Ast_cocci.meta_name list list (* used after *) *
+	 Ast_cocci.meta_name list list (* fresh used after *) *
+	 Ast_cocci.meta_name list list (* fresh used after seeds *)) ->
       Ast_cocci.meta_name list list (* positions *) ->
       formula list
 

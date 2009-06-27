@@ -82,15 +82,15 @@ let ast_to_flow_with_error_messages a =
 (* Ctl related *)
 (* --------------------------------------------------------------------- *)
 
-let ctls_of_ast2 ast ua pos =
+let ctls_of_ast2 ast (ua,fua,fuas) pos =
   List.map2
-    (function ast -> function (ua,pos) ->
+    (function ast -> function (ua,(fua,(fuas,pos))) ->
       List.combine
 	(if !Flag_cocci.popl
 	then Popl.popl ast
-	else Asttoctl2.asttoctl ast ua pos)
+	else Asttoctl2.asttoctl ast (ua,fua,fuas) pos)
 	(Asttomember.asttomember ast ua))
-    ast (List.combine ua pos)
+    ast (List.combine ua (List.combine fua (List.combine fuas pos)))
 
 let ctls_of_ast ast ua =
   Common.profile_code "asttoctl2" (fun () -> ctls_of_ast2 ast ua)
@@ -730,15 +730,16 @@ let gen_pdf_graph () =
 
 (* --------------------------------------------------------------------- *)
 let prepare_cocci ctls free_var_lists negated_pos_lists
-    used_after_lists positions_list metavars astcocci = 
+    (ua,fua,fuas) positions_list metavars astcocci = 
 
   let gathered = Common.index_list_1
-      (zip (zip (zip (zip (zip (zip ctls metavars) astcocci) free_var_lists)
-		   negated_pos_lists) used_after_lists) positions_list)
+      (zip (zip (zip (zip (zip (zip (zip (zip ctls metavars) astcocci)
+				  free_var_lists)
+		   negated_pos_lists) ua) fua) fuas) positions_list)
   in
   gathered +> List.map 
-    (fun (((((((ctl_toplevel_list,metavars),ast),free_var_list),
-	     negated_pos_list),used_after_list),positions_list),rulenb) -> 
+    (fun (((((((((ctl_toplevel_list,metavars),ast),free_var_list),
+	     negated_pos_list),ua),fua),fuas),positions_list),rulenb) -> 
       
       let is_script_rule r =
         match r with
@@ -797,7 +798,7 @@ let prepare_cocci ctls free_var_lists negated_pos_lists
             dropped_isos = dropped_isos;
             free_vars = List.hd free_var_list;
             negated_pos_vars = List.hd negated_pos_list;
-            used_after = List.hd used_after_list;
+            used_after = (List.hd ua) @ (List.hd fua);
             positions = List.hd positions_list;
             ruleid = rulenb;
 	    ruletype = ruletype;

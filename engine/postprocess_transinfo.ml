@@ -96,16 +96,25 @@ let process_tree inherited_env l =
 
 (* ----------------------------------------------------------------------- *)
 (* Create the environment to be used afterwards *)
-(* anything that a used after fresh variable refers to has to have a
-unique value, by virtue of the placement of the quantifier *)
+(* anything that a used after fresh variable refers to has to have a unique
+value, by virtue of the placement of the quantifier.  thus we augment
+inherited env with the first element of l, if any *)
 
 let collect_used_after used_after envs l inherited_env =
-  List.map 
-    (function env ->
+  List.map2
+    (function env -> function l ->
+      let inherited_env =
+	match l with
+	  [] -> inherited_env
+	| (_,fse,_)::_ ->
+	    (* l represents the result from a single tree. fse is a complete
+	       environment in that tree.  for a fresh seed, the environments
+	       for all leaves contain the same information *)
+	    fse@inherited_env  in
       List.map
 	(function (v,vl) -> (v,vl inherited_env))
 	(List.filter (function (v,vl) -> List.mem v used_after) env))
-    envs
+    envs l
 
 (* ----------------------------------------------------------------------- *)
 (* distinguish between distinct witness trees, each gets an index n *)
