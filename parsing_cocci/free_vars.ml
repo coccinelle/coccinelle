@@ -823,14 +823,11 @@ let collect_local_used_after metavars minirules used_after =
 	   fresh
 	   5. The variables that are used as seeds in computing the bindings
 	   of the variables collected in part 4. *)
-	Printf.printf "mini_used_after %s\n" (Dumper.dump mini_used_after);
 	let (local_used_after, nonlocal_used_after) =
 	  is_local mini_used_after in
 	let (fresh_local_used_after(*4*),matched_local_used_after) =
 	  List.partition (function x -> List.mem x local_fresh)
 	    local_used_after in
-	Printf.printf "local_used_after %s fresh_local_used_after %s\n"
-	  (Dumper.dump local_used_after) (Dumper.dump fresh_local_used_after);
 	let matched_local_used_after(*3*) =
 	  Common.union_set matched_local_used_after nonlocal_used_after in
 	let new_used_after = (*1*)
