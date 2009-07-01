@@ -981,10 +981,12 @@ let ifthenelse ifheader branch1 els branch2 ((afvs,_,_,_) as aft) after
     | _ -> failwith "not possible" in
   let (e2fvs,b2fvs,s2fvs) =
     (* fvs on else? *)
-    match seq_fvs quantified
-	[Ast.get_fvs ifheader;Ast.get_fvs branch2;afvs] with
+    (* just combine with the else branch.  no point to have separate
+       quantifier, since there is only one possible control-flow path *)
+    let else_fvs = Common.union_set (Ast.get_fvs els) (Ast.get_fvs branch2) in
+    match seq_fvs quantified [Ast.get_fvs ifheader;else_fvs;afvs] with
       [(e2fvs,b2fvs);(s2fvs,b2afvs);_] ->
-	(e2fvs,Common.union_set b2fvs b2afvs,s2fvs)
+        (e2fvs,Common.union_set b2fvs b2afvs,s2fvs)
     | _ -> failwith "not possible" in
   let bothfvs        = union (union b1fvs b2fvs) (intersect s1fvs s2fvs) in
   let exponlyfvs     = intersect e1fvs e2fvs in
@@ -998,8 +1000,11 @@ let ifthenelse ifheader branch1 els branch2 ((afvs,_,_,_) as aft) after
     | _ -> failwith "not possible" in
   let (me2fvs,mb2fvs,ms2fvs) =
     (* fvs on else? *)
-    match seq_fvs minus_quantified
-	[Ast.get_mfvs ifheader;Ast.get_mfvs branch2;[]] with
+    (* just combine with the else branch.  no point to have separate
+       quantifier, since there is only one possible control-flow path *)
+    let else_mfvs =
+      Common.union_set (Ast.get_mfvs els) (Ast.get_mfvs branch2) in
+    match seq_fvs minus_quantified [Ast.get_mfvs ifheader;else_mfvs;[]] with
       [(e2fvs,b2fvs);(s2fvs,b2afvs);_] ->
 	(e2fvs,Common.union_set b2fvs b2afvs,s2fvs)
     | _ -> failwith "not possible" in
@@ -1016,7 +1021,10 @@ let ifthenelse ifheader branch1 els branch2 ((afvs,_,_,_) as aft) after
 	  (Some (lv,used)) llabel slabel guard] in
   let false_branch =
     make_seq guard
-      [falsepred label; make_match els;
+      [falsepred label;
+	quantify guard
+	  (Common.minus_set (Ast.get_fvs els) new_quantified)
+	  (make_match els);
 	recurse branch2 Tail new_quantified new_mquantified
 	  (Some (lv,used)) llabel slabel guard] in
   let after_pred = aftpred label in
