@@ -20,7 +20,7 @@
   Allows this to happen without tracing through all the control-flow
   paths.  Thanks to Francois Bissyande for pointing out the problem.
 - prevent code from being added to the beginning or end of a disjunction
-- delete some temporary files as they are created
+- more information about why a script is not applied when using -debug option
 
 ** Bugfix:
 - keep disjunction in the proper order for structure initialization fields

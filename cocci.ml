@@ -1043,9 +1043,9 @@ let apply_python_rule r cache newes e rules_that_have_matched
   else
     begin
       let (_, mv, _) = r.scr_ast_rule in
-      if List.for_all (Pycocci.contains_binding e) mv
-      then
-	begin
+      let not_bound x = not (Pycocci.contains_binding e x) in
+      (match List.filter not_bound mv with
+	[] ->
 	  let relevant_bindings =
 	    List.filter
 	      (function ((re,rm),_) ->
@@ -1071,8 +1071,13 @@ let apply_python_rule r cache newes e rules_that_have_matched
 	  if !Pycocci.inc_match
 	  then (new_cache, merge_env [(e, rules_that_have_matched)] newes)
 	  else (new_cache, newes)
-	end
-      else (cache, merge_env [(e, rules_that_have_matched)] newes)
+      |	unbound ->
+	  (if !Flag_cocci.show_dependencies
+	  then
+	    let m2c (_,(r,x)) = r^"."^x in
+	    pr2 (Printf.sprintf "script not applied: %s not bound"
+		   (String.concat ", " (List.map m2c unbound))));
+	  (cache, merge_env [(e, rules_that_have_matched)] newes))
     end
 
 let rec apply_cocci_rule r rules_that_have_ever_matched es
