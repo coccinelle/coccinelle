@@ -1,6 +1,6 @@
 int main () {
-  if (retval) {
-    if (retval != -ENODEV) {
+  if (retval1) {
+    if (retval2 != -ENODEV) {
       foo();
       return 3;
     }
@@ -10,8 +10,8 @@ int main () {
 }
 
 int second () {
-  if (retval) {
-    if (retval != -ENODEV) {
+  if (retval1) {
+    if (retval2 != -ENODEV) {
       foo();
       goto out;
     }

@@ -1,5 +1,5 @@
 int main () {
-  if (retval) {
+  if (retval1) {
       foo();
       return 3;
   }
@@ -7,7 +7,7 @@ int main () {
 }
 
 int second () {
-  if (retval) {
+  if (retval1) {
       foo();
       goto out;
   }
