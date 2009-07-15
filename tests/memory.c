@@ -1,10 +1,7 @@
-#define QUEUE_MAGIC_FREE	0xf7e1c9a3
-#define BAD_MAGIC(q,m)	((q)->magic != (m))
-
+#define BAD_MAGIC(q,m)	0
 
 int __queue_add(Queue_t *queue, Scsi_Cmnd *SCpnt, int head)
 {
-	QE_t *q;
-	if (BAD_MAGIC(q, QUEUE_MAGIC_FREE))
+	if (BAD_MAGIC(1,12))
 		BUG();
 }
