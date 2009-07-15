@@ -4,6 +4,6 @@
 void main(void)
 {
      INT16 a, b, c;
-     c = b - a;
+     c = a - b;
 }
 

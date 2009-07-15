@@ -225,11 +225,18 @@ let neutral_mcode (_,_,info,mcodekind,pos,_) =
 (* neutral for context; used for mcode in bef aft nodes that don't represent
 anything if they don't contain some information *)
 let nc_mcode (_,_,info,mcodekind,pos,_) =
-  let offset = info.Ast0.pos_info.Ast0.offset in
+  (* distinguish from the offset of some real token *)
+  let offset = (-1) * info.Ast0.pos_info.Ast0.offset in
   match mcodekind with
     Ast0.MINUS(_) -> Token(AllMarked,offset,mcodekind,[])
   | Ast0.PLUS -> Token(AllMarked,offset,mcodekind,[])
-  | Ast0.CONTEXT(_) -> Token(Neutral,offset,mcodekind,[offset])
+  | Ast0.CONTEXT(_) ->
+      (* Unlike the other mcode cases, we drop the offset from the context
+	 offsets.  This is because we don't know whether the term this is
+	 associated with is - or context.  In any case, the context offsets are
+	 used for identification, and this invisible node should not be needed
+	 for this purpose. *)
+      Token(Neutral,offset,mcodekind,[])
   | _ -> failwith "not possible"
 
 let is_context = function Ast0.CONTEXT(_) -> true | _ -> false

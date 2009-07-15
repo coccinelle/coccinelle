@@ -872,7 +872,6 @@ let rebuild_info_program cs file isexp =
       (* Common.command2 ("cat " ^ file); *)
       let cprogram = cprogram_of_file file in
       let xs = build_info_program cprogram c.env_typing_before in
-      Common.erase_this_temp_file file;
 	  
       (* TODO: assert env has not changed,
       * if yes then must also reparse what follows even if not modified.

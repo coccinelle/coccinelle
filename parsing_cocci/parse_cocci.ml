@@ -60,7 +60,6 @@ let token2c (tok,_) =
   | PC.TNever -> "never"
   | PC.TExists -> "exists"
   | PC.TForall -> "forall"
-  | PC.TReverse -> "reverse"
   | PC.TError -> "error"
   | PC.TWords -> "words"
   | PC.TGenerated -> "generated"
@@ -580,7 +579,6 @@ let split_token ((tok,_) as t) =
   | PC.TContext | PC.TRuleName(_) | PC.TUsing | PC.TDisable | PC.TExtends
   | PC.TPathIsoFile(_)
   | PC.TDepends | PC.TOn | PC.TEver | PC.TNever | PC.TExists | PC.TForall
-  | PC.TReverse
   | PC.TError | PC.TWords | PC.TGenerated | PC.TNothing -> ([t],[t])
 
   | PC.Tchar(clt) | PC.Tshort(clt) | PC.Tint(clt) | PC.Tdouble(clt)
@@ -1220,7 +1218,9 @@ let partition_either l =
 let get_metavars parse_fn table file lexbuf =
   let rec meta_loop acc (* read one decl at a time *) =
     let (_,tokens) =
-      tokens_all table file true lexbuf [PC.TArobArob;PC.TMPtVirg] in
+      Data.call_in_meta
+	(function _ ->
+	  tokens_all table file true lexbuf [PC.TArobArob;PC.TMPtVirg]) in
     let tokens = prepare_mv_tokens tokens in
     match tokens with
       [(PC.TArobArob,_)] -> List.rev acc
@@ -1292,12 +1292,10 @@ let parse_iso file =
               | _ -> failwith "Script rules cannot appear in isomorphism rules"
               in
 	    Ast0.rule_name := rule_name;
-	    Data.in_meta := true;
 	    let iso_metavars =
 	      match get_metavars PC.iso_meta_main table file lexbuf with
 		(iso_metavars,[]) -> iso_metavars
-	      |	_ -> failwith "unexpected inheritance in iso" in
-	    Data.in_meta := false;
+	      | _ -> failwith "unexpected inheritance in iso" in
 	    (* get the rule *)
 	    let (more,tokens) =
 	      get_tokens
@@ -1384,10 +1382,8 @@ let rec parse file =
 		rule_name :: !Data.inheritable_positions;
 
             (* get metavariable declarations *)
-            Data.in_meta := true;
             let (metavars, inherited_metavars) =
-              get_metavars PC.meta_main table file lexbuf in
-            Data.in_meta := false;
+	      get_metavars PC.meta_main table file lexbuf in
             Hashtbl.add Data.all_metadecls rule_name metavars;
             Hashtbl.add Lexer_cocci.rule_names rule_name ();
             Hashtbl.add Lexer_cocci.all_metavariables rule_name
@@ -1455,10 +1451,10 @@ let rec parse file =
             let get_tokens = tokens_script_all table file false lexbuf in
 
               (* meta-variables *)
-            Data.in_meta := true;
             let metavars =
-	      get_script_metavars PC.script_meta_main table file lexbuf in
-            Data.in_meta := false;
+	      Data.call_in_meta
+		(function _ ->
+		  get_script_metavars PC.script_meta_main table file lexbuf) in
 
             let exists_in old_metas (py,(r,m)) =
               let test (rr,mr) x =

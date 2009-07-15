@@ -234,12 +234,11 @@ module XTRANS = struct
              *)
 	       let pm str mcode env =
 		 Printf.sprintf
-		   "%s modification:\n%s\nAccording to environment %d:\n%s\n"
+		   "%s modification:\n%s\nAccording to environment:\n%s\n"
 		   str
 		   (Common.format_to_string
 		      (function _ ->
 			Pretty_print_cocci.print_mcodekind mcode))
-		   (List.length env)
 		   (String.concat "\n"
 		      (List.map
 			 (function ((r,vr),vl) ->
@@ -467,7 +466,7 @@ module XTRANS = struct
   let meta_name_to_str (s1, s2) = 
     s1 ^ "." ^ s2
 
-  let envf keep _inherited = fun (s, value, _) f tin -> 
+  let envf keep inherited = fun (s, value, _) f tin -> 
     let s = Ast_cocci.unwrap_mcode s in
     let v = 
       if keep =*= Type_cocci.Saved
@@ -498,7 +497,11 @@ module XTRANS = struct
          *)
 
         (*f () tin*)
-        if Cocci_vs_c.equal_metavarval value value' 
+	let equal =
+	  if inherited
+	  then Cocci_vs_c.equal_inh_metavarval
+	  else Cocci_vs_c.equal_metavarval in
+        if equal value value' 
         then f () tin
         else fail tin
 

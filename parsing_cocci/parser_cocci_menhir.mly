@@ -21,7 +21,7 @@ module P = Parse_aux
 %token TPure TContext TGenerated
 %token TTypedef TDeclarer TIterator TName TPosition TPosAny
 %token TUsing TDisable TExtends TDepends TOn TEver TNever TExists TForall
-%token TScript TInitialize TFinalize TReverse TNothing
+%token TScript TInitialize TFinalize TNothing
 %token<string> TRuleName
 
 %token<Data.clt> Tchar Tshort Tint Tdouble Tfloat Tlong
@@ -220,7 +220,6 @@ disable:
 exists:
   TExists { Ast.Exists }
 | TForall { Ast.Forall }
-| TReverse TForall { Ast.ReverseForall }
 |         { Ast.Undetermined }
 
 is_expression: // for more flexible parsing of top level expressions
@@ -581,30 +580,30 @@ declarations, statements, and expressions for the subterms */
 minus_body:
     f=loption(filespec)
     b=loption(minus_start)
-    ew=loption(error_words)
-    { match f@b@ew with
+    /*ew=loption(error_words)*/
+    { match f@b(*@ew*) with
       [] -> raise (Semantic_cocci.Semantic "minus slice can't be empty")
     | code -> Top_level.top_level code }
 
 plus_body:
     f=loption(filespec)
     b=loption(plus_start)
-    ew=loption(error_words)
-    { Top_level.top_level (f@b@ew) }
+    /*ew=loption(error_words)*/
+    { Top_level.top_level (f@b(*@ew*)) }
 
 minus_exp_body:
     f=loption(filespec)
     b=top_eexpr
-    ew=loption(error_words)
-    { match f@[b]@ew with
+    /*ew=loption(error_words)*/
+    { match f@[b](*@ew*) with
       [] -> raise (Semantic_cocci.Semantic "minus slice can't be empty")
     | code -> Top_level.top_level code }
 
 plus_exp_body:
     f=loption(filespec)
     b=top_eexpr
-    ew=loption(error_words)
-    { Top_level.top_level (f@[b]@ew) }
+    /*ew=loption(error_words)*/
+    { Top_level.top_level (f@[b](*@ew*)) }
 
 filespec:
   TMinusFile TPlusFile
@@ -1380,10 +1379,28 @@ meta_ident:
 pure_ident_or_meta_ident:
        pure_ident                { (None,P.id2name $1) }
      | meta_ident                { $1 }
-     | Tlist                     { (None,"list") }
-     | TError                    { (None,"error") }
-     | TType                     { (None,"type") }
-     | TName                     { (None,"name") }
+     | TIdentifier { (None, "identifier") }
+     | TExpression { (None, "expression") }
+     | TStatement { (None, "statement") }
+     | TFunction { (None, "function") }
+     | TLocal { (None, "local") }
+     | TType { (None, "type") }
+     | TParameter { (None, "parameter") }
+     | TIdExpression { (None, "idexpression") }
+     | TInitialiser { (None, "initialiser") }
+     | Tlist { (None, "list") }
+     | TFresh { (None, "fresh") }
+     | TConstant { (None, "constant") }
+     | TError { (None, "error") }
+     | TWords { (None, "words") }
+     | TPure { (None, "pure") }
+     | TContext { (None, "context") }
+     | TGenerated { (None, "generated") }
+     | TTypedef { (None, "typedef") }
+     | TDeclarer { (None, "declarer") }
+     | TIterator { (None, "iterator") }
+     | TName { (None, "name") }
+     | TPosition { (None, "position") }
 
 pure_ident_or_meta_ident_with_seed:
        pure_ident_or_meta_ident { ($1,Ast.NoVal) }
@@ -1565,9 +1582,15 @@ comma_decls(dotter,decl):
 
 /* ---------------------------------------------------------------------- */
 
-error_words:
+/* error words make it complicated to be able to use error as a metavariable
+name or a type in a metavariable list; for that we would like to allow TError
+as an ident, but that makes conflicts with this rule.  To add back error words,
+need to find some appropriate delimiter for it, but it has not been used much
+so just drop it */
+/*error_words:
     TError TWords TEq TOCro cl=comma_list(dexpr) TCCro
       { [Ast0.wrap(Ast0.ERRORWORDS(cl))] }
+*/
 
 /* ---------------------------------------------------------------------- */
 /* sequences of statements and expressions */

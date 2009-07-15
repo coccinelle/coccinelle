@@ -3,7 +3,7 @@
 (* true = don't see all matched nodes, only modified ones *)
 let onlyModif = ref true(*false*)
 
-type ex = Exists | Forall | ReverseForall
+type ex = Exists | Forall
 let exists = ref Forall
 
 module Ast = Ast_cocci
@@ -70,7 +70,6 @@ let ctl_ax s = function
       match !exists with
 	Exists -> CTL.EX(CTL.FORWARD,x)
       |	Forall -> CTL.AX(CTL.FORWARD,s,x)
-      |	ReverseForall -> failwith "not supported"
 
 let ctl_ax_absolute s = function
     CTL.True -> CTL.True
@@ -108,20 +107,16 @@ let ctl_au s x y =
   match (x,!exists) with
     (CTL.True,Exists) -> CTL.EF(CTL.FORWARD,y)
   | (CTL.True,Forall) -> CTL.AF(CTL.FORWARD,s,y)
-  | (CTL.True,ReverseForall) -> failwith "not supported"
   | (_,Exists) -> CTL.EU(CTL.FORWARD,x,y)
   | (_,Forall) -> CTL.AU(CTL.FORWARD,s,x,y)
-  | (_,ReverseForall) -> failwith "not supported"
 
 let ctl_anti_au s x y = (* only for ..., where the quantifier is changed *)
   CTL.XX
     (match (x,!exists) with
       (CTL.True,Exists) -> CTL.AF(CTL.FORWARD,s,y)
     | (CTL.True,Forall) -> CTL.EF(CTL.FORWARD,y)
-    | (CTL.True,ReverseForall) -> failwith "not supported"
     | (_,Exists) -> CTL.AU(CTL.FORWARD,s,x,y)
-    | (_,Forall) -> CTL.EU(CTL.FORWARD,x,y)
-    | (_,ReverseForall) -> failwith "not supported")
+    | (_,Forall) -> CTL.EU(CTL.FORWARD,x,y))
 
 let ctl_uncheck = function
     CTL.True -> CTL.True
@@ -587,7 +582,8 @@ and get_before_e s a =
   | Ast.Nest(stmt_dots,w,multi,_,aft) ->
       let w = get_before_whencode w in
       let (sd,_) = get_before stmt_dots a in
-      let a =
+      (*let a =
+	got rid of this, don't want to let nests overshoot
 	List.filter
 	  (function
 	      Ast.Other a ->
@@ -603,7 +599,7 @@ and get_before_e s a =
 		  Unify_ast.MAYBE -> false
 		| _ -> true)
 	    | _ -> true)
-	  a in
+	  a in*)
       (Ast.rewrap s (Ast.Nest(sd,w,multi,a,aft)),[Ast.Other_dots stmt_dots])
   | Ast.Disj(stmt_dots_list) ->
       let (dsl,dsla) =
@@ -689,7 +685,8 @@ and get_after_e s a =
   | Ast.Nest(stmt_dots,w,multi,bef,_) ->
       let w = get_after_whencode a w in
       let (sd,_) = get_after stmt_dots a in
-      let a =
+      (*let a =
+	 got rid of this. don't want to let nests overshoot
 	List.filter
 	  (function
 	      Ast.Other a ->
@@ -705,7 +702,7 @@ and get_after_e s a =
 		  Unify_ast.MAYBE -> false
 		| _ -> true)
 	    | _ -> true)
-	  a in
+	  a in*)
       (Ast.rewrap s (Ast.Nest(sd,w,multi,bef,a)),[Ast.Other_dots stmt_dots])
   | Ast.Disj(stmt_dots_list) ->
       let (dsl,dsla) =
@@ -834,7 +831,15 @@ let exptymatch l make_match make_guard_match =
   let rec suffixes = function
       [] -> []
     | x::xs -> xs::(suffixes xs) in
-  let prefixes = List.rev (suffixes (List.rev guard_matches)) in
+  let prefixes =
+    (* normally, we check that an expression does not match something
+       earlier in the disjunction (calculated as prefixes).  But for large
+       disjunctions, this can result in a very big CTL formula.  So we
+       give the user the option to say he doesn't want this feature, if that is
+       the case. *)
+    if !Flag_matcher.no_safe_expressions
+    then List.map (function _ -> []) matches
+    else List.rev (suffixes (List.rev guard_matches)) in
   let info = (* not null *)
     List.map2
       (function matcher ->
@@ -1239,6 +1244,9 @@ let dots_au is_strict toend label s wrapcode n x seq_after y quantifier =
     else
       Common.Right
 	(function vx -> function v ->
+	  (* vx is the contents of the nest, if any.  we can only stop early
+	     if we find neither the ending code nor the nest contents in
+	     the if branch.  not sure if this is a good idea. *)
 	  let lv = get_label_ctr() in
 	  let labelpred = CTL.Pred(Lib_engine.Label lv,CTL.Control) in
 	  let preflabelpred = label_pred_maker (Some (lv,ref true)) in
@@ -1248,7 +1256,7 @@ let dots_au is_strict toend label s wrapcode n x seq_after y quantifier =
 		  (ctl_and CTL.NONSTRICT (truepred label) labelpred)
 		  (ctl_au CTL.NONSTRICT
 		     (ctl_and CTL.NONSTRICT (ctl_not v)
-			(ctl_and CTL.NONSTRICT (ctl_not vx) preflabelpred))
+			(ctl_and CTL.NONSTRICT vx preflabelpred))
 		     (ctl_and CTL.NONSTRICT preflabelpred
 			(if !Flag_matcher.only_return_is_error_exit
 			then
@@ -1352,9 +1360,11 @@ let rec dots_and_nests plus nest whencodes bef aft dotcode after label
       on the "true" in between code *)
   let plus_var = if plus then get_label_ctr() else string2var "" in
   let plus_var2 = if plus then get_label_ctr() else string2var "" in
-  let ornest =
+  let (ornest,just_nest) =
+    (* just_nest is used when considering whether to stop early, to continue
+       to collect nest information in the if branch *)
     match (nest,guard && not plus) with
-      (None,_) | (_,true) -> whencodes CTL.True
+      (None,_) | (_,true) -> (whencodes CTL.True,CTL.True)
     | (Some nest,false) ->
 	let v = get_let_ctr() in
 	let is_plus x =
@@ -1371,13 +1381,11 @@ let rec dots_and_nests plus nest whencodes bef aft dotcode after label
 			       CTL.Pred(Lib_engine.BindGood(plus_var),
 					CTL.Modif plus_var2)))
 	  else x in
-        CTL.Let(v,nest,
-		CTL.Or(is_plus (CTL.Ref v),
-		       whencodes (CTL.Not(ctl_uncheck (CTL.Ref v))))) in
-  let just_nest =
-    match (nest,guard && not plus) with
-      (None,_) | (_,true) -> CTL.False
-    | (Some nest,false) -> nest in
+	let body = 
+	  CTL.Let(v,nest,
+		  CTL.Or(is_plus (CTL.Ref v),
+			 whencodes (CTL.Not(ctl_uncheck (CTL.Ref v))))) in
+        (body,body) in
   let plus_modifier x =
     if plus
     then
@@ -1745,7 +1753,7 @@ and statement stmt after quantified minus_quantified
 		      (quantify guard b2fvs
 			 (statement_list body Tail
 			    new_quantified2 new_mquantified2
-			    (Some (lv,ref true))
+			    None(*no label because past the goto*)
 			    llabel slabel false guard))])) in
 	ctl_or pattern_as_given (ctl_or pattern2 pattern3)
       else pattern_as_given
@@ -2310,7 +2318,6 @@ let asttoctlz (name,(_,_,exists_flag),l)
   (match exists_flag with
     Ast.Exists -> exists := Exists
   | Ast.Forall -> exists := Forall
-  | Ast.ReverseForall -> exists := ReverseForall
   | Ast.Undetermined ->
       exists := if !Flag.sgrep_mode2 then Exists else Forall);
 

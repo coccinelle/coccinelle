@@ -1,4 +1,16 @@
+@aaa@
+identifier f;
 @@
+
+a();
+<...
+-ff();
++g();
+...>
+b();
+
+
+@bbb@
 identifier f;
 @@
 
@@ -8,3 +20,12 @@ a();
 +g();
 ...>
 b();
+
+
+@xxx@
+identifier f;
+@@
+
+a();
+...
+-b();

@@ -543,7 +543,7 @@ and anything =
 
 (* --------------------------------------------------------------------- *)
 
-and exists = Exists | Forall | ReverseForall | Undetermined
+and exists = Exists | Forall | Undetermined
 
 (* --------------------------------------------------------------------- *)
 

@@ -610,10 +610,9 @@ let astfvs metavars bound =
 	  Ast.Iterator(header,body,(unbound,fresh,inherited,aft))
       |	s -> s in
 
-    let (unbound,munbound,fresh,_) = classify free minus_free in
+    let (matched,munbound,fresh,_) = classify free minus_free in
     let inherited =
       List.filter (function x -> List.mem x bound) nc_free in
-    let (matched,fresh) = collect_fresh unbound in
     {res with
       Ast.node = s;
       Ast.free_vars = matched;

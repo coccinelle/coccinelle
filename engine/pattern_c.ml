@@ -295,7 +295,7 @@ module XMATCH = struct
 	   inherited variables *)
 	(match Common.optionise (fun () -> tin.binding0 +> List.assoc c) with
 	  Some valu' ->
-	    if Cocci_vs_c.equal_metavarval exp valu'
+	    if Cocci_vs_c.equal_inh_metavarval exp valu'
 	    then success else failure
 	| None ->
 	    (* if the variable is not there, it puts no constraints *)
@@ -318,7 +318,7 @@ module XMATCH = struct
     then
       match Common.optionise (fun () -> tin.binding0 +> List.assoc k) with
       | Some (valu') ->
-          if Cocci_vs_c.equal_metavarval valu valu'
+          if Cocci_vs_c.equal_inh_metavarval valu valu'
           then Some tin.binding
           else None
       |	None -> None

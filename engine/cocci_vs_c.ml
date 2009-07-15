@@ -288,6 +288,60 @@ let equal_metavarval valu valu' =
     ), _
       -> raise Impossible
 
+let equal_inh_metavarval valu valu' =
+  match valu, valu' with
+  | Ast_c.MetaIdVal a, Ast_c.MetaIdVal b -> a =$= b
+  | Ast_c.MetaFuncVal a, Ast_c.MetaFuncVal b -> a =$= b
+  | Ast_c.MetaLocalFuncVal a, Ast_c.MetaLocalFuncVal b -> 
+      (* do something more ? *)
+      a =$= b
+
+  (* al_expr before comparing !!! and accept when they match.
+   * Note that here we have Astc._expression, so it is a match
+   * modulo isomorphism (there is no metavariable involved here,
+   * just isomorphisms). => TODO call isomorphism_c_c instead of
+   * =*=. Maybe would be easier to transform ast_c in ast_cocci
+   * and call the iso engine of julia. *)
+  | Ast_c.MetaExprVal a, Ast_c.MetaExprVal b -> 
+      Lib_parsing_c.al_inh_expr a =*= Lib_parsing_c.al_inh_expr b
+  | Ast_c.MetaExprListVal a, Ast_c.MetaExprListVal b -> 
+      Lib_parsing_c.al_inh_arguments a =*= Lib_parsing_c.al_inh_arguments b
+
+  | Ast_c.MetaStmtVal a, Ast_c.MetaStmtVal b -> 
+      Lib_parsing_c.al_inh_statement a =*= Lib_parsing_c.al_inh_statement b
+  | Ast_c.MetaInitVal a, Ast_c.MetaInitVal b -> 
+      Lib_parsing_c.al_inh_init a =*= Lib_parsing_c.al_inh_init b
+  | Ast_c.MetaTypeVal a, Ast_c.MetaTypeVal b -> 
+      (* old: Lib_parsing_c.al_inh_type a =*= Lib_parsing_c.al_inh_type b *)
+      C_vs_c.eq_type a b
+        
+  | Ast_c.MetaListlenVal a, Ast_c.MetaListlenVal b -> a =|= b
+
+  | Ast_c.MetaParamVal a, Ast_c.MetaParamVal b -> 
+      Lib_parsing_c.al_param a =*= Lib_parsing_c.al_param b
+  | Ast_c.MetaParamListVal a, Ast_c.MetaParamListVal b -> 
+      Lib_parsing_c.al_params a =*= Lib_parsing_c.al_params b
+
+  | Ast_c.MetaPosVal (posa1,posa2), Ast_c.MetaPosVal (posb1,posb2) -> 
+      Ast_cocci.equal_pos posa1 posb1 && Ast_cocci.equal_pos posa2 posb2
+        
+  | Ast_c.MetaPosValList l1, Ast_c.MetaPosValList l2 ->
+      List.exists
+	(function (fla,cea,posa1,posa2) ->
+	  List.exists
+	    (function (flb,ceb,posb1,posb2) ->
+	      fla =$= flb && cea =$= ceb &&
+	      Ast_c.equal_posl posa1 posb1 && Ast_c.equal_posl posa2 posb2)
+            l2)
+	l1
+
+  | (B.MetaPosValList _|B.MetaListlenVal _|B.MetaPosVal _|B.MetaStmtVal _
+      |B.MetaTypeVal _ |B.MetaInitVal _
+      |B.MetaParamListVal _|B.MetaParamVal _|B.MetaExprListVal _
+      |B.MetaExprVal _|B.MetaLocalFuncVal _|B.MetaFuncVal _|B.MetaIdVal _
+    ), _
+      -> raise Impossible
+
 
 (*---------------------------------------------------------------------------*)
 (* could put in ast_c.ml, next to the split/unsplit_comma *)

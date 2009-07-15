@@ -463,6 +463,9 @@ let other_options = [
     "-allow_inconsistent_paths",
     Arg.Set Flag_matcher.allow_inconsistent_paths,
     "   if this flag is set don't check for inconsistent paths; dangerous";
+    "-no_safe_expressions",
+    Arg.Set Flag_matcher.no_safe_expressions,
+    "  make an expression disjunction not prioritise the topmost disjunct";
     "-int_bits", Arg.Int Flag_parsing_c.set_int_bits,
     "  the number of bits in an unsigned int";
     "-long_bits", Arg.Int Flag_parsing_c.set_long_bits,

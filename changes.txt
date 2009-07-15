@@ -21,6 +21,7 @@
   paths.  Thanks to Francois Bissyande for pointing out the problem.
 - prevent code from being added to the beginning or end of a disjunction
 - more information about why a script is not applied when using -debug option
+- added -no_safe_expressions option
 
 ** Bugfix:
 - keep disjunction in the proper order for structure initialization fields
@@ -29,8 +30,18 @@
 - drop complaints about label metavariables not being used
 - drop test information from the type of an expression when the expression
   is bound to a metavariable
+<<<<<<< changes.txt
+<<<<<<< changes.txt
+- nests should not extend beyond the before and after code, even if the
+  before and after code matches the nest code
+- nests should extend into conditioals that end in error exit
+=======
+>>>>>>> 1.91
+>>>>>>> 1.92
+=======
 - take into account metavariables on "else".  Thanks to Derek Jones for
   pointing out the problem.
+>>>>>>> 1.94
 
 * 0.1.8
 

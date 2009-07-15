@@ -1815,6 +1815,7 @@ let merge_plus model_mcode e_mcode =
 	    | Ast.AFTER(a) -> (anythings@a,t)
 	    | Ast.BEFOREAFTER(b,a) -> (b@anythings@a,t)
 	    | Ast.NOTHING -> (anythings,t))
+      | Ast0.MIXED(_) -> failwith "how did this become mixed?"
       |	_ -> failwith "not possible 7")
   | Ast0.MIXED(_) -> failwith "not possible 8"
   | Ast0.PLUS -> failwith "not possible 9"

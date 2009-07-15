@@ -1,5 +1,5 @@
 @ r1 @
-identifier X, Y;
+identifier X,Y;
 @@
 
 struct foo {
