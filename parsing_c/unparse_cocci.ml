@@ -369,7 +369,7 @@ and  logicalOp = function
 
 and constant = function
     Ast.String(s) -> print_string ("\""^s^"\"")
-  | Ast.Char(s) -> print_string s
+  | Ast.Char(s) -> print_string ("\'"^s^"\'")
   | Ast.Int(s) -> print_string s
   | Ast.Float(s) -> print_string s
 
