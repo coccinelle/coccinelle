@@ -521,6 +521,9 @@ and declaration =
 
      and local_decl = LocalDecl | NotLocalDecl
 
+     (* fullType is the type used if the type should be converted to
+	an assignment.  It can be adjusted in the type annotation
+	phase when typedef information is availalble *)
      and initialiser = initialiserbis wrap
        and initialiserbis = 
           | InitExpr of expression 

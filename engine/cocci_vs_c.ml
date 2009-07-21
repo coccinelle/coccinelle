@@ -485,6 +485,8 @@ let initialisation_to_affectation decl =
                 B.v_local = local},
               iisep) = x in
 
+
+
           (match var with
           | Some (name, iniopt) -> 
               (match iniopt with
