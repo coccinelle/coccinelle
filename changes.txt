@@ -25,6 +25,7 @@
 - added -no_loops option.  Ignores back edges derived from looping
   constructs.  This is unsafe, but perhaps useful for bug finding, as it can
   be more efficient.
+- for semantic matches, allow "minus" on same code with multiple environments
 
 ** Bugfix:
 - keep disjunction in the proper order for structure initialization fields

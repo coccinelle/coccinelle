@@ -208,7 +208,7 @@ module XTRANS = struct
 
     | (Ast_cocci.MINUS(old_pos,old_inst,old_adj,[]),
        Ast_cocci.MINUS(new_pos,new_inst,new_adj,[]))
-	when old_pos = new_pos && oldenv =*= tin.binding
+	when old_pos = new_pos && (oldenv =*= tin.binding or !Flag.sgrep_mode2)
 	    (* no way to combine adjacency information, just drop one *)
       ->
         cocciinforef := Some
