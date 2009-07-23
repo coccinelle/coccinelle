@@ -915,6 +915,42 @@ let rec translate_when_true_false = function
   | x::xs -> x :: (translate_when_true_false xs)
 
 (* ----------------------------------------------------------------------- *)
+
+let check_parentheses tokens =
+  let clt2line (_,line,_,_,_,_,_,_) = line in
+  let rec loop seen_open = function
+      [] -> tokens
+    | (PC.TOPar(clt),q) :: rest
+    | (PC.TDefineParam(clt,_,_,_),q) :: rest ->
+	loop (Common.Left (clt2line clt) :: seen_open) rest
+    | (PC.TOPar0(clt),q) :: rest ->
+	loop (Common.Right (clt2line clt) :: seen_open) rest
+    | (PC.TCPar(clt),q) :: rest ->
+	(match seen_open with
+	  [] ->
+	    failwith
+	      (Printf.sprintf
+		 "unexpected close parenthesis in line %d\n" (clt2line clt))
+	| Common.Left _ :: seen_open -> loop seen_open rest
+	| Common.Right open_line :: _ -> 
+	    failwith
+	      (Printf.sprintf
+		 "disjunction parenthesis in line %d column 0 matched to normal parenthesis on line %d\n" open_line (clt2line clt)))
+    | (PC.TCPar0(clt),q) :: rest ->
+	(match seen_open with
+	  [] ->
+	    failwith
+	      (Printf.sprintf
+		 "unexpected close parenthesis in line %d\n" (clt2line clt))
+	| Common.Right _ :: seen_open -> loop seen_open rest
+	| Common.Left open_line :: _ -> 
+	    failwith
+	      (Printf.sprintf
+		 "normal parenthesis in line %d matched to disjunction parenthesis on line %d column 0\n" open_line (clt2line clt)))
+    | x::rest -> loop seen_open rest in
+  loop [] tokens
+
+(* ----------------------------------------------------------------------- *)
 (* top level initializers: a sequence of braces followed by a dot *)
 
 let find_top_init tokens =
@@ -1169,7 +1205,8 @@ let prepare_tokens tokens =
   find_top_init
     (translate_when_true_false (* after insert_line_end *)
        (insert_line_end
-	  (detect_types false (find_function_names (detect_attr tokens)))))
+	  (detect_types false
+	     (find_function_names (detect_attr (check_parentheses tokens))))))
 
 let prepare_mv_tokens tokens =
   detect_types false (detect_attr tokens)
