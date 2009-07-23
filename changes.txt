@@ -29,6 +29,8 @@
   environments
 - better error message for mismatch of parenthesis in column 0 with normal
   parenthesis.  Thanks to Derek Jones for pointing out the problem.
+- allow disjunctions on function return types.  Thanks to Pierre Habouzit
+  for pointing this out.
 
 ** Bugfix:
 - keep disjunction in the proper order for structure initialization fields

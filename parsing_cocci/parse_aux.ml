@@ -481,3 +481,30 @@ let make_initial_script_rule_name_result lang =
 let make_final_script_rule_name_result lang =
   let l = id2name lang in
   Ast.FinalScriptRulename(l)
+
+(* Allows type alone only when it is void and only when there is only one
+    parameter.  This avoids ambiguity problems in the parser. *)
+let verify_parameter_declarations = function
+    [] -> ()
+  | [x] ->
+      (match Ast0.unwrap x with
+	Ast0.Param(t, None) ->
+	  (match Ast0.unwrap t with
+	    Ast0.BaseType(Ast.VoidType,_) -> ()
+	  | _ ->
+	      failwith
+		(Printf.sprintf
+		   "%d: only void can be a parameter without an identifier"
+		   (Ast0.get_line t)))
+      |	_ -> ())
+  | l ->
+      List.iter
+	(function x ->
+	  match Ast0.unwrap x with
+	    Ast0.Param(t, None) ->
+	      failwith
+		(Printf.sprintf
+		   "%d: only void alone can be a parameter without an identifier"
+		   (Ast0.get_line t))
+	  | _ -> ())
+	l
