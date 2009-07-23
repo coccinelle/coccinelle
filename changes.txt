@@ -28,7 +28,7 @@
 - for semantic matches, allow "minus" on same code with multiple
   environments
 - better error message for mismatch of parenthesis in column 0 with normal
-  parenthesis
+  parenthesis.  Thanks to Derek Jones for pointing out the problem.
 
 ** Bugfix:
 - keep disjunction in the proper order for structure initialization fields

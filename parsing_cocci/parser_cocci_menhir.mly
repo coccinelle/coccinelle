@@ -561,7 +561,11 @@ fn_ctype: // allows metavariables
          { P.pointerify
 	     (Ast0.wrap(Ast0.BaseType(Ast.VoidType,[P.clt2mcode "void" t])))
 	     m }
-
+/*     | lp=TOPar0 t=midzero_list(fn_ctype,fn_ctype) rp=TCPar0
+       { let (mids,code) = t in
+         Ast0.wrap
+	  (Ast0.DisjType(P.clt2mcode "(" lp,code,mids, P.clt2mcode ")" rp)) }
+*/
 %inline ctype_qualif:
   r=Tunsigned
    { function x -> Ast0.wrap(Ast0.Signed(P.clt2mcode Ast.Unsigned r,x)) }
