@@ -50,6 +50,7 @@
 - support disjunction of types on variable declaration
 - allow @ within strings in script code.  ignore // comment lines in script
   code.
+- don't drop + code placed after the transformed code
 
 
 * 0.1.8

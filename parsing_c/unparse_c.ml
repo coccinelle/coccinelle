@@ -547,7 +547,8 @@ let remove_minus_and_between_and_expanded_and_fake xs =
         let (between_comments, rest) =
 	  Common.span is_minusable_comment_or_plus xs in
         (match rest with
-        | [] -> [t1]
+        | [] ->
+	    t1 :: (List.map (set_minus_comment_or_plus adj1) between_comments)
 
         | ((T2 (_,Min adj2,_)) as t2)::rest when common_adj adj1 adj2 ->
             t1::
@@ -865,7 +866,7 @@ let pp_program2 xs outfile  =
       let e = remove_useless_fakeInfo_struct e in
       
       match ppmethod with
-      | PPnormal -> 
+      | PPnormal ->
           (* now work on tokens *)
 
           (* phase1: just get all the tokens, all the information *)
