@@ -105,6 +105,10 @@ let testall ?(expected_score_file="tests/SCORE_expected.sexp") () =
               let s = Str.global_replace 
                 (Str.regexp "\"/tmp/cocci-output.*\"") "<COCCIOUTPUTFILE>" s
               in
+              (* on macos the temporary files are stored elsewhere *)
+              let s = Str.global_replace 
+                (Str.regexp "\"/var/folders/.*/cocci-output.*\"") "<COCCIOUTPUTFILE>" s
+              in
               let s = 
                 "INCORRECT:" ^ s ^ "\n" ^ 
                 "    diff (result(<) vs expected_result(>)) = \n" ^

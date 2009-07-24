@@ -2343,7 +2343,8 @@ and (struct_field: (A.declaration, B.field) matcher) = fun fa fb ->
               B.v_local = Ast_c.NotLocalDecl;
               B.v_attr = Ast_c.noattr;
               B.v_type_bis = ref None; 
-              (* TODO? the struct field should also get expanded ? *)
+              (* the struct field should also get expanded ? no it's not
+               * important here, we will rematch very soon *)
             },
 	     iivirg)            
           in
