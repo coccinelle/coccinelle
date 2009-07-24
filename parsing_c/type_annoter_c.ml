@@ -1038,7 +1038,8 @@ let rec visit_toplevel ~just_add_in_env ~depth elem =
       (match d with
       | (DeclList (xs, ii)) -> 
           xs +> List.iter (fun ({v_namei = var; v_type = t;
-                                 v_storage = sto; v_local = local}, iicomma) -> 
+                                 v_storage = sto; v_local = local} as x
+                                   , iicomma) ->
 
             (* to add possible definition in type found in Decl *)
             Visitor_c.vk_type bigf t;
@@ -1058,6 +1059,8 @@ let rec visit_toplevel ~just_add_in_env ~depth elem =
               | _ -> 
                   add_binding (VarOrFunc (s, (Lib.al_type t, local))) true;
 
+                  x.v_type_bis := 
+                    Some (typedef_fix (Lib.al_type t) !_scoped_env);
 
                   if need_annotate_body then begin
                     (* int x = sizeof(x) is legal so need process ini *)

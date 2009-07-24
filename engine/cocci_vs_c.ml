@@ -481,6 +481,7 @@ let initialisation_to_affectation decl =
       | [x] -> 
           let ({B.v_namei = var;
                 B.v_type = returnType;
+                B.v_type_bis = tybis;
                 B.v_storage = storage;
                 B.v_local = local},
               iisep) = x in
@@ -497,8 +498,20 @@ let initialisation_to_affectation decl =
 		      Ast_c.NotLocalDecl -> Ast_c.NotLocalVar
 		    | Ast_c.LocalDecl ->
 			Ast_c.LocalVar (Ast_c.info_of_type returnType) in
+
+                  let typexp = 
+                    (* old: Lib_parsing_c.al_type returnType
+                     * but this type has not the typename completed so
+                     * instead try to use tybis
+                     *)
+                    match !tybis with
+                    | Some ty_with_typename_completed -> 
+                        ty_with_typename_completed
+                    | None -> raise Impossible
+                  in
+                        
                   let typ =
-		    ref (Some ((Lib_parsing_c.al_type returnType),local),
+		    ref (Some (typexp,local),
 			       Ast_c.NotTest) in
                   let ident = name in
                   let idexpr = 
