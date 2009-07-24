@@ -1740,6 +1740,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
      B.v_storage = (B.StoTypedef, inl);
      B.v_local = local; 
      B.v_attr = attrs;
+     B.v_type_bis = typb0bis;
    }, iivirg) ->
 
    (match A.unwrap tya0, typb0 with
@@ -1803,6 +1804,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
                         B.v_storage = (B.StoTypedef, inl);
                         B.v_local = local;
                         B.v_attr = attrs;
+                        B.v_type_bis = typb0bis;
                      },
                        iivirg),iiptvirgb,iistob)
                      )
@@ -1831,6 +1833,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
                         B.v_storage = (B.StoTypedef, inl);
                         B.v_local = local;
                         B.v_attr = attrs;
+                        B.v_type_bis = typb0bis;
                      },
                       iivirg),iiptvirgb,iistob)
                    )
@@ -1862,6 +1865,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
        B.v_storage = stob;
        B.v_local = local;
        B.v_attr = attrs;
+       B.v_type_bis = typbbis;
      }, iivirg) -> 
 
        tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb -> 
@@ -1876,6 +1880,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
               B.v_storage = stob;
               B.v_local = local;
               B.v_attr = attrs;
+              B.v_type_bis = typbbis;
            },iivirg),
 	    iiptvirgb,iistob)
          )))))
@@ -1886,6 +1891,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
        B.v_storage = stob;
        B.v_local = local;
        B.v_attr = attrs;
+       B.v_type_bis = typbbis;
      },iivirg)
        ->
        tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb -> 
@@ -1902,6 +1908,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
               B.v_storage = stob;
               B.v_local = local;
               B.v_attr = attrs;
+              B.v_type_bis = typbbis;
            },iivirg),
            iiptvirgb,iistob)
          )))))))
@@ -1912,6 +1919,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
        B.v_storage = stob; 
        B.v_local = local;
        B.v_attr = attrs;
+       B.v_type_bis = typbbis;
      }, iivirg)  ->
 
        if stob =*= (B.NoSto, false)
@@ -1925,6 +1933,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
                 B.v_storage = stob;
                 B.v_local = local;
                 B.v_attr = attrs;
+                B.v_type_bis = typbbis;
              }, iivirg), iiptvirgb, iistob)
            )))
        else fail
@@ -1936,6 +1945,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
        B.v_storage = (B.StoTypedef,inline);
        B.v_local = local;
        B.v_attr = attrs;
+       B.v_type_bis = typbbis;
      },iivirg) ->
 
        tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb -> 
@@ -1988,6 +1998,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
               B.v_storage = (B.StoTypedef,inline);
               B.v_local = local;
               B.v_attr = attrs;
+              B.v_type_bis = typbbis;
            },
 	     iivirg),
             iiptvirgb, iistob)
@@ -2318,6 +2329,8 @@ and (struct_field: (A.declaration, B.field) matcher) = fun fa fb ->
               B.v_storage = stob;
               B.v_local = Ast_c.NotLocalDecl;
               B.v_attr = Ast_c.noattr;
+              B.v_type_bis = ref None; 
+              (* TODO? the struct field should also get expanded ? *)
             },
 	     iivirg)            
           in
