@@ -13,6 +13,8 @@
 
 #TODO check python 2.5 ?
 
+# need latex and hevea if want to compile the documentation
+
 #old: --with-menhir=/path/to/menhirLib or `ocamlfind query menhirLib`
 
 my $project =
