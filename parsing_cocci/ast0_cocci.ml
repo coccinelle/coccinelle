@@ -536,9 +536,9 @@ let rec ast0_type_to_type ty =
 	Id(tag) ->
 	  Type_cocci.StructUnionName(structUnion su,false,unwrap_mcode tag)
       | MetaId(tag,_,_) ->
-	  (Printf.printf
+	  (Common.pr2
 	     "warning: struct/union with a metavariable name detected.\n";
-	   Printf.printf
+	   Common.pr2
 	     "For type checking assuming the name of the metavariable is the name of the type\n";
 	   let (rule,tag) = unwrap_mcode tag in
 	   Type_cocci.StructUnionName(structUnion su,true,rule^tag))
@@ -548,7 +548,10 @@ let rec ast0_type_to_type ty =
   | TypeName(name) -> Type_cocci.TypeName(unwrap_mcode name)
   | MetaType(name,_) ->
       Type_cocci.MetaType(unwrap_mcode name,Type_cocci.Unitary,false)
-  | DisjType(_,types,_,_) -> failwith "unexpected DisjType"
+  | DisjType(_,types,_,_) ->
+      Common.pr2_once
+	"disjtype not supported in smpl type inference, assuming unknown";
+      Type_cocci.Unknown
   | OptType(ty) | UniqueType(ty) ->
       ast0_type_to_type ty
 

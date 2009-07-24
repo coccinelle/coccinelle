@@ -45,6 +45,7 @@
 - take into account metavariables on "else".  Thanks to Derek Jones for
   pointing out the problem.
 - print single quotes on generated character constants
+- support disjunction of types on variable declaration
 
 * 0.1.8
 
