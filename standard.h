@@ -72,11 +72,12 @@
 
 // this is defined by windows compiler, and so can not be found via a macro
 // after a -extract_macros
-#define __stdcall /*could: YACFE_ATTRIBUTE*/
-#define __declspec(a) 
+// update: now handled in lexer, simplify stuff
+//#define __stdcall /*could: YACFE_ATTRIBUTE*/
+//#define __declspec(a) 
 
-#define WINAPI
-#define CALLBACK
+//#define WINAPI
+//#define CALLBACK
 
 
 // ****************************************************************************
@@ -172,8 +173,8 @@
 // maybe only in old kernel
 #define  __openfirmware
 
-
-#define __extension__
+// now in lexer
+//#define __extension__
 
 #define __thread
 #define __used
@@ -357,7 +358,10 @@
 
 #define __releases(x) 
 #define __acquires(x) 
-#define __declspec(x) 
+
+//now in lexer
+//#define __declspec(x) 
+
 #define __page_aligned(x) 
 #define __vsyscall(x) 
 
