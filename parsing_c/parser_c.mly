@@ -1269,6 +1269,7 @@ decl2:
        DeclList ([{v_namei = None; v_type = returnType; 
                    v_storage = unwrap storage; v_local = local;
                    v_attr = Ast_c.noattr;
+                   v_type_bis = ref None;
                 },[]],  
                 ($2::iistart::snd storage))
      } 
@@ -1291,6 +1292,7 @@ decl2:
             v_storage = unwrap storage;
             v_local = local;
             v_attr = attrs;
+            v_type_bis = ref None;
            },
            iivirg 
          )

@@ -511,6 +511,10 @@ and declaration =
      and onedecl = 
        { v_namei: (name * (info (* = *) * initialiser) option) option;
          v_type: fullType;
+         (* semantic: set in type annotated and used in cocci_vs_c 
+          * when we transform some initialisation into affectation
+          *)
+         v_type_bis: fullType (* Type_c.completed_and_simplified *) option ref;
          v_storage: storage;
          v_local: local_decl; (* cocci: *)
          v_attr: attribute list; (* gccext: *)

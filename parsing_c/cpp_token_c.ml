@@ -176,7 +176,7 @@ let rec remap_keyword_tokens xs =
           let ii = TH.info_of_tok y in
           if s ==~ Common.regexp_alpha
           then begin
-            pr2 (spf "remaping: %s to an ident in expanded code" s);
+            pr2 (spf "remapping: %s to an ident in expanded code" s);
             x::(Parser_c.TIdent (s, ii))::remap_keyword_tokens xs
           end
           else 
@@ -187,7 +187,7 @@ let rec remap_keyword_tokens xs =
           let ii = TH.info_of_tok x in
           if s ==~ Common.regexp_alpha
           then begin
-            pr2 (spf "remaping: %s to an ident in expanded code" s);
+            pr2 (spf "remapping: %s to an ident in expanded code" s);
             (Parser_c.TIdent (s, ii))::remap_keyword_tokens (y::xs)
           end
           else 
@@ -525,7 +525,7 @@ let rec (define_parse: Parser_c.token list -> (string * define_def) list) =
             let s = TH.str_of_tok x in
             if s ==~ Common.regexp_alpha
             then begin
-              pr2 (spf "remaping: %s to a macro parameter" s);
+              pr2 (spf "remapping: %s to a macro parameter" s);
               Some s
             end
             else 
@@ -542,7 +542,7 @@ let rec (define_parse: Parser_c.token list -> (string * define_def) list) =
             let ii = TH.info_of_tok tok in 
             if s ==~ Common.regexp_alpha && List.mem s params
             then begin
-              pr2 (spf "remaping: %s to an ident in macro body" s);
+              pr2 (spf "remapping: %s to an ident in macro body" s);
               TIdent (s, ii)
             end
             else tok

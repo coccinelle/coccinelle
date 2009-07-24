@@ -199,6 +199,22 @@ let test_parse_unparse infile =
   ()
 
 
+let parse_and_print_sexp file = 
+  let (ast2,_stat) = Parse_c.parse_c_and_cpp file in
+  let ast = Parse_c.program_of_program2 ast2 in
+  let _ast = 
+    Type_annoter_c.annotate_program !Type_annoter_c.initial_env ast
+  in
+
+  (*
+  let sexp = Sexp_ast_c.sexp_of_program ast in
+  let s = Sexp.to_string_hum sexp in
+  *)
+  Sexp_ast_c.show_info := false;
+  let s = Sexp_ast_c.string_of_program ast in
+  pr2 s;
+  ()
+
 
 
 let test_type_c infile = 
@@ -474,6 +490,8 @@ let actions () = [
   Common.mk_action_1_arg test_cfg_ifdef;
   "-parse_unparse", "   <file>", 
   Common.mk_action_1_arg test_parse_unparse;
+  "-parse_and_print_sexp", "   <file>", 
+    Common.mk_action_1_arg parse_and_print_sexp;
   "-type_c", "   <file>", 
   Common.mk_action_1_arg test_type_c;
   "-compare_c", "   <file1> <file2>", 

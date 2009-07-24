@@ -488,7 +488,7 @@ let rec define_ident acc xs =
           let ii = TH.info_of_tok t in
           if s ==~ Common.regexp_alpha
           then begin
-            pr2 (spf "remaping: %s to an ident in macro name" s);
+            pr2 (spf "remapping: %s to an ident in macro name" s);
 	    let acc = (TCommentSpace i1) :: acc in
 	    let acc = (TIdentDefine (s,ii)) :: acc in
             define_ident acc xs
