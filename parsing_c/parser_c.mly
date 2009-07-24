@@ -445,6 +445,7 @@ let mk_string_wrap (s,info) = (s, [info])
 /*(*-----------------------------------------*)*/
 %token <Ast_c.info> Tasm
 %token <Ast_c.info> Tattribute
+%token <Ast_c.info> TattributeNoarg
 %token <Ast_c.info> Tinline
 %token <Ast_c.info> Ttypeof
 

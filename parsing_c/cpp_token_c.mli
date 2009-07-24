@@ -35,6 +35,8 @@ val string_of_define_def: define_def -> string
 val apply_macro_defs: 
   msg_apply_known_macro:(string -> unit) ->
   msg_apply_known_macro_hint:(string -> unit) ->
+  ?evaluate_concatop:bool ->
+  ?inplace_when_single:bool ->
   (string, define_def) Hashtbl.t ->
   Token_views_c.paren_grouped list -> unit
 

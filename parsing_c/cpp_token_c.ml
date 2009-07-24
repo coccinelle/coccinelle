@@ -271,9 +271,11 @@ let rec agglomerate_concat_op_ident xs =
  * for instance transform some of the back into some TypedefIdent
  * so cpp_engine may be fooled?
  *)
-let rec (cpp_engine: (string , Parser_c.token list) assoc -> 
+let rec (cpp_engine: 
+          ?evaluate_concatop:bool ->
+          (string , Parser_c.token list) assoc -> 
           Parser_c.token list -> Parser_c.token list) = 
- fun env xs ->
+ fun ?(evaluate_concatop=true) env xs ->
   xs +> List.map (fun tok -> 
     (* expand only TIdent ? no cos the parameter of the macro
      * can actually be some 'register' so may have to look for 
@@ -289,7 +291,11 @@ let rec (cpp_engine: (string , Parser_c.token list) assoc ->
   )
   +> List.flatten
   +> remap_keyword_tokens
-  +> agglomerate_concat_op_ident
+  +> (fun xs -> 
+       if evaluate_concatop
+       then agglomerate_concat_op_ident xs
+       else xs
+  ) 
 
 
 
@@ -310,6 +316,8 @@ let rec (cpp_engine: (string , Parser_c.token list) assoc ->
 let rec apply_macro_defs 
  ~msg_apply_known_macro 
  ~msg_apply_known_macro_hint 
+ ?evaluate_concatop
+ ?(inplace_when_single=true)
  defs xs = 
  let rec apply_macro_defs xs = 
   match xs with
@@ -380,7 +388,8 @@ let rec apply_macro_defs
                 ) in
                 id.new_tokens_before <-
                   (* !!! cpp expansion job here  !!! *)
-                  cpp_engine (Common.zip params xxs') bodymacro;
+                  cpp_engine ?evaluate_concatop 
+                    (Common.zip params xxs') bodymacro;
 
                 (* important to do that after have apply the macro, otherwise
                  * will pass as argument to the macro some tokens that
@@ -443,7 +452,10 @@ let rec apply_macro_defs
           ()
       | NoParam -> 
           (match body with
-          | DefineBody [newtok] -> 
+          (* bugfix: we prefer not using this special case when we come
+           * from extract_macros context
+           *)
+          | DefineBody [newtok] when inplace_when_single -> 
              (* special case when 1-1 substitution, we reuse the token *)
               id.tok <- (newtok +> TH.visitor_info_of_tok (fun _ -> 
                 TH.info_of_tok id.tok))

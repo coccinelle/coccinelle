@@ -135,6 +135,9 @@ let keyword_table = Common.hash_of_list [
   "__typeof__", (fun ii -> Ttypeof ii);
   "__typeof", (fun ii -> Ttypeof ii);
 
+        (* found a lot in expanded code *)
+  "__extension__", (fun ii -> TattributeNoarg ii); 
+
 
   (* gccext: alias *)
   "__signed__",     (fun ii -> Tsigned ii);
@@ -145,6 +148,14 @@ let keyword_table = Common.hash_of_list [
   "__volatile__",  (fun ii -> Tvolatile ii); 
   "__volatile",    (fun ii -> Tvolatile ii);  
 
+  (* windowsext: *)
+  "__declspec", (fun ii -> Tattribute ii);
+
+  "__stdcall", (fun ii -> TattributeNoarg ii);
+  "__cdecl", (fun ii -> TattributeNoarg ii);
+  "WINAPI", (fun ii -> TattributeNoarg ii);
+  "APIENTRY", (fun ii -> TattributeNoarg ii);
+  "CALLBACK", (fun ii -> TattributeNoarg ii);
 
   (* c99:  *)
   (* no just "restrict" ? maybe for backward compatibility they avoided 

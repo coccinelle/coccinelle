@@ -913,6 +913,13 @@ let rec find_macro_paren xs =
       set_as_comment Token_c.CppAttr id;
       find_macro_paren xs
 
+  | PToken ({tok = TattributeNoarg _} as id)
+    ::xs
+     -> 
+      pr2_cpp ("MACRO: __attributenoarg detected ");
+      set_as_comment Token_c.CppAttr id;
+      find_macro_paren xs
+
 (*
   (* attribute cpp, __xxx id *)
   | PToken ({tok = TIdent (s,i1)} as id)
