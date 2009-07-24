@@ -48,6 +48,8 @@
 - better typedef handling in the initialisation/affectation builtin
   isomorphism, cf -test init_affect_typedef
 - support disjunction of types on variable declaration
+- allow @ within strings in script code.  ignore // comment lines in script
+  code.
 
 
 * 0.1.8
