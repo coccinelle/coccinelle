@@ -720,7 +720,7 @@ let report_if_take_time timethreshold s f =
   let res = f () in
   let t' = Unix.gettimeofday () in
   if (t' -. t  > float_of_int timethreshold) 
-  then pr2 (sprintf "NOTE: this code takes more than: %ds %s" timethreshold s);
+  then pr2 (sprintf "Note: processing took %7.1fs: %s" (t' -. t) s);
   res
 
 let profile_code2 category f = 

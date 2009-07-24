@@ -228,7 +228,7 @@ let dfs_iter_with_path xi f g =
     
 
 let generate_ograph_generic g label fnode filename =
-  with_open_outfile filename (fun (pr,_) ->
+  Common.with_open_outfile filename (fun (pr,_) ->
     pr "digraph misc {\n" ;
     pr "size = \"10,10\";\n" ;
     (match label with
