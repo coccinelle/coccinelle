@@ -88,6 +88,10 @@ let info_of_token1 t =
   | Fake1 info -> info
   | T1 tok -> TH.info_of_tok tok
 
+let print_token1 = function
+    T1 tok -> TH.str_of_tok tok
+  | Fake1 info -> "fake"
+
 let str_of_token2 = function
   | T2 (t,_,_) -> TH.str_of_tok t
   | Fake2 -> ""
@@ -110,6 +114,10 @@ let print_token2 = function
   | C2 s -> "C2:"^s
   | Indent_cocci2 -> "Indent"
   | Unindent_cocci2 -> "Unindent"
+
+let simple_print_all_tokens1 l =
+  List.iter (function x -> Printf.printf "%s " (print_token1 x)) l;
+  Printf.printf "\n"
 
 let simple_print_all_tokens2 l =
   List.iter (function x -> Printf.printf "%s " (print_token2 x)) l;
@@ -242,7 +250,7 @@ let get_fakeInfo_and_tokens celem toks =
 
 (* Fake nodes that have BEFORE code should be moved over any subsequent
 whitespace and newlines, but not any comments, to get as close to the affected
-code as possible.  Similarly, face nodes that have AFTER code should be moved
+code as possible.  Similarly, fake nodes that have AFTER code should be moved
 backwards.  No fake nodes should have both before and after code. *)
 
 let displace_fake_nodes toks =
@@ -261,22 +269,22 @@ let displace_fake_nodes toks =
 	(match !(info.cocci_tag) with
         | Some x -> 
           (match x with
-	  (Ast_cocci.CONTEXT(_,Ast_cocci.BEFORE _),_) ->
+	    (Ast_cocci.CONTEXT(_,Ast_cocci.BEFORE _),_) ->
 	    (* move the fake node forwards *)
-	    let (whitespace,rest) = Common.span is_whitespace aft in
-	    bef @ whitespace @ fake :: (loop rest)
-	| (Ast_cocci.CONTEXT(_,Ast_cocci.AFTER _),_) ->
+	      let (whitespace,rest) = Common.span is_whitespace aft in
+	      bef @ whitespace @ fake :: (loop rest)
+	  | (Ast_cocci.CONTEXT(_,Ast_cocci.AFTER _),_) ->
 	    (* move the fake node backwards *)
-	    let revbef = List.rev bef in
-	    let (revwhitespace,revprev) = Common.span is_whitespace revbef in
-	    let whitespace = List.rev revwhitespace in
-	    let prev = List.rev revprev in
-	    prev @ fake :: (loop (whitespace @ aft))
-	| (Ast_cocci.CONTEXT(_,Ast_cocci.NOTHING),_) ->
-	    bef @ fake :: (loop aft)
-	| (Ast_cocci.CONTEXT(_,Ast_cocci.BEFOREAFTER _),_) ->
-	    failwith "fake node should not be before-after"
-	| _ -> bef @ fake :: (loop aft) (* old: was removed when have simpler yacfe *)
+	      let revbef = List.rev bef in
+	      let (revwhitespace,revprev) = Common.span is_whitespace revbef in
+	      let whitespace = List.rev revwhitespace in
+	      let prev = List.rev revprev in
+	      prev @ fake :: (loop (whitespace @ aft))
+	  | (Ast_cocci.CONTEXT(_,Ast_cocci.NOTHING),_) ->
+	      bef @ fake :: (loop aft)
+	  | (Ast_cocci.CONTEXT(_,Ast_cocci.BEFOREAFTER _),_) ->
+	      failwith "fake node should not be before-after"
+	  | _ -> bef @ fake :: (loop aft) (* old: was removed when have simpler yacfe *)
         )
         | None -> 
             bef @ fake :: (loop aft)
@@ -420,9 +428,9 @@ let is_minusable_comment = function
       (match t with
       | Parser_c.TCommentSpace _   (* only whitespace *)
       (* patch: coccinelle *)      
-      | Parser_c.TCommentNewline _ (* newline plus whitespace *)
-      | Parser_c.TComment _ 
-      | Parser_c.TCommentCpp (Token_c.CppAttr, _) 
+      | Parser_c.TCommentNewline _ (* newline plus whitespace *) -> true
+      | Parser_c.TComment _
+      | Parser_c.TCommentCpp (Token_c.CppAttr, _)
       | Parser_c.TCommentCpp (Token_c.CppMacro, _)
       | Parser_c.TCommentCpp (Token_c.CppDirective, _) (* result was false *)
         -> true
@@ -578,9 +586,10 @@ let adjust_before_semicolon toks =
 	then
 	  let (spaces, rest) = Common.span is_minusable_comment xs in
 	  (match rest with
-	    (T2(_,Min _,_))::_ | (Cocci2 _)::_ ->
+	    ((T2(_,Min _,_)) as a)::rerest ->
 	      (* only drop spaces if something was actually changed before *)
-	      x :: loop rest
+	      let (spaces, rest) = Common.span is_minusable_comment rerest in
+	      x :: a :: loop rest
 	  | _ -> x :: loop xs)
 	else x :: loop xs
     | x::xs -> x :: loop xs in
@@ -861,7 +870,6 @@ let pp_program2 xs outfile  =
     in
     
     xs +> List.iter (fun ((e,(str, toks_e)), ppmethod) -> 
-
       (* here can still work on ast *)
       let e = remove_useless_fakeInfo_struct e in
       
@@ -882,8 +890,8 @@ let pp_program2 xs outfile  =
 	  
           (* phase2: can now start to filter and adjust *)
           let toks = adjust_indentation toks in
+	  let toks = adjust_before_semicolon toks in (* before remove minus *)
           let toks = remove_minus_and_between_and_expanded_and_fake toks in
-	  let toks = adjust_before_semicolon toks in
           (* assert Origin + Cocci + C and no minus *)
           let toks = add_space toks in
           let toks = fix_tokens toks in
