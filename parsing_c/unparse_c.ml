@@ -317,7 +317,7 @@ let expand_mcode toks =
         else push2 (C2 str) toks_out
           
   
-    | T1 tok -> 
+    | T1 tok ->
 	(*let (a,b) = !((TH.info_of_tok tok).cocci_tag) in*)
         (* no tag on expandedTok ! *)
         (if (TH.is_expanded tok && 
@@ -579,21 +579,20 @@ let remove_minus_and_between_and_expanded_and_fake xs =
 (* normally, in C code, a semicolon is not preceded by a space or newline *)
 let adjust_before_semicolon toks =
   let toks = List.rev toks in
-  let rec loop = function
+  let rec search_semic = function
       [] -> []
     | ((T2(_,Ctx,_)) as x)::xs | ((Cocci2 _) as x)::xs ->
 	if List.mem (str_of_token2 x) [";";")";","]
-	then
-	  let (spaces, rest) = Common.span is_minusable_comment xs in
-	  (match rest with
-	    ((T2(_,Min _,_)) as a)::rerest ->
-	      (* only drop spaces if something was actually changed before *)
-	      let (spaces, rest) = Common.span is_minusable_comment rerest in
-	      x :: a :: loop rest
-	  | _ -> x :: loop xs)
-	else x :: loop xs
-    | x::xs -> x :: loop xs in
-  List.rev (loop toks)
+	then x :: search_minus false xs
+	else x :: search_semic xs
+    | x::xs -> x :: search_semic xs
+  and search_minus seen_minus xs =
+    let (spaces, rest) = Common.span is_minusable_comment xs in
+    (* only delete spaces if something is actually deleted *)
+    match rest with
+      ((T2(_,Min _,_)) as a)::rerest -> a :: search_minus true rerest
+    | _ -> if seen_minus then rest else xs in
+  List.rev (search_semic toks)
 
 let is_ident_like s = s ==~ Common.regexp_alpha
 
