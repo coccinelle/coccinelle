@@ -426,9 +426,11 @@ and typeC ty =
   | Ast.EnumName(kind,name) -> mcode print_string kind; pr_space();
       ident name
   | Ast.StructUnionName(kind,name) ->
+      Printf.printf "in name case\n";
       mcode structUnion kind;
       print_option ident name
   | Ast.StructUnionDef(ty,lb,decls,rb) ->
+      Printf.printf "in def case\n";
       fullType ty; ft_space ty;
       mcode print_string lb;
       dots force_newline declaration decls;

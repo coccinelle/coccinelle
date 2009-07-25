@@ -51,6 +51,7 @@
 - allow @ within strings in script code.  ignore // comment lines in script
   code.
 - don't drop + code placed after the transformed code
+- drop spaces produced by removing code before semicolons
 
 
 * 0.1.8

@@ -423,6 +423,14 @@ let expand_mcode toks =
 (* Tokens2 processing, filtering, adjusting *)
 (*****************************************************************************)
 
+let is_space = function
+  | (T2 (t,_b,_i)) -> 
+      (match t with
+      | Parser_c.TCommentSpace _ -> true  (* only whitespace *)
+      | _ -> false
+      )
+  | _ -> false 
+
 let is_minusable_comment = function
   | (T2 (t,_b,_i)) -> 
       (match t with
@@ -587,7 +595,7 @@ let adjust_before_semicolon toks =
 	else x :: search_semic xs
     | x::xs -> x :: search_semic xs
   and search_minus seen_minus xs =
-    let (spaces, rest) = Common.span is_minusable_comment xs in
+    let (spaces, rest) = Common.span is_space xs in
     (* only delete spaces if something is actually deleted *)
     match rest with
       ((T2(_,Min _,_)) as a)::rerest -> a :: search_minus true rerest
