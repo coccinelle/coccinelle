@@ -581,7 +581,7 @@ let adjust_before_semicolon toks =
   let toks = List.rev toks in
   let rec loop = function
       [] -> []
-    | ((T2(_,Ctx,_)) as x)::xs ->
+    | ((T2(_,Ctx,_)) as x)::xs | ((Cocci2 _) as x)::xs ->
 	if List.mem (str_of_token2 x) [";";")";","]
 	then
 	  let (spaces, rest) = Common.span is_minusable_comment xs in
