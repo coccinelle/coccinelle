@@ -52,6 +52,7 @@
   code.
 - don't drop + code placed after the transformed code
 - drop spaces produced by removing code before semicolons
+- adjusted spacing within generated code
 
 
 * 0.1.8
