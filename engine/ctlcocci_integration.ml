@@ -392,6 +392,29 @@ let rec coalesce_positions = function
       (x,Ast_c.MetaPosValList new_ls) :: coalesce_positions others
   | x::rest -> x :: coalesce_positions rest
 
+let strip env =
+  List.map
+    (function (v,vl) ->
+      let vl =
+	match vl with
+	  Ast_c.MetaExprVal a ->
+	    Ast_c.MetaExprVal(Lib_parsing_c.al_inh_expr a)
+	| Ast_c.MetaExprListVal a ->
+	    Ast_c.MetaExprListVal(Lib_parsing_c.al_inh_arguments a)
+	| Ast_c.MetaStmtVal a -> 
+	    Ast_c.MetaStmtVal(Lib_parsing_c.al_inh_statement a)
+	| Ast_c.MetaInitVal a -> 
+	    Ast_c.MetaInitVal(Lib_parsing_c.al_inh_init a)
+	| x -> (*don't contain binding info*) x in
+      (v,vl))
+    env
+
+let rec nub ls =
+  match ls with
+    [] -> []
+  | (x::xs) when (List.mem x xs) -> nub xs
+  | (x::xs) -> x::(nub xs)
+
 (*****************************************************************************)
 (* Call ctl engine *)
 (*****************************************************************************)
@@ -417,6 +440,8 @@ let (mysat2:
     let trans_info = satbis_to_trans_info trans_info2 in
     let newbindings = List.map metavars_binding2_to_binding used_after_envs in
     let newbindings = List.map coalesce_positions newbindings in
+    let newbindings = List.map strip newbindings in
+    let newbindings = nub newbindings in
     (trans_info, returned_any_states, binding, newbindings)
 
 let mysat a b c = 

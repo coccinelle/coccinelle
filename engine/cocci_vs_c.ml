@@ -288,7 +288,10 @@ let equal_metavarval valu valu' =
     ), _
       -> raise Impossible
 
-let equal_inh_metavarval valu valu' =
+(* probably only one argument needs to be stripped, because inherited
+metavariables containing expressions are stripped in advance. But don't
+know which one is which... *)
+let equal_inh_metavarval valu valu'=
   match valu, valu' with
   | Ast_c.MetaIdVal a, Ast_c.MetaIdVal b -> a =$= b
   | Ast_c.MetaFuncVal a, Ast_c.MetaFuncVal b -> a =$= b
