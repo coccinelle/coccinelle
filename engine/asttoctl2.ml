@@ -946,8 +946,10 @@ let ifthen ifheader branch ((afvs,_,_,_) as aft) after
   let lv = get_label_ctr() in
   let used = ref false in
   let true_branch =
+    (* no point to put a label on truepred; it is local to this construct
+       so it must have the same label *)
     make_seq guard
-      [truepred label; recurse branch Tail new_quantified new_mquantified
+      [truepred None; recurse branch Tail new_quantified new_mquantified
 	  (Some (lv,used)) llabel slabel guard] in
   let after_pred = aftpred label in
   let or_cases after_branch =
@@ -1022,11 +1024,11 @@ let ifthenelse ifheader branch1 els branch2 ((afvs,_,_,_) as aft) after
   let used = ref false in
   let true_branch =
     make_seq guard
-      [truepred label; recurse branch1 Tail new_quantified new_mquantified
+      [truepred None; recurse branch1 Tail new_quantified new_mquantified
 	  (Some (lv,used)) llabel slabel guard] in
   let false_branch =
     make_seq guard
-      [falsepred label;
+      [falsepred None;
 	quantify guard
 	  (Common.minus_set (Ast.get_fvs els) new_quantified)
 	  (make_match els);
@@ -1072,7 +1074,7 @@ let forwhile header body ((afvs,_,_,_) as aft) after
     let used = ref false in
     let body =
       make_seq guard
-	[inlooppred label;
+	[inlooppred None;
 	  recurse body Tail new_quantified new_mquantified
 	    (Some (lv,used)) (Some (lv,used)) None guard] in
     let after_pred = fallpred label in
