@@ -1778,8 +1778,8 @@ and statement stmt after quantified minus_quantified
 	label statement make_match guard
 
   | Ast.Disj(stmt_dots_list) -> (* list shouldn't be empty *)
-      ctl_and
-	(label_pred_maker label)
+      (*ctl_and        seems pointless, disjuncts see label too
+	(label_pred_maker label)*)
 	(List.fold_left ctl_seqor CTL.False
 	   (List.map
 	      (function sl ->
