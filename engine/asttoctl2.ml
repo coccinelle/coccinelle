@@ -1188,20 +1188,25 @@ let svar_minus_or_no_add_after stmt s label quantified d ast
   let prelabel_pred =
     CTL.Pred (Lib_engine.PrefixLabel(label_var),CTL.Control) in
   let matcher d = make_match None guard (make_meta_rule_elem d fvinfo) in
-  let ender =
+  let stmt_fvs = Ast.get_fvs stmt in
+  let fvs = get_unquantified quantified stmt_fvs in
+  let (new_fvs,body) =
     match (d,after) with
       (Ast.CONTEXT(pos,Ast.NOTHING),(Tail|End|VeryEnd)) ->
 	(* just match the root. don't care about label; always ok *)
-	make_raw_match None false ast
+	(fvs,function f -> f(make_raw_match None false ast))
     | (Ast.MINUS(pos,inst,adj,[]),(Tail|End|VeryEnd)) ->
     (* don't have to put anything before the beginning, so don't have to
        distinguish the first node.  so don't have to bother about paths,
        just use the label. label ensures that found nodes match up with
        what they should because it is in the lhs of the andany. *)
-	CTL.HackForStmt(CTL.FORWARD,CTL.NONSTRICT,
-			ctl_and CTL.NONSTRICT label_pred
-			  (make_raw_match label false ast),
-			ctl_and CTL.NONSTRICT (matcher d) prelabel_pred)
+	let ender =
+	  CTL.HackForStmt(CTL.FORWARD,CTL.NONSTRICT,
+			  ctl_and CTL.NONSTRICT label_pred
+			    (make_raw_match label false ast),
+			  ctl_and CTL.NONSTRICT (matcher d) prelabel_pred) in
+	(label_var::fvs,
+	 function f -> ctl_and CTL.NONSTRICT label_pred (f ender))
     | _ ->
 	(* more safe but less efficient *)
 	let first_metamatch = matcher d in
@@ -1213,14 +1218,14 @@ let svar_minus_or_no_add_after stmt s label quantified d ast
 	    | Ast.PLUS -> failwith "not possible") in
 	let rest_nodes = ctl_and CTL.NONSTRICT rest_metamatch prelabel_pred in
 	let last_node = and_after guard (ctl_not prelabel_pred) after in
-	(ctl_and CTL.NONSTRICT (make_raw_match label false ast)
-	   (make_seq guard
-	      [first_metamatch;
-		ctl_au CTL.NONSTRICT rest_nodes last_node])) in
-  let body f = ctl_and CTL.NONSTRICT label_pred (f ender) in
-  let stmt_fvs = Ast.get_fvs stmt in
-  let fvs = get_unquantified quantified stmt_fvs in
-  quantify guard (label_var::fvs)
+	let ender =
+	  ctl_and CTL.NONSTRICT (make_raw_match label false ast)
+	    (make_seq guard
+	       [first_metamatch;
+		 ctl_au CTL.NONSTRICT rest_nodes last_node]) in
+	(label_var::fvs,
+	 function f -> ctl_and CTL.NONSTRICT label_pred (f ender)) in
+  quantify guard new_fvs
     (sequencibility body label_pred process_bef_aft seqible)
 
 (* --------------------------------------------------------------------- *)
