@@ -946,14 +946,14 @@ let ifthen ifheader branch ((afvs,_,_,_) as aft) after
   let lv = get_label_ctr() in
   let used = ref false in
   let true_branch =
-    (* no point to put a label on truepred; it is local to this construct
+    (* no point to put a label on truepred etc; it is local to this construct
        so it must have the same label *)
     make_seq guard
       [truepred None; recurse branch Tail new_quantified new_mquantified
 	  (Some (lv,used)) llabel slabel guard] in
-  let after_pred = aftpred label in
+  let after_pred = aftpred None in
   let or_cases after_branch =
-    ctl_or true_branch (ctl_or (fallpred label) after_branch) in
+    ctl_or true_branch (ctl_or (fallpred None) after_branch) in
   let (if_header,wrapper) =
     if !used
     then
@@ -1031,10 +1031,10 @@ let ifthenelse ifheader branch1 els branch2 ((afvs,_,_,_) as aft) after
       [falsepred None;
 	quantify guard
 	  (Common.minus_set (Ast.get_fvs els) new_quantified)
-	  (make_match els);
+	  (header_match None guard els);
 	recurse branch2 Tail new_quantified new_mquantified
 	  (Some (lv,used)) llabel slabel guard] in
-  let after_pred = aftpred label in
+  let after_pred = aftpred None in
   let or_cases after_branch =
     ctl_or true_branch (ctl_or false_branch after_branch) in
   let s = guard_to_strict guard in
@@ -1047,8 +1047,8 @@ let ifthenelse ifheader branch1 els branch2 ((afvs,_,_,_) as aft) after
     else (if_header,function x -> x) in
   wrapper
     (end_control_structure bothfvs if_header or_cases after_pred
-      (Some(ctl_and s (ctl_ex (falsepred label)) (ctl_ex after_pred)))
-      (Some(ctl_ex (falsepred label)))
+      (Some(ctl_and s (ctl_ex (falsepred None)) (ctl_ex after_pred)))
+      (Some(ctl_ex (falsepred None)))
       aft after label guard)
 
 let forwhile header body ((afvs,_,_,_) as aft) after
@@ -1077,7 +1077,7 @@ let forwhile header body ((afvs,_,_,_) as aft) after
 	[inlooppred None;
 	  recurse body Tail new_quantified new_mquantified
 	    (Some (lv,used)) (Some (lv,used)) None guard] in
-    let after_pred = fallpred label in
+    let after_pred = fallpred None in
     let or_cases after_branch = ctl_or body after_branch in
     let (header,wrapper) =
       if !used
