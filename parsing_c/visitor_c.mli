@@ -28,6 +28,7 @@ val default_visitor_c : visitor_c
 
 val vk_expr      : visitor_c -> expression  -> unit
 val vk_statement : visitor_c -> statement   -> unit
+val vk_statement_sequencable : visitor_c -> statement_sequencable -> unit
 val vk_type      : visitor_c -> fullType    -> unit
 val vk_decl      : visitor_c -> declaration -> unit
 val vk_onedecl   : visitor_c -> onedecl -> unit
