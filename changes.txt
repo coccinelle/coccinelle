@@ -53,7 +53,7 @@
 - don't drop + code placed after the transformed code
 - drop spaces produced by removing code before semicolons
 - adjusted spacing within generated code
-
+- less verbose -sp.  Thanks to Derek Jones for pointing out the problem.
 
 * 0.1.8
 
