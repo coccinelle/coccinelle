@@ -760,12 +760,12 @@ let annotater_expr_visitor_subpart = (fun (k,bigf) expr ->
                       if !Flag_parsing_c.check_annotater then 
                         if not (Hashtbl.mem !_notyped_var s)
                         then begin 
-                          pr2 ("Type_annoter: not finding type for: " ^ s);
+                          pr2 ("Type_annoter: no type found for: " ^ s);
                           Hashtbl.add !_notyped_var s true;
                         end
                         else ()
                       else 
-                        pr2 ("Type_annoter: not finding type for: " ^ s)
+                        pr2 ("Type_annoter: no type found for: " ^ s)
                     ;
                     Type_c.noTypeHere
                 )

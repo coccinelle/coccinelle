@@ -824,7 +824,7 @@ let main () =
     let arglist = Array.to_list Sys.argv in
 
     if not (null (Common.inter_set arglist
-	             ["-cocci_file";"-sp_file";"-test";"-testall";
+	             ["-cocci_file";"-sp_file";"-sp";"-test";"-testall";
                       "-test_okfailed";"-test_regression_okfailed"]))
     then run_profile quiet_profile;
 

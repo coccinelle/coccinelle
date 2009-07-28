@@ -732,7 +732,7 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
                   let s = Ast_c.str_of_name nameidb in 
                   if s =~ "^[A-Z_][A-Z_0-9]*$" 
                   then begin
-		    pr2_once ("warning: I consider " ^ s ^ " as a constant");
+		    pr2_once ("warning: " ^ s ^ " treated as a constant");
 		    true
                   end
                   else false
