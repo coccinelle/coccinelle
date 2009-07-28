@@ -8,7 +8,7 @@ let tok = Lexing.lexeme
 (* ---------------------------------------------------------------------- *)
 (* tokens *)
 
-let myrule = [^'@']+
+let myrule = [^'"''@']+
 
 rule token = parse
   | myrule		{ TScriptData (tok lexbuf) }
