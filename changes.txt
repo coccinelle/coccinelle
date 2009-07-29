@@ -54,6 +54,7 @@
 - drop spaces produced by removing code before semicolons
 - adjusted spacing within generated code
 - less verbose -sp.  Thanks to Derek Jones for pointing out the problem.
+- accept multiple type names in a SmPL typedef declaration.
 
 * 0.1.8
 
