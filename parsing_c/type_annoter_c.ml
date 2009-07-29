@@ -1133,7 +1133,10 @@ let rec visit_toplevel ~just_add_in_env ~depth elem =
           in
           let (i1, i2) = 
             match ii with 
-	      (* what is iifunc1?  it should be a type.  jll *)
+	      (* what is iifunc1?  it should be a type.  jll 
+               * pad: it's the '(' in the function definition. The
+               * return type is part of f_type.
+               *)
             | iifunc1::iifunc2::ibrace1::ibrace2::ifakestart::isto -> 
                 iifunc1, iifunc2
             | _ -> raise Impossible
