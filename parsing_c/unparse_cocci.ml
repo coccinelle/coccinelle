@@ -45,7 +45,7 @@ let print_string s line lcol =
   pr s line lcol rcol in
 let print_text s = pr s unknown unknown unknown in
 let close_box _ = () in
-let force_newline () = print_text "\n" in
+let force_newline _ = print_text "\n" in
 
 let start_block () = force_newline(); indent() in
 let end_block () = unindent(); force_newline () in
@@ -256,7 +256,12 @@ let rec expression e =
   | Ast.Constant(const) -> mcode constant const
   | Ast.FunCall(fn,lp,args,rp) ->
       expression fn; mcode print_string_box lp;
-      dots (function _ -> ()) expression args;
+      let comma e =
+	expression e;
+	match Ast.unwrap e with
+	  Ast.EComma(cm) -> pr_space()
+	| _ -> () in
+      dots (function _ -> ()) comma args;
       close_box(); mcode print_string rp
   | Ast.Assignment(left,op,right,_) ->
       expression left; pr_space(); mcode assignOp op;
