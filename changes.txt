@@ -9,7 +9,7 @@
 ** Bugfix:
 - for glimps there is no point to create a pattern containing a numeric
   constant becaise glimpse doesn't index them
-- add spaces after commas in function calls
+- add spaces after commas in function calls and function headers
 
 * 0.1.9
 

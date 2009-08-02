@@ -613,7 +613,13 @@ and parameterTypeDef p =
   | Ast.Pdots(dots) | Ast.Pcircles(dots) -> raise CantBeInPlus
   | Ast.OptParam(param) | Ast.UniqueParam(param) -> raise CantBeInPlus
 
-and parameter_list l = dots (function _ -> ()) parameterTypeDef l
+and parameter_list l =
+  let comma p =
+    parameterTypeDef p;
+    match Ast.unwrap p with
+      Ast.PComma(cm) -> pr_space()
+    | _ -> () in
+  dots (function _ -> ()) comma l
 in
 
 
