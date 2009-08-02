@@ -135,8 +135,9 @@ let bclabel_pred_maker = function
       used := true;
       CTL.Pred(Lib_engine.BCLabel(label_var),CTL.Control)
 
-let predmaker guard pred label =
-  ctl_and (guard_to_strict guard) (CTL.Pred pred) (label_pred_maker label)
+(* label used to be used here, but it is not use; label is only needed after
+and within dots *)
+let predmaker guard pred label = CTL.Pred pred
 
 let aftpred     = predmaker false (Lib_engine.After,       CTL.Control)
 let retpred     = predmaker false (Lib_engine.Return,      CTL.Control)
@@ -864,7 +865,9 @@ let do_re_matches label guard res quantified minus_quantified =
     let stmt_fvs = Ast.get_fvs x in
     let fvs = get_unquantified quantified stmt_fvs in
     quantify guard fvs (make_match None guard x) in
-  ctl_and CTL.NONSTRICT (label_pred_maker label)
+(* label used to be used here, but it is not use; label is only needed after
+and within dots 
+    ctl_and CTL.NONSTRICT (label_pred_maker label) *)
     (match List.map Ast.unwrap res with
       [] -> failwith "unexpected empty disj"
     | Ast.Exp(e)::rest -> exptymatch res make_match make_guard_match
@@ -884,7 +887,9 @@ let header_match label guard code : ('a, Ast.meta_name, 'b) CTL.generic_ctl =
     Ast.DisjRuleElem(res) ->
       let make_match = make_match None guard in
       let orop = if guard then ctl_or else ctl_seqor in
-      ctl_and CTL.NONSTRICT (label_pred_maker label)
+(* label used to be used here, but it is not use; label is only needed after
+and within dots
+      ctl_and CTL.NONSTRICT (label_pred_maker label) *)
       (List.fold_left orop CTL.False (List.map make_match res))
   | _ -> make_match label guard code
 
@@ -1405,8 +1410,13 @@ let rec dots_and_nests plus nest whencodes bef aft dotcode after label
 
   let ender =
     match after with
-      After f -> f
-    | Guard f -> ctl_uncheck f
+      (* label within dots is taken care of elsewhere.  the next two lines
+         put the label on the code following dots *)
+      After f -> ctl_and (guard_to_strict guard) f labelled
+    | Guard f ->
+	(* actually, label should be None based on the only use of Guard... *)
+	assert (label = None);
+	ctl_and CTL.NONSTRICT (ctl_uncheck f) labelled
     | VeryEnd ->
 	let exit = endpred label in
 	let errorexit = exitpred label in
