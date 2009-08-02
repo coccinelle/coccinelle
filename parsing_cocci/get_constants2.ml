@@ -177,12 +177,10 @@ let do_get_constants constants keywords env neg_pos =
 	  (match Ast.unwrap_mcode const with
 	    Ast.String s -> constants s
 	  | Ast.Char "\\0" -> option_default (* glimpse doesn't like it *)
-	  | Ast.Char s -> constants s
+	  | Ast.Char s -> option_default (* probably not chars either *)
 	  (* the following were eg keywords "1", but not good for glimpse *)
-	  | Ast.Int "0" -> option_default (* glimpse doesn't like it *)
-	  | Ast.Int "1" -> option_default (* glimpse doesn't like it *)
-	  | Ast.Int s -> constants s
-	  | Ast.Float s -> constants s)
+	  | Ast.Int s -> option_default (* glimpse doesn't index integers *)
+	  | Ast.Float s -> option_default (* probably not floats either *))
     | Ast.MetaExpr(name,_,_,Some type_list,_,_) ->
 	let types = List.fold_left type_collect option_default type_list in
 	bind (k e) (bind (minherited name) types)

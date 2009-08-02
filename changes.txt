@@ -1,5 +1,15 @@
 -*- org -*-
 
+* 0.1.10
+
+** Language:
+
+** Features:
+
+** Bugfix:
+- for glimps there is no point to create a pattern containing a numeric
+  constant becaise glimpse doesn't index them
+
 * 0.1.9
 
 ** Language:
