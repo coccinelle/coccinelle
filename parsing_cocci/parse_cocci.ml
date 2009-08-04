@@ -1529,7 +1529,6 @@ let rec parse file =
 
               (* script code *)
             let (more, tokens) = get_tokens [PC.TArobArob; PC.TArob] in
-	    Printf.printf "script tokens %d\n" (List.length tokens);
             let data = collect_script_tokens tokens in
             (more,k (language, data),[],tokens) in
 
