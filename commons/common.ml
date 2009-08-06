@@ -3469,15 +3469,33 @@ let (with_open_outfile_append: filename -> (((string -> unit) * out_channel) -> 
  * 
  * question: can we have a signal and so exn when in a exn handler ? 
  *)
+
+let interval_timer = ref true
+
 let timeout_function timeoutval = fun f -> 
   try 
-    begin
-      Sys.set_signal Sys.sigalrm (Sys.Signal_handle (fun _ -> raise Timeout ));
-      ignore(Unix.alarm timeoutval);
-      let x = f() in
-      ignore(Unix.alarm 0);
-      x
-    end
+    if !interval_timer
+    then
+      begin
+        Sys.set_signal Sys.sigvtalrm
+	  (Sys.Signal_handle (fun _ -> raise Timeout));
+	ignore
+	  (Unix.setitimer Unix.ITIMER_VIRTUAL
+             {Unix.it_interval=float_of_int timeoutval;
+               Unix.it_value =float_of_int timeoutval});
+	let x = f() in
+	ignore(Unix.alarm 0);
+	x
+      end
+    else
+      begin
+	Sys.set_signal Sys.sigalrm
+	  (Sys.Signal_handle (fun _ -> raise Timeout ));
+	ignore(Unix.alarm timeoutval);
+	let x = f() in
+	ignore(Unix.alarm 0);
+	x
+      end
   with Timeout -> 
     begin 
       log "timeout (we abort)";

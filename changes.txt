@@ -5,6 +5,8 @@
 ** Language:
 
 ** Features:
+- use interval timer for timeouts.  Thanks to Derek M. Jones for the
+  implementation.
 
 ** Bugfix:
 - for glimps there is no point to create a pattern containing a numeric
