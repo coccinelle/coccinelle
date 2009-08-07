@@ -1,7 +1,7 @@
-first () {
+int first () {
   return 0;
 }
 
-last () {
+int last () {
   return 0;
 }

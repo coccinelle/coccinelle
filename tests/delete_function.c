@@ -1,13 +1,13 @@
-first () {
+int first () {
   return 0;
 }
 
-foo() {
+int foo() {
  a();
  a();
  a();
 }
 
-last () {
+int last () {
   return 0;
 }
