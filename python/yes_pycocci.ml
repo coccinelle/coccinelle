@@ -43,31 +43,7 @@ let load_module module_name =
   else get_module module_name
 (* end python module handling part *)
 
-(* initialisation routines *)
-let pycocci_init () =
-  (* initialize *)
-  if not !initialised then (
-  initialised := true;
-  Unix.putenv "PYTHONPATH"
-      (Printf.sprintf "%s/coccinelle" (Unix.getenv "HOME"));
-  let _ = if not (py_isinitialized () != 0) then 
-  	(if !Flag.show_misc then Common.pr2 "Initializing python\n%!"; 
-	py_initialize()) in
-
-  (* set argv *)
-  let argv0 = Printf.sprintf "%s%sspatch" (Sys.getcwd ()) (match Sys.os_type with "Win32" -> "\\" | _ -> "/") in
-  let _ = pycaml_setargs argv0 in
-
-  coccinelle_module := (pymodule_new "coccinelle");
-  module_map := StringMap.add "coccinelle" !coccinelle_module !module_map;
-  let _ = load_module "coccilib.elems" in
-  let _ = load_module "coccilib.output" in
-  ()) else
-
-  ()
-
-(*let _ = pycocci_init ()*)
-(* end initialisation routines *)
+let cocci_functions = ref []
 
 (* python interaction *)
 let split_fqn fqn =
@@ -115,12 +91,15 @@ let build_class cname parent methods pymodule =
   check_int_return_value v;
   (cd, cx)
 
-let has_environment_binding env name =
+let the_environment = ref []
+
+let has_environment_binding name =
   let a = pytuple_toarray name in
   let (rule, name) = (Array.get a 1, Array.get a 2) in
   let orule = pystring_asstring rule in
   let oname = pystring_asstring name in
-  let e = List.exists (function (x,y) -> orule =$= x && oname =$= y) env in
+  let e = List.exists (function (x,y) -> orule =$= x && oname =$= y)
+      !the_environment in
   if e then pytrue () else pyfalse ()
 
 let pyoutputinstance = ref (pynone ())
@@ -129,23 +108,52 @@ let pyoutputdict = ref (pynone ())
 let get_cocci_file args =
 	pystring_fromstring (!cocci_file_name)
 
+(* initialisation routines *)
+let pycocci_init () =
+  (* initialize *)
+  if not !initialised then (
+  initialised := true;
+  Unix.putenv "PYTHONPATH"
+      (Printf.sprintf "%s/coccinelle" (Unix.getenv "HOME"));
+  let _ = if not (py_isinitialized () != 0) then 
+  	(if !Flag.show_misc then Common.pr2 "Initializing python\n%!"; 
+	py_initialize()) in
+
+  (* set argv *)
+  let argv0 = Printf.sprintf "%s%sspatch" (Sys.getcwd ()) (match Sys.os_type with "Win32" -> "\\" | _ -> "/") in
+  let _ = pycaml_setargs argv0 in
+
+  coccinelle_module := (pymodule_new "coccinelle");
+  module_map := StringMap.add "coccinelle" !coccinelle_module !module_map;
+  let _ = load_module "coccilib.elems" in
+  let _ = load_module "coccilib.output" in
+  (* too expensive to create these each time *)
+  cocci_functions :=
+    [("include_match", include_match, (pynull()));
+      ("has_env_binding", has_environment_binding, (pynull()))];
+  ()) else
+
+  ()
+
+(*let _ = pycocci_init ()*)
+(* end initialisation routines *)
+
 let build_classes env =
-	let _ = pycocci_init () in
-	let module_dictionary = pyimport_getmoduledict() in
-        coccinelle_module := pymodule_new "coccinelle";
-	let mx = !coccinelle_module in
-	inc_match := true;
-        let (cd, cx) = build_class "Cocci" (!Flag.pyoutput) 
-		[("include_match", include_match, (pynull()));
-		 ("has_env_binding", has_environment_binding env, (pynull()))] mx in
-	pyoutputinstance := cx;
-	pyoutputdict := cd;
-	let v1 = pydict_setitemstring(module_dictionary, "coccinelle", mx) in
-	check_int_return_value v1;
-        let mypystring = pystring_fromstring !cocci_file_name in
-        let v2 = pydict_setitemstring(cd, "cocci_file", mypystring) in
-	check_int_return_value v2;
-        ()
+  let _ = pycocci_init () in
+  let module_dictionary = pyimport_getmoduledict() in
+  coccinelle_module := pymodule_new "coccinelle";
+  let mx = !coccinelle_module in
+  inc_match := true;
+  the_environment := env;
+  let (cd, cx) = build_class "Cocci" (!Flag.pyoutput) !cocci_functions mx in
+  pyoutputinstance := cx;
+  pyoutputdict := cd;
+  let v1 = pydict_setitemstring(module_dictionary, "coccinelle", mx) in
+  check_int_return_value v1;
+  let mypystring = pystring_fromstring !cocci_file_name in
+  let v2 = pydict_setitemstring(cd, "cocci_file", mypystring) in
+  check_int_return_value v2;
+  ()
 
 let build_variable name value =
   let mx = !coccinelle_module in

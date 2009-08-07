@@ -8,5 +8,8 @@ switch (2)
    case 4: j++;
            break;
 
+   case 6: i++;
+           break;
+
    }
 }
