@@ -460,6 +460,26 @@ let is_minusable_comment = function
       )
   | _ -> false 
 
+let is_minusable_comment_nocpp = function
+  | (T2 (t,_b,_i)) -> 
+      (match t with
+      | Parser_c.TCommentSpace _   (* only whitespace *)
+      (* patch: coccinelle *)      
+      | Parser_c.TCommentNewline _ (* newline plus whitespace *) -> true
+      | Parser_c.TComment _ -> true
+      | Parser_c.TCommentCpp (Token_c.CppAttr, _)
+      | Parser_c.TCommentCpp (Token_c.CppMacro, _)
+      | Parser_c.TCommentCpp (Token_c.CppDirective, _)
+        -> false
+
+      | Parser_c.TCommentMisc _
+      | Parser_c.TCommentCpp (Token_c.CppPassingCosWouldGetError, _)
+        -> false
+
+      | _ -> false
+      )
+  | _ -> false 
+
 let all_coccis = function
     Cocci2 _ | C2 _ | Indent_cocci2 | Unindent_cocci2 -> true
   | _ -> false
@@ -508,6 +528,10 @@ let remove_minus_and_between_and_expanded_and_fake xs =
       T2(_,Min adj,_) -> true
     | x -> is_minusable_comment x in
 
+  let minus_or_comment_nocpp = function
+      T2(_,Min adj,_) -> true
+    | x -> is_minusable_comment_nocpp x in
+
   let common_adj (index1,adj1) (index2,adj2) =
     adj1 = adj2 (* same adjacency info *) &&
     (* non-empty intersection of witness trees *)
@@ -516,7 +540,7 @@ let remove_minus_and_between_and_expanded_and_fake xs =
   let rec adjust_around_minus = function
       [] -> []
     | (T2(Parser_c.TCommentNewline c,_b,_i) as x)::
-      (T2(_,Min adj,_))::rest ->
+      (((T2(_,Min adj,_))::_) as rest) ->
 	(* an initial newline, as in a replaced statement *)
 	let (between_minus,rest) = Common.span minus_or_comment rest in
 	(match rest with
@@ -611,7 +635,7 @@ let remove_minus_and_between_and_expanded_and_fake xs =
 	  (* the rest of this code is the same as from_newline below
 	     but merging them seems to be error prone... *)
 	  ((T2 (t, Min adj, idx)) as m) :: rest ->
-	    let (spaces,rest) = Common.span minus_or_comment rest in
+	    let (spaces,rest) = Common.span minus_or_comment_nocpp rest in
 	    h :: m ::
 	    (List.map (set_minus_comment adj) spaces) @
 	    (adjust_before_brace rest)
@@ -620,7 +644,7 @@ let remove_minus_and_between_and_expanded_and_fake xs =
 
   let from_newline = function
       ((T2 (t, Min adj, idx)) as m) :: rest ->
-	let (spaces,rest) = Common.span minus_or_comment rest in
+	let (spaces,rest) = Common.span minus_or_comment_nocpp rest in
 	m ::
 	(List.map (set_minus_comment adj) spaces) @
 	(adjust_before_brace rest)

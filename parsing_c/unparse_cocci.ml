@@ -111,7 +111,6 @@ let print_string_befaft fn fn1 x info =
   List.iter
     (function (s,ln,col) -> force_newline(); fn1(); print_string s ln col)
     info.Ast.straft in
-
 let print_meta (r,x) = print_text x in
 
 let print_pos = function
@@ -146,6 +145,14 @@ let mcode fn (s,info,mc,pos) =
       |	_ -> force_newline());
       fn s line lcol;
       let _ = print_comments (Some info.Ast.line) info.Ast.straft in
+      (* newline after a pragma
+	 should really store parsed versions of the strings, but make a cheap
+	 effort here
+         print_comments takes care of interior newlines *)
+      (match List.rev info.Ast.straft with
+	(str,_,_)::_ when String.length str > 0 && String.get str 0 = '#' ->
+	  force_newline()
+      |	_ -> ());
       ()
       (* printing for rule generation *)
   | (true, Ast.MINUS(_,_,_,plus_stream)) ->
