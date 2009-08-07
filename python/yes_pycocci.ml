@@ -43,8 +43,6 @@ let load_module module_name =
   else get_module module_name
 (* end python module handling part *)
 
-let cocci_functions = ref []
-
 (* python interaction *)
 let split_fqn fqn =
   let last_period = String.rindex fqn '.' in
@@ -127,25 +125,13 @@ let pycocci_init () =
   module_map := StringMap.add "coccinelle" !coccinelle_module !module_map;
   let _ = load_module "coccilib.elems" in
   let _ = load_module "coccilib.output" in
-  (* too expensive to create these each time *)
-  cocci_functions :=
-    [("include_match", include_match, (pynull()));
-      ("has_env_binding", has_environment_binding, (pynull()))];
-  ()) else
 
-  ()
-
-(*let _ = pycocci_init ()*)
-(* end initialisation routines *)
-
-let build_classes env =
-  let _ = pycocci_init () in
   let module_dictionary = pyimport_getmoduledict() in
   coccinelle_module := pymodule_new "coccinelle";
   let mx = !coccinelle_module in
-  inc_match := true;
-  the_environment := env;
-  let (cd, cx) = build_class "Cocci" (!Flag.pyoutput) !cocci_functions mx in
+  let (cd, cx) = build_class "Cocci" (!Flag.pyoutput) 
+      [("include_match", include_match, (pynull()));
+	("has_env_binding", has_environment_binding, (pynull()))] mx in
   pyoutputinstance := cx;
   pyoutputdict := cd;
   let v1 = pydict_setitemstring(module_dictionary, "coccinelle", mx) in
@@ -153,15 +139,40 @@ let build_classes env =
   let mypystring = pystring_fromstring !cocci_file_name in
   let v2 = pydict_setitemstring(cd, "cocci_file", mypystring) in
   check_int_return_value v2;
+  ()) else
+  ()
+
+(*let _ = pycocci_init ()*)
+(* end initialisation routines *)
+
+let added_variables = ref []
+
+let build_classes env =
+  let _ = pycocci_init () in
+  inc_match := true;
+  the_environment := env;
+  let mx = !coccinelle_module in
+  let dict = pymodule_getdict mx in
+  List.iter
+    (function
+	"include_match" | "has_env_binding" -> ()
+      | name ->
+	  let v = pydict_delitemstring(dict,name) in
+	  check_int_return_value v)
+    !added_variables;
+  added_variables := [];
   ()
 
 let build_variable name value =
   let mx = !coccinelle_module in
-  check_int_return_value (pydict_setitemstring(pymodule_getdict mx, name, value))
+  added_variables := name :: !added_variables;
+  check_int_return_value
+    (pydict_setitemstring(pymodule_getdict mx, name, value))
 
 let contains_binding e (_,(r,m)) =
   try
-    let _ = List.find (function ((re, rm), _) -> r =$= re && m =$= rm) e in true
+    let _ = List.find (function ((re, rm), _) -> r =$= re && m =$= rm) e in
+    true
   with Not_found -> false
 
 let construct_variables mv e =
@@ -174,12 +185,14 @@ let construct_variables mv e =
 
   let instantiate_Expression(x) =
     let str = pystring_fromstring (Pycocci_aux.exprrep x) in
-    pycocci_instantiate_class "coccilib.elems.Expression" (pytuple_fromsingle (str))
+    pycocci_instantiate_class "coccilib.elems.Expression"
+      (pytuple_fromsingle (str))
   in
 
   let instantiate_Identifier(x) =
     let str = pystring_fromstring x in
-    pycocci_instantiate_class "coccilib.elems.Identifier" (pytuple_fromsingle (str))
+    pycocci_instantiate_class "coccilib.elems.Identifier"
+      (pytuple_fromsingle (str))
   in
 
   List.iter (function (py,(r,m)) ->
