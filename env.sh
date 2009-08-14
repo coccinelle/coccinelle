@@ -4,6 +4,8 @@
 
 #!!!!You need to source me with "source env.sh" from the good directory!!!!
 
+# 14 Aug 2009 Try directory we were executed from
+
 if [ "$1" ] ; then
 	DIR=$1
 else
@@ -11,9 +13,14 @@ else
 fi
 
 if [ ! -r $DIR/standard.iso ]
-    then echo "There is no standard.iso in '$DIR'. 
-Are you sure you run this script from the coccinelle directory ?
-Alternatively, provide the coccinelle directory as the first argument.
+then
+        echo "standard.iso not found in '$DIR' trying `dirname $0`"
+	DIR=`dirname $0`
+fi
+
+if [ ! -r $DIR/standard.iso ]
+    then echo "standard.iso not found in '$DIR'. 
+  Give the coccinelle directory as the first argument.
 ";
 else
 
@@ -28,15 +35,16 @@ else
 
 # To find the data/ files such as the default standard.h file.
 # Cf also globals/config.ml
-echo setting COCCINELLE_HOME=${COCCINELLE_HOME:=$DIR}
+echo setting COCCINELLE_HOME=$DIR
+COCCINELLE_HOME=$DIR				; export COCCINELLE_HOME
 
 # To find pycaml dynamic library
-echo setting LD_LIBRARY_PATH=${LD_LIBRARY_PATH:=$COCCINELLE_HOME:$LD_LIBRARY_PATH}
+echo adding $COCCINELLE_HOME to LD_LIBRARY_PATH
+LD_LIBRARY_PATH=$COCCINELLE_HOME:$LD_LIBRARY_PATH ; export LD_LIBRARY_PATH
 
 # To find .py files like the one in python/coccib
-echo setting PYTHONPATH=${PYTHONPATH:=$COCCINELLE_HOME/python:$PYTHONPATH}
-
-export COCCINELLE_HOME LD_LIBRARY_PATH PYTHONPATH
+echo adding $COCCINELLE_HOME/python to PYTHONPATH
+PYTHONPATH=$COCCINELLE_HOME/python:PYTHONPATH	; export PYTHONPATH
 
 fi
 
