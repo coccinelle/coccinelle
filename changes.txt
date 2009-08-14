@@ -7,9 +7,11 @@
 ** Features:
 - use interval timer for timeouts.  Thanks to Derek M. Jones for the
   implementation.
+- more flexible env.sh, thanks to Derek Jones.
+- faster Python invocation
 
 ** Bugfix:
-- for glimps there is no point to create a pattern containing a numeric
+- for glimpse there is no point to create a pattern containing a numeric
   constant becaise glimpse doesn't index them
 - add spaces after commas in function calls and function headers
 
