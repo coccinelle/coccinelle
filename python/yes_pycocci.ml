@@ -6,6 +6,28 @@ module StringMap = Map.Make (String)
 
 exception Pycocciexception
 
+(* ------------------------------------------------------------------- *)
+(* The following definitions are from
+http://patches.ubuntu.com/by-release/extracted/debian/c/coccinelle/0.1.5dbs-2/01-system-pycaml
+as well as _pycocci_setargs *)
+
+let _pycocci_none () =
+  let builtins = pyeval_getbuiltins () in
+  pyobject_getitem (builtins, pystring_fromstring "None")
+
+let _pycocci_true () =
+  let builtins = pyeval_getbuiltins () in
+  pyobject_getitem (builtins, pystring_fromstring "True")
+
+let _pycocci_false () =
+  let builtins = pyeval_getbuiltins () in
+  pyobject_getitem (builtins, pystring_fromstring "False")
+
+let _pycocci_tuple6 (a,b,c,d,e,f) =
+  pytuple_fromarray ([|a; b; c; d; e; f|])
+
+(* ------------------------------------------------------------------- *)
+
 let check_return_value v =
   if v =*= (pynull ()) then 
 	  (pyerr_print ();
@@ -19,11 +41,11 @@ let check_int_return_value v =
 
 let initialised = ref false
 
-let coccinelle_module = ref (pynone ())
+let coccinelle_module = ref (_pycocci_none ())
 let cocci_file_name = ref ""
 
 (* dealing with python modules loaded *)
-let module_map = ref (StringMap.add "__main__" (pynone ()) StringMap.empty)
+let module_map = ref (StringMap.add "__main__" (_pycocci_none ()) StringMap.empty)
 
 let get_module module_name =
   StringMap.find module_name (!module_map)
@@ -67,10 +89,6 @@ let pycocci_instantiate_class fqn args =
 
 let inc_match = ref true
 
-let _pycocci_none () =
-  let builtins = pyeval_getbuiltins () in
-  pyobject_getitem (builtins, pystring_fromstring "None")
-
 let include_match v =
   let truth = pyobject_istrue (pytuple_getitem (v, 1)) in
   check_int_return_value truth;
@@ -96,14 +114,6 @@ let build_class cname parent methods pymodule =
 
 let the_environment = ref []
 
-let _pycocci_true () =
-  let builtins = pyeval_getbuiltins () in
-  pyobject_getitem (builtins, pystring_fromstring "True")
-
-let _pycocci_false () =
-  let builtins = pyeval_getbuiltins () in
-  pyobject_getitem (builtins, pystring_fromstring "False")
-
 let has_environment_binding name =
   let a = pytuple_toarray name in
   let (rule, name) = (Array.get a 1, Array.get a 2) in
@@ -113,8 +123,8 @@ let has_environment_binding name =
       !the_environment in
   if e then _pycocci_true () else _pycocci_false ()
 
-let pyoutputinstance = ref (pynone ())
-let pyoutputdict = ref (pynone ())
+let pyoutputinstance = ref (_pycocci_none ())
+let pyoutputdict = ref (_pycocci_none ())
 
 let get_cocci_file args =
   pystring_fromstring (!cocci_file_name)
@@ -193,9 +203,6 @@ let contains_binding e (_,(r,m)) =
     let _ = List.find (function ((re, rm), _) -> r =$= re && m =$= rm) e in
     true
   with Not_found -> false
-
-let _pycocci_tuple6 (a,b,c,d,e,f) =
-  pytuple_fromarray ([|a; b; c; d; e; f|])
 
 let construct_variables mv e =
   let find_binding (r,m) =
