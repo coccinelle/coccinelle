@@ -14,6 +14,11 @@
 - for glimpse there is no point to create a pattern containing a numeric
   constant because glimpse doesn't index them
 - add spaces after commas in function calls and function headers
+- correct labels associated with a switch in the CFG so that a statement
+  metavariable can match a switch.  Thanks to Derek Jones for pointing out
+  the problem.
+- keep switch pattern within switch body.  Thanks to Derek Jones for
+  pointing out the problem.
 
 * 0.1.9
 
