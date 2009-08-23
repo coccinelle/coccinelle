@@ -1966,7 +1966,7 @@ and statement stmt after quantified minus_quantified
 		  let new3_mquantified = union mb1fvs new2_mquantified in
 		  let body =
 		    statement_list body Tail
-		      new3_quantified new3_mquantified label llabel
+		      new3_quantified new3_mquantified (Some (lv,used)) llabel
 		      (Some (lv,used)) true(*?*) guard in
 		  quantify guard b1fvs (make_seq [case_header; body])
 	    | Ast.OptCase(case_line) -> failwith "not supported")
