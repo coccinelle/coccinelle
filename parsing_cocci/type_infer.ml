@@ -338,14 +338,13 @@ let rec propagate_types env =
 
   and case_line r k c =
     match Ast0.unwrap c with
-      Ast0.Default(def,colon,code) -> let _ = k c in None
-    | Ast0.Case(case,exp,colon,code) ->
+      Ast0.Case(case,exp,colon,code) ->
 	let _ = k c in
 	(match Ast0.get_type exp with
 	  None -> Ast0.set_type exp (Some (int_type))
 	| _ -> ());
 	None
-    | Ast0.OptCase(case) -> k c in
+    | _ -> k c in
 
   V0.combiner bind option_default
     {V0.combiner_functions with

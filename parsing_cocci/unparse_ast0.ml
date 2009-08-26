@@ -564,6 +564,12 @@ and case_line arity c =
 	  mcode print_string case; print_string " "; expression exp;
 	  mcode print_string colon; print_string " ";
 	  dots force_newline (statement arity) code
+      | Ast0.DisjCase(starter,case_lines,mids,ender) ->
+	  print_string "\n("; force_newline();
+	  print_between
+	    (function _ -> print_string "\n|"; force_newline())
+	    case_line case_lines;
+	  print_string "\n)"
       | Ast0.OptCase(case) -> case_line "?" case)
 
 and statement_dots l = dots (function _ -> ()) (statement "") l

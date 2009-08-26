@@ -787,6 +787,16 @@ let visitor mode bind option_default
 	    let (code_n,code) = statement_dots code in
 	    (multibind [case_n;exp_n;colon_n;code_n],
 	     Ast0.Case(case,exp,colon,code))
+	| Ast0.DisjCase(starter,case_lines,mids,ender) ->
+	    let (starter_n,starter) = string_mcode starter in
+	    let (case_lines_n,case_lines) = map_split case_line case_lines in
+	    let (mids_n,mids) = map_split string_mcode mids in
+	    let (ender_n,ender) = string_mcode ender in
+	    (multibind
+	       [starter_n;List.hd case_lines_n;
+		 multibind (List.map2 bind mids_n (List.tl case_lines_n));
+		 ender_n],
+	     Ast0.DisjCase(starter,case_lines,mids,ender))
 	| Ast0.OptCase(case) ->
 	    let (n,case) = case_line case in (n,Ast0.OptCase(case))) in
     casefn all_functions k c

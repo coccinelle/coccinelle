@@ -316,7 +316,9 @@ let disj_rule_elem r k re =
   | Ast.Case(case,exp,colon) ->
       orify_rule_elem re exp
 	(function exp -> Ast.rewrap re (Ast.Case(case,exp,colon)))
-  | Ast.DisjRuleElem(_) -> failwith "not possible"
+  | Ast.DisjRuleElem(l) ->
+      (* only case lines *)
+      Ast.DisjRuleElem(List.map disj_rule_elem l)
 
 let disj_all =
   let mcode x = x in

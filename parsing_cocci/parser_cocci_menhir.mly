@@ -895,9 +895,14 @@ single_statement:
 
 case_line:
     TDefault TDotDot fun_start
-      { Ast0.wrap(Ast0.Default(P.clt2mcode "default" $1,P.clt2mcode ":" $2,$3)) }
+      { Ast0.wrap
+	  (Ast0.Default(P.clt2mcode "default" $1,P.clt2mcode ":" $2,$3)) }
   | TCase eexpr TDotDot fun_start
       { Ast0.wrap(Ast0.Case(P.clt2mcode "case" $1,$2,P.clt2mcode ":" $3,$4)) }
+  | lp=TOPar0 t=midzero_list(case_line,case_line) rp=TCPar0
+    { let (mids,code) = t in
+      Ast0.wrap
+	(Ast0.DisjCase(P.clt2mcode "(" lp,code,mids, P.clt2mcode ")" rp)) }
 
 /* In the following, an identifier as a type is not fully supported.  Indeed,
 the language is ambiguous: what is foo * bar; */

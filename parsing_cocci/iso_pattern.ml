@@ -1140,6 +1140,8 @@ let match_maker checks_needed context_required whencode_allowed =
 	    [check_mcode ca1 ca; check_mcode c1 c; match_expr expa expb;
 	      match_dots match_statement is_slist_matcher do_slist_match
 		codea codeb]
+      | (Ast0.DisjCase(_,case_linesa,_,_),_) ->
+	  failwith "not allowed in the pattern of an isomorphism"
       |	(Ast0.OptCase(ca),Ast0.OptCase(cb)) -> match_case_line ca cb
       |	(_,Ast0.OptCase(cb)) -> match_case_line pattern cb
       |	_ -> return false

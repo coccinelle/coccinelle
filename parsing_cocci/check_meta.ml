@@ -367,6 +367,8 @@ and case_line old_metas table minus c =
       dots (statement old_metas table minus) code
   | Ast0.Case(case,exp,colon,code) ->
       dots (statement old_metas table minus) code
+  | Ast0.DisjCase(_,case_lines,_,_) ->
+      List.iter (case_line old_metas table minus) case_lines
   | Ast0.OptCase(case) -> failwith "unexpected code"
 
 (* --------------------------------------------------------------------- *)

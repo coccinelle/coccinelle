@@ -189,12 +189,18 @@ let check_allminus =
 	List.for_all r.VT0.combiner_rec_statement_dots statement_dots_list
     | _ -> k e in
 
+  let case_line r k e =
+    match Ast0.unwrap e with
+      Ast0.DisjCase(starter,case_lines,mids,ender) ->
+	List.for_all r.VT0.combiner_rec_case_line case_lines
+    | _ -> k e in
+
   V0.flat_combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode mcode
     donothing donothing donothing donothing donothing donothing
     donothing expression typeC donothing donothing declaration
-    statement donothing donothing
+    statement case_line donothing
 
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)
@@ -877,6 +883,9 @@ and case_line c =
 	let colon = mcode colon in
 	let code = dots statement code in
 	Ast.CaseLine(rewrap c no_isos (Ast.Case(case,exp,colon)),code)
+    | Ast0.DisjCase(_,case_lines,_,_) ->
+	Ast.CaseLine(Ast.DisjRuleElem(List.map case_line case_lines))
+
     | Ast0.OptCase(case) -> Ast.OptCase(case_line case))
 
 and statement_dots l = dots statement l

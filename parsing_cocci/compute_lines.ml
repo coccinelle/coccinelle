@@ -746,6 +746,14 @@ and case_line c =
       let exp = expression exp in
       let code = dots is_stm_dots (Some(promote_mcode colon)) statement code in
       mkres c (Ast0.Case(case,exp,colon,code)) (promote_mcode case) code
+  | Ast0.DisjCase(starter,case_lines,mids,ender) ->
+      let starter = bad_mcode starter in
+      let case_lines = List.map case_line case_lines in
+      let mids = List.map bad_mcode mids in
+      let ender = bad_mcode ender in
+      mkmultires e (Ast0.DisjCase(starter,case_lines,mids,ender))
+	(promote_mcode starter) (promote_mcode ender)
+	(get_all_start_info case_lines) (get_all_end_info case_lines)
   | Ast0.OptCase(case) ->
       let case = case_line case in mkres c (Ast0.OptCase(case)) case case
 

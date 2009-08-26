@@ -1,5 +1,5 @@
 (* create an index for each constructor *)
-(* current max is 147, but 107 is free *)
+(* current max is 147 *)
 
 (* doesn't really work - requires that identical terms with no token
 subterms (eg dots) not appear on the same line *)
@@ -186,6 +186,7 @@ let case_line c =
   match Ast0.unwrap c with
     Ast0.Default(def,colon,code) -> [126]
   | Ast0.Case(case,exp,colon,code) -> [127]
+  | Ast0.DisjCase(_,case_lines,_,_) -> [107]
   | Ast0.OptCase(case) -> [128]
 
 let top_level t =

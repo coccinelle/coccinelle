@@ -336,6 +336,8 @@ and base_case_line =
     Default of string mcode (* default *) * string mcode (*:*) * statement dots
   | Case of string mcode (* case *) * expression * string mcode (*:*) *
 	statement dots
+  | DisjCase of string mcode * case_line list *
+	string mcode list (* the |s *) * string mcode
   | OptCase of case_line
 
 and case_line = base_case_line wrap
