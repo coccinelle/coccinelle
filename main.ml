@@ -745,6 +745,7 @@ let main_action xs =
 		pr2 ("HANDLING: " ^ (join " " cfiles));
 		Common.timeout_function_opt !FC.timeout (fun () ->
   	          Common.report_if_take_time 10 (join " " cfiles) (fun () ->
+		    (*let s = profile_diagnostic() in*)
                     (* Unix.sleep 1; *)
                     try
 		      let optfile =
@@ -760,6 +761,10 @@ let main_action xs =
 		    with
 		      | Common.UnixExit x -> raise (Common.UnixExit x)
 		      | e ->
+			  (*pr2 "previous";
+			  pr2 s;
+			  pr2 "new";
+			  pr2(profile_diagnostic());*)
 			  if !dir
 			  then begin
 			    pr2 ("EXN:" ^ Printexc.to_string e);
@@ -922,8 +927,7 @@ let main () =
     (* --------------------------------------------------------- *)
     (* This is the main entry *)
     (* --------------------------------------------------------- *)
-    | x::xs ->
-        main_action (x::xs)
+    | x::xs -> main_action (x::xs)
 
     (* --------------------------------------------------------- *)
     (* empty entry *)

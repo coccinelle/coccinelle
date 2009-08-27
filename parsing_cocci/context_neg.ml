@@ -371,6 +371,13 @@ let classify is_minus all_marked table code =
 	  k (Ast0.rewrap i (Ast0.Idots(dots,None)))
       |	_ -> k i) in
 
+  let case_line r k e =
+    compute_result Ast0.case_line e
+      (match Ast0.unwrap e with
+	Ast0.DisjCase(starter,case_list,_,ender) ->
+	  disj_cases e starter case_list r.VT0.combiner_rec_case_line ender
+      |	_ -> k e) in
+
   let statement r k s =
     compute_result Ast0.stmt s
       (match Ast0.unwrap s with
@@ -408,7 +415,7 @@ let classify is_minus all_marked table code =
       (do_nothing Ast0.dotsParam) (do_nothing Ast0.dotsStmt)
       (do_nothing Ast0.dotsDecl) (do_nothing Ast0.dotsCase)
       (do_nothing Ast0.ident) expression typeC initialiser param declaration
-      statement (do_nothing Ast0.case_line) (do_top Ast0.top) in
+      statement case_line (do_top Ast0.top) in
   combiner.VT0.combiner_rec_top_level code
 
 (* --------------------------------------------------------------------- *)
@@ -674,6 +681,11 @@ let equal_case_line c1 c2 =
       equal_mcode def1 def2 && equal_mcode colon1 colon2
   | (Ast0.Case(case1,_,colon1,_),Ast0.Case(case2,_,colon2,_)) ->
       equal_mcode case1 case2 && equal_mcode colon1 colon2
+  | (Ast0.DisjCase(starter1,_,mids1,ender1),
+     Ast0.DisjCase(starter2,_,mids2,ender2)) ->
+       equal_mcode starter1 starter2 &&
+       List.for_all2 equal_mcode mids1 mids2 &&
+       equal_mcode ender1 ender2
   | (Ast0.OptCase(_),Ast0.OptCase(_)) -> true
   | _ -> false
 

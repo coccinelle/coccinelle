@@ -751,7 +751,7 @@ and case_line c =
       let case_lines = List.map case_line case_lines in
       let mids = List.map bad_mcode mids in
       let ender = bad_mcode ender in
-      mkmultires e (Ast0.DisjCase(starter,case_lines,mids,ender))
+      mkmultires c (Ast0.DisjCase(starter,case_lines,mids,ender))
 	(promote_mcode starter) (promote_mcode ender)
 	(get_all_start_info case_lines) (get_all_end_info case_lines)
   | Ast0.OptCase(case) ->

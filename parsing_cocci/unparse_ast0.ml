@@ -568,7 +568,7 @@ and case_line arity c =
 	  print_string "\n("; force_newline();
 	  print_between
 	    (function _ -> print_string "\n|"; force_newline())
-	    case_line case_lines;
+	    (case_line arity) case_lines;
 	  print_string "\n)"
       | Ast0.OptCase(case) -> case_line "?" case)
 

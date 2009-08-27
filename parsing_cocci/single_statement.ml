@@ -342,11 +342,18 @@ and contains_only_minus =
 	List.for_all r.VT0.combiner_rec_statement_dots statement_dots_list
     | _ -> k e in
 
+  let case_line r k e =
+    mcodekind (Ast0.get_mcodekind e) &&
+    match Ast0.unwrap e with
+      Ast0.DisjCase(starter,case_list,mids,ender) ->
+	List.for_all r.VT0.combiner_rec_case_line case_list
+    | _ -> k e in
+
   V0.flat_combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     dots dots dots dots dots dots
     donothing expression typeC donothing donothing declaration
-    statement donothing donothing
+    statement case_line donothing
 
 
 (* needs a special case when there is a Disj or an empty DOTS *)

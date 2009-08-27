@@ -652,7 +652,7 @@ let profile_end category = failwith "todo"
  *)  
 let profile_code category f = 
   if not (check_profile category)
-  then f() 
+  then f()
   else begin
   if !show_trace_profile then pr2 (spf "p: %s" category);
   let t = Unix.gettimeofday () in

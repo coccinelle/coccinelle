@@ -884,7 +884,8 @@ and case_line c =
 	let code = dots statement code in
 	Ast.CaseLine(rewrap c no_isos (Ast.Case(case,exp,colon)),code)
     | Ast0.DisjCase(_,case_lines,_,_) ->
-	Ast.CaseLine(Ast.DisjRuleElem(List.map case_line case_lines))
+	failwith "not supported"
+	(*Ast.CaseLine(Ast.DisjRuleElem(List.map case_line case_lines))*)
 
     | Ast0.OptCase(case) -> Ast.OptCase(case_line case))
 

@@ -14,6 +14,9 @@
 - for glimpse there is no point to create a pattern containing a numeric
   constant because glimpse doesn't index them
 - add spaces after commas in function calls and function headers
+- made python integration more like the ubuntu version
+  http://patches.ubuntu.com/by-release/extracted/debian/c/coccinelle/0.1.5dbs-2/01-system-pycaml
+  this fixes some memory management problems with None, True, and False
 - correct labels associated with a switch in the CFG so that a statement
   metavariable can match a switch.  Thanks to Derek Jones for pointing out
   the problem.

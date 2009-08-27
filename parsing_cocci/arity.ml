@@ -1029,9 +1029,9 @@ and case_line tgt c =
       (match List.rev case_lines with
 	_::xs ->
 	  if anyopt xs (function Ast0.OptCase(_) -> true | _ -> false)
-	  then fail expr "opt only allowed in the last disjunct"
+	  then fail c "opt only allowed in the last disjunct"
       |	_ -> ());
-      Ast0.rewrap expr (Ast0.DisjCase(starter,case_lines,mids,ender))
+      Ast0.rewrap c (Ast0.DisjCase(starter,case_lines,mids,ender))
   | Ast0.OptCase(_) -> failwith "unexpected OptCase"
 
 (* --------------------------------------------------------------------- *)
