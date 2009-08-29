@@ -557,7 +557,7 @@ let remove_minus_and_between_and_expanded_and_fake xs =
 	(match rest with
 	  [] -> (set_minus_comment adj x) ::
 	    (List.map (set_minus_comment adj) between_minus)
-	| T2(_,Ctx,_)::_ ->
+	| T2(_,Ctx,_)::_ when is_newline (List.hd(List.rev between_minus)) ->
 	    (set_minus_comment adj x)::(adjust_within_minus between_minus) @
 	    (adjust_around_minus rest)
 	| _ ->

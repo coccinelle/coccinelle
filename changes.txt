@@ -27,6 +27,7 @@
   not removed.  But this does currently allow them in + code, which will
   produce the expansion.  Thanks to Ali-Erdem Ozcan for pointing out the
   problem.
+- improved adjustment of spacing when code removed at the beginning of a line
 
 * 0.1.9
 
