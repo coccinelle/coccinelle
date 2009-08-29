@@ -518,6 +518,12 @@ let set_minus_comment_or_plus adj = function
     Cocci2 _ | C2 _ | Indent_cocci2 | Unindent_cocci2 as x -> x
   | x -> set_minus_comment adj x
 
+let drop_minus xs =
+  xs +> Common.exclude (function
+    | T2 (t,Min adj,_) -> true
+    | _ -> false
+  )
+
 let remove_minus_and_between_and_expanded_and_fake xs =
 
   (* get rid of exampled and fake tok *)
@@ -657,10 +663,7 @@ let remove_minus_and_between_and_expanded_and_fake xs =
 
   let xs = List.rev (from_newline (List.rev xs)) in
 
-  let xs = xs +> Common.exclude (function
-    | T2 (t,Min adj,_) -> true
-    | _ -> false
-  ) in
+  let xs = drop_minus xs in
   xs
 
 (* normally, in C code, a semicolon is not preceded by a space or newline *)
@@ -973,14 +976,19 @@ let pp_program2 xs outfile  =
           let toks = expand_mcode toks in
           (* assert Origin;ExpandedTok; + Cocci + C (was AbstractLineTok)
            * and no tag information, just NOTHING. *)
-	  
-          (* phase2: can now start to filter and adjust *)
-          let toks = adjust_indentation toks in
-	  let toks = adjust_before_semicolon toks in (* before remove minus *)
-          let toks = remove_minus_and_between_and_expanded_and_fake toks in
-          (* assert Origin + Cocci + C and no minus *)
-          let toks = add_space toks in
-          let toks = fix_tokens toks in
+
+	  let toks =
+	    if !Flag.sgrep_mode2
+	    then drop_minus toks (* nothing to do for sgrep *)
+	    else
+              (* phase2: can now start to filter and adjust *)
+              let toks = adjust_indentation toks in
+	      let toks = adjust_before_semicolon toks in(*before remove minus*)
+              let toks = remove_minus_and_between_and_expanded_and_fake toks in
+              (* assert Origin + Cocci + C and no minus *)
+              let toks = add_space toks in
+              let toks = fix_tokens toks in
+	      toks in
 
           (* in theory here could reparse and rework the ast! or 
            * apply some SP. Not before cos julia may have generated

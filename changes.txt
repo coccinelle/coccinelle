@@ -9,6 +9,7 @@
   implementation.
 - more flexible env.sh, thanks to Derek Jones.
 - faster Python invocation
+- simplify unparsing in the sgrep case
 
 ** Bugfix:
 - for glimpse there is no point to create a pattern containing a numeric
