@@ -314,7 +314,7 @@ module XTRANS = struct
         (match any_befaft with
         | Ast_cocci.NOTHING -> expr
             
-        | Ast_cocci.BEFORE xxs -> 
+        | Ast_cocci.BEFORE xxs ->
             distributef (
               (fun ib -> tag_with_mck 
                 (Ast_cocci.CONTEXT (pos,Ast_cocci.BEFORE xxs)) ib tin),
@@ -323,7 +323,7 @@ module XTRANS = struct
               (fun ib -> tag_with_mck 
                 (Ast_cocci.CONTEXT (pos,Ast_cocci.BEFORE xxs)) ib tin)
             ) expr
-        | Ast_cocci.AFTER xxs -> 
+        | Ast_cocci.AFTER xxs ->
             distributef (
               (fun x -> x), 
               (fun x -> x), 
@@ -333,7 +333,7 @@ module XTRANS = struct
                 (Ast_cocci.CONTEXT (pos,Ast_cocci.AFTER xxs)) ib tin)
             ) expr
 
-        | Ast_cocci.BEFOREAFTER (xxs, yys) -> 
+        | Ast_cocci.BEFOREAFTER (xxs, yys) ->
             distributef (
               (fun ib -> tag_with_mck 
                 (Ast_cocci.CONTEXT (pos,Ast_cocci.BEFORE xxs)) ib tin),

@@ -320,8 +320,13 @@ let expand_mcode toks =
     | T1 tok ->
 	(*let (a,b) = !((TH.info_of_tok tok).cocci_tag) in*)
         (* no tag on expandedTok ! *)
-        (if (TH.is_expanded tok && 
-            !((TH.info_of_tok tok).cocci_tag) <> Ast_c.emptyAnnot)
+	let modified = function
+	    None -> false
+	  | Some (Ast_cocci.CONTEXT(pos,Ast_cocci.NOTHING),l) -> false
+	  | _ -> true in
+        (if (TH.is_expanded tok &&
+	     modified !((TH.info_of_tok tok).cocci_tag)
+            (*!((TH.info_of_tok tok).cocci_tag) <> Ast_c.emptyAnnot*))
 	then
 	  failwith
 	    (Printf.sprintf
