@@ -109,7 +109,7 @@ let print_token2 = function
 	      (String.concat " " (List.map string_of_int index))
 	| Ctx -> "" in
       "T2:"^b_str^TH.str_of_tok t
-  | Fake2 -> ""
+  | Fake2 -> "fake"
   | Cocci2 (s,_,lc,rc) -> Printf.sprintf "Cocci2:%d:%d%s" lc rc s
   | C2 s -> "C2:"^s
   | Indent_cocci2 -> "Indent"
@@ -120,7 +120,7 @@ let simple_print_all_tokens1 l =
   Printf.printf "\n"
 
 let simple_print_all_tokens2 l =
-  List.iter (function x -> Printf.printf "%s " (print_token2 x)) l;
+  List.iter (function x -> Printf.printf "|%s| " (print_token2 x)) l;
   Printf.printf "\n"
 
 let str_of_token3 = function
@@ -597,6 +597,55 @@ let remove_minus_and_between_and_expanded_and_fake xs =
 	    t1::(between_minus @ adjust_within_minus (x::xs)))
     | _ -> failwith "only minus and space possible" in
 
+  (* new idea: collects regions not containing non-space context code
+     if two adjacent adjacent minus tokens satisfy common_adj then delete
+     all spaces, comments etc between them
+     if two adjacent minus tokens do not satisfy common_adj only delete
+     the spaces between them if there are no comments, etc.
+     if the region contain no plus code and is both preceded and followed
+     by a newline, delete the initial newline. *)
+
+  let rec adjust_around_minus = function
+      [] -> []
+    | (T2(Parser_c.TCommentNewline c,_b,_i) as x)::
+      (T2(_,Min adj1,_) as t1)::xs ->
+	let (minus_list,rest) = Common.span not_context (t1::xs) in
+	let x =
+	  match List.rev minus_list with
+	    (T2(Parser_c.TCommentNewline c,_b,_i))::rest
+	    when List.for_all minus_or_comment minus_list ->
+	      set_minus_comment_or_plus adj1 x
+	  | _ -> x in
+	x :: adjust_within_minus minus_list @ adjust_around_minus rest
+    | (T2(_,Min adj1,_) as t1)::xs ->
+	let (minus_list,rest) = Common.span not_context (t1::xs) in
+	adjust_within_minus minus_list @ adjust_around_minus rest
+    | x::xs -> x :: adjust_around_minus xs
+  and adjust_within_minus = function
+      (T2(_,Min adj1,_) as t1)::xs ->
+	let not_minus = function T2(_,Min _,_) -> false | _ -> true in
+	let (not_minus_list,rest) = Common.span not_minus xs in
+	t1 ::
+	(match rest with
+	  (T2(_,Min adj2,_) as t2)::xs when common_adj adj1 adj2 ->
+	    (List.map (set_minus_comment_or_plus adj1) not_minus_list)
+	    @ (adjust_within_minus (t2::xs))
+	| (T2(_,Min adj2,_) as t2)::xs ->
+	    let is_whitespace_or_plus = function
+		(T2 _) as x -> is_space x
+	      | _ -> true (*plus*) in
+	    if List.for_all is_whitespace_or_plus not_minus_list
+	    then
+	      (List.map (set_minus_comment_or_plus adj1) not_minus_list)
+	      @ (adjust_within_minus (t2::xs))
+	    else not_minus_list @ (adjust_within_minus (t2::xs))
+	| _ -> xs)
+    | xs -> xs
+  and not_context =
+    function
+	(T2(_,Ctx,_) as x) when not (is_minusable_comment x) -> false
+      | _ -> true in
+
   let xs = adjust_around_minus xs in
 
   (* this drops blank lines after a brace introduced by removing code *)
@@ -662,7 +711,6 @@ let remove_minus_and_between_and_expanded_and_fake xs =
     | rest -> adjust_before_brace rest in
 
   let xs = List.rev (from_newline (List.rev xs)) in
-
   let xs = drop_minus xs in
   xs
 
