@@ -617,6 +617,16 @@ let remove_minus_and_between_and_expanded_and_fake xs =
 	      set_minus_comment_or_plus adj1 x
 	  | _ -> x in
 	x :: adjust_within_minus minus_list @ adjust_around_minus rest
+    | (T2(Parser_c.TCommentSpace c,_b,_i) as x)::
+      (T2(_,Min adj1,_) as t1)::xs ->
+	let (minus_list,rest) = Common.span not_context (t1::xs) in
+	let x =
+	  match List.rev minus_list with
+	    (T2(Parser_c.TCommentSpace c,_b,_i))::rest
+	    when List.for_all minus_or_comment minus_list ->
+	      set_minus_comment_or_plus adj1 x
+	  | _ -> x in
+	x :: adjust_within_minus minus_list @ adjust_around_minus rest
     | (T2(_,Min adj1,_) as t1)::xs ->
 	let (minus_list,rest) = Common.span not_context (t1::xs) in
 	adjust_within_minus minus_list @ adjust_around_minus rest
