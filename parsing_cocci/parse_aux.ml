@@ -416,9 +416,15 @@ let iterator i lp e rp s =
   Ast0.wrap(Ast0.Iterator(i,clt2mcode "(" lp,e,clt2mcode ")" rp,s,
 			  (Ast0.default_info(),Ast0.context_befaft())))
 
-let switch s lp e rp lb c rb =
+let switch s lp e rp lb d c rb =
+  let d =
+    List.map
+      (function d ->
+	Ast0.wrap(Ast0.Decl((Ast0.default_info(),Ast0.context_befaft()),d)))
+      d in
   Ast0.wrap(Ast0.Switch(clt2mcode "switch" s,clt2mcode "(" lp,e,
 			clt2mcode ")" rp,clt2mcode "{" lb,
+			Ast0.wrap(Ast0.DOTS(d)),
 			Ast0.wrap(Ast0.DOTS(c)),clt2mcode "}" rb))
 
 let ret_exp r e pv =

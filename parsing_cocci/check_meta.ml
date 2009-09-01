@@ -312,8 +312,9 @@ and statement old_metas table minus s =
       ident GLOBAL old_metas table minus nm;
       dots (expression ID old_metas table minus) args;
       statement old_metas table minus body
-  | Ast0.Switch(switch,lp,exp,rp,lb,cases,rb) ->
+  | Ast0.Switch(switch,lp,exp,rp,lb,decls,cases,rb) ->
       expression ID old_metas table minus exp;
+      dots (statement old_metas table minus) decls;
       dots (case_line old_metas table minus) cases
   | Ast0.ReturnExpr(ret,exp,sem) -> expression ID old_metas table minus exp
   | Ast0.MetaStmt(name,_) ->     check_table table minus name

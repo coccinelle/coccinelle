@@ -130,7 +130,8 @@ let get_free checker t =
 	VT0.combiner_tyfn = typeC;
 	VT0.combiner_paramfn = parameter;
 	VT0.combiner_declfn = declaration;
-	VT0.combiner_stmtfn = statement} in
+	VT0.combiner_stmtfn = statement;
+	VT0.combiner_casefn = case_line} in
 
   collect_unitary_nonunitary
     (List.concat (List.map res.VT0.combiner_rec_top_level t))

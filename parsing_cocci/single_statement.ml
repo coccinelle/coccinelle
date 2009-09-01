@@ -205,7 +205,8 @@ and left_statement s =
   | Ast0.For(fr,lp,e1,sem1,e2,sem2,e3,rp,body,(info,aft)) ->
       modif_before_mcode fr
   | Ast0.Iterator(nm,lp,args,rp,body,(info,aft)) -> left_ident nm
-  | Ast0.Switch(switch,lp,exp,rp,lb,cases,rb) -> modif_before_mcode switch
+  | Ast0.Switch(switch,lp,exp,rp,lb,decls,cases,rb) ->
+      modif_before_mcode switch
   | Ast0.Break(br,sem) -> modif_before_mcode br
   | Ast0.Continue(cont,sem) -> modif_before_mcode cont
   | Ast0.Label(l,dd) -> left_ident l
@@ -245,7 +246,7 @@ and right_statement s =
       modif_after_mcodekind aft
   | Ast0.Iterator(nm,lp,args,rp,body,(info,aft)) ->
       modif_after_mcodekind aft
-  | Ast0.Switch(switch,lp,exp,rp,lb,cases,rb) -> modif_after_mcode rb
+  | Ast0.Switch(switch,lp,exp,rp,lb,decls,cases,rb) -> modif_after_mcode rb
   | Ast0.Break(br,sem) -> modif_after_mcode sem
   | Ast0.Continue(cont,sem) -> modif_after_mcode sem
   | Ast0.Label(l,dd) -> modif_after_mcode dd
@@ -504,12 +505,13 @@ let rec statement dots_before dots_after s =
       do_one
 	(Ast0.rewrap s
 	   (Ast0.Iterator(nm,lp,args,rp,statement false false body,x)))
-  | Ast0.Switch(switch,lp,exp,rp,lb,cases,rb) ->
+  | Ast0.Switch(switch,lp,exp,rp,lb,decls,cases,rb) ->
       do_one
 	(Ast0.rewrap s
-	   (Ast0.Switch(switch,lp,exp,rp,lb,
+	   (Ast0.Switch(switch,lp,exp,rp,lb,decls,
 			Ast0.rewrap cases
-			  (Ast0.DOTS(List.map case_line (Ast0.undots cases))),
+			  (Ast0.DOTS
+			     (List.map case_line (Ast0.undots cases))),
 			rb)))
   | Ast0.Break(br,sem) -> do_one s
   | Ast0.Continue(cont,sem) -> do_one s
@@ -550,6 +552,8 @@ and case_line c =
 	Ast0.Default(def,colon,statement_dots false false code)
     | Ast0.Case(case,exp,colon,code) ->
 	Ast0.Case(case,exp,colon,statement_dots false false code)
+    | Ast0.DisjCase(starter,case_lines,mids,ender) ->
+	Ast0.DisjCase(starter,List.map case_line case_lines,mids,ender)
     | Ast0.OptCase(case) -> Ast0.OptCase(case_line c))
 
 and do_statement_dots dots_before dots_after = function

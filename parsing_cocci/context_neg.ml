@@ -626,8 +626,8 @@ let rec equal_statement s1 s2 =
        equal_mcode rp1 rp2
   | (Ast0.Iterator(nm1,lp1,_,rp1,_,_),Ast0.Iterator(nm2,lp2,_,rp2,_,_)) ->
       equal_mcode lp1 lp2 && equal_mcode rp1 rp2
-  | (Ast0.Switch(switch1,lp1,_,rp1,lb1,case1,rb1),
-     Ast0.Switch(switch2,lp2,_,rp2,lb2,case2,rb2)) ->
+  | (Ast0.Switch(switch1,lp1,_,rp1,lb1,_,_,rb1),
+     Ast0.Switch(switch2,lp2,_,rp2,lb2,_,_,rb2)) ->
        equal_mcode switch1 switch2 && equal_mcode lp1 lp2 &&
        equal_mcode rp1 rp2 && equal_mcode lb1 lb2 &&
        equal_mcode rb1 rb2

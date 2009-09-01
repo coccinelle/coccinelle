@@ -734,7 +734,7 @@ and statement tgt stm =
       let rp = mcode rp in
       let body = statement arity body in
       make_rule_elem stm tgt arity (Ast0.Iterator(nm,lp,args,rp,body,aft))
-  | Ast0.Switch(switch,lp,exp,rp,lb,cases,rb) ->
+  | Ast0.Switch(switch,lp,exp,rp,lb,decls,cases,rb) ->
       let arity =
 	stm_same (mcode2line switch)
 	  (List.map mcode2arity [switch;lp;rp;lb;rb]) in
@@ -743,10 +743,11 @@ and statement tgt stm =
       let exp = expression arity exp in
       let rp = mcode rp in
       let lb = mcode lb in
+      let decls = dots (statement arity) decls in
       let cases = dots (case_line arity) cases in
       let rb = mcode rb in
       make_rule_elem stm tgt arity
-	(Ast0.Switch(switch,lp,exp,rp,lb,cases,rb))
+	(Ast0.Switch(switch,lp,exp,rp,lb,decls,cases,rb))
   | Ast0.Break(br,sem) ->
       let arity = stm_same (mcode2line br) (List.map mcode2arity [br;sem]) in
       let br = mcode br in

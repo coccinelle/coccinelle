@@ -78,9 +78,9 @@ let rec right_statement s =
 	(function sem -> Ast0.Do(d,body,whl,lp,exp,rp,sem))
   | Ast0.For(fr,lp,e1,sem1,e2,sem2,e3,rp,body,aft) -> None
   | Ast0.Iterator(nm,lp,args,rp,body,aft) -> None
-  | Ast0.Switch(switch,lp,exp,rp,lb,cases,rb) ->
+  | Ast0.Switch(switch,lp,exp,rp,lb,decls,cases,rb) ->
       call_right right_mcode rb s
-	(function rb -> Ast0.Switch(switch,lp,exp,rp,lb,cases,rb))
+	(function rb -> Ast0.Switch(switch,lp,exp,rp,lb,decls,cases,rb))
   | Ast0.Break(br,sem) ->
       call_right right_mcode sem s
 	(function sem -> Ast0.Break(br,sem))

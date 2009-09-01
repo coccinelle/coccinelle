@@ -450,11 +450,12 @@ and statement arity s =
 	  close_box(); mcode print_string rp; print_string " ";
 	  statement arity body;
 	  mcode (function _ -> ()) ((),(),info,aft,ref Ast0.NoMetaPos,-1)
-      |	Ast0.Switch(switch,lp,exp,rp,lb,cases,rb) ->
+      |	Ast0.Switch(switch,lp,exp,rp,lb,decls,cases,rb) ->
 	  print_string arity;
 	  mcode print_string switch; print_string " ";
 	  mcode print_string_box lp; expression exp; close_box();
 	  mcode print_string rp; print_string " "; mcode print_string lb;
+	  dots force_newline (statement arity) decls;
 	  dots force_newline (case_line arity) cases;
 	  mcode print_string rb
       | Ast0.Break(br,sem) ->

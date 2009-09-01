@@ -427,7 +427,7 @@ and base_statement =
   | For           of rule_elem (* header *) * statement * end_info (*endfor*)
   | Iterator      of rule_elem (* header *) * statement * end_info (*enditer*)
   | Switch        of rule_elem (* header *) * rule_elem (* { *) *
-	             case_line list * rule_elem (* } *)
+	             statement (*decl*) dots * case_line list * rule_elem(*}*)
   | Atomic        of rule_elem
   | Disj          of statement dots list
   | Nest          of statement dots *

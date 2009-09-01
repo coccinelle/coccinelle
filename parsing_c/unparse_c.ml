@@ -405,7 +405,7 @@ let expand_mcode toks =
         (match any_befaft with
         | Ast_cocci.NOTHING -> 
             add_elem t Ctx
-        | Ast_cocci.BEFORE xxs -> 
+        | Ast_cocci.BEFORE xxs ->
             unparser xxs Unparse_cocci.Before;
             add_elem t Ctx
         | Ast_cocci.AFTER xxs -> 

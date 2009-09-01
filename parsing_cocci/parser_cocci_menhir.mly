@@ -828,8 +828,8 @@ statement:
     { P.doloop $1 $2 $3 $4 $5 $6 $7 }
 | iter_ident TOPar eexpr_list_option TCPar single_statement
     { P.iterator $1 $2 $3 $4 $5 }
-| TSwitch TOPar eexpr TCPar TOBrace list(case_line) TCBrace
-    { P.switch $1 $2 $3 $4 $5 $6 $7 }
+| TSwitch TOPar eexpr TCPar TOBrace list(decl_var) list(case_line) TCBrace
+    { P.switch $1 $2 $3 $4 $5 (List.concat $6) $7 $8 }
 | TReturn eexpr TPtVirg { P.ret_exp $1 $2 $3 }
 | TReturn TPtVirg { P.ret $1 $2 }
 | TBreak TPtVirg { P.break $1 $2 }

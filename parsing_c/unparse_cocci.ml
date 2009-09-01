@@ -809,8 +809,9 @@ let rec statement arity s =
       indent_if_needed body (function _ -> statement arity body);
       mcode (fun _ _ _ -> ()) ((),Ast.no_info,aft,Ast.NoMetaPos)
 
-  | Ast.Switch(header,lb,cases,rb) ->
+  | Ast.Switch(header,lb,decls,cases,rb) ->
       rule_elem arity header; pr_space(); rule_elem arity lb;
+      dots force_newline (statement arity) decls;
       List.iter (function x -> case_line arity x; force_newline()) cases;
       rule_elem arity rb
 

@@ -404,8 +404,9 @@ let combiner bind option_default
       | Ast.For(header,body,_) -> multibind [rule_elem header; statement body]
       | Ast.Iterator(header,body,_) ->
 	  multibind [rule_elem header; statement body]
-      |	Ast.Switch(header,lb,cases,rb) ->
+      |	Ast.Switch(header,lb,decls,cases,rb) ->
 	  multibind [rule_elem header;rule_elem lb;
+		      statement_dots decls;
 		      multibind (List.map case_line cases);
 		      rule_elem rb]
       | Ast.Atomic(re) -> rule_elem re
@@ -913,8 +914,9 @@ let rebuilder
 	    Ast.For(rule_elem header, statement body, aft)
 	| Ast.Iterator(header,body,aft) ->
 	    Ast.Iterator(rule_elem header, statement body, aft)
-	| Ast.Switch(header,lb,cases,rb) ->
+	| Ast.Switch(header,lb,decls,cases,rb) ->
 	    Ast.Switch(rule_elem header,rule_elem lb,
+		       statement_dots decls,
 		       List.map case_line cases,rule_elem rb)
 	| Ast.Atomic(re) -> Ast.Atomic(rule_elem re)
 	| Ast.Disj(stmt_dots_list) ->

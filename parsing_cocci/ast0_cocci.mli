@@ -274,6 +274,7 @@ and base_statement =
 	             statement * (info * mcodekind) (* after info *)
   | Switch        of string mcode (* switch *) * string mcode (* ( *) *
 	             expression * string mcode (* ) *) * string mcode (* { *) *
+	             statement (*decl*) dots *
 	             case_line dots * string mcode (* } *)
   | Break         of string mcode (* break *) * string mcode (* ; *)
   | Continue      of string mcode (* continue *) * string mcode (* ; *)

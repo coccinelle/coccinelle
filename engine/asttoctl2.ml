@@ -636,7 +636,9 @@ and get_before_e s a =
   | Ast.Iterator(header,body,aft) ->
       let (bd,_) = get_before_e body [] in
       (Ast.rewrap s (Ast.Iterator(header,bd,aft)),[Ast.Other s])
-  | Ast.Switch(header,lb,cases,rb) ->
+  | Ast.Switch(header,lb,decls,cases,rb) ->
+      let index = count_nested_braces s in
+      let (de,dea) = get_before decls [Ast.WParen(lb,index)] in
       let cases =
 	List.map
 	  (function case_line ->
@@ -646,7 +648,8 @@ and get_before_e s a =
 		Ast.rewrap case_line (Ast.CaseLine(header,body))
 	    | Ast.OptCase(case_line) -> failwith "not supported")
 	  cases in
-      (Ast.rewrap s (Ast.Switch(header,lb,cases,rb)),[Ast.Other s])
+      (Ast.rewrap s (Ast.Switch(header,lb,de,cases,rb)),
+       [Ast.WParen(rb,index)])
   | Ast.FunDecl(header,lbrace,body,rbrace) ->
       let (bd,_) = get_before body [] in
       (Ast.rewrap s (Ast.FunDecl(header,lbrace,bd,rbrace)),[])
@@ -768,17 +771,19 @@ and get_after_e s a =
   | Ast.Iterator(header,body,aft) ->
       let (bd,_) = get_after_e body a in
       (Ast.rewrap s (Ast.Iterator(header,bd,aft)),[Ast.Other s])
-  | Ast.Switch(header,lb,cases,rb) ->
+  | Ast.Switch(header,lb,decls,cases,rb) ->
+      let index = count_nested_braces s in
       let cases =
 	List.map
 	  (function case_line ->
 	    match Ast.unwrap case_line with
 	      Ast.CaseLine(header,body) ->
-		let (body,_) = get_after body [] in
+		let (body,_) = get_after body [Ast.WParen(rb,index)] in
 		Ast.rewrap case_line (Ast.CaseLine(header,body))
 	    | Ast.OptCase(case_line) -> failwith "not supported")
 	  cases in
-      (Ast.rewrap s (Ast.Switch(header,lb,cases,rb)),[Ast.Other s])
+      let (de,_) = get_after decls [] in
+      (Ast.rewrap s (Ast.Switch(header,lb,de,cases,rb)),[Ast.WParen(lb,index)])
   | Ast.FunDecl(header,lbrace,body,rbrace) ->
       let (bd,_) = get_after body [] in
       (Ast.rewrap s (Ast.FunDecl(header,lbrace,bd,rbrace)),[])
@@ -1855,7 +1860,7 @@ and statement stmt after quantified minus_quantified
 	guard quantified
 	(function x -> Ast.set_fvs [] (Ast.rewrap stmt x))
 
-  | Ast.Switch(header,lb,cases,rb) ->
+  | Ast.Switch(header,lb,decls,cases,rb) ->
       let rec intersect_all = function
 	  [] -> []
 	| [x] -> x
@@ -1864,6 +1869,7 @@ and statement stmt after quantified minus_quantified
       (* start normal variables *)
       let header_fvs = Ast.get_fvs header in
       let lb_fvs = Ast.get_fvs lb in
+      let decl_fvs = union_all (List.map Ast.get_fvs (Ast.undots decls)) in
       let case_fvs = List.map Ast.get_fvs cases in
       let rb_fvs = Ast.get_fvs rb in
       let (all_efvs,all_b1fvs,all_lbfvs,all_b2fvs,
@@ -1878,7 +1884,7 @@ and statement stmt after quantified minus_quantified
 		   b2fvs::all_b2fvs,casefvs::all_casefvs,b3fvs::all_b3fvs,
 		   rbfvs::all_rbfvs)
 	      |	_ -> failwith "not possible")
-	  ([],[],[],[],[],[],[]) case_fvs in
+	  ([],[],[],[],[],[],[]) (decl_fvs :: case_fvs) in
       let (all_efvs,all_b1fvs,all_lbfvs,all_b2fvs,
 	   all_casefvs,all_b3fvs,all_rbfvs) =
 	(List.rev all_efvs,List.rev all_b1fvs,List.rev all_lbfvs,
@@ -1896,6 +1902,7 @@ and statement stmt after quantified minus_quantified
       (* ------------------- start minus free variables *)
       let header_mfvs = Ast.get_mfvs header in
       let lb_mfvs = Ast.get_mfvs lb in
+      let decl_mfvs = union_all (List.map Ast.get_mfvs (Ast.undots decls)) in
       let case_mfvs = List.map Ast.get_mfvs cases in
       let rb_mfvs = Ast.get_mfvs rb in
       let (all_mefvs,all_mb1fvs,all_mlbfvs,all_mb2fvs,
@@ -1912,7 +1919,7 @@ and statement stmt after quantified minus_quantified
 		   b2fvs::all_b2fvs,casefvs::all_casefvs,b3fvs::all_b3fvs,
 		   rbfvs::all_rbfvs)
 	      |	_ -> failwith "not possible")
-	  ([],[],[],[],[],[],[]) case_mfvs in
+	  ([],[],[],[],[],[],[]) (decl_mfvs::case_mfvs) in
       let (all_mefvs,all_mb1fvs,all_mlbfvs,all_mb2fvs,
 	   all_mcasefvs,all_mb3fvs,all_mrbfvs) =
 	(List.rev all_mefvs,List.rev all_mb1fvs,List.rev all_mlbfvs,
@@ -1941,10 +1948,22 @@ and statement stmt after quantified minus_quantified
 		quantify guard e1fvs (real_make_match label true header)
 	    | Ast.OptCase(case_line) -> failwith "not supported")
 	  cases in
-      let no_header =
-	ctl_not (List.fold_left ctl_or_fl CTL.False case_headers) in
       let lv = get_label_ctr() in
       let used = ref false in
+      let (decls_exists_code,decls_all_code) =
+	(*don't really understand this*)
+	if (Ast.undots decls) = []
+	then (CTL.True,CTL.False)
+	else
+	let res =
+	  statement_list decls Tail
+	    new2_quantified new2_mquantified (Some (lv,used)) llabel None
+	    false(*?*) guard in
+	(res,res) in
+      let no_header =
+	ctl_not
+	  (List.fold_left ctl_or_fl CTL.False
+	     (decls_all_code::case_headers)) in
       let case_code =
 	List.map
 	  (function case_line ->
@@ -1967,7 +1986,7 @@ and statement stmt after quantified minus_quantified
 		  let body =
 		    statement_list body Tail
 		      new3_quantified new3_mquantified (Some (lv,used)) llabel
-		      (Some (lv,used)) true(*?*) guard in
+		      (Some (lv,used)) false(*?*) guard in
 		  quantify guard b1fvs (make_seq [case_header; body])
 	    | Ast.OptCase(case_line) -> failwith "not supported")
 	  cases in
@@ -1991,8 +2010,10 @@ and statement stmt after quantified minus_quantified
 		(make_seq
 		   [ctl_and lb
 		       (List.fold_left ctl_and CTL.True
-			  (List.map ctl_ex case_headers));
-		     List.fold_left ctl_or_fl no_header case_code])))
+			  (List.map ctl_ex
+			     (decls_exists_code :: case_headers)));
+		     List.fold_left ctl_or_fl no_header
+		       (decls_all_code :: case_code)])))
 	  after_branch in
       let aft =
 	(rb_fvs,Ast.get_fresh rb,Ast.get_inherited rb,

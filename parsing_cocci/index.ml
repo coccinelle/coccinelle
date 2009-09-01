@@ -159,7 +159,7 @@ let statement s =
   | Ast0.Do(d,body,whl,lp,exp,rp,sem) -> [75]
   | Ast0.For(fr,lp,e1,sem1,e2,sem2,e3,rp,body,_) -> [76]
   | Ast0.Iterator(nm,lp,args,rp,body,_) -> [142]
-  | Ast0.Switch(switch,lp,exp,rp,lb,cases,rb) -> [125]
+  | Ast0.Switch(switch,lp,exp,rp,lb,decls,cases,rb) -> [125]
   | Ast0.Break(br,sem) -> [100]
   | Ast0.Continue(cont,sem) -> [101]
   | Ast0.Label(l,dd) -> [144]

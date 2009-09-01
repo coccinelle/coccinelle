@@ -5,8 +5,8 @@ position p1,p2;
 @@
 switch (...)
    {
-   case ...:@p1 S_1
-   case ...:@p2 S_2
+   case 2:@p1 S_1
+   case 4:@p2 S_2
    }
 
 @

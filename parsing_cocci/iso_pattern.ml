@@ -1021,12 +1021,14 @@ let match_maker checks_needed context_required whencode_allowed =
 		   match_dots match_expr is_elist_matcher do_elist_match
 		     argsa argsb;
 		   match_statement bodya bodyb]
-	  | (Ast0.Switch(s1,lp1,expa,rp1,lb1,casesa,rb1),
-	     Ast0.Switch(s,lp,expb,rp,lb,casesb,rb)) ->
+	  | (Ast0.Switch(s1,lp1,expa,rp1,lb1,declsa,casesa,rb1),
+	     Ast0.Switch(s,lp,expb,rp,lb,declsb,casesb,rb)) ->
 	       conjunct_many_bindings
 		 [check_mcode s1 s; check_mcode lp1 lp; check_mcode rp1 rp;
 		   check_mcode lb1 lb; check_mcode rb1 rb;
 		   match_expr expa expb;
+		   match_dots match_statement is_slist_matcher do_slist_match
+		     declsa declsb;
 		   match_dots match_case_line no_list do_nolist_match
 		     casesa casesb]
 	  | (Ast0.Break(b1,sc1),Ast0.Break(b,sc))
