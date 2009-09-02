@@ -1254,12 +1254,12 @@ let satAW dir ((grp,_,states) as m) s1 s2 reqst =
       (*let ctr = ref 0 in*)
       let f y =
 	inc_step();
-	(*ctr := !ctr + 1;
+	ctr := !ctr + 1;
 	Printf.printf "iter %d y %d\n" !ctr (List.length y);
 	print_state "y" y;
-	flush stdout;*)
+	flush stdout;
 	let pre = pre_forall dir m y y reqst in
-	(*print_state "pre" pre;*)
+	print_state "pre" pre;
 	let conj = triples_conj s1 pre in (* or triples_conj_AW *)
 	triples_union s2 conj in
       let drop_wits = List.map (function (s,e,_) -> (s,e,[])) in
@@ -1268,7 +1268,7 @@ let satAW dir ((grp,_,states) as m) s1 s2 reqst =
 	 out of the loop. s1 is like a guard. To see the problem, consider
 	 an example where both s1 and s2 match some code after the loop.
 	 we only want the witness from s2. *)
-      setgfix f (triples_union (drop_wits s1) s2)
+      setgfix f (triples_union (nub(drop_wits s1)) s2)
 ;;
 
 let satAF dir m s reqst = 
@@ -1777,6 +1777,7 @@ let rec satloop unchecked required required_states
 	    match res with
 	      AUok res -> res
 	    | AUfailed tmp_res ->
+		print_state "tmp_res" tmp_res;
 		(* found a loop, have to try AW *)
 		(* the formula is
 		   A[E[phi1 U phi2] & phi1 W phi2]
@@ -1785,9 +1786,11 @@ let rec satloop unchecked required required_states
 		(*Printf.printf "using AW\n"; flush stdout;*)
 		let s1 =
 		  triples_conj
-		    (satEU dir m s1 tmp_res new_required_states
+		    (let a1 = (satEU dir m s1 tmp_res new_required_states
 		       (* no graph, for the moment *)
-		       (fun y str -> ()))
+		       (fun y str -> ())) in
+		    print_state "a1" a1;
+		    a1)
 		    s1 in
 		strict_A2 strict satAW satEF dir m s1 s2 new_required_states
 		)

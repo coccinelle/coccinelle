@@ -49,7 +49,8 @@ let anything_equal = function
   | (Ast0.DotsCaseTag(d1),Ast0.DotsCaseTag(d2)) ->
       failwith "not a possible variable binding"
   | (Ast0.IdentTag(d1),Ast0.IdentTag(d2)) ->
-      (strip_info.VT0.rebuilder_rec_ident d1) = (strip_info.VT0.rebuilder_rec_ident d2)
+      (strip_info.VT0.rebuilder_rec_ident d1) =
+      (strip_info.VT0.rebuilder_rec_ident d2)
   | (Ast0.ExprTag(d1),Ast0.ExprTag(d2)) ->
       (strip_info.VT0.rebuilder_rec_expression d1) =
       (strip_info.VT0.rebuilder_rec_expression d2)
@@ -570,7 +571,8 @@ let match_maker checks_needed context_required whencode_allowed =
 		    expr
 		else return false
 	  | None ->
-	      add_pure_binding name pure pure_sp_code.VT0.combiner_rec_expression
+	      add_pure_binding name pure
+		pure_sp_code.VT0.combiner_rec_expression
 		(function expr -> Ast0.ExprTag expr)
 		expr
 	else return false
@@ -1571,6 +1573,11 @@ let instantiate bindings mv_bindings =
 	failwith "metaexprlist not supported"
     | Ast0.Unary(exp,unop) ->
 	(match Ast0.unwrap_mcode unop with
+	  (* propagate negation only when the propagated and the encountered
+	     negation have the same transformation, when there is nothing
+	     added to the original one, and when there is nothing added to
+	     the expression into which we are doing the propagation.  This
+	     may be too conservative. *)
 	  Ast.Not ->
 	    let was_meta =
 	      (* k e doesn't change the outer structure of the term,
@@ -1581,9 +1588,7 @@ let instantiate bindings mv_bindings =
 		    Ast0.MetaExpr(name,constraints,x,form,pure) -> true
 		  | _ -> false)
 	      |	_ -> failwith "not possible" in
-	    let nomodif e =
-	      let mc = Ast0.get_mcodekind exp in
-	      match mc with
+	    let nomodif = function
 		Ast0.MINUS(x) ->
 		  (match !x with
 		    ([],_) -> true
@@ -1593,53 +1598,77 @@ let instantiate bindings mv_bindings =
 		    (Ast.NOTHING,_,_) -> true
 		  | _ -> false)
 	      |	_ -> failwith "plus not possible" in
-	    if was_meta && nomodif exp && nomodif e
+	    let same_modif newop oldop =
+	      (* only propagate ! is they have the same modification
+		 and no + code on the old one (the new one from the iso
+		 surely has no + code) *)
+	      match (newop,oldop) with
+		(Ast0.MINUS(x1),Ast0.MINUS(x2)) -> nomodif oldop
+	      |	(Ast0.CONTEXT(x1),Ast0.CONTEXT(x2)) -> nomodif oldop
+	      |	(Ast0.MIXED(x1),Ast0.MIXED(x2)) -> nomodif oldop
+	      |	_ -> false in
+	    if was_meta
 	    then
 	      let idcont x = x in
 	      let rec negate e (*for rewrapping*) res (*code to process*) k =
 		(* k accumulates parens, to keep negation outside if no
 		   propagation is possible *)
-		match Ast0.unwrap res with
-		  Ast0.Unary(e1,op) when Ast0.unwrap_mcode op = Ast.Not ->
-		    k (Ast0.rewrap e (Ast0.unwrap e1))
-		| Ast0.Edots(_,_) -> k (Ast0.rewrap e (Ast0.unwrap res))
-		| Ast0.Paren(lp,e,rp) ->
-		    negate e e
-		      (function x ->
-			k (Ast0.rewrap res (Ast0.Paren(lp,x,rp))))
-		| Ast0.Binary(e1,op,e2) ->
-		    let reb nop = Ast0.rewrap_mcode op (Ast.Logical(nop)) in
-		    let k1 x = k (Ast0.rewrap e x) in
-		    (match Ast0.unwrap_mcode op with
-		      Ast.Logical(Ast.Inf) ->
-			k1 (Ast0.Binary(e1,reb Ast.SupEq,e2))
-		    | Ast.Logical(Ast.Sup) ->
-			k1 (Ast0.Binary(e1,reb Ast.InfEq,e2))
-		    | Ast.Logical(Ast.InfEq) ->
-			k1 (Ast0.Binary(e1,reb Ast.Sup,e2))
-		    | Ast.Logical(Ast.SupEq) ->
-			k1 (Ast0.Binary(e1,reb Ast.Inf,e2))
-		    | Ast.Logical(Ast.Eq) ->
-			k1 (Ast0.Binary(e1,reb Ast.NotEq,e2))
-		    | Ast.Logical(Ast.NotEq) ->
-			k1 (Ast0.Binary(e1,reb Ast.Eq,e2))
-		    | Ast.Logical(Ast.AndLog) ->
-			k1 (Ast0.Binary(negate e1 e1 idcont,reb Ast.OrLog,
-				       negate e2 e2 idcont))
-		    | Ast.Logical(Ast.OrLog) ->
-			k1 (Ast0.Binary(negate e1 e1 idcont,reb Ast.AndLog,
-				       negate e2 e2 idcont))
-		    | _ ->
-			Ast0.rewrap e
-			  (Ast0.Unary(k res,Ast0.rewrap_mcode op Ast.Not)))
-		| Ast0.DisjExpr(lp,exps,mids,rp) ->
+		if nomodif (Ast0.get_mcodekind e)
+		then
+		  match Ast0.unwrap res with
+		    Ast0.Unary(e1,op) when Ast0.unwrap_mcode op = Ast.Not &&
+		      same_modif
+			(Ast0.get_mcode_mcodekind unop)
+			(Ast0.get_mcode_mcodekind op) ->
+			  k e1
+		  | Ast0.Edots(_,_) -> k (Ast0.rewrap e (Ast0.unwrap res))
+		  | Ast0.Paren(lp,e,rp) ->
+		      negate e e
+			(function x ->
+			  k (Ast0.rewrap res (Ast0.Paren(lp,x,rp))))
+		  | Ast0.Binary(e1,op,e2) when
+		      same_modif
+			(Ast0.get_mcode_mcodekind unop)
+			(Ast0.get_mcode_mcodekind op)->
+			  let reb nop =
+			    Ast0.rewrap_mcode op (Ast.Logical(nop)) in
+			  let k1 x = k (Ast0.rewrap e x) in
+			  (match Ast0.unwrap_mcode op with
+			    Ast.Logical(Ast.Inf) ->
+			      k1 (Ast0.Binary(e1,reb Ast.SupEq,e2))
+			  | Ast.Logical(Ast.Sup) ->
+			      k1 (Ast0.Binary(e1,reb Ast.InfEq,e2))
+			  | Ast.Logical(Ast.InfEq) ->
+			      k1 (Ast0.Binary(e1,reb Ast.Sup,e2))
+			  | Ast.Logical(Ast.SupEq) ->
+			      k1 (Ast0.Binary(e1,reb Ast.Inf,e2))
+			  | Ast.Logical(Ast.Eq) ->
+			      k1 (Ast0.Binary(e1,reb Ast.NotEq,e2))
+			  | Ast.Logical(Ast.NotEq) ->
+			      k1 (Ast0.Binary(e1,reb Ast.Eq,e2))
+			  | Ast.Logical(Ast.AndLog) ->
+			      k1 (Ast0.Binary(negate e1 e1 idcont,
+					      reb Ast.OrLog,
+					      negate e2 e2 idcont))
+			  | Ast.Logical(Ast.OrLog) ->
+			      k1 (Ast0.Binary(negate e1 e1 idcont,
+					      reb Ast.AndLog,
+					      negate e2 e2 idcont))
+			  | _ ->
+			      Ast0.rewrap e
+				(Ast0.Unary(k res,
+					    Ast0.rewrap_mcode op Ast.Not)))
+		  | Ast0.DisjExpr(lp,exps,mids,rp) ->
 		      (* use res because it is the transformed argument *)
-		    let exps = List.map (function e -> negate e e k) exps in
-		    Ast0.rewrap res (Ast0.DisjExpr(lp,exps,mids,rp))
-		| _ ->
+		      let exps = List.map (function e -> negate e e k) exps in
+		      Ast0.rewrap res (Ast0.DisjExpr(lp,exps,mids,rp))
+		  | _ ->
 		      (*use e, because this might be the toplevel expression*)
-		    Ast0.rewrap e
-		      (Ast0.Unary(k res,Ast0.rewrap_mcode unop Ast.Not)) in
+		      Ast0.rewrap e
+			(Ast0.Unary(k res,Ast0.rewrap_mcode unop Ast.Not))
+		else
+		  Ast0.rewrap e
+		    (Ast0.Unary(k res,Ast0.rewrap_mcode unop Ast.Not)) in
 	      negate e exp idcont
 	    else e
 	| _ -> e)

@@ -135,7 +135,7 @@ let bclabel_pred_maker = function
       used := true;
       CTL.Pred(Lib_engine.BCLabel(label_var),CTL.Control)
 
-(* label used to be used here, but it is not use; label is only needed after
+(* label used to be used here, but it is not used; label is only needed after
 and within dots *)
 let predmaker guard pred label = CTL.Pred pred
 
@@ -1266,6 +1266,9 @@ let dots_au is_strict toend label s wrapcode n x seq_after y quantifier =
 	    (* Rather a special case.  But if the code afterwards is just
 	       a } then there is no point checking after a goto that it does
 	       not appear. *)
+	    (* this optimization doesn't work.  probably depends on whether
+	       the destination of the break/goto is local or more global than
+	       the dots *)
 	    match seq_after with
 	      CTL.And(_,e1,e2) ->
 		let is_paren = function
@@ -1292,9 +1295,11 @@ let dots_au is_strict toend label s wrapcode n x seq_after y quantifier =
 				(ctl_not seq_after))
 			     (ctl_and CTL.NONSTRICT
 				(ctl_or matchgoto matchbreak)
-				(if is_paren
+				((*if is_paren
+                                (* an optim that failed see defn is_paren
+                                   and tests/makes_a_loop *)
 				then CTL.True
-				else
+				else*)
 				  (ctl_ag s
 				     (ctl_not seq_after))))))))))) in
   let op = if quantifier = !exists then ctl_au else ctl_anti_au in
@@ -1305,7 +1310,8 @@ let dots_au is_strict toend label s wrapcode n x seq_after y quantifier =
     | Common.Right stop_early ->
 	CTL.Let(v,y,
 		ctl_or (CTL.Ref v)
-		  (stop_early n (CTL.Ref v))))
+		  (ctl_and CTL.NONSTRICT (label_pred_maker label)
+		     (stop_early n (CTL.Ref v)))))
 
 let rec dots_and_nests plus nest whencodes bef aft dotcode after label
     process_bef_aft statement_list statement guard quantified wrapcode =
