@@ -610,28 +610,21 @@ let remove_minus_and_between_and_expanded_and_fake xs =
     | (T2(Parser_c.TCommentNewline c,_b,_i) as x)::
       (T2(_,Min adj1,_) as t1)::xs ->
 	let (minus_list,rest) = Common.span not_context (t1::xs) in
+	let contains_plus = List.exists is_plus minus_list in
 	let x =
 	  match List.rev minus_list with
 	    (T2(Parser_c.TCommentNewline c,_b,_i))::rest
 	    when List.for_all minus_or_comment minus_list ->
 	      set_minus_comment_or_plus adj1 x
 	  | _ -> x in
-	x :: adjust_within_minus minus_list @ adjust_around_minus rest
-    | (T2(Parser_c.TCommentSpace c,_b,_i) as x)::
-      (T2(_,Min adj1,_) as t1)::xs ->
-	let (minus_list,rest) = Common.span not_context (t1::xs) in
-	let x =
-	  match List.rev minus_list with
-	    (T2(Parser_c.TCommentSpace c,_b,_i))::rest
-	    when List.for_all minus_or_comment minus_list ->
-	      set_minus_comment_or_plus adj1 x
-	  | _ -> x in
-	x :: adjust_within_minus minus_list @ adjust_around_minus rest
+	x :: adjust_within_minus contains_plus minus_list @
+	adjust_around_minus rest
     | (T2(_,Min adj1,_) as t1)::xs ->
 	let (minus_list,rest) = Common.span not_context (t1::xs) in
-	adjust_within_minus minus_list @ adjust_around_minus rest
+	let contains_plus = List.exists is_plus minus_list in
+	adjust_within_minus contains_plus minus_list @ adjust_around_minus rest
     | x::xs -> x :: adjust_around_minus xs
-  and adjust_within_minus = function
+  and adjust_within_minus cp (* contains plus *) = function
       (T2(_,Min adj1,_) as t1)::xs ->
 	let not_minus = function T2(_,Min _,_) -> false | _ -> true in
 	let (not_minus_list,rest) = Common.span not_minus xs in
@@ -639,7 +632,7 @@ let remove_minus_and_between_and_expanded_and_fake xs =
 	(match rest with
 	  (T2(_,Min adj2,_) as t2)::xs when common_adj adj1 adj2 ->
 	    (List.map (set_minus_comment_or_plus adj1) not_minus_list)
-	    @ (adjust_within_minus (t2::xs))
+	    @ (adjust_within_minus cp (t2::xs))
 	| (T2(_,Min adj2,_) as t2)::xs ->
 	    let is_whitespace_or_plus = function
 		(T2 _) as x -> is_space x
@@ -647,14 +640,22 @@ let remove_minus_and_between_and_expanded_and_fake xs =
 	    if List.for_all is_whitespace_or_plus not_minus_list
 	    then
 	      (List.map (set_minus_comment_or_plus adj1) not_minus_list)
-	      @ (adjust_within_minus (t2::xs))
-	    else not_minus_list @ (adjust_within_minus (t2::xs))
-	| _ -> xs)
-    | xs -> xs
-  and not_context =
-    function
-	(T2(_,Ctx,_) as x) when not (is_minusable_comment x) -> false
-      | _ -> true in
+	      @ (adjust_within_minus cp (t2::xs))
+	    else not_minus_list @ (adjust_within_minus cp (t2::xs))
+	| _ ->
+	    if cp
+	    then xs
+	    else
+	      let (spaces,rest) = Common.span is_space xs in
+	      (List.map (set_minus_comment_or_plus adj1) spaces)
+	      @ rest)
+    | xs -> failwith "should always start with minus"
+  and not_context = function
+      (T2(_,Ctx,_) as x) when not (is_minusable_comment x) -> false
+    | _ -> true
+  and is_plus = function
+      C2 _ | Cocci2 _ -> true
+    | _ -> false in
 
   let xs = adjust_around_minus xs in
 
