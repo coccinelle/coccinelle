@@ -3,6 +3,7 @@
 * 0.1.10
 
 ** Language:
+- declarations allowed in switch, suggested by Derek M. Jones
 
 ** Features:
 - use interval timer for timeouts.  Thanks to Derek M. Jones for the

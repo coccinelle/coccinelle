@@ -1871,6 +1871,14 @@ and statement stmt after quantified minus_quantified
 	  [] -> []
 	| [x] -> x
 	| x::xs -> intersect x (intersect_all xs) in
+      let rec intersect_all2 = function (* pairwise *)
+	  [] -> []
+	| x::xs ->
+	    let front =
+	      List.filter
+		(function elem -> List.exists (List.mem elem) xs)
+		x in
+	    Common.union_set front (intersect_all2 xs) in
       let rec union_all l = List.fold_left union [] l in
       (* start normal variables *)
       let header_fvs = Ast.get_fvs header in
@@ -1902,7 +1910,8 @@ and statement stmt after quantified minus_quantified
 (*      let rbonlyfvs = intersect_all all_rbfvs in*)
       let b1fvs = union_all all_b1fvs in
       let new1_quantified = union b1fvs quantified in
-      let b2fvs = union (union_all all_b1fvs) (intersect_all all_casefvs) in
+      let b2fvs =
+	union (union_all all_b2fvs) (intersect_all2 all_casefvs) in
       let new2_quantified = union b2fvs new1_quantified in
 (*      let b3fvs = union_all all_b3fvs in*)
       (* ------------------- start minus free variables *)
@@ -1935,7 +1944,8 @@ and statement stmt after quantified minus_quantified
 (*      let rbonlyfvs = intersect_all all_rbfvs in*)
       let mb1fvs = union_all all_mb1fvs in
       let new1_mquantified = union mb1fvs quantified in
-      let mb2fvs = union (union_all all_mb1fvs) (intersect_all all_mcasefvs) in
+      let mb2fvs =
+	union (union_all all_mb2fvs) (intersect_all2 all_mcasefvs) in
       let new2_mquantified = union mb2fvs new1_mquantified in
 (*      let b3fvs = union_all all_b3fvs in*)
       (* ------------------- end collection of free variables *)
