@@ -1262,7 +1262,7 @@ let dots_au is_strict toend label s wrapcode n x seq_after y quantifier =
 	  let lv = get_label_ctr() in
 	  let labelpred = CTL.Pred(Lib_engine.Label lv,CTL.Control) in
 	  let preflabelpred = label_pred_maker (Some (lv,ref true)) in
-	  let is_paren =
+	  (*let is_paren =
 	    (* Rather a special case.  But if the code afterwards is just
 	       a } then there is no point checking after a goto that it does
 	       not appear. *)
@@ -1275,7 +1275,7 @@ let dots_au is_strict toend label s wrapcode n x seq_after y quantifier =
 		    CTL.Pred(Lib_engine.Paren _,_) -> true
 		  | _ -> false in
 		is_paren e1 or is_paren e2
-	    | _ -> false in
+	    | _ -> false in *)
 	  ctl_or (aftpred label)
 	    (quantify false [lv]
 	       (ctl_and CTL.NONSTRICT
