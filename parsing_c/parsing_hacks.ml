@@ -1442,24 +1442,20 @@ and find_actions_params xxs =
 (* ------------------------------------------------------------------------- *)
 
 let filter_cpp_stuff xs = 
-  let rec aux xs = 
-    match xs with
-    | [] -> []
-    | x::xs -> 
-        (match x.tok with
-        | tok when TH.is_comment tok -> aux xs
+  List.filter
+    (function x ->
+      (match x.tok with
+        | tok when TH.is_comment tok -> false
         (* don't want drop the define, or if drop, have to drop
          * also its body otherwise the line heuristics may be lost
          * by not finding the TDefine in column 0 but by finding
          * a TDefineIdent in a column > 0
          *)
-        | Parser_c.TDefine _ -> 
-            x::aux xs
-        | tok when TH.is_cpp_instruction tok -> aux xs
-        | _ -> x::aux xs
-        )
-  in
-  aux xs
+        | Parser_c.TDefine _ -> true
+        | tok when TH.is_cpp_instruction tok -> false
+        | _ -> true
+        ))
+    xs
 
 let insert_virtual_positions l =
   let strlen x = String.length (Ast_c.str_of_info x) in
@@ -1551,8 +1547,6 @@ let fix_tokens_cpp2 ~macro_defs tokens =
 
     let brace_grouped = TV.mk_braceised cleaner in
     set_context_tag   brace_grouped;
-
-
 
     (* macro *)
     let cleaner = !tokens2 +> filter_cpp_stuff in

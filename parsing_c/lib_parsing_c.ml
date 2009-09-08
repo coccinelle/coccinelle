@@ -248,7 +248,8 @@ let max_min_by_pos xs =
 
 let lin_col_by_pos xs = 
   (* put min before max; no idea why they are backwards above *)
-  let (i2, i1) = max_min_ii_by_pos xs in
+  let non_fake = List.filter (function ii -> not (Ast_c.is_fake ii)) xs in
+  let (i2, i1) = max_min_ii_by_pos non_fake in
   let posf x = Ast_c.col_of_info x in
   let mposf x = Ast_c.col_of_info x + String.length (Ast_c.str_of_info x) in
   (Ast_c.file_of_info i1,!Flag.current_element,

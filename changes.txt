@@ -3,6 +3,17 @@
 * 0.1.10
 
 ** Language:
+
+** Features:
+
+** Bugfix:
+- bind position variables to the correct starting position in the case of a
+  complex statement such as an if or while.  Thanks to Derek Jones for
+  pointing out the problem.
+
+* 0.1.10
+
+** Language:
 - declarations allowed in switch, suggested by Derek M. Jones
 
 ** Features:

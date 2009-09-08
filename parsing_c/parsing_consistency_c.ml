@@ -114,8 +114,8 @@ let consistency_checking2 xs =
   stat +> Hashtbl.iter (fun k v -> 
     let xs = Common.hash_to_list v in
     if List.length xs >= 2
-    then begin 
-      pr2_err ("CONFLICT:" ^ k);
+    then begin
+      pr2_err ("TYPEDEF CONFLICT:" ^ k);
       let sorted = xs +> List.sort (fun (ka,va) (kb,vb) -> 
         if !va =|= !vb then
           (match ka, kb with
@@ -130,6 +130,8 @@ let consistency_checking2 xs =
       | [CTypedef, i1;CIdent, i2] -> 
           pr2_err ("transforming some ident in typedef");
           push2 k ident_to_type;
+      | [CIdent, i1;CTypedef, i2] ->
+          pr2_err ("TODO:typedef now used as an identifier");
       | _ -> 
           pr2_err ("TODO:other transforming?");
       
