@@ -10,6 +10,7 @@
 - bind position variables to the correct starting position in the case of a
   complex statement such as an if or while.  Thanks to Derek Jones for
   pointing out the problem.
+- checking for non mentioned case lines in switch should be unchecked.
 
 * 0.1.10
 

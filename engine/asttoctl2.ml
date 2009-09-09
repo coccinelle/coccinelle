@@ -1979,7 +1979,8 @@ and statement stmt after quantified minus_quantified
       let no_header =
 	ctl_not
 	  (List.fold_left ctl_or_fl CTL.False
-	     (decls_all_code::case_headers)) in
+	     (List.map ctl_uncheck
+		(decls_all_code::case_headers))) in
       let case_code =
 	List.map
 	  (function case_line ->
