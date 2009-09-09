@@ -1,4 +1,4 @@
-itn main () {
+int main () {
   if (a) {
   if (x) {
     a = 3;
