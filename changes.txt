@@ -1,6 +1,6 @@
 -*- org -*-
 
-* 0.1.10
+* 0.1.11
 
 ** Language:
 
@@ -11,6 +11,8 @@
   complex statement such as an if or while.  Thanks to Derek Jones for
   pointing out the problem.
 - checking for non mentioned case lines in switch should be unchecked.
+- space should be printed after sizeof when there are no parentheses around
+  the argument.  Thanks to Daniel Walker for pointing out the problem.
 
 * 0.1.10
 

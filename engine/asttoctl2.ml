@@ -194,7 +194,7 @@ let elim_opt =
     | (Ast.Dots(_,_,_,_)::Ast.OptStm(stm)::(Ast.Dots(_,_,_,_) as u)::urest,
        d0::s::d1::rest)
     | (Ast.Nest(_,_,_,_,_)::Ast.OptStm(stm)::(Ast.Dots(_,_,_,_) as u)::urest,
-       d0::s::d1::rest) ->
+       d0::s::d1::rest) -> (* why no case for nest as u? *)
 	 let l = Ast.get_line stm in
 	 let new_rest1 = stm :: (dots_list (u::urest) (d1::rest)) in
 	 let new_rest2 = dots_list urest rest in

@@ -110,7 +110,12 @@ let mk_pretty_printers
     | RecordPtAccess (e, name),     [i1] -> 
         pp_expression e; pr_elem i1; pp_name name;
 	  
-    | SizeOfExpr  (e),     [i] -> pr_elem i; pp_expression e
+    | SizeOfExpr  (e),     [i] ->
+	pr_elem i;
+	(match Ast_c.unwrap e with
+	  ParenExpr (e), _ -> ()
+	| _ -> pr_space());
+	pp_expression e
     | SizeOfType  (t),     [i1;i2;i3] -> 
         pr_elem i1; pr_elem i2; pp_type t; pr_elem i3
     | Cast    (t, e),      [i1;i2] -> 
