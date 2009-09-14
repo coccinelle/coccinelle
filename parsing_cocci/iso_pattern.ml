@@ -1308,8 +1308,8 @@ let make_minus =
 let rebuild_mcode start_line =
   let copy_mcodekind = function
       Ast0.CONTEXT(mc) -> Ast0.CONTEXT(ref (!mc))
-    | Ast0.MINUS(mc) -> Ast0.MINUS(ref (!mc))
-    | Ast0.MIXED(mc) -> Ast0.MIXED(ref (!mc))
+    | Ast0.MINUS(mc) ->   Ast0.MINUS(ref (!mc))
+    | Ast0.MIXED(mc) ->   Ast0.MIXED(ref (!mc))
     | Ast0.PLUS ->
 	(* this function is used elsewhere where we need to rebuild the
 	   indices, and so we allow PLUS code as well *)
@@ -1622,8 +1622,8 @@ let instantiate bindings mv_bindings =
 			(Ast0.get_mcode_mcodekind op) ->
 			  k e1
 		  | Ast0.Edots(_,_) -> k (Ast0.rewrap e (Ast0.unwrap res))
-		  | Ast0.Paren(lp,e,rp) ->
-		      negate e e
+		  | Ast0.Paren(lp,e1,rp) ->
+		      negate e e1
 			(function x ->
 			  k (Ast0.rewrap res (Ast0.Paren(lp,x,rp))))
 		  | Ast0.Binary(e1,op,e2) when
