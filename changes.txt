@@ -13,6 +13,7 @@
 - checking for non mentioned case lines in switch should be unchecked.
 - space should be printed after sizeof when there are no parentheses around
   the argument.  Thanks to Daniel Walker for pointing out the problem.
+- avoid introducing sharing in propagating ! over () in treatment of isos
 
 * 0.1.10
 
