@@ -14,6 +14,7 @@
 - space should be printed after sizeof when there are no parentheses around
   the argument.  Thanks to Daniel Walker for pointing out the problem.
 - avoid introducing sharing in propagating ! over () in treatment of isos
+- save_excursion has to handle and rethrow exceptions
 
 * 0.1.10
 

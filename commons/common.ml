@@ -1259,7 +1259,7 @@ type 'a mylazy = (unit -> 'a)
 (* a la emacs *)
 let save_excursion reference f = 
   let old = !reference in
-  let res = f() in
+  let res = try f() with e -> reference := old; raise e in
   reference := old;
   res
 
