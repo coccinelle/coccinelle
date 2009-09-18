@@ -4,7 +4,7 @@
 
 #!!!!You need to source me with "source env.sh" from the good directory!!!!
 
-# 14 Aug 2009 Try likely locations for support files
+# 14 Aug 2009 Try directory we were executed from
 
 if [ "$1" ] ; then
 	DIR=$1
@@ -14,23 +14,13 @@ fi
 
 if [ ! -r $DIR/standard.iso ]
 then
-   if [ -r /usr/local/share/coccinelle/standard.iso ]
-   then
-      echo "standard.iso not found in '$DIR' using /usr/local/share/coccinelle"
-      DIR="/usr/local/share/coccinelle"
-   else
-# The following won't work with "source env.sh" under bash
-      if [ -r `dirname $0`/standard.iso ]
-      then
-         echo "standard.iso not found in '$DIR' using `dirname $0`"
-	 DIR=`dirname $0`
-      fi
-   fi
+        echo "standard.iso not found in '$DIR' trying `dirname $0`"
+	DIR=`dirname $0`
 fi
 
 if [ ! -r $DIR/standard.iso ]
     then echo "standard.iso not found in '$DIR'. 
-Give its directory as the first argument.
+  Give the coccinelle directory as the first argument.
 ";
 else
 
