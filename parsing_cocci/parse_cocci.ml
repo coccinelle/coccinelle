@@ -1693,6 +1693,7 @@ let process file isofile verbose =
 	       let minus_ast =
 		 Ast0toast.ast0toast rule_name dependencies dropped_isos
 		   exists minus is_exp ruletype in
+	       
 	       match function_prototypes with
 		 None -> [(extra_meta @ metavars, minus_ast)]
 	       | Some mv_fp -> [(extra_meta @ metavars, minus_ast); mv_fp])

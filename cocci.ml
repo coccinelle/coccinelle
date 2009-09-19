@@ -730,7 +730,7 @@ let gen_pdf_graph () =
 
 (* --------------------------------------------------------------------- *)
 let prepare_cocci ctls free_var_lists negated_pos_lists
-    (ua,fua,fuas) positions_list metavars astcocci = 
+    (ua,fua,fuas) positions_list metavars astcocci =
 
   let gathered = Common.index_list_1
       (zip (zip (zip (zip (zip (zip (zip (zip ctls metavars) astcocci)
@@ -828,7 +828,8 @@ let build_info_program cprogram env =
     let (fullstr, tokens) = parseinfo in
 
     let flow = 
-      ast_to_flow_with_error_messages c +> Common.map_option (fun flow -> 
+      ast_to_flow_with_error_messages c +>
+      Common.map_option (fun flow -> 
         let flow = Ast_to_flow.annotate_loop_nodes flow in
 
         (* remove the fake nodes for julia *)
@@ -890,7 +891,8 @@ let rebuild_info_c_and_headers ccs isexp =
   );
   ccs +> List.map (fun c_or_h -> 
     { c_or_h with
-      asts = rebuild_info_program c_or_h.asts c_or_h.full_fname isexp }
+      asts =
+      rebuild_info_program c_or_h.asts c_or_h.full_fname isexp }
   )
 
 

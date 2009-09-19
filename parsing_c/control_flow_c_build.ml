@@ -755,7 +755,7 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
         }
       in
 
-      if not is_zero && not !Flag_parsing_c.no_loops
+      if not is_zero && (not !Flag_parsing_c.no_loops)
       then begin
         let newfakethen = !g +> add_node InLoopNode lbl "[dowhiletrue]" in
         !g#add_arc ((taili, newfakethen), Direct); 
@@ -803,7 +803,8 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
       !g#add_arc ((newi, newafter), Direct);
       let finalthen = aux_statement (Some newfakethen, newxi) st in
       !g +> add_arc_opt
-	(finalthen, if !Flag_parsing_c.no_loops then newafter else newi);
+	(finalthen,
+	 if !Flag_parsing_c.no_loops then newafter else newi);
       Some newfakeelse
 
 
@@ -839,7 +840,8 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
       !g#add_arc ((newi, newafter), Direct);
       let finalthen = aux_statement (Some newfakethen, newxi) st in
       !g +> add_arc_opt
-	(finalthen, if !Flag_parsing_c.no_loops then newafter else newi);
+	(finalthen,
+	 if !Flag_parsing_c.no_loops then newafter else newi);
       Some newfakeelse
 
 
@@ -1116,7 +1118,7 @@ let specialdeclmacro_to_stmt (s, args, ii) =
 
 
 
-let ast_to_control_flow e = 
+let ast_to_control_flow e =
 
   (* globals (re)initialialisation *) 
   g := (new ograph_mutable);
