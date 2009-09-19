@@ -11,4 +11,5 @@ val process :
 	     Ast_cocci.meta_name list list list) *
 	  Ast_cocci.meta_name list list list (*positions list*) *
 	  string list list (* non metavars in - code, for grep *) *
-	  string option (* non metavars in - code, for glimpse *)
+	  string option (* non metavars in - code, for glimpse *) *
+	  string list (* virtual rule names *)

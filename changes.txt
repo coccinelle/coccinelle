@@ -5,6 +5,8 @@
 ** Language:
 
 ** Features:
+- virtual rules, which can be referenced in depends, and set and unset
+  using the command-line options -D and -U
 
 ** Bugfix:
 - bind position variables to the correct starting position in the case of a

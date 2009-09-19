@@ -21,7 +21,7 @@ module P = Parse_aux
 %token TPure TContext TGenerated
 %token TTypedef TDeclarer TIterator TName TPosition TPosAny
 %token TUsing TDisable TExtends TDepends TOn TEver TNever TExists TForall
-%token TScript TInitialize TFinalize TNothing
+%token TScript TInitialize TFinalize TNothing TVirtual
 %token<string> TRuleName
 
 %token<Data.clt> Tchar Tshort Tint Tdouble Tfloat Tlong
@@ -234,6 +234,13 @@ incl:
   TIncludeL           { let (x,_) = $1 in Data.Include(x) }
 | TUsing TString      { Data.Iso(Common.Left(P.id2name $2)) }
 | TUsing TPathIsoFile { Data.Iso(Common.Right $2) }
+| TVirtual comma_list(pure_ident)
+    { let names = List.map P.id2name $2 in
+      (* ensure that the names of virtual and real rules don't overlap *)
+      List.iter
+      (function name -> Hashtbl.add Data.all_metadecls name [])
+      names;
+      Data.Virt(names) }
 
 metadec:
   ar=arity ispure=pure

@@ -194,6 +194,7 @@ let id_tokens lexbuf =
   | "words" when in_meta ->      check_context_linetype s; TWords
 
   | "using" when in_rule_name || in_prolog ->  check_context_linetype s; TUsing
+  | "virtual" when in_prolog ->  check_context_linetype s; TVirtual
   | "disable" when in_rule_name ->  check_context_linetype s; TDisable
   | "extends" when in_rule_name -> check_context_linetype s; TExtends
   | "depends" when in_rule_name -> check_context_linetype s; TDepends

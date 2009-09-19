@@ -51,6 +51,7 @@ let token2c (tok,_) =
   | PC.TName -> "name"
   | PC.TRuleName str -> "rule_name-"^str
   | PC.TUsing -> "using"
+  | PC.TVirtual -> "virtual"
   | PC.TPathIsoFile str -> "path_iso_file-"^str
   | PC.TDisable -> "disable"
   | PC.TExtends -> "extends"
@@ -576,8 +577,8 @@ let split_token ((tok,_) as t) =
   | PC.TFunction | PC.TTypedef | PC.TDeclarer | PC.TIterator | PC.TName
   | PC.TType | PC.TParameter | PC.TLocal | PC.Tlist | PC.TFresh
   | PC.TCppConcatOp | PC.TPure
-  | PC.TContext | PC.TRuleName(_) | PC.TUsing | PC.TDisable | PC.TExtends
-  | PC.TPathIsoFile(_)
+  | PC.TContext | PC.TRuleName(_) | PC.TUsing | PC.TVirtual | PC.TDisable
+  | PC.TExtends | PC.TPathIsoFile(_)
   | PC.TDepends | PC.TOn | PC.TEver | PC.TNever | PC.TExists | PC.TForall
   | PC.TError | PC.TWords | PC.TGenerated | PC.TNothing -> ([t],[t])
 
@@ -1401,16 +1402,24 @@ let rec parse file =
 	  let include_and_iso_files =
 	    parse_one "include and iso file names" PC.include_main file data in
 
-	  let (include_files,iso_files) =
+	  let (include_files,iso_files,virt) =
 	    List.fold_left
-	      (function (include_files,iso_files) ->
+	      (function (include_files,iso_files,virt) ->
 		function
-		    Data.Include s -> (s::include_files,iso_files)
-		  | Data.Iso s -> (include_files,s::iso_files))
-	      ([],[]) include_and_iso_files in
+		    Data.Include s -> (s::include_files,iso_files,virt)
+		  | Data.Iso s -> (include_files,s::iso_files,virt)
+		  | Data.Virt l -> (include_files,iso_files,l@virt))
+	      ([],[],[]) include_and_iso_files in
+	  List.iter (function x -> Hashtbl.add Lexer_cocci.rule_names x ())
+	    virt;
 
-	  let (extra_iso_files, extra_rules) =
-	    List.split (List.map parse include_files) in
+	  let (extra_iso_files, extra_rules, extra_virt) =
+	    let rec loop = function
+		[] -> ([],[],[])
+	      |	(a,b,c)::rest ->
+		  let (x,y,z) = loop rest in
+		  (a::x,b::y,c::z) in
+	    loop (List.map parse include_files) in
 
           let parse_cocci_rule ruletype old_metas
 	      (rule_name, dependencies, iso, dropiso, exists, is_expression) =
@@ -1582,12 +1591,12 @@ let rec parse file =
 	  (List.fold_left
 	     (function prev -> function cur -> Common.union_set cur prev)
 	     iso_files extra_iso_files,
-	   List.fold_left
-	     (function prev -> function cur -> cur @ prev)
-	     (loop [] (x = PC.TArob)) extra_rules)
+	   (* included rules first *)
+	   List.fold_left (@) (loop [] (x = PC.TArob)) (List.rev extra_rules),
+	   List.fold_left (@) virt extra_virt (*no dups allowed*))
       |	_ -> failwith "unexpected code before the first rule\n")
   | (false,[(PC.TArobArob,_)]) | (false,[(PC.TArob,_)]) ->
-      ([],([] : Ast0.parsed_rule list))
+      ([],([] : Ast0.parsed_rule list),[] (*virtual rules*))
   | _ -> failwith "unexpected code before the first rule\n" in
   res)
 
@@ -1595,7 +1604,7 @@ let rec parse file =
 let process file isofile verbose =
   let extra_path = Filename.dirname file in
   Lexer_cocci.init();
-  let (iso_files, rules) = parse file in
+  let (iso_files, rules, virt) = parse file in
   let std_isos =
     match isofile with
       None -> []
@@ -1712,4 +1721,5 @@ let process file isofile verbose =
   let glimpse_tokens2 =
     Common.profile_code "get_glimpse_constants"
       (fun () -> Get_constants2.get_constants code neg_pos) in(* for glimpse *)
-  (metavars,code,fvs,neg_pos,ua,pos,grep_tokens,glimpse_tokens2)
+
+  (metavars,code,fvs,neg_pos,ua,pos,grep_tokens,glimpse_tokens2,virt)

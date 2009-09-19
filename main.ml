@@ -203,7 +203,7 @@ let short_options = [
   "-outplace", Arg.Set outplace_modif,
   "   store modifications in a .cocci_res file";
 
-  "-U", Arg.Int (fun n -> Flag_parsing_c.diff_lines := Some (i_to_s n)),
+  "-u", Arg.Int (fun n -> Flag_parsing_c.diff_lines := Some (i_to_s n)),
   "  set number of diff context lines";
   "-partial_match",        Arg.Set Flag_ctl.partial_match,
   "    report partial matches of the SP on the C file";
@@ -476,6 +476,10 @@ let other_options = [
     "  spacing of + code follows the conventions of Linux";
     "-smpl_spacing", Arg.Unit Flag_parsing_c.set_smpl_spacing,
     "  spacing of + code follows the semantic patch";
+    "-D", Arg.String Flag_parsing_cocci.set_defined_virtual_rules,
+    "  indicate that a virtual rule should be considered to be matched";
+    "-U", Arg.String Flag_parsing_cocci.set_undefined_virtual_rules,
+    "  indicate that a virtual rule should be considered to be not matched";
   ];
 
   "misc options",
@@ -607,7 +611,7 @@ let adjust_stdin cfile k =
 
 let glimpse_filter (coccifile, isofile) dir =
   let (_metavars,astcocci,_free_var_lists,_negated_positions,
-       _used_after_lists,_positions_lists,_,query) =
+       _used_after_lists,_positions_lists,_,query,_virt) =
     Cocci.sp_of_file coccifile (Some isofile) in
   match query with
     None -> pr2 "no glimpse keyword inferred from snippet"; None

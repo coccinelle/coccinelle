@@ -3,7 +3,9 @@
    metavariables *)
 type fresh = bool
 
-type incl_iso = Include of string | Iso of (string,string) Common.either
+type incl_iso =
+    Include of string | Iso of (string,string) Common.either
+  | Virt of string list (* virtual rules *)
 
 type clt =
     line_type * int * int * int * int (* starting spaces *) *
