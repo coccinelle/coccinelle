@@ -895,7 +895,10 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
           let desti = 
             (match x with 
             | Ast_c.Break -> loopendi 
-            | Ast_c.Continue -> loopstarti 
+            | Ast_c.Continue ->
+		(* if no loops, then continue behaves like break - just
+		   one iteration *)
+		if !Flag_parsing_c.no_loops then loopendi else loopstarti 
             | x -> raise Impossible
             ) in
           let difference = List.length xi.braces - List.length braces in
@@ -1262,8 +1265,7 @@ let annotate_loop_nodes g =
         let node = g#nodes#find yi in
         let ((node2, nodeinfo), nodestr) = node in
         let node' = ((node2, {nodeinfo with is_loop = true}), (nodestr ^ "*")) 
-        in
-        g#replace_node (yi, node');
+        in g#replace_node (yi, node');
     );
   );
 
