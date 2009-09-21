@@ -1,6 +1,6 @@
 PREFIX?=/tobedefine
 PROJECT?=/myproject
-SPFLAGS?="-quiet -timeout 60 -use_glimpse"
+SPFLAGS?="-timeout 60" # -use_glimpse -D diff
 
 COCCI?=/tobedefine/cocci
 RESULTS?=/tobedefine/results
