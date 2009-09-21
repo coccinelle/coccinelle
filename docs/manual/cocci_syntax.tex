@@ -143,6 +143,7 @@ constrained by its type.
 \begin{grammar}
   \RULE{\rt{metadecl}}
   \CASE{fresh identifier \NT{ids} ;}
+  \CASE{identifier \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_regexp}\mth{)} ;}
   \CASE{identifier \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq}\mth{)} ;}
   \CASE{parameter \opt{list} \NT{ids} ;}
   \CASE{parameter list [ \NT{id} ] \NT{ids} ;}
@@ -151,8 +152,10 @@ constrained by its type.
   \CASE{typedef \NT{ids} ;}
   \CASE{declarer name \NT{ids} ;}
 %  \CASE{\opt{local} function \NT{pmid\_with\_not\_eq\_list} ;}
+  \CASE{declarer \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_regexp}\mth{)} ;}
   \CASE{declarer \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq}\mth{)} ;}
   \CASE{iterator name \NT{ids} ;}
+  \CASE{iterator \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_regexp}\mth{)} ;}
   \CASE{iterator \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq}\mth{)} ;}
 %  \CASE{error \NT{pmid\_with\_not\_eq\_list} ; }
   \CASE{\opt{local} idexpression \opt{\NT{ctype}} \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq}\mth{)} ;}
@@ -183,6 +186,9 @@ constrained by its type.
 %   \CASE{type}
 
   \RULE{\rt{mid}}  \CASE{\T{rulename\_id}.\T{id}}
+
+  \RULE{\rt{pmid\_with\_regexp}}
+  \CASE{\NT{pmid} \~{}= \NT{regexp}}
 
   \RULE{\rt{pmid\_with\_not\_eq}}
   \CASE{\NT{pmid} \OPT{!= \T{id}}}
@@ -786,6 +792,9 @@ in a concise way.
 
   \RULE{\rt{pathToIsoFile}}
   \CASE{<.*>}
+
+  \RULE{\rt{regexp}}
+  \CASE{"\any{[\^{}"]}"}
 \end{grammar}
 
 
