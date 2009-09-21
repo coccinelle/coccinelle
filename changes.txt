@@ -3,10 +3,15 @@
 * 0.1.11
 
 ** Language:
+- Meta-identifier/function could be filtered from SmPL by
+  regular expressions using the "~=" operator followed by
+  an OCaml regular expression (see man Str) in double quote.
 
 ** Features:
 - virtual rules, which can be referenced in depends, and set and unset
   using the command-line options -D and -U
+- coccicheck: a framework to check a serie of SmPL files on a project
+  see scripts/coccicheck for more information
 
 ** Bugfix:
 - bind position variables to the correct starting position in the case of a
