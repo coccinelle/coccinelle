@@ -37,7 +37,7 @@ viewfilteredlog:
 		grep -ve "TYPE: header .* not found" 
 
 viewres:
-	find $(RESULTS) -name "*.out" | less
+	find $(RESULTS) -name "*.out" | xargs less
 
 checkcocci:
 	for c in `find $(COCCI) -name "*.cocci"`; do spatch -parse_cocci $$c > /dev/null ; done
