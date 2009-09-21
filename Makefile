@@ -413,7 +413,7 @@ bytecodetar: all
 	rm -f $(TMP)/$(PACKAGE)
 
 coccicheck:
-	cp -ar `pwd`/scripts/coccicheck $(TMP)/coccicheck
+	cp -a `pwd`/scripts/coccicheck $(TMP)/coccicheck
 	cd $(TMP); tar cvfz coccicheck.tgz --exclude-vcs coccicheck
 	rm -rf $(TMP)/coccicheck
 
