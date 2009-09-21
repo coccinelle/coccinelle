@@ -438,13 +438,12 @@ let test_parse_cocci file =
   Printf.printf "grep tokens\n";
   List.iter (function x -> Printf.printf "%s\n" (String.concat " " x))
     grep_tokens;
-  if !Flag.use_glimpse
-  then match query with None -> pr "No query" | Some x -> pr x
-
-
-
-
-
+  match !Flag.scanner with
+    Flag.NoScanner -> ()
+  | Flag.Glimpse | Flag.Google _ ->
+      (match query with
+	None -> pr "No query"
+      | Some x -> pr (String.concat " || " x))
 
 
 

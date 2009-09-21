@@ -8,7 +8,8 @@ let show_trying = ref false
 
 let track_iso_usage = ref false
 
-let use_glimpse = ref false
+type scanner = Glimpse | Google of string | NoScanner
+let scanner = ref NoScanner
 
 let pyoutput = ref "coccilib.output.Console"
 

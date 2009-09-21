@@ -25,7 +25,7 @@ wanted *)
 type combine =
     And of combine list | Or of combine list | Elem of string | False | True
 
-let interpret strict x =
+let interpret_glimpse strict x =
   let rec loop = function
       Elem x -> x
     | And [x] -> loop x
@@ -41,12 +41,45 @@ let interpret strict x =
     True -> None
   | False when strict ->
       failwith "False should not be in the final result.  Perhaps your rule doesn't contain any +/-/* code"
-  | _ -> Some (loop x)
+  | _ -> Some [(loop x)]
+
+let interpret_google strict x =
+  (* convert to dnf *)
+  let rec dnf = function
+      Elem x -> [x]
+    | Or l -> List.fold_left Common.union_set [] (List.map dnf l)
+    | And l ->
+	let l = List.map dnf l in
+	List.fold_left
+	  (function prev ->
+	    function cur ->
+	      List.fold_left Common.union_set []
+		(List.map
+		   (function x ->
+		     List.map (function y -> Printf.sprintf "%s %s" x y) prev)
+		   cur))
+	  [] l
+    | True -> ["True"]
+    | False ->
+	if strict
+	then failwith "False should not be in the final result.  Perhaps your rule doesn't contain any +/-/* code"
+	else ["False"] in
+  match x with
+    True -> None
+  | False when strict ->
+      failwith "False should not be in the final result.  Perhaps your rule doesn't contain any +/-/* code"
+  | _ -> Some (dnf x)
+
+let interpret strict x =
+  match !Flag.scanner with
+    Flag.Glimpse -> interpret_glimpse strict x
+  | Flag.Google _ -> interpret_google strict x
+  | _ -> failwith "not possible"
 
 let combine2c x =
   match interpret false x with
     None -> "None"
-  | Some x -> x
+  | Some x -> String.concat " || " x
 
 let norm = function
     And l -> And (List.sort compare l)
@@ -432,38 +465,42 @@ let rule_fn tls in_plus env neg_pos =
 	| x -> (build_or x rest_info, new_plusses))
     (False,in_plus) (List.combine tls neg_pos)
 
-let get_constants rules neg_pos_vars =
-  if not !Flag.use_glimpse
-  then None
-  else
-    let (info,_,_,_) =
-      List.fold_left
-	(function (rest_info,in_plus,env,locals(*dom of env*)) ->
-          function
-              (Ast.ScriptRule (_,deps,mv,_),_) ->
-		let extra_deps =
-		  List.fold_left
-		    (function prev ->
-		      function (_,(rule,_)) -> Ast.AndDep (Ast.Dep rule,prev))
-		    deps mv in
-		(match dependencies env extra_deps with
-		  False -> (rest_info, in_plus, env, locals)
-		| dependencies ->
-		    (build_or dependencies rest_info, in_plus, env, locals))
-            | (Ast.InitialScriptRule (_,_),_)
-	    | (Ast.FinalScriptRule (_,_),_) -> (rest_info,in_plus,env,locals)
-            | (Ast.CocciRule (nm,(dep,_,_),cur,_,_),neg_pos_vars) ->
-		let (cur_info,cur_plus) =
-		  rule_fn cur in_plus ((nm,True)::env) neg_pos_vars in
-		if List.for_all all_context.V.combiner_top_level cur
-		then (rest_info,cur_plus,(nm,cur_info)::env,nm::locals)
-		else
+let get_constants rules neg_pos_vars virt =
+  match !Flag.scanner with
+    Flag.NoScanner -> None
+  | Flag.Glimpse | Flag.Google _ ->
+      let virt =
+	List.map (function (x,v) -> (x, if v then True else False)) virt in
+      let (info,_,_,_) =
+	List.fold_left
+	  (function (rest_info,in_plus,env,locals(*dom of env*)) ->
+            function
+		(Ast.ScriptRule (_,deps,mv,_),_) ->
+		  let extra_deps =
+		    List.fold_left
+		      (function prev ->
+			function (_,(rule,_)) ->
+			  Ast.AndDep (Ast.Dep rule,prev))
+		      deps mv in
+		  (match dependencies env extra_deps with
+		    False -> (rest_info, in_plus, env, locals)
+		  | dependencies ->
+		      (build_or dependencies rest_info, in_plus, env, locals))
+              | (Ast.InitialScriptRule (_,_),_)
+	      | (Ast.FinalScriptRule (_,_),_) -> (rest_info,in_plus,env,locals)
+              | (Ast.CocciRule (nm,(dep,_,_),cur,_,_),neg_pos_vars) ->
+		  let (cur_info,cur_plus) =
+		    rule_fn cur in_plus ((nm,True)::env) neg_pos_vars in
+		  if List.for_all all_context.V.combiner_top_level cur
+		  then (rest_info,cur_plus,(nm,cur_info)::env,nm::locals)
+		  else
 	       (* no constants if dependent on another rule; then we need to
 	          find the constants of that rule *)
-		  match dependencies env dep with
-		    False -> (rest_info,cur_plus,env,locals)
-		  | dependencies ->
-		      (build_or (build_and dependencies cur_info) rest_info,
-		       cur_plus,env,locals))
-	(False,[],[],[]) (List.combine (rules : Ast.rule list) neg_pos_vars) in
-    interpret true info
+		    match dependencies env dep with
+		      False -> (rest_info,cur_plus,env,locals)
+		    | dependencies ->
+			(build_or (build_and dependencies cur_info) rest_info,
+			 cur_plus,env,locals))
+	  (False,[],virt,[])
+	  (List.combine (rules : Ast.rule list) neg_pos_vars) in
+      interpret true info

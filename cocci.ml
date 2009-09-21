@@ -1508,28 +1508,7 @@ let pre_engine2 (coccifile, isofile) =
 	  | _ -> languages)
       [] cocci_infos in
 
-  let virtual_rules =
-    List.iter
-      (function x ->
-	if not (List.mem x virt)
-	then
-	  failwith
-	    (Printf.sprintf "unknown virtual rule %s\n" x))
-      (!Flag_parsing_cocci.defined_virtual_rules @
-       !Flag_parsing_cocci.undefined_virtual_rules);
-    List.map
-      (function x ->
-	if List.mem x !Flag_parsing_cocci.defined_virtual_rules
-	then (x,true)
-	else if List.mem x !Flag_parsing_cocci.undefined_virtual_rules
-	then (x,false)
-	else
-	  (Printf.fprintf stderr
-	     "warning: no value specified for virtual rule %s, assuming unmatched\n" x;
-	   (x,false)))
-      virt in
-
-  (cocci_infos,toks,virtual_rules)
+  (cocci_infos,toks,virt)
 
 let pre_engine a = 
   Common.profile_code "pre_engine" (fun () -> pre_engine2 a)

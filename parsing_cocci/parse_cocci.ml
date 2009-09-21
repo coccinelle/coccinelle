@@ -1244,6 +1244,27 @@ let any_modif rule =
       donothing donothing in
   List.exists fn.VT0.combiner_rec_top_level rule
 
+let eval_virt virt =
+  List.iter
+    (function x ->
+      if not (List.mem x virt)
+      then
+	failwith
+	  (Printf.sprintf "unknown virtual rule %s\n" x))
+    (!Flag_parsing_cocci.defined_virtual_rules @
+     !Flag_parsing_cocci.undefined_virtual_rules);
+  List.map
+    (function x ->
+      if List.mem x !Flag_parsing_cocci.defined_virtual_rules
+      then (x,true)
+      else if List.mem x !Flag_parsing_cocci.undefined_virtual_rules
+      then (x,false)
+      else
+	(Printf.fprintf stderr
+	   "warning: no value specified for virtual rule %s, assuming unmatched\n" x;
+	 (x,false)))
+    virt
+
 let drop_last extra l = List.rev(extra@(List.tl(List.rev l)))
 
 let partition_either l =
@@ -1607,6 +1628,7 @@ let process file isofile verbose =
   let extra_path = Filename.dirname file in
   Lexer_cocci.init();
   let (iso_files, rules, virt) = parse file in
+  let virt = eval_virt virt in
   let std_isos =
     match isofile with
       None -> []
@@ -1721,7 +1743,7 @@ let process file isofile verbose =
     Common.profile_code "get_constants"
       (fun () -> Get_constants.get_constants code) in (* for grep *)
   let glimpse_tokens2 =
-    Common.profile_code "get_glimpse_constants"
-      (fun () -> Get_constants2.get_constants code neg_pos) in(* for glimpse *)
+    Common.profile_code "get_glimpse_constants" (* for glimpse *)
+      (fun () -> Get_constants2.get_constants code neg_pos virt) in
 
   (metavars,code,fvs,neg_pos,ua,pos,grep_tokens,glimpse_tokens2,virt)
