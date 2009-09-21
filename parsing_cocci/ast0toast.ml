@@ -274,18 +274,15 @@ let rec do_isos l = List.map (function (nm,x) -> (nm,anything x)) l
 and ident i =
   rewrap i (do_isos (Ast0.get_iso i))
     (match Ast0.unwrap i with
-      Ast0.Id(name) -> Ast.Id(mcode name)
-    | Ast0.MetaId(name,constraints,_) ->
-	let constraints = List.map ident constraints in
-	Ast.MetaId(mcode name,constraints,unitary,false)
-    | Ast0.MetaFunc(name,constraints,_) ->
-	let constraints = List.map ident constraints in
-	Ast.MetaFunc(mcode name,constraints,unitary,false)
-    | Ast0.MetaLocalFunc(name,constraints,_) ->
-	let constraints = List.map ident constraints in
-	Ast.MetaLocalFunc(mcode name,constraints,unitary,false)
-    | Ast0.OptIdent(id) -> Ast.OptIdent(ident id)
-    | Ast0.UniqueIdent(id) -> Ast.UniqueIdent(ident id))
+	 Ast0.Id(name) -> Ast.Id(mcode name)
+       | Ast0.MetaId(name,constraints,_) ->
+	     Ast.MetaId(mcode name,constraints,unitary,false)
+       | Ast0.MetaFunc(name,constraints,_) ->
+	     Ast.MetaFunc(mcode name,constraints,unitary,false)
+       | Ast0.MetaLocalFunc(name,constraints,_) ->
+	     Ast.MetaLocalFunc(mcode name,constraints,unitary,false)
+       | Ast0.OptIdent(id) -> Ast.OptIdent(ident id)
+       | Ast0.UniqueIdent(id) -> Ast.UniqueIdent(ident id))
 
 (* --------------------------------------------------------------------- *)
 (* Expression *)

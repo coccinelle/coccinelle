@@ -25,7 +25,7 @@ and line_type =
   | PLUS
   | CONTEXT | UNIQUE | OPT
 
-type iconstraints = Ast0.ident list
+type iconstraints = Ast.idconstraint
 type econstraints = Ast0.expression list
 type pconstraints = Ast.meta_name list
 

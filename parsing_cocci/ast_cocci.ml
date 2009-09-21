@@ -1,3 +1,9 @@
+(* Constraints on Meta-* Identifiers, Functions *)
+type idconstraint =
+    NoConstraint
+  | NegIdSet      of string list
+  | RegExp        of string * Str.regexp
+
 (* --------------------------------------------------------------------- *)
 (* Modified code *)
 
@@ -30,18 +36,18 @@ and 'a befaft =
   | NOTHING
 
 and 'a mcode = 'a * info * mcodekind * meta_pos (* pos variable *)
- (* pos is an offset indicating where in the C code the mcodekind has an
- effect *)
-(* int list is the match instances, which are only meaningful in annotated
-C code *)
-(* int is the adjacency index, which is incremented on context dots *)
- and mcodekind =
+    (* pos is an offset indicating where in the C code the mcodekind
+       has an effect *)
+    (* int list is the match instances, which are only meaningful in annotated
+       C code *)
+    (* int is the adjacency index, which is incremented on context dots *)
+and mcodekind =
     MINUS       of pos * int list * int * anything list list
   | CONTEXT     of pos * anything befaft
   | PLUS
- and fixpos =
+and fixpos =
     Real of int (* charpos *) | Virt of int * int (* charpos + offset *)
- and pos = NoPos | DontCarePos | FixPos of (fixpos * fixpos)
+and pos = NoPos | DontCarePos | FixPos of (fixpos * fixpos)
 
 and dots_bef_aft =
     NoDots
@@ -105,11 +111,10 @@ and 'a dots = 'a base_dots wrap
 (* Identifier *)
 
 and base_ident =
-    Id of string mcode
-
-  | MetaId        of meta_name mcode * ident list * keep_binding * inherited
-  | MetaFunc      of meta_name mcode * ident list * keep_binding * inherited
-  | MetaLocalFunc of meta_name mcode * ident list * keep_binding * inherited
+    Id            of string mcode
+  | MetaId        of meta_name mcode * idconstraint * keep_binding * inherited
+  | MetaFunc      of meta_name mcode * idconstraint * keep_binding * inherited
+  | MetaLocalFunc of meta_name mcode * idconstraint * keep_binding * inherited
 
   | OptIdent      of ident
   | UniqueIdent   of ident

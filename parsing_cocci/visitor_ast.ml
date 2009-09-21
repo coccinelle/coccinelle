@@ -93,13 +93,13 @@ let combiner bind option_default
   and ident i =
     let k i =
       match Ast.unwrap i with
-	Ast.Id(name) -> string_mcode name
-      | Ast.MetaId(name,_,_,_) -> meta_mcode name
-      | Ast.MetaFunc(name,_,_,_) -> meta_mcode name
-      | Ast.MetaLocalFunc(name,_,_,_) -> meta_mcode name
-      | Ast.OptIdent(id) -> ident id
-      | Ast.UniqueIdent(id) -> ident id in
-    identfn all_functions k i
+	  Ast.Id(name) -> string_mcode name
+	| Ast.MetaId(name,_,_,_) -> meta_mcode name
+	| Ast.MetaFunc(name,_,_,_) -> meta_mcode name
+	| Ast.MetaLocalFunc(name,_,_,_) -> meta_mcode name
+	| Ast.OptIdent(id) -> ident id
+	| Ast.UniqueIdent(id) -> ident id in
+      identfn all_functions k i
 
   and expression e =
     let k e =

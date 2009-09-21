@@ -288,7 +288,7 @@ let init _ =
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_fresh_id_meta :=
     (fun name ->
-      let fn clt = TMetaId(name,[],Ast0.Impure,clt) in
+      let fn clt = TMetaId(name,Ast.NoConstraint,Ast0.Impure,clt) in
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_type_meta :=
     (fun name pure ->
@@ -427,6 +427,7 @@ rule token = parse
 	   then (start_line true; TArob)
 	   else (check_minus_context_linetype "@"; TPArob) }
 
+  | "~="  { start_line true; TTildeEq (get_current_line_type lexbuf) }
   | "WHEN" | "when"
       { start_line true; check_minus_context_linetype (tok lexbuf);
 	TWhen (get_current_line_type lexbuf) }
@@ -553,8 +554,8 @@ rule token = parse
 
   | ":"            { start_line true; TDotDot (get_current_line_type lexbuf) }
 
-  | "=="           { start_line true; TEqEq   (get_current_line_type lexbuf) }
-  | "!="           { start_line true; TNotEq  (get_current_line_type lexbuf) }
+  | "=="           { start_line true; TEqEq    (get_current_line_type lexbuf) }
+  | "!="           { start_line true; TNotEq   (get_current_line_type lexbuf) }
   | ">="           { start_line true;
 		     TLogOp(Ast.SupEq,get_current_line_type lexbuf) }
   | "<="           { start_line true;
@@ -720,7 +721,7 @@ and comment = parse
   (* noteopti: *)
   | [^ '*'] { start_line true; let s = tok lexbuf in s ^ comment lexbuf }
   | [ '*']   { start_line true; let s = tok lexbuf in s ^ comment lexbuf }
-  | _  
+  | _
       { start_line true; let s = tok lexbuf in
         Common.pr2 ("LEXER: unrecognised symbol in comment:"^s);
         s ^ comment lexbuf

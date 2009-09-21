@@ -7,11 +7,11 @@ type id = Id of string | Meta of (string * string)
 
 let rec get_name name =
   match Ast0.unwrap name with
-    Ast0.Id(nm) -> Id(Ast0.unwrap_mcode nm)
-  | Ast0.MetaId(nm,_,_) | Ast0.MetaFunc(nm,_,_)
-  | Ast0.MetaLocalFunc(nm,_,_) -> Meta(Ast0.unwrap_mcode nm)
-  | Ast0.OptIdent(id) | Ast0.UniqueIdent(id) ->
-      get_name id
+      Ast0.Id(nm) -> Id(Ast0.unwrap_mcode nm)
+    | Ast0.MetaId(nm,_,_) | Ast0.MetaFunc(nm,_,_)
+    | Ast0.MetaLocalFunc(nm,_,_) -> Meta(Ast0.unwrap_mcode nm)
+    | Ast0.OptIdent(id) | Ast0.UniqueIdent(id) ->
+	get_name id
 
 (* --------------------------------------------------------------------- *)
 (* collect all of the functions *)

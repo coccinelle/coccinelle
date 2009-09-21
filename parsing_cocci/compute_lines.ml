@@ -185,15 +185,15 @@ let dots is_dots prev fn d =
 
 let rec ident i =
   match Ast0.unwrap i with
-    Ast0.Id(name) as ui ->
-      let name = promote_mcode name in mkres i ui name name
-  | Ast0.MetaId(name,_,_)
-  | Ast0.MetaFunc(name,_,_) | Ast0.MetaLocalFunc(name,_,_) as ui ->
-      let name = promote_mcode name in mkres i ui name name
-  | Ast0.OptIdent(id) ->
-      let id = ident id in mkres i (Ast0.OptIdent(id)) id id
-  | Ast0.UniqueIdent(id) ->
-      let id = ident id in mkres i (Ast0.UniqueIdent(id)) id id
+      Ast0.Id(name) as ui ->
+	let name = promote_mcode name in mkres i ui name name
+    | Ast0.MetaId(name,_,_)
+    | Ast0.MetaFunc(name,_,_) | Ast0.MetaLocalFunc(name,_,_) as ui ->
+	let name = promote_mcode name in mkres i ui name name
+    | Ast0.OptIdent(id) ->
+	let id = ident id in mkres i (Ast0.OptIdent(id)) id id
+    | Ast0.UniqueIdent(id) ->
+	let id = ident id in mkres i (Ast0.UniqueIdent(id)) id id
 
 (* --------------------------------------------------------------------- *)
 (* Expression *)

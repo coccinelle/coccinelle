@@ -61,31 +61,31 @@ let is_ifdef name =
 
 let ident context old_metas table minus i =
   match Ast0.unwrap i with
-    Ast0.Id((name,_,info,_,_,_) : string Ast0.mcode) ->
-      let rl = info.Ast0.pos_info.Ast0.line_start in
-      let err =
-	if List.exists (function x -> x = name) old_metas
+      Ast0.Id((name,_,info,_,_,_) : string Ast0.mcode) ->
+	let rl = info.Ast0.pos_info.Ast0.line_start in
+	let err =
+	  if List.exists (function x -> x = name) old_metas
 	    && (minus || Ast0.get_mcodekind i = Ast0.PLUS)
-	then
-	  begin
-	    warning
-	      (Printf.sprintf
-		 "line %d: %s, previously declared as a metavariable, is used as an identifier" rl name);
-	      true
-	  end
-	else false in
-      (match context with
-	ID ->
-	  if not (is_ifdef name) && minus && not err(* warn only once per id *)
 	  then
-	    warning
-	      (Printf.sprintf "line %d: should %s be a metavariable?" rl name)
-      | _ -> ())
-  | Ast0.MetaId(name,_,_) -> check_table table minus name
-  | Ast0.MetaFunc(name,_,_) -> check_table table minus name
-  | Ast0.MetaLocalFunc(name,_,_) -> check_table table minus name
-  | Ast0.OptIdent(_) | Ast0.UniqueIdent(_) ->
-      failwith "unexpected code"
+	    begin
+	      warning
+		(Printf.sprintf
+		   "line %d: %s, previously declared as a metavariable, is used as an identifier" rl name);
+	      true
+	    end
+	  else false in
+	  (match context with
+	       ID ->
+		 if not (is_ifdef name) && minus && not err(* warn only once per id *)
+		 then
+		   warning
+		     (Printf.sprintf "line %d: should %s be a metavariable?" rl name)
+	     | _ -> ())
+    | Ast0.MetaId(name,_,_) -> check_table table minus name
+    | Ast0.MetaFunc(name,_,_) -> check_table table minus name
+    | Ast0.MetaLocalFunc(name,_,_) -> check_table table minus name
+    | Ast0.OptIdent(_) | Ast0.UniqueIdent(_) ->
+	failwith "unexpected code"
 
 (* --------------------------------------------------------------------- *)
 (* Expression *)

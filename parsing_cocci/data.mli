@@ -20,7 +20,7 @@ and line_type =
   | PLUS
   | CONTEXT | UNIQUE | OPT
 
-type iconstraints = Ast0_cocci.ident list
+type iconstraints = Ast_cocci.idconstraint
 type econstraints = Ast0_cocci.expression list
 type pconstraints = Ast_cocci.meta_name list
 

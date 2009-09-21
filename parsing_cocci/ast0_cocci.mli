@@ -68,10 +68,10 @@ and 'a dots = 'a base_dots wrap
 (* Identifier *)
 
 and base_ident =
-    Id of string mcode
-  | MetaId        of Ast_cocci.meta_name mcode * ident list * pure
-  | MetaFunc      of Ast_cocci.meta_name mcode * ident list * pure
-  | MetaLocalFunc of Ast_cocci.meta_name mcode * ident list * pure
+    Id            of string mcode
+  | MetaId        of Ast_cocci.meta_name mcode * Ast_cocci.idconstraint * pure
+  | MetaFunc      of Ast_cocci.meta_name mcode * Ast_cocci.idconstraint * pure
+  | MetaLocalFunc of Ast_cocci.meta_name mcode * Ast_cocci.idconstraint * pure
   | OptIdent      of ident
   | UniqueIdent   of ident
 

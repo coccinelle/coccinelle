@@ -5,12 +5,12 @@
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License (GPL)
  * version 2 as published by the Free Software Foundation.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * file license.txt for more details.
- * 
+ *
  * This file was part of Coccinelle.
  *)
 
@@ -34,10 +34,10 @@ let pr2, pr2_once = Common.mk_pr2_wrappers Flag_matcher.verbose_matcher
 
 type sequence = Ordered | Unordered
 
-let seqstyle eas =      
-   match A.unwrap eas with 
-   | A.DOTS _ -> Ordered 
-   | A.CIRCLES _ -> Unordered 
+let seqstyle eas =
+   match A.unwrap eas with
+   | A.DOTS _ -> Ordered
+   | A.CIRCLES _ -> Unordered
    | A.STARS _ -> failwith "not handling stars"
 
 let (redots : 'a A.dots -> 'a list -> 'a A.dots)=fun eas easundots ->
@@ -270,7 +270,7 @@ let equal_metavarval valu valu' =
 
   | Ast_c.MetaPosVal (posa1,posa2), Ast_c.MetaPosVal (posb1,posb2) -> 
       Ast_cocci.equal_pos posa1 posb1 && Ast_cocci.equal_pos posa2 posb2
-        
+
   | Ast_c.MetaPosValList l1, Ast_c.MetaPosValList l2 ->
       List.exists
 	(function (fla,cea,posa1,posa2) ->
@@ -637,7 +637,11 @@ module type PARAM =
 	  (unit -> Common.filename * string * Ast_c.posl * Ast_c.posl) ->
       (unit -> tin -> 'x tout) -> (tin -> 'x tout)
 
-    val check_constraints :
+    val check_idconstraint :
+      ('a -> 'b -> bool) -> 'a -> 'b ->
+	(unit -> tin -> 'x tout) -> (tin -> 'x tout)
+
+    val check_constraints_ne :
       ('a, 'b) matcher -> 'a list -> 'b ->
 	(unit -> tin -> 'x tout) -> (tin -> 'x tout)
 
@@ -655,7 +659,7 @@ module type PARAM =
 (*****************************************************************************)
 
 module COCCI_VS_C =
-  functor (X : PARAM) -> 
+  functor (X : PARAM) ->
 struct
 
 type ('a, 'b) matcher = 'a -> 'b  -> X.tin -> ('a * 'b) X.tout
@@ -692,6 +696,16 @@ functions could be avoided by introducing an appropriate level of polymorphism,
 but I don't know how to declare polymorphism across functors *)
 let dots2metavar (_,info,mcodekind,pos) = (("","..."),info,mcodekind,pos)
 let metavar2dots (_,info,mcodekind,pos) = ("...",info,mcodekind,pos)
+
+let satisfies_constraint c id : bool =
+  match c with
+      A.NoConstraint -> true
+    | A.NegIdSet l -> not (List.mem id l)
+    | A.RegExp (_,recompiled) ->
+	if Str.string_match recompiled id 0 then
+	  true
+	else
+	  false
 
 (*---------------------------------------------------------------------------*)
 (* toc: 
@@ -764,7 +778,7 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
               acc >|+|> compatible_type ta tb) fail
 	) >>=
 	(fun () () ->
-	  X.check_constraints expression constraints eb
+	  X.check_constraints_ne expression constraints eb
             (fun () ->
 	  let max_min _ =
 	    Lib_parsing_c.lin_col_by_pos (Lib_parsing_c.ii_of_expr expb) in
@@ -1174,7 +1188,7 @@ and (ident_cpp: info_ident -> (A.ident, B.name) matcher) =
 	 fail
 
 and (ident: info_ident -> (A.ident, string * Ast_c.info) matcher) = 
- fun infoidb ida ((idb, iib) as ib) -> 
+ fun infoidb ida ((idb, iib)) -> (* (idb, iib) as ib *)
   X.all_bound (A.get_inherited ida) >&&>
   match A.unwrap ida with
   | A.Id sa -> 
@@ -1186,9 +1200,8 @@ and (ident: info_ident -> (A.ident, string * Ast_c.info) matcher) =
         ))
       else fail
 
-
   | A.MetaId(mida,constraints,keep,inherited) -> 
-      X.check_constraints (ident infoidb) constraints ib
+      X.check_idconstraint satisfies_constraint constraints idb
         (fun () ->
       let max_min _ = Lib_parsing_c.lin_col_by_pos [iib] in
       (* use drop_pos for ids so that the pos is not added a second time in
@@ -1204,7 +1217,7 @@ and (ident: info_ident -> (A.ident, string * Ast_c.info) matcher) =
 
   | A.MetaFunc(mida,constraints,keep,inherited) -> 
       let is_function _ =
-	X.check_constraints (ident infoidb) constraints ib
+	X.check_idconstraint satisfies_constraint constraints idb
             (fun () ->
           let max_min _ = Lib_parsing_c.lin_col_by_pos [iib] in
           X.envf keep inherited (A.drop_pos mida,Ast_c.MetaFuncVal idb,max_min)
@@ -1228,7 +1241,7 @@ and (ident: info_ident -> (A.ident, string * Ast_c.info) matcher) =
   | A.MetaLocalFunc(mida,constraints,keep,inherited) -> 
       (match infoidb with 
       | LocalFunction -> 
-	  X.check_constraints (ident infoidb) constraints ib
+	  X.check_idconstraint satisfies_constraint constraints idb
             (fun () ->
           let max_min _ = Lib_parsing_c.lin_col_by_pos [iib] in
           X.envf keep inherited

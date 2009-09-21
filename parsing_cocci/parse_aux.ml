@@ -331,17 +331,17 @@ let create_fresh_metadec kindfn ids current_rule =
 	 kindfn rule checker seed)
        ids)
 
-let create_metadec_ne ar ispure kindfn ids current_rule =
+let create_metadec_with_constraints ar ispure kindfn ids current_rule =
   List.concat
     (List.map
        (function ((rule,nm),constraints) ->
 	 let (rule,checker) =
 	   match rule with
-	     None -> ((current_rule,nm),function x -> [Common.Left x])
-	   | Some rule ->
-	       ((rule,nm),
-		function x -> check_meta x; [Common.Right x]) in
-	 kindfn ar rule ispure checker constraints)
+	       None -> ((current_rule,nm),function x -> [Common.Left x])
+	     | Some rule ->
+		 ((rule,nm),
+		  function x -> check_meta x; [Common.Right x]) in
+	   kindfn ar rule ispure checker constraints)
        ids)
 
 let create_metadec_ty ar ispure kindfn ids current_rule =

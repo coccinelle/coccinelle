@@ -1,3 +1,9 @@
+(* Constraints on Meta-* Identifiers, Functions *)
+type idconstraint =
+    NoConstraint
+  | NegIdSet      of string list
+  | RegExp        of string * Str.regexp
+
 (* --------------------------------------------------------------------- *)
 (* Modified code *)
 
@@ -99,11 +105,10 @@ and 'a dots = 'a base_dots wrap
 (* Identifier *)
 
 and base_ident =
-    Id of string mcode
-
-  | MetaId        of meta_name mcode * ident list * keep_binding * inherited
-  | MetaFunc      of meta_name mcode * ident list * keep_binding * inherited
-  | MetaLocalFunc of meta_name mcode * ident list * keep_binding * inherited
+    Id            of string mcode
+  | MetaId        of meta_name mcode * idconstraint * keep_binding * inherited
+  | MetaFunc      of meta_name mcode * idconstraint * keep_binding * inherited
+  | MetaLocalFunc of meta_name mcode * idconstraint * keep_binding * inherited
 
   | OptIdent      of ident
   | UniqueIdent   of ident

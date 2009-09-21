@@ -275,9 +275,17 @@ module XMATCH = struct
 
 
   (* ------------------------------------------------------------------------*)
-  (* Constraints on metavariable values *) 
+  (* Constraints on metavariable values *)
   (* ------------------------------------------------------------------------*)
-  let check_constraints matcher constraints exp = fun f tin ->
+  let check_idconstraint matcher c id = fun f tin ->
+    if matcher c id then
+      (* success *)
+      f () tin
+    else
+      (* failure *)
+      fail tin
+
+  let check_constraints_ne matcher constraints exp = fun f tin ->
     let rec loop = function
 	[] -> f () tin (* success *)
       |	c::cs ->
@@ -287,7 +295,7 @@ module XMATCH = struct
     loop constraints
 
   let check_pos_constraints constraints pvalu f tin =
-    check_constraints
+    check_constraints_ne
       (fun c exp tin ->
 	let success = [[]] in
 	let failure = [] in

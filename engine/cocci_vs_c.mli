@@ -152,7 +152,11 @@ module type PARAM =
 	  (unit -> Common.filename * string * Ast_c.posl * Ast_c.posl) ->
       (unit -> tin -> 'x tout) -> (tin -> 'x tout)
 
-    val check_constraints :
+    val check_idconstraint :
+      ('a -> 'b -> bool) -> 'a -> 'b ->
+	(unit -> tin -> 'x tout) -> (tin -> 'x tout)
+
+    val check_constraints_ne :
       ('a, 'b) matcher -> 'a list -> 'b ->
 	(unit -> tin -> 'x tout) -> (tin -> 'x tout)
 

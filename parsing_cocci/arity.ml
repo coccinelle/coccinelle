@@ -133,32 +133,32 @@ let make_id =
 
 let ident opt_allowed tgt i =
   match Ast0.unwrap i with
-    Ast0.Id(name) ->
-      let arity =
-	all_same opt_allowed tgt (mcode2line name)
-	  [mcode2arity name] in
-      let name = mcode name in
-      make_id i tgt arity (Ast0.Id(name))
-  | Ast0.MetaId(name,constraints,pure) ->
-      let arity =
-	all_same opt_allowed tgt (mcode2line name)
-	  [mcode2arity name] in
-      let name = mcode name in
-      make_id i tgt arity (Ast0.MetaId(name,constraints,pure))
-  | Ast0.MetaFunc(name,constraints,pure) ->
-      let arity =
-	all_same opt_allowed tgt (mcode2line name)
-	  [mcode2arity name] in
-      let name = mcode name in
-      make_id i tgt arity (Ast0.MetaFunc(name,constraints,pure))
-  | Ast0.MetaLocalFunc(name,constraints,pure) ->
-      let arity =
-	all_same opt_allowed tgt (mcode2line name)
-	  [mcode2arity name] in
-      let name = mcode name in
-      make_id i tgt arity (Ast0.MetaLocalFunc(name,constraints,pure))
-  | Ast0.OptIdent(_) | Ast0.UniqueIdent(_) ->
-      failwith "unexpected code"
+      Ast0.Id(name) ->
+	let arity =
+	  all_same opt_allowed tgt (mcode2line name)
+	    [mcode2arity name] in
+	let name = mcode name in
+	  make_id i tgt arity (Ast0.Id(name))
+    | Ast0.MetaId(name,constraints,pure) ->
+	let arity =
+	  all_same opt_allowed tgt (mcode2line name)
+	    [mcode2arity name] in
+	let name = mcode name in
+	  make_id i tgt arity (Ast0.MetaId(name,constraints,pure))
+    | Ast0.MetaFunc(name,constraints,pure) ->
+	let arity =
+	  all_same opt_allowed tgt (mcode2line name)
+	    [mcode2arity name] in
+	let name = mcode name in
+	  make_id i tgt arity (Ast0.MetaFunc(name,constraints,pure))
+    | Ast0.MetaLocalFunc(name,constraints,pure) ->
+	let arity =
+	  all_same opt_allowed tgt (mcode2line name)
+	    [mcode2arity name] in
+	let name = mcode name in
+	  make_id i tgt arity (Ast0.MetaLocalFunc(name,constraints,pure))
+    | Ast0.OptIdent(_) | Ast0.UniqueIdent(_) ->
+	failwith "unexpected code"
 
 (* --------------------------------------------------------------------- *)
 (* Expression *)

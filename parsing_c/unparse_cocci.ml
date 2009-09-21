@@ -3,18 +3,18 @@
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License (GPL)
  * version 2 as published by the Free Software Foundation.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * file license.txt for more details.
- * 
+ *
  * This file was part of Coccinelle.
  *)
 open Common
 
 (*****************************************************************************)
-(* mostly a copy paste of parsing_cocci/pretty_print_cocci.ml 
+(* mostly a copy paste of parsing_cocci/pretty_print_cocci.ml
  * todo?: try to factorize ?
  *)
 (*****************************************************************************)
@@ -23,8 +23,8 @@ module Ast = Ast_cocci
 
 let term s = Ast.unwrap_mcode s
 
-(* or perhaps can have in plus, for instance a Disj, but those Disj must be 
- *  handled by interactive tool (by proposing alternatives) 
+(* or perhaps can have in plus, for instance a Disj, but those Disj must be
+ *  handled by interactive tool (by proposing alternatives)
  *)
 exception CantBeInPlus
 
@@ -227,25 +227,25 @@ in
 
 let rec ident i =
   match Ast.unwrap i with
-    Ast.Id(name) -> mcode print_string name
-  | Ast.MetaId(name,_,_,_) -> 
-      handle_metavar name (function
-        | (Ast_c.MetaIdVal id) -> print_text id
-        | _ -> raise Impossible
-        ) 
-  | Ast.MetaFunc(name,_,_,_) -> 
-      handle_metavar name (function
-        | (Ast_c.MetaFuncVal id) -> print_text id
-        | _ -> raise Impossible
-        ) 
-  | Ast.MetaLocalFunc(name,_,_,_) -> 
-      handle_metavar name (function
-        | (Ast_c.MetaLocalFuncVal id) -> print_text id
-        | _ -> raise Impossible
-        )
+      Ast.Id(name) -> mcode print_string name
+    | Ast.MetaId(name,_,_,_) ->
+	handle_metavar name (function
+			       | (Ast_c.MetaIdVal id) -> print_text id
+			       | _ -> raise Impossible
+			    )
+    | Ast.MetaFunc(name,_,_,_) ->
+	handle_metavar name (function
+			       | (Ast_c.MetaFuncVal id) -> print_text id
+			       | _ -> raise Impossible
+			    )
+    | Ast.MetaLocalFunc(name,_,_,_) ->
+	handle_metavar name (function
+			       | (Ast_c.MetaLocalFuncVal id) -> print_text id
+			       | _ -> raise Impossible
+			    )
 
-  | Ast.OptIdent(_) | Ast.UniqueIdent(_) -> 
-      raise CantBeInPlus
+    | Ast.OptIdent(_) | Ast.UniqueIdent(_) ->
+	raise CantBeInPlus
 
 in
 

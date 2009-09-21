@@ -69,7 +69,7 @@ module P = Parse_aux
 %token <Data.clt> TOr
 %token <Data.clt> TXor
 %token <Data.clt> TAnd
-%token <Data.clt> TEqEq TNotEq
+%token <Data.clt> TEqEq TNotEq TTildeEq
 %token <Ast_cocci.logicalOp * Data.clt> TLogOp /* TInf TSup TInfEq TSupEq */
 %token <Ast_cocci.arithOp * Data.clt>   TShOp  /* TShl TShr */
 %token <Ast_cocci.arithOp * Data.clt>   TDmOp  /* TDiv TMod */
@@ -251,18 +251,18 @@ metadec:
     { P.create_fresh_metadec kindfn ids }
 | ar=arity ispure=pure
   kindfn=metakind_atomic
-  ids=comma_list(pure_ident_or_meta_ident_with_not_eq(not_eq)) TMPtVirg
-    { P.create_metadec_ne ar ispure kindfn ids }
+  ids=comma_list(pure_ident_or_meta_ident_with_constraint(re_or_not_eq)) TMPtVirg
+    { P.create_metadec_with_constraints ar ispure kindfn ids }
 | ar=arity ispure=pure
   kindfn=metakind_atomic_expi
-  ids=comma_list(pure_ident_or_meta_ident_with_not_eq(not_eqe)) TMPtVirg
-    { P.create_metadec_ne ar ispure kindfn ids }
+  ids=comma_list(pure_ident_or_meta_ident_with_x_eq(not_eqe)) TMPtVirg
+    { P.create_metadec_with_constraints ar ispure kindfn ids }
 | ar=arity ispure=pure
   kindfn=metakind_atomic_expe
-  ids=comma_list(pure_ident_or_meta_ident_with_not_eq(not_ceq)) TMPtVirg
-    { P.create_metadec_ne ar ispure kindfn ids }
+  ids=comma_list(pure_ident_or_meta_ident_with_x_eq(not_ceq)) TMPtVirg
+    { P.create_metadec_with_constraints ar ispure kindfn ids }
 | ar=arity TPosition a=option(TPosAny)
-    ids=comma_list(pure_ident_or_meta_ident_with_not_eq(not_pos)) TMPtVirg
+    ids=comma_list(pure_ident_or_meta_ident_with_x_eq(not_pos)) TMPtVirg
     (* pb: position variables can't be inherited from normal rules, and then
        there is no way to inherit from a generated rule, so there is no point
        to have a position variable *)
@@ -272,7 +272,7 @@ metadec:
       let tok = check_meta(Ast.MetaPosDecl(arity,name)) in
       let any = match a with None -> Ast.PER | Some _ -> Ast.ALL in
       !Data.add_pos_meta name constraints any; tok in
-    P.create_metadec_ne ar false kindfn ids }
+    P.create_metadec_with_constraints ar false kindfn ids }
 | ar=arity ispure=pure
     TParameter Tlist TOCro id=pure_ident_or_meta_ident TCCro
     ids=comma_list(pure_ident_or_meta_ident) TMPtVirg
@@ -1410,8 +1410,29 @@ seed_elem:
       P.check_meta(Ast.MetaIdDecl(Ast.NONE,nm));
       Ast.SeedId nm }
 
-pure_ident_or_meta_ident_with_not_eq(not_eq):
-       i=pure_ident_or_meta_ident l=loption(not_eq) { (i,l) }
+pure_ident_or_meta_ident_with_x_eq(x_eq):
+       i=pure_ident_or_meta_ident l=loption(x_eq) { (i,l) }
+
+pure_ident_or_meta_ident_with_constraint(constraint_type):
+       i=pure_ident_or_meta_ident c=option(constraint_type)
+    {
+      match c with
+	  None -> (i, Ast.NoConstraint)
+	| Some constraint_ -> (i,constraint_)
+    }
+
+re_or_not_eq:
+   re=regexp_eq {re}
+ | ne=not_eq    {ne}
+
+regexp_eq:
+       TTildeEq re=TString
+         { (if !Data.in_iso
+	    then failwith "constraints not allowed in iso file");
+	   (if !Data.in_generating
+	    then failwith "constraints not allowed in a generated rule file");
+	   let (s,_) = re in Ast.RegExp (s,Str.regexp s)
+	 }
 
 not_eq:
        TNotEq i=pure_ident
@@ -1421,13 +1442,14 @@ not_eq:
            (* pb: constraints not stored with metavars; too lazy to search for
 	      them in the pattern *)
 	   then failwith "constraints not allowed in a generated rule file");
-	   [Ast0.wrap(Ast0.Id(P.id2mcode i))] }
+	   Ast.NegIdSet([fst i]) }
      | TNotEq TOBrace l=comma_list(pure_ident) TCBrace
 	 { (if !Data.in_iso
 	   then failwith "constraints not allowed in iso file");
 	   (if !Data.in_generating
 	   then failwith "constraints not allowed in a generated rule file");
-	   List.map (function i -> Ast0.wrap(Ast0.Id(P.id2mcode i))) l }
+	   Ast.NegIdSet(List.map fst l)
+	 }
 
 not_eqe:
        TNotEq i=pure_ident

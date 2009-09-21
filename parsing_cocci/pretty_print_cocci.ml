@@ -141,16 +141,27 @@ let print_type keep info = function
       print_string " */"*)
 
 (* --------------------------------------------------------------------- *)
+(* Contraint on Identifier and Function *)
+(* FIXME: Not called at the moment *)
+
+let idconstraint c =
+  match c with
+      Ast.NoConstraint  -> print_string "/* No constraint */"
+    | Ast.NegIdSet ids     -> List.iter (fun s -> print_string (" "^s)) ids
+    | Ast.RegExp (re,_) -> print_string "\""; print_string re; print_string "\""
+
+
+(* --------------------------------------------------------------------- *)
 (* Identifier *)
 
 let rec ident i =
   match Ast.unwrap i with
-    Ast.Id(name) -> mcode print_string name
-  | Ast.MetaId(name,_,keep,inherited) -> mcode print_meta name
-  | Ast.MetaFunc(name,_,_,_) -> mcode print_meta name
-  | Ast.MetaLocalFunc(name,_,_,_) -> mcode print_meta name
-  | Ast.OptIdent(id) -> print_string "?"; ident id
-  | Ast.UniqueIdent(id) -> print_string "!"; ident id
+      Ast.Id(name) -> mcode print_string name
+    | Ast.MetaId(name,_,keep,inherited) -> mcode print_meta name
+    | Ast.MetaFunc(name,_,_,_) -> mcode print_meta name
+    | Ast.MetaLocalFunc(name,_,_,_) -> mcode print_meta name
+    | Ast.OptIdent(id) -> print_string "?"; ident id
+    | Ast.UniqueIdent(id) -> print_string "!"; ident id
 
 and print_unitary = function
     Type_cocci.Unitary -> print_string "unitary"

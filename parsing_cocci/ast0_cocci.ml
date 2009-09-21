@@ -76,10 +76,10 @@ and 'a dots = 'a base_dots wrap
 (* Identifier *)
 
 and base_ident =
-    Id of string mcode
-  | MetaId        of Ast.meta_name mcode * ident list * pure
-  | MetaFunc      of Ast.meta_name mcode * ident list * pure
-  | MetaLocalFunc of Ast.meta_name mcode * ident list * pure
+    Id            of string mcode
+  | MetaId        of Ast.meta_name mcode * Ast.idconstraint * pure
+  | MetaFunc      of Ast.meta_name mcode * Ast.idconstraint * pure
+  | MetaLocalFunc of Ast.meta_name mcode * Ast.idconstraint * pure
   | OptIdent      of ident
   | UniqueIdent   of ident
 
@@ -609,7 +609,7 @@ let rec reverse_type ty =
 	(* not right... *)
 	EnumName
 	  (make_mcode "enum",
-	   context_wrap(MetaId(make_mcode ("",tag),[],Impure)))
+	   context_wrap(MetaId(make_mcode ("",tag),Ast.NoConstraint,Impure)))
       else
 	EnumName(make_mcode "enum",context_wrap(Id(make_mcode tag)))
   | Type_cocci.StructUnionName(su,mv,tag) ->
@@ -618,7 +618,7 @@ let rec reverse_type ty =
 	(* not right... *)
 	StructUnionName
 	  (reverse_structUnion su,
-	   Some(context_wrap(MetaId(make_mcode ("",tag),[],Impure))))
+	   Some(context_wrap(MetaId(make_mcode ("",tag),Ast.NoConstraint,Impure))))
       else
 	StructUnionName
 	  (reverse_structUnion su,
