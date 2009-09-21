@@ -14,8 +14,7 @@ echo "Using PREFIX="${PREFIX:=`pwd`}
 echo "Using PROJECT="${PROJECT:=$PREFIX/project}
 echo "Using COCCI="${COCCI:=$PREFIX/cocci}
 echo "Using RESULTS="${RESULTS:=$PREFIX/results}
-echo "Using SPFLAGS="${SPFLAGS:="-timeout 60 -D $MODE"}
-#echo "Using SPFLAGS="${SPFLAGS:="-timeout 60 -use_glimpse -D $MODE"}
+echo "Using SPFLAGS="${SPFLAGS:="-timeout 60 -use_glimpse -D $MODE"}
 
 echo -e "\nFor efficiency, run \`<coccinelle dir>/scripts/glimpseindex_cocci.sh\`"
 echo -e "in $PROJECT\n"
