@@ -1056,7 +1056,16 @@ let apply_python_rule r cache newes e rules_that_have_matched
 	      e in
 	  let new_cache =
 	    if List.mem relevant_bindings cache
-	    then cache
+	    then
+	      begin
+		print_dependencies
+		  "dependencies for script satisfied, but cached:"
+		  rules_that_have_matched
+		  !rules_that_have_ever_matched virtual_methods
+		  r.scr_dependencies;
+		show_or_not_binding "in" e;
+		cache
+	      end
 	    else
 	      begin
 		print_dependencies "dependencies for script satisfied:"

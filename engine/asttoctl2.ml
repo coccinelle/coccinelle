@@ -1198,6 +1198,16 @@ let svar_minus_or_no_add_after stmt s label quantified d ast
   let prelabel_pred =
     CTL.Pred (Lib_engine.PrefixLabel(label_var),CTL.Control) in
   let matcher d = make_match None guard (make_meta_rule_elem d fvinfo) in
+  let matchbreak _ =
+    make_match None false
+      (Ast.set_fvs []
+	 (Ast.rewrap stmt 
+	    (Ast.Break(Ast.make_mcode "break",Ast.make_mcode ";")))) in
+  let matchcontinue _ =
+     make_match None false
+      (Ast.set_fvs []
+	 (Ast.rewrap stmt 
+	    (Ast.Continue(Ast.make_mcode "continue",Ast.make_mcode ";")))) in
   let ender =
     match (d,after) with
       (Ast.CONTEXT(pos,Ast.NOTHING),(Tail|End|VeryEnd)) ->
@@ -1212,6 +1222,29 @@ let svar_minus_or_no_add_after stmt s label quantified d ast
 			ctl_and CTL.NONSTRICT label_pred
 			  (make_raw_match label false ast),
 			ctl_and CTL.NONSTRICT (matcher d) prelabel_pred)
+    (* the following seems like a good idea, but for some reason it is not *)
+    | (Ast.CONTEXT(pos,Ast.NOTHING),After a) when false ->
+	let first_metamatch = matcher d in
+	let rest_metamatch = matcher (Ast.CONTEXT(pos,Ast.NOTHING)) in
+	let rest_nodes = ctl_and CTL.NONSTRICT rest_metamatch prelabel_pred in
+	let last_node =
+	  ctl_or (ctl_and CTL.NONSTRICT
+		    (ctl_or (retpred None)
+		       (ctl_or (gotopred None)
+			  (ctl_or (matchbreak())
+			     (matchcontinue()))))
+		    rest_nodes)
+	    (and_after guard (ctl_not prelabel_pred) after) in
+	(* try to follow after link *)
+	let is_compound =
+	  ctl_ex(make_seq guard [aftpred None; CTL.True; a]) in
+	let not_compound =
+	  make_seq guard
+	    [ctl_not (ctl_ex (aftpred None));
+	      ctl_au CTL.NONSTRICT rest_nodes last_node] in
+	ctl_and CTL.NONSTRICT (make_raw_match label false ast)
+	  (ctl_and CTL.NONSTRICT
+	     first_metamatch (ctl_or is_compound not_compound)) (**)
     | _ ->
 	(* more safe but less efficient *)
 	let first_metamatch = matcher d in
@@ -1222,7 +1255,14 @@ let svar_minus_or_no_add_after stmt s label quantified d ast
 	    | Ast.CONTEXT(pos,_) -> Ast.CONTEXT(pos,Ast.NOTHING)
 	    | Ast.PLUS -> failwith "not possible") in
 	let rest_nodes = ctl_and CTL.NONSTRICT rest_metamatch prelabel_pred in
-	let last_node = and_after guard (ctl_not prelabel_pred) after in
+	let last_node =
+	  ctl_or (ctl_and CTL.NONSTRICT
+		    (ctl_or (retpred None)
+		       (ctl_or (gotopred None)
+			  (ctl_or (matchbreak())
+			     (matchcontinue()))))
+		    rest_metamatch)
+	    (and_after guard (ctl_not prelabel_pred) after) in
 	ctl_and CTL.NONSTRICT (make_raw_match label false ast)
 	  (make_seq guard
 	     [first_metamatch;

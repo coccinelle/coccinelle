@@ -254,3 +254,4 @@ let set_smpl_spacing _ = spacing := SMPL   (*use spacing from the SP*)
 (* drop back edges made by proper loop constructs -
    unsafe but more efficient *)
 let no_loops = ref false
+let no_gotos = ref false

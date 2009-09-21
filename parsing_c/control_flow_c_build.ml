@@ -369,23 +369,28 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
      in
      !g +> add_arc_opt (starti, newi);
 
-     let ilabel = 
-       try xi.labels_assoc#find s 
-       with Not_found -> 
+     if !Flag_parsing_c.no_gotos
+     then Some newi
+     else
+       begin
+	 let ilabel = 
+	   try xi.labels_assoc#find s 
+	   with Not_found -> 
          (* jump vers ErrorExit a la place ? 
           * pourquoi tant de "cant jump" ? pas detecté par gcc ? 
           *)
-         raise (Error (GotoCantFindLabel (s, pinfo_of_ii ii)))
-     in
-     (* !g +> add_arc_opt (starti, ilabel); 
-      * todo: special_case: suppose that always goto to toplevel of function,
-      * hence the Common.init 
-      * todo?: can perhaps report when a goto is not a classic error_goto ? 
-      * that is when it does not jump to the toplevel of the function.
-      *)
-     let newi = insert_all_braces (Common.list_init xi.braces) newi in
-     !g#add_arc ((newi, ilabel), Direct);
-     None
+             raise (Error (GotoCantFindLabel (s, pinfo_of_ii ii)))
+	 in
+	 (* !g +> add_arc_opt (starti, ilabel); 
+	  * todo: special_case: suppose that always goto to toplevel of
+	  * function, hence the Common.init 
+	  * todo?: can perhaps report when a goto is not a classic error_goto ?
+	  * that is when it does not jump to the toplevel of the function.
+	  *)
+	 let newi = insert_all_braces (Common.list_init xi.braces) newi in
+	 !g#add_arc ((newi, ilabel), Direct);
+	 None
+       end
       
   | Jump (Ast_c.GotoComputed e) -> 
       raise (Error (ComputedGoto))

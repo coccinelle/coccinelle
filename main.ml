@@ -437,6 +437,8 @@ let other_options = [
     "-loop",              Arg.Set Flag_ctl.loop_in_src_code,    " ";
     "-no_loops",          Arg.Set Flag_parsing_c.no_loops,
     "   drop all back edges derived from looping constructs - unsafe";
+    "-no_gotos",          Arg.Set Flag_parsing_c.no_gotos,
+    "   drop all jumps derived from gotos - unsafe";
 
     "-l1",                Arg.Clear Flag_parsing_c.label_strategy_2, " ";
     "-ifdef_to_if",       Arg.Set FC.ifdef_to_if,
