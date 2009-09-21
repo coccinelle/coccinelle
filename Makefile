@@ -365,19 +365,20 @@ OCAMLVERSION=$(shell ocaml -version |perl -p -e 's/.*version (.*)/$$1/;')
 
 
 package:
-	make srctar
+	$(MAKE) srctar
 	./configure --without-python
-	make docs
-	make bintar
-	make bytecodetar
-	make staticbintar
+	$(MAKE) docs
+	$(MAKE) bintar
+	$(MAKE) bytecodetar
+	$(MAKE) staticbintar
+	$(MAKE) coccicheck
 
 
 # I currently pre-generate the parser so the user does not have to
 # install menhir on his machine. We could also do a few cleanups.
 # You may have first to do a 'make licensify'.
 #
-# update: make docs generates pdf but also some ugly .log files, so 
+# update: make docs generates pdf but also some ugly .log files, so
 # make clean is there to remove them while not removing the pdf
 # (only distclean remove the pdfs).
 srctar:
@@ -410,6 +411,11 @@ bytecodetar: all
 	make purebytecode
 	cd $(TMP); tar cvfz $(PACKAGE)-bin-bytecode-$(OCAMLVERSION).tgz --exclude-vcs $(BINSRC2)
 	rm -f $(TMP)/$(PACKAGE)
+
+coccicheck:
+	cp -ar `pwd`/scripts/coccicheck $(TMP)/coccicheck
+	cd $(TMP); tar cvfz coccicheck.tgz --exclude-vcs coccicheck
+	rm -rf $(TMP)/coccicheck
 
 clean::
 	rm -f $(PACKAGE)
