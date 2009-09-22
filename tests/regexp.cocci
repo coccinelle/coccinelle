@@ -1,59 +1,35 @@
 @anyid@
 type t;
 identifier id;
+fresh identifier new = id ## "_is_an_id";
 @@
 
-t id () {
-...
-}
-
-@script:python@
-x << anyid.id;
-@@
-
-print "Identifier: %s" % x
+t id;
++t new;
 
 @contains@
 type t;
-identifier foo ~= ".*foo";
+identifier anyid.id ~= ".*foo";
+fresh identifier contains = id ##"_contains_foo";
 @@
 
-t foo () {
-...
-}
-
-@script:python@
-x << contains.foo;
-@@
-
-print "Contains foo: %s" % x
+t id;
++t contains;
 
 @endsby@
 type t;
-identifier foo ~= ".*foo$";
+identifier anyid.id ~= ".*foo$";
+fresh identifier endsby = id ##"_ends_by_foo";
 @@
 
-t foo () {
-...
-}
-
-@script:python@
-x << endsby.foo;
-@@
-
-print "Ends by foo: %s" % x
+t id;
++t endsby;
 
 @beginsby@
 type t;
-identifier foo ~= "^foo";
+identifier anyid.id ~= "^foo";
+fresh identifier beginsby = id ##"_begins_by_foo";
 @@
 
-t foo () {
-...
-}
-
-@script:python@
-x << beginsby.foo;
-@@
-
-print "Begins by foo: %s" % x
+t id;
++t beginsby;
