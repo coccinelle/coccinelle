@@ -31,6 +31,8 @@ type compare_result =
  * is not enough to substituate until the end of the line. *)
 let cvs_keyword_list = [
   "Id";"Date"; "Revision"; (* the common one *)
+  "FreeBSD";"Heimdal";"KAME";"NetBSD";"OpenBSD";"OpenLDAP";"RuOBSD";
+  "SourceForge";
   "Name";"Author";"CVSHeader";"Header";"Locker";"RCSfile";"Source";"State";
   "Rev";
 ]
