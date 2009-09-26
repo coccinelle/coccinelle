@@ -1260,9 +1260,9 @@ let eval_virt virt =
       else if List.mem x !Flag_parsing_cocci.undefined_virtual_rules
       then (x,false)
       else
-	(Printf.fprintf stderr
-	   "warning: no value specified for virtual rule %s, assuming unmatched\n" x;
-	 (x,false)))
+	(*Printf.fprintf stderr
+	   "warning: no value specified for virtual rule %s, assuming unmatched\n" x;*)
+	 (x,false))
     virt
 
 let drop_last extra l = List.rev(extra@(List.tl(List.rev l)))

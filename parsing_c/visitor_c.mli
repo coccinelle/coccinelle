@@ -6,6 +6,7 @@ type visitor_c = {
   ktype      : (fullType    -> unit)  * visitor_c -> fullType    -> unit;
 
   kdecl      : (declaration -> unit)  * visitor_c -> declaration -> unit;
+  konedecl   : (onedecl -> unit)      * visitor_c -> onedecl     -> unit;
   kdef       : (definition  -> unit)  * visitor_c -> definition  -> unit;
   kname      : (name  -> unit)        * visitor_c -> name        -> unit;
 

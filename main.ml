@@ -203,7 +203,7 @@ let short_options = [
   "-outplace", Arg.Set outplace_modif,
   "   store modifications in a .cocci_res file";
 
-  "-u", Arg.Int (fun n -> Flag_parsing_c.diff_lines := Some (i_to_s n)),
+  "-U", Arg.Int (fun n -> Flag_parsing_c.diff_lines := Some (i_to_s n)),
   "  set number of diff context lines";
   "-partial_match",        Arg.Set Flag_ctl.partial_match,
   "    report partial matches of the SP on the C file";
@@ -482,8 +482,6 @@ let other_options = [
     "  spacing of + code follows the semantic patch";
     "-D", Arg.String Flag_parsing_cocci.set_defined_virtual_rules,
     "  indicate that a virtual rule should be considered to be matched";
-    "-U", Arg.String Flag_parsing_cocci.set_undefined_virtual_rules,
-    "  indicate that a virtual rule should be considered to be not matched";
   ];
 
   "misc options",
