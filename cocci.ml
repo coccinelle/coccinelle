@@ -130,7 +130,7 @@ let show_or_not_cocci a b =
 
 let show_or_not_diff2 cfile outfile show_only_minus = 
   if !Flag_cocci.show_diff then begin
-    match Common.fst(Compare_c.compare_default cfile outfile) with
+    match Common.fst(Compare_c.compare_to_original cfile outfile) with
       Compare_c.Correct -> () (* diff only in spacing, etc *)
     | _ ->
         (* may need --strip-trailing-cr under windows *)

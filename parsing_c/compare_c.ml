@@ -115,7 +115,7 @@ let normal_form_program xs =
 
 
 
-let normal_form_token x = 
+let normal_form_token adjust_cvs x = 
   let x' = 
     match x with 
     | Parser_c.TString ((s, kind),i1) -> Parser_c.TString (("",kind), i1)
@@ -124,7 +124,7 @@ let normal_form_token x =
   x' +> Token_helpers.visitor_info_of_tok (fun info -> 
     let info = Ast_c.al_info 0 info in
     let str = Ast_c.str_of_info info in
-    if Common.string_match_substring cvs_keyword_regexp str
+    if adjust_cvs && Common.string_match_substring cvs_keyword_regexp str
     then 
       let newstr = cvs_compute_newstr str in
       rewrap_str newstr info
@@ -262,8 +262,7 @@ let is_normal_space_or_comment = function
  * because when there is a notparsablezone in generated_file, I 
  * don't issue a PbOnlyInNotParsedCorrectly
  *)
-let compare_token filename1 filename2 = 
-
+let do_compare_token adjust_cvs filename1 filename2 =
 
   let rec loop xs ys = 
     match xs, ys with
@@ -281,8 +280,8 @@ let compare_token filename1 filename2 =
         Some "not same number of tokens inside C elements"
         
     | x::xs, y::ys -> 
-        let x' = normal_form_token x in
-        let y' = normal_form_token y in
+        let x' = normal_form_token adjust_cvs x in
+        let y' = normal_form_token adjust_cvs y in
         if x' =*= y' 
         then loop xs ys
         else 
@@ -356,12 +355,16 @@ let compare_token filename1 filename2 =
 
   res, xs
 
-
+let compare_token = do_compare_token true
 
 
 (*****************************************************************************)
 
-let compare_default = compare_token 
+(* compare to a res file *)
+let compare_default = do_compare_token true
+
+(* compare to the source of the transformation *)
+let compare_to_original = do_compare_token false
 
 
 let compare_result_to_string (correct, diffxs) =

@@ -22,6 +22,8 @@
   the argument.  Thanks to Daniel Walker for pointing out the problem.
 - avoid introducing sharing in propagating ! over () in treatment of isos
 - save_excursion has to handle and rethrow exceptions
+- eliminate unnecessary consideration of CVS strings.  Thanks to David
+  Young for pointing out the problem.
 
 * 0.1.10
 
