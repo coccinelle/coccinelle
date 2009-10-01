@@ -25,6 +25,7 @@
 - eliminate unnecessary consideration of CVS strings.  Thanks to David
   Young for pointing out the problem.
 - completely new treatment of statement metavariables
+- ++ for multiple additions
 
 * 0.1.10
 
