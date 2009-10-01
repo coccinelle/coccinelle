@@ -48,8 +48,11 @@ let clt2mcode str = function
       (str,Ast0.UNIQUE,make_info line lline offset col strbef straft,
        Ast0.MINUS(ref([],Ast0.default_token_info)),ref pos,-1)
   | (Data.PLUS,line,lline,offset,col,strbef,straft,pos)        ->
-      (str,Ast0.NONE,make_info line lline offset col strbef straft,Ast0.PLUS,
-       ref pos,-1)
+      (str,Ast0.NONE,make_info line lline offset col strbef straft,
+       Ast0.PLUS(Ast.ONE),ref pos,-1)
+  | (Data.PLUSPLUS,line,lline,offset,col,strbef,straft,pos)        ->
+      (str,Ast0.NONE,make_info line lline offset col strbef straft,
+       Ast0.PLUS(Ast.MANY),ref pos,-1)
   | (Data.CONTEXT,line,lline,offset,col,strbef,straft,pos)     ->
       (str,Ast0.NONE,make_info line lline offset col strbef straft,
        Ast0.CONTEXT(ref(Ast.NOTHING,

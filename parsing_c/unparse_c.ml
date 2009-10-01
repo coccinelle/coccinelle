@@ -158,7 +158,7 @@ let mcode_contain_plus = function
 (* patch: when need full coccinelle transformation *)
   | Ast_cocci.MINUS (_,_,_,[]) -> false
   | Ast_cocci.MINUS (_,_,_,x::xs) -> true
-  | Ast_cocci.PLUS -> raise Impossible
+  | Ast_cocci.PLUS _ -> raise Impossible
 
 let contain_plus info = 
   let mck = Ast_c.mcode_of_info info in
@@ -405,18 +405,18 @@ let expand_mcode toks =
         (match any_befaft with
         | Ast_cocci.NOTHING -> 
             add_elem t Ctx
-        | Ast_cocci.BEFORE xxs ->
+        | Ast_cocci.BEFORE (xxs,_) ->
             unparser xxs Unparse_cocci.Before;
             add_elem t Ctx
-        | Ast_cocci.AFTER xxs -> 
+        | Ast_cocci.AFTER (xxs,_) -> 
             add_elem t Ctx;
             unparser xxs Unparse_cocci.After;
-        | Ast_cocci.BEFOREAFTER (xxs, yys) -> 
+        | Ast_cocci.BEFOREAFTER (xxs, yys, _) -> 
             unparser xxs Unparse_cocci.Before;
             add_elem t Ctx;
             unparser yys Unparse_cocci.After;
         )
-    | Ast_cocci.PLUS -> raise Impossible
+    | Ast_cocci.PLUS _ -> raise Impossible
 
   in
 

@@ -241,7 +241,7 @@ module XMATCH = struct
   (* ------------------------------------------------------------------------*)
   let tag_mck_pos mck posmck =
     match mck with 
-    | Ast_cocci.PLUS -> Ast_cocci.PLUS
+    | Ast_cocci.PLUS c -> Ast_cocci.PLUS c
     | Ast_cocci.CONTEXT (pos, xs) -> 
         assert (pos =*= Ast_cocci.NoPos || pos =*= Ast_cocci.DontCarePos);
         Ast_cocci.CONTEXT (posmck, xs)

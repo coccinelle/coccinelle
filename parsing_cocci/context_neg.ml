@@ -119,7 +119,7 @@ let collect_plus_lines top =
   let donothing r k e = k e in
   let mcode (_,_,info,mcodekind,_,_) =
     match mcodekind with
-      Ast0.PLUS -> insert info.Ast0.pos_info.Ast0.line_start
+      Ast0.PLUS _ -> insert info.Ast0.pos_info.Ast0.line_start
     | _ -> () in
   let fn =
     V0.flat_combiner bind option_default
@@ -131,7 +131,8 @@ let collect_plus_lines top =
 
 (* --------------------------------------------------------------------- *)
 
-type kind = Neutral | AllMarked | NotAllMarked (* marked means + or - *)
+type kind =
+    Neutral | AllMarked of Ast.count | NotAllMarked (* marked means + or - *)
 
 (* --------------------------------------------------------------------- *)
 (* The first part analyzes each of the minus tree and the plus tree
@@ -154,7 +155,7 @@ type node =
 
 let kind2c = function
     Neutral -> "neutral"
-  | AllMarked -> "allmarked"
+  | AllMarked _ -> "allmarked"
   | NotAllMarked -> "notallmarked"
 
 let node2c = function
@@ -167,8 +168,8 @@ tokens *)
 let bind c1 c2 =
   let lub = function
       (k1,k2) when k1 = k2 -> k1
-    | (Neutral,AllMarked) -> AllMarked
-    | (AllMarked,Neutral) -> AllMarked
+    | (Neutral,AllMarked c) -> AllMarked c
+    | (AllMarked c,Neutral) -> AllMarked c
     | _ -> NotAllMarked in
   match (c1,c2) with
     (* token/token *)
@@ -209,8 +210,8 @@ let option_default = (*Bind(Neutral,[],[],[],[],[])*)
 let mcode (_,_,info,mcodekind,pos,_) =
   let offset = info.Ast0.pos_info.Ast0.offset in
   match mcodekind with
-    Ast0.MINUS(_) -> Token(AllMarked,offset,mcodekind,[])
-  | Ast0.PLUS -> Token(AllMarked,offset,mcodekind,[])
+    Ast0.MINUS(_) -> Token(AllMarked Ast.ONE,offset,mcodekind,[])
+  | Ast0.PLUS c -> Token(AllMarked c,offset,mcodekind,[])
   | Ast0.CONTEXT(_) -> Token(NotAllMarked,offset,mcodekind,[offset])
   | _ -> failwith "not possible"
 
@@ -218,7 +219,7 @@ let neutral_mcode (_,_,info,mcodekind,pos,_) =
   let offset = info.Ast0.pos_info.Ast0.offset in
   match mcodekind with
     Ast0.MINUS(_) -> Token(Neutral,offset,mcodekind,[])
-  | Ast0.PLUS -> Token(Neutral,offset,mcodekind,[])
+  | Ast0.PLUS _ -> Token(Neutral,offset,mcodekind,[])
   | Ast0.CONTEXT(_) -> Token(Neutral,offset,mcodekind,[offset])
   | _ -> failwith "not possible"
 
@@ -228,8 +229,8 @@ let nc_mcode (_,_,info,mcodekind,pos,_) =
   (* distinguish from the offset of some real token *)
   let offset = (-1) * info.Ast0.pos_info.Ast0.offset in
   match mcodekind with
-    Ast0.MINUS(_) -> Token(AllMarked,offset,mcodekind,[])
-  | Ast0.PLUS -> Token(AllMarked,offset,mcodekind,[])
+    Ast0.MINUS(_) -> Token(AllMarked Ast.ONE,offset,mcodekind,[])
+  | Ast0.PLUS c -> Token(AllMarked c,offset,mcodekind,[])
   | Ast0.CONTEXT(_) ->
       (* Unlike the other mcode cases, we drop the offset from the context
 	 offsets.  This is because we don't know whether the term this is
@@ -247,9 +248,10 @@ let union_all l = List.fold_left Common.union_set [] l
 intermingled with plus code.  it is used in disj_cases *)
 let classify is_minus all_marked table code =
   let mkres builder k il tl bil btl l e =
-    (if k = AllMarked
-    then Ast0.set_mcodekind e (all_marked()) (* definitive *)
-    else
+    (match k with
+      AllMarked count ->
+	Ast0.set_mcodekind e (all_marked count) (* definitive *)
+    | _ ->
       let check_index il tl =
 	if List.for_all is_context tl
 	then
@@ -1003,7 +1005,7 @@ let context_neg minus plus =
 	      classify true
 		(function _ -> Ast0.MINUS(ref([],Ast0.default_token_info)))
 		minus_table m in
-	    let _ = classify false (function _ -> Ast0.PLUS) plus_table p in
+	    let _ = classify false (function c -> Ast0.PLUS c) plus_table p in
 	    traverse minus_table plus_table;
 	    (m,p)::loop(minus,plus)
 	  end

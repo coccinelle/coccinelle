@@ -95,7 +95,7 @@ type info = {
   (* this cocci_tag can be changed, which is how we can express some program
    * transformations by tagging the tokens involved in this transformation. 
    *)
-  cocci_tag: (Ast_cocci.mcodekind * metavars_binding) option ref;
+  cocci_tag: (Ast_cocci.mcodekind * metavars_binding list) option ref;
   (* set in comment_annotater_c.ml *)
   comments_tag: comments_around ref;
 
@@ -766,10 +766,10 @@ let emptyMetavarsBinding =
 
 let emptyAnnotCocci =
   (Ast_cocci.CONTEXT (Ast_cocci.NoPos,Ast_cocci.NOTHING),
-  emptyMetavarsBinding)
+  ([] : metavars_binding list))
 
 let emptyAnnot = 
-  (None: (Ast_cocci.mcodekind * metavars_binding) option)
+  (None: (Ast_cocci.mcodekind * metavars_binding list) option)
 
 (* compatibility mode *)
 let mcode_and_env_of_cocciref aref = 

@@ -13,9 +13,11 @@ let default_token_info =
 
 (* MIXED is like CONTEXT, since sometimes MIXED things have to revert to
 CONTEXT - see insert_plus.ml *)
+type count = ONE (* + *) | MANY (* ++ *)
+
 type mcodekind =
     MINUS       of (Ast.anything list list * token_info) ref
-  | PLUS
+  | PLUS        of Ast.count
   | CONTEXT     of (Ast.anything Ast.befaft * token_info * token_info) ref
   | MIXED       of (Ast.anything Ast.befaft * token_info * token_info) ref
 

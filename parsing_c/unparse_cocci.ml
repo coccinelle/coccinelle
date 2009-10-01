@@ -34,7 +34,7 @@ type pos = Before | After | InPlace
 
 let unknown = -1
 
-let rec pp_list_list_any
+let rec do_all
     (env, pr, pr_celem, pr_cspace, pr_space, pr_arity, pr_barrier,
      indent, unindent)
     generating xxs before =
@@ -98,9 +98,9 @@ and print_anything_list = function
 
 let print_around printer term = function
     Ast.NOTHING -> printer term
-  | Ast.BEFORE(bef) -> print_anything bef; printer term
-  | Ast.AFTER(aft) -> printer term; print_anything aft
-  | Ast.BEFOREAFTER(bef,aft) ->
+  | Ast.BEFORE(bef,_) -> print_anything bef; printer term
+  | Ast.AFTER(aft,_) -> printer term; print_anything aft
+  | Ast.BEFOREAFTER(bef,aft,_) ->
       print_anything bef; printer term; print_anything aft in
 
 let print_string_befaft fn fn1 x info =
@@ -163,10 +163,14 @@ let mcode fn (s,info,mc,pos) =
   | (true, Ast.CONTEXT(_,plus_streams)) ->
       let fn s = force_newline(); fn s line lcol; print_pos pos in
       print_around fn s plus_streams
-  | (true,Ast.PLUS) ->
+  | (true,Ast.PLUS Ast.ONE) ->
       let fn s =
 	force_newline(); print_text "+ "; fn s line lcol; print_pos pos in
       print_string_befaft fn (function _ -> print_text "+ ") s info
+  | (true,Ast.PLUS Ast.MANY) ->
+      let fn s =
+ 	force_newline(); print_text "++ "; fn s line lcol; print_pos pos in
+      print_string_befaft fn (function _ -> print_text "++ ") s info
 in
 
 
@@ -1049,3 +1053,12 @@ in
       (* print a newline at the end, if needed *)
       newline_after()
 
+let rec pp_list_list_any (envs, pr, pr_celem, pr_cspace, pr_space, pr_arity,
+			  pr_barrier, indent, unindent)
+    generating xxs before =
+  List.iter
+    (function env ->
+      do_all (env, pr, pr_celem, pr_cspace, pr_space, pr_arity, pr_barrier,
+	      indent, unindent)
+	generating xxs before)
+    envs

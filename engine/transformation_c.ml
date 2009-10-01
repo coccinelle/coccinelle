@@ -157,7 +157,7 @@ module XTRANS = struct
   (* ------------------------------------------------------------------------*)
    let check_pos info mck pos = 
      match mck with
-     | Ast_cocci.PLUS -> raise Impossible
+     | Ast_cocci.PLUS _ -> raise Impossible
      | Ast_cocci.CONTEXT (Ast_cocci.FixPos (i1,i2),_)
      | Ast_cocci.MINUS   (Ast_cocci.FixPos (i1,i2),_,_,_) -> 
          pos <= i2 && pos >= i1
@@ -178,7 +178,7 @@ module XTRANS = struct
   let tag_with_mck mck ib = fun tin -> 
 
     let cocciinforef = ib.Ast_c.cocci_tag in
-    let (oldmcode, oldenv) = Ast_c.mcode_and_env_of_cocciref cocciinforef in
+    let (oldmcode, oldenvs) = Ast_c.mcode_and_env_of_cocciref cocciinforef in
 
     let mck =
       (* coccionly: 
@@ -195,29 +195,44 @@ module XTRANS = struct
     | _ -> ()
     );
 
-    match (oldmcode,mck) with
-    | (Ast_cocci.CONTEXT(_,Ast_cocci.NOTHING),  _)
-    | (_,   Ast_cocci.CONTEXT(_,Ast_cocci.NOTHING)) 
-      ->
+    let many_count = function
+	Ast_cocci.BEFORE(_,Ast_cocci.MANY) | Ast_cocci.AFTER(_,Ast_cocci.MANY)
+      |	 Ast_cocci.BEFOREAFTER(_,_,Ast_cocci.MANY) -> true
+      |	_ -> false in
+
+    (match (oldmcode,mck) with
+    | (Ast_cocci.CONTEXT(_,Ast_cocci.NOTHING),      _) ->
+	(* nothing there, so take the new stuff *)
 	let update_inst inst = function
 	    Ast_cocci.MINUS (pos,_,adj,any_xxs) ->
 	      Ast_cocci.MINUS (pos,inst,adj,any_xxs)
 	  | mck -> mck in
-        cocciinforef := Some (update_inst tin.extra.index mck, tin.binding);
-        ib
-
+        cocciinforef := Some (update_inst tin.extra.index mck, [tin.binding])
+    | (_,   Ast_cocci.CONTEXT(_,Ast_cocci.NOTHING)) ->
+	(* can this case occur? stay with the old stuff *)
+	()
     | (Ast_cocci.MINUS(old_pos,old_inst,old_adj,[]),
        Ast_cocci.MINUS(new_pos,new_inst,new_adj,[]))
-	when old_pos = new_pos && (oldenv =*= tin.binding or !Flag.sgrep_mode2)
+	when old_pos = new_pos &&
+	  (List.mem tin.binding oldenvs or !Flag.sgrep_mode2)
 	    (* no way to combine adjacency information, just drop one *)
       ->
         cocciinforef := Some
 	  (Ast_cocci.MINUS
 	     (old_pos,Common.union_set old_inst new_inst,old_adj,[]),
-	   tin.binding);
+	   [tin.binding]);
         (if !Flag_matcher.show_misc
-        then pr2 "already tagged but only removed, so safe");
-	ib
+        then pr2 "already tagged but only removed, so safe")
+
+    | (Ast_cocci.CONTEXT(old_pos,old_modif),
+       Ast_cocci.CONTEXT(new_pos,new_modif))
+	when old_pos = new_pos &&
+	  old_modif = new_modif && many_count old_modif ->
+	    (* iteration only allowed on context; no way to replace something
+	       more than once; now no need for iterable; just check a flag *)
+
+          cocciinforef :=
+	    Some(Ast_cocci.CONTEXT(old_pos,old_modif),tin.binding::oldenvs)
 
     | _ -> 
           (* coccionly: 
@@ -234,11 +249,12 @@ module XTRANS = struct
              *)
 	       let pm str mcode env =
 		 Printf.sprintf
-		   "%s modification:\n%s\nAccording to environment:\n%s\n"
+		   "%s modification:\n%s\nAccording to environment %d:\n%s\n"
 		   str
 		   (Common.format_to_string
 		      (function _ ->
 			Pretty_print_cocci.print_mcodekind mcode))
+		   (List.length env)
 		   (String.concat "\n"
 		      (List.map
 			 (function ((r,vr),vl) ->
@@ -249,8 +265,9 @@ module XTRANS = struct
 			 env)) in
 	       flush stdout; flush stderr;
 	       Common.pr2
-		 ("\n"^ (pm "previous" oldmcode oldenv) ^ "\n" ^
-		  (pm "current" mck tin.binding));
+		 ("\n"^ (String.concat "\n"
+			   (List.map (pm "previous" oldmcode) oldenvs)) ^ "\n"
+		  ^ (pm "current" mck tin.binding));
                failwith
 	         (match Ast_c.pinfo_of_info ib with
 		   Ast_c.FakeTok _ ->
@@ -262,7 +279,8 @@ module XTRANS = struct
 		      tin.extra.current_rule_name
 	              (Common.error_message (Ast_c.file_of_info ib)
 			 (Ast_c.str_of_info ib, Ast_c.opos_of_info ib)))
-            end
+            end);
+    ib
 
   let tokenf ia ib = fun tin -> 
     let (_,i,mck,_) = ia in
@@ -314,39 +332,39 @@ module XTRANS = struct
         (match any_befaft with
         | Ast_cocci.NOTHING -> expr
             
-        | Ast_cocci.BEFORE xxs ->
+        | Ast_cocci.BEFORE (xxs,c) -> 
             distributef (
               (fun ib -> tag_with_mck 
-                (Ast_cocci.CONTEXT (pos,Ast_cocci.BEFORE xxs)) ib tin),
+                (Ast_cocci.CONTEXT (pos,Ast_cocci.BEFORE (xxs,c))) ib tin),
               (fun x -> x), 
               (fun x -> x), 
               (fun ib -> tag_with_mck 
-                (Ast_cocci.CONTEXT (pos,Ast_cocci.BEFORE xxs)) ib tin)
+                (Ast_cocci.CONTEXT (pos,Ast_cocci.BEFORE (xxs,c))) ib tin)
             ) expr
-        | Ast_cocci.AFTER xxs ->
+        | Ast_cocci.AFTER (xxs,c) -> 
             distributef (
               (fun x -> x), 
               (fun x -> x), 
               (fun ib -> tag_with_mck 
-                (Ast_cocci.CONTEXT (pos,Ast_cocci.AFTER xxs)) ib tin),
+                (Ast_cocci.CONTEXT (pos,Ast_cocci.AFTER (xxs,c))) ib tin),
               (fun ib -> tag_with_mck 
-                (Ast_cocci.CONTEXT (pos,Ast_cocci.AFTER xxs)) ib tin)
+                (Ast_cocci.CONTEXT (pos,Ast_cocci.AFTER (xxs,c))) ib tin)
             ) expr
 
-        | Ast_cocci.BEFOREAFTER (xxs, yys) ->
+        | Ast_cocci.BEFOREAFTER (xxs, yys, c) -> 
             distributef (
               (fun ib -> tag_with_mck 
-                (Ast_cocci.CONTEXT (pos,Ast_cocci.BEFORE xxs)) ib tin),
+                (Ast_cocci.CONTEXT (pos,Ast_cocci.BEFORE (xxs,c))) ib tin),
               (fun x -> x), 
               (fun ib -> tag_with_mck 
-                (Ast_cocci.CONTEXT (pos,Ast_cocci.AFTER yys)) ib tin),
+                (Ast_cocci.CONTEXT (pos,Ast_cocci.AFTER (yys,c))) ib tin),
               (fun ib -> tag_with_mck 
-                (Ast_cocci.CONTEXT (pos,Ast_cocci.BEFOREAFTER (xxs,yys)))
+                (Ast_cocci.CONTEXT (pos,Ast_cocci.BEFOREAFTER (xxs,yys,c)))
                 ib tin)
             ) expr
 
         )
-    | Ast_cocci.PLUS -> raise Impossible
+    | Ast_cocci.PLUS _ -> raise Impossible
 
 
   (* use new strategy, collect ii, sort, recollect and tag *)
@@ -408,7 +426,7 @@ module XTRANS = struct
 
    let get_pos mck = 
      match mck with
-     | Ast_cocci.PLUS -> raise Impossible
+     | Ast_cocci.PLUS _ -> raise Impossible
      | Ast_cocci.CONTEXT (Ast_cocci.FixPos (i1,i2),_)
      | Ast_cocci.MINUS   (Ast_cocci.FixPos (i1,i2),_,_,_) -> 
          Ast_cocci.FixPos (i1,i2)

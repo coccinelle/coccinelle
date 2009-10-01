@@ -445,20 +445,20 @@ let collect_plus_nodes root =
 	      Ast0.offset = first.Ast0.offset} in
 	  let new_info = {adjust_info with Ast0.pos_info = new_pos_info} in
 	  let string = List.map (function (s,_) -> s) strings_before in
-	  [(new_info, Ast.Pragma (string))] in
+	  [(new_info,Ast.ONE(*?*),Ast.Pragma (string))] in
     let bef = extract info.Ast0.strings_before in
     let aft = extract info.Ast0.strings_after in
     (bef,aft) in
 
   let mcode fn (term,_,info,mcodekind,_,_) =
     match mcodekind with
-      Ast0.PLUS -> [(info,fn term)]
+      Ast0.PLUS c -> [(info,c,fn term)]
     | Ast0.CONTEXT _ -> let (bef,aft) = extract_strings info in bef@aft
     | _ -> [] in
 
   let imcode fn (term,_,info,mcodekind,_,_) =
     match mcodekind with
-      Ast0.PLUS -> [(info,fn term (Ast0toast.convert_info info))]
+      Ast0.PLUS c -> [(info,c,fn term (Ast0toast.convert_info info))]
     | Ast0.CONTEXT _ -> let (bef,aft) = extract_strings info in bef@aft
     | _ -> [] in
 
@@ -467,7 +467,7 @@ let collect_plus_nodes root =
   let do_nothing fn r k e =
     match Ast0.get_mcodekind e with
       (Ast0.CONTEXT(_)) when not(Ast0.get_index e = root_index) -> []
-    | Ast0.PLUS -> [(Ast0.get_info e,fn e)]
+    | Ast0.PLUS c -> [(Ast0.get_info e,c,fn e)]
     | _ -> k e in
 
   (* case for everything that is just a wrapper for a simpler thing *)
@@ -525,7 +525,7 @@ let collect_plus_nodes root =
     stmt (do_nothing mk_case_line) toplevel
 
 let call_collect_plus context_nodes :
-    (int * (Ast0.info * Ast.anything) list) list =
+    (int * (Ast0.info * Ast.count * Ast.anything) list) list =
   List.map
     (function e ->
       match e with
@@ -602,35 +602,39 @@ let redo info start finish =
   {info with Ast0.pos_info = new_pos_info}
 
 let rec find_neighbors (index,l) :
-    int * (Ast0.info * (Ast.anything list list)) list =
+    int * (Ast0.info * Ast.count * (Ast.anything list list)) list =
   let rec loop = function
       [] -> []
-    | (i,x)::rest ->
+    | (i,c,x)::rest ->
 	(match loop rest with
-	  ((i1,(x1::rest_inner))::rest_middle)::rest_outer ->
+	  ((i1,c1,(x1::rest_inner))::rest_middle)::rest_outer ->
 	    let finish1 = logend i in
 	    let start2 = logstart i1 in
 	    if finish1 = start2
 	    then
-	      ((redo i (logstart i) (logend i1),(x::x1::rest_inner))
+	      ((if not (c = c1) then failwith "inconsistent + code");
+	      ((redo i (logstart i) (logend i1),c,(x::x1::rest_inner))
 	       ::rest_middle)
-	      ::rest_outer
+	      ::rest_outer)
 	    else if finish1 + 1 = start2
-	    then ((i,[x])::(i1,(x1::rest_inner))::rest_middle)::rest_outer
-	    else [(i,[x])]::((i1,(x1::rest_inner))::rest_middle)::rest_outer
-	| _ -> [[(i,[x])]]) (* rest must be [] *) in
+	    then ((i,c,[x])::(i1,c1,(x1::rest_inner))::rest_middle)::rest_outer
+	    else
+	      [(i,c,[x])]::((i1,c1,(x1::rest_inner))::rest_middle)::rest_outer
+	| _ -> [[(i,c,[x])]]) (* rest must be [] *) in
   let res =
     List.map
       (function l ->
-	let (start_info,_) = List.hd l in
-	let (end_info,_) = List.hd (List.rev l) in
+	let (start_info,start_count,_) = List.hd l in
+	let (end_info,end_count,_) = List.hd (List.rev l) in
+	(if not (start_count = end_count) then failwith "inconsistent + code");
 	(redo start_info (logstart start_info) (logend end_info),
-	 List.map (function (_,x) -> x) l))
+	 start_count,
+	 List.map (function (_,_,x) -> x) l))
       (loop l) in
   (index,res)
 
 let process_plus plus :
-    (int * (Ast0.info * Ast.anything list list) list) list =
+    (int * (Ast0.info * Ast.count * Ast.anything list list) list) list =
   List.concat
     (List.map
        (function x ->
@@ -747,48 +751,60 @@ let init thing info =
      Ast0.left_offset = info.Ast0.pos_info.Ast0.offset;
      Ast0.right_offset = info.Ast0.pos_info.Ast0.offset})
 
-let attachbefore (infop,p) = function
+let attachbefore (infop,c,p) = function
     Ast0.MINUS(replacements) ->
-      (match !replacements with
-	([],ti) -> replacements := init p infop
-      |	(repl,ti) -> replacements := insert p infop repl ti)
+      let (repl,ti) = !replacements in
+      let (bef,ti) =
+ 	match repl with
+ 	  [] -> init p infop
+ 	| repl -> insert p infop repl ti in
+      replacements := (bef,ti)
   | Ast0.CONTEXT(neighbors) ->
       let (repl,ti1,ti2) = !neighbors in
       (match repl with
-	Ast.BEFORE(bef) ->
+	Ast.BEFORE(bef,it) ->
 	  let (bef,ti1) = insert p infop bef ti1 in
-	  neighbors := (Ast.BEFORE(bef),ti1,ti2)
-      |	Ast.AFTER(aft) ->
+	  let it = Ast.lub_count it c in
+	  neighbors := (Ast.BEFORE(bef,it),ti1,ti2)
+      |	Ast.AFTER(aft,it) ->
 	  let (bef,ti1) = init p infop in
-	  neighbors := (Ast.BEFOREAFTER(bef,aft),ti1,ti2)
-      |	Ast.BEFOREAFTER(bef,aft) ->
+	  let it = Ast.lub_count it c in
+	  neighbors := (Ast.BEFOREAFTER(bef,aft,it),ti1,ti2)
+      |	Ast.BEFOREAFTER(bef,aft,it) ->
 	  let (bef,ti1) = insert p infop bef ti1 in
-	  neighbors := (Ast.BEFOREAFTER(bef,aft),ti1,ti2)
+	  let it = Ast.lub_count it c in
+	  neighbors := (Ast.BEFOREAFTER(bef,aft,it),ti1,ti2)
       |	Ast.NOTHING ->
 	  let (bef,ti1) = init p infop in
-	  neighbors := (Ast.BEFORE(bef),ti1,ti2))
+	  neighbors := (Ast.BEFORE(bef,c),ti1,ti2))
   | _ -> failwith "not possible for attachbefore"
 
-let attachafter (infop,p) = function
+let attachafter (infop,c,p) = function
     Ast0.MINUS(replacements) ->
-      (match !replacements with
-	([],ti) -> replacements := init p infop
-      |	(repl,ti) -> replacements := insert p infop repl ti)
+       let (repl,ti) = !replacements in
+       let (aft,ti) =
+ 	match repl with
+ 	  [] -> init p infop
+ 	| repl -> insert p infop repl ti in
+       replacements := (aft,ti)
   | Ast0.CONTEXT(neighbors) ->
       let (repl,ti1,ti2) = !neighbors in
       (match repl with
-	Ast.BEFORE(bef) ->
+	Ast.BEFORE(bef,it) ->
 	  let (aft,ti2) = init p infop in
-	  neighbors := (Ast.BEFOREAFTER(bef,aft),ti1,ti2)
-      |	Ast.AFTER(aft) ->
+	  let it = Ast.lub_count it c in
+	  neighbors := (Ast.BEFOREAFTER(bef,aft,it),ti1,ti2)
+      |	Ast.AFTER(aft,it) ->
 	  let (aft,ti2) = insert p infop aft ti2 in
-	  neighbors := (Ast.AFTER(aft),ti1,ti2)
-      |	Ast.BEFOREAFTER(bef,aft) ->
+	  let it = Ast.lub_count it c in
+	  neighbors := (Ast.AFTER(aft,it),ti1,ti2)
+      |	Ast.BEFOREAFTER(bef,aft,it) ->
 	  let (aft,ti2) = insert p infop aft ti2 in
-	  neighbors := (Ast.BEFOREAFTER(bef,aft),ti1,ti2)
+	  let it = Ast.lub_count it c in
+	  neighbors := (Ast.BEFOREAFTER(bef,aft,it),ti1,ti2)
       |	Ast.NOTHING ->
 	  let (aft,ti2) = init p infop in
-	  neighbors := (Ast.AFTER(aft),ti1,ti2))
+	  neighbors := (Ast.AFTER(aft,c),ti1,ti2))
   | _ -> failwith "not possible for attachbefore"
 
 let attach_all_before ps m =
@@ -800,7 +816,7 @@ let attach_all_after ps m =
 let split_at_end info ps =
   let split_point =  info.Ast0.pos_info.Ast0.logical_end in
   List.partition
-    (function (info,_) -> info.Ast0.pos_info.Ast0.logical_end < split_point)
+    (function (info,_,_) -> info.Ast0.pos_info.Ast0.logical_end < split_point)
     ps
 
 let allminus = function
@@ -809,7 +825,7 @@ let allminus = function
 
 let rec before_m1 ((f1,infom1,m1) as x1) ((f2,infom2,m2) as x2) rest = function
     [] -> ()
-  | (((infop,_) as p) :: ps) as all ->
+  | (((infop,_,_) as p) :: ps) as all ->
       if less_than_start infop infom1 or
 	(allminus m1 && less_than_end infop infom1) (* account for trees *)
       then
@@ -823,7 +839,7 @@ let rec before_m1 ((f1,infom1,m1) as x1) ((f2,infom2,m2) as x2) rest = function
 
 and after_m1 ((f1,infom1,m1) as x1) ((f2,infom2,m2) as x2) rest = function
     [] -> ()
-  | (((infop,pcode) as p) :: ps) as all ->
+  | (((infop,count,pcode) as p) :: ps) as all ->
       (* if the following is false, then some + code is stuck in the middle
 	 of some context code (m1).  could drop down to the token level.
 	 this might require adjustments in ast0toast as well, when + code on
@@ -878,10 +894,10 @@ and is_minus = function
   | _ -> false
 
 and before_m2 ((f2,infom2,m2) as x2) rest
-    (p : (Ast0.info * Ast.anything list list) list) =
+    (p : (Ast0.info * Ast.count * Ast.anything list list) list) =
   match (rest,p) with
     (_,[]) -> ()
-  | ([],((infop,_)::_)) ->
+  | ([],((infop,_,_)::_)) ->
       let (bef_m2,aft_m2) = split_at_end infom2 p in (* bef_m2 isn't empty *)
       if good_start infom2
       then (attach_all_before bef_m2 m2; after_m2 x2 rest aft_m2)
@@ -892,10 +908,10 @@ and before_m2 ((f2,infom2,m2) as x2) rest
   | (m::ms,_) -> before_m1 x2 m ms p
 
 and after_m2 ((f2,infom2,m2) as x2) rest
-    (p : (Ast0.info * Ast.anything list list) list) =
+    (p : (Ast0.info * Ast.count * Ast.anything list list) list) =
   match (rest,p) with
     (_,[]) -> ()
-  | ([],((infop,_)::_)) ->
+  | ([],((infop,_,_)::_)) ->
       if good_end infom2
       then attach_all_after p m2
       else
@@ -905,7 +921,8 @@ and after_m2 ((f2,infom2,m2) as x2) rest
   | (m::ms,_) -> after_m1 x2 m ms p
 
 let merge_one : (minus_join_point * Ast0.info * 'a) list *
-    (Ast0.info * Ast.anything list list) list -> unit = function (m,p) ->
+    (Ast0.info * Ast.count * Ast.anything list list) list -> unit =
+      function (m,p) ->
   (*
   Printf.printf "minus code\n";
   List.iter

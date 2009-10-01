@@ -63,9 +63,11 @@ let ident context old_metas table minus i =
   match Ast0.unwrap i with
       Ast0.Id((name,_,info,_,_,_) : string Ast0.mcode) ->
 	let rl = info.Ast0.pos_info.Ast0.line_start in
+	let is_plus i =
+ 	  match Ast0.get_mcodekind i with Ast0.PLUS _ -> true | _ -> false in
 	let err =
 	  if List.exists (function x -> x = name) old_metas
-	    && (minus || Ast0.get_mcodekind i = Ast0.PLUS)
+	    && (minus || is_plus i)
 	  then
 	    begin
 	      warning

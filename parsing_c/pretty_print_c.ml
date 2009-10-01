@@ -1271,8 +1271,8 @@ and pp_init (init, iinit) =
       
       
     | (F.TopNode|F.EndNode|
-      F.ErrorExit|F.Exit|F.Enter|
-      F.FallThroughNode|F.AfterNode|F.FalseNode|F.TrueNode|F.InLoopNode|
+      F.ErrorExit|F.Exit|F.Enter|F.LoopFallThroughNode|F.FallThroughNode|
+      F.AfterNode|F.FalseNode|F.TrueNode|F.InLoopNode|
       F.Fake) ->
         pr2 "YYY" in
 

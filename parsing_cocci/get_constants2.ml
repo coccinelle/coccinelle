@@ -386,9 +386,9 @@ let get_plus_constants =
 	[] l in
     match mcodekind with
       Ast.MINUS(_,_,_,anythings) -> recurse anythings
-    | Ast.CONTEXT(_,Ast.BEFORE(a)) -> recurse a
-    | Ast.CONTEXT(_,Ast.AFTER(a)) -> recurse a
-    | Ast.CONTEXT(_,Ast.BEFOREAFTER(a1,a2)) ->
+    | Ast.CONTEXT(_,Ast.BEFORE(a,_)) -> recurse a
+    | Ast.CONTEXT(_,Ast.AFTER(a,_)) -> recurse a
+    | Ast.CONTEXT(_,Ast.BEFOREAFTER(a1,a2,_)) ->
 	Common.union_set (recurse a1) (recurse a2)
     | _ -> [] in
 

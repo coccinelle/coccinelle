@@ -1031,7 +1031,7 @@ let merge_env new_e old_e =
 
 let apply_python_rule r cache newes e rules_that_have_matched
     rules_that_have_ever_matched virtual_methods =
-  Common.profile_code "python" (fun () -> 
+  Common.profile_code "python" (fun () ->
   show_or_not_scr_rule_name r.scr_ruleid;
   if not(interpret_dependencies rules_that_have_matched
 	   !rules_that_have_ever_matched virtual_methods r.scr_dependencies)
@@ -1453,7 +1453,8 @@ let initial_final_bigloop2 ty rebuild r =
     "python" ->
       (* include_match makes no sense in an initial or final rule, although
 	 er have no way to prevent it *)
-      let _ = apply_python_rule r [] [] [] [] (ref []) in ()
+      let _ = apply_python_rule r [] [] [] [] (ref []) [] in
+      ()
   | _ ->
       Printf.printf "Unknown language for initial/final script: %s\n"
 	r.language

@@ -10,7 +10,7 @@ val default_token_info : token_info
 
 type mcodekind =
     MINUS       of (Ast_cocci.anything list list * token_info) ref
-  | PLUS
+  | PLUS        of Ast_cocci.count
   | CONTEXT     of (Ast_cocci.anything Ast_cocci.befaft *
 		      token_info * token_info) ref
   | MIXED       of (Ast_cocci.anything Ast_cocci.befaft *
@@ -366,8 +366,8 @@ and parsed_rule =
   | ScriptRule of
       string * Ast_cocci.dependency * (string * Ast_cocci.meta_name) list *
 	string
-  | InitialScriptRule of string * string
-  | FinalScriptRule of string * string
+  | InitialScriptRule of string (*language*) * string (*code*)
+  | FinalScriptRule   of string (*language*) * string (*code*)
 
 (* --------------------------------------------------------------------- *)
 

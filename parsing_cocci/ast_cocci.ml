@@ -30,9 +30,9 @@ type 'a wrap =
       iso_info : (string*anything) list }
 
 and 'a befaft =
-    BEFORE      of 'a list list
-  | AFTER       of 'a list list
-  | BEFOREAFTER of 'a list list * 'a list list
+    BEFORE      of 'a list list * count
+  | AFTER       of 'a list list * count
+  | BEFOREAFTER of 'a list list * 'a list list * count
   | NOTHING
 
 and 'a mcode = 'a * info * mcodekind * meta_pos (* pos variable *)
@@ -41,10 +41,19 @@ and 'a mcode = 'a * info * mcodekind * meta_pos (* pos variable *)
     (* int list is the match instances, which are only meaningful in annotated
        C code *)
     (* int is the adjacency index, which is incremented on context dots *)
+(* iteration is only allowed on contect code, the intuition vaguely being
+that there is no way to replace something more than once.  Actually,
+allowing iterated additions on minus code would cause problems with some
+heuristics for adding braces, because one couldn't identify simple
+replacements with certainty.  Anyway, iteration doesn't seem to be needed
+on - code for the moment.  Although it may be confusing that there can be
+iterated addition of code before context code where the context code is
+immediately followed by removed code. *)
 and mcodekind =
     MINUS       of pos * int list * int * anything list list
   | CONTEXT     of pos * anything befaft
-  | PLUS
+  | PLUS        of count
+and count = ONE (* + *) | MANY (* ++ *)
 and fixpos =
     Real of int (* charpos *) | Virt of int * int (* charpos + offset *)
 and pos = NoPos | DontCarePos | FixPos of (fixpos * fixpos)
@@ -572,6 +581,13 @@ and exists = Exists | Forall | Undetermined
 (* --------------------------------------------------------------------- *)
 
 let mkToken x = Token (x,None)
+
+(* --------------------------------------------------------------------- *)
+
+let lub_count i1 i2 =
+  match (i1,i2) with
+    (MANY,MANY) -> MANY
+  | _ -> ONE
 
 (* --------------------------------------------------------------------- *)
 

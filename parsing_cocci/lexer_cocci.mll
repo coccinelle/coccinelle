@@ -27,7 +27,7 @@ let get_current_line_type lexbuf =
   let preceeding_spaces =
     if !line_start < 0 then 0 else lex_start - !line_start in
   (*line_start := -1;*)
-  prev_plus := (c = D.PLUS);
+  prev_plus := (c = D.PLUS) or (c = D.PLUSPLUS);
   (c,l,ll,lex_start,preceeding_spaces,[],[],Ast0.NoMetaPos)
 let current_line_started = ref false
 let col_zero = ref true
@@ -65,6 +65,8 @@ let add_current_line_type x =
       current_line_type := (D.OPTMINUS,ln,lln)
   | (D.PLUS,(D.CONTEXT,ln,lln))   ->
       current_line_type := (D.PLUS,ln,lln)
+  | (D.PLUSPLUS,(D.CONTEXT,ln,lln))   ->
+      current_line_type := (D.PLUSPLUS,ln,lln)
   | (D.UNIQUE,(D.CONTEXT,ln,lln)) ->
       current_line_type := (D.UNIQUE,ln,lln)
   | (D.OPT,(D.CONTEXT,ln,lln))    ->
@@ -73,7 +75,7 @@ let add_current_line_type x =
 
 let check_minus_context_linetype s =
   match !current_line_type with
-    (D.PLUS,_,_) -> lexerr "invalid in a + context: " s
+    (D.PLUS,_,_) | (D.PLUSPLUS,_,_) -> lexerr "invalid in a + context: " s
   | _ -> ()
 
 let check_context_linetype s =
@@ -83,17 +85,18 @@ let check_context_linetype s =
 
 let check_plus_linetype s =
   match !current_line_type with
-    (D.PLUS,_,_) -> ()
+    (D.PLUS,_,_) | (D.PLUSPLUS,_,_) -> ()
   | _ -> lexerr "invalid in a non + context: " s
 
 let check_arity_context_linetype s =
   match !current_line_type with
-    (D.CONTEXT,_,_) | (D.PLUS,_,_) | (D.UNIQUE,_,_) | (D.OPT,_,_) -> ()
+    (D.CONTEXT,_,_) | (D.PLUS,_,_) | (D.PLUSPLUS,_,_)
+  | (D.UNIQUE,_,_) | (D.OPT,_,_) -> ()
   | _ -> lexerr "invalid in a nonempty context: " s
 
 let process_include start finish str =
   (match !current_line_type with
-    (D.PLUS,_,_) ->
+    (D.PLUS,_,_) | (D.PLUSPLUS,_,_) ->
       (try
 	let _ = Str.search_forward (Str.regexp "\\.\\.\\.") str start in
 	lexerr "... not allowed in + include" ""
@@ -533,7 +536,12 @@ rule token = parse
 		     TDmOp (Ast.Mod,get_current_line_type lexbuf) }
   | '~'            { start_line true;  TTilde (get_current_line_type lexbuf) }
 
-  | "++"           { start_line true;  TInc (get_current_line_type lexbuf) }
+  | "++"           { pass_zero();
+ 		     if !current_line_started
+ 		     then
+ 		       (start_line true; TInc (get_current_line_type lexbuf))
+ 		     else (patch_or_match PATCH;
+ 			   add_current_line_type D.PLUSPLUS; token lexbuf) }
   | "--"           { start_line true;  TDec (get_current_line_type lexbuf) }
 
   | "="            { start_line true; TEq (get_current_line_type lexbuf) }

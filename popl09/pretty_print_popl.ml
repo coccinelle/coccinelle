@@ -12,11 +12,11 @@ let end_block str =
 
 let print_around printer term = function
     Ast.NOTHING -> printer term
-  | Ast.BEFORE(bef) ->
+  | Ast.BEFORE(bef,_) ->
       Pretty_print_cocci.print_anything "<<< " bef; printer term
-  | Ast.AFTER(aft) ->
+  | Ast.AFTER(aft,_) ->
       printer term; Pretty_print_cocci.print_anything ">>> " aft
-  | Ast.BEFOREAFTER(bef,aft) ->
+  | Ast.BEFOREAFTER(bef,aft,_) ->
       Pretty_print_cocci.print_anything "<<< " bef; printer term;
       Pretty_print_cocci.print_anything ">>> " aft
 
@@ -26,7 +26,7 @@ let mcode fn = function
       Pretty_print_cocci.print_anything ">>> " plus_stream
   | (x, _, Ast.CONTEXT(_,plus_streams), pos) -> 
 	print_around fn x plus_streams
-  | (x, info, Ast.PLUS, pos) -> fn x
+  | (x, info, Ast.PLUS _, pos) -> fn x
 
 (* --------------------------------------------------------------------- *)
 

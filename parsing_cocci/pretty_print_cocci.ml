@@ -52,9 +52,9 @@ and print_anything_list = function
 
 let print_around printer term = function
     Ast.NOTHING -> printer term
-  | Ast.BEFORE(bef) -> print_anything "<<< " bef; printer term
-  | Ast.AFTER(aft) -> printer term; print_anything ">>> " aft
-  | Ast.BEFOREAFTER(bef,aft) ->
+  | Ast.BEFORE(bef,_) -> print_anything "<<< " bef; printer term
+  | Ast.AFTER(aft,_) -> printer term; print_anything ">>> " aft
+  | Ast.BEFOREAFTER(bef,aft,_) ->
       print_anything "<<< " bef; printer term; print_anything ">>> " aft
 
 let print_string_befaft fn x info =
@@ -85,7 +85,7 @@ let mcode fn = function
 	let fn x = fn x; print_pos pos in
 	print_around fn x plus_streams
       else (fn x; print_pos pos)
-  | (x, info, Ast.PLUS, pos) ->
+  | (x, info, Ast.PLUS _, pos) ->
       let fn x = fn x; print_pos pos in
       print_string_befaft fn x info
 
@@ -95,7 +95,7 @@ let print_mcodekind = function
       print_anything ">>> " plus_stream
   | Ast.CONTEXT(_,plus_streams) ->
       print_around (function _ -> print_string "CONTEXT") () plus_streams
-  | Ast.PLUS -> print_string "PLUS"
+  | Ast.PLUS _ -> print_string "PLUS"
 
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)

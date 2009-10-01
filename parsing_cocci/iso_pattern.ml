@@ -22,11 +22,12 @@ type isomorphism =
 
 let strip_info =
   let mcode (term,_,_,_,_,_) =
-    (term,Ast0.NONE,Ast0.default_info(),Ast0.PLUS,ref Ast0.NoMetaPos,-1) in
+    (term,Ast0.NONE,Ast0.default_info(),Ast0.PLUS Ast.ONE,
+     ref Ast0.NoMetaPos,-1) in
   let donothing r k e =
     let x = k e in
     {(Ast0.wrap (Ast0.unwrap x)) with
-      Ast0.mcodekind = ref Ast0.PLUS;
+      Ast0.mcodekind = ref (Ast0.PLUS Ast.ONE);
       Ast0.true_if_test = x.Ast0.true_if_test} in
   V0.flat_rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
@@ -268,7 +269,7 @@ let rec is_pure_context s =
 	      (match Ast.unwrap s with
 		Ast.IfThen(_,_,_) -> false (* potentially dangerous *)
 	      | _ -> true)
-	  |	(_,_) -> false)
+	  | (_,_) -> false)
       | _ -> false))
 
 let is_minus e =
@@ -1200,7 +1201,7 @@ let make_minus =
 	    mcodekind := Ast0.MINUS(ref([],Ast0.default_token_info))
 	| _ -> failwith "make_minus: unexpected befaft")
     | Ast0.MINUS(_mc) -> () (* in the part copied from the src term *)
-    | Ast0.PLUS -> failwith "make_minus donothing: unexpected plus mcodekind"
+    | Ast0.PLUS _ -> failwith "make_minus donothing: unexpected plus mcodekind"
     | _ -> failwith "make_minus donothing: unexpected mcodekind" in
 
   let donothing r k e =
@@ -1310,10 +1311,10 @@ let rebuild_mcode start_line =
       Ast0.CONTEXT(mc) -> Ast0.CONTEXT(ref (!mc))
     | Ast0.MINUS(mc) ->   Ast0.MINUS(ref (!mc))
     | Ast0.MIXED(mc) ->   Ast0.MIXED(ref (!mc))
-    | Ast0.PLUS ->
+    | Ast0.PLUS count ->
 	(* this function is used elsewhere where we need to rebuild the
 	   indices, and so we allow PLUS code as well *)
-        Ast0.PLUS in
+        Ast0.PLUS count in
 
   let mcode (term,arity,info,mcodekind,pos,adj) =
     let info =
@@ -1825,33 +1826,38 @@ let merge_plus model_mcode e_mcode =
 	  let merged =
 	    match (mba,eba) with
 	      (x,Ast.NOTHING) | (Ast.NOTHING,x) -> x
-	    | (Ast.BEFORE(b1),Ast.BEFORE(b2)) -> Ast.BEFORE(b1@b2)
-	    | (Ast.BEFORE(b),Ast.AFTER(a)) -> Ast.BEFOREAFTER(b,a)
-	    | (Ast.BEFORE(b1),Ast.BEFOREAFTER(b2,a)) ->
-		Ast.BEFOREAFTER(b1@b2,a)
-	    | (Ast.AFTER(a),Ast.BEFORE(b)) -> Ast.BEFOREAFTER(b,a)
-	    | (Ast.AFTER(a1),Ast.AFTER(a2)) ->Ast.AFTER(a2@a1)
-	    | (Ast.AFTER(a1),Ast.BEFOREAFTER(b,a2)) -> Ast.BEFOREAFTER(b,a2@a1)
-	    | (Ast.BEFOREAFTER(b1,a),Ast.BEFORE(b2)) ->
-		Ast.BEFOREAFTER(b1@b2,a)
-	    | (Ast.BEFOREAFTER(b,a1),Ast.AFTER(a2)) ->
-		Ast.BEFOREAFTER(b,a2@a1)
-	    | (Ast.BEFOREAFTER(b1,a1),Ast.BEFOREAFTER(b2,a2)) ->
-		 Ast.BEFOREAFTER(b1@b2,a2@a1) in
+	    | (Ast.BEFORE(b1,it1),Ast.BEFORE(b2,it2)) ->
+		Ast.BEFORE(b1@b2,Ast.lub_count it1 it2)
+	    | (Ast.BEFORE(b,it1),Ast.AFTER(a,it2)) ->
+		Ast.BEFOREAFTER(b,a,Ast.lub_count it1 it2)
+	    | (Ast.BEFORE(b1,it1),Ast.BEFOREAFTER(b2,a,it2)) ->
+		Ast.BEFOREAFTER(b1@b2,a,Ast.lub_count it1 it2)
+	    | (Ast.AFTER(a,it1),Ast.BEFORE(b,it2)) ->
+		Ast.BEFOREAFTER(b,a,Ast.lub_count it1 it2)
+	    | (Ast.AFTER(a1,it1),Ast.AFTER(a2,it2)) ->
+		Ast.AFTER(a2@a1,Ast.lub_count it1 it2)
+	    | (Ast.AFTER(a1,it1),Ast.BEFOREAFTER(b,a2,it2)) ->
+		Ast.BEFOREAFTER(b,a2@a1,Ast.lub_count it1 it2)
+	    | (Ast.BEFOREAFTER(b1,a,it1),Ast.BEFORE(b2,it2)) ->
+		Ast.BEFOREAFTER(b1@b2,a,Ast.lub_count it1 it2)
+	    | (Ast.BEFOREAFTER(b,a1,it1),Ast.AFTER(a2,it2)) ->
+		Ast.BEFOREAFTER(b,a2@a1,Ast.lub_count it1 it2)
+	    | (Ast.BEFOREAFTER(b1,a1,it1),Ast.BEFOREAFTER(b2,a2,it2)) ->
+		 Ast.BEFOREAFTER(b1@b2,a2@a1,Ast.lub_count it1 it2) in
 	  emc := (merged,tb,ta)
       |	Ast0.MINUS(emc) ->
 	  let (anything_bef_aft,_,_) = !mc in
 	  let (anythings,t) = !emc in
 	  emc :=
 	    (match anything_bef_aft with
-	      Ast.BEFORE(b) -> (b@anythings,t)
-	    | Ast.AFTER(a) -> (anythings@a,t)
-	    | Ast.BEFOREAFTER(b,a) -> (b@anythings@a,t)
+	      Ast.BEFORE(b,_) -> (b@anythings,t)
+	    | Ast.AFTER(a,_) -> (anythings@a,t)
+	    | Ast.BEFOREAFTER(b,a,_) -> (b@anythings@a,t)
 	    | Ast.NOTHING -> (anythings,t))
       | Ast0.MIXED(_) -> failwith "how did this become mixed?"
       |	_ -> failwith "not possible 7")
   | Ast0.MIXED(_) -> failwith "not possible 8"
-  | Ast0.PLUS -> failwith "not possible 9"
+  | Ast0.PLUS _ -> failwith "not possible 9"
 
 let copy_plus printer minusify model e =
   if !Flag.sgrep_mode2
@@ -1873,7 +1879,7 @@ let copy_minus printer minusify model e =
       if !Flag.sgrep_mode2
       then e
       else failwith "not possible 8"
-  | Ast0.PLUS -> failwith "not possible 9"
+  | Ast0.PLUS _ -> failwith "not possible 9"
 
 let whencode_allowed prev_ecount prev_icount prev_dcount
     ecount icount dcount rest =

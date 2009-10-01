@@ -265,13 +265,13 @@ let cip_mcodekind r mck =
     Ast.MINUS(_,_,_,anythings) -> process_anything_list_list anythings
   | Ast.CONTEXT(_,befaft) ->
       (match befaft with
-	Ast.BEFORE(ll) -> process_anything_list_list ll
-      | Ast.AFTER(ll) -> process_anything_list_list ll
-      | Ast.BEFOREAFTER(llb,lla) ->
+	Ast.BEFORE(ll,_) -> process_anything_list_list ll
+      | Ast.AFTER(ll,_) -> process_anything_list_list ll
+      | Ast.BEFOREAFTER(llb,lla,_) ->
 	  (process_anything_list_list lla) @
 	  (process_anything_list_list llb)
       | Ast.NOTHING -> [])
-  | Ast.PLUS -> []
+  | Ast.PLUS _ -> []
 
 
 let collect_fresh_seed_env metavars l =

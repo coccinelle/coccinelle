@@ -8,7 +8,7 @@ type mvar = Ast_cocci.meta_name
 type predicate =
     InLoop | TrueBranch | FalseBranch
   | After (* pointer to the code after an if or while *)
-  | FallThrough
+  | FallThrough | LoopFallThrough
   | Return (* any exit from the current function *)
   | FunHeader | Top | Exit | ErrorExit | Goto
   | Paren of Ast_cocci.meta_name

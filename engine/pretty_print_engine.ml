@@ -66,6 +66,7 @@ let rec pp_predicate = function
   | FalseBranch -> pp "FalseBranch"
   | After -> pp "After"
   | FallThrough -> pp "FallThrough"
+  | LoopFallThrough -> pp "LoopFallThrough"
   | Return -> pp "Return"
   | FunHeader -> pp "FunHeader"
   | Top -> pp "Top"

@@ -19,7 +19,7 @@ let minus_checker name = let id = Ast0.unwrap_mcode name in [id]
 
 (* take only what is in the plus code *)
 let plus_checker (nm,_,_,mc,_,_) =
-  match mc with Ast0.PLUS -> [nm] | _ -> []
+  match mc with Ast0.PLUS _ -> [nm] | _ -> []
 
 let get_free checker t =
   let bind x y = x @ y in

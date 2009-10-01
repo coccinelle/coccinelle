@@ -296,7 +296,7 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
   match Ast_c.unwrap_st stmt with
 
   (*  coupling: the Switch case copy paste parts of the Compound case *)
-  | Ast_c.Compound statxs -> 
+  | Ast_c.Compound statxs ->
       (* flow_to_ast: *)
       let (i1, i2) = tuple_of_list2 ii in
 
@@ -331,14 +331,14 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
       in
 
       !g +> add_arc_opt (starti, newi);
-      let starti = Some newi in
+      let finishi = Some newi in
 
-      aux_statement_list starti (xi, newxi) statxs
+      aux_statement_list finishi (xi, newxi) statxs
 
       (* braces: *)
-      +> Common.fmap (fun starti -> 
+      +> Common.fmap (fun finishi -> 
             (* subtil: not always return a Some.
-             * Note that if starti is None, alors forcement ca veut dire
+             * Note that if finishi is None, alors forcement ca veut dire
              * qu'il y'a eu un return (ou goto), et donc forcement les 
              * braces auront au moins ete crée une fois, et donc flow_to_ast
              * marchera.
@@ -347,7 +347,12 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
              * il faut forcement au moins un return.
              *)
             let endi = !g#add_node endnode in
-            !g#add_arc ((starti, endi), Direct);
+	    if xi.compound_caller = Statement
+	    then
+	      (let afteri = !g +> add_node AfterNode lbl "[after]" in
+	      !g#add_arc ((newi, afteri), Direct);
+	      !g#add_arc ((afteri, endi), Direct));
+            !g#add_arc ((finishi, endi), Direct);
             endi 
            ) 
 
@@ -436,7 +441,7 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
     let iist2 = Ast_c.get_ii_st_take_care st2 in
     (match Ast_c.unwrap_st st2 with
     | Ast_c.ExprStatement (None) when null iist2 -> 
-      (* sometome can have ExprStatement None but it is a if-then-else,
+      (* sometime can have ExprStatement None but it is a if-then-else,
        * because something like   if() xx else ;
        * so must force to have [] in the ii associated with ExprStatement 
        *)
@@ -705,7 +710,7 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
       !g +> add_arc_opt (starti, newi);
       let newfakethen = !g +> add_node InLoopNode  lbl "[whiletrue]" in
       (* let newfakeelse = !g +> add_node FalseNode lbl "[endwhile]" in *)
-      let newafter = !g +> add_node FallThroughNode lbl "[whilefall]" in
+      let newafter = !g +> add_node LoopFallThroughNode lbl "[whilefall]" in
       let newfakeelse = 
         !g +> add_node (EndStatement (Some iifakeend)) lbl "[endwhile]" in
 
@@ -754,6 +759,10 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
       let newfakeelse = 
         !g +> add_node (EndStatement (Some iifakeend)) lbl "[enddowhile]" in
 
+      let afteri = !g +> add_node AfterNode lbl "[after]" in
+      !g#add_arc ((doi,afteri), Direct);
+      !g#add_arc ((afteri,newfakeelse), Direct);
+
       let newxi = { xi_lbl with
          ctx = LoopInfo (taili, newfakeelse, xi_lbl.braces, lbl);
          ctx_stack = xi_lbl.ctx::xi_lbl.ctx_stack
@@ -793,7 +802,7 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
       !g +> add_arc_opt (starti, newi);
       let newfakethen = !g +> add_node InLoopNode  lbl "[fortrue]" in
       (*let newfakeelse = !g +> add_node FalseNode lbl "[endfor]" in*)
-      let newafter = !g +> add_node FallThroughNode lbl "[forfall]" in
+      let newafter = !g +> add_node LoopFallThroughNode lbl "[forfall]" in
       let newfakeelse = 
         !g +> add_node (EndStatement (Some iifakeend)) lbl "[endfor]" in
 
@@ -830,7 +839,7 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
       !g +> add_arc_opt (starti, newi);
       let newfakethen = !g +> add_node InLoopNode  lbl "[fortrue]" in
       (*let newfakeelse = !g +> add_node FalseNode lbl "[endfor]" in*)
-      let newafter = !g +> add_node FallThroughNode lbl "[foreachfall]" in
+      let newafter = !g +> add_node LoopFallThroughNode lbl "[foreachfall]" in
       let newfakeelse = 
         !g +> add_node (EndStatement (Some iifakeend)) lbl "[endforeach]" in
 
@@ -1040,6 +1049,17 @@ and aux_statement_list starti (xi, newxi) statxs =
             !g +> add_arc_opt (finalthen, taili);
           ) 
         in
+
+(*
+        This is an attempt to let a statement metavariable match this
+	construct, but it doesn't work because #ifdef is not a statement.
+        Not sure if this is a good or bad thing, at least if there is no else
+	because then no statement might be there.
+	let afteri = !g +> add_node AfterNode newxi'.labels "[after]" in
+	!g#add_arc ((newi, afteri), Direct);
+	!g#add_arc ((afteri, taili), Direct);
+*)
+
         Some taili
 
   ) starti

@@ -27,9 +27,9 @@ type 'a wrap =
       iso_info : (string*anything) list }
 
 and 'a befaft =
-    BEFORE      of 'a list list
-  | AFTER       of 'a list list
-  | BEFOREAFTER of 'a list list * 'a list list
+    BEFORE      of 'a list list * count
+  | AFTER       of 'a list list * count
+  | BEFOREAFTER of 'a list list * 'a list list * count
   | NOTHING
 
 and 'a mcode = 'a * info * mcodekind * meta_pos (* pos variable *)
@@ -38,7 +38,8 @@ and 'a mcode = 'a * info * mcodekind * meta_pos (* pos variable *)
  and mcodekind =
     MINUS       of pos * int list * int * anything list list
   | CONTEXT     of pos * anything befaft
-  | PLUS
+  | PLUS        of count
+ and count = ONE (* + *) | MANY (* ++ *)
  and fixpos =
     Real of int (* charpos *) | Virt of int * int (* charpos + offset *)
  and pos = NoPos | DontCarePos | FixPos of (fixpos * fixpos)
@@ -555,6 +556,8 @@ and exists = Exists | Forall | Undetermined
 val mkToken : string -> anything
 
 val undots : 'a dots -> 'a list
+
+val lub_count : count -> count -> count
 
 (* --------------------------------------------------------------------- *)
 

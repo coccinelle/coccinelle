@@ -2,6 +2,7 @@
 given None, because they can accomodate their own directives or comments *)
 
 module Ast0 = Ast0_cocci
+module Ast = Ast_cocci
 module V0 = Visitor_ast0
 module VT0 = Visitor_ast0_types
 
@@ -12,21 +13,21 @@ let call_right processor data s cont =
 
 let left_mcode (a,b,info,mcodekind,d,e) =
   match (info.Ast0.strings_before,mcodekind) with
-    ([],_) | (_,Ast0.PLUS) -> None
+    ([],_) | (_,Ast0.PLUS _) -> None
   | (l,_) -> Some(l,(a,b,{info with Ast0.strings_before = []},mcodekind,d,e))
 
 let right_mcode (a,b,info,mcodekind,d,e) =
   match (info.Ast0.strings_after,mcodekind) with
-    ([],_) | (_,Ast0.PLUS) -> None
+    ([],_) | (_,Ast0.PLUS _) -> None
   | (l,_) -> Some(l,(a,b,{info with Ast0.strings_after = []},mcodekind,d,e))
 
 let update_before pragmas (info,x) =
   ({info with Ast0.strings_before = pragmas @ info.Ast0.strings_before},
-   Ast0.PLUS)
+   Ast0.PLUS Ast.ONE) (* not sure what the arg should be... one seems safe *)
 
 let update_after pragmas (info,x) =
   ({info with Ast0.strings_after = info.Ast0.strings_after @ pragmas},
-   Ast0.PLUS)
+   Ast0.PLUS Ast.ONE) (* not sure what the arg should be... one seems safe *)
 
 let rec right_decl d =
   match Ast0.unwrap d with

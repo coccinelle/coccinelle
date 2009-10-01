@@ -72,7 +72,7 @@ let inline_mcodes =
 		else starter @ ender in
 	  (lst,
 	   {endinfo with Ast0.tline_start = startinfo.Ast0.tline_start}) in
-	let attach_bef bef beforeinfo = function
+	let attach_bef bef beforeinfo befit = function
 	    (true,mcl) ->
 	      List.iter
 		(function
@@ -81,27 +81,31 @@ let inline_mcodes =
 		      mreplacements := concat bef beforeinfo mrepl tokeninfo
 		  | Ast0.CONTEXT(mbefaft) ->
 		      (match !mbefaft with
-			(Ast.BEFORE(mbef),mbeforeinfo,a) ->
+			(Ast.BEFORE(mbef,it),mbeforeinfo,a) ->
 			  let (newbef,newinfo) =
 			    concat bef beforeinfo mbef mbeforeinfo in
-			  mbefaft := (Ast.BEFORE(newbef),newinfo,a)
-		      | (Ast.AFTER(maft),_,a) ->
+			  let it = Ast.lub_count befit it in
+			  mbefaft := (Ast.BEFORE(newbef,it),newinfo,a)
+		      | (Ast.AFTER(maft,it),_,a) ->
+			  let it = Ast.lub_count befit it in
 			  mbefaft :=
-			    (Ast.BEFOREAFTER(bef,maft),beforeinfo,a)
-		      | (Ast.BEFOREAFTER(mbef,maft),mbeforeinfo,a) ->
+			    (Ast.BEFOREAFTER(bef,maft,it),beforeinfo,a)
+		      | (Ast.BEFOREAFTER(mbef,maft,it),mbeforeinfo,a) ->
 			  let (newbef,newinfo) =
 			    concat bef beforeinfo mbef mbeforeinfo in
+			  let it = Ast.lub_count befit it in
 			  mbefaft :=
-			    (Ast.BEFOREAFTER(newbef,maft),newinfo,a)
+			    (Ast.BEFOREAFTER(newbef,maft,it),newinfo,a)
 		      | (Ast.NOTHING,_,a) ->
-			  mbefaft := (Ast.BEFORE(bef),beforeinfo,a))
+			  mbefaft :=
+			    (Ast.BEFORE(bef,befit),beforeinfo,a))
 		  |	_ -> failwith "unexpected annotation")
 		mcl
 	  | _ ->
 	      Printf.printf "before %s\n" (Dumper.dump bef);
 	      failwith
 		"context tree should not have bad code before" in
-	let attach_aft aft afterinfo = function
+	let attach_aft aft afterinfo aftit = function
 	    (true,mcl) ->
 	      List.iter
 		(function
@@ -110,39 +114,42 @@ let inline_mcodes =
 		      mreplacements := concat mrepl tokeninfo aft afterinfo
 		  | Ast0.CONTEXT(mbefaft) ->
 		      (match !mbefaft with
-			(Ast.BEFORE(mbef),b,_) ->
+			(Ast.BEFORE(mbef,it),b,_) ->
+			  let it = Ast.lub_count aftit it in
 			  mbefaft :=
-			    (Ast.BEFOREAFTER(mbef,aft),b,afterinfo)
-		      | (Ast.AFTER(maft),b,mafterinfo) ->
+			    (Ast.BEFOREAFTER(mbef,aft,it),b,afterinfo)
+		      | (Ast.AFTER(maft,it),b,mafterinfo) ->
 			  let (newaft,newinfo) =
 			    concat maft mafterinfo aft afterinfo in
-			  mbefaft := (Ast.AFTER(newaft),b,newinfo)
-		      | (Ast.BEFOREAFTER(mbef,maft),b,mafterinfo) ->
+			  let it = Ast.lub_count aftit it in
+			  mbefaft := (Ast.AFTER(newaft,it),b,newinfo)
+		      | (Ast.BEFOREAFTER(mbef,maft,it),b,mafterinfo) ->
 			  let (newaft,newinfo) =
 			    concat maft mafterinfo aft afterinfo in
+			  let it = Ast.lub_count aftit it in
 			  mbefaft :=
-			    (Ast.BEFOREAFTER(mbef,newaft),b,newinfo)
+			    (Ast.BEFOREAFTER(mbef,newaft,it),b,newinfo)
 		      | (Ast.NOTHING,b,_) ->
-			  mbefaft := (Ast.AFTER(aft),b,afterinfo))
+			  mbefaft := (Ast.AFTER(aft,aftit),b,afterinfo))
 		  |	_ -> failwith "unexpected annotation")
 		mcl
 	  | _ ->
 	      failwith
 		"context tree should not have bad code after" in
 	(match !befaft with
-	  (Ast.BEFORE(bef),beforeinfo,_) ->
-	    attach_bef bef beforeinfo
+	  (Ast.BEFORE(bef,it),beforeinfo,_) ->
+	    attach_bef bef beforeinfo it
 	      (einfo.Ast0.attachable_start,einfo.Ast0.mcode_start)
-	| (Ast.AFTER(aft),_,afterinfo) ->
-	    attach_aft aft afterinfo
+	| (Ast.AFTER(aft,it),_,afterinfo) ->
+	    attach_aft aft afterinfo it
 	      (einfo.Ast0.attachable_end,einfo.Ast0.mcode_end)
-	| (Ast.BEFOREAFTER(bef,aft),beforeinfo,afterinfo) ->
-	    attach_bef bef beforeinfo
+	| (Ast.BEFOREAFTER(bef,aft,it),beforeinfo,afterinfo) ->
+	    attach_bef bef beforeinfo it
 	      (einfo.Ast0.attachable_start,einfo.Ast0.mcode_start);
-	    attach_aft aft afterinfo
+	    attach_aft aft afterinfo it
 	      (einfo.Ast0.attachable_end,einfo.Ast0.mcode_end)
 	| (Ast.NOTHING,_,_) -> ())
-    | Ast0.PLUS -> () in
+    | Ast0.PLUS _ -> () in
   V0.flat_combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode mcode
@@ -227,7 +234,7 @@ let convert_mcodekind adj = function
     Ast0.MINUS(replacements) ->
       let (replacements,_) = !replacements in
       Ast.MINUS(Ast.NoPos,[],adj,replacements)
-  | Ast0.PLUS -> Ast.PLUS
+  | Ast0.PLUS count -> Ast.PLUS count
   | Ast0.CONTEXT(befaft) ->
       let (befaft,_,_) = !befaft in Ast.CONTEXT(Ast.NoPos,befaft)
   | Ast0.MIXED(_) -> failwith "not possible for mcode"

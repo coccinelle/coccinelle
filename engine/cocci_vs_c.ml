@@ -90,7 +90,7 @@ let mcode_contain_plus = function
   | A.CONTEXT _ -> true
   | A.MINUS (_,_,_,[]) -> false
   | A.MINUS (_,_,_,x::xs) -> true
-  | A.PLUS -> raise Impossible
+  | A.PLUS _ -> raise Impossible
 
 let mcode_simple_minus = function
   | A.MINUS (_,_,_,[]) -> true
@@ -115,7 +115,7 @@ let generalize_mcode ia =
   let (s1, i, mck, pos) = ia in
   let new_mck =
     match mck with
-    | A.PLUS -> raise Impossible
+    | A.PLUS _ -> raise Impossible
     | A.CONTEXT (A.NoPos,x) -> 
 	A.CONTEXT (A.DontCarePos,x)
     | A.MINUS   (A.NoPos,inst,adj,x) -> 
@@ -3325,7 +3325,8 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
       let default = A.MetaRuleElem(mcode,keep,inherited), unwrap_node in
       (match unwrap_node with
       | F.CaseNode _
-      | F.TrueNode | F.FalseNode | F.AfterNode | F.FallThroughNode 
+      | F.TrueNode | F.FalseNode | F.AfterNode
+      | F.LoopFallThroughNode  | F.FallThroughNode 
       | F.InLoopNode -> 
           if X.mode =*= PatternMode 
           then return default 
@@ -3374,7 +3375,8 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
    * TODO: and F.Fake ?
    *)
   | _, F.EndStatement _ | _, F.CaseNode _
-  | _, F.TrueNode | _, F.FalseNode | _, F.AfterNode | _, F.FallThroughNode
+  | _, F.TrueNode | _, F.FalseNode | _, F.AfterNode
+  | _, F.FallThroughNode | _, F.LoopFallThroughNode
   | _, F.InLoopNode
     -> fail2()
 

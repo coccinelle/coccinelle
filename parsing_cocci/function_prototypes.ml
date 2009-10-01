@@ -104,9 +104,11 @@ let rec align all_minus all_plus =
 
 and strip =
   let donothing r k e =
-    {(Ast0.wrap (Ast0.unwrap (k e))) with Ast0.mcodekind = ref Ast0.PLUS} in
+    {(Ast0.wrap (Ast0.unwrap (k e))) with
+      Ast0.mcodekind = ref  (Ast0.PLUS Ast.ONE)} in
   let mcode (mc,_,_,_,_,_) =
-    (mc,Ast0.NONE,Ast0.default_info(),Ast0.PLUS,ref Ast0.NoMetaPos,-1) in
+    (mc,Ast0.NONE,Ast0.default_info(),Ast0.PLUS Ast.ONE,
+     ref Ast0.NoMetaPos,-1) in
 
   (* need a case for everything that has an unvisited component and can be in
      a function prototype *)

@@ -24,6 +24,7 @@
 - save_excursion has to handle and rethrow exceptions
 - eliminate unnecessary consideration of CVS strings.  Thanks to David
   Young for pointing out the problem.
+- completely new treatment of statement metavariables
 
 * 0.1.10
 

@@ -24,6 +24,7 @@ let line_type2c tok =
   match line_type tok with
     D.MINUS | D.OPTMINUS | D.UNIQUEMINUS -> ":-"
   | D.PLUS -> ":+"
+  | D.PLUSPLUS -> ":++"
   | D.CONTEXT | D.UNIQUE | D.OPT -> ""
 
 let token2c (tok,_) =
@@ -308,7 +309,7 @@ let plus_attachable only_plus (tok,_) =
 
   | PC.TEq(clt) | PC.TAssign(_,clt) | PC.TDot(clt) | PC.TComma(clt)
   | PC.TPtVirg(clt) ->
-      if line_type clt = D.PLUS
+      if List.mem (line_type clt) [D.PLUS;D.PLUSPLUS]
       then PLUS
       else if only_plus then NOTPLUS
       else if line_type clt = D.CONTEXT then PLUS else NOTPLUS
@@ -569,7 +570,7 @@ let split t clt =
   let (d,_,_,_,_,_,_,_) = clt in
   match d with
     D.MINUS | D.OPTMINUS | D.UNIQUEMINUS -> ([t],[])
-  | D.PLUS -> ([],[t])
+  | D.PLUS | D.PLUSPLUS -> ([],[t])
   | D.CONTEXT | D.UNIQUE | D.OPT -> ([t],[t])
 
 let split_token ((tok,_) as t) =
@@ -1082,7 +1083,7 @@ let minus_to_nothing l =
       let (d,_,_,_,_,_,_,_) = get_clt tok in
       (match d with
 	D.MINUS | D.OPTMINUS | D.UNIQUEMINUS -> true
-      | D.PLUS -> false
+      | D.PLUS | D.PLUSPLUS -> false
       | D.CONTEXT | D.UNIQUE | D.OPT -> false)
     with _ -> false in
   let rec minus_loop = function
@@ -1231,7 +1232,7 @@ let rec consume_minus_positions = function
 let any_modif rule =
   let mcode x =
     match Ast0.get_mcode_mcodekind x with
-      Ast0.MINUS _ | Ast0.PLUS -> true
+      Ast0.MINUS _ | Ast0.PLUS _ -> true
     | _ -> false in
   let donothing r k e = k e in
   let bind x y = x or y in

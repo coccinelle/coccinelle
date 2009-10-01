@@ -150,8 +150,11 @@ let inlooppred  = predmaker false (Lib_engine.InLoop,      CTL.Control)
 let truepred    = predmaker false (Lib_engine.TrueBranch,  CTL.Control)
 let falsepred   = predmaker false (Lib_engine.FalseBranch, CTL.Control)
 let fallpred    = predmaker false (Lib_engine.FallThrough, CTL.Control)
+let loopfallpred = predmaker false (Lib_engine.LoopFallThrough, CTL.Control)
 
-let aftret label_var f = ctl_or (aftpred label_var) (exitpred label_var)
+let aftret label_var =
+  ctl_or (aftpred label_var)
+    (ctl_or (loopfallpred label_var) (exitpred label_var))
 
 let letctr = ref 0
 let get_let_ctr _ =
@@ -409,7 +412,7 @@ let contains_modif =
   let mcode r (_,_,kind,metapos) =
     match kind with
       Ast.MINUS(_,_,_,_) -> true
-    | Ast.PLUS -> failwith "not possible"
+    | Ast.PLUS _ -> failwith "not possible"
     | Ast.CONTEXT(_,info) -> not (info = Ast.NOTHING) in
   let do_nothing r k e = k e in
   let rule_elem r k re =
@@ -1087,7 +1090,7 @@ let forwhile header body ((afvs,_,_,_) as aft) after
 	[inlooppred None;
 	  recurse body Tail new_quantified new_mquantified
 	    (Some (lv,used)) (Some (lv,used)) None guard] in
-    let after_pred = fallpred None in
+    let after_pred = loopfallpred None in
     let or_cases after_branch = ctl_or body after_branch in
     let (header,wrapper) =
       if !used
@@ -1150,29 +1153,46 @@ let svar_context_with_add_after stmt s label quantified d ast
   let first_metamatch =
     matcher
       (match d with
-	Ast.CONTEXT(pos,Ast.BEFOREAFTER(bef,_)) ->
-	  Ast.CONTEXT(pos,Ast.BEFORE(bef))
+	Ast.CONTEXT(pos,Ast.BEFOREAFTER(bef,_,c)) ->
+	  Ast.CONTEXT(pos,Ast.BEFORE(bef,c))
       |	Ast.CONTEXT(pos,_) -> Ast.CONTEXT(pos,Ast.NOTHING)
-      | Ast.MINUS(_,_,_,_) | Ast.PLUS -> failwith "not possible") in
+      | Ast.MINUS(_,_,_,_) | Ast.PLUS _ -> failwith "not possible") in
+(*
   let middle_metamatch =
     matcher
       (match d with
 	Ast.CONTEXT(pos,_) -> Ast.CONTEXT(pos,Ast.NOTHING)
-      | Ast.MINUS(_,_,_,_) | Ast.PLUS -> failwith "not possible") in
+      | Ast.MINUS(_,_,_,_) | Ast.PLUS _ -> failwith "not possible") in
+*)
   let last_metamatch =
     matcher
       (match d with
-	Ast.CONTEXT(pos,Ast.BEFOREAFTER(_,aft)) ->
-	  Ast.CONTEXT(pos,Ast.AFTER(aft))
+	Ast.CONTEXT(pos,Ast.BEFOREAFTER(_,aft,c)) ->
+	  Ast.CONTEXT(pos,Ast.AFTER(aft,c))
       |	Ast.CONTEXT(_,_) -> d
-      | Ast.MINUS(_,_,_,_) | Ast.PLUS -> failwith "not possible") in
+      | Ast.MINUS(_,_,_,_) | Ast.PLUS _ -> failwith "not possible") in
 
+(*
   let rest_nodes =
-    ctl_and CTL.NONSTRICT middle_metamatch prelabel_pred in  
+    ctl_and CTL.NONSTRICT middle_metamatch prelabel_pred in
+*)
+
+  let to_end = ctl_or (aftpred None) (loopfallpred None) in
   let left_or = (* the whole statement is one node *)
+    make_seq_after guard
+      (ctl_and CTL.NONSTRICT (ctl_not (ctl_ex to_end)) full_metamatch) after in
+  let right_or = (* the statement covers multiple nodes *)
+    ctl_and CTL.NONSTRICT 
+      (ctl_ex
+	 (make_seq guard
+	    [to_end; make_seq_after guard last_metamatch after]))
+      first_metamatch in
+
+(*
+  let left_or =
     make_seq guard
       [full_metamatch; and_after guard (ctl_not prelabel_pred) after] in
-  let right_or = (* the statement covers multiple nodes *)
+  let right_or =
     make_seq guard
       [first_metamatch;
         ctl_au CTL.NONSTRICT
@@ -1181,6 +1201,8 @@ let svar_context_with_add_after stmt s label quantified d ast
 	     [ctl_and CTL.NONSTRICT last_metamatch label_pred;
 	       and_after guard
 		 (ctl_not prelabel_pred) after])] in
+*)
+
   let body f =
     ctl_and CTL.NONSTRICT label_pred
        (f (ctl_and CTL.NONSTRICT
@@ -1198,75 +1220,57 @@ let svar_minus_or_no_add_after stmt s label quantified d ast
   let prelabel_pred =
     CTL.Pred (Lib_engine.PrefixLabel(label_var),CTL.Control) in
   let matcher d = make_match None guard (make_meta_rule_elem d fvinfo) in
-  let matchbreak _ =
-    make_match None false
-      (Ast.set_fvs []
-	 (Ast.rewrap stmt 
-	    (Ast.Break(Ast.make_mcode "break",Ast.make_mcode ";")))) in
-  let matchcontinue _ =
-     make_match None false
-      (Ast.set_fvs []
-	 (Ast.rewrap stmt 
-	    (Ast.Continue(Ast.make_mcode "continue",Ast.make_mcode ";")))) in
   let ender =
     match (d,after) with
-      (Ast.CONTEXT(pos,Ast.NOTHING),(Tail|End|VeryEnd)) ->
+      (Ast.PLUS _, _) -> failwith "not possible"
+    | (Ast.CONTEXT(pos,Ast.NOTHING),(Tail|End|VeryEnd)) ->
 	(* just match the root. don't care about label; always ok *)
 	make_match None false ast
-    | (Ast.MINUS(pos,inst,adj,[]),(Tail|End|VeryEnd)) ->
-    (* don't have to put anything before the beginning, so don't have to
-       distinguish the first node.  so don't have to bother about paths,
-       just use the label. label ensures that found nodes match up with
-       what they should because it is in the lhs of the andany. *)
-	CTL.HackForStmt(CTL.FORWARD,CTL.NONSTRICT,
-			ctl_and CTL.NONSTRICT label_pred
-			  (make_raw_match label false ast),
-			ctl_and CTL.NONSTRICT (matcher d) prelabel_pred)
-    (* the following seems like a good idea, but for some reason it is not *)
-    | (Ast.CONTEXT(pos,Ast.NOTHING),After a) when false ->
+    | (Ast.CONTEXT(pos,(Ast.NOTHING|Ast.BEFORE(_,_))),(After a | Guard a)) ->
+	(* This case and the MINUS one couldprobably be merged, if
+	   HackForStmt were to notice when its arguments are trivial *)
 	let first_metamatch = matcher d in
-	let rest_metamatch = matcher (Ast.CONTEXT(pos,Ast.NOTHING)) in
-	let rest_nodes = ctl_and CTL.NONSTRICT rest_metamatch prelabel_pred in
-	let last_node =
-	  ctl_or (ctl_and CTL.NONSTRICT
-		    (ctl_or (retpred None)
-		       (ctl_or (gotopred None)
-			  (ctl_or (matchbreak())
-			     (matchcontinue()))))
-		    rest_nodes)
-	    (and_after guard (ctl_not prelabel_pred) after) in
 	(* try to follow after link *)
+	let to_end = ctl_or (aftpred None) (loopfallpred None) in
 	let is_compound =
-	  ctl_ex(make_seq guard [aftpred None; CTL.True; a]) in
+	  ctl_ex(make_seq guard [to_end; CTL.True; a]) in
 	let not_compound =
-	  make_seq guard
-	    [ctl_not (ctl_ex (aftpred None));
-	      ctl_au CTL.NONSTRICT rest_nodes last_node] in
+	  make_seq_after guard (ctl_not (ctl_ex to_end)) after in
 	ctl_and CTL.NONSTRICT (make_raw_match label false ast)
 	  (ctl_and CTL.NONSTRICT
-	     first_metamatch (ctl_or is_compound not_compound)) (**)
-    | _ ->
-	(* more safe but less efficient *)
-	let first_metamatch = matcher d in
-	let rest_metamatch =
-	  matcher
-	    (match d with
-	      Ast.MINUS(pos,inst,adj,_) -> Ast.MINUS(pos,inst,adj,[])
-	    | Ast.CONTEXT(pos,_) -> Ast.CONTEXT(pos,Ast.NOTHING)
-	    | Ast.PLUS -> failwith "not possible") in
-	let rest_nodes = ctl_and CTL.NONSTRICT rest_metamatch prelabel_pred in
-	let last_node =
-	  ctl_or (ctl_and CTL.NONSTRICT
-		    (ctl_or (retpred None)
-		       (ctl_or (gotopred None)
-			  (ctl_or (matchbreak())
-			     (matchcontinue()))))
-		    rest_metamatch)
-	    (and_after guard (ctl_not prelabel_pred) after) in
-	ctl_and CTL.NONSTRICT (make_raw_match label false ast)
-	  (make_seq guard
-	     [first_metamatch;
-	       ctl_au CTL.NONSTRICT rest_nodes last_node]) in
+	     first_metamatch (ctl_or is_compound not_compound))
+    | (Ast.CONTEXT(pos,(Ast.AFTER _|Ast.BEFOREAFTER _)),_) ->
+	failwith "not possible"
+    | (Ast.MINUS(pos,inst,adj,l),after) ->
+	let (first_metamatch,last_metamatch,rest_metamatch) =
+	  match l with
+	    [] -> (matcher(Ast.CONTEXT(pos,Ast.NOTHING)),CTL.True,matcher d)
+	  | _ -> (matcher d,
+		  matcher(Ast.MINUS(pos,inst,adj,[])),
+		  ctl_and CTL.NONSTRICT
+		    (ctl_not (make_raw_match label false ast))
+		    (matcher(Ast.MINUS(pos,inst,adj,[])))) in
+	(* try to follow after link *)
+	let to_end = ctl_or (aftpred None) (loopfallpred None) in
+	let is_compound =
+	  ctl_ex
+	    (make_seq guard
+	       [to_end; make_seq_after guard last_metamatch after]) in
+	let not_compound =
+	  make_seq_after guard (ctl_not (ctl_ex to_end)) after in
+	ctl_and CTL.NONSTRICT
+	  (ctl_and CTL.NONSTRICT (make_raw_match label false ast)
+	     (ctl_and CTL.NONSTRICT
+		first_metamatch (ctl_or is_compound not_compound)))
+          (* don't have to put anything before the beginning, so don't have to
+          distinguish the first node.  so don't have to bother about paths,
+          just use the label. label ensures that found nodes match up with
+          what they should because it is in the lhs of the andany. *)
+	  (CTL.HackForStmt(CTL.FORWARD,CTL.NONSTRICT,
+			   ctl_and CTL.NONSTRICT label_pred
+			     (make_raw_match label false ast),
+			   ctl_and CTL.NONSTRICT rest_metamatch prelabel_pred))
+  in
   let body f = ctl_and CTL.NONSTRICT label_pred (f ender) in
   let stmt_fvs = Ast.get_fvs stmt in
   let fvs = get_unquantified quantified stmt_fvs in
@@ -1290,9 +1294,9 @@ let dots_au is_strict toend label s wrapcode n x seq_after y quantifier =
     if quantifier = Exists
     then Common.Left(CTL.False)
     else if toend
-    then Common.Left(CTL.Or(aftpred label,exitpred label))
+    then Common.Left(aftret label)
     else if is_strict
-    then Common.Left(aftpred label)
+    then Common.Left(ctl_or (aftpred label) (loopfallpred label))
     else
       Common.Right
 	(function vx -> function v ->
@@ -1316,7 +1320,7 @@ let dots_au is_strict toend label s wrapcode n x seq_after y quantifier =
 		  | _ -> false in
 		is_paren e1 or is_paren e2
 	    | _ -> false in *)
-	  ctl_or (aftpred label)
+	  ctl_or (ctl_or (aftpred label) (loopfallpred label))
 	    (quantify false [lv]
 	       (ctl_and CTL.NONSTRICT
 		  (ctl_and CTL.NONSTRICT (truepred label) labelpred)
@@ -1556,7 +1560,7 @@ and whencond_false e label guard quantified =
   let (if_headers, while_headers, for_headers) =
     make_whencond_headers e e1 label guard quantified in
   ctl_or (ctl_and CTL.NONSTRICT (falsepred label) (ctl_back_ex if_headers))
-    (ctl_and CTL.NONSTRICT (fallpred label)
+    (ctl_and CTL.NONSTRICT (ctl_or (loopfallpred label) (fallpred label))
        (ctl_or (ctl_back_ex if_headers)
 	  (ctl_or (ctl_back_ex while_headers) (ctl_back_ex for_headers))))
 
@@ -1633,9 +1637,9 @@ and statement stmt after quantified minus_quantified
 	   this makes more matching for things like when (...) S, but perhaps
 	   that matching is not so costly anyway *)
 	(*Ast.MetaStmt(_,Type_cocci.Unitary,_,false) when guard -> CTL.True*)
-      |	Ast.MetaStmt((s,_,(Ast.CONTEXT(_,Ast.BEFOREAFTER(_,_)) as d),_),
+      |	Ast.MetaStmt((s,_,(Ast.CONTEXT(_,Ast.BEFOREAFTER(_,_,_)) as d),_),
 		     keep,seqible,_)
-      | Ast.MetaStmt((s,_,(Ast.CONTEXT(_,Ast.AFTER(_)) as d),_),
+      | Ast.MetaStmt((s,_,(Ast.CONTEXT(_,Ast.AFTER(_,_)) as d),_),
 		     keep,seqible,_)->
 	  svar_context_with_add_after stmt s label quantified d ast seqible
 	    after
@@ -1684,16 +1688,18 @@ and statement stmt after quantified minus_quantified
 		  when !Flag.sgrep_mode2 ->
 		    (* in sgrep mode, we can propagate the - *)
 		    Some (Ast.MINUS(Ast.NoPos,inst1,adj1,l1@l2))
-		| (Ast.MINUS(_,_,_,l1),Ast.MINUS(_,_,_,l2))
-		| (Ast.CONTEXT(_,Ast.BEFORE(l1)),
-		   Ast.CONTEXT(_,Ast.AFTER(l2))) ->
-		    Some (Ast.CONTEXT(Ast.NoPos,Ast.BEFORE(l1@l2)))
+		| (Ast.MINUS(_,_,_,l1),Ast.MINUS(_,_,_,l2)) ->
+		    Some (Ast.CONTEXT(Ast.NoPos,Ast.BEFORE(l1@l2,Ast.ONE)))
+		| (Ast.CONTEXT(_,Ast.BEFORE(l1,c1)),
+		   Ast.CONTEXT(_,Ast.AFTER(l2,c2))) ->
+		     (if not (c1 = c2) then failwith "bad + code");
+		    Some (Ast.CONTEXT(Ast.NoPos,Ast.BEFORE(l1@l2,c1)))
 		| (Ast.CONTEXT(_,Ast.BEFORE(_)),Ast.CONTEXT(_,Ast.NOTHING))
 		| (Ast.CONTEXT(_,Ast.NOTHING),Ast.CONTEXT(_,Ast.NOTHING)) ->
 		    Some retmc
 		| (Ast.CONTEXT(_,Ast.NOTHING),
-		   Ast.CONTEXT(_,Ast.AFTER(l))) ->
-		    Some (Ast.CONTEXT(Ast.NoPos,Ast.BEFORE(l)))
+		   Ast.CONTEXT(_,Ast.AFTER(l,c))) ->
+		    Some (Ast.CONTEXT(Ast.NoPos,Ast.BEFORE(l,c)))
 		| _ -> None in
 	      let ret = Ast.make_mcode "return" in
 	      let edots =
@@ -1786,11 +1792,12 @@ and statement stmt after quantified minus_quantified
 	  (quantify guard b1fvs
 	     (make_seq
 		[start_brace;
-		  quantify guard b2fvs
+		  (ctl_or (aftpred label)
+		  (quantify guard b2fvs
 		    (statement_list body
 		       (After (make_seq_after end_brace after))
 		       new_quantified2 new_mquantified2
-		       (Some (lv,ref true)) llabel slabel false guard)])) in
+		       (Some (lv,ref true)) llabel slabel false guard)))])) in
       if ends_in_return body
       then
 	(* matching error handling code *)
