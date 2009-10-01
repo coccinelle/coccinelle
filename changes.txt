@@ -10,7 +10,7 @@
 ** Features:
 - virtual rules, which can be referenced in depends, and set and unset
   using the command-line options -D and -U
-- coccicheck: a framework to check a serie of SmPL files on a project
+- coccicheck: a framework to check a series of SmPL files on a project
   see scripts/coccicheck for more information
 
 ** Bugfix:
