@@ -1146,8 +1146,8 @@ let svar_context_with_add_after stmt s label quantified d ast
   let label_var = (*fresh_label_var*) string2var "_lab" in
   let label_pred =
     CTL.Pred (Lib_engine.Label(label_var),CTL.Control) in
-  let prelabel_pred =
-    CTL.Pred (Lib_engine.PrefixLabel(label_var),CTL.Control) in
+  (*let prelabel_pred =
+    CTL.Pred (Lib_engine.PrefixLabel(label_var),CTL.Control) in*)
   let matcher d = make_match None guard (make_meta_rule_elem d fvinfo) in
   let full_metamatch = matcher d in
   let first_metamatch =
@@ -1225,7 +1225,11 @@ let svar_minus_or_no_add_after stmt s label quantified d ast
       (Ast.PLUS _, _) -> failwith "not possible"
     | (Ast.CONTEXT(pos,Ast.NOTHING),(Tail|End|VeryEnd)) ->
 	(* just match the root. don't care about label; always ok *)
-	make_match None false ast
+	make_raw_match None false ast
+    | (Ast.CONTEXT(pos,Ast.BEFORE(_,_)),(Tail|End|VeryEnd)) ->
+	ctl_and CTL.NONSTRICT
+	  (make_raw_match None false ast) (* statement *)
+	  (matcher d)                     (* transformation *)
     | (Ast.CONTEXT(pos,(Ast.NOTHING|Ast.BEFORE(_,_))),(After a | Guard a)) ->
 	(* This case and the MINUS one couldprobably be merged, if
 	   HackForStmt were to notice when its arguments are trivial *)
