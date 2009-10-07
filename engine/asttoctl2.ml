@@ -152,9 +152,9 @@ let falsepred   = predmaker false (Lib_engine.FalseBranch, CTL.Control)
 let fallpred    = predmaker false (Lib_engine.FallThrough, CTL.Control)
 let loopfallpred = predmaker false (Lib_engine.LoopFallThrough, CTL.Control)
 
-let aftret label_var =
+(*let aftret label_var =
   ctl_or (aftpred label_var)
-    (ctl_or (loopfallpred label_var) (exitpred label_var))
+    (ctl_or (loopfallpred label_var) (exitpred label_var))*)
 
 let letctr = ref 0
 let get_let_ctr _ =
@@ -1298,9 +1298,9 @@ let dots_au is_strict toend label s wrapcode n x seq_after y quantifier =
     if quantifier = Exists
     then Common.Left(CTL.False)
     else if toend
-    then Common.Left(aftret label)
+    then Common.Left(CTL.Or(aftpred label,exitpred label))
     else if is_strict
-    then Common.Left(ctl_or (aftpred label) (loopfallpred label))
+    then Common.Left(aftpred label)
     else
       Common.Right
 	(function vx -> function v ->
