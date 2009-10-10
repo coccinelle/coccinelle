@@ -1324,7 +1324,7 @@ let dots_au is_strict toend label s wrapcode n x seq_after y quantifier =
 		  | _ -> false in
 		is_paren e1 or is_paren e2
 	    | _ -> false in *)
-	  ctl_or (ctl_or (aftpred label) (loopfallpred label))
+	  ctl_or (aftpred label)
 	    (quantify false [lv]
 	       (ctl_and CTL.NONSTRICT
 		  (ctl_and CTL.NONSTRICT (truepred label) labelpred)
@@ -1564,7 +1564,7 @@ and whencond_false e label guard quantified =
   let (if_headers, while_headers, for_headers) =
     make_whencond_headers e e1 label guard quantified in
   ctl_or (ctl_and CTL.NONSTRICT (falsepred label) (ctl_back_ex if_headers))
-    (ctl_and CTL.NONSTRICT (ctl_or (loopfallpred label) (fallpred label))
+    (ctl_and CTL.NONSTRICT (loopfallpred label)
        (ctl_or (ctl_back_ex if_headers)
 	  (ctl_or (ctl_back_ex while_headers) (ctl_back_ex for_headers))))
 
