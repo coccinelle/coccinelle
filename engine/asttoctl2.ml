@@ -1796,12 +1796,14 @@ and statement stmt after quantified minus_quantified
 	  (quantify guard b1fvs
 	     (make_seq
 		[start_brace;
-		  (ctl_or (aftpred label)
-		  (quantify guard b2fvs
-		    (statement_list body
-		       (After (make_seq_after end_brace after))
-		       new_quantified2 new_mquantified2
-		       (Some (lv,ref true)) llabel slabel false guard)))])) in
+		  (ctl_or
+		     (if !exists = Exists then CTL.False else (aftpred label))
+		     (quantify guard b2fvs
+			(statement_list body
+			   (After (make_seq_after end_brace after))
+			   new_quantified2 new_mquantified2
+			   (Some (lv,ref true))
+			   llabel slabel false guard)))])) in
       if ends_in_return body
       then
 	(* matching error handling code *)
