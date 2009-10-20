@@ -272,7 +272,7 @@ install-python:
 		$(DESTDIR)$(SHAREDIR)/python/coccilib/coccigui
 	$(INSTALL_LIB) dllpycaml_stubs.so $(DESTDIR)$(LIBDIR)
 
-install: install-common 
+install: install-common
 	@if test -x spatch -a ! -x spatch.opt ; then \
 		$(MAKE) install-byte;fi
 	@if test ! -x spatch -a -x spatch.opt ; then \
