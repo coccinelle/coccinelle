@@ -238,6 +238,7 @@ type visitor_c =
 
    kdecl:      (declaration -> unit) * visitor_c -> declaration -> unit;
    konedecl:   (onedecl -> unit)      * visitor_c -> onedecl -> unit;
+   kparam:  (parameterType -> unit)      * visitor_c -> parameterType -> unit;
    kdef:       (definition  -> unit) * visitor_c -> definition  -> unit; 
    kname     : (name -> unit)        * visitor_c -> name       -> unit;
 
@@ -263,6 +264,7 @@ let default_visitor_c =
     ktype         = (fun (k,_) t  -> k t);
     kdecl         = (fun (k,_) d  -> k d);
     konedecl      = (fun (k,_) d  -> k d);
+    kparam        = (fun (k,_) d  -> k d);
     kdef          = (fun (k,_) d  -> k d);
     kini          = (fun (k,_) ie  -> k ie);
     kname         = (fun (k,_) x -> k x);
@@ -878,10 +880,13 @@ and vk_argument_list = fun bigf es ->
 
 and vk_param = fun bigf param  ->
   let iif ii = vk_ii bigf ii in
-  let {p_namei = swrapopt; p_register = (b, iib); p_type=ft} = param in
-  swrapopt +> Common.do_option (vk_name bigf);
-  iif iib;
-  vk_type bigf ft
+  let f = bigf.kparam in 
+  let rec k param =
+    let {p_namei = swrapopt; p_register = (b, iib); p_type=ft} = param in
+    swrapopt +> Common.do_option (vk_name bigf);
+    iif iib;
+    vk_type bigf ft
+  in f (k, bigf) param
 
 and vk_param_list = fun bigf ts -> 
   let iif ii = vk_ii bigf ii in

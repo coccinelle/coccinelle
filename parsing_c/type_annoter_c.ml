@@ -920,7 +920,7 @@ let annotater_expr_visitor_subpart = (fun (k,bigf) expr ->
           (* todo *)
     | StatementExpr _ ->  
         k expr; (* recurse to set the types-ref of sub expressions *)
-        pr2_once "Type annotater:not handling GetRefLabel";
+        pr2_once "Type annotater:not handling StatementExpr";
         Type_c.noTypeHere
           (*
             | _ -> k expr; Type_c.noTypeHere
@@ -1005,15 +1005,18 @@ let rec visit_toplevel ~just_add_in_env ~depth elem =
            *)
 
           | DefineExpr expr -> 
-              if is_simple_expr expr
+	      (* prevent macro-declared variables from leaking out *)
+	      do_in_new_scope (fun () ->
+		if is_simple_expr expr
              (* even if not need_annotate_body, still recurse*)
-              then k directive 
-              else 
-                if need_annotate_body
-                then k directive;
+		then k directive 
+		else 
+                  if need_annotate_body
+                  then k directive)
           | _ -> 
-              if need_annotate_body
-              then k directive;
+	      do_in_new_scope (fun () ->
+		if need_annotate_body
+		then k directive)
           );
 
           add_binding (Macro (s, (defkind, defval) )) true;

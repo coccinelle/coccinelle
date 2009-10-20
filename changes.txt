@@ -26,6 +26,7 @@
   Young for pointing out the problem.
 - completely new treatment of statement metavariables
 - ++ for multiple additions
+- better type checking for macro definitions
 
 * 0.1.10
 
