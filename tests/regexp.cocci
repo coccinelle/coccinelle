@@ -16,6 +16,15 @@ fresh identifier contains = id ##"_contains_foo";
 t id;
 +t contains;
 
+@nocontain@
+type t;
+identifier anyid.id ~!= ".*foo";
+fresh identifier nocontain = id ##"_doesn_t_contain_foo";
+@@
+
+t id;
++t nocontain;
+
 @endsby@
 type t;
 identifier anyid.id ~= ".*foo$";

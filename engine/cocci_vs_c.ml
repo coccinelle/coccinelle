@@ -706,6 +706,11 @@ let satisfies_constraint c id : bool =
 	  true
 	else
 	  false
+    | A.NotRegExp (_,recompiled) ->
+	if Str.string_match recompiled id 0 then
+	  false
+	else
+	  true
 
 (*---------------------------------------------------------------------------*)
 (* toc: 

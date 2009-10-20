@@ -28,6 +28,21 @@ x << contains.foo;
 
 print "Contains foo: %s" % x
 
+@nocontain@
+type t;
+identifier foo ~!= ".*foo";
+@@
+
+t foo () {
+...
+}
+
+@script:python@
+x << nocontain.foo;
+@@
+
+print "Does not contain foo: %s" % x
+
 @endsby@
 type t;
 identifier foo ~= ".*foo$";

@@ -148,8 +148,8 @@ let idconstraint c =
   match c with
       Ast.NoConstraint  -> print_string "/* No constraint */"
     | Ast.NegIdSet ids     -> List.iter (fun s -> print_string (" "^s)) ids
-    | Ast.RegExp (re,_) -> print_string "\""; print_string re; print_string "\""
-
+    | Ast.RegExp (re,_) -> print_string "~= \""; print_string re; print_string "\""
+    | Ast.NotRegExp (re,_) -> print_string "~!= \""; print_string re; print_string "\""
 
 (* --------------------------------------------------------------------- *)
 (* Identifier *)

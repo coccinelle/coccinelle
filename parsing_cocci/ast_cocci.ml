@@ -3,6 +3,7 @@ type idconstraint =
     NoConstraint
   | NegIdSet      of string list
   | RegExp        of string * Str.regexp
+  | NotRegExp     of string * Str.regexp
 
 (* --------------------------------------------------------------------- *)
 (* Modified code *)

@@ -135,6 +135,7 @@ let token2c (tok,_) =
   | PC.TEqEq(clt) -> "=="^(line_type2c clt)
   | PC.TNotEq(clt) -> "!="^(line_type2c clt)
   | PC.TTildeEq(clt) -> "~="^(line_type2c clt)
+  | PC.TTildeExclEq(clt) -> "~!="^(line_type2c clt)
   | PC.TLogOp(op,clt) ->
       (match op with
 	Ast.Inf -> "<"
@@ -640,7 +641,7 @@ let split_token ((tok,_) as t) =
       split t clt
 
   | PC.TOrLog(clt) | PC.TAndLog(clt) | PC.TOr(clt) | PC.TXor(clt)
-  | PC.TAnd (clt) | PC.TEqEq(clt) | PC.TNotEq(clt) | PC.TTildeEq(clt) | PC.TLogOp(_,clt)
+  | PC.TAnd (clt) | PC.TEqEq(clt) | PC.TNotEq(clt) | PC.TTildeEq(clt) | PC.TTildeExclEq(clt) | PC.TLogOp(_,clt)
   | PC.TShOp(_,clt) | PC.TPlus(clt) | PC.TMinus(clt) | PC.TMul(clt)
   | PC.TDmOp(_,clt) | PC.TTilde (clt) -> split t clt
 

@@ -6,6 +6,7 @@ int foo_ends_by_foo;
 int foo_contains_foo;
 int foo_is_an_id;
 int bar;
+int bar_doesn_t_contain_foo;
 int bar_is_an_id;
 int foobar;
 int foobar_begins_by_foo;

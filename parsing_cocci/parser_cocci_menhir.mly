@@ -69,7 +69,7 @@ module P = Parse_aux
 %token <Data.clt> TOr
 %token <Data.clt> TXor
 %token <Data.clt> TAnd
-%token <Data.clt> TEqEq TNotEq TTildeEq
+%token <Data.clt> TEqEq TNotEq TTildeEq TTildeExclEq
 %token <Ast_cocci.logicalOp * Data.clt> TLogOp /* TInf TSup TInfEq TSupEq */
 %token <Ast_cocci.arithOp * Data.clt>   TShOp  /* TShl TShr */
 %token <Ast_cocci.arithOp * Data.clt>   TDmOp  /* TDiv TMod */
@@ -1432,6 +1432,13 @@ regexp_eq:
 	   (if !Data.in_generating
 	    then failwith "constraints not allowed in a generated rule file");
 	   let (s,_) = re in Ast.RegExp (s,Str.regexp s)
+	 }
+ | TTildeExclEq re=TString
+         { (if !Data.in_iso
+	    then failwith "constraints not allowed in iso file");
+	   (if !Data.in_generating
+	    then failwith "constraints not allowed in a generated rule file");
+	   let (s,_) = re in Ast.NotRegExp (s,Str.regexp s)
 	 }
 
 not_eq:
