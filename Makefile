@@ -5,6 +5,7 @@
 -include Makefile.config
 
 VERSION=$(shell cat globals/config.ml.in |grep version |perl -p -e 's/.*"(.*)".*/$$1/;')
+CCVERSION=$(shell cat scripts/coccicheck/README |grep "Coccicheck version" |perl -p -e 's/.*version (.*)[ ]*/$$1/;')
 
 ##############################################################################
 # Variables
@@ -312,7 +313,8 @@ uninstall:
 	rm -f $(DESTDIR)$(MANDIR)/man1/spatch.1
 
 version:
-	@echo $(VERSION)
+	@echo "spatch     $(VERSION)"
+	@echo "coccicheck $(CCVERSION)"
 
 
 ##############################################################################
@@ -414,7 +416,7 @@ bytecodetar: all
 
 coccicheck:
 	cp -a `pwd`/scripts/coccicheck $(TMP)/coccicheck
-	cd $(TMP); tar cvfz coccicheck.tgz --exclude-vcs coccicheck
+	cd $(TMP); tar cvfz coccicheck-$(CCVERSION).tgz --exclude-vcs coccicheck
 	rm -rf $(TMP)/coccicheck
 
 clean::
