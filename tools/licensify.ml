@@ -1,6 +1,6 @@
 let lines =
 ["Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen";
-"Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller";
+"Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix";
 "This file is part of Coccinelle.";
 "";
 "Coccinelle is free software: you can redistribute it and/or modify";
