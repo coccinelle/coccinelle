@@ -697,7 +697,7 @@ but I don't know how to declare polymorphism across functors *)
 let dots2metavar (_,info,mcodekind,pos) = (("","..."),info,mcodekind,pos)
 let metavar2dots (_,info,mcodekind,pos) = ("...",info,mcodekind,pos)
 
-let satisfies_constraint c id : bool =
+let satisfies_iconstraint c id : bool =
   match c with
       A.IdNoConstraint -> true
     | A.IdNegIdSet l -> not (List.mem id l)
@@ -711,6 +711,35 @@ let satisfies_constraint c id : bool =
 	  false
 	else
 	  true
+
+let satisfies_econstraint c exp : bool =
+    match Ast_c.unwrap_expr exp with
+	Ast_c.Ident (name) ->
+	  (
+	    match name with
+		Ast_c.RegularName     rname -> satisfies_iconstraint c (Ast_c.unwrap_st rname)
+	      | Ast_c.CppConcatenatedName _ ->
+		  failwith ("Could not apply a constraint on a CppConcatenatedName identifier !"^
+		    " -- Improve satisfies_econstraint in engine/cocci_vs_c.ml")
+	      | Ast_c.CppVariadicName     _ ->
+		  failwith ("Could not apply a constraint on a CppVariadicName identifier !"^
+		    " -- Improve satisfies_econstraint in engine/cocci_vs_c.ml")
+	      | Ast_c.CppIdentBuilder     _ ->
+		  failwith ("Could not apply a constraint on a CppIdentBuilder identifier !"^
+		    " -- Improve satisfies_econstraint in engine/cocci_vs_c.ml")
+	  )
+      | Ast_c.Constant cst ->
+	  (match cst with
+	     | Ast_c.String (str, _) -> satisfies_iconstraint c str
+	     | Ast_c.MultiString strlist ->
+		 failwith ("Could not apply a constraint on an multistring constant !"^
+		   " -- Improve satisfies_econstraint in engine/cocci_vs_c.ml")
+	     | Ast_c.Char  (char , _) -> satisfies_iconstraint c char
+	     | Ast_c.Int   (int  , _) -> satisfies_iconstraint c int
+	     | Ast_c.Float (float, _) -> satisfies_iconstraint c float
+	  )
+      | _ -> failwith ("Could not apply a constraint on an expression !"^
+	  " -- Improve satisfies_econstraint in engine/cocci_vs_c.ml")
 
 (*---------------------------------------------------------------------------*)
 (* toc: 
@@ -777,7 +806,7 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
             pr2_once ("Missing type information. Certainly a pb in " ^
                       "annotate_typer.ml");
             fail
-	      
+
         | Some tas, Some tb ->
             tas +> List.fold_left (fun acc ta ->
               acc >|+|> compatible_type ta tb) fail
@@ -797,11 +826,10 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
 			       expb
 			     ))
 		     )
+
 	     | Ast_cocci.NotIdCstrt cstrt ->
-		 (* eb is an Ast_c expression. satisfies_constraint works on id. *)
-(*		 X.check_idconstraint satisfies_constraint cstrt eb
+		 X.check_idconstraint satisfies_econstraint cstrt eb
 		   (fun () ->
-*)
 		      let max_min _ =
 			Lib_parsing_c.lin_col_by_pos (Lib_parsing_c.ii_of_expr expb) in
 			X.envf keep inherited (ida, Ast_c.MetaExprVal expb, max_min)
@@ -813,10 +841,7 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
 				      A.rewrap ea,
 				    expb
 				  ))
-			  )
-(*
-)
-*)
+			  ))
 
 	     | Ast_cocci.NotExpCstrt cstrts ->
 		 X.check_constraints_ne expression cstrts eb
@@ -834,7 +859,7 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
 				  ))
 			  )))
       else fail
-	  
+
   (* old: 
    * | A.MetaExpr(ida,false,opttypa,_inherited), expb ->
    *   D.distribute_mck (mcodekind ida) D.distribute_mck_e expb binding
@@ -1243,7 +1268,7 @@ and (ident: info_ident -> (A.ident, string * Ast_c.info) matcher) =
       else fail
 
   | A.MetaId(mida,constraints,keep,inherited) -> 
-      X.check_idconstraint satisfies_constraint constraints idb
+      X.check_idconstraint satisfies_iconstraint constraints idb
         (fun () ->
       let max_min _ = Lib_parsing_c.lin_col_by_pos [iib] in
       (* use drop_pos for ids so that the pos is not added a second time in
@@ -1259,7 +1284,7 @@ and (ident: info_ident -> (A.ident, string * Ast_c.info) matcher) =
 
   | A.MetaFunc(mida,constraints,keep,inherited) -> 
       let is_function _ =
-	X.check_idconstraint satisfies_constraint constraints idb
+	X.check_idconstraint satisfies_iconstraint constraints idb
             (fun () ->
           let max_min _ = Lib_parsing_c.lin_col_by_pos [iib] in
           X.envf keep inherited (A.drop_pos mida,Ast_c.MetaFuncVal idb,max_min)
@@ -1283,7 +1308,7 @@ and (ident: info_ident -> (A.ident, string * Ast_c.info) matcher) =
   | A.MetaLocalFunc(mida,constraints,keep,inherited) -> 
       (match infoidb with 
       | LocalFunction -> 
-	  X.check_idconstraint satisfies_constraint constraints idb
+	  X.check_idconstraint satisfies_iconstraint constraints idb
             (fun () ->
           let max_min _ = Lib_parsing_c.lin_col_by_pos [iib] in
           X.envf keep inherited

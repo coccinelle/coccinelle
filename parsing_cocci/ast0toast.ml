@@ -344,7 +344,6 @@ and expression e =
     | Ast0.MetaErr(name,cstrts,_)  ->
 	  Ast.MetaErr(mcode name,constraints cstrts,unitary,false)
     | Ast0.MetaExpr(name,cstrts,ty,form,_)  ->
-(*	let constraints = Ast.NotExpCstrt (List.map expression constraints) in *)
 	  Ast.MetaExpr(mcode name,constraints cstrts,unitary,ty,form,false)
     | Ast0.MetaExprList(name,Some lenname,_) ->
 	Ast.MetaExprList(mcode name,Some (mcode lenname,unitary,false),

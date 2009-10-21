@@ -121,9 +121,9 @@ and 'a wrap3 = 'a * il (* * evotype*)
 (* ------------------------------------------------------------------------- *)
 
 (* was called 'ident' before, but 'name' is I think better
- * as concatenated strings can be used not only for identifiers and for 
+ * as concatenated strings can be used not only for identifiers and for
  * declarators, but also for fields, for labels, etc.
- * 
+ *
  * Note: because now the info is embeded in the name, the info for
  * expression like Ident, or types like Typename, are not anymore
  * stored in the expression or type. Hence if you assume this,
@@ -132,13 +132,13 @@ and 'a wrap3 = 'a * il (* * evotype*)
  * the local ii to e. If you want to do that, use the appropiate
  * wrapper get_local_ii_of_expr_inlining_ii_of_name.
  *)
-and name = 
+and name =
    | RegularName of string wrap
    | CppConcatenatedName of (string wrap) wrap2 (* the ## separators *) list
    (* normally only used inside list of things, as in parameters or arguments
     * in which case, cf cpp-manual, it has a special meaning *)
    | CppVariadicName of string wrap (* ## s *)
-   | CppIdentBuilder of string wrap (* s ( ) *) * 
+   | CppIdentBuilder of string wrap (* s ( ) *) *
                        ((string wrap) wrap2 list) (* arguments *)
 
 
@@ -278,7 +278,7 @@ and typeQualifierbis = {const: bool; volatile: bool}
 (* gccext: cppext: *)
 and attribute = attributebis wrap
   and attributebis =
-    | Attribute of string 
+    | Attribute of string
 
 (* ------------------------------------------------------------------------- *)
 (* C expression *)
@@ -289,14 +289,14 @@ and expression = (expressionbis * exp_info ref (* semantic: *)) wrap3
     and local = LocalVar of parse_info | NotLocalVar (* cocci: *)
   and test = Test | NotTest (* cocci: *)
 
- and expressionbis = 
+ and expressionbis =
 
   (* Ident can be a enumeration constant, a simple variable, a name of a func.
    * With cppext, Ident can also be the name of a macro. Sparse says
    * "an identifier with a meaning is a symbol" *)
   | Ident          of name (* todo? more semantic info such as LocalFunc *)
 
-  | Constant       of constant                                  
+  | Constant       of constant
   | FunCall        of expression * argument wrap2 (* , *) list
   (* gccext: x ? /* empty */ : y <=> x ? x : y;  hence the 'option' below *)
   | CondExpr       of expression * expression option * expression
@@ -309,8 +309,8 @@ and expression = (expressionbis * exp_info ref (* semantic: *)) wrap3
   | Postfix        of expression * fixOp
   | Infix          of expression * fixOp
 
-  | Unary          of expression * unaryOp                      
-  | Binary         of expression * binaryOp * expression        
+  | Unary          of expression * unaryOp
+  | Binary         of expression * binaryOp * expression
 
   | ArrayAccess    of expression * expression
 
