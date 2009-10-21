@@ -420,10 +420,10 @@ coccicheck:
 	rm -rf $(TMP)/coccicheck
 
 clean::
-	rm -f $(PACKAGE)
-	rm -f $(PACKAGE)-bin-x86.tgz
-	rm -f $(PACKAGE)-bin-x86-static.tgz
-	rm -f $(PACKAGE)-bin-bytecode-$(OCAMLVERSION).tgz
+	rm -f $(TMP)/$(PACKAGE)
+	rm -f $(TMP)/$(PACKAGE)-bin-x86.tgz
+	rm -f $(TMP)/$(PACKAGE)-bin-x86-static.tgz
+	rm -f $(TMP)/$(PACKAGE)-bin-bytecode-$(OCAMLVERSION).tgz
 
 
 
