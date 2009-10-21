@@ -427,7 +427,7 @@ clean::
 
 
 
-TOLICENSIFY=ctl engine parsing_cocci popl popl09 python scripts tools
+TOLICENSIFY=ctl engine parsing_cocci popl popl09 python scripts tools demos
 licensify:
 	ocaml tools/licensify.ml
 	set -e; for i in $(TOLICENSIFY); do cd $$i; ocaml ../tools/licensify.ml; cd ..; done
