@@ -322,6 +322,7 @@ version:
 ##############################################################################
 
 PACKAGE=coccinelle-$(VERSION)
+CCPACKAGE=coccicheck-$(CCVERSION)
 
 BINSRC=spatch env.sh env.csh standard.h standard.iso \
        *.txt \
@@ -415,17 +416,16 @@ bytecodetar: all
 	rm -f $(TMP)/$(PACKAGE)
 
 coccicheck:
-	cp -a `pwd`/scripts/coccicheck $(TMP)/coccicheck
-	cd $(TMP); tar cvfz coccicheck-$(CCVERSION).tgz --exclude-vcs coccicheck
-	rm -rf $(TMP)/coccicheck
+	cp -a `pwd`/scripts/coccicheck $(TMP)/$(CCPACKAGE)
+	cd $(TMP); tar cvfz $(CCPACKAGE) --exclude-vcs coccicheck
+	rm -rf $(TMP)/$(CCPACKAGE)
 
 clean::
 	rm -f $(TMP)/$(PACKAGE)
 	rm -f $(TMP)/$(PACKAGE)-bin-x86.tgz
 	rm -f $(TMP)/$(PACKAGE)-bin-x86-static.tgz
 	rm -f $(TMP)/$(PACKAGE)-bin-bytecode-$(OCAMLVERSION).tgz
-
-
+	rm -f $(TMP)/$(CCPACKAGE).tgz
 
 TOLICENSIFY=ctl engine parsing_cocci popl popl09 python scripts tools
 licensify:
