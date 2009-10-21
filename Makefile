@@ -427,7 +427,11 @@ clean::
 	rm -f $(TMP)/$(PACKAGE)-bin-bytecode-$(OCAMLVERSION).tgz
 	rm -f $(TMP)/$(CCPACKAGE).tgz
 
-TOLICENSIFY=ctl engine parsing_cocci popl popl09 python scripts tools
+#
+# No need to licensify 'demos'. Because these is basic building blocks
+# to use SmPL.
+#
+TOLICENSIFY=ctl engine globals parsing_cocci popl popl09 python scripts tools
 licensify:
 	ocaml tools/licensify.ml
 	set -e; for i in $(TOLICENSIFY); do cd $$i; ocaml ../tools/licensify.ml; cd ..; done
