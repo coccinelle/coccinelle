@@ -719,27 +719,22 @@ let satisfies_econstraint c exp : bool =
 	    match name with
 		Ast_c.RegularName     rname -> satisfies_iconstraint c (Ast_c.unwrap_st rname)
 	      | Ast_c.CppConcatenatedName _ ->
-		  failwith ("Could not apply a constraint on a CppConcatenatedName identifier !"^
-		    " -- Improve satisfies_econstraint in engine/cocci_vs_c.ml")
+		  pr2_once ("WARNING: Unable to apply a constraint on a CppConcatenatedName identifier !"); true
 	      | Ast_c.CppVariadicName     _ ->
-		  failwith ("Could not apply a constraint on a CppVariadicName identifier !"^
-		    " -- Improve satisfies_econstraint in engine/cocci_vs_c.ml")
+		  pr2_once ("WARNING: Unable to apply a constraint on a CppVariadicName identifier !"); true
 	      | Ast_c.CppIdentBuilder     _ ->
-		  failwith ("Could not apply a constraint on a CppIdentBuilder identifier !"^
-		    " -- Improve satisfies_econstraint in engine/cocci_vs_c.ml")
+		  pr2_once ("WARNING: Unable to apply a constraint on a CppIdentBuilder identifier !");	true
 	  )
       | Ast_c.Constant cst ->
 	  (match cst with
 	     | Ast_c.String (str, _) -> satisfies_iconstraint c str
 	     | Ast_c.MultiString strlist ->
-		 failwith ("Could not apply a constraint on an multistring constant !"^
-		   " -- Improve satisfies_econstraint in engine/cocci_vs_c.ml")
+		 pr2_once ("WARNING: Unable to apply a constraint on an multistring constant !"); true
 	     | Ast_c.Char  (char , _) -> satisfies_iconstraint c char
 	     | Ast_c.Int   (int  , _) -> satisfies_iconstraint c int
 	     | Ast_c.Float (float, _) -> satisfies_iconstraint c float
 	  )
-      | _ -> failwith ("Could not apply a constraint on an expression !"^
-	  " -- Improve satisfies_econstraint in engine/cocci_vs_c.ml")
+      | _ -> pr2_once ("WARNING: Unable to apply a constraint on an expression !"); true
 
 (*---------------------------------------------------------------------------*)
 (* toc: 
