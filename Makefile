@@ -417,7 +417,7 @@ bytecodetar: all
 
 coccicheck:
 	cp -a `pwd`/scripts/coccicheck $(TMP)/$(CCPACKAGE)
-	tar cvfz $(CCPACKAGE).tgz -C $(TMP) --exclude-vcs $(CCPACKAGE)
+	tar cvfz $(TMP)/$(CCPACKAGE).tgz -C $(TMP) --exclude-vcs $(CCPACKAGE)
 	rm -rf $(TMP)/$(CCPACKAGE)
 
 clean::
