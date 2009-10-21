@@ -1,24 +1,24 @@
 
 int main(void) {
 
-int foo = FOO;
-int foo_equals_cst_that_begins_by_FOO;
-int foo_equals_cst_that_ends_by_FOO;
-int foo_equals_cst_that_contains_FOO;
-int foo_is_constant;
-int bar = BAR;
-int bar_equals_cst_that_doesn_t_contain_FOO;
-int bar_is_constant;
-int foobar = FOOBAR;
-int foobar_equals_cst_that_begins_by_FOO;
-int foobar_equals_cst_that_contains_FOO;
-int foobar_is_constant;
-int barfoobar = BARFOOBAR;
-int barfoobar_equals_cst_that_contains_FOO;
-int barfoobar_is_constant;
-int barfoo = BARFOO;
-int barfoo_equals_cst_that_ends_by_FOO;
-int barfoo_equals_cst_that_contains_FOO;
-int barfoo_is_constant;
+int t0 = FOO;
+int t0_equals_cst_that_begins_by_FOO;
+int t0_equals_cst_that_ends_by_FOO;
+int t0_equals_cst_that_contains_FOO;
+int t0_is_constant;
+int t1 = BAR;
+int t1_equals_cst_that_doesn_t_contain_FOO;
+int t1_is_constant;
+int t2 = FOOBAR;
+int t2_equals_cst_that_begins_by_FOO;
+int t2_equals_cst_that_contains_FOO;
+int t2_is_constant;
+int t3 = BARFOOBAR;
+int t3_equals_cst_that_contains_FOO;
+int t3_is_constant;
+int t4 = BARFOO;
+int t4_equals_cst_that_ends_by_FOO;
+int t4_equals_cst_that_contains_FOO;
+int t4_is_constant;
 
 }

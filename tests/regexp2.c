@@ -1,10 +1,10 @@
 
 int main(void) {
 
-int foo = FOO;
-int bar = BAR;
-int foobar = FOOBAR;
-int barfoobar = BARFOOBAR;
-int barfoo = BARFOO;
+int t0 = FOO;
+int t1 = BAR;
+int t2 = FOOBAR;
+int t3 = BARFOOBAR;
+int t4 = BARFOO;
 
 }
