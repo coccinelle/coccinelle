@@ -291,7 +291,7 @@ let init _ =
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_fresh_id_meta :=
     (fun name ->
-      let fn clt = TMetaId(name,Ast.NoConstraint,Ast0.Impure,clt) in
+      let fn clt = TMetaId(name,Ast.IdNoConstraint,Ast0.Impure,clt) in
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_type_meta :=
     (fun name pure ->

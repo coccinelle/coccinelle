@@ -146,10 +146,10 @@ let print_type keep info = function
 
 let idconstraint c =
   match c with
-      Ast.NoConstraint  -> print_string "/* No constraint */"
-    | Ast.NegIdSet ids     -> List.iter (fun s -> print_string (" "^s)) ids
-    | Ast.RegExp (re,_) -> print_string "~= \""; print_string re; print_string "\""
-    | Ast.NotRegExp (re,_) -> print_string "~!= \""; print_string re; print_string "\""
+      Ast.IdNoConstraint  -> print_string "/* No constraint */"
+    | Ast.IdNegIdSet ids     -> List.iter (fun s -> print_string (" "^s)) ids
+    | Ast.IdRegExp (re,_) -> print_string "~= \""; print_string re; print_string "\""
+    | Ast.IdNotRegExp (re,_) -> print_string "~!= \""; print_string re; print_string "\""
 
 (* --------------------------------------------------------------------- *)
 (* Identifier *)

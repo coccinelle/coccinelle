@@ -26,7 +26,7 @@ and line_type =
   | CONTEXT | UNIQUE | OPT
 
 type iconstraints = Ast.idconstraint
-type econstraints = Ast0.expression list
+type econstraints = Ast0.constraints
 type pconstraints = Ast.meta_name list
 
 let in_rule_name = ref false

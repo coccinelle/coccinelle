@@ -341,12 +341,11 @@ and expression e =
     | Ast0.SizeOfType(szf,lp,ty,rp) ->
 	Ast.SizeOfType(mcode szf, mcode lp,typeC ty,mcode rp)
     | Ast0.TypeExp(ty) -> Ast.TypeExp(typeC ty)
-    | Ast0.MetaErr(name,constraints,_)  ->
-	let constraints = List.map expression constraints in
-	Ast.MetaErr(mcode name,constraints,unitary,false)
-    | Ast0.MetaExpr(name,constraints,ty,form,_)  ->
-	let constraints = List.map expression constraints in
-	Ast.MetaExpr(mcode name,constraints,unitary,ty,form,false)
+    | Ast0.MetaErr(name,cstrts,_)  ->
+	  Ast.MetaErr(mcode name,constraints cstrts,unitary,false)
+    | Ast0.MetaExpr(name,cstrts,ty,form,_)  ->
+(*	let constraints = Ast.NotExpCstrt (List.map expression constraints) in *)
+	  Ast.MetaExpr(mcode name,constraints cstrts,unitary,ty,form,false)
     | Ast0.MetaExprList(name,Some lenname,_) ->
 	Ast.MetaExprList(mcode name,Some (mcode lenname,unitary,false),
 			 unitary,false)
@@ -375,6 +374,12 @@ and expression e =
   if Ast0.get_test_exp e then Ast.set_test_exp e1 else e1
 
 and expression_dots ed = dots expression ed
+
+and constraints c =
+  match c with
+      Ast0.NoConstraint        -> Ast.NoConstraint
+    | Ast0.NotIdCstrt   idctrt -> Ast.NotIdCstrt idctrt
+    | Ast0.NotExpCstrt  exps   -> Ast.NotExpCstrt (List.map expression exps)
 
 (* --------------------------------------------------------------------- *)
 (* Types *)

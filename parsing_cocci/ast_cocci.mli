@@ -1,9 +1,9 @@
 (* Constraints on Meta-* Identifiers, Functions *)
 type idconstraint =
-    NoConstraint
-  | NegIdSet      of string list
-  | RegExp        of string * Str.regexp
-  | NotRegExp     of string * Str.regexp
+    IdNoConstraint
+  | IdNegIdSet      of string list
+  | IdRegExp        of string * Str.regexp
+  | IdNotRegExp     of string * Str.regexp
 
 (* --------------------------------------------------------------------- *)
 (* Modified code *)
@@ -148,9 +148,9 @@ and base_expression =
   | Paren          of string mcode (* ( *) * expression *
                       string mcode (* ) *)
 
-  | MetaErr        of meta_name mcode * expression list * keep_binding *
+  | MetaErr        of meta_name mcode * constraints * keep_binding *
 	              inherited
-  | MetaExpr       of meta_name mcode * expression list * keep_binding *
+  | MetaExpr       of meta_name mcode * constraints * keep_binding *
 	              Type_cocci.typeC list option * form * inherited
   | MetaExprList   of meta_name mcode * listlen option *
 	              keep_binding * inherited (* only in arg lists *)
@@ -169,6 +169,11 @@ and base_expression =
 
   | OptExp         of expression
   | UniqueExp      of expression
+
+and constraints =
+    NoConstraint
+  | NotIdCstrt     of idconstraint
+  | NotExpCstrt    of expression list
 
 and form = ANY | ID | LocalID | CONST (* form for MetaExp *)
 

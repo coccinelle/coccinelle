@@ -8,7 +8,7 @@ type idinfo = Ast.meta_name * Data.iconstraints * Ast0.pure * Data.clt
 type expinfo = Ast.meta_name * Data.econstraints * Ast0.pure * Data.clt
 type tyinfo = Ast.meta_name * Ast0.typeC list * Ast0.pure * Data.clt
 type list_info = Ast.meta_name * Ast.meta_name option * Ast0.pure * Data.clt
-type typed_info =
+type typed_expinfo =
     Ast.meta_name * Data.econstraints * Ast0.pure *
       Type_cocci.typeC list option * Data.clt
 type pos_info = Ast.meta_name * Data.pconstraints * Ast.meta_collect * Data.clt

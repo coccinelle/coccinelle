@@ -21,7 +21,7 @@ and line_type =
   | CONTEXT | UNIQUE | OPT
 
 type iconstraints = Ast_cocci.idconstraint
-type econstraints = Ast0_cocci.expression list
+type econstraints = Ast0_cocci.constraints
 type pconstraints = Ast_cocci.meta_name list
 
 val in_rule_name : bool ref (* true if parsing the rule name *)

@@ -106,8 +106,8 @@ and base_expression =
   | SizeOfType     of string mcode (* sizeof *) * string mcode (* ( *) *
                       typeC * string mcode (* ) *)
   | TypeExp        of typeC
-  | MetaErr        of Ast_cocci.meta_name mcode * expression list * pure
-  | MetaExpr       of Ast_cocci.meta_name mcode * expression list *
+  | MetaErr        of Ast_cocci.meta_name mcode * constraints * pure
+  | MetaExpr       of Ast_cocci.meta_name mcode * constraints *
 	              Type_cocci.typeC list option * Ast_cocci.form * pure
   | MetaExprList   of Ast_cocci.meta_name mcode (* only in arglists *) *
 	              listlen * pure
@@ -123,6 +123,11 @@ and base_expression =
   | UniqueExp      of expression
 
 and expression = base_expression wrap
+
+and constraints =
+    NoConstraint
+  | NotIdCstrt     of Ast_cocci.idconstraint
+  | NotExpCstrt    of expression list
 
 and listlen = Ast_cocci.meta_name mcode option
 

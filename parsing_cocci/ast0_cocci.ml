@@ -116,8 +116,8 @@ and base_expression =
   | SizeOfType     of string mcode (* sizeof *) * string mcode (* ( *) *
                       typeC * string mcode (* ) *)
   | TypeExp        of typeC (* type name used as an expression, only in args *)
-  | MetaErr        of Ast.meta_name mcode * expression list * pure
-  | MetaExpr       of Ast.meta_name mcode * expression list *
+  | MetaErr        of Ast.meta_name mcode * constraints * pure
+  | MetaExpr       of Ast.meta_name mcode * constraints *
 	              Type_cocci.typeC list option * Ast.form * pure
   | MetaExprList   of Ast.meta_name mcode (* only in arg lists *) *
 	              listlen * pure
@@ -133,6 +133,11 @@ and base_expression =
   | UniqueExp      of expression
 
 and expression = base_expression wrap
+
+and constraints =
+    NoConstraint
+  | NotIdCstrt     of Ast.idconstraint
+  | NotExpCstrt    of expression list
 
 and listlen = Ast.meta_name mcode option
 
@@ -611,7 +616,7 @@ let rec reverse_type ty =
 	(* not right... *)
 	EnumName
 	  (make_mcode "enum",
-	   context_wrap(MetaId(make_mcode ("",tag),Ast.NoConstraint,Impure)))
+	   context_wrap(MetaId(make_mcode ("",tag),Ast.IdNoConstraint,Impure)))
       else
 	EnumName(make_mcode "enum",context_wrap(Id(make_mcode tag)))
   | Type_cocci.StructUnionName(su,mv,tag) ->
@@ -620,7 +625,7 @@ let rec reverse_type ty =
 	(* not right... *)
 	StructUnionName
 	  (reverse_structUnion su,
-	   Some(context_wrap(MetaId(make_mcode ("",tag),Ast.NoConstraint,Impure))))
+	   Some(context_wrap(MetaId(make_mcode ("",tag),Ast.IdNoConstraint,Impure))))
       else
 	StructUnionName
 	  (reverse_structUnion su,
