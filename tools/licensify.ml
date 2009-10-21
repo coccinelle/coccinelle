@@ -19,17 +19,25 @@ let lines =
 "Coccinelle under other licenses."
 ]
 
-let c_lines = "/*" :: (List.map (function x -> "* "^x) lines) @ ["*/"]
 
-let ml_lines = "(*" :: (List.map (function x -> "* "^x) lines) @ ["*)"]
+let comment_lines =
+  List.map (function x -> if x <> "" then " * "^x else " *") lines
 
-let make_lines = (List.map (function x -> "# "^x) lines)
+let cpp_lines = "/*" :: comment_lines @ [" */"]
+
+let ml_lines = "(*" :: comment_lines @ [" *)"]
+
+let make_lines = (List.map (function x -> if x <> "" then "# "^x else "#") lines)
+let c_lines = (List.map (function x -> if x <> "" then "// "^x else "//") lines)
 
 let do_one file =
   let lines =
-    if Filename.check_suffix file ".mly" then c_lines else
-    if Filename.check_suffix file ".ml" then ml_lines else
-    if Filename.check_suffix file ".mll" then ml_lines else
+    if Filename.check_suffix file ".cocci" then c_lines else
+    if Filename.check_suffix file ".mly"   then cpp_lines else
+    if Filename.check_suffix file ".ml"    then ml_lines else
+    if Filename.check_suffix file ".mli"   then ml_lines else
+    if Filename.check_suffix file ".mll"   then ml_lines else
+    if Filename.check_suffix file ".pl"    then make_lines else
     if Filename.basename file = "Makefile" then make_lines else
     failwith (Printf.sprintf "unknown file type: %s" file) in
   let _ = Sys.command (Printf.sprintf "cp %s /tmp/tmpfl" file) in
