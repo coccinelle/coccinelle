@@ -367,6 +367,10 @@ OCAMLVERSION=$(shell ocaml -version |perl -p -e 's/.*version (.*)/$$1/;')
 # the scripts/licensify has been run at least once.
 # For the 'make bintar' I can do it from my original repo.
 
+prepackage:
+	cvs up -CdP
+	$(MAKE) distclean
+	$(MAKE) licensify
 
 package:
 	$(MAKE) srctar
