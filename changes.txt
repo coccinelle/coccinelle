@@ -3,8 +3,8 @@
 * 0.1.11
 
 ** Language:
-- Meta-identifier/function could be filtered from SmPL by
-  regular expressions using the "~=" operator followed by
+- Meta-identifier/function and constant could be filtered from SmPL by
+  regular expressions using the "~=" and "!~=" operators followed by
   an OCaml regular expression (see man Str) in double quote.
 
 ** Features:
