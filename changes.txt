@@ -6,10 +6,11 @@
 - Meta-identifier/function and constant could be filtered from SmPL by
   regular expressions using the "~=" and "!~=" operators followed by
   an OCaml regular expression (see man Str) in double quote.
+- virtual rules, which can be referenced in depends, and set and unset
+  using the command-line options -D
+- ++ for multiple additions
 
 ** Features:
-- virtual rules, which can be referenced in depends, and set and unset
-  using the command-line options -D and -U
 - coccicheck: a framework to check a series of SmPL files on a project
   see scripts/coccicheck for more information
 
@@ -25,7 +26,6 @@
 - eliminate unnecessary consideration of CVS strings.  Thanks to David
   Young for pointing out the problem.
 - completely new treatment of statement metavariables
-- ++ for multiple additions
 - better type checking for macro definitions
 - drop regression testing in -parse_c
 
