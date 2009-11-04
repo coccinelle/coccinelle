@@ -1,3 +1,7 @@
+@initialize:python@
+
+from coccilib.org import print_todo, print_link
+
 @r@
 position p1, p2;
 identifier f;
@@ -12,15 +16,15 @@ p2 << r.p2;
 f  << r.f;
 @@
 
-cocci.print_main (p1)
-cocci.print_sec (p2)
+print_todo (p1)
+print_link (p2)
 
 print ""
 
-cocci.print_main (p1, "foo")
-cocci.print_sec (p2, "foo")
+cocci.print_main ("foo", p1)
+cocci.print_sec ("foo", p2)
 
 print ""
 
-cocci.print_main (p1, "foo", "ovl-face3")
-cocci.print_sec (p2, "foo", "ovl-face4")
+cocci.print_main ("foo", p1, "ovl-face3")
+cocci.print_sec ("foo", p2, "ovl-face4")
