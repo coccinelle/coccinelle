@@ -164,10 +164,7 @@ $(EXEC).top: $(LIBS) $(OBJS)
 
 clean::
 	rm -f $(TARGET) $(TARGET).opt $(TARGET).top
-
-clean::
 	rm -f dllpycaml_stubs.so
-
 
 .PHONY:: tools configure
 
@@ -338,24 +335,28 @@ OCAMLVERSION=$(shell ocaml -version |perl -p -e 's/.*version (.*)/$$1/;')
 
 # Procedure to do first time:
 #  cd ~/release
-#  cvs checkout coccinelle
+#  cvs checkout coccinelle -dP
 #  cd coccinelle
-#  cvs update -d -P
-#  touch **/*
-#  make licensify
-#  remember to comment the -g -dtypes in this Makefile
+#
+# Procedure to do each time:
+#
+#  1) make prepackage # WARN: These will clean your local rep. of pending modifications
+#
+#  UPDATE VERSION number in globals/config.ml.in
+#  and commit it with
+#
+#  2) make release
+#
+#  The project is then automatically licensified.
+#
+#  Remember to comment the -g -dtypes in this Makefile
 #  You can also remove a few things, for instance I removed in this
 #   Makefile things related to popl/ and popl09/
-
-# Procedure to do each time:
-#  cvs update
 #  make sure that ocaml is the distribution ocaml of /usr/bin, not ~pad/...
-#  modify globals/config.ml.in
-#  cd globals/; cvs commit -m"new version"  (do not commit from the root!)
-#  ./configure --without-python
-#  can make; ./spatch -testall to check and update the SCORE_expected.sexp
-#  make package
-#  make website
+#
+#  3) make package
+#
+#  if WEBSITE is set properly, you can also run 'make website'
 # Check that run an ocaml in /usr/bin
 
 # To test you can try compile and run spatch from different instances
@@ -370,6 +371,9 @@ OCAMLVERSION=$(shell ocaml -version |perl -p -e 's/.*version (.*)/$$1/;')
 prepackage:
 	cvs up -CdP
 	$(MAKE) distclean
+
+release:
+	cvs ci -m "Release $(VERSION)" globals/config.ml-in
 	$(MAKE) licensify
 
 package:
