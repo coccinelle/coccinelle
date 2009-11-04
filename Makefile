@@ -171,7 +171,7 @@ clean::
 configure:
 	./configure
 
-Makefile.config:    
+Makefile.config:
 	@echo "Makefile.config is missing. Have you run ./configure?"
 	@exit 1
 
@@ -457,53 +457,11 @@ fixdates:
 ocamlversion:
 	@echo $(OCAMLVERSION)
 
-
-##############################################################################
-# Pad specific rules
-##############################################################################
-
-#TOP=/home/pad/mobile/project-coccinelle
-WEBSITE=/home/pad/mobile/homepage/software/project-coccinelle
-
-website:
-	cp $(TMP)/$(PACKAGE).tgz                $(WEBSITE)
-	cp $(TMP)/$(PACKAGE)-bin-x86.tgz        $(WEBSITE)
-	cp $(TMP)/$(PACKAGE)-bin-x86-static.tgz $(WEBSITE)
-	cp $(TMP)/$(PACKAGE)-bin-bytecode-$(OCAMLVERSION).tgz   $(WEBSITE)
-	rm -f $(WEBSITE)/LATEST* $(WEBSITE)/coccinelle-latest.tgz
-	cp changes.txt $(WEBSITE)/changes-$(VERSION).txt
-	cd $(WEBSITE); touch LATEST_IS_$(VERSION); ln -s $(PACKAGE).tgz coccinelle-latest.tgz
-	cp readme.txt $(WEBSITE)
-
-
-#TXT=$(wildcard *.txt)
-syncwiki:
-#	unison ~/public_html/wiki/wiki-LFS/data/pages/ docs/wiki/
-#	set -e; for i in $(TXT); do unison $$i docs/wiki/$$i; done
-
-darcsweb:
-#	@echo pull from ~/public_html/darcs/c-coccinelle and c-commons and lib-xxx
-
-DARCSFORESTS=commons ocamlsexp \
- parsing_c parsing_cocci engine
-
-update_darcs:
-	darcs pull
-	set -e; for i in $(DARCSFORESTS); do cd $$i; darcs pull; cd ..; done
-
-#darcs diff -u
-diff_darcs:
-	set -e; for i in $(DARCSFORESTS); do cd $$i; darcs diff -u; cd ..; done
-
-##############################################################################
-# Git Developer rules
-##############################################################################
-gitupdate:
-	git cvsimport -d :ext:topps:/var/cvs/cocci  coccinelle
-
 ##############################################################################
 # Developer rules
 ##############################################################################
+
+-include Makefile.dev
 
 test: $(TARGET)
 	./$(TARGET) -testall
