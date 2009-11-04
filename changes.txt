@@ -28,6 +28,8 @@
 - completely new treatment of statement metavariables
 - better type checking for macro definitions
 - drop regression testing in -parse_c
+- proper consideration of #define macro arguments in checking for the use
+  of metavariables and in computing the line numbers of complex terms
 
 * 0.1.10
 

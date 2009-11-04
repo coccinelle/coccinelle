@@ -136,7 +136,7 @@ let collect_minus_join_points root =
   let bind x y = x @ y in
   let option_default = [] in
 
-  let mcode (_,_,info,mcodekind,_,_) =
+  let mcode (x,_,info,mcodekind,_,_) =
     if List.mem (info.Ast0.pos_info.Ast0.offset) unfavored_tokens
     then [(Unfavored,info,mcodekind)]
     else [(Favored,info,mcodekind)] in
@@ -368,7 +368,7 @@ let verify l =
 		  then
 		    failwith
 		      (Printf.sprintf
-			 "error in collection of - tokens %d less than %d"
+			 "error in collection of - tokens: line %d less than line %d"
 			 (token_real_start_line cur) real_prev);
 		  (token_end_line cur,token_real_end_line cur))
 	      (token_end_line (List.hd l1), token_real_end_line (List.hd l1))

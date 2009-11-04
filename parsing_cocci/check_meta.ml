@@ -344,12 +344,26 @@ and statement old_metas table minus s =
       parameter_list old_metas table minus params;
       dots (statement old_metas table minus) body
   | Ast0.Include(inc,s) -> () (* no metavariables possible *)
-  | Ast0.Define(def,id,_,body) ->
+  | Ast0.Define(def,id,params,body) ->
       ident GLOBAL old_metas table minus id;
+      define_parameters old_metas table minus params;
       dots (statement old_metas table minus) body
   | Ast0.Label(i,_) -> ident ID old_metas table minus i
   | Ast0.Goto(_,i,_) -> ident ID old_metas table minus i
   | _ -> () (* no metavariable subterms *)
+
+and define_param old_metas table minus p =
+  match Ast0.unwrap p with
+    Ast0.DParam(id) -> ident GLOBAL old_metas table minus id
+  | Ast0.DPComma(_) | Ast0.DPdots(_) | Ast0.DPcircles(_) ->
+      () (* no metavariable subterms *)
+  | Ast0.OptDParam(dp)    -> define_param old_metas table minus dp
+  | Ast0.UniqueDParam(dp) -> define_param old_metas table minus dp
+
+and define_parameters old_metas table minus x =
+  match Ast0.unwrap x with
+    Ast0.NoParams -> ()
+  | Ast0.DParams(lp,dp,rp) -> dots (define_param old_metas table minus) dp
 
 and fninfo old_metas table minus = function
     Ast0.FStorage(stg) -> ()
