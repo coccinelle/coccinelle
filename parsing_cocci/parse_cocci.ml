@@ -1412,6 +1412,7 @@ let parse_iso_files existing_isos iso_files extra_path =
   existing_isos@(List.concat (List.rev res))
 
 let rec parse file =
+  Lexer_cocci.init();
   let table = Common.full_charpos_to_pos file in
   Common.with_open_infile file (fun channel ->
   let lexbuf = Lexing.from_channel channel in
@@ -1435,6 +1436,7 @@ let rec parse file =
 		  | Data.Iso s -> (include_files,s::iso_files,virt)
 		  | Data.Virt l -> (include_files,iso_files,l@virt))
 	      ([],[],[]) include_and_iso_files in
+
 	  List.iter (function x -> Hashtbl.add Lexer_cocci.rule_names x ())
 	    virt;
 
@@ -1617,7 +1619,8 @@ let rec parse file =
 	     (function prev -> function cur -> Common.union_set cur prev)
 	     iso_files extra_iso_files,
 	   (* included rules first *)
-	   List.fold_left (@) (loop [] (x = PC.TArob)) (List.rev extra_rules),
+	   List.fold_left (function prev -> function cur -> cur@prev)
+	     (loop [] (x = PC.TArob)) (List.rev extra_rules),
 	   List.fold_left (@) virt extra_virt (*no dups allowed*))
       |	_ -> failwith "unexpected code before the first rule\n")
   | (false,[(PC.TArobArob,_)]) | (false,[(PC.TArob,_)]) ->
@@ -1628,7 +1631,6 @@ let rec parse file =
 (* parse to ast0 and then convert to ast *)
 let process file isofile verbose =
   let extra_path = Filename.dirname file in
-  Lexer_cocci.init();
   let (iso_files, rules, virt) = parse file in
   let virt = eval_virt virt in
   let std_isos =
@@ -1736,6 +1738,8 @@ let process file isofile verbose =
       rules in
   let parsed = List.concat parsed in
   let disjd = Disjdistr.disj parsed in
+
+  List.iter (function (_,r) -> Pretty_print_cocci.unparse r) disjd;
 
   let (metavars,code,fvs,neg_pos,ua,pos) = Free_vars.free_vars disjd in
   if !Flag_parsing_cocci.show_SP

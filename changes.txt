@@ -30,6 +30,8 @@
 - drop regression testing in -parse_c
 - proper consideration of #define macro arguments in checking for the use
   of metavariables and in computing the line numbers of complex terms
+- better parsing of included .cocci files
+- put included .cocci files in the right order
 
 * 0.1.10
 
