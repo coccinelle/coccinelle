@@ -539,7 +539,8 @@ let rec print_dependencies str local global dep =
 	| Ast_cocci.OrDep(s1,s2)  ->
 	    loop s1;
 	    loop s2
-	| Ast_cocci.NoDep -> () in
+	| Ast_cocci.NoDep -> ()
+	| Ast_cocci.FailDep -> pr2 "False not satisfied" in
       loop dep
     end
 

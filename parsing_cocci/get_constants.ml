@@ -244,6 +244,7 @@ let rec dependent = function
   | Ast.AndDep (d1,d2) -> dependent d1 or dependent d2
   | Ast.OrDep (d1,d2) -> dependent d1 && dependent d2
   | Ast.NoDep -> false
+  | Ast.FailDep -> true
 
 (* ------------------------------------------------------------------------ *)
 

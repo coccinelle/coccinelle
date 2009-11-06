@@ -409,6 +409,7 @@ let rec dependencies env = function
   | Ast.AndDep (d1,d2) -> build_and (dependencies env d1) (dependencies env d2)
   | Ast.OrDep (d1,d2) -> build_or (dependencies env d1) (dependencies env d2)
   | Ast.NoDep -> True
+  | Ast.FailDep -> False
 
 (* ------------------------------------------------------------------------ *)
 

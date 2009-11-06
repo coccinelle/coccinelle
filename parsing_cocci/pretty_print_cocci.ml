@@ -799,7 +799,8 @@ let rec dep in_and = function
       if not in_and
       then print_or ()
       else (print_string "("; print_or(); print_string ")")
-  | Ast.NoDep -> failwith "not possible"
+  | Ast.NoDep   -> print_string "no_dep"
+  | Ast.FailDep -> print_string "fail_dep"
 
 let unparse z =
   match z with
