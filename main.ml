@@ -613,7 +613,7 @@ let adjust_stdin cfile k =
 
 let glimpse_filter (coccifile, isofile) dir =
   let (_metavars,astcocci,_free_var_lists,_negated_positions,
-       _used_after_lists,_positions_lists,_,query,_virt) =
+       _used_after_lists,_positions_lists,_,query) =
     Cocci.sp_of_file coccifile (Some isofile) in
   match query with
     None -> pr2 "no glimpse keyword inferred from snippet"; None

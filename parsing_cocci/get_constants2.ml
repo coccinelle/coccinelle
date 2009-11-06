@@ -465,12 +465,10 @@ let rule_fn tls in_plus env neg_pos =
 	| x -> (build_or x rest_info, new_plusses))
     (False,in_plus) (List.combine tls neg_pos)
 
-let get_constants rules neg_pos_vars virt =
+let get_constants rules neg_pos_vars =
   match !Flag.scanner with
     Flag.NoScanner -> None
   | Flag.Glimpse | Flag.Google _ ->
-      let virt =
-	List.map (function (x,v) -> (x, if v then True else False)) virt in
       let (info,_,_,_) =
 	List.fold_left
 	  (function (rest_info,in_plus,env,locals(*dom of env*)) ->
@@ -501,6 +499,6 @@ let get_constants rules neg_pos_vars virt =
 		    | dependencies ->
 			(build_or (build_and dependencies cur_info) rest_info,
 			 cur_plus,env,locals))
-	  (False,[],virt,[])
+	  (False,[],[],[])
 	  (List.combine (rules : Ast.rule list) neg_pos_vars) in
       interpret true info

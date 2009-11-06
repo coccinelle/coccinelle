@@ -111,15 +111,20 @@ let pm = ref UNKNOWN
 
 let patch_or_match = function
     PATCH ->
-      (match !pm with
-	MATCH -> lexerr "- or + not allowed in the first column for a match" ""
-      |	PATCH -> ()
-      |	UNKNOWN -> Flag.sgrep_mode2 := false; pm := PATCH)
+      if not !D.ignore_patch_or_match
+      then
+	(match !pm with
+	  MATCH ->
+	    lexerr "- or + not allowed in the first column for a match" ""
+	| PATCH -> ()
+	| UNKNOWN -> Flag.sgrep_mode2 := false; pm := PATCH)
   | MATCH ->
-      (match !pm with
-	PATCH -> lexerr "* not allowed in the first column for a patch" ""
-      |	MATCH -> ()
-      |	UNKNOWN -> Flag.sgrep_mode2 := true; pm := MATCH)
+      if not !D.ignore_patch_or_match
+      then
+	(match !pm with
+	  PATCH -> lexerr "* not allowed in the first column for a patch" ""
+	| MATCH -> ()
+	| UNKNOWN -> Flag.sgrep_mode2 := true; pm := MATCH)
   | _ -> failwith "unexpected argument"
 
 (* ---------------------------------------------------------------------- *)

@@ -28,6 +28,7 @@ val in_rule_name : bool ref (* true if parsing the rule name *)
 val in_meta : bool ref      (* true if parsing the metavariable decls *)
 val in_iso : bool ref       (* true if parsing the isomorphisms *)
 val in_generating : bool ref(* true if generating a rule *)
+val ignore_patch_or_match : bool ref (* skip rules not satisfying virt *)
 val in_prolog : bool ref    (* true if parsing the beginning of an SP *)
 val saw_struct : bool ref   (* true if saw struct/union *)
 val inheritable_positions : string list ref

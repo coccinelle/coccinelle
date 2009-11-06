@@ -33,6 +33,7 @@ let in_rule_name = ref false
 let in_meta = ref false
 let in_iso = ref false
 let in_generating = ref false
+let ignore_patch_or_match = ref false
 let in_prolog = ref false
 (* state machine for lexer..., allows smpl keywords as type names *)
 let saw_struct = ref false

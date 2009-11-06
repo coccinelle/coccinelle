@@ -1251,21 +1251,9 @@ let eval_virt virt =
     (function x ->
       if not (List.mem x virt)
       then
-	failwith
-	  (Printf.sprintf "unknown virtual rule %s\n" x))
-    (!Flag_parsing_cocci.defined_virtual_rules @
-     !Flag_parsing_cocci.undefined_virtual_rules);
-  List.map
-    (function x ->
-      if List.mem x !Flag_parsing_cocci.defined_virtual_rules
-      then (x,true)
-      else if List.mem x !Flag_parsing_cocci.undefined_virtual_rules
-      then (x,false)
-      else
-	(*Printf.fprintf stderr
-	   "warning: no value specified for virtual rule %s, assuming unmatched\n" x;*)
-	 (x,false))
-    virt
+        failwith
+          (Printf.sprintf "unknown virtual rule %s\n" x))
+    !Flag_parsing_cocci.defined_virtual_rules
 
 let drop_last extra l = List.rev(extra@(List.tl(List.rev l)))
 
@@ -1410,6 +1398,39 @@ let parse_iso_files existing_isos iso_files extra_path =
       ([],old_names) iso_files in
   Data.in_iso := false;
   existing_isos@(List.concat (List.rev res))
+
+(* None = dependency not satisfied
+   Some dep = dependency satisfied or unknown and dep has virts optimized
+   away *)
+let eval_depend dep virt =
+  let rec loop dep =
+    match dep with
+      Ast.Dep req | Ast.EverDep req ->
+	if List.mem req virt
+	then
+	  if List.mem req !Flag_parsing_cocci.defined_virtual_rules
+	  then Some Ast.NoDep
+	  else None
+	else Some dep
+    | Ast.AntiDep antireq | Ast.NeverDep antireq ->
+	if List.mem antireq virt
+	then
+	  if not(List.mem antireq !Flag_parsing_cocci.defined_virtual_rules)
+	  then Some Ast.NoDep
+	  else None
+	else Some dep
+    | Ast.AndDep(d1,d2) ->
+	(match (loop d1, loop d2) with
+	  (None,_) | (_,None) -> None
+	| (Some Ast.NoDep,x) | (x,Some Ast.NoDep) -> x
+	| (Some x,Some y) -> Some (Ast.AndDep(x,y)))
+    | Ast.OrDep(d1,d2) ->
+	(match (loop d1, loop d2) with
+	  (None,None) -> None
+	| (Some Ast.NoDep,x) | (x,Some Ast.NoDep) | (None,x) | (x,None) -> x
+	| (Some x,Some y) -> Some (Ast.OrDep(x,y)))
+    | Ast.NoDep -> Some dep in
+  loop dep
 
 let rec parse file =
   Lexer_cocci.init();
@@ -1579,23 +1600,50 @@ let rec parse file =
 		Ast0.FinalScriptRule(language,data)) in
 
           let parse_rule old_metas starts_with_name =
+	    let keep_rule (more,rule,metavars,tokens) =
+	      (more,[rule],metavars,tokens) in
+	    let drop_rule (more,_,_,tokens) =
+	      (more,[],[],tokens) in
             let rulename =
 	      get_rule_name PC.rule_name starts_with_name get_tokens file
 		"rule" in
             match rulename with
-              Ast.CocciRulename (Some s, a, b, c, d, e) ->
-                parse_cocci_rule Ast.Normal old_metas (s, a, b, c, d, e)
-            | Ast.GeneratedRulename (Some s, a, b, c, d, e) ->
-		Data.in_generating := true;
-                let res =
-		  parse_cocci_rule Ast.Generated old_metas (s,a,b,c,d,e) in
-		Data.in_generating := false;
-		res
-            | Ast.ScriptRulename(l,deps) -> parse_script_rule l old_metas deps
-            | Ast.InitialScriptRulename(l) -> parse_iscript_rule l
-            | Ast.FinalScriptRulename(l) -> parse_fscript_rule l
-            | _ -> failwith "Malformed rule name"
-            in
+              Ast.CocciRulename (Some s, dep, b, c, d, e) ->
+		(match eval_depend dep virt with
+		  Some (dep) ->
+		    keep_rule
+		      (parse_cocci_rule Ast.Normal old_metas (s,dep,b,c,d,e))
+		| None ->
+		    D.ignore_patch_or_match := true;
+                    let res =
+		      parse_cocci_rule Ast.Normal old_metas
+			(s, dep, b, c, d, e) in
+		    D.ignore_patch_or_match := false;
+		    drop_rule res)
+            | Ast.GeneratedRulename (Some s, dep, b, c, d, e) ->
+		(match eval_depend dep virt with
+		  Some (dep) ->
+		    Data.in_generating := true;
+		    let res =
+		      parse_cocci_rule Ast.Normal old_metas (s,dep,b,c,d,e) in
+		    Data.in_generating := false;
+		    keep_rule res
+		| None ->
+		    D.ignore_patch_or_match := true;
+		    Data.in_generating := true;
+                    let res =
+		      parse_cocci_rule Ast.Normal old_metas
+			(s, dep, b, c, d, e) in
+		    D.ignore_patch_or_match := false;
+		    Data.in_generating := false;
+		    drop_rule res)
+            | Ast.ScriptRulename(l,deps) ->
+		(match eval_depend deps virt with
+		  Some deps -> keep_rule(parse_script_rule l old_metas deps)
+		| None ->  drop_rule(parse_script_rule l old_metas deps))
+            | Ast.InitialScriptRulename(l) -> keep_rule(parse_iscript_rule l)
+            | Ast.FinalScriptRulename(l)   -> keep_rule(parse_fscript_rule l)
+            | _ -> failwith "Malformed rule name" in
 
 	  let rec loop old_metas starts_with_name =
 	    (!Data.init_rule)();
@@ -1608,12 +1656,12 @@ let rec parse file =
                   | _ -> failwith "unexpected token")
             in
 
-            let (more, rule, metavars, tokens) =
+            let (more, rule_lst, metavars, tokens) =
               parse_rule old_metas starts_with_name in
             if more then
-              rule::
+              rule_lst@
 	      (loop (metavars @ old_metas) (gen_starts_with_name more tokens))
-            else [rule] in
+            else rule_lst in
 
 	  (List.fold_left
 	     (function prev -> function cur -> Common.union_set cur prev)
@@ -1632,7 +1680,7 @@ let rec parse file =
 let process file isofile verbose =
   let extra_path = Filename.dirname file in
   let (iso_files, rules, virt) = parse file in
-  let virt = eval_virt virt in
+  eval_virt virt;
   let std_isos =
     match isofile with
       None -> []
@@ -1739,8 +1787,6 @@ let process file isofile verbose =
   let parsed = List.concat parsed in
   let disjd = Disjdistr.disj parsed in
 
-  List.iter (function (_,r) -> Pretty_print_cocci.unparse r) disjd;
-
   let (metavars,code,fvs,neg_pos,ua,pos) = Free_vars.free_vars disjd in
   if !Flag_parsing_cocci.show_SP
   then List.iter Pretty_print_cocci.unparse code;
@@ -1750,6 +1796,6 @@ let process file isofile verbose =
       (fun () -> Get_constants.get_constants code) in (* for grep *)
   let glimpse_tokens2 =
     Common.profile_code "get_glimpse_constants" (* for glimpse *)
-      (fun () -> Get_constants2.get_constants code neg_pos virt) in
+      (fun () -> Get_constants2.get_constants code neg_pos) in
 
-  (metavars,code,fvs,neg_pos,ua,pos,grep_tokens,glimpse_tokens2,virt)
+  (metavars,code,fvs,neg_pos,ua,pos,grep_tokens,glimpse_tokens2)

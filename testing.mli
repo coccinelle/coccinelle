@@ -47,8 +47,7 @@ val sp_of_file :
 	 Ast_cocci.meta_name list list list) *
       Ast_cocci.meta_name list list list *
       string list list *
-      string list option *
-      (string * bool) list
+      string list option
 
 (* TODO: Remove
 val rule_elem_of_string : string -> filename option -> Ast_cocci.rule_elem
