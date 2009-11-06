@@ -1600,10 +1600,6 @@ let rec parse file =
 		Ast0.FinalScriptRule(language,data)) in
 
           let parse_rule old_metas starts_with_name =
-	    let keep_rule (more,rule,metavars,tokens) =
-	      (more,[rule],metavars,tokens) in
-	    let drop_rule (more,_,_,tokens) =
-	      (more,[],[],tokens) in
             let rulename =
 	      get_rule_name PC.rule_name starts_with_name get_tokens file
 		"rule" in
@@ -1611,15 +1607,14 @@ let rec parse file =
               Ast.CocciRulename (Some s, dep, b, c, d, e) ->
 		(match eval_depend dep virt with
 		  Some (dep) ->
-		    keep_rule
-		      (parse_cocci_rule Ast.Normal old_metas (s,dep,b,c,d,e))
+		    parse_cocci_rule Ast.Normal old_metas (s,dep,b,c,d,e)
 		| None ->
 		    D.ignore_patch_or_match := true;
                     let res =
 		      parse_cocci_rule Ast.Normal old_metas
 			(s, dep, b, c, d, e) in
 		    D.ignore_patch_or_match := false;
-		    drop_rule res)
+		    res)
             | Ast.GeneratedRulename (Some s, dep, b, c, d, e) ->
 		(match eval_depend dep virt with
 		  Some (dep) ->
@@ -1627,7 +1622,7 @@ let rec parse file =
 		    let res =
 		      parse_cocci_rule Ast.Normal old_metas (s,dep,b,c,d,e) in
 		    Data.in_generating := false;
-		    keep_rule res
+		    res
 		| None ->
 		    D.ignore_patch_or_match := true;
 		    Data.in_generating := true;
@@ -1636,13 +1631,13 @@ let rec parse file =
 			(s, dep, b, c, d, e) in
 		    D.ignore_patch_or_match := false;
 		    Data.in_generating := false;
-		    drop_rule res)
+		    res)
             | Ast.ScriptRulename(l,deps) ->
 		(match eval_depend deps virt with
-		  Some deps -> keep_rule(parse_script_rule l old_metas deps)
-		| None ->  drop_rule(parse_script_rule l old_metas deps))
-            | Ast.InitialScriptRulename(l) -> keep_rule(parse_iscript_rule l)
-            | Ast.FinalScriptRulename(l)   -> keep_rule(parse_fscript_rule l)
+		  Some deps -> parse_script_rule l old_metas deps
+		| None ->  parse_script_rule l old_metas deps)
+            | Ast.InitialScriptRulename(l) -> parse_iscript_rule l
+            | Ast.FinalScriptRulename(l)   -> parse_fscript_rule l
             | _ -> failwith "Malformed rule name" in
 
 	  let rec loop old_metas starts_with_name =
@@ -1656,12 +1651,12 @@ let rec parse file =
                   | _ -> failwith "unexpected token")
             in
 
-            let (more, rule_lst, metavars, tokens) =
+            let (more, rule, metavars, tokens) =
               parse_rule old_metas starts_with_name in
             if more then
-              rule_lst@
+              rule::
 	      (loop (metavars @ old_metas) (gen_starts_with_name more tokens))
-            else rule_lst in
+            else [rule] in
 
 	  (List.fold_left
 	     (function prev -> function cur -> Common.union_set cur prev)
