@@ -506,6 +506,7 @@ let rec interpret_dependencies local global = function
       (interpret_dependencies local global s1) or
       (interpret_dependencies local global s2)
   | Ast_cocci.NoDep -> true
+  | Ast_cocci.FailDep -> false
 	
 let rec print_dependencies str local global dep =
   if !Flag_cocci.show_dependencies

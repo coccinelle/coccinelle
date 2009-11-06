@@ -1429,7 +1429,8 @@ let eval_depend dep virt =
 	  (None,None) -> None
 	| (Some Ast.NoDep,x) | (x,Some Ast.NoDep) | (None,x) | (x,None) -> x
 	| (Some x,Some y) -> Some (Ast.OrDep(x,y)))
-    | Ast.NoDep -> Some dep in
+    | Ast.NoDep | Ast.FailDep -> Some dep
+    in
   loop dep
 
 let rec parse file =
@@ -1612,7 +1613,7 @@ let rec parse file =
 		    D.ignore_patch_or_match := true;
                     let res =
 		      parse_cocci_rule Ast.Normal old_metas
-			(s, dep, b, c, d, e) in
+			(s, Ast.FailDep, b, c, d, e) in
 		    D.ignore_patch_or_match := false;
 		    res)
             | Ast.GeneratedRulename (Some s, dep, b, c, d, e) ->
@@ -1628,14 +1629,14 @@ let rec parse file =
 		    Data.in_generating := true;
                     let res =
 		      parse_cocci_rule Ast.Normal old_metas
-			(s, dep, b, c, d, e) in
+			(s, Ast.FailDep, b, c, d, e) in
 		    D.ignore_patch_or_match := false;
 		    Data.in_generating := false;
 		    res)
             | Ast.ScriptRulename(l,deps) ->
 		(match eval_depend deps virt with
 		  Some deps -> parse_script_rule l old_metas deps
-		| None ->  parse_script_rule l old_metas deps)
+		| None ->  parse_script_rule l old_metas Ast.FailDep)
             | Ast.InitialScriptRulename(l) -> parse_iscript_rule l
             | Ast.FinalScriptRulename(l)   -> parse_fscript_rule l
             | _ -> failwith "Malformed rule name" in

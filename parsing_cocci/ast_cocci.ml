@@ -541,7 +541,7 @@ and dependency =
   | NeverDep of string (* rule never applies for any binding *)
   | AndDep of dependency * dependency
   | OrDep of dependency * dependency
-  | NoDep
+  | NoDep | FailDep
 
 and rule_with_metavars = metavar list * rule
 
