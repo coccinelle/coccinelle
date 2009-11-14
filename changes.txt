@@ -13,6 +13,7 @@
 ** Features:
 - coccicheck: a framework to check a series of SmPL files on a project
   see scripts/coccicheck for more information
+- added -keep_comments option for the unparsing of the transformed code
 
 ** Bugfix:
 - bind position variables to the correct starting position in the case of a
@@ -32,6 +33,7 @@
   of metavariables and in computing the line numbers of complex terms
 - better parsing of included .cocci files
 - put included .cocci files in the right order
+- bind position variables only once for #include
 
 * 0.1.10
 

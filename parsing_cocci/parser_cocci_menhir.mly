@@ -612,7 +612,8 @@ filespec:
 includes:
   TIncludeL
     { Ast0.wrap
-	      (Ast0.Include(P.clt2mcode "#include" (P.drop_aft (P.id2clt $1)),
+	      (Ast0.Include(P.clt2mcode "#include"
+			      (P.drop_pos (P.drop_aft (P.id2clt $1))),
 			    let (arity,ln,lln,offset,col,strbef,straft,pos) =
 			      P.id2clt $1 in
 			    let clt =
@@ -622,7 +623,8 @@ includes:
 			      (P.drop_bef clt))) }
 | TIncludeNL
     { Ast0.wrap
-	      (Ast0.Include(P.clt2mcode "#include" (P.drop_aft (P.id2clt $1)),
+	      (Ast0.Include(P.clt2mcode "#include"
+			      (P.drop_pos (P.drop_aft (P.id2clt $1))),
 			    let (arity,ln,lln,offset,col,strbef,straft,pos) =
 			      P.id2clt $1 in
 			    let clt =

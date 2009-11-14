@@ -436,6 +436,9 @@ let other_options = [
       Flag.make_hrule := Some s; FC.include_options := FC.I_NO_INCLUDES),
     "    semantic patch generation";
 
+    "-keep_comments", Arg.Set Flag_parsing_c.keep_comments,
+    "   keep comments around removed code";
+
     "-loop",              Arg.Set Flag_ctl.loop_in_src_code,    " ";
     "-no_loops",          Arg.Set Flag_parsing_c.no_loops,
     "   drop all back edges derived from looping constructs - unsafe";

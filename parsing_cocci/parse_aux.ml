@@ -37,6 +37,9 @@ let drop_bef (arity,line,lline,offset,col,strbef,straft,pos) =
 let drop_aft (arity,line,lline,offset,col,strbef,straft,pos) =
   (arity,line,lline,offset,col,strbef,[],pos)
 
+let drop_pos (arity,line,lline,offset,col,strbef,straft,pos) =
+  (arity,line,lline,offset,col,strbef,straft,Ast0.NoMetaPos)
+
 let clt2mcode str = function
     (Data.MINUS,line,lline,offset,col,strbef,straft,pos)       ->
       (str,Ast0.NONE,make_info line lline offset col strbef straft,

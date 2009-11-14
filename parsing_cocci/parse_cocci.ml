@@ -1492,6 +1492,11 @@ let rec parse file =
             let (_, plus_tokens) =
 	      split_token_stream (minus_to_nothing tokens) in
 
+	    (*
+	       print_tokens "minus tokens" minus_tokens;
+	       print_tokens "plus tokens" plus_tokens;
+	    *)
+
 	    let minus_tokens = consume_minus_positions minus_tokens in
 	    let minus_tokens = prepare_tokens minus_tokens in
 	    let plus_tokens = prepare_tokens plus_tokens in
