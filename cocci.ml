@@ -1521,7 +1521,8 @@ let full_engine2 (cocci_infos,toks) cfiles =
   if !Flag_cocci.worth_trying_opt && not (worth_trying cfiles toks)
   then
     begin 
-      pr2 ("not worth trying:" ^ Common.join " " cfiles);
+      pr2 ("No matches found for " Common.join " " toks ".  Skipping:" ^
+	   Common.join " " cfiles);
       cfiles +> List.map (fun s -> s, None)
     end
   else

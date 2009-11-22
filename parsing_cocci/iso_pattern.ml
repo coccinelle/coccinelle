@@ -2183,11 +2183,16 @@ let transform_expr (metavars,alts,name) e =
       make_minus.VT0.rebuilder_rec_expression
       (rebuild_mcode start_line).VT0.rebuilder_rec_expression
       name Unparse_ast0.expression extra_copy_other_plus update_others in
+  let set_property model e =
+    let e = if Ast0.get_test_pos model then Ast0.set_test_exp e else e in
+    if Ast0.get_arg_exp model then Ast0.set_arg_exp e else e in
   match alts with
-    (Ast0.ExprTag(_)::_)::_ -> process do_nothing
-  | (Ast0.ArgExprTag(_)::_)::_ when Ast0.get_arg_exp e -> process do_nothing
+    (Ast0.ExprTag(_)::_)::_ ->
+      process (set_property e)
+  | (Ast0.ArgExprTag(_)::_)::_ when Ast0.get_arg_exp e ->
+      process (set_property e)
   | (Ast0.TestExprTag(_)::_)::_ when Ast0.get_test_pos e ->
-      process Ast0.set_test_exp
+      process (set_property e)
   | _ -> (0,[],e)
 
 let transform_decl (metavars,alts,name) e =
