@@ -460,7 +460,7 @@ let other_options = [
 
 
     "-disallow_nested_exps", Arg.Set Flag_matcher.disallow_nested_exps,
-       "disallow an expresion pattern from matching a term and its subterm";
+       " disallow an expresion pattern from matching a term and its subterm";
     "-disable_worth_trying_opt", Arg.Clear FC.worth_trying_opt,
     "  ";
     "-only_return_is_error_exit",
