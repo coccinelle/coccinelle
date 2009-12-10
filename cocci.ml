@@ -1177,7 +1177,7 @@ let rec apply_cocci_rule r rules_that_have_ever_matched es
 		    if !Flag_ctl.partial_match
 		    then
 		      printf
-			"Empty list of bindings, I will restart from old env";
+			"Empty list of bindings, I will restart from old env\n";
 		    [(old_bindings_to_keep,rules_that_have_matched)]
 		  end
 		else
