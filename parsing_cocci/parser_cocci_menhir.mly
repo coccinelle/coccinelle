@@ -251,11 +251,13 @@ metadec:
     { P.create_fresh_metadec kindfn ids }
 | ar=arity ispure=pure
   kindfn=metakind_atomic
-  ids=comma_list(pure_ident_or_meta_ident_with_idconstraint(re_or_not_eqid)) TMPtVirg
+  ids=comma_list(pure_ident_or_meta_ident_with_idconstraint(re_or_not_eqid))
+    TMPtVirg
     { P.create_metadec_with_constraints ar ispure kindfn ids }
 | ar=arity ispure=pure
   kindfn=metakind_atomic_expi
-  ids=comma_list(pure_ident_or_meta_ident_with_econstraint(re_or_not_eqe)) TMPtVirg
+  ids=comma_list(pure_ident_or_meta_ident_with_econstraint(re_or_not_eqe))
+    TMPtVirg
     { P.create_metadec_with_constraints ar ispure kindfn ids }
 | ar=arity ispure=pure
   kindfn=metakind_atomic_expe

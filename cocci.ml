@@ -1369,7 +1369,8 @@ and process_a_ctl_a_env_a_toplevel  a b c f=
 
 
 let rec bigloop2 rs (ccs: file_info list) =
-  let es = ref [(Ast_c.emptyMetavarsBinding,[])] in
+  let init_es = [(Ast_c.emptyMetavarsBinding,[])] in
+  let es = ref init_es in
   let ccs = ref ccs in
   let rules_that_have_ever_matched = ref [] in
 
@@ -1413,7 +1414,7 @@ let rec bigloop2 rs (ccs: file_info list) =
 		      )
             ([],[]) !es in
 
-        es := newes;
+        es := (if newes = [] then init_es else newes);
     | CocciRuleCocciInfo r ->
 	apply_cocci_rule r rules_that_have_ever_matched
 	  es ccs);
