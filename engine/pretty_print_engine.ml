@@ -49,9 +49,16 @@ and pp_binding subst =
 let pp_binding_kind2 = function
   | ParenVal s -> pp "pv("; pp_meta s; pp ")"
   | NormalMetaVal x -> pp_binding_kind x
-  | LabelVal xs -> 
+  | LabelVal (Absolute xs) -> 
       begin
         pp "labelval";
+        pp "(";
+        Common.print_between (fun () -> pp ",") Format.print_int xs;
+        pp ")";
+      end
+  | LabelVal (Prefix xs) -> 
+      begin
+        pp "prefixlabelval";
         pp "(";
         Common.print_between (fun () -> pp ",") Format.print_int xs;
         pp ")";

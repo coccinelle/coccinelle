@@ -79,18 +79,19 @@ let (labels_for_ctl: string list (* dropped isos *) ->
       | Lib_engine.Paren _, _ -> []
       | Lib_engine.Label s, _ -> 
           let labels = F.extract_labels node in
-          [(nodei, (p,[(s --> (Lib_engine.LabelVal labels))]))]
+          [(nodei,
+	    (p,[(s --> (Lib_engine.LabelVal (Lib_engine.Absolute labels)))]))]
       | Lib_engine.BCLabel s, _ -> 
 	  (match F.extract_bclabels node with
 	    [] -> [] (* null for all nodes that are not break or continue *)
 	  | labels ->
-              [(nodei, (p,[(s --> (Lib_engine.LabelVal labels))]))])
+              [(nodei,
+		(p,[(s -->
+		  (Lib_engine.LabelVal (Lib_engine.Absolute labels)))]))])
       | Lib_engine.PrefixLabel s, _ -> 
           let labels = F.extract_labels node in
-          let prefixes = Common.inits labels +> Common.tail in
-          prefixes +> List.map (fun prefixlabels -> 
-            (nodei, (p,[(s --> (Lib_engine.LabelVal prefixlabels))]))
-          )
+          [(nodei,
+	    (p,[(s --> (Lib_engine.LabelVal (Lib_engine.Prefix labels)))]))]
 
       | Lib_engine.Match (re), _unwrapnode -> 
           let substs = 
@@ -269,6 +270,36 @@ module PRED =
       Pretty_print_engine.pp_predicate x
   end
 
+(* prefix was proper prefix; this does not enforce that, but not sure it
+matters *)
+let prefix l1 l2 =
+  let rec loop = function
+      ([],_) -> true
+    | (_,[]) -> false
+    | (x::xs,y::ys) when x = y -> loop (xs,ys)
+    | _ -> false in
+  loop(l1,l2)
+
+let compatible_labels l1 l2 =
+  match (l1,l2) with
+    (Lib_engine.Absolute(l1),Lib_engine.Absolute(l2)) -> l1 =*= l2
+  | (Lib_engine.Absolute(l1),Lib_engine.Prefix(l2))   -> prefix l1 l2
+  | (Lib_engine.Prefix(l1),Lib_engine.Absolute(l2))   -> prefix l2 l1
+  | (Lib_engine.Prefix(l1),Lib_engine.Prefix(l2))     ->
+      List.hd l1 =*= List.hd l2 (* labels are never empty *)
+
+let merge_labels l1 l2 =
+  match (l1,l2) with
+    (* known to be compatible *)
+    (Lib_engine.Absolute(_),Lib_engine.Absolute(_)) -> l1
+  | (Lib_engine.Absolute(_),Lib_engine.Prefix(_))   -> l1
+  | (Lib_engine.Prefix(_),Lib_engine.Absolute(_))   -> l2
+  | (Lib_engine.Prefix(l1),Lib_engine.Prefix(l2))   ->
+      let rec max_prefix = function
+	  (x::xs,y::ys) when x = y -> x::(max_prefix(xs,ys))
+	| (l1,l2) -> [] in
+      Lib_engine.Prefix(max_prefix(l1,l2))
+
 module ENV =
   struct
     type value = Lib_engine.metavar_binding_kind2
@@ -284,6 +315,8 @@ module ENV =
       |	(Lib_engine.NormalMetaVal(Ast_c.MetaTypeVal a),
 	 Lib_engine.NormalMetaVal(Ast_c.MetaTypeVal b)) ->
           C_vs_c.eq_type a b
+      |	(Lib_engine.LabelVal(l1),Lib_engine.LabelVal(l2)) ->
+	  compatible_labels l1 l2
       |	_ -> v =*= v'
     let merge_val v v' = (* values guaranteed to be compatible *)
       (* v *)
@@ -299,6 +332,8 @@ module ENV =
       |	(Lib_engine.NormalMetaVal(Ast_c.MetaTypeVal a),
 	 Lib_engine.NormalMetaVal(Ast_c.MetaTypeVal b)) ->
           Lib_engine.NormalMetaVal (Ast_c.MetaTypeVal (C_vs_c.merge_type a b))
+      |	(Lib_engine.LabelVal(l1),Lib_engine.LabelVal(l2)) ->
+	  Lib_engine.LabelVal(merge_labels l1 l2)
 
       |	_ -> v
     let print_mvar (_,s) = Format.print_string s

@@ -33,8 +33,10 @@ type metavars_binding = Ast_c.metavars_binding
 type metavar_binding_kind2 = 
   | NormalMetaVal of Ast_c.metavar_binding_kind
   | ParenVal of Ast_cocci.meta_name
-  | LabelVal of int list
+  | LabelVal of labelval
   | GoodVal | BadVal (* used to implement \+ *)
+
+and labelval = Absolute of int list | Prefix of int list
 
 and metavars_binding2 = (mvar, metavar_binding_kind2) Common.assoc
 
