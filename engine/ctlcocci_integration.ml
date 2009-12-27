@@ -270,8 +270,7 @@ module PRED =
       Pretty_print_engine.pp_predicate x
   end
 
-(* prefix was proper prefix; this does not enforce that, but not sure it
-matters *)
+(* prefix has to be nonempty *)
 let prefix l1 l2 =
   let rec loop = function
       ([],_) -> true
@@ -286,6 +285,7 @@ let compatible_labels l1 l2 =
   | (Lib_engine.Absolute(l1),Lib_engine.Prefix(l2))   -> prefix l1 l2
   | (Lib_engine.Prefix(l1),Lib_engine.Absolute(l2))   -> prefix l2 l1
   | (Lib_engine.Prefix(l1),Lib_engine.Prefix(l2))     ->
+      not (l1 = []) && not (l2 = []) &&
       List.hd l1 =*= List.hd l2 (* labels are never empty *)
 
 let merge_labels l1 l2 =
