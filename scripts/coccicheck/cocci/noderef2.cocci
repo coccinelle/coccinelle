@@ -3,9 +3,9 @@
 // data, no the size of the pointer to it.
 //
 
-virtual org, patch
+virtual org, patch, diff
 
-@ depends on patch && !org@
+@ depends on patch && !org && !diff@
 type T;
 T *x;
 expression E;
@@ -15,7 +15,15 @@ memset(x, E, sizeof(
 + *
  x))
 
-@r depends on !patch && org@
+@ depends on !patch && !org && diff@
+type T;
+T *x;
+expression E;
+@@
+
+*memset(x, E, sizeof(x))
+
+@r depends on !patch && org && !diff@
 type T;
 T *x;
 expression E;

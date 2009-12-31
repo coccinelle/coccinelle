@@ -3,9 +3,9 @@
 // data, no the size of the pointer to it.
 //
 
-virtual org, patch
+virtual org, patch, diff
 
-@ depends on patch && !org expression@
+@ depends on patch && !org && !diff expression@
 expression *x;
 @@
 
@@ -15,7 +15,16 @@ x =
 +sizeof(*x)
 ...+>
 
-@r depends on !patch && org expression @
+@ depends on !patch && !org && diff expression@
+expression *x;
+@@
+
+x =
+ <+...
+*sizeof(x)
+...+>
+
+@r depends on !patch && org && !diff expression @
 expression *x;
 position p;
 @@

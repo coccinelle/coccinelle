@@ -6,16 +6,22 @@
 // URL: http://coccinelle.lip6.fr/
 // Options:
 
-virtual org,patch
+virtual org,patch,diff
 
-@depends on patch && !org@
+@depends on patch && !org && !diff@
 @@
 
 - kcalloc(1,
 + kzalloc(
           ...)
 
-@r depends on !patch && org@
+@depends on !patch && !org && diff@
+position p;
+@@
+
+*kcalloc@p(1,...)
+
+@r depends on !patch && org && !diff@
 position p;
 @@
 

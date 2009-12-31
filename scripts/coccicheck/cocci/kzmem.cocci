@@ -6,9 +6,9 @@
 // URL: http://coccinelle.lip6.fr/
 // Options:
 
-virtual org,patch
+virtual org,patch,diff
 
-@depends on patch && !org@
+@depends on patch && !org && !diff@
 expression x;
 statement S;
 @@
@@ -18,7 +18,17 @@ if (x == NULL) S
 ... when != x
 -memset(x,0,...);
 
-@r depends on !patch && org@
+@depends on !patch && !org && diff@
+expression x;
+statement S;
+@@
+
+x = kzalloc(...);
+if (x == NULL) S
+... when != x
+*memset(x,0,...);
+
+@r depends on !patch && org && !diff@
 expression x;
 statement S;
 position p;
