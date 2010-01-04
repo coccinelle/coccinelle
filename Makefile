@@ -386,6 +386,7 @@ package:
 	$(MAKE) staticbintar
 	$(MAKE) distclean       # Clean project
 	./configure             # Reconfigure project with Python support
+	$(MAKE) docs
 	$(MAKE) bintar-python
 	$(MAKE) bytecodetar-python
 	$(MAKE) coccicheck
