@@ -388,7 +388,6 @@ package:
 	./configure             # Reconfigure project with Python support
 	$(MAKE) bintar-python
 	$(MAKE) bytecodetar-python
-	$(MAKE) staticbintar-python
 	$(MAKE) coccicheck
 
 
@@ -434,13 +433,6 @@ bintar-python: all
 	rm -f $(TMP)/$(PACKAGE)
 	ln -s `pwd` $(TMP)/$(PACKAGE)
 	cd $(TMP); tar cvfz $(PACKAGE)-bin-x86-python.tgz --exclude-vcs $(BINSRC2)
-	rm -f $(TMP)/$(PACKAGE)
-
-staticbintar-python: all.opt
-	rm -f $(TMP)/$(PACKAGE)
-	ln -s `pwd` $(TMP)/$(PACKAGE)
-	make static
-	cd $(TMP); tar cvfz $(PACKAGE)-bin-x86-static-python.tgz --exclude-vcs $(BINSRC2)
 	rm -f $(TMP)/$(PACKAGE)
 
 # add ocaml version in name ?
