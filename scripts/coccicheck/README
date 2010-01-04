@@ -5,10 +5,12 @@
 
  1) ./configure mode <your project directory>
  	This will setup some default directories.
-	Check if they suit you!
+	Check in Makefile if they suit you!
 	mode is either org or diff, depending on whether you want the
  	output in Emacs org mode, or in diff format where - indicates not
  	something to remove but an item of interest.
+
+	NB: The project directory must currently be an absolute path.
 
  2) make update
  	This will create the `results` directory.

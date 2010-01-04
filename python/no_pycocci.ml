@@ -5,6 +5,8 @@ module StringMap = Map.Make (String)
 
 exception Pycocciexception
 
+let python_support = false
+
 let check_return_value v = failwith "no python"
 let check_int_return_value v = failwith "no python"
 

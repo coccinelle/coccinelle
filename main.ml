@@ -251,7 +251,8 @@ let short_options = [
 
 
   "-version",   Arg.Unit (fun () ->
-    pr2 (spf "spatch version: %s" Config.version);
+    let withpython = if Pycocci.python_support then "with" else "without" in
+    pr2 (spf "spatch version %s %s Python support" Config.version withpython);
     exit 0;
   ),
     "  guess what";

@@ -10,14 +10,38 @@ if [ "$MODE" == "" -o "$PROJECT" == "" ]; then
 	exit 1
 fi
 
+SPATCHVER=`spatch -version 2>&1 | sed "s|spatch version \([^ ]*\) .*|\1|"`
+WITHPYTHON=`spatch -version 2>&1 | sed "s|spatch version \([^ ]*\) with Python support|yes|"`
+WITHPYTHON=`echo $WITHPYTHON | sed "s|spatch version \([^ ]*\) without Python support||"`
+
+echo "Using spatch version $SPATCHVER"
+#TODO: Add version check
+
+if [ "$WITHPYTHON" ] ; then
+    echo "Your version has been build with Python support"
+else
+    echo "Your version has no Python support"
+    if [ "org" == "$MODE" ] ; then
+	echo "org mode requires Python support."
+	exit 1
+    fi
+fi
+echo
+
 echo "Using PREFIX="${PREFIX:=`pwd`}
 echo "Using PROJECT="${PROJECT:=$PREFIX/project}
 echo "Using COCCI="${COCCI:=$PREFIX/cocci}
 echo "Using RESULTS="${RESULTS:=$PREFIX/results}
-echo "Using SPFLAGS="${SPFLAGS:="-timeout 60 -use_glimpse -D $MODE"}
+
+if [ "`which glimpse`" ]; then
+    echo "Using SPFLAGS="${SPFLAGS:="-timeout 60 -use_glimpse -D $MODE"}
+else
+    echo "Using SPFLAGS="${SPFLAGS:="-timeout 60 -D $MODE"}
+fi
 
 echo -e "\nFor efficiency, run \`<coccinelle dir>/scripts/glimpseindex_cocci.sh\`"
-echo -e "in $PROJECT\n"
+echo -e "in $PROJECT"
+echo -e "NB: glimpse is available at http://webglimpse.net/ but it is not under the GPL.\n"
 
 sed -i "s|^PREFIX?=.*$|PREFIX?=${PREFIX}|" Makefile
 sed -i "s|^PROJECT?=.*$|PROJECT?=${PROJECT}|" Makefile

@@ -1,9 +1,9 @@
-PREFIX?=/tobedefine
-PROJECT?=/myproject
-SPFLAGS?="-timeout 60" # -use_glimpse -D diff
+PREFIX?=/home/npalix/Documents/build/coccinelle/scripts/coccicheck
+PROJECT?=/
+SPFLAGS?="-timeout 60 -use_glimpse -D org"
 
-COCCI?=/tobedefine/cocci
-RESULTS?=/tobedefine/results
+COCCI?=/home/npalix/Documents/build/coccinelle/scripts/coccicheck/cocci
+RESULTS?=/home/npalix/Documents/build/coccinelle/scripts/coccicheck/results
 
 .PHONY:: update viewlog viewfilteredlog viewres checkcocci
 .PHONY:: all clean distclean depend
@@ -34,7 +34,7 @@ viewfilteredlog:
 		grep -v "not worth trying" | \
 		grep -v "MultiFound field:" | \
 		grep -ve "(ONCE) warning: I consider .* as a constant" | \
-		grep -ve "TYPE: header .* not found" 
+		grep -ve "TYPE: header .* not found"
 
 viewres:
 	find $(RESULTS) -name "*.out" | xargs less
@@ -46,7 +46,7 @@ clean:
 	find $(RESULTS) -name "*.out" -delete
 	find $(RESULTS) -name "*.log" -delete
 
-distclean: 
+distclean:
 	rm -rf $(RESULTS)
 
 depend: update

@@ -6,6 +6,13 @@ echo "Using COCCI="${COCCI:=$3}
 echo "Using RESULTS="${RESULTS:=$4}
 echo "Using SPFLAGS="${SPFLAGS:=$5}
 
+if [ "`which spatch.opt`" ] ; then
+    SPATCH=spatch.opt
+else
+    SPATCH=spatch
+fi
+echo "Using $SPATCH"
+
 #echo "Using PREFIX="${PREFIX:=`pwd`}
 #echo "Using COCCI="${COCCI:=$PREFIX/cocci}
 #echo "Using PROJECT="${PROJECT:=$PREFIX/project}
@@ -29,14 +36,14 @@ for s in $SMPL;do
 	echo "FLAGS=\"`grep -E \"// +Options *:\" $COCCI/$s | cut -f2 -d\":\"`\"" >> $RESULTS/$f.sh
 	echo "INC=$PROJECT/include" >> $RESULTS/$f.sh
 	echo "echo \"Applying $COCCI/$s with: '\$FLAGS'\"" >> $RESULTS/$f.sh
-	echo "nice -19 spatch.opt $SPFLAGS \$FLAGS -I \$INC -cocci_file $COCCI/$s -dir $PROJECT/ $FLAGS \\" >> $RESULTS/$f.sh
+	echo "nice -19 $SPATCH $SPFLAGS \$FLAGS -I \$INC -cocci_file $COCCI/$s -dir $PROJECT/ $FLAGS \\" >> $RESULTS/$f.sh
 	echo "> $f.out \\" >> $RESULTS/$f.sh
 	echo "2> $f.log" >> $RESULTS/$f.sh
 	echo "echo \"$f.out completed\"" >> $RESULTS/$f.sh
 	chmod u+x $RESULTS/$f.sh
 
 done # s in $SMPL
-	
+
 
 #############################################
 # Fill the Makefile
@@ -46,7 +53,7 @@ echo -e ".SUFFIXES: .out .sh\n" > $RESULTS/Makefile
 echo -e "all: out\n" >> $RESULTS/Makefile
 echo -e ".sh.out:" >> $RESULTS/Makefile
 echo -e "\t-@./\$<\n" >> $RESULTS/Makefile
- 
+
 ALL_SMPL=`echo -n "out:"`
 
 for s in $SMPL;do
@@ -55,14 +62,14 @@ for s in $SMPL;do
 #    echo "$f.out:" >> $RESULTS/Makefile
 #    echo "	-./$f.sh" >> $RESULTS/Makefile
     ALL_SMPL="$ALL_SMPL $f.out"
-		
+
 done # s
-	 
+
 echo "$ALL_SMPL" >> $RESULTS/Makefile
 
 #############################################
 
-# Cleanup dead links 
+# Cleanup dead links
 find -L $RESULTS -type l -delete
 # Cleanup empty dir.
 find results/ -depth -type d -empty -delete

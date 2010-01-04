@@ -1,5 +1,5 @@
 # I put both stuff useful for the user and developer in this file. Could
-# separate and have a env-user.sh, env-compile.sh, env-developer.sh, 
+# separate and have a env-user.sh, env-compile.sh, env-developer.sh,
 # but it's not worth it.
 
 #!!!!You need to source me with "source env.sh" from the good directory!!!!
@@ -19,7 +19,7 @@ then
 fi
 
 if [ ! -r $DIR/standard.iso ]
-    then echo "standard.iso not found in '$DIR'. 
+    then echo "standard.iso not found in '$DIR'.
   Give the coccinelle directory as the first argument.
 ";
 else
@@ -47,4 +47,6 @@ echo adding $COCCINELLE_HOME/python to PYTHONPATH
 PYTHONPATH=$COCCINELLE_HOME/python:PYTHONPATH	; export PYTHONPATH
 
 fi
+
+export PATH=$COCCINELLE_HOME:$PATH
 

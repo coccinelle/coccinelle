@@ -6,6 +6,8 @@ module StringMap = Map.Make (String)
 
 exception Pycocciexception
 
+let python_support = true
+
 (* ------------------------------------------------------------------- *)
 (* The following definitions are from
 http://patches.ubuntu.com/by-release/extracted/debian/c/coccinelle/0.1.5dbs-2/01-system-pycaml
