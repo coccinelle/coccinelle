@@ -383,6 +383,10 @@ package:
 	$(MAKE) bintar
 	$(MAKE) bytecodetar
 	$(MAKE) staticbintar
+	./configure
+	$(MAKE) bintar-python
+	$(MAKE) bytecodetar-python
+	$(MAKE) staticbintar-python
 	$(MAKE) coccicheck
 
 
@@ -422,6 +426,27 @@ bytecodetar: all
 	ln -s `pwd` $(TMP)/$(PACKAGE)
 	make purebytecode
 	cd $(TMP); tar cvfz $(PACKAGE)-bin-bytecode-$(OCAMLVERSION).tgz --exclude-vcs $(BINSRC2)
+	rm -f $(TMP)/$(PACKAGE)
+
+bintar-python: all
+	rm -f $(TMP)/$(PACKAGE)
+	ln -s `pwd` $(TMP)/$(PACKAGE)
+	cd $(TMP); tar cvfz $(PACKAGE)-bin-x86-python.tgz --exclude-vcs $(BINSRC2)
+	rm -f $(TMP)/$(PACKAGE)
+
+staticbintar-python: all.opt
+	rm -f $(TMP)/$(PACKAGE)
+	ln -s `pwd` $(TMP)/$(PACKAGE)
+	make static
+	cd $(TMP); tar cvfz $(PACKAGE)-bin-x86-static-python.tgz --exclude-vcs $(BINSRC2)
+	rm -f $(TMP)/$(PACKAGE)
+
+# add ocaml version in name ?
+bytecodetar-python: all
+	rm -f $(TMP)/$(PACKAGE)
+	ln -s `pwd` $(TMP)/$(PACKAGE)
+	make purebytecode
+	cd $(TMP); tar cvfz $(PACKAGE)-bin-bytecode-$(OCAMLVERSION)-python.tgz --exclude-vcs $(BINSRC2)
 	rm -f $(TMP)/$(PACKAGE)
 
 coccicheck:
