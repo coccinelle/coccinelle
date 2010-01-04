@@ -15,7 +15,7 @@ update:
 	./bin/update_result_tree $(PREFIX) $(PROJECT) $(COCCI) $(RESULTS) $(SPFLAGS)
 
 viewlog:
-	find $(RESULTS) -name "*.log" | xargs cat | less
+	find $(RESULTS) -name "*.log" | xargs cat | pager
 
 viewfilteredlog:
 	find $(RESULTS) -name "*.log" | xargs cat | \
@@ -37,7 +37,7 @@ viewfilteredlog:
 		grep -ve "TYPE: header .* not found"
 
 viewres:
-	find $(RESULTS) -name "*.out" | xargs less
+	find $(RESULTS) -name "*.out" | xargs pager
 
 checkcocci:
 	for c in `find $(COCCI) -name "*.cocci"`; do spatch -parse_cocci $$c > /dev/null ; done
