@@ -2,11 +2,23 @@
 
 * 0.2.0
 ** Language:
+
 ** Features:
+- Remove duplicated code in disjunctions
+- Better error message when grep finds nothing relevant.  Thanks to Joe
+  Perches for the suggestion.
+- added -keep_comments option for the unparsing of the transformed code
 - Option "-version" now also gives information about built-in
   Python binding support.
 
 ** Bugfix:
+- proper consideration of #define macro arguments in checking for the use
+  of metavariables and in computing the line numbers of complex terms
+- better parsing of included .cocci files
+- put included .cocci files in the right order
+- bind position variables only once for #include
+- fix bug in include_match that caused everything to halt when all matches
+  were discarded
 
 * 0.1.11
 
@@ -14,17 +26,13 @@
 - Meta-identifier/function and constant could be filtered from SmPL by
   regular expressions using the "~=" and "!~=" operators followed by
   an OCaml regular expression (see man Str) in double quote.
-- virtual rules, which can be referenced in depends, and set and unset
+- Virtual rules, which can be referenced in depends, and set and unset
   using the command-line options -D
 - ++ for multiple additions
 
 ** Features:
 - coccicheck: a framework to check a series of SmPL files on a project
   see scripts/coccicheck for more information
-- remove duplicated code in disjunctions
-- better error message when grep finds nothing relevant.  Thanks to Joe
-  Perches for the suggestion.
-- added -keep_comments option for the unparsing of the transformed code
 
 ** Bugfix:
 - bind position variables to the correct starting position in the case of a
@@ -40,13 +48,6 @@
 - completely new treatment of statement metavariables
 - better type checking for macro definitions
 - drop regression testing in -parse_c
-- proper consideration of #define macro arguments in checking for the use
-  of metavariables and in computing the line numbers of complex terms
-- better parsing of included .cocci files
-- put included .cocci files in the right order
-- bind position variables only once for #include
-- fix bug in include_match that caused everything to halt when all matches
-  were discarded
 
 * 0.1.10
 
