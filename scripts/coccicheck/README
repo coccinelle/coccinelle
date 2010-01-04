@@ -12,6 +12,9 @@
 
 	NB: The project directory must currently be an absolute path.
 
+	You can overwrite the default flags on the command line:
+	SPFLAGS="-I my_include -timeout 30" ./configure mode <project>
+
  2) make update
  	This will create the `results` directory.
 	It will contain all the files needed
