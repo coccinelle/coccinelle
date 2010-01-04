@@ -1,5 +1,13 @@
 -*- org -*-
 
+* 0.2.0
+** Language:
+** Features:
+- Option "-version" now also gives information about built-in
+  Python binding support.
+
+** Bugfix:
+
 * 0.1.11
 
 ** Language:
