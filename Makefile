@@ -449,11 +449,13 @@ coccicheck:
 	tar cvfz $(TMP)/$(CCPACKAGE).tgz -C $(TMP) --exclude-vcs $(CCPACKAGE)
 	rm -rf $(TMP)/$(CCPACKAGE)
 
-clean::
+clean-packages::
 	rm -f $(TMP)/$(PACKAGE).tgz
 	rm -f $(TMP)/$(PACKAGE)-bin-x86.tgz
 	rm -f $(TMP)/$(PACKAGE)-bin-x86-static.tgz
 	rm -f $(TMP)/$(PACKAGE)-bin-bytecode-$(OCAMLVERSION).tgz
+	rm -f $(TMP)/$(PACKAGE)-bin-x86-python.tgz
+	rm -f $(TMP)/$(PACKAGE)-bin-bytecode-$(OCAMLVERSION)-python.tgz
 	rm -f $(TMP)/$(CCPACKAGE).tgz
 
 #
