@@ -34,11 +34,11 @@ echo "Using COCCI="${COCCI:=$PREFIX/cocci}
 echo "Using RESULTS="${RESULTS:=$PREFIX/results}
 
 if [ "`which glimpse`" ]; then
-    ${SPFLAGS:="-timeout 60 -use_glimpse"}
+    FLAGS=${SPFLAGS:="-timeout 60 -use_glimpse"}
 else
-    ${SPFLAGS:="-timeout 60"}
+    FLAGS=${SPFLAGS:="-timeout 60"}
 fi
-SPFLAGS="$SPFLAGS -D $MODE"
+SPFLAGS="$FLAGS -D $MODE"
 echo "Using SPFLAGS="$SPFLAGS
 
 echo -e "\nFor efficiency, run \`<coccinelle dir>/scripts/glimpseindex_cocci.sh\`"
