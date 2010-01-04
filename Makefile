@@ -377,13 +377,14 @@ release:
 	$(MAKE) licensify
 
 package:
+	$(MAKE) distclean       # Clean project
 	$(MAKE) srctar
 	./configure --without-python
 	$(MAKE) docs
 	$(MAKE) bintar
 	$(MAKE) bytecodetar
 	$(MAKE) staticbintar
-	$(MAKE) -C python clean # Clean python sub-directory
+	$(MAKE) distclean       # Clean project
 	./configure             # Reconfigure project with Python support
 	$(MAKE) bintar-python
 	$(MAKE) bytecodetar-python
