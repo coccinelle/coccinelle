@@ -383,7 +383,8 @@ package:
 	$(MAKE) bintar
 	$(MAKE) bytecodetar
 	$(MAKE) staticbintar
-	./configure
+	$(MAKE) -C python clean # Clean python sub-directory
+	./configure             # Reconfigure project with Python support
 	$(MAKE) bintar-python
 	$(MAKE) bytecodetar-python
 	$(MAKE) staticbintar-python
