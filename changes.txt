@@ -19,6 +19,7 @@
 - bind position variables only once for #include
 - fix bug in include_match that caused everything to halt when all matches
   were discarded
+- fix iso rule name in bugon test (rename unlikely into likely)
 
 * 0.1.11
 

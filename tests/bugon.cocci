@@ -1,4 +1,4 @@
-@disable unlikely@ expression E; @@
+@disable likely@ expression E; @@
 
 - if (unlikely(E)) { BUG(); }
 + BUG_ON(E);
