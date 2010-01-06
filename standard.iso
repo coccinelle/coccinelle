@@ -313,7 +313,7 @@ for(X;Y;i++) S <=> for(X;Y;++i) S
 // likely and unlikely are used to give hints to gcc to improve performance.
 
 Expression
-@ likely @ 
+@ unlikely @ 
 expression E; 
 @@
 

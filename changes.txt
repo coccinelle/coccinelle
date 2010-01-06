@@ -12,14 +12,14 @@
   Python binding support.
 
 ** Bugfix:
-- proper consideration of #define macro arguments in checking for the use
+- Proper consideration of #define macro arguments in checking for the use
   of metavariables and in computing the line numbers of complex terms
-- better parsing of included .cocci files
-- put included .cocci files in the right order
-- bind position variables only once for #include
-- fix bug in include_match that caused everything to halt when all matches
+- Better parsing of included .cocci files
+- Put included .cocci files in the right order
+- Bind position variables only once for #include
+- Fix bug in include_match that caused everything to halt when all matches
   were discarded
-- fix iso rule name in bugon test (rename unlikely into likely)
+- Merge unlikely/likely iso rules under a iso rule named unlikely
 
 * 0.1.11
 
