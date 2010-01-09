@@ -61,16 +61,7 @@ position r.p1, r.p2, r.p3;
 @@
 
 *x@p1
-...
+<...
 *goto@p3 l;
-...
-*return@p2 ...;
-
-@depends on diff && !with_goto@
-expression x;
-position r.p1, r.p2;
-@@
-
-*x@p1
-...
+...>
 *return@p2 ...;
