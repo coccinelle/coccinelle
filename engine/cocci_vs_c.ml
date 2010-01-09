@@ -2359,7 +2359,10 @@ and (struct_fields: (A.declaration list, B.field list) matcher) =
           if optwhen <> None then failwith "not handling when in argument";
 
           (* '...' can take more or less the beginnings of the arguments *)
-          let startendxs = Common.zip (Common.inits ys) (Common.tails ys) in
+          let startendxs =
+	    if eas = []
+	    then [(ys,[])] (* hack! the only one that can work *)
+	    else Common.zip (Common.inits ys) (Common.tails ys) in
           startendxs +> List.fold_left (fun acc (startxs, endxs) -> 
             acc >||> (
               
@@ -2915,7 +2918,7 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
 	 | _ -> fail in
 
        process_type
-	 >>= (fun ty ii_sub_sb -> 
+	 >>= (fun ty ii_sub_sb ->
 
             tokenf lba lbb >>= (fun lba lbb -> 
             tokenf rba rbb >>= (fun rba rbb -> 

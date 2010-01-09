@@ -125,7 +125,9 @@ module XMATCH = struct
       else xs
 *)
     (* opti? use set instead of list *)
-    m1 tin ++ m2 tin
+    let l1 = m1 tin in
+    let l2 = m2 tin in
+    if l2 = [] then l1 else l1 ++ l2 (*a small benefit; avoid a trivial @*)
 
 
   let return res = fun tin -> 

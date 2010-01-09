@@ -56,6 +56,7 @@ let process_fp fl =
   !lines
 
 (* --------------------------------------------------------------------- *)
+(* same info, different categories *)
 
 let discard_ambiguous lines =
   let rec loop = function
@@ -208,8 +209,11 @@ let rec upto = function
   | n -> (mktag (n-1)) :: (upto (n-1))
 	  
 let _ =
+  let (no_ors,args) =
+    List.partition (function "-no_ors" -> true | _ -> false)
+      (Array.to_list Sys.argv) in
   let (file,fp,env) =
-    match List.tl(Array.to_list Sys.argv) with
+    match List.tl args with
       file::env ->
 	let rec loop prev = function
 	    [] ->
@@ -233,7 +237,7 @@ let _ =
   let fp = List.fold_left (@) [] (List.map process_fp fp) in
   let i = open_in file in
   let lines = collect_lines fp i in
-  let lines = collect_ors fp lines in
+  let lines = if no_ors = [] then collect_ors fp lines else lines in
   close_in i;
   let lines = discard_ambiguous lines in
   List.iter (process_line env) lines;

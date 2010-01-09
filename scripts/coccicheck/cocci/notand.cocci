@@ -7,7 +7,7 @@
 
 virtual org,diff
 
-@r disable unlikely,likely @
+@r@
 expression E;
 constant C;
 position p;

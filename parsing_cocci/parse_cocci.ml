@@ -1479,10 +1479,10 @@ let rec parse file =
             (* get metavariable declarations *)
             let (metavars, inherited_metavars) =
 	      get_metavars PC.meta_main table file lexbuf in
-            Hashtbl.add Data.all_metadecls rule_name metavars;
-            Hashtbl.add Lexer_cocci.rule_names rule_name ();
-            Hashtbl.add Lexer_cocci.all_metavariables rule_name
-              (Hashtbl.fold
+	    Hashtbl.add Data.all_metadecls rule_name metavars;
+	    Hashtbl.add Lexer_cocci.rule_names rule_name ();
+	    Hashtbl.add Lexer_cocci.all_metavariables rule_name
+	      (Hashtbl.fold
 		 (fun key v rest -> (key,v)::rest)
 		 Lexer_cocci.metavariables []);
 
@@ -1523,7 +1523,9 @@ let rec parse file =
 	       Printf.printf "before plus parse\n";
 	    *)
 	    let plus_res =
-	      if !Flag.sgrep_mode2
+	      (* put ignore_patch_or_match with * case, which is less
+		 constraining *)
+	      if !Flag.sgrep_mode2 or !D.ignore_patch_or_match
 	      then (* not actually used for anything, except context_neg *)
 		List.map
 		  (Iso_pattern.rebuild_mcode None).VT0.rebuilder_rec_top_level

@@ -10,6 +10,7 @@
 - added -keep_comments option for the unparsing of the transformed code
 - Option "-version" now also gives information about built-in
   Python binding support.
+- slightly faster environment manipulation in pathological cases
 
 ** Bugfix:
 - Proper consideration of #define macro arguments in checking for the use
@@ -20,6 +21,7 @@
 - Fix bug in include_match that caused everything to halt when all matches
   were discarded
 - Merge unlikely/likely iso rules under a iso rule named unlikely
+- some fixes to coccicheck rules, thanks to Andrew Lunn
 
 * 0.1.11
 
