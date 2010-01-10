@@ -21,7 +21,8 @@
 - Fix bug in include_match that caused everything to halt when all matches
   were discarded
 - Merge unlikely/likely iso rules under a iso rule named unlikely
-- some fixes to coccicheck rules, thanks to Andrew Lunn
+- Some fixes to coccicheck rules, thanks to Andrew Lunn
+- Support groups in regular expression, thanks to Michael Stefaniuc
 
 * 0.1.11
 

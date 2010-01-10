@@ -713,12 +713,13 @@ and string  = parse
   | ("\\" (_ as v)) as x
        {
          (match v with
-         | 'n' -> ()  | 't' -> ()   | 'v' -> ()  | 'b' -> () | 'r' -> ()
-	 | 'f' -> () | 'a' -> ()
-	 | '\\' -> () | '?'  -> () | '\'' -> ()  | '"' -> ()
-         | 'e' -> ()
-         | '\n' -> ()
-         | _ -> lexerr "unrecognised symbol:" (tok lexbuf)
+	    | 'n' -> ()  | 't' -> ()   | 'v' -> ()  | 'b' -> () | 'r' -> ()
+	    | 'f' -> () | 'a' -> ()
+	    | '\\' -> () | '?'  -> () | '\'' -> ()  | '"' -> ()
+	    | 'e' -> ()
+	    | '\n' -> ()
+	    | '(' -> () | '|' -> () | ')' -> ()
+	    | _ -> lexerr "unrecognised symbol:" (tok lexbuf)
 	 );
           x ^ string lexbuf
        }
