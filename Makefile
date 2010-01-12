@@ -373,7 +373,7 @@ prepackage:
 	$(MAKE) distclean
 
 release:
-	cvs ci -m "Release $(VERSION)" globals/config.ml-in
+	cvs ci -m "Release $(VERSION)" globals/config.ml.in
 	$(MAKE) licensify
 
 package:
