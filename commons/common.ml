@@ -250,23 +250,32 @@ let out_chan_pr2 ?(newline=true) s =
       output_string chan (s ^ (if newline then "\n" else "")); 
       flush chan
 
+let print_to_stderr = ref true
 
-let pr2 s = 
-  prerr_string !_prefix_pr;
-  do_n !_tab_level_print (fun () -> prerr_string " ");
-  prerr_string s;
-  prerr_string "\n"; 
-  flush stderr;
-  out_chan_pr2 s;
-  ()
+let pr2 s =
+  if !print_to_stderr
+  then
+    begin
+      prerr_string !_prefix_pr;
+      do_n !_tab_level_print (fun () -> prerr_string " ");
+      prerr_string s;
+      prerr_string "\n"; 
+      flush stderr;
+      out_chan_pr2 s;
+      ()
+    end
 
 let pr2_no_nl s = 
-  prerr_string !_prefix_pr;
-  do_n !_tab_level_print (fun () -> prerr_string " ");
-  prerr_string s;
-  flush stderr;
-  out_chan_pr2 ~newline:false s;
-  ()
+  if !print_to_stderr
+  then
+    begin
+      prerr_string !_prefix_pr;
+      do_n !_tab_level_print (fun () -> prerr_string " ");
+      prerr_string s;
+      flush stderr;
+      out_chan_pr2 ~newline:false s;
+      ()
+    end
 
 
 let pr_xxxxxxxxxxxxxxxxx () = 

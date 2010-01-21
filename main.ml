@@ -50,8 +50,54 @@ let mod_distrib   = ref false
 (*****************************************************************************)
 
 (* pair of  (list of flags to set true, list of flags to set false *)
+let very_quiet_profile = (
+  [
+  ],
+  [
+    (* FC.show_diff;   just leave this as it is *)
+
+    Common.print_to_stderr;
+    Flag.show_misc;
+    Flag.show_trying;
+    Flag.show_transinfo;
+
+    FC.show_c;
+    FC.show_cocci;
+    FC.show_flow;
+    FC.show_before_fixed_flow;
+    FC.show_ctl_tex;
+    FC.show_ctl_text;
+    FC.show_binding_in_out;
+
+    FC.verbose_cocci;
+
+    Flag_parsing_c.show_parsing_error;
+
+    Flag_parsing_c.verbose_lexing;
+    Flag_parsing_c.verbose_parsing;
+    Flag_parsing_c.verbose_type;
+    Flag_parsing_c.verbose_cfg;
+    Flag_parsing_c.verbose_unparsing;
+    Flag_parsing_c.verbose_visit;
+    Flag_parsing_c.verbose_cpp_ast;
+
+    Flag_matcher.verbose_matcher;
+    Flag_matcher.debug_engine;
+
+    Flag_parsing_c.debug_unparsing;
+
+    Flag_parsing_cocci.show_SP;
+    Flag_parsing_cocci.show_iso_failures;
+
+    Flag_ctl.verbose_ctl_engine;
+    Flag_ctl.verbose_match;
+
+
+  ])
+
 let quiet_profile = (
   [
+    Common.print_to_stderr
   ],
   [
     (* FC.show_diff;   just leave this as it is *)
@@ -98,6 +144,7 @@ let quiet_profile = (
 work properly *)
 let debug_profile = (
   [
+    Common.print_to_stderr;
     Flag.show_misc;
     Flag.show_transinfo;
 
@@ -140,6 +187,7 @@ let debug_profile = (
 let pad_profile = (
   [
     FC.show_diff;
+    Common.print_to_stderr;
   ],
   [
 
@@ -386,6 +434,7 @@ let other_options = [
   [
     (* todo: other profile ? *)
     "-quiet",   Arg.Unit (fun () -> run_profile quiet_profile), " ";
+    "-very_quiet",   Arg.Unit (fun () -> run_profile very_quiet_profile), " ";
     "-debug",   Arg.Unit (fun () -> run_profile debug_profile), " ";
     "-pad",     Arg.Unit (fun () -> run_profile pad_profile),   " ";
 

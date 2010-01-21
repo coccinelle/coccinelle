@@ -130,6 +130,7 @@ val pr_xxxxxxxxxxxxxxxxx : unit -> unit
 
 (* pr2 print on stderr, but can also in addition print into a file *)
 val _chan_pr2: out_channel option ref
+val print_to_stderr : bool ref
 val pr2 : string -> unit
 val pr2_no_nl : string -> unit
 val pr2_xxxxxxxxxxxxxxxxx : unit -> unit
