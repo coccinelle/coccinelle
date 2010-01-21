@@ -1,5 +1,14 @@
 -*- org -*-
 
+* 0.2.1
+** Language:
+
+** Features:
+- parse_error_msg now more helpful.  New option -verbose_parsing for even
+  more information.
+
+** Bugfix:
+
 * 0.2.0
 ** Language:
 

@@ -339,7 +339,10 @@ let other_options = [
        Flag_ctl.graphical_trace := true; Flag_ctl.gt_without_label := true),
        "  remove graph label (requires option -graphical_trace)";
 
-    "-parse_error_msg", Arg.Set Flag_parsing_c.verbose_parsing, " ";
+    "-parse_error_msg", Arg.Set Flag_parsing_c.show_parsing_error, " ";
+    "-verbose_parsing",
+       Arg.Unit (fun _ -> Flag_parsing_c.verbose_parsing := true;
+	 Flag_parsing_c.show_parsing_error := true), " ";
     "-type_error_msg",  Arg.Set Flag_parsing_c.verbose_type, " ";
     (* could also use Flag_parsing_c.options_verbose *)
   ];
