@@ -371,6 +371,7 @@ OCAMLVERSION=$(shell ocaml -version |perl -p -e 's/.*version (.*)/$$1/;')
 prepackage:
 	cvs up -CdP
 	$(MAKE) distclean
+	sed -i "s|OCAMLCFLAGS=.$|OCAMLCFLAGS=|" Makefile
 
 release:
 	cvs ci -m "Release $(VERSION)" globals/config.ml.in
