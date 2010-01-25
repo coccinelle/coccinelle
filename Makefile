@@ -326,9 +326,10 @@ BINSRC=spatch env.sh env.csh standard.h standard.iso \
        *.txt \
        docs/manual/manual.pdf docs/manual/options.pdf docs/manual/main_grammar.pdf docs/spatch.1 \
        docs/manual/cocci-python.txt \
-       demos/foo.* demos/simple.*
-#      $(PYLIB) python/coccilib/ demos/printloc.*
+       demos/*
+BINSRC-PY=$(BINSRC) $(PYLIB) python/coccilib/
 BINSRC2=$(BINSRC:%=$(PACKAGE)/%)
+BINSRC2-PY=$(BINSRC-PY:%=$(PACKAGE)/%)
 
 TMP=/tmp
 OCAMLVERSION=$(shell ocaml -version |perl -p -e 's/.*version (.*)/$$1/;')
@@ -378,19 +379,29 @@ release:
 	$(MAKE) licensify
 
 package:
+	$(MAKE) package-src
+	$(MAKE) package-nopython
+	$(MAKE) package-python
+
+package-src:
 	$(MAKE) distclean       # Clean project
 	$(MAKE) srctar
+	$(MAKE) coccicheck
+
+package-nopython:
+	$(MAKE) distclean       # Clean project
 	./configure --without-python
 	$(MAKE) docs
 	$(MAKE) bintar
 	$(MAKE) bytecodetar
 	$(MAKE) staticbintar
+
+package-python:
 	$(MAKE) distclean       # Clean project
 	./configure             # Reconfigure project with Python support
 	$(MAKE) docs
 	$(MAKE) bintar-python
 	$(MAKE) bytecodetar-python
-	$(MAKE) coccicheck
 
 
 # I currently pre-generate the parser so the user does not have to
@@ -434,7 +445,7 @@ bytecodetar: all
 bintar-python: all
 	rm -f $(TMP)/$(PACKAGE)
 	ln -s `pwd` $(TMP)/$(PACKAGE)
-	cd $(TMP); tar cvfz $(PACKAGE)-bin-x86-python.tgz --exclude-vcs $(BINSRC2)
+	cd $(TMP); tar cvfz $(PACKAGE)-bin-x86-python.tgz --exclude-vcs $(BINSRC2-PY)
 	rm -f $(TMP)/$(PACKAGE)
 
 # add ocaml version in name ?
@@ -442,7 +453,7 @@ bytecodetar-python: all
 	rm -f $(TMP)/$(PACKAGE)
 	ln -s `pwd` $(TMP)/$(PACKAGE)
 	make purebytecode
-	cd $(TMP); tar cvfz $(PACKAGE)-bin-bytecode-$(OCAMLVERSION)-python.tgz --exclude-vcs $(BINSRC2)
+	cd $(TMP); tar cvfz $(PACKAGE)-bin-bytecode-$(OCAMLVERSION)-python.tgz --exclude-vcs $(BINSRC2-PY)
 	rm -f $(TMP)/$(PACKAGE)
 
 coccicheck:
