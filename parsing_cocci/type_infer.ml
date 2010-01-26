@@ -18,7 +18,7 @@ let err wrapped ty s =
   T.typeC ty; Format.print_newline();
   failwith (Printf.sprintf "line %d: %s" (Ast0.get_line wrapped) s)
 
-type id = Id of string | Meta of (string * string)
+type id = Id of string | Meta of Ast.meta_name
 
 let int_type = T.BaseType(T.IntType)
 let bool_type = T.BaseType(T.BoolType)

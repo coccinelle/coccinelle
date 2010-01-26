@@ -694,7 +694,8 @@ let (option: ('a,'b) matcher -> ('a option,'b option) matcher)= fun f t1 t2 ->
 can match other things.  But they no longer have the same type.  Perhaps these
 functions could be avoided by introducing an appropriate level of polymorphism,
 but I don't know how to declare polymorphism across functors *)
-let dots2metavar (_,info,mcodekind,pos) = (("","..."),info,mcodekind,pos)
+let dots2metavar (_,info,mcodekind,pos) =
+  (("","..."),info,mcodekind,pos)
 let metavar2dots (_,info,mcodekind,pos) = ("...",info,mcodekind,pos)
 
 let satisfies_iconstraint c id : bool =

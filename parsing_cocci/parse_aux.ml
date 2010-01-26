@@ -13,7 +13,6 @@ type typed_expinfo =
       Type_cocci.typeC list option * Data.clt
 type pos_info = Ast.meta_name * Data.pconstraints * Ast.meta_collect * Data.clt
 
-
 let get_option fn = function
     None -> None
   | Some x -> Some (fn x)
@@ -322,6 +321,15 @@ let create_metadec ar ispure kindfn ids current_rule =
 	       ((rule,nm),
 		function x -> check_meta x; [Common.Right x]) in
 	 kindfn ar rule ispure checker)
+       ids)
+
+
+let create_metadec_virt ar ispure kindfn ids current_rule =
+  List.concat
+    (List.map
+       (function nm ->
+	 let checker = function x -> [Common.Right x] in
+	 kindfn ar nm ispure checker !Flag.defined_virtual_env)
        ids)
 
 let create_fresh_metadec kindfn ids current_rule =

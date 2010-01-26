@@ -536,7 +536,7 @@ let other_options = [
     "  spacing of + code follows the conventions of Linux";
     "-smpl_spacing", Arg.Unit Flag_parsing_c.set_smpl_spacing,
     "  spacing of + code follows the semantic patch";
-    "-D", Arg.String Flag_parsing_cocci.set_defined_virtual_rules,
+    "-D", Arg.String Flag.set_defined_virtual_rules,
     "  indicate that a virtual rule should be considered to be matched";
   ];
 

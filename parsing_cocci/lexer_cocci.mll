@@ -202,7 +202,9 @@ let id_tokens lexbuf =
   | "words" when in_meta ->      check_context_linetype s; TWords
 
   | "using" when in_rule_name || in_prolog ->  check_context_linetype s; TUsing
-  | "virtual" when in_prolog ->  check_context_linetype s; TVirtual
+  | "virtual" when in_prolog or in_rule_name or in_meta ->
+      (* don't want to allow virtual as a rule name *)
+      check_context_linetype s; TVirtual
   | "disable" when in_rule_name ->  check_context_linetype s; TDisable
   | "extends" when in_rule_name -> check_context_linetype s; TExtends
   | "depends" when in_rule_name -> check_context_linetype s; TDepends
@@ -293,6 +295,14 @@ let init _ =
   Data.add_id_meta :=
     (fun name constraints pure ->
       let fn clt = TMetaId(name,constraints,pure,clt) in
+      Hashtbl.replace metavariables (get_name name) fn);
+  Data.add_virt_id_meta_found :=
+    (fun name vl ->
+      let fn clt = TIdent(vl,clt) in
+      Hashtbl.replace metavariables name fn);
+  Data.add_virt_id_meta_not_found :=
+    (fun name pure ->
+      let fn clt = TMetaId(name,Ast.IdNoConstraint,pure,clt) in
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_fresh_id_meta :=
     (fun name ->

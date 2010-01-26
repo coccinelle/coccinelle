@@ -71,7 +71,8 @@ let collect_refs include_constraints =
   let rec type_collect res = function
       TC.ConstVol(_,ty) | TC.Pointer(ty) | TC.FunctionPointer(ty)
     | TC.Array(ty) -> type_collect res ty
-    | TC.MetaType(tyname,_,_) -> bind [tyname] res
+    | TC.MetaType(tyname,_,_) ->
+	bind [tyname] res
     | TC.SignedT(_,Some ty) -> type_collect res ty
     | ty -> res in
 
@@ -174,14 +175,17 @@ let collect_saved =
   let astfvident recursor k i =
     bind (k i)
       (match Ast.unwrap i with
-	Ast.MetaId(name,_,TC.Saved,_) | Ast.MetaFunc(name,_,TC.Saved,_)
-      | Ast.MetaLocalFunc(name,_,TC.Saved,_) -> [metaid name]
+	Ast.MetaId(name,_,TC.Saved,_)
+      | Ast.MetaFunc(name,_,TC.Saved,_)
+      | Ast.MetaLocalFunc(name,_,TC.Saved,_) ->
+	  [metaid name]
       | _ -> option_default) in
 
   let rec type_collect res = function
       TC.ConstVol(_,ty) | TC.Pointer(ty) | TC.FunctionPointer(ty)
     | TC.Array(ty) -> type_collect res ty
-    | TC.MetaType(tyname,TC.Saved,_) -> bind [tyname] res
+    | TC.MetaType(tyname,TC.Saved,_) ->
+	bind [tyname] res
     | TC.SignedT(_,Some ty) -> type_collect res ty
     | ty -> res in
 
@@ -415,7 +419,8 @@ let classify_variables metavar_decls minirules used_after =
     match Ast.unwrap e with
       Ast.MetaId(name,constraints,_,_) ->
 	let (unitary,inherited) = classify name in
-	Ast.rewrap e (Ast.MetaId(name,constraints,unitary,inherited))
+	Ast.rewrap e
+	  (Ast.MetaId(name,constraints,unitary,inherited))
     | Ast.MetaFunc(name,constraints,_,_) ->
 	let (unitary,inherited) = classify name in
 	Ast.rewrap e (Ast.MetaFunc(name,constraints,unitary,inherited))
@@ -727,6 +732,7 @@ their point of definition. *)
 
 
 let collect_top_level_used_after metavar_rule_list =
+  let drop_virt = List.filter (function ("virtual",_) -> false | _ -> true) in
   let (used_after,used_after_lists) =
     List.fold_right
       (function (metavar_list,r) ->
@@ -738,11 +744,12 @@ let collect_top_level_used_after metavar_rule_list =
 	  let free_vars =
             match r with
               Ast.ScriptRule (_,_,mv,_) ->
-                List.map (function (_,(r,v)) -> (r,v)) mv
+                drop_virt(List.map (function (_,(r,v)) -> (r,v)) mv)
             | Ast.InitialScriptRule (_,_) | Ast.FinalScriptRule (_,_) -> []
             | Ast.CocciRule (_,_,rule,_,_) ->
-	        Common.union_set (nub (collect_all_rule_refs rule))
-	          (collect_in_plus metavar_list rule) in
+		drop_virt
+	          (Common.union_set (nub (collect_all_rule_refs rule))
+	             (collect_in_plus metavar_list rule)) in
 	  let inherited =
 	    List.filter (function x -> not (List.mem x locally_defined))
 	      free_vars in

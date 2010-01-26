@@ -94,12 +94,12 @@ let dot_term (var1,_,info,_,_,_) =
 
 
 type reason =
-    NotPure of Ast0.pure * (string * string) * Ast0.anything
-  | NotPureLength of (string * string)
+    NotPure of Ast0.pure * Ast.meta_name * Ast0.anything
+  | NotPureLength of Ast.meta_name
   | ContextRequired of Ast0.anything
   | NonMatch
   | Braces of Ast0.statement
-  | Position of string * string
+  | Position of Ast.meta_name
   | TypeMatch of reason list
 
 let rec interpret_reason name line reason printer =
@@ -2032,7 +2032,7 @@ let mkdisj matcher metavars alts e instantiater mkiso disj_maker minusify
 	      | _ -> ());
 	    inner_loop all_alts (prev_ecount + ecount) (prev_icount + icount)
 	      (prev_dcount + dcount) rest
-	| OK (bindings : (((string * string) * 'a) list list)) ->
+	| OK (bindings : ((Ast.meta_name * 'a) list list)) ->
 	    let all_alts =
 	      (* apply update_others to all patterns other than the matched
 		 one.  This is used to desigate the others as test
@@ -2183,16 +2183,11 @@ let transform_expr (metavars,alts,name) e =
       make_minus.VT0.rebuilder_rec_expression
       (rebuild_mcode start_line).VT0.rebuilder_rec_expression
       name Unparse_ast0.expression extra_copy_other_plus update_others in
-  let set_property model e =
-    let e = if Ast0.get_test_pos model then Ast0.set_test_exp e else e in
-    if Ast0.get_arg_exp model then Ast0.set_arg_exp e else e in
   match alts with
-    (Ast0.ExprTag(_)::_)::_ ->
-      process (set_property e)
-  | (Ast0.ArgExprTag(_)::_)::_ when Ast0.get_arg_exp e ->
-      process (set_property e)
+    (Ast0.ExprTag(_)::_)::_ -> process do_nothing
+  | (Ast0.ArgExprTag(_)::_)::_ when Ast0.get_arg_exp e -> process do_nothing
   | (Ast0.TestExprTag(_)::_)::_ when Ast0.get_test_pos e ->
-      process (set_property e)
+      process Ast0.set_test_exp
   | _ -> (0,[],e)
 
 let transform_decl (metavars,alts,name) e =

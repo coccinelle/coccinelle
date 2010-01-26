@@ -1021,7 +1021,7 @@ let rebuilder
   and all_functions =
     {rebuilder_ident = ident;
       rebuilder_expression = expression;
-      rebuilder_fullType= fullType;
+      rebuilder_fullType = fullType;
       rebuilder_typeC = typeC;
       rebuilder_declaration = declaration;
       rebuilder_initialiser = initialiser;

@@ -171,7 +171,7 @@ let do_get_constants constants keywords env neg_pos =
   let inherited ((nm1,_) as x) =
     (* perhaps inherited, but value not required, so no constraints *)
     if List.mem x neg_pos then option_default
-    else try List.assoc nm1 env with Not_found -> False in
+    else (try List.assoc nm1 env with Not_found -> False) in
   let minherited name = inherited (Ast.unwrap_mcode name) in
   let mcode _ x =
     match Ast.get_pos_var x with
@@ -195,7 +195,8 @@ let do_get_constants constants keywords env neg_pos =
   let rec type_collect res = function
       TC.ConstVol(_,ty) | TC.Pointer(ty) | TC.FunctionPointer(ty)
     | TC.Array(ty) -> type_collect res ty
-    | TC.MetaType(tyname,_,_) -> inherited tyname
+    | TC.MetaType(tyname,_,_) ->
+	inherited tyname
     | TC.TypeName(s) -> constants s
     | TC.EnumName(false,s) -> constants s
     | TC.StructUnionName(_,false,s) -> constants s
@@ -437,7 +438,8 @@ let rule_fn tls in_plus env neg_pos =
     (function (rest_info,in_plus) ->
       function (cur,neg_pos) ->
 	let minuses =
-	  (do_get_constants keep drop env neg_pos).V.combiner_top_level cur in
+	  let getter = do_get_constants keep drop env neg_pos in
+	  getter.V.combiner_top_level cur in
 	let all_minuses =
 	  if !Flag.sgrep_mode2
 	  then [] (* nothing removed for sgrep *)
@@ -457,9 +459,8 @@ let rule_fn tls in_plus env neg_pos =
 	   minirules anymore anyway. *)
 	match new_minuses with
 	  True ->
-	    let retry =
-	      (do_get_constants drop keep env neg_pos).V.combiner_top_level
-		cur in
+	    let getter = do_get_constants drop keep env neg_pos in
+	    let retry = getter.V.combiner_top_level cur in
 	    (match retry with
 	      True when not was_bot -> (rest_info, new_plusses)
 	    | x -> (build_or x rest_info, new_plusses))
@@ -479,7 +480,9 @@ let get_constants rules neg_pos_vars =
 		    List.fold_left
 		      (function prev ->
 			function (_,(rule,_)) ->
-			  Ast.AndDep (Ast.Dep rule,prev))
+			  if rule = "virtual"
+			  then Ast.NoDep
+			  else Ast.AndDep (Ast.Dep rule,prev))
 		      deps mv in
 		  (match dependencies env extra_deps with
 		    False -> (rest_info, in_plus, env, locals)
@@ -489,7 +492,8 @@ let get_constants rules neg_pos_vars =
 	      | (Ast.FinalScriptRule (_,_),_) -> (rest_info,in_plus,env,locals)
               | (Ast.CocciRule (nm,(dep,_,_),cur,_,_),neg_pos_vars) ->
 		  let (cur_info,cur_plus) =
-		    rule_fn cur in_plus ((nm,True)::env) neg_pos_vars in
+		    rule_fn cur in_plus ((nm,True)::env)
+		      neg_pos_vars in
 		  if List.for_all all_context.V.combiner_top_level cur
 		  then (rest_info,cur_plus,(nm,cur_info)::env,nm::locals)
 		  else

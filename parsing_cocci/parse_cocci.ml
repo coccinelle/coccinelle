@@ -1253,7 +1253,7 @@ let eval_virt virt =
       then
         failwith
           (Printf.sprintf "unknown virtual rule %s\n" x))
-    !Flag_parsing_cocci.defined_virtual_rules
+    !Flag.defined_virtual_rules
 
 let drop_last extra l = List.rev(extra@(List.tl(List.rev l)))
 
@@ -1408,14 +1408,14 @@ let eval_depend dep virt =
       Ast.Dep req | Ast.EverDep req ->
 	if List.mem req virt
 	then
-	  if List.mem req !Flag_parsing_cocci.defined_virtual_rules
+	  if List.mem req !Flag.defined_virtual_rules
 	  then Some Ast.NoDep
 	  else None
 	else Some dep
     | Ast.AntiDep antireq | Ast.NeverDep antireq ->
 	if List.mem antireq virt
 	then
-	  if not(List.mem antireq !Flag_parsing_cocci.defined_virtual_rules)
+	  if not(List.mem antireq !Flag.defined_virtual_rules)
 	  then Some Ast.NoDep
 	  else None
 	else Some dep
@@ -1569,6 +1569,7 @@ let rec parse file =
 		  get_script_metavars PC.script_meta_main table file lexbuf) in
 
             let exists_in old_metas (py,(r,m)) =
+	      r = "virtual" or
               let test (rr,mr) x =
                 let (ro,vo) = Ast.get_meta_name x in
                 ro = rr && vo = mr in
@@ -1795,8 +1796,8 @@ let process file isofile verbose =
   then List.iter Pretty_print_cocci.unparse code;
 
   let grep_tokens =
-    Common.profile_code "get_constants"
-      (fun () -> Get_constants.get_constants code) in (* for grep *)
+    Common.profile_code "get_constants" (* for grep *)
+      (fun () -> Get_constants.get_constants code) in
   let glimpse_tokens2 =
     Common.profile_code "get_glimpse_constants" (* for glimpse *)
       (fun () -> Get_constants2.get_constants code neg_pos) in

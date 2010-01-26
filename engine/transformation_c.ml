@@ -481,8 +481,7 @@ module XTRANS = struct
   (* ------------------------------------------------------------------------*)
   (* Environment *) 
   (* ------------------------------------------------------------------------*)
-  let meta_name_to_str (s1, s2) = 
-    s1 ^ "." ^ s2
+  let meta_name_to_str (s1, s2) = s1 ^ "." ^ s2
 
   let envf keep inherited = fun (s, value, _) f tin -> 
     let s = Ast_cocci.unwrap_mcode s in

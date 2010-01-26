@@ -56,6 +56,13 @@ let add_id_meta:
     (Ast.meta_name -> iconstraints -> Ast0.pure -> unit) ref =
   ref (fun _ -> failwith "uninitialized add_meta")
 
+let add_virt_id_meta_found: (string -> string -> unit) ref =
+  ref (fun _ -> failwith "uninitialized add_meta")
+
+let add_virt_id_meta_not_found:
+    (Ast_cocci.meta_name -> Ast0_cocci.pure -> unit) ref =
+  ref (fun _ -> failwith "uninitialized add_meta")
+
 let add_fresh_id_meta: (Ast.meta_name -> unit) ref =
   ref (fun _ -> failwith "uninitialized add_meta")
 

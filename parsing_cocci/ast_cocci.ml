@@ -713,13 +713,15 @@ let make_term x =
     iso_info = [] }
 
 let make_meta_rule_elem s d (fvs,fresh,inh) =
+  let rule = "" in
   {(make_term
-      (MetaRuleElem((("",s),no_info,d,NoMetaPos),Type_cocci.Unitary,false)))
+      (MetaRuleElem(((rule,s),no_info,d,NoMetaPos),Type_cocci.Unitary,false)))
   with free_vars = fvs; fresh_vars = fresh; inherited = inh}
 
 let make_meta_decl s d (fvs,fresh,inh) =
+  let rule = "" in
   {(make_term
-      (MetaDecl((("",s),no_info,d,NoMetaPos),Type_cocci.Unitary,false))) with
+      (MetaDecl(((rule,s),no_info,d,NoMetaPos),Type_cocci.Unitary,false))) with
     free_vars = fvs; fresh_vars = fresh; inherited = inh}
 
 let make_mcode x = (x,no_info,CONTEXT(NoPos,NOTHING),NoMetaPos)

@@ -643,7 +643,7 @@ type toplevel_c_info = {
 }
 
 type toplevel_cocci_info_script_rule = {
-  scr_ast_rule: string * (string * (string * string)) list * string;
+  scr_ast_rule: string * (string * Ast_cocci.meta_name) list * string;
   language: string;
   scr_dependencies: Ast_cocci.dependency;
   scr_ruleid: int;
@@ -1045,13 +1045,16 @@ let apply_python_rule r cache newes e rules_that_have_matched
   else
     begin
       let (_, mv, _) = r.scr_ast_rule in
-      let not_bound x = not (Pycocci.contains_binding e x) in
+      let ve =
+	(List.map (function (n,v) -> (("virtual",n),Ast_c.MetaIdVal v))
+	   !Flag.defined_virtual_env) @ e in
+      let not_bound x = not (Pycocci.contains_binding ve x) in
       (match List.filter not_bound mv with
 	[] ->
 	  let relevant_bindings =
 	    List.filter
 	      (function ((re,rm),_) ->
-		List.exists (function (_,(r,m)) -> r =$= re && m =$= rm) mv)
+		List.exists (function (_,(r,m)) -> r =*= re && m =$= rm) mv)
 	      e in
 	  let new_cache =
 	    if List.mem relevant_bindings cache
@@ -1072,8 +1075,8 @@ let apply_python_rule r cache newes e rules_that_have_matched
 		  !rules_that_have_ever_matched
 		  r.scr_dependencies;
 		show_or_not_binding "in" e;
-		Pycocci.build_classes (List.map (function (x,y) -> x) e);
-		Pycocci.construct_variables mv e;
+		Pycocci.build_classes (List.map (function (x,y) -> x) ve);
+		Pycocci.construct_variables mv ve;
 		let _ = Pycocci.pyrun_simplestring
 		  ("import coccinelle\nfrom coccinelle "^
 		   "import *\ncocci = Cocci()\n" ^
@@ -1308,8 +1311,7 @@ and process_a_generated_a_env_a_toplevel2 r env = function
       let metavars =
 	List.filter
 	  (function md ->
-	    let (rl,_) = Ast_cocci.get_meta_name md in
-	    rl =$= r.rulename)
+	    let (rl,_) = Ast_cocci.get_meta_name md in rl =$= r.rulename)
 	  r.metavars in
       if Common.include_set free_vars env_domain
       then Unparse_hrule.pp_rule metavars r.ast_rule env cfile.full_fname

@@ -154,7 +154,7 @@ expression X;
 @@
 X == 0 <=> 0 == X => !X
 
-Expression
+TestExpression
 @ isnt_zero @ 
 expression X; 
 @@

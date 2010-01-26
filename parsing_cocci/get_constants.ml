@@ -155,7 +155,7 @@ let check_inherited nm =
   let donothing r k e = k e in
   let option_default = false in
   let bind x y = x or y in
-  let inherited (nm1,_) = not(nm = nm1) in
+  let inherited (nm1,_) = (nm = nm1) in
   let minherited mc = inherited (Ast.unwrap_mcode mc) in
   let mcode _ x =
     match Ast.get_pos_var x with
@@ -174,7 +174,8 @@ let check_inherited nm =
   let rec type_collect res = function
       TC.ConstVol(_,ty) | TC.Pointer(ty) | TC.FunctionPointer(ty)
     | TC.Array(ty) -> type_collect res ty
-    | TC.MetaType(tyname,_,_) -> inherited tyname
+    | TC.MetaType(tyname,_,_) ->
+	inherited tyname
     | ty -> res in
 
   let strictexpr recursor k e =

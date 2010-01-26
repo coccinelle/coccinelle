@@ -9,7 +9,7 @@ module V0 = Visitor_ast0
 module VT0 = Visitor_ast0_types
 
 (* all fresh identifiers *)
-let fresh_table = (Hashtbl.create(50) : ((string * string), unit) Hashtbl.t)
+let fresh_table = (Hashtbl.create(50) : (Ast.meta_name, unit) Hashtbl.t)
 
 let warning s = Printf.fprintf stderr "warning: %s\n" s
 
@@ -479,7 +479,8 @@ let dup_positions rules =
   let rec loop = function
       [] | [_] -> ()
     | ((rule,name) as x)::y::_ when x = y ->
-	failwith (Printf.sprintf "duplicate use of %s.%s" rule name)
+	failwith
+	  (Printf.sprintf "duplicate use of %s.%s" rule name)
     | _::xs -> loop xs in
   loop res
 
@@ -488,7 +489,7 @@ let dup_positions rules =
 let make_table l =
   let table =
     (Hashtbl.create(List.length l) :
-       ((string * string), bool ref) Hashtbl.t) in
+       (Ast.meta_name, bool ref) Hashtbl.t) in
   List.iter
     (function x -> Hashtbl.add table (Ast.get_meta_name x) (ref false)) l;
   table

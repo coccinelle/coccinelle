@@ -614,18 +614,22 @@ let rec reverse_type ty =
       if mv
       then
 	(* not right... *)
+	let rule = "" in
 	EnumName
 	  (make_mcode "enum",
-	   context_wrap(MetaId(make_mcode ("",tag),Ast.IdNoConstraint,Impure)))
+	   context_wrap(MetaId(make_mcode (rule,tag),Ast.IdNoConstraint,
+			       Impure)))
       else
 	EnumName(make_mcode "enum",context_wrap(Id(make_mcode tag)))
   | Type_cocci.StructUnionName(su,mv,tag) ->
       if mv
       then
 	(* not right... *)
+	let rule = "" in
 	StructUnionName
 	  (reverse_structUnion su,
-	   Some(context_wrap(MetaId(make_mcode ("",tag),Ast.IdNoConstraint,Impure))))
+	   Some(context_wrap(MetaId(make_mcode (rule,tag),Ast.IdNoConstraint,
+				    Impure))))
       else
 	StructUnionName
 	  (reverse_structUnion su,
