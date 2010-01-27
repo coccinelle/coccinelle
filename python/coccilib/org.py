@@ -8,6 +8,14 @@ def print_todo(p, msg="", color="ovl-face1") :
 def print_link(p, msg="", color="ovl-face1") :
 	print (build_link(p, msg, color))
 
+def print_safe_todo(p, msg="", color="ovl-face1") :
+	msg_safe=msg.replace("[","@(").replace("]",")")
+	print_todo(p, msg_safe, color)
+
+def print_safe_link(p, msg="", color="ovl-face1") :
+	msg_safe=msg.replace("[","@(").replace("]",")")
+	print_link(p, msg_safe, color)
+
 #
 # print_main, print_sec and print_secs
 # will be deprecated.
