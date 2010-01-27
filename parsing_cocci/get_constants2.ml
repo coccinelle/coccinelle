@@ -169,8 +169,10 @@ let do_get_constants constants keywords env neg_pos =
   let option_default = True in
   let bind = build_and in
   let inherited ((nm1,_) as x) =
+    (* ignore virtuals *)
+    if nm1 = "virtual" then option_default
     (* perhaps inherited, but value not required, so no constraints *)
-    if List.mem x neg_pos then option_default
+    else if List.mem x neg_pos then option_default
     else (try List.assoc nm1 env with Not_found -> False) in
   let minherited name = inherited (Ast.unwrap_mcode name) in
   let mcode _ x =
@@ -481,7 +483,7 @@ let get_constants rules neg_pos_vars =
 		      (function prev ->
 			function (_,(rule,_)) ->
 			  if rule = "virtual"
-			  then Ast.NoDep
+			  then prev
 			  else Ast.AndDep (Ast.Dep rule,prev))
 		      deps mv in
 		  (match dependencies env extra_deps with
