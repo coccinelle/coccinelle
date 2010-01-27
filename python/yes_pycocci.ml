@@ -31,7 +31,7 @@ let _pycocci_tuple6 (a,b,c,d,e,f) =
 (* ------------------------------------------------------------------- *)
 
 let check_return_value v =
-  if v =*= (pynull ()) then 
+  if v =*= (pynull ()) then
 	  (pyerr_print ();
 	  raise Pycocciexception)
   else ()
@@ -144,8 +144,8 @@ let pycocci_init () =
   initialised := true;
   Unix.putenv "PYTHONPATH"
       (Printf.sprintf "%s/coccinelle" (Unix.getenv "HOME"));
-  let _ = if not (py_isinitialized () != 0) then 
-  	(if !Flag.show_misc then Common.pr2 "Initializing python\n%!"; 
+  let _ = if not (py_isinitialized () != 0) then
+  	(if !Flag.show_misc then Common.pr2 "Initializing python\n%!";
 	py_initialize()) in
 
   (* set argv *)
@@ -160,7 +160,7 @@ let pycocci_init () =
   let module_dictionary = pyimport_getmoduledict() in
   coccinelle_module := pymodule_new "coccinelle";
   let mx = !coccinelle_module in
-  let (cd, cx) = build_class "Cocci" (!Flag.pyoutput) 
+  let (cd, cx) = build_class "Cocci" (!Flag.pyoutput)
       [("include_match", include_match, (pynull()));
 	("has_env_binding", has_environment_binding, (pynull()))] mx in
   pyoutputinstance := cx;
@@ -262,11 +262,10 @@ let set_coccifile cocci_file =
 	cocci_file_name := cocci_file;
 	()
 
-
-let pyrun_simplestring s = 
+let pyrun_simplestring s =
   Pycaml.pyrun_simplestring s
 
-let py_isinitialized () = 
+let py_isinitialized () =
   Pycaml.py_isinitialized ()
 
 
