@@ -1074,6 +1074,8 @@ let apply_python_rule r cache newes e rules_that_have_matched
 		let _ = Pycocci.pyrun_simplestring
 		  ("import coccinelle\n"^
 		     "import coccilib\n"^
+		     "import coccilib.org\n"^
+		     "import coccilib.report\n"^
 		     "from coccinelle import *\n"^
 		     "cocci = Cocci()\n" ^
 		     r.script_code) in
@@ -1493,19 +1495,39 @@ let pre_engine2 (coccifile, isofile) =
     prepare_cocci ctls free_var_lists negated_pos_lists
       used_after_lists positions_lists metavars astcocci in
 
-  let _ =
+  (* NICO *)
+  let used_languages =
     List.fold_left
       (function languages ->
-	function
-	    InitialScriptRuleCocciInfo(r) ->
-	      (if List.mem r.language languages
-	      then failwith ("double initializer found for "^r.language));
-	      initial_final_bigloop "initial"
-		(function(x,_,y) -> Ast_cocci.InitialScriptRule(x,y))
-		r;
-	      r.language::languages
-	  | _ -> languages)
+	 function
+	     ScriptRuleCocciInfo(r) ->
+	       if List.mem r.language languages then
+		 languages
+	       else
+		 r.language::languages
+	   | _ -> languages)
       [] cocci_infos in
+
+  let initialized_languages =
+    List.fold_left
+      (function languages ->
+	 function
+	     InitialScriptRuleCocciInfo(r) ->
+	       (if List.mem r.language languages
+		then failwith ("double initializer found for "^r.language));
+	       initial_final_bigloop "initial"
+		 (function(x,_,y) -> Ast_cocci.InitialScriptRule(x,y))
+		 r;
+	       r.language::languages
+	   | _ -> languages)
+      [] cocci_infos in
+
+  let uninitialized_languages =
+    List.filter
+      (fun used -> not (List.mem used initialized_languages))
+      used_languages in
+    List.iter (fun lgg -> pr2 (lgg ^" script feature is used without user initialization."))
+      uninitialized_languages;
 
   (cocci_infos,toks)
 
