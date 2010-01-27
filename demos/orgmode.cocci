@@ -1,6 +1,6 @@
 @initialize:python@
 
-from coccilib.org import print_todo, print_link
+from coccilib.org import print_todo, print_safe_todo, print_link, print_safe_link
 
 @r@
 position p1, p2;
@@ -18,6 +18,21 @@ f  << r.f;
 
 print_todo (p1[0])
 print_link (p2[0])
+
+print ""
+
+print_safe_todo (p1[0], "arr[i]")
+print_safe_link (p2[0], "arr[i]")
+
+print ""
+
+coccilib.org.print_todo (p1[0])
+coccilib.org.print_link (p2[0])
+
+print ""
+
+coccilib.org.print_safe_todo (p1[0], "arr[i]")
+coccilib.org.print_safe_link (p2[0], "arr[i]")
 
 print ""
 
