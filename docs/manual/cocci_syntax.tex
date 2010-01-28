@@ -194,14 +194,13 @@ constrained by its type.
   \CASE{\NT{pmid} \OPT{!= \T{id}}}
   \CASE{\NT{pmid} \OPT{!= \ttlb~\NT{COMMA\_LIST}\mth{(}\T{id}\mth{)} \ttrb}}
 
-  \RULE{\rt{pmid\_with\_not\_ceq}}
+  \RULE{\rt{pmid\_with\_virt\_or\_not\_eq}}
   \CASE{virtual.\T{id}}
+  \CASE{\NT{pmid\_with\_not\_eq}}
+
+  \RULE{\rt{pmid\_with\_not\_ceq}}
   \CASE{\NT{pmid} \OPT{!= \NT{id\_or\_cst}}}
   \CASE{\NT{pmid} \OPT{!= \ttlb~\NT{COMMA\_LIST}\mth{(}\NT{id\_or\_cst}\mth{)} \ttrb}}
-
-  \RULE{\rt{pmid\_with\_virt\_or\_not\_ceq}}
-  \CASE{virtual.\T{id}}
-  \CASE{\rt{pmid\_with\_not\_ceq}}
 
   \RULE{\rt{id\_or\_cst}}
   \CASE{\T{id}}
