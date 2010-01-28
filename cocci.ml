@@ -722,15 +722,15 @@ let gen_pdf_graph () =
   Printf.printf " - Done\n")
 
 let local_python_code =
-    "from coccinelle import *\n"^
-    "cocci = Cocci()\n"
+    "from coccinelle import *\n"
 
 let python_code =
   "import coccinelle\n"^
     "import coccilib\n"^
     "import coccilib.org\n"^
     "import coccilib.report\n" ^
-    local_python_code
+    local_python_code ^
+    "cocci = Cocci()\n"
 
 let make_init rulenb lang code =
   let mv = [] in
