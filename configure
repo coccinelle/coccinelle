@@ -298,8 +298,3 @@ my $pythonprefix = $python ? "yes_" : "no_";
 my $command = "perl -p -e 's#Not_found.\*#Not_found->\\\"$src\\\"#' globals/config.ml.in > globals/config.ml";
 `$command`;
 
-}
-
-
-
-
