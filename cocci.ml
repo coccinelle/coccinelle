@@ -721,6 +721,27 @@ let gen_pdf_graph () =
 	    ) filename_stack;
   Printf.printf " - Done\n")
 
+let local_python_code =
+    "from coccinelle import *\n"^
+    "cocci = Cocci()\n"
+
+let python_code =
+  "import coccinelle\n"^
+    "import coccilib\n"^
+    "import coccilib.org\n"^
+    "import coccilib.report\n" ^
+    local_python_code
+
+let make_init rulenb lang code =
+  let mv = [] in
+  let deps = Ast_cocci.NoDep in
+    {
+      scr_ast_rule = (lang, mv, code);
+      language = lang;
+      scr_dependencies = deps;
+      scr_ruleid = rulenb;
+      script_code = (if lang = "python" then python_code else "") ^code
+    }
 
 (* --------------------------------------------------------------------- *)
 let prepare_cocci ctls free_var_lists negated_pos_lists
@@ -756,17 +777,8 @@ let prepare_cocci ctls free_var_lists negated_pos_lists
           }
           in ScriptRuleCocciInfo r
       | Ast_cocci.InitialScriptRule (lang,code) ->
-	  let mv = [] in
-	  let deps = Ast_cocci.NoDep in
-          let r =
-          {
-            scr_ast_rule = (lang, mv, code);
-            language = lang;
-            scr_dependencies = deps;
-            scr_ruleid = rulenb;
-            script_code = code;
-          }
-          in InitialScriptRuleCocciInfo r
+	  let r = make_init rulenb lang code in
+	    InitialScriptRuleCocciInfo r
       | Ast_cocci.FinalScriptRule (lang,code) ->
 	  let mv = [] in
 	  let deps = Ast_cocci.NoDep in
@@ -1071,14 +1083,7 @@ let apply_python_rule r cache newes e rules_that_have_matched
 		show_or_not_binding "in" e;
 		Pycocci.build_classes (List.map (function (x,y) -> x) ve);
 		Pycocci.construct_variables mv ve;
-		let _ = Pycocci.pyrun_simplestring
-		  ("import coccinelle\n"^
-		     "import coccilib\n"^
-		     "import coccilib.org\n"^
-		     "import coccilib.report\n"^
-		     "from coccinelle import *\n"^
-		     "cocci = Cocci()\n" ^
-		     r.script_code) in
+		let _ = Pycocci.pyrun_simplestring (local_python_code ^r.script_code) in
 		relevant_bindings :: cache
 	      end in
 	  if !Pycocci.inc_match
@@ -1495,7 +1500,6 @@ let pre_engine2 (coccifile, isofile) =
     prepare_cocci ctls free_var_lists negated_pos_lists
       used_after_lists positions_lists metavars astcocci in
 
-  (* NICO *)
   let used_languages =
     List.fold_left
       (function languages ->
@@ -1525,8 +1529,13 @@ let pre_engine2 (coccifile, isofile) =
   let uninitialized_languages =
     List.filter
       (fun used -> not (List.mem used initialized_languages))
-      used_languages in
-    List.iter (fun lgg -> pr2 (lgg ^" script feature is used without user initialization."))
+      used_languages
+  in
+    List.iter (fun lgg ->
+		 initial_final_bigloop "initial"
+		   (function(x,_,y) -> Ast_cocci.InitialScriptRule(x,y))
+		   (make_init (-1) lgg "");
+	      )
       uninitialized_languages;
 
   (cocci_infos,toks)
