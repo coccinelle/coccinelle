@@ -1,5 +1,6 @@
 (* Yoann Padioleau
  * 
+ * Copyright (C) 2010, University of Copenhagen DIKU and INRIA.
  * Copyright (C) 2002, 2006 Yoann Padioleau
  *
  * This program is free software; you can redistribute it and/or
