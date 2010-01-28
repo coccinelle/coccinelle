@@ -155,7 +155,7 @@ let check_inherited nm =
   let donothing r k e = k e in
   let option_default = false in
   let bind x y = x or y in
-  let inherited (nm1,_) = (nm = nm1) in
+  let inherited (nm1,_) = not(nm = nm1) in
   let minherited mc = inherited (Ast.unwrap_mcode mc) in
   let mcode _ x =
     match Ast.get_pos_var x with
