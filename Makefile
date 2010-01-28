@@ -569,7 +569,6 @@ distclean:: clean
 	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i $@; done
 	rm -f .depend
 	rm -f Makefile.config
-	rm -f python/coccilib/output.py
 	rm -f python/pycocci.ml
 	rm -f python/pycocci_aux.ml
 	rm -f globals/config.ml
