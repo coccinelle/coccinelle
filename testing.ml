@@ -7,14 +7,14 @@ open Common
 (* There can be multiple .c for the same cocci file. The convention
  * is to have one base.cocci and a base.c and some optional
  * base_vernn.[c,res].
- * 
+ *
  * If want to test without iso, use -iso_file empty.iso option.
  *)
-let testone x compare_with_expected_flag = 
+let testone x compare_with_expected_flag =
   let x    = if x =~ "\\(.*\\)_ver0$" then matched1 x else x in
   let base = if x =~ "\\(.*\\)_ver[0-9]+$" then matched1 x else x in
 
-  let cfile      = "tests/" ^ x ^ ".c" in 
+  let cfile      = "tests/" ^ x ^ ".c" in
   let cocci_file = "tests/" ^ base ^ ".cocci" in
 
   let expected_res   = "tests/" ^ x ^ ".res" in
@@ -22,56 +22,56 @@ let testone x compare_with_expected_flag =
     let cocci_infos = Cocci.pre_engine (cocci_file, !Config.std_iso) in
     let res = Cocci.full_engine cocci_infos [cfile] in
     Cocci.post_engine cocci_infos;
-    let generated = 
+    let generated =
       match Common.optionise (fun () -> List.assoc cfile res) with
-      | Some (Some outfile) -> 
-          if List.length res > 1 
+      | Some (Some outfile) ->
+          if List.length res > 1
           then pr2 ("note that not just " ^ cfile ^ " was involved");
 
           let tmpfile = "/tmp/"^Common.basename cfile in
           pr2 (sprintf "One file modified. Result is here: %s" tmpfile);
           Common.command2 ("mv "^outfile^" "^tmpfile);
           tmpfile
-      | Some None -> 
+      | Some None ->
           pr2 "no modification on the input file";
           cfile
       | None -> raise Impossible
     in
     if compare_with_expected_flag
-    then 
-      Compare_c.compare_default generated expected_res 
-      +> Compare_c.compare_result_to_string 
+    then
+      Compare_c.compare_default generated expected_res
+      +> Compare_c.compare_result_to_string
       +> pr2;
   end
-          
+
 
 (* ------------------------------------------------------------------------ *)
-(* note: if you get some weird results in -testall, and not in -test, 
- * it is possible that a test file work in -test but may not 
+(* note: if you get some weird results in -testall, and not in -test,
+ * it is possible that a test file work in -test but may not
  * work while used inside a -testall. If we have some bugs in our
- * parser that modify some global state and that those states 
+ * parser that modify some global state and that those states
  * are not reseted between each test file, then having run previous
  * test files may have an influence on another test file which mean
  * than a test may work in isolation (via -test) but not otherwise
  * (via -testall). Fortunately such bugs are rare.
- * 
+ *
  *)
 let testall ?(expected_score_file="tests/SCORE_expected.sexp") () =
- 
+
   let score  = empty_score () in
 
-  let expected_result_files = 
-    Common.glob "tests/*.res" 
+  let expected_result_files =
+    Common.glob "tests/*.res"
     +> List.filter (fun f -> Common.filesize f > 0)
     +> List.map Filename.basename
     +> List.sort compare
   in
 
   begin
-    expected_result_files +> List.iter (fun res -> 
-      let x = 
+    expected_result_files +> List.iter (fun res ->
+      let x =
         if res =~ "\\(.*\\).res" then matched1 res else raise Impossible in
-      let base = if x =~ "\\(.*\\)_ver[0-9]+" then matched1 x else x in 
+      let base = if x =~ "\\(.*\\)_ver[0-9]+" then matched1 x else x in
       let cfile      = "tests/" ^ x ^ ".c" in
       let cocci_file = "tests/" ^ base ^ ".cocci" in
       let expected = "tests/" ^ res in
@@ -79,7 +79,7 @@ let testall ?(expected_score_file="tests/SCORE_expected.sexp") () =
       let timeout_testall = 30 in
 
       try (
-        Common.timeout_function timeout_testall  (fun () -> 
+        Common.timeout_function timeout_testall  (fun () ->
 
 	  pr2 res;
 
@@ -87,7 +87,7 @@ let testall ?(expected_score_file="tests/SCORE_expected.sexp") () =
           let xs = Cocci.full_engine cocci_infos [cfile] in
 	  Cocci.post_engine cocci_infos;
 
-          let generated = 
+          let generated =
             match List.assoc cfile xs with
             | Some generated -> generated
             | None -> cfile
@@ -101,22 +101,22 @@ let testall ?(expected_score_file="tests/SCORE_expected.sexp") () =
            *)
           (match correct with
           | Compare_c.Correct -> Hashtbl.add score res Common.Ok;
-          | Compare_c.Pb s -> 
-              let s = Str.global_replace 
+          | Compare_c.Pb s ->
+              let s = Str.global_replace
                 (Str.regexp "\"/tmp/cocci-output.*\"") "<COCCIOUTPUTFILE>" s
               in
               (* on macos the temporary files are stored elsewhere *)
-              let s = Str.global_replace 
+              let s = Str.global_replace
                 (Str.regexp "\"/var/folders/.*/cocci-output.*\"") "<COCCIOUTPUTFILE>" s
               in
-              let s = 
-                "INCORRECT:" ^ s ^ "\n" ^ 
+              let s =
+                "INCORRECT:" ^ s ^ "\n" ^
                 "    diff (result(<) vs expected_result(>)) = \n" ^
                 (diffxs +> List.map(fun s -> "    "^s^"\n") +> Common.join "")
               in
               Hashtbl.add score res (Common.Pb s)
-          | Compare_c.PbOnlyInNotParsedCorrectly s -> 
-              let s = 
+          | Compare_c.PbOnlyInNotParsedCorrectly s ->
+              let s =
                 "seems incorrect, but only because of code that " ^
                 "was not parsable" ^ s
               in
@@ -124,7 +124,7 @@ let testall ?(expected_score_file="tests/SCORE_expected.sexp") () =
           )
         )
       )
-      with exn -> 
+      with exn ->
         Common.reset_pr_indent();
         let s = "PROBLEM\n" ^ ("   exn = " ^ Printexc.to_string exn ^ "\n") in
         Hashtbl.add score res (Common.Pb s)
@@ -135,11 +135,11 @@ let testall ?(expected_score_file="tests/SCORE_expected.sexp") () =
     pr2 "statistics";
     pr2 "--------------------------------";
 
-    Common.hash_to_list score +> List.iter (fun (s, v) -> 
+    Common.hash_to_list score +> List.iter (fun (s, v) ->
       pr_no_nl (Printf.sprintf "%-30s: " s);
       pr_no_nl (
         match v with
-        | Common.Ok ->  "CORRECT\n" 
+        | Common.Ok ->  "CORRECT\n"
         | Common.Pb s -> s
       )
     );
@@ -148,7 +148,7 @@ let testall ?(expected_score_file="tests/SCORE_expected.sexp") () =
     pr2 "--------------------------------";
     pr2 "regression testing  information";
     pr2 "--------------------------------";
- 
+
     (* now default argument of testall:
     let expected_score_file = "tests/SCORE_expected.sexp" in
     *)
@@ -157,21 +157,21 @@ let testall ?(expected_score_file="tests/SCORE_expected.sexp") () =
     let actual_score_file = "tests/SCORE_actual.sexp" in
 
     pr2 ("regression file: "^ expected_score_file);
-    let (expected_score : score) = 
+    let (expected_score : score) =
       if Sys.file_exists expected_score_file
-      then 
+      then
         let sexp = Sexp.load_sexp expected_score_file in
         Sexp_common.score_of_sexp sexp
-      else 
-        if Sys.file_exists expected_score_file_orig 
+      else
+        if Sys.file_exists expected_score_file_orig
         then begin
           pr2 (spf "use expected orig file (%s)" expected_score_file_orig);
-          Common.command2 (spf "cp %s %s" expected_score_file_orig 
+          Common.command2 (spf "cp %s %s" expected_score_file_orig
                                           expected_score_file);
           let sexp = Sexp.load_sexp expected_score_file in
           Sexp_common.score_of_sexp sexp
         end
-       else 
+       else
           empty_score()
     in
 
@@ -193,14 +193,14 @@ let testall ?(expected_score_file="tests/SCORE_expected.sexp") () =
     let (good, total)                   = Common.total_scores score in
     let (expected_good, expected_total) = Common.total_scores expected_score in
 
-    if good = expected_good 
-    then begin 
+    if good = expected_good
+    then begin
       pr2 "Current score is equal to expected score; everything is fine";
       raise (UnixExit 0);
     end
-    else 
+    else
       if good < expected_good
-      then begin 
+      then begin
         pr2 "Current score is lower than expected :(";
         pr2 (spf "(was expecting %d but got %d)" expected_good good);
         pr2 "";
@@ -219,7 +219,7 @@ let testall ?(expected_score_file="tests/SCORE_expected.sexp") () =
           (spf "mv %s %s" best_of_both_file expected_score_file);
         raise (UnixExit 0);
       end
-     
+
   end
 
 (* ------------------------------------------------------------------------ *)
@@ -232,35 +232,35 @@ let t_to_s = function
   | SpatchOK -> ".spatch_ok"
   | Failed -> ".failed"
 
-let delete_previous_result_files infile = 
-  [Ok;SpatchOK;Failed] +> List.iter (fun kind -> 
+let delete_previous_result_files infile =
+  [Ok;SpatchOK;Failed] +> List.iter (fun kind ->
     Common.command2 ("rm -f " ^ infile ^ t_to_s kind)
   )
 
 (* quite similar to compare_with_expected  below *)
-let test_okfailed cocci_file cfiles = 
+let test_okfailed cocci_file cfiles =
   cfiles +> List.iter delete_previous_result_files;
 
   (* final_files contain the name of an output file (a .ok or .failed
    * or .spatch_ok), and also some additionnal strings to be printed in
    * this output file in addition to the general error message of
    * full_engine. *)
-  let final_files = ref [] in 
+  let final_files = ref [] in
 
 
-  let newout = 
-    Common.new_temp_file "cocci" ".stdout" 
+  let newout =
+    Common.new_temp_file "cocci" ".stdout"
   in
 
   let t = Unix.gettimeofday () in
-  let time_per_file_str () = 
+  let time_per_file_str () =
     let t' = Unix.gettimeofday () in
     let tdiff = t' -. t in
     let tperfile = tdiff /. (float_of_int (List.length cfiles)) in
     spf "time: %f" tperfile
   in
-  
-  Common.redirect_stdout_stderr newout (fun () -> 
+
+  Common.redirect_stdout_stderr newout (fun () ->
     try (
       Common.timeout_function_opt !Flag_cocci.timeout (fun () ->
 
@@ -269,107 +269,107 @@ let test_okfailed cocci_file cfiles =
 	Cocci.post_engine cocci_infos;
 
         let time_str = time_per_file_str () in
-          
-        outfiles +> List.iter (fun (infile, outopt) -> 
+
+        outfiles +> List.iter (fun (infile, outopt) ->
           let (dir, base, ext) = Common.dbe_of_filename infile in
-          let expected_suffix   = 
+          let expected_suffix   =
             match ext with
             | "c" -> "res"
             | "h" -> "h.res"
             | s -> pr2 ("WEIRD: not a .c or .h :" ^ base ^ "." ^ s);
                 "" (* no extension, will compare to same file *)
           in
-          let expected_res =  
+          let expected_res =
             Common.filename_of_dbe  (dir, base, expected_suffix) in
-          let expected_res2 = 
-            Common.filename_of_dbe (dir,"corrected_"^ base,expected_suffix) 
+          let expected_res2 =
+            Common.filename_of_dbe (dir,"corrected_"^ base,expected_suffix)
           in
-	  
+
             (* can delete more than the first delete_previous_result_files
                * because here we can have more files than in cfiles, for instance
                * the header files
             *)
           delete_previous_result_files infile;
-          
+
           match outopt, Common.lfile_exists expected_res with
-          | None, false -> 
+          | None, false ->
               ()
-          | Some outfile, false -> 
+          | Some outfile, false ->
               let s =("PB: input file " ^ infile ^ " modified but no .res") in
               push2 (infile^t_to_s Failed, [s;time_str]) final_files
-		
-          | x, true -> 
-              let outfile = 
-                match x with 
-                | Some outfile -> outfile 
-                | None -> infile 
+
+          | x, true ->
+              let outfile =
+                match x with
+                | Some outfile -> outfile
+                | None -> infile
               in
-              
+
               let diff = Compare_c.compare_default outfile expected_res in
               let s1 = (Compare_c.compare_result_to_string diff) in
               if fst diff =*= Compare_c.Correct
               then push2 (infile ^ (t_to_s Ok), [s1;time_str]) final_files
-              else 
+              else
                 if Common.lfile_exists expected_res2
                 then begin
                   let diff = Compare_c.compare_default outfile expected_res2 in
                   let s2 = Compare_c.compare_result_to_string diff in
                   if fst diff =*= Compare_c.Correct
-                  then push2 (infile ^ (t_to_s SpatchOK),[s2;s1;time_str]) 
+                  then push2 (infile ^ (t_to_s SpatchOK),[s2;s1;time_str])
                       final_files
-                  else push2 (infile ^ (t_to_s Failed), [s2;s1;time_str]) 
+                  else push2 (infile ^ (t_to_s Failed), [s2;s1;time_str])
                       final_files
                 end
 		else push2 (infile ^ (t_to_s Failed), [s1;time_str]) final_files
 		    )
 	  );
       )
-    with exn -> 
+    with exn ->
       let clean s =
 	Str.global_replace (Str.regexp "\\\\n") "\n"
 	  (Str.global_replace (Str.regexp ("\\\\\"")) "\""
 	     (Str.global_replace (Str.regexp "\\\\t") "\t" s)) in
       let s = "PROBLEM\n"^("   exn = " ^ clean(Printexc.to_string exn) ^ "\n")
       in
-      let time_str = time_per_file_str () 
+      let time_str = time_per_file_str ()
       in
       (* we may miss some file because cfiles is shorter than outfiles.
 	 * For instance the detected local headers are not in cfiles, so
 	 * may have less failed. But at least have some failed.
       *)
-      cfiles +> List.iter (fun infile -> 
+      cfiles +> List.iter (fun infile ->
         push2 (infile ^ (t_to_s Failed), [s;time_str]) final_files;
 	);
       );
-  !final_files +> List.iter (fun (file, additional_strs) -> 
+  !final_files +> List.iter (fun (file, additional_strs) ->
     Common.command2 ("cp " ^ newout ^ " " ^ file);
-    with_open_outfile file (fun (pr, chan) -> 
+    with_open_outfile file (fun (pr, chan) ->
       additional_strs +> List.iter (fun s -> pr (s ^ "\n"))
 	);
-    
+
     )
 
 
-let test_regression_okfailed () = 
+let test_regression_okfailed () =
 
   (* it's  xxx.c.ok *)
   let chop_ext f = f +> Filename.chop_extension in
 
   let newscore  = Common.empty_score () in
-  let oks = 
-    Common.cmd_to_list ("find -name \"*.ok\"") 
+  let oks =
+    Common.cmd_to_list ("find -name \"*.ok\"")
     ++
     Common.cmd_to_list ("find -name \"*.spatch_ok\"")
   in
   let failed = Common.cmd_to_list ("find -name \"*.failed\"") in
 
-  if null (oks ++ failed) 
+  if null (oks ++ failed)
   then failwith "no ok/failed file, you certainly did a make clean"
   else begin
-    oks +> List.iter (fun s -> 
+    oks +> List.iter (fun s ->
       Hashtbl.add newscore (chop_ext s)  Common.Ok
     );
-    failed +> List.iter (fun s -> 
+    failed +> List.iter (fun s ->
       Hashtbl.add newscore (chop_ext s) (Common.Pb "fail")
     );
     pr2 "--------------------------------";
@@ -377,42 +377,42 @@ let test_regression_okfailed () =
     pr2 "--------------------------------";
     Common.regression_testing newscore ("score_failed.marshalled")
   end
-    
+
 
 (* ------------------------------------------------------------------------ *)
 (* quite similar to test_ok_failed. Maybe could factorize code *)
 let compare_with_expected outfiles =
   pr2 "";
-  outfiles +> List.iter (fun (infile, outopt) -> 
+  outfiles +> List.iter (fun (infile, outopt) ->
     let (dir, base, ext) = Common.dbe_of_filename infile in
-    let expected_suffix   = 
+    let expected_suffix   =
       match ext with
       | "c" -> "res"
       | "h" -> "h.res"
       | s -> failwith ("weird C file, not a .c or .h :" ^ s)
     in
-    let expected_res =  
+    let expected_res =
       Common.filename_of_dbe  (dir, base, expected_suffix) in
-    let expected_res2 = 
-      Common.filename_of_dbe (dir,"corrected_"^ base,expected_suffix) 
+    let expected_res2 =
+      Common.filename_of_dbe (dir,"corrected_"^ base,expected_suffix)
     in
-    
+
     match outopt, Common.lfile_exists expected_res with
     | None, false -> ()
-    | Some outfile, false -> 
+    | Some outfile, false ->
         let s =("PB: input file " ^ infile ^ " modified but no .res") in
         pr2 s
-    | x, true -> 
-        let outfile = 
-          match x with 
-          | Some outfile -> outfile 
-          | None -> infile 
+    | x, true ->
+        let outfile =
+          match x with
+          | Some outfile -> outfile
+          | None -> infile
         in
         let diff = Compare_c.compare_default outfile expected_res in
         let s1 = (Compare_c.compare_result_to_string diff) in
         if fst diff =*= Compare_c.Correct
         then pr2_no_nl (infile ^ " " ^ s1)
-        else 
+        else
           if Common.lfile_exists expected_res2
           then begin
             let diff = Compare_c.compare_default outfile expected_res2 in
@@ -428,8 +428,8 @@ let compare_with_expected outfiles =
 (* Subsystem testing *)
 (*****************************************************************************)
 
-let test_parse_cocci file = 
-  if not (file =~ ".*\\.cocci") 
+let test_parse_cocci file =
+  if not (file =~ ".*\\.cocci")
   then pr2 "warning: seems not a .cocci file";
 
   let (_,xs,_,_,_,_,grep_tokens,query) =
@@ -458,10 +458,10 @@ let sp_of_file file iso    = Parse_cocci.process file iso false
 *)
 
 (*
-let flows_of_ast astc = 
+let flows_of_ast astc =
   astc +> Common.map_filter (fun e -> ast_to_flow_with_error_messages e)
 
-let one_flow flows = 
+let one_flow flows =
   List.hd flows
 
 let one_ctl ctls = List.hd (List.hd ctls)

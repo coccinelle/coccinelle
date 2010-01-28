@@ -6,7 +6,7 @@ val check_control_flow : Control_flow_c.cflow -> unit
 
 val annotate_loop_nodes : Control_flow_c.cflow -> Control_flow_c.cflow
 
-type error = 
+type error =
   | DeadCode          of Common.parse_info option
   | CaseNoSwitch      of Common.parse_info
   | OnlyBreakInSwitch of Common.parse_info

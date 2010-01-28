@@ -110,7 +110,7 @@ let get_free checker t =
 	  (detect_unitary_frees
 	     (List.map
 		(whencode
-		   r.VT0.combiner_rec_statement_dots 
+		   r.VT0.combiner_rec_statement_dots
 		   r.VT0.combiner_rec_statement
 		    r.VT0.combiner_rec_expression)
 		whn))

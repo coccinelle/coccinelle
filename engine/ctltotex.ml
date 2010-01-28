@@ -228,7 +228,7 @@ let ctltotex rule pp pv ctls o =
       Printf.fprintf o "%s\n" res)
     ctls;
   Printf.fprintf o "\\end{array}\\]\n\n"
-  
+
 let make_prelude o = Printf.fprintf o "%s\n" prelude
 let make_postlude o = Printf.fprintf o "%s\n" postlude
 

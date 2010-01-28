@@ -321,7 +321,7 @@ let elim_opt =
 	Ast.DOTS(l) -> Ast.DOTS(dots_list (List.map Ast.unwrap l) l)
       | Ast.CIRCLES(l) -> failwith "elimopt: not supported"
       | Ast.STARS(l) -> failwith "elimopt: not supported") in
-  
+
   V.rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing stmtdotsfn donothing
@@ -469,7 +469,7 @@ let make_match label guard code =
 
 let make_raw_match label guard code =
   predmaker guard (Lib_engine.Match(code),CTL.Control) label
-    
+
 let rec seq_fvs quantified = function
     [] -> []
   | fv1::fvs ->
@@ -874,7 +874,7 @@ let do_re_matches label guard res quantified minus_quantified =
     let fvs = get_unquantified quantified stmt_fvs in
     quantify guard fvs (make_match None guard x) in
 (* label used to be used here, but it is not use; label is only needed after
-and within dots 
+and within dots
     ctl_and CTL.NONSTRICT (label_pred_maker label) *)
     (match List.map Ast.unwrap res with
       [] -> failwith "unexpected empty disj"
@@ -940,7 +940,7 @@ let ifthen ifheader branch ((afvs,_,_,_) as aft) after
     if(test) & AX((TrueBranch & AX thn) v FallThrough v (After & AXAX after))
              & EX After
 *)
-  (* free variables *) 
+  (* free variables *)
   let (efvs,bfvs) =
     match seq_fvs quantified
 	[Ast.get_fvs ifheader;Ast.get_fvs branch;afvs] with
@@ -1068,13 +1068,13 @@ let forwhile header body ((afvs,_,_,_) as aft) after
     quantified minus_quantified label recurse make_match guard =
   let process _ =
     (* the translation in this case is similar to that of an if with no else *)
-    (* free variables *) 
+    (* free variables *)
     let (efvs,bfvs) =
       match seq_fvs quantified [Ast.get_fvs header;Ast.get_fvs body;afvs] with
 	[(efvs,b1fvs);(_,b2fvs);_] -> (efvs,Common.union_set b1fvs b2fvs)
       | _ -> failwith "not possible" in
     let new_quantified = Common.union_set bfvs quantified in
-    (* minus free variables *) 
+    (* minus free variables *)
     let (mefvs,mbfvs) =
       match seq_fvs minus_quantified
 	  [Ast.get_mfvs header;Ast.get_mfvs body;[]] with
@@ -1115,7 +1115,7 @@ let forwhile header body ((afvs,_,_,_) as aft) after
 	  quantify guard efvs (make_match header)
       | _ -> process())
   | _ -> process()
-  
+
 (* --------------------------------------------------------------------- *)
 (* statement metavariables *)
 
@@ -1182,7 +1182,7 @@ let svar_context_with_add_after stmt s label quantified d ast
     make_seq_after guard
       (ctl_and CTL.NONSTRICT (ctl_not (ctl_ex to_end)) full_metamatch) after in
   let right_or = (* the statement covers multiple nodes *)
-    ctl_and CTL.NONSTRICT 
+    ctl_and CTL.NONSTRICT
       (ctl_ex
 	 (make_seq guard
 	    [to_end; make_seq_after guard last_metamatch after]))
@@ -1462,7 +1462,7 @@ let rec dots_and_nests plus nest whencodes bef aft dotcode after label
 			       CTL.Pred(Lib_engine.BindGood(plus_var),
 					CTL.Modif plus_var2)))
 	  else x in
-	let body = 
+	let body =
 	  CTL.Let(v,nest,
 		  CTL.Or(is_plus (CTL.Ref v),
 			 whencodes (CTL.Not(ctl_uncheck (CTL.Ref v))))) in
@@ -1570,7 +1570,7 @@ and whencond_false e label guard quantified =
 
 (* --------------------------------------------------------------------- *)
 (* the main translation loop *)
-  
+
 let rec statement_list stmt_list after quantified minus_quantified
     label llabel slabel dots_before guard =
   let isdots x =
@@ -1851,7 +1851,7 @@ and statement stmt after quantified minus_quantified
   | Ast.IfThen(ifheader,branch,aft) ->
       ifthen ifheader branch aft after quantified minus_quantified
 	  label llabel slabel statement make_match guard
-	 
+
   | Ast.IfThenElse(ifheader,branch1,els,branch2,aft) ->
       ifthenelse ifheader branch1 els branch2 aft after quantified
 	  minus_quantified label llabel slabel statement make_match guard
@@ -2227,7 +2227,7 @@ and statement stmt after quantified minus_quantified
 	(* function body is all minus, no whencode *)
 	match Ast.undots body with
 	  [body] ->
-	    (match Ast.unwrap body with 
+	    (match Ast.unwrap body with
 	      Ast.Dots
 		((_,i,(Ast.MINUS(_,_,_,[]) as d),_),[],_,_) ->
 		  (match (Ast.unwrap lbrace,Ast.unwrap rbrace) with
@@ -2305,7 +2305,7 @@ and do_between_dots stmt term after quantified minus_quantified
 	  (v,ctl_or
 	     (ctl_back_ex (ctl_or (truepred label) (inlooppred label)))
 	     (ctl_back_ex (ctl_back_ex (falsepred label))),
-	   ctl_or case1 case2)	 
+	   ctl_or case1 case2)	
     | Ast.NoDots -> term
 
 (* un_process_bef_aft is because we don't want to do transformation in this

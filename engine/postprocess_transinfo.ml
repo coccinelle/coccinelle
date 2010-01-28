@@ -21,7 +21,7 @@ let get_seeded seed =
   seed^(string_of_int ctr)
 
 let read_fresh_id _ =
-  try 
+  try
     let s = read_line () in
     match Parse_c.tokens_of_string s with
       [Parser_c.TIdent _; Parser_c.EOF _] -> s

@@ -30,7 +30,7 @@ type ctlcocci = (predicate, Ast_cocci.meta_name) Wrapper_ctl.wrapped_ctl
 type metavars_binding = Ast_c.metavars_binding
 
 (* used in ctlcocci_integration *)
-type metavar_binding_kind2 = 
+type metavar_binding_kind2 =
   | NormalMetaVal of Ast_c.metavar_binding_kind
   | ParenVal of Ast_cocci.meta_name
   | LabelVal of labelval
@@ -46,18 +46,18 @@ and metavars_binding2 = (mvar, metavar_binding_kind2) Common.assoc
 (* the CTL model related types *)
 (*****************************************************************************)
 (* coccionly: *)
-type label_ctlcocci = 
- predicate -> 
- (nodei * 
- (predicate * (mvar, metavar_binding_kind2) Ast_ctl.generic_substitution)) 
+type label_ctlcocci =
+ predicate ->
+ (nodei *
+ (predicate * (mvar, metavar_binding_kind2) Ast_ctl.generic_substitution))
  list
- 
+
 type model = Control_flow_c.cflow * label_ctlcocci * nodei list
 
-type transformation_info = 
+type transformation_info =
  (nodei * metavars_binding * Ast_cocci.rule_elem) list
 
-type numbered_transformation_info = 
+type numbered_transformation_info =
  (int list * (nodei * metavars_binding * Ast_cocci.rule_elem)) list
 
 
@@ -65,5 +65,5 @@ type numbered_transformation_info =
 (* comparing binding *)
 (*****************************************************************************)
 
-let equal_binding xs ys = 
+let equal_binding xs ys =
   List.sort compare xs = List.sort compare ys

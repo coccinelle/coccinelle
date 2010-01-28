@@ -14,7 +14,7 @@ and element =
   | DInfo of dots
   | EExists of Ast_cocci.meta_name * element
 
-and dots = 
+and dots =
     Dots
   | Nest of sequence
   | When of dots * sequence

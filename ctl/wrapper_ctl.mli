@@ -1,6 +1,6 @@
 type info = int
 
-type ('pred, 'mvar) wrapped_ctl = 
+type ('pred, 'mvar) wrapped_ctl =
     ('pred * 'mvar Ast_ctl.modif,  'mvar, info) Ast_ctl.generic_ctl
 
 type ('a, 'b) wrapped_binding =
@@ -8,7 +8,7 @@ type ('a, 'b) wrapped_binding =
   | PredVal of 'b Ast_ctl.modif
 
 type ('pred,'state,'mvar,'value) labelfunc =
-    'pred -> 
+    'pred ->
       ('state * ('pred * ('mvar, 'value) Ast_ctl.generic_substitution))  list
 
 module CTL_ENGINE_BIS :
@@ -51,7 +51,7 @@ module CTL_ENGINE_BIS :
     val satbis :
 	G.cfg *
 	 (predicate,G.node,SUB.mvar,SUB.value) labelfunc *
-         G.node list -> 
+         G.node list ->
 	   ((predicate,SUB.mvar) wrapped_ctl *
 	      (WRAPPER_PRED.t list list)) ->
 		(WRAPPER_ENV.mvar list * (SUB.mvar * SUB.value) list) ->

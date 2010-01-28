@@ -237,7 +237,7 @@ and case_line testfn mcode tail case =
   match Ast.unwrap case with
     Ast.CaseLine(header,code) ->
       conj_one testfn header (statement_list testfn mcode tail code)
-	  
+
   | Ast.OptCase(case) -> []
 
 (* --------------------------------------------------------------------- *)

@@ -1,7 +1,7 @@
 (*****************************************************************************)
 (*  *)
 (*****************************************************************************)
-(* src: Jon Harrop. 
+(* src: Jon Harrop.
  *
  * "Certain applications are extremely well suited to functional
  * programming and parsing is one of them. Specifically, the ability to
@@ -11,23 +11,23 @@
  * conventional parser generators such as ocamllex and ocamlyacc. This
  * article explains how parser combinators may be designed and
  * implemented in OCaml, using the standard example of a calculator."
- * 
+ *
  * Based on haskell articles I guess like meijer functional pearl or
  * graham hutton articles. Also maybe based on haskell parsec.
- * 
+ *
  * pad: a few bugfix. I also put more restrictive and descriptive types.
- * pad: I remember having coded such a library, maybe not in ocaml. 
+ * pad: I remember having coded such a library, maybe not in ocaml.
  * Or maybe it was during a "TP compilation" at INSA ? I remember having
  * a generic lexer. Or maybe it was genlex ?
- * 
- * 
- * 
- * 
+ *
+ *
+ *
+ *
  * alternatives: genlex + parser extension of ocaml (streams).
  * cf genlex doc:
- * 
+ *
  * Example: a lexer suitable for a desk calculator is obtained by
- * let lexer = make_lexer ["+";"-";"*";"/";"let";"="; "("; ")"]  
+ * let lexer = make_lexer ["+";"-";"*";"/";"let";"="; "("; ")"]
  * let parse_expr = parser
  *     [< 'Int n >] -> n
  *   | [< 'Kwd "("; n = parse_expr; 'Kwd ")" >] -> n
@@ -42,8 +42,8 @@
  * | 	Float of float
  * | 	String of string
  * | 	Char of char
- * 
- * 
+ *
+ *
  * Cf also ocaml manual
  *  let rec parse_expr = parser
  *      [< e1 = parse_mult; e = parse_more_adds e1 >] -> e
@@ -64,7 +64,7 @@
  *    | [< 'Kwd "("; e = parse_expr; 'Kwd ")" >] -> e;;
  * But see how they are forced to use a LL(1) grammar which denatures the
  * grammar "parse_more_xxx"
- * 
+ *
  *)
 
 (*****************************************************************************)
@@ -85,11 +85,11 @@ let val_of_parser = fst
 
 (* pad: could also do it by returning a Maybe and use monad *)
 let ( ||| ) p1 p2 s =
-  try 
-    p1 s 
-  with Not_found -> 
+  try
+    p1 s
+  with Not_found ->
     p2 s
-      
+
 let ( +++ ) p1 p2 s =
   let e1, s = p1 s in
   let e2, s = p2 s in
@@ -146,12 +146,12 @@ let alpha = function
 
 
 let symbol = function
-  | '(' | ')' 
-  | '{' | '}' 
-  | '[' | ']' 
-  | '<' | '>' 
-  | '+' | '-' | '*' | '/' 
-  | '&' | '|' | '!' 
+  | '(' | ')'
+  | '{' | '}'
+  | '[' | ']'
+  | '<' | '>'
+  | '+' | '-' | '*' | '/'
+  | '&' | '|' | '!'
 
   | '=' | '~' | '@'
       -> true
@@ -180,7 +180,7 @@ let alphanum_under_minus c = digit c || alpha c || (c = '-') || (c = '_')
 
 
 let (+>) o f = f o
-let string_of_chars cs = 
+let string_of_chars cs =
   cs +> List.map (String.make 1) +> String.concat ""
 
 
@@ -231,17 +231,17 @@ let rawkeyword =
 
 
 (* todo: handle antislash *)
-let rawstring = 
-  pred stringquote +++ 
+let rawstring =
+  pred stringquote +++
   several (fun c -> not (stringquote c)) +++
   pred stringquote
-   >| (fun ((c1, cs), c3) -> 
+   >| (fun ((c1, cs), c3) ->
         let s = string_of_chars cs in
         STR s (* exclude the marker *)
    )
 
 
-let lex_gen tokenf str = 
+let lex_gen tokenf str =
   let alltoks = (many tokenf) +++ fin >| fst in
   val_of_parser (alltoks (list_of_string str))
 
@@ -266,9 +266,9 @@ let lex (string : string) =
 
 
 
-let test1 () = 
+let test1 () =
   Common.example
-  (lex "a x^2 + b x + c" 
+  (lex "a x^2 + b x + c"
     =
     [IDENT "a"; IDENT "x"; KWD "^"; INT "2"; KWD "+"; IDENT "b"; IDENT "x";
      KWD "+"; IDENT "c"]
@@ -321,30 +321,30 @@ let string = function
  * indefinitely until a stack overflow occurs. Consequently, our
  * implementation of the factor parser is careful to parse an atom first,
  * and term calls factor first, to avoid this problem."
- * 
+ *
  * pad: bugfix, added the KWD "*".
  *)
 
-(* pad: I think I remembered you cant eta-factorize the parameter 
+(* pad: I think I remembered you cant eta-factorize the parameter
  * when you use mutually recursive
  *)
 let rec atom s =
  (
-  (int             >| fun n -> Int(int_of_string n)) 
+  (int             >| fun n -> Int(int_of_string n))
   |||
-  (ident           >| fun x -> Var x) 
+  (ident           >| fun x -> Var x)
   |||
   (a (KWD "(") +++ term +++ a (KWD ")")     >| fun ((_, e), _) -> e)
   ) s
 and factor s =
  (
-  (atom +++ a (KWD "*") +++ factor      >| fun ((f, _), g) -> Mul (f,g)) 
+  (atom +++ a (KWD "*") +++ factor      >| fun ((f, _), g) -> Mul (f,g))
   |||
   atom
  ) s
 and term s =
   (
-   (factor +++ a (KWD "+") +++ term     >| fun ((f, _), g) -> Add (f,g)) 
+   (factor +++ a (KWD "+") +++ term     >| fun ((f, _), g) -> Add (f,g))
    |||
    factor
   ) s
@@ -356,7 +356,7 @@ let expr =
 let parse p string =
     val_of_parser(p(lex string))
 
-(* 
+(*
 parse expr "a x x + b x + c"
 *)
 

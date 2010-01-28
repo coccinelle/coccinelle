@@ -26,7 +26,7 @@ let parse_line fp l n =
 	    | _ -> failwith "no data" in
 	  Some (cocci,loop (drop_spaces first) others)
       | _ -> failwith (Printf.sprintf "bad line: %s" l)
-    
+
 let collect_lines fp i =
   let lines = ref [] in
   let ln = ref 0 in
@@ -193,9 +193,9 @@ let process_line env (cocci,tags) =
 	(mktag !n) first_tag_val;
       n := !n + 1)
     files
-    
+
 (* --------------------------------------------------------------------- *)
-    
+
 let rec mkenv = function
     [] -> []
   | [_] -> failwith "required arguments: file (category x cocci file)*"
@@ -207,7 +207,7 @@ let rec mkenv = function
 let rec upto = function
     0 -> []
   | n -> (mktag (n-1)) :: (upto (n-1))
-	  
+
 let _ =
   let (no_ors,args) =
     List.partition (function "-no_ors" -> true | _ -> false)

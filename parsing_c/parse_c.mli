@@ -1,5 +1,5 @@
-(* The main function is parse_c_and_cpp. It uses globals in Lexer_Parser and 
- * and also _defs below which often comes from a standard.h macro file. 
+(* The main function is parse_c_and_cpp. It uses globals in Lexer_Parser and
+ * and also _defs below which often comes from a standard.h macro file.
  * cf also init_defs_xxx below.
  *)
 
@@ -18,7 +18,7 @@ val init_defs_builtins : Common.filename -> unit
 
 
 (* This is the main function *)
-val parse_c_and_cpp : 
+val parse_c_and_cpp :
   Common.filename (*cfile*) -> (program2 * Parsing_stat.parsing_stat)
 
 (* use some .ast_raw memoized version, and take care if obsolete *)
@@ -29,7 +29,7 @@ val parse_cache:
 (* ---------------------------------------------------------------------- *)
 (* used to extract macros from standard.h, but also now from regular C files
  * in -extract_macros to later feed an automatically build standard.h *)
-val extract_macros : 
+val extract_macros :
   Common.filename -> (string, Cpp_token_c.define_def) Common.assoc
 
 
@@ -43,12 +43,12 @@ val tokens_of_string: string -> Parser_c.token list
 
 val parse:                        Common.filename -> Ast_c.program
 val parse_print_error:            Common.filename -> Ast_c.program
-val parse_gen: 
+val parse_gen:
     ((Lexing.lexbuf -> Parser_c.token) -> Lexing.lexbuf -> 'a) -> string -> 'a
 
 (* ---------------------------------------------------------------------- *)
 (* Easy way to build complex Ast elements from simple strings.
- * Can also be useful when called from the ocaml toplevel to test. 
+ * Can also be useful when called from the ocaml toplevel to test.
  *)
 val type_of_string      : string -> Ast_c.fullType
 val statement_of_string : string -> Ast_c.statement

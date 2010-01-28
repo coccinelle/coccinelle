@@ -8,7 +8,7 @@ let unwind_protect f cleanup =
 
 let (with_open_infile: string -> ((in_channel) -> 'a) -> 'a) = fun file f ->
   let chan = open_in file in
-  unwind_protect (fun () -> 
+  unwind_protect (fun () ->
     let res = f chan in
     close_in chan;
     res)
@@ -122,5 +122,5 @@ let _ =
       Printf.printf "%s\n" last
   | _ -> ()
 
-    
-    
+
+

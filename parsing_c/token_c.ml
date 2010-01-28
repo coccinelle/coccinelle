@@ -6,7 +6,7 @@
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License (GPL)
  * version 2 as published by the Free Software Foundation.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -27,20 +27,20 @@ open Common
  * tokens which pour le coup were not in the ast at all. So,
  * to avoid recursive mutual dependencies, we provide this file
  * so that ast_c does not need to depend on yacc which depends on
- * ast_c, etc. 
- * 
+ * ast_c, etc.
+ *
  * Also, ocamlyacc imposes some stupid constraints on the way we can define
  * the token type. ocamlyacc forces us to do a token type that
  * cant be a pair of a sum type, it must be directly a sum type.
  * We don't have this constraint here.
- * 
+ *
  * Also, some yacc tokens are not used in the grammar because they are filtered
  * in some intermediate phases. But they still must be declared because
  * ocamllex may generate them, or some intermediate phase may also
  * generate them (like some functions in parsing_hacks.ml).
  * Here we don't have this problem again so we can have a clearer token type.
- * 
- * 
+ *
+ *
  *)
 
 (*****************************************************************************)
@@ -48,20 +48,20 @@ open Common
 (*****************************************************************************)
 
 (* history: was in ast_c.ml before:
- *  This type is not in the Ast but is associated with the TCommentCpp 
+ *  This type is not in the Ast but is associated with the TCommentCpp
  *  token. I put this enum here because parser_c.mly need it. I could have put
  *  it also in lexer_parser.
- * 
+ *
  * update: now in token_c.ml, and actually right now we want those tokens
- * to be in the ast so that in the matching/transforming of C code, we 
- * can detect if some metavariables match code which have some 
+ * to be in the ast so that in the matching/transforming of C code, we
+ * can detect if some metavariables match code which have some
  * cpp_passed tokens next to them (and so where we should issue a warning).
  *)
-type cppcommentkind = 
-  | CppDirective 
-  | CppAttr 
-  | CppMacro 
-  | CppPassingNormal (* ifdef 0, cplusplus, etc *) 
+type cppcommentkind =
+  | CppDirective
+  | CppAttr
+  | CppMacro
+  | CppPassingNormal (* ifdef 0, cplusplus, etc *)
   | CppPassingCosWouldGetError (* expr passsing *)
   | CppPassingExplicit (* skip_start/end tag *)
 
@@ -70,8 +70,8 @@ type cppcommentkind =
 (*****************************************************************************)
 
 (*
- * TODO? Do we want to handle also non OriginTok-like tokens here ? 
- * Right now we use this file to be able to later store in the 
+ * TODO? Do we want to handle also non OriginTok-like tokens here ?
+ * Right now we use this file to be able to later store in the
  * ast some information about comments and passed cpp tokens, to
  * improve our matching/transforming and unparsing in coccinelle.
  * So we should be concerned really only with origin tok, so right
@@ -79,13 +79,13 @@ type cppcommentkind =
  * Ast_c.parse_info, or even more complex Ast_c.info.
  * Also right now I defined only the token_tags of comment-like
  * tokens.
- *) 
+ *)
 
-type info = Common.parse_info 
+type info = Common.parse_info
 
 (* I try to be consistent with the names in parser_c.mli *)
 type token = token_tag * info
- and token_tag = 
+ and token_tag =
   | TCommentSpace
   | TCommentNewline
 
@@ -98,13 +98,13 @@ type token = token_tag * info
 
 
 
-(* Later if decide to include more kinds of tokens, then may 
+(* Later if decide to include more kinds of tokens, then may
  * have to move the current token_tag like TCommentXxx in their
  * own type and have a generic TCommentLike of comment_like_token
  * in token_tag. Could also do like in token_helpers have some
  * is_xxx predicate, but it's not very pretty (but required when
  * some tokens can belong to multiple categories).
- * 
+ *
  * It's supposed to be all the tokens that are not otherwise represented
  * in the ast via regular constructors and info.
  *)
@@ -118,15 +118,15 @@ type comment_like_token = token
 
 (* simpler than in token_helpers :) because we don't have the ocamlyacc
  * constraints on how to define the token type. *)
-let info_of_token = snd 
+let info_of_token = snd
 
 
 
 (*****************************************************************************)
 (*****************************************************************************)
-(* remaining tokens 
+(* remaining tokens
 
-could define a type  token_class = Comment | Ident | Operator | ... 
+could define a type  token_class = Comment | Ident | Operator | ...
 
   | TInt of (string * Ast_c.info)
   | TFloat of ((string * Ast_c.floatType) * Ast_c.info)

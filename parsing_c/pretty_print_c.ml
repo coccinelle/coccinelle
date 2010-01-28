@@ -1,12 +1,12 @@
 (* Yoann Padioleau, Julia Lawall
- * 
+ *
  * Copyright (C) 2010, University of Copenhagen DIKU and INRIA.
  * Copyright (C) 2006, 2007, 2008, 2009 Ecole des Mines de Nantes and DIKU
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License (GPL)
  * version 2 as published by the Free Software Foundation.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -29,11 +29,11 @@ let pr2, pr2_once = Common.mk_pr2_wrappers Flag_parsing_c.verbose_unparsing
 
 type type_with_ident =
     (string * Ast_c.info) option ->
-    (Ast_c.storage * Ast_c.il) option -> 
+    (Ast_c.storage * Ast_c.il) option ->
     Ast_c.fullType ->
     Ast_c.attribute list -> unit
 
-type 'a printer = 'a -> unit 
+type 'a printer = 'a -> unit
 
 type pretty_printers = {
   expression      : Ast_c.expression printer;
@@ -62,97 +62,97 @@ type pretty_printers = {
  * abstract-lined piece of code, etc. *)
 
 let mk_pretty_printers
-    ~pr_elem ~pr_space 
-    ~pr_nl ~pr_indent ~pr_outdent ~pr_unindent 
+    ~pr_elem ~pr_space
+    ~pr_nl ~pr_indent ~pr_outdent ~pr_unindent
  =
   let start_block () = pr_nl(); pr_indent() in
   let end_block   () = pr_unindent(); pr_nl() in
-  
+
   let indent_if_needed st f =
     match Ast_c.unwrap_st st with
       Compound _ -> pr_space(); f()
     | _ ->
         (*no newline at the end - someone else will do that*)
 	start_block(); f(); pr_unindent() in
-  
 
 
 
-  let rec pp_expression = fun ((exp, typ), ii) -> 
+
+  let rec pp_expression = fun ((exp, typ), ii) ->
     (match exp, ii with
     | Ident (ident),         []     -> pp_name ident
     (* only a MultiString can have multiple ii *)
     | Constant (MultiString _), is     -> is +> List.iter pr_elem
-    | Constant (c),         [i]     -> pr_elem i 
-    | FunCall  (e, es),     [i1;i2] -> 
-        pp_expression e; pr_elem i1; 
+    | Constant (c),         [i]     -> pr_elem i
+    | FunCall  (e, es),     [i1;i2] ->
+        pp_expression e; pr_elem i1;
 	pp_arg_list es;
         pr_elem i2;
-        
-    | CondExpr (e1, e2, e3),    [i1;i2]    -> 
+
+    | CondExpr (e1, e2, e3),    [i1;i2]    ->
         pp_expression e1; pr_space(); pr_elem i1; pr_space();
-	do_option (function x -> pp_expression x; pr_space()) e2; pr_elem i2; 
+	do_option (function x -> pp_expression x; pr_space()) e2; pr_elem i2;
         pp_expression e3
-    | Sequence (e1, e2),          [i]  -> 
+    | Sequence (e1, e2),          [i]  ->
         pp_expression e1; pr_elem i; pr_space(); pp_expression e2
-    | Assignment (e1, op, e2),    [i]  -> 
+    | Assignment (e1, op, e2),    [i]  ->
         pp_expression e1; pr_space(); pr_elem i; pr_space(); pp_expression e2
-          
+
     | Postfix  (e, op),    [i] -> pp_expression e; pr_elem i;
     | Infix    (e, op),    [i] -> pr_elem i; pp_expression e;
     | Unary    (e, op),    [i] -> pr_elem i; pp_expression e
-    | Binary   (e1, op, e2),    [i] -> 
+    | Binary   (e1, op, e2),    [i] ->
         pp_expression e1; pr_space(); pr_elem i; pr_space(); pp_expression e2
-          
-    | ArrayAccess    (e1, e2),   [i1;i2] -> 
+
+    | ArrayAccess    (e1, e2),   [i1;i2] ->
         pp_expression e1; pr_elem i1; pp_expression e2; pr_elem i2
-    | RecordAccess   (e, name),     [i1] -> 
+    | RecordAccess   (e, name),     [i1] ->
         pp_expression e; pr_elem i1; pp_name name;
-    | RecordPtAccess (e, name),     [i1] -> 
+    | RecordPtAccess (e, name),     [i1] ->
         pp_expression e; pr_elem i1; pp_name name;
-	  
+
     | SizeOfExpr  (e),     [i] ->
 	pr_elem i;
 	(match Ast_c.unwrap e with
 	  ParenExpr (e), _ -> ()
 	| _ -> pr_space());
 	pp_expression e
-    | SizeOfType  (t),     [i1;i2;i3] -> 
+    | SizeOfType  (t),     [i1;i2;i3] ->
         pr_elem i1; pr_elem i2; pp_type t; pr_elem i3
-    | Cast    (t, e),      [i1;i2] -> 
+    | Cast    (t, e),      [i1;i2] ->
         pr_elem i1; pp_type t; pr_elem i2; pp_expression e
-	  
-    | StatementExpr (statxs, [ii1;ii2]),  [i1;i2] -> 
+
+    | StatementExpr (statxs, [ii1;ii2]),  [i1;i2] ->
         pr_elem i1;
         pr_elem ii1;
         statxs +> List.iter pp_statement_seq;
         pr_elem ii2;
         pr_elem i2;
-    | Constructor (t, xs), lp::rp::i1::i2::iicommaopt -> 
+    | Constructor (t, xs), lp::rp::i1::i2::iicommaopt ->
         pr_elem lp;
         pp_type t;
         pr_elem rp;
         pr_elem i1;
-        xs +> List.iter (fun (x, ii) -> 
+        xs +> List.iter (fun (x, ii) ->
           assert (List.length ii <= 1);
           ii +> List.iter (function x -> pr_elem x; pr_space());
           pp_init x
         );
         iicommaopt +> List.iter pr_elem;
         pr_elem i2;
-	
+
     | ParenExpr (e), [i1;i2] -> pr_elem i1; pp_expression e; pr_elem i2;
-	
-    | (Ident (_) | Constant _ | FunCall (_,_) | CondExpr (_,_,_) 
+
+    | (Ident (_) | Constant _ | FunCall (_,_) | CondExpr (_,_,_)
     | Sequence (_,_)
-    | Assignment (_,_,_) 
+    | Assignment (_,_,_)
     | Postfix (_,_) | Infix (_,_) | Unary (_,_) | Binary (_,_,_)
     | ArrayAccess (_,_) | RecordAccess (_,_) | RecordPtAccess (_,_)
-    | SizeOfExpr (_) | SizeOfType (_) | Cast (_,_) 
+    | SizeOfExpr (_) | SizeOfType (_) | Cast (_,_)
     | StatementExpr (_) | Constructor _
     | ParenExpr (_)),_ -> raise Impossible
     );
-    
+
     if !Flag_parsing_c.pretty_print_type_info
     then begin
       pr_elem (Ast_c.fakeInfo() +> Ast_c.rewrap_str "/*");
@@ -166,55 +166,55 @@ let mk_pretty_printers
 	    pr_elem (Ast_c.fakeInfo() +> Ast_c.rewrap_str s)));
       pr_elem (Ast_c.fakeInfo() +> Ast_c.rewrap_str "*/");
     end
-	
+
   and pp_arg_list es =
-    es +> List.iter (fun (e, opt) -> 
+    es +> List.iter (fun (e, opt) ->
       assert (List.length opt <= 1); (* opt must be a comma? *)
       opt +> List.iter (function x -> pr_elem x; pr_space());
       pp_argument e)
-      
-  and pp_argument argument = 
+
+  and pp_argument argument =
     let rec pp_action (ActMisc ii) = ii +> List.iter pr_elem in
     match argument with
     | Left e -> pp_expression e
-    | Right weird -> 
+    | Right weird ->
 	(match weird with
 	| ArgType param -> pp_param param
 	| ArgAction action -> pp_action action)
-	  
+
 (* ---------------------- *)
   and pp_name = function
-    | RegularName (s, ii) -> 
+    | RegularName (s, ii) ->
         let (i1) = Common.tuple_of_list1 ii in
         pr_elem i1
-    | CppConcatenatedName xs -> 
-        xs +> List.iter (fun ((x,ii1), ii2) -> 
+    | CppConcatenatedName xs ->
+        xs +> List.iter (fun ((x,ii1), ii2) ->
           ii2 +> List.iter pr_elem;
           ii1 +> List.iter pr_elem;
         )
-    | CppVariadicName (s, ii) -> 
+    | CppVariadicName (s, ii) ->
         ii +> List.iter pr_elem
-    | CppIdentBuilder ((s,iis), xs) -> 
+    | CppIdentBuilder ((s,iis), xs) ->
         let (iis, iop, icp) = Common.tuple_of_list3 iis in
         pr_elem iis;
         pr_elem iop;
-        xs +> List.iter (fun ((x,iix), iicomma) -> 
+        xs +> List.iter (fun ((x,iix), iicomma) ->
           iicomma +> List.iter pr_elem;
           iix +> List.iter pr_elem;
         );
         pr_elem icp
 
 (* ---------------------- *)
-  and pp_statement = fun st -> 
+  and pp_statement = fun st ->
     match Ast_c.get_st_and_ii st with
     | Labeled (Label (name, st)), ii ->
         let (i2) = Common.tuple_of_list1 ii in
 	pr_outdent(); pp_name name; pr_elem i2; pr_nl(); pp_statement st
-    | Labeled (Case  (e, st)), [i1;i2] -> 
+    | Labeled (Case  (e, st)), [i1;i2] ->
 	pr_unindent();
         pr_elem i1; pp_expression e; pr_elem i2; pr_nl(); pr_indent();
 	pp_statement st
-    | Labeled (CaseRange  (e, e2, st)), [i1;i2;i3] -> 
+    | Labeled (CaseRange  (e, e2, st)), [i1;i2;i3] ->
 	pr_unindent();
         pr_elem i1; pp_expression e; pr_elem i2; pp_expression e2; pr_elem i3;
 	pr_nl(); pr_indent();
@@ -222,18 +222,18 @@ let mk_pretty_printers
     | Labeled (Default st), [i1;i2] ->
 	pr_unindent(); pr_elem i1; pr_elem i2; pr_nl(); pr_indent();
 	pp_statement st
-    | Compound statxs, [i1;i2] -> 
+    | Compound statxs, [i1;i2] ->
         pr_elem i1; start_block();
         statxs +> Common.print_between pr_nl pp_statement_seq;
         end_block(); pr_elem i2;
-        
+
     | ExprStatement (None), [i] -> pr_elem i;
     | ExprStatement (None), [] -> ()
     | ExprStatement (Some e), [i] -> pp_expression e; pr_elem i
         (* the last ExprStatement of a for does not have a trailing
            ';' hence the [] for ii *)
-    | ExprStatement (Some e), [] -> pp_expression e; 
-    | Selection  (If (e, st1, st2)), i1::i2::i3::is -> 
+    | ExprStatement (Some e), [] -> pp_expression e;
+    | Selection  (If (e, st1, st2)), i1::i2::i3::is ->
         pr_elem i1; pr_space(); pr_elem i2; pp_expression e; pr_elem i3;
 	indent_if_needed st1 (function _ -> pp_statement st1);
         (match (Ast_c.get_st_and_ii st2, is) with
@@ -244,23 +244,23 @@ let mk_pretty_printers
 	    pr_elem iifakend
         | x -> raise Impossible
         )
-    | Selection  (Switch (e, st)), [i1;i2;i3;iifakend] -> 
+    | Selection  (Switch (e, st)), [i1;i2;i3;iifakend] ->
         pr_elem i1; pr_space(); pr_elem i2; pp_expression e; pr_elem i3;
 	indent_if_needed st (function _-> pp_statement st); pr_elem iifakend
-    | Iteration  (While (e, st)), [i1;i2;i3;iifakend] -> 
+    | Iteration  (While (e, st)), [i1;i2;i3;iifakend] ->
         pr_elem i1; pr_space(); pr_elem i2; pp_expression e; pr_elem i3;
 	indent_if_needed st (function _-> pp_statement st); pr_elem iifakend
-    | Iteration  (DoWhile (st, e)), [i1;i2;i3;i4;i5;iifakend] -> 
+    | Iteration  (DoWhile (st, e)), [i1;i2;i3;i4;i5;iifakend] ->
         pr_elem i1;
 	indent_if_needed st (function _ -> pp_statement st);
-	pr_elem i2; pr_elem i3; pp_expression e; 
+	pr_elem i2; pr_elem i3; pp_expression e;
         pr_elem i4; pr_elem i5;
         pr_elem iifakend
-          
-          
+
+
     | Iteration  (For ((e1opt,il1),(e2opt,il2),(e3opt, il3),st)),
         [i1;i2;i3;iifakend] ->
-	  
+
           pr_elem i1; pr_space();
           pr_elem i2;
           pp_statement (Ast_c.mk_st (ExprStatement e1opt) il1);
@@ -270,108 +270,108 @@ let mk_pretty_printers
           pr_elem i3;
           indent_if_needed st (function _ -> pp_statement st);
           pr_elem iifakend
-	    
+
     | Iteration  (MacroIteration (s,es,st)), [i1;i2;i3;iifakend] ->
         pr_elem i1; pr_space();
         pr_elem i2;
-	
-        es +> List.iter (fun (e, opt) -> 
+
+        es +> List.iter (fun (e, opt) ->
           assert (List.length opt <= 1);
           opt +> List.iter pr_elem;
           pp_argument e;
         );
-	
+
         pr_elem i3;
         indent_if_needed st (function _ -> pp_statement st);
         pr_elem iifakend
-          
-    | Jump (Goto name), ii               -> 
+
+    | Jump (Goto name), ii               ->
         let (i1, i3) = Common.tuple_of_list2 ii in
         pr_elem i1; pr_space(); pp_name name; pr_elem i3;
     | Jump ((Continue|Break|Return)), [i1;i2] -> pr_elem i1; pr_elem i2;
     | Jump (ReturnExpr e), [i1;i2] ->
 	pr_elem i1; pr_space(); pp_expression e; pr_elem i2
-    | Jump (GotoComputed e), [i1;i2;i3] -> 
+    | Jump (GotoComputed e), [i1;i2;i3] ->
         pr_elem i1; pr_elem i2; pp_expression e; pr_elem i3
-	  
+
     | Decl decl, [] -> pp_decl decl
-    | Asm asmbody, ii -> 
+    | Asm asmbody, ii ->
         (match ii with
-        | [iasm;iopar;icpar;iptvirg] -> 
+        | [iasm;iopar;icpar;iptvirg] ->
             pr_elem iasm; pr_elem iopar;
             pp_asmbody asmbody;
             pr_elem icpar; pr_elem iptvirg
-        | [iasm;ivolatile;iopar;icpar;iptvirg] -> 
-            pr_elem iasm; pr_elem ivolatile; pr_elem iopar; 
+        | [iasm;ivolatile;iopar;icpar;iptvirg] ->
+            pr_elem iasm; pr_elem ivolatile; pr_elem iopar;
             pp_asmbody asmbody;
             pr_elem icpar; pr_elem iptvirg
         | _ -> raise Impossible
         )
-	  
-    | NestedFunc def, ii -> 
+
+    | NestedFunc def, ii ->
         assert (null ii);
         pp_def def
-    | MacroStmt, ii -> 
+    | MacroStmt, ii ->
         ii +> List.iter pr_elem ;
-	
-    | (Labeled (Case  (_,_)) 
+
+    | (Labeled (Case  (_,_))
     | Labeled (CaseRange  (_,_,_)) | Labeled (Default _)
-    | Compound _ | ExprStatement _ 
+    | Compound _ | ExprStatement _
     | Selection  (If (_, _, _)) | Selection  (Switch (_, _))
-    | Iteration  (While (_, _)) | Iteration  (DoWhile (_, _)) 
+    | Iteration  (While (_, _)) | Iteration  (DoWhile (_, _))
     | Iteration  (For ((_,_), (_,_), (_, _), _))
     | Iteration  (MacroIteration (_,_,_))
     | Jump ((Continue|Break|Return)) | Jump (ReturnExpr _)
     | Jump (GotoComputed _)
-    | Decl _ 
+    | Decl _
 	), _ -> raise Impossible
-	    
+
   and pp_statement_seq = function
     | StmtElem st -> pp_statement st
     | IfdefStmt ifdef -> pp_ifdef ifdef
     | CppDirectiveStmt cpp -> pp_directive cpp
     | IfdefStmt2 (ifdef, xxs) -> pp_ifdef_tree_sequence ifdef xxs
-	  
+
 (* ifdef XXX elsif YYY elsif ZZZ endif *)
-  and pp_ifdef_tree_sequence ifdef xxs = 
+  and pp_ifdef_tree_sequence ifdef xxs =
     match ifdef with
-    | if1::ifxs -> 
+    | if1::ifxs ->
 	pp_ifdef if1;
 	pp_ifdef_tree_sequence_aux  ifxs xxs
     | _ -> raise Impossible
-	  
+
 (* XXX elsif YYY elsif ZZZ endif *)
-  and pp_ifdef_tree_sequence_aux ifdefs xxs = 
-    Common.zip ifdefs xxs +> List.iter (fun (ifdef, xs) -> 
+  and pp_ifdef_tree_sequence_aux ifdefs xxs =
+    Common.zip ifdefs xxs +> List.iter (fun (ifdef, xs) ->
       xs +> List.iter pp_statement_seq;
       pp_ifdef ifdef
     )
-	
-	
-	
-	
-	
+
+
+
+
+
 (* ---------------------- *)
-  and pp_asmbody (string_list, colon_list) = 
+  and pp_asmbody (string_list, colon_list) =
     string_list +> List.iter pr_elem ;
-    colon_list +> List.iter (fun (Colon xs, ii) -> 
+    colon_list +> List.iter (fun (Colon xs, ii) ->
       ii +> List.iter pr_elem;
-      xs +> List.iter (fun (x,iicomma) -> 
+      xs +> List.iter (fun (x,iicomma) ->
 	assert ((List.length iicomma) <= 1);
 	iicomma +> List.iter (function x -> pr_elem x; pr_space());
-	(match x with 
+	(match x with
 	| ColonMisc, ii -> ii +> List.iter pr_elem;
-	| ColonExpr e, [istring;iopar;icpar] -> 
+	| ColonExpr e, [istring;iopar;icpar] ->
             pr_elem istring;
             pr_elem iopar;
             pp_expression e;
             pr_elem icpar
 	| (ColonExpr _), _ -> raise Impossible)
         ))
-      
-      
+
+
 (* ---------------------- *)
-      
+
 (*
    pp_type_with_ident
    pp_base_type
@@ -379,41 +379,41 @@ let mk_pretty_printers
    pp_type_left
    pp_type_right
    pp_type
-   
+
    pp_decl
 *)
-  and (pp_type_with_ident: 
-	 (string * info) option -> (storage * il) option -> 
+  and (pp_type_with_ident:
+	 (string * info) option -> (storage * il) option ->
 	   fullType -> attribute list ->
-	     unit) = 
+	     unit) =
     fun ident sto ft attrs ->
       pp_base_type ft  sto;
       (match (ident, Ast_c.unwrap_typeC ft) with
 	(Some _,_) | (_,Pointer _) -> pr_space()
       |	_ -> ());
       pp_type_with_ident_rest ident ft attrs
-	
-	
-  and (pp_base_type: fullType -> (storage * il) option -> unit) = 
-    fun (qu, (ty, iity)) sto -> 
-      let get_sto sto = 
-        match sto with 
+
+
+  and (pp_base_type: fullType -> (storage * il) option -> unit) =
+    fun (qu, (ty, iity)) sto ->
+      let get_sto sto =
+        match sto with
         | None -> [] | Some (s, iis) -> (*assert (List.length iis = 1);*) iis
       in
-      let print_sto_qu (sto, (qu, iiqu)) = 
+      let print_sto_qu (sto, (qu, iiqu)) =
         let all_ii = get_sto sto ++ iiqu in
-        all_ii 
+        all_ii
           +> List.sort Ast_c.compare_pos
           +> Common.print_between pr_space pr_elem
-          
+
       in
-      let print_sto_qu_ty (sto, (qu, iiqu), iity) = 
+      let print_sto_qu_ty (sto, (qu, iiqu), iity) =
         let all_ii = get_sto sto ++ iiqu ++ iity in
         let all_ii2 = all_ii +> List.sort Ast_c.compare_pos in
-	  
+
         if all_ii <> all_ii2
-        then begin 
-            (* TODO in fact for pointer, the qualifier is after the type 
+        then begin
+            (* TODO in fact for pointer, the qualifier is after the type
              * cf -test strangeorder
              *)
           pr2 "STRANGEORDER";
@@ -421,78 +421,78 @@ let mk_pretty_printers
         end
         else all_ii2 +> Common.print_between pr_space pr_elem
       in
-	
+
       match ty, iity with
       | (Pointer t, [i])                           -> pp_base_type t sto
       | (ParenType t, _)                           -> pp_base_type t sto
       | (Array (eopt, t), [i1;i2])                 -> pp_base_type t sto
-      | (FunctionType (returnt, paramst), [i1;i2]) -> 
+      | (FunctionType (returnt, paramst), [i1;i2]) ->
           pp_base_type returnt sto
-	      
-	      
-      | (StructUnion (su, sopt, fields),iis) -> 
+
+
+      | (StructUnion (su, sopt, fields),iis) ->
           print_sto_qu (sto, qu);
-	    
+
           (match sopt,iis with
-          | Some s , [i1;i2;i3;i4] -> 
-              pr_elem i1; pr_elem i2; pr_elem i3; 
-          | None, [i1;i2;i3] -> 
-              pr_elem i1; pr_elem i2; 
+          | Some s , [i1;i2;i3;i4] ->
+              pr_elem i1; pr_elem i2; pr_elem i3;
+          | None, [i1;i2;i3] ->
+              pr_elem i1; pr_elem i2;
           | x -> raise Impossible
 	  );
-	    
-          fields +> List.iter 
-            (fun (field) -> 
-		
-              match field with 
+
+          fields +> List.iter
+            (fun (field) ->
+
+              match field with
               | DeclarationField(FieldDeclList(onefield_multivars,iiptvirg))->
                   (match onefield_multivars with
-                  | x::xs -> 
+                  | x::xs ->
                     (* handling the first var. Special case, with the
                        first var, we print the whole type *)
-			
+
 		      (match x with
-		      | (Simple (nameopt, typ)), iivirg -> 
+		      | (Simple (nameopt, typ)), iivirg ->
                         (* first var cant have a preceding ',' *)
-			  assert (List.length iivirg =|= 0); 
-			  let identinfo = 
-                            match nameopt with 
-			    | None -> None 
+			  assert (List.length iivirg =|= 0);
+			  let identinfo =
+                            match nameopt with
+			    | None -> None
                             | Some name -> Some (get_s_and_info_of_name name)
                           in
 			  pp_type_with_ident identinfo None typ Ast_c.noattr;
-			    
-		      | (BitField (nameopt, typ, iidot, expr)), iivirg -> 
+
+		      | (BitField (nameopt, typ, iidot, expr)), iivirg ->
                       (* first var cant have a preceding ',' *)
-			  assert (List.length iivirg =|= 0); 
+			  assert (List.length iivirg =|= 0);
 			  (match nameopt with
-			  | None -> 
+			  | None ->
 			      pp_type typ;
-			  | Some name -> 
+			  | Some name ->
                               let (s, is) = get_s_and_info_of_name name in
 			      pp_type_with_ident
 				(Some (s, is)) None typ Ast_c.noattr;
 			  );
                           pr_elem iidot;
 			  pp_expression expr
-                            
+
                       ); (* match x, first onefield_multivars *)
-			
+
                       (* for other vars *)
 		      xs +> List.iter (function
-			| (Simple (nameopt, typ)), iivirg -> 
+			| (Simple (nameopt, typ)), iivirg ->
 			    iivirg +> List.iter pr_elem;
-			    let identinfo = 
-			      match nameopt with 
-			      | None -> None 
+			    let identinfo =
+			      match nameopt with
+			      | None -> None
 			      | Some name -> Some (get_s_and_info_of_name name)
 			    in
 			    pp_type_with_ident_rest identinfo typ Ast_c.noattr
 
-			| (BitField (nameopt, typ, iidot, expr)), iivirg -> 
+			| (BitField (nameopt, typ, iidot, expr)), iivirg ->
 			    iivirg +> List.iter pr_elem;
 			    (match nameopt with
-			    | Some name -> 
+			    | Some name ->
                                 let (s,is) = get_s_and_info_of_name name in
 				pp_type_with_ident_rest
 				  (Some (s, is)) typ Ast_c.noattr;
@@ -500,15 +500,15 @@ let mk_pretty_printers
 				pp_expression expr
 			    | x -> raise Impossible
 			    )); (* iter other vars *)
-			
+
 		  | [] -> raise Impossible
 		  ); (* onefield_multivars *)
 		  assert (List.length iiptvirg =|= 1);
 		  iiptvirg +> List.iter pr_elem;
-		    
-		    
-	      | MacroDeclField ((s, es), ii)  -> 
-                 let (iis, lp, rp, iiend, ifakestart) = 
+
+
+	      | MacroDeclField ((s, es), ii)  ->
+                 let (iis, lp, rp, iiend, ifakestart) =
                    Common.tuple_of_list5 ii in
                  (* iis::lp::rp::iiend::ifakestart::iisto
 	         iisto +> List.iter pr_elem; (* static and const *)
@@ -516,77 +516,77 @@ let mk_pretty_printers
 	         pr_elem ifakestart;
 	         pr_elem iis;
 	         pr_elem lp;
-	         es +> List.iter (fun (e, opt) -> 
+	         es +> List.iter (fun (e, opt) ->
                    assert (List.length opt <= 1);
                    opt +> List.iter pr_elem;
                    pp_argument e;
 	         );
-	         
+
 	         pr_elem rp;
 	         pr_elem iiend;
 
-		      
-		      
-	      | EmptyField iipttvirg_when_emptyfield -> 
+
+
+	      | EmptyField iipttvirg_when_emptyfield ->
                   pr_elem iipttvirg_when_emptyfield
-		      
+
 	      | CppDirectiveStruct cpp -> pp_directive cpp
 	      | IfdefStruct ifdef -> pp_ifdef ifdef
 	  );
-	    
+
           (match sopt,iis with
           | Some s , [i1;i2;i3;i4] -> pr_elem i4
-          | None, [i1;i2;i3] ->       pr_elem i3; 
+          | None, [i1;i2;i3] ->       pr_elem i3;
           | x -> raise Impossible
 	  );
-	    
-	    
-	    
-      | (Enum  (sopt, enumt), iis) -> 
+
+
+
+      | (Enum  (sopt, enumt), iis) ->
           print_sto_qu (sto, qu);
-	    
+
           (match sopt, iis with
-          | (Some s, ([i1;i2;i3;i4]|[i1;i2;i3;i4;_])) -> 
+          | (Some s, ([i1;i2;i3;i4]|[i1;i2;i3;i4;_])) ->
               pr_elem i1; pr_elem i2; pr_elem i3;
-          | (None, ([i1;i2;i3]|[i1;i2;i3;_])) -> 
+          | (None, ([i1;i2;i3]|[i1;i2;i3;_])) ->
               pr_elem i1; pr_elem i2
           | x -> raise Impossible
 	  );
-	    
-          enumt +> List.iter (fun ((name, eopt), iicomma) -> 
+
+          enumt +> List.iter (fun ((name, eopt), iicomma) ->
             assert (List.length iicomma <= 1);
             iicomma +> List.iter (function x -> pr_elem x; pr_space());
             pp_name name;
-            eopt +> Common.do_option (fun (ieq, e) -> 
+            eopt +> Common.do_option (fun (ieq, e) ->
               pr_elem ieq;
               pp_expression e;
 	  ));
-	    
+
           (match sopt, iis with
           | (Some s, [i1;i2;i3;i4]) ->    pr_elem i4
-          | (Some s, [i1;i2;i3;i4;i5]) -> 
+          | (Some s, [i1;i2;i3;i4;i5]) ->
               pr_elem i5; pr_elem i4 (* trailing comma *)
           | (None, [i1;i2;i3]) ->         pr_elem i3
-          | (None, [i1;i2;i3;i4]) ->      
+          | (None, [i1;i2;i3;i4]) ->
               pr_elem i4; pr_elem i3 (* trailing comma *)
-		  
-		  
+
+
           | x -> raise Impossible
 	  );
-	    
-	    
-      | (BaseType _, iis) -> 
+
+
+      | (BaseType _, iis) ->
           print_sto_qu_ty (sto, qu, iis);
-	    
-      | (StructUnionName (s, structunion), iis) -> 
+
+      | (StructUnionName (s, structunion), iis) ->
           assert (List.length iis =|= 2);
           print_sto_qu_ty (sto, qu, iis);
-	    
-      | (EnumName  s, iis) -> 
+
+      | (EnumName  s, iis) ->
           assert (List.length iis =|= 2);
           print_sto_qu_ty (sto, qu, iis);
-	    
-      | (TypeName (name,typ), noii) -> 
+
+      | (TypeName (name,typ), noii) ->
           assert (null noii);
           let (_s, iis) = get_s_and_info_of_name name in
           print_sto_qu_ty (sto, qu, [iis]);
@@ -594,53 +594,53 @@ let mk_pretty_printers
           if !Flag_parsing_c.pretty_print_typedef_value
           then begin
             pr_elem (Ast_c.fakeInfo() +> Ast_c.rewrap_str "{*");
-            typ +> Common.do_option (fun typ -> 
+            typ +> Common.do_option (fun typ ->
                 pp_type typ;
             );
             pr_elem (Ast_c.fakeInfo() +> Ast_c.rewrap_str "*}");
           end;
-	    
-      | (TypeOfExpr (e), iis) -> 
+
+      | (TypeOfExpr (e), iis) ->
           print_sto_qu (sto, qu);
           (match iis with
-          | [itypeof;iopar;icpar] -> 
+          | [itypeof;iopar;icpar] ->
               pr_elem itypeof; pr_elem iopar;
               pp_expression e;
               pr_elem icpar;
           | _ -> raise Impossible
           )
-	      
-      | (TypeOfType (t), iis) -> 
+
+      | (TypeOfType (t), iis) ->
           print_sto_qu (sto, qu);
           (match iis with
-          | [itypeof;iopar;icpar] -> 
+          | [itypeof;iopar;icpar] ->
               pr_elem itypeof; pr_elem iopar;
-              pp_type t; 
+              pp_type t;
               pr_elem icpar;
           | _ -> raise Impossible
 	  )
-	      
-      | (Pointer _ | (*ParenType _ |*) Array _ | FunctionType _ 
+
+      | (Pointer _ | (*ParenType _ |*) Array _ | FunctionType _
             (* | StructUnion _ | Enum _ | BaseType _ *)
             (* | StructUnionName _ | EnumName _ | TypeName _  *)
             (* | TypeOfExpr _ | TypeOfType _ *)
          ), _ -> raise Impossible
-		
-      
-      
-(* used because of DeclList, in    int i,*j[23];  we dont print anymore the 
-   int before *j *) 
-  and (pp_type_with_ident_rest: (string * info) option -> 
-    fullType -> attribute list -> unit) = 
-    
-    fun ident (((qu, iiqu), (ty, iity)) as fullt) attrs -> 
 
-      let print_ident ident = Common.do_option (fun (s, iis) -> 
+
+
+(* used because of DeclList, in    int i,*j[23];  we dont print anymore the
+   int before *j *)
+  and (pp_type_with_ident_rest: (string * info) option ->
+    fullType -> attribute list -> unit) =
+
+    fun ident (((qu, iiqu), (ty, iity)) as fullt) attrs ->
+
+      let print_ident ident = Common.do_option (fun (s, iis) ->
         (* XXX attrs +> pp_attributes pr_elem pr_space; *)
         pr_elem iis
 	) ident
       in
-      
+
       match ty, iity with
       (* the work is to do in base_type !! *)
       | (BaseType _, iis)                       -> print_ident ident
@@ -651,24 +651,24 @@ let mk_pretty_printers
       | (TypeName (_name,_typ), iis)            -> print_ident ident
       | (TypeOfExpr (e), iis)                   -> print_ident ident
       | (TypeOfType (e), iis)                   -> print_ident ident
-	    
-	    
-	    
-      | (Pointer t, [i]) ->  
-          (* subtil:  void ( *done)(int i)   is a Pointer 
+
+
+
+      | (Pointer t, [i]) ->
+          (* subtil:  void ( *done)(int i)   is a Pointer
              (FunctionType (return=void, params=int i) *)
           (*WRONG I THINK, use left & right function *)
           (* bug: pp_type_with_ident_rest None t;      print_ident ident *)
-          pr_elem i; 
+          pr_elem i;
           iiqu +> List.iter pr_elem; (* le const est forcement apres le '*' *)
           pp_type_with_ident_rest ident t attrs;
-	  
-      (* ugly special case ... todo? maybe sufficient in practice *)       
-      | (ParenType ttop, [i1;i2]) ->  
+
+      (* ugly special case ... todo? maybe sufficient in practice *)
+      | (ParenType ttop, [i1;i2]) ->
           (match Ast_c.get_ty_and_ii ttop with
-          | (_q1, (Pointer t2, [ipointer])) -> 
+          | (_q1, (Pointer t2, [ipointer])) ->
               (match Ast_c.get_ty_and_ii t2 with
-              | (q2, (FunctionType t, ii3)) -> 
+              | (q2, (FunctionType t, ii3)) ->
 
 		  pp_type_left (q2, mk_tybis (FunctionType t) ii3);
 		  pr_elem i1;
@@ -676,17 +676,17 @@ let mk_pretty_printers
 		  print_ident ident;
 		  pr_elem i2;
 		  pp_type_right (q2, mk_tybis (FunctionType t) ii3);
-              | _ -> 
+              | _ ->
                   pr2 "PB PARENTYPE ZARB, I forget about the ()";
                   pp_type_with_ident_rest ident ttop attrs;
               )
           (* another ugly special case *)
-          | _q1, (Array (eopt,t2 ), [iarray1;iarray2]) -> 
-              (match Ast_c.get_ty_and_ii t2 with 
-              | (_q2, (Pointer t3, [ipointer])) -> 
+          | _q1, (Array (eopt,t2 ), [iarray1;iarray2]) ->
+              (match Ast_c.get_ty_and_ii t2 with
+              | (_q2, (Pointer t3, [ipointer])) ->
                   (match Ast_c.get_ty_and_ii t3 with
-                  | (q3, (FunctionType t, iifunc)) -> 
- 
+                  | (q3, (FunctionType t, iifunc)) ->
+
 		      pp_type_left (q3, mk_tybis (FunctionType t) iifunc);
 		      pr_elem i1;
 		      pr_elem ipointer;
@@ -696,155 +696,155 @@ let mk_pretty_printers
 		      pr_elem iarray2;
 		      pr_elem i2;
 		      pp_type_right (q3, mk_tybis (FunctionType t) iifunc)
-                  | _ -> 
+                  | _ ->
                       pr2 "PB PARENTYPE ZARB, I forget about the ()";
                       pp_type_with_ident_rest ident ttop attrs;
                   )
-              | _ -> 
+              | _ ->
                   pr2 "PB PARENTYPE ZARB, I forget about the ()";
                   pp_type_with_ident_rest ident ttop attrs;
               )
-          | _t -> 
+          | _t ->
 
               pr2 "PB PARENTYPE ZARB, I forget about the ()";
               pp_type_with_ident_rest ident ttop attrs;
           )
-          
-	  
-      | (Array (eopt, t), [i1;i2]) -> 
+
+
+      | (Array (eopt, t), [i1;i2]) ->
           pp_type_left fullt;
-	  
+
           iiqu +> List.iter pr_elem;
           print_ident ident;
-	  
+
           pp_type_right fullt;
-	  
-	  
-      | (FunctionType (returnt, paramst), [i1;i2]) -> 
+
+
+      | (FunctionType (returnt, paramst), [i1;i2]) ->
           pp_type_left fullt;
-	  
+
           iiqu +> List.iter pr_elem;
           print_ident ident;
-	  
+
           pp_type_right fullt;
-          
-	  
+
+
       | (FunctionType _ | Array _ | ParenType _ | Pointer _), _ ->
 	  raise Impossible
-              
-	      
-  and (pp_type_left: fullType -> unit) = 
-    fun ((qu, iiqu), (ty, iity)) -> 
+
+
+  and (pp_type_left: fullType -> unit) =
+    fun ((qu, iiqu), (ty, iity)) ->
       match ty, iity with
-      | (Pointer t, [i]) ->  
-          pr_elem i; 
+      | (Pointer t, [i]) ->
+          pr_elem i;
           iiqu +> List.iter pr_elem; (* le const est forcement apres le '*' *)
           pp_type_left t
-	    
+
       | (Array (eopt, t), [i1;i2]) -> pp_type_left t
       | (FunctionType (returnt, paramst), [i1;i2]) -> pp_type_left returnt
-	    
+
       | (ParenType t, _) ->  failwith "parenType"
-	    
-	    
-      | (BaseType _, iis)    -> ()    
-      | (Enum  (sopt, enumt), iis) -> ()    
-      | (StructUnion (_, sopt, fields),iis)  -> ()    
-      | (StructUnionName (s, structunion), iis) -> ()    
-      | (EnumName  s, iis) -> ()    
+
+
+      | (BaseType _, iis)    -> ()
+      | (Enum  (sopt, enumt), iis) -> ()
+      | (StructUnion (_, sopt, fields),iis)  -> ()
+      | (StructUnionName (s, structunion), iis) -> ()
+      | (EnumName  s, iis) -> ()
       | (TypeName (_name,_typ), iis) -> ()
-	    
+
       | TypeOfType _, _ -> ()
       | TypeOfExpr _, _ -> ()
-	    
+
       | (FunctionType _ | Array _ | Pointer _), _ -> raise Impossible
 
-      
-  and pp_param param = 
+
+  and pp_param param =
     let {p_namei = nameopt;
          p_register = (b,iib);
          p_type=t;} = param in
-    
+
     iib +> List.iter pr_elem;
 
     match nameopt with
-    | None -> 
+    | None ->
         pp_type t
-    | Some name -> 
+    | Some name ->
         let (s,i1) = get_s_and_info_of_name name in
 	pp_type_with_ident
           (Some (s, i1)) None t Ast_c.noattr
-          
-        
-	  
-	  
-  and pp_type_right (((qu, iiqu), (ty, iity)) : fullType) = 
+
+
+
+
+  and pp_type_right (((qu, iiqu), (ty, iity)) : fullType) =
     match ty, iity with
     | (Pointer t, [i]) ->  pp_type_right t
-	    
-    | (Array (eopt, t), [i1;i2]) -> 
+
+    | (Array (eopt, t), [i1;i2]) ->
         pr_elem i1;
         eopt +> do_option pp_expression;
         pr_elem i2;
         pp_type_right t
-	    
+
     | (ParenType t, _) ->  failwith "parenType"
-    | (FunctionType (returnt, paramst), [i1;i2]) -> 
+    | (FunctionType (returnt, paramst), [i1;i2]) ->
         pr_elem i1;
         (match paramst with
-        | (ts, (b, iib)) -> 
-            ts +> List.iter (fun (param,iicomma) -> 
+        | (ts, (b, iib)) ->
+            ts +> List.iter (fun (param,iicomma) ->
               assert ((List.length iicomma) <= 1);
               iicomma +> List.iter (function x -> pr_elem x; pr_space());
-                
+
               pp_param param;
 	    );
             iib +> List.iter pr_elem;
         );
         pr_elem i2
-	  
-    | (BaseType _, iis)        -> ()    
-    | (Enum  (sopt, enumt), iis) -> ()    
-    | (StructUnion (_, sopt, fields),iis)-> ()      
-    | (StructUnionName (s, structunion), iis) -> ()    
-    | (EnumName  s, iis) -> ()    
+
+    | (BaseType _, iis)        -> ()
+    | (Enum  (sopt, enumt), iis) -> ()
+    | (StructUnion (_, sopt, fields),iis)-> ()
+    | (StructUnionName (s, structunion), iis) -> ()
+    | (EnumName  s, iis) -> ()
     | (TypeName (name,_typ), iis) -> ()
-	    
+
     | TypeOfType _, _ -> ()
     | TypeOfExpr _, _ -> ()
-	    
+
     | (FunctionType _ | Array _ | Pointer _), _ -> raise Impossible
-      
+
   and pp_type t =
     pp_type_with_ident None None t Ast_c.noattr
-      
+
 (* ---------------------- *)
   and pp_decl = function
-    | DeclList ((({v_namei = var; 
+    | DeclList ((({v_namei = var;
                    v_type = returnType;
-                   v_storage = storage; 
+                   v_storage = storage;
                    v_attr = attrs;
-                  },[])::xs), 
-	       iivirg::ifakestart::iisto) -> 
-	
+                  },[])::xs),
+	       iivirg::ifakestart::iisto) ->
+
 	pr_elem ifakestart;
-		  
+
         (* old: iisto +> List.iter pr_elem; *)
-		  
-	
+
+
         (* handling the first var. Special case, we print the whole type *)
 	(match var with
-	| Some (name, iniopt) -> 
+	| Some (name, iniopt) ->
             let (s,iis) = get_s_and_info_of_name name in
 	    pp_type_with_ident
 	      (Some (s, iis)) (Some (storage, iisto))
 	      returnType attrs;
-	    iniopt +> do_option (fun (iini, init) -> 
-	      pr_elem iini; 
+	    iniopt +> do_option (fun (iini, init) ->
+	      pr_elem iini;
               pp_init init);
 	| None -> pp_type returnType
 	);
-		  
+
       (* for other vars, we just call pp_type_with_ident_rest. *)
 	xs +> List.iter (function
 	| ({v_namei = Some (name, iniopt);
@@ -852,46 +852,46 @@ let mk_pretty_printers
 	    v_storage = storage2;
 	    v_attr = attrs;
 	  }, iivirg) ->
-			 
+
             let (s,iis) = get_s_and_info_of_name name in
 	    assert (storage2 =*= storage);
 	    iivirg +> List.iter pr_elem;
 	    pp_type_with_ident_rest
 	      (Some (s, iis)) returnType attrs;
-	    iniopt +> do_option (fun (iini, init) -> 
+	    iniopt +> do_option (fun (iini, init) ->
 	      pr_elem iini; pp_init init
             );
-	    
-	    
+
+
 	| x -> raise Impossible
 	);
-	
+
 	pr_elem iivirg;
-	
-    | MacroDecl ((s, es), iis::lp::rp::iiend::ifakestart::iisto) -> 
+
+    | MacroDecl ((s, es), iis::lp::rp::iiend::ifakestart::iisto) ->
 	pr_elem ifakestart;
 	iisto +> List.iter pr_elem; (* static and const *)
 	pr_elem iis;
 	pr_elem lp;
-	es +> List.iter (fun (e, opt) -> 
+	es +> List.iter (fun (e, opt) ->
           assert (List.length opt <= 1);
           opt +> List.iter pr_elem;
           pp_argument e;
 	);
-	
+
 	pr_elem rp;
 	pr_elem iiend;
-	
+
     | (DeclList (_, _) | (MacroDecl _)) -> raise Impossible
-	  
-	  
+
+
 (* ---------------------- *)
 and pp_init (init, iinit) =
   match init, iinit with
       | InitExpr e, [] -> pp_expression e;
-      | InitList xs, i1::i2::iicommaopt -> 
+      | InitList xs, i1::i2::iicommaopt ->
           pr_elem i1; start_block();
-          xs +> List.iter (fun (x, ii) -> 
+          xs +> List.iter (fun (x, ii) ->
             assert (List.length ii <= 1);
             ii +> List.iter (function e -> pr_elem e; pr_nl());
             pp_init x
@@ -899,50 +899,50 @@ and pp_init (init, iinit) =
           iicommaopt +> List.iter pr_elem;
 	  end_block();
           pr_elem i2;
-	  
+
       | InitDesignators (xs, initialiser), [i1] -> (* : *)
           xs +> List.iter pp_designator;
           pr_elem i1;
           pp_init initialiser
-	    
+
     (* no use of '=' in the "Old" style *)
       | InitFieldOld (string, initialiser), [i1;i2] -> (* label:   in oldgcc *)
           pr_elem i1; pr_elem i2; pp_init initialiser
       | InitIndexOld (expression, initialiser), [i1;i2] -> (* [1] in oldgcc *)
-          pr_elem i1; pp_expression expression; pr_elem i2; 
+          pr_elem i1; pp_expression expression; pr_elem i2;
           pp_init initialiser
-	    
-      | (InitIndexOld _ | InitFieldOld _ | InitDesignators _ 
+
+      | (InitIndexOld _ | InitFieldOld _ | InitDesignators _
       | InitList _ | InitExpr _
 	  ), _ -> raise Impossible
-      
-      
-      
+
+
+
   and pp_designator = function
-    | DesignatorField (s), [i1; i2] -> 
-	pr_elem i1; pr_elem i2; 
-    | DesignatorIndex (expression), [i1;i2] -> 
-	pr_elem i1; pp_expression expression; pr_elem i2; 
-	
-    | DesignatorRange (e1, e2), [iocro;iellipsis;iccro] -> 
+    | DesignatorField (s), [i1; i2] ->
+	pr_elem i1; pr_elem i2;
+    | DesignatorIndex (expression), [i1;i2] ->
+	pr_elem i1; pp_expression expression; pr_elem i2;
+
+    | DesignatorRange (e1, e2), [iocro;iellipsis;iccro] ->
 	pr_elem iocro; pp_expression e1; pr_elem iellipsis;
-	pp_expression e2; pr_elem iccro; 
-	
+	pp_expression e2; pr_elem iccro;
+
     | (DesignatorField _ | DesignatorIndex _ | DesignatorRange _
 	), _ -> raise Impossible
-	    
-	    
+
+
 (* ---------------------- *)
   and pp_attributes pr_elem pr_space attrs =
-    attrs +> List.iter (fun (attr, ii) -> 
+    attrs +> List.iter (fun (attr, ii) ->
       ii +> List.iter pr_elem;
     );
-    
+
 (* ---------------------- *)
-  and pp_def def = 
+  and pp_def def =
     let defbis, ii = def in
-    match ii with 
-    | iifunc1::iifunc2::i1::i2::ifakestart::isto -> 
+    match ii with
+    | iifunc1::iifunc2::i1::i2::ifakestart::isto ->
 	let {f_name = name;
              f_type = (returnt, (paramst, (b, iib)));
              f_storage = sto;
@@ -951,114 +951,114 @@ and pp_init (init, iinit) =
 	} = defbis
 	in
         pr_elem ifakestart;
-        
-        pp_type_with_ident None (Some (sto, isto)) 
+
+        pp_type_with_ident None (Some (sto, isto))
           returnt Ast_c.noattr;
-	
+
         pp_attributes pr_elem pr_space attrs;
         pp_name name;
-	
+
         pr_elem iifunc1;
-	
-        (* not anymore, cf tests/optional_name_parameter and 
+
+        (* not anymore, cf tests/optional_name_parameter and
            macro_parameter_shortcut.c
            (match paramst with
-           | [(((bool, None, t), ii_b_s), iicomma)] -> 
-               assert 
-		 (match t with 
+           | [(((bool, None, t), ii_b_s), iicomma)] ->
+               assert
+		 (match t with
 		 | qu, (BaseType Void, ii) -> true
-		 | _ -> true 
+		 | _ -> true
 	       );
                assert (null iicomma);
                assert (null ii_b_s);
                pp_type_with_ident None None t
-           
-           | paramst -> 
+
+           | paramst ->
                paramst +> List.iter (fun (((bool, s, t), ii_b_s), iicomma) ->
 	       iicomma +> List.iter pr_elem;
-           
+
 	       (match b, s, ii_b_s with
-               | false, Some s, [i1] -> 
+               | false, Some s, [i1] ->
 		   pp_type_with_ident (Some (s, i1)) None t;
-               | true, Some s, [i1;i2] -> 
+               | true, Some s, [i1;i2] ->
 		   pr_elem i1;
 		   pp_type_with_ident (Some (s, i2)) None t;
-	   
+
             (* in definition we have name for params, except when f(void) *)
-               | _, None, _ -> raise Impossible 
-               | false, None, [] -> 
-           
+               | _, None, _ -> raise Impossible
+               | false, None, [] ->
+
                | _ -> raise Impossible
            )));
-	   
+
          (* normally ii represent the ",..." but it is also abused
             with the f(void) case *)
          (* assert (List.length iib <= 2);*)
            iib +> List.iter pr_elem;
-	   
+
         *)
-        paramst +> List.iter (fun (param,iicomma) -> 
+        paramst +> List.iter (fun (param,iicomma) ->
           assert ((List.length iicomma) <= 1);
           iicomma +> List.iter (function x -> pr_elem x; pr_space());
-          
+
           pp_param param;
         );
         iib +> List.iter pr_elem;
-        
-	
+
+
         pr_elem iifunc2;
-        pr_elem i1; 
+        pr_elem i1;
         statxs +> List.iter pp_statement_seq;
         pr_elem i2;
     | _ -> raise Impossible
-	  
-	  
-	  
+
+
+
 (* ---------------------- *)
-	  
-  and pp_ifdef ifdef = 
+
+  and pp_ifdef ifdef =
     match ifdef with
-    | IfdefDirective (ifdef, ii) -> 
+    | IfdefDirective (ifdef, ii) ->
 	List.iter pr_elem ii
-	  
-	  
+
+
   and pp_directive = function
-    | Include {i_include = (s, ii);} -> 
+    | Include {i_include = (s, ii);} ->
 	let (i1,i2) = Common.tuple_of_list2 ii in
 	pr_elem i1; pr_elem i2
-    | Define ((s,ii), (defkind, defval)) -> 
+    | Define ((s,ii), (defkind, defval)) ->
 	let (idefine,iident,ieol) = Common.tuple_of_list3 ii in
 	pr_elem idefine;
 	pr_elem iident;
-        
+
 	let define_val = function
           | DefineExpr e -> pp_expression e
           | DefineStmt st -> pp_statement st
-          | DefineDoWhileZero ((st,e), ii) -> 
+          | DefineDoWhileZero ((st,e), ii) ->
               (match ii with
-              | [ido;iwhile;iopar;icpar] -> 
+              | [ido;iwhile;iopar;icpar] ->
                   pr_elem ido;
                   pp_statement st;
-                  pr_elem iwhile; pr_elem iopar; 
+                  pr_elem iwhile; pr_elem iopar;
                   pp_expression e;
                   pr_elem icpar
               | _ -> raise Impossible
 	      )
           | DefineFunction def -> pp_def def
-		
+
           | DefineType ty -> pp_type ty
           | DefineText (s, ii) -> List.iter pr_elem ii
           | DefineEmpty -> ()
           | DefineInit ini -> pp_init ini
-		
+
           | DefineTodo -> pr2 "DefineTodo"
 	in
 	(match defkind with
 	| DefineVar -> ()
-	| DefineFunc (params, ii) -> 
+	| DefineFunc (params, ii) ->
             let (i1,i2) = tuple_of_list2 ii in
-            pr_elem i1; 
-            params +> List.iter (fun ((s,iis), iicomma) -> 
+            pr_elem i1;
+            params +> List.iter (fun ((s,iis), iicomma) ->
               assert (List.length iicomma <= 1);
               iicomma +> List.iter pr_elem;
               iis +> List.iter pr_elem;
@@ -1067,42 +1067,42 @@ and pp_init (init, iinit) =
 	);
 	define_val defval;
 	pr_elem ieol
-          
-    | Undef (s, ii) -> 
+
+    | Undef (s, ii) ->
 	List.iter pr_elem ii
-    | PragmaAndCo (ii) -> 
+    | PragmaAndCo (ii) ->
 	List.iter pr_elem ii in
-	  
-	  
-	  
-	  
+
+
+
+
   let pp_toplevel = function
     | Declaration decl -> pp_decl decl
     | Definition def -> pp_def def
 
-    | CppTop directive -> pp_directive directive 
-	
-	
-    | MacroTop (s, es,   [i1;i2;i3;i4]) -> 
+    | CppTop directive -> pp_directive directive
+
+
+    | MacroTop (s, es,   [i1;i2;i3;i4]) ->
 	pr_elem i1;
 	pr_elem i2;
-	es +> List.iter (fun (e, opt) -> 
+	es +> List.iter (fun (e, opt) ->
           assert (List.length opt <= 1);
           opt +> List.iter pr_elem;
           pp_argument e;
 	);
 	pr_elem i3;
 	pr_elem i4;
-      
-      
+
+
     | EmptyDef ii -> ii +> List.iter pr_elem
-    | NotParsedCorrectly ii -> 
+    | NotParsedCorrectly ii ->
 	assert (List.length ii >= 1);
-	ii +> List.iter pr_elem 
+	ii +> List.iter pr_elem
     | FinalDef info -> pr_elem (Ast_c.rewrap_str "" info)
-	
+
     | IfdefTop ifdefdir -> pp_ifdef ifdefdir
-	
+
     | (MacroTop _) -> raise Impossible in
 
 
@@ -1115,7 +1115,7 @@ and pp_init (init, iinit) =
                      f_storage = stob;
                      f_body = body;
                      f_attr = attrs},ii) ->
-		     
+
 		       assert(null body);
       (*
 	 iif ii;
@@ -1130,25 +1130,25 @@ and pp_init (init, iinit) =
 		       pr2 "Def";
 
 
-    | F.Decl decl -> 
+    | F.Decl decl ->
         (* vk_decl bigf decl *)
-	pr2 "Decl" 
-	
-    | F.ExprStatement (st, (eopt, ii)) ->  
-	pp_statement (Ast_c.mk_st (ExprStatement eopt) ii) 
-	
-    | F.IfHeader (_, (e,ii)) 
+	pr2 "Decl"
+
+    | F.ExprStatement (st, (eopt, ii)) ->
+	pp_statement (Ast_c.mk_st (ExprStatement eopt) ii)
+
+    | F.IfHeader (_, (e,ii))
     | F.SwitchHeader (_, (e,ii))
     | F.WhileHeader (_, (e,ii))
-    | F.DoWhileTail (e,ii) -> 
+    | F.DoWhileTail (e,ii) ->
         (*
            iif ii;
            vk_expr bigf e
         *)
 	pr2 "XXX";
-      
-      
-    | F.ForHeader (_st, (((e1opt,i1), (e2opt,i2), (e3opt,i3)), ii)) -> 
+
+
+    | F.ForHeader (_st, (((e1opt,i1), (e2opt,i2), (e3opt,i3)), ii)) ->
         (*
            iif i1; iif i2; iif i3;
            iif ii;
@@ -1157,120 +1157,120 @@ and pp_init (init, iinit) =
            e3opt +> do_option (vk_expr bigf);
         *)
 	pr2 "XXX"
-      
-    | F.MacroIterHeader (_s, ((s,es), ii)) -> 
+
+    | F.MacroIterHeader (_s, ((s,es), ii)) ->
         (*
            iif ii;
            vk_argument_list bigf es;
         *)
 	pr2 "XXX"
-      
-      
-    | F.ReturnExpr (_st, (e,ii)) -> 
+
+
+    | F.ReturnExpr (_st, (e,ii)) ->
         (* iif ii; vk_expr bigf e*)
 	pr2 "XXX"
-      
-      
-    | F.Case  (_st, (e,ii)) -> 
+
+
+    | F.Case  (_st, (e,ii)) ->
       (* iif ii; vk_expr bigf e *)
 	pr2 "XXX"
-      
-    | F.CaseRange (_st, ((e1, e2),ii)) -> 
+
+    | F.CaseRange (_st, ((e1, e2),ii)) ->
         (* iif ii; vk_expr bigf e1; vk_expr bigf e2 *)
 	pr2 "XXX"
-      
-      
-      
+
+
+
     | F.CaseNode i -> ()
-	
-    | F.DefineExpr e  -> 
+
+    | F.DefineExpr e  ->
         (* vk_expr bigf e *)
 	pr2 "XXX"
-      
-    | F.DefineType ft  -> 
+
+    | F.DefineType ft  ->
         (* vk_type bigf ft *)
 	pr2 "XXX"
-      
-    | F.DefineHeader ((s,ii), (defkind))  -> 
+
+    | F.DefineHeader ((s,ii), (defkind))  ->
         (*
            iif ii;
            vk_define_kind bigf defkind;
         *)
 	pr2 "XXX"
-      
-      
-    | F.DefineDoWhileZeroHeader (((),ii)) -> 
+
+
+    | F.DefineDoWhileZeroHeader (((),ii)) ->
         (* iif ii *)
 	pr2 "XXX"
-      
-      
-    | F.Include {i_include = (s, ii);} -> 
+
+
+    | F.Include {i_include = (s, ii);} ->
         (* iif ii; *)
 	pr2 "XXX"
-      
-      
-    | F.MacroTop (s, args, ii) -> 
+
+
+    | F.MacroTop (s, args, ii) ->
         (* iif ii;
            vk_argument_list bigf args *)
 	pr2 "XXX"
-      
-      
-    | F.Break    (st,((),ii)) -> 
+
+
+    | F.Break    (st,((),ii)) ->
         (* iif ii *)
 	pr2 "XXX"
-    | F.Continue (st,((),ii)) -> 
+    | F.Continue (st,((),ii)) ->
         (* iif ii *)
 	pr2 "XXX"
-    | F.Default  (st,((),ii)) -> 
+    | F.Default  (st,((),ii)) ->
         (* iif ii *)
 	pr2 "XXX"
-    | F.Return   (st,((),ii)) -> 
+    | F.Return   (st,((),ii)) ->
         (* iif ii *)
 	pr2 "XXX"
-    | F.Goto  (st, name, ((),ii)) -> 
+    | F.Goto  (st, name, ((),ii)) ->
         (* iif ii *)
 	pr2 "XXX"
-    | F.Label (st, name, ((),ii)) -> 
+    | F.Label (st, name, ((),ii)) ->
         (* iif ii *)
 	pr2 "XXX"
-    | F.EndStatement iopt -> 
+    | F.EndStatement iopt ->
         (* do_option infof iopt *)
 	pr2 "XXX"
-    | F.DoHeader (st, info) -> 
+    | F.DoHeader (st, info) ->
         (* infof info *)
 	pr2 "XXX"
-    | F.Else info -> 
+    | F.Else info ->
         (* infof info *)
 	pr2 "XXX"
-    | F.SeqEnd (i, info) -> 
+    | F.SeqEnd (i, info) ->
         (* infof info *)
 	pr2 "XXX"
-    | F.SeqStart (st, i, info) -> 
+    | F.SeqStart (st, i, info) ->
         (* infof info *)
 	pr2 "XXX"
-      
-    | F.MacroStmt (st, ((),ii)) -> 
+
+    | F.MacroStmt (st, ((),ii)) ->
         (* iif ii *)
 	pr2 "XXX"
-    | F.Asm (st, (asmbody,ii)) -> 
+    | F.Asm (st, (asmbody,ii)) ->
         (*
            iif ii;
            vk_asmbody bigf asmbody
         *)
 	pr2 "XXX"
-      
-      
-    | F.IfdefHeader (info) -> 
+
+
+    | F.IfdefHeader (info) ->
 	pp_ifdef info
-    | F.IfdefElse (info) -> 
+    | F.IfdefElse (info) ->
 	pp_ifdef info
-    | F.IfdefEndif (info) -> 
+    | F.IfdefEndif (info) ->
 	pp_ifdef info
-	
-    | F.DefineTodo -> 
+
+    | F.DefineTodo ->
 	pr2 "XXX"
-      
-      
+
+
     | (F.TopNode|F.EndNode|
       F.ErrorExit|F.Exit|F.Enter|F.LoopFallThroughNode|F.FallThroughNode|
       F.AfterNode|F.FalseNode|F.TrueNode|F.InLoopNode|
@@ -1289,9 +1289,9 @@ and pp_init (init, iinit) =
     toplevel = pp_toplevel;
     flow = pp_flow;
   }
-    
+
 (*****************************************************************************)
-    
+
 (* Here we do not use (mcode, env). It is a simple C pretty printer. *)
 let pr_elem info =
   let s = Ast_c.str_of_info info in
@@ -1299,7 +1299,7 @@ let pr_elem info =
     let before = !(info.comments_tag).mbefore in
     if not (null before) then begin
       pp "-->";
-      before +> List.iter (fun (comment_like, pinfo) -> 
+      before +> List.iter (fun (comment_like, pinfo) ->
         let s = pinfo.Common.str in
         pp s
       );
@@ -1307,7 +1307,7 @@ let pr_elem info =
     end;
   end;
   pp s
-    
+
 let pr_space _ = Format.print_space()
 
 let pr_nl _ = ()
@@ -1317,7 +1317,7 @@ let pr_unindent _ = ()
 
 
 let ppc =
-  mk_pretty_printers 
+  mk_pretty_printers
     ~pr_elem ~pr_space ~pr_nl ~pr_outdent ~pr_indent ~pr_unindent
 
 let pp_expression_simple = ppc.expression
@@ -1330,7 +1330,7 @@ let pp_flow_simple       = ppc.flow
 
 let pp_elem_sp ~pr_elem ~pr_space =
   mk_pretty_printers
-    ~pr_elem ~pr_space 
+    ~pr_elem ~pr_space
     ~pr_nl ~pr_outdent ~pr_indent ~pr_unindent
 
 let pp_expression_gen ~pr_elem ~pr_space =
@@ -1361,23 +1361,23 @@ let pp_program_gen ~pr_elem ~pr_space =
   (pp_elem_sp pr_elem pr_space).toplevel
 
 
-let string_of_expression e = 
+let string_of_expression e =
   Common.format_to_string (fun () ->
     pp_expression_simple e
   )
 
-let string_of_toplevel top = 
+let string_of_toplevel top =
   Common.format_to_string (fun () ->
     pp_toplevel_simple top
   )
-    
+
 let (debug_info_of_node:
-       Ograph_extended.nodei -> Control_flow_c.cflow -> string) = 
-  fun nodei flow -> 
+       Ograph_extended.nodei -> Control_flow_c.cflow -> string) =
+  fun nodei flow ->
     let node = flow#nodes#assoc nodei in
     let s = Common.format_to_string (fun () ->
       pp_flow_simple node
     ) in
     let pos = Lib_parsing_c.min_pinfo_of_node node in
     (spf "%s(n%d)--> %s" (Common.string_of_parse_info_bis pos) nodei s)
-      
+

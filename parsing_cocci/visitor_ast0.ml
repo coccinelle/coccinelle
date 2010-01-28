@@ -525,13 +525,13 @@ let visitor mode bind option_default
       rewrap s
 	(match Ast0.unwrap s with
 	  Ast0.FunDecl(bef,fi,name,lp,params,rp,lbrace,body,rbrace) ->
-	    let (fi_n,fi) = map_split_bind fninfo fi in 
+	    let (fi_n,fi) = map_split_bind fninfo fi in
 	    let (name_n,name) = ident name in
-	    let (lp_n,lp) = string_mcode lp in 
+	    let (lp_n,lp) = string_mcode lp in
 	    let (params_n,params) = parameter_list params in
-	    let (rp_n,rp) = string_mcode rp in 
+	    let (rp_n,rp) = string_mcode rp in
 	    let (lbrace_n,lbrace) = string_mcode lbrace in
-	    let (body_n,body) = statement_dots body in 
+	    let (body_n,body) = statement_dots body in
 	    let (rbrace_n,rbrace) = string_mcode rbrace in
 	    (multibind
 	       [fi_n;name_n;lp_n;params_n;rp_n;lbrace_n;body_n;rbrace_n],
@@ -540,29 +540,29 @@ let visitor mode bind option_default
 	    let (decl_n,decl) = declaration decl in
 	    (decl_n,Ast0.Decl(bef,decl))
 	| Ast0.Seq(lbrace,body,rbrace) ->
-	    let (lbrace_n,lbrace) = string_mcode lbrace in 
+	    let (lbrace_n,lbrace) = string_mcode lbrace in
 	    let (body_n,body) = statement_dots body in
 	    let (rbrace_n,rbrace) = string_mcode rbrace in
 	    (multibind [lbrace_n;body_n;rbrace_n],
 	     Ast0.Seq(lbrace,body,rbrace))
 	| Ast0.ExprStatement(exp,sem) ->
-	    let (exp_n,exp) = expression exp in 
+	    let (exp_n,exp) = expression exp in
 	    let (sem_n,sem) = string_mcode sem in
 	    (bind exp_n sem_n, Ast0.ExprStatement(exp,sem))
 	| Ast0.IfThen(iff,lp,exp,rp,branch1,aft) ->
-	    let (iff_n,iff) = string_mcode iff in 
-	    let (lp_n,lp) = string_mcode lp in 
+	    let (iff_n,iff) = string_mcode iff in
+	    let (lp_n,lp) = string_mcode lp in
 	    let (exp_n,exp) = expression exp in
 	    let (rp_n,rp) = string_mcode rp in
 	    let (branch1_n,branch1) = statement branch1 in
 	    (multibind [iff_n;lp_n;exp_n;rp_n;branch1_n],
 	     Ast0.IfThen(iff,lp,exp,rp,branch1,aft))
 	| Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2,aft) ->
-	    let (iff_n,iff) = string_mcode iff in 
+	    let (iff_n,iff) = string_mcode iff in
 	    let (lp_n,lp) = string_mcode lp in
 	    let (exp_n,exp) = expression exp in
-	    let (rp_n,rp) = string_mcode rp in 
-	    let (branch1_n,branch1) = statement branch1 in 
+	    let (rp_n,rp) = string_mcode rp in
+	    let (branch1_n,branch1) = statement branch1 in
 	    let (els_n,els) = string_mcode els in
 	    let (branch2_n,branch2) = statement branch2 in
 	    (multibind [iff_n;lp_n;exp_n;rp_n;branch1_n;els_n;branch2_n],
@@ -598,7 +598,7 @@ let visitor mode bind option_default
 	    (multibind [fr_n;lp_n;e1_n;sem1_n;e2_n;sem2_n;e3_n;rp_n;body_n],
 	     Ast0.For(fr,lp,e1,sem1,e2,sem2,e3,rp,body,aft))
 	| Ast0.Iterator(nm,lp,args,rp,body,aft) ->
-	    let (nm_n,nm) = ident nm in 
+	    let (nm_n,nm) = ident nm in
 	    let (lp_n,lp) = string_mcode lp in
 	    let (args_n,args) = expression_dots args in
 	    let (rp_n,rp) = string_mcode rp in
@@ -606,13 +606,13 @@ let visitor mode bind option_default
 	    (multibind [nm_n;lp_n;args_n;rp_n;body_n],
 	     Ast0.Iterator(nm,lp,args,rp,body,aft))
 	| Ast0.Switch(switch,lp,exp,rp,lb,decls,cases,rb) ->
-	    let (switch_n,switch) = string_mcode switch in 
+	    let (switch_n,switch) = string_mcode switch in
 	    let (lp_n,lp) = string_mcode lp in
 	    let (exp_n,exp) = expression exp in
-	    let (rp_n,rp) = string_mcode rp in 
+	    let (rp_n,rp) = string_mcode rp in
 	    let (lb_n,lb) = string_mcode lb in
-	    let (decls_n,decls) = statement_dots decls in 
-	    let (cases_n,cases) = case_line_dots cases in 
+	    let (decls_n,decls) = statement_dots decls in
+	    let (cases_n,cases) = case_line_dots cases in
 	    let (rb_n,rb) = string_mcode rb in
 	    (multibind [switch_n;lp_n;exp_n;rp_n;lb_n;decls_n;cases_n;rb_n],
       	     Ast0.Switch(switch,lp,exp,rp,lb,decls,cases,rb))
@@ -834,7 +834,7 @@ let visitor mode bind option_default
 	  let (params_n,params) = parameter_list params in
 	  (params_n,Ast0.DotsParamTag(params))
       | Ast0.DotsStmtTag(stmts) ->
-	  let (stmts_n,stmts) = statement_dots stmts in 
+	  let (stmts_n,stmts) = statement_dots stmts in
 	  (stmts_n,Ast0.DotsStmtTag(stmts))
       | Ast0.DotsDeclTag(decls) ->
 	  let (decls_n,decls) = declaration_dots decls in

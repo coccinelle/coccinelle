@@ -5,34 +5,34 @@ open Common.BasicType
 (*****************************************************************************)
 (*
  * Use this not so much for functors, I hate functors, but
- * more to force me to have consistent naming of stuff. 
- * 
+ * more to force me to have consistent naming of stuff.
+ *
  * It's related to objet.ml in some way, but use a different scheme.
- * 
- * src: (strongly) inspired by Jane Street core lib, which in turn 
+ *
+ * src: (strongly) inspired by Jane Street core lib, which in turn
  * may have been strongly inspired by Java Interfaces or Haskell
  * TypeClass.
- * 
- * 
- * 
+ *
+ *
+ *
  * Example of use in .mli:
- * 
+ *
  *   open Interfaces
  *   include Stringable with type stringable = t
  *   include Comparable with type comparable = t
- * 
+ *
  * Example of use in .ml:
- * 
+ *
  *   type xxx
  *   type stringable = xxx
  *   let of_string = bool_of_string
  *   let to_string = string_of_bool
- * 
- * 
+ *
+ *
  * No this file is not about (graphical) user interface. See gui.ml for that.
- * 
- * 
- * todo? but as in type class, or object, can not have default method 
+ *
+ *
+ * todo? but as in type class, or object, can not have default method
  * with this scheme ?
  *)
 
@@ -45,11 +45,11 @@ open Common.BasicType
 (* note: less need for cloneable, copyable as in Java. Only needed
  * when use ref, but refs should be avoided anyway so better not to
  * encourage it.
- * 
+ *
  * Often found this in haskell:
- * 
+ *
  *    data x = ... deriving (Read, Show, Eq, Ord, Enum, Bounded)
- * 
+ *
  * Apparently this is what is considered basic by haskell.
  *)
 
@@ -72,7 +72,7 @@ end
 
 
 
-(* Same, should not use compare normally, dangerous when evolve code. 
+(* Same, should not use compare normally, dangerous when evolve code.
  * Called Ord in haskell. Inherit Eq normally.
  *)
 module type Compare_able = sig
@@ -82,7 +82,7 @@ end
 (* Jane street have also some binable, sexpable *)
 
 
-(* Haskell have lots of related type class after Num such as 
+(* Haskell have lots of related type class after Num such as
  * Real, Fractional, Integral, RealFrac, Floating, RealFloat
  *)
 module type Num_able = sig
@@ -167,17 +167,17 @@ end
 
 (*****************************************************************************)
 (* Idea taken from Jane Street Core library, slightly changed.
- *   
- * It's another way to organize data structures, module instead of objects. 
- * It's also the Java way. 
- * 
+ *
+ * It's another way to organize data structures, module instead of objects.
+ * It's also the Java way.
+ *
  * It makes some code looks a little bit like Haskell* typeclass.
- * 
+ *
  *)
 
 (* In Jane Street they put each interface in its own file but then have to
  * do that:
- * 
+ *
  * module type Stringable = Stringable.S
  * module type Comparable = Comparable.S
  * module type Floatable = Floatable.S
@@ -188,7 +188,7 @@ end
  * module type Setable = Setable.S
  * module type Sexpable = Sexpable.S
  * module type Binable = Binable.S
- * 
+ *
  * And I dont like having too much files, especially as all those xxable
  * end with able, not start, so don't see them together in the directory.
  *)

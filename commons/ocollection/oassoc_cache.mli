@@ -2,7 +2,7 @@
 class ['a, 'b] oassoc_buffer :
   int ->
   (< add : 'a * 'b -> 'd; assoc : 'a -> 'b; del : 'a * 'b -> 'd;
-   delkey : 'a -> 'd; iter : ('a * 'b -> unit) -> unit; length : int; 
+   delkey : 'a -> 'd; iter : ('a * 'b -> unit) -> unit; length : int;
    keys: 'a list; clear: unit;
    .. >
      as 'd) ->

@@ -4,17 +4,17 @@
 
 (* Some conventions:
  *
- * When I have some _xxx variables before some functions, it's 
- * because I want to show that those functions internally use a global 
+ * When I have some _xxx variables before some functions, it's
+ * because I want to show that those functions internally use a global
  * variable. That does not mean I want people to modify this global.
  * In fact they are kind of private, but I still want to show them.
  * Maybe one day OCaml will have an effect type system so I don't need this.
- * 
- * The variables that are called _init_xxx show the internal init 
+ *
+ * The variables that are called _init_xxx show the internal init
  * side effect of the module (like static var trick used in C/C++)
- * 
+ *
  * Why not split the functionnalities of this file in different files ?
- * Because when I write ocaml script I want simply to load one 
+ * Because when I write ocaml script I want simply to load one
  * file, common.ml, and that's it. Cf common_extra.ml for more on this.
  *)
 
@@ -22,7 +22,7 @@
 (*****************************************************************************)
 (* Flags *)
 (*****************************************************************************)
-(* see the corresponding section for the use of those flags. See also 
+(* see the corresponding section for the use of those flags. See also
  * the "Flags and actions" section at the end of this file.
  *)
 
@@ -49,7 +49,7 @@ val save_tmp_files : bool ref
 (*****************************************************************************)
 (* Module side effect *)
 (*****************************************************************************)
-(* 
+(*
  * I define a few unit tests via some let _ = example (... = ...).
  * I also initialize the random seed, cf _init_random .
  * I also set Gc.stack_size, cf _init_gc_stack .
@@ -87,22 +87,22 @@ end
 (*
  * Another related trick, found via Jon Harrop to have an extended standard
  * lib is to do something like
- * 
+ *
  * module List = struct
  *  include List
  *  val map2 : ...
  * end
- * 
+ *
  * And then can put this "module extension" somewhere to open it.
  *)
 
 
 
-(* This module defines the Timeout and UnixExit exceptions.  
- * You  have to make sure that those exn are not intercepted. So 
+(* This module defines the Timeout and UnixExit exceptions.
+ * You  have to make sure that those exn are not intercepted. So
  * avoid exn handler such as try (...) with _ -> cos Timeout will not bubble up
- * enough. In such case, add a case before such as  
- * with Timeout -> raise Timeout | _ -> ... 
+ * enough. In such case, add a case before such as
+ * with Timeout -> raise Timeout | _ -> ...
  * The same is true for UnixExit (see below).
  *)
 
@@ -118,9 +118,9 @@ val reset_pr_indent : unit -> unit
  * They also add the _prefix_pr, for instance used in MPI to show which
  * worker is talking.
  * update: for pr2, it can also print into a log file.
- * 
+ *
  * The use of 2 in pr2 is because 2 is under UNIX the second descriptor
- * which corresponds to stderr. 
+ * which corresponds to stderr.
  *)
 val _prefix_pr : string ref
 
@@ -162,9 +162,9 @@ val sprintf : ('a, unit, string) format -> 'a
 val spf : ('a, unit, string) format -> 'a
 
 (* default = stderr *)
-val _chan : out_channel ref 
+val _chan : out_channel ref
 (* generate & use a /tmp/debugml-xxx file *)
-val start_log_file : unit -> unit 
+val start_log_file : unit -> unit
 
 (* see flag: val verbose_level : int ref *)
 val log : string -> unit
@@ -243,9 +243,9 @@ val profile_code2 : string -> (unit -> 'a) -> 'a
 
 val example : bool -> unit
 (* generate failwith <string> when pb *)
-val example2 : string -> bool -> unit 
+val example2 : string -> bool -> unit
 (* use Dumper to report when pb *)
-val assert_equal : 'a -> 'a -> unit 
+val assert_equal : 'a -> 'a -> unit
 
 val _list_bool : (string * bool) list ref
 val example3 : string -> bool -> unit
@@ -253,11 +253,11 @@ val test_all : unit -> unit
 
 
 (* regression testing *)
-type score_result = Ok | Pb of string 
+type score_result = Ok | Pb of string
 type score =      (string (* usually a filename *), score_result) Hashtbl.t
 type score_list = (string (* usually a filename *) * score_result) list
 val empty_score : unit -> score
-val regression_testing : 
+val regression_testing :
   score -> filename (* old score file on disk (usually in /tmp) *) -> unit
 val regression_testing_vs: score -> score -> score
 val total_scores : score -> int (* good *) * int (* total *)
@@ -283,7 +283,7 @@ val frequencyl : (int * 'a) list -> 'a gen
 
 val laws : string -> ('a -> bool) -> 'a gen -> 'a option
 
-(* example of use: 
+(* example of use:
  * let b = laws "unit" (fun x -> reverse [x] = [x])    ig
  *)
 
@@ -352,7 +352,7 @@ val adjust_pp_with_indent : (unit -> unit) -> unit
 val adjust_pp_with_indent_and_header : string -> (unit -> unit) -> unit
 
 
-val mk_str_func_of_assoc_conv: 
+val mk_str_func_of_assoc_conv:
   ('a * string) list -> (string -> 'a) * ('a -> string)
 
 (*****************************************************************************)
@@ -420,24 +420,24 @@ val cache_in_ref : 'a option ref -> (unit -> 'a) -> 'a
 
 
 (* take file from which computation is done, an extension, and the function
- * and will compute the function only once and then save result in 
+ * and will compute the function only once and then save result in
  * file ^ extension
  *)
-val cache_computation : 
-  ?verbose:bool -> ?use_cache:bool -> filename  -> string (* extension *) -> 
+val cache_computation :
+  ?verbose:bool -> ?use_cache:bool -> filename  -> string (* extension *) ->
   (unit -> 'a) -> 'a
 
-(* a more robust version where the client describes the dependencies of the 
- * computation so it will relaunch the computation in 'f' if needed. 
+(* a more robust version where the client describes the dependencies of the
+ * computation so it will relaunch the computation in 'f' if needed.
  *)
 val cache_computation_robust :
-  filename -> 
-  string (* extension for marshalled object *) -> 
-  (filename list * 'x) -> 
-  string (* extension for marshalled dependencies *) -> 
-  (unit -> 'a) -> 
+  filename ->
+  string (* extension for marshalled object *) ->
+  (filename list * 'x) ->
+  string (* extension for marshalled dependencies *) ->
+  (unit -> 'a) ->
   'a
-  
+
 
 
 val once : ('a -> unit) -> ('a -> unit)
@@ -456,7 +456,7 @@ val main_boilerplate : (unit -> unit) -> unit
 (*****************************************************************************)
 
 (* how ensure really atomic file creation ? hehe :) *)
-exception FileAlreadyLocked 
+exception FileAlreadyLocked
 val acquire_file_lock : filename -> unit
 val release_file_lock : filename -> unit
 
@@ -482,7 +482,7 @@ val exn_to_s : exn -> string
 (* alias *)
 val string_of_exn : exn -> string
 
-type error = Error of string 
+type error = Error of string
 
 type evotype = unit
 val evoval : evotype
@@ -493,7 +493,7 @@ val evoval : evotype
 
 val check_stack_size: int -> unit
 val check_stack_nbfiles: int -> unit
- 
+
 (* internally common.ml set Gc. parameters *)
 val _init_gc_stack : unit
 
@@ -509,10 +509,10 @@ type options_with_title = string * string * arg_spec_full list
 type cmdline_sections = options_with_title list
 
 
-(* A wrapper around Arg modules that have more logical argument order, 
+(* A wrapper around Arg modules that have more logical argument order,
  * and returns the remaining args.
  *)
-val parse_options : 
+val parse_options :
   cmdline_options -> Arg.usage_msg -> string array -> string list
 
 (* Another wrapper that does Arg.align automatically *)
@@ -523,18 +523,18 @@ val usage : Arg.usage_msg -> cmdline_options -> unit
 (* Work with the options_with_title type way to organize a long
  * list of command line switches.
  *)
-val short_usage : 
+val short_usage :
   Arg.usage_msg -> short_opt:cmdline_options -> unit
-val long_usage : 
-  Arg.usage_msg -> short_opt:cmdline_options -> long_opt:cmdline_sections -> 
+val long_usage :
+  Arg.usage_msg -> short_opt:cmdline_options -> long_opt:cmdline_sections ->
   unit
 
 (* With the options_with_title way, we don't want the default -help and --help
  * so need adapter of Arg module, not just wrapper.
  *)
 val arg_align2 : cmdline_options -> cmdline_options
-val arg_parse2 : 
-  cmdline_options -> Arg.usage_msg -> (unit -> unit) (* short_usage func *) -> 
+val arg_parse2 :
+  cmdline_options -> Arg.usage_msg -> (unit -> unit) (* short_usage func *) ->
   string list
 
 
@@ -544,7 +544,7 @@ val arg_parse2 :
 (* The action lib. Useful to debug supart of your system. cf some of
  * my main.ml for example of use. *)
 type flag_spec   = Arg.key * Arg.spec * Arg.doc
-type action_spec = Arg.key * Arg.doc * action_func 
+type action_spec = Arg.key * Arg.doc * action_func
    and action_func = (string list -> unit)
 
 type cmdline_actions = action_spec list
@@ -557,11 +557,11 @@ val mk_action_3_arg : (string -> string -> string -> unit) -> action_func
 
 val mk_action_n_arg : (string list -> unit) -> action_func
 
-val options_of_actions: 
+val options_of_actions:
   string ref (* the action ref *) -> cmdline_actions -> cmdline_options
-val action_list: 
+val action_list:
   cmdline_actions -> Arg.key list
-val do_action: 
+val do_action:
   Arg.key -> string list (* args *) -> cmdline_actions -> unit
 
 (*****************************************************************************)
@@ -589,7 +589,7 @@ val (=*=): 'a -> 'a -> bool
 (* if want to restrict the use of '=', uncomment this:
  *
  * val (=): unit -> unit -> bool
- * 
+ *
  * But it will not forbid you to use caml functions like List.find, List.mem
  * which internaly use this convenient but evolution-unfriendly (=)
 *)
@@ -681,7 +681,7 @@ val int_of_all : string -> int
 val ( += ) : int ref -> int -> unit
 val ( -= ) : int ref -> int -> unit
 
-val pourcent: int -> int -> int 
+val pourcent: int -> int -> int
 val pourcent_float: int -> int -> float
 val pourcent_float_of_floats: float -> float -> float
 
@@ -689,7 +689,7 @@ val pourcent_good_bad: int -> int -> int
 val pourcent_good_bad_float: int -> int -> float
 
 type 'a max_with_elem = int ref * 'a ref
-val update_max_with_elem: 
+val update_max_with_elem:
   'a max_with_elem -> is_better:(int -> int ref -> bool) -> int * 'a -> unit
 (*****************************************************************************)
 (* Numeric/overloading *)
@@ -709,7 +709,7 @@ val numd_float : float numdict
 val testd : 'a numdict -> 'a -> 'a
 
 
-module ArithFloatInfix : sig 
+module ArithFloatInfix : sig
     val (+) : float -> float -> float
     val (-) : float -> float -> float
     val (/) : float -> float -> float
@@ -845,9 +845,9 @@ val showCodeHex : int list -> unit
 val size_mo_ko : int -> string
 val size_ko : int -> string
 
-val edit_distance: string -> string -> int 
+val edit_distance: string -> string -> int
 
-val md5sum_of_string : string -> string 
+val md5sum_of_string : string -> string
 
 (*****************************************************************************)
 (* Regexp *)
@@ -883,7 +883,7 @@ val join : string (* sep *) -> string list -> string
 val split_list_regexp : string -> string list -> (string * string list) list
 
 val all_match : string (* regexp *) -> string -> string list
-val global_replace_regexp : 
+val global_replace_regexp :
   string (* regexp *) -> (string -> string) -> string -> string
 
 val regular_words: string -> string list
@@ -910,7 +910,7 @@ val filename_of_db : (string * filename) -> filename
 val dbe_of_filename : filename -> string * string * string
 val dbe_of_filename_nodot : filename -> string * string * string
 (* Left (d,b,e) | Right (d,b)  if file has no extension *)
-val dbe_of_filename_safe : 
+val dbe_of_filename_safe :
   filename -> (string * string * string,  string * string) either
 
 val filename_of_dbe : string * string * string -> filename
@@ -931,7 +931,7 @@ val filename_without_leading_path : string -> filename -> filename
 (*****************************************************************************)
 (* i18n *)
 (*****************************************************************************)
-type langage = 
+type langage =
   | English
   | Francais
   | Deutsch
@@ -942,7 +942,7 @@ type langage =
 
 (* can also use ocamlcalendar, but heavier, use many modules ... *)
 
-type month = 
+type month =
   | Jan  | Feb  | Mar  | Apr  | May  | Jun
   | Jul  | Aug  | Sep  | Oct  | Nov  | Dec
 type year = Year of int
@@ -1093,7 +1093,7 @@ val readdir_to_link_list : string -> string list
 val readdir_to_dir_size_list : string -> (string * int) list
 
 val glob : string -> filename list
-val files_of_dir_or_files : 
+val files_of_dir_or_files :
   string (* ext *) -> string list -> filename list
 val files_of_dir_or_files_no_vcs :
   string (* ext *) -> string list -> filename list
@@ -1112,23 +1112,23 @@ val file_perm_of : u:rwx -> g:rwx -> o:rwx -> Unix.file_perm
 val has_env : string -> bool
 
 (* scheme spirit. do a finalize so no leak. *)
-val with_open_outfile : 
+val with_open_outfile :
   filename -> ((string -> unit) * out_channel -> 'a) -> 'a
-val with_open_infile : 
+val with_open_infile :
   filename -> (in_channel -> 'a) -> 'a
-val with_open_outfile_append : 
+val with_open_outfile_append :
   filename -> ((string -> unit) * out_channel -> 'a) -> 'a
 
-val with_open_stringbuf : 
+val with_open_stringbuf :
   (((string -> unit) * Buffer.t) -> unit) -> string
 
 exception Timeout
 
-(* subtil: have to make sure that Timeout is not intercepted before here. So 
+(* subtil: have to make sure that Timeout is not intercepted before here. So
  * avoid exn handler such as try (...) with _ -> cos Timeout will not bubble up
- * enough. In such case, add a case before such as  
- * with Timeout -> raise Timeout | _ -> ... 
- * 
+ * enough. In such case, add a case before such as
+ * with Timeout -> raise Timeout | _ -> ...
+ *
  * The same is true for UnixExit (see below).
  *)
 val timeout_function : int -> (unit -> 'a) -> 'a
@@ -1136,8 +1136,8 @@ val timeout_function : int -> (unit -> 'a) -> 'a
 val timeout_function_opt : int option -> (unit -> 'a) -> 'a
 
 
-(* creation of /tmp files, a la gcc 
- * ex: new_temp_file "cocci" ".c" will give "/tmp/cocci-3252-434465.c" 
+(* creation of /tmp files, a la gcc
+ * ex: new_temp_file "cocci" ".c" will give "/tmp/cocci-3252-434465.c"
  *)
 val _temp_files_created : string list ref
 (* see flag: val save_tmp_files : bool ref *)
@@ -1149,11 +1149,11 @@ val erase_this_temp_file : filename -> unit
  * exit and do something before exiting. There is exn handler for exit 0
  * so better never use exit 0 but instead use an exception and just at
  * the very toplevel transform this exn in a unix exit code.
- * 
+ *
  * subtil: same problem than with Timeout. Do not intercept such exception
  * with some blind try (...) with _ -> ...
  *)
-exception UnixExit of int 
+exception UnixExit of int
 val exn_to_real_unixexit : (unit -> 'a) -> 'a
 
 
@@ -1282,7 +1282,7 @@ val exclude : ('a -> bool) -> 'a list -> 'a list
  * line. Here we delete any repeated line (here list element).
  *)
 val uniq : 'a list -> 'a list
-val uniq_eff: 'a list -> 'a list 
+val uniq_eff: 'a list -> 'a list
 
 val has_no_duplicate: 'a list -> bool
 val is_set_as_list: 'a list -> bool
@@ -1314,7 +1314,7 @@ val and_list : bool list -> bool
 
 val sum_float : float list -> float
 val sum_int : int list -> int
-val avg_list: int list -> float 
+val avg_list: int list -> float
 
 val return_when : ('a -> 'b option) -> 'a list -> 'b
 
@@ -1322,7 +1322,7 @@ val return_when : ('a -> 'b option) -> 'a list -> 'b
 val grep_with_previous : ('a -> 'a -> bool) -> 'a list -> 'a list
 val iter_with_previous : ('a -> 'a -> 'b) -> 'a list -> unit
 
-val iter_with_before_after : 
+val iter_with_before_after :
  ('a list -> 'a -> 'a list -> unit) -> 'a list -> unit
 
 val get_pair : 'a list -> ('a * 'a) list
@@ -1361,7 +1361,7 @@ val array_find_index_via_elem : ('a -> bool) -> 'a array -> int
 (* for better type checking, as sometimes when have an 'int array', can
  * easily mess up the index from the value.
  *)
-type idx = Idx of int 
+type idx = Idx of int
 val next_idx: idx -> idx
 val int_of_idx: idx -> int
 
@@ -1375,13 +1375,13 @@ type 'a matrix = 'a array array
 
 val map_matrix : ('a -> 'b) -> 'a matrix -> 'b matrix
 
-val make_matrix_init: 
+val make_matrix_init:
   nrow:int -> ncolumn:int -> (int -> int -> 'a) -> 'a matrix
 
-val iter_matrix: 
+val iter_matrix:
   (int -> int -> 'a -> unit) -> 'a matrix -> unit
 
-val nb_rows_matrix: 'a matrix -> int 
+val nb_rows_matrix: 'a matrix -> int
 val nb_columns_matrix: 'a matrix -> int
 
 val rows_of_matrix: 'a matrix -> 'a list list
@@ -1452,19 +1452,19 @@ val ( $@$ ) : 'a list -> 'a list -> 'a list
 
 val nub : 'a list -> 'a list
 
-(* use internally a hash and return 
- * - the common part, 
- * - part only in a, 
+(* use internally a hash and return
+ * - the common part,
+ * - part only in a,
  * - part only in b
  *)
-val diff_two_say_set_eff : 'a list -> 'a list -> 
+val diff_two_say_set_eff : 'a list -> 'a list ->
   'a list * 'a list * 'a list
 
 (*****************************************************************************)
 (* Set as normal list *)
 (*****************************************************************************)
 
-(* cf above *) 
+(* cf above *)
 
 (*****************************************************************************)
 (* Set as sorted list *)
@@ -1475,10 +1475,10 @@ val diff_two_say_set_eff : 'a list -> 'a list ->
 (* Sets specialized *)
 (*****************************************************************************)
 
-(* 
+(*
 module StringSet = Set.Make(struct type t = string let compare = compare end)
 *)
- 
+
 
 (*****************************************************************************)
 (* Assoc. But have a look too at Mapb.mli; it's better. Or use Hashtbl. *)
@@ -1575,8 +1575,8 @@ val intintmap_string_of_t : 'a -> 'b -> string
 (* Note that Hashtbl keep old binding to a key so if want a hash
  * of a list, then can use the Hashtbl as is. Use Hashtbl.find_all then
  * to get the list of bindings
- * 
- * Note that Hashtbl module use different convention :( the object is 
+ *
+ * Note that Hashtbl module use different convention :( the object is
  * the first argument, not last as for List or Map.
  *)
 
@@ -1593,7 +1593,7 @@ val hremove : 'a -> ('a, 'b) Hashtbl.t -> unit
 
 val hfind_default : 'a -> (unit -> 'b) -> ('a, 'b) Hashtbl.t -> 'b
 val hfind_option : 'a -> ('a, 'b) Hashtbl.t -> 'b option
-val hupdate_default : 
+val hupdate_default :
   'a -> ('b -> 'b) -> (unit -> 'b) -> ('a, 'b) Hashtbl.t -> unit
 
 val hash_to_list : ('a, 'b) Hashtbl.t -> ('a * 'b) list
@@ -1601,19 +1601,19 @@ val hash_to_list_unsorted : ('a, 'b) Hashtbl.t -> ('a * 'b) list
 val hash_of_list : ('a * 'b) list -> ('a, 'b) Hashtbl.t
 
 
-val hkeys : ('a, 'b) Hashtbl.t -> 'a list 
+val hkeys : ('a, 'b) Hashtbl.t -> 'a list
 
 (*****************************************************************************)
 (* Hash sets *)
 (*****************************************************************************)
 
-type 'a hashset = ('a, bool) Hashtbl.t 
+type 'a hashset = ('a, bool) Hashtbl.t
 
 
 (* common use of hashset, in a hash of hash *)
 val hash_hashset_add : 'a -> 'b -> ('a, 'b hashset) Hashtbl.t -> unit
 
-val hashset_to_set : 
+val hashset_to_set :
  < fromlist : ('a ) list -> 'c; .. > -> ('a, 'b) Hashtbl.t -> 'c
 
 val hashset_to_list : 'a hashset -> 'a list
@@ -1670,21 +1670,21 @@ val tree_iter : ('a -> unit) -> 'a tree -> unit
 (*****************************************************************************)
 
 (* no empty tree, must have one root at least *)
-type 'a treeref = 
-  | NodeRef of 'a *   'a treeref list ref 
+type 'a treeref =
+  | NodeRef of 'a *   'a treeref list ref
 
-val treeref_node_iter: 
+val treeref_node_iter:
   (('a * 'a treeref list ref) -> unit) -> 'a treeref -> unit
-val treeref_node_iter_with_parents: 
-  (('a * 'a treeref list ref) -> ('a list) -> unit) -> 
+val treeref_node_iter_with_parents:
+  (('a * 'a treeref list ref) -> ('a list) -> unit) ->
   'a treeref -> unit
 
-val find_treeref: 
-  (('a * 'a treeref list ref) -> bool) -> 
+val find_treeref:
+  (('a * 'a treeref list ref) -> bool) ->
   'a treeref -> 'a treeref
 
-val treeref_children_ref: 
-  'a treeref -> 'a treeref list ref 
+val treeref_children_ref:
+  'a treeref -> 'a treeref list ref
 
 val find_treeref_with_parents_some:
  ('a * 'a treeref list ref -> 'a list -> 'c option) ->
@@ -1695,29 +1695,29 @@ val find_multi_treeref_with_parents_some:
  'a treeref -> 'c list
 
 
-(* Leaf can seem redundant, but sometimes want to directly see if 
+(* Leaf can seem redundant, but sometimes want to directly see if
  * a children is a leaf without looking if the list is empty.
  *)
-type ('a, 'b) treeref2 = 
-  | NodeRef2 of 'a * ('a, 'b) treeref2 list ref 
+type ('a, 'b) treeref2 =
+  | NodeRef2 of 'a * ('a, 'b) treeref2 list ref
   | LeafRef2 of 'b
 
 
-val find_treeref2: 
-  (('a * ('a, 'b) treeref2 list ref) -> bool) -> 
+val find_treeref2:
+  (('a * ('a, 'b) treeref2 list ref) -> bool) ->
   ('a, 'b) treeref2 -> ('a, 'b) treeref2
 
-val treeref_node_iter_with_parents2: 
-  (('a * ('a, 'b) treeref2 list ref) -> ('a list) -> unit) -> 
+val treeref_node_iter_with_parents2:
+  (('a * ('a, 'b) treeref2 list ref) -> ('a list) -> unit) ->
   ('a, 'b) treeref2 -> unit
 
-val treeref_node_iter2: 
+val treeref_node_iter2:
   (('a * ('a, 'b) treeref2 list ref) -> unit) -> ('a, 'b) treeref2 -> unit
 
 (*
 
 
-val treeref_children_ref: ('a, 'b) treeref -> ('a, 'b) treeref list ref 
+val treeref_children_ref: ('a, 'b) treeref -> ('a, 'b) treeref list ref
 
 val find_treeref_with_parents_some:
  ('a * ('a, 'b) treeref list ref -> 'a list -> 'c option) ->
@@ -1873,13 +1873,13 @@ val getDoubleParser :
 
 
 (* Currently lexing.ml does not handle the line number position.
- * Even if there is some fields in the lexing structure, they are not 
+ * Even if there is some fields in the lexing structure, they are not
  * maintained by the lexing engine :( So the following code does not work:
- * 
- *   let pos = Lexing.lexeme_end_p lexbuf in 
- *   sprintf "at file %s, line %d, char %d" pos.pos_fname pos.pos_lnum  
- *      (pos.pos_cnum - pos.pos_bol) in 
- * 
+ *
+ *   let pos = Lexing.lexeme_end_p lexbuf in
+ *   sprintf "at file %s, line %d, char %d" pos.pos_fname pos.pos_lnum
+ *      (pos.pos_cnum - pos.pos_bol) in
+ *
  * Hence those functions to overcome the previous limitation.
  *)
 
@@ -1890,7 +1890,7 @@ type parse_info = {
     line: int;
     column: int;
     file: filename;
-  } 
+  }
 val fake_parse_info : parse_info
 val string_of_parse_info : parse_info -> string
 val string_of_parse_info_bis : parse_info -> string
@@ -1900,13 +1900,13 @@ val full_charpos_to_pos : filename -> (int * int) array
 
 (* fill in the line and column field of parse_info that were not set
  * during lexing because of limitations of ocamllex. *)
-val complete_parse_info : 
+val complete_parse_info :
   filename -> (int * int) array -> parse_info -> parse_info
 
-val full_charpos_to_pos_large: 
+val full_charpos_to_pos_large:
   filename -> (int -> (int * int))
 
-val complete_parse_info_large : 
+val complete_parse_info_large :
   filename -> (int -> (int * int))  -> parse_info -> parse_info
 
 (* return line x col x str_line  from a charpos. This function is quite
@@ -1918,7 +1918,7 @@ val info_from_charpos : int -> filename -> (int * int * string)
 val error_message :       filename -> (string * int) -> string
 val error_message_short : filename -> (string * int) -> string
 
-(* add a 'decalage/shift' argument to handle stuff such as cpp which includes 
+(* add a 'decalage/shift' argument to handle stuff such as cpp which includes
  * files and who can make shift.
  *)
 val error_messagebis : filename -> (string * int) -> int -> string
@@ -1937,7 +1937,7 @@ val new_scope : ('a, 'b) scoped_env ref -> unit
 val del_scope : ('a, 'b) scoped_env ref -> unit
 
 val do_in_new_scope : ('a, 'b) scoped_env ref -> (unit -> unit) -> unit
-  
+
 val add_in_scope : ('a, 'b) scoped_env ref -> 'a * 'b -> unit
 
 
@@ -1968,8 +1968,8 @@ val add_in_scope_h : ('a, 'b) scoped_h_env ref -> 'a * 'b -> unit
 (* don't forget to call Common_extra.set_link () *)
 
 val _execute_and_show_progress_func :
-  (int (* length *) -> ((unit -> unit) -> unit) -> unit) ref 
-val execute_and_show_progress : 
+  (int (* length *) -> ((unit -> unit) -> unit) -> unit) ref
+val execute_and_show_progress :
  int (* length *) -> ((unit -> unit) -> unit) -> unit
 
 (*****************************************************************************)

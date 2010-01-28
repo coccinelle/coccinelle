@@ -26,5 +26,5 @@ object ('o)
 
 end
 
-val create_dbm : 
+val create_dbm :
   Common.filename -> string -> Dbm.t * ('a, 'b) oassocdbm

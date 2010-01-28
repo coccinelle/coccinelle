@@ -12,9 +12,9 @@ module type SUBST =
   end
 
 module type GRAPH =
-  sig 
-    type node 
-    type cfg 
+  sig
+    type node
+    type cfg
     val predecessors:     cfg -> node -> node list
     val successors:       cfg -> node -> node list
     val extract_is_loop : cfg -> node -> bool
@@ -67,4 +67,4 @@ module CTL_ENGINE :
 
 val get_graph_files : unit -> string list
 val get_graph_comp_files : string -> string list
-	  
+

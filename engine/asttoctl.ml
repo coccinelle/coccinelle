@@ -165,7 +165,7 @@ let elim_opt =
 	Ast.DOTS(l) -> Ast.DOTS(dots_list (List.map Ast.unwrap l) l)
       | Ast.CIRCLES(l) -> failwith "elimopt: not supported"
       | Ast.STARS(l) -> failwith "elimopt: not supported") in
-  
+
   V.rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing stmtdotsfn
@@ -617,7 +617,7 @@ and statement stmt used_after after quantified guard =
 		  Ast.CONTEXT(Ast.AFTER(aft))
 	      |	Ast.CONTEXT(_) -> d
 	      | Ast.MINUS(_) | Ast.PLUS -> failwith "not possible") in
-	  
+
 	  let left_or =
 	    make_seq
 	      [full_metamatch; and_opt (wrapNot(prelabel_pred)) after] in
@@ -652,7 +652,7 @@ and statement stmt used_after after quantified guard =
 			     wrapAnd(wrapNot(wrapBackAX(label_pred)),x))))
 	  | Ast.NotSequencible ->
 	      quantify (label_var::get_unquantified quantified [s]) (body id))
-	    
+
       |	Ast.MetaStmt((s,i,d),seqible,_) ->
 	  let label_var = (*fresh_label_var*) "_lab" in
 	  let label_pred = wrapPred(Lib_engine.Label(label_var),CTL.Control) in
@@ -767,7 +767,7 @@ and statement stmt used_after after quantified guard =
              & EX After
 *)
 
-       (* free variables *) 
+       (* free variables *)
        let (efvs,bfvs,_) =
 	 seq_fvs2 quantified (Ast.get_fvs ifheader) (Ast.get_fvs branch) in
        let new_quantified = Common.union_set bfvs quantified in
@@ -797,7 +797,7 @@ and statement stmt used_after after quantified guard =
 	   quantify bfvs
 	     (wrapAnd (if_header, wrapAnd(wrapAX or_cases, wrapEX after_pred)))
        | _ -> quantify bfvs (wrapAnd(if_header, wrapAX or_cases)))
-	 
+
   | Ast.IfThenElse(ifheader,branch1,els,branch2,aft) ->
 
 (*  "if (test) thn else els" becomes:
@@ -867,7 +867,7 @@ and statement stmt used_after after quantified guard =
 
   | Ast.While(header,body,aft) | Ast.For(header,body,aft) ->
    (* the translation in this case is similar to that of an if with no else *)
-       (* free variables *) 
+       (* free variables *)
       let (efvs,bfvs,_) =
 	seq_fvs2 quantified (Ast.get_fvs header) (Ast.get_fvs body) in
       let new_quantified = Common.union_set bfvs quantified in
@@ -1188,7 +1188,7 @@ and replace_subformulas dec f =
   | CTL.Not(phi) ->
       let (acc,new_phi) = replace_formulas dec phi in
       (acc,CTL.rewrap f (CTL.Not(new_phi)))
-  | CTL.Exists(v,phi) -> 
+  | CTL.Exists(v,phi) ->
       let (acc,new_phi) = replace_formulas dec phi in
       (acc,CTL.rewrap f (CTL.Exists(v,new_phi)))
   | CTL.And(phi1,phi2) ->
@@ -1203,7 +1203,7 @@ and replace_subformulas dec f =
       let (acc1,new_phi1) = replace_formulas dec phi1 in
       let (acc2,new_phi2) = replace_formulas dec phi2 in
       (acc1@acc2,CTL.rewrap f (CTL.SeqOr(new_phi1,new_phi2)))
-  | CTL.Implies(phi1,phi2) -> 
+  | CTL.Implies(phi1,phi2) ->
       let (acc1,new_phi1) = replace_formulas dec phi1 in
       let (acc2,new_phi2) = replace_formulas dec phi2 in
       (acc1@acc2,CTL.rewrap f (CTL.Implies(new_phi1,new_phi2)))
@@ -1230,7 +1230,7 @@ and replace_subformulas dec f =
   | CTL.EX(dir,phi) ->
       let (acc,new_phi) = replace_formulas dec phi in
       (acc,CTL.rewrap f (CTL.EX(dir,new_phi)))
-  | CTL.EG(dir,phi) -> 
+  | CTL.EG(dir,phi) ->
       let (acc,new_phi) = replace_formulas dec phi in
       (acc,CTL.rewrap f (CTL.EG(dir,new_phi)))
   | CTL.EU(dir,phi1,phi2) ->

@@ -2,28 +2,28 @@ open Common
 
 open Osequence
 
-(* growing array ? initialise with None, 
- * and generate exception when not defined or have an arraydefault 
+(* growing array ? initialise with None,
+ * and generate exception when not defined or have an arraydefault
  * update: can use dynArray ?
  *)
 
 (* !!take care!!, this is not a pure data structure *)
-class ['a] oarray n el = 
+class ['a] oarray n el =
 object(o: 'o)
   inherit ['a] osequence
 
   val data = Array.make n el
 
   method empty = raise Todo
-  method add (i,v)  = 
-    Array.set data i v; 
+  method add (i,v)  =
+    Array.set data i v;
     o
 
-  method iter f = 
+  method iter f =
     Array.iteri (curry f) data
   method view = raise Todo
 
-  method assoc i = 
+  method assoc i =
     Array.get data i
 
   method null = raise Todo
@@ -33,14 +33,14 @@ object(o: 'o)
   method first = raise Todo
   method delkey = raise Todo
 
-  method keys = raise Todo 
+  method keys = raise Todo
 
   method del = raise Todo
   method fromlist = raise Todo
-  method length = 
+  method length =
     Array.length data
 
-  (* method create: int -> 'a -> 'o = 
+  (* method create: int -> 'a -> 'o =
     raise Todo
   *)
   (* method put: make more explicit the fact that array do side effect *)

@@ -5,12 +5,12 @@
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License (GPL)
  * version 2 as published by the Free Software Foundation.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * file license.txt for more details.
- * 
+ *
  * This file was part of Coccinelle.
  *)
 
@@ -168,13 +168,13 @@ let rewrap_str s ii =
     | Ast_c.AbstractLineTok pi ->
 	Ast_c.AbstractLineTok { pi with Common.str = s;})}
 
-let rewrap_prefix_name prefix name = 
+let rewrap_prefix_name prefix name =
   match name with
-  | Ast_c.RegularName (s, iiname) -> 
-      let iis = Common.tuple_of_list1 iiname in 
+  | Ast_c.RegularName (s, iiname) ->
+      let iis = Common.tuple_of_list1 iiname in
       let iis' = rewrap_str (prefix^s) iis in
       Ast_c.RegularName (prefix ^ s, [iis'])
-  | Ast_c.CppConcatenatedName _ | Ast_c.CppVariadicName _ 
+  | Ast_c.CppConcatenatedName _ | Ast_c.CppVariadicName _
   | Ast_c.CppIdentBuilder _
       -> raise Common.Todo
 
@@ -188,7 +188,7 @@ let print_metavar pr = function
       pr ("expression "^prefix); pr param
   | ({Ast_c.p_namei = Some name; p_type = (_,ty)} : Ast_c.parameterType) ->
 
-      let name' = rewrap_prefix_name prefix name in 
+      let name' = rewrap_prefix_name prefix name in
 
       print_typedef pr ty;
 
@@ -218,7 +218,7 @@ let make_exp = function
 let print_extra_typedefs pr env =
   let bigf =
     { Visitor_c.default_visitor_c with
-      Visitor_c.ktype = (fun (k, bigf) ty -> 
+      Visitor_c.ktype = (fun (k, bigf) ty ->
 	match ty with
 	  (_,((Ast_c.TypeName(_,_),_) as ty)) -> print_typedef pr ty
 	| _ -> k ty) } in
@@ -240,14 +240,14 @@ let print_extra_typedefs pr env =
     env
 
 let rename argids env =
-  let argenv = List.map (function name -> 
+  let argenv = List.map (function name ->
     let arg = Ast_c.str_of_name name in
     (arg,prefix^arg)
   ) argids in
   let lookup x = try List.assoc x argenv with Not_found -> x in
   let bigf =
     { Visitor_c.default_visitor_c_s with
-    Visitor_c.kexpr_s = (fun (k,bigf) e -> 
+    Visitor_c.kexpr_s = (fun (k,bigf) e ->
       match e with
 	((Ast_c.Ident (name), info), []) ->
 
@@ -287,7 +287,7 @@ let print_one_type pr env = function
     (Type_cocci.MetaType(name,keep,inherited)) as ty ->
       (try
 	match List.assoc name env with
-	  Ast_c.MetaTypeVal ty -> 
+	  Ast_c.MetaTypeVal ty ->
 	    Pretty_print_c.pp_type_gen
 	      (function x -> pr (Ast_c.str_of_info x))
 	      (function _ -> pr " ")

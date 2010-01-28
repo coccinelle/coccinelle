@@ -1,15 +1,15 @@
 (*
  * Ptset: Sets of integers implemented as Patricia trees.
  * Copyright (C) 2000 Jean-Christophe FILLIATRE
- * 
+ *
  * This software is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
  * License version 2, as published by the Free Software Foundation.
- * 
+ *
  * This software is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * 
+ *
  * See the GNU Library General Public License version 2 for more details
  * (enclosed in the file LGPL).
  *)
@@ -50,7 +50,7 @@ type t =
     $$\mathtt{Branch~(0,~1,~Leaf~4,~Branch~(1,~4,~Leaf~1,~Leaf~5))}$$
     The first branching bit is the bit 0 (and the corresponding prefix
     is [0b0], not of use here), with $\{4\}$ on the left and $\{1,5\}$ on the
-    right. Then the right subtree branches on bit 2 (and so has a branching 
+    right. Then the right subtree branches on bit 2 (and so has a branching
     value of $2^2 = 4$), with prefix [0b01 = 1]. *)
 
 (*s Empty set and singletons. *)
@@ -90,9 +90,9 @@ let mask p m = p land (m-1)
 
 let join (p0,t0,p1,t1) =
   let m = branching_bit p0 p1 in
-  if zero_bit p0 m then 
+  if zero_bit p0 m then
     Branch (mask p0 m, m, t0, t1)
-  else 
+  else
     Branch (mask p0 m, m, t1, t0)
 
 (*s Then the insertion of value [k] in set [t] is easily implemented
@@ -108,11 +108,11 @@ let match_prefix k p m = (mask k m) == p
 let add k t =
   let rec ins = function
     | Empty -> Leaf k
-    | Leaf j as t -> 
+    | Leaf j as t ->
         if j == k then t else join (k, Leaf k, j, t)
     | Branch (p,m,t0,t1) as t ->
         if match_prefix k p m then
-          if zero_bit k m then 
+          if zero_bit k m then
             Branch (p, m, ins t0, t1)
           else
             Branch (p, m, t0, ins t1)
@@ -123,7 +123,7 @@ let add k t =
 
 (*s The code to remove an element is basically similar to the code of
     insertion. But since we have to maintain the invariant that both
-    subtrees of a [Branch] node are non-empty, we use here the 
+    subtrees of a [Branch] node are non-empty, we use here the
     ``smart constructor'' [branch] instead of [Branch]. *)
 
 let branch = function
@@ -135,7 +135,7 @@ let remove k t =
   let rec rmv = function
     | Empty -> Empty
     | Leaf j as t -> if k == j then Empty else t
-    | Branch (p,m,t0,t1) as t -> 
+    | Branch (p,m,t0,t1) as t ->
         if match_prefix k p m then
           if zero_bit k m then
             branch (p, m, rmv t0, t1)
@@ -166,9 +166,9 @@ let rec merge = function
         Branch (p, m, merge (s0,t0), merge (s1,t1))
       else if m < n && match_prefix q p m then
         (* [q] contains [p]. Merge [t] with a subtree of [s]. *)
-        if zero_bit q m then 
+        if zero_bit q m then
           Branch (p, m, merge (s0,t), s1)
-        else 
+        else
           Branch (p, m, s0, merge (s1,t))
       else if m > n && match_prefix p q n then
         (* [p] contains [q]. Merge [s] with a subtree of [t]. *)
@@ -196,9 +196,9 @@ let rec subset s1 s2 = match (s1,s2) with
       if m1 == m2 && p1 == p2 then
         subset l1 l2 && subset r1 r2
       else if m1 > m2 && match_prefix p1 p2 m2 then
-        if zero_bit p1 m2 then 
+        if zero_bit p1 m2 then
           subset l1 l2 && subset r1 l2
-        else 
+        else
           subset l1 r2 && subset r1 r2
       else
         false
@@ -213,7 +213,7 @@ let rec inter s1 s2 = match (s1,s2) with
   | Leaf k1, _ -> if mem k1 s2 then s1 else Empty
   | _, Leaf k2 -> if mem k2 s1 then s2 else Empty
   | Branch (p1,m1,l1,r1), Branch (p2,m2,l2,r2) ->
-      if m1 == m2 && p1 == p2 then 
+      if m1 == m2 && p1 == p2 then
         merge (inter l1 l2, inter r1 r2)
       else if m1 < m2 && match_prefix p2 p1 m1 then
         inter (if zero_bit p2 m1 then l1 else r1) s2
@@ -231,9 +231,9 @@ let rec diff s1 s2 = match (s1,s2) with
       if m1 == m2 && p1 == p2 then
         merge (diff l1 l2, diff r1 r2)
       else if m1 < m2 && match_prefix p2 p1 m1 then
-        if zero_bit p2 m1 then 
-          merge (diff l1 s2, r1) 
-        else 
+        if zero_bit p2 m1 then
+          merge (diff l1 s2, r1)
+        else
           merge (l1, diff r1 s2)
       else if m1 > m2 && match_prefix p1 p2 m2 then
         if zero_bit p1 m2 then diff s1 l2 else diff s1 r2
@@ -253,7 +253,7 @@ let rec iter f = function
   | Empty -> ()
   | Leaf k -> f k
   | Branch (_,_,t0,t1) -> iter f t0; iter f t1
-      
+
 let rec fold f s accu = match s with
   | Empty -> accu
   | Leaf k -> f k accu
@@ -269,7 +269,7 @@ let rec exists p = function
   | Leaf k -> p k
   | Branch (_,_,t0,t1) -> exists p t0 || exists p t1
 
-let filter p s = 
+let filter p s =
   let rec filt acc = function
     | Empty -> acc
     | Leaf k -> if p k then add k acc else acc

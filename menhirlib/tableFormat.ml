@@ -18,7 +18,7 @@
 module type TABLES = sig
 
   (* This is the parser's type of tokens. *)
-    
+
   type token
 
   (* This maps a token to its internal (generation-time) integer code. *)
@@ -111,7 +111,7 @@ module type TABLES = sig
   (* A one-dimensional semantic action table maps productions to semantic
      actions. The calling convention for semantic actions is described in
      [EngineTypes]. *)
-    
+
   val semantic_action: ((int, Obj.t, token) EngineTypes.env -> unit) array
 
   (* The parser defines its own [Error] exception. This exception can be

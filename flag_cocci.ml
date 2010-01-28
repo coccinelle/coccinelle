@@ -36,7 +36,7 @@ let include_path = ref (None : string option)
  * current directory. This is because of how works extract_c_and_res
  *)
 
-let relax_include_path = ref false 
+let relax_include_path = ref false
 
 let timeout = ref (None : int option)
 

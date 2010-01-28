@@ -2,7 +2,7 @@ open Common
 open Oassoc
 
 (* just a class that behave as fun x -> x *)
-class ['a] oassoc_id xs = 
+class ['a] oassoc_id xs =
   object(o)
     inherit ['a,'a] oassoc
 
@@ -18,7 +18,7 @@ class ['a] oassoc_id xs =
     method assoc k = k
     method delkey k = {<  >}
 
-    method keys = 
+    method keys =
       List.map fst (o#tolist)
 
-end     
+end

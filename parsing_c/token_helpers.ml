@@ -1,12 +1,12 @@
 (* Yoann Padioleau
- * 
+ *
  * Copyright (C) 2010, University of Copenhagen DIKU and INRIA.
  * Copyright (C) 2007, 2008 Ecole des Mines de Nantes
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License (GPL)
  * version 2 as published by the Free Software Foundation.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -22,9 +22,9 @@ open Parser_c
 (* Is_xxx, categories *)
 (*****************************************************************************)
 
-(* could define a type  token_class = Comment | Ident | Operator | ... 
+(* could define a type  token_class = Comment | Ident | Operator | ...
  * update: now token_c can maybe do that.
- * but still, sometimes tokens belon to multiple classes. Could maybe 
+ * but still, sometimes tokens belon to multiple classes. Could maybe
  * return then a set of classes.
  *)
 
@@ -50,46 +50,46 @@ let is_just_comment = function
 
 
 let is_comment = function
-  | TComment _    
-  | TCommentSpace _ | TCommentNewline _ 
-  | TCommentCpp _ 
+  | TComment _
+  | TCommentSpace _ | TCommentNewline _
+  | TCommentCpp _
   | TCommentMisc _ -> true
   | _ -> false
 
 (* coupling with comment_annotater_c.ml.
  * In fact more tokens than comments are not in the ast, but
- * they were usually temporally created by ocamllex and removed 
+ * they were usually temporally created by ocamllex and removed
  * in parsing_hacks.
 *)
 let is_not_in_ast = is_comment
 
 let is_fake_comment = function
-  | TCommentCpp _    | TCommentMisc _ 
+  | TCommentCpp _    | TCommentMisc _
       -> true
   | _ -> false
 
-let is_not_comment x = 
+let is_not_comment x =
   not (is_comment x)
 
 
 (* ---------------------------------------------------------------------- *)
 
 let is_cpp_instruction = function
-  | TInclude _ 
+  | TInclude _
   | TDefine _
-  | TIfdef _   | TIfdefelse _ | TIfdefelif _ | TEndif _ 
+  | TIfdef _   | TIfdefelse _ | TIfdefelif _ | TEndif _
   | TIfdefBool _ | TIfdefMisc _ | TIfdefVersion _
-  | TUndef _ 
+  | TUndef _
   | TCppDirectiveOther _
       -> true
   | _ -> false
 
 
 let is_gcc_token = function
-  | Tasm _ 
-  | Tinline _ 
-  | Tattribute _ 
-  | Ttypeof _ 
+  | Tasm _
+  | Tinline _
+  | Tattribute _
+  | Ttypeof _
       -> true
   | _ -> false
 
@@ -112,7 +112,7 @@ let is_obrace = function
 
 let is_cbrace = function
   | TCBrace _ -> true
-  | _ -> false 
+  | _ -> false
 
 
 
@@ -131,9 +131,9 @@ let is_eom = function
   | _ -> false
 
 let is_statement = function
-  | Tfor _ | Tdo _ | Tif _ | Twhile _ | Treturn _ 
+  | Tfor _ | Tdo _ | Tif _ | Twhile _ | Treturn _
   | Tbreak _ | Telse _ | Tswitch _ | Tcase _ | Tcontinue _
-  | Tgoto _ 
+  | Tgoto _
   | TPtVirg _
   | TMacroIterator _
       -> true
@@ -141,48 +141,48 @@ let is_statement = function
 
 (* is_start_of_something is used in parse_c for error recovery, to find
  * a synchronisation token.
- * 
+ *
  * Would like to put TIdent or TDefine, TIfdef but they can be in the
  * middle of a function, for instance with label:.
- * 
+ *
  * Could put Typedefident but fired ? it would work in error recovery
  * on the already_passed tokens, which has been already gone in the
  * Parsing_hacks.lookahead machinery, but it will not work on the
  * "next" tokens. But because the namespace for labels is different
  * from namespace for ident/typedef, we can use the name for a typedef
- * for a label and so dangerous to put Typedefident at true here. 
- * 
+ * for a label and so dangerous to put Typedefident at true here.
+ *
  * Can look in parser_c.output to know what can be at toplevel
  * at the very beginning.
  *)
 
 let is_start_of_something = function
-  | Tchar _  | Tshort _ | Tint _ | Tdouble _ |  Tfloat _ | Tlong _ 
-  | Tunsigned _ | Tsigned _ | Tvoid _ 
+  | Tchar _  | Tshort _ | Tint _ | Tdouble _ |  Tfloat _ | Tlong _
+  | Tunsigned _ | Tsigned _ | Tvoid _
   | Tauto _ | Tregister _ | Textern _ | Tstatic _
   | Tconst _ | Tvolatile _
   | Ttypedef _
-  | Tstruct _ | Tunion _ | Tenum _ 
+  | Tstruct _ | Tunion _ | Tenum _
     -> true
   | _ -> false
 
 
 
 let is_binary_operator = function
-  | TOrLog _ | TAndLog _ |  TOr _ |  TXor _ |  TAnd _ 
-  | TEqEq _ |  TNotEq _  | TInf _ |  TSup _ |  TInfEq _ |  TSupEq _ 
-  | TShl _ | TShr _  
-  | TPlus _ |  TMinus _ |  TMul _ |  TDiv _ |  TMod _ 
+  | TOrLog _ | TAndLog _ |  TOr _ |  TXor _ |  TAnd _
+  | TEqEq _ |  TNotEq _  | TInf _ |  TSup _ |  TInfEq _ |  TSupEq _
+  | TShl _ | TShr _
+  | TPlus _ |  TMinus _ |  TMul _ |  TDiv _ |  TMod _
         -> true
-  | _ -> false 
+  | _ -> false
 
 let is_stuff_taking_parenthized = function
-  | Tif _ 
-  | Twhile _ 
+  | Tif _
+  | Twhile _
   | Tswitch _
   | Ttypeof _
   | TMacroIterator _
-    -> true 
+    -> true
   | _ -> false
 
 
@@ -204,14 +204,14 @@ let is_ident_like = function
   | TMacroIterator _
       -> true
 
-  | _ -> false 
+  | _ -> false
 
 
 (*****************************************************************************)
 (* Visitors *)
 (*****************************************************************************)
 
-(* Because ocamlyacc force us to do it that way. The ocamlyacc token 
+(* Because ocamlyacc force us to do it that way. The ocamlyacc token
  * cant be a pair of a sum type, it must be directly a sum type.
  *)
 let info_of_tok = function
@@ -226,7 +226,7 @@ let info_of_tok = function
 
   | TInt  (s, i) -> i
 
-  | TDefine (ii) -> ii 
+  | TDefine (ii) -> ii
   | TInclude (includes, filename, inifdef, i1) ->     i1
 
   | TUndef (s, ii) -> ii
@@ -356,27 +356,27 @@ let info_of_tok = function
   | Ttypeof              (i) -> i
 
   | EOF                  (i) -> i
-  
+
 
 
 
 (* used by tokens to complete the parse_info with filename, line, col infos *)
 let visitor_info_of_tok f = function
-  | TString ((s, isWchar), i)  -> TString ((s, isWchar), f i) 
-  | TChar  ((s, isWchar), i)   -> TChar  ((s, isWchar), f i) 
-  | TFloat ((s, floatType), i) -> TFloat ((s, floatType), f i) 
-  | TAssign  (assignOp, i)     -> TAssign  (assignOp, f i) 
+  | TString ((s, isWchar), i)  -> TString ((s, isWchar), f i)
+  | TChar  ((s, isWchar), i)   -> TChar  ((s, isWchar), f i)
+  | TFloat ((s, floatType), i) -> TFloat ((s, floatType), f i)
+  | TAssign  (assignOp, i)     -> TAssign  (assignOp, f i)
 
-  | TIdent  (s, i)       -> TIdent  (s, f i) 
-  | TypedefIdent  (s, i) -> TypedefIdent  (s, f i) 
-  | TInt  (s, i)         -> TInt  (s, f i) 
+  | TIdent  (s, i)       -> TIdent  (s, f i)
+  | TypedefIdent  (s, i) -> TypedefIdent  (s, f i)
+  | TInt  (s, i)         -> TInt  (s, f i)
 
-  | TDefine (i1) -> TDefine(f i1) 
+  | TDefine (i1) -> TDefine(f i1)
 
-  | TUndef (s,i1) -> TUndef(s, f i1) 
-  | TCppDirectiveOther (i1) -> TCppDirectiveOther(f i1) 
+  | TUndef (s,i1) -> TUndef(s, f i1)
+  | TCppDirectiveOther (i1) -> TCppDirectiveOther(f i1)
 
-  | TInclude (includes, filename, inifdef, i1) -> 
+  | TInclude (includes, filename, inifdef, i1) ->
       TInclude (includes, filename, inifdef, f i1)
 
   | TIncludeStart (i1, inifdef) -> TIncludeStart (f i1, inifdef)
@@ -411,101 +411,101 @@ let visitor_info_of_tok f = function
 
   | TAction               (i) -> TAction             (f i)
 
-  | TComment             (i) -> TComment             (f i) 
-  | TCommentSpace        (i) -> TCommentSpace        (f i) 
-  | TCommentNewline      (i) -> TCommentNewline      (f i) 
-  | TCommentCpp          (cppkind, i) -> TCommentCpp (cppkind, f i) 
-  | TCommentMisc         (i) -> TCommentMisc         (f i) 
+  | TComment             (i) -> TComment             (f i)
+  | TCommentSpace        (i) -> TCommentSpace        (f i)
+  | TCommentNewline      (i) -> TCommentNewline      (f i)
+  | TCommentCpp          (cppkind, i) -> TCommentCpp (cppkind, f i)
+  | TCommentMisc         (i) -> TCommentMisc         (f i)
 
-  | TCommentSkipTagStart         (i) -> TCommentSkipTagStart         (f i) 
-  | TCommentSkipTagEnd         (i) -> TCommentSkipTagEnd         (f i) 
+  | TCommentSkipTagStart         (i) -> TCommentSkipTagStart         (f i)
+  | TCommentSkipTagEnd         (i) -> TCommentSkipTagEnd         (f i)
 
-  | TIfdef               (t, i) -> TIfdef               (t, f i) 
-  | TIfdefelse           (t, i) -> TIfdefelse           (t, f i) 
-  | TIfdefelif           (t, i) -> TIfdefelif           (t, f i) 
-  | TEndif               (t, i) -> TEndif               (t, f i) 
-  | TIfdefBool           (b, t, i) -> TIfdefBool        (b, t, f i) 
-  | TIfdefMisc           (b, t, i) -> TIfdefMisc        (b, t, f i) 
-  | TIfdefVersion        (b, t, i) -> TIfdefVersion     (b, t, f i) 
+  | TIfdef               (t, i) -> TIfdef               (t, f i)
+  | TIfdefelse           (t, i) -> TIfdefelse           (t, f i)
+  | TIfdefelif           (t, i) -> TIfdefelif           (t, f i)
+  | TEndif               (t, i) -> TEndif               (t, f i)
+  | TIfdefBool           (b, t, i) -> TIfdefBool        (b, t, f i)
+  | TIfdefMisc           (b, t, i) -> TIfdefMisc        (b, t, f i)
+  | TIfdefVersion        (b, t, i) -> TIfdefVersion     (b, t, f i)
 
-  | TOPar                (i) -> TOPar                (f i) 
-  | TCPar                (i) -> TCPar                (f i) 
-  | TOBrace              (i) -> TOBrace              (f i) 
-  | TCBrace              (i) -> TCBrace              (f i) 
-  | TOCro                (i) -> TOCro                (f i) 
-  | TCCro                (i) -> TCCro                (f i) 
-  | TDot                 (i) -> TDot                 (f i) 
-  | TComma               (i) -> TComma               (f i) 
-  | TPtrOp               (i) -> TPtrOp               (f i) 
-  | TInc                 (i) -> TInc                 (f i) 
-  | TDec                 (i) -> TDec                 (f i) 
-  | TEq                  (i) -> TEq                  (f i) 
-  | TWhy                 (i) -> TWhy                 (f i) 
-  | TTilde               (i) -> TTilde               (f i) 
-  | TBang                (i) -> TBang                (f i) 
-  | TEllipsis            (i) -> TEllipsis            (f i) 
-  | TDotDot              (i) -> TDotDot              (f i) 
-  | TPtVirg              (i) -> TPtVirg              (f i) 
-  | TOrLog               (i) -> TOrLog               (f i) 
-  | TAndLog              (i) -> TAndLog              (f i) 
-  | TOr                  (i) -> TOr                  (f i) 
-  | TXor                 (i) -> TXor                 (f i) 
-  | TAnd                 (i) -> TAnd                 (f i) 
-  | TEqEq                (i) -> TEqEq                (f i) 
-  | TNotEq               (i) -> TNotEq               (f i) 
-  | TInf                 (i) -> TInf                 (f i) 
-  | TSup                 (i) -> TSup                 (f i) 
-  | TInfEq               (i) -> TInfEq               (f i) 
-  | TSupEq               (i) -> TSupEq               (f i) 
-  | TShl                 (i) -> TShl                 (f i) 
-  | TShr                 (i) -> TShr                 (f i) 
-  | TPlus                (i) -> TPlus                (f i) 
-  | TMinus               (i) -> TMinus               (f i) 
-  | TMul                 (i) -> TMul                 (f i) 
-  | TDiv                 (i) -> TDiv                 (f i) 
-  | TMod                 (i) -> TMod                 (f i) 
-  | Tchar                (i) -> Tchar                (f i) 
-  | Tshort               (i) -> Tshort               (f i) 
-  | Tint                 (i) -> Tint                 (f i) 
-  | Tdouble              (i) -> Tdouble              (f i) 
-  | Tfloat               (i) -> Tfloat               (f i) 
-  | Tlong                (i) -> Tlong                (f i) 
-  | Tunsigned            (i) -> Tunsigned            (f i) 
-  | Tsigned              (i) -> Tsigned              (f i) 
-  | Tvoid                (i) -> Tvoid                (f i) 
-  | Tauto                (i) -> Tauto                (f i) 
-  | Tregister            (i) -> Tregister            (f i) 
-  | Textern              (i) -> Textern              (f i) 
-  | Tstatic              (i) -> Tstatic              (f i) 
-  | Tconst               (i) -> Tconst               (f i) 
-  | Tvolatile            (i) -> Tvolatile            (f i) 
+  | TOPar                (i) -> TOPar                (f i)
+  | TCPar                (i) -> TCPar                (f i)
+  | TOBrace              (i) -> TOBrace              (f i)
+  | TCBrace              (i) -> TCBrace              (f i)
+  | TOCro                (i) -> TOCro                (f i)
+  | TCCro                (i) -> TCCro                (f i)
+  | TDot                 (i) -> TDot                 (f i)
+  | TComma               (i) -> TComma               (f i)
+  | TPtrOp               (i) -> TPtrOp               (f i)
+  | TInc                 (i) -> TInc                 (f i)
+  | TDec                 (i) -> TDec                 (f i)
+  | TEq                  (i) -> TEq                  (f i)
+  | TWhy                 (i) -> TWhy                 (f i)
+  | TTilde               (i) -> TTilde               (f i)
+  | TBang                (i) -> TBang                (f i)
+  | TEllipsis            (i) -> TEllipsis            (f i)
+  | TDotDot              (i) -> TDotDot              (f i)
+  | TPtVirg              (i) -> TPtVirg              (f i)
+  | TOrLog               (i) -> TOrLog               (f i)
+  | TAndLog              (i) -> TAndLog              (f i)
+  | TOr                  (i) -> TOr                  (f i)
+  | TXor                 (i) -> TXor                 (f i)
+  | TAnd                 (i) -> TAnd                 (f i)
+  | TEqEq                (i) -> TEqEq                (f i)
+  | TNotEq               (i) -> TNotEq               (f i)
+  | TInf                 (i) -> TInf                 (f i)
+  | TSup                 (i) -> TSup                 (f i)
+  | TInfEq               (i) -> TInfEq               (f i)
+  | TSupEq               (i) -> TSupEq               (f i)
+  | TShl                 (i) -> TShl                 (f i)
+  | TShr                 (i) -> TShr                 (f i)
+  | TPlus                (i) -> TPlus                (f i)
+  | TMinus               (i) -> TMinus               (f i)
+  | TMul                 (i) -> TMul                 (f i)
+  | TDiv                 (i) -> TDiv                 (f i)
+  | TMod                 (i) -> TMod                 (f i)
+  | Tchar                (i) -> Tchar                (f i)
+  | Tshort               (i) -> Tshort               (f i)
+  | Tint                 (i) -> Tint                 (f i)
+  | Tdouble              (i) -> Tdouble              (f i)
+  | Tfloat               (i) -> Tfloat               (f i)
+  | Tlong                (i) -> Tlong                (f i)
+  | Tunsigned            (i) -> Tunsigned            (f i)
+  | Tsigned              (i) -> Tsigned              (f i)
+  | Tvoid                (i) -> Tvoid                (f i)
+  | Tauto                (i) -> Tauto                (f i)
+  | Tregister            (i) -> Tregister            (f i)
+  | Textern              (i) -> Textern              (f i)
+  | Tstatic              (i) -> Tstatic              (f i)
+  | Tconst               (i) -> Tconst               (f i)
+  | Tvolatile            (i) -> Tvolatile            (f i)
 
-  | Trestrict            (i) -> Trestrict            (f i) 
+  | Trestrict            (i) -> Trestrict            (f i)
 
-  | Tstruct              (i) -> Tstruct              (f i) 
-  | Tenum                (i) -> Tenum                (f i) 
-  | Ttypedef             (i) -> Ttypedef             (f i) 
-  | Tunion               (i) -> Tunion               (f i) 
-  | Tbreak               (i) -> Tbreak               (f i) 
-  | Telse                (i) -> Telse                (f i) 
-  | Tswitch              (i) -> Tswitch              (f i) 
-  | Tcase                (i) -> Tcase                (f i) 
-  | Tcontinue            (i) -> Tcontinue            (f i) 
-  | Tfor                 (i) -> Tfor                 (f i) 
-  | Tdo                  (i) -> Tdo                  (f i) 
-  | Tif                  (i) -> Tif                  (f i) 
-  | Twhile               (i) -> Twhile               (f i) 
-  | Treturn              (i) -> Treturn              (f i) 
-  | Tgoto                (i) -> Tgoto                (f i) 
-  | Tdefault             (i) -> Tdefault             (f i) 
-  | Tsizeof              (i) -> Tsizeof              (f i) 
-  | Tasm                 (i) -> Tasm                 (f i) 
-  | Tattribute           (i) -> Tattribute           (f i) 
-  | TattributeNoarg           (i) -> TattributeNoarg           (f i) 
-  | Tinline              (i) -> Tinline              (f i) 
-  | Ttypeof              (i) -> Ttypeof              (f i) 
-  | EOF                  (i) -> EOF                  (f i) 
-  
+  | Tstruct              (i) -> Tstruct              (f i)
+  | Tenum                (i) -> Tenum                (f i)
+  | Ttypedef             (i) -> Ttypedef             (f i)
+  | Tunion               (i) -> Tunion               (f i)
+  | Tbreak               (i) -> Tbreak               (f i)
+  | Telse                (i) -> Telse                (f i)
+  | Tswitch              (i) -> Tswitch              (f i)
+  | Tcase                (i) -> Tcase                (f i)
+  | Tcontinue            (i) -> Tcontinue            (f i)
+  | Tfor                 (i) -> Tfor                 (f i)
+  | Tdo                  (i) -> Tdo                  (f i)
+  | Tif                  (i) -> Tif                  (f i)
+  | Twhile               (i) -> Twhile               (f i)
+  | Treturn              (i) -> Treturn              (f i)
+  | Tgoto                (i) -> Tgoto                (f i)
+  | Tdefault             (i) -> Tdefault             (f i)
+  | Tsizeof              (i) -> Tsizeof              (f i)
+  | Tasm                 (i) -> Tasm                 (f i)
+  | Tattribute           (i) -> Tattribute           (f i)
+  | TattributeNoarg           (i) -> TattributeNoarg           (f i)
+  | Tinline              (i) -> Tinline              (f i)
+  | Ttypeof              (i) -> Ttypeof              (f i)
+  | EOF                  (i) -> EOF                  (f i)
+
 
 (*****************************************************************************)
 (* Accessors *)
@@ -534,8 +534,8 @@ let is_abstract x =
 (*****************************************************************************)
 (* Helpers *)
 (*****************************************************************************)
-let is_same_line_or_close line tok = 
-  line_of_tok tok =|= line || 
+let is_same_line_or_close line tok =
+  line_of_tok tok =|= line ||
   line_of_tok tok =|= line - 1 ||
   line_of_tok tok =|= line - 2
 

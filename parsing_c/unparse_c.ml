@@ -1,18 +1,18 @@
 (* Yoann Padioleau, Julia Lawall
- * 
+ *
  * Copyright (C) 2010, University of Copenhagen DIKU and INRIA.
  * Copyright (C) 2006, 2007, 2008, 2009 Ecole des Mines de Nantes and DIKU
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License (GPL)
  * version 2 as published by the Free Software Foundation.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * file license.txt for more details.
- * 
- * 
+ *
+ *
  * Modifications by Julia Lawall for better newline handling.
  *)
 open Common
@@ -37,7 +37,7 @@ let pr2, pr2_once = Common.mk_pr2_wrappers Flag_parsing_c.verbose_unparsing
 (* Types used during the intermediate phases of the unparsing *)
 (*****************************************************************************)
 
-type token1 = 
+type token1 =
   | Fake1 of info
   | T1 of Parser_c.token
 
@@ -46,7 +46,7 @@ type token1 =
  * token and get something simpler ? because we need to know if the
  * info is a TCommentCpp or TCommentSpace, etc for some of the further
  * analysis so easier to keep with the token.
- * 
+ *
  * This type contains the whole information. Have all the tokens with this
  * type.
  *)
@@ -54,8 +54,8 @@ type min =
     Min of (int list (* match numbers *) * int (* adjacency information *))
   | Ctx
 
-type token2 = 
-  | T2 of Parser_c.token * min * 
+type token2 =
+  | T2 of Parser_c.token * min *
           int option (* orig index, abstracting away comments and space *)
   | Fake2
   | Cocci2 of string * int (* line *) * int (* lcol *) * int (* rcol *)
@@ -64,7 +64,7 @@ type token2 =
   | Unindent_cocci2
 
 (* not used yet *)
-type token3 = 
+type token3 =
   | T3 of Parser_c.token
   | Cocci3 of string
   | C3 of string
@@ -84,7 +84,7 @@ type token_extended = {
 (* Helpers *)
 (*****************************************************************************)
 
-let info_of_token1 t = 
+let info_of_token1 t =
   match t with
   | Fake1 info -> info
   | T1 tok -> TH.info_of_tok tok
@@ -130,22 +130,22 @@ let str_of_token3 = function
 
 
 
-let mk_token_extended x = 
-  let origidx = 
+let mk_token_extended x =
+  let origidx =
     match x with
-    | T2 (_,_, idx) -> idx 
+    | T2 (_,_, idx) -> idx
     | _ -> None
   in
-  { tok2 = x; 
+  { tok2 = x;
     str = str_of_token2 x;
     idx = origidx;
     new_tokens_before = [];
     remove = false;
   }
 
-let rebuild_tokens_extented toks_ext = 
+let rebuild_tokens_extented toks_ext =
   let _tokens = ref [] in
-  toks_ext +> List.iter (fun tok -> 
+  toks_ext +> List.iter (fun tok ->
     tok.new_tokens_before +> List.iter (fun x -> push2 x _tokens);
     if not tok.remove then push2 tok.tok2 _tokens;
   );
@@ -161,7 +161,7 @@ let mcode_contain_plus = function
   | Ast_cocci.MINUS (_,_,_,x::xs) -> true
   | Ast_cocci.PLUS _ -> raise Impossible
 
-let contain_plus info = 
+let contain_plus info =
   let mck = Ast_c.mcode_of_info info in
   mcode_contain_plus mck
 
@@ -169,14 +169,14 @@ let contain_plus info =
 (* Last fix on the ast *)
 (*****************************************************************************)
 
-(* Because of the ugly trick to handle initialiser, I generate fake ',' 
+(* Because of the ugly trick to handle initialiser, I generate fake ','
  * for the last initializer element, but if there is nothing around it,
  * I don't want in the end to print it.
  *)
 
-let remove_useless_fakeInfo_struct program = 
+let remove_useless_fakeInfo_struct program =
   let bigf = { Visitor_c.default_visitor_c_s with
-    Visitor_c.kini_s = (fun (k,bigf) ini -> 
+    Visitor_c.kini_s = (fun (k,bigf) ini ->
       match k ini with
       | InitList args, ii ->
           (match ii with
@@ -187,7 +187,7 @@ let remove_useless_fakeInfo_struct program =
                  (* sometimes the guy put a normal iicommaopt *)
               then InitList args, [i1;i2]
               else InitList args, [i1;i2;iicommaopt]
-          | [i1;i2;iicommaopt;end_comma_opt] -> 
+          | [i1;i2;iicommaopt;end_comma_opt] ->
 	      (* only in #define. end_comma_opt canot be fake *)
 	      (* not sure if this will be considered ambiguous with a previous
 		 case? *)
@@ -208,24 +208,24 @@ let remove_useless_fakeInfo_struct program =
 (* Tokens1 generation *)
 (*****************************************************************************)
 
-let get_fakeInfo_and_tokens celem toks = 
-  let toks_in  = ref toks in 
+let get_fakeInfo_and_tokens celem toks =
+  let toks_in  = ref toks in
   let toks_out = ref [] in
 
   (* todo? verify good order of position ? *)
-  let pr_elem info = 
+  let pr_elem info =
     match Ast_c.pinfo_of_info info with
-    | FakeTok _ -> 
+    | FakeTok _ ->
         Common.push2 (Fake1 info) toks_out
-    | OriginTok _ | ExpandedTok _ -> 
+    | OriginTok _ | ExpandedTok _ ->
         (* get the associated comments/space/cppcomment tokens *)
         let (before, x, after) =
-	  !toks_in +> Common.split_when (fun tok -> 
+	  !toks_in +> Common.split_when (fun tok ->
 	  info =*= TH.info_of_tok tok)
         in
         assert(info =*= TH.info_of_tok x);
         (*old: assert(before +> List.for_all (TH.is_comment)); *)
-        before +> List.iter (fun x -> 
+        before +> List.iter (fun x ->
           if not (TH.is_comment x)
           then pr2 ("WEIRD: not a comment:" ^ TH.str_of_tok x)
           (* case such as  int asm d3("x"); not yet in ast *)
@@ -233,11 +233,11 @@ let get_fakeInfo_and_tokens celem toks =
         before +> List.iter (fun x -> Common.push2 (T1 x) toks_out);
         push2 (T1 x) toks_out;
         toks_in := after;
-    | AbstractLineTok _ -> 
+    | AbstractLineTok _ ->
         (* can be called on type info when for instance use -type_c *)
         if !Flag_parsing_c.pretty_print_type_info
         then Common.push2 (Fake1 info) toks_out
-        else raise Impossible (* at this stage *) 
+        else raise Impossible (* at this stage *)
   in
 
   let pr_space _ = () in (* use the spacing that is there already *)
@@ -268,7 +268,7 @@ let displace_fake_nodes toks =
     match fake_info with
       Some(bef,((Fake1 info) as fake),aft) ->
 	(match !(info.cocci_tag) with
-        | Some x -> 
+        | Some x ->
           (match x with
 	    (Ast_cocci.CONTEXT(_,Ast_cocci.BEFORE _),_) ->
 	    (* move the fake node forwards *)
@@ -287,7 +287,7 @@ let displace_fake_nodes toks =
 	      failwith "fake node should not be before-after"
 	  | _ -> bef @ fake :: (loop aft) (* old: was removed when have simpler yacfe *)
         )
-        | None -> 
+        | None ->
             bef @ fake :: (loop aft)
         )
     | None -> toks
@@ -303,21 +303,21 @@ let comment2t2 = function
       C2("\n"^info.Common.str^"\n")
   | x -> failwith (Printf.sprintf "unexpected comment %s" (Common.dump x))
 
-let expand_mcode toks = 
+let expand_mcode toks =
   let toks_out = ref [] in
 
   let index = ref 0 in
 
-  let add_elem t minus = 
+  let add_elem t minus =
     match t with
-    | Fake1 info -> 
+    | Fake1 info ->
         let str = Ast_c.str_of_info info in
         if str =$= ""
         then push2 (Fake2) toks_out
         (* perhaps the fake ',' *)
         else push2 (C2 str) toks_out
-          
-  
+
+
     | T1 tok ->
 	(*let (a,b) = !((TH.info_of_tok tok).cocci_tag) in*)
         (* no tag on expandedTok ! *)
@@ -334,11 +334,11 @@ let expand_mcode toks =
 	       "expanded token %s on line %d is either modified or stored in a metavariable"
 	       (TH.str_of_tok tok) (TH.line_of_tok tok)));
 
-        let tok' = tok +> TH.visitor_info_of_tok (fun i -> 
+        let tok' = tok +> TH.visitor_info_of_tok (fun i ->
           { i with cocci_tag = ref Ast_c.emptyAnnot; }
         ) in
 
-        let optindex = 
+        let optindex =
           if TH.is_origin tok && not (TH.is_real_comment tok)
           then begin
               incr index;
@@ -350,13 +350,13 @@ let expand_mcode toks =
         push2 (T2 (tok', minus, optindex)) toks_out
   in
 
-  let expand_info t = 
-    let (mcode,env) = 
+  let expand_info t =
+    let (mcode,env) =
       Ast_c.mcode_and_env_of_cocciref ((info_of_token1 t).cocci_tag) in
 
-    let pr_cocci s ln col rcol = 
+    let pr_cocci s ln col rcol =
       push2 (Cocci2(s,ln,col,rcol)) toks_out  in
-    let pr_c info = 
+    let pr_c info =
       (match Ast_c.pinfo_of_info info with
 	Ast_c.AbstractLineTok _ ->
 	  push2 (C2 (Ast_c.str_of_info info)) toks_out
@@ -389,30 +389,30 @@ let expand_mcode toks =
 	 Flag_parsing_c.SMPL -> pr_barrier | _ -> pr_nobarrier),
        indent, unindent) in
 
-    (* old: when for yacfe with partial cocci: 
-     *    add_elem t false; 
+    (* old: when for yacfe with partial cocci:
+     *    add_elem t false;
     *)
 
     (* patch: when need full coccinelle transformation *)
     let unparser = Unparse_cocci.pp_list_list_any args_pp false in
     match mcode with
-    | Ast_cocci.MINUS (_,inst,adj,any_xxs) -> 
+    | Ast_cocci.MINUS (_,inst,adj,any_xxs) ->
         (* Why adding ? because I want to have all the information, the whole
-         * set of tokens, so I can then process and remove the 
+         * set of tokens, so I can then process and remove the
          * is_between_two_minus for instance *)
         add_elem t (Min (inst,adj));
         unparser any_xxs Unparse_cocci.InPlace
-    | Ast_cocci.CONTEXT (_,any_befaft) -> 
+    | Ast_cocci.CONTEXT (_,any_befaft) ->
         (match any_befaft with
-        | Ast_cocci.NOTHING -> 
+        | Ast_cocci.NOTHING ->
             add_elem t Ctx
         | Ast_cocci.BEFORE (xxs,_) ->
             unparser xxs Unparse_cocci.Before;
             add_elem t Ctx
-        | Ast_cocci.AFTER (xxs,_) -> 
+        | Ast_cocci.AFTER (xxs,_) ->
             add_elem t Ctx;
             unparser xxs Unparse_cocci.After;
-        | Ast_cocci.BEFOREAFTER (xxs, yys, _) -> 
+        | Ast_cocci.BEFOREAFTER (xxs, yys, _) ->
             unparser xxs Unparse_cocci.Before;
             add_elem t Ctx;
             unparser yys Unparse_cocci.After;
@@ -423,7 +423,7 @@ let expand_mcode toks =
 
   toks +> List.iter expand_info;
   List.rev !toks_out
-        
+
 
 (*****************************************************************************)
 (* Tokens2 processing, filtering, adjusting *)
@@ -431,26 +431,26 @@ let expand_mcode toks =
 
 let is_space = function
   | T2(Parser_c.TCommentSpace _,_b,_i) -> true  (* only whitespace *)
-  | _ -> false 
+  | _ -> false
 
 let is_newline = function
   | T2(Parser_c.TCommentNewline _,_b,_i) -> true
   | _ -> false
 
 let is_whitespace = function
-  | (T2 (t,_b,_i)) -> 
+  | (T2 (t,_b,_i)) ->
       (match t with
       | Parser_c.TCommentSpace _ -> true  (* only whitespace *)
       | Parser_c.TCommentNewline _ (* newline plus whitespace *) -> true
       | _ -> false
       )
-  | _ -> false 
+  | _ -> false
 
 let is_minusable_comment = function
-  | (T2 (t,_b,_i)) -> 
+  | (T2 (t,_b,_i)) ->
       (match t with
       | Parser_c.TCommentSpace _   (* only whitespace *)
-      (* patch: coccinelle *)      
+      (* patch: coccinelle *)
       | Parser_c.TCommentNewline _ (* newline plus whitespace *) -> true
       | Parser_c.TComment _ when !Flag_parsing_c.keep_comments -> false
       | Parser_c.TComment _
@@ -465,13 +465,13 @@ let is_minusable_comment = function
 
       | _ -> false
       )
-  | _ -> false 
+  | _ -> false
 
 let is_minusable_comment_nocpp = function
-  | (T2 (t,_b,_i)) -> 
+  | (T2 (t,_b,_i)) ->
       (match t with
       | Parser_c.TCommentSpace _   (* only whitespace *)
-      (* patch: coccinelle *)      
+      (* patch: coccinelle *)
       | Parser_c.TCommentNewline _ (* newline plus whitespace *) -> true
       | Parser_c.TComment _ when !Flag_parsing_c.keep_comments -> false
       | Parser_c.TComment _ -> true
@@ -486,7 +486,7 @@ let is_minusable_comment_nocpp = function
 
       | _ -> false
       )
-  | _ -> false 
+  | _ -> false
 
 let all_coccis = function
     Cocci2 _ | C2 _ | Indent_cocci2 | Unindent_cocci2 -> true
@@ -496,24 +496,24 @@ let all_coccis = function
 let is_minusable_comment_or_plus x = is_minusable_comment x or all_coccis x
 
 let set_minus_comment adj = function
-  | T2 (t,Ctx,idx) -> 
+  | T2 (t,Ctx,idx) ->
       let str = TH.str_of_tok t in
       (match t with
       | Parser_c.TCommentSpace _
-(* patch: coccinelle *)      
+(* patch: coccinelle *)
       | Parser_c.TCommentNewline _ -> ()
 
-      | Parser_c.TComment _ 
-      | Parser_c.TCommentCpp (Token_c.CppAttr, _) 
+      | Parser_c.TComment _
+      | Parser_c.TCommentCpp (Token_c.CppAttr, _)
       | Parser_c.TCommentCpp (Token_c.CppMacro, _)
       | Parser_c.TCommentCpp (Token_c.CppDirective, _)
-        -> 
+        ->
           pr2 (Printf.sprintf "%d: ERASING_COMMENTS: %s"
 		 (TH.line_of_tok t) str)
       | _ -> raise Impossible
       );
       T2 (t, Min adj, idx)
-(* patch: coccinelle *)   
+(* patch: coccinelle *)
   | T2 (t,Min adj,idx) as x -> x
   | _ -> raise Impossible
 
@@ -530,7 +530,7 @@ let drop_minus xs =
 let remove_minus_and_between_and_expanded_and_fake xs =
 
   (* get rid of exampled and fake tok *)
-  let xs = xs +> Common.exclude (function 
+  let xs = xs +> Common.exclude (function
     | T2 (t,_,_) when TH.is_expanded t -> true
     | Fake2 -> true
 
@@ -748,7 +748,7 @@ let adjust_before_semicolon toks =
 
 let is_ident_like s = s ==~ Common.regexp_alpha
 
-let rec add_space xs = 
+let rec add_space xs =
   match xs with
   | [] -> []
   | [x] -> [x]
@@ -759,7 +759,7 @@ let rec add_space xs =
 	   something should be done to add newlines too, rather than
 	   printing them explicitly in unparse_cocci. *)
 	x::C2 (String.make (lcoly-rcolx) ' ')::add_space (y::xs)
-  | x::y::xs -> 
+  | x::y::xs ->
       let sx = str_of_token2 x in
       let sy = str_of_token2 y in
       if is_ident_like sx && is_ident_like sy
@@ -772,12 +772,12 @@ let rec add_space xs =
  * code at the right place, with the good indentation. So each time we
  * encounter some spacing info, with some newline, we maintain the
  * current indentation level used.
- * 
+ *
  * TODO problems: not accurate. ex: TODO
- * 
+ *
  * TODO: if in #define region, should add a \ \n
  *)
-let new_tabbing2 space = 
+let new_tabbing2 space =
   (list_of_string space)
     +> List.rev
     +> Common.take_until (fun c -> c =<= '\n')
@@ -785,11 +785,11 @@ let new_tabbing2 space =
     +> List.map string_of_char
     +> String.concat ""
 
-let new_tabbing a = 
+let new_tabbing a =
   Common.profile_code "C unparsing.new_tabbing" (fun () -> new_tabbing2 a)
 
 
-let rec adjust_indentation xs = 
+let rec adjust_indentation xs =
   let _current_tabbing = ref "" in
   let tabbing_unit = ref None in
 
@@ -830,7 +830,7 @@ let rec adjust_indentation xs =
     | x::xs -> find_first_tab started xs in
   find_first_tab false xs;
 
-  let rec aux started xs = 
+  let rec aux started xs =
     match xs with
     | [] ->  []
 (* patch: coccinelle *)
@@ -840,7 +840,7 @@ let rec adjust_indentation xs =
 	(* to be done for if, etc, but not for a function header *)
 	x::(C2 " ")::a::(aux started xs)
     | ((T2 (Parser_c.TCommentNewline s, _, _)) as x)::xs ->
-	let old_tabbing = !_current_tabbing in 
+	let old_tabbing = !_current_tabbing in
         str_of_token2 x +> new_tabbing +> (fun s -> _current_tabbing := s);
 	(* only trust the indentation after the first { *)
 	(if started then adjust_tabbing_unit old_tabbing !_current_tabbing);
@@ -872,9 +872,9 @@ let rec adjust_indentation xs =
     (* starting the body of the function *)
     | ((T2 (tok,_,_)) as x)::xs when str_of_token2 x =$= "{" ->  x::aux true xs
     | ((Cocci2("{",_,_,_)) as a)::xs -> a::aux true xs
-    | ((Cocci2("\n",_,_,_)) as x)::xs -> 
+    | ((Cocci2("\n",_,_,_)) as x)::xs ->
             (* dont inline in expr because of weird eval order of ocaml *)
-        let s = !_current_tabbing in 
+        let s = !_current_tabbing in
         x::Cocci2 (s,-1,-1,-1)::aux started xs
     | x::xs -> x::aux started xs in
   aux false xs
@@ -885,34 +885,34 @@ let rec find_paren_comma = function
 
   (* do nothing if was like this in original file *)
   | ({ str = "("; idx = Some p1 } as _x1)::({ str = ","; idx = Some p2} as x2)
-    ::xs when p2 =|= p1 + 1 -> 
+    ::xs when p2 =|= p1 + 1 ->
       find_paren_comma (x2::xs)
 
   | ({ str = ","; idx = Some p1 } as _x1)::({ str = ","; idx = Some p2} as x2)
-    ::xs when p2 =|= p1 + 1 -> 
+    ::xs when p2 =|= p1 + 1 ->
       find_paren_comma (x2::xs)
 
   | ({ str = ","; idx = Some p1 } as _x1)::({ str = ")"; idx = Some p2} as x2)
-    ::xs when p2 =|= p1 + 1 -> 
+    ::xs when p2 =|= p1 + 1 ->
       find_paren_comma (x2::xs)
 
   (* otherwise yes can adjust *)
-  | ({ str = "(" } as _x1)::({ str = ","} as x2)::xs -> 
+  | ({ str = "(" } as _x1)::({ str = ","} as x2)::xs ->
       x2.remove <- true;
       find_paren_comma (x2::xs)
-  | ({ str = "," } as x1)::({ str = ","} as x2)::xs -> 
+  | ({ str = "," } as x1)::({ str = ","} as x2)::xs ->
       x1.remove <- true;
       find_paren_comma (x2::xs)
 
-  | ({ str = "," } as x1)::({ str = ")"} as x2)::xs -> 
+  | ({ str = "," } as x1)::({ str = ")"} as x2)::xs ->
       x1.remove <- true;
       find_paren_comma (x2::xs)
 
-  | x::xs -> 
+  | x::xs ->
       find_paren_comma xs
-  
 
-let fix_tokens toks = 
+
+let fix_tokens toks =
   let toks = toks +> List.map mk_token_extended in
 
   let cleaner = toks +> Common.exclude (function
@@ -945,12 +945,12 @@ let kind_of_token2 = function
       | AbstractLineTok _ -> raise Impossible (* now a KC *)
       )
   | Unindent_cocci2 | Indent_cocci2 -> raise Impossible
-  
+
 let end_mark = "!"
 
 let start_mark = function
   | KFake -> "!F!"
-  | KCocci -> "!S!" 
+  | KCocci -> "!S!"
   | KC -> "!A!"
   | KExpanded -> "!E!"
   | KOrigin -> ""
@@ -959,7 +959,7 @@ let print_all_tokens2 pr xs =
   if !Flag_parsing_c.debug_unparsing
   then
     let current_kind = ref KOrigin in
-    xs +> List.iter (fun t -> 
+    xs +> List.iter (fun t ->
       let newkind = kind_of_token2 t in
       if newkind =*= !current_kind
       then pr (str_of_token2 t)
@@ -970,9 +970,9 @@ let print_all_tokens2 pr xs =
         current_kind := newkind
       end
     );
-  else 
+  else
     xs +> List.iter (fun x -> pr (str_of_token2 x))
-          
+
 
 
 
@@ -987,8 +987,8 @@ let print_all_tokens2 pr xs =
  * fancy stuff when a function was not modified at all. Just need to
  * print the list of token as-is. But now pretty_print_c.ml handles
  * almost everything so maybe less useful. Maybe PPviatok allows to
- * optimize a little the pretty printing. 
- * 
+ * optimize a little the pretty printing.
+ *
  * update: now have PPviastr which goes even faster than PPviatok, so
  * PPviatok has disappeared.
  *)
@@ -999,37 +999,37 @@ type ppmethod = PPnormal | PPviastr
 
 
 (* The pp_program function will call pretty_print_c.ml with a special
- * function to print the leaf components, the tokens. When we want to 
+ * function to print the leaf components, the tokens. When we want to
  * print a token, we need to print also maybe the space and comments that
- * were close to it in the original file (and that was omitted during the 
+ * were close to it in the original file (and that was omitted during the
  * parsing phase), and honor what the cocci-info attached to the token says.
  * Maybe we will not print the token if it's a MINUS-token, and maybe we will
- * print it and also print some cocci-code attached in a PLUS to it. 
+ * print it and also print some cocci-code attached in a PLUS to it.
  * So we will also maybe call unparse_cocci. Because the cocci-code may
  * contain metavariables, unparse_cocci will in fact sometimes call back
  * pretty_print_c (which will this time don't call back again unparse_cocci)
  *)
 
-let pp_program2 xs outfile  = 
-  Common.with_open_outfile outfile (fun (pr,chan) -> 
-    let pr s = 
-      if !Flag_parsing_c.debug_unparsing 
+let pp_program2 xs outfile  =
+  Common.with_open_outfile outfile (fun (pr,chan) ->
+    let pr s =
+      if !Flag_parsing_c.debug_unparsing
       then begin pr2_no_nl s; flush stderr end
-      else pr s  
+      else pr s
         (* flush chan; *)
         (* Common.pr2 ("UNPARSING: >" ^ s ^ "<"); *)
     in
-    
-    xs +> List.iter (fun ((e,(str, toks_e)), ppmethod) -> 
+
+    xs +> List.iter (fun ((e,(str, toks_e)), ppmethod) ->
       (* here can still work on ast *)
       let e = remove_useless_fakeInfo_struct e in
-      
+
       match ppmethod with
       | PPnormal ->
           (* now work on tokens *)
 
           (* phase1: just get all the tokens, all the information *)
-          assert(toks_e +> List.for_all (fun t -> 
+          assert(toks_e +> List.for_all (fun t ->
 	    TH.is_origin t or TH.is_expanded t
           ));
           let toks = get_fakeInfo_and_tokens e toks_e in
@@ -1052,7 +1052,7 @@ let pp_program2 xs outfile  =
               let toks = fix_tokens toks in
 	      toks in
 
-          (* in theory here could reparse and rework the ast! or 
+          (* in theory here could reparse and rework the ast! or
            * apply some SP. Not before cos julia may have generated
            * not parsable file. Need do unparsing_tricks call before being
            * ready to reparse. *)
@@ -1062,10 +1062,10 @@ let pp_program2 xs outfile  =
     )
   )
 
-let pp_program a b = 
+let pp_program a b =
   Common.profile_code "C unparsing" (fun () -> pp_program2 a b)
 
 
-let pp_program_default xs outfile = 
+let pp_program_default xs outfile =
   let xs' = xs +> List.map (fun x -> x, PPnormal) in
   pp_program xs' outfile

@@ -23,7 +23,7 @@
         Empty
       | Node of 'a t * key * 'a * 'a t * int
 *)
-  type ('key, 'v) t = 
+  type ('key, 'v) t =
       Empty
     | Node of ('key, 'v) t * 'key * 'v * ('key, 'v) t * int
 

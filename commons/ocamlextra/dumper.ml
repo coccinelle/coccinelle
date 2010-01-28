@@ -1,6 +1,6 @@
 (* Dump an OCaml value into a printable string.
  * By Richard W.M. Jones (rich@annexia.org).
- * dumper.ml 1.2 2005/02/06 12:38:21 rich Exp 
+ * dumper.ml 1.2 2005/02/06 12:38:21 rich Exp
  *)
 
 open Printf

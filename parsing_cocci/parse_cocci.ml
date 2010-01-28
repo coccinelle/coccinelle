@@ -937,7 +937,7 @@ let check_parentheses tokens =
 	      (Printf.sprintf
 		 "unexpected close parenthesis in line %d\n" (clt2line clt))
 	| Common.Left _ :: seen_open -> loop seen_open rest
-	| Common.Right open_line :: _ -> 
+	| Common.Right open_line :: _ ->
 	    failwith
 	      (Printf.sprintf
 		 "disjunction parenthesis in line %d column 0 matched to normal parenthesis on line %d\n" open_line (clt2line clt)))
@@ -948,7 +948,7 @@ let check_parentheses tokens =
 	      (Printf.sprintf
 		 "unexpected close parenthesis in line %d\n" (clt2line clt))
 	| Common.Right _ :: seen_open -> loop seen_open rest
-	| Common.Left open_line :: _ -> 
+	| Common.Left open_line :: _ ->
 	    failwith
 	      (Printf.sprintf
 		 "normal parenthesis in line %d matched to disjunction parenthesis on line %d column 0\n" open_line (clt2line clt)))
@@ -1783,7 +1783,7 @@ let process file isofile verbose =
 	       let minus_ast =
 		 Ast0toast.ast0toast rule_name dependencies dropped_isos
 		   exists minus is_exp ruletype in
-	       
+
 	       match function_prototypes with
 		 None -> [(extra_meta @ metavars, minus_ast)]
 	       | Some mv_fp -> [(extra_meta @ metavars, minus_ast); mv_fp])

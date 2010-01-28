@@ -137,7 +137,7 @@ let add_link root pred_opt explicit =
     | Some n -> (*if n.link = None then*) n.link <- explicit
     | None -> ()
 
-(* ------------ 
+(* ------------
    suffix links
    ------------ *)
 
@@ -259,7 +259,7 @@ and implicit_node_aux (seqar,node) implicit =
     if !a < l
     then raise Not_found
     else implicit_node_aux (seqar,child) (subseq_sub implicit !a (w - !a))
-  else (node,implicit,child) 
+  else (node,implicit,child)
 
 (*
 let rec synthesized (seqar,root : t) (f : 'a list -> node -> 'a) =
@@ -311,7 +311,7 @@ let exact_matches : t -> string -> (int * int) list =
 
 
 
-let contained_string gst word = 
+let contained_string gst word =
   List.map (fun (i,j) -> Array.get (fst gst) i)  (exact_matches gst word)
 
 

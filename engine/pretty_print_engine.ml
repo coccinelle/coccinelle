@@ -3,7 +3,7 @@ open Common.Infix
 open Lib_engine
 
 
-let pp = Common.pp 
+let pp = Common.pp
 
 let pp_meta (_,x) = pp x
 
@@ -13,11 +13,11 @@ let rec pp_binding_kind = function
   | Ast_c.MetaLocalFuncVal s -> pp ("localfunc " ^ s)
   | Ast_c.MetaExprVal      expr -> Pretty_print_c.pp_expression_simple expr
   | Ast_c.MetaExprListVal  expr_list -> pp "<<exprlist>>"
-  | Ast_c.MetaInitVal      ini -> 
+  | Ast_c.MetaInitVal      ini ->
       Pretty_print_c.pp_init_simple ini
-  | Ast_c.MetaTypeVal      typ -> 
+  | Ast_c.MetaTypeVal      typ ->
       Pretty_print_c.pp_type_simple typ
-  | Ast_c.MetaStmtVal      statement -> 
+  | Ast_c.MetaStmtVal      statement ->
       Pretty_print_c.pp_statement_simple statement
   | Ast_c.MetaParamVal     params -> pp "<<param>>"
   | Ast_c.MetaParamListVal params -> pp "<<paramlist>>"
@@ -27,7 +27,7 @@ let rec pp_binding_kind = function
 	  Ast_cocci.Real x -> string_of_int x
 	| Ast_cocci.Virt(x,off) -> Printf.sprintf "%d+%d" x off in
       pp (Common.sprintf ("pos(%s,%s)") (print_pos pos1) (print_pos pos2))
-  | Ast_c.MetaPosValList l -> 
+  | Ast_c.MetaPosValList l ->
       pp (Common.sprintf ("poss[%s]")
 	    (String.concat ", "
 	       (List.map
@@ -36,10 +36,10 @@ let rec pp_binding_kind = function
 		      fl ce minl minc maxl maxc)
 		  l)))
 
-and pp_binding subst = 
+and pp_binding subst =
   begin
     pp "[";
-    Common.print_between (fun () -> pp ";"; Format.print_cut() ) 
+    Common.print_between (fun () -> pp ";"; Format.print_cut() )
       (fun ((_,s), kind) -> pp s; pp " --> "; pp_binding_kind kind)
       subst;
     pp "]";
@@ -49,14 +49,14 @@ and pp_binding subst =
 let pp_binding_kind2 = function
   | ParenVal s -> pp "pv("; pp_meta s; pp ")"
   | NormalMetaVal x -> pp_binding_kind x
-  | LabelVal (Absolute xs) -> 
+  | LabelVal (Absolute xs) ->
       begin
         pp "labelval";
         pp "(";
         Common.print_between (fun () -> pp ",") Format.print_int xs;
         pp ")";
       end
-  | LabelVal (Prefix xs) -> 
+  | LabelVal (Prefix xs) ->
       begin
         pp "prefixlabelval";
         pp "(";
@@ -66,8 +66,8 @@ let pp_binding_kind2 = function
   | GoodVal -> pp "goodval"
   | BadVal ->  pp "badval"
 
-  
-let rec pp_predicate = function 
+
+let rec pp_predicate = function
   | InLoop -> pp "InLoop"
   | TrueBranch -> pp "TrueBranch"
   | FalseBranch -> pp "FalseBranch"
@@ -89,19 +89,19 @@ let rec pp_predicate = function
   | BindBad s ->  pp "BindBad(";  pp_meta s; pp ")"
   | FakeBrace -> pp "FakeBrace"
 
-and pp_binding2 subst = 
+and pp_binding2 subst =
   begin
     pp "[";
-    Common.print_between (fun () -> pp ";";Format.print_cut(); ) 
+    Common.print_between (fun () -> pp ";";Format.print_cut(); )
       (fun (s, kind) -> pp s; pp " --> "; pp_binding_kind2 kind)
       subst;
     pp "]";
   end
 
-and pp_binding2_ctlsubst subst = 
+and pp_binding2_ctlsubst subst =
   begin
     pp "[";
-    Common.print_between (fun () -> pp ";"; Format.print_cut(); ) 
+    Common.print_between (fun () -> pp ";"; Format.print_cut(); )
       (function
           Ast_ctl.Subst (s, kind) ->
 	    pp_meta s; pp " --> ";  pp_binding_kind2 kind;
@@ -116,7 +116,7 @@ let predicate_to_string pred =
   Common.format_to_string (function _ -> pp_predicate pred)
 
 
-let pp_pred_smodif = fun (pred, smodif) -> 
+let pp_pred_smodif = fun (pred, smodif) ->
   begin
     pp_predicate pred;
 (*
@@ -128,9 +128,9 @@ let pp_pred_smodif = fun (pred, smodif) ->
   end
 
 
-let pp_ctlcocci show_plus inline_let_def ctl = 
+let pp_ctlcocci show_plus inline_let_def ctl =
   begin
-    if show_plus 
+    if show_plus
     then begin
       Pretty_print_cocci.print_plus_flag := true;
       Pretty_print_cocci.print_minus_flag := true;
@@ -139,7 +139,7 @@ let pp_ctlcocci show_plus inline_let_def ctl =
       Pretty_print_cocci.print_plus_flag := false;
       Pretty_print_cocci.print_minus_flag := false;
     end;
-    Common.pp_do_in_box (fun () -> 
+    Common.pp_do_in_box (fun () ->
       Pretty_print_ctl.pp_ctl (pp_pred_smodif,(fun s -> pp_meta s))
         inline_let_def ctl;
       );

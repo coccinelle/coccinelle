@@ -1,7 +1,7 @@
 (* **********************************************************************
  *
  * Wrapping for FUNCTORS and MODULES
- * 
+ *
  *
  * $Id$
  *
@@ -9,21 +9,21 @@
 
 type info = int
 
-type ('pred, 'mvar) wrapped_ctl = 
+type ('pred, 'mvar) wrapped_ctl =
     ('pred * 'mvar Ast_ctl.modif,  'mvar, info) Ast_ctl.generic_ctl
 
-type ('value, 'pred) wrapped_binding = 
+type ('value, 'pred) wrapped_binding =
   | ClassicVal of 'value
   | PredVal of 'pred Ast_ctl.modif
 
 type ('pred,'state,'mvar,'value) labelfunc =
-    'pred -> 
+    'pred ->
       ('state * ('pred * ('mvar, 'value) Ast_ctl.generic_substitution)) list
 
 (* pad: what is 'wit ? *)
 type ('pred,'state,'mvar,'value,'wit) wrapped_labelfunc =
-  ('pred * 'mvar Ast_ctl.modif) -> 
-      ('state * 
+  ('pred * 'mvar Ast_ctl.modif) ->
+      ('state *
        ('mvar,('value,'pred) wrapped_binding) Ast_ctl.generic_substitution *
        'wit
       ) list
@@ -56,19 +56,19 @@ struct
     type mvar = SUB.mvar
     type value = (SUB.value,predicate) wrapped_binding
     let eq_mvar = SUB.eq_mvar
-    let eq_val wv1 wv2 = 
+    let eq_val wv1 wv2 =
       match (wv1,wv2) with
 	| (ClassicVal(v1),ClassicVal(v2)) -> SUB.eq_val v1 v2
 	| (PredVal(v1),PredVal(v2))       -> v1 = v2   (* FIX ME: ok? *)
 	| _                               -> false
-    let merge_val wv1 wv2 = 
+    let merge_val wv1 wv2 =
       match (wv1,wv2) with
 	| (ClassicVal(v1),ClassicVal(v2)) -> ClassicVal(SUB.merge_val v1 v2)
 	| _                               -> wv1       (* FIX ME: ok? *)
 
 
     let print_mvar x = SUB.print_mvar x
-    let print_value x = 
+    let print_value x =
       match x with
 	ClassicVal v -> SUB.print_value v
       | PredVal(A.Modif v) -> P.print_predicate v
@@ -76,10 +76,10 @@ struct
       |	PredVal(A.Control) -> Format.print_string "no value"
   end
 
-  module WRAPPER_PRED = 
-    struct 
+  module WRAPPER_PRED =
+    struct
       type t = P.t * SUB.mvar Ast_ctl.modif
-      let print_predicate (pred, modif) = 
+      let print_predicate (pred, modif) =
         begin
           P.print_predicate pred;
 	  (match modif with
@@ -94,12 +94,12 @@ struct
     Ctl_engine.CTL_ENGINE (WRAPPER_ENV) (G) (WRAPPER_PRED)
 
   (* Wrap a label function *)
-  let (wrap_label: ('pred,'state,'mvar,'value) labelfunc -> 
-	('pred,'state,'mvar,'value,'wit) wrapped_labelfunc) = 
+  let (wrap_label: ('pred,'state,'mvar,'value) labelfunc ->
+	('pred,'state,'mvar,'value,'wit) wrapped_labelfunc) =
     fun oldlabelfunc ->
       fun (p, predvar) ->
 
-	let penv p'  = 
+	let penv p'  =
 	  match predvar with
 	  | A.Modif(x)   -> [A.Subst(x,PredVal(A.Modif(p')))]
 	  | A.UnModif(x) -> [A.Subst(x,PredVal(A.UnModif(p')))]
@@ -110,8 +110,8 @@ struct
 	  | A.Subst(x,v)    -> A.Subst(x,ClassicVal(v))
 	  | A.NegSubst(x,v) -> A.NegSubst(x,ClassicVal(v)) in
 
-	let conv_trip (s,(p',env)) = 
-          (s,penv p' @ (List.map conv_sub env),[](*pad: ?*)) 
+	let conv_trip (s,(p',env)) =
+          (s,penv p' @ (List.map conv_sub env),[](*pad: ?*))
         in
         List.map conv_trip (oldlabelfunc p)
 
@@ -200,12 +200,12 @@ struct
   let satbis_noclean (grp,lab,states) (phi,reqopt) :
       ('pred,'anno) WRAPPER_ENGINE.triples =
     WRAPPER_ENGINE.sat (grp,wrap_label lab,states) phi reqopt
-      
+
   (* Returns the "cleaned up" result from satbis_noclean *)
   let (satbis :
          G.cfg *
 	 (predicate,G.node,SUB.mvar,SUB.value) labelfunc *
-         G.node list -> 
+         G.node list ->
 	   ((predicate,SUB.mvar) wrapped_ctl *
 	      (WRAPPER_PRED.t list list)) ->
 	     (WRAPPER_ENV.mvar list * (SUB.mvar * SUB.value) list) ->

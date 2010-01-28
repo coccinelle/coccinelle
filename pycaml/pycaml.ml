@@ -5,11 +5,11 @@
 
 open Int64 ;;
 
-type funcptr 
-type pyobject 
+type funcptr
+type pyobject
 type funcent = (funcptr * int * int)
 
-type pymodule_func = { pyml_name : string ; 
+type pymodule_func = { pyml_name : string ;
 		       pyml_func : (pyobject -> pyobject) ;
 		       pyml_flags : int ;
 		       pyml_doc : string }
@@ -27,13 +27,13 @@ type pyobject_type =
   | NullType
   | TypeType
   | OtherType
-      
+
       (* Function list *)
-      
+
 external getfuncarray : unit -> funcent array = "pygetfuncarray"
-let py_funcs = getfuncarray () 
+let py_funcs = getfuncarray ()
 external pytype : pyobject -> pyobject_type = "pytype"
-    
+
 external pyfuncall1 : (funcptr * int * int) -> unit -> unit = "pygencall"
 external pyfuncall2 : (funcptr * int * int) -> int -> unit = "pygencall"
 external pyfuncall3 : (funcptr * int * int) -> string -> unit = "pygencall"
@@ -44,7 +44,7 @@ external pyfuncall7 : (funcptr * int * int) -> (int * string * int) -> int =
   "pygencall"
 external pyfuncall8 : (funcptr * int * int) -> unit -> string = "pygencall"
 external pyfuncall9 : (funcptr * int * int) -> (string * int * pyobject * pyobject) -> pyobject = "pygencall"
-external pyfuncall10 : (funcptr * int * int) -> 
+external pyfuncall10 : (funcptr * int * int) ->
   (int * string * int * pyobject * pyobject) -> pyobject = "pygencall"
 external pyfuncall11 : (funcptr * int * int) ->
   (int * string * int * pyobject * pyobject * int) -> pyobject = "pygencall"
@@ -69,22 +69,22 @@ external pyfuncall27 : (funcptr * int * int) -> (pyobject * pyobject) -> pyobjec
 external pyfuncall28 : (funcptr * int * int) -> string -> pyobject = "pygencall"
 external pyfuncall29 : (funcptr * int * int) -> unit -> pyobject = "pygencall"
 external pyfuncall30 : (funcptr * int * int) -> pyobject -> unit = "pygencall"
-external pyfuncall31 : (funcptr * int * int) -> (pyobject * int) -> 
+external pyfuncall31 : (funcptr * int * int) -> (pyobject * int) ->
   (pyobject * pyobject * int) option = "pygencall"
 external pyfuncall34 : (funcptr * int * int) -> int64 -> pyobject = "pygencall"
 external pyfuncall35 : (funcptr * int * int) -> unit -> int64 = "pygencall"
 external pyfuncall36 : (funcptr * int * int) -> float -> pyobject = "pygencall"
 external pyfuncall37 : (funcptr * int * int) -> pyobject -> float = "pygencall"
 external pyfuncall39 : (funcptr * int * int) -> int -> pyobject = "pygencall"
-external pyfuncall40 : (funcptr * int * int) -> (pyobject * int) -> 
+external pyfuncall40 : (funcptr * int * int) -> (pyobject * int) ->
   pyobject = "pygencall"
 external pyfuncall41 : (funcptr * int * int) -> (pyobject * int * pyobject) ->
   int = "pygencall"
 external pyfuncall42 : (funcptr * int * int) -> (pyobject * pyobject * pyobject) ->
   pyobject = "pygencall"
-external pyfuncall43 : (funcptr * int * int) -> (pyobject * int) -> 
+external pyfuncall43 : (funcptr * int * int) -> (pyobject * int) ->
   (int * int * int) option = "pygencall"
-external pyfuncall44 : (funcptr * int * int) -> (int * int * int * int) -> 
+external pyfuncall44 : (funcptr * int * int) -> (int * int * int * int) ->
   pyobject = "pygencall"
 external pyfuncall45 : (funcptr * int * int) -> (pyobject * pyobject) -> unit =
   "pygencall"
@@ -98,7 +98,7 @@ external pyfuncall49 : (funcptr * int * int) -> (pyobject * string) -> pyobject 
   "pygencall"
 external pyfuncall50 : (funcptr * int * int) -> (string * pyobject * string) ->
   pyobject = "pygencall"
-external pyfuncall51 : (funcptr * int * int) -> 
+external pyfuncall51 : (funcptr * int * int) ->
   (string * pyobject * pyobject * pyobject) -> pyobject = "pygencall"
 external pyfuncall52 : (funcptr * int * int) -> pyobject -> string = "pygencall"
 external pyfuncall53 : (funcptr * int * int) -> (pyobject * int * int * pyobject) -> int = "pygencall"
@@ -159,11 +159,11 @@ let fmt51call func = pyfuncall51 func
 let fmt52call func = pyfuncall52 func
 let fmt53call func = pyfuncall53 func
 let fmt54call func = pyfuncall54 func
-    
+
 let py_cur_func_num = ref 0
-let pnf () = let this_func = py_funcs.(!py_cur_func_num) in 
+let pnf () = let this_func = py_funcs.(!py_cur_func_num) in
 py_cur_func_num := !py_cur_func_num + 1 ; this_func
-  
+
       (* 1 *)
 let py_initialize = fmt1call (pnf ())
 let py_finalize = fmt1call (pnf ())
@@ -287,7 +287,7 @@ let pyint_fromlong = fmt34call (pnf ())
 let pyint_aslong = fmt25call (pnf ())
 (* 35 *)
 let pyint_getmax = fmt35call (pnf ())
-    
+
 (* Float *)
 (* 36 *)
 let pyfloat_fromdouble = fmt36call (pnf ())
@@ -393,7 +393,7 @@ let pyimport_reloadmodule = fmt14call (pnf ())
 let pyimport_cleanup = fmt1call (pnf ())
 (* 5 *)
 let pyimport_importfrozenmodule = fmt5call (pnf ())
-    
+
 (* Interface to random parts in ceval.c *)
 (* 42 *)
 let pyeval_callobjectwithkeywords = fmt42call (pnf ())
@@ -515,9 +515,9 @@ external pytrue : unit -> pyobject = "pytrue"
 external pyfalse : unit -> pyobject = "pyfalse"
 
 external pytuple_fromarray : pyobject array -> pyobject = "pytuple_fromarray"
-let pytuple_fromsingle elt = pytuple_fromarray [| elt |] 
-let pytuple_empty = pytuple_fromarray [| |] 
-external pytuple2 : (pyobject * pyobject) -> pyobject = 
+let pytuple_fromsingle elt = pytuple_fromarray [| elt |]
+let pytuple_empty = pytuple_fromarray [| |]
+external pytuple2 : (pyobject * pyobject) -> pyobject =
   "pytuple_fromarray"
 external pytuple3 : (pyobject * pyobject * pyobject) -> pyobject =
   "pytuple_fromarray"

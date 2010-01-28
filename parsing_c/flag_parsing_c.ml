@@ -1,7 +1,7 @@
 (*****************************************************************************)
 (* convenient globals. *)
 (*****************************************************************************)
-let path = ref 
+let path = ref
   (try (Sys.getenv "YACFE_HOME")
     with Not_found-> "/home/pad/c-yacfe"
   )
@@ -10,9 +10,9 @@ let path = ref
 (* macros *)
 (*****************************************************************************)
 
-let macro_dir = "config/macros/" 
-let mk_macro_path ~cocci_path file = 
-  Filename.concat cocci_path (macro_dir ^ file) 
+let macro_dir = "config/macros/"
+let mk_macro_path ~cocci_path file =
+  Filename.concat cocci_path (macro_dir ^ file)
 
 
 (* to pass to parse_c.init_defs *)
@@ -20,7 +20,7 @@ let std_h   = ref (mk_macro_path ~cocci_path:!path "standard.h")
 let common_h   = ref (mk_macro_path ~cocci_path:!path "common_macros.h")
 
 
-let cmdline_flags_macrofile () = 
+let cmdline_flags_macrofile () =
   [
     "-macro_file_builtins", Arg.Set_string std_h,
     " <file> (default=" ^ !std_h ^ ")";
@@ -45,7 +45,7 @@ let cmdline_flags_cpp () = [
 (*****************************************************************************)
 let std_envir = ref (Filename.concat !path "config/envos/environment_splint.h")
 
-let cmdline_flags_envfile () = 
+let cmdline_flags_envfile () =
   [
     "-env_file", Arg.Set_string std_envir,
     " <file> (default=" ^ !std_envir ^ ")";
@@ -85,7 +85,7 @@ let pretty_print_typedef_value = ref false
 let show_flow_labels = ref true
 
 
-let cmdline_flags_verbose () = 
+let cmdline_flags_verbose () =
   [
     "-no_verbose_parsing", Arg.Clear verbose_parsing , "  ";
     "-no_verbose_lexing", Arg.Clear verbose_lexing , "  ";
@@ -93,9 +93,9 @@ let cmdline_flags_verbose () =
 
     "-no_parse_error_msg", Arg.Clear verbose_parsing, " ";
     "-no_type_error_msg",  Arg.Clear verbose_type, " ";
-    
-    
-    "-filter_msg",      Arg.Set  filter_msg , 
+
+
+    "-filter_msg",      Arg.Set  filter_msg ,
     "  filter some cpp message when the macro is a \"known\" cpp construct";
     "-filter_msg_define_error",Arg.Set filter_msg_define_error,
     "  filter the error msg";
@@ -122,7 +122,7 @@ let debug_unparsing = ref false
 let debug_cfg = ref false
 
 (*   "debug C parsing/unparsing", "" *)
-let cmdline_flags_debugging () = 
+let cmdline_flags_debugging () =
   [
   "-debug_cpp",          Arg.Set  debug_cpp, " ";
   "-debug_lexer",        Arg.Set  debug_lexer , " ";
@@ -138,7 +138,7 @@ let cmdline_flags_debugging () =
 (*****************************************************************************)
 
 let check_annotater = ref true
-let cmdline_flags_checks () = 
+let cmdline_flags_checks () =
   [
   "-disable_check_annotater",          Arg.Clear  check_annotater, " ";
   "-enable_check_annotater",          Arg.Set  check_annotater, " ";
@@ -161,7 +161,7 @@ let cmdline_flags_algos () =
 (*****************************************************************************)
 
 let cpp_directive_passing = ref false
-let ifdef_directive_passing = ref false 
+let ifdef_directive_passing = ref false
 
 let disable_multi_pass = ref false
 let disable_add_typedef = ref false
@@ -171,12 +171,12 @@ let add_typedef_root = ref true
 
 let cmdline_flags_parsing_algos () = [
 
-    "-directive_passing",              Arg.Set cpp_directive_passing, 
+    "-directive_passing",              Arg.Set cpp_directive_passing,
     "   pass most cpp directives, especially when inside function";
-    "-ifdef_passing",              Arg.Set ifdef_directive_passing, 
+    "-ifdef_passing",              Arg.Set ifdef_directive_passing,
     "   pass ifdef directives ";
 
-    "-noif0_passing",   Arg.Clear if0_passing, 
+    "-noif0_passing",   Arg.Clear if0_passing,
     " ";
     "-noadd_typedef_root",   Arg.Clear add_typedef_root, " ";
     "-noadd_typedef",   Arg.Set disable_add_typedef, " ";
@@ -194,12 +194,12 @@ let diff_lines = ref (None : string option) (* number of lines of context *)
 (* for parse_c *)
 let use_cache = ref false
 
-let cmdline_flags_other () = 
+let cmdline_flags_other () =
   [
-    "-U", Arg.Int (fun n -> diff_lines := Some (Common.i_to_s n)), 
+    "-U", Arg.Int (fun n -> diff_lines := Some (Common.i_to_s n)),
     "  set number of diff context lines";
-    
-    "-use_cache", Arg.Set use_cache, 
+
+    "-use_cache", Arg.Set use_cache,
     "   use .ast_raw pre-parsed cached C file";
   ]
 
