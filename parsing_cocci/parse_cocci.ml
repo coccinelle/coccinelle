@@ -1427,7 +1427,8 @@ let eval_depend dep virt =
     | Ast.OrDep(d1,d2) ->
 	(match (loop d1, loop d2) with
 	  (None,None) -> None
-	| (Some Ast.NoDep,x) | (x,Some Ast.NoDep) | (None,x) | (x,None) -> x
+	| (Some Ast.NoDep,x) | (x,Some Ast.NoDep) -> Some Ast.NoDep
+	| (None,x) | (x,None) -> x
 	| (Some x,Some y) -> Some (Ast.OrDep(x,y)))
     | Ast.NoDep | Ast.FailDep -> Some dep
     in

@@ -15,6 +15,7 @@
   initialization.
 
 ** Bugfix:
+- correct treatment of depends on with || for virtual rules
 
 * 0.2.0
 ** Language:
