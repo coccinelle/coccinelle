@@ -2,7 +2,6 @@
 
 * 0.2.1
 ** Language:
-
 - Add virtual identifiers
 - Add coccilib.report and coccilib.trac Python modules
 - coccilib.org and coccilib.report are imported by default but not loaded
