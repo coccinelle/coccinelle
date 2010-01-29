@@ -1,5 +1,16 @@
 -*- org -*-
 
+* upcoming/planned/todo
+** Language:
+- Semantic patch for other languages
+- Support metavariables, virtual rules and virtual identifiers
+  in initialize and finalize rules
+
+** Features:
+- New scripting languages
+
+** Bugfix:
+
 * 0.2.1
 ** Language:
 - Add virtual identifiers
