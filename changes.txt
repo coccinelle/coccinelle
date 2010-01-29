@@ -10,6 +10,7 @@
 - New scripting languages
 
 ** Bugfix:
+- Add more information in documentation, man pages and wiki
 
 * 0.2.1
 ** Language:
