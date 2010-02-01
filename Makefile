@@ -146,7 +146,7 @@ $(MAKESUBDIRS:%=%.opt):
 
 clean::
 	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i $@; done
-	$(MAKE) -C demo/spp $@
+	$(MAKE) -C demos/spp $@
 
 $(LIBS): $(MAKESUBDIRS)
 $(LIBS:.cma=.cmxa): $(MAKESUBDIRS:%=%.opt)
