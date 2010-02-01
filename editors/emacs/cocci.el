@@ -33,7 +33,7 @@
 
 ;;; History
 
-;; 2010-02-01 Nico: Add support for 'disable', 'using', scripting
+;; 2010-02-01 Nico: Add support for 'disable', 'using', scripting, 'virtual' rules
 ;; 2009-11-05 Nico: Cleanups, Change shortcut % to C-M-% (% is used in Python rule)
 ;; Some cleanups done by Rene Rydhof Hansen
 
@@ -138,6 +138,11 @@
 
 (setq cocci-font-lock-keywords
  `(
+   ; For virtual rule declarations
+   ("^[ \t]*\\(virtual\\)\\b\\(.*\\)"
+    (1 'cocci-special-face)
+    (2 'cocci-rulename-face)
+    )
 
    ; blink possible errors, when - or + is not in first column
    ("^[ \t]+[-+]" . 'cocci-problem-face)
