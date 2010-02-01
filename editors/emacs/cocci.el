@@ -1,5 +1,6 @@
 ;;; cocci.el --- a major mode for editing semantic patches
 
+;; Copyright (C) 2010      Nicolas Palix <npalix@diku.dk>
 ;; Copyright (C) 2006-2007 Yoann Padioleau
 
 ;; Please imagine a long and boring gnu-style copyright notice
@@ -178,6 +179,27 @@
 
    ("@.*\\b\\(extends\\|\\(depends[ \t]*on\\)\\)\\b.*@"
     (1 'cocci-special-face t))
+
+   ("@.*\\b\\(disable\\)\\b.*@"
+    (1 'cocci-special-face t))
+
+   ("@.*\\b\\(using\\)\\b.*@"
+    (1 'cocci-special-face t))
+
+   ("@.*\\b\\(initialize\\)[ \t]*:[ \t]*\\(.*\\)[ \t]*@"
+    (1 'cocci-special-face t)
+    (2 'cocci-script-face t)
+    )
+
+   ("@.*\\b\\(script\\)[ \t]*:[ \t]*\\(.*\\)[ \t]*@"
+    (1 'cocci-special-face t)
+    (2 'cocci-script-face t)
+    )
+
+   ("@.*\\b\\(finalize\\)[ \t]*:[ \t]*\\(.*\\)[ \t]*@"
+    (1 'cocci-special-face t)
+    (2 'cocci-script-face t)
+    )
 
    ;old: does not work, not easy to handle the   rule1, rule2, rule3  list.
    ;   ("@[ \t]*\\(\\(\\w+\\)[ \t,]*\\)*[ \t]*@"
