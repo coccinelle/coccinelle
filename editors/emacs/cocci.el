@@ -33,6 +33,7 @@
 
 ;;; History
 
+;; 2010-02-01 Nico: Add support for 'disable', 'using', scripting
 ;; 2009-11-05 Nico: Cleanups, Change shortcut % to C-M-% (% is used in Python rule)
 ;; Some cleanups done by Rene Rydhof Hansen
 
