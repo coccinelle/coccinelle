@@ -12,6 +12,16 @@
 ** Bugfix:
 - Add more information in documentation, man pages and wiki
 
+
+* 0.2.2
+** Language:
+
+** Features:
+- Update Emacs mode (cocci.el) to support 'virtual' rules and fix other
+  keywords sush as 'depends on', 'using', 'disable'
+
+** Bugfix:
+
 * 0.2.1
 ** Language:
 - Add virtual identifiers
