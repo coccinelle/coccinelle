@@ -21,6 +21,7 @@
   keywords sush as 'depends on', 'using', 'disable'
 
 ** Bugfix:
+- correct interaction between virtual rules and included .cocci files
 
 * 0.2.1
 ** Language:
