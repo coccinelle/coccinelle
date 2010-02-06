@@ -1434,8 +1434,9 @@ let eval_depend dep virt =
     in
   loop dep
 
-let rec parse file =
+let parse file =
   Lexer_cocci.init();
+  let rec parse_loop file =
   let table = Common.full_charpos_to_pos file in
   Common.with_open_infile file (fun channel ->
   let lexbuf = Lexing.from_channel channel in
@@ -1469,7 +1470,7 @@ let rec parse file =
 	      |	(a,b,c)::rest ->
 		  let (x,y,z) = loop rest in
 		  (a::x,b::y,c::z) in
-	    loop (List.map parse include_files) in
+	    loop (List.map parse_loop include_files) in
 
           let parse_cocci_rule ruletype old_metas
 	      (rule_name, dependencies, iso, dropiso, exists, is_expression) =
@@ -1679,7 +1680,8 @@ let rec parse file =
   | (false,[(PC.TArobArob,_)]) | (false,[(PC.TArob,_)]) ->
       ([],([] : Ast0.parsed_rule list),[] (*virtual rules*))
   | _ -> failwith "unexpected code before the first rule\n" in
-  res)
+  res) in
+  parse_loop file
 
 (* parse to ast0 and then convert to ast *)
 let process file isofile verbose =
