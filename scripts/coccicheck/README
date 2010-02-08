@@ -1,5 +1,5 @@
 
-		Coccicheck version 0.2.2
+		Coccicheck version 0.2.3
 
  -*- Usage -*-
 
@@ -12,7 +12,7 @@
 
 	NB: The project directory must currently be an absolute path.
 
-	You can overwrite the default flags on the command line:
+	On bash, you can overwrite the default flags on the command line:
 	SPFLAGS="-I my_include -timeout 30" ./configure mode <project>
 
  2) make update
@@ -34,8 +34,9 @@ If you edit/add some SmPL files in `cocci` directory, you can use
 `make checkcocci` to parse them and see if there is any error.
 
 Once the results are computed, you can either:
- - run `make viewres` to view all the results
- - run `make viewlog` to view the complete trace
- - run `make viewfilteredlog` to view the most important part of the trace
-
+ - run `make viewres` to view all the bug reports
+ - run `make viewlog` to view the complete execution trace
+ - run `make viewfilteredlog` to only view unlikely errors of the trace 
+	Note that this filter will remove some error messages about
+	timeout, parsing ... Check Makefile to see the exact list.
 
