@@ -516,8 +516,8 @@ prepack:
 packsrc: prepack
 #	$(MAKE) -C $(TMP)/$(PACKAGE)/debian lucid
 	$(MAKE) -C $(TMP)/$(PACKAGE)/debian karmic
-#	$(MAKE) push
-#	rm -rf  $(TMP)/$(PACKAGE)/
+	$(MAKE) push
+	rm -rf  $(TMP)/$(PACKAGE)/
 
 push:
 	cd $(TMP)/ && for p in `ls $(PRJNAME)_$(VERSION).deb*_source.changes`; do dput $(PRJNAME) $$p ; done
