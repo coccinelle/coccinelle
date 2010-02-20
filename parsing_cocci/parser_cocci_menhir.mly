@@ -1922,11 +1922,11 @@ any_strict:
 *****************************************************************************/
 
 iso_main:
-  TIsoExpression e1=dexpr el=list(iso(dexpr)) EOF
+  TIsoExpression e1=eexpr el=list(iso(eexpr)) EOF
     { P.iso_adjust (function x -> Ast0.ExprTag x) e1 el }
-| TIsoArgExpression e1=dexpr el=list(iso(dexpr)) EOF
+| TIsoArgExpression e1=eexpr el=list(iso(eexpr)) EOF
     { P.iso_adjust (function x -> Ast0.ArgExprTag x) e1 el }
-| TIsoTestExpression e1=dexpr el=list(iso(dexpr)) EOF
+| TIsoTestExpression e1=eexpr el=list(iso(eexpr)) EOF
     { P.iso_adjust (function x -> Ast0.TestExprTag x) e1 el }
 | TIsoStatement s1=single_statement sl=list(iso(single_statement)) EOF
     { P.iso_adjust (function x -> Ast0.StmtTag x) s1 sl }
