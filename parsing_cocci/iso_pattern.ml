@@ -1531,8 +1531,6 @@ let instantiate bindings mv_bindings =
       | Ast0.STARS(l) -> Ast0.STARS(list_fn r same_stars l)) in
 
   let exprfn r k old_e = (* need to keep the original code for ! optim *)
-    ctr := !ctr + 1;
-    let ctr = !ctr in
     let e = k old_e in
     let e1 =
     match Ast0.unwrap e with
