@@ -1778,7 +1778,6 @@ let process file isofile verbose =
 		   ([],_) | (_,Ast.Generated) -> ([],minus)
 		 | _ -> Iso_pattern.apply_isos chosen_isos minus rule_name in
 	       (* after iso, because iso can intro ... *)
-	       Unparse_ast0.unparse minus;
 	       let minus = Adjacency.compute_adjacency minus in
 	       let minus = Comm_assoc.comm_assoc minus rule_name dropiso in
 	       let minus =
