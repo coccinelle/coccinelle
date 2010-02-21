@@ -23,6 +23,9 @@
 
 ** Bugfix:
 - correct interaction between virtual rules and included .cocci files
+- improvement in treatment of ! in isos, to avoid duplicating + code
+- improvement intreatment of metavars as isos, to avoid duplicating + code
+  between toplevel and variable instantiation
 
 * 0.2.1
 ** Language:

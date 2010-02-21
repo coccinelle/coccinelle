@@ -315,7 +315,9 @@ let rec propagate_types env =
       (* if a type is known, it is specified in the decl *)
 	  None
       | (Ast0.Paren(lp,exp,rp),None) -> process_test exp
-      | (_,None) -> Some (int_type)
+      (* the following doesn't seem like a good idea - triggers int isos
+	 on all test expressions *)
+      (*| (_,None) -> Some (int_type) *)
       | _ -> None in
     let new_expty = process_test exp in
     (match new_expty with
