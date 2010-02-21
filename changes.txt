@@ -26,7 +26,9 @@
 - improvement in treatment of ! in isos, to avoid duplicating + code
 - improvement intreatment of metavars as isos, to avoid duplicating + code
   between toplevel and variable instantiation
-- test expression of smpl conditional, etc no longer assumed to have type int
+- test expression of smpl conditional, etc no longer assumed to have type
+  int
+- correct + line numbers in the patch produced when using *
 
 * 0.2.1
 ** Language:

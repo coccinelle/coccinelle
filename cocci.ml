@@ -126,9 +126,58 @@ let show_or_not_cocci2 coccifile isofile =
 let show_or_not_cocci a b =
   Common.profile_code "show_xxx" (fun () -> show_or_not_cocci2 a b)
 
+(* ---------------------------------------------------------------------- *)
 (* the output *)
 
-let show_or_not_diff2 cfile outfile show_only_minus =
+let fix_sgrep_diffs l =
+  let l =
+    List.filter (function s -> (s =~ "^\\+\\+\\+") || not (s =~ "^\\+")) l in
+  let l = List.rev l in
+  (* adjust second number for + code *)
+  let rec loop1 n = function
+      [] -> []
+    | s::ss ->
+	if s =~ "^-" && not(s =~ "^---")
+	then s :: loop1 (n+1) ss
+	else if s =~ "^@@"
+	then
+	  (match Str.split (Str.regexp " ") s with
+	    bef::min::pl::aft ->
+	      (match Str.split (Str.regexp ",") pl with
+		[n1;n2] ->
+		  let n2 = int_of_string n2 in
+		  (Printf.sprintf "%s %s %s,%d %s" bef min n1 (n2-n)
+		     (String.concat " " aft))
+		  :: loop1 0 ss
+	      | _ -> failwith "bad + line information")
+	  | _ -> failwith "bad @@ information")
+	else s :: loop1 n ss in
+  let rec loop2 n = function
+      [] -> []
+    | s::ss ->
+	if s =~ "^---"
+	then s :: loop2 0 ss
+	else if s =~ "^@@"
+	then
+	  (match Str.split (Str.regexp " ") s with
+	    bef::min::pl::aft ->
+	      (match (Str.split (Str.regexp ",") min,
+		      Str.split (Str.regexp ",") pl) with
+		([_;m2],[n1;n2]) ->
+		  let n1 =
+		    int_of_string
+		      (String.sub n1 1 ((String.length n1)-1)) in
+		  let m2 = int_of_string m2 in
+		  let n2 = int_of_string n2 in
+		  (Printf.sprintf "%s %s +%d,%d %s" bef min (n1-n) n2
+		     (String.concat " " aft))
+		  :: loop2 (n+(m2-n2)) ss
+	      | _ -> failwith "bad -/+ line information")
+	  | _ -> failwith "bad @@ information")
+	else s :: loop2 n ss in
+  loop2 0 (List.rev (loop1 0 l))
+
+let show_or_not_diff2 cfile outfile =
   if !Flag_cocci.show_diff then begin
     match Common.fst(Compare_c.compare_to_original cfile outfile) with
       Compare_c.Correct -> () (* diff only in spacing, etc *)
@@ -166,7 +215,7 @@ let show_or_not_diff2 cfile outfile show_only_minus =
 		| _ -> failwith "bad command" in
 	      let (minus_line,plus_line) =
 		if !Flag.sgrep_mode2
-		then (minus_file,plus_file)
+		then (minus_file,"+++ /tmp/nothing")
 		else
 		  match (Str.split (Str.regexp "[ \t]") minus_file,
 			 Str.split (Str.regexp "[ \t]") plus_file) with
@@ -182,13 +231,11 @@ let show_or_not_diff2 cfile outfile show_only_minus =
 			   (String.concat ":" l1) (String.concat ":" l2)) in
 	      diff_line::minus_line::plus_line::rest
 	  | _ -> res in
-	xs +> List.iter (fun s ->
-	  if s =~ "^\\+" && show_only_minus
-	  then ()
-	  else pr s)
+	let xs = if !Flag.sgrep_mode2 then fix_sgrep_diffs xs else xs in
+	xs +> List.iter pr
   end
-let show_or_not_diff a b c  =
-  Common.profile_code "show_xxx" (fun () -> show_or_not_diff2 a b c)
+let show_or_not_diff a b =
+  Common.profile_code "show_xxx" (fun () -> show_or_not_diff2 a b)
 
 
 (* the derived input *)
@@ -1592,8 +1639,7 @@ let full_engine2 (cocci_infos,toks) cfiles =
             (* and now unparse everything *)
             cfile_of_program (for_unparser c_or_h.asts) outfile;
 
-            let show_only_minus = !Flag.sgrep_mode2 in
-            show_or_not_diff c_or_h.fpath outfile show_only_minus;
+            show_or_not_diff c_or_h.fpath outfile;
 
             (c_or_h.fpath,
              if !Flag.sgrep_mode2 then None else Some outfile)
