@@ -1431,8 +1431,6 @@ let lookup name bindings mv_bindings =
       (* failure is not possible anymore *)
       Common.Right (List.assoc (term name) mv_bindings)
 
-let ctr = ref 0
-
 (* mv_bindings is for the fresh metavariables that are introduced by the
 isomorphism *)
 let instantiate bindings mv_bindings =
