@@ -283,6 +283,8 @@ let match_list matcher is_list_matcher do_list_match la lb =
     | _ -> return false in
   loop (la,lb)
 
+let all_caps = Str.regexp "^[A-Z_][A-Z_0-9]*$"
+
 let match_maker checks_needed context_required whencode_allowed =
 
   let check_mcode pmc cmc binding =
@@ -480,6 +482,13 @@ let match_maker checks_needed context_required whencode_allowed =
 	      let rec matches e =
 		match Ast0.unwrap e with
 		  Ast0.Constant(c) -> true
+		| Ast0.Ident(c) ->
+		    (match Ast0.unwrap c with
+		      Ast0.Id(nm) ->
+			let nm = Ast0.unwrap_mcode nm in
+			(* all caps is a const *)
+			Str.string_match all_caps nm 0
+		    | _ -> false)
 		| Ast0.Cast(lp,ty,rp,e) -> matches e
 		| Ast0.SizeOfExpr(se,exp) -> true
 		| Ast0.SizeOfType(se,lp,ty,rp) -> true

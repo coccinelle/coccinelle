@@ -29,6 +29,8 @@
 - test expression of smpl conditional, etc no longer assumed to have type
   int
 - correct + line numbers in the patch produced when using *
+- iso constant metavariable matches an identifier whose name is all capital
+  letters, eg NULL
 
 * 0.2.1
 ** Language:
