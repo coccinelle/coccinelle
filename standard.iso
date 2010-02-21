@@ -186,11 +186,14 @@ expression X;
 @@
 X == 0 => !X
 
-Expression
+// X should be a test expression, but X!=0 doesn't have to be one
+// not nice at all...  ToTestExpression sets everything after the first
+// pattern in the iso rule to be TestExpression
+ToTestExpression
 @ isnt_zero @ 
 expression X; 
 @@
-X != 0 => X || ...
+X != 0 => X
 
 Expression
 @ is_null @ 
@@ -198,11 +201,11 @@ expression X;
 @@
 X == NULL => !X
 
-Expression
+ToTestExpression
 @ isnt_null1 @ 
 expression X; 
 @@
-X != NULL => X || ...
+X != NULL => X
 
 // ---------------------------------------------------------------------------
 // Bit operations

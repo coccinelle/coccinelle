@@ -15,11 +15,13 @@
 
 * 0.2.2
 ** Language:
+- Added ToTestExpression to iso language, see standard.iso for an explanation
 
 ** Features:
 - Update Emacs mode (cocci.el) to support 'virtual' rules and fix other
   keywords sush as 'depends on', 'using', 'disable'
-- better treatment of !X in isos, communtativity for ==/!= for all constants
+- better treatment of != 0 in isos, communtativity for ==/!= for all
+  constants
 
 ** Bugfix:
 - correct interaction between virtual rules and included .cocci files

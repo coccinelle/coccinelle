@@ -151,7 +151,7 @@ let ty_pointerify ty m =
 
 (* Left is <=>, Right is =>.  Collect <=>s. *)
 (* The parser should have done this, with precedences.  But whatever... *)
-let iso_adjust fn first rest =
+let iso_adjust first_fn fn first rest =
   let rec loop = function
       [] -> [[]]
     | (Common.Left x)::rest ->
@@ -163,7 +163,7 @@ let iso_adjust fn first rest =
 	  front::after -> []::(fn x::front)::after
 	| _ -> failwith "not possible") in
   match loop rest with
-    front::after -> (fn first::front)::after
+    front::after -> (first_fn first::front)::after
   | _ -> failwith "not possible"
 
 let check_meta tok =

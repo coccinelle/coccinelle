@@ -244,6 +244,7 @@ let token2c (tok,_) =
   | PC.TIsoExpression -> "Expression"
   | PC.TIsoArgExpression -> "ArgExpression"
   | PC.TIsoTestExpression -> "TestExpression"
+  | PC.TIsoToTestExpression -> "ToTestExpression"
   | PC.TIsoStatement -> "Statement"
   | PC.TIsoDeclaration -> "Declaration"
   | PC.TIsoType -> "Type"
@@ -657,7 +658,8 @@ let split_token ((tok,_) as t) =
 
   | PC.TIso | PC.TRightIso
   | PC.TIsoExpression | PC.TIsoStatement | PC.TIsoDeclaration | PC.TIsoType
-  | PC.TIsoTopLevel | PC.TIsoArgExpression | PC.TIsoTestExpression ->
+  | PC.TIsoTopLevel | PC.TIsoArgExpression | PC.TIsoTestExpression
+  | PC.TIsoToTestExpression ->
       failwith "unexpected tokens"
   | PC.TScriptData s -> ([t],[t])
 
@@ -1351,7 +1353,7 @@ let parse_iso file =
 	    let (more,tokens) =
 	      get_tokens
 		[PC.TIsoStatement;PC.TIsoExpression;PC.TIsoArgExpression;
-		  PC.TIsoTestExpression;
+		  PC.TIsoTestExpression; PC.TIsoToTestExpression;
 		  PC.TIsoDeclaration;PC.TIsoType;PC.TIsoTopLevel] in
 	    let next_start = List.hd(List.rev tokens) in
 	    let dummy_info = ("",(-1,-1),(-1,-1)) in
@@ -1776,6 +1778,7 @@ let process file isofile verbose =
 		   ([],_) | (_,Ast.Generated) -> ([],minus)
 		 | _ -> Iso_pattern.apply_isos chosen_isos minus rule_name in
 	       (* after iso, because iso can intro ... *)
+	       Unparse_ast0.unparse minus;
 	       let minus = Adjacency.compute_adjacency minus in
 	       let minus = Comm_assoc.comm_assoc minus rule_name dropiso in
 	       let minus =

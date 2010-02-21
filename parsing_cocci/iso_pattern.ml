@@ -2214,7 +2214,14 @@ let transform_expr (metavars,alts,name) e =
 	  | _ -> true)
   in
   match alts with
-    (Ast0.ExprTag(_)::_)::_ -> process do_nothing
+    (Ast0.ExprTag(_)::r)::rs ->
+      (* hack to accomodate ToTestExpression case, where the first pattern is
+	 a normal expression, but the others are test expressions *)
+      let others = r @ (List.concat rs) in
+      let is_test = function Ast0.TestExprTag(_) -> true | _ -> false in
+      if List.for_all is_test others then process Ast0.set_test_exp
+      else if List.exists is_test others then failwith "inconsistent iso"
+      else process do_nothing
   | (Ast0.ArgExprTag(_)::_)::_ when Ast0.get_arg_exp e -> process do_nothing
   | (Ast0.TestExprTag(_)::_)::_ when Ast0.get_test_pos e ->
       process Ast0.set_test_exp

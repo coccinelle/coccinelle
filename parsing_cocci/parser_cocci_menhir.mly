@@ -86,7 +86,7 @@ module P = Parse_aux
 %token <Ast_cocci.assignOp * Data.clt> TAssign
 
 %token TIso TRightIso TIsoExpression TIsoStatement TIsoDeclaration TIsoType
-%token TIsoTopLevel TIsoArgExpression TIsoTestExpression
+%token TIsoTopLevel TIsoArgExpression TIsoTestExpression TIsoToTestExpression
 
 %token TInvalid
 
@@ -1923,17 +1923,21 @@ any_strict:
 
 iso_main:
   TIsoExpression e1=eexpr el=list(iso(eexpr)) EOF
-    { P.iso_adjust (function x -> Ast0.ExprTag x) e1 el }
+    { let fn x = Ast0.ExprTag x in P.iso_adjust fn fn e1 el }
 | TIsoArgExpression e1=eexpr el=list(iso(eexpr)) EOF
-    { P.iso_adjust (function x -> Ast0.ArgExprTag x) e1 el }
+    { let fn x = Ast0.ArgExprTag x in P.iso_adjust fn fn e1 el }
 | TIsoTestExpression e1=eexpr el=list(iso(eexpr)) EOF
-    { P.iso_adjust (function x -> Ast0.TestExprTag x) e1 el }
+    { let fn x = Ast0.TestExprTag x in P.iso_adjust fn fn e1 el }
+| TIsoToTestExpression e1=eexpr el=list(iso(eexpr)) EOF
+    { let ffn x = Ast0.ExprTag x in
+      let fn x =  Ast0.TestExprTag x in
+      P.iso_adjust ffn fn e1 el }
 | TIsoStatement s1=single_statement sl=list(iso(single_statement)) EOF
-    { P.iso_adjust (function x -> Ast0.StmtTag x) s1 sl }
+    { let fn x = Ast0.StmtTag x in P.iso_adjust fn fn s1 sl }
 | TIsoType t1=ctype tl=list(iso(ctype)) EOF
-    { P.iso_adjust (function x -> Ast0.TypeCTag x) t1 tl }
+    { let fn x = Ast0.TypeCTag x in P.iso_adjust fn fn t1 tl }
 | TIsoTopLevel e1=nest_start el=list(iso(nest_start)) EOF
-    { P.iso_adjust (function x -> Ast0.DotsStmtTag x) e1 el }
+    { let fn x = Ast0.DotsStmtTag x in P.iso_adjust fn fn e1 el }
 | TIsoDeclaration d1=decl_var dl=list(iso(decl_var)) EOF
     { let check_one = function
 	[x] -> x
@@ -1948,7 +1952,7 @@ iso_main:
 	    Common.Left x -> Common.Left(check_one x)
 	  | Common.Right x -> Common.Right(check_one x))
 	dl in
-    P.iso_adjust (function x -> Ast0.DeclTag x) d1 dl }
+    let fn x = Ast0.DeclTag x in P.iso_adjust fn fn d1 dl }
 
 iso(term):
     TIso t=term { Common.Left t }

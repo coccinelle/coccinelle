@@ -258,13 +258,14 @@ let id_tokens lexbuf =
 
   | "sizeof" ->     TSizeof   linetype
 
-  | "Expression"     -> TIsoExpression
-  | "ArgExpression"  -> TIsoArgExpression
-  | "TestExpression" -> TIsoTestExpression
-  | "Statement"      -> TIsoStatement
-  | "Declaration"    -> TIsoDeclaration
-  | "Type"           -> TIsoType
-  | "TopLevel"       -> TIsoTopLevel
+  | "Expression"       -> TIsoExpression
+  | "ArgExpression"    -> TIsoArgExpression
+  | "TestExpression"   -> TIsoTestExpression
+  | "ToTestExpression" -> TIsoToTestExpression
+  | "Statement"        -> TIsoStatement
+  | "Declaration"      -> TIsoDeclaration
+  | "Type"             -> TIsoType
+  | "TopLevel"         -> TIsoTopLevel
 
   | s -> check_var s linetype
 
