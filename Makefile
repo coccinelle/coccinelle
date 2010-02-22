@@ -4,7 +4,7 @@
 #############################################################################
 
 -include Makefile.config
-include /etc/lsb-release
+-include /etc/lsb-release
 
 VERSION=$(shell cat globals/config.ml.in |grep version |perl -p -e 's/.*"(.*)".*/$$1/;')
 CCVERSION=$(shell cat scripts/coccicheck/README |grep "Coccicheck version" |perl -p -e 's/.*version (.*)[ ]*/$$1/;')
