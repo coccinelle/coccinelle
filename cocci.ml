@@ -493,7 +493,7 @@ let sp_contain_typed_metavar rules =
 
 let interpret_include_path _ =
   match !Flag_cocci.include_path with
-    None -> "include"
+    None -> ["include"]
   | Some x -> x
 
 let (includes_to_parse:
@@ -507,7 +507,7 @@ let (includes_to_parse:
       xs +> List.map (fun (file, cs) ->
 	let dir = Common.dirname file in
 
-	cs +> Common.map_filter (fun (c,_info_item) ->
+	cs +> List.map (fun (c,_info_item) ->
 	  match c with
 	  | Ast_c.CppTop
 	      (Ast_c.Include
@@ -520,21 +520,29 @@ let (includes_to_parse:
 		then
 		  let attempt2 = Filename.concat dir (Common.last xs) in
 		  if not (Sys.file_exists f) && all_includes
-		  then Some (Filename.concat (interpret_include_path())
-                               (Common.join "/" xs))
-		  else Some attempt2
-		else Some f
+		  then
+		    List.map (fun path ->
+				Filename.concat path
+				  (Common.join "/" xs)
+			     )
+		      (interpret_include_path())
+		  else [attempt2]
+		else [f]
 
             | Ast_c.NonLocal xs ->
 		if all_includes ||
 	        Common.fileprefix (Common.last xs) =$= Common.fileprefix file
 		then
-                  Some (Filename.concat (interpret_include_path())
-                          (Common.join "/" xs))
-		else None
-            | Ast_c.Weird _ -> None
+		    List.map (fun path ->
+				Filename.concat path
+				  (Common.join "/" xs)
+			     )
+		      (interpret_include_path())
+		else []
+            | Ast_c.Weird _ -> []
 		  )
-	  | _ -> None))
+	  | _ -> []))
+	+> List.concat
 	+> List.concat
 	+> Common.uniq
 

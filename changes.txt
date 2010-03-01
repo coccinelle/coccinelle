@@ -24,6 +24,7 @@
   constants
 - allow adding // comments
 - "-test" option also checks for .c/.cocci pair in the current directory
+- Add support for multiple -I options
 
 ** Bugfix:
 - correct interaction between virtual rules and included .cocci files
