@@ -33,6 +33,10 @@
 - correct + line numbers in the patch produced when using *
 - iso constant metavariable matches an identifier whose name is all capital
   letters, eg NULL
+- allow / at the end of the name of a directory (-dir) or patch prefix
+  (-patch)
+- dropped space in + code after the binding of a type metavariable that is
+  a pointer type
 
 * 0.2.1
 ** Language:

@@ -435,8 +435,22 @@ let real = pent exp | ((pent? '.' pfract | pent '.' pfract? ) exp?)
 
 
 rule token = parse
-  | [' ' '\t'  ]+             { start_line false; token lexbuf }
-  | ['\n' '\r' '\011' '\012'] { reset_line lexbuf; token lexbuf }
+  | [' ' '\t']* ['\n' '\r' '\011' '\012']
+    { let cls = !current_line_started in
+      
+      if not cls
+      then
+	begin
+	  match !current_line_type with
+	    (D.PLUS,_,_) | (D.PLUSPLUS,_,_) ->
+	      let info = get_current_line_type lexbuf in
+	      reset_line lexbuf;
+	      TPragma ("", info)
+	  | _ -> reset_line lexbuf; token lexbuf
+	end
+      else (reset_line lexbuf; token lexbuf) }
+
+  | [' ' '\t'  ]+  { start_line false; token lexbuf }
 
   | "//" [^ '\n']* { start_line false; token lexbuf }
 

@@ -1819,7 +1819,6 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
   | _, (B.MacroDecl _ |B.DeclList _) ->       fail
 
 
-
 and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
  X.all_bound (A.get_inherited decla) >&&>
  match A.unwrap decla, declb with
@@ -2459,8 +2458,10 @@ and (struct_field: (A.declaration, B.field) matcher) = fun fa fb ->
   | B.EmptyField _iifield ->
       fail
 
-  | B.MacroDeclField _ ->
-      raise Todo
+  | B.MacroDeclField ((sb,ebs),ii) ->
+      (match A.unwrap fa with
+	A.MacroDecl (sa,lpa,eas,rpa,enda) -> raise Todo
+      |	_ -> fail)
 
   | B.CppDirectiveStruct directive -> fail
   | B.IfdefStruct directive -> fail

@@ -1,9 +1,9 @@
-PREFIX?=/home/npalix/Documents/build/coccinelle/scripts/coccicheck
-PROJECT?=/
-SPFLAGS?="-timeout 60 -use_glimpse -D org"
+PREFIX?=/home/julia/coccinelle/scripts/coccicheck
+PROJECT?=/home/julia/source
+SPFLAGS?="-show_trying -all_includes -timeout 30 -D org"
 
-COCCI?=/home/npalix/Documents/build/coccinelle/scripts/coccicheck/cocci
-RESULTS?=/home/npalix/Documents/build/coccinelle/scripts/coccicheck/results
+COCCI?=/home/julia/coccinelle/scripts/coccicheck/cocci
+RESULTS?=/home/julia/coccinelle/scripts/coccicheck/results
 
 .PHONY:: update viewlog viewfilteredlog viewres checkcocci
 .PHONY:: all clean distclean depend

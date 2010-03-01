@@ -50,7 +50,7 @@ let close_box _ = () in
 let force_newline _ = print_text "\n" in
 
 let start_block () = force_newline(); indent() in
-let end_block () = unindent(); force_newline () in
+let end_block () = unindent true; force_newline () in
 let print_string_box s = print_string s in
 
 let print_option = Common.do_option in
@@ -66,7 +66,7 @@ let outdent _ = () (* should go to leftmost col, does nothing now *) in
 
 let pretty_print_c =
   Pretty_print_c.mk_pretty_printers pr_celem pr_cspace
-    force_newline indent outdent unindent in
+    force_newline indent outdent (function _ -> unindent true) in
 
 (* --------------------------------------------------------------------- *)
 (* Only for make_hrule, print plus code, unbound metavariables *)
@@ -135,7 +135,8 @@ let mcode fn (s,info,mc,pos) =
 	  (function line_before ->
 	    function (str,line,col) ->
 	      match line_before with
-		None -> print_string str line col; Some line
+		None -> unindent false;
+		  print_string str line col; Some line
 	      |	Some lb when line =|= lb ->
 		  print_string str line col; Some line
 	      |	_ -> force_newline(); print_string str line col; Some line)
@@ -199,7 +200,8 @@ let handle_metavar name fn =
 	(* call mcode to preserve the -+ annotation *)
 	mcode (fun _ _ _ -> fn e) name
       else fn e);
-      let rcol = if lcol = unknown then unknown else lcol + (String.length b) in
+      let rcol =
+	if lcol = unknown then unknown else lcol + (String.length b) in
       pr_barrier line rcol
 in
 (* --------------------------------------------------------------------- *)
@@ -536,6 +538,13 @@ and ft_space ty =
     Ast.Type(cv,ty) ->
       (match Ast.unwrap ty with
 	Ast.Pointer(_,_) -> ()
+      | Ast.MetaType(name,_,_) ->
+	  (match List.assoc (Ast.unwrap_mcode name) env with
+            Ast_c.MetaTypeVal (tq,ty) ->
+	      (match Ast_c.unwrap ty with
+		Ast_c.Pointer(_,_) -> ()
+	      |	_ -> pr_space())
+	  | _ -> pr_space())
       | _ -> pr_space())
   | _ -> pr_space()
 
@@ -782,7 +791,7 @@ let indent_if_needed s f =
     Ast.Seq(lbrace,body,rbrace) -> pr_space(); f()
   | _ ->
       (*no newline at the end - someone else will do that*)
-      start_block(); f(); unindent() in
+      start_block(); f(); unindent true in
 
 let rec statement arity s =
   match Ast.unwrap s with
@@ -980,7 +989,7 @@ in
 	  (Ast.Token ("}",_)::_) -> true
 	| _ -> false in
       let prnl x =
-	(if unindent_before x then unindent());
+	(if unindent_before x then unindent true);
 	force_newline() in
       let newline_before _ =
 	if before =*= After
@@ -1017,7 +1026,7 @@ in
 	      match (indent_needed,unindent_before x) with
 		(true,true) -> force_newline()
 	      | (true,false) -> force_newline(); indent()
-	      | (false,true) -> unindent(); force_newline()
+	      | (false,true) -> unindent true; force_newline()
 	      | (false,false) -> force_newline());
 	    let space_needed_before = function
 		Ast.ParamTag(x) ->

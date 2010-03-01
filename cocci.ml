@@ -194,6 +194,11 @@ let show_or_not_diff2 cfile outfile =
 	  match (!Flag.patch,res) with
 	(* create something that looks like the output of patch *)
 	    (Some prefix,minus_file::plus_file::rest) ->
+	      let prefix =
+		let lp = String.length prefix in
+		if String.get prefix (lp-1) = '/'
+		then String.sub prefix 0 (lp-1)
+		else prefix in
 	      let drop_prefix file =
 		if prefix =$= ""
 		then "/"^file
