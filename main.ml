@@ -948,8 +948,15 @@ let main () =
     (* The test framework. Works with tests/ or .ok and .failed  *)
     (* --------------------------------------------------------- *)
     | [x] when !test_mode    ->
-        FC.include_path := Some "tests/include";
-        Testing.testone x !compare_with_expected
+	begin
+	  try
+	    let prefix = "tests/" in
+              FC.include_path := Some (prefix^"include");
+              Testing.testone prefix x !compare_with_expected
+	  with _ ->
+            FC.include_path := Some "include";
+            Testing.testone "" x !compare_with_expected
+	end
 
     | []  when !test_all ->
         FC.include_path := Some "tests/include";
