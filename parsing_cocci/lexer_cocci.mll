@@ -452,7 +452,10 @@ rule token = parse
 
   | [' ' '\t'  ]+  { start_line false; token lexbuf }
 
-  | "//" [^ '\n']* { start_line false; token lexbuf }
+  | "//" [^ '\n']* {
+    match !current_line_type with
+      (D.CONTEXT,_,_) -> start_line false; token lexbuf
+    | _ -> TPragma (tok lexbuf, get_current_line_type lexbuf) }
 
   | "@@" { start_line true; TArobArob }
   | "@"  { pass_zero();

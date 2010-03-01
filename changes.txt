@@ -22,6 +22,7 @@
   keywords sush as 'depends on', 'using', 'disable'
 - better treatment of != 0 in isos, communtativity for ==/!= for all
   constants
+- allow adding // comments
 
 ** Bugfix:
 - correct interaction between virtual rules and included .cocci files
