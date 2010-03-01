@@ -1,9 +1,9 @@
-PREFIX?=/home/npalix/Documents/build/coccinelle/scripts/coccicheck
+PREFIX?=/tobedefine
 PROJECT?=/
 SPFLAGS?="-timeout 60 -use_glimpse -D org"
 
-COCCI?=/home/npalix/Documents/build/coccinelle/scripts/coccicheck/cocci
-RESULTS?=/home/npalix/Documents/build/coccinelle/scripts/coccicheck/results
+COCCI?=/tobedefine/cocci
+RESULTS?=/tobedefine/results
 
 .PHONY:: update viewlog viewfilteredlog viewres checkcocci
 .PHONY:: all clean distclean depend
