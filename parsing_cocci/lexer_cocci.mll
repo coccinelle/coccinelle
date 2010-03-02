@@ -455,7 +455,10 @@ rule token = parse
   | "//" [^ '\n']* {
     match !current_line_type with
       (D.CONTEXT,_,_) -> start_line false; token lexbuf
-    | _ -> TPragma (Ast.Indent (tok lexbuf), get_current_line_type lexbuf) }
+    | _ ->
+	if !Data.in_iso
+	then (start_line false; token lexbuf)
+	else TPragma (Ast.Indent (tok lexbuf), get_current_line_type lexbuf) }
 
   | "@@" { start_line true; TArobArob }
   | "@"  { pass_zero();
