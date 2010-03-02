@@ -165,9 +165,6 @@ let mcode fn (s,info,mc,pos) =
 	 should really store parsed versions of the strings, but make a cheap
 	 effort here
          print_comments takes care of interior newlines *)
-      (match List.rev info.Ast.straft with
-	(Ast.Noindent str,_,_)::_ -> force_newline()
-      |	_ -> ());
       ()
       (* printing for rule generation *)
   | (true, Ast.MINUS(_,_,_,plus_stream)) ->
