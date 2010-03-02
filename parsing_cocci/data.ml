@@ -12,8 +12,8 @@ type incl_iso =
 
 type clt =
     line_type * int * int * int * int (* starting spaces *) *
-      (string * Ast0.position_info) list (* code before *) *
-      (string * Ast0.position_info) list (* code after *) *
+      (Ast_cocci.added_string * Ast0.position_info) list (* code before *) *
+      (Ast_cocci.added_string * Ast0.position_info) list (* code after *) *
       Ast0.meta_pos (* position variable, minus only *)
 
 (* ---------------------------------------------------------------------- *)

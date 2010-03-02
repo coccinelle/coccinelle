@@ -90,7 +90,8 @@ let token2c (tok,_) =
   | PC.Tconst(clt) -> "const"^(line_type2c clt)
   | PC.Tvolatile(clt) -> "volatile"^(line_type2c clt)
 
-  | PC.TPragma(s,_) -> s
+  | PC.TPragma(Ast.Noindent s,_) -> s
+  | PC.TPragma(Ast.Indent s,_)   -> s
   | PC.TIncludeL(s,clt) -> (pr "#include \"%s\"" s)^(line_type2c clt)
   | PC.TIncludeNL(s,clt) -> (pr "#include <%s>" s)^(line_type2c clt)
   | PC.TDefine(clt,_) -> "#define"^(line_type2c clt)

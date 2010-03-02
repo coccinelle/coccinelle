@@ -34,7 +34,8 @@ module P = Parse_aux
 
 %token <Data.clt> TIf TElse TWhile TFor TDo TSwitch TCase TDefault TReturn
 %token <Data.clt> TBreak TContinue TGoto TSizeof TFunDecl
-%token <string * Data.clt> TIdent TTypeId TDeclarerId TIteratorId TPragma
+%token <string * Data.clt> TIdent TTypeId TDeclarerId TIteratorId
+%token <Ast_cocci.added_string * Data.clt> TPragma
 
 %token <Parse_aux.idinfo>        TMetaId TMetaFunc TMetaLocalFunc
 %token <Parse_aux.idinfo>        TMetaIterator TMetaDeclarer

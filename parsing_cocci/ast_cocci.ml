@@ -8,9 +8,11 @@ type idconstraint =
 (* --------------------------------------------------------------------- *)
 (* Modified code *)
 
+type added_string = Noindent of string | Indent of string
+
 type info = { line : int; column : int;
-	      strbef : (string * int (* line *) * int (* col *)) list;
-	      straft : (string * int (* line *) * int (* col *)) list }
+	      strbef : (added_string * int (* line *) * int (* col *)) list;
+	      straft : (added_string * int (* line *) * int (* col *)) list }
 type line = int
 type meta_name = string * string
 (* need to be careful about rewrapping, to avoid duplicating pos info
@@ -568,7 +570,7 @@ and anything =
   | CaseLineTag         of case_line
   | ConstVolTag         of const_vol
   | Token               of string * info option
-  | Pragma              of string list
+  | Pragma              of added_string list
   | Code                of top_level
   | ExprDotsTag         of expression dots
   | ParamDotsTag        of parameterTypeDef dots

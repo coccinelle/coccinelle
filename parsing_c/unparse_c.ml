@@ -858,7 +858,6 @@ let rec adjust_indentation xs =
 	    _current_tabbing := (!_current_tabbing)^tu;
 	    Cocci2 (tu,-1,-1,-1)::aux started xs)
     | Unindent_cocci2(permanent)::xs ->
-	Printf.printf "permanent %b\n" permanent;
 	(match !tabbing_unit with
 	  None -> aux started xs
 	| Some (_,tu) ->
@@ -881,7 +880,6 @@ let rec adjust_indentation xs =
         let s = !_current_tabbing in
         x::Cocci2 (s,-1,-1,-1)::aux started xs
     | x::xs -> x::aux started xs in
-  simple_print_all_tokens2 xs;
   aux false xs
 
 

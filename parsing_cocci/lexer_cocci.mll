@@ -445,7 +445,7 @@ rule token = parse
 	    (D.PLUS,_,_) | (D.PLUSPLUS,_,_) ->
 	      let info = get_current_line_type lexbuf in
 	      reset_line lexbuf;
-	      TPragma ("", info)
+	      TPragma (Ast.Noindent "", info)
 	  | _ -> reset_line lexbuf; token lexbuf
 	end
       else (reset_line lexbuf; token lexbuf) }
@@ -455,7 +455,7 @@ rule token = parse
   | "//" [^ '\n']* {
     match !current_line_type with
       (D.CONTEXT,_,_) -> start_line false; token lexbuf
-    | _ -> TPragma (tok lexbuf, get_current_line_type lexbuf) }
+    | _ -> TPragma (Ast.Indent (tok lexbuf), get_current_line_type lexbuf) }
 
   | "@@" { start_line true; TArobArob }
   | "@"  { pass_zero();
@@ -666,13 +666,14 @@ rule token = parse
   | "#" [' ' '\t']* "endif" [^'\n']*
   | "#" [' ' '\t']* "error" [^'\n']*
       { start_line true; check_plus_linetype (tok lexbuf);
-	TPragma (tok lexbuf, get_current_line_type lexbuf) }
+	TPragma (Ast.Noindent(tok lexbuf), get_current_line_type lexbuf) }
   | "/*"
       { start_line true; check_plus_linetype (tok lexbuf);
 	(* second argument to TPragma is not quite right, because
 	   it represents only the first token of the comemnt, but that
 	   should be good enough *)
-	TPragma ("/*"^(comment lexbuf), get_current_line_type lexbuf) }
+	TPragma (Ast.Indent("/*"^(comment lexbuf)),
+		 get_current_line_type lexbuf) }
   | "---" [^'\n']*
       { (if !current_line_started
       then lexerr "--- must be at the beginning of the line" "");

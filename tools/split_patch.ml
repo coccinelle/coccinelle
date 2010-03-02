@@ -1,264 +1,82 @@
-open Common
+(* split patch per file *)
 
-module CP = Classic_patch
+let is_diff = Str.regexp "diff "
+let split_patch i =
+  let patches = ref [] in
+  let cur = ref [] in
+  let rec loop _ =
+    let l = input_line i in
+    (if Str.string_match is_diff l 0
+    then
+      (if List.length !cur > 0
+      then begin patches := List.rev !cur :: !patches; cur := [l] end)
+    else cur := l :: !cur);
+    loop() in
+  try loop() with End_of_file -> !patches
 
-(* ./split_patch ../demos/janitorings/patch-kzalloc-vnew3.patch /tmp/xx "0 -> NULL" ../bodymail.doc
-./split_patch /tmp/badzero.patch /tmp/xx ../mailbody.doc ../kernel_dirs.meta
+(* ------------------------------------------------------------------------ *)
 
-update: see  http://lwn.net/Articles/284469/
-for a script using git annotate to find automatically to who send
-a patch (by looking at authors of lines close concerning the patch I guess
-*)
+(* can get_maintainers takea file as an argument, or only a patch? *)
+let resolve_maintainers cmd patches =
+  let maintainer_table = Hashtbl.create (List.length patches) in
+  List.iter
+    (function
+	diff_line::rest ->
+	  (match Str.split (Str.regexp " a/") diff_line with
+	    [before;after] ->
+	      (match Str.split (Str.regexp " ") after with
+		file::_ ->
+		  (match Common.cmd_to_list (cmd ^ " " ^ file) with
+		    [info] ->
+		      let cell =
+			try Hashtbl.find maintainer_table info
+			with Not_found ->
+			  let cell = ref [] in
+			  Hashtbl.add maintainer_table info cell;
+			  cell in
+		      cell := (diff_line :: rest) :: !cell
+		  | _ -> failwith "badly formatted maintainer result")
+	      |	_ -> failwith "filename not found")
+	  | _ ->
+	      failwith (Printf.sprintf "prefix a/ not found in %s" diff_line))
+      |	_ -> failwith "bad diff line")
+    patches;
+  maintainer_table
 
-(*****************************************************************************)
-(* Flags *)
-(*****************************************************************************)
+(* ------------------------------------------------------------------------ *)
 
-let just_patch = ref false
-let verbose = ref true
+let print_all o l =
+  List.iter (function x -> Printf.fprintf o "%s\n" x) l
 
-let pr2 s =
-  if !verbose then pr2 s
+let make_output_files template maintainer_table patch =
+  let ctr = ref 0 in
+  Hashtbl.iter
+    (function maintainers ->
+      function diffs ->
+	ctr := !ctr + 1;
+	let o = open_out (Printf.sprintf "%s%d" patch !ctr) in
+	Printf.fprintf o "To: %s\n\n" maintainers;
+	print_all o template;
+	List.iter (print_all o) (List.rev !diffs);
+	close_out o)
+    maintainer_table
 
-(*****************************************************************************)
-(* Helpers *)
-(*****************************************************************************)
+(* ------------------------------------------------------------------------ *)
 
-let print_header_patch patch =
-  patch +> List.iter (function CP.File (s, header, body) -> pr s)
+let command = ref "get_maintainers.pl"
+let file = ref ""
 
+let options =
+  ["-cmd", Arg.String (function x -> command := x), "get maintainer command"]
 
-(*****************************************************************************)
-(* Grouping strategies *)
-(*****************************************************************************)
+let usage = ""
 
-let group_patch_depth_2 patch =
-  let patch_with_dir = patch +> List.map (function (CP.File (s,header,body)) ->
-    Common.split "/" (Common.dirname s),
-    (CP.File (s, header, body))
-  )
-  in
-  let rec aux_patch xs =
-    match xs with
-    | [] -> []
-    | (dir_elems,x)::xs ->
-        let cond, base =
-          if List.length dir_elems >= 2 then
-            let base = Common.take 2 dir_elems in
-            (fun dir_elems' ->
-              List.length dir_elems' >= 2 && Common.take 2 dir_elems' = base),
-            base
-          else
-            (fun dir_elems' -> dir_elems' = dir_elems),
-            dir_elems
-        in
+let anonymous x = file := x
 
-        let (yes, no) = xs +> Common.partition_either (fun (dir_elems', x) ->
-          if cond dir_elems'
-          then Left x
-          else Right (dir_elems', x)
-        ) in
-        (Common.join "/" base, ["NOEMAIL"], (x::yes))::aux_patch no
-  in
-  aux_patch patch_with_dir
-
-
-
-let group_patch_subsystem_info patch subinfo =
-  let patch_with_dir = patch +> List.map (function (CP.File (s,header,body)) ->
-    (Common.dirname s),     (CP.File (s, header, body))
-  )
-  in
-  let index = Maintainers.mk_inverted_index_subsystem subinfo in
-  let hash = Maintainers.subsystem_to_hash subinfo in
-
-  let rec aux_patch xs =
-    match xs with
-    | [] -> []
-    | ((dir,patchitem)::xs) as xs' ->
-        let leader =
-          try Hashtbl.find index dir
-          with Not_found -> failwith ("cant find leader for : " ^ dir)
-        in
-        let (emailsleader, subdirs) =
-          try Hashtbl.find hash leader
-          with Not_found -> failwith ("cant find subdirs of : " ^ leader)
-        in
-
-        (match emailsleader with
-        | ["NOEMAIL"] | [] | [""] -> pr2 ("no leader maintainer for: "^leader);
-        | _ -> ()
-        );
-
-        let emails = ref emailsleader in
-        let allsubdirs = (leader, emailsleader)::subdirs in
-
-        let (yes, no) = xs' +> Common.partition_either (fun (dir',patchitem')->
-          try (
-            let emailsdir' = List.assoc dir' allsubdirs in
-            emails := !emails $+$ emailsdir';
-            Left patchitem'
-          ) with Not_found -> Right (dir', patchitem')
-         (*
-          if List.mem dir' (leader::subdirs)
-          then Left x
-          else Right (dir', x)
-         *)
-        ) in
-        (leader, !emails, yes)::aux_patch no
-  in
-  aux_patch patch_with_dir
-
-
-(*****************************************************************************)
-(* Split patch *)
-(*****************************************************************************)
-let i_to_s_padded i total =
-  match i with
-  | i when i < 10 && total >= 10 -> "0" ^ i_to_s i
-  | i when i < 100 -> i_to_s i
-  | i -> i_to_s i
-
-let split_patch file prefix bodymail subinfofile =
-  let patch = CP.parse_patch file in
-
-  let subsystem_info = Maintainers.parse_subsystem_info subinfofile in
-  let minipatches = group_patch_subsystem_info patch subsystem_info in
-  (* let minipatches = group_patch_depth_2 patch in *)
-
-  let total = List.length minipatches in
-  let minipatches_indexed = Common.index_list_1 minipatches in
-
-  let (subject, bodymail_rest) =
-    match Common.cat bodymail with
-    | x::y::xs ->
-        if x =~ "Subject: \\(.*\\)"
-        then
-          let subject = matched1 x in
-          if y =~ "[-]+$"
-          then
-            subject, xs
-          else failwith ("wrong format for mailbody in:" ^ bodymail)
-        else failwith ("wrong format for mailbody in:" ^ bodymail)
-    | _ -> failwith ("wrong format for mailbody in:" ^ bodymail)
-  in
-
-  Common.command2_y_or_no ("rm -f " ^ prefix ^ "*");
-
-
-  minipatches_indexed +> List.iter (fun ((dir,emails, minipatch), i) ->
-    let numpatch = i_to_s_padded  i total in
-    let tmpfile = prefix ^  numpatch ^ ".mail" in
-    let patchfile = "/tmp/x.patch" in
-    pr2 ("generating :" ^ tmpfile ^ " for " ^ dir);
-
-    CP.unparse_patch minipatch patchfile;
-
-    let emails =
-      (match emails with
-      | ["NOEMAIL"] | [] | [""] ->
-          pr2 "no maintainer"; []
-      | xs -> xs
-      ) @ ["akpm@linux-foundation.org"]
-    in
-
-
-    if !just_patch
-    then command2(sprintf "cat %s > %s" patchfile tmpfile)
-    else begin
-      Common.with_open_outfile tmpfile (fun (pr_no_nl, chan) ->
-        let pr s = pr_no_nl (s ^ "\n") in
-        pr "To: kernel-janitors@vger.kernel.org";
-        pr (sprintf "Subject: [PATCH %s/%d] %s, for %s"
-               numpatch total subject dir);
-        pr ("Cc: " ^ (Common.join ", " (emails @ ["linux-kernel@vger.kernel.org"])));
-        pr "BCC: padator@wanadoo.fr";
-        pr "From: Yoann Padioleau <padator@wanadoo.fr>";
-        pr "--text follows this line--";
-
-        pr "";
-        bodymail_rest +> List.iter pr;
-        pr "";
-        pr "Signed-off-by: Yoann Padioleau <padator@wanadoo.fr>";
-        emails +> List.iter (fun s ->
-          pr ("Cc: " ^ s)
-        );
-        pr "---";
-
-        pr "";
-      );
-
-      command2(sprintf "diffstat -p1 %s >> %s" patchfile tmpfile);
-      command2(sprintf "echo >> %s" tmpfile);
-      command2(sprintf "cat %s >> %s" patchfile tmpfile);
-    end
-  )
-
-
-
-(*****************************************************************************)
-(* Test *)
-(*****************************************************************************)
-
-let test_patch file =
-  let patch = CP.parse_patch file in
-  let groups = group_patch_depth_2 patch in
-  groups +> List.iter (fun (dir, email, minipatch) ->
-    print_header_patch minipatch;
-    pr ""
-  )
-
-
-(*****************************************************************************)
-(* Main entry point *)
-(*****************************************************************************)
-
-let main () =
-  begin
-    let args = ref [] in
-    let options = [
-      "-just_patch", Arg.Set just_patch, "";
-      "-no_verbose", Arg.Clear verbose, "";
-    ] in
-    let usage_msg =
-      "Usage: " ^ basename Sys.argv.(0) ^
-        " <patch> <prefix> <bodymailfile> <maintainerfile> [options]" ^ "\n"
-      ^ "Options are:"
-    in
-
-    Arg.parse (Arg.align options) (fun x -> args := x::!args) usage_msg;
-    args := List.rev !args;
-
-    (match (!args) with
-    | [patch] -> test_patch patch
-    | [patch;prefix;bodymail;subinfofile] ->
-        split_patch patch prefix bodymail subinfofile;
-
-        command2("rm -f /tmp/split_check*");
-        let checkfile = "/tmp/split_check.all" in
-        let checkprefix = "/tmp/split_check-xx" in
-        save_excursion verbose (fun () ->
-        save_excursion just_patch (fun () ->
-          just_patch := true;
-          verbose := false;
-          split_patch patch checkprefix bodymail subinfofile;
-        ));
-        command2("cat /tmp/split_check*.mail > " ^ checkfile);
-
-        let diff = Common.cmd_to_list (sprintf "diff %s %s " patch checkfile)
-        in
-        let samesize = Common.filesize patch = Common.filesize checkfile in
-        if (List.length diff <> 0)
-        then
-          if samesize
-          then pr2 "diff but at least same size"
-          else pr2 "PB: diff and not same size"
-
-    | _ -> Arg.usage (Arg.align options) usage_msg;
-    )
-  end
-
-(*****************************************************************************)
 let _ =
-  main ()
-
+  Arg.parse (Arg.align options) (fun x -> file := x) usage;
+  let i = open_in !file in
+  let patches = split_patch i in
+  let maintainer_table = resolve_maintainers !command patches in
+  let template = Common.cmd_to_list (Printf.sprintf "cat %s.tmp" !file) in
+  make_output_files template maintainer_table !file

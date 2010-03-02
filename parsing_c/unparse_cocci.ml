@@ -106,12 +106,14 @@ let print_around printer term = function
       print_anything bef; printer term; print_anything aft in
 
 let print_string_befaft fn fn1 x info =
+  let print ln col =
+    function Ast.Noindent s | Ast.Indent s -> print_string s ln col in
   List.iter
-    (function (s,ln,col) -> fn1(); print_string s ln col; force_newline())
+    (function (s,ln,col) -> fn1(); print ln col s; force_newline())
     info.Ast.strbef;
   fn x;
   List.iter
-    (function (s,ln,col) -> force_newline(); fn1(); print_string s ln col)
+    (function (s,ln,col) -> force_newline(); fn1(); print ln col s)
     info.Ast.straft in
 let print_meta (r,x) = print_text x in
 
@@ -135,11 +137,22 @@ let mcode fn (s,info,mc,pos) =
 	  (function line_before ->
 	    function (str,line,col) ->
 	      match line_before with
-		None -> unindent false;
+		None ->
+		  let str =
+		    match str with
+		      Ast.Noindent s -> unindent false; s
+		    | Ast.Indent s -> s in
 		  print_string str line col; Some line
 	      |	Some lb when line =|= lb ->
+		  Printf.printf "some, line same case\n";
+		  let str = match str with Ast.Noindent s | Ast.Indent s -> s in
 		  print_string str line col; Some line
-	      |	_ -> force_newline(); print_string str line col; Some line)
+	      |	_ ->
+		  let str =
+		    match str with
+		      Ast.Noindent s -> unindent false; s
+		    | Ast.Indent s -> s in
+		  force_newline(); print_string str line col; Some line)
 	  lb comments in
       let line_before = print_comments None info.Ast.strbef in
       (match line_before with
@@ -153,8 +166,7 @@ let mcode fn (s,info,mc,pos) =
 	 effort here
          print_comments takes care of interior newlines *)
       (match List.rev info.Ast.straft with
-	(str,_,_)::_ when String.length str > 0 && String.get str 0 = '#' ->
-	  force_newline()
+	(Ast.Noindent str,_,_)::_ -> force_newline()
       |	_ -> ());
       ()
       (* printing for rule generation *)
@@ -947,7 +959,9 @@ let rec pp_any = function
   | Ast.CaseLineTag(x) -> case_line "" x; false
 
   | Ast.ConstVolTag(x) -> const_vol x unknown unknown; false
-  | Ast.Pragma(xs) -> print_between force_newline print_text xs; false
+  | Ast.Pragma(xs) ->
+      let print = function Ast.Noindent s | Ast.Indent s -> print_text s in
+      print_between force_newline print xs; false
   | Ast.Token(x,None) -> print_text x; if_open_brace x
   | Ast.Token(x,Some info) ->
       mcode
