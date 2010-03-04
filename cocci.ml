@@ -495,7 +495,6 @@ let rec search_include_path searchlist relpath =
       []       -> Some relpath
     | hd::tail ->
 	let file = Filename.concat hd relpath in
-	  prerr_endline ("Looking for "^ file);
 	if Sys.file_exists file then
 	  Some file
 	else
