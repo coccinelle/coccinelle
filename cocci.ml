@@ -490,11 +490,24 @@ let sp_contain_typed_metavar rules =
  * For the moment we base in part our heuristic on the name of the file, e.g.
  * serio.c is related we think to #include <linux/serio.h>
  *)
+let rec search_include_path searchlist relpath =
+  match searchlist with
+      []       -> Some relpath
+    | hd::tail ->
+	let file = Filename.concat hd relpath in
+	  prerr_endline ("Looking for "^ file);
+	if Sys.file_exists file then
+	  Some file
+	else
+	  search_include_path tail relpath
 
-let interpret_include_path _ =
-  match !Flag_cocci.include_path with
-    None -> ["include"]
-  | Some x -> x
+let interpret_include_path relpath =
+  let searchlist =
+    match !Flag_cocci.include_path with
+	[] -> ["include"]
+      | x -> List.rev x
+  in
+    search_include_path searchlist relpath
 
 let (includes_to_parse:
        (Common.filename * Parse_c.program2) list ->
@@ -507,42 +520,35 @@ let (includes_to_parse:
       xs +> List.map (fun (file, cs) ->
 	let dir = Common.dirname file in
 
-	cs +> List.map (fun (c,_info_item) ->
+	cs +> Common.map_filter (fun (c,_info_item) ->
 	  match c with
 	  | Ast_c.CppTop
 	      (Ast_c.Include
 		 {Ast_c.i_include = ((x,ii)); i_rel_pos = info_h_pos;})  ->
 	    (match x with
             | Ast_c.Local xs ->
-		let f = Filename.concat dir (Common.join "/" xs) in
+		let relpath = Common.join "/" xs in
+		let f = Filename.concat dir (relpath) in
 	      (* for our tests, all the files are flat in the current dir *)
 		if not (Sys.file_exists f) && !Flag_cocci.relax_include_path
 		then
 		  let attempt2 = Filename.concat dir (Common.last xs) in
 		  if not (Sys.file_exists f) && all_includes
 		  then
-		    List.map (fun path ->
-				Filename.concat path
-				  (Common.join "/" xs)
-			     )
-		      (interpret_include_path())
-		  else [attempt2]
-		else [f]
+		    interpret_include_path relpath
+		  else Some attempt2
+		else Some f
 
             | Ast_c.NonLocal xs ->
+		let relpath = Common.join "/" xs in
 		if all_includes ||
 	        Common.fileprefix (Common.last xs) =$= Common.fileprefix file
 		then
-		    List.map (fun path ->
-				Filename.concat path
-				  (Common.join "/" xs)
-			     )
-		      (interpret_include_path())
-		else []
-            | Ast_c.Weird _ -> []
+		  interpret_include_path relpath
+		else None
+            | Ast_c.Weird _ -> None
 		  )
-	  | _ -> []))
-	+> List.concat
+	  | _ -> None))
 	+> List.concat
 	+> Common.uniq
 

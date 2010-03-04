@@ -274,10 +274,8 @@ let short_options = [
   "  causes local include files to be used";
   "-include_headers", Arg.Set include_headers,
   "    process header files independently";
-  "-I",   Arg.String (function x ->
-			match !FC.include_path with
-			    None      -> FC.include_path:= Some ([x])
-			  | Some list -> FC.include_path:= Some (x::list)
+  "-I",   Arg.String (fun x ->
+			FC.include_path:= x::!FC.include_path
 		     ),
   "  <dir> containing the header files (optional)";
 
@@ -920,8 +918,8 @@ let main () =
 	     chosen
 	   end
 	 else List.hd !args in
-      if !FC.include_path =*= None
-      then FC.include_path := Some ([Filename.concat chosen_dir "include"]));
+      if !FC.include_path =*= []
+      then FC.include_path := [Filename.concat chosen_dir "include"]);
 
     args := List.rev !args;
 
@@ -955,15 +953,15 @@ let main () =
 	begin
 	  try
 	    let prefix = "tests/" in
-              FC.include_path := Some ([prefix^"include"]);
+              FC.include_path := [prefix^"include"];
               Testing.testone prefix x !compare_with_expected
 	  with _ ->
-            FC.include_path := Some ["include"];
+            FC.include_path := ["include"];
             Testing.testone "" x !compare_with_expected
 	end
 
     | []  when !test_all ->
-        FC.include_path := Some ["tests/include"];
+        FC.include_path := ["tests/include"];
         if !expected_score_file <> ""
         then Testing.testall ~expected_score_file:!expected_score_file ()
         else Testing.testall ()
