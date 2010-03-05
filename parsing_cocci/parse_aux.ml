@@ -494,13 +494,13 @@ let make_script_rule_name_result lang deps =
   let l = id2name lang in
   Ast.ScriptRulename (l,deps)
 
-let make_initial_script_rule_name_result lang =
+let make_initial_script_rule_name_result lang deps =
   let l = id2name lang in
-  Ast.InitialScriptRulename(l)
+  Ast.InitialScriptRulename(l,deps)
 
-let make_final_script_rule_name_result lang =
+let make_final_script_rule_name_result lang deps =
   let l = id2name lang in
-  Ast.FinalScriptRulename(l)
+  Ast.FinalScriptRulename(l,deps)
 
 (* Allows type alone only when it is void and only when there is only one
     parameter.  This avoids ambiguity problems in the parser. *)

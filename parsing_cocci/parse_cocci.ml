@@ -1315,8 +1315,8 @@ let get_rule_name parse_fn starts_with_name get_tokens file prefix =
       | Ast.GeneratedRulename (nm,a,b,c,d,e) ->
           Ast.GeneratedRulename (check_name nm,a,b,c,d,e)
       | Ast.ScriptRulename(s,deps) -> Ast.ScriptRulename(s,deps)
-      | Ast.InitialScriptRulename(s) -> Ast.InitialScriptRulename(s)
-      | Ast.FinalScriptRulename(s) -> Ast.FinalScriptRulename(s)
+      | Ast.InitialScriptRulename(s,deps) -> Ast.InitialScriptRulename(s,deps)
+      | Ast.FinalScriptRulename(s,deps) -> Ast.FinalScriptRulename(s,deps)
     else
       Ast.CocciRulename(Some(mknm()),Ast.NoDep,[],[],Ast.Undetermined,false) in
   Data.in_rule_name := false;
@@ -1595,23 +1595,28 @@ let parse file =
             let data = collect_script_tokens tokens in
             (more,Ast0.ScriptRule(language, deps, metavars, data),[],tokens) in
 
-          let parse_if_script_rule k language =
+          let parse_if_script_rule k language _ deps =
             let get_tokens = tokens_script_all table file false lexbuf in
 
               (* script code *)
             let (more, tokens) = get_tokens [PC.TArobArob; PC.TArob] in
             let data = collect_script_tokens tokens in
-            (more,k (language, data),[],tokens) in
+            (more,k (language, deps, data),[],tokens) in
 
 	  let parse_iscript_rule =
 	    parse_if_script_rule
-	      (function (language,data) ->
-		Ast0.InitialScriptRule(language,data)) in
+	      (function (language,deps,data) ->
+		Ast0.InitialScriptRule(language,deps,data)) in
 
 	  let parse_fscript_rule =
 	    parse_if_script_rule
-	      (function (language,data) ->
-		Ast0.FinalScriptRule(language,data)) in
+	      (function (language,deps,data) ->
+		Ast0.FinalScriptRule(language,deps,data)) in
+
+	  let do_parse_script_rule fn l old_metas deps =
+	    match eval_depend deps virt with
+	      Some deps -> fn l old_metas deps
+	    | None ->  fn l old_metas Ast.FailDep in
 
           let parse_rule old_metas starts_with_name =
             let rulename =
@@ -1647,11 +1652,11 @@ let parse file =
 		    Data.in_generating := false;
 		    res)
             | Ast.ScriptRulename(l,deps) ->
-		(match eval_depend deps virt with
-		  Some deps -> parse_script_rule l old_metas deps
-		| None ->  parse_script_rule l old_metas Ast.FailDep)
-            | Ast.InitialScriptRulename(l) -> parse_iscript_rule l
-            | Ast.FinalScriptRulename(l)   -> parse_fscript_rule l
+		do_parse_script_rule parse_script_rule l old_metas deps
+            | Ast.InitialScriptRulename(l,deps) ->
+		do_parse_script_rule parse_iscript_rule l old_metas deps
+            | Ast.FinalScriptRulename(l,deps)   ->
+		do_parse_script_rule parse_fscript_rule l old_metas deps
             | _ -> failwith "Malformed rule name" in
 
 	  let rec loop old_metas starts_with_name =
@@ -1701,8 +1706,8 @@ let process file isofile verbose =
     List.map
       (function
           Ast0.ScriptRule (a,b,c,d) -> [([],Ast.ScriptRule (a,b,c,d))]
-	| Ast0.InitialScriptRule (a,b) -> [([],Ast.InitialScriptRule (a,b))]
-	| Ast0.FinalScriptRule (a,b) -> [([],Ast.FinalScriptRule (a,b))]
+	| Ast0.InitialScriptRule (a,b,c) -> [([],Ast.InitialScriptRule (a,b,c))]
+	| Ast0.FinalScriptRule (a,b,c) -> [([],Ast.FinalScriptRule (a,b,c))]
 	| Ast0.CocciRule
 	    ((minus, metavarsm,
 	      (iso, dropiso, dependencies, rule_name, exists)),

@@ -41,3 +41,4 @@ val sp_of_file :
       string list list *
       string list option
 
+val normalize_path : string -> string

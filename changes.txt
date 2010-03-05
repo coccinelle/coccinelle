@@ -15,7 +15,9 @@
 
 * 0.2.2
 ** Language:
-- Added ToTestExpression to iso language, see standard.iso for an explanation
+- Added ToTestExpression to iso language, see standard.iso for an
+  explanation
+- Added depends on to initialize and finalize script code
 
 ** Features:
 - Update Emacs mode (cocci.el) to support 'virtual' rules and fix other
@@ -40,6 +42,7 @@
   (-patch)
 - dropped space in + code after the binding of a type metavariable that is
   a pointer type
+- better handling of . or .. in -dir name
 
 * 0.2.1
 ** Language:

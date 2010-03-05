@@ -803,38 +803,27 @@ let rec dep in_and = function
   | Ast.NoDep   -> print_string "no_dep"
   | Ast.FailDep -> print_string "fail_dep"
 
+let script_header str lang deps code =
+  print_string "@@";
+  force_newline();
+  print_string (str ^ ":" ^ lang);
+  (match deps with
+    Ast.NoDep -> ()
+  | _ -> print_string " depends on "; dep true deps);
+  force_newline();
+  print_string "@@";
+  force_newline();
+  print_string code;
+  force_newline()
+
 let unparse z =
   match z with
-    Ast.InitialScriptRule (lang,code) ->
-      print_string "@@";
-      force_newline();
-      print_string ("initialize:" ^ lang);
-      force_newline();
-      print_string "@@";
-      force_newline();
-      print_string code;
-      force_newline()
-  | Ast.FinalScriptRule (lang,code) ->
-      print_string "@@";
-      force_newline();
-      print_string ("finalize:" ^ lang);
-      force_newline();
-      print_string "@@";
-      force_newline();
-      print_string code;
-      force_newline()
+    Ast.InitialScriptRule (lang,deps,code) ->
+      script_header "initialize" lang deps code
+  | Ast.FinalScriptRule (lang,deps,code) ->
+      script_header "finalize" lang deps code
   | Ast.ScriptRule (lang,deps,bindings,code) ->
-      print_string "@@";
-      force_newline();
-      print_string ("script:" ^ lang);
-      (match deps with
-	Ast.NoDep -> ()
-      | _ -> print_string " depends on "; dep true deps);
-      force_newline();
-      print_string "@@";
-      force_newline();
-      print_string code;
-      force_newline()
+      script_header "script" lang deps code
   | Ast.CocciRule (nm, (deps, drops, exists), x, _, _) ->
       print_string "@@";
       force_newline();

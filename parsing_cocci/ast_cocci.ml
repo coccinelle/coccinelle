@@ -523,8 +523,8 @@ and rulename =
   | GeneratedRulename of string option * dependency *
 	string list * string list * exists * bool
   | ScriptRulename of string * dependency
-  | InitialScriptRulename of string
-  | FinalScriptRulename of string
+  | InitialScriptRulename of string * dependency
+  | FinalScriptRulename of string * dependency
 
 and ruletype = Normal | Generated
 
@@ -533,8 +533,8 @@ and rule =
 	(dependency * string list (* dropped isos *) * exists) * top_level list
 	* bool list * ruletype
   | ScriptRule of string * dependency * (string * meta_name) list * string
-  | InitialScriptRule of string (*language*) * string (*code*)
-  | FinalScriptRule of string (*language*) * string (*code*)
+  | InitialScriptRule of string (*language*) * dependency * string (*code*)
+  | FinalScriptRule of string (*language*) * dependency * string (*code*)
 
 and dependency =
     Dep of string (* rule applies for the current binding *)

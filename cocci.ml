@@ -177,6 +177,20 @@ let fix_sgrep_diffs l =
 	else s :: loop2 n ss in
   loop2 0 (List.rev (loop1 0 l))
 
+let normalize_path file =
+  let fullpath =
+    if String.get file 0 = '/' then file else (Sys.getcwd()) ^ "/" ^ file in
+  let elements = Str.split_delim (Str.regexp "/") fullpath in
+  let rec loop prev = function
+      [] -> String.concat "/" (List.rev prev)
+    | "." :: rest -> loop prev rest
+    | ".." :: rest ->
+	(match prev with
+	  x::xs -> loop xs rest
+	| _ -> failwith "bad path")
+    | x::rest -> loop (x::prev) rest in
+  loop [] elements
+
 let show_or_not_diff2 cfile outfile =
   if !Flag_cocci.show_diff then begin
     match Common.fst(Compare_c.compare_to_original cfile outfile) with
@@ -200,11 +214,21 @@ let show_or_not_diff2 cfile outfile =
 		then String.sub prefix 0 (lp-1)
 		else prefix in
 	      let drop_prefix file =
-		if prefix =$= ""
-		then "/"^file
-		else
+		let file = normalize_path file in
+		if Str.string_match (Str.regexp prefix) file 0
+		then
 		  let lp = String.length prefix in
-		  String.sub file lp ((String.length file) - lp) in
+		  let lf = String.length file in
+		  if lp < lf
+		  then String.sub file lp (lf - lp)
+		  else
+		    failwith
+		      (Printf.sprintf "prefix %s doesn't match file %s"
+			 prefix file)
+		else
+		  failwith
+		    (Printf.sprintf "prefix %s doesn't match file %s"
+		       prefix file) in
 	      let diff_line =
 		match List.rev(Str.split (Str.regexp " ") line) with
 		  new_file::old_file::cmdrev ->
@@ -797,16 +821,15 @@ let python_code =
     local_python_code ^
     "cocci = Cocci()\n"
 
-let make_init rulenb lang code =
+let make_init rulenb lang deps code =
   let mv = [] in
-  let deps = Ast_cocci.NoDep in
-    {
-      scr_ast_rule = (lang, mv, code);
-      language = lang;
-      scr_dependencies = deps;
-      scr_ruleid = rulenb;
-      script_code = (if lang = "python" then python_code else "") ^code
-    }
+  {
+  scr_ast_rule = (lang, mv, code);
+  language = lang;
+  scr_dependencies = deps;
+  scr_ruleid = rulenb;
+  script_code = (if lang = "python" then python_code else "") ^code
+}
 
 (* --------------------------------------------------------------------- *)
 let prepare_cocci ctls free_var_lists negated_pos_lists
@@ -841,12 +864,11 @@ let prepare_cocci ctls free_var_lists negated_pos_lists
             script_code = code;
           }
           in ScriptRuleCocciInfo r
-      | Ast_cocci.InitialScriptRule (lang,code) ->
-	  let r = make_init rulenb lang code in
+      | Ast_cocci.InitialScriptRule (lang,deps,code) ->
+	  let r = make_init rulenb lang deps code in
 	    InitialScriptRuleCocciInfo r
-      | Ast_cocci.FinalScriptRule (lang,code) ->
+      | Ast_cocci.FinalScriptRule (lang,deps,code) ->
 	  let mv = [] in
-	  let deps = Ast_cocci.NoDep in
           let r =
           {
             scr_ast_rule = (lang, mv, code);
@@ -968,10 +990,6 @@ let rebuild_info_c_and_headers ccs isexp =
 
 
 
-
-
-
-
 let prepare_c files choose_includes : file_info list =
   let cprograms = List.map cprogram_of_file_cached files in
   let includes = includes_to_parse (zip files cprograms) choose_includes in
@@ -980,7 +998,8 @@ let prepare_c files choose_includes : file_info list =
   let all =
     (includes +> List.map (fun hpath -> Right hpath))
     ++
-    ((zip files cprograms) +> List.map (fun (file, asts) -> Left (file, asts)))
+    ((zip files cprograms) +>
+     List.map (fun (file, asts) -> Left (file, asts)))
   in
 
   let env = ref !TAC.initial_env in
@@ -1148,7 +1167,9 @@ let apply_python_rule r cache newes e rules_that_have_matched
 		show_or_not_binding "in" e;
 		Pycocci.build_classes (List.map (function (x,y) -> x) ve);
 		Pycocci.construct_variables mv ve;
-		let _ = Pycocci.pyrun_simplestring (local_python_code ^r.script_code) in
+		let _ =
+		  Pycocci.pyrun_simplestring
+		    (local_python_code ^r.script_code) in
 		relevant_bindings :: cache
 	      end in
 	  if !Pycocci.inc_match
@@ -1516,13 +1537,13 @@ let initial_final_bigloop2 ty rebuild r =
 
       adjust_pp_with_indent (fun () ->
 	Format.force_newline();
-	Pretty_print_cocci.unparse(rebuild r.scr_ast_rule));
+	Pretty_print_cocci.unparse(rebuild r.scr_ast_rule r.scr_dependencies));
     end;
 
   match r.language with
     "python" ->
       (* include_match makes no sense in an initial or final rule, although
-	 er have no way to prevent it *)
+	 we have no way to prevent it *)
       let _ = apply_python_rule r [] [] [] [] (ref []) in
       ()
   | _ ->
@@ -1584,10 +1605,16 @@ let pre_engine2 (coccifile, isofile) =
 	     InitialScriptRuleCocciInfo(r) ->
 	       (if List.mem r.language languages
 		then failwith ("double initializer found for "^r.language));
-	       initial_final_bigloop "initial"
-		 (function(x,_,y) -> Ast_cocci.InitialScriptRule(x,y))
-		 r;
-	       r.language::languages
+	       if interpret_dependencies [] [] r.scr_dependencies
+	       then
+		 begin
+		   initial_final_bigloop "initial"
+		     (fun (x,_,y) -> fun deps ->
+		       Ast_cocci.InitialScriptRule(x,deps,y))
+		     r;
+		   r.language::languages
+		 end
+	       else languages
 	   | _ -> languages)
       [] cocci_infos in
 
@@ -1598,8 +1625,9 @@ let pre_engine2 (coccifile, isofile) =
   in
     List.iter (fun lgg ->
 		 initial_final_bigloop "initial"
-		   (function(x,_,y) -> Ast_cocci.InitialScriptRule(x,y))
-		   (make_init (-1) lgg "");
+		   (fun (x,_,y) -> fun deps ->
+		     Ast_cocci.InitialScriptRule(x,deps,y))
+		   (make_init (-1) lgg Ast_cocci.NoDep "");
 	      )
       uninitialized_languages;
 
@@ -1678,7 +1706,7 @@ let post_engine2 (cocci_infos,_) =
 	      (if List.mem r.language languages
 	      then failwith ("double finalizer found for "^r.language));
 	      initial_final_bigloop "final"
-		(function(x,_,y) -> Ast_cocci.FinalScriptRule(x,y))
+		(fun (x,_,y) -> fun deps -> Ast_cocci.FinalScriptRule(x,deps,y))
 		r;
 	      r.language::languages
 	  | _ -> languages)

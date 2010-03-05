@@ -371,8 +371,10 @@ and parsed_rule =
   | ScriptRule of
       string * Ast_cocci.dependency * (string * Ast_cocci.meta_name) list *
 	string
-  | InitialScriptRule of string (*language*) * string (*code*)
-  | FinalScriptRule   of string (*language*) * string (*code*)
+  | InitialScriptRule of
+      string (*language*) * Ast_cocci.dependency * string (*code*)
+  | FinalScriptRule   of
+      string (*language*) * Ast_cocci.dependency * string (*code*)
 
 (* --------------------------------------------------------------------- *)
 
