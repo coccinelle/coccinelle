@@ -45,6 +45,7 @@
 - allow keywords and metavariable names in identifier constraints (not sure
   keywords is very useful, though)
 - no lubtype on arguments of && and || in SmPL
+- allow unknown as type for array indices in SmPL
 
 * 0.2.1
 ** Language:
