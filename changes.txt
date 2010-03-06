@@ -30,7 +30,7 @@
 ** Bugfix:
 - correct interaction between virtual rules and included .cocci files
 - improvement in treatment of ! in isos, to avoid duplicating + code
-- improvement intreatment of metavars as isos, to avoid duplicating + code
+- improvement in treatment of metavars as isos, to avoid duplicating + code
   between toplevel and variable instantiation
 - test expression of smpl conditional, etc no longer assumed to have type
   int
