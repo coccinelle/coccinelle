@@ -44,6 +44,7 @@
 - better handling of . or .. in -dir name
 - allow keywords and metavariable names in identifier constraints (not sure
   keywords is very useful, though)
+- no lubtype on arguments of && and || in SmPL
 
 * 0.2.1
 ** Language:
