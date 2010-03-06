@@ -42,6 +42,8 @@
 - dropped space in + code after the binding of a type metavariable that is
   a pointer type
 - better handling of . or .. in -dir name
+- allow keywords and metavariable names in identifier constraints (not sure
+  keywords is very useful, though)
 
 * 0.2.1
 ** Language:

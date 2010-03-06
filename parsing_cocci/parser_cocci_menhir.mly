@@ -1495,20 +1495,20 @@ regexp_eqid:
 	 }
 
 not_eqid:
-       TNotEq i=pure_ident
+       TNotEq i=pure_ident_or_meta_ident
          { (if !Data.in_iso
 	   then failwith "constraints not allowed in iso file");
 	   (if !Data.in_generating
            (* pb: constraints not stored with metavars; too lazy to search for
 	      them in the pattern *)
 	   then failwith "constraints not allowed in a generated rule file");
-	   Ast.IdNegIdSet([fst i]) }
-     | TNotEq TOBrace l=comma_list(pure_ident) TCBrace
+	   Ast.IdNegIdSet([snd i]) }
+     | TNotEq TOBrace l=comma_list(pure_ident_or_meta_ident) TCBrace
 	 { (if !Data.in_iso
 	   then failwith "constraints not allowed in iso file");
 	   (if !Data.in_generating
 	   then failwith "constraints not allowed in a generated rule file");
-	   Ast.IdNegIdSet(List.map fst l)
+	   Ast.IdNegIdSet(List.map snd l)
 	 }
 
 re_or_not_eqe:
