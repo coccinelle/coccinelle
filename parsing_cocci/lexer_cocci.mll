@@ -278,6 +278,7 @@ let init _ =
   prev_plus := false;
   line_start := 0;
   current_line_started := false;
+  current_line_type := (D.CONTEXT,0,0);
   col_zero := true;
   pm := UNKNOWN;
   Data.in_rule_name := false;
@@ -454,11 +455,9 @@ rule token = parse
 
   | "//" [^ '\n']* {
     match !current_line_type with
-      (D.CONTEXT,_,_) -> start_line false; token lexbuf
-    | _ ->
-	if !Data.in_iso
-	then (start_line false; token lexbuf)
-	else TPragma (Ast.Indent (tok lexbuf), get_current_line_type lexbuf) }
+      (D.PLUS,_,_) | (D.PLUSPLUS,_,_) ->
+	TPragma (Ast.Indent (tok lexbuf), get_current_line_type lexbuf)
+    | _ -> start_line false; token lexbuf }
 
   | "@@" { start_line true; TArobArob }
   | "@"  { pass_zero();
