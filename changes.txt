@@ -24,7 +24,7 @@
   keywords sush as 'depends on', 'using', 'disable'
 - better treatment of != 0 in isos, communtativity for ==/!= for all
   constants
-- allow adding // comments
+- allow adding // comments and blank lines
 - Add support for multiple -I options
 
 ** Bugfix:
