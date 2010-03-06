@@ -25,7 +25,6 @@
 - better treatment of != 0 in isos, communtativity for ==/!= for all
   constants
 - allow adding // comments
-- "-test" option also checks for .c/.cocci pair in the current directory
 - Add support for multiple -I options
 
 ** Bugfix:
