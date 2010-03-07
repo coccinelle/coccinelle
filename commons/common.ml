@@ -3238,7 +3238,13 @@ let lfile_exists filename =
     | (Unix.S_REG | Unix.S_LNK) -> true
     | _ -> false
     )
-  with Unix.Unix_error (Unix.ENOENT, _, _) -> false
+  with
+    Unix.Unix_error (Unix.ENOENT, _, _) -> false
+  | Unix.Unix_error (Unix.ENOTDIR, _, _) -> false
+  | Unix.Unix_error (error, _, fl) ->
+      failwith
+	(Printf.sprintf "unexpected error %s for file %s"
+	   (Unix.error_message error) fl)
 
 let is_directory file =
   (Unix.stat file).Unix.st_kind =*= Unix.S_DIR

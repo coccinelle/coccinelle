@@ -48,6 +48,9 @@
 - allow unknown as type for array indices in SmPL
 - support matching of static annotation on functions that are both static
   and inline
+- support ENOTDIR error in Common.lfile_exists, to allow for the case where
+  an include file is in a subdirectory that exists but is an ordinary file,
+  not a directory.
 
 * 0.2.1
 ** Language:
