@@ -3037,20 +3037,18 @@ and storage_optional_allminus allminus stoa (stob, iistob) =
   | Some x, ((stobis, inline)) ->
       if equal_storage (term x) stobis
       then
-        match iistob with
-        | [i1] ->
-           tokenf x i1 >>= (fun x i1 ->
-             return (Some x,  ((stobis, inline), [i1]))
-           )
-       (* or if have inline ? have to do a split_storage_inline a la
-        * split_signb_baseb_ii *)
-        | _ -> raise Impossible
+	let rec loop acc = function
+	    [] -> fail
+	  | i1::iistob ->
+	      let try1 =
+		tokenf x i1 >>= (fun x i1 ->
+		  let rebuilt = (List.rev acc) @ i1 :: iistob in
+		  return (Some x,  ((stobis, inline), rebuilt))) in
+	      let try2 x = loop (i1::acc) iistob x in (* x for laziness *)
+	      try1 >||> try2 in
+	loop [] iistob
       else fail
   )
-
-
-
-
 
 and fullType_optional_allminus allminus tya retb =
   match tya with

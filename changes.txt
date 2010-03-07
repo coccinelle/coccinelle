@@ -46,6 +46,8 @@
   keywords is very useful, though)
 - no lubtype on arguments of && and || in SmPL
 - allow unknown as type for array indices in SmPL
+- support matching of static annotation on functions that are both static
+  and inline
 
 * 0.2.1
 ** Language:
