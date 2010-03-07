@@ -1286,9 +1286,12 @@ let rec apply_cocci_rule r rules_that_have_ever_matched es
 		      (new_bindings +>
 		       List.map
 			 (List.filter
-			    (fun (s,v) ->
-			      List.mem s r.used_after &&
-			      not (List.mem s old_variables)))) in
+			    (function
+				(* see comment before combine_pos *)
+				(s,Ast_c.MetaPosValList []) -> false
+			      |	(s,v) ->
+				  List.mem s r.used_after &&
+				  not (List.mem s old_variables)))) in
 		  List.map
 		    (function new_binding_to_add ->
 		      (List.sort compare
@@ -1369,22 +1372,28 @@ and reassociate_positions free_vars negated_pos_vars envs =
      (List.map (function (non_pos,_) -> List.assoc non_pos extended_relevant)
 	splitted_relevant)
 
+(* If the negated posvar is not bound at all, this function will
+nevertheless bind it to [].  If we get rid of these bindings, then the
+matching of the term the position variable with the constraints will fail
+because some variables are unbound.  So we let the binding be [] and then
+we will have to clean these up afterwards.  This should be the only way
+that a position variable can have an empty binding. *)
 and combine_pos negated_pos_vars others =
   List.map
     (function posvar ->
-      (posvar,
-       Ast_c.MetaPosValList
-	 (List.sort compare
-	    (List.fold_left
-	       (function positions ->
-		 function other_list ->
-		   try
-		     match List.assoc posvar other_list with
-		       Ast_c.MetaPosValList l1 ->
-			 Common.union_set l1 positions
-		     | _ -> failwith "bad value for a position variable"
-		   with Not_found -> positions)
-	       [] others))))
+      let positions =
+	List.sort compare
+	  (List.fold_left
+	     (function positions ->
+	       function other_list ->
+		 try
+		   match List.assoc posvar other_list with
+		     Ast_c.MetaPosValList l1 ->
+		       Common.union_set l1 positions
+		   | _ -> failwith "bad value for a position variable"
+		 with Not_found -> positions)
+	     [] others) in
+      (posvar,Ast_c.MetaPosValList positions))
     negated_pos_vars
 
 and process_a_generated_a_env_a_toplevel2 r env = function

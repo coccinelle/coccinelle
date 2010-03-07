@@ -40,7 +40,8 @@ and pp_binding subst =
   begin
     pp "[";
     Common.print_between (fun () -> pp ";"; Format.print_cut() )
-      (fun ((_,s), kind) -> pp s; pp " --> "; pp_binding_kind kind)
+      (fun ((r,s), kind) ->
+	pp r; pp "."; pp s; pp " --> "; pp_binding_kind kind)
       subst;
     pp "]";
   end
