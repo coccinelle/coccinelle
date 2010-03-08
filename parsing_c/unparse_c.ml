@@ -790,6 +790,7 @@ let new_tabbing a =
 
 
 let rec adjust_indentation xs =
+
   let _current_tabbing = ref "" in
   let tabbing_unit = ref None in
 
