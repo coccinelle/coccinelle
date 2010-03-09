@@ -8,12 +8,13 @@ let tok = Lexing.lexeme
 (* ---------------------------------------------------------------------- *)
 (* tokens *)
 
-let myrule = [^'"''@']+
+let myrule = [^'"''@''/']+
 
 rule token = parse
-  | myrule		{ TScriptData (tok lexbuf) }
+  | myrule { TScriptData (tok lexbuf) }
   | "@@" { TArobArob }
   | "@"  { TArob }
+  | "/"  { TScriptData (tok lexbuf) }
   | "//" [^ '\n']* { token lexbuf } (* skip SmPL comments *)
   | '"'  { TScriptData (Printf.sprintf "\"%s\"" (string lexbuf)) }
   | eof  { EOF }
