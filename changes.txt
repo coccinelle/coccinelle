@@ -51,7 +51,9 @@
 - support ENOTDIR error in Common.lfile_exists, to allow for the case where
   an include file is in a subdirectory that exists but is an ordinary file,
   not a directory.
-- better management of unbound position variables that appear in constraints
+- better management of unbound position variables that appear in
+  constraints
+- require + on every line of a multiline comment
 
 * 0.2.1
 ** Language:
