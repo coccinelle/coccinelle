@@ -952,13 +952,19 @@ let main () =
     (* --------------------------------------------------------- *)
     | [x] when !test_mode    ->
 	begin
+	  let prefix = "tests/" in
 	  try
-	    let prefix = "tests/" in
               FC.include_path := [prefix^"include"];
               Testing.testone prefix x !compare_with_expected
-	  with _ ->
-            FC.include_path := ["include"];
-            Testing.testone "" x !compare_with_expected
+	  with error ->
+	    let testfile = prefix ^ x ^ ".cocci" in
+	    if not (Sys.file_exists testfile) then
+	      begin
+		FC.include_path := ["include"];
+		Testing.testone "" x !compare_with_expected
+	      end
+	    else
+	      raise error
 	end
 
     | []  when !test_all ->
