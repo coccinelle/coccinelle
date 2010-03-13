@@ -21,7 +21,6 @@
 ** Bugfix:
 - drop inconsistent paths check when only one node was matched
 
-
 * 0.2.2
 ** Language:
 - Added ToTestExpression to iso language, see standard.iso for an
@@ -424,7 +423,6 @@
 ** Internals: 
 - isomorphisms don't apply under signed/unsigned, to prevent the creation
   of things like unsigned signed int.  Need a better solution for this.
-
 
 * 0.1.3
 
