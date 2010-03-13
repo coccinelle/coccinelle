@@ -953,18 +953,20 @@ let main () =
     | [x] when !test_mode    ->
 	begin
 	  let prefix = "tests/" in
-	  try
-              FC.include_path := [prefix^"include"];
-              Testing.testone prefix x !compare_with_expected
-	  with error ->
-	    let testfile = prefix ^ x ^ ".cocci" in
-	    if not (Sys.file_exists testfile) then
+	  let testfile = x ^ ".cocci" in
+	    if Sys.file_exists (prefix ^ testfile) then
 	      begin
-		FC.include_path := ["include"];
-		Testing.testone "" x !compare_with_expected
+		FC.include_path := [prefix^"include"];
+		Testing.testone prefix x !compare_with_expected
 	      end
 	    else
-	      raise error
+	      if Sys.file_exists testfile then
+		begin
+		  FC.include_path := ["include"];
+		  Testing.testone "" x !compare_with_expected
+		end
+	      else
+		pr2 (spf "ERROR: File %s does not exist" testfile)
 	end
 
     | []  when !test_all ->
