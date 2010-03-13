@@ -13,6 +13,15 @@
 - Add more information in documentation, man pages and wiki
 
 
+* 0.2.3
+** Language:
+
+** Features:
+
+** Bugfix:
+- drop inconsistent paths check when only one node was matched
+
+
 * 0.2.2
 ** Language:
 - Added ToTestExpression to iso language, see standard.iso for an

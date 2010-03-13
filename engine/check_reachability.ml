@@ -69,19 +69,24 @@ let create_formulas _ =
 	  let match_roots =
 	    List.map (function n -> Ast_ctl.Pred(Node(n)))
 	      (List.sort compare !roots) in
-	  let roots =
+	  let or_roots =
 	    List.fold_left
 	      (function prev -> function cur -> Ast_ctl.Or(prev,cur))
 	      (List.hd match_roots) (List.tl match_roots) in
-	  (node,
-	   Ast_ctl.AF(Ast_ctl.BACKWARD,Ast_ctl.NONSTRICT,
-		      Ast_ctl.Or(roots,Ast_ctl.Pred(After))),
-	   Ast_ctl.And
-	     (Ast_ctl.NONSTRICT,
-	      Ast_ctl.Not(roots),
-	      Ast_ctl.EX
-		(Ast_ctl.BACKWARD,
-		 Ast_ctl.EU(Ast_ctl.BACKWARD,roots,match_node))))
+	  (* no point to search if no path, and the presence of after
+	     in the AF formula can make things slow *)
+	  if List.mem node !roots
+	  then acc
+	  else
+	    (node,
+	     Ast_ctl.AF(Ast_ctl.BACKWARD,Ast_ctl.NONSTRICT,
+			Ast_ctl.Or(or_roots,Ast_ctl.Pred(After))),
+	     Ast_ctl.And
+	       (Ast_ctl.NONSTRICT,
+		Ast_ctl.Not(or_roots),
+		Ast_ctl.EX
+		  (Ast_ctl.BACKWARD,
+		   Ast_ctl.EU(Ast_ctl.BACKWARD,or_roots,match_node))))
 	   (*exef
 	      (wrap(Ast_ctl.And(Ast_ctl.NONSTRICT,match_node,exef(roots))))*)
 	  :: acc)
