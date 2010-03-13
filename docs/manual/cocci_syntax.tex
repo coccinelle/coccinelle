@@ -239,8 +239,8 @@ typing, metavariables for scripts do not include type declarations.
   \RULE{\rt{script\_metavariables}}
   \CASE{@ script:\NT{language} \OPT{depends on \NT{dep}} @
         \any{\NT{script\_metadecl}} @@}
-  \CASE{@ initialize:\NT{language} @}
-  \CASE{@ finalize:\NT{language} @}
+  \CASE{@ initialize:\NT{language} \OPT{depends on \NT{dep}} @}
+  \CASE{@ finalize:\NT{language} \OPT{depends on \NT{dep}} @}
 
   \RULE{\rt{language}} \CASE{python}
 
