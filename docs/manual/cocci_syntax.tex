@@ -48,6 +48,11 @@ not be use in this code.  Spatch scans the script code for the next
 \texttt{@} and considers that to be the beginning of the next rule, even if
 \texttt{@} occurs within e.g., a string or a comment.
 
+\texttt{virtual} keyword is used to declare virtual rules. Virtual
+rules may be subsequently used as a dependency for the rules in the
+SmPL file. Whether a virtual rule is defined or not is controlled by
+the \texttt{-D} option on the command line.
+
 % Between the metavariables and the transformation rule, there can be a
 % specification of constraints on the names of the old and new files,
 % analogous to the filename specifications in the standard patch syntax.
