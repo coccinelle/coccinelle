@@ -17,9 +17,10 @@
 ** Language:
 
 ** Features:
+- drop inconsistent paths check when only one node was matched
 
 ** Bugfix:
-- drop inconsistent paths check when only one node was matched
+- print diff when only a comment is added
 
 * 0.2.2
 ** Language:
