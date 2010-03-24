@@ -658,6 +658,8 @@ includes:
 			    P.clt2mcode
 			      (Ast.NonLocal (Parse_aux.str2inc (P.id2name $1)))
 			      (P.drop_bef clt))) }
+| d=defineop TLineEnd
+    { d (Ast0.wrap(Ast0.DOTS([]))) }
 | d=defineop t=ctype TLineEnd
     { let ty = Ast0.wrap(Ast0.TopExp(Ast0.wrap(Ast0.TypeExp(t)))) in
       d (Ast0.wrap(Ast0.DOTS([ty]))) }

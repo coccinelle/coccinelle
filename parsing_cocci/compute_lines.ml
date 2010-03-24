@@ -183,17 +183,21 @@ let dots is_dots prev fn d =
 (* --------------------------------------------------------------------- *)
 (* Identifier *)
 
-let rec ident i =
+(* for #define name, with no value, to compute right side *)
+let mkidres a b c d r = (mkres a b c d,r)
+
+let rec full_ident i =
   match Ast0.unwrap i with
       Ast0.Id(name) as ui ->
-	let name = promote_mcode name in mkres i ui name name
+	let name = promote_mcode name in mkidres i ui name name name
     | Ast0.MetaId(name,_,_)
     | Ast0.MetaFunc(name,_,_) | Ast0.MetaLocalFunc(name,_,_) as ui ->
-	let name = promote_mcode name in mkres i ui name name
+	let name = promote_mcode name in mkidres i ui name name name
     | Ast0.OptIdent(id) ->
-	let id = ident id in mkres i (Ast0.OptIdent(id)) id id
+	let (id,r) = full_ident id in mkidres i (Ast0.OptIdent(id)) id id r
     | Ast0.UniqueIdent(id) ->
-	let id = ident id in mkres i (Ast0.UniqueIdent(id)) id id
+	let (id,r) = full_ident id in mkidres i (Ast0.UniqueIdent(id)) id id r
+and ident i = let (id,_) = full_ident i in id
 
 (* --------------------------------------------------------------------- *)
 (* Expression *)
@@ -571,14 +575,14 @@ let rec define_param p =
       let res = define_param dp in
       mkres p (Ast0.UniqueDParam(res)) res res
 
-let define_parameters x =
+let define_parameters x id =
   match Ast0.unwrap x with
-    Ast0.NoParams -> x (* no info, should be ignored *)
+    Ast0.NoParams -> (x,id) (* no info, should be ignored *)
   | Ast0.DParams(lp,dp,rp) ->
       let dp = dots is_define_param_dots None define_param dp in
       let l = promote_mcode lp in
       let r = promote_mcode rp in
-      mkres x (Ast0.DParams(lp,dp,rp)) l r
+      (mkres x (Ast0.DParams(lp,dp,rp)) l r, r)
 
 (* --------------------------------------------------------------------- *)
 (* Top-level code *)
@@ -769,9 +773,9 @@ let rec statement s =
     | Ast0.Include(inc,stm) ->
 	mkres s (Ast0.Include(inc,stm)) (promote_mcode inc) (promote_mcode stm)
     | Ast0.Define(def,id,params,body) ->
-	let id = ident id in
-	let params = define_parameters params in
-	let body = dots is_stm_dots None statement body in
+	let (id,right) = full_ident id in
+	let (params,prev) = define_parameters params right in
+	let body = dots is_stm_dots (Some prev) statement body in
 	mkres s (Ast0.Define(def,id,params,body)) (promote_mcode def) body
     | Ast0.OptStm(stm) ->
 	let stm = statement stm in mkres s (Ast0.OptStm(stm)) stm stm

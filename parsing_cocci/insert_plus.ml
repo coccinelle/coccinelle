@@ -935,7 +935,7 @@ let merge_one : (minus_join_point * Ast0.info * 'a) list *
     m;
   Printf.printf "plus code\n";
   List.iter
-    (function (info,p) ->
+    (function (info,_,p) ->
       Printf.printf "start %d end %d real_start %d real_end %d\n"
 	info.Ast0.pos_info.Ast0.logical_start
 	info.Ast0.pos_info.Ast0.logical_end

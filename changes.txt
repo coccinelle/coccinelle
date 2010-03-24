@@ -18,6 +18,7 @@
 
 ** Features:
 - drop inconsistent paths check when only one node was matched
+- allow #define id with no definition
 
 ** Bugfix:
 - print diff when only a comment is added
