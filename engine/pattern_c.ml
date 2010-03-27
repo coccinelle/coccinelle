@@ -340,51 +340,83 @@ module XMATCH = struct
           else None
 
       | None ->
-          let valu' =
-            match valu with
-              Ast_c.MetaIdVal a        -> Ast_c.MetaIdVal a
-            | Ast_c.MetaFuncVal a      -> Ast_c.MetaFuncVal a
-            | Ast_c.MetaLocalFuncVal a -> Ast_c.MetaLocalFuncVal a (*more?*)
-            | Ast_c.MetaExprVal a ->
-		Ast_c.MetaExprVal
-		  (if strip
-		  then Lib_parsing_c.al_expr a
-		  else Lib_parsing_c.semi_al_expr a)
-            | Ast_c.MetaExprListVal a ->
-		Ast_c.MetaExprListVal
-		  (if strip
-		  then Lib_parsing_c.al_arguments a
-		  else Lib_parsing_c.semi_al_arguments a)
-
-            | Ast_c.MetaStmtVal a ->
-		Ast_c.MetaStmtVal
-		  (if strip
-		  then Lib_parsing_c.al_statement a
-		  else Lib_parsing_c.semi_al_statement a)
-            | Ast_c.MetaTypeVal a ->
-		Ast_c.MetaTypeVal
-		  (if strip
-		  then Lib_parsing_c.al_type a
-		  else Lib_parsing_c.semi_al_type a)
-
-            | Ast_c.MetaInitVal a ->
-		Ast_c.MetaInitVal
-		  (if strip
-		  then Lib_parsing_c.al_init a
-		  else Lib_parsing_c.semi_al_init a)
-
-            | Ast_c.MetaListlenVal a -> Ast_c.MetaListlenVal a
-
-            | Ast_c.MetaParamVal a -> failwith "not handling MetaParamVal"
-            | Ast_c.MetaParamListVal a ->
-		Ast_c.MetaParamListVal
-		  (if strip
-		  then Lib_parsing_c.al_params a
-		  else Lib_parsing_c.semi_al_params a)
-
-            | Ast_c.MetaPosVal (pos1,pos2) -> Ast_c.MetaPosVal (pos1,pos2)
-            | Ast_c.MetaPosValList l -> Ast_c.MetaPosValList l
-          in Some (tin.binding +> Common.insert_assoc (k, valu'))
+	  let success valu' =
+	    Some (tin.binding +> Common.insert_assoc (k, valu')) in
+          (match valu with
+            Ast_c.MetaIdVal a        ->
+	      success(Ast_c.MetaIdVal a)
+          | Ast_c.MetaFuncVal a      ->
+	      success(Ast_c.MetaFuncVal a)
+          | Ast_c.MetaLocalFuncVal a ->
+	      success(Ast_c.MetaLocalFuncVal a) (*more?*)
+          | Ast_c.MetaExprVal (a,c) ->
+	      (* c in the value is only to prepare for the future in which
+		 we figure out how to have subterm constraints on unbound
+		 variables.  Now an environment will only contain expression
+		 values with empty constraints, as all constraints are
+		 resolved at binding time *)
+	      let stripped =
+		if strip
+		then Lib_parsing_c.al_expr a
+		else Lib_parsing_c.semi_al_expr a in
+	      let inh_stripped = Lib_parsing_c.al_inh_expr a in
+	      let rec loop = function
+		  [] -> success(Ast_c.MetaExprVal(stripped,[]))
+		| c::cs ->
+		    let tmp =
+		      Common.optionise
+			(fun () -> tin.binding0 +> List.assoc c) in
+		    (match tmp with
+		      Some (Ast_c.MetaExprVal(v,_)) ->
+			let inh_v = Lib_parsing_c.al_inh_expr v in
+			if C_vs_c.subexpression_of_expression inh_stripped inh_v
+			then loop cs (* forget satisfied constraints *)
+			else None (* failure *)
+		    | Some _ -> failwith "not possible"
+		      (* fail if this should be a subterm of something that
+			 doesn't exist *)
+		    | None -> None) in
+	      loop c
+          | Ast_c.MetaExprListVal a ->
+	      success
+		(Ast_c.MetaExprListVal
+		   (if strip
+		   then Lib_parsing_c.al_arguments a
+		   else Lib_parsing_c.semi_al_arguments a))
+		
+          | Ast_c.MetaStmtVal a ->
+	      success
+		(Ast_c.MetaStmtVal
+		   (if strip
+		   then Lib_parsing_c.al_statement a
+		   else Lib_parsing_c.semi_al_statement a))
+          | Ast_c.MetaTypeVal a ->
+	      success
+		(Ast_c.MetaTypeVal
+		   (if strip
+		   then Lib_parsing_c.al_type a
+		   else Lib_parsing_c.semi_al_type a))
+		
+          | Ast_c.MetaInitVal a ->
+	      success
+		(Ast_c.MetaInitVal
+		   (if strip
+		   then Lib_parsing_c.al_init a
+		   else Lib_parsing_c.semi_al_init a))
+		
+          | Ast_c.MetaListlenVal a -> success(Ast_c.MetaListlenVal a)
+		
+          | Ast_c.MetaParamVal a -> failwith "not handling MetaParamVal"
+          | Ast_c.MetaParamListVal a ->
+	      success
+		(Ast_c.MetaParamListVal
+		   (if strip
+		   then Lib_parsing_c.al_params a
+		   else Lib_parsing_c.semi_al_params a))
+		
+          | Ast_c.MetaPosVal (pos1,pos2) ->
+	      success(Ast_c.MetaPosVal (pos1,pos2))
+          | Ast_c.MetaPosValList l -> success (Ast_c.MetaPosValList l))
 
   let envf keep inherited = fun (k, valu, get_max_min) f tin ->
     let x = Ast_cocci.unwrap_mcode k in

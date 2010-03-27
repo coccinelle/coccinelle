@@ -79,10 +79,26 @@ let collect_refs include_constraints =
   let astfvexpr recursor k e =
     bind (k e)
       (match Ast.unwrap e with
-	Ast.MetaExpr(name,_,_,Some type_list,_,_) ->
+	Ast.MetaExpr(name,constraints,_,Some type_list,_,_) ->
 	  let types = List.fold_left type_collect option_default type_list in
-	  bind [metaid name] types
-      | Ast.MetaErr(name,_,_,_) | Ast.MetaExpr(name,_,_,_,_,_) -> [metaid name]
+	  let extra =
+	    if include_constraints
+	    then
+	      match constraints with
+		Ast.SubExpCstrt l -> l
+	      |	_ -> []
+	    else [] in
+	  bind extra (bind [metaid name] types)
+      | Ast.MetaErr(name,constraints,_,_)
+      | Ast.MetaExpr(name,constraints,_,_,_,_) ->
+	  let extra =
+	    if include_constraints
+	    then
+	      match constraints with
+		Ast.SubExpCstrt l -> l
+	      |	_ -> []
+	    else [] in
+	  bind extra [metaid name]
       | Ast.MetaExprList(name,None,_,_) -> [metaid name]
       | Ast.MetaExprList(name,Some (lenname,_,_),_,_) ->
 	  [metaid name;metaid lenname]

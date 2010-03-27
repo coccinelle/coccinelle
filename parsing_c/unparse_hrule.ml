@@ -227,7 +227,7 @@ let print_extra_typedefs pr env =
       match vl with
 	Ast_c.MetaIdVal(_) | Ast_c.MetaFuncVal(_)
       | Ast_c.MetaLocalFuncVal(_) -> ()
-      | Ast_c.MetaExprVal(exp) -> Visitor_c.vk_expr bigf exp
+      | Ast_c.MetaExprVal(exp,_) -> Visitor_c.vk_expr bigf exp
       | Ast_c.MetaExprListVal(args) -> Visitor_c.vk_argument_list bigf args
       | Ast_c.MetaParamVal(param) -> Visitor_c.vk_param bigf param
       | Ast_c.MetaParamListVal(params) -> Visitor_c.vk_param_list bigf params
@@ -264,8 +264,8 @@ let rename argids env =
        match vl with
 	 Ast_c.MetaIdVal(_) | Ast_c.MetaFuncVal(_)
        | Ast_c.MetaLocalFuncVal(_) -> vl
-       | Ast_c.MetaExprVal(exp) ->
-	   Ast_c.MetaExprVal(Visitor_c.vk_expr_s bigf exp)
+       | Ast_c.MetaExprVal(exp,c) ->
+	   Ast_c.MetaExprVal(Visitor_c.vk_expr_s bigf exp,c)
        | Ast_c.MetaExprListVal(args) ->
 	   Ast_c.MetaExprListVal(Visitor_c.vk_arguments_s bigf args)
        | Ast_c.MetaParamVal(param) ->

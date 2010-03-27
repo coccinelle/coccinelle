@@ -138,6 +138,7 @@ and constraints =
     NoConstraint
   | NotIdCstrt     of Ast.idconstraint
   | NotExpCstrt    of expression list
+  | SubExpCstrt    of Ast.meta_name list
 
 and listlen = Ast.meta_name mcode option
 

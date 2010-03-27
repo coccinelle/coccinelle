@@ -191,6 +191,7 @@ and constraints =
     NoConstraint
   | NotIdCstrt     of idconstraint
   | NotExpCstrt    of expression list
+  | SubExpCstrt    of meta_name list
 
 (* ANY = int E; ID = idexpression int X; CONST = constant int X; *)
 and form = ANY | ID | LocalID | CONST (* form for MetaExp *)

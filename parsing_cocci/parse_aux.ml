@@ -310,6 +310,14 @@ let check_meta tok =
       raise
 	(Semantic_cocci.Semantic ("arity not allowed on imported declaration"))
 
+let check_inherited_constraint meta_name fn =
+  match meta_name with
+    (None,_) -> failwith "constraint must be an inherited variable"
+  | (Some rule,name) ->
+      let i = (rule,name) in
+      check_meta(fn i);
+      i
+
 let create_metadec ar ispure kindfn ids current_rule =
   List.concat
     (List.map

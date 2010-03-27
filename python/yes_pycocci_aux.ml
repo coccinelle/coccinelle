@@ -15,7 +15,7 @@ let stringrep mvb = match mvb with
   Ast_c.MetaIdVal        s -> s
 | Ast_c.MetaFuncVal      s -> s
 | Ast_c.MetaLocalFuncVal s -> s
-| Ast_c.MetaExprVal      expr -> exprrep expr
+| Ast_c.MetaExprVal      (expr,_) -> exprrep expr
 | Ast_c.MetaExprListVal  expr_list -> "TODO: <<exprlist>>"
 | Ast_c.MetaTypeVal      typ -> call_pretty Pretty_print_c.pp_type_gen typ
 | Ast_c.MetaInitVal      ini -> call_pretty Pretty_print_c.pp_init_gen ini

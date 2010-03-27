@@ -297,3 +297,26 @@ let eq_type a b =
 
 let merge_type a b =
   Common.profile_code "C_vs_c" (fun () -> merge_type2 a b)
+
+
+(* ------------------------------------------------------------------------- *)
+
+(* This seemed like a reasonable place to put this, given the file name,
+but not sure that it is the case...  This has to be compatible with the
+function equal_inh_metavarval.  It is indeed not so clear why that is
+defined in cocci_vs_c.ml, and not here, since it is comparing C code to C
+code. *)
+
+let subexpression_of_expression small_exp big_exp =
+  let res = ref false in (* because no appropriate functional visitor... *)
+  let expr (k,bigf) big_exp =
+    (* comparison used in Cocci_vs_c.equal_inh_metavarval *)
+    (*Printf.printf "comparing %s and %s\n"
+      (Dumper.dump small_exp)
+      (Dumper.dump big_exp);*)
+    if small_exp =*= big_exp
+    then res := true
+    else k big_exp in
+  let bigf = { Visitor_c.default_visitor_c with Visitor_c.kexpr = expr } in
+  Visitor_c.vk_expr bigf big_exp;
+  !res

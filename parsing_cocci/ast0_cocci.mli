@@ -128,6 +128,7 @@ and constraints =
     NoConstraint
   | NotIdCstrt     of Ast_cocci.idconstraint
   | NotExpCstrt    of expression list
+  | SubExpCstrt    of Ast_cocci.meta_name list
 
 and listlen = Ast_cocci.meta_name mcode option
 

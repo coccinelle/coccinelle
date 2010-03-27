@@ -39,7 +39,7 @@ let stringrep mvb = match mvb with
   Ast_c.MetaIdVal        s -> s
 | Ast_c.MetaFuncVal      s -> s
 | Ast_c.MetaLocalFuncVal s -> s
-| Ast_c.MetaExprVal      ((expr,_),[il]) -> (exprrep expr)
+| Ast_c.MetaExprVal      (((expr,_),[il]),_) -> (exprrep expr)
 | Ast_c.MetaExprVal	 e -> "TODO: <<MetaExprVal>>"
 | Ast_c.MetaExprListVal  expr_list -> "TODO: <<exprlist>>"
 | Ast_c.MetaTypeVal      typ -> call_pretty Pretty_print_c.pp_type_gen typ

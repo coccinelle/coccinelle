@@ -248,7 +248,7 @@ let equal_metavarval valu valu' =
    * just isomorphisms). => TODO call isomorphism_c_c instead of
    * =*=. Maybe would be easier to transform ast_c in ast_cocci
    * and call the iso engine of julia. *)
-  | Ast_c.MetaExprVal a, Ast_c.MetaExprVal b ->
+  | Ast_c.MetaExprVal (a,_), Ast_c.MetaExprVal (b,_) ->
       Lib_parsing_c.al_expr a =*= Lib_parsing_c.al_expr b
   | Ast_c.MetaExprListVal a, Ast_c.MetaExprListVal b ->
       Lib_parsing_c.al_arguments a =*= Lib_parsing_c.al_arguments b
@@ -305,7 +305,7 @@ let equal_inh_metavarval valu valu'=
    * just isomorphisms). => TODO call isomorphism_c_c instead of
    * =*=. Maybe would be easier to transform ast_c in ast_cocci
    * and call the iso engine of julia. *)
-  | Ast_c.MetaExprVal a, Ast_c.MetaExprVal b ->
+  | Ast_c.MetaExprVal (a,_), Ast_c.MetaExprVal (b,_) ->
       Lib_parsing_c.al_inh_expr a =*= Lib_parsing_c.al_inh_expr b
   | Ast_c.MetaExprListVal a, Ast_c.MetaExprListVal b ->
       Lib_parsing_c.al_inh_arguments a =*= Lib_parsing_c.al_inh_arguments b
@@ -810,52 +810,30 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
               acc >|+|> compatible_type ta tb) fail
 	) >>=
 	(fun () () ->
-	   match constraints with
-	       Ast_cocci.NoConstraint ->
-		 let max_min _ =
-		   Lib_parsing_c.lin_col_by_pos (Lib_parsing_c.ii_of_expr expb) in
-		   X.envf keep inherited (ida, Ast_c.MetaExprVal expb, max_min)
-		     (fun () ->
-			X.distrf_e ida expb >>=
-			  (fun ida expb ->
-			     return (
-			       A.MetaExpr (ida,constraints,keep,opttypa,form,inherited)+>
-				 A.rewrap ea,
-			       expb
-			     ))
-		     )
-
-	     | Ast_cocci.NotIdCstrt cstrt ->
-		 X.check_idconstraint satisfies_econstraint cstrt eb
-		   (fun () ->
-		      let max_min _ =
-			Lib_parsing_c.lin_col_by_pos (Lib_parsing_c.ii_of_expr expb) in
-			X.envf keep inherited (ida, Ast_c.MetaExprVal expb, max_min)
-			  (fun () ->
-			     X.distrf_e ida expb >>=
-			       (fun ida expb ->
-				  return (
-				    A.MetaExpr (ida,constraints,keep,opttypa,form,inherited)+>
-				      A.rewrap ea,
-				    expb
-				  ))
-			  ))
-
-	     | Ast_cocci.NotExpCstrt cstrts ->
-		 X.check_constraints_ne expression cstrts eb
-		   (fun () ->
-		      let max_min _ =
-			Lib_parsing_c.lin_col_by_pos (Lib_parsing_c.ii_of_expr expb) in
-			X.envf keep inherited (ida, Ast_c.MetaExprVal expb, max_min)
-			  (fun () ->
-			     X.distrf_e ida expb >>=
-			       (fun ida expb ->
-				  return (
-				    A.MetaExpr (ida,constraints,keep,opttypa,form,inherited)+>
-				      A.rewrap ea,
-				    expb
-				  ))
-			  )))
+	  let meta_expr_val l x = Ast_c.MetaExprVal(x,l) in
+	  match constraints with
+	    Ast_cocci.NoConstraint -> return (meta_expr_val [],())
+	  | Ast_cocci.NotIdCstrt cstrt ->
+	      X.check_idconstraint satisfies_econstraint cstrt eb
+		(fun () -> return (meta_expr_val [],()))
+	  | Ast_cocci.NotExpCstrt cstrts ->
+	      X.check_constraints_ne expression cstrts eb
+		(fun () -> return (meta_expr_val [],()))
+	  | Ast_cocci.SubExpCstrt cstrts -> return (meta_expr_val cstrts,()))
+	  >>=
+	(fun wrapper () ->
+	  let max_min _ =
+	    Lib_parsing_c.lin_col_by_pos (Lib_parsing_c.ii_of_expr expb) in
+	  X.envf keep inherited (ida, wrapper expb, max_min)
+	    (fun () ->
+	      X.distrf_e ida expb >>=
+	      (fun ida expb ->
+		return (
+		A.MetaExpr (ida,constraints,keep,opttypa,form,inherited)+>
+		A.rewrap ea,
+		expb
+		  ))
+		))
       else fail
 
   (* old:

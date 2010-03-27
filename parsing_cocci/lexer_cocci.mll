@@ -607,7 +607,9 @@ rule token = parse
   | ">="           { start_line true;
 		     TLogOp(Ast.SupEq,get_current_line_type lexbuf) }
   | "<="           { start_line true;
-		     TLogOp(Ast.InfEq,get_current_line_type lexbuf) }
+		     if !Data.in_meta
+		     then TSub(get_current_line_type lexbuf)
+		     else TLogOp(Ast.InfEq,get_current_line_type lexbuf) }
   | "<"            { start_line true;
 		     TLogOp(Ast.Inf,get_current_line_type lexbuf) }
   | ">"            { start_line true;

@@ -330,7 +330,7 @@ let rec expression e =
 
   | Ast.MetaExpr (name,_,_,_typedontcare,_formdontcare,_) ->
       handle_metavar name  (function
-        | Ast_c.MetaExprVal exp ->
+        | Ast_c.MetaExprVal (exp,_) ->
             pretty_print_c.Pretty_print_c.expression exp
         | _ -> raise Impossible
       )

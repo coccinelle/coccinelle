@@ -689,7 +689,9 @@ and metavars_binding = (Ast_cocci.meta_name, metavar_binding_kind) assoc
   | MetaFuncVal      of string
   | MetaLocalFuncVal of string
 
-  | MetaExprVal      of expression (* a "clean expr" *)
+  | MetaExprVal      of expression (* a "clean expr" *) *
+	                (*subterm constraints, currently exprs*)
+	                Ast_cocci.meta_name list
   | MetaExprListVal  of argument wrap2 list
   | MetaParamVal     of parameterType
   | MetaParamListVal of parameterType wrap2 list

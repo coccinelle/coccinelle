@@ -379,6 +379,7 @@ and constraints c =
       Ast0.NoConstraint        -> Ast.NoConstraint
     | Ast0.NotIdCstrt   idctrt -> Ast.NotIdCstrt idctrt
     | Ast0.NotExpCstrt  exps   -> Ast.NotExpCstrt (List.map expression exps)
+    | Ast0.SubExpCstrt  ids    -> Ast.SubExpCstrt ids
 
 (* --------------------------------------------------------------------- *)
 (* Types *)

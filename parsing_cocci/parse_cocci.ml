@@ -135,6 +135,7 @@ let token2c (tok,_) =
   | PC.TAnd (clt) -> "&"^(line_type2c clt)
   | PC.TEqEq(clt) -> "=="^(line_type2c clt)
   | PC.TNotEq(clt) -> "!="^(line_type2c clt)
+  | PC.TSub(clt) -> "<="^(line_type2c clt)
   | PC.TTildeEq(clt) -> "~="^(line_type2c clt)
   | PC.TTildeExclEq(clt) -> "~!="^(line_type2c clt)
   | PC.TLogOp(op,clt) ->
@@ -284,7 +285,8 @@ let plus_attachable only_plus (tok,_) =
   | PC.TString(_,clt) | PC.TChar(_,clt) | PC.TFloat(_,clt) | PC.TInt(_,clt)
 
   | PC.TOrLog(clt) | PC.TAndLog(clt) | PC.TOr(clt) | PC.TXor(clt)
-  | PC.TAnd (clt) | PC.TEqEq(clt) | PC.TNotEq(clt) | PC.TTildeEq(clt) | PC.TLogOp(_,clt)
+  | PC.TAnd (clt) | PC.TEqEq(clt) | PC.TNotEq(clt) | PC.TTildeEq(clt)
+  | PC.TLogOp(_,clt)
   | PC.TShOp(_,clt) | PC.TPlus(clt) | PC.TMinus(clt) | PC.TMul(clt)
   | PC.TDmOp(_,clt) | PC.TTilde (clt)
 
@@ -322,6 +324,7 @@ let plus_attachable only_plus (tok,_) =
   | PC.TPOEllipsis(clt) | PC.TPCEllipsis(clt) (* | PC.TOCircles(clt)
   | PC.TCCircles(clt) | PC.TOStars(clt) | PC.TCStars(clt) *) -> NOTPLUS
   | PC.TMetaPos(nm,_,_,_) -> NOTPLUS
+  | PC.TSub(clt) -> NOTPLUS
 
   | _ -> SKIP
 
@@ -349,7 +352,8 @@ let get_clt (tok,_) =
   | PC.TString(_,clt) | PC.TChar(_,clt) | PC.TFloat(_,clt) | PC.TInt(_,clt)
 
   | PC.TOrLog(clt) | PC.TAndLog(clt) | PC.TOr(clt) | PC.TXor(clt)
-  | PC.TAnd (clt) | PC.TEqEq(clt) | PC.TNotEq(clt) | PC.TTildeEq(clt) | PC.TLogOp(_,clt)
+  | PC.TAnd (clt) | PC.TEqEq(clt) | PC.TNotEq(clt) | PC.TTildeEq(clt)
+  | PC.TSub(clt) | PC.TLogOp(_,clt)
   | PC.TShOp(_,clt) | PC.TPlus(clt) | PC.TMinus(clt) | PC.TMul(clt)
   | PC.TDmOp(_,clt) | PC.TTilde (clt)
 
@@ -451,6 +455,7 @@ let update_clt (tok,x) clt =
   | PC.TEqEq(_) -> (PC.TEqEq(clt),x)
   | PC.TNotEq(_) -> (PC.TNotEq(clt),x)
   | PC.TTildeEq(_) -> (PC.TTildeEq(clt),x)
+  | PC.TSub(_) -> (PC.TSub(clt),x)
   | PC.TLogOp(op,_) -> (PC.TLogOp(op,clt),x)
   | PC.TShOp(op,_) -> (PC.TShOp(op,clt),x)
   | PC.TPlus(_) -> (PC.TPlus(clt),x)
@@ -643,7 +648,8 @@ let split_token ((tok,_) as t) =
       split t clt
 
   | PC.TOrLog(clt) | PC.TAndLog(clt) | PC.TOr(clt) | PC.TXor(clt)
-  | PC.TAnd (clt) | PC.TEqEq(clt) | PC.TNotEq(clt) | PC.TTildeEq(clt) | PC.TTildeExclEq(clt) | PC.TLogOp(_,clt)
+  | PC.TAnd (clt) | PC.TEqEq(clt) | PC.TNotEq(clt) | PC.TTildeEq(clt)
+  | PC.TTildeExclEq(clt) | PC.TSub(clt) | PC.TLogOp(_,clt)
   | PC.TShOp(_,clt) | PC.TPlus(clt) | PC.TMinus(clt) | PC.TMul(clt)
   | PC.TDmOp(_,clt) | PC.TTilde (clt) -> split t clt
 

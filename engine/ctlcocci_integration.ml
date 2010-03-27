@@ -434,8 +434,8 @@ let strip env =
     (function (v,vl) ->
       let vl =
 	match vl with
-	  Ast_c.MetaExprVal a ->
-	    Ast_c.MetaExprVal(Lib_parsing_c.al_inh_expr a)
+	  Ast_c.MetaExprVal (a,c) ->
+	    Ast_c.MetaExprVal(Lib_parsing_c.al_inh_expr a,c)
 	| Ast_c.MetaExprListVal a ->
 	    Ast_c.MetaExprListVal(Lib_parsing_c.al_inh_arguments a)
 	| Ast_c.MetaStmtVal a ->
