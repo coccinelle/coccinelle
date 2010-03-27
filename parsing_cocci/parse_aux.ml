@@ -166,7 +166,7 @@ let iso_adjust first_fn fn first rest =
     front::after -> (first_fn first::front)::after
   | _ -> failwith "not possible"
 
-let check_meta tok =
+let check_meta_tyopt type_irrelevant tok =
   let lookup rule name =
     try
       let info = Hashtbl.find Data.all_metadecls rule in
@@ -232,21 +232,21 @@ let check_meta tok =
 	       ("incompatible inheritance declaration "^name)))
   | Ast.MetaExpDecl(Ast.NONE,(rule,name),ty) ->
       (match lookup rule name with
-	Ast.MetaExpDecl(_,_,ty1) when ty = ty1 -> ()
+	Ast.MetaExpDecl(_,_,ty1) when type_irrelevant or ty = ty1 -> ()
       | _ ->
 	  raise
 	    (Semantic_cocci.Semantic
 	       ("incompatible inheritance declaration "^name)))
   | Ast.MetaIdExpDecl(Ast.NONE,(rule,name),ty) ->
       (match lookup rule name with
-	Ast.MetaIdExpDecl(_,_,ty1) when ty = ty1 -> ()
+	Ast.MetaIdExpDecl(_,_,ty1) when type_irrelevant or ty = ty1 -> ()
       | _ ->
 	  raise
 	    (Semantic_cocci.Semantic
 	       ("incompatible inheritance declaration "^name)))
   | Ast.MetaLocalIdExpDecl(Ast.NONE,(rule,name),ty) ->
       (match lookup rule name with
-	Ast.MetaLocalIdExpDecl(_,_,ty1) when ty = ty1 -> ()
+	Ast.MetaLocalIdExpDecl(_,_,ty1) when type_irrelevant or ty = ty1 -> ()
       | _ ->
 	  raise
 	    (Semantic_cocci.Semantic
@@ -289,7 +289,7 @@ let check_meta tok =
 	       ("incompatible inheritance declaration "^name)))
   | Ast.MetaConstDecl(Ast.NONE,(rule,name),ty) ->
       (match lookup rule name with
-	Ast.MetaConstDecl(_,_,ty1) when ty = ty1 -> ()
+	Ast.MetaConstDecl(_,_,ty1) when type_irrelevant or ty = ty1 -> ()
       | _ ->
 	  raise
 	    (Semantic_cocci.Semantic
@@ -310,12 +310,14 @@ let check_meta tok =
       raise
 	(Semantic_cocci.Semantic ("arity not allowed on imported declaration"))
 
+let check_meta m = check_meta_tyopt false m
+
 let check_inherited_constraint meta_name fn =
   match meta_name with
     (None,_) -> failwith "constraint must be an inherited variable"
   | (Some rule,name) ->
       let i = (rule,name) in
-      check_meta(fn i);
+      check_meta_tyopt true (fn i);
       i
 
 let create_metadec ar ispure kindfn ids current_rule =

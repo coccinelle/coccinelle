@@ -267,7 +267,7 @@ metadec:
     { P.create_metadec_with_constraints ar ispure kindfn ids }
 | ar=arity ispure=pure
   kindfn=metakind_atomic_expi
-  ids=comma_list(pure_ident_or_meta_ident_with_econstraint(re_or_not_eqe))
+  ids=comma_list(pure_ident_or_meta_ident_with_econstraint(re_or_not_eqe_or_sub))
     TMPtVirg
     { P.create_metadec_with_constraints ar ispure kindfn ids }
 | ar=arity ispure=pure
@@ -1518,9 +1518,14 @@ not_eqid:
 	   Ast.IdNegIdSet(List.map snd l)
 	 }
 
-re_or_not_eqe:
-   re=regexp_eqid {Ast0.NotIdCstrt (re)}
- | ne=not_eqe     {Ast0.NotExpCstrt (ne)}
+re_or_not_eqe_or_sub:
+   re=regexp_eqid {Ast0.NotIdCstrt  re}
+ | ne=not_eqe     {Ast0.NotExpCstrt ne}
+ | s=sub          {Ast0.SubExpCstrt s}
+
+not_ceq_or_sub:
+   ceq=not_ceq    {Ast0.NotExpCstrt ceq}
+ | s=sub          {Ast0.SubExpCstrt s}
 
 not_eqe:
        TNotEq i=pure_ident
@@ -1541,23 +1546,25 @@ not_eqe:
 	     l
 	 }
 
-not_ceq_or_sub:
+not_ceq:
        TNotEq i=ident_or_const
          { (if !Data.in_iso
 	   then failwith "constraints not allowed in iso file");
 	   (if !Data.in_generating
 	   then failwith "constraints not allowed in a generated rule file");
-	   Ast0.NotExpCstrt [i] }
+	   [i] }
      | TNotEq TOBrace l=comma_list(ident_or_const) TCBrace
 	 { (if !Data.in_iso
 	   then failwith "constraints not allowed in iso file");
 	   (if !Data.in_generating
 	   then failwith "constraints not allowed in a generated rule file");
-	   Ast0.NotExpCstrt l }
+	   l }
+
+sub:
      (* has to be inherited because not clear how to check subterm constraints
 	in the functorized CTL engine, so need the variable to be bound
 	already when bind the subterm constrained metavariable *)
-     | TSub i=meta_ident
+       TSub i=meta_ident
          { (if !Data.in_iso
 	   then failwith "constraints not allowed in iso file");
 	   (if !Data.in_generating
@@ -1565,18 +1572,17 @@ not_ceq_or_sub:
 	   let i =
 	     P.check_inherited_constraint i
 	       (function mv -> Ast.MetaExpDecl(Ast.NONE,mv,None)) in
-	   Ast0.SubExpCstrt [i] }
+	   [i] }
      | TSub TOBrace l=comma_list(meta_ident) TCBrace
 	 { (if !Data.in_iso
 	   then failwith "constraints not allowed in iso file");
 	   (if !Data.in_generating
 	   then failwith "constraints not allowed in a generated rule file");
-	   Ast0.SubExpCstrt
-	     (List.map
-		(function i ->
-		  P.check_inherited_constraint i
-		    (function mv -> Ast.MetaExpDecl(Ast.NONE,mv,None)))
-		l)}
+           List.map
+	     (function i ->
+	       P.check_inherited_constraint i
+		 (function mv -> Ast.MetaExpDecl(Ast.NONE,mv,None)))
+	     l}
 
 ident_or_const:
        i=pure_ident { Ast0.wrap(Ast0.Ident(Ast0.wrap(Ast0.Id(P.id2mcode i)))) }
