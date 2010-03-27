@@ -368,8 +368,7 @@ module XMATCH = struct
 			(fun () -> tin.binding0 +> List.assoc c) in
 		    (match tmp with
 		      Some (Ast_c.MetaExprVal(v,_)) ->
-			let inh_v = Lib_parsing_c.al_inh_expr v in
-			if C_vs_c.subexpression_of_expression inh_stripped inh_v
+			if C_vs_c.subexpression_of_expression inh_stripped v
 			then loop cs (* forget satisfied constraints *)
 			else None (* failure *)
 		    | Some _ -> failwith "not possible"

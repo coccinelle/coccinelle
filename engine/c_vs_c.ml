@@ -311,12 +311,17 @@ let subexpression_of_expression small_exp big_exp =
   let res = ref false in (* because no appropriate functional visitor... *)
   let expr (k,bigf) big_exp =
     (* comparison used in Cocci_vs_c.equal_inh_metavarval *)
-    (*Printf.printf "comparing %s and %s\n"
-      (Dumper.dump small_exp)
-      (Dumper.dump big_exp);*)
-    if small_exp =*= big_exp
+    (* have to strip each subexp, because stripping puts some offsets in the
+       term rather than setting everything to 0.  No idea why... *)
+    if small_exp =*= Lib_parsing_c.al_inh_expr big_exp
     then res := true
     else k big_exp in
   let bigf = { Visitor_c.default_visitor_c with Visitor_c.kexpr = expr } in
   Visitor_c.vk_expr bigf big_exp;
+  (*Printf.printf "comparison gives %b\n" !res;
+  Pretty_print_c.pp_expression_simple small_exp;
+  Format.print_newline();
+  Pretty_print_c.pp_expression_simple big_exp;
+  Format.print_newline();
+  Printf.printf "--------------------------------\n";*)
   !res
