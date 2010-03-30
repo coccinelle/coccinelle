@@ -442,9 +442,14 @@ Normally, the only output is a diff printed to standard output.
 
 \rare{-o $\langle$file$\rangle$}{ The output file.}
 
-\rare{-inplace}{ Modify the input file.}
+\rare{-in\_place}{ Modify the input file.  By default, the input file is
+  overwritten, with no backup.}
 
-\rare{-outplace}{ Store modifications in a .cocci\_res file.}
+\rare{-backup\_suffix}{The suffix of the file to use in making a backup of
+  the original file(s).  This option only has an effect when the option
+  {\tt -in\_place} is also used.}
+
+\rare{-out\_place}{ Store modifications in a .cocci\_res file.}
 
 \rare{-no\_show\_diff}{ Normally, a diff between the original and transformed
 code is printed on the standard output.  This option causes this not to be

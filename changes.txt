@@ -17,6 +17,9 @@
 ** Language:
 - <= constraints relating an expression metavariable to one or more
   inherited expression metavariables that it should be a subexpression of
+- the -inplace and -outplace options have been renamed -in_place and
+  -out_place.  -in_place no longer makes a backup.  A backup can be
+  requested using the option -backup_suffix, eg -backup_suffix .bk
 
 ** Features:
 - drop inconsistent paths check when only one node was matched

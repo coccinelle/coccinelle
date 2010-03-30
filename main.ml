@@ -13,7 +13,9 @@ module FC = Flag_cocci
 let cocci_file = ref ""
 
 let output_file = ref ""
-let inplace_modif = ref false  (* but keeps a .cocci_orig *)
+let inplace_modif = ref false  (* but keeps nothing *)
+let backup_suffix =
+  ref (None : string option) (* suffix for backup if one is desired *)
 let outplace_modif = ref false (* generates a .cocci_res  *)
 let preprocess = ref false     (* run the C preprocessor before cocci *)
 let compat_mode = ref false
@@ -246,9 +248,11 @@ let short_options = [
 
   "-o", Arg.Set_string output_file,
   "   <file> the output file";
-  "-inplace", Arg.Set inplace_modif,
+  "-in_place", Arg.Set inplace_modif,
   "   do the modification on the file directly";
-  "-outplace", Arg.Set outplace_modif,
+  "-backup_suffix", Arg.String (function s -> backup_suffix := Some s),
+  "   suffix to use when making a backup for inplace";
+  "-out_place", Arg.Set outplace_modif,
   "   store modifications in a .cocci_res file";
 
   "-U", Arg.Int (fun n -> Flag_parsing_c.diff_lines := Some (i_to_s n)),
@@ -848,7 +852,10 @@ let main_action xs =
 	    outopt +> Common.do_option (fun outfile ->
 	      if !inplace_modif
 	      then begin
-                Common.command2 ("cp "^infile^" "^infile^".cocci_orig");
+		(match !backup_suffix with
+		  Some backup_suffix ->
+		    Common.command2 ("cp "^infile^" "^infile^backup_suffix)
+		| None -> ());
                 Common.command2 ("cp "^outfile^" "^infile);
 	      end;
 
