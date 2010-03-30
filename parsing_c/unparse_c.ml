@@ -638,7 +638,7 @@ let remove_minus_and_between_and_expanded_and_fake xs =
 	    @ (adjust_within_minus cp (t2::xs))
 	| (T2(_,Min adj2,_) as t2)::xs ->
 	    let is_whitespace_or_plus = function
-		(T2 _) as x -> is_space x
+		(T2 _) as x -> is_whitespace x
 	      | _ -> true (*plus*) in
 	    if List.for_all is_whitespace_or_plus not_minus_list
 	    then
