@@ -27,6 +27,8 @@
 
 ** Bugfix:
 - print diff when only a comment is added
+- better adjustment of whitespace when deleting adjacent lines.  Thanks to
+  Wolfram Sang for pointing out the problem.
 
 * 0.2.2
 ** Language:
