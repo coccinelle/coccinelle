@@ -26,7 +26,11 @@
 - allow #define id with no definition
 
 ** Bugfix:
+- drop inconsistent paths check when only one node was matched
+- better take into account virtual rules when selecting glimpse tokens
 - print diff when only a comment is added
+- the type of the C code !x should be int regardless of the type of x
+- allow python code at the beginning of an included file
 - better adjustment of whitespace when deleting adjacent lines.  Thanks to
   Wolfram Sang for pointing out the problem.
 

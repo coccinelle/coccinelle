@@ -907,7 +907,8 @@ let annotater_expr_visitor_subpart = (fun (k,bigf) expr ->
 
     | Unary (e, Not) ->
         k expr; (* recurse to set the types-ref of sub expressions *)
-        Ast_c.get_type_expr e
+	(* the result of ! is always 0 or 1, not the argument type *)
+        make_info_def (type_of_s "int")
     | Unary (e, Tilde) ->
         k expr; (* recurse to set the types-ref of sub expressions *)
         Ast_c.get_type_expr e

@@ -499,16 +499,16 @@ let get_constants rules neg_pos_vars =
 		  let (cur_info,cur_plus) =
 		    rule_fn cur in_plus ((nm,True)::env)
 		      neg_pos_vars in
-		  if List.for_all all_context.V.combiner_top_level cur
-		  then (rest_info,cur_plus,(nm,cur_info)::env,nm::locals)
-		  else
+		  (match dependencies env dep with
+		    False -> (rest_info,cur_plus,env,locals)
+		  | dependencies ->
+		      if List.for_all all_context.V.combiner_top_level cur
+		      then (rest_info,cur_plus,(nm,cur_info)::env,nm::locals)
+		      else
 	       (* no constants if dependent on another rule; then we need to
 	          find the constants of that rule *)
-		    match dependencies env dep with
-		      False -> (rest_info,cur_plus,env,locals)
-		    | dependencies ->
 			(build_or (build_and dependencies cur_info) rest_info,
-			 cur_plus,env,locals))
+			 cur_plus,env,locals)))
 	  (False,[],[],[])
 	  (List.combine (rules : Ast.rule list) neg_pos_vars) in
       interpret true info

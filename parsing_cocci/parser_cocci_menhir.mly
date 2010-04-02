@@ -229,6 +229,7 @@ is_expression: // for more flexible parsing of top level expressions
 
 include_main:
   list(incl) TArob     { $1 }
+| list(incl) TPArob    { $1 }
 | list(incl) TArobArob { $1 }
 
 incl:
