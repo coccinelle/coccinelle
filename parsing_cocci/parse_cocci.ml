@@ -1827,6 +1827,4 @@ let process file isofile verbose =
     Common.profile_code "get_glimpse_constants" (* for glimpse *)
       (fun () -> Get_constants2.get_constants code neg_pos) in
 
-  Printf.fprintf stderr "rules %d\n" (List.length rules);
-
   (metavars,code,fvs,neg_pos,ua,pos,grep_tokens,glimpse_tokens2)
