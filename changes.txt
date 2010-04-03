@@ -33,6 +33,7 @@
 - allow python code at the beginning of an included file
 - better adjustment of whitespace when deleting adjacent lines.  Thanks to
   Wolfram Sang for pointing out the problem.
+- allow metavariables to be inherited from included files
 
 * 0.2.2
 ** Language:

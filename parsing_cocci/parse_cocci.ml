@@ -1446,6 +1446,7 @@ let eval_depend dep virt =
 let parse file =
   Lexer_cocci.init();
   let rec parse_loop file =
+  Lexer_cocci.include_init ();
   let table = Common.full_charpos_to_pos file in
   Common.with_open_infile file (fun channel ->
   let lexbuf = Lexing.from_channel channel in
@@ -1473,12 +1474,12 @@ let parse file =
 	  List.iter (function x -> Hashtbl.add Lexer_cocci.rule_names x ())
 	    virt;
 
-	  let (extra_iso_files, extra_rules, extra_virt) =
+	  let (extra_iso_files, extra_rules, extra_virt, extra_metas) =
 	    let rec loop = function
-		[] -> ([],[],[])
-	      |	(a,b,c)::rest ->
-		  let (x,y,z) = loop rest in
-		  (a::x,b::y,c::z) in
+		[] -> ([],[],[],[])
+	      |	(a,b,c,d)::rest ->
+		  let (x,y,z,zz) = loop rest in
+		  (a::x,b::y,c::z,d@zz) in
 	    loop (List.map parse_loop include_files) in
 
           let parse_cocci_rule ruletype old_metas
@@ -1678,21 +1679,28 @@ let parse file =
 
             let (more, rule, metavars, tokens) =
               parse_rule old_metas starts_with_name in
+	    let all_metas = metavars @ old_metas in
+
             if more then
-              rule::
-	      (loop (metavars @ old_metas) (gen_starts_with_name more tokens))
-            else [rule] in
+	      let (all_rules,all_metas) =
+		loop all_metas (gen_starts_with_name more tokens) in
+	      (rule::all_rules,all_metas)
+            else ([rule],all_metas) in
+
+	  let (all_rules,all_metas) =
+	    loop extra_metas (x = PC.TArob) in
 
 	  (List.fold_left
 	     (function prev -> function cur -> Common.union_set cur prev)
 	     iso_files extra_iso_files,
 	   (* included rules first *)
 	   List.fold_left (function prev -> function cur -> cur@prev)
-	     (loop [] (x = PC.TArob)) (List.rev extra_rules),
-	   List.fold_left (@) virt extra_virt (*no dups allowed*))
+	     all_rules (List.rev extra_rules),
+	   List.fold_left (@) virt extra_virt (*no dups allowed*),
+	   (all_metas : 'a list))
       |	_ -> failwith "unexpected code before the first rule\n")
   | (false,[(PC.TArobArob,_)]) | (false,[(PC.TArob,_)]) ->
-      ([],([] : Ast0.parsed_rule list),[] (*virtual rules*))
+      ([],([] : Ast0.parsed_rule list),[] (*virtual rules*), [] (*all metas*))
   | _ -> failwith "unexpected code before the first rule\n" in
   res) in
   parse_loop file
@@ -1700,7 +1708,7 @@ let parse file =
 (* parse to ast0 and then convert to ast *)
 let process file isofile verbose =
   let extra_path = Filename.dirname file in
-  let (iso_files, rules, virt) = parse file in
+  let (iso_files, rules, virt, _metas) = parse file in
   eval_virt virt;
   let std_isos =
     match isofile with
@@ -1818,5 +1826,7 @@ let process file isofile verbose =
   let glimpse_tokens2 =
     Common.profile_code "get_glimpse_constants" (* for glimpse *)
       (fun () -> Get_constants2.get_constants code neg_pos) in
+
+  Printf.fprintf stderr "rules %d\n" (List.length rules);
 
   (metavars,code,fvs,neg_pos,ua,pos,grep_tokens,glimpse_tokens2)

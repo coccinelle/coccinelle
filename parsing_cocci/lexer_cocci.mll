@@ -405,6 +405,13 @@ let init _ =
       List.iter (function (name,fn) -> Hashtbl.add metavariables name fn)
 	(Hashtbl.find all_metavariables parent))
 
+(* the following is needed to properly tokenize include files.  Because an
+include file is included after seeing a @, so current_line_started is true.
+Current_line_started is not important for parsing the name of a rule, so we
+don't have to reset this value to true after parsing an included file. *)
+let include_init _ =
+  current_line_started := false
+
 let drop_spaces s =
   let len = String.length s in
   let rec loop n =
