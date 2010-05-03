@@ -34,6 +34,7 @@
 - better adjustment of whitespace when deleting adjacent lines.  Thanks to
   Wolfram Sang for pointing out the problem.
 - allow metavariables to be inherited from included files
+- allow ? on goto
 
 * 0.2.2
 ** Language:
