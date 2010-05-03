@@ -682,7 +682,7 @@ let glimpse_filter (coccifile, isofile) dir =
     None -> pr2 "no glimpse keyword inferred from snippet"; None
   | Some [query] ->
       (let suffixes = if !include_headers then ["c";"h"] else ["c"] in
-      pr2 ("glimpse request = " ^ query);
+      Printf.fprintf stderr "%s\n" ("glimpse request = " ^ query);
       let command = spf "glimpse -y -H %s -N -W -w '%s'" dir query in
       let (glimpse_res,stat) = Common.cmd_to_list_and_status command in
       match stat with

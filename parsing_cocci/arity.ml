@@ -768,7 +768,7 @@ and statement tgt stm =
       let arity =
 	stm_same (mcode2line goto) (List.map mcode2arity [goto;sem]) in
       let goto = mcode goto in
-      let l = ident false tgt l in
+      let l = ident true tgt l in
       let sem = mcode sem in
       make_rule_elem stm tgt arity (Ast0.Goto(goto,l,sem))
   | Ast0.Return(ret,sem) ->

@@ -733,7 +733,8 @@ let satisfies_econstraint c exp : bool =
 		 pr2_once ("WARNING: Unable to apply a constraint on an multistring constant !"); true
 	     | Ast_c.Char  (char , _) -> satisfies_iconstraint c char
 	     | Ast_c.Int   (int  , _) -> satisfies_iconstraint c int
-	     | Ast_c.Float (float, _) -> satisfies_iconstraint c float
+	     | Ast_c.Float (float, _) ->
+		 satisfies_iconstraint c float
 	  )
       | _ -> pr2_once ("WARNING: Unable to apply a constraint on an expression !"); true
 
