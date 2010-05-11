@@ -126,7 +126,7 @@ and expression = base_expression wrap
 
 and constraints =
     NoConstraint
-  | NotIdCstrt     of Ast_cocci.idconstraint
+  | NotIdCstrt     of Ast_cocci.reconstraint
   | NotExpCstrt    of expression list
   | SubExpCstrt    of Ast_cocci.meta_name list
 

@@ -136,7 +136,7 @@ and expression = base_expression wrap
 
 and constraints =
     NoConstraint
-  | NotIdCstrt     of Ast.idconstraint
+  | NotIdCstrt     of Ast.reconstraint
   | NotExpCstrt    of expression list
   | SubExpCstrt    of Ast.meta_name list
 

@@ -192,8 +192,9 @@ constrained by its type.
   \CASE{\NT{pmid} \~{}= \NT{regexp}}
 
   \RULE{\rt{pmid\_with\_not\_eq}}
-  \CASE{\NT{pmid} \OPT{!= \T{id}}}
-  \CASE{\NT{pmid} \OPT{!= \ttlb~\NT{COMMA\_LIST}\mth{(}\T{id}\mth{)} \ttrb}}
+  \CASE{\NT{pmid} \OPT{!= \NT{id\_or\_meta}}}
+  \CASE{\NT{pmid}
+     \OPT{!= \ttlb~\NT{COMMA\_LIST}\mth{(}\NT{id\_or\_meta}\mth{)} \ttrb}}
 
   \RULE{\rt{pmid\_with\_virt\_or\_not\_eq}}
   \CASE{virtual.\T{id}}
@@ -206,6 +207,10 @@ constrained by its type.
   \RULE{\rt{id\_or\_cst}}
   \CASE{\T{id}}
   \CASE{\T{integer}}
+
+  \RULE{\rt{id\_or\_meta}}
+  \CASE{\T{id}}
+  \CASE{\T{rulename\_id}.\T{id}}
 
   \RULE{\rt{pmid\_with\_not\_eq\_mid}}
   \CASE{\NT{pmid} \OPT{!= \NT{mid}}}

@@ -498,6 +498,7 @@ let macro_body_to_maybe_hint body =
       )
   | xs -> DefineBody body
 
+exception Bad_param
 
 let rec (define_parse: Parser_c.token list -> (string * define_def) list) =
  fun xs ->
@@ -507,49 +508,56 @@ let rec (define_parse: Parser_c.token list -> (string * define_def) list) =
       (* note: the macro could be badly written and have no closing ')' for
        * its param, which would make us go too far away, but I don't think
        * it's important to handle such an error *)
-      let (tokparams, _, xs) =
-        xs +> Common.split_when (function TCPar _ -> true | _ -> false) in
-      let (body, _, xs) =
-        xs +> Common.split_when (function TDefEOL _ -> true | _ -> false) in
-      let params =
-        tokparams +> Common.map_filter (function
-        | TComma _ -> None
-        | TIdent (s, _) -> Some s
+      let def =
+	try
+	  let (tokparams, _, xs) =
+            xs +> Common.split_when (function TCPar _ -> true | _ -> false) in
+	  let (body, _, xs) =
+            xs +> Common.split_when (function TDefEOL _ -> true | _ -> false) in
+	  let params =
+            tokparams +> Common.map_filter (function
+              | TComma _ -> None
+              | TIdent (s, _) -> Some s
 
-        (* TODO *)
-        | TDefParamVariadic (s, _) -> Some s
-        (* TODO *)
-        | TEllipsis _ -> Some "..."
+              (* TODO *)
+              | TDefParamVariadic (s, _) -> Some s
+              (* TODO *)
+              | TEllipsis _ -> Some "..."
 
-        | x ->
-            (* bugfix: param of macros can be tricky *)
-            let s = TH.str_of_tok x in
-            if s ==~ Common.regexp_alpha
-            then begin
-              pr2 (spf "remapping: %s to a macro parameter" s);
-              Some s
-            end
-            else
-              error_cant_have x
-        ) in
-      (* bugfix: also substitute to ident in body so cpp_engine will
-       * have an easy job.
-       *)
-      let body = body +> List.map (fun tok ->
-        match tok with
-        | TIdent _ -> tok
-        | _ ->
-            let s = TH.str_of_tok tok in
-            let ii = TH.info_of_tok tok in
-            if s ==~ Common.regexp_alpha && List.mem s params
-            then begin
-              pr2 (spf "remapping: %s to an ident in macro body" s);
-              TIdent (s, ii)
-            end
-            else tok
-      ) +> List.map (TH.visitor_info_of_tok Ast_c.make_expanded) in
-      let def = (s, (s, Params params, macro_body_to_maybe_hint body)) in
-      def::define_parse xs
+              | x ->
+              (* bugfix: param of macros can be tricky *)
+		  let s = TH.str_of_tok x in
+		  if s ==~ Common.regexp_alpha
+		  then begin
+		    pr2 (spf "remapping: %s to a macro parameter" s);
+		    Some s
+		  end
+		  else
+		    begin
+		      pr2 (spf "bad character %s in macro parameter list" s);
+		      raise Bad_param
+		    end)  in
+          (* bugfix: also substitute to ident in body so cpp_engine will
+           * have an easy job.
+           *)
+	  let body = body +> List.map (fun tok ->
+            match tok with
+            | TIdent _ -> tok
+            | _ ->
+		let s = TH.str_of_tok tok in
+		let ii = TH.info_of_tok tok in
+		if s ==~ Common.regexp_alpha && List.mem s params
+		then begin
+		  pr2 (spf "remapping: %s to an ident in macro body" s);
+		  TIdent (s, ii)
+		end
+		else tok) +>
+	    List.map (TH.visitor_info_of_tok Ast_c.make_expanded) in
+	  Some (s, (s, Params params, macro_body_to_maybe_hint body))
+	with Bad_param -> None in
+      (match def with
+	Some def -> def::define_parse xs
+      |	None -> define_parse xs)
 
   | TDefine i1::TIdentDefine (s,i2)::xs ->
       let (body, _, xs) =

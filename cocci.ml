@@ -1136,7 +1136,7 @@ let apply_python_rule r cache newes e rules_that_have_matched
     begin
       let (_, mv, _) = r.scr_ast_rule in
       let ve =
-	(List.map (function (n,v) -> (("virtual",n),Ast_c.MetaIdVal v))
+	(List.map (function (n,v) -> (("virtual",n),Ast_c.MetaIdVal (v,[])))
 	   !Flag.defined_virtual_env) @ e in
       let not_bound x = not (Pycocci.contains_binding ve x) in
       (match List.filter not_bound mv with

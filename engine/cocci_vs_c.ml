@@ -236,7 +236,7 @@ let equal_storage a b =
 
 let equal_metavarval valu valu' =
   match valu, valu' with
-  | Ast_c.MetaIdVal a, Ast_c.MetaIdVal b -> a =$= b
+  | Ast_c.MetaIdVal (a,_), Ast_c.MetaIdVal (b,_) -> a =$= b
   | Ast_c.MetaFuncVal a, Ast_c.MetaFuncVal b -> a =$= b
   | Ast_c.MetaLocalFuncVal a, Ast_c.MetaLocalFuncVal b ->
       (* do something more ? *)
@@ -293,7 +293,7 @@ metavariables containing expressions are stripped in advance. But don't
 know which one is which... *)
 let equal_inh_metavarval valu valu'=
   match valu, valu' with
-  | Ast_c.MetaIdVal a, Ast_c.MetaIdVal b -> a =$= b
+  | Ast_c.MetaIdVal (a,_), Ast_c.MetaIdVal (b,_) -> a =$= b
   | Ast_c.MetaFuncVal a, Ast_c.MetaFuncVal b -> a =$= b
   | Ast_c.MetaLocalFuncVal a, Ast_c.MetaLocalFuncVal b ->
       (* do something more ? *)
@@ -698,45 +698,39 @@ let dots2metavar (_,info,mcodekind,pos) =
   (("","..."),info,mcodekind,pos)
 let metavar2dots (_,info,mcodekind,pos) = ("...",info,mcodekind,pos)
 
-let satisfies_iconstraint c id : bool =
+let satisfies_regexpconstraint c id : bool =
   match c with
-      A.IdNoConstraint -> true
-    | A.IdNegIdSet l -> not (List.mem id l)
-    | A.IdRegExp (_,recompiled) ->
-	if Str.string_match recompiled id 0 then
-	  true
-	else
-	  false
-    | A.IdNotRegExp (_,recompiled) ->
-	if Str.string_match recompiled id 0 then
-	  false
-	else
-	  true
+    A.IdRegExp (_,recompiled)    -> Str.string_match recompiled id 0
+  | A.IdNotRegExp (_,recompiled) -> not (Str.string_match recompiled id 0)
+
+let satisfies_iconstraint c id : bool =
+  not (List.mem id c)
 
 let satisfies_econstraint c exp : bool =
-    match Ast_c.unwrap_expr exp with
-	Ast_c.Ident (name) ->
-	  (
-	    match name with
-		Ast_c.RegularName     rname -> satisfies_iconstraint c (Ast_c.unwrap_st rname)
-	      | Ast_c.CppConcatenatedName _ ->
-		  pr2_once ("WARNING: Unable to apply a constraint on a CppConcatenatedName identifier !"); true
-	      | Ast_c.CppVariadicName     _ ->
-		  pr2_once ("WARNING: Unable to apply a constraint on a CppVariadicName identifier !"); true
-	      | Ast_c.CppIdentBuilder     _ ->
-		  pr2_once ("WARNING: Unable to apply a constraint on a CppIdentBuilder identifier !");	true
-	  )
-      | Ast_c.Constant cst ->
-	  (match cst with
-	     | Ast_c.String (str, _) -> satisfies_iconstraint c str
-	     | Ast_c.MultiString strlist ->
-		 pr2_once ("WARNING: Unable to apply a constraint on an multistring constant !"); true
-	     | Ast_c.Char  (char , _) -> satisfies_iconstraint c char
-	     | Ast_c.Int   (int  , _) -> satisfies_iconstraint c int
-	     | Ast_c.Float (float, _) ->
-		 satisfies_iconstraint c float
-	  )
-      | _ -> pr2_once ("WARNING: Unable to apply a constraint on an expression !"); true
+  let warning s = pr2_once ("WARNING: "^s); false in
+  match Ast_c.unwrap_expr exp with
+    Ast_c.Ident (name) ->
+      (match name with
+	Ast_c.RegularName     rname ->
+	  satisfies_regexpconstraint c (Ast_c.unwrap_st rname)
+      | Ast_c.CppConcatenatedName _ ->
+	  warning
+	    "Unable to apply a constraint on a CppConcatenatedName identifier!"
+      | Ast_c.CppVariadicName     _ ->
+	  warning
+	    "Unable to apply a constraint on a CppVariadicName identifier!"
+      | Ast_c.CppIdentBuilder     _ ->
+	  warning
+	    "Unable to apply a constraint on a CppIdentBuilder identifier!")
+  | Ast_c.Constant cst ->
+      (match cst with
+      | Ast_c.String (str, _) -> satisfies_regexpconstraint c str
+      | Ast_c.MultiString strlist ->
+	  warning "Unable to apply a constraint on an multistring constant!"
+      | Ast_c.Char  (char , _) -> satisfies_regexpconstraint c char
+      | Ast_c.Int   (int  , _) -> satisfies_regexpconstraint c int
+      | Ast_c.Float (float, _) -> satisfies_regexpconstraint c float)
+  | _ -> warning "Unable to apply a constraint on an expression!"
 
 (*---------------------------------------------------------------------------*)
 (* toc:
@@ -820,7 +814,8 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
 	  | Ast_cocci.NotExpCstrt cstrts ->
 	      X.check_constraints_ne expression cstrts eb
 		(fun () -> return (meta_expr_val [],()))
-	  | Ast_cocci.SubExpCstrt cstrts -> return (meta_expr_val cstrts,()))
+	  | Ast_cocci.SubExpCstrt cstrts ->
+	      return (meta_expr_val cstrts,()))
 	  >>=
 	(fun wrapper () ->
 	  let max_min _ =
@@ -1232,6 +1227,16 @@ and (ident_cpp: info_ident -> (A.ident, B.name) matcher) =
 
 and (ident: info_ident -> (A.ident, string * Ast_c.info) matcher) =
  fun infoidb ida ((idb, iib)) -> (* (idb, iib) as ib *)
+   let check_constraints constraints idb =
+     let meta_id_val l x = Ast_c.MetaIdVal(x,l) in
+     match constraints with
+       A.IdNoConstraint -> return (meta_id_val [],())
+     | A.IdNegIdSet (str,meta) ->
+	 X.check_idconstraint satisfies_iconstraint str idb
+	   (fun () -> return (meta_id_val meta,()))
+     | A.IdRegExpConstraint re ->
+	 X.check_idconstraint satisfies_regexpconstraint re idb
+	   (fun () -> return (meta_id_val [],())) in
   X.all_bound (A.get_inherited ida) >&&>
   match A.unwrap ida with
   | A.Id sa ->
@@ -1244,12 +1249,12 @@ and (ident: info_ident -> (A.ident, string * Ast_c.info) matcher) =
       else fail
 
   | A.MetaId(mida,constraints,keep,inherited) ->
-      X.check_idconstraint satisfies_iconstraint constraints idb
-        (fun () ->
+      check_constraints constraints idb >>=
+      (fun wrapper () ->
       let max_min _ = Lib_parsing_c.lin_col_by_pos [iib] in
       (* use drop_pos for ids so that the pos is not added a second time in
 	 the call to tokenf *)
-      X.envf keep inherited (A.drop_pos mida, Ast_c.MetaIdVal (idb), max_min)
+      X.envf keep inherited (A.drop_pos mida, wrapper idb, max_min)
 	(fun () ->
         tokenf mida iib >>= (fun mida iib ->
           return (
@@ -1260,8 +1265,8 @@ and (ident: info_ident -> (A.ident, string * Ast_c.info) matcher) =
 
   | A.MetaFunc(mida,constraints,keep,inherited) ->
       let is_function _ =
-	X.check_idconstraint satisfies_iconstraint constraints idb
-            (fun () ->
+	check_constraints constraints idb >>=
+	(fun wrapper () ->
           let max_min _ = Lib_parsing_c.lin_col_by_pos [iib] in
           X.envf keep inherited (A.drop_pos mida,Ast_c.MetaFuncVal idb,max_min)
 	    (fun () ->
@@ -1284,8 +1289,8 @@ and (ident: info_ident -> (A.ident, string * Ast_c.info) matcher) =
   | A.MetaLocalFunc(mida,constraints,keep,inherited) ->
       (match infoidb with
       | LocalFunction ->
-	  X.check_idconstraint satisfies_iconstraint constraints idb
-            (fun () ->
+	  check_constraints constraints idb >>=
+	  (fun wrapper () ->
           let max_min _ = Lib_parsing_c.lin_col_by_pos [iib] in
           X.envf keep inherited
 	    (A.drop_pos mida,Ast_c.MetaLocalFuncVal idb, max_min)

@@ -1482,11 +1482,11 @@ pure_ident_or_meta_ident_with_idconstraint(constraint_type):
     }
 
 re_or_not_eqid:
-   re=regexp_eqid {re}
+   re=regexp_eqid {Ast.IdRegExpConstraint re}
  | ne=not_eqid    {ne}
 
 regexp_eqid:
-       TTildeEq re=TString
+     TTildeEq re=TString
          { (if !Data.in_iso
 	    then failwith "constraints not allowed in iso file");
 	   (if !Data.in_generating
@@ -1509,13 +1509,30 @@ not_eqid:
            (* pb: constraints not stored with metavars; too lazy to search for
 	      them in the pattern *)
 	   then failwith "constraints not allowed in a generated rule file");
-	   Ast.IdNegIdSet([snd i]) }
+	   (match i with
+	     (Some rn,id) ->
+	       let i =
+		 P.check_inherited_constraint i
+		   (function mv -> Ast.MetaIdDecl(Ast.NONE,mv)) in
+	       Ast.IdNegIdSet([],[i])
+	   | (None,i) -> Ast.IdNegIdSet([i],[])) }
      | TNotEq TOBrace l=comma_list(pure_ident_or_meta_ident) TCBrace
 	 { (if !Data.in_iso
 	   then failwith "constraints not allowed in iso file");
 	   (if !Data.in_generating
 	   then failwith "constraints not allowed in a generated rule file");
-	   Ast.IdNegIdSet(List.map snd l)
+	   let (str,meta) =
+	     List.fold_left
+	       (function (str,meta) ->
+		 function 
+		   (Some rn,id) as i ->
+		     let i =
+		       P.check_inherited_constraint i
+			 (function mv -> Ast.MetaIdDecl(Ast.NONE,mv)) in
+		     (str,i::meta)
+		 | (None,i) -> (i::str,meta))
+	       ([],[]) l in
+	   Ast.IdNegIdSet(str,meta)
 	 }
 
 re_or_not_eqe_or_sub:

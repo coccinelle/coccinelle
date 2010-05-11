@@ -12,7 +12,7 @@ let call_pretty f a =
 let exprrep = call_pretty Pretty_print_c.pp_expression_gen
 
 let stringrep mvb = match mvb with
-  Ast_c.MetaIdVal        s -> s
+  Ast_c.MetaIdVal        (s,_) -> s
 | Ast_c.MetaFuncVal      s -> s
 | Ast_c.MetaLocalFuncVal s -> s
 | Ast_c.MetaExprVal      (expr,_) -> exprrep expr

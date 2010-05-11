@@ -64,8 +64,16 @@ let collect_refs include_constraints =
   let astfvident recursor k i =
     bind (k i)
       (match Ast.unwrap i with
-	Ast.MetaId(name,_,_,_) | Ast.MetaFunc(name,_,_,_)
-      | Ast.MetaLocalFunc(name,_,_,_) -> [metaid name]
+	Ast.MetaId(name,idconstraint,_,_) | Ast.MetaFunc(name,idconstraint,_,_)
+      | Ast.MetaLocalFunc(name,idconstraint,_,_) ->
+	  let metas =
+	    if include_constraints
+	    then
+	      match idconstraint with
+		Ast.IdNegIdSet (_,metas) -> metas
+	      | _ -> []
+	    else [] in
+	  bind (List.rev metas) [metaid name]
       | _ -> option_default) in
 
   let rec type_collect res = function

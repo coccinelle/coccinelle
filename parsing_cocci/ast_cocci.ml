@@ -1,10 +1,3 @@
-(* Constraints on Meta-* Identifiers, Functions *)
-type idconstraint =
-    IdNoConstraint
-  | IdNegIdSet      of string list
-  | IdRegExp        of string * Str.regexp
-  | IdNotRegExp     of string * Str.regexp
-
 (* --------------------------------------------------------------------- *)
 (* Modified code *)
 
@@ -189,9 +182,19 @@ and base_expression =
 
 and constraints =
     NoConstraint
-  | NotIdCstrt     of idconstraint
+  | NotIdCstrt     of reconstraint
   | NotExpCstrt    of expression list
   | SubExpCstrt    of meta_name list
+
+(* Constraints on Meta-* Identifiers, Functions *)
+and idconstraint =
+    IdNoConstraint
+  | IdNegIdSet         of string list * meta_name list
+  | IdRegExpConstraint of reconstraint
+
+and reconstraint =
+  | IdRegExp        of string * Str.regexp
+  | IdNotRegExp     of string * Str.regexp
 
 (* ANY = int E; ID = idexpression int X; CONST = constant int X; *)
 and form = ANY | ID | LocalID | CONST (* form for MetaExp *)

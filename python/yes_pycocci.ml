@@ -233,7 +233,7 @@ let construct_variables mv e =
        let expr_repr = instantiate_Expression(expr) in
        let _ = build_variable py expr_repr in
        ()
-    | Some (_, Ast_c.MetaIdVal id) ->
+    | Some (_, Ast_c.MetaIdVal (id,_)) ->
        let id_repr = instantiate_Identifier(id) in
        let _ = build_variable py id_repr in
        ()

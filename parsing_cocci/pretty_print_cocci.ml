@@ -143,12 +143,18 @@ let print_type keep info = function
 (* Contraint on Identifier and Function *)
 (* FIXME: Not called at the moment *)
 
-let idconstraint c =
-  match c with
-      Ast.IdNoConstraint  -> print_string "/* No constraint */"
-    | Ast.IdNegIdSet ids     -> List.iter (fun s -> print_string (" "^s)) ids
-    | Ast.IdRegExp (re,_) -> print_string "~= \""; print_string re; print_string "\""
-    | Ast.IdNotRegExp (re,_) -> print_string "~!= \""; print_string re; print_string "\""
+let rec idconstraint = function
+    Ast.IdNoConstraint  -> print_string "/* No constraint */"
+  | Ast.IdNegIdSet (str,meta)     ->
+      List.iter (function s -> print_string (" "^s)) str;
+      List.iter (function (r,n) -> print_string " "; print_meta(r,n)) meta
+  | Ast.IdRegExpConstraint re -> regconstraint re
+
+and regconstraint = function
+    Ast.IdRegExp (re,_) ->
+      print_string "~= \""; print_string re; print_string "\""
+  | Ast.IdNotRegExp (re,_) ->
+      print_string "~!= \""; print_string re; print_string "\""
 
 (* --------------------------------------------------------------------- *)
 (* Identifier *)

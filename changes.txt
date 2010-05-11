@@ -20,6 +20,9 @@
 - the -inplace and -outplace options have been renamed -in_place and
   -out_place.  -in_place no longer makes a backup.  A backup can be
   requested using the option -backup_suffix, eg -backup_suffix .bk
+- identifiers can be constrained to be different from an inherited
+  identifier metavariable, or from a set containing both concrete
+  identifiers and inherited identifier metavariables.
 
 ** Features:
 - drop inconsistent paths check when only one node was matched
@@ -35,6 +38,8 @@
   Wolfram Sang for pointing out the problem.
 - allow metavariables to be inherited from included files
 - allow ? on goto
+- more graceful failure on finding a strange character in a macro parameter
+  list
 
 * 0.2.2
 ** Language:

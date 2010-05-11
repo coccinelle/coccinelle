@@ -343,8 +343,22 @@ module XMATCH = struct
 	  let success valu' =
 	    Some (tin.binding +> Common.insert_assoc (k, valu')) in
           (match valu with
-            Ast_c.MetaIdVal a        ->
-	      success(Ast_c.MetaIdVal a)
+            Ast_c.MetaIdVal (a,c)    ->
+	      (* c is a negated constraint *)
+	      let rec loop = function
+		  [] -> success(Ast_c.MetaIdVal(a,[]))
+		| c::cs ->
+		    let tmp =
+		      Common.optionise
+			(fun () -> tin.binding0 +> List.assoc c) in
+		    (match tmp with
+		      Some (Ast_c.MetaIdVal(v,_)) ->
+			if a =$= v
+			then None (* failure *)
+			else success(Ast_c.MetaIdVal(a,[]))
+		    | Some _ -> failwith "Not possible"
+		    | None -> success(Ast_c.MetaIdVal(a,[]))) in
+	      loop c
           | Ast_c.MetaFuncVal a      ->
 	      success(Ast_c.MetaFuncVal a)
           | Ast_c.MetaLocalFuncVal a ->
