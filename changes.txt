@@ -27,6 +27,8 @@
 ** Features:
 - drop inconsistent paths check when only one node was matched
 - allow #define id with no definition
+- attempt to add newlines in the generated code when function calls in the
+  smpl cause passing column 80
 
 ** Bugfix:
 - drop inconsistent paths check when only one node was matched

@@ -33,6 +33,7 @@ exception CantBeInPlus
 (*****************************************************************************)
 
 type pos = Before | After | InPlace
+type nlhint = StartBox | EndBox | SpaceOrNewline of string ref
 
 let unknown = -1
 
@@ -44,8 +45,11 @@ let rec do_all
 (* Just to be able to copy paste the code from pretty_print_cocci.ml. *)
 let print_string s line lcol =
   let rcol = if lcol = unknown then unknown else lcol + (String.length s) in
-  pr s line lcol rcol in
-let print_text s = pr s unknown unknown unknown in
+  pr s line lcol rcol None in
+let print_string_with_hint hint s line lcol =
+  let rcol = if lcol = unknown then unknown else lcol + (String.length s) in
+  pr s line lcol rcol (Some hint) in
+let print_text s = pr s unknown unknown unknown None in
 let close_box _ = () in
 let force_newline _ = print_text "\n" in
 
@@ -282,14 +286,9 @@ let rec expression e =
     Ast.Ident(id) -> ident id
   | Ast.Constant(const) -> mcode constant const
   | Ast.FunCall(fn,lp,args,rp) ->
-      expression fn; mcode print_string_box lp;
-      let comma e =
-	expression e;
-	match Ast.unwrap e with
-	  Ast.EComma(cm) -> pr_space()
-	| _ -> () in
-      dots (function _ -> ()) comma args;
-      close_box(); mcode print_string rp
+      expression fn; mcode (print_string_with_hint StartBox) lp;
+      dots (function _ -> ()) arg_expression args;
+      mcode (print_string_with_hint EndBox) rp
   | Ast.Assignment(left,op,right,_) ->
       expression left; pr_space(); mcode assignOp op;
       pr_space(); expression right
@@ -373,6 +372,14 @@ let rec expression e =
 
   | Ast.OptExp(exp) | Ast.UniqueExp(exp) ->
       raise CantBeInPlus
+
+and arg_expression e =
+  match Ast.unwrap e with
+    Ast.EComma(cm) ->
+      (* space is only used by add_newline, and only if not using SMPL
+	 spacing.  pr_cspace uses a " " in unparse_c.ml.  Not so nice... *)
+      mcode (print_string_with_hint (SpaceOrNewline (ref " ")))  cm
+  | _ -> expression e
 
 and  unaryOp = function
     Ast.GetRef -> print_string "&"

@@ -59,6 +59,7 @@ type token2 =
           int option (* orig index, abstracting away comments and space *)
   | Fake2
   | Cocci2 of string * int (* line *) * int (* lcol *) * int (* rcol *)
+	* Unparse_cocci.nlhint option
   | C2 of string
   | Indent_cocci2
   | Unindent_cocci2 of bool (* true for permanent, false for temporary *)
@@ -96,7 +97,7 @@ let print_token1 = function
 let str_of_token2 = function
   | T2 (t,_,_) -> TH.str_of_tok t
   | Fake2 -> ""
-  | Cocci2 (s,_,_,_) -> s
+  | Cocci2 (s,_,_,_,_) -> s
   | C2 s -> s
   | Indent_cocci2 -> ""
   | Unindent_cocci2 _ -> ""
@@ -111,7 +112,7 @@ let print_token2 = function
 	| Ctx -> "" in
       "T2:"^b_str^TH.str_of_tok t
   | Fake2 -> "fake"
-  | Cocci2 (s,_,lc,rc) -> Printf.sprintf "Cocci2:%d:%d%s" lc rc s
+  | Cocci2 (s,_,lc,rc,_) -> Printf.sprintf "Cocci2:%d:%d%s" lc rc s
   | C2 s -> "C2:"^s
   | Indent_cocci2 -> "Indent"
   | Unindent_cocci2 _ -> "Unindent"
@@ -354,8 +355,8 @@ let expand_mcode toks =
     let (mcode,env) =
       Ast_c.mcode_and_env_of_cocciref ((info_of_token1 t).cocci_tag) in
 
-    let pr_cocci s ln col rcol =
-      push2 (Cocci2(s,ln,col,rcol)) toks_out  in
+    let pr_cocci s ln col rcol hint =
+      push2 (Cocci2(s,ln,col,rcol,hint)) toks_out  in
     let pr_c info =
       (match Ast_c.pinfo_of_info info with
 	Ast_c.AbstractLineTok _ ->
@@ -369,7 +370,7 @@ let expand_mcode toks =
       List.iter (fun x -> Common.push2 (comment2t2 x) toks_out) in
 
     let pr_barrier ln col = (* marks a position, used around C code *)
-      push2 (Cocci2("",ln,col,col)) toks_out  in
+      push2 (Cocci2("",ln,col,col,None)) toks_out  in
     let pr_nobarrier ln col = () in (* not needed for linux spacing *)
 
     let pr_cspace _ = push2 (C2 " ") toks_out in
@@ -752,7 +753,7 @@ let rec add_space xs =
   match xs with
   | [] -> []
   | [x] -> [x]
-  | (Cocci2(sx,lnx,_,rcolx) as x)::((Cocci2(sy,lny,lcoly,_)) as y)::xs
+  | (Cocci2(sx,lnx,_,rcolx,_) as x)::((Cocci2(sy,lny,lcoly,_,_)) as y)::xs
     when !Flag_parsing_c.spacing = Flag_parsing_c.SMPL &&
       not (lnx = -1) && lnx = lny && not (rcolx = -1) && rcolx < lcoly ->
 	(* this only works within a line.  could consider whether
@@ -766,7 +767,77 @@ let rec add_space xs =
       then x::C2 " "::(add_space (y::xs))
       else x::(add_space (y::xs))
 
-
+(* The following only works for the outermost function call.  Stack records
+the column of all open parentheses.  Space_cell contains the most recent
+comma in the outermost function call.  The goal is to decide whether this
+should be followed by a space or a newline and indent. *)
+let add_newlines toks tabbing_unit =
+  let create_indent n =
+    let (tu,tlen) = 
+      match tabbing_unit with
+	Some ("\t",_) -> ("\t",8)
+      | Some (s,_) -> (s,String.length s) (* assuming only spaces *)
+      |	None -> ("\t",8) in
+    let rec loop seen =
+      if seen + tlen <= n
+      then tu ^ loop (seen + tlen)
+      else String.make (n-seen) ' ' in
+    loop 0 in
+  let check_for_newline count x = function
+      Some (start,space_cell) when count > Flag_parsing_c.max_width ->
+	space_cell := "\n"^(create_indent x);
+	Some (x + (count - start))
+    | _ -> None in
+  (* the following is for strings that may contain newline *)
+  let string_length s count =
+    let l = list_of_string s in
+    List.fold_left
+      (function count ->
+	function
+	    '\t' -> count + 8
+	  | '\n' -> 0
+	  | c -> count + 1)
+      count l in
+  let rec loop info count = function
+      [] -> []
+    | ((T2(tok,_,_)) as a)::xs ->
+	a :: loop info (string_length (TH.str_of_tok tok) count) xs
+    | ((Cocci2(s,line,lcol,rcol,hint)) as a)::xs ->
+	let (stack,space_cell) = info in
+	let rest =
+	  match hint with
+	    None -> loop info (count + (String.length s)) xs
+	  | Some Unparse_cocci.StartBox ->
+	      let count = count + (String.length s) in
+	      loop (count::stack,space_cell) count xs
+	  | Some Unparse_cocci.EndBox ->
+	      let count = count + (String.length s) in
+	      (match stack with
+		[x] ->
+		  (match check_for_newline count x space_cell with
+		    Some count -> loop ([],None) count xs
+		  | None -> loop ([],None) count xs)
+	      | _ -> loop (List.tl stack,space_cell) count xs)
+	  | Some (Unparse_cocci.SpaceOrNewline sp) ->
+	      let count = count + (String.length s) + 1 (*space*) in
+	      (match stack with
+		[x] ->
+		  (match check_for_newline count x space_cell with
+		    Some count -> loop (stack,Some (x,sp)) count xs
+		  | None -> loop (stack,Some (count,sp)) count xs)
+	      | _ -> loop info count xs) in
+	a :: rest
+    | ((C2(s)) as a)::xs -> a :: loop info (string_length s count) xs
+    | Fake2 :: _ | Indent_cocci2 :: _
+    | Unindent_cocci2 _::_ ->
+	failwith "unexpected fake, indent, or unindent" in
+  let redo_spaces prev = function
+      Cocci2(s,line,lcol,rcol,Some (Unparse_cocci.SpaceOrNewline sp)) ->
+        C2 !sp :: Cocci2(s,line,lcol,rcol,None) :: prev
+    | t -> t::prev in
+  (match !Flag_parsing_c.spacing with
+    Flag_parsing_c.SMPL -> toks
+  | _ -> List.rev (List.fold_left redo_spaces [] (loop ([],None) 0 toks)))
 
 (* When insert some new code, because of a + in a SP, we must add this
  * code at the right place, with the good indentation. So each time we
@@ -836,7 +907,7 @@ let rec adjust_indentation xs =
     | [] ->  []
 (* patch: coccinelle *)
     | ((T2 (tok,_,_)) as x)::(T2 (Parser_c.TCommentNewline s, _, _))::
-      ((Cocci2 ("{",_,_,_)) as a)::xs
+      ((Cocci2 ("{",_,_,_,_)) as a)::xs
       when started && str_of_token2 x =$= ")" ->
 	(* to be done for if, etc, but not for a function header *)
 	x::(C2 " ")::a::(aux started xs)
@@ -857,7 +928,7 @@ let rec adjust_indentation xs =
 	  None -> aux started xs
 	| Some (tu,_) ->
 	    _current_tabbing := (!_current_tabbing)^tu;
-	    Cocci2 (tu,-1,-1,-1)::aux started xs)
+	    Cocci2 (tu,-1,-1,-1,None)::aux started xs)
     | Unindent_cocci2(permanent)::xs ->
 	(match !tabbing_unit with
 	  None -> aux started xs
@@ -865,7 +936,7 @@ let rec adjust_indentation xs =
 	    _current_tabbing := remtab tu (!_current_tabbing);
 	    aux started xs)
     (* border between existing code and cocci code *)
-    | ((T2 (tok,_,_)) as x)::((Cocci2("\n",_,_,_)) as y)::xs
+    | ((T2 (tok,_,_)) as x)::((Cocci2("\n",_,_,_,_)) as y)::xs
       when str_of_token2 x =$= "{" ->
 	x::aux true (y::Indent_cocci2::xs)
     | ((Cocci2 _) as x)::((T2 (tok,_,_)) as y)::xs
@@ -873,15 +944,15 @@ let rec adjust_indentation xs =
 	x::aux started (y::Unindent_cocci2 true::xs)
     (* starting the body of the function *)
     | ((T2 (tok,_,_)) as x)::xs when str_of_token2 x =$= "{" ->  x::aux true xs
-    | ((Cocci2("{",_,_,_)) as a)::xs -> a::aux true xs
-    | ((Cocci2("\n",_,_,_)) as x)::Unindent_cocci2(false)::xs ->
+    | ((Cocci2("{",_,_,_,_)) as a)::xs -> a::aux true xs
+    | ((Cocci2("\n",_,_,_,_)) as x)::Unindent_cocci2(false)::xs ->
         x::aux started xs
-    | ((Cocci2("\n",_,_,_)) as x)::xs ->
+    | ((Cocci2("\n",_,_,_,_)) as x)::xs ->
             (* dont inline in expr because of weird eval order of ocaml *)
         let s = !_current_tabbing in
-        x::Cocci2 (s,-1,-1,-1)::aux started xs
+        x::Cocci2 (s,-1,-1,-1,None)::aux started xs
     | x::xs -> x::aux started xs in
-  aux false xs
+  (aux false xs,!tabbing_unit)
 
 
 let rec find_paren_comma = function
@@ -1048,11 +1119,12 @@ let pp_program2 xs outfile  =
 	    then drop_minus toks (* nothing to do for sgrep *)
 	    else
               (* phase2: can now start to filter and adjust *)
-              let toks = adjust_indentation toks in
+              let (toks,tu) = adjust_indentation toks in
 	      let toks = adjust_before_semicolon toks in(*before remove minus*)
               let toks = remove_minus_and_between_and_expanded_and_fake toks in
               (* assert Origin + Cocci + C and no minus *)
               let toks = add_space toks in
+	      let toks = add_newlines toks tu in
               let toks = fix_tokens toks in
 	      toks in
 
