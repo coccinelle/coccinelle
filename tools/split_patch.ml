@@ -165,9 +165,21 @@ let make_output_files template maintainer_table patch =
       (function (services,maintainers) ->
 	function diffs ->
 	  function rest ->
-	    ctr := !ctr + 1;
-	    let (files,diffs) = List.split (List.rev !diffs) in
-	    (!ctr,services=[default_string],maintainers,files,diffs)::rest)
+	    if services=[default_string]
+	    then
+	      (* if no maintainer, then one file per diff *)
+	      (List.map
+		 (function (file,diff) ->
+		   ctr := !ctr + 1;
+		   (!ctr,true,maintainers,[file],[diff]))
+		 (List.rev !diffs)) @
+	      rest
+	    else
+	      begin
+		ctr := !ctr + 1;
+		let (files,diffs) = List.split (List.rev !diffs) in
+		(!ctr,false,maintainers,files,diffs)::rest
+	      end)
       maintainer_table [] in
   let number = List.length elements in
   List.iter
