@@ -201,10 +201,10 @@ and statement testfn mcode tail stmt : 'a list list =
       then []
       else Common.union_all processed
 
-  | Ast.Nest(stmt_dots,whencode,true,_,_) ->
+  | Ast.Nest(starter,stmt_dots,ender,whencode,true,_,_) ->
       statement_list testfn mcode false stmt_dots
 
-  | Ast.Nest(stmt_dots,whencode,false,_,_) -> []
+  | Ast.Nest(starter,stmt_dots,ender,whencode,false,_,_) -> []
 
   | Ast.Dots(_,whencodes,_,_) -> []
 

@@ -168,7 +168,10 @@ and base_expression =
   | EComma         of string mcode (* only in arg lists *)
 
   | DisjExpr       of expression list
-  | NestExpr       of expression dots * expression option * multi
+  | NestExpr       of string mcode (* <.../<+... *) *
+	              expression dots *
+	              string mcode (* ...>/...+> *) * 
+                      expression option * multi
 
   (* can appear in arg lists, and also inside Nest, as in:
    if(< ... X ... Y ...>)
@@ -456,7 +459,8 @@ and base_statement =
 	             statement (*decl*) dots * case_line list * rule_elem(*}*)
   | Atomic        of rule_elem
   | Disj          of statement dots list
-  | Nest          of statement dots *
+  | Nest          of string mcode (* <.../<+... *) * statement dots *
+	             string mcode (* ...>/...+> *) * 
 	             (statement dots,statement) whencode list * multi *
 	             dots_whencode list * dots_whencode list
   | FunDecl       of rule_elem (* header *) * rule_elem (* { *) *

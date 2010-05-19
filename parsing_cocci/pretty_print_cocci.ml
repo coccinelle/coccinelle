@@ -106,22 +106,15 @@ let dots between fn d =
   | Ast.CIRCLES(l) -> print_between between fn l
   | Ast.STARS(l) -> print_between between fn l
 
-let nest_dots multi fn f d =
-  let mo s = if multi then "<+"^s else "<"^s in
-  let mc s = if multi then s^"+>" else s^">" in
-  match Ast.unwrap d with
-    Ast.DOTS(l) ->
-      print_string (mo "..."); f(); start_block();
-      print_between force_newline fn l;
-      end_block(); print_string (mc "...")
-  | Ast.CIRCLES(l) ->
-      print_string (mo "ooo"); f(); start_block();
-      print_between force_newline fn l;
-      end_block(); print_string (mc "ooo")
-  | Ast.STARS(l) ->
-      print_string (mo "***"); f(); start_block();
-      print_between force_newline fn l;
-      end_block(); print_string (mc "***")
+let nest_dots starter ender fn f d =
+  mcode print_string starter;
+  f(); start_block();
+  (match Ast.unwrap d with
+    Ast.DOTS(l)    -> print_between force_newline fn l
+  | Ast.CIRCLES(l) -> print_between force_newline fn l
+  | Ast.STARS(l)   -> print_between force_newline fn l);
+  end_block();
+  mcode print_string ender
 
 (* --------------------------------------------------------------------- *)
 
@@ -241,12 +234,12 @@ let rec expression e =
   | Ast.MetaExprList(name,_,_,_) -> mcode print_meta name
   | Ast.EComma(cm) -> mcode print_string cm; print_space()
   | Ast.DisjExpr(exp_list) -> print_disj_list expression exp_list
-  | Ast.NestExpr(expr_dots,Some whencode,multi) ->
-      nest_dots multi expression
+  | Ast.NestExpr(starter,expr_dots,ender,Some whencode,multi) ->
+      nest_dots starter ender expression
 	(function _ -> print_string "   when != "; expression whencode)
 	expr_dots
-  | Ast.NestExpr(expr_dots,None,multi) ->
-      nest_dots multi expression (function _ -> ()) expr_dots
+  | Ast.NestExpr(starter,expr_dots,ender,None,multi) ->
+      nest_dots starter ender expression (function _ -> ()) expr_dots
   | Ast.Edots(dots,Some whencode)
   | Ast.Ecircles(dots,Some whencode)
   | Ast.Estars(dots,Some whencode) ->
@@ -665,9 +658,9 @@ and statement arity s =
   | Ast.Define(header,body) ->
       rule_elem arity header; print_string " ";
       dots force_newline (statement arity) body
-  | Ast.Nest(stmt_dots,whn,multi,_,_) ->
+  | Ast.Nest(starter,stmt_dots,ender,whn,multi,_,_) ->
       print_string arity;
-      nest_dots multi (statement arity)
+      nest_dots starter ender (statement arity)
 	(function _ ->
 	  open_box 0;
 	  print_between force_newline

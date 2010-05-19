@@ -776,6 +776,7 @@ let add_newlines toks tabbing_unit =
     let (tu,tlen) = 
       match tabbing_unit with
 	Some ("\t",_) -> ("\t",8)
+      | Some ("",_) -> ("\t",8) (* not sure why... *)
       | Some (s,_) -> (s,String.length s) (* assuming only spaces *)
       |	None -> ("\t",8) in
     let rec loop seen =

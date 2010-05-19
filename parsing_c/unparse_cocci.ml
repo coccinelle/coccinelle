@@ -228,22 +228,15 @@ let dots between fn d =
   | Ast.STARS(l) -> print_between between fn l
 in
 
-let nest_dots multi fn f d =
-  let mo s = if multi then "<+"^s else "<"^s in
-  let mc s = if multi then s^"+>" else s^">" in
-  match Ast.unwrap d with
-    Ast.DOTS(l) ->
-      print_text (mo "..."); f(); start_block();
-      print_between force_newline fn l;
-      end_block(); print_text (mc "...")
-  | Ast.CIRCLES(l) ->
-      print_text (mo "ooo"); f(); start_block();
-      print_between force_newline fn l;
-      end_block(); print_text (mc "ooo")
-  | Ast.STARS(l) ->
-      print_text (mo "***"); f(); start_block();
-      print_between force_newline fn l;
-      end_block(); print_text (mc "***")
+let nest_dots starter ender fn f d =
+  mcode print_string starter;
+  f(); start_block();
+  (match Ast.unwrap d with
+    Ast.DOTS(l)    -> print_between force_newline fn l
+  | Ast.CIRCLES(l) -> print_between force_newline fn l
+  | Ast.STARS(l)   -> print_between force_newline fn l);
+  end_block();
+  mcode print_string ender
 in
 
 (* --------------------------------------------------------------------- *)
@@ -347,13 +340,14 @@ let rec expression e =
       if generating
       then print_disj_list expression exp_list
       else raise CantBeInPlus
-  | Ast.NestExpr(expr_dots,Some whencode,multi) when generating ->
-      nest_dots multi expression
+  | Ast.NestExpr(starter,expr_dots,ender,Some whencode,multi)
+    when generating ->
+      nest_dots starter ender expression
 	(function _ -> print_text "   when != "; expression whencode)
 	expr_dots
-  | Ast.NestExpr(expr_dots,None,multi) when generating ->
-      nest_dots multi expression (function _ -> ()) expr_dots
-  | Ast.NestExpr(_) -> raise CantBeInPlus
+  | Ast.NestExpr(starter,expr_dots,ender,None,multi) when generating ->
+      nest_dots starter ender expression (function _ -> ()) expr_dots
+  | Ast.NestExpr _ -> raise CantBeInPlus
   | Ast.Edots(dots,Some whencode)
   | Ast.Ecircles(dots,Some whencode)
   | Ast.Estars(dots,Some whencode) ->
@@ -874,9 +868,9 @@ let rec statement arity s =
 	   stmt_dots_list;
 	 print_text "\n)")
       else raise CantBeInPlus
-  | Ast.Nest(stmt_dots,whn,multi,_,_) when generating ->
+  | Ast.Nest(starter,stmt_dots,ender,whn,multi,_,_) when generating ->
       pr_arity arity;
-      nest_dots multi (statement arity)
+      nest_dots starter ender (statement arity)
 	(function _ ->
 	  print_between force_newline
 	    (whencode (dots force_newline (statement "")) (statement "")) whn;

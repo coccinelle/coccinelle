@@ -303,6 +303,9 @@ let plus_attachable only_plus (tok,_) =
   | PC.TWhen(clt) |  PC.TWhenTrue(clt) |  PC.TWhenFalse(clt)
   | PC.TAny(clt) | PC.TStrict(clt) | PC.TEllipsis(clt)
   (* | PC.TCircles(clt) | PC.TStars(clt) *)
+  | PC.TOEllipsis(clt) | PC.TCEllipsis(clt)
+  | PC.TPOEllipsis(clt) | PC.TPCEllipsis(clt) (* | PC.TOCircles(clt)
+  | PC.TCCircles(clt) | PC.TOStars(clt) | PC.TCStars(clt) *)
 
   | PC.TWhy(clt) | PC.TDotDot(clt) | PC.TBang(clt) | PC.TOPar(clt)
   | PC.TCPar(clt)
@@ -319,10 +322,7 @@ let plus_attachable only_plus (tok,_) =
       else if only_plus then NOTPLUS
       else if line_type clt = D.CONTEXT then PLUS else NOTPLUS
 
-  | PC.TOPar0(clt) | PC.TMid0(clt) | PC.TCPar0(clt)
-  | PC.TOEllipsis(clt) | PC.TCEllipsis(clt)
-  | PC.TPOEllipsis(clt) | PC.TPCEllipsis(clt) (* | PC.TOCircles(clt)
-  | PC.TCCircles(clt) | PC.TOStars(clt) | PC.TCStars(clt) *) -> NOTPLUS
+  | PC.TOPar0(clt) | PC.TMid0(clt) | PC.TCPar0(clt) -> NOTPLUS
   | PC.TMetaPos(nm,_,_,_) -> NOTPLUS
   | PC.TSub(clt) -> NOTPLUS
 
@@ -627,14 +627,15 @@ let split_token ((tok,_) as t) =
   | PC.TFunDecl(clt)
   | PC.TWhen(clt) | PC.TWhenTrue(clt) | PC.TWhenFalse(clt)
   | PC.TAny(clt) | PC.TStrict(clt) | PC.TLineEnd(clt)
-  | PC.TEllipsis(clt) (* | PC.TCircles(clt) | PC.TStars(clt) *) -> split t clt
+  | PC.TEllipsis(clt) (* | PC.TCircles(clt) | PC.TStars(clt) *)
+  | PC.TOEllipsis(clt) | PC.TCEllipsis(clt)
+  | PC.TPOEllipsis(clt) | PC.TPCEllipsis(clt) -> split t clt
 
-  | PC.TOEllipsis(_) | PC.TCEllipsis(_) (* clt must be context *)
-  | PC.TPOEllipsis(_) | PC.TPCEllipsis(_) (* clt must be context *)
 (*
   | PC.TOCircles(_) | PC.TCCircles(_)   (* clt must be context *)
   | PC.TOStars(_) | PC.TCStars(_)       (* clt must be context *)
 *)
+
   | PC.TBang0 | PC.TPlus0 | PC.TWhy0 ->
       ([t],[t])
 
@@ -930,6 +931,36 @@ let rec translate_when_true_false = function
 
 (* ----------------------------------------------------------------------- *)
 
+(* In a nest, if the nest is -, all of the nested code must also be -.
+All are converted to context, because the next takes care of the -. *)
+let check_nests tokens =
+  let is_minus t =
+    let (line_type,a,b,c,d,e,f,g) = get_clt t in
+    List.mem line_type [D.MINUS;D.OPTMINUS;D.UNIQUEMINUS] in
+  let drop_minus t =
+    let clt = try Some(get_clt t) with Failure _ -> None in
+	match clt with
+	  Some (line_type,a,b,c,d,e,f,g) ->
+	    (match line_type with
+	      D.MINUS -> update_clt t (D.CONTEXT,a,b,c,d,e,f,g)
+	    | D.OPTMINUS -> update_clt t (D.OPT,a,b,c,d,e,f,g)
+	    | D.UNIQUEMINUS -> update_clt t (D.UNIQUE,a,b,c,d,e,f,g)
+	    | _ -> failwith "minus token expected")
+	| None -> t in
+  let rec outside = function
+      [] -> []
+    | ((PC.TPOEllipsis(clt),q) as t)::r when is_minus t -> t :: inside 0 r
+    | t::r -> t :: outside r
+  and inside stack = function
+      [] -> failwith "missing nest end"
+    | ((PC.TPCEllipsis(clt),q) as t)::r ->
+	(drop_minus t)
+	:: (if stack = 0 then outside r else inside (stack - 1) r)
+    | ((PC.TPOEllipsis(clt),q) as t)::r ->
+	(drop_minus t) :: (inside (stack + 1) r)
+    | t :: r -> (drop_minus t) :: (inside stack r) in
+  outside tokens
+
 let check_parentheses tokens =
   let clt2line (_,line,_,_,_,_,_,_) = line in
   let rec loop seen_open = function
@@ -1220,7 +1251,10 @@ let prepare_tokens tokens =
     (translate_when_true_false (* after insert_line_end *)
        (insert_line_end
 	  (detect_types false
-	     (find_function_names (detect_attr (check_parentheses tokens))))))
+	     (find_function_names
+		(detect_attr
+		   (check_nests
+		      (check_parentheses tokens)))))))
 
 let prepare_mv_tokens tokens =
   detect_types false (detect_attr tokens)
@@ -1368,7 +1402,7 @@ let parse_iso file =
 	    let tokens = prepare_tokens (start@tokens) in
             (*
 	       print_tokens "iso tokens" tokens;
-	    *)
+	    å*)
 	    let entry = parse_one "iso main" PC.iso_main file tokens in
 	    let entry = List.map (List.map Test_exps.process_anything) entry in
 	    if more
@@ -1780,6 +1814,7 @@ let process file isofile verbose =
 			 (match List.map Ast0.unwrap (Ast0.undots c) with
 			   [Ast0.Exp e] -> true | _ -> false)
 		     | _ -> false] in
+	       Unparse_ast0.unparse minus;
 	       let minus = Arity.minus_arity minus in
 	       let ((metavars,minus),function_prototypes) =
 		 Function_prototypes.process

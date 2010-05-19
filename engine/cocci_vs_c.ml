@@ -1150,12 +1150,16 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
           ((B.ParenExpr (eb), typ), [ib1;ib2])
       ))))
 
-  | A.NestExpr(exps,None,true), eb ->
+  | A.NestExpr(starter,exps,ender,None,true), eb ->
+      (match A.get_mcodekind starter with
+	A.MINUS _ -> failwith "TODO: only context nests supported"
+      |	_ -> ());
       (match A.unwrap exps with
 	A.DOTS [exp] ->
 	  X.cocciExpExp expression exp eb >>= (fun exp eb ->
             return (
-            (A.NestExpr(A.rewrap exps (A.DOTS [exp]),None,true)) +> wa,
+            (A.NestExpr
+	       (starter,A.rewrap exps (A.DOTS [exp]),ender,None,true)) +> wa,
             eb
             )
 	  )

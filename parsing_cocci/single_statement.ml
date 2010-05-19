@@ -541,9 +541,13 @@ let rec statement dots_before dots_after s =
 		     statement_dots_list,
 		   mids,ender))
   | Ast0.Nest(starter,stmt_dots,ender,whencode,multi) ->
-      Ast0.rewrap s
-	(Ast0.Nest
-	   (starter,statement_dots true true stmt_dots,ender,whencode,multi))
+      (match Ast0.get_mcode_mcodekind starter with
+	Ast0.MINUS _ -> (* everything removed, like -... *) s
+      |	_ ->
+	  Ast0.rewrap s
+	    (Ast0.Nest
+	       (starter,statement_dots true true stmt_dots,ender,
+		whencode,multi)))
   | Ast0.Exp(exp) -> s
   | Ast0.TopExp(exp) -> s
   | Ast0.Ty(ty) -> s

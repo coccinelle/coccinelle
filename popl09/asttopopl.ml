@@ -41,7 +41,10 @@ let rec stm s =
 		 Ast.WhenNot(a) -> Past.When(prev,stm_list a)
 	       | _ -> failwith "only when != supported")
 	   Past.Dots whencodes)
-  | Ast.Nest(stmt_dots,whencodes,false,_,_) ->
+  | Ast.Nest(starter,stmt_dots,ender,whencodes,false,_,_) ->
+      (match Ast.get_mcodekind starter with
+	Ast.MINUS _ -> failwith "only context nests supported"
+      |	_ -> ());
       let nest = Past.Nest(stm_list stmt_dots) in
       Past.DInfo
 	(List.fold_left

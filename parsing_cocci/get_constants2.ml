@@ -227,8 +227,8 @@ let do_get_constants constants keywords env neg_pos =
 	bind (k e) (bind (minherited name) (minherited lenname))
     | Ast.SizeOfExpr(sizeof,exp) -> bind (keywords "sizeof") (k e)
     | Ast.SizeOfType(sizeof,lp,ty,rp) -> bind (keywords "sizeof") (k e)
-    | Ast.NestExpr(expr_dots,wc,false) -> option_default
-    | Ast.NestExpr(expr_dots,wc,true) ->
+    | Ast.NestExpr(starter,expr_dots,ender,wc,false) -> option_default
+    | Ast.NestExpr(starter,expr_dots,ender,wc,true) ->
 	r.V.combiner_expression_dots expr_dots
     | Ast.DisjExpr(exps) ->
 	disj_union_all (List.map r.V.combiner_expression exps)
@@ -325,8 +325,8 @@ let do_get_constants constants keywords env neg_pos =
     match Ast.unwrap s with
       Ast.Disj(stmt_dots) ->
 	disj_union_all (List.map r.V.combiner_statement_dots stmt_dots)
-    | Ast.Nest(stmt_dots,whn,false,_,_) -> option_default
-    | Ast.Nest(stmt_dots,whn,true,_,_) ->
+    | Ast.Nest(starter,stmt_dots,ender,whn,false,_,_) -> option_default
+    | Ast.Nest(starter,stmt_dots,ender,whn,true,_,_) ->
 	r.V.combiner_statement_dots stmt_dots
     | Ast.OptStm(s) -> option_default
     | Ast.Dots(d,whn,_,_) | Ast.Circles(d,whn,_,_) | Ast.Stars(d,whn,_,_) ->

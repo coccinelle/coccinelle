@@ -7,6 +7,12 @@ module Ast = Ast_cocci
 (* --------------------------------------------------------------------- *)
 (* Result *)
 
+(* This is a horrible hack.  We need to have a special treatment for the code
+inside a nest, and this is to avoid threading that information around
+everywhere *)
+let in_nest_count = ref 0
+let check_attachable v = if !in_nest_count > 0 then false else v
+
 let mkres x e left right =
   let lstart = Ast0.get_info left in
   let lend = Ast0.get_info right in
@@ -19,8 +25,8 @@ let mkres x e left right =
       Ast0.offset = lstart.Ast0.pos_info.Ast0.offset;} in
   let info =
     { Ast0.pos_info = pos_info;
-      Ast0.attachable_start = lstart.Ast0.attachable_start;
-      Ast0.attachable_end = lend.Ast0.attachable_end;
+      Ast0.attachable_start = check_attachable lstart.Ast0.attachable_start;
+      Ast0.attachable_end = check_attachable lend.Ast0.attachable_end;
       Ast0.mcode_start = lstart.Ast0.mcode_start;
       Ast0.mcode_end = lend.Ast0.mcode_end;
       (* only for tokens, not inherited upwards *)
@@ -49,8 +55,10 @@ let mkmultires x e left right (astart,start_mcodes) (aend,end_mcodes) =
       Ast0.offset = lstart.Ast0.pos_info.Ast0.offset; } in
   let info =
     { Ast0.pos_info = pos_info;
-      Ast0.attachable_start = if !inherit_attachable then astart else false;
-      Ast0.attachable_end = if !inherit_attachable then aend else false;
+      Ast0.attachable_start =
+      check_attachable (if !inherit_attachable then astart else false);
+      Ast0.attachable_end =
+      check_attachable (if !inherit_attachable then aend else false);
       Ast0.mcode_start = start_mcodes;
       Ast0.mcode_end = end_mcodes;
       (* only for tokens, not inherited upwards *)
@@ -96,7 +104,8 @@ let promote_to_statement stm mcodekind =
     {info with
       Ast0.pos_info = new_pos_info;
       Ast0.mcode_start = [mcodekind]; Ast0.mcode_end = [mcodekind];
-      Ast0.attachable_start = true; Ast0.attachable_end = true} in
+      Ast0.attachable_start = check_attachable true;
+      Ast0.attachable_end = check_attachable true} in
   {(Ast0.wrap ()) with Ast0.info = new_info; Ast0.mcodekind = ref mcodekind}
 
 let promote_to_statement_start stm mcodekind =
@@ -109,13 +118,16 @@ let promote_to_statement_start stm mcodekind =
     {info with
       Ast0.pos_info = new_pos_info;
       Ast0.mcode_start = [mcodekind]; Ast0.mcode_end = [mcodekind];
-      Ast0.attachable_start = true; Ast0.attachable_end = true} in
+      Ast0.attachable_start = check_attachable true;
+      Ast0.attachable_end = check_attachable true} in
   {(Ast0.wrap ()) with Ast0.info = new_info; Ast0.mcodekind = ref mcodekind}
 
 (* mcode is good by default *)
 let bad_mcode (t,a,info,mcodekind,pos,adj) =
   let new_info =
-    {info with Ast0.attachable_start = false; Ast0.attachable_end = false} in
+    {info with
+      Ast0.attachable_start = check_attachable false;
+      Ast0.attachable_end = check_attachable false} in
   (t,a,new_info,mcodekind,pos,adj)
 
 let get_all_start_info l =
@@ -152,11 +164,11 @@ let dot_list is_dots fn = function
       let last = List.hd backward in
       let first_info =
 	{ (Ast0.get_info first) with
-	  Ast0.attachable_start = first_attachable;
+	  Ast0.attachable_start = check_attachable first_attachable;
 	  Ast0.mcode_start = first_mcode } in
       let last_info =
 	{ (Ast0.get_info last) with
-	  Ast0.attachable_end = last_attachable;
+	  Ast0.attachable_end = check_attachable last_attachable;
 	  Ast0.mcode_end = last_mcode } in
       let first = Ast0.set_info first first_info in
       let last = Ast0.set_info last last_info in
@@ -169,7 +181,9 @@ let dots is_dots prev fn d =
   | (None,Ast0.DOTS([])) ->
       Ast0.set_info d
 	{(Ast0.get_info d)
-	with Ast0.attachable_start = false; Ast0.attachable_end = false}
+	with
+	  Ast0.attachable_start = check_attachable false;
+	  Ast0.attachable_end = check_attachable false}
   | (_,Ast0.DOTS(x)) ->
       let (l,lstart,lend) = dot_list is_dots fn x in
       mkres d (Ast0.DOTS l) lstart lend
@@ -713,7 +727,27 @@ let rec statement s =
     | Ast0.Nest(starter,rule_elem_dots,ender,whencode,multi) ->
 	let starter = bad_mcode starter in
 	let ender = bad_mcode ender in
-	let rule_elem_dots = dots is_stm_dots None statement rule_elem_dots in
+	let wrapper f =
+	  match Ast0.get_mcode_mcodekind starter with
+	    Ast0.MINUS _ ->
+	      (* if minus, then all nest code has to be minus.  This is
+		 checked at the token level, in parse_cocci.ml.  All nest code
+		 is also unattachable.  We strip the minus annotations from
+		 the nest code because in the CTL another metavariable will
+		 take care of removing all the code matched by the nest.
+		 Without stripping the minus annotations, we would get a
+		 double transformation.  Perhaps there is a more elegant
+		 way to do this in the CTL, but it is not easy, because of
+		 the interaction with the whencode and the implementation of
+		 plus *)
+	      in_nest_count := !in_nest_count + 1;
+	      let res = f() in
+	      in_nest_count := !in_nest_count - 1;
+	      res
+	  | _ -> f() in
+	let rule_elem_dots =
+	  wrapper
+	    (function _ -> dots is_stm_dots None statement rule_elem_dots) in
 	mkres s (Ast0.Nest(starter,rule_elem_dots,ender,whencode,multi))
 	  (promote_mcode starter) (promote_mcode ender)
     | Ast0.Dots(dots,whencode) ->
@@ -829,14 +863,17 @@ let top_level t =
 (* Entry points *)
 
 let compute_lines attachable_or x =
+  in_nest_count := 0;
   inherit_attachable := attachable_or;
   List.map top_level x
 
 let compute_statement_lines attachable_or x =
+  in_nest_count := 0;
   inherit_attachable := attachable_or;
   statement x
 
 let compute_statement_dots_lines attachable_or x =
+  in_nest_count := 0;
   inherit_attachable := attachable_or;
   statement_dots x
 

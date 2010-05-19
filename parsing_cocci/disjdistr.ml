@@ -149,7 +149,7 @@ and disjexp e =
   | Ast.MetaExprList(_,_,_,_) | Ast.EComma(_) -> [e]
   | Ast.DisjExpr(exp_list) ->
       List.concat (List.map disjexp exp_list)
-  | Ast.NestExpr(expr_dots,whencode,multi) ->
+  | Ast.NestExpr(starter,expr_dots,ender,whencode,multi) ->
       (* not sure what to do here, so ambiguities still possible *)
       [e]
   | Ast.Edots(dots,_) | Ast.Ecircles(dots,_) | Ast.Estars(dots,_) -> [e]

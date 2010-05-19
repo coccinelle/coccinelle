@@ -498,9 +498,9 @@ rule token = parse
 	     TOEllipsis (get_current_line_type lexbuf) }
   | "...>" { start_line true; check_context_linetype (tok lexbuf);
 	     TCEllipsis (get_current_line_type lexbuf) }
-  | "<+..." { start_line true; check_context_linetype (tok lexbuf);
+  | "<+..." { start_line true; check_minus_context_linetype (tok lexbuf);
 	     TPOEllipsis (get_current_line_type lexbuf) }
-  | "...+>" { start_line true; check_context_linetype (tok lexbuf);
+  | "...+>" { start_line true; check_minus_context_linetype (tok lexbuf);
 	     TPCEllipsis (get_current_line_type lexbuf) }
 (*
   | "<ooo" { start_line true; check_context_linetype (tok lexbuf);

@@ -196,7 +196,8 @@ let elim_opt =
 
     | (Ast.Dots(_,_,_,_)::Ast.OptStm(stm)::(Ast.Dots(_,_,_,_) as u)::urest,
        d0::s::d1::rest)
-    | (Ast.Nest(_,_,_,_,_)::Ast.OptStm(stm)::(Ast.Dots(_,_,_,_) as u)::urest,
+    | (Ast.Nest(_,_,_,_,_,_,_)::Ast.OptStm(stm)::(Ast.Dots(_,_,_,_) as u)
+       ::urest,
        d0::s::d1::rest) -> (* why no case for nest as u? *)
 	 let l = Ast.get_line stm in
 	 let new_rest1 = stm :: (dots_list (u::urest) (d1::rest)) in
@@ -301,7 +302,7 @@ let elim_opt =
 	     Ast.inherited = inh_both;
 	     Ast.saved_witness = saved_both}]
 
-    | ([Ast.Nest(_,_,_,_,_);Ast.OptStm(stm)],[d1;_]) ->
+    | ([Ast.Nest(_,_,_,_,_,_,_);Ast.OptStm(stm)],[d1;_]) ->
 	let l = Ast.get_line stm in
 	let rw = Ast.rewrap stm in
 	let rwd = Ast.rewrap stm in
@@ -583,7 +584,7 @@ and get_before_e s a =
   match Ast.unwrap s with
     Ast.Dots(d,w,_,aft) ->
       (Ast.rewrap s (Ast.Dots(d,get_before_whencode w,a,aft)),a)
-  | Ast.Nest(stmt_dots,w,multi,_,aft) ->
+  | Ast.Nest(starter,stmt_dots,ender,w,multi,_,aft) ->
       let w = get_before_whencode w in
       let (sd,_) = get_before stmt_dots a in
       (*let a =
@@ -604,7 +605,8 @@ and get_before_e s a =
 		| _ -> true)
 	    | _ -> true)
 	  a in*)
-      (Ast.rewrap s (Ast.Nest(sd,w,multi,a,aft)),[Ast.Other_dots stmt_dots])
+      (Ast.rewrap s (Ast.Nest(starter,sd,ender,w,multi,a,aft)),
+       [Ast.Other_dots stmt_dots])
   | Ast.Disj(stmt_dots_list) ->
       let (dsl,dsla) =
 	List.split (List.map (function e -> get_before e a) stmt_dots_list) in
@@ -689,7 +691,7 @@ and get_after_e s a =
   match Ast.unwrap s with
     Ast.Dots(d,w,bef,_) ->
       (Ast.rewrap s (Ast.Dots(d,get_after_whencode a w,bef,a)),a)
-  | Ast.Nest(stmt_dots,w,multi,bef,_) ->
+  | Ast.Nest(starter,stmt_dots,ender,w,multi,bef,_) ->
       let w = get_after_whencode a w in
       let (sd,_) = get_after stmt_dots a in
       (*let a =
@@ -710,7 +712,8 @@ and get_after_e s a =
 		| _ -> true)
 	    | _ -> true)
 	  a in*)
-      (Ast.rewrap s (Ast.Nest(sd,w,multi,bef,a)),[Ast.Other_dots stmt_dots])
+      (Ast.rewrap s (Ast.Nest(starter,sd,ender,w,multi,bef,a)),
+       [Ast.Other_dots stmt_dots])
   | Ast.Disj(stmt_dots_list) ->
       let (dsl,dsla) =
 	List.split (List.map (function e -> get_after e a) stmt_dots_list) in
@@ -725,7 +728,7 @@ and get_after_e s a =
 	    (function
 		Ast.Other x ->
 		  (match Ast.unwrap x with
-		    Ast.Dots(_,_,_,_) | Ast.Nest(_,_,_,_,_) ->
+		    Ast.Dots(_,_,_,_) | Ast.Nest(_,_,_,_,_,_,_) ->
 		      failwith
 			"dots/nest not allowed before and after stmt metavar"
 		  | _ -> ())
@@ -733,7 +736,7 @@ and get_after_e s a =
 		  (match Ast.undots x with
 		    x::_ ->
 		      (match Ast.unwrap x with
-			Ast.Dots(_,_,_,_) | Ast.Nest(_,_,_,_,_) ->
+			Ast.Dots(_,_,_,_) | Ast.Nest(_,_,_,_,_,_,_) ->
 			  failwith
 			    ("dots/nest not allowed before and after stmt "^
 			     "metavar")
@@ -1508,9 +1511,9 @@ let rec dots_and_nests plus nest whencodes bef aft dotcode after label
   plus_modifier
     (dots_au is_strict ((after = Tail) or (after = VeryEnd))
        label (guard_to_strict guard) wrapcode just_nest
-      (ctl_and_ns dotcode
-	 (ctl_and_ns (ctl_and_ns (ctl_not bef_aft) ornest) labelled))
-      aft ender quantifier)
+       (ctl_and_ns dotcode
+	   (ctl_and_ns (ctl_and_ns (ctl_not bef_aft) ornest) labelled))
+       aft ender quantifier)
 
 and get_whencond_exps e =
   match Ast.unwrap e with
@@ -1871,7 +1874,7 @@ and statement stmt after quantified minus_quantified
 		  llabel slabel true guard)
 	      stmt_dots_list))
 
-  | Ast.Nest(stmt_dots,whencode,multi,bef,aft) ->
+  | Ast.Nest(starter,stmt_dots,ender,whencode,multi,bef,aft) ->
       (* label in recursive call is None because label check is already
 	 wrapped around the corresponding code *)
 
@@ -1884,12 +1887,20 @@ and statement stmt after quantified minus_quantified
       (* no minus version because when code doesn't contain any minus code *)
       let new_quantified = Common.union_set bfvs quantified in
 
+      let dot_code =
+	match Ast.get_mcodekind starter with (*ender must have the same mcode*)
+	  Ast.MINUS(_,_,_,_) as d ->
+            (* no need for the fresh metavar, but ... is a bit weird as a
+	       variable name *)
+	    Some(make_match (make_meta_rule_elem d ([],[],[])))
+	| _ -> None in
+
       quantify guard bfvs
 	(let dots_pattern =
 	  statement_list stmt_dots (a2n after) new_quantified minus_quantified
 	    None llabel slabel true guard in
 	dots_and_nests multi
-	  (Some dots_pattern) whencode bef aft None after label
+	  (Some dots_pattern) whencode bef aft dot_code after label
 	  (process_bef_aft new_quantified minus_quantified
 	     None llabel slabel true)
 	  (function x ->
@@ -2145,12 +2156,16 @@ and statement stmt after quantified minus_quantified
 	Common.union_set mb1fvs
 	  (Common.union_set mb2fvs
 	     (Common.union_set mb3fvs minus_quantified)) in
+      let not_minus = function Ast.MINUS(_,_,_,_) -> false | _ -> true in
       let optim1 =
 	match (Ast.undots body,
 	       contains_modif rbrace or contains_pos rbrace) with
 	  ([body],false) ->
 	    (match Ast.unwrap body with
-	      Ast.Nest(stmt_dots,[],false,_,_) ->
+	      Ast.Nest(starter,stmt_dots,ender,[],false,_,_)
+		(* perhaps could optimize for minus case too... TODO *)
+		when not_minus (Ast.get_mcodekind starter)
+	      ->
             (* special case for function header + body - header is unambiguous
 	       and unique, so we can just look for the nested body anywhere
 	       else in the CFG *)

@@ -353,9 +353,11 @@ and expression e =
     | Ast0.EComma(cm)         -> Ast.EComma(mcode cm)
     | Ast0.DisjExpr(_,exps,_,_)     ->
 	Ast.DisjExpr(List.map expression exps)
-    | Ast0.NestExpr(_,exp_dots,_,whencode,multi) ->
+    | Ast0.NestExpr(starter,exp_dots,ender,whencode,multi) ->
+	let starter = mcode starter in
 	let whencode = get_option expression whencode in
-	Ast.NestExpr(dots expression exp_dots,whencode,multi)
+	let ender = mcode ender in
+	Ast.NestExpr(starter,dots expression exp_dots,ender,whencode,multi)
     | Ast0.Edots(dots,whencode) ->
 	let dots = mcode dots in
 	let whencode = get_option expression whencode in
@@ -700,9 +702,10 @@ and statement s =
       | Ast0.Disj(_,rule_elem_dots_list,_,_) ->
 	  Ast.Disj(List.map (function x -> statement_dots seqible x)
 		     rule_elem_dots_list)
-      | Ast0.Nest(_,rule_elem_dots,_,whn,multi) ->
+      | Ast0.Nest(starter,rule_elem_dots,ender,whn,multi) ->
 	  Ast.Nest
-	    (statement_dots Ast.Sequencible rule_elem_dots,
+	    (mcode starter,statement_dots Ast.Sequencible rule_elem_dots,
+	     mcode ender,
 	     List.map
 	       (whencode (statement_dots Ast.Sequencible)
 		 (statement Ast.NotSequencible))
