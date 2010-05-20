@@ -42,6 +42,7 @@
 - allow ? on goto
 - more graceful failure on finding a strange character in a macro parameter
   list
+- support Parameter metavariables
 
 * 0.2.2
 ** Language:

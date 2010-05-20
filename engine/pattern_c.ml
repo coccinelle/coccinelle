@@ -419,7 +419,12 @@ module XMATCH = struct
 		
           | Ast_c.MetaListlenVal a -> success(Ast_c.MetaListlenVal a)
 		
-          | Ast_c.MetaParamVal a -> failwith "not handling MetaParamVal"
+          | Ast_c.MetaParamVal a ->
+	      success
+		(Ast_c.MetaParamVal
+		   (if strip
+		   then Lib_parsing_c.al_param a
+		   else Lib_parsing_c.semi_al_param a))
           | Ast_c.MetaParamListVal a ->
 	      success
 		(Ast_c.MetaParamListVal

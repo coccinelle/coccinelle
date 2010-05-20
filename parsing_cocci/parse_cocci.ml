@@ -1814,7 +1814,6 @@ let process file isofile verbose =
 			 (match List.map Ast0.unwrap (Ast0.undots c) with
 			   [Ast0.Exp e] -> true | _ -> false)
 		     | _ -> false] in
-	       Unparse_ast0.unparse minus;
 	       let minus = Arity.minus_arity minus in
 	       let ((metavars,minus),function_prototypes) =
 		 Function_prototypes.process

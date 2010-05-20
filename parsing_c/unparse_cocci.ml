@@ -148,7 +148,6 @@ let mcode fn (s,info,mc,pos) =
 		    | Ast.Indent s -> s in
 		  print_string str line col; Some line
 	      |	Some lb when line =|= lb ->
-		  Printf.printf "some, line same case\n";
 		  let str = match str with Ast.Noindent s | Ast.Indent s -> s in
 		  print_string str line col; Some line
 	      |	_ ->
@@ -638,7 +637,11 @@ and parameterTypeDef p =
   | Ast.Param(ty,None) -> fullType ty
 
   | Ast.MetaParam(name,_,_) ->
-      failwith "not handling MetaParam"
+      handle_metavar name
+	(function
+	    Ast_c.MetaParamVal p ->
+              pretty_print_c.Pretty_print_c.param p
+          | _ -> raise Impossible)
   | Ast.MetaParamList(name,_,_,_) ->
       failwith "not handling MetaParamList"
 
