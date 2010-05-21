@@ -1,0 +1,4 @@
+use better pycaml
+make it work without PYTHONPATH
+commons looks like a separate library
+run tests
