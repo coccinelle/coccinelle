@@ -1,0 +1,25 @@
+Source: coccinelle
+Section: devel
+Priority: optional
+Maintainer: Nicolas Palix <npalix@diku.dk>
+XSBC-Original-Maintainer: Debian OCaml Maintainers <debian-ocaml-maint@lists.debian.org>
+Uploaders: Євгеній Мещеряков <eugen@debian.org>
+Build-Depends: debhelper (>= 7), quilt, ocaml-nox (>= 3.11.0), pycaml (>= 0.82-10), python,
+ menhir (>= 20090204.dfsg), libmenhir-ocaml-dev (>= 20090204.dfsg), ocaml-findlib, dh-ocaml,
+ ocaml-best-compilers, python2.6-dev, python-support (>= 0.6), libsexplib-camlp4-dev
+Standards-Version: 3.8.3
+Homepage: http://coccinelle.lip6.fr
+Vcs-Git: git://git.debian.org/git/pkg-ocaml-maint/packages/coccinelle.git
+Vcs-Browser: http://git.debian.org/?p=pkg-ocaml-maint/packages/coccinelle.git
+
+Package: coccinelle
+Architecture: any
+XB-Python-Version: 2.6
+Depends: ${misc:Depends}, ${shlibs:Depends}, ${F:OCamlRun}, ${python:Depends}
+Recommends: python-gobject, python-gtk2, python-glade2
+Suggests: vim-addon-manager
+Description: semantic patching tool for C
+ Coccinelle is a program matching and transformation tool for C.
+ The programmer describes the code to match and the transformation to
+ perform as a semantic patch, which looks like a standard patch, but can
+ transform multiple files at any number of code sites.

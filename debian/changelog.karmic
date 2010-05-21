@@ -1,0 +1,35 @@
+coccinelle (0.2.2.deb-0~npalix4) karmic; urgency=low
+
+  * Add Param metavariables
+
+ -- Nicolas Palix <npalix@diku.dk>  Fri, 21 May 2010 17:32:22 +0200
+
+coccinelle (0.2.2.deb-0~npalix3) karmic; urgency=low
+
+  * Fix handling of empty #define
+
+ -- Nicolas Palix <npalix@npalix-pc.diku.dk>  Wed, 24 Mar 2010 23:32:57 +0100
+
+coccinelle (0.2.2.deb-0~npalix2) karmic; urgency=low
+
+  * Fix in comment handling
+
+ -- Nicolas Palix <npalix@diku.dk>  Sat, 20 Mar 2010 11:20:54 +0100
+
+coccinelle (0.2.2.deb-0~npalix1) karmic; urgency=low
+
+  * Release of version 0.2.2
+
+ -- Nicolas Palix <npalix@diku.dk>  Fri, 12 Mar 2010 16:42:57 +0100
+
+coccinelle (0.2.2-rc2.deb-0~npalix1) karmic; urgency=low
+
+  * Release of version 0.2.2-rc2
+
+ -- Nicolas Palix <npalix@diku.dk>  Tue, 09 Mar 2010 14:26:01 +0100
+
+coccinelle (0.2.1.deb-1ubuntu0~npalix1) karmic; urgency=low
+
+  * Initial release for karmic on PPA.
+
+ -- Nicolas Palix <npalix@diku.dk>  Tue, 09 Feb 2010 00:16:31 +0100

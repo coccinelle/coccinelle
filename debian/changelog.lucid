@@ -1,0 +1,5 @@
+coccinelle (0.2.2.deb-0~1004npalix4) lucid; urgency=low
+
+  * Add Param metavariables
+
+ -- Nicolas Palix <npalix@diku.dk>  Fri, 21 May 2010 17:32:22 +0200

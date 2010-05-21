@@ -1,0 +1,115 @@
+This package was debianized by Євгеній Мещеряков <eugen@debian.org> on
+Thu, 22 Jan 2009 17:26:07 +0100.
+
+It was downloaded from <http://www.emn.fr/x-info/coccinelle/#download>
+
+Some files were removed from the source tarball, see debian/repack.sh for details.
+
+Upstream Authors:
+    Julia Lawall <julia@diku.dk>
+    Yoann Padioleau <yoann.padioleau@gmail.com>
+    Rene Rydhof Hansen <rrhansen@diku.dk>
+    Henrik Stuart <henrik@hstuart.dk>
+
+Copyright:
+
+    2005-2009	Ecole des Mines de Nantes
+    2005-2009   University of Copenhagen
+    1998-2009	Yoann Padioleau
+    2005-2009	Julia Lawall
+    2005-2009	Rene Rydhof Hansen
+    2005-2009   Henrik Stuart
+    2005-2009	Gilles Muller
+    2004	Troestler Christophe
+    2003	Brian Hurt
+    2003	Nicolas Cannasse
+    1996	Institut National de Recherche en Informatique et en Automatique
+    2000	Jean-Christophe FILLIATRE
+    2008, 2009	University of Urbana Champaign
+    
+Copyright for some python sources (vim*.py):
+
+    2005	Ali Afshar
+    2005-2007	The PIDA Project
+
+Copyright for files under editors/vim:
+    2009	Alexander Færøy
+
+License:
+
+    This program is free software; you can redistribute it and/or
+    modify it under the terms of the GNU General Public License (GPL)
+    version 2 as published by the Free Software Foundation.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License along
+    with this program; if not, write to the Free Software Foundation, Inc.,
+    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+On Debian systems, the complete text of the GNU General Public
+License, version 2, can be found in /usr/share/common-licenses/GPL-2.
+
+Files under commons/ are distributed under the following license:
+
+   This library is free software; you can redistribute it and/or
+   modify it under the terms of the GNU Lesser General Public License (LGPL)
+   version 2.1 as published by the Free Software Foundation, with the
+   special exception on linking described in file license.txt.
+
+   This library is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the file
+   license.txt for more details.
+
+The special exception reads:
+
+   As a special exception to the GNU Lesser General Public License, you
+   may link, statically or dynamically, a "work that uses the Library"
+   with a publicly distributed version of the Library to produce an
+   executable file containing portions of the Library, and distribute that
+   executable file under terms of your choice, without any of the additional
+   requirements listed in clause 6 of the GNU Lesser General Public License.
+   By "a publicly distributed version of the Library", we mean either the
+   unmodified Library as distributed by the authors, or a modified version
+   of the Library that is distributed under the conditions defined in clause
+   3 of the GNU Lesser General Public License.  This exception does not
+   however invalidate any other reasons why the executable file might be
+   covered by the GNU Lesser General Public License.
+
+On Debian systems, the complete text of the GNU Lesser General Public
+License, version 2.1, can be found in /usr/share/common-licenses/GPL-2.1.
+
+Files python/coccilib/coccigui/vim*.py have the following license:
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in
+    all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+    SOFTWARE.
+
+License for files under editors/vim/ reads:
+
+    You may redistribute this under the same terms as Vim itself.
+
+    Vim license permits to distribute it under GPL version 2 or later. For GPL
+    conditions see above. For full license text of Vim, see Vim's copyright
+    file.
+
+The Debian packaging is copyright 2009, Євгеній Мещеряков <eugen@debian.org> and
+is licensed under the GPL, see above.

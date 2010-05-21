@@ -1,0 +1,96 @@
+#!/usr/bin/make -f
+
+# Uncomment this to turn on verbose mode.
+#export DH_VERBOSE=1
+
+TG_BRANCHES = debian/documentation-paths \
+	      fixes/system-pycaml \
+	      fixes/system-menhir \
+	      fixes/system-ocamlsexp \
+	      fixes/documentation-build
+
+include /usr/share/quilt/quilt.make
+-include /usr/share/topgit/tg2quilt.mk
+include /usr/share/ocaml/ocamlvars.mk
+
+COCCI_FLAGS = BYTECODE_STATIC="" MANDIR=/usr/share/man
+
+VIM_ADIR = $(CURDIR)/debian/coccinelle/usr/share/vim/addons
+VIM_RDIR = $(CURDIR)/debian/coccinelle/usr/share/vim/registry
+
+COMMON_CONFIG = --prefix=/usr --with-python --without-trac
+
+ifeq ($(OCAML_HAVE_OCAMLOPT),yes)
+OCAMLRUN =
+CONFIG_FLAGS = $(COMMON_CONFIG) --opt
+MAKE_TGT = all.opt
+else
+OCAMLRUN = ocaml-base-nox-$(OCAML_ABI), pycaml (>= 0.82-10)
+CONFIG_FLAGS = $(COMMON_CONFIG) --no-opt
+MAKE_TGT = all
+endif
+
+my-very-own-patch-stamp:
+	# work around broken tg2quilt (#522906)
+	[ -f $(QUILT_STAMPFN) ] || debian/rules $(QUILT_STAMPFN)
+	touch my-very-own-patch-stamp
+
+build: build-stamp
+#build-stamp: $(QUILT_STAMPFN)
+build-stamp: my-very-own-patch-stamp
+	dh build --before dh_auto_configure
+	./configure $(CONFIG_FLAGS)
+	$(MAKE) $(COCCI_FLAGS) depend
+	$(MAKE) $(COCCI_FLAGS) $(MAKE_TGT)
+	dh build --after dh_auto_test
+	touch build-stamp
+
+# this is needed because patches modify clean target
+unpatch: patched-clean
+patched-clean: patch
+	$(MAKE) distclean
+
+clean: unpatch
+	dh clean --before dh_auto_clean
+	dh clean --after dh_auto_clean
+
+install: install-stamp
+install-stamp: build-stamp
+	dh install --before dh_auto_install
+	$(MAKE) DESTDIR=$(CURDIR)/debian/coccinelle $(COCCI_FLAGS) install
+	# install the wrapper script, i dont like upstreams one
+	rm $(CURDIR)/debian/coccinelle/usr/bin/spatch*
+	install $(CURDIR)/debian/spatch $(CURDIR)/debian/coccinelle/usr/bin/
+	# move binary into /usr/lib/coccinelle
+	mv $(CURDIR)/debian/coccinelle/usr/share/coccinelle/spatch* \
+		$(CURDIR)/debian/coccinelle/usr/lib/coccinelle/spatch
+
+	# Vim files
+	install -d $(VIM_ADIR)/ftdetect $(VIM_ADIR)/syntax
+	cp $(CURDIR)/editors/vim/ftdetect/cocci.vim $(VIM_ADIR)/ftdetect/
+	cp $(CURDIR)/editors/vim/syntax/cocci.vim $(VIM_ADIR)/syntax/
+	install -d $(VIM_RDIR)
+	cp $(CURDIR)/debian/coccinelle.yaml $(VIM_RDIR)/
+
+	# Emacs files
+	cp $(CURDIR)/editors/emacs/cocci.el $(CURDIR)/debian/coccinelle/usr/share/emacs/site-lisp/
+
+	dh install --after dh_auto_install --before dh_compress
+	dh_compress -X.pdf
+	dh install --after dh_compress
+	touch install-stamp
+
+
+binary-arch: install
+	dh binary-arch --before dh_gencontrol
+	dh_gencontrol -a -- -VF:OCamlRun="$(OCAMLRUN)"
+	dh binary-arch --after dh_gencontrol
+
+binary-indep: install
+
+binary: binary-indep binary-arch
+
+tag-patches:
+	sh debian/tag-patches.sh $(TG_BRANCHES)
+
+.PHONY: build clean binary-indep binary-arch binary install tag-patches

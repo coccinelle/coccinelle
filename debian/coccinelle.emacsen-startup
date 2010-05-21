@@ -1,0 +1,9 @@
+;; -*-emacs-lisp-*-
+(setq auto-mode-alist
+	(cons '("\\.cocci$" . cocci-mode) auto-mode-alist))
+(setq auto-mode-alist
+	(cons '("\\.iso$" . cocci-mode) auto-mode-alist))
+(autoload 'cocci-mode "cocci"
+	"Major mode for editing cocci code." t)
+
+;; vim: ft=lisp

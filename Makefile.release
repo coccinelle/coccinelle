@@ -6,12 +6,16 @@
 PACKAGE=$(PRJNAME)-$(VERSION)
 CCPACKAGE=coccicheck-$(CCVERSION)
 
+EXCLUDE=debian
+
 BINSRC=spatch env.sh env.csh standard.h standard.iso \
        *.txt \
        docs/manual/manual.pdf docs/manual/options.pdf docs/manual/main_grammar.pdf docs/spatch.1 \
        docs/manual/cocci-python.txt \
        demos/*
 BINSRC-PY=$(BINSRC) $(PYLIB) python/coccilib/
+
+EXCL=$(EXCLUDE:%=--exclude=$(PACKAGE)/%)
 BINSRC2=$(BINSRC:%=$(PACKAGE)/%)
 BINSRC2-PY=$(BINSRC-PY:%=$(PACKAGE)/%)
 
@@ -101,7 +105,7 @@ srctar:
 	make clean
 	cp -a .  $(TMP)/$(PACKAGE)
 	cd $(TMP)/$(PACKAGE); cd parsing_cocci/; make parser_cocci_menhir.ml
-	cd $(TMP); tar cvfz $(PACKAGE).tgz --exclude-vcs $(PACKAGE)
+	cd $(TMP); tar cvfz $(PACKAGE).tgz --exclude-vcs $(EXCL) $(PACKAGE)
 	rm -rf  $(TMP)/$(PACKAGE)
 
 

@@ -1,0 +1,5 @@
+addon: coccinelle
+description: "file detection and syntax highlighting for Coccinelle files"
+files:
+  - ftdetect/cocci.vim
+  - syntax/cocci.vim
