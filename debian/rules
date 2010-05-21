@@ -90,7 +90,4 @@ binary-indep: install
 
 binary: binary-indep binary-arch
 
-tag-patches:
-	sh debian/tag-patches.sh $(TG_BRANCHES)
-
 .PHONY: build clean binary-indep binary-arch binary install tag-patches
