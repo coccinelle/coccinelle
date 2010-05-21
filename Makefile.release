@@ -201,7 +201,7 @@ EXCL_SYNC=--exclude ".git"          \
 	--cvs-exclude
 
 packsrc: prepack
-#	$(MAKE) -C $(TMP)/$(PACKAGE)/debian lucid
+	$(MAKE) -C $(TMP)/$(PACKAGE)/debian lucid
 	$(MAKE) -C $(TMP)/$(PACKAGE)/debian karmic
 	$(MAKE) push
 	rm -rf  $(TMP)/$(PACKAGE)/
