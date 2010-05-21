@@ -43,6 +43,7 @@
 - more graceful failure on finding a strange character in a macro parameter
   list
 - support Parameter metavariables
+- add space after the last comma in an added portion of an argument list
 
 * 0.2.2
 ** Language:
