@@ -1066,7 +1066,13 @@ in
 	      |	Ast.Token(t,_) when List.mem t ["if";"for";"while";"do"] ->
 		  (* space always needed *)
 		  pr_space(); false
-	      |	_ -> true in
+	      |	Ast.ExpressionTag(e) ->
+		  (match Ast.unwrap e with
+		    Ast.EComma _ ->
+		      (* space always needed *)
+		      pr_space(); false 
+		  | _ -> true)
+	      |	t -> true in
 	    let indent_needed =
 	      let rec loop space_after indent_needed = function
 		  [] -> indent_needed
