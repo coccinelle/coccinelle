@@ -39,6 +39,16 @@ simply do:
 \begin{verbatim}
 $ spatch -sp_file ex1.cocci *.c
 \end{verbatim}
+
+
+Coccinelle primarily targets ANSI C, and supports some GCC extensions.  It
+has only partial support for K\&R C.  K\&R function declarations are only
+recognized if the parameter declarations are indented.  Furthermore, the
+parameter names are subsequently considered to be type names, due to
+confusion with function prototypes, in which a name by itself is indeed the
+name of a type.
+
+
 %command line: 
 
 %can do inplace, or with git, cf chapter on developing ...
