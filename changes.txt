@@ -29,6 +29,8 @@
 - allow #define id with no definition
 - attempt to add newlines in the generated code when function calls in the
   smpl cause passing column 80
+- allow - in front of statement level nests, if everything inside the nest
+  is also -
 
 ** Bugfix:
 - drop inconsistent paths check when only one node was matched

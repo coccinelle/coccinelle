@@ -300,7 +300,12 @@ let displace_fake_nodes toks =
 (*****************************************************************************)
 
 let comment2t2 = function
-    (Token_c.TCommentCpp x,(info : Token_c.info)) ->
+    (Token_c.TCommentCpp
+       (* not sure iif the following list is exhaustive or complete *)
+       (Token_c.CppAttr|Token_c.CppMacro|Token_c.CppPassingCosWouldGetError),
+     (info : Token_c.info)) ->
+      C2(info.Common.str)
+  | (Token_c.TCommentCpp x,(info : Token_c.info)) ->
       C2("\n"^info.Common.str^"\n")
   | x -> failwith (Printf.sprintf "unexpected comment %s" (Common.dump x))
 
