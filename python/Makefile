@@ -10,8 +10,13 @@ TARGET=coccipython
 
 SOURCES= pycocci_aux.ml pycocci.ml
 
+ifeq ("$(PYCAMLDIR)", "pycaml")
+INCLUDEDIRS = ../commons ../commons/ocamlextra ../globals ../$(PYCAMLDIR) \
+	      ../parsing_c ../parsing_cocci
+else
 INCLUDEDIRS = ../commons ../commons/ocamlextra ../globals $(PYCAMLDIR) \
 	      ../parsing_c ../parsing_cocci
+endif
 
 SYSLIBS = str.cma unix.cma pycaml.cma
 LIBS=../commons/commons.cma ../globals/globals.cma

@@ -25,7 +25,7 @@ PYCMA=pycaml.cma
 #OPTLIBFLAGS=-cclib dllpycaml_stubs.so
 else
 PYCMA=
-OPTLIBFLAGS=
+#OPTLIBFLAGS=
 endif
 
 SEXPSYSCMA=bigarray.cma nums.cma
@@ -78,9 +78,6 @@ OCAMLCFLAGS= -g -dtypes # -w A
 # to also link with -g, but even in 3.11 the backtrace support seems buggy so
 # not worth it.
 OPTFLAGS=
-# the following is essential for Coccinelle to compile under gentoo
-# but is now defined above in this file
-#OPTLIBFLAGS=-cclib dllpycaml_stubs.so
 
 OCAMLC=ocamlc$(OPTBIN) $(OCAMLCFLAGS)  $(INCLUDES)
 OCAMLOPT=ocamlopt$(OPTBIN) $(OPTFLAGS) $(INCLUDES)
@@ -172,7 +169,6 @@ $(EXEC).top: $(LIBS) $(OBJS)
 
 clean::
 	rm -f $(TARGET) $(TARGET).opt $(TARGET).top
-	rm -f dllpycaml_stubs.so
 
 .PHONY:: tools configure
 
@@ -280,7 +276,7 @@ install-python:
 		$(DESTDIR)$(SHAREDIR)/python/coccilib/coccigui
 	$(INSTALL_DATA) python/coccilib/coccigui/pygui.gladep \
 		$(DESTDIR)$(SHAREDIR)/python/coccilib/coccigui
-	$(INSTALL_LIB) dllpycaml_stubs.so $(DESTDIR)$(LIBDIR)
+	$(INSTALL_LIB) pycaml/dllpycaml_stubs.so $(DESTDIR)$(LIBDIR)
 
 install: install-common
 	@if test -x spatch -a ! -x spatch.opt ; then \
