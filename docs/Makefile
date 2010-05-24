@@ -2,7 +2,7 @@ SUBDIR=manual
 
 .PHONY: all clean distclean spatch.1
 
-include ../Makefile.config
+-include ../Makefile.config
 
 all: spatch.1
 	make -C $(SUBDIR)
