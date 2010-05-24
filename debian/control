@@ -4,7 +4,7 @@ Priority: optional
 Maintainer: Nicolas Palix <npalix@diku.dk>
 XSBC-Original-Maintainer: Debian OCaml Maintainers <debian-ocaml-maint@lists.debian.org>
 Uploaders: Євгеній Мещеряков <eugen@debian.org>
-Build-Depends: debhelper (>= 7), quilt, ocaml-nox (>= 3.11.0), pycaml (>= 0.82-10), python,
+Build-Depends: debhelper (>= 7), ocaml-nox (>= 3.11.0), pycaml (>= 0.82-10), python,
  menhir (>= 20090204.dfsg), libmenhir-ocaml-dev (>= 20090204.dfsg), ocaml-findlib, dh-ocaml,
  ocaml-best-compilers, python2.6-dev, python-support (>= 0.6), libsexplib-camlp4-dev
 Standards-Version: 3.8.3
