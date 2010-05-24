@@ -3,14 +3,6 @@
 # Uncomment this to turn on verbose mode.
 #export DH_VERBOSE=1
 
-TG_BRANCHES = debian/documentation-paths \
-	      fixes/system-pycaml \
-	      fixes/system-menhir \
-	      fixes/system-ocamlsexp \
-	      fixes/documentation-build
-
-include /usr/share/quilt/quilt.make
--include /usr/share/topgit/tg2quilt.mk
 include /usr/share/ocaml/ocamlvars.mk
 
 COCCI_FLAGS = BYTECODE_STATIC="" MANDIR=/usr/share/man
@@ -18,7 +10,7 @@ COCCI_FLAGS = BYTECODE_STATIC="" MANDIR=/usr/share/man
 VIM_ADIR = $(CURDIR)/debian/coccinelle/usr/share/vim/addons
 VIM_RDIR = $(CURDIR)/debian/coccinelle/usr/share/vim/registry
 
-COMMON_CONFIG = --prefix=/usr --with-python --without-trac
+COMMON_CONFIG = --prefix=/usr --with-python
 
 ifeq ($(OCAML_HAVE_OCAMLOPT),yes)
 OCAMLRUN =
@@ -30,14 +22,9 @@ CONFIG_FLAGS = $(COMMON_CONFIG) --no-opt
 MAKE_TGT = all
 endif
 
-my-very-own-patch-stamp:
-	# work around broken tg2quilt (#522906)
-	[ -f $(QUILT_STAMPFN) ] || debian/rules $(QUILT_STAMPFN)
-	touch my-very-own-patch-stamp
-
 build: build-stamp
 #build-stamp: $(QUILT_STAMPFN)
-build-stamp: my-very-own-patch-stamp
+build-stamp:
 	dh build --before dh_auto_configure
 	./configure $(CONFIG_FLAGS)
 	$(MAKE) $(COCCI_FLAGS) depend
@@ -47,7 +34,7 @@ build-stamp: my-very-own-patch-stamp
 
 # this is needed because patches modify clean target
 unpatch: patched-clean
-patched-clean: patch
+patched-clean:
 	$(MAKE) distclean
 
 clean: unpatch
@@ -80,7 +67,6 @@ install-stamp: build-stamp
 	dh install --after dh_compress
 	touch install-stamp
 
-
 binary-arch: install
 	dh binary-arch --before dh_gencontrol
 	dh_gencontrol -a -- -VF:OCamlRun="$(OCAMLRUN)"
@@ -90,4 +76,4 @@ binary-indep: install
 
 binary: binary-indep binary-arch
 
-.PHONY: build clean binary-indep binary-arch binary install tag-patches
+.PHONY: build clean binary-indep binary-arch binary install
