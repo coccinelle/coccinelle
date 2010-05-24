@@ -189,6 +189,10 @@ if($syspydir) {
     pr2 "'pycaml' library found. Using system-wide version located in $pydir";
 }
 
+# TODO: Make something similar for menhirLib and sexpli and sexplib
+# ocamlfind query menhirLib
+# ocamlfind query sexplib
+
 ######################################################################
 # Generate config files (platform/portability issues)
 ######################################################################
