@@ -25,8 +25,8 @@ PYCMA=pycaml.cma
 #OPTLIBFLAGS=-cclib dllpycaml_stubs.so
 else
 PYCMA=
-#OPTLIBFLAGS=
 endif
+OPTLIBFLAGS=
 
 SEXPSYSCMA=bigarray.cma nums.cma
 
