@@ -1,3 +1,9 @@
+coccinelle (0.2.3rc1.deb-0~910npalix1) karmic; urgency=low
+
+  * New release 0.2.3rc1
+
+ -- Nicolas Palix <npalix@diku.dk>  Mon, 24 May 2010 09:34:40 +0200
+
 coccinelle (0.2.2.deb-0~npalix4) karmic; urgency=low
 
   * Add Param metavariables
