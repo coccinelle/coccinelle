@@ -4,16 +4,13 @@ SUBDIR=manual
 
 -include ../Makefile.config
 
-all: spatch.1
-	make -C $(SUBDIR)
+all:: spatch.1
 
 spatch.1: spatch.1.in
 	sed "s|SHAREDIR|$(SHAREDIR)|g" $^ > $@
 
-clean:
-	make -C $(SUBDIR) clean
+clean distclean::
 	rm -f spatch.1
 
-distclean:
-	make -C $(SUBDIR) distclean
-	rm -f spatch.1
+all clean distclean::
+	make -C $(SUBDIR) $@
