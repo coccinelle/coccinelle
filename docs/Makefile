@@ -1,6 +1,6 @@
 SUBDIR=manual
 
-.PHONY: all clean distclean
+.PHONY: all clean distclean spatch.1
 
 include ../Makefile.config
 
