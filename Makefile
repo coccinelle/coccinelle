@@ -20,35 +20,38 @@ PRJNAME=coccinelle
 SRC=flag_cocci.ml cocci.ml testing.ml test.ml main.ml
 
 ifeq ($(FEATURE_PYTHON),1)
-PYCMA=pycaml/pycaml.cma
-PYDIR=pycaml
-PYLIB=dllpycaml_stubs.so
+PYCMA=pycaml.cma
 # the following is essential for Coccinelle to compile under gentoo (weird)
-OPTLIBFLAGS=-cclib dllpycaml_stubs.so
+#OPTLIBFLAGS=-cclib dllpycaml_stubs.so
 else
 PYCMA=
-PYDIR=
-PYLIB=
 OPTLIBFLAGS=
 endif
 
 SEXPSYSCMA=bigarray.cma nums.cma
 
-SYSLIBS=str.cma unix.cma $(SEXPSYSCMA)
+SYSLIBS=str.cma unix.cma $(SEXPSYSCMA) $(PYCMA)
 LIBS=commons/commons.cma \
      ocamlsexp/sexplib1.cma commons/commons_sexp.cma \
      globals/globals.cma \
      ctl/ctl.cma \
      parsing_cocci/cocci_parser.cma parsing_c/parsing_c.cma \
      engine/cocciengine.cma popl09/popl.cma \
-     extra/extra.cma $(PYCMA) python/coccipython.cma
+     extra/extra.cma python/coccipython.cma
 
 #used for clean: and depend: and a little for rec & rec.opt
-MAKESUBDIRS=commons ocamlsexp \
- globals menhirlib $(PYDIR) ctl parsing_cocci parsing_c \
+ifeq ("$(PYCAMLDIR)","pycaml")
+MAKESUBDIRS=$(PYCAMLDIR) commons ocamlsexp \
+ globals menhirlib ctl parsing_cocci parsing_c \
  engine popl09 extra python
+else
+MAKESUBDIRS=commons ocamlsexp \
+ globals menhirlib ctl parsing_cocci parsing_c \
+ engine popl09 extra python
+endif
+
 INCLUDEDIRS=commons commons/ocamlextra ocamlsexp \
- globals menhirlib $(PYDIR) ctl \
+ globals menhirlib $(PYCAMLDIR) ctl \
  parsing_cocci parsing_c engine popl09 extra python
 
 ##############################################################################

@@ -30,6 +30,7 @@ my $prefix="/usr/local";
 my $python=1;
 my $opt=".opt";
 my $tarzan=1;
+my $pydir="pycaml";
 
 local $_ = join ' ', @ARGV;
 
@@ -181,6 +182,13 @@ We need  3.XX",
 # Librairies
 #---------------------------------------------------------------------
 
+my $syspydir=`ocamlfind query pycaml 2> /dev/null`;
+
+if($syspydir) {
+    $pydir=$syspydir;
+    pr2 "'pycaml' library found. Using system-wide version located in $pydir";
+}
+
 ######################################################################
 # Generate config files (platform/portability issues)
 ######################################################################
@@ -279,6 +287,8 @@ SHAREDIR=$src
 # Features
 FEATURE_PYTHON=$python
 FEATURE_TARZAN=$tarzan
+
+PYCAMLDIR=$pydir
 
 # The OPTBIN variable is here to allow to use ocamlc.opt instead of
 # ocaml, when it is available, which speeds up compilation. So

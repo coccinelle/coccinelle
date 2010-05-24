@@ -83,7 +83,7 @@ let pycocci_get_class_type fqn =
 
 let pycocci_instantiate_class fqn args =
   let class_type = pycocci_get_class_type fqn in
-  let obj = pyobject_callobject(class_type, args) in
+  let obj = pyeval_callobject(class_type, args) in
   check_return_value obj;
   obj
 

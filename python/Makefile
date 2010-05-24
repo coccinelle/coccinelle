@@ -10,16 +10,11 @@ TARGET=coccipython
 
 SOURCES= pycocci_aux.ml pycocci.ml
 
-INCLUDEDIRS = ../commons ../commons/ocamlextra ../globals ../pycaml \
+INCLUDEDIRS = ../commons ../commons/ocamlextra ../globals $(PYCAMLDIR) \
 	      ../parsing_c ../parsing_cocci
 
-SYSLIBS = str.cma unix.cma
+SYSLIBS = str.cma unix.cma pycaml.cma
 LIBS=../commons/commons.cma ../globals/globals.cma
-
-#     ../ctl/ctl.cma \
-#     ../parsing_c/c_parser.cma ../parsing_cocci/cocci_parser.cma
-#pycaml/pycaml.cma
-
 
 ##############################################################################
 # Generic variables
