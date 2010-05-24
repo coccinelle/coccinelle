@@ -215,7 +215,10 @@ distclean::
 # Pre-Install (customization of spatch frontend script)
 ##############################################################################
 
-preinstall: scripts/spatch scripts/spatch.opt scripts/spatch.byte
+preinstall: docs/spatch.1 scripts/spatch scripts/spatch.opt scripts/spatch.byte
+
+docs/spatch.1: Makefile.config
+	$(MAKE) -C docs spatch.1
 
 # user will use spatch to run spatch.opt (native)
 scripts/spatch: Makefile.config
