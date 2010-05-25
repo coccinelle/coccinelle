@@ -31,6 +31,8 @@
   smpl cause passing column 80
 - allow - in front of statement level nests, if everything inside the nest
   is also -
+- 'configure' looks for some system libraries: menhirLib, sexplib, pycaml.
+  Not available libraries are replaced by a copy provided with the sources.
 
 ** Bugfix:
 - drop inconsistent paths check when only one node was matched
