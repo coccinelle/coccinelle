@@ -20,8 +20,11 @@ get_constants.ml get_constants2.ml adjacency.ml parse_cocci.ml
 LIBS=../commons/commons.cma ../globals/globals.cma
 SYSLIBS = str.cma unix.cma
 
-#MENHIR_PATH=$(shell ocamlfind query menhirLib)
-MENHIR_PATH=../menhirlib
+ifeq ("$(MENHIRDIR)","menhirlib")
+MENHIR_PATH=../$(MENHIRDIR)
+else
+MENHIR_PATH=$(MENHIRDIR)
+endif
 
 INCLUDES = -I ../commons -I ../commons/ocamlextra -I ../globals \
 -I $(MENHIR_PATH)

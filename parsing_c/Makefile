@@ -10,8 +10,12 @@ TARGET=parsing_c
 
 ifeq ($(FEATURE_TARZAN), 1)
 TARZANSRC=sexp_ast_c.ml
-TARZANINCLUDE=-I ../ocamlsexp
-endif
+ifeq ("$(SEXPDIR)","ocamlsexp")
+TARZANINCLUDE=-I ../$(SEXPDIR)
+else
+TARZANINCLUDE=-I $(SEXPDIR)
+endif # Use local ocamlsexp
+endif # FEATURE_TARZAN
 
 
 
@@ -46,9 +50,10 @@ SRC= flag_parsing_c.ml parsing_stat.ml \
 LIBS=../commons/commons.cma ../globals/globals.cma \
      ../parsing_cocci/cocci_parser.cma
 
-INCLUDES= -I ../commons -I ../commons/ocamlextra -I ../commons/ocollection \
- $(TARZANINCLUDE) \
+INCLUDESDEP= -I ../commons -I ../commons/ocamlextra -I ../commons/ocollection \
   -I ../globals -I  ../parsing_cocci
+
+INCLUDES=$(INCLUDESDEP) $(TARZANINCLUDE)
 
 #LIBS=../commons/commons.cma
 #INCLUDES= -I ../commons
@@ -66,7 +71,7 @@ OCAMLC=ocamlc$(OPTBIN) $(OCAMLCFLAGS) $(INCLUDES)
 OCAMLOPT=ocamlopt$(OPTBIN) $(OPTFLAGS) $(INCLUDES)
 OCAMLLEX=ocamllex$(OPTBIN) #-ml
 OCAMLYACC=ocamlyacc -v
-OCAMLDEP=ocamldep$(OPTBIN) $(INCLUDES)
+OCAMLDEP=ocamldep$(OPTBIN) $(INCLUDESDEP)
 OCAMLMKTOP=ocamlmktop -g -custom $(INCLUDES)
 
 

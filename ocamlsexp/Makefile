@@ -15,12 +15,12 @@ SRC= \
 #SOURCES = \
 #  parser.mly \
 #  lexer.mll \
-# sexp.mli path.mli conv.mli 
+# sexp.mli path.mli conv.mli
 
 
-TARGET=sexplib1
+TARGET=sexplib
 TARGETPACK=sexplib
-#LIB_PACK_NAME = sexplib
+LIB_PACK_NAME = Sexplib
 
 ##############################################################################
 # Generic variables
@@ -90,13 +90,13 @@ OBJS = $(SRC:.ml=.cmo)
 OPTOBJS = $(SRC:.ml=.cmx)
 
 all: $(TARGET).cma $(TARGETPACK).cmo
-all.opt: $(TARGET).cmxa
+all.opt: $(TARGET).cmxa $(TARGETPACK).cmx
 
 $(TARGET).cma: $(OBJS)
-	$(OCAMLC) -a -o $(TARGET).cma $(OBJS)
+	$(OCAMLC) -a -o $@ $(OBJS)
 
 $(TARGET).cmxa: $(OPTOBJS) $(LIBS:.cma=.cmxa)
-	$(OCAMLOPT) -a -o $(TARGET).cmxa $(OPTOBJS)
+	$(OCAMLOPT) -a -o $@ $(OPTOBJS)
 
 $(TARGET).top: $(OBJS) $(LIBS)
 	$(OCAMLMKTOP) -o $(TARGET).top $(SYSLIBS) $(LIBS) $(OBJS)
@@ -104,17 +104,18 @@ $(TARGET).top: $(OBJS) $(LIBS)
 clean::
 	rm -f $(TARGET).top
 
-
-
 $(TARGETPACK).cmo: $(OBJS)
-	$(OCAMLC) -pack -o $(TARGETPACK).cmo $(OBJS)
+	$(OCAMLC) -pack -o $@ $(OBJS)
+
+$(TARGETPACK).cmx: $(OPTOBJS)
+	$(OCAMLOPT) -pack -o $@ $(OPTOBJS)
 
 # special handling, fun that they use cpp whereas they claim camplp4 can do everything
 pre_sexp.cmo: pre_sexp.ml
 	$(OCAMLC) -pp "cpp -w" -c $<
 
 pre_sexp.cmx: pre_sexp.ml
-	$(OCAMLOPT) -pp "cpp -w" -c $<
+	$(OCAMLOPT) -for-pack $(LIB_PACK_NAME) -pp "cpp -w" -c $<
 
 
 
@@ -143,10 +144,11 @@ beforedepend:: parser.ml parser.mli
 	$(OCAMLC) -c $<
 .mli.cmi:
 	$(OCAMLC) -c $<
-.ml.cmx:
-	$(OCAMLOPT) -c $<
 
-.ml.mldepend: 
+.ml.cmx:
+	$(OCAMLOPT) -for-pack $(LIB_PACK_NAME) -c $<
+
+.ml.mldepend:
 	$(OCAMLC) -i $<
 
 clean::

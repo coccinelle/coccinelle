@@ -28,31 +28,56 @@ PYCMA=
 endif
 OPTLIBFLAGS=
 
+ifeq ("$(SEXPDIR)","ocamlsexp")
+SEXPLIB=sexplib.cmo
+OPTSEXPLIB=sexplib.cmx
+else
+SEXPLIB=sexplib.cma
+OPTSEXPLIB=sexplib.cmxa
+endif
+
 SEXPSYSCMA=bigarray.cma nums.cma
 
 SYSLIBS=str.cma unix.cma $(SEXPSYSCMA) $(PYCMA)
 LIBS=commons/commons.cma \
-     ocamlsexp/sexplib1.cma commons/commons_sexp.cma \
+     commons/commons_sexp.cma \
      globals/globals.cma \
      ctl/ctl.cma \
      parsing_cocci/cocci_parser.cma parsing_c/parsing_c.cma \
      engine/cocciengine.cma popl09/popl.cma \
      extra/extra.cma python/coccipython.cma
 
-#used for clean: and depend: and a little for rec & rec.opt
+# Should we use the local version of pycaml
 ifeq ("$(PYCAMLDIR)","pycaml")
-MAKESUBDIRS=$(PYCAMLDIR) commons ocamlsexp \
- globals menhirlib ctl parsing_cocci parsing_c \
- engine popl09 extra python
+LOCALPYCAML=pycaml
 else
-MAKESUBDIRS=commons ocamlsexp \
- globals menhirlib ctl parsing_cocci parsing_c \
- engine popl09 extra python
+LOCALPYCAML=
 endif
 
-INCLUDEDIRS=commons commons/ocamlextra ocamlsexp \
- globals menhirlib $(PYCAMLDIR) ctl \
+# Should we use the local version of menhirLib
+ifeq ("$(MENHIRDIR)","menhirLib")
+LOCALMENHIR=menhirLib
+else
+LOCALMENHIR=
+endif
+
+# Should we use the local version of ocamlsexp
+ifeq ("$(SEXPDIR)","ocamlsexp")
+LOCALSEXP=ocamlsexp
+else
+LOCALSEXP=
+endif
+
+#used for clean: and depend: and a little for rec & rec.opt
+MAKESUBDIRS=$(LOCALPYCAML) $(LOCALSEXP) commons \
+ globals $(LOCALMENHIR) ctl parsing_cocci parsing_c \
+ engine popl09 extra python
+
+INCLUDEDIRSDEP=commons commons/ocamlextra $(LOCALSEXP) \
+ globals $(LOCALMENHIR) $(LOCALPYCAML) ctl \
  parsing_cocci parsing_c engine popl09 extra python
+
+INCLUDEDIRS=$(INCLUDEDIRSDEP) $(SEXPDIR) $(MENHIRDIR) $(PYCAMLDIR)
 
 ##############################################################################
 # Generic variables
@@ -83,7 +108,7 @@ OCAMLC=ocamlc$(OPTBIN) $(OCAMLCFLAGS)  $(INCLUDES)
 OCAMLOPT=ocamlopt$(OPTBIN) $(OPTFLAGS) $(INCLUDES)
 OCAMLLEX=ocamllex #-ml # -ml for debugging lexer, but slightly slower
 OCAMLYACC=ocamlyacc -v
-OCAMLDEP=ocamldep $(INCLUDES)
+OCAMLDEP=ocamldep $(INCLUDEDIRSDEP:%=-I %)
 OCAMLMKTOP=ocamlmktop -g -custom $(INCLUDES)
 
 # can also be set via 'make static'
@@ -118,16 +143,18 @@ opt-compil: .depend
 top: $(EXEC).top
 
 subdirs:
-	$(MAKE) -C commons OCAMLCFLAGS="$(OCAMLCFLAGS)"
-	$(MAKE) -C ocamlsexp OCAMLCFLAGS="$(OCAMLCFLAGS)"
-	$(MAKE) -C commons sexp OCAMLCFLAGS="$(OCAMLCFLAGS)"
+#	$(MAKE) -C commons OCAMLCFLAGS="$(OCAMLCFLAGS)"
+#	if [ "$(LOCALSEXP)" != "" ]; then \
+#		$(MAKE) -C ocamlsexp OCAMLCFLAGS="$(OCAMLCFLAGS)" ; fi
 	+for D in $(MAKESUBDIRS); do $(MAKE) $$D || exit 1 ; done
+	$(MAKE) -C commons sexp OCAMLCFLAGS="$(OCAMLCFLAGS)"
 
 subdirs.opt:
-	$(MAKE) -C commons all.opt OCAMLCFLAGS="$(OCAMLCFLAGS)"
-	$(MAKE) -C ocamlsexp all.opt OCAMLCFLAGS="$(OCAMLCFLAGS)"
-	$(MAKE) -C commons sexp.opt OCAMLCFLAGS="$(OCAMLCFLAGS)"
+#	$(MAKE) -C commons all.opt OCAMLCFLAGS="$(OCAMLCFLAGS)"
+#	if [ "$(LOCALSEXP)" != "" ]; then \
+#		$(MAKE) -C ocamlsexp all.opt OCAMLCFLAGS="$(OCAMLCFLAGS)"; fi
 	+for D in $(MAKESUBDIRS); do $(MAKE) $$D.opt || exit 1 ; done
+	$(MAKE) -C commons sexp.opt OCAMLCFLAGS="$(OCAMLCFLAGS)"
 
 $(MAKESUBDIRS):
 	$(MAKE) -C $@ OCAMLCFLAGS="$(OCAMLCFLAGS)" all
@@ -159,13 +186,13 @@ $(OBJS):$(LIBS)
 $(OPTOBJS):$(LIBS:.cma=.cmxa)
 
 $(EXEC): $(LIBS) $(OBJS)
-	$(OCAMLC) $(BYTECODE_STATIC) -o $@ $(SYSLIBS)  $^
+	$(OCAMLC) $(BYTECODE_STATIC) -o $@ $(SYSLIBS) $(SEXPLIB) $^
 
 $(EXEC).opt: $(LIBS:.cma=.cmxa) $(OPTOBJS)
-	$(OCAMLOPT) $(STATIC) -o $@ $(SYSLIBS:.cma=.cmxa) $(OPTLIBFLAGS)  $^
+	$(OCAMLOPT) $(STATIC) -o $@ $(SYSLIBS:.cma=.cmxa) $(OPTSEXPLIB) $(OPTLIBFLAGS)  $^
 
 $(EXEC).top: $(LIBS) $(OBJS)
-	$(OCAMLMKTOP) -custom -o $@ $(SYSLIBS) $^
+	$(OCAMLMKTOP) -custom -o $@ $(SYSLIBS) $(SEXPLIB) $^
 
 clean::
 	rm -f $(TARGET) $(TARGET).opt $(TARGET).top
