@@ -87,9 +87,9 @@ let split_patch i =
     else
       let l = input_line i in
       cur := l :: !cur;
-      match Str.split spaces l with
-	"-"::_ -> read_hunk (msize - 1) psize
-      |	"+"::_ -> read_hunk msize (psize - 1)
+      match String.get l 0 with
+	'-' -> read_hunk (msize - 1) psize
+      |	'+' -> read_hunk msize (psize - 1)
       |	_ -> read_hunk (msize - 1) (psize - 1) in
   try read_diff_or_atat()
   with End_of_file -> List.rev ((List.rev !cur)::!patches)
