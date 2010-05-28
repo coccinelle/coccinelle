@@ -1892,7 +1892,6 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
              )
 
            | A.StructUnionName(sua, sa) ->
-
              fullType tya2 structnameb >>= (fun tya2 structnameb ->
 
                let tya1 = A.StructUnionDef(tya2,lba,declsa,rba)+> A.rewrap tya1
@@ -2883,12 +2882,17 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
 		 A.Type(None,ty) ->
 		   (match A.unwrap ty with
 		     A.StructUnionName(sua, None) ->
-		       tokenf sua iisub >>= (fun sua iisub ->
-			 let ty =
-			   A.Type(None,
-				  A.StructUnionName(sua, None) +> A.rewrap ty)
-			     +> A.rewrap s in
-			 return (ty,[iisub]))
+		       (match (term sua, sub) with
+			 (A.Struct,B.Struct)
+		       | (A.Union,B.Union) -> return ((),())
+		       | _ -> fail) >>=
+		       (fun _ _ ->
+			 tokenf sua iisub >>= (fun sua iisub ->
+			   let ty =
+			     A.Type(None,
+				    A.StructUnionName(sua, None) +> A.rewrap ty)
+			       +> A.rewrap s in
+			   return (ty,[iisub])))
 		   | _ -> fail)
 	       | A.DisjType(disjs) ->
 		   disjs +>

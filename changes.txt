@@ -48,6 +48,8 @@
   list
 - support Parameter metavariables
 - add space after the last comma in an added portion of an argument list
+- SmPL nameless struct should only match a nameless struct, not a nameless
+  union.  Thanks to Peter Tummeltshammer for pointing out the problem.
 
 * 0.2.2
 ** Language:
