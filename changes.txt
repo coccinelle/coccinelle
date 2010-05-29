@@ -33,6 +33,8 @@
   is also -
 - 'configure' looks for some system libraries: menhirLib, sexplib, pycaml.
   Not available libraries are replaced by a copy provided with the sources.
+- added static for a function goes just before what is specified in the
+  semantic patch, not before any comments etc.
 
 ** Bugfix:
 - drop inconsistent paths check when only one node was matched
@@ -50,6 +52,8 @@
 - add space after the last comma in an added portion of an argument list
 - SmPL nameless struct should only match a nameless struct, not a nameless
   union.  Thanks to Peter Tummeltshammer for pointing out the problem.
+- adjustments to storage don't modify inline as well
+- matching and transformation allowed on inline
 
 * 0.2.2
 ** Language:

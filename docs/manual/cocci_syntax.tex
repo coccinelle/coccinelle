@@ -599,6 +599,62 @@ $^\dag$ The optional \texttt{when} construct ends at the end of the line.
   \CASE{\NT{COMMA\_LIST}\mth{(}\NT{gram\_p} \OR \ldots \opt{\NT{when\_p}}\mth{)}}
 \end{grammar}
 
+To match a function it is not necessary to provide all of the annotations
+that appear before the function name.  For example, the following semantic
+patch:
+
+\begin{lstlisting}[language=Cocci]
+@@
+@@
+
+foo() { ... }
+\end{lstlisting}
+
+\noindent
+matches a function declared as follows:
+
+\begin{lstlisting}[language=C]
+static int foo() { return 12; }
+\end{lstlisting}
+
+\noindent
+This behavior can be turned off by disabling the \KW{optional\_storage}
+isomorphism.  If one adds code before a function declaration, then the
+effect depends on the kind of code that is added.  If the added code is a
+function definition or CPP code, then the new code is placed before
+all information associated with the function definition, including any
+comments preceeding the function definition.  On the other hand, if the new
+code is associated with the function, such as the addition of the keyword
+{\tt static}, the new code is placed exactly where it appears with respect
+to the rest of the function definition in the semantic patch.  For example, 
+
+\begin{lstlisting}[language=Cocci]
+@@
+@@
+
++ static
+foo() { ... }
+\end{lstlisting}
+
+\noindent
+causes static to be placed just before the function name.  The following
+causes it to be placed just before the type
+
+\begin{lstlisting}[language=Cocci]
+@@
+type T;
+@@
+
++ static
+T foo() { ... }
+\end{lstlisting}
+
+\noindent
+It may be nencessary to consider several cases to ensure that the added ode
+is placed in the right position.  For example, one may need one pattern
+that considers that the function is declared {\tt inline} and another that
+considers that it is not.
+
 %\newpage
 
 \section{Declarations}

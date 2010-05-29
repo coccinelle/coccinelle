@@ -675,7 +675,12 @@ let decl = function Decl -> true | Favored | Unfavored | Toplevel -> false
 let favored = function Favored -> true | Unfavored | Toplevel | Decl -> false
 
 let top_code =
-  List.for_all (List.for_all (function Ast.Code _ -> true | _ -> false))
+  List.for_all
+    (List.for_all (function Ast.Code _ | Ast.Pragma _ -> true | _ -> false))
+
+let storage_code =
+  List.for_all
+    (List.for_all (function Ast.StorageTag _ -> true | _ -> false))
 
 (* The following is probably not correct.  The idea is to detect what
 should be placed completely before the declaration.  So type/storage
@@ -825,16 +830,22 @@ let allminus = function
 
 let rec before_m1 ((f1,infom1,m1) as x1) ((f2,infom2,m2) as x2) rest = function
     [] -> ()
-  | (((infop,_,_) as p) :: ps) as all ->
+  | (((infop,_,pcode) as p) :: ps) as all ->
       if less_than_start infop infom1 or
 	(allminus m1 && less_than_end infop infom1) (* account for trees *)
       then
-	if good_start infom1
-	then (attachbefore p m1; before_m1 x1 x2 rest ps)
+	if toplevel f1
+	then
+	  if storage_code pcode
+	  then before_m2 x2 rest all (* skip fake token for storage *)
+	  else (attachbefore p m1; before_m1 x1 x2 rest ps)
 	else
-	  failwith
-	    (pr "%d: no available token to attach to"
-	       infop.Ast0.pos_info.Ast0.line_start)
+	  if good_start infom1
+	  then (attachbefore p m1; before_m1 x1 x2 rest ps)
+	  else
+	    failwith
+	      (pr "%d: no available token to attach to"
+		 infop.Ast0.pos_info.Ast0.line_start)
       else after_m1 x1 x2 rest all
 
 and after_m1 ((f1,infom1,m1) as x1) ((f2,infom2,m2) as x2) rest = function

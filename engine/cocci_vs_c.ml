@@ -3032,14 +3032,62 @@ and storage_optional_allminus allminus stoa (stob, iistob) =
 	let rec loop acc = function
 	    [] -> fail
 	  | i1::iistob ->
-	      let try1 =
-		tokenf x i1 >>= (fun x i1 ->
-		  let rebuilt = (List.rev acc) @ i1 :: iistob in
-		  return (Some x,  ((stobis, inline), rebuilt))) in
-	      let try2 x = loop (i1::acc) iistob x in (* x for laziness *)
-	      try1 >||> try2 in
+	      let str = B.str_of_info i1 in
+	      (match str with
+		"static" | "extern" | "auto" | "register" -> 
+		  (* not very elegant, but tokenf doesn't know what token to
+		     match with *)
+		  tokenf x i1 >>= (fun x i1 ->
+		    let rebuilt = (List.rev acc) @ i1 :: iistob in
+		    return (Some x,  ((stobis, inline), rebuilt)))
+	      |	_ -> loop (i1::acc) iistob) in
 	loop [] iistob
       else fail
+  )
+
+and inline_optional_allminus allminus inla (stob, iistob) =
+  (* "iso-by-absence" for storage, and return type. *)
+  X.optional_storage_flag (fun optional_storage ->
+  match inla, stob with
+  | None, (stobis, inline) ->
+      let do_minus () =
+        if allminus
+        then
+          minusize_list iistob >>= (fun () iistob ->
+            return (None, (stob, iistob))
+          )
+        else return (None, (stob, iistob))
+      in
+
+      if inline
+      then
+	if optional_storage
+	then
+	  begin
+	    if !Flag.show_misc
+            then pr2_once "USING optional_storage builtin isomorphism";
+            do_minus()
+	  end
+	else fail (* inline not in SP and present in C code *)
+      else do_minus()
+
+  | Some x, ((stobis, inline)) ->
+      if inline
+      then
+	let rec loop acc = function
+	    [] -> fail
+	  | i1::iistob ->
+	      let str = B.str_of_info i1 in
+	      (match str with
+		"inline" -> 
+		  (* not very elegant, but tokenf doesn't know what token to
+		     match with *)
+		  tokenf x i1 >>= (fun x i1 ->
+		    let rebuilt = (List.rev acc) @ i1 :: iistob in
+		    return (Some x,  ((stobis, inline), rebuilt)))
+	      |	_ -> loop (i1::acc) iistob) in
+	loop [] iistob
+      else fail (* SP has inline, but the C code does not *)
   )
 
 and fullType_optional_allminus allminus tya retb =
@@ -3584,8 +3632,9 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
 	match List.filter (function A.FType(s) -> true | _ -> false) fninfoa
 	with [A.FType(t)] -> Some t | _ -> None in
 
-      (match List.filter (function A.FInline(i) -> true | _ -> false) fninfoa
-      with [A.FInline(i)] -> failwith "not checking inline" | _ -> ());
+      let inla =
+	match List.filter (function A.FInline(i) -> true | _ -> false) fninfoa
+	with [A.FInline(i)] -> Some i | _ -> None in
 
       (match List.filter (function A.FAttr(a) -> true | _ -> false) fninfoa
       with [A.FAttr(a)] -> failwith "not checking attributes" | _ -> ());
@@ -3605,6 +3654,8 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
             (A.undots paramsa) paramsb >>=
             (fun paramsaundots paramsb ->
               let paramsa = redots paramsa paramsaundots in
+          inline_optional_allminus allminus
+            inla (stob, iistob) >>= (fun inla (stob, iistob) ->
           storage_optional_allminus allminus
             stoa (stob, iistob) >>= (fun stoa (stob, iistob) ->
               (
@@ -3622,6 +3673,7 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
 
              let fninfoa =
                (match stoa with Some st -> [A.FStorage st] | None -> []) ++
+               (match inla with Some i -> [A.FInline i] | None -> []) ++
                (match tya  with Some t -> [A.FType t] | None -> [])
 
              in
@@ -3638,7 +3690,7 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
                            },
                            ioparenb::icparenb::iifakestart::iistob)
                 )
-              ))))))))
+              )))))))))
       | _ -> raise Impossible
       )
 
