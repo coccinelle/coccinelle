@@ -340,9 +340,14 @@ uninstall:
 	rm -f $(DESTDIR)$(BINDIR)/spatch
 	rm -f $(DESTDIR)$(BINDIR)/spatch.opt
 	rm -f $(DESTDIR)$(LIBDIR)/dllpycaml_stubs.so
+	rm -f $(DESTDIR)$(SHAREDIR)/spatch
+	rm -f $(DESTDIR)$(SHAREDIR)/spatch.opt
 	rm -f $(DESTDIR)$(SHAREDIR)/standard.h
 	rm -f $(DESTDIR)$(SHAREDIR)/standard.iso
-	rm -rf $(DESTDIR)$(SHAREDIR)/python/coccilib
+	rm -f $(DESTDIR)$(SHAREDIR)/python/coccilib/coccigui/*
+	rm -f $(DESTDIR)$(SHAREDIR)/python/coccilib/*.py
+	rmdir --ignore-fail-on-non-empty -p \
+		$(DESTDIR)$(SHAREDIR)/python/coccilib/coccigui
 	rm -f $(DESTDIR)$(MANDIR)/man1/spatch.1
 
 version:
