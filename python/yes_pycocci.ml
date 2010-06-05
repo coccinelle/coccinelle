@@ -263,7 +263,9 @@ let set_coccifile cocci_file =
 	()
 
 let pyrun_simplestring s =
-  Pycaml.pyrun_simplestring s
+  let res = Pycaml.pyrun_simplestring s in
+  check_int_return_value res;
+  res
 
 let py_isinitialized () =
   Pycaml.py_isinitialized ()

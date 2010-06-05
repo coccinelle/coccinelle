@@ -37,6 +37,7 @@
   semantic patch, not before any comments etc.
 - optimize structure matching when the semantic patch specifies 0 or 1
   fields.  Thanks to Arnd Bergmann for pointing towards the problem.
+- error in python code causes immediate abort of spatch
 
 ** Bugfix:
 - drop inconsistent paths check when only one node was matched
