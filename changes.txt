@@ -35,6 +35,8 @@
   Not available libraries are replaced by a copy provided with the sources.
 - added static for a function goes just before what is specified in the
   semantic patch, not before any comments etc.
+- optimize structure matching when the semantic patch specifies 0 or 1
+  fields.  Thanks to Arnd Bergmann for pointing towards the problem.
 
 ** Bugfix:
 - drop inconsistent paths check when only one node was matched
@@ -54,6 +56,7 @@
   union.  Thanks to Peter Tummeltshammer for pointing out the problem.
 - adjustments to storage don't modify inline as well
 - matching and transformation allowed on inline
+- allow removed field between two ... in structure initialization
 
 * 0.2.2
 ** Language:

@@ -49,18 +49,21 @@ let (redots : 'a A.dots -> 'a list -> 'a A.dots)=fun eas easundots ->
   )
 
 
-let (need_unordered_initialisers : B.initialiser B.wrap2 list -> bool) =
- fun ibs ->
-   ibs +> List.exists (fun (ib, icomma) ->
-     match B.unwrap ib with
-     | B.InitDesignators _
-     | B.InitFieldOld _
-     | B.InitIndexOld _
-         -> true
-     | B.InitExpr _
-     | B.InitList _
-         -> false
-   )
+let (need_unordered_initialisers : A.initialiser list ->
+                                   B.initialiser B.wrap2 list -> bool) =
+ fun ias ibs ->
+   match ias with
+     [] | [_] -> false (*if at most one thing to match, order doesn't matter*)
+   | _ ->
+       ibs +> List.exists (fun (ib, icomma) ->
+	 match B.unwrap ib with
+	 | B.InitDesignators _
+	 | B.InitFieldOld _
+	 | B.InitIndexOld _
+           -> true
+	 | B.InitExpr _
+	 | B.InitList _
+           -> false)
 
 (* For the #include <linux/...> in the .cocci, need to find where is
  * the '+' attached to this element, to later find the first concrete
@@ -2270,7 +2273,7 @@ and initialisers = fun ias (ibs, iicomma) ->
   let ibs_split   = resplit_initialiser ibs iicomma in
 
   let f =
-    if need_unordered_initialisers ibs
+    if need_unordered_initialisers ias ibs
     then initialisers_unordered2
     else initialisers_ordered2
   in

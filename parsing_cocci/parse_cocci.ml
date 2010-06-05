@@ -1680,14 +1680,15 @@ let parse file =
 		  Some (dep) ->
 		    Data.in_generating := true;
 		    let res =
-		      parse_cocci_rule Ast.Normal old_metas (s,dep,b,c,d,e) in
+		      parse_cocci_rule Ast.Generated old_metas
+			(s,dep,b,c,d,e) in
 		    Data.in_generating := false;
 		    res
 		| None ->
 		    D.ignore_patch_or_match := true;
 		    Data.in_generating := true;
                     let res =
-		      parse_cocci_rule Ast.Normal old_metas
+		      parse_cocci_rule Ast.Generated old_metas
 			(s, Ast.FailDep, b, c, d, e) in
 		    D.ignore_patch_or_match := false;
 		    Data.in_generating := false;

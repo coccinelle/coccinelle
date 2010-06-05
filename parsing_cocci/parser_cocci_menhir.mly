@@ -1120,6 +1120,8 @@ initialize_list_start:
   initialize2 TComma { [$1;Ast0.wrap(Ast0.IComma(P.clt2mcode "," $2))] }
 | initialize2 TComma initialize_list_start
     { $1::Ast0.wrap(Ast0.IComma(P.clt2mcode "," $2))::$3 }
+| TNothing initialize_list_start
+    { $2 } /* + code only */
 | d=edots_when(TEllipsis,initialize)
       r=comma_initializers(edots_when(TEllipsis,initialize))
     { (P.mkidots "..." d)::
@@ -1129,12 +1131,14 @@ comma_initializers(dotter):
   /* empty */ { [] }
 | d=dotter r=comma_initializers2(dotter)
       { (function dot_builder -> [dot_builder d])::r }
+| TNothing r=comma_initializers(dotter) { r }
 | i=initialize2 c=TComma r=comma_initializers(dotter)
     { (function dot_builder -> [i; Ast0.wrap(Ast0.IComma(P.clt2mcode "," c))])::
       r }
 
 comma_initializers2(dotter):
   /* empty */ { [] }
+| TNothing r=comma_initializers(dotter) { r }
 | i=initialize2 c=TComma r=comma_initializers(dotter)
     { (function dot_builder -> [i; Ast0.wrap(Ast0.IComma(P.clt2mcode "," c))])::
       r }

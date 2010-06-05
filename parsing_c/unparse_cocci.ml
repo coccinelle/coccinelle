@@ -330,6 +330,8 @@ let rec expression e =
       handle_metavar name  (function
         | Ast_c.MetaExprListVal args ->
             pretty_print_c.Pretty_print_c.arg_list args
+	| Ast_c.MetaParamListVal _ ->
+	    failwith "have meta param list matching meta exp list\n";
         | _ -> raise Impossible
       )
 

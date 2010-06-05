@@ -4,6 +4,8 @@ same offset.  On the other hand, at the moment offset only seems to be used
 before this phase.  Furthermore add_dot_binding relies on the offset to
 remain the same between matching an iso and instantiating it with bindings. *)
 
+(* Consider whether ... in iso should match <... ...> in smpl? *)
+
 (* --------------------------------------------------------------------- *)
 (* match a SmPL expression against a SmPL abstract syntax tree,
 either - or + *)
