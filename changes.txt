@@ -35,12 +35,9 @@
   Not available libraries are replaced by a copy provided with the sources.
 - added static for a function goes just before what is specified in the
   semantic patch, not before any comments etc.
-<<<<<<< changes.txt
 - Add a new option, -ignore_unknown_options, to ease the integration
   of Coccinelle as a checker in a toolchain.
-=======
 - error in python code causes immediate abort of spatch
->>>>>>> 1.203
 
 ** Bugfix:
 - drop inconsistent paths check when only one node was matched
