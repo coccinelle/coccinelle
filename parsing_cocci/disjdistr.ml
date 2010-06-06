@@ -181,10 +181,10 @@ and disjini i =
   | Ast.InitExpr(exp) ->
       let exp = disjexp exp in
       List.map (function exp -> Ast.rewrap i (Ast.InitExpr(exp))) exp
-  | Ast.InitList(lb,initlist,rb,whencode) ->
+  | Ast.InitList(allminus,lb,initlist,rb,whencode) ->
       List.map
 	(function initlist ->
-	  Ast.rewrap i (Ast.InitList(lb,initlist,rb,whencode)))
+	  Ast.rewrap i (Ast.InitList(allminus,lb,initlist,rb,whencode)))
 	(disjmult disjini initlist)
   | Ast.InitGccExt(designators,eq,ini) ->
       let designators = disjmult designator designators in

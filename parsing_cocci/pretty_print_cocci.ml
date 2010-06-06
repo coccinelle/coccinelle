@@ -449,7 +449,7 @@ and initialiser i =
     Ast.MetaInit(name,_,_) ->
       mcode print_meta name; print_string " "
   | Ast.InitExpr(exp) -> expression exp
-  | Ast.InitList(lb,initlist,rb,whencode) ->
+  | Ast.InitList(allminus,lb,initlist,rb,whencode) ->
       mcode print_string lb; open_box 0;
       if not (whencode = [])
       then

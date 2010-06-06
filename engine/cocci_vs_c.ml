@@ -49,21 +49,17 @@ let (redots : 'a A.dots -> 'a list -> 'a A.dots)=fun eas easundots ->
   )
 
 
-let (need_unordered_initialisers : A.initialiser list ->
-                                   B.initialiser B.wrap2 list -> bool) =
- fun ias ibs ->
-   match ias with
-     [] -> false (*if nothing to match, order doesn't matter*)
-   | _ ->
-       ibs +> List.exists (fun (ib, icomma) ->
-	 match B.unwrap ib with
-	 | B.InitDesignators _
-	 | B.InitFieldOld _
-	 | B.InitIndexOld _
-           -> true
-	 | B.InitExpr _
-	 | B.InitList _
-           -> false)
+let (need_unordered_initialisers : B.initialiser B.wrap2 list -> bool) =
+ fun ibs ->
+   ibs +> List.exists (fun (ib, icomma) ->
+     match B.unwrap ib with
+     | B.InitDesignators _
+     | B.InitFieldOld _
+     | B.InitIndexOld _
+       -> true
+     | B.InitExpr _
+     | B.InitList _
+       -> false)
 
 (* For the #include <linux/...> in the .cocci, need to find where is
  * the '+' attached to this element, to later find the first concrete
@@ -2157,21 +2153,22 @@ and (initialiser: (A.initialiser, Ast_c.initialiser) matcher) =  fun ia ib ->
         | _ -> fail
         )
 
-    | (A.InitList (ia1, ias, ia2, []), (B.InitList ibs, ii)) ->
+    | (A.InitList (allminus, ia1, ias, ia2, []), (B.InitList ibs, ii)) ->
         (match ii with
         | ib1::ib2::iicommaopt ->
             tokenf ia1 ib1 >>= (fun ia1 ib1 ->
             tokenf ia2 ib2 >>= (fun ia2 ib2 ->
-            initialisers ias (ibs, iicommaopt) >>= (fun ias (ibs,iicommaopt) ->
+            initialisers allminus ias (ibs, iicommaopt) >>=
+	      (fun ias (ibs,iicommaopt) ->
               return (
-                (A.InitList (ia1, ias, ia2, [])) +> A.rewrap ia,
+                (A.InitList (allminus, ia1, ias, ia2, [])) +> A.rewrap ia,
                 (B.InitList ibs, ib1::ib2::iicommaopt)
               ))))
 
         | _ -> raise Impossible
         )
 
-    | (A.InitList (i1, ias, i2, whencode),(B.InitList ibs, _ii)) ->
+    | (A.InitList (allminus, i1, ias, i2, whencode),(B.InitList ibs, _ii)) ->
         failwith "TODO: not handling whencode in initialisers"
 
 
@@ -2268,13 +2265,13 @@ and designator da db =
       fail
 
 
-and initialisers = fun ias (ibs, iicomma) ->
+and initialisers = fun allminus ias (ibs, iicomma) ->
   let ias_unsplit = unsplit_icomma      ias in
   let ibs_split   = resplit_initialiser ibs iicomma in
 
   let f =
-    if need_unordered_initialisers ias ibs
-    then initialisers_unordered2
+    if need_unordered_initialisers ibs
+    then initialisers_unordered2 allminus
     else initialisers_ordered2
   in
   f ias_unsplit ibs_split >>=
@@ -2305,10 +2302,21 @@ and initialisers_ordered2 = fun ias ibs ->
   | _ -> fail
 
 
+and initialisers_unordered2 = fun allminus ias ibs ->
 
-and initialisers_unordered2 = fun ias ibs ->
   match ias, ibs with
-  | [], ys -> return ([], ys)
+  | [], ys ->
+      if allminus
+      then
+	let rec loop = function
+	    [] -> return ([],[])
+	  | (ib,comma)::ibs ->
+	      X.distrf_ini minusizer ib >>= (fun _ ib ->
+		tokenf minusizer comma >>= (fun _ comma ->
+		  loop ibs >>= (fun l ibs ->
+		    return(l,(ib,comma)::ibs)))) in
+	loop ibs
+      else return ([], ys)
   | (x,xcomma)::xs, ys ->
 
       let permut = Common.uncons_permut_lazy ys in
@@ -2328,7 +2336,7 @@ and initialisers_unordered2 = fun ias ibs ->
             )
             >>= (fun x e ->
               let rest = Lazy.force rest in
-              initialisers_unordered2 xs rest >>= (fun xs rest ->
+              initialisers_unordered2 allminus xs rest >>= (fun xs rest ->
                 return (
                   x::xs,
                   Common.insert_elem_pos (e, pos) rest

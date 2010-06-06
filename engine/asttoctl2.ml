@@ -423,11 +423,16 @@ let contains_modif =
 	bind (mcode r ((),(),bef,Ast.NoMetaPos)) res
     | Ast.Decl(bef,_,decl) -> bind (mcode r ((),(),bef,Ast.NoMetaPos)) res
     | _ -> res in
+  let init r k i =
+    let res = k i in
+    match Ast.unwrap i with
+      Ast.InitList(allminus,_,_,_,_) -> allminus or res
+    | _ -> res in
   let recursor =
     V.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       do_nothing do_nothing do_nothing do_nothing
-      do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
+      do_nothing do_nothing do_nothing do_nothing init do_nothing
       do_nothing rule_elem do_nothing do_nothing do_nothing do_nothing in
   recursor.V.combiner_rule_elem
 

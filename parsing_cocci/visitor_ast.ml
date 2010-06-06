@@ -252,7 +252,7 @@ let combiner bind option_default
       match Ast.unwrap i with
 	Ast.MetaInit(name,_,_) -> meta_mcode name
       |	Ast.InitExpr(exp) -> expression exp
-      | Ast.InitList(lb,initlist,rb,whencode) ->
+      | Ast.InitList(allminus,lb,initlist,rb,whencode) ->
 	  multibind
 	    [string_mcode lb;
 	      multibind (List.map initialiser initlist);
@@ -750,8 +750,9 @@ let rebuilder
 	  Ast.MetaInit(name,keep,inherited) ->
 	    Ast.MetaInit(meta_mcode name,keep,inherited)
 	| Ast.InitExpr(exp) -> Ast.InitExpr(expression exp)
-	| Ast.InitList(lb,initlist,rb,whencode) ->
-	    Ast.InitList(string_mcode lb, List.map initialiser initlist,
+	| Ast.InitList(allminus,lb,initlist,rb,whencode) ->
+	    Ast.InitList(allminus,
+			 string_mcode lb, List.map initialiser initlist,
 			 string_mcode rb, List.map initialiser whencode)
 	| Ast.InitGccName(name,eq,ini) ->
 	    Ast.InitGccName(ident name, string_mcode eq, initialiser ini)

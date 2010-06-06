@@ -509,19 +509,32 @@ and declaration_dots l = dots declaration l
 (* Initialiser *)
 
 and strip_idots initlist =
+  let isminus mc =
+    match Ast0.get_mcode_mcodekind mc with
+      Ast0.MINUS _ -> true
+    | _ -> false in
   match Ast0.unwrap initlist with
     Ast0.DOTS(x) ->
-      let (whencode,init) =
+      let (whencode,init,dotinfo) =
 	List.fold_left
-	  (function (prevwhen,previnit) ->
+	  (function (prevwhen,previnit,dotinfo) ->
 	    function cur ->
 	      match Ast0.unwrap cur with
 		Ast0.Idots(dots,Some whencode) ->
-		  (whencode :: prevwhen, previnit)
-	      | Ast0.Idots(dots,None) -> (prevwhen,previnit)
-	      | _ -> (prevwhen, cur :: previnit))
-	  ([],[]) x in
-      (List.rev whencode, List.rev init)
+		  (whencode :: prevwhen, previnit,
+		    (isminus dots)::dotinfo)
+	      | Ast0.Idots(dots,None) ->
+		  (prevwhen, previnit, (isminus dots)::dotinfo)
+	      | _ -> (prevwhen, cur :: previnit, dotinfo))
+	  ([],[],[]) x in
+      let allminus =
+	if List.for_all (function x -> not x) dotinfo
+	then false (* false if no dots *)
+	else
+	  if List.for_all (function x -> x) dotinfo
+	  then true
+	  else failwith "inconsistent annotations on initialiser list dots" in
+      (List.rev whencode, List.rev init, allminus)
   | Ast0.CIRCLES(x) | Ast0.STARS(x) -> failwith "not possible for an initlist"
 
 and initialiser i =
@@ -530,8 +543,8 @@ and initialiser i =
       Ast0.MetaInit(name,_) -> Ast.MetaInit(mcode name,unitary,false)
     | Ast0.InitExpr(exp) -> Ast.InitExpr(expression exp)
     | Ast0.InitList(lb,initlist,rb) ->
-	let (whencode,initlist) =  strip_idots initlist in
-	Ast.InitList(mcode lb,List.map initialiser initlist,mcode rb,
+	let (whencode,initlist,allminus) = strip_idots initlist in
+	Ast.InitList(allminus,mcode lb,List.map initialiser initlist,mcode rb,
 		     List.map initialiser whencode)
     | Ast0.InitGccExt(designators,eq,ini) ->
 	Ast.InitGccExt(List.map designator designators,mcode eq,

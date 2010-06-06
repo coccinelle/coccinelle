@@ -293,8 +293,8 @@ and unify_initialiser i1 i2 =
     (Ast.MetaInit(_,_,_),_) | (_,Ast.MetaInit(_,_,_)) -> return true
   | (Ast.InitExpr(expa),Ast.InitExpr(expb)) ->
       unify_expression expa expb
-  | (Ast.InitList(_,initlista,_,whena),
-     Ast.InitList(_,initlistb,_,whenb)) ->
+  | (Ast.InitList(_,_,initlista,_,whena),
+     Ast.InitList(_,_,initlistb,_,whenb)) ->
       (* ignore whencode - returns true safely *)
       unify_lists unify_initialiser (function _ -> false) initlista initlistb
   | (Ast.InitGccExt(designatorsa,_,inia),

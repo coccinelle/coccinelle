@@ -276,7 +276,8 @@ and declaration = base_declaration wrap
 and base_initialiser =
     MetaInit of meta_name mcode * keep_binding * inherited
   | InitExpr of expression
-  | InitList of string mcode (*{*) * initialiser list * string mcode (*}*) *
+  | InitList of bool (* true if all are - *) *
+        string mcode (*{*) * initialiser list * string mcode (*}*) *
 	initialiser list (* whencode: elements that shouldn't appear in init *)
   | InitGccExt of
       designator list (* name *) * string mcode (*=*) *

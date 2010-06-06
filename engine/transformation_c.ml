@@ -433,7 +433,7 @@ module XTRANS = struct
      | Ast_cocci.CONTEXT (Ast_cocci.DontCarePos,_)
      | Ast_cocci.MINUS   (Ast_cocci.DontCarePos,_,_,_) ->
          Ast_cocci.DontCarePos
-     | _ -> failwith "weird: dont have position info for the mcodekind"
+     | _ -> failwith "weird: dont have position info for the mcodekind 2"
 
   let distrf (ii_of_x_f, distribute_mck_x_f) =
     fun ia x -> fun tin ->
