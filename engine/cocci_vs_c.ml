@@ -53,7 +53,7 @@ let (need_unordered_initialisers : A.initialiser list ->
                                    B.initialiser B.wrap2 list -> bool) =
  fun ias ibs ->
    match ias with
-     [] | [_] -> false (*if at most one thing to match, order doesn't matter*)
+     [] -> false (*if nothing to match, order doesn't matter*)
    | _ ->
        ibs +> List.exists (fun (ib, icomma) ->
 	 match B.unwrap ib with
@@ -2307,7 +2307,6 @@ and initialisers_ordered2 = fun ias ibs ->
 
 
 and initialisers_unordered2 = fun ias ibs ->
-
   match ias, ibs with
   | [], ys -> return ([], ys)
   | (x,xcomma)::xs, ys ->
