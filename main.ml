@@ -19,6 +19,7 @@ let backup_suffix =
 let outplace_modif = ref false (* generates a .cocci_res  *)
 let preprocess = ref false     (* run the C preprocessor before cocci *)
 let compat_mode = ref false
+let ignore_unknown_opt = ref false
 
 (* somehow obsolete now *)
 let dir = ref false
@@ -276,6 +277,8 @@ let short_options = [
   "-local_includes",
   Arg.Unit (function _ -> FC.include_options := FC.I_NORMAL_INCLUDES),
   "  causes local include files to be used";
+  "-ignore_unknown_options", Arg.Set ignore_unknown_opt,
+  "    For integration in a toolchain (must be set before the first unknown option)";
   "-include_headers", Arg.Set include_headers,
   "    process header files independently";
   "-I",   Arg.String (fun x ->
@@ -623,17 +626,39 @@ let all_options =
 let arg_align2 xs =
   Arg.align xs +> List.rev +> Common.drop 2 +> List.rev
 
+(*
+  Ignore unknown option
+
+  This simplifies the integration of Coccinelle in toolchain.  For
+  instance, spatch can then be used as a checker in the Linux build
+  system.
+
+*)
+let rec arg_parse_no_fail l f msg =
+  try
+    Arg.parse_argv Sys.argv l f msg;
+  with
+    | Arg.Bad _ ->
+	arg_parse_no_fail l f msg
+    | Arg.Help msg -> (* printf "%s" msg; exit 0; *)
+	raise Impossible  (* -help is specified in speclist *)
+
 (* copy paste of Arg.parse. Don't want the default -help msg *)
 let arg_parse2 l f msg =
   (try
     Arg.parse_argv Sys.argv l f msg;
   with
-  | Arg.Bad msg -> (* eprintf "%s" msg; exit 2; *)
-      let xs = Common.lines msg in
-      (* take only head, it's where the error msg is *)
-      pr2 (List.hd xs);
-      !short_usage_func();
-      raise (Common.UnixExit (2))
+  | Arg.Bad emsg -> (* eprintf "%s" msg; exit 2; *)
+      if not !ignore_unknown_opt then
+	begin
+	  let xs = Common.lines emsg in
+	    (* take only head, it's where the error msg is *)
+	    pr2 (List.hd xs);
+	    !short_usage_func();
+	    raise (Common.UnixExit (2))
+	end
+      else
+	arg_parse_no_fail l f msg;
   | Arg.Help msg -> (* printf "%s" msg; exit 0; *)
       raise Impossible  (* -help is specified in speclist *)
   )
