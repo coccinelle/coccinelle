@@ -414,46 +414,44 @@ let worth_trying cfiles tokens =
   (* drop the following line for a list of list by rules.  since we don't
      allow multiple minirules, all the tokens within a rule should be in
      a single CFG entity *)
-  let tokens = Common.union_all tokens in
-  if not !Flag_cocci.windows && not (null tokens)
-  then
+  match (!Flag_cocci.windows,tokens) with
+    (true,_) | (_,None) -> true
+  | (_,Some tokens) ->
    (* could also modify the code in get_constants.ml *)
-    let tokens = tokens +> List.map (fun s ->
-      match () with
-      | _ when s =~ "^[A-Za-z_][A-Za-z_0-9]*$" ->
-          "\\b" ^ s ^ "\\b"
+      let tokens = tokens +> List.map (fun s ->
+	match () with
+	| _ when s =~ "^[A-Za-z_][A-Za-z_0-9]*$" ->
+            "\\b" ^ s ^ "\\b"
 
-      | _ when s =~ "^[A-Za-z_]" ->
-          "\\b" ^ s
+	| _ when s =~ "^[A-Za-z_]" ->
+            "\\b" ^ s
 
-      | _ when s =~ ".*[A-Za-z_]$" ->
-          s ^ "\\b"
-      | _ -> s
+	| _ when s =~ ".*[A-Za-z_]$" ->
+            s ^ "\\b"
+	| _ -> s
 
-    ) in
-    let com = sprintf "egrep -q '(%s)' %s" (join "|" tokens) (join " " cfiles)
-    in
-    (match Sys.command com with
-    | 0 (* success *) -> true
-    | _ (* failure *) ->
-	(if !Flag.show_misc
-	then Printf.printf "grep failed: %s\n" com);
-	false (* no match, so not worth trying *)
-    )
-  else true
+      ) in
+      let com = sprintf "egrep -q '(%s)' %s" (join "|" tokens) (join " " cfiles)
+      in
+      (match Sys.command com with
+      | 0 (* success *) -> true
+      | _ (* failure *) ->
+	  (if !Flag.show_misc
+	  then Printf.printf "grep failed: %s\n" com);
+	  false (* no match, so not worth trying *))
 
-let check_macro_in_sp_and_adjust tokens =
-  let tokens = Common.union_all tokens in
-  tokens +> List.iter (fun s ->
-    if Hashtbl.mem !Parse_c._defs s
-    then begin
-      if !Flag_cocci.verbose_cocci then begin
-        pr2 "warning: macro in semantic patch was in macro definitions";
-        pr2 ("disabling macro expansion for " ^ s);
-      end;
-      Hashtbl.remove !Parse_c._defs s
-    end
-  )
+let check_macro_in_sp_and_adjust = function
+    None -> ()
+  | Some tokens ->
+      tokens +> List.iter (fun s ->
+	if Hashtbl.mem !Parse_c._defs s
+	then begin
+	  if !Flag_cocci.verbose_cocci then begin
+            pr2 "warning: macro in semantic patch was in macro definitions";
+            pr2 ("disabling macro expansion for " ^ s);
+	  end;
+	  Hashtbl.remove !Parse_c._defs s
+	end)
 
 
 let contain_loop gopt =
@@ -762,7 +760,7 @@ type toplevel_cocci_info =
   | FinalScriptRuleCocciInfo of toplevel_cocci_info_script_rule
   | CocciRuleCocciInfo of toplevel_cocci_info_cocci_rule
 
-type cocci_info = toplevel_cocci_info list * string list list (* tokens *)
+type cocci_info = toplevel_cocci_info list * string list option (* tokens *)
 
 type kind_file = Header | Source
 type file_info = {
@@ -1655,8 +1653,11 @@ let full_engine2 (cocci_infos,toks) cfiles =
   if !Flag_cocci.worth_trying_opt && not (worth_trying cfiles toks)
   then
     begin
-      pr2 ("No matches found for " ^ (Common.join " " (Common.union_all toks))
-	   ^ "\nSkipping:" ^ (Common.join " " cfiles));
+      (match toks with
+	None -> ()
+      | Some toks ->
+	  pr2 ("No matches found for " ^ (Common.join " " toks)
+	       ^ "\nSkipping:" ^ (Common.join " " cfiles)));
       cfiles +> List.map (fun s -> s, None)
     end
   else

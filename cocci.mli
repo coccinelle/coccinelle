@@ -38,7 +38,7 @@ val sp_of_file :
 	 (*fresh used after list seeds*)
 	 Ast_cocci.meta_name list list list) *
       Ast_cocci.meta_name list list list *
-      string list list *
-      string list option
+      string list option (*grep tokens*) *
+      string list option (*glimpse tokens*)
 
 val normalize_path : string -> string

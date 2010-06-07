@@ -1855,11 +1855,8 @@ let process file isofile verbose =
   if !Flag_parsing_cocci.show_SP
   then List.iter Pretty_print_cocci.unparse code;
 
-  let grep_tokens =
-    Common.profile_code "get_constants" (* for grep *)
-      (fun () -> Get_constants.get_constants code) in
-  let glimpse_tokens2 =
+  let (grep_tokens,glimpse_tokens) =
     Common.profile_code "get_glimpse_constants" (* for glimpse *)
       (fun () -> Get_constants2.get_constants code neg_pos) in
 
-  (metavars,code,fvs,neg_pos,ua,pos,grep_tokens,glimpse_tokens2)
+  (metavars,code,fvs,neg_pos,ua,pos,grep_tokens,glimpse_tokens)

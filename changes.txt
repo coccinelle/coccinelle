@@ -38,6 +38,8 @@
 - Add a new option, -ignore_unknown_options, to ease the integration
   of Coccinelle as a checker in a toolchain.
 - error in python code causes immediate abort of spatch
+- use the same algorithm for collecing grep tokens as for collecting
+  glimpse tokens
 
 ** Bugfix:
 - drop inconsistent paths check when only one node was matched

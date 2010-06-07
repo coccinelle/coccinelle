@@ -437,10 +437,11 @@ let test_parse_cocci file =
     Parse_cocci.process file (Some !Config.std_iso) false in
   xs +> List.iter Pretty_print_cocci.unparse;
   Printf.printf "grep tokens\n";
-  List.iter (function x -> Printf.printf "%s\n" (String.concat " " x))
-    grep_tokens;
+  (match grep_tokens with
+    None -> pr "No query"
+  | Some x -> pr (String.concat " || " x));
   match !Flag.scanner with
-    Flag.NoScanner -> ()
+    Flag.NoScanner | Flag.Grep -> ()
   | Flag.Glimpse | Flag.Google _ ->
       (match query with
 	None -> pr "No query"

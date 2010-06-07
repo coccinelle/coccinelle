@@ -15,6 +15,11 @@ module TC = Type_cocci
     constants.
 *)
 
+(* This doesn't do the . -> trick of get_constants for record fields, as
+    that does not fit well with the recursive structure.  It was not clear
+    that that was completely safe either, although eg putting a newline
+    after the . or -> is probably unusual. *)
+
 (* ----------------------------------------------------------------------- *)
 (* This phase collects everything.  One can then filter out what it not
 wanted *)
@@ -32,7 +37,10 @@ let interpret_glimpse strict x =
     | Or [x] -> loop x
     | And l -> Printf.sprintf "{%s}" (String.concat ";" (List.map loop l))
     | Or l -> Printf.sprintf "{%s}" (String.concat "," (List.map loop l))
-    | True -> "True"
+    | True ->
+	if strict
+	then failwith "True should not be in the final result"
+	else "True"
     | False ->
 	if strict
 	then failwith "False should not be in the final result.  Perhaps your rule doesn't contain any +/-/* code"
@@ -42,6 +50,26 @@ let interpret_glimpse strict x =
   | False when strict ->
       failwith "False should not be in the final result.  Perhaps your rule doesn't contain any +/-/* code"
   | _ -> Some [(loop x)]
+
+(* grep only does or *)
+let interpret_grep strict x =
+  let rec loop = function
+      Elem x -> [x]
+    | And l -> List.concat (List.map loop l)
+    | Or l -> List.concat (List.map loop l)
+    | True ->
+	if strict
+	then failwith "True should not be in the final result"
+	else ["True"]
+    | False ->
+	if strict
+	then failwith "False should not be in the final result.  Perhaps your rule doesn't contain any +/-/* code"
+	else ["False"] in
+  match x with
+    True -> None
+  | False when strict ->
+      failwith "False should not be in the final result.  Perhaps your rule doesn't contain any +/-/* code"
+  | _ -> Some (loop x)
 
 let interpret_google strict x =
   (* convert to dnf *)
@@ -70,14 +98,8 @@ let interpret_google strict x =
       failwith "False should not be in the final result.  Perhaps your rule doesn't contain any +/-/* code"
   | _ -> Some (dnf x)
 
-let interpret strict x =
-  match !Flag.scanner with
-    Flag.Glimpse -> interpret_glimpse strict x
-  | Flag.Google _ -> interpret_google strict x
-  | _ -> failwith "not possible"
-
 let combine2c x =
-  match interpret false x with
+  match interpret_glimpse false x with
     None -> "None"
   | Some x -> String.concat " || " x
 
@@ -469,46 +491,57 @@ let rule_fn tls in_plus env neg_pos =
 	| x -> (build_or x rest_info, new_plusses))
     (False,in_plus) (List.combine tls neg_pos)
 
-let get_constants rules neg_pos_vars =
-  match !Flag.scanner with
-    Flag.NoScanner -> None
-  | Flag.Glimpse | Flag.Google _ ->
-      let (info,_,_,_) =
-	List.fold_left
-	  (function (rest_info,in_plus,env,locals(*dom of env*)) ->
-            function
-		(Ast.ScriptRule (_,deps,mv,_),_) ->
-		  let extra_deps =
-		    List.fold_left
-		      (function prev ->
-			function (_,(rule,_)) ->
-			  if rule = "virtual"
-			  then prev
-			  else Ast.AndDep (Ast.Dep rule,prev))
-		      deps mv in
-		  (match dependencies env extra_deps with
-		    False -> (rest_info, in_plus, env, locals)
-		  | dependencies ->
-		      (build_or dependencies rest_info, in_plus, env, locals))
-              | (Ast.InitialScriptRule (_,deps,_),_)
-	      | (Ast.FinalScriptRule (_,deps,_),_) ->
+let run rules neg_pos_vars =
+  let (info,_,_,_) =
+    List.fold_left
+      (function (rest_info,in_plus,env,locals(*dom of env*)) ->
+        function
+	    (Ast.ScriptRule (_,deps,mv,_),_) ->
+	      let extra_deps =
+		List.fold_left
+		  (function prev ->
+		    function (_,(rule,_)) ->
+		      if rule = "virtual"
+		      then prev
+		      else Ast.AndDep (Ast.Dep rule,prev))
+		  deps mv in
+	      (match dependencies env extra_deps with
+		False -> (rest_info, in_plus, env, locals)
+	      | dependencies ->
+		  (build_or dependencies rest_info, in_plus, env, locals))
+          | (Ast.InitialScriptRule (_,deps,_),_)
+	  | (Ast.FinalScriptRule (_,deps,_),_) ->
 		  (* initialize and finalize dependencies are irrelevant to
 		     get_constants *)
-		  (rest_info, in_plus, env, locals)
-              | (Ast.CocciRule (nm,(dep,_,_),cur,_,_),neg_pos_vars) ->
-		  let (cur_info,cur_plus) =
-		    rule_fn cur in_plus ((nm,True)::env)
-		      neg_pos_vars in
-		  (match dependencies env dep with
-		    False -> (rest_info,cur_plus,env,locals)
-		  | dependencies ->
-		      if List.for_all all_context.V.combiner_top_level cur
-		      then (rest_info,cur_plus,(nm,cur_info)::env,nm::locals)
-		      else
+	      (rest_info, in_plus, env, locals)
+          | (Ast.CocciRule (nm,(dep,_,_),cur,_,_),neg_pos_vars) ->
+	      let (cur_info,cur_plus) =
+		rule_fn cur in_plus ((nm,True)::env)
+		  neg_pos_vars in
+	      (match dependencies env dep with
+		False -> (rest_info,cur_plus,env,locals)
+	      | dependencies ->
+		  if List.for_all all_context.V.combiner_top_level cur
+		  then (rest_info,cur_plus,(nm,cur_info)::env,nm::locals)
+		  else
 	       (* no constants if dependent on another rule; then we need to
 	          find the constants of that rule *)
-			(build_or (build_and dependencies cur_info) rest_info,
-			 cur_plus,env,locals)))
-	  (False,[],[],[])
-	  (List.combine (rules : Ast.rule list) neg_pos_vars) in
-      interpret true info
+		    (build_or (build_and dependencies cur_info) rest_info,
+		     cur_plus,env,locals)))
+      (False,[],[],[])
+      (List.combine (rules : Ast.rule list) neg_pos_vars) in
+  info
+    
+let get_constants rules neg_pos_vars =
+  match !Flag.scanner with
+    Flag.NoScanner -> (None,None)
+  | Flag.Grep ->
+      let res = run rules neg_pos_vars in
+      (interpret_grep true res,None)
+  | Flag.Glimpse ->
+      let res = run rules neg_pos_vars in
+      (interpret_grep true res,interpret_glimpse true res)
+  | Flag.Google _ ->
+      let res = run rules neg_pos_vars in
+      (interpret_grep true res,interpret_google true res)
+      
