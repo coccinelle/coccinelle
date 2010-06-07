@@ -634,11 +634,20 @@ let arg_align2 xs =
   system.
 
 *)
+let check_include_path () =
+  let opt = Array.get Sys.argv !Arg.current in
+  let is_include_re = Str.regexp "-I\\(.*\\)" in
+  if Str.string_match is_include_re opt 0 then
+    let path = Str.matched_group 1 opt in
+	FC.include_path:= path::!FC.include_path
+  else ()
+
 let rec arg_parse_no_fail l f msg =
   try
+    check_include_path ();
     Arg.parse_argv Sys.argv l f msg;
   with
-    | Arg.Bad _ ->
+    | Arg.Bad emsg ->
 	arg_parse_no_fail l f msg
     | Arg.Help msg -> (* printf "%s" msg; exit 0; *)
 	raise Impossible  (* -help is specified in speclist *)
