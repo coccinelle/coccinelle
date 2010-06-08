@@ -129,7 +129,7 @@ The same as the above, except that a modified version of foo.c is stored in
 It is also possible to apply spatch to all of the C files in
 a directory: 
 
-  ./spatch -cocci_file foo.cocci -dir foodir . 
+  ./spatch -cocci_file foo.cocci -dir foodir
 
 If the semantic patch is not working as expected, the option -debug
 shows selection of information about the application of
