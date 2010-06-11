@@ -1,5 +1,5 @@
 @@
 @@
 
-struct foo x = { .b = 15, .c = 22, };
+*struct foo x = { .b = 15, .c = 22, };
 

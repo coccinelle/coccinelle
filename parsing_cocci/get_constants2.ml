@@ -400,16 +400,15 @@ let get_plus_constants =
   let donothing r k e = k e in
   let bind = Common.union_set in
   let option_default = [] in
-  let mcode r mc =
-    let mcodekind = Ast.get_mcodekind mc in
-    let recurse l =
-      List.fold_left
-	(List.fold_left
-	   (function prev ->
-	     function cur ->
-	       bind ((get_all_constants false).V.combiner_anything cur) prev))
-	[] l in
-    match mcodekind with
+
+  let recurse l =
+    List.fold_left
+      (List.fold_left
+	 (function prev ->
+	   function cur ->
+	     bind ((get_all_constants false).V.combiner_anything cur) prev))
+      [] l in
+  let process_mcodekind = function
       Ast.MINUS(_,_,_,anythings) -> recurse anythings
     | Ast.CONTEXT(_,Ast.BEFORE(a,_)) -> recurse a
     | Ast.CONTEXT(_,Ast.AFTER(a,_)) -> recurse a
@@ -417,11 +416,27 @@ let get_plus_constants =
 	Common.union_set (recurse a1) (recurse a2)
     | _ -> [] in
 
+  let mcode r mc = process_mcodekind (Ast.get_mcodekind mc) in
+  let end_info (_,_,_,mc) = process_mcodekind mc in
+
+  let rule_elem r k e =
+    match Ast.unwrap e with
+      Ast.FunHeader(bef,_,_,_,_,_,_)
+    | Ast.Decl(bef,_,_) -> bind (process_mcodekind bef) (k e)
+    | _ -> k e in
+
+  let statement r k e =
+    match Ast.unwrap e with
+      Ast.IfThen(_,_,ei) | Ast.IfThenElse(_,_,_,_,ei)
+    | Ast.While(_,_,ei)  | Ast.For(_,_,ei)
+    | Ast.Iterator(_,_,ei) -> bind (k e) (end_info ei)
+    | _ -> k e in
+
   V.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing
+    rule_elem statement donothing donothing donothing
 
 (* ------------------------------------------------------------------------ *)
 
@@ -444,16 +459,38 @@ let all_context =
 
   let donothing recursor k e = k e in
 
-  let mcode r e =
-    match Ast.get_mcodekind e with
+  let process_mcodekind = function
       Ast.CONTEXT(_,Ast.NOTHING) -> true
     | _ -> false in
+
+  let mcode r e = process_mcodekind (Ast.get_mcodekind e) in
+
+  let end_info (_,_,_,mc) = process_mcodekind mc in
+
+  let initialiser r k e =
+    match Ast.unwrap e with
+      Ast.InitList(all_minus,_,_,_,_) ->
+	not all_minus && k e
+    | _ -> k e in
+
+  let rule_elem r k e =
+    match Ast.unwrap e with
+      Ast.FunHeader(bef,_,_,_,_,_,_)
+    | Ast.Decl(bef,_,_) -> bind (process_mcodekind bef) (k e)
+    | _ -> k e in
+
+  let statement r k e =
+    match Ast.unwrap e with
+      Ast.IfThen(_,_,ei) | Ast.IfThenElse(_,_,_,_,ei)
+    | Ast.While(_,_,ei)  | Ast.For(_,_,ei)
+    | Ast.Iterator(_,_,ei) -> bind (k e) (end_info ei)
+    | _ -> k e in
 
   V.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing donothing
+    donothing donothing donothing donothing initialiser donothing
+    donothing rule_elem statement donothing donothing donothing
 
 (* ------------------------------------------------------------------------ *)
 
