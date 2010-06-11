@@ -4,7 +4,7 @@
 ##############################################################################
 
 #TOP=/home/pad/mobile/project-coccinelle
-WEBSITE=/home/pad/mobile/homepage/software/project-coccinelle
+WEBSITE=~/website/distrib
 
 website:
 	cp $(TMP)/$(PACKAGE).tgz                $(WEBSITE)
