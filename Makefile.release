@@ -100,11 +100,11 @@ package-python:
 # make clean is there to remove them while not removing the pdf
 # (only distclean remove the pdfs).
 srctar:
-	make distclean
-	make docs
-	make clean
+	$(MAKE) distclean
+	$(MAKE) docs
+	$(MAKE) clean
 	cp -a .  $(TMP)/$(PACKAGE)
-	cd $(TMP)/$(PACKAGE); cd parsing_cocci/; make parser_cocci_menhir.ml
+	cd $(TMP)/$(PACKAGE); cd parsing_cocci/; $(MAKE) parser_cocci_menhir.ml
 	cd $(TMP); tar cvfz $(PACKAGE).tgz --exclude-vcs $(EXCL) $(PACKAGE)
 	rm -rf  $(TMP)/$(PACKAGE)
 
@@ -118,7 +118,7 @@ bintar: all
 staticbintar: all.opt
 	rm -f $(TMP)/$(PACKAGE)
 	ln -s `pwd` $(TMP)/$(PACKAGE)
-	make static
+	$(MAKE) static
 	cd $(TMP); tar cvfz $(PACKAGE)-bin-x86-static.tgz --exclude-vcs $(BINSRC2)
 	rm -f $(TMP)/$(PACKAGE)
 
@@ -126,7 +126,7 @@ staticbintar: all.opt
 bytecodetar: all
 	rm -f $(TMP)/$(PACKAGE)
 	ln -s `pwd` $(TMP)/$(PACKAGE)
-	make purebytecode
+	$(MAKE) purebytecode
 	cd $(TMP); tar cvfz $(PACKAGE)-bin-bytecode-$(OCAMLVERSION).tgz --exclude-vcs $(BINSRC2)
 	rm -f $(TMP)/$(PACKAGE)
 
@@ -140,7 +140,7 @@ bintar-python: all
 bytecodetar-python: all
 	rm -f $(TMP)/$(PACKAGE)
 	ln -s `pwd` $(TMP)/$(PACKAGE)
-	make purebytecode
+	$(MAKE) purebytecode
 	cd $(TMP); tar cvfz $(PACKAGE)-bin-bytecode-$(OCAMLVERSION)-python.tgz --exclude-vcs $(BINSRC2-PY)
 	rm -f $(TMP)/$(PACKAGE)
 
