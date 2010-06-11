@@ -108,7 +108,6 @@ srctar:
 	cd $(TMP); tar cvfz $(PACKAGE).tgz --exclude-vcs $(EXCL) $(PACKAGE)
 	rm -rf  $(TMP)/$(PACKAGE)
 
-
 bintar: all
 	rm -f $(TMP)/$(PACKAGE)
 	ln -s `pwd` $(TMP)/$(PACKAGE)
