@@ -1,3 +1,9 @@
+coccinelle (0.2.3rc2.deb-0~910npalix1) karmic; urgency=low
+
+  * New release 0.2.3rc2
+
+ -- Nicolas Palix <npalix@diku.dk>  Fri, 11 Jun 2010 22:24:27 +0200
+
 coccinelle (0.2.3rc1.deb-0~910npalix2) karmic; urgency=low
 
   * Rebuild

@@ -1,3 +1,9 @@
+coccinelle (0.2.3rc2.deb-0~npalix1) lucid; urgency=low
+
+  * New release 0.2.3rc2
+
+ -- Nicolas Palix <npalix@diku.dk>  Fri, 11 Jun 2010 22:23:50 +0200
+
 coccinelle (0.2.3rc1.deb-0~npalix2) lucid; urgency=low
 
   * Rebuild
