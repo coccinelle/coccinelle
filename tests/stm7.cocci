@@ -6,3 +6,7 @@ statement S;
 
   f();
   S
+
+
+@script:python@
+@@
