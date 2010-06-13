@@ -61,6 +61,7 @@
 - matching and transformation allowed on inline
 - allow removed field between two ... in structure initialization
 - allow removing an entire structure initialization
+- manage labels within do while 0 macros
 
 * 0.2.2
 ** Language:
