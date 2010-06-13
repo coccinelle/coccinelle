@@ -287,7 +287,7 @@ let rec expression e =
   | Ast.CondExpr(exp1,why,exp2,colon,exp3) ->
       expression exp1; pr_space(); mcode print_string why;
       print_option (function e -> pr_space(); expression e) exp2;
-      pr_space(); mcode print_string colon; expression exp3
+      pr_space(); mcode print_string colon; pr_space(); expression exp3
   | Ast.Postfix(exp,op) -> expression exp; mcode fixOp op
   | Ast.Infix(exp,op) -> mcode fixOp op; expression exp
   | Ast.Unary(exp,op) -> mcode unaryOp op; expression exp

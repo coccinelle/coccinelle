@@ -62,6 +62,8 @@
 - allow removed field between two ... in structure initialization
 - allow removing an entire structure initialization
 - manage labels within do while 0 macros
+- added space after : in printing a conditional expression.  Thanks to Josh
+  Triplett for noticing the problem.
 
 * 0.2.2
 ** Language:
