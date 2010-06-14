@@ -438,15 +438,21 @@ let test_parse_cocci file =
   xs +> List.iter Pretty_print_cocci.unparse;
   Format.print_newline();
   (* compile ocaml script code *)
-  (match Prepare_ocamlcocci.prepare xs with
-    None -> ()
-  | Some ocaml_script_file ->
-      (* compile file *)
-      (* remove file *)
-      Sys.command
-	(Printf.sprintf
-	   "cat %s; /bin/rm %s" ocaml_script_file ocaml_script_file);
-      ());
+  (match Prepare_ocamlcocci.prepare file xs with
+       None -> ()
+     | Some ocaml_script_file ->
+	 (* compile file *)
+	 Prepare_ocamlcocci.load_file ocaml_script_file;
+	 (* remove file *)
+	 Sys.command
+	   (Printf.sprintf
+	      "echo \"====  %s  ====\";
+               cat %s;
+               echo \"=============================\""
+	      ocaml_script_file ocaml_script_file);
+	 Prepare_ocamlcocci.clean_file ocaml_script_file;
+	 Prepare_ocamlcocci.test ();
+	 ());
   Printf.printf "grep tokens\n";
   (match grep_tokens with
     None -> pr "No query"

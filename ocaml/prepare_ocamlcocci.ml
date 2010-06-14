@@ -1,5 +1,8 @@
 module Ast = Ast_cocci
 
+exception CompileFailure of string
+exception LinkFailure of string
+
 let init_ocamlcocci _ =
   "open Coccilib\n"
 
@@ -34,7 +37,7 @@ let prepare_rule (name, metavars, code) =
       "%s\nlet _ = Hashtbl.add Coccilib.fcts \"%s\" %s\n" body name fname in
   hash_add (function_header (build_parameter_list code))
 
-let prepare code =
+let prepare coccifile code =
   let init_rules =
     List.fold_left
       (function prev ->
@@ -59,7 +62,8 @@ let prepare code =
   if init_rules = [] && other_rules = []
   then None
   else
-    let (file,o) = Filename.open_temp_file "ocaml_script" "ml" in
+    let basefile = Filename.basename (Filename.chop_extension coccifile) in
+    let (file,o) = Filename.open_temp_file  basefile ".ml" in
     (* Global initialization *)
     Printf.fprintf o "%s" (init_ocamlcocci());
     (* Semantic patch specific initialization *)
@@ -69,3 +73,120 @@ let prepare code =
     Printf.fprintf o "%s" (String.concat "\n\n" rule_code);
     close_out o;
     Some file
+
+
+let filter_dep acc dep =
+  match dep with
+      "Array" | "String" | "Printf" | "Arg" | "Obj" | "Printexc"
+    | "Hashtbl" | "List" | "Tbl" -> acc
+    | _ -> String.lowercase dep::acc
+
+let dep_flag mlfile =
+  let depcmd  = "ocamldep -modules "^mlfile^"| cut -f2 -d':'" in
+    match Common.cmd_to_list depcmd with
+	[dep] ->
+	  let deplist = Str.split (Str.regexp_string " ") dep in
+	  let orderdep = List.rev (List.fold_left filter_dep [] deplist) in
+	  let packages = String.concat " " orderdep in
+	  let inclcmd = "ocamlfind query -i-format "^packages in
+	  let inclflags = Common.cmd_to_list inclcmd in
+	    prerr_endline ("Packages used: "^packages);
+	    String.concat " " inclflags
+      | _ -> raise (CompileFailure ("Wrong dependencies for "^mlfile))
+
+(*************************************************************
+
+let loadstr = format_of_string
+"let _ =
+  print_endline \"Loading %s module\";
+"
+
+let regstr = format_of_string "  Hashtbl.add Tbl.fcts \"%s\" %s"
+
+let write_file coccifile initcode rulecode =
+  let coccimlfile = Filename.temp_file coccifile ".ml" in
+  let ch = open_out coccimlfile in
+    output_string ch initcode;
+    let regcode =
+      List.map
+	(fun (name, str) ->
+	   let fct = "let "^name^ " () =" in
+	     output_string ch fct;
+	     output_string ch (str^"\n");
+	     Printf.sprintf regstr name name
+	) rulecode
+    in
+      output_string ch (Printf.sprintf loadstr coccifile);
+      output_string ch ((String.concat ";\n" regcode)^";\n");
+      output_string ch ("  init ()\n");
+      close_out ch;
+      coccimlfile
+
+*************************************************************)
+
+let compile_bytecode mlfile =
+  let obj = (Filename.chop_extension mlfile) ^ ".cmo" in
+  let flag = "-g " ^ (dep_flag mlfile) in
+  let cmd = Printf.sprintf "ocamlc.opt -c %s %s %s" obj flag mlfile in (*  tbl.cmo *)
+    prerr_endline cmd;
+    match Sys.command cmd with
+	0 -> obj
+      | _ -> raise (CompileFailure mlfile)
+
+let compile_native mlfile =
+  let obj = (Filename.chop_extension mlfile) ^ ".cmxs" in
+    (*
+      FIXME: Need to be fixed.
+      'coccilib.cmx' should not be linked.
+      But, what is the name of the module to 'open' ?
+    *)
+  let flag = "-g " ^ (dep_flag mlfile) ^ " coccilib.cmx" in
+  let cmd = Printf.sprintf "ocamlopt.opt -shared -o %s %s %s" obj flag mlfile in (*  tbl.cmx *)
+    prerr_endline cmd;
+    match Sys.command cmd with
+	0 -> obj
+      | _ -> raise (CompileFailure mlfile)
+
+let load_file mlfile =
+  let file =
+    if Dynlink.is_native
+    then compile_native mlfile
+    else
+      begin
+	(*
+	  FIXME: Need to be fixed.
+	  This should not be dynamically loaded.
+	  But, what is the name of the module to 'open' ?
+	*)
+	Dynlink.loadfile "coccilib.cmo";
+	compile_bytecode mlfile
+      end
+  in
+    prerr_endline "Compilation OK! Loading...";
+    try
+      Dynlink.loadfile file
+    with Dynlink.Error e ->
+      prerr_endline (Dynlink.error_message e);
+      raise (LinkFailure file)
+
+let clean_file mlfile =
+  let basefile = Filename.chop_extension mlfile in
+  let files =
+    if Dynlink.is_native then
+      [basefile ^ ".cmxs";
+       basefile ^ ".cmx";
+       basefile ^ ".o"]
+    else
+      [basefile ^ ".cmo"]
+  in
+    Sys.remove mlfile;
+    Sys.remove (basefile^".cmi");
+    List.iter (fun f -> Sys.remove f) files
+
+let test () =
+  Hashtbl.iter
+    (fun key fct ->
+       prerr_endline ("Fct registered: \""^key^"\"")
+    ) Coccilib.fcts
+
+

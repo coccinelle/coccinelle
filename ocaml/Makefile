@@ -6,7 +6,7 @@
 
 TARGET=cocciocaml
 
-SRC= coccilib.ml prepare_ocamlcocci.ml
+SRC=coccilib.ml prepare_ocamlcocci.ml
 
 #LIBS=../commons/commons.cma ../parsing_c/parsing_c.cma
 #INCLUDES= -I ../commons -I ../parsing_c

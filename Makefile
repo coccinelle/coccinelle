@@ -38,7 +38,7 @@ endif
 
 SEXPSYSCMA=bigarray.cma nums.cma
 
-SYSLIBS=str.cma unix.cma $(SEXPSYSCMA) $(PYCMA)
+SYSLIBS=str.cma unix.cma $(SEXPSYSCMA) $(PYCMA) dynlink.cma
 LIBS=commons/commons.cma \
      commons/commons_sexp.cma \
      globals/globals.cma \
