@@ -183,6 +183,10 @@ let clean_file mlfile =
     Sys.remove (basefile^".cmi");
     List.iter (fun f -> Sys.remove f) files
 
+(*
+  This function should be removed
+  when the others will work!
+*)
 let test () =
   Hashtbl.iter
     (fun key fct ->
