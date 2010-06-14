@@ -77,7 +77,7 @@ let prepare coccifile code =
 let filter_dep acc dep =
   match dep with
       "Array" | "String" | "Printf" | "Arg" | "Obj" | "Printexc"
-    | "Hashtbl" | "List" | "Tbl" -> acc
+    | "Hashtbl" | "List" | "Coccilib" -> acc
     | _ -> String.lowercase dep::acc
 
 let dep_flag mlfile =

@@ -451,6 +451,7 @@ let test_parse_cocci file =
                echo \"=============================\""
 	      ocaml_script_file ocaml_script_file);
 	 Prepare_ocamlcocci.clean_file ocaml_script_file;
+	 (* FIXME To be removed later *)
 	 Prepare_ocamlcocci.test ();
 	 ());
   Printf.printf "grep tokens\n";
