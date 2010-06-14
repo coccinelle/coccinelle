@@ -200,7 +200,7 @@ let build_variable name value =
   check_int_return_value
     (pydict_setitemstring(pymodule_getdict mx, name, value))
 
-let contains_binding e (_,(r,m)) =
+let contains_binding e (_,(r,m),_) =
   try
     let _ = List.find (function ((re, rm), _) -> r =*= re && m =$= rm) e in
     true
@@ -226,7 +226,7 @@ let construct_variables mv e =
       (pytuple_fromsingle (str))
   in
 
-  List.iter (function (py,(r,m)) ->
+  List.iter (function (py,(r,m),_) ->
     match find_binding (r,m) with
       None -> ()
     | Some (_, Ast_c.MetaExprVal (expr,_)) ->

@@ -531,9 +531,12 @@ and rulename =
 	string list * string list * exists * bool
   | GeneratedRulename of string option * dependency *
 	string list * string list * exists * bool
-  | ScriptRulename of string * dependency
-  | InitialScriptRulename of string * dependency
-  | FinalScriptRulename of string * dependency
+  | ScriptRulename of string option (* name *) * string (* language *) *
+	dependency
+  | InitialScriptRulename of string option (* name *) * string (* language *) *
+	dependency
+  | FinalScriptRulename of string option (* name *) * string (* language *) *
+	dependency
 
 and ruletype = Normal | Generated
 
@@ -541,9 +544,13 @@ and rule =
     CocciRule of string (* name *) *
 	(dependency * string list (* dropped isos *) * exists) * top_level list
 	* bool list * ruletype
-  | ScriptRule of string * dependency * (string * meta_name) list * string
-  | InitialScriptRule of string (*language*) * dependency * string (*code*)
-  | FinalScriptRule of string (*language*) * dependency * string (*code*)
+  | ScriptRule of string (* name *) *
+      (* metaname for python (untyped), metavar for ocaml (typed) *)
+      string * dependency * (string * meta_name * metavar) list * string
+  | InitialScriptRule of  string (* name *) *
+	string (*language*) * dependency * string (*code*)
+  | FinalScriptRule of  string (* name *) *
+	string (*language*) * dependency * string (*code*)
 
 and dependency =
     Dep of string (* rule applies for the current binding *)

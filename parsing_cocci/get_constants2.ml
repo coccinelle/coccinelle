@@ -533,11 +533,11 @@ let run rules neg_pos_vars =
     List.fold_left
       (function (rest_info,in_plus,env,locals(*dom of env*)) ->
         function
-	    (Ast.ScriptRule (_,deps,mv,_),_) ->
+	    (Ast.ScriptRule (_,_,deps,mv,_),_) ->
 	      let extra_deps =
 		List.fold_left
 		  (function prev ->
-		    function (_,(rule,_)) ->
+		    function (_,(rule,_),_) ->
 		      if rule = "virtual"
 		      then prev
 		      else Ast.AndDep (Ast.Dep rule,prev))
@@ -546,8 +546,8 @@ let run rules neg_pos_vars =
 		False -> (rest_info, in_plus, env, locals)
 	      | dependencies ->
 		  (build_or dependencies rest_info, in_plus, env, locals))
-          | (Ast.InitialScriptRule (_,deps,_),_)
-	  | (Ast.FinalScriptRule (_,deps,_),_) ->
+          | (Ast.InitialScriptRule (_,_,deps,_),_)
+	  | (Ast.FinalScriptRule (_,_,deps,_),_) ->
 		  (* initialize and finalize dependencies are irrelevant to
 		     get_constants *)
 	      (rest_info, in_plus, env, locals)

@@ -45,7 +45,7 @@ LIBS=commons/commons.cma \
      ctl/ctl.cma \
      parsing_cocci/cocci_parser.cma parsing_c/parsing_c.cma \
      engine/cocciengine.cma popl09/popl.cma \
-     extra/extra.cma python/coccipython.cma
+     extra/extra.cma python/coccipython.cma ocaml/cocciocaml.cma
 
 # Should we use the local version of pycaml
 ifeq ("$(PYCAMLDIR)","pycaml")
@@ -71,11 +71,11 @@ endif
 #used for clean: and depend: and a little for rec & rec.opt
 MAKESUBDIRS=$(LOCALPYCAML) $(LOCALSEXP) commons \
  globals $(LOCALMENHIR) ctl parsing_cocci parsing_c \
- engine popl09 extra python
+ engine popl09 extra python ocaml
 
 INCLUDEDIRSDEP=commons commons/ocamlextra $(LOCALSEXP) \
  globals $(LOCALMENHIR) $(LOCALPYCAML) ctl \
- parsing_cocci parsing_c engine popl09 extra python
+ parsing_cocci parsing_c engine popl09 extra python ocaml
 
 INCLUDEDIRS=$(INCLUDEDIRSDEP) $(SEXPDIR) $(MENHIRDIR) $(PYCAMLDIR)
 

@@ -436,6 +436,17 @@ let test_parse_cocci file =
   let (_,xs,_,_,_,_,grep_tokens,query) =
     Parse_cocci.process file (Some !Config.std_iso) false in
   xs +> List.iter Pretty_print_cocci.unparse;
+  Format.print_newline();
+  (* compile ocaml script code *)
+  (match Prepare_ocamlcocci.prepare xs with
+    None -> ()
+  | Some ocaml_script_file ->
+      (* compile file *)
+      (* remove file *)
+      Sys.command
+	(Printf.sprintf
+	   "cat %s; /bin/rm %s" ocaml_script_file ocaml_script_file);
+      ());
   Printf.printf "grep tokens\n";
   (match grep_tokens with
     None -> pr "No query"

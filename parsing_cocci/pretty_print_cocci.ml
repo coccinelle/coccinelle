@@ -817,11 +817,11 @@ let script_header str lang deps code =
 
 let unparse z =
   match z with
-    Ast.InitialScriptRule (lang,deps,code) ->
+    Ast.InitialScriptRule (name,lang,deps,code) ->
       script_header "initialize" lang deps code
-  | Ast.FinalScriptRule (lang,deps,code) ->
+  | Ast.FinalScriptRule (name,lang,deps,code) ->
       script_header "finalize" lang deps code
-  | Ast.ScriptRule (lang,deps,bindings,code) ->
+  | Ast.ScriptRule (name,lang,deps,bindings,code) ->
       script_header "script" lang deps code
   | Ast.CocciRule (nm, (deps, drops, exists), x, _, _) ->
       print_string "@@";

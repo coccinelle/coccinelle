@@ -166,17 +166,16 @@ let iso_adjust first_fn fn first rest =
     front::after -> (first_fn first::front)::after
   | _ -> failwith "not possible"
 
-let check_meta_tyopt type_irrelevant tok =
-  let lookup rule name =
-    try
-      let info = Hashtbl.find Data.all_metadecls rule in
-      List.find (function mv -> Ast.get_meta_name mv = (rule,name)) info
-    with
-      Not_found ->
-	raise
-	  (Semantic_cocci.Semantic
-	     ("bad rule "^rule^" or bad variable "^name)) in
-  match tok with
+let lookup rule name =
+  try
+    let info = Hashtbl.find Data.all_metadecls rule in
+    List.find (function mv -> Ast.get_meta_name mv = (rule,name)) info
+  with
+    Not_found ->
+      raise
+	(Semantic_cocci.Semantic("bad rule "^rule^" or bad variable "^name))
+
+let check_meta_tyopt type_irrelevant = function
     Ast.MetaIdDecl(Ast.NONE,(rule,name)) ->
       (match lookup rule name with
 	Ast.MetaIdDecl(_,_) | Ast.MetaFreshIdDecl(_,_) -> ()
@@ -502,15 +501,15 @@ let make_generated_rule_name_result nm d i a e ee =
 
 let make_script_rule_name_result lang deps =
   let l = id2name lang in
-  Ast.ScriptRulename (l,deps)
+  Ast.ScriptRulename (None,l,deps)
 
 let make_initial_script_rule_name_result lang deps =
   let l = id2name lang in
-  Ast.InitialScriptRulename(l,deps)
+  Ast.InitialScriptRulename(None,l,deps)
 
 let make_final_script_rule_name_result lang deps =
   let l = id2name lang in
-  Ast.FinalScriptRulename(l,deps)
+  Ast.FinalScriptRulename(None,l,deps)
 
 (* Allows type alone only when it is void and only when there is only one
     parameter.  This avoids ambiguity problems in the parser. *)

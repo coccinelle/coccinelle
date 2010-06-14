@@ -135,7 +135,7 @@ rule_name
 %start meta_main
 %type <(Ast_cocci.metavar,Ast_cocci.metavar) Common.either list> meta_main
 
-%start <string * Ast_cocci.meta_name> script_meta_main
+%start <string * Ast_cocci.meta_name * Ast_cocci.metavar> script_meta_main
 
 %start iso_main
 %type <Ast0_cocci.anything list list> iso_main
@@ -2021,6 +2021,9 @@ never_used: TPragma { () }
 
 script_meta_main:
   py=pure_ident TShOp TRuleName TDot cocci=pure_ident TMPtVirg
-  { (P.id2name py, ($3, P.id2name cocci)) }
+  { let mv = Parse_aux.lookup $3 (P.id2name cocci) in
+    (P.id2name py, ($3, P.id2name cocci), mv) }
   | py=pure_ident TShOp TVirtual TDot cocci=pure_ident TMPtVirg
-  { (P.id2name py, ("virtual", P.id2name cocci)) }
+  { let name = ("virtual", P.id2name cocci) in
+    let mv = Ast.MetaIdDecl(Ast.NONE,name) in
+    (P.id2name py, name, mv) }
