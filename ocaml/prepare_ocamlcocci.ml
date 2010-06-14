@@ -74,7 +74,6 @@ let prepare coccifile code =
     close_out o;
     Some file
 
-
 let filter_dep acc dep =
   match dep with
       "Array" | "String" | "Printf" | "Arg" | "Obj" | "Printexc"
@@ -127,7 +126,7 @@ let write_file coccifile initcode rulecode =
 let compile_bytecode mlfile =
   let obj = (Filename.chop_extension mlfile) ^ ".cmo" in
   let flag = "-g " ^ (dep_flag mlfile) in
-  let cmd = Printf.sprintf "ocamlc.opt -c %s %s %s" obj flag mlfile in (*  tbl.cmo *)
+  let cmd = Printf.sprintf "ocamlc.opt -c %s %s %s" obj flag mlfile in
     prerr_endline cmd;
     match Sys.command cmd with
 	0 -> obj
@@ -141,7 +140,7 @@ let compile_native mlfile =
       But, what is the name of the module to 'open' ?
     *)
   let flag = "-g " ^ (dep_flag mlfile) ^ " coccilib.cmx" in
-  let cmd = Printf.sprintf "ocamlopt.opt -shared -o %s %s %s" obj flag mlfile in (*  tbl.cmx *)
+  let cmd = Printf.sprintf "ocamlopt.opt -shared -o %s %s %s" obj flag mlfile in
     prerr_endline cmd;
     match Sys.command cmd with
 	0 -> obj
@@ -151,16 +150,7 @@ let load_file mlfile =
   let file =
     if Dynlink.is_native
     then compile_native mlfile
-    else
-      begin
-	(*
-	  FIXME: Need to be fixed.
-	  This should not be dynamically loaded.
-	  But, what is the name of the module to 'open' ?
-	*)
-	Dynlink.loadfile "coccilib.cmo";
-	compile_bytecode mlfile
-      end
+    else compile_bytecode mlfile
   in
     prerr_endline "Compilation OK! Loading...";
     try
