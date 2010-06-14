@@ -134,12 +134,7 @@ let compile_bytecode mlfile =
 
 let compile_native mlfile =
   let obj = (Filename.chop_extension mlfile) ^ ".cmxs" in
-    (*
-      FIXME: Need to be fixed.
-      'coccilib.cmx' should not be linked.
-      But, what is the name of the module to 'open' ?
-    *)
-  let flag = "-g " ^ (dep_flag mlfile) ^ " coccilib.cmx" in
+  let flag = "-g " ^ (dep_flag mlfile) in
   let cmd = Printf.sprintf "ocamlopt.opt -shared -o %s %s %s" obj flag mlfile in
     prerr_endline cmd;
     match Sys.command cmd with
