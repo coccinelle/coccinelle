@@ -6,7 +6,7 @@ type pos = { current_element : string; line : string; col : string;
 type param_type = Pos of pos | Str of string
 
 let fcts : (string, param_type list -> unit) Hashtbl.t =
-  Hashtbl.create 10
+  Hashtbl.create 11 (* Use prime number *)
 
 (* ---------------------------------------------------------------------- *)
 (* Match management *)
