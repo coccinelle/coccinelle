@@ -123,36 +123,34 @@ let write_file coccifile initcode rulecode =
 
 *************************************************************)
 
-let compile_bytecode mlfile =
+let compile_bytecode_cmd flags mlfile =
   let obj = (Filename.chop_extension mlfile) ^ ".cmo" in
-  let flag = "-g " ^ (dep_flag mlfile) ^ " -I "^Config.path^"/ocaml/" in
-  let cmd = Printf.sprintf "%s -c %s %s %s" !Config.ocamlc obj flag mlfile in
-    Common.pr2 cmd;
-    match Sys.command cmd with
-	0 -> obj
-      | _ -> raise (CompileFailure mlfile)
+    (obj, Printf.sprintf "%s -c %s %s %s" !Config.ocamlc obj flags mlfile)
 
-let compile_native mlfile =
+let compile_native_cmd flags mlfile =
   let obj = (Filename.chop_extension mlfile) ^ ".cmxs" in
-  let flag = "-g " ^ (dep_flag mlfile) ^ " -I "^Config.path^"/ocaml/" in
-  let cmd = Printf.sprintf "%s -shared -o %s %s %s" !Config.ocamlopt obj flag mlfile in
-    Common.pr2 cmd;
-    match Sys.command cmd with
-	0 -> obj
-      | _ -> raise (CompileFailure mlfile)
+    (obj, Printf.sprintf "%s -shared -o %s %s %s" !Config.ocamlopt obj flags mlfile)
+
+let compile mlfile cmd =
+  Common.pr2 cmd;
+  match Sys.command cmd with
+      0 -> ()
+    | _ -> raise (CompileFailure mlfile)
 
 let load_file mlfile =
-  let file =
+  let flags = "-g " ^ (dep_flag mlfile) ^ " -I "^Config.path^"/ocaml/" in
+  let (obj, cmd) =
     if Dynlink.is_native
-    then compile_native mlfile
-    else compile_bytecode mlfile
+    then compile_native_cmd flags mlfile
+    else compile_bytecode_cmd flags mlfile
   in
+    compile mlfile cmd;
     Common.pr2 "Compilation OK! Loading...";
     try
-      Dynlink.loadfile file
+      Dynlink.loadfile obj
     with Dynlink.Error e ->
       Common.pr2 (Dynlink.error_message e);
-      raise (LinkFailure file)
+      raise (LinkFailure obj)
 
 let clean_file mlfile =
   let basefile = Filename.chop_extension mlfile in
