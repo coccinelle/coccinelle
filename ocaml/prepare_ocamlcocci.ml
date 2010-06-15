@@ -89,7 +89,7 @@ let dep_flag mlfile =
 	  let packages = String.concat " " orderdep in
 	  let inclcmd = "ocamlfind query -i-format "^packages in
 	  let inclflags = Common.cmd_to_list inclcmd in
-	    prerr_endline ("Packages used: "^packages);
+	    Common.pr2 ("Packages used: "^packages);
 	    String.concat " " inclflags
       | _ -> raise (CompileFailure ("Wrong dependencies for "^mlfile))
 
@@ -127,7 +127,7 @@ let compile_bytecode mlfile =
   let obj = (Filename.chop_extension mlfile) ^ ".cmo" in
   let flag = "-g " ^ (dep_flag mlfile) ^ " -I "^Config.path^"/ocaml/" in
   let cmd = Printf.sprintf "ocamlc.opt -c %s %s %s" obj flag mlfile in
-    prerr_endline cmd;
+    Common.pr2 cmd;
     match Sys.command cmd with
 	0 -> obj
       | _ -> raise (CompileFailure mlfile)
@@ -136,7 +136,7 @@ let compile_native mlfile =
   let obj = (Filename.chop_extension mlfile) ^ ".cmxs" in
   let flag = "-g " ^ (dep_flag mlfile) ^ " -I "^Config.path^"/ocaml/" in
   let cmd = Printf.sprintf "ocamlopt.opt -shared -o %s %s %s" obj flag mlfile in
-    prerr_endline cmd;
+    Common.pr2 cmd;
     match Sys.command cmd with
 	0 -> obj
       | _ -> raise (CompileFailure mlfile)
@@ -147,11 +147,11 @@ let load_file mlfile =
     then compile_native mlfile
     else compile_bytecode mlfile
   in
-    prerr_endline "Compilation OK! Loading...";
+    Common.pr2 "Compilation OK! Loading...";
     try
       Dynlink.loadfile file
     with Dynlink.Error e ->
-      prerr_endline (Dynlink.error_message e);
+      Common.pr2 (Dynlink.error_message e);
       raise (LinkFailure file)
 
 let clean_file mlfile =
@@ -175,7 +175,7 @@ let clean_file mlfile =
 let test () =
   Hashtbl.iter
     (fun key fct ->
-       prerr_endline ("Fct registered: \""^key^"\"")
+       Common.pr2 ("Fct registered: \""^key^"\"")
     ) Coccilib.fcts
 
 
