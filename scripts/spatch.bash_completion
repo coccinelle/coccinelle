@@ -85,9 +85,11 @@ _spatch()
     return 0
 }
 
-[ "$have" ] &&
 complete -F _spatch -o bashdefault -o default -o nospace spatch \
  || complete -F _spatch -o default -o nospace spatch
+
+complete -F _spatch -o bashdefault -o default -o nospace spatch.opt \
+ || complete -F _spatch -o default -o nospace spatch.opt
 
 # Local variables:
 # mode: shell-script
