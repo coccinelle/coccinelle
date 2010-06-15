@@ -125,7 +125,7 @@ let write_file coccifile initcode rulecode =
 
 let compile_bytecode mlfile =
   let obj = (Filename.chop_extension mlfile) ^ ".cmo" in
-  let flag = "-g " ^ (dep_flag mlfile) in
+  let flag = "-g " ^ (dep_flag mlfile) ^ " -I "^Config.path^"/ocaml/" in
   let cmd = Printf.sprintf "ocamlc.opt -c %s %s %s" obj flag mlfile in
     prerr_endline cmd;
     match Sys.command cmd with
@@ -134,7 +134,7 @@ let compile_bytecode mlfile =
 
 let compile_native mlfile =
   let obj = (Filename.chop_extension mlfile) ^ ".cmxs" in
-  let flag = "-g " ^ (dep_flag mlfile) in
+  let flag = "-g " ^ (dep_flag mlfile) ^ " -I "^Config.path^"/ocaml/" in
   let cmd = Printf.sprintf "ocamlopt.opt -shared -o %s %s %s" obj flag mlfile in
     prerr_endline cmd;
     match Sys.command cmd with

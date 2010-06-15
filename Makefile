@@ -286,10 +286,11 @@ clean::
 install-common:
 	mkdir -p $(DESTDIR)$(BINDIR)
 	mkdir -p $(DESTDIR)$(LIBDIR)
-	mkdir -p $(DESTDIR)$(SHAREDIR)
+	mkdir -p $(DESTDIR)$(SHAREDIR)/ocaml
 	mkdir -p $(DESTDIR)$(MANDIR)/man1
 	$(INSTALL_DATA) standard.h $(DESTDIR)$(SHAREDIR)
 	$(INSTALL_DATA) standard.iso $(DESTDIR)$(SHAREDIR)
+	$(INSTALL_DATA) ocaml/coccilib.cmi $(DESTDIR)$(SHAREDIR)/ocaml/
 	$(INSTALL_DATA) docs/spatch.1 $(DESTDIR)$(MANDIR)/man1/
 	@if [ $(FEATURE_PYTHON) -eq 1 ]; then $(MAKE) install-python; fi
 
@@ -344,6 +345,7 @@ uninstall:
 	rm -f $(DESTDIR)$(SHAREDIR)/spatch.opt
 	rm -f $(DESTDIR)$(SHAREDIR)/standard.h
 	rm -f $(DESTDIR)$(SHAREDIR)/standard.iso
+	rm -f $(DESTDIR)$(SHAREDIR)/ocaml/coccilib.cmi
 	rm -f $(DESTDIR)$(SHAREDIR)/python/coccilib/coccigui/*
 	rm -f $(DESTDIR)$(SHAREDIR)/python/coccilib/*.py
 	rmdir --ignore-fail-on-non-empty -p \
