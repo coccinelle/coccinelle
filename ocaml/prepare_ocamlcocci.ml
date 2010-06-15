@@ -81,13 +81,13 @@ let filter_dep acc dep =
     | _ -> String.lowercase dep::acc
 
 let dep_flag mlfile =
-  let depcmd  = "ocamldep -modules "^mlfile^"| cut -f2 -d':'" in
+  let depcmd  = !Config.ocamldep ^" -modules "^mlfile^"| cut -f2 -d':'" in
     match Common.cmd_to_list depcmd with
 	[dep] ->
 	  let deplist = Str.split (Str.regexp_string " ") dep in
 	  let orderdep = List.rev (List.fold_left filter_dep [] deplist) in
 	  let packages = String.concat " " orderdep in
-	  let inclcmd = "ocamlfind query -i-format "^packages in
+	  let inclcmd = !Config.ocamlfind ^" query -i-format "^packages in
 	  let inclflags = Common.cmd_to_list inclcmd in
 	    Common.pr2 ("Packages used: "^packages);
 	    String.concat " " inclflags
