@@ -303,6 +303,8 @@ LIBDIR=$prefix/lib
 # Where to install the configuration files
 SHAREDIR=$src
 
+BASH_COMPLETION_DIR=/etc/bash_completion.d
+
 # Features
 FEATURE_PYTHON=$python
 FEATURE_TARZAN=$tarzan

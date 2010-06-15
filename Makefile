@@ -293,6 +293,11 @@ install-common:
 	$(INSTALL_DATA) ocaml/coccilib.cmi $(DESTDIR)$(SHAREDIR)/ocaml/
 	$(INSTALL_DATA) docs/spatch.1 $(DESTDIR)$(MANDIR)/man1/
 	@if [ $(FEATURE_PYTHON) -eq 1 ]; then $(MAKE) install-python; fi
+	@if [ -d $(BASH_COMPLETION_DIR) ]; then $(MAKE) install-bash; fi
+
+install-bash:
+	$(INSTALL_DATA) scripts/spatch.bash_completion \
+		$(DESTDIR)$(BASH_COMPLETION_DIR)/spatch
 
 install-python:
 	mkdir -p $(DESTDIR)$(SHAREDIR)/python/coccilib/coccigui
