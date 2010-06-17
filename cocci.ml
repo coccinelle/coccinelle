@@ -1122,9 +1122,21 @@ let merge_env new_e old_e =
       ([],old_e) new_e in
   old_e @ (List.rev ext)
 
-let apply_python_rule r cache newes e rules_that_have_matched
+let contains_binding e (_,(r,m),_) =
+  try
+    let _ = List.find (function ((re, rm), _) -> r =*= re && m =$= rm) e in
+    true
+  with Not_found -> false
+
+let python_application mv ve r =
+  Pycocci.build_classes (List.map (function (x,y) -> x) ve);
+  Pycocci.construct_variables mv ve;
+  let _ = Pycocci.pyrun_simplestring (local_python_code ^r.script_code) in
+  !Pycocci.inc_match
+
+let apply_script_rule r cache newes e rules_that_have_matched
     rules_that_have_ever_matched =
-  Common.profile_code "python" (fun () ->
+  Common.profile_code r.language (fun () ->
   show_or_not_scr_rule_name r.scr_ruleid;
   if not(interpret_dependencies rules_that_have_matched
 	   !rules_that_have_ever_matched r.scr_dependencies)
@@ -1142,7 +1154,7 @@ let apply_python_rule r cache newes e rules_that_have_matched
       let ve =
 	(List.map (function (n,v) -> (("virtual",n),Ast_c.MetaIdVal (v,[])))
 	   !Flag.defined_virtual_env) @ e in
-      let not_bound x = not (Pycocci.contains_binding ve x) in
+      let not_bound x = not (contains_binding ve x) in
       (match List.filter not_bound mv with
 	[] ->
 	  let relevant_bindings =
@@ -1150,35 +1162,29 @@ let apply_python_rule r cache newes e rules_that_have_matched
 	      (function ((re,rm),_) ->
 		List.exists (function (_,(r,m),_) -> r =*= re && m =$= rm) mv)
 	      e in
-	  let new_cache =
-	    if List.mem relevant_bindings cache
-	    then
-	      begin
-		print_dependencies
-		  "dependencies for script satisfied, but cached:"
-		  rules_that_have_matched
-		  !rules_that_have_ever_matched
-		  r.scr_dependencies;
-		show_or_not_binding "in" e;
-		cache
-	      end
-	    else
-	      begin
-		print_dependencies "dependencies for script satisfied:"
-		  rules_that_have_matched
-		  !rules_that_have_ever_matched
-		  r.scr_dependencies;
-		show_or_not_binding "in" e;
-		Pycocci.build_classes (List.map (function (x,y) -> x) ve);
-		Pycocci.construct_variables mv ve;
-		let _ =
-		  Pycocci.pyrun_simplestring
-		    (local_python_code ^r.script_code) in
-		relevant_bindings :: cache
-	      end in
-	  if !Pycocci.inc_match
-	  then (new_cache, merge_env [(e, rules_that_have_matched)] newes)
-	  else (new_cache, newes)
+	  if List.mem relevant_bindings cache
+	  then
+	    begin
+	      print_dependencies
+		"dependencies for script satisfied, but cached:"
+		rules_that_have_matched
+		!rules_that_have_ever_matched
+		r.scr_dependencies;
+	      show_or_not_binding "in" e;
+	      (cache,newes)
+	    end
+	  else
+	    begin
+	      print_dependencies "dependencies for script satisfied:"
+		rules_that_have_matched
+		!rules_that_have_ever_matched
+		r.scr_dependencies;
+	      show_or_not_binding "in" e;
+	      let new_cache = relevant_bindings :: cache in
+	      if python_application mv ve r
+	      then (new_cache, merge_env [(e, rules_that_have_matched)] newes)
+	      else (new_cache, newes)
+	    end
       |	unbound ->
 	  (if !Flag_cocci.show_dependencies
 	  then
@@ -1504,8 +1510,11 @@ let rec bigloop2 rs (ccs: file_info list) =
               function (e, rules_that_have_matched) ->
 		match r.language with
                   "python" ->
-		    apply_python_rule r cache newes e rules_that_have_matched
-		      rules_that_have_ever_matched
+		    apply_script_rule r cache newes e rules_that_have_matched
+		      rules_that_have_ever_matched python_application
+                  "ocaml" ->
+		    apply_script_rule r cache newes e rules_that_have_matched
+		      rules_that_have_ever_matched ocaml_application
 		| "test" ->
 		    concat_headers_and_c !ccs +> List.iter (fun (c,_) ->
 		      if c.flow <> None
@@ -1557,7 +1566,12 @@ let initial_final_bigloop2 ty rebuild r =
     "python" ->
       (* include_match makes no sense in an initial or final rule, although
 	 we have no way to prevent it *)
-      let _ = apply_python_rule r [] [] [] [] (ref []) in
+      let _ = apply_script_rule r [] [] [] [] (ref []) python_application in
+      ()
+  | "ocaml" ->
+      (* include_match makes no sense in an initial or final rule, although
+	 we have no way to prevent it *)
+      let _ = apply_script_rule r [] [] [] [] (ref []) ocaml_application in
       ()
   | _ ->
       Printf.printf "Unknown language for initial/final script: %s\n"
