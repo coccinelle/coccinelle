@@ -444,15 +444,8 @@ let test_parse_cocci file =
 	 (* compile file *)
 	 Prepare_ocamlcocci.load_file ocaml_script_file;
 	 (* remove file *)
-	 let _ =
-	   Sys.command
-	     (Printf.sprintf
-		"echo \"====  %s  ====\";
-		cat %s;
-                echo \"=============================\""
-		ocaml_script_file ocaml_script_file) in
 	 Prepare_ocamlcocci.clean_file ocaml_script_file;
-	 (* FIXME To be removed later *)
+	 (* Print the list of registered functions *)
 	 Prepare_ocamlcocci.test ());
   Printf.printf "grep tokens\n";
   (match grep_tokens with
