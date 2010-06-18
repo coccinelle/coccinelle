@@ -55,8 +55,8 @@ LOCALPYCAML=
 endif
 
 # Should we use the local version of menhirLib
-ifeq ("$(MENHIRDIR)","menhirLib")
-LOCALMENHIR=menhirLib
+ifeq ("$(MENHIRDIR)","menhirlib")
+LOCALMENHIR=menhirlib
 else
 LOCALMENHIR=
 endif
