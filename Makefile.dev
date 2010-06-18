@@ -50,3 +50,10 @@ diff_darcs:
 gitupdate:
 	git cvsimport -d :ext:topps:/var/cvs/cocci  coccinelle
 
+UBUNTU=karmic lucid maverik
+UBUNTURELEASE=$(UBUNTU:%=ubuntu-%)
+
+.PHONY:: $(UBUNTURELEASE)
+
+$(UBUNTURELEASE):
+	debchange -i -c debian/changelog.$(@:ubuntu-%=%) -D $(@:ubuntu-%=%) -r $(VERSION)
