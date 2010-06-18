@@ -89,39 +89,10 @@ let dep_flag mlfile =
 	  let packages = String.concat " " orderdep in
 	  let inclcmd = !Config.ocamlfind ^" query -i-format "^packages in
 	  let inclflags = Common.cmd_to_list inclcmd in
-	    Common.pr2 ("Packages used: "^packages);
+	    Common.pr2 ("Extra OCaml packages used in the semantic patch: "^
+			  (if packages = "" then "(none)" else packages));
 	    String.concat " " inclflags
       | _ -> raise (CompileFailure ("Wrong dependencies for "^mlfile))
-
-(*************************************************************
-
-let loadstr = format_of_string
-"let _ =
-  print_endline \"Loading %s module\";
-"
-
-let regstr = format_of_string "  Hashtbl.add Tbl.fcts \"%s\" %s"
-
-let write_file coccifile initcode rulecode =
-  let coccimlfile = Filename.temp_file coccifile ".ml" in
-  let ch = open_out coccimlfile in
-    output_string ch initcode;
-    let regcode =
-      List.map
-	(fun (name, str) ->
-	   let fct = "let "^name^ " () =" in
-	     output_string ch fct;
-	     output_string ch (str^"\n");
-	     Printf.sprintf regstr name name
-	) rulecode
-    in
-      output_string ch (Printf.sprintf loadstr coccifile);
-      output_string ch ((String.concat ";\n" regcode)^";\n");
-      output_string ch ("  init ()\n");
-      close_out ch;
-      coccimlfile
-
-*************************************************************)
 
 let compile_bytecode_cmd flags mlfile =
   let obj = (Filename.chop_extension mlfile) ^ ".cmo" in
