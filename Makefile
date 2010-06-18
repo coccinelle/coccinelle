@@ -303,6 +303,7 @@ install-common:
 	@if [ -d $(BASH_COMPLETION_DIR) ]; then $(MAKE) install-bash; fi
 
 install-bash:
+	mkdir -p $(DESTDIR)$(BASH_COMPLETION_DIR)
 	$(INSTALL_DATA) scripts/spatch.bash_completion \
 		$(DESTDIR)$(BASH_COMPLETION_DIR)/spatch
 
