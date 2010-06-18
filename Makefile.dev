@@ -50,7 +50,7 @@ diff_darcs:
 gitupdate:
 	git cvsimport -d :ext:topps:/var/cvs/cocci  coccinelle
 
-UBUNTU=karmic lucid maverik
+UBUNTU=karmic lucid
 UBUNTURELEASE=$(UBUNTU:%=ubuntu-%)
 
 .PHONY:: ubuntu $(UBUNTURELEASE)
@@ -58,8 +58,11 @@ UBUNTURELEASE=$(UBUNTU:%=ubuntu-%)
 ubuntu:
 	for r in $(UBUNTURELEASE); do $(MAKE) $$r ; done
 
+#$(UBUNTURELEASE):
+#	debchange -c debian/changelog.karmic -D karmic -v $(VERSION).deb-0~$(@:ubuntu-%=%)~npalix1 "New release $(VERSION)"
+
 ubuntu-karmic:
-	debchange -c debian/changelog.karmic -D karmic -v $(VERSION).deb-0~910npalix1 "New release $(VERSION)"
+	debchange -c debian/changelog.karmic -D karmic -v $(VERSION).deb-0~$(@:ubuntu-%=%)910npalix1 "New release $(VERSION)"
 
 ubuntu-lucid:
 	debchange -c debian/changelog.lucid -D lucid -v $(VERSION).deb-0~1004npalix1 "New release $(VERSION)"
