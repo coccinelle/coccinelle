@@ -53,7 +53,10 @@ gitupdate:
 UBUNTU=karmic lucid maverik
 UBUNTURELEASE=$(UBUNTU:%=ubuntu-%)
 
-.PHONY:: $(UBUNTURELEASE)
+.PHONY:: ubuntu $(UBUNTURELEASE)
+
+ubuntu:
+	for r in $(UBUNTURELEASE); do $(MAKE) $$r ; done
 
 ubuntu-karmic:
 	debchange -c debian/changelog.karmic -D karmic -v $(VERSION).deb-0~910npalix1 "New release $(VERSION)"
