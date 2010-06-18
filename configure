@@ -190,6 +190,8 @@ my $syspydir=`ocamlfind query pycaml 2> /dev/null | xargs echo -n`;
 if($syspydir) {
     $pydir=$syspydir;
     pr2 "'pycaml' library present in $pydir";
+} else {
+    pr2 "'pycaml' library not present. Will use local copy.";
 }
 
 # menhirLib. Runtime system for the parsers generated with menhir
@@ -198,6 +200,8 @@ my $sysmenhirdir=`ocamlfind query menhirLib 2> /dev/null | xargs echo -n`;
 if($sysmenhirdir) {
     $menhirdir=$sysmenhirdir;
     pr2 "'menhirLib' library present in $menhirdir";
+} else {
+    pr2 "'menhirLib' library not present. Will use local copy.";
 }
 
 # sexplib. Runtime system for the parsers generated with menhir
@@ -206,6 +210,8 @@ my $syssexpdir=`ocamlfind query sexplib 2> /dev/null | xargs echo -n`;
 if($syssexpdir) {
     $sexpdir=$syssexpdir;
     pr2 "'sexplib' library present in $sexpdir";
+} else {
+    pr2 "'sexplib' library not present. Will use local copy.";
 }
 
 ######################################################################
