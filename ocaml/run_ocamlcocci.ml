@@ -21,10 +21,10 @@ let run mv ve name code =
 		    (fname,current_element,(line,col),(line_end,col_end)) ->
 		      { Coccilib.current_element = current_element;
 			Coccilib.file = fname;
-			Coccilib.line = string_of_int line;
-			Coccilib.col = string_of_int col;
-			Coccilib.line_end = string_of_int line_end;
-			Coccilib.col_end = string_of_int col_end }) l in
+			Coccilib.line = line;
+			Coccilib.col = col;
+			Coccilib.line_end = line_end;
+			Coccilib.col_end = col_end }) l in
 	    Coccilib.Pos locs
 	| Some (_,binding) ->
 	    Coccilib.Str (Ocamlcocci_aux.stringrep binding))

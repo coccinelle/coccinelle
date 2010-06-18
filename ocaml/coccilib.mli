@@ -1,5 +1,10 @@
-type pos = { current_element : string; file: string ; line : string; col : string;
-	     line_end : string; col_end : string; }
+
+type pos = { current_element : string;
+	     file :string ;
+	     line : int;
+	     col : int;
+	     line_end : int;
+	     col_end : int; }
 
 type param_type = Pos of pos list | Str of string
 
