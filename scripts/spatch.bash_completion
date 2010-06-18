@@ -46,7 +46,7 @@ _spatch()
           -iso_file -macro_file -macro_file_builtins
           -inplace -outplace -use_glimpse -help -o -ignore_unknown_options
           -include_headers -no_includes -all_includes -local_includes
-          -quiet -very_quiet -debug -timeout"
+          -quiet -very_quiet -debug -timeout -test"
 
     if [[ $COMP_CWORD -eq 1 ]]; then
         local IFS=$'\n'
