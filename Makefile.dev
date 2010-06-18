@@ -65,4 +65,9 @@ ubuntu-lucid:
 	debchange -c debian/changelog.lucid -D lucid -v $(VERSION).deb-0~1004npalix1 "New release $(VERSION)"
 
 ubuntu-maverik:
-	debchange -c debian/changelog.$(@:ubuntu-%=%) -D $(@:ubuntu-%=%) -v $(VERSION).deb-0~npalix1 "New release $(VERSION)"
+	if [ ! -f debian/changelog.$(@:ubuntu-%=%) ] ; then \
+		debchange --create -c debian/changelog.$(@:ubuntu-%=%) -D UNRELEASED \
+			-v $(VERSION).deb-0~npalix1 "New release $(VERSION)" --package $(PACKAGE) ; \
+	else \
+		debchange -c debian/changelog.$(@:ubuntu-%=%) -D UNRELEASED -v $(VERSION).deb-0~npalix1 "New release $(VERSION)" ; \
+	fi
