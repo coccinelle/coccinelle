@@ -55,11 +55,11 @@ UBUNTURELEASE=$(UBUNTU:%=ubuntu-%)
 
 .PHONY:: $(UBUNTURELEASE)
 
-$(UBUNTURELEASE):
-ifeq ($(@:ubuntu-%=%),karmic)
+ubuntu-karmic:
 	debchange -c debian/changelog.karmic -D karmic -v $(VERSION).deb-0~910npalix1
-else ifeq ($(@:ubuntu-%=%),lucid)
+
+ubuntu-lucid:
 	debchange -c debian/changelog.lucid -D lucid -v $(VERSION).deb-0~1004npalix1
-else
+
+ubuntu-maverik:
 	debchange -c debian/changelog.$(@:ubuntu-%=%) -D $(@:ubuntu-%=%) -v $(VERSION).deb-0~npalix1
-endif
