@@ -103,7 +103,7 @@ my $error = 0;
 
 $error +=
     check_config("echo \"1;;\\n\" | ocaml |",
-                 "Objective(.*) 3.\(09|1[0-9\)",
+                 "Objective(.*) 3.\(09|1[0-9]\)",
                  "OCaml (the wonderful language) is present.",
                  "The program ocaml is missing or is not a good version. We need at least 3.09",
                  );
@@ -325,18 +325,19 @@ SEXPDIR=$sexpdir
 OPTBIN=$opt
 ";
 
-pr2 "Modifying globals/config.ml";
-pr2 "Generating appropriate links in python/ (python=$python)";
-my $pythonprefix = $python ? "yes_" : "no_";
-`cd python; ln -sf ${pythonprefix}pycocci.ml pycocci.ml; `;
-`cd python; ln -sf ${pythonprefix}pycocci_aux.ml pycocci_aux.ml;`;
+
+my $pythonprefix = $python ? "yes" : "no";
+pr2 "Support for python scripting : $pythonprefix";
+`cd python; ln -sf ${pythonprefix}_pycocci.ml pycocci.ml; `;
+`cd python; ln -sf ${pythonprefix}_pycocci_aux.ml pycocci_aux.ml;`;
 `cd python; make depend`;
 
-my $ocamlprefix = $noocamlscripting ? "no_" : "yes_";
-`cd ocaml; ln -sf ${ocamlprefix}prepare_ocamlcocci.ml prepare_ocamlcocci.ml;`;
+my $ocamlprefix = $noocamlscripting ? "no" : "yes";
+pr2 "Support for ocaml scripting : $ocamlprefix";
+`cd ocaml; ln -sf ${ocamlprefix}_prepare_ocamlcocci.ml prepare_ocamlcocci.ml;`;
 `cd ocaml; make depend`;
 
-
+pr2 "Modifying globals/config.ml";
 my $command = "perl -p -e 's#Not_found.\*#Not_found->\\\"$src\\\"#' globals/config.ml.in > globals/config.ml";
 `$command`;
 
