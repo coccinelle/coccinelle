@@ -56,10 +56,10 @@ UBUNTURELEASE=$(UBUNTU:%=ubuntu-%)
 .PHONY:: $(UBUNTURELEASE)
 
 ubuntu-karmic:
-	debchange -c debian/changelog.karmic -D karmic -v $(VERSION).deb-0~910npalix1
+	debchange -c debian/changelog.karmic -D karmic -v $(VERSION).deb-0~910npalix1 "New release $(VERSION)"
 
 ubuntu-lucid:
-	debchange -c debian/changelog.lucid -D lucid -v $(VERSION).deb-0~1004npalix1
+	debchange -c debian/changelog.lucid -D lucid -v $(VERSION).deb-0~1004npalix1 "New release $(VERSION)"
 
 ubuntu-maverik:
-	debchange -c debian/changelog.$(@:ubuntu-%=%) -D $(@:ubuntu-%=%) -v $(VERSION).deb-0~npalix1
+	debchange -c debian/changelog.$(@:ubuntu-%=%) -D $(@:ubuntu-%=%) -v $(VERSION).deb-0~npalix1 "New release $(VERSION)"
