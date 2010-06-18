@@ -244,9 +244,8 @@ on the $project website. !!!!
 #pad: before the message was saying (make depend); make all
 # I found this confusing so I removed it.
 
-    pr2 "
-
-----------------------------------------------------------------------
+    pr2
+"----------------------------------------------------------------------
 
 All seems fine for $project.
 

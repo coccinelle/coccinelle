@@ -25,6 +25,7 @@ pycaml.customtop: byte-code-library
 
 clean::
 	rm -f pycaml.customtop
+	rm -f *.cm[aiox] *.a
 
 distclean:: clean
 
