@@ -1,17 +1,19 @@
 @r@
-expression x;
+expression x,a;
 @@
 
-f(x)
+f(x,a)
 
 @script:ocaml@
 y << r.x;
+yy << r.a;
 @@
 
-Printf.printf "%s\n" y
+Printf.printf "%s and %s\n" y yy
 
 @script:ocaml@
-y << r.x;
+y << r.a;
+zz << r.x;
 @@
 
-Printf.printf "%s again\n" y
+Printf.printf "%s again and %s again \n" zz y

@@ -45,7 +45,14 @@ let _hctl = Hashtbl.create 101
 (* --------------------------------------------------------------------- *)
 let sp_of_file2 file iso   =
   Common.memoized _hparse (file, iso) (fun () ->
-    Parse_cocci.process file iso false)
+    let (_,xs,_,_,_,_,_,_) as res = Parse_cocci.process file iso false in
+    (match Prepare_ocamlcocci.prepare file xs with
+      None -> ()
+    | Some ocaml_script_file ->
+        (* compile file *)
+	Prepare_ocamlcocci.load_file ocaml_script_file;
+	Prepare_ocamlcocci.clean_file ocaml_script_file);
+    res)
 let sp_of_file file iso    =
   Common.profile_code "parse cocci" (fun () -> sp_of_file2 file iso)
 
@@ -1134,8 +1141,12 @@ let python_application mv ve r =
   let _ = Pycocci.pyrun_simplestring (local_python_code ^r.script_code) in
   !Pycocci.inc_match
 
+let ocaml_application mv ve r =
+  Run_ocamlcocci.run mv ve r.scr_rulename r.script_code;
+  !Coccilib.inc_match
+
 let apply_script_rule r cache newes e rules_that_have_matched
-    rules_that_have_ever_matched =
+    rules_that_have_ever_matched script_application =
   Common.profile_code r.language (fun () ->
   show_or_not_scr_rule_name r.scr_ruleid;
   if not(interpret_dependencies rules_that_have_matched
@@ -1181,7 +1192,7 @@ let apply_script_rule r cache newes e rules_that_have_matched
 		r.scr_dependencies;
 	      show_or_not_binding "in" e;
 	      let new_cache = relevant_bindings :: cache in
-	      if python_application mv ve r
+	      if script_application mv ve r
 	      then (new_cache, merge_env [(e, rules_that_have_matched)] newes)
 	      else (new_cache, newes)
 	    end
@@ -1512,7 +1523,7 @@ let rec bigloop2 rs (ccs: file_info list) =
                   "python" ->
 		    apply_script_rule r cache newes e rules_that_have_matched
 		      rules_that_have_ever_matched python_application
-                  "ocaml" ->
+                | "ocaml" ->
 		    apply_script_rule r cache newes e rules_that_have_matched
 		      rules_that_have_ever_matched ocaml_application
 		| "test" ->
@@ -1523,8 +1534,7 @@ let rec bigloop2 rs (ccs: file_info list) =
 		    (cache, newes)
 		| _ ->
                     Printf.printf "Unknown language: %s\n" r.language;
-                    (cache, newes)
-		      )
+                    (cache, newes))
             ([],[]) !es in
 
         es := (if newes = [] then init_es else newes);
@@ -1550,11 +1560,14 @@ let rec bigloop2 rs (ccs: file_info list) =
 let bigloop a b =
   Common.profile_code "bigloop" (fun () -> bigloop2 a b)
 
+type init_final = Initial | Final
+
 let initial_final_bigloop2 ty rebuild r =
   if !Flag_cocci.show_ctl_text then
     begin
       Common.pr_xxxxxxxxxxxxxxxxx ();
-      pr (ty ^ ": " ^ r.language);
+      pr ((match ty with Initial -> "initial" | Final -> "final") ^ ": " ^
+	  r.language);
       Common.pr_xxxxxxxxxxxxxxxxx ();
 
       adjust_pp_with_indent (fun () ->
@@ -1568,6 +1581,7 @@ let initial_final_bigloop2 ty rebuild r =
 	 we have no way to prevent it *)
       let _ = apply_script_rule r [] [] [] [] (ref []) python_application in
       ()
+  | "ocaml" when ty = Initial -> () (* nothing to do *)
   | "ocaml" ->
       (* include_match makes no sense in an initial or final rule, although
 	 we have no way to prevent it *)
@@ -1638,7 +1652,7 @@ let pre_engine2 (coccifile, isofile) =
 	       if interpret_dependencies [] [] r.scr_dependencies
 	       then
 		 begin
-		   initial_final_bigloop "initial"
+		   initial_final_bigloop Initial
 		     (fun (x,_,y) -> fun deps ->
 		       Ast_cocci.InitialScriptRule(r.scr_rulename,x,deps,y))
 		     r;
@@ -1654,7 +1668,7 @@ let pre_engine2 (coccifile, isofile) =
       used_languages
   in
     List.iter (fun lgg ->
-		 initial_final_bigloop "initial"
+		 initial_final_bigloop Initial
 		   (fun (x,_,y) -> fun deps ->
 		     Ast_cocci.InitialScriptRule("",x,deps,y))
 		   (make_init "" (-1) lgg Ast_cocci.NoDep "");
@@ -1738,7 +1752,7 @@ let post_engine2 (cocci_infos,_) =
 	    FinalScriptRuleCocciInfo(r) ->
 	      (if List.mem r.language languages
 	      then failwith ("double finalizer found for "^r.language));
-	      initial_final_bigloop "final"
+	      initial_final_bigloop Final
 		(fun (x,_,y) -> fun deps ->
 		  Ast_cocci.FinalScriptRule(r.scr_rulename,x,deps,y))
 		r;

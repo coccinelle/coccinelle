@@ -6,14 +6,14 @@
 
 TARGET=cocciocaml
 
-SRC=coccilib.ml prepare_ocamlcocci.ml
+SRC=coccilib.ml ocamlcocci_aux.ml prepare_ocamlcocci.ml run_ocamlcocci.ml
 
 #LIBS=../commons/commons.cma ../parsing_c/parsing_c.cma
 #INCLUDES= -I ../commons -I ../parsing_c
 INCLUDES = -I ../commons -I ../commons/ocamlextra -I ../globals \
-	       -I ../parsing_cocci
+	       -I ../parsing_cocci -I ../parsing_c
 LIBS=../commons/commons.cma ../globals/globals.cma \
-     ../parsing_cocci/cocci_parser.cma
+     ../parsing_c/parsing_c.cma ../parsing_cocci/cocci_parser.cma
 
 SYSLIBS= str.cma unix.cma
 

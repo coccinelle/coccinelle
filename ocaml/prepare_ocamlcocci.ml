@@ -175,5 +175,3 @@ let test () =
     (fun key fct ->
        Common.pr2 ("Fct registered: \""^key^"\"")
     ) Coccilib.fcts
-
-

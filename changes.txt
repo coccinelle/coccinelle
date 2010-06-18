@@ -23,6 +23,7 @@
 - identifiers can be constrained to be different from an inherited
   identifier metavariable, or from a set containing both concrete
   identifiers and inherited identifier metavariables.
+- support for ocaml scripting
 
 ** Features:
 - drop inconsistent paths check when only one node was matched
