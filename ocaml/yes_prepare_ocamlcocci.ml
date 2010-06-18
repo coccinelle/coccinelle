@@ -167,8 +167,9 @@ let clean_file mlfile =
     List.iter (fun f -> Sys.remove f) files
 
 (*
-  This function should be removed
-  when the others will work!
+  This function is used in testing.ml.
+  Once the ML file is compiled and loaded,
+  newly available functions are reported here.
 *)
 let test () =
   Hashtbl.iter
