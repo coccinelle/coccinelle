@@ -67,7 +67,7 @@ ubuntu-lucid:
 ubuntu-maverik:
 	if [ ! -f debian/changelog.$(@:ubuntu-%=%) ] ; then \
 		debchange --create -c debian/changelog.$(@:ubuntu-%=%) -D UNRELEASED \
-			-v $(VERSION).deb-0~npalix1 "New release $(VERSION)" --package $(PACKAGE) ; \
+			-v $(VERSION).deb-0~npalix1 "New release $(VERSION)" --package $(PRJNAME) ; \
 	else \
 		debchange -c debian/changelog.$(@:ubuntu-%=%) -D UNRELEASED -v $(VERSION).deb-0~npalix1 "New release $(VERSION)" ; \
 	fi
