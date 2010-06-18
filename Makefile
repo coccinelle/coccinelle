@@ -68,9 +68,16 @@ else
 LOCALSEXP=
 endif
 
-#used for clean: and depend: and a little for rec & rec.opt
+# used for depend: and a little for rec & rec.opt
 MAKESUBDIRS=$(LOCALPYCAML) $(LOCALSEXP) commons \
  globals $(LOCALMENHIR) ctl parsing_cocci parsing_c \
+ engine popl09 extra python ocaml
+
+# used for clean:
+# It is like MAKESUBDIRS but also
+# force cleaning of local library copies
+CLEANSUBDIRS=pycaml ocamlsexp commons \
+ globals menhirlib ctl parsing_cocci parsing_c \
  engine popl09 extra python ocaml
 
 INCLUDEDIRSDEP=commons commons/ocamlextra $(LOCALSEXP) \
@@ -176,7 +183,7 @@ $(MAKESUBDIRS:%=%.opt):
 # python:pycaml parsing_cocci parsing_c
 
 clean::
-	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i $@; done
+	set -e; for i in $(CLEANSUBDIRS); do $(MAKE) -C $$i $@; done
 	$(MAKE) -C demos/spp $@
 
 $(LIBS): $(MAKESUBDIRS)
