@@ -17,7 +17,7 @@ OCAMLRUN =
 CONFIG_FLAGS = $(COMMON_CONFIG) --opt
 MAKE_TGT = all.opt
 else
-OCAMLRUN = ocaml-base-nox-$(OCAML_ABI), pycaml (>= 0.82-10)
+OCAMLRUN = $(OCAML_RUNTIME_NOX), pycaml (>= 0.82-10)
 CONFIG_FLAGS = $(COMMON_CONFIG) --no-opt
 MAKE_TGT = all
 endif

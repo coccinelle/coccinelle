@@ -16,7 +16,7 @@ Package: coccinelle
 Architecture: any
 XB-Python-Version: 2.6
 Depends: ${misc:Depends}, ${shlibs:Depends}, ${F:OCamlRun}, ${python:Depends}
-Recommends: python-gobject, python-gtk2, python-glade2
+Recommends: python-gobject, python-gtk2, python-glade2, ocaml-native-compilers (>= 3.11.0) | ocaml-nox (>= 3.11.0), ocaml-findlib
 Suggests: vim-addon-manager
 Description: semantic patching tool for C
  Coccinelle is a program matching and transformation tool for C.
