@@ -13,12 +13,12 @@ website:
 	cp $(TMP)/$(PACKAGE)-bin-x86-python.tgz $(WEBSITE)
 	cp $(TMP)/$(PACKAGE)-bin-bytecode-$(OCAMLVERSION).tgz          $(WEBSITE)
 	cp $(TMP)/$(PACKAGE)-bin-bytecode-$(OCAMLVERSION)-python.tgz   $(WEBSITE)
-	cvs add $(WEBSITE)/$(PACKAGE).tgz                              \
-		$(WEBSITE)/$(PACKAGE)-bin-x86.tgz                      \
-		$(WEBSITE)/$(PACKAGE)-bin-x86-static.tgz               \
-		$(WEBSITE)/$(PACKAGE)-bin-x86-python.tgz               \
-		$(WEBSITE)/$(PACKAGE)-bin-bytecode-$(OCAMLVERSION).tgz \
-		$(WEBSITE)/$(PACKAGE)-bin-bytecode-$(OCAMLVERSION)-python.tgz
+	cd $(WEBSITE); cvs add $(PACKAGE).tgz               \
+		$(PACKAGE)-bin-x86.tgz                      \
+		$(PACKAGE)-bin-x86-static.tgz               \
+		$(PACKAGE)-bin-x86-python.tgz               \
+		$(PACKAGE)-bin-bytecode-$(OCAMLVERSION).tgz \
+		$(PACKAGE)-bin-bytecode-$(OCAMLVERSION)-python.tgz
 #	rm -f $(WEBSITE)/LATEST* $(WEBSITE)/coccinelle-latest.tgz
 #	cp changes.txt $(WEBSITE)/changes-$(VERSION).txt
 #	cd $(WEBSITE); touch LATEST_IS_$(VERSION); ln -s $(PACKAGE).tgz coccinelle-latest.tgz
