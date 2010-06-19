@@ -216,7 +216,7 @@ packsrc: prepack
 packbin: prepack
 	$(MAKE) -C $(TMP)/$(PACKAGE)/debian binary
 	rm -rf  $(TMP)/$(PACKAGE)/
-	rm -rf $(TMP)/$(PRJNAME)_$(VERSION).deb*_source.build
+	rm -rf $(TMP)/$(PACKAGE)_$(VERSION)*_source.build
 
 prepack:
 	rsync -a $(EXCL_SYNC) . $(TMP)/$(PACKAGE)
@@ -224,9 +224,9 @@ prepack:
 	rm -rf $(TMP)/$(PACKAGE)/tools
 
 push:
-	cd $(TMP)/ && for p in `ls $(PRJNAME)_$(VERSION).deb*_source.changes`; do dput $(PRJNAME) $$p ; done
-	rm -rf $(TMP)/$(PRJNAME)_$(VERSION).deb*_source.changes
-	rm -rf $(TMP)/$(PRJNAME)_$(VERSION).deb*_source.$(PRJNAME).upload
-	rm -rf $(TMP)/$(PRJNAME)_$(VERSION).deb*.dsc
-	rm -rf $(TMP)/$(PRJNAME)_$(VERSION).deb*.tar.gz
+	cd $(TMP)/ && for p in `ls $(PRJNAME)_$(VERSION)*_source.changes`; do dput $(PRJNAME) $$p ; done
+	rm -rf $(TMP)/$(PRJNAME)_$(VERSION)*_source.changes
+	rm -rf $(TMP)/$(PRJNAME)_$(VERSION)*_source.$(PRJNAME).upload
+	rm -rf $(TMP)/$(PRJNAME)_$(VERSION)*.dsc
+	rm -rf $(TMP)/$(PRJNAME)_$(VERSION)*.tar.gz
 

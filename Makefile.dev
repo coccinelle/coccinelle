@@ -59,18 +59,19 @@ ubuntu:
 	for r in $(UBUNTURELEASE); do $(MAKE) $$r ; done
 
 #$(UBUNTURELEASE):
-#	debchange -c debian/changelog.karmic -D karmic -v $(VERSION).deb-0~$(@:ubuntu-%=%)~npalix1 "New release $(VERSION)"
+#	debchange -c debian/changelog.karmic -D karmic -v $(VERSION)~$(@:ubuntu-%=%)~npalix1 "New release $(VERSION)"
 
 ubuntu-karmic:
-	debchange -c debian/changelog.karmic -D karmic -v $(VERSION).deb-0~910npalix1 "New release $(VERSION)"
+	debchange -c debian/changelog.karmic -D karmic -v $(VERSION)~910npalix1 "New release $(VERSION)"
 
 ubuntu-lucid:
-	debchange -c debian/changelog.lucid -D lucid -v $(VERSION).deb-0~1004npalix1 "New release $(VERSION)"
+	debchange -c debian/changelog.lucid -D lucid -v $(VERSION)~1004npalix1 "New release $(VERSION)"
 
 ubuntu-maverik:
 	if [ ! -f debian/changelog.$(@:ubuntu-%=%) ] ; then \
 		debchange --create -c debian/changelog.$(@:ubuntu-%=%) -D UNRELEASED \
-			-v $(VERSION).deb-0~npalix1 "New release $(VERSION)" --package $(PRJNAME) ; \
+			-v $(VERSION)~npalix1 "New release $(VERSION)" --package $(PRJNAME) ; \
 	else \
-		debchange -c debian/changelog.$(@:ubuntu-%=%) -D UNRELEASED -v $(VERSION).deb-0~npalix1 "New release $(VERSION)" ; \
+		debchange -c debian/changelog.$(@:ubuntu-%=%) -D UNRELEASED -v $(VERSION)~npalix1 "New release $(VERSION)" ; \
 	fi
+
