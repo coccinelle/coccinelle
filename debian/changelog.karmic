@@ -1,3 +1,9 @@
+coccinelle (0.2.3rc3.deb-0~910npalix3) karmic; urgency=low
+
+  * Improve OCaml scripting support
+
+ -- Nicolas Palix <npalix@diku.dk>  Sat, 19 Jun 2010 04:40:21 +0200
+
 coccinelle (0.2.3rc3.deb-0~910npalix2) karmic; urgency=low
 
   * Fix installation of bash completion file
