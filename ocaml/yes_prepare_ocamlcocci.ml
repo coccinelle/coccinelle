@@ -3,6 +3,36 @@ module Ast = Ast_cocci
 exception CompileFailure of string
 exception LinkFailure of string
 
+let has_ocamlfind = ref false
+
+let check_cmd cmd =
+  match Sys.command cmd with
+      0 -> true
+    | _ -> false
+
+let check_runtime () =
+  let has_opt  = check_cmd (!Flag.ocamlc ^".opt -version 2>&1 > /dev/null") in
+  let has_c    = check_cmd (!Flag.ocamlc ^" -version 2>&1 > /dev/null") in
+  let has_find = check_cmd (!Flag.ocamlfind ^ " printconf 2>&1 > /dev/null") in
+    has_ocamlfind := has_find;
+    if has_opt then
+      begin
+	Flag.ocamlc   := !Flag.ocamlc   ^ ".opt";
+	Flag.ocamlopt := !Flag.ocamlopt ^ ".opt";
+	Flag.ocamldep := !Flag.ocamldep ^ ".opt";
+	Common.pr2 "Using native version of ocamlc/ocamlopt/ocamldep"
+      end
+    else
+      if has_c then
+	Common.pr2 "Using bytecode version of ocamlc/ocamlopt/ocamldep"
+      else
+	if Dynlink.is_native then
+	  failwith
+	    "No OCaml compiler found! Install either ocamlopt or ocamlopt.opt"
+	else
+	  failwith
+	    "No OCaml compiler found! Install either ocamlc or ocamlc.opt"
+
 let init_ocamlcocci _ =
   "open Coccilib\n"
 
@@ -64,43 +94,77 @@ let prepare coccifile code =
   else
     let basefile = Filename.basename (Filename.chop_extension coccifile) in
     let (file,o) = Filename.open_temp_file  basefile ".ml" in
-    (* Global initialization *)
-    Printf.fprintf o "%s" (init_ocamlcocci());
-    (* Semantic patch specific initialization *)
-    Printf.fprintf o "%s" (String.concat "\n\n" init_rules);
-    (* Semantic patch rules and finalizer *)
-    let rule_code = List.map prepare_rule other_rules in
-    Printf.fprintf o "%s" (String.concat "\n\n" rule_code);
-    close_out o;
-    Some file
+      (* Global initialization *)
+      Printf.fprintf o "%s" (init_ocamlcocci());
+      (* Semantic patch specific initialization *)
+      Printf.fprintf o "%s" (String.concat "\n\n" init_rules);
+      (* Semantic patch rules and finalizer *)
+      let rule_code = List.map prepare_rule other_rules in
+	Printf.fprintf o "%s" (String.concat "\n\n" rule_code);
+	close_out o;
+	check_runtime ();
+	Some file
 
 let filter_dep acc dep =
   match dep with
-      "Array" | "String" | "Printf" | "Arg" | "Obj" | "Printexc"
-    | "Hashtbl" | "List" | "Coccilib" -> acc
-    | _ -> String.lowercase dep::acc
+      (* Built-in and OCaml defaults are filtered out *)
+      "Arg" | "Arith_status" | "Array" | "ArrayLabels" | "Big_int" | "Bigarray"
+    | "Buffer" | "Callback" | "CamlinternalLazy" | "CamlinternalMod" | "CamlinternalOO"
+    | "Char" | "Complex" | "Condition" | "Dbm" | "Digest" | "Dynlink" | "Event" | "Filename"
+    | "Format" | "Gc" | "Genlex" | "Graphics" | "GraphicsX11" | "Hashtbl" | "Int32" | "Int64"
+    | "Lazy" | "Lexing" | "List" | "ListLabels" | "Map" | "Marshal" | "MoreLabels" | "Mutex"
+    | "Nativeint" | "Num" | "Obj" | "Oo" | "Parsing" | "Pervasives" | "Printexc" | "Printf"
+    | "Queue" | "Random" | "Scanf" | "Set" | "Sort" | "Stack" | "StdLabels" | "Str" | "Stream"
+    | "String" | "StringLabels" | "Sys" | "Thread" | "ThreadUnix" | "Tk" | "Unix" | "UnixLabels"
+    | "Weak"
+
+    (* Coccilib is filtered out too *)
+    | "Coccilib" -> acc
+
+    | _ ->
+	let l = Char.lowercase (String.get dep 0)in
+	  String.set dep 0 l;
+	  dep::acc
+
+let parse_dep mlfile depout =
+  let re_colon = Str.regexp_string ":" in
+  match Str.split re_colon depout with
+      _::[dep] ->
+	let deplist = Str.split (Str.regexp_string " ") dep in
+	let orderdep = List.rev (List.fold_left filter_dep [] deplist) in
+	  if orderdep <> [] then
+	    if !has_ocamlfind then
+	      let packages = String.concat " " orderdep in
+	      let inclcmd = !Flag.ocamlfind ^" query -i-format "^packages in
+	      let inclflags = Common.cmd_to_list inclcmd in
+	      let flags = String.concat " " inclflags in
+		if flags <> "" then
+		  (Common.pr2 ("Extra OCaml packages used in the semantic patch: "^ packages);
+		   flags)
+		else
+		  raise (CompileFailure ("ocamlfind did not found "^
+					   (if List.length orderdep = 1
+					    then "this package: "
+					    else "one of these packages: ")^ packages))
+	    else
+	      raise (CompileFailure ("ocamlfind not found but "^mlfile^" uses "^dep))
+	  else
+	    ""
+    | _ -> raise (CompileFailure ("Wrong dependencies for "^mlfile^" (Got "^depout^")"))
 
 let dep_flag mlfile =
-  let depcmd  = !Config.ocamldep ^" -modules "^mlfile^"| cut -f2 -d':'" in
+  let depcmd  = !Flag.ocamldep ^" -modules "^mlfile in
     match Common.cmd_to_list depcmd with
-	[dep] ->
-	  let deplist = Str.split (Str.regexp_string " ") dep in
-	  let orderdep = List.rev (List.fold_left filter_dep [] deplist) in
-	  let packages = String.concat " " orderdep in
-	  let inclcmd = !Config.ocamlfind ^" query -i-format "^packages in
-	  let inclflags = Common.cmd_to_list inclcmd in
-	    Common.pr2 ("Extra OCaml packages used in the semantic patch: "^
-			  (if packages = "" then "(none)" else packages));
-	    String.concat " " inclflags
+	[dep] -> parse_dep mlfile dep
       | _ -> raise (CompileFailure ("Wrong dependencies for "^mlfile))
 
 let compile_bytecode_cmd flags mlfile =
   let obj = (Filename.chop_extension mlfile) ^ ".cmo" in
-    (obj, Printf.sprintf "%s -c %s %s %s" !Config.ocamlc obj flags mlfile)
+    (obj, Printf.sprintf "%s -c %s %s %s" !Flag.ocamlc obj flags mlfile)
 
 let compile_native_cmd flags mlfile =
   let obj = (Filename.chop_extension mlfile) ^ ".cmxs" in
-    (obj, Printf.sprintf "%s -shared -o %s %s %s" !Config.ocamlopt obj flags mlfile)
+    (obj, Printf.sprintf "%s -shared -o %s %s %s" !Flag.ocamlopt obj flags mlfile)
 
 let compile mlfile cmd =
   Common.pr2 cmd;
