@@ -15,3 +15,4 @@ val fcts : (string, param_type list -> unit) Hashtbl.t
 
 val inc_match : bool ref
 val include_match : bool -> unit
+val dir : unit -> string

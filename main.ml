@@ -757,6 +757,7 @@ let main_action xs =
 		("warning: patch output can only be created when only one\n"^
 		    "directory is specified or when the -patch flag is used")
           );
+	Flag.dir := x;
 
         let infiles =
           Common.profile_code "Main.infiles computation" (fun () ->
@@ -770,7 +771,6 @@ let main_action xs =
                 if not (null xs)
                 then failwith "-use_glimpse can accept only one dir";
 
-		Flag.dir := x;
                 let files =
 		  match glimpse_filter (!cocci_file, !Config.std_iso) x with
 		  None ->
@@ -955,9 +955,10 @@ let main () =
 	 then
 	   begin
 	     let chosen = List.hd !args in
-	     pr2 ("ignoring all but the last specified directory: "^chosen);
-	     args := [chosen];
-	     chosen
+	       Flag.dir := chosen;
+	       pr2 ("ignoring all but the last specified directory: "^chosen);
+	       args := [chosen];
+	       chosen
 	   end
 	 else List.hd !args in
       if !FC.include_path =*= []

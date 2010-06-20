@@ -3,6 +3,7 @@ module Ast = Ast_cocci
 exception CompileFailure of string
 exception LinkFailure of string
 
+let ext = if Dynlink.is_native then ".cmxs" else ".cma"
 let has_ocamlfind = ref false
 
 let check_cmd cmd =
@@ -105,51 +106,64 @@ let prepare coccifile code =
 	check_runtime ();
 	Some file
 
-let filter_dep acc dep =
+let filter_dep (accld, accinc) dep =
   match dep with
       (* Built-in and OCaml defaults are filtered out *)
       "Arg" | "Arith_status" | "Array" | "ArrayLabels" | "Big_int" | "Bigarray"
     | "Buffer" | "Callback" | "CamlinternalLazy" | "CamlinternalMod" | "CamlinternalOO"
-    | "Char" | "Complex" | "Condition" | "Dbm" | "Digest" | "Dynlink" | "Event" | "Filename"
-    | "Format" | "Gc" | "Genlex" | "Graphics" | "GraphicsX11" | "Hashtbl" | "Int32" | "Int64"
+    | "Char" | "Complex" | "Condition" | "Digest" | "Dynlink" | "Event" | "Filename"
+    | "Format" | "Gc" | "Genlex" | "GraphicsX11" | "Hashtbl" | "Int32" | "Int64"
     | "Lazy" | "Lexing" | "List" | "ListLabels" | "Map" | "Marshal" | "MoreLabels" | "Mutex"
     | "Nativeint" | "Num" | "Obj" | "Oo" | "Parsing" | "Pervasives" | "Printexc" | "Printf"
     | "Queue" | "Random" | "Scanf" | "Set" | "Sort" | "Stack" | "StdLabels" | "Str" | "Stream"
-    | "String" | "StringLabels" | "Sys" | "Thread" | "ThreadUnix" | "Tk" | "Unix" | "UnixLabels"
+    | "String" | "StringLabels" | "Sys" | "ThreadUnix" | "Unix" | "UnixLabels"
     | "Weak"
 
     (* Coccilib is filtered out too *)
-    | "Coccilib" -> acc
+    | "Coccilib" -> (accld, accinc)
+
+    | "Dbm"      -> ("dbm"::accld, accinc)
+    | "Graphics" -> ("graphics"::accld, accinc)
+    | "Thread"   -> ("thread"::accld, accinc)
+    | "Tk"       -> ("tk"::accld, accinc)
 
     | _ ->
 	let l = Char.lowercase (String.get dep 0)in
 	  String.set dep 0 l;
-	  dep::acc
+	  (accld, dep::accinc)
+
+let get_dir p =
+  let inclcmd = !Flag.ocamlfind ^" query "^p in
+  let dir = List.hd (Common.cmd_to_list inclcmd) in
+    (dir, p)
 
 let parse_dep mlfile depout =
   let re_colon = Str.regexp_string ":" in
   match Str.split re_colon depout with
       _::[dep] ->
 	let deplist = Str.split (Str.regexp_string " ") dep in
-	let orderdep = List.rev (List.fold_left filter_dep [] deplist) in
-	  if orderdep <> [] then
+	let (libs, orderdep) = List.fold_left filter_dep ([],[]) deplist in
+	  if libs <> [] || orderdep <> [] then
 	    if !has_ocamlfind then
-	      let packages = String.concat " " orderdep in
-	      let inclcmd = !Flag.ocamlfind ^" query -i-format "^packages in
-	      let inclflags = Common.cmd_to_list inclcmd in
-	      let flags = String.concat " " inclflags in
-		if flags <> "" then
-		  (Common.pr2 ("Extra OCaml packages used in the semantic patch: "^ packages);
-		   flags)
+	      let packages = List.rev orderdep in
+	      let inclflags = List.map get_dir packages in
+	      let alllibs = List.rev_append (List.map get_dir libs) inclflags in
+	      let plist = List.fold_left (fun acc (_,p) -> acc ^" "^p) "" alllibs in
+	      let flags = String.concat " " (List.map (fun (d,_) -> "-I "^d) inclflags) in
+		if flags <> "" || libs <> [] then
+		  (
+		    Common.pr2 ("Extra OCaml packages used in the semantic patch:"^ plist);
+		    (alllibs, flags)
+		  )
 		else
 		  raise (CompileFailure ("ocamlfind did not found "^
-					   (if List.length orderdep = 1
-					    then "this package: "
-					    else "one of these packages: ")^ packages))
+					   (if (List.length libs + List.length orderdep) = 1
+					    then "this package:"
+					    else "one of these packages:")^ plist))
 	    else
 	      raise (CompileFailure ("ocamlfind not found but "^mlfile^" uses "^dep))
 	  else
-	    ""
+	    ([],"")
     | _ -> raise (CompileFailure ("Wrong dependencies for "^mlfile^" (Got "^depout^")"))
 
 let dep_flag mlfile =
@@ -172,15 +186,38 @@ let compile mlfile cmd =
       0 -> ()
     | _ -> raise (CompileFailure mlfile)
 
+let rec load_obj obj =
+  try
+    Dynlink.loadfile obj
+  with Dynlink.Error e ->
+    match e with
+	Dynlink.Unsafe_file ->
+	  Dynlink.allow_unsafe_modules true;
+	  load_obj obj
+      | _ ->
+	  Common.pr2 (Dynlink.error_message e);
+	  raise (LinkFailure obj)
+
+let load_lib (dir, name) =
+  let obj = dir ^ "/" ^name ^ ext in
+    Common.pr2 ("Loading "^ obj ^"...");
+    load_obj obj
+
+let load_libs libs =
+    List.iter load_lib libs
+
 let load_file mlfile =
-  let flags = "-g " ^ (dep_flag mlfile) ^ " -I "^Config.path^"/ocaml/" in
+  let (libs, inc) = dep_flag mlfile in
+  let flags = "-g " ^ inc ^ " -I "^Config.path^"/ocaml/" in
   let (obj, cmd) =
     if Dynlink.is_native
     then compile_native_cmd flags mlfile
     else compile_bytecode_cmd flags mlfile
   in
     compile mlfile cmd;
-    Common.pr2 "Compilation OK! Loading...";
+    Common.pr2 "Compilation OK!";
+    load_libs libs;
+    Common.pr2 "Loading ML code of the SP...";
     try
       Dynlink.loadfile obj
     with Dynlink.Error e ->

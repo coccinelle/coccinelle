@@ -17,3 +17,4 @@ let fcts : (string, param_type list -> unit) Hashtbl.t =
 
 let inc_match = ref true
 let include_match x = inc_match := x
+let dir () = !Flag.dir
