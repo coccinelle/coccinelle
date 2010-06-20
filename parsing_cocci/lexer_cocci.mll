@@ -539,7 +539,7 @@ rule token = parse
           else if !Data.in_meta
 	  then TBang0
           else (add_current_line_type D.UNIQUE; token lexbuf) }
-  | "(" { if not !col_zero
+  | "(" { if !Data.in_meta or not !col_zero
 	  then (start_line true; TOPar (get_current_line_type lexbuf))
           else
             (start_line true; check_context_linetype (tok lexbuf);

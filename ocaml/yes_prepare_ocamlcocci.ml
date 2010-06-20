@@ -147,17 +147,23 @@ let filter_dep (accld, accinc) dep =
   match dep with
       (* Built-in and OCaml defaults are filtered out *)
       "Arg" | "Arith_status" | "Array" | "ArrayLabels" | "Big_int" | "Bigarray"
-    | "Buffer" | "Callback" | "CamlinternalLazy" | "CamlinternalMod" | "CamlinternalOO"
-    | "Char" | "Complex" | "Condition" | "Digest" | "Dynlink" | "Event" | "Filename"
-    | "Format" | "Gc" | "Genlex" | "GraphicsX11" | "Hashtbl" | "Int32" | "Int64"
-    | "Lazy" | "Lexing" | "List" | "ListLabels" | "Map" | "Marshal" | "MoreLabels" | "Mutex"
-    | "Nativeint" | "Num" | "Obj" | "Oo" | "Parsing" | "Pervasives" | "Printexc" | "Printf"
-    | "Queue" | "Random" | "Scanf" | "Set" | "Sort" | "Stack" | "StdLabels" | "Str" | "Stream"
+    | "Buffer" | "Callback" | "CamlinternalLazy" | "CamlinternalMod"
+    | "CamlinternalOO"
+    | "Char" | "Complex" | "Condition" | "Digest" | "Dynlink" | "Event"
+    | "Filename"
+    | "Format" | "Gc" | "Genlex" | "GraphicsX11" | "Hashtbl" | "Int32"
+    | "Int64"
+    | "Lazy" | "Lexing" | "List" | "ListLabels" | "Map" | "Marshal"
+    | "MoreLabels" | "Mutex"
+    | "Nativeint" | "Num" | "Obj" | "Oo" | "Parsing" | "Pervasives"
+    | "Printexc" | "Printf"
+    | "Queue" | "Random" | "Scanf" | "Set" | "Sort" | "Stack" | "StdLabels"
+    | "Str" | "Stream"
     | "String" | "StringLabels" | "Sys" | "ThreadUnix" | "Unix" | "UnixLabels"
     | "Weak"
 
     (* Coccilib is filtered out too *)
-    | "Coccilib" -> (accld, accinc)
+    | "Coccilib" | "Ast_c" | "Visitor_c" -> (accld, accinc)
 
     | "Dbm"      -> ("dbm"::accld, accinc)
     | "Graphics" -> ("graphics"::accld, accinc)
@@ -177,46 +183,57 @@ let get_dir p =
 let parse_dep mlfile depout =
   let re_colon = Str.regexp_string ":" in
   match Str.split re_colon depout with
-      _::[dep] ->
-	let deplist = Str.split (Str.regexp_string " ") dep in
-	let (libs, orderdep) = List.fold_left filter_dep ([],[]) deplist in
-	  if libs <> [] || orderdep <> [] then
-	    if !has_ocamlfind then
-	      let packages = List.rev orderdep in
-	      let inclflags = List.map get_dir packages in
-	      let intlib = List.map get_dir libs in
-	      let alllibs = List.rev_append intlib inclflags in
-	      let plist = List.fold_left (fun acc (_,p) -> acc ^" "^p) "" alllibs in
-	      let flags = String.concat " " (List.map (fun (d,_) -> "-I "^d) inclflags) in
-		if flags <> "" || libs <> [] then
-		  (
-		    Common.pr2 ("Extra OCaml packages used in the semantic patch:"^ plist);
-		    (alllibs (* , inclflags *), flags)
-		  )
-		else
-		  raise (CompileFailure ("ocamlfind did not found "^
-					   (if (List.length libs + List.length orderdep) = 1
-					    then "this package:"
-					    else "one of these packages:")^ plist))
-	    else
-	      raise (CompileFailure ("ocamlfind not found but "^mlfile^" uses "^dep))
+    _::[dep] ->
+      let deplist = Str.split (Str.regexp_string " ") dep in
+      let (libs, orderdep) = List.fold_left filter_dep ([],[]) deplist in
+      if libs <> [] || orderdep <> [] then
+	if !has_ocamlfind
+	then
+	  let packages = List.rev orderdep in
+	  let inclflags = List.map get_dir packages in
+	  let intlib = List.map get_dir libs in
+	  let alllibs = List.rev_append intlib inclflags in
+	  let plist =
+	    List.fold_left (fun acc (_,p) -> acc ^" "^p) "" alllibs in
+	  let flags =
+	    String.concat " " (List.map (fun (d,_) -> "-I "^d) inclflags) in
+	  if flags <> "" || libs <> []
+	  then
+	    begin
+	      Common.pr2
+		("Extra OCaml packages used in the semantic patch:"^ plist);
+	      (alllibs (* , inclflags *), flags)
+	    end
 	  else
-	    ([] (* , [] *), "")
-    | _ -> raise (CompileFailure ("Wrong dependencies for "^mlfile^" (Got "^depout^")"))
-
+	    raise
+	      (CompileFailure
+		 ("ocamlfind did not find "^
+		  (if (List.length libs + List.length orderdep) = 1
+		  then "this package:"
+		  else "one of these packages:")^ plist))
+	else
+	  raise
+	    (CompileFailure ("ocamlfind not found but "^mlfile^" uses "^dep))
+      else
+	([] (* , [] *), "")
+  | _ ->
+      raise
+	(CompileFailure ("Wrong dependencies for "^mlfile^" (Got "^depout^")"))
+	
 let dep_flag mlfile =
   let depcmd  = !Flag.ocamldep ^" -modules "^mlfile in
-    match Common.cmd_to_list depcmd with
-	[dep] -> parse_dep mlfile dep
-      | _ -> raise (CompileFailure ("Wrong dependencies for "^mlfile))
-
+  match Common.cmd_to_list depcmd with
+    [dep] -> parse_dep mlfile dep
+  | _ -> raise (CompileFailure ("Wrong dependencies for "^mlfile))
+	
 let compile_bytecode_cmd flags mlfile =
   let obj = (Filename.chop_extension mlfile) ^ ".cmo" in
-    (obj, Printf.sprintf "%s -c %s %s %s" !Flag.ocamlc obj flags mlfile)
-
+  (obj, Printf.sprintf "%s -c %s %s %s" !Flag.ocamlc obj flags mlfile)
+    
 let compile_native_cmd flags mlfile =
   let obj = (Filename.chop_extension mlfile) ^ ".cmxs" in
-    (obj, Printf.sprintf "%s -shared -o %s %s %s" !Flag.ocamlopt obj flags mlfile)
+  (obj,
+   Printf.sprintf "%s -shared -o %s %s %s" !Flag.ocamlopt obj flags mlfile)
 
 let compile mlfile cmd =
   Common.pr2 cmd;
@@ -254,21 +271,22 @@ let load_libs libs =
 let load_file mlfile =
   let (ldlibs (* , lklibs *), inc) = dep_flag mlfile in
 (*   let linklibs = link_libs lklibs in *)
-  let flags = "-thread -g -dtypes -I /usr/lib/ocaml " ^ inc ^ " -I "^Config.path^"/ocaml/ " in
+  let flags =
+    Printf.sprintf
+    "-thread -g -dtypes -I /usr/lib/ocaml %s -I %s/ocaml -I %s/parsing_c "
+      inc Config.path Config.path in
   let (obj, cmd) =
     if Dynlink.is_native
     then compile_native_cmd flags mlfile
-    else compile_bytecode_cmd flags mlfile
-  in
-    compile mlfile cmd;
-    Common.pr2 "Compilation OK!";
-    load_libs ldlibs;
-    Common.pr2 "Loading ML code of the SP...";
-    try
-      Dynlink.loadfile obj
-    with Dynlink.Error e ->
-      Common.pr2 (Dynlink.error_message e);
-      raise (LinkFailure obj)
+    else compile_bytecode_cmd flags mlfile in
+  compile mlfile cmd;
+  Common.pr2 "Compilation OK!";
+  load_libs ldlibs;
+  Common.pr2 "Loading ML code of the SP...";
+  try Dynlink.loadfile obj
+  with Dynlink.Error e ->
+    Common.pr2 (Dynlink.error_message e);
+    raise (LinkFailure obj)
 
 let clean_file mlfile =
   let basefile = Filename.chop_extension mlfile in
@@ -276,13 +294,15 @@ let clean_file mlfile =
     if Dynlink.is_native then
       [basefile ^ ".cmxs";
        basefile ^ ".cmx";
-       basefile ^ ".o"]
+       basefile ^ ".o";
+       basefile ^ ".annot"]
     else
-      [basefile ^ ".cmo"]
+      [basefile ^ ".cmo";
+       basefile ^ ".annot"]
   in
     Sys.remove mlfile;
     Sys.remove (basefile^".cmi");
-    List.iter (fun f -> Sys.remove f) files
+    List.iter (fun f -> try Sys.remove f with _ -> ()) files
 
 (*
   This function is used in testing.ml.
