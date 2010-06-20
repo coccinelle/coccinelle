@@ -29,7 +29,6 @@ y << r.x;
 yy << r.a;
 @@
 
-Dbm.add db y yy;
 if Str.string_match (Str.regexp "^foo") f 0
 then Printf.eprintf "Fct '%s' matchs \"^foo\"\n" f
 else Printf.eprintf "Fct '%s' does not match \"^foo\"\n" f
