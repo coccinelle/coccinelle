@@ -43,6 +43,7 @@
   glimpse tokens
 - Add scripts/spatch.bash_completion for automatic completion of common
   options under the bash shell.
+- Print rule name when a script rule crashes
 
 ** Bugfix:
 - drop inconsistent paths check when only one node was matched

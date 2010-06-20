@@ -1136,14 +1136,20 @@ let contains_binding e (_,(r,m),_) =
   with Not_found -> false
 
 let python_application mv ve r =
-  Pycocci.build_classes (List.map (function (x,y) -> x) ve);
-  Pycocci.construct_variables mv ve;
-  let _ = Pycocci.pyrun_simplestring (local_python_code ^r.script_code) in
-  !Pycocci.inc_match
+  try
+    Pycocci.build_classes (List.map (function (x,y) -> x) ve);
+    Pycocci.construct_variables mv ve;
+    let _ = Pycocci.pyrun_simplestring (local_python_code ^r.script_code) in
+    !Pycocci.inc_match
+  with Pycocci.Pycocciexception ->
+    (pr2 ("Failure in " ^ r.scr_rulename);
+     raise Pycocci.Pycocciexception)
 
 let ocaml_application mv ve r =
-  Run_ocamlcocci.run mv ve r.scr_rulename r.script_code;
-  !Coccilib.inc_match
+  try
+    Run_ocamlcocci.run mv ve r.scr_rulename r.script_code;
+    !Coccilib.inc_match
+  with e -> (pr2 ("Failure in " ^ r.scr_rulename); raise e)
 
 let apply_script_rule r cache newes e rules_that_have_matched
     rules_that_have_ever_matched script_application =
