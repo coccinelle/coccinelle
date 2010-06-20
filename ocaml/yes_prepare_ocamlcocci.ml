@@ -147,13 +147,14 @@ let parse_dep mlfile depout =
 	    if !has_ocamlfind then
 	      let packages = List.rev orderdep in
 	      let inclflags = List.map get_dir packages in
-	      let alllibs = List.rev_append (List.map get_dir libs) inclflags in
+	      let intlib = List.map get_dir libs in
+	      let alllibs = List.rev_append intlib inclflags in
 	      let plist = List.fold_left (fun acc (_,p) -> acc ^" "^p) "" alllibs in
 	      let flags = String.concat " " (List.map (fun (d,_) -> "-I "^d) inclflags) in
 		if flags <> "" || libs <> [] then
 		  (
 		    Common.pr2 ("Extra OCaml packages used in the semantic patch:"^ plist);
-		    (alllibs, flags)
+		    (alllibs (* , inclflags *), flags)
 		  )
 		else
 		  raise (CompileFailure ("ocamlfind did not found "^
@@ -163,7 +164,7 @@ let parse_dep mlfile depout =
 	    else
 	      raise (CompileFailure ("ocamlfind not found but "^mlfile^" uses "^dep))
 	  else
-	    ([],"")
+	    ([] (* , [] *), "")
     | _ -> raise (CompileFailure ("Wrong dependencies for "^mlfile^" (Got "^depout^")"))
 
 let dep_flag mlfile =
@@ -198,17 +199,25 @@ let rec load_obj obj =
 	  Common.pr2 (Dynlink.error_message e);
 	  raise (LinkFailure obj)
 
+(*
+let link_lib (dir, name) = name ^ ext
+
+let link_libs libs =
+    String.concat " " (List.map link_lib libs)
+*)
+
 let load_lib (dir, name) =
   let obj = dir ^ "/" ^name ^ ext in
     Common.pr2 ("Loading "^ obj ^"...");
     load_obj obj
 
 let load_libs libs =
-    List.iter load_lib libs
+  List.iter load_lib libs
 
 let load_file mlfile =
-  let (libs, inc) = dep_flag mlfile in
-  let flags = "-g " ^ inc ^ " -I "^Config.path^"/ocaml/" in
+  let (ldlibs (* , lklibs *), inc) = dep_flag mlfile in
+(*   let linklibs = link_libs lklibs in *)
+  let flags = "-thread -g -dtypes -I /usr/lib/ocaml " ^ inc ^ " -I "^Config.path^"/ocaml/ " in
   let (obj, cmd) =
     if Dynlink.is_native
     then compile_native_cmd flags mlfile
@@ -216,7 +225,7 @@ let load_file mlfile =
   in
     compile mlfile cmd;
     Common.pr2 "Compilation OK!";
-    load_libs libs;
+    load_libs ldlibs;
     Common.pr2 "Loading ML code of the SP...";
     try
       Dynlink.loadfile obj

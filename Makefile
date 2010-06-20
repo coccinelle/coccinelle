@@ -38,7 +38,7 @@ endif
 
 SEXPSYSCMA=bigarray.cma nums.cma
 
-SYSLIBS=str.cma unix.cma $(SEXPSYSCMA) $(PYCMA) dynlink.cma
+SYSLIBS=str.cma unix.cma $(SEXPSYSCMA) $(PYCMA) dynlink.cma # threads.cma
 LIBS=commons/commons.cma \
      commons/commons_sexp.cma \
      globals/globals.cma \
@@ -150,24 +150,18 @@ opt-compil: .depend
 top: $(EXEC).top
 
 subdirs:
-#	$(MAKE) -C commons OCAMLCFLAGS="$(OCAMLCFLAGS)"
-#	if [ "$(LOCALSEXP)" != "" ]; then \
-#		$(MAKE) -C ocamlsexp OCAMLCFLAGS="$(OCAMLCFLAGS)" ; fi
 	+for D in $(MAKESUBDIRS); do $(MAKE) $$D || exit 1 ; done
 	$(MAKE) -C commons sexp OCAMLCFLAGS="$(OCAMLCFLAGS)"
 
 subdirs.opt:
-#	$(MAKE) -C commons all.opt OCAMLCFLAGS="$(OCAMLCFLAGS)"
-#	if [ "$(LOCALSEXP)" != "" ]; then \
-#		$(MAKE) -C ocamlsexp all.opt OCAMLCFLAGS="$(OCAMLCFLAGS)"; fi
 	+for D in $(MAKESUBDIRS); do $(MAKE) $$D.opt || exit 1 ; done
-	$(MAKE) -C commons sexp.opt OCAMLCFLAGS="$(OCAMLCFLAGS)"
+	$(MAKE) -C commons sexp.opt OPTFLAGS="$(OPTFLAGS)"
 
 $(MAKESUBDIRS):
 	$(MAKE) -C $@ OCAMLCFLAGS="$(OCAMLCFLAGS)" all
 
 $(MAKESUBDIRS:%=%.opt):
-	$(MAKE) -C $(@:%.opt=%) OCAMLCFLAGS="$(OCAMLCFLAGS)" all.opt
+	$(MAKE) -C $(@:%.opt=%) OPTFLAGS="$(OPTFLAGS)" all.opt
 
 #dependencies:
 # commons:
