@@ -163,7 +163,7 @@ let filter_dep (accld, accinc) dep =
     | "Weak"
 
     (* Coccilib is filtered out too *)
-    | "Coccilib" | "Ast_c" | "Visitor_c" -> (accld, accinc)
+    | "Coccilib" | "Ast_c" | "Visitor_c" | "Lib_parsing_c" -> (accld, accinc)
 
     | "Dbm"      -> ("dbm"::accld, accinc)
     | "Graphics" -> ("graphics"::accld, accinc)
