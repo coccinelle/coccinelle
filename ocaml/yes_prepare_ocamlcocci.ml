@@ -37,6 +37,48 @@ let check_runtime () =
 let init_ocamlcocci _ =
   "open Coccilib\n"
 
+let print_match ctr nm kind =
+  let endlet = "| _ -> failwith \"bad value\" in" in
+  let index = !ctr in
+  ctr := !ctr + 1;
+  Printf.sprintf
+    "let %s = match List.nth args %d with Coccilib.%s x -> x %s"
+    nm index kind endlet
+
+let string_rep_binding ctr = function
+    (Some nm,Ast.MetaPosDecl _) -> print_match ctr nm "Pos"
+  | (Some nm,Ast.MetaListlenDecl _) -> print_match ctr nm "Int"
+  | (Some nm,_) (* strings for everything else *) ->
+      print_match ctr nm "Str"
+  | (None,_) -> ""
+
+let ast_rep_binding ctr = function
+    (Some nm,Ast.MetaPosDecl _) ->
+      failwith
+	(Printf.sprintf "%s: No AST representation for position variables" nm)
+  | (Some nm,Ast.MetaIdDecl _) -> print_match ctr nm "Str"
+  | (Some nm,Ast.MetaFreshIdDecl _) -> print_match ctr nm "Str"
+  | (Some nm,Ast.MetaTypeDecl _) -> print_match ctr nm "Type"
+  | (Some nm,Ast.MetaInitDecl _) -> print_match ctr nm "Init"
+  | (Some nm,Ast.MetaListlenDecl _) ->
+      failwith
+	(Printf.sprintf "%s: No AST representation for listlen variables" nm)
+  | (Some nm,Ast.MetaParamDecl _) -> print_match ctr nm "Param"
+  | (Some nm,Ast.MetaParamListDecl _) -> print_match ctr nm "ParamList"
+  | (Some nm,Ast.MetaConstDecl _) -> print_match ctr nm "Expr"
+  | (Some nm,Ast.MetaErrDecl _) -> failwith "not supported"
+  | (Some nm,Ast.MetaExpDecl _) -> print_match ctr nm "Expr"
+  | (Some nm,Ast.MetaIdExpDecl _) -> print_match ctr nm "Expr"
+  | (Some nm,Ast.MetaLocalIdExpDecl _) -> print_match ctr nm "Expr"
+  | (Some nm,Ast.MetaExpListDecl _) -> print_match ctr nm "ExprList"
+  | (Some nm,Ast.MetaStmDecl _) -> print_match ctr nm "Stmt"
+  | (Some nm,Ast.MetaStmListDecl _) -> failwith "not supported"
+  | (Some nm,Ast.MetaFuncDecl _) -> print_match ctr nm "Str"
+  | (Some nm,Ast.MetaLocalFuncDecl _) -> print_match ctr nm "Str"
+  | (Some nm,Ast.MetaDeclarerDecl _) -> print_match ctr nm "Str"
+  | (Some nm,Ast.MetaIteratorDecl _) -> print_match ctr nm "Str"
+  | (None,_) -> ""
+
 let prepare_rule (name, metavars, code) =
   let fname = String.concat "_" (Str.split (Str.regexp " ") name) in
   (* function header *)
@@ -45,23 +87,18 @@ let prepare_rule (name, metavars, code) =
   (* parameter list *)
   let build_parameter_list body =
     let ctr = ref 0 in
-    List.fold_left
-      (function body ->
-	function (nm,_,mv) ->
-	  let endlet =
-	    Printf.sprintf "| _ -> failwith \"bad value\" in\n%s" body in
-	  let index = !ctr in
-	  ctr := !ctr + 1;
-	  match mv with
-	    Ast.MetaPosDecl(_,_) ->
-	      Printf.sprintf
-		"let %s = match List.nth args %d with Coccilib.Pos x -> x %s"
-		nm index endlet
-	  | _ (* strings for everything else *) ->
-	      Printf.sprintf
-		"let %s = match List.nth args %d with Coccilib.Str x -> x %s"
-		nm index endlet)
-      body metavars in
+    let lets =
+      String.concat ""
+	(List.rev
+	   (List.fold_left
+	      (function prev ->
+		function ((str_nm,ast_nm),_,mv) ->
+	          (* order important; ctr is incremented *)
+		  let string_rep = string_rep_binding ctr (str_nm,mv) in
+		  let ast_rep = ast_rep_binding ctr (ast_nm,mv) in
+		  ast_rep :: string_rep :: prev)
+	      [] metavars)) in
+    lets ^ body in
   (* add to hash table *)
   let hash_add body =
     Printf.sprintf

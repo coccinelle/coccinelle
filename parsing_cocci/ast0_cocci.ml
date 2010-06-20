@@ -377,7 +377,8 @@ and parsed_rule =
 	 (string list * string list * Ast.dependency * string * Ast.exists)) *
 	(rule * Ast.metavar list) * Ast.ruletype
   | ScriptRule of string (* name *) *
-      string * Ast.dependency * (string * Ast.meta_name * Ast.metavar) list *
+      string * Ast.dependency *
+	(Ast.script_meta_name * Ast.meta_name * Ast.metavar) list *
 	string
   | InitialScriptRule of  string (* name *) *string * Ast.dependency * string
   | FinalScriptRule of  string (* name *) *string * Ast.dependency * string

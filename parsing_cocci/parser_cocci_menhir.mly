@@ -89,6 +89,8 @@ module P = Parse_aux
 %token TIso TRightIso TIsoExpression TIsoStatement TIsoDeclaration TIsoType
 %token TIsoTopLevel TIsoArgExpression TIsoTestExpression TIsoToTestExpression
 
+%token TUnderscore
+
 %token TInvalid
 
 /* operator precedence */
@@ -135,7 +137,7 @@ rule_name
 %start meta_main
 %type <(Ast_cocci.metavar,Ast_cocci.metavar) Common.either list> meta_main
 
-%start <string * Ast_cocci.meta_name * Ast_cocci.metavar> script_meta_main
+%start <(string option (*string*) * string option (*ast*)) * Ast_cocci.meta_name * Ast_cocci.metavar> script_meta_main
 
 %start iso_main
 %type <Ast0_cocci.anything list list> iso_main
@@ -2020,10 +2022,26 @@ never_used: TPragma { () }
   | TScriptData     { () }
 
 script_meta_main:
-  py=pure_ident TShOp TRuleName TDot cocci=pure_ident TMPtVirg
-  { let mv = Parse_aux.lookup $3 (P.id2name cocci) in
-    (P.id2name py, ($3, P.id2name cocci), mv) }
-  | py=pure_ident TShOp TVirtual TDot cocci=pure_ident TMPtVirg
-  { let name = ("virtual", P.id2name cocci) in
-    let mv = Ast.MetaIdDecl(Ast.NONE,name) in
-    (P.id2name py, name, mv) }
+  py=pure_ident script_name_decl
+  { let (nm,mv) = $2 in
+    ((Some (P.id2name py), None), nm, mv) }
+  | TOPar TUnderscore TComma ast=pure_ident TCPar script_name_decl
+  { let (nm,mv) = $6 in
+    ((None, Some (P.id2name ast)), nm, mv) }
+  | TOPar str=pure_ident TComma TUnderscore TCPar script_name_decl
+  { let (nm,mv) = $6 in
+    ((Some (P.id2name str), None), nm, mv) }
+  | TOPar str=pure_ident TComma ast=pure_ident TCPar script_name_decl
+  { let (nm,mv) = $6 in
+    ((Some (P.id2name str), Some (P.id2name ast)), nm, mv) }
+
+script_name_decl:
+    TShOp TRuleName TDot cocci=pure_ident TMPtVirg
+      { let nm = P.id2name cocci in
+        let mv = Parse_aux.lookup $2 nm in
+        (($2, nm), mv) }
+  | TShOp TVirtual TDot cocci=pure_ident TMPtVirg
+      { let nm = P.id2name cocci in
+        let name = ("virtual", nm) in
+        let mv = Ast.MetaIdDecl(Ast.NONE,name) in
+	(name,mv) }

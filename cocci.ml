@@ -733,7 +733,9 @@ type toplevel_c_info = {
 type toplevel_cocci_info_script_rule = {
   scr_rulename: string;
   scr_ast_rule:
-      string * (string * Ast_cocci.meta_name * Ast_cocci.metavar) list *
+      string *
+      (Ast_cocci.script_meta_name * Ast_cocci.meta_name *
+	 Ast_cocci.metavar) list *
       string;
   language: string;
   scr_dependencies: Ast_cocci.dependency;
@@ -1136,6 +1138,15 @@ let contains_binding e (_,(r,m),_) =
   with Not_found -> false
 
 let python_application mv ve r =
+  let mv =
+    List.map
+      (function
+	  ((Some x,None),y,z) -> (x,y,z)
+	| _ ->
+	    failwith
+	      (Printf.sprintf "unexpected ast metavar in rule %s"
+		 r.scr_rulename))
+      mv in
   try
     Pycocci.build_classes (List.map (function (x,y) -> x) ve);
     Pycocci.construct_variables mv ve;

@@ -24,6 +24,7 @@
   identifier metavariable, or from a set containing both concrete
   identifiers and inherited identifier metavariables.
 - support for ocaml scripting
+- ast available in ocaml scripts
 
 ** Features:
 - drop inconsistent paths check when only one node was matched

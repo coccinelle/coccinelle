@@ -546,11 +546,14 @@ and rule =
 	* bool list * ruletype
   | ScriptRule of string (* name *) *
       (* metaname for python (untyped), metavar for ocaml (typed) *)
-      string * dependency * (string * meta_name * metavar) list * string
+      string * dependency *
+	(script_meta_name * meta_name * metavar) list * string
   | InitialScriptRule of  string (* name *) *
 	string (*language*) * dependency * string (*code*)
   | FinalScriptRule of  string (* name *) *
 	string (*language*) * dependency * string (*code*)
+
+and script_meta_name = string option (*string*) * string option (*ast*)
 
 and dependency =
     Dep of string (* rule applies for the current binding *)
