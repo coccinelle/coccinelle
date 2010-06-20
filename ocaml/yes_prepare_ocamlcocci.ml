@@ -38,7 +38,7 @@ let init_ocamlcocci _ =
   "open Coccilib\n"
 
 let print_match ctr nm kind =
-  let endlet = "| _ -> failwith \"bad value\" in" in
+  let endlet = "| _ -> failwith \"bad value\" in\n" in
   let index = !ctr in
   ctr := !ctr + 1;
   Printf.sprintf
@@ -66,13 +66,13 @@ let ast_rep_binding ctr = function
   | (Some nm,Ast.MetaParamDecl _) -> print_match ctr nm "Param"
   | (Some nm,Ast.MetaParamListDecl _) -> print_match ctr nm "ParamList"
   | (Some nm,Ast.MetaConstDecl _) -> print_match ctr nm "Expr"
-  | (Some nm,Ast.MetaErrDecl _) -> failwith "not supported"
+  | (Some nm,Ast.MetaErrDecl _) -> failwith ("not supported: "^nm)
   | (Some nm,Ast.MetaExpDecl _) -> print_match ctr nm "Expr"
   | (Some nm,Ast.MetaIdExpDecl _) -> print_match ctr nm "Expr"
   | (Some nm,Ast.MetaLocalIdExpDecl _) -> print_match ctr nm "Expr"
   | (Some nm,Ast.MetaExpListDecl _) -> print_match ctr nm "ExprList"
   | (Some nm,Ast.MetaStmDecl _) -> print_match ctr nm "Stmt"
-  | (Some nm,Ast.MetaStmListDecl _) -> failwith "not supported"
+  | (Some nm,Ast.MetaStmListDecl _) -> failwith ("not supported: "^nm)
   | (Some nm,Ast.MetaFuncDecl _) -> print_match ctr nm "Str"
   | (Some nm,Ast.MetaLocalFuncDecl _) -> print_match ctr nm "Str"
   | (Some nm,Ast.MetaDeclarerDecl _) -> print_match ctr nm "Str"

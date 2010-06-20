@@ -55,7 +55,7 @@ let run mv ve name code =
 	   match find_binding (r,m) with
 	     None -> []
 	   | Some (_,vl) ->
-	       (string_binding vl str_name) @ (ast_binding vl str_name))
+	       (string_binding vl str_name) @ (ast_binding vl ast_name))
 	 mv) in
 
   (* call the function *)
