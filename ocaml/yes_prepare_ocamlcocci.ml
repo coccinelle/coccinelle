@@ -163,7 +163,8 @@ let filter_dep (accld, accinc) dep =
     | "Weak"
 
     (* Coccilib is filtered out too *)
-    | "Coccilib" | "Ast_c" | "Visitor_c" | "Lib_parsing_c" -> (accld, accinc)
+    | "Coccilib" | "Common" | "Ast_c" | "Visitor_c" | "Lib_parsing_c" ->
+	(accld, accinc)
 
     | "Dbm"      -> ("dbm"::accld, accinc)
     | "Graphics" -> ("graphics"::accld, accinc)
@@ -273,8 +274,8 @@ let load_file mlfile =
 (*   let linklibs = link_libs lklibs in *)
   let flags =
     Printf.sprintf
-    "-thread -g -dtypes -I /usr/lib/ocaml %s -I %s/ocaml -I %s/parsing_c "
-      inc Config.path Config.path in
+    "-thread -g -dtypes -I /usr/lib/ocaml %s -I %s/ocaml -I %s/parsing_c -I %s/commons "
+      inc Config.path Config.path Config.path in
   let (obj, cmd) =
     if Dynlink.is_native
     then compile_native_cmd flags mlfile
