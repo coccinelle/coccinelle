@@ -131,6 +131,8 @@ let prepare coccifile code =
   then None
   else
     let basefile = Filename.basename (Filename.chop_extension coccifile) in
+    let basefile =
+      String.concat "_" (Str.split (Str.regexp "-") basefile) in
     let (file,o) = Filename.open_temp_file  basefile ".ml" in
       (* Global initialization *)
       Printf.fprintf o "%s" (init_ocamlcocci());
