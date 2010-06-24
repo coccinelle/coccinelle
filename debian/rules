@@ -45,6 +45,7 @@ install: install-stamp
 install-stamp: build-stamp
 	dh install --before dh_auto_install
 	$(MAKE) DESTDIR=$(CURDIR)/debian/coccinelle $(COCCI_FLAGS) install
+	$(MAKE) DESTDIR=$(CURDIR)/debian/coccinelle                install-bash
 	# install the wrapper script, i dont like upstreams one
 	rm $(CURDIR)/debian/coccinelle/usr/bin/spatch*
 	install $(CURDIR)/debian/spatch $(CURDIR)/debian/coccinelle/usr/bin/
