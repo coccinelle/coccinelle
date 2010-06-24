@@ -1,3 +1,9 @@
+coccinelle (0.2.3rc4~1004npalix1) lucid; urgency=low
+
+  * New release 0.2.3rc4
+
+ -- Nicolas Palix <npalix@diku.dk>  Thu, 24 Jun 2010 10:45:37 +0200
+
 coccinelle (0.2.3rc3.deb-0~1004npalix3) lucid; urgency=low
 
   * Improve OCaml scripting support
