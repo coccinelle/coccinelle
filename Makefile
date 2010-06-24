@@ -359,6 +359,11 @@ uninstall:
 		$(DESTDIR)$(SHAREDIR)/python/coccilib/coccigui
 	rm -f $(DESTDIR)$(MANDIR)/man1/spatch.1
 
+uninstall-bash:
+	rm -f $(DESTDIR)$(BASH_COMPLETION_DIR)/spatch
+	rmdir --ignore-fail-on-non-empty -p \
+		$(DESTDIR)$(BASH_COMPLETION_DIR)
+
 version:
 	@echo "spatch     $(VERSION)"
 	@echo "spatch     $(PKGVERSION) ($(DISTRIB_ID))"
