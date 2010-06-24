@@ -4,7 +4,8 @@
 ##############################################################################
 
 #TOP=/home/pad/mobile/project-coccinelle
-WEBSITE=~/website/distrib
+WEBBASE=~/website
+WEBSITE=$(WEBBASE)/distrib
 
 website:
 	cp $(TMP)/$(PACKAGE).tgz                $(WEBSITE)
@@ -19,6 +20,10 @@ website:
 		$(PACKAGE)-bin-x86-python.tgz               \
 		$(PACKAGE)-bin-bytecode-$(OCAMLVERSION).tgz \
 		$(PACKAGE)-bin-bytecode-$(OCAMLVERSION)-python.tgz
+	@echo "\nYou need to manually update those files:\n"
+	@echo "\t$(WEBBASE)/download.php"
+	@echo "\t$(WEBSITE)/change.html\n"
+	@echo "Then commit the changes.\n"
 #	rm -f $(WEBSITE)/LATEST* $(WEBSITE)/coccinelle-latest.tgz
 #	cp changes.txt $(WEBSITE)/changes-$(VERSION).txt
 #	cd $(WEBSITE); touch LATEST_IS_$(VERSION); ln -s $(PACKAGE).tgz coccinelle-latest.tgz
@@ -57,6 +62,8 @@ UBUNTURELEASE=$(UBUNTU:%=ubuntu-%)
 
 ubuntu:
 	for r in $(UBUNTURELEASE); do $(MAKE) $$r ; done
+	@echo "\nYou can now build the Ubuntu source package with\n"
+	@echo "\tmake packsrc\n"
 
 #$(UBUNTURELEASE):
 #	debchange -c debian/changelog.karmic -D karmic -v $(VERSION)~$(@:ubuntu-%=%)~npalix1 "New release $(VERSION)"
