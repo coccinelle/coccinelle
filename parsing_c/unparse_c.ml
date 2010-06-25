@@ -539,7 +539,6 @@ let remove_minus_and_between_and_expanded_and_fake xs =
   let xs = xs +> Common.exclude (function
     | T2 (t,_,_) when TH.is_expanded t -> true
     | Fake2 -> true
-
     | _ -> false
   )
   in
@@ -753,6 +752,35 @@ let adjust_before_semicolon toks =
   List.rev (search_semic toks)
 
 let is_ident_like s = s ==~ Common.regexp_alpha
+
+let rec drop_space_at_endline = function
+    [] -> []
+  | [x] -> [x]
+  | ((T2(Parser_c.TCommentSpace _,Ctx,_i)) as a)::rest ->
+      let (outer_spaces,rest) = Common.span is_space rest in
+      let minus_or_comment_or_space_nocpp = function
+	  T2(_,Min adj,_) -> true
+	| (T2(Parser_c.TCommentSpace _,Ctx,_i)) -> true
+	| (T2 (Parser_c.TCommentNewline _,Ctx,_i)) -> false
+	| x -> is_minusable_comment_nocpp x in
+      let (minus,rest) = Common.span minus_or_comment_or_space_nocpp rest in
+      (match (minus,rest) with
+	([],_) -> a::outer_spaces@(drop_space_at_endline rest)
+      |	(_,(((T2 (Parser_c.TCommentNewline _,Ctx,_i)) as a) :: rest)) ->
+	  (* drop trailing spaces *)
+	  minus@a::(drop_space_at_endline rest)
+      |	_ -> a :: outer_spaces @ minus @ (drop_space_at_endline rest))
+  | a :: rest -> a :: drop_space_at_endline rest
+
+(* if a removed ( is between two tokens, then add a space *)
+let rec paren_to_space = function
+    [] -> []
+  | [x] -> [x]
+  | [x;y] -> [x;y]
+  | ((T2(_,Ctx,_)) as a)::((T2(t,Min _,_)) as b)::((T2(_,Ctx,_)) as c)::rest
+    when TH.str_of_tok t = "(" ->
+      a :: b :: (C2 " ") :: (paren_to_space (c :: rest))
+  | a :: rest -> a :: (paren_to_space rest)
 
 let rec add_space xs =
   match xs with
@@ -1127,6 +1155,8 @@ let pp_program2 xs outfile  =
               (* phase2: can now start to filter and adjust *)
               let (toks,tu) = adjust_indentation toks in
 	      let toks = adjust_before_semicolon toks in(*before remove minus*)
+	      let toks = drop_space_at_endline toks in
+	      let toks = paren_to_space toks in
               let toks = remove_minus_and_between_and_expanded_and_fake toks in
               (* assert Origin + Cocci + C and no minus *)
               let toks = add_space toks in

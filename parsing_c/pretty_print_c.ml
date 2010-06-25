@@ -92,7 +92,7 @@ let mk_pretty_printers
     | CondExpr (e1, e2, e3),    [i1;i2]    ->
         pp_expression e1; pr_space(); pr_elem i1; pr_space();
 	do_option (function x -> pp_expression x; pr_space()) e2; pr_elem i2;
-        pp_expression e3
+        pr_space(); pp_expression e3
     | Sequence (e1, e2),          [i]  ->
         pp_expression e1; pr_elem i; pr_space(); pp_expression e2
     | Assignment (e1, op, e2),    [i]  ->

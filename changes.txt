@@ -69,6 +69,8 @@
 - manage labels within do while 0 macros
 - added space after : in printing a conditional expression.  Thanks to Josh
   Triplett for noticing the problem.
+- dropped trailing whitespace when code at the end of a line is deleted.
+  Thanks to Josh Triplett for noticing the problem.
 
 * 0.2.2
 ** Language:

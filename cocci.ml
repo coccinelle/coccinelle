@@ -150,13 +150,15 @@ let fix_sgrep_diffs l =
 	then
 	  (match Str.split (Str.regexp " ") s with
 	    bef::min::pl::aft ->
-	      (match Str.split (Str.regexp ",") pl with
-		[n1;n2] ->
-		  let n2 = int_of_string n2 in
-		  (Printf.sprintf "%s %s %s,%d %s" bef min n1 (n2-n)
-		     (String.concat " " aft))
-		  :: loop1 0 ss
-	      | _ -> failwith "bad + line information")
+	      let (n1,n2) =
+		match Str.split (Str.regexp ",") pl with
+		  [n1;n2] -> (n1,n2)
+		| [n1] -> (n1,"1")
+		| _ -> failwith "bad + line information" in
+	      let n2 = int_of_string n2 in
+	      (Printf.sprintf "%s %s %s,%d %s" bef min n1 (n2-n)
+		 (String.concat " " aft))
+	      :: loop1 0 ss
 	  | _ -> failwith "bad @@ information")
 	else s :: loop1 n ss in
   let rec loop2 n = function
@@ -168,18 +170,21 @@ let fix_sgrep_diffs l =
 	then
 	  (match Str.split (Str.regexp " ") s with
 	    bef::min::pl::aft ->
-	      (match (Str.split (Str.regexp ",") min,
-		      Str.split (Str.regexp ",") pl) with
-		([_;m2],[n1;n2]) ->
-		  let n1 =
-		    int_of_string
-		      (String.sub n1 1 ((String.length n1)-1)) in
-		  let m2 = int_of_string m2 in
-		  let n2 = int_of_string n2 in
-		  (Printf.sprintf "%s %s +%d,%d %s" bef min (n1-n) n2
-		     (String.concat " " aft))
-		  :: loop2 (n+(m2-n2)) ss
-	      | _ -> failwith "bad -/+ line information")
+	      let (m2,n1,n2) =
+		match (Str.split (Str.regexp ",") min,
+		       Str.split (Str.regexp ",") pl) with
+		  ([_;m2],[n1;n2]) -> (m2,n1,n2)
+		| ([_],[n1;n2]) -> ("1",n1,n2)
+		| ([_;m2],[n1]) -> (m2,n1,"1")
+		| ([_],[n1]) -> ("1",n1,"1")
+		| _ -> failwith "bad -/+ line information" in
+	      let n1 =
+		int_of_string (String.sub n1 1 ((String.length n1)-1)) in
+	      let m2 = int_of_string m2 in
+	      let n2 = int_of_string n2 in
+	      (Printf.sprintf "%s %s +%d,%d %s" bef min (n1-n) n2
+		 (String.concat " " aft))
+	      :: loop2 (n+(m2-n2)) ss
 	  | _ -> failwith "bad @@ information")
 	else s :: loop2 n ss in
   loop2 0 (List.rev (loop1 0 l))
