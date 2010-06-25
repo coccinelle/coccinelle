@@ -778,7 +778,8 @@ let rec paren_to_space = function
   | [x] -> [x]
   | [x;y] -> [x;y]
   | ((T2(_,Ctx,_)) as a)::((T2(t,Min _,_)) as b)::((T2(_,Ctx,_)) as c)::rest
-    when TH.str_of_tok t = "(" ->
+    when not (is_whitespace a) && TH.str_of_tok t = "(" ->
+      simple_print_all_tokens2 [a;b;c];
       a :: b :: (C2 " ") :: (paren_to_space (c :: rest))
   | a :: rest -> a :: (paren_to_space rest)
 
