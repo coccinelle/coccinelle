@@ -302,8 +302,9 @@ one of these options can be specified.}
 
 \rare{-relax\_include\_path}{This option when combined with -all\_includes
   causes the search for local
-  include files to consider the directory specified using {\bf -I} if the
-  included file is not found in the current directory.}
+  include files to consider the current directory, even if the include
+  patch specifies a subdirectory.  This is really only useful for testing,
+  eg with the option {\bf -testall}}
 
 \section{Application of the semantic patch to the C code}
 
