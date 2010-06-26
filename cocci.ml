@@ -574,7 +574,8 @@ let (includes_to_parse:
 			interpret_include_path relpath
 		      else Some attempt2
 		  else
-		    interpret_include_path relpath
+		    if all_includes then interpret_include_path relpath
+		    else None
 
             | Ast_c.NonLocal xs ->
 		let relpath = Common.join "/" xs in
