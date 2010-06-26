@@ -562,14 +562,14 @@ let (includes_to_parse:
             | Ast_c.Local xs ->
 		let relpath = Common.join "/" xs in
 		let f = Filename.concat dir (relpath) in
-	      (* for our tests, all the files are flat in the current dir *)
 		if (Sys.file_exists f) then
 		  Some f
 		else
 		  if !Flag_cocci.relax_include_path
+	      (* for our tests, all the files are flat in the current dir *)
 		  then
 		    let attempt2 = Filename.concat dir (Common.last xs) in
-		      if not (Sys.file_exists f) && all_includes
+		      if not (Sys.file_exists attempt2) && all_includes
 		      then
 			interpret_include_path relpath
 		      else Some attempt2
