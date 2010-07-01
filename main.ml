@@ -863,6 +863,8 @@ let main_action xs =
 							   )
 		    with
 		      | Common.UnixExit x -> raise (Common.UnixExit x)
+		      |	Pycocci.Pycocciexception ->
+			  raise Pycocci.Pycocciexception
 		      | e ->
 			  (*pr2 "previous";
 			  pr2 s;
