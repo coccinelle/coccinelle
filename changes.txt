@@ -74,6 +74,8 @@
   Triplett for noticing the problem.
 - dropped trailing whitespace when code at the end of a line is deleted.
   Thanks to Josh Triplett for noticing the problem.
+- Fixed environment management when script rule uses cache.  Thanks to
+  Bissyande for finding the problem.
 
 * 0.2.2
 ** Language:
