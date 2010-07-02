@@ -36,9 +36,15 @@ SEXPLIB=sexplib.cma
 OPTSEXPLIB=sexplib.cmxa
 endif
 
+ifeq ("$(DYNLINK)","no")
+DYNLINK=
+else
+DYNLINK=dynlink.cma
+endif
+
 SEXPSYSCMA=bigarray.cma nums.cma
 
-SYSLIBS=str.cma unix.cma $(SEXPSYSCMA) $(PYCMA) dynlink.cma # threads.cma
+SYSLIBS=str.cma unix.cma $(SEXPSYSCMA) $(PYCMA) $(DYNLINK) # threads.cma
 LIBS=commons/commons.cma \
      commons/commons_sexp.cma \
      globals/globals.cma \
