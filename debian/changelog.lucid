@@ -1,3 +1,9 @@
+coccinelle (0.2.3rc5~1004npalix1) lucid; urgency=low
+
+  * New release 0.2.3rc5
+
+ -- Nicolas Palix <npalix@diku.dk>  Sat, 03 Jul 2010 00:16:57 +0200
+
 coccinelle (0.2.3rc4~1004npalix1) lucid; urgency=low
 
   * New release 0.2.3rc4
