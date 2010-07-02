@@ -76,6 +76,7 @@
   Thanks to Josh Triplett for noticing the problem.
 - Fixed environment management when script rule uses cache.  Thanks to
   Bissyande for finding the problem.
+- when false matches if with no else
 
 * 0.2.2
 ** Language:
