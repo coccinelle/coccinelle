@@ -130,7 +130,10 @@ and constraints =
   | NotExpCstrt    of expression list
   | SubExpCstrt    of Ast_cocci.meta_name list
 
-and listlen = Ast_cocci.meta_name mcode option
+and listlen =
+    MetaListLen of Ast_cocci.meta_name mcode
+  | CstListLen of int
+  | AnyListLen
 
 (* --------------------------------------------------------------------- *)
 (* Types *)

@@ -7,7 +7,7 @@ type info = Ast.meta_name * Ast0.pure * Data.clt
 type idinfo = Ast.meta_name * Data.iconstraints * Ast0.pure * Data.clt
 type expinfo = Ast.meta_name * Data.econstraints * Ast0.pure * Data.clt
 type tyinfo = Ast.meta_name * Ast0.typeC list * Ast0.pure * Data.clt
-type list_info = Ast.meta_name * Ast.meta_name option * Ast0.pure * Data.clt
+type list_info = Ast.meta_name * Ast.list_len * Ast0.pure * Data.clt
 type typed_expinfo =
     Ast.meta_name * Data.econstraints * Ast0.pure *
       Type_cocci.typeC list option * Data.clt
@@ -381,15 +381,20 @@ let create_metadec_ty ar ispure kindfn ids current_rule =
        ids)
 
 let create_len_metadec ar ispure kindfn lenid ids current_rule =
-  let lendec =
-    create_metadec Ast.NONE Ast0.Impure
-      (fun _ name _ check_meta -> check_meta(Ast.MetaListlenDecl(name)))
-      [lenid] current_rule in
-  let lenname =
-    match lendec with
-      [Common.Left (Ast.MetaListlenDecl(x))] -> x
-    | [Common.Right (Ast.MetaListlenDecl(x))] -> x
-    | _ -> failwith "unexpected length declaration" in
+  let (lendec,lenname) =
+    match lenid with
+      Common.Left lenid ->
+	let lendec =
+	  create_metadec Ast.NONE Ast0.Impure
+	    (fun _ name _ check_meta -> check_meta(Ast.MetaListlenDecl(name)))
+	    [lenid] current_rule in
+	let lenname =
+	  match lendec with
+	    [Common.Left (Ast.MetaListlenDecl(x))] -> Ast.MetaLen x
+	  | [Common.Right (Ast.MetaListlenDecl(x))] -> Ast.MetaLen x
+	  | _ -> failwith "unexpected length declaration" in
+	(lendec,lenname)
+    | Common.Right n -> ([],Ast.CstLen n) in
   lendec@(create_metadec ar ispure (kindfn lenname) ids current_rule)
 
 (* ---------------------------------------------------------------------- *)

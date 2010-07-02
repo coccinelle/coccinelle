@@ -325,11 +325,14 @@ let pp_meta_decl pr env decl =
   | Ast.MetaListlenDecl(name) -> ()
   | Ast.MetaParamDecl(ar, name) ->
       no_arity ar; pr "parameter "; pp_name name; pr ";\n"
-  | Ast.MetaParamListDecl(ar, name, None) ->
+  | Ast.MetaParamListDecl(ar, name, Ast.AnyLen) ->
       no_arity ar; pr "parameter list "; pp_name name; pr ";\n"
-  | Ast.MetaParamListDecl(ar, name, Some len) ->
+  | Ast.MetaParamListDecl(ar, name, Ast.MetaLen len) ->
       no_arity ar; pr "parameter list "; pp_name name;
       pr "["; pp_name len; pr "]"; pr ";\n"
+  | Ast.MetaParamListDecl(ar, name, Ast.CstLen len) ->
+      no_arity ar; pr "parameter list "; pr (string_of_int len);
+      pr "["; pr (string_of_int len); pr "]"; pr ";\n"
   | Ast.MetaConstDecl(ar, name, types) ->
       no_arity ar; pr "constant "; print_types pr env types;
       pp_name name; pr ";\n"
@@ -345,11 +348,14 @@ let pp_meta_decl pr env decl =
   | Ast.MetaLocalIdExpDecl(ar, name, types) ->
       no_arity ar; pr "local idexpression ";
       print_types pr env types; pp_name name; pr ";\n"
-  | Ast.MetaExpListDecl(ar, name, None) ->
+  | Ast.MetaExpListDecl(ar, name, Ast.AnyLen) ->
       no_arity ar; pr "parameter list "; pp_name name; pr ";\n"
-  | Ast.MetaExpListDecl(ar, name, Some len) ->
+  | Ast.MetaExpListDecl(ar, name, Ast.MetaLen len) ->
       no_arity ar; pr "parameter list ";
       pp_name name; pr "["; pp_name len; pr "]"; pr ";\n"
+  | Ast.MetaExpListDecl(ar, name, Ast.CstLen len) ->
+      no_arity ar; pr "parameter list ";
+      pp_name name; pr "["; pr (string_of_int len); pr "]"; pr ";\n"
   | Ast.MetaStmDecl(ar, name) ->
       no_arity ar; pr "statement "; pp_name name; pr ";\n"
   | Ast.MetaStmListDecl(ar, name) ->

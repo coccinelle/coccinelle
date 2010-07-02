@@ -345,11 +345,8 @@ and expression e =
 	  Ast.MetaErr(mcode name,constraints cstrts,unitary,false)
     | Ast0.MetaExpr(name,cstrts,ty,form,_)  ->
 	  Ast.MetaExpr(mcode name,constraints cstrts,unitary,ty,form,false)
-    | Ast0.MetaExprList(name,Some lenname,_) ->
-	Ast.MetaExprList(mcode name,Some (mcode lenname,unitary,false),
-			 unitary,false)
-    | Ast0.MetaExprList(name,None,_) ->
-	Ast.MetaExprList(mcode name,None,unitary,false)
+    | Ast0.MetaExprList(name,lenname,_) ->
+	Ast.MetaExprList(mcode name,do_lenname lenname,unitary,false)
     | Ast0.EComma(cm)         -> Ast.EComma(mcode cm)
     | Ast0.DisjExpr(_,exps,_,_)     ->
 	Ast.DisjExpr(List.map expression exps)
@@ -382,6 +379,11 @@ and constraints c =
     | Ast0.NotIdCstrt   idctrt -> Ast.NotIdCstrt idctrt
     | Ast0.NotExpCstrt  exps   -> Ast.NotExpCstrt (List.map expression exps)
     | Ast0.SubExpCstrt  ids    -> Ast.SubExpCstrt ids
+
+and do_lenname = function
+    Ast0.MetaListLen(nm) -> Ast.MetaListLen(mcode nm,unitary,false)
+  | Ast0.CstListLen n -> Ast.CstListLen n
+  | Ast0.AnyListLen -> Ast.AnyListLen
 
 (* --------------------------------------------------------------------- *)
 (* Types *)
@@ -574,11 +576,8 @@ and parameterTypeDef p =
     | Ast0.Param(ty,id) -> Ast.Param(typeC ty,get_option ident id)
     | Ast0.MetaParam(name,_) ->
 	Ast.MetaParam(mcode name,unitary,false)
-    | Ast0.MetaParamList(name,Some lenname,_) ->
-	Ast.MetaParamList(mcode name,Some(mcode lenname,unitary,false),
-			  unitary,false)
-    | Ast0.MetaParamList(name,None,_) ->
-	Ast.MetaParamList(mcode name,None,unitary,false)
+    | Ast0.MetaParamList(name,lenname,_) ->
+	Ast.MetaParamList(mcode name,do_lenname lenname,unitary,false)
     | Ast0.PComma(cm) -> Ast.PComma(mcode cm)
     | Ast0.Pdots(dots) -> Ast.Pdots(mcode dots)
     | Ast0.Pcircles(dots) -> Ast.Pcircles(mcode dots)

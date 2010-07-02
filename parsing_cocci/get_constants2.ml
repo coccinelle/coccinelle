@@ -244,9 +244,9 @@ let do_get_constants constants keywords env neg_pos =
 	bind (k e) (bind (minherited name) types)
     | Ast.MetaErr(name,_,_,_) | Ast.MetaExpr(name,_,_,_,_,_) ->
 	bind (k e) (minherited name)
-    | Ast.MetaExprList(name,None,_,_) -> minherited name
-    | Ast.MetaExprList(name,Some (lenname,_,_),_,_) ->
+    | Ast.MetaExprList(name,Ast.MetaListLen (lenname,_,_),_,_) ->
 	bind (k e) (bind (minherited name) (minherited lenname))
+    | Ast.MetaExprList(name,_,_,_) -> minherited name
     | Ast.SizeOfExpr(sizeof,exp) -> bind (keywords "sizeof") (k e)
     | Ast.SizeOfType(sizeof,lp,ty,rp) -> bind (keywords "sizeof") (k e)
     | Ast.NestExpr(starter,expr_dots,ender,wc,false) -> option_default
@@ -298,9 +298,9 @@ let do_get_constants constants keywords env neg_pos =
     match Ast.unwrap p with
       Ast.OptParam(param) -> option_default
     | Ast.MetaParam(name,_,_) -> bind (k p) (minherited name)
-    | Ast.MetaParamList(name,None,_,_) -> bind (k p) (minherited name)
-    | Ast.MetaParamList(name,Some(lenname,_,_),_,_) ->
+    | Ast.MetaParamList(name,Ast.MetaListLen(lenname,_,_),_,_) ->
 	bind (minherited name) (bind (minherited lenname) (k p))
+    | Ast.MetaParamList(name,_,_,_) -> bind (k p) (minherited name)
     | _ -> k p in
 
   let rule_elem r k re =
