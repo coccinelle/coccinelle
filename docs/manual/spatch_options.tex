@@ -263,11 +263,13 @@ stored in a cache.
 
 \normal{-macro\_file $\langle$file$\rangle$}{
   Extra macro definitions to be taken into account when parsing the C
-  files.}
+  files.  This uses the provided macro definitions in addition to those in
+  the default macro file.}
 
 \normal{-macro\_file\_builtins $\langle$file$\rangle$}{
   Builtin macro definitions to be taken into account when parsing the C
-  files.}
+  files.  This causes the macro definitions provided in the default macro
+  file to be ignored and the ones in the specified file to be used instead.}
 
 \rare{-ifdef\_to\_if,-no\_ifdef\_to\_if}{
 The option {\bf -ifdef\_to\_if}
