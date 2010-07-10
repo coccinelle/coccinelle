@@ -761,15 +761,18 @@ let rec drop_space_at_endline = function
       let minus_or_comment_or_space_nocpp = function
 	  T2(_,Min adj,_) -> true
 	| (T2(Parser_c.TCommentSpace _,Ctx,_i)) -> true
-	| (T2 (Parser_c.TCommentNewline _,Ctx,_i)) -> false
-	| x -> is_minusable_comment_nocpp x in
+	| (T2(Parser_c.TCommentNewline _,Ctx,_i)) -> false
+	| x -> false in
       let (minus,rest) = Common.span minus_or_comment_or_space_nocpp rest in
-      (match (minus,rest) with
-	([],_) -> a::outer_spaces@(drop_space_at_endline rest)
-      |	(_,(((T2 (Parser_c.TCommentNewline _,Ctx,_i)) as a) :: rest)) ->
-	  (* drop trailing spaces *)
-	  minus@a::(drop_space_at_endline rest)
-      |	_ -> a :: outer_spaces @ minus @ (drop_space_at_endline rest))
+      let fail _ = a :: outer_spaces @ minus @ (drop_space_at_endline rest) in
+      if List.exists (function T2(_,Min adj,_) -> true | _ -> false) minus
+      then
+	match rest with
+	  ((T2(Parser_c.TCommentNewline _,Ctx,_i)) as a)::rest ->
+	    (* drop trailing spaces *)
+	    minus@a::(drop_space_at_endline rest)
+	| _ -> fail()
+      else fail()
   | a :: rest -> a :: drop_space_at_endline rest
 
 (* if a removed ( is between two tokens, then add a space *)
