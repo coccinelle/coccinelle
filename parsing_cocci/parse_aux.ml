@@ -478,35 +478,30 @@ let seq lb s rb =
 
 (* ---------------------------------------------------------------------- *)
 
+let check_rule_name = function
+    Some nm ->
+      let n = id2name nm in
+      (try let _ =  Hashtbl.find Data.all_metadecls n in
+      raise (Semantic_cocci.Semantic ("repeated rule name"))
+      with Not_found -> Some n)
+  | None -> None
+
 let make_iso_rule_name_result n =
-    (try let _ =  Hashtbl.find Data.all_metadecls n in
-    raise (Semantic_cocci.Semantic ("repeated rule name"))
-    with Not_found -> ());
-    Ast.CocciRulename (Some n,Ast.NoDep,[],[],Ast.Undetermined,false (*discarded*))
+  (try let _ =  Hashtbl.find Data.all_metadecls n in
+  raise (Semantic_cocci.Semantic ("repeated rule name"))
+  with Not_found -> ());
+  Ast.CocciRulename
+    (Some n,Ast.NoDep,[],[],Ast.Undetermined,false (*discarded*))
 
 let make_cocci_rule_name_result nm d i a e ee =
-  match nm with
-    Some nm ->
-      let n = id2name nm in
-      (try let _ =  Hashtbl.find Data.all_metadecls n in
-      raise (Semantic_cocci.Semantic ("repeated rule name"))
-      with Not_found -> ());
-      Ast.CocciRulename (Some n,d,i,a,e,ee)
-  | None -> Ast.CocciRulename (None,d,i,a,e,ee)
+  Ast.CocciRulename (check_rule_name nm,d,i,a,e,ee)
 
 let make_generated_rule_name_result nm d i a e ee =
-  match nm with
-    Some nm ->
-      let n = id2name nm in
-      (try let _ =  Hashtbl.find Data.all_metadecls n in
-      raise (Semantic_cocci.Semantic ("repeated rule name"))
-      with Not_found -> ());
-      Ast.GeneratedRulename (Some n,d,i,a,e,ee)
-  | None -> Ast.GeneratedRulename (None,d,i,a,e,ee)
+  Ast.GeneratedRulename (check_rule_name nm,d,i,a,e,ee)
 
-let make_script_rule_name_result lang deps =
+let make_script_rule_name_result lang nm deps =
   let l = id2name lang in
-  Ast.ScriptRulename (None,l,deps)
+  Ast.ScriptRulename (check_rule_name nm,l,deps)
 
 let make_initial_script_rule_name_result lang deps =
   let l = id2name lang in

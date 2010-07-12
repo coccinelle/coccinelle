@@ -146,12 +146,8 @@ let token2c (tok,_) =
       |	Ast.SupEq -> ">="
       |	_ -> failwith "not possible")
       ^(line_type2c clt)
-  | PC.TShOp(op,clt) ->
-      (match op with
-	Ast.DecLeft -> "<<"
-      |	Ast.DecRight -> ">>"
-      |	_ -> failwith "not possible")
-      ^(line_type2c clt)
+  | PC.TShLOp(op,clt) -> "<<"^(line_type2c clt)
+  | PC.TShROp(op,clt) -> ">>"^(line_type2c clt)
   | PC.TPlus(clt) -> "+"^(line_type2c clt)
   | PC.TMinus(clt) -> "-"^(line_type2c clt)
   | PC.TMul(clt) -> "*"^(line_type2c clt)
@@ -288,7 +284,8 @@ let plus_attachable only_plus (tok,_) =
   | PC.TOrLog(clt) | PC.TAndLog(clt) | PC.TOr(clt) | PC.TXor(clt)
   | PC.TAnd (clt) | PC.TEqEq(clt) | PC.TNotEq(clt) | PC.TTildeEq(clt)
   | PC.TLogOp(_,clt)
-  | PC.TShOp(_,clt) | PC.TPlus(clt) | PC.TMinus(clt) | PC.TMul(clt)
+  | PC.TShLOp(_,clt) | PC.TShROp(_,clt)
+  | PC.TPlus(clt) | PC.TMinus(clt) | PC.TMul(clt)
   | PC.TDmOp(_,clt) | PC.TTilde (clt)
 
   | PC.TMetaParam(_,_,clt) | PC.TMetaParamList(_,_,_,clt)
@@ -355,7 +352,8 @@ let get_clt (tok,_) =
   | PC.TOrLog(clt) | PC.TAndLog(clt) | PC.TOr(clt) | PC.TXor(clt)
   | PC.TAnd (clt) | PC.TEqEq(clt) | PC.TNotEq(clt) | PC.TTildeEq(clt)
   | PC.TSub(clt) | PC.TLogOp(_,clt)
-  | PC.TShOp(_,clt) | PC.TPlus(clt) | PC.TMinus(clt) | PC.TMul(clt)
+  | PC.TShLOp(_,clt) | PC.TShROp(_,clt)
+  | PC.TPlus(clt) | PC.TMinus(clt) | PC.TMul(clt)
   | PC.TDmOp(_,clt) | PC.TTilde (clt)
 
   | PC.TMetaParam(_,_,clt) | PC.TMetaParamList(_,_,_,clt)
@@ -458,7 +456,8 @@ let update_clt (tok,x) clt =
   | PC.TTildeEq(_) -> (PC.TTildeEq(clt),x)
   | PC.TSub(_) -> (PC.TSub(clt),x)
   | PC.TLogOp(op,_) -> (PC.TLogOp(op,clt),x)
-  | PC.TShOp(op,_) -> (PC.TShOp(op,clt),x)
+  | PC.TShLOp(op,_) -> (PC.TShLOp(op,clt),x)
+  | PC.TShROp(op,_) -> (PC.TShROp(op,clt),x)
   | PC.TPlus(_) -> (PC.TPlus(clt),x)
   | PC.TMinus(_) -> (PC.TMinus(clt),x)
   | PC.TMul(_) -> (PC.TMul(clt),x)
@@ -652,7 +651,8 @@ let split_token ((tok,_) as t) =
   | PC.TOrLog(clt) | PC.TAndLog(clt) | PC.TOr(clt) | PC.TXor(clt)
   | PC.TAnd (clt) | PC.TEqEq(clt) | PC.TNotEq(clt) | PC.TTildeEq(clt)
   | PC.TTildeExclEq(clt) | PC.TSub(clt) | PC.TLogOp(_,clt)
-  | PC.TShOp(_,clt) | PC.TPlus(clt) | PC.TMinus(clt) | PC.TMul(clt)
+  | PC.TShLOp(_,clt) | PC.TShROp(_,clt)
+  | PC.TPlus(clt) | PC.TMinus(clt) | PC.TMul(clt)
   | PC.TDmOp(_,clt) | PC.TTilde (clt) -> split t clt
 
   | PC.TOBrace(clt) | PC.TCBrace(clt) | PC.TOInit(clt) -> split t clt
@@ -852,7 +852,8 @@ let token2line (tok,_) =
 
   | PC.TOrLog(clt) | PC.TAndLog(clt) | PC.TOr(clt) | PC.TXor(clt)
   | PC.TAnd (clt) | PC.TEqEq(clt) | PC.TNotEq(clt) | PC.TLogOp(_,clt)
-  | PC.TShOp(_,clt) | PC.TPlus(clt) | PC.TMinus(clt) | PC.TMul(clt)
+  | PC.TShLOp(_,clt) | PC.TShROp(_,clt)
+  | PC.TPlus(clt) | PC.TMinus(clt) | PC.TMul(clt)
   | PC.TDmOp(_,clt) | PC.TTilde (clt)
 
   | PC.TMetaParam(_,_,clt) | PC.TMetaParamList(_,_,_,clt)
@@ -1355,8 +1356,8 @@ let get_rule_name parse_fn starts_with_name get_tokens file prefix =
           Ast.CocciRulename (check_name nm,a,b,c,d,e)
       | Ast.GeneratedRulename (nm,a,b,c,d,e) ->
           Ast.GeneratedRulename (check_name nm,a,b,c,d,e)
-      | Ast.ScriptRulename(_,s,deps) ->
-	  Ast.ScriptRulename(check_name None,s,deps)
+      | Ast.ScriptRulename(nm,s,deps) ->
+	  Ast.ScriptRulename(check_name nm,s,deps)
       | Ast.InitialScriptRulename(_,s,deps) ->
 	  Ast.InitialScriptRulename(check_name None,s,deps)
       | Ast.FinalScriptRulename(_,s,deps) ->
@@ -1522,6 +1523,7 @@ let parse file =
 
           let parse_cocci_rule ruletype old_metas
 	      (rule_name, dependencies, iso, dropiso, exists, is_expression) =
+	    let dropiso = !Flag_parsing_cocci.disabled_isos @ dropiso in
             Ast0.rule_name := rule_name;
             Data.inheritable_positions :=
 		rule_name :: !Data.inheritable_positions;
@@ -1617,6 +1619,17 @@ let parse file =
 	      Data.call_in_meta
 		(function _ ->
 		  get_script_metavars PC.script_meta_main table file lexbuf) in
+	    let (metavars,fresh_metavars) =
+	      List.fold_left
+		(function (metavars,fresh_metavars) ->
+		  function
+		      (script_var,Some(parent,var)) ->
+			((script_var,parent,var) :: metavars, fresh_metavars)
+		    | (script_var,None) ->
+			(metavars, script_var :: fresh_metavars))
+		([],[]) metavars in
+	    let metavars = List.rev metavars in
+	    let fresh_metavars = List.rev fresh_metavars in
 (*
             let exists_in old_metas (py,(r,m)) =
 	      r = "virtual" or
@@ -1638,7 +1651,9 @@ let parse file =
               (* script code *)
             let (more, tokens) = get_tokens [PC.TArobArob; PC.TArob] in
             let data = collect_script_tokens tokens in
-            (more,Ast0.ScriptRule(name, language, deps, metavars, data),
+            (more,
+	     Ast0.ScriptRule(name, language, deps, metavars,
+			     fresh_metavars, data),
 	     [],tokens) in
 
           let parse_if_script_rule k name language _ deps =
@@ -1759,7 +1774,9 @@ let process file isofile verbose =
   let parsed =
     List.map
       (function
-          Ast0.ScriptRule (a,b,c,d,e) ->
+          Ast0.ScriptRule (a,b,c,d,fv,e) ->
+	    (if not (fv = [])
+	    then failwith "fresh variables in script not supported");
 	    [([],Ast.ScriptRule (a,b,c,d,e))]
 	| Ast0.InitialScriptRule(a,b,c,d) ->
 	    [([],Ast.InitialScriptRule (a,b,c,d))]

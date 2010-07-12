@@ -72,7 +72,7 @@ module P = Parse_aux
 %token <Data.clt> TAnd
 %token <Data.clt> TEqEq TNotEq TTildeEq TTildeExclEq TSub
 %token <Ast_cocci.logicalOp * Data.clt> TLogOp /* TInf TSup TInfEq TSupEq */
-%token <Ast_cocci.arithOp * Data.clt>   TShOp  /* TShl TShr */
+%token <Ast_cocci.arithOp * Data.clt>   TShLOp TShROp  /* TShl TShr */
 %token <Ast_cocci.arithOp * Data.clt>   TDmOp  /* TDiv TMod */
 %token <Data.clt> TPlus TMinus
 %token <Data.clt> TMul TTilde
@@ -104,7 +104,7 @@ module P = Parse_aux
 %left TAnd
 %left TEqEq TNotEq
 %left TLogOp /* TInf TSup TInfEq TSupEq */
-%left TShOp /* TShl TShr */
+%left TShLOp TShROp /* TShl TShr */
 %left TPlus TMinus
 %left TMul TDmOp /* TDiv TMod */
 
@@ -137,7 +137,7 @@ rule_name
 %start meta_main
 %type <(Ast_cocci.metavar,Ast_cocci.metavar) Common.either list> meta_main
 
-%start <(string option (*string*) * string option (*ast*)) * Ast_cocci.meta_name * Ast_cocci.metavar> script_meta_main
+%start <(string option (*string*) * string option (*ast*)) * (Ast_cocci.meta_name * Ast_cocci.metavar) option> script_meta_main
 
 %start iso_main
 %type <Ast0_cocci.anything list list> iso_main
@@ -186,8 +186,8 @@ rule_name:
       /* these rules have no name as a cheap way to ensure that no normal
       rule inherits their metavariables or depends on them */
       { P.make_generated_rule_name_result None d i a e ee }
-  | TScript TDotDot lang=pure_ident d=depends TArob
-      { P.make_script_rule_name_result lang d }
+  | TScript TDotDot lang=pure_ident nm=ioption(pure_ident) d=depends TArob
+      { P.make_script_rule_name_result lang nm d }
   | TInitialize TDotDot lang=pure_ident d=depends TArob
       { P.make_initial_script_rule_name_result lang d }
   | TFinalize TDotDot lang=pure_ident d=depends TArob
@@ -1285,7 +1285,9 @@ arith_expr(r,pe):
       { P.arith_op Ast.Plus $1 $2 $3 }
   | arith_expr(r,pe) TMinus  arith_expr(r,pe)
       { P.arith_op Ast.Minus $1 $2 $3 }
-  | arith_expr(r,pe) TShOp    arith_expr(r,pe)
+  | arith_expr(r,pe) TShLOp    arith_expr(r,pe)
+      { let (op,clt) = $2 in P.arith_op op $1 clt $3 }
+  | arith_expr(r,pe) TShROp    arith_expr(r,pe)
       { let (op,clt) = $2 in P.arith_op op $1 clt $3 }
   | arith_expr(r,pe) TLogOp    arith_expr(r,pe)
       { let (op,clt) = $2 in P.logic_op op $1 clt $3 }
@@ -2028,26 +2030,22 @@ never_used: TPragma { () }
   | TScriptData     { () }
 
 script_meta_main:
-  py=pure_ident script_name_decl
-  { let (nm,mv) = $2 in
-    ((Some (P.id2name py), None), nm, mv) }
-  | TOPar TUnderscore TComma ast=pure_ident TCPar script_name_decl
-  { let (nm,mv) = $6 in
-    ((None, Some (P.id2name ast)), nm, mv) }
-  | TOPar str=pure_ident TComma TUnderscore TCPar script_name_decl
-  { let (nm,mv) = $6 in
-    ((Some (P.id2name str), None), nm, mv) }
-  | TOPar str=pure_ident TComma ast=pure_ident TCPar script_name_decl
-  { let (nm,mv) = $6 in
-    ((Some (P.id2name str), Some (P.id2name ast)), nm, mv) }
+  py=pure_ident option(script_name_decl) TMPtVirg
+  { ((Some (P.id2name py), None), $2) }
+  | TOPar TUnderscore TComma ast=pure_ident TCPar script_name_decl TMPtVirg
+  { ((None, Some (P.id2name ast)), Some $6) }
+  | TOPar str=pure_ident TComma TUnderscore TCPar script_name_decl TMPtVirg
+  { ((Some (P.id2name str), None), Some $6) }
+  | TOPar str=pure_ident TComma ast=pure_ident TCPar script_name_decl TMPtVirg
+  { ((Some (P.id2name str), Some (P.id2name ast)), Some $6) }
 
 script_name_decl:
-    TShOp TRuleName TDot cocci=pure_ident TMPtVirg
+    TShLOp TRuleName TDot cocci=pure_ident
       { let nm = P.id2name cocci in
         let mv = Parse_aux.lookup $2 nm in
         (($2, nm), mv) }
-  | TShOp TVirtual TDot cocci=pure_ident TMPtVirg
+  | TShLOp TVirtual TDot cocci=pure_ident
       { let nm = P.id2name cocci in
         let name = ("virtual", nm) in
         let mv = Ast.MetaIdDecl(Ast.NONE,name) in
-	(name,mv) }
+        (name,mv) }

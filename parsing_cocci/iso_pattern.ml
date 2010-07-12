@@ -2019,7 +2019,7 @@ let do_nothing x = x
 
 let mkdisj matcher metavars alts e instantiater mkiso disj_maker minusify
     rebuild_mcodes name printer extra_plus update_others has_context =
-  let call_instantiate bindings mv_bindings alts has_context =
+  let call_instantiate bindings mv_bindings alts pattern has_context =
     List.concat
       (List.map
 	 (function (a,_,_,_) ->
@@ -2034,6 +2034,9 @@ let mkdisj matcher metavars alts e instantiater mkiso disj_maker minusify
 		    then
 		      copy_plus printer minusify e (extra_plus e instantiated)
 		    else instantiated in
+		  if pattern = a
+		  then plus_added
+		  else (* iso tracking *)
 		  Ast0.set_iso plus_added
 		    ((name,mkiso a)::(Ast0.get_iso e))) (* keep count, not U *)
 		bindings))
@@ -2077,7 +2080,7 @@ let mkdisj matcher metavars alts e instantiater mkiso disj_maker minusify
 		  make_new_metavars metavars (nub(List.concat bindings)) in
 		Common.Right
 		  (new_metavars,
-		   call_instantiate bindings mv_bindings all_alts
+		   call_instantiate bindings mv_bindings all_alts pattern
 		     (has_context pattern)))) in
   let rec outer_loop prev_ecount prev_icount prev_dcount = function
       [] | [[_]] (*only one alternative*)  -> (0,[],e) (* nothing matched *)

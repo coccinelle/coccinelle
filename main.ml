@@ -467,6 +467,11 @@ let other_options = [
     "   disable limit on max depth of iso application";
     "-track_iso", Arg.Set Flag.track_iso_usage,
     "   gather information about isomorphism usage";
+    "-disable_iso",
+    Arg.String
+    (fun s -> Flag_parsing_cocci.disabled_isos :=
+      s :: !Flag_parsing_cocci.disabled_isos),
+    "   disable a specific isomorphism";
     "-profile_iso",
     Arg.Unit
     (function () ->

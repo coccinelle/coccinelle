@@ -628,9 +628,9 @@ rule token = parse
   | "||"           { start_line true; TOrLog  (get_current_line_type lexbuf) }
 
   | ">>"           { start_line true;
-		     TShOp(Ast.DecRight,get_current_line_type lexbuf) }
+		     TShROp(Ast.DecRight,get_current_line_type lexbuf) }
   | "<<"           { start_line true;
-		     TShOp(Ast.DecLeft,get_current_line_type lexbuf) }
+		     TShLOp(Ast.DecLeft,get_current_line_type lexbuf) }
 
   | "&"            { start_line true; TAnd    (get_current_line_type lexbuf) }
   | "^"            { start_line true; TXor(get_current_line_type lexbuf) }
