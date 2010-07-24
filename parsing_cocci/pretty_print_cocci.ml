@@ -821,7 +821,7 @@ let unparse z =
       script_header "initialize" lang deps code
   | Ast.FinalScriptRule (name,lang,deps,code) ->
       script_header "finalize" lang deps code
-  | Ast.ScriptRule (name,lang,deps,bindings,code) ->
+  | Ast.ScriptRule (name,lang,deps,bindings,script_vars,code) ->
       script_header "script" lang deps code
   | Ast.CocciRule (nm, (deps, drops, exists), x, _, _) ->
       print_string "@@";

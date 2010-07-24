@@ -1619,17 +1619,25 @@ let parse file =
 	      Data.call_in_meta
 		(function _ ->
 		  get_script_metavars PC.script_meta_main table file lexbuf) in
-	    let (metavars,fresh_metavars) =
+	    let (metavars,script_metavars) =
 	      List.fold_left
-		(function (metavars,fresh_metavars) ->
+		(function (metavars,script_metavars) ->
 		  function
 		      (script_var,Some(parent,var)) ->
-			((script_var,parent,var) :: metavars, fresh_metavars)
-		    | (script_var,None) ->
-			(metavars, script_var :: fresh_metavars))
+			((script_var,parent,var) :: metavars, script_metavars)
+		    | ((Some script_var,None),None) ->
+			(metavars, (name,script_var) :: script_metavars)
+		    | _ -> failwith "not possible")
 		([],[]) metavars in
 	    let metavars = List.rev metavars in
-	    let fresh_metavars = List.rev fresh_metavars in
+	    let script_metavars = List.rev script_metavars in
+
+	    Hashtbl.add Data.all_metadecls name
+	      (List.map (function x -> Ast.MetaIdDecl(Ast.NONE,x))
+		 script_metavars);
+	    Hashtbl.add Lexer_cocci.rule_names name ();
+	    (*TODOHashtbl.add Lexer_cocci.all_metavariables name script_metavars;*)
+
 (*
             let exists_in old_metas (py,(r,m)) =
 	      r = "virtual" or
@@ -1653,7 +1661,7 @@ let parse file =
             let data = collect_script_tokens tokens in
             (more,
 	     Ast0.ScriptRule(name, language, deps, metavars,
-			     fresh_metavars, data),
+			     script_metavars, data),
 	     [],tokens) in
 
           let parse_if_script_rule k name language _ deps =
@@ -1775,9 +1783,7 @@ let process file isofile verbose =
     List.map
       (function
           Ast0.ScriptRule (a,b,c,d,fv,e) ->
-	    (if not (fv = [])
-	    then failwith "fresh variables in script not supported");
-	    [([],Ast.ScriptRule (a,b,c,d,e))]
+	    [([],Ast.ScriptRule (a,b,c,d,fv,e))]
 	| Ast0.InitialScriptRule(a,b,c,d) ->
 	    [([],Ast.InitialScriptRule (a,b,c,d))]
 	| Ast0.FinalScriptRule (a,b,c,d) ->

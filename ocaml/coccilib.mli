@@ -18,7 +18,7 @@ type param_type =
   | ExprList of Ast_c.argument Ast_c.wrap2 list
   | Stmt of Ast_c.statement
 
-val fcts : (string, param_type list -> unit) Hashtbl.t
+val fcts : (string, param_type list -> string ref list -> unit) Hashtbl.t
 
 (* ---------------------------------------------------------------------- *)
 (* Match management *)

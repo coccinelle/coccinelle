@@ -83,7 +83,8 @@ let pycocci_get_class_type fqn =
 
 let pycocci_instantiate_class fqn args =
   let class_type = pycocci_get_class_type fqn in
-  let obj = pyeval_callobject(class_type, args) in
+  let obj =
+    pyeval_callobjectwithkeywords(class_type, args, pynull()) in
   check_return_value obj;
   obj
 
@@ -200,6 +201,11 @@ let build_variable name value =
   check_int_return_value
     (pydict_setitemstring(pymodule_getdict mx, name, value))
 
+let get_variable name =
+  let mx = !coccinelle_module in
+  pystring_asstring
+    (pyobject_str(pydict_getitemstring(pymodule_getdict mx, name)))
+
 let contains_binding e (_,(r,m),_) =
   try
     let _ = List.find (function ((re, rm), _) -> r =*= re && m =$= rm) e in
@@ -252,11 +258,27 @@ let construct_variables mv e =
        let _ = build_variable py pylocs in
        ()
     | Some (_,binding) ->
-       let _ = build_variable py (pystring_fromstring (Pycocci_aux.stringrep binding))
-       in ()
+       let _ =
+	 build_variable py
+	   (pystring_fromstring (Pycocci_aux.stringrep binding)) in
+       ()
     ) mv;
 
   ()
+
+let construct_script_variables mv =
+  List.iter
+    (function (_,py) ->
+      let vl =
+	let str = pystring_fromstring "initial value" in
+	pycocci_instantiate_class "coccilib.elems.Identifier"
+	  (pytuple_fromsingle (str)) in
+      let _ = build_variable py vl in
+      ())
+    mv
+
+let retrieve_script_variables mv =
+  List.map (function (_,py) -> get_variable py) mv
 
 let set_coccifile cocci_file =
 	cocci_file_name := cocci_file;

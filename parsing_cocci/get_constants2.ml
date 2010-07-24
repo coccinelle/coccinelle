@@ -533,7 +533,7 @@ let run rules neg_pos_vars =
     List.fold_left
       (function (rest_info,in_plus,env,locals(*dom of env*)) ->
         function
-	    (Ast.ScriptRule (_,_,deps,mv,_),_) ->
+	    (Ast.ScriptRule (nm,_,deps,mv,_,_),_) ->
 	      let extra_deps =
 		List.fold_left
 		  (function prev ->
@@ -543,7 +543,7 @@ let run rules neg_pos_vars =
 		      else Ast.AndDep (Ast.Dep rule,prev))
 		  deps mv in
 	      (match dependencies env extra_deps with
-		False -> (rest_info, in_plus, env, locals)
+		False -> (rest_info, in_plus, (nm,True)::env, nm::locals)
 	      | dependencies ->
 		  (build_or dependencies rest_info, in_plus, env, locals))
           | (Ast.InitialScriptRule (_,_,deps,_),_)

@@ -524,7 +524,8 @@ and rule =
 	top_level list * bool list (* true if generates an exp *) * ruletype
   | ScriptRule of string (* name *) *
       string * dependency *
-	(script_meta_name * meta_name * metavar) list * string
+	(script_meta_name * meta_name * metavar) list *
+	meta_name list (*script vars*) * string
   | InitialScriptRule of  string (* name *) *
 	string * dependency * string
   | FinalScriptRule of  string (* name *) *

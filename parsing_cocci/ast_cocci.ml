@@ -551,7 +551,8 @@ and rule =
   | ScriptRule of string (* name *) *
       (* metaname for python (untyped), metavar for ocaml (typed) *)
       string * dependency *
-	(script_meta_name * meta_name * metavar) list * string
+	(script_meta_name * meta_name * metavar) list (*inherited vars*) *
+	meta_name list (*script vars*) * string
   | InitialScriptRule of  string (* name *) *
 	string (*language*) * dependency * string (*code*)
   | FinalScriptRule of  string (* name *) *

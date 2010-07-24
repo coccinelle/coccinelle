@@ -19,7 +19,7 @@ type param_type =
   | ExprList of Ast_c.argument Ast_c.wrap2 list
   | Stmt of Ast_c.statement
 
-let fcts : (string, param_type list -> unit) Hashtbl.t =
+let fcts : (string, param_type list -> string ref list -> unit) Hashtbl.t =
   Hashtbl.create 11 (* Use prime number *)
 
 (* ---------------------------------------------------------------------- *)

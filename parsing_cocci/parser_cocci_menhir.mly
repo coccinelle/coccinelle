@@ -2030,8 +2030,10 @@ never_used: TPragma { () }
   | TScriptData     { () }
 
 script_meta_main:
-  py=pure_ident option(script_name_decl) TMPtVirg
-  { ((Some (P.id2name py), None), $2) }
+    py=pure_ident TMPtVirg
+  { ((Some (P.id2name py), None), None) }
+  | py=pure_ident script_name_decl TMPtVirg
+  { ((Some (P.id2name py), None), Some $2) }
   | TOPar TUnderscore TComma ast=pure_ident TCPar script_name_decl TMPtVirg
   { ((None, Some (P.id2name ast)), Some $6) }
   | TOPar str=pure_ident TComma TUnderscore TCPar script_name_decl TMPtVirg

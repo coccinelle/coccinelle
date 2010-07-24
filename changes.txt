@@ -13,6 +13,14 @@
 - Add more information in documentation, man pages and wiki
 
 
+* 0.2.4
+** Language:
+- scripts now have names and can declare metavariables that are seen by
+  SmPL as identifier metavariables, see demos/{python,ocaml}tococci.cocci
+** Features:
+- compatability with Python 2.7.  Thanks to Richard W.M. Jones for pointing
+  out the problem
+** Bugfix:
 * 0.2.3
 ** Language:
 - <= constraints relating an expression metavariable to one or more
