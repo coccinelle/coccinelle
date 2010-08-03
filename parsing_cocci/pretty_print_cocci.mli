@@ -3,6 +3,7 @@ val unparse_to_string : Ast_cocci.rule -> string
 val expression : Ast_cocci.expression -> unit
 val ident : Ast_cocci.ident -> unit
 val ident_to_string : Ast_cocci.ident -> string
+val declaration : Ast_cocci.declaration -> unit
 val statement : string -> Ast_cocci.statement -> unit
 val statement_dots : Ast_cocci.statement Ast_cocci.dots -> unit
 val rule_elem : string -> Ast_cocci.rule_elem -> unit

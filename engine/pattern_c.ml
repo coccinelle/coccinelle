@@ -264,15 +264,17 @@ module XMATCH = struct
     in
     tag_mck_pos_mcode mcode posmck x tin
 
-  let distrf_e    = distrf (Lib_parsing_c.ii_of_expr)
-  let distrf_args = distrf (Lib_parsing_c.ii_of_args)
-  let distrf_type = distrf (Lib_parsing_c.ii_of_type)
-  let distrf_param = distrf (Lib_parsing_c.ii_of_param)
+  let distrf_e      = distrf (Lib_parsing_c.ii_of_expr)
+  let distrf_args   = distrf (Lib_parsing_c.ii_of_args)
+  let distrf_type   = distrf (Lib_parsing_c.ii_of_type)
+  let distrf_param  = distrf (Lib_parsing_c.ii_of_param)
   let distrf_params = distrf (Lib_parsing_c.ii_of_params)
-  let distrf_ini   = distrf (Lib_parsing_c.ii_of_ini)
+  let distrf_ini    = distrf (Lib_parsing_c.ii_of_ini)
+  let distrf_decl   = distrf (Lib_parsing_c.ii_of_decl)
+  let distrf_field  = distrf (Lib_parsing_c.ii_of_field)
   let distrf_node   = distrf (Lib_parsing_c.ii_of_node)
-  let distrf_struct_fields   = distrf (Lib_parsing_c.ii_of_struct_fields)
-  let distrf_cst = distrf (Lib_parsing_c.ii_of_cst)
+  let distrf_struct_fields = distrf (Lib_parsing_c.ii_of_struct_fields)
+  let distrf_cst    = distrf (Lib_parsing_c.ii_of_cst)
   let distrf_define_params = distrf (Lib_parsing_c.ii_of_define_params)
 
 
@@ -397,6 +399,18 @@ module XMATCH = struct
 		   then Lib_parsing_c.al_arguments a
 		   else Lib_parsing_c.semi_al_arguments a))
 		
+          | Ast_c.MetaDeclVal a ->
+	      success
+		(Ast_c.MetaDeclVal
+		   (if strip
+		   then Lib_parsing_c.al_declaration a
+		   else Lib_parsing_c.semi_al_declaration a))
+          | Ast_c.MetaFieldVal a ->
+	      success
+		(Ast_c.MetaFieldVal
+		   (if strip
+		   then Lib_parsing_c.al_field a
+		   else Lib_parsing_c.semi_al_field a))
           | Ast_c.MetaStmtVal a ->
 	      success
 		(Ast_c.MetaStmtVal

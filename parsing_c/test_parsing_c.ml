@@ -33,11 +33,11 @@ let test_parse_gen xs ext =
   Flag_parsing_c.debug_etdt := false;
   Flag_parsing_c.filter_msg := true;
 
-  let dirname_opt =
+  (*let dirname_opt =
     match xs with
     | [x] when is_directory x -> Some x
     | _ -> None
-  in
+  in*)
 
   (* old:
      let xs = if !Flag.dir then

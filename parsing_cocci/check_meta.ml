@@ -200,7 +200,9 @@ and typeC old_metas table minus t =
 
 and declaration context old_metas table minus d =
   match Ast0.unwrap d with
-    Ast0.Init(stg,ty,id,eq,ini,sem) ->
+    Ast0.MetaDecl(name,_) | Ast0.MetaField(name,_) ->
+      check_table table minus name
+  | Ast0.Init(stg,ty,id,eq,ini,sem) ->
       (match Ast0.unwrap ini with
 	Ast0.InitExpr exp ->
 	  typeC old_metas table minus ty;

@@ -16,7 +16,7 @@ module P = Parse_aux
 %token EOF
 
 %token TIdentifier TExpression TStatement TFunction TLocal TType TParameter
-%token TIdExpression TInitialiser
+%token TIdExpression TInitialiser TDeclaration TField
 %token Tlist TFresh TConstant TError TWords TWhy0 TPlus0 TBang0
 %token TPure TContext TGenerated
 %token TTypedef TDeclarer TIterator TName TPosition TPosAny
@@ -41,7 +41,7 @@ module P = Parse_aux
 %token <Parse_aux.idinfo>        TMetaIterator TMetaDeclarer
 %token <Parse_aux.expinfo>       TMetaErr
 %token <Parse_aux.info>          TMetaParam TMetaStm TMetaStmList TMetaType
-%token <Parse_aux.info>          TMetaInit
+%token <Parse_aux.info>          TMetaInit TMetaDecl TMetaField
 %token <Parse_aux.list_info>     TMetaParamList TMetaExpList
 %token <Parse_aux.typed_expinfo> TMetaExp TMetaIdExp TMetaLocalIdExp TMetaConst
 %token <Parse_aux.pos_info>      TMetaPos
@@ -344,6 +344,14 @@ list_len:
     { (fun arity name pure check_meta ->
       let tok = check_meta(Ast.MetaStmDecl(arity,name)) in
       !Data.add_stm_meta name pure; tok) }
+| TDeclaration
+    { (fun arity name pure check_meta ->
+      let tok = check_meta(Ast.MetaDeclDecl(arity,name)) in
+      !Data.add_decl_meta name pure; tok) }
+| TField
+    { (fun arity name pure check_meta ->
+      let tok = check_meta(Ast.MetaFieldDecl(arity,name)) in
+      !Data.add_field_meta name pure; tok) }
 | TStatement Tlist
     { (fun arity name pure check_meta ->
       let tok = check_meta(Ast.MetaStmListDecl(arity,name)) in
@@ -575,6 +583,7 @@ struct_or_union:
 
 struct_decl:
       TNothing { [] }
+    | TMetaField { [P.meta_field $1] }
     | t=ctype d=d_ident pv=TPtVirg
 	 { let (id,fn) = d in
 	 [Ast0.wrap(Ast0.UnInit(None,fn t,id,P.clt2mcode ";" pv))] }
@@ -959,6 +968,7 @@ a disjunction on a statement with a declaration in each branch */
 decl_var:
     t=ctype pv=TPtVirg
       { [Ast0.wrap(Ast0.TyDecl(t,P.clt2mcode ";" pv))] }
+  | TMetaDecl { [P.meta_decl $1] }
   | s=ioption(storage) t=ctype d=comma_list(d_ident) pv=TPtVirg
       { List.map
 	  (function (id,fn) ->
@@ -1020,6 +1030,7 @@ decl_var:
 one_decl_var:
     t=ctype pv=TPtVirg
       { Ast0.wrap(Ast0.TyDecl(t,P.clt2mcode ";" pv)) }
+  | TMetaDecl { P.meta_decl $1 }
   | s=ioption(storage) t=ctype d=d_ident pv=TPtVirg
       { let (id,fn) = d in
         Ast0.wrap(Ast0.UnInit(s,fn t,id,P.clt2mcode ";" pv)) }

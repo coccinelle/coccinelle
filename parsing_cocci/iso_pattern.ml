@@ -384,6 +384,12 @@ let match_maker checks_needed context_required whencode_allowed =
 	  Ast0.MetaParam(name,pure) | Ast0.MetaParamList(name,_,pure) -> pure
 	| _ -> Ast0.Impure) in
 
+    let decl r k d =
+      bind (bind (pure_mcodekind (Ast0.get_mcodekind d)) (k d))
+	(match Ast0.unwrap d with
+	  Ast0.MetaDecl(name,pure) | Ast0.MetaField(name,pure) -> pure
+	| _ -> Ast0.Impure) in
+
     let stmt r k s =
       bind (bind (pure_mcodekind (Ast0.get_mcodekind s)) (k s))
 	(match Ast0.unwrap s with
@@ -393,7 +399,7 @@ let match_maker checks_needed context_required whencode_allowed =
     V0.flat_combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing donothing donothing donothing
-      ident expression typeC init param donothing stmt donothing
+      ident expression typeC init param decl stmt donothing
       donothing in
 
   let add_pure_list_binding name pure is_pure builder1 builder2 lst =
@@ -784,63 +790,73 @@ let match_maker checks_needed context_required whencode_allowed =
 	else return_false (ContextRequired (Ast0.TypeCTag t))
 
   and match_decl pattern d =
-    if not(checks_needed) or not(context_required) or is_context d
-    then
-      match (Ast0.unwrap pattern,Ast0.unwrap d) with
-	(Ast0.Init(stga,tya,ida,eq1,inia,sc1),
-	 Ast0.Init(stgb,tyb,idb,eq,inib,sc)) ->
-	  if bool_match_option mcode_equal stga stgb
-	  then
-	    conjunct_many_bindings
-	      [check_mcode eq1 eq; check_mcode sc1 sc;
-		match_option check_mcode stga stgb;
-		match_typeC tya tyb; match_ident ida idb;
-		match_init inia inib]
-	  else return false
-      | (Ast0.UnInit(stga,tya,ida,sc1),Ast0.UnInit(stgb,tyb,idb,sc)) ->
-	  if bool_match_option mcode_equal stga stgb
-	  then
-	    conjunct_many_bindings
-	      [check_mcode sc1 sc; match_option check_mcode stga stgb;
-		match_typeC tya tyb; match_ident ida idb]
-	  else return false
-      | (Ast0.MacroDecl(namea,lp1,argsa,rp1,sc1),
-	 Ast0.MacroDecl(nameb,lp,argsb,rp,sc)) ->
-	   conjunct_many_bindings
-	     [match_ident namea nameb;
-	       check_mcode lp1 lp; check_mcode rp1 rp;
-	       check_mcode sc1 sc;
-	       match_dots match_expr is_elist_matcher do_elist_match
-		 argsa argsb]
-      | (Ast0.TyDecl(tya,sc1),Ast0.TyDecl(tyb,sc)) ->
-	  conjunct_bindings (check_mcode sc1 sc) (match_typeC tya tyb)
-      | (Ast0.Typedef(stga,tya,ida,sc1),Ast0.Typedef(stgb,tyb,idb,sc)) ->
-	  conjunct_bindings (check_mcode sc1 sc)
-	    (conjunct_bindings (match_typeC tya tyb) (match_typeC ida idb))
-      | (Ast0.DisjDecl(_,declsa,_,_),Ast0.DisjDecl(_,declsb,_,_)) ->
-	  failwith "not allowed in the pattern of an isomorphism"
-      | (Ast0.Ddots(d1,None),Ast0.Ddots(d,None)) -> check_mcode d1 d
-      |	(Ast0.Ddots(dd,None),Ast0.Ddots(d,Some wc)) ->
-	  conjunct_bindings (check_mcode dd d)
+    match Ast0.unwrap pattern with
+      Ast0.MetaDecl(name,pure) ->
+	add_pure_binding name pure pure_sp_code.VT0.combiner_rec_declaration
+	  (function d -> Ast0.DeclTag d)
+	  d
+    | Ast0.MetaField(name,pure) ->
+	add_pure_binding name pure pure_sp_code.VT0.combiner_rec_declaration
+	  (function d -> Ast0.DeclTag d)
+	  d
+    | up ->
+	if not(checks_needed) or not(context_required) or is_context d
+	then
+	  match (up,Ast0.unwrap d) with
+	    (Ast0.Init(stga,tya,ida,eq1,inia,sc1),
+	     Ast0.Init(stgb,tyb,idb,eq,inib,sc)) ->
+	       if bool_match_option mcode_equal stga stgb
+	       then
+		 conjunct_many_bindings
+		   [check_mcode eq1 eq; check_mcode sc1 sc;
+		     match_option check_mcode stga stgb;
+		     match_typeC tya tyb; match_ident ida idb;
+		     match_init inia inib]
+	       else return false
+	  | (Ast0.UnInit(stga,tya,ida,sc1),Ast0.UnInit(stgb,tyb,idb,sc)) ->
+	      if bool_match_option mcode_equal stga stgb
+	      then
+		conjunct_many_bindings
+		  [check_mcode sc1 sc; match_option check_mcode stga stgb;
+		    match_typeC tya tyb; match_ident ida idb]
+	      else return false
+	  | (Ast0.MacroDecl(namea,lp1,argsa,rp1,sc1),
+	     Ast0.MacroDecl(nameb,lp,argsb,rp,sc)) ->
+	       conjunct_many_bindings
+		 [match_ident namea nameb;
+		   check_mcode lp1 lp; check_mcode rp1 rp;
+		   check_mcode sc1 sc;
+		   match_dots match_expr is_elist_matcher do_elist_match
+		     argsa argsb]
+	  | (Ast0.TyDecl(tya,sc1),Ast0.TyDecl(tyb,sc)) ->
+	      conjunct_bindings (check_mcode sc1 sc) (match_typeC tya tyb)
+	  | (Ast0.Typedef(stga,tya,ida,sc1),Ast0.Typedef(stgb,tyb,idb,sc)) ->
+	      conjunct_bindings (check_mcode sc1 sc)
+		(conjunct_bindings (match_typeC tya tyb) (match_typeC ida idb))
+	  | (Ast0.DisjDecl(_,declsa,_,_),Ast0.DisjDecl(_,declsb,_,_)) ->
+	      failwith "not allowed in the pattern of an isomorphism"
+	  | (Ast0.Ddots(d1,None),Ast0.Ddots(d,None)) -> check_mcode d1 d
+	  |	(Ast0.Ddots(dd,None),Ast0.Ddots(d,Some wc)) ->
+	      conjunct_bindings (check_mcode dd d)
 	    (* hope that mcode of ddots is unique somehow *)
-	    (let (ddots_whencode_allowed,_,_) = whencode_allowed in
-	    if ddots_whencode_allowed
-	    then add_dot_binding dd (Ast0.DeclTag wc)
-	    else
-	      (Printf.printf "warning: not applying iso because of whencode";
-	       return false))
-      | (Ast0.Ddots(_,Some _),_) ->
-	  failwith "whencode not allowed in a pattern1"
-
-      | (Ast0.OptDecl(decla),Ast0.OptDecl(declb))
-      | (Ast0.UniqueDecl(decla),Ast0.UniqueDecl(declb)) ->
-	  match_decl decla declb
-      | (_,Ast0.OptDecl(declb))
-      | (_,Ast0.UniqueDecl(declb)) ->
-	  match_decl pattern declb
-      | _ -> return false
-    else return_false (ContextRequired (Ast0.DeclTag d))
-
+		(let (ddots_whencode_allowed,_,_) = whencode_allowed in
+		if ddots_whencode_allowed
+		then add_dot_binding dd (Ast0.DeclTag wc)
+		else
+		  (Printf.printf "warning: not applying iso because of whencode";
+		   return false))
+	  | (Ast0.Ddots(_,Some _),_) ->
+	      failwith "whencode not allowed in a pattern1"
+		
+	  | (Ast0.OptDecl(decla),Ast0.OptDecl(declb))
+	  | (Ast0.UniqueDecl(decla),Ast0.UniqueDecl(declb)) ->
+	      match_decl decla declb
+	  | (_,Ast0.OptDecl(declb))
+	  | (_,Ast0.UniqueDecl(declb)) ->
+	      match_decl pattern declb
+	  | _ -> return false
+	else return_false (ContextRequired (Ast0.DeclTag d))
+	    
   and match_init pattern i =
     match Ast0.unwrap pattern with
       Ast0.MetaInit(name,pure) ->
@@ -1742,7 +1758,23 @@ let instantiate bindings mv_bindings =
   let declfn r k e =
     let e = k e in
     match Ast0.unwrap e with
-      Ast0.Ddots(d,_) ->
+      Ast0.MetaDecl(name,pure) ->
+	(rebuild_mcode None).VT0.rebuilder_rec_declaration
+	  (match lookup name bindings mv_bindings with
+	    Common.Left(Ast0.DeclTag(d)) -> d
+	  | Common.Left(_) -> failwith "not possible 1"
+	  | Common.Right(new_mv) ->
+	      Ast0.rewrap e
+		(Ast0.MetaDecl(Ast0.set_mcode_data new_mv name, pure)))
+    | Ast0.MetaField(name,pure) ->
+	(rebuild_mcode None).VT0.rebuilder_rec_declaration
+	  (match lookup name bindings mv_bindings with
+	    Common.Left(Ast0.DeclTag(d)) -> d
+	  | Common.Left(_) -> failwith "not possible 1"
+	  | Common.Right(new_mv) ->
+	      Ast0.rewrap e
+		(Ast0.MetaField(Ast0.set_mcode_data new_mv name, pure)))
+    | Ast0.Ddots(d,_) ->
 	(try
 	  (match List.assoc (dot_term d) bindings with
 	    Ast0.DeclTag(exp) -> Ast0.rewrap e (Ast0.Ddots(d,Some exp))
@@ -1777,7 +1809,7 @@ let instantiate bindings mv_bindings =
   let stmtfn r k e =
     let e = k e in
     match Ast0.unwrap e with
-    Ast0.MetaStmt(name,pure) ->
+      Ast0.MetaStmt(name,pure) ->
 	(rebuild_mcode None).VT0.rebuilder_rec_statement
 	  (match lookup name bindings mv_bindings with
 	    Common.Left(Ast0.StmtTag(stm)) -> stm
@@ -1983,6 +2015,10 @@ let get_name = function
       (nm,function nm -> Ast.MetaLocalIdExpDecl(ar,nm,ty))
   | Ast.MetaExpListDecl(ar,nm,nm1) ->
       (nm,function nm -> Ast.MetaExpListDecl(ar,nm,nm1))
+  | Ast.MetaDeclDecl(ar,nm) ->
+      (nm,function nm -> Ast.MetaDeclDecl(ar,nm))
+  | Ast.MetaFieldDecl(ar,nm) ->
+      (nm,function nm -> Ast.MetaFieldDecl(ar,nm))
   | Ast.MetaStmDecl(ar,nm) ->
       (nm,function nm -> Ast.MetaStmDecl(ar,nm))
   | Ast.MetaStmListDecl(ar,nm) ->

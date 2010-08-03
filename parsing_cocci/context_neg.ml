@@ -538,7 +538,10 @@ let rec equal_typeC t1 t2 =
 
 let equal_declaration d1 d2 =
   match (Ast0.unwrap d1,Ast0.unwrap d2) with
-    (Ast0.Init(stg1,_,_,eq1,_,sem1),Ast0.Init(stg2,_,_,eq2,_,sem2)) ->
+    (Ast0.MetaDecl(name1,_),Ast0.MetaDecl(name2,_))
+  | (Ast0.MetaField(name1,_),Ast0.MetaField(name2,_)) ->
+      equal_mcode name1 name2
+  | (Ast0.Init(stg1,_,_,eq1,_,sem1),Ast0.Init(stg2,_,_,eq2,_,sem2)) ->
       equal_option stg1 stg2 && equal_mcode eq1 eq2 && equal_mcode sem1 sem2
   | (Ast0.UnInit(stg1,_,_,sem1),Ast0.UnInit(stg2,_,_,sem2)) ->
       equal_option stg1 stg2 && equal_mcode sem1 sem2

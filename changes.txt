@@ -17,6 +17,8 @@
 ** Language:
 - scripts now have names and can declare metavariables that are seen by
   SmPL as identifier metavariables, see demos/{python,ocaml}tococci.cocci
+- declaration (match variable declarations) and field (match structure
+  field declarations) metavariables
 
 ** Features:
 - compatability with Python 2.7.  Thanks to Richard W.M. Jones for pointing

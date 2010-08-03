@@ -40,6 +40,7 @@ type pretty_printers = {
   arg_list        : (Ast_c.argument Ast_c.wrap2 list) printer;
   statement       : Ast_c.statement printer;
   decl            : Ast_c.declaration printer;
+  field           : Ast_c.field printer;
   init            : Ast_c.initialiser printer;
   param           : Ast_c.parameterType printer;
   ty              : Ast_c.fullType printer;
@@ -441,98 +442,7 @@ let mk_pretty_printers
           | x -> raise Impossible
 	  );
 
-          fields +> List.iter
-            (fun (field) ->
-
-              match field with
-              | DeclarationField(FieldDeclList(onefield_multivars,iiptvirg))->
-                  (match onefield_multivars with
-                  | x::xs ->
-                    (* handling the first var. Special case, with the
-                       first var, we print the whole type *)
-
-		      (match x with
-		      | (Simple (nameopt, typ)), iivirg ->
-                        (* first var cant have a preceding ',' *)
-			  assert (List.length iivirg =|= 0);
-			  let identinfo =
-                            match nameopt with
-			    | None -> None
-                            | Some name -> Some (get_s_and_info_of_name name)
-                          in
-			  pp_type_with_ident identinfo None typ Ast_c.noattr;
-
-		      | (BitField (nameopt, typ, iidot, expr)), iivirg ->
-                      (* first var cant have a preceding ',' *)
-			  assert (List.length iivirg =|= 0);
-			  (match nameopt with
-			  | None ->
-			      pp_type typ;
-			  | Some name ->
-                              let (s, is) = get_s_and_info_of_name name in
-			      pp_type_with_ident
-				(Some (s, is)) None typ Ast_c.noattr;
-			  );
-                          pr_elem iidot;
-			  pp_expression expr
-
-                      ); (* match x, first onefield_multivars *)
-
-                      (* for other vars *)
-		      xs +> List.iter (function
-			| (Simple (nameopt, typ)), iivirg ->
-			    iivirg +> List.iter pr_elem;
-			    let identinfo =
-			      match nameopt with
-			      | None -> None
-			      | Some name -> Some (get_s_and_info_of_name name)
-			    in
-			    pp_type_with_ident_rest identinfo typ Ast_c.noattr
-
-			| (BitField (nameopt, typ, iidot, expr)), iivirg ->
-			    iivirg +> List.iter pr_elem;
-			    (match nameopt with
-			    | Some name ->
-                                let (s,is) = get_s_and_info_of_name name in
-				pp_type_with_ident_rest
-				  (Some (s, is)) typ Ast_c.noattr;
-				pr_elem iidot;
-				pp_expression expr
-			    | x -> raise Impossible
-			    )); (* iter other vars *)
-
-		  | [] -> raise Impossible
-		  ); (* onefield_multivars *)
-		  assert (List.length iiptvirg =|= 1);
-		  iiptvirg +> List.iter pr_elem;
-
-
-	      | MacroDeclField ((s, es), ii)  ->
-                 let (iis, lp, rp, iiend, ifakestart) =
-                   Common.tuple_of_list5 ii in
-                 (* iis::lp::rp::iiend::ifakestart::iisto
-	         iisto +> List.iter pr_elem; (* static and const *)
-                 *)
-	         pr_elem ifakestart;
-	         pr_elem iis;
-	         pr_elem lp;
-	         es +> List.iter (fun (e, opt) ->
-                   assert (List.length opt <= 1);
-                   opt +> List.iter pr_elem;
-                   pp_argument e;
-	         );
-
-	         pr_elem rp;
-	         pr_elem iiend;
-
-
-
-	      | EmptyField iipttvirg_when_emptyfield ->
-                  pr_elem iipttvirg_when_emptyfield
-
-	      | CppDirectiveStruct cpp -> pp_directive cpp
-	      | IfdefStruct ifdef -> pp_ifdef ifdef
-	  );
+          fields +> List.iter pp_field;
 
           (match sopt,iis with
           | Some s , [i1;i2;i3;i4] -> pr_elem i4
@@ -626,7 +536,94 @@ let mk_pretty_printers
             (* | TypeOfExpr _ | TypeOfType _ *)
          ), _ -> raise Impossible
 
+  and pp_field = function
+      DeclarationField(FieldDeclList(onefield_multivars,iiptvirg))->
+        (match onefield_multivars with
+          x::xs ->
+	    (* handling the first var. Special case, with the
+               first var, we print the whole type *)
 
+	    (match x with
+	      (Simple (nameopt, typ)), iivirg ->
+              (* first var cant have a preceding ',' *)
+		assert (List.length iivirg =|= 0);
+		let identinfo =
+                  match nameopt with
+		  | None -> None
+                  | Some name -> Some (get_s_and_info_of_name name)
+                in
+		pp_type_with_ident identinfo None typ Ast_c.noattr;
+		
+	    | (BitField (nameopt, typ, iidot, expr)), iivirg ->
+                      (* first var cant have a preceding ',' *)
+		assert (List.length iivirg =|= 0);
+		(match nameopt with
+		| None ->
+		    pp_type typ;
+		| Some name ->
+                    let (s, is) = get_s_and_info_of_name name in
+		    pp_type_with_ident
+		      (Some (s, is)) None typ Ast_c.noattr;
+		    );
+                pr_elem iidot;
+		pp_expression expr
+
+                  ); (* match x, first onefield_multivars *)
+
+                      (* for other vars *)
+	    xs +> List.iter (function
+	      | (Simple (nameopt, typ)), iivirg ->
+		  iivirg +> List.iter pr_elem;
+		  let identinfo =
+		    match nameopt with
+		    | None -> None
+		    | Some name -> Some (get_s_and_info_of_name name)
+		  in
+		  pp_type_with_ident_rest identinfo typ Ast_c.noattr
+
+	      | (BitField (nameopt, typ, iidot, expr)), iivirg ->
+		  iivirg +> List.iter pr_elem;
+		  (match nameopt with
+		  | Some name ->
+                      let (s,is) = get_s_and_info_of_name name in
+		      pp_type_with_ident_rest
+			(Some (s, is)) typ Ast_c.noattr;
+		      pr_elem iidot;
+		      pp_expression expr
+		  | x -> raise Impossible
+			)); (* iter other vars *)
+
+	| [] -> raise Impossible
+	      ); (* onefield_multivars *)
+	assert (List.length iiptvirg =|= 1);
+	iiptvirg +> List.iter pr_elem;
+
+
+    | MacroDeclField ((s, es), ii)  ->
+        let (iis, lp, rp, iiend, ifakestart) =
+          Common.tuple_of_list5 ii in
+                 (* iis::lp::rp::iiend::ifakestart::iisto
+	            iisto +> List.iter pr_elem; (* static and const *)
+                 *)
+	pr_elem ifakestart;
+	pr_elem iis;
+	pr_elem lp;
+	es +> List.iter (fun (e, opt) ->
+          assert (List.length opt <= 1);
+          opt +> List.iter pr_elem;
+          pp_argument e;
+	  );
+
+	pr_elem rp;
+	pr_elem iiend;
+
+
+
+    | EmptyField iipttvirg_when_emptyfield ->
+        pr_elem iipttvirg_when_emptyfield
+
+    | CppDirectiveStruct cpp -> pp_directive cpp
+    | IfdefStruct ifdef -> pp_ifdef ifdef
 
 (* used because of DeclList, in    int i,*j[23];  we dont print anymore the
    int before *j *)
@@ -1279,15 +1276,16 @@ and pp_init (init, iinit) =
 
 
   { expression = pp_expression;
-    arg_list = pp_arg_list;
-    statement = pp_statement;
-    decl = pp_decl;
-    init = pp_init;
-    param = pp_param;
-    ty = pp_type;
+    arg_list   = pp_arg_list;
+    statement  = pp_statement;
+    decl       = pp_decl;
+    field      = pp_field;
+    init       = pp_init;
+    param      = pp_param;
+    ty         = pp_type;
     type_with_ident = pp_type_with_ident;
-    toplevel = pp_toplevel;
-    flow = pp_flow;
+    toplevel   = pp_toplevel;
+    flow       = pp_flow;
   }
 
 (*****************************************************************************)
@@ -1321,6 +1319,8 @@ let ppc =
     ~pr_elem ~pr_space ~pr_nl ~pr_outdent ~pr_indent ~pr_unindent
 
 let pp_expression_simple = ppc.expression
+let pp_decl_simple       = ppc.decl
+let pp_field_simple      = ppc.field
 let pp_statement_simple  = ppc.statement
 let pp_type_simple       = ppc.ty
 let pp_init_simple       = ppc.init
@@ -1342,8 +1342,11 @@ let pp_arg_list_gen pr_elem pr_space =
 let pp_statement_gen ~pr_elem ~pr_space =
   (pp_elem_sp pr_elem pr_space).statement
 
-let pp_decl_gen pr_elem pr_space =
+let pp_decl_gen ~pr_elem ~pr_space =
   (pp_elem_sp pr_elem pr_space).decl
+
+let pp_field_gen ~pr_elem ~pr_space =
+  (pp_elem_sp pr_elem pr_space).field
 
 let pp_init_gen ~pr_elem ~pr_space =
   (pp_elem_sp pr_elem pr_space).init

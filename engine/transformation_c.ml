@@ -393,6 +393,12 @@ module XTRANS = struct
   let distribute_mck_type (maxpos, minpos) = fun (lop,mop,rop,bop) -> fun x ->
     Visitor_c.vk_type_s (mk_bigf (maxpos, minpos) (lop,mop,rop,bop)) x
 
+  let distribute_mck_decl (maxpos, minpos) = fun (lop,mop,rop,bop) -> fun x ->
+    Visitor_c.vk_decl_s (mk_bigf (maxpos, minpos) (lop,mop,rop,bop)) x
+
+  let distribute_mck_field (maxpos, minpos) = fun (lop,mop,rop,bop) -> fun x ->
+    Visitor_c.vk_struct_field_s (mk_bigf (maxpos, minpos) (lop,mop,rop,bop)) x
+
   let distribute_mck_ini (maxpos, minpos) = fun (lop,mop,rop,bop) -> fun x ->
     Visitor_c.vk_ini_s (mk_bigf (maxpos, minpos) (lop,mop,rop,bop)) x
 
@@ -469,6 +475,8 @@ module XTRANS = struct
   let distrf_param  = distrf (Lib_parsing_c.ii_of_param, distribute_mck_param)
   let distrf_params = distrf (Lib_parsing_c.ii_of_params,distribute_mck_params)
   let distrf_ini = distrf (Lib_parsing_c.ii_of_ini,distribute_mck_ini)
+  let distrf_decl = distrf (Lib_parsing_c.ii_of_decl,distribute_mck_decl)
+  let distrf_field = distrf (Lib_parsing_c.ii_of_field,distribute_mck_field)
   let distrf_node = distrf (Lib_parsing_c.ii_of_node,distribute_mck_node)
   let distrf_struct_fields =
     distrf (Lib_parsing_c.ii_of_struct_fields, distribute_mck_struct_fields)

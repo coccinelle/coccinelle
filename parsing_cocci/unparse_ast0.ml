@@ -300,7 +300,8 @@ and declaration d =
   print_context d
     (function _ ->
       match Ast0.unwrap d with
-	Ast0.Init(stg,ty,id,eq,ini,sem) ->
+	Ast0.MetaDecl(name,_) | Ast0.MetaField(name,_) -> mcode print_meta name
+      |	Ast0.Init(stg,ty,id,eq,ini,sem) ->
 	  print_option (mcode U.storage) stg;
 	  print_named_type ty id;
 	  print_string " ";
@@ -616,33 +617,24 @@ let unparse_anything x =
   | Ast0.DotsStmtTag(d) ->
       print_string "StmDots:"; force_newline();
       statement_dots d
-  | Ast0.DotsDeclTag(d) ->
-      declaration_dots d
-  | Ast0.DotsCaseTag(d) ->
-      case_dots d
-  | Ast0.IdentTag(d) ->
-      ident d
+  | Ast0.DotsDeclTag(d) -> declaration_dots d
+  | Ast0.DotsCaseTag(d) -> case_dots d
+  | Ast0.IdentTag(d)    -> ident d
   | Ast0.ExprTag(d) | Ast0.ArgExprTag(d) | Ast0.TestExprTag(d) ->
       print_string "Exp:"; force_newline();
       expression d
-  | Ast0.TypeCTag(d) ->
-      typeC d
-  | Ast0.ParamTag(d) ->
-      parameterTypeDef d
-  | Ast0.InitTag(d) ->
-      initialiser d
-  | Ast0.DeclTag(d) ->
-      declaration d
-  | Ast0.StmtTag(d) ->
+  | Ast0.TypeCTag(d) -> typeC d
+  | Ast0.ParamTag(d) -> parameterTypeDef d
+  | Ast0.InitTag(d)  -> initialiser d
+  | Ast0.DeclTag(d)  -> declaration d
+  | Ast0.StmtTag(d)  ->
       print_string "Stm:"; force_newline();
       statement "" d
-  | Ast0.CaseLineTag(d) ->
-      case_line "" d
-  | Ast0.TopTag(d) ->
-      top_level d
-  | Ast0.IsoWhenTag(x) -> U.print_when_modif x
-  | Ast0.IsoWhenTTag(e) -> expression e
-  | Ast0.IsoWhenFTag(e) -> expression e
+  | Ast0.CaseLineTag(d)  -> case_line "" d
+  | Ast0.TopTag(d)       -> top_level d
+  | Ast0.IsoWhenTag(x)   -> U.print_when_modif x
+  | Ast0.IsoWhenTTag(e)  -> expression e
+  | Ast0.IsoWhenFTag(e)  -> expression e
   | Ast0.MetaPosTag(var) -> meta_pos var);
   quiet := q;
   print_newline()

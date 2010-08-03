@@ -418,7 +418,8 @@ and print_named_type ty id =
 
 and declaration d =
   match Ast.unwrap d with
-    Ast.Init(stg,ty,id,eq,ini,sem) ->
+    Ast.MetaDecl(name,_,_) | Ast.MetaField(name,_,_) -> mcode print_meta name
+  | Ast.Init(stg,ty,id,eq,ini,sem) ->
       print_option (mcode storage) stg; print_named_type ty id;
       print_string " "; mcode print_string eq;
       print_string " "; initialiser ini; mcode print_string sem
@@ -437,7 +438,6 @@ and declaration d =
   | Ast.Ddots(dots,Some whencode) ->
       mcode print_string dots; print_string "   when != "; declaration whencode
   | Ast.Ddots(dots,None) -> mcode print_string dots
-  | Ast.MetaDecl(name,_,_) -> mcode print_meta name
   | Ast.OptDecl(decl) -> print_string "?"; declaration decl
   | Ast.UniqueDecl(decl) -> print_string "!"; declaration decl
 

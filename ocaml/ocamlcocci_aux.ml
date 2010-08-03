@@ -20,6 +20,10 @@ let stringrep = function
 | Ast_c.MetaExprListVal  expr_list -> "TODO: <<exprlist>>"
 | Ast_c.MetaTypeVal      typ -> call_pretty Pretty_print_c.pp_type_gen typ
 | Ast_c.MetaInitVal      ini -> call_pretty Pretty_print_c.pp_init_gen ini
+| Ast_c.MetaDeclVal      declaration ->
+    call_pretty Pretty_print_c.pp_decl_gen declaration
+| Ast_c.MetaFieldVal      field ->
+    call_pretty Pretty_print_c.pp_field_gen field
 | Ast_c.MetaStmtVal      statement ->
     call_pretty Pretty_print_c.pp_statement_gen statement
 | Ast_c.MetaParamVal     param ->

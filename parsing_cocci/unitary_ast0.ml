@@ -89,7 +89,8 @@ let get_free checker t =
 
   let declaration r k d =
     match Ast0.unwrap d with
-      Ast0.DisjDecl(starter,decls,mids,ender) ->
+      Ast0.MetaDecl(name,_) | Ast0.MetaField(name,_) -> checker name
+    | Ast0.DisjDecl(starter,decls,mids,ender) ->
 	detect_unitary_frees(List.map r.VT0.combiner_rec_declaration decls)
     | _ -> k d in
 

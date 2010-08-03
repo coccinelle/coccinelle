@@ -103,6 +103,10 @@ module type PARAM =
 
     val distrf_ini :
       (Ast_cocci.meta_name Ast_cocci.mcode, Ast_c.initialiser) matcher
+    val distrf_decl :
+      (Ast_cocci.meta_name Ast_cocci.mcode, Ast_c.declaration) matcher
+    val distrf_field :
+      (Ast_cocci.meta_name Ast_cocci.mcode, Ast_c.field) matcher
 
     val distrf_node :
       (Ast_cocci.meta_name Ast_cocci.mcode, Control_flow_c.node) matcher

@@ -90,6 +90,8 @@ and metavar =
   | MetaLocalIdExpDecl of
       arity * meta_name (* name *) * Type_cocci.typeC list option
   | MetaExpListDecl of arity * meta_name (*name*) * list_len (*len*)
+  | MetaDeclDecl of arity * meta_name (* name *)
+  | MetaFieldDecl of arity * meta_name (* name *)
   | MetaStmDecl of arity * meta_name (* name *)
   | MetaStmListDecl of arity * meta_name (* name *)
   | MetaFuncDecl of arity * meta_name (* name *)
@@ -290,6 +292,7 @@ and base_declaration =
   | Ddots    of string mcode (* ... *) * declaration option (* whencode *)
 
   | MetaDecl of meta_name mcode * keep_binding * inherited
+  | MetaField of meta_name mcode * keep_binding * inherited
 
   | OptDecl    of declaration
   | UniqueDecl of declaration
@@ -677,6 +680,8 @@ let get_meta_name = function
   | MetaIdExpDecl(ar,nm,ty) -> nm
   | MetaLocalIdExpDecl(ar,nm,ty) -> nm
   | MetaExpListDecl(ar,nm,nm1) -> nm
+  | MetaDeclDecl(ar,nm) -> nm
+  | MetaFieldDecl(ar,nm) -> nm
   | MetaStmDecl(ar,nm) -> nm
   | MetaStmListDecl(ar,nm) -> nm
   | MetaFuncDecl(ar,nm) -> nm

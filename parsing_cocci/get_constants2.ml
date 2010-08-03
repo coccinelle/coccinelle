@@ -283,7 +283,9 @@ let do_get_constants constants keywords env neg_pos =
 
   let declaration r k d =
     match Ast.unwrap d with
-      Ast.DisjDecl(decls) ->
+      Ast.MetaDecl(name,_,_) | Ast.MetaField(name,_,_) ->
+	bind (k d) (minherited name)
+    | Ast.DisjDecl(decls) ->
 	disj_union_all (List.map r.V.combiner_declaration decls)
     | Ast.OptDecl(decl) -> option_default
     | Ast.Ddots(dots,whencode) -> option_default

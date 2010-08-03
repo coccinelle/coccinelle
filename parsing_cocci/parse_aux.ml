@@ -404,7 +404,15 @@ let str2inc s =
   List.map (function "..." -> Ast.IncDots | s -> Ast.IncPath s) elements
 
 (* ---------------------------------------------------------------------- *)
-(* statements *)
+(* declarations and statements *)
+
+let meta_decl name =
+  let (nm,pure,clt) = name in
+  Ast0.wrap(Ast0.MetaDecl(clt2mcode nm clt,pure))
+
+let meta_field name =
+  let (nm,pure,clt) = name in
+  Ast0.wrap(Ast0.MetaField(clt2mcode nm clt,pure))
 
 let meta_stm name =
   let (nm,pure,clt) = name in

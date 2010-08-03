@@ -180,7 +180,12 @@ and typeC = base_typeC wrap
    split out into multiple declarations of a single variable each. *)
 
 and base_declaration =
-    Init of Ast.storage mcode option * typeC * ident * string mcode (*=*) *
+    MetaDecl of Ast.meta_name mcode * pure (* variables *)
+    (* the following are kept separate from MetaDecls because ultimately
+       they don't match the same thin at all.  Consider whether there
+       should be a separate type for fields, as in the C AST *)
+  | MetaField of Ast.meta_name mcode * pure (* structure fields *)
+  | Init of Ast.storage mcode option * typeC * ident * string mcode (*=*) *
 	initialiser * string mcode (*;*)
   | UnInit of Ast.storage mcode option * typeC * ident * string mcode (* ; *)
   | TyDecl of typeC * string mcode (* ; *)

@@ -1,5 +1,5 @@
 (* create an index for each constructor *)
-(* current max is 147 *)
+(* current max is 149 *)
 
 (* doesn't really work - requires that identical terms with no token
 subterms (eg dots) not appear on the same line *)
@@ -113,7 +113,9 @@ let typeC t =
 
 let declaration d =
   match Ast0.unwrap d with
-    Ast0.Init(stg,ty,id,eq,exp,sem) -> [54]
+    Ast0.MetaDecl(name,_) -> [148]
+  | Ast0.MetaField(name,_) -> [149]
+  | Ast0.Init(stg,ty,id,eq,exp,sem) -> [54]
   | Ast0.UnInit(stg,ty,id,sem) -> [55]
   | Ast0.MacroDecl(name,lp,args,rp,sem) -> [137]
   | Ast0.TyDecl(ty,sem) -> [116]
