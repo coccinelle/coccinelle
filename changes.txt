@@ -23,6 +23,8 @@
 ** Features:
 - compatability with Python 2.7.  Thanks to Richard W.M. Jones for pointing
   out the problem
+- python and ocaml string representations of parameter lists and expression
+  lists
 
 ** Bugfix:
 

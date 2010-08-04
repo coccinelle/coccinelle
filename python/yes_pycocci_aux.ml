@@ -16,7 +16,8 @@ let stringrep mvb = match mvb with
 | Ast_c.MetaFuncVal      s -> s
 | Ast_c.MetaLocalFuncVal s -> s
 | Ast_c.MetaExprVal      (expr,_) -> exprrep expr
-| Ast_c.MetaExprListVal  expr_list -> "TODO: <<exprlist>>"
+| Ast_c.MetaExprListVal  expr_list ->
+    call_pretty Pretty_print_c.pp_arg_list_gen expr_list
 | Ast_c.MetaTypeVal      typ -> call_pretty Pretty_print_c.pp_type_gen typ
 | Ast_c.MetaInitVal      ini -> call_pretty Pretty_print_c.pp_init_gen ini
 | Ast_c.MetaDeclVal      decl ->
@@ -27,7 +28,8 @@ let stringrep mvb = match mvb with
     call_pretty Pretty_print_c.pp_statement_gen statement
 | Ast_c.MetaParamVal     param ->
     call_pretty Pretty_print_c.pp_param_gen param
-| Ast_c.MetaParamListVal params -> "TODO: <<paramlist>>"
+| Ast_c.MetaParamListVal params ->
+    call_pretty Pretty_print_c.pp_param_list_gen params
 | Ast_c.MetaListlenVal n -> string_of_int n
 | Ast_c.MetaPosVal (pos1, pos2) ->
     let print_pos = function
