@@ -43,6 +43,7 @@ type pretty_printers = {
   field           : Ast_c.field printer;
   init            : Ast_c.initialiser printer;
   param           : Ast_c.parameterType printer;
+  paramlist       : (Ast_c.parameterType Ast_c.wrap2 list) printer;
   ty              : Ast_c.fullType printer;
   type_with_ident : type_with_ident;
   toplevel        : Ast_c.toplevel printer;
@@ -994,12 +995,7 @@ and pp_init (init, iinit) =
            iib +> List.iter pr_elem;
 
         *)
-        paramst +> List.iter (fun (param,iicomma) ->
-          assert ((List.length iicomma) <= 1);
-          iicomma +> List.iter (function x -> pr_elem x; pr_space());
-
-          pp_param param;
-        );
+	pp_param_list paramst;
         iib +> List.iter pr_elem;
 
 
@@ -1009,7 +1005,11 @@ and pp_init (init, iinit) =
         pr_elem i2;
     | _ -> raise Impossible
 
-
+  and pp_param_list paramst =
+    paramst +> List.iter (fun (param,iicomma) ->
+      assert ((List.length iicomma) <= 1);
+      iicomma +> List.iter (function x -> pr_elem x; pr_space());
+      pp_param param)
 
 (* ---------------------- *)
 
@@ -1282,6 +1282,7 @@ and pp_init (init, iinit) =
     field      = pp_field;
     init       = pp_init;
     param      = pp_param;
+    paramlist = pp_param_list;
     ty         = pp_type;
     type_with_ident = pp_type_with_ident;
     toplevel   = pp_toplevel;
@@ -1336,7 +1337,7 @@ let pp_elem_sp ~pr_elem ~pr_space =
 let pp_expression_gen ~pr_elem ~pr_space =
   (pp_elem_sp pr_elem pr_space).expression
 
-let pp_arg_list_gen pr_elem pr_space =
+let pp_arg_list_gen ~pr_elem ~pr_space =
   (pp_elem_sp pr_elem pr_space).arg_list
 
 let pp_statement_gen ~pr_elem ~pr_space =
@@ -1353,6 +1354,9 @@ let pp_init_gen ~pr_elem ~pr_space =
 
 let pp_param_gen ~pr_elem ~pr_space =
   (pp_elem_sp pr_elem pr_space).param
+
+let pp_param_list_gen ~pr_elem ~pr_space =
+  (pp_elem_sp pr_elem pr_space).paramlist
 
 let pp_type_gen ~pr_elem ~pr_space =
   (pp_elem_sp pr_elem pr_space).ty

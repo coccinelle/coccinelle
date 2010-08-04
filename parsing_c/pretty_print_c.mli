@@ -14,6 +14,7 @@ type pretty_printers = {
   field           : Ast_c.field printer;
   init            : Ast_c.initialiser printer;
   param           : Ast_c.parameterType printer;
+  paramlist       : (Ast_c.parameterType Ast_c.wrap2 list) printer;
   ty              : Ast_c.fullType printer;
   type_with_ident : type_with_ident;
   toplevel        : Ast_c.toplevel printer;
@@ -32,6 +33,8 @@ val mk_pretty_printers :
 (* used in pycocci mostly *)
 val pp_expression_gen: pr_elem:Ast_c.info printer -> pr_space: unit printer ->
   Ast_c.expression printer
+val pp_arg_list_gen: pr_elem:Ast_c.info printer -> pr_space: unit printer ->
+  (Ast_c.argument Ast_c.wrap2 list) printer
 val pp_decl_gen: pr_elem:Ast_c.info printer -> pr_space: unit printer ->
   Ast_c.declaration printer
 val pp_field_gen: pr_elem:Ast_c.info printer -> pr_space: unit printer ->
@@ -40,6 +43,8 @@ val pp_statement_gen: pr_elem:Ast_c.info printer -> pr_space: unit printer ->
   Ast_c.statement printer
 val pp_param_gen:  pr_elem:Ast_c.info printer -> pr_space: unit printer ->
   Ast_c.parameterType printer
+val pp_param_list_gen:  pr_elem:Ast_c.info printer -> pr_space: unit printer ->
+  (Ast_c.parameterType Ast_c.wrap2 list) printer
 val pp_type_gen:  pr_elem:Ast_c.info printer -> pr_space:unit printer ->
   Ast_c.fullType printer
 val pp_init_gen:  pr_elem:Ast_c.info printer -> pr_space:unit printer ->
