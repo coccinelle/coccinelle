@@ -474,7 +474,12 @@ let make_match label guard code =
     | _ -> CTL.Exists(true,v,predmaker guard (matcher,CTL.UnModif v) label))
 
 let make_raw_match label guard code =
-  predmaker guard (Lib_engine.Match(code),CTL.Control) label
+  match intersect !used_after (Ast.get_fvs code) with
+    [] -> predmaker guard (Lib_engine.Match(code),CTL.Control) label
+  | _ ->
+      let v = fresh_var() in
+    CTL.Exists(true,v,predmaker guard (Lib_engine.Match(code),CTL.UnModif v)
+		 label)
 
 let rec seq_fvs quantified = function
     [] -> []

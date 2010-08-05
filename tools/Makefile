@@ -21,7 +21,7 @@ alloc_free: alloc_free.ml
 
 # more flexible version of alloc_free
 bridge: bridge.ml
-	ocamlopt -o bridge str.cmxa bridge.ml
+	ocamlopt -o bridge str.cmxa dumper.mli dumper.ml bridge.ml
 
 install_bridge: bridge
 	cp -f bridge /usr/local/bin

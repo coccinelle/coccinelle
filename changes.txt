@@ -27,6 +27,7 @@
   lists
 
 ** Bugfix:
+- detect used after metavariables in simple statement metavariable match
 
 * 0.2.3
 ** Language:
