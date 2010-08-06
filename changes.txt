@@ -25,6 +25,7 @@
   out the problem
 - python and ocaml string representations of parameter lists and expression
   lists
+- try simpler patterns on glimpse failure
 
 ** Bugfix:
 - detect used after metavariables in simple statement metavariable match
