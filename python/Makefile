@@ -118,6 +118,7 @@ clean::
 	rm -f *~ .*~ #*#
 
 distclean::
+	$(MAKE) -C coccilib $@
 	rm -f .depend
 
 beforedepend:
