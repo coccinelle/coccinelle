@@ -7,6 +7,9 @@ module V0 = Visitor_ast0
 module VT0 = Visitor_ast0_types
 module Ast = Ast_cocci
 module Ast0 = Ast0_cocci
+
+exception Bad_virt of string
+
 let pr = Printf.sprintf
 (*let pr2 s = prerr_string s; prerr_string "\n"; flush stderr*)
 let pr2 s = Printf.printf "%s\n" s
@@ -1307,9 +1310,7 @@ let eval_virt virt =
   List.iter
     (function x ->
       if not (List.mem x virt)
-      then
-        failwith
-          (Printf.sprintf "unknown virtual rule %s\n" x))
+      then raise (Bad_virt x))
     !Flag.defined_virtual_rules
 
 let drop_last extra l = List.rev(extra@(List.tl(List.rev l)))
@@ -1603,7 +1604,8 @@ let parse file =
 	    *)
 
 	    (if not !Flag.sgrep_mode2 &&
-	      (any_modif minus_res or any_modif plus_res)
+	      (any_modif minus_res or any_modif plus_res) &&
+	      not(dependencies = Ast.FailDep)
 	    then Data.inheritable_positions := []);
 
 	    Check_meta.check_meta rule_name old_metas inherited_metavars

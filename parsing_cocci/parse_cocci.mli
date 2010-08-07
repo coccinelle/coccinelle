@@ -1,3 +1,5 @@
+exception Bad_virt of string
+
 val process :
     string (* filename *) -> string option (* iso filename *) ->
       bool (* verbose? *) ->
