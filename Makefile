@@ -107,7 +107,7 @@ EXEC=$(TARGET)
 # Generic ocaml variables
 ##############################################################################
 
-OCAMLCFLAGS= -g -dtypes # -w A
+OCAMLCFLAGS=
 
 # for profiling add  -p -inline 0
 # but 'make forprofiling' below does that for you.
@@ -298,6 +298,8 @@ install-common:
 	$(INSTALL_DATA) standard.h $(DESTDIR)$(SHAREDIR)
 	$(INSTALL_DATA) standard.iso $(DESTDIR)$(SHAREDIR)
 	$(INSTALL_DATA) ocaml/coccilib.cmi $(DESTDIR)$(SHAREDIR)/ocaml/
+	$(INSTALL_DATA) parsing_c/*.cmi $(DESTDIR)$(SHAREDIR)/parsing_c/
+	$(INSTALL_DATA) commons/*.cmi $(DESTDIR)$(SHAREDIR)/commons/
 	$(INSTALL_DATA) docs/spatch.1 $(DESTDIR)$(MANDIR)/man1/
 	@if [ $(FEATURE_PYTHON) -eq 1 ]; then $(MAKE) install-python; fi
 
