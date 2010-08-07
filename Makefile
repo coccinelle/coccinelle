@@ -294,6 +294,8 @@ install-common:
 	mkdir -p $(DESTDIR)$(BINDIR)
 	mkdir -p $(DESTDIR)$(LIBDIR)
 	mkdir -p $(DESTDIR)$(SHAREDIR)/ocaml
+	mkdir -p $(DESTDIR)$(SHAREDIR)/commons
+	mkdir -p $(DESTDIR)$(SHAREDIR)/parsing_c
 	mkdir -p $(DESTDIR)$(MANDIR)/man1
 	$(INSTALL_DATA) standard.h $(DESTDIR)$(SHAREDIR)
 	$(INSTALL_DATA) standard.iso $(DESTDIR)$(SHAREDIR)
