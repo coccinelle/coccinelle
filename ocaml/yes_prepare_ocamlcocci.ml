@@ -232,17 +232,17 @@ let parse_dep mlfile depout =
   | _ ->
       raise
 	(CompileFailure ("Wrong dependencies for "^mlfile^" (Got "^depout^")"))
-	
+
 let dep_flag mlfile =
   let depcmd  = !Flag.ocamldep ^" -modules "^mlfile in
   match Common.cmd_to_list depcmd with
     [dep] -> parse_dep mlfile dep
   | _ -> raise (CompileFailure ("Wrong dependencies for "^mlfile))
-	
+
 let compile_bytecode_cmd flags mlfile =
   let obj = (Filename.chop_extension mlfile) ^ ".cmo" in
   (obj, Printf.sprintf "%s -c %s %s %s" !Flag.ocamlc obj flags mlfile)
-    
+
 let compile_native_cmd flags mlfile =
   let obj = (Filename.chop_extension mlfile) ^ ".cmxs" in
   (obj,
