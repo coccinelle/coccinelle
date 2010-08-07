@@ -360,6 +360,8 @@ uninstall:
 	rm -f $(DESTDIR)$(SHAREDIR)/standard.h
 	rm -f $(DESTDIR)$(SHAREDIR)/standard.iso
 	rm -f $(DESTDIR)$(SHAREDIR)/ocaml/coccilib.cmi
+	rm -f $(DESTDIR)$(SHAREDIR)/parsing_c/*.cmi
+	rm -f $(DESTDIR)$(SHAREDIR)/commons*.cmi
 	rm -f $(DESTDIR)$(SHAREDIR)/python/coccilib/coccigui/*
 	rm -f $(DESTDIR)$(SHAREDIR)/python/coccilib/*.py
 	rmdir --ignore-fail-on-non-empty -p \
