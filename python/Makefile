@@ -10,12 +10,14 @@ TARGET=coccipython
 
 SOURCES= pycocci_aux.ml pycocci.ml
 
+INCLUDEDIRS_LOCAL = ../commons ../commons/ocamlextra ../globals \
+		    ../parsing_c ../parsing_cocci
+
 ifeq ("$(PYCAMLDIR)", "pycaml")
-INCLUDEDIRS = ../commons ../commons/ocamlextra ../globals ../$(PYCAMLDIR) \
-	      ../parsing_c ../parsing_cocci
+INCLUDEDIRS_LOCAL += ../$(PYCAMLDIR)
+INCLUDEDIRS = $(INCLUDEDIRS_LOCAL)
 else
-INCLUDEDIRS = ../commons ../commons/ocamlextra ../globals $(PYCAMLDIR) \
-	      ../parsing_c ../parsing_cocci
+INCLUDEDIRS = $(INCLUDEDIRS_LOCAL) $(PYCAMLDIR)
 endif
 
 SYSLIBS = str.cma unix.cma pycaml.cma
@@ -26,6 +28,7 @@ LIBS=../commons/commons.cma ../globals/globals.cma
 ##############################################################################
 
 INCLUDES=$(INCLUDEDIRS:%=-I %) $(INCLUDESEXTRA)
+INCLUDES_DEPEND=$(INCLUDEDIRS_LOCAL:%=-I %) $(INCLUDESEXTRA)
 
 ##############################################################################
 # Generic ocaml variables
@@ -35,7 +38,7 @@ INCLUDES=$(INCLUDEDIRS:%=-I %) $(INCLUDESEXTRA)
 OCAMLCFLAGS ?= -g -dtypes
 OCAMLC =ocamlc$(OPTBIN) $(OCAMLCFLAGS) $(INCLUDES)
 OCAMLOPT = ocamlopt$(OPTBIN) $(OPTFLAGS) $(INCLUDES)
-OCAMLDEP = ocamldep$(OPTBIN) $(INCLUDES)
+OCAMLDEP = ocamldep$(OPTBIN) $(INCLUDES_DEPEND)
 
 
 ##############################################################################
