@@ -11,7 +11,7 @@ let call_pretty f a =
 
 let exprrep = call_pretty Pretty_print_c.pp_expression_gen
 
-let stringrep mvb = match mvb with
+let stringrep = function
   Ast_c.MetaIdVal        (s,_) -> s
 | Ast_c.MetaFuncVal      s -> s
 | Ast_c.MetaLocalFuncVal s -> s
