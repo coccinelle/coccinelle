@@ -139,7 +139,7 @@ let command s =
   let _ = Sys.command s in
   ()
 
-let created = ref ([] : (string * (int ref * out_channel)) list)
+let created = ref ([] : (string * (string list ref * out_channel)) list)
 
 let mktag n = Printf.sprintf "x%d" n
 
@@ -156,12 +156,17 @@ let process_line env (cocci,tags) =
 	try List.assoc resdir !created
 	with Not_found ->
 	  begin
-	    command
-	      (Printf.sprintf "/bin/rm -r -f %s; mkdir %s" resdir resdir);
+	    if Sys.file_exists resdir
+	    then
+	      command
+		(Printf.sprintf
+		   "test %s -nt %s && /bin/rm -r -f %s && mkdir %s"
+		   cocci_file resdir resdir resdir)
+	    else command (Printf.sprintf "mkdir %s" resdir);
 	    let files = Printf.sprintf "%s/files" resdir in
 	    let o = open_out files in
 	    Printf.fprintf o "all: real_all\n\n";
-	    let cell = ((ref 0),o) in
+	    let cell = ((ref []),o) in
 	    created := (resdir,cell) :: !created;
 	    cell
 	  end in
@@ -189,9 +194,9 @@ let process_line env (cocci,tags) =
 	tags;
       command
 	(Printf.sprintf "mv %s %s/%s.cocci" temp_file resdir first_tag_val);
-      Printf.fprintf o "%s:\n\tmono_spatch_linux %s.cocci ${ARGS}\n\n"
-	(mktag !n) first_tag_val;
-      n := !n + 1)
+      Printf.fprintf o "%s.out:\n\tmono_spatch_linux %s.cocci ${ARGS}\n\n"
+	first_tag_val first_tag_val;
+      n := (first_tag_val^".out") :: !n)
     files
 
 (* --------------------------------------------------------------------- *)
@@ -244,6 +249,6 @@ let _ =
   List.iter
     (function (resdir,(n,o)) ->
       Printf.fprintf o "real_all: %s\n"
-	(String.concat " " (List.rev (upto !n)));
+	(String.concat " " (List.rev !n));
       close_out o)
     !created
