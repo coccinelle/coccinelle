@@ -250,5 +250,7 @@ let _ =
     (function (resdir,(n,o)) ->
       Printf.fprintf o "real_all: %s\n"
 	(String.concat " " (List.rev !n));
+      Printf.fprintf o "\tcat %s > completed\n"
+	(String.concat " " (List.rev !n));
       close_out o)
     !created
