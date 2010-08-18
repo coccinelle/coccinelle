@@ -1,7 +1,14 @@
 open Ast_c
 open Common
 
-let rec exprrep expr = match expr with
+let constantrep c = match c with
+  Ast_c.String (s,isWchar) -> s
+| Ast_c.MultiString _ -> "TODO: MultiString"
+| Ast_c.Char (s,isWchar) -> s
+| Ast_c.Int (s, _t) -> s
+| Ast_c.Float (s, _t) -> s
+
+let exprrep expr = match expr with
   Ast_c.Ident (ident) -> Ast_c.str_of_name ident
 | Ast_c.Constant c -> constantrep c
 | Ast_c.FunCall (e,args) -> "TODO: FunCall"
@@ -21,12 +28,6 @@ let rec exprrep expr = match expr with
 | Ast_c.StatementExpr c -> "TODO: StatementExpr"
 | Ast_c.Constructor (t,i) -> "TODO: Constructor"
 | Ast_c.ParenExpr e -> "TODO: ParenExpr"
-and constantrep c = match c with
-  Ast_c.String (s,isWchar) -> s
-| Ast_c.MultiString _ -> "TODO: MultiString"
-| Ast_c.Char (s,isWchar) -> s
-| Ast_c.Int (s, _t) -> s
-| Ast_c.Float (s, _t) -> s
 
 let call_pretty f a =
   let str = ref ([] : string list) in
@@ -52,4 +53,6 @@ let stringrep mvb = match mvb with
     "TODO: <<posval>>"
 | Ast_c.MetaPosValList positions -> "TODO: <<postvallist>>"
 | Ast_c.MetaInitVal _ -> "TODO: <<metainitval>>"
+| Ast_c.MetaDeclVal _ -> "TODO: <<metadeclval>>"
+| Ast_c.MetaFieldVal _ -> "TODO: <<metafieldval>>"
 
