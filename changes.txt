@@ -33,6 +33,8 @@
 - detect used after metavariables in simple statement metavariable match
 - allow inheriting position variables over rules that make transformations
   but depend on virtual rules that are not defined on the command line
+- treat top-level tokens in decl visitor.  Thanks to Peter Tummeltshammer
+  for noticing a resulting problem.
 
 * 0.2.3
 ** Language:
