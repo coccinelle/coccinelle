@@ -331,7 +331,6 @@ OPTBIN=$opt
 my $pythonprefix = $python ? "yes" : "no";
 pr2 "Support for python scripting : $pythonprefix";
 `cd python; ln -sf ${pythonprefix}_pycocci.ml pycocci.ml; `;
-`cd python; ln -sf ${pythonprefix}_pycocci_aux.ml pycocci_aux.ml;`;
 `cd python; make depend`;
 
 pr2 "Support for ocaml scripting : $ocamlprefix";

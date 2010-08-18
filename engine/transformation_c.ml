@@ -1,4 +1,4 @@
-(* Yoann Padioleau
+1(* Yoann Padioleau
  *
  * Copyright (C) 2006, 2007 Ecole des Mines de Nantes
  *
