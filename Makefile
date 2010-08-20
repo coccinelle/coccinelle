@@ -466,7 +466,6 @@ distclean:: clean
 	rm -f .depend
 	rm -f Makefile.config
 	rm -f python/pycocci.ml
-	rm -f python/pycocci_aux.ml
 	rm -f globals/config.ml
 	rm -f TAGS
 	rm -f tests/SCORE_actual.sexp
