@@ -77,6 +77,7 @@ let al_param     x = Visitor_c.vk_param_s     (strip_info_visitor()) x
 let al_params    x = Visitor_c.vk_params_s    (strip_info_visitor()) x
 let al_arguments x = Visitor_c.vk_arguments_s (strip_info_visitor()) x
 let al_fields    x = Visitor_c.vk_struct_fields_s (strip_info_visitor()) x
+let al_name      x = Visitor_c.vk_name_s      (strip_info_visitor()) x
 
 let al_node      x = Visitor_c.vk_node_s      (strip_info_visitor()) x
 

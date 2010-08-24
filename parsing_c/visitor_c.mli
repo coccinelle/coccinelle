@@ -97,6 +97,7 @@ val vk_type_s : visitor_c_s -> fullType -> fullType
 val vk_decl_s : visitor_c_s -> declaration -> declaration
 val vk_ini_s : visitor_c_s -> initialiser -> initialiser
 val vk_def_s : visitor_c_s -> definition -> definition
+val vk_name_s : visitor_c_s -> name -> name
 val vk_toplevel_s : visitor_c_s -> toplevel -> toplevel
 val vk_info_s : visitor_c_s -> info -> info
 val vk_ii_s : visitor_c_s -> info list -> info list
