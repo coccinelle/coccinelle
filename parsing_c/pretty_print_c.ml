@@ -954,6 +954,7 @@ and pp_init (init, iinit) =
           returnt Ast_c.noattr;
 
         pp_attributes pr_elem pr_space attrs;
+	pr_space();
         pp_name name;
 
         pr_elem iifunc1;
@@ -999,7 +1000,7 @@ and pp_init (init, iinit) =
         iib +> List.iter pr_elem;
 
 
-        pr_elem iifunc2;
+        pr_elem iifunc2; pr_space();
         pr_elem i1;
         statxs +> List.iter pp_statement_seq;
         pr_elem i2;
@@ -1022,7 +1023,7 @@ and pp_init (init, iinit) =
   and pp_directive = function
     | Include {i_include = (s, ii);} ->
 	let (i1,i2) = Common.tuple_of_list2 ii in
-	pr_elem i1; pr_elem i2
+	pr_elem i1; pr_space(); pr_elem i2
     | Define ((s,ii), (defkind, defval)) ->
 	let (idefine,iident,ieol) = Common.tuple_of_list3 ii in
 	pr_elem idefine;
