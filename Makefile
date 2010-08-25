@@ -216,8 +216,8 @@ Makefile.config:
 tools:
 	$(MAKE) -C tools
 
-clean::
-	if [ -d tools ] ; then $(MAKE) -C tools clean ; fi
+distclean::
+	if [ -d tools ] ; then $(MAKE) -C tools distclean ; fi
 
 static:
 	rm -f spatch.opt spatch

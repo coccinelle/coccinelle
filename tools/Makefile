@@ -74,7 +74,7 @@ beforedepend::
 depend:: beforedepend
 	ocamldep $(INCLUDE) *.mli *.ml    > .depend
 
-distclean::
+distclean:: clean
 	rm -f .depend
 
 -include .depend
