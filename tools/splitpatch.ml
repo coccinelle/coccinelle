@@ -317,6 +317,7 @@ let make_message_files subject cover message date maintainer_table
 	make_mail_header o date maintainers ctr number
 	  (Printf.sprintf "%s: %s" (merge_files the_rest files) subject);
 	print_all o message;
+	Printf.fprintf o "\n---\n";
 	let (nm,o1) = Filename.open_temp_file "patch" "patch" in
 	List.iter (print_all o1) (List.rev diffs);
 	close_out o1;
