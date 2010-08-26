@@ -1,6 +1,6 @@
 -include ../Makefile.config
 
-PROGS=spp gitgrep split_patch extract_c_and_res #generate_dependencies
+PROGS=spp gitgrep splitpatch extract_c_and_res #generate_dependencies
 
 all: $(SUBDIRS) $(PROGS)
 
@@ -47,7 +47,7 @@ spp: spp.ml
 	$(OCAMLC) -o $@ $(SYSLIBS) $(INCLUDE) $(LIBS)  $+
 #	ocamlc -I ../commons/ -o spp str.cma unix.cma bigarray.cma  ../commons/common.cmo spp.ml
 
-split_patch: split_patch.cmo
+splitpatch: splitpatch.cmo
 	$(OCAMLC) -o $@ $(SYSLIBS) $(INCLUDE) $(LIBS)  $+
 
 extract_c_and_res: extract_c_and_res.cmo
