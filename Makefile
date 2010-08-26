@@ -213,7 +213,7 @@ Makefile.config:
 	@echo "Makefile.config is missing. Have you run ./configure?"
 	@exit 1
 
-tools:
+tools: $(LIBS)
 	$(MAKE) -C tools
 
 distclean::
@@ -310,6 +310,13 @@ install-bash:
 	$(INSTALL_DATA) scripts/spatch.bash_completion \
 		$(DESTDIR)$(BASH_COMPLETION_DIR)/spatch
 
+install-tools:
+	mkdir -p $(DESTDIR)$(BINDIR)
+	$(INSTALL_PROGRAM) tools/splitpatch \
+		$(DESTDIR)$(BINDIR)/splitpatch
+	$(INSTALL_PROGRAM) tools/cocci-send-email.perl \
+		$(DESTDIR)$(BINDIR)/cocci-send-email.perl
+
 install-python:
 	mkdir -p $(DESTDIR)$(SHAREDIR)/python/coccilib/coccigui
 	$(INSTALL_DATA) python/coccilib/*.py \
@@ -374,6 +381,10 @@ uninstall-bash:
 	rm -f $(DESTDIR)$(BASH_COMPLETION_DIR)/spatch
 	rmdir --ignore-fail-on-non-empty -p \
 		$(DESTDIR)$(BASH_COMPLETION_DIR)
+
+uninstall-tools:
+	rm -f $(DESTDIR)$(BINDIR)/splitpatch
+	rm -f $(DESTDIR)$(BINDIR)/cocci-send-email.perl
 
 version:
 	@echo "spatch     $(VERSION)"
