@@ -379,12 +379,12 @@ let generate_command front cover generated =
   (match cover with
     None ->
       Printf.fprintf o
-	"%s --auto-to --no-thread --from=\"%s\" %s %s $*\n"
+	"%s --auto-to --no-thread --from=\"%s\" %s $* %s\n"
 	mail_sender !from !git_options
 	(String.concat " " generated)
   | Some cover ->
       Printf.fprintf o
-	"%s --auto-to --thread --from=\"%s\" %s %s\n"
+	"%s --auto-to --thread --from=\"%s\" %s $* %s\n"
 	mail_sender !from !git_options
 	(String.concat " " ((front^".cover") :: generated)));
   close_out o
