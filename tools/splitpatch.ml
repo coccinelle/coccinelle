@@ -282,7 +282,9 @@ let make_mail_header o date maintainers ctr number subject =
       Printf.fprintf o "To: %s\n" x;
       Printf.fprintf o "Cc: %s\n" (String.concat "," xs)
   | _ -> failwith "no maintainers");
-  Printf.fprintf o "Subject: [PATCH %d/%d] %s\n\n" ctr number subject
+  if number = 1
+  then Printf.fprintf o "Subject: [PATCH] %s\n\n" subject
+  else Printf.fprintf o "Subject: [PATCH %d/%d] %s\n\n" ctr number subject
 
 let make_message_files subject cover message date maintainer_table
     patch front add_ext =
