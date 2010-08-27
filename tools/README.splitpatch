@@ -12,7 +12,7 @@ cocci-send-email.perl, and is installed with splitpatch.
 1. Configuring splitpatch
 
 Splitpatch needs some information about the environment, which it looks for
-in the file .split_patch_config in your home directory.  An example
+in the file .splitpatch in your home directory.  An example
 configuration file, including the complete set of options, is as follows:
 
 from = Julia Lawall <julia@diku.dk>
@@ -21,7 +21,7 @@ git_options = --cc=kernel-janitors@vger.kernel.org --suppress-cc=self
 prefix_before = /var/linuxes/linux-next
 prefix_after = /var/julia/linuxcopy
 
-All of these options, and indeed the .split_patch_config file itself, are
+All of these options, and indeed the .splitpatch file itself, are
 optional, in at least some situations.  These are described in more detail
 as follows:
 
@@ -30,21 +30,21 @@ as follows:
   increasing priority: 1) The first Signed-off-by in the message file (the
   message file is defined below), 2) The from information in .git/config if
   the current directory or an ancestor of the current directory has a .git
-  subdirectory, 3) The from information in ~/.split_patch_config.
+  subdirectory, 3) The from information in ~/.splitpatch.
 
 * git_tree: This is the directory containing the root of your Linux
   distribution.  This directory is expected to have a scripts subdirectory
   in which checkpatch.pl and get_maintainers.pl are found.  Splitpatch
   makes two attempts to find this information.  These are, in order of
   increasing priority: 1) The ancestor directory having .git as a
-  subdirectory, 2) The git_tree information in ~/.split_patch_config
+  subdirectory, 2) The git_tree information in ~/.splitpatch
 
 * git_options: These are any options that you would always like to pass
   along to git.  This is only useful if you use splitpatch from a directory
   that is not part of your Linux source tree.  If splitpatch is used from
   within the Linux source tree, the git options found in .git/config will
   be used as well, regardless of whether or not some git_options are
-  provided in ~/.split_patch_config
+  provided in ~/.splitpatch
 
 * prefix_before, prefix_after: These are substrings to remove from the ---
   and +++ lines of each diff.  These options are probably not useful if you
@@ -53,7 +53,8 @@ as follows:
 Arguments for git send-email (cocci-send-email.perl) can also be passed on
 the splitpatch command line.  Anything that starts with - on the splitpatch
 command line is interpreted as an argument to git send-email
-(cocci-send-email.perl).
+(cocci-send-email.perl).  Finally, any further arguments can be passed to
+the generated command script (see send.cmd below).
 
 2.  Using splitpatch
 

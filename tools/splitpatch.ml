@@ -3,7 +3,7 @@
 (* ------------------------------------------------------------------------ *)
 (* The following are a reminder of what this information should look like.
 These values are not used.  See the README file for information on how to
-create a .split_patch_config file in your home directory. *)
+create a .splitpatch file in your home directory. *)
 
 let from = ref "email@xyz.org"
 let git_tree = ref "/var/linuxes/linux-next"
@@ -68,9 +68,9 @@ let read_configs template =
 	  begin temporary_git_tree := Some path; from_from_gitconfig path end
 	else loop (Filename.dirname path) in
   loop (Sys.getcwd());
-  (* get information from .split_patch_config *)
+  (* get information from .splitpatch *)
   let home = List.hd(Common.cmd_to_list "ls -d ~") in
-  let config = home^"/.split_patch_config" in
+  let config = home^"/.splitpatch" in
   (if Sys.file_exists config
   then
     let i = open_in config in
@@ -379,7 +379,7 @@ let generate_command front cover generated =
   (match cover with
     None ->
       Printf.fprintf o
-	"%s --auto-to --no-thread --from=\"%s\" %s %s\n"
+	"%s --auto-to --no-thread --from=\"%s\" %s %s $*\n"
 	mail_sender !from !git_options
 	(String.concat " " generated)
   | Some cover ->
