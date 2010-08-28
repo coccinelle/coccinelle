@@ -48,7 +48,7 @@ spp: spp.ml
 #	ocamlc -I ../commons/ -o spp str.cma unix.cma bigarray.cma  ../commons/common.cmo spp.ml
 
 splitpatch: splitpatch.cmo
-	$(OCAMLC) -o $@ $(SYSLIBS) $(INCLUDE) $(LIBS)  $+
+	$(OCAMLC) -o $@ $(SYSLIBS) $(INCLUDE) $+
 
 extract_c_and_res: extract_c_and_res.cmo
 	$(OCAMLC) -o $@ $(SYSLIBS) $(INCLUDE) $(LIBS)  $+

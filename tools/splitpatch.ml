@@ -14,6 +14,21 @@ let prefix_after = ref (Some "/var/julia/linuxcopy")
 (* ------------------------------------------------------------------------ *)
 (* misc *)
 
+let process_output_to_list2 = fun command ->
+  let chan = Unix.open_process_in command in
+  let res = ref ([] : string list) in
+  let rec process_otl_aux () =
+    let e = input_line chan in
+    res := e::!res;
+    process_otl_aux() in
+  try process_otl_aux ()
+  with End_of_file ->
+    let stat = Unix.close_process_in chan in (List.rev !res,stat)
+let cmd_to_list command =
+  let (l,_) = process_output_to_list2 command in l
+let process_output_to_list = cmd_to_list
+let cmd_to_list_and_status = process_output_to_list2
+
 let safe_chop_extension s = try Filename.chop_extension s with _ -> s
 
 let safe_get_extension s =
@@ -26,7 +41,7 @@ let safe_get_extension s =
 
 let from_from_template template =
   let signed_offs =
-    Common.cmd_to_list (Printf.sprintf "grep Signed-off-by: %s" template) in
+    cmd_to_list (Printf.sprintf "grep Signed-off-by: %s" template) in
   match signed_offs with
     x::xs -> String.concat " " (Str.split (Str.regexp "[ \t]+") x)
   | _ -> failwith "No Signed-off-by in template file"
@@ -69,7 +84,7 @@ let read_configs template =
 	else loop (Filename.dirname path) in
   loop (Sys.getcwd());
   (* get information from .splitpatch *)
-  let home = List.hd(Common.cmd_to_list "ls -d ~") in
+  let home = List.hd(cmd_to_list "ls -d ~") in
   let config = home^"/.splitpatch" in
   (if Sys.file_exists config
   then
@@ -83,7 +98,7 @@ let read_configs template =
       | ["git_options";s] -> git_options := s
       | ["prefix_before";s] -> prefix_before := Some s
       | ["prefix_after";s] -> prefix_after := Some s
-      | _ -> Common.pr2 ("unknown line: "^l));
+      | _ -> Printf.fprintf stderr "unknown line: %s\n" l);
       loop() in
     try loop() with End_of_file -> close_in i);
   match !temporary_git_tree with
@@ -226,9 +241,9 @@ let resolve_maintainers patches =
 	      (match Str.split spaces after with
 		file::_ ->
 		  let maintainers =
-		    List.hd (Common.cmd_to_list (maintainer_command file)) in
+		    List.hd (cmd_to_list (maintainer_command file)) in
 		  let subsystems =
-		    Common.cmd_to_list (subsystem_command file) in
+		    cmd_to_list (subsystem_command file) in
 		  let info = (subsystems,maintainers) in
 		  let cell =
 		    try Hashtbl.find maintainer_table info
@@ -324,7 +339,7 @@ let make_message_files subject cover message date maintainer_table
 	List.iter (print_all o1) (List.rev diffs);
 	close_out o1;
 	let diffstat =
-	  Common.cmd_to_list
+	  cmd_to_list
 	    (Printf.sprintf "diffstat -p1 < %s ; /bin/rm %s" nm nm) in
 	List.iter (print_all o) [diffstat];
 	Printf.fprintf o "\n";
@@ -332,7 +347,7 @@ let make_message_files subject cover message date maintainer_table
 	Printf.fprintf o "\n";
 	close_out o;
 	let (info,stat) =
-	  Common.cmd_to_list_and_status
+	  cmd_to_list_and_status
 	    (checkpatch_command ((Sys.getcwd())^"/"^output_file)) in
 	(if not(stat = Unix.WEXITED 0)
 	then (print_all stderr info; Printf.fprintf stderr "\n"));
@@ -392,7 +407,7 @@ let generate_command front cover generated =
   close_out o
 
 let make_output_files subject cover message maintainer_table patch =
-  let date = List.hd (Common.cmd_to_list "date") in
+  let date = List.hd (cmd_to_list "date") in
   let front = safe_chop_extension patch in
   let add_ext =
     match safe_get_extension patch with
