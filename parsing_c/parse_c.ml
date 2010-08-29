@@ -613,7 +613,7 @@ let get_one_elem ~pass tr (file, filelines) =
       (* Call parser *)
       (* -------------------------------------------------- *)
       Common.profile_code_exclusif "YACC" (fun () ->
-        Left (Parser_c.celem (lexer_function ~pass tr) lexbuf_fake)
+	Left (Parser_c.celem (lexer_function ~pass tr) lexbuf_fake)
       )
     with e ->
       LP.restore_typedef_state();
@@ -691,7 +691,7 @@ let find_optional_macro_to_expand2 ~defs toks =
 
   let defs = Common.hash_of_list defs in
 
-  let toks = toks +> Common.map (function
+  let toks = toks +> Common.tail_map (function
 
     (* special cases to undo *)
     | Parser_c.TMacroIterator (s, ii) ->

@@ -35,6 +35,8 @@
   but depend on virtual rules that are not defined on the command line
 - treat top-level tokens in decl visitor.  Thanks to Peter Tummeltshammer
   for noticing a resulting problem.
+- improve typing of the result of an assignment expression
+- eliminate some recursive calls in C code parsing to avoid tack overflows
 
 * 0.2.3
 ** Language:

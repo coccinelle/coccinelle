@@ -1757,6 +1757,7 @@ val empty_graph : 'a list * 'b list
 (* mostly alias to functions in List *)
 
 val map : ('a -> 'b) -> 'a list -> 'b list
+val tail_map : ('a -> 'b) -> 'a list -> 'b list
 val filter : ('a -> bool) -> 'a list -> 'a list
 val fold : ('a -> 'b -> 'a) -> 'a -> 'b list -> 'a
 

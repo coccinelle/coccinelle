@@ -113,8 +113,7 @@ OCAMLCFLAGS=
 # but 'make forprofiling' below does that for you.
 # This flag is also used in subdirectories so don't change its name here.
 # To enable backtrace support for native code, you need to put -g in OPTFLAGS
-# to also link with -g, but even in 3.11 the backtrace support seems buggy so
-# not worth it.
+# to also link with -g.
 OPTFLAGS=
 
 OCAMLC=ocamlc$(OPTBIN) $(OCAMLCFLAGS)  $(INCLUDES)
