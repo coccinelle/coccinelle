@@ -273,15 +273,17 @@ let common_prefix l1 l2 =
 	   (String.concat "/" l1) (String.concat "/" l2))
   | res -> res
 
-let merge_files the_rest files =
-  let butlast l = if the_rest then l else List.rev(List.tl(List.rev l)) in
-  match List.map (function s -> Str.split (Str.regexp "/") s) files with
-    first::rest ->
-      let rec loop res = function
-	  [] -> String.concat "/" res
-	| x::rest -> loop (common_prefix res x) rest in
-      loop (butlast first) rest
-  | _ -> failwith "not possible"
+let merge_files the_rest = function
+    [l] -> l
+  | files ->
+      let butlast l = if the_rest then l else List.rev(List.tl(List.rev l)) in
+      match List.map (function s -> Str.split (Str.regexp "/") s) files with
+	first::rest ->
+	  let rec loop res = function
+	      [] -> String.concat "/" res
+	    | x::rest -> loop (common_prefix res x) rest in
+	  loop (butlast first) rest
+      | _ -> failwith "not possible"
 
 (* ------------------------------------------------------------------------ *)
 
