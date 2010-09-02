@@ -792,6 +792,7 @@ val partition_either3 :
 
 val filter_some : 'a option list -> 'a list
 val map_filter : ('a -> 'b option) -> 'a list -> 'b list
+val tail_map_filter : ('a -> 'b option) -> 'a list -> 'b list
 val find_some : ('a -> 'b option) -> 'a list -> 'b
 
 val list_to_single_or_exn: 'a list -> 'a

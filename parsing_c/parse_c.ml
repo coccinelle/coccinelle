@@ -108,7 +108,7 @@ let print_bad line_error (start_line, end_line) filelines  =
 (* Stats on what was passed/commentized  *)
 (*****************************************************************************)
 
-let commentized xs = xs +> Common.map_filter (function
+let commentized xs = xs +> Common.tail_map_filter (function
   | Parser_c.TCommentCpp (cppkind, ii) ->
       let s = Ast_c.str_of_info ii in
       let legal_passing =

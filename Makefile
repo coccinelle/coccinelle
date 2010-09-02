@@ -114,7 +114,7 @@ OCAMLCFLAGS=
 # This flag is also used in subdirectories so don't change its name here.
 # To enable backtrace support for native code, you need to put -g in OPTFLAGS
 # to also link with -g.
-OPTFLAGS=
+OPTFLAGS= -g
 
 OCAMLC=ocamlc$(OPTBIN) $(OCAMLCFLAGS)  $(INCLUDES)
 OCAMLOPT=ocamlopt$(OPTBIN) $(OPTFLAGS) $(INCLUDES)

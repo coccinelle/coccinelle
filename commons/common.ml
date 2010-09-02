@@ -2101,6 +2101,17 @@ let rec filter_some = function
 
 let map_filter f xs = xs +> List.map f +> filter_some
 
+(* avoid recursion *)
+let tail_map_filter f xs =
+  List.rev
+    (List.fold_left
+       (function prev ->
+	 function cur ->
+	   match f cur with
+	     Some x -> x :: prev
+	   | None -> prev)
+       [] xs)
+
 let rec find_some p = function
   | [] -> raise Not_found
   | x :: l ->
