@@ -1529,7 +1529,8 @@ and process_a_ctl_a_env_a_toplevel2 r e c f =
 
     r.rule_info.was_matched := true;
 
-    if not (null trans_info)
+    if not (null trans_info) &&
+      not (!Flag.sgrep_mode2 && not !Flag_cocci.show_diff)
     then begin
       c.was_modified := true;
       try

@@ -28,6 +28,8 @@
 - try simpler patterns on glimpse failure
 - graceful and immediate failure when a virtual rule is defined on the
   command line, but not in the rule
+- spatch returns -1 when a virtual rule is requested that is not supported
+- no transformation when using * with the option -no_show_diff
 
 ** Bugfix:
 - detect used after metavariables in simple statement metavariable match

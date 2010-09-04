@@ -1087,7 +1087,8 @@ let main_with_better_error_report () =
 	     filename (Unix.error_message e));
         raise (UnixExit (-1))
     | Parse_cocci.Bad_virt s ->
-	Common.pr2 (Printf.sprintf "virtual rule %s not supported" s)
+	Common.pr2 (Printf.sprintf "virtual rule %s not supported" s);
+        raise (UnixExit (-1))
 
 (*****************************************************************************)
 let start =

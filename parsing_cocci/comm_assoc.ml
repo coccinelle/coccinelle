@@ -32,7 +32,6 @@ let process_binops rule_name =
       when List.mem (Ast0.unwrap_mcode op) comm_assoc ->
 	(match Ast0.unwrap right with
 	  Ast0.Edots(d,None) ->
-	    Printf.printf "have an edots in comm assoc\n";
 	    if (is_minus e || (is_context e && is_context right))
 		&& nopos op && nopos d
 	    (* keep dots to record required modif *)
