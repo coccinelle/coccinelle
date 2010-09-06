@@ -454,14 +454,7 @@ and vk_type = fun bigf t ->
         )
 
     | Enum  (sopt, enumt) ->
-        enumt +> List.iter (fun ((name, eopt), iicomma) ->
-          vk_name bigf name;
-          iif iicomma;
-          eopt +> Common.do_option (fun (info, e) ->
-            iif [info];
-            vk_expr bigf e
-          )
-        );
+        vk_enum_fields bigf enumt
 
     | StructUnion (sopt, _su, fields) ->
         vk_struct_fields bigf fields
@@ -610,6 +603,18 @@ and vk_struct_fieldkinds = fun bigf onefield_multivars ->
         vk_expr bigf expr;
         vk_type bigf t
   )
+
+
+and vk_enum_fields = fun bigf enumt ->
+  let iif ii = vk_ii bigf ii in
+  enumt +> List.iter (fun ((name, eopt), iicomma) ->
+    vk_name bigf name;
+    iif iicomma;
+    eopt +> Common.do_option (fun (info, e) ->
+      iif [info];
+      vk_expr bigf e
+        )
+      )
 
 (* ------------------------------------------------------------------------ *)
 

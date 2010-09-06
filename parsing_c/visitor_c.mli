@@ -53,6 +53,7 @@ val vk_params_splitted :
 val vk_struct_field : visitor_c -> field -> unit
 val vk_struct_fields : visitor_c -> field list -> unit
 val vk_struct_fieldkinds : visitor_c -> fieldkind wrap list -> unit
+val vk_enum_fields : visitor_c -> enumType -> unit
 
 val vk_cst : visitor_c -> ((constant, string) Common.either wrap) -> unit
 
