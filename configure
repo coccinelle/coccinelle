@@ -38,9 +38,10 @@ my $sexpdir="ocamlsexp";
 local $_ = join ' ', @ARGV;
 
 # Parse options
-/-h/ || /--help/ and die "usage: $0 [--prefix=path] [--without-python] [--no-opt]\n\n\t--no-opt\tDo not use the optimimized version of OCaml\n\t--opt\tUse the optimimized version of OCaml\n\n";
+/-h/ || /--help/ and die "usage: $0 [--prefix=path] [--without-python] [--without-ocaml] [--no-opt]\n\n\t--no-opt\tDo not use the optimimized version of OCaml\n\t--opt\tUse the optimimized version of OCaml\n\n";
 /--prefix=([^ ]*)/ and $prefix = $1;
 /--without-python/ and $python = 0;
+/--without-ocaml/ and $noocamlscripting = 1;
 /--no-opt/ and $opt = "";
 /--opt/ and $opt = ".opt";
 
@@ -108,11 +109,13 @@ $error +=
                  "The program ocaml is missing or is not a good version. We need at least 3.09",
                  );
 
+unless ($noocamlscripting) { 
 $noocamlscripting = check_config("echo \"1;;\\n\" | ocaml |",
                  "Objective(.*) 3.1[1-9]",
                  "OCaml >= 3.11 is present. OCaml scripting activated.",
                  "OCaml scripting disabled. We need at least OCaml 3.11",
                  );
+}
 my $ocamlprefix = $noocamlscripting ? "no" : "yes";
 
 if ($opt eq ".opt") {
