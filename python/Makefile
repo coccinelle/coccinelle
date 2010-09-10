@@ -86,17 +86,14 @@ $(CTLEXEC): $(CTLOBJS) $(LIBS)
 
 clean::
 	rm -f $(OPTLIB) $(LIB:.cma=.a)
-	rm -f $(TARGET) rm -f $(TARGET).byte
+	rm -f $(TARGET)
+	rm -f $(TARGET).byte
 	rm -f $(CTLTARGET)
 
-
-#pycocci.ml: ../pycaml/pycaml.ml ../pycaml/pycaml_ml.c
-#pycocci_aux.ml:  ../pycaml/pycaml.ml ../pycaml/pycaml_ml.c
-pycocci_aux.ml:
-	@echo "\n\n\t*** pycocci_aux.ml not found ! ***\n\n\tRun 'configure && make depend' first.\n\n"
-
-rmlinks:
-	rm -f pycocci.ml pycocci_aux.ml
+distclean::
+	$(MAKE) -C coccilib $@
+	rm -f .depend
+	rm -f pycocci.ml
 
 ##############################################################################
 # Generic ocaml rules
@@ -119,10 +116,6 @@ rmlinks:
 clean::
 	rm -f *.cm[iox] *.o  *.annot
 	rm -f *~ .*~ #*#
-
-distclean::
-	$(MAKE) -C coccilib $@
-	rm -f .depend
 
 beforedepend:
 
