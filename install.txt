@@ -13,6 +13,13 @@ You must first install a recent version of
  - Python and its development files (python-dev)
    (unless you run configure with the --without-python option)
 
+On Debian/Ubuntu, install the following packages
+ - ocaml-native-compilers (or alternatively ocaml) 
+ - pycaml
+ - libsexplib-camlp4-dev
+ - menhir and libmenhir-ocaml-dev
+
+
 Then simply type
  ./configure
  make depend
