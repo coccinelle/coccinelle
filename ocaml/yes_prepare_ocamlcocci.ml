@@ -7,8 +7,9 @@ let ext = if Dynlink.is_native then ".cmxs" else ".cma"
 let has_ocamlfind = ref false
 
 let check_cmd cmd =
-  match Sys.command cmd with
-      0 -> true
+  let (_,stat) = Common.cmd_to_list_and_status cmd in
+  match stat with
+      Unix.WEXITED 0 -> true
     | _ -> false
 
 let check_runtime () =

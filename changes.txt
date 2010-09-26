@@ -39,6 +39,7 @@
   for noticing a resulting problem.
 - improve typing of the result of an assignment expression
 - eliminate some recursive calls in C code parsing to avoid tack overflows
+- avoid adding an error message to standard output if ocamlfind is not found
 
 * 0.2.3
 ** Language:
