@@ -1181,6 +1181,8 @@ let rec drop_double_dots l =
       [] -> []
     | x::rest when any_before prev && any_after x ->
 	(PC.TNothing,i)::x::(loop x rest)
+    | ((PC.TComma(_),_) as c)::x::rest when any_before prev && any_after x ->
+	c::(PC.TNothing,i)::x::(loop x rest)
     | x::rest -> x :: (loop x rest) in
   match l with
     [] -> []

@@ -103,6 +103,9 @@ module type PARAM =
 
     val distrf_ini :
       (Ast_cocci.meta_name Ast_cocci.mcode, Ast_c.initialiser) matcher
+    val distrf_inis :
+      (Ast_cocci.meta_name Ast_cocci.mcode,
+       (Ast_c.initialiser, Ast_c.il) Common.either list) matcher
     val distrf_decl :
       (Ast_cocci.meta_name Ast_cocci.mcode, Ast_c.declaration) matcher
     val distrf_field :
@@ -115,6 +118,10 @@ module type PARAM =
       (Ast_cocci.meta_name Ast_cocci.mcode,
       (string Ast_c.wrap, Ast_c.il) Common.either list)
       matcher
+
+    val distrf_enum_fields :
+      (Ast_cocci.meta_name Ast_cocci.mcode,
+       (Ast_c.oneEnumType, Ast_c.il) Common.either list) matcher
 
     val distrf_struct_fields :
       (Ast_cocci.meta_name Ast_cocci.mcode, Ast_c.field list)

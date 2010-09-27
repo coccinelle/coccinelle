@@ -120,6 +120,7 @@ let dumb_astcocci_type = function
  | A.FunctionType _ -> ()
  | A.Array (typa, _, eaopt, _) -> ()
  | A.EnumName(en, ena) -> ()
+ | A.EnumDef(ty, lb, ids, rb) -> ()
  | A.StructUnionName(sa, sua) -> ()
  | A.StructUnionDef(ty, lb, decls, rb) -> ()
  | A.TypeName sa -> ()

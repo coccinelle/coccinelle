@@ -151,7 +151,9 @@ and base_typeC =
                        string mcode (* ) *)
   | Array           of typeC * string mcode (* [ *) *
 	               expression option * string mcode (* ] *)
-  | EnumName        of string mcode (*enum*) * ident (* name *)
+  | EnumName        of string mcode (*enum*) * ident option (* name *)
+  | EnumDef  of typeC (* either StructUnionName or metavar *) *
+	string mcode (* { *) * expression dots * string mcode (* } *)
   | StructUnionName of Ast_cocci.structUnion mcode * ident option (* name *)
   | StructUnionDef  of typeC (* either StructUnionName or metavar *) *
 	string mcode (* { *) * declaration dots * string mcode (* } *)
@@ -194,7 +196,8 @@ and declaration = base_declaration wrap
 and base_initialiser =
     MetaInit of Ast_cocci.meta_name mcode * pure
   | InitExpr of expression
-  | InitList of string mcode (*{*) * initialiser_list * string mcode (*}*)
+  | InitList of string mcode (*{*) * initialiser_list * string mcode (*}*) *
+	bool (* true if ordered, false if unordered *)
   | InitGccExt of
       designator list (* name *) * string mcode (*=*) *
 	initialiser (* gccext: *)
@@ -472,6 +475,7 @@ val fresh_index : unit -> int
 val set_mcode_data : 'a -> 'a mcode -> 'a mcode
 val make_mcode : 'a -> 'a mcode
 val make_mcode_info : 'a -> info -> 'a mcode
+val make_minus_mcode : 'a -> 'a mcode
 
 val ast0_type_to_type : typeC -> Type_cocci.typeC
 val reverse_type : Type_cocci.typeC -> base_typeC

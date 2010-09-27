@@ -406,7 +406,7 @@ let do_get_constants constants keywords env neg_pos =
 
   V.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing
     ident expression fullType typeC initialiser parameter declaration
     rule_elem statement donothing donothing donothing
 
@@ -439,7 +439,7 @@ let get_all_constants minus_only =
   V.combiner bind option_default
     other mcode other other other other other other other other other other
 
-    donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing
 
@@ -483,7 +483,7 @@ let get_plus_constants =
 
   V.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
     rule_elem statement donothing donothing donothing
 
@@ -518,7 +518,7 @@ let all_context =
 
   let initialiser r k e =
     match Ast.unwrap e with
-      Ast.InitList(all_minus,_,_,_,_) ->
+      Ast.StrInitList(all_minus,_,_,_,_) ->
 	not all_minus && k e
     | _ -> k e in
 
@@ -537,7 +537,7 @@ let all_context =
 
   V.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing
     donothing donothing donothing donothing initialiser donothing
     donothing rule_elem statement donothing donothing donothing
 

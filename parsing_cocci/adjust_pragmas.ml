@@ -167,6 +167,9 @@ let rec left_ty t =
       call_right left_ty ty t (function ty -> Ast0.Array(ty,lb,size,rb))
   | Ast0.EnumName(kind,name) ->
       call_right left_mcode kind t (function kind -> Ast0.EnumName(kind,name))
+  | Ast0.EnumDef(ty,lb,ids,rb) ->
+      call_right left_ty ty t
+	(function ty -> Ast0.EnumDef(ty,lb,ids,rb))
   | Ast0.StructUnionName(kind,name) ->
       call_right left_mcode kind t
 	(function kind -> Ast0.StructUnionName(kind,name))

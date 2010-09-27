@@ -395,6 +395,7 @@ let rec set_ifdef_parenthize_info xs =
  * [TCommentSpace "\n"; TDefEOL] but if TDefEOL is a fakeinfo then we will
  * not synchronize on it and so we will not print the "\n".
  * A solution would be to put the TDefEOL before the "\n".
+ * (jll: tried to do this, see the comment "Put end of line..." below)
  *
  * todo?: could put a ExpandedTok for that ?
  *)
@@ -447,7 +448,13 @@ and define_line_2 acc line lastinfo xs =
       | x ->
           if line' =|= line
           then define_line_2 (x::acc) line info xs
-          else define_line_1 (mark_end_define lastinfo::acc) (x::xs)
+          else
+	    (* Put end of line token before the newline.  A newline at least
+	       must be there because the line changed and because we saw a
+	       #define previously to get to this function at all *)
+	    define_line_1
+	      ((List.hd acc)::(mark_end_define lastinfo::(List.tl acc)))
+	      (x::xs)
       )
 
 let rec define_ident acc xs =

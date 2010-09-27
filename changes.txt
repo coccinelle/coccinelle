@@ -19,6 +19,7 @@
   SmPL as identifier metavariables, see demos/{python,ocaml}tococci.cocci
 - declaration (match variable declarations) and field (match structure
   field declarations) metavariables
+- matching of array initializations and of enum declarations
 
 ** Features:
 - compatability with Python 2.7.  Thanks to Richard W.M. Jones for pointing
@@ -39,6 +40,10 @@
   for noticing a resulting problem.
 - improve typing of the result of an assignment expression
 - eliminate some recursive calls in C code parsing to avoid tack overflows
+- better pretty printing of #define when the whole line is removed
+- better pretty printing of asm code containing
+  "::[input]"r"(&coherence_data[i])"
+- allow pretty printing of C code with nameless bit fields
 - avoid adding an error message to standard output if ocamlfind is not found
 
 * 0.2.3

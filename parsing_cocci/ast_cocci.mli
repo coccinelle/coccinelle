@@ -234,7 +234,9 @@ and base_typeC =
                    string mcode (* ) *)
   | Array           of fullType * string mcode (* [ *) *
 	               expression option * string mcode (* ] *)
-  | EnumName        of string mcode (*enum*) * ident (* name *)
+  | EnumName        of string mcode (*enum*) * ident option (* name *)
+  | EnumDef  of fullType (* either EnumName or metavar *) *
+	string mcode (* { *) * expression dots * string mcode (* } *)
   | StructUnionName of structUnion mcode * ident option (* name *)
   | StructUnionDef  of fullType (* either StructUnionName or metavar *) *
 	string mcode (* { *) * declaration dots * string mcode (* } *)
@@ -284,7 +286,8 @@ and declaration = base_declaration wrap
 and base_initialiser =
     MetaInit of meta_name mcode * keep_binding * inherited
   | InitExpr of expression
-  | InitList of bool (* true if all are - *) *
+  | ArInitList of string mcode (*{*) * initialiser dots * string mcode (*}*)
+  | StrInitList of bool (* true if all are - *) *
         string mcode (*{*) * initialiser list * string mcode (*}*) *
 	initialiser list (* whencode: elements that shouldn't appear in init *)
   | InitGccExt of
@@ -293,6 +296,7 @@ and base_initialiser =
   | InitGccName of ident (* name *) * string mcode (*:*) *
 	initialiser
   | IComma of string mcode (* , *)
+  | Idots  of string mcode (* ... *) * initialiser option (* whencode *)
   | OptIni    of initialiser
   | UniqueIni of initialiser
 

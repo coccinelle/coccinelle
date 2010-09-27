@@ -365,9 +365,16 @@ and typeC t =
       let ty = typeC ty in
       mkres t (Ast0.Array(ty,lb,get_option expression size,rb))
 	ty (promote_mcode rb)
-  | Ast0.EnumName(kind,name) ->
+  | Ast0.EnumName(kind,Some name) ->
       let name = ident name in
-      mkres t (Ast0.EnumName(kind,name)) (promote_mcode kind) name
+      mkres t (Ast0.EnumName(kind,Some name)) (promote_mcode kind) name
+  | Ast0.EnumName(kind,None) ->
+      let mc = promote_mcode kind in
+      mkres t (Ast0.EnumName(kind,None)) mc mc
+  | Ast0.EnumDef(ty,lb,ids,rb) ->
+      let ty = typeC ty in
+      let ids = dots is_exp_dots (Some(promote_mcode lb)) expression ids in
+      mkres t (Ast0.EnumDef(ty,lb,ids,rb)) ty (promote_mcode rb)
   | Ast0.StructUnionName(kind,Some name) ->
       let name = ident name in
       mkres t (Ast0.StructUnionName(kind,Some name)) (promote_mcode kind) name
@@ -475,10 +482,10 @@ and initialiser i =
   | Ast0.InitExpr(exp) ->
       let exp = expression exp in
       mkres i (Ast0.InitExpr(exp)) exp exp
-  | Ast0.InitList(lb,initlist,rb) ->
+  | Ast0.InitList(lb,initlist,rb,ordered) ->
       let initlist =
 	dots is_init_dots (Some(promote_mcode lb)) initialiser initlist in
-      mkres i (Ast0.InitList(lb,initlist,rb))
+      mkres i (Ast0.InitList(lb,initlist,rb,ordered))
 	(promote_mcode lb) (promote_mcode rb)
   | Ast0.InitGccExt(designators,eq,ini) ->
       let (delims,designators) = (* non empty due to parsing *)

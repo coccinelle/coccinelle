@@ -184,7 +184,10 @@ and typeC old_metas table minus t =
       check_table table minus name
   | Ast0.DisjType(_,types,_,_) ->
       List.iter (typeC old_metas table minus) types
-  | Ast0.EnumName(en,id) -> ident GLOBAL old_metas table minus id
+  | Ast0.EnumName(en,Some id) -> ident GLOBAL old_metas table minus id
+  | Ast0.EnumDef(ty,lb,ids,rb) ->
+      typeC old_metas table minus ty;
+      dots (expression GLOBAL old_metas table minus) ids
   | Ast0.StructUnionName(su,Some id) -> ident GLOBAL old_metas table minus id
   | Ast0.StructUnionDef(ty,lb,decls,rb) ->
       typeC old_metas table minus ty;
@@ -241,7 +244,7 @@ and initialiser old_metas table minus ini =
     Ast0.MetaInit(name,_) ->
       check_table table minus name
   | Ast0.InitExpr(exp) -> expression ID old_metas table minus exp
-  | Ast0.InitList(lb,initlist,rb) ->
+  | Ast0.InitList(lb,initlist,rb,ordered) ->
       dots (initialiser old_metas table minus) initlist
   | Ast0.InitGccExt(designators,eq,ini) ->
       List.iter (designator old_metas table minus) designators;
@@ -385,6 +388,7 @@ and case_line old_metas table minus c =
     Ast0.Default(def,colon,code) ->
       dots (statement old_metas table minus) code
   | Ast0.Case(case,exp,colon,code) ->
+      expression GLOBAL old_metas table minus exp;
       dots (statement old_metas table minus) code
   | Ast0.DisjCase(_,case_lines,_,_) ->
       List.iter (case_line old_metas table minus) case_lines

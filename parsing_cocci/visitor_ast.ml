@@ -25,7 +25,8 @@ type 'a combiner =
      combiner_anything : Ast.anything  -> 'a;
      combiner_expression_dots : Ast.expression Ast.dots -> 'a;
      combiner_statement_dots : Ast.statement Ast.dots -> 'a;
-     combiner_declaration_dots : Ast.declaration Ast.dots -> 'a}
+     combiner_declaration_dots : Ast.declaration Ast.dots -> 'a;
+     combiner_initialiser_dots : Ast.initialiser Ast.dots -> 'a}
 
 type ('mc,'a) cmcode = 'a combiner -> 'mc Ast_cocci.mcode -> 'a
 type ('cd,'a) ccode = 'a combiner -> ('cd -> 'a) -> 'cd -> 'a
@@ -36,7 +37,7 @@ let combiner bind option_default
     unary_mcodefn binary_mcodefn
     cv_mcodefn sign_mcodefn struct_mcodefn storage_mcodefn
     inc_file_mcodefn
-    expdotsfn paramdotsfn stmtdotsfn decldotsfn
+    expdotsfn paramdotsfn stmtdotsfn decldotsfn initdotsfn
     identfn exprfn ftfn tyfn initfn paramfn declfn rulefn stmtfn casefn
     topfn anyfn =
   let multibind l =
@@ -48,6 +49,13 @@ let combiner bind option_default
   let get_option f = function
       Some x -> f x
     | None -> option_default in
+
+  let dotsfn param default all_functions arg =
+    let k d =
+      match Ast.unwrap d with
+	Ast.DOTS(l) | Ast.CIRCLES(l) | Ast.STARS(l) ->
+	  multibind (List.map default l) in
+    param all_functions k arg in
 
   let rec meta_mcode x = meta_mcodefn all_functions x
   and string_mcode x = string_mcodefn all_functions x
@@ -62,33 +70,11 @@ let combiner bind option_default
   and storage_mcode x = storage_mcodefn all_functions x
   and inc_file_mcode x = inc_file_mcodefn all_functions x
 
-  and expression_dots d =
-    let k d =
-      match Ast.unwrap d with
-	Ast.DOTS(l) | Ast.CIRCLES(l) | Ast.STARS(l) ->
-	  multibind (List.map expression l) in
-    expdotsfn all_functions k d
-
-  and parameter_dots d =
-    let k d =
-      match Ast.unwrap d with
-	Ast.DOTS(l) | Ast.CIRCLES(l) | Ast.STARS(l) ->
-	  multibind (List.map parameterTypeDef l) in
-    paramdotsfn all_functions k d
-
-  and statement_dots d =
-    let k d =
-      match Ast.unwrap d with
-	Ast.DOTS(l) | Ast.CIRCLES(l) | Ast.STARS(l) ->
-	  multibind (List.map statement l) in
-    stmtdotsfn all_functions k d
-
-  and declaration_dots d =
-    let k d =
-      match Ast.unwrap d with
-	Ast.DOTS(l) | Ast.CIRCLES(l) | Ast.STARS(l) ->
-	  multibind (List.map declaration l) in
-    decldotsfn all_functions k d
+  and expression_dots d = dotsfn expdotsfn expression all_functions d
+  and parameter_dots d = dotsfn paramdotsfn parameterTypeDef all_functions d
+  and statement_dots d = dotsfn stmtdotsfn statement all_functions d
+  and declaration_dots d = dotsfn decldotsfn declaration all_functions d
+  and initialiser_dots d = dotsfn initdotsfn initialiser all_functions d
 
   and ident i =
     let k i =
@@ -197,7 +183,12 @@ let combiner bind option_default
       |	Ast.FunctionType (_,ty,lp1,params,rp1) ->
 	  function_type (ty,lp1,params,rp1) []
       | Ast.Array(ty,lb,size,rb) -> array_type (ty,lb,size,rb) []
-      | Ast.EnumName(kind,name) -> bind (string_mcode kind) (ident name)
+      | Ast.EnumName(kind,name) ->
+	  bind (string_mcode kind) (get_option ident name)
+      | Ast.EnumDef(ty,lb,ids,rb) ->
+	  multibind
+	    [fullType ty; string_mcode lb; expression_dots ids;
+	      string_mcode rb]
       | Ast.StructUnionName(kind,name) ->
 	  bind (struct_mcode kind) (get_option ident name)
       | Ast.StructUnionDef(ty,lb,decls,rb) ->
@@ -252,7 +243,10 @@ let combiner bind option_default
       match Ast.unwrap i with
 	Ast.MetaInit(name,_,_) -> meta_mcode name
       |	Ast.InitExpr(exp) -> expression exp
-      | Ast.InitList(allminus,lb,initlist,rb,whencode) ->
+      | Ast.ArInitList(lb,initlist,rb) ->
+	  multibind
+	    [string_mcode lb; initialiser_dots initlist; string_mcode rb]
+      | Ast.StrInitList(allminus,lb,initlist,rb,whencode) ->
 	  multibind
 	    [string_mcode lb;
 	      multibind (List.map initialiser initlist);
@@ -265,6 +259,8 @@ let combiner bind option_default
 	    ((List.map designator designators) @
 	     [string_mcode eq; initialiser ini])
       | Ast.IComma(cm) -> string_mcode cm
+      | Ast.Idots(dots,whencode) ->
+	  bind (string_mcode dots) (get_option initialiser whencode)
       | Ast.OptIni(i) -> initialiser i
       | Ast.UniqueIni(i) -> initialiser i in
     initfn all_functions k i
@@ -517,7 +513,8 @@ let combiner bind option_default
       combiner_anything = anything;
       combiner_expression_dots = expression_dots;
       combiner_statement_dots = statement_dots;
-      combiner_declaration_dots = declaration_dots} in
+      combiner_declaration_dots = declaration_dots;
+      combiner_initialiser_dots = initialiser_dots} in
   all_functions
 
 (* ---------------------------------------------------------------------- *)
@@ -540,6 +537,7 @@ type rebuilder =
       rebuilder_expression_dots : Ast.expression Ast.dots inout;
       rebuilder_statement_dots : Ast.statement Ast.dots inout;
       rebuilder_declaration_dots : Ast.declaration Ast.dots inout;
+      rebuilder_initialiser_dots : Ast.initialiser Ast.dots inout;
       rebuilder_define_param_dots : Ast.define_param Ast.dots inout;
       rebuilder_define_param : Ast.define_param inout;
       rebuilder_define_parameters : Ast.define_parameters inout;
@@ -553,47 +551,27 @@ let rebuilder
     meta_mcode string_mcode const_mcode assign_mcode fix_mcode unary_mcode
     binary_mcode cv_mcode sign_mcode struct_mcode storage_mcode
     inc_file_mcode
-    expdotsfn paramdotsfn stmtdotsfn decldotsfn
+    expdotsfn paramdotsfn stmtdotsfn decldotsfn initdotsfn
     identfn exprfn ftfn tyfn initfn paramfn declfn rulefn stmtfn casefn
     topfn anyfn =
   let get_option f = function
       Some x -> Some (f x)
     | None -> None in
-  let rec expression_dots d =
-    let k d =
-      Ast.rewrap d
-	(match Ast.unwrap d with
-	  Ast.DOTS(l) -> Ast.DOTS(List.map expression l)
-	| Ast.CIRCLES(l) -> Ast.CIRCLES(List.map expression l)
-	| Ast.STARS(l) -> Ast.STARS(List.map expression l)) in
-    expdotsfn all_functions k d
 
-  and parameter_dots d =
+  let dotsfn param default all_functions arg =
     let k d =
       Ast.rewrap d
 	(match Ast.unwrap d with
-	  Ast.DOTS(l) -> Ast.DOTS(List.map parameterTypeDef l)
-	| Ast.CIRCLES(l) -> Ast.CIRCLES(List.map parameterTypeDef l)
-	| Ast.STARS(l) -> Ast.STARS(List.map parameterTypeDef l)) in
-    paramdotsfn all_functions k d
+	  Ast.DOTS(l) -> Ast.DOTS(List.map default l)
+	| Ast.CIRCLES(l) -> Ast.CIRCLES(List.map default l)
+	| Ast.STARS(l) -> Ast.STARS(List.map default l)) in
+    param all_functions k arg in
 
-  and statement_dots d =
-    let k d =
-      Ast.rewrap d
-	(match Ast.unwrap d with
-	  Ast.DOTS(l) -> Ast.DOTS(List.map statement l)
-	| Ast.CIRCLES(l) -> Ast.CIRCLES(List.map statement l)
-	| Ast.STARS(l) -> Ast.STARS(List.map statement l)) in
-    stmtdotsfn all_functions k d
-
-  and declaration_dots d =
-    let k d =
-      Ast.rewrap d
-	(match Ast.unwrap d with
-	  Ast.DOTS(l) -> Ast.DOTS(List.map declaration l)
-	| Ast.CIRCLES(l) -> Ast.CIRCLES(List.map declaration l)
-	| Ast.STARS(l) -> Ast.STARS(List.map declaration l)) in
-    decldotsfn all_functions k d
+  let rec expression_dots d = dotsfn expdotsfn expression all_functions d
+  and parameter_dots d = dotsfn paramdotsfn parameterTypeDef all_functions d
+  and statement_dots d = dotsfn stmtdotsfn statement all_functions d
+  and declaration_dots d = dotsfn decldotsfn declaration all_functions d
+  and initialiser_dots d = dotsfn initdotsfn initialiser all_functions d
 
   and ident i =
     let k i =
@@ -705,7 +683,10 @@ let rebuilder
 	    Ast.Array(fullType ty, string_mcode lb,
 		      get_option expression size, string_mcode rb)
 	| Ast.EnumName(kind,name) ->
-	    Ast.EnumName(string_mcode kind, ident name)
+	    Ast.EnumName(string_mcode kind, get_option ident name)
+	| Ast.EnumDef(ty,lb,ids,rb) ->
+	    Ast.EnumDef (fullType ty, string_mcode lb, expression_dots ids,
+			 string_mcode rb)
 	| Ast.StructUnionName(kind,name) ->
 	    Ast.StructUnionName (struct_mcode kind, get_option ident name)
 	| Ast.StructUnionDef(ty,lb,decls,rb) ->
@@ -752,8 +733,11 @@ let rebuilder
 	  Ast.MetaInit(name,keep,inherited) ->
 	    Ast.MetaInit(meta_mcode name,keep,inherited)
 	| Ast.InitExpr(exp) -> Ast.InitExpr(expression exp)
-	| Ast.InitList(allminus,lb,initlist,rb,whencode) ->
-	    Ast.InitList(allminus,
+	| Ast.ArInitList(lb,initlist,rb) ->
+	    Ast.ArInitList(string_mcode lb, initialiser_dots initlist,
+			   string_mcode rb)
+	| Ast.StrInitList(allminus,lb,initlist,rb,whencode) ->
+	    Ast.StrInitList(allminus,
 			 string_mcode lb, List.map initialiser initlist,
 			 string_mcode rb, List.map initialiser whencode)
 	| Ast.InitGccName(name,eq,ini) ->
@@ -763,6 +747,8 @@ let rebuilder
 	      (List.map designator designators, string_mcode eq,
 	       initialiser ini)
 	| Ast.IComma(cm) -> Ast.IComma(string_mcode cm)
+	| Ast.Idots(dots,whencode) ->
+	    Ast.Idots(string_mcode dots,get_option initialiser whencode)
 	| Ast.OptIni(i) -> Ast.OptIni(initialiser i)
 	| Ast.UniqueIni(i) -> Ast.UniqueIni(initialiser i)) in
     initfn all_functions k i
@@ -1045,6 +1031,7 @@ let rebuilder
       rebuilder_expression_dots = expression_dots;
       rebuilder_statement_dots = statement_dots;
       rebuilder_declaration_dots = declaration_dots;
+      rebuilder_initialiser_dots = initialiser_dots;
       rebuilder_define_param_dots = define_param_dots;
       rebuilder_define_param = define_param;
       rebuilder_define_parameters = define_parameters;

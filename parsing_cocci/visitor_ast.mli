@@ -17,7 +17,9 @@ type 'a combiner =
      combiner_statement_dots :
 	     Ast_cocci.statement Ast_cocci.dots -> 'a;
      combiner_declaration_dots :
-		 Ast_cocci.declaration Ast_cocci.dots -> 'a}
+		 Ast_cocci.declaration Ast_cocci.dots -> 'a;
+     combiner_initialiser_dots :
+		     Ast_cocci.initialiser Ast_cocci.dots -> 'a}
 
 type ('mc,'a) cmcode = 'a combiner -> 'mc Ast_cocci.mcode -> 'a
 type ('cd,'a) ccode = 'a combiner -> ('cd -> 'a) -> 'cd -> 'a
@@ -40,6 +42,7 @@ val combiner :
       ((Ast_cocci.parameterTypeDef Ast_cocci.dots,'a) ccode) ->
       ((Ast_cocci.statement Ast_cocci.dots,'a) ccode) ->
       ((Ast_cocci.declaration Ast_cocci.dots,'a) ccode) ->
+      ((Ast_cocci.initialiser Ast_cocci.dots,'a) ccode) ->
       ((Ast_cocci.ident,'a) ccode) ->
       ((Ast_cocci.expression,'a) ccode) ->
       ((Ast_cocci.fullType,'a) ccode) ->
@@ -72,6 +75,7 @@ type rebuilder =
       rebuilder_expression_dots : Ast_cocci.expression Ast_cocci.dots inout;
       rebuilder_statement_dots : Ast_cocci.statement Ast_cocci.dots inout;
       rebuilder_declaration_dots : Ast_cocci.declaration Ast_cocci.dots inout;
+      rebuilder_initialiser_dots : Ast_cocci.initialiser Ast_cocci.dots inout;
       rebuilder_define_param_dots: Ast_cocci.define_param Ast_cocci.dots inout;
       rebuilder_define_param : Ast_cocci.define_param inout;
       rebuilder_define_parameters : Ast_cocci.define_parameters inout;
@@ -97,6 +101,7 @@ val rebuilder :
     (Ast_cocci.parameterTypeDef Ast_cocci.dots rcode) ->
     (Ast_cocci.statement Ast_cocci.dots rcode) ->
     (Ast_cocci.declaration Ast_cocci.dots rcode) ->
+    (Ast_cocci.initialiser Ast_cocci.dots rcode) ->
     (Ast_cocci.ident rcode) ->
     (Ast_cocci.expression rcode) ->
     (Ast_cocci.fullType rcode) ->

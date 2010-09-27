@@ -287,8 +287,14 @@ let visitor mode bind option_default
 	| Ast0.Array(ty,lb,size,rb) -> array_type (ty,lb,size,rb) []
 	| Ast0.EnumName(kind,name) ->
 	    let (kind_n,kind) = string_mcode kind in
-	    let (name_n,name) = ident name in
+	    let (name_n,name) = get_option ident name in
 	    (bind kind_n name_n, Ast0.EnumName(kind,name))
+	| Ast0.EnumDef(ty,lb,ids,rb) ->
+	    let (ty_n,ty) = typeC ty in
+	    let (lb_n,lb) = string_mcode lb in
+	    let (ids_n,ids) = expression_dots ids in
+	    let (rb_n,rb) = string_mcode rb in
+	    (multibind [ty_n;lb_n;ids_n;rb_n], Ast0.EnumDef(ty,lb,ids,rb))
 	| Ast0.StructUnionName(kind,name) ->
 	    let (kind_n,kind) = struct_mcode kind in
 	    let (name_n,name) = get_option ident name in
@@ -435,11 +441,12 @@ let visitor mode bind option_default
 	| Ast0.InitExpr(exp) ->
 	    let (exp_n,exp) = expression exp in
 	    (exp_n,Ast0.InitExpr(exp))
-	| Ast0.InitList(lb,initlist,rb) ->
+	| Ast0.InitList(lb,initlist,rb,ordered) ->
 	    let (lb_n,lb) = string_mcode lb in
 	    let (initlist_n,initlist) = initialiser_list initlist in
 	    let (rb_n,rb) = string_mcode rb in
-	    (multibind [lb_n;initlist_n;rb_n], Ast0.InitList(lb,initlist,rb))
+	    (multibind [lb_n;initlist_n;rb_n],
+	     Ast0.InitList(lb,initlist,rb,ordered))
 	| Ast0.InitGccExt(designators,eq,ini) ->
 	    let (dn,designators) = map_split_bind designator designators in
 	    let (eq_n,eq) = string_mcode eq in

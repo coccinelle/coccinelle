@@ -1,6 +1,7 @@
 (* Yoann Padioleau, Julia Lawall
  *
  * Copyright (C) 2006, 2007, 2008 Ecole des Mines de Nantes
+ * Copyright (C) 2009, 2010 DIKU, INRIA, LIP6
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License (GPL)
@@ -27,6 +28,8 @@ module Flag = Flag_matcher
 (* Wrappers *)
 (*****************************************************************************)
 let pr2, pr2_once = Common.mk_pr2_wrappers Flag_matcher.verbose_matcher
+
+let (+++) a b = match a with Some x -> Some x | None -> b
 
 (*****************************************************************************)
 (* Helpers *)
@@ -63,7 +66,7 @@ let (need_unordered_initialisers : B.initialiser B.wrap2 list -> bool) =
 
 (* For the #include <linux/...> in the .cocci, need to find where is
  * the '+' attached to this element, to later find the first concrete
- * #include <linux/xxx.h> or last one in the serie of #includes in the
+ * #include <linux/xxx.h> or last one in the series of #includes in the
  * .c.
  *)
 type include_requirement =
@@ -612,6 +615,8 @@ module type PARAM =
       (A.meta_name A.mcode, Ast_c.parameterType) matcher
     val distrf_ini :
       (A.meta_name A.mcode, Ast_c.initialiser) matcher
+    val distrf_inis :
+      (A.meta_name A.mcode, (Ast_c.initialiser, Ast_c.il) either list) matcher
     val distrf_decl :
       (A.meta_name A.mcode, Ast_c.declaration) matcher
     val distrf_field :
@@ -620,8 +625,10 @@ module type PARAM =
       (A.meta_name A.mcode, Control_flow_c.node) matcher
 
     val distrf_define_params :
-      (A.meta_name A.mcode, (string Ast_c.wrap, Ast_c.il) either list)
-      matcher
+      (A.meta_name A.mcode, (string Ast_c.wrap, Ast_c.il) either list) matcher
+
+    val distrf_enum_fields :
+      (A.meta_name A.mcode, (B.oneEnumType, B.il) either list) matcher
 
     val distrf_struct_fields :
       (A.meta_name A.mcode, B.field list) matcher
@@ -742,6 +749,154 @@ let satisfies_econstraint c exp : bool =
       | Ast_c.Int   (int  , _) -> satisfies_regexpconstraint c int
       | Ast_c.Float (float, _) -> satisfies_regexpconstraint c float)
   | _ -> warning "Unable to apply a constraint on an expression!"
+
+
+(* ------------------------------------------------------------------------- *)
+(* This has to be up here to allow adequate polymorphism *)
+
+let list_matcher match_dots rebuild_dots match_comma rebuild_comma
+    match_metalist rebuild_metalist mktermval special_cases
+    element distrf get_iis = fun eas ebs ->
+  let rec loop = function
+      [], [] -> return ([], [])
+    | [], eb::ebs -> fail
+    | ea::eas, ebs ->
+	X.all_bound (A.get_inherited ea) >&&>
+	let try_matches =
+	  (match match_dots ea, ebs with
+	    Some (mcode, optexpr), ys ->
+          (* todo: if optexpr, then a WHEN and so may have to filter yys *)
+              if optexpr <> None then failwith "not handling when in a list";
+	      
+          (* '...' can take more or less the beginnings of the arguments *)
+              let startendxs =
+		Common.zip (Common.inits ys) (Common.tails ys) in
+	      Some
+		(startendxs +> List.fold_left (fun acc (startxs, endxs) ->
+		  acc >||> (
+		  
+              (* allow '...', and maybe its associated ',' to match nothing.
+		 * for the associated ',' see below how we handle the EComma
+		 * to match nothing.
+              *)
+		  (if null startxs
+		  then
+                    if mcode_contain_plus (mcodekind mcode)
+                    then fail
+                  (*failwith
+		     "I have no token that I could accroche myself on"*)
+                    else return (dots2metavar mcode, [])
+		  else
+                (* subtil: we dont want the '...' to match until the
+                   * comma. cf -test pb_params_iso. We would get at
+                   * "already tagged" error.
+                   * this is because both f (... x, ...) and f (..., x, ...)
+                   * would match a  f(x,3)  with our "optional-comma" strategy.
+                *)
+                    (match Common.last startxs with
+                    | Right _ -> fail
+                    | Left _ -> distrf (dots2metavar mcode) startxs))
+		    
+		    >>= (fun mcode startxs ->
+		      let mcode = metavar2dots mcode in
+                      loop (eas, endxs) >>= (fun eas endxs ->
+			return (
+			(rebuild_dots (mcode, optexpr) +> A.rewrap ea) ::eas,
+			startxs ++ endxs
+			  )))
+		    )
+		    ) fail)
+		
+	  | None,_ -> None)
+	    +++
+	    (match match_comma ea, ebs with
+	    | Some ia1, Right ii::ebs ->
+		Some
+		  (let ib1 = tuple_of_list1 ii in
+		  tokenf ia1 ib1 >>= (fun ia1 ib1 ->
+		    loop (eas, ebs) >>= (fun eas ebs ->
+		      return (
+                      (rebuild_comma ia1 +> A.rewrap ea)::eas,
+                      (Right [ib1])::ebs
+				       )
+			)))
+	    | Some ia1, ebs ->
+          (* allow ',' to maching nothing. optional comma trick *)
+		Some
+		  (if mcode_contain_plus (mcodekind ia1)
+		  then fail
+		  else loop (eas, ebs))
+	    | None,_ -> None)
+	    +++
+	    (match match_metalist ea, ebs with
+	      Some (ida,leninfo,keep,inherited), ys ->
+		let startendxs =
+		  Common.zip (Common.inits ys) (Common.tails ys) in
+		Some
+		  (startendxs +> List.fold_left (fun acc (startxs, endxs) ->
+		    acc >||> (
+		    let ok =
+		      if null startxs
+		      then
+			if mcode_contain_plus (mcodekind ida)
+			then false
+                    (* failwith "no token that I could accroche myself on" *)
+			else true
+		      else
+			(match Common.last startxs with
+			| Right _ -> false
+			| Left _ -> true)
+		    in
+		    if not ok
+		    then fail
+		    else
+		      let startxs' = Ast_c.unsplit_comma startxs in
+		      let len = List.length  startxs' in
+		      
+		      (match leninfo with
+		      | A.MetaListLen (lenname,lenkeep,leninherited) ->
+			  let max_min _ = failwith "no pos" in
+			  X.envf lenkeep leninherited
+			    (lenname, Ast_c.MetaListlenVal (len), max_min)
+		      | A.CstListLen n ->
+			  if len = n
+			  then (function f -> f())
+			  else (function f -> fail)
+		      | A.AnyListLen -> function f -> f()
+			    )
+			(fun () ->
+			  let max_min _ =
+			    Lib_parsing_c.lin_col_by_pos (get_iis startxs) in
+			  X.envf keep inherited
+			    (ida, mktermval startxs', max_min)
+			    (fun () ->
+			      if null startxs
+			      then return (ida, [])
+			      else distrf ida (Ast_c.split_comma startxs'))
+			    >>= (fun ida startxs ->
+			      loop (eas, endxs) >>= (fun eas endxs ->
+				return (
+				(rebuild_metalist(ida,leninfo,keep,inherited))
+				  +> A.rewrap ea::eas,
+				startxs ++ endxs
+				  ))
+				)
+			    )
+			)) fail)
+	    | None,_ -> None)
+	    +++
+	    special_cases ea eas ebs in
+	match try_matches with
+	  Some res -> res
+	| None ->
+	    (match ebs with
+	    | (Left eb)::ebs ->
+		element ea eb >>= (fun ea eb ->
+		  loop (eas, ebs) >>= (fun eas ebs ->
+		    return (ea::eas, Left eb::ebs)))
+	    | (Right y)::ys -> raise Impossible
+	    | [] -> fail) in
+  loop (eas,ebs)
 
 (*---------------------------------------------------------------------------*)
 (* toc:
@@ -966,7 +1121,7 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
         expression ea2 eb2 >>= (fun ea2 eb2 ->
         tokenf opa opbi >>= (fun opa opbi ->
           return (
-            ((A.Assignment (ea1, opa, ea2, simple))) +> wa,
+            (A.Assignment (ea1, opa, ea2, simple)) +> wa,
             ((B.Assignment (eb1, opb, eb2), typ), [opbi])
         ))))
       else fail
@@ -1323,169 +1478,60 @@ and (ident: info_ident -> (A.ident, string * Ast_c.info) matcher) =
 
   | A.OptIdent _ | A.UniqueIdent _ ->
       failwith "not handling Opt/Unique for ident"
-
-
-
+    
 (* ------------------------------------------------------------------------- *)
 and (arguments: sequence ->
-      (A.expression list, Ast_c.argument Ast_c.wrap2 list) matcher) =
- fun seqstyle eas ebs ->
-  match seqstyle with
-  | Unordered -> failwith "not handling ooo"
-  | Ordered ->
-      arguments_bis eas (Ast_c.split_comma ebs) >>= (fun eas ebs_splitted ->
-        return (eas, (Ast_c.unsplit_comma ebs_splitted))
-      )
+  (A.expression list, Ast_c.argument Ast_c.wrap2 list) matcher) =
+  fun seqstyle eas ebs ->
+    match seqstyle with
+    | Unordered -> failwith "not handling ooo"
+    | Ordered ->
+	arguments_bis eas (Ast_c.split_comma ebs) >>= (fun eas ebs_splitted ->
+          return (eas, (Ast_c.unsplit_comma ebs_splitted))
+	    )
 (* because '...' can match nothing, need to take care when have
- * ', ...'   or '...,'  as in  f(..., X, Y, ...). It must match
- * f(1,2) for instance.
- * So I have added special cases such as (if startxs = []) and code
- * in the Ecomma matching rule.
- *
- * old: Must do some try, for instance when f(...,X,Y,...) have to
- * test the transfo for all the combinaitions    and if multiple transfo
- * possible ? pb ? => the type is to return a expression option ? use
- * some combinators to help ?
- * update: with the tag-SP approach, no more a problem.
- *)
-
+   * ', ...'   or '...,'  as in  f(..., X, Y, ...). It must match
+   * f(1,2) for instance.
+   * So I have added special cases such as (if startxs = []) and code
+   * in the Ecomma matching rule.
+   *
+   * old: Must do some try, for instance when f(...,X,Y,...) have to
+   * test the transfo for all the combinaitions    and if multiple transfo
+   * possible ? pb ? => the type is to return a expression option ? use
+   * some combinators to help ?
+   * update: with the tag-SP approach, no more a problem.
+*)
+	  
 and arguments_bis = fun eas ebs ->
-  match eas, ebs with
-  | [], [] -> return ([], [])
-  | [], eb::ebs -> fail
-  | ea::eas, ebs ->
-      X.all_bound (A.get_inherited ea) >&&>
-      (match A.unwrap ea, ebs with
-      | A.Edots (mcode, optexpr), ys ->
-          (* todo: if optexpr, then a WHEN and so may have to filter yys *)
-          if optexpr <> None then failwith "not handling when in argument";
-
-          (* '...' can take more or less the beginnings of the arguments *)
-          let startendxs = Common.zip (Common.inits ys) (Common.tails ys) in
-          startendxs +> List.fold_left (fun acc (startxs, endxs) ->
-            acc >||> (
-
-              (* allow '...', and maybe its associated ',' to match nothing.
-               * for the associated ',' see below how we handle the EComma
-               * to match nothing.
-               *)
-              (if null startxs
-              then
-                if mcode_contain_plus (mcodekind mcode)
-                then fail
-                  (* failwith "I have no token that I could accroche myself on" *)
-                else return (dots2metavar mcode, [])
-              else
-                (* subtil: we dont want the '...' to match until the
-                 * comma. cf -test pb_params_iso. We would get at
-                 * "already tagged" error.
-                 * this is because both f (... x, ...) and f (..., x, ...)
-                 * would match a  f(x,3)  with our "optional-comma" strategy.
-                 *)
-                  (match Common.last startxs with
-                  | Right _ -> fail
-                  | Left _ ->
-                      X.distrf_args (dots2metavar mcode) startxs
-                  )
-              )
-              >>= (fun mcode startxs ->
-		let mcode = metavar2dots mcode in
-                arguments_bis eas endxs >>= (fun eas endxs ->
-                  return (
-                    (A.Edots (mcode, optexpr) +> A.rewrap ea) ::eas,
-                    startxs ++ endxs
-                  )))
-            )
-          ) fail
-
-      | A.EComma ia1, Right ii::ebs ->
-          let ib1 = tuple_of_list1 ii in
-          tokenf ia1 ib1 >>= (fun ia1 ib1 ->
-            arguments_bis eas ebs >>= (fun eas ebs ->
-              return (
-                (A.EComma ia1 +> A.rewrap ea)::eas,
-                (Right [ib1])::ebs
-              )
-            ))
-      | A.EComma ia1, ebs ->
-          (* allow ',' to maching nothing. optional comma trick *)
-          if mcode_contain_plus (mcodekind ia1)
-          then fail
-          else arguments_bis eas ebs
-
-      | A.MetaExprList(ida,leninfo,keep,inherited),ys ->
-          let startendxs = Common.zip (Common.inits ys) (Common.tails ys) in
-          startendxs +> List.fold_left (fun acc (startxs, endxs) ->
-            acc >||> (
-              let ok =
-                if null startxs
-                then
-                  if mcode_contain_plus (mcodekind ida)
-                  then false
-                    (* failwith "no token that I could accroche myself on" *)
-                  else true
-                else
-                  (match Common.last startxs with
-                  | Right _ -> false
-                  | Left _ -> true
-                  )
-              in
-              if not ok
-              then fail
-              else
-                let startxs' = Ast_c.unsplit_comma startxs in
-                let len = List.length  startxs' in
-
-		(match leninfo with
-		| A.MetaListLen (lenname,lenkeep,leninherited) ->
-		    let max_min _ = failwith "no pos" in
-                    X.envf lenkeep leninherited
-                      (lenname, Ast_c.MetaListlenVal (len), max_min)
-		| A.CstListLen n ->
-		    if len = n
-		    then (function f -> f())
-		    else (function f -> fail)
-		| A.AnyListLen -> function f -> f()
-                )
-                (fun () ->
-		  let max_min _ =
-		    Lib_parsing_c.lin_col_by_pos
-		      (Lib_parsing_c.ii_of_args startxs) in
-                  X.envf keep inherited
-                    (ida, Ast_c.MetaExprListVal startxs', max_min)
-                (fun () ->
-		  if null startxs
-		  then return (ida, [])
-                  else X.distrf_args ida (Ast_c.split_comma startxs')
-                )
-                >>= (fun ida startxs ->
-                  arguments_bis eas endxs >>= (fun eas endxs ->
-                    return (
-                      (A.MetaExprList(ida,leninfo,keep,inherited))
-		      +> A.rewrap ea::eas,
-                      startxs ++ endxs
-                    ))
-                  )
-                )
-            )) fail
-
-
-      | _unwrapx, (Left eb)::ebs ->
-          argument ea eb >>= (fun ea eb ->
-          arguments_bis eas ebs >>= (fun eas ebs ->
-            return (ea::eas, Left eb::ebs)
-          ))
-      | _unwrapx, (Right y)::ys -> raise Impossible
-      | _unwrapx, [] -> fail
-      )
-
+  let match_dots ea =
+    match A.unwrap ea with
+      A.Edots(mcode, optexpr) -> Some (mcode, optexpr)
+    | _ -> None in
+  let build_dots (mcode, optexpr) = A.Edots(mcode, optexpr) in
+  let match_comma ea =
+    match A.unwrap ea with
+      A.EComma ia1 -> Some ia1
+    | _ -> None in
+  let build_comma ia1 = A.EComma ia1 in
+  let match_metalist ea =
+    match A.unwrap ea with
+      A.MetaExprList(ida,leninfo,keep,inherited) ->
+	Some(ida,leninfo,keep,inherited)
+    | _ -> None in
+  let build_metalist (ida,leninfo,keep,inherited) =
+    A.MetaExprList(ida,leninfo,keep,inherited) in
+  let mktermval v = Ast_c.MetaExprListVal v in
+  let special_cases ea eas ebs = None in
+  list_matcher match_dots build_dots match_comma build_comma
+    match_metalist build_metalist mktermval
+    special_cases argument X.distrf_args
+    Lib_parsing_c.ii_of_args eas ebs
 
 and argument arga argb =
   X.all_bound (A.get_inherited arga) >&&>
-   match A.unwrap arga, argb with
+  match A.unwrap arga, argb with
   | A.TypeExp tya,
     Right (B.ArgType {B.p_register=b,iib; p_namei=sopt;p_type=tyb}) ->
-
       if b || sopt <> None
       then
         (* failwith "the argument have a storage and ast_cocci does not have"*)
@@ -1524,211 +1570,99 @@ and (parameters: sequence ->
 
 
 and parameters_bis eas ebs =
-  match eas, ebs with
-  | [], [] -> return ([], [])
-  | [], eb::ebs -> fail
-  | ea::eas, ebs ->
-      (* the management of positions is inlined into each case, because
-	 sometimes there is a Param and sometimes a ParamList *)
-      X.all_bound (A.get_inherited ea) >&&>
-      (match A.unwrap ea, ebs with
-      | A.Pdots (mcode), ys ->
-
-          (* '...' can take more or less the beginnings of the arguments *)
-          let startendxs = Common.zip (Common.inits ys) (Common.tails ys) in
-          startendxs +> List.fold_left (fun acc (startxs, endxs) ->
-            acc >||> (
-
-              (if null startxs
-              then
-                if mcode_contain_plus (mcodekind mcode)
-                then fail
-                (* failwith "I have no token that I could accroche myself on"*)
-                else return (dots2metavar mcode, [])
-              else
-                (match Common.last startxs with
-                | Right _ -> fail
-                | Left _ ->
-                    X.distrf_params (dots2metavar mcode) startxs
-                )
-              ) >>= (fun mcode startxs ->
-		let mcode = metavar2dots mcode in
-                parameters_bis eas endxs >>= (fun eas endxs ->
-                  return (
-                    (A.Pdots (mcode) +> A.rewrap ea) ::eas,
-                    startxs ++ endxs
-                  )))
-            )
-          ) fail
-
-      | A.PComma ia1, Right ii::ebs ->
-          let ib1 = tuple_of_list1 ii in
-          tokenf ia1 ib1 >>= (fun ia1 ib1 ->
-          parameters_bis eas ebs >>= (fun eas ebs ->
-            return (
-              (A.PComma ia1 +> A.rewrap ea)::eas,
-              (Right [ib1])::ebs
-            )
-          ))
-
-      | A.PComma ia1, ebs ->
-          (* try optional comma trick *)
-          if mcode_contain_plus (mcodekind ia1)
-          then fail
-          else parameters_bis eas ebs
-
-
-      | A.MetaParamList(ida,leninfo,keep,inherited),ys->
-          let startendxs = Common.zip (Common.inits ys) (Common.tails ys) in
-          startendxs +> List.fold_left (fun acc (startxs, endxs) ->
-            acc >||> (
-              let ok =
-                if null startxs
-                then
-                  if mcode_contain_plus (mcodekind ida)
-                  then false
-               (* failwith "I have no token that I could accroche myself on" *)
-                  else true
-                else
-                  (match Common.last startxs with
-                  | Right _ -> false
-                  | Left _ -> true
-                  )
-              in
-              if not ok
-              then fail
-              else
-                let startxs' = Ast_c.unsplit_comma startxs in
-                let len = List.length  startxs' in
-
-		(match leninfo with
-		  A.MetaListLen (lenname,lenkeep,leninherited) ->
-		    let max_min _ = failwith "no pos" in
-                    X.envf lenkeep leninherited
-		      (lenname, Ast_c.MetaListlenVal (len), max_min)
-		| A.CstListLen n ->
-		    if len = n
-		    then (function f -> f())
-		    else (function f -> fail)
-		| A.AnyListLen -> function f -> f()
-                )
-	        (fun () ->
-		  let max_min _ =
-		    Lib_parsing_c.lin_col_by_pos
-		      (Lib_parsing_c.ii_of_params startxs) in
-                  X.envf keep inherited
-                    (ida, Ast_c.MetaParamListVal startxs', max_min)
-                (fun () ->
-		  if null startxs
-		  then return (ida, [])
-		  else X.distrf_params ida (Ast_c.split_comma startxs')
-		) >>= (fun ida startxs ->
-                  parameters_bis eas endxs >>= (fun eas endxs ->
-                    return (
-                      (A.MetaParamList(ida,leninfo,keep,inherited))
-                        +> A.rewrap ea::eas,
-                      startxs ++ endxs
-		    ))
-                )
-                ))
-          ) fail
-
-
-      | A.VoidParam ta, ys ->
+  let match_dots ea =
+    match A.unwrap ea with
+      A.Pdots(mcode) -> Some (mcode, None)
+    | _ -> None in
+  let build_dots (mcode, _optexpr) = A.Pdots(mcode) in
+  let match_comma ea =
+    match A.unwrap ea with
+      A.PComma ia1 -> Some ia1
+    | _ -> None in
+  let build_comma ia1 = A.PComma ia1 in
+  let match_metalist ea =
+    match A.unwrap ea with
+      A.MetaParamList(ida,leninfo,keep,inherited) ->
+	Some(ida,leninfo,keep,inherited)
+    | _ -> None in
+  let build_metalist (ida,leninfo,keep,inherited) =
+    A.MetaParamList(ida,leninfo,keep,inherited) in
+  let mktermval v = Ast_c.MetaParamListVal v in
+  let special_cases ea eas ebs =
+    (* a case where one smpl parameter matches a list of C parameters *)
+    match A.unwrap ea,ebs with
+      A.VoidParam ta, ys ->
+	Some
           (match eas, ebs with
           | [], [Left eb] ->
               let {B.p_register=(hasreg,iihasreg);
-                   p_namei = idbopt;
-                   p_type=tb; } = eb in
-
+                    p_namei = idbopt;
+                    p_type=tb; } = eb in
+	      
               if idbopt =*= None && not hasreg
               then
                 match tb with
                 | (qub, (B.BaseType B.Void,_)) ->
                     fullType ta tb >>= (fun ta tb ->
                       return (
-                        [(A.VoidParam ta) +> A.rewrap ea],
-                        [Left {B.p_register=(hasreg, iihasreg);
-                               p_namei = idbopt;
-                               p_type = tb;}]
-                      ))
+                      [(A.VoidParam ta) +> A.rewrap ea],
+                      [Left {B.p_register=(hasreg, iihasreg);
+                              p_namei = idbopt;
+                              p_type = tb;}]
+			))
                 | _ -> fail
               else fail
-          | _ -> fail
-          )
-
-      | (A.OptParam _ | A.UniqueParam _), _ ->
-              failwith "handling Opt/Unique for Param"
-
-      | A.Pcircles (_), ys -> raise Impossible (* in Ordered mode *)
-
-
-      | A.MetaParam (ida,keep,inherited), (Left eb)::ebs ->
-          (* todo: use quaopt, hasreg ? *)
-	  let max_min _ =
-	    Lib_parsing_c.lin_col_by_pos (Lib_parsing_c.ii_of_param eb) in
-          X.envf keep inherited (ida,Ast_c.MetaParamVal eb,max_min) (fun () ->
-            X.distrf_param ida eb
-          ) >>= (fun ida eb ->
-              parameters_bis eas ebs >>= (fun eas ebs ->
-                return (
-                  (A.MetaParam(ida,keep,inherited))+> A.rewrap ea::eas,
-                  (Left eb)::ebs
-                )))
-
-
-      | A.Param (typa, idaopt), (Left eb)::ebs ->
-	  (*this should succeed if the C code has a name, and fail otherwise*)
-          parameter (idaopt, typa) eb >>= (fun (idaopt, typa) eb ->
-          parameters_bis eas ebs >>= (fun eas ebs ->
-            return (
-              (A.Param (typa, idaopt))+> A.rewrap ea :: eas,
-              (Left eb)::ebs
-            )))
-
-      | _unwrapx, (Right y)::ys -> raise Impossible
-      | _unwrapx, [] -> fail
-      )
-
-
-
+          | _ -> fail)
+    |	_ -> None in
+  list_matcher match_dots build_dots match_comma build_comma
+    match_metalist build_metalist mktermval
+    special_cases parameter X.distrf_params
+    Lib_parsing_c.ii_of_params eas ebs
+    
 (*
-let split_register_param = fun (hasreg, idb, ii_b_s) ->
-  match hasreg, idb,  ii_b_s with
-  | false, Some s, [i1] -> Left (s, [], i1)
-  | true, Some s, [i1;i2] -> Left (s, [i1], i2)
-  | _, None, ii -> Right ii
-  | _ -> raise Impossible
+   let split_register_param = fun (hasreg, idb, ii_b_s) ->
+   match hasreg, idb,  ii_b_s with
+   | false, Some s, [i1] -> Left (s, [], i1)
+   | true, Some s, [i1;i2] -> Left (s, [i1], i2)
+   | _, None, ii -> Right ii
+   | _ -> raise Impossible
 *)
-
-
-and parameter = fun (idaopt, typa) paramb ->
-
-  let {B.p_register = (hasreg,iihasreg);
-       p_namei = nameidbopt;
-       p_type = typb;} = paramb in
-
-  fullType typa typb >>= (fun typa typb ->
-  match idaopt, nameidbopt with
-  | Some ida, Some nameidb ->
+    
+    
+and parameter = fun parama paramb ->
+  match A.unwrap parama, paramb with
+    A.MetaParam (ida,keep,inherited), eb ->
+      (* todo: use quaopt, hasreg ? *)
+      let max_min _ =
+	Lib_parsing_c.lin_col_by_pos (Lib_parsing_c.ii_of_param eb) in
+      X.envf keep inherited (ida,Ast_c.MetaParamVal eb,max_min) (fun () ->
+        X.distrf_param ida eb
+          ) >>= (fun ida eb ->
+            return (A.MetaParam(ida,keep,inherited)+> A.rewrap parama,eb))
+  | A.Param (typa, idaopt), eb ->
+      let {B.p_register = (hasreg,iihasreg);
+	    p_namei = nameidbopt;
+	    p_type = typb;} = paramb in
+      
+      fullType typa typb >>= (fun typa typb ->
+	match idaopt, nameidbopt with
+	| Some ida, Some nameidb ->
       (* todo: if minus on ida, should also minus the iihasreg ? *)
-      ident_cpp DontKnow ida nameidb >>= (fun ida nameidb ->
-        return (
-          (Some ida, typa),
-          {B.p_register = (hasreg, iihasreg);
-           p_namei = Some (nameidb);
-           p_type = typb}
-        ))
-
-  | None, None ->
-      return (
-        (None, typa),
-        {B.p_register=(hasreg,iihasreg);
-         p_namei = None;
-         p_type = typb;}
-      )
-
-
+	    ident_cpp DontKnow ida nameidb >>= (fun ida nameidb ->
+              return (
+              A.Param (typa, Some ida)+> A.rewrap parama,
+              {B.p_register = (hasreg, iihasreg);
+		p_namei = Some (nameidb);
+		p_type = typb}
+		))
+	      
+	| None, None ->
+	    return (
+            A.Param (typa, None)+> A.rewrap parama,
+            {B.p_register=(hasreg,iihasreg);
+              p_namei = None;
+              p_type = typb;}
+	      )
   (* why handle this case ? because of transform_proto ? we may not
    * have an ident in the proto.
    * If have some plus on ida ? do nothing about ida ?
@@ -1741,12 +1675,12 @@ and parameter = fun (idaopt, typa) paramb ->
       )
  *)
 
-  | Some _, None -> fail
-  | None, Some _ -> fail
-  )
-
-
-
+	| Some _, None -> fail
+	| None, Some _ -> fail)
+  | (A.OptParam _ | A.UniqueParam _), _ ->
+      failwith "not handling Opt/Unique for Param"	  
+  | A.Pcircles (_), ys -> raise Impossible (* in Ordered mode *)
+  | _ -> fail
 
 (* ------------------------------------------------------------------------- *)
 and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
@@ -1914,6 +1848,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
 		 | _ -> raise Impossible
              )
 
+	   (* do we need EnumName here too? *)
            | A.StructUnionName(sua, sa) ->
              fullType tya2 structnameb >>= (fun tya2 structnameb ->
 
@@ -2177,22 +2112,38 @@ and (initialiser: (A.initialiser, Ast_c.initialiser) matcher) =  fun ia ib ->
         | _ -> fail
         )
 
-    | (A.InitList (allminus, ia1, ias, ia2, []), (B.InitList ibs, ii)) ->
+    | (A.ArInitList (ia1, ias, ia2), (B.InitList ibs, ii)) ->
         (match ii with
-        | ib1::ib2::iicommaopt ->
+	| ib1::ib2::iicommaopt ->
             tokenf ia1 ib1 >>= (fun ia1 ib1 ->
             tokenf ia2 ib2 >>= (fun ia2 ib2 ->
-            initialisers allminus ias (ibs, iicommaopt) >>=
-	      (fun ias (ibs,iicommaopt) ->
+            ar_initialisers (A.undots ias) (ibs, iicommaopt) >>=
+	      (fun iasundots (ibs,iicommaopt) ->
               return (
-                (A.InitList (allminus, ia1, ias, ia2, [])) +> A.rewrap ia,
+                (A.ArInitList (ia1, redots ias iasundots, ia2)) +> A.rewrap ia,
                 (B.InitList ibs, ib1::ib2::iicommaopt)
               ))))
 
         | _ -> raise Impossible
         )
 
-    | (A.InitList (allminus, i1, ias, i2, whencode),(B.InitList ibs, _ii)) ->
+    | (A.StrInitList (allminus, ia1, ias, ia2, []), (B.InitList ibs, ii)) ->
+        (match ii with
+        | ib1::ib2::iicommaopt ->
+            tokenf ia1 ib1 >>= (fun ia1 ib1 ->
+            tokenf ia2 ib2 >>= (fun ia2 ib2 ->
+            str_initialisers allminus ias (ibs, iicommaopt) >>=
+	      (fun ias (ibs,iicommaopt) ->
+              return (
+                (A.StrInitList (allminus, ia1, ias, ia2, [])) +> A.rewrap ia,
+                (B.InitList ibs, ib1::ib2::iicommaopt)
+              ))))
+
+        | _ -> raise Impossible
+        )
+
+    | (A.StrInitList (allminus, i1, ias, i2, whencode),
+       (B.InitList ibs, _ii)) ->
         failwith "TODO: not handling whencode in initialisers"
 
 
@@ -2288,46 +2239,56 @@ and designator da db =
   | (_, ((B.DesignatorField _|B.DesignatorIndex _|B.DesignatorRange _), _)) ->
       fail
 
-
-and initialisers = fun allminus ias (ibs, iicomma) ->
+and str_initialisers = fun allminus ias (ibs, iicomma) ->
   let ias_unsplit = unsplit_icomma      ias in
   let ibs_split   = resplit_initialiser ibs iicomma in
 
-  let f =
-    if need_unordered_initialisers ibs
-    then initialisers_unordered2 allminus
-    else initialisers_ordered2
-  in
-  f ias_unsplit ibs_split >>=
-      (fun ias_unsplit ibs_split ->
-        return (
-          split_icomma ias_unsplit,
-          unsplit_initialiser ibs_split
-        )
-      )
+  if need_unordered_initialisers ibs
+  then initialisers_unordered2 allminus ias_unsplit ibs_split >>=
+    (fun ias_unsplit ibs_split ->
+      return (
+      split_icomma ias_unsplit,
+      unsplit_initialiser ibs_split))
+  else fail
 
-(* todo: one day julia will reput a IDots *)
+and ar_initialisers = fun ias (ibs, iicomma) ->
+  (* this doesn't check need_unordered_initialisers because ... can be
+     implemented as ordered, even if it matches unordered initializers *)
+  let ibs = resplit_initialiser ibs iicomma in
+  let ibs =
+    List.concat
+      (List.map (function (elem,comma) -> [Left elem; Right [comma]]) ibs) in
+  initialisers_ordered2 ias ibs >>=
+  (fun ias ibs_split ->
+    let ibs,iicomma =
+      match List.rev ibs_split with
+	(Right comma)::rest -> (Ast_c.unsplit_comma (List.rev rest),comma)
+      | (Left _)::_ -> (Ast_c.unsplit_comma ibs_split,[]) (* possible *)
+      | [] -> ([],[]) in
+    return (ias, (ibs,iicomma)))
+
 and initialisers_ordered2 = fun ias ibs ->
-  match ias, ibs with
-  | [], [] -> return ([], [])
-  | (x, xcomma)::xs, (y, commay)::ys ->
-      (match A.unwrap xcomma with
-      | A.IComma commax ->
-          tokenf commax commay >>= (fun commax commay ->
-          initialiser x y >>= (fun x y ->
-          initialisers_ordered2 xs ys >>= (fun xs ys ->
-            return (
-                    (x, (A.IComma commax) +> A.rewrap xcomma)::xs,
-                    (y, commay)::ys
-            )
-          )))
-      | _ -> raise Impossible (* unsplit_iicomma wrong *)
-      )
-  | _ -> fail
+  let match_dots ea =
+    match A.unwrap ea with
+      A.Idots(mcode, optexpr) -> Some (mcode, optexpr)
+    |  _ -> None in
+  let build_dots (mcode, optexpr) = A.Idots(mcode, optexpr) in
+  let match_comma ea =
+    match A.unwrap ea with
+      A.IComma ia1 -> Some ia1
+    |  _ -> None in
+  let build_comma ia1 = A.IComma ia1 in
+  let match_metalist ea = None in
+  let build_metalist (ida,leninfo,keep,inherited) = failwith "not possible" in
+  let mktermval v = failwith "not possible" in
+  let special_cases ea eas ebs = None in
+  let no_ii x = failwith "not possible" in
+  list_matcher match_dots build_dots match_comma build_comma
+    match_metalist build_metalist mktermval
+    special_cases initialiser X.distrf_inis no_ii ias ibs
 
 
 and initialisers_unordered2 = fun allminus ias ibs ->
-
   match ias, ibs with
   | [], ys ->
       if allminus
@@ -2341,23 +2302,11 @@ and initialisers_unordered2 = fun allminus ias ibs ->
 		    return(l,(ib,comma)::ibs)))) in
 	loop ibs
       else return ([], ys)
-  | (x,xcomma)::xs, ys ->
-
+  | x::xs, ys ->
       let permut = Common.uncons_permut_lazy ys in
       permut +> List.fold_left (fun acc ((e, pos), rest) ->
         acc >||>
-          (
-            (match A.unwrap xcomma, e with
-            | A.IComma commax, (y, commay) ->
-                tokenf commax commay >>= (fun commax commay ->
-                initialiser x y >>= (fun x y ->
-                  return (
-                    (x, (A.IComma commax) +> A.rewrap xcomma),
-                    (y, commay))
-                )
-                )
-            | _ -> raise Impossible (* unsplit_iicomma wrong *)
-            )
+          (initialiser_comma x e
             >>= (fun x e ->
               let rest = Lazy.force rest in
               initialisers_unordered2 allminus xs rest >>= (fun xs rest ->
@@ -2367,53 +2316,42 @@ and initialisers_unordered2 = fun allminus ias ibs ->
                 ))))
       ) fail
 
+and initialiser_comma (x,xcomma) (y, commay) =
+  match A.unwrap xcomma with
+    A.IComma commax ->
+      tokenf commax commay >>= (fun commax commay ->
+        initialiser x y >>= (fun x y ->
+          return (
+          (x, (A.IComma commax) +> A.rewrap xcomma),
+          (y, commay))))
+  | _ -> raise Impossible (* unsplit_iicomma wrong *)
 
 (* ------------------------------------------------------------------------- *)
 and (struct_fields: (A.declaration list, B.field list) matcher) =
  fun eas ebs ->
-  match eas, ebs with
-  | [], [] -> return ([], [])
-  | [], eb::ebs -> fail
-  | ea::eas, ebs ->
-      X.all_bound (A.get_inherited ea) >&&>
-      (match A.unwrap ea, ebs with
-      | A.Ddots (mcode, optwhen), ys ->
-          if optwhen <> None then failwith "not handling when in argument";
-
-          (* '...' can take more or less the beginnings of the arguments *)
-          let startendxs =
-	    if eas = []
-	    then [(ys,[])] (* hack! the only one that can work *)
-	    else Common.zip (Common.inits ys) (Common.tails ys) in
-          startendxs +> List.fold_left (fun acc (startxs, endxs) ->
-            acc >||> (
-
-              (if null startxs
-              then
-                if mcode_contain_plus (mcodekind mcode)
-                then fail
-                  (* failwith "I have no token that I could accroche myself on" *)
-                else return (dots2metavar mcode, [])
-              else
-
-                  X.distrf_struct_fields (dots2metavar mcode) startxs
-              ) >>= (fun mcode startxs ->
-		let mcode = metavar2dots mcode in
-                struct_fields eas endxs >>= (fun eas endxs ->
-                  return (
-                    (A.Ddots (mcode, optwhen) +> A.rewrap ea) ::eas,
-                    startxs ++ endxs
-                  )))
-            )
-          ) fail
-      | _unwrapx, eb::ebs ->
-          struct_field ea eb >>= (fun ea eb ->
-          struct_fields eas ebs >>= (fun eas ebs ->
-            return (ea::eas, eb::ebs)
-          ))
-
-      | _unwrapx, [] -> fail
-      )
+  let match_dots ea =
+    match A.unwrap ea with
+      A.Ddots(mcode, optexpr) -> Some (mcode, optexpr)
+    | _ -> None in
+  let build_dots (mcode, optexpr) = A.Ddots(mcode, optexpr) in
+  let match_comma ea = None in
+  let build_comma ia1 = failwith "not possible" in
+  let match_metalist ea = None in
+  let build_metalist (ida,leninfo,keep,inherited) = failwith "not possible" in
+  let mktermval v = failwith "not possible" in
+  let special_cases ea eas ebs = None in
+  let no_ii x = failwith "not possible" in
+  let make_ebs ebs = List.map (function x -> Left x) ebs in
+  let unmake_ebs ebs =
+    List.map (function Left x -> x | Right x -> failwith "no right") ebs in
+  let distrf mcode startxs =
+    let startxs = unmake_ebs startxs in
+    X.distrf_struct_fields mcode startxs >>=
+    (fun mcode startxs -> return (mcode,make_ebs startxs)) in
+  list_matcher match_dots build_dots match_comma build_comma
+    match_metalist build_metalist mktermval
+    special_cases struct_field distrf no_ii eas (make_ebs ebs) >>=
+  (fun eas ebs -> return (eas,unmake_ebs ebs))
 
 and (struct_field: (A.declaration, B.field) matcher) = fun fa fb ->
 
@@ -2495,6 +2433,44 @@ and (struct_field: (A.declaration, B.field) matcher) = fun fa fb ->
   | _,B.IfdefStruct directive -> fail
 
 
+and enum_fields = fun eas ebs ->
+  let match_dots ea =
+    match A.unwrap ea with
+      A.Edots(mcode, optexpr) -> Some (mcode, optexpr)
+    | _ -> None in
+  let build_dots (mcode, optexpr) = A.Edots(mcode, optexpr) in
+  let match_comma ea =
+    match A.unwrap ea with
+      A.EComma ia1 -> Some ia1
+    | _ -> None in
+  let build_comma ia1 = A.EComma ia1 in
+  let match_metalist ea = None in
+  let build_metalist (ida,leninfo,keep,inherited) = failwith "not possible" in
+  let mktermval v = failwith "not possible" in
+  let special_cases ea eas ebs = None in
+  list_matcher match_dots build_dots match_comma build_comma
+    match_metalist build_metalist mktermval
+    special_cases enum_field X.distrf_enum_fields
+    Lib_parsing_c.ii_of_enum_fields eas ebs
+
+and enum_field ida idb =
+  X.all_bound (A.get_inherited ida) >&&>
+  match A.unwrap ida, idb with
+    A.Ident(id),(nameidb,None) ->
+      ident_cpp DontKnow id nameidb >>= (fun id nameidb ->
+        return ((A.Ident id) +> A.rewrap ida, (nameidb,None)))
+  | A.Assignment(ea1,opa,ea2,init),(nameidb,Some(opbi,eb2)) ->
+      (match A.unwrap ea1 with
+	A.Ident(id) ->
+	  ident_cpp DontKnow id nameidb >>= (fun id nameidb ->
+	  expression ea2 eb2 >>= (fun ea2 eb2 ->
+          tokenf opa opbi >>= (fun opa opbi -> (* only one kind of assignop *)
+	    return (
+	    (A.Assignment((A.Ident(id))+>A.rewrap ea1,opa,ea2,init)) +>
+	    A.rewrap ida,
+	    (nameidb,Some(opbi,eb2))))))
+      |	_ -> failwith "not possible")
+  | _ -> failwith "not possible"
 
 (* ------------------------------------------------------------------------- *)
 and (fullType: (A.fullType, Ast_c.fullType) matcher) =
@@ -2996,14 +2972,84 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
     | _, (B.TypeOfType e, ii) -> fail
 
     | _, (B.ParenType e, ii) -> fail (* todo ?*)
-    | A.EnumName(en,namea), (B.EnumName nameb, ii) ->
+    | A.EnumName(en,Some namea), (B.EnumName nameb, ii) ->
         let (ib1,ib2) = tuple_of_list2 ii in
 	ident DontKnow namea (nameb, ib2) >>= (fun namea (nameb, ib2) ->
           tokenf en ib1 >>= (fun en ib1 ->
           return (
-          (A.EnumName (en, namea)) +> A.rewrap ta,
+          (A.EnumName (en, Some namea)) +> A.rewrap ta,
           (B.EnumName nameb, [ib1;ib2])
           )))
+
+    | A.EnumDef(ty, lba, idsa, rba),
+	(B.Enum (sbopt, idsb), ii) ->
+
+       let (ii_sub_sb, lbb, rbb, comma_opt) =
+	 match ii with
+	   [iisub; lbb; rbb; comma_opt] ->
+	     (Common.Left iisub,lbb,rbb,comma_opt)
+	 | [iisub; iisb; lbb; rbb; comma_opt] ->
+	     (Common.Right (iisub,iisb),lbb,rbb,comma_opt)
+	 | _ -> failwith "list of length 4 or 5 expected" in
+
+       let process_type =
+         match (sbopt,ii_sub_sb) with
+           (None,Common.Left iisub) ->
+	     (* the following doesn't reconstruct the complete SP code, just
+		the part that matched *)
+	     let rec loop s =
+	       match A.unwrap s with
+		 A.Type(None,ty) ->
+		   (match A.unwrap ty with
+		     A.EnumName(sua, None) ->
+		       tokenf sua iisub >>= (fun sua iisub ->
+			 let ty =
+			   A.Type(None,A.EnumName(sua, None) +> A.rewrap ty)
+			     +> A.rewrap s in
+			 return (ty,[iisub]))
+		   | _ -> fail)
+	       | A.DisjType(disjs) ->
+		   disjs +>
+		   List.fold_left (fun acc disj -> acc >|+|> (loop disj)) fail
+	       | _ -> fail in
+	     loop ty
+
+         | (Some sb,Common.Right (iisub,iisb)) ->
+
+             (* build an EnumName from an Enum *)
+             let fake_su = B.nQ, (B.EnumName sb, [iisub;iisb]) in
+
+             fullType ty fake_su >>= (fun ty fake_su ->
+               match fake_su with
+               | _nQ, (B.EnumName sb, [iisub;iisb]) ->
+                   return (ty,  [iisub; iisb])
+               | _ -> raise Impossible)
+	 | _ -> fail in
+
+       process_type
+	 >>= (fun ty ii_sub_sb ->
+
+            tokenf lba lbb >>= (fun lba lbb ->
+            tokenf rba rbb >>= (fun rba rbb ->
+	      let idsb = resplit_initialiser idsb [comma_opt] in
+	      let idsb =
+		List.concat
+		  (List.map
+		     (function (elem,comma) -> [Left elem; Right [comma]])
+		     idsb) in
+            enum_fields (A.undots idsa) idsb >>= (fun unidsa idsb ->
+              let idsa = redots idsa unidsa in
+	      let idsb,iicomma =
+		match List.rev idsb with
+		  (Right comma)::rest ->
+		    (Ast_c.unsplit_comma (List.rev rest),comma)
+		| (Left _)::_ -> (Ast_c.unsplit_comma idsb,[]) (* possible *)
+		| [] -> ([],[]) in
+              return (
+                (A.EnumDef(ty, lba, idsa, rba)) +> A.rewrap ta,
+                (B.Enum (sbopt, idsb),ii_sub_sb@[lbb;rbb]@iicomma)
+              ))
+		)))
 
     | _, (B.Enum _, _) -> fail (* todo cocci ?*)
 
@@ -3369,76 +3415,35 @@ and (define_params: sequence ->
 
 (* todo? facto code with argument and parameters ? *)
 and define_paramsbis = fun eas ebs ->
-  match eas, ebs with
-  | [], [] -> return ([], [])
-  | [], eb::ebs -> fail
-  | ea::eas, ebs ->
-      X.all_bound (A.get_inherited ea) >&&>
-      (match A.unwrap ea, ebs with
-      | A.DPdots (mcode), ys ->
+  let match_dots ea =
+    match A.unwrap ea with
+      A.DPdots(mcode) -> Some (mcode, None)
+    | _ -> None in
+  let build_dots (mcode, _optexpr) = A.DPdots(mcode) in
+  let match_comma ea =
+    match A.unwrap ea with
+      A.DPComma ia1 -> Some ia1
+    | _ -> None in
+  let build_comma ia1 = A.DPComma ia1 in
+  let match_metalist ea = None in
+  let build_metalist (ida,leninfo,keep,inherited) = failwith "not possible" in
+  let mktermval v = failwith "not possible" in
+  let special_cases ea eas ebs = None in
+  let no_ii x = failwith "not possible" in
+  list_matcher match_dots build_dots match_comma build_comma
+    match_metalist build_metalist mktermval
+    special_cases define_parameter X.distrf_define_params no_ii eas ebs
 
-          (* '...' can take more or less the beginnings of the arguments *)
-          let startendxs = Common.zip (Common.inits ys) (Common.tails ys) in
-          startendxs +> List.fold_left (fun acc (startxs, endxs) ->
-            acc >||> (
-
-              (if null startxs
-              then
-                if mcode_contain_plus (mcodekind mcode)
-                then fail
-                  (* failwith "I have no token that I could accroche myself on" *)
-                else return (dots2metavar mcode, [])
-              else
-                (match Common.last startxs with
-                | Right _ -> fail
-                | Left _ ->
-                    X.distrf_define_params (dots2metavar mcode) startxs
-                )
-              ) >>= (fun mcode startxs ->
-		let mcode = metavar2dots mcode in
-                define_paramsbis eas endxs >>= (fun eas endxs ->
-                  return (
-                    (A.DPdots (mcode) +> A.rewrap ea) ::eas,
-                    startxs ++ endxs
-                  )))
-              )
-            ) fail
-
-      | A.DPComma ia1, Right ii::ebs ->
-          let ib1 = tuple_of_list1 ii in
-          tokenf ia1 ib1 >>= (fun ia1 ib1 ->
-          define_paramsbis eas ebs >>= (fun eas ebs ->
-            return (
-              (A.DPComma ia1 +> A.rewrap ea)::eas,
-              (Right [ib1])::ebs
-            )
-          ))
-
-      | A.DPComma ia1, ebs ->
-          if mcode_contain_plus (mcodekind ia1)
-          then fail
-          else
-            (define_paramsbis eas ebs) (* try optional comma trick *)
-
-      | (A.OptDParam _ | A.UniqueDParam _), _ ->
-              failwith "handling Opt/Unique for define parameters"
-
-      | A.DPcircles (_), ys -> raise Impossible (* in Ordered mode *)
-
-      | A.DParam ida, (Left (idb, ii))::ebs ->
-          let ib1 = tuple_of_list1 ii in
-          ident DontKnow ida (idb, ib1) >>= (fun ida (idb, ib1) ->
-          define_paramsbis eas ebs >>= (fun eas ebs ->
-            return (
-              (A.DParam ida)+> A.rewrap ea :: eas,
-              (Left (idb, [ib1]))::ebs
-            )))
-
-      | _unwrapx, (Right y)::ys -> raise Impossible
-      | _unwrapx, [] -> fail
-      )
-
-
+and define_parameter = fun parama paramb ->
+  match A.unwrap parama, paramb with
+    A.DParam ida, (idb, ii) ->
+      let ib1 = tuple_of_list1 ii in
+      ident DontKnow ida (idb, ib1) >>= (fun ida (idb, ib1) ->
+        return ((A.DParam ida)+> A.rewrap parama,(idb, [ib1])))
+  | (A.OptDParam _ | A.UniqueDParam _), _ ->
+      failwith "handling Opt/Unique for define parameters"
+  | A.DPcircles (_), ys -> raise Impossible (* in Ordered mode *)
+  | _ -> fail
 
 (*****************************************************************************)
 (* Entry points *)

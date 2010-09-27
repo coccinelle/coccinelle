@@ -368,7 +368,19 @@ let mk_pretty_printers
             pr_elem iopar;
             pp_expression e;
             pr_elem icpar
-	| (ColonExpr _), _ -> raise Impossible)
+	  (* the following case used to be just raise Impossible, but
+	     the code __asm__ __volatile__ ("dcbz 0, %[input]"
+                                ::[input]"r"(&coherence_data[i]));
+	     in linux-2.6.34/drivers/video/fsl-diu-fb.c matches this case *)
+	| (ColonExpr e), ii ->
+	    (match List.rev ii with
+	      icpar::iopar::istring::rest ->
+		List.iter pr_elem (List.rev rest);
+		pr_elem istring;
+		pr_elem iopar;
+		pp_expression e;
+		pr_elem icpar
+	    | _ -> raise Impossible))
         ))
 
 
@@ -591,7 +603,12 @@ let mk_pretty_printers
 			(Some (s, is)) typ Ast_c.noattr;
 		      pr_elem iidot;
 		      pp_expression expr
-		  | x -> raise Impossible
+		  | None ->
+		      (* was raise Impossible, but have no idea why because
+			 nameless bit fields are accepted by the parser and
+			 nothing seems to be done to give them names *)
+		      pr_elem iidot;
+		      pp_expression expr
 			)); (* iter other vars *)
 
 	| [] -> raise Impossible

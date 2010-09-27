@@ -348,8 +348,13 @@ and typeC ty =
   | Ast.Array(ty,lb,size,rb) ->
       fullType ty; mcode print_string lb; print_option expression size;
       mcode print_string rb
-  | Ast.EnumName(kind,name) -> mcode print_string kind; print_string " ";
-      ident name
+  | Ast.EnumName(kind,name) ->
+      mcode print_string kind;
+      print_option (function x -> ident x; print_string " ") name
+  | Ast.EnumDef(ty,lb,ids,rb) ->
+      fullType ty; mcode print_string lb;
+      dots force_newline expression ids;
+      mcode print_string rb
   | Ast.StructUnionName(kind,name) ->
       mcode structUnion kind;
       print_option (function x -> ident x; print_string " ") name
@@ -449,7 +454,11 @@ and initialiser i =
     Ast.MetaInit(name,_,_) ->
       mcode print_meta name; print_string " "
   | Ast.InitExpr(exp) -> expression exp
-  | Ast.InitList(allminus,lb,initlist,rb,whencode) ->
+  | Ast.ArInitList(lb,initlist,rb) ->
+      mcode print_string lb; open_box 0;
+      dots force_newline initialiser initlist; close_box();
+      mcode print_string rb
+  | Ast.StrInitList(allminus,lb,initlist,rb,whencode) ->
       mcode print_string lb; open_box 0;
       if not (whencode = [])
       then
@@ -465,6 +474,9 @@ and initialiser i =
   | Ast.InitGccName(name,eq,ini) ->
       ident name; mcode print_string eq; initialiser ini
   | Ast.IComma(comma) -> mcode print_string comma; force_newline()
+  | Ast.Idots(dots,Some whencode) ->
+      mcode print_string dots; print_string "   when != "; initialiser whencode
+  | Ast.Idots(dots,None) -> mcode print_string dots
   | Ast.OptIni(ini) -> print_string "?"; initialiser ini
   | Ast.UniqueIni(ini) -> print_string "!"; initialiser ini
 

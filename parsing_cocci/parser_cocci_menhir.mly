@@ -528,7 +528,12 @@ non_signable_types:
 | ty=Tfloat
     { Ast0.wrap(Ast0.BaseType(Ast.FloatType,[P.clt2mcode "float" ty])) }
 | s=Tenum i=ident
-    { Ast0.wrap(Ast0.EnumName(P.clt2mcode "enum" s, i)) }
+    { Ast0.wrap(Ast0.EnumName(P.clt2mcode "enum" s, Some i)) }
+| s=Tenum i=ioption(ident) l=TOBrace ids=enum_decl_list r=TCBrace
+    { (if i = None && !Data.in_iso
+    then failwith "enums must be named in the iso file");
+      Ast0.wrap(Ast0.EnumDef(Ast0.wrap(Ast0.EnumName(P.clt2mcode "enum" s, i)),
+			     P.clt2mcode "{" l, ids, P.clt2mcode "}" r)) }
 | s=struct_or_union i=ident
     { Ast0.wrap(Ast0.StructUnionName(s, Some i)) }
 | s=struct_or_union i=ioption(ident)
@@ -582,11 +587,14 @@ struct_or_union:
      | u=Tunion  { P.clt2mcode Ast.Union u }
 
 struct_decl:
-      TNothing { [] }
-    | TMetaField { [P.meta_field $1] }
+      TNothing        { [] }
+    | struct_decl_one { [$1] }
+
+struct_decl_one:
+    | TMetaField { P.meta_field $1 }
     | t=ctype d=d_ident pv=TPtVirg
 	 { let (id,fn) = d in
-	 [Ast0.wrap(Ast0.UnInit(None,fn t,id,P.clt2mcode ";" pv))] }
+	 Ast0.wrap(Ast0.UnInit(None,fn t,id,P.clt2mcode ";" pv)) }
     | t=ctype lp1=TOPar st=TMul d=d_ident rp1=TCPar
 	lp2=TOPar p=decl_list(name_opt_decl) rp2=TCPar pv=TPtVirg
         { let (id,fn) = d in
@@ -595,11 +603,11 @@ struct_decl:
 	    (Ast0.FunctionPointer
 	       (t,P.clt2mcode "(" lp1,P.clt2mcode "*" st,P.clt2mcode ")" rp1,
 		P.clt2mcode "(" lp2,p,P.clt2mcode ")" rp2)) in
-        [Ast0.wrap(Ast0.UnInit(None,fn t,id,P.clt2mcode ";" pv))] }
+        Ast0.wrap(Ast0.UnInit(None,fn t,id,P.clt2mcode ";" pv)) }
      | cv=ioption(const_vol) i=pure_ident d=d_ident pv=TPtVirg
 	 { let (id,fn) = d in
 	 let idtype = P.make_cv cv (Ast0.wrap (Ast0.TypeName(P.id2mcode i))) in
-	 [Ast0.wrap(Ast0.UnInit(None,fn idtype,id,P.clt2mcode ";" pv))] }
+	 Ast0.wrap(Ast0.UnInit(None,fn idtype,id,P.clt2mcode ";" pv)) }
 
 struct_decl_list:
    struct_decl_list_start { Ast0.wrap(Ast0.DOTS($1)) }
@@ -607,14 +615,48 @@ struct_decl_list:
 struct_decl_list_start:
   struct_decl                        { $1 }
 | struct_decl struct_decl_list_start { $1@$2 }
-| d=edots_when(TEllipsis,struct_decl) r=continue_struct_decl_list
-    { (P.mkddots "..." d)::r }
+| d=edots_when(TEllipsis,struct_decl_one) r=continue_struct_decl_list
+    { (P.mkddots_one "..." d)::r }
 
 continue_struct_decl_list:
   /* empty */                        { [] }
 | struct_decl struct_decl_list_start { $1@$2 }
 | struct_decl                        { $1 }
 
+
+/* ---------------------------------------------------------------------- */
+/* very restricted what kinds of expressions can appear in an enum decl */
+
+enum_decl_one:
+    | ident    { Ast0.wrap(Ast0.Ident($1)) }
+    | ident TEq enum_val
+	{ let id = Ast0.wrap(Ast0.Ident($1)) in
+	Ast0.wrap
+	  (Ast0.Assignment
+	     (id,P.clt2mcode Ast.SimpleAssign $2,Ast0.set_arg_exp $3,
+	      false)) }
+
+enum_val:
+   ident    { Ast0.wrap(Ast0.Ident($1)) }
+ | TInt
+     { let (x,clt) = $1 in
+     Ast0.wrap(Ast0.Constant (P.clt2mcode (Ast.Int x) clt)) }
+ | TMetaConst
+     { let (nm,constraints,pure,ty,clt) = $1 in
+     Ast0.wrap
+       (Ast0.MetaExpr(P.clt2mcode nm clt,constraints,ty,Ast.CONST,pure)) }
+ | TMetaExp
+     { let (nm,constraints,pure,ty,clt) = $1 in
+     Ast0.wrap
+       (Ast0.MetaExpr(P.clt2mcode nm clt,constraints,ty,Ast.ANY,pure)) }
+ | TMetaIdExp
+     { let (nm,constraints,pure,ty,clt) = $1 in
+     Ast0.wrap
+       (Ast0.MetaExpr(P.clt2mcode nm clt,constraints,ty,Ast.ID,pure)) }
+
+enum_decl_list:
+   nonempty_list_start(enum_decl_one,edots_when(TEllipsis,enum_decl_one))
+     { Ast0.wrap(Ast0.DOTS($1 P.mkedots (fun c -> Ast0.EComma c))) }
 
 /*****************************************************************************/
 
@@ -736,33 +778,15 @@ defineop:
 
 /* ---------------------------------------------------------------------- */
 
-define_param_list: define_param_list_start
-     {let circle x =
-       match Ast0.unwrap x with Ast0.DPcircles(_) -> true | _ -> false in
-     if List.exists circle $1
-     then Ast0.wrap(Ast0.CIRCLES($1))
-     else Ast0.wrap(Ast0.DOTS($1)) }
+dparam: ident { Ast0.wrap(Ast0.DParam $1) }
 
-define_param_list_start:
-    ident { [Ast0.wrap(Ast0.DParam $1)] }
-  | ident TComma define_param_list_start
-      { Ast0.wrap(Ast0.DParam $1)::
-	Ast0.wrap(Ast0.DPComma(P.clt2mcode "," $2))::$3 }
-  | d=TEllipsis r=list(dp_comma_args(TEllipsis))
-      { (P.mkdpdots "..." d)::
-	(List.concat (List.map (function x -> x (P.mkdpdots "...")) r)) }
-
-dp_comma_args(dotter):
-  c=TComma d=dotter
-    { function dot_builder ->
-      [Ast0.wrap(Ast0.DPComma(P.clt2mcode "," c)); dot_builder d] }
-| TComma ident
-    { function dot_builder ->
-      [Ast0.wrap(Ast0.DPComma(P.clt2mcode "," $1));
-	Ast0.wrap(Ast0.DParam $2)] }
-
-define_param_list_option: define_param_list { $1 }
-         | /* empty */     { Ast0.wrap(Ast0.DOTS([])) }
+define_param_list_option:
+    empty_list_start(dparam,TEllipsis)
+      { Ast0.wrap
+	  (Ast0.DOTS
+	     ($1
+		(fun _ d -> Ast0.wrap(Ast0.DPdots(P.clt2mcode "," d)))
+		(fun c -> Ast0.DPComma c))) }
 
 /*****************************************************************************/
 
@@ -1096,11 +1120,12 @@ initialize:
     eexpr
       { Ast0.wrap(Ast0.InitExpr($1)) }
   | TOBrace initialize_list TCBrace
-      { Ast0.wrap(Ast0.InitList(P.clt2mcode "{" $1,$2,P.clt2mcode "}" $3)) }
-  | TOBrace TCBrace
-      { Ast0.wrap
-	  (Ast0.InitList(P.clt2mcode "{" $1,Ast0.wrap(Ast0.DOTS []),
-			 P.clt2mcode "}" $2)) }
+    { if P.struct_initializer $2
+    then
+      let il = P.drop_dot_commas $2 in
+      Ast0.wrap(Ast0.InitList(P.clt2mcode "{" $1,il,P.clt2mcode "}" $3,false))
+    else
+      Ast0.wrap(Ast0.InitList(P.clt2mcode "{" $1,$2,P.clt2mcode "}" $3,true)) }
   | TMetaInit
       {let (nm,pure,clt) = $1 in
       Ast0.wrap(Ast0.MetaInit(P.clt2mcode nm clt,pure)) }
@@ -1110,13 +1135,14 @@ initialize2:
   /*dots and nests probably not allowed at top level, haven't looked into why*/
   arith_expr(eexpr,invalid) { Ast0.wrap(Ast0.InitExpr($1)) }
 | TOBrace initialize_list TCBrace
-    { Ast0.wrap(Ast0.InitList(P.clt2mcode "{" $1,$2,P.clt2mcode "}" $3)) }
-| TOBrace TCBrace
-    { Ast0.wrap
-	(Ast0.InitList(P.clt2mcode "{" $1,Ast0.wrap(Ast0.DOTS []),
-		       P.clt2mcode "}" $2)) }
+    { if P.struct_initializer $2
+    then
+      let il = P.drop_dot_commas $2 in
+      Ast0.wrap(Ast0.InitList(P.clt2mcode "{" $1,il,P.clt2mcode "}" $3,false))
+    else
+      Ast0.wrap(Ast0.InitList(P.clt2mcode "{" $1,$2,P.clt2mcode "}" $3,true)) }
            /* gccext:, labeled elements */
-| list(designator) TEq initialize2
+| list(designator) TEq initialize2 /*can we have another of these on the rhs?*/
     { Ast0.wrap(Ast0.InitGccExt($1,P.clt2mcode "=" $2,$3)) }
 | ident TDotDot initialize2
     { Ast0.wrap(Ast0.InitGccName($1,P.clt2mcode ":" $2,$3)) } /* in old kernel */
@@ -1131,34 +1157,8 @@ designator:
 			     $4,P.clt2mcode "]" $5) }
 
 initialize_list:
-   initialize_list_start { Ast0.wrap(Ast0.DOTS($1)) }
-
-initialize_list_start:
-  initialize2 TComma { [$1;Ast0.wrap(Ast0.IComma(P.clt2mcode "," $2))] }
-| initialize2 TComma initialize_list_start
-    { $1::Ast0.wrap(Ast0.IComma(P.clt2mcode "," $2))::$3 }
-| TNothing initialize_list_start
-    { $2 } /* + code only */
-| d=edots_when(TEllipsis,initialize)
-      r=comma_initializers(edots_when(TEllipsis,initialize))
-    { (P.mkidots "..." d)::
-      (List.concat(List.map (function x -> x (P.mkidots "...")) r)) }
-
-comma_initializers(dotter):
-  /* empty */ { [] }
-| d=dotter r=comma_initializers2(dotter)
-      { (function dot_builder -> [dot_builder d])::r }
-| TNothing r=comma_initializers(dotter) { r }
-| i=initialize2 c=TComma r=comma_initializers(dotter)
-    { (function dot_builder -> [i; Ast0.wrap(Ast0.IComma(P.clt2mcode "," c))])::
-      r }
-
-comma_initializers2(dotter):
-  /* empty */ { [] }
-| TNothing r=comma_initializers(dotter) { r }
-| i=initialize2 c=TComma r=comma_initializers(dotter)
-    { (function dot_builder -> [i; Ast0.wrap(Ast0.IComma(P.clt2mcode "," c))])::
-      r }
+   empty_list_start(initialize2,edots_when(TEllipsis,initialize))
+     { Ast0.wrap(Ast0.DOTS($1 P.mkidots (fun c -> Ast0.IComma c))) }
 
 /* a statement that is part of a list */
 decl_statement:
@@ -1694,21 +1694,12 @@ typedef_ident:
 /*****************************************************************************/
 
 decl_list(decl):
-  /* empty */ { Ast0.wrap(Ast0.DOTS([])) }
-| decl_list_start(decl)
-     {let circle x =
-       match Ast0.unwrap x with Ast0.Pcircles(_) -> true | _ -> false in
-     if List.exists circle $1
-     then Ast0.wrap(Ast0.CIRCLES($1))
-     else Ast0.wrap(Ast0.DOTS($1)) }
-
-decl_list_start(decl):
-  one_dec(decl)  { [$1] }
-| one_dec(decl) TComma decl_list_start(decl)
-    { $1::Ast0.wrap(Ast0.PComma(P.clt2mcode "," $2))::$3 }
-| TEllipsis list(comma_decls(TEllipsis,decl))
-    { Ast0.wrap(Ast0.Pdots(P.clt2mcode "..." $1))::
-      (List.concat(List.map (function x -> x (P.mkpdots "...")) $2)) }
+  empty_list_start(one_dec(decl),TEllipsis)
+     { Ast0.wrap
+	 (Ast0.DOTS
+	    ($1
+	       (fun _ d -> Ast0.wrap(Ast0.Pdots(P.clt2mcode "..." d)))
+	       (fun c -> Ast0.PComma c))) }
 
 one_dec(decl):
   decl  { $1 }
@@ -1722,14 +1713,49 @@ one_dec(decl):
 	| Ast.CstLen n -> Ast0.CstListLen n in
     Ast0.wrap(Ast0.MetaParamList(nm,lenname,pure)) }
 
-comma_decls(dotter,decl):
-  TComma dotter
-    { function dot_builder ->
-      [Ast0.wrap(Ast0.PComma(P.clt2mcode "," $1));
-	dot_builder $2] }
-| TComma one_dec(decl)
-    { function dot_builder ->
-      [Ast0.wrap(Ast0.PComma(P.clt2mcode "," $1)); $2] }
+/* ---------------------------------------------------------------------- */
+/* comma list parser, used for fn params, fn args, enums, initlists,
+   #define params */
+
+/* enums: enum_decl, edots_when(TEllipsis,enum_decl_one)
+fun s d -> P.mkedots "..." d
+fun c -> Ast0.EComma c
+ */
+
+empty_list_start(elem,dotter):
+  /* empty */ { fun build_dots build_comma -> [] }
+| nonempty_list_start(elem,dotter) { $1 }
+
+nonempty_list_start(elem,dotter): /* dots allowed */
+  elem { fun build_dots build_comma -> [$1] }
+| elem TComma
+    { fun build_dots build_comma ->
+      $1::[Ast0.wrap(build_comma(P.clt2mcode "," $2))] }
+| elem TComma nonempty_list_start(elem,dotter)
+    { fun build_dots build_comma ->
+      $1::(Ast0.wrap(build_comma(P.clt2mcode "," $2)))::
+      ($3 build_dots build_comma) }
+| TNothing nonempty_list_start(elem,dotter) { $2 }
+| d=dotter { fun build_dots build_comma -> [(build_dots "..." d)] }
+| d=dotter TComma
+      { fun build_dots build_comma ->
+	[(build_dots "..." d);Ast0.wrap(build_comma(P.clt2mcode "," $2))] }
+| d=dotter TComma r=continue_list(elem,dotter)
+    { fun build_dots build_comma ->
+      (build_dots "..." d)::
+      (Ast0.wrap(build_comma(P.clt2mcode "," $2)))::
+      (r build_dots build_comma) }
+
+continue_list(elem,dotter): /* dots not allowed */
+  elem { fun build_dots build_comma -> [$1] }
+| elem TComma
+    { fun build_dots build_comma ->
+      $1::[Ast0.wrap(build_comma(P.clt2mcode "," $2))] }
+| elem TComma nonempty_list_start(elem,dotter)
+    { fun build_dots build_comma ->
+      $1::(Ast0.wrap(build_comma(P.clt2mcode "," $2)))::
+      ($3 build_dots build_comma) }
+| TNothing nonempty_list_start(elem,dotter) { $2 }
 
 /* ---------------------------------------------------------------------- */
 
@@ -1814,7 +1840,12 @@ toplevel_after_stm:
 
 top_init:
   TOInit initialize_list TCBrace
-    { Ast0.wrap(Ast0.InitList(P.clt2mcode "{" $1,$2,P.clt2mcode "}" $3)) }
+    { if P.struct_initializer $2
+    then
+      let il = P.drop_dot_commas $2 in
+      Ast0.wrap(Ast0.InitList(P.clt2mcode "{" $1,il,P.clt2mcode "}" $3,false))
+    else
+      Ast0.wrap(Ast0.InitList(P.clt2mcode "{" $1,$2,P.clt2mcode "}" $3,true)) }
 
 /* ------------------------------------------------------------------------ */
 /* Plus top level */
@@ -1913,23 +1944,9 @@ when_start:
 
 /* ---------------------------------------------------------------------- */
 
-eexpr_list:
-  eexpr_list_start
-     {let circle x =
-       match Ast0.unwrap x with Ast0.Ecircles(_) -> true | _ -> false in
-     let star x =
-       match Ast0.unwrap x with Ast0.Estars(_) -> true | _ -> false in
-     if List.exists circle $1
-     then Ast0.wrap(Ast0.CIRCLES($1))
-     else
-       if List.exists star $1
-       then Ast0.wrap(Ast0.STARS($1))
-       else Ast0.wrap(Ast0.DOTS($1)) }
-
 /* arg expr.  may contain a type or a explist metavariable */
 aexpr:
-    eexpr
-      { Ast0.set_arg_exp $1 }
+    dexpr { Ast0.set_arg_exp $1 }
   | TMetaExpList
       { let (nm,lenname,pure,clt) = $1 in
       let nm = P.clt2mcode nm clt in
@@ -1942,21 +1959,13 @@ aexpr:
   | ctype
       { Ast0.set_arg_exp(Ast0.wrap(Ast0.TypeExp($1))) }
 
-eexpr_list_start:
-    aexpr { [$1] }
-  | aexpr TComma eexpr_list_start
-      { $1::Ast0.wrap(Ast0.EComma(P.clt2mcode "," $2))::$3 }
-
-comma_args(dotter):
-  c=TComma d=dotter
-    { function dot_builder ->
-      [Ast0.wrap(Ast0.EComma(P.clt2mcode "," c)); dot_builder d] }
-| TComma aexpr
-    { function dot_builder ->
-      [Ast0.wrap(Ast0.EComma(P.clt2mcode "," $1)); $2] }
-
-eexpr_list_option: eexpr_list { $1 }
-         | /* empty */     { Ast0.wrap(Ast0.DOTS([])) }
+eexpr_list_option:
+    empty_list_start(aexpr,TEllipsis)
+      { Ast0.wrap
+	  (Ast0.DOTS
+	     ($1
+		(fun _ d -> Ast0.wrap(Ast0.Edots(P.clt2mcode "..." d,None)))
+		(fun c -> Ast0.EComma c))) }
 
 /****************************************************************************/
 

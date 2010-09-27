@@ -35,6 +35,8 @@ val vk_type      : visitor_c -> fullType    -> unit
 val vk_decl      : visitor_c -> declaration -> unit
 val vk_onedecl   : visitor_c -> onedecl -> unit
 val vk_ini       : visitor_c -> initialiser -> unit
+val vk_inis_splitted :
+    visitor_c -> (initialiser, il) Common.either list -> unit
 val vk_name      : visitor_c -> name -> unit
 val vk_def       : visitor_c -> definition  -> unit
 val vk_node      : visitor_c -> Control_flow_c.node -> unit
@@ -54,6 +56,8 @@ val vk_struct_field : visitor_c -> field -> unit
 val vk_struct_fields : visitor_c -> field list -> unit
 val vk_struct_fieldkinds : visitor_c -> fieldkind wrap list -> unit
 val vk_enum_fields : visitor_c -> enumType -> unit
+val vk_enum_fields_splitted :
+    visitor_c -> (oneEnumType, il) Common.either list -> unit
 
 val vk_cst : visitor_c -> ((constant, string) Common.either wrap) -> unit
 
@@ -97,6 +101,12 @@ val vk_statement_sequencable_s : visitor_c_s -> statement_sequencable -> stateme
 val vk_type_s : visitor_c_s -> fullType -> fullType
 val vk_decl_s : visitor_c_s -> declaration -> declaration
 val vk_ini_s : visitor_c_s -> initialiser -> initialiser
+
+val vk_inis_splitted_s :
+  visitor_c_s ->
+  (initialiser, il) Common.either list ->
+  (initialiser, il) Common.either list
+
 val vk_def_s : visitor_c_s -> definition -> definition
 val vk_name_s : visitor_c_s -> name -> name
 val vk_toplevel_s : visitor_c_s -> toplevel -> toplevel
@@ -132,6 +142,10 @@ val vk_define_params_splitted_s :
   (string Ast_c.wrap, il) Common.either list ->
   (string Ast_c.wrap, il) Common.either list
 
+val vk_enum_fields_s : visitor_c_s -> enumType -> enumType
+val vk_enum_fields_splitted_s : visitor_c_s ->
+  (oneEnumType, il) Common.either list ->
+  (oneEnumType, il) Common.either list
 val vk_struct_field_s : visitor_c_s -> field -> field
 val vk_struct_fields_s : visitor_c_s -> field list -> field list
 

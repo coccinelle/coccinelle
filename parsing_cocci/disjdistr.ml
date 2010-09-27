@@ -71,6 +71,10 @@ and disjtypeC bty =
 	(function ty -> function size ->
 	  Ast.rewrap bty (Ast.Array(ty,lb,size,rb)))
   | Ast.EnumName(_,_) | Ast.StructUnionName(_,_) -> [bty]
+  | Ast.EnumDef(ty,lb,ids,rb) ->
+      disjmult2 (disjty ty) (disjdots disjexp ids)
+	(function ty -> function ids ->
+	  Ast.rewrap bty (Ast.EnumDef(ty,lb,ids,rb)))
   | Ast.StructUnionDef(ty,lb,decls,rb) ->
       disjmult2 (disjty ty) (disjdots disjdecl decls)
 	(function ty -> function decls ->
@@ -181,10 +185,15 @@ and disjini i =
   | Ast.InitExpr(exp) ->
       let exp = disjexp exp in
       List.map (function exp -> Ast.rewrap i (Ast.InitExpr(exp))) exp
-  | Ast.InitList(allminus,lb,initlist,rb,whencode) ->
+  | Ast.ArInitList(lb,initlist,rb) ->
       List.map
 	(function initlist ->
-	  Ast.rewrap i (Ast.InitList(allminus,lb,initlist,rb,whencode)))
+	  Ast.rewrap i (Ast.ArInitList(lb,initlist,rb)))
+	(disjdots disjini initlist)
+  | Ast.StrInitList(allminus,lb,initlist,rb,whencode) ->
+      List.map
+	(function initlist ->
+	  Ast.rewrap i (Ast.StrInitList(allminus,lb,initlist,rb,whencode)))
 	(disjmult disjini initlist)
   | Ast.InitGccExt(designators,eq,ini) ->
       let designators = disjmult designator designators in
@@ -198,6 +207,7 @@ and disjini i =
 	(function ini -> Ast.rewrap i (Ast.InitGccName(name,eq,ini)))
 	ini
   | Ast.IComma(comma) -> [i]
+  | Ast.Idots(dots,_) -> [i]
   | Ast.OptIni(ini) ->
       let ini = disjini ini in
       List.map (function ini -> Ast.rewrap i (Ast.OptIni(ini))) ini
@@ -326,7 +336,7 @@ let disj_all =
   let donothing r k e = k e in
   V.rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
     disj_rule_elem donothing donothing donothing donothing
 
@@ -343,7 +353,7 @@ let collect_all_isos =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
-    donothing doanything
+    donothing donothing doanything
 
 let collect_iso_info =
   let mcode x = x in
@@ -357,6 +367,7 @@ let collect_iso_info =
   V.rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing donothing donothing
+     donothing
     donothing donothing donothing donothing rule_elem donothing donothing
     donothing donothing
 

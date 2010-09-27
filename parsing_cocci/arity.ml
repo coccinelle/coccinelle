@@ -387,8 +387,17 @@ and top_typeC tgt opt_allowed typ =
       let arity =
 	all_same opt_allowed tgt (mcode2line kind) [mcode2arity kind] in
       let kind = mcode kind in
-      let name = ident false arity name in
+      let name = get_option (ident false arity) name in
       make_typeC typ tgt arity (Ast0.EnumName(kind,name))
+  | Ast0.EnumDef(ty,lb,decls,rb) ->
+      let arity =
+	all_same opt_allowed tgt (mcode2line lb)
+	  (List.map mcode2arity [lb;rb]) in
+      let ty = typeC arity ty in
+      let lb = mcode lb in
+      let ids = dots (expression tgt) decls in
+      let rb = mcode rb in
+      make_typeC typ tgt arity (Ast0.EnumDef(ty,lb,ids,rb))
   | Ast0.StructUnionName(kind,name) ->
       let arity =
 	all_same opt_allowed tgt (mcode2line kind)
@@ -529,12 +538,12 @@ and initialiser tgt i =
       make_init i tgt arity (Ast0.MetaInit(name,pure))
   | Ast0.InitExpr(exp) ->
       Ast0.rewrap i (Ast0.InitExpr(expression tgt exp))
-  | Ast0.InitList(lb,initlist,rb) ->
+  | Ast0.InitList(lb,initlist,rb,ordered) ->
       let arity = init_same (mcode2line lb) [mcode2arity lb; mcode2arity rb] in
       let lb = mcode lb in
       let initlist = dots (initialiser arity) initlist in
       let rb = mcode rb in
-      make_init i tgt arity (Ast0.InitList(lb,initlist,rb))
+      make_init i tgt arity (Ast0.InitList(lb,initlist,rb,ordered))
   | Ast0.InitGccExt(designators,eq,ini) ->
       let arity = init_same (mcode2line eq) [mcode2arity eq] in
       let designators = List.map (designator arity) designators in

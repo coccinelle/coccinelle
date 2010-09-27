@@ -88,6 +88,11 @@ let sdots s =
     Ast.Dots(_,_,_,_) | Ast.Circles(_,_,_,_) | Ast.Stars(_,_,_,_) -> true
   | _ -> false
 
+let idots e =
+  match Ast.unwrap e with
+    Ast.Idots(_,_) -> true
+  | _ -> false
+
 (* --------------------------------------------------------------------- *)
 (* Identifier *)
 
@@ -230,12 +235,17 @@ and unify_typeC t1 t2 =
   | (Ast.Array(ty1,lb1,e1,rb1),Ast.Array(ty2,lb2,e2,rb2)) ->
       conjunct_bindings
 	(unify_fullType ty1 ty2) (unify_option unify_expression e1 e2)
-  | (Ast.EnumName(s1,ts1),Ast.EnumName(s2,ts2)) ->
+  | (Ast.EnumName(s1,Some ts1),Ast.EnumName(s2,Some ts2)) ->
       if unify_mcode s1 s2 then unify_ident ts1 ts2 else return false
+  | (Ast.EnumName(s1,None),Ast.EnumName(s2,None)) ->
+      return true
+  | (Ast.EnumDef(ty1,lb1,ids1,rb1),Ast.EnumDef(ty2,lb2,ids2,rb2)) ->
+       conjunct_bindings (unify_fullType ty1 ty2)
+	 (unify_dots unify_expression edots ids1 ids2)
   | (Ast.StructUnionName(s1,Some ts1),Ast.StructUnionName(s2,Some ts2)) ->
       if unify_mcode s1 s2 then unify_ident ts1 ts2 else return false
   | (Ast.StructUnionName(s1,None),Ast.StructUnionName(s2,None)) ->
-      return true
+      return (unify_mcode s1 s2)
   | (Ast.StructUnionDef(ty1,lb1,decls1,rb1),
      Ast.StructUnionDef(ty2,lb2,decls2,rb2)) ->
        conjunct_bindings (unify_fullType ty1 ty2)
@@ -295,8 +305,12 @@ and unify_initialiser i1 i2 =
     (Ast.MetaInit(_,_,_),_) | (_,Ast.MetaInit(_,_,_)) -> return true
   | (Ast.InitExpr(expa),Ast.InitExpr(expb)) ->
       unify_expression expa expb
-  | (Ast.InitList(_,_,initlista,_,whena),
-     Ast.InitList(_,_,initlistb,_,whenb)) ->
+  | (Ast.ArInitList(_,initlista,_),
+     Ast.ArInitList(_,initlistb,_)) ->
+      (* ignore whencode - returns true safely *)
+      unify_dots unify_initialiser idots initlista initlistb
+  | (Ast.StrInitList(_,_,initlista,_,whena),
+     Ast.StrInitList(_,_,initlistb,_,whenb)) ->
       (* ignore whencode - returns true safely *)
       unify_lists unify_initialiser (function _ -> false) initlista initlistb
   | (Ast.InitGccExt(designatorsa,_,inia),
@@ -482,7 +496,7 @@ and subexp f =
   let donothing r k e = k e in
   let recursor = V.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      donothing donothing donothing donothing
+      donothing donothing donothing donothing donothing
       donothing expr donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing in
   recursor.V.combiner_rule_elem
@@ -495,7 +509,7 @@ and subtype f =
   let donothing r k e = k e in
   let recursor = V.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      donothing donothing donothing donothing
+      donothing donothing donothing donothing donothing
       donothing donothing fullType donothing donothing donothing donothing
       donothing donothing donothing donothing donothing in
   recursor.V.combiner_rule_elem

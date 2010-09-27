@@ -7,7 +7,6 @@ module Ast0 = Ast0_cocci
 module Ast = Ast_cocci
 module V0 = Visitor_ast0
 module VT0 = Visitor_ast0_types
-module V = Visitor_ast
 
 let unitary = Type_cocci.Unitary
 
@@ -273,6 +272,36 @@ let dots fn d =
     | Ast0.CIRCLES(x) -> Ast.CIRCLES(List.map fn x)
     | Ast0.STARS(x) -> Ast.STARS(List.map fn x))
 
+(* commas in dotted lists, here due to polymorphism restrictions *)
+
+let add_comma is_comma make_comma itemlist =
+  match Ast0.unwrap itemlist with
+    Ast0.DOTS(x) ->
+      (match List.rev x with
+	[] -> itemlist
+      | e::es ->
+	  if is_comma e
+	  then itemlist
+	  else
+	    let comma =
+	      match Ast0.get_mcodekind e with
+		Ast0.MINUS(_) -> (Ast0.make_minus_mcode ",")
+	      |	_ -> (Ast0.make_mcode ",") in
+	    Ast0.rewrap itemlist
+	      (Ast0.DOTS
+		 (List.rev (Ast0.rewrap e (make_comma comma) :: (e::es)))))
+  | _ -> failwith "not possible"
+
+let add_exp_comma =
+  add_comma
+    (function x -> match Ast0.unwrap x with Ast0.EComma _ -> true | _ -> false)
+    (function x -> Ast0.EComma x)
+
+and add_init_comma =
+  add_comma
+    (function x -> match Ast0.unwrap x with Ast0.IComma _ -> true | _ -> false)
+    (function x -> Ast0.IComma x)
+
 (* --------------------------------------------------------------------- *)
 (* Identifier *)
 
@@ -416,7 +445,8 @@ and typeC t =
     | Ast0.BaseType(_) | Ast0.Signed(_,_) | Ast0.Pointer(_,_)
     | Ast0.FunctionPointer(_,_,_,_,_,_,_) | Ast0.FunctionType(_,_,_,_)
     | Ast0.Array(_,_,_,_) | Ast0.EnumName(_,_) | Ast0.StructUnionName(_,_)
-    | Ast0.StructUnionDef(_,_,_,_) | Ast0.TypeName(_) | Ast0.MetaType(_,_) ->
+    | Ast0.StructUnionDef(_,_,_,_) | Ast0.EnumDef(_,_,_,_)
+    | Ast0.TypeName(_) | Ast0.MetaType(_,_) ->
 	Ast.Type(None,rewrap t no_isos (base_typeC t))
     | Ast0.DisjType(_,types,_,_) -> Ast.DisjType(List.map typeC types)
     | Ast0.OptType(ty) -> Ast.OptType(typeC ty)
@@ -441,7 +471,10 @@ and base_typeC t =
   | Ast0.Array(ty,lb,size,rb) ->
       Ast.Array(typeC ty,mcode lb,get_option expression size,mcode rb)
   | Ast0.EnumName(kind,name) ->
-      Ast.EnumName(mcode kind,ident name)
+      Ast.EnumName(mcode kind,get_option ident name)
+  | Ast0.EnumDef(ty,lb,ids,rb) ->
+      let ids = add_exp_comma ids in
+      Ast.EnumDef(typeC ty,mcode lb,dots expression ids,mcode rb)
   | Ast0.StructUnionName(kind,name) ->
       Ast.StructUnionName(mcode kind,get_option ident name)
   | Ast0.StructUnionDef(ty,lb,decls,rb) ->
@@ -518,19 +551,32 @@ and strip_idots initlist =
       Ast0.MINUS _ -> true
     | _ -> false in
   match Ast0.unwrap initlist with
-    Ast0.DOTS(x) ->
+    Ast0.DOTS(l) ->
+      let l =
+	match List.rev l with
+	  [] | [_] -> l
+	| x::y::xs ->
+	    (match (Ast0.unwrap x,Ast0.unwrap y) with
+	      (Ast0.IComma _,Ast0.Idots _) ->
+		(* drop comma that was added by add_comma *)
+		List.rev (y::xs)
+	    | _ -> l) in
       let (whencode,init,dotinfo) =
-	List.fold_left
-	  (function (prevwhen,previnit,dotinfo) ->
-	    function cur ->
-	      match Ast0.unwrap cur with
+	let rec loop = function
+	    [] -> ([],[],[])
+	  | x::rest ->
+	      (match Ast0.unwrap x with
 		Ast0.Idots(dots,Some whencode) ->
-		  (whencode :: prevwhen, previnit,
+		  let (restwhen,restinit,dotinfo) = loop rest in
+		  (whencode :: restwhen, restinit,
 		    (isminus dots)::dotinfo)
-	      | Ast0.Idots(dots,None) ->
-		  (prevwhen, previnit, (isminus dots)::dotinfo)
-	      | _ -> (prevwhen, cur :: previnit, dotinfo))
-	  ([],[],[]) x in
+	      |	Ast0.Idots(dots,None) ->
+		  let (restwhen,restinit,dotinfo) = loop rest in
+		  (restwhen, restinit, (isminus dots)::dotinfo)
+	      |	_ -> 
+		  let (restwhen,restinit,dotinfo) = loop rest in
+		  (restwhen,x::restinit,dotinfo)) in
+	loop l in
       let allminus =
 	if List.for_all (function x -> not x) dotinfo
 	then false (* false if no dots *)
@@ -538,7 +584,7 @@ and strip_idots initlist =
 	  if List.for_all (function x -> x) dotinfo
 	  then true
 	  else failwith "inconsistent annotations on initialiser list dots" in
-      (List.rev whencode, List.rev init, allminus)
+      (whencode, init, allminus)
   | Ast0.CIRCLES(x) | Ast0.STARS(x) -> failwith "not possible for an initlist"
 
 and initialiser i =
@@ -546,17 +592,25 @@ and initialiser i =
     (match Ast0.unwrap i with
       Ast0.MetaInit(name,_) -> Ast.MetaInit(mcode name,unitary,false)
     | Ast0.InitExpr(exp) -> Ast.InitExpr(expression exp)
-    | Ast0.InitList(lb,initlist,rb) ->
+    | Ast0.InitList(lb,initlist,rb,true) ->
+	let initlist = add_init_comma initlist in
+	Ast.ArInitList(mcode lb,dots initialiser initlist,mcode rb)
+    | Ast0.InitList(lb,initlist,rb,false) ->
+	let initlist = add_init_comma initlist in
 	let (whencode,initlist,allminus) = strip_idots initlist in
-	Ast.InitList(allminus,mcode lb,List.map initialiser initlist,mcode rb,
-		     List.map initialiser whencode)
+	Ast.StrInitList
+	  (allminus,mcode lb,List.map initialiser initlist,mcode rb,
+	   List.map initialiser whencode)
     | Ast0.InitGccExt(designators,eq,ini) ->
 	Ast.InitGccExt(List.map designator designators,mcode eq,
 		       initialiser ini)
     | Ast0.InitGccName(name,eq,ini) ->
 	Ast.InitGccName(ident name,mcode eq,initialiser ini)
     | Ast0.IComma(comma) -> Ast.IComma(mcode comma)
-    | Ast0.Idots(_,_) -> failwith "Idots should have been removed"
+    | Ast0.Idots(dots,whencode) ->
+	let dots = mcode dots in
+	let whencode = get_option initialiser whencode in
+	Ast.Idots(dots,whencode)
     | Ast0.OptIni(ini) -> Ast.OptIni(initialiser ini)
     | Ast0.UniqueIni(ini) -> Ast.UniqueIni(initialiser ini))
 

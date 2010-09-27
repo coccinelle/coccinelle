@@ -106,6 +106,11 @@ let mkddots str (dot,whencode) =
   | ("...",Some [w]) -> Ast0.wrap(Ast0.Ddots(clt2mcode str dot, Some w))
   | _ -> failwith "cannot happen"
 
+let mkddots_one str (dot,whencode) =
+  match str with
+    "..." -> Ast0.wrap(Ast0.Ddots(clt2mcode str dot, whencode))
+  | _ -> failwith "cannot happen"
+
 let mkpdots str dot =
   match str with
     "..." -> Ast0.wrap(Ast0.Pdots(clt2mcode str dot))
@@ -545,3 +550,31 @@ let verify_parameter_declarations = function
 		   (Ast0.get_line t))
 	  | _ -> ())
 	l
+
+(* ---------------------------------------------------------------------- *)
+(* decide whether an init list is ordered or unordered *)
+
+let struct_initializer initlist =
+  let rec loop i =
+    match Ast0.unwrap i with
+      Ast0.InitGccExt _ -> true
+    | Ast0.InitGccName _ -> true
+    | Ast0.OptIni i | Ast0.UniqueIni i -> loop i
+    | Ast0.MetaInit _ -> true (* ambiguous... *)
+    | _ -> false in
+  let l = Ast0.undots initlist in
+  (l = []) or (List.exists loop l)
+
+let drop_dot_commas initlist =
+  match Ast0.unwrap initlist with
+    Ast0.DOTS(l) ->
+      let rec loop after_comma = function
+	  [] -> []
+	| x::xs ->
+	    (match Ast0.unwrap x with
+	      Ast0.Idots(dots,whencode) -> x :: (loop true xs)
+	    | Ast0.IComma(comma) when after_comma -> (*drop*) loop false xs
+	    | _ -> x :: (loop false xs)) in
+      Ast0.rewrap initlist (Ast0.DOTS(loop false l))
+  | _ -> failwith "not supported"
+

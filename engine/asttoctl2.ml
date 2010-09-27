@@ -325,7 +325,7 @@ let elim_opt =
 
   V.rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    donothing donothing stmtdotsfn donothing
+    donothing donothing stmtdotsfn donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing
 
@@ -426,12 +426,12 @@ let contains_modif =
   let init r k i =
     let res = k i in
     match Ast.unwrap i with
-      Ast.InitList(allminus,_,_,_,_) -> allminus or res
+      Ast.StrInitList(allminus,_,_,_,_) -> allminus or res
     | _ -> res in
   let recursor =
     V.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      do_nothing do_nothing do_nothing do_nothing
+      do_nothing do_nothing do_nothing do_nothing do_nothing
       do_nothing do_nothing do_nothing do_nothing init do_nothing
       do_nothing rule_elem do_nothing do_nothing do_nothing do_nothing in
   recursor.V.combiner_rule_elem
@@ -454,7 +454,7 @@ let contains_pos =
   let recursor =
     V.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      do_nothing do_nothing do_nothing do_nothing
+      do_nothing do_nothing do_nothing do_nothing do_nothing
       do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
       do_nothing rule_elem do_nothing do_nothing do_nothing do_nothing in
   recursor.V.combiner_rule_elem
@@ -525,7 +525,7 @@ let count_nested_braces s =
   let mcode r x = 0 in
   let recursor = V.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      donothing donothing donothing donothing
+      donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing donothing
       donothing donothing stmt_count donothing donothing donothing in
   let res = string_of_int (recursor.V.combiner_statement s) in
@@ -1889,7 +1889,8 @@ and statement stmt after quantified minus_quantified
 
   | Ast.Nest(starter,stmt_dots,ender,whencode,multi,bef,aft) ->
       (* label in recursive call is None because label check is already
-	 wrapped around the corresponding code *)
+	 wrapped around the corresponding code. not good enough, want to stay
+	 in a specific region, dots and nests will keep going *)
 
       let bfvs =
 	match seq_fvs quantified [Ast.get_wcfvs whencode;Ast.get_fvs stmt_dots]
@@ -1911,16 +1912,16 @@ and statement stmt after quantified minus_quantified
       quantify guard bfvs
 	(let dots_pattern =
 	  statement_list stmt_dots (a2n after) new_quantified minus_quantified
-	    None llabel slabel true guard in
+	    label(*None*) llabel slabel true guard in
 	dots_and_nests multi
 	  (Some dots_pattern) whencode bef aft dot_code after label
 	  (process_bef_aft new_quantified minus_quantified
-	     None llabel slabel true)
+	     label(*None*) llabel slabel true)
 	  (function x ->
-	    statement_list x Tail new_quantified minus_quantified None
+	    statement_list x Tail new_quantified minus_quantified label(*None*)
 	      llabel slabel true true)
 	  (function x ->
-	    statement x Tail new_quantified minus_quantified None
+	    statement x Tail new_quantified minus_quantified label(*None*)
 	      llabel slabel true)
 	  guard quantified
 	  (function x -> Ast.set_fvs [] (Ast.rewrap stmt x)))

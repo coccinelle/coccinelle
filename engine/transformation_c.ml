@@ -402,6 +402,9 @@ module XTRANS = struct
   let distribute_mck_ini (maxpos, minpos) = fun (lop,mop,rop,bop) -> fun x ->
     Visitor_c.vk_ini_s (mk_bigf (maxpos, minpos) (lop,mop,rop,bop)) x
 
+  let distribute_mck_inis (maxpos, minpos) = fun (lop,mop,rop,bop) -> fun x ->
+    Visitor_c.vk_inis_splitted_s (mk_bigf (maxpos, minpos) (lop,mop,rop,bop)) x
+
   let distribute_mck_param (maxpos, minpos) = fun (lop,mop,rop,bop) -> fun x ->
     Visitor_c.vk_param_s (mk_bigf (maxpos, minpos) (lop,mop,rop,bop)) x
 
@@ -412,6 +415,12 @@ module XTRANS = struct
   let distribute_mck_node (maxpos, minpos) = fun (lop,mop,rop,bop) ->fun x ->
     Visitor_c.vk_node_s (mk_bigf (maxpos, minpos) (lop,mop,rop,bop))
       x
+
+  let distribute_mck_enum_fields (maxpos, minpos) =
+    fun (lop,mop,rop,bop) ->fun x ->
+      Visitor_c.vk_enum_fields_splitted_s
+	(mk_bigf (maxpos, minpos) (lop,mop,rop,bop))
+        x
 
   let distribute_mck_struct_fields (maxpos, minpos) =
     fun (lop,mop,rop,bop) ->fun x ->
@@ -475,9 +484,12 @@ module XTRANS = struct
   let distrf_param  = distrf (Lib_parsing_c.ii_of_param, distribute_mck_param)
   let distrf_params = distrf (Lib_parsing_c.ii_of_params,distribute_mck_params)
   let distrf_ini = distrf (Lib_parsing_c.ii_of_ini,distribute_mck_ini)
+  let distrf_inis = distrf (Lib_parsing_c.ii_of_inis,distribute_mck_inis)
   let distrf_decl = distrf (Lib_parsing_c.ii_of_decl,distribute_mck_decl)
   let distrf_field = distrf (Lib_parsing_c.ii_of_field,distribute_mck_field)
   let distrf_node = distrf (Lib_parsing_c.ii_of_node,distribute_mck_node)
+  let distrf_enum_fields =
+    distrf (Lib_parsing_c.ii_of_enum_fields, distribute_mck_enum_fields)
   let distrf_struct_fields =
     distrf (Lib_parsing_c.ii_of_struct_fields, distribute_mck_struct_fields)
   let distrf_cst =

@@ -249,8 +249,13 @@ and typeC t =
       | Ast0.Array(ty,lb,size,rb) ->
 	  typeC ty; mcode print_string lb; print_option expression size;
 	  mcode print_string rb
-      | Ast0.EnumName(kind,name) -> mcode print_string kind; print_string " ";
-	  ident name
+      | Ast0.EnumName(kind,name) ->
+	  mcode print_string kind;
+	  print_option (function x -> ident x; print_string " ") name
+      | Ast0.EnumDef(ty,lb,ids,rb) ->
+	  typeC ty; mcode print_string lb;
+	  dots force_newline expression ids;
+	  mcode print_string rb
       | Ast0.StructUnionName(kind,name) ->
 	  mcode U.structUnion kind;
 	  print_option (function x -> ident x; print_string " ") name
@@ -342,7 +347,8 @@ and initialiser i =
       match Ast0.unwrap i with
 	Ast0.MetaInit(name,_)-> mcode print_meta name; print_string " "
       |	Ast0.InitExpr(exp) -> expression exp
-      | Ast0.InitList(lb,initlist,rb) ->
+      | Ast0.InitList(lb,initlist,rb,ordered) ->
+          (*doesn't show commas dropped in unordered case*)
 	  mcode print_string lb; open_box 0;
 	  let _ = dots (function _ -> ()) initialiser initlist in
 	  close_box(); mcode print_string rb
