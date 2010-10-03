@@ -1,5 +1,5 @@
 (*
- * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Copyright 2005-2010, Ecole des Mines de Nantes, University of Copenhagen
  * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
  * This file is part of Coccinelle.
  *
@@ -44,10 +44,10 @@ let rec exprrep expr = match expr with
 | Ast_c.Constructor (t,i) -> "TODO: Constructor"
 | Ast_c.ParenExpr e -> "TODO: ParenExpr"
 and constantrep c = match c with
-  Ast_c.String (s,isWchar) -> s 
+  Ast_c.String (s,isWchar) -> s
 | Ast_c.MultiString _ -> "TODO: MultiString"
 | Ast_c.Char (s,isWchar) -> s
-| Ast_c.Int (s, _t) -> s 
+| Ast_c.Int (s, _t) -> s
 | Ast_c.Float (s, _t) -> s
 
 let call_pretty f a =
@@ -69,7 +69,7 @@ let stringrep mvb = match mvb with
 | Ast_c.MetaParamVal     params -> "TODO: <<param>>"
 | Ast_c.MetaParamListVal params -> "TODO: <<paramlist>>"
 | Ast_c.MetaListlenVal n -> string_of_int n
-| Ast_c.MetaPosVal (pos1, pos2) -> 
+| Ast_c.MetaPosVal (pos1, pos2) ->
     (* Common.sprintf ("pos(%d,%d)") pos1 pos2 *)
     "TODO: <<posval>>"
 | Ast_c.MetaPosValList positions -> "TODO: <<postvallist>>"

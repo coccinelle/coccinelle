@@ -1,5 +1,5 @@
 (*
- * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Copyright 2005-2010, Ecole des Mines de Nantes, University of Copenhagen
  * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
  * This file is part of Coccinelle.
  *
@@ -31,7 +31,7 @@ and element =
   | DInfo of dots * element list (* before *) * element list (* after *)
   | EExists of Ast_cocci.meta_name * element
 
-and dots = 
+and dots =
     Dots
   | Nest of sequence
   | When of dots * sequence

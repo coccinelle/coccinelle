@@ -1,5 +1,5 @@
 (*
- * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Copyright 2005-2010, Ecole des Mines de Nantes, University of Copenhagen
  * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
  * This file is part of Coccinelle.
  *
@@ -22,13 +22,6 @@
 
 module Ast = Ast_cocci
 module V = Visitor_ast
-
-let setify l = (* keep first *)
-  let rec loop seen = function
-      [] -> []
-    | x::xs ->
-	if List.mem x seen then loop seen xs else x::(loop (x::seen) xs) in
-  loop [] l
 
 let disjmult2 e1 e2 k =
   List.concat
@@ -275,8 +268,7 @@ and disjdecl d =
 let generic_orify_rule_elem f re exp rebuild =
   match f exp with
     [exp] -> re
-  | orexps ->
-      Ast.rewrap re (Ast.DisjRuleElem (setify(List.map rebuild orexps)))
+  | orexps -> Ast.rewrap re (Ast.DisjRuleElem (List.map rebuild orexps))
 
 let orify_rule_elem re exp rebuild =
   generic_orify_rule_elem disjexp re exp rebuild
@@ -348,7 +340,7 @@ let rec disj_rule_elem r k re =
 	(function exp -> Ast.rewrap re (Ast.Case(case,exp,colon)))
   | Ast.DisjRuleElem(l) ->
       (* only case lines *)
-      Ast.rewrap re(Ast.DisjRuleElem(setify(List.map (disj_rule_elem r k) l)))
+      Ast.rewrap re(Ast.DisjRuleElem(List.map (disj_rule_elem r k) l))
 
 let disj_all =
   let mcode x = x in

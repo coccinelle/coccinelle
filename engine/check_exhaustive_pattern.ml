@@ -1,5 +1,5 @@
 (*
- * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Copyright 2005-2010, Ecole des Mines de Nantes, University of Copenhagen
  * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
  * This file is part of Coccinelle.
  *
@@ -24,7 +24,7 @@
 (* Just to warn me when there is some news in the types in
  * ast_cocci.ml or even ast_c.ml, so that I can then adjust my code in
  * pattern.ml or transformation.ml.
- * 
+ *
  * For the moment I do it only for myself (pad), that is I check only
  * for news in ast_cocci.ml, because I already know when I add stuff in
  * my code in ast_c.ml or control_flow_c.ml. *)
@@ -148,36 +148,36 @@ let dumb_astcocci_type = function
 (* ------------------------------------------------------------------------- *)
 (* for C *)
 (*
-  | (Ident (_) | Constant _ | FunCall (_,_) | CondExpr (_,_,_) 
+  | (Ident (_) | Constant _ | FunCall (_,_) | CondExpr (_,_,_)
     | Sequence (_,_)
-    | Assignment (_,_,_) 
+    | Assignment (_,_,_)
     | Postfix (_,_) | Infix (_,_) | Unary (_,_) | Binary (_,_,_)
     | ArrayAccess (_,_) | RecordAccess (_,_) | RecordPtAccess (_,_)
-    | SizeOfExpr (_) | SizeOfType (_) | Cast (_,_) 
-    | StatementExpr (_) | Constructor 
+    | SizeOfExpr (_) | SizeOfType (_) | Cast (_,_)
+    | StatementExpr (_) | Constructor
     | ParenExpr (_) | MacroCall (_) | MacroCall2 (_)
-    ),_ -> 
+    ),_ ->
 
-  | ( Labeled (Label (_,_)) | Labeled (Case  (_,_)) 
+  | ( Labeled (Label (_,_)) | Labeled (Case  (_,_))
     | Labeled (CaseRange  (_,_,_)) | Labeled (Default _)
-    | Compound _ | ExprStatement _ 
+    | Compound _ | ExprStatement _
     | Selection  (If (_, _, _)) | Selection  (Switch (_, _))
-    | Iteration  (While (_, _)) | Iteration  (DoWhile (_, _)) 
+    | Iteration  (While (_, _)) | Iteration  (DoWhile (_, _))
     | Iteration  (For ((_,_), (_,_), (_, _), _))
     | Jump (Goto _) | Jump ((Continue|Break|Return)) | Jump (ReturnExpr _)
     | Decl _ | Asm | Selection (IfCpp (_,_))
-    ), _ -> 
+    ), _ ->
 *)
 
-(* for control flow nodes 
+(* for control flow nodes
 
-  | ( F.ExprStatement (_, _) 
+  | ( F.ExprStatement (_, _)
     | F.IfHeader  (_, _) | F.SwitchHeader (_, _)
-    | F.WhileHeader (_, _) | (* F.DoHeader (_, _) | *) F.DoWhileTail (_, _) 
+    | F.WhileHeader (_, _) | (* F.DoHeader (_, _) | *) F.DoWhileTail (_, _)
     | F.ForHeader (_, _)
     | F.Return     (_, _)  | F.ReturnExpr (_, _)
         (* no counter part in cocci *)
-    | F.Label (_, _) 
+    | F.Label (_, _)
     | F.Case  (_,_) | (* F.CaseRange (_, _) | *) F.Default   (_, _)
     | F.Goto (_, _) | F.Continue (_, _) | F.Break    (_, _)
     ) -> raise Impossible

@@ -1,5 +1,5 @@
 (*
- * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Copyright 2005-2010, Ecole des Mines de Nantes, University of Copenhagen
  * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
  * This file is part of Coccinelle.
  *
@@ -250,7 +250,7 @@ let ctltotex rule pp pv ctls o =
       Printf.fprintf o "%s\n" res)
     ctls;
   Printf.fprintf o "\\end{array}\\]\n\n"
-  
+
 let make_prelude o = Printf.fprintf o "%s\n" prelude
 let make_postlude o = Printf.fprintf o "%s\n" postlude
 

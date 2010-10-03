@@ -1,6 +1,6 @@
 %{
-(* src: ocamlyaccified from 
- *  http://www.lysator.liu.se/c/ANSI-C-grammar-y.html 
+(* src: ocamlyaccified from
+ *  http://www.lysator.liu.se/c/ANSI-C-grammar-y.html
  *)
 open Common
 open AbstractSyntax
@@ -15,23 +15,23 @@ exception Parsing of string
 /*(* conflicts *)*/
 %token <string> TypedefIdent
 
-%token TOPar TCPar TOBrace TCBrace TOCro TCCro 
-%token TDot TComma TPtrOp 
+%token TOPar TCPar TOBrace TCBrace TOCro TCCro
+%token TDot TComma TPtrOp
 %token TInc TDec
-%token <AbstractSyntax.assignOp> TAssign 
+%token <AbstractSyntax.assignOp> TAssign
 %token TEq
 %token TWhy TDotDot TPtVirg TTilde TBang
 %token TEllipsis
 
-%token TOrLog TAndLog TOrIncl TOrExcl TAnd  TEqEq TNotEq TInf TSup TInfEq TSupEq  TShl TShr 
-       TPlus TMinus TMul TDiv TMod 
+%token TOrLog TAndLog TOrIncl TOrExcl TAnd  TEqEq TNotEq TInf TSup TInfEq TSupEq  TShl TShr
+       TPlus TMinus TMul TDiv TMod
 
 %token Tchar Tshort Tint Tdouble Tfloat Tlong Tunsigned Tsigned Tvoid
-       Tauto Tregister Textern Tstatic 
+       Tauto Tregister Textern Tstatic
        Tconst Tvolatile
        Tstruct Tenum Ttypedef Tunion
        Tbreak Telse Tswitch Tcase Tcontinue Tfor Tdo Tif  Twhile Treturn Tgoto Tdefault
-       Tsizeof  
+       Tsizeof
 
 %token EOF
 
@@ -40,12 +40,12 @@ exception Parsing of string
 %left TAndLog
 %left TOrIncl
 %left TOrExcl
-%left TAnd 
+%left TAnd
 %left TEqEq TNotEq
-%left TInf TSup TInfEq TSupEq 
+%left TInf TSup TInfEq TSupEq
 %left TShl TShr
 %left TPlus TMinus
-%left TMul TDiv TMod 
+%left TMul TDiv TMod
 
 %start main
 %type <int list> main
@@ -165,10 +165,10 @@ iteration: Twhile TOPar expr TCPar statement {}
 	 | Tfor TOPar expr_statement expr_statement TCPar statement {}
 	 | Tfor TOPar expr_statement expr_statement expr TCPar statement {}
 
-jump: Tgoto TIdent {} 
+jump: Tgoto TIdent {}
     | Tcontinue {}
     | Tbreak {}
-    | Treturn {} 
+    | Treturn {}
     | Treturn expr {}
 
 /********************************************************************************/
@@ -202,7 +202,7 @@ type_spec: Tvoid {}
 	 | struct_or_union_spec {}
 	 | enum_spec {}
 /*TODO	 | TIdent {} */
-         | TypedefIdent {} 
+         | TypedefIdent {}
 
 type_qualif: Tconst {}
 	   | Tvolatile {}
@@ -241,7 +241,7 @@ enumerator_list: enumerator {}
 enumerator: TIdent {}
           | TIdent TEq const_expr {}
 /*------------------------------------------------------------------------------*/
- 	     
+
 init_declarator_list: init_declarator {}
 	            | init_declarator_list TComma init_declarator {}
 
@@ -297,7 +297,7 @@ direct_abstract_declarator: TOPar abstract_declarator TCPar {}
 			  | TOPar parameter_type_list TCPar {}
 			  | direct_abstract_declarator TOPar TCPar {}
 			  | direct_abstract_declarator TOPar parameter_type_list TCPar {}
-			  
+
 /*------------------------------------------------------------------------------*/
 initialize: assign_expr {}
           | TOBrace initialize_list TCBrace {}

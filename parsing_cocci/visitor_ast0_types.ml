@@ -1,5 +1,5 @@
 (*
- * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Copyright 2005-2010, Ecole des Mines de Nantes, University of Copenhagen
  * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
  * This file is part of Coccinelle.
  *
@@ -76,7 +76,7 @@ type ('mc,'n) flat_cmcode = 'mc Ast0.mcode -> 'n
 type ('cd,'n) ccode = 'n combiner_rec_functions -> ('cd -> 'n) -> 'cd -> 'n
 
 type 'n combiner_functions =
-  {combiner_meta_mcode : ((string*string),'n) cmcode;
+  {combiner_meta_mcode : (Ast.meta_name,'n) cmcode;
    combiner_string_mcode : (string,'n) cmcode;
    combiner_const_mcode : (Ast.constant,'n) cmcode;
    combiner_assign_mcode : (Ast.assignOp,'n) cmcode;
@@ -137,7 +137,7 @@ type 'cd rcode =
     rebuilder_rec_functions -> ('cd rebuilder_inout) -> 'cd rebuilder_inout
 
 type rebuilder_functions =
-  {rebuilder_meta_mcode : (string*string) rmcode;
+  {rebuilder_meta_mcode : Ast_cocci.meta_name rmcode;
    rebuilder_string_mcode : string rmcode;
    rebuilder_const_mcode : Ast.constant rmcode;
    rebuilder_assign_mcode : Ast.assignOp rmcode;
@@ -173,7 +173,7 @@ type ('cd,'a) rccode =
     'a all_functions -> ('cd -> ('a * 'cd)) -> 'cd -> ('a * 'cd)
 
 type 'n combiner_rebuilder_functions =
-  {combiner_rebuilder_meta_mcode : ((string*string),'n) rcmcode;
+  {combiner_rebuilder_meta_mcode : (Ast_cocci.meta_name,'n) rcmcode;
    combiner_rebuilder_string_mcode : (string,'n) rcmcode;
    combiner_rebuilder_const_mcode : (Ast.constant,'n) rcmcode;
    combiner_rebuilder_assign_mcode : (Ast.assignOp,'n) rcmcode;

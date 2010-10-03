@@ -2,12 +2,12 @@
 open Ast_c
 
 (*
-let sexp_of_program x = 
+let sexp_of_program x =
   raise (Common.Todo)
 *)
 
 (* pad addons: *)
-module Common = Sexp_common 
+module Common = Sexp_common
 module Ast_cocci = struct
 let mcodekind_of_sexp x = failwith "todo"
 let sexp_of_mcodekind x = failwith "todo"
@@ -20,7 +20,7 @@ let sexp_of_comment_like_token x = failwith "todo"
 end
 (* cf also the failwith and comment I have added in this file
    (C-s failwith   et C-s ( *        )
-   mainly to break the mutually recursive, for the cocci_tag and 
+   mainly to break the mutually recursive, for the cocci_tag and
    metavars_binding stuff. I also moved some function up
    outside the big 'rec .. and .. and .. and', especially the wrap_of_sexp
    by transforming some 'and xxx' in 'let xxx'.
@@ -39,17 +39,17 @@ let posl_of_sexp__ =
     | Sexp.List ([ v1; v2 ]) ->
         let v1 = Conv.int_of_sexp v1 and v2 = Conv.int_of_sexp v2 in (v1, v2)
     | sexp -> Conv_error.tuple_of_size_n_expected _loc 2 sexp
-  
+
 let posl_of_sexp sexp =
   try posl_of_sexp__ sexp
   with
   | Conv_error.No_variant_match ((msg, sexp)) -> Conv.of_sexp_error msg sexp
-  
+
 let sexp_of_posl (v1, v2) =
   let v1 = Conv.sexp_of_int v1
   and v2 = Conv.sexp_of_int v2
   in Sexp.List [ v1; v2 ]
-  
+
 let virtual_position_of_sexp__ =
   let _loc = "Xxx.virtual_position"
   in
@@ -59,17 +59,17 @@ let virtual_position_of_sexp__ =
         and v2 = Conv.int_of_sexp v2
         in (v1, v2)
     | sexp -> Conv_error.tuple_of_size_n_expected _loc 2 sexp
-  
+
 let virtual_position_of_sexp sexp =
   try virtual_position_of_sexp__ sexp
   with
   | Conv_error.No_variant_match ((msg, sexp)) -> Conv.of_sexp_error msg sexp
-  
+
 let sexp_of_virtual_position (v1, v2) =
   let v1 = Common.sexp_of_parse_info v1
   and v2 = Conv.sexp_of_int v2
   in Sexp.List [ v1; v2 ]
-  
+
 let parse_info_of_sexp__ =
   let _loc = "Xxx.parse_info"
   in
@@ -117,9 +117,9 @@ let parse_info_of_sexp__ =
         Conv_error.nested_list_invalid_sum _loc sexp
     | (Sexp.List [] as sexp) -> Conv_error.empty_list_invalid_sum _loc sexp
     | sexp -> Conv_error.unexpected_stag _loc sexp
-  
+
 let parse_info_of_sexp sexp = parse_info_of_sexp__ sexp
-  
+
 let sexp_of_parse_info =
   function
   | OriginTok v1 ->
@@ -136,7 +136,7 @@ let sexp_of_parse_info =
   | AbstractLineTok v1 ->
       let v1 = Common.sexp_of_parse_info v1
       in Sexp.List [ Sexp.Atom "AbstractLineTok"; v1 ]
-  
+
 let rec info_of_sexp__ =
   let _loc = "Xxx.info"
   in
@@ -164,7 +164,7 @@ let rec info_of_sexp__ =
                                  (function
                                   | Sexp.List ([ v1; v2 ]) ->
                                       let v1 = Ast_cocci.mcodekind_of_sexp v1
-                                      and v2 = 
+                                      and v2 =
                                         (*metavars_binding_of_sexp v2*)
                                         failwith "todo"
                                       in (v1, v2)
@@ -386,7 +386,7 @@ and com_of_sexp sexp =
   with
   | Conv_error.No_variant_match ((msg, sexp)) -> Conv.of_sexp_error msg sexp
 
- 
+
 
 
 
@@ -2906,7 +2906,7 @@ and program_of_sexp sexp =
 
 
 
-(* 
+(*
 and metavars_binding_of_sexp__ =
   let _loc = "Xxx.metavars_binding"
   in
@@ -3075,7 +3075,7 @@ let rec
                  comments_tag = v_comments_tag
                } =
   if not !show_info then Sexp.Atom ""
-  else 
+  else
   let bnds = [] in
   let arg = Conv.sexp_of_ref sexp_of_comments_around v_comments_tag in
   let bnd = Sexp.List [ Sexp.Atom "comments_tag"; arg ] in
@@ -3313,7 +3313,7 @@ and
 and sexp_of_typeQualifier v = sexp_of_wrap sexp_of_typeQualifierbis v
 and sexp_of_typeQualifierbis { const = v_const; volatile = v_volatile } =
   if not !show_qualifier then Sexp.Atom ""
-  else 
+  else
   let bnds = [] in
   let arg = Conv.sexp_of_bool v_volatile in
   let bnd = Sexp.List [ Sexp.Atom "volatile"; arg ] in
@@ -3331,7 +3331,7 @@ and sexp_of_expression v =
   sexp_of_wrap
     (fun (v1, v2) ->
        let v1 = sexp_of_expressionbis v1
-       and v2 = 
+       and v2 =
          if not !show_expr_info then Sexp.Atom ""
          else Conv.sexp_of_ref sexp_of_exp_info v2
        in Sexp.List [ v1; v2 ])
@@ -4003,21 +4003,21 @@ and sexp_of_metavar_binding_kind =
   | MetaListlenVal v1 ->
       let v1 = Conv.sexp_of_int v1
       in Sexp.List [ Sexp.Atom "MetaListlenVal"; v1 ]
-  
+
 *)
 
 (* pad: *)
-let string_of_toplevel top = 
+let string_of_toplevel top =
   let sexp = sexp_of_toplevel top in
   let s = Sexp.to_string_hum sexp in
   s
 
-let string_of_expression x = 
+let string_of_expression x =
   let sexp = sexp_of_expression x in
   let s = Sexp.to_string_hum sexp in
   s
 
-let string_of_program xs = 
+let string_of_program xs =
   let sexp = sexp_of_program xs in
   let s = Sexp.to_string_hum sexp in
   s

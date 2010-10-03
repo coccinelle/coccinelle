@@ -1,5 +1,5 @@
 (*
- * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Copyright 2005-2010, Ecole des Mines de Nantes, University of Copenhagen
  * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
  * This file is part of Coccinelle.
  *
@@ -20,27 +20,27 @@
  *)
 
 
-open Ograph_extended 
+open Ograph_extended
 
 val labels_for_ctl :
   string list (* dropped isos *) ->
-  (nodei * Control_flow_c.node) list -> Lib_engine.metavars_binding -> 
+  (nodei * Control_flow_c.node) list -> Lib_engine.metavars_binding ->
   Lib_engine.label_ctlcocci
 
 
 val fix_flow_ctl : Control_flow_c.cflow -> Control_flow_c.cflow
 
-val model_for_ctl : 
-  string list (* dropped isos *) -> 
+val model_for_ctl :
+  string list (* dropped isos *) ->
   Control_flow_c.cflow -> Lib_engine.metavars_binding -> Lib_engine.model
 
 
 type pred = Lib_engine.predicate * Ast_cocci.meta_name Ast_ctl.modif
 
 val mysat :
-  Lib_engine.model -> 
-  (Lib_engine.ctlcocci * (pred list list)) -> 
-  (Lib_engine.mvar list * Lib_engine.metavars_binding) -> 
+  Lib_engine.model ->
+  (Lib_engine.ctlcocci * (pred list list)) ->
+  (Lib_engine.mvar list * Lib_engine.metavars_binding) ->
   (Lib_engine.numbered_transformation_info *  bool *
      Lib_engine.metavars_binding * Lib_engine.metavars_binding list)
 

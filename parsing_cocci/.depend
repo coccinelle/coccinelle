@@ -184,9 +184,9 @@ unitary_ast0.cmo: visitor_ast0_types.cmo visitor_ast0.cmi ../globals/flag.cmo \
 unitary_ast0.cmx: visitor_ast0_types.cmx visitor_ast0.cmx ../globals/flag.cmx \
     ast_cocci.cmx ast0_cocci.cmx unitary_ast0.cmi 
 unparse_ast0.cmo: type_cocci.cmi pretty_print_cocci.cmi ../commons/common.cmi \
-    ast0_cocci.cmi unparse_ast0.cmi 
+    ast_cocci.cmi ast0_cocci.cmi unparse_ast0.cmi 
 unparse_ast0.cmx: type_cocci.cmx pretty_print_cocci.cmx ../commons/common.cmx \
-    ast0_cocci.cmx unparse_ast0.cmi 
+    ast_cocci.cmx ast0_cocci.cmx unparse_ast0.cmi 
 visitor_ast.cmo: ast_cocci.cmi ast0_cocci.cmi visitor_ast.cmi 
 visitor_ast.cmx: ast_cocci.cmx ast0_cocci.cmx visitor_ast.cmi 
 visitor_ast0.cmo: visitor_ast0_types.cmo ast_cocci.cmi ast0_cocci.cmi \

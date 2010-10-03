@@ -1,5 +1,5 @@
 (*
- * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Copyright 2005-2010, Ecole des Mines de Nantes, University of Copenhagen
  * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
  * This file is part of Coccinelle.
  *
@@ -229,7 +229,7 @@ and do_between_dots keep_wit ba term after =
 	  (v,ctl_or
 	     (ctl_back_ex truepred)
 	     (ctl_back_ex (ctl_back_ex falsepred)),
-	   ctl_or case1 case2)	 
+	   ctl_or case1 case2)	
     | Past.NoDots -> term
 
 (* --------------------------------------------------------------------- *)

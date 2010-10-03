@@ -1,5 +1,5 @@
-type ('a, 'b) view = 
-  | Empty 
+type ('a, 'b) view =
+  | Empty
   | Cons of 'a * 'b
 
 class virtual ['a] ocollection :

@@ -1,5 +1,5 @@
 (*
- * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Copyright 2005-2010, Ecole des Mines de Nantes, University of Copenhagen
  * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
  * This file is part of Coccinelle.
  *
@@ -76,6 +76,13 @@ let clear_meta: (unit -> unit) ref =
 
 let add_id_meta:
     (Ast.meta_name -> iconstraints -> Ast0.pure -> unit) ref =
+  ref (fun _ -> failwith "uninitialized add_meta")
+
+let add_virt_id_meta_found: (string -> string -> unit) ref =
+  ref (fun _ -> failwith "uninitialized add_meta")
+
+let add_virt_id_meta_not_found:
+    (Ast_cocci.meta_name -> Ast0_cocci.pure -> unit) ref =
   ref (fun _ -> failwith "uninitialized add_meta")
 
 let add_fresh_id_meta: (Ast.meta_name -> unit) ref =

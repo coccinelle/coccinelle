@@ -5,13 +5,13 @@ open Common
 
 (* correspond usually to a kernel_dirs.meta *)
 type subsystem_info = subsystem list
-   and subsystem = Subsystem of (dir * maintainers) * 
+   and subsystem = Subsystem of (dir * maintainers) *
                                 (dir * maintainers) list (* subdirs *)
       and dir = string
       and maintainers = string list
 
 val mk_inverted_index_subsystem : subsystem_info -> (dir,dir) Hashtbl.t
-val subsystem_to_hash : 
+val subsystem_to_hash :
   subsystem_info -> (dir, (maintainers * (dir * maintainers) list)) Hashtbl.t
 
 

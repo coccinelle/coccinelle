@@ -14,7 +14,7 @@ val parse_kbuild_info : filename -> kbuild_info
 
 val generate_naive_kbuild_info : string list -> kbuild_info
 val generate_less_naive_kbuild_info : string list -> kbuild_info
-val generate_kbuild_info_from_depcocci : 
+val generate_kbuild_info_from_depcocci :
   string list -> filename (*out*) -> unit
 val check_up_to_date : kbuild_info -> kbuild_info -> unit
 
@@ -23,6 +23,6 @@ val files_in_dirs : string list (* dirs *) -> kbuild_info -> group list
 
 
 (* remove the .git directory, wrong include, from the list of directories
- * passed in parameter 
+ * passed in parameter
  *)
 val adjust_dirs : string list -> string list

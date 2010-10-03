@@ -144,7 +144,7 @@ constrained by its type.
   \RULE{\rt{metadecl}}
   \CASE{fresh identifier \NT{ids} ;}
   \CASE{identifier \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_regexp}\mth{)} ;}
-  \CASE{identifier \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq}\mth{)} ;}
+  \CASE{identifier \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_virt\_or\_not\_eq}\mth{)} ;}
   \CASE{parameter \opt{list} \NT{ids} ;}
   \CASE{parameter list [ \NT{id} ] \NT{ids} ;}
   \CASE{type \NT{ids} ;}
@@ -195,8 +195,13 @@ constrained by its type.
   \CASE{\NT{pmid} \OPT{!= \ttlb~\NT{COMMA\_LIST}\mth{(}\T{id}\mth{)} \ttrb}}
 
   \RULE{\rt{pmid\_with\_not\_ceq}}
+  \CASE{virtual.\T{id}}
   \CASE{\NT{pmid} \OPT{!= \NT{id\_or\_cst}}}
   \CASE{\NT{pmid} \OPT{!= \ttlb~\NT{COMMA\_LIST}\mth{(}\NT{id\_or\_cst}\mth{)} \ttrb}}
+
+  \RULE{\rt{pmid\_with\_virt\_or\_not\_ceq}}
+  \CASE{virtual.\T{id}}
+  \CASE{\rt{pmid\_with\_not\_ceq}}
 
   \RULE{\rt{id\_or\_cst}}
   \CASE{\T{id}}
@@ -216,6 +221,13 @@ that was declared using \texttt{type} and stands for any type.
 The \NT{ctype} and \NT{ctypes} nonterminals are used by both the grammar of
 metavariable declarations and the grammar of transformations, and are
 defined on page~\pageref{types}.
+
+An identifier metavariable with {\tt virtual} as its ``rule name'' is given
+a value on the command line.  For example, if a semantic patch contains a
+rule that declares an identifier metavariable with the name {\tt
+  virtual.alloc}, then the command line could contain {\tt -D
+  alloc=kmalloc}.  There should not be space around the {\tt =}.  An
+example is in {\tt demos/vm.cocci} and {\tt demos/vm.c}.
 
 \section{Metavariables for scripts}
 

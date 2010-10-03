@@ -1,5 +1,5 @@
 (*
- * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Copyright 2005-2010, Ecole des Mines de Nantes, University of Copenhagen
  * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
  * This file is part of Coccinelle.
  *
@@ -40,7 +40,7 @@ let err wrapped ty s =
   T.typeC ty; Format.print_newline();
   failwith (Printf.sprintf "line %d: %s" (Ast0.get_line wrapped) s)
 
-type id = Id of string | Meta of (string * string)
+type id = Id of string | Meta of Ast.meta_name
 
 let int_type = T.BaseType(T.IntType)
 let bool_type = T.BaseType(T.BoolType)

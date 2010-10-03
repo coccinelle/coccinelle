@@ -1,7 +1,7 @@
 open Ast_c
 
 type node = node1 * string (* For debugging. Used by print_graph *)
-  and node1 = node2 * nodeinfo 
+  and node1 = node2 * nodeinfo
    and nodeinfo = {
       labels: int list;   (* Labels. Trick used for CTL engine *)
       bclabels: int list; (* parent of a break or continue node *)
@@ -9,7 +9,7 @@ type node = node1 * string (* For debugging. Used by print_graph *)
       is_fake: bool;
     }
   and node2 =
-  | TopNode 
+  | TopNode
   | EndNode
 
   | FunHeader     of definition (* but empty body *)
@@ -25,7 +25,7 @@ type node = node1 * string (* For debugging. Used by print_graph *)
   | WhileHeader   of statement * expression wrap
   | DoHeader      of statement * info
   | DoWhileTail   of expression wrap
-  | ForHeader     of statement * 
+  | ForHeader     of statement *
                  (exprStatement wrap * exprStatement wrap * exprStatement wrap)
                  wrap
   | SwitchHeader  of statement * expression wrap
@@ -53,7 +53,7 @@ type node = node1 * string (* For debugging. Used by print_graph *)
 
   | Include of includ
 
-  | MacroTop of string * argument wrap2 list * il 
+  | MacroTop of string * argument wrap2 list * il
 
   (* ------------------------ *)
   | Case      of statement * expression wrap
@@ -73,10 +73,10 @@ type node = node1 * string (* For debugging. Used by print_graph *)
 
 
   (* ------------------------ *)
-  | Enter 
+  | Enter
   | Exit
   | Fake
-  | CaseNode of int 
+  | CaseNode of int
 
   (* ------------------------ *)
   (* for ctl:  *)

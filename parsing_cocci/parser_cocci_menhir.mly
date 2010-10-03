@@ -1,5 +1,5 @@
 /*
- * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Copyright 2005-2010, Ecole des Mines de Nantes, University of Copenhagen
  * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
  * This file is part of Coccinelle.
  *
@@ -156,7 +156,7 @@ rule_name
 %start meta_main
 %type <(Ast_cocci.metavar,Ast_cocci.metavar) Common.either list> meta_main
 
-%start <string * (string * string)> script_meta_main
+%start <string * Ast_cocci.meta_name> script_meta_main
 
 %start iso_main
 %type <Ast0_cocci.anything list list> iso_main
@@ -272,6 +272,16 @@ metadec:
     TMPtVirg
     { P.create_fresh_metadec kindfn ids }
 | ar=arity ispure=pure
+  kindfn=metakind_atomic_maybe_virt
+  ids=
+  comma_list(pure_ident_or_meta_ident_with_idconstraint_virt(re_or_not_eqid))
+    TMPtVirg
+    { let (normal,virt) = Common.partition_either (fun x -> x) ids in
+    let (idfn,virtfn) = kindfn in
+    function cr ->
+      (P.create_metadec_with_constraints ar ispure idfn normal cr) @
+      (P.create_metadec_virt ar ispure virtfn virt cr) }
+| ar=arity ispure=pure
   kindfn=metakind_atomic
   ids=comma_list(pure_ident_or_meta_ident_with_idconstraint(re_or_not_eqid))
     TMPtVirg
@@ -322,6 +332,7 @@ metadec:
       let tok = check_meta(Ast.MetaFreshIdDecl(name,seed)) in
       !Data.add_fresh_id_meta name; tok) }
 
+/* metavariable kinds with no constraints, etc */
 %inline metakind:
   TParameter
     { (fun arity name pure check_meta ->
@@ -367,12 +378,24 @@ metadec:
       then (!Data.add_iterator_name name; [])
       else raise (Semantic_cocci.Semantic "bad iterator")) }
 
-%inline metakind_atomic:
+%inline metakind_atomic_maybe_virt:
   TIdentifier
-    { (fun arity name pure check_meta constraints ->
-      let tok = check_meta(Ast.MetaIdDecl(arity,name)) in
-      !Data.add_id_meta name constraints pure; tok) }
-| TFunction
+    {
+     let idfn arity name pure check_meta constraints =
+       let tok = check_meta(Ast.MetaIdDecl(arity,name)) in
+       !Data.add_id_meta name constraints pure; tok in
+     let virtfn arity name pure check_meta virtual_env =
+       try
+	 let vl = List.assoc name virtual_env in
+	 !Data.add_virt_id_meta_found name vl; []
+       with Not_found ->
+	 let name = ("virtual",name) in
+	 let tok = check_meta(Ast.MetaIdDecl(arity,name)) in
+	 !Data.add_virt_id_meta_not_found name pure; tok in
+     (idfn,virtfn) }
+
+%inline metakind_atomic:
+  TFunction
     { (fun arity name pure check_meta constraints ->
       let tok = check_meta(Ast.MetaFuncDecl(arity,name)) in
       !Data.add_func_meta name constraints pure; tok) }
@@ -1391,34 +1414,38 @@ no_dot_start_end(grammar,dotter):
 pure_ident:
      TIdent { $1 }
 
+pure_ident_kwd:
+   | TIdentifier { "identifier" }
+   | TExpression { "expression" }
+   | TStatement { "statement" }
+   | TFunction { "function" }
+   | TLocal { "local" }
+   | TType { "type" }
+   | TParameter { "parameter" }
+   | TIdExpression { "idexpression" }
+   | TInitialiser { "initialiser" }
+   | Tlist { "list" }
+   | TFresh { "fresh" }
+   | TConstant { "constant" }
+   | TError { "error" }
+   | TWords { "words" }
+   | TPure { "pure" }
+   | TContext { "context" }
+   | TGenerated { "generated" }
+   | TTypedef { "typedef" }
+   | TDeclarer { "declarer" }
+   | TIterator { "iterator" }
+   | TName { "name" }
+   | TPosition { "position" }
+
 meta_ident:
-       TRuleName TDot pure_ident { (Some $1,P.id2name $3) }
+     TRuleName TDot pure_ident     { (Some $1,P.id2name $3) }
+   | TRuleName TDot pure_ident_kwd { (Some $1,$3) }
 
 pure_ident_or_meta_ident:
        pure_ident                { (None,P.id2name $1) }
+     | pure_ident_kwd            { (None,$1) }
      | meta_ident                { $1 }
-     | TIdentifier { (None, "identifier") }
-     | TExpression { (None, "expression") }
-     | TStatement { (None, "statement") }
-     | TFunction { (None, "function") }
-     | TLocal { (None, "local") }
-     | TType { (None, "type") }
-     | TParameter { (None, "parameter") }
-     | TIdExpression { (None, "idexpression") }
-     | TInitialiser { (None, "initialiser") }
-     | Tlist { (None, "list") }
-     | TFresh { (None, "fresh") }
-     | TConstant { (None, "constant") }
-     | TError { (None, "error") }
-     | TWords { (None, "words") }
-     | TPure { (None, "pure") }
-     | TContext { (None, "context") }
-     | TGenerated { (None, "generated") }
-     | TTypedef { (None, "typedef") }
-     | TDeclarer { (None, "declarer") }
-     | TIterator { (None, "iterator") }
-     | TName { (None, "name") }
-     | TPosition { (None, "position") }
 
 pure_ident_or_meta_ident_with_seed:
        pure_ident_or_meta_ident { ($1,Ast.NoVal) }
@@ -1449,6 +1476,16 @@ pure_ident_or_meta_ident_with_econstraint(x_eq):
 	  None   -> (i, Ast0.NoConstraint)
 	| Some c -> (i, c)
     }
+
+pure_ident_or_meta_ident_with_idconstraint_virt(constraint_type):
+  i=pure_ident_or_meta_ident c=option(constraint_type)
+    {
+      Common.Left
+        (match c with
+	  None -> (i, Ast.IdNoConstraint)
+	| Some constraint_ -> (i,constraint_))
+    }
+| TVirtual TDot pure_ident { Common.Right (P.id2name $3) }
 
 pure_ident_or_meta_ident_with_idconstraint(constraint_type):
        i=pure_ident_or_meta_ident c=option(constraint_type)
@@ -1948,5 +1985,8 @@ never_used: TPragma { () }
   | TPArob TMetaPos { () }
   | TScriptData     { () }
 
-script_meta_main: py=pure_ident TShOp TRuleName TDot cocci=pure_ident TMPtVirg
+script_meta_main:
+  py=pure_ident TShOp TRuleName TDot cocci=pure_ident TMPtVirg
   { (P.id2name py, ($3, P.id2name cocci)) }
+  | py=pure_ident TShOp TVirtual TDot cocci=pure_ident TMPtVirg
+  { (P.id2name py, ("virtual", P.id2name cocci)) }

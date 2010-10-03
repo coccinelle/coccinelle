@@ -1,5 +1,5 @@
 (*
- * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Copyright 2005-2010, Ecole des Mines de Nantes, University of Copenhagen
  * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
  * This file is part of Coccinelle.
  *
@@ -31,7 +31,7 @@ open Common
  *  - .c and .h, local .h and also not local .h
  *  - files that were part of the patch, and so modified, but also
  *    other files (especially .h) to get more type information
- * 
+ *
  *)
 
 (*****************************************************************************)
@@ -42,17 +42,17 @@ open Common
 (* Main entry point *)
 (*****************************************************************************)
 
-let ex_kmallocmemset = "dd00cc486ab1c17049a535413d1751ef3482141c" 
+let ex_kmallocmemset = "dd00cc486ab1c17049a535413d1751ef3482141c"
 let ex_new_driver = "3faa1ffb4f4be7d10715f4b003ff7b27d14eae26"
 let ex_delete_driver = "4d8506b806cc726c96db1c1a55edfb2da52217a9"
 
-let main () = 
+let main () =
   begin
     let args = ref [] in
     let options = [
     ] in
-    let usage_msg = 
-      "Usage: " ^ basename Sys.argv.(0) ^ 
+    let usage_msg =
+      "Usage: " ^ basename Sys.argv.(0) ^
         " <file> [options]" ^ "\n" ^ "Options are:"
     in
 
@@ -61,7 +61,7 @@ let main () =
 
     (match (!args) with
     | [x] -> pr x
-    | _ -> Arg.usage (Arg.align options) usage_msg; 
+    | _ -> Arg.usage (Arg.align options) usage_msg;
     )
   end
 

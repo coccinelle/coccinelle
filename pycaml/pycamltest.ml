@@ -15,7 +15,7 @@ let rgbtoyiq = pydict_getitemstring (dict,"rgb_to_yiq")
 let triplet = pyeval_callobject (rgbtoyiq,triplet)
 
 let _ = print_endline ((string_of_float
-			  (pyfloat_asdouble (pytuple_getitem (triplet,0)))) ^ 
+			  (pyfloat_asdouble (pytuple_getitem (triplet,0)))) ^
 		       " " ^
 		       (string_of_float
 			  (pyfloat_asdouble (pytuple_getitem (triplet,1)))) ^
@@ -23,9 +23,9 @@ let _ = print_endline ((string_of_float
 		       (string_of_float
 			  (pyfloat_asdouble (pytuple_getitem (triplet,2))))) ;;
 
-let x = pywrap_closure 
-    (fun x -> print_string (pystring_asstring (pytuple_getitem (x,0))) ; 
+let x = pywrap_closure
+    (fun x -> print_string (pystring_asstring (pytuple_getitem (x,0))) ;
       pynone ())
 
-let _ = pyeval_callobject 
+let _ = pyeval_callobject
     (x,pytuple_fromsingle (pystring_fromstring "hi there"))

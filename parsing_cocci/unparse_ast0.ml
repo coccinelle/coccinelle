@@ -1,5 +1,5 @@
 (*
- * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Copyright 2005-2010, Ecole des Mines de Nantes, University of Copenhagen
  * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
  * This file is part of Coccinelle.
  *
@@ -21,6 +21,7 @@
 
 
 open Format
+module Ast = Ast_cocci
 module Ast0 = Ast0_cocci
 module U = Pretty_print_cocci
 
@@ -102,7 +103,8 @@ let print_context x fn =
     (Ast0.get_mcodekind x)
 
 let print_meta (ctx,name) =
-  if !full_ids then (print_string ctx; print_string ":");
+  (if !full_ids
+  then (print_string ctx; print_string ":"));
   print_string name
 
 (* --------------------------------------------------------------------- *)

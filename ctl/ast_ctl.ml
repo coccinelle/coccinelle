@@ -1,5 +1,5 @@
 (*
- * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Copyright 2005-2010, Ecole des Mines de Nantes, University of Copenhagen
  * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
  * This file is part of Coccinelle.
  *
@@ -30,21 +30,21 @@ type strict = STRICT | NONSTRICT
 type keep_binding = bool (* true = put in witness tree *)
 
 (* CTL parameterised on basic predicates and metavar's*)
-type ('pred,'mvar,'anno) generic_ctl = 
+type ('pred,'mvar,'anno) generic_ctl =
   | False
   | True
   | Pred of 'pred
   | Not of (('pred,'mvar,'anno) generic_ctl)
   | Exists of keep_binding * 'mvar * (('pred,'mvar,'anno) generic_ctl)
-  | And of strict * (('pred,'mvar,'anno) generic_ctl) * 
+  | And of strict * (('pred,'mvar,'anno) generic_ctl) *
       (('pred,'mvar,'anno) generic_ctl)
-  | AndAny of direction * strict * (('pred,'mvar,'anno) generic_ctl) * 
+  | AndAny of direction * strict * (('pred,'mvar,'anno) generic_ctl) *
       (('pred,'mvar,'anno) generic_ctl)
-  | HackForStmt of direction * strict * (('pred,'mvar,'anno) generic_ctl) * 
+  | HackForStmt of direction * strict * (('pred,'mvar,'anno) generic_ctl) *
       (('pred,'mvar,'anno) generic_ctl)
-  | Or  of (('pred,'mvar,'anno) generic_ctl) * 
+  | Or  of (('pred,'mvar,'anno) generic_ctl) *
       (('pred,'mvar,'anno) generic_ctl)
-  | Implies of (('pred,'mvar,'anno) generic_ctl) * 
+  | Implies of (('pred,'mvar,'anno) generic_ctl) *
       (('pred,'mvar,'anno) generic_ctl)
   | AF of direction * strict * (('pred,'mvar,'anno) generic_ctl)
   | AX of direction * strict * (('pred,'mvar,'anno) generic_ctl)
@@ -58,16 +58,16 @@ type ('pred,'mvar,'anno) generic_ctl =
   | EF of direction * (('pred,'mvar,'anno) generic_ctl)
   | EX of direction * (('pred,'mvar,'anno) generic_ctl)
   | EG of direction * (('pred,'mvar,'anno) generic_ctl)
-  | EU of direction * (('pred,'mvar,'anno) generic_ctl) * 
+  | EU of direction * (('pred,'mvar,'anno) generic_ctl) *
       (('pred,'mvar,'anno) generic_ctl)
-  | Let of string * 
-      (('pred,'mvar,'anno) generic_ctl) * 
+  | Let of string *
+      (('pred,'mvar,'anno) generic_ctl) *
       (('pred,'mvar,'anno) generic_ctl)
   | LetR of direction * string * (* evals phi1 wrt reachable states *)
-      (('pred,'mvar,'anno) generic_ctl) * 
+      (('pred,'mvar,'anno) generic_ctl) *
       (('pred,'mvar,'anno) generic_ctl)
   | Ref of string
-  | SeqOr of (('pred,'mvar,'anno) generic_ctl) * 
+  | SeqOr of (('pred,'mvar,'anno) generic_ctl) *
       (('pred,'mvar,'anno) generic_ctl)
   | Uncheck of (('pred,'mvar,'anno) generic_ctl)
   | InnerAnd of (('pred,'mvar,'anno) generic_ctl)
@@ -81,7 +81,7 @@ let get_line (_,l) = l
 
 
 (* NOTE: No explicit representation of the bottom subst., i.e., FALSE *)
-type ('mvar,'value) generic_subst = 
+type ('mvar,'value) generic_subst =
   | Subst of 'mvar * 'value
   | NegSubst of 'mvar * 'value
 type ('mvar,'value) generic_substitution = ('mvar,'value) generic_subst list

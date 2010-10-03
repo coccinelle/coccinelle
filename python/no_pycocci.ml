@@ -1,5 +1,5 @@
 (*
- * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Copyright 2005-2010, Ecole des Mines de Nantes, University of Copenhagen
  * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
  * This file is part of Coccinelle.
  *
@@ -85,11 +85,11 @@ let set_coccifile cocci_file =
 	()
 
 
-let pyrun_simplestring s = 
+let pyrun_simplestring s =
   failwith "no python"
- 
-let py_isinitialized () = 
+
+let py_isinitialized () =
   failwith "no python"
- 
+
 let py_finalize () =
   failwith "no python"

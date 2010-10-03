@@ -12,7 +12,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* $Id: infiniteArray.ml,v 1.1 2008/09/25 21:18:16 pad Exp $ *)
+(* $Id: infiniteArray.ml,v 1.2 2010/01/28 14:23:47 npalix Exp $ *)
 
 (** This module implements infinite arrays, that is, arrays that grow
     transparently upon demand. *)
@@ -21,7 +21,7 @@ type 'a t = {
     default: 'a;
     mutable table: 'a array;
     mutable extent: int; (* the index of the greatest [set] ever, plus one *)
-  } 
+  }
 
 let default_size =
   16384 (* must be non-zero *)
@@ -30,7 +30,7 @@ let make x = {
   default = x;
   table = Array.make default_size x;
   extent = 0;
-} 
+}
 
 let rec new_length length i =
   if i < length then

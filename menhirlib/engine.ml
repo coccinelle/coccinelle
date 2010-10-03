@@ -82,7 +82,7 @@ module Make (T : TABLE) = struct
   let rec run env please_discard : void =
 
     (* Log the fact that we just entered this state. *)
-    
+
     let s = env.current in
     Log.state s;
 

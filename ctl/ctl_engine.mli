@@ -1,5 +1,5 @@
 (*
- * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Copyright 2005-2010, Ecole des Mines de Nantes, University of Copenhagen
  * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
  * This file is part of Coccinelle.
  *
@@ -34,9 +34,9 @@ module type SUBST =
   end
 
 module type GRAPH =
-  sig 
-    type node 
-    type cfg 
+  sig
+    type node
+    type cfg
     val predecessors:     cfg -> node -> node list
     val successors:       cfg -> node -> node list
     val extract_is_loop : cfg -> node -> bool
@@ -89,4 +89,4 @@ module CTL_ENGINE :
 
 val get_graph_files : unit -> string list
 val get_graph_comp_files : string -> string list
-	  
+

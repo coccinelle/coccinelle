@@ -8,7 +8,7 @@
    Node-based accesses are provided (sequences, root, children, suffix links,
    node labels, index), as well as a functional for synthesizing attributes from
    a GST. A readable representation of GSTs is derived from the later.
- 
+
 *)
 (* made by Sebastien Ferre *)
 
@@ -79,7 +79,7 @@ val fold_node : t -> ('h -> node -> bool) -> ('h -> node -> 'h) -> ('s list -> '
     (** Same as [fold], except the computation starts and finishes at the last argument node. *)
 
 val fold_s : t -> ('s list -> node -> 's) -> 's
-    (** [fold_s gst synth] is equivalent to [fold gst filter herit synth init], where there is no filtering, and 
+    (** [fold_s gst synth] is equivalent to [fold gst filter herit synth init], where there is no filtering, and
        no inherited values: purely synthetic. *)
 
 val fold_s_node : t -> ('s list -> node -> 's) -> node -> 's

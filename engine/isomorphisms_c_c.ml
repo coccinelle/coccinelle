@@ -1,5 +1,5 @@
 (*
- * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Copyright 2005-2010, Ecole des Mines de Nantes, University of Copenhagen
  * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
  * This file is part of Coccinelle.
  *
@@ -32,24 +32,24 @@ open Common
 
 open Ast_c
 
-let rec (iso_e_e: expression -> expression -> bool) = fun a b -> 
+let rec (iso_e_e: expression -> expression -> bool) = fun a b ->
   raise Todo
     (*
-      let rec (=~=) a b = 
+      let rec (=~=) a b =
       match (a, b) with
       | (Ident a, typa, iia), (Ident b, typb, iib) -> a = b
       | (Constant a, typa, iia), (Constant b, typb, iib) -> a = b
-      | (FunCall  (ea, eas), typa, iia), (FunCall  (eb, ebs), typb, iib)        -> 
+      | (FunCall  (ea, eas), typa, iia), (FunCall  (eb, ebs), typb, iib)        ->
       ea =~= eb &&
-      List.length eas = List.length ebs && 
-      List.for_all (fun (a, b) -> 
+      List.length eas = List.length ebs &&
+      List.for_all (fun (a, b) ->
       match (a, b) with
       | (Left ea, iia), (Left eb, iib) -> ea =~= eb
       | _ -> raise Todo
       )
       (zip eas ebs)
-      | (Binary (ea1,Logical AndLog,ea2),typa, iia), (Binary (eb1,Logical AndLog, eb2), typb, iib) -> 
-      (ea1 =~= eb1  && ea2 =~= eb2) 
+      | (Binary (ea1,Logical AndLog,ea2),typa, iia), (Binary (eb1,Logical AndLog, eb2), typb, iib) ->
+      (ea1 =~= eb1  && ea2 =~= eb2)
       ||
       (ea1 =~= eb2  && ea2 =~= eb1)
 
@@ -58,14 +58,14 @@ let rec (iso_e_e: expression -> expression -> bool) = fun a b ->
       a =~= b
     *)
 
-and (iso_st_st: statement -> statement -> bool) = fun a b -> 
+and (iso_st_st: statement -> statement -> bool) = fun a b ->
   raise Todo
-and (iso_t_t: fullType -> fullType -> bool) = fun a b -> 
+and (iso_t_t: fullType -> fullType -> bool) = fun a b ->
   raise Todo
 
-  
+
 (*
-let _ = assert (iso_e_e 
+let _ = assert (iso_e_e
   (cexpression_of_string "a&&b")
   (cexpression_of_string "b&&a")
 *)

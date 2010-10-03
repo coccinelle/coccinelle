@@ -1,5 +1,5 @@
 (*
- * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Copyright 2005-2010, Ecole des Mines de Nantes, University of Copenhagen
  * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
  * This file is part of Coccinelle.
  *
@@ -45,3 +45,11 @@ let currentfile = ref (None : string option)
 
 let current_element = ref ""
 let dir = ref ""
+
+let defined_virtual_rules = ref ([] : string list)
+let defined_virtual_env = ref ([] : (string*string) list)
+
+let set_defined_virtual_rules s =
+  match Str.split (Str.regexp "=") s with
+    [name;vl] -> defined_virtual_env := (name,vl) :: !defined_virtual_env
+  | _ -> defined_virtual_rules := s :: !defined_virtual_rules

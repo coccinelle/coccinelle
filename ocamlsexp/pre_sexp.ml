@@ -149,7 +149,7 @@ let with_new_buffer oc f =
   let buf = buffer () in
   f buf;
   Buffer.output_buffer oc buf
-  
+
 let output_hum oc sexp =
   with_new_buffer oc (fun buf -> to_buffer_hum sexp ~buf)
 

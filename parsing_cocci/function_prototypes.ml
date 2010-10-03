@@ -1,5 +1,5 @@
 (*
- * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Copyright 2005-2010, Ecole des Mines de Nantes, University of Copenhagen
  * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
  * This file is part of Coccinelle.
  *
@@ -25,7 +25,7 @@ module Ast = Ast_cocci
 module V0 = Visitor_ast0
 module VT0 = Visitor_ast0_types
 
-type id = Id of string | Meta of (string * string)
+type id = Id of string | Meta of Ast.meta_name
 
 let rec get_name name =
   match Ast0.unwrap name with
@@ -233,7 +233,8 @@ let rec rename_param old_name all param =
 	  let new_id =
 	    Ast0.rewrap id
 	      (Ast0.MetaId
-		 ((nm,arity,info,mcodekind,pos,adj),constraints,Ast0.Pure)) in
+		 ((nm,arity,info,mcodekind,pos,adj),constraints,
+		  Ast0.Pure)) in
 	  ([Ast.MetaIdDecl(Ast.NONE,nm)],
 	   Ast0.rewrap param (Ast0.Param(ty,Some new_id)))
       |	_ -> ([],param))

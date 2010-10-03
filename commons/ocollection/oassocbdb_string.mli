@@ -1,14 +1,14 @@
 (* !!take care!!: this class does side effect, not a pure oassoc.
- * 
+ *
  * Also can not put structure with ref or mutable field because when
  * you will modify those refs or fields, you will modify it in the memory,
- * not in the disk. The only way to modify on the disk is to call 
+ * not in the disk. The only way to modify on the disk is to call
  * #add or #replace with what you modified. Oassocbdb has no way
  * to know that you modified it.
  *)
-class ['b] oassoc_btree_string : 
-  Bdb.db -> 
-  string                     (* db name, for profiling *) -> 
+class ['b] oassoc_btree_string :
+  Bdb.db ->
+  string                     (* db name, for profiling *) ->
   (unit -> Bdb.dbtxn option) (* transaction handler *) ->
 object('o)
   inherit [string,'b] Oassoc.oassoc
@@ -32,10 +32,10 @@ object('o)
 
 end
 
-val create_bdb: 
+val create_bdb:
   string ->
   string ->
   Bdb.dbenv ->
   (unit -> Bdb.dbtxn option) ->
-  int -> 
-  Bdb.db * (string, 'a) Oassoc_buffer.oassoc_buffer 
+  int ->
+  Bdb.db * (string, 'a) Oassoc_buffer.oassoc_buffer

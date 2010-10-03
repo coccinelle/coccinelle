@@ -1,5 +1,5 @@
 (*
- * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Copyright 2005-2010, Ecole des Mines de Nantes, University of Copenhagen
  * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
  * This file is part of Coccinelle.
  *
@@ -259,7 +259,7 @@ and case_line testfn mcode tail case =
   match Ast.unwrap case with
     Ast.CaseLine(header,code) ->
       conj_one testfn header (statement_list testfn mcode tail code)
-	  
+
   | Ast.OptCase(case) -> []
 
 (* --------------------------------------------------------------------- *)

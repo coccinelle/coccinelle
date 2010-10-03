@@ -1,5 +1,5 @@
 (*
- * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Copyright 2005-2010, Ecole des Mines de Nantes, University of Copenhagen
  * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
  * This file is part of Coccinelle.
  *
@@ -132,7 +132,7 @@ let get_free checker t =
 	  (detect_unitary_frees
 	     (List.map
 		(whencode
-		   r.VT0.combiner_rec_statement_dots 
+		   r.VT0.combiner_rec_statement_dots
 		   r.VT0.combiner_rec_statement
 		    r.VT0.combiner_rec_expression)
 		whn))

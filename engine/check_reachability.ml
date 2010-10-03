@@ -1,5 +1,5 @@
 (*
- * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Copyright 2005-2010, Ecole des Mines de Nantes, University of Copenhagen
  * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
  * This file is part of Coccinelle.
  *
@@ -72,12 +72,12 @@ let build_modified (n,_,wits) =
     |	CTL.Wit(st,_,anno,wit) -> List.iter loop wit
     |	CTL.NegWit(wit) -> () in
   List.iter loop wits
-    
+
 (* Step 2: For each node in the hash table, create the error and warning
    formulas *)
 
 type 'a nodes = Node of 'a | After
-    
+
 let create_formulas _ =
   Hashtbl.fold
     (function node ->
@@ -111,7 +111,7 @@ let create_formulas _ =
 
 (* Step 3: check the formula on the control-flow graph *)
 
-module PRED = 
+module PRED =
   struct
     type t = Ograph_extended.nodei nodes
     let print_predicate = function
@@ -132,11 +132,11 @@ module ENV =
   end
 
 
-module CFG = 
+module CFG =
   struct
     type node = Ograph_extended.nodei
-    type cfg = 
-        (Control_flow_c.node, Control_flow_c.edge) 
+    type cfg =
+        (Control_flow_c.node, Control_flow_c.edge)
           Ograph_extended.ograph_mutable
     let predecessors cfg n = List.map fst ((cfg#predecessors n)#tolist)
     let successors   cfg n = List.map fst ((cfg#successors n)#tolist)

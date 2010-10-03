@@ -3,7 +3,7 @@ open Common
 open Oassoc
 
 (* !!take care!!: this class does side effect, not a pure oassoc *)
-class ['a,'b] oassoch xs = 
+class ['a,'b] oassoch xs =
   let h = Common.hash_of_list xs in
   object(o)
     inherit ['a,'b] oassoc
@@ -24,15 +24,15 @@ class ['a,'b] oassoch xs =
     method mem e = raise Todo
     method null = (try (Hashtbl.iter (fun k v -> raise ReturnExn) data; false) with ReturnExn -> true)
 
-    method assoc k = 
-      try 
+    method assoc k =
+      try
         Hashtbl.find data k
-      with Not_found -> (log3 ("pb assoc with k = " ^ (Dumper.dump k)); raise Not_found) 
-        
+      with Not_found -> (log3 ("pb assoc with k = " ^ (Dumper.dump k)); raise Not_found)
+
     method delkey k = (Hashtbl.remove data k; o)
 
-    method keys = 
+    method keys =
       List.map fst (o#tolist)
 
-end     
+end
 

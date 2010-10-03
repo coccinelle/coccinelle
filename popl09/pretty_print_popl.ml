@@ -1,5 +1,5 @@
 (*
- * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Copyright 2005-2010, Ecole des Mines de Nantes, University of Copenhagen
  * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
  * This file is part of Coccinelle.
  *
@@ -46,7 +46,7 @@ let mcode fn = function
     (x, _, Ast.MINUS(_,_,_,plus_stream), pos) ->
       print_string "-"; fn x;
       Pretty_print_cocci.print_anything ">>> " plus_stream
-  | (x, _, Ast.CONTEXT(_,plus_streams), pos) -> 
+  | (x, _, Ast.CONTEXT(_,plus_streams), pos) ->
 	print_around fn x plus_streams
   | (x, info, Ast.PLUS _, pos) -> fn x
 

@@ -32,7 +32,7 @@ val is_ident_like: Parser_c.token -> bool
 (* ---------------------------------------------------------------------- *)
 val info_of_tok : Parser_c.token -> Ast_c.info
 
-val visitor_info_of_tok : 
+val visitor_info_of_tok :
   (Ast_c.info -> Ast_c.info) -> Parser_c.token -> Parser_c.token
 
 (* ---------------------------------------------------------------------- *)

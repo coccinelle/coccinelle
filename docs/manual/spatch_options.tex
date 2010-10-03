@@ -214,6 +214,10 @@ which score file to compare with in the testall run}
 
 \rare{-parse\_error\_msg}{Show parsing errors in the C file.}
 
+\rare{-verbose\_parsing}{Show parsing errors in the C file, as well as
+  information about attempts to accomodate such errors.  This implicitly
+  sets -parse\_error\_msg.}
+
 \rare{-type\_error\_msg}{Show information about where the C type checker
   was not able to determine the type of an expression.}
 
@@ -366,6 +370,18 @@ This can be viewed as a simpler, more efficient, but less informative
 version of {\bf -partial\_match}.}
 
 \subsection{Actions during the application of the semantic patch}
+
+\normal{-D rulename}{Run the patch considering that the virtual rule
+  ``rulename'' is satisfied.  Virtual rules should be declared at the
+  beginning of the semantic patch in a comma separated list following the
+  keyword virtual.  Other rules can depend on the satisfaction or non
+  satifaction of these rules using the keyword {\tt depends on} in the
+  usual way.}
+
+\normal{-D variable=value}{Run the patch considering that the virtual
+  identifier metavariable ``variable'' is bound to ``value''.  Any
+  identifier metavariable can be designated as being virtual by giving it
+  the rule name {\tt virtual}.  An example is in demos/vm.coci}
 
 \rare{-allow\_inconsistent\_paths}{Normally, a term that is transformed
   should only be accessible from other terms that are matched by the

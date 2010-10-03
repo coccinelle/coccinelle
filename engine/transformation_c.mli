@@ -1,5 +1,5 @@
 (*
- * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Copyright 2005-2010, Ecole des Mines de Nantes, University of Copenhagen
  * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
  * This file is part of Coccinelle.
  *
@@ -21,8 +21,8 @@
 
 
 (* note that now we do the transformation via side effect on ast *)
-val transform : 
+val transform :
   string (* rule name *) -> string list (* dropped isos *) ->
   Lib_engine.metavars_binding -> (* inherited bindings *)
-  Lib_engine.numbered_transformation_info -> 
+  Lib_engine.numbered_transformation_info ->
   Control_flow_c.cflow -> Control_flow_c.cflow (* could be unit *)

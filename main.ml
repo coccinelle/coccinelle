@@ -1,5 +1,5 @@
 (*
- * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Copyright 2005-2010, Ecole des Mines de Nantes, University of Copenhagen
  * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
  * This file is part of Coccinelle.
  *
@@ -72,8 +72,54 @@ let mod_distrib   = ref false
 (*****************************************************************************)
 
 (* pair of  (list of flags to set true, list of flags to set false *)
+let very_quiet_profile = (
+  [
+  ],
+  [
+    (* FC.show_diff;   just leave this as it is *)
+
+    Common.print_to_stderr;
+    Flag.show_misc;
+    Flag.show_trying;
+    Flag.show_transinfo;
+
+    FC.show_c;
+    FC.show_cocci;
+    FC.show_flow;
+    FC.show_before_fixed_flow;
+    FC.show_ctl_tex;
+    FC.show_ctl_text;
+    FC.show_binding_in_out;
+
+    FC.verbose_cocci;
+
+    Flag_parsing_c.show_parsing_error;
+
+    Flag_parsing_c.verbose_lexing;
+    Flag_parsing_c.verbose_parsing;
+    Flag_parsing_c.verbose_type;
+    Flag_parsing_c.verbose_cfg;
+    Flag_parsing_c.verbose_unparsing;
+    Flag_parsing_c.verbose_visit;
+    Flag_parsing_c.verbose_cpp_ast;
+
+    Flag_matcher.verbose_matcher;
+    Flag_matcher.debug_engine;
+
+    Flag_parsing_c.debug_unparsing;
+
+    Flag_parsing_cocci.show_SP;
+    Flag_parsing_cocci.show_iso_failures;
+
+    Flag_ctl.verbose_ctl_engine;
+    Flag_ctl.verbose_match;
+
+
+  ])
+
 let quiet_profile = (
   [
+    Common.print_to_stderr
   ],
   [
     (* FC.show_diff;   just leave this as it is *)
@@ -120,6 +166,7 @@ let quiet_profile = (
 work properly *)
 let debug_profile = (
   [
+    Common.print_to_stderr;
     Flag.show_misc;
     Flag.show_transinfo;
 
@@ -162,6 +209,7 @@ let debug_profile = (
 let pad_profile = (
   [
     FC.show_diff;
+    Common.print_to_stderr;
   ],
   [
 
@@ -280,7 +328,7 @@ let short_options = [
     "  guess what";
 
   "-date",   Arg.Unit (fun () ->
-    pr2 "version: $Date: 2010/01/04 11:16:30 $";
+    pr2 "version: $Date: 2010/01/26 06:01:55 $";
     raise (Common.UnixExit 0)
     ),
   "   guess what";
@@ -361,7 +409,10 @@ let other_options = [
        Flag_ctl.graphical_trace := true; Flag_ctl.gt_without_label := true),
        "  remove graph label (requires option -graphical_trace)";
 
-    "-parse_error_msg", Arg.Set Flag_parsing_c.verbose_parsing, " ";
+    "-parse_error_msg", Arg.Set Flag_parsing_c.show_parsing_error, " ";
+    "-verbose_parsing",
+       Arg.Unit (fun _ -> Flag_parsing_c.verbose_parsing := true;
+	 Flag_parsing_c.show_parsing_error := true), " ";
     "-type_error_msg",  Arg.Set Flag_parsing_c.verbose_type, " ";
     (* could also use Flag_parsing_c.options_verbose *)
   ];
@@ -405,6 +456,7 @@ let other_options = [
   [
     (* todo: other profile ? *)
     "-quiet",   Arg.Unit (fun () -> run_profile quiet_profile), " ";
+    "-very_quiet",   Arg.Unit (fun () -> run_profile very_quiet_profile), " ";
     "-debug",   Arg.Unit (fun () -> run_profile debug_profile), " ";
     "-pad",     Arg.Unit (fun () -> run_profile pad_profile),   " ";
 
@@ -506,7 +558,7 @@ let other_options = [
     "  spacing of + code follows the conventions of Linux";
     "-smpl_spacing", Arg.Unit Flag_parsing_c.set_smpl_spacing,
     "  spacing of + code follows the semantic patch";
-    "-D", Arg.String Flag_parsing_cocci.set_defined_virtual_rules,
+    "-D", Arg.String Flag.set_defined_virtual_rules,
     "  indicate that a virtual rule should be considered to be matched";
   ];
 

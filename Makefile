@@ -1,4 +1,4 @@
-# Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+# Copyright 2005-2010, Ecole des Mines de Nantes, University of Copenhagen
 # Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
 # This file is part of Coccinelle.
 #
@@ -82,7 +82,7 @@ EXEC=$(TARGET)
 # Generic ocaml variables
 ##############################################################################
 
-OCAMLCFLAGS=# -g -dtypes # -w A
+OCAMLCFLAGS=
 
 # for profiling add  -p -inline 0
 # but 'make forprofiling' below does that for you.
@@ -346,9 +346,10 @@ BINSRC=spatch env.sh env.csh standard.h standard.iso \
        *.txt \
        docs/manual/manual.pdf docs/manual/options.pdf docs/manual/main_grammar.pdf docs/spatch.1 \
        docs/manual/cocci-python.txt \
-       demos/foo.* demos/simple.*
-#      $(PYLIB) python/coccilib/ demos/printloc.*
+       demos/*
+BINSRC-PY=$(BINSRC) $(PYLIB) python/coccilib/
 BINSRC2=$(BINSRC:%=$(PACKAGE)/%)
+BINSRC2-PY=$(BINSRC-PY:%=$(PACKAGE)/%)
 
 TMP=/tmp
 OCAMLVERSION=$(shell ocaml -version |perl -p -e 's/.*version (.*)/$$1/;')
@@ -391,25 +392,36 @@ OCAMLVERSION=$(shell ocaml -version |perl -p -e 's/.*version (.*)/$$1/;')
 prepackage:
 	cvs up -CdP
 	$(MAKE) distclean
+	sed -i "s|^OCAMLCFLAGS=.*$$|OCAMLCFLAGS=|" Makefile
 
 release:
 	cvs ci -m "Release $(VERSION)" globals/config.ml.in
 	$(MAKE) licensify
 
 package:
+	$(MAKE) package-src
+	$(MAKE) package-nopython
+	$(MAKE) package-python
+
+package-src:
 	$(MAKE) distclean       # Clean project
 	$(MAKE) srctar
+	$(MAKE) coccicheck
+
+package-nopython:
+	$(MAKE) distclean       # Clean project
 	./configure --without-python
 	$(MAKE) docs
 	$(MAKE) bintar
 	$(MAKE) bytecodetar
 	$(MAKE) staticbintar
+
+package-python:
 	$(MAKE) distclean       # Clean project
 	./configure             # Reconfigure project with Python support
 	$(MAKE) docs
 	$(MAKE) bintar-python
 	$(MAKE) bytecodetar-python
-	$(MAKE) coccicheck
 
 
 # I currently pre-generate the parser so the user does not have to
@@ -453,7 +465,7 @@ bytecodetar: all
 bintar-python: all
 	rm -f $(TMP)/$(PACKAGE)
 	ln -s `pwd` $(TMP)/$(PACKAGE)
-	cd $(TMP); tar cvfz $(PACKAGE)-bin-x86-python.tgz --exclude-vcs $(BINSRC2)
+	cd $(TMP); tar cvfz $(PACKAGE)-bin-x86-python.tgz --exclude-vcs $(BINSRC2-PY)
 	rm -f $(TMP)/$(PACKAGE)
 
 # add ocaml version in name ?
@@ -461,7 +473,7 @@ bytecodetar-python: all
 	rm -f $(TMP)/$(PACKAGE)
 	ln -s `pwd` $(TMP)/$(PACKAGE)
 	make purebytecode
-	cd $(TMP); tar cvfz $(PACKAGE)-bin-bytecode-$(OCAMLVERSION)-python.tgz --exclude-vcs $(BINSRC2)
+	cd $(TMP); tar cvfz $(PACKAGE)-bin-bytecode-$(OCAMLVERSION)-python.tgz --exclude-vcs $(BINSRC2-PY)
 	rm -f $(TMP)/$(PACKAGE)
 
 coccicheck:
@@ -577,7 +589,6 @@ distclean:: clean
 	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i $@; done
 	rm -f .depend
 	rm -f Makefile.config
-	rm -f python/coccilib/output.py
 	rm -f python/pycocci.ml
 	rm -f python/pycocci_aux.ml
 	rm -f globals/config.ml

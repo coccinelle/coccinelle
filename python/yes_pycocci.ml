@@ -1,5 +1,5 @@
 (*
- * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Copyright 2005-2010, Ecole des Mines de Nantes, University of Copenhagen
  * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
  * This file is part of Coccinelle.
  *
@@ -21,7 +21,7 @@
 
 
 (*
- * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Copyright 2005-2010, Ecole des Mines de Nantes, University of Copenhagen
  * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
  * This file is part of Coccinelle.
  *
@@ -75,7 +75,7 @@ let _pycocci_tuple6 (a,b,c,d,e,f) =
 (* ------------------------------------------------------------------- *)
 
 let check_return_value v =
-  if v =*= (pynull ()) then 
+  if v =*= (pynull ()) then
 	  (pyerr_print ();
 	  raise Pycocciexception)
   else ()
@@ -165,7 +165,7 @@ let has_environment_binding name =
   let (rule, name) = (Array.get a 1, Array.get a 2) in
   let orule = pystring_asstring rule in
   let oname = pystring_asstring name in
-  let e = List.exists (function (x,y) -> orule =$= x && oname =$= y)
+  let e = List.exists (function (x,y) -> orule =*= x && oname =$= y)
       !the_environment in
   if e then _pycocci_true () else _pycocci_false ()
 
@@ -188,8 +188,8 @@ let pycocci_init () =
   initialised := true;
   Unix.putenv "PYTHONPATH"
       (Printf.sprintf "%s/coccinelle" (Unix.getenv "HOME"));
-  let _ = if not (py_isinitialized () != 0) then 
-  	(if !Flag.show_misc then Common.pr2 "Initializing python\n%!"; 
+  let _ = if not (py_isinitialized () != 0) then
+  	(if !Flag.show_misc then Common.pr2 "Initializing python\n%!";
 	py_initialize()) in
 
   (* set argv *)
@@ -204,7 +204,7 @@ let pycocci_init () =
   let module_dictionary = pyimport_getmoduledict() in
   coccinelle_module := pymodule_new "coccinelle";
   let mx = !coccinelle_module in
-  let (cd, cx) = build_class "Cocci" (!Flag.pyoutput) 
+  let (cd, cx) = build_class "Cocci" (!Flag.pyoutput)
       [("include_match", include_match, (pynull()));
 	("has_env_binding", has_environment_binding, (pynull()))] mx in
   pyoutputinstance := cx;
@@ -246,14 +246,14 @@ let build_variable name value =
 
 let contains_binding e (_,(r,m)) =
   try
-    let _ = List.find (function ((re, rm), _) -> r =$= re && m =$= rm) e in
+    let _ = List.find (function ((re, rm), _) -> r =*= re && m =$= rm) e in
     true
   with Not_found -> false
 
 let construct_variables mv e =
   let find_binding (r,m) =
     try
-      let elem = List.find (function ((re,rm),_) -> r =$= re && m =$= rm) e in
+      let elem = List.find (function ((re,rm),_) -> r =*= re && m =$= rm) e in
       Some elem
     with Not_found -> None
   in
@@ -306,11 +306,10 @@ let set_coccifile cocci_file =
 	cocci_file_name := cocci_file;
 	()
 
-
-let pyrun_simplestring s = 
+let pyrun_simplestring s =
   Pycaml.pyrun_simplestring s
 
-let py_isinitialized () = 
+let py_isinitialized () =
   Pycaml.py_isinitialized ()
 
 

@@ -2,17 +2,17 @@ open Common
 
 type nodei = int
 
-(* graph structure: 
- *  - node: index -> nodevalue 
+(* graph structure:
+ *  - node: index -> nodevalue
  *  - arc: (index * index) * edgevalue
- * 
+ *
  * How ? matrix ? but no growing array :(
- * 
+ *
  * When need index ? Must have an index when can't just use the nodevalue
  * as a key, cos sometimes may have 2 times the same key, but it must
  * be 2 different nodes. For instance in a C program 'f(); f();' we want 2
  * nodes, one per 'f();' hence the index. If each node is different, then
- * no problem, can omit index. 
+ * no problem, can omit index.
  *)
 
 class ['node, 'edge] ograph_extended :
@@ -51,31 +51,31 @@ object ('o)
 end
 
 
-val dfs_iter : 
+val dfs_iter :
   nodei -> (nodei -> unit) -> ('node, 'edge) ograph_mutable -> unit
 
-val dfs_iter_with_path : 
-  nodei -> (nodei -> nodei list -> unit) -> ('node, 'edge) ograph_mutable -> 
+val dfs_iter_with_path :
+  nodei -> (nodei -> nodei list -> unit) -> ('node, 'edge) ograph_mutable ->
   unit
 
-val print_ograph_mutable_generic : 
-  ('node, 'edge) ograph_mutable -> 
+val print_ograph_mutable_generic :
+  ('node, 'edge) ograph_mutable ->
   string option -> (* label for the entire graph *)
   (* what string to print for a node and how to color it *)
   ((nodei * 'node) -> (string * string option * string option)) ->
-  output_file:filename -> 
-  launch_gv:bool -> 
+  output_file:filename ->
+  launch_gv:bool ->
   unit
 
 
-val print_ograph_extended : 
-  ('node * string, 'edge) ograph_extended -> 
-  filename (* output file *) -> 
-  bool (* launch gv ? *) -> 
+val print_ograph_extended :
+  ('node * string, 'edge) ograph_extended ->
+  filename (* output file *) ->
+  bool (* launch gv ? *) ->
   unit
 
-val print_ograph_mutable : 
-  ('node * string, 'edge) ograph_mutable -> 
-  filename (* output file *) -> 
-  bool (* launch gv ? *) -> 
+val print_ograph_mutable :
+  ('node * string, 'edge) ograph_mutable ->
+  filename (* output file *) ->
+  bool (* launch gv ? *) ->
   unit

@@ -1,5 +1,5 @@
 (*
- * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Copyright 2005-2010, Ecole des Mines de Nantes, University of Copenhagen
  * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
  * This file is part of Coccinelle.
  *
@@ -29,26 +29,26 @@ module F = Control_flow_c
 (*****************************************************************************)
 (* Debugging functions *)
 (*****************************************************************************)
-let show_or_not_predicate pred = 
-  if !Flag_matcher.debug_engine then begin 
-    indent_do (fun () -> 
-      adjust_pp_with_indent_and_header "labeling: pred = " (fun () -> 
+let show_or_not_predicate pred =
+  if !Flag_matcher.debug_engine then begin
+    indent_do (fun () ->
+      adjust_pp_with_indent_and_header "labeling: pred = " (fun () ->
         Pretty_print_engine.pp_predicate pred;
       );
     )
   end
 
 let show_or_not_nodes nodes =
-  if !Flag_matcher.debug_engine  then begin 
-    indent_do (fun () -> 
-      adjust_pp_with_indent_and_header "labeling: result = " (fun () -> 
-        Common.pp_do_in_box (fun () -> 
+  if !Flag_matcher.debug_engine  then begin
+    indent_do (fun () ->
+      adjust_pp_with_indent_and_header "labeling: result = " (fun () ->
+        Common.pp_do_in_box (fun () ->
           pp "{";
-          Common.print_between 
+          Common.print_between
             (fun () -> pp ";"; Format.print_cut())
-            (fun (nodei, (_predTODO, subst)) -> 
+            (fun (nodei, (_predTODO, subst)) ->
               Format.print_int nodei;
-              Common.pp_do_in_box (fun () -> 
+              Common.pp_do_in_box (fun () ->
                 Pretty_print_engine.pp_binding2_ctlsubst subst
               )
             ) nodes;
@@ -79,53 +79,53 @@ let show_isos rule_elem =
 let (-->) x v = Ast_ctl.Subst (x,v);;
 
 (* Take list of predicate and for each predicate returns where in the
- * control flow it matches, and the set of subsitutions for this match. 
+ * control flow it matches, and the set of subsitutions for this match.
  *)
 let (labels_for_ctl: string list (* dropped isos *) ->
- (nodei * F.node) list -> Lib_engine.metavars_binding -> 
+ (nodei * F.node) list -> Lib_engine.metavars_binding ->
  Lib_engine.label_ctlcocci) =
   fun dropped_isos nodes binding ->
 
-   (fun p -> 
+   (fun p ->
      show_or_not_predicate p;
 
-     let nodes' = nodes +> List.map (fun (nodei, node) -> 
+     let nodes' = nodes +> List.map (fun (nodei, node) ->
       (* todo? put part of this code in pattern ? *)
       (match p, F.unwrap node with
-      | Lib_engine.Paren s,  (F.SeqStart (_, bracelevel, _)) -> 
+      | Lib_engine.Paren s,  (F.SeqStart (_, bracelevel, _)) ->
 	  let make_var x = ("",i_to_s x) in
           [(nodei, (p,[(s --> (Lib_engine.ParenVal (make_var bracelevel)))]))]
-      | Lib_engine.Paren s,  (F.SeqEnd (bracelevel, _)) -> 
+      | Lib_engine.Paren s,  (F.SeqEnd (bracelevel, _)) ->
 	  let make_var x = ("",i_to_s x) in
           [(nodei, (p,[(s --> (Lib_engine.ParenVal (make_var bracelevel)))]))]
       | Lib_engine.Paren _, _ -> []
-      | Lib_engine.Label s, _ -> 
+      | Lib_engine.Label s, _ ->
           let labels = F.extract_labels node in
           [(nodei,
 	    (p,[(s --> (Lib_engine.LabelVal (Lib_engine.Absolute labels)))]))]
-      | Lib_engine.BCLabel s, _ -> 
+      | Lib_engine.BCLabel s, _ ->
 	  (match F.extract_bclabels node with
 	    [] -> [] (* null for all nodes that are not break or continue *)
 	  | labels ->
               [(nodei,
 		(p,[(s -->
 		  (Lib_engine.LabelVal (Lib_engine.Absolute labels)))]))])
-      | Lib_engine.PrefixLabel s, _ -> 
+      | Lib_engine.PrefixLabel s, _ ->
           let labels = F.extract_labels node in
           [(nodei,
 	    (p,[(s --> (Lib_engine.LabelVal (Lib_engine.Prefix labels)))]))]
 
-      | Lib_engine.Match (re), _unwrapnode -> 
-          let substs = 
+      | Lib_engine.Match (re), _unwrapnode ->
+          let substs =
             Pattern_c.match_re_node dropped_isos re node binding
-            +> List.map (fun (re', subst) -> 
+            +> List.map (fun (re', subst) ->
               Lib_engine.Match (re'), subst
             )
           in
-          substs +> List.map (fun (p', subst) -> 
-            (nodei, 
-              (p', 
-                subst +> List.map (fun (s, meta) -> 
+          substs +> List.map (fun (p', subst) ->
+            (nodei,
+              (p',
+                subst +> List.map (fun (s, meta) ->
                   s --> Lib_engine.NormalMetaVal meta
                 ))))
 
@@ -158,11 +158,11 @@ let (labels_for_ctl: string list (* dropped isos *) ->
       |	Lib_engine.FakeBrace, _ ->
 	  if F.extract_is_fake node then [nodei, (p,[])] else []
 
-      | Lib_engine.Return, node -> 
+      | Lib_engine.Return, node ->
           (match node with
-            (* todo? should match the Exit code ? 
+            (* todo? should match the Exit code ?
              * todo: one day try also to match the special function
-             * such as panic(); 
+             * such as panic();
              *)
           | F.Return _ ->  [nodei, (p,[])]
           | F.ReturnExpr _ -> [nodei, (p,[])]
@@ -174,37 +174,37 @@ let (labels_for_ctl: string list (* dropped isos *) ->
 
      show_or_not_nodes nodes';
      nodes'
-   ) 
+   )
 
 (*****************************************************************************)
 (* Some fix flow, for CTL, for unparse *)
 (*****************************************************************************)
 (* could erase info on nodes, and edge, because they are not used by rene *)
-let (control_flow_for_ctl: F.cflow -> ('a, 'b) ograph_mutable) = 
+let (control_flow_for_ctl: F.cflow -> ('a, 'b) ograph_mutable) =
  fun cflow -> cflow
 
 
 
-(* Just make the final node of the control flow loop over itself. 
+(* Just make the final node of the control flow loop over itself.
  * It seems that one hypothesis of the SAT algorithm is that each node as at
  * least a successor.
- * 
+ *
  * update: do same for errorexit node.
- * 
- * update: also erase the fake nodes (and adjust the edges accordingly), 
+ *
+ * update: also erase the fake nodes (and adjust the edges accordingly),
  * so that AX in CTL can now work.
  * Indeed, à la fin de la branche then (et else), on devrait aller directement
  * au suivant du endif, sinon si ecrit if(1) { foo(); }; bar();
  * sans '...' entre le if et bar(), alors ca matchera pas car le CTL
- * generera un AX bar()  qui il tombera d'abord sur le [endif] :( 
- * Mais chiant de changer l'algo de generation, marche pas tres bien avec 
+ * generera un AX bar()  qui il tombera d'abord sur le [endif] :(
+ * Mais chiant de changer l'algo de generation, marche pas tres bien avec
  * ma facon de faire recursive et compositionnel.
  * => faire une fonction qui applique des fixes autour de ce control flow,
- * comme ca passe un bon flow a rene, mais garde un flow a moi pour pouvoir 
+ * comme ca passe un bon flow a rene, mais garde un flow a moi pour pouvoir
  * facilement generate back the ast.
  * alt: faire un wrapper autourde mon graphe pour lui passer dans le module CFG
  * une fonction qui passe a travers les Fake, mais bof.
- * 
+ *
  * update: also make loop the deadcode nodes, the one that have
  * no predecessor.
  *)
@@ -215,19 +215,19 @@ let (fix_flow_ctl2: F.cflow -> F.cflow) = fun flow ->
   !g#add_arc ((topi, topi), F.Direct);
 
   (* for the #define CFG who have no Exit but have at least a EndNode *)
-  (try 
+  (try
       let endi  = F.find_node (fun x -> x =*= F.EndNode) !g in
       !g#add_arc ((endi, endi), F.Direct);
     with Not_found -> ()
   );
 
   (* for the regular functions *)
-  (try 
+  (try
     let exitnodei  = F.find_node (fun x -> x =*= F.Exit) !g in
     let errornodei = F.find_node (fun x -> x =*= F.ErrorExit) !g in
-    
+
     !g#add_arc ((exitnodei, exitnodei), F.Direct);
-    
+
     if null ((!g#successors   errornodei)#tolist) &&
        null ((!g#predecessors errornodei)#tolist)
     then !g#del_node errornodei
@@ -235,20 +235,20 @@ let (fix_flow_ctl2: F.cflow -> F.cflow) = fun flow ->
    with Not_found -> ()
   );
 
-  let fake_nodes = !g#nodes#tolist +> List.filter (fun (nodei, node) -> 
+  let fake_nodes = !g#nodes#tolist +> List.filter (fun (nodei, node) ->
     match F.unwrap node with
-    | F.CaseNode _ 
+    | F.CaseNode _
     | F.Enter
     (*| F.Fake*) (* [endif], [endswitch], ... *)
       -> true
-    | _ -> false 
+    | _ -> false
     ) in
-  
+
   fake_nodes +> List.iter (fun (nodei, node) -> F.remove_one_node nodei !g);
 
   (* even when have deadcode, julia want loop over those nodes *)
-  !g#nodes#tolist +> List.iter (fun (nodei, node) -> 
-    if (!g#predecessors nodei)#null 
+  !g#nodes#tolist +> List.iter (fun (nodei, node) ->
+    if (!g#predecessors nodei)#null
     then begin
       let fakei = !g#add_node (F.mk_node F.Fake [] [] "DEADCODELOOP") in
       !g#add_arc ((fakei, nodei), F.Direct);
@@ -256,14 +256,14 @@ let (fix_flow_ctl2: F.cflow -> F.cflow) = fun flow ->
     end
   );
 
-  !g#nodes#tolist +> List.iter (fun (nodei, node) -> 
-    assert (List.length ((!g#successors nodei)#tolist) >= 1); 
-    (* no:  && List.length ((!g#predecessors nodei)#tolist) >= 1  
+  !g#nodes#tolist +> List.iter (fun (nodei, node) ->
+    assert (List.length ((!g#successors nodei)#tolist) >= 1);
+    (* no:  && List.length ((!g#predecessors nodei)#tolist) >= 1
        because    the enter node at least have no predecessors *)
     );
 
   !g
-let fix_flow_ctl a = 
+let fix_flow_ctl a =
   Common.profile_code "fix_flow" (fun () -> fix_flow_ctl2 a)
 
 
@@ -271,22 +271,22 @@ let fix_flow_ctl a =
 
 
 (*****************************************************************************)
-(* subtil: the label must operate on newflow, not (old) cflow 
+(* subtil: the label must operate on newflow, not (old) cflow
  * update: now I supposed that we give me a fixed_flow
  *)
-let model_for_ctl dropped_isos cflow binding = 
+let model_for_ctl dropped_isos cflow binding =
  let newflow = cflow (* old: fix_flow_ctl (control_flow_for_ctl cflow) *) in
  let labels = labels_for_ctl dropped_isos (newflow#nodes#tolist) binding  in
  let states = List.map fst  newflow#nodes#tolist  in
  newflow, labels, states
- 
+
 
 (*****************************************************************************)
 
-module PRED = 
+module PRED =
   struct
     type t = Lib_engine.predicate
-    let print_predicate x = 
+    let print_predicate x =
       Pretty_print_cocci.print_plus_flag := false;
       Pretty_print_cocci.print_minus_flag := false;
       Pretty_print_engine.pp_predicate x
@@ -362,7 +362,7 @@ module ENV =
     let print_value x = Pretty_print_engine.pp_binding_kind2 x
   end
 
-module CFG = 
+module CFG =
   struct
     type node = Ograph_extended.nodei
     type cfg = (F.node, F.edge) Ograph_extended.ograph_mutable
@@ -373,14 +373,14 @@ module CFG =
     let print_node i = Format.print_string (i_to_s i)
     let size cfg = cfg#nodes#length
 
-    (* In ctl_engine, we use 'node' for the node but in the Ograph_extended 
+    (* In ctl_engine, we use 'node' for the node but in the Ograph_extended
      * terminology, this 'node' is in fact an index to access the real
      * node information (that ctl/ wants to abstract away to be more generic),
      * the 'Ograph_extended.nodei'.
      *)
-    let print_graph cfg label border_colors fill_colors filename = 
+    let print_graph cfg label border_colors fill_colors filename =
       Ograph_extended.print_ograph_mutable_generic cfg label
-        (fun (nodei, (node: F.node)) -> 
+        (fun (nodei, (node: F.node)) ->
           (* the string julia wants to put ? *)
           let bc = try Some(List.assoc nodei border_colors) with _ -> None in
           let fc = try Some(List.assoc nodei fill_colors) with _ -> None in
@@ -400,8 +400,8 @@ let print_bench _ = WRAPPED_ENGINE.print_bench()
 type pred = Lib_engine.predicate * Ast_cocci.meta_name Ast_ctl.modif
 
 (*****************************************************************************)
-let metavars_binding2_to_binding   binding2 = 
-  binding2 +> Common.map_filter (fun (s, kind2) -> 
+let metavars_binding2_to_binding   binding2 =
+  binding2 +> Common.map_filter (fun (s, kind2) ->
     match kind2 with
     | Lib_engine.NormalMetaVal kind -> Some (s, kind)
     (* I thought it was Impossible to have this when called from
@@ -412,17 +412,17 @@ let metavars_binding2_to_binding   binding2 =
     | Lib_engine.GoodVal    -> None (* should not occur *)
    )
 
-let metavars_binding_to_binding2 binding = 
+let metavars_binding_to_binding2 binding =
   binding +> List.map (fun (s, kind) -> s, Lib_engine.NormalMetaVal kind)
 
 
-let (satbis_to_trans_info: 
+let (satbis_to_trans_info:
   (int list *
-     (nodei * Lib_engine.metavars_binding2 * Lib_engine.predicate)) list -> 
+     (nodei * Lib_engine.metavars_binding2 * Lib_engine.predicate)) list ->
   (int list *
-     (nodei * Lib_engine.metavars_binding * Ast_cocci.rule_elem)) list) = 
-  fun xs -> 
-    xs +> List.fold_left (fun prev (index,(nodei, binding2, pred)) -> 
+     (nodei * Lib_engine.metavars_binding * Ast_cocci.rule_elem)) list) =
+  fun xs ->
+    xs +> List.fold_left (fun prev (index,(nodei, binding2, pred)) ->
       match pred with
       | Lib_engine.Match (rule_elem) ->
 	  if !Flag.track_iso_usage then show_isos rule_elem;
@@ -460,9 +460,9 @@ let strip env =
 	    Ast_c.MetaExprVal(Lib_parsing_c.al_inh_expr a)
 	| Ast_c.MetaExprListVal a ->
 	    Ast_c.MetaExprListVal(Lib_parsing_c.al_inh_arguments a)
-	| Ast_c.MetaStmtVal a -> 
+	| Ast_c.MetaStmtVal a ->
 	    Ast_c.MetaStmtVal(Lib_parsing_c.al_inh_statement a)
-	| Ast_c.MetaInitVal a -> 
+	| Ast_c.MetaInitVal a ->
 	    Ast_c.MetaInitVal(Lib_parsing_c.al_inh_init a)
 	| x -> (*don't contain binding info*) x in
       (v,vl))
@@ -479,13 +479,13 @@ let rec nub ls =
 (*****************************************************************************)
 let (mysat2:
   Lib_engine.model ->
-  (Lib_engine.ctlcocci * (pred list list)) -> 
+  (Lib_engine.ctlcocci * (pred list list)) ->
   (Lib_engine.mvar list*Lib_engine.metavars_binding) ->
   (Lib_engine.numbered_transformation_info * bool *
      Lib_engine.metavars_binding * Lib_engine.metavars_binding list)) =
-  fun (flow, label, states) ctl (used_after, binding) -> 
+  fun (flow, label, states) ctl (used_after, binding) ->
     let binding2 = metavars_binding_to_binding2 binding in
-    let (triples,(trans_info2, returned_any_states, used_after_envs)) = 
+    let (triples,(trans_info2, returned_any_states, used_after_envs)) =
       WRAPPED_ENGINE.satbis (flow, label, states) ctl
 	(used_after, binding2)
     in
@@ -503,5 +503,5 @@ let (mysat2:
     let newbindings = nub newbindings in
     (trans_info, returned_any_states, binding, newbindings)
 
-let mysat a b c = 
+let mysat a b c =
   Common.profile_code "mysat" (fun () -> mysat2 a b c)

@@ -178,7 +178,7 @@ type token =
   | EOF
 
 
-val script_meta_main: (Lexing.lexbuf -> token) -> Lexing.lexbuf -> (string * (string * string))
+val script_meta_main: (Lexing.lexbuf -> token) -> Lexing.lexbuf -> (string * Ast_cocci.meta_name)
 val rule_name: (Lexing.lexbuf -> token) -> Lexing.lexbuf -> (Ast_cocci.rulename)
 val reinit: (Lexing.lexbuf -> token) -> Lexing.lexbuf -> (unit)
 val plus_main: (Lexing.lexbuf -> token) -> Lexing.lexbuf -> (Ast0_cocci.rule)

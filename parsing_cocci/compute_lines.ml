@@ -1,5 +1,5 @@
 (*
- * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Copyright 2005-2010, Ecole des Mines de Nantes, University of Copenhagen
  * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
  * This file is part of Coccinelle.
  *
@@ -96,7 +96,7 @@ let promote_mcode (_,_,info,mcodekind,_,_) =
   {(Ast0.wrap ()) with Ast0.info = new_info; Ast0.mcodekind = ref mcodekind}
 
 let promote_mcode_plus_one (_,_,info,mcodekind,_,_) =
-  let new_pos_info = 
+  let new_pos_info =
     {info.Ast0.pos_info with
       Ast0.line_start = info.Ast0.pos_info.Ast0.line_start + 1;
       Ast0.logical_start = info.Ast0.pos_info.Ast0.logical_start + 1;

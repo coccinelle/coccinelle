@@ -55,7 +55,7 @@ let magnitude (v : int) =
 let pack (a : int array) : t =
 
   let m = Array.length a in
-  
+
   (* Compute the maximum magnitude of the array elements. This tells
      us how many bits per element we are going to use. *)
 

@@ -2,7 +2,7 @@ open Common
 
 open Oassoc
 
-class ['a,'b] oassocb xs = 
+class ['a,'b] oassocb xs =
   object(o)
     inherit ['a,'b] oassoc
 
@@ -21,7 +21,7 @@ class ['a,'b] oassocb xs =
     method assoc k = Mapb.find k data
     method delkey k = {< data = Mapb.remove k data >}
 
-    method keys = 
+    method keys =
       List.map fst (o#tolist)
-end     
+end
 

@@ -28,18 +28,15 @@ my $projectcmdline =
 
 my $prefix="/usr/local";
 my $python=1;
-my $trac=0;
 my $opt=".opt";
 my $tarzan=1;
 
 local $_ = join ' ', @ARGV;
 
 # Parse options
-/-h/ || /--help/ and die "usage: $0 [--prefix=path] [--without-python] [--with-trac] [--no-opt]\n\n\t--no-opt\tDo not use the optimimized version of OCaml\n\t--opt\tUse the optimimized version of OCaml\n\n";
+/-h/ || /--help/ and die "usage: $0 [--prefix=path] [--without-python] [--no-opt]\n\n\t--no-opt\tDo not use the optimimized version of OCaml\n\t--opt\tUse the optimimized version of OCaml\n\n";
 /--prefix=([^ ]*)/ and $prefix = $1;
 /--without-python/ and $python = 0;
-/--without-trac/ and $trac = 0;
-/--with-trac/ and $trac = 1;
 /--no-opt/ and $opt = "";
 /--opt/ and $opt = ".opt";
 
@@ -300,18 +297,4 @@ my $pythonprefix = $python ? "yes_" : "no_";
 
 my $command = "perl -p -e 's#Not_found.\*#Not_found->\\\"$src\\\"#' globals/config.ml.in > globals/config.ml";
 `$command`;
-
-#
-# Configuration of python with or without trac
-#
-`cd python/coccilib; ln -sf output_base.py output.py;`;
-if($trac) {
-# Switch between implementation
-# in python/coccilib
-pr2 "Selecting python trac extension";
-`cd python/coccilib; ln -sf output_trac.py output.py;`;
-}
-
-
-
 

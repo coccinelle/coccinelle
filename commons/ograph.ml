@@ -1,8 +1,8 @@
 open Common
 
-(* todo: 
+(* todo:
  *  invariant succesors/predecessors
- *  see c++ library, GTL ... 
+ *  see c++ library, GTL ...
  *  (cf paper from ASTL, cf paper from jfla05 on ocamlgraph)
  *)
 
@@ -25,6 +25,6 @@ object(o: 'o)
   method virtual children: 'a Oset.oset -> 'a Oset.oset
   method virtual brothers: 'a -> 'a Oset.oset
 
-  method mydebug: ('a * 'a list) list = 
+  method mydebug: ('a * 'a list) list =
     (o#nodes)#tolist +> map (fun a -> (a, (o#successors a)#tolist))
 end

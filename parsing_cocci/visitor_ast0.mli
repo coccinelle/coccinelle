@@ -1,5 +1,5 @@
 (*
- * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Copyright 2005-2010, Ecole des Mines de Nantes, University of Copenhagen
  * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
  * This file is part of Coccinelle.
  *
@@ -28,7 +28,7 @@ val combiner :
 
 val flat_combiner :
     ('a -> 'a -> 'a) -> 'a ->
-    ((string*string,'a) Visitor_ast0_types.flat_cmcode) ->
+    ((Ast_cocci.meta_name,'a) Visitor_ast0_types.flat_cmcode) ->
     ((string,'a) Visitor_ast0_types.flat_cmcode) ->
     ((Ast_cocci.constant,'a) Visitor_ast0_types.flat_cmcode) ->
     ((Ast_cocci.assignOp,'a) Visitor_ast0_types.flat_cmcode) ->
@@ -63,7 +63,7 @@ val rebuilder : Visitor_ast0_types.rebuilder_functions ->
   Visitor_ast0_types.rebuilder_rec_functions
 
 val flat_rebuilder :
-    ((string*string) Visitor_ast0_types.rmcode) ->
+    (Ast_cocci.meta_name Visitor_ast0_types.rmcode) ->
     (string Visitor_ast0_types.rmcode) ->
     (Ast_cocci.constant Visitor_ast0_types.rmcode) ->
     (Ast_cocci.assignOp Visitor_ast0_types.rmcode) ->

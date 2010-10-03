@@ -75,7 +75,7 @@ let compress
     (insignificant : 'a -> bool)
     (dummy : 'a)
     (m : int) (n : int)
-    (t : 'a array array) 
+    (t : 'a array array)
     : 'a table =
 
   (* Be defensive. *)
@@ -98,7 +98,7 @@ let compress
       else
 	let x = line.(j) in
 	loop
-	  (j - 1) 
+	  (j - 1)
 	  (if insignificant x then row else (j, x) :: row)
     in
 
@@ -211,7 +211,7 @@ let compress
     else
       fit (k + 1) row
   in
- 
+
   let fit row =
     match row with
     | [] ->

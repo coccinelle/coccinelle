@@ -19,7 +19,7 @@ type visitor_c = {
   kstatementseq: (statement_sequencable   -> unit) * visitor_c -> statement_sequencable   -> unit;
 
 
-  knode:      
+  knode:
     (Control_flow_c.node -> unit) * visitor_c -> Control_flow_c.node -> unit;
   ktoplevel: (toplevel -> unit) * visitor_c -> toplevel -> unit;
 
@@ -47,7 +47,7 @@ val vk_argument_list : visitor_c -> argument wrap2 list -> unit
 val vk_args_splitted : visitor_c -> (argument, il) Common.either list -> unit
 val vk_param : visitor_c -> parameterType -> unit
 val vk_param_list : visitor_c -> parameterType wrap2 list -> unit
-val vk_params_splitted : 
+val vk_params_splitted :
   visitor_c -> (parameterType, il) Common.either list -> unit
 
 val vk_struct_fields : visitor_c -> field list -> unit
@@ -55,7 +55,7 @@ val vk_struct_fieldkinds : visitor_c -> fieldkind wrap list -> unit
 
 val vk_cst : visitor_c -> ((constant, string) Common.either wrap) -> unit
 
-val vk_define_params_splitted : 
+val vk_define_params_splitted :
   visitor_c -> (string Ast_c.wrap, il) Common.either list -> unit
 
 
@@ -76,10 +76,10 @@ type visitor_c_s = {
   kcppdirective_s : (cpp_directive inout * visitor_c_s) -> cpp_directive inout;
   kdefineval_s : (define_val inout * visitor_c_s) -> define_val inout;
   kstatementseq_s: (statement_sequencable inout * visitor_c_s) -> statement_sequencable inout;
-  kstatementseq_list_s: 
+  kstatementseq_list_s:
     (statement_sequencable list inout * visitor_c_s) -> statement_sequencable list inout;
 
-  knode_s      : 
+  knode_s      :
     Control_flow_c.node inout * visitor_c_s -> Control_flow_c.node    inout;
   ktoplevel_s  : toplevel inout * visitor_c_s -> toplevel inout;
 
@@ -102,33 +102,33 @@ val vk_ii_s : visitor_c_s -> info list -> info list
 val vk_node_s : visitor_c_s -> Control_flow_c.node -> Control_flow_c.node
 val vk_program_s  : visitor_c_s -> program -> program
 
-val vk_arguments_s : 
-  visitor_c_s -> 
+val vk_arguments_s :
+  visitor_c_s ->
   argument wrap2 list -> argument wrap2 list
 
-val vk_args_splitted_s : 
-  visitor_c_s -> 
-  (argument, il) Common.either list -> 
+val vk_args_splitted_s :
+  visitor_c_s ->
+  (argument, il) Common.either list ->
   (argument, il) Common.either list
 
-val vk_params_s : 
-  visitor_c_s -> 
+val vk_params_s :
+  visitor_c_s ->
   parameterType wrap2 list -> parameterType wrap2 list
 
-val vk_params_splitted_s : 
-  visitor_c_s -> 
-  (parameterType, il) Common.either list -> 
+val vk_params_splitted_s :
+  visitor_c_s ->
+  (parameterType, il) Common.either list ->
   (parameterType, il) Common.either list
 
 
 
 val vk_param_s : visitor_c_s -> parameterType -> parameterType
 
-val vk_define_params_splitted_s : 
-  visitor_c_s -> 
-  (string Ast_c.wrap, il) Common.either list -> 
+val vk_define_params_splitted_s :
+  visitor_c_s ->
+  (string Ast_c.wrap, il) Common.either list ->
   (string Ast_c.wrap, il) Common.either list
 
 val vk_struct_fields_s : visitor_c_s -> field list -> field list
 
-val vk_cst_s : visitor_c_s -> ((constant, string) Common.either wrap) inout 
+val vk_cst_s : visitor_c_s -> ((constant, string) Common.either wrap) inout

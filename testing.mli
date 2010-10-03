@@ -1,5 +1,5 @@
 (*
- * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Copyright 2005-2010, Ecole des Mines de Nantes, University of Copenhagen
  * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
  * This file is part of Coccinelle.
  *
@@ -39,14 +39,14 @@ val test_regression_okfailed : unit -> unit
 (*****************************************************************************)
 (* the parameter is the result of Cocci.full_engine *)
 (*****************************************************************************)
-val compare_with_expected : (filename * filename option) list -> unit 
+val compare_with_expected : (filename * filename option) list -> unit
 
 
 (*****************************************************************************)
 (* to test/debug the coccinelle subsystems *)
 (*****************************************************************************)
 
-(* pad: 
+(* pad:
  * I moved the parsing_c/ subsystem testing in parsing_c/test_parsing_c.ml
  * as I need it for other projects too.
  *)

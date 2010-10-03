@@ -1,5 +1,5 @@
 (*
- * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Copyright 2005-2010, Ecole des Mines de Nantes, University of Copenhagen
  * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
  * This file is part of Coccinelle.
  *
@@ -29,8 +29,8 @@ open Common
  * pre_engine does the compilation of the SmPL code and runs any initially
  * scripts
  * post_engine runs any finally scripts
- * 
- * This function uses memoisation internally, which is useful when 
+ *
+ * This function uses memoisation internally, which is useful when
  * using -dir to not redo twice the same work. So take care!
  *)
 type cocci_info
@@ -39,13 +39,13 @@ val full_engine :
   cocci_info -> filename list -> (filename * filename option) list
 val post_engine : cocci_info -> unit
 
-(* because of the #include "toto.c" and also because we may associate the 
+(* because of the #include "toto.c" and also because we may associate the
  * same C file to multiple drivers because they share code, we can
- * modify multiple times the same file when use -dir. This check 
- * remove duplicates and check that the modification are consistent 
+ * modify multiple times the same file when use -dir. This check
+ * remove duplicates and check that the modification are consistent
  * among the different drivers.
  *)
-val check_duplicate_modif : 
+val check_duplicate_modif :
  (filename * filename option) list -> (filename * filename option) list
 
 (* provides memoization *)

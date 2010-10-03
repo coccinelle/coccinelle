@@ -1,5 +1,5 @@
 (*
- * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Copyright 2005-2010, Ecole des Mines de Nantes, University of Copenhagen
  * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
  * This file is part of Coccinelle.
  *
@@ -37,12 +37,12 @@ module SIMPLE_ENV =
 ;;
 
 (* Simple predicates *)
-module WRAPPER_PRED = 
+module WRAPPER_PRED =
   struct
     type predicate = string
   end
 
-module EXAMPLE_ENGINE = 
+module EXAMPLE_ENGINE =
   Wrapper_ctl.CTL_ENGINE_BIS (SIMPLE_ENV) (Ctl_engine.OGRAPHEXT_GRAPH) (WRAPPER_PRED)
 
 let top_wit = []
@@ -69,17 +69,17 @@ let (-->) x v = Subst (x,v);;
 (* FIX ME: move to ENGINE module *)
 let (-/->) x v = NegSubst(x,v);;
 
-let mkgraph nodes edges = 
+let mkgraph nodes edges =
   let g = ref (new Ograph_extended.ograph_extended) in
-  let addn (n,x) = 
-    (* let (g',i) = (!g)#add_node x in *) 
-    (* now I need to force the nodei of a node, because of the state(vx) predicates 
+  let addn (n,x) =
+    (* let (g',i) = (!g)#add_node x in *)
+    (* now I need to force the nodei of a node, because of the state(vx) predicates
        hence add_node -> add_nodei
      *)
     let (g', i) = !g#add_nodei n x in
     assert (i = n);
     g := g'; (n,i) in
-  let adde anodes (n1,n2,x) = 
+  let adde anodes (n1,n2,x) =
     let g' = (!g)#add_arc ((List.assoc n1 anodes,List.assoc n2 anodes),x) in
     g := g'; () in
   let add_nodes = List.map addn nodes in
@@ -89,7 +89,7 @@ let mkgraph nodes edges =
 
 
 (* CTL parameterised on basic predicates and metavar's*)
-type ('pred,'mvar) old_gen_ctl = 
+type ('pred,'mvar) old_gen_ctl =
   | False_
   | True_
   | Pred_ of 'pred
@@ -148,8 +148,8 @@ let ex1lab s =
     | _ -> []
 ;;
 
-let ex1graph = 
-  let nodes = 
+let ex1graph =
+  let nodes =
     [(0,"f(1)");(1,"f(2)");(2,"< >");(3,"g(1)");(4,"g(2)");(5,"<exit>")] in
   let edges = [(0,2); (1,2); (2,3); (2,4); (3,5); (4,5); (5,5)] in
   mkgraph nodes (List.map (fun (x,y) -> (x,y,())) edges)
@@ -185,7 +185,7 @@ let ex1s8c = Exists_("x",ex1s7c);;
 
 let ex1phi1 = ex1s4;;
 let ex1phi2 = ex1s5a;;
-let ex1phi3 = 
+let ex1phi3 =
   And_
  (Exists_ ("x",
   (Exists_ ("v3",
@@ -197,7 +197,7 @@ let ex1phi3 =
        Pred_ ("g(y)", Modif "v0")
                       ))))));;
 
-let ex1phi4 = 
+let ex1phi4 =
   Exists_ ("x",
 	   And_ (
 	    (Exists_ ("v3",
@@ -212,14 +212,14 @@ let ex1phi4 =
 
 let ex1phi5 = AU_(True_,Exists_("y", Exists_("v0",Pred_("g(y)",Modif "v0"))));;
 
-let ex1phi6 = 
+let ex1phi6 =
   AU_(
     Not_(Exists_("x",Exists_("v1",Pred_("f(x)",UnModif "v1")))),
     Exists_("y", Exists_("v0",Pred_("g(y)",Modif "v0")))
   );;
 
 (* use with ex1nc *)
-let ex1phi7 = 
+let ex1phi7 =
   AU_(
     Not_(Or_(Pred_("f(1)",Control),Pred_("f(2)",Control))),
     Exists_("y", Exists_("v0",Pred_("g(y)",Modif "v0")))
@@ -238,13 +238,13 @@ let ex2lab s =
     | "p"        -> [0,[]]
     | "{"        -> [(1,[]); (2,[])]
     | "}"        -> [(3,[]); (4,[])]
-    | "paren(v)" -> [(1,["v" --> "1"]); (2,["v" --> "2"]); 
+    | "paren(v)" -> [(1,["v" --> "1"]); (2,["v" --> "2"]);
 		     (3,["v" --> "2"]); (4,["v" --> "1"])]
     | _          -> []
 ;;
 
-let ex2graph = 
-  let nodes = 
+let ex2graph =
+  let nodes =
     [(0,"p");(1,"{");(2,"{");(3,"}");(4,"}");(5,"<exit>")] in
   let edges = [(0,1); (1,2); (2,3); (3,4); (4,5); (5,5)] in
   mkgraph nodes (List.map (fun (x,y) -> (x,y,())) edges)

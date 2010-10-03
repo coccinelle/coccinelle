@@ -1,11 +1,12 @@
 (* Yoann Padioleau
- * 
+ *
+ * Copyright (C) 2010, University of Copenhagen DIKU and INRIA.
  * Copyright (C) 2006, 2007 Ecole des Mines de Nantes
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License (GPL)
  * version 2 as published by the Free Software Foundation.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -29,19 +30,19 @@ let pr2, pr2_once = Common.mk_pr2_wrappers Flag_parsing_c.verbose_cfg
 
 (*****************************************************************************)
 (* todo?: compute target level with goto (but rare that different I think)
- * ver1: just do init, 
+ * ver1: just do init,
  * ver2: compute depth of label (easy, intercept compound in the visitor)
- * 
+ *
  * checktodo: after a switch, need check that all the st in the
  * compound start with a case: ?
- * 
+ *
  * checktodo: how ensure that when we call aux_statement recursivly, we
  * pass it xi_lbl and not just auxinfo ? how enforce that ?
  * in fact we must either pass a xi_lbl or a newxi
- * 
+ *
  * todo: can have code (and so nodes) in many places, in the size of an
  * array, in the init of initializer, but also in StatementExpr, ...
- * 
+ *
  * todo?: steal code from CIL ? (but seems complicated ... again) *)
 (*****************************************************************************)
 
@@ -49,7 +50,7 @@ let pr2, pr2_once = Common.mk_pr2_wrappers Flag_parsing_c.verbose_cfg
 (* Types *)
 (*****************************************************************************)
 
-type error = 
+type error =
   | DeadCode          of Common.parse_info option
   | CaseNoSwitch      of Common.parse_info
   | OnlyBreakInSwitch of Common.parse_info
@@ -68,15 +69,15 @@ exception Error of error
 (* Helpers *)
 (*****************************************************************************)
 
-let add_node node labels nodestr g = 
+let add_node node labels nodestr g =
    g#add_node (Control_flow_c.mk_node node labels [] nodestr)
-let add_bc_node node labels parent_labels nodestr g = 
+let add_bc_node node labels parent_labels nodestr g =
    g#add_node (Control_flow_c.mk_node node labels parent_labels  nodestr)
-let add_arc_opt (starti, nodei) g = 
+let add_arc_opt (starti, nodei) g =
   starti +> do_option (fun starti -> g#add_arc ((starti, nodei), Direct))
 
 
-let lbl_0 = [] 
+let lbl_0 = []
 
 let pinfo_of_ii ii = Ast_c.get_opi (List.hd ii).Ast_c.pinfo
 
@@ -87,78 +88,78 @@ let pinfo_of_ii ii = Ast_c.get_opi (List.hd ii).Ast_c.pinfo
 (*****************************************************************************)
 
 (* Sometimes have a continue/break and we must know where we must jump.
- *    
- * ctl_brace: The node list in context_info record the number of '}' at the 
+ *
+ * ctl_brace: The node list in context_info record the number of '}' at the
  * context point, for instance at the switch point. So that when deeper,
  * we can compute the difference between the number of '}' from root to
- * the context point to close the good number of '}' . For instance 
+ * the context point to close the good number of '}' . For instance
  * where there is a 'continue', we must close only until the for.
  *)
 type context_info =
-  | NoInfo 
+  | NoInfo
   | LoopInfo   of nodei * nodei (* start, end *) * node list * int list
   | SwitchInfo of nodei * nodei (* start, end *) * node list * int list
 
-(* for the Compound case I need to do different things depending if 
+(* for the Compound case I need to do different things depending if
  * the compound is the compound of the function definition, the compound of
  * a switch, so this type allows to specify this and enable to factorize
  * code for the Compound
  *)
-and compound_caller = 
+and compound_caller =
   FunctionDef | Statement | Switch of (nodei -> xinfo -> xinfo)
 
-(* other information used internally in ast_to_flow and passed recursively *) 
-and xinfo =  { 
+(* other information used internally in ast_to_flow and passed recursively *)
+and xinfo =  {
 
   ctx: context_info; (* cf above *)
   ctx_stack: context_info list;
 
   (* are we under a ifthen[noelse]. Used for ErrorExit *)
-  under_ifthen: bool; 
+  under_ifthen: bool;
   compound_caller: compound_caller;
 
   (* does not change recursively. Some kind of globals. *)
-  labels_assoc: (string, nodei) oassoc; 
+  labels_assoc: (string, nodei) oassoc;
   exiti:      nodei option;
   errorexiti: nodei option;
 
   (* ctl_braces: the nodei list is to handle current imbrication depth.
-   * It contains the must-close '}'. 
-   * update: now it is instead a node list. 
+   * It contains the must-close '}'.
+   * update: now it is instead a node list.
    *)
   braces: node list;
 
   (* ctl: *)
-  labels: int list; 
+  labels: int list;
   }
 
 
 let initial_info = {
-  ctx = NoInfo; 
+  ctx = NoInfo;
   ctx_stack = [];
   under_ifthen = false;
   compound_caller = Statement;
   braces = [];
-  labels = []; 
+  labels = [];
 
   (* don't change when recurse *)
   labels_assoc = new oassocb [];
   exiti = None;
   errorexiti = None;
-} 
+}
 
 
 (*****************************************************************************)
 (* (Semi) Globals, Julia's style. *)
 (*****************************************************************************)
 (* global graph *)
-let g = ref (new ograph_mutable) 
+let g = ref (new ograph_mutable)
 
 let counter_for_labels = ref 0
 let counter_for_braces = ref 0
 
 (* For switch we use compteur too (or pass int ref) cos need know order of the
- * case if then later want to go from CFG to (original) AST. 
+ * case if then later want to go from CFG to (original) AST.
  * update: obsolete now I think
  *)
 let counter_for_switch = ref 0
@@ -168,32 +169,32 @@ let counter_for_switch = ref 0
 (* helpers *)
 (*****************************************************************************)
 
-(* alt: do via a todo list, so can do all in one pass (but more complex) 
- * todo: can also count the depth level and associate it to the node, for 
- * the ctl_braces: 
+(* alt: do via a todo list, so can do all in one pass (but more complex)
+ * todo: can also count the depth level and associate it to the node, for
+ * the ctl_braces:
  *)
-let compute_labels_and_create_them st = 
+let compute_labels_and_create_them st =
 
   (* map C label to index number in graph *)
   let (h: (string, nodei) oassoc ref) = ref (new oassocb []) in
 
   begin
-    st +> Visitor_c.vk_statement { Visitor_c.default_visitor_c with 
-      Visitor_c.kstatement = (fun (k, bigf) st -> 
+    st +> Visitor_c.vk_statement { Visitor_c.default_visitor_c with
+      Visitor_c.kstatement = (fun (k, bigf) st ->
         match Ast_c.unwrap_st st with
-        | Labeled (Ast_c.Label (name, _st)) -> 
+        | Labeled (Ast_c.Label (name, _st)) ->
             let ii = Ast_c.get_ii_st_take_care st in
             (* at this point I put a lbl_0, but later I will put the
              * good labels. *)
             let s = Ast_c.str_of_name name in
-            let newi = !g +> add_node (Label (st,name, ((),ii))) lbl_0  (s^":") 
+            let newi = !g +> add_node (Label (st,name, ((),ii))) lbl_0  (s^":")
             in
             begin
               (* the C label already exists ? *)
               if (!h#haskey s) then raise (Error (DuplicatedLabel s));
               h := !h#add (s, newi);
               (* not k _st !!! otherwise in lbl1: lbl2: i++; we miss lbl2 *)
-              k st; 
+              k st;
             end
         | _st -> k st
       )
@@ -203,9 +204,9 @@ let compute_labels_and_create_them st =
 
 
 (* ctl_braces: *)
-let insert_all_braces xs starti = 
-  xs  +> List.fold_left (fun acc node -> 
-    (* Have to build a new node (clone), cos cant share it. 
+let insert_all_braces xs starti =
+  xs  +> List.fold_left (fun acc node ->
+    (* Have to build a new node (clone), cos cant share it.
      * update: This is now done by the caller. The clones are in xs.
      *)
     let newi = !g#add_node node in
@@ -218,15 +219,15 @@ let insert_all_braces xs starti =
 (*****************************************************************************)
 
 (* Take in a (optional) start node, return an (optional) end node.
- * 
+ *
  * history:
- * 
+ *
  * ver1: old code was returning an nodei, but goto has no end, so
  * aux_statement should return nodei option.
- * 
+ *
  * ver2: old code was taking a nodei, but should also take nodei
  * option.
- * 
+ *
  * ver3: deadCode detection. What is dead code ? When there is no
  * starti to start from ? So make starti an option too ? Si on arrive
  * sur un label: au moment d'un deadCode, on peut verifier les
@@ -238,41 +239,41 @@ let insert_all_braces xs starti =
  * moment d'arriver sur near: on n'a pas encore de predecesseurs pour
  * ce label. De meme, meme le cas simple ou la derniere instruction
  * c'est un return, alors ca va generer un DeadCode :(
- * 
+ *
  * So make a first pass where dont launch exn at all. Create nodes,
  * if starti is None then dont add arc. Then make a second pass that
  * just checks that all nodes (except enter) have predecessors.
  * So make starti an option too. So type is now
- * 
+ *
  *      nodei option -> statement -> nodei option.
- * 
- * todo?: if the pb is at a fake node, then try first successos that 
- * is non fake. 
- * 
+ *
+ * todo?: if the pb is at a fake node, then try first successos that
+ * is non fake.
+ *
  * ver4: because of special needs of coccinelle, need pass more info, cf
  * type additionnal_info defined above.
- * 
+ *
  * - to complete (break, continue (and enclosing loop), switch (and
  * associated case, casedefault)) we need to pass additionnal info.
  * The start/exit when enter in a loop, to know the current 'for'.
- * 
+ *
  * - to handle the braces, need again pass additionnal info.
- * 
+ *
  * - need pass the labels.
- * 
+ *
  * convention: xi for the auxinfo passed recursively
- * 
+ *
  *)
 
-let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) = 
+let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
  fun (starti, xi) stmt ->
 
   if not !Flag_parsing_c.label_strategy_2
   then incr counter_for_labels;
-    
-  let lbl = 
-    if !Flag_parsing_c.label_strategy_2 
-    then xi.labels 
+
+  let lbl =
+    if !Flag_parsing_c.label_strategy_2
+    then xi.labels
     else xi.labels @ [!counter_for_labels]
   in
 
@@ -280,19 +281,19 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
    * But in some cases we add additionnal stuff in which case we don't use
    * this 'xi_lbl' but a 'newxi' specially built.
    *)
-  let xi_lbl = 
+  let xi_lbl =
     if !Flag_parsing_c.label_strategy_2
     then { xi with
       compound_caller = Statement;
     }
-    else { xi with 
-      labels = xi.labels @ [ !counter_for_labels ]; 
+    else { xi with
+      labels = xi.labels @ [ !counter_for_labels ];
       compound_caller = Statement;
-    } 
+    }
   in
   let ii = Ast_c.get_ii_st_take_care stmt in
 
-  (* ------------------------- *)        
+  (* ------------------------- *)
   match Ast_c.unwrap_st stmt with
 
   (*  coupling: the Switch case copy paste parts of the Compound case *)
@@ -312,7 +313,7 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
         | Statement -> xi.labels @ [!counter_for_labels]
         | Switch _ -> xi.labels
       in
- 
+
       let newi = !g +> add_node (SeqStart (stmt, brace, i1)) lbl s1 in
       let endnode = mk_node     (SeqEnd (brace, i2))         lbl [] s2 in
       let endnode_dup = mk_fake_node (SeqEnd (brace, i2))    lbl [] s2 in
@@ -324,7 +325,7 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
       let newxi = { xi_lbl with braces = endnode_dup:: xi_lbl.braces } in
 
       let newxi = match xi.compound_caller with
-        | Switch todo_in_compound -> 
+        | Switch todo_in_compound ->
             (* note that side effect in todo_in_compound *)
             todo_in_compound newi newxi
         | FunctionDef | Statement -> newxi
@@ -336,10 +337,10 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
       aux_statement_list finishi (xi, newxi) statxs
 
       (* braces: *)
-      +> Common.fmap (fun finishi -> 
+      +> Common.fmap (fun finishi ->
             (* subtil: not always return a Some.
              * Note that if finishi is None, alors forcement ca veut dire
-             * qu'il y'a eu un return (ou goto), et donc forcement les 
+             * qu'il y'a eu un return (ou goto), et donc forcement les
              * braces auront au moins ete crée une fois, et donc flow_to_ast
              * marchera.
              * Sauf si le goto revient en arriere ? mais dans ce cas
@@ -353,12 +354,12 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
 	      !g#add_arc ((newi, afteri), Direct);
 	      !g#add_arc ((afteri, endi), Direct));
             !g#add_arc ((finishi, endi), Direct);
-            endi 
-           ) 
+            endi
+           )
 
 
-   (* ------------------------- *)        
-  | Labeled (Ast_c.Label (name, st)) -> 
+   (* ------------------------- *)
+  | Labeled (Ast_c.Label (name, st)) ->
       let s = Ast_c.str_of_name name in
       let ilabel = xi.labels_assoc#find s in
       let node = mk_node (unwrap (!g#nodes#find ilabel)) lbl [] (s ^ ":") in
@@ -367,7 +368,7 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
       aux_statement (Some ilabel, xi_lbl) st
 
 
-  | Jump (Ast_c.Goto name) -> 
+  | Jump (Ast_c.Goto name) ->
      let s = Ast_c.str_of_name name in
      (* special_cfg_ast: *)
      let newi = !g +> add_node (Goto (stmt, name, ((),ii))) lbl ("goto "^s^":")
@@ -378,17 +379,17 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
      then Some newi
      else
        begin
-	 let ilabel = 
-	   try xi.labels_assoc#find s 
-	   with Not_found -> 
-         (* jump vers ErrorExit a la place ? 
-          * pourquoi tant de "cant jump" ? pas detecté par gcc ? 
+	 let ilabel =
+	   try xi.labels_assoc#find s
+	   with Not_found ->
+         (* jump vers ErrorExit a la place ?
+          * pourquoi tant de "cant jump" ? pas detecté par gcc ?
           *)
              raise (Error (GotoCantFindLabel (s, pinfo_of_ii ii)))
 	 in
-	 (* !g +> add_arc_opt (starti, ilabel); 
+	 (* !g +> add_arc_opt (starti, ilabel);
 	  * todo: special_case: suppose that always goto to toplevel of
-	  * function, hence the Common.init 
+	  * function, hence the Common.init
 	  * todo?: can perhaps report when a goto is not a classic error_goto ?
 	  * that is when it does not jump to the toplevel of the function.
 	  *)
@@ -396,31 +397,31 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
 	 !g#add_arc ((newi, ilabel), Direct);
 	 None
        end
-      
-  | Jump (Ast_c.GotoComputed e) -> 
+
+  | Jump (Ast_c.GotoComputed e) ->
       raise (Error (ComputedGoto))
-      
-   (* ------------------------- *)        
-  | Ast_c.ExprStatement opte -> 
+
+   (* ------------------------- *)
+  | Ast_c.ExprStatement opte ->
       (* flow_to_ast:   old: when opte = None, then do not add in CFG. *)
-      let s = 
+      let s =
         match opte with
         | None -> "empty;"
-        | Some e -> 
+        | Some e ->
             (match Ast_c.unwrap_expr e with
-            | FunCall (e, _args) -> 
+            | FunCall (e, _args) ->
                 (match Ast_c.unwrap_expr e with
-                | Ident namef -> 
+                | Ident namef ->
                     Ast_c.str_of_name namef ^ "(...)"
                 | _ -> "statement"
                 )
-            | Assignment (e1, SimpleAssign, e2) -> 
+            | Assignment (e1, SimpleAssign, e2) ->
                 (match Ast_c.unwrap_expr e1 with
                 | Ident namevar ->
                     Ast_c.str_of_name namevar ^ " = ... ;"
-                | RecordAccess(e, field) -> 
+                | RecordAccess(e, field) ->
                     (match Ast_c.unwrap_expr e with
-                    | Ident namevar -> 
+                    | Ident namevar ->
                         let sfield = Ast_c.str_of_name field in
                         Ast_c.str_of_name namevar ^ "." ^ sfield ^ " = ... ;"
                     | _ -> "statement"
@@ -433,26 +434,26 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
       let newi = !g +> add_node (ExprStatement (stmt, (opte, ii))) lbl s in
       !g +> add_arc_opt (starti, newi);
       Some newi
-      
 
-   (* ------------------------- *)        
+
+   (* ------------------------- *)
   | Selection  (Ast_c.If (e, st1, st2)) ->
 
     let iist2 = Ast_c.get_ii_st_take_care st2 in
     (match Ast_c.unwrap_st st2 with
-    | Ast_c.ExprStatement (None) when null iist2 -> 
+    | Ast_c.ExprStatement (None) when null iist2 ->
       (* sometime can have ExprStatement None but it is a if-then-else,
        * because something like   if() xx else ;
-       * so must force to have [] in the ii associated with ExprStatement 
+       * so must force to have [] in the ii associated with ExprStatement
        *)
-      
+
       let (i1,i2,i3, iifakeend) = tuple_of_list4 ii in
       let ii = [i1;i2;i3] in
      (* starti -> newi --->   newfakethen -> ... -> finalthen --> lasti
       *                  |                                      |
       *                  |->   newfakeelse -> ... -> finalelse -|
       * update: there is now also a link directly to lasti.
-      *  
+      *
       * because of CTL, now do different things if we are in a ifthen or
       * ifthenelse.
       *)
@@ -477,13 +478,13 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
       !g +> add_arc_opt (finalthen, lasti);
       Some lasti
 
-    | _unwrap_st2 -> 
+    | _unwrap_st2 ->
      (* starti -> newi --->   newfakethen -> ... -> finalthen --> lasti
       *                 |                                      |
       *                 |->   newfakeelse -> ... -> finalelse -|
       * update: there is now also a link directly to lasti.
       *)
-      let (iiheader, iielse, iifakeend) = 
+      let (iiheader, iielse, iifakeend) =
         match ii with
         | [i1;i2;i3;i4;i5] -> [i1;i2;i3], i4, i5
         | _ -> raise Impossible
@@ -503,12 +504,12 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
       let finalthen = aux_statement (Some newfakethen, xi_lbl) st1 in
       let finalelse = aux_statement (Some elsenode, xi_lbl) st2 in
 
-      (match finalthen, finalelse with 
+      (match finalthen, finalelse with
         | (None, None) -> None
-        | _ -> 
-            let lasti = 
+        | _ ->
+            let lasti =
               !g +> add_node (EndStatement(Some iifakeend)) lbl "[endif]" in
-            let afteri = 
+            let afteri =
               !g +> add_node AfterNode lbl "[after]" in
             !g#add_arc ((newi, afteri),  Direct);
             !g#add_arc ((afteri, lasti), Direct);
@@ -517,18 +518,18 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
               !g +> add_arc_opt (finalelse, lasti);
               Some lasti
            end)
-    )        
-      
-   (* ------------------------- *)        
-  | Selection  (Ast_c.Switch (e, st)) -> 
+    )
+
+   (* ------------------------- *)
+  | Selection  (Ast_c.Switch (e, st)) ->
       let (i1,i2,i3, iifakeend) = tuple_of_list4 ii in
       let ii = [i1;i2;i3] in
 
       (* The newswitchi is for the labels to know where to attach.
        * The newendswitch (endi) is for the 'break'. *)
-      let newswitchi= 
+      let newswitchi=
         !g+> add_node (SwitchHeader(stmt,(e,ii))) lbl "switch" in
-      let newendswitch = 
+      let newendswitch =
         !g +> add_node (EndStatement (Some iifakeend)) lbl "[endswitch]" in
 
       !g +> add_arc_opt (starti, newswitchi);
@@ -537,35 +538,35 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
         * because we need to build a context_info that need some of the
         * information build inside the compound case: the nodei of {
         *)
-       let finalthen = 
+       let finalthen =
          match Ast_c.unwrap_st st with
-         | Ast_c.Compound statxs -> 
+         | Ast_c.Compound statxs ->
 
              let statxs = Lib.stmt_elems_of_sequencable statxs in
-             
+
              (* todo? we should not allow to match a stmt that corresponds
               * to a compound of a switch, so really SeqStart (stmt, ...)
               * here ? so maybe should change the SeqStart labeling too.
               * So need pass a todo_in_compound2 function.
               *)
-             let todo_in_compound newi newxi = 
-               let newxi' = { newxi with 
+             let todo_in_compound newi newxi =
+               let newxi' = { newxi with
                  ctx = SwitchInfo (newi(*!!*), newendswitch, xi.braces, lbl);
                  ctx_stack = newxi.ctx::newxi.ctx_stack
                }
                in
-               !g#add_arc ((newswitchi, newi), Direct); 
-               (* new: if have not a default case, then must add an edge 
+               !g#add_arc ((newswitchi, newi), Direct);
+               (* new: if have not a default case, then must add an edge
                 * between start to end.
-                * todo? except if the case[range] coverthe whole spectrum 
+                * todo? except if the case[range] coverthe whole spectrum
                 *)
-               if not (statxs +> List.exists (fun x -> 
+               if not (statxs +> List.exists (fun x ->
                  match Ast_c.unwrap_st x with
                  | Labeled (Ast_c.Default _) -> true
                  | _ -> false
                ))
                then begin
-                 (* when there is no default, then a valid path is 
+                 (* when there is no default, then a valid path is
                   * from the switchheader to the end. In between we
                   * add a Fallthrough.
                   *)
@@ -581,12 +582,12 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
                newxi'
              in
              let newxi = { xi_lbl with compound_caller = (* was xi *)
-                 Switch todo_in_compound 
-             } 
+                 Switch todo_in_compound
+             }
              in
              aux_statement (None (* no starti *), newxi) st
-         | _x -> 
-             (* apparently gcc allows some switch body such as 
+         | _x ->
+             (* apparently gcc allows some switch body such as
               *   switch (i) case 0 : printf("here\n");
               *   cf tests-bis/switch_no_body.c
               * but I don't think it's worthwile to handle
@@ -599,12 +600,12 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
 
 
        (* what if has only returns inside. We must  try to see if the
-        * newendswitch has been used via a 'break;'  or because no 
+        * newendswitch has been used via a 'break;'  or because no
         * 'default:')
         *)
-       let res = 
+       let res =
          (match finalthen with
-         | Some finalthen -> 
+         | Some finalthen ->
 
              let afteri = !g +> add_node AfterNode lbl "[after]" in
              !g#add_arc ((newswitchi, afteri),  Direct);
@@ -613,7 +614,7 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
 
              !g#add_arc ((finalthen, newendswitch), Direct);
              Some newendswitch
-         | None -> 
+         | None ->
              if (!g#predecessors newendswitch)#null
              then begin
                  assert ((!g#successors newendswitch)#null);
@@ -632,37 +633,37 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
          )
        in
        res
-       
+
 
   | Labeled (Ast_c.Case  (_, _))
-  | Labeled (Ast_c.CaseRange  (_, _, _)) -> 
+  | Labeled (Ast_c.CaseRange  (_, _, _)) ->
 
       incr counter_for_switch;
       let switchrank = !counter_for_switch in
-      let node, st = 
-        match Ast_c.get_st_and_ii stmt with 
-        | Labeled (Ast_c.Case  (e, st)), ii -> 
+      let node, st =
+        match Ast_c.get_st_and_ii stmt with
+        | Labeled (Ast_c.Case  (e, st)), ii ->
             (Case (stmt, (e, ii))),  st
-        | Labeled (Ast_c.CaseRange  (e, e2, st)), ii -> 
+        | Labeled (Ast_c.CaseRange  (e, e2, st)), ii ->
             (CaseRange (stmt, ((e, e2), ii))), st
         | _ -> raise Impossible
       in
 
       let newi = !g +> add_node node  lbl "case:" in
 
-      (match Common.optionise (fun () -> 
+      (match Common.optionise (fun () ->
         (* old: xi.ctx *)
-        (xi.ctx::xi.ctx_stack) +> Common.find_some (function 
+        (xi.ctx::xi.ctx_stack) +> Common.find_some (function
         | SwitchInfo (a, b, c, _) -> Some (a, b, c)
         | _ -> None
         ))
       with
-      | Some (startbrace, switchendi, _braces) -> 
+      | Some (startbrace, switchendi, _braces) ->
           (* no need to attach to previous for the first case, cos would be
            * redundant. *)
-          starti +> do_option (fun starti -> 
+          starti +> do_option (fun starti ->
             if starti <> startbrace
-            then !g +> add_arc_opt (Some starti, newi); 
+            then !g +> add_arc_opt (Some starti, newi);
             );
 
           let s = ("[casenode] " ^ i_to_s switchrank) in
@@ -672,9 +673,9 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
       | None -> raise (Error (CaseNoSwitch (pinfo_of_ii ii)))
       );
       aux_statement (Some newi, xi_lbl) st
-      
 
-  | Labeled (Ast_c.Default st) -> 
+
+  | Labeled (Ast_c.Default st) ->
       incr counter_for_switch;
       let switchrank = !counter_for_switch in
 
@@ -682,7 +683,7 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
       !g +> add_arc_opt (starti, newi);
 
       (match xi.ctx with
-      | SwitchInfo (startbrace, switchendi, _braces, _parent_lbl) -> 
+      | SwitchInfo (startbrace, switchendi, _braces, _parent_lbl) ->
           let s = ("[casenode] " ^ i_to_s switchrank) in
           let newcasenodei = !g +> add_node (CaseNode switchrank) lbl s in
           !g#add_arc ((startbrace, newcasenodei), Direct);
@@ -696,11 +697,11 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
 
 
 
-   (* ------------------------- *)        
-  | Iteration  (Ast_c.While (e, st)) -> 
+   (* ------------------------- *)
+  | Iteration  (Ast_c.While (e, st)) ->
      (* starti -> newi ---> newfakethen -> ... -> finalthen -
       *             |---|-----------------------------------|
-      *                 |-> newfakelse 
+      *                 |-> newfakelse
       *)
 
       let (i1,i2,i3, iifakeend) = tuple_of_list4 ii in
@@ -711,7 +712,7 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
       let newfakethen = !g +> add_node InLoopNode  lbl "[whiletrue]" in
       (* let newfakeelse = !g +> add_node FalseNode lbl "[endwhile]" in *)
       let newafter = !g +> add_node LoopFallThroughNode lbl "[whilefall]" in
-      let newfakeelse = 
+      let newfakeelse =
         !g +> add_node (EndStatement (Some iifakeend)) lbl "[endwhile]" in
 
       let newxi = { xi_lbl with
@@ -728,22 +729,22 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
 	(finalthen, if !Flag_parsing_c.no_loops then newafter else newi);
       Some newfakeelse
 
-      
+
   (* This time, may return None, for instance if goto in body of dowhile
-   * (whereas While cant return None). But if return None, certainly 
+   * (whereas While cant return None). But if return None, certainly
    * some deadcode.
    *)
-  | Iteration  (Ast_c.DoWhile (st, e)) -> 
+  | Iteration  (Ast_c.DoWhile (st, e)) ->
      (* starti -> doi ---> ... ---> finalthen (opt) ---> whiletaili
       *             |--------- newfakethen ---------------|  |---> newfakelse
       *)
-      let is_zero = 
+      let is_zero =
         match Ast_c.unwrap_expr e with
         | Constant (Int ("0",_)) -> true
         | _ -> false
       in
 
-      let (iido, iiwhiletail, iifakeend) = 
+      let (iido, iiwhiletail, iifakeend) =
         match ii with
         | [i1;i2;i3;i4;i5;i6] -> i1, [i2;i3;i4;i5], i6
         | _ -> raise Impossible
@@ -752,11 +753,11 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
       !g +> add_arc_opt (starti, doi);
       let taili = !g +> add_node (DoWhileTail (e, iiwhiletail)) lbl "whiletail"
       in
-      
+
 
       (*let newfakeelse = !g +> add_node FalseNode lbl "[enddowhile]" in *)
       let newafter = !g +> add_node FallThroughNode lbl "[dowhilefall]" in
-      let newfakeelse = 
+      let newfakeelse =
         !g +> add_node (EndStatement (Some iifakeend)) lbl "[enddowhile]" in
 
       let afteri = !g +> add_node AfterNode lbl "[after]" in
@@ -772,42 +773,42 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
       if not is_zero && (not !Flag_parsing_c.no_loops)
       then begin
         let newfakethen = !g +> add_node InLoopNode lbl "[dowhiletrue]" in
-        !g#add_arc ((taili, newfakethen), Direct); 
-        !g#add_arc ((newfakethen, doi), Direct); 
+        !g#add_arc ((taili, newfakethen), Direct);
+        !g#add_arc ((newfakethen, doi), Direct);
       end;
 
       !g#add_arc ((newafter, newfakeelse), Direct);
       !g#add_arc ((taili, newafter), Direct);
 
 
-      let finalthen = aux_statement (Some doi, newxi) st in 
+      let finalthen = aux_statement (Some doi, newxi) st in
       (match finalthen with
-      | None -> 
+      | None ->
           if (!g#predecessors taili)#null
           then raise (Error (DeadCode (Some (pinfo_of_ii ii))))
           else Some newfakeelse
-      | Some finali -> 
+      | Some finali ->
           !g#add_arc ((finali, taili), Direct);
           Some newfakeelse
       )
-          
 
 
-  | Iteration  (Ast_c.For (e1opt, e2opt, e3opt, st)) -> 
+
+  | Iteration  (Ast_c.For (e1opt, e2opt, e3opt, st)) ->
       let (i1,i2,i3, iifakeend) = tuple_of_list4 ii in
       let ii = [i1;i2;i3] in
 
-      let newi = 
+      let newi =
         !g+>add_node(ForHeader(stmt,((e1opt,e2opt,e3opt),ii))) lbl "for" in
       !g +> add_arc_opt (starti, newi);
       let newfakethen = !g +> add_node InLoopNode  lbl "[fortrue]" in
       (*let newfakeelse = !g +> add_node FalseNode lbl "[endfor]" in*)
       let newafter = !g +> add_node LoopFallThroughNode lbl "[forfall]" in
-      let newfakeelse = 
+      let newfakeelse =
         !g +> add_node (EndStatement (Some iifakeend)) lbl "[endfor]" in
 
       let newxi = { xi_lbl with
-           ctx = LoopInfo (newi, newfakeelse, xi_lbl.braces, lbl); 
+           ctx = LoopInfo (newi, newfakeelse, xi_lbl.braces, lbl);
            ctx_stack = xi_lbl.ctx::xi_lbl.ctx_stack
         }
       in
@@ -825,26 +826,26 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
   (* to generate less exception with the breakInsideLoop, analyse
    * correctly the loop deguisé comme list_for_each. Add a case ForMacro
    * in ast_c (and in lexer/parser), and then do code that imitates the
-   * code for the For. 
-   * update: the list_for_each was previously converted into Tif by the 
+   * code for the For.
+   * update: the list_for_each was previously converted into Tif by the
    * lexer, now they are returned as Twhile so less pbs. But not perfect.
    * update: now I recognize the list_for_each macro so no more problems.
    *)
-  | Iteration  (Ast_c.MacroIteration (s, es, st)) -> 
+  | Iteration  (Ast_c.MacroIteration (s, es, st)) ->
       let (i1,i2,i3, iifakeend) = tuple_of_list4 ii in
       let ii = [i1;i2;i3] in
 
-      let newi = 
+      let newi =
         !g+>add_node(MacroIterHeader(stmt,((s,es),ii))) lbl "foreach" in
       !g +> add_arc_opt (starti, newi);
       let newfakethen = !g +> add_node InLoopNode  lbl "[fortrue]" in
       (*let newfakeelse = !g +> add_node FalseNode lbl "[endfor]" in*)
       let newafter = !g +> add_node LoopFallThroughNode lbl "[foreachfall]" in
-      let newfakeelse = 
+      let newfakeelse =
         !g +> add_node (EndStatement (Some iifakeend)) lbl "[endforeach]" in
 
       let newxi = { xi_lbl with
-           ctx = LoopInfo (newi, newfakeelse, xi_lbl.braces, lbl); 
+           ctx = LoopInfo (newi, newfakeelse, xi_lbl.braces, lbl);
            ctx_stack = xi_lbl.ctx::xi_lbl.ctx_stack
         }
       in
@@ -860,19 +861,19 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
 
 
 
-   (* ------------------------- *)        
-  | Jump ((Ast_c.Continue|Ast_c.Break) as x) ->  
+   (* ------------------------- *)
+  | Jump ((Ast_c.Continue|Ast_c.Break) as x) ->
       let context_info =
 	match xi.ctx with
-	  SwitchInfo (startbrace, loopendi, braces, parent_lbl) -> 
+	  SwitchInfo (startbrace, loopendi, braces, parent_lbl) ->
             if x =*= Ast_c.Break
 	    then xi.ctx
 	    else
-	      (try 
-                xi.ctx_stack +> Common.find_some (function 
+	      (try
+                xi.ctx_stack +> Common.find_some (function
                     LoopInfo (_,_,_,_) as c ->  Some c
                   | _ -> None)
-              with Not_found -> 
+              with Not_found ->
                 raise (Error (OnlyBreakInSwitch (pinfo_of_ii ii))))
         | LoopInfo (loopstarti, loopendi, braces, parent_lbl) -> xi.ctx
 	| NoInfo -> raise (Error (NoEnclosingLoop (pinfo_of_ii ii))) in
@@ -905,14 +906,14 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
       (* let newi = some starti in *)
 
       (match context_info with
-      | LoopInfo (loopstarti, loopendi, braces, parent_lbl) -> 
-          let desti = 
-            (match x with 
-            | Ast_c.Break -> loopendi 
+      | LoopInfo (loopstarti, loopendi, braces, parent_lbl) ->
+          let desti =
+            (match x with
+            | Ast_c.Break -> loopendi
             | Ast_c.Continue ->
 		(* if no loops, then continue behaves like break - just
 		   one iteration *)
-		if !Flag_parsing_c.no_loops then loopendi else loopstarti 
+		if !Flag_parsing_c.no_loops then loopendi else loopstarti
             | x -> raise Impossible
             ) in
           let difference = List.length xi.braces - List.length braces in
@@ -933,20 +934,20 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
       | NoInfo -> raise Impossible
       )
 
-  | Jump ((Ast_c.Return | Ast_c.ReturnExpr _) as kind) -> 
+  | Jump ((Ast_c.Return | Ast_c.ReturnExpr _) as kind) ->
      (match xi.exiti, xi.errorexiti with
      | None, None -> raise (Error (NoExit (pinfo_of_ii ii)))
-     | Some exiti, Some errorexiti -> 
+     | Some exiti, Some errorexiti ->
 
       (* flow_to_ast: *)
-      let s = 
+      let s =
         match kind with
         | Ast_c.Return -> "return"
         | Ast_c.ReturnExpr _ -> "return ..."
         | _ -> raise Impossible
       in
-      let newi = 
-        !g +> add_node 
+      let newi =
+        !g +> add_node
           (match kind with
           | Ast_c.Return ->       Return (stmt, ((),ii))
           | Ast_c.ReturnExpr e -> ReturnExpr (stmt, (e, ii))
@@ -966,67 +967,67 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
      )
 
 
-  (* ------------------------- *)        
-  | Ast_c.Decl decl -> 
-     let s = 
+  (* ------------------------- *)
+  | Ast_c.Decl decl ->
+     let s =
        match decl with
-       | (Ast_c.DeclList 
+       | (Ast_c.DeclList
              ([{v_namei = Some (name, _); v_type = typ; v_storage = sto}, _], _)) ->
 	   "decl:" ^ Ast_c.str_of_name name
        | _ -> "decl_novar_or_multivar"
      in
-            
+
      let newi = !g +> add_node (Decl (decl)) lbl s in
      !g +> add_arc_opt (starti, newi);
      Some newi
-      
-  (* ------------------------- *)        
-  | Ast_c.Asm body -> 
+
+  (* ------------------------- *)
+  | Ast_c.Asm body ->
       let newi = !g +> add_node (Asm (stmt, ((body,ii)))) lbl "asm;" in
       !g +> add_arc_opt (starti, newi);
       Some newi
 
-  | Ast_c.MacroStmt -> 
+  | Ast_c.MacroStmt ->
       let newi = !g +> add_node (MacroStmt (stmt, ((),ii))) lbl "macro;" in
       !g +> add_arc_opt (starti, newi);
       Some newi
 
 
-  (* ------------------------- *)        
-  | Ast_c.NestedFunc def -> 
+  (* ------------------------- *)
+  | Ast_c.NestedFunc def ->
       raise (Error NestedFunc)
-      
 
 
 
 
 
 
-and aux_statement_list starti (xi, newxi) statxs = 
-  statxs 
+
+and aux_statement_list starti (xi, newxi) statxs =
+  statxs
   +> List.fold_left (fun starti statement_seq ->
     if !Flag_parsing_c.label_strategy_2
     then incr counter_for_labels;
-    
-    let newxi' = 
+
+    let newxi' =
       if !Flag_parsing_c.label_strategy_2
-      then { newxi with labels = xi.labels @ [ !counter_for_labels ] } 
+      then { newxi with labels = xi.labels @ [ !counter_for_labels ] }
       else newxi
     in
 
     match statement_seq with
-    | Ast_c.StmtElem statement -> 
+    | Ast_c.StmtElem statement ->
         aux_statement (starti, newxi') statement
 
-    | Ast_c.CppDirectiveStmt directive -> 
+    | Ast_c.CppDirectiveStmt directive ->
         pr2_once ("ast_to_flow: filter a directive");
         starti
 
-    | Ast_c.IfdefStmt ifdef -> 
+    | Ast_c.IfdefStmt ifdef ->
         pr2_once ("ast_to_flow: filter a directive");
         starti
 
-    | Ast_c.IfdefStmt2 (ifdefs, xxs) -> 
+    | Ast_c.IfdefStmt2 (ifdefs, xxs) ->
 
         let (head, body, tail) = Common.head_middle_tail ifdefs in
 
@@ -1034,20 +1035,20 @@ and aux_statement_list starti (xi, newxi) statxs =
         let taili = !g +> add_node (IfdefEndif (tail)) newxi'.labels "[endif]" in
         !g +> add_arc_opt (starti, newi);
 
-        let elsenodes = 
-          body +> List.map (fun elseif -> 
-            let elsei = 
+        let elsenodes =
+          body +> List.map (fun elseif ->
+            let elsei =
               !g +> add_node (IfdefElse (elseif)) newxi'.labels "[elseif]" in
             !g#add_arc ((newi, elsei), Direct);
             elsei
           ) in
 
-        let _finalxs = 
-          Common.zip (newi::elsenodes) xxs +> List.map (fun (start_nodei, xs)-> 
-            let finalthen = 
+        let _finalxs =
+          Common.zip (newi::elsenodes) xxs +> List.map (fun (start_nodei, xs)->
+            let finalthen =
               aux_statement_list (Some start_nodei) (newxi, newxi) xs in
             !g +> add_arc_opt (finalthen, taili);
-          ) 
+          )
         in
 
 (*
@@ -1073,17 +1074,17 @@ let (aux_definition: nodei -> definition -> unit) = fun topi funcdef ->
 
   let lbl_start = [!counter_for_labels] in
 
-  let ({f_name = namefuncs; 
-        f_type = functype; 
-        f_storage= sto; 
+  let ({f_name = namefuncs;
+        f_type = functype;
+        f_storage= sto;
         f_body= compound;
         f_attr= attrs;
         f_old_c_style = oldstyle;
         }, ii) = funcdef in
-  let iifunheader, iicompound = 
-    (match ii with 
-    | ioparen::icparen::iobrace::icbrace::iifake::isto -> 
-        ioparen::icparen::iifake::isto,     
+  let iifunheader, iicompound =
+    (match ii with
+    | ioparen::icparen::iobrace::icbrace::iifake::isto ->
+        ioparen::icparen::iifake::isto,
         [iobrace;icbrace]
     | _ -> raise Impossible
     )
@@ -1091,8 +1092,8 @@ let (aux_definition: nodei -> definition -> unit) = fun topi funcdef ->
 
   let topstatement = Ast_c.mk_st (Ast_c.Compound compound) iicompound in
 
-  let headi = !g +> add_node 
-    (FunHeader ({ 
+  let headi = !g +> add_node
+    (FunHeader ({
       Ast_c.f_name = namefuncs;
       f_type = functype;
       f_storage = sto;
@@ -1110,14 +1111,14 @@ let (aux_definition: nodei -> definition -> unit) = fun topi funcdef ->
 
   (* ---------------------------------------------------------------- *)
   (* todocheck: assert ? such as we have "consommer" tous les labels  *)
-  let info = 
-    { initial_info with 
+  let info =
+    { initial_info with
       labels = lbl_start;
       labels_assoc = compute_labels_and_create_them topstatement;
       exiti      = Some exiti;
       errorexiti = Some errorexiti;
       compound_caller = FunctionDef;
-    } 
+    }
   in
 
   let lasti = aux_statement (Some enteri, info) topstatement in
@@ -1127,13 +1128,13 @@ let (aux_definition: nodei -> definition -> unit) = fun topi funcdef ->
 (* Entry point *)
 (*****************************************************************************)
 
-(* Helpers for SpecialDeclMacro. 
- * 
+(* Helpers for SpecialDeclMacro.
+ *
  * could also force the coccier to define
  * the toplevel macro statement as in @@ toplevel_declarator MACRO_PARAM;@@
  * and so I would not need this hack and instead I would to a cleaner
  * match in cocci_vs_c_3.ml of a A.MacroTop vs B.MacroTop
- * 
+ *
  * todo: update: now I do what I just described, so can remove this code ?
  *)
 let specialdeclmacro_to_stmt (s, args, ii) =
@@ -1148,7 +1149,7 @@ let specialdeclmacro_to_stmt (s, args, ii) =
 
 let ast_to_control_flow e =
 
-  (* globals (re)initialialisation *) 
+  (* globals (re)initialialisation *)
   g := (new ograph_mutable);
   counter_for_labels := 1;
   counter_for_braces := 0;
@@ -1156,25 +1157,25 @@ let ast_to_control_flow e =
 
   let topi = !g +> add_node TopNode lbl_0 "[top]" in
 
-  match e with 
-  | Ast_c.Definition ((defbis,_) as def) -> 
+  match e with
+  | Ast_c.Definition ((defbis,_) as def) ->
       let _funcs = defbis.f_name in
       let _c = defbis.f_body in
       (* if !Flag.show_misc then pr2 ("build info function " ^ funcs); *)
       aux_definition topi def;
       Some !g
 
-  | Ast_c.Declaration _ 
+  | Ast_c.Declaration _
   | Ast_c.CppTop (Ast_c.Include _)
   | Ast_c.MacroTop _
-    -> 
-      let (elem, str) = 
-        match e with 
-        | Ast_c.Declaration decl -> 
+    ->
+      let (elem, str) =
+        match e with
+        | Ast_c.Declaration decl ->
             (Control_flow_c.Decl decl),  "decl"
-        | Ast_c.CppTop (Ast_c.Include inc) -> 
+        | Ast_c.CppTop (Ast_c.Include inc) ->
             (Control_flow_c.Include inc), "#include"
-        | Ast_c.MacroTop (s, args, ii) -> 
+        | Ast_c.MacroTop (s, args, ii) ->
             let (st, (e, ii)) = specialdeclmacro_to_stmt (s, args, ii) in
             (Control_flow_c.ExprStatement (st, (Some e, ii))), "macrotoplevel"
           (*(Control_flow_c.MacroTop (s, args,ii), "macrotoplevel") *)
@@ -1187,25 +1188,25 @@ let ast_to_control_flow e =
       !g#add_arc ((ei, endi),Direct);
       Some !g
 
-  | Ast_c.CppTop (Ast_c.Define ((id,ii), (defkind, defval)))  -> 
+  | Ast_c.CppTop (Ast_c.Define ((id,ii), (defkind, defval)))  ->
       let s = ("#define " ^ id) in
       let headeri = !g+>add_node (DefineHeader ((id, ii), defkind)) lbl_0 s in
       !g#add_arc ((topi, headeri),Direct);
 
       (match defval with
-      | Ast_c.DefineExpr e -> 
+      | Ast_c.DefineExpr e ->
           let ei   = !g +> add_node (DefineExpr e) lbl_0 "defexpr" in
           let endi = !g +> add_node EndNode        lbl_0 "[end]" in
           !g#add_arc ((headeri, ei) ,Direct);
           !g#add_arc ((ei, endi) ,Direct);
-          
-      | Ast_c.DefineType ft -> 
+
+      | Ast_c.DefineType ft ->
           let ei   = !g +> add_node (DefineType ft) lbl_0 "deftyp" in
           let endi = !g +> add_node EndNode         lbl_0 "[end]" in
           !g#add_arc ((headeri, ei) ,Direct);
           !g#add_arc ((ei, endi) ,Direct);
 
-      | Ast_c.DefineStmt st -> 
+      | Ast_c.DefineStmt st ->
 
           (* can have some return; inside the statement *)
           let exiti      = !g +> add_node Exit      lbl_0 "[exit]"      in
@@ -1216,56 +1217,56 @@ let ast_to_control_flow e =
             labels_assoc = goto_labels;
             exiti      = Some exiti;
             errorexiti = Some errorexiti;
-          } 
+          }
           in
 
           let lasti = aux_statement (Some headeri , info) st in
-          lasti +> do_option (fun lasti -> 
+          lasti +> do_option (fun lasti ->
             (* todo? if don't have a lasti ? no EndNode ? CTL will work ? *)
             let endi = !g +> add_node EndNode lbl_0 "[end]" in
             !g#add_arc ((lasti, endi), Direct)
           )
-          
 
-      | Ast_c.DefineDoWhileZero ((st,_e), ii) -> 
-          let headerdoi = 
+
+      | Ast_c.DefineDoWhileZero ((st,_e), ii) ->
+          let headerdoi =
             !g +> add_node (DefineDoWhileZeroHeader ((),ii)) lbl_0 "do0" in
           !g#add_arc ((headeri, headerdoi), Direct);
           let info = initial_info in
           let lasti = aux_statement (Some headerdoi , info) st in
-          lasti +> do_option (fun lasti -> 
+          lasti +> do_option (fun lasti ->
             let endi = !g +> add_node EndNode lbl_0 "[end]" in
             !g#add_arc ((lasti, endi), Direct)
           )
 
-      | Ast_c.DefineFunction def -> 
+      | Ast_c.DefineFunction def ->
           aux_definition headeri def;
 
-      | Ast_c.DefineText (s, s_ii) -> 
+      | Ast_c.DefineText (s, s_ii) ->
           raise (Error(Define(pinfo_of_ii ii)))
-      | Ast_c.DefineEmpty -> 
+      | Ast_c.DefineEmpty ->
           let endi = !g +> add_node EndNode lbl_0 "[end]" in
           !g#add_arc ((headeri, endi),Direct);
-      | Ast_c.DefineInit _ -> 
+      | Ast_c.DefineInit _ ->
           raise (Error(Define(pinfo_of_ii ii)))
-      | Ast_c.DefineTodo -> 
+      | Ast_c.DefineTodo ->
           raise (Error(Define(pinfo_of_ii ii)))
 
 (* old:
-      | Ast_c.DefineText (s, ii) -> 
+      | Ast_c.DefineText (s, ii) ->
           let endi = !g +> add_node EndNode lbl_0 "[end]" in
           !g#add_arc ((headeri, endi),Direct);
-      | Ast_c.DefineInit _ -> 
+      | Ast_c.DefineInit _ ->
           let endi = !g +> add_node EndNode lbl_0 "[end]" in
           !g#add_arc ((headeri, endi),Direct);
-      | Ast_c.DefineTodo -> 
+      | Ast_c.DefineTodo ->
           let endi = !g +> add_node EndNode lbl_0 "[end]" in
           !g#add_arc ((headeri, endi),Direct);
 *)
       );
 
       Some !g
-      
+
 
   | _ -> None
 
@@ -1278,18 +1279,18 @@ let annotate_loop_nodes g =
   let firsti = Control_flow_c.first_node g in
 
   (* just for opti a little *)
-  let already = Hashtbl.create 101 in 
+  let already = Hashtbl.create 101 in
 
-  g +> Ograph_extended.dfs_iter_with_path firsti (fun xi path -> 
+  g +> Ograph_extended.dfs_iter_with_path firsti (fun xi path ->
     Hashtbl.add already xi true;
     let succ = g#successors xi in
     let succ = succ#tolist in
-    succ +> List.iter (fun (yi,_edge) -> 
+    succ +> List.iter (fun (yi,_edge) ->
       if Hashtbl.mem already yi && List.mem yi (xi::path)
       then
         let node = g#nodes#find yi in
         let ((node2, nodeinfo), nodestr) = node in
-        let node' = ((node2, {nodeinfo with is_loop = true}), (nodestr ^ "*")) 
+        let node' = ((node2, {nodeinfo with is_loop = true}), (nodestr ^ "*"))
         in g#replace_node (yi, node');
     );
   );
@@ -1304,33 +1305,33 @@ let annotate_loop_nodes g =
 
 (* the second phase, deadcode detection. Old code was raising DeadCode if
  * lasti = None, but maybe not. In fact if have 2 return in the then
- * and else of an if ? 
- * 
+ * and else of an if ?
+ *
  * alt: but can assert that at least there exist
  * a node to exiti, just check #pred of exiti.
- * 
- * Why so many deadcode in Linux ? Ptet que le label est utilisé 
+ *
+ * Why so many deadcode in Linux ? Ptet que le label est utilisé
  * mais dans le corps d'une macro et donc on le voit pas :(
- * 
+ *
  *)
-let deadcode_detection g = 
+let deadcode_detection g =
 
-  g#nodes#iter (fun (k, node) -> 
+  g#nodes#iter (fun (k, node) ->
     let pred = g#predecessors k in
-    if pred#null then 
+    if pred#null then
       (match unwrap node with
-      (* old: 
+      (* old:
        * | Enter -> ()
-       * | EndStatement _ -> pr2 "deadcode sur fake node, pas grave"; 
+       * | EndStatement _ -> pr2 "deadcode sur fake node, pas grave";
        *)
       | TopNode -> ()
       | FunHeader _ -> ()
       | ErrorExit -> ()
       | Exit -> ()     (* if have 'loop: if(x) return; i++; goto loop' *)
       | SeqEnd _ -> () (* todo?: certaines '}' deviennent orphelins *)
-      | x -> 
+      | x ->
           (match Control_flow_c.extract_fullstatement node with
-          | Some st -> 
+          | Some st ->
               let ii = Ast_c.get_ii_st_take_care st in
               raise (Error (DeadCode (Some (pinfo_of_ii ii))))
           | _ -> pr2 "CFG: orphelin nodes, maybe something weird happened"
@@ -1342,10 +1343,10 @@ let deadcode_detection g =
 (* special_cfg_braces: the check are really specific to the way we
  * have build our control_flow, with the { } in the graph so normally
  * all those checks here are useless.
- * 
+ *
  * ver1: to better error reporting, to report earlier the message, pass
  * the list of '{' (containing morover a brace_identifier) instead of
- * just the depth. 
+ * just the depth.
  *)
 
 let (check_control_flow: cflow -> unit) = fun g ->
@@ -1356,60 +1357,60 @@ let (check_control_flow: cflow -> unit) = fun g ->
 
   let print_trace_error xs =  pr2 "PB with flow:";  Common.pr2_gen xs; in
 
-  let rec dfs (nodei, (* Depth depth,*) startbraces,  trace)  = 
+  let rec dfs (nodei, (* Depth depth,*) startbraces,  trace)  =
     let trace2 = nodei::trace in
-    if !visited#haskey nodei 
-    then 
+    if !visited#haskey nodei
+    then
       (* if loop back, just check that go back to a state where have same depth
          number *)
       let (*(Depth depth2)*) startbraces2 = !visited#find nodei in
       if  (*(depth = depth2)*) startbraces <> startbraces2
-      then  
-        begin 
-          pr2 (sprintf "PB with flow: the node %d has not same braces count" 
-                 nodei);  
-          print_trace_error trace2  
+      then
+        begin
+          pr2 (sprintf "PB with flow: the node %d has not same braces count"
+                 nodei);
+          print_trace_error trace2
         end
-    else 
+    else
       let children = g#successors nodei in
       let _ = visited := !visited#add (nodei, (* Depth depth*) startbraces) in
 
       (* old: good, but detect a missing } too late, only at the end
-      let newdepth = 
+      let newdepth =
         (match fst (nodes#find nodei) with
         | StartBrace i -> Depth (depth + 1)
         | EndBrace i   -> Depth (depth - 1)
         | _ -> Depth depth
-        ) 
+        )
       in
       *)
-      let newdepth = 
+      let newdepth =
         (match unwrap (nodes#find nodei),  startbraces with
         | SeqStart (_,i,_), xs  -> i::xs
-        | SeqEnd (i,_), j::xs -> 
-            if i =|= j 
+        | SeqEnd (i,_), j::xs ->
+            if i =|= j
             then xs
-            else 
-              begin 
-                pr2 (sprintf ("PB with flow: not corresponding match between }%d and excpeted }%d at node %d") i j nodei); 
-                print_trace_error trace2; 
-                xs 
+            else
+              begin
+                pr2 (sprintf ("PB with flow: not corresponding match between }%d and excpeted }%d at node %d") i j nodei);
+                print_trace_error trace2;
+                xs
               end
-        | SeqEnd (i,_), [] -> 
+        | SeqEnd (i,_), [] ->
             pr2 (sprintf "PB with flow: too much } at }%d " i);
-            print_trace_error trace2; 
+            print_trace_error trace2;
             []
         | _, xs ->  xs
-        ) 
+        )
       in
 
-   
+
       if null children#tolist
-      then 
+      then
         if (* (depth = 0) *) startbraces <> []
         then print_trace_error trace2
-      else 
-        children#tolist +> List.iter (fun (nodei,_) -> 
+      else
+        children#tolist +> List.iter (fun (nodei,_) ->
           dfs (nodei, newdepth, trace2)
         )
     in
@@ -1420,33 +1421,33 @@ let (check_control_flow: cflow -> unit) = fun g ->
 (* Error report *)
 (*****************************************************************************)
 
-let report_error error = 
-  let error_from_info info = 
+let report_error error =
+  let error_from_info info =
     Common.error_message_short info.file ("", info.charpos)
   in
   match error with
-  | DeadCode          infoopt -> 
+  | DeadCode          infoopt ->
       (match infoopt with
       | None ->   pr2 "FLOW: deadcode detected, but cant trace back the place"
       | Some info -> pr2 ("FLOW: deadcode detected: " ^ error_from_info info)
       )
-  | CaseNoSwitch      info -> 
+  | CaseNoSwitch      info ->
       pr2 ("FLOW: case without corresponding switch: " ^ error_from_info info)
-  | OnlyBreakInSwitch info -> 
+  | OnlyBreakInSwitch info ->
       pr2 ("FLOW: only break are allowed in switch: " ^ error_from_info info)
-  | WeirdSwitch info -> 
+  | WeirdSwitch info ->
       pr2 ("FLOW: weird switch: " ^ error_from_info info)
-  | NoEnclosingLoop   (info) -> 
+  | NoEnclosingLoop   (info) ->
       pr2 ("FLOW: can't find enclosing loop: " ^ error_from_info info)
   | GotoCantFindLabel (s, info) ->
       pr2 ("FLOW: cant jump to " ^ s ^ ": because we can't find this label")
-  | NoExit info -> 
+  | NoExit info ->
       pr2 ("FLOW: can't find exit or error exit: " ^ error_from_info info)
-  | DuplicatedLabel s -> 
+  | DuplicatedLabel s ->
       pr2 ("FLOW: duplicate label " ^ s)
-  | NestedFunc  -> 
+  | NestedFunc  ->
       pr2 ("FLOW: not handling yet nested function")
-  | ComputedGoto -> 
+  | ComputedGoto ->
       pr2 ("FLOW: not handling computed goto yet")
   | Define info ->
       pr2 ("Unsupported form of #define: " ^ error_from_info info)
