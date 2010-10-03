@@ -20,6 +20,8 @@ module type GRAPH =
     val extract_is_loop : cfg -> node -> bool
     val print_node :      node -> unit
     val size :            cfg -> int
+    val print_graph :     cfg -> string option ->
+      (node * string) list -> (node * string) list -> string -> unit
   end
 
 module OGRAPHEXT_GRAPH :
@@ -62,3 +64,7 @@ module CTL_ENGINE :
 
 	val print_bench : unit -> unit
       end
+
+val get_graph_files : unit -> string list
+val get_graph_comp_files : string -> string list
+	  

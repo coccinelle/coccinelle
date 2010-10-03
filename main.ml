@@ -89,7 +89,7 @@ let quiet_profile = (
     Flag_parsing_cocci.show_iso_failures;
     Flag_ctl.verbose_ctl_engine;
     Flag_ctl.verbose_match;
-    Flag_engine.debug_engine;
+    Flag_matcher.debug_engine;
     Flag_parsing_c.debug_unparsing;
     Flag_parsing_c.verbose_type;
     Flag_parsing_c.verbose_parsing;
@@ -116,7 +116,7 @@ let pad_profile = (
     Flag_parsing_cocci.show_iso_failures;
     Flag_ctl.verbose_ctl_engine;
     Flag_ctl.verbose_match;
-    Flag_engine.debug_engine;
+    Flag_matcher.debug_engine;
     Flag_parsing_c.debug_unparsing;
     Flag_parsing_c.verbose_type;
     Flag_parsing_c.verbose_parsing;
@@ -197,7 +197,7 @@ let short_options = [
     "  guess what";
 
   "-date",   Arg.Unit (fun () -> 
-    pr2 "version: $Date: 2008/10/11 16:22:38 $";
+    pr2 "version: $Date: 2008/11/18 20:37:55 $";
     raise (Common.UnixExit 0)
     ), 
   "   guess what";
@@ -264,8 +264,10 @@ let other_options = [
   "",
   [
     "-verbose_ctl_engine",   Arg.Set Flag_ctl.verbose_ctl_engine, " ";
-    "-verbose_match",   Arg.Set Flag_ctl.verbose_match, " ";
-    "-verbose_engine",       Arg.Set Flag_engine.debug_engine,    " ";
+    "-verbose_match",        Arg.Set Flag_ctl.verbose_match, " ";
+    "-verbose_engine",       Arg.Set Flag_matcher.debug_engine,    " ";
+    "-graphical_trace",      Arg.Set Flag_ctl.graphical_trace, "  generate a pdf file representing the matching process";
+    "-gt_without_label",     Arg.Set Flag_ctl.gt_without_label, "  remove graph label (requires option -graphical_trace)";
 
     "-no_parse_error_msg", Arg.Clear Flag_parsing_c.verbose_parsing, " ";
     "-no_type_error_msg",  Arg.Clear Flag_parsing_c.verbose_type, " ";
@@ -294,7 +296,7 @@ let other_options = [
     "-filter_msg",      Arg.Set  Flag_parsing_c.filter_msg , 
     "  filter some cpp message when the macro is a \"known\" cpp construct";
     "-filter_define_error",Arg.Set Flag_parsing_c.filter_define_error,"  ";
-    "-filter_classic_passed",Arg.Set Flag_parsing_c.filter_classic_passed,"  ";
+    "-filter_passed_level", Arg.Set_int Flag_parsing_c.filter_passed_level,"  ";
 
     "-debug_cfg",          Arg.Set Flag_parsing_c.debug_cfg , "  ";
     "-debug_unparsing",      Arg.Set  Flag_parsing_c.debug_unparsing, "  ";
@@ -365,26 +367,27 @@ let other_options = [
     "-loop",              Arg.Set Flag_ctl.loop_in_src_code,    " ";
 
     "-l1",                Arg.Clear Flag_parsing_c.label_strategy_2, " ";
-    "-ifdef",              Arg.Set Flag_parsing_c.ifdef_to_if, 
-    "   convert ifdef to if (buggy!)";
+    "-ifdef_to_if",              Arg.Set Flag_cocci.ifdef_to_if, 
+    "   convert ifdef to if (experimental)";
+
     "-noif0_passing",   Arg.Clear Flag_parsing_c.if0_passing, 
     " ";
     "-noadd_typedef_root",   Arg.Clear Flag_parsing_c.add_typedef_root, " ";
     (* could use Flag_parsing_c.options_algo instead *)
 
 
-    "-disallow_nested_exps", Arg.Set Flag_engine.disallow_nested_exps,
+    "-disallow_nested_exps", Arg.Set Flag_matcher.disallow_nested_exps,
        "disallow an expresion pattern from matching a term and its subterm";
     "-disable_worth_trying_opt", Arg.Clear Flag_cocci.worth_trying_opt,
     "  ";
     "-only_return_is_error_exit",
-    Arg.Set Flag_engine.only_return_is_error_exit,
+    Arg.Set Flag_matcher.only_return_is_error_exit,
     "if this flag is not set, then break and continue are also error exits";
     (* the following is a hack to make it easier to add code in sgrep-like
        code, essentially to compensate for the fact that we don't have
        any way of printing things out *)
     "-allow_inconsistent_paths",
-    Arg.Set Flag_engine.allow_inconsistent_paths,
+    Arg.Set Flag_matcher.allow_inconsistent_paths,
     "if this flag is set don't check for inconsistent paths; dangerous";    
   ];
 
@@ -504,11 +507,14 @@ let adjust_stdin cfile k =
   then k()
   else
     let newin = 
-      let (dir, base, ext) = Common.dbe_of_filename cfile in
-      let varfile = Common.filename_of_dbe (dir, base, "var") in
-      if ext = "c" && Common.lfile_exists varfile
-      then Some varfile
-      else None in
+      try
+        let (dir, base, ext) = Common.dbe_of_filename cfile in
+        let varfile = Common.filename_of_dbe (dir, base, "var") in
+        if ext = "c" && Common.lfile_exists varfile
+        then Some varfile
+        else None 
+      with Invalid_argument("Filename.chop_extension") -> None
+    in
     Common.redirect_stdin_opt newin k
 
 let glimpse_filter (coccifile, isofile) dir = 

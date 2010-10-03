@@ -5,6 +5,8 @@ open Common
  * where I can not allow any exception to stop mount.lfs.
  * 
  * src: Jane Street Core library.
+ * update: Normally no more needed in OCaml 3.11 as part of the 
+ *  default runtime.
  *)
 external print : unit -> unit = "print_exception_backtrace_stub" "noalloc"
 

@@ -107,13 +107,10 @@ BYTECODE_STATIC=-custom
 ##############################################################################
 # Top rules
 ##############################################################################
-eclipse: depend all
-configure:
-	./configure
-
 all: rec $(EXEC)
 opt: rec.opt $(EXEC).opt
 all.opt: opt
+top: $(EXEC).top
 
 rec:
 	set -e; for i in $(MAKESUBDIRS); \
@@ -123,6 +120,9 @@ rec.opt:
 clean::
 	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i clean; done 
 
+eclipse: depend all
+configure:
+	./configure
 
 $(EXEC): $(LIBS) $(OBJS)
 	$(OCAMLC) $(BYTECODE_STATIC) -o $@ $(SYSLIBS)  $^
@@ -214,6 +214,7 @@ OCAMLVERSION=$(shell ocaml -version |perl -p -e 's/.*version (.*)/$$1/;')
 #  cvs update -d -P
 #  touch **/*
 #  make licensify
+#  remember to comment the -g -dtypes in this Makefile
 
 # Procedure to do each time:
 #  cvs update
@@ -319,6 +320,17 @@ syncwiki:
 darcsweb:
 #	@echo pull from ~/public_html/darcs/c-coccinelle and c-commons and lib-xxx
 
+DARCSFORESTS=commons \
+ parsing_c parsing_cocci engine
+
+update_darcs:
+	darcs pull
+	set -e; for i in $(DARCSFORESTS); do cd $$i; darcs pull; cd ..; done 
+
+#darcs diff -u
+diff_darcs:
+	set -e; for i in $(DARCSFORESTS); do cd $$i; darcs diff -u; cd ..; done 
+
 
 ##############################################################################
 # Developer rules
@@ -346,8 +358,9 @@ tags:
 
 dependencygraph:
 	find  -name "*.ml" |grep -v "scripts" | xargs ocamldep -I commons -I globals -I ctl -I parsing_cocci -I parsing_c -I engine -I popl09 -I extra > /tmp/dependfull.depend
-	ocamldot -fullgraph /tmp/dependfull.depend > /tmp/dependfull.dot
+	ocamldot -lr /tmp/dependfull.depend > /tmp/dependfull.dot
 	dot -Tps /tmp/dependfull.dot > /tmp/dependfull.ps
+	ps2pdf /tmp/dependfull.ps /tmp/dependfull.pdf
 
 ##############################################################################
 # Misc rules

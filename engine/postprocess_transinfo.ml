@@ -40,7 +40,7 @@ let get_extra _ =
 let read_fresh_id () =
   try 
     let s = read_line () in
-    match Parse_c.tokens_string s with
+    match Parse_c.tokens_of_string s with
       [Parser_c.TIdent _; Parser_c.EOF _] -> s
     | _ -> failwith ("wrong fresh id: " ^ s)
   with End_of_file -> get_extra()

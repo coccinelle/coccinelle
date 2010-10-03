@@ -1143,17 +1143,18 @@ dot_expressions:
   TEllipsis { Ast0.wrap(Ast0.Edots(P.clt2mcode "..." $1,None)) }
 | nest_expressions { $1 }
 
+/* not clear what whencode would mean, so just drop it */
 nest_expressions:
-  TOEllipsis w=option(whenexp) e=expr_dots(TEllipsis) c=TCEllipsis
+  TOEllipsis e=expr_dots(TEllipsis) c=TCEllipsis
     { Ast0.wrap(Ast0.NestExpr(P.clt2mcode "<..." $1,
 			      Ast0.wrap(Ast0.DOTS(e (P.mkedots "..."))),
-			      P.clt2mcode "...>" c, w, false)) }
-| TPOEllipsis w=option(whenexp) e=expr_dots(TEllipsis) c=TPCEllipsis
+			      P.clt2mcode "...>" c, None, false)) }
+| TPOEllipsis e=expr_dots(TEllipsis) c=TPCEllipsis
     { Ast0.wrap(Ast0.NestExpr(P.clt2mcode "<+..." $1,
 			      Ast0.wrap(Ast0.DOTS(e (P.mkedots "..."))),
-			      P.clt2mcode "...+>" c, w, true)) }
+			      P.clt2mcode "...+>" c, None, true)) }
 
-whenexp: TWhen TNotEq w=eexpr TLineEnd { w }
+//whenexp: TWhen TNotEq w=eexpr TLineEnd { w }
 
 basic_expr(recurser,primary_extra):
   assign_expr(recurser,primary_extra)                        { $1 }

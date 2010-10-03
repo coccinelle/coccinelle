@@ -52,9 +52,9 @@ let rec pp_binding_kind = function
       pp (Common.sprintf ("poss[%s]")
 	    (String.concat ", "
 	       (List.map
-		  (function (fl,(minl,minc),(maxl,maxc)) ->
-		    Printf.sprintf "(%s,(%d,%d),(%d,%d))"
-		      fl minl minc maxl maxc)
+		  (function (fl,ce,(minl,minc),(maxl,maxc)) ->
+		    Printf.sprintf "(%s,%s,(%d,%d),(%d,%d))"
+		      fl ce minl minc maxl maxc)
 		  l)))
 
 and pp_binding subst = 

@@ -7,7 +7,8 @@ You must first install a recent version of
    the SmPL parser pre-generated)
  - Python and its development files (python-dev)
    (unless you run configure with the --without-python option)
-   
+ - pdftk and graphviz (with PDF support) if you want to use
+   the -graphical_trace option   
 
 Then simply type 
  ./configure

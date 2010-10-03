@@ -227,16 +227,29 @@ let dfs_iter_with_path xi f g =
   
     
 
-
-let generate_ograph_xxx g filename =
+let generate_ograph_generic g label fnode filename =
   with_open_outfile filename (fun (pr,_) ->
     pr "digraph misc {\n" ;
     pr "size = \"10,10\";\n" ;
+    (match label with
+      None -> ()
+    | Some x -> pr (Printf.sprintf "label = \"%s\";\n" x));
 
     let nodes = g#nodes in
-    nodes#iter (fun (k,(node, s)) -> 
+    nodes#iter (fun (k,node) -> 
+      let (str,border_color,inner_color) = fnode (k, node) in
+      let color =
+	match inner_color with
+	  None ->
+	    (match border_color with
+	      None -> ""
+	    | Some x -> Printf.sprintf ", style=\"setlinewidth(3)\", color = %s" x)
+	| Some x ->
+	    (match border_color with
+	      None -> Printf.sprintf ", style=\"setlinewidth(3),filled\", fillcolor = %s" x 
+	    | Some x' -> Printf.sprintf ", style=\"setlinewidth(3),filled\", fillcolor = %s, color = %s" x x') in
      (* so can see if nodes without arcs were created *) 
-      pr (sprintf "%d [label=\"%s   [%d]\"];" k s k); 
+      pr (sprintf "%d [label=\"%s   [%d]\"%s];\n" k str k color)
     );
 
     nodes#iter (fun (k,node) -> 
@@ -247,11 +260,34 @@ let generate_ograph_xxx g filename =
     );
     pr "}\n" ;
     );
-  let _status = 
-    Unix.system ("dot " ^ filename ^ " -Tps  -o " ^ filename ^ ".ps;") in
   ()
 
-let launch_gv filename =
+
+let generate_ograph_xxx g filename =
+  with_open_outfile filename (fun (pr,_) ->
+    pr "digraph misc {\n" ;
+    pr "size = \"10,10\";\n" ;
+
+    let nodes = g#nodes in
+    nodes#iter (fun (k,(node, s)) -> 
+     (* so can see if nodes without arcs were created *) 
+      pr (sprintf "%d [label=\"%s   [%d]\"];\n" k s k)
+    );
+
+    nodes#iter (fun (k,node) -> 
+      let succ = g#successors k in
+      succ#iter (fun (j,edge) ->
+        pr (sprintf "%d -> %d;\n" k j);
+      );
+    );
+    pr "}\n" ;
+    );
+  ()
+
+
+let launch_gv_cmd filename =
+  let _status = 
+    Unix.system ("dot " ^ filename ^ " -Tps  -o " ^ filename ^ ".ps;") in
   let _status = Unix.system ("gv " ^ filename ^ ".ps &")
   in
   (* zarb: I need this when I launch the program via eshell, otherwise gv
@@ -261,8 +297,12 @@ let launch_gv filename =
 
 let print_ograph_extended g filename launchgv = 
   generate_ograph_xxx g filename;
-  if launchgv then launch_gv filename
+  if launchgv then launch_gv_cmd filename
 
 let print_ograph_mutable g filename launchgv = 
   generate_ograph_xxx g filename;
-  if launchgv then launch_gv filename
+  if launchgv then launch_gv_cmd filename
+
+let print_ograph_mutable_generic g label fnode ~output_file ~launch_gv = 
+  generate_ograph_generic g label fnode output_file;
+  if launch_gv then launch_gv_cmd output_file

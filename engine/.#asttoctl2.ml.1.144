@@ -1230,7 +1230,7 @@ let dots_au is_strict toend label s wrapcode x seq_after y quantifier =
       (wrapcode
 	 (Ast.Continue(Ast.make_mcode "continue",Ast.make_mcode ";"))) in
   let stop_early v =
-    if !exists = Exists
+    if quantifier = Exists
     then CTL.False
     else if toend
     then CTL.Or(aftpred label,exitpred label)
@@ -1248,7 +1248,7 @@ let dots_au is_strict toend label s wrapcode x seq_after y quantifier =
 		 (ctl_and CTL.NONSTRICT (ctl_not v) preflabelpred)
 		 (ctl_and CTL.NONSTRICT preflabelpred
 		    (ctl_or (retpred None)
-		       (if !Flag_engine.only_return_is_error_exit
+		       (if !Flag_matcher.only_return_is_error_exit
 		       then CTL.True
 		       else
 			 (ctl_or matchcontinue
@@ -2027,7 +2027,13 @@ and statement stmt after quantified minus_quantified
 		if multi
 		then None (* not sure how to optimize this case *)
 		else Some (Common.Left stmt_dots)
-	    | Ast.Dots(_,whencode,_,_) -> Some (Common.Right whencode)
+	    | Ast.Dots(_,whencode,_,_) when
+		(List.for_all
+		   (* flow sensitive, so not optimizable *)
+		   (function Ast.WhenNotTrue(_) | Ast.WhenNotFalse(_) ->
+		      false
+		 | _ -> true) whencode) ->
+		Some (Common.Right whencode)
 	    | _ -> None)
 	| _ -> None in
       let body_code =
@@ -2065,6 +2071,8 @@ and statement stmt after quantified minus_quantified
 					  new_quantified4 new_mquantified4
 					  label llabel slabel true true in
 				      ctl_or prev x
+				  | Ast.WhenNotTrue(_) | Ast.WhenNotFalse(_) ->
+				      failwith "unexpected"
 				  | Ast.WhenModifier(Ast.WhenAny) -> CTL.False
 				  | Ast.WhenModifier(_) -> prev)
 			      CTL.False whencode))
@@ -2078,6 +2086,8 @@ and statement stmt after quantified minus_quantified
 				       label llabel slabel true in
 				   ctl_and prev x
 			       | Ast.WhenNot(sl) -> prev
+			       | Ast.WhenNotTrue(_) | Ast.WhenNotFalse(_) ->
+				   failwith "unexpected"
 			       | Ast.WhenModifier(Ast.WhenAny) -> CTL.True
 			       | Ast.WhenModifier(_) -> prev)
 			   CTL.True whencode) in

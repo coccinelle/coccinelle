@@ -109,7 +109,7 @@ module type PARAM =
       matcher
 
     val distrf_struct_fields :
-      (Ast_cocci.meta_name Ast_cocci.mcode, Ast_c.field Ast_c.wrap list) 
+      (Ast_cocci.meta_name Ast_cocci.mcode, Ast_c.field list) 
       matcher
 
     val distrf_cst :
@@ -145,7 +145,7 @@ module type PARAM =
       Ast_cocci.inherited ->
       Ast_cocci.meta_name Ast_cocci.mcode * Ast_c.metavar_binding_kind *
 	  (* pos info, if needed *)
-	  (unit -> Common.filename * Ast_c.posl * Ast_c.posl) ->
+	  (unit -> Common.filename * string * Ast_c.posl * Ast_c.posl) ->
       (unit -> tin -> 'x tout) -> (tin -> 'x tout)
 
     val check_constraints :

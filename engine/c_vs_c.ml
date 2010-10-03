@@ -143,6 +143,7 @@ and typeC tya tyb =
             let sxopt = saopt in
             let ii_b_sx = ii_b_sa in
 
+            (* todo?  iso on name or argument ? *)
             (ba =:= bb && saopt =*= sbopt) >&&>
             fullType ta tb >>= (fun tx -> 
               let paramx = (((bx, sxopt, tx), ii_b_sx)) in
@@ -198,7 +199,9 @@ and typeC tya tyb =
             match xfielda, xfieldb with 
             | EmptyField, EmptyField -> return ((EmptyField, iix)::xs)
 
-            | FieldDeclList fa, FieldDeclList fb -> 
+            | DeclarationField (FieldDeclList (fa, iipta)), 
+              DeclarationField (FieldDeclList (fb, iiptb)) -> 
+                let iipt = iipta in (* TODO ?*)
                 (List.length fa =|= List.length fb) >&&> 
 
                 Common.zip fa fb +> List.fold_left 
@@ -224,7 +227,8 @@ and typeC tya tyb =
                     )
                   ) (return [])
                  >>= (fun fx -> 
-                   return ((FieldDeclList (List.rev fx), iix)::xs)
+                   return (((DeclarationField 
+                               (FieldDeclList (List.rev fx,iipt))), iix)::xs)
                  )
             | _ -> fail
           )

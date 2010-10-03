@@ -70,6 +70,7 @@ open Ast_c
 (*****************************************************************************)
 
 
+(* ---------------------------------------------------------------------- *)
 (* The string is for debugging. Used by Ograph_extended.print_graph. 
  * The int list are Labels. Trick used for CTL engine. Must not 
  * transform that in a triple or record because print_graph would
@@ -85,6 +86,7 @@ type node = node1 * string
     }
     and node2 =
 
+  (* ------------------------ *)
   (* For CTL to work, we need that some nodes loop over itself. We
    * need that every nodes have a successor. Julia also want to go back
    * indefinitely. So must tag some nodes as the beginning and end of
@@ -101,10 +103,12 @@ type node = node1 * string
    | TopNode 
    | EndNode 
 
-   | FunHeader of (string * functionType * storage) wrap
+   (* ------------------------ *)
+   | FunHeader of definition (* but empty body *)
 
    | Decl   of declaration
 
+   (* ------------------------ *)
    (* flow_to_ast: cocci: Need the { and } in the control flow graph also
     * because the coccier can express patterns containing such { }.
     *
@@ -183,6 +187,11 @@ type node = node1 * string
   | Return     of statement * unit wrap
   | ReturnExpr of statement * expression wrap
 
+  (* ------------------------ *)
+  | IfdefHeader of ifdef_directive
+  | IfdefElse of ifdef_directive
+  | IfdefEndif of ifdef_directive
+
 
   (* ------------------------ *)
   | DefineHeader of string wrap * define_kind
@@ -190,8 +199,9 @@ type node = node1 * string
   | DefineExpr of expression 
   | DefineType of fullType
   | DefineDoWhileZeroHeader of unit wrap
+  | DefineTodo
 
-  | Include of inc_file wrap * (include_rel_pos option ref * bool)
+  | Include of includ
 
   (* obsolete? *)
   | MacroTop of string * argument wrap2 list * il 
@@ -211,8 +221,6 @@ type node = node1 * string
 
   | Asm of statement * asmbody wrap
   | MacroStmt of statement * unit wrap
-
-  | Ifdef of statement * unit wrap
 
   (* ------------------------ *)
   (* some control nodes *)
@@ -316,11 +324,13 @@ let extract_fullstatement node =
   | MacroStmt (st, _) -> Some st
   | MacroIterHeader (st, _) -> Some st
 
-  | Ifdef _ -> None (* other ? *)
-
   | Include _ 
   | DefineHeader _ | DefineType _ | DefineExpr  _ | DefineDoWhileZeroHeader _
+  | DefineTodo
   | MacroTop _
+      -> None
+
+  | IfdefHeader _ | IfdefElse _ | IfdefEndif _ 
       -> None
 
   | SeqStart (st,_,_) 

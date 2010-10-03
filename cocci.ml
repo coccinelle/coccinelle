@@ -46,11 +46,15 @@ let cprogram_of_file file =
 
 let cprogram_of_file_cached file = 
   let (program2, _stat) = Parse_c.parse_cache file in
-  program2
-
+  if !Flag_cocci.ifdef_to_if
+  then 
+    program2 +> Parse_c.with_program2 (fun asts -> 
+      Cpp_ast_c.cpp_ifdef_statementize asts
+    )
+  else program2
 
 let cfile_of_program program2_with_ppmethod outf = 
-  Unparse_c2.pp_program program2_with_ppmethod outf
+  Unparse_c.pp_program program2_with_ppmethod outf
 
 (* for memoization, contains only one entry, the one for the SP *)
 let _hparse = Hashtbl.create 101
@@ -272,18 +276,29 @@ let show_or_not_ctl_text a b c =
 
 
 (* running information *)
+let get_celem celem : string = 
+  match celem with 
+      Ast_c.Definition ({Ast_c.f_name = funcs;},_) -> funcs
+    | Ast_c.Declaration
+	(Ast_c.DeclList ([{Ast_c.v_namei = Some ((s, _),_);}, _], _)) -> s
+    | _ -> ""
 
 let show_or_not_celem2 prelude celem = 
-  if !Flag.show_trying then 
+  let (tag,trying) =
   (match celem with 
-  | Ast_c.Definition ((funcs,_,_,_c),_) -> 
-      pr2 (prelude ^ " function: " ^ funcs);
+  | Ast_c.Definition ({Ast_c.f_name = funcs;},_) -> 
+      Flag.current_element := funcs;
+      (" function: ",funcs)
   | Ast_c.Declaration
-      (Ast_c.DeclList ([(Some ((s, _),_), typ, sto, _local), _], _)) ->
-      pr2 (prelude ^ " variable " ^ s);
-  | _ -> 
-      pr2 (prelude ^ " something else");
-  )
+      (Ast_c.DeclList ([{Ast_c.v_namei = Some ((s, _),_);}, _], _)) ->
+      Flag.current_element := s;
+      (" variable ",s);
+  | _ ->
+      Flag.current_element := "something_else";
+      (" ","something else");
+  ) in
+  if !Flag.show_trying then pr2 (prelude ^ tag ^ trying)
+  
 let show_or_not_celem a b  = 
   Common.profile_code "show_xxx" (fun () -> show_or_not_celem2 a b)
 
@@ -437,7 +452,7 @@ let sp_contain_typed_metavar rules =
  * serio.c is related we think to #include <linux/serio.h> 
  *)
 
-let includes_to_parse xs = 
+let (includes_to_parse: (Common.filename * Parse_c.program2) list -> 'a) = fun xs ->
   if !Flag_cocci.no_includes
   then []
   else
@@ -446,7 +461,8 @@ let includes_to_parse xs =
       
       cs +> Common.map_filter (fun (c,_info_item) -> 
 	match c with
-	| Ast_c.Include ((x,ii),info_h_pos)  -> 
+	| Ast_c.CppTop (Ast_c.Include {Ast_c.i_include = ((x,ii));
+                         i_rel_pos = info_h_pos;})  -> 
             (match x with
             | Ast_c.Local xs -> 
 		let f = Filename.concat dir (Common.join "/" xs) in
@@ -567,7 +583,9 @@ let compute_new_prefixes xs =
 let rec update_include_rel_pos cs =
   let only_include = cs +> Common.map_filter (fun c -> 
     match c with 
-    | Ast_c.Include ((x,_),(aref, inifdef)) ->
+    | Ast_c.CppTop (Ast_c.Include {Ast_c.i_include = ((x,_));
+                     i_rel_pos = aref;
+                     i_is_in_ifdef = inifdef}) ->
         (match x with
         | Ast_c.Wierd _ -> None
         | _ -> 
@@ -676,13 +694,36 @@ let g_contain_typedmetavar = ref false
 let last_env_toplevel_c_info xs =
   (Common.last xs).env_typing_after
 
-let concat_headers_and_c ccs = 
-  (List.concat (ccs +> List.map (fun x -> x.asts)))
+let concat_headers_and_c (ccs: file_info list) 
+    : (toplevel_c_info * string) list = 
+  (List.concat (ccs +> List.map (fun x -> 
+				   x.asts +> List.map (fun x' ->
+							 (x', x.fname)))))
 
 let for_unparser xs = 
   xs +> List.map (fun x -> 
-    (x.ast_c, (x.fullstring, x.tokens_c)), Unparse_c2.PPviastr
+    (x.ast_c, (x.fullstring, x.tokens_c)), Unparse_c.PPviastr
   )
+
+let gen_pdf_graph () =
+  (Ctl_engine.get_graph_files ()) +> List.iter (fun outfile -> 
+  Printf.printf "Generation of %s%!" outfile;
+  let filename_stack = Ctl_engine.get_graph_comp_files outfile in
+  List.iter (fun filename ->
+    ignore (Unix.system ("dot " ^ filename ^ " -Tpdf  -o " ^ filename ^ ".pdf;"))
+	    ) filename_stack;
+  let (head,tail) = (List.hd filename_stack, List.tl filename_stack) in
+    ignore(Unix.system ("cp " ^ head ^ ".pdf " ^ outfile ^ ".pdf;"));
+    tail +> List.iter (fun filename ->
+      ignore(Unix.system ("mv " ^ outfile ^ ".pdf /tmp/tmp.pdf;"));
+      ignore(Unix.system ("pdftk " ^ filename ^ ".pdf /tmp/tmp.pdf cat output " ^ outfile ^ ".pdf"));
+	      );
+    ignore(Unix.system ("rm /tmp/tmp.pdf;"));
+    List.iter (fun filename ->
+	ignore (Unix.system ("rm " ^ filename ^ " " ^ filename ^ ".pdf;"))
+	    ) filename_stack;
+  Printf.printf " - Done\n")
+
 
 (* --------------------------------------------------------------------- *)
 let prepare_cocci ctls free_var_lists negated_pos_lists
@@ -789,7 +830,7 @@ let rebuild_info_program cs file isexp =
       |	None ->
 	  let file = Common.new_temp_file "cocci_small_output" ".c" in
 	  cfile_of_program 
-            [(c.ast_c, (c.fullstring, c.tokens_c)), Unparse_c2.PPnormal] 
+            [(c.ast_c, (c.fullstring, c.tokens_c)), Unparse_c.PPnormal] 
             file;
 	  
           (* Common.command2 ("cat " ^ file); *)
@@ -822,7 +863,7 @@ let rebuild_info_c_and_headers ccs isexp =
 
 
 
-let prepare_c files = 
+let prepare_c files : file_info list = 
   let cprograms = List.map cprogram_of_file_cached files in
   let includes = includes_to_parse (zip files cprograms) in
 
@@ -976,7 +1017,7 @@ let rec apply_python_rule r cache newes e rules_that_have_matched
       else (cache, merge_env [(e, rules_that_have_matched)] newes)
     end
 
-and apply_cocci_rule r rules_that_have_ever_matched es ccs =
+and apply_cocci_rule r rules_that_have_ever_matched es (ccs:file_info list ref) =
   Common.profile_code r.rulename (fun () -> 
     show_or_not_rule_name r.ast_rule r.ruleid;
     show_or_not_ctl_text r.ctl r.ast_rule r.ruleid;
@@ -1020,13 +1061,13 @@ and apply_cocci_rule r rules_that_have_ever_matched es ccs =
       
                       (* looping over the functions and toplevel elements in
 			 .c and .h *)
-		    concat_headers_and_c !ccs +> List.iter (fun c -> 
+		    concat_headers_and_c !ccs +> List.iter (fun (c,f) -> 
 		      if c.flow <> None 
 		      then
                         (* does also some side effects on c and r *)
 			let processed =
 			  process_a_ctl_a_env_a_toplevel r relevant_bindings
-			    c in
+			    c f in
 			match processed with
 			| None -> ()
 			| Some newbindings -> 
@@ -1098,7 +1139,7 @@ and merge_env new_e old_e =
 	| _ -> failwith "duplicate environment entries")
     old_e new_e
 
-and bigloop2 rs ccs = 
+and bigloop2 rs (ccs: file_info list) = 
   let es = ref [(Ast_c.emptyMetavarsBinding,[])] in
   let ccs = ref ccs in
   let rules_that_have_ever_matched = ref [] in
@@ -1131,7 +1172,7 @@ and bigloop2 rs ccs =
 		    apply_python_rule r cache newes e rules_that_have_matched
 		      rules_that_have_ever_matched
 		| "test" ->
-		    concat_headers_and_c !ccs +> List.iter (fun c -> 
+		    concat_headers_and_c !ccs +> List.iter (fun (c,_) -> 
 		      if c.flow <> None 
 		      then
 			Printf.printf "Flow: %s\r\nFlow!\r\n%!" c.fullstring);
@@ -1248,9 +1289,10 @@ and bigloop a b =
 
 
 (* does side effects on C ast and on Cocci info rule *)
-and process_a_ctl_a_env_a_toplevel2 r e c = 
+and process_a_ctl_a_env_a_toplevel2 r e c f = 
  indent_do (fun () -> 
   show_or_not_celem "trying" c.ast_c;
+  Flag.currentfile := Some (f ^ ":" ^get_celem c.ast_c);
   let (trans_info, returned_any_states, inherited_bindings, newbindings) = 
     Common.save_excursion Flag_ctl.loop_in_src_code (fun () -> 
       Flag_ctl.loop_in_src_code := !Flag_ctl.loop_in_src_code||c.contain_loop;
@@ -1281,7 +1323,7 @@ and process_a_ctl_a_env_a_toplevel2 r e c =
          * trasformation au fichier concerne. *)
 
         (* modify ast via side effect *)
-        ignore(Transformation3.transform r.rulename r.dropped_isos
+        ignore(Transformation_c.transform r.rulename r.dropped_isos
                   inherited_bindings trans_info (Common.some c.flow));
       with Timeout -> raise Timeout | UnixExit i -> raise (UnixExit i)
     end;
@@ -1290,9 +1332,9 @@ and process_a_ctl_a_env_a_toplevel2 r e c =
   end
  )
    
-and process_a_ctl_a_env_a_toplevel  a b c = 
+and process_a_ctl_a_env_a_toplevel  a b c f= 
   Common.profile_code "process_a_ctl_a_env_a_toplevel" 
-    (fun () -> process_a_ctl_a_env_a_toplevel2 a b c)
+    (fun () -> process_a_ctl_a_env_a_toplevel2 a b c f)
    
 
 
@@ -1355,6 +1397,7 @@ let full_engine2 (coccifile, isofile) cfiles =
 
     if !Flag.show_misc then Common.pr_xxxxxxxxxxxxxxxxx ();
     if !Flag.show_misc then pr "Finished";
+    if !Flag_ctl.graphical_trace then gen_pdf_graph ();
     if !Flag.show_misc then Common.pr_xxxxxxxxxxxxxxxxx();
 
     c_infos' +> List.map (fun c_or_h -> 

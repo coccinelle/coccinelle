@@ -580,22 +580,24 @@ exception TyConv
 let rec reverse_type ty =
   match ty with
     Type_cocci.ConstVol(cv,ty) ->
-      ConstVol(reverse_const_vol cv,wrap(reverse_type ty))
+      ConstVol(reverse_const_vol cv,context_wrap(reverse_type ty))
   | Type_cocci.BaseType(bty,None) ->
       BaseType(reverse_baseType bty,None)
   | Type_cocci.BaseType(bty,Some sgn) ->
       BaseType(reverse_baseType bty,Some (reverse_sign sgn))
   | Type_cocci.Pointer(ty) ->
-      Pointer(wrap(reverse_type ty),make_mcode "*")
+      Pointer(context_wrap(reverse_type ty),make_mcode "*")
   | Type_cocci.StructUnionName(su,mv,tag) ->
       if mv
       then
 	(* not right... *)
-	StructUnionName(reverse_structUnion su,
-			Some(wrap(MetaId(make_mcode ("",tag),[],Impure))))
+	StructUnionName
+	  (reverse_structUnion su,
+	   Some(context_wrap(MetaId(make_mcode ("",tag),[],Impure))))
       else
-	StructUnionName(reverse_structUnion su,
-			Some (wrap(Id(make_mcode tag))))
+	StructUnionName
+	  (reverse_structUnion su,
+	   Some (context_wrap(Id(make_mcode tag))))
   | Type_cocci.TypeName(name) -> TypeName(make_mcode name)
   | Type_cocci.MetaType(name,_,_) ->
       MetaType(make_mcode name,Impure(*not really right*))

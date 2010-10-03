@@ -46,6 +46,8 @@ let windows = ref false
 
 let popl = ref false
 
+let ifdef_to_if = ref false
+
 let all_includes = ref false
 let include_path = ref "include"
 (* if true then when have a #include "../../xx.h", we look also for xx.h in

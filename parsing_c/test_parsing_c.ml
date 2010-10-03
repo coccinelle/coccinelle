@@ -39,12 +39,12 @@ let test_parse_gen xs ext =
      let xs = if !Flag.dir then 
      process_output_to_list ("find " ^ x ^" -name \"*.c\"") else x::xs in
   *)
-  let fullxs = Common.files_of_dir_or_files ext xs in
+  let fullxs = Common.files_of_dir_or_files_no_vcs ext xs in
 
   let stat_list = ref [] in
   let newscore  = Common.empty_score () in
 
-  (*cocci: Common.check_stack_nbfiles (List.length fullxs); *)
+  Common.check_stack_nbfiles (List.length fullxs);
 
   fullxs +> List.iter (fun file -> 
     if not (file =~ (".*\\."^ext))
@@ -62,15 +62,15 @@ let test_parse_gen xs ext =
     Common.push2 stat stat_list;
     let s = 
       sprintf "bad = %d, timeout = %B" 
-        stat.Parse_c.bad stat.Parse_c.have_timeout
+        stat.Parsing_stat.bad stat.Parsing_stat.have_timeout
     in
-    if stat.Parse_c.bad = 0 && not stat.Parse_c.have_timeout
+    if stat.Parsing_stat.bad = 0 && not stat.Parsing_stat.have_timeout
     then Hashtbl.add newscore file (Common.Ok)
     else Hashtbl.add newscore file (Common.Pb s)
   );
   
   if not (null !stat_list) 
-  then Parse_c.print_parsing_stat_list !stat_list;
+  then Parsing_stat.print_parsing_stat_list !stat_list;
   
   dirname_opt +> Common.do_option (fun dirname -> 
     pr2 "--------------------------------";
@@ -106,7 +106,6 @@ let test_parse_ch xs =
 (* ---------------------------------------------------------------------- *)
 (* file can be   "foo.c"  or "foo.c:main" *)
 let test_cfg file = 
-
   let (file, specific_func) = 
     if file =~ "\\(.*\\.c\\):\\(.*\\)"
     then 
@@ -125,8 +124,8 @@ let test_cfg file =
     let toprocess = 
       match specific_func, e with
       | None, _ -> true
-      | Some s, Ast_c.Definition (((funcs, _, _, c),_))  -> 
-          s = funcs
+      | Some s, Ast_c.Definition (defbis,_)  -> 
+          s = defbis.Ast_c.f_name
       | _, _ -> false 
     in
           
@@ -147,12 +146,12 @@ let test_cfg file =
 *)
               flow
             in
-            Ograph_extended.print_ograph_mutable flow' ("/tmp/output.dot") true
+	    let filename = Filename.temp_file "output" ".dot" in
+            Ograph_extended.print_ograph_mutable flow' (filename) true
           )
         with Ast_to_flow.Error (x) -> Ast_to_flow.report_error x
       )
   )
-
 
 
 
@@ -161,17 +160,15 @@ let test_parse_unparse infile =
   if not (infile =~ ".*\\.c") 
   then pr2 "warning: seems not a .c file";
 
-(* for cocci: to remove one day
   let (program2, _stat) = Parse_c.parse_print_error_heuristic infile in
   let program2_with_ppmethod = 
-    program2 +> List.map (fun x -> x, Unparse_c2.PPnormal)
+    program2 +> List.map (fun x -> x, Unparse_c.PPnormal)
   in
-  Unparse_c2.pp_program program2_with_ppmethod tmpfile;
+  Unparse_c.pp_program program2_with_ppmethod tmpfile;
   Common.command2 ("cat " ^ tmpfile);
   (* if want see diff of space => no -b -B *)
   Common.command2 (spf "diff -u -p  %s %s" infile tmpfile);
   (* +> Transformation.test_simple_trans1;*)
-*)
   ()
 
 
@@ -194,11 +191,10 @@ let test_type_c infile =
     )
     +> Common.uncurry Common.zip
   in
-(* for cocci: to remove one day *)
   let program2_with_ppmethod = 
-    program2 +> List.map (fun x -> x, Unparse_c2.PPnormal)
+    program2 +> List.map (fun x -> x, Unparse_c.PPnormal)
   in
-  Unparse_c2.pp_program program2_with_ppmethod tmpfile;
+  Unparse_c.pp_program program2_with_ppmethod tmpfile;
   Common.command2 ("cat " ^ tmpfile);
   ();;
 

@@ -208,9 +208,11 @@ let construct_variables mv e =
        let _ = build_variable py id_repr in
        ()
     | Some (_, Ast_c.MetaPosValList l) ->
-       let locs = List.map (function (fname,(line,col),(line_end,col_end)) ->
-		pycocci_instantiate_class "coccilib.elems.Location" (pytuple5
-		(pystring_fromstring fname,
+       let locs =
+	 List.map
+	   (function (fname,current_element,(line,col),(line_end,col_end)) ->
+		pycocci_instantiate_class "coccilib.elems.Location" (pytuple6
+		(pystring_fromstring fname,pystring_fromstring current_element,
 		pystring_fromstring (Printf.sprintf "%d" line),
 		pystring_fromstring (Printf.sprintf "%d" col),
 		pystring_fromstring (Printf.sprintf "%d" line_end),

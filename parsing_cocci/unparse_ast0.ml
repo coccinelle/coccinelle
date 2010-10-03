@@ -197,8 +197,14 @@ let rec expression e =
 	  mcode print_string rp
       | Ast0.TypeExp(ty) -> typeC ty
       | Ast0.MetaErr(name,_,_) -> mcode print_meta name
-      | Ast0.MetaExpr(name,_,ty,_,_) ->
-	  mcode print_meta name; print_types ty
+      | Ast0.MetaExpr(name,_,ty,_,pure) ->
+	  mcode print_meta name; print_types ty(*;
+	  print_string "^";
+	  (match pure with
+	    Ast0.Pure -> print_string "pure"
+	  | Ast0.Impure -> print_string "impure"
+	  | Ast0.Context -> print_string "context"
+	  | Ast0.PureContext -> print_string "pure_context")*)
       | Ast0.MetaExprList(name,_,_) -> mcode print_meta name
       | Ast0.EComma(cm) -> mcode print_string cm; print_space()
       | Ast0.DisjExpr(_,exp_list,_,_) ->

@@ -46,6 +46,10 @@ let pUNCHECK_OPT = ref true
 let pANY_NEG_OPT = ref true
 let pLazyOpt = ref true
 
+(* Nico: This stack is use for graphical traces *)
+let graph_stack = ref ([] : string list)
+let graph_hash = (Hashtbl.create 101)
+
 (*
 let pTRIPLES_CONJ_OPT = ref false
 let pTRIPLES_COMPLEMENT_OPT = ref false
@@ -125,6 +129,8 @@ module type GRAPH =
     val extract_is_loop : cfg -> node -> bool
     val print_node :      node -> unit
     val size :            cfg -> int
+    val print_graph :     cfg -> string option ->
+      (node * string) list -> (node * string) list -> string -> unit
   end
 ;;
 
@@ -153,6 +159,9 @@ end
 (* ---------------------------------------------------------------------- *)
 (* Misc. useful generic functions                                         *)
 (* ---------------------------------------------------------------------- *)
+
+let get_graph_files () = !graph_stack
+let get_graph_comp_files outfile = Hashtbl.find_all graph_hash outfile
 
 let head = List.hd
 
@@ -363,7 +372,44 @@ let print_required_states = function
 let mkstates states = function
     None -> states
   | Some states -> states
-    
+
+let print_graph grp required_states res str = function
+    A.Exists (keep,v,phi)     -> ()
+  | phi ->
+      if !Flag_ctl.graphical_trace && not !Flag_ctl.checking_reachability
+      then
+	 match phi with
+	| A.Exists (keep,v,phi)     -> ()
+	| _ ->
+	    let label =
+	      Printf.sprintf "%s%s"
+		(String.escaped
+		   (Common.format_to_string
+		      (function _ ->
+			Pretty_print_ctl.pp_ctl
+			  (P.print_predicate, SUB.print_mvar)
+			  false phi)))
+		str in
+	    let file = (match !Flag.currentfile with
+	      None -> "graphical_trace"
+	    | Some f -> f
+		  ) in
+	      (if not (List.mem file !graph_stack) then
+		graph_stack := file :: !graph_stack);
+	    let filename = Filename.temp_file (file^":") ".dot" in	   
+	    Hashtbl.add graph_hash file filename;  
+	    G.print_graph grp
+	      (if !Flag_ctl.gt_without_label then None else (Some label))
+	      (match required_states with
+		None -> []
+	      | Some required_states ->
+		  (List.map (function s -> (s,"blue")) required_states))
+	      (List.map (function (s,_,_) -> (s,"\"#FF8080\"")) res)  filename
+
+let print_graph_c grp required_states res ctr phi =
+  let str = "iter: "^(string_of_int !ctr) in
+  print_graph grp required_states res str phi
+
 (* ---------------------------------------------------------------------- *)
 (*                                                                        *)
 (* ---------------------------------------------------------------------- *)
@@ -1050,7 +1096,8 @@ let satAX dir m s reqst = pre_forall dir m s s reqst
 ;;
 
 (* E[phi1 U phi2] == phi2 \/ (phi1 /\ EXE[phi1 U phi2]) *)
-let satEU dir ((_,_,states) as m) s1 s2 reqst = 
+let satEU dir ((_,_,states) as m) s1 s2 reqst print_graph = 
+  let ctr = ref 0 in
   inc satEU_calls;
   if s1 = []
   then s2
@@ -1064,6 +1111,7 @@ let satEU dir ((_,_,states) as m) s1 s2 reqst =
 	  [] -> y
 	| new_info ->
 	    ctr := !ctr + 1;
+	    print_graph y ctr;
 	    let first = triples_conj s1 (pre_exist dir m new_info reqst) in
 	    let res = triples_union first y in
 	    let new_info = setdiff res y in
@@ -1075,6 +1123,8 @@ let satEU dir ((_,_,states) as m) s1 s2 reqst =
     else
       let f y =
 	inc_step();
+	ctr := !ctr + 1;
+	print_graph y ctr;
 	let pre = pre_exist dir m y reqst in
 	triples_union s2 (triples_conj s1 pre) in
       setfix f s2
@@ -1115,7 +1165,8 @@ type ('pred,'anno) auok =
     AUok of ('pred,'anno) triples | AUfailed of ('pred,'anno) triples
 
 (* A[phi1 U phi2] == phi2 \/ (phi1 /\ AXA[phi1 U phi2]) *)
-let satAU dir ((cfg,_,states) as m) s1 s2 reqst =
+let satAU dir ((cfg,_,states) as m) s1 s2 reqst print_graph =
+  let ctr = ref 0 in
   inc satAU_calls;
   if s1 = []
   then AUok s2
@@ -1132,9 +1183,10 @@ let satAU dir ((cfg,_,states) as m) s1 s2 reqst =
 	match newinfo with
 	  [] -> AUok y
 	| new_info ->
-	    (*ctr := !ctr + 1;
-	    print_state (Printf.sprintf "iteration %d\n" !ctr) y;
+	    ctr := !ctr + 1;
+	    (*print_state (Printf.sprintf "iteration %d\n" !ctr) y;
 	    flush stdout;*)
+	    print_graph y ctr;
 	    let pre =
 	      try Some (pre_forall dir m new_info y reqst)
 	      with AW -> None in
@@ -1169,6 +1221,8 @@ let satAU dir ((cfg,_,states) as m) s1 s2 reqst =
 	    subseteq s1 s2) in for popl *)
 	let f y =
 	  inc_step();
+	  ctr := !ctr + 1;
+	  print_graph y ctr;
 	  let pre = pre_forall dir m y y reqst in
 	  triples_union s2 (triples_conj s1 pre) in
 	AUok (setfix f s2)
@@ -1349,8 +1403,8 @@ let strict_A2 strict op failop dir ((_,_,states) as m) trips trips'
   else res
       
 let strict_A2au strict op failop dir ((_,_,states) as m) trips trips'
-    required_states = 
-  match op dir m trips trips' required_states with
+    required_states print_graph = 
+  match op dir m trips trips' required_states print_graph with
     AUok res ->
       if !Flag_ctl.partial_match && strict = A.STRICT
       then
@@ -1710,7 +1764,8 @@ let rec satloop unchecked required required_states
 	| s2 ->
 	    let new_required = extend_required s2 required in
 	    let s1 = loop unchecked new_required new_required_states phi1 in
-	    satEU dir m s1 s2 new_required_states)
+	    satEU dir m s1 s2 new_required_states
+	      (fun y ctr -> print_graph_c grp new_required_states y ctr phi))
     | A.AW(dir,strict,phi1,phi2) ->
 	let new_required_states = get_reachable dir m required_states in
 	(match loop unchecked required new_required_states phi2 with
@@ -1728,7 +1783,9 @@ let rec satloop unchecked required required_states
 	    let new_required = extend_required s2 required in
 	    let s1 = loop unchecked new_required new_required_states phi1 in
 	    let res =
-	      strict_A2au strict satAU satEF dir m s1 s2 new_required_states in
+	      strict_A2au strict satAU satEF dir m s1 s2 new_required_states
+		(fun y ctr ->
+		  print_graph_c grp new_required_states y ctr phi) in
 	    match res with
 	      AUok res -> res
 	    | AUfailed tmp_res ->
@@ -1739,7 +1796,10 @@ let rec satloop unchecked required required_states
 		(* tmp_res is bigger than s2, so perhaps closer to s1 *)
 		(*Printf.printf "using AW\n"; flush stdout;*)
 		let s1 =
-		  triples_conj (satEU dir m s1 tmp_res new_required_states)
+		  triples_conj
+		    (satEU dir m s1 tmp_res new_required_states
+		       (* no graph, for the moment *)
+		       (fun y str -> ()))
 		    s1 in
 		strict_A2 strict satAW satEF dir m s1 s2 new_required_states)
     | A.Implies(phi1,phi2) ->
@@ -1758,6 +1818,7 @@ let rec satloop unchecked required required_states
 	(* should only be used when the properties unchecked, required,
 	   and required_states are known to be the same or at least
 	   compatible between all the uses.  this is not checked. *)
+	(* doesn't seem to be used any more *)
 	let new_required_states = get_reachable dir m required_states in
 	let res = loop unchecked required new_required_states phi1 in
 	satloop unchecked required required_states m phi2 ((v,res) :: env)
@@ -1768,7 +1829,9 @@ let rec satloop unchecked required required_states
 	else res
     | A.XX(phi) -> failwith "should have been removed" in
     if !Flag_ctl.bench > 0 then triples := !triples + (List.length res);
-    drop_wits required_states res phi (* ) *) in
+    let res = drop_wits required_states res phi (* ) *) in
+    print_graph grp required_states res "" phi;
+    res in
   
   loop unchecked required required_states phi
 ;;    
@@ -1974,7 +2037,8 @@ let rec sat_verbose_loop unchecked required required_states annot maxlvl lvl
 	    let (child1,res1) =
 	      satv unchecked new_required new_required_states phi1 env in
 	    Printf.printf "EU\n"; flush stdout;
-	    anno (satEU dir m res1 res2 new_required_states) [child1; child2])
+	    anno (satEU dir m res1 res2 new_required_states (fun y str -> ()))
+	      [child1; child2])
     | A.AW(dir,strict,phi1,phi2)      -> 
 	failwith "should not be used" (*
 	  let new_required_states = get_reachable dir m required_states in
@@ -2001,7 +2065,8 @@ let rec sat_verbose_loop unchecked required required_states annot maxlvl lvl
 	      satv unchecked new_required new_required_states phi1 env in
 	    Printf.printf "AU\n"; flush stdout;
 	    let res =
-	      strict_A2au strict satAU satEF dir m s1 s2 new_required_states in
+	      strict_A2au strict satAU satEF dir m s1 s2 new_required_states
+		(fun y str -> ()) in
 	    (match res with
 	      AUok res ->
 		anno res [child1; child2]
@@ -2013,7 +2078,11 @@ let rec sat_verbose_loop unchecked required required_states annot maxlvl lvl
 		(* tmp_res is bigger than s2, so perhaps closer to s1 *)
 	      Printf.printf "AW\n"; flush stdout;
 	      let s1 =
-		triples_conj (satEU dir m s1 tmp_res new_required_states) s1 in
+		triples_conj
+		  (satEU dir m s1 tmp_res new_required_states
+		     (* no graph, for the moment *)
+		     (fun y str -> ()))
+		  s1 in
 	      let res =
 		strict_A2 strict satAW satEF dir m s1 s2 new_required_states in
 	      anno res [child1; child2]))

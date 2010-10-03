@@ -1,4 +1,4 @@
-(* Copyright (C) 2002-2008 Yoann Padioleau
+(* Copyright (C) 2007, 2008 Yoann Padioleau
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License (GPL)
@@ -102,11 +102,14 @@ let ii_of_ini  = extract_info_visitor Visitor_c.vk_ini
 let ii_of_param = extract_info_visitor Visitor_c.vk_param
 let ii_of_params = extract_info_visitor Visitor_c.vk_params_splitted
 let ii_of_struct_fields = extract_info_visitor Visitor_c.vk_struct_fields
-let ii_of_struct_field = extract_info_visitor Visitor_c.vk_struct_field
+(*let ii_of_struct_field = extract_info_visitor Visitor_c.vk_struct_field*)
+let ii_of_struct_fieldkinds = extract_info_visitor Visitor_c.vk_struct_fieldkinds
 let ii_of_cst = extract_info_visitor Visitor_c.vk_cst
 let ii_of_define_params = 
   extract_info_visitor Visitor_c.vk_define_params_splitted
+let ii_of_toplevel = extract_info_visitor Visitor_c.vk_toplevel
 
+(*****************************************************************************)
 let max_min_ii_by_pos xs = 
   match xs with
   | [] -> failwith "empty list, max_min_ii_by_pos"
@@ -137,7 +140,7 @@ let lin_col_by_pos xs =
   let (i2, i1) = max_min_ii_by_pos xs in
   let posf x = Ast_c.col_of_info x in
   let mposf x = Ast_c.col_of_info x + String.length (Ast_c.str_of_info x) in
-  (Ast_c.file_of_info i1,
+  (Ast_c.file_of_info i1,!Flag.current_element,
    (Ast_c.line_of_info i1, posf i1), (Ast_c.line_of_info i2, mposf i2))
 
 

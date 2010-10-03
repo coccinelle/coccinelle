@@ -155,11 +155,11 @@ let update_unitary unitary =
   
   let is_unitary name =
     match (List.mem (Ast0.unwrap_mcode name) unitary,
-	   Ast0.get_mcode_mcodekind name) with
-      (true,Ast0.CONTEXT(mc)) -> Ast0.PureContext
-    | (true,_) -> Ast0.Pure
-    | (false,Ast0.CONTEXT(mc)) -> Ast0.Context
-    | (false,_) -> Ast0.Impure in
+	   !Flag.sgrep_mode2, Ast0.get_mcode_mcodekind name) with
+      (true,true,_) | (true,_,Ast0.CONTEXT(_)) -> Ast0.PureContext
+    | (true,_,_) -> Ast0.Pure
+    | (false,true,_) | (false,_,Ast0.CONTEXT(_)) -> Ast0.Context
+    | (false,_,_) -> Ast0.Impure in
 
   let ident r k i =
     match Ast0.unwrap i with

@@ -1229,35 +1229,41 @@ let dots_au is_strict toend label s wrapcode x seq_after y quantifier =
      make_match None false
       (wrapcode
 	 (Ast.Continue(Ast.make_mcode "continue",Ast.make_mcode ";"))) in
-  let stop_early v =
+  let stop_early =
     if quantifier = Exists
-    then CTL.False
+    then Common.Left(CTL.False)
     else if toend
-    then CTL.Or(aftpred label,exitpred label)
+    then Common.Left(CTL.Or(aftpred label,exitpred label))
     else if is_strict
-    then aftpred label
+    then Common.Left(aftpred label)
     else
-      let lv = get_label_ctr() in
-      let labelpred = CTL.Pred(Lib_engine.Label lv,CTL.Control) in
-      let preflabelpred = label_pred_maker (Some (lv,ref true)) in
-      ctl_or (aftpred label)
-	(quantify false [lv]
-	   (ctl_and CTL.NONSTRICT
-	      (ctl_and CTL.NONSTRICT (truepred label) labelpred)
-	      (ctl_au CTL.NONSTRICT
-		 (ctl_and CTL.NONSTRICT (ctl_not v) preflabelpred)
-		 (ctl_and CTL.NONSTRICT preflabelpred
-		    (ctl_or (retpred None)
-		       (if !Flag_engine.only_return_is_error_exit
-		       then CTL.True
-		       else
-			 (ctl_or matchcontinue
-			    (ctl_and CTL.NONSTRICT
-			       (ctl_or matchgoto matchbreak)
-			       (ctl_ag s (ctl_not seq_after)))))))))) in
-  let v = get_let_ctr() in
+      Common.Right
+	(function v ->
+	  let lv = get_label_ctr() in
+	  let labelpred = CTL.Pred(Lib_engine.Label lv,CTL.Control) in
+	  let preflabelpred = label_pred_maker (Some (lv,ref true)) in
+	  ctl_or (aftpred label)
+	    (quantify false [lv]
+	       (ctl_and CTL.NONSTRICT
+		  (ctl_and CTL.NONSTRICT (truepred label) labelpred)
+		  (ctl_au CTL.NONSTRICT
+		     (ctl_and CTL.NONSTRICT (ctl_not v) preflabelpred)
+		     (ctl_and CTL.NONSTRICT preflabelpred
+			(ctl_or (retpred None)
+			   (if !Flag_matcher.only_return_is_error_exit
+			   then CTL.True
+			   else
+			     (ctl_or matchcontinue
+				(ctl_and CTL.NONSTRICT
+				   (ctl_or matchgoto matchbreak)
+				   (ctl_ag s (ctl_not seq_after))))))))))) in
   let op = if quantifier = !exists then ctl_au else ctl_anti_au in
-  op s x (CTL.Let(v,y,ctl_or (CTL.Ref v) (stop_early (CTL.Ref v))))
+  let v = get_let_ctr() in
+  op s x
+    (match stop_early with
+      Common.Left x -> ctl_or y x
+    | Common.Right stop_early ->
+	CTL.Let(v,y,ctl_or (CTL.Ref v) (stop_early (CTL.Ref v))))
 
 let rec dots_and_nests plus nest whencodes bef aft dotcode after label
     process_bef_aft statement_list statement guard quantified wrapcode =

@@ -400,22 +400,6 @@ let test_parse_cocci file =
 let sp_of_file file iso    = Parse_cocci.process file iso false
 
 (* TODO: Remove
-let (rule_elem_of_string: string -> filename option -> Ast_cocci.rule_elem) =
- fun s iso -> 
-  begin
-    Common.write_file ("/tmp/__cocci.cocci") (s);
-    let (astcocci, _,_,_,_,_) = sp_of_file ("/tmp/__cocci.cocci") iso in
-    let stmt =
-      astcocci +>
-      List.hd +> (function (_,_,x) -> List.hd x) +> (function x ->
-	match Ast_cocci.unwrap x with
-	| Ast_cocci.CODE stmt_dots -> Ast_cocci.undots stmt_dots +> List.hd
-	| _ -> raise Not_found)
-    in
-    match Ast_cocci.unwrap stmt with
-    | Ast_cocci.Atomic(re) -> re
-    | _ -> failwith "only atomic patterns allowed"
-  end
 *)
 
 (*

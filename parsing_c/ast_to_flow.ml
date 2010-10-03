@@ -26,6 +26,10 @@ open Oassocb
  * todo?: steal code from CIL ? (but seems complicated ... again) *)
 (*****************************************************************************)
 
+(*****************************************************************************)
+(* Types *)
+(*****************************************************************************)
+
 type error = 
   | DeadCode          of Common.parse_info option
   | CaseNoSwitch      of Common.parse_info
@@ -304,17 +308,7 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
       !g +> add_arc_opt (starti, newi);
       let starti = Some newi in
 
-      statxs +> List.fold_left (fun starti statement ->
-        if !Flag_parsing_c.label_strategy_2
-        then incr counter_for_labels;
-
-        let newxi' = 
-          if !Flag_parsing_c.label_strategy_2
-          then { newxi with labels = xi.labels @ [ !counter_for_labels ] } 
-          else newxi
-        in
-        aux_statement (starti, newxi') statement
-      ) starti
+      aux_statement_list starti (xi, newxi) statxs
 
       (* braces: *)
       +> Common.fmap (fun starti -> 
@@ -477,46 +471,6 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
            end)
         
       
-  | Selection  (Ast_c.Ifdef (st1s, st2s)), ii -> 
-      let (ii,iifakeend) = 
-        match ii with
-        | [i1;i2;i3;i4] -> [i1;i2;i3], i4
-        | [i1;i2;i3] -> [i1;i2], i3
-        | _ -> raise Impossible
-      in
-
-      let newi = !g +> add_node (Ifdef (stmt, ((), ii))) lbl "ifcpp" in
-      !g +> add_arc_opt (starti, newi);
-      let newfakethen = !g +> add_node TrueNode  lbl "[then]" in
-      let newfakeelse = !g +> add_node FalseNode lbl "[else]" in
-
-      !g#add_arc ((newi, newfakethen), Direct);
-      !g#add_arc ((newi, newfakeelse), Direct);
-
-      let aux_statement_list (starti, newxi) statxs =
-        statxs +> List.fold_left (fun starti statement ->
-          aux_statement (starti, newxi) statement
-        ) starti
-      in
-
-
-      let finalthen = aux_statement_list (Some newfakethen, xi_lbl) st1s in
-      let finalelse = aux_statement_list (Some newfakeelse, xi_lbl) st2s in
-
-      (match finalthen, finalelse with 
-        | (None, None) -> None
-        | _ -> 
-            let lasti =  
-              !g +> add_node (EndStatement (Some iifakeend)) lbl "[endifcpp]" 
-            in
-            begin
-              !g +> add_arc_opt (finalthen, lasti);
-              !g +> add_arc_opt (finalelse, lasti);
-              Some lasti
-           end
-      )
-      
-
    (* ------------------------- *)        
   | Selection  (Ast_c.Switch (e, st)), ii -> 
       let (i1,i2,i3, iifakeend) = tuple_of_list4 ii in
@@ -538,6 +492,7 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
        let finalthen = 
          match st with
          | Ast_c.Compound statxs, ii -> 
+             let statxs = Ast_c.stmt_elems_of_sequencable statxs in
              
              (* todo? we should not allow to match a stmt that corresponds
               * to a compound of a switch, so really SeqStart (stmt, ...)
@@ -945,7 +900,8 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
   | Ast_c.Decl decl, ii -> 
      let s = 
        match decl with
-       | (Ast_c.DeclList ([(Some ((s, _),_), typ, sto, _), _], _)) ->
+       | (Ast_c.DeclList 
+             ([{v_namei = Some ((s, _),_); v_type = typ; v_storage = sto}, _], _)) ->
 	   "decl:" ^ s
        | _ -> "decl_novar_or_multivar"
      in
@@ -973,6 +929,61 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
 
 
 
+
+
+
+and aux_statement_list starti (xi, newxi) statxs = 
+  statxs 
+  +> List.fold_left (fun starti statement_seq ->
+    if !Flag_parsing_c.label_strategy_2
+    then incr counter_for_labels;
+    
+    let newxi' = 
+      if !Flag_parsing_c.label_strategy_2
+      then { newxi with labels = xi.labels @ [ !counter_for_labels ] } 
+      else newxi
+    in
+
+    match statement_seq with
+    | Ast_c.StmtElem statement -> 
+        aux_statement (starti, newxi') statement
+
+    | Ast_c.CppDirectiveStmt directive -> 
+        pr2_once ("ast_to_flow: filter a directive");
+        starti
+
+    | Ast_c.IfdefStmt ifdef -> 
+        pr2_once ("ast_to_flow: filter a directive");
+        starti
+
+    | Ast_c.IfdefStmt2 (ifdefs, xxs) -> 
+
+        let (head, body, tail) = Common.head_middle_tail ifdefs in
+
+        let newi = !g +> add_node (IfdefHeader (head)) newxi'.labels "[ifdef]" in
+        let taili = !g +> add_node (IfdefEndif (tail)) newxi'.labels "[endif]" in
+        !g +> add_arc_opt (starti, newi);
+
+        let elsenodes = 
+          body +> List.map (fun elseif -> 
+            let elsei = 
+              !g +> add_node (IfdefElse (elseif)) newxi'.labels "[elseif]" in
+            !g#add_arc ((newi, elsei), Direct);
+            elsei
+          ) in
+
+        let finalxs = 
+          Common.zip (newi::elsenodes) xxs +> List.map (fun (start_nodei, xs)-> 
+            let finalthen = 
+              aux_statement_list (Some start_nodei) (newxi, newxi) xs in
+            !g +> add_arc_opt (finalthen, taili);
+          ) 
+        in
+        Some taili
+
+  ) starti
+
+
 (*****************************************************************************)
 (* Definition of function *)
 (*****************************************************************************)
@@ -981,7 +992,12 @@ let (aux_definition: nodei -> definition -> unit) = fun topi funcdef ->
 
   let lbl_start = [!counter_for_labels] in
 
-  let ((funcs, functype, sto, compound), ii) = funcdef in
+  let ({f_name = funcs; 
+        f_type = functype; 
+        f_storage= sto; 
+        f_body= compound;
+        f_attr= attrs;
+        }, ii) = funcdef in
   let iifunheader, iicompound = 
     (match ii with 
     | is::ioparen::icparen::iobrace::icbrace::iifake::isto -> 
@@ -993,8 +1009,15 @@ let (aux_definition: nodei -> definition -> unit) = fun topi funcdef ->
 
   let topstatement = Ast_c.Compound compound, iicompound in
 
-  let headi = !g +> add_node (FunHeader ((funcs, functype, sto), iifunheader))
-                         lbl_start ("function " ^ funcs) in
+  let headi = !g +> add_node 
+    (FunHeader ({ 
+      Ast_c.f_name = funcs;
+      f_type = functype;
+      f_storage = sto;
+      f_attr = attrs;
+      f_body = [] (* empty body *)
+      }, iifunheader))
+    lbl_start ("function " ^ funcs) in
   let enteri     = !g +> add_node Enter     lbl_0 "[enter]"     in
   let exiti      = !g +> add_node Exit      lbl_0 "[exit]"      in
   let errorexiti = !g +> add_node ErrorExit lbl_0 "[errorexit]" in
@@ -1048,21 +1071,23 @@ let ast_to_control_flow e =
   let topi = !g +> add_node TopNode lbl_0 "[top]" in
 
   match e with 
-  | Ast_c.Definition (((funcs, _, _, c),_) as def) -> 
+  | Ast_c.Definition ((defbis,_) as def) -> 
+      let _funcs = defbis.f_name in
+      let _c = defbis.f_body in
       (* if !Flag.show_misc then pr2 ("build info function " ^ funcs); *)
       aux_definition topi def;
       Some !g
 
   | Ast_c.Declaration _ 
-  | Ast_c.Include _ 
+  | Ast_c.CppTop (Ast_c.Include _)
   | Ast_c.MacroTop _
     -> 
       let (elem, str) = 
         match e with 
         | Ast_c.Declaration decl -> 
             (Control_flow_c.Decl decl),  "decl"
-        | Ast_c.Include (a,b) -> 
-            (Control_flow_c.Include (a,b)), "#include"
+        | Ast_c.CppTop (Ast_c.Include inc) -> 
+            (Control_flow_c.Include inc), "#include"
         | Ast_c.MacroTop (s, args, ii) -> 
             let (st, (e, ii)) = specialdeclmacro_to_stmt (s, args, ii) in
             (Control_flow_c.ExprStatement (st, (Some e, ii))), "macrotoplevel"
@@ -1076,7 +1101,7 @@ let ast_to_control_flow e =
       !g#add_arc ((ei, endi),Direct);
       Some !g
 
-  | Ast_c.Define ((id,ii), (defkind, defval))  -> 
+  | Ast_c.CppTop (Ast_c.Define ((id,ii), (defkind, defval)))  -> 
       let s = ("#define " ^ id) in
       let headeri = !g+>add_node (DefineHeader ((id, ii), defkind)) lbl_0 s in
       !g#add_arc ((topi, headeri),Direct);
@@ -1116,7 +1141,7 @@ let ast_to_control_flow e =
           )
           
 
-      | Ast_c.DefineDoWhileZero (st, ii) -> 
+      | Ast_c.DefineDoWhileZero ((st,_e), ii) -> 
           let headerdoi = 
             !g +> add_node (DefineDoWhileZeroHeader ((),ii)) lbl_0 "do0" in
           !g#add_arc ((headeri, headerdoi), Direct);
@@ -1135,6 +1160,10 @@ let ast_to_control_flow e =
       | Ast_c.DefineEmpty -> 
           let endi = !g +> add_node EndNode lbl_0 "[end]" in
           !g#add_arc ((headeri, endi),Direct);
+      | Ast_c.DefineInit _ -> 
+          raise Todo
+      | Ast_c.DefineTodo -> 
+          raise Todo
       );
 
       Some !g

@@ -30,7 +30,7 @@ module F = Control_flow_c
 (* Debugging functions *)
 (*****************************************************************************)
 let show_or_not_predicate pred = 
-  if !Flag_engine.debug_engine then begin 
+  if !Flag_matcher.debug_engine then begin 
     indent_do (fun () -> 
       adjust_pp_with_indent_and_header "labeling: pred = " (fun () -> 
         Pretty_print_engine.pp_predicate pred;
@@ -39,7 +39,7 @@ let show_or_not_predicate pred =
   end
 
 let show_or_not_nodes nodes =
-  if !Flag_engine.debug_engine  then begin 
+  if !Flag_matcher.debug_engine  then begin 
     indent_do (fun () -> 
       adjust_pp_with_indent_and_header "labeling: result = " (fun () -> 
         Common.pp_do_in_box (fun () -> 
@@ -116,7 +116,7 @@ let (labels_for_ctl: string list (* dropped isos *) ->
 
       | Lib_engine.Match (re), _unwrapnode -> 
           let substs = 
-            Pattern3.match_re_node dropped_isos re node binding
+            Pattern_c.match_re_node dropped_isos re node binding
             +> List.map (fun (re', subst) -> 
               Lib_engine.Match (re'), subst
             )
@@ -400,14 +400,15 @@ let (mysat2:
   Lib_engine.model ->
   (Lib_engine.ctlcocci * (pred list list)) -> 
   (Lib_engine.mvar list*Lib_engine.metavars_binding) ->
-  (Lib_engine.transformation_info * bool * Lib_engine.metavars_binding list)) =
+  (Lib_engine.transformation_info * bool * Lib_engine.metavars_binding *
+     Lib_engine.metavars_binding list)) =
   fun (flow, label, states) ctl (used_after, binding) -> 
     let binding2 = metavars_binding_to_binding2 binding in
     let (triples,(trans_info2, returned_any_states, used_after_envs)) = 
       WRAPPED_ENGINE.satbis (flow, label, states) ctl (used_after, binding2)
     in
     if not (!Flag_parsing_cocci.sgrep_mode || !Flag.sgrep_mode2 ||
-            !Flag_engine.allow_inconsistent_paths)
+            !Flag_matcher.allow_inconsistent_paths)
     then Check_reachability.check_reachability triples flow;
     let (trans_info2,used_after_fresh_envs) =
       Postprocess_transinfo.process used_after binding2 trans_info2 in
@@ -416,7 +417,7 @@ let (mysat2:
     let trans_info = satbis_to_trans_info trans_info2 in
     let newbindings = List.map metavars_binding2_to_binding used_after_envs in
     let newbindings = List.map coalesce_positions newbindings in
-    (trans_info, returned_any_states, newbindings)
+    (trans_info, returned_any_states, binding, newbindings)
 
 let mysat a b c = 
   Common.profile_code "mysat" (fun () -> mysat2 a b c)

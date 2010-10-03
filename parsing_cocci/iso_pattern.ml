@@ -119,8 +119,9 @@ type reason =
   | NonMatch
   | Braces of Ast0.statement
   | Position of string * string
+  | TypeMatch of reason list
 
-let interpret_reason name line reason printer =
+let rec interpret_reason name line reason printer =
   Printf.printf
     "warning: iso %s does not match the code below on line %d\n" name line;
   printer(); Format.print_newline();
@@ -155,6 +156,9 @@ let interpret_reason name line reason printer =
   | Position(rule,name) ->
       Printf.printf "position variable %s.%s conflicts with an isomorphism\n"
 	rule name;
+  | TypeMatch reason_list ->
+      List.iter (function r -> interpret_reason name line r printer)
+	reason_list
   | _ -> failwith "not possible"
 
 type 'a either = OK of 'a | Fail of reason
@@ -342,14 +346,18 @@ let match_maker checks_needed context_required whencode_allowed =
   let pure_sp_code =
     let bind = Ast0.lub_pure in
     let option_default = Ast0.Context in
-    let pure_mcodekind = function
-	Ast0.CONTEXT(mc) ->
-	  (match !mc with
-	    (Ast.NOTHING,_,_) -> Ast0.PureContext
-	  | _ -> Ast0.Context)
-      | Ast0.MINUS(mc) ->
-	  (match !mc with ([],_) -> Ast0.Pure | _ ->  Ast0.Impure)
-      | _ -> Ast0.Impure in
+    let pure_mcodekind mc =
+      if !Flag.sgrep_mode2
+      then Ast0.PureContext
+      else
+	match mc with
+	  Ast0.CONTEXT(mc) ->
+	    (match !mc with
+	      (Ast.NOTHING,_,_) -> Ast0.PureContext
+	    | _ -> Ast0.Context)
+	| Ast0.MINUS(mc) ->
+	    (match !mc with ([],_) -> Ast0.Pure | _ ->  Ast0.Impure)
+	| _ -> Ast0.Impure in
     let donothing r k e =
       bind (pure_mcodekind (Ast0.get_mcodekind e)) (k e) in
 
@@ -522,34 +530,46 @@ let match_maker checks_needed context_required whencode_allowed =
 		    (match expty with
 		      Some expty ->
 			let tyname = Ast0.rewrap_mcode name tyname in
-			(function bindings ->
-			  let attempts =
-			    List.map
-			      (function expty ->
-				(try
-				  conjunct_bindings
-				    (add_pure_binding tyname Ast0.Impure
-				       (function _ -> Ast0.Impure)
-				       (function ty -> Ast0.TypeCTag ty)
-				       (Ast0.rewrap expr
-					  (Ast0.reverse_type expty)))
-				    (add_pure_binding name pure
-				       pure_sp_code.V0.combiner_expression
-				       (function expr -> Ast0.ExprTag expr)
-				       expr)
-				    bindings
-				with Ast0.TyConv ->
-				  Printf.printf "warning: unconvertible type";
-				  return false bindings))
-			      expty in
-			  match
-			    List.concat
-			      (List.map (function Fail _ -> [] | OK x -> x)
-				 attempts)
-			  with
-			    [] -> Fail NonMatch
-			  | x -> OK x)
-		    |	_ ->
+			conjunct_bindings
+			  (add_pure_binding name pure
+			     pure_sp_code.V0.combiner_expression
+			     (function expr -> Ast0.ExprTag expr)
+			     expr)
+			  (function bindings ->
+			    let attempts =
+			      List.map
+				(function expty ->
+				  (try
+				    add_pure_binding tyname Ast0.Impure
+				      (function _ -> Ast0.Impure)
+				      (function ty -> Ast0.TypeCTag ty)
+				      (Ast0.rewrap expr
+					 (Ast0.reverse_type expty))
+				      bindings
+				  with Ast0.TyConv ->
+				    Printf.printf
+				      "warning: unconvertible type";
+				    return false bindings))
+				expty in
+			    if List.exists
+				(function Fail _ -> false | OK x -> true)
+				attempts
+			    then
+				(* not sure why this is ok. can there be more
+				 than one OK? *)
+			      OK (List.concat
+				    (List.map
+				       (function Fail _ -> [] | OK x -> x)
+				       attempts))
+			    else
+			      Fail
+				(TypeMatch
+				   (List.map
+				      (function
+					  Fail r -> r
+					| OK x -> failwith "not possible")
+				      attempts)))
+		    | _ ->
 		  (*Printf.printf
 		     "warning: type metavar can only match one type";*)
 			return false)
@@ -1239,10 +1259,11 @@ let make_minus =
       Ast0.DOTS([]) ->
 	(* if context is - this should be - as well.  There are no tokens
 	   here though, so the bottom-up minusifier in context_neg leaves it
-	   as mixed.  It would be better to fix context_neg, but that would
+	   as mixed (or context for sgrep2).  It would be better to fix
+	   context_neg, but that would
 	   require a special case for each term with a dots subterm. *)
 	(match !mcodekind with
-	  Ast0.MIXED(mc) ->
+	  Ast0.MIXED(mc) | Ast0.CONTEXT(mc) ->
 	    (match !mc with
 	      (Ast.NOTHING,_,_) ->
 		mcodekind := Ast0.MINUS(ref([],Ast0.default_token_info));
@@ -1253,8 +1274,8 @@ let make_minus =
 	| _ ->
 	    failwith
 	      (Printf.sprintf
-		 "%d: make_minus donothingxxx: unexpected mcodekind"
-		 info.Ast0.line_start))
+		 "%d: make_minus donothingxxx: unexpected mcodekind: %s"
+		 info.Ast0.line_start (Dumper.dump e)))
     | _ -> donothing r k e in
   
   V0.rebuilder
@@ -2095,7 +2116,8 @@ let transform_expr (metavars,alts,name) e =
       (function b -> function mv_b ->
 	(instantiate b mv_b).V0.rebuilder_expression)
       (function e -> Ast0.ExprTag e)
-      (make_disj_expr e) make_minus.V0.rebuilder_expression
+      (make_disj_expr e)
+      make_minus.V0.rebuilder_expression
       (rebuild_mcode start_line).V0.rebuilder_expression
       name Unparse_ast0.expression extra_copy_other_plus update_others in
   match alts with
@@ -2194,7 +2216,8 @@ let transform_top (metavars,alts,name) e =
 	      (function s -> Ast0.DotsStmtTag s)
 	      (function x ->
 		Ast0.rewrap e (Ast0.DOTS([make_disj_stmt_list x])))
-	      make_minus.V0.rebuilder_statement_dots
+	      (function x ->
+		make_minus.V0.rebuilder_statement_dots x)
 	      (rebuild_mcode start_line).V0.rebuilder_statement_dots
 	      name Unparse_ast0.statement_dots extra_copy_other_plus do_nothing
 	| _ -> ([],stmts) in

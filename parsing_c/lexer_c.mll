@@ -1,5 +1,5 @@
 {
-(* Copyright (C) 2002-2008 Yoann Padioleau
+(* Copyright (C) 2002, 2006, 2007, 2008 Yoann Padioleau
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License (GPL)
@@ -67,12 +67,16 @@ let tokinfo lexbuf  =
     comments_tag = ref Ast_c.emptyComments;
   }
 
+(* must generate a new ref each time, otherwise share *)
+let no_ifdef_mark () = ref (None: (int * int) option)
+
 let tok_add_s s ii = Ast_c.rewrap_str ((Ast_c.str_of_info ii) ^ s) ii
     
 
 (* opti: less convenient, but using a hash is faster than using a match *)
 let keyword_table = Common.hash_of_list [
 
+  (* c: *)
   "void",   (fun ii -> Tvoid ii); 
   "char",   (fun ii -> Tchar ii);    
   "short",  (fun ii -> Tshort ii); 
@@ -121,16 +125,16 @@ let keyword_table = Common.hash_of_list [
   "inline",     (fun ii -> Tinline ii);
   "__inline__", (fun ii -> Tinline ii);
   "__inline",   (fun ii -> Tinline ii);
-  "INLINE",     (fun ii -> Tinline ii); 
-  "_INLINE_",   (fun ii -> Tinline ii); 
-  "__INLINE__",   (fun ii -> Tinline ii); 
 
   "__attribute__", (fun ii -> Tattribute ii);
   "__attribute", (fun ii -> Tattribute ii);
 
   "typeof", (fun ii -> Ttypeof ii);
   "__typeof__", (fun ii -> Ttypeof ii);
+  "__typeof", (fun ii -> Ttypeof ii);
 
+
+  (* gccext: alias *)
   "__signed__",     (fun ii -> Tsigned ii);
 
   "__const__",     (fun ii -> Tconst ii);
@@ -138,6 +142,14 @@ let keyword_table = Common.hash_of_list [
 
   "__volatile__",  (fun ii -> Tvolatile ii); 
   "__volatile",    (fun ii -> Tvolatile ii);  
+
+
+  (* c99:  *)
+  (* no just "restrict" ? maybe for backward compatibility they avoided 
+   * to use restrict which people may have used in their program already 
+   *)
+  "__restrict",    (fun ii -> Trestrict ii);  
+  "__restrict__",    (fun ii -> Trestrict ii);  
   
  ]
 
@@ -207,6 +219,7 @@ rule token = parse
 
   (* C++ comment are allowed via gccext, but normally they are deleted by cpp.
    * So need this here only when dont call cpp before.
+   * note that we don't keep the trailing \n; it will be in another token.
    *)
   | "//" [^'\r' '\n' '\011']*    { TComment (tokinfo lexbuf) } 
 
@@ -240,38 +253,26 @@ rule token = parse
   (* misc *)
   (* ---------------------- *)
       
-   (* #pragma pack
-    * #pragma GCC set_debug_pwd
-    * #pragma alloc_text
-    * #pragma options align=packed
-    * #pragma options align=reset
-    * #pragma options align=power
-    * #pragma	pack(2)
-    * etc
-    *)
-  | "#pragma" sp  [^'\n']* '\n'  
-      { TCommentCpp (CppDirective, tokinfo lexbuf) }
+  (* bugfix: I want now to keep comments for the cComment study 
+   * so cant do:    sp [^'\n']+ '\n' 
+   * http://gcc.gnu.org/onlinedocs/gcc/Pragmas.html
+   *)
 
-  | "#" [' ' '\t']* "ident"   [' ' '\t']+  [^'\n']+ '\n' 
+  | "#" spopt "pragma"  sp [^'\n']*  '\n'
+  | "#" spopt "ident"   sp  [^'\n']* '\n' 
+  | "#" spopt "line"    sp  [^'\n']* '\n' 
+  | "#" spopt "error"   sp  [^'\n']* '\n' 
+  | "#" spopt "warning" sp  [^'\n']* '\n'                     
+  | "#" spopt "abort"   sp  [^'\n']* '\n'
+      { TCppDirectiveOther (tokinfo lexbuf) }
 
-  | "#" [' ' '\t']* "line"   [' ' '\t']+  [^'\n']+ '\n' 
-
-  | "#" [' ' '\t']* "error"   [' ' '\t']+  [^'\n']* '\n' 
-  | "#" [' ' '\t']* "warning" [' ' '\t']+  [^'\n']* '\n'                     
-  | "#" [' ' '\t']* "abort"   [' ' '\t']+  [^'\n']* '\n'
-
-      { TCommentCpp (CppDirective, tokinfo lexbuf) }
+  | "#" [' ' '\t']* '\n' 
+      { TCppDirectiveOther (tokinfo lexbuf) }
 
   (* only after cpp, ex: # 1 "include/linux/module.h" 1 *)
   | "#" sp pent sp  '"' [^ '"']* '"' (spopt pent)*  spopt '\n'
-      { TCommentCpp (CppDirective, tokinfo lexbuf) }
+      { TCppDirectiveOther (tokinfo lexbuf) }
 
-
-  (* in drivers/char/tpqic02.c, in old version of the kernel *)
-  | "#" [' ' '\t']* "error"     { TCommentCpp (CppDirective,tokinfo lexbuf) }
-
-
-  | "#" [' ' '\t']* '\n'        { TCommentCpp (CppDirective,tokinfo lexbuf) }
 
 
   (* ---------------------- *)
@@ -283,43 +284,14 @@ rule token = parse
    *)
   | "#" [' ' '\t']* "define" { TDefine (tokinfo lexbuf) } 
 
-  | "#" [' ' '\t']* "undef" [' ' '\t']+ id
-      { let info = tokinfo lexbuf in 
-        TCommentCpp (CppDirective,info +> tok_add_s (cpp_eat_until_nl lexbuf))
-      }
-
-
-  (* could generate separate token for #, ## and then exten grammar,
-   * but there can be ident in many different places, in expression
-   * but also in declaration, in function name. So having 3 tokens
-   * for an ident does not work well with how we add info in
-   * ast_c. So better to generate just one token, just one info,
-   * even if have later to reanalyse those tokens and unsplit.
+  (* note: in some cases can have stuff after the ident as in #undef XXX 50, 
+   * but I currently don't handle it cos I think it's bad code.
    *)
-
-  | ((id as s)  "...")
-      { TDefParamVariadic (s, tokinfo lexbuf) }
-
-  (* cppext: string concatenation *)
-  |  id   ([' ''\t']* "##" [' ''\t']* id)+ 
-      { let info = tokinfo lexbuf in
-        TIdent (tok lexbuf, info)
+  | (("#" [' ' '\t']* "undef" [' ' '\t']+) as _undef) (id as id)
+      { let info = tokinfo lexbuf in 
+        TUndef (id, info)
+        (*+> tok_add_s (cpp_eat_until_nl lexbuf))*)
       }
-
-  (* cppext: stringification *)
-  |  "#" id  
-      { let info = tokinfo lexbuf in
-        TIdent (tok lexbuf, info)
-      }
-
-  (* cppext: gccext: ##args for variadic macro *)
-  |  "##" [' ''\t']* id
-      { let info = tokinfo lexbuf in
-        TIdent (tok lexbuf, info)
-      }
-
-  (* only in cpp directives normally *)
-  | "\\" '\n' { TCppEscapedNewline (tokinfo lexbuf) }
 
 
   (* ---------------------- *)
@@ -327,46 +299,69 @@ rule token = parse
   (* ---------------------- *)
 
   (* The difference between a local "" and standard <> include is computed
-   * later in parser_c.mly. So redo a little bit of lexing there. Ugly but
+   * later in parser_c.mly. So redo a little bit of lexing there; ugly but
    * simpler to generate a single token here.  *)
   | (("#" [' ''\t']* "include" [' ' '\t']*) as includes) 
     (('"' ([^ '"']+) '"' | 
      '<' [^ '>']+ '>' | 
       ['A'-'Z''_']+ 
     ) as filename)
-      {
-        let info = tokinfo lexbuf in 
+      { let info = tokinfo lexbuf in 
         TInclude (includes, filename, Ast_c.noInIfdef(), info)
       }
-
-   (* linuxext: special_for_no_exn: in atm/ambassador.c *)
-  | "#include UCODE(" [^'\n']+  '\n'    
-      { TCommentCpp (CppDirective, tokinfo lexbuf) }
-
+  (* gccext: found in glibc *)
+  | (("#" [' ''\t']* "include_next" [' ' '\t']*) as includes) 
+    (('"' ([^ '"']+) '"' | 
+     '<' [^ '>']+ '>' | 
+      ['A'-'Z''_']+ 
+    ) as filename)
+      { let info = tokinfo lexbuf in 
+        TInclude (includes, filename, Ast_c.noInIfdef(), info)
+      }
 
   (* ---------------------- *)
   (* #ifdef *)
   (* ---------------------- *)
 
+  (* The ifdef_mark will be set later in Parsing_hacks.set_ifdef_parenthize_info
+   * when working on the ifdef view.
+   *)
+
   (* '0'+ because sometimes it is a #if 000 *)
   | "#" [' ' '\t']* "if" [' ' '\t']* '0'+           (* [^'\n']*  '\n' *)
       { let info = tokinfo lexbuf in 
-        TIfdefBool (false, info +> tok_add_s (cpp_eat_until_nl lexbuf)) 
+        TIfdefBool (false, no_ifdef_mark(), info)
+          (* +> tok_add_s (cpp_eat_until_nl lexbuf)*) 
       }
 
-  | "#" [' ' '\t']* "if" [' ' '\t']* '1'   [^'\n']*  '\n'
+  | "#" [' ' '\t']* "if" [' ' '\t']* '1'   (* [^'\n']*  '\n' *)
       { let info = tokinfo lexbuf in 
-        TIfdefBool (true, info) 
+        TIfdefBool (true, no_ifdef_mark(), info) 
 
       } 
-
-  | "#" [' ' '\t']* "ifdef" [' ' '\t']* "__cplusplus"   [^'\n']*  '\n'
+  
+ (* DO NOT cherry pick to lexer_cplusplus !!! often used for the extern "C" { *)
+  | "#" [' ' '\t']* "if" sp "defined" sp "(" spopt "__cplusplus" spopt ")" [^'\n']* '\n'
       { let info = tokinfo lexbuf in 
-        TIfdefMisc (false, info) 
+        TIfdefMisc (false, no_ifdef_mark(), info) 
       }
 
+ (* DO NOT cherry pick to lexer_cplusplus !!! *)
+  | "#" [' ' '\t']* "ifdef" [' ' '\t']* "__cplusplus"   [^'\n']*  '\n'
+      { let info = tokinfo lexbuf in 
+        TIfdefMisc (false, no_ifdef_mark(), info) 
+      }
 
-  (* linuxext: different possible variations (we not manage all of them):
+  (* in glibc *)
+  | "#" spopt ("ifdef"|"if") sp "__STDC__"
+      { let info = tokinfo lexbuf in 
+        TIfdefVersion (true, no_ifdef_mark(), 
+                      info +> tok_add_s (cpp_eat_until_nl lexbuf)) 
+      } 
+
+
+  (* linuxext: different possible variations (we do not manage all of them):
+
     #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,4,0)
     #if LINUX_VERSION_CODE <= KERNEL_VERSION(2,4,2)
     #if LINUX_VERSION_CODE < KERNEL_VERSION(2,5,0)
@@ -391,49 +386,105 @@ rule token = parse
     
   *)
 
-  (* linuxext: *)
+  (* linuxext: must be before the generic rules for if and ifdef *)
   | "#" spopt "if" sp "("?  "LINUX_VERSION_CODE" sp (">=" | ">") sp
       { let info = tokinfo lexbuf in 
-        TIfdefVersion (true, info +> tok_add_s (cpp_eat_until_nl lexbuf)) 
+        TIfdefVersion (true, no_ifdef_mark(), 
+                      info +> tok_add_s (cpp_eat_until_nl lexbuf)) 
       } 
   (* linuxext: *)
   | "#" spopt "if" sp "!" "("?  "LINUX_VERSION_CODE" sp (">=" | ">") sp
   | "#" spopt "if" sp ['(']?  "LINUX_VERSION_CODE" sp ("<=" | "<") sp
       
       { let info = tokinfo lexbuf in 
-        TIfdefVersion (false, info +> tok_add_s (cpp_eat_until_nl lexbuf)) 
+        TIfdefVersion (false, no_ifdef_mark(), 
+                      info +> tok_add_s (cpp_eat_until_nl lexbuf)) 
       } 
+
+
 
 
   (* can have some ifdef 0  hence the letter|digit even at beginning of word *)
   | "#" [' ''\t']* "ifdef"  [' ''\t']+ (letter|digit) ((letter|digit)*) [' ''\t']*  
-      { TIfdef (tokinfo lexbuf) }
+      { TIfdef (no_ifdef_mark(), tokinfo lexbuf) }
   | "#" [' ''\t']* "ifndef" [' ''\t']+ (letter|digit) ((letter|digit)*) [' ''\t']*  
-      { TIfdef (tokinfo lexbuf) }
+      { TIfdef (no_ifdef_mark(), tokinfo lexbuf) }
   | "#" [' ''\t']* "if" [' ' '\t']+                                           
       { let info = tokinfo lexbuf in 
-        TIfdef (info +> tok_add_s (cpp_eat_until_nl lexbuf)) 
+        TIfdef (no_ifdef_mark(), info +> tok_add_s (cpp_eat_until_nl lexbuf)) 
       }
   | "#" [' ' '\t']* "if" '('                
       { let info = tokinfo lexbuf in 
-        TIfdef (info +> tok_add_s (cpp_eat_until_nl lexbuf))
+        TIfdef (no_ifdef_mark(), info +> tok_add_s (cpp_eat_until_nl lexbuf))
       }
 
   | "#" [' ' '\t']* "elif" [' ' '\t']+ 
       { let info = tokinfo lexbuf in 
-        TIfdefelif (info +> tok_add_s (cpp_eat_until_nl lexbuf)) 
+        TIfdefelif (no_ifdef_mark(), info +> tok_add_s (cpp_eat_until_nl lexbuf)) 
       } 
 
 
-  (* can have #endif LINUX *)
-  | "#" [' ' '\t']* "endif" [^'\n']* '\n'    { TEndif     (tokinfo lexbuf) }
+  (* bugfix: can have #endif LINUX  but at the same time if I eat everything
+   * until next line, I may miss some TComment which for some tools
+   * are important such as aComment 
+   *)
+  | "#" [' ' '\t']* "endif" (*[^'\n']* '\n'*) { 
+      TEndif     (no_ifdef_mark(), tokinfo lexbuf) 
+    }
   (* can be at eof *)
-  | "#" [' ' '\t']* "endif"                  { TEndif     (tokinfo lexbuf) }
+  (*| "#" [' ' '\t']* "endif"                { TEndif     (tokinfo lexbuf) }*)
 
-  | "#" [' ' '\t']* "else" [' ' '\t' '\n']   { TIfdefelse (tokinfo lexbuf) }
-  (* there is a file in 2.6 that have this *)
-  | "##" [' ' '\t']* "else" [' ' '\t' '\n']  { TIfdefelse (tokinfo lexbuf) }
+  | "#" [' ' '\t']* "else" [' ' '\t' '\n']   
+      { TIfdefelse (no_ifdef_mark(), tokinfo lexbuf) }
 
+
+
+
+  (* ---------------------- *)
+  (* #define body *)
+  (* ---------------------- *)
+
+  (* only in cpp directives normally *)
+  | "\\" '\n' { TCppEscapedNewline (tokinfo lexbuf) }
+
+
+  | ((id as s)  "...")
+      { TDefParamVariadic (s, tokinfo lexbuf) }
+
+
+  (* could generate separate token for #, ## and then extend grammar,
+   * but there can be ident in many different places, in expression
+   * but also in declaration, in function name. So having 3 tokens
+   * for an ident does not work well with how we add info in
+   * ast_c. So better to generate just one token, for now, just one info,
+   * even if have later to reanalyse those tokens and unsplit.
+   * 
+   * todo: our heuristics in parsing_hacks rely on TIdent. So maybe
+   * an easier solution would be to augment the TIdent type such as 
+   *   TIdent of string * info * cpp_ident_additionnal_info
+   *)
+
+
+  (* cppext: string concatenation of idents *)
+  |  id   ([' ''\t']* "##" [' ''\t']* id)+ 
+      { let info = tokinfo lexbuf in
+        TIdent (tok lexbuf, info)
+      }
+
+  (* cppext: stringification.
+   * bugfix: this case must be after the other cases such as #endif
+   * otherwise take precedent.
+   *)
+  |  "#" spopt id  
+      { let info = tokinfo lexbuf in
+        TIdent (tok lexbuf, info)
+      }
+
+  (* cppext: gccext: ##args for variadic macro *)
+  |  "##" spopt id
+      { let info = tokinfo lexbuf in
+        TIdent (tok lexbuf, info)
+      }
 
 
 
@@ -511,19 +562,32 @@ rule token = parse
           with
           | Some f -> f info
 
-           (* parse_typedef_fix. note: now this is no more useful, cos
-            * as we use tokens_all, it first parse all as an ident and
-            * later transform an indent in a typedef. so this job is
-            * now done in parse_c.ml.
-            * 
+           (* parse_typedef_fix. 
             *    if Lexer_parser.is_typedef s 
             *    then TypedefIdent (s, info)
             *    else TIdent (s, info)
+            * 
+            * update: now this is no more useful, cos
+            * as we use tokens_all, it first parse all as an ident and
+            * later transform an indent in a typedef. so the typedef job is
+            * now done in parse_c.ml.
             *)
 
           | None -> TIdent (s, info)
-        )            
-      }	
+        )
+      }
+  (* gccext: apparently gcc allows dollar in variable names. found such 
+   * thing a few time in linux and in glibc. No need look in keyword_table
+   * here.
+   *)
+  | (letter | '$') (letter | digit | '$') *  
+      { 
+        let info = tokinfo lexbuf in
+        let s = tok lexbuf in
+        pr2 ("LEXER: identifier with dollar: "  ^ s);
+        TIdent (s, info)
+      }
+
 
   (* ----------------------------------------------------------------------- *)
   (* C constant *)
@@ -574,11 +638,11 @@ rule token = parse
 
   | ['0'] ['0'-'9']+  
       { pr2 ("LEXER: " ^ error_radix "octal" ^ tok lexbuf); 
-        TCommentMisc (tokinfo lexbuf)
+        TUnknown (tokinfo lexbuf)
       }
   | ("0x" |"0X") ['0'-'9' 'a'-'z' 'A'-'Z']+ 
       { pr2 ("LEXER: " ^ error_radix "hexa" ^ tok lexbuf);
-        TCommentMisc (tokinfo lexbuf)
+        TUnknown (tokinfo lexbuf)
       }
 
 
@@ -662,6 +726,8 @@ and string  = parse
           x ^ string lexbuf
        }
 
+  | eof { pr2 "LEXER: WIERD end of file in string"; ""}
+
  (* Bug if add following code, cos match also the '"' that is needed
   * to finish the string, and so go until end of file.
   *)
@@ -694,7 +760,7 @@ and comment = parse
 
 (* cpp recognize C comments, so when #define xx (yy) /* comment \n ... */
  * then he has already erased the /* comment. So:
- * - dont eat the start of the comment otherwiseafterwards we are in the middle
+ * - dont eat the start of the comment otherwise afterwards we are in the middle
  *   of a comment and so will problably get a parse error somewhere.
  * - have to recognize comments in cpp_eat_until_nl.
  *)

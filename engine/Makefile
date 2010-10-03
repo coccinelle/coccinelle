@@ -18,106 +18,109 @@
 # Coccinelle under other licenses.
 
 
+##############################################################################
+# Variables
+##############################################################################
+#TARGET=matcher
 TARGET=cocciengine
 CTLTARGET=engine
 
-SOURCES = flag_engine.ml lib_engine.ml pretty_print_engine.ml \
-	  check_exhaustive_pattern.ml \
-	  check_reachability.ml \
-	  c_vs_c.ml isomorphisms_c_c.ml \
-          cocci_vs_c_3.ml pattern3.ml sgrep.ml transformation3.ml  \
-	  asttomember.ml asttoctl2.ml ctltotex.ml \
-	  postprocess_transinfo.ml ctlcocci_integration.ml
+SRC= flag_matcher.ml lib_engine.ml pretty_print_engine.ml \
+      check_exhaustive_pattern.ml \
+      check_reachability.ml \
+      c_vs_c.ml isomorphisms_c_c.ml \
+      cocci_vs_c.ml pattern_c.ml sgrep.ml transformation_c.ml  \
+      asttomember.ml asttoctl2.ml ctltotex.ml \
+      postprocess_transinfo.ml ctlcocci_integration.ml
+
+#c_vs_c.ml
+#SRC= flag_matcher.ml \
+#  c_vs_c.ml cocci_vs_c.ml \
+#  lib_engine.ml \
+#  pattern_c.ml transformation_c.ml 
+
+#LIBS=../commons/commons.cma ../parsing_c/parsing_c.cma
+#INCLUDES= -I ../commons -I ../parsing_c
+INCLUDES = -I ../commons -I ../commons/ocamlextra -I ../globals \
+	       -I ../ctl -I ../parsing_cocci -I ../parsing_c 
+LIBS=../commons/commons.cma ../globals/globals.cma \
+     ../ctl/ctl.cma ../parsing_c/parsing_c.cma ../parsing_cocci/cocci_parser.cma
+
+SYSLIBS= str.cma unix.cma 
+
 
 # just to test asttoctl
 # CTLSOURCES = lib_engine.ml pretty_print_engine.ml asttoctl.ml ctltotex.ml \
 #	main.ml
 
-INCLUDES = -I ../commons -I ../commons/ocamlextra -I ../globals \
-	       -I ../ctl -I ../parsing_c -I ../parsing_cocci
+##############################################################################
+# Generic variables
+##############################################################################
 
-SYSLIBS = str.cma unix.cma
-LIBS=../commons/commons.cma ../globals/globals.cma \
-     ../ctl/ctl.cma ../parsing_c/c_parser.cma ../parsing_cocci/cocci_parser.cma
-
-
-# The Caml compilers.
+#for warning:  -w A 
+#for profiling:  -p -inline 0   with OCAMLOPT
 OCAMLCFLAGS ?= -g -dtypes
-OCAMLC =ocamlc$(OPTBIN) $(OCAMLCFLAGS) $(INCLUDES)
-OCAMLOPT = ocamlopt$(OPTBIN) $(OPTFLAGS) $(INCLUDES)
-OCAMLDEP = ocamldep$(OPTBIN) $(INCLUDES)
 
-EXEC=$(TARGET).byte
-LIB=$(TARGET).cma
-OPTLIB=$(LIB:.cma=.cmxa)
-
-CTLEXEC=$(CTLTARGET)
-
-OBJS = $(SOURCES:.ml=.cmo)
-OPTOBJS = $(OBJS:.cmo=.cmx)
-
-CTLOBJS = $(CTLSOURCES:.ml=.cmo)
-CTLOPTOBJS = $(CTLOBJS:.cmo=.cmx)
+OCAMLC=ocamlc$(OPTBIN) $(OCAMLCFLAGS) $(INCLUDES)
+OCAMLOPT=ocamlopt$(OPTBIN) $(OPTFLAGS) $(INCLUDES)
+OCAMLLEX=ocamllex$(OPTBIN) #-ml
+OCAMLYACC=ocamlyacc -v
+OCAMLDEP=ocamldep$(OPTBIN) $(INCLUDES)
+OCAMLMKTOP=ocamlmktop -g -custom $(INCLUDES)
 
 
-#all: $(EXEC) $(LIB)
-all: $(LIB)
-
-all.opt: $(OPTLIB)
-
-ctl: $(CTLEXEC)
+OBJS = $(SRC:.ml=.cmo)
+OPTOBJS = $(SRC:.ml=.cmx)
 
 
-$(LIB): $(OBJS)
-	$(OCAMLC) -a -o $(LIB) $(OBJS)
+##############################################################################
+# Top rules
+##############################################################################
+all: $(TARGET).cma
+all.opt: $(TARGET).cmxa
 
-# clean rule for LIB
+$(TARGET).cma: $(OBJS)
+	$(OCAMLC) -a -o $(TARGET).cma $(OBJS)
+
+$(TARGET).cmxa: $(OPTOBJS) $(LIBS:.cma=.cmxa)
+	$(OCAMLOPT) -a -o $(TARGET).cmxa $(OPTOBJS)
+
+$(TARGET).top: $(OBJS) $(LIBS)
+	$(OCAMLMKTOP) -o $(TARGET).top $(SYSLIBS) $(LIBS) $(OBJS)
+
 clean::
-	rm -f $(LIB)
+	rm -f $(TARGET).top
 
 
-$(OPTLIB): $(OPTOBJS) 
-	$(OCAMLOPT) -a -o $(OPTLIB) $(OPTOBJS)
 
+##############################################################################
+# Pad's rules
+##############################################################################
 
-$(EXEC): $(OBJS) main.cmo $(LIBS)
-	$(OCAMLC) -o $(EXEC) $(SYSLIBS) $(LIBS) $(OBJS) main.cmo
+##############################################################################
+# Generic rules
+##############################################################################
 
-$(CTLEXEC): $(CTLOBJS) $(LIBS)
-	$(OCAMLC) -o $(CTLEXEC) $(SYSLIBS) $(LIBS) $(CTLOBJS)
-
-
-# clean rule for LIB.opt
-clean::
-	rm -f $(OPTLIB) $(LIB:.cma=.a) 	
-	rm -f $(TARGET) rm -f $(TARGET).byte
-	rm -f $(CTLTARGET)
-
-
-.SUFFIXES:
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
 
 .ml.cmo:
 	$(OCAMLC) -c $<
-
 .mli.cmi:
 	$(OCAMLC) -c $<
-
 .ml.cmx:
 	$(OCAMLOPT) -c $<
 
+.ml.mldepend: 
+	$(OCAMLC) -i $<
 
-# clean rule for others files
 clean::
-	rm -f *.cm[iox] *.o  *.annot
-	rm -f *~ .*~ #*# 
+	rm -f *.cm[ioxa] *.o *.a *.cmxa *.annot
+clean::
+	rm -f *~ .*~ gmon.out #*#
 
-beforedepend:
+beforedepend::
 
-depend: beforedepend
-	$(OCAMLDEP) *.mli *.ml > .depend
-
-.depend: 
-	$(OCAMLDEP) *.mli *.ml > .depend
+depend:: beforedepend
+	$(OCAMLDEP) *.mli *.ml    > .depend
 
 -include .depend

@@ -29,7 +29,7 @@ SYSLIBS=str.cma unix.cma
 LIBS=../commons/commons.cma ../globals/globals.cma
 
 INCLUDES = -I ../commons -I ../globals \
-	       -I ../ctl -I ../parsing_c -I ../parsing_cocci -I ../engine
+	       -I ../ctl -I ../parsing_cocci -I ../parsing_c  -I ../engine
 
 #The Caml compilers.
 #for warning:  -w A 

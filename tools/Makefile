@@ -1,4 +1,4 @@
-PROGS=gitgrep split_patch extract_c_and_res meta_files generate_dependencies
+PROGS=gitgrep split_patch extract_c_and_res #generate_dependencies
 
 all: $(PROGS)
 
@@ -29,7 +29,7 @@ SYSLIBS = str.cma unix.cma
 
 INCLUDE=-I ../commons -I ../extra -I  ../parsing_c
 LIBS=../commons/commons.cma ../globals/globals.cma \
-     ../parsing_c/c_parser.cma ../extra/extra.cma 
+     ../parsing_c/parsing_c.cma ../extra/extra.cma 
 
 OCAMLC=ocamlc$(OPTBIN) -g -dtypes   $(INCLUDE) 
 OCAMLOPT=ocamlopt$(OPTBIN)   $(INCLUDE) $(OPTFLAGS)
@@ -43,9 +43,6 @@ split_patch: split_patch.cmo
 	$(OCAMLC) -o $@ $(SYSLIBS) $(INCLUDE) $(LIBS)  $+
 
 extract_c_and_res: extract_c_and_res.cmo
-	$(OCAMLC) -o $@ $(SYSLIBS) $(INCLUDE) $(LIBS)  $+
-
-meta_files: meta_files.cmo
 	$(OCAMLC) -o $@ $(SYSLIBS) $(INCLUDE) $(LIBS)  $+
 
 generate_dependencies: generate_dependencies.cmo

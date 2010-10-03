@@ -12,7 +12,7 @@ type node = node1 * string (* For debugging. Used by print_graph *)
   | TopNode 
   | EndNode
 
-  | FunHeader     of (string * functionType * storage) wrap
+  | FunHeader     of definition (* but empty body *)
   | Decl          of declaration
 
   | SeqStart      of statement * int * info
@@ -38,13 +38,20 @@ type node = node1 * string (* For debugging. Used by print_graph *)
 
 
   (* ------------------------ *)
+  | IfdefHeader of ifdef_directive
+  | IfdefElse of ifdef_directive
+  | IfdefEndif of ifdef_directive
+
+  (* ------------------------ *)
   | DefineHeader of string wrap * define_kind
 
   | DefineExpr of expression
   | DefineType of fullType
   | DefineDoWhileZeroHeader of unit wrap
 
-  | Include of inc_file wrap * (include_rel_pos option ref * bool)
+  | DefineTodo
+
+  | Include of includ
 
   | MacroTop of string * argument wrap2 list * il 
 
@@ -63,8 +70,6 @@ type node = node1 * string (* For debugging. Used by print_graph *)
 
   | Asm of statement * asmbody wrap
   | MacroStmt of statement * unit wrap
-
-  | Ifdef of statement * unit wrap
 
 
   (* ------------------------ *)

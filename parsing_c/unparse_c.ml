@@ -1,4 +1,4 @@
-(* Copyright (C) 2002-2008 Yoann Padioleau
+(* Copyright (C) 2006, 2007, 2008 Yoann Padioleau
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License (GPL)
@@ -8,6 +8,9 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * file license.txt for more details.
+ * 
+ * 
+ * Modifications by Julia Lawall for better newline handling.
  *)
 open Common
 
@@ -122,6 +125,7 @@ let rebuild_tokens_extented toks_ext =
 let mcode_contain_plus = function
   | Ast_cocci.CONTEXT (_,Ast_cocci.NOTHING) -> false
   | Ast_cocci.CONTEXT _ -> true
+(* patch: when need full coccinelle transformation *)
   | Ast_cocci.MINUS (_,[]) -> false
   | Ast_cocci.MINUS (_,x::xs) -> true
   | Ast_cocci.PLUS -> raise Impossible
@@ -214,6 +218,7 @@ let displace_fake_nodes toks =
   let is_fake = function Fake1 _ -> true | _ -> false in
   let is_whitespace = function
       T1(Parser_c.TCommentSpace _)
+      (* patch: cocci    *)
     | T1(Parser_c.TCommentNewline _) -> true
     | _ -> false in
   let rec loop toks =
@@ -238,7 +243,8 @@ let displace_fake_nodes toks =
 	    bef @ fake :: (loop aft)
 	| (Ast_cocci.CONTEXT(_,Ast_cocci.BEFOREAFTER _),_) ->
 	    failwith "fake node should not be before-after"
-	| _ -> bef @ fake :: (loop aft))
+	| _ -> bef @ fake :: (loop aft) (* old: was removed when have simpler yacfe *)
+        )
     | None -> toks
     | _ -> raise Impossible in
   loop toks
@@ -304,28 +310,32 @@ let expand_mcode toks =
 
     let args_pp = (env, pr_cocci, pr_c, pr_space, indent, unindent) in
 
+    (* old: when for yacfe with partial cocci: 
+     *    add_elem t false; 
+    *)
 
+    (* patch: when need full coccinelle transformation *)
     match mcode with
     | Ast_cocci.MINUS (_,any_xxs) -> 
         (* Why adding ? because I want to have all the information, the whole
          * set of tokens, so I can then process and remove the 
          * is_between_two_minus for instance *)
         add_elem t true;
-        Unparse_cocci2.pp_list_list_any args_pp any_xxs Unparse_cocci2.InPlace
+        Unparse_cocci.pp_list_list_any args_pp any_xxs Unparse_cocci.InPlace
     | Ast_cocci.CONTEXT (_,any_befaft) -> 
         (match any_befaft with
         | Ast_cocci.NOTHING -> 
             add_elem t false
         | Ast_cocci.BEFORE xxs -> 
-            Unparse_cocci2.pp_list_list_any args_pp xxs Unparse_cocci2.Before;
+            Unparse_cocci.pp_list_list_any args_pp xxs Unparse_cocci.Before;
             add_elem t false
         | Ast_cocci.AFTER xxs -> 
             add_elem t false;
-            Unparse_cocci2.pp_list_list_any args_pp xxs Unparse_cocci2.After;
+            Unparse_cocci.pp_list_list_any args_pp xxs Unparse_cocci.After;
         | Ast_cocci.BEFOREAFTER (xxs, yys) -> 
-            Unparse_cocci2.pp_list_list_any args_pp xxs Unparse_cocci2.Before;
+            Unparse_cocci.pp_list_list_any args_pp xxs Unparse_cocci.Before;
             add_elem t false;
-            Unparse_cocci2.pp_list_list_any args_pp yys Unparse_cocci2.After;
+            Unparse_cocci.pp_list_list_any args_pp yys Unparse_cocci.After;
         )
     | Ast_cocci.PLUS -> raise Impossible
 
@@ -343,6 +353,7 @@ let is_minusable_comment = function
   | T2 (t,_b,_i) -> 
       (match t with
       | Parser_c.TCommentSpace _   (* only whitespace *)
+      (* patch: coccinelle *)      
       | Parser_c.TCommentNewline _ (* newline plus whitespace *)
       | Parser_c.TComment _ 
       | Parser_c.TCommentCpp (Ast_c.CppAttr, _) 
@@ -351,7 +362,7 @@ let is_minusable_comment = function
 
       | Parser_c.TCommentMisc _ 
       | Parser_c.TCommentCpp (Ast_c.CppDirective, _)
-      | Parser_c.TCommentCpp (Ast_c.CppOther, _)
+      | Parser_c.TCommentCpp (Ast_c.CppPassingCosWouldGetError, _)
         -> false
 
       | _ -> false
@@ -363,6 +374,7 @@ let all_coccis = function
   | _ -> false
 
 let is_minusable_comment_or_plus = function
+(* patch: coccinelle *)
     T2(Parser_c.TCommentNewline _,_b,_i) -> false
   | x -> is_minusable_comment x or all_coccis x
 
@@ -371,6 +383,7 @@ let set_minus_comment = function
       let str = TH.str_of_tok t in
       (match t with
       | Parser_c.TCommentSpace _
+(* patch: coccinelle *)      
       | Parser_c.TCommentNewline _ -> ()
 
       | Parser_c.TComment _ 
@@ -381,6 +394,7 @@ let set_minus_comment = function
       | _ -> raise Impossible
       );
       T2 (t, true, idx)
+(* patch: coccinelle *)   
   | T2 (Parser_c.TCommentNewline _,true,idx) as x -> x
   | _ -> raise Impossible
 
@@ -403,6 +417,7 @@ let remove_minus_and_between_and_expanded_and_fake xs =
   (*This drops the space before each completely minused block (no plus code).*)
   let rec adjust_before_minus = function
       [] -> []
+(* patch: coccinelle  *)
     | (T2(Parser_c.TCommentNewline c,_b,_i) as x)::((T2(_,true,_)::_) as xs) ->
 	let minus_or_comment = function
 	    T2(_,true,_) -> true
@@ -523,6 +538,7 @@ let rec adjust_indentation xs =
       [] -> ()
     | ((T2 (tok,_,_)) as x)::xs when str_of_token2 x = "{" ->
 	find_first_tab true xs
+(* patch: coccinelle *)
     | ((T2 (Parser_c.TCommentNewline s, _, _)) as x)::_
       when started ->
 	let s = str_of_token2 x +> new_tabbing in
@@ -533,6 +549,7 @@ let rec adjust_indentation xs =
   let rec aux started xs = 
     match xs with
     | [] ->  []
+(* patch: coccinelle *)
     | ((T2 (tok,_,_)) as x)::(T2 (Parser_c.TCommentNewline s, _, _))::
       (Cocci2 "{")::xs when started && str_of_token2 x = ")" ->
 	(* to be done for if, etc, but not for a function header *)
@@ -758,3 +775,7 @@ let pp_program2 xs outfile  =
 let pp_program a b = 
   Common.profile_code "C unparsing" (fun () -> pp_program2 a b)
 
+
+let pp_program_default xs outfile = 
+  let xs' = xs +> List.map (fun x -> x, PPnormal) in
+  pp_program xs' outfile

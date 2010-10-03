@@ -1,8 +1,18 @@
 -*- org -*-
 
+* 0.1.2
+
+** Bugfix:
+- better handling of ifdef on statements in control flow graph.
+- transform files even if they do not end in .c (thanks to Vegard Nossum)
+
+** Internals: 
+- merge code of yacfe
+
 * 0.1.1
 
-** better support for initializer, cf -test substruct
+** Langage: 
+ - support for initializer at toplevel, cf -test substruct
 
 * 0.1
 

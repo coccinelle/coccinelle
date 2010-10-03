@@ -71,6 +71,8 @@ oseti.cmo: seti.cmo oset.cmi ocollection.cmi
 oseti.cmx: seti.cmx oset.cmx ocollection.cmx 
 osetpt.cmo: ocamlextra/setPt.cmo oset.cmi ocollection.cmi 
 osetpt.cmx: ocamlextra/setPt.cmx oset.cmx ocollection.cmx 
+parser_combinators.cmo: common.cmi parser_combinators.cmi 
+parser_combinators.cmx: common.cmx parser_combinators.cmi 
 seti.cmo: common.cmi 
 seti.cmx: common.cmx 
 ocamlextra/ANSITerminal.cmo: ocamlextra/ANSITerminal.cmi 
@@ -81,10 +83,6 @@ ocamlextra/dynArray.cmo: ocamlextra/enum.cmi ocamlextra/dynArray.cmi
 ocamlextra/dynArray.cmx: ocamlextra/enum.cmx ocamlextra/dynArray.cmi 
 ocamlextra/enum.cmo: ocamlextra/enum.cmi 
 ocamlextra/enum.cmx: ocamlextra/enum.cmi 
-ocamlextra/parser_combinators.cmo: common.cmi \
-    ocamlextra/parser_combinators.cmi 
-ocamlextra/parser_combinators.cmx: common.cmx \
-    ocamlextra/parser_combinators.cmi 
 ocamlextra/setb.cmo: ocamlextra/setb.cmi 
 ocamlextra/setb.cmx: ocamlextra/setb.cmi 
 ocamlextra/suffix_tree.cmo: ocamlextra/suffix_tree.cmi 

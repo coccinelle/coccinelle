@@ -67,7 +67,7 @@ let normal_form_program xs =
     );
     Visitor_c.ktoplevel_s = (fun (k,bigf) p -> 
       match p with
-      | Define _ -> 
+      | CppTop (Define _) -> 
           raise Todo
           (*
           let (i1, i2, i3) = Common.tuple_of_list3 ii in
@@ -175,8 +175,9 @@ let compare_ast filename1 filename2  =
         | EmptyDef a, EmptyDef b ->       if not (a =*= b) then incr error
         | MacroTop (a1,b1,c1), MacroTop (a2,b2,c2) -> 
             if not ((a1,b1,c1) =*= (a2,b2,c2)) then incr error
-        | Include (a,_), Include (b,_) -> if not (a =*= b) then incr error
-        | Define _, Define _ ->   
+        | CppTop (Include {i_include = a}), CppTop (Include {i_include = b}) -> 
+            if not (a =*= b) then incr error
+        | CppTop Define _, CppTop Define _ ->   
             raise Todo
             (* if not (a =*= b) then incr error *)
         | NotParsedCorrectly a, NotParsedCorrectly b -> 
@@ -188,7 +189,13 @@ let compare_ast filename1 filename2  =
         | _, NotParsedCorrectly b -> 
             incr pb_notparsed
         | FinalDef a, FinalDef b -> if not (a =*= b) then incr error
-        | _, _ -> incr error
+
+        | IfdefTop a, IfdefTop b -> if not (a =*= b) then incr error
+
+        | (FinalDef _|EmptyDef _|
+           MacroTop (_, _, _)|IfdefTop _|
+           CppTop _|Definition _|Declaration _), _ -> incr error
+    
         );
         (match () with
         | _ when !pb_notparsed > 0 && !error = 0 -> 

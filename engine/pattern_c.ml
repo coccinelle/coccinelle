@@ -1,27 +1,19 @@
-(*
-* Copyright 2005-2008, Ecole des Mines de Nantes, University of Copenhagen
-* Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller
-* This file is part of Coccinelle.
-* 
-* Coccinelle is free software: you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation, according to version 2 of the License.
-* 
-* Coccinelle is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-* GNU General Public License for more details.
-* 
-* You should have received a copy of the GNU General Public License
-* along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
-* 
-* The authors reserve the right to distribute this or future versions of
-* Coccinelle under other licenses.
-*)
-
-
+(* Copyright (C) 2006, 2007 Yoann Padioleau
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License (GPL)
+ * version 2 as published by the Free Software Foundation.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * file license.txt for more details.
+ * 
+ * This file was part of Coccinelle.
+ *)
 open Common
 
+module Flag_engine = Flag_matcher
 (*****************************************************************************)
 (* The functor argument  *) 
 (*****************************************************************************)
@@ -80,6 +72,7 @@ module XMATCH = struct
   type tin = { 
     extra: xinfo;
     binding: Lib_engine.metavars_binding;
+    binding0: Lib_engine.metavars_binding; (* inherited bindings *)
   }
   (* 'x is a ('a * 'b) but in fact dont care about 'b, we just tag the SP *)
   (* opti? use set instead of list *)
@@ -91,7 +84,7 @@ module XMATCH = struct
   let (>>=) m1 m2 = fun tin ->
     let xs = m1 tin in
     let xxs = xs +> List.map (fun ((a,b), binding) -> 
-      m2 a b {extra = tin.extra; binding = binding}
+      m2 a b {tin with binding = binding}
     ) in
     List.flatten xxs
 
@@ -145,7 +138,7 @@ module XMATCH = struct
     else fail tin
 
 
-  let mode = Cocci_vs_c_3.PatternMode
+  let mode = Cocci_vs_c.PatternMode
 
   (* ------------------------------------------------------------------------*)
   (* Exp  *) 
@@ -223,6 +216,23 @@ module XMATCH = struct
       (a, node), binding
     )
 
+  let cocciInit = fun expf expa node -> fun tin -> 
+
+    let globals = ref [] in
+    let bigf = { 
+      Visitor_c.default_visitor_c with 
+        Visitor_c.kini = (fun (k, bigf) expb -> 
+	match expf expa expb tin with
+	| [] -> (* failed *) k expb
+	| xs -> globals := xs @ !globals);
+
+    } 
+    in
+    Visitor_c.vk_node bigf node;
+    !globals +> List.map (fun ((a, _exp), binding) -> 
+      (a, node), binding
+    )
+
 
   (* ------------------------------------------------------------------------*)
   (* Distribute mcode *) 
@@ -279,9 +289,11 @@ module XMATCH = struct
       (fun c exp tin ->
 	let success = [[]] in
 	let failure = [] in
-	(match Common.optionise (fun () -> tin.binding +> List.assoc c) with
+	(* relies on the fact that constraints on pos variables must refer to
+	   inherited variables *)
+	(match Common.optionise (fun () -> tin.binding0 +> List.assoc c) with
 	  Some valu' ->
-	    if Cocci_vs_c_3.equal_metavarval exp valu'
+	    if Cocci_vs_c.equal_metavarval exp valu'
 	    then success else failure
 	| None ->
 	    (* if the variable is not there, it puts no constraints *)
@@ -300,67 +312,72 @@ module XMATCH = struct
    * X et qu'elle a mis X a DontSaved.
    *)
   let check_add_metavars_binding strip _keep inherited = fun (k, valu) tin ->
-    (match Common.optionise (fun () -> tin.binding +> List.assoc k) with
-    | Some (valu') ->
-        if Cocci_vs_c_3.equal_metavarval valu valu'
-        then Some tin.binding
-        else None
-
-    | None ->
-        if inherited 
-        then None
-        else 
+    if inherited
+    then
+      match Common.optionise (fun () -> tin.binding0 +> List.assoc k) with
+      | Some (valu') ->
+          if Cocci_vs_c.equal_metavarval valu valu'
+          then Some tin.binding
+          else None
+      |	None -> None
+    else
+      match Common.optionise (fun () -> tin.binding +> List.assoc k) with
+      | Some (valu') ->
+          if Cocci_vs_c.equal_metavarval valu valu'
+          then Some tin.binding
+          else None
+	      
+      | None ->
           let valu' = 
             match valu with
               Ast_c.MetaIdVal a        -> Ast_c.MetaIdVal a
             | Ast_c.MetaFuncVal a      -> Ast_c.MetaFuncVal a
             | Ast_c.MetaLocalFuncVal a -> Ast_c.MetaLocalFuncVal a (*more?*)
             | Ast_c.MetaExprVal a -> 
-                Ast_c.MetaExprVal
+		Ast_c.MetaExprVal
 		  (if strip
 		  then Lib_parsing_c.al_expr a
 		  else Lib_parsing_c.semi_al_expr a)
             | Ast_c.MetaExprListVal a ->  
-                Ast_c.MetaExprListVal
+		Ast_c.MetaExprListVal
 		  (if strip
 		  then Lib_parsing_c.al_arguments a
 		  else Lib_parsing_c.semi_al_arguments a)
 		  
             | Ast_c.MetaStmtVal a -> 
-                Ast_c.MetaStmtVal
+		Ast_c.MetaStmtVal
 		  (if strip
 		  then Lib_parsing_c.al_statement a
 		  else Lib_parsing_c.semi_al_statement a)
             | Ast_c.MetaTypeVal a -> 
-                Ast_c.MetaTypeVal
+		Ast_c.MetaTypeVal
 		  (if strip
 		  then Lib_parsing_c.al_type a
 		  else Lib_parsing_c.semi_al_type a)
-
+		  
             | Ast_c.MetaListlenVal a -> Ast_c.MetaListlenVal a
-
+		  
             | Ast_c.MetaParamVal a -> failwith "not handling MetaParamVal"
             | Ast_c.MetaParamListVal a -> 
-                Ast_c.MetaParamListVal
+		Ast_c.MetaParamListVal
 		  (if strip
 		  then Lib_parsing_c.al_params a
 		  else Lib_parsing_c.semi_al_params a)
-
+		  
             | Ast_c.MetaPosVal (pos1,pos2) -> Ast_c.MetaPosVal (pos1,pos2)
             | Ast_c.MetaPosValList l -> Ast_c.MetaPosValList l
           in Some (tin.binding +> Common.insert_assoc (k, valu'))
-    )
 
   let envf keep inherited = fun (k, valu, get_max_min) f tin ->
     let x = Ast_cocci.unwrap_mcode k in
     match check_add_metavars_binding true keep inherited (x, valu) tin with
     | Some binding ->
-	let new_tin = {extra = tin.extra; binding = binding} in
+	let new_tin = {tin with binding = binding} in
 	(match Ast_cocci.get_pos_var k with
 	  Ast_cocci.MetaPos(name,constraints,per,keep,inherited) ->
 	    let pvalu =
-	      let (file,min,max) = get_max_min() in
-	      Ast_c.MetaPosValList[(file,min,max)] in
+	      let (file,current_element,min,max) = get_max_min() in
+	      Ast_c.MetaPosValList[(file,current_element,min,max)] in
 	    (* check constraints.  success means that there is a match with
 	       one of the constraints, which will ultimately result in
 	       failure. *)
@@ -374,7 +391,7 @@ module XMATCH = struct
 		    check_add_metavars_binding false keep inherited (x, pvalu)
 		      new_tin with
 		  | Some binding ->
-		      f () {extra = new_tin.extra; binding = binding}
+		      f () {new_tin with binding = binding}
 		  | None -> fail tin))
 	      new_tin
 	| Ast_cocci.NoMetaPos -> f () new_tin)
@@ -393,7 +410,7 @@ module XMATCH = struct
 
   let (all_bound : Ast_cocci.meta_name list -> tin -> bool) = fun l tin ->
     l +> List.for_all (fun inhvar -> 
-      match Common.optionise (fun () -> tin.binding +> List.assoc inhvar) with
+      match Common.optionise (fun () -> tin.binding0 +> List.assoc inhvar) with
       | Some _ -> true
       | None -> false
     )
@@ -428,7 +445,7 @@ module XMATCH = struct
 	      (match
 		check_add_metavars_binding false keep inherited (x, pvalu) tin
 	      with
-		Some binding -> finish {extra = tin.extra; binding = binding}
+		Some binding -> finish {tin with binding = binding}
 	      | None -> fail tin))
 	  tin
     | _ -> finish tin
@@ -443,10 +460,10 @@ end
 (*****************************************************************************)
 (* Entry point  *) 
 (*****************************************************************************)
-module MATCH  = Cocci_vs_c_3.COCCI_VS_C (XMATCH)
+module MATCH  = Cocci_vs_c.COCCI_VS_C (XMATCH)
 
 
-let match_re_node2 dropped_isos a b binding = 
+let match_re_node2 dropped_isos a b binding0 = 
 
   let tin = { 
     XMATCH.extra = {
@@ -454,7 +471,8 @@ let match_re_node2 dropped_isos a b binding =
       optional_qualifier_iso = not(List.mem "optional_qualifier" dropped_isos);
       value_format_iso       = not(List.mem "value_format"       dropped_isos);
     };
-    XMATCH.binding = binding;
+    XMATCH.binding = [];
+    XMATCH.binding0 = binding0;
   } in
 
   MATCH.rule_elem_node a b tin

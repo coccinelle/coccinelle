@@ -144,6 +144,7 @@ module CFG =
       Control_flow_c.extract_is_loop (cfg#nodes#find n)
     let print_node i = Format.print_string (string_of_int i)
     let size cfg = cfg#nodes#length
+    let print_graph cfg label border_nodes fill_nodes filename = ()
   end
 
 module ENGINE = Ctl_engine.CTL_ENGINE (ENV) (CFG) (PRED)
@@ -161,14 +162,19 @@ let test_formula state formula cfg =
 	       cfg#nodes#tolist) in
     let verbose = !Flag_ctl.verbose_ctl_engine in
     let pm = !Flag_ctl.partial_match in
+(*     let gt = !Flag_ctl.graphical_trace in *)
     Flag_ctl.verbose_ctl_engine := false;
     Flag_ctl.partial_match := false;
+    Flag_ctl.checking_reachability := true;
+(*     Flag_ctl.graphical_trace := ""; *)
     let res =
       ENGINE.sat (cfg,label,List.map fst cfg#nodes#tolist)
 	(CTL.And(CTL.NONSTRICT,CTL.Pred(Node(state)),formula))
 	[[Node(state)]] in
     Flag_ctl.verbose_ctl_engine := verbose;
     Flag_ctl.partial_match := pm;
+    Flag_ctl.checking_reachability := false;
+(*     Flag_ctl.graphical_trace := gt; *)
     match res with [] -> false | _ -> true
 
 (* ---------------------------------------------------------------- *)

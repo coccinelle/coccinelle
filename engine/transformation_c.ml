@@ -1,29 +1,21 @@
-(*
-* Copyright 2005-2008, Ecole des Mines de Nantes, University of Copenhagen
-* Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller
-* This file is part of Coccinelle.
-* 
-* Coccinelle is free software: you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation, according to version 2 of the License.
-* 
-* Coccinelle is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-* GNU General Public License for more details.
-* 
-* You should have received a copy of the GNU General Public License
-* along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
-* 
-* The authors reserve the right to distribute this or future versions of
-* Coccinelle under other licenses.
-*)
-
-
+(* Copyright (C) 2006, 2007 Yoann Padioleau
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License (GPL)
+ * version 2 as published by the Free Software Foundation.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * file license.txt for more details.
+ * 
+ * This file was part of Coccinelle.
+ *)
 open Common
 
 module F = Control_flow_c
 
+module Flag = Flag_matcher
 (*****************************************************************************)
 (* The functor argument  *) 
 (*****************************************************************************)
@@ -63,6 +55,7 @@ module XTRANS = struct
   type tin = { 
     extra: xinfo;
     binding: Lib_engine.metavars_binding;
+    binding0: Lib_engine.metavars_binding; (* inherited variable *)
   }
   type 'x tout = 'x option
 
@@ -99,7 +92,7 @@ module XTRANS = struct
   let value_format_flag f = fun tin -> 
     f (tin.extra.value_format_iso) tin
 
-  let mode = Cocci_vs_c_3.TransformMode
+  let mode = Cocci_vs_c.TransformMode
 
   (* ------------------------------------------------------------------------*)
   (* Exp  *) 
@@ -144,6 +137,18 @@ module XTRANS = struct
     in
     Some (expa, Visitor_c.vk_node_s bigf node)
 
+  let cocciInit = fun expf expa node -> fun tin -> 
+
+    let bigf = { 
+      Visitor_c.default_visitor_c_s with 
+      Visitor_c.kini_s = (fun (k, bigf) expb ->
+	match expf expa expb tin with
+	| None -> (* failed *) k expb
+	| Some (x, expb) -> expb);
+    }
+    in
+    Some (expa, Visitor_c.vk_node_s bigf node)
+
 
   (* ------------------------------------------------------------------------*)
   (* Tokens *) 
@@ -174,9 +179,12 @@ module XTRANS = struct
     let (oldmcode, oldenv) = !cocciinforef in
 
     let mck =
+      (* coccionly: 
       if !Flag_parsing_cocci.sgrep_mode
       then Sgrep.process_sgrep ib mck
-      else mck 
+      else 
+      *)
+        mck 
     in
     (match mck, Ast_c.pinfo_of_info ib with
     | _,                  Ast_c.AbstractLineTok _ -> raise Impossible
@@ -200,10 +208,13 @@ module XTRANS = struct
           ib
         end
         else 
+          (* coccionly: 
           if !Flag.sgrep_mode2
           then ib (* safe *)
           else 
-            begin
+          *)
+             begin
+            (* coccionly:
 	      Format.set_formatter_out_channel stderr;
               Common.pr2 "SP mcode ";
               Pretty_print_cocci.print_mcodekind oldmcode;
@@ -212,6 +223,7 @@ module XTRANS = struct
               Pretty_print_cocci.print_mcodekind mck;
               Format.print_newline();
               Format.print_flush();
+            *)
               failwith
 	        (Common.sprintf "%s: already tagged token:\n%s"
 		   tin.extra.current_rule_name
@@ -447,7 +459,7 @@ module XTRANS = struct
          *)
 
         (*f () tin*)
-        if Cocci_vs_c_3.equal_metavarval value value' 
+        if Cocci_vs_c.equal_metavarval value value' 
         then f () tin
         else fail tin
 
@@ -465,7 +477,7 @@ end
 (*****************************************************************************)
 (* Entry point  *) 
 (*****************************************************************************)
-module TRANS  = Cocci_vs_c_3.COCCI_VS_C (XTRANS)
+module TRANS  = Cocci_vs_c.COCCI_VS_C (XTRANS)
 
 
 let transform_re_node a b tin = 
@@ -473,10 +485,10 @@ let transform_re_node a b tin =
   | None -> raise Impossible
   | Some (_sp, b') -> b'
 
-
 let (transform2: string (* rule name *) -> string list (* dropped_isos *) ->
+  Lib_engine.metavars_binding (* inherited bindings *) ->
   Lib_engine.transformation_info -> F.cflow -> F.cflow) = 
- fun rule_name dropped_isos xs cflow -> 
+ fun rule_name dropped_isos binding0 xs cflow -> 
 
    let extra = { 
      optional_storage_iso   = not(List.mem "optional_storage" dropped_isos);
@@ -496,7 +508,8 @@ let (transform2: string (* rule name *) -> string list (* dropped_isos *) ->
       
       let tin = {
         XTRANS.extra = extra;
-        XTRANS.binding = binding;
+        XTRANS.binding = binding0@binding;
+        XTRANS.binding0 = []; (* not used - everything constant for trans *)
       } in
 
       let node' = transform_re_node rule_elem node tin in
@@ -521,6 +534,6 @@ let (transform2: string (* rule name *) -> string list (* dropped_isos *) ->
 
 
 
-let transform a b c d = 
+let transform a b c d e = 
   Common.profile_code "Transformation3.transform" 
-    (fun () -> transform2 a b c d)
+    (fun () -> transform2 a b c d e)

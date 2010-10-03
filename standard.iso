@@ -631,6 +631,14 @@ T E;
 
 sizeof(T) => sizeof(E)
 
+// Expression
+// @ fld_func_call @
+// expression list ES;
+// identifier fld;
+// expression E;
+// @@
+//  E.fld(ES) <=> (*E.fld)(ES)
+
 
 // ****************************************************************************
 // Linux specific isomorphisms 

@@ -17,6 +17,8 @@ object ('o)
   method virtual mem : 'a -> bool
   method virtual null : bool
 
+  (* effect version *)
+  method add2: 'a -> unit
 
 
   method fold : ('c -> 'a -> 'c) -> 'c -> 'c
