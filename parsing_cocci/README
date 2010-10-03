@@ -1,0 +1,32 @@
+Workflow:
+
+main.ml: an entry point to be used in place of the cocci top level, to
+check only the parsing of SmPL files.
+
+parse_cocci.ml: Initiates the parsing process and subsequent processing
+phases.  There are two entry points:
+
+   process: called by main, returns metavariables and merged ast code
+
+   process_for_ctl: called by engine/main, returns no metavariables, but
+   instead ast and ast0 code.  ast code is used by ast0toctl for printing
+   and ast0 code is transformed to CTL.
+
+
+
+arity.ml
+ast0_cocci.ml
+ast0toast.ml
+ast_cocci.ml
+check_meta.ml
+data.ml
+lexer_cocci.ml
+main.ml
+merge.ml
+parse_cocci.ml
+parser_cocci_menhir.ml
+parser_cocci.ml
+plus.ml
+semantic_cocci.ml
+top_level.ml
+unparse_cocci.ml

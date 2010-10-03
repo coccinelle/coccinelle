@@ -1,0 +1,73 @@
+1. Motivate in some way the changes that need to be made.
+
+2. Show the semantic patch in rule9_1.cocci.  This could also be developed
+   incrementally, with first the lines for get and put, then the line for
+   the error checking on hostptr, then the - and + line for moving the
+   declaration of hostptr to the parameter list.  Finally, drop the hostno
+   parameter.  Explain the metavariables.  Note that a rule is
+   automatically generated to update the prototype of the proc_info
+   function, if one is available.
+
+3. Apply it to scsiglue.c and show what has changed.
+
+4. Some issues:
+
+   * In nsp_cs.c (and a lot of other files), there is no call to the put
+     function.  Indeed, the reason for the CE was that driver programmers
+     were forgetting to call the put function.  We thus would like to make
+     it optional, the idea being that if we find it we should delete it,
+     but if we don't find it, the rest of the transformation should still
+     take place.
+
+   * In g_NCR5380.c, there is no error checking on the result of calling
+     the get function.  Thus, that has to be optional as well.  The result
+     of making both of these changes is in rule9_2.cocci.
+
+   * In sym53c8xx.c, there are no braces around the if branch in the error
+     handling code.  Explain about the isomorphisms.
+
+   * In nsp_cs.c, hostptr is compared to NULL.  There is an isomorphism for
+     that as well.
+
+   * The function is essentially identified by the types of its
+     parameters.  Since there are quite a lot of them, with quite varied
+     typed, this is probably enough to uniquely identify the function
+     within each driver in practice.  But for greater safety, we should
+     describe the function in terms of how it interacts with the SCSI
+     library, because it is the SCSI library that will be responsible for
+     supplying the extra argument.  For this we add a new rule
+     (rule9_3.cocci).  This rule identifies the function as the one that is
+     stored in the proc_info field of a structure of type SHT (also given
+     the typedef name of Scsi_Host_Template).  Isomorphisms take case of
+     the case where this assignment has other forms, eg involving a pointer
+     to the structure or is part of a top-level structure initialization.
+
+     Now we want to inherit the binding of proc_info_func from the first
+     rule to the second one.  For this, we give the first one a name, and
+     use that name in declaring the proc_info_func metavariable in the
+     second rule.  The second rule will be applied once for each successful
+     match of the first rule, but in practice, there is only one.
+
+5. The transformation that is implemented is not yet complete, as one can
+   see by comparing with the .res file.  We also have to rename the hostno
+   variable everywhere that it occurs.  Because it can in principle occur
+   anywhere, we make a separate rule to avoid cluttering up the previous
+   one.  This rule inherits the name of the proc_info function from rule1
+   and the names of the hostno and hostptr variables from rule2.  The
+   transformation is to replace occurrences of hostno by a reference to the
+   host_no field of hostptr everywhere hostno occurs, as indicated by the
+   <... ...>.
+
+6. Finally, the proc_info function may be called from other places within
+   the current driver.  These cases must be updated as well with the new
+   argument.  For this, we have to find an appropriate value somewhere.
+   Because the get function has been deprecated, the driver will normally
+   get this information as a parameter, and that is the only case we
+   consider here.  The name of the function enclosing the call is arbitrary
+   (as indicated by a metavariable) as is the position of the
+   Scsi_Host-typed parameter (as indicated by the dots in the parameter
+   list).  As for the previous rule, we use <... ...> to update a call to
+   the proc_info function wherever it occurs.  Note that although we have
+   used the same names as for the parameter list in rule2, buffer, start,
+   etc. are now arbitrary expressions.
+

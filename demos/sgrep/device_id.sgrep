@@ -1,0 +1,37 @@
+// from LKN book de greg
+
+// in fact search more specifically in initializer zone for 
+// the string 157e for the usb, and for the macro which
+// is bound to 0x8139 for the pci
+
+// could functorize/parametrize this script to be generic
+// to handle any kind of device_id number
+
+--- include/linux/pci_ids.h
++++ include/linux/pci_ids.h
+
+// would like a $VAL passed to sgrep via a -DVAL=0x8139
+#define V 0x8139 
+
+---
++++
+
+@@
+identifier X;
+@@
+
+struct 
+(
+pci_device_id 
+|
+usb_device_id 
+)
+    X[] = 
+- { ... };        
+
+// would like a 
+// { 
+// <... 
+- V  // en fait voudrait toute la ligne
+ ...>
+// }

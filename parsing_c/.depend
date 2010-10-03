@@ -1,0 +1,98 @@
+ast_to_flow.cmi: control_flow_c.cmi ../commons/common.cmi ast_c.cmo 
+compare_c.cmi: ../commons/common.cmi 
+control_flow_c.cmi: ../commons/ograph_extended.cmi ast_c.cmo 
+lexer_parser.cmi: ../commons/common.cmi 
+parse_c.cmi: parsing_hacks.cmi parser_c.cmi ../commons/common.cmi ast_c.cmo 
+parser_c.cmi: ast_c.cmo 
+parsing_hacks.cmi: parser_c.cmi ../commons/common.cmi 
+pretty_print_c.cmi: ast_c.cmo 
+test_parsing_c.cmi: ../commons/common.cmi 
+token_helpers.cmi: parser_c.cmi ../commons/common.cmi ast_c.cmo 
+type_annoter_c.cmi: ../commons/common.cmi ast_c.cmo 
+unparse_c2.cmi: parse_c.cmi ../commons/common.cmi 
+unparse_cocci2.cmi: pretty_print_c.cmi ../parsing_cocci/ast_cocci.cmi \
+    ast_c.cmo 
+unparse_hrule.cmi: parse_c.cmi ../commons/common.cmi 
+visitor_c.cmi: control_flow_c.cmi ../commons/common.cmi ast_c.cmo 
+ast_c.cmo: ../commons/common.cmi ../parsing_cocci/ast_cocci.cmi 
+ast_c.cmx: ../commons/common.cmx ../parsing_cocci/ast_cocci.cmx 
+ast_to_flow.cmo: visitor_c.cmi ../commons/ograph_extended.cmi \
+    ../commons/oassocb.cmo ../commons/oassoc.cmi flag_parsing_c.cmo \
+    control_flow_c.cmi ../commons/common.cmi ast_c.cmo ast_to_flow.cmi 
+ast_to_flow.cmx: visitor_c.cmx ../commons/ograph_extended.cmx \
+    ../commons/oassocb.cmx ../commons/oassoc.cmx flag_parsing_c.cmx \
+    control_flow_c.cmx ../commons/common.cmx ast_c.cmx ast_to_flow.cmi 
+compare_c.cmo: visitor_c.cmi token_helpers.cmi parser_c.cmi parse_c.cmi \
+    lib_parsing_c.cmo flag_parsing_c.cmo ../commons/common.cmi ast_c.cmo \
+    compare_c.cmi 
+compare_c.cmx: visitor_c.cmx token_helpers.cmx parser_c.cmx parse_c.cmx \
+    lib_parsing_c.cmx flag_parsing_c.cmx ../commons/common.cmx ast_c.cmx \
+    compare_c.cmi 
+control_flow_c.cmo: ../commons/ograph_extended.cmi flag_parsing_c.cmo \
+    ../commons/common.cmi ast_c.cmo control_flow_c.cmi 
+control_flow_c.cmx: ../commons/ograph_extended.cmx flag_parsing_c.cmx \
+    ../commons/common.cmx ast_c.cmx control_flow_c.cmi 
+flag_parsing_c.cmo: ../commons/common.cmi 
+flag_parsing_c.cmx: ../commons/common.cmx 
+lexer_c.cmo: parser_c.cmi flag_parsing_c.cmo ../commons/common.cmi ast_c.cmo 
+lexer_c.cmx: parser_c.cmx flag_parsing_c.cmx ../commons/common.cmx ast_c.cmx 
+lexer_parser.cmo: flag_parsing_c.cmo ../commons/common.cmi lexer_parser.cmi 
+lexer_parser.cmx: flag_parsing_c.cmx ../commons/common.cmx lexer_parser.cmi 
+lib_parsing_c.cmo: visitor_c.cmi ../commons/common.cmi \
+    ../parsing_cocci/ast_cocci.cmi ast_c.cmo 
+lib_parsing_c.cmx: visitor_c.cmx ../commons/common.cmx \
+    ../parsing_cocci/ast_cocci.cmx ast_c.cmx 
+parse_c.cmo: visitor_c.cmi token_helpers.cmi semantic_c.cmo parsing_hacks.cmi \
+    parser_c.cmi lexer_parser.cmi lexer_c.cmo flag_parsing_c.cmo \
+    ../globals/config.cmo ../commons/common.cmi ast_c.cmo parse_c.cmi 
+parse_c.cmx: visitor_c.cmx token_helpers.cmx semantic_c.cmx parsing_hacks.cmx \
+    parser_c.cmx lexer_parser.cmx lexer_c.cmx flag_parsing_c.cmx \
+    ../globals/config.cmx ../commons/common.cmx ast_c.cmx parse_c.cmi 
+parser_c.cmo: semantic_c.cmo lexer_parser.cmi flag_parsing_c.cmo \
+    ../commons/common.cmi ast_c.cmo parser_c.cmi 
+parser_c.cmx: semantic_c.cmx lexer_parser.cmx flag_parsing_c.cmx \
+    ../commons/common.cmx ast_c.cmx parser_c.cmi 
+parsing_hacks.cmo: token_helpers.cmi parser_c.cmi lexer_parser.cmi \
+    flag_parsing_c.cmo ../commons/common.cmi ast_c.cmo parsing_hacks.cmi 
+parsing_hacks.cmx: token_helpers.cmx parser_c.cmx lexer_parser.cmx \
+    flag_parsing_c.cmx ../commons/common.cmx ast_c.cmx parsing_hacks.cmi 
+pretty_print_c.cmo: flag_parsing_c.cmo ../commons/common.cmi ast_c.cmo \
+    pretty_print_c.cmi 
+pretty_print_c.cmx: flag_parsing_c.cmx ../commons/common.cmx ast_c.cmx \
+    pretty_print_c.cmi 
+semantic_c.cmo: ../commons/common.cmi 
+semantic_c.cmx: ../commons/common.cmx 
+test_parsing_c.cmo: unparse_c2.cmi type_annoter_c.cmi parse_c.cmi \
+    ../commons/ograph_extended.cmi flag_parsing_c.cmo compare_c.cmi \
+    ../commons/common.cmi ast_to_flow.cmi ast_c.cmo test_parsing_c.cmi 
+test_parsing_c.cmx: unparse_c2.cmx type_annoter_c.cmx parse_c.cmx \
+    ../commons/ograph_extended.cmx flag_parsing_c.cmx compare_c.cmx \
+    ../commons/common.cmx ast_to_flow.cmx ast_c.cmx test_parsing_c.cmi 
+token_helpers.cmo: parser_c.cmi ../commons/common.cmi ast_c.cmo \
+    token_helpers.cmi 
+token_helpers.cmx: parser_c.cmx ../commons/common.cmx ast_c.cmx \
+    token_helpers.cmi 
+type_annoter_c.cmo: visitor_c.cmi parse_c.cmi lib_parsing_c.cmo \
+    flag_parsing_c.cmo ../commons/common.cmi ast_c.cmo type_annoter_c.cmi 
+type_annoter_c.cmx: visitor_c.cmx parse_c.cmx lib_parsing_c.cmx \
+    flag_parsing_c.cmx ../commons/common.cmx ast_c.cmx type_annoter_c.cmi 
+unparse_c2.cmo: visitor_c.cmi unparse_cocci2.cmi token_helpers.cmi \
+    pretty_print_c.cmi parser_c.cmi flag_parsing_c.cmo ../commons/common.cmi \
+    ../parsing_cocci/ast_cocci.cmi ast_c.cmo unparse_c2.cmi 
+unparse_c2.cmx: visitor_c.cmx unparse_cocci2.cmx token_helpers.cmx \
+    pretty_print_c.cmx parser_c.cmx flag_parsing_c.cmx ../commons/common.cmx \
+    ../parsing_cocci/ast_cocci.cmx ast_c.cmx unparse_c2.cmi 
+unparse_cocci2.cmo: pretty_print_c.cmi ../commons/common.cmi \
+    ../parsing_cocci/ast_cocci.cmi ast_c.cmo unparse_cocci2.cmi 
+unparse_cocci2.cmx: pretty_print_c.cmx ../commons/common.cmx \
+    ../parsing_cocci/ast_cocci.cmx ast_c.cmx unparse_cocci2.cmi 
+unparse_hrule.cmo: unparse_c2.cmi token_helpers.cmi pretty_print_c.cmi \
+    parser_c.cmi ../commons/common.cmi ../parsing_cocci/ast_cocci.cmi \
+    ast_c.cmo unparse_hrule.cmi 
+unparse_hrule.cmx: unparse_c2.cmx token_helpers.cmx pretty_print_c.cmx \
+    parser_c.cmx ../commons/common.cmx ../parsing_cocci/ast_cocci.cmx \
+    ast_c.cmx unparse_hrule.cmi 
+visitor_c.cmo: control_flow_c.cmi ../commons/common.cmi ast_c.cmo \
+    visitor_c.cmi 
+visitor_c.cmx: control_flow_c.cmx ../commons/common.cmx ast_c.cmx \
+    visitor_c.cmi 

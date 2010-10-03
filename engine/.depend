@@ -1,0 +1,141 @@
+asttoctl.cmi: ../ctl/wrapper_ctl.cmi lib_engine.cmo ../ctl/ast_ctl.cmo \
+    ../parsing_cocci/ast_cocci.cmi 
+asttoctl2.cmi: ../ctl/wrapper_ctl.cmi lib_engine.cmo ../ctl/ast_ctl.cmo \
+    ../parsing_cocci/ast_cocci.cmi 
+asttomember.cmi: lib_engine.cmo ../ctl/ast_ctl.cmo \
+    ../parsing_cocci/ast_cocci.cmi 
+c_vs_c.cmi: ../parsing_c/ast_c.cmo 
+check_reachability.cmi: ../ctl/wrapper_ctl.cmi ../commons/ograph_extended.cmi \
+    ../parsing_c/control_flow_c.cmi ../ctl/ast_ctl.cmo 
+cocci_vs_c_3.cmi: ../parsing_c/control_flow_c.cmi ../commons/common.cmi \
+    ../parsing_cocci/ast_cocci.cmi ../parsing_c/ast_c.cmo 
+ctlcocci_integration.cmi: ../commons/ograph_extended.cmi lib_engine.cmo \
+    ../parsing_c/control_flow_c.cmi ../ctl/ast_ctl.cmo \
+    ../parsing_cocci/ast_cocci.cmi 
+ctltotex.cmi: ../ctl/wrapper_ctl.cmi lib_engine.cmo ../ctl/ast_ctl.cmo \
+    ../parsing_cocci/ast_cocci.cmi 
+pattern3.cmi: lib_engine.cmo ../parsing_c/control_flow_c.cmi \
+    ../parsing_cocci/ast_cocci.cmi 
+postprocess_transinfo.cmi: ../commons/ograph_extended.cmi lib_engine.cmo \
+    ../parsing_cocci/ast_cocci.cmi 
+pretty_print_engine.cmi: lib_engine.cmo ../ctl/ast_ctl.cmo \
+    ../parsing_c/ast_c.cmo 
+transformation3.cmi: lib_engine.cmo ../parsing_c/control_flow_c.cmi 
+asttoctl.cmo: ../ctl/wrapper_ctl.cmi ../parsing_cocci/visitor_ast.cmi \
+    ../parsing_cocci/unify_ast.cmi pretty_print_engine.cmi lib_engine.cmo \
+    ../parsing_cocci/free_vars.cmi ../commons/common.cmi ../ctl/ast_ctl.cmo \
+    ../parsing_cocci/ast_cocci.cmi asttoctl.cmi 
+asttoctl.cmx: ../ctl/wrapper_ctl.cmx ../parsing_cocci/visitor_ast.cmx \
+    ../parsing_cocci/unify_ast.cmx pretty_print_engine.cmx lib_engine.cmx \
+    ../parsing_cocci/free_vars.cmx ../commons/common.cmx ../ctl/ast_ctl.cmx \
+    ../parsing_cocci/ast_cocci.cmx asttoctl.cmi 
+asttoctl2.cmo: ../ctl/wrapper_ctl.cmi ../parsing_cocci/visitor_ast.cmi \
+    ../parsing_cocci/unify_ast.cmi ../parsing_cocci/type_cocci.cmi \
+    pretty_print_engine.cmi ../ctl/pretty_print_ctl.cmi \
+    ../parsing_cocci/pretty_print_cocci.cmi lib_engine.cmo flag_engine.cmo \
+    ../globals/flag.cmo ../commons/common.cmi ../ctl/ast_ctl.cmo \
+    ../parsing_cocci/ast_cocci.cmi asttoctl2.cmi 
+asttoctl2.cmx: ../ctl/wrapper_ctl.cmx ../parsing_cocci/visitor_ast.cmx \
+    ../parsing_cocci/unify_ast.cmx ../parsing_cocci/type_cocci.cmx \
+    pretty_print_engine.cmx ../ctl/pretty_print_ctl.cmx \
+    ../parsing_cocci/pretty_print_cocci.cmx lib_engine.cmx flag_engine.cmx \
+    ../globals/flag.cmx ../commons/common.cmx ../ctl/ast_ctl.cmx \
+    ../parsing_cocci/ast_cocci.cmx asttoctl2.cmi 
+asttomember.cmo: ../parsing_cocci/visitor_ast.cmi \
+    ../parsing_cocci/pretty_print_cocci.cmi lib_engine.cmo \
+    ../commons/common.cmi ../ctl/ast_ctl.cmo ../parsing_cocci/ast_cocci.cmi \
+    asttomember.cmi 
+asttomember.cmx: ../parsing_cocci/visitor_ast.cmx \
+    ../parsing_cocci/pretty_print_cocci.cmx lib_engine.cmx \
+    ../commons/common.cmx ../ctl/ast_ctl.cmx ../parsing_cocci/ast_cocci.cmx \
+    asttomember.cmi 
+c_vs_c.cmo: ../parsing_c/lib_parsing_c.cmo ../commons/common.cmi \
+    ../parsing_c/ast_c.cmo c_vs_c.cmi 
+c_vs_c.cmx: ../parsing_c/lib_parsing_c.cmx ../commons/common.cmx \
+    ../parsing_c/ast_c.cmx c_vs_c.cmi 
+check_exhaustive_pattern.cmo: ../parsing_c/control_flow_c.cmi \
+    ../parsing_cocci/ast_cocci.cmi ../parsing_c/ast_c.cmo 
+check_exhaustive_pattern.cmx: ../parsing_c/control_flow_c.cmx \
+    ../parsing_cocci/ast_cocci.cmx ../parsing_c/ast_c.cmx 
+check_reachability.cmo: ../ctl/wrapper_ctl.cmi ../commons/ograph_extended.cmi \
+    ../ctl/flag_ctl.cmo ../ctl/ctl_engine.cmi ../parsing_c/control_flow_c.cmi \
+    ../ctl/ast_ctl.cmo check_reachability.cmi 
+check_reachability.cmx: ../ctl/wrapper_ctl.cmx ../commons/ograph_extended.cmx \
+    ../ctl/flag_ctl.cmx ../ctl/ctl_engine.cmx ../parsing_c/control_flow_c.cmx \
+    ../ctl/ast_ctl.cmx check_reachability.cmi 
+cocci_vs_c_3.cmo: ../parsing_cocci/type_cocci.cmi \
+    ../parsing_c/lib_parsing_c.cmo ../globals/flag.cmo \
+    ../parsing_c/control_flow_c.cmi ../commons/common.cmi c_vs_c.cmi \
+    ../parsing_cocci/ast_cocci.cmi ../parsing_c/ast_c.cmo cocci_vs_c_3.cmi 
+cocci_vs_c_3.cmx: ../parsing_cocci/type_cocci.cmx \
+    ../parsing_c/lib_parsing_c.cmx ../globals/flag.cmx \
+    ../parsing_c/control_flow_c.cmx ../commons/common.cmx c_vs_c.cmx \
+    ../parsing_cocci/ast_cocci.cmx ../parsing_c/ast_c.cmx cocci_vs_c_3.cmi 
+ctlcocci_integration.cmo: ../ctl/wrapper_ctl.cmi pretty_print_engine.cmi \
+    ../parsing_cocci/pretty_print_cocci.cmi postprocess_transinfo.cmi \
+    pattern3.cmi ../commons/ograph_extended.cmi lib_engine.cmo \
+    ../parsing_cocci/flag_parsing_cocci.cmo flag_engine.cmo \
+    ../globals/flag.cmo ../parsing_c/control_flow_c.cmi ../commons/common.cmi \
+    check_reachability.cmi c_vs_c.cmi ../ctl/ast_ctl.cmo \
+    ../parsing_cocci/ast_cocci.cmi ../parsing_c/ast_c.cmo \
+    ctlcocci_integration.cmi 
+ctlcocci_integration.cmx: ../ctl/wrapper_ctl.cmx pretty_print_engine.cmx \
+    ../parsing_cocci/pretty_print_cocci.cmx postprocess_transinfo.cmx \
+    pattern3.cmx ../commons/ograph_extended.cmx lib_engine.cmx \
+    ../parsing_cocci/flag_parsing_cocci.cmx flag_engine.cmx \
+    ../globals/flag.cmx ../parsing_c/control_flow_c.cmx ../commons/common.cmx \
+    check_reachability.cmx c_vs_c.cmx ../ctl/ast_ctl.cmx \
+    ../parsing_cocci/ast_cocci.cmx ../parsing_c/ast_c.cmx \
+    ctlcocci_integration.cmi 
+ctltotex.cmo: ../parsing_cocci/pretty_print_cocci.cmi lib_engine.cmo \
+    ../ctl/ast_ctl.cmo ctltotex.cmi 
+ctltotex.cmx: ../parsing_cocci/pretty_print_cocci.cmx lib_engine.cmx \
+    ../ctl/ast_ctl.cmx ctltotex.cmi 
+isomorphisms_c_c.cmo: ../commons/common.cmi ../parsing_c/ast_c.cmo 
+isomorphisms_c_c.cmx: ../commons/common.cmx ../parsing_c/ast_c.cmx 
+lib_engine.cmo: ../ctl/wrapper_ctl.cmi ../commons/ograph_extended.cmi \
+    ../parsing_c/control_flow_c.cmi ../commons/common.cmi ../ctl/ast_ctl.cmo \
+    ../parsing_cocci/ast_cocci.cmi ../parsing_c/ast_c.cmo 
+lib_engine.cmx: ../ctl/wrapper_ctl.cmx ../commons/ograph_extended.cmx \
+    ../parsing_c/control_flow_c.cmx ../commons/common.cmx ../ctl/ast_ctl.cmx \
+    ../parsing_cocci/ast_cocci.cmx ../parsing_c/ast_c.cmx 
+main.cmo: ../parsing_cocci/parse_cocci.cmi ctltotex.cmi asttoctl.cmi 
+main.cmx: ../parsing_cocci/parse_cocci.cmx ctltotex.cmx asttoctl.cmx 
+pattern3.cmo: ../parsing_c/visitor_c.cmi ../parsing_c/lib_parsing_c.cmo \
+    lib_engine.cmo flag_engine.cmo ../commons/common.cmi cocci_vs_c_3.cmi \
+    ../parsing_cocci/ast_cocci.cmi ../parsing_c/ast_c.cmo pattern3.cmi 
+pattern3.cmx: ../parsing_c/visitor_c.cmx ../parsing_c/lib_parsing_c.cmx \
+    lib_engine.cmx flag_engine.cmx ../commons/common.cmx cocci_vs_c_3.cmx \
+    ../parsing_cocci/ast_cocci.cmx ../parsing_c/ast_c.cmx pattern3.cmi 
+postprocess_transinfo.cmo: ../parsing_c/parser_c.cmi ../parsing_c/parse_c.cmi \
+    lib_engine.cmo ../commons/common.cmi ../parsing_cocci/ast_cocci.cmi \
+    ../parsing_c/ast_c.cmo postprocess_transinfo.cmi 
+postprocess_transinfo.cmx: ../parsing_c/parser_c.cmx ../parsing_c/parse_c.cmx \
+    lib_engine.cmx ../commons/common.cmx ../parsing_cocci/ast_cocci.cmx \
+    ../parsing_c/ast_c.cmx postprocess_transinfo.cmi 
+pretty_print_engine.cmo: ../ctl/pretty_print_ctl.cmi \
+    ../parsing_cocci/pretty_print_cocci.cmi ../parsing_c/pretty_print_c.cmi \
+    lib_engine.cmo ../commons/common.cmi ../ctl/ast_ctl.cmo \
+    ../parsing_cocci/ast_cocci.cmi ../parsing_c/ast_c.cmo \
+    pretty_print_engine.cmi 
+pretty_print_engine.cmx: ../ctl/pretty_print_ctl.cmx \
+    ../parsing_cocci/pretty_print_cocci.cmx ../parsing_c/pretty_print_c.cmx \
+    lib_engine.cmx ../commons/common.cmx ../ctl/ast_ctl.cmx \
+    ../parsing_cocci/ast_cocci.cmx ../parsing_c/ast_c.cmx \
+    pretty_print_engine.cmi 
+sgrep.cmo: ../parsing_cocci/ast_cocci.cmi ../parsing_c/ast_c.cmo 
+sgrep.cmx: ../parsing_cocci/ast_cocci.cmx ../parsing_c/ast_c.cmx 
+transformation3.cmo: ../parsing_c/visitor_c.cmi \
+    ../parsing_cocci/type_cocci.cmi sgrep.cmo \
+    ../parsing_cocci/pretty_print_cocci.cmi ../parsing_c/lib_parsing_c.cmo \
+    lib_engine.cmo ../parsing_cocci/flag_parsing_cocci.cmo \
+    ../globals/flag.cmo ../parsing_c/control_flow_c.cmi ../commons/common.cmi \
+    cocci_vs_c_3.cmi ../parsing_cocci/ast_cocci.cmi ../parsing_c/ast_c.cmo \
+    transformation3.cmi 
+transformation3.cmx: ../parsing_c/visitor_c.cmx \
+    ../parsing_cocci/type_cocci.cmx sgrep.cmx \
+    ../parsing_cocci/pretty_print_cocci.cmx ../parsing_c/lib_parsing_c.cmx \
+    lib_engine.cmx ../parsing_cocci/flag_parsing_cocci.cmx \
+    ../globals/flag.cmx ../parsing_c/control_flow_c.cmx ../commons/common.cmx \
+    cocci_vs_c_3.cmx ../parsing_cocci/ast_cocci.cmx ../parsing_c/ast_c.cmx \
+    transformation3.cmi 

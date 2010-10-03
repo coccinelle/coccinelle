@@ -1,0 +1,19 @@
+@ rule1 @
+identifier fn;
+@@
+
+fn(...) {
+ <...
+\+ foo();
+ ...>
+}
+
+@ rule2 depends on rule1 @
+identifier rule1.fn;
+@@
+
+- fn(...) {
+- <...
+-\+  bar();
+- ...>
+- }

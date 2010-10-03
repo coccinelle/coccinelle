@@ -1,0 +1,6 @@
+@@
+statement S;
+@@
+
+  S
++ foo();

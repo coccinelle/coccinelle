@@ -1,0 +1,40 @@
+#
+# Edit SYSLIBS to fit your system
+#
+
+PY_PREFIX=@PY_PREFIX@
+PY_VERSION=@PY_VERSION@
+SYSLIBS=@PY_LIBS@
+
+#
+# The rest is automatic
+#
+
+LIBS=	pycaml_ml.o \
+	-cclib -L$(PY_PREFIX)/lib/python$(PY_VERSION)/config \
+	-cclib -lpython$(PY_VERSION) $(SYSLIBS) \
+	unix.cma threads.cma pycaml.cmo
+
+all: pycamltop pycamltest ocamlobj
+
+pycamltop: pycaml_ml.o pycaml.cmo
+	ocamlmktop -thread -custom -o $@ $(LIBS)
+
+pycaml_ml.o: pycaml_ml.c
+	ocamlc -thread -ccopt -c -ccopt -g \
+	-ccopt -I$(PY_PREFIX)/include/python$(PY_VERSION) $<
+
+pycaml.cmo: pycaml.ml
+	ocamlc -thread -c $<
+
+pycamltest: pycamltest.ml pycaml.cmo pycaml_ml.o
+	ocamlc -custom -thread -ccopt -g $(LIBS) pycamltest.ml -o $@
+
+ocamlobj: ocamlobj.ml pycaml.cmo pycaml_ml.o
+	ocamlc -custom -thread -ccopt -g $(LIBS) ocamlobj.ml -o $@
+
+clean:
+	rm -rf *.o *.cmi *.cmo pycamltop pycamltest ocamlobj
+
+distclean: clean
+	rm -rf config.cache autom4te.cache config.status Makefile

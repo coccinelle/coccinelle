@@ -1,0 +1,18 @@
+#!/bin/bash
+DN=`dirname $0`
+
+if [ -z ${PYTHONPATH} ]
+then
+export PYTHONPATH=${DN}/python
+else
+export PYTHONPATH=${PYTHONPATH}:${DN}/python
+fi
+
+if [ -z ${LD_LIBRARY_PATH} ]
+then
+export LD_LIBRARY_PATH=${DN}
+else
+export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${DN}
+fi
+
+${DN}/spatch.opt $*

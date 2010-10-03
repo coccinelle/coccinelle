@@ -1,0 +1,17 @@
+c_info.cmi: ../commons/ograph_extended.cmi ../commons/common.cmi \
+    ../parsing_c/ast_c.cmo 
+classic_patch.cmi: ../commons/common.cmi 
+kbuild.cmi: ../commons/common.cmi 
+maintainers.cmi: ../commons/common.cmi 
+c_info.cmo: ../parsing_c/visitor_c.cmi ../commons/ograph_extended.cmi \
+    ../globals/flag.cmo ../commons/common.cmi ../parsing_c/ast_c.cmo \
+    c_info.cmi 
+c_info.cmx: ../parsing_c/visitor_c.cmx ../commons/ograph_extended.cmx \
+    ../globals/flag.cmx ../commons/common.cmx ../parsing_c/ast_c.cmx \
+    c_info.cmi 
+classic_patch.cmo: ../commons/common.cmi classic_patch.cmi 
+classic_patch.cmx: ../commons/common.cmx classic_patch.cmi 
+kbuild.cmo: ../commons/common.cmi kbuild.cmi 
+kbuild.cmx: ../commons/common.cmx kbuild.cmi 
+maintainers.cmo: ../commons/common.cmi maintainers.cmi 
+maintainers.cmx: ../commons/common.cmx maintainers.cmi 

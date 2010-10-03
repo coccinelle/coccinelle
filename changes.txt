@@ -1,0 +1,18 @@
+-*- org -*-
+
+* 0.1
+
+** first public release of the source code:
+
+** Features
+ - embeded python scripting
+ - position
+
+* beta 
+
+** first public release of the binary
+
+* alpha
+
+** Features
+ - lots of features ... look at coccinelle research papers and tutorials.

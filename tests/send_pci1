@@ -1,0 +1,49 @@
+Send to: davej@codemonkey.org.uk, linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+
+Subject: [PATCH 1/2]: drivers/char: remove unnecessary pci_dev_put
+
+---------------------------------------
+
+From: Julia Lawall <julia@diku.dk>
+
+pci_get_class implicitly does a pci_dev_put on its second argument, so
+pci_dev_put is only needed if there is a break out of the loop.
+
+The semantic match detecting this problem is as follows:
+
+// <smpl>
+@@
+expression dev;
+expression E;
+@@
+
+* pci_dev_put(dev)
+  ... when != dev = E
+(
+* pci_get_device(...,dev)
+|
+* pci_get_device_reverse(...,dev)
+|
+* pci_get_subsys(...,dev)
+|
+* pci_get_class(...,dev)
+)
+// </smpl>
+
+Signed-off-by: Julia Lawall <julia@diku.dk>
+---
+
+diff -up a/drivers/char/agp/amd-k7-agp.c b/drivers/char/agp/amd-k7-agp.c
+--- a/drivers/char/agp/amd-k7-agp.c	2007-11-15 07:33:31.000000000 +0100
++++ b/drivers/char/agp/amd-k7-agp.c	2007-11-15 07:40:48.000000000 +0100
+@@ -436,10 +436,6 @@ static int __devinit agp_amdk7_probe(str
+ 				return -ENODEV;
+ 			}
+ 			cap_ptr = pci_find_capability(gfxcard, PCI_CAP_ID_AGP);
+-			if (!cap_ptr) {
+-				pci_dev_put(gfxcard);
+-				continue;
+-			}
+ 		}
+ 
+ 		/* With so many variants of NVidia cards, it's simpler just

@@ -1,0 +1,17 @@
+You must first install a recent version of 
+ - OCaml (at least 3.09.2), 
+   see http://caml.inria.fr/download.en.html
+ - the Menhir parser generator (at least 20080912),
+   see http://cristal.inria.fr/~fpottier/menhir/
+   (unless you got a version of the coccinelle source with
+   the SmPL parser pre-generated)
+ - Python and its development files (python-dev)
+   (unless you run configure with the --without-python option)
+   
+
+Then simply type 
+ ./configure
+ make depend
+ make
+ make install
+

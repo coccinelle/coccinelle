@@ -1,0 +1,107 @@
+--- a/pycaml_ml.c	2004-12-02 17:17:07.000000000 +0100
++++ b/pycaml_ml.c	2008-03-27 12:15:23.000000000 +0100
+@@ -554,6 +554,7 @@
+ extern DL_IMPORT(PyObject *) PyObject_GetAttrString(PyObject *, char *);
+ /* 17 */
+ extern DL_IMPORT(PyObject *) PyObject_GetAttr(PyObject *, PyObject *);
++extern DL_IMPORT(PyObject *) PyObject_CallObject(PyObject *, PyObject *);
+ /* 18 */
+ extern DL_IMPORT(int) PyObject_IsTrue(PyObject *);
+ extern DL_IMPORT(int) PyObject_Not(PyObject *);
+@@ -654,6 +655,7 @@
+ extern DL_IMPORT(PyObject *) PyTuple_New(int size);
+ /* 18 */
+ extern DL_IMPORT(int) PyTuple_Size(PyObject *);
++extern DL_IMPORT(int) PyTuple_Check(PyObject *);
+ /* 40 */
+ extern DL_IMPORT(PyObject *) PyTuple_GetItem(PyObject *, int);
+ /* 41 */
+@@ -883,6 +885,47 @@
+ #endif//MAYBE_RUN
+ #endif//DONT_COMPILE_THIS
+ 
++/* HST FIXUP */
++#undef PyRun_SimpleString
++int PyRun_SimpleString(const char* command) { return PyRun_SimpleStringFlags(command, NULL); }
++
++#undef PyRun_AnyFile
++int PyRun_AnyFile(FILE* fp, const char* filename) { return PyRun_AnyFileExFlags(fp, filename, 0, NULL); }
++
++#undef PyRun_SimpleFile
++int PyRun_SimpleFile(FILE* fp, const char* filename) { return PyRun_SimpleFileExFlags(fp, filename, 0, NULL); }
++
++#undef PyRun_InteractiveOne
++int PyRun_InteractiveOne(FILE* fp, const char* filename) { return PyRun_InteractiveOneFlags(fp, filename, NULL); }
++
++#undef PyRun_InteractiveLoop
++int PyRun_InteractiveLoop(FILE* fp, const char* filename) { return PyRun_InteractiveLoopFlags(fp, filename, NULL); }
++
++#undef PyRun_AnyFileEx
++int PyRun_AnyFileEx(FILE* fp, const char* filename, int closeit) { return PyRun_AnyFileExFlags(fp, filename, closeit, NULL); }
++
++#undef PyRun_SimpleFileEx
++int PyRun_SimpleFileEx(FILE* fp, const char* filename, int closeit) { return PyRun_SimpleFileExFlags(fp, filename, closeit, NULL); }
++
++#undef PyRun_String
++PyObject* PyRun_String(const char* str, int start, PyObject* globals, PyObject* locals) { return PyRun_StringFlags(str, start, globals, locals, NULL); }
++
++#undef PyRun_File
++PyObject* PyRun_File(FILE* fp, const char* filename, int start, PyObject* globals, PyObject* locals) { return PyRun_FileExFlags(fp, filename, start, globals, locals, 0, NULL); }
++
++#undef PyRun_FileEx
++PyObject* PyRun_FileEx(FILE* fp, const char* filename, int start, PyObject* globals, PyObject* locals, int closeit) { return PyRun_FileExFlags(fp, filename, start, globals, locals, closeit, NULL); }
++
++#undef Py_CompileString
++PyObject* Py_CompileString(const char* str, const char* filename, int start) { return Py_CompileStringFlags(str, filename, start, NULL); }
++
++#undef PyRange_New
++PyObject* PyRange_New(PyObject* start, PyObject* stop, PyObject* step) { return PyObject_CallFunction((PyObject*)&PyRange_Type, "lll", start, stop, step); }
++
++#undef PyTuple_Check
++int PyTuple_Check(PyObject* op) { return PyObject_TypeCheck(op, &PyTuple_Type); }
++/* END HST FIXUP */
++
+ /* Value -> Pyobject */
+ 
+ value pywrapvalue( value cb ) {
+@@ -963,6 +1006,7 @@
+     { (void *)PyObject_GetAttrString, 16, "PyObject_GetAttrString" },
+ /* 17 */
+     { (void *)PyObject_GetAttr, 17, "PyObject_GetAttr" },
++    { (void *)PyObject_CallObject, 17, "PyObject_CallObject" },
+ /* 18 */
+     { (void *)PyObject_IsTrue, 18, "PyObject_IsTrue" },
+     { (void *)PyObject_Not, 18, "PyObject_Not" },
+@@ -1051,6 +1095,7 @@
+     { (void *)PyTuple_New, 39, "PyTuple_New" },
+ /* 18 */
+     { (void *)PyTuple_Size, 18, "PyTuple_Size" },
++    { (void *)PyTuple_Check, 18, "PyTuple_Check" },
+ /* 40 */
+     { (void *)PyTuple_GetItem, 40, "PyTuple_GetItem" },
+ /* 41 */
+@@ -1385,3 +1430,24 @@
+ 
+     CAMLreturn(Val_unit);
+ }
++
++value pycaml_setargs(value argv) {
++  CAMLparam1(argv);
++  char* cargv[1];
++
++  cargv[0] = String_val(argv);
++
++  PySys_SetArgv(1, cargv);
++
++  CAMLreturn0; 
++}
++
++value pytrue( value unit ) {
++    CAMLparam1(unit);
++    CAMLreturn(pywrap(Py_True));
++}
++
++value pyfalse(value unit) {
++    CAMLparam1(unit);
++    CAMLreturn(pywrap(Py_False));
++}

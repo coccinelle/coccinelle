@@ -1,0 +1,180 @@
+arity.cmi: ast0_cocci.cmi 
+ast0_cocci.cmi: type_cocci.cmi ast_cocci.cmi 
+ast0toast.cmi: ast_cocci.cmi ast0_cocci.cmi 
+ast_cocci.cmi: type_cocci.cmi 
+check_meta.cmi: ast_cocci.cmi ast0_cocci.cmi 
+comm_assoc.cmi: ast0_cocci.cmi 
+compute_lines.cmi: ast0_cocci.cmi 
+context_neg.cmi: ../commons/common.cmi ast0_cocci.cmi 
+data.cmi: type_cocci.cmi ast_cocci.cmi ast0_cocci.cmi 
+disjdistr.cmi: ast_cocci.cmi 
+free_vars.cmi: ast_cocci.cmi 
+function_prototypes.cmi: ast_cocci.cmi ast0_cocci.cmi 
+get_constants.cmi: ast_cocci.cmi 
+get_constants2.cmi: ast_cocci.cmi 
+index.cmi: ast0_cocci.cmi 
+insert_plus.cmi: ast0_cocci.cmi 
+iso_compile.cmi: iso_pattern.cmi 
+iso_pattern.cmi: visitor_ast0.cmi ast_cocci.cmi ast0_cocci.cmi 
+merge.cmi: ast_cocci.cmi ast0_cocci.cmi 
+parse_cocci.cmi: ast_cocci.cmi 
+parser_cocci_menhir.cmi: parse_aux.cmo data.cmi ../commons/common.cmi \
+    ast_cocci.cmi ast0_cocci.cmi 
+plus.cmi: ast_cocci.cmi 
+pretty_print_cocci.cmi: ast_cocci.cmi 
+simple_assignments.cmi: ast0_cocci.cmi 
+single_statement.cmi: ast0_cocci.cmi 
+test_exps.cmi: ast0_cocci.cmi 
+top_level.cmi: ast0_cocci.cmi 
+type_infer.cmi: ast0_cocci.cmi 
+unify_ast.cmi: ast_cocci.cmi 
+unitary_ast0.cmi: ast0_cocci.cmi 
+unparse_ast0.cmi: ast0_cocci.cmi 
+visitor_ast.cmi: ast_cocci.cmi 
+visitor_ast0.cmi: ast_cocci.cmi ast0_cocci.cmi 
+arity.cmo: ast_cocci.cmi ast0_cocci.cmi arity.cmi 
+arity.cmx: ast_cocci.cmx ast0_cocci.cmx arity.cmi 
+ast0_cocci.cmo: type_cocci.cmi ../globals/flag.cmo ast_cocci.cmi \
+    ast0_cocci.cmi 
+ast0_cocci.cmx: type_cocci.cmx ../globals/flag.cmx ast_cocci.cmx \
+    ast0_cocci.cmi 
+ast0toast.cmo: visitor_ast0.cmi visitor_ast.cmi type_cocci.cmi \
+    ../globals/flag.cmo ast_cocci.cmi ast0_cocci.cmi ast0toast.cmi 
+ast0toast.cmx: visitor_ast0.cmx visitor_ast.cmx type_cocci.cmx \
+    ../globals/flag.cmx ast_cocci.cmx ast0_cocci.cmx ast0toast.cmi 
+ast_cocci.cmo: type_cocci.cmi ../commons/common.cmi ast_cocci.cmi 
+ast_cocci.cmx: type_cocci.cmx ../commons/common.cmx ast_cocci.cmi 
+check_meta.cmo: visitor_ast0.cmi type_cocci.cmi ../commons/common.cmi \
+    ast_cocci.cmi ast0_cocci.cmi check_meta.cmi 
+check_meta.cmx: visitor_ast0.cmx type_cocci.cmx ../commons/common.cmx \
+    ast_cocci.cmx ast0_cocci.cmx check_meta.cmi 
+comm_assoc.cmo: visitor_ast0.cmi unparse_ast0.cmi ../globals/flag.cmo \
+    ast_cocci.cmi ast0_cocci.cmi comm_assoc.cmi 
+comm_assoc.cmx: visitor_ast0.cmx unparse_ast0.cmx ../globals/flag.cmx \
+    ast_cocci.cmx ast0_cocci.cmx comm_assoc.cmi 
+compute_lines.cmo: ast_cocci.cmi ast0_cocci.cmi compute_lines.cmi 
+compute_lines.cmx: ast_cocci.cmx ast0_cocci.cmx compute_lines.cmi 
+context_neg.cmo: visitor_ast0.cmi unparse_ast0.cmi index.cmi \
+    ../globals/flag.cmo compute_lines.cmi ../commons/common.cmi ast_cocci.cmi \
+    ast0_cocci.cmi context_neg.cmi 
+context_neg.cmx: visitor_ast0.cmx unparse_ast0.cmx index.cmx \
+    ../globals/flag.cmx compute_lines.cmx ../commons/common.cmx ast_cocci.cmx \
+    ast0_cocci.cmx context_neg.cmi 
+data.cmo: type_cocci.cmi ast_cocci.cmi ast0_cocci.cmi data.cmi 
+data.cmx: type_cocci.cmx ast_cocci.cmx ast0_cocci.cmx data.cmi 
+disjdistr.cmo: visitor_ast.cmi ../globals/flag.cmo ../commons/common.cmi \
+    ast_cocci.cmi disjdistr.cmi 
+disjdistr.cmx: visitor_ast.cmx ../globals/flag.cmx ../commons/common.cmx \
+    ast_cocci.cmx disjdistr.cmi 
+free_vars.cmo: visitor_ast.cmi type_cocci.cmi ../commons/common.cmi \
+    ast_cocci.cmi free_vars.cmi 
+free_vars.cmx: visitor_ast.cmx type_cocci.cmx ../commons/common.cmx \
+    ast_cocci.cmx free_vars.cmi 
+function_prototypes.cmo: visitor_ast0.cmi iso_pattern.cmi insert_plus.cmi \
+    context_neg.cmi compute_lines.cmi ast_cocci.cmi ast0toast.cmi \
+    ast0_cocci.cmi function_prototypes.cmi 
+function_prototypes.cmx: visitor_ast0.cmx iso_pattern.cmx insert_plus.cmx \
+    context_neg.cmx compute_lines.cmx ast_cocci.cmx ast0toast.cmx \
+    ast0_cocci.cmx function_prototypes.cmi 
+get_constants.cmo: visitor_ast.cmi type_cocci.cmi ../globals/flag.cmo \
+    ../commons/common.cmi ast_cocci.cmi get_constants.cmi 
+get_constants.cmx: visitor_ast.cmx type_cocci.cmx ../globals/flag.cmx \
+    ../commons/common.cmx ast_cocci.cmx get_constants.cmi 
+get_constants2.cmo: visitor_ast.cmi type_cocci.cmi ../globals/flag.cmo \
+    ../commons/common.cmi ast_cocci.cmi get_constants2.cmi 
+get_constants2.cmx: visitor_ast.cmx type_cocci.cmx ../globals/flag.cmx \
+    ../commons/common.cmx ast_cocci.cmx get_constants2.cmi 
+index.cmo: ast_cocci.cmi ast0_cocci.cmi index.cmi 
+index.cmx: ast_cocci.cmx ast0_cocci.cmx index.cmi 
+insert_plus.cmo: visitor_ast0.cmi pretty_print_cocci.cmi context_neg.cmi \
+    ast_cocci.cmi ast0toast.cmi ast0_cocci.cmi insert_plus.cmi 
+insert_plus.cmx: visitor_ast0.cmx pretty_print_cocci.cmx context_neg.cmx \
+    ast_cocci.cmx ast0toast.cmx ast0_cocci.cmx insert_plus.cmi 
+iso_compile.cmo: visitor_ast0.cmi ../commons/common.cmi ast_cocci.cmi \
+    ast0_cocci.cmi iso_compile.cmi 
+iso_compile.cmx: visitor_ast0.cmx ../commons/common.cmx ast_cocci.cmx \
+    ast0_cocci.cmx iso_compile.cmi 
+iso_pattern.cmo: visitor_ast0.cmi unparse_ast0.cmi type_cocci.cmi \
+    flag_parsing_cocci.cmo ../globals/flag.cmo compute_lines.cmi \
+    ../commons/common.cmi ast_cocci.cmi ast0_cocci.cmi iso_pattern.cmi 
+iso_pattern.cmx: visitor_ast0.cmx unparse_ast0.cmx type_cocci.cmx \
+    flag_parsing_cocci.cmx ../globals/flag.cmx compute_lines.cmx \
+    ../commons/common.cmx ast_cocci.cmx ast0_cocci.cmx iso_pattern.cmi 
+lexer_cocci.cmo: parser_cocci_menhir.cmi parse_aux.cmo ../globals/flag.cmo \
+    data.cmi ../commons/common.cmi ast_cocci.cmi ast0_cocci.cmi 
+lexer_cocci.cmx: parser_cocci_menhir.cmx parse_aux.cmx ../globals/flag.cmx \
+    data.cmx ../commons/common.cmx ast_cocci.cmx ast0_cocci.cmx 
+lexer_script.cmo: parser_cocci_menhir.cmi data.cmi ast_cocci.cmi 
+lexer_script.cmx: parser_cocci_menhir.cmx data.cmx ast_cocci.cmx 
+main.cmo: parse_cocci.cmi 
+main.cmx: parse_cocci.cmx 
+merge.cmo: visitor_ast0.cmi ast_cocci.cmi ast0_cocci.cmi merge.cmi 
+merge.cmx: visitor_ast0.cmx ast_cocci.cmx ast0_cocci.cmx merge.cmi 
+parse_aux.cmo: type_cocci.cmi semantic_cocci.cmo data.cmi \
+    ../commons/common.cmi ast_cocci.cmi ast0_cocci.cmi 
+parse_aux.cmx: type_cocci.cmx semantic_cocci.cmx data.cmx \
+    ../commons/common.cmx ast_cocci.cmx ast0_cocci.cmx 
+parse_cocci.cmo: visitor_ast0.cmi unitary_ast0.cmi type_infer.cmi \
+    test_exps.cmi single_statement.cmi simple_assignments.cmi \
+    semantic_cocci.cmo pretty_print_cocci.cmi parser_cocci_menhir.cmi \
+    parse_aux.cmo lexer_script.cmo lexer_cocci.cmo iso_pattern.cmi \
+    iso_compile.cmi insert_plus.cmi get_constants2.cmi get_constants.cmi \
+    function_prototypes.cmi free_vars.cmi flag_parsing_cocci.cmo \
+    ../globals/flag.cmo disjdistr.cmi data.cmi context_neg.cmi \
+    ../globals/config.cmo compute_lines.cmi ../commons/common.cmi \
+    comm_assoc.cmi check_meta.cmi ast_cocci.cmi ast0toast.cmi ast0_cocci.cmi \
+    arity.cmi parse_cocci.cmi 
+parse_cocci.cmx: visitor_ast0.cmx unitary_ast0.cmx type_infer.cmx \
+    test_exps.cmx single_statement.cmx simple_assignments.cmx \
+    semantic_cocci.cmx pretty_print_cocci.cmx parser_cocci_menhir.cmx \
+    parse_aux.cmx lexer_script.cmx lexer_cocci.cmx iso_pattern.cmx \
+    iso_compile.cmx insert_plus.cmx get_constants2.cmx get_constants.cmx \
+    function_prototypes.cmx free_vars.cmx flag_parsing_cocci.cmx \
+    ../globals/flag.cmx disjdistr.cmx data.cmx context_neg.cmx \
+    ../globals/config.cmx compute_lines.cmx ../commons/common.cmx \
+    comm_assoc.cmx check_meta.cmx ast_cocci.cmx ast0toast.cmx ast0_cocci.cmx \
+    arity.cmx parse_cocci.cmi 
+parser_cocci_menhir.cmo: type_cocci.cmi top_level.cmi semantic_cocci.cmo \
+    parse_aux.cmo data.cmi ../commons/common.cmi ast_cocci.cmi ast0_cocci.cmi \
+    parser_cocci_menhir.cmi 
+parser_cocci_menhir.cmx: type_cocci.cmx top_level.cmx semantic_cocci.cmx \
+    parse_aux.cmx data.cmx ../commons/common.cmx ast_cocci.cmx ast0_cocci.cmx \
+    parser_cocci_menhir.cmi 
+plus.cmo: visitor_ast.cmi ast_cocci.cmi plus.cmi 
+plus.cmx: visitor_ast.cmx ast_cocci.cmx plus.cmi 
+pretty_print_cocci.cmo: type_cocci.cmi ../globals/flag.cmo \
+    ../commons/common.cmi ast_cocci.cmi pretty_print_cocci.cmi 
+pretty_print_cocci.cmx: type_cocci.cmx ../globals/flag.cmx \
+    ../commons/common.cmx ast_cocci.cmx pretty_print_cocci.cmi 
+simple_assignments.cmo: visitor_ast0.cmi ../globals/flag.cmo \
+    ../commons/common.cmi ast_cocci.cmi ast0_cocci.cmi simple_assignments.cmi 
+simple_assignments.cmx: visitor_ast0.cmx ../globals/flag.cmx \
+    ../commons/common.cmx ast_cocci.cmx ast0_cocci.cmx simple_assignments.cmi 
+single_statement.cmo: visitor_ast0.cmi iso_pattern.cmi flag_parsing_cocci.cmo \
+    compute_lines.cmi ast_cocci.cmi ast0_cocci.cmi single_statement.cmi 
+single_statement.cmx: visitor_ast0.cmx iso_pattern.cmx flag_parsing_cocci.cmx \
+    compute_lines.cmx ast_cocci.cmx ast0_cocci.cmx single_statement.cmi 
+test_exps.cmo: visitor_ast0.cmi ast_cocci.cmi ast0_cocci.cmi test_exps.cmi 
+test_exps.cmx: visitor_ast0.cmx ast_cocci.cmx ast0_cocci.cmx test_exps.cmi 
+top_level.cmo: ast0_cocci.cmi top_level.cmi 
+top_level.cmx: ast0_cocci.cmx top_level.cmi 
+type_cocci.cmo: type_cocci.cmi 
+type_cocci.cmx: type_cocci.cmi 
+type_infer.cmo: visitor_ast0.cmi type_cocci.cmi ast_cocci.cmi ast0_cocci.cmi \
+    type_infer.cmi 
+type_infer.cmx: visitor_ast0.cmx type_cocci.cmx ast_cocci.cmx ast0_cocci.cmx \
+    type_infer.cmi 
+unify_ast.cmo: visitor_ast.cmi ast_cocci.cmi unify_ast.cmi 
+unify_ast.cmx: visitor_ast.cmx ast_cocci.cmx unify_ast.cmi 
+unitary_ast0.cmo: visitor_ast0.cmi ../globals/flag.cmo ast_cocci.cmi \
+    ast0_cocci.cmi unitary_ast0.cmi 
+unitary_ast0.cmx: visitor_ast0.cmx ../globals/flag.cmx ast_cocci.cmx \
+    ast0_cocci.cmx unitary_ast0.cmi 
+unparse_ast0.cmo: type_cocci.cmi pretty_print_cocci.cmi ../commons/common.cmi \
+    ast0_cocci.cmi unparse_ast0.cmi 
+unparse_ast0.cmx: type_cocci.cmx pretty_print_cocci.cmx ../commons/common.cmx \
+    ast0_cocci.cmx unparse_ast0.cmi 
+visitor_ast.cmo: ast_cocci.cmi visitor_ast.cmi 
+visitor_ast.cmx: ast_cocci.cmx visitor_ast.cmi 
+visitor_ast0.cmo: ast_cocci.cmi ast0_cocci.cmi visitor_ast0.cmi 
+visitor_ast0.cmx: ast_cocci.cmx ast0_cocci.cmx visitor_ast0.cmi 

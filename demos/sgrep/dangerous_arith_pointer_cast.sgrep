@@ -1,0 +1,9 @@
+
+@@
+type T;
+expression E1, E2;
+@@
+
+// safer is ((T) E1) + E2
+- (T *) E1 + E2
+

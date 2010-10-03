@@ -1,0 +1,10 @@
+engine.cmo: engineTypes.cmo 
+engine.cmx: engineTypes.cmx 
+rowDisplacement.cmo: infiniteArray.cmo 
+rowDisplacement.cmx: infiniteArray.cmx 
+tableFormat.cmo: packedIntArray.cmo engineTypes.cmo 
+tableFormat.cmx: packedIntArray.cmx engineTypes.cmx 
+tableInterpreter.cmo: tableFormat.cmo rowDisplacement.cmo packedIntArray.cmo \
+    engineTypes.cmo engine.cmo 
+tableInterpreter.cmx: tableFormat.cmx rowDisplacement.cmx packedIntArray.cmx \
+    engineTypes.cmx engine.cmx 

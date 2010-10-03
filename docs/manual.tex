@@ -1,0 +1,257 @@
+\documentclass{report}
+
+
+\usepackage{listing}
+
+\title{\spatch and \sgrep manual}
+
+\tableofcontents
+
+%##############################################################################
+\chapter{Introduction}
+
+%_semantic_ patch and grep
+%next-gen
+
+%semantic patch/match
+%SmPL
+%%SMPL => semantic match and patch language ?
+
+%sed on steroids
+
+%features
+
+%abstract away 
+% -
+% -
+% -
+% -
+% -
+
+%submit idea/patch/ or even semantic patch :) to xxx@xxx
+
+%##############################################################################
+\chapter{Building \spatch and \sgrep}
+
+\section{Requirements}
+
+\section{Getting}
+
+\section{Compiling}
+%requirements
+
+\section{Running}
+
+
+
+
+%##############################################################################
+\chapter{Tutorial}
+
+%toy.c, toy.spatch
+
+\section{SmPL piece by pieces}
+
+%very simple ex
+%bigger ex, show different C constructs.
+%%abstract space
+%
+%+
+%-
+%* (a kind of -)
+%
+%first run
+%first process/workflow ?
+%
+%
+%then metavar
+%sed on steroids
+%%abstract xxx
+
+% show vs perl
+
+%then context!! 
+
+%
+%then typed metavar.
+%
+%then iso
+%
+%
+%
+%then '...' and multi usage (in arg, struct, statement)
+%%abstract yyy
+%
+%
+%
+%then multi rules and multi usage
+
+
+
+%##############################################################################
+\chapter{Advanced features}
+
+\subsection{Multi files}
+
+\subsection{Position}
+%src: a mail from julia
+
+%Tu peux maintenant mettre des positions partout.  C'est interdit d'heriter
+%une position a travers une regle qui fait une modif.
+%
+%Tu peux declarer une position avec des contraintes, eg
+%
+%position p1 != {x.p2, y.p3};
+%
+%Entre les premiers @@ d'une regle, tu peux mettre "expression" et avoir
+%une meilleure parsing.  Ca permet par exemple de faire:
+%
+%<... f() ...> + <... g() ...>
+%
+%pour decrire un + qui a f() et g() quelquepart comme arguements.
+%
+%Pour les }, j'ai mis un champ "is_fake" dans les noeuds, avec is_loop,
+%etc.
+
+\subsection{Embeded Python scripting}
+
+\subsection{More on ...}
+
+exists annotation on rule
+
+'when any' and shortest path
+
+
+when strict
+
+
+%##############################################################################
+\chapter{Examples}
+%put additionnal commented scripts ?
+
+
+
+%##############################################################################
+\chapter{Developing a semantic patch}
+
+%best practices
+
+\subsection{Emacs mode}
+
+\subsection{Basic worflow}
+
+\subsection{Linux workflow and git}
+
+%git diff
+%git revert
+
+%multi patch ?
+
+\subsection{Debugging a semantic patch/match}
+
+
+%##############################################################################
+\chapter{\spatch/\sgrep command line options}
+
+%cpp
+
+%iso
+%rules
+
+%##############################################################################
+\chapter{Other tools}
+
+%partial-match?
+
+%cocci-ediff ?
+
+%coccigui
+
+
+
+%org-mode ?
+
+%patchparse
+
+
+%patch handling (splitter, mailer, maintainer)
+
+
+
+
+
+%##############################################################################
+\chapter{Reference}
+%put grammar ?
+
+
+%context!!
+
+%well-formedness
+
+%limitations
+% goto
+% ...
+
+
+%lexical conventions
+% superset of C
+%plus
+% blanks, column!!!
+%comments, c vs cocci comments
+%identifiers
+
+
+\section{Toplevel}
+
+\section{Metavariables}
+%typed metavar
+%scoped metavar and rules
+
+\section{Variables}
+
+\section{Types}
+
+\section{Expressions}
+
+%funcall and ...
+
+%cf also position trick
+
+\section{Statements}
+
+%declaration
+
+%type definition
+% struct iso
+
+
+
+\section{Rules}
+
+
+\section{Isomorphisms}
+
+%named iso
+
+
+%iso file
+%extra file standard.h
+
+%implicit iso
+
+
+\section{cpp quircks}
+
+%declarator
+%declarer
+
+%also extra file standard.h
+
+%##############################################################################
+\appendix
+
+
+
+%index (reversed)
+%index of concepts ? keywords ?

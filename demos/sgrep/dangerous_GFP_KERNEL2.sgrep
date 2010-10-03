@@ -1,0 +1,12 @@
+@@
+identifier fn;
+@@
+
+ spin_lock_irqsave(...)
+ ... when != spin_unlock_irqrestore(...)
+ fn(...,
+- GFP_KERNEL
++ GFP_ATOMIC
+   ,...
+   )
+ 

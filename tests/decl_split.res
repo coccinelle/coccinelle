@@ -1,0 +1,2 @@
+int func(int i) { 
+}

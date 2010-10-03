@@ -1,0 +1,44 @@
+cocci.cmi: commons/common.cmi parsing_cocci/ast_cocci.cmi 
+testing.cmi: commons/common.cmi parsing_cocci/ast_cocci.cmi 
+cocci.cmo: parsing_cocci/visitor_ast.cmi parsing_c/unparse_hrule.cmi \
+    parsing_c/unparse_c2.cmi parsing_c/type_annoter_c.cmi \
+    engine/transformation3.cmi python/pycocci.cmo \
+    engine/pretty_print_engine.cmi parsing_cocci/pretty_print_cocci.cmi \
+    popl09/popl.cmi parsing_c/parsing_hacks.cmi parsing_cocci/parse_cocci.cmi \
+    parsing_c/parse_c.cmi commons/ograph_extended.cmi engine/lib_engine.cmo \
+    parsing_c/flag_parsing_c.cmo ctl/flag_ctl.cmo flag_cocci.cmo \
+    globals/flag.cmo engine/ctltotex.cmi engine/ctlcocci_integration.cmi \
+    parsing_c/control_flow_c.cmi parsing_c/compare_c.cmi commons/common.cmi \
+    engine/asttomember.cmi engine/asttoctl2.cmi parsing_c/ast_to_flow.cmi \
+    parsing_cocci/ast_cocci.cmi parsing_c/ast_c.cmo cocci.cmi 
+cocci.cmx: parsing_cocci/visitor_ast.cmx parsing_c/unparse_hrule.cmx \
+    parsing_c/unparse_c2.cmx parsing_c/type_annoter_c.cmx \
+    engine/transformation3.cmx python/pycocci.cmx \
+    engine/pretty_print_engine.cmx parsing_cocci/pretty_print_cocci.cmx \
+    popl09/popl.cmx parsing_c/parsing_hacks.cmx parsing_cocci/parse_cocci.cmx \
+    parsing_c/parse_c.cmx commons/ograph_extended.cmx engine/lib_engine.cmx \
+    parsing_c/flag_parsing_c.cmx ctl/flag_ctl.cmx flag_cocci.cmx \
+    globals/flag.cmx engine/ctltotex.cmx engine/ctlcocci_integration.cmx \
+    parsing_c/control_flow_c.cmx parsing_c/compare_c.cmx commons/common.cmx \
+    engine/asttomember.cmx engine/asttoctl2.cmx parsing_c/ast_to_flow.cmx \
+    parsing_cocci/ast_cocci.cmx parsing_c/ast_c.cmx cocci.cmi 
+main.cmo: testing.cmi parsing_c/test_parsing_c.cmi python/pycocci.cmo \
+    parsing_c/parse_c.cmi extra/kbuild.cmi popl09/flag_popl.cmo \
+    parsing_cocci/flag_parsing_cocci.cmo parsing_c/flag_parsing_c.cmo \
+    engine/flag_engine.cmo ctl/flag_ctl.cmo flag_cocci.cmo globals/flag.cmo \
+    engine/ctlcocci_integration.cmi globals/config.cmo commons/common.cmi \
+    cocci.cmi 
+main.cmx: testing.cmx parsing_c/test_parsing_c.cmx python/pycocci.cmx \
+    parsing_c/parse_c.cmx extra/kbuild.cmx popl09/flag_popl.cmx \
+    parsing_cocci/flag_parsing_cocci.cmx parsing_c/flag_parsing_c.cmx \
+    engine/flag_engine.cmx ctl/flag_ctl.cmx flag_cocci.cmx globals/flag.cmx \
+    engine/ctlcocci_integration.cmx globals/config.cmx commons/common.cmx \
+    cocci.cmx 
+testing.cmo: parsing_cocci/pretty_print_cocci.cmi \
+    parsing_cocci/parse_cocci.cmi flag_cocci.cmo globals/flag.cmo \
+    globals/config.cmo parsing_c/compare_c.cmi commons/common.cmi cocci.cmi \
+    testing.cmi 
+testing.cmx: parsing_cocci/pretty_print_cocci.cmx \
+    parsing_cocci/parse_cocci.cmx flag_cocci.cmx globals/flag.cmx \
+    globals/config.cmx parsing_c/compare_c.cmx commons/common.cmx cocci.cmx \
+    testing.cmi 

@@ -1,0 +1,6 @@
+Release coccinelle-0.1
+
+ * First public release of the source code:
+ * Features
+   - embeded python scripting
+   - position

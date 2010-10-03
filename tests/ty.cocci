@@ -1,0 +1,5 @@
+@@
+@@
+
++ const
+  struct foo

@@ -1,0 +1,168 @@
+diff -u -p -b a/arch/sparc64/kernel/isa.c b/arch/sparc64/kernel/isa.c
+OK send
+--- a/arch/sparc64/kernel/isa.c 2007-08-12 13:27:06.000000000 +0200
++++ b/arch/sparc64/kernel/isa.c 2007-11-18 18:32:16.000000000 +0100
+@@ -155,6 +155,7 @@ void __init isa_init(void)
+ 		isa_br = kzalloc(sizeof(*isa_br), GFP_KERNEL);
+ 		if (!isa_br) {
+ 			printk(KERN_DEBUG "isa: cannot allocate sparc_isa_bridge");
++			pci_dev_put(pdev);
+ 			return;
+ 		}
+ 
+@@ -168,6 +169,7 @@ void __init isa_init(void)
+ 			printk(KERN_DEBUG "isa: device registration error for %s!\n",
+ 			       dp->path_component_name);
+ 			kfree(isa_br);
++			pci_dev_put(pdev);
+ 			return;
+ 		}
+ 
+diff -u -p -b a/drivers/char/agp/amd64-agp.c b/drivers/char/agp/amd64-agp.c
+--- a/drivers/char/agp/amd64-agp.c 2007-11-01 10:30:39.000000000 +0100
++++ b/drivers/char/agp/amd64-agp.c 2007-11-18 18:32:36.000000000 +0100
+NOT SURE
+@@ -771,6 +771,7 @@ int __init agp_amd64_init(void)
+ 			/* Only one bridge supported right now */
+ 			if (agp_amd64_probe(dev, NULL) == 0) {
+ 				err = 0;
++				pci_dev_put(dev);
+ 				break;
+ 			}
+ 		}
+diff -u -p -b a/drivers/char/applicom.c b/drivers/char/applicom.c
+--- a/drivers/char/applicom.c 2006-11-30 19:04:20.000000000 +0100
++++ b/drivers/char/applicom.c 2007-11-18 18:32:39.000000000 +0100
+@@ -204,7 +204,9 @@ static int __init applicom_init(void)
+ 			continue;
+ 		
+ 		if (pci_enable_device(dev))
+-			return -EIO;
++			{
++			pci_dev_put(dev);
++			return -EIO;}
+ 
+ 		RamIO = ioremap(dev->resource[0].start, LEN_RAM_IO);
+ 
+@@ -213,6 +215,7 @@ static int __init applicom_init(void)
+ 				"space at 0x%llx\n",
+ 				(unsigned long long)dev->resource[0].start);
+ 			pci_disable_device(dev);
++			pci_dev_put(dev);
+ 			return -EIO;
+ 		}
+ 
+diff -u -p -b a/drivers/macintosh/via-pmu.c b/drivers/macintosh/via-pmu.c
+--- a/drivers/macintosh/via-pmu.c 2007-10-22 11:25:10.000000000 +0200
++++ b/drivers/macintosh/via-pmu.c 2007-11-18 18:33:24.000000000 +0100
+OK sent
+@@ -1897,7 +1897,9 @@ pbook_pci_restore(void)
+ 		pci_write_config_dword(pd, 4, ps->config[1]);
+ #else
+ 		if (npci-- == 0)
+-			return;
++			{
++			pci_dev_put(pd);
++			return;}
+ 		ps++;
+ 		if (ps->command == 0)
+ 			continue;
+diff -u -p -b a/drivers/mmc/host/ricoh_mmc.c b/drivers/mmc/host/ricoh_mmc.c
+--- a/drivers/mmc/host/ricoh_mmc.c 2007-11-18 16:56:19.000000000 +0100
++++ b/drivers/mmc/host/ricoh_mmc.c 2007-11-18 18:33:44.000000000 +0100
+@@ -68,6 +68,7 @@ static int __devinit ricoh_mmc_probe(str
+ 			if (disable & 0x02) {
+ 				printk(KERN_INFO DRIVER_NAME
+ 				       ": Controller already disabled. Nothing to do.\n");
++				pci_dev_put(fw_dev);
+ 				return -ENODEV;
+ 			}
+ 
+@@ -81,6 +82,7 @@ static int __devinit ricoh_mmc_probe(str
+ 			printk(KERN_INFO DRIVER_NAME
+ 			       ": Controller is now disabled.\n");
+ 
++			pci_dev_put(fw_dev);
+ 			break;
+ 		}
+ 	}
+diff -u -p -b a/drivers/net/s2io.c b/drivers/net/s2io.c
+--- a/drivers/net/s2io.c 2007-11-15 15:09:36.000000000 +0100
++++ b/drivers/net/s2io.c 2007-11-18 18:34:15.000000000 +0100
+BIZARRE submitted
+@@ -983,6 +983,7 @@ static int s2io_on_nec_bridge(struct pci
+ 		if (tdev->vendor == NEC_VENID && tdev->device == NEC_DEVID) {
+ 			if (tdev->bus == s2io_pdev->bus->parent)
+ 				pci_dev_put(tdev);
++				pci_dev_put(tdev);
+ 				return 1;
+ 		}
+ 	}
+diff -u -p -b a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
+OK sent
+--- a/drivers/pci/pci-sysfs.c 2007-07-20 17:45:56.000000000 +0200
++++ b/drivers/pci/pci-sysfs.c 2007-11-18 18:34:41.000000000 +0100
+@@ -703,7 +703,9 @@ static int __init pci_sysfs_init(void)
+ 	for_each_pci_dev(pdev) {
+ 		retval = pci_create_sysfs_dev_files(pdev);
+ 		if (retval)
+-			return retval;
++			{
++			pci_dev_put(pdev);
++			return retval;}
+ 	}
+ 
+ 	return 0;
+diff -u -p -b a/drivers/pnp/resource.c b/drivers/pnp/resource.c
+OK sent
+--- a/drivers/pnp/resource.c 2007-10-22 11:25:20.000000000 +0200
++++ b/drivers/pnp/resource.c 2007-11-18 18:34:46.000000000 +0100
+@@ -368,7 +368,9 @@ int pnp_check_irq(struct pnp_dev *dev, i
+ 		struct pci_dev *pci = NULL;
+ 		for_each_pci_dev(pci) {
+ 			if (pci->irq == *irq)
+-				return 0;
++				{
++				pci_dev_put(pci);
++				return 0;}
+ 		}
+ 	}
+ #endif
+diff -u -p -b a/drivers/scsi/dpt_i2o.c b/drivers/scsi/dpt_i2o.c
+--- a/drivers/scsi/dpt_i2o.c 2007-10-22 11:25:23.000000000 +0200
++++ b/drivers/scsi/dpt_i2o.c 2007-11-18 18:36:30.000000000 +0100
+NOT SURE
+code is written in an inconsistent manner, such that adpt_install_hba
+might do a put on pDev, or might not
+@@ -189,6 +189,7 @@ static int adpt_detect(void)
+ 			if(adpt_install_hba(pDev) ){
+ 				PERROR("Could not Init an I2O RAID device\n");
+ 				PERROR("Will not try to detect others.\n");
++				pci_dev_put(pDev);
+ 				return hba_count-1;
+ 			}
+ 			pci_dev_get(pDev);
+diff -u -p -b a/drivers/watchdog/iTCO_wdt.c b/drivers/watchdog/iTCO_wdt.c
+NO.  iTCO_wdt_init does put.
+--- a/drivers/watchdog/iTCO_wdt.c 2007-11-08 08:00:52.000000000 +0100
++++ b/drivers/watchdog/iTCO_wdt.c 2007-11-18 18:37:09.000000000 +0100
+@@ -740,6 +740,7 @@ static int __devinit iTCO_wdt_probe(stru
+ 		if (ent) {
+ 			if (!(iTCO_wdt_init(pdev, ent, dev))) {
+ 				found++;
++				pci_dev_put(pdev);
+ 				break;
+ 			}
+ 		}
+diff -u -p -b a/sound/core/memalloc.c b/sound/core/memalloc.c
+OK sent
+--- a/sound/core/memalloc.c 2007-10-22 11:25:51.000000000 +0200
++++ b/sound/core/memalloc.c 2007-11-18 18:38:21.000000000 +0100
+@@ -568,6 +568,7 @@ static ssize_t snd_mem_proc_write(struct
+ 				if (pci_set_dma_mask(pci, mask) < 0 ||
+ 				    pci_set_consistent_dma_mask(pci, mask) < 0) {
+ 					printk(KERN_ERR "snd-page-alloc: cannot set DMA mask %lx for pci %04x:%04x\n", mask, vendor, device);
++					pci_dev_put(pci);
+ 					return count;
+ 				}
+ 			}

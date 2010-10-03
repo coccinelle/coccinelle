@@ -1,0 +1,5 @@
+Yoann Padioleau
+
+Maybe a few code was borrowed from pixel (pascal rigaux).
+
+See also credits.txt.
