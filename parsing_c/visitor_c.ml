@@ -495,7 +495,9 @@ and vk_decl = fun bigf d ->
   let f = bigf.kdecl in
   let rec k decl =
     match decl with
-    | DeclList (xs,ii) -> xs +> List.iter (fun (x,ii) ->
+    | DeclList (xs,ii) ->
+	iif ii;
+	xs +> List.iter (fun (x,ii) ->
         iif ii;
         vk_onedecl bigf x;
       );

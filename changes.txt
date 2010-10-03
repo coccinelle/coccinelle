@@ -26,9 +26,15 @@
 - python and ocaml string representations of parameter lists and expression
   lists
 - try simpler patterns on glimpse failure
+- graceful and immediate failure when a virtual rule is defined on the
+  command line, but not in the rule
 
 ** Bugfix:
 - detect used after metavariables in simple statement metavariable match
+- allow inheriting position variables over rules that make transformations
+  but depend on virtual rules that are not defined on the command line
+- treat top-level tokens in decl visitor.  Thanks to Peter Tummeltshammer
+  for noticing a resulting problem.
 
 * 0.2.3
 ** Language:

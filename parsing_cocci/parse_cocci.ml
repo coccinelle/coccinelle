@@ -1,27 +1,3 @@
-(*
- * Copyright 2010, INRIA, University of Copenhagen
- * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
- * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
- * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
- * This file is part of Coccinelle.
- *
- * Coccinelle is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, according to version 2 of the License.
- *
- * Coccinelle is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
- *
- * The authors reserve the right to distribute this or future versions of
- * Coccinelle under other licenses.
- *)
-
-
 (* splits the entire file into minus and plus fragments, and parses each
 separately (thus duplicating work for the parsing of the context elements) *)
 
@@ -31,6 +7,9 @@ module V0 = Visitor_ast0
 module VT0 = Visitor_ast0_types
 module Ast = Ast_cocci
 module Ast0 = Ast0_cocci
+
+exception Bad_virt of string
+
 let pr = Printf.sprintf
 (*let pr2 s = prerr_string s; prerr_string "\n"; flush stderr*)
 let pr2 s = Printf.printf "%s\n" s
@@ -1331,9 +1310,7 @@ let eval_virt virt =
   List.iter
     (function x ->
       if not (List.mem x virt)
-      then
-        failwith
-          (Printf.sprintf "unknown virtual rule %s\n" x))
+      then raise (Bad_virt x))
     !Flag.defined_virtual_rules
 
 let drop_last extra l = List.rev(extra@(List.tl(List.rev l)))
@@ -1627,7 +1604,8 @@ let parse file =
 	    *)
 
 	    (if not !Flag.sgrep_mode2 &&
-	      (any_modif minus_res or any_modif plus_res)
+	      (any_modif minus_res or any_modif plus_res) &&
+	      not(dependencies = Ast.FailDep)
 	    then Data.inheritable_positions := []);
 
 	    Check_meta.check_meta rule_name old_metas inherited_metavars

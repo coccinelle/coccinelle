@@ -1,27 +1,3 @@
-(*
- * Copyright 2010, INRIA, University of Copenhagen
- * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
- * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
- * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
- * This file is part of Coccinelle.
- *
- * Coccinelle is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, according to version 2 of the License.
- *
- * Coccinelle is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
- *
- * The authors reserve the right to distribute this or future versions of
- * Coccinelle under other licenses.
- *)
-
-
 let drop_spaces s =
   String.concat "" (Str.split (Str.regexp "[ ]+") s)
 
@@ -163,7 +139,7 @@ let command s =
   let _ = Sys.command s in
   ()
 
-let created = ref ([] : (string * (int ref * out_channel)) list)
+let created = ref ([] : (string * (string list ref * out_channel)) list)
 
 let mktag n = Printf.sprintf "x%d" n
 
@@ -180,12 +156,17 @@ let process_line env (cocci,tags) =
 	try List.assoc resdir !created
 	with Not_found ->
 	  begin
-	    command
-	      (Printf.sprintf "/bin/rm -r -f %s; mkdir %s" resdir resdir);
+	    if Sys.file_exists resdir
+	    then
+	      command
+		(Printf.sprintf
+		   "test %s -nt %s && /bin/rm -r -f %s && mkdir %s"
+		   cocci_file resdir resdir resdir)
+	    else command (Printf.sprintf "mkdir %s" resdir);
 	    let files = Printf.sprintf "%s/files" resdir in
 	    let o = open_out files in
 	    Printf.fprintf o "all: real_all\n\n";
-	    let cell = ((ref 0),o) in
+	    let cell = ((ref []),o) in
 	    created := (resdir,cell) :: !created;
 	    cell
 	  end in
@@ -213,9 +194,9 @@ let process_line env (cocci,tags) =
 	tags;
       command
 	(Printf.sprintf "mv %s %s/%s.cocci" temp_file resdir first_tag_val);
-      Printf.fprintf o "%s:\n\tmono_spatch_linux %s.cocci ${ARGS}\n\n"
-	(mktag !n) first_tag_val;
-      n := !n + 1)
+      Printf.fprintf o "%s.out:\n\tmono_spatch_linux %s.cocci ${ARGS}\n\n"
+	first_tag_val first_tag_val;
+      n := (first_tag_val^".out") :: !n)
     files
 
 (* --------------------------------------------------------------------- *)
@@ -268,6 +249,8 @@ let _ =
   List.iter
     (function (resdir,(n,o)) ->
       Printf.fprintf o "real_all: %s\n"
-	(String.concat " " (List.rev (upto !n)));
+	(String.concat " " (List.rev !n));
+      Printf.fprintf o "\tcat %s > completed\n"
+	(String.concat " " (List.rev !n));
       close_out o)
     !created

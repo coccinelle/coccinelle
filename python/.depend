@@ -1,14 +1,12 @@
-no_pycocci.cmo: ../commons/common.cmi ../parsing_c/ast_c.cmo 
-no_pycocci.cmx: ../commons/common.cmx ../parsing_c/ast_c.cmx 
-no_pycocci_aux.cmo: ../parsing_c/pretty_print_c.cmi ../commons/common.cmi \
+pycocci.cmi: ../parsing_cocci/ast_cocci.cmi ../parsing_c/ast_c.cmo 
+pycocci_aux.cmi: ../parsing_c/ast_c.cmo 
+no_pycocci.cmo: pycocci_aux.cmi ../commons/common.cmi ../parsing_c/ast_c.cmo 
+no_pycocci.cmx: pycocci_aux.cmx ../commons/common.cmx ../parsing_c/ast_c.cmx 
+pycocci_aux.cmo: ../parsing_c/pretty_print_c.cmi ../commons/common.cmi \
+    ../parsing_cocci/ast_cocci.cmi ../parsing_c/ast_c.cmo pycocci_aux.cmi 
+pycocci_aux.cmx: ../parsing_c/pretty_print_c.cmx ../commons/common.cmx \
+    ../parsing_cocci/ast_cocci.cmx ../parsing_c/ast_c.cmx pycocci_aux.cmi 
+yes_pycocci.cmo: pycocci_aux.cmi ../globals/flag.cmo ../commons/common.cmi \
     ../parsing_c/ast_c.cmo 
-no_pycocci_aux.cmx: ../parsing_c/pretty_print_c.cmx ../commons/common.cmx \
+yes_pycocci.cmx: pycocci_aux.cmx ../globals/flag.cmx ../commons/common.cmx \
     ../parsing_c/ast_c.cmx 
-yes_pycocci.cmo: ../globals/flag.cmo ../commons/common.cmi \
-    ../parsing_c/ast_c.cmo 
-yes_pycocci.cmx: ../globals/flag.cmx ../commons/common.cmx \
-    ../parsing_c/ast_c.cmx 
-yes_pycocci_aux.cmo: ../parsing_c/pretty_print_c.cmi ../commons/common.cmi \
-    ../parsing_cocci/ast_cocci.cmi ../parsing_c/ast_c.cmo 
-yes_pycocci_aux.cmx: ../parsing_c/pretty_print_c.cmx ../commons/common.cmx \
-    ../parsing_cocci/ast_cocci.cmx ../parsing_c/ast_c.cmx 

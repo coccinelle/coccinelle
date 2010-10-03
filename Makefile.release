@@ -73,6 +73,8 @@ package:
 	$(MAKE) package-src
 	$(MAKE) package-nopython
 	$(MAKE) package-python
+	@echo "\tPut online with 'make website'"
+	@echo "\tThe coccinelle CVS repository must be in $(WEBBASE)\n"
 
 package-src:
 	$(MAKE) distclean       # Clean project

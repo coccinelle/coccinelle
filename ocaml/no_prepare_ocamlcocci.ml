@@ -7,7 +7,7 @@ let prepare coccifile code =
     List.fold_left
       (function prev ->
 	function
-	    Ast_cocci.ScriptRule (name,"ocaml",deps,mv,code) ->
+	    Ast_cocci.ScriptRule (name,"ocaml",deps,mv,script_vars,code) ->
 	      code :: prev
 	  | Ast_cocci.InitialScriptRule (name,"ocaml",deps,code) ->
 	      code :: prev
