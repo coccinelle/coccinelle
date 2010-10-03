@@ -106,10 +106,28 @@ let collect_used_after used_after envs =
   List.map (List.filter (function (v,vl) -> List.mem v used_after)) envs
 
 (* ----------------------------------------------------------------------- *)
+(* distinguish between distinct witness trees, each gets an index n *)
+
+let numberify trees =
+  let trees =
+    Common.fold_left_with_index
+      (function acc -> function xs -> function n ->
+	(List.map (function x -> (n,x)) xs) @ acc)
+      [] trees in
+  List.fold_left
+    (function res ->
+      function (n,x) ->
+	let (same,diff) = List.partition (function (ns,xs) -> x = xs) res in
+	match same with
+	  [(ns,xs)] -> (n::ns,xs)::diff
+	| _ -> ([n],x)::res)
+    [] trees
+
+(* ----------------------------------------------------------------------- *)
 (* entry point *)
 
 let process used_after inherited_env l =
-  extra_counter := 0;
   let (trees, fresh_envs) =
     List.split (List.map (process_tree inherited_env) l) in
-  (Common.uniq(List.concat trees), collect_used_after used_after fresh_envs)
+  let trees = numberify trees in
+  (trees, collect_used_after used_after fresh_envs)

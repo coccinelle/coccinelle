@@ -79,7 +79,7 @@ module P = Parse_aux
 %token <string>  TPathIsoFile
 %token <string * Data.clt> TIncludeL TIncludeNL
 %token <Data.clt * token> TDefine
-%token <Data.clt * token * int> TDefineParam
+%token <Data.clt * token * int * int> TDefineParam
 %token <string * Data.clt> TMinusFile TPlusFile
 
 %token <Data.clt> TInc TDec
@@ -687,11 +687,12 @@ defineop:
 	      Ast0.wrap Ast0.NoParams,
 	      body)) }
 | TDefineParam define_param_list_option TCPar
-    { let (clt,ident,parenoff) = $1 in
+    { let (clt,ident,parenoff,parencol) = $1 in
+      (* clt is the start of the #define itself *)
       let (arity,line,lline,offset,col,strbef,straft,pos) = clt in
       let lp =
 	P.clt2mcode "("
-	  (arity,line,lline,parenoff,0,[],[],Ast0.NoMetaPos) in
+	  (arity,line,lline,parenoff,parencol,[],[],Ast0.NoMetaPos) in
       function body ->
 	Ast0.wrap
 	  (Ast0.Define
@@ -905,7 +906,7 @@ stm_dots:
     { Ast0.wrap(Ast0.Nest(P.clt2mcode "<+..." a, b,
 			  P.clt2mcode "...+>" c, List.concat w, true)) }
 
-whenppdecs: w=whens(when_start,rule_elem_statement)
+whenppdecs: w=whens(when_start,rule_elem_statement,any_strict)
     { w }
 
 /* a statement that fits into a single rule_elem.  should nests be included?
@@ -1808,7 +1809,7 @@ edots_when(dotter,when_grammar):
     d=dotter                                      { (d,None) }
   | d=dotter TWhen TNotEq w=when_grammar TLineEnd { (d,Some w) }
 
-whens(when_grammar,simple_when_grammar):
+whens(when_grammar,simple_when_grammar,any_strict):
     TWhen TNotEq w=when_grammar TLineEnd { [Ast0.WhenNot w] }
   | TWhen TEq w=simple_when_grammar TLineEnd { [Ast0.WhenAlways w] }
   | TWhen comma_list(any_strict) TLineEnd
@@ -1819,6 +1820,11 @@ whens(when_grammar,simple_when_grammar):
 any_strict:
     TAny    { Ast.WhenAny }
   | TStrict { Ast.WhenStrict }
+  | TForall { Ast.WhenForall }
+  | TExists { Ast.WhenExists }
+
+any_only:
+    TAny    { Ast.WhenAny }
   | TForall { Ast.WhenForall }
   | TExists { Ast.WhenExists }
 

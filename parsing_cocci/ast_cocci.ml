@@ -54,8 +54,11 @@ and 'a befaft =
 and 'a mcode = 'a * info * mcodekind * meta_pos (* pos variable *)
  (* pos is an offset indicating where in the C code the mcodekind has an
  effect *)
+(* int list is the match instances, which are only meaningful in annotated
+C code *)
+(* int is the adjacency index, which is incremented on context dots *)
  and mcodekind =
-    MINUS       of pos * anything list list
+    MINUS       of pos * int list * int * anything list list
   | CONTEXT     of pos * anything befaft
   | PLUS
  and fixpos =
@@ -433,7 +436,7 @@ and metaStmtInfo =
 and rule_elem = base_rule_elem wrap
 
 and base_statement =
-    Seq           of rule_elem (* { *) * statement dots *
+    Seq           of rule_elem (* { *) *
 	             statement dots * rule_elem (* } *)
   | IfThen        of rule_elem (* header *) * statement * end_info (* endif *)
   | IfThenElse    of rule_elem (* header *) * statement *
@@ -450,7 +453,7 @@ and base_statement =
 	             (statement dots,statement) whencode list * multi *
 	             dots_whencode list * dots_whencode list
   | FunDecl       of rule_elem (* header *) * rule_elem (* { *) *
-     	             statement dots * statement dots * rule_elem (* } *)
+     	             statement dots * rule_elem (* } *)
   | Define        of rule_elem (* header *) * statement dots
   | Dots          of string mcode (* ... *) *
 	             (statement dots,statement) whencode list *
@@ -592,6 +595,7 @@ let unwrap_mcode (x,_,_,_)  = x
 let get_mcodekind (_,_,x,_) = x
 let get_line x             = x.node_line
 let get_mcode_line (_,l,_,_) = l.line
+let get_mcode_col (_,l,_,_)  = l.column
 let get_fvs x              = x.free_vars
 let set_fvs fvs x          = {x with free_vars = fvs}
 let get_mfvs x             = x.minus_free_vars
@@ -684,7 +688,7 @@ and tag2c = function
 
 (* --------------------------------------------------------------------- *)
 
-let no_info = { line = 0; column = 0; strbef = []; straft = [] }
+let no_info = { line = 0; column = -1; strbef = []; straft = [] }
 
 let make_term x =
   {node = x;

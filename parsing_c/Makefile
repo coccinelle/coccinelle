@@ -9,14 +9,15 @@ TARGET=parsing_c
 
 # - type_cocci.ml ast_cocci.ml  # + unparse_hrule
 SRC= flag_parsing_c.ml parsing_stat.ml \
- token_c.ml ast_c.ml control_flow_c.ml type_c.ml \
+ token_c.ml ast_c.ml control_flow_c.ml \
  visitor_c.ml lib_parsing_c.ml \
- ast_to_flow.ml \
+ control_flow_c_build.ml \
  pretty_print_c.ml \
  semantic_c.ml lexer_parser.ml parser_c.ml lexer_c.ml \
- token_helpers.ml parsing_hacks.ml \
+ token_helpers.ml token_views_c.ml \
+ cpp_token_c.ml parsing_hacks.ml \
  unparse_cocci.ml unparse_c.ml unparse_hrule.ml  \
- parse_c.ml \
+ parse_c.ml type_c.ml \
  cpp_ast_c.ml \
  type_annoter_c.ml comment_annotater_c.ml \
  compare_c.ml \
@@ -38,7 +39,7 @@ INCLUDES= -I ../commons -I ../commons/ocamlextra -I ../commons/ocollection \
 
 #LIBS=../commons/commons.cma
 #INCLUDES= -I ../commons
-SYSLIBS= str.cma unix.cma
+SYSLIBS= str.cma unix.cma num.cma
 
 ##############################################################################
 # Generic variables
@@ -77,8 +78,6 @@ $(TARGET).top: $(OBJS) $(LIBS)
 
 clean::
 	rm -f $(TARGET).top
-
-
 
 lexer_c.ml: lexer_c.mll
 	$(OCAMLLEX) $<
@@ -145,6 +144,9 @@ distclean::
 	rm -f .depend
 
 beforedepend::
+
+distclean::
+	rm -f .depend
 
 depend:: beforedepend
 	$(OCAMLDEP) *.mli *.ml    > .depend

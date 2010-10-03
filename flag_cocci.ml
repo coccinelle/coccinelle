@@ -41,11 +41,13 @@ let show_mcodekind_in_ctl = ref false
 let show_binding_in_out = ref false
 let show_dependencies =   ref false
 
+let verbose_cocci = ref true
+
 let windows = ref false
 
 let popl = ref false
 
-let ifdef_to_if = ref false
+let ifdef_to_if = ref true(*false*)
 
 type include_options =
     I_UNSPECIFIED | I_NO_INCLUDES | I_NORMAL_INCLUDES | I_ALL_INCLUDES

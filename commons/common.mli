@@ -117,16 +117,21 @@ val reset_pr_indent : unit -> unit
 (* The following functions first indent _tab_level_print spaces.
  * They also add the _prefix_pr, for instance used in MPI to show which
  * worker is talking.
+ * update: for pr2, it can also print into a log file.
  * 
  * The use of 2 in pr2 is because 2 is under UNIX the second descriptor
  * which corresponds to stderr. 
  *)
 val _prefix_pr : string ref
+
 val pr : string -> unit
-val pr2 : string -> unit
 val pr_no_nl : string -> unit
-val pr2_no_nl : string -> unit
 val pr_xxxxxxxxxxxxxxxxx : unit -> unit
+
+(* pr2 print on stderr, but can also in addition print into a file *)
+val _chan_pr2: out_channel option ref
+val pr2 : string -> unit
+val pr2_no_nl : string -> unit
 val pr2_xxxxxxxxxxxxxxxxx : unit -> unit
 
 (* use Dumper.dump *)
@@ -137,9 +142,14 @@ val dump: 'a -> string
 val _already_printed : (string, bool) Hashtbl.t
 val pr2_once : string -> unit
 
+val mk_pr2_wrappers: bool ref -> (string -> unit) * (string -> unit)
+
+
 val redirect_stdout_stderr : filename -> (unit -> unit) -> unit
 val redirect_stdin : filename -> (unit -> unit) -> unit
 val redirect_stdin_opt : filename option -> (unit -> unit) -> unit
+
+val with_pr2_to_string: (unit -> unit) -> string list
 
 val fprintf : out_channel -> ('a, out_channel, unit) format -> 'a
 val printf : ('a, out_channel, unit) format -> 'a
@@ -393,6 +403,8 @@ type 'a mylazy = (unit -> 'a)
 
 (* emacs spirit *)
 val save_excursion : 'a ref -> (unit -> 'b) -> 'b
+val save_excursion_and_disable : bool ref -> (unit -> 'b) -> 'b
+val save_excursion_and_enable :  bool ref -> (unit -> 'b) -> 'b
 
 (* emacs spirit *)
 val unwind_protect : (unit -> 'a) -> (exn -> 'b) -> 'a
@@ -1885,6 +1897,12 @@ val full_charpos_to_pos : filename -> (int * int) array
  * during lexing because of limitations of ocamllex. *)
 val complete_parse_info : 
   filename -> (int * int) array -> parse_info -> parse_info
+
+val full_charpos_to_pos_large: 
+  filename -> (int -> (int * int))
+
+val complete_parse_info_large : 
+  filename -> (int -> (int * int))  -> parse_info -> parse_info
 
 (* return line x col x str_line  from a charpos. This function is quite
  * expensive so don't use it to get the line x col from every token in

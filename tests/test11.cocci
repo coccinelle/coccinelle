@@ -7,5 +7,5 @@ expression X;
  g(X)
  ...
 - h(X)
-+ h(X,X)
++ h(X, X)
  

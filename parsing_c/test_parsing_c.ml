@@ -6,6 +6,7 @@ let score_path = "/home/pad/c-yacfe/tmp"
 
 let tmpfile = "/tmp/output.c" 
 
+module Ast_to_flow = Control_flow_c_build
 
 (*****************************************************************************)
 (* Subsystem testing *)
@@ -72,12 +73,6 @@ let test_parse_gen xs ext =
     else Hashtbl.add newscore file (Common.Pb s)
   );
   
-  if not (null !stat_list) 
-  then begin 
-    Parsing_stat.print_recurring_problematic_tokens !stat_list;
-    Parsing_stat.print_parsing_stat_list !stat_list;
-  end;
-  
   dirname_opt +> Common.do_option (fun dirname -> 
     pr2_xxxxxxxxxxxxxxxxx();
     pr2 "regression testing  information";
@@ -88,7 +83,14 @@ let test_parse_gen xs ext =
     Common.regression_testing newscore 
       (Filename.concat score_path
        ("score_parsing__" ^str ^ def ^ ext ^ ".marshalled"))
-  )
+  );
+
+  if not (null !stat_list) 
+  then begin 
+    Parsing_stat.print_recurring_problematic_tokens !stat_list;
+    Parsing_stat.print_parsing_stat_list !stat_list;
+  end;
+  ()
 
 
 let test_parse_c xs = 
@@ -99,7 +101,61 @@ let test_parse_ch xs =
   test_parse_gen xs "[ch]"
 
 
+(* ---------------------------------------------------------------------- *)
 
+let test_parse xs = 
+
+  Flag_parsing_c.filter_msg_define_error := true;
+  Flag_parsing_c.filter_define_error := true;
+  Flag_parsing_c.verbose_lexing := false;
+  Flag_parsing_c.verbose_parsing := false;
+
+  let dirname_opt = 
+    match xs with
+    | [x] when is_directory x -> Some x
+    | _ -> None
+  in
+  dirname_opt +> Common.do_option (fun dir -> 
+
+    let ext = "h" in 
+    let fullxs = Common.files_of_dir_or_files_no_vcs ext [dir] in
+    fullxs +> List.iter (fun file -> 
+      let xs = Parse_c.parse_cpp_define_file file in
+      xs +> List.iter (fun (x, def) -> 
+        let (s, params, body) = def in 
+        Hashtbl.replace !Parse_c._defs s (s, params, body);
+      );
+    );
+  );
+
+  let ext = "[ch]" in
+
+  let fullxs = Common.files_of_dir_or_files_no_vcs ext xs in
+
+  let stat_list = ref [] in
+  Common.check_stack_nbfiles (List.length fullxs);
+
+  fullxs +> List.iter (fun file -> 
+    if not (file =~ (".*\\."^ext))
+    then pr2 ("warning: seems not a ."^ext^" file");
+
+    pr2 "";
+    pr2 ("PARSING: " ^ file);
+
+    let (xs, stat) = Parse_c.parse_print_error_heuristic file in
+    xs +> List.iter (fun (ast, (s, toks)) -> 
+      Parse_c.print_commentized toks
+    );
+
+    Common.push2 stat stat_list;
+  );
+  
+  if not (null !stat_list) 
+  then begin 
+    Parsing_stat.print_recurring_problematic_tokens !stat_list;
+    Parsing_stat.print_parsing_stat_list !stat_list;
+  end;
+  ()
 
 
 
@@ -322,6 +378,57 @@ let test_cpp file =
 
 
 
+let extract_macros ~selection x = 
+  (* CONFIG [ch] ? also do for .c ? maybe less needed now that I 
+   * add local_macros.
+   *)
+
+  let ext = "h" in 
+  let fullxs = Common.files_of_dir_or_files_no_vcs ext [x] in
+  fullxs +> List.iter (fun file -> 
+   
+    pr ("/* PARSING: " ^ file ^ " */");
+    let xs = Parse_c.parse_cpp_define_file file in
+    xs +> List.iter (fun (x, def) -> 
+      let (s, params, body) = def in 
+      assert(s = x);
+      (match params, body with
+      | Cpp_token_c.NoParam, Cpp_token_c.DefineBody [Parser_c.TInt _]
+      | Cpp_token_c.NoParam, Cpp_token_c.DefineBody [] -> 
+          ()
+      | _ -> 
+
+          let s1 = 
+            match params with
+            | Cpp_token_c.NoParam -> spf "#define %s " s
+            | Cpp_token_c.Params xs -> 
+                spf "#define %s(%s) "
+                  s (Common.join "," xs)
+          in
+          let s2, bodytoks = 
+            match body with
+            | Cpp_token_c.DefineHint _ -> 
+                failwith "weird, hint in regular header file"
+            | Cpp_token_c.DefineBody xs -> 
+                Common.join " " (xs +> List.map Token_helpers.str_of_tok),
+                xs
+          in
+
+          let print = 
+            match () with
+            | () when s ==~ Parsing_hacks.regexp_annot -> true
+            | () when List.exists (function
+              | Parser_c.Tattribute _ -> true
+              | _ -> false) bodytoks -> true
+            | () -> false
+          in
+          if print || not selection then pr (s1 ^ s2)
+      );
+    );
+  );
+  ()
+
+
 
 (* ---------------------------------------------------------------------- *)
 let test_xxx a  = 
@@ -354,6 +461,9 @@ let actions () = [
   "-parse_ch", "   <file or dir>", 
   Common.mk_action_n_arg test_parse_ch;
 
+  "-parse", "   <file or dir>", 
+  Common.mk_action_n_arg test_parse;
+
   "-show_flow", "   <file or file:function>", 
   Common.mk_action_1_arg test_cfg;
   "-control_flow", "   <file or file:function>", 
@@ -377,6 +487,11 @@ let actions () = [
   "-test_cpp", " <file>",
   Common.mk_action_1_arg test_cpp;
 
+  "-extract_macros", " <file or dir>",
+  Common.mk_action_1_arg (extract_macros ~selection:false) ;
+
+  "-extract_macros_select", " <file or dir>",
+  Common.mk_action_1_arg (extract_macros ~selection:true);
 
 
   "-xxx", "   <file1> <>", 

@@ -1,19 +1,29 @@
-// clone: yacfe(master), coccinelle, acomment, 
-
 // ****************************************************************************
-// Prelude, this file is to be used with the -macro_file option of the C parser
+// Prelude, this file is used with -macro_file_builtins option of the C parser
 // ****************************************************************************
 
 /* This file contains:
  *   - macros found in <.h>
+ *   - macros found in ".h" 
+ *     but where we cant detect that it will be a "bad macro"
+ *   - hints, cf below.
+ * 
+ * A "bad macro" is a macro using free variables or when expanded
+ * that influence the control-flow of the code. In those cases it 
+ * is preferable to expand the macro so that the coccinelle engine
+ * has a more accurate representation of what is going on.
+ * 
+ *
+ *
+ *
+ * old: this file was also containing what is below but now we 
+ * try to expand on demand the macro found in the c file, so those cases
+ * are not needed any more:
  *   - macros found in .c; macros that cannot be parsed.
  *     In the future should be autodetected
  *     (not so easy to do same for macros in .h cos require to access .h file)
- *   - macros found in ".h" 
- *     but where we cant detect that it will be a "bad macro"
  *   - macros found in .c; macros correctly parsed
  *     but where we cant detect that it will be a "bad macro"
- *   - hints, cf below.
  *
  * Some of those macros could be deleted and the C code rewritten because
  * they are "bad" macros.
@@ -54,28 +64,19 @@
 // #define FOO(a,b) fn(a,b)
 #define FOO_METH_TEST(a) YACFE_IDENT_BUILDER
 
+//#define FOO YACFE_DECLARATOR
+
 // ****************************************************************************
 // Generic macros
 // ****************************************************************************
 
-// ****************************************************************************
-// Yacc macros 
-// ****************************************************************************
+// this is defined by windows compiler, and so can not be found via a macro
+// after a -extract_macros
+#define __stdcall /*could: YACFE_ATTRIBUTE*/
+#define __declspec(a) 
 
-#define YY_PROTO(x) x 
-#define yyconst const 
-
-
-// ****************************************************************************
-// GNU Hello macros 
-// ****************************************************************************
-
-#define __getopt_argv_const const
-
-
-// ****************************************************************************
-// Gcc (as in the source of gcc code) macros 
-// ****************************************************************************
+#define WINAPI
+#define CALLBACK
 
 
 // ****************************************************************************
@@ -183,6 +184,14 @@
 
 #define __uses_jump_to_uncached
 
+
+// last last
+#define __net_init
+#define __net_exit
+#define __net_initdata
+
+#define __paginginit // in mm
+
 // ----------------------------------------------------------------------------
 // String macros
 // ----------------------------------------------------------------------------
@@ -270,6 +279,10 @@
 
 #define  TRACE_EXIT return
 
+#define notrace
+
+#define noinline_for_stack // in fs
+#define debug_noinline // in net
 
 // ----------------------------------------------------------------------------
 // linkage
@@ -734,71 +747,3 @@ do {									\
 //#define	 ACPI_MODULE_NAME(x)
 
 
-
-
-// ****************************************************************************
-// Httpd (apache) macros 
-// ****************************************************************************
-
-#define AP_DECLARE(x) x
-#define PROXY_DECLARE(x) x
-#define CACHE_DECLARE(x) x
-#define DBD_DECLARE_NONSTD(x) x
-#define DAV_DECLARE(x) x
-#define APU_DECLARE(x) x
-#define APU_DECLARE_NONSTD(x) x
-#define APR_DECLARE(x) x
-#define AP_CORE_DECLARE(x) x
-#define AP_DECLARE_NONSTD(x) x
-#define AP_CORE_DECLARE_NONSTD(x) x
-#define APR_OPTIONAL_FN_TYPE(x) x
-#define DAV_DECLARE_NONSTD(x) x
-#define APR_DECLARE_NONSTD(x) x
-
-#define APU_DECLARE_DATA
-#define APR_THREAD_FUNC
-#define AP_DECLARE_DATA
-#define PROXY_DECLARE_DATA
-#define AP_MODULE_DECLARE_DATA
-#define APR_DECLARE_DATA
-
-
-
-#define APR_INLINE inline
-#define EXPORT static
-#define REGISTER register
-
-#define MODSSL_D2I_SSL_SESSION_CONST const 
-#define MODSSL_D2I_X509_CONST const
-#define MODSSL_D2I_PrivateKey_CONST const
-#define MODSSL_D2I_SSL_SESSION_CONST const
-
-#define STACK_OF(X509_NAME) X509_NAME
-
-#define MODSSL_PCHAR_CAST  (pchar)
-
-#define WINAPI
-//#define CALLBACK
-// generate false positive in Linux 
-#define APIENTRY
-#define __declspec(x) 
-#define __stdcall
-
-
-//#define module struct xxx
-
-#define APR_POOL_IMPLEMENT_ACCESSOR(shm)
-
-#define ADD_SUITE(suite) suite;
-
-// ****************************************************************************
-// CISCO vpn client macros 
-// ****************************************************************************
-
-// #define NOREGPARM 
-// #define IN
-// #define OUT
-// #define OPTIONAL
-
-#define likely(x) x
-#define unlikely(x) x

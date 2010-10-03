@@ -1,4 +1,5 @@
 @@
+declarer name MODULE_PARM;
 @@
 
 - MODULE_PARM(...);

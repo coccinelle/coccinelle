@@ -20,6 +20,12 @@ open Ograph_extended
 open Oassoc
 open Oassocb
 
+module Lib = Lib_parsing_c
+
+(*****************************************************************************)
+(* Wrappers *)
+(*****************************************************************************)
+let pr2, pr2_once = Common.mk_pr2_wrappers Flag_parsing_c.verbose_cfg
 
 (*****************************************************************************)
 (* todo?: compute target level with goto (but rare that different I think)
@@ -47,6 +53,7 @@ type error =
   | DeadCode          of Common.parse_info option
   | CaseNoSwitch      of Common.parse_info
   | OnlyBreakInSwitch of Common.parse_info
+  | WeirdSwitch       of Common.parse_info
   | NoEnclosingLoop   of Common.parse_info
   | GotoCantFindLabel of string * Common.parse_info
   | NoExit of Common.parse_info
@@ -173,8 +180,9 @@ let compute_labels_and_create_them st =
   begin
     st +> Visitor_c.vk_statement { Visitor_c.default_visitor_c with 
       Visitor_c.kstatement = (fun (k, bigf) st -> 
-        match st with
-        | Labeled (Ast_c.Label (name, _st)),ii -> 
+        match Ast_c.unwrap_st st with
+        | Labeled (Ast_c.Label (name, _st)) -> 
+            let ii = Ast_c.get_ii_st_take_care st in
             (* at this point I put a lbl_0, but later I will put the
              * good labels. *)
             let s = Ast_c.str_of_name name in
@@ -187,7 +195,7 @@ let compute_labels_and_create_them st =
               (* not k _st !!! otherwise in lbl1: lbl2: i++; we miss lbl2 *)
               k st; 
             end
-        | st -> k st
+        | _st -> k st
       )
     };
     !h;
@@ -282,12 +290,13 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
       compound_caller = Statement;
     } 
   in
-      
+  let ii = Ast_c.get_ii_st_take_care stmt in
+
   (* ------------------------- *)        
-  match stmt with
+  match Ast_c.unwrap_st stmt with
 
   (*  coupling: the Switch case copy paste parts of the Compound case *)
-  | Ast_c.Compound statxs, ii -> 
+  | Ast_c.Compound statxs -> 
       (* flow_to_ast: *)
       let (i1, i2) = tuple_of_list2 ii in
 
@@ -344,7 +353,7 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
 
 
    (* ------------------------- *)        
-  | Labeled (Ast_c.Label (name, st)), ii -> 
+  | Labeled (Ast_c.Label (name, st)) -> 
       let s = Ast_c.str_of_name name in
       let ilabel = xi.labels_assoc#find s in
       let node = mk_node (unwrap (!g#nodes#find ilabel)) lbl [] (s ^ ":") in
@@ -353,8 +362,8 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
       aux_statement (Some ilabel, xi_lbl) st
 
 
-  | Jump (Ast_c.Goto name), ii -> 
-      let s = Ast_c.str_of_name name in
+  | Jump (Ast_c.Goto name) -> 
+     let s = Ast_c.str_of_name name in
      (* special_cfg_ast: *)
      let newi = !g +> add_node (Goto (stmt, name, ((),ii))) lbl ("goto "^s^":")
      in
@@ -378,32 +387,38 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
      !g#add_arc ((newi, ilabel), Direct);
      None
       
-  | Jump (Ast_c.GotoComputed e), ii -> 
+  | Jump (Ast_c.GotoComputed e) -> 
       raise (Error (ComputedGoto))
       
    (* ------------------------- *)        
-  | Ast_c.ExprStatement opte, ii -> 
+  | Ast_c.ExprStatement opte -> 
       (* flow_to_ast:   old: when opte = None, then do not add in CFG. *)
       let s = 
         match opte with
         | None -> "empty;"
         | Some e -> 
-            let ((unwrap_e, typ), ii) = e in
-            (match unwrap_e with
-            | FunCall (((Ident (namef), _typ), _ii), _args) -> 
-                Ast_c.str_of_name namef ^ "(...)"
-            | Assignment (((Ident (namevar), _typ), _ii), SimpleAssign, e) -> 
-                Ast_c.str_of_name namevar ^ " = ... ;"
-            | Assignment 
-                (((RecordAccess (((Ident (namevar), _typ), _ii), field), _typ2),
-                  _ii2),
-                 SimpleAssign, 
-                 e) -> 
-                let sfield = Ast_c.str_of_name field in
-                Ast_c.str_of_name namevar ^ "." ^ sfield ^ " = ... ;"
-                   
+            (match Ast_c.unwrap_expr e with
+            | FunCall (e, _args) -> 
+                (match Ast_c.unwrap_expr e with
+                | Ident namef -> 
+                    Ast_c.str_of_name namef ^ "(...)"
+                | _ -> "statement"
+                )
+            | Assignment (e1, SimpleAssign, e2) -> 
+                (match Ast_c.unwrap_expr e1 with
+                | Ident namevar ->
+                    Ast_c.str_of_name namevar ^ " = ... ;"
+                | RecordAccess(e, field) -> 
+                    (match Ast_c.unwrap_expr e with
+                    | Ident namevar -> 
+                        let sfield = Ast_c.str_of_name field in
+                        Ast_c.str_of_name namevar ^ "." ^ sfield ^ " = ... ;"
+                    | _ -> "statement"
+                    )
+                | _ -> "statement"
+                )
             | _ -> "statement"
-        )
+            )
       in
       let newi = !g +> add_node (ExprStatement (stmt, (opte, ii))) lbl s in
       !g +> add_arc_opt (starti, newi);
@@ -411,7 +426,11 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
       
 
    (* ------------------------- *)        
-  | Selection  (Ast_c.If (e, st1, (Ast_c.ExprStatement (None), []))), ii ->
+  | Selection  (Ast_c.If (e, st1, st2)) ->
+
+    let iist2 = Ast_c.get_ii_st_take_care st2 in
+    (match Ast_c.unwrap_st st2 with
+    | Ast_c.ExprStatement (None) when null iist2 -> 
       (* sometome can have ExprStatement None but it is a if-then-else,
        * because something like   if() xx else ;
        * so must force to have [] in the ii associated with ExprStatement 
@@ -448,8 +467,7 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
       !g +> add_arc_opt (finalthen, lasti);
       Some lasti
 
-      
-  | Selection  (Ast_c.If (e, st1, st2)), ii -> 
+    | _unwrap_st2 -> 
      (* starti -> newi --->   newfakethen -> ... -> finalthen --> lasti
       *                 |                                      |
       *                 |->   newfakeelse -> ... -> finalelse -|
@@ -489,10 +507,10 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
               !g +> add_arc_opt (finalelse, lasti);
               Some lasti
            end)
-        
+    )        
       
    (* ------------------------- *)        
-  | Selection  (Ast_c.Switch (e, st)), ii -> 
+  | Selection  (Ast_c.Switch (e, st)) -> 
       let (i1,i2,i3, iifakeend) = tuple_of_list4 ii in
       let ii = [i1;i2;i3] in
 
@@ -510,9 +528,10 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
         * information build inside the compound case: the nodei of {
         *)
        let finalthen = 
-         match st with
-         | Ast_c.Compound statxs, ii -> 
-             let statxs = Ast_c.stmt_elems_of_sequencable statxs in
+         match Ast_c.unwrap_st st with
+         | Ast_c.Compound statxs -> 
+
+             let statxs = Lib.stmt_elems_of_sequencable statxs in
              
              (* todo? we should not allow to match a stmt that corresponds
               * to a compound of a switch, so really SeqStart (stmt, ...)
@@ -530,9 +549,10 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
                 * between start to end.
                 * todo? except if the case[range] coverthe whole spectrum 
                 *)
-               if not (statxs +> List.exists (function 
-               | (Labeled (Ast_c.Default _), _) -> true
-               | _ -> false
+               if not (statxs +> List.exists (fun x -> 
+                 match Ast_c.unwrap_st x with
+                 | Labeled (Ast_c.Default _) -> true
+                 | _ -> false
                ))
                then begin
                  (* when there is no default, then a valid path is 
@@ -555,7 +575,15 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
              } 
              in
              aux_statement (None (* no starti *), newxi) st
-         | x -> raise Impossible
+         | _x -> 
+             (* apparently gcc allows some switch body such as 
+              *   switch (i) case 0 : printf("here\n");
+              *   cf tests-bis/switch_no_body.c
+              * but I don't think it's worthwile to handle
+              * such pathological and rare case. Not worth
+              * the complexity. Safe to assume a coumpound.
+              *)
+             raise (Error (WeirdSwitch (pinfo_of_ii [i1])))
        in
        !g +> add_arc_opt (finalthen, newendswitch);
 
@@ -596,13 +624,13 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
        res
        
 
-  | Labeled (Ast_c.Case  (_, _)), ii
-  | Labeled (Ast_c.CaseRange  (_, _, _)), ii -> 
+  | Labeled (Ast_c.Case  (_, _))
+  | Labeled (Ast_c.CaseRange  (_, _, _)) -> 
 
       incr counter_for_switch;
       let switchrank = !counter_for_switch in
       let node, st = 
-        match stmt with 
+        match Ast_c.get_st_and_ii stmt with 
         | Labeled (Ast_c.Case  (e, st)), ii -> 
             (Case (stmt, (e, ii))),  st
         | Labeled (Ast_c.CaseRange  (e, e2, st)), ii -> 
@@ -636,7 +664,7 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
       aux_statement (Some newi, xi_lbl) st
       
 
-  | Labeled (Ast_c.Default st), ii -> 
+  | Labeled (Ast_c.Default st) -> 
       incr counter_for_switch;
       let switchrank = !counter_for_switch in
 
@@ -659,7 +687,7 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
 
 
    (* ------------------------- *)        
-  | Iteration  (Ast_c.While (e, st)), ii -> 
+  | Iteration  (Ast_c.While (e, st)) -> 
      (* starti -> newi ---> newfakethen -> ... -> finalthen -
       *             |---|-----------------------------------|
       *                 |-> newfakelse 
@@ -694,13 +722,13 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
    * (whereas While cant return None). But if return None, certainly 
    * some deadcode.
    *)
-  | Iteration  (Ast_c.DoWhile (st, e)), ii -> 
+  | Iteration  (Ast_c.DoWhile (st, e)) -> 
      (* starti -> doi ---> ... ---> finalthen (opt) ---> whiletaili
       *             |--------- newfakethen ---------------|  |---> newfakelse
       *)
       let is_zero = 
         match Ast_c.unwrap_expr e with
-        | Constant (Int "0") -> true
+        | Constant (Int ("0",_)) -> true
         | _ -> false
       in
 
@@ -750,7 +778,7 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
           
 
 
-  | Iteration  (Ast_c.For (e1opt, e2opt, e3opt, st)), ii -> 
+  | Iteration  (Ast_c.For (e1opt, e2opt, e3opt, st)) -> 
       let (i1,i2,i3, iifakeend) = tuple_of_list4 ii in
       let ii = [i1;i2;i3] in
 
@@ -785,7 +813,7 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
    * lexer, now they are returned as Twhile so less pbs. But not perfect.
    * update: now I recognize the list_for_each macro so no more problems.
    *)
-  | Iteration  (Ast_c.MacroIteration (s, es, st)), ii -> 
+  | Iteration  (Ast_c.MacroIteration (s, es, st)) -> 
       let (i1,i2,i3, iifakeend) = tuple_of_list4 ii in
       let ii = [i1;i2;i3] in
 
@@ -814,7 +842,7 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
 
 
    (* ------------------------- *)        
-  | Jump ((Ast_c.Continue|Ast_c.Break) as x),ii ->  
+  | Jump ((Ast_c.Continue|Ast_c.Break) as x) ->  
       let context_info =
 	match xi.ctx with
 	  SwitchInfo (startbrace, loopendi, braces, parent_lbl) -> 
@@ -883,7 +911,7 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
       | NoInfo -> raise Impossible
       )
 
-  | Jump ((Ast_c.Return | Ast_c.ReturnExpr _) as kind), ii -> 
+  | Jump ((Ast_c.Return | Ast_c.ReturnExpr _) as kind) -> 
      (match xi.exiti, xi.errorexiti with
      | None, None -> raise (Error (NoExit (pinfo_of_ii ii)))
      | Some exiti, Some errorexiti -> 
@@ -917,7 +945,7 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
 
 
   (* ------------------------- *)        
-  | Ast_c.Decl decl, ii -> 
+  | Ast_c.Decl decl -> 
      let s = 
        match decl with
        | (Ast_c.DeclList 
@@ -931,19 +959,19 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
      Some newi
       
   (* ------------------------- *)        
-  | Ast_c.Asm body, ii -> 
+  | Ast_c.Asm body -> 
       let newi = !g +> add_node (Asm (stmt, ((body,ii)))) lbl "asm;" in
       !g +> add_arc_opt (starti, newi);
       Some newi
 
-  | Ast_c.MacroStmt, ii -> 
+  | Ast_c.MacroStmt -> 
       let newi = !g +> add_node (MacroStmt (stmt, ((),ii))) lbl "macro;" in
       !g +> add_arc_opt (starti, newi);
       Some newi
 
 
   (* ------------------------- *)        
-  | Ast_c.NestedFunc def, ii -> 
+  | Ast_c.NestedFunc def -> 
       raise (Error NestedFunc)
       
 
@@ -1028,7 +1056,7 @@ let (aux_definition: nodei -> definition -> unit) = fun topi funcdef ->
     )
   in
 
-  let topstatement = Ast_c.Compound compound, iicompound in
+  let topstatement = Ast_c.mk_st (Ast_c.Compound compound) iicompound in
 
   let headi = !g +> add_node 
     (FunHeader ({ 
@@ -1072,13 +1100,15 @@ let (aux_definition: nodei -> definition -> unit) = fun topi funcdef ->
  * the toplevel macro statement as in @@ toplevel_declarator MACRO_PARAM;@@
  * and so I would not need this hack and instead I would to a cleaner
  * match in cocci_vs_c_3.ml of a A.MacroTop vs B.MacroTop
+ * 
+ * todo: update: now I do what I just described, so can remove this code ?
  *)
 let specialdeclmacro_to_stmt (s, args, ii) =
   let (iis, iiopar, iicpar, iiptvirg) = tuple_of_list4 ii in
   let ident = Ast_c.RegularName (s, [iis]) in
-  let identfinal = (Ast_c.Ident (ident), Ast_c.noType()), [] in
-  let f = (Ast_c.FunCall (identfinal, args), Ast_c.noType()), [iiopar;iicpar] in
-  let stmt = Ast_c.ExprStatement (Some f), [iiptvirg] in
+  let identfinal = Ast_c.mk_e (Ast_c.Ident (ident)) Ast_c.noii in
+  let f = Ast_c.mk_e (Ast_c.FunCall (identfinal, args)) [iiopar;iicpar] in
+  let stmt = Ast_c.mk_st (Ast_c.ExprStatement (Some f)) [iiptvirg] in
   stmt,  (f, [iiptvirg])
 
 
@@ -1187,6 +1217,18 @@ let ast_to_control_flow e =
           raise (Error(Define(pinfo_of_ii ii)))
       | Ast_c.DefineTodo -> 
           raise (Error(Define(pinfo_of_ii ii)))
+
+(* old:
+      | Ast_c.DefineText (s, ii) -> 
+          let endi = !g +> add_node EndNode lbl_0 "[end]" in
+          !g#add_arc ((headeri, endi),Direct);
+      | Ast_c.DefineInit _ -> 
+          let endi = !g +> add_node EndNode lbl_0 "[end]" in
+          !g#add_arc ((headeri, endi),Direct);
+      | Ast_c.DefineTodo -> 
+          let endi = !g +> add_node EndNode lbl_0 "[end]" in
+          !g#add_arc ((headeri, endi),Direct);
+*)
       );
 
       Some !g
@@ -1256,7 +1298,9 @@ let deadcode_detection g =
       | SeqEnd _ -> () (* todo?: certaines '}' deviennent orphelins *)
       | x -> 
           (match Control_flow_c.extract_fullstatement node with
-          | Some (st, ii) -> raise (Error (DeadCode (Some (pinfo_of_ii ii))))
+          | Some st -> 
+              let ii = Ast_c.get_ii_st_take_care st in
+              raise (Error (DeadCode (Some (pinfo_of_ii ii))))
           | _ -> pr2 "CFG: orphelin nodes, maybe something weird happened"
           )
       )
@@ -1358,6 +1402,8 @@ let report_error error =
       pr2 ("FLOW: case without corresponding switch: " ^ error_from_info info)
   | OnlyBreakInSwitch info -> 
       pr2 ("FLOW: only break are allowed in switch: " ^ error_from_info info)
+  | WeirdSwitch info -> 
+      pr2 ("FLOW: weird switch: " ^ error_from_info info)
   | NoEnclosingLoop   (info) -> 
       pr2 ("FLOW: can't find enclosing loop: " ^ error_from_info info)
   | GotoCantFindLabel (s, info) ->
@@ -1365,7 +1411,7 @@ let report_error error =
   | NoExit info -> 
       pr2 ("FLOW: can't find exit or error exit: " ^ error_from_info info)
   | DuplicatedLabel s -> 
-      pr2 ("FLOW: duplicate label" ^ s)
+      pr2 ("FLOW: duplicate label " ^ s)
   | NestedFunc  -> 
       pr2 ("FLOW: not handling yet nested function")
   | ComputedGoto -> 

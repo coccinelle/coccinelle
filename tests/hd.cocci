@@ -2,6 +2,6 @@
 @@
 
 - f(int x, int y) {
-+ f(int x) {
++ f(int x){
    ...
   }

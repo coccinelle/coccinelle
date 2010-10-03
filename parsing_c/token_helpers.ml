@@ -117,11 +117,17 @@ let is_cbrace = function
 
 
 (* ---------------------------------------------------------------------- *)
+
+(* end of file *)
 let is_eof = function
   | EOF x -> true
   | _ -> false
 
 
+(* end of macro *)
+let is_eom = function
+  | TDefEOL _ -> true
+  | _ -> false
 
 let is_statement = function
   | Tfor _ | Tdo _ | Tif _ | Twhile _ | Treturn _ 
@@ -193,7 +199,6 @@ let is_ident_like = function
   | TMacroStmt _
   | TMacroString _
   | TMacroDecl _
-  | TMacroStructDecl _
   | TMacroDeclConst _
   | TMacroIterator _
       -> true
@@ -247,7 +252,6 @@ let info_of_tok = function
   | TMacroStmt             (s, i) -> i
   | TMacroString             (s, i) -> i
   | TMacroDecl             (s, i) -> i
-  | TMacroStructDecl             (s, i) -> i
   | TMacroDeclConst             (i) -> i
   | TMacroIterator             (s,i) -> i
 (*  | TMacroTop             (s,i) -> i *)
@@ -397,7 +401,6 @@ let visitor_info_of_tok f = function
   | TMacroStmt           (s, i)   -> TMacroStmt            (s, f i)
   | TMacroString         (s, i)   -> TMacroString          (s, f i)
   | TMacroDecl           (s, i) -> TMacroDecl            (s, f i)
-  | TMacroStructDecl     (s, i) -> TMacroStructDecl      (s, f i)
   | TMacroDeclConst      (i)   -> TMacroDeclConst       (f i)
   | TMacroIterator       (s, i) -> TMacroIterator        (s, f i)
 (*  | TMacroTop          (s,i) -> TMacroTop             (s,f i) *)

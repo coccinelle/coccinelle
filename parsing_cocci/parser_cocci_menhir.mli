@@ -146,7 +146,7 @@ type token =
   | TDmOp of (Ast_cocci.arithOp * Data.clt)
   | TDisable
   | TDepends
-  | TDefineParam of (Data.clt * token * int)
+  | TDefineParam of (Data.clt * token * int * int)
   | TDefine of (Data.clt * token)
   | TDefault of (Data.clt)
   | TDeclarerId of (string * Data.clt)

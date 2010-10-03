@@ -26,6 +26,8 @@ module U = Pretty_print_cocci
 
 let quiet = ref true (* true = no decoration on - context, etc *)
 
+let full_ids = ref false (* true = print rule name as well *)
+
 let start_block str =
   force_newline(); print_string "  "; open_box 0
 
@@ -77,7 +79,7 @@ let mcodekind brackets fn x info mc =
 	(function x ->
 	  print_string lb; fn x; print_string rb)
 	x plus_streams
-  | Ast0.PLUS -> fn x
+  | Ast0.PLUS -> print_int (info.Ast0.pos_info.Ast0.column); fn x
   | Ast0.MIXED(plus_streams) ->
       let (lb,rb) =
 	if !quiet
@@ -91,7 +93,7 @@ let mcodekind brackets fn x info mc =
 	x plus_streams);
   List.iter (function (s,_) -> print_string s) info.Ast0.strings_after
 
-let mcode fn (x,_,info,mc,pos) =
+let mcode fn (x,_,info,mc,pos,adj) =
   let fn x = fn x; meta_pos !pos in
   mcodekind (Some info.Ast0.pos_info.Ast0.line_start)(*None*) fn x info mc
 
@@ -99,7 +101,9 @@ let print_context x fn =
   mcodekind (Some (Ast0.get_line x)) fn () (Ast0.get_info x)
     (Ast0.get_mcodekind x)
 
-let print_meta (_,name) = print_string name
+let print_meta (ctx,name) =
+  if !full_ids then (print_string ctx; print_string ":");
+  print_string name
 
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)
@@ -431,7 +435,7 @@ and statement arity s =
 	  mcode print_string iff; print_string " "; mcode print_string_box lp;
 	  expression exp; close_box(); mcode print_string rp; print_string " ";
 	  statement arity branch1;
-	  mcode (function _ -> ()) ((),(),info,aft,ref Ast0.NoMetaPos)
+	  mcode (function _ -> ()) ((),(),info,aft,ref Ast0.NoMetaPos,-1)
       | Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2,(info,aft)) ->
 	  print_string arity;
 	  mcode print_string iff; print_string " "; mcode print_string_box lp;
@@ -439,13 +443,13 @@ and statement arity s =
 	  statement arity branch1;
 	  print_string arity; mcode print_string els; print_string " ";
 	  statement arity branch2;
-	  mcode (function _ -> ()) ((),(),info,aft,ref Ast0.NoMetaPos)
+	  mcode (function _ -> ()) ((),(),info,aft,ref Ast0.NoMetaPos,-1)
       | Ast0.While(whl,lp,exp,rp,body,(info,aft)) ->
 	  print_string arity;
 	  mcode print_string whl; print_string " "; mcode print_string_box lp;
 	  expression exp; close_box(); mcode print_string rp; print_string " ";
 	  statement arity body;
-	  mcode (function _ -> ()) ((),(),info,aft,ref Ast0.NoMetaPos)
+	  mcode (function _ -> ()) ((),(),info,aft,ref Ast0.NoMetaPos,-1)
       | Ast0.Do(d,body,whl,lp,exp,rp,sem) ->
 	  print_string arity; mcode print_string d; print_string " ";
 	  statement arity body;
@@ -460,14 +464,14 @@ and statement arity s =
 	  print_option expression e2; mcode print_string sem2;
 	  print_option expression e3; close_box();
 	  mcode print_string rp; print_string " "; statement arity body;
-	  mcode (function _ -> ()) ((),(),info,aft,ref Ast0.NoMetaPos)
+	  mcode (function _ -> ()) ((),(),info,aft,ref Ast0.NoMetaPos,-1)
       | Ast0.Iterator(nm,lp,args,rp,body,(info,aft)) ->
 	  print_string arity;
 	  ident nm; print_string " "; mcode print_string_box lp;
 	  let _ = dots (function _ -> ()) expression args in
 	  close_box(); mcode print_string rp; print_string " ";
 	  statement arity body;
-	  mcode (function _ -> ()) ((),(),info,aft,ref Ast0.NoMetaPos)
+	  mcode (function _ -> ()) ((),(),info,aft,ref Ast0.NoMetaPos,-1)
       |	Ast0.Switch(switch,lp,exp,rp,lb,cases,rb) ->
 	  print_string arity;
 	  mcode print_string switch; print_string " ";

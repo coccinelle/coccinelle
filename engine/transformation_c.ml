@@ -34,6 +34,7 @@ type xinfo = {
   optional_qualifier_iso : bool;
   value_format_iso : bool;
   current_rule_name : string; (* used for errors *)
+  index : int list (* witness tree indices *)
 }
 
 module XTRANS = struct
@@ -164,11 +165,11 @@ module XTRANS = struct
    let check_pos info mck pos = 
      match mck with
      | Ast_cocci.PLUS -> raise Impossible
-     | Ast_cocci.CONTEXT (Ast_cocci.FixPos (i1,i2),_) 
-     | Ast_cocci.MINUS   (Ast_cocci.FixPos (i1,i2),_) -> 
+     | Ast_cocci.CONTEXT (Ast_cocci.FixPos (i1,i2),_)
+     | Ast_cocci.MINUS   (Ast_cocci.FixPos (i1,i2),_,_,_) -> 
          pos <= i2 && pos >= i1
-     | Ast_cocci.CONTEXT (Ast_cocci.DontCarePos,_) 
-     | Ast_cocci.MINUS   (Ast_cocci.DontCarePos,_) -> 
+     | Ast_cocci.CONTEXT (Ast_cocci.DontCarePos,_)
+     | Ast_cocci.MINUS   (Ast_cocci.DontCarePos,_,_,_) -> 
          true
      | _ ->
 	 match info with
@@ -184,7 +185,7 @@ module XTRANS = struct
   let tag_with_mck mck ib = fun tin -> 
 
     let cocciinforef = ib.Ast_c.cocci_tag in
-    let (oldmcode, oldenv) = !cocciinforef in
+    let (oldmcode, oldenv) = Ast_c.mcode_and_env_of_cocciref cocciinforef in
 
     let mck =
       (* coccionly: 
@@ -202,41 +203,69 @@ module XTRANS = struct
     );
 
     match (oldmcode,mck) with
-    | (Ast_cocci.CONTEXT(_,Ast_cocci.NOTHING),      _)
+    | (Ast_cocci.CONTEXT(_,Ast_cocci.NOTHING),  _)
     | (_,   Ast_cocci.CONTEXT(_,Ast_cocci.NOTHING)) 
       ->
-        cocciinforef := (mck, tin.binding);
+	let update_inst inst = function
+	    Ast_cocci.MINUS (pos,_,adj,any_xxs) ->
+	      Ast_cocci.MINUS (pos,inst,adj,any_xxs)
+	  | mck -> mck in
+        cocciinforef := Some (update_inst tin.extra.index mck, tin.binding);
         ib
 
+    | (Ast_cocci.MINUS(old_pos,old_inst,old_adj,[]),
+       Ast_cocci.MINUS(new_pos,new_inst,new_adj,[]))
+	when old_pos = new_pos && oldenv =*= tin.binding
+	    (* no way to combine adjacency information, just drop one *)
+      ->
+        cocciinforef := Some
+	  (Ast_cocci.MINUS
+	     (old_pos,Common.union_set old_inst new_inst,old_adj,[]),
+	   tin.binding);
+        (if !Flag_matcher.show_misc
+        then pr2 "already tagged but only removed, so safe");
+	ib
+
     | _ -> 
-        if (oldmcode, oldenv) =*= (mck, tin.binding)
-        then begin
-          if !Flag_matcher.show_misc
-          then pr2 "already tagged but with same mcode, so safe";
-          ib
-        end
-        else 
           (* coccionly: 
           if !Flag.sgrep_mode2
           then ib (* safe *)
           else 
           *)
              begin
-            (* coccionly:
-	      Format.set_formatter_out_channel stderr;
-              Common.pr2 "SP mcode ";
-              Pretty_print_cocci.print_mcodekind oldmcode;
-              Format.print_newline();
-              Common.pr2 "C code mcode ";
-              Pretty_print_cocci.print_mcodekind mck;
-              Format.print_newline();
-              Format.print_flush();
-            *)
-              failwith
+            (* coccionly: 
+               pad: if dont want cocci write:
+                failwith
 	        (match Ast_c.pinfo_of_info ib with
 		  Ast_c.FakeTok _ -> "already tagged fake token"
+             *)
+	       let pm str mcode env =
+		 Printf.sprintf
+		   "%s modification:\n%s\nAccording to environment:\n%s\n"
+		   str
+		   (Common.format_to_string
+		      (function _ ->
+			Pretty_print_cocci.print_mcodekind mcode))
+		   (String.concat "\n"
+		      (List.map
+			 (function ((r,vr),vl) ->
+			   Printf.sprintf "   %s.%s -> %s" r vr
+			     (Common.format_to_string
+				(function _ ->
+				  Pretty_print_engine.pp_binding_kind vl)))
+			 env)) in
+	       flush stdout; flush stderr;
+	       Common.pr2
+		 ("\n"^ (pm "previous" oldmcode oldenv) ^ "\n" ^
+		  (pm "current" mck tin.binding));
+               failwith
+	         (match Ast_c.pinfo_of_info ib with
+		   Ast_c.FakeTok _ ->
+		     Common.sprintf "%s: already tagged fake token\n"
+		       tin.extra.current_rule_name
 		| _ ->
-		    Common.sprintf "%s: already tagged token:\n%s"
+		    Printf.sprintf
+		      "%s: already tagged token:\nC code context\n%s"
 		      tin.extra.current_rule_name
 	              (Common.error_message (Ast_c.file_of_info ib)
 			 (Ast_c.str_of_info ib, Ast_c.opos_of_info ib)))
@@ -276,12 +305,17 @@ module XTRANS = struct
 
   let distribute_mck mcodekind distributef expr tin =
     match mcodekind with
-    | Ast_cocci.MINUS (pos,any_xxs) -> 
+    | Ast_cocci.MINUS (pos,_,adj,any_xxs) -> 
+	let inst = tin.extra.index in
         distributef (
-          (fun ib -> tag_with_mck (Ast_cocci.MINUS (pos,any_xxs)) ib tin),
-          (fun ib -> tag_with_mck (Ast_cocci.MINUS (pos,[])) ib tin),
-          (fun ib -> tag_with_mck (Ast_cocci.MINUS (pos,[])) ib tin),
-          (fun ib -> tag_with_mck (Ast_cocci.MINUS (pos,any_xxs)) ib tin)
+          (fun ib ->
+	    tag_with_mck (Ast_cocci.MINUS (pos,inst,adj,any_xxs)) ib tin),
+          (fun ib ->
+	    tag_with_mck (Ast_cocci.MINUS (pos,inst,adj,[])) ib tin),
+          (fun ib ->
+	    tag_with_mck (Ast_cocci.MINUS (pos,inst,adj,[])) ib tin),
+          (fun ib ->
+	    tag_with_mck (Ast_cocci.MINUS (pos,inst,adj,any_xxs)) ib tin)
         ) expr
     | Ast_cocci.CONTEXT (pos,any_befaft) -> 
         (match any_befaft with
@@ -382,11 +416,11 @@ module XTRANS = struct
    let get_pos mck = 
      match mck with
      | Ast_cocci.PLUS -> raise Impossible
-     | Ast_cocci.CONTEXT (Ast_cocci.FixPos (i1,i2),_) 
-     | Ast_cocci.MINUS   (Ast_cocci.FixPos (i1,i2),_) -> 
+     | Ast_cocci.CONTEXT (Ast_cocci.FixPos (i1,i2),_)
+     | Ast_cocci.MINUS   (Ast_cocci.FixPos (i1,i2),_,_,_) -> 
          Ast_cocci.FixPos (i1,i2)
-     | Ast_cocci.CONTEXT (Ast_cocci.DontCarePos,_) 
-     | Ast_cocci.MINUS   (Ast_cocci.DontCarePos,_) -> 
+     | Ast_cocci.CONTEXT (Ast_cocci.DontCarePos,_)
+     | Ast_cocci.MINUS   (Ast_cocci.DontCarePos,_,_,_) -> 
          Ast_cocci.DontCarePos
      | _ -> failwith "weird: dont have position info for the mcodekind"      
       
@@ -498,7 +532,7 @@ let transform_re_node a b tin =
 
 let (transform2: string (* rule name *) -> string list (* dropped_isos *) ->
   Lib_engine.metavars_binding (* inherited bindings *) ->
-  Lib_engine.transformation_info -> F.cflow -> F.cflow) = 
+  Lib_engine.numbered_transformation_info -> F.cflow -> F.cflow) = 
  fun rule_name dropped_isos binding0 xs cflow -> 
 
    let extra = { 
@@ -506,19 +540,20 @@ let (transform2: string (* rule name *) -> string list (* dropped_isos *) ->
      optional_qualifier_iso = not(List.mem "optional_qualifier" dropped_isos);
      value_format_iso = not(List.mem "value_format" dropped_isos);
      current_rule_name = rule_name;
+     index = [];
    } in
 
   (* find the node, transform, update the node,  and iter for all elements *)
 
-   xs +> List.fold_left (fun acc (nodei, binding, rule_elem) -> 
+   xs +> List.fold_left (fun acc (index, (nodei, binding, rule_elem)) -> 
       (* subtil: not cflow#nodes but acc#nodes *)
       let node  = acc#nodes#assoc nodei in 
 
       if !Flag.show_transinfo
       then pr2 "transform one node";
-      
+
       let tin = {
-        XTRANS.extra = extra;
+        XTRANS.extra = {extra with index = index};
         XTRANS.binding = binding0@binding;
         XTRANS.binding0 = []; (* not used - everything constant for trans *)
       } in

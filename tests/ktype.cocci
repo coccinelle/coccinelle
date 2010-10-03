@@ -7,6 +7,6 @@ expression E2;
 @@
 
 - x = kmalloc(sizeof(T1),E2)
-+ x = kzalloc(sizeof(T1),E2)
++ x = kzalloc(sizeof(T1), E2)
   ...
 - memset(x,0,sizeof(*y));

@@ -95,7 +95,7 @@ let print_pos = function
   | _ -> ()
 
 let mcode fn = function
-    (x, _, Ast.MINUS(_,plus_stream), pos) ->
+    (x, _, Ast.MINUS(_,_,adj,plus_stream), pos) ->
       if !print_minus_flag
       then print_string (if !Flag.sgrep_mode2 then "*" else "-");
       fn x; print_pos pos;
@@ -112,7 +112,7 @@ let mcode fn = function
       print_string_befaft fn x info
 
 let print_mcodekind = function
-    Ast.MINUS(_,plus_stream) ->
+    Ast.MINUS(_,_,_,plus_stream) ->
       print_string "MINUS";
       print_anything ">>> " plus_stream
   | Ast.CONTEXT(_,plus_streams) ->
@@ -623,9 +623,8 @@ and print_define_param param =
 
 and statement arity s =
   match Ast.unwrap s with
-    Ast.Seq(lbrace,decls,body,rbrace) ->
+    Ast.Seq(lbrace,body,rbrace) ->
       rule_elem arity lbrace;
-      dots force_newline (statement arity) decls;
       dots force_newline (statement arity) body;
       rule_elem arity rbrace
   | Ast.IfThen(header,branch,(_,_,_,aft)) ->
@@ -652,9 +651,8 @@ and statement arity s =
       List.iter (function x -> case_line arity x; force_newline()) cases;
       rule_elem arity rb
   | Ast.Atomic(re) -> rule_elem arity re
-  | Ast.FunDecl(header,lbrace,decls,body,rbrace) ->
+  | Ast.FunDecl(header,lbrace,body,rbrace) ->
       rule_elem arity header; rule_elem arity lbrace;
-      dots force_newline (statement arity) decls;
       dots force_newline (statement arity) body;
       rule_elem arity rbrace
   | Ast.Disj([stmt_dots]) ->

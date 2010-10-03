@@ -1,94 +1,3 @@
-\documentclass{article}
-%\usepackage[latin9]{inputenc}
-\usepackage{hevea}
-\usepackage{fullpage}
-\usepackage{alltt}
-\usepackage{xspace}
-\usepackage[pdfborder={0 0 0}]{hyperref}
-\usepackage{listings}
-\usepackage[usenames,dvipsnames]{color}
-\usepackage{times}
-\usepackage[T1]{fontenc}
-\usepackage{multirow}
-
-\lstset{basicstyle=\ttfamily,numbers=left, numberstyle=\tiny, stepnumber=1, numbersep=5pt,language=C,commentstyle=\color{OliveGreen},keywordstyle=\color{blue},stringstyle=\color{BrickRed}}
-
-%
-% You must prefix the +/- lines of
-% cocci files with @+/@- respectively.
-% This will enable the automatic coloration.
-%
-% Note: You need at least the following version of hevea
-% http://hevea.inria.fr/distri/unstable/hevea-2008-12-17.tar.gz
-%
-\ifhevea % For HTML generation
-\lstdefinelanguage{Cocci}{
-morekeywords={idexpression,expression,statement,identifier,type,
-parameter,list,when,strict,any,forall,local,position,typedef},
-keywordstyle=\color{OliveGreen}\bfseries,
-sensitive=false,
-moredelim=[is][\color{blue}]{@M}{@M},
-moredelim=[il][\color{OliveGreen}]{@+},
-moredelim=[il][\color{BrickRed}]{@-}}
-
-\lstdefinelanguage{PatchC}[ANSI]{C}{
-stringstyle=\color{black},
-moredelim=[il][\color{OliveGreen}]{@+},
-moredelim=[il][\color{BrickRed}]{@-},
-moredelim=[il][\color{Plum}]{@M}}
-
-\else % For DVI/PS/PDF generation
-\lstdefinelanguage{Cocci}{
-morekeywords={idexpression,expression,statement,identifier,type,
-parameter,list,when,strict,any,forall,local,position,typedef},
-keywordstyle=\color{OliveGreen}\bfseries,
-sensitive=false,
-moredelim=*[is][\color{blue}]{@M}{@M},
-moredelim=[il][\color{OliveGreen}]{@+},
-moredelim=[il][\color{BrickRed}]{@-}}
-
-\lstdefinelanguage{PatchC}[ANSI]{C}{
-stringstyle=\color{black},
-moredelim=[il][\color{OliveGreen}]{@+},
-moredelim=[il][\color{BrickRed}]{@-},
-moredelim=[il][\color{Plum}]{@M}}
-\fi
-
-\newif\iflanguagestyle
-\languagestylefalse
-\input{grammar}
-
-\newcommand{\sizecodebis}[0]{\scriptsize}
-
-\newcommand{\mita}[1]{\mbox{\it{{#1}}}}
-\newcommand{\mtt}[1]{\mbox{\tt{{#1}}}}
-\newcommand{\msf}[1]{\mbox{\sf{{#1}}}}
-\newcommand{\stt}[1]{\mbox{\scriptsize\tt{{#1}}}}
-\newcommand{\ssf}[1]{\mbox{\scriptsize\sf{{#1}}}}
-\newcommand{\sita}[1]{\mbox{\scriptsize\it{{#1}}}}
-\newcommand{\mrm}[1]{\mbox{\rm{{#1}}}}
-\newcommand{\mth}[1]{\({#1}\)}
-\newcommand{\entails}[2]{\begin{array}{@{}c@{}}{#1}\\\hline{#2}\end{array}}
-\newcommand{\ttlb}{\mbox{\tt \char'173}}
-\newcommand{\ttrb}{\mbox{\tt \char'175}}
-\newcommand{\ttmid}{\mbox{\tt \char'174}}
-\newcommand{\tttld}{\mbox{\tt \char'176}}
-
-\newcommand{\fixme}[1]{{\color{red} #1}}
-
-\ifhevea
-\newcommand{\phantom}{}
-\newcommand{\air}{   }
-\else
-\newcommand{\air}{\phantom{xxx}}
-\fi
-
-\title{The SmPL Grammar (version 0.1.4)}
-\author{Research group on Coccinelle}
-\date{\today}
-
-\begin{document}
-\maketitle
 
 %\section{The SmPL Grammar}
 
@@ -104,11 +13,15 @@ arguments.  The grammar also uses some unspecified nonterminals, such
 as \T{id}, \T{const}, etc.  These refer to the sets suggested by
 the name, {\em i.e.}, \T{id} refers to the set of possible
 C-language identifiers, while \T{const} refers to the set of
-possible C-language constants.  \ifhevea A PDF version of this
-documentation is available at
-\url{http://www.emn.fr/x-info/coccinelle/docs/cocci_syntax.pdf}.\else
+possible C-language constants.  
+%
+\ifhevea 
+A PDF version of this documentation is available at
+\url{http://www.emn.fr/x-info/coccinelle/docs/cocci_syntax.pdf}.
+\else
 A HTML version of this documentation is available online at
-\url{http://www.emn.fr/x-info/coccinelle/docs/cocci_syntax.html}. \fi
+\url{http://www.emn.fr/x-info/coccinelle/docs/cocci_syntax.html}. 
+\fi
 
 %% \ifhevea A PDF
 %% version of this documentation is available at
@@ -878,13 +791,10 @@ in a concise way.
   \CASE{<.*>}
 \end{grammar}
 
-\include{examples}
-\include{tips}
-\end{document}
 
 %%% Local Variables:
 %%% mode: LaTeX
-%%% TeX-master: "cocci_syntax"
+%%% TeX-master: "main_grammar"
 %%% coding: latin-9
 %%% TeX-PDF-mode: t
 %%% ispell-local-dictionary: "american"

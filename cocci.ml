@@ -25,6 +25,8 @@ open Common
 module CCI = Ctlcocci_integration
 module TAC = Type_annoter_c
 
+module Ast_to_flow = Control_flow_c_build
+
 (*****************************************************************************)
 (* This file is a kind of driver. It gathers all the important functions 
  * from coccinelle in one place. The different entities in coccinelle are:
@@ -307,6 +309,9 @@ let show_or_not_celem a b  =
 
 
 let show_or_not_trans_info2 trans_info = 
+  (* drop witness tree indices for printing *)
+  let trans_info =
+    List.map (function (index,trans_info) -> trans_info) trans_info in
   if !Flag.show_transinfo then begin
     if null trans_info then pr2 "transformation info is empty"
     else begin
@@ -387,11 +392,13 @@ let worth_trying cfiles tokens =
 let check_macro_in_sp_and_adjust tokens = 
   let tokens = Common.union_all tokens in
   tokens +> List.iter (fun s -> 
-    if Hashtbl.mem !Parsing_hacks._defs s
+    if Hashtbl.mem !Parse_c._defs s
     then begin
-      pr2 "warning: macro in semantic patch was in macro definitions";
-      pr2 ("disabling macro expansion for " ^ s);
-      Hashtbl.remove !Parsing_hacks._defs s
+      if !Flag_cocci.verbose_cocci then begin
+        pr2 "warning: macro in semantic patch was in macro definitions";
+        pr2 ("disabling macro expansion for " ^ s);
+      end;
+      Hashtbl.remove !Parse_c._defs s
     end
   )
 
@@ -1019,16 +1026,26 @@ let prepare_c files choose_includes : file_info list =
 
 (* r(ule), c(element in C code), e(nvironment) *)
 
+let findk f l =
+  let rec loop k = function
+      [] -> None
+    | x::xs ->
+	if f x
+	then Some (x, function n -> k (n :: xs))
+	else loop (function vs -> k (x :: vs)) xs in
+  loop (function x -> x) l
+
 let merge_env new_e old_e =
-  List.fold_left
-    (function old_e ->
-      function (e,rules) as elem ->
-	let (same,diff) = List.partition (function (e1,_) -> e =*= e1) old_e in
-	match same with
-	  [] -> elem :: old_e
-	| [(_,old_rules)] -> (e,Common.union_set rules old_rules) :: diff
-	| _ -> failwith "duplicate environment entries")
-    old_e new_e
+  let (ext,old_e) =
+    List.fold_left
+      (function (ext,old_e) ->
+	function (e,rules) as elem ->
+	  match findk (function (e1,_) -> e =*= e1) old_e with
+	    None -> (elem :: ext,old_e)
+	  | Some((_,old_rules),k) ->
+	      (ext,k (e,Common.union_set rules old_rules)))
+      ([],old_e) new_e in
+  old_e @ (List.rev ext)
 
 let apply_python_rule r cache newes e rules_that_have_matched
     rules_that_have_ever_matched =
@@ -1122,26 +1139,29 @@ let rec apply_cocci_rule r rules_that_have_ever_matched es
 		    (* applying the rule *)
 		    (match r.ruletype with
 		      Ast_cocci.Normal ->
-			let children_e = ref [] in
-      
                       (* looping over the functions and toplevel elements in
 			 .c and .h *)
-			concat_headers_and_c !ccs +> List.iter (fun (c,f) -> 
-			  if c.flow <> None 
-			  then
-                          (* does also some side effects on c and r *)
-			    let processed =
-			      process_a_ctl_a_env_a_toplevel r
-				relevant_bindings c f in
-			    match processed with
-			    | None -> ()
-			    | Some newbindings -> 
-				newbindings +> List.iter (fun newbinding -> 
-				  children_e :=
-				    Common.insert_set newbinding !children_e)
-				  ); (* end iter cs *)
-
-			!children_e
+			List.rev
+			  (concat_headers_and_c !ccs +>
+			   List.fold_left (fun children_e (c,f) -> 
+			     if c.flow <> None 
+			     then
+                             (* does also some side effects on c and r *)
+			       let processed =
+				 process_a_ctl_a_env_a_toplevel r
+				   relevant_bindings c f in
+			       match processed with
+			       | None -> children_e
+			       | Some newbindings -> 
+				   newbindings +>
+				   List.fold_left
+				     (fun children_e newbinding -> 
+				       if List.mem newbinding children_e
+				       then children_e
+				       else newbinding :: children_e)
+				     children_e
+			     else children_e)
+			     [])
 		    | Ast_cocci.Generated ->
 			process_a_generated_a_env_a_toplevel r
 			  relevant_bindings !ccs;
@@ -1576,7 +1596,9 @@ let post_engine a =
 
 let check_duplicate_modif2 xs = 
   (* opti: let groups = Common.groupBy (fun (a,resa) (b,resb) -> a =$= b) xs *)
-  pr2 ("Check duplication for " ^ i_to_s (List.length xs) ^ " files");
+  if !Flag_cocci.verbose_cocci
+  then pr2 ("Check duplication for " ^ i_to_s (List.length xs) ^ " files");
+
   let groups = Common.group_assoc_bykey_eff xs in
   groups +> Common.map_filter (fun (file, xs) -> 
     match xs with

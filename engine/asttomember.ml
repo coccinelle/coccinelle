@@ -29,7 +29,7 @@ module CTL = Ast_ctl
 
 let mcode r (_,_,kind,_) =
   match kind with
-    Ast.MINUS(_,_) -> true
+    Ast.MINUS(_,_,_,_) -> true
   | Ast.PLUS -> failwith "not possible"
   | Ast.CONTEXT(_,info) -> not (info = Ast.NOTHING)
 
@@ -183,11 +183,8 @@ and statement testfn mcode tail stmt : 'a list list =
 	(* modifications on return are managed in some other way *)
 	Ast.Return(_,_) | Ast.ReturnExpr(_,_,_) when tail -> []
       |	_ -> if testfn ast then rule_elem ast else [])
-  | Ast.Seq(lbrace,decls,body,rbrace) ->
-      let body_info =
-	conj
-	  (statement_list testfn mcode false decls)
-	  (statement_list testfn mcode tail body) in
+  | Ast.Seq(lbrace,body,rbrace) ->
+      let body_info = statement_list testfn mcode tail body in
       if testfn lbrace or testfn rbrace
       then conj_wrapped [lbrace;rbrace] body_info
       else body_info
@@ -230,11 +227,8 @@ and statement testfn mcode tail stmt : 'a list list =
 
   | Ast.Dots(_,whencodes,_,_) -> []
 
-  | Ast.FunDecl(header,lbrace,decls,body,rbrace) ->
-      let body_info =
-	conj
-	  (statement_list testfn mcode false decls)
-	  (statement_list testfn mcode true body) in
+  | Ast.FunDecl(header,lbrace,body,rbrace) ->
+      let body_info = statement_list testfn mcode true body in
       if testfn header or testfn lbrace or testfn rbrace
       then conj (rule_elem header) body_info
       else body_info

@@ -1,0 +1,45 @@
+\lstset{basicstyle=\ttfamily,numbers=left, numberstyle=\tiny, stepnumber=1, numbersep=5pt,language=C,commentstyle=\color{OliveGreen},keywordstyle=\color{blue},stringstyle=\color{BrickRed}}
+
+%
+% You must prefix the +/- lines of
+% cocci files with @+/@- respectively.
+% This will enable the automatic coloration.
+%
+% Note: You need at least the following version of hevea
+% http://hevea.inria.fr/distri/unstable/hevea-2008-12-17.tar.gz
+%
+\ifhevea % For HTML generation
+\lstdefinelanguage{Cocci}{
+morekeywords={idexpression,expression,statement,identifier,type,
+parameter,list,when,strict,any,forall,local,position,typedef},
+keywordstyle=\color{OliveGreen}\bfseries,
+sensitive=false,
+moredelim=[is][\color{blue}]{@M}{@M},
+moredelim=[il][\color{OliveGreen}]{@+},
+moredelim=[il][\color{BrickRed}]{@-}}
+
+\lstdefinelanguage{PatchC}[ANSI]{C}{
+stringstyle=\color{black},
+moredelim=[il][\color{OliveGreen}]{@+},
+moredelim=[il][\color{BrickRed}]{@-},
+moredelim=[il][\color{Plum}]{@M}}
+
+\else % For DVI/PS/PDF generation
+\lstdefinelanguage{Cocci}{
+morekeywords={idexpression,expression,statement,identifier,type,
+parameter,list,when,strict,any,forall,local,position,typedef},
+keywordstyle=\color{OliveGreen}\bfseries,
+sensitive=false,
+moredelim=*[is][\color{blue}]{@M}{@M},
+moredelim=[il][\color{OliveGreen}]{@+},
+moredelim=[il][\color{BrickRed}]{@-}}
+
+\lstdefinelanguage{PatchC}[ANSI]{C}{
+stringstyle=\color{black},
+moredelim=[il][\color{OliveGreen}]{@+},
+moredelim=[il][\color{BrickRed}]{@-},
+moredelim=[il][\color{Plum}]{@M}}
+\fi
+
+\newif\iflanguagestyle
+\languagestylefalse

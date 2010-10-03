@@ -77,6 +77,9 @@ type model = Control_flow_c.cflow * label_ctlcocci * nodei list
 type transformation_info = 
  (nodei * metavars_binding * Ast_cocci.rule_elem) list
 
+type numbered_transformation_info = 
+ (int list * (nodei * metavars_binding * Ast_cocci.rule_elem)) list
+
 
 (*****************************************************************************)
 (* comparing binding *)

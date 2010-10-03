@@ -127,6 +127,8 @@ let annotate_program toks asts =
      info.Ast_c.comments_tag :=
        { Ast_c.mbefore = before';
          Ast_c.mafter = after';
+         mbefore2 = [];
+         mafter2 = [];
        };
      
    );

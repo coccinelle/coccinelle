@@ -11,4 +11,4 @@ rule1.T *E;
 @@
 
 - g(E)
-+ g(E,NULL)
++ g(E, NULL)

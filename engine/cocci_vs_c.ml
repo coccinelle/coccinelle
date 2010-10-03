@@ -30,6 +30,7 @@ module Flag = Flag_matcher
 (*****************************************************************************)
 (* Wrappers *)
 (*****************************************************************************)
+let pr2, pr2_once = Common.mk_pr2_wrappers Flag_matcher.verbose_matcher
 
 (*****************************************************************************)
 (* Helpers *)
@@ -91,12 +92,12 @@ let mcodekind mc = A.get_mcodekind mc
 let mcode_contain_plus = function
   | A.CONTEXT (_,A.NOTHING) -> false
   | A.CONTEXT _ -> true
-  | A.MINUS (_,[]) -> false
-  | A.MINUS (_,x::xs) -> true
+  | A.MINUS (_,_,_,[]) -> false
+  | A.MINUS (_,_,_,x::xs) -> true
   | A.PLUS -> raise Impossible
 
 let mcode_simple_minus = function
-  | A.MINUS (_,[]) -> true
+  | A.MINUS (_,_,_,[]) -> true
   | _ -> false
 
 
@@ -110,8 +111,8 @@ let mcode_simple_minus = function
 
 let minusizer = 
   ("fake","fake"), 
-  {A.line = 0; column =0; A.strbef=[]; A.straft=[];},
-  (A.MINUS(A.DontCarePos, [])),
+  {A.line = 0; A.column =0; A.strbef=[]; A.straft=[];},
+  (A.MINUS(A.DontCarePos,[],-1,[])),
   A.NoMetaPos
 
 let generalize_mcode ia = 
@@ -121,11 +122,11 @@ let generalize_mcode ia =
     | A.PLUS -> raise Impossible
     | A.CONTEXT (A.NoPos,x) -> 
 	A.CONTEXT (A.DontCarePos,x)
-    | A.MINUS   (A.NoPos,x) -> 
-	A.MINUS   (A.DontCarePos,x)
+    | A.MINUS   (A.NoPos,inst,adj,x) -> 
+	A.MINUS   (A.DontCarePos,inst,adj,x)
 
     | A.CONTEXT ((A.FixPos _|A.DontCarePos), _) 
-    | A.MINUS ((A.FixPos _|A.DontCarePos), _)
+    | A.MINUS ((A.FixPos _|A.DontCarePos), _, _, _)
         ->
         raise Impossible
   in
@@ -448,10 +449,14 @@ let initialisation_to_affectation decl =
 		    ref (Some ((Lib_parsing_c.al_type returnType),local),
 			       Ast_c.NotTest) in
                   let ident = name in
-                  let idexpr = (B.Ident (ident), typ),Ast_c.noii in
-                  F.DefineExpr
-                    ((B.Assignment (idexpr, B.SimpleAssign, e), 
-                     Ast_c.noType()), [iini])
+                  let idexpr = 
+                    Ast_c.mk_e_bis (B.Ident (ident)) typ Ast_c.noii
+                  in
+                  let assign = 
+                    Ast_c.mk_e 
+                      (B.Assignment (idexpr,B.SimpleAssign, e)) [iini] in
+                  F.DefineExpr assign
+                    
               | _ -> F.Decl decl
               )
           | _ -> F.Decl decl
@@ -762,7 +767,7 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
           ))
       in
       (match term ia1, ib with 
-      | A.Int x, B.Int y -> 
+      | A.Int x, B.Int (y,_) -> 
           X.value_format_flag (fun use_value_equivalence -> 
             if use_value_equivalence 
             then 
@@ -1082,10 +1087,9 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
 
 
 
-
 (* ------------------------------------------------------------------------- *)
 and (ident_cpp: info_ident -> (A.ident, B.name) matcher) = 
- fun infoidb ida idb -> 
+ fun infoidb ida idb ->
    match idb with
    | B.RegularName (s, iis) -> 
        let iis = tuple_of_list1 iis in
@@ -1095,7 +1099,11 @@ and (ident_cpp: info_ident -> (A.ident, B.name) matcher) =
            (B.RegularName (s, [iis]))
          ))
    | B.CppConcatenatedName _ | B.CppVariadicName _ |B.CppIdentBuilder _
-       -> raise Todo
+       ->
+	 (* This should be moved to the Id case of ident.  Metavariables
+	 should be allowed to be bound to such variables.  But doing so
+	 would require implementing an appropriate distr function *)
+	 fail
 
 and (ident: info_ident -> (A.ident, string * Ast_c.info) matcher) = 
  fun infoidb ida ((idb, iib) as ib) -> 
@@ -1663,7 +1671,7 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
                          [iisb;lpb;rpb;iiendb;iifakestart] ++ iistob))
           ))))))))
 
-  | _, (B.MacroDecl _ |B.DeclList _) -> fail
+  | _, (B.MacroDecl _ |B.DeclList _) ->       fail
 
 
 
@@ -2229,9 +2237,8 @@ and (struct_fields: (A.declaration list, B.field list) matcher) =
       )
 
 and (struct_field: (A.declaration, B.field) matcher) = fun fa fb -> 
-  let (xfield, iifield) = fb in
 
-  match xfield with 
+  match fb with 
   | B.DeclarationField (B.FieldDeclList (onefield_multivars,iiptvirg)) -> 
 
     let iiptvirgb = tuple_of_list1 iiptvirg in
@@ -2276,8 +2283,8 @@ and (struct_field: (A.declaration, B.field) matcher) = fun fa fb ->
                   return (
                     (fa),
                     ((B.DeclarationField 
-                        (B.FieldDeclList ([onevar, iivirg], [iiptvirgb]))),
-                    iifield)
+                        (B.FieldDeclList ([onevar, iivirg], [iiptvirgb])))
+                    )
                   )
               | _ -> raise Impossible
             )
@@ -2287,11 +2294,12 @@ and (struct_field: (A.declaration, B.field) matcher) = fun fa fb ->
       pr2_once "PB: More that one variable in decl. Have to split";
       fail
     )
-  | B.EmptyField -> 
-      let _iiptvirgb = tuple_of_list1 iifield in
+  | B.EmptyField _iifield -> 
       fail
 
-  | B.MacroStructDeclTodo -> fail
+  | B.MacroDeclField _ -> 
+      raise Todo
+
   | B.CppDirectiveStruct directive -> fail
   | B.IfdefStruct directive -> fail
 

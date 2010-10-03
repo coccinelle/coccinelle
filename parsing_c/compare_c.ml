@@ -71,7 +71,7 @@ let normal_form_program xs =
     Visitor_c.kexpr_s = (fun (k,bigf) e -> 
       match e with
       (* todo: should also do something for multistrings *)
-      | (Constant (String (s,kind)), typ), [ii] 
+      | (Constant (String (s,kind)), typ), [ii]
           when Common.string_match_substring cvs_keyword_regexp s -> 
           let newstr = cvs_compute_newstr s in
           (Constant (String (newstr,kind)), typ), [rewrap_str newstr ii]

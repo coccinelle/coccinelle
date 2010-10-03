@@ -83,7 +83,7 @@ let get_minus_constants bind orbind =
 	if !Flag.sgrep_mode2
 	then
 	  match ty with
-	    (_,_,Ast.MINUS(_,_),_) -> [Ast.unwrap_mcode ty]
+	    (_,_,Ast.MINUS(_,_,_,_),_) -> [Ast.unwrap_mcode ty]
 	  | _ -> []
 	else [Ast.unwrap_mcode ty]
     | _ -> k e in
@@ -130,7 +130,7 @@ let get_all_minus_constants =
   let option_default = [] in
   let mcode r (x,_,mcodekind,_) =
     match mcodekind with
-      Ast.MINUS(_,_) -> [x]
+      Ast.MINUS(_,_,_,_) -> [x]
     | _ -> [] in
   let other r (x,_,mcodekind,_) = [] in
 
@@ -156,7 +156,7 @@ let get_plus_constants =
 	       bind (fn.V.combiner_anything cur) prev))
 	[] l in
     match mcodekind with
-      Ast.MINUS(_,anythings) -> recurse anythings
+      Ast.MINUS(_,_,_,anythings) -> recurse anythings
     | Ast.CONTEXT(_,Ast.BEFORE(a)) -> recurse a
     | Ast.CONTEXT(_,Ast.AFTER(a)) -> recurse a
     | Ast.CONTEXT(_,Ast.BEFOREAFTER(a1,a2)) ->

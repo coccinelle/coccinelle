@@ -10,15 +10,15 @@ let call_right processor data s cont =
     None -> None
   | Some(pragmas,data) -> Some (pragmas,Ast0.rewrap s (cont data))
 
-let left_mcode (a,b,info,mcodekind,d) =
+let left_mcode (a,b,info,mcodekind,d,e) =
   match (info.Ast0.strings_before,mcodekind) with
     ([],_) | (_,Ast0.PLUS) -> None
-  | (l,_) -> Some(l,(a,b,{info with Ast0.strings_before = []},mcodekind,d))
+  | (l,_) -> Some(l,(a,b,{info with Ast0.strings_before = []},mcodekind,d,e))
 
-let right_mcode (a,b,info,mcodekind,d) =
+let right_mcode (a,b,info,mcodekind,d,e) =
   match (info.Ast0.strings_after,mcodekind) with
     ([],_) | (_,Ast0.PLUS) -> None
-  | (l,_) -> Some(l,(a,b,{info with Ast0.strings_after = []},mcodekind,d))
+  | (l,_) -> Some(l,(a,b,{info with Ast0.strings_after = []},mcodekind,d,e))
 
 let update_before pragmas (info,x) =
   ({info with Ast0.strings_before = pragmas @ info.Ast0.strings_before},

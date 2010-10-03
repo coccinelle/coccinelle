@@ -8,12 +8,12 @@
  (bad_ptr_print.res Ok) (bad_typedef.res Ok) (badexp.res Ok)
  (badpos.res
   (Pb
-   "PROBLEM\n   exn = Failure(\"rule starting on line 1: already tagged token:\\nFile \\\"tests/badpos.c\\\", line 5, column 30,  charpos = 139\\n    around = 'reg_ptr', whole content = \\t (int) -(((struct pt_regs *) reg_ptr)->orig_eax + 2));\")\n"))
- (badtypedef.res Ok) (ben.res Ok) (bitfield.res Ok) (braces.res Ok)
- (break.res Ok) (bug1.res Ok)
+   "PROBLEM\n   exn = Failure(\"rule starting on line 1: already tagged token:\\nC code context\\nFile \\\"tests/badpos.c\\\", line 5, column 30,  charpos = 139\\n    around = 'reg_ptr', whole content = \\t (int) -(((struct pt_regs *) reg_ptr)->orig_eax + 2));\")\n"))
+ (badtypedef.res Ok) (badzero.res Ok) (ben.res Ok) (bitfield.res Ok)
+ (braces.res Ok) (break.res Ok) (bug1.res Ok)
  (bugloop.res
   (Pb
-   "PROBLEM\n   exn = Failure(\"try to delete an expanded token: flags\")\n"))
+   "INCORRECT:diff token: PF_FREEZE VS )\nFile <COCCIOUTPUTFILE>, line 12, column 16,  charpos = 390\n    around = 'PF_FREEZE', whole content = \t\t\trefrigerator(PF_FREEZE);\nFile \"tests/bugloop.res\", line 8, column 16,  charpos = 160\n    around = ')', whole content = \t\t\trefrigerator();\n\n    diff (result(<) vs expected_result(>)) = \n    @@ -1,7 +1,3 @@\n    -/* this doesn't work, because on the paths where we don't find refrigerator,\n    -we expect to reach Exit without first going through current->flags & PF_FREEZE,\n    -but of course any path that goes around the loop does precisely that */\n    -\n     static int stir_transmit_thread(void *arg)\n     {\n     \n    @@ -9,7 +5,7 @@\n     \t{\n     \t\t/* if suspending, then power off and wait */\n     \t\tif (unlikely(freezing(current))) {\n    -\t\t\trefrigerator(PF_FREEZE);\n    +\t\t\trefrigerator();\n     \n     \t\t}\n     \t}\n"))
  (bugon.res Ok) (cards.res Ok) (cast.res Ok) (cast_iso.res Ok)
  (compare.res Ok) (const.res Ok) (const1bis.res Ok) (const_adding.res Ok)
  (const_array.res Ok) (const_implicit_iso.res Ok) (constty.res Ok)
@@ -29,23 +29,26 @@
  (define_exp.res Ok) (define_param.res Ok) (deftodo.res Ok) (deref.res Ok)
  (devlink.res Ok) (disjexpr.res Ok) (disjexpr_ver1.res Ok)
  (disjexpr_ver2.res Ok) (distribute.res Ok) (double.res Ok)
- (double_assign.res Ok)
- (double_switch.res (Pb "PROBLEM\n   exn = Common.Impossible\n"))
- (doublepos.res Ok)
- (doubleswitch.res (Pb "PROBLEM\n   exn = Common.Impossible\n"))
- (dowhile.res Ok) (dropf.res Ok) (dropparam.res Ok) (edots.res Ok)
- (edots_ver1.res Ok) (empty.res Ok) (end_commas.res Ok) (endif.res Ok)
- (exp.res Ok) (expnest.res Ok) (expopt.res Ok) (expopt2.res Ok)
- (expopt3.res Ok) (expopt3_ver1.res Ok) (expopt3_ver2.res Ok) (fields.res Ok)
- (fieldsmin.res Ok) (fix_flow_need.res Ok) (fn_todo.res Ok) (fnptr.res Ok)
- (fnret.res Ok) (four.res Ok) (foura.res Ok) (fp.res Ok) (fun.res Ok)
+ (double_assign.res Ok) (double_switch.res Ok) (doublepos.res Ok)
+ (doubleswitch.res Ok) (dowhile.res Ok) (dropf.res Ok) (dropparam.res Ok)
+ (edots.res Ok) (edots_ver1.res Ok) (empty.res Ok) (end_commas.res Ok)
+ (endif.res Ok) (exp.res Ok) (expnest.res Ok) (expopt.res Ok)
+ (expopt2.res Ok) (expopt3.res Ok) (expopt3_ver1.res Ok)
+ (expopt3_ver2.res Ok) (fields.res Ok) (fieldsmin.res Ok) (find_long.res Ok)
+ (fix_flow_need.res Ok) (fn_todo.res Ok) (fnptr.res Ok) (fnret.res Ok)
+ (four.res Ok) (foura.res Ok) (fp.res Ok) (fun.res Ok)
  (gilles-question.res Ok) (gotobreak.res Ok) (hd.res Ok) (headers.res Ok)
- (hex.res Ok)
- (hil1.res Ok) (if.res Ok) (ifbr.res Ok) (ifdef1.res Ok) (ifdef2.res Ok)
+ (hex.res Ok) (hil1.res Ok) (if.res Ok) (ifbr.res Ok) (ifdef1.res Ok)
+ (ifdef2.res Ok)
  (ifdef3.res
   (Pb
    "PROBLEM\n   exn = Lexer_cocci.Lexical(\"unrecognised symbol, in token rule: #\")\n"))
  (ifdef4.res Ok) (ifdef5.res Ok) (ifdef6.res Ok) (ifdef6a.res Ok)
+ (ifdefmeta.res Ok) (ifdefmeta1.res Ok) (ifdefmeta2.res Ok)
+ (ifdefmeta3.res Ok)
+ (ifdefmeta4.res
+  (Pb
+   "PROBLEM\n   exn = Unix.Unix_error(20, \"stat\", \"tests/ifdefmeta4.cocci\")\n"))
  (ifend.res Ok) (ifzer.res Ok) (inc.res Ok)
  (incdir.res
   (Pb
@@ -58,17 +61,15 @@
  (jloop1.res
   (Pb
    "PROBLEM\n   exn = Failure(\"minus: parse error: \\n = File \\\"tests/jloop1.cocci\\\", line 10, column 3,  charpos = 129\\n    around = '...>', whole content =    ...>\\n\")\n"))
- (julia10.res Ok) (julia7.res Ok) (keep_comma.res Ok)
- (km.res
-  (Pb
-   "INCORRECT:diff token: } VS memset\nFile <COCCIOUTPUTFILE>, line 4, column 0,  charpos = 85\n    around = '}', whole content = }\nFile \"tests/km.res\", line 4, column 2,  charpos = 87\n    around = 'memset', whole content =   memset(data, 0, element->string.length + 1);\n\n    diff (result(<) vs expected_result(>)) = \n    @@ -1,4 +1,5 @@\n     int main() {\n       int *data = kzalloc(element->string.length + 1, GFP_KERNEL);\n       foo();\n    +  memset(data, 0, element->string.length + 1);\n     }\n"))
+ (julia10.res Ok) (julia7.res Ok) (keep_comma.res Ok) (km.res Ok)
  (kmalloc.res Ok) (kmc.res Ok) (ktype.res Ok)
  (labels_metastatement.res
   (Pb
    "INCORRECT:diff token: { VS x\nFile <COCCIOUTPUTFILE>, line 4, column 2,  charpos = 30\n    around = '{', whole content =   {\nFile \"tests/labels_metastatement.res\", line 4, column 4,  charpos = 32\n    around = 'x', whole content =     x = 3; foo();\n\n    diff (result(<) vs expected_result(>)) = \n    @@ -1,15 +1,10 @@\n     int foo(int i) {\n     \n       if(1) {\n    -  {\n    -    x = 3;\n    -    foo();\n    -    z = 4;\n    -    foo();\n    -  }\n    -  foo();\n    -  }\n    -  foo(); // we dont want that it add both foo on the } and on the endif\n    +    x = 3; foo();\n    +    z = 4; foo();\n    +  } // we dont want that it add both foo on the } and on the endif\n         // (note: but need correct endif accrochage)\n    +  foo();\n     \n     }\n"))
  (labels_metastatement_ver1.res Ok) (local.res Ok) (localid.res Ok)
- (longlong.res Ok) (longlongint.res Ok) (loop.res Ok) (lvalue.res Ok)
- (macro.res Ok) (match_no_meta.res Ok) (max.res Ok)
+ (longconst.res Ok) (longlong.res Ok) (longlongint.res Ok) (loop.res Ok)
+ (lvalue.res Ok) (macro.res Ok) (macro_int16.res Ok) (match_no_meta.res Ok)
+ (max.res Ok)
  (metahex.res
   (Pb
    "INCORRECT:diff token: f VS }\nFile \"tests/metahex.c\", line 2, column 2,  charpos = 15\n    around = 'f', whole content =   f(3);\nFile \"tests/metahex.res\", line 2, column 0,  charpos = 13\n    around = '}', whole content = }\n\n    diff (result(<) vs expected_result(>)) = \n    @@ -1,4 +1,2 @@\n     int main() {\n    -  f(3);\n    -  g(0x03);\n     }\n"))
@@ -81,10 +82,13 @@
  (multiplus.res Ok) (multitype.res Ok) (multitypedef.res Ok)
  (multivars.res Ok) (nest.res Ok) (nestone.res Ok) (nestseq.res Ok)
  (neststruct.res Ok) (nl.res Ok) (nocast.res Ok) (not.res Ok) (noty.res Ok)
- (null_type.res Ok) (of.res Ok) (oneline.res Ok) (opt.res Ok)
- (optional_qualifier.res Ok) (optional_storage.res Ok) (orexp.res Ok)
- (param.res Ok) (param_end.res Ok) (param_ver1.res Ok)
- (parameters_dots.res Ok) (partial.res Ok)
+ (null_type.res Ok)
+ (oddifdef.res
+  (Pb
+   "INCORRECT:diff token: #else\n VS x\nFile <COCCIOUTPUTFILE>, line 10, column 0,  charpos = 114\n    around = '#else\n', whole content = #else\nFile \"tests/oddifdef.res\", line 10, column 2,  charpos = 116\n    around = 'x', whole content =   x = 0;\n\n    diff (result(<) vs expected_result(>)) = \n    @@ -7,8 +7,9 @@\n         a = 5;\n     \n     #ifdef FOO\n    +  x = 0;\n     #else\n    -  \n    +  x = 0;\n     #endif\n     }\n     \n    @@ -21,8 +22,9 @@\n         a = 3;\n     \n     #ifdef FOO\n    +  x = 0;\n     #else\n    -  \n    +  x = 0;\n     #endif\n     }\n     \n    @@ -35,7 +37,8 @@\n     #endif\n     \n     #ifdef FOO\n    +  x = 0;\n     #else\n    -  \n    +  x = 0;\n     #endif\n     }\n"))
+ (of.res Ok) (oneline.res Ok) (opt.res Ok) (optional_qualifier.res Ok)
+ (optional_storage.res Ok) (orexp.res Ok) (param.res Ok) (param_end.res Ok)
+ (param_ver1.res Ok) (parameters_dots.res Ok) (partial.res Ok)
  (pb_distribute_type.res
   (Pb
    "INCORRECT:PB parsing only in generated-file\n    diff (result(<) vs expected_result(>)) = \n    @@ -5,11 +5,11 @@\n     \n     \n     int foo() {\n    -  int * *x;\n    +  int **x;\n       return 0;\n     }\n     \n     int foo() {\n    -  int[45] *x;\n    +  int (*x)[45];\n       return 0;\n     }\n"))
@@ -142,4 +146,4 @@
  (wierdinit.res
   (Pb
    "seems incorrect, but only because of code that was not parsablediff token: dev_link_t VS struct\nFile \"tests/wierdinit.c\", line 4, column 1,  charpos = 27\n    around = 'dev_link_t', whole content = \tdev_link_t *link;\nFile \"tests/wierdinit.res\", line 4, column 1,  charpos = 27\n    around = 'struct', whole content = \tstruct pcmcia_device *link;\n"))
- (ws2.res Ok) (y2.res Ok) (zero.res Ok))
+ (ws2.res Ok) (xfield.res Ok) (y2.res Ok) (zero.res Ok))

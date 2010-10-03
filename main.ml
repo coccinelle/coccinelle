@@ -38,17 +38,20 @@ let output_file = ref ""
 let inplace_modif = ref false  (* but keeps a .cocci_orig *)
 let outplace_modif = ref false (* generates a .cocci_res  *)
 
-(* could be avoided by using Common.files_of_dir_or_files instead *)
+(* somehow obsolete now *)
 let dir = ref false 
 
 let include_headers = ref false
 let kbuild_info = ref ""
+
+let macro_file = ref "" 
 
 (* test mode *)
 let test_mode = ref false
 let test_all = ref false
 let test_okfailed = ref false
 let test_regression_okfailed = ref false
+let expected_score_file = ref ""
 
 
 (* action mode *)
@@ -56,7 +59,6 @@ let action = ref ""
 
 (* works with -test but also in "normal" spatch mode *)
 let compare_with_expected = ref false
-
 
 let distrib_index = ref (None : int option)
 let distrib_max   = ref (None : int option)
@@ -86,14 +88,29 @@ let quiet_profile = (
     FC.show_ctl_text;
     FC.show_binding_in_out;
 
+    FC.verbose_cocci;
+
+    Flag_parsing_c.show_parsing_error;
+
+    Flag_parsing_c.verbose_lexing;
+    Flag_parsing_c.verbose_parsing;
+    Flag_parsing_c.verbose_type;
+    Flag_parsing_c.verbose_cfg;
+    Flag_parsing_c.verbose_unparsing;
+    Flag_parsing_c.verbose_visit;
+
+    Flag_matcher.verbose_matcher;
+    Flag_matcher.debug_engine;
+
+    Flag_parsing_c.debug_unparsing;
+
     Flag_parsing_cocci.show_SP;
     Flag_parsing_cocci.show_iso_failures;
+
     Flag_ctl.verbose_ctl_engine;
     Flag_ctl.verbose_match;
-    Flag_matcher.debug_engine;
-    Flag_parsing_c.debug_unparsing;
-    Flag_parsing_c.verbose_type;
-    Flag_parsing_c.verbose_parsing;
+
+
   ])
 
 (* some information that is useful in seeing why a semantic patch doesn't
@@ -101,12 +118,24 @@ work properly *)
 let debug_profile = (
   [
     Flag.show_misc;
+    Flag.show_transinfo;
+
     FC.show_diff;
     FC.show_cocci;
     FC.show_binding_in_out;
     FC.show_dependencies;
-    Flag.show_transinfo;
+
     Flag_parsing_cocci.show_iso_failures;
+
+    FC.verbose_cocci;
+
+    Flag_parsing_c.verbose_cfg;
+    Flag_parsing_c.verbose_unparsing;
+    Flag_parsing_c.verbose_visit;
+
+    Flag_matcher.verbose_matcher;
+
+    Flag_parsing_c.show_parsing_error;
   ],
   [
 
@@ -200,7 +229,9 @@ let short_options = [
 
   "-iso_file", Arg.Set_string Config.std_iso,   
   " <file> (default=" ^ !Config.std_iso ^")";
-  "-macro_file", Arg.Set_string Config.std_h,
+  "-macro_file", Arg.Set_string macro_file,
+  " <file>";
+  "-macro_file_builtins", Arg.Set_string Config.std_h,
   " <file> (default=" ^ !Config.std_h ^ ")";
 
   "-all_includes",
@@ -239,7 +270,7 @@ let short_options = [
     "  guess what";
 
   "-date",   Arg.Unit (fun () -> 
-    pr2 "version: $Date: 2009/04/15 18:01:55 $";
+    pr2 "version: $Date: 2009/05/08 16:15:31 $";
     raise (Common.UnixExit 0)
     ), 
   "   guess what";
@@ -274,11 +305,12 @@ let other_options = [
   "aliases and obsolete options", 
   "",
   [ 
+    "-sp", Arg.Set_string cocci_file,     " short option of -sp_file";
+    "-iso", Arg.Set_string Config.std_iso,   " short option of -iso_file";
+
     "-cocci_file", Arg.Set_string cocci_file, 
     "   <file> the semantic patch file";
-    "-c", Arg.Set_string cocci_file,     " short option of -cocci_file";
-    "-iso", Arg.Set_string Config.std_iso,   " short option of -iso_file";
-    "-D",   Arg.Set_string Config.std_h,     " short option of -macro_file";
+    "-c", Arg.Set_string cocci_file,     " short option of -sp_file";
   ];
 
   "most useful show options", 
@@ -348,6 +380,8 @@ let other_options = [
     "-filter_msg",      Arg.Set  Flag_parsing_c.filter_msg , 
     "  filter some cpp message when the macro is a \"known\" cpp construct";
     "-filter_define_error",Arg.Set Flag_parsing_c.filter_define_error,"  ";
+    "-filter_msg_define_error",Arg.Set Flag_parsing_c.filter_msg_define_error,
+    "  filter the error msg";
     "-filter_passed_level", Arg.Set_int Flag_parsing_c.filter_passed_level,"  ";
 (*  debug cfg doesn't seem to have any effect, so drop it as an option *)
 (*  "-debug_cfg",          Arg.Set Flag_parsing_c.debug_cfg , "  "; *)
@@ -423,6 +457,10 @@ let other_options = [
     "-l1",                Arg.Clear Flag_parsing_c.label_strategy_2, " ";
     "-ifdef_to_if",              Arg.Set FC.ifdef_to_if, 
     "   convert ifdef to if (experimental)";
+    "-no_ifdef_to_if",              Arg.Clear FC.ifdef_to_if, 
+    "   convert ifdef to if (experimental)";
+
+    "-disable_multi_pass", Arg.Set Flag_parsing_c.disable_multi_pass, " ";
 
     "-noif0_passing",   Arg.Clear Flag_parsing_c.if0_passing, 
     " ";
@@ -442,7 +480,15 @@ let other_options = [
        any way of printing things out *)
     "-allow_inconsistent_paths",
     Arg.Set Flag_matcher.allow_inconsistent_paths,
-    "if this flag is set don't check for inconsistent paths; dangerous";    
+    "   if this flag is set don't check for inconsistent paths; dangerous";
+    "-int_bits", Arg.Int Flag_parsing_c.set_int_bits,
+    "  the number of bits in an unsigned int";
+    "-long_bits", Arg.Int Flag_parsing_c.set_long_bits,
+    "  the number of bits in an unsigned long";
+    "-linux_spacing", Arg.Unit Flag_parsing_c.set_linux_spacing,
+    "  spacing of + code follows the conventions of Linux";
+    "-smpl_spacing", Arg.Unit Flag_parsing_c.set_smpl_spacing,
+    "  spacing of + code follows the semantic patch";
   ];
 
   "misc options",
@@ -452,6 +498,8 @@ let other_options = [
     "   option to set if launch spatch in ocamldebug";
     "-disable_once",     Arg.Set Common.disable_pr2_once, 
     "   to print more messages";
+    "-show_trace_profile",          Arg.Set Common.show_trace_profile, 
+    "   show trace";
     "-save_tmp_files",   Arg.Set Common.save_tmp_files,   " ";
   ];
 
@@ -490,6 +538,8 @@ let other_options = [
 
     "-compare_with_expected", Arg.Set compare_with_expected, 
     "   use also file.res"; 
+    "-expected_score_file", Arg.Set_string expected_score_file, 
+    "   which score file to compare with in -testall"; 
     "-relax_include_path", Arg.Set FC.relax_include_path,
     " ";
     
@@ -514,7 +564,6 @@ let other_options = [
 let all_options = 
   short_options ++ List.concat (List.map Common.thd3 other_options)
  
-
   
 (* I don't want the -help and --help that are appended by Arg.align *)
 let arg_align2 xs =
@@ -599,166 +648,175 @@ let glimpse_filter (coccifile, isofile) dir =
 let main_action xs = 
   match xs with
   | x::xs ->
-	adjust_stdin x (fun () ->
-          if !cocci_file =$= ""
-          then failwith "I need a cocci file,  use -sp_file <file>";
 
-	  if !dir && !Flag.patch =*= None
-	  then
-	    (match xs with
-	    | [] -> Flag.patch := Some x
-	    | _ ->
-		pr2
-		  ("warning: patch output can only be created when only one\n"^
-		   "directory is specified or when the -patch flag is used")
-            );
+      (* a more general solution would be to use 
+       * Common.files_of_dir_or_files (x::xs) 
+       * as some elements in xs may also be directories, or individual
+       * files.
+       *)
+      if Common.is_directory x
+      then dir := true;
 
-          let infiles = 
-            Common.profile_code "Main.infiles computation" (fun () -> 
-	      match !dir, !kbuild_info, !Flag.use_glimpse with
-              (* glimpse *)
-              | false, _, true -> 
-                  failwith "-use_glimpse works only with -dir"
-              | true, s, true when s <> "" -> 
-                  failwith "-use_glimpse does not work with -kbuild"
-              | true, "", true -> 
-                  if not (null xs)
-                  then failwith "-use_glimpse can accept only one dir";
+      adjust_stdin x (fun () ->
+        if !cocci_file =$= ""
+        then failwith "I need a cocci file,  use -sp_file <file>";
 
-		  Flag.dir := x;
-                  let files =
-		    match glimpse_filter (!cocci_file, !Config.std_iso) x with
-		      None ->
-			Common.cmd_to_list (* same as "true, "", _" case *)
-			  (if !include_headers
-			     (* FIXME : Could we remove xs ?
-				-use_glimpse requires a singleton.
-				This is checked some lines before.
-			  then ("find "^(join " " (x::xs))^" -name \"*.[ch]\"")
-			  else ("find "^(join " " (x::xs))^" -name \"*.c\""))
-			     *)
-			  then ("find "^ x ^" -name \"*.[ch]\"")
-			  else ("find "^ x ^" -name \"*.c\""))
-		    | Some files -> files in
-                  files +> List.map (fun x -> [x])
-              (* normal *)
-	      | false, _, _ -> [x::xs]
-	      | true, "", _ -> 
-		  Common.cmd_to_list
-		    (if !include_headers
-		    then ("find "^(join " " (x::xs))^" -name \"*.[ch]\"")
+	if !dir && !Flag.patch =*= None
+	then
+	  (match xs with
+	  | [] -> Flag.patch := Some x
+	  | _ ->
+	      pr2
+		("warning: patch output can only be created when only one\n"^
+		    "directory is specified or when the -patch flag is used")
+          );
+
+        let infiles = 
+          Common.profile_code "Main.infiles computation" (fun () -> 
+	    match !dir, !kbuild_info, !Flag.use_glimpse with
+            (* glimpse *)
+            | false, _, true -> 
+                failwith "-use_glimpse works only with -dir"
+            | true, s, true when s <> "" -> 
+                failwith "-use_glimpse does not work with -kbuild"
+            | true, "", true -> 
+                if not (null xs)
+                then failwith "-use_glimpse can accept only one dir";
+
+		Flag.dir := x;
+                let files =
+		  match glimpse_filter (!cocci_file, !Config.std_iso) x with
+		  None ->
+		    Common.cmd_to_list (* same as "true, "", _" case *)
+		      (if !include_headers
+			  (* FIXME : Could we remove xs ?
+			     -use_glimpse requires a singleton.
+			     This is checked some lines before.
+			     then ("find "^(join " " (x::xs))^" -name \"*.[ch]\"")
+			     else ("find "^(join " " (x::xs))^" -name \"*.c\""))
+			  *)
+		      then ("find "^ x ^" -name \"*.[ch]\"")
+			else ("find "^ x ^" -name \"*.c\""))
+		  | Some files -> files in
+                files +> List.map (fun x -> [x])
+                  (* normal *)
+	    | false, _, _ -> [x::xs]
+	    | true, "", _ -> 
+		Common.cmd_to_list
+		  (if !include_headers
+		  then ("find "^(join " " (x::xs))^" -name \"*.[ch]\"")
 		    else ("find "^(join " " (x::xs))^" -name \"*.c\""))
-		  +> List.map (fun x -> [x])
+		+> List.map (fun x -> [x])
 
-              (* kbuild *)
-	      | true, kbuild_info_file,_ -> 
-		  let dirs = 
-                    Common.cmd_to_list ("find "^(join " " (x::xs))^" -type d") 
-                  in
-		  let info = Kbuild.parse_kbuild_info kbuild_info_file in
-		  let groups = Kbuild.files_in_dirs dirs info in
-		  
-		  groups +> List.map (function Kbuild.Group xs -> xs)
-	    )
-          in
+            (* kbuild *)
+	    | true, kbuild_info_file,_ -> 
+		let dirs = 
+                  Common.cmd_to_list ("find "^(join " " (x::xs))^" -type d") 
+                in
+		let info = Kbuild.parse_kbuild_info kbuild_info_file in
+		let groups = Kbuild.files_in_dirs dirs info in
+		
+		groups +> List.map (function Kbuild.Group xs -> xs)
+	  )
+        in
 
-	  let infiles =
-	    match (!distrib_index,!distrib_max) with
-	      (None,None) -> infiles
-	    | (Some index,Some max) ->
-		(if index >= max
-		then
-		  failwith "index starts at 0, and so must be less than max");
-		if !mod_distrib
-		then
+	let infiles =
+	  match (!distrib_index,!distrib_max) with
+	  (None,None) -> infiles
+	  | (Some index,Some max) ->
+	      (if index >= max
+	      then
+		failwith "index starts at 0, and so must be less than max");
+	      if !mod_distrib
+	      then
+		let rec loop ct = function
+		  [] -> []
+		  | x::xs ->
+		      if (ct mod max) =|= index
+		      then x::(loop (ct+1) xs)
+		      else loop (ct+1) xs in
+		loop 0 infiles
+	      else
+		begin
+		  let all_files = List.length infiles in
+		  let regions = (all_files + (max - 1)) / max in
+		  let this_min = index * regions in
+		  let this_max = (index+1) * regions in
 		  let rec loop ct = function
-		      [] -> []
+		    [] -> []
 		    | x::xs ->
-			if (ct mod max) =|= index
+			if this_min <= ct && ct < this_max
 			then x::(loop (ct+1) xs)
 			else loop (ct+1) xs in
 		  loop 0 infiles
-		else
-		  begin
-		    let all_files = List.length infiles in
-		    let regions = (all_files + (max - 1)) / max in
-		    let this_min = index * regions in
-		    let this_max = (index+1) * regions in
-		    let rec loop ct = function
-			[] -> []
-		      | x::xs ->
-			  if this_min <= ct && ct < this_max
-			  then x::(loop (ct+1) xs)
-			  else loop (ct+1) xs in
-		    loop 0 infiles
-		  end
-	    | _ -> failwith "inconsistent distribution information" in
-	    
-          let outfiles = 
-            Common.profile_code "Main.outfiles computation" (fun () ->
-	      let cocci_infos =
-		Cocci.pre_engine (!cocci_file, !Config.std_iso) in
-	      let res =
-		infiles +> List.map (fun cfiles -> 
-		  pr2 ("HANDLING: " ^ (join " " cfiles));
-		  Common.timeout_function_opt !FC.timeout (fun () -> 
-  	            Common.report_if_take_time 10 (join " " cfiles) (fun () -> 
-                    (* Unix.sleep 1; *)
-                      try 
-                    (* this is the main call *)
-			Cocci.full_engine cocci_infos cfiles
-		      with 
-		      | Common.UnixExit x -> raise (Common.UnixExit x)
-		      | e ->
-			  if !dir
-			  then begin
-			    pr2 ("EXN:" ^ Printexc.to_string e); 
-			    [] (* *)
-			  end
-			  else raise e))) in
-	      Cocci.post_engine cocci_infos;
-	      res
-            ) +> List.concat 
-          in
-
-          Common.profile_code "Main.result analysis" (fun () -> 
-	      
-	    Ctlcocci_integration.print_bench();
-	      
-            let outfiles = Cocci.check_duplicate_modif outfiles in
-              
-            outfiles +> List.iter (fun (infile, outopt) -> 
-	      outopt +> Common.do_option (fun outfile -> 
-		if !inplace_modif
-		then begin
-                  Common.command2 ("cp "^infile^" "^infile^".cocci_orig");
-                  Common.command2 ("cp "^outfile^" "^infile);
-		end;
-
-		if !outplace_modif
-		then Common.command2 ("cp "^outfile^" "^infile^".cocci_res");
-		  
-		if !output_file =$= "" 
-		then begin
-                  let tmpfile = "/tmp/"^Common.basename infile in
-                  pr2 (spf "One file modified. Result is here: %s" tmpfile);
-                  Common.command2 ("cp "^outfile^" "^tmpfile);
 		end
-	      ));
-            if !output_file <> "" then
-	      (match outfiles with 
-	      | [infile, Some outfile] when infile =$= x && null xs -> 
-                  Common.command2 ("cp " ^outfile^ " " ^ !output_file);
-	      | [infile, None] when infile =$= x && null xs -> 
-                  Common.command2 ("cp " ^infile^ " " ^ !output_file);
-	      | _ -> 
-                  failwith 
-                    ("-o can not be applied because there is multiple " ^
-                        "modified files");
-	      );
-            
-            if !compare_with_expected
-            then Testing.compare_with_expected outfiles))
+	  | _ -> failwith "inconsistent distribution information" in
+	
+        let outfiles = 
+          Common.profile_code "Main.outfiles computation" (fun () ->
+	    let cocci_infos =
+	      Cocci.pre_engine (!cocci_file, !Config.std_iso) in
+	    let res =
+	      infiles +> List.map (fun cfiles -> 
+		pr2 ("HANDLING: " ^ (join " " cfiles));
+		Common.timeout_function_opt !FC.timeout (fun () -> 
+  	          Common.report_if_take_time 10 (join " " cfiles) (fun () -> 
+                    (* Unix.sleep 1; *)
+                    try 
+                      (* this is the main call *)
+		      Cocci.full_engine cocci_infos cfiles
+		    with 
+		    | Common.UnixExit x -> raise (Common.UnixExit x)
+		    | e ->
+			if !dir
+			then begin
+			  pr2 ("EXN:" ^ Printexc.to_string e); 
+			  [] (* *)
+			end
+			else raise e))) in
+	    Cocci.post_engine cocci_infos;
+	    res
+          ) +> List.concat 
+        in
+
+        Common.profile_code "Main.result analysis" (fun () -> 
+	  
+	  Ctlcocci_integration.print_bench();
+	  
+          let outfiles = Cocci.check_duplicate_modif outfiles in
+          
+          outfiles +> List.iter (fun (infile, outopt) -> 
+	    outopt +> Common.do_option (fun outfile -> 
+	      if !inplace_modif
+	      then begin
+                Common.command2 ("cp "^infile^" "^infile^".cocci_orig");
+                Common.command2 ("cp "^outfile^" "^infile);
+	      end;
+
+	      if !outplace_modif
+	      then Common.command2 ("cp "^outfile^" "^infile^".cocci_res");
+	      
+	      if !output_file =$= "" 
+	      then begin
+                let tmpfile = "/tmp/"^Common.basename infile in
+                pr2 (spf "One file modified. Result is here: %s" tmpfile);
+                Common.command2 ("cp "^outfile^" "^tmpfile);
+	      end
+	    ));
+          if !output_file <> "" then
+	    (match outfiles with 
+	    | [infile, Some outfile] when infile =$= x && null xs -> 
+                Common.command2 ("cp " ^outfile^ " " ^ !output_file);
+	    | [infile, None] when infile =$= x && null xs -> 
+                Common.command2 ("cp " ^infile^ " " ^ !output_file);
+	    | _ -> 
+                failwith 
+                  ("-o can not be applied because there is multiple " ^
+                      "modified files");
+	    );
+          
+          if !compare_with_expected
+          then Testing.compare_with_expected outfiles))
 
   | [] -> raise Impossible
 
@@ -777,9 +835,13 @@ let main () =
 
     let args = ref [] in
 
+    (* Gc.set {(Gc.get ()) with Gc.stack_limit = 1024 * 1024};*)
+
     (* this call can set up many global flag variables via the cmd line *)
     arg_parse2 (Arg.align all_options) (fun x -> args := x::!args) usage_msg;
 
+    (* julia hack so that one can override directories specified on
+     * the command line. *)
     (if !dir
     then
       let chosen_dir =
@@ -794,6 +856,7 @@ let main () =
 	 else List.hd !args in
       if !FC.include_path =*= None
       then FC.include_path := Some (Filename.concat chosen_dir "include"));
+
     args := List.rev !args;
 
     if !cocci_file <> "" && (not (!cocci_file =~ ".*\\.\\(sgrep\\|spatch\\)$"))
@@ -805,7 +868,10 @@ let main () =
     then Config.std_h := Common.adjust_ext_if_needed !Config.std_h ".h";
 
     if !Config.std_h <> "" 
-    then Parse_c.init_defs !Config.std_h;
+    then Parse_c.init_defs_builtins !Config.std_h;
+
+    if !macro_file <> "" 
+    then Parse_c.init_defs_macros !macro_file;
 
 
     (* must be done after Arg.parse, because Common.profile is set by it *)
@@ -825,7 +891,9 @@ let main () =
 
     | []  when !test_all -> 
         FC.include_path := Some "tests/include";
-        Testing.testall ()
+        if !expected_score_file <> ""
+        then Testing.testall ~expected_score_file:!expected_score_file ()
+        else Testing.testall ()
 
     | [] when !test_regression_okfailed -> 
         Testing.test_regression_okfailed ()
@@ -876,9 +944,21 @@ let main () =
     end
   end
 
+
+let main_with_better_error_report () = 
+  if !Common.debugger then main () 
+  else 
+    try 
+      main () 
+    with
+    | Unix.Unix_error (_, "stat", filename) -> 
+        pr2 (spf "ERROR: File %s does not exist" filename);
+        raise (UnixExit (-1))
+    
+
 (*****************************************************************************)
-let _ =
+let start =
   Common.main_boilerplate (fun () -> 
-    main ();
+    main_with_better_error_report ();
     Ctlcocci_integration.print_bench();
   )

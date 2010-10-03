@@ -43,8 +43,8 @@ type isomorphism =
     Ast_cocci.metavar list * Ast0_cocci.anything list list * string (* name *)
 
 let strip_info =
-  let mcode (term,_,_,_,_) =
-    (term,Ast0.NONE,Ast0.default_info(),Ast0.PLUS,ref Ast0.NoMetaPos) in
+  let mcode (term,_,_,_,_,_) =
+    (term,Ast0.NONE,Ast0.default_info(),Ast0.PLUS,ref Ast0.NoMetaPos,-1) in
   let donothing r k e =
     let x = k e in
     {(Ast0.wrap (Ast0.unwrap x)) with
@@ -108,8 +108,8 @@ let anything_equal = function
       failwith "only for isos within iso phase"
   | _ -> false
 
-let term (var1,_,_,_,_) = var1
-let dot_term (var1,_,info,_,_) =
+let term (var1,_,_,_,_,_) = var1
+let dot_term (var1,_,info,_,_,_) =
   ("", var1 ^ (string_of_int info.Ast0.pos_info.Ast0.offset))
 
 
@@ -227,7 +227,7 @@ let rec conjunct_many_bindings = function
   | [x] -> x
   | x::xs -> conjunct_bindings x (conjunct_many_bindings xs)
 
-let mcode_equal (x,_,_,_,_) (y,_,_,_,_) = x = y
+let mcode_equal (x,_,_,_,_,_) (y,_,_,_,_,_) = x = y
 
 let return b binding = if b then OK binding else Fail NonMatch
 let return_false reason binding = Fail reason
@@ -1197,7 +1197,7 @@ let match_statement_dots dochecks context_required whencode_allowed =
 (* make an entire tree MINUS *)
 
 let make_minus =
-  let mcode (term,arity,info,mcodekind,pos) =
+  let mcode (term,arity,info,mcodekind,pos,adj) =
     let new_mcodekind =
      match mcodekind with
        Ast0.CONTEXT(mc) ->
@@ -1206,7 +1206,7 @@ let make_minus =
 	 | _ -> failwith "make_minus: unexpected befaft")
      | Ast0.MINUS(mc) -> mcodekind (* in the part copied from the src term *)
      | _ -> failwith "make_minus mcode: unexpected mcodekind" in
-    (term,arity,info,new_mcodekind,pos) in
+    (term,arity,info,new_mcodekind,pos,adj) in
 
   let update_mc mcodekind e =
     match !mcodekind with
@@ -1331,7 +1331,7 @@ let rebuild_mcode start_line =
 	   indices, and so we allow PLUS code as well *)
         Ast0.PLUS in
 
-  let mcode (term,arity,info,mcodekind,pos) =
+  let mcode (term,arity,info,mcodekind,pos,adj) =
     let info =
       match start_line with
 	Some x ->
@@ -1341,7 +1341,7 @@ let rebuild_mcode start_line =
 	      Ast0.line_end = x; } in
 	  {info with Ast0.pos_info = new_pos_info}
       |	None -> info in
-    (term,arity,info,copy_mcodekind mcodekind,pos) in
+    (term,arity,info,copy_mcodekind mcodekind,pos,adj) in
 
   let copy_one x =
     let old_info = Ast0.get_info x in
@@ -1562,7 +1562,7 @@ let instantiate bindings mv_bindings =
 		    let rec renamer = function
 			Type_cocci.MetaType(name,keep,inherited) ->
 			  (match
-			    lookup (name,(),(),(),None) bindings mv_bindings
+			    lookup (name,(),(),(),None,-1) bindings mv_bindings
 			  with
 			    Common.Left(Ast0.TypeCTag(t)) ->
 			      Ast0.ast0_type_to_type t
@@ -2356,7 +2356,7 @@ let transform (alts : isomorphism) t =
 
 (* should be done by functorizing the parser to use wrap or context_wrap *)
 let rewrap =
-  let mcode (x,a,i,mc,pos) = (x,a,i,Ast0.context_befaft(),pos) in
+  let mcode (x,a,i,mc,pos,adj) = (x,a,i,Ast0.context_befaft(),pos,adj) in
   let donothing r k e = Ast0.context_wrap(Ast0.unwrap(k e)) in
   V0.flat_rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode

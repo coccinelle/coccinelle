@@ -77,7 +77,7 @@ let get_function_name rule env =
       [] any_list_list in
   let mcode r mc =
     match Ast.get_mcodekind mc with
-      Ast.MINUS(_,any_list_list) -> do_any_list_list r any_list_list
+      Ast.MINUS(_,_,_,any_list_list) -> do_any_list_list r any_list_list
     | Ast.CONTEXT(_,any_befaft) ->
 	(match any_befaft with
 	  Ast.BEFORE(any_list_list) | Ast.AFTER(any_list_list) ->
@@ -457,9 +457,10 @@ let pp_rule local_metas ast env srcfile =
       |	_ ->
 	  Printf.printf "line: %s\n" (Common.dump info);
 	  error rule "not an abstract line" in
+    let pr_space _ = pr " " in
     Unparse_cocci.pp_list_list_any
-      (env, pr, pr_c, (function _ -> pr " "),
-       (function _ -> ()), (function _ -> ()))
+      (env, (fun s _ _ _ -> pr s), pr_c, pr_space, pr_space, pr,
+       (fun _ _ -> ()), (function _ -> ()), (function _ -> ()))
       true printable Unparse_cocci.InPlace;
     print_end pr;
     pr "\n")

@@ -1,3 +1,4 @@
+adjacency.cmi: ast0_cocci.cmi 
 adjust_pragmas.cmi: ast0_cocci.cmi 
 arity.cmi: ast0_cocci.cmi 
 ast0_cocci.cmi: type_cocci.cmi ast_cocci.cmi 
@@ -31,6 +32,10 @@ unitary_ast0.cmi: ast0_cocci.cmi
 unparse_ast0.cmi: ast0_cocci.cmi 
 visitor_ast.cmi: ast_cocci.cmi 
 visitor_ast0.cmi: visitor_ast0_types.cmo ast_cocci.cmi ast0_cocci.cmi 
+adjacency.cmo: visitor_ast0_types.cmo visitor_ast0.cmi ast0_cocci.cmi \
+    adjacency.cmi 
+adjacency.cmx: visitor_ast0_types.cmx visitor_ast0.cmx ast0_cocci.cmx \
+    adjacency.cmi 
 adjust_pragmas.cmo: visitor_ast0_types.cmo visitor_ast0.cmi ast0_cocci.cmi \
     adjust_pragmas.cmi 
 adjust_pragmas.cmx: visitor_ast0_types.cmx visitor_ast0.cmx ast0_cocci.cmx \
@@ -125,7 +130,7 @@ parse_cocci.cmo: visitor_ast0_types.cmo visitor_ast0.cmi unitary_ast0.cmi \
     ../globals/flag.cmo disjdistr.cmi data.cmi context_neg.cmi \
     compute_lines.cmi ../commons/common.cmi comm_assoc.cmi check_meta.cmi \
     ast_cocci.cmi ast0toast.cmi ast0_cocci.cmi arity.cmi adjust_pragmas.cmi \
-    parse_cocci.cmi 
+    adjacency.cmi parse_cocci.cmi 
 parse_cocci.cmx: visitor_ast0_types.cmx visitor_ast0.cmx unitary_ast0.cmx \
     type_infer.cmx test_exps.cmx single_statement.cmx simple_assignments.cmx \
     semantic_cocci.cmx pretty_print_cocci.cmx parse_aux.cmx iso_pattern.cmx \
@@ -134,7 +139,7 @@ parse_cocci.cmx: visitor_ast0_types.cmx visitor_ast0.cmx unitary_ast0.cmx \
     ../globals/flag.cmx disjdistr.cmx data.cmx context_neg.cmx \
     compute_lines.cmx ../commons/common.cmx comm_assoc.cmx check_meta.cmx \
     ast_cocci.cmx ast0toast.cmx ast0_cocci.cmx arity.cmx adjust_pragmas.cmx \
-    parse_cocci.cmi 
+    adjacency.cmx parse_cocci.cmi 
 plus.cmo: visitor_ast.cmi ast_cocci.cmi plus.cmi 
 plus.cmx: visitor_ast.cmx ast_cocci.cmx plus.cmi 
 pretty_print_cocci.cmo: type_cocci.cmi ../globals/flag.cmo \

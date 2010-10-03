@@ -10,6 +10,7 @@ type error =
   | DeadCode          of Common.parse_info option
   | CaseNoSwitch      of Common.parse_info
   | OnlyBreakInSwitch of Common.parse_info
+  | WeirdSwitch       of Common.parse_info
   | NoEnclosingLoop   of Common.parse_info
   | GotoCantFindLabel of string * Common.parse_info
   | NoExit of Common.parse_info

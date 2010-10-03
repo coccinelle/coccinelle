@@ -28,8 +28,8 @@ open Common
  * so that ast_c does not need to depend on yacc which depends on
  * ast_c, etc. 
  * 
- * Also, OcamlYacc imposes some stupid constraints on the way we can define
- * the token type. OcamlYacc force us to do a token type that
+ * Also, ocamlyacc imposes some stupid constraints on the way we can define
+ * the token type. ocamlyacc forces us to do a token type that
  * cant be a pair of a sum type, it must be directly a sum type.
  * We don't have this constraint here.
  * 

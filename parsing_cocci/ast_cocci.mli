@@ -30,7 +30,7 @@ and 'a mcode = 'a * info * mcodekind * meta_pos (* pos variable *)
  (* pos is an offset indicating where in the C code the mcodekind has an
  effect *)
  and mcodekind =
-    MINUS       of pos * anything list list
+    MINUS       of pos * int list * int * anything list list
   | CONTEXT     of pos * anything befaft
   | PLUS
  and fixpos =
@@ -399,7 +399,7 @@ and metaStmtInfo =
 and rule_elem = base_rule_elem wrap
 
 and base_statement =
-    Seq           of rule_elem (* { *) * statement dots *
+    Seq           of rule_elem (* { *) *
 	             statement dots * rule_elem (* } *)
   | IfThen        of rule_elem (* header *) * statement * end_info
   | IfThenElse    of rule_elem (* header *) * statement *
@@ -416,7 +416,7 @@ and base_statement =
 	             (statement dots,statement) whencode list * multi *
 	             dots_whencode list * dots_whencode list
   | FunDecl       of rule_elem (* header *) * rule_elem (* { *) *
-     	             statement dots * statement dots * rule_elem (* } *)
+     	             statement dots * rule_elem (* } *)
   | Define        of rule_elem (* header *) * statement dots
   | Dots          of string mcode (* ... *) *
 	             (statement dots,statement) whencode list *
@@ -557,6 +557,7 @@ val unwrap_mcode : 'a mcode -> 'a
 val get_mcodekind : 'a mcode -> mcodekind
 val get_line : 'a wrap -> line
 val get_mcode_line : 'a mcode -> line
+val get_mcode_col : 'a mcode -> int
 val get_fvs : 'a wrap -> meta_name list
 val get_wcfvs : ('a wrap,'b wrap) whencode list -> meta_name list
 val set_fvs : meta_name list -> 'a wrap -> 'a wrap

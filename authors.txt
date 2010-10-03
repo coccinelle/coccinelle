@@ -5,7 +5,6 @@ Here are the authors and maintainers of the different parts of coccinelle:
 - parsing_cocci/ (parsing SmPL, isomorphism handling)
 - engine/ (ast_cocci to ctl, sgrep)
 - ctl/ (symbolic model checker)
-- popl/ popl09/
 - tools/ 
 - standard.iso
 
@@ -13,21 +12,19 @@ Here are the authors and maintainers of the different parts of coccinelle:
 
 - parsing_c/ (parsing C, unparsing C, type checking, control flow, C diff)
 - engine/ (pattern matching and transforming, unparsing, ctl integration)
-- cocci.ml (driver)
-- main.ml, testing.ml
-- emacs/cocci.el
+- main.ml, cocci.ml (driver), testing.ml
+- configure, txt files, Makefiles 
 - globals/
-- extra/
-- tools/ 
-- scripts/
-- commons/ (utility functions)
+- extra/, tools/, scripts/
+- commons/ (utility functions, e.g. for logging, profiling, regression testing)
+- editors/emacs/cocci.el
 - standard.h
 
 
 * Rene Rydhof Hansen <rrhansen@diku.dk>
 
 - Original version of the model checker in ctl/
-- emacs/cocci-ediff.el
+- editors/emacs/cocci-ediff.el
 - scripts/extractor.awk
 
 * Henrik stuart <henrik@hstuart.dk>

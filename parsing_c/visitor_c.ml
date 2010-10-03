@@ -26,6 +26,11 @@ module F = Control_flow_c
  *)
 
 (*****************************************************************************)
+(* Wrappers *)
+(*****************************************************************************)
+let pr2, pr2_once = Common.mk_pr2_wrappers Flag_parsing_c.verbose_visit
+
+(*****************************************************************************)
 (* Functions to visit the Ast, and now also the CFG nodes *)
 (*****************************************************************************)
 
@@ -358,7 +363,9 @@ and vk_statement = fun bigf (st: Ast_c.statement) ->
     let (unwrap_st, ii) = st in
     iif ii;
     match unwrap_st with
-    | Labeled (Label (s, st)) -> statf  st;
+    | Labeled (Label (name, st)) -> 
+        vk_name bigf name;
+        statf  st;
     | Labeled (Case  (e, st)) -> vk_expr bigf e; statf st;
     | Labeled (CaseRange  (e, e2, st)) -> 
         vk_expr bigf e; vk_expr bigf e2; statf st;
@@ -376,9 +383,9 @@ and vk_statement = fun bigf (st: Ast_c.statement) ->
         vk_expr bigf e; statf st;
     | Iteration  (DoWhile (st, e)) -> statf st; vk_expr bigf e; 
     | Iteration  (For ((e1opt,i1), (e2opt,i2), (e3opt,i3), st)) -> 
-        statf (ExprStatement (e1opt),i1); 
-        statf (ExprStatement (e2opt),i2); 
-        statf (ExprStatement (e3opt),i3); 
+        statf (mk_st (ExprStatement (e1opt)) i1); 
+        statf (mk_st (ExprStatement (e2opt)) i2); 
+        statf (mk_st (ExprStatement (e3opt)) i3); 
         statf st;
 
     | Iteration  (MacroIteration (s, es, st)) -> 
@@ -557,17 +564,15 @@ and vk_struct_field = fun bigf field ->
   let f = bigf.kfield in
   let rec k field = 
 
-    let (xfield, ii) = field in
-    iif ii;
-    match xfield with 
+    match field with 
     | DeclarationField 
         (FieldDeclList (onefield_multivars, iiptvirg)) -> 
         vk_struct_fieldkinds bigf onefield_multivars;
           iif iiptvirg;
-    | EmptyField -> ()
-    | MacroStructDeclTodo -> 
-        pr2_once "MacroStructDeclTodo";
-        ()
+    | EmptyField info -> iif [info]
+    | MacroDeclField ((s, args),ii) -> 
+        iif ii;
+        vk_argument_list bigf args;
 
     | CppDirectiveStruct directive -> 
         vk_cpp_directive bigf directive
@@ -603,7 +608,7 @@ and vk_def = fun bigf d ->
   let f = bigf.kdef in
   let rec k d = 
     match d with
-    | {f_name = s;
+    | {f_name = name;
        f_type = (returnt, (paramst, (b, iib)));
        f_storage = sto;
        f_body = statxs;
@@ -615,6 +620,7 @@ and vk_def = fun bigf d ->
         iif iib;
         attrs +> List.iter (vk_attribute bigf);
         vk_type bigf returnt;
+        vk_name bigf name;
         paramst +> List.iter (fun (param,iicomma) -> 
           vk_param bigf param;
           iif iicomma;
@@ -1086,8 +1092,8 @@ and vk_statement_s = fun bigf st ->
     let (unwrap_st, ii) = st in
     let st' = 
       match unwrap_st with
-      | Labeled (Label (s, st)) -> 
-          Labeled (Label (s, statf st))
+      | Labeled (Label (name, st)) -> 
+          Labeled (Label (vk_name_s bigf name, statf st))
       | Labeled (Case  (e, st)) -> 
           Labeled (Case  ((vk_expr_s bigf) e , statf st))
       | Labeled (CaseRange  (e, e2, st)) -> 
@@ -1108,12 +1114,21 @@ and vk_statement_s = fun bigf st ->
       | Iteration (DoWhile (st, e))  -> 
           Iteration  (DoWhile (statf st, (vk_expr_s bigf) e))
       | Iteration (For ((e1opt,i1), (e2opt,i2), (e3opt,i3), st)) -> 
-          let e1opt' = statf (ExprStatement (e1opt),i1) in
-          let e2opt' = statf (ExprStatement (e2opt),i2) in
-          let e3opt' = statf (ExprStatement (e3opt),i3) in
-          (match (e1opt', e2opt', e3opt') with
-          | ((ExprStatement x1,i1), (ExprStatement x2,i2), ((ExprStatement x3,i3))) -> 
-              Iteration (For ((x1,i1), (x2,i2), (x3,i3), statf st))
+          let e1opt' = statf (mk_st (ExprStatement (e1opt)) i1) in
+          let e2opt' = statf (mk_st (ExprStatement (e2opt)) i2) in
+          let e3opt' = statf (mk_st (ExprStatement (e3opt)) i3) in
+
+          let e1' = Ast_c.unwrap_st e1opt' in
+          let e2' = Ast_c.unwrap_st e2opt' in
+          let e3' = Ast_c.unwrap_st e3opt' in
+          let i1' = Ast_c.get_ii_st_take_care e1opt' in
+          let i2' = Ast_c.get_ii_st_take_care e2opt' in
+          let i3' = Ast_c.get_ii_st_take_care e3opt' in
+
+          (match (e1', e2', e3') with
+          | ((ExprStatement x1), (ExprStatement x2), ((ExprStatement x3))) -> 
+              Iteration (For ((x1,i1'), (x2,i2'), (x3,i3'), statf st))
+
           | x -> failwith "cant be here if iterator keep ExprStatement as is"
          )
 
@@ -1349,24 +1364,26 @@ and vk_struct_fields_s = fun bigf fields ->
 
   let iif ii = vk_ii_s bigf ii in
 
-  fields +> List.map (fun (xfield, iiptvirg) -> 
-    
-    (match xfield with
+  fields +> List.map (fun (field) -> 
+    (match field with
     | (DeclarationField (FieldDeclList (onefield_multivars, iiptvirg))) -> 
         DeclarationField
           (FieldDeclList 
               (vk_struct_fieldkinds_s bigf onefield_multivars, iif iiptvirg))
-    | EmptyField -> EmptyField
-    | MacroStructDeclTodo -> 
-        pr2_once "MacroStructDeclTodo";
-        MacroStructDeclTodo
+    | EmptyField info -> EmptyField (vk_info_s bigf info)
+    | MacroDeclField ((s, args),ii) -> 
+        MacroDeclField
+          ((s, 
+           args +> List.map (fun (e,ii) -> vk_argument_s bigf e, iif ii)
+           ),
+          iif ii)
 
     | CppDirectiveStruct directive -> 
         CppDirectiveStruct (vk_cpp_directive_s bigf directive)
     | IfdefStruct ifdef -> 
         IfdefStruct (vk_ifdef_directive_s bigf ifdef)
 
-    ), iif iiptvirg
+    )
   )
 
 
@@ -1375,7 +1392,7 @@ and vk_def_s = fun bigf d ->
   let iif ii = vk_ii_s bigf ii in
   let rec k d = 
     match d with
-    | {f_name = s;
+    | {f_name = name;
        f_type = (returnt, (paramst, (b, iib)));
        f_storage = sto;
        f_body = statxs;
@@ -1383,7 +1400,7 @@ and vk_def_s = fun bigf d ->
        f_old_c_style = oldstyle;
       }, ii  
         -> 
-        {f_name = s;
+        {f_name = vk_name_s bigf name;
          f_type = 
             (vk_type_s bigf returnt, 
             (paramst +> List.map (fun (param, iicomma) ->

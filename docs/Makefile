@@ -1,25 +1,14 @@
-SUBDIRS=grammar
+SUBDIR=manual
 
-TEX=options.tex
-PDF=$(TEX:.tex=.pdf)
-AUX=$(TEX:.tex=.aux)
-LOG=$(TEX:.tex=.log)
+.PHONY: all clean distclean
 
-.PHONY: all clean distclean $(SUBDIRS)
-.SUFFIXES: .pdf .tex
-
-all: $(PDF) $(SUBDIRS)
-
-$(SUBDIRS):
-	make -C $@
-
-$(PDF): $(TEX)
-	pdflatex $<
+all: 
+	make -C $(SUBDIR)
 
 clean:
-	make -C $(SUBDIRS) clean
-	rm -f $(AUX) $(LOG)
+	make -C $(SUBDIR) clean
 
 distclean:
-	make -C $(SUBDIRS) distclean
-	rm -f $(PDF)
+	make -C $(SUBDIR) distclean
+
+

@@ -1,17 +1,28 @@
 (*****************************************************************************)
-(* convenient globals to pass to parse_c.init_defs *)
+(* convenient globals. *)
 (*****************************************************************************)
 let path = ref 
   (try (Sys.getenv "YACFE_HOME")
     with Not_found-> "/home/pad/c-yacfe"
   )
-let std_h   = ref (Filename.concat !path "data/standard.h")
-let common_h   = ref (Filename.concat !path "data/common_macros.h")
+
+(*****************************************************************************)
+(* macros *)
+(*****************************************************************************)
+
+let macro_dir = "config/macros/" 
+let mk_macro_path ~cocci_path file = 
+  Filename.concat cocci_path (macro_dir ^ file) 
+
+
+(* to pass to parse_c.init_defs *)
+let std_h   = ref (mk_macro_path ~cocci_path:!path "standard.h")
+let common_h   = ref (mk_macro_path ~cocci_path:!path "common_macros.h")
 
 
 let cmdline_flags_macrofile () = 
   [
-    "-macro_file", Arg.Set_string std_h,
+    "-macro_file_builtins", Arg.Set_string std_h,
     " <file> (default=" ^ !std_h ^ ")";
   ]
 
@@ -40,6 +51,11 @@ let cmdline_flags_envfile () =
     " <file> (default=" ^ !std_envir ^ ")";
   ]
 
+(*****************************************************************************)
+(* show *)
+(*****************************************************************************)
+
+let show_parsing_error = ref true
 
 (*****************************************************************************)
 (* verbose *)
@@ -48,7 +64,11 @@ let cmdline_flags_envfile () =
 let verbose_lexing = ref true
 let verbose_parsing = ref true
 let verbose_type    = ref true
+let verbose_cfg    = ref true
 let verbose_annotater = ref true
+let verbose_unparsing = ref true
+let verbose_visit = ref true
+let verbose_cpp_ast = ref true
 
 let filter_msg = ref false
 let filter_msg_define_error = ref false
@@ -59,6 +79,7 @@ let filter_passed_level = ref 0
 
 let pretty_print_type_info = ref false
 let pretty_print_comment_info = ref false
+let pretty_print_typedef_value = ref false
 
 (* cocci specific *)
 let show_flow_labels = ref true
@@ -93,6 +114,8 @@ let debug_lexer   = ref false
 let debug_etdt    = ref false
 let debug_typedef = ref false
 let debug_cpp     = ref false
+
+let debug_cpp_ast  = ref false
 
 let debug_unparsing = ref false
 
@@ -140,7 +163,7 @@ let cmdline_flags_algos () =
 let cpp_directive_passing = ref false
 let ifdef_directive_passing = ref false 
 
-let disable_two_pass = ref false
+let disable_multi_pass = ref false
 let disable_add_typedef = ref false
 
 let if0_passing = ref true
@@ -158,7 +181,7 @@ let cmdline_flags_parsing_algos () = [
     "-noadd_typedef_root",   Arg.Clear add_typedef_root, " ";
     "-noadd_typedef",   Arg.Set disable_add_typedef, " ";
 
-    "-disable_two_pass", Arg.Set disable_two_pass, " ";
+    "-disable_multi_pass", Arg.Set disable_multi_pass, " ";
 ]
 
 (*****************************************************************************)
@@ -179,5 +202,51 @@ let cmdline_flags_other () =
     "-use_cache", Arg.Set use_cache, 
     "   use .ast_raw pre-parsed cached C file";
   ]
+
+(*****************************************************************************)
+(* for lexing of integer constants *)
+(*****************************************************************************)
+
+let int_thresholds =
+  ref (None :
+	 (int (*int_sz*) * int (*long_sz*) *
+	    Big_int.big_int (*uint threshold*) *
+	    Big_int.big_int (*long threshold*) *
+	    Big_int.big_int (*ulong threshold*)) option)
+
+let set_int_bits n =
+  match !int_thresholds with
+    None ->
+      (*assume long is 2*int; this can be corrected by a subsequent long_bits*)
+      let uint_threshold  = Big_int.power_int_positive_int 2 (n-1) in
+      let long_threshold  = Big_int.power_int_positive_int 2 n in
+      let ulong_threshold = Big_int.power_int_positive_int 2 ((2*n)-1) in
+      int_thresholds :=
+	Some (n,2*n,uint_threshold,long_threshold,ulong_threshold)
+  | Some(int_sz,long_sz,uint_threshold,long_threshold,ulong_threshold) ->
+      let uint_threshold = Big_int.power_int_positive_int 2 (n-1) in
+      let long_threshold = Big_int.power_int_positive_int 2 n in
+      int_thresholds :=
+	Some (n,long_sz,uint_threshold,long_threshold,ulong_threshold)
+
+let set_long_bits n =
+  match !int_thresholds with
+    None ->
+      (*assume int is 1/2*int; this can be corrected by a subsequent int_bits*)
+      set_int_bits (n/2)
+  | Some(int_sz,long_sz,uint_threshold,long_threshold,ulong_threshold) ->
+      let ulong_threshold = Big_int.power_int_positive_int 2 (n-1) in
+      int_thresholds :=
+	Some (int_sz,n,uint_threshold,long_threshold,ulong_threshold)
+
+(*****************************************************************************)
+(* unparsing strategy *)
+(*****************************************************************************)
+
+type spacing = LINUX | SMPL
+let spacing = ref LINUX
+
+let set_linux_spacing _ = spacing := LINUX (*follow the conventions of Linux*)
+let set_smpl_spacing _ = spacing := SMPL   (*use spacing from the SP*)
 
 (*****************************************************************************)

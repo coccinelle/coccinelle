@@ -21,7 +21,7 @@ val type_field:
 
 (* typing rules *)
 val lub: 
-  finalType option -> finalType option -> Ast_c.exp_info
+  Ast_c.arithOp -> finalType option -> finalType option -> Ast_c.exp_info
 
 (* helpers *)
 val structdef_to_struct_name: 

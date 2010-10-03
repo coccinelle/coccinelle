@@ -84,15 +84,17 @@ let glimpseindex ext dir indexdir =
     );
   ()
 
-let _tmpfile = "/tmp/pad_glimpseindex_files.list" 
 
 let glimpseindex_files files indexdir = 
   check_have_glimpse ();
   Common.command2(spf "mkdir -p %s" indexdir);
+
+  let tmpfile = Common.new_temp_file "glimpse" "list" in
+    (* "/tmp/pad_glimpseindex_files.list" *)
   
-  Common.uncat files _tmpfile;
+  Common.uncat files tmpfile;
   Common.command2 
-    (spf "cat %s | %s" _tmpfile (glimpse_cmd indexdir));
+    (spf "cat %s | %s" tmpfile (glimpse_cmd indexdir));
   ()
 
 

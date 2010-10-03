@@ -34,6 +34,8 @@ open Common
 (* parse_typedef_fix *)
 let _handle_typedef = ref true
 
+let _always_look_typedef = ref false
+
 (* parse_typedef_fix2 *)
 let enable_typedef ()  = _handle_typedef := true
 let disable_typedef () = _handle_typedef := false
@@ -54,7 +56,7 @@ type identkind = TypeDefI | IdentI
 let (_typedef : (string, identkind) Common.scoped_h_env ref) = 
   ref (Common.empty_scoped_h_env ())
    
-let is_typedef s  = if !_handle_typedef then
+let is_typedef s  = if !_handle_typedef || !_always_look_typedef then
   (match (Common.optionise (fun () -> Common.lookup_h_env s !_typedef)) with
   | Some TypeDefI -> true
   | Some IdentI -> false

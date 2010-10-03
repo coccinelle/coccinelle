@@ -1,6 +1,6 @@
-(* Yoann Padioleau 
+(* Yoann Padioleau, Julia Lawall
  *
- * Copyright (C) 2007, 2008, 2009 University of Urbana Champaign
+ * Copyright (C) 2007, 2008, 2009 University of Urbana Champaign and DIKU
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License (GPL)
@@ -15,6 +15,11 @@
 open Common
 
 open Ast_c
+
+(*****************************************************************************)
+(* Wrappers *)
+(*****************************************************************************)
+let pr2, pr2_once = Common.mk_pr2_wrappers Flag_parsing_c.verbose_type
 
 (*****************************************************************************)
 (* Types *)
@@ -62,6 +67,28 @@ type completed_and_simplified = Ast_c.fullType
 
 type completed_typedef = Ast_c.fullType
 type removed_typedef = Ast_c.fullType
+
+(* move in ast_c ? 
+ * use Ast_c.nQ, Ast_c.defaultInt, Ast_c.emptyAnnotCocci, 
+ * Ast_c.emptyMetavarsBinding, Ast_c.emptyComments
+*)
+let (int_type: Ast_c.fullType) = 
+  (* Lib_parsing_c.al_type   (Parse_c.type_of_string "int")*)
+  Ast_c.mk_ty
+   (Ast_c.BaseType (Ast_c.IntType (Ast_c.Si (Ast_c.Signed, Ast_c.CInt))))
+   [Ast_c.al_info 0 (* al *)
+    {Ast_c.pinfo =
+     Ast_c.OriginTok
+      {Common.str = "int"; Common.charpos = 0; Common.line = -1;
+       Common.column = -1; Common.file = ""};
+    Ast_c.cocci_tag = 
+     {contents = Some (Ast_cocci.CONTEXT (Ast_cocci.NoPos, Ast_cocci.NOTHING), [])};
+    Ast_c.comments_tag = {contents = 
+        {Ast_c.mbefore = []; Ast_c.mafter = [];
+         Ast_c.mbefore2 = []; Ast_c.mafter2 = []
+        }}}]
+
+
 
 
 (* normally if the type annotated has done a good job, this should always
@@ -143,9 +170,6 @@ let noTypeHere =
   (None, Ast_c.NotTest)
 
 
-
-
-
 let do_with_type f (t,_test) = 
   match t with
   | None -> noTypeHere
@@ -164,12 +188,14 @@ let get_opt_type e =
 
 
 let structdef_to_struct_name ty = 
-  match ty with 
-  | qu, (StructUnion (su, sopt, fields), iis) -> 
-      (match sopt,iis with
+  let (qu, tybis) = ty in
+  match Ast_c.unwrap_typeC ty with 
+  | (StructUnion (su, sopt, fields)) -> 
+      let iis = Ast_c.get_ii_typeC_take_care tybis in
+      (match sopt, iis with
       (* todo? but what if correspond to a nested struct def ? *)
       | Some s , [i1;i2;i3;i4] -> 
-          qu, (StructUnionName (su, s), [i1;i2])
+          qu, Ast_c.mk_tybis (StructUnionName (su, s)) [i1;i2]
       | None, _ -> 
           ty
       | x -> raise Impossible
@@ -192,7 +218,7 @@ let type_of_function (def,ii) =
   let fake = Ast_c.fakeInfo (Common.fake_parse_info) in
   let fake_cparen = Ast_c.rewrap_str ")" fake in
 
-  Ast_c.nQ, (FunctionType ftyp, [fake_oparen;fake_cparen])
+  Ast_c.mk_ty (FunctionType ftyp) [fake_oparen;fake_cparen]
 
 
 (* pre: only a single variable *)
@@ -277,7 +303,7 @@ let (fake_function_type:
     rettype +> Common.map_option (fun rettype -> 
       let (ftyp: functionType) = (rettype, (tyargs, (false,[]))) in
       let (t: fullType) = 
-        (Ast_c.nQ, (FunctionType ftyp, [fake_oparen;fake_cparen]))  
+        Ast_c.mk_ty (FunctionType ftyp) [fake_oparen;fake_cparen]
       in
       t
     )
@@ -301,7 +327,7 @@ let (fake_function_type:
  * | (T.Pointer(ty1),ty2) -> T.Pointer(ty1)
  * 
 *)
-let lub t1 t2 = 
+let lub op t1 t2 =
   let ftopt = 
     match t1, t2 with
     | None, None -> None
@@ -321,9 +347,55 @@ let lub t1 t2 =
     | Some t1, Some t2 -> 
         let t1bis = Ast_c.unwrap_typeC t1 in
         let t2bis = Ast_c.unwrap_typeC t2 in
-        (match t1bis, t2bis with
+	(* a small attempt to do better, no consideration of typedefs *)
+        (match op, t1bis, t2bis with
+	  (* these rules follow ANSI C.  See eg:
+	     http://flexor.uwaterloo.ca/library/SGI_bookshelves/SGI_Developer/books/CLanguageRef/sgi_html/ch05.html *)
+	  _,Ast_c.BaseType(bt1),Ast_c.BaseType(bt2) ->
+	    (match bt1,bt2 with
+	      Ast_c.Void,_ -> Some t2 (* something has gone wrong *)
+	    | _,Ast_c.Void -> Some t1 (* something has gone wrong *)
+	    | Ast_c.FloatType(Ast_c.CLongDouble),_ -> Some t1
+	    | _,Ast_c.FloatType(Ast_c.CLongDouble) -> Some t2
+	    | Ast_c.FloatType(Ast_c.CDouble),_ -> Some t1
+	    | _,Ast_c.FloatType(Ast_c.CDouble) -> Some t2
+	    | Ast_c.FloatType(Ast_c.CFloat),_ -> Some t1
+	    | _,Ast_c.FloatType(Ast_c.CFloat) -> Some t2
+
+	    | Ast_c.IntType(Ast_c.Si(Ast_c.UnSigned,Ast_c.CLongLong)),_ ->
+		Some t1
+	    | _,Ast_c.IntType(Ast_c.Si(Ast_c.UnSigned,Ast_c.CLongLong)) ->
+		Some t2
+	    | Ast_c.IntType(Ast_c.Si(Ast_c.Signed,Ast_c.CLongLong)),_ ->
+		Some t1
+	    | _,Ast_c.IntType(Ast_c.Si(Ast_c.Signed,Ast_c.CLongLong)) ->
+		Some t2
+	    | Ast_c.IntType(Ast_c.Si(Ast_c.UnSigned,Ast_c.CLong)),_ ->
+		Some t1
+	    | _,Ast_c.IntType(Ast_c.Si(Ast_c.UnSigned,Ast_c.CLong)) ->
+		Some t2
+	    | Ast_c.IntType(Ast_c.Si(Ast_c.Signed,Ast_c.CLong)),_ ->
+		Some t1
+	    | _,Ast_c.IntType(Ast_c.Si(Ast_c.Signed,Ast_c.CLong)) ->
+		Some t2
+	    | Ast_c.IntType(Ast_c.Si(Ast_c.UnSigned,Ast_c.CInt)),_ ->
+		Some t1
+	    | _,Ast_c.IntType(Ast_c.Si(Ast_c.UnSigned,Ast_c.CInt)) ->
+		Some t2
+	    | _ -> Some int_type)
+
+	| Ast_c.Plus,Ast_c.Pointer _,Ast_c.BaseType(Ast_c.IntType _) ->
+	    Some t1
+	| Ast_c.Plus,Ast_c.BaseType(Ast_c.IntType _),Ast_c.Pointer _ ->
+	    Some t2
+	| Ast_c.Minus,Ast_c.Pointer _,Ast_c.BaseType(Ast_c.IntType _) ->
+	    Some t1
+	| Ast_c.Minus,Ast_c.BaseType(Ast_c.IntType _),Ast_c.Pointer _ ->
+	    Some t2
+	| Ast_c.Minus,Ast_c.Pointer _,Ast_c.Pointer _ ->
+	    Some int_type
         (* todo, Pointer, Typedef, etc *)
-        | _, _ -> Some t1
+        | _, _, _ -> Some t1
         )
 
   in
@@ -349,7 +421,7 @@ let (type_field:
     
   let rec aux_fields fields = 
     fields +> List.iter (fun x -> 
-      match Ast_c.unwrap x with
+      match x with
       | DeclarationField (FieldDeclList (onefield_multivars, iiptvirg)) -> 
           onefield_multivars +> List.iter (fun (fieldkind, iicomma) -> 
             match fieldkind with
@@ -380,8 +452,8 @@ let (type_field:
             | _ -> ()
           )
             
-      | EmptyField -> ()
-      | MacroStructDeclTodo -> pr2_once "DeclTodo"; ()
+      | EmptyField info -> ()
+      | MacroDeclField _ -> pr2_once "DeclTodo"; ()
           
       | CppDirectiveStruct _
       | IfdefStruct _ -> pr2_once "StructCpp"; 

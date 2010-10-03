@@ -29,7 +29,7 @@ SRC+=$(MYSRC)
 SRC+=ocamlextra/enum.ml ocamlextra/dynArray.ml
 SRC+=ocamlextra/suffix_tree.ml ocamlextra/suffix_tree_ext.ml
 
-SYSLIBS=str.cma unix.cma
+SYSLIBS=str.cma bigarray.cma unix.cma
 
 INCLUDEDIRS=ocamlextra ocollection
 SUBDIRS=ocamlextra ocollection
@@ -105,7 +105,7 @@ OPTFLAGS=
 # ocaml, when it is available, which speeds up compilation. So
 # if you want the fast version of the ocaml chain tools, set this var 
 # or setenv it to ".opt" in your startup script.
-#OPTBIN= #.opt
+OPTBIN ?= #.opt
 
 OCAMLCFLAGS ?= -g -dtypes
 

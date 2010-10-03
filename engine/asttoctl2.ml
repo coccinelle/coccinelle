@@ -434,7 +434,7 @@ let contains_modif =
   let option_default = false in
   let mcode r (_,_,kind,metapos) =
     match kind with
-      Ast.MINUS(_,_) -> true
+      Ast.MINUS(_,_,_,_) -> true
     | Ast.PLUS -> failwith "not possible"
     | Ast.CONTEXT(_,info) -> not (info = Ast.NOTHING) in
   let do_nothing r k e = k e in
@@ -531,7 +531,7 @@ let count_nested_braces s =
   let option_default = 0 in
   let stmt_count r k s =
     match Ast.unwrap s with
-      Ast.Seq(_,_,_,_) | Ast.FunDecl(_,_,_,_,_) -> (k s) + 1
+      Ast.Seq(_,_,_) | Ast.FunDecl(_,_,_,_) -> (k s) + 1
     | _ -> k s in
   let donothing r k e = k e in
   let mcode r x = 0 in
@@ -635,12 +635,10 @@ and get_before_e s a =
       (match Ast.unwrap ast with
 	Ast.MetaStmt(_,_,_,_) -> (s,[])
       |	_ -> (s,[Ast.Other s]))
-  | Ast.Seq(lbrace,decls,body,rbrace) ->
+  | Ast.Seq(lbrace,body,rbrace) ->
       let index = count_nested_braces s in
-      let (de,dea) = get_before decls [Ast.WParen(lbrace,index)] in
-      let (bd,_) = get_before body dea in
-      (Ast.rewrap s (Ast.Seq(lbrace,de,bd,rbrace)),
-       [Ast.WParen(rbrace,index)])
+      let (bd,_) = get_before body [Ast.WParen(lbrace,index)] in
+      (Ast.rewrap s (Ast.Seq(lbrace,bd,rbrace)),[Ast.WParen(rbrace,index)])
   | Ast.Define(header,body) ->
       let (body,_) = get_before body [] in
       (Ast.rewrap s (Ast.Define(header,body)), [Ast.Other s])
@@ -674,10 +672,9 @@ and get_before_e s a =
 	    | Ast.OptCase(case_line) -> failwith "not supported")
 	  cases in
       (Ast.rewrap s (Ast.Switch(header,lb,cases,rb)),[Ast.Other s])
-  | Ast.FunDecl(header,lbrace,decls,body,rbrace) ->
-      let (de,dea) = get_before decls [] in
-      let (bd,_) = get_before body dea in
-      (Ast.rewrap s (Ast.FunDecl(header,lbrace,de,bd,rbrace)),[])
+  | Ast.FunDecl(header,lbrace,body,rbrace) ->
+      let (bd,_) = get_before body [] in
+      (Ast.rewrap s (Ast.FunDecl(header,lbrace,bd,rbrace)),[])
   | _ ->
       Pretty_print_cocci.statement "" s; Format.print_newline();
       failwith "get_before_e: not supported"
@@ -768,11 +765,10 @@ and get_after_e s a =
 		   (Ast.MetaStmt(nm,keep,Ast.SequencibleAfterDots a,i)))),[])
       |	Ast.MetaStmt(_,_,_,_) -> (s,[])
       |	_ -> (s,[Ast.Other s]))
-  | Ast.Seq(lbrace,decls,body,rbrace) ->
+  | Ast.Seq(lbrace,body,rbrace) ->
       let index = count_nested_braces s in
-      let (bd,bda) = get_after body [Ast.WParen(rbrace,index)] in
-      let (de,_) = get_after decls bda in
-      (Ast.rewrap s (Ast.Seq(lbrace,de,bd,rbrace)),
+      let (bd,_) = get_after body [Ast.WParen(rbrace,index)] in
+      (Ast.rewrap s (Ast.Seq(lbrace,bd,rbrace)),
        [Ast.WParen(lbrace,index)])
   | Ast.Define(header,body) ->
       let (body,_) = get_after body a in
@@ -807,10 +803,9 @@ and get_after_e s a =
 	    | Ast.OptCase(case_line) -> failwith "not supported")
 	  cases in
       (Ast.rewrap s (Ast.Switch(header,lb,cases,rb)),[Ast.Other s])
-  | Ast.FunDecl(header,lbrace,decls,body,rbrace) ->
-      let (bd,bda) = get_after body [] in
-      let (de,_) = get_after decls bda in
-      (Ast.rewrap s (Ast.FunDecl(header,lbrace,de,bd,rbrace)),[])
+  | Ast.FunDecl(header,lbrace,body,rbrace) ->
+      let (bd,_) = get_after body [] in
+      (Ast.rewrap s (Ast.FunDecl(header,lbrace,bd,rbrace)),[])
   | _ -> failwith "get_after_e: not supported"
 
 let preprocess_dots sl =
@@ -1156,19 +1151,19 @@ let svar_context_with_add_after stmt s label quantified d ast
 	Ast.CONTEXT(pos,Ast.BEFOREAFTER(bef,_)) ->
 	  Ast.CONTEXT(pos,Ast.BEFORE(bef))
       |	Ast.CONTEXT(pos,_) -> Ast.CONTEXT(pos,Ast.NOTHING)
-      | Ast.MINUS(_,_) | Ast.PLUS -> failwith "not possible") in
+      | Ast.MINUS(_,_,_,_) | Ast.PLUS -> failwith "not possible") in
   let middle_metamatch =
     matcher
       (match d with
 	Ast.CONTEXT(pos,_) -> Ast.CONTEXT(pos,Ast.NOTHING)
-      | Ast.MINUS(_,_) | Ast.PLUS -> failwith "not possible") in
+      | Ast.MINUS(_,_,_,_) | Ast.PLUS -> failwith "not possible") in
   let last_metamatch =
     matcher
       (match d with
 	Ast.CONTEXT(pos,Ast.BEFOREAFTER(_,aft)) ->
 	  Ast.CONTEXT(pos,Ast.AFTER(aft))
       |	Ast.CONTEXT(_,_) -> d
-      | Ast.MINUS(_,_) | Ast.PLUS -> failwith "not possible") in
+      | Ast.MINUS(_,_,_,_) | Ast.PLUS -> failwith "not possible") in
 
   let rest_nodes =
     ctl_and CTL.NONSTRICT middle_metamatch prelabel_pred in  
@@ -1201,19 +1196,16 @@ let svar_minus_or_no_add_after stmt s label quantified d ast
   let prelabel_pred =
     CTL.Pred (Lib_engine.PrefixLabel(label_var),CTL.Control) in
   let matcher d = make_match None guard (make_meta_rule_elem d fvinfo) in
-  let pure_d =
+  let ender =
+    match (d,after) with
+      (Ast.CONTEXT(pos,Ast.NOTHING),(Tail|End|VeryEnd)) ->
+	(* just match the root. don't care about label; always ok *)
+	make_raw_match None false ast
+    | (Ast.MINUS(pos,inst,adj,[]),(Tail|End|VeryEnd)) ->
     (* don't have to put anything before the beginning, so don't have to
        distinguish the first node.  so don't have to bother about paths,
        just use the label. label ensures that found nodes match up with
        what they should because it is in the lhs of the andany. *)
-    match d with
-	Ast.MINUS(pos,[]) -> true
-      | Ast.CONTEXT(pos,Ast.NOTHING) -> true
-      | _ -> false in
-  let ender =
-    match (pure_d,after) with
-      (true,Tail) | (true,End) | (true,VeryEnd) ->
-	(* the label sharing makes it safe to use AndAny *)
 	CTL.HackForStmt(CTL.FORWARD,CTL.NONSTRICT,
 			ctl_and CTL.NONSTRICT label_pred
 			  (make_raw_match label false ast),
@@ -1224,7 +1216,7 @@ let svar_minus_or_no_add_after stmt s label quantified d ast
 	let rest_metamatch =
 	  matcher
 	    (match d with
-	      Ast.MINUS(pos,_) -> Ast.MINUS(pos,[])
+	      Ast.MINUS(pos,inst,adj,_) -> Ast.MINUS(pos,inst,adj,[])
 	    | Ast.CONTEXT(pos,_) -> Ast.CONTEXT(pos,Ast.NOTHING)
 	    | Ast.PLUS -> failwith "not possible") in
 	let rest_nodes = ctl_and CTL.NONSTRICT rest_metamatch prelabel_pred in
@@ -1605,17 +1597,19 @@ and statement stmt after quantified minus_quantified
 		 is absent *)
 	      let new_mc =
 		match (retmc,semmc) with
-		  (Ast.MINUS(_,l1),Ast.MINUS(_,l2)) when !Flag.sgrep_mode2 ->
+		  (Ast.MINUS(_,inst1,adj1,l1),Ast.MINUS(_,_,_,l2))
+		  when !Flag.sgrep_mode2 ->
 		    (* in sgrep mode, we can propagate the - *)
-		    Some (Ast.MINUS(Ast.NoPos,l1@l2))
-		| (Ast.MINUS(_,l1),Ast.MINUS(_,l2))
+		    Some (Ast.MINUS(Ast.NoPos,inst1,adj1,l1@l2))
+		| (Ast.MINUS(_,_,_,l1),Ast.MINUS(_,_,_,l2))
 		| (Ast.CONTEXT(_,Ast.BEFORE(l1)),
 		   Ast.CONTEXT(_,Ast.AFTER(l2))) ->
 		    Some (Ast.CONTEXT(Ast.NoPos,Ast.BEFORE(l1@l2)))
 		| (Ast.CONTEXT(_,Ast.BEFORE(_)),Ast.CONTEXT(_,Ast.NOTHING))
 		| (Ast.CONTEXT(_,Ast.NOTHING),Ast.CONTEXT(_,Ast.NOTHING)) ->
 		    Some retmc
-		| (Ast.CONTEXT(_,Ast.NOTHING),Ast.CONTEXT(_,Ast.AFTER(l))) ->
+		| (Ast.CONTEXT(_,Ast.NOTHING),
+		   Ast.CONTEXT(_,Ast.AFTER(l))) ->
 		    Some (Ast.CONTEXT(Ast.NoPos,Ast.BEFORE(l)))
 		| _ -> None in
 	      let ret = Ast.make_mcode "return" in
@@ -1660,24 +1654,24 @@ and statement stmt after quantified minus_quantified
 		    quantified minus_quantified label llabel slabel guard in
 	      dots_done := true;
 	      make_seq_after term after)
-  | Ast.Seq(lbrace,decls,body,rbrace) ->
-      let (lbfvs,b1fvs,b2fvs,b3fvs,rbfvs) =
+  | Ast.Seq(lbrace,body,rbrace) ->
+      let (lbfvs,b1fvs,b2fvs,rbfvs) =
 	match
 	  seq_fvs quantified
-	    [Ast.get_fvs lbrace;Ast.get_fvs decls;
+	    [Ast.get_fvs lbrace;
 	      Ast.get_fvs body;Ast.get_fvs rbrace]
 	with
-	  [(lbfvs,b1fvs);(_,b2fvs);(_,b3fvs);(rbfvs,_)] ->
-	    (lbfvs,b1fvs,b2fvs,b3fvs,rbfvs)
+	  [(lbfvs,b1fvs);(_,b2fvs);(rbfvs,_)] ->
+	    (lbfvs,b1fvs,b2fvs,rbfvs)
 	| _ -> failwith "not possible" in
-      let (mlbfvs,mb1fvs,mb2fvs,mb3fvs,mrbfvs) =
+      let (mlbfvs,mb1fvs,mb2fvs,mrbfvs) =
 	match
 	  seq_fvs minus_quantified
-	    [Ast.get_mfvs lbrace;Ast.get_mfvs decls;
+	    [Ast.get_mfvs lbrace;
 	      Ast.get_mfvs body;Ast.get_mfvs rbrace]
 	with
-	  [(lbfvs,b1fvs);(_,b2fvs);(_,b3fvs);(rbfvs,_)] ->
-	    (lbfvs,b1fvs,b2fvs,b3fvs,rbfvs)
+	  [(lbfvs,b1fvs);(_,b2fvs);(rbfvs,_)] ->
+	    (lbfvs,b1fvs,b2fvs,rbfvs)
 	| _ -> failwith "not possible" in
       let pv = count_nested_braces stmt in
       let lv = get_label_ctr() in
@@ -1701,26 +1695,17 @@ and statement stmt after quantified minus_quantified
 		paren_pred)) in
       let new_quantified2 =
 	Common.union_set b1fvs (Common.union_set b2fvs quantified) in
-      let new_quantified3 = Common.union_set b3fvs new_quantified2 in
       let new_mquantified2 =
 	Common.union_set mb1fvs (Common.union_set mb2fvs minus_quantified) in
-      let new_mquantified3 = Common.union_set mb3fvs new_mquantified2 in
       let pattern_as_given =
 	let new_quantified2 = Common.union_set [pv] new_quantified2 in
-	let new_quantified3 = Common.union_set [pv] new_quantified3 in
 	quantify true [pv;lv]
 	  (quantify guard b1fvs
 	     (make_seq
 		[start_brace;
 		  quantify guard b2fvs
-		    (statement_list decls
-		       (After
-			  (quantify guard b3fvs
-			     (statement_list body
-				(After (make_seq_after end_brace after))
-				new_quantified3 new_mquantified3
-				(Some (lv,ref true)) (* label mostly useful *)
-				llabel slabel true guard)))
+		    (statement_list body
+		       (After (make_seq_after end_brace after))
 		       new_quantified2 new_mquantified2
 		       (Some (lv,ref true)) llabel slabel false guard)])) in
       if ends_in_return body
@@ -1742,13 +1727,12 @@ and statement stmt after quantified minus_quantified
 	      ctl_au
 		(make_match empty_rbrace)
 		(ctl_ax (* skip the destination label *)
-		   (quantify guard b3fvs
+		   (quantify guard b2fvs
 		      (statement_list body End
-			 new_quantified3 new_mquantified3 None llabel slabel
+			 new_quantified2 new_mquantified2 None llabel slabel
 			 true guard)))] in
 	let pattern3 =
 	  let new_quantified2 = Common.union_set [pv] new_quantified2 in
-	  let new_quantified3 = Common.union_set [pv] new_quantified3 in
 	  quantify true [pv;lv]
 	    (quantify guard b1fvs
 	       (make_seq
@@ -1762,23 +1746,11 @@ and statement stmt after quantified minus_quantified
 			    (* want AF even for sgrep *)
 			    (CTL.AF(CTL.FORWARD,CTL.STRICT,end_brace))))
 		      (quantify guard b2fvs
-			 (statement_list decls
-			    (After
-			       (quantify guard b3fvs
-				  (statement_list body Tail
-					(*After
-					   (make_seq_after
-					      nopv_end_brace after)*)
-				     new_quantified3 new_mquantified3
-				     None llabel slabel true guard)))
+			 (statement_list body Tail
 			    new_quantified2 new_mquantified2
 			    (Some (lv,ref true))
 			    llabel slabel false guard))])) in
-	ctl_or pattern_as_given
-	  (match Ast.unwrap decls with
-	    Ast.DOTS([]) -> ctl_or pattern2 pattern3
-	  | Ast.DOTS(l) -> pattern3
-	  | _ -> failwith "circles and stars not supported")
+	ctl_or pattern_as_given (ctl_or pattern2 pattern3)
       else pattern_as_given
   | Ast.IfThen(ifheader,branch,aft) ->
       ifthen ifheader branch aft after quantified minus_quantified
@@ -1836,7 +1808,7 @@ and statement stmt after quantified minus_quantified
   | Ast.Dots((_,i,d,_),whencodes,bef,aft) ->
       let dot_code =
 	match d with
-	  Ast.MINUS(_,_) ->
+	  Ast.MINUS(_,_,_,_) ->
             (* no need for the fresh metavar, but ... is a bit weird as a
 	       variable name *)
 	    Some(make_match (make_meta_rule_elem d ([],[],[])))
@@ -2005,24 +1977,24 @@ and statement stmt after quantified minus_quantified
       wrapper
 	(end_control_structure b1fvs switch_header body
 	   after_pred (Some(ctl_ex after_pred)) None aft after label guard)
-  | Ast.FunDecl(header,lbrace,decls,body,rbrace) ->
-      let (hfvs,b1fvs,lbfvs,b2fvs,b3fvs,b4fvs,rbfvs) =
+  | Ast.FunDecl(header,lbrace,body,rbrace) ->
+      let (hfvs,b1fvs,lbfvs,b2fvs,b3fvs,rbfvs) =
 	match
 	  seq_fvs quantified
-	    [Ast.get_fvs header;Ast.get_fvs lbrace;Ast.get_fvs decls;
+	    [Ast.get_fvs header;Ast.get_fvs lbrace;
 	      Ast.get_fvs body;Ast.get_fvs rbrace]
 	with
-	  [(hfvs,b1fvs);(lbfvs,b2fvs);(_,b3fvs);(_,b4fvs);(rbfvs,_)] ->
-	    (hfvs,b1fvs,lbfvs,b2fvs,b3fvs,b4fvs,rbfvs)
+	  [(hfvs,b1fvs);(lbfvs,b2fvs);(_,b3fvs);(rbfvs,_)] ->
+	    (hfvs,b1fvs,lbfvs,b2fvs,b3fvs,rbfvs)
 	| _ -> failwith "not possible" in
-      let (mhfvs,mb1fvs,mlbfvs,mb2fvs,mb3fvs,mb4fvs,mrbfvs) =
+      let (mhfvs,mb1fvs,mlbfvs,mb2fvs,mb3fvs,mrbfvs) =
 	match
 	  seq_fvs quantified
-	    [Ast.get_mfvs header;Ast.get_mfvs lbrace;Ast.get_mfvs decls;
+	    [Ast.get_mfvs header;Ast.get_mfvs lbrace;
 	      Ast.get_mfvs body;Ast.get_mfvs rbrace]
 	with
-	  [(hfvs,b1fvs);(lbfvs,b2fvs);(_,b3fvs);(_,b4fvs);(rbfvs,_)] ->
-	    (hfvs,b1fvs,lbfvs,b2fvs,b3fvs,b4fvs,rbfvs)
+	  [(hfvs,b1fvs);(lbfvs,b2fvs);(_,b3fvs);(rbfvs,_)] ->
+	    (hfvs,b1fvs,lbfvs,b2fvs,b3fvs,rbfvs)
 	| _ -> failwith "not possible" in
       let function_header = quantify guard hfvs (make_match header) in
       let start_brace = quantify guard lbfvs (make_match lbrace) in
@@ -2046,16 +2018,14 @@ and statement stmt after quantified minus_quantified
       let new_quantified3 =
 	Common.union_set b1fvs
 	  (Common.union_set b2fvs (Common.union_set b3fvs quantified)) in
-      let new_quantified4 = Common.union_set b4fvs new_quantified3 in
       let new_mquantified3 =
 	Common.union_set mb1fvs
 	  (Common.union_set mb2fvs
 	     (Common.union_set mb3fvs minus_quantified)) in
-      let new_mquantified4 = Common.union_set mb4fvs new_mquantified3 in
       let fn_nest =
-	match (Ast.undots decls,Ast.undots body,
+	match (Ast.undots body,
 	       contains_modif rbrace or contains_pos rbrace) with
-	  ([],[body],false) ->
+	  ([body],false) ->
 	    (match Ast.unwrap body with
 	      Ast.Nest(stmt_dots,[],multi,_,_) ->
 		if multi
@@ -2081,7 +2051,7 @@ and statement stmt after quantified minus_quantified
 	       statement_list stmt_dots
 		 (* discards match on right brace, but don't need it *)
 		 (Guard (make_seq_after end_brace after))
-		 new_quantified4 new_mquantified4
+		 new_quantified3 new_mquantified3
 		 None llabel slabel true guard)
 	| Some (Common.Right whencode) ->
 	    (* try to be more efficient for the case where the body is just
@@ -2102,7 +2072,7 @@ and statement stmt after quantified minus_quantified
 				  | Ast.WhenNot(sl) ->
 				      let x =
 					statement_list sl Tail
-					  new_quantified4 new_mquantified4
+					  new_quantified3 new_mquantified3
 					  label llabel slabel true true in
 				      ctl_or prev x
 				  | Ast.WhenNotTrue(_) | Ast.WhenNotFalse(_) ->
@@ -2116,7 +2086,7 @@ and statement stmt after quantified minus_quantified
 				 Ast.WhenAlways(s) ->
 				   let x =
 				     statement s Tail
-				       new_quantified4 new_mquantified4
+				       new_quantified3 new_mquantified3
 				       label llabel slabel true in
 				   ctl_and prev x
 			       | Ast.WhenNot(sl) -> prev
@@ -2130,13 +2100,8 @@ and statement stmt after quantified minus_quantified
 	    make_seq
 	      [start_brace;
 		quantify guard b3fvs
-		  (statement_list decls
-		     (After
-			(quantify guard b4fvs
-			   (statement_list body
-			      (After (make_seq_after end_brace after))
-			      new_quantified4 new_mquantified4
-			      None llabel slabel true guard)))
+		  (statement_list body
+		     (After (make_seq_after end_brace after))
 		     new_quantified3 new_mquantified3 None llabel slabel
 		     false guard)] in
       quantify guard b1fvs

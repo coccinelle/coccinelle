@@ -250,9 +250,9 @@ module XMATCH = struct
     | Ast_cocci.CONTEXT (pos, xs) -> 
         assert (pos =*= Ast_cocci.NoPos || pos =*= Ast_cocci.DontCarePos);
         Ast_cocci.CONTEXT (posmck, xs)
-    | Ast_cocci.MINUS (pos, xs) -> 
+    | Ast_cocci.MINUS (pos, inst, adj, xs) -> 
         assert (pos =*= Ast_cocci.NoPos || pos =*= Ast_cocci.DontCarePos);
-        Ast_cocci.MINUS (posmck, xs)
+        Ast_cocci.MINUS (posmck, inst, adj, xs)
   
 
   let tag_mck_pos_mcode (x,info,mck,pos) posmck stuff = fun tin -> 

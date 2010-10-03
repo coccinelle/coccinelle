@@ -85,6 +85,9 @@ OCAMLCFLAGS= #-g -dtypes # -w A
 # for profiling add  -p -inline 0
 # but 'make forprofiling' below does that for you.
 # This flag is also used in subdirectories so don't change its name here.
+# To enable backtrace support for native code, you need to put -g in OPTFLAGS
+# to also link with -g, but even in 3.11 the backtrace support seems buggy so
+# not worth it.
 OPTFLAGS=
 # the following is essential for Coccinelle to compile under gentoo
 # but is now defined above in this file
@@ -109,17 +112,14 @@ BYTECODE_STATIC=-custom
 .PHONY:: all all.opt byte opt top clean distclean configure
 .PHONY:: $(MAKESUBDIRS) $(MAKESUBDIRS:%=%.opt) subdirs subdirs.opt
 
-all: byte
-	$(MAKE) preinstall
+all: Makefile.config byte preinstall
 
 opt: all.opt
-all.opt: opt-compil
-	$(MAKE) preinstall
+all.opt: opt-compil preinstall
 
-world: 
+world: preinstall
 	$(MAKE) byte
-	$(MAKE) opt
-	$(MAKE) preinstall
+	$(MAKE) opt-compil
 
 byte: .depend
 	$(MAKE) subdirs
@@ -191,6 +191,10 @@ clean::
 configure:
 	./configure
 
+Makefile.config:    
+	@echo "Makefile.config is missing. Have you run ./configure?"
+	@exit 1
+
 tools:
 	$(MAKE) -C tools
 
@@ -224,30 +228,35 @@ distclean::
 ##############################################################################
 # Pre-Install (customization of spatch frontend script)
 ##############################################################################
-.PHONY:: preinstall preinstall-def preinstall-byte preinstall-opt
 
-preinstall: preinstall-def preinstall-byte preinstall-opt
+preinstall: scripts/spatch scripts/spatch.opt scripts/spatch.byte
 
 # user will use spatch to run spatch.opt (native)
-preinstall-def:
+scripts/spatch:
 	cp scripts/spatch.sh scripts/spatch.tmp2
 	sed "s|SHAREDIR|$(SHAREDIR)|g" scripts/spatch.tmp2 > scripts/spatch.tmp
 	sed "s|LIBDIR|$(LIBDIR)|g" scripts/spatch.tmp > scripts/spatch
 	rm -f scripts/spatch.tmp2 scripts/spatch.tmp
 
 # user will use spatch to run spatch (bytecode)
-preinstall-byte:
-	cp scripts/spatch.sh scripts/spatch.tmp3
-	sed "s|\.opt||" scripts/spatch.tmp3 > scripts/spatch.tmp2
-	sed "s|SHAREDIR|$(SHAREDIR)|g" scripts/spatch.tmp2 > scripts/spatch.tmp
-	sed "s|LIBDIR|$(LIBDIR)|g" scripts/spatch.tmp > scripts/spatch.byte
-	rm -f scripts/spatch.tmp3 scripts/spatch.tmp2 scripts/spatch.tmp
+scripts/spatch.byte:
+	cp scripts/spatch.sh scripts/spatch.byte.tmp3
+	sed "s|\.opt||" scripts/spatch.byte.tmp3 > scripts/spatch.byte.tmp2
+	sed "s|SHAREDIR|$(SHAREDIR)|g" scripts/spatch.byte.tmp2 \
+		> scripts/spatch.byte.tmp
+	sed "s|LIBDIR|$(LIBDIR)|g" scripts/spatch.byte.tmp \
+		> scripts/spatch.byte
+	rm -f   scripts/spatch.byte.tmp3 \
+		scripts/spatch.byte.tmp2 \
+		scripts/spatch.byte.tmp
 
 # user will use spatch.opt to run spatch.opt (native)
-preinstall-opt:
+scripts/spatch.opt:
 	cp scripts/spatch.sh scripts/spatch.opt.tmp2
-	sed "s|SHAREDIR|$(SHAREDIR)|g" scripts/spatch.opt.tmp2 > scripts/spatch.opt.tmp
-	sed "s|LIBDIR|$(LIBDIR)|g" scripts/spatch.opt.tmp > scripts/spatch.opt
+	sed "s|SHAREDIR|$(SHAREDIR)|g" scripts/spatch.opt.tmp2 \
+		> scripts/spatch.opt.tmp
+	sed "s|LIBDIR|$(LIBDIR)|g" scripts/spatch.opt.tmp \
+		> scripts/spatch.opt
 	rm -f scripts/spatch.opt.tmp scripts/spatch.opt.tmp2
 
 clean::
@@ -268,11 +277,6 @@ install-common:
 	$(INSTALL_DATA) standard.iso $(DESTDIR)$(SHAREDIR)
 	$(INSTALL_DATA) docs/spatch.1 $(DESTDIR)$(MANDIR)/man1/
 	@if [ $(FEATURE_PYTHON) -eq 1 ]; then $(MAKE) install-python; fi
-	@echo ""
-	@echo "You can also install spatch by copying the program spatch"
-	@echo "(available in this directory) anywhere you want and"
-	@echo "give it the right options to find its configuration files."
-	@echo ""
 
 install-python:
 	mkdir -p $(DESTDIR)$(SHAREDIR)/python/coccilib/coccigui
@@ -286,7 +290,7 @@ install-python:
 		$(DESTDIR)$(SHAREDIR)/python/coccilib/coccigui
 	$(INSTALL_LIB) dllpycaml_stubs.so $(DESTDIR)$(LIBDIR)
 
-install:
+install: install-common 
 	@if test -x spatch -a ! -x spatch.opt ; then \
 		$(MAKE) install-byte;fi
 	@if test ! -x spatch -a -x spatch.opt ; then \
@@ -295,19 +299,24 @@ install:
 		$(MAKE) install-byte; $(MAKE) install-opt;fi
 	@if test ! -x spatch -a ! -x spatch.opt ; then \
 		echo "\n\n\t==> Run 'make', 'make opt', or both first. <==\n\n";fi
+	@echo ""
+	@echo "\tYou can also install spatch by copying the program spatch"
+	@echo "\t(available in this directory) anywhere you want and"
+	@echo "\tgive it the right options to find its configuration files."
+	@echo ""
 
 # user will use spatch to run spatch.opt (native)
-install-def: install-common
+install-def:
 	$(INSTALL_PROGRAM) spatch.opt $(DESTDIR)$(SHAREDIR)
 	$(INSTALL_PROGRAM) scripts/spatch $(DESTDIR)$(BINDIR)/spatch
 
 # user will use spatch to run spatch (bytecode)
-install-byte: install-common
+install-byte:
 	$(INSTALL_PROGRAM) spatch $(DESTDIR)$(SHAREDIR)
 	$(INSTALL_PROGRAM) scripts/spatch.byte $(DESTDIR)$(BINDIR)/spatch
 
 # user will use spatch.opt to run spatch.opt (native)
-install-opt: install-common
+install-opt:
 	$(INSTALL_PROGRAM) spatch.opt $(DESTDIR)$(SHAREDIR)
 	$(INSTALL_PROGRAM) scripts/spatch.opt $(DESTDIR)$(BINDIR)/spatch.opt
 
@@ -332,8 +341,8 @@ PACKAGE=coccinelle-$(VERSION)
 
 BINSRC=spatch env.sh env.csh standard.h standard.iso \
        *.txt \
-       docs/options.pdf docs/grammar/cocci_syntax.pdf docs/spatch.1 \
-       docs/cocci-python.txt \
+       docs/manual/options.pdf docs/manual/cocci_syntax.pdf docs/spatch.1 \
+       docs/manual/cocci-python.txt \
        demos/foo.* demos/simple.*
 #      $(PYLIB) python/coccilib/ demos/printloc.*
 BINSRC2=$(BINSRC:%=$(PACKAGE)/%)
@@ -355,7 +364,7 @@ OCAMLVERSION=$(shell ocaml -version |perl -p -e 's/.*version (.*)/$$1/;')
 # Procedure to do each time:
 #  cvs update
 #  make sure that ocaml is the distribution ocaml of /usr/bin, not ~pad/...
-#  modify globals/config.ml
+#  modify globals/config.ml.in
 #  cd globals/; cvs commit -m"new version"  (do not commit from the root!)
 #  ./configure --without-python
 #  make package
@@ -459,6 +468,7 @@ website:
 	rm -f $(WEBSITE)/LATEST* $(WEBSITE)/coccinelle-latest.tgz
 	cp changes.txt $(WEBSITE)/changes-$(VERSION).txt
 	cd $(WEBSITE); touch LATEST_IS_$(VERSION); ln -s $(PACKAGE).tgz coccinelle-latest.tgz
+	cp readme.txt $(WEBSITE)
 
 
 #TXT=$(wildcard *.txt)
@@ -469,7 +479,7 @@ syncwiki:
 darcsweb:
 #	@echo pull from ~/public_html/darcs/c-coccinelle and c-commons and lib-xxx
 
-DARCSFORESTS=commons \
+DARCSFORESTS=commons ocamlsexp \
  parsing_c parsing_cocci engine
 
 update_darcs:

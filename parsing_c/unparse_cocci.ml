@@ -19,14 +19,20 @@ exception CantBeInPlus
 
 type pos = Before | After | InPlace
 
-let rec pp_list_list_any (env, pr, pr_elem, pr_space, indent, unindent)
+let unknown = -1
+
+let rec pp_list_list_any
+    (env, pr, pr_celem, pr_cspace, pr_space, pr_arity, pr_barrier,
+     indent, unindent)
     generating xxs before =
 
 (* Just to be able to copy paste the code from pretty_print_cocci.ml. *)
-let print_string = pr in
+let print_string s line lcol =
+  let rcol = if lcol = unknown then unknown else lcol + (String.length s) in
+  pr s line lcol rcol in
+let print_text s = pr s unknown unknown unknown in
 let close_box _ = () in
-let print_space() = pr " "  in
-let force_newline () = pr "\n" in
+let force_newline () = print_text "\n" in
 
 let start_block () = force_newline(); indent() in
 let end_block () = unindent(); force_newline () in
@@ -38,7 +44,7 @@ let print_between = Common.print_between in
 let outdent _ = () (* should go to leftmost col, does nothing now *) in
 
 let pretty_print_c =
-  Pretty_print_c.pretty_print_c pr_elem pr_space
+  Pretty_print_c.pretty_print_c pr_celem pr_cspace
     force_newline indent outdent unindent in
 
 (* --------------------------------------------------------------------- *)
@@ -68,7 +74,7 @@ and print_anything_list = function
 	  Ast.Rule_elemTag(_) | Ast.AssignOpTag(_) | Ast.BinaryOpTag(_)
 	| Ast.ArithOpTag(_) | Ast.LogicalOpTag(_) | Ast.Token("{",_) -> true
 	| _ -> false) in
-      if space then print_string " ";
+      if space then pr_space ();
       print_anything_list rest in
 
 let print_around printer term = function
@@ -79,25 +85,29 @@ let print_around printer term = function
       print_anything bef; printer term; print_anything aft in
 
 let print_string_befaft fn fn1 x info =
-  List.iter (function (s,_,_) -> fn1(); print_string s; force_newline())
+  List.iter
+    (function (s,ln,col) -> fn1(); print_string s ln col; force_newline())
     info.Ast.strbef;
   fn x;
-  List.iter (function (s,_,_) -> force_newline(); fn1(); print_string s)
+  List.iter
+    (function (s,ln,col) -> force_newline(); fn1(); print_string s ln col)
     info.Ast.straft in
 
-let print_meta (r,x) = print_string x in
+let print_meta (r,x) = print_text x in
 
 let print_pos = function
     Ast.MetaPos(name,_,_,_,_) ->
       let name = Ast.unwrap_mcode name in
-      print_string "@"; print_meta name
+      print_text "@"; print_meta name
   | _ -> () in
 
 (* --------------------------------------------------------------------- *)
 
-let mcode fn arg =
-  match (generating,arg) with
-    (false,(s,info,_,_)) ->
+let mcode fn (s,info,mc,pos) =
+  let line = info.Ast.line in
+  let lcol = info.Ast.column in
+  match (generating,mc) with
+    (false,_) ->
     (* printing for transformation *)
     (* Here we don't care about the annotation on s. *)
       let print_comments lb comments =
@@ -105,48 +115,60 @@ let mcode fn arg =
 	  (function line_before ->
 	    function (str,line,col) ->
 	      match line_before with
-		None -> print_string str; Some line
-	      |	Some lb when line =|= lb -> print_string str; Some line
-	      |	_ -> print_string "\n"; print_string str; Some line)
+		None -> print_string str line col; Some line
+	      |	Some lb when line =|= lb ->
+		  print_string str line col; Some line
+	      |	_ -> force_newline(); print_string str line col; Some line)
 	  lb comments in
       let line_before = print_comments None info.Ast.strbef in
       (match line_before with
 	None -> ()
       |	Some lb when lb =|= info.Ast.line -> ()
-      |	_ -> print_string "\n");
-      fn s;
+      |	_ -> force_newline());
+      fn s line lcol;
       let _ = print_comments (Some info.Ast.line) info.Ast.straft in
       ()
       (* printing for rule generation *)
-  | (true, (x, _, Ast.MINUS(_,plus_stream), pos)) ->
-      print_string "\n- ";
-      fn x; print_pos pos;
+  | (true, Ast.MINUS(_,_,_,plus_stream)) ->
+      force_newline();
+      print_text "- ";
+      fn s line lcol; print_pos pos;
       print_anything plus_stream
-  | (true, (x, _, Ast.CONTEXT(_,plus_streams), pos)) ->
-      let fn x = print_string "\n "; fn x; print_pos pos in
-      print_around fn x plus_streams
-  | (true,( x, info, Ast.PLUS, pos)) ->
-      let fn x = print_string "\n+ "; fn x; print_pos pos in
-      print_string_befaft fn (function _ -> print_string "+ ") x info
+  | (true, Ast.CONTEXT(_,plus_streams)) ->
+      let fn s = force_newline(); fn s line lcol; print_pos pos in
+      print_around fn s plus_streams
+  | (true,Ast.PLUS) ->
+      let fn s =
+	force_newline(); print_text "+ "; fn s line lcol; print_pos pos in
+      print_string_befaft fn (function _ -> print_text "+ ") s info
 in
 
 
 (* --------------------------------------------------------------------- *)
 
 let handle_metavar name fn =
-  match (Common.optionise (fun () -> List.assoc (term name) env)) with
-  | None ->
+  let ((_,b) as s,info,mc,pos) = name in
+  let line = info.Ast.line in
+  let lcol = info.Ast.column in
+  match Common.optionise (fun () -> List.assoc s env) with
+    None ->
       let name_string (_,s) = s in
       if generating
-      then mcode (function _ -> pr (name_string (term name))) name
+      then
+	mcode (function _ -> print_string (name_string s)) name
       else
 	failwith
 	  (Printf.sprintf "SP line %d: Not found a value in env for: %s"
-	     (Ast_cocci.get_mcode_line name) (name_string (term name)))
+	     line (name_string s))
   | Some e  ->
-      if generating
-      then mcode (function _ -> fn e) name
-      else fn e
+      pr_barrier line lcol;
+      (if generating
+      then
+	(* call mcode to preserve the -+ annotation *)
+	mcode (fun _ _ _ -> fn e) name
+      else fn e);
+      let rcol = if lcol = unknown then unknown else lcol + (String.length b) in
+      pr_barrier line rcol
 in
 (* --------------------------------------------------------------------- *)
 let dots between fn d =
@@ -161,17 +183,17 @@ let nest_dots multi fn f d =
   let mc s = if multi then s^"+>" else s^">" in
   match Ast.unwrap d with
     Ast.DOTS(l) ->
-      print_string (mo "..."); f(); start_block();
+      print_text (mo "..."); f(); start_block();
       print_between force_newline fn l;
-      end_block(); print_string (mc "...")
+      end_block(); print_text (mc "...")
   | Ast.CIRCLES(l) ->
-      print_string (mo "ooo"); f(); start_block();
+      print_text (mo "ooo"); f(); start_block();
       print_between force_newline fn l;
-      end_block(); print_string (mc "ooo")
+      end_block(); print_text (mc "ooo")
   | Ast.STARS(l) ->
-      print_string (mo "***"); f(); start_block();
+      print_text (mo "***"); f(); start_block();
       print_between force_newline fn l;
-      end_block(); print_string (mc "***")
+      end_block(); print_text (mc "***")
 in
 
 (* --------------------------------------------------------------------- *)
@@ -182,17 +204,17 @@ let rec ident i =
     Ast.Id(name) -> mcode print_string name
   | Ast.MetaId(name,_,_,_) -> 
       handle_metavar name (function
-        | (Ast_c.MetaIdVal id) -> pr id
+        | (Ast_c.MetaIdVal id) -> print_text id
         | _ -> raise Impossible
         ) 
   | Ast.MetaFunc(name,_,_,_) -> 
       handle_metavar name (function
-        | (Ast_c.MetaFuncVal id) -> pr id
+        | (Ast_c.MetaFuncVal id) -> print_text id
         | _ -> raise Impossible
         ) 
   | Ast.MetaLocalFunc(name,_,_,_) -> 
       handle_metavar name (function
-        | (Ast_c.MetaLocalFuncVal id) -> pr id
+        | (Ast_c.MetaLocalFuncVal id) -> print_text id
         | _ -> raise Impossible
         )
 
@@ -205,34 +227,30 @@ in
 (* Expression *)
 
 let print_disj_list fn l =
-  force_newline(); print_string "("; force_newline();
-  print_between
-    (function _ ->
-      force_newline(); print_string "|"; force_newline())
-    fn l;
-  force_newline(); print_string ")"; force_newline() in
+  print_text "\n(\n";
+  print_between (function _ -> print_text "\n|\n") fn l;
+  print_text "\n)\n" in
 
 let rec expression e =
   match Ast.unwrap e with
     Ast.Ident(id) -> ident id
-
   | Ast.Constant(const) -> mcode constant const
   | Ast.FunCall(fn,lp,args,rp) ->
       expression fn; mcode print_string_box lp;
       dots (function _ -> ()) expression args;
       close_box(); mcode print_string rp
   | Ast.Assignment(left,op,right,_) ->
-      expression left; print_string " "; mcode assignOp op;
-      print_string " "; expression right
+      expression left; pr_space(); mcode assignOp op;
+      pr_space(); expression right
   | Ast.CondExpr(exp1,why,exp2,colon,exp3) ->
-      expression exp1; print_string " "; mcode print_string why;
-      print_option (function e -> print_string " "; expression e) exp2;
-      print_string " "; mcode print_string colon; expression exp3
+      expression exp1; pr_space(); mcode print_string why;
+      print_option (function e -> pr_space(); expression e) exp2;
+      pr_space(); mcode print_string colon; expression exp3
   | Ast.Postfix(exp,op) -> expression exp; mcode fixOp op
   | Ast.Infix(exp,op) -> mcode fixOp op; expression exp
   | Ast.Unary(exp,op) -> mcode unaryOp op; expression exp
   | Ast.Binary(left,op,right) ->
-      expression left; print_string " "; mcode binaryOp op; print_string " ";
+      expression left; pr_space(); mcode binaryOp op; pr_space();
       expression right
   | Ast.Nested(left,op,right) -> failwith "nested only in minus code"
   | Ast.Paren(lp,exp,rp) ->
@@ -273,7 +291,7 @@ let rec expression e =
         | _ -> raise Impossible
       )
 
-  | Ast.EComma(cm) -> mcode print_string cm; print_space()
+  | Ast.EComma(cm) -> mcode print_string cm; pr_space()
 
   | Ast.DisjExpr(exp_list) ->
       if generating
@@ -281,7 +299,7 @@ let rec expression e =
       else raise CantBeInPlus
   | Ast.NestExpr(expr_dots,Some whencode,multi) when generating ->
       nest_dots multi expression
-	(function _ -> print_string "   when != "; expression whencode)
+	(function _ -> print_text "   when != "; expression whencode)
 	expr_dots
   | Ast.NestExpr(expr_dots,None,multi) when generating ->
       nest_dots multi expression (function _ -> ()) expr_dots
@@ -292,7 +310,7 @@ let rec expression e =
       if generating
       then
 	(mcode print_string dots;
-	 print_string "   when != ";
+	 print_text "   when != ";
 	 expression whencode)
       else raise CantBeInPlus
   | Ast.Edots(dots,None)
@@ -315,7 +333,9 @@ and  unaryOp = function
 
 and  assignOp = function
     Ast.SimpleAssign -> print_string "="
-  | Ast.OpAssign(aop) -> arithOp aop; print_string "="
+  | Ast.OpAssign(aop) ->
+      (function line -> function lcol ->
+	arithOp aop line lcol; print_string "=" line lcol)
 
 and  fixOp = function
     Ast.Dec -> print_string "--"
@@ -348,7 +368,7 @@ and  logicalOp = function
   | Ast.OrLog -> print_string "||"
 
 and constant = function
-    Ast.String(s) -> print_string "\""; print_string s; print_string "\""
+    Ast.String(s) -> print_string ("\""^s^"\"")
   | Ast.Char(s) -> print_string s
   | Ast.Int(s) -> print_string s
   | Ast.Float(s) -> print_string s
@@ -390,13 +410,13 @@ and typeC ty =
   | Ast.Array(ty,lb,size,rb) ->
       fullType ty; mcode print_string lb; print_option expression size;
       mcode print_string rb
-  | Ast.EnumName(kind,name) -> mcode print_string kind; print_string " ";
+  | Ast.EnumName(kind,name) -> mcode print_string kind; pr_space();
       ident name
   | Ast.StructUnionName(kind,name) ->
       mcode structUnion kind;
       print_option ident name
   | Ast.StructUnionDef(ty,lb,decls,rb) ->
-      fullType ty;
+      fullType ty; ft_space ty;
       mcode print_string lb;
       dots force_newline declaration decls;
       mcode print_string rb
@@ -452,10 +472,10 @@ and print_named_type ty id =
       (match Ast.unwrap ty1 with
 	Ast.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
 	  print_function_pointer (ty,lp1,star,rp1,lp2,params,rp2)
-	    (function _ -> print_string " "; ident id)
+	    (function _ -> pr_space(); ident id)
       | Ast.FunctionType(am,ty,lp1,params,rp1) ->
 	  print_function_type (ty,lp1,params,rp1)
-	    (function _ -> print_string " "; ident id)
+	    (function _ -> pr_space(); ident id)
       | Ast.Array(_,_,_,_) ->
 	  let rec loop ty k =
 	    match Ast.unwrap ty with
@@ -480,23 +500,23 @@ and print_named_type ty id =
 and ty_space ty =
   match Ast.unwrap ty with
     Ast.Pointer(_,_) -> ()
-  | _ -> print_space()
+  | _ -> pr_space()
 
 and ft_space ty =
   match Ast.unwrap ty with
     Ast.Type(cv,ty) ->
       (match Ast.unwrap ty with
 	Ast.Pointer(_,_) -> ()
-      | _ -> print_space())
-  | _ -> print_space()
+      | _ -> pr_space())
+  | _ -> pr_space()
 
 and declaration d =
   match Ast.unwrap d with
     Ast.Init(stg,ty,id,eq,ini,sem) ->
       print_option (mcode storage) stg;
       print_named_type ty id;
-      print_string " "; mcode print_string eq;
-      print_string " "; initialiser true ini; mcode print_string sem
+      pr_space(); mcode print_string eq;
+      pr_space(); initialiser true ini; mcode print_string sem
   | Ast.UnInit(stg,ty,id,sem) ->
       print_option (mcode storage) stg;
       print_named_type ty id;
@@ -537,8 +557,8 @@ and initialiser nlcomma i =
       end_block(); mcode print_string rb
   | Ast.InitList(lb,initlist,rb,_) -> failwith "unexpected whencode in plus"
   | Ast.InitGccExt(designators,eq,ini) ->
-      List.iter designator designators; print_string " ";
-      mcode print_string eq; print_string " "; initialiser nlcomma ini
+      List.iter designator designators; pr_space();
+      mcode print_string eq; pr_space(); initialiser nlcomma ini
   | Ast.InitGccName(name,eq,ini) ->
       ident name; mcode print_string eq; initialiser nlcomma ini
   | Ast.IComma(comma) ->
@@ -569,7 +589,7 @@ and parameterTypeDef p =
   | Ast.MetaParamList(name,_,_,_) -> 
       failwith "not handling MetaParamList"
 
-  | Ast.PComma(cm) -> mcode print_string cm; print_space()
+  | Ast.PComma(cm) -> mcode print_string cm; pr_space()
   | Ast.Pdots(dots) | Ast.Pcircles(dots) when generating ->
       mcode print_string dots
   | Ast.Pdots(dots) | Ast.Pcircles(dots) -> raise CantBeInPlus
@@ -584,17 +604,13 @@ in
 
 let rec inc_file = function
     Ast.Local(elems) ->
-      print_string "\"";
-      print_between (function _ -> print_string "/") inc_elem elems;
-      print_string "\""
+      print_string ("\""^(String.concat "/" (List.map inc_elem elems))^"\"")
   | Ast.NonLocal(elems) ->
-      print_string "<";
-      print_between (function _ -> print_string "/") inc_elem elems;
-      print_string ">"
+      print_string ("<"^(String.concat "/" (List.map inc_elem elems))^">")
 
 and inc_elem = function
-    Ast.IncPath s -> print_string s
-  | Ast.IncDots -> print_string "..."
+    Ast.IncPath s -> s
+  | Ast.IncDots -> "..."
 
 (* --------------------------------------------------------------------- *)
 (* Top-level code *)
@@ -602,94 +618,91 @@ and inc_elem = function
 and rule_elem arity re =
   match Ast.unwrap re with
     Ast.FunHeader(_,_,fninfo,name,lp,params,rp) ->
-      print_string arity; List.iter print_fninfo fninfo;
+      pr_arity arity; List.iter print_fninfo fninfo;
       ident name; mcode print_string_box lp;
       parameter_list params; close_box(); mcode print_string rp;
-      print_string " "
-  | Ast.Decl(_,_,decl) -> print_string arity; declaration decl
+      pr_space()
+  | Ast.Decl(_,_,decl) -> pr_arity arity; declaration decl
 
   | Ast.SeqStart(brace) ->
-      print_string arity; mcode print_string brace; start_block()
+      pr_arity arity; mcode print_string brace; start_block()
   | Ast.SeqEnd(brace) ->
-      end_block(); print_string arity; mcode print_string brace
+      end_block(); pr_arity arity; mcode print_string brace
 
   | Ast.ExprStatement(exp,sem) ->
-      print_string arity; expression exp; mcode print_string sem
+      pr_arity arity; expression exp; mcode print_string sem
 
   | Ast.IfHeader(iff,lp,exp,rp) ->
-      print_string arity;
-      mcode print_string iff; print_string " "; mcode print_string_box lp;
+      pr_arity arity;
+      mcode print_string iff; pr_space(); mcode print_string_box lp;
       expression exp; close_box(); mcode print_string rp
   | Ast.Else(els) ->
-      print_string arity; mcode print_string els
+      pr_arity arity; mcode print_string els
 
   | Ast.WhileHeader(whl,lp,exp,rp) ->
-      print_string arity;
-      mcode print_string whl; print_string " "; mcode print_string_box lp;
+      pr_arity arity;
+      mcode print_string whl; pr_space(); mcode print_string_box lp;
       expression exp; close_box(); mcode print_string rp
   | Ast.DoHeader(d) ->
-      print_string arity; mcode print_string d
+      pr_arity arity; mcode print_string d
   | Ast.WhileTail(whl,lp,exp,rp,sem) ->
-      print_string arity;
-      mcode print_string whl; print_string " "; mcode print_string_box lp;
+      pr_arity arity;
+      mcode print_string whl; pr_space(); mcode print_string_box lp;
       expression exp; close_box(); mcode print_string rp;
       mcode print_string sem
   | Ast.ForHeader(fr,lp,e1,sem1,e2,sem2,e3,rp) ->
-      print_string arity;
+      pr_arity arity;
       mcode print_string fr; mcode print_string_box lp;
       print_option expression e1; mcode print_string sem1;
       print_option expression e2; mcode print_string sem2;
       print_option expression e3; close_box();
       mcode print_string rp
   | Ast.IteratorHeader(nm,lp,args,rp) ->
-      print_string arity;
-      ident nm; print_string " "; mcode print_string_box lp;
+      pr_arity arity;
+      ident nm; pr_space(); mcode print_string_box lp;
       dots (function _ -> ()) expression args; close_box();
       mcode print_string rp
 
   | Ast.SwitchHeader(switch,lp,exp,rp) ->
-      print_string arity;
-      mcode print_string switch; print_string " "; mcode print_string_box lp;
+      pr_arity arity;
+      mcode print_string switch; pr_space(); mcode print_string_box lp;
       expression exp; close_box(); mcode print_string rp
 
   | Ast.Break(br,sem) ->
-      print_string arity; mcode print_string br; mcode print_string sem
+      pr_arity arity; mcode print_string br; mcode print_string sem
   | Ast.Continue(cont,sem) ->
-      print_string arity; mcode print_string cont; mcode print_string sem
+      pr_arity arity; mcode print_string cont; mcode print_string sem
   | Ast.Label(l,dd) -> ident l; mcode print_string dd
   | Ast.Goto(goto,l,sem) ->
       mcode print_string goto; ident l; mcode print_string sem
   | Ast.Return(ret,sem) ->
-      print_string arity; mcode print_string ret; 
+      pr_arity arity; mcode print_string ret; 
       mcode print_string sem
   | Ast.ReturnExpr(ret,exp,sem) ->
-      print_string arity; mcode print_string ret; print_string " ";
+      pr_arity arity; mcode print_string ret; pr_space();
       expression exp; mcode print_string sem
 
-  | Ast.Exp(exp) -> print_string arity; expression exp
-  | Ast.TopExp(exp) -> print_string arity; expression exp
-  | Ast.Ty(ty) -> print_string arity; fullType ty
+  | Ast.Exp(exp) -> pr_arity arity; expression exp
+  | Ast.TopExp(exp) -> pr_arity arity; expression exp
+  | Ast.Ty(ty) -> pr_arity arity; fullType ty
   | Ast.TopInit(init) -> initialiser false init
   | Ast.Include(inc,s) ->
-      mcode print_string inc; print_string " "; mcode inc_file s
+      mcode print_string inc; print_text " "; mcode inc_file s
   | Ast.DefineHeader(def,id,params) ->
-      mcode print_string def; print_string " "; ident id; 
+      mcode print_string def; pr_space(); ident id; 
       print_define_parameters params
   | Ast.Default(def,colon) ->
-      mcode print_string def; mcode print_string colon; print_string " "
+      mcode print_string def; mcode print_string colon; pr_space()
   | Ast.Case(case,exp,colon) ->
-      mcode print_string case; print_string " "; expression exp;
-      mcode print_string colon; print_string " "
+      mcode print_string case; pr_space(); expression exp;
+      mcode print_string colon; pr_space()
   | Ast.DisjRuleElem(res) ->
       if generating
       then
-	(print_string arity;
-	 force_newline(); print_string "("; force_newline();
-	 print_between
-	   (function _ -> force_newline(); print_string "|"; force_newline())
-	   (rule_elem arity)
+	(pr_arity arity; print_text "\n(\n";
+	 print_between (function _ -> print_text "\n|\n") (rule_elem arity)
 	   res;
-	 force_newline(); print_string ")")
+	 print_text "\n)")
       else raise CantBeInPlus
 
   | Ast.MetaRuleElem(name,_,_) ->
@@ -718,27 +731,26 @@ and print_define_param param =
   | Ast.DPComma(comma) -> mcode print_string comma
   | Ast.DPdots(dots) -> mcode print_string dots
   | Ast.DPcircles(circles) -> mcode print_string circles
-  | Ast.OptDParam(dp) -> print_string "?"; print_define_param dp
-  | Ast.UniqueDParam(dp) -> print_string "!"; print_define_param dp
+  | Ast.OptDParam(dp) -> print_text "?"; print_define_param dp
+  | Ast.UniqueDParam(dp) -> print_text "!"; print_define_param dp
 
 and print_fninfo = function
     Ast.FStorage(stg) -> mcode storage stg
   | Ast.FType(ty) -> fullType ty
-  | Ast.FInline(inline) -> mcode print_string inline; print_string " "
-  | Ast.FAttr(attr) -> mcode print_string attr; print_string " " in
+  | Ast.FInline(inline) -> mcode print_string inline; pr_space()
+  | Ast.FAttr(attr) -> mcode print_string attr; pr_space() in
 
 let indent_if_needed s f =
   match Ast.unwrap s with
-    Ast.Seq(lbrace,decls,body,rbrace) -> pr_space(); f()
+    Ast.Seq(lbrace,body,rbrace) -> pr_space(); f()
   | _ ->
       (*no newline at the end - someone else will do that*)
       start_block(); f(); unindent() in
 
 let rec statement arity s =
   match Ast.unwrap s with
-    Ast.Seq(lbrace,decls,body,rbrace) ->
+    Ast.Seq(lbrace,body,rbrace) ->
       rule_elem arity lbrace;
-      dots force_newline (statement arity) decls;
       dots force_newline (statement arity) body;
       rule_elem arity rbrace
 
@@ -748,10 +760,9 @@ let rec statement arity s =
   | Ast.IfThenElse(header,branch1,els,branch2,_) ->
       rule_elem arity header;
       indent_if_needed branch1 (function _ -> statement arity branch1);
-      print_string " ";
+      force_newline();
       rule_elem arity els;
       indent_if_needed branch2 (function _ -> statement arity branch2)
-
   | Ast.While(header,body,_) ->
       rule_elem arity header;
       indent_if_needed body (function _ -> statement arity body)
@@ -765,43 +776,40 @@ let rec statement arity s =
   | Ast.Iterator(header,body,(_,_,_,aft)) ->
       rule_elem arity header;
       indent_if_needed body (function _ -> statement arity body);
-      mcode (function _ -> ()) ((),Ast.no_info,aft,Ast.NoMetaPos)
+      mcode (fun _ _ _ -> ()) ((),Ast.no_info,aft,Ast.NoMetaPos)
 
   | Ast.Switch(header,lb,cases,rb) ->
-      rule_elem arity header; print_string " "; rule_elem arity lb;
+      rule_elem arity header; pr_space(); rule_elem arity lb;
       List.iter (function x -> case_line arity x; force_newline()) cases;
       rule_elem arity rb
 
   | Ast.Atomic(re) -> rule_elem arity re
 
-  | Ast.FunDecl(header,lbrace,decls,body,rbrace) ->
+  | Ast.FunDecl(header,lbrace,body,rbrace) ->
       rule_elem arity header; rule_elem arity lbrace;
-      dots force_newline (statement arity) decls;
       dots force_newline (statement arity) body; rule_elem arity rbrace
 
   | Ast.Define(header,body) ->
-      rule_elem arity header; print_string " ";
+      rule_elem arity header; pr_space();
       dots force_newline (statement arity) body
 
   | Ast.Disj([stmt_dots]) ->
       if generating
       then
-	(print_string arity;
+	(pr_arity arity;
 	 dots force_newline (statement arity) stmt_dots)
       else raise CantBeInPlus
   | Ast.Disj(stmt_dots_list) -> (* ignores newline directive for readability *)
       if generating
       then
-	(print_string arity;
-	 force_newline(); print_string "("; force_newline();
-	 print_between
-	   (function _ -> force_newline();print_string "|"; force_newline())
+	(pr_arity arity; print_text "\n(\n";
+	 print_between (function _ -> print_text "\n|\n")
 	   (dots force_newline (statement arity))
 	   stmt_dots_list;
-	 force_newline(); print_string ")")
+	 print_text "\n)")
       else raise CantBeInPlus
   | Ast.Nest(stmt_dots,whn,multi,_,_) when generating ->
-      print_string arity;
+      pr_arity arity;
       nest_dots multi (statement arity)
 	(function _ ->
 	  print_between force_newline
@@ -812,7 +820,7 @@ let rec statement arity s =
   | Ast.Dots(d,whn,_,_) | Ast.Circles(d,whn,_,_) | Ast.Stars(d,whn,_,_) ->
       if generating
       then
-	(print_string arity; mcode print_string d;
+	(pr_arity arity; mcode print_string d;
 	 print_between force_newline
 	   (whencode (dots force_newline (statement "")) (statement "")) whn;
 	 force_newline())
@@ -823,25 +831,25 @@ let rec statement arity s =
 
 and whencode notfn alwaysfn = function
     Ast.WhenNot a ->
-      print_string "   WHEN != "; notfn a
+      print_text "   WHEN != "; notfn a
   | Ast.WhenAlways a ->
-      print_string "   WHEN = "; alwaysfn a
-  | Ast.WhenModifier x -> print_string "   WHEN "; print_when_modif x
+      print_text "   WHEN = "; alwaysfn a
+  | Ast.WhenModifier x -> print_text "   WHEN "; print_when_modif x
   | Ast.WhenNotTrue a ->
-      print_string "   WHEN != TRUE "; rule_elem "" a
+      print_text "   WHEN != TRUE "; rule_elem "" a
   | Ast.WhenNotFalse a ->
-      print_string "   WHEN != FALSE "; rule_elem "" a
+      print_text "   WHEN != FALSE "; rule_elem "" a
 
 and print_when_modif = function
-  | Ast.WhenAny    -> print_string "ANY"
-  | Ast.WhenStrict -> print_string "STRICT"
-  | Ast.WhenForall -> print_string "FORALL"
-  | Ast.WhenExists -> print_string "EXISTS"
+  | Ast.WhenAny    -> print_text "ANY"
+  | Ast.WhenStrict -> print_text "STRICT"
+  | Ast.WhenForall -> print_text "FORALL"
+  | Ast.WhenExists -> print_text "EXISTS"
 
 and case_line arity c =
   match Ast.unwrap c with
     Ast.CaseLine(header,code) ->
-      rule_elem arity header; print_string " ";
+      rule_elem arity header; pr_space();
       dots force_newline (statement arity) code
   | Ast.OptCase(case) -> raise CantBeInPlus in
 
@@ -865,45 +873,44 @@ let if_open_brace  = function "{" -> true | _ -> false in
 let rec pp_any = function
   (* assert: normally there is only CONTEXT NOTHING tokens in any *)
     Ast.FullTypeTag(x) -> fullType x; false
-  | Ast.BaseTypeTag(x) -> baseType x; false
-  | Ast.StructUnionTag(x) -> structUnion x; false
-  | Ast.SignTag(x) -> sign x; false
+  | Ast.BaseTypeTag(x) -> baseType x unknown unknown; false
+  | Ast.StructUnionTag(x) -> structUnion x unknown unknown; false
+  | Ast.SignTag(x) -> sign x unknown unknown; false
 
   | Ast.IdentTag(x) -> ident x; false
 
   | Ast.ExpressionTag(x) -> expression x; false
 
-  | Ast.ConstantTag(x) -> constant x; false
-  | Ast.UnaryOpTag(x) -> unaryOp x; false
-  | Ast.AssignOpTag(x) -> assignOp x; false
-  | Ast.FixOpTag(x) -> fixOp x; false
-  | Ast.BinaryOpTag(x) -> binaryOp x; false
-  | Ast.ArithOpTag(x) -> arithOp x; false
-  | Ast.LogicalOpTag(x) -> logicalOp x; false
+  | Ast.ConstantTag(x) -> constant x unknown unknown; false
+  | Ast.UnaryOpTag(x) -> unaryOp x unknown unknown; false
+  | Ast.AssignOpTag(x) -> assignOp x unknown unknown; false
+  | Ast.FixOpTag(x) -> fixOp x unknown unknown; false
+  | Ast.BinaryOpTag(x) -> binaryOp x unknown unknown; false
+  | Ast.ArithOpTag(x) -> arithOp x unknown unknown; false
+  | Ast.LogicalOpTag(x) -> logicalOp x unknown unknown; false
 
   | Ast.InitTag(x) -> initialiser false x; false
   | Ast.DeclarationTag(x) -> declaration x; false
 
-  | Ast.StorageTag(x) -> storage x; false
-  | Ast.IncFileTag(x) -> inc_file x; false
+  | Ast.StorageTag(x) -> storage x unknown unknown; false
+  | Ast.IncFileTag(x) -> inc_file x unknown unknown; false
 
   | Ast.Rule_elemTag(x) -> rule_elem "" x; false
   | Ast.StatementTag(x) -> statement "" x; false
   | Ast.CaseLineTag(x) -> case_line "" x; false
 
-  | Ast.ConstVolTag(x) -> const_vol x; false
-  | Ast.Pragma(xs) -> print_between force_newline print_string xs; false
-  | Ast.Token(x,None) -> print_string x; if_open_brace x
+  | Ast.ConstVolTag(x) -> const_vol x unknown unknown; false
+  | Ast.Pragma(xs) -> print_between force_newline print_text xs; false
+  | Ast.Token(x,None) -> print_text x; if_open_brace x
   | Ast.Token(x,Some info) -> 
       mcode
-	(function x ->
+	(fun x line lcol ->
 	  (match x with
-	    "else" -> pr "\n"
+	    "else" -> force_newline()
 	  | _ -> ());
-	  print_string x;
-	  (* if x ==~ Common.regexp_alpha then print_string " "; *)
+	  print_string x line lcol;
 	  (match x with
-	    (*"return" |*) "else" -> print_string " "
+	    "else" -> pr_space()
 	  | _ -> ()))
 	(let nomcodekind = Ast.CONTEXT(Ast.DontCarePos,Ast.NOTHING) in
 	(x,info,nomcodekind,Ast.NoMetaPos));
@@ -915,8 +922,8 @@ let rec pp_any = function
      normally there should be no '...' inside them *)
   | Ast.ExprDotsTag(x) -> dots (function _ -> ()) expression x; false
   | Ast.ParamDotsTag(x) -> parameter_list x; false
-  | Ast.StmtDotsTag(x) -> dots (function _ -> pr "\n") (statement "") x; false
-  | Ast.DeclDotsTag(x) -> dots (function _ -> pr "\n") declaration x; false
+  | Ast.StmtDotsTag(x) -> dots force_newline (statement "") x; false
+  | Ast.DeclDotsTag(x) -> dots force_newline declaration x; false
 
   | Ast.TypeCTag(x) -> typeC x; false
   | Ast.ParamTag(x) -> parameterTypeDef x; false
@@ -939,13 +946,14 @@ in
 	| _ -> false in
       let prnl x =
 	(if unindent_before x then unindent());
-	pr "\n" in
+	force_newline() in
       let newline_before _ =
 	if before =*= After
 	then
 	  let hd = List.hd xxs in
 	  match hd with
-            (Ast.StatementTag s::_) when isfn s -> pr "\n\n"
+            (Ast.StatementTag s::_) when isfn s ->
+	      force_newline(); force_newline()
 	  | (Ast.Pragma _::_)
           | (Ast.Rule_elemTag _::_) | (Ast.StatementTag _::_)
 	  | (Ast.InitTag _::_)
@@ -956,10 +964,12 @@ in
 	then
 	  match List.rev(List.hd(List.rev xxs)) with
 	    (Ast.StatementTag s::_) ->
-	      if isfn s then pr "\n\n" else pr "\n"
+	      (if isfn s then force_newline());
+	      force_newline()
 	  | (Ast.Pragma _::_)
           | (Ast.Rule_elemTag _::_) | (Ast.InitTag _::_)
-	  | (Ast.DeclarationTag _::_) | (Ast.Token ("{",_)::_) -> pr "\n"
+	  | (Ast.DeclarationTag _::_) | (Ast.Token ("{",_)::_) ->
+	      force_newline()
           | _ -> () in
       (* print a newline at the beginning, if needed *)
       newline_before();
@@ -970,10 +980,10 @@ in
 	    (if leading_newline
 	    then
 	      match (indent_needed,unindent_before x) with
-		(true,true) -> pr "\n"
-	      | (true,false) -> pr "\n"; indent()
-	      | (false,true) -> unindent(); pr "\n"
-	      | (false,false) -> pr "\n");
+		(true,true) -> force_newline()
+	      | (true,false) -> force_newline(); indent()
+	      | (false,true) -> unindent(); force_newline()
+	      | (false,false) -> force_newline());
 	    let indent_needed =
 	      List.fold_left (function indent_needed -> pp_any) false x in
 	    loop true indent_needed xs in

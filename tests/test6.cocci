@@ -3,6 +3,6 @@ expression X;
 @@
 
 - f(X)
-+ f(X,"foo")
++ f(X, "foo")
 
 //error words = [f]

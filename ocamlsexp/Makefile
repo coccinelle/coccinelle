@@ -64,7 +64,7 @@ SYSLIBS= str.cma unix.cma bigarray.cma num.cma
 ##############################################################################
 
 #dont use -custom, it makes the bytecode unportable.
-OCAMLCFLAGS= -g -dtypes # -w A
+OCAMLCFLAGS ?= -g -dtypes # -w A
 #-for-pack Sexplib
 
 # This flag is also used in subdirectories so don't change its name here.
@@ -111,10 +111,10 @@ $(TARGETPACK).cmo: $(OBJS)
 
 # special handling, fun that they use cpp whereas they claim camplp4 can do everything
 pre_sexp.cmo: pre_sexp.ml
-	$(OCAMLC) -pp cpp -c $<
+	$(OCAMLC) -pp "cpp -w" -c $<
 
 pre_sexp.cmx: pre_sexp.ml
-	$(OCAMLOPT) -pp cpp -c $<
+	$(OCAMLOPT) -pp "cpp -w" -c $<
 
 
 
@@ -158,7 +158,7 @@ beforedepend::
 
 # need also -pp cpp here
 depend:: beforedepend
-	$(OCAMLDEP) -pp cpp *.mli *.ml    > .depend
+	$(OCAMLDEP) -pp "cpp -w" *.mli *.ml    > .depend
 
 distclean: clean
 	rm -f .depend

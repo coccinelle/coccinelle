@@ -1,30 +1,3 @@
-\documentclass{article}
-\usepackage{fullpage}
-\usepackage{amsmath}
-\usepackage{amssymb}
-\usepackage{ifthen}
-\usepackage[geometry]{ifsym}
-\title{Coccinelle Usage (version 0.1.4)}
-\newcommand{\minimum}[2]{\paragraph*{\makebox[0in][r]{\FilledBigDiamondshape\,\,} {{#1}}} {#2}}
-\newcommand{\normal}[2]{\paragraph*{\makebox[0in][r]{\BigLowerDiamond\,\,} {{#1}}} {#2}}
-\newcommand{\rare}[2]{\paragraph*{\makebox[0in][r]{\BigDiamondshape\,\,} {{#1}}} {#2}}
-\newcommand{\developer}[2]{\paragraph*{{#1}} {#2}}
-
-% Very convenient to add comments on the paper. Just set the boolean
-% to false before sending the paper:
-\newboolean{showcomments}
-\setboolean{showcomments}{true}
-\ifthenelse{\boolean{showcomments}}
-{ \newcommand{\mynote}[2]{
-    \fbox{\bfseries\sffamily\scriptsize#1}
-    {\small$\blacktriangleright$\textsf{\emph{#2}}$\blacktriangleleft$}}}
-{ \newcommand{\mynote}[2]{}}
-
-\newcommand\jl[1]{\mynote{Julia}{#1}}
-
-\begin{document}
-\maketitle
-
 \section{Introduction}
 
 This document describes the options provided by Coccinelle.  The options
@@ -179,19 +152,13 @@ Test the parsing of cpp code and attributes, respectively.}
 
 \subsection{Selecting C files}
 
-An argument that ends in {\tt .c} is assumed to be a C file to process.  A
-directory can be specified with the option {\bf -dir}, described below.
-Normally, only one C file or one directory is specified.  If multiple files
-are specified, they are treated in parallel, {\em i.e.}, the first semantic
-patch rule is applied to all functions in all files, then the second
-semantic patch rule is applied to all functions in all files, etc.  If a
-directory is specified then no files may be specified and only the
+An argument that ends in {\tt .c} is assumed to be a C file to process.
+Normally, only one C file or one directory is specified.  If multiple C
+files are specified, they are treated in parallel, {\em i.e.}, the first
+semantic patch rule is applied to all functions in all files, then the
+second semantic patch rule is applied to all functions in all files, etc.
+If a directory is specified then no files may be specified and only the
 rightmost directory specified is used.
-
-\minimum{-dir}{ Specify a directory containing C files to process.  By
-  default, the include path will be set to the ``include'' subdirectory of
-  this directory.  A different include path can be specified using the
-  option {\bf -I}.}
 
 \normal{-include\_headers}{ This option causes header files to be processed
 independently.  This option only makes sense if a directory is specified
@@ -203,6 +170,16 @@ specified.  The index may be created using the script {\tt
   coccinelle/scripts/ glimpseindex\_cocci.sh}.  Glimpse is available at
 http://webglimpse.net/.  In conjunction with the option {\bf -patch\_cocci}
 this option prints the regular expression that will be passed to glimpse.}
+
+\rare{-dir}{ Specify a directory containing C files to process.  By
+  default, the include path will be set to the ``include'' subdirectory of
+  this directory.  A different include path can be specified using the
+  option {\bf -I}.  {\bf -dir} only considers the rightmost directory in
+  the argument list.  This behavior is convenient for creating a script
+  that always works on a single directory, but allows the user of the
+  script to override the provided directory with another one.  Spatch
+  collects the files in the directory using {\tt find} and does not follow
+  symbolic links.}
 
 \developer{-kbuild\_info $\langle$file$\rangle$}{ The specified file
   contains information about which sets of files should be considered in
@@ -228,6 +205,9 @@ keeping track of tests that have succeeded and failed.
   Coccinelle to file{\tt{.c}} to the file file{\tt{.res}} representing the
   expected result.}
 
+\developer{-expected\_score\_file $\langle$file$\rangle$}{
+which score file to compare with in the testall run}
+
 \subsection{Parsing C files}
 
 \rare{-show\_c}{Show the C code that is being processed.}
@@ -236,6 +216,19 @@ keeping track of tests that have succeeded and failed.
 
 \rare{-type\_error\_msg}{Show information about where the C type checker
   was not able to determine the type of an expression.}
+
+\rare{-int\_bits $\langle$n$\rangle$, -long\_bits
+$\langle$n$\rangle$}{Provide integer size information. n is the number of
+bits in an unsigned integer or unsigned long, respectively.  If only the
+option {\bf -int\_bits} is used, unsigned longs will be assumed to have
+twice as many bits as unsigned integers.  If only the option {\bf
+-long\_bits} is used, unsigned ints will be assumed to have half as many
+bits as unsigned integers.  This information is only used in determining
+the types of integer constants, according to the ANSI C standard (C89).  If
+neither is provided, the type of an integer constant is determined by the
+sequence of ``u'' and ``l'' annotations following the constant.  If there
+is none, the constant is assumed to be a signed integer.  If there is only
+``u'', the constant is assumed to be an unsigned integer, etc.}
 
 \developer{-use\_cache} Use preparsed versions of the C files that are
 stored in a cache.
@@ -259,15 +252,21 @@ stored in a cache.
 
 \subsubsection*{Macros and other preprocessor code}
 
-\normal{-D $\langle$file$\rangle$, -macro\_file $\langle$file$\rangle$}{
+\normal{-macro\_file $\langle$file$\rangle$}{
   Extra macro definitions to be taken into account when parsing the C
   files.}
 
-\rare{-ifdef\_to\_if}{ This option constructs represents an \#ifdef in
-the source code as a conditional in the control-flow graph.  This option is
-unsafe, as it makes the source code unparsable when \#ifdef is used in a
-way that does not directly convert to a conditional.  Nevertheless, it can
-be useful when \#ifdef is used in a well-structured way.}
+\normal{-macro\_file\_builtins $\langle$file$\rangle$}{
+  Builtin macro definitions to be taken into account when parsing the C
+  files.}
+
+\rare{-ifdef\_to\_if,-no\_ifdef\_to\_if}{
+The option {\bf -ifdef\_to\_if}
+represents an {\tt \#ifdef} in the source code as a conditional in the
+control-flow graph when doing so represents valid code.  {\bf
+-no\_ifdef\_to\_if} disables this feature.  {\bf -ifdef\_to\_if} is the
+default.
+}
 
 \rare{-use\_if0\_code}{ Normally code under \#if 0 is ignored.  If this
 option is set then the code is considered, just like the code under any
@@ -404,6 +403,13 @@ These options use a simplified version of the SmPL language.  {\bf
 
 Normally, the only output is a diff printed to standard output.
 
+\normal{-linux\_spacing, -smpl\_spacing}{Control the spacing within the code
+  added by the semantic patch.  The option {\bf -linux\_spacing} causes
+  spatch to follow the conventions of Linux, regardless of the spacing in
+  the semantic patch.  This is the default.  The option {\bf
+  -smpl\_spacing} causes spatch to follow the spacing given in the semantic
+  patch, within individual lines.}
+
 \rare{-o $\langle$file$\rangle$}{ The output file.}
 
 \rare{-inplace}{ Modify the input file.}
@@ -477,4 +483,3 @@ condition occurs, rather than only once.}
 
 \developer{-pad, -hrule $\langle$dir$\rangle$, -xxx, -l1}{}
 
-\end{document}

@@ -237,18 +237,37 @@ let pr_no_nl s =
   flush stdout
 
 
+
+
+
+
+let _chan_pr2 = ref (None: out_channel option)
+
+let out_chan_pr2 ?(newline=true) s = 
+  match !_chan_pr2 with
+  | None -> ()
+  | Some chan -> 
+      output_string chan (s ^ (if newline then "\n" else "")); 
+      flush chan
+
+
 let pr2 s = 
   prerr_string !_prefix_pr;
   do_n !_tab_level_print (fun () -> prerr_string " ");
   prerr_string s;
   prerr_string "\n"; 
-  flush stderr
+  flush stderr;
+  out_chan_pr2 s;
+  ()
 
 let pr2_no_nl s = 
   prerr_string !_prefix_pr;
   do_n !_tab_level_print (fun () -> prerr_string " ");
   prerr_string s;
-  flush stderr
+  flush stderr;
+  out_chan_pr2 ~newline:false s;
+  ()
+
 
 let pr_xxxxxxxxxxxxxxxxx () = 
   pr "-----------------------------------------------------------------------"
@@ -385,14 +404,34 @@ let pr2_gen x = pr2 (dump x)
 
 let _already_printed = Hashtbl.create 101
 let disable_pr2_once = ref false 
-let pr2_once s = 
+
+let xxx_once f s = 
   if !disable_pr2_once then pr2 s
   else 
     if not (Hashtbl.mem _already_printed s)
     then begin
       Hashtbl.add _already_printed s true;
-      pr2 ("(ONCE) " ^ s);
+      f ("(ONCE) " ^ s);
     end
+
+let pr2_once s = xxx_once pr2 s
+
+(* ---------------------------------------------------------------------- *)
+let mk_pr2_wrappers aref = 
+  let fpr2 s = 
+    if !aref
+    then pr2 s
+    else 
+      (* just to the log file *)
+      out_chan_pr2 s
+  in
+  let fpr2_once s = 
+    if !aref
+    then pr2_once s
+    else 
+      xxx_once out_chan_pr2 s
+  in
+  fpr2, fpr2_once
 
 
 (* ---------------------------------------------------------------------- *)
@@ -433,6 +472,10 @@ let redirect_stdin_opt optfile f =
   | Some infile -> redirect_stdin infile f
 
 
+(* cf end 
+let with_pr2_to_string f = 
+*)
+  
 
 (* ---------------------------------------------------------------------- *)
 
@@ -1050,28 +1093,6 @@ let pp_f_in_box f      =
 
 let pp s = Format.print_string s
 
-
-
-(* julia: convert something printed using format to print into a string *)
-let format_to_string f =
-  let o = open_out "/tmp/out" in
-  Format.set_formatter_out_channel o;
-  let _ = f() in
-  Format.print_flush();
-  Format.set_formatter_out_channel stdout;
-  close_out o;
-  let i = open_in "/tmp/out" in
-  let lines = ref [] in
-  let rec loop _ =
-    let cur = input_line i in
-    lines := cur :: !lines;
-    loop() in
-  (try loop() with End_of_file -> ());
-  close_in i;
-  String.concat "\n" (List.rev !lines)
-
-
-
 let mk_str_func_of_assoc_conv xs = 
   let swap (x,y) = (y,x) in
 
@@ -1082,6 +1103,16 @@ let mk_str_func_of_assoc_conv xs =
   (fun a -> 
     List.assoc a xs
   )
+
+
+
+(* julia: convert something printed using format to print into a string *)
+(* now at bottom of file
+let format_to_string f =
+ ...
+*)
+
+
 
 (*****************************************************************************)
 (* Macro *)
@@ -1213,6 +1244,17 @@ let save_excursion reference f =
   reference := old;
   res
 
+let save_excursion_and_disable reference f = 
+  save_excursion reference (fun () -> 
+    reference := false;
+    f ()
+  )
+
+let save_excursion_and_enable reference f = 
+  save_excursion reference (fun () -> 
+    reference := true;
+    f ()
+  )
 
 
 let memoized h k f = 
@@ -1399,6 +1441,8 @@ let test_check_stack_size limit =
  *)
 let _init_gc_stack = 
   Gc.set {(Gc.get ()) with Gc.stack_limit = 100 * 1024 * 1024}
+
+
 
 
 (* if process a big set of files then dont want get overflow in the middle
@@ -3300,7 +3344,7 @@ let files_of_dir_or_files_no_vcs_post_filter regex xs =
     then 
       cmd_to_list 
         ("find " ^ x  ^
-         " -noleaf -type f | grep -v /.hg/ |grep -v /CVS/ | grep -v /.git/"
+         " -noleaf -type f | grep -v /.hg/ |grep -v /CVS/ | grep -v /.git/ |grep -v /_darcs/"
         )
         +> List.filter (fun s -> s =~ regex)
     else [x]
@@ -5347,9 +5391,11 @@ let info_from_charpos a b =
 
 
 
-let (full_charpos_to_pos2: filename -> (int * int) array ) = fun filename ->
+let full_charpos_to_pos2 = fun filename ->
 
-    let arr = Array.create (filesize filename + 2) (0,0) in
+  let size = (filesize filename + 2) in
+
+    let arr = Array.create size  (0,0) in
 
     let chan = open_in filename in
 
@@ -5392,6 +5438,65 @@ let complete_parse_info filename table x =
     file = filename;
     line   = fst (table.(x.charpos));
     column = snd (table.(x.charpos));
+  }
+
+
+
+let full_charpos_to_pos_large2 = fun filename ->
+
+  let size = (filesize filename + 2) in
+
+    (* old: let arr = Array.create size  (0,0) in *)
+    let arr1 = Bigarray.Array1.create 
+      Bigarray.int Bigarray.c_layout size in
+    let arr2 = Bigarray.Array1.create 
+      Bigarray.int Bigarray.c_layout size in
+    Bigarray.Array1.fill arr1 0;
+    Bigarray.Array1.fill arr2 0;
+
+    let chan = open_in filename in
+
+    let charpos   = ref 0 in
+    let line  = ref 0 in
+
+    let rec full_charpos_to_pos_aux () =
+     try
+       let s = (input_line chan) in
+       incr line;
+
+       (* '... +1 do'  cos input_line dont return the trailing \n *)
+       for i = 0 to (slength s - 1) + 1 do 
+         (* old: arr.(!charpos + i) <- (!line, i); *)
+         arr1.{!charpos + i} <- (!line);
+         arr2.{!charpos + i} <- i;
+       done;
+       charpos := !charpos + slength s + 1;
+       full_charpos_to_pos_aux();
+       
+     with End_of_file -> 
+       for i = !charpos to (* old: Array.length arr *) 
+         Bigarray.Array1.dim arr1 - 1 do
+         (* old: arr.(i) <- (!line, 0); *)
+         arr1.{i} <- !line;
+         arr2.{i} <- 0;
+       done;
+       ();
+    in 
+    begin 
+      full_charpos_to_pos_aux ();
+      close_in chan;
+      (fun i -> arr1.{i}, arr2.{i})
+    end
+let full_charpos_to_pos_large a =
+  profile_code "Common.full_charpos_to_pos_large" 
+    (fun () -> full_charpos_to_pos_large2 a)
+
+
+let complete_parse_info_large filename table x = 
+  { x with 
+    file = filename;
+    line   = fst (table (x.charpos));
+    column = snd (table (x.charpos));
   }
 
 (*---------------------------------------------------------------------------*)
@@ -5894,6 +5999,34 @@ let md5sum_of_string s =
       (*pr2 s;*)
       s
   | _ -> failwith "md5sum_of_string wrong output"
+
+
+
+let with_pr2_to_string f = 
+  let file = new_temp_file "pr2" "out" in
+  redirect_stdout_stderr file f;
+  cat file
+
+(* julia: convert something printed using format to print into a string *)
+let format_to_string f =
+  let (nm,o) = Filename.open_temp_file "format_to_s" ".out" in
+  Format.set_formatter_out_channel o;
+  let _ = f() in
+  Format.print_newline();
+  Format.print_flush();
+  Format.set_formatter_out_channel stdout;
+  close_out o;
+  let i = open_in nm in
+  let lines = ref [] in
+  let rec loop _ =
+    let cur = input_line i in
+    lines := cur :: !lines;
+    loop() in
+  (try loop() with End_of_file -> ());
+  close_in i;
+  command2 ("rm -f " ^ nm);
+  String.concat "\n" (List.rev !lines)
+
 
 
 (*****************************************************************************)

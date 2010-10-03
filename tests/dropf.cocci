@@ -3,4 +3,4 @@ expression E;
 @@
 
 - f(E)
-+ f(E+3)
++ f(E + 3)

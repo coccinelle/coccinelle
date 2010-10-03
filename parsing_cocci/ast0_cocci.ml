@@ -52,7 +52,12 @@ type info = { pos_info : position_info;
 	      strings_before : (string * position_info) list;
 	      strings_after : (string * position_info) list }
 
-type 'a mcode = 'a * arity * info * mcodekind * meta_pos ref (* pos, - only *)
+(* adjacency index is incremented when we skip over dots or nest delimiters
+it is used in deciding how much to remove, when two adjacent code tokens are
+removed. *)
+type 'a mcode =
+    'a * arity * info * mcodekind * meta_pos ref (* pos, - only *) *
+      int (* adjacency_index *)
 (* int ref is an index *)
 and 'a wrap =
     { node : 'a;
@@ -470,15 +475,17 @@ let context_wrap x =
     true_if_test_exp = false;
     iso_info = [] }
 let unwrap x = x.node
-let unwrap_mcode (x,_,_,_,_) = x
+let unwrap_mcode (x,_,_,_,_,_) = x
 let rewrap model x = { model with node = x }
-let rewrap_mcode (_,arity,info,mcodekind,pos) x = (x,arity,info,mcodekind,pos)
+let rewrap_mcode (_,arity,info,mcodekind,pos,adj) x =
+  (x,arity,info,mcodekind,pos,adj)
 let copywrap model x =
   { model with node = x; index = ref !(model.index);
     mcodekind = ref !(model.mcodekind); exp_ty = ref !(model.exp_ty)}
-let get_pos (_,_,_,_,x) = !x
-let get_pos_ref (_,_,_,_,x) = x
-let set_pos pos (m,arity,info,mcodekind,_) = (m,arity,info,mcodekind,ref pos)
+let get_pos (_,_,_,_,x,_) = !x
+let get_pos_ref (_,_,_,_,x,_) = x
+let set_pos pos (m,arity,info,mcodekind,_,adj) =
+  (m,arity,info,mcodekind,ref pos,adj)
 let get_info x      = x.info
 let set_info x info = {x with info = info}
 let get_line x      = x.info.pos_info.line_start
@@ -486,7 +493,7 @@ let get_line_end x  = x.info.pos_info.line_end
 let get_index x     = !(x.index)
 let set_index x i   = x.index := i
 let get_mcodekind x = !(x.mcodekind)
-let get_mcode_mcodekind (_,_,_,mcodekind,_) = mcodekind
+let get_mcode_mcodekind (_,_,_,mcodekind,_,_) = mcodekind
 let get_mcodekind_ref x = x.mcodekind
 let set_mcodekind x mk  = x.mcodekind := mk
 let set_type x t        = x.exp_ty := t
@@ -501,7 +508,7 @@ let get_test_exp x      = x.true_if_test_exp
 let set_test_exp x      = {x with true_if_test_exp = true}
 let get_iso x           = x.iso_info
 let set_iso x i = if !Flag.track_iso_usage then {x with iso_info = i} else x
-let set_mcode_data data (_,ar,info,mc,pos) = (data,ar,info,mc,pos)
+let set_mcode_data data (_,ar,info,mc,pos,adj) = (data,ar,info,mc,pos,adj)
 
 (* --------------------------------------------------------------------- *)
 
@@ -596,8 +603,8 @@ and const_vol t =
 (* this function is a rather minimal attempt.  the problem is that information
 has been lost.  but since it is only used for metavariable types in the isos,
 perhaps it doesn't matter *)
-and make_mcode x = (x,NONE,default_info(),context_befaft(),ref NoMetaPos)
-let make_mcode_info x info = (x,NONE,info,context_befaft(),ref NoMetaPos)
+and make_mcode x = (x,NONE,default_info(),context_befaft(),ref NoMetaPos,-1)
+let make_mcode_info x info = (x,NONE,info,context_befaft(),ref NoMetaPos,-1)
 
 exception TyConv
 

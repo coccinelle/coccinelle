@@ -503,10 +503,12 @@ let visitor mode bind option_default
 	(match Ast0.unwrap p with
 	  Ast0.VoidParam(ty) ->
 	    let (n,ty) = typeC ty in (n,Ast0.VoidParam(ty))
-	| Ast0.Param(ty,id) ->
+	| Ast0.Param(ty,Some id) ->
+	    let ((ty_id_n,ty),id) = named_type ty id in
+	    (ty_id_n, Ast0.Param(ty,Some id))
+	| Ast0.Param(ty,None) ->
 	    let (ty_n,ty) = typeC ty in
-	    let (id_n,id) = get_option ident id in
-	    (bind ty_n id_n, Ast0.Param(ty,id))
+	    (ty_n, Ast0.Param(ty,None))
 	| Ast0.MetaParam(name,pure) ->
 	    let (n,name) = meta_mcode name in
 	    (n,Ast0.MetaParam(name,pure))

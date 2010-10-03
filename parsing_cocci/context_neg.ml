@@ -139,7 +139,7 @@ let collect_plus_lines top =
   let bind x y = () in
   let option_default = () in
   let donothing r k e = k e in
-  let mcode (_,_,info,mcodekind,_) =
+  let mcode (_,_,info,mcodekind,_,_) =
     match mcodekind with
       Ast0.PLUS -> insert info.Ast0.pos_info.Ast0.line_start
     | _ -> () in
@@ -228,7 +228,7 @@ let bind c1 c2 =
 let option_default = (*Bind(Neutral,[],[],[],[],[])*)
   Recursor(Neutral,[],[],[])
 
-let mcode (_,_,info,mcodekind,pos) =
+let mcode (_,_,info,mcodekind,pos,_) =
   let offset = info.Ast0.pos_info.Ast0.offset in
   match mcodekind with
     Ast0.MINUS(_) -> Token(AllMarked,offset,mcodekind,[])
@@ -236,7 +236,7 @@ let mcode (_,_,info,mcodekind,pos) =
   | Ast0.CONTEXT(_) -> Token(NotAllMarked,offset,mcodekind,[offset])
   | _ -> failwith "not possible"
 
-let neutral_mcode (_,_,info,mcodekind,pos) =
+let neutral_mcode (_,_,info,mcodekind,pos,_) =
   let offset = info.Ast0.pos_info.Ast0.offset in
   match mcodekind with
     Ast0.MINUS(_) -> Token(Neutral,offset,mcodekind,[])
@@ -246,7 +246,7 @@ let neutral_mcode (_,_,info,mcodekind,pos) =
 
 (* neutral for context; used for mcode in bef aft nodes that don't represent
 anything if they don't contain some information *)
-let nc_mcode (_,_,info,mcodekind,pos) =
+let nc_mcode (_,_,info,mcodekind,pos,_) =
   let offset = info.Ast0.pos_info.Ast0.offset in
   match mcodekind with
     Ast0.MINUS(_) -> Token(AllMarked,offset,mcodekind,[])
@@ -403,13 +403,13 @@ let classify is_minus all_marked table code =
 	(* cases for everything with extra mcode *)
       |	Ast0.FunDecl((info,bef),_,_,_,_,_,_,_,_)
       | Ast0.Decl((info,bef),_) ->
-	  bind (nc_mcode ((),(),info,bef,())) (k s)
+	  bind (nc_mcode ((),(),info,bef,(),-1)) (k s)
       | Ast0.IfThen(_,_,_,_,_,(info,aft))
       | Ast0.IfThenElse(_,_,_,_,_,_,_,(info,aft))
       | Ast0.Iterator(_,_,_,_,_,(info,aft))
       | Ast0.While(_,_,_,_,_,(info,aft))
       | Ast0.For(_,_,_,_,_,_,_,_,_,(info,aft)) ->
-	  bind (k s) (nc_mcode ((),(),info,aft,()))
+	  bind (k s) (nc_mcode ((),(),info,aft,(),-1))
       |	_ -> k s
 
 ) in
@@ -432,7 +432,7 @@ the same context children *)
 
 (* this is just a sanity check - really only need to look at the top-level
    structure *)
-let equal_mcode (_,_,info1,_,_) (_,_,info2,_,_) =
+let equal_mcode (_,_,info1,_,_,_) (_,_,info2,_,_,_) =
   info1.Ast0.pos_info.Ast0.offset = info2.Ast0.pos_info.Ast0.offset
 
 let equal_option e1 e2 =

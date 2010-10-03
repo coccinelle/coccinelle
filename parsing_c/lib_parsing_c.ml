@@ -14,6 +14,11 @@
 open Common
 
 (*****************************************************************************)
+(* Wrappers *)
+(*****************************************************************************)
+let pr2, pr2_once = Common.mk_pr2_wrappers Flag_parsing_c.verbose_parsing
+
+(*****************************************************************************)
 (* Abstract line *)
 (*****************************************************************************)
 
@@ -32,7 +37,7 @@ let strip_info_visitor _ =
     function i -> ctr := !ctr + 1; Ast_c.al_info_cpp !ctr i));
 
     Visitor_c.kexpr_s = (fun (k,_) e -> 
-      let (e', ty),ii' = k e in
+      let (e', ty), ii' = k e in
       (e', Ast_c.noType()(*ref !ty*)), ii' (* keep type - jll *)
     );
 
@@ -238,3 +243,26 @@ let names_of_parameters_in_macro xs =
     let (s, ii2) = xx in
     s
   )
+
+
+
+(* only used in ast_to_flow, so move it ? *)
+let rec stmt_elems_of_sequencable xs = 
+  xs +> Common.map (fun x -> 
+    match x with
+    | Ast_c.StmtElem e -> [e]
+    | Ast_c.CppDirectiveStmt _
+    | Ast_c.IfdefStmt _ 
+        -> 
+        pr2_once ("stmt_elems_of_sequencable: filter a directive");
+        []
+    | Ast_c.IfdefStmt2 (_ifdef, xxs) -> 
+        pr2 ("stmt_elems_of_sequencable: IfdefStm2 TODO?");
+        xxs +> List.map (fun xs -> 
+          let xs' = stmt_elems_of_sequencable xs in
+          xs'
+        ) +> List.flatten
+  ) +> List.flatten
+        
+  
+

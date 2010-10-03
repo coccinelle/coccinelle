@@ -18,7 +18,7 @@ EXTRAOPT=-for-pack MenhirLib
 ##############################################################################
 # Generic variables
 ##############################################################################
-OCAMLCFLAGS=-g -dtypes
+OCAMLCFLAGS ?=-g -dtypes
 OPTFLAGS=
 
 OCAMLC=ocamlc$(OPTBIN)     $(OCAMLCFLAGS) $(INCLUDES)

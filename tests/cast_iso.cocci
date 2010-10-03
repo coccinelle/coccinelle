@@ -4,7 +4,7 @@ type T;
 @@
 
 - snd_magic_cast(T, (void*) B ,...)
-+ (T *) B
++ (T *)B
 
 @@
 expression B;
