@@ -831,6 +831,15 @@ and statement tgt stm =
 	| Ast0.UniqueType(ty) ->
 	    Ast0.UniqueStm(Ast0.rewrap stm (Ast0.Ty(ty)))
 	| _ -> Ast0.Ty(new_ty))
+  | Ast0.TopInit(init) ->
+      let new_init = initialiser tgt init in
+      Ast0.rewrap stm
+	(match Ast0.unwrap new_init with
+	  Ast0.OptIni(init) ->
+	    Ast0.OptStm(Ast0.rewrap stm (Ast0.TopInit(init)))
+	| Ast0.UniqueIni(init) ->
+	    Ast0.UniqueStm(Ast0.rewrap stm (Ast0.TopInit(init)))
+	| _ -> Ast0.TopInit(new_init))
   | Ast0.Disj(starter,rule_elem_dots_list,mids,ender) ->
       let stms =
 	List.map (function x -> concat_dots (statement tgt) x)
@@ -875,7 +884,8 @@ and statement tgt stm =
 	concat_dots (statement Ast0.NONE) rule_elem_dots in
       let whn =
 	List.map
-	  (whencode (concat_dots (statement Ast0.NONE)) (statement Ast0.NONE))
+	  (whencode (concat_dots (statement Ast0.NONE)) (statement Ast0.NONE)
+	     (expression Ast0.NONE))
 	  whn in
       Ast0.rewrap stm
 	(Ast0.Nest(starter,new_rule_elem_dots,ender,whn,multi))
@@ -884,7 +894,8 @@ and statement tgt stm =
       let dots = mcode dots in
       let whn =
 	List.map
-	  (whencode (concat_dots (statement Ast0.NONE)) (statement Ast0.NONE))
+	  (whencode (concat_dots (statement Ast0.NONE)) (statement Ast0.NONE)
+	     (expression Ast0.NONE))
 	  whn in
       make_rule_elem stm tgt arity (Ast0.Dots(dots,whn))
   | Ast0.Circles(dots,whn) ->
@@ -892,7 +903,8 @@ and statement tgt stm =
       let dots = mcode dots in
       let whn =
 	List.map
-	  (whencode (concat_dots (statement Ast0.NONE)) (statement Ast0.NONE))
+	  (whencode (concat_dots (statement Ast0.NONE)) (statement Ast0.NONE)
+	     (expression Ast0.NONE))
 	  whn in
       make_rule_elem stm tgt arity (Ast0.Circles(dots,whn))
   | Ast0.Stars(dots,whn)   ->
@@ -900,7 +912,8 @@ and statement tgt stm =
       let dots = mcode dots in
       let whn =
 	List.map
-	  (whencode (concat_dots (statement Ast0.NONE)) (statement Ast0.NONE))
+	  (whencode (concat_dots (statement Ast0.NONE)) (statement Ast0.NONE)
+	     (expression Ast0.NONE))
 	  whn in
       make_rule_elem stm tgt arity (Ast0.Stars(dots,whn))
   | Ast0.FunDecl(bef,fi,name,lp,params,rp,lbrace,body,rbrace) ->
@@ -995,10 +1008,12 @@ and fninfo2arity fninfo =
 	 | Ast0.FAttr(attr) -> [mcode2arity attr])
        fninfo)
 
-and whencode notfn alwaysfn = function
+and whencode notfn alwaysfn expression = function
     Ast0.WhenNot a -> Ast0.WhenNot (notfn a)
   | Ast0.WhenAlways a -> Ast0.WhenAlways (alwaysfn a)
   | Ast0.WhenModifier(x) -> Ast0.WhenModifier(x)
+  | Ast0.WhenNotTrue a -> Ast0.WhenNotTrue (expression a)
+  | Ast0.WhenNotFalse a -> Ast0.WhenNotFalse (expression a)
 
 and make_case_line =
   make_opt_unique

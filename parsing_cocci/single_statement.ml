@@ -242,6 +242,7 @@ and left_statement s =
   | Ast0.Exp(exp) -> false (* can only be replaced by an expression *)
   | Ast0.TopExp(exp) -> false (* as above *)
   | Ast0.Ty(ty) -> false (* can only be replaced by a type *)
+  | Ast0.TopInit(init) -> false (* can only be replaced by an init *)
   | Ast0.Dots(d,whn) | Ast0.Circles(d,whn) | Ast0.Stars(d,whn) -> false
   | Ast0.Include(inc,s) -> modif_before_mcode inc
   | Ast0.Define(def,id,params,body) -> modif_before_mcode def
@@ -281,6 +282,7 @@ and right_statement s =
   | Ast0.Exp(exp) -> false (* can only be replaced by an expression *)
   | Ast0.TopExp(exp) -> false (* as above *)
   | Ast0.Ty(ty) -> false (* can only be replaced by a type *)
+  | Ast0.TopInit(init) -> false (* can only be replaced by an init *)
   | Ast0.Dots(d,whn) | Ast0.Circles(d,whn) | Ast0.Stars(d,whn) -> false
   | Ast0.Include(inc,s) -> modif_after_mcode s
   | Ast0.Define(def,id,params,body) -> right_dots right_statement body
@@ -544,6 +546,7 @@ let rec statement dots_before dots_after s =
   | Ast0.Exp(exp) -> s
   | Ast0.TopExp(exp) -> s
   | Ast0.Ty(ty) -> s
+  | Ast0.TopInit(init) -> s
   | Ast0.Dots(d,whn) | Ast0.Circles(d,whn) | Ast0.Stars(d,whn) -> s
   | Ast0.Include(inc,string) -> s (* doesn't affect the need for braces *)
   | Ast0.Define(def,id,params,body) -> s (* same as include *)

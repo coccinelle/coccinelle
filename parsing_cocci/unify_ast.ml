@@ -450,6 +450,7 @@ and unify_rule_elem re1 re2 =
   | (_,Ast.Exp(e2)) -> subexp (unify_expression e2) re1
 
   | (Ast.TopExp(e1),Ast.TopExp(e2)) -> unify_expression e1 e2
+  | (Ast.TopInit(i1),Ast.TopInit(i2)) -> unify_initialiser i1 i2
 
     (* can match a rule_elem in different parts *)
   | (Ast.Ty(t1),Ast.Ty(t2)) -> return true

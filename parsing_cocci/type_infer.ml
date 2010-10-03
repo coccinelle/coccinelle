@@ -247,10 +247,12 @@ let rec propagate_types env =
     | Ast0.OptIdent(id)    -> strip id
     | Ast0.UniqueIdent(id) -> strip id in
 
-  let process_whencode notfn allfn = function
+  let process_whencode notfn allfn exp = function
       Ast0.WhenNot(x) -> let _ = notfn x in ()
     | Ast0.WhenAlways(x) -> let _ = allfn x in ()
-    | Ast0.WhenModifier(_) -> () in
+    | Ast0.WhenModifier(_) -> ()
+    | Ast0.WhenNotTrue(x) -> let _ = exp x in ()
+    | Ast0.WhenNotFalse(x) -> let _ = exp x in () in
 
   (* assume that all of the declarations are at the beginning of a statement
      list, which is required by C, but not actually required by the cocci
@@ -279,9 +281,10 @@ let rec propagate_types env =
 	    let new_acc = (process_decl decl)@acc in
 	    process_statement_list r new_acc ss
 	| Ast0.Dots(_,wc) ->
+	    (* why is this case here?  why is there none for nests? *)
 	    List.iter
 	      (process_whencode r.V0.combiner_statement_dots
-		 r.V0.combiner_statement)
+		 r.V0.combiner_statement r.V0.combiner_expression)
 	      wc;
 	    process_statement_list r acc ss
 	| Ast0.Disj(_,statement_dots_list,_,_) ->

@@ -42,6 +42,7 @@ let dumb_astcocci_rule_elem = function
  | A.Exp expr -> ()
  | A.TopExp expr -> ()
  | A.Ty ty -> ()
+ | A.TopInit init -> ()
  | A.FunHeader (bef,allminus, fninfo, ida, _, paramsa, _) -> ()
  | A.Decl (bef,allminus,decla) -> ()
  | A.SeqStart _ -> ()

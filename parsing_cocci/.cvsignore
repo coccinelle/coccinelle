@@ -1,0 +1,6 @@
+.depend
+*.cma
+lexer_cocci.ml
+lexer_script.ml
+parser_cocci_menhir.ml
+parser_cocci_menhir.mli

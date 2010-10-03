@@ -683,6 +683,8 @@ and statement s =
 	  Ast.Atomic(rewrap_rule_elem s (Ast.TopExp(expression exp)))
       | Ast0.Exp(exp) ->
 	  Ast.Atomic(rewrap_rule_elem s (Ast.Exp(expression exp)))
+      | Ast0.TopInit(init) ->
+	  Ast.Atomic(rewrap_rule_elem s (Ast.TopInit(initialiser init)))
       | Ast0.Ty(ty) ->
 	  Ast.Atomic(rewrap_rule_elem s (Ast.Ty(typeC ty)))
       | Ast0.Disj(_,rule_elem_dots_list,_,_) ->
@@ -770,6 +772,15 @@ and statement s =
       Ast0.WhenNot a -> Ast.WhenNot (notfn a)
     | Ast0.WhenAlways a -> Ast.WhenAlways (alwaysfn a)
     | Ast0.WhenModifier(x) -> Ast.WhenModifier(x)
+    | x ->
+	let rewrap_rule_elem ast0 ast =
+	  rewrap ast0 (do_isos (Ast0.get_iso ast0)) ast in
+	match x with
+	  Ast0.WhenNotTrue(e) ->
+	    Ast.WhenNotTrue(rewrap_rule_elem e (Ast.Exp(expression e)))
+	| Ast0.WhenNotFalse(e) ->
+	    Ast.WhenNotFalse(rewrap_rule_elem e (Ast.Exp(expression e)))
+	| _ -> failwith "not possible"
 
   and process_list seqible isos = function
       [] -> []
@@ -884,6 +895,8 @@ and anything = function
   | Ast0.CaseLineTag(d) -> Ast.CaseLineTag(case_line d)
   | Ast0.TopTag(d) -> Ast.Code(top_level d)
   | Ast0.IsoWhenTag(_) -> failwith "not possible"
+  | Ast0.IsoWhenTTag(_) -> failwith "not possible"
+  | Ast0.IsoWhenFTag(_) -> failwith "not possible"
   | Ast0.MetaPosTag _ -> failwith "not possible"
 
 (* --------------------------------------------------------------------- *)

@@ -459,9 +459,6 @@ let make_cocci_rule_name_result nm d i a e ee =
       Ast.CocciRulename (Some n,d,i,a,e,ee)
   | None -> Ast.CocciRulename (None,d,i,a,e,ee)
 
-let make_script_rule_name_result scr lang deps =
-  let s = id2name scr in
+let make_script_rule_name_result lang deps =
   let l = id2name lang in
-  if s <> "script" then 
-    raise (Semantic_cocci.Semantic ("malformed script rule"));
-  Ast.ScriptRulename (l,deps)
+  	Ast.ScriptRulename (l,deps)

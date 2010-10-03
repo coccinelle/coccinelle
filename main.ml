@@ -197,7 +197,7 @@ let short_options = [
     "  guess what";
 
   "-date",   Arg.Unit (fun () -> 
-    pr2 "version: $Date: 2008/09/26 00:44:57 $";
+    pr2 "version: $Date: 2008/10/11 16:22:38 $";
     raise (Common.UnixExit 0)
     ), 
   "   guess what";
@@ -254,6 +254,10 @@ let other_options = [
     "-no_show_misc",         Arg.Clear Flag.show_misc, " ";
     "-show_trying",          Arg.Set Flag.show_trying,
     " show the name of each function being processed";
+    "-show_dependencies",
+    Arg.Unit (function _ -> Flag_cocci.show_dependencies := true;
+      Flag_cocci.show_binding_in_out := true),
+    " show the dependencies related to each rule";
   ];
 
   "verbose subsystems options",  

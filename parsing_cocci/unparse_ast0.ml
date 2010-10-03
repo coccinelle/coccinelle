@@ -513,6 +513,7 @@ and statement arity s =
       | Ast0.Exp(exp) -> print_string arity; expression exp
       | Ast0.TopExp(exp) -> print_string arity; expression exp
       | Ast0.Ty(ty) -> print_string arity; typeC ty
+      |	Ast0.TopInit(init) -> initialiser init
       | Ast0.Dots(d,whn) | Ast0.Circles(d,whn) | Ast0.Stars(d,whn) ->
 	  print_string arity; mcode print_string d;
 	  List.iter
@@ -556,6 +557,10 @@ and whencode notfn alwaysfn = function
   | Ast0.WhenAlways a ->
       print_string "   WHEN = "; open_box 0; alwaysfn a; close_box()
   | Ast0.WhenModifier x -> print_string "   WHEN "; U.print_when_modif x
+  | Ast0.WhenNotTrue a ->
+      print_string "   WHEN != TRUE "; open_box 0; expression a; close_box()
+  | Ast0.WhenNotFalse a ->
+      print_string "   WHEN != FALSE "; open_box 0; expression a; close_box()
 
 and case_line arity c =
   print_context c
@@ -637,6 +642,8 @@ let unparse_anything x =
   | Ast0.TopTag(d) ->
       top_level d
   | Ast0.IsoWhenTag(x) -> U.print_when_modif x
+  | Ast0.IsoWhenTTag(e) -> expression e
+  | Ast0.IsoWhenFTag(e) -> expression e
   | Ast0.MetaPosTag(var) -> meta_pos var);
   quiet := q;
   print_newline()

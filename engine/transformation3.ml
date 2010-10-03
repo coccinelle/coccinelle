@@ -63,6 +63,7 @@ module XTRANS = struct
   type tin = { 
     extra: xinfo;
     binding: Lib_engine.metavars_binding;
+    binding0: Lib_engine.metavars_binding; (* inherited variable *)
   }
   type 'x tout = 'x option
 
@@ -137,6 +138,18 @@ module XTRANS = struct
     let bigf = { 
       Visitor_c.default_visitor_c_s with 
       Visitor_c.ktype_s = (fun (k, bigf) expb ->
+	match expf expa expb tin with
+	| None -> (* failed *) k expb
+	| Some (x, expb) -> expb);
+    }
+    in
+    Some (expa, Visitor_c.vk_node_s bigf node)
+
+  let cocciInit = fun expf expa node -> fun tin -> 
+
+    let bigf = { 
+      Visitor_c.default_visitor_c_s with 
+      Visitor_c.kini_s = (fun (k, bigf) expb ->
 	match expf expa expb tin with
 	| None -> (* failed *) k expb
 	| Some (x, expb) -> expb);
@@ -473,10 +486,10 @@ let transform_re_node a b tin =
   | None -> raise Impossible
   | Some (_sp, b') -> b'
 
-
 let (transform2: string (* rule name *) -> string list (* dropped_isos *) ->
+  Lib_engine.metavars_binding (* inherited bindings *) ->
   Lib_engine.transformation_info -> F.cflow -> F.cflow) = 
- fun rule_name dropped_isos xs cflow -> 
+ fun rule_name dropped_isos binding0 xs cflow -> 
 
    let extra = { 
      optional_storage_iso   = not(List.mem "optional_storage" dropped_isos);
@@ -496,7 +509,8 @@ let (transform2: string (* rule name *) -> string list (* dropped_isos *) ->
       
       let tin = {
         XTRANS.extra = extra;
-        XTRANS.binding = binding;
+        XTRANS.binding = binding0@binding;
+        XTRANS.binding0 = []; (* not used - everything constant for trans *)
       } in
 
       let node' = transform_re_node rule_elem node tin in
@@ -521,6 +535,6 @@ let (transform2: string (* rule name *) -> string list (* dropped_isos *) ->
 
 
 
-let transform a b c d = 
+let transform a b c d e = 
   Common.profile_code "Transformation3.transform" 
-    (fun () -> transform2 a b c d)
+    (fun () -> transform2 a b c d e)

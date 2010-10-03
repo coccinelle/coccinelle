@@ -77,10 +77,12 @@ let get_free checker t =
       List.filter (function x -> not (List.mem x nonunitary)) unitary in
     unitary@nonunitary@nonunitary in
 
-  let whencode afn bfn = function
+  let whencode afn bfn expression = function
       Ast0.WhenNot(a) -> afn a
     | Ast0.WhenAlways(b) -> bfn b
-    | Ast0.WhenModifier(_) -> option_default in
+    | Ast0.WhenModifier(_) -> option_default
+    | Ast0.WhenNotTrue(a) -> expression a
+    | Ast0.WhenNotFalse(a) -> expression a in
   
   let ident r k i =
     match Ast0.unwrap i with
@@ -123,12 +125,14 @@ let get_free checker t =
 	bind (r.V0.combiner_statement_dots stmt_dots)
 	  (detect_unitary_frees 
 	     (List.map
-		(whencode r.V0.combiner_statement_dots r.V0.combiner_statement)
+		(whencode r.V0.combiner_statement_dots r.V0.combiner_statement
+		    r.V0.combiner_expression)
 		whn))
     | Ast0.Dots(d,whn) | Ast0.Circles(d,whn) | Ast0.Stars(d,whn) ->
 	detect_unitary_frees
 	  (List.map
-	     (whencode r.V0.combiner_statement_dots r.V0.combiner_statement)
+	     (whencode r.V0.combiner_statement_dots r.V0.combiner_statement
+		r.V0.combiner_expression)
 	     whn)
     | _ -> k s in
   

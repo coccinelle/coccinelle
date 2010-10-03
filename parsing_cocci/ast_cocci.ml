@@ -408,6 +408,7 @@ and base_rule_elem =
   | TopExp        of expression (* for macros body, exp at top level,
 				   not subexp *)
   | Ty            of fullType (* only at SP top level, matches a subterm *)
+  | TopInit       of initialiser (* only at top level *)
   | Include       of string mcode (*#include*) * inc_file mcode (*file *)
   | DefineHeader  of string mcode (* #define *) * ident (* name *) *
 	             define_parameters (*params*)
@@ -462,6 +463,8 @@ and ('a,'b) whencode =
     WhenNot of 'a
   | WhenAlways of 'b
   | WhenModifier of when_modifier
+  | WhenNotTrue of rule_elem (* useful for fvs *)
+  | WhenNotFalse of rule_elem
 
 and when_modifier =
   (* The following removes the shortest path constraint.  It can be used
@@ -600,7 +603,9 @@ let get_wcfvs (whencode : ('a wrap, 'b wrap) whencode list) =
        (function
 	   WhenNot(a) -> get_fvs a
 	 | WhenAlways(a) -> get_fvs a
-	 | WhenModifier(_) -> [])
+	 | WhenModifier(_) -> []
+	 | WhenNotTrue(e) -> get_fvs e
+	 | WhenNotFalse(e) -> get_fvs e)
        whencode)
 
 (* --------------------------------------------------------------------- *)

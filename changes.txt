@@ -1,5 +1,9 @@
 -*- org -*-
 
+* 0.1.1
+
+** better support for initializer, cf -test substruct
+
 * 0.1
 
 ** first public release of the source code:

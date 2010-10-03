@@ -40,6 +40,7 @@ let show_mcodekind_in_ctl = ref false
 (* the "underived" outputs *)
 let show_transinfo = ref true
 let show_binding_in_out = ref false
+let show_dependencies = ref false
 
 let windows = ref false
 

@@ -306,6 +306,7 @@ and base_statement =
   | Exp           of expression  (* only in dotted statement lists *)
   | TopExp        of expression (* for macros body *)
   | Ty            of typeC (* only at top level *)
+  | TopInit       of initialiser (* only at top level *)
   | Disj          of string mcode * statement dots list *
 	             string mcode list (* the |s *)  * string mcode
   | Nest          of string mcode * statement dots * string mcode *
@@ -337,6 +338,8 @@ and ('a,'b) whencode =
     WhenNot of 'a
   | WhenAlways of 'b
   | WhenModifier of Ast.when_modifier
+  | WhenNotTrue of expression
+  | WhenNotFalse of expression
 
 and statement = base_statement wrap
 
@@ -397,6 +400,8 @@ and anything =
   | CaseLineTag of case_line
   | TopTag of top_level
   | IsoWhenTag of Ast.when_modifier
+  | IsoWhenTTag of expression
+  | IsoWhenFTag of expression
   | MetaPosTag of meta_pos
 
 let dotsExpr x = DotsExprTag x

@@ -15,7 +15,10 @@
 
 ;;; Usage
 
+;; Copy this file in your ~/.emacs.d directory
+;;
 ;; Add the following lines to your ~/.emacs or equivalent:
+;;  (load "~/.emacs.d/cocci.el")
 ;;  (setq auto-mode-alist 
 ;;          (cons '("\\.cocci$" . cocci-mode) auto-mode-alist))
 ;;  (autoload 'cocci-mode "cocci" 

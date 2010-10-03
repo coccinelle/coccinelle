@@ -419,6 +419,7 @@ let combiner bind option_default
       | Ast0.Exp(exp) -> expression exp
       | Ast0.TopExp(exp) -> expression exp
       | Ast0.Ty(ty) -> typeC ty
+      | Ast0.TopInit(init) -> initialiser init
       | Ast0.Dots(d,whn) | Ast0.Circles(d,whn) | Ast0.Stars(d,whn) ->
 	  bind (string_mcode d)
 	    (multibind (List.map (whencode statement_dots statement) whn))
@@ -468,6 +469,8 @@ let combiner bind option_default
       Ast0.WhenNot a -> notfn a
     | Ast0.WhenAlways a -> alwaysfn a
     | Ast0.WhenModifier(_) -> option_default
+    | Ast0.WhenNotTrue(e) -> expression e
+    | Ast0.WhenNotFalse(e) -> expression e
 
   and case_line c =
     let k c =
@@ -500,6 +503,8 @@ let combiner bind option_default
       | Ast0.CaseLineTag(c) -> case_line c
       | Ast0.TopTag(top) -> top_level top
       | Ast0.IsoWhenTag(_) -> option_default
+      | Ast0.IsoWhenTTag(e) -> expression e
+      | Ast0.IsoWhenFTag(e) -> expression e
       |	Ast0.MetaPosTag(var) -> failwith "not supported" in
     k a
 
@@ -893,6 +898,7 @@ let rebuilder = fun
 	| Ast0.Exp(exp) -> Ast0.Exp(expression exp)
 	| Ast0.TopExp(exp) -> Ast0.TopExp(expression exp)
 	| Ast0.Ty(ty) -> Ast0.Ty(typeC ty)
+	| Ast0.TopInit(init) -> Ast0.TopInit(initialiser init)
 	| Ast0.Dots(d,whn) ->
 	    Ast0.Dots(string_mcode d,
 		      List.map (whencode statement_dots statement) whn)
@@ -954,7 +960,9 @@ let rebuilder = fun
   and whencode notfn alwaysfn = function
       Ast0.WhenNot a -> Ast0.WhenNot (notfn a)
     | Ast0.WhenAlways a -> Ast0.WhenAlways (alwaysfn a)
-    | Ast0.WhenModifier(x)    -> Ast0.WhenModifier(x)
+    | Ast0.WhenModifier(x) -> Ast0.WhenModifier(x)
+    | Ast0.WhenNotTrue(e) -> Ast0.WhenNotTrue(expression e)
+    | Ast0.WhenNotFalse(e) -> Ast0.WhenNotFalse(expression e)
 
   and case_line c =
     let k c =
@@ -1002,6 +1010,8 @@ let rebuilder = fun
       | Ast0.CaseLineTag(c) -> Ast0.CaseLineTag(case_line c)
       | Ast0.TopTag(top) -> Ast0.TopTag(top_level top)
       | Ast0.IsoWhenTag(x) -> Ast0.IsoWhenTag(x)
+      | Ast0.IsoWhenTTag(e) -> Ast0.IsoWhenTTag(expression e)
+      | Ast0.IsoWhenFTag(e) -> Ast0.IsoWhenFTag(expression e)
       |	Ast0.MetaPosTag(var) -> failwith "not supported" in
     k a
 

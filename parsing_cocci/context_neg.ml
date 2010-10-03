@@ -54,6 +54,8 @@ let set_mcodekind x mcodekind =
   | Ast0.CaseLineTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.TopTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.IsoWhenTag(_) -> failwith "only within iso phase"
+  | Ast0.IsoWhenTTag(_) -> failwith "only within iso phase"
+  | Ast0.IsoWhenFTag(_) -> failwith "only within iso phase"
   | Ast0.MetaPosTag(p) -> failwith "metapostag only within iso phase"
 
 let set_index x index =
@@ -76,6 +78,8 @@ let set_index x index =
   | Ast0.CaseLineTag(d) -> Ast0.set_index d index
   | Ast0.TopTag(d) -> Ast0.set_index d index
   | Ast0.IsoWhenTag(_) -> failwith "only within iso phase"
+  | Ast0.IsoWhenTTag(_) -> failwith "only within iso phase"
+  | Ast0.IsoWhenFTag(_) -> failwith "only within iso phase"
   | Ast0.MetaPosTag(p) -> failwith "metapostag only within iso phase"
 
 let get_index = function
@@ -97,6 +101,8 @@ let get_index = function
   | Ast0.CaseLineTag(d) -> Index.case_line d
   | Ast0.TopTag(d) -> Index.top_level d
   | Ast0.IsoWhenTag(_) -> failwith "only within iso phase"
+  | Ast0.IsoWhenTTag(_) -> failwith "only within iso phase"
+  | Ast0.IsoWhenFTag(_) -> failwith "only within iso phase"
   | Ast0.MetaPosTag(p) -> failwith "metapostag only within iso phase"
 
 (* --------------------------------------------------------------------- *)
@@ -638,6 +644,7 @@ let rec equal_statement s1 s2 =
   | (Ast0.Exp(_),Ast0.Exp(_)) -> true
   | (Ast0.TopExp(_),Ast0.TopExp(_)) -> true
   | (Ast0.Ty(_),Ast0.Ty(_)) -> true
+  | (Ast0.TopInit(_),Ast0.TopInit(_)) -> true
   | (Ast0.Dots(d1,_),Ast0.Dots(d2,_))
   | (Ast0.Circles(d1,_),Ast0.Circles(d2,_))
   | (Ast0.Stars(d1,_),Ast0.Stars(d2,_)) -> equal_mcode d1 d2
@@ -692,7 +699,9 @@ let root_equal e1 e2 =
   | (Ast0.DeclTag(d1),Ast0.DeclTag(d2)) -> equal_declaration d1 d2
   | (Ast0.StmtTag(s1),Ast0.StmtTag(s2)) -> equal_statement s1 s2
   | (Ast0.TopTag(t1),Ast0.TopTag(t2)) -> equal_top_level t1 t2
-  | (Ast0.IsoWhenTag(_),_) | (_,Ast0.IsoWhenTag(_)) ->
+  | (Ast0.IsoWhenTag(_),_) | (_,Ast0.IsoWhenTag(_))
+  | (Ast0.IsoWhenTTag(_),_) | (_,Ast0.IsoWhenTTag(_))
+  | (Ast0.IsoWhenFTag(_),_) | (_,Ast0.IsoWhenFTag(_)) ->
       failwith "only within iso phase"
   | _ -> false
 
@@ -758,7 +767,9 @@ let contextify_whencode =
   let whencode = function
       Ast0.WhenNot sd -> contextify_all.V0.combiner_statement_dots sd
     | Ast0.WhenAlways s -> contextify_all.V0.combiner_statement s
-    | Ast0.WhenModifier(_) -> () in
+    | Ast0.WhenModifier(_) -> ()
+    | Ast0.WhenNotTrue(e) -> contextify_all.V0.combiner_expression e
+    | Ast0.WhenNotFalse(e) -> contextify_all.V0.combiner_expression e in
 
   let statement r k (s : Ast0.statement) =
     k s;

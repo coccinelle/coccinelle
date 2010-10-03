@@ -219,6 +219,7 @@ let id_tokens lexbuf =
   | "exists" when in_rule_name  -> check_context_linetype s; TExists
   | "forall" when in_rule_name  -> check_context_linetype s; TForall
   | "reverse" when in_rule_name -> check_context_linetype s; TReverse
+  | "script" when in_rule_name -> check_context_linetype s; TScript
 
   | "char" ->       Tchar     linetype
   | "short" ->      Tshort    linetype

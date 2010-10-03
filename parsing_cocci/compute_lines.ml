@@ -633,6 +633,9 @@ let rec statement s =
     | Ast0.Ty(ty) ->
 	let ty = typeC ty in
 	mkres s (Ast0.Ty(ty)) ty ty
+    | Ast0.TopInit(init) ->
+	let init = initialiser init in
+	mkres s (Ast0.TopInit(init)) init init
     | Ast0.Disj(starter,rule_elem_dots_list,mids,ender) ->
 	let starter = bad_mcode starter in
 	let mids = List.map bad_mcode mids in

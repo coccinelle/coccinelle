@@ -271,6 +271,7 @@ let orify_rule_elem re exp rebuild =
 let orify_rule_elem_ty = generic_orify_rule_elem disjty
 let orify_rule_elem_param = generic_orify_rule_elem disjparam
 let orify_rule_elem_decl = generic_orify_rule_elem disjdecl
+let orify_rule_elem_ini = generic_orify_rule_elem disjini
 
 let disj_rule_elem r k re =
   match Ast.unwrap re with      
@@ -323,6 +324,9 @@ let disj_rule_elem r k re =
       orify_rule_elem re exp (function exp -> Ast.rewrap exp (Ast.TopExp(exp)))
   | Ast.Ty(ty) ->
       orify_rule_elem_ty re ty (function ty -> Ast.rewrap ty (Ast.Ty(ty)))
+  | Ast.TopInit(init) ->
+      orify_rule_elem_ini re init
+	(function init -> Ast.rewrap init (Ast.TopInit(init)))
   | Ast.Include(inc,s) -> re
   | Ast.DefineHeader(def,id,params) -> re
   | Ast.Default(def,colon) -> re

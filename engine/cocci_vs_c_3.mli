@@ -133,6 +133,10 @@ module type PARAM =
       (Ast_cocci.fullType, Ast_c.fullType) matcher -> 
       (Ast_cocci.fullType, Control_flow_c.node) matcher
 
+    val cocciInit :
+      (Ast_cocci.initialiser, Ast_c.initialiser) matcher -> 
+      (Ast_cocci.initialiser, Control_flow_c.node) matcher
+
     (* -------------------------------------------------------------------- *)
     (* Environment manipulation. Extract info from tin, the "something" *)
     (* -------------------------------------------------------------------- *)

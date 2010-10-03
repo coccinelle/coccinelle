@@ -57,8 +57,8 @@ LIBS=commons/commons.cma globals/globals.cma\
 
 MAKESUBDIRS=commons globals menhirlib $(PYDIR) ctl parsing_cocci parsing_c \
  engine popl09 extra python
-INCLUDEDIRS=commons globals menhirlib $(PYDIR) ctl parsing_cocci parsing_c \
- engine popl09 extra python
+INCLUDEDIRS=commons commons/ocamlextra globals menhirlib $(PYDIR) ctl \
+ parsing_cocci parsing_c engine popl09 extra python
 
 ##############################################################################
 # Generic variables
@@ -107,6 +107,9 @@ BYTECODE_STATIC=-custom
 ##############################################################################
 # Top rules
 ##############################################################################
+eclipse: depend all
+configure:
+	./configure
 
 all: rec $(EXEC)
 opt: rec.opt $(EXEC).opt
@@ -138,7 +141,7 @@ clean::
 	rm -f dllpycaml_stubs.so
 
 
-.PHONY: tools
+.PHONY: tools all configure
 
 tools:
 	$(MAKE) -C tools
@@ -250,14 +253,14 @@ srctar:
 bintar: all
 	rm -f $(TMP)/$(PACKAGE)
 	ln -s `pwd` $(TMP)/$(PACKAGE)
-	cd $(TMP); tar cvfz $(PACKAGE)-bin-x86.tgz $(BINSRC2)
+	cd $(TMP); tar cvfz $(PACKAGE)-bin-x86.tgz --exclude=CVS $(BINSRC2)
 	rm -f $(TMP)/$(PACKAGE)
 
 staticbintar: all.opt
 	rm -f $(TMP)/$(PACKAGE)
 	ln -s `pwd` $(TMP)/$(PACKAGE)
 	make static
-	cd $(TMP); tar cvfz $(PACKAGE)-bin-x86-static.tgz $(BINSRC2)
+	cd $(TMP); tar cvfz $(PACKAGE)-bin-x86-static.tgz --exclude=CVS $(BINSRC2)
 	rm -f $(TMP)/$(PACKAGE)
 
 # add ocaml version in name ?
@@ -265,7 +268,7 @@ bytecodetar: all
 	rm -f $(TMP)/$(PACKAGE)
 	ln -s `pwd` $(TMP)/$(PACKAGE)
 	make purebytecode
-	cd $(TMP); tar cvfz $(PACKAGE)-bin-bytecode-$(OCAMLVERSION).tgz $(BINSRC2)
+	cd $(TMP); tar cvfz $(PACKAGE)-bin-bytecode-$(OCAMLVERSION).tgz --exclude=CVS $(BINSRC2)
 	rm -f $(TMP)/$(PACKAGE)
 
 clean::

@@ -42,7 +42,7 @@ module P = Parse_aux
 %token Tlist TFresh TConstant TError TWords TWhy0 TPlus0 TBang0
 %token TPure TContext
 %token TTypedef TDeclarer TIterator TName TPosition TPosAny
-%token TUsing TDisable TExtends TDepends TOn TEver TNever TExists TForall
+%token TUsing TDisable TExtends TDepends TOn TEver TNever TExists TForall TScript
 %token TReverse TNothing
 %token<string> TRuleName
 
@@ -70,7 +70,7 @@ module P = Parse_aux
 %token <string> TScriptData
 
 %token <Data.clt> TEllipsis TOEllipsis TCEllipsis TPOEllipsis TPCEllipsis
-%token <Data.clt> TWhen TAny TStrict TLineEnd
+%token <Data.clt> TWhen TWhenTrue TWhenFalse TAny TStrict TLineEnd
 
 %token <Data.clt> TWhy TDotDot TBang TOPar TOPar0
 %token <Data.clt> TMid0 TCPar TCPar0
@@ -97,7 +97,7 @@ module P = Parse_aux
 %token <Data.clt> TPlus TMinus
 %token <Data.clt> TMul TTilde
 
-%token <Data.clt> TOBrace TCBrace
+%token <Data.clt> TOBrace TCBrace TOInit
 %token <Data.clt> TOCro TCCro
 
 %token <Data.clt> TPtrOp
@@ -199,8 +199,8 @@ rule_name:
   nm=ioption(pure_ident) extends d=depends i=loption(choose_iso)
     a=loption(disable) e=exists ee=is_expression TArob
       { P.make_cocci_rule_name_result nm d i a e ee }
-  | scr=pure_ident TDotDot lang=pure_ident d=depends TArob
-      { P.make_script_rule_name_result scr lang d }
+  | TScript TDotDot lang=pure_ident d=depends TArob
+      { P.make_script_rule_name_result lang d }
 
 extends:
   /* empty */                                     { () }
@@ -1513,6 +1513,7 @@ when_body_sequence.
 minus_start:
   fundecl                { [Ast0.wrap(Ast0.DECL($1))] }
 | ctype                  { [Ast0.wrap(Ast0.OTHER(Ast0.wrap(Ast0.Ty($1))))] }
+| top_init          { [Ast0.wrap(Ast0.OTHER(Ast0.wrap(Ast0.TopInit($1))))] }
 | toplevel_seq_start(toplevel_after_dots_init)
     { List.map (function x -> Ast0.wrap(Ast0.OTHER(x))) $1 }
 
@@ -1541,12 +1542,17 @@ toplevel_after_stm:
 | stm_dots toplevel_after_dots       {$1::$2}
 | decl_statement toplevel_after_stm  {$1@$2}
 
+top_init:
+  TOInit initialize_list TCBrace
+    { Ast0.wrap(Ast0.InitList(P.clt2mcode "{" $1,$2,P.clt2mcode "}" $3)) }
+
 /* ------------------------------------------------------------------------ */
 /* Plus top level */
 
 /* does allow only ... also allows multiple top-level functions */
 plus_start:
   ctype                   { [Ast0.wrap(Ast0.OTHER(Ast0.wrap(Ast0.Ty($1))))] }
+| top_init           { [Ast0.wrap(Ast0.OTHER(Ast0.wrap(Ast0.TopInit($1))))] }
 | stm_dots plus_after_dots
                                           { (Ast0.wrap(Ast0.OTHER($1)))::$2 }
 | expr plus_after_exp
@@ -1698,15 +1704,13 @@ edots_when(dotter,when_grammar):
     d=dotter                                      { (d,None) }
   | d=dotter TWhen TNotEq w=when_grammar TLineEnd { (d,Some w) }
 
-dots_when(dotter,when_grammar,simple_when_grammar):
-    d=dotter w=list(whens(when_grammar,simple_when_grammar))
-      { (d,List.concat w) }
-
 whens(when_grammar,simple_when_grammar):
     TWhen TNotEq w=when_grammar TLineEnd { [Ast0.WhenNot w] }
   | TWhen TEq w=simple_when_grammar TLineEnd { [Ast0.WhenAlways w] }
   | TWhen comma_list(any_strict) TLineEnd
       { List.map (function x -> Ast0.WhenModifier(x)) $2 }
+  | TWhenTrue TNotEq e = eexpr TLineEnd { [Ast0.WhenNotTrue e] }
+  | TWhenFalse TNotEq e = eexpr TLineEnd { [Ast0.WhenNotFalse e] }
 
 any_strict:
     TAny    { Ast.WhenAny }

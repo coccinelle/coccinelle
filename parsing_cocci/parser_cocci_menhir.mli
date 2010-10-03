@@ -27,6 +27,8 @@ type token =
   | TWhy0
   | TWhy of (Data.clt)
   | TWhile of (Data.clt)
+  | TWhenTrue of (Data.clt)
+  | TWhenFalse of (Data.clt)
   | TWhen of (Data.clt)
   | TUsing
   | TTypedef
@@ -40,6 +42,7 @@ type token =
   | TSizeof of (Data.clt)
   | TShOp of (Ast_cocci.arithOp * Data.clt)
   | TScriptData of (string)
+  | TScript
   | TRuleName of (string)
   | TRightIso
   | TReverse
@@ -63,6 +66,7 @@ type token =
   | TOn
   | TOPar0 of (Data.clt)
   | TOPar of (Data.clt)
+  | TOInit of (Data.clt)
   | TOEllipsis of (Data.clt)
   | TOCro of (Data.clt)
   | TOBrace of (Data.clt)

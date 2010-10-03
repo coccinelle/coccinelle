@@ -359,6 +359,7 @@ let combiner bind option_default
       | Ast.Exp(exp) -> expression exp
       | Ast.TopExp(exp) -> expression exp
       | Ast.Ty(ty) -> fullType ty
+      | Ast.TopInit(init) -> initialiser init
       |	Ast.Include(inc,name) -> bind (string_mcode inc) (inc_file_mcode name)
       |	Ast.DefineHeader(def,id,params) ->
 	  multibind [string_mcode def; ident id; define_parameters params]
@@ -456,6 +457,8 @@ let combiner bind option_default
       Ast.WhenNot a -> notfn a
     | Ast.WhenAlways a -> alwaysfn a
     | Ast.WhenModifier(_) -> option_default
+    | Ast.WhenNotTrue(e) -> rule_elem e
+    | Ast.WhenNotFalse(e) -> rule_elem e
  
   and case_line c =
     let k c =
@@ -849,6 +852,7 @@ let rebuilder
 	| Ast.Exp(exp) -> Ast.Exp(expression exp)
 	| Ast.TopExp(exp) -> Ast.TopExp(expression exp)
 	| Ast.Ty(ty) -> Ast.Ty(fullType ty)
+	| Ast.TopInit(init) -> Ast.TopInit(initialiser init)
 	| Ast.Include(inc,name) ->
 	    Ast.Include(string_mcode inc,inc_file_mcode name)
 	| Ast.DefineHeader(def,id,params) ->
@@ -967,6 +971,8 @@ let rebuilder
       Ast.WhenNot a -> Ast.WhenNot (notfn a)
     | Ast.WhenAlways a -> Ast.WhenAlways (alwaysfn a)
     | Ast.WhenModifier(x)    -> Ast.WhenModifier(x)
+    | Ast.WhenNotTrue(e) -> Ast.WhenNotTrue(rule_elem e)
+    | Ast.WhenNotFalse(e) -> Ast.WhenNotFalse(rule_elem e)
 
   and case_line c =
     let k c =
