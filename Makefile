@@ -60,14 +60,14 @@ endif
 
 SEXPSYSCMA=bigarray.cma nums.cma
 
-SYSLIBS=str.cma unix.cma $(SEXPSYSCMA) $(PYCMA)
+SYSLIBS=str.cma unix.cma $(SEXPSYSCMA) $(PYCMA) dynlink.cma
 LIBS=commons/commons.cma \
      commons/commons_sexp.cma \
      globals/globals.cma \
      ctl/ctl.cma \
      parsing_cocci/cocci_parser.cma parsing_c/parsing_c.cma \
      engine/cocciengine.cma popl09/popl.cma \
-     extra/extra.cma python/coccipython.cma
+     extra/extra.cma python/coccipython.cma ocaml/cocciocaml.cma
 
 # Should we use the local version of pycaml
 ifeq ("$(PYCAMLDIR)","pycaml")
@@ -77,8 +77,8 @@ LOCALPYCAML=
 endif
 
 # Should we use the local version of menhirLib
-ifeq ("$(MENHIRDIR)","menhirLib")
-LOCALMENHIR=menhirLib
+ifeq ("$(MENHIRDIR)","menhirlib")
+LOCALMENHIR=menhirlib
 else
 LOCALMENHIR=
 endif
@@ -90,14 +90,21 @@ else
 LOCALSEXP=
 endif
 
-#used for clean: and depend: and a little for rec & rec.opt
+# used for depend: and a little for rec & rec.opt
 MAKESUBDIRS=$(LOCALPYCAML) $(LOCALSEXP) commons \
  globals $(LOCALMENHIR) ctl parsing_cocci parsing_c \
- engine popl09 extra python
+ engine popl09 extra python ocaml
+
+# used for clean:
+# It is like MAKESUBDIRS but also
+# force cleaning of local library copies
+CLEANSUBDIRS=pycaml ocamlsexp commons \
+ globals menhirlib ctl parsing_cocci parsing_c \
+ engine popl09 extra python ocaml
 
 INCLUDEDIRSDEP=commons commons/ocamlextra $(LOCALSEXP) \
  globals $(LOCALMENHIR) $(LOCALPYCAML) ctl \
- parsing_cocci parsing_c engine popl09 extra python
+ parsing_cocci parsing_c engine popl09 extra python ocaml
 
 INCLUDEDIRS=$(INCLUDEDIRSDEP) $(SEXPDIR) $(MENHIRDIR) $(PYCAMLDIR)
 
@@ -198,7 +205,7 @@ $(MAKESUBDIRS:%=%.opt):
 # python:pycaml parsing_cocci parsing_c
 
 clean::
-	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i $@; done
+	set -e; for i in $(CLEANSUBDIRS); do $(MAKE) -C $$i $@; done
 	$(MAKE) -C demos/spp $@
 
 $(LIBS): $(MAKESUBDIRS)
@@ -308,12 +315,19 @@ clean::
 install-common:
 	mkdir -p $(DESTDIR)$(BINDIR)
 	mkdir -p $(DESTDIR)$(LIBDIR)
-	mkdir -p $(DESTDIR)$(SHAREDIR)
+	mkdir -p $(DESTDIR)$(SHAREDIR)/ocaml
 	mkdir -p $(DESTDIR)$(MANDIR)/man1
 	$(INSTALL_DATA) standard.h $(DESTDIR)$(SHAREDIR)
 	$(INSTALL_DATA) standard.iso $(DESTDIR)$(SHAREDIR)
+	$(INSTALL_DATA) ocaml/coccilib.cmi $(DESTDIR)$(SHAREDIR)/ocaml/
 	$(INSTALL_DATA) docs/spatch.1 $(DESTDIR)$(MANDIR)/man1/
 	@if [ $(FEATURE_PYTHON) -eq 1 ]; then $(MAKE) install-python; fi
+	@if [ -d $(BASH_COMPLETION_DIR) ]; then $(MAKE) install-bash; fi
+
+install-bash:
+	mkdir -p $(DESTDIR)$(BASH_COMPLETION_DIR)
+	$(INSTALL_DATA) scripts/spatch.bash_completion \
+		$(DESTDIR)$(BASH_COMPLETION_DIR)/spatch
 
 install-python:
 	mkdir -p $(DESTDIR)$(SHAREDIR)/python/coccilib/coccigui
@@ -366,6 +380,7 @@ uninstall:
 	rm -f $(DESTDIR)$(SHAREDIR)/spatch.opt
 	rm -f $(DESTDIR)$(SHAREDIR)/standard.h
 	rm -f $(DESTDIR)$(SHAREDIR)/standard.iso
+	rm -f $(DESTDIR)$(SHAREDIR)/ocaml/coccilib.cmi
 	rm -f $(DESTDIR)$(SHAREDIR)/python/coccilib/coccigui/*
 	rm -f $(DESTDIR)$(SHAREDIR)/python/coccilib/*.py
 	rmdir --ignore-fail-on-non-empty -p \

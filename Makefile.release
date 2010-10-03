@@ -61,10 +61,13 @@ prerelease:
 	cvs up -CdP
 	$(MAKE) distclean
 	sed -i "s|^OCAMLCFLAGS=.*$$|OCAMLCFLAGS=|" Makefile
+	@echo "\n\tEdit globals/config.ml.in"
+	@echo "\tCommit with 'make release'\n"
 
 release:
 	cvs ci -m "Release $(VERSION)" globals/config.ml.in
 	$(MAKE) licensify
+	@echo "\n\tRun 'make package'\n"
 
 package:
 	$(MAKE) package-src
@@ -100,14 +103,13 @@ package-python:
 # make clean is there to remove them while not removing the pdf
 # (only distclean remove the pdfs).
 srctar:
-	make distclean
-	make docs
-	make clean
+	$(MAKE) distclean
+	$(MAKE) docs
+	$(MAKE) clean
 	cp -a .  $(TMP)/$(PACKAGE)
-	cd $(TMP)/$(PACKAGE); cd parsing_cocci/; make parser_cocci_menhir.ml
+	cd $(TMP)/$(PACKAGE); cd parsing_cocci/; $(MAKE) parser_cocci_menhir.ml
 	cd $(TMP); tar cvfz $(PACKAGE).tgz --exclude-vcs $(EXCL) $(PACKAGE)
 	rm -rf  $(TMP)/$(PACKAGE)
-
 
 bintar: all
 	rm -f $(TMP)/$(PACKAGE)
@@ -118,7 +120,7 @@ bintar: all
 staticbintar: all.opt
 	rm -f $(TMP)/$(PACKAGE)
 	ln -s `pwd` $(TMP)/$(PACKAGE)
-	make static
+	$(MAKE) static
 	cd $(TMP); tar cvfz $(PACKAGE)-bin-x86-static.tgz --exclude-vcs $(BINSRC2)
 	rm -f $(TMP)/$(PACKAGE)
 
@@ -126,7 +128,7 @@ staticbintar: all.opt
 bytecodetar: all
 	rm -f $(TMP)/$(PACKAGE)
 	ln -s `pwd` $(TMP)/$(PACKAGE)
-	make purebytecode
+	$(MAKE) purebytecode
 	cd $(TMP); tar cvfz $(PACKAGE)-bin-bytecode-$(OCAMLVERSION).tgz --exclude-vcs $(BINSRC2)
 	rm -f $(TMP)/$(PACKAGE)
 
@@ -140,7 +142,7 @@ bintar-python: all
 bytecodetar-python: all
 	rm -f $(TMP)/$(PACKAGE)
 	ln -s `pwd` $(TMP)/$(PACKAGE)
-	make purebytecode
+	$(MAKE) purebytecode
 	cd $(TMP); tar cvfz $(PACKAGE)-bin-bytecode-$(OCAMLVERSION)-python.tgz --exclude-vcs $(BINSRC2-PY)
 	rm -f $(TMP)/$(PACKAGE)
 
@@ -207,6 +209,7 @@ EXCL_SYNC=--exclude ".git"          \
 packsrc: prepack
 	$(MAKE) -C $(TMP)/$(PACKAGE)/debian lucid
 	$(MAKE) -C $(TMP)/$(PACKAGE)/debian karmic
+#	$(MAKE) -C $(TMP)/$(PACKAGE)/debian maverik
 	$(MAKE) push
 	rm -rf  $(TMP)/$(PACKAGE)/
 
@@ -226,3 +229,4 @@ push:
 	rm -rf $(TMP)/$(PRJNAME)_$(VERSION).deb*_source.$(PRJNAME).upload
 	rm -rf $(TMP)/$(PRJNAME)_$(VERSION).deb*.dsc
 	rm -rf $(TMP)/$(PRJNAME)_$(VERSION).deb*.tar.gz
+

@@ -10,11 +10,19 @@ website:
 	cp $(TMP)/$(PACKAGE).tgz                $(WEBSITE)
 	cp $(TMP)/$(PACKAGE)-bin-x86.tgz        $(WEBSITE)
 	cp $(TMP)/$(PACKAGE)-bin-x86-static.tgz $(WEBSITE)
-	cp $(TMP)/$(PACKAGE)-bin-bytecode-$(OCAMLVERSION).tgz   $(WEBSITE)
-	rm -f $(WEBSITE)/LATEST* $(WEBSITE)/coccinelle-latest.tgz
-	cp changes.txt $(WEBSITE)/changes-$(VERSION).txt
-	cd $(WEBSITE); touch LATEST_IS_$(VERSION); ln -s $(PACKAGE).tgz coccinelle-latest.tgz
-	cp readme.txt $(WEBSITE)
+	cp $(TMP)/$(PACKAGE)-bin-x86-python.tgz $(WEBSITE)
+	cp $(TMP)/$(PACKAGE)-bin-bytecode-$(OCAMLVERSION).tgz          $(WEBSITE)
+	cp $(TMP)/$(PACKAGE)-bin-bytecode-$(OCAMLVERSION)-python.tgz   $(WEBSITE)
+	cvs add $(WEBSITE)/$(PACKAGE).tgz                              \
+		$(WEBSITE)/$(PACKAGE)-bin-x86.tgz                      \
+		$(WEBSITE)/$(PACKAGE)-bin-x86-static.tgz               \
+		$(WEBSITE)/$(PACKAGE)-bin-x86-python.tgz               \
+		$(WEBSITE)/$(PACKAGE)-bin-bytecode-$(OCAMLVERSION).tgz \
+		$(WEBSITE)/$(PACKAGE)-bin-bytecode-$(OCAMLVERSION)-python.tgz
+#	rm -f $(WEBSITE)/LATEST* $(WEBSITE)/coccinelle-latest.tgz
+#	cp changes.txt $(WEBSITE)/changes-$(VERSION).txt
+#	cd $(WEBSITE); touch LATEST_IS_$(VERSION); ln -s $(PACKAGE).tgz coccinelle-latest.tgz
+#	cp readme.txt $(WEBSITE)
 
 
 #TXT=$(wildcard *.txt)
@@ -42,3 +50,27 @@ diff_darcs:
 gitupdate:
 	git cvsimport -d :ext:topps:/var/cvs/cocci  coccinelle
 
+UBUNTU=karmic lucid
+UBUNTURELEASE=$(UBUNTU:%=ubuntu-%)
+
+.PHONY:: ubuntu $(UBUNTURELEASE)
+
+ubuntu:
+	for r in $(UBUNTURELEASE); do $(MAKE) $$r ; done
+
+#$(UBUNTURELEASE):
+#	debchange -c debian/changelog.karmic -D karmic -v $(VERSION).deb-0~$(@:ubuntu-%=%)~npalix1 "New release $(VERSION)"
+
+ubuntu-karmic:
+	debchange -c debian/changelog.karmic -D karmic -v $(VERSION).deb-0~910npalix1 "New release $(VERSION)"
+
+ubuntu-lucid:
+	debchange -c debian/changelog.lucid -D lucid -v $(VERSION).deb-0~1004npalix1 "New release $(VERSION)"
+
+ubuntu-maverik:
+	if [ ! -f debian/changelog.$(@:ubuntu-%=%) ] ; then \
+		debchange --create -c debian/changelog.$(@:ubuntu-%=%) -D UNRELEASED \
+			-v $(VERSION).deb-0~npalix1 "New release $(VERSION)" --package $(PRJNAME) ; \
+	else \
+		debchange -c debian/changelog.$(@:ubuntu-%=%) -D UNRELEASED -v $(VERSION).deb-0~npalix1 "New release $(VERSION)" ; \
+	fi

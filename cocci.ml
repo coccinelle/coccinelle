@@ -69,7 +69,14 @@ let _hctl = Hashtbl.create 101
 (* --------------------------------------------------------------------- *)
 let sp_of_file2 file iso   =
   Common.memoized _hparse (file, iso) (fun () ->
-    Parse_cocci.process file iso false)
+    let (_,xs,_,_,_,_,_,_) as res = Parse_cocci.process file iso false in
+    (match Prepare_ocamlcocci.prepare file xs with
+      None -> ()
+    | Some ocaml_script_file ->
+        (* compile file *)
+	Prepare_ocamlcocci.load_file ocaml_script_file;
+	Prepare_ocamlcocci.clean_file ocaml_script_file);
+    res)
 let sp_of_file file iso    =
   Common.profile_code "parse cocci" (fun () -> sp_of_file2 file iso)
 
@@ -748,7 +755,10 @@ type toplevel_c_info = {
 }
 
 type toplevel_cocci_info_script_rule = {
-  scr_ast_rule: string * (string * Ast_cocci.meta_name) list * string;
+  scr_rulename: string;
+  scr_ast_rule:
+      string * (string * Ast_cocci.meta_name * Ast_cocci.metavar) list *
+      string;
   language: string;
   scr_dependencies: Ast_cocci.dependency;
   scr_ruleid: int;
@@ -843,9 +853,10 @@ let python_code =
     local_python_code ^
     "cocci = Cocci()\n"
 
-let make_init rulenb lang deps code =
+let make_init name rulenb lang deps code =
   let mv = [] in
   {
+  scr_rulename = name;
   scr_ast_rule = (lang, mv, code);
   language = lang;
   scr_dependencies = deps;
@@ -876,9 +887,10 @@ let prepare_cocci ctls free_var_lists negated_pos_lists
       then failwith "not handling multiple minirules";
 
       match ast with
-        Ast_cocci.ScriptRule (lang,deps,mv,code) ->
+        Ast_cocci.ScriptRule (name,lang,deps,mv,code) ->
           let r =
           {
+	    scr_rulename = name;
             scr_ast_rule = (lang, mv, code);
             language = lang;
             scr_dependencies = deps;
@@ -886,13 +898,14 @@ let prepare_cocci ctls free_var_lists negated_pos_lists
             script_code = code;
           }
           in ScriptRuleCocciInfo r
-      | Ast_cocci.InitialScriptRule (lang,deps,code) ->
-	  let r = make_init rulenb lang deps code in
+      | Ast_cocci.InitialScriptRule (name,lang,deps,code) ->
+	  let r = make_init name rulenb lang deps code in
 	    InitialScriptRuleCocciInfo r
-      | Ast_cocci.FinalScriptRule (lang,deps,code) ->
+      | Ast_cocci.FinalScriptRule (name,lang,deps,code) ->
 	  let mv = [] in
           let r =
           {
+	    scr_rulename = name;
             scr_ast_rule = (lang, mv, code);
             language = lang;
             scr_dependencies = deps;
@@ -1140,9 +1153,25 @@ let merge_env new_e old_e =
       ([],old_e) new_e in
   old_e @ (List.rev ext)
 
-let apply_python_rule r cache newes e rules_that_have_matched
-    rules_that_have_ever_matched =
-  Common.profile_code "python" (fun () ->
+let contains_binding e (_,(r,m),_) =
+  try
+    let _ = List.find (function ((re, rm), _) -> r =*= re && m =$= rm) e in
+    true
+  with Not_found -> false
+
+let python_application mv ve r =
+  Pycocci.build_classes (List.map (function (x,y) -> x) ve);
+  Pycocci.construct_variables mv ve;
+  let _ = Pycocci.pyrun_simplestring (local_python_code ^r.script_code) in
+  !Pycocci.inc_match
+
+let ocaml_application mv ve r =
+  Run_ocamlcocci.run mv ve r.scr_rulename r.script_code;
+  !Coccilib.inc_match
+
+let apply_script_rule r cache newes e rules_that_have_matched
+    rules_that_have_ever_matched script_application =
+  Common.profile_code r.language (fun () ->
   show_or_not_scr_rule_name r.scr_ruleid;
   if not(interpret_dependencies rules_that_have_matched
 	   !rules_that_have_ever_matched r.scr_dependencies)
@@ -1160,47 +1189,41 @@ let apply_python_rule r cache newes e rules_that_have_matched
       let ve =
 	(List.map (function (n,v) -> (("virtual",n),Ast_c.MetaIdVal (v,[])))
 	   !Flag.defined_virtual_env) @ e in
-      let not_bound x = not (Pycocci.contains_binding ve x) in
+      let not_bound x = not (contains_binding ve x) in
       (match List.filter not_bound mv with
 	[] ->
 	  let relevant_bindings =
 	    List.filter
 	      (function ((re,rm),_) ->
-		List.exists (function (_,(r,m)) -> r =*= re && m =$= rm) mv)
+		List.exists (function (_,(r,m),_) -> r =*= re && m =$= rm) mv)
 	      e in
-	  let new_cache =
-	    if List.mem relevant_bindings cache
-	    then
-	      begin
-		print_dependencies
-		  "dependencies for script satisfied, but cached:"
-		  rules_that_have_matched
-		  !rules_that_have_ever_matched
-		  r.scr_dependencies;
-		show_or_not_binding "in" e;
-		cache
-	      end
-	    else
-	      begin
-		print_dependencies "dependencies for script satisfied:"
-		  rules_that_have_matched
-		  !rules_that_have_ever_matched
-		  r.scr_dependencies;
-		show_or_not_binding "in" e;
-		Pycocci.build_classes (List.map (function (x,y) -> x) ve);
-		Pycocci.construct_variables mv ve;
-		let _ =
-		  Pycocci.pyrun_simplestring
-		    (local_python_code ^r.script_code) in
-		relevant_bindings :: cache
-	      end in
-	  if !Pycocci.inc_match
-	  then (new_cache, merge_env [(e, rules_that_have_matched)] newes)
-	  else (new_cache, newes)
+	  if List.mem relevant_bindings cache
+	  then
+	    begin
+	      print_dependencies
+		"dependencies for script satisfied, but cached:"
+		rules_that_have_matched
+		!rules_that_have_ever_matched
+		r.scr_dependencies;
+	      show_or_not_binding "in" e;
+	      (cache,newes)
+	    end
+	  else
+	    begin
+	      print_dependencies "dependencies for script satisfied:"
+		rules_that_have_matched
+		!rules_that_have_ever_matched
+		r.scr_dependencies;
+	      show_or_not_binding "in" e;
+	      let new_cache = relevant_bindings :: cache in
+	      if script_application mv ve r
+	      then (new_cache, merge_env [(e, rules_that_have_matched)] newes)
+	      else (new_cache, newes)
+	    end
       |	unbound ->
 	  (if !Flag_cocci.show_dependencies
 	  then
-	    let m2c (_,(r,x)) = r^"."^x in
+	    let m2c (_,(r,x),_) = r^"."^x in
 	    pr2 (Printf.sprintf "script not applied: %s not bound"
 		   (String.concat ", " (List.map m2c unbound))));
 	  (cache, merge_env [(e, rules_that_have_matched)] newes))
@@ -1511,7 +1534,7 @@ let rec bigloop2 rs (ccs: file_info list) =
             let (l,mv,code) = r.scr_ast_rule in
 	    let deps = r.scr_dependencies in
             Pretty_print_cocci.unparse
-	      (Ast_cocci.ScriptRule (l,deps,mv,code)));
+	      (Ast_cocci.ScriptRule ("",l,deps,mv,code)));
 	end;
 
 	if !Flag.show_misc then print_endline "RESULT =";
@@ -1522,8 +1545,11 @@ let rec bigloop2 rs (ccs: file_info list) =
               function (e, rules_that_have_matched) ->
 		match r.language with
                   "python" ->
-		    apply_python_rule r cache newes e rules_that_have_matched
-		      rules_that_have_ever_matched
+		    apply_script_rule r cache newes e rules_that_have_matched
+		      rules_that_have_ever_matched python_application
+                | "ocaml" ->
+		    apply_script_rule r cache newes e rules_that_have_matched
+		      rules_that_have_ever_matched ocaml_application
 		| "test" ->
 		    concat_headers_and_c !ccs +> List.iter (fun (c,_) ->
 		      if c.flow <> None
@@ -1532,8 +1558,7 @@ let rec bigloop2 rs (ccs: file_info list) =
 		    (cache, newes)
 		| _ ->
                     Printf.printf "Unknown language: %s\n" r.language;
-                    (cache, newes)
-		      )
+                    (cache, newes))
             ([],[]) !es in
 
         es := (if newes = [] then init_es else newes);
@@ -1559,11 +1584,14 @@ let rec bigloop2 rs (ccs: file_info list) =
 let bigloop a b =
   Common.profile_code "bigloop" (fun () -> bigloop2 a b)
 
+type init_final = Initial | Final
+
 let initial_final_bigloop2 ty rebuild r =
   if !Flag_cocci.show_ctl_text then
     begin
       Common.pr_xxxxxxxxxxxxxxxxx ();
-      pr (ty ^ ": " ^ r.language);
+      pr ((match ty with Initial -> "initial" | Final -> "final") ^ ": " ^
+	  r.language);
       Common.pr_xxxxxxxxxxxxxxxxx ();
 
       adjust_pp_with_indent (fun () ->
@@ -1575,7 +1603,13 @@ let initial_final_bigloop2 ty rebuild r =
     "python" ->
       (* include_match makes no sense in an initial or final rule, although
 	 we have no way to prevent it *)
-      let _ = apply_python_rule r [] [] [] [] (ref []) in
+      let _ = apply_script_rule r [] [] [] [] (ref []) python_application in
+      ()
+  | "ocaml" when ty = Initial -> () (* nothing to do *)
+  | "ocaml" ->
+      (* include_match makes no sense in an initial or final rule, although
+	 we have no way to prevent it *)
+      let _ = apply_script_rule r [] [] [] [] (ref []) ocaml_application in
       ()
   | _ ->
       Printf.printf "Unknown language for initial/final script: %s\n"
@@ -1602,7 +1636,8 @@ let pre_engine2 (coccifile, isofile) =
     else Some isofile in
 
   (* useful opti when use -dir *)
-  let (metavars,astcocci,free_var_lists,negated_pos_lists,used_after_lists,
+  let (metavars,astcocci,
+       free_var_lists,negated_pos_lists,used_after_lists,
        positions_lists,toks,_) =
       sp_of_file coccifile isofile in
   let ctls = ctls_of_ast astcocci used_after_lists positions_lists in
@@ -1641,9 +1676,9 @@ let pre_engine2 (coccifile, isofile) =
 	       if interpret_dependencies [] [] r.scr_dependencies
 	       then
 		 begin
-		   initial_final_bigloop "initial"
+		   initial_final_bigloop Initial
 		     (fun (x,_,y) -> fun deps ->
-		       Ast_cocci.InitialScriptRule(x,deps,y))
+		       Ast_cocci.InitialScriptRule(r.scr_rulename,x,deps,y))
 		     r;
 		   r.language::languages
 		 end
@@ -1657,10 +1692,10 @@ let pre_engine2 (coccifile, isofile) =
       used_languages
   in
     List.iter (fun lgg ->
-		 initial_final_bigloop "initial"
+		 initial_final_bigloop Initial
 		   (fun (x,_,y) -> fun deps ->
-		     Ast_cocci.InitialScriptRule(x,deps,y))
-		   (make_init (-1) lgg Ast_cocci.NoDep "");
+		     Ast_cocci.InitialScriptRule("",x,deps,y))
+		   (make_init "" (-1) lgg Ast_cocci.NoDep "");
 	      )
       uninitialized_languages;
 
@@ -1741,8 +1776,9 @@ let post_engine2 (cocci_infos,_) =
 	    FinalScriptRuleCocciInfo(r) ->
 	      (if List.mem r.language languages
 	      then failwith ("double finalizer found for "^r.language));
-	      initial_final_bigloop "final"
-		(fun (x,_,y) -> fun deps -> Ast_cocci.FinalScriptRule(x,deps,y))
+	      initial_final_bigloop Final
+		(fun (x,_,y) -> fun deps ->
+		  Ast_cocci.FinalScriptRule(r.scr_rulename,x,deps,y))
 		r;
 	      r.language::languages
 	  | _ -> languages)

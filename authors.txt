@@ -31,6 +31,11 @@ Here are the authors and maintainers of the different parts of coccinelle:
 
 - python/ (python SmPL extension and a coccinelle GUI)
 
+* Nicolas Palix <npalix@diku.dk>
+
+- ocaml/ (OCaml SmPL extension)
+- scripts/spatch.bash_completion
+
 * All
 
 - tests/ demos/

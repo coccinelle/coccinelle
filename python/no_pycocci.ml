@@ -78,7 +78,7 @@ let build_classes env = failwith "no python"
 
 let build_variable name value = failwith "no python"
 
-let contains_binding e (_,(r,m)) = failwith "no python"
+let contains_binding e (_,(r,m),_) = failwith "no python"
 
 let construct_variables mv e = failwith "no python"
 

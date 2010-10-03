@@ -713,8 +713,8 @@ let collect_astfvs rules =
       [] -> []
     | (metavars, rule)::rules ->
         match rule with
-          Ast.ScriptRule (_,_,_,_)
-	| Ast.InitialScriptRule (_,_,_) | Ast.FinalScriptRule (_,_,_) ->
+          Ast.ScriptRule (_,_,_,_,_)
+	| Ast.InitialScriptRule (_,_,_,_) | Ast.FinalScriptRule (_,_,_,_) ->
 	    (* bound stays as is because script rules have no names, so no
 	       inheritance is possible *)
 	    rule::(loop bound rules)
@@ -791,9 +791,10 @@ let collect_top_level_used_after metavar_rule_list =
 	      used_after in
 	  let free_vars =
             match r with
-              Ast.ScriptRule (_,_,mv,_) ->
-                drop_virt(List.map (function (_,(r,v)) -> (r,v)) mv)
-            | Ast.InitialScriptRule (_,_,_) | Ast.FinalScriptRule (_,_,_) -> []
+              Ast.ScriptRule (_,_,_,mv,_) ->
+                drop_virt(List.map (function (_,(r,v),_) -> (r,v)) mv)
+            | Ast.InitialScriptRule (_,_,_,_)
+	    | Ast.FinalScriptRule (_,_,_,_) -> []
             | Ast.CocciRule (_,_,rule,_,_) ->
 		drop_virt
 	          (Common.union_set (nub (collect_all_rule_refs rule))
@@ -900,8 +901,8 @@ let collect_used_after metavar_rule_list =
     (function (metavars,r) ->
       function used_after ->
         match r with
-          Ast.ScriptRule (_,_,_,_)
-	| Ast.InitialScriptRule (_,_,_) | Ast.FinalScriptRule (_,_,_) ->
+          Ast.ScriptRule (_,_,_,_,_)
+	| Ast.InitialScriptRule (_,_,_,_) | Ast.FinalScriptRule (_,_,_,_) ->
 	    ([], [used_after], [], [])
         | Ast.CocciRule (name, rule_info, minirules, _,_) ->
           collect_local_used_after metavars minirules used_after

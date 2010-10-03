@@ -529,9 +529,12 @@ and rulename =
   | GeneratedRulename of string option * dependency *
 	string list * string list * exists * bool
       (* true if the whole thing is an expression *)
-  | ScriptRulename of string * dependency
-  | InitialScriptRulename of string * dependency
-  | FinalScriptRulename of string * dependency
+  | ScriptRulename of string option (* name *) * string (* language *) *
+	dependency
+  | InitialScriptRulename of string option (* name *) * string (* language *) *
+	dependency
+  | FinalScriptRulename of string option (* name *) * string (* language *) *
+	dependency
 
 and ruletype = Normal | Generated
 
@@ -539,9 +542,12 @@ and rule =
     CocciRule of string (* name *) *
 	(dependency * string list (* dropped isos *) * exists) *
 	top_level list * bool list (* true if generates an exp *) * ruletype
-  | ScriptRule of string * dependency * (string * meta_name) list * string
-  | InitialScriptRule of string * dependency * string
-  | FinalScriptRule of string * dependency * string
+  | ScriptRule of string (* name *) *
+      string * dependency * (string * meta_name * metavar) list * string
+  | InitialScriptRule of  string (* name *) *
+	string * dependency * string
+  | FinalScriptRule of  string (* name *) *
+	string * dependency * string
 
 and dependency =
     Dep of string (* rule applies for the current binding *)

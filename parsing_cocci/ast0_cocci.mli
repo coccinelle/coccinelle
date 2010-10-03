@@ -393,12 +393,13 @@ and parsed_rule =
 	 (string list * string list * Ast_cocci.dependency * string *
 	    Ast_cocci.exists)) *
 	(rule * Ast_cocci.metavar list) * Ast_cocci.ruletype
-  | ScriptRule of
-      string * Ast_cocci.dependency * (string * Ast_cocci.meta_name) list *
+  | ScriptRule of string (* name *) *
+      string * Ast_cocci.dependency *
+	(string * Ast_cocci.meta_name * Ast_cocci.metavar) list *
 	string
-  | InitialScriptRule of
+  | InitialScriptRule of string (* name *) *
       string (*language*) * Ast_cocci.dependency * string (*code*)
-  | FinalScriptRule   of
+  | FinalScriptRule of string (* name *) *
       string (*language*) * Ast_cocci.dependency * string (*code*)
 
 (* --------------------------------------------------------------------- *)

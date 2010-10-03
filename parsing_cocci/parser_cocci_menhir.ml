@@ -29092,12 +29092,13 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _endpos = _endpos__6_ in
         let _v : (
 # 162 "parser_cocci_menhir.mly"
-       (string * Ast_cocci.meta_name)
+       (string * Ast_cocci.meta_name * Ast_cocci.metavar)
 # 29097 "parser_cocci_menhir.ml"
         ) = 
 # 2048 "parser_cocci_menhir.mly"
-  ( (P.id2name py, (_3, P.id2name cocci)) )
-# 29101 "parser_cocci_menhir.ml"
+  ( let mv = Parse_aux.lookup _3 (P.id2name cocci) in
+    (P.id2name py, (_3, P.id2name cocci), mv) )
+# 29102 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -29142,12 +29143,14 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _endpos = _endpos__6_ in
         let _v : (
 # 162 "parser_cocci_menhir.mly"
-       (string * Ast_cocci.meta_name)
-# 29147 "parser_cocci_menhir.ml"
+       (string * Ast_cocci.meta_name * Ast_cocci.metavar)
+# 29148 "parser_cocci_menhir.ml"
         ) = 
-# 2050 "parser_cocci_menhir.mly"
-  ( (P.id2name py, ("virtual", P.id2name cocci)) )
-# 29151 "parser_cocci_menhir.ml"
+# 2051 "parser_cocci_menhir.mly"
+  ( let name = ("virtual", P.id2name cocci) in
+    let mv = Ast.MetaIdDecl(Ast.NONE,name) in
+    (P.id2name py, name, mv) )
+# 29154 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -29168,14 +29171,14 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _1 : (
 # 90 "parser_cocci_menhir.mly"
        (string * Data.clt)
-# 29172 "parser_cocci_menhir.ml"
+# 29175 "parser_cocci_menhir.ml"
         ) = Obj.magic _1 in
         let _startpos = _startpos__1_ in
         let _endpos = _endpos__1_ in
         let _v : 'tv_seed_elem = 
 # 1473 "parser_cocci_menhir.mly"
           ( let (x,_) = _1 in Ast.SeedString x )
-# 29179 "parser_cocci_menhir.ml"
+# 29182 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -29196,14 +29199,14 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _1 : (
 # 64 "parser_cocci_menhir.mly"
        (Parse_aux.idinfo)
-# 29200 "parser_cocci_menhir.ml"
+# 29203 "parser_cocci_menhir.ml"
         ) = Obj.magic _1 in
         let _startpos = _startpos__1_ in
         let _endpos = _endpos__1_ in
         let _v : 'tv_seed_elem = 
 # 1474 "parser_cocci_menhir.mly"
           ( let (x,_,_,_) = _1 in Ast.SeedId x )
-# 29207 "parser_cocci_menhir.ml"
+# 29210 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -29234,7 +29237,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _1 : (
 # 49 "parser_cocci_menhir.mly"
       (string)
-# 29238 "parser_cocci_menhir.ml"
+# 29241 "parser_cocci_menhir.ml"
         ) = Obj.magic _1 in
         let _startpos = _startpos__1_ in
         let _endpos = _endpos__3_ in
@@ -29243,7 +29246,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
     ( let nm = (_1,P.id2name _3) in
       P.check_meta(Ast.MetaIdDecl(Ast.NONE,nm));
       Ast.SeedId nm )
-# 29247 "parser_cocci_menhir.ml"
+# 29250 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -29264,14 +29267,14 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let x : (
 # 90 "parser_cocci_menhir.mly"
        (string * Data.clt)
-# 29268 "parser_cocci_menhir.ml"
+# 29271 "parser_cocci_menhir.ml"
         ) = Obj.magic x in
         let _startpos = _startpos_x_ in
         let _endpos = _endpos_x_ in
         let _v : 'tv_separated_nonempty_list_TComma_TString_ = 
 # 144 "standard.mly"
     ( [ x ] )
-# 29275 "parser_cocci_menhir.ml"
+# 29278 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -29302,14 +29305,14 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let x : (
 # 90 "parser_cocci_menhir.mly"
        (string * Data.clt)
-# 29306 "parser_cocci_menhir.ml"
+# 29309 "parser_cocci_menhir.ml"
         ) = Obj.magic x in
         let _startpos = _startpos_x_ in
         let _endpos = _endpos_xs_ in
         let _v : 'tv_separated_nonempty_list_TComma_TString_ = 
 # 146 "standard.mly"
     ( x :: xs )
-# 29313 "parser_cocci_menhir.ml"
+# 29316 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -29333,7 +29336,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _v : 'tv_separated_nonempty_list_TComma_any_strict_ = 
 # 144 "standard.mly"
     ( [ x ] )
-# 29337 "parser_cocci_menhir.ml"
+# 29340 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -29367,7 +29370,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _v : 'tv_separated_nonempty_list_TComma_any_strict_ = 
 # 146 "standard.mly"
     ( x :: xs )
-# 29371 "parser_cocci_menhir.ml"
+# 29374 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -29391,7 +29394,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _v : 'tv_separated_nonempty_list_TComma_ctype_ = 
 # 144 "standard.mly"
     ( [ x ] )
-# 29395 "parser_cocci_menhir.ml"
+# 29398 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -29425,7 +29428,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _v : 'tv_separated_nonempty_list_TComma_ctype_ = 
 # 146 "standard.mly"
     ( x :: xs )
-# 29429 "parser_cocci_menhir.ml"
+# 29432 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -29449,7 +29452,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _v : 'tv_separated_nonempty_list_TComma_d_ident_ = 
 # 144 "standard.mly"
     ( [ x ] )
-# 29453 "parser_cocci_menhir.ml"
+# 29456 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -29483,7 +29486,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _v : 'tv_separated_nonempty_list_TComma_d_ident_ = 
 # 146 "standard.mly"
     ( x :: xs )
-# 29487 "parser_cocci_menhir.ml"
+# 29490 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -29507,7 +29510,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _v : 'tv_separated_nonempty_list_TComma_ident_or_const_ = 
 # 144 "standard.mly"
     ( [ x ] )
-# 29511 "parser_cocci_menhir.ml"
+# 29514 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -29541,7 +29544,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _v : 'tv_separated_nonempty_list_TComma_ident_or_const_ = 
 # 146 "standard.mly"
     ( x :: xs )
-# 29545 "parser_cocci_menhir.ml"
+# 29548 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -29565,7 +29568,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _v : 'tv_separated_nonempty_list_TComma_meta_ident_ = 
 # 144 "standard.mly"
     ( [ x ] )
-# 29569 "parser_cocci_menhir.ml"
+# 29572 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -29599,7 +29602,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _v : 'tv_separated_nonempty_list_TComma_meta_ident_ = 
 # 146 "standard.mly"
     ( x :: xs )
-# 29603 "parser_cocci_menhir.ml"
+# 29606 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -29623,7 +29626,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _v : 'tv_separated_nonempty_list_TComma_pure_ident_ = 
 # 144 "standard.mly"
     ( [ x ] )
-# 29627 "parser_cocci_menhir.ml"
+# 29630 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -29657,7 +29660,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _v : 'tv_separated_nonempty_list_TComma_pure_ident_ = 
 # 146 "standard.mly"
     ( x :: xs )
-# 29661 "parser_cocci_menhir.ml"
+# 29664 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -29681,7 +29684,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _v : 'tv_separated_nonempty_list_TComma_pure_ident_or_meta_ident_ = 
 # 144 "standard.mly"
     ( [ x ] )
-# 29685 "parser_cocci_menhir.ml"
+# 29688 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -29715,7 +29718,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _v : 'tv_separated_nonempty_list_TComma_pure_ident_or_meta_ident_ = 
 # 146 "standard.mly"
     ( x :: xs )
-# 29719 "parser_cocci_menhir.ml"
+# 29722 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -29739,7 +29742,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _v : 'tv_separated_nonempty_list_TComma_pure_ident_or_meta_ident_with_econstraint_not_ceq_or_sub__ = 
 # 144 "standard.mly"
     ( [ x ] )
-# 29743 "parser_cocci_menhir.ml"
+# 29746 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -29773,7 +29776,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _v : 'tv_separated_nonempty_list_TComma_pure_ident_or_meta_ident_with_econstraint_not_ceq_or_sub__ = 
 # 146 "standard.mly"
     ( x :: xs )
-# 29777 "parser_cocci_menhir.ml"
+# 29780 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -29797,7 +29800,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _v : 'tv_separated_nonempty_list_TComma_pure_ident_or_meta_ident_with_econstraint_re_or_not_eqe_or_sub__ = 
 # 144 "standard.mly"
     ( [ x ] )
-# 29801 "parser_cocci_menhir.ml"
+# 29804 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -29831,7 +29834,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _v : 'tv_separated_nonempty_list_TComma_pure_ident_or_meta_ident_with_econstraint_re_or_not_eqe_or_sub__ = 
 # 146 "standard.mly"
     ( x :: xs )
-# 29835 "parser_cocci_menhir.ml"
+# 29838 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -29855,7 +29858,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _v : 'tv_separated_nonempty_list_TComma_pure_ident_or_meta_ident_with_idconstraint_re_or_not_eqid__ = 
 # 144 "standard.mly"
     ( [ x ] )
-# 29859 "parser_cocci_menhir.ml"
+# 29862 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -29889,7 +29892,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _v : 'tv_separated_nonempty_list_TComma_pure_ident_or_meta_ident_with_idconstraint_re_or_not_eqid__ = 
 # 146 "standard.mly"
     ( x :: xs )
-# 29893 "parser_cocci_menhir.ml"
+# 29896 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -29913,7 +29916,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _v : 'tv_separated_nonempty_list_TComma_pure_ident_or_meta_ident_with_idconstraint_virt_re_or_not_eqid__ = 
 # 144 "standard.mly"
     ( [ x ] )
-# 29917 "parser_cocci_menhir.ml"
+# 29920 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -29947,7 +29950,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _v : 'tv_separated_nonempty_list_TComma_pure_ident_or_meta_ident_with_idconstraint_virt_re_or_not_eqid__ = 
 # 146 "standard.mly"
     ( x :: xs )
-# 29951 "parser_cocci_menhir.ml"
+# 29954 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -29971,7 +29974,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _v : 'tv_separated_nonempty_list_TComma_pure_ident_or_meta_ident_with_seed_ = 
 # 144 "standard.mly"
     ( [ x ] )
-# 29975 "parser_cocci_menhir.ml"
+# 29978 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -30005,7 +30008,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _v : 'tv_separated_nonempty_list_TComma_pure_ident_or_meta_ident_with_seed_ = 
 # 146 "standard.mly"
     ( x :: xs )
-# 30009 "parser_cocci_menhir.ml"
+# 30012 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -30029,7 +30032,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _v : 'tv_separated_nonempty_list_TComma_pure_ident_or_meta_ident_with_x_eq_not_pos__ = 
 # 144 "standard.mly"
     ( [ x ] )
-# 30033 "parser_cocci_menhir.ml"
+# 30036 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -30063,7 +30066,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _v : 'tv_separated_nonempty_list_TComma_pure_ident_or_meta_ident_with_x_eq_not_pos__ = 
 # 146 "standard.mly"
     ( x :: xs )
-# 30067 "parser_cocci_menhir.ml"
+# 30070 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -30087,7 +30090,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _v : 'tv_separated_nonempty_list_TComma_typedef_ident_ = 
 # 144 "standard.mly"
     ( [ x ] )
-# 30091 "parser_cocci_menhir.ml"
+# 30094 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -30121,7 +30124,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _v : 'tv_separated_nonempty_list_TComma_typedef_ident_ = 
 # 146 "standard.mly"
     ( x :: xs )
-# 30125 "parser_cocci_menhir.ml"
+# 30128 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -30145,7 +30148,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _v : 'tv_separated_nonempty_list_TCppConcatOp_seed_elem_ = 
 # 144 "standard.mly"
     ( [ x ] )
-# 30149 "parser_cocci_menhir.ml"
+# 30152 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -30179,7 +30182,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _v : 'tv_separated_nonempty_list_TCppConcatOp_seed_elem_ = 
 # 146 "standard.mly"
     ( x :: xs )
-# 30183 "parser_cocci_menhir.ml"
+# 30186 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -30203,7 +30206,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _v : 'tv_single_statement = 
 # 952 "parser_cocci_menhir.mly"
                                       ( _1 )
-# 30207 "parser_cocci_menhir.ml"
+# 30210 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -30234,13 +30237,13 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _3 : (
 # 80 "parser_cocci_menhir.mly"
        (Data.clt)
-# 30238 "parser_cocci_menhir.ml"
+# 30241 "parser_cocci_menhir.ml"
         ) = Obj.magic _3 in
         let _2 : 'tv_midzero_list_statement_statement_ = Obj.magic _2 in
         let _1 : (
 # 79 "parser_cocci_menhir.mly"
        (Data.clt)
-# 30244 "parser_cocci_menhir.ml"
+# 30247 "parser_cocci_menhir.ml"
         ) = Obj.magic _1 in
         let _startpos = _startpos__1_ in
         let _endpos = _endpos__3_ in
@@ -30251,7 +30254,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
 	  (Ast0.Disj(P.clt2mcode "(" _1,
 		     List.map (function x -> Ast0.wrap(Ast0.DOTS([x]))) code,
 		     mids, P.clt2mcode ")" _3)) )
-# 30255 "parser_cocci_menhir.ml"
+# 30258 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -30275,7 +30278,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _v : 'tv_statement = 
 # 879 "parser_cocci_menhir.mly"
            ( _1 )
-# 30279 "parser_cocci_menhir.ml"
+# 30282 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -30296,14 +30299,14 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _1 : (
 # 67 "parser_cocci_menhir.mly"
        (Parse_aux.info)
-# 30300 "parser_cocci_menhir.ml"
+# 30303 "parser_cocci_menhir.ml"
         ) = Obj.magic _1 in
         let _startpos = _startpos__1_ in
         let _endpos = _endpos__1_ in
         let _v : 'tv_statement = 
 # 881 "parser_cocci_menhir.mly"
     ( P.meta_stm _1 )
-# 30307 "parser_cocci_menhir.ml"
+# 30310 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -30329,7 +30332,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _2 : (
 # 110 "parser_cocci_menhir.mly"
        (Data.clt)
-# 30333 "parser_cocci_menhir.ml"
+# 30336 "parser_cocci_menhir.ml"
         ) = Obj.magic _2 in
         let _1 : 'tv_expr = Obj.magic _1 in
         let _startpos = _startpos__1_ in
@@ -30337,7 +30340,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _v : 'tv_statement = 
 # 883 "parser_cocci_menhir.mly"
     ( P.exp_stm _1 _2 )
-# 30341 "parser_cocci_menhir.ml"
+# 30344 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -30379,25 +30382,25 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _4 : (
 # 80 "parser_cocci_menhir.mly"
        (Data.clt)
-# 30383 "parser_cocci_menhir.ml"
+# 30386 "parser_cocci_menhir.ml"
         ) = Obj.magic _4 in
         let _3 : 'tv_eexpr = Obj.magic _3 in
         let _2 : (
 # 79 "parser_cocci_menhir.mly"
        (Data.clt)
-# 30389 "parser_cocci_menhir.ml"
+# 30392 "parser_cocci_menhir.ml"
         ) = Obj.magic _2 in
         let _1 : (
 # 59 "parser_cocci_menhir.mly"
        (Data.clt)
-# 30394 "parser_cocci_menhir.ml"
+# 30397 "parser_cocci_menhir.ml"
         ) = Obj.magic _1 in
         let _startpos = _startpos__1_ in
         let _endpos = _endpos__5_ in
         let _v : 'tv_statement = 
 # 885 "parser_cocci_menhir.mly"
     ( P.ifthen _1 _2 _3 _4 _5 )
-# 30401 "parser_cocci_menhir.ml"
+# 30404 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -30449,31 +30452,31 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _6 : (
 # 59 "parser_cocci_menhir.mly"
        (Data.clt)
-# 30453 "parser_cocci_menhir.ml"
+# 30456 "parser_cocci_menhir.ml"
         ) = Obj.magic _6 in
         let _5 : 'tv_single_statement = Obj.magic _5 in
         let _4 : (
 # 80 "parser_cocci_menhir.mly"
        (Data.clt)
-# 30459 "parser_cocci_menhir.ml"
+# 30462 "parser_cocci_menhir.ml"
         ) = Obj.magic _4 in
         let _3 : 'tv_eexpr = Obj.magic _3 in
         let _2 : (
 # 79 "parser_cocci_menhir.mly"
        (Data.clt)
-# 30465 "parser_cocci_menhir.ml"
+# 30468 "parser_cocci_menhir.ml"
         ) = Obj.magic _2 in
         let _1 : (
 # 59 "parser_cocci_menhir.mly"
        (Data.clt)
-# 30470 "parser_cocci_menhir.ml"
+# 30473 "parser_cocci_menhir.ml"
         ) = Obj.magic _1 in
         let _startpos = _startpos__1_ in
         let _endpos = _endpos__7_ in
         let _v : 'tv_statement = 
 # 887 "parser_cocci_menhir.mly"
     ( P.ifthenelse _1 _2 _3 _4 _5 _6 _7 )
-# 30477 "parser_cocci_menhir.ml"
+# 30480 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -30535,37 +30538,37 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _8 : (
 # 80 "parser_cocci_menhir.mly"
        (Data.clt)
-# 30539 "parser_cocci_menhir.ml"
+# 30542 "parser_cocci_menhir.ml"
         ) = Obj.magic _8 in
         let _7 : 'tv_option_eexpr_ = Obj.magic _7 in
         let _6 : (
 # 110 "parser_cocci_menhir.mly"
        (Data.clt)
-# 30545 "parser_cocci_menhir.ml"
+# 30548 "parser_cocci_menhir.ml"
         ) = Obj.magic _6 in
         let _5 : 'tv_option_eexpr_ = Obj.magic _5 in
         let _4 : (
 # 110 "parser_cocci_menhir.mly"
        (Data.clt)
-# 30551 "parser_cocci_menhir.ml"
+# 30554 "parser_cocci_menhir.ml"
         ) = Obj.magic _4 in
         let _3 : 'tv_option_eexpr_ = Obj.magic _3 in
         let _2 : (
 # 79 "parser_cocci_menhir.mly"
        (Data.clt)
-# 30557 "parser_cocci_menhir.ml"
+# 30560 "parser_cocci_menhir.ml"
         ) = Obj.magic _2 in
         let _1 : (
 # 59 "parser_cocci_menhir.mly"
        (Data.clt)
-# 30562 "parser_cocci_menhir.ml"
+# 30565 "parser_cocci_menhir.ml"
         ) = Obj.magic _1 in
         let _startpos = _startpos__1_ in
         let _endpos = _endpos__9_ in
         let _v : 'tv_statement = 
 # 890 "parser_cocci_menhir.mly"
     ( P.forloop _1 _2 _3 _4 _5 _6 _7 _8 _9 )
-# 30569 "parser_cocci_menhir.ml"
+# 30572 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -30607,25 +30610,25 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _4 : (
 # 80 "parser_cocci_menhir.mly"
        (Data.clt)
-# 30611 "parser_cocci_menhir.ml"
+# 30614 "parser_cocci_menhir.ml"
         ) = Obj.magic _4 in
         let _3 : 'tv_eexpr = Obj.magic _3 in
         let _2 : (
 # 79 "parser_cocci_menhir.mly"
        (Data.clt)
-# 30617 "parser_cocci_menhir.ml"
+# 30620 "parser_cocci_menhir.ml"
         ) = Obj.magic _2 in
         let _1 : (
 # 59 "parser_cocci_menhir.mly"
        (Data.clt)
-# 30622 "parser_cocci_menhir.ml"
+# 30625 "parser_cocci_menhir.ml"
         ) = Obj.magic _1 in
         let _startpos = _startpos__1_ in
         let _endpos = _endpos__5_ in
         let _v : 'tv_statement = 
 # 892 "parser_cocci_menhir.mly"
     ( P.whileloop _1 _2 _3 _4 _5 )
-# 30629 "parser_cocci_menhir.ml"
+# 30632 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -30676,36 +30679,36 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _7 : (
 # 110 "parser_cocci_menhir.mly"
        (Data.clt)
-# 30680 "parser_cocci_menhir.ml"
+# 30683 "parser_cocci_menhir.ml"
         ) = Obj.magic _7 in
         let _6 : (
 # 80 "parser_cocci_menhir.mly"
        (Data.clt)
-# 30685 "parser_cocci_menhir.ml"
+# 30688 "parser_cocci_menhir.ml"
         ) = Obj.magic _6 in
         let _5 : 'tv_eexpr = Obj.magic _5 in
         let _4 : (
 # 79 "parser_cocci_menhir.mly"
        (Data.clt)
-# 30691 "parser_cocci_menhir.ml"
+# 30694 "parser_cocci_menhir.ml"
         ) = Obj.magic _4 in
         let _3 : (
 # 59 "parser_cocci_menhir.mly"
        (Data.clt)
-# 30696 "parser_cocci_menhir.ml"
+# 30699 "parser_cocci_menhir.ml"
         ) = Obj.magic _3 in
         let _2 : 'tv_single_statement = Obj.magic _2 in
         let _1 : (
 # 59 "parser_cocci_menhir.mly"
        (Data.clt)
-# 30702 "parser_cocci_menhir.ml"
+# 30705 "parser_cocci_menhir.ml"
         ) = Obj.magic _1 in
         let _startpos = _startpos__1_ in
         let _endpos = _endpos__7_ in
         let _v : 'tv_statement = 
 # 894 "parser_cocci_menhir.mly"
     ( P.doloop _1 _2 _3 _4 _5 _6 _7 )
-# 30709 "parser_cocci_menhir.ml"
+# 30712 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -30747,13 +30750,13 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _4 : (
 # 80 "parser_cocci_menhir.mly"
        (Data.clt)
-# 30751 "parser_cocci_menhir.ml"
+# 30754 "parser_cocci_menhir.ml"
         ) = Obj.magic _4 in
         let _3 : 'tv_eexpr_list_option = Obj.magic _3 in
         let _2 : (
 # 79 "parser_cocci_menhir.mly"
        (Data.clt)
-# 30757 "parser_cocci_menhir.ml"
+# 30760 "parser_cocci_menhir.ml"
         ) = Obj.magic _2 in
         let _1 : 'tv_iter_ident = Obj.magic _1 in
         let _startpos = _startpos__1_ in
@@ -30761,7 +30764,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _v : 'tv_statement = 
 # 896 "parser_cocci_menhir.mly"
     ( P.iterator _1 _2 _3 _4 _5 )
-# 30765 "parser_cocci_menhir.ml"
+# 30768 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -30817,37 +30820,37 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _8 : (
 # 104 "parser_cocci_menhir.mly"
        (Data.clt)
-# 30821 "parser_cocci_menhir.ml"
+# 30824 "parser_cocci_menhir.ml"
         ) = Obj.magic _8 in
         let _7 : 'tv_list_case_line_ = Obj.magic _7 in
         let _6 : 'tv_list_decl_var_ = Obj.magic _6 in
         let _5 : (
 # 104 "parser_cocci_menhir.mly"
        (Data.clt)
-# 30828 "parser_cocci_menhir.ml"
+# 30831 "parser_cocci_menhir.ml"
         ) = Obj.magic _5 in
         let _4 : (
 # 80 "parser_cocci_menhir.mly"
        (Data.clt)
-# 30833 "parser_cocci_menhir.ml"
+# 30836 "parser_cocci_menhir.ml"
         ) = Obj.magic _4 in
         let _3 : 'tv_eexpr = Obj.magic _3 in
         let _2 : (
 # 79 "parser_cocci_menhir.mly"
        (Data.clt)
-# 30839 "parser_cocci_menhir.ml"
+# 30842 "parser_cocci_menhir.ml"
         ) = Obj.magic _2 in
         let _1 : (
 # 59 "parser_cocci_menhir.mly"
        (Data.clt)
-# 30844 "parser_cocci_menhir.ml"
+# 30847 "parser_cocci_menhir.ml"
         ) = Obj.magic _1 in
         let _startpos = _startpos__1_ in
         let _endpos = _endpos__8_ in
         let _v : 'tv_statement = 
 # 898 "parser_cocci_menhir.mly"
     ( P.switch _1 _2 _3 _4 _5 (List.concat _6) _7 _8 )
-# 30851 "parser_cocci_menhir.ml"
+# 30854 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -30878,20 +30881,20 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _3 : (
 # 110 "parser_cocci_menhir.mly"
        (Data.clt)
-# 30882 "parser_cocci_menhir.ml"
+# 30885 "parser_cocci_menhir.ml"
         ) = Obj.magic _3 in
         let _2 : 'tv_eexpr = Obj.magic _2 in
         let _1 : (
 # 59 "parser_cocci_menhir.mly"
        (Data.clt)
-# 30888 "parser_cocci_menhir.ml"
+# 30891 "parser_cocci_menhir.ml"
         ) = Obj.magic _1 in
         let _startpos = _startpos__1_ in
         let _endpos = _endpos__3_ in
         let _v : 'tv_statement = 
 # 899 "parser_cocci_menhir.mly"
                         ( P.ret_exp _1 _2 _3 )
-# 30895 "parser_cocci_menhir.ml"
+# 30898 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -30917,19 +30920,19 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _2 : (
 # 110 "parser_cocci_menhir.mly"
        (Data.clt)
-# 30921 "parser_cocci_menhir.ml"
+# 30924 "parser_cocci_menhir.ml"
         ) = Obj.magic _2 in
         let _1 : (
 # 59 "parser_cocci_menhir.mly"
        (Data.clt)
-# 30926 "parser_cocci_menhir.ml"
+# 30929 "parser_cocci_menhir.ml"
         ) = Obj.magic _1 in
         let _startpos = _startpos__1_ in
         let _endpos = _endpos__2_ in
         let _v : 'tv_statement = 
 # 900 "parser_cocci_menhir.mly"
                   ( P.ret _1 _2 )
-# 30933 "parser_cocci_menhir.ml"
+# 30936 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -30955,19 +30958,19 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _2 : (
 # 110 "parser_cocci_menhir.mly"
        (Data.clt)
-# 30959 "parser_cocci_menhir.ml"
+# 30962 "parser_cocci_menhir.ml"
         ) = Obj.magic _2 in
         let _1 : (
 # 60 "parser_cocci_menhir.mly"
        (Data.clt)
-# 30964 "parser_cocci_menhir.ml"
+# 30967 "parser_cocci_menhir.ml"
         ) = Obj.magic _1 in
         let _startpos = _startpos__1_ in
         let _endpos = _endpos__2_ in
         let _v : 'tv_statement = 
 # 901 "parser_cocci_menhir.mly"
                  ( P.break _1 _2 )
-# 30971 "parser_cocci_menhir.ml"
+# 30974 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -30993,19 +30996,19 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _2 : (
 # 110 "parser_cocci_menhir.mly"
        (Data.clt)
-# 30997 "parser_cocci_menhir.ml"
+# 31000 "parser_cocci_menhir.ml"
         ) = Obj.magic _2 in
         let _1 : (
 # 60 "parser_cocci_menhir.mly"
        (Data.clt)
-# 31002 "parser_cocci_menhir.ml"
+# 31005 "parser_cocci_menhir.ml"
         ) = Obj.magic _1 in
         let _startpos = _startpos__1_ in
         let _endpos = _endpos__2_ in
         let _v : 'tv_statement = 
 # 902 "parser_cocci_menhir.mly"
                     ( P.cont _1 _2 )
-# 31009 "parser_cocci_menhir.ml"
+# 31012 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -31031,7 +31034,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _2 : (
 # 79 "parser_cocci_menhir.mly"
        (Data.clt)
-# 31035 "parser_cocci_menhir.ml"
+# 31038 "parser_cocci_menhir.ml"
         ) = Obj.magic _2 in
         let _1 : 'tv_ident = Obj.magic _1 in
         let _startpos = _startpos__1_ in
@@ -31039,7 +31042,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _v : 'tv_statement = 
 # 903 "parser_cocci_menhir.mly"
                 ( P.label _1 _2 )
-# 31043 "parser_cocci_menhir.ml"
+# 31046 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -31070,20 +31073,20 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _3 : (
 # 110 "parser_cocci_menhir.mly"
        (Data.clt)
-# 31074 "parser_cocci_menhir.ml"
+# 31077 "parser_cocci_menhir.ml"
         ) = Obj.magic _3 in
         let _2 : 'tv_ident = Obj.magic _2 in
         let _1 : (
 # 60 "parser_cocci_menhir.mly"
        (Data.clt)
-# 31080 "parser_cocci_menhir.ml"
+# 31083 "parser_cocci_menhir.ml"
         ) = Obj.magic _1 in
         let _startpos = _startpos__1_ in
         let _endpos = _endpos__3_ in
         let _v : 'tv_statement = 
 # 904 "parser_cocci_menhir.mly"
                       ( P.goto _1 _2 _3 )
-# 31087 "parser_cocci_menhir.ml"
+# 31090 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -31114,20 +31117,20 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _3 : (
 # 104 "parser_cocci_menhir.mly"
        (Data.clt)
-# 31118 "parser_cocci_menhir.ml"
+# 31121 "parser_cocci_menhir.ml"
         ) = Obj.magic _3 in
         let _2 : 'tv_fun_start = Obj.magic _2 in
         let _1 : (
 # 104 "parser_cocci_menhir.mly"
        (Data.clt)
-# 31124 "parser_cocci_menhir.ml"
+# 31127 "parser_cocci_menhir.ml"
         ) = Obj.magic _1 in
         let _startpos = _startpos__1_ in
         let _endpos = _endpos__3_ in
         let _v : 'tv_statement = 
 # 906 "parser_cocci_menhir.mly"
     ( P.seq _1 _2 _3 )
-# 31131 "parser_cocci_menhir.ml"
+# 31134 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -31154,14 +31157,14 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _1 : (
 # 76 "parser_cocci_menhir.mly"
        (Data.clt)
-# 31158 "parser_cocci_menhir.ml"
+# 31161 "parser_cocci_menhir.ml"
         ) = Obj.magic _1 in
         let _startpos = _startpos__1_ in
         let _endpos = _endpos_w_ in
         let _v : 'tv_stm_dots = 
 # 910 "parser_cocci_menhir.mly"
     ( Ast0.wrap(Ast0.Dots(P.clt2mcode "..." _1, List.concat w)) )
-# 31165 "parser_cocci_menhir.ml"
+# 31168 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -31197,14 +31200,14 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let c : (
 # 76 "parser_cocci_menhir.mly"
        (Data.clt)
-# 31201 "parser_cocci_menhir.ml"
+# 31204 "parser_cocci_menhir.ml"
         ) = Obj.magic c in
         let b : 'tv_nest_start = Obj.magic b in
         let w : 'tv_list_whenppdecs_ = Obj.magic w in
         let _1 : (
 # 76 "parser_cocci_menhir.mly"
        (Data.clt)
-# 31208 "parser_cocci_menhir.ml"
+# 31211 "parser_cocci_menhir.ml"
         ) = Obj.magic _1 in
         let _startpos = _startpos__1_ in
         let _endpos = _endpos_c_ in
@@ -31212,7 +31215,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
 # 912 "parser_cocci_menhir.mly"
     ( Ast0.wrap(Ast0.Nest(P.clt2mcode "<..." _1, b,
 			  P.clt2mcode "...>" c, List.concat w, false)) )
-# 31216 "parser_cocci_menhir.ml"
+# 31219 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -31248,14 +31251,14 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let c : (
 # 76 "parser_cocci_menhir.mly"
        (Data.clt)
-# 31252 "parser_cocci_menhir.ml"
+# 31255 "parser_cocci_menhir.ml"
         ) = Obj.magic c in
         let b : 'tv_nest_start = Obj.magic b in
         let w : 'tv_list_whenppdecs_ = Obj.magic w in
         let _1 : (
 # 76 "parser_cocci_menhir.mly"
        (Data.clt)
-# 31259 "parser_cocci_menhir.ml"
+# 31262 "parser_cocci_menhir.ml"
         ) = Obj.magic _1 in
         let _startpos = _startpos__1_ in
         let _endpos = _endpos_c_ in
@@ -31263,7 +31266,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
 # 915 "parser_cocci_menhir.mly"
     ( Ast0.wrap(Ast0.Nest(P.clt2mcode "<+..." _1, b,
 			  P.clt2mcode "...+>" c, List.concat w, true)) )
-# 31267 "parser_cocci_menhir.ml"
+# 31270 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -31284,14 +31287,14 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let s : (
 # 55 "parser_cocci_menhir.mly"
       (Data.clt)
-# 31288 "parser_cocci_menhir.ml"
+# 31291 "parser_cocci_menhir.ml"
         ) = Obj.magic s in
         let _startpos = _startpos_s_ in
         let _endpos = _endpos_s_ in
         let _v : 'tv_storage = 
 # 841 "parser_cocci_menhir.mly"
                         ( P.clt2mcode Ast.Static s )
-# 31295 "parser_cocci_menhir.ml"
+# 31298 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -31312,14 +31315,14 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let s : (
 # 55 "parser_cocci_menhir.mly"
       (Data.clt)
-# 31316 "parser_cocci_menhir.ml"
+# 31319 "parser_cocci_menhir.ml"
         ) = Obj.magic s in
         let _startpos = _startpos_s_ in
         let _endpos = _endpos_s_ in
         let _v : 'tv_storage = 
 # 842 "parser_cocci_menhir.mly"
                         ( P.clt2mcode Ast.Auto s )
-# 31323 "parser_cocci_menhir.ml"
+# 31326 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -31340,14 +31343,14 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let s : (
 # 55 "parser_cocci_menhir.mly"
       (Data.clt)
-# 31344 "parser_cocci_menhir.ml"
+# 31347 "parser_cocci_menhir.ml"
         ) = Obj.magic s in
         let _startpos = _startpos_s_ in
         let _endpos = _endpos_s_ in
         let _v : 'tv_storage = 
 # 843 "parser_cocci_menhir.mly"
                         ( P.clt2mcode Ast.Register s )
-# 31351 "parser_cocci_menhir.ml"
+# 31354 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -31368,14 +31371,14 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let s : (
 # 55 "parser_cocci_menhir.mly"
       (Data.clt)
-# 31372 "parser_cocci_menhir.ml"
+# 31375 "parser_cocci_menhir.ml"
         ) = Obj.magic s in
         let _startpos = _startpos_s_ in
         let _endpos = _endpos_s_ in
         let _v : 'tv_storage = 
 # 844 "parser_cocci_menhir.mly"
                         ( P.clt2mcode Ast.Extern s )
-# 31379 "parser_cocci_menhir.ml"
+# 31382 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -31397,7 +31400,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _v : 'tv_struct_decl = 
 # 595 "parser_cocci_menhir.mly"
                ( [] )
-# 31401 "parser_cocci_menhir.ml"
+# 31404 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -31428,7 +31431,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let pv : (
 # 110 "parser_cocci_menhir.mly"
        (Data.clt)
-# 31432 "parser_cocci_menhir.ml"
+# 31435 "parser_cocci_menhir.ml"
         ) = Obj.magic pv in
         let d : 'tv_d_ident = Obj.magic d in
         let t : 'tv_ctype = Obj.magic t in
@@ -31438,7 +31441,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
 # 597 "parser_cocci_menhir.mly"
   ( let (id,fn) = d in
 	 [Ast0.wrap(Ast0.UnInit(None,fn t,id,P.clt2mcode ";" pv))] )
-# 31442 "parser_cocci_menhir.ml"
+# 31445 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -31499,34 +31502,34 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let pv : (
 # 110 "parser_cocci_menhir.mly"
        (Data.clt)
-# 31503 "parser_cocci_menhir.ml"
+# 31506 "parser_cocci_menhir.ml"
         ) = Obj.magic pv in
         let rp2 : (
 # 80 "parser_cocci_menhir.mly"
        (Data.clt)
-# 31508 "parser_cocci_menhir.ml"
+# 31511 "parser_cocci_menhir.ml"
         ) = Obj.magic rp2 in
         let p : 'tv_decl_list_name_opt_decl_ = Obj.magic p in
         let lp2 : (
 # 79 "parser_cocci_menhir.mly"
        (Data.clt)
-# 31514 "parser_cocci_menhir.ml"
+# 31517 "parser_cocci_menhir.ml"
         ) = Obj.magic lp2 in
         let rp1 : (
 # 80 "parser_cocci_menhir.mly"
        (Data.clt)
-# 31519 "parser_cocci_menhir.ml"
+# 31522 "parser_cocci_menhir.ml"
         ) = Obj.magic rp1 in
         let d : 'tv_d_ident = Obj.magic d in
         let st : (
 # 102 "parser_cocci_menhir.mly"
        (Data.clt)
-# 31525 "parser_cocci_menhir.ml"
+# 31528 "parser_cocci_menhir.ml"
         ) = Obj.magic st in
         let lp1 : (
 # 79 "parser_cocci_menhir.mly"
        (Data.clt)
-# 31530 "parser_cocci_menhir.ml"
+# 31533 "parser_cocci_menhir.ml"
         ) = Obj.magic lp1 in
         let t : 'tv_ctype = Obj.magic t in
         let _startpos = _startpos_t_ in
@@ -31540,7 +31543,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
 	       (t,P.clt2mcode "(" lp1,P.clt2mcode "*" st,P.clt2mcode ")" rp1,
 		P.clt2mcode "(" lp2,p,P.clt2mcode ")" rp2)) in
         [Ast0.wrap(Ast0.UnInit(None,fn t,id,P.clt2mcode ";" pv))] )
-# 31544 "parser_cocci_menhir.ml"
+# 31547 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -31571,7 +31574,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let pv : (
 # 110 "parser_cocci_menhir.mly"
        (Data.clt)
-# 31575 "parser_cocci_menhir.ml"
+# 31578 "parser_cocci_menhir.ml"
         ) = Obj.magic pv in
         let d : 'tv_d_ident = Obj.magic d in
         let i : 'tv_pure_ident = Obj.magic i in
@@ -31581,7 +31584,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
           
 # 39 "standard.mly"
     ( None )
-# 31585 "parser_cocci_menhir.ml"
+# 31588 "parser_cocci_menhir.ml"
           
         in
         
@@ -31589,7 +31592,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
   ( let (id,fn) = d in
 	 let idtype = P.make_cv cv (Ast0.wrap (Ast0.TypeName(P.id2mcode i))) in
 	 [Ast0.wrap(Ast0.UnInit(None,fn idtype,id,P.clt2mcode ";" pv))] )
-# 31593 "parser_cocci_menhir.ml"
+# 31596 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -31625,7 +31628,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let pv : (
 # 110 "parser_cocci_menhir.mly"
        (Data.clt)
-# 31629 "parser_cocci_menhir.ml"
+# 31632 "parser_cocci_menhir.ml"
         ) = Obj.magic pv in
         let d : 'tv_d_ident = Obj.magic d in
         let i : 'tv_pure_ident = Obj.magic i in
@@ -31637,7 +31640,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
           
 # 41 "standard.mly"
     ( Some x )
-# 31641 "parser_cocci_menhir.ml"
+# 31644 "parser_cocci_menhir.ml"
           
         in
         
@@ -31645,7 +31648,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
   ( let (id,fn) = d in
 	 let idtype = P.make_cv cv (Ast0.wrap (Ast0.TypeName(P.id2mcode i))) in
 	 [Ast0.wrap(Ast0.UnInit(None,fn idtype,id,P.clt2mcode ";" pv))] )
-# 31649 "parser_cocci_menhir.ml"
+# 31652 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -31669,7 +31672,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _v : 'tv_struct_decl_list = 
 # 614 "parser_cocci_menhir.mly"
                           ( Ast0.wrap(Ast0.DOTS(_1)) )
-# 31673 "parser_cocci_menhir.ml"
+# 31676 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -31693,7 +31696,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _v : 'tv_struct_decl_list_start = 
 # 617 "parser_cocci_menhir.mly"
                                      ( _1 )
-# 31697 "parser_cocci_menhir.ml"
+# 31700 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -31723,7 +31726,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _v : 'tv_struct_decl_list_start = 
 # 618 "parser_cocci_menhir.mly"
                                      ( _1@_2 )
-# 31727 "parser_cocci_menhir.ml"
+# 31730 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -31753,7 +31756,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _v : 'tv_struct_decl_list_start = 
 # 620 "parser_cocci_menhir.mly"
     ( (P.mkddots "..." d)::r )
-# 31757 "parser_cocci_menhir.ml"
+# 31760 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -31774,14 +31777,14 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let s : (
 # 52 "parser_cocci_menhir.mly"
       (Data.clt)
-# 31778 "parser_cocci_menhir.ml"
+# 31781 "parser_cocci_menhir.ml"
         ) = Obj.magic s in
         let _startpos = _startpos_s_ in
         let _endpos = _endpos_s_ in
         let _v : 'tv_struct_or_union = 
 # 591 "parser_cocci_menhir.mly"
                  ( P.clt2mcode Ast.Struct s )
-# 31785 "parser_cocci_menhir.ml"
+# 31788 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -31802,14 +31805,14 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let u : (
 # 52 "parser_cocci_menhir.mly"
       (Data.clt)
-# 31806 "parser_cocci_menhir.ml"
+# 31809 "parser_cocci_menhir.ml"
         ) = Obj.magic u in
         let _startpos = _startpos_u_ in
         let _endpos = _endpos_u_ in
         let _v : 'tv_struct_or_union = 
 # 592 "parser_cocci_menhir.mly"
                  ( P.clt2mcode Ast.Union u )
-# 31813 "parser_cocci_menhir.ml"
+# 31816 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -31844,7 +31847,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
 	     P.check_inherited_constraint i
 	       (function mv -> Ast.MetaExpDecl(Ast.NONE,mv,None)) in
 	   [i] )
-# 31848 "parser_cocci_menhir.ml"
+# 31851 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -31888,7 +31891,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
 	       P.check_inherited_constraint i
 		 (function mv -> Ast.MetaExpDecl(Ast.NONE,mv,None)))
 	     l)
-# 31892 "parser_cocci_menhir.ml"
+# 31895 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -31912,7 +31915,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _v : 'tv_top_eexpr = 
 # 1243 "parser_cocci_menhir.mly"
         ( Ast0.wrap(Ast0.OTHER(Ast0.wrap(Ast0.Exp(_1)))) )
-# 31916 "parser_cocci_menhir.ml"
+# 31919 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -31943,20 +31946,20 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _3 : (
 # 104 "parser_cocci_menhir.mly"
        (Data.clt)
-# 31947 "parser_cocci_menhir.ml"
+# 31950 "parser_cocci_menhir.ml"
         ) = Obj.magic _3 in
         let _2 : 'tv_initialize_list = Obj.magic _2 in
         let _1 : (
 # 104 "parser_cocci_menhir.mly"
        (Data.clt)
-# 31953 "parser_cocci_menhir.ml"
+# 31956 "parser_cocci_menhir.ml"
         ) = Obj.magic _1 in
         let _startpos = _startpos__1_ in
         let _endpos = _endpos__3_ in
         let _v : 'tv_top_init = 
 # 1821 "parser_cocci_menhir.mly"
     ( Ast0.wrap(Ast0.InitList(P.clt2mcode "{" _1,_2,P.clt2mcode "}" _3)) )
-# 31960 "parser_cocci_menhir.ml"
+# 31963 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -31973,7 +31976,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _v : 'tv_toplevel_after_dots = 
 # 1809 "parser_cocci_menhir.mly"
                                      ([])
-# 31977 "parser_cocci_menhir.ml"
+# 31980 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -32001,7 +32004,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _v : 'tv_toplevel_after_dots = 
 # 1810 "parser_cocci_menhir.mly"
                                      (_2)
-# 32005 "parser_cocci_menhir.ml"
+# 32008 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -32031,7 +32034,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _v : 'tv_toplevel_after_dots = 
 # 1811 "parser_cocci_menhir.mly"
                                      ((Ast0.wrap(Ast0.Exp(_1)))::_2)
-# 32035 "parser_cocci_menhir.ml"
+# 32038 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -32061,7 +32064,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _v : 'tv_toplevel_after_dots = 
 # 1812 "parser_cocci_menhir.mly"
                                           (_1@_2)
-# 32065 "parser_cocci_menhir.ml"
+# 32068 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -32089,7 +32092,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _v : 'tv_toplevel_after_dots_init = 
 # 1800 "parser_cocci_menhir.mly"
                                      (_2)
-# 32093 "parser_cocci_menhir.ml"
+# 32096 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -32119,7 +32122,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _v : 'tv_toplevel_after_dots_init = 
 # 1801 "parser_cocci_menhir.mly"
                                      ((Ast0.wrap(Ast0.Exp(_1)))::_2)
-# 32123 "parser_cocci_menhir.ml"
+# 32126 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -32149,7 +32152,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _v : 'tv_toplevel_after_dots_init = 
 # 1802 "parser_cocci_menhir.mly"
                                           (_1@_2)
-# 32153 "parser_cocci_menhir.ml"
+# 32156 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -32166,7 +32169,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _v : 'tv_toplevel_after_exp = 
 # 1805 "parser_cocci_menhir.mly"
                                      ([])
-# 32170 "parser_cocci_menhir.ml"
+# 32173 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -32196,7 +32199,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _v : 'tv_toplevel_after_exp = 
 # 1806 "parser_cocci_menhir.mly"
                                      (_1::_2)
-# 32200 "parser_cocci_menhir.ml"
+# 32203 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -32213,7 +32216,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _v : 'tv_toplevel_after_stm = 
 # 1815 "parser_cocci_menhir.mly"
                                      ([])
-# 32217 "parser_cocci_menhir.ml"
+# 32220 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -32243,7 +32246,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _v : 'tv_toplevel_after_stm = 
 # 1816 "parser_cocci_menhir.mly"
                                      (_1::_2)
-# 32247 "parser_cocci_menhir.ml"
+# 32250 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -32273,7 +32276,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _v : 'tv_toplevel_after_stm = 
 # 1817 "parser_cocci_menhir.mly"
                                      (_1@_2)
-# 32277 "parser_cocci_menhir.ml"
+# 32280 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -32303,7 +32306,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _v : 'tv_toplevel_seq_start_toplevel_after_dots_ = 
 # 1795 "parser_cocci_menhir.mly"
                                      ( _1::_2 )
-# 32307 "parser_cocci_menhir.ml"
+# 32310 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -32333,7 +32336,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _v : 'tv_toplevel_seq_start_toplevel_after_dots_ = 
 # 1796 "parser_cocci_menhir.mly"
                                      ( (Ast0.wrap(Ast0.Exp(_1)))::_2 )
-# 32337 "parser_cocci_menhir.ml"
+# 32340 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -32363,7 +32366,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _v : 'tv_toplevel_seq_start_toplevel_after_dots_ = 
 # 1797 "parser_cocci_menhir.mly"
                                           ( _1@_2 )
-# 32367 "parser_cocci_menhir.ml"
+# 32370 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -32396,7 +32399,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let a0 : (
 # 76 "parser_cocci_menhir.mly"
        (Data.clt)
-# 32400 "parser_cocci_menhir.ml"
+# 32403 "parser_cocci_menhir.ml"
         ) = Obj.magic a0 in
         let _startpos = _startpos_a0_ in
         let _endpos = _endpos_b_ in
@@ -32406,13 +32409,13 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
           
 # 920 "parser_cocci_menhir.mly"
     ( Ast0.wrap(Ast0.Dots(P.clt2mcode "..." a, List.concat w)) )
-# 32410 "parser_cocci_menhir.ml"
+# 32413 "parser_cocci_menhir.ml"
           
         in
         
 # 1788 "parser_cocci_menhir.mly"
                                              ( a::b )
-# 32416 "parser_cocci_menhir.ml"
+# 32419 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -32454,14 +32457,14 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let c0 : (
 # 76 "parser_cocci_menhir.mly"
        (Data.clt)
-# 32458 "parser_cocci_menhir.ml"
+# 32461 "parser_cocci_menhir.ml"
         ) = Obj.magic c0 in
         let b0 : 'tv_nest_start = Obj.magic b0 in
         let w0 : 'tv_list_whenppdecs_ = Obj.magic w0 in
         let a0 : (
 # 76 "parser_cocci_menhir.mly"
        (Data.clt)
-# 32465 "parser_cocci_menhir.ml"
+# 32468 "parser_cocci_menhir.ml"
         ) = Obj.magic a0 in
         let _startpos = _startpos_a0_ in
         let _endpos = _endpos_b_ in
@@ -32474,13 +32477,13 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
 # 924 "parser_cocci_menhir.mly"
     ( Ast0.wrap(Ast0.Nest(P.clt2mcode "<..." a, b,
 			  P.clt2mcode "...>" c, List.concat w, false)) )
-# 32478 "parser_cocci_menhir.ml"
+# 32481 "parser_cocci_menhir.ml"
           
         in
         
 # 1789 "parser_cocci_menhir.mly"
                                               ( a::b )
-# 32484 "parser_cocci_menhir.ml"
+# 32487 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -32522,14 +32525,14 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let c0 : (
 # 76 "parser_cocci_menhir.mly"
        (Data.clt)
-# 32526 "parser_cocci_menhir.ml"
+# 32529 "parser_cocci_menhir.ml"
         ) = Obj.magic c0 in
         let b0 : 'tv_nest_start = Obj.magic b0 in
         let w0 : 'tv_list_whenppdecs_ = Obj.magic w0 in
         let a0 : (
 # 76 "parser_cocci_menhir.mly"
        (Data.clt)
-# 32533 "parser_cocci_menhir.ml"
+# 32536 "parser_cocci_menhir.ml"
         ) = Obj.magic a0 in
         let _startpos = _startpos_a0_ in
         let _endpos = _endpos_b_ in
@@ -32542,13 +32545,13 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
 # 927 "parser_cocci_menhir.mly"
     ( Ast0.wrap(Ast0.Nest(P.clt2mcode "<+..." a, b,
 			  P.clt2mcode "...+>" c, List.concat w, true)) )
-# 32546 "parser_cocci_menhir.ml"
+# 32549 "parser_cocci_menhir.ml"
           
         in
         
 # 1789 "parser_cocci_menhir.mly"
                                               ( a::b )
-# 32552 "parser_cocci_menhir.ml"
+# 32555 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -32584,14 +32587,14 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let c0 : (
 # 76 "parser_cocci_menhir.mly"
        (Data.clt)
-# 32588 "parser_cocci_menhir.ml"
+# 32591 "parser_cocci_menhir.ml"
         ) = Obj.magic c0 in
         let b0 : 'tv_nest_start = Obj.magic b0 in
         let w0 : 'tv_list_whenppdecs_ = Obj.magic w0 in
         let a0 : (
 # 76 "parser_cocci_menhir.mly"
        (Data.clt)
-# 32595 "parser_cocci_menhir.ml"
+# 32598 "parser_cocci_menhir.ml"
         ) = Obj.magic a0 in
         let _startpos = _startpos_a0_ in
         let _endpos = _endpos_c0_ in
@@ -32604,13 +32607,13 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
 # 924 "parser_cocci_menhir.mly"
     ( Ast0.wrap(Ast0.Nest(P.clt2mcode "<..." a, b,
 			  P.clt2mcode "...>" c, List.concat w, false)) )
-# 32608 "parser_cocci_menhir.ml"
+# 32611 "parser_cocci_menhir.ml"
           
         in
         
 # 1790 "parser_cocci_menhir.mly"
                                        ( [a] )
-# 32614 "parser_cocci_menhir.ml"
+# 32617 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -32646,14 +32649,14 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let c0 : (
 # 76 "parser_cocci_menhir.mly"
        (Data.clt)
-# 32650 "parser_cocci_menhir.ml"
+# 32653 "parser_cocci_menhir.ml"
         ) = Obj.magic c0 in
         let b0 : 'tv_nest_start = Obj.magic b0 in
         let w0 : 'tv_list_whenppdecs_ = Obj.magic w0 in
         let a0 : (
 # 76 "parser_cocci_menhir.mly"
        (Data.clt)
-# 32657 "parser_cocci_menhir.ml"
+# 32660 "parser_cocci_menhir.ml"
         ) = Obj.magic a0 in
         let _startpos = _startpos_a0_ in
         let _endpos = _endpos_c0_ in
@@ -32666,13 +32669,13 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
 # 927 "parser_cocci_menhir.mly"
     ( Ast0.wrap(Ast0.Nest(P.clt2mcode "<+..." a, b,
 			  P.clt2mcode "...+>" c, List.concat w, true)) )
-# 32670 "parser_cocci_menhir.ml"
+# 32673 "parser_cocci_menhir.ml"
           
         in
         
 # 1790 "parser_cocci_menhir.mly"
                                        ( [a] )
-# 32676 "parser_cocci_menhir.ml"
+# 32679 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -32702,7 +32705,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _v : 'tv_toplevel_seq_startne_toplevel_after_dots_init_ = 
 # 1791 "parser_cocci_menhir.mly"
                                      ( (Ast0.wrap(Ast0.Exp(_1)))::_2 )
-# 32706 "parser_cocci_menhir.ml"
+# 32709 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -32732,7 +32735,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _v : 'tv_toplevel_seq_startne_toplevel_after_dots_init_ = 
 # 1792 "parser_cocci_menhir.mly"
                                           ( _1@_2 )
-# 32736 "parser_cocci_menhir.ml"
+# 32739 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -32764,12 +32767,12 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let ty00 : (
 # 51 "parser_cocci_menhir.mly"
       (Data.clt)
-# 32768 "parser_cocci_menhir.ml"
+# 32771 "parser_cocci_menhir.ml"
         ) = Obj.magic ty00 in
         let r0 : (
 # 53 "parser_cocci_menhir.mly"
       (Data.clt)
-# 32773 "parser_cocci_menhir.ml"
+# 32776 "parser_cocci_menhir.ml"
         ) = Obj.magic r0 in
         let _startpos = _startpos_r0_ in
         let _endpos = _endpos_m_ in
@@ -32781,26 +32784,26 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
             
 # 509 "parser_cocci_menhir.mly"
     ( Ast0.wrap(Ast0.BaseType(Ast.CharType,[P.clt2mcode "char" ty])) )
-# 32785 "parser_cocci_menhir.ml"
+# 32788 "parser_cocci_menhir.ml"
             
           in
           
 # 561 "parser_cocci_menhir.mly"
     ( Ast0.wrap(Ast0.Signed(P.clt2mcode Ast.Signed r,Some ty)) )
-# 32791 "parser_cocci_menhir.ml"
+# 32794 "parser_cocci_menhir.ml"
           
         in
         let cv =
           
 # 39 "standard.mly"
     ( None )
-# 32798 "parser_cocci_menhir.ml"
+# 32801 "parser_cocci_menhir.ml"
           
         in
         
 # 582 "parser_cocci_menhir.mly"
     ( P.pointerify (P.make_cv cv ty) m )
-# 32804 "parser_cocci_menhir.ml"
+# 32807 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -32832,12 +32835,12 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let ty00 : (
 # 51 "parser_cocci_menhir.mly"
       (Data.clt)
-# 32836 "parser_cocci_menhir.ml"
+# 32839 "parser_cocci_menhir.ml"
         ) = Obj.magic ty00 in
         let r0 : (
 # 53 "parser_cocci_menhir.mly"
       (Data.clt)
-# 32841 "parser_cocci_menhir.ml"
+# 32844 "parser_cocci_menhir.ml"
         ) = Obj.magic r0 in
         let _startpos = _startpos_r0_ in
         let _endpos = _endpos_m_ in
@@ -32849,26 +32852,26 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
             
 # 511 "parser_cocci_menhir.mly"
     ( Ast0.wrap(Ast0.BaseType(Ast.ShortType,[P.clt2mcode "short" ty])) )
-# 32853 "parser_cocci_menhir.ml"
+# 32856 "parser_cocci_menhir.ml"
             
           in
           
 # 561 "parser_cocci_menhir.mly"
     ( Ast0.wrap(Ast0.Signed(P.clt2mcode Ast.Signed r,Some ty)) )
-# 32859 "parser_cocci_menhir.ml"
+# 32862 "parser_cocci_menhir.ml"
           
         in
         let cv =
           
 # 39 "standard.mly"
     ( None )
-# 32866 "parser_cocci_menhir.ml"
+# 32869 "parser_cocci_menhir.ml"
           
         in
         
 # 582 "parser_cocci_menhir.mly"
     ( P.pointerify (P.make_cv cv ty) m )
-# 32872 "parser_cocci_menhir.ml"
+# 32875 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -32900,12 +32903,12 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let ty00 : (
 # 51 "parser_cocci_menhir.mly"
       (Data.clt)
-# 32904 "parser_cocci_menhir.ml"
+# 32907 "parser_cocci_menhir.ml"
         ) = Obj.magic ty00 in
         let r0 : (
 # 53 "parser_cocci_menhir.mly"
       (Data.clt)
-# 32909 "parser_cocci_menhir.ml"
+# 32912 "parser_cocci_menhir.ml"
         ) = Obj.magic r0 in
         let _startpos = _startpos_r0_ in
         let _endpos = _endpos_m_ in
@@ -32917,26 +32920,26 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
             
 # 513 "parser_cocci_menhir.mly"
     ( Ast0.wrap(Ast0.BaseType(Ast.IntType,[P.clt2mcode "int" ty])) )
-# 32921 "parser_cocci_menhir.ml"
+# 32924 "parser_cocci_menhir.ml"
             
           in
           
 # 561 "parser_cocci_menhir.mly"
     ( Ast0.wrap(Ast0.Signed(P.clt2mcode Ast.Signed r,Some ty)) )
-# 32927 "parser_cocci_menhir.ml"
+# 32930 "parser_cocci_menhir.ml"
           
         in
         let cv =
           
 # 39 "standard.mly"
     ( None )
-# 32934 "parser_cocci_menhir.ml"
+# 32937 "parser_cocci_menhir.ml"
           
         in
         
 # 582 "parser_cocci_menhir.mly"
     ( P.pointerify (P.make_cv cv ty) m )
-# 32940 "parser_cocci_menhir.ml"
+# 32943 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -32968,12 +32971,12 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let p00 : (
 # 67 "parser_cocci_menhir.mly"
        (Parse_aux.info)
-# 32972 "parser_cocci_menhir.ml"
+# 32975 "parser_cocci_menhir.ml"
         ) = Obj.magic p00 in
         let r0 : (
 # 53 "parser_cocci_menhir.mly"
       (Data.clt)
-# 32977 "parser_cocci_menhir.ml"
+# 32980 "parser_cocci_menhir.ml"
         ) = Obj.magic r0 in
         let _startpos = _startpos_r0_ in
         let _endpos = _endpos_m_ in
@@ -32986,26 +32989,26 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
 # 515 "parser_cocci_menhir.mly"
     ( let (nm,pure,clt) = p in
       Ast0.wrap(Ast0.MetaType(P.clt2mcode nm clt,pure)) )
-# 32990 "parser_cocci_menhir.ml"
+# 32993 "parser_cocci_menhir.ml"
             
           in
           
 # 561 "parser_cocci_menhir.mly"
     ( Ast0.wrap(Ast0.Signed(P.clt2mcode Ast.Signed r,Some ty)) )
-# 32996 "parser_cocci_menhir.ml"
+# 32999 "parser_cocci_menhir.ml"
           
         in
         let cv =
           
 # 39 "standard.mly"
     ( None )
-# 33003 "parser_cocci_menhir.ml"
+# 33006 "parser_cocci_menhir.ml"
           
         in
         
 # 582 "parser_cocci_menhir.mly"
     ( P.pointerify (P.make_cv cv ty) m )
-# 33009 "parser_cocci_menhir.ml"
+# 33012 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -33046,17 +33049,17 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let p00 : (
 # 61 "parser_cocci_menhir.mly"
        (string * Data.clt)
-# 33050 "parser_cocci_menhir.ml"
+# 33053 "parser_cocci_menhir.ml"
         ) = Obj.magic p00 in
         let r00 : (
 # 49 "parser_cocci_menhir.mly"
       (string)
-# 33055 "parser_cocci_menhir.ml"
+# 33058 "parser_cocci_menhir.ml"
         ) = Obj.magic r00 in
         let r1 : (
 # 53 "parser_cocci_menhir.mly"
       (Data.clt)
-# 33060 "parser_cocci_menhir.ml"
+# 33063 "parser_cocci_menhir.ml"
         ) = Obj.magic r1 in
         let _startpos = _startpos_r1_ in
         let _endpos = _endpos_m_ in
@@ -33075,26 +33078,26 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
     let _ = P.check_meta(Ast.MetaTypeDecl(Ast.NONE,nm)) in
     Ast0.wrap(Ast0.MetaType(P.clt2mcode nm (P.id2clt p),
 			    Ast0.Impure (*will be ignored*))) )
-# 33079 "parser_cocci_menhir.ml"
+# 33082 "parser_cocci_menhir.ml"
             
           in
           
 # 561 "parser_cocci_menhir.mly"
     ( Ast0.wrap(Ast0.Signed(P.clt2mcode Ast.Signed r,Some ty)) )
-# 33085 "parser_cocci_menhir.ml"
+# 33088 "parser_cocci_menhir.ml"
           
         in
         let cv =
           
 # 39 "standard.mly"
     ( None )
-# 33092 "parser_cocci_menhir.ml"
+# 33095 "parser_cocci_menhir.ml"
           
         in
         
 # 582 "parser_cocci_menhir.mly"
     ( P.pointerify (P.make_cv cv ty) m )
-# 33098 "parser_cocci_menhir.ml"
+# 33101 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -33126,12 +33129,12 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let ty00 : (
 # 51 "parser_cocci_menhir.mly"
       (Data.clt)
-# 33130 "parser_cocci_menhir.ml"
+# 33133 "parser_cocci_menhir.ml"
         ) = Obj.magic ty00 in
         let r0 : (
 # 53 "parser_cocci_menhir.mly"
       (Data.clt)
-# 33135 "parser_cocci_menhir.ml"
+# 33138 "parser_cocci_menhir.ml"
         ) = Obj.magic r0 in
         let _startpos = _startpos_r0_ in
         let _endpos = _endpos_m_ in
@@ -33143,26 +33146,26 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
             
 # 525 "parser_cocci_menhir.mly"
     ( Ast0.wrap(Ast0.BaseType(Ast.LongType,[P.clt2mcode "long" ty])) )
-# 33147 "parser_cocci_menhir.ml"
+# 33150 "parser_cocci_menhir.ml"
             
           in
           
 # 561 "parser_cocci_menhir.mly"
     ( Ast0.wrap(Ast0.Signed(P.clt2mcode Ast.Signed r,Some ty)) )
-# 33153 "parser_cocci_menhir.ml"
+# 33156 "parser_cocci_menhir.ml"
           
         in
         let cv =
           
 # 39 "standard.mly"
     ( None )
-# 33160 "parser_cocci_menhir.ml"
+# 33163 "parser_cocci_menhir.ml"
           
         in
         
 # 582 "parser_cocci_menhir.mly"
     ( P.pointerify (P.make_cv cv ty) m )
-# 33166 "parser_cocci_menhir.ml"
+# 33169 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -33199,17 +33202,17 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let ty200 : (
 # 51 "parser_cocci_menhir.mly"
       (Data.clt)
-# 33203 "parser_cocci_menhir.ml"
+# 33206 "parser_cocci_menhir.ml"
         ) = Obj.magic ty200 in
         let ty100 : (
 # 51 "parser_cocci_menhir.mly"
       (Data.clt)
-# 33208 "parser_cocci_menhir.ml"
+# 33211 "parser_cocci_menhir.ml"
         ) = Obj.magic ty100 in
         let r0 : (
 # 53 "parser_cocci_menhir.mly"
       (Data.clt)
-# 33213 "parser_cocci_menhir.ml"
+# 33216 "parser_cocci_menhir.ml"
         ) = Obj.magic r0 in
         let _startpos = _startpos_r0_ in
         let _endpos = _endpos_m_ in
@@ -33226,26 +33229,26 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
 	(Ast0.BaseType
 	   (Ast.LongLongType,
 	    [P.clt2mcode "long" ty1;P.clt2mcode "long" ty2])) )
-# 33230 "parser_cocci_menhir.ml"
+# 33233 "parser_cocci_menhir.ml"
             
           in
           
 # 561 "parser_cocci_menhir.mly"
     ( Ast0.wrap(Ast0.Signed(P.clt2mcode Ast.Signed r,Some ty)) )
-# 33236 "parser_cocci_menhir.ml"
+# 33239 "parser_cocci_menhir.ml"
           
         in
         let cv =
           
 # 39 "standard.mly"
     ( None )
-# 33243 "parser_cocci_menhir.ml"
+# 33246 "parser_cocci_menhir.ml"
           
         in
         
 # 582 "parser_cocci_menhir.mly"
     ( P.pointerify (P.make_cv cv ty) m )
-# 33249 "parser_cocci_menhir.ml"
+# 33252 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -33277,12 +33280,12 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let ty00 : (
 # 51 "parser_cocci_menhir.mly"
       (Data.clt)
-# 33281 "parser_cocci_menhir.ml"
+# 33284 "parser_cocci_menhir.ml"
         ) = Obj.magic ty00 in
         let r0 : (
 # 53 "parser_cocci_menhir.mly"
       (Data.clt)
-# 33286 "parser_cocci_menhir.ml"
+# 33289 "parser_cocci_menhir.ml"
         ) = Obj.magic r0 in
         let _startpos = _startpos_r0_ in
         let _endpos = _endpos_m_ in
@@ -33294,26 +33297,26 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
             
 # 509 "parser_cocci_menhir.mly"
     ( Ast0.wrap(Ast0.BaseType(Ast.CharType,[P.clt2mcode "char" ty])) )
-# 33298 "parser_cocci_menhir.ml"
+# 33301 "parser_cocci_menhir.ml"
             
           in
           
 # 563 "parser_cocci_menhir.mly"
     ( Ast0.wrap(Ast0.Signed(P.clt2mcode Ast.Unsigned r,Some ty)) )
-# 33304 "parser_cocci_menhir.ml"
+# 33307 "parser_cocci_menhir.ml"
           
         in
         let cv =
           
 # 39 "standard.mly"
     ( None )
-# 33311 "parser_cocci_menhir.ml"
+# 33314 "parser_cocci_menhir.ml"
           
         in
         
 # 582 "parser_cocci_menhir.mly"
     ( P.pointerify (P.make_cv cv ty) m )
-# 33317 "parser_cocci_menhir.ml"
+# 33320 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -33345,12 +33348,12 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let ty00 : (
 # 51 "parser_cocci_menhir.mly"
       (Data.clt)
-# 33349 "parser_cocci_menhir.ml"
+# 33352 "parser_cocci_menhir.ml"
         ) = Obj.magic ty00 in
         let r0 : (
 # 53 "parser_cocci_menhir.mly"
       (Data.clt)
-# 33354 "parser_cocci_menhir.ml"
+# 33357 "parser_cocci_menhir.ml"
         ) = Obj.magic r0 in
         let _startpos = _startpos_r0_ in
         let _endpos = _endpos_m_ in
@@ -33362,26 +33365,26 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
             
 # 511 "parser_cocci_menhir.mly"
     ( Ast0.wrap(Ast0.BaseType(Ast.ShortType,[P.clt2mcode "short" ty])) )
-# 33366 "parser_cocci_menhir.ml"
+# 33369 "parser_cocci_menhir.ml"
             
           in
           
 # 563 "parser_cocci_menhir.mly"
     ( Ast0.wrap(Ast0.Signed(P.clt2mcode Ast.Unsigned r,Some ty)) )
-# 33372 "parser_cocci_menhir.ml"
+# 33375 "parser_cocci_menhir.ml"
           
         in
         let cv =
           
 # 39 "standard.mly"
     ( None )
-# 33379 "parser_cocci_menhir.ml"
+# 33382 "parser_cocci_menhir.ml"
           
         in
         
 # 582 "parser_cocci_menhir.mly"
     ( P.pointerify (P.make_cv cv ty) m )
-# 33385 "parser_cocci_menhir.ml"
+# 33388 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -33413,12 +33416,12 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let ty00 : (
 # 51 "parser_cocci_menhir.mly"
       (Data.clt)
-# 33417 "parser_cocci_menhir.ml"
+# 33420 "parser_cocci_menhir.ml"
         ) = Obj.magic ty00 in
         let r0 : (
 # 53 "parser_cocci_menhir.mly"
       (Data.clt)
-# 33422 "parser_cocci_menhir.ml"
+# 33425 "parser_cocci_menhir.ml"
         ) = Obj.magic r0 in
         let _startpos = _startpos_r0_ in
         let _endpos = _endpos_m_ in
@@ -33430,26 +33433,26 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
             
 # 513 "parser_cocci_menhir.mly"
     ( Ast0.wrap(Ast0.BaseType(Ast.IntType,[P.clt2mcode "int" ty])) )
-# 33434 "parser_cocci_menhir.ml"
+# 33437 "parser_cocci_menhir.ml"
             
           in
           
 # 563 "parser_cocci_menhir.mly"
     ( Ast0.wrap(Ast0.Signed(P.clt2mcode Ast.Unsigned r,Some ty)) )
-# 33440 "parser_cocci_menhir.ml"
+# 33443 "parser_cocci_menhir.ml"
           
         in
         let cv =
           
 # 39 "standard.mly"
     ( None )
-# 33447 "parser_cocci_menhir.ml"
+# 33450 "parser_cocci_menhir.ml"
           
         in
         
 # 582 "parser_cocci_menhir.mly"
     ( P.pointerify (P.make_cv cv ty) m )
-# 33453 "parser_cocci_menhir.ml"
+# 33456 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -33481,12 +33484,12 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let p00 : (
 # 67 "parser_cocci_menhir.mly"
        (Parse_aux.info)
-# 33485 "parser_cocci_menhir.ml"
+# 33488 "parser_cocci_menhir.ml"
         ) = Obj.magic p00 in
         let r0 : (
 # 53 "parser_cocci_menhir.mly"
       (Data.clt)
-# 33490 "parser_cocci_menhir.ml"
+# 33493 "parser_cocci_menhir.ml"
         ) = Obj.magic r0 in
         let _startpos = _startpos_r0_ in
         let _endpos = _endpos_m_ in
@@ -33499,26 +33502,26 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
 # 515 "parser_cocci_menhir.mly"
     ( let (nm,pure,clt) = p in
       Ast0.wrap(Ast0.MetaType(P.clt2mcode nm clt,pure)) )
-# 33503 "parser_cocci_menhir.ml"
+# 33506 "parser_cocci_menhir.ml"
             
           in
           
 # 563 "parser_cocci_menhir.mly"
     ( Ast0.wrap(Ast0.Signed(P.clt2mcode Ast.Unsigned r,Some ty)) )
-# 33509 "parser_cocci_menhir.ml"
+# 33512 "parser_cocci_menhir.ml"
           
         in
         let cv =
           
 # 39 "standard.mly"
     ( None )
-# 33516 "parser_cocci_menhir.ml"
+# 33519 "parser_cocci_menhir.ml"
           
         in
         
 # 582 "parser_cocci_menhir.mly"
     ( P.pointerify (P.make_cv cv ty) m )
-# 33522 "parser_cocci_menhir.ml"
+# 33525 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -33559,17 +33562,17 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let p00 : (
 # 61 "parser_cocci_menhir.mly"
        (string * Data.clt)
-# 33563 "parser_cocci_menhir.ml"
+# 33566 "parser_cocci_menhir.ml"
         ) = Obj.magic p00 in
         let r00 : (
 # 49 "parser_cocci_menhir.mly"
       (string)
-# 33568 "parser_cocci_menhir.ml"
+# 33571 "parser_cocci_menhir.ml"
         ) = Obj.magic r00 in
         let r1 : (
 # 53 "parser_cocci_menhir.mly"
       (Data.clt)
-# 33573 "parser_cocci_menhir.ml"
+# 33576 "parser_cocci_menhir.ml"
         ) = Obj.magic r1 in
         let _startpos = _startpos_r1_ in
         let _endpos = _endpos_m_ in
@@ -33588,26 +33591,26 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
     let _ = P.check_meta(Ast.MetaTypeDecl(Ast.NONE,nm)) in
     Ast0.wrap(Ast0.MetaType(P.clt2mcode nm (P.id2clt p),
 			    Ast0.Impure (*will be ignored*))) )
-# 33592 "parser_cocci_menhir.ml"
+# 33595 "parser_cocci_menhir.ml"
             
           in
           
 # 563 "parser_cocci_menhir.mly"
     ( Ast0.wrap(Ast0.Signed(P.clt2mcode Ast.Unsigned r,Some ty)) )
-# 33598 "parser_cocci_menhir.ml"
+# 33601 "parser_cocci_menhir.ml"
           
         in
         let cv =
           
 # 39 "standard.mly"
     ( None )
-# 33605 "parser_cocci_menhir.ml"
+# 33608 "parser_cocci_menhir.ml"
           
         in
         
 # 582 "parser_cocci_menhir.mly"
     ( P.pointerify (P.make_cv cv ty) m )
-# 33611 "parser_cocci_menhir.ml"
+# 33614 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -33639,12 +33642,12 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let ty00 : (
 # 51 "parser_cocci_menhir.mly"
       (Data.clt)
-# 33643 "parser_cocci_menhir.ml"
+# 33646 "parser_cocci_menhir.ml"
         ) = Obj.magic ty00 in
         let r0 : (
 # 53 "parser_cocci_menhir.mly"
       (Data.clt)
-# 33648 "parser_cocci_menhir.ml"
+# 33651 "parser_cocci_menhir.ml"
         ) = Obj.magic r0 in
         let _startpos = _startpos_r0_ in
         let _endpos = _endpos_m_ in
@@ -33656,26 +33659,26 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
             
 # 525 "parser_cocci_menhir.mly"
     ( Ast0.wrap(Ast0.BaseType(Ast.LongType,[P.clt2mcode "long" ty])) )
-# 33660 "parser_cocci_menhir.ml"
+# 33663 "parser_cocci_menhir.ml"
             
           in
           
 # 563 "parser_cocci_menhir.mly"
     ( Ast0.wrap(Ast0.Signed(P.clt2mcode Ast.Unsigned r,Some ty)) )
-# 33666 "parser_cocci_menhir.ml"
+# 33669 "parser_cocci_menhir.ml"
           
         in
         let cv =
           
 # 39 "standard.mly"
     ( None )
-# 33673 "parser_cocci_menhir.ml"
+# 33676 "parser_cocci_menhir.ml"
           
         in
         
 # 582 "parser_cocci_menhir.mly"
     ( P.pointerify (P.make_cv cv ty) m )
-# 33679 "parser_cocci_menhir.ml"
+# 33682 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -33712,17 +33715,17 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let ty200 : (
 # 51 "parser_cocci_menhir.mly"
       (Data.clt)
-# 33716 "parser_cocci_menhir.ml"
+# 33719 "parser_cocci_menhir.ml"
         ) = Obj.magic ty200 in
         let ty100 : (
 # 51 "parser_cocci_menhir.mly"
       (Data.clt)
-# 33721 "parser_cocci_menhir.ml"
+# 33724 "parser_cocci_menhir.ml"
         ) = Obj.magic ty100 in
         let r0 : (
 # 53 "parser_cocci_menhir.mly"
       (Data.clt)
-# 33726 "parser_cocci_menhir.ml"
+# 33729 "parser_cocci_menhir.ml"
         ) = Obj.magic r0 in
         let _startpos = _startpos_r0_ in
         let _endpos = _endpos_m_ in
@@ -33739,26 +33742,26 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
 	(Ast0.BaseType
 	   (Ast.LongLongType,
 	    [P.clt2mcode "long" ty1;P.clt2mcode "long" ty2])) )
-# 33743 "parser_cocci_menhir.ml"
+# 33746 "parser_cocci_menhir.ml"
             
           in
           
 # 563 "parser_cocci_menhir.mly"
     ( Ast0.wrap(Ast0.Signed(P.clt2mcode Ast.Unsigned r,Some ty)) )
-# 33749 "parser_cocci_menhir.ml"
+# 33752 "parser_cocci_menhir.ml"
           
         in
         let cv =
           
 # 39 "standard.mly"
     ( None )
-# 33756 "parser_cocci_menhir.ml"
+# 33759 "parser_cocci_menhir.ml"
           
         in
         
 # 582 "parser_cocci_menhir.mly"
     ( P.pointerify (P.make_cv cv ty) m )
-# 33762 "parser_cocci_menhir.ml"
+# 33765 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -33785,7 +33788,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let ty00 : (
 # 51 "parser_cocci_menhir.mly"
       (Data.clt)
-# 33789 "parser_cocci_menhir.ml"
+# 33792 "parser_cocci_menhir.ml"
         ) = Obj.magic ty00 in
         let _startpos = _startpos_ty00_ in
         let _endpos = _endpos_m_ in
@@ -33796,26 +33799,26 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
             
 # 509 "parser_cocci_menhir.mly"
     ( Ast0.wrap(Ast0.BaseType(Ast.CharType,[P.clt2mcode "char" ty])) )
-# 33800 "parser_cocci_menhir.ml"
+# 33803 "parser_cocci_menhir.ml"
             
           in
           
 # 564 "parser_cocci_menhir.mly"
                     ( ty )
-# 33806 "parser_cocci_menhir.ml"
+# 33809 "parser_cocci_menhir.ml"
           
         in
         let cv =
           
 # 39 "standard.mly"
     ( None )
-# 33813 "parser_cocci_menhir.ml"
+# 33816 "parser_cocci_menhir.ml"
           
         in
         
 # 582 "parser_cocci_menhir.mly"
     ( P.pointerify (P.make_cv cv ty) m )
-# 33819 "parser_cocci_menhir.ml"
+# 33822 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -33842,7 +33845,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let ty00 : (
 # 51 "parser_cocci_menhir.mly"
       (Data.clt)
-# 33846 "parser_cocci_menhir.ml"
+# 33849 "parser_cocci_menhir.ml"
         ) = Obj.magic ty00 in
         let _startpos = _startpos_ty00_ in
         let _endpos = _endpos_m_ in
@@ -33853,26 +33856,26 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
             
 # 511 "parser_cocci_menhir.mly"
     ( Ast0.wrap(Ast0.BaseType(Ast.ShortType,[P.clt2mcode "short" ty])) )
-# 33857 "parser_cocci_menhir.ml"
+# 33860 "parser_cocci_menhir.ml"
             
           in
           
 # 564 "parser_cocci_menhir.mly"
                     ( ty )
-# 33863 "parser_cocci_menhir.ml"
+# 33866 "parser_cocci_menhir.ml"
           
         in
         let cv =
           
 # 39 "standard.mly"
     ( None )
-# 33870 "parser_cocci_menhir.ml"
+# 33873 "parser_cocci_menhir.ml"
           
         in
         
 # 582 "parser_cocci_menhir.mly"
     ( P.pointerify (P.make_cv cv ty) m )
-# 33876 "parser_cocci_menhir.ml"
+# 33879 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -33899,7 +33902,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let ty00 : (
 # 51 "parser_cocci_menhir.mly"
       (Data.clt)
-# 33903 "parser_cocci_menhir.ml"
+# 33906 "parser_cocci_menhir.ml"
         ) = Obj.magic ty00 in
         let _startpos = _startpos_ty00_ in
         let _endpos = _endpos_m_ in
@@ -33910,26 +33913,26 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
             
 # 513 "parser_cocci_menhir.mly"
     ( Ast0.wrap(Ast0.BaseType(Ast.IntType,[P.clt2mcode "int" ty])) )
-# 33914 "parser_cocci_menhir.ml"
+# 33917 "parser_cocci_menhir.ml"
             
           in
           
 # 564 "parser_cocci_menhir.mly"
                     ( ty )
-# 33920 "parser_cocci_menhir.ml"
+# 33923 "parser_cocci_menhir.ml"
           
         in
         let cv =
           
 # 39 "standard.mly"
     ( None )
-# 33927 "parser_cocci_menhir.ml"
+# 33930 "parser_cocci_menhir.ml"
           
         in
         
 # 582 "parser_cocci_menhir.mly"
     ( P.pointerify (P.make_cv cv ty) m )
-# 33933 "parser_cocci_menhir.ml"
+# 33936 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -33956,7 +33959,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let p00 : (
 # 67 "parser_cocci_menhir.mly"
        (Parse_aux.info)
-# 33960 "parser_cocci_menhir.ml"
+# 33963 "parser_cocci_menhir.ml"
         ) = Obj.magic p00 in
         let _startpos = _startpos_p00_ in
         let _endpos = _endpos_m_ in
@@ -33968,26 +33971,26 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
 # 515 "parser_cocci_menhir.mly"
     ( let (nm,pure,clt) = p in
       Ast0.wrap(Ast0.MetaType(P.clt2mcode nm clt,pure)) )
-# 33972 "parser_cocci_menhir.ml"
+# 33975 "parser_cocci_menhir.ml"
             
           in
           
 # 564 "parser_cocci_menhir.mly"
                     ( ty )
-# 33978 "parser_cocci_menhir.ml"
+# 33981 "parser_cocci_menhir.ml"
           
         in
         let cv =
           
 # 39 "standard.mly"
     ( None )
-# 33985 "parser_cocci_menhir.ml"
+# 33988 "parser_cocci_menhir.ml"
           
         in
         
 # 582 "parser_cocci_menhir.mly"
     ( P.pointerify (P.make_cv cv ty) m )
-# 33991 "parser_cocci_menhir.ml"
+# 33994 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -34023,12 +34026,12 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let p00 : (
 # 61 "parser_cocci_menhir.mly"
        (string * Data.clt)
-# 34027 "parser_cocci_menhir.ml"
+# 34030 "parser_cocci_menhir.ml"
         ) = Obj.magic p00 in
         let r00 : (
 # 49 "parser_cocci_menhir.mly"
       (string)
-# 34032 "parser_cocci_menhir.ml"
+# 34035 "parser_cocci_menhir.ml"
         ) = Obj.magic r00 in
         let _startpos = _startpos_r00_ in
         let _endpos = _endpos_m_ in
@@ -34046,26 +34049,26 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
     let _ = P.check_meta(Ast.MetaTypeDecl(Ast.NONE,nm)) in
     Ast0.wrap(Ast0.MetaType(P.clt2mcode nm (P.id2clt p),
 			    Ast0.Impure (*will be ignored*))) )
-# 34050 "parser_cocci_menhir.ml"
+# 34053 "parser_cocci_menhir.ml"
             
           in
           
 # 564 "parser_cocci_menhir.mly"
                     ( ty )
-# 34056 "parser_cocci_menhir.ml"
+# 34059 "parser_cocci_menhir.ml"
           
         in
         let cv =
           
 # 39 "standard.mly"
     ( None )
-# 34063 "parser_cocci_menhir.ml"
+# 34066 "parser_cocci_menhir.ml"
           
         in
         
 # 582 "parser_cocci_menhir.mly"
     ( P.pointerify (P.make_cv cv ty) m )
-# 34069 "parser_cocci_menhir.ml"
+# 34072 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -34092,7 +34095,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let ty00 : (
 # 51 "parser_cocci_menhir.mly"
       (Data.clt)
-# 34096 "parser_cocci_menhir.ml"
+# 34099 "parser_cocci_menhir.ml"
         ) = Obj.magic ty00 in
         let _startpos = _startpos_ty00_ in
         let _endpos = _endpos_m_ in
@@ -34103,26 +34106,26 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
             
 # 525 "parser_cocci_menhir.mly"
     ( Ast0.wrap(Ast0.BaseType(Ast.LongType,[P.clt2mcode "long" ty])) )
-# 34107 "parser_cocci_menhir.ml"
+# 34110 "parser_cocci_menhir.ml"
             
           in
           
 # 564 "parser_cocci_menhir.mly"
                     ( ty )
-# 34113 "parser_cocci_menhir.ml"
+# 34116 "parser_cocci_menhir.ml"
           
         in
         let cv =
           
 # 39 "standard.mly"
     ( None )
-# 34120 "parser_cocci_menhir.ml"
+# 34123 "parser_cocci_menhir.ml"
           
         in
         
 # 582 "parser_cocci_menhir.mly"
     ( P.pointerify (P.make_cv cv ty) m )
-# 34126 "parser_cocci_menhir.ml"
+# 34129 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -34154,12 +34157,12 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let ty200 : (
 # 51 "parser_cocci_menhir.mly"
       (Data.clt)
-# 34158 "parser_cocci_menhir.ml"
+# 34161 "parser_cocci_menhir.ml"
         ) = Obj.magic ty200 in
         let ty100 : (
 # 51 "parser_cocci_menhir.mly"
       (Data.clt)
-# 34163 "parser_cocci_menhir.ml"
+# 34166 "parser_cocci_menhir.ml"
         ) = Obj.magic ty100 in
         let _startpos = _startpos_ty100_ in
         let _endpos = _endpos_m_ in
@@ -34175,26 +34178,26 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
 	(Ast0.BaseType
 	   (Ast.LongLongType,
 	    [P.clt2mcode "long" ty1;P.clt2mcode "long" ty2])) )
-# 34179 "parser_cocci_menhir.ml"
+# 34182 "parser_cocci_menhir.ml"
             
           in
           
 # 564 "parser_cocci_menhir.mly"
                     ( ty )
-# 34185 "parser_cocci_menhir.ml"
+# 34188 "parser_cocci_menhir.ml"
           
         in
         let cv =
           
 # 39 "standard.mly"
     ( None )
-# 34192 "parser_cocci_menhir.ml"
+# 34195 "parser_cocci_menhir.ml"
           
         in
         
 # 582 "parser_cocci_menhir.mly"
     ( P.pointerify (P.make_cv cv ty) m )
-# 34198 "parser_cocci_menhir.ml"
+# 34201 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -34221,7 +34224,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let ty00 : (
 # 52 "parser_cocci_menhir.mly"
       (Data.clt)
-# 34225 "parser_cocci_menhir.ml"
+# 34228 "parser_cocci_menhir.ml"
         ) = Obj.magic ty00 in
         let _startpos = _startpos_ty00_ in
         let _endpos = _endpos_m_ in
@@ -34232,26 +34235,26 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
             
 # 535 "parser_cocci_menhir.mly"
     ( Ast0.wrap(Ast0.BaseType(Ast.VoidType,[P.clt2mcode "void" ty])) )
-# 34236 "parser_cocci_menhir.ml"
+# 34239 "parser_cocci_menhir.ml"
             
           in
           
 # 565 "parser_cocci_menhir.mly"
                         ( ty )
-# 34242 "parser_cocci_menhir.ml"
+# 34245 "parser_cocci_menhir.ml"
           
         in
         let cv =
           
 # 39 "standard.mly"
     ( None )
-# 34249 "parser_cocci_menhir.ml"
+# 34252 "parser_cocci_menhir.ml"
           
         in
         
 # 582 "parser_cocci_menhir.mly"
     ( P.pointerify (P.make_cv cv ty) m )
-# 34255 "parser_cocci_menhir.ml"
+# 34258 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -34278,7 +34281,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let ty00 : (
 # 51 "parser_cocci_menhir.mly"
       (Data.clt)
-# 34282 "parser_cocci_menhir.ml"
+# 34285 "parser_cocci_menhir.ml"
         ) = Obj.magic ty00 in
         let _startpos = _startpos_ty00_ in
         let _endpos = _endpos_m_ in
@@ -34289,26 +34292,26 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
             
 # 537 "parser_cocci_menhir.mly"
     ( Ast0.wrap(Ast0.BaseType(Ast.DoubleType,[P.clt2mcode "double" ty])) )
-# 34293 "parser_cocci_menhir.ml"
+# 34296 "parser_cocci_menhir.ml"
             
           in
           
 # 565 "parser_cocci_menhir.mly"
                         ( ty )
-# 34299 "parser_cocci_menhir.ml"
+# 34302 "parser_cocci_menhir.ml"
           
         in
         let cv =
           
 # 39 "standard.mly"
     ( None )
-# 34306 "parser_cocci_menhir.ml"
+# 34309 "parser_cocci_menhir.ml"
           
         in
         
 # 582 "parser_cocci_menhir.mly"
     ( P.pointerify (P.make_cv cv ty) m )
-# 34312 "parser_cocci_menhir.ml"
+# 34315 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -34335,7 +34338,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let ty00 : (
 # 51 "parser_cocci_menhir.mly"
       (Data.clt)
-# 34339 "parser_cocci_menhir.ml"
+# 34342 "parser_cocci_menhir.ml"
         ) = Obj.magic ty00 in
         let _startpos = _startpos_ty00_ in
         let _endpos = _endpos_m_ in
@@ -34346,26 +34349,26 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
             
 # 539 "parser_cocci_menhir.mly"
     ( Ast0.wrap(Ast0.BaseType(Ast.FloatType,[P.clt2mcode "float" ty])) )
-# 34350 "parser_cocci_menhir.ml"
+# 34353 "parser_cocci_menhir.ml"
             
           in
           
 # 565 "parser_cocci_menhir.mly"
                         ( ty )
-# 34356 "parser_cocci_menhir.ml"
+# 34359 "parser_cocci_menhir.ml"
           
         in
         let cv =
           
 # 39 "standard.mly"
     ( None )
-# 34363 "parser_cocci_menhir.ml"
+# 34366 "parser_cocci_menhir.ml"
           
         in
         
 # 582 "parser_cocci_menhir.mly"
     ( P.pointerify (P.make_cv cv ty) m )
-# 34369 "parser_cocci_menhir.ml"
+# 34372 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -34398,7 +34401,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let s00 : (
 # 52 "parser_cocci_menhir.mly"
       (Data.clt)
-# 34402 "parser_cocci_menhir.ml"
+# 34405 "parser_cocci_menhir.ml"
         ) = Obj.magic s00 in
         let _startpos = _startpos_s00_ in
         let _endpos = _endpos_m_ in
@@ -34411,26 +34414,26 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
             
 # 541 "parser_cocci_menhir.mly"
     ( Ast0.wrap(Ast0.EnumName(P.clt2mcode "enum" s, i)) )
-# 34415 "parser_cocci_menhir.ml"
+# 34418 "parser_cocci_menhir.ml"
             
           in
           
 # 565 "parser_cocci_menhir.mly"
                         ( ty )
-# 34421 "parser_cocci_menhir.ml"
+# 34424 "parser_cocci_menhir.ml"
           
         in
         let cv =
           
 # 39 "standard.mly"
     ( None )
-# 34428 "parser_cocci_menhir.ml"
+# 34431 "parser_cocci_menhir.ml"
           
         in
         
 # 582 "parser_cocci_menhir.mly"
     ( P.pointerify (P.make_cv cv ty) m )
-# 34434 "parser_cocci_menhir.ml"
+# 34437 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -34472,26 +34475,26 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
             
 # 543 "parser_cocci_menhir.mly"
     ( Ast0.wrap(Ast0.StructUnionName(s, Some i)) )
-# 34476 "parser_cocci_menhir.ml"
+# 34479 "parser_cocci_menhir.ml"
             
           in
           
 # 565 "parser_cocci_menhir.mly"
                         ( ty )
-# 34482 "parser_cocci_menhir.ml"
+# 34485 "parser_cocci_menhir.ml"
           
         in
         let cv =
           
 # 39 "standard.mly"
     ( None )
-# 34489 "parser_cocci_menhir.ml"
+# 34492 "parser_cocci_menhir.ml"
           
         in
         
 # 582 "parser_cocci_menhir.mly"
     ( P.pointerify (P.make_cv cv ty) m )
-# 34495 "parser_cocci_menhir.ml"
+# 34498 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -34533,13 +34536,13 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let r00 : (
 # 104 "parser_cocci_menhir.mly"
        (Data.clt)
-# 34537 "parser_cocci_menhir.ml"
+# 34540 "parser_cocci_menhir.ml"
         ) = Obj.magic r00 in
         let d00 : 'tv_struct_decl_list = Obj.magic d00 in
         let l00 : (
 # 104 "parser_cocci_menhir.mly"
        (Data.clt)
-# 34543 "parser_cocci_menhir.ml"
+# 34546 "parser_cocci_menhir.ml"
         ) = Obj.magic l00 in
         let s00 : 'tv_struct_or_union = Obj.magic s00 in
         let _startpos = _startpos_s00_ in
@@ -34558,7 +34561,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
               
 # 39 "standard.mly"
     ( None )
-# 34562 "parser_cocci_menhir.ml"
+# 34565 "parser_cocci_menhir.ml"
               
             in
             
@@ -34568,26 +34571,26 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
       Ast0.wrap(Ast0.StructUnionDef(Ast0.wrap(Ast0.StructUnionName(s, i)),
 				    P.clt2mcode "{" l,
 				    d, P.clt2mcode "}" r)) )
-# 34572 "parser_cocci_menhir.ml"
+# 34575 "parser_cocci_menhir.ml"
             
           in
           
 # 565 "parser_cocci_menhir.mly"
                         ( ty )
-# 34578 "parser_cocci_menhir.ml"
+# 34581 "parser_cocci_menhir.ml"
           
         in
         let cv =
           
 # 39 "standard.mly"
     ( None )
-# 34585 "parser_cocci_menhir.ml"
+# 34588 "parser_cocci_menhir.ml"
           
         in
         
 # 582 "parser_cocci_menhir.mly"
     ( P.pointerify (P.make_cv cv ty) m )
-# 34591 "parser_cocci_menhir.ml"
+# 34594 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -34634,13 +34637,13 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let r00 : (
 # 104 "parser_cocci_menhir.mly"
        (Data.clt)
-# 34638 "parser_cocci_menhir.ml"
+# 34641 "parser_cocci_menhir.ml"
         ) = Obj.magic r00 in
         let d00 : 'tv_struct_decl_list = Obj.magic d00 in
         let l00 : (
 # 104 "parser_cocci_menhir.mly"
        (Data.clt)
-# 34644 "parser_cocci_menhir.ml"
+# 34647 "parser_cocci_menhir.ml"
         ) = Obj.magic l00 in
         let x000 : 'tv_ident = Obj.magic x000 in
         let s00 : 'tv_struct_or_union = Obj.magic s00 in
@@ -34663,7 +34666,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
               
 # 41 "standard.mly"
     ( Some x )
-# 34667 "parser_cocci_menhir.ml"
+# 34670 "parser_cocci_menhir.ml"
               
             in
             
@@ -34673,26 +34676,26 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
       Ast0.wrap(Ast0.StructUnionDef(Ast0.wrap(Ast0.StructUnionName(s, i)),
 				    P.clt2mcode "{" l,
 				    d, P.clt2mcode "}" r)) )
-# 34677 "parser_cocci_menhir.ml"
+# 34680 "parser_cocci_menhir.ml"
             
           in
           
 # 565 "parser_cocci_menhir.mly"
                         ( ty )
-# 34683 "parser_cocci_menhir.ml"
+# 34686 "parser_cocci_menhir.ml"
           
         in
         let cv =
           
 # 39 "standard.mly"
     ( None )
-# 34690 "parser_cocci_menhir.ml"
+# 34693 "parser_cocci_menhir.ml"
           
         in
         
 # 582 "parser_cocci_menhir.mly"
     ( P.pointerify (P.make_cv cv ty) m )
-# 34696 "parser_cocci_menhir.ml"
+# 34699 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -34734,18 +34737,18 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let r00 : (
 # 104 "parser_cocci_menhir.mly"
        (Data.clt)
-# 34738 "parser_cocci_menhir.ml"
+# 34741 "parser_cocci_menhir.ml"
         ) = Obj.magic r00 in
         let d00 : 'tv_struct_decl_list = Obj.magic d00 in
         let l00 : (
 # 104 "parser_cocci_menhir.mly"
        (Data.clt)
-# 34744 "parser_cocci_menhir.ml"
+# 34747 "parser_cocci_menhir.ml"
         ) = Obj.magic l00 in
         let s00 : (
 # 67 "parser_cocci_menhir.mly"
        (Parse_aux.info)
-# 34749 "parser_cocci_menhir.ml"
+# 34752 "parser_cocci_menhir.ml"
         ) = Obj.magic s00 in
         let _startpos = _startpos_s00_ in
         let _endpos = _endpos_m_ in
@@ -34764,26 +34767,26 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
     ( let (nm,pure,clt) = s in
     let ty = Ast0.wrap(Ast0.MetaType(P.clt2mcode nm clt,pure)) in
     Ast0.wrap(Ast0.StructUnionDef(ty,P.clt2mcode "{" l,d,P.clt2mcode "}" r)) )
-# 34768 "parser_cocci_menhir.ml"
+# 34771 "parser_cocci_menhir.ml"
             
           in
           
 # 565 "parser_cocci_menhir.mly"
                         ( ty )
-# 34774 "parser_cocci_menhir.ml"
+# 34777 "parser_cocci_menhir.ml"
           
         in
         let cv =
           
 # 39 "standard.mly"
     ( None )
-# 34781 "parser_cocci_menhir.ml"
+# 34784 "parser_cocci_menhir.ml"
           
         in
         
 # 582 "parser_cocci_menhir.mly"
     ( P.pointerify (P.make_cv cv ty) m )
-# 34787 "parser_cocci_menhir.ml"
+# 34790 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -34810,7 +34813,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let p00 : (
 # 61 "parser_cocci_menhir.mly"
        (string * Data.clt)
-# 34814 "parser_cocci_menhir.ml"
+# 34817 "parser_cocci_menhir.ml"
         ) = Obj.magic p00 in
         let _startpos = _startpos_p00_ in
         let _endpos = _endpos_m_ in
@@ -34821,26 +34824,26 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
             
 # 556 "parser_cocci_menhir.mly"
     ( Ast0.wrap(Ast0.TypeName(P.id2mcode p)) )
-# 34825 "parser_cocci_menhir.ml"
+# 34828 "parser_cocci_menhir.ml"
             
           in
           
 # 565 "parser_cocci_menhir.mly"
                         ( ty )
-# 34831 "parser_cocci_menhir.ml"
+# 34834 "parser_cocci_menhir.ml"
           
         in
         let cv =
           
 # 39 "standard.mly"
     ( None )
-# 34838 "parser_cocci_menhir.ml"
+# 34841 "parser_cocci_menhir.ml"
           
         in
         
 # 582 "parser_cocci_menhir.mly"
     ( P.pointerify (P.make_cv cv ty) m )
-# 34844 "parser_cocci_menhir.ml"
+# 34847 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -34877,12 +34880,12 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let ty00 : (
 # 51 "parser_cocci_menhir.mly"
       (Data.clt)
-# 34881 "parser_cocci_menhir.ml"
+# 34884 "parser_cocci_menhir.ml"
         ) = Obj.magic ty00 in
         let r0 : (
 # 53 "parser_cocci_menhir.mly"
       (Data.clt)
-# 34886 "parser_cocci_menhir.ml"
+# 34889 "parser_cocci_menhir.ml"
         ) = Obj.magic r0 in
         let x0 : 'tv_const_vol = Obj.magic x0 in
         let _startpos = _startpos_x0_ in
@@ -34895,13 +34898,13 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
             
 # 509 "parser_cocci_menhir.mly"
     ( Ast0.wrap(Ast0.BaseType(Ast.CharType,[P.clt2mcode "char" ty])) )
-# 34899 "parser_cocci_menhir.ml"
+# 34902 "parser_cocci_menhir.ml"
             
           in
           
 # 561 "parser_cocci_menhir.mly"
     ( Ast0.wrap(Ast0.Signed(P.clt2mcode Ast.Signed r,Some ty)) )
-# 34905 "parser_cocci_menhir.ml"
+# 34908 "parser_cocci_menhir.ml"
           
         in
         let cv =
@@ -34909,13 +34912,13 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
           
 # 41 "standard.mly"
     ( Some x )
-# 34913 "parser_cocci_menhir.ml"
+# 34916 "parser_cocci_menhir.ml"
           
         in
         
 # 582 "parser_cocci_menhir.mly"
     ( P.pointerify (P.make_cv cv ty) m )
-# 34919 "parser_cocci_menhir.ml"
+# 34922 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -34952,12 +34955,12 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let ty00 : (
 # 51 "parser_cocci_menhir.mly"
       (Data.clt)
-# 34956 "parser_cocci_menhir.ml"
+# 34959 "parser_cocci_menhir.ml"
         ) = Obj.magic ty00 in
         let r0 : (
 # 53 "parser_cocci_menhir.mly"
       (Data.clt)
-# 34961 "parser_cocci_menhir.ml"
+# 34964 "parser_cocci_menhir.ml"
         ) = Obj.magic r0 in
         let x0 : 'tv_const_vol = Obj.magic x0 in
         let _startpos = _startpos_x0_ in
@@ -34970,13 +34973,13 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
             
 # 511 "parser_cocci_menhir.mly"
     ( Ast0.wrap(Ast0.BaseType(Ast.ShortType,[P.clt2mcode "short" ty])) )
-# 34974 "parser_cocci_menhir.ml"
+# 34977 "parser_cocci_menhir.ml"
             
           in
           
 # 561 "parser_cocci_menhir.mly"
     ( Ast0.wrap(Ast0.Signed(P.clt2mcode Ast.Signed r,Some ty)) )
-# 34980 "parser_cocci_menhir.ml"
+# 34983 "parser_cocci_menhir.ml"
           
         in
         let cv =
@@ -34984,13 +34987,13 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
           
 # 41 "standard.mly"
     ( Some x )
-# 34988 "parser_cocci_menhir.ml"
+# 34991 "parser_cocci_menhir.ml"
           
         in
         
 # 582 "parser_cocci_menhir.mly"
     ( P.pointerify (P.make_cv cv ty) m )
-# 34994 "parser_cocci_menhir.ml"
+# 34997 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -35027,12 +35030,12 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let ty00 : (
 # 51 "parser_cocci_menhir.mly"
       (Data.clt)
-# 35031 "parser_cocci_menhir.ml"
+# 35034 "parser_cocci_menhir.ml"
         ) = Obj.magic ty00 in
         let r0 : (
 # 53 "parser_cocci_menhir.mly"
       (Data.clt)
-# 35036 "parser_cocci_menhir.ml"
+# 35039 "parser_cocci_menhir.ml"
         ) = Obj.magic r0 in
         let x0 : 'tv_const_vol = Obj.magic x0 in
         let _startpos = _startpos_x0_ in
@@ -35045,13 +35048,13 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
             
 # 513 "parser_cocci_menhir.mly"
     ( Ast0.wrap(Ast0.BaseType(Ast.IntType,[P.clt2mcode "int" ty])) )
-# 35049 "parser_cocci_menhir.ml"
+# 35052 "parser_cocci_menhir.ml"
             
           in
           
 # 561 "parser_cocci_menhir.mly"
     ( Ast0.wrap(Ast0.Signed(P.clt2mcode Ast.Signed r,Some ty)) )
-# 35055 "parser_cocci_menhir.ml"
+# 35058 "parser_cocci_menhir.ml"
           
         in
         let cv =
@@ -35059,13 +35062,13 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
           
 # 41 "standard.mly"
     ( Some x )
-# 35063 "parser_cocci_menhir.ml"
+# 35066 "parser_cocci_menhir.ml"
           
         in
         
 # 582 "parser_cocci_menhir.mly"
     ( P.pointerify (P.make_cv cv ty) m )
-# 35069 "parser_cocci_menhir.ml"
+# 35072 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -35102,12 +35105,12 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let p00 : (
 # 67 "parser_cocci_menhir.mly"
        (Parse_aux.info)
-# 35106 "parser_cocci_menhir.ml"
+# 35109 "parser_cocci_menhir.ml"
         ) = Obj.magic p00 in
         let r0 : (
 # 53 "parser_cocci_menhir.mly"
       (Data.clt)
-# 35111 "parser_cocci_menhir.ml"
+# 35114 "parser_cocci_menhir.ml"
         ) = Obj.magic r0 in
         let x0 : 'tv_const_vol = Obj.magic x0 in
         let _startpos = _startpos_x0_ in
@@ -35121,13 +35124,13 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
 # 515 "parser_cocci_menhir.mly"
     ( let (nm,pure,clt) = p in
       Ast0.wrap(Ast0.MetaType(P.clt2mcode nm clt,pure)) )
-# 35125 "parser_cocci_menhir.ml"
+# 35128 "parser_cocci_menhir.ml"
             
           in
           
 # 561 "parser_cocci_menhir.mly"
     ( Ast0.wrap(Ast0.Signed(P.clt2mcode Ast.Signed r,Some ty)) )
-# 35131 "parser_cocci_menhir.ml"
+# 35134 "parser_cocci_menhir.ml"
           
         in
         let cv =
@@ -35135,13 +35138,13 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
           
 # 41 "standard.mly"
     ( Some x )
-# 35139 "parser_cocci_menhir.ml"
+# 35142 "parser_cocci_menhir.ml"
           
         in
         
 # 582 "parser_cocci_menhir.mly"
     ( P.pointerify (P.make_cv cv ty) m )
-# 35145 "parser_cocci_menhir.ml"
+# 35148 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -35187,17 +35190,17 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let p00 : (
 # 61 "parser_cocci_menhir.mly"
        (string * Data.clt)
-# 35191 "parser_cocci_menhir.ml"
+# 35194 "parser_cocci_menhir.ml"
         ) = Obj.magic p00 in
         let r00 : (
 # 49 "parser_cocci_menhir.mly"
       (string)
-# 35196 "parser_cocci_menhir.ml"
+# 35199 "parser_cocci_menhir.ml"
         ) = Obj.magic r00 in
         let r1 : (
 # 53 "parser_cocci_menhir.mly"
       (Data.clt)
-# 35201 "parser_cocci_menhir.ml"
+# 35204 "parser_cocci_menhir.ml"
         ) = Obj.magic r1 in
         let x0 : 'tv_const_vol = Obj.magic x0 in
         let _startpos = _startpos_x0_ in
@@ -35217,13 +35220,13 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
     let _ = P.check_meta(Ast.MetaTypeDecl(Ast.NONE,nm)) in
     Ast0.wrap(Ast0.MetaType(P.clt2mcode nm (P.id2clt p),
 			    Ast0.Impure (*will be ignored*))) )
-# 35221 "parser_cocci_menhir.ml"
+# 35224 "parser_cocci_menhir.ml"
             
           in
           
 # 561 "parser_cocci_menhir.mly"
     ( Ast0.wrap(Ast0.Signed(P.clt2mcode Ast.Signed r,Some ty)) )
-# 35227 "parser_cocci_menhir.ml"
+# 35230 "parser_cocci_menhir.ml"
           
         in
         let cv =
@@ -35231,13 +35234,13 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
           
 # 41 "standard.mly"
     ( Some x )
-# 35235 "parser_cocci_menhir.ml"
+# 35238 "parser_cocci_menhir.ml"
           
         in
         
 # 582 "parser_cocci_menhir.mly"
     ( P.pointerify (P.make_cv cv ty) m )
-# 35241 "parser_cocci_menhir.ml"
+# 35244 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -35274,12 +35277,12 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let ty00 : (
 # 51 "parser_cocci_menhir.mly"
       (Data.clt)
-# 35278 "parser_cocci_menhir.ml"
+# 35281 "parser_cocci_menhir.ml"
         ) = Obj.magic ty00 in
         let r0 : (
 # 53 "parser_cocci_menhir.mly"
       (Data.clt)
-# 35283 "parser_cocci_menhir.ml"
+# 35286 "parser_cocci_menhir.ml"
         ) = Obj.magic r0 in
         let x0 : 'tv_const_vol = Obj.magic x0 in
         let _startpos = _startpos_x0_ in
@@ -35292,13 +35295,13 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
             
 # 525 "parser_cocci_menhir.mly"
     ( Ast0.wrap(Ast0.BaseType(Ast.LongType,[P.clt2mcode "long" ty])) )
-# 35296 "parser_cocci_menhir.ml"
+# 35299 "parser_cocci_menhir.ml"
             
           in
           
 # 561 "parser_cocci_menhir.mly"
     ( Ast0.wrap(Ast0.Signed(P.clt2mcode Ast.Signed r,Some ty)) )
-# 35302 "parser_cocci_menhir.ml"
+# 35305 "parser_cocci_menhir.ml"
           
         in
         let cv =
@@ -35306,13 +35309,13 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
           
 # 41 "standard.mly"
     ( Some x )
-# 35310 "parser_cocci_menhir.ml"
+# 35313 "parser_cocci_menhir.ml"
           
         in
         
 # 582 "parser_cocci_menhir.mly"
     ( P.pointerify (P.make_cv cv ty) m )
-# 35316 "parser_cocci_menhir.ml"
+# 35319 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -35354,17 +35357,17 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let ty200 : (
 # 51 "parser_cocci_menhir.mly"
       (Data.clt)
-# 35358 "parser_cocci_menhir.ml"
+# 35361 "parser_cocci_menhir.ml"
         ) = Obj.magic ty200 in
         let ty100 : (
 # 51 "parser_cocci_menhir.mly"
       (Data.clt)
-# 35363 "parser_cocci_menhir.ml"
+# 35366 "parser_cocci_menhir.ml"
         ) = Obj.magic ty100 in
         let r0 : (
 # 53 "parser_cocci_menhir.mly"
       (Data.clt)
-# 35368 "parser_cocci_menhir.ml"
+# 35371 "parser_cocci_menhir.ml"
         ) = Obj.magic r0 in
         let x0 : 'tv_const_vol = Obj.magic x0 in
         let _startpos = _startpos_x0_ in
@@ -35382,13 +35385,13 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
 	(Ast0.BaseType
 	   (Ast.LongLongType,
 	    [P.clt2mcode "long" ty1;P.clt2mcode "long" ty2])) )
-# 35386 "parser_cocci_menhir.ml"
+# 35389 "parser_cocci_menhir.ml"
             
           in
           
 # 561 "parser_cocci_menhir.mly"
     ( Ast0.wrap(Ast0.Signed(P.clt2mcode Ast.Signed r,Some ty)) )
-# 35392 "parser_cocci_menhir.ml"
+# 35395 "parser_cocci_menhir.ml"
           
         in
         let cv =
@@ -35396,13 +35399,13 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
           
 # 41 "standard.mly"
     ( Some x )
-# 35400 "parser_cocci_menhir.ml"
+# 35403 "parser_cocci_menhir.ml"
           
         in
         
 # 582 "parser_cocci_menhir.mly"
     ( P.pointerify (P.make_cv cv ty) m )
-# 35406 "parser_cocci_menhir.ml"
+# 35409 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -35439,12 +35442,12 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let ty00 : (
 # 51 "parser_cocci_menhir.mly"
       (Data.clt)
-# 35443 "parser_cocci_menhir.ml"
+# 35446 "parser_cocci_menhir.ml"
         ) = Obj.magic ty00 in
         let r0 : (
 # 53 "parser_cocci_menhir.mly"
       (Data.clt)
-# 35448 "parser_cocci_menhir.ml"
+# 35451 "parser_cocci_menhir.ml"
         ) = Obj.magic r0 in
         let x0 : 'tv_const_vol = Obj.magic x0 in
         let _startpos = _startpos_x0_ in
@@ -35457,13 +35460,13 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
             
 # 509 "parser_cocci_menhir.mly"
     ( Ast0.wrap(Ast0.BaseType(Ast.CharType,[P.clt2mcode "char" ty])) )
-# 35461 "parser_cocci_menhir.ml"
+# 35464 "parser_cocci_menhir.ml"
             
           in
           
 # 563 "parser_cocci_menhir.mly"
     ( Ast0.wrap(Ast0.Signed(P.clt2mcode Ast.Unsigned r,Some ty)) )
-# 35467 "parser_cocci_menhir.ml"
+# 35470 "parser_cocci_menhir.ml"
           
         in
         let cv =
@@ -35471,13 +35474,13 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
           
 # 41 "standard.mly"
     ( Some x )
-# 35475 "parser_cocci_menhir.ml"
+# 35478 "parser_cocci_menhir.ml"
           
         in
         
 # 582 "parser_cocci_menhir.mly"
     ( P.pointerify (P.make_cv cv ty) m )
-# 35481 "parser_cocci_menhir.ml"
+# 35484 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -35514,12 +35517,12 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let ty00 : (
 # 51 "parser_cocci_menhir.mly"
       (Data.clt)
-# 35518 "parser_cocci_menhir.ml"
+# 35521 "parser_cocci_menhir.ml"
         ) = Obj.magic ty00 in
         let r0 : (
 # 53 "parser_cocci_menhir.mly"
       (Data.clt)
-# 35523 "parser_cocci_menhir.ml"
+# 35526 "parser_cocci_menhir.ml"
         ) = Obj.magic r0 in
         let x0 : 'tv_const_vol = Obj.magic x0 in
         let _startpos = _startpos_x0_ in
@@ -35532,13 +35535,13 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
             
 # 511 "parser_cocci_menhir.mly"
     ( Ast0.wrap(Ast0.BaseType(Ast.ShortType,[P.clt2mcode "short" ty])) )
-# 35536 "parser_cocci_menhir.ml"
+# 35539 "parser_cocci_menhir.ml"
             
           in
           
 # 563 "parser_cocci_menhir.mly"
     ( Ast0.wrap(Ast0.Signed(P.clt2mcode Ast.Unsigned r,Some ty)) )
-# 35542 "parser_cocci_menhir.ml"
+# 35545 "parser_cocci_menhir.ml"
           
         in
         let cv =
@@ -35546,13 +35549,13 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
           
 # 41 "standard.mly"
     ( Some x )
-# 35550 "parser_cocci_menhir.ml"
+# 35553 "parser_cocci_menhir.ml"
           
         in
         
 # 582 "parser_cocci_menhir.mly"
     ( P.pointerify (P.make_cv cv ty) m )
-# 35556 "parser_cocci_menhir.ml"
+# 35559 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -35589,12 +35592,12 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let ty00 : (
 # 51 "parser_cocci_menhir.mly"
       (Data.clt)
-# 35593 "parser_cocci_menhir.ml"
+# 35596 "parser_cocci_menhir.ml"
         ) = Obj.magic ty00 in
         let r0 : (
 # 53 "parser_cocci_menhir.mly"
       (Data.clt)
-# 35598 "parser_cocci_menhir.ml"
+# 35601 "parser_cocci_menhir.ml"
         ) = Obj.magic r0 in
         let x0 : 'tv_const_vol = Obj.magic x0 in
         let _startpos = _startpos_x0_ in
@@ -35607,13 +35610,13 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
             
 # 513 "parser_cocci_menhir.mly"
     ( Ast0.wrap(Ast0.BaseType(Ast.IntType,[P.clt2mcode "int" ty])) )
-# 35611 "parser_cocci_menhir.ml"
+# 35614 "parser_cocci_menhir.ml"
             
           in
           
 # 563 "parser_cocci_menhir.mly"
     ( Ast0.wrap(Ast0.Signed(P.clt2mcode Ast.Unsigned r,Some ty)) )
-# 35617 "parser_cocci_menhir.ml"
+# 35620 "parser_cocci_menhir.ml"
           
         in
         let cv =
@@ -35621,13 +35624,13 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
           
 # 41 "standard.mly"
     ( Some x )
-# 35625 "parser_cocci_menhir.ml"
+# 35628 "parser_cocci_menhir.ml"
           
         in
         
 # 582 "parser_cocci_menhir.mly"
     ( P.pointerify (P.make_cv cv ty) m )
-# 35631 "parser_cocci_menhir.ml"
+# 35634 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -35664,12 +35667,12 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let p00 : (
 # 67 "parser_cocci_menhir.mly"
        (Parse_aux.info)
-# 35668 "parser_cocci_menhir.ml"
+# 35671 "parser_cocci_menhir.ml"
         ) = Obj.magic p00 in
         let r0 : (
 # 53 "parser_cocci_menhir.mly"
       (Data.clt)
-# 35673 "parser_cocci_menhir.ml"
+# 35676 "parser_cocci_menhir.ml"
         ) = Obj.magic r0 in
         let x0 : 'tv_const_vol = Obj.magic x0 in
         let _startpos = _startpos_x0_ in
@@ -35683,13 +35686,13 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
 # 515 "parser_cocci_menhir.mly"
     ( let (nm,pure,clt) = p in
       Ast0.wrap(Ast0.MetaType(P.clt2mcode nm clt,pure)) )
-# 35687 "parser_cocci_menhir.ml"
+# 35690 "parser_cocci_menhir.ml"
             
           in
           
 # 563 "parser_cocci_menhir.mly"
     ( Ast0.wrap(Ast0.Signed(P.clt2mcode Ast.Unsigned r,Some ty)) )
-# 35693 "parser_cocci_menhir.ml"
+# 35696 "parser_cocci_menhir.ml"
           
         in
         let cv =
@@ -35697,13 +35700,13 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
           
 # 41 "standard.mly"
     ( Some x )
-# 35701 "parser_cocci_menhir.ml"
+# 35704 "parser_cocci_menhir.ml"
           
         in
         
 # 582 "parser_cocci_menhir.mly"
     ( P.pointerify (P.make_cv cv ty) m )
-# 35707 "parser_cocci_menhir.ml"
+# 35710 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -35749,17 +35752,17 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let p00 : (
 # 61 "parser_cocci_menhir.mly"
        (string * Data.clt)
-# 35753 "parser_cocci_menhir.ml"
+# 35756 "parser_cocci_menhir.ml"
         ) = Obj.magic p00 in
         let r00 : (
 # 49 "parser_cocci_menhir.mly"
       (string)
-# 35758 "parser_cocci_menhir.ml"
+# 35761 "parser_cocci_menhir.ml"
         ) = Obj.magic r00 in
         let r1 : (
 # 53 "parser_cocci_menhir.mly"
       (Data.clt)
-# 35763 "parser_cocci_menhir.ml"
+# 35766 "parser_cocci_menhir.ml"
         ) = Obj.magic r1 in
         let x0 : 'tv_const_vol = Obj.magic x0 in
         let _startpos = _startpos_x0_ in
@@ -35779,13 +35782,13 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
     let _ = P.check_meta(Ast.MetaTypeDecl(Ast.NONE,nm)) in
     Ast0.wrap(Ast0.MetaType(P.clt2mcode nm (P.id2clt p),
 			    Ast0.Impure (*will be ignored*))) )
-# 35783 "parser_cocci_menhir.ml"
+# 35786 "parser_cocci_menhir.ml"
             
           in
           
 # 563 "parser_cocci_menhir.mly"
     ( Ast0.wrap(Ast0.Signed(P.clt2mcode Ast.Unsigned r,Some ty)) )
-# 35789 "parser_cocci_menhir.ml"
+# 35792 "parser_cocci_menhir.ml"
           
         in
         let cv =
@@ -35793,13 +35796,13 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
           
 # 41 "standard.mly"
     ( Some x )
-# 35797 "parser_cocci_menhir.ml"
+# 35800 "parser_cocci_menhir.ml"
           
         in
         
 # 582 "parser_cocci_menhir.mly"
     ( P.pointerify (P.make_cv cv ty) m )
-# 35803 "parser_cocci_menhir.ml"
+# 35806 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -35836,12 +35839,12 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let ty00 : (
 # 51 "parser_cocci_menhir.mly"
       (Data.clt)
-# 35840 "parser_cocci_menhir.ml"
+# 35843 "parser_cocci_menhir.ml"
         ) = Obj.magic ty00 in
         let r0 : (
 # 53 "parser_cocci_menhir.mly"
       (Data.clt)
-# 35845 "parser_cocci_menhir.ml"
+# 35848 "parser_cocci_menhir.ml"
         ) = Obj.magic r0 in
         let x0 : 'tv_const_vol = Obj.magic x0 in
         let _startpos = _startpos_x0_ in
@@ -35854,13 +35857,13 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
             
 # 525 "parser_cocci_menhir.mly"
     ( Ast0.wrap(Ast0.BaseType(Ast.LongType,[P.clt2mcode "long" ty])) )
-# 35858 "parser_cocci_menhir.ml"
+# 35861 "parser_cocci_menhir.ml"
             
           in
           
 # 563 "parser_cocci_menhir.mly"
     ( Ast0.wrap(Ast0.Signed(P.clt2mcode Ast.Unsigned r,Some ty)) )
-# 35864 "parser_cocci_menhir.ml"
+# 35867 "parser_cocci_menhir.ml"
           
         in
         let cv =
@@ -35868,13 +35871,13 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
           
 # 41 "standard.mly"
     ( Some x )
-# 35872 "parser_cocci_menhir.ml"
+# 35875 "parser_cocci_menhir.ml"
           
         in
         
 # 582 "parser_cocci_menhir.mly"
     ( P.pointerify (P.make_cv cv ty) m )
-# 35878 "parser_cocci_menhir.ml"
+# 35881 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -35916,17 +35919,17 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let ty200 : (
 # 51 "parser_cocci_menhir.mly"
       (Data.clt)
-# 35920 "parser_cocci_menhir.ml"
+# 35923 "parser_cocci_menhir.ml"
         ) = Obj.magic ty200 in
         let ty100 : (
 # 51 "parser_cocci_menhir.mly"
       (Data.clt)
-# 35925 "parser_cocci_menhir.ml"
+# 35928 "parser_cocci_menhir.ml"
         ) = Obj.magic ty100 in
         let r0 : (
 # 53 "parser_cocci_menhir.mly"
       (Data.clt)
-# 35930 "parser_cocci_menhir.ml"
+# 35933 "parser_cocci_menhir.ml"
         ) = Obj.magic r0 in
         let x0 : 'tv_const_vol = Obj.magic x0 in
         let _startpos = _startpos_x0_ in
@@ -35944,13 +35947,13 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
 	(Ast0.BaseType
 	   (Ast.LongLongType,
 	    [P.clt2mcode "long" ty1;P.clt2mcode "long" ty2])) )
-# 35948 "parser_cocci_menhir.ml"
+# 35951 "parser_cocci_menhir.ml"
             
           in
           
 # 563 "parser_cocci_menhir.mly"
     ( Ast0.wrap(Ast0.Signed(P.clt2mcode Ast.Unsigned r,Some ty)) )
-# 35954 "parser_cocci_menhir.ml"
+# 35957 "parser_cocci_menhir.ml"
           
         in
         let cv =
@@ -35958,13 +35961,13 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
           
 # 41 "standard.mly"
     ( Some x )
-# 35962 "parser_cocci_menhir.ml"
+# 35965 "parser_cocci_menhir.ml"
           
         in
         
 # 582 "parser_cocci_menhir.mly"
     ( P.pointerify (P.make_cv cv ty) m )
-# 35968 "parser_cocci_menhir.ml"
+# 35971 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -35996,7 +35999,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let ty00 : (
 # 51 "parser_cocci_menhir.mly"
       (Data.clt)
-# 36000 "parser_cocci_menhir.ml"
+# 36003 "parser_cocci_menhir.ml"
         ) = Obj.magic ty00 in
         let x0 : 'tv_const_vol = Obj.magic x0 in
         let _startpos = _startpos_x0_ in
@@ -36008,13 +36011,13 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
             
 # 509 "parser_cocci_menhir.mly"
     ( Ast0.wrap(Ast0.BaseType(Ast.CharType,[P.clt2mcode "char" ty])) )
-# 36012 "parser_cocci_menhir.ml"
+# 36015 "parser_cocci_menhir.ml"
             
           in
           
 # 564 "parser_cocci_menhir.mly"
                     ( ty )
-# 36018 "parser_cocci_menhir.ml"
+# 36021 "parser_cocci_menhir.ml"
           
         in
         let cv =
@@ -36022,13 +36025,13 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
           
 # 41 "standard.mly"
     ( Some x )
-# 36026 "parser_cocci_menhir.ml"
+# 36029 "parser_cocci_menhir.ml"
           
         in
         
 # 582 "parser_cocci_menhir.mly"
     ( P.pointerify (P.make_cv cv ty) m )
-# 36032 "parser_cocci_menhir.ml"
+# 36035 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -36060,7 +36063,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let ty00 : (
 # 51 "parser_cocci_menhir.mly"
       (Data.clt)
-# 36064 "parser_cocci_menhir.ml"
+# 36067 "parser_cocci_menhir.ml"
         ) = Obj.magic ty00 in
         let x0 : 'tv_const_vol = Obj.magic x0 in
         let _startpos = _startpos_x0_ in
@@ -36072,13 +36075,13 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
             
 # 511 "parser_cocci_menhir.mly"
     ( Ast0.wrap(Ast0.BaseType(Ast.ShortType,[P.clt2mcode "short" ty])) )
-# 36076 "parser_cocci_menhir.ml"
+# 36079 "parser_cocci_menhir.ml"
             
           in
           
 # 564 "parser_cocci_menhir.mly"
                     ( ty )
-# 36082 "parser_cocci_menhir.ml"
+# 36085 "parser_cocci_menhir.ml"
           
         in
         let cv =
@@ -36086,13 +36089,13 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
           
 # 41 "standard.mly"
     ( Some x )
-# 36090 "parser_cocci_menhir.ml"
+# 36093 "parser_cocci_menhir.ml"
           
         in
         
 # 582 "parser_cocci_menhir.mly"
     ( P.pointerify (P.make_cv cv ty) m )
-# 36096 "parser_cocci_menhir.ml"
+# 36099 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -36124,7 +36127,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let ty00 : (
 # 51 "parser_cocci_menhir.mly"
       (Data.clt)
-# 36128 "parser_cocci_menhir.ml"
+# 36131 "parser_cocci_menhir.ml"
         ) = Obj.magic ty00 in
         let x0 : 'tv_const_vol = Obj.magic x0 in
         let _startpos = _startpos_x0_ in
@@ -36136,13 +36139,13 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
             
 # 513 "parser_cocci_menhir.mly"
     ( Ast0.wrap(Ast0.BaseType(Ast.IntType,[P.clt2mcode "int" ty])) )
-# 36140 "parser_cocci_menhir.ml"
+# 36143 "parser_cocci_menhir.ml"
             
           in
           
 # 564 "parser_cocci_menhir.mly"
                     ( ty )
-# 36146 "parser_cocci_menhir.ml"
+# 36149 "parser_cocci_menhir.ml"
           
         in
         let cv =
@@ -36150,13 +36153,13 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
           
 # 41 "standard.mly"
     ( Some x )
-# 36154 "parser_cocci_menhir.ml"
+# 36157 "parser_cocci_menhir.ml"
           
         in
         
 # 582 "parser_cocci_menhir.mly"
     ( P.pointerify (P.make_cv cv ty) m )
-# 36160 "parser_cocci_menhir.ml"
+# 36163 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -36188,7 +36191,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let p00 : (
 # 67 "parser_cocci_menhir.mly"
        (Parse_aux.info)
-# 36192 "parser_cocci_menhir.ml"
+# 36195 "parser_cocci_menhir.ml"
         ) = Obj.magic p00 in
         let x0 : 'tv_const_vol = Obj.magic x0 in
         let _startpos = _startpos_x0_ in
@@ -36201,13 +36204,13 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
 # 515 "parser_cocci_menhir.mly"
     ( let (nm,pure,clt) = p in
       Ast0.wrap(Ast0.MetaType(P.clt2mcode nm clt,pure)) )
-# 36205 "parser_cocci_menhir.ml"
+# 36208 "parser_cocci_menhir.ml"
             
           in
           
 # 564 "parser_cocci_menhir.mly"
                     ( ty )
-# 36211 "parser_cocci_menhir.ml"
+# 36214 "parser_cocci_menhir.ml"
           
         in
         let cv =
@@ -36215,13 +36218,13 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
           
 # 41 "standard.mly"
     ( Some x )
-# 36219 "parser_cocci_menhir.ml"
+# 36222 "parser_cocci_menhir.ml"
           
         in
         
 # 582 "parser_cocci_menhir.mly"
     ( P.pointerify (P.make_cv cv ty) m )
-# 36225 "parser_cocci_menhir.ml"
+# 36228 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -36262,12 +36265,12 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let p00 : (
 # 61 "parser_cocci_menhir.mly"
        (string * Data.clt)
-# 36266 "parser_cocci_menhir.ml"
+# 36269 "parser_cocci_menhir.ml"
         ) = Obj.magic p00 in
         let r00 : (
 # 49 "parser_cocci_menhir.mly"
       (string)
-# 36271 "parser_cocci_menhir.ml"
+# 36274 "parser_cocci_menhir.ml"
         ) = Obj.magic r00 in
         let x0 : 'tv_const_vol = Obj.magic x0 in
         let _startpos = _startpos_x0_ in
@@ -36286,13 +36289,13 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
     let _ = P.check_meta(Ast.MetaTypeDecl(Ast.NONE,nm)) in
     Ast0.wrap(Ast0.MetaType(P.clt2mcode nm (P.id2clt p),
 			    Ast0.Impure (*will be ignored*))) )
-# 36290 "parser_cocci_menhir.ml"
+# 36293 "parser_cocci_menhir.ml"
             
           in
           
 # 564 "parser_cocci_menhir.mly"
                     ( ty )
-# 36296 "parser_cocci_menhir.ml"
+# 36299 "parser_cocci_menhir.ml"
           
         in
         let cv =
@@ -36300,13 +36303,13 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
           
 # 41 "standard.mly"
     ( Some x )
-# 36304 "parser_cocci_menhir.ml"
+# 36307 "parser_cocci_menhir.ml"
           
         in
         
 # 582 "parser_cocci_menhir.mly"
     ( P.pointerify (P.make_cv cv ty) m )
-# 36310 "parser_cocci_menhir.ml"
+# 36313 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -36338,7 +36341,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let ty00 : (
 # 51 "parser_cocci_menhir.mly"
       (Data.clt)
-# 36342 "parser_cocci_menhir.ml"
+# 36345 "parser_cocci_menhir.ml"
         ) = Obj.magic ty00 in
         let x0 : 'tv_const_vol = Obj.magic x0 in
         let _startpos = _startpos_x0_ in
@@ -36350,13 +36353,13 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
             
 # 525 "parser_cocci_menhir.mly"
     ( Ast0.wrap(Ast0.BaseType(Ast.LongType,[P.clt2mcode "long" ty])) )
-# 36354 "parser_cocci_menhir.ml"
+# 36357 "parser_cocci_menhir.ml"
             
           in
           
 # 564 "parser_cocci_menhir.mly"
                     ( ty )
-# 36360 "parser_cocci_menhir.ml"
+# 36363 "parser_cocci_menhir.ml"
           
         in
         let cv =
@@ -36364,13 +36367,13 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
           
 # 41 "standard.mly"
     ( Some x )
-# 36368 "parser_cocci_menhir.ml"
+# 36371 "parser_cocci_menhir.ml"
           
         in
         
 # 582 "parser_cocci_menhir.mly"
     ( P.pointerify (P.make_cv cv ty) m )
-# 36374 "parser_cocci_menhir.ml"
+# 36377 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -36407,12 +36410,12 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let ty200 : (
 # 51 "parser_cocci_menhir.mly"
       (Data.clt)
-# 36411 "parser_cocci_menhir.ml"
+# 36414 "parser_cocci_menhir.ml"
         ) = Obj.magic ty200 in
         let ty100 : (
 # 51 "parser_cocci_menhir.mly"
       (Data.clt)
-# 36416 "parser_cocci_menhir.ml"
+# 36419 "parser_cocci_menhir.ml"
         ) = Obj.magic ty100 in
         let x0 : 'tv_const_vol = Obj.magic x0 in
         let _startpos = _startpos_x0_ in
@@ -36429,13 +36432,13 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
 	(Ast0.BaseType
 	   (Ast.LongLongType,
 	    [P.clt2mcode "long" ty1;P.clt2mcode "long" ty2])) )
-# 36433 "parser_cocci_menhir.ml"
+# 36436 "parser_cocci_menhir.ml"
             
           in
           
 # 564 "parser_cocci_menhir.mly"
                     ( ty )
-# 36439 "parser_cocci_menhir.ml"
+# 36442 "parser_cocci_menhir.ml"
           
         in
         let cv =
@@ -36443,13 +36446,13 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
           
 # 41 "standard.mly"
     ( Some x )
-# 36447 "parser_cocci_menhir.ml"
+# 36450 "parser_cocci_menhir.ml"
           
         in
         
 # 582 "parser_cocci_menhir.mly"
     ( P.pointerify (P.make_cv cv ty) m )
-# 36453 "parser_cocci_menhir.ml"
+# 36456 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -36481,7 +36484,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let ty00 : (
 # 52 "parser_cocci_menhir.mly"
       (Data.clt)
-# 36485 "parser_cocci_menhir.ml"
+# 36488 "parser_cocci_menhir.ml"
         ) = Obj.magic ty00 in
         let x0 : 'tv_const_vol = Obj.magic x0 in
         let _startpos = _startpos_x0_ in
@@ -36493,13 +36496,13 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
             
 # 535 "parser_cocci_menhir.mly"
     ( Ast0.wrap(Ast0.BaseType(Ast.VoidType,[P.clt2mcode "void" ty])) )
-# 36497 "parser_cocci_menhir.ml"
+# 36500 "parser_cocci_menhir.ml"
             
           in
           
 # 565 "parser_cocci_menhir.mly"
                         ( ty )
-# 36503 "parser_cocci_menhir.ml"
+# 36506 "parser_cocci_menhir.ml"
           
         in
         let cv =
@@ -36507,13 +36510,13 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
           
 # 41 "standard.mly"
     ( Some x )
-# 36511 "parser_cocci_menhir.ml"
+# 36514 "parser_cocci_menhir.ml"
           
         in
         
 # 582 "parser_cocci_menhir.mly"
     ( P.pointerify (P.make_cv cv ty) m )
-# 36517 "parser_cocci_menhir.ml"
+# 36520 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -36545,7 +36548,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let ty00 : (
 # 51 "parser_cocci_menhir.mly"
       (Data.clt)
-# 36549 "parser_cocci_menhir.ml"
+# 36552 "parser_cocci_menhir.ml"
         ) = Obj.magic ty00 in
         let x0 : 'tv_const_vol = Obj.magic x0 in
         let _startpos = _startpos_x0_ in
@@ -36557,13 +36560,13 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
             
 # 537 "parser_cocci_menhir.mly"
     ( Ast0.wrap(Ast0.BaseType(Ast.DoubleType,[P.clt2mcode "double" ty])) )
-# 36561 "parser_cocci_menhir.ml"
+# 36564 "parser_cocci_menhir.ml"
             
           in
           
 # 565 "parser_cocci_menhir.mly"
                         ( ty )
-# 36567 "parser_cocci_menhir.ml"
+# 36570 "parser_cocci_menhir.ml"
           
         in
         let cv =
@@ -36571,13 +36574,13 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
           
 # 41 "standard.mly"
     ( Some x )
-# 36575 "parser_cocci_menhir.ml"
+# 36578 "parser_cocci_menhir.ml"
           
         in
         
 # 582 "parser_cocci_menhir.mly"
     ( P.pointerify (P.make_cv cv ty) m )
-# 36581 "parser_cocci_menhir.ml"
+# 36584 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -36609,7 +36612,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let ty00 : (
 # 51 "parser_cocci_menhir.mly"
       (Data.clt)
-# 36613 "parser_cocci_menhir.ml"
+# 36616 "parser_cocci_menhir.ml"
         ) = Obj.magic ty00 in
         let x0 : 'tv_const_vol = Obj.magic x0 in
         let _startpos = _startpos_x0_ in
@@ -36621,13 +36624,13 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
             
 # 539 "parser_cocci_menhir.mly"
     ( Ast0.wrap(Ast0.BaseType(Ast.FloatType,[P.clt2mcode "float" ty])) )
-# 36625 "parser_cocci_menhir.ml"
+# 36628 "parser_cocci_menhir.ml"
             
           in
           
 # 565 "parser_cocci_menhir.mly"
                         ( ty )
-# 36631 "parser_cocci_menhir.ml"
+# 36634 "parser_cocci_menhir.ml"
           
         in
         let cv =
@@ -36635,13 +36638,13 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
           
 # 41 "standard.mly"
     ( Some x )
-# 36639 "parser_cocci_menhir.ml"
+# 36642 "parser_cocci_menhir.ml"
           
         in
         
 # 582 "parser_cocci_menhir.mly"
     ( P.pointerify (P.make_cv cv ty) m )
-# 36645 "parser_cocci_menhir.ml"
+# 36648 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -36679,7 +36682,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let s00 : (
 # 52 "parser_cocci_menhir.mly"
       (Data.clt)
-# 36683 "parser_cocci_menhir.ml"
+# 36686 "parser_cocci_menhir.ml"
         ) = Obj.magic s00 in
         let x0 : 'tv_const_vol = Obj.magic x0 in
         let _startpos = _startpos_x0_ in
@@ -36693,13 +36696,13 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
             
 # 541 "parser_cocci_menhir.mly"
     ( Ast0.wrap(Ast0.EnumName(P.clt2mcode "enum" s, i)) )
-# 36697 "parser_cocci_menhir.ml"
+# 36700 "parser_cocci_menhir.ml"
             
           in
           
 # 565 "parser_cocci_menhir.mly"
                         ( ty )
-# 36703 "parser_cocci_menhir.ml"
+# 36706 "parser_cocci_menhir.ml"
           
         in
         let cv =
@@ -36707,13 +36710,13 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
           
 # 41 "standard.mly"
     ( Some x )
-# 36711 "parser_cocci_menhir.ml"
+# 36714 "parser_cocci_menhir.ml"
           
         in
         
 # 582 "parser_cocci_menhir.mly"
     ( P.pointerify (P.make_cv cv ty) m )
-# 36717 "parser_cocci_menhir.ml"
+# 36720 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -36761,13 +36764,13 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
             
 # 543 "parser_cocci_menhir.mly"
     ( Ast0.wrap(Ast0.StructUnionName(s, Some i)) )
-# 36765 "parser_cocci_menhir.ml"
+# 36768 "parser_cocci_menhir.ml"
             
           in
           
 # 565 "parser_cocci_menhir.mly"
                         ( ty )
-# 36771 "parser_cocci_menhir.ml"
+# 36774 "parser_cocci_menhir.ml"
           
         in
         let cv =
@@ -36775,13 +36778,13 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
           
 # 41 "standard.mly"
     ( Some x )
-# 36779 "parser_cocci_menhir.ml"
+# 36782 "parser_cocci_menhir.ml"
           
         in
         
 # 582 "parser_cocci_menhir.mly"
     ( P.pointerify (P.make_cv cv ty) m )
-# 36785 "parser_cocci_menhir.ml"
+# 36788 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -36828,13 +36831,13 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let r00 : (
 # 104 "parser_cocci_menhir.mly"
        (Data.clt)
-# 36832 "parser_cocci_menhir.ml"
+# 36835 "parser_cocci_menhir.ml"
         ) = Obj.magic r00 in
         let d00 : 'tv_struct_decl_list = Obj.magic d00 in
         let l00 : (
 # 104 "parser_cocci_menhir.mly"
        (Data.clt)
-# 36838 "parser_cocci_menhir.ml"
+# 36841 "parser_cocci_menhir.ml"
         ) = Obj.magic l00 in
         let s00 : 'tv_struct_or_union = Obj.magic s00 in
         let x0 : 'tv_const_vol = Obj.magic x0 in
@@ -36854,7 +36857,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
               
 # 39 "standard.mly"
     ( None )
-# 36858 "parser_cocci_menhir.ml"
+# 36861 "parser_cocci_menhir.ml"
               
             in
             
@@ -36864,13 +36867,13 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
       Ast0.wrap(Ast0.StructUnionDef(Ast0.wrap(Ast0.StructUnionName(s, i)),
 				    P.clt2mcode "{" l,
 				    d, P.clt2mcode "}" r)) )
-# 36868 "parser_cocci_menhir.ml"
+# 36871 "parser_cocci_menhir.ml"
             
           in
           
 # 565 "parser_cocci_menhir.mly"
                         ( ty )
-# 36874 "parser_cocci_menhir.ml"
+# 36877 "parser_cocci_menhir.ml"
           
         in
         let cv =
@@ -36878,13 +36881,13 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
           
 # 41 "standard.mly"
     ( Some x )
-# 36882 "parser_cocci_menhir.ml"
+# 36885 "parser_cocci_menhir.ml"
           
         in
         
 # 582 "parser_cocci_menhir.mly"
     ( P.pointerify (P.make_cv cv ty) m )
-# 36888 "parser_cocci_menhir.ml"
+# 36891 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -36936,13 +36939,13 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let r00 : (
 # 104 "parser_cocci_menhir.mly"
        (Data.clt)
-# 36940 "parser_cocci_menhir.ml"
+# 36943 "parser_cocci_menhir.ml"
         ) = Obj.magic r00 in
         let d00 : 'tv_struct_decl_list = Obj.magic d00 in
         let l00 : (
 # 104 "parser_cocci_menhir.mly"
        (Data.clt)
-# 36946 "parser_cocci_menhir.ml"
+# 36949 "parser_cocci_menhir.ml"
         ) = Obj.magic l00 in
         let x000 : 'tv_ident = Obj.magic x000 in
         let s00 : 'tv_struct_or_union = Obj.magic s00 in
@@ -36966,7 +36969,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
               
 # 41 "standard.mly"
     ( Some x )
-# 36970 "parser_cocci_menhir.ml"
+# 36973 "parser_cocci_menhir.ml"
               
             in
             
@@ -36976,13 +36979,13 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
       Ast0.wrap(Ast0.StructUnionDef(Ast0.wrap(Ast0.StructUnionName(s, i)),
 				    P.clt2mcode "{" l,
 				    d, P.clt2mcode "}" r)) )
-# 36980 "parser_cocci_menhir.ml"
+# 36983 "parser_cocci_menhir.ml"
             
           in
           
 # 565 "parser_cocci_menhir.mly"
                         ( ty )
-# 36986 "parser_cocci_menhir.ml"
+# 36989 "parser_cocci_menhir.ml"
           
         in
         let cv =
@@ -36990,13 +36993,13 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
           
 # 41 "standard.mly"
     ( Some x )
-# 36994 "parser_cocci_menhir.ml"
+# 36997 "parser_cocci_menhir.ml"
           
         in
         
 # 582 "parser_cocci_menhir.mly"
     ( P.pointerify (P.make_cv cv ty) m )
-# 37000 "parser_cocci_menhir.ml"
+# 37003 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -37043,18 +37046,18 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let r00 : (
 # 104 "parser_cocci_menhir.mly"
        (Data.clt)
-# 37047 "parser_cocci_menhir.ml"
+# 37050 "parser_cocci_menhir.ml"
         ) = Obj.magic r00 in
         let d00 : 'tv_struct_decl_list = Obj.magic d00 in
         let l00 : (
 # 104 "parser_cocci_menhir.mly"
        (Data.clt)
-# 37053 "parser_cocci_menhir.ml"
+# 37056 "parser_cocci_menhir.ml"
         ) = Obj.magic l00 in
         let s00 : (
 # 67 "parser_cocci_menhir.mly"
        (Parse_aux.info)
-# 37058 "parser_cocci_menhir.ml"
+# 37061 "parser_cocci_menhir.ml"
         ) = Obj.magic s00 in
         let x0 : 'tv_const_vol = Obj.magic x0 in
         let _startpos = _startpos_x0_ in
@@ -37074,13 +37077,13 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
     ( let (nm,pure,clt) = s in
     let ty = Ast0.wrap(Ast0.MetaType(P.clt2mcode nm clt,pure)) in
     Ast0.wrap(Ast0.StructUnionDef(ty,P.clt2mcode "{" l,d,P.clt2mcode "}" r)) )
-# 37078 "parser_cocci_menhir.ml"
+# 37081 "parser_cocci_menhir.ml"
             
           in
           
 # 565 "parser_cocci_menhir.mly"
                         ( ty )
-# 37084 "parser_cocci_menhir.ml"
+# 37087 "parser_cocci_menhir.ml"
           
         in
         let cv =
@@ -37088,13 +37091,13 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
           
 # 41 "standard.mly"
     ( Some x )
-# 37092 "parser_cocci_menhir.ml"
+# 37095 "parser_cocci_menhir.ml"
           
         in
         
 # 582 "parser_cocci_menhir.mly"
     ( P.pointerify (P.make_cv cv ty) m )
-# 37098 "parser_cocci_menhir.ml"
+# 37101 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -37126,7 +37129,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let p00 : (
 # 61 "parser_cocci_menhir.mly"
        (string * Data.clt)
-# 37130 "parser_cocci_menhir.ml"
+# 37133 "parser_cocci_menhir.ml"
         ) = Obj.magic p00 in
         let x0 : 'tv_const_vol = Obj.magic x0 in
         let _startpos = _startpos_x0_ in
@@ -37138,13 +37141,13 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
             
 # 556 "parser_cocci_menhir.mly"
     ( Ast0.wrap(Ast0.TypeName(P.id2mcode p)) )
-# 37142 "parser_cocci_menhir.ml"
+# 37145 "parser_cocci_menhir.ml"
             
           in
           
 # 565 "parser_cocci_menhir.mly"
                         ( ty )
-# 37148 "parser_cocci_menhir.ml"
+# 37151 "parser_cocci_menhir.ml"
           
         in
         let cv =
@@ -37152,13 +37155,13 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
           
 # 41 "standard.mly"
     ( Some x )
-# 37156 "parser_cocci_menhir.ml"
+# 37159 "parser_cocci_menhir.ml"
           
         in
         
 # 582 "parser_cocci_menhir.mly"
     ( P.pointerify (P.make_cv cv ty) m )
-# 37162 "parser_cocci_menhir.ml"
+# 37165 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -37189,13 +37192,13 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let rp : (
 # 80 "parser_cocci_menhir.mly"
        (Data.clt)
-# 37193 "parser_cocci_menhir.ml"
+# 37196 "parser_cocci_menhir.ml"
         ) = Obj.magic rp in
         let t : 'tv_midzero_list_ctype_ctype_ = Obj.magic t in
         let lp : (
 # 79 "parser_cocci_menhir.mly"
        (Data.clt)
-# 37199 "parser_cocci_menhir.ml"
+# 37202 "parser_cocci_menhir.ml"
         ) = Obj.magic lp in
         let _startpos = _startpos_lp_ in
         let _endpos = _endpos_rp_ in
@@ -37204,7 +37207,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
     ( let (mids,code) = t in
       Ast0.wrap
 	(Ast0.DisjType(P.clt2mcode "(" lp,code,mids, P.clt2mcode ")" rp)) )
-# 37208 "parser_cocci_menhir.ml"
+# 37211 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -37228,7 +37231,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _v : 'tv_typedef_ident = 
 # 1694 "parser_cocci_menhir.mly"
          ( Ast0.wrap(Ast0.TypeName(P.id2mcode _1)) )
-# 37232 "parser_cocci_menhir.ml"
+# 37235 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -37249,7 +37252,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _1 : (
 # 67 "parser_cocci_menhir.mly"
        (Parse_aux.info)
-# 37253 "parser_cocci_menhir.ml"
+# 37256 "parser_cocci_menhir.ml"
         ) = Obj.magic _1 in
         let _startpos = _startpos__1_ in
         let _endpos = _endpos__1_ in
@@ -37257,7 +37260,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
 # 1696 "parser_cocci_menhir.mly"
          ( let (nm,pure,clt) = _1 in
 	 Ast0.wrap(Ast0.MetaType(P.clt2mcode nm clt,pure)) )
-# 37261 "parser_cocci_menhir.ml"
+# 37264 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -37281,7 +37284,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _v : 'tv_unary_expr_eexpr_dot_expressions_ = 
 # 1332 "parser_cocci_menhir.mly"
                                          ( _1 )
-# 37285 "parser_cocci_menhir.ml"
+# 37288 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -37308,14 +37311,14 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _1 : (
 # 88 "parser_cocci_menhir.mly"
        (Data.clt)
-# 37312 "parser_cocci_menhir.ml"
+# 37315 "parser_cocci_menhir.ml"
         ) = Obj.magic _1 in
         let _startpos = _startpos__1_ in
         let _endpos = _endpos__2_ in
         let _v : 'tv_unary_expr_eexpr_dot_expressions_ = 
 # 1334 "parser_cocci_menhir.mly"
       ( Ast0.wrap(Ast0.Infix (_2, P.clt2mcode Ast.Inc _1)) )
-# 37319 "parser_cocci_menhir.ml"
+# 37322 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -37342,14 +37345,14 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _1 : (
 # 88 "parser_cocci_menhir.mly"
        (Data.clt)
-# 37346 "parser_cocci_menhir.ml"
+# 37349 "parser_cocci_menhir.ml"
         ) = Obj.magic _1 in
         let _startpos = _startpos__1_ in
         let _endpos = _endpos__2_ in
         let _v : 'tv_unary_expr_eexpr_dot_expressions_ = 
 # 1336 "parser_cocci_menhir.mly"
       ( Ast0.wrap(Ast0.Infix (_2, P.clt2mcode Ast.Dec _1)) )
-# 37353 "parser_cocci_menhir.ml"
+# 37356 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -37379,7 +37382,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _v : 'tv_unary_expr_eexpr_dot_expressions_ = 
 # 1338 "parser_cocci_menhir.mly"
       ( let mcode = _1 in Ast0.wrap(Ast0.Unary(_2, mcode)) )
-# 37383 "parser_cocci_menhir.ml"
+# 37386 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -37406,7 +37409,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _1 : (
 # 79 "parser_cocci_menhir.mly"
        (Data.clt)
-# 37410 "parser_cocci_menhir.ml"
+# 37413 "parser_cocci_menhir.ml"
         ) = Obj.magic _1 in
         let _startpos = _startpos__1_ in
         let _endpos = _endpos__2_ in
@@ -37414,7 +37417,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
 # 1340 "parser_cocci_menhir.mly"
       ( let mcode = P.clt2mcode Ast.Not _1 in
       Ast0.wrap(Ast0.Unary(_2, mcode)) )
-# 37418 "parser_cocci_menhir.ml"
+# 37421 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -37441,14 +37444,14 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _1 : (
 # 60 "parser_cocci_menhir.mly"
        (Data.clt)
-# 37445 "parser_cocci_menhir.ml"
+# 37448 "parser_cocci_menhir.ml"
         ) = Obj.magic _1 in
         let _startpos = _startpos__1_ in
         let _endpos = _endpos__2_ in
         let _v : 'tv_unary_expr_eexpr_dot_expressions_ = 
 # 1343 "parser_cocci_menhir.mly"
       ( Ast0.wrap(Ast0.SizeOfExpr (P.clt2mcode "sizeof" _1, _2)) )
-# 37452 "parser_cocci_menhir.ml"
+# 37455 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -37484,18 +37487,18 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let rp : (
 # 80 "parser_cocci_menhir.mly"
        (Data.clt)
-# 37488 "parser_cocci_menhir.ml"
+# 37491 "parser_cocci_menhir.ml"
         ) = Obj.magic rp in
         let t : 'tv_ctype = Obj.magic t in
         let lp : (
 # 79 "parser_cocci_menhir.mly"
        (Data.clt)
-# 37494 "parser_cocci_menhir.ml"
+# 37497 "parser_cocci_menhir.ml"
         ) = Obj.magic lp in
         let s : (
 # 60 "parser_cocci_menhir.mly"
        (Data.clt)
-# 37499 "parser_cocci_menhir.ml"
+# 37502 "parser_cocci_menhir.ml"
         ) = Obj.magic s in
         let _startpos = _startpos_s_ in
         let _endpos = _endpos_rp_ in
@@ -37504,7 +37507,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
       ( Ast0.wrap(Ast0.SizeOfType (P.clt2mcode "sizeof" s,
                                    P.clt2mcode "(" lp,t,
                                    P.clt2mcode ")" rp)) )
-# 37508 "parser_cocci_menhir.ml"
+# 37511 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -37528,7 +37531,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _v : 'tv_unary_expr_eexpr_invalid_ = 
 # 1332 "parser_cocci_menhir.mly"
                                          ( _1 )
-# 37532 "parser_cocci_menhir.ml"
+# 37535 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -37555,14 +37558,14 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _1 : (
 # 88 "parser_cocci_menhir.mly"
        (Data.clt)
-# 37559 "parser_cocci_menhir.ml"
+# 37562 "parser_cocci_menhir.ml"
         ) = Obj.magic _1 in
         let _startpos = _startpos__1_ in
         let _endpos = _endpos__2_ in
         let _v : 'tv_unary_expr_eexpr_invalid_ = 
 # 1334 "parser_cocci_menhir.mly"
       ( Ast0.wrap(Ast0.Infix (_2, P.clt2mcode Ast.Inc _1)) )
-# 37566 "parser_cocci_menhir.ml"
+# 37569 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -37589,14 +37592,14 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _1 : (
 # 88 "parser_cocci_menhir.mly"
        (Data.clt)
-# 37593 "parser_cocci_menhir.ml"
+# 37596 "parser_cocci_menhir.ml"
         ) = Obj.magic _1 in
         let _startpos = _startpos__1_ in
         let _endpos = _endpos__2_ in
         let _v : 'tv_unary_expr_eexpr_invalid_ = 
 # 1336 "parser_cocci_menhir.mly"
       ( Ast0.wrap(Ast0.Infix (_2, P.clt2mcode Ast.Dec _1)) )
-# 37600 "parser_cocci_menhir.ml"
+# 37603 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -37626,7 +37629,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _v : 'tv_unary_expr_eexpr_invalid_ = 
 # 1338 "parser_cocci_menhir.mly"
       ( let mcode = _1 in Ast0.wrap(Ast0.Unary(_2, mcode)) )
-# 37630 "parser_cocci_menhir.ml"
+# 37633 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -37653,7 +37656,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _1 : (
 # 79 "parser_cocci_menhir.mly"
        (Data.clt)
-# 37657 "parser_cocci_menhir.ml"
+# 37660 "parser_cocci_menhir.ml"
         ) = Obj.magic _1 in
         let _startpos = _startpos__1_ in
         let _endpos = _endpos__2_ in
@@ -37661,7 +37664,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
 # 1340 "parser_cocci_menhir.mly"
       ( let mcode = P.clt2mcode Ast.Not _1 in
       Ast0.wrap(Ast0.Unary(_2, mcode)) )
-# 37665 "parser_cocci_menhir.ml"
+# 37668 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -37688,14 +37691,14 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _1 : (
 # 60 "parser_cocci_menhir.mly"
        (Data.clt)
-# 37692 "parser_cocci_menhir.ml"
+# 37695 "parser_cocci_menhir.ml"
         ) = Obj.magic _1 in
         let _startpos = _startpos__1_ in
         let _endpos = _endpos__2_ in
         let _v : 'tv_unary_expr_eexpr_invalid_ = 
 # 1343 "parser_cocci_menhir.mly"
       ( Ast0.wrap(Ast0.SizeOfExpr (P.clt2mcode "sizeof" _1, _2)) )
-# 37699 "parser_cocci_menhir.ml"
+# 37702 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -37731,18 +37734,18 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let rp : (
 # 80 "parser_cocci_menhir.mly"
        (Data.clt)
-# 37735 "parser_cocci_menhir.ml"
+# 37738 "parser_cocci_menhir.ml"
         ) = Obj.magic rp in
         let t : 'tv_ctype = Obj.magic t in
         let lp : (
 # 79 "parser_cocci_menhir.mly"
        (Data.clt)
-# 37741 "parser_cocci_menhir.ml"
+# 37744 "parser_cocci_menhir.ml"
         ) = Obj.magic lp in
         let s : (
 # 60 "parser_cocci_menhir.mly"
        (Data.clt)
-# 37746 "parser_cocci_menhir.ml"
+# 37749 "parser_cocci_menhir.ml"
         ) = Obj.magic s in
         let _startpos = _startpos_s_ in
         let _endpos = _endpos_rp_ in
@@ -37751,7 +37754,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
       ( Ast0.wrap(Ast0.SizeOfType (P.clt2mcode "sizeof" s,
                                    P.clt2mcode "(" lp,t,
                                    P.clt2mcode ")" rp)) )
-# 37755 "parser_cocci_menhir.ml"
+# 37758 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -37775,7 +37778,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _v : 'tv_unary_expr_eexpr_nest_expressions_ = 
 # 1332 "parser_cocci_menhir.mly"
                                          ( _1 )
-# 37779 "parser_cocci_menhir.ml"
+# 37782 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -37802,14 +37805,14 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _1 : (
 # 88 "parser_cocci_menhir.mly"
        (Data.clt)
-# 37806 "parser_cocci_menhir.ml"
+# 37809 "parser_cocci_menhir.ml"
         ) = Obj.magic _1 in
         let _startpos = _startpos__1_ in
         let _endpos = _endpos__2_ in
         let _v : 'tv_unary_expr_eexpr_nest_expressions_ = 
 # 1334 "parser_cocci_menhir.mly"
       ( Ast0.wrap(Ast0.Infix (_2, P.clt2mcode Ast.Inc _1)) )
-# 37813 "parser_cocci_menhir.ml"
+# 37816 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -37836,14 +37839,14 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _1 : (
 # 88 "parser_cocci_menhir.mly"
        (Data.clt)
-# 37840 "parser_cocci_menhir.ml"
+# 37843 "parser_cocci_menhir.ml"
         ) = Obj.magic _1 in
         let _startpos = _startpos__1_ in
         let _endpos = _endpos__2_ in
         let _v : 'tv_unary_expr_eexpr_nest_expressions_ = 
 # 1336 "parser_cocci_menhir.mly"
       ( Ast0.wrap(Ast0.Infix (_2, P.clt2mcode Ast.Dec _1)) )
-# 37847 "parser_cocci_menhir.ml"
+# 37850 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -37873,7 +37876,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _v : 'tv_unary_expr_eexpr_nest_expressions_ = 
 # 1338 "parser_cocci_menhir.mly"
       ( let mcode = _1 in Ast0.wrap(Ast0.Unary(_2, mcode)) )
-# 37877 "parser_cocci_menhir.ml"
+# 37880 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -37900,7 +37903,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _1 : (
 # 79 "parser_cocci_menhir.mly"
        (Data.clt)
-# 37904 "parser_cocci_menhir.ml"
+# 37907 "parser_cocci_menhir.ml"
         ) = Obj.magic _1 in
         let _startpos = _startpos__1_ in
         let _endpos = _endpos__2_ in
@@ -37908,7 +37911,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
 # 1340 "parser_cocci_menhir.mly"
       ( let mcode = P.clt2mcode Ast.Not _1 in
       Ast0.wrap(Ast0.Unary(_2, mcode)) )
-# 37912 "parser_cocci_menhir.ml"
+# 37915 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -37935,14 +37938,14 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _1 : (
 # 60 "parser_cocci_menhir.mly"
        (Data.clt)
-# 37939 "parser_cocci_menhir.ml"
+# 37942 "parser_cocci_menhir.ml"
         ) = Obj.magic _1 in
         let _startpos = _startpos__1_ in
         let _endpos = _endpos__2_ in
         let _v : 'tv_unary_expr_eexpr_nest_expressions_ = 
 # 1343 "parser_cocci_menhir.mly"
       ( Ast0.wrap(Ast0.SizeOfExpr (P.clt2mcode "sizeof" _1, _2)) )
-# 37946 "parser_cocci_menhir.ml"
+# 37949 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -37978,18 +37981,18 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let rp : (
 # 80 "parser_cocci_menhir.mly"
        (Data.clt)
-# 37982 "parser_cocci_menhir.ml"
+# 37985 "parser_cocci_menhir.ml"
         ) = Obj.magic rp in
         let t : 'tv_ctype = Obj.magic t in
         let lp : (
 # 79 "parser_cocci_menhir.mly"
        (Data.clt)
-# 37988 "parser_cocci_menhir.ml"
+# 37991 "parser_cocci_menhir.ml"
         ) = Obj.magic lp in
         let s : (
 # 60 "parser_cocci_menhir.mly"
        (Data.clt)
-# 37993 "parser_cocci_menhir.ml"
+# 37996 "parser_cocci_menhir.ml"
         ) = Obj.magic s in
         let _startpos = _startpos_s_ in
         let _endpos = _endpos_rp_ in
@@ -37998,7 +38001,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
       ( Ast0.wrap(Ast0.SizeOfType (P.clt2mcode "sizeof" s,
                                    P.clt2mcode "(" lp,t,
                                    P.clt2mcode ")" rp)) )
-# 38002 "parser_cocci_menhir.ml"
+# 38005 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -38022,7 +38025,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _v : 'tv_unary_expr_expr_invalid_ = 
 # 1332 "parser_cocci_menhir.mly"
                                          ( _1 )
-# 38026 "parser_cocci_menhir.ml"
+# 38029 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -38049,14 +38052,14 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _1 : (
 # 88 "parser_cocci_menhir.mly"
        (Data.clt)
-# 38053 "parser_cocci_menhir.ml"
+# 38056 "parser_cocci_menhir.ml"
         ) = Obj.magic _1 in
         let _startpos = _startpos__1_ in
         let _endpos = _endpos__2_ in
         let _v : 'tv_unary_expr_expr_invalid_ = 
 # 1334 "parser_cocci_menhir.mly"
       ( Ast0.wrap(Ast0.Infix (_2, P.clt2mcode Ast.Inc _1)) )
-# 38060 "parser_cocci_menhir.ml"
+# 38063 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -38083,14 +38086,14 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _1 : (
 # 88 "parser_cocci_menhir.mly"
        (Data.clt)
-# 38087 "parser_cocci_menhir.ml"
+# 38090 "parser_cocci_menhir.ml"
         ) = Obj.magic _1 in
         let _startpos = _startpos__1_ in
         let _endpos = _endpos__2_ in
         let _v : 'tv_unary_expr_expr_invalid_ = 
 # 1336 "parser_cocci_menhir.mly"
       ( Ast0.wrap(Ast0.Infix (_2, P.clt2mcode Ast.Dec _1)) )
-# 38094 "parser_cocci_menhir.ml"
+# 38097 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -38120,7 +38123,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _v : 'tv_unary_expr_expr_invalid_ = 
 # 1338 "parser_cocci_menhir.mly"
       ( let mcode = _1 in Ast0.wrap(Ast0.Unary(_2, mcode)) )
-# 38124 "parser_cocci_menhir.ml"
+# 38127 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -38147,7 +38150,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _1 : (
 # 79 "parser_cocci_menhir.mly"
        (Data.clt)
-# 38151 "parser_cocci_menhir.ml"
+# 38154 "parser_cocci_menhir.ml"
         ) = Obj.magic _1 in
         let _startpos = _startpos__1_ in
         let _endpos = _endpos__2_ in
@@ -38155,7 +38158,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
 # 1340 "parser_cocci_menhir.mly"
       ( let mcode = P.clt2mcode Ast.Not _1 in
       Ast0.wrap(Ast0.Unary(_2, mcode)) )
-# 38159 "parser_cocci_menhir.ml"
+# 38162 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -38182,14 +38185,14 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _1 : (
 # 60 "parser_cocci_menhir.mly"
        (Data.clt)
-# 38186 "parser_cocci_menhir.ml"
+# 38189 "parser_cocci_menhir.ml"
         ) = Obj.magic _1 in
         let _startpos = _startpos__1_ in
         let _endpos = _endpos__2_ in
         let _v : 'tv_unary_expr_expr_invalid_ = 
 # 1343 "parser_cocci_menhir.mly"
       ( Ast0.wrap(Ast0.SizeOfExpr (P.clt2mcode "sizeof" _1, _2)) )
-# 38193 "parser_cocci_menhir.ml"
+# 38196 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -38225,18 +38228,18 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let rp : (
 # 80 "parser_cocci_menhir.mly"
        (Data.clt)
-# 38229 "parser_cocci_menhir.ml"
+# 38232 "parser_cocci_menhir.ml"
         ) = Obj.magic rp in
         let t : 'tv_ctype = Obj.magic t in
         let lp : (
 # 79 "parser_cocci_menhir.mly"
        (Data.clt)
-# 38235 "parser_cocci_menhir.ml"
+# 38238 "parser_cocci_menhir.ml"
         ) = Obj.magic lp in
         let s : (
 # 60 "parser_cocci_menhir.mly"
        (Data.clt)
-# 38240 "parser_cocci_menhir.ml"
+# 38243 "parser_cocci_menhir.ml"
         ) = Obj.magic s in
         let _startpos = _startpos_s_ in
         let _endpos = _endpos_rp_ in
@@ -38245,7 +38248,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
       ( Ast0.wrap(Ast0.SizeOfType (P.clt2mcode "sizeof" s,
                                    P.clt2mcode "(" lp,t,
                                    P.clt2mcode ")" rp)) )
-# 38249 "parser_cocci_menhir.ml"
+# 38252 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -38266,14 +38269,14 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _1 : (
 # 96 "parser_cocci_menhir.mly"
        (Data.clt)
-# 38270 "parser_cocci_menhir.ml"
+# 38273 "parser_cocci_menhir.ml"
         ) = Obj.magic _1 in
         let _startpos = _startpos__1_ in
         let _endpos = _endpos__1_ in
         let _v : 'tv_unary_op = 
 # 1349 "parser_cocci_menhir.mly"
                   ( P.clt2mcode Ast.GetRef _1 )
-# 38277 "parser_cocci_menhir.ml"
+# 38280 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -38294,14 +38297,14 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _1 : (
 # 102 "parser_cocci_menhir.mly"
        (Data.clt)
-# 38298 "parser_cocci_menhir.ml"
+# 38301 "parser_cocci_menhir.ml"
         ) = Obj.magic _1 in
         let _startpos = _startpos__1_ in
         let _endpos = _endpos__1_ in
         let _v : 'tv_unary_op = 
 # 1350 "parser_cocci_menhir.mly"
            ( P.clt2mcode Ast.DeRef _1 )
-# 38305 "parser_cocci_menhir.ml"
+# 38308 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -38322,14 +38325,14 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _1 : (
 # 101 "parser_cocci_menhir.mly"
        (Data.clt)
-# 38326 "parser_cocci_menhir.ml"
+# 38329 "parser_cocci_menhir.ml"
         ) = Obj.magic _1 in
         let _startpos = _startpos__1_ in
         let _endpos = _endpos__1_ in
         let _v : 'tv_unary_op = 
 # 1351 "parser_cocci_menhir.mly"
            ( P.clt2mcode Ast.UnPlus _1 )
-# 38333 "parser_cocci_menhir.ml"
+# 38336 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -38350,14 +38353,14 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _1 : (
 # 101 "parser_cocci_menhir.mly"
        (Data.clt)
-# 38354 "parser_cocci_menhir.ml"
+# 38357 "parser_cocci_menhir.ml"
         ) = Obj.magic _1 in
         let _startpos = _startpos__1_ in
         let _endpos = _endpos__1_ in
         let _v : 'tv_unary_op = 
 # 1352 "parser_cocci_menhir.mly"
            ( P.clt2mcode Ast.UnMinus _1 )
-# 38361 "parser_cocci_menhir.ml"
+# 38364 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -38378,14 +38381,14 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _1 : (
 # 102 "parser_cocci_menhir.mly"
        (Data.clt)
-# 38382 "parser_cocci_menhir.ml"
+# 38385 "parser_cocci_menhir.ml"
         ) = Obj.magic _1 in
         let _startpos = _startpos__1_ in
         let _endpos = _endpos__1_ in
         let _v : 'tv_unary_op = 
 # 1353 "parser_cocci_menhir.mly"
            ( P.clt2mcode Ast.Tilde _1 )
-# 38389 "parser_cocci_menhir.ml"
+# 38392 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -38415,7 +38418,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _v : 'tv_when_start = 
 # 1914 "parser_cocci_menhir.mly"
     ( Ast0.wrap(Ast0.DOTS((Ast0.wrap(Ast0.Exp(_1)))::_2)) )
-# 38419 "parser_cocci_menhir.ml"
+# 38422 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -38445,7 +38448,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _v : 'tv_when_start = 
 # 1916 "parser_cocci_menhir.mly"
     ( Ast0.wrap(Ast0.DOTS(_1@_2)) )
-# 38449 "parser_cocci_menhir.ml"
+# 38452 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -38469,7 +38472,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _v : 'tv_whenppdecs = 
 # 931 "parser_cocci_menhir.mly"
     ( w )
-# 38473 "parser_cocci_menhir.ml"
+# 38476 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -38505,7 +38508,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _v : 'tv_whens_when_start_rule_elem_statement_any_strict_ = 
 # 1982 "parser_cocci_menhir.mly"
                                          ( [Ast0.WhenNot w] )
-# 38509 "parser_cocci_menhir.ml"
+# 38512 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -38541,7 +38544,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _v : 'tv_whens_when_start_rule_elem_statement_any_strict_ = 
 # 1983 "parser_cocci_menhir.mly"
                                              ( [Ast0.WhenAlways w] )
-# 38545 "parser_cocci_menhir.ml"
+# 38548 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -38573,7 +38576,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _v : 'tv_whens_when_start_rule_elem_statement_any_strict_ = 
 # 1985 "parser_cocci_menhir.mly"
       ( List.map (function x -> Ast0.WhenModifier(x)) _2 )
-# 38577 "parser_cocci_menhir.ml"
+# 38580 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -38609,7 +38612,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _v : 'tv_whens_when_start_rule_elem_statement_any_strict_ = 
 # 1986 "parser_cocci_menhir.mly"
                                         ( [Ast0.WhenNotTrue e] )
-# 38613 "parser_cocci_menhir.ml"
+# 38616 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -38645,7 +38648,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _v : 'tv_whens_when_start_rule_elem_statement_any_strict_ = 
 # 1987 "parser_cocci_menhir.mly"
                                          ( [Ast0.WhenNotFalse e] )
-# 38649 "parser_cocci_menhir.ml"
+# 38652 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
           MenhirLib.EngineTypes.state = _menhir_s;
@@ -38668,8 +38671,8 @@ let rec script_meta_main =
   fun lexer lexbuf ->
     (Obj.magic (MenhirInterpreter.entry 1826 lexer lexbuf) : (
 # 162 "parser_cocci_menhir.mly"
-       (string * Ast_cocci.meta_name)
-# 38673 "parser_cocci_menhir.ml"
+       (string * Ast_cocci.meta_name * Ast_cocci.metavar)
+# 38676 "parser_cocci_menhir.ml"
     ))
 
 and rule_name =
@@ -38677,7 +38680,7 @@ and rule_name =
     (Obj.magic (MenhirInterpreter.entry 1754 lexer lexbuf) : (
 # 156 "parser_cocci_menhir.mly"
       (Ast_cocci.rulename)
-# 38681 "parser_cocci_menhir.ml"
+# 38684 "parser_cocci_menhir.ml"
     ))
 
 and reinit =
@@ -38685,7 +38688,7 @@ and reinit =
     (Obj.magic (MenhirInterpreter.entry 1752 lexer lexbuf) : (
 # 134 "parser_cocci_menhir.mly"
       (unit)
-# 38689 "parser_cocci_menhir.ml"
+# 38692 "parser_cocci_menhir.ml"
     ))
 
 and plus_main =
@@ -38693,7 +38696,7 @@ and plus_main =
     (Obj.magic (MenhirInterpreter.entry 1716 lexer lexbuf) : (
 # 143 "parser_cocci_menhir.mly"
       (Ast0_cocci.rule)
-# 38697 "parser_cocci_menhir.ml"
+# 38700 "parser_cocci_menhir.ml"
     ))
 
 and plus_exp_main =
@@ -38701,7 +38704,7 @@ and plus_exp_main =
     (Obj.magic (MenhirInterpreter.entry 1708 lexer lexbuf) : (
 # 146 "parser_cocci_menhir.mly"
       (Ast0_cocci.rule)
-# 38705 "parser_cocci_menhir.ml"
+# 38708 "parser_cocci_menhir.ml"
     ))
 
 and never_used =
@@ -38709,7 +38712,7 @@ and never_used =
     (Obj.magic (MenhirInterpreter.entry 1702 lexer lexbuf) : (
 # 171 "parser_cocci_menhir.mly"
       (unit)
-# 38713 "parser_cocci_menhir.ml"
+# 38716 "parser_cocci_menhir.ml"
     ))
 
 and minus_main =
@@ -38717,7 +38720,7 @@ and minus_main =
     (Obj.magic (MenhirInterpreter.entry 1622 lexer lexbuf) : (
 # 137 "parser_cocci_menhir.mly"
       (Ast0_cocci.rule)
-# 38721 "parser_cocci_menhir.ml"
+# 38724 "parser_cocci_menhir.ml"
     ))
 
 and minus_exp_main =
@@ -38725,7 +38728,7 @@ and minus_exp_main =
     (Obj.magic (MenhirInterpreter.entry 1610 lexer lexbuf) : (
 # 140 "parser_cocci_menhir.mly"
       (Ast0_cocci.rule)
-# 38729 "parser_cocci_menhir.ml"
+# 38732 "parser_cocci_menhir.ml"
     ))
 
 and meta_main =
@@ -38733,7 +38736,7 @@ and meta_main =
     (Obj.magic (MenhirInterpreter.entry 1607 lexer lexbuf) : (
 # 160 "parser_cocci_menhir.mly"
       ((Ast_cocci.metavar,Ast_cocci.metavar) Common.either list)
-# 38737 "parser_cocci_menhir.ml"
+# 38740 "parser_cocci_menhir.ml"
     ))
 
 and iso_rule_name =
@@ -38741,7 +38744,7 @@ and iso_rule_name =
     (Obj.magic (MenhirInterpreter.entry 1603 lexer lexbuf) : (
 # 152 "parser_cocci_menhir.mly"
       (Ast_cocci.rulename)
-# 38745 "parser_cocci_menhir.ml"
+# 38748 "parser_cocci_menhir.ml"
     ))
 
 and iso_meta_main =
@@ -38749,7 +38752,7 @@ and iso_meta_main =
     (Obj.magic (MenhirInterpreter.entry 1349 lexer lexbuf) : (
 # 168 "parser_cocci_menhir.mly"
       ((Ast_cocci.metavar,Ast_cocci.metavar) Common.either list)
-# 38753 "parser_cocci_menhir.ml"
+# 38756 "parser_cocci_menhir.ml"
     ))
 
 and iso_main =
@@ -38757,7 +38760,7 @@ and iso_main =
     (Obj.magic (MenhirInterpreter.entry 18 lexer lexbuf) : (
 # 165 "parser_cocci_menhir.mly"
       (Ast0_cocci.anything list list)
-# 38761 "parser_cocci_menhir.ml"
+# 38764 "parser_cocci_menhir.ml"
     ))
 
 and include_main =
@@ -38765,7 +38768,7 @@ and include_main =
     (Obj.magic (MenhirInterpreter.entry 0 lexer lexbuf) : (
 # 149 "parser_cocci_menhir.mly"
       (Data.incl_iso list)
-# 38769 "parser_cocci_menhir.ml"
+# 38772 "parser_cocci_menhir.ml"
     ))
 
 

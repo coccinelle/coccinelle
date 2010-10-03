@@ -1207,7 +1207,6 @@ let ast_to_control_flow e =
           !g#add_arc ((ei, endi) ,Direct);
 
       | Ast_c.DefineStmt st ->
-
           (* can have some return; inside the statement *)
           let exiti      = !g +> add_node Exit      lbl_0 "[exit]"      in
           let errorexiti = !g +> add_node ErrorExit lbl_0 "[errorexit]" in
@@ -1229,10 +1228,13 @@ let ast_to_control_flow e =
 
 
       | Ast_c.DefineDoWhileZero ((st,_e), ii) ->
+          let goto_labels = compute_labels_and_create_them st in
+          let info = { initial_info with
+            labels_assoc = goto_labels } in
+
           let headerdoi =
             !g +> add_node (DefineDoWhileZeroHeader ((),ii)) lbl_0 "do0" in
           !g#add_arc ((headeri, headerdoi), Direct);
-          let info = initial_info in
           let lasti = aux_statement (Some headerdoi , info) st in
           lasti +> do_option (fun lasti ->
             let endi = !g +> add_node EndNode lbl_0 "[end]" in

@@ -28,6 +28,7 @@ my $projectcmdline =
 
 my $prefix="/usr/local";
 my $python=1;
+my $noocamlscripting=0;
 my $opt=".opt";
 my $tarzan=1;
 my $pydir="pycaml";
@@ -99,12 +100,18 @@ my $error = 0;
 #---------------------------------------------------------------------
 # Compilers and runtimes
 #---------------------------------------------------------------------
+
 $error +=
     check_config("echo \"1;;\\n\" | ocaml |",
-#                 "Objective(.*) 3.0[9]",
-                 "Objective(.*) 3.",
+                 "Objective(.*) 3.\(09|1[0-9]\)",
                  "OCaml (the wonderful language) is present.",
                  "The program ocaml is missing or is not a good version. We need at least 3.09",
+                 );
+
+$noocamlscripting = check_config("echo \"1;;\\n\" | ocaml |",
+                 "Objective(.*) 3.1[1-9]",
+                 "OCaml >= 3.11 is present. OCaml scripting activated.",
+                 "OCaml scripting disabled. We need at least OCaml 3.11",
                  );
 
 if ($opt eq ".opt") {
@@ -189,7 +196,9 @@ my $syspydir=`ocamlfind query pycaml 2> /dev/null | xargs echo -n`;
 
 if($syspydir) {
     $pydir=$syspydir;
-    pr2 "'pycaml' library present in $pydir";
+    pr2 "'pycaml' library is present in $pydir";
+} else {
+    pr2 "'pycaml' library is not present. A local copy will be used.";
 }
 
 # menhirLib. Runtime system for the parsers generated with menhir
@@ -197,7 +206,9 @@ my $sysmenhirdir=`ocamlfind query menhirLib 2> /dev/null | xargs echo -n`;
 
 if($sysmenhirdir) {
     $menhirdir=$sysmenhirdir;
-    pr2 "'menhirLib' library present in $menhirdir";
+    pr2 "'menhirLib' library is present in $menhirdir";
+} else {
+    pr2 "'menhirLib' library is not present. A local copy will be used..";
 }
 
 # sexplib. Runtime system for the parsers generated with menhir
@@ -205,7 +216,9 @@ my $syssexpdir=`ocamlfind query sexplib 2> /dev/null | xargs echo -n`;
 
 if($syssexpdir) {
     $sexpdir=$syssexpdir;
-    pr2 "'sexplib' library present in $sexpdir";
+    pr2 "'sexplib' library is present in $sexpdir";
+} else {
+    pr2 "'sexplib' library is not present. A local copy will be used..";
 }
 
 ######################################################################
@@ -235,12 +248,8 @@ on the $project website. !!!!
 ";
 } else {
 
-#pad: before the message was saying (make depend); make all
-# I found this confusing so I removed it.
-
-    pr2 "
-
-----------------------------------------------------------------------
+    pr2
+"----------------------------------------------------------------------
 
 All seems fine for $project.
 
@@ -265,17 +274,13 @@ Then, to test $project simply type:
 if($python) {
         pr2
 "To use the python SmPL feature you may have to set some environment variables.
+However, they are automatically set by the front-end installed in $prefix/bin.
 For bash do:
 export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:$prefix/lib
-export PYTHONPATH=\$PYTHONPATH:$src/python
-"
+export PYTHONPATH=\$PYTHONPATH:$src/python"
     }
-    pr2 "
-----------------------------------------------------------------------
-";
+    pr2 "----------------------------------------------------------------------";
 }
-
-
 
 ######################################################################
 # Generating the configuration
@@ -303,6 +308,8 @@ LIBDIR=$prefix/lib
 # Where to install the configuration files
 SHAREDIR=$src
 
+BASH_COMPLETION_DIR=/etc/bash_completion.d
+
 # Features
 FEATURE_PYTHON=$python
 FEATURE_TARZAN=$tarzan
@@ -318,14 +325,19 @@ SEXPDIR=$sexpdir
 OPTBIN=$opt
 ";
 
-pr2 "Modifying globals/config.ml";
-pr2 "Generating appropriate links in python/ (python=$python)";
-my $pythonprefix = $python ? "yes_" : "no_";
-`cd python; rm -f  pycocci.ml pycocci_aux.ml;`;
-`cd python; ln -s ${pythonprefix}pycocci.ml pycocci.ml; `;
-`cd python; ln -s ${pythonprefix}pycocci_aux.ml pycocci_aux.ml;`;
+
+my $pythonprefix = $python ? "yes" : "no";
+pr2 "Support for python scripting : $pythonprefix";
+`cd python; ln -sf ${pythonprefix}_pycocci.ml pycocci.ml; `;
+`cd python; ln -sf ${pythonprefix}_pycocci_aux.ml pycocci_aux.ml;`;
 `cd python; make depend`;
 
+my $ocamlprefix = $noocamlscripting ? "no" : "yes";
+pr2 "Support for ocaml scripting : $ocamlprefix";
+`cd ocaml; ln -sf ${ocamlprefix}_prepare_ocamlcocci.ml prepare_ocamlcocci.ml;`;
+`cd ocaml; make depend`;
+
+pr2 "Modifying globals/config.ml";
 my $command = "perl -p -e 's#Not_found.\*#Not_found->\\\"$src\\\"#' globals/config.ml.in > globals/config.ml";
 `$command`;
 

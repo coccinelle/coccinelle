@@ -37,6 +37,11 @@ let scanner = ref Grep
 
 let pyoutput = ref "coccilib.output.Console"
 
+let ocamlc = ref "ocamlc"
+let ocamlopt = ref "ocamlopt"
+let ocamldep = ref "ocamldep"
+let ocamlfind = ref "ocamlfind"
+
 (*"Some" value is the path with respect to which the patch should be created*)
 let patch = ref (None : string option)
 

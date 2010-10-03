@@ -38,3 +38,8 @@ files in the docs/ directory. You may need to install the texlive-fonts-extra
 packages from your distribution to compile some of the LaTeX documentation
 files.
 
+ ** Runtime dependencies under Debian/Ubuntu**
+
+ - For the OCaml scripting feature in SmPL
+	ocaml-native-compilers
+     or ocaml-nox

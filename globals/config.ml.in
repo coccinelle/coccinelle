@@ -1,4 +1,4 @@
-let version = "0.2.3rc2"
+let version = "0.2.3rc3"
 
 let path =
   try (Sys.getenv "COCCINELLE_HOME")
@@ -6,3 +6,4 @@ let path =
 
 let std_iso = ref (Filename.concat path "standard.iso")
 let std_h   = ref (Filename.concat path "standard.h")
+
