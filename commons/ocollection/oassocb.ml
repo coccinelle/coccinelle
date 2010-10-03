@@ -20,5 +20,8 @@ class ['a,'b] oassocb xs =
 
     method assoc k = Mapb.find k data
     method delkey k = {< data = Mapb.remove k data >}
+
+    method keys = 
+      List.map fst (o#tolist)
 end     
 

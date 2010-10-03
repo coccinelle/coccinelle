@@ -53,8 +53,17 @@ let al_type      x = Visitor_c.vk_type_s      (strip_info_visitor()) x
 let al_param     x = Visitor_c.vk_param_s     (strip_info_visitor()) x
 let al_params    x = Visitor_c.vk_params_s    (strip_info_visitor()) x
 let al_arguments x = Visitor_c.vk_arguments_s (strip_info_visitor()) x
+let al_fields    x = Visitor_c.vk_struct_fields_s (strip_info_visitor()) x
+
+let al_node      x = Visitor_c.vk_node_s      (strip_info_visitor()) x
 
 let al_program  x = List.map (Visitor_c.vk_toplevel_s (strip_info_visitor())) x
+let al_ii    x = Visitor_c.vk_ii_s (strip_info_visitor()) x
+
+
+
+
+
 
 let semi_strip_info_visitor = (* keep position information *)
   { Visitor_c.default_visitor_c_s with
@@ -75,6 +84,39 @@ let semi_al_params    = Visitor_c.vk_params_s    semi_strip_info_visitor
 let semi_al_arguments = Visitor_c.vk_arguments_s semi_strip_info_visitor
 
 let semi_al_program = List.map (Visitor_c.vk_toplevel_s semi_strip_info_visitor)
+
+
+
+
+
+let real_strip_info_visitor _ = 
+  { Visitor_c.default_visitor_c_s with
+    Visitor_c.kinfo_s = (fun (k,_) i ->
+      Ast_c.real_al_info i
+    );
+
+    Visitor_c.kexpr_s = (fun (k,_) e -> 
+      let (e', ty),ii' = k e in
+      (e', Ast_c.noType()), ii'
+    );
+
+(*
+    Visitor_c.ktype_s = (fun (k,_) ft -> 
+      let ft' = k ft in
+      match Ast_c.unwrap_typeC ft' with
+      | Ast_c.TypeName (s,_typ) -> 
+          Ast_c.TypeName (s, Ast_c.noTypedefDef()) +> Ast_c.rewrap_typeC ft'
+      | _ -> ft'
+
+    );
+*)
+    
+  }
+
+let real_al_expr      x = Visitor_c.vk_expr_s   (real_strip_info_visitor()) x
+let real_al_node      x = Visitor_c.vk_node_s   (real_strip_info_visitor()) x
+let real_al_type      x = Visitor_c.vk_type_s   (real_strip_info_visitor()) x
+
 
 (*****************************************************************************)
 (* Extract infos *)
@@ -110,6 +152,8 @@ let ii_of_define_params =
 let ii_of_toplevel = extract_info_visitor Visitor_c.vk_toplevel
 
 (*****************************************************************************)
+(* Max min, range *)
+(*****************************************************************************)
 let max_min_ii_by_pos xs = 
   match xs with
   | [] -> failwith "empty list, max_min_ii_by_pos"
@@ -144,3 +188,24 @@ let lin_col_by_pos xs =
    (Ast_c.line_of_info i1, posf i1), (Ast_c.line_of_info i2, mposf i2))
 
 
+
+
+
+let min_pinfo_of_node node = 
+  let ii = ii_of_node node in
+  let (maxii, minii) = max_min_ii_by_pos ii in
+  Ast_c.parse_info_of_info minii
+
+
+let (range_of_origin_ii: Ast_c.info list -> (int * int) option) = 
+ fun ii -> 
+  let ii = List.filter Ast_c.is_origintok ii in
+  try 
+    let (max, min) = max_min_ii_by_pos ii in
+    assert(Ast_c.is_origintok max);
+    assert(Ast_c.is_origintok min);
+    let strmax = Ast_c.str_of_info max in
+    Some 
+      (Ast_c.pos_of_info min, Ast_c.pos_of_info max + String.length strmax)
+  with _ -> 
+    None

@@ -10,6 +10,24 @@ open Osetb
  * every 100 operation do a flush 
  * 
  * todo: choose between oassocb and oassoch ? 
+ * 
+ * Also take care that must often redefine all function in the original
+ * oassoc.ml because if some methods are not redefined, for instance 
+ * #clear, then if do wrapper over a oassocdbm, then even if oassocdbm
+ * redefine #clear, it will not be called, but instead the default
+ * method will be called that internally will call another method.
+ * So better delegate all the methods and override even the method
+ * with a default definition.
+ * 
+ * In the same way sometimes an exn can occur at wierd time. When
+ * we add an element, sometimes this may raise an exn such as Out_of_memory,
+ * but as we dont add directly but only at flush time, the exn
+ * may happen far later the user added something in this oassoc.
+ * Also in the case of Out_of_memory, even if the entry is not 
+ * added in the wrapped, it will still be present in the cache
+ * and so the next flush will still generate an exn that again
+ * may not be cached. So for the moment if Out_of_memory then
+ * do something special and erase the entry in the cache.
  *)
 
 (* !!take care!!: this class has side effect, not a pure oassoc *)
@@ -24,17 +42,32 @@ object(o)
   val wrapped = ref cached
 
   method private myflush = 
+
+    let has_a_raised = ref false in 
+
     !dirty#iter (fun k -> 
-      wrapped := !wrapped#add (k, !cache#assoc k)
+      try 
+        wrapped := !wrapped#add (k, !cache#assoc k)
+      with Out_of_memory -> 
+        pr2 "PBBBBBB: Out_of_memory in oassoc_buffer, but still empty cache";
+        has_a_raised := true;
     );
     dirty := (new osetb Setb.empty);
     cache := (new oassocb []);
     counter := 0;
+    if !has_a_raised then raise Out_of_memory
+
       
   method misc_op_hook2 = o#myflush
         
   method empty = 
     raise Todo
+      
+  (* what happens in k is already present ? or if add multiple times
+   * the same k ? cache is a oassocb and so the previous binding is
+   * still there, but dirty is a set, and in myflush we iter based 
+   * on dirty so we will flush only the last 'k' in the cache.
+   *)
   method add (k,v) = 
     cache := !cache#add (k,v);
     dirty := !dirty#add k;
@@ -45,6 +78,15 @@ object(o)
   method iter f = 
     o#myflush; (* bugfix: have to flush !!! *)
     !wrapped#iter f
+
+
+  method keys = 
+    o#myflush; (* bugfix: have to flush !!! *)
+    !wrapped#keys
+
+  method clear = 
+    o#myflush; (* bugfix: have to flush !!! *)
+    !wrapped#clear
 
 
   method length = 

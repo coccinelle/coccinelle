@@ -94,6 +94,9 @@ type context =
   | InParameter
   | InInitializer
   | InEnum
+(* InExpr ? but then orthogonal to InFunction. Could assign InExpr for 
+ * instance after a '=' as in 'a = (irq_t) b;' 
+ *)
 
 let is_top_or_struct = function
   | InTopLevel

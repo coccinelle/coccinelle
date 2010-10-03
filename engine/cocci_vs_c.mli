@@ -176,7 +176,7 @@ module COCCI_VS_C :
 
       val expression :     (Ast_cocci.expression, Ast_c.expression)   matcher
 
-      (* there is far more functions in this functor but they do not have
+      (* there are far more functions in this functor but they do not have
        * to be exported 
        *)
 

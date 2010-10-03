@@ -1,9 +1,9 @@
-(* !!take care!!: this classe have side effect, not a pure oassoc *)
-class ['a, 'b] oassoc_buffer :
-  int ->
-  (< add : 'a * 'b -> 'd; assoc : 'a -> 'b; del : 'a * 'b -> 'd;
-   delkey : 'a -> 'd; iter : ('a * 'b -> unit) -> unit; length : int; .. >
-     as 'd) ->
+(* !!take care!!: this class does side effect, not a pure oassoc *)
+class ['a, 'b] oassocdbm :
+  'd ->
+  Dbm.t ->
+  ('b -> 'e) ->
+  ('e -> 'b) ->
 object ('o)
   inherit ['a,'b] Oassoc.oassoc
 
@@ -22,7 +22,9 @@ object ('o)
   method assoc : 'a -> 'b
   method delkey : 'a -> 'o
 
-  (* ugly, from objet class, extension trick *)
-  method private myflush : unit
-  method misc_op_hook2 : unit
+  method keys: 'a list
+
 end
+
+val create_dbm : 
+  Common.filename -> string -> Dbm.t * ('a, 'b) oassocdbm

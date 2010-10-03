@@ -3212,8 +3212,13 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
                   f_storage = stob;
                   f_attr = attrs;
                   f_body = body;
+                  f_old_c_style = oldstyle;
                   }, ii) -> 
       assert (null body);
+
+      if oldstyle <> None
+      then pr2 "OLD STYLE DECL NOT WELL SUPPORTED";
+
 
       (* fninfoa records the order in which the SP specified the various
 	 information, but this isn't taken into account in the matching.
@@ -3276,6 +3281,7 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
                              f_storage = stob;
                              f_attr = attrs;
                              f_body = body;
+                             f_old_c_style = oldstyle; (* TODO *)
                            },
                            iidb::ioparenb::icparenb::iifakestart::iistob)
                 )

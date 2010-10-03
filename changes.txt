@@ -1,5 +1,26 @@
 -*- org -*-
 
+* 0.1.3
+
+** Features: 
+- help in building the configuration macro file. The -parse_c action
+  now returns the 10 most frequent parsing errors. This give useful
+  hints to extend standard.h.
+
+** Bugfix:
+- positions no longer allowed on \(, \|, and \)
+- improved propagation of negation for isos in the presence of parens
+- convert Todos in flow graph construction to recoverable errors
+- fixed bug in treatment of when != true and when != false, to allow more
+  than one of them per ...
+- improve parsing of typedef of function pointer. 
+- improve typing.
+- parsing and typing support for old style C function declaration.
+- consider position variables as modifications when optimizing the
+  translation into CTL of function definitions
+
+** Internals: 
+
 * 0.1.2
 
 ** Bugfix:

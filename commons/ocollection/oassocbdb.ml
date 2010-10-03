@@ -21,7 +21,7 @@ object(o)
   method empty = 
     raise Todo
 
-  method private add2 (k,v) = 
+  method private addbis (k,v) = 
     (* pr2 (fkey k); *)
     (* pr2 (debugv v); *)
 
@@ -30,12 +30,19 @@ object(o)
        with Not_found -> ());
     *)
     let k' = Marshal.to_string k [] in
-    let v' = Marshal.to_string (fv v) [Marshal.Closures] in (* still clos? *)
+    let v' = 
+      try
+        Marshal.to_string (fv v) [(*Marshal.Closures*)] 
+      with Out_of_memory -> 
+        pr2 ("PBBBBBBB Out_of_memory in: " ^ namedb);
+        raise Out_of_memory
+          
+    in (* still clos? *)
     Db.put data (transact()) k' v' []; 
     (* minsky wrapper ?  Db.put data ~txn:(transact()) ~key:k' ~data:v' *)
     o
   method add x = 
-    Common.profile_code ("Btree.add" ^ namedb) (fun () -> o#add2 x)
+    Common.profile_code ("Btree.add" ^ namedb) (fun () -> o#addbis x)
 
   (* bugfix: if not tail call (because of a try for instance), 
    * then strange behaviour in native mode 
@@ -116,4 +123,61 @@ object(o)
   method delkey x = 
     Common.profile_code ("Btree.delkey" ^ namedb) (fun () -> o#delkey2 x)
 
+
+  method keys = 
+    let res = ref [] in 
+    let dbc = Cursor.db_cursor db (transact()) [] in
+    let rec aux dbc = 
+      if
+	(try 
+	    let a = Cursor.dbc_get dbc [Cursor.DB_NEXT] in
+            (* minsky ? Cursor.get dbc Cursor.NEXT [] *)
+	    let key  = (* unkey *) Marshal.from_string (fst a) 0 in 
+	    (* 
+               let valu = unv (Marshal.from_string (snd a) 0) in
+	       f (key, valu);
+            *)
+            Common.push2 key res;
+            true
+	 with Failure "ending" -> false
+        ) 
+      then aux dbc
+      else ()
+        
+    in 
+    aux dbc; 
+    Cursor.dbc_close dbc (* minsky Cursor.close dbc *);
+    !res
+
+
+  method clear = 
+    let dbc = Cursor.db_cursor db (transact()) [] in
+    let rec aux dbc = 
+      if
+	(try 
+	    let a = Cursor.dbc_get dbc [Cursor.DB_NEXT] in
+            Db.del data (transact()) (fst a)  [];             
+            true
+	 with Failure "ending" -> false
+        ) 
+      then aux dbc
+      else ()
+        
+    in 
+    aux dbc; 
+    Cursor.dbc_close dbc (* minsky Cursor.close dbc *);
+    ()
+
 end	
+
+
+let create_bdb metapath dbname env  transact (fv, unv) size_buffer_oassoc_buffer =
+  let db = Bdb.Db.create env [] in 
+  Bdb.Db.db_open db (transact()) 
+    (spf "%s/%s.db4" metapath dbname) 
+    (spf "/%s.db4" dbname) 
+    Bdb.Db.DB_BTREE [Bdb.Db.DB_CREATE] 0;
+  db,
+  new Oassoc_buffer.oassoc_buffer size_buffer_oassoc_buffer
+    (new oassoc_btree db dbname transact fv unv)
+

@@ -22,6 +22,7 @@ val vk_expr      : visitor_c -> expression  -> unit
 val vk_statement : visitor_c -> statement   -> unit
 val vk_type      : visitor_c -> fullType    -> unit
 val vk_decl      : visitor_c -> declaration -> unit
+val vk_onedecl   : visitor_c -> onedecl -> unit
 val vk_ini       : visitor_c -> initialiser -> unit
 val vk_def       : visitor_c -> definition  -> unit
 val vk_node      : visitor_c -> Control_flow_c.node -> unit
@@ -78,6 +79,7 @@ val vk_ini_s : visitor_c_s -> initialiser -> initialiser
 val vk_def_s : visitor_c_s -> definition -> definition
 val vk_toplevel_s : visitor_c_s -> toplevel -> toplevel
 val vk_info_s : visitor_c_s -> info -> info
+val vk_ii_s : visitor_c_s -> info list -> info list
 val vk_node_s : visitor_c_s -> Control_flow_c.node -> Control_flow_c.node
 val vk_program_s  : visitor_c_s -> program -> program
 

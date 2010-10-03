@@ -61,6 +61,19 @@ object(o)
       o
     with Dbm.Dbm_error "dbm_delete" -> 
       raise Not_found
+
+  method keys = 
+    let res = ref [] in 
+    db +> Dbm.iter (fun key data -> 
+      let k' = (* unkey *) Marshal.from_string key 0 in 
+      (* 
+         let v' = unv (Marshal.from_string data 0) in
+         f (k', v')
+      *)
+      Common.push2 k' res;
+    );
+    !res
+
 end
 
 

@@ -9,10 +9,10 @@ MYSRC=common.ml common_extra.ml \
       ocollection.ml \
       seti.ml \
       oset.ml oassoc.ml osequence.ml ograph.ml \
-      oseti.ml oseth.ml osetb.ml osetpt.ml \
-      oassocb.ml oassoch.ml oassoc_buffer.ml oassocid.ml \
+      ocollection/oseti.ml ocollection/oseth.ml ocollection/osetb.ml ocollection/osetpt.ml \
+      ocollection/oassocb.ml ocollection/oassoch.ml ocollection/oassoc_buffer.ml ocollection/oassocid.ml \
       oarray.ml \
-      ograph2way.ml ograph_extended.ml \
+      ocollection/ograph2way.ml ograph_extended.ml \
       ofullcommon.ml \
       glimpse.ml parser_combinators.ml
 
@@ -27,29 +27,29 @@ SRC+=ocamlextra/suffix_tree.ml ocamlextra/suffix_tree_ext.ml
 
 SYSLIBS=str.cma unix.cma   
 
-INCLUDEDIRS=ocamlextra
-SUBDIR=ocamlextra
+INCLUDEDIRS=ocamlextra ocollection
+SUBDIRS=ocamlextra ocollection
 
 #-----------------------------------------------------------------------------
 # Other common (thin wrapper) libraries
 #-----------------------------------------------------------------------------
 
 #gdbm
-MYGDBMSRC=oassocdbm.ml
+MYGDBMSRC=ocollection/oassocdbm.ml
 GDBMSYSLIBS=dbm.cma
 
-#berkeley db
+#berkeley db (ocamlbdb)
 BDBINCLUDES=-I ../ocamlbdb
-MYBDBSRC=oassocbdb.ml
+MYBDBSRC=ocollection/oassocbdb.ml ocollection/oassocbdb_string.ml
 BDBSYSLIBS=bdb.cma
 
 
-#ocamlgtk
+#lablgtk (ocamlgtk)
 GUIINCLUDES=-I +lablgtk2 -I +lablgtksourceview -I ../ocamlgtk/src
 MYGUISRC=gui.ml
 GUISYSLIBS=lablgtk.cma lablgtksourceview.cma
 
-#pycaml
+#pycaml (ocamlpython)
 PYINCLUDES=-I ../ocamlpython -I ../../ocamlpython
 MYPYSRC=python.ml
 PYSYSLIBS=python.cma
@@ -58,6 +58,13 @@ PYSYSLIBS=python.cma
 MPIINCLUDES=-I ../ocamlmpi -I ../../ocamlmpi -I +ocamlmpi 
 MYMPISRC=distribution.ml
 MPISYSLIBS=mpi.cma
+
+
+#-----------------------------------------------------------------------------
+#pcre 
+#REGEXPINCLUDES=-I +pcre
+REGEXPINCLUDES=-I ../ocamlpcre/lib
+MYREGEXPSRC=regexp.ml
 
 #-----------------------------------------------------------------------------
 # Other stuff
@@ -135,6 +142,7 @@ clean::
 
 all_libs: gdbm bdb gui mpi backtrace
 
+#-----------------------------------------------------------------------------
 gdbm: commons_gdbm.cma
 gdbm.opt: commons_gdbm.cmxa
 
@@ -145,6 +153,7 @@ commons_gdbm.cmxa: $(MYGDBMSRC:.ml=.cmx)
 	$(OCAMLOPT) -a -o $@ $^
 
 
+#-----------------------------------------------------------------------------
 bdb: 
 	$(MAKE) INCLUDESEXTRA="$(BDBINCLUDES)" commons_bdb.cma
 bdb.opt: 
@@ -158,6 +167,7 @@ commons_bdb.cmxa: $(MYBDBSRC:.ml=.cmx)
 
 
 
+#-----------------------------------------------------------------------------
 gui:
 	$(MAKE) INCLUDESEXTRA="$(GUIINCLUDES)" commons_gui.cma
 gui.opt:
@@ -171,6 +181,7 @@ commons_gui.cmxa: $(MYGUISRC:.ml=.cmx)
 
 
 
+#-----------------------------------------------------------------------------
 mpi: 
 	$(MAKE) INCLUDESEXTRA="$(MPIINCLUDES)" commons_mpi.cma
 mpi.opt: 
@@ -188,6 +199,7 @@ distribution.opt: mpi.opt
 
 
 
+#-----------------------------------------------------------------------------
 python: 
 	$(MAKE) INCLUDESEXTRA="$(PYINCLUDES)" commons_python.cma
 python.opt: 
@@ -201,6 +213,20 @@ commons_python.cmxa: $(MYPYSRC:.ml=.cmx)
 	$(OCAMLOPT) -a -o $@ $^
 
 
+#-----------------------------------------------------------------------------
+regexp:
+	$(MAKE) INCLUDESEXTRA="$(REGEXPINCLUDES)" commons_regexp.cma
+regexp.opt:
+	$(MAKE) INCLUDESEXTRA="$(REGEXPINCLUDES)" commons_regexp.cmxa
+
+commons_regexp.cma: $(MYREGEXPSRC:.ml=.cmo)
+	$(OCAMLC) -a -o $@ $^
+
+commons_regexp.cmxa: $(MYREGEXPSRC:.ml=.cmx)
+	$(OCAMLOPT) -a -o $@ $^
+
+
+#-----------------------------------------------------------------------------
 backtrace: commons_backtrace.cma
 backtrace.opt: commons_backtrace.cmxa
 
@@ -259,12 +285,14 @@ clean::
 	rm -f *~ .*~ #*# 
 
 clean::
-	rm -f $(SUBDIR)/*.cm[iox] $(SUBDIR)/*.o $(SUBDIR)/*.a 
-	rm -f $(SUBDIR)/*.cma $(SUBDIR)/*.cmxa $(SUBDIR)/*.annot
-	rm -f $(SUBDIR)/*~ $(SUBDIR)/.*~ #*# 
+	for i in $(SUBDIRS); do (cd $$i; \
+        rm -f *.cm[iox] *.o *.a *.cma *.cmxa *.annot *~ .*~ ; \
+        cd ..; ) \
+	done
 
 depend: 
-	$(OCAMLDEP) *.mli *.ml $(SUBDIR)/*.ml $(SUBDIR)/*.mli  > .depend
+	$(OCAMLDEP) *.mli *.ml  > .depend
+	for i in $(SUBDIRS); do ocamldep $$i/*.ml $$i/*.mli >> .depend; done
 
 distclean::
 	rm -f .depend

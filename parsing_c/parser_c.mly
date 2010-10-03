@@ -111,7 +111,8 @@ let addQualif = function
   | ({volatile=true},({volatile=true} as x))-> warning "duplicate 'volatile'" x
   | ({const=true},    v) -> {v with const=true}
   | ({volatile=true}, v) -> {v with volatile=true}
-  | _ -> internal_error "there is no noconst or novolatile keyword"
+  | _ -> 
+      internal_error "there is no noconst or novolatile keyword"
 
 let addQualifD ((qu,ii), ({qualifD = (v,ii2)} as x)) =
   { x with qualifD = (addQualif (qu, v),ii::ii2) }
@@ -135,7 +136,11 @@ let (fixDeclSpecForDecl: decl -> (fullType * (storage wrap)))  = function
   (
    ((qu, iiq),
    (match ty with 
- | (None,None,None)       -> warning "type defaults to 'int'" (defaultInt, [])
+ | (None,None,None)       -> 
+     (* generate fake_info, otherwise type_annotater can crash in 
+      * offset.
+      *)
+     warning "type defaults to 'int'" (defaultInt, [fakeInfo fake_pi])
  | (None, None, Some t)   -> (t, iit)
 	 
  | (Some sign,   None, (None| Some (BaseType (IntType (Si (_,CInt))))))  -> 
@@ -225,15 +230,14 @@ let (fixOldCDecl: fullType -> fullType) = fun ty ->
       raise (Semantic ("seems this is not a function", fake_pi)) 
 
 
-let fixFunc = function
-  | ((
-      (s,iis), 
-      (nQ, (FunctionType (fullt, (params,bool)),iifunc)), 
-      (st,iist),
-      attrs
-    ), 
-    (cp,iicp)
-    ) 
+let fixFunc (typ, compound, old_style_opt) = 
+  let (cp,iicp) = compound in
+
+  match typ with
+  | ((s,iis), 
+    (nQ, (FunctionType (fullt, (params,bool)),iifunc)), 
+    (st,iist),
+    attrs)
     -> 
       let iistart = Ast_c.fakeInfo () in
       assert (nQ =*= nullQualif);
@@ -251,6 +255,7 @@ let fixFunc = function
        f_storage = st;
        f_body = cp;
        f_attr = attrs;
+       f_old_c_style = old_style_opt;
       }, 
       ([iis]++iifunc++iicp++[iistart]++iist) 
   | _ -> 
@@ -936,7 +941,8 @@ attribute_storage:
 
 type_qualif_attr:
  | type_qualif { $1 }
- | TMacroAttr { {const=false  ; volatile=false}, snd $1 (*TODO*)  }
+/*(*TODO !!!!! *)*/
+ | TMacroAttr { {const=true  ; volatile=false}, snd $1   }
 
 /*(*-----------------------------------------------------------------------*)*/
 /*(* Declarator, right part of a type + second part of decl (the ident)  *)*/
@@ -1423,16 +1429,15 @@ idente: ident { LP.add_ident (fst $1); $1 }
 function_definition: function_def    { fixFunc $1 }
 
 decl_list: 
- | decl           { [$1]   }
- | decl_list decl { $1 ++ [$2] }
+ | decl           { [$1 Ast_c.LocalDecl]   }
+ | decl_list decl { $1 ++ [$2 Ast_c.LocalDecl] }
 
 function_def: 
- | start_fun compound      { LP.del_scope(); ($1, $2) }
+ | start_fun compound      { LP.del_scope(); ($1, $2, None) }
  | start_fun decl_list compound      { 
-     pr2 "OLD STYLE DECL NOT WELL SUPPORTED";
      (* TODO: undo the typedef added ? *)
      LP.del_scope(); 
-     ($1, $3) 
+     ($1, $3, Some $2)
    }
 
 start_fun: start_fun2                        

@@ -95,11 +95,13 @@ iso_compile.cmo: visitor_ast0.cmi ../commons/common.cmi ast_cocci.cmi \
 iso_compile.cmx: visitor_ast0.cmx ../commons/common.cmx ast_cocci.cmx \
     ast0_cocci.cmx iso_compile.cmi 
 iso_pattern.cmo: visitor_ast0.cmi unparse_ast0.cmi type_cocci.cmi \
-    flag_parsing_cocci.cmo ../globals/flag.cmo compute_lines.cmi \
-    ../commons/common.cmi ast_cocci.cmi ast0_cocci.cmi iso_pattern.cmi 
+    flag_parsing_cocci.cmo ../globals/flag.cmo \
+    ../commons/ocamlextra/dumper.cmi compute_lines.cmi ../commons/common.cmi \
+    ast_cocci.cmi ast0_cocci.cmi iso_pattern.cmi 
 iso_pattern.cmx: visitor_ast0.cmx unparse_ast0.cmx type_cocci.cmx \
-    flag_parsing_cocci.cmx ../globals/flag.cmx compute_lines.cmx \
-    ../commons/common.cmx ast_cocci.cmx ast0_cocci.cmx iso_pattern.cmi 
+    flag_parsing_cocci.cmx ../globals/flag.cmx \
+    ../commons/ocamlextra/dumper.cmx compute_lines.cmx ../commons/common.cmx \
+    ast_cocci.cmx ast0_cocci.cmx iso_pattern.cmi 
 lexer_cocci.cmo: parser_cocci_menhir.cmi parse_aux.cmo ../globals/flag.cmo \
     data.cmi ../commons/common.cmi ast_cocci.cmi ast0_cocci.cmi 
 lexer_cocci.cmx: parser_cocci_menhir.cmx parse_aux.cmx ../globals/flag.cmx \

@@ -6,7 +6,7 @@ TARGET=parsing_c
 
 # - type_cocci.ml ast_cocci.ml  # + unparse_hrule 
 SRC= flag_parsing_c.ml parsing_stat.ml \
- ast_c.ml control_flow_c.ml \
+ ast_c.ml control_flow_c.ml type_c.ml \
  visitor_c.ml lib_parsing_c.ml \
  ast_to_flow.ml \
  pretty_print_c.ml \
@@ -29,7 +29,8 @@ SRC= flag_parsing_c.ml parsing_stat.ml \
 LIBS=../commons/commons.cma ../globals/globals.cma \
      ../parsing_cocci/cocci_parser.cma
 
-INCLUDES= -I ../commons -I ../globals -I  ../parsing_cocci 
+INCLUDES= -I ../commons -I ../commons/ocamlextra -I ../commons/ocollection \
+  -I ../globals -I  ../parsing_cocci 
 
 #LIBS=../commons/commons.cma
 #INCLUDES= -I ../commons

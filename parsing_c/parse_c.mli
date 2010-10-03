@@ -53,6 +53,7 @@ val parse_gen:
  *)
 val type_of_string      : string -> Ast_c.fullType
 val statement_of_string : string -> Ast_c.statement
+
 (* similar but use parse_c_and_cpp and a /tmp/__cocci.c and extract the part *)
 val cstatement_of_string  : string -> Ast_c.statement
 val cexpression_of_string : string -> Ast_c.expression
@@ -62,9 +63,10 @@ val cexpression_of_string : string -> Ast_c.expression
 
 (* ---------------------------------------------------------------------- *)
 (* a few helpers *)
+val print_commentized       : Parser_c.token list -> unit
+
 val program_of_program2 : program2 -> Ast_c.program
 val with_program2: (Ast_c.program -> Ast_c.program) -> program2 -> program2
 
-val print_commentized       : Parser_c.token list -> unit
 
 

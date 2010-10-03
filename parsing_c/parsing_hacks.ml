@@ -2405,7 +2405,10 @@ let lookahead2 ~pass next before =
       TypedefIdent (s, i1)
 
 
-  (*  (xx) (    yy) *)
+  (* (xx) (    yy) 
+   * but false positif: typedef int (xxx_t)(...), so do specialisation below.
+   *)
+  (*
   | (TIdent (s, i1)::TCPar _::TOPar _::_ , (TOPar info)::x::_)  
     when not (TH.is_stuff_taking_parenthized x)  
       && ok_typedef s 
@@ -2413,6 +2416,16 @@ let lookahead2 ~pass next before =
       msg_typedef s; LP.add_typedef_root s;
       (* TOPar info *)
       TypedefIdent (s, i1)
+  *)
+  (* special case:  = (xx) (    yy) *)
+  | (TIdent (s, i1)::TCPar _::TOPar _::_ , 
+    (TOPar info)::(TEq _ |TEqEq _)::_)
+    when ok_typedef s 
+        ->
+      msg_typedef s; LP.add_typedef_root s;
+      (* TOPar info *)
+      TypedefIdent (s, i1)
+
 
   (*  (xx * ) yy *)
   | (TIdent (s, i1)::TMul _::TCPar _::TIdent (s2, i2)::_ , (TOPar info)::_) when 
@@ -2438,8 +2451,19 @@ let lookahead2 ~pass next before =
            LP.add_typedef_root s;
            Tsizeof
          *)
-   (* x ( *y )(params),  function pointer *)
+
+
+  (* ----------------------------------- *)
+  (* x ( *y )(params),  function pointer *)
   | (TIdent (s, i1)::TOPar _::TMul _::TIdent _::TCPar _::TOPar _::_,  _) 
+      when not_struct_enum before
+      && ok_typedef s 
+        ->
+      msg_typedef s; LP.add_typedef_root s;
+      TypedefIdent (s, i1)
+
+  (* x* ( *y )(params),  function pointer 2 *)
+  | (TIdent (s, i1)::TMul _::TOPar _::TMul _::TIdent _::TCPar _::TOPar _::_,  _) 
       when not_struct_enum before
       && ok_typedef s 
         ->

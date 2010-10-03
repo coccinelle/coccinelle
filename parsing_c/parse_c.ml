@@ -68,8 +68,10 @@ let mk_info_item2 filename toks =
     begin
       toks +> List.iter (fun tok -> 
         match TH.pinfo_of_tok tok with
-        | Ast_c.OriginTok _ -> Buffer.add_string buf (TH.str_of_tok tok)
-        | Ast_c.AbstractLineTok _ -> raise Impossible
+        | Ast_c.OriginTok _ -> 
+            Buffer.add_string buf (TH.str_of_tok tok)
+        | Ast_c.AbstractLineTok _ -> 
+            raise Impossible
         | _ -> ()
       );
       Buffer.contents buf
@@ -82,6 +84,8 @@ let mk_info_item a b =
     (fun () -> mk_info_item2 a b)
 
 
+let info_same_line line xs = 
+  xs +> List.filter (fun info -> Ast_c.line_of_info info = line)
 
 
 (*****************************************************************************)
@@ -976,7 +980,7 @@ let get_one_elem ~pass tr (file, filelines) =
       
       
       let info_of_bads = Common.map_eff_rev TH.info_of_tok tr.passed in 
-      Right (info_of_bads,  line_error)
+      Right (info_of_bads,  line_error, tr.passed)
     end
   )
 
@@ -997,7 +1001,7 @@ let get_one_elem ~pass tr (file, filelines) =
 
 let parse_print_error_heuristic2 file = 
 
-  let filelines = (""::Common.cat file) +> Array.of_list in
+  let filelines = Common.cat_array file in
   let stat = Parsing_stat.default_stat file in
 
   (* -------------------------------------------------- *)
@@ -1062,7 +1066,7 @@ let parse_print_error_heuristic2 file =
     let was_define = 
       (match elem with
       | Left _ -> false
-      | Right (_, line_error) -> 
+      | Right (_, line_error, _) -> 
           let was_define = 
             let xs = tr.passed +> List.rev +> List.filter TH.is_not_comment in
             if List.length xs >= 2 
@@ -1108,17 +1112,27 @@ let parse_print_error_heuristic2 file =
 
     let elem = 
       match elem with
-      | Left e -> e
-      | Right (info_of_bads, _line_error) -> 
+      | Left e -> 
+          stat.Stat.correct <- stat.Stat.correct + diffline;
+          e
+      | Right (info_of_bads, line_error, toks_of_bads) -> 
+          if was_define && !Flag_parsing_c.filter_define_error
+          then stat.Stat.correct <- stat.Stat.correct + diffline
+          else stat.Stat.bad     <- stat.Stat.bad     + diffline;
+
+          let pbline = 
+            toks_of_bads 
+            +> Common.filter (TH.is_same_line line_error)
+            +> Common.filter TH.is_ident_like 
+          in
+          let error_info = 
+            (pbline +> List.map TH.str_of_tok), line_error
+          in
+          stat.Stat.problematic_lines <- 
+            error_info::stat.Stat.problematic_lines;
+
           Ast_c.NotParsedCorrectly info_of_bads
     in
-    (match elem with
-    | Ast_c.NotParsedCorrectly xs -> 
-        if was_define && !Flag_parsing_c.filter_define_error
-        then stat.Stat.correct <- stat.Stat.correct + diffline
-        else stat.Stat.bad     <- stat.Stat.bad     + diffline
-    | _ -> stat.Stat.correct <- stat.Stat.correct + diffline
-    );
 
     (match elem with
     | Ast_c.FinalDef x -> [(Ast_c.FinalDef x, info)]
@@ -1126,7 +1140,6 @@ let parse_print_error_heuristic2 file =
     )
   in
   let v = loop tr in
-
   let v = consistency_checking v in
   (v, stat)
 

@@ -30,5 +30,9 @@ class ['a,'b] oassoch xs =
       with Not_found -> (log3 ("pb assoc with k = " ^ (Dumper.dump k)); raise Not_found) 
         
     method delkey k = (Hashtbl.remove data k; o)
+
+    method keys = 
+      List.map fst (o#tolist)
+
 end     
 

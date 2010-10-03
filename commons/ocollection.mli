@@ -19,6 +19,8 @@ object ('o)
 
   (* effect version *)
   method add2: 'a -> unit
+  method del2: 'a -> unit
+  method clear: unit
 
 
   method fold : ('c -> 'a -> 'c) -> 'c -> 'c

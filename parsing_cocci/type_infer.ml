@@ -52,10 +52,13 @@ let rec lub_type t1 t2 =
 	| (t1,T.Unknown) -> t1
 	| (T.ConstVol(cv1,ty1),T.ConstVol(cv2,ty2)) when cv1 = cv2 ->
 	    T.ConstVol(cv1,loop(ty1,ty2))
+
+        (* pad: in pointer arithmetic, as in ptr+1, the lub must be ptr *)
 	| (T.Pointer(ty1),T.Pointer(ty2)) ->
 	    T.Pointer(loop(ty1,ty2))
 	| (ty1,T.Pointer(ty2)) -> T.Pointer(ty2)
 	| (T.Pointer(ty1),ty2) -> T.Pointer(ty1)
+
 	| (T.Array(ty1),T.Array(ty2)) -> T.Array(loop(ty1,ty2))
 	| (T.TypeName(s1),t2) -> t2
 	| (t1,T.TypeName(s1)) -> t1
@@ -105,6 +108,7 @@ let rec propagate_types env =
     let res = k e in
     let ty =
       match Ast0.unwrap e with
+        (* pad: the type of id is set in the ident visitor *)
 	Ast0.Ident(id) -> Ast0.set_type e res; res
       | Ast0.Constant(const) ->
 	  (match Ast0.unwrap_mcode const with
@@ -112,6 +116,9 @@ let rec propagate_types env =
 	  | Ast.Char(_) -> Some (T.BaseType(T.CharType,None))
 	  | Ast.Int(_) -> Some (T.BaseType(T.IntType,None))
 	  | Ast.Float(_) ->  Some (T.BaseType(T.FloatType,None)))
+        (* pad: note that in C can do either ptr(...) or ( *ptr)(...) 
+         * so I am not sure this code is enough. 
+         *)
       | Ast0.FunCall(fn,lp,args,rp) ->
 	  (match Ast0.get_type fn with
 	    Some (T.FunctionPointer(ty)) -> Some ty
@@ -154,10 +161,13 @@ let rec propagate_types env =
 	  let ty2 = Ast0.get_type exp2 in
 	  let same_type = function
 	      (None,None) -> Some (T.BaseType(T.IntType,None))
+
+            (* pad: pointer arithmetic handling as in ptr+1 *)
 	    | (Some (T.Pointer ty1),Some ty2) ->
 		Some (T.Pointer ty1)
 	    | (Some ty1,Some (T.Pointer ty2)) ->
 		Some (T.Pointer ty2)
+
 	    | (t1,t2) ->
 		let ty = lub_type t1 t2 in
 		Ast0.set_type exp1 ty; Ast0.set_type exp2 ty; ty in
@@ -181,6 +191,7 @@ let rec propagate_types env =
 	  | Some (T.Pointer(ty)) -> Some ty
 	  | Some (T.MetaType(_,_,_)) -> None
 	  | Some x -> err exp1 x "ill-typed array reference")
+      (* pad: should handle structure one day and look 'field' in environment *)
       | Ast0.RecordAccess(exp,pt,field) ->
 	  (match strip_cv (Ast0.get_type exp) with
 	    None -> None
@@ -272,7 +283,8 @@ let rec propagate_types env =
 		  [(strip id,Ast0.ast0_type_to_type ty)]
 	      | Ast0.MacroDecl(_,_,_,_,_) -> []
 	      | Ast0.TyDecl(ty,_) -> []
-	      | Ast0.Typedef(_,_,_,_) -> []
+              (* pad: should handle typedef one day and add a binding *)
+	      | Ast0.Typedef(_,_,_,_) -> [] 
 	      | Ast0.DisjDecl(_,disjs,_,_) ->
 		  List.concat(List.map process_decl disjs)
 	      | Ast0.Ddots(_,_) -> [] (* not in a statement list anyway *)

@@ -30,12 +30,25 @@ let cmdline_flags_cpp () = [
   ]
 
 (*****************************************************************************)
+(* types *)
+(*****************************************************************************)
+let std_envir = ref (Filename.concat !path "config/envos/environment_splint.h")
+
+let cmdline_flags_envfile () = 
+  [
+    "-env_file", Arg.Set_string std_envir,
+    " <file> (default=" ^ !std_envir ^ ")";
+  ]
+
+
+(*****************************************************************************)
 (* verbose *)
 (*****************************************************************************)
 
 let verbose_lexing = ref true
 let verbose_parsing = ref true
 let verbose_type    = ref true
+let verbose_annotater = ref true
 
 let filter_msg = ref false
 let filter_msg_define_error = ref false
@@ -52,9 +65,11 @@ let show_flow_labels = ref true
 
 let cmdline_flags_verbose () = 
   [
-    "-no_parse_error_msg", Arg.Clear verbose_parsing, " ";
     "-no_verbose_parsing", Arg.Clear verbose_parsing , "  ";
     "-no_verbose_lexing", Arg.Clear verbose_lexing , "  ";
+    "-no_verbose_annotater", Arg.Clear verbose_annotater , "  ";
+
+    "-no_parse_error_msg", Arg.Clear verbose_parsing, " ";
     "-no_type_error_msg",  Arg.Clear verbose_type, " ";
     
     
@@ -92,6 +107,17 @@ let cmdline_flags_debugging () =
 
   "-debug_cfg",          Arg.Set debug_cfg , "  ";
   "-debug_unparsing",      Arg.Set  debug_unparsing, "  ";
+  ]
+
+(*****************************************************************************)
+(* checks *)
+(*****************************************************************************)
+
+let check_annotater = ref true
+let cmdline_flags_checks () = 
+  [
+  "-disable_check_annotater",          Arg.Clear  check_annotater, " ";
+  "-enable_check_annotater",          Arg.Set  check_annotater, " ";
   ]
 
 (*****************************************************************************)
@@ -153,6 +179,4 @@ let cmdline_flags_other () =
     "   use .ast_raw pre-parsed cached C file";
   ]
 
-
 (*****************************************************************************)
-

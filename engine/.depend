@@ -14,6 +14,9 @@ ctlcocci_integration.cmi: ../commons/ograph_extended.cmi lib_engine.cmo \
     ../parsing_cocci/ast_cocci.cmi 
 ctltotex.cmi: ../ctl/wrapper_ctl.cmi lib_engine.cmo ../ctl/ast_ctl.cmo \
     ../parsing_cocci/ast_cocci.cmi 
+lib_matcher_c.cmi: ../commons/ograph_extended.cmi \
+    ../parsing_c/control_flow_c.cmi ../parsing_cocci/ast_cocci.cmi \
+    ../parsing_c/ast_c.cmo 
 pattern_c.cmi: lib_engine.cmo ../parsing_c/control_flow_c.cmi \
     ../parsing_cocci/ast_cocci.cmi 
 postprocess_transinfo.cmi: ../commons/ograph_extended.cmi lib_engine.cmo \
@@ -99,6 +102,14 @@ lib_engine.cmo: ../ctl/wrapper_ctl.cmi ../commons/ograph_extended.cmi \
 lib_engine.cmx: ../ctl/wrapper_ctl.cmx ../commons/ograph_extended.cmx \
     ../parsing_c/control_flow_c.cmx ../commons/common.cmx ../ctl/ast_ctl.cmx \
     ../parsing_cocci/ast_cocci.cmx ../parsing_c/ast_c.cmx 
+lib_matcher_c.cmo: ../parsing_c/visitor_c.cmi pattern_c.cmi \
+    ../commons/ograph_extended.cmi ../parsing_c/lib_parsing_c.cmo \
+    ../parsing_c/control_flow_c.cmi ../commons/common.cmi \
+    ../parsing_cocci/ast_cocci.cmi ../parsing_c/ast_c.cmo lib_matcher_c.cmi 
+lib_matcher_c.cmx: ../parsing_c/visitor_c.cmx pattern_c.cmx \
+    ../commons/ograph_extended.cmx ../parsing_c/lib_parsing_c.cmx \
+    ../parsing_c/control_flow_c.cmx ../commons/common.cmx \
+    ../parsing_cocci/ast_cocci.cmx ../parsing_c/ast_c.cmx lib_matcher_c.cmi 
 main.cmo: ../parsing_cocci/parse_cocci.cmi ctltotex.cmi asttoctl.cmi 
 main.cmx: ../parsing_cocci/parse_cocci.cmx ctltotex.cmx asttoctl.cmx 
 pattern_c.cmo: ../parsing_c/visitor_c.cmi ../parsing_c/lib_parsing_c.cmo \

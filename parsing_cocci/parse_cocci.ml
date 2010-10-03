@@ -915,9 +915,9 @@ and find_line_end inwhen line clt q = function
 let rec translate_when_true_false = function
     [] -> []
   | (PC.TWhen(clt),q)::((PC.TNotEq(_),_) as x)::(PC.TIdent("true",_),_)::xs ->
-      (PC.TWhenTrue(clt),q)::x::xs
+      (PC.TWhenTrue(clt),q)::x::(translate_when_true_false xs)
   | (PC.TWhen(clt),q)::((PC.TNotEq(_),_) as x)::(PC.TIdent("false",_),_)::xs ->
-      (PC.TWhenFalse(clt),q)::x::xs
+      (PC.TWhenFalse(clt),q)::x::(translate_when_true_false xs)
   | x::xs -> x :: (translate_when_true_false xs)
 
 (* ----------------------------------------------------------------------- *)
@@ -1127,6 +1127,8 @@ let prepare_tokens tokens =
 
 let rec consume_minus_positions = function
     [] -> []
+  | ((PC.TOPar0(_),_) as x)::xs | ((PC.TCPar0(_),_) as x)::xs
+  | ((PC.TMid0(_),_) as x)::xs -> x::consume_minus_positions xs
   | x::(PC.TPArob,_)::(PC.TMetaPos(name,constraints,per,clt),_)::xs ->
       let (arity,ln,lln,offset,col,strbef,straft,_) = get_clt x in
       let name = Parse_aux.clt2mcode name clt in

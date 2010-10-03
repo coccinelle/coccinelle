@@ -16,6 +16,7 @@ type error =
   | DuplicatedLabel of string
   | NestedFunc
   | ComputedGoto
+  | Define of Common.parse_info
 
 exception Error of error
 
