@@ -189,15 +189,21 @@ let rec propagate_types env =
 		    Ast0.set_type exp1 ty; Ast0.set_type exp2 ty; ty in
 	      (match Ast0.unwrap_mcode op with
 		   Ast.Arith(op) -> same_type (ty1, ty2)
+		 | Ast.Logical(Ast.AndLog) | Ast.Logical(Ast.OrLog) ->
+		     Some(bool_type)
 		 | Ast.Logical(op) ->
 		     let ty = lub_type ty1 ty2 in
-		       Ast0.set_type exp1 ty; Ast0.set_type exp2 ty;
-		       Some(bool_type))
+		     Ast0.set_type exp1 ty; Ast0.set_type exp2 ty;
+		     Some(bool_type))
 	| Ast0.Paren(lp,exp,rp) -> Ast0.get_type exp
 	| Ast0.ArrayAccess(exp1,lb,exp2,rb) ->
 	    (match strip_cv (Ast0.get_type exp2) with
 		 None -> Ast0.set_type exp2 (Some(int_type))
 	       | Some(ty) when is_int_type ty -> ()
+	       | Some(Type_cocci.Unknown) ->
+		   (* unknown comes from param types, not sure why this
+		      is not just None... *)
+		   Ast0.set_type exp2 (Some(int_type))
 	       | Some ty -> err exp2 ty "bad type for an array index");
 	    (match strip_cv (Ast0.get_type exp1) with
 		 None -> None

@@ -331,7 +331,7 @@ let short_options = [
     "  guess what";
 
   "-date",   Arg.Unit (fun () ->
-    pr2 "version: $Date: 2010/03/05 21:12:11 $";
+    pr2 "version: $Date: 2010/03/09 08:29:04 $";
     raise (Common.UnixExit 0)
     ),
   "   guess what";
@@ -974,13 +974,19 @@ let main () =
     (* --------------------------------------------------------- *)
     | [x] when !test_mode    ->
 	begin
+	  let prefix = "tests/" in
 	  try
-	    let prefix = "tests/" in
               FC.include_path := [prefix^"include"];
               Testing.testone prefix x !compare_with_expected
-	  with _ ->
-            FC.include_path := ["include"];
-            Testing.testone "" x !compare_with_expected
+	  with error ->
+	    let testfile = prefix ^ x ^ ".cocci" in
+	    if not (Sys.file_exists testfile) then
+	      begin
+		FC.include_path := ["include"];
+		Testing.testone "" x !compare_with_expected
+	      end
+	    else
+	      raise error
 	end
 
     | []  when !test_all ->
@@ -1043,8 +1049,10 @@ let main_with_better_error_report () =
     try
       main ()
     with
-    | Unix.Unix_error (_, "stat", filename) ->
-        pr2 (spf "ERROR: File %s does not exist" filename);
+    | Unix.Unix_error (e, "stat", filename) ->
+        pr2
+	  (spf "ERROR: File %s does not exist: %s"
+	     filename (Unix.error_message e));
         raise (UnixExit (-1))
 
 (*****************************************************************************)

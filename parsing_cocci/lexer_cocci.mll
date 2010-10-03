@@ -116,6 +116,10 @@ let check_arity_context_linetype s =
   | (D.UNIQUE,_,_) | (D.OPT,_,_) -> ()
   | _ -> lexerr "invalid in a nonempty context: " s
 
+let check_comment s =
+  if not !current_line_started
+  then lexerr "+ expected at the beginning of the line" s
+
 let process_include start finish str =
   (match !current_line_type with
     (D.PLUS,_,_) | (D.PLUSPLUS,_,_) ->
@@ -694,7 +698,7 @@ rule token = parse
   | "/*"
       { start_line true; check_plus_linetype (tok lexbuf);
 	(* second argument to TPragma is not quite right, because
-	   it represents only the first token of the comemnt, but that
+	   it represents only the first token of the comment, but that
 	   should be good enough *)
 	TPragma (Ast.Indent("/*"^(comment lexbuf)),
 		 get_current_line_type lexbuf) }
@@ -779,16 +783,23 @@ and string  = parse
   | _ { lexerr "unrecognised symbol: " (tok lexbuf) }
 
 and comment = parse
-  | "*/"     { start_line true; tok lexbuf }
+  | "*/" { let s = tok lexbuf in check_comment s; start_line true; s }
   | ['\n' '\r' '\011' '\012']
-      { reset_line lexbuf; let s = tok lexbuf in s ^ comment lexbuf }
+      { let s = tok lexbuf in
+        (* even blank line should have a + *)
+        check_comment s;
+        reset_line lexbuf; s ^ comment lexbuf }
   | "+" { pass_zero();
 	  if !current_line_started
 	  then (start_line true; let s = tok lexbuf in s^(comment lexbuf))
-	  else comment lexbuf }
+	  else (start_line true; comment lexbuf) }
   (* noteopti: *)
-  | [^ '*'] { start_line true; let s = tok lexbuf in s ^ comment lexbuf }
-  | [ '*']   { start_line true; let s = tok lexbuf in s ^ comment lexbuf }
+  | [^ '*']
+      { let s = tok lexbuf in
+        check_comment s; start_line true; s ^ comment lexbuf }
+  | [ '*']
+      { let s = tok lexbuf in
+        check_comment s; start_line true; s ^ comment lexbuf }
   | _
       { start_line true; let s = tok lexbuf in
         Common.pr2 ("LEXER: unrecognised symbol in comment:"^s);

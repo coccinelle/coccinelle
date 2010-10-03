@@ -148,11 +148,14 @@ let mcode fn (s,info,mc,pos) =
 		  let str = match str with Ast.Noindent s | Ast.Indent s -> s in
 		  print_string str line col; Some line
 	      |	_ ->
+		  force_newline();
+		  (* not super elegant to put side-effecting unindent in a let
+		     expression... *)
 		  let str =
 		    match str with
 		      Ast.Noindent s -> unindent false; s
 		    | Ast.Indent s -> s in
-		  force_newline(); print_string str line col; Some line)
+		  print_string str line col; Some line)
 	  lb comments in
       let line_before = print_comments None info.Ast.strbef in
       (match line_before with
