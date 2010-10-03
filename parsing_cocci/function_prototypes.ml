@@ -1,5 +1,5 @@
 (*
-* Copyright 2005-2008, Ecole des Mines de Nantes, University of Copenhagen
+* Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
 * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller
 * This file is part of Coccinelle.
 * 
@@ -158,7 +158,6 @@ and strip =
 
   V0.rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    mcode
     donothing donothing donothing donothing donothing donothing
     ident donothing typeC donothing param donothing donothing
     donothing donothing
@@ -211,7 +210,7 @@ let drop_names dec =
 
 let ct = ref 0
 
-let new_name name = 
+let new_name name =
   let n = !ct in
   ct := !ct + 1;
   name^"__"^(string_of_int n)
@@ -333,7 +332,7 @@ let merge mproto pproto =
   let pproto =
     Compute_lines.compute_lines [Ast0.copywrap pproto (Ast0.DECL pproto)] in
   let (m,p) = List.split(Context_neg.context_neg mproto pproto) in
-  Insert_plus.insert_plus m p;
+  Insert_plus.insert_plus m p true (* no isos for protos *);
   (* convert to ast so that the + code will fall down to the tokens
      and off the artificially added Ast0.DECL *)
   let mproto = Ast0toast.ast0toast_toplevel (List.hd mproto) in
@@ -387,7 +386,7 @@ let rec split4 = function
   | (a,b,c,d)::rest ->
       let (ax,bx,cx,dx) = split4 rest in (a::ax,b::bx,c::cx,d::dx)
 
-let process rule_name rule_metavars dropped_isos minus plus =
+let process rule_name rule_metavars dropped_isos minus plus ruletype =
   let minus_functions = List.concat (List.map get_all_functions minus) in
   match minus_functions with
     [] -> ((rule_metavars,minus),None)
@@ -407,13 +406,13 @@ let process rule_name rule_metavars dropped_isos minus plus =
 	  (* probably not possible, since there is always the version with
 	     variables and the version without *)
 	  ((mdef_metavars,minus),
-	   Some 
+	   Some
 	     (metavars,
 	      Ast.CocciRule
 		("proto for "^rule_name,
 		 (Ast.Dep rule_name,dropped_isos,Ast.Forall),
 		 [Ast.rewrap x (Ast.DECL x)],
-		 [false])))
+		 [false],ruletype)))
       |	x::_ ->
 	  let drules =
 	    List.map (function x -> Ast.rewrap x (Ast.DOTS [x])) rules in
@@ -422,5 +421,5 @@ let process rule_name rule_metavars dropped_isos minus plus =
 	    ("proto for "^rule_name,
 	     (Ast.Dep rule_name,dropped_isos,Ast.Forall),
 	     [Ast.rewrap x (Ast.DECL (Ast.rewrap x (Ast.Disj drules)))],
-	     [false]) in
+	     [false],ruletype) in
 	  ((mdef_metavars,minus),Some(metavars,res))

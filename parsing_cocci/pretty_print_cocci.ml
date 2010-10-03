@@ -1,5 +1,5 @@
 (*
-* Copyright 2005-2008, Ecole des Mines de Nantes, University of Copenhagen
+* Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
 * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller
 * This file is part of Coccinelle.
 * 
@@ -99,9 +99,9 @@ let mcode fn = function
       if !print_minus_flag
       then print_string (if !Flag.sgrep_mode2 then "*" else "-");
       fn x; print_pos pos;
-      if !print_plus_flag 
+      if !print_plus_flag
       then print_anything ">>> " plus_stream
-  | (x, _, Ast.CONTEXT(_,plus_streams), pos) -> 
+  | (x, _, Ast.CONTEXT(_,plus_streams), pos) ->
       if !print_plus_flag
       then
 	let fn x = fn x; print_pos pos in
@@ -111,7 +111,7 @@ let mcode fn = function
       let fn x = fn x; print_pos pos in
       print_string_befaft fn x info
 
-let print_mcodekind = function 
+let print_mcodekind = function
     Ast.MINUS(_,plus_stream) ->
       print_string "MINUS";
       print_anything ">>> " plus_stream
@@ -349,8 +349,9 @@ and print_fninfo = function
 
 and typeC ty =
   match Ast.unwrap ty with
-    Ast.BaseType(ty,sgn) -> print_option (mcode sign) sgn; mcode baseType ty
-  | Ast.ImplicitInt(sgn) -> mcode sign sgn
+    Ast.BaseType(ty,strings) ->
+      List.iter (function s -> mcode print_string s; print_string " ") strings
+  | Ast.SignedT(sgn,ty) -> mcode sign sgn; print_option typeC ty
   | Ast.Pointer(ty,star) -> fullType ty; mcode print_string star
   | Ast.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
       print_function_pointer (ty,lp1,star,rp1,lp2,params,rp2)
@@ -360,6 +361,8 @@ and typeC ty =
   | Ast.Array(ty,lb,size,rb) ->
       fullType ty; mcode print_string lb; print_option expression size;
       mcode print_string rb
+  | Ast.EnumName(kind,name) -> mcode print_string kind; print_string " ";
+      ident name
   | Ast.StructUnionName(kind,name) ->
       mcode structUnion kind;
       print_option (function x -> ident x; print_string " ") name
@@ -379,6 +382,7 @@ and baseType = function
   | Ast.DoubleType -> print_string "double "
   | Ast.FloatType -> print_string "float "
   | Ast.LongType -> print_string "long "
+  | Ast.LongLongType -> print_string "long long "
 
 and structUnion = function
     Ast.Struct -> print_string "struct "
@@ -443,7 +447,7 @@ and declaration d =
       mcode print_string stg; print_string " "; fullType ty; typeC id;
       mcode print_string sem
   | Ast.DisjDecl(decls) -> print_disj_list declaration decls
-  | Ast.Ddots(dots,Some whencode) -> 
+  | Ast.Ddots(dots,Some whencode) ->
       mcode print_string dots; print_string "   when != "; declaration whencode
   | Ast.Ddots(dots,None) -> mcode print_string dots
   | Ast.MetaDecl(name,_,_) -> mcode print_meta name
@@ -821,7 +825,7 @@ let unparse z =
     force_newline();
     print_string code;
     force_newline()
-  | Ast.CocciRule (nm, (deps, drops, exists), x, _) ->
+  | Ast.CocciRule (nm, (deps, drops, exists), x, _, _) ->
     print_string "@@";
     force_newline();
     print_string nm;

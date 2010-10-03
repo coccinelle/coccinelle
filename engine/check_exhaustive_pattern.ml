@@ -1,5 +1,5 @@
 (*
-* Copyright 2005-2008, Ecole des Mines de Nantes, University of Copenhagen
+* Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
 * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller
 * This file is part of Coccinelle.
 * 
@@ -133,12 +133,13 @@ let dumb_astcocci_fulltype = function
 
 let dumb_astcocci_type = function
  | A.MetaType(ida,_,_) -> ()
- | A.BaseType (basea, signaopt) -> ()
- | A.ImplicitInt (signa) -> ()
+ | A.BaseType (basea,strings) -> ()
+ | A.SignedT (signa,tya) -> ()
  | A.Pointer (typa, _) -> ()
  | A.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) -> ()
  | A.FunctionType _ -> ()
  | A.Array (typa, _, eaopt, _) -> ()
+ | A.EnumName(en, ena) -> ()
  | A.StructUnionName(sa, sua) -> ()
  | A.StructUnionDef(ty, lb, decls, rb) -> ()
  | A.TypeName sa -> ()

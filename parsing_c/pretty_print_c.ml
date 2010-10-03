@@ -1,4 +1,4 @@
-(* Copyright (C) 2006, 2007, 2008 Yoann Padioleau
+(* Copyright (C) 2006, 2007, 2008 Ecole des Mines de Nantes
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License (GPL)
@@ -42,11 +42,7 @@ let rec pp_expression_gen pr_elem pr_space =
     | Constant (c),         [i]     -> pr_elem i 
     | FunCall  (e, es),     [i1;i2] -> 
         pp_expression e; pr_elem i1; 
-        es +> List.iter (fun (e, opt) -> 
-          assert (List.length opt <= 1); (* opt must be a comma? *)
-          opt +> List.iter (function x -> pr_elem x; pr_space());
-          pp_argument_gen pr_elem pr_space e;
-        );
+	pp_arg_list_gen pr_elem pr_space es;
         pr_elem i2;
         
     | CondExpr (e1, e2, e3),    [i1;i2]    -> 
@@ -130,6 +126,11 @@ let rec pp_expression_gen pr_elem pr_space =
   in
   pp_expression
 
+and pp_arg_list_gen pr_elem pr_space es =
+  es +> List.iter (fun (e, opt) -> 
+    assert (List.length opt <= 1); (* opt must be a comma? *)
+    opt +> List.iter (function x -> pr_elem x; pr_space());
+    pp_argument_gen pr_elem pr_space e)
 
 and pp_argument_gen pr_elem pr_space argument = 
   let rec pp_action = function 
@@ -326,8 +327,9 @@ and (pp_type_with_ident_gen:
       fullType -> attribute list ->
       unit) = 
   fun pr_elem pr_space ->
-    fun ident sto ((qu, iiqu), (ty, iity)) attrs -> 
+    fun ident sto ((qu, iiqu), (ty, iity)) attrs ->
       pp_base_type_gen pr_elem pr_space ((qu, iiqu), (ty, iity))  sto;
+      (match ident with None -> () | Some _ -> pr_space());
       pp_type_with_ident_rest_gen pr_elem pr_space ident
 	((qu, iiqu), (ty, iity)) attrs
 
@@ -348,7 +350,7 @@ and (pp_base_type_gen:
           let all_ii = get_sto sto ++ iiqu in
           all_ii 
           +> List.sort Ast_c.compare_pos
-          +> List.iter pr_elem;
+          +> Common.print_between pr_space pr_elem(*List.iter pr_elem*);
           
         in
         let print_sto_qu_ty (sto, (qu, iiqu), iity) = 
@@ -360,10 +362,10 @@ and (pp_base_type_gen:
             (* TODO in fact for pointer, the qualifier is after the type 
              * cf -test strangeorder
              *)
-            pr2 "STRANGEORDER"; 
-            all_ii2 +> List.iter pr_elem 
+            pr2 "STRANGEORDER";
+            all_ii2 +> Common.print_between pr_space pr_elem(*List.iter pr_elem*)
           end
-          else all_ii2 +> List.iter pr_elem
+          else all_ii2 +> Common.print_between pr_space pr_elem(*List.iter pr_elem*)
         in
 
         match ty, iity with

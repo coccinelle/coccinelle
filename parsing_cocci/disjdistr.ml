@@ -1,5 +1,5 @@
 (*
-* Copyright 2005-2008, Ecole des Mines de Nantes, University of Copenhagen
+* Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
 * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller
 * This file is part of Coccinelle.
 * 
@@ -72,7 +72,7 @@ let rec disjty ft =
 
 and disjtypeC bty =
   match Ast.unwrap bty with
-    Ast.BaseType(_,_) | Ast.ImplicitInt(_) -> [bty]
+    Ast.BaseType(_) | Ast.SignedT(_,_) -> [bty]
   | Ast.Pointer(ty,star) ->
       let ty = disjty ty in
       List.map (function ty -> Ast.rewrap bty (Ast.Pointer(ty,star))) ty
@@ -92,7 +92,7 @@ and disjtypeC bty =
       disjmult2 (disjty ty) (disjoption disjexp size)
 	(function ty -> function size ->
 	  Ast.rewrap bty (Ast.Array(ty,lb,size,rb)))
-  | Ast.StructUnionName(kind,name) -> [bty]
+  | Ast.EnumName(_,_) | Ast.StructUnionName(_,_) -> [bty]
   | Ast.StructUnionDef(ty,lb,decls,rb) ->
       disjmult2 (disjty ty) (disjdots disjdecl decls)
 	(function ty -> function decls ->
@@ -169,7 +169,8 @@ and disjexp e =
       List.map (function ty -> Ast.rewrap e (Ast.TypeExp(ty))) ty
   | Ast.MetaErr(_,_,_,_) | Ast.MetaExpr(_,_,_,_,_,_)
   | Ast.MetaExprList(_,_,_,_) | Ast.EComma(_) -> [e]
-  | Ast.DisjExpr(exp_list) -> List.concat (List.map disjexp exp_list)
+  | Ast.DisjExpr(exp_list) ->
+      List.concat (List.map disjexp exp_list)
   | Ast.NestExpr(expr_dots,whencode,multi) ->
       (* not sure what to do here, so ambiguities still possible *)
       [e]
@@ -225,10 +226,10 @@ and disjini i =
 	(function exp1 -> function exp2 -> function ini ->
 	  Ast.rewrap i (Ast.InitGccRange(lb,exp1,dots,exp2,rb,eq,ini)))
   | Ast.IComma(comma) -> [i]
-  | Ast.OptIni(ini) -> 
+  | Ast.OptIni(ini) ->
       let ini = disjini ini in
       List.map (function ini -> Ast.rewrap i (Ast.OptIni(ini))) ini
-  | Ast.UniqueIni(ini) -> 
+  | Ast.UniqueIni(ini) ->
       let ini = disjini ini in
       List.map (function ini -> Ast.rewrap i (Ast.UniqueIni(ini))) ini
 
@@ -274,7 +275,7 @@ let orify_rule_elem_decl = generic_orify_rule_elem disjdecl
 let orify_rule_elem_ini = generic_orify_rule_elem disjini
 
 let disj_rule_elem r k re =
-  match Ast.unwrap re with      
+  match Ast.unwrap re with
     Ast.FunHeader(bef,allminus,fninfo,name,lp,params,rp) ->
       generic_orify_rule_elem (disjdots disjparam) re params
 	(function params ->
@@ -340,7 +341,6 @@ let disj_all =
   let donothing r k e = k e in
   V.rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    mcode
     donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
     disj_rule_elem donothing donothing donothing donothing
@@ -356,7 +356,6 @@ let collect_all_isos =
   let doanything r k e = k e in
   V.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    mcode
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
     donothing doanything
@@ -372,7 +371,6 @@ let collect_iso_info =
 	Ast.set_isos e isos in
   V.rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    mcode
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing rule_elem donothing donothing
     donothing donothing
@@ -384,14 +382,14 @@ let disj rules =
     (function (mv,r) ->
       match r with
         Ast.ScriptRule _ -> (mv, r)
-      | Ast.CocciRule (nm, rule_info, r, isexp) ->
-      let res =
-	List.map
-	  (function x ->
-	    let res = disj_all.V.rebuilder_top_level x in
-	    if !Flag.track_iso_usage
-	    then collect_iso_info.V.rebuilder_top_level res
-	    else res)
-	  r in
-      (mv, Ast.CocciRule (nm,rule_info,res,isexp)))
+      | Ast.CocciRule (nm, rule_info, r, isexp, ruletype) ->
+	  let res =
+	    List.map
+	      (function x ->
+		let res = disj_all.V.rebuilder_top_level x in
+		if !Flag.track_iso_usage
+		then collect_iso_info.V.rebuilder_top_level res
+		else res)
+	      r in
+	  (mv, Ast.CocciRule (nm,rule_info,res,isexp,ruletype)))
     rules

@@ -1,5 +1,5 @@
 (*
-* Copyright 2005-2008, Ecole des Mines de Nantes, University of Copenhagen
+* Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
 * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller
 * This file is part of Coccinelle.
 * 
@@ -86,7 +86,7 @@ let mcodekind brackets fn x info = function
 	if !quiet
 	then ("","")
 	else
-	  let n = 
+	  let n =
 	    match brackets with Some x -> "^"^(string_of_int x) | None -> "" in
 	  ("§","½"^n) in
       let (plus_streams,_,_) = !plus_streams in
@@ -253,9 +253,10 @@ and typeC t =
       match Ast0.unwrap t with
 	Ast0.ConstVol(cv,ty) ->
 	  mcode U.const_vol cv; print_string " "; typeC ty
-      |	Ast0.BaseType(ty,sgn) ->
-	  print_option (mcode U.sign) sgn; mcode U.baseType ty
-      |	Ast0.ImplicitInt(sgn) -> mcode U.sign sgn
+      |	Ast0.BaseType(ty,strings) ->
+	  List.iter (function s -> mcode print_string s; print_string " ")
+	    strings
+      |	Ast0.Signed(sgn,ty) -> mcode U.sign sgn; print_option typeC ty
       | Ast0.Pointer(ty,star) -> typeC ty; mcode print_string star
       | Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
 	  print_function_pointer (ty,lp1,star,rp1,lp2,params,rp2)
@@ -265,6 +266,8 @@ and typeC t =
       | Ast0.Array(ty,lb,size,rb) ->
 	  typeC ty; mcode print_string lb; print_option expression size;
 	  mcode print_string rb
+      | Ast0.EnumName(kind,name) -> mcode print_string kind; print_string " ";
+	  ident name
       | Ast0.StructUnionName(kind,name) ->
 	  mcode U.structUnion kind;
 	  print_option (function x -> ident x; print_string " ") name
@@ -337,7 +340,7 @@ and declaration d =
 	    (function _ -> print_string "\n|"; force_newline())
 	    declaration decls;
 	  print_string "\n)"
-      | Ast0.Ddots(dots,Some whencode) -> 
+      | Ast0.Ddots(dots,Some whencode) ->
 	  mcode print_string dots; print_string "   when != ";
 	  declaration whencode
       | Ast0.Ddots(dots,None) -> mcode print_string dots

@@ -74,7 +74,7 @@ and ident = base_ident wrap
 (* --------------------------------------------------------------------- *)
 (* Expression *)
 
-and base_expression = 
+and base_expression =
     Ident          of ident
   | Constant       of Ast_cocci.constant mcode
   | FunCall        of expression * string mcode (* ( *) *
@@ -123,10 +123,10 @@ and listlen = Ast_cocci.meta_name mcode option
 (* --------------------------------------------------------------------- *)
 (* Types *)
 
-and base_typeC = 
+and base_typeC =
     ConstVol        of Ast_cocci.const_vol mcode * typeC
-  | BaseType        of Ast_cocci.baseType mcode * Ast_cocci.sign mcode option
-  | ImplicitInt     of Ast_cocci.sign mcode
+  | BaseType        of Ast_cocci.baseType * string mcode list
+  | Signed          of Ast_cocci.sign mcode * typeC option
   | Pointer         of typeC * string mcode (* * *)
   | FunctionPointer of typeC *
 	          string mcode(* ( *)*string mcode(* * *)*string mcode(* ) *)*
@@ -136,6 +136,7 @@ and base_typeC =
                        string mcode (* ) *)
   | Array           of typeC * string mcode (* [ *) *
 	               expression option * string mcode (* ] *)
+  | EnumName        of string mcode (*enum*) * ident (* name *)
   | StructUnionName of Ast_cocci.structUnion mcode * ident option (* name *)
   | StructUnionDef  of typeC (* either StructUnionName or metavar *) *
 	string mcode (* { *) * declaration dots * string mcode (* } *)
@@ -174,7 +175,7 @@ and declaration = base_declaration wrap
 (* Initializers *)
 
 and base_initialiser =
-    InitExpr of expression 
+    InitExpr of expression
   | InitList of string mcode (*{*) * initialiser_list * string mcode (*}*)
   | InitGccDotName of
       string mcode (*.*) * ident (* name *) * string mcode (*=*) *
@@ -350,7 +351,7 @@ and parsed_rule =
       (rule * Ast_cocci.metavar list *
 	 (string list * string list * Ast_cocci.dependency * string *
 	    Ast_cocci.exists)) *
-	(rule * Ast_cocci.metavar list)
+	(rule * Ast_cocci.metavar list) * Ast_cocci.ruletype
   | ScriptRule of
       string * Ast_cocci.dependency * (string * Ast_cocci.meta_name) list *
 	string

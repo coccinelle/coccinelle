@@ -1,5 +1,5 @@
 (*
-* Copyright 2005-2008, Ecole des Mines de Nantes, University of Copenhagen
+* Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
 * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller
 * This file is part of Coccinelle.
 * 
@@ -40,14 +40,14 @@ let minus_checker name = let id = Ast0.unwrap_mcode name in [id]
 
 (* take only what is in the plus code *)
 let plus_checker (nm,_,_,mc,_) =
-  match mc with Ast0.PLUS -> [nm] | _ -> []  
-      
+  match mc with Ast0.PLUS -> [nm] | _ -> []
+
 let get_free checker t =
   let bind x y = x @ y in
   let option_default = [] in
   let donothing r k e = k e in
   let mcode _ = option_default in
-  
+
   (* considers a single list *)
   let collect_unitary_nonunitary free_usage =
     let free_usage = List.sort compare free_usage in
@@ -66,7 +66,7 @@ let get_free checker t =
 	    let (unitary,non_unitary) = loop2 (y::xs) in
 	    (x::unitary,non_unitary) in
     loop2 free_usage in
-  
+
   (* considers a list of lists *)
   let detect_unitary_frees l =
     let (unitary,nonunitary) =
@@ -83,13 +83,13 @@ let get_free checker t =
     | Ast0.WhenModifier(_) -> option_default
     | Ast0.WhenNotTrue(a) -> expression a
     | Ast0.WhenNotFalse(a) -> expression a in
-  
+
   let ident r k i =
     match Ast0.unwrap i with
       Ast0.MetaId(name,_,_) | Ast0.MetaFunc(name,_,_)
     | Ast0.MetaLocalFunc(name,_,_) -> checker name
     | _ -> k i in
-  
+
   let expression r k e =
     match Ast0.unwrap e with
       Ast0.MetaErr(name,_,_) | Ast0.MetaExpr(name,_,_,_,_)
@@ -97,19 +97,19 @@ let get_free checker t =
     | Ast0.DisjExpr(starter,expr_list,mids,ender) ->
 	detect_unitary_frees(List.map r.V0.combiner_expression expr_list)
     | _ -> k e in
-  
+
   let typeC r k t =
     match Ast0.unwrap t with
       Ast0.MetaType(name,_) -> checker name
     | Ast0.DisjType(starter,types,mids,ender) ->
 	detect_unitary_frees(List.map r.V0.combiner_typeC types)
     | _ -> k t in
-  
+
   let parameter r k p =
     match Ast0.unwrap p with
       Ast0.MetaParam(name,_) | Ast0.MetaParamList(name,_,_) -> checker name
     | _ -> k p in
-  
+
   let declaration r k d =
     match Ast0.unwrap d with
       Ast0.DisjDecl(starter,decls,mids,ender) ->
@@ -123,7 +123,7 @@ let get_free checker t =
 	detect_unitary_frees(List.map r.V0.combiner_statement_dots stmt_list)
     | Ast0.Nest(starter,stmt_dots,ender,whn,multi) ->
 	bind (r.V0.combiner_statement_dots stmt_dots)
-	  (detect_unitary_frees 
+	  (detect_unitary_frees
 	     (List.map
 		(whencode r.V0.combiner_statement_dots r.V0.combiner_statement
 		    r.V0.combiner_expression)
@@ -135,24 +135,23 @@ let get_free checker t =
 		r.V0.combiner_expression)
 	     whn)
     | _ -> k s in
-  
-  let res = V0.combiner bind option_default 
+
+  let res = V0.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      mcode
       donothing donothing donothing donothing donothing donothing
       ident expression typeC donothing parameter declaration statement
       donothing donothing in
-  
+
   collect_unitary_nonunitary
     (List.concat (List.map res.V0.combiner_top_level t))
-    
+
 (* ----------------------------------------------------------------------- *)
 (* update the variables that are unitary *)
-    
+
 let update_unitary unitary =
   let donothing r k e = k e in
   let mcode x = x in
-  
+
   let is_unitary name =
     match (List.mem (Ast0.unwrap_mcode name) unitary,
 	   !Flag.sgrep_mode2, Ast0.get_mcode_mcodekind name) with
@@ -180,13 +179,13 @@ let update_unitary unitary =
     | Ast0.MetaExprList(name,lenname,_) ->
 	Ast0.rewrap e (Ast0.MetaExprList(name,lenname,is_unitary name))
     | _ -> k e in
-  
+
   let typeC r k t =
     match Ast0.unwrap t with
       Ast0.MetaType(name,_) ->
 	Ast0.rewrap t (Ast0.MetaType(name,is_unitary name))
     | _ -> k t in
-  
+
   let parameter r k p =
     match Ast0.unwrap p with
       Ast0.MetaParam(name,_) ->
@@ -194,7 +193,7 @@ let update_unitary unitary =
     | Ast0.MetaParamList(name,lenname,_) ->
 	Ast0.rewrap p (Ast0.MetaParamList(name,lenname,is_unitary name))
     | _ -> k p in
-  
+
   let statement r k s =
     match Ast0.unwrap s with
       Ast0.MetaStmt(name,_) ->
@@ -202,10 +201,9 @@ let update_unitary unitary =
     | Ast0.MetaStmtList(name,_) ->
 	Ast0.rewrap s (Ast0.MetaStmtList(name,is_unitary name))
     | _ -> k s in
-  
+
   let res = V0.rebuilder
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      mcode
       donothing donothing donothing donothing donothing donothing
       ident expression typeC donothing parameter donothing statement
       donothing donothing in
@@ -234,12 +232,12 @@ let do_unitary rules =
         Ast0.ScriptRule (a,b,c,d) ->
           let (x,rules) = loop rules in
           (x, r::rules)
-      | Ast0.CocciRule ((minus,metavars,chosen_isos),((plus,_) as plusz)) ->
+      | Ast0.CocciRule ((minus,metavars,chosen_isos),((plus,_) as plusz),rt) ->
           let mm1 = List.map Ast.get_meta_name metavars in
           let (used_after, rest) = loop rules in
           let (m_unitary, m_nonunitary) = get_free minus_checker minus in
           let (p_unitary, p_nonunitary) = get_free plus_checker plus in
-          let p_free = 
+          let p_free =
             if !Flag.sgrep_mode2 then []
             else p_unitary @ p_nonunitary in
           let (in_p, m_unitary) =
@@ -253,7 +251,7 @@ let do_unitary rules =
           let rebuilt = update_unitary m_unitary minus in
           (set_minus (m_nonunitary @ used_after) mm1,
              (Ast0.CocciRule
-		((rebuilt, metavars, chosen_isos),plusz))::rest) in
+		((rebuilt, metavars, chosen_isos),plusz,rt))::rest) in
   let (_,rules) = loop rules in
   rules
 

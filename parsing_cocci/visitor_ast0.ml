@@ -1,5 +1,5 @@
 (*
-* Copyright 2005-2008, Ecole des Mines de Nantes, University of Copenhagen
+* Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
 * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller
 * This file is part of Coccinelle.
 * 
@@ -57,9 +57,9 @@ type 'a combiner =
 type ('mc,'a) cmcode = 'mc Ast0.mcode -> 'a
 type ('cd,'a) ccode = 'a combiner -> ('cd -> 'a) -> 'cd -> 'a
 
-let combiner bind option_default 
+let combiner bind option_default
     meta_mcode string_mcode const_mcode assign_mcode fix_mcode unary_mcode
-    binary_mcode cv_mcode base_mcode sign_mcode struct_mcode storage_mcode
+    binary_mcode cv_mcode sign_mcode struct_mcode storage_mcode
     inc_mcode
     dotsexprfn dotsinitfn dotsparamfn dotsstmtfn dotsdeclfn dotscasefn
     identfn exprfn
@@ -206,9 +206,8 @@ let combiner bind option_default
     let k t =
       match Ast0.unwrap t with
 	Ast0.ConstVol(cv,ty) -> bind (cv_mcode cv) (typeC ty)
-      |	Ast0.BaseType(ty,sign) ->
-	  bind (get_option sign_mcode sign) (base_mcode ty)
-      |	Ast0.ImplicitInt(sign) -> (sign_mcode sign)
+      |	Ast0.BaseType(ty,strings) -> multibind (List.map string_mcode strings)
+      |	Ast0.Signed(sign,ty) -> bind (sign_mcode sign) (get_option typeC ty)
       | Ast0.Pointer(ty,star) -> bind (typeC ty) (string_mcode star)
       | Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
 	  function_pointer (ty,lp1,star,rp1,lp2,params,rp2) []
@@ -216,6 +215,7 @@ let combiner bind option_default
 	  function_type (ty,lp1,params,rp1) []
       | Ast0.Array(ty,lb,size,rb) ->
 	  array_type (ty,lb,size,rb) []
+      | Ast0.EnumName(kind,name) -> bind (string_mcode kind) (ident name)
       | Ast0.StructUnionName(kind,name) ->
 	  bind (struct_mcode kind) (get_option ident name)
       | Ast0.StructUnionDef(ty,lb,decls,rb) ->
@@ -457,7 +457,7 @@ let combiner bind option_default
       | Ast0.DPcircles(c) -> string_mcode c
       | Ast0.OptDParam(dp) -> define_param dp
       | Ast0.UniqueDParam(dp) -> define_param dp in
-    k p 
+    k p
 
   and fninfo = function
       Ast0.FStorage(stg) -> storage_mcode stg
@@ -574,7 +574,7 @@ type 'cd rcode = rebuilder -> ('cd inout) -> 'cd inout
 
 let rebuilder = fun
     meta_mcode string_mcode const_mcode assign_mcode fix_mcode unary_mcode
-    binary_mcode cv_mcode base_mcode sign_mcode struct_mcode storage_mcode
+    binary_mcode cv_mcode sign_mcode struct_mcode storage_mcode
     inc_mcode
     dotsexprfn dotsinitfn dotsparamfn dotsstmtfn dotsdeclfn dotscasefn
     identfn exprfn tyfn initfn paramfn declfn stmtfn casefn topfn ->
@@ -681,7 +681,7 @@ let rebuilder = fun
 	| Ast0.SizeOfExpr(szf,exp) ->
 	    Ast0.SizeOfExpr(string_mcode szf, expression exp)
 	| Ast0.SizeOfType(szf,lp,ty,rp) ->
-	    Ast0.SizeOfType(string_mcode szf,string_mcode lp, typeC ty, 
+	    Ast0.SizeOfType(string_mcode szf,string_mcode lp, typeC ty,
                             string_mcode rp)
 	| Ast0.TypeExp(ty) -> Ast0.TypeExp(typeC ty)
 	| Ast0.MetaErr(name,constraints,pure) ->
@@ -712,9 +712,10 @@ let rebuilder = fun
       Ast0.rewrap t
 	(match Ast0.unwrap t with
 	  Ast0.ConstVol(cv,ty) -> Ast0.ConstVol(cv_mcode cv,typeC ty)
-	| Ast0.BaseType(ty,sign) ->
-	    Ast0.BaseType(base_mcode ty, get_option sign_mcode sign)
-	| Ast0.ImplicitInt(sign) -> Ast0.ImplicitInt(sign_mcode sign)
+	| Ast0.BaseType(ty,strings) ->
+	    Ast0.BaseType(ty, List.map string_mcode strings)
+	| Ast0.Signed(sign,ty) ->
+	    Ast0.Signed(sign_mcode sign,get_option typeC ty)
 	| Ast0.Pointer(ty,star) ->
 	    Ast0.Pointer(typeC ty, string_mcode star)
 	| Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
@@ -729,6 +730,8 @@ let rebuilder = fun
 	| Ast0.Array(ty,lb,size,rb) ->
 	    Ast0.Array(typeC ty, string_mcode lb,
 		       get_option expression size, string_mcode rb)
+	| Ast0.EnumName(kind,name) ->
+	    Ast0.EnumName(string_mcode kind, ident name)
 	| Ast0.StructUnionName(kind,name) ->
 	    Ast0.StructUnionName (struct_mcode kind, get_option ident name)
 	| Ast0.StructUnionDef(ty,lb,decls,rb) ->

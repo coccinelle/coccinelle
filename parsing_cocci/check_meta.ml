@@ -1,5 +1,5 @@
 (*
-* Copyright 2005-2008, Ecole des Mines de Nantes, University of Copenhagen
+* Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
 * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller
 * This file is part of Coccinelle.
 * 
@@ -175,7 +175,8 @@ let rec expression context old_metas table minus e =
   | _ -> () (* no metavariable subterms *)
 
 and get_type_name = function
-    Type_cocci.ConstVol(_,ty) | Type_cocci.Pointer(ty)
+    Type_cocci.ConstVol(_,ty) | Type_cocci.SignedT(_,Some ty)
+  | Type_cocci.Pointer(ty)
   | Type_cocci.FunctionPointer(ty) | Type_cocci.Array(ty) -> get_type_name ty
   | Type_cocci.MetaType(nm,_,_) -> Some nm
   | _ -> None
@@ -186,6 +187,8 @@ and get_type_name = function
 and typeC old_metas table minus t =
   match Ast0.unwrap t with
     Ast0.ConstVol(cv,ty) -> typeC old_metas table minus ty
+  | Ast0.Signed(sgn,ty) ->
+      get_opt (typeC old_metas table minus) ty
   | Ast0.Pointer(ty,star) -> typeC old_metas table minus ty
   | Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
       typeC old_metas table minus ty;
@@ -200,6 +203,7 @@ and typeC old_metas table minus t =
       check_table table minus name
   | Ast0.DisjType(_,types,_,_) ->
       List.iter (typeC old_metas table minus) types
+  | Ast0.EnumName(en,id) -> ident GLOBAL old_metas table minus id
   | Ast0.StructUnionName(su,Some id) -> ident GLOBAL old_metas table minus id
   | Ast0.StructUnionDef(ty,lb,decls,rb) ->
       typeC old_metas table minus ty;
@@ -233,7 +237,7 @@ and declaration context old_metas table minus d =
   | Ast0.UnInit(stg,ty,id,sem) ->
       typeC old_metas table minus ty; ident context old_metas table minus id
   | Ast0.MacroDecl(name,lp,args,rp,sem) ->
-      ident ID old_metas table minus name;
+      ident GLOBAL old_metas table minus name;
       dots (expression ID old_metas table minus) args
   | Ast0.TyDecl(ty,sem) -> typeC old_metas table minus ty
   | Ast0.Typedef(stg,ty,id,sem) ->
@@ -322,7 +326,7 @@ and statement old_metas table minus s =
       get_opt (expression ID old_metas table minus) exp3;
       statement old_metas table minus body
   | Ast0.Iterator(nm,lp,args,rp,body,_) ->
-      ident ID old_metas table minus nm;
+      ident GLOBAL old_metas table minus nm;
       dots (expression ID old_metas table minus) args;
       statement old_metas table minus body
   | Ast0.Switch(switch,lp,exp,rp,lb,cases,rb) ->
@@ -410,7 +414,6 @@ let positions table rules =
   let fn =
     V0.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      mcode
       donothing donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing donothing donothing
       donothing donothing in
@@ -462,7 +465,6 @@ let dup_positions rules =
   let fn =
     V0.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      mcode
       donothing donothing donothing donothing donothing donothing
       donothing expression typeC donothing donothing declaration statement
       donothing donothing in
@@ -527,7 +529,7 @@ let check_meta rname old_metas inherited_metavars metavars minus plus =
   dup_positions minus;
   check_all_marked rname "metavariable" other_table "in the - or context code";
   rule old_metas [iother_table;fresh_table;err_table] false plus;
-  check_all_marked rname "fresh identifier metavariable" iother_table
+  check_all_marked rname "inherited metavariable" iother_table
     "in the -, +, or context code";
   check_all_marked rname "metavariable" fresh_table "in the + code";
   check_all_marked rname "error metavariable" err_table ""

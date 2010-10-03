@@ -1,5 +1,5 @@
 (*
-* Copyright 2005-2008, Ecole des Mines de Nantes, University of Copenhagen
+* Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
 * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller
 * This file is part of Coccinelle.
 * 
@@ -202,7 +202,7 @@ let rec find_neighbors = function
 	   rest_inner)::rest_middle)::rest_outer)
 	  as rest ->
 	    if finish1 = start2
-	    then 
+	    then
 	      ((((x1,real_start1,real_finish1,start1,finish1)::
 		 (x2,real_start2,real_finish2,start2,finish2)::rest_inner)::
 		rest_middle)::
@@ -216,7 +216,7 @@ let rec find_neighbors = function
 	    else [[(x1,real_start1,real_finish1,start1,finish1)]]::rest
       |	_ -> [[[(x1,real_start1,real_finish1,start1,finish1)]]])
       (* rest must be [] *)
-      
+
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)
 (* Entry point *)

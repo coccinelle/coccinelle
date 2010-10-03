@@ -53,48 +53,57 @@ ocamlextra/ANSITerminal.cmo: ocamlextra/ANSITerminal.cmi
 ocamlextra/ANSITerminal.cmx: ocamlextra/ANSITerminal.cmi 
 ocamlextra/dumper.cmo: ocamlextra/dumper.cmi 
 ocamlextra/dumper.cmx: ocamlextra/dumper.cmi 
-ocamlextra/dynArray.cmo: ocamlextra/dynArray.cmi 
-ocamlextra/dynArray.cmx: ocamlextra/dynArray.cmi 
+ocamlextra/dynArray.cmo: ocamlextra/enum.cmi ocamlextra/dynArray.cmi 
+ocamlextra/dynArray.cmx: ocamlextra/enum.cmx ocamlextra/dynArray.cmi 
 ocamlextra/enum.cmo: ocamlextra/enum.cmi 
 ocamlextra/enum.cmx: ocamlextra/enum.cmi 
 ocamlextra/setb.cmo: ocamlextra/setb.cmi 
 ocamlextra/setb.cmx: ocamlextra/setb.cmi 
 ocamlextra/suffix_tree.cmo: ocamlextra/suffix_tree.cmi 
 ocamlextra/suffix_tree.cmx: ocamlextra/suffix_tree.cmi 
-ocamlextra/suffix_tree_ext.cmo: ocamlextra/suffix_tree_ext.cmi 
-ocamlextra/suffix_tree_ext.cmx: ocamlextra/suffix_tree_ext.cmi 
-ocollection/oassoc_buffer.cmo: oassoc.cmi common.cmi \
+ocamlextra/suffix_tree_ext.cmo: ocamlextra/dynArray.cmi \
+    ocamlextra/suffix_tree_ext.cmi 
+ocamlextra/suffix_tree_ext.cmx: ocamlextra/dynArray.cmx \
+    ocamlextra/suffix_tree_ext.cmi 
+ocamlextra/dynArray.cmi: ocamlextra/enum.cmi 
+ocollection/oassoc_buffer.cmo: ocamlextra/setb.cmi ocollection/osetb.cmo \
+    ocollection/oassocb.cmo oassoc.cmi common.cmi \
     ocollection/oassoc_buffer.cmi 
-ocollection/oassoc_buffer.cmx: oassoc.cmx common.cmx \
+ocollection/oassoc_buffer.cmx: ocamlextra/setb.cmx ocollection/osetb.cmx \
+    ocollection/oassocb.cmx oassoc.cmx common.cmx \
     ocollection/oassoc_buffer.cmi 
-ocollection/oassocb.cmo: oassoc.cmi common.cmi 
-ocollection/oassocb.cmx: oassoc.cmx common.cmx 
-ocollection/oassocbdb.cmo: oassoc.cmi common.cmi ocollection/oassocbdb.cmi 
-ocollection/oassocbdb.cmx: oassoc.cmx common.cmx ocollection/oassocbdb.cmi 
-ocollection/oassocbdb_string.cmo: oassoc.cmi common.cmi \
-    ocollection/oassocbdb_string.cmi 
-ocollection/oassocbdb_string.cmx: oassoc.cmx common.cmx \
-    ocollection/oassocbdb_string.cmi 
+ocollection/oassocb.cmo: oassoc.cmi ocamlextra/mapb.cmo common.cmi 
+ocollection/oassocb.cmx: oassoc.cmx ocamlextra/mapb.cmx common.cmx 
+ocollection/oassocbdb.cmo: ocollection/oassoc_buffer.cmi oassoc.cmi \
+    ocamlextra/dumper.cmi common.cmi ocollection/oassocbdb.cmi 
+ocollection/oassocbdb.cmx: ocollection/oassoc_buffer.cmx oassoc.cmx \
+    ocamlextra/dumper.cmx common.cmx ocollection/oassocbdb.cmi 
+ocollection/oassocbdb_string.cmo: ocollection/oassoc_buffer.cmi oassoc.cmi \
+    common.cmi ocollection/oassocbdb_string.cmi 
+ocollection/oassocbdb_string.cmx: ocollection/oassoc_buffer.cmx oassoc.cmx \
+    common.cmx ocollection/oassocbdb_string.cmi 
 ocollection/oassocdbm.cmo: oassoc.cmi common.cmi ocollection/oassocdbm.cmi 
 ocollection/oassocdbm.cmx: oassoc.cmx common.cmx ocollection/oassocdbm.cmi 
-ocollection/oassoch.cmo: oassoc.cmi common.cmi 
-ocollection/oassoch.cmx: oassoc.cmx common.cmx 
+ocollection/oassoch.cmo: oassoc.cmi ocamlextra/dumper.cmi common.cmi 
+ocollection/oassoch.cmx: oassoc.cmx ocamlextra/dumper.cmx common.cmx 
 ocollection/oassocid.cmo: oassoc.cmi common.cmi 
 ocollection/oassocid.cmx: oassoc.cmx common.cmx 
-ocollection/ograph2way.cmo: oset.cmi ograph.cmi ocollection.cmi common.cmi \
-    ocollection/ograph2way.cmi 
-ocollection/ograph2way.cmx: oset.cmx ograph.cmx ocollection.cmx common.cmx \
-    ocollection/ograph2way.cmi 
-ocollection/osetb.cmo: oset.cmi ocollection.cmi 
-ocollection/osetb.cmx: oset.cmx ocollection.cmx 
+ocollection/ograph2way.cmo: ocamlextra/setb.cmi ocollection/osetb.cmo \
+    oset.cmi ograph.cmi ocollection.cmi common.cmi ocollection/ograph2way.cmi 
+ocollection/ograph2way.cmx: ocamlextra/setb.cmx ocollection/osetb.cmx \
+    oset.cmx ograph.cmx ocollection.cmx common.cmx ocollection/ograph2way.cmi 
+ocollection/osetb.cmo: ocamlextra/setb.cmi oset.cmi ocollection.cmi 
+ocollection/osetb.cmx: ocamlextra/setb.cmx oset.cmx ocollection.cmx 
 ocollection/oseth.cmo: oset.cmi common.cmi 
 ocollection/oseth.cmx: oset.cmx common.cmx 
 ocollection/oseti.cmo: seti.cmo oset.cmi ocollection.cmi 
 ocollection/oseti.cmx: seti.cmx oset.cmx ocollection.cmx 
-ocollection/osetpt.cmo: oset.cmi ocollection.cmi 
-ocollection/osetpt.cmx: oset.cmx ocollection.cmx 
+ocollection/osetpt.cmo: ocamlextra/setPt.cmo oset.cmi ocollection.cmi 
+ocollection/osetpt.cmx: ocamlextra/setPt.cmx oset.cmx ocollection.cmx 
 ocollection/oassoc_buffer.cmi: ocollection.cmi oassoc.cmi 
-ocollection/oassocbdb.cmi: ocollection.cmi oassoc.cmi 
-ocollection/oassocbdb_string.cmi: ocollection.cmi oassoc.cmi 
+ocollection/oassocbdb.cmi: ocollection.cmi ocollection/oassoc_buffer.cmi \
+    oassoc.cmi 
+ocollection/oassocbdb_string.cmi: ocollection.cmi \
+    ocollection/oassoc_buffer.cmi oassoc.cmi 
 ocollection/oassocdbm.cmi: ocollection.cmi oassoc.cmi common.cmi 
 ocollection/ograph2way.cmi: oset.cmi ograph.cmi 

@@ -1,5 +1,36 @@
 -*- org -*-
 
+* 0.1.4
+
+** Features: 
+- can match patterns of the form unsigned T or signed T, where T is a
+  metavariable
+- dropped the sizeof_parens isomorphism, which was made redundant by the
+  paren isomorphism
+- simple rule generation
+- long long added to SmPL
+
+** Bugfix:
+- trailing , ; and ) no longer left on a line by themselves
+- better treatment of error exit when the searched for code matches the
+  error exit condition.
+- fix incorrect treatment of parentheses in test_exps that could allow +
+  code to be added twice
+- don't ask whether iterator names and declarer names should be declared as
+  metavariables.
+- slightly better support for expression list metavariables.
+- short and long allowed for array index types in SmPL
+- more restrictions on type inference for pointer arithmetic in SmPL
+- allow isomorphisms to apply when + code is anywhere within all - terms
+- changed order of printing const and volatile
+- allow  eg ... <... in plus code
+- better formatting of generated if/while/etc. code
+- better parse error reporting when the problem is at the end of the file
+
+** Internals: 
+- isomorphisms don't apply under signed/unsigned, to prevent the creation
+  of things like unsigned signed int.  Need a better solution for this.
+
 * 0.1.3
 
 ** Features: 

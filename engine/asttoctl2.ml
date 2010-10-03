@@ -1,5 +1,5 @@
 (*
-* Copyright 2005-2008, Ecole des Mines de Nantes, University of Copenhagen
+* Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
 * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller
 * This file is part of Coccinelle.
 * 
@@ -347,7 +347,6 @@ let elim_opt =
   
   V.rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    mcode
     donothing donothing stmtdotsfn donothing
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing
@@ -449,7 +448,6 @@ let contains_modif =
   let recursor =
     V.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      mcode
       do_nothing do_nothing do_nothing do_nothing
       do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
       do_nothing rule_elem do_nothing do_nothing do_nothing do_nothing in
@@ -473,7 +471,6 @@ let contains_pos =
   let recursor =
     V.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      mcode
       do_nothing do_nothing do_nothing do_nothing
       do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
       do_nothing rule_elem do_nothing do_nothing do_nothing do_nothing in
@@ -540,7 +537,6 @@ let count_nested_braces s =
   let mcode r x = 0 in
   let recursor = V.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      mcode
       donothing donothing donothing donothing
       donothing donothing donothing donothing donothing donothing
       donothing donothing stmt_count donothing donothing donothing in
@@ -1275,14 +1271,18 @@ let dots_au is_strict toend label s wrapcode x seq_after y quantifier =
 		  (ctl_au CTL.NONSTRICT
 		     (ctl_and CTL.NONSTRICT (ctl_not v) preflabelpred)
 		     (ctl_and CTL.NONSTRICT preflabelpred
-			(ctl_or (retpred None)
-			   (if !Flag_matcher.only_return_is_error_exit
-			   then CTL.True
-			   else
-			     (ctl_or matchcontinue
-				(ctl_and CTL.NONSTRICT
-				   (ctl_or matchgoto matchbreak)
-				   (ctl_ag s (ctl_not seq_after))))))))))) in
+			(if !Flag_matcher.only_return_is_error_exit
+			then
+			  (ctl_and CTL.NONSTRICT
+			     (retpred None) (ctl_not seq_after))
+			else
+			  (ctl_or
+			     (ctl_and CTL.NONSTRICT
+				(ctl_or (retpred None) matchcontinue)
+				(ctl_not seq_after))
+			     (ctl_and CTL.NONSTRICT
+				(ctl_or matchgoto matchbreak)
+				(ctl_ag s (ctl_not seq_after)))))))))) in
   let op = if quantifier = !exists then ctl_au else ctl_anti_au in
   let v = get_let_ctr() in
   op s x
@@ -2329,7 +2329,9 @@ let asttoctlz (name,(_,_,exists_flag),l) used_after positions =
 let asttoctl r used_after positions =
   match r with
     Ast.ScriptRule _ -> []
-  | Ast.CocciRule (a,b,c,_) -> asttoctlz (a,b,c) used_after positions
+  | Ast.CocciRule (a,b,c,_,Ast_cocci.Normal) ->
+      asttoctlz (a,b,c) used_after positions
+  | Ast.CocciRule (a,b,c,_,Ast_cocci.Generated) -> [CTL.True]
 
 let pp_cocci_predicate (pred,modif) =
   Pretty_print_engine.pp_predicate pred

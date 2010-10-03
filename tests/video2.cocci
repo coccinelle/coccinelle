@@ -1,4 +1,5 @@
 @@
+identifier x;
 expression E, E1, E2;
 @@
 

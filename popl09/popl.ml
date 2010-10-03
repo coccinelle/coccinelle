@@ -1,5 +1,5 @@
 (*
-* Copyright 2005-2008, Ecole des Mines de Nantes, University of Copenhagen
+* Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
 * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller
 * This file is part of Coccinelle.
 * 
@@ -34,5 +34,5 @@ let poplz (name,_,ast) =
 
 let popl r =
   match r with
-    Ast_cocci.CocciRule (a,b,c,_) -> poplz (a,b,c)
+    Ast_cocci.CocciRule(a,b,c,_,Ast_cocci.Normal) -> poplz (a,b,c)
   | _ -> []

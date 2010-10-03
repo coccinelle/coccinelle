@@ -1,5 +1,5 @@
 (*
-* Copyright 2005-2008, Ecole des Mines de Nantes, University of Copenhagen
+* Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
 * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller
 * This file is part of Coccinelle.
 * 
@@ -133,7 +133,7 @@ and ident = base_ident wrap
 (* --------------------------------------------------------------------- *)
 (* Expression *)
 
-and base_expression = 
+and base_expression =
     Ident          of ident
   | Constant       of constant mcode
   | FunCall        of expression * string mcode (* ( *) *
@@ -215,9 +215,9 @@ and base_fullType =
   | OptType         of fullType
   | UniqueType      of fullType
 
-and base_typeC = 
-    BaseType        of baseType mcode * sign mcode option
-  | ImplicitInt     of sign mcode
+and base_typeC =
+    BaseType        of baseType * string mcode list (* Yoann style *)
+  | SignedT         of sign mcode * typeC option
   | Pointer         of fullType * string mcode (* * *)
   | FunctionPointer of fullType *
 	          string mcode(* ( *)*string mcode(* * *)*string mcode(* ) *)*
@@ -231,6 +231,7 @@ and base_typeC =
 
   | Array           of fullType * string mcode (* [ *) *
 	               expression option * string mcode (* ] *)
+  | EnumName        of string mcode (*enum*) * ident (* name *)
   | StructUnionName of structUnion mcode * ident option (* name *)
   | StructUnionDef  of fullType (* either StructUnionName or metavar *) *
 	string mcode (* { *) * declaration dots * string mcode (* } *)
@@ -240,9 +241,9 @@ and base_typeC =
 
 and fullType = base_fullType wrap
 and typeC = base_typeC wrap
-     
+
 and baseType = VoidType | CharType | ShortType | IntType | DoubleType
-| FloatType | LongType
+  | FloatType | LongType | LongLongType
 
 and structUnion = Struct | Union
 
@@ -262,7 +263,7 @@ and base_declaration =
   | TyDecl of fullType * string mcode (* ; *)
   | MacroDecl of ident (* name *) * string mcode (* ( *) *
         expression dots * string mcode (* ) *) * string mcode (* ; *)
-  | Typedef of string mcode (*typedef*) * fullType * 
+  | Typedef of string mcode (*typedef*) * fullType *
                typeC (* either TypeName or metavar *) * string mcode (*;*)
   | DisjDecl of declaration list
   (* Ddots is for a structure declaration *)
@@ -279,7 +280,7 @@ and declaration = base_declaration wrap
 (* Initializers *)
 
 and base_initialiser =
-    InitExpr of expression 
+    InitExpr of expression
   | InitList of string mcode (*{*) * initialiser list * string mcode (*}*) *
 	initialiser list (* whencode: elements that shouldn't appear in init *)
   | InitGccDotName of
@@ -509,12 +510,16 @@ and top_level = base_top_level wrap
 and rulename =
     CocciRulename of string option * dependency *
 	string list * string list * exists * bool
+  | GeneratedRulename of string option * dependency *
+	string list * string list * exists * bool
   | ScriptRulename of string * dependency
 
+and ruletype = Normal | Generated
+
 and rule =
-    CocciRule of string (* name *) * 
+    CocciRule of string (* name *) *
 	(dependency * string list (* dropped isos *) * exists) * top_level list
-	* bool list
+	* bool list * ruletype
   | ScriptRule of string * dependency * (string * meta_name) list * string
 
 and dependency =

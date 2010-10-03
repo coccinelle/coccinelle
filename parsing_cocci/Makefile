@@ -1,4 +1,4 @@
-# Copyright 2005-2008, Ecole des Mines de Nantes, University of Copenhagen
+# Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
 # Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller
 # This file is part of Coccinelle.
 # 
@@ -54,7 +54,7 @@ OCAMLC =ocamlc$(OPTBIN) $(OCAMLCFLAGS) $(INCLUDES)
 OCAMLOPT = ocamlopt$(OPTBIN) $(OPTFLAGS) $(INCLUDES)
 OCAMLLEX = ocamllex$(OPTBIN)
 OCAMLYACC= menhir --table
-OCAMLDEP = ocamldep$(OPTBIN) $(INCLUDES)
+OCAMLDEP = ocamldep$(OPTBIN) #$(INCLUDES)
 EXEC=$(TARGET).byte
 EXEC=$(TARGET)
 LIB=$(TARGET).cma
@@ -70,7 +70,6 @@ all: $(LIB)
 local: $(EXEC)
 
 all.opt: $(OPTLIB)
-
 
 $(LIB): $(GENERATED) $(OBJS)
 	$(OCAMLC) -I $(MENHIR_PATH) -a -o $(LIB) $(MENHIR) $(OBJS)

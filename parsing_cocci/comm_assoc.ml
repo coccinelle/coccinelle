@@ -1,5 +1,5 @@
 (*
-* Copyright 2005-2008, Ecole des Mines de Nantes, University of Copenhagen
+* Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
 * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller
 * This file is part of Coccinelle.
 * 
@@ -65,7 +65,7 @@ let process_binops rule_name =
 	       Unparse_ast0.expression e1;
 	       Format.print_newline();
 	       e)
-	| Ast0.Edots(d,_) -> 
+	| Ast0.Edots(d,_) ->
 	    (Printf.printf
 	       "%s: whencode interferes with comm_assoc iso" rule_name;
 	     Unparse_ast0.expression e1;
@@ -75,7 +75,6 @@ let process_binops rule_name =
     | _ -> e in
   V0.rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    mcode
     donothing donothing donothing donothing donothing donothing
     donothing expr donothing donothing donothing donothing donothing
     donothing donothing

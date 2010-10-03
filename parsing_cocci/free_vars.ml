@@ -1,5 +1,5 @@
 (*
-* Copyright 2005-2008, Ecole des Mines de Nantes, University of Copenhagen
+* Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
 * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller
 * This file is part of Coccinelle.
 * 
@@ -91,6 +91,7 @@ let collect_refs include_constraints =
       TC.ConstVol(_,ty) | TC.Pointer(ty) | TC.FunctionPointer(ty)
     | TC.Array(ty) -> type_collect res ty
     | TC.MetaType(tyname,_,_) -> bind [tyname] res
+    | TC.SignedT(_,Some ty) -> type_collect res ty
     | ty -> res in
 
   let astfvexpr recursor k e =
@@ -159,7 +160,6 @@ let collect_refs include_constraints =
 
   V.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    mcode
     donothing donothing donothing donothing
     astfvident astfvexpr astfvfullType astfvtypeC donothing astfvparam
     astfvdecls astfvrule_elem astfvstatement donothing donothing donothing_a
@@ -195,6 +195,7 @@ let collect_saved =
       TC.ConstVol(_,ty) | TC.Pointer(ty) | TC.FunctionPointer(ty)
     | TC.Array(ty) -> type_collect res ty
     | TC.MetaType(tyname,TC.Saved,_) -> bind [tyname] res
+    | TC.SignedT(_,Some ty) -> type_collect res ty
     | ty -> res in
 
   let astfvexpr recursor k e =
@@ -252,7 +253,6 @@ let collect_saved =
 
   V.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    mcode
     donothing donothing donothing donothing
     astfvident astfvexpr donothing astfvtypeC donothing astfvparam
     donothing astfvrule_elem donothing donothing donothing donothing
@@ -331,7 +331,6 @@ let collect_in_plus_term =
 
   V.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    mcode
     donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing
     donothing astfvrule_elem astfvstatement donothing donothing donothing
@@ -359,7 +358,7 @@ let classify_variables metavars minirules used_after =
   let metavars = List.map Ast.get_meta_name metavars in
   let (unitary,nonunitary) = collect_all_multirefs minirules in
   let inplus = collect_in_plus minirules in
-  
+
   let donothing r k e = k e in
   let check_unitary name inherited =
     if List.mem name inplus or List.mem name used_after
@@ -404,6 +403,7 @@ let classify_variables metavars minirules used_after =
     | TC.MetaType(name,_,_) ->
 	let (unitary,inherited) = classify (name,(),(),Ast.NoMetaPos) in
 	Type_cocci.MetaType(name,unitary,inherited)
+    | TC.SignedT(sgn,Some ty) -> TC.SignedT(sgn,Some (type_infos ty))
     | ty -> ty in
 
   let expression r k e =
@@ -469,7 +469,6 @@ let classify_variables metavars minirules used_after =
 
   let fn = V.rebuilder
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      mcode
       donothing donothing donothing donothing
       ident expression donothing typeC donothing param donothing rule_elem
       donothing donothing donothing donothing in
@@ -560,7 +559,7 @@ let astfvs metavars bound =
 	    classify (cip_mcodekind collect_in_plus_term aft) [] in
 	  Ast.Iterator(header,body,(unbound,fresh,inherited,aft))
       |	s -> s in
-    
+
     let (unbound,munbound,fresh,_) = classify free minus_free in
     let inherited =
       List.filter (function x -> List.mem x bound) nc_free in
@@ -601,7 +600,6 @@ let astfvs metavars bound =
 
   V.rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    mcode
     donothing donothing astfvstatement_dots donothing
     donothing donothing donothing donothing donothing donothing donothing
     astfvrule_elem astfvstatement donothing astfvtoplevel donothing
@@ -628,14 +626,14 @@ let collect_astfvs rules =
 	    (* bound stays as is because script rules have no names, so no
 	       inheritance is possible *)
 	    rule::(loop bound rules)
-        | Ast.CocciRule (nm, rule_info, minirules, isexp) ->
+        | Ast.CocciRule (nm, rule_info, minirules, isexp, ruletype) ->
           let bound =
             Common.minus_set bound (List.map Ast.get_meta_name metavars) in
           (Ast.CocciRule
 	     (nm, rule_info,
 	      (List.map (astfvs metavars bound).V.rebuilder_top_level
 		 minirules),
-	      isexp))::
+	      isexp, ruletype))::
             (loop ((List.map Ast.get_meta_name metavars)@bound) rules) in
   loop [] rules
 
@@ -660,12 +658,11 @@ let get_neg_pos_list (_,rule) used_after_list =
   let v =
     V.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    mcode
     donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing in
   match rule with
-    Ast.CocciRule(_,_,minirules,_) ->
+    Ast.CocciRule(_,_,minirules,_,_) ->
       List.map
 	(function toplevel ->
 	  let (positions,neg_positions) = v.V.combiner_top_level toplevel in
@@ -702,7 +699,7 @@ let collect_top_level_used_after metavar_rule_list =
             match r with
               Ast.ScriptRule (_,_,mv,_) ->
                 List.map (function (_,(r,v)) -> (r,v)) mv
-            | Ast.CocciRule (_,_,rule,_) ->
+            | Ast.CocciRule (_,_,rule,_,_) ->
 	        Common.union_set (nub (collect_all_rule_refs rule))
 	          (collect_in_plus rule) in
 	  let inherited =
@@ -717,7 +714,7 @@ let collect_top_level_used_after metavar_rule_list =
       failwith
 	(Printf.sprintf "collect_top_level_used_after: unbound variables %s"
 	   (String.concat " " (List.map (function (_,x) -> x) used_after)))
-	
+
 let collect_local_used_after metavars minirules used_after =
   let locally_defined = List.map Ast.get_meta_name metavars in
   let rec loop defined = function
@@ -749,7 +746,7 @@ let collect_used_after metavar_rule_list =
       function used_after ->
         match r with
           Ast.ScriptRule (_,_,mv,_) -> ([], [used_after])
-        | Ast.CocciRule (name, rule_info, minirules, _) ->
+        | Ast.CocciRule (name, rule_info, minirules, _,_) ->
           collect_local_used_after metavars minirules used_after
     )
     metavar_rule_list used_after_lists
@@ -766,7 +763,7 @@ let free_vars rules =
       (function (mv, r) ->
          match r with
            Ast.ScriptRule _ -> []
-         | Ast.CocciRule (_,_,rule,_) ->
+         | Ast.CocciRule (_,_,rule,_,_) ->
            let positions =
              List.fold_left
                (function prev ->
@@ -780,10 +777,11 @@ let free_vars rules =
 	function ua ->
           match r with
             Ast.ScriptRule _ -> r
-          | Ast.CocciRule (nm, rule_info, r, is_exp) ->
+          | Ast.CocciRule (nm, rule_info, r, is_exp,ruletype) ->
 	      Ast.CocciRule
 		(nm, rule_info, classify_variables mv r (List.concat ua),
-		 is_exp))
+		 is_exp,ruletype))
       rules used_after_lists in
   let new_rules = collect_astfvs (List.combine metavars new_rules) in
-  (new_rules,fvs_lists,neg_pos_lists,used_after_lists,positions_list)
+  (metavars,new_rules,
+   fvs_lists,neg_pos_lists,used_after_lists,positions_list)

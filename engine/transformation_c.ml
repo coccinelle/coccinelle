@@ -1,21 +1,29 @@
-(* Copyright (C) 2006, 2007 Yoann Padioleau
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License (GPL)
- * version 2 as published by the Free Software Foundation.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * file license.txt for more details.
- * 
- * This file was part of Coccinelle.
- *)
+(*
+* Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+* Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller
+* This file is part of Coccinelle.
+* 
+* Coccinelle is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, according to version 2 of the License.
+* 
+* Coccinelle is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+* 
+* You should have received a copy of the GNU General Public License
+* along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+* 
+* The authors reserve the right to distribute this or future versions of
+* Coccinelle under other licenses.
+*)
+
+
 open Common
 
 module F = Control_flow_c
 
-module Flag = Flag_matcher
 (*****************************************************************************)
 (* The functor argument  *) 
 (*****************************************************************************)
@@ -203,7 +211,7 @@ module XTRANS = struct
     | _ -> 
         if (oldmcode, oldenv) = (mck, tin.binding)
         then begin
-          if !Flag.show_misc 
+          if !Flag_matcher.show_misc 
           then pr2 "already tagged but with same mcode, so safe";
           ib
         end
@@ -503,7 +511,7 @@ let (transform2: string (* rule name *) -> string list (* dropped_isos *) ->
       (* subtil: not cflow#nodes but acc#nodes *)
       let node  = acc#nodes#assoc nodei in 
 
-      if !Flag.show_misc 
+      if !Flag.show_transinfo
       then pr2 "transform one node";
       
       let tin = {

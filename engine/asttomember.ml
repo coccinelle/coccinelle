@@ -1,5 +1,5 @@
 (*
-* Copyright 2005-2008, Ecole des Mines de Nantes, University of Copenhagen
+* Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
 * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller
 * This file is part of Coccinelle.
 * 
@@ -53,7 +53,7 @@ let contains_modif used_after x =
     let recursor =
       V.combiner bind option_default
 	mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-	mcode mcode
+	mcode
 	do_nothing do_nothing do_nothing do_nothing
 	do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
 	do_nothing rule_elem do_nothing do_nothing do_nothing do_nothing in
@@ -78,7 +78,7 @@ let contains_constant x =
       let recursor =
 	V.combiner bind option_default
 	  mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-	  mcode mcode
+	  mcode
 	  do_nothing do_nothing do_nothing do_nothing
 	  ident expr do_nothing do_nothing do_nothing do_nothing
 	  do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing in
@@ -120,7 +120,6 @@ let strip =
   let recursor =
     V.rebuilder
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      mcode
       do_nothing do_nothing do_nothing do_nothing
       do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
       do_nothing rule_elem do_nothing do_nothing
@@ -323,5 +322,5 @@ let asttomemberz (_,_,l) used_after =
 let asttomember r used_after =
   match r with
     Ast.ScriptRule _ -> []
-  | Ast.CocciRule (a,b,c,_) -> asttomemberz (a,b,c) used_after
+  | Ast.CocciRule (a,b,c,_,_) -> asttomemberz (a,b,c) used_after
 

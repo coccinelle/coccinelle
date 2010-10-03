@@ -1,4 +1,4 @@
-(* Copyright (C) 2006, 2007, 2008 Yoann Padioleau
+(* Copyright (C) 2006, 2007, 2008 Ecole des Mines de Nantes
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License (GPL)
@@ -315,27 +315,28 @@ let expand_mcode toks =
     *)
 
     (* patch: when need full coccinelle transformation *)
+    let unparser = Unparse_cocci.pp_list_list_any args_pp false in
     match mcode with
     | Ast_cocci.MINUS (_,any_xxs) -> 
         (* Why adding ? because I want to have all the information, the whole
          * set of tokens, so I can then process and remove the 
          * is_between_two_minus for instance *)
         add_elem t true;
-        Unparse_cocci.pp_list_list_any args_pp any_xxs Unparse_cocci.InPlace
+        unparser any_xxs Unparse_cocci.InPlace
     | Ast_cocci.CONTEXT (_,any_befaft) -> 
         (match any_befaft with
         | Ast_cocci.NOTHING -> 
             add_elem t false
         | Ast_cocci.BEFORE xxs -> 
-            Unparse_cocci.pp_list_list_any args_pp xxs Unparse_cocci.Before;
+            unparser xxs Unparse_cocci.Before;
             add_elem t false
         | Ast_cocci.AFTER xxs -> 
             add_elem t false;
-            Unparse_cocci.pp_list_list_any args_pp xxs Unparse_cocci.After;
+            unparser xxs Unparse_cocci.After;
         | Ast_cocci.BEFOREAFTER (xxs, yys) -> 
-            Unparse_cocci.pp_list_list_any args_pp xxs Unparse_cocci.Before;
+            unparser xxs Unparse_cocci.Before;
             add_elem t false;
-            Unparse_cocci.pp_list_list_any args_pp yys Unparse_cocci.After;
+            unparser yys Unparse_cocci.After;
         )
     | Ast_cocci.PLUS -> raise Impossible
 
@@ -468,6 +469,23 @@ let remove_minus_and_between_and_expanded_and_fake xs =
   ) in
   xs
 
+(* normally, in C code, a semicolon is not preceded by a space or newline *)
+let adjust_before_semicolon toks =
+  let toks = List.rev toks in
+  let rec loop = function
+      [] -> []
+    | ((T2(_,false,_)) as x)::xs ->
+	if List.mem (str_of_token2 x) [";";")";","]
+	then
+	  let (spaces, rest) = Common.span is_minusable_comment xs in
+	  (match rest with
+	    (T2(_,true,_))::_ | (Cocci2 _)::_ ->
+	      (* only drop spaces if something was actually changed before *)
+	      x :: loop rest
+	  | _ -> x :: loop xs)
+	else x :: loop xs
+    | x::xs -> x :: loop xs in
+  List.rev (loop toks)
 
 let is_ident_like s = s ==~ Common.regexp_alpha
 
@@ -478,7 +496,7 @@ let rec add_space xs =
   | x::y::xs -> 
       let sx = str_of_token2 x in
       let sy = str_of_token2 y in
-      if is_ident_like sx && is_ident_like sy 
+      if is_ident_like sx && is_ident_like sy
       then x::C2 " "::(add_space (y::xs))
       else x::(add_space (y::xs))
 
@@ -758,6 +776,7 @@ let pp_program2 xs outfile  =
           (* phase2: can now start to filter and adjust *)
           let toks = adjust_indentation toks in
           let toks = remove_minus_and_between_and_expanded_and_fake toks in
+	  let toks = adjust_before_semicolon toks in
           (* assert Origin + Cocci + C and no minus *)
           let toks = add_space toks in
           let toks = fix_tokens toks in

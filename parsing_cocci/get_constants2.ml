@@ -1,5 +1,5 @@
 (*
-* Copyright 2005-2008, Ecole des Mines de Nantes, University of Copenhagen
+* Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
 * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller
 * This file is part of Coccinelle.
 * 
@@ -186,6 +186,7 @@ let do_get_constants constants keywords env neg_pos =
     | TC.Array(ty) -> type_collect res ty
     | TC.MetaType(tyname,_,_) -> inherited tyname
     | TC.TypeName(s) -> constants s
+    | TC.EnumName(false,s) -> constants s
     | TC.StructUnionName(_,false,s) -> constants s
     | ty -> res in
 
@@ -222,14 +223,14 @@ let do_get_constants constants keywords env neg_pos =
     | Ast.OptExp(exp) -> option_default
     | Ast.Edots(_,_) | Ast.Ecircles(_,_) | Ast.Estars(_,_) -> option_default
     | _ -> k e in
-  
+
   let fullType r k ft =
     match Ast.unwrap ft with
       Ast.DisjType(decls) ->
 	disj_union_all (List.map r.V.combiner_fullType decls)
     | Ast.OptType(ty) -> option_default
     | _ -> k ft in
-  
+
   let baseType = function
       Ast.VoidType -> keywords "void "
     | Ast.CharType -> keywords "char "
@@ -237,11 +238,11 @@ let do_get_constants constants keywords env neg_pos =
     | Ast.IntType -> keywords "int "
     | Ast.DoubleType -> keywords "double "
     | Ast.FloatType -> keywords "float "
-    | Ast.LongType -> keywords "long " in
+    | Ast.LongType | Ast.LongLongType -> keywords "long " in
 
   let typeC r k ty =
     match Ast.unwrap ty with
-      Ast.BaseType(ty1,sgn) -> bind (k ty) (baseType (Ast.unwrap_mcode ty1))
+      Ast.BaseType(ty1,strings) -> bind (k ty) (baseType ty1)
     | Ast.TypeName(name) -> bind (k ty) (constants (Ast.unwrap_mcode name))
     | Ast.MetaType(name,_,_) -> bind (minherited name) (k ty)
     | _ -> k ty in
@@ -267,7 +268,7 @@ let do_get_constants constants keywords env neg_pos =
     | Ast.MetaParamList(name,Some(lenname,_,_),_,_) ->
 	bind (minherited name) (bind (minherited lenname) (k p))
     | _ -> k p in
-  
+
   let rule_elem r k re =
     match Ast.unwrap re with
       Ast.MetaRuleElem(name,_,_) | Ast.MetaStmt(name,_,_,_)
@@ -307,7 +308,7 @@ let do_get_constants constants keywords env neg_pos =
     | Ast.DisjRuleElem(res) ->
 	disj_union_all (List.map r.V.combiner_rule_elem res)
     | _ -> k re in
-  
+
   let statement r k s =
     match Ast.unwrap s with
       Ast.Disj(stmt_dots) ->
@@ -322,7 +323,6 @@ let do_get_constants constants keywords env neg_pos =
 
   V.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    mcode
     donothing donothing donothing donothing
     ident expression fullType typeC initialiser parameter declaration
     rule_elem statement donothing donothing donothing
@@ -355,7 +355,6 @@ let get_all_constants minus_only =
 
   V.combiner bind option_default
     other mcode other other other other other other other other other other
-    other
 
     donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
@@ -386,7 +385,6 @@ let get_plus_constants =
 
   V.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    mcode
     donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing
@@ -418,7 +416,6 @@ let all_context =
 
   V.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    mcode
     donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing
@@ -477,7 +474,7 @@ let get_constants rules neg_pos_vars =
 		  False -> (rest_info, in_plus, env, locals)
 		| dependencies ->
 		    (build_or dependencies rest_info, in_plus, env, locals))
-            | (Ast.CocciRule (nm,(dep,_,_),cur,_),neg_pos_vars) ->
+            | (Ast.CocciRule (nm,(dep,_,_),cur,_,_),neg_pos_vars) ->
 		let (cur_info,cur_plus) =
 		  rule_fn cur in_plus ((nm,True)::env) neg_pos_vars in
 		if List.for_all all_context.V.combiner_top_level cur

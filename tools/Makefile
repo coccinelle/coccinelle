@@ -1,6 +1,6 @@
 PROGS=gitgrep split_patch extract_c_and_res #generate_dependencies
 
-all: $(PROGS)
+all: $(SUBDIRS) $(PROGS)
 
 # for recursive make
 all.opt: $(PROGS)
@@ -24,6 +24,8 @@ bridge: bridge.ml
 install_bridge: bridge
 	cp -f bridge /usr/local/bin
 
+.PHONY: $(SUBDIRS)
+
 
 SYSLIBS = str.cma unix.cma 
 
@@ -36,7 +38,7 @@ OCAMLOPT=ocamlopt$(OPTBIN)   $(INCLUDE) $(OPTFLAGS)
 #OCAMLLEX=ocamllex$(OPTBIN) -ml
 OCAMLLEX=ocamllex$(OPTBIN)
 OCAMLYACC=ocamlyacc -v
-OCAMLDEP=ocamldep$(OPTBIN)  $(INCLUDE)
+OCAMLDEP=ocamldep$(OPTBIN) #$(INCLUDE)
 OCAMLMKTOP=ocamlmktop -g -custom $(INCLUDE)
 
 split_patch: split_patch.cmo
@@ -48,12 +50,6 @@ extract_c_and_res: extract_c_and_res.cmo
 generate_dependencies: generate_dependencies.cmo
 	$(OCAMLC) -o $@ $(SYSLIBS) $(INCLUDE) $(LIBS)  $+
 
-
-clean::
-	rm -f $(PROGS)
-
-
-
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
 
 .ml.cmo:
@@ -63,9 +59,9 @@ clean::
 .ml.cmx:
 	$(OCAMLOPT) -c $<
 
-clean::
+clean:
+	rm -f $(PROGS)
 	rm -f *.cm[ioxa] *.o *.a *.cmxa *.annot
-
 
 beforedepend::
 

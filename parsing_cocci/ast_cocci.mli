@@ -108,7 +108,7 @@ and ident = base_ident wrap
 (* --------------------------------------------------------------------- *)
 (* Expression *)
 
-and base_expression = 
+and base_expression =
     Ident          of ident
   | Constant       of constant mcode
   | FunCall        of expression * string mcode (* ( *) *
@@ -188,9 +188,9 @@ and base_fullType =
   | OptType         of fullType
   | UniqueType      of fullType
 
-and base_typeC = 
-    BaseType        of baseType mcode * sign mcode option
-  | ImplicitInt     of sign mcode
+and base_typeC =
+    BaseType        of baseType * string mcode list (* Yoann style *)
+  | SignedT         of sign mcode * typeC option
   | Pointer         of fullType * string mcode (* * *)
   | FunctionPointer of fullType *
 	          string mcode(* ( *)*string mcode(* * *)*string mcode(* ) *)*
@@ -201,6 +201,7 @@ and base_typeC =
                    string mcode (* ) *)
   | Array           of fullType * string mcode (* [ *) *
 	               expression option * string mcode (* ] *)
+  | EnumName        of string mcode (*enum*) * ident (* name *)
   | StructUnionName of structUnion mcode * ident option (* name *)
   | StructUnionDef  of fullType (* either StructUnionName or metavar *) *
 	string mcode (* { *) * declaration dots * string mcode (* } *)
@@ -210,9 +211,9 @@ and base_typeC =
 
 and fullType = base_fullType wrap
 and typeC = base_typeC wrap
-     
+
 and baseType = VoidType | CharType | ShortType | IntType | DoubleType
-| FloatType | LongType
+  | FloatType | LongType | LongLongType
 
 and structUnion = Struct | Union
 
@@ -247,7 +248,7 @@ and declaration = base_declaration wrap
 (* Initializers *)
 
 and base_initialiser =
-    InitExpr of expression 
+    InitExpr of expression
   | InitList of string mcode (*{*) * initialiser list * string mcode (*}*) *
 	initialiser list (* whencode: elements that shouldn't appear in init *)
   | InitGccDotName of
@@ -334,7 +335,7 @@ and base_rule_elem =
 	             fninfo list * ident (* name *) *
 	             string mcode (* ( *) * parameter_list *
                      string mcode (* ) *)
-  | Decl          of mcodekind (* before the decl *) * 
+  | Decl          of mcodekind (* before the decl *) *
                      bool (* true if all minus *) * declaration
 
   | SeqStart      of string mcode (* { *)
@@ -471,12 +472,17 @@ and rulename =
     CocciRulename of string option * dependency * string list * string list *
 	exists * bool
       (* true if the whole thing is an expression *)
+  | GeneratedRulename of string option * dependency *
+	string list * string list * exists * bool
+      (* true if the whole thing is an expression *)
   | ScriptRulename of string * dependency
+
+and ruletype = Normal | Generated
 
 and rule =
     CocciRule of string (* name *) *
 	(dependency * string list (* dropped isos *) * exists) *
-	top_level list * bool list (* true if generates an exp *)
+	top_level list * bool list (* true if generates an exp *) * ruletype
   | ScriptRule of string * dependency * (string * meta_name) list * string
 
 and dependency =

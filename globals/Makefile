@@ -5,8 +5,8 @@ TARGET=globals
 
 SRC= flag.ml config.ml
 
-LIBS=../commons/commons.cma
-INCLUDES= -I ../commons
+LIBS=
+INCLUDES=
 
 ##############################################################################
 # Generic variables
@@ -14,7 +14,7 @@ INCLUDES= -I ../commons
 OCAMLCFLAGS ?= -g -dtypes
 OCAMLC =ocamlc$(OPTBIN) $(OCAMLCFLAGS) $(INCLUDES)
 OCAMLOPT = ocamlopt$(OPTBIN) $(OPTFLAGS) $(INCLUDES)
-OCAMLDEP = ocamldep$(OPTBIN) $(INCLUDES)
+OCAMLDEP = ocamldep$(OPTBIN) #$(INCLUDES)
 OCAMLMKTOP=ocamlmktop -g -custom $(INCLUDES)
 
 OBJS= $(SRC:.ml=.cmo)
@@ -27,7 +27,6 @@ OPTOBJS= $(SRC:.ml=.cmx)
 all: $(TARGET).cma
 
 all.opt: $(TARGET).cmxa
-
 
 $(TARGET).cma: $(OBJS) $(LIBS)
 	$(OCAMLC) -a -o $(TARGET).cma $(OBJS)

@@ -1,4 +1,4 @@
-# Copyright 2005-2008, Ecole des Mines de Nantes, University of Copenhagen
+# Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
 # Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller
 # This file is part of Coccinelle.
 # 
@@ -85,17 +85,17 @@ OPTFLAGS=
 # but is now defined above in this file
 #OPTLIBFLAGS=-cclib dllpycaml_stubs.so
 
-# the OPTBIN variable is here to allow to use ocamlc.opt instead of 
+# the OPTBIN variable is here to allow to use ocamlc.opt instead of
 # ocaml, when it is available, which speeds up compilation. So
-# if you want the fast version of the ocaml chain tools, set this var 
+# if you want the fast version of the ocaml chain tools, set this var
 # or setenv it to ".opt" in your startup script.
 OPTBIN= #.opt
 
 OCAMLC=ocamlc$(OPTBIN) $(OCAMLCFLAGS)  $(INCLUDES)
-OCAMLOPT=ocamlopt$(OPTBIN) $(OPTFLAGS) $(INCLUDES) 
+OCAMLOPT=ocamlopt$(OPTBIN) $(OPTFLAGS) $(INCLUDES)
 OCAMLLEX=ocamllex #-ml # -ml for debugging lexer, but slightly slower
 OCAMLYACC=ocamlyacc -v
-OCAMLDEP=ocamldep $(INCLUDES)
+OCAMLDEP=ocamldep #$(INCLUDES)
 OCAMLMKTOP=ocamlmktop -g -custom $(INCLUDES)
 
 # can also be set via 'make static'
@@ -107,35 +107,76 @@ BYTECODE_STATIC=-custom
 ##############################################################################
 # Top rules
 ##############################################################################
-all: rec $(EXEC)
-opt: rec.opt $(EXEC).opt
+.PHONY: all all.opt opt top clean configure
+.PHONY: $(MAKESUBDIRS) $(MAKESUBDIRS:%=%.opt)
+
+all:
+	$(MAKE) subdirs
+	$(MAKE) $(EXEC)
+
+opt:
+	$(MAKE) subdirs.opt
+	$(MAKE) $(EXEC).opt
+
 all.opt: opt
 top: $(EXEC).top
 
-rec:
-	set -e; for i in $(MAKESUBDIRS); \
-	do $(MAKE) -C $$i OCAMLCFLAGS="$(OCAMLCFLAGS)" all; done 
-rec.opt:
-	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i all.opt; done 
-clean::
-	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i clean; done 
+subdirs: $(MAKESUBDIRS)
+subdirs.opt: $(MAKESUBDIRS:%=%.opt)
 
-eclipse: depend all
+$(MAKESUBDIRS):
+	$(MAKE) -C $@ OCAMLCFLAGS="$(OCAMLCFLAGS)" all
+
+$(MAKESUBDIRS:%=%.opt):
+	$(MAKE) -C $(@:%.opt=%) OCAMLCFLAGS="$(OCAMLCFLAGS)" all.opt
+
+commons:
+globals:
+menhirlib:
+parsing_cocci:globals menhirlib
+parsing_c:parsing_cocci
+ctl:globals commons
+engine: parsing_cocci parsing_c ctl
+popl09:engine
+extra: parsing_cocci parsing_c ctl
+pycaml:
+python:pycaml parsing_cocci parsing_c
+
+commons.opt:
+globals.opt:
+menhirlib.opt:
+parsing_cocci.opt:globals.opt menhirlib.opt
+parsing_c.opt:parsing_cocci.opt
+ctl.opt:globals.opt commons.opt
+engine.opt: parsing_cocci.opt parsing_c.opt ctl.opt
+popl09.opt:engine.opt
+extra.opt: parsing_cocci.opt parsing_c.opt ctl.opt
+pycaml.opt:
+python.opt:pycaml.opt parsing_cocci.opt parsing_c.opt
+
+clean::
+	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i clean; done
+
 configure:
 	./configure
+
+$(LIBS): #$(MAKESUBDIRS)
+$(LIBS:.cma=.cmxa): #$(MAKESUBDIRS:%=%.opt)
+
+$(OBJS):$(LIBS)
+$(OPTOBJS):$(LIBS:.cma=.cmxa)
 
 $(EXEC): $(LIBS) $(OBJS)
 	$(OCAMLC) $(BYTECODE_STATIC) -o $@ $(SYSLIBS)  $^
 
-$(EXEC).opt: $(LIBS:.cma=.cmxa) $(OPTOBJS) 
+$(EXEC).opt: $(LIBS:.cma=.cmxa) $(OPTOBJS)
 	$(OCAMLOPT) $(STATIC) -o $@ $(SYSLIBS:.cma=.cmxa) $(OPTLIBFLAGS)  $^
 
-$(EXEC).top: $(LIBS) $(OBJS) 
+$(EXEC).top: $(LIBS) $(OBJS)
 	$(OCAMLMKTOP) -custom -o $@ $(SYSLIBS) $^
 
 clean::
 	rm -f $(TARGET) $(TARGET).opt $(TARGET).top
-
 
 clean::
 	rm -f dllpycaml_stubs.so
@@ -168,12 +209,14 @@ install: all
 	mkdir -p $(DESTDIR)$(BINDIR)
 	mkdir -p $(DESTDIR)$(LIBDIR)
 	mkdir -p $(DESTDIR)$(SHAREDIR)
-	cp spatch $(DESTDIR)$(BINDIR)	
-	cp -f dllpycaml_stubs.so $(DESTDIR)$(LIBDIR)	
+	mkdir -p $(DESTDIR)$(MANDIR)/man1
+	cp spatch $(DESTDIR)$(BINDIR)
 	cp standard.h $(DESTDIR)$(SHAREDIR)
 	cp standard.iso $(DESTDIR)$(SHAREDIR)
+	cp docs/spatch.1 $(DESTDIR)$(MANDIR)/man1/
 	mkdir -p $(DESTDIR)$(SHAREDIR)/python
 	cp -a python/coccilib $(DESTDIR)$(SHAREDIR)/python
+	cp -f dllpycaml_stubs.so $(DESTDIR)$(LIBDIR)
 	@echo ""
 	@echo "You can also install spatch by copying the program spatch"
 	@echo "(available in this directory) anywhere you want and"
@@ -185,6 +228,7 @@ uninstall:
 	rm -f $(DESTDIR)$(SHAREDIR)/standard.h
 	rm -f $(DESTDIR)$(SHAREDIR)/standard.iso
 	rm -rf $(DESTDIR)$(SHAREDIR)/python/coccilib
+	rm -f $(DESTDIR)$(MANDIR)/man1/spatch.1
 
 
 
@@ -200,7 +244,7 @@ PACKAGE=coccinelle-$(VERSION)
 
 BINSRC=spatch env.sh env.csh standard.h standard.iso \
        *.txt docs/* \
-       demos/foo.* demos/simple.* 
+       demos/foo.* demos/simple.*
 #      $(PYLIB) python/coccilib/ demos/printloc.*
 BINSRC2=$(BINSRC:%=$(PACKAGE)/%)
 
@@ -218,28 +262,30 @@ OCAMLVERSION=$(shell ocaml -version |perl -p -e 's/.*version (.*)/$$1/;')
 
 # Procedure to do each time:
 #  cvs update
+#  modify globals/config.ml
+#  cd globals/; cvs commit -m"new version"  (do not commit from the root!)
 #  ./configure --without-python
 #  make package
 #  make website
 # Check also that run an ocaml in /usr/bin
 
-# To test you can try compile and run spatch from different instances 
-# like my ~/coccinelle, ~/release/coccinelle, and the /tmp/coccinelle-0.X 
-# downloaded from the website. 
+# To test you can try compile and run spatch from different instances
+# like my ~/coccinelle, ~/release/coccinelle, and the /tmp/coccinelle-0.X
+# downloaded from the website.
 
 # For 'make srctar' it must done from a clean
-# repo such as ~/release/coccinelle. It must also be a repo where 
-# the scripts/licensify has been run at least once. 
+# repo such as ~/release/coccinelle. It must also be a repo where
+# the scripts/licensify has been run at least once.
 # For the 'make bintar' I can do it from my original repo.
 
 
-package: 
-	make srctar 
-	make bintar 
-	make staticbintar 
+package:
+	make srctar
+	make bintar
+	make staticbintar
 	make bytecodetar
 
-# I currently pre-generate the parser so the user does not have to 
+# I currently pre-generate the parser so the user does not have to
 # install menhir on his machine. I also do a few cleanups like 'rm todo_pos'.
 # You may have first to do a 'make licensify'.
 srctar:
@@ -247,21 +293,21 @@ srctar:
 	cp -a .  $(TMP)/$(PACKAGE)
 	cd $(TMP)/$(PACKAGE); cd parsing_cocci/; make parser_cocci_menhir.ml
 	cd $(TMP)/$(PACKAGE); rm todo_pos
-	cd $(TMP); tar cvfz $(PACKAGE).tgz  --exclude=CVS  $(PACKAGE)
+	cd $(TMP); tar cvfz $(PACKAGE).tgz --exclude-vcs $(PACKAGE)
 	rm -rf  $(TMP)/$(PACKAGE)
 
 
 bintar: all
 	rm -f $(TMP)/$(PACKAGE)
 	ln -s `pwd` $(TMP)/$(PACKAGE)
-	cd $(TMP); tar cvfz $(PACKAGE)-bin-x86.tgz --exclude=CVS $(BINSRC2)
+	cd $(TMP); tar cvfz $(PACKAGE)-bin-x86.tgz --exclude-vcs $(BINSRC2)
 	rm -f $(TMP)/$(PACKAGE)
 
 staticbintar: all.opt
 	rm -f $(TMP)/$(PACKAGE)
 	ln -s `pwd` $(TMP)/$(PACKAGE)
 	make static
-	cd $(TMP); tar cvfz $(PACKAGE)-bin-x86-static.tgz --exclude=CVS $(BINSRC2)
+	cd $(TMP); tar cvfz $(PACKAGE)-bin-x86-static.tgz --exclude-vcs $(BINSRC2)
 	rm -f $(TMP)/$(PACKAGE)
 
 # add ocaml version in name ?
@@ -269,21 +315,21 @@ bytecodetar: all
 	rm -f $(TMP)/$(PACKAGE)
 	ln -s `pwd` $(TMP)/$(PACKAGE)
 	make purebytecode
-	cd $(TMP); tar cvfz $(PACKAGE)-bin-bytecode-$(OCAMLVERSION).tgz --exclude=CVS $(BINSRC2)
+	cd $(TMP); tar cvfz $(PACKAGE)-bin-bytecode-$(OCAMLVERSION).tgz --exclude-vcs $(BINSRC2)
 	rm -f $(TMP)/$(PACKAGE)
 
 clean::
-	rm -f $(PACKAGE) 
-	rm -f $(PACKAGE)-bin-x86.tgz 
-	rm -f $(PACKAGE)-bin-x86-static.tgz 
+	rm -f $(PACKAGE)
+	rm -f $(PACKAGE)-bin-x86.tgz
+	rm -f $(PACKAGE)-bin-x86-static.tgz
 	rm -f $(PACKAGE)-bin-bytecode-$(OCAMLVERSION).tgz
 
 
 
 TOLICENSIFY=ctl engine parsing_cocci popl popl09 python
 licensify:
-	ocaml tools/licensify.ml 
-	set -e; for i in $(TOLICENSIFY); do cd $$i; ocaml ../tools/licensify.ml; cd ..; done 
+	ocaml tools/licensify.ml
+	set -e; for i in $(TOLICENSIFY); do cd $$i; ocaml ../tools/licensify.ml; cd ..; done
 
 # When checking out the source from diku sometimes I have some "X in the future"
 # error messages.
@@ -315,7 +361,7 @@ website:
 #TXT=$(wildcard *.txt)
 syncwiki:
 #	unison ~/public_html/wiki/wiki-LFS/data/pages/ docs/wiki/
-#	set -e; for i in $(TXT); do unison $$i docs/wiki/$$i; done 
+#	set -e; for i in $(TXT); do unison $$i docs/wiki/$$i; done
 
 darcsweb:
 #	@echo pull from ~/public_html/darcs/c-coccinelle and c-commons and lib-xxx
@@ -325,11 +371,11 @@ DARCSFORESTS=commons \
 
 update_darcs:
 	darcs pull
-	set -e; for i in $(DARCSFORESTS); do cd $$i; darcs pull; cd ..; done 
+	set -e; for i in $(DARCSFORESTS); do cd $$i; darcs pull; cd ..; done
 
 #darcs diff -u
 diff_darcs:
-	set -e; for i in $(DARCSFORESTS); do cd $$i; darcs diff -u; cd ..; done 
+	set -e; for i in $(DARCSFORESTS); do cd $$i; darcs diff -u; cd ..; done
 
 
 ##############################################################################
@@ -344,14 +390,14 @@ testparsing:
 
 
 
-# -inline 0  to see all the functions in the profile. 
-# Can also use the profile framework in commons/ and run your program 
+# -inline 0  to see all the functions in the profile.
+# Can also use the profile framework in commons/ and run your program
 # with -profile.
 forprofiling:
 	$(MAKE) OPTFLAGS="-p -inline 0 " opt
 
 clean::
-	rm -f gmon.out 
+	rm -f gmon.out
 
 tags:
 	otags -no-mli-tags -r  .
@@ -366,9 +412,9 @@ dependencygraph:
 # Misc rules
 ##############################################################################
 
-# each member of the project can have its own test.ml. this file is 
+# each member of the project can have its own test.ml. this file is
 # not under CVS.
-test.ml: 
+test.ml:
 	echo "let foo_ctl () = failwith \"there is no foo_ctl formula\"" \
 	  > test.ml
 
@@ -397,7 +443,7 @@ beforedepend:: test.ml
 .ml.cmx:
 	$(OCAMLOPT)  -c $<
 
-.ml.mldepend: 
+.ml.mldepend:
 	$(OCAMLC) -i $<
 
 clean::

@@ -10,7 +10,7 @@ idexpression struct list_head *I;
 @@
 identifier I;
 expression E;
-iterator list_for_each_rcu;
+iterator name list_for_each_rcu;
 statement S;
 @@
 
@@ -23,7 +23,7 @@ statement S;
 @@
 identifier I;
 expression E;
-iterator list_for_each;
+iterator name list_for_each;
 statement S;
 @@
 
@@ -36,7 +36,7 @@ statement S;
 @@
 identifier I;
 expression E;
-iterator list_for_each_prev;
+iterator name list_for_each_prev;
 statement S;
 @@
 
@@ -63,7 +63,7 @@ expression E;
 type T,T1;
 identifier I, x;
 expression E, E1, E2;
-iterator list_for_each_entry_rcu;
+iterator name list_for_each_entry_rcu;
 @@
 
   <... when != _Y(I)
@@ -81,7 +81,7 @@ iterator list_for_each_entry_rcu;
 type T,T1;
 identifier I, x;
 expression E, E1, E2;
-iterator list_for_each_entry;
+iterator name list_for_each_entry;
 @@
 
   <... when != _Y(I)
@@ -99,7 +99,7 @@ iterator list_for_each_entry;
 type T,T1;
 identifier I, x;
 expression E, E1, E2;
-iterator list_for_each_entry_reverse;
+iterator name list_for_each_entry_reverse;
 @@
 
   <... when != _Y(I)

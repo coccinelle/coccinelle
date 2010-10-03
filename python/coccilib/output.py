@@ -39,6 +39,10 @@ class Output:
 	def print_sec(self, msg, p) :
 		print "[[view:%s::face=ovl-face2::linb=%s::colb=%s::cole=%s][%s]]" % (p[0].file,p[0].line,p[0].column,p[0].column_end,msg)
 
+	def print_secs(self, msg, ps) :
+		for i in ps:
+			print "[[view:%s::face=ovl-face2::linb=%s::colb=%s::cole=%s][%s]]" % (i.file,i.line,i.column,i.column_end,msg)
+
 class Console(Output):
 	def __init__(self):
 		pass

@@ -1,5 +1,5 @@
 (*
-* Copyright 2005-2008, Ecole des Mines de Nantes, University of Copenhagen
+* Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
 * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller
 * This file is part of Coccinelle.
 * 
@@ -31,16 +31,15 @@ let show_diff = ref true
 let show_flow = ref false
 let show_before_fixed_flow = ref false
 
-let show_ctl_tex = ref false
-let show_ctl_text = ref true
+let show_ctl_tex =  ref false
+let show_ctl_text = ref false
 
 let inline_let_ctl = ref false
 let show_mcodekind_in_ctl = ref false
 
 (* the "underived" outputs *)
-let show_transinfo = ref true
 let show_binding_in_out = ref false
-let show_dependencies = ref false
+let show_dependencies =   ref false
 
 let windows = ref false
 
@@ -48,13 +47,14 @@ let popl = ref false
 
 let ifdef_to_if = ref false
 
-let all_includes = ref false
+type include_options =
+    I_UNSPECIFIED | I_NO_INCLUDES | I_NORMAL_INCLUDES | I_ALL_INCLUDES
+let include_options = ref I_UNSPECIFIED
+
 let include_path = ref "include"
 (* if true then when have a #include "../../xx.h", we look also for xx.h in
  * current directory. This is because of how works extract_c_and_res
  *)
-
-let no_includes = ref false (* no includes at all, not even the local ones *)
 
 let relax_include_path = ref false 
 

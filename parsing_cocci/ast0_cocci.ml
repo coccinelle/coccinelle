@@ -1,5 +1,5 @@
 (*
-* Copyright 2005-2008, Ecole des Mines de Nantes, University of Copenhagen
+* Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
 * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller
 * This file is part of Coccinelle.
 * 
@@ -102,7 +102,7 @@ and ident = base_ident wrap
 (* --------------------------------------------------------------------- *)
 (* Expression *)
 
-and base_expression = 
+and base_expression =
     Ident          of ident
   | Constant       of Ast.constant mcode
   | FunCall        of expression * string mcode (* ( *) *
@@ -151,10 +151,10 @@ and listlen = Ast.meta_name mcode option
 (* --------------------------------------------------------------------- *)
 (* Types *)
 
-and base_typeC = 
+and base_typeC =
     ConstVol        of Ast.const_vol mcode * typeC
-  | BaseType        of Ast.baseType mcode * Ast.sign mcode option
-  | ImplicitInt     of Ast.sign mcode
+  | BaseType        of Ast.baseType * string mcode list
+  | Signed          of Ast.sign mcode * typeC option
   | Pointer         of typeC * string mcode (* * *)
   | FunctionPointer of typeC *
 	          string mcode(* ( *)*string mcode(* * *)*string mcode(* ) *)*
@@ -164,6 +164,7 @@ and base_typeC =
                        string mcode (* ) *)
   | Array           of typeC * string mcode (* [ *) *
 	               expression option * string mcode (* ] *)
+  | EnumName        of string mcode (*enum*) * ident (* name *)
   | StructUnionName of Ast.structUnion mcode * ident option (* name *)
   | StructUnionDef  of typeC (* either StructUnionName or metavar *) *
 	string mcode (* { *) * declaration dots * string mcode (* } *)
@@ -202,7 +203,7 @@ and declaration = base_declaration wrap
 (* Initializers *)
 
 and base_initialiser =
-    InitExpr of expression 
+    InitExpr of expression
   | InitList of string mcode (*{*) * initialiser_list * string mcode (*}*)
   | InitGccDotName of
       string mcode (*.*) * ident (* name *) * string mcode (*=*) *
@@ -375,7 +376,7 @@ and parsed_rule =
     CocciRule of
       (rule * Ast.metavar list *
 	 (string list * string list * Ast.dependency * string * Ast.exists)) *
-	(rule * Ast.metavar list)
+	(rule * Ast.metavar list) * Ast.ruletype
   | ScriptRule of
       string * Ast.dependency * (string * Ast.meta_name) list * string
 
@@ -510,18 +511,30 @@ let undots d =
 let rec ast0_type_to_type ty =
   match unwrap ty with
     ConstVol(cv,ty) -> Type_cocci.ConstVol(const_vol cv,ast0_type_to_type ty)
-  | BaseType(bty,None) ->
-      Type_cocci.BaseType(baseType bty,None)
-  | BaseType(bty,Some sgn) ->
-      Type_cocci.BaseType(baseType bty,Some (sign sgn))
-  | ImplicitInt(sgn) ->
-      let bty = Type_cocci.IntType in
-      Type_cocci.BaseType(bty,Some (sign sgn))
+  | BaseType(bty,strings) ->
+      Type_cocci.BaseType(baseType bty)
+  | Signed(sgn,None) ->
+      Type_cocci.SignedT(sign sgn,None)
+  | Signed(sgn,Some ty) ->
+      let bty = ast0_type_to_type ty in
+      Type_cocci.SignedT(sign sgn,Some bty)
   | Pointer(ty,_) -> Type_cocci.Pointer(ast0_type_to_type ty)
   | FunctionPointer(ty,_,_,_,_,params,_) ->
       Type_cocci.FunctionPointer(ast0_type_to_type ty)
   | FunctionType _ -> failwith "not supported"
   | Array(ety,_,_,_) -> Type_cocci.Array(ast0_type_to_type ety)
+  | EnumName(su,tag) ->
+      (match unwrap tag with
+	Id(tag) ->
+	  Type_cocci.EnumName(false,unwrap_mcode tag)
+      | MetaId(tag,_,_) ->
+	  (Printf.printf
+	     "warning: enum with a metavariable name detected.\n";
+	   Printf.printf
+	     "For type checking assuming the name of the metavariable is the name of the type\n";
+	   let (rule,tag) = unwrap_mcode tag in
+	   Type_cocci.EnumName(true,rule^tag))
+      | _ -> failwith "unexpected enum type name")
   | StructUnionName(su,Some tag) ->
       (match unwrap tag with
 	Id(tag) ->
@@ -543,8 +556,7 @@ let rec ast0_type_to_type ty =
   | OptType(ty) | UniqueType(ty) ->
       ast0_type_to_type ty
 
-and baseType t =
-  match unwrap_mcode t with
+and baseType = function
     Ast.VoidType -> Type_cocci.VoidType
   | Ast.CharType -> Type_cocci.CharType
   | Ast.ShortType -> Type_cocci.ShortType
@@ -552,6 +564,7 @@ and baseType t =
   | Ast.DoubleType -> Type_cocci.DoubleType
   | Ast.FloatType -> Type_cocci.FloatType
   | Ast.LongType -> Type_cocci.LongType
+  | Ast.LongLongType -> Type_cocci.LongLongType
 
 and structUnion t =
   match unwrap_mcode t with
@@ -572,7 +585,7 @@ and const_vol t =
 (* this function is a rather minimal attempt.  the problem is that information
 has been lost.  but since it is only used for metavariable types in the isos,
 perhaps it doesn't matter *)
-let make_mcode x = (x,NONE,default_info(),context_befaft(),ref NoMetaPos)
+and make_mcode x = (x,NONE,default_info(),context_befaft(),ref NoMetaPos)
 let make_mcode_info x info = (x,NONE,info,context_befaft(),ref NoMetaPos)
 
 exception TyConv
@@ -581,12 +594,22 @@ let rec reverse_type ty =
   match ty with
     Type_cocci.ConstVol(cv,ty) ->
       ConstVol(reverse_const_vol cv,context_wrap(reverse_type ty))
-  | Type_cocci.BaseType(bty,None) ->
-      BaseType(reverse_baseType bty,None)
-  | Type_cocci.BaseType(bty,Some sgn) ->
-      BaseType(reverse_baseType bty,Some (reverse_sign sgn))
+  | Type_cocci.BaseType(bty) ->
+      BaseType(reverse_baseType bty,[(* not used *)])
+  | Type_cocci.SignedT(sgn,None) -> Signed(reverse_sign sgn,None)
+  | Type_cocci.SignedT(sgn,Some bty) ->
+      Signed(reverse_sign sgn,Some (context_wrap(reverse_type ty)))
   | Type_cocci.Pointer(ty) ->
       Pointer(context_wrap(reverse_type ty),make_mcode "*")
+  | Type_cocci.EnumName(mv,tag) ->
+      if mv
+      then
+	(* not right... *)
+	EnumName
+	  (make_mcode "enum",
+	   context_wrap(MetaId(make_mcode ("",tag),[],Impure)))
+      else
+	EnumName(make_mcode "enum",context_wrap(Id(make_mcode tag)))
   | Type_cocci.StructUnionName(su,mv,tag) ->
       if mv
       then
@@ -603,17 +626,16 @@ let rec reverse_type ty =
       MetaType(make_mcode name,Impure(*not really right*))
   | _ -> raise TyConv
 
-and reverse_baseType t =
-  make_mcode
-    (match t with
-      Type_cocci.VoidType -> Ast.VoidType
-    | Type_cocci.CharType -> Ast.CharType
-    | Type_cocci.BoolType -> Ast.IntType
-    | Type_cocci.ShortType -> Ast.ShortType
-    | Type_cocci.IntType -> Ast.IntType
-    | Type_cocci.DoubleType -> Ast.DoubleType
-    | Type_cocci.FloatType -> Ast.FloatType
-    | Type_cocci.LongType -> Ast.LongType)
+and reverse_baseType = function
+    Type_cocci.VoidType -> Ast.VoidType
+  | Type_cocci.CharType -> Ast.CharType
+  | Type_cocci.BoolType -> Ast.IntType
+  | Type_cocci.ShortType -> Ast.ShortType
+  | Type_cocci.IntType -> Ast.IntType
+  | Type_cocci.DoubleType -> Ast.DoubleType
+  | Type_cocci.FloatType -> Ast.FloatType
+  | Type_cocci.LongType -> Ast.LongType
+  | Type_cocci.LongLongType -> Ast.LongLongType
 
 and reverse_structUnion t =
   make_mcode

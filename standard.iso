@@ -172,18 +172,18 @@ expression X,Y;
 @@
 X & Y => Y & X
 
-// only if side effect free in theory ...
-Expression
-@ and_comm @ 
-expression X,Y; 
-@@
-X && Y => Y && X
+// only if side effect free in theory, perhaps makes no sense
+// Expression
+// @ and_comm @ 
+// expression X,Y; 
+// @@
+// X && Y => Y && X
 
-Expression
-@ or_comm @ 
-expression X,Y; 
-@@
-X || Y => Y || X
+// Expression
+// @ or_comm @ 
+// expression X,Y; 
+// @@
+// X || Y => Y || X
 
 
 // ---------------------------------------------------------------------------
@@ -558,6 +558,12 @@ return ...; => return;
 // todo: isomorphism avec les () around ? cf sizeof 3.
 // (E) => E    with some conditions.
 
+Expression
+@ paren @
+expression E;
+@@
+
+ (E) => E
 
 // ---------------------------------------------------------------------------
 // Pointer/Array isomorphisms
@@ -615,12 +621,13 @@ E.fld => E1->fld
 // sizeof isomorphisms
 // ---------------------------------------------------------------------------
 
-Expression
-@ sizeof_parens @
-expression E;
-@@
+// The following is made redundant by the paren isomorphism
+// Expression
+// @ sizeof_parens @
+// expression E;
+// @@
 
-sizeof(E) => sizeof E
+// sizeof(E) => sizeof E
 
 
 Expression

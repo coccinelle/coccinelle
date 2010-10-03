@@ -4,8 +4,6 @@ identifier dev, cmd, arg;
 identifier v;
 type T;
 identifier fld;
-expression E;
-statement S;
 @@
 
   ioctlfn(

@@ -13,7 +13,9 @@
 
 #define DONE_SEM 0 // index of the semaphore on which to wait for children
 
+#ifndef HOME
 #define HOME "/home/julia/coccinelle/tools/distributed/"
+#endif
 
 int sem;
 

@@ -1,5 +1,5 @@
 (*
-* Copyright 2005-2008, Ecole des Mines de Nantes, University of Copenhagen
+* Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
 * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller
 * This file is part of Coccinelle.
 * 
@@ -118,7 +118,6 @@ let get_minus_constants bind orbind =
 
   V.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    mcode
     donothing donothing donothing donothing
     ident expression fullType typeC donothing donothing declaration
     rule_elem statement donothing donothing donothing
@@ -137,7 +136,6 @@ let get_all_minus_constants =
 
   V.combiner bind option_default
     other mcode other other other other other other other other other other
-    other
 
     donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
@@ -167,7 +165,6 @@ let get_plus_constants =
 
   V.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    mcode
     donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing
@@ -255,7 +252,6 @@ let check_inherited nm =
 
   V.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    mcode
     donothing donothing donothing donothing
     strictident strictexpr strictfullType stricttypeC donothing strictparam
     strictdecls strictrule_elem strictstatement donothing donothing donothing
@@ -306,7 +302,7 @@ let get_constants rules =
           function r ->
             match r with
               Ast.ScriptRule (_,mv,deps,_) -> (rest_info, in_plus)
-            | Ast.CocciRule (nm, (dep,_,_), cur, _) ->
+            | Ast.CocciRule (nm, (dep,_,_), cur, _, _) ->
                 let (cur_info,cur_plus) = rule_fn cur in_plus in
 	        let cur_info =
 	          (* no dependencies if dependent on another rule; then we

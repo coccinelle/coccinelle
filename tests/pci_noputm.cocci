@@ -39,7 +39,7 @@ while ((d = \(pci_get_device\|pci_get_device_reverse\|pci_get_subsys\|pci_get_cl
 identifier d;
 type T;
 expression e;
-iterator for_each_pci_dev;
+iterator name for_each_pci_dev;
 @@
 
 T *d;

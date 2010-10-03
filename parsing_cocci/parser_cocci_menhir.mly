@@ -1,5 +1,5 @@
 /*
-* Copyright 2005-2008, Ecole des Mines de Nantes, University of Copenhagen
+* Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
 * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller
 * This file is part of Coccinelle.
 * 
@@ -40,14 +40,14 @@ module P = Parse_aux
 %token TIdentifier TExpression TStatement TFunction TLocal TType TParameter
 %token TIdExpression
 %token Tlist TFresh TConstant TError TWords TWhy0 TPlus0 TBang0
-%token TPure TContext
+%token TPure TContext TGenerated
 %token TTypedef TDeclarer TIterator TName TPosition TPosAny
-%token TUsing TDisable TExtends TDepends TOn TEver TNever TExists TForall TScript
-%token TReverse TNothing
+%token TUsing TDisable TExtends TDepends TOn TEver TNever TExists TForall
+%token TScript TReverse TNothing
 %token<string> TRuleName
 
 %token<Data.clt> Tchar Tshort Tint Tdouble Tfloat Tlong
-%token<Data.clt> Tvoid Tstruct Tunion
+%token<Data.clt> Tvoid Tstruct Tunion Tenum
 %token<Data.clt> Tunsigned Tsigned
 
 %token<Data.clt> Tstatic Tauto Tregister Textern Tinline Ttypedef
@@ -60,7 +60,7 @@ module P = Parse_aux
 
 %token <Parse_aux.idinfo>     TMetaId TMetaFunc TMetaLocalFunc
 %token <Parse_aux.idinfo>     TMetaIterator TMetaDeclarer
-%token <Parse_aux.expinfo>    TMetaErr 
+%token <Parse_aux.expinfo>    TMetaErr
 %token <Parse_aux.info>       TMetaParam TMetaStm TMetaStmList TMetaType
 %token <Parse_aux.list_info>  TMetaParamList TMetaExpList
 %token <Parse_aux.typed_info> TMetaExp TMetaIdExp TMetaLocalIdExp TMetaConst
@@ -89,7 +89,7 @@ module P = Parse_aux
 %token <Data.clt> TAndLog
 %token <Data.clt> TOr
 %token <Data.clt> TXor
-%token <Data.clt> TAnd 
+%token <Data.clt> TAnd
 %token <Data.clt> TEqEq TNotEq
 %token <Ast_cocci.logicalOp * Data.clt> TLogOp /* TInf TSup TInfEq TSupEq */
 %token <Ast_cocci.arithOp * Data.clt>   TShOp  /* TShl TShr */
@@ -119,7 +119,7 @@ module P = Parse_aux
 %left TAndLog
 %left TOr
 %left TXor
-%left TAnd 
+%left TAnd
 %left TEqEq TNotEq
 %left TLogOp /* TInf TSup TInfEq TSupEq */
 %left TShOp /* TShl TShr */
@@ -199,6 +199,11 @@ rule_name:
   nm=ioption(pure_ident) extends d=depends i=loption(choose_iso)
     a=loption(disable) e=exists ee=is_expression TArob
       { P.make_cocci_rule_name_result nm d i a e ee }
+  | TGenerated extends d=depends i=loption(choose_iso)
+    a=loption(disable) e=exists ee=is_expression TArob
+      /* these rules have no name as a cheap way to ensure that no normal
+      rule inherits their metavariables or depends on them */
+      { P.make_generated_rule_name_result None d i a e ee }
   | TScript TDotDot lang=pure_ident d=depends TArob
       { P.make_script_rule_name_result lang d }
 
@@ -265,7 +270,12 @@ metadec:
     { P.create_metadec_ne ar ispure kindfn ids }
 | ar=arity TPosition a=option(TPosAny)
     ids=comma_list(pure_ident_or_meta_ident_with_not_eq(not_pos)) TMPtVirg
-    { let kindfn arity name pure check_meta constraints =
+    (* pb: position variables can't be inherited from normal rules, and then
+       there is no way to inherit from a generated rule, so there is no point
+       to have a position variable *)
+    { (if !Data.in_generating
+      then failwith "position variables not allowed in a generated rule file");
+      let kindfn arity name pure check_meta constraints =
       let tok = check_meta(Ast.MetaPosDecl(arity,name)) in
       let any = match a with None -> Ast.PER | Some _ -> Ast.ALL in
       !Data.add_pos_meta name constraints any; tok in
@@ -309,7 +319,7 @@ metadec:
 | TType
     { (fun arity name pure check_meta ->
       let tok = check_meta(Ast.MetaTypeDecl(arity,name)) in
-      !Data.add_type_meta name pure; tok) } 
+      !Data.add_type_meta name pure; tok) }
 | TStatement
     { (fun arity name pure check_meta ->
       let tok = check_meta(Ast.MetaStmDecl(arity,name)) in
@@ -412,9 +422,9 @@ metadec:
 	      if not
 		  (List.exists
 		     (function
-			 Type_cocci.BaseType(Type_cocci.IntType,_) -> true
-		       | Type_cocci.BaseType(Type_cocci.ShortType,_) -> true
-		       | Type_cocci.BaseType(Type_cocci.LongType,_) -> true
+			 Type_cocci.BaseType(Type_cocci.IntType) -> true
+		       | Type_cocci.BaseType(Type_cocci.ShortType) -> true
+		       | Type_cocci.BaseType(Type_cocci.LongType) -> true
 		       | _ -> false)
 		     vl)
 	      then failwith "metavariable with int constraint must be an int"
@@ -437,21 +447,26 @@ arity: TBang0 { Ast.UNIQUE }
      | TPlus0 { Ast.MULTI }
      | /* empty */ { Ast.NONE }
 
-generic_ctype:
-       q=ctype_qualif
-         { Ast0.wrap(Ast0.ImplicitInt(q)) }
-     | q=ioption(ctype_qualif) ty=Tchar
-         { Ast0.wrap(Ast0.BaseType(P.clt2mcode Ast.CharType ty, q)) }
-     | q=ioption(ctype_qualif) ty=Tshort
-         { Ast0.wrap(Ast0.BaseType(P.clt2mcode Ast.ShortType ty, q)) }
-     | q=ioption(ctype_qualif) ty=Tint
-         { Ast0.wrap(Ast0.BaseType(P.clt2mcode Ast.IntType ty, q)) }
+generic_ctype_full:
+       q=ctype_qualif_opt ty=Tchar
+        { q (Ast0.wrap(Ast0.BaseType(Ast.CharType,[P.clt2mcode "char" ty]))) }
+     | q=ctype_qualif_opt ty=Tshort
+        { q (Ast0.wrap(Ast0.BaseType(Ast.ShortType,[P.clt2mcode "short" ty])))}
+     | q=ctype_qualif_opt ty=Tint
+         { q (Ast0.wrap(Ast0.BaseType(Ast.IntType,[P.clt2mcode "int" ty]))) }
      | t=Tdouble
-         { Ast0.wrap(Ast0.BaseType(P.clt2mcode Ast.DoubleType t, None)) }
+         { Ast0.wrap(Ast0.BaseType(Ast.DoubleType,[P.clt2mcode "double" t])) }
      | t=Tfloat
-         { Ast0.wrap(Ast0.BaseType(P.clt2mcode Ast.FloatType t, None)) }
-     | q=ioption(ctype_qualif) ty=Tlong
-         { Ast0.wrap(Ast0.BaseType(P.clt2mcode Ast.LongType ty, q)) }
+         { Ast0.wrap(Ast0.BaseType(Ast.FloatType,[P.clt2mcode "float" t])) }
+     | q=ctype_qualif_opt ty=Tlong
+         { q (Ast0.wrap(Ast0.BaseType(Ast.LongType,[P.clt2mcode "long" ty]))) }
+     | q=ctype_qualif_opt ty=Tlong ty1=Tlong
+         { q (Ast0.wrap
+		(Ast0.BaseType
+		   (Ast.LongLongType,
+		      [P.clt2mcode "long" ty;P.clt2mcode "long" ty1]))) }
+     | s=Tenum i=ident
+	 { Ast0.wrap(Ast0.EnumName(P.clt2mcode "enum" s, i)) }
      | s=struct_or_union i=ident
 	 { Ast0.wrap(Ast0.StructUnionName(s, Some i)) }
      | s=struct_or_union i=ioption(ident)
@@ -476,9 +491,13 @@ generic_ctype:
 				 Ast0.Impure (*will be ignored*))) }
      | p=TTypeId
 	 { Ast0.wrap(Ast0.TypeName(P.id2mcode p)) }
-     | p=TMetaType
+     | q=ctype_qualif_opt p=TMetaType
 	 { let (nm,pure,clt) = p in
-	 Ast0.wrap(Ast0.MetaType(P.clt2mcode nm clt,pure)) }
+	 q (Ast0.wrap(Ast0.MetaType(P.clt2mcode nm clt,pure))) }
+
+generic_ctype:
+       q=ctype_qualif     { q None }
+     | generic_ctype_full { $1 }
 
 struct_or_union:
        s=Tstruct { P.clt2mcode Ast.Struct s }
@@ -522,7 +541,20 @@ ctype:
 	 { P.pointerify (P.make_cv cv ty) m }
      | cv=ioption(const_vol) t=Tvoid m=nonempty_list(TMul)
          { let ty =
-	     Ast0.wrap(Ast0.BaseType(P.clt2mcode Ast.VoidType t, None)) in
+	     Ast0.wrap(Ast0.BaseType(Ast.VoidType,[P.clt2mcode "void" t])) in
+	   P.pointerify (P.make_cv cv ty) m }
+   | lp=TOPar0 t=midzero_list(ctype,ctype) rp=TCPar0
+      /* more hacks */
+    { let (mids,code) = t in
+      Ast0.wrap
+	(Ast0.DisjType(P.clt2mcode "(" lp,code,mids, P.clt2mcode ")" rp)) }
+
+ctype_full:
+       cv=ioption(const_vol) ty=generic_ctype_full m=list(TMul)
+	 { P.pointerify (P.make_cv cv ty) m }
+     | cv=ioption(const_vol) t=Tvoid m=nonempty_list(TMul)
+         { let ty =
+	     Ast0.wrap(Ast0.BaseType(Ast.VoidType,[P.clt2mcode "void" t])) in
 	   P.pointerify (P.make_cv cv ty) m }
    | lp=TOPar0 t=midzero_list(ctype,ctype) rp=TCPar0
       /* more hacks */
@@ -535,19 +567,25 @@ fn_ctype: // allows metavariables
        ty=generic_ctype m=list(TMul) { P.pointerify ty m }
      | t=Tvoid m=list(TMul)
          { P.pointerify
-	     (Ast0.wrap(Ast0.BaseType(P.clt2mcode Ast.VoidType t, None)))
+	     (Ast0.wrap(Ast0.BaseType(Ast.VoidType,[P.clt2mcode "void" t])))
 	     m }
 
-ctype_qualif:
-       Tunsigned   { P.clt2mcode Ast.Unsigned $1 }
-     | Tsigned     { P.clt2mcode Ast.Signed $1 }
+%inline ctype_qualif:
+  r=Tunsigned
+   { function x -> Ast0.wrap(Ast0.Signed(P.clt2mcode Ast.Unsigned r,x)) }
+| r=Tsigned
+   { function x -> Ast0.wrap(Ast0.Signed(P.clt2mcode Ast.Signed r,x)) }
+
+%inline ctype_qualif_opt:
+  s=ctype_qualif  { function x -> s (Some x) }
+| /* empty */   { function x -> x }
 
 /*****************************************************************************/
 
 /* have to inline everything to avoid conflicts? switch to proper
 declarations, statements, and expressions for the subterms */
 
-minus_body: 
+minus_body:
     f=loption(filespec)
     b=loption(minus_start)
     ew=loption(error_words)
@@ -555,7 +593,7 @@ minus_body:
       [] -> raise (Semantic_cocci.Semantic "minus slice can't be empty")
     | code -> Top_level.top_level code }
 
-plus_body: 
+plus_body:
     f=loption(filespec)
     b=loption(plus_start)
     ew=loption(error_words)
@@ -698,7 +736,7 @@ funproto:
 	      id, P.clt2mcode ";" pt)) }
 | s=ioption(storage) t=Tvoid
   id=func_ident lp=TOPar d=decl_list(name_opt_decl) rp=TCPar pt=TPtVirg
-    { let t = Ast0.wrap(Ast0.BaseType(P.clt2mcode Ast.VoidType t, None)) in
+    { let t = Ast0.wrap(Ast0.BaseType(Ast.VoidType,[P.clt2mcode "void" t])) in
       Ast0.wrap
         (Ast0.UnInit
 	   (s,
@@ -775,7 +813,8 @@ decl: t=ctype i=ident
 		P.clt2mcode "(" lp1,d,P.clt2mcode ")" rp1)) in
 	Ast0.wrap(Ast0.Param(fnptr, Some i)) }
     | t=Tvoid
-	{ let ty = Ast0.wrap(Ast0.BaseType(P.clt2mcode Ast.VoidType t, None)) in
+	{ let ty =
+	  Ast0.wrap(Ast0.BaseType(Ast.VoidType,[P.clt2mcode "void" t])) in
           Ast0.wrap(Ast0.VoidParam(ty)) }
     | TMetaParam
 	{ let (nm,pure,clt) = $1 in
@@ -837,6 +876,18 @@ stm_dots:
 			  P.clt2mcode "...>" c, List.concat w, false)) }
 | TPOEllipsis w=list(whenppdecs) b=nest_start c=TPCEllipsis
     { Ast0.wrap(Ast0.Nest(P.clt2mcode "<+..." $1, b,
+			  P.clt2mcode "...+>" c, List.concat w, true)) }
+
+%inline stm_dots_ell:
+  a=TEllipsis w=list(whenppdecs)
+    { Ast0.wrap(Ast0.Dots(P.clt2mcode "..." a, List.concat w)) }
+
+%inline stm_dots_nest:
+  a=TOEllipsis w=list(whenppdecs) b=nest_start c=TCEllipsis
+    { Ast0.wrap(Ast0.Nest(P.clt2mcode "<..." a, b,
+			  P.clt2mcode "...>" c, List.concat w, false)) }
+| a=TPOEllipsis w=list(whenppdecs) b=nest_start c=TPCEllipsis
+    { Ast0.wrap(Ast0.Nest(P.clt2mcode "<+..." a, b,
 			  P.clt2mcode "...+>" c, List.concat w, true)) }
 
 whenppdecs: w=whens(when_start,rule_elem_statement)
@@ -923,7 +974,7 @@ decl_var:
         [Ast0.wrap(Ast0.UnInit(s,fn t,id,P.clt2mcode ";" pv))] }
   | decl_ident TOPar eexpr_list_option TCPar TPtVirg
       { [Ast0.wrap(Ast0.MacroDecl($1,P.clt2mcode "(" $2,$3,
-				  P.clt2mcode ")" $4,P.clt2mcode ";" $5))] } 
+				  P.clt2mcode ")" $4,P.clt2mcode ";" $5))] }
   | s=ioption(storage)
     t=fn_ctype lp1=TOPar st=TMul d=d_ident rp1=TCPar
     lp2=TOPar p=decl_list(name_opt_decl) rp2=TCPar
@@ -935,7 +986,7 @@ decl_var:
 	       (t,P.clt2mcode "(" lp1,P.clt2mcode "*" st,P.clt2mcode ")" rp1,
 		P.clt2mcode "(" lp2,p,P.clt2mcode ")" rp2)) in
       [Ast0.wrap(Ast0.Init(s,fn t,id,P.clt2mcode "=" q,e,P.clt2mcode ";" pv))]}
-  | s=Ttypedef t=ctype id=typedef_ident pv=TPtVirg
+  | s=Ttypedef t=ctype_full id=typedef_ident pv=TPtVirg
       { let s = P.clt2mcode "typedef" s in
         [Ast0.wrap(Ast0.Typedef(s,t,id,P.clt2mcode ";" pv))] }
 
@@ -976,7 +1027,7 @@ one_decl_var:
         Ast0.wrap(Ast0.UnInit(s,fn t,id,P.clt2mcode ";" pv)) }
   | decl_ident TOPar eexpr_list_option TCPar TPtVirg
       { Ast0.wrap(Ast0.MacroDecl($1,P.clt2mcode "(" $2,$3,
-				  P.clt2mcode ")" $4,P.clt2mcode ";" $5)) } 
+				  P.clt2mcode ")" $4,P.clt2mcode ";" $5)) }
   | s=ioption(storage)
     t=fn_ctype lp1=TOPar st=TMul d=d_ident rp1=TCPar
     lp2=TOPar p=decl_list(name_opt_decl) rp2=TCPar
@@ -1331,6 +1382,7 @@ pure_ident_or_meta_ident:
      | Tlist                     { (None,"list") }
      | TError                    { (None,"error") }
      | TType                     { (None,"type") }
+     | TName                     { (None,"name") }
 
 pure_ident_or_meta_ident_with_not_eq(not_eq):
        i=pure_ident_or_meta_ident l=loption(not_eq) { (i,l) }
@@ -1339,20 +1391,30 @@ not_eq:
        TNotEq i=pure_ident
          { (if !Data.in_iso
 	   then failwith "constraints not allowed in iso file");
+	   (if !Data.in_generating
+           (* pb: constraints not stored with metavars; too lazy to search for
+	      them in the pattern *)
+	   then failwith "constraints not allowed in a generated rule file");
 	   [Ast0.wrap(Ast0.Id(P.id2mcode i))] }
      | TNotEq TOBrace l=comma_list(pure_ident) TCBrace
 	 { (if !Data.in_iso
 	   then failwith "constraints not allowed in iso file");
+	   (if !Data.in_generating
+	   then failwith "constraints not allowed in a generated rule file");
 	   List.map (function i -> Ast0.wrap(Ast0.Id(P.id2mcode i))) l }
 
 not_eqe:
        TNotEq i=pure_ident
          { (if !Data.in_iso
 	   then failwith "constraints not allowed in iso file");
+	   (if !Data.in_generating
+	   then failwith "constraints not allowed in a generated rule file");
 	   [Ast0.wrap(Ast0.Ident(Ast0.wrap(Ast0.Id(P.id2mcode i))))] }
      | TNotEq TOBrace l=comma_list(pure_ident) TCBrace
 	 { (if !Data.in_iso
 	   then failwith "constraints not allowed in iso file");
+	   (if !Data.in_generating
+	   then failwith "constraints not allowed in a generated rule file");
 	   List.map
 	     (function i ->
 	       Ast0.wrap(Ast0.Ident(Ast0.wrap(Ast0.Id(P.id2mcode i)))))
@@ -1362,10 +1424,14 @@ not_ceq:
        TNotEq i=ident_or_const
          { (if !Data.in_iso
 	   then failwith "constraints not allowed in iso file");
+	   (if !Data.in_generating
+	   then failwith "constraints not allowed in a generated rule file");
 	   [i] }
      | TNotEq TOBrace l=comma_list(ident_or_const) TCBrace
 	 { (if !Data.in_iso
 	   then failwith "constraints not allowed in iso file");
+	   (if !Data.in_generating
+	   then failwith "constraints not allowed in a generated rule file");
 	   l }
 
 ident_or_const:
@@ -1378,6 +1444,8 @@ not_pos:
        TNotEq i=meta_ident
          { (if !Data.in_iso
 	   then failwith "constraints not allowed in iso file");
+	   (if !Data.in_generating
+	   then failwith "constraints not allowed in a generated rule file");
 	   match i with
 	     (None,_) -> failwith "constraint must be an inherited variable"
 	   | (Some rule,name) ->
@@ -1387,6 +1455,8 @@ not_pos:
      | TNotEq TOBrace l=comma_list(meta_ident) TCBrace
 	 { (if !Data.in_iso
 	   then failwith "constraints not allowed in iso file");
+	   (if !Data.in_generating
+	   then failwith "constraints not allowed in a generated rule file");
 	   List.map
 	     (function
 		 (None,_) ->
@@ -1465,7 +1535,7 @@ one_dec(decl):
 	Some nm -> Some(P.clt2mcode nm clt)
       | None -> None in
     Ast0.wrap(Ast0.MetaParamList(nm,lenname,pure)) }
- 
+
 comma_decls(dotter,decl):
   TComma dotter
     { function dot_builder ->
@@ -1515,8 +1585,15 @@ minus_start:
   fundecl                { [Ast0.wrap(Ast0.DECL($1))] }
 | ctype                  { [Ast0.wrap(Ast0.OTHER(Ast0.wrap(Ast0.Ty($1))))] }
 | top_init          { [Ast0.wrap(Ast0.OTHER(Ast0.wrap(Ast0.TopInit($1))))] }
-| toplevel_seq_start(toplevel_after_dots_init)
+| toplevel_seq_startne(toplevel_after_dots_init)
     { List.map (function x -> Ast0.wrap(Ast0.OTHER(x))) $1 }
+
+toplevel_seq_startne(after_dots_init):
+  a=stm_dots_ell b=after_dots_init           { a::b }
+| a=stm_dots_nest b=after_dots_init           { a::b }
+| a=stm_dots_nest                      { [a] }
+| expr toplevel_after_exp            { (Ast0.wrap(Ast0.Exp($1)))::$2 }
+| decl_statement_expr toplevel_after_stm  { $1@$2 }
 
 toplevel_seq_start(after_dots_init):
   stm_dots after_dots_init           { $1::$2 }

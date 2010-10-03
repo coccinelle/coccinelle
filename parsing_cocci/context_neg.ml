@@ -1,5 +1,5 @@
 (*
-* Copyright 2005-2008, Ecole des Mines de Nantes, University of Copenhagen
+* Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
 * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller
 * This file is part of Coccinelle.
 * 
@@ -145,7 +145,6 @@ let collect_plus_lines top =
   let fn =
     V0.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      mcode
       donothing donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing donothing donothing
       donothing donothing in
@@ -263,7 +262,7 @@ let classify is_minus all_marked table code =
 	  try
 	    let _ = Hashtbl.find table index in
 	    failwith
-	      (Printf.sprintf "%d: index %s already used\n"
+	      (Printf.sprintf "line %d: index %s already used\n"
 		 (Ast0.get_info e).Ast0.line_start
 		 (String.concat " " (List.map string_of_int index)))
 	  with Not_found -> Hashtbl.add table index (e1,l)) in
@@ -320,7 +319,7 @@ let classify is_minus all_marked table code =
 	  k (Ast0.rewrap e (Ast0.Ecircles(dots,None)))
       | Ast0.Estars(dots,whencode) ->
 	  k (Ast0.rewrap e (Ast0.Estars(dots,None)))
-      | Ast0.DisjExpr(starter,expr_list,_,ender) -> 
+      | Ast0.DisjExpr(starter,expr_list,_,ender) ->
 	  disj_cases e starter expr_list r.V0.combiner_expression ender
       |	_ -> k e) in
 
@@ -408,10 +407,9 @@ let classify is_minus all_marked table code =
 
   let do_top builder r k e = compute_result builder e (k e) in
 
-  let combiner = 
+  let combiner =
     V0.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      mcode
       (do_nothing Ast0.dotsExpr) (do_nothing Ast0.dotsInit)
       (do_nothing Ast0.dotsParam) (do_nothing Ast0.dotsStmt)
       (do_nothing Ast0.dotsDecl) (do_nothing Ast0.dotsCase)
@@ -490,7 +488,7 @@ let rec equal_expression e1 e2 =
   | (Ast0.EComma(cm1),Ast0.EComma(cm2)) -> equal_mcode cm1 cm2
   | (Ast0.DisjExpr(starter1,_,mids1,ender1),
      Ast0.DisjExpr(starter2,_,mids2,ender2)) ->
-       equal_mcode starter1 starter2 && 
+       equal_mcode starter1 starter2 &&
        List.for_all2 equal_mcode mids1 mids2 &&
        equal_mcode ender1 ender2
   | (Ast0.NestExpr(starter1,_,ender1,_,m1),
@@ -506,14 +504,16 @@ let rec equal_expression e1 e2 =
 let rec equal_typeC t1 t2 =
   match (Ast0.unwrap t1,Ast0.unwrap t2) with
     (Ast0.ConstVol(cv1,_),Ast0.ConstVol(cv2,_)) -> equal_mcode cv1 cv2
-  | (Ast0.BaseType(ty1,sign1),Ast0.BaseType(ty2,sign2)) ->
-      equal_mcode ty1 ty2 && equal_option sign1 sign2
-  | (Ast0.ImplicitInt(sign1),Ast0.ImplicitInt(sign2)) ->
+  | (Ast0.BaseType(ty1,stringsa),Ast0.BaseType(ty2,stringsb)) ->
+      List.for_all2 equal_mcode stringsa stringsb
+  | (Ast0.Signed(sign1,_),Ast0.Signed(sign2,_)) ->
       equal_mcode sign1 sign2
   | (Ast0.Pointer(_,star1),Ast0.Pointer(_,star2)) ->
       equal_mcode star1 star2
   | (Ast0.Array(_,lb1,_,rb1),Ast0.Array(_,lb2,_,rb2)) ->
       equal_mcode lb1 lb2 && equal_mcode rb1 rb2
+  | (Ast0.EnumName(kind1,_),Ast0.EnumName(kind2,_)) ->
+      equal_mcode kind1 kind2
   | (Ast0.StructUnionName(kind1,_),Ast0.StructUnionName(kind2,_)) ->
       equal_mcode kind1 kind2
   | (Ast0.FunctionType(ty1,lp1,p1,rp1),Ast0.FunctionType(ty2,lp2,p2,rp2)) ->
@@ -526,7 +526,7 @@ let rec equal_typeC t1 t2 =
       equal_mcode name1 name2
   | (Ast0.DisjType(starter1,_,mids1,ender1),
      Ast0.DisjType(starter2,_,mids2,ender2)) ->
-       equal_mcode starter1 starter2 && 
+       equal_mcode starter1 starter2 &&
        List.for_all2 equal_mcode mids1 mids2 &&
        equal_mcode ender1 ender2
   | (Ast0.OptType(_),Ast0.OptType(_)) -> true
@@ -569,7 +569,7 @@ let equal_initialiser i1 i2 =
   | (Ast0.OptIni(_),Ast0.OptIni(_)) -> true
   | (Ast0.UniqueIni(_),Ast0.UniqueIni(_)) -> true
   | _ -> false
-	
+
 let equal_parameterTypeDef p1 p2 =
   match (Ast0.unwrap p1,Ast0.unwrap p2) with
     (Ast0.VoidParam(_),Ast0.VoidParam(_)) -> true
@@ -636,7 +636,7 @@ let rec equal_statement s1 s2 =
   | (Ast0.MetaStmtList(name1,_),Ast0.MetaStmtList(name2,_)) ->
       equal_mcode name1 name2
   | (Ast0.Disj(starter1,_,mids1,ender1),Ast0.Disj(starter2,_,mids2,ender2)) ->
-      equal_mcode starter1 starter2 && 
+      equal_mcode starter1 starter2 &&
       List.for_all2 equal_mcode mids1 mids2 &&
       equal_mcode ender1 ender2
   | (Ast0.Nest(starter1,_,ender1,_,m1),Ast0.Nest(starter2,_,ender2,_,m2)) ->
@@ -737,7 +737,6 @@ let contextify_all =
 
   V0.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    mcode
     do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
     do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
     do_nothing do_nothing do_nothing
@@ -779,10 +778,9 @@ let contextify_whencode =
 	List.iter whencode whn
     | _ -> () in
 
-  let combiner = 
+  let combiner =
     V0.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      mcode
       do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
       do_nothing
       expression
@@ -835,7 +833,7 @@ let collect_up_to m plus =
   let mend = minfo.Ast0.logical_end in
   let rec loop = function
       [] -> ([],[])
-    | p::plus -> 
+    | p::plus ->
 	let pinfo = Ast0.get_info p in
 	let pstart = pinfo.Ast0.logical_start in
 	if pstart > mend

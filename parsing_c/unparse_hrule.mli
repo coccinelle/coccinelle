@@ -1,7 +1,7 @@
 open Common
 
 (* program -> output filename (often "/tmp/output.c") -> unit *) 
-val pp_program : 
-  Parse_c.toplevel2 -> filename -> filename ->
-    bool (* true if res is an exp *) -> unit
+val pp_rule : 
+    Ast_cocci.metavar list (* local metavars only *) ->
+      Ast_cocci.rule -> Ast_c.metavars_binding -> filename -> unit
 

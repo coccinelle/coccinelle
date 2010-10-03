@@ -1,4 +1,4 @@
-(* Copyright (C) 2006, 2007, 2008 Yoann Padioleau
+(* Copyright (C) 2006, 2007, 2008 Ecole des Mines de Nantes
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License (GPL)
@@ -854,7 +854,7 @@ let rec vk_expr_s = fun bigf expr ->
                     vk_argument_s bigf e, iif ii
                   ))
             
-      | CondExpr (e1, e2, e3)    -> CondExpr (exprf e1, fmap exprf e2, exprf e3)
+      | CondExpr (e1, e2, e3)   -> CondExpr (exprf e1, fmap exprf e2, exprf e3)
       | Sequence (e1, e2)        -> Sequence (exprf e1, exprf e2)
       | Assignment (e1, op, e2)  -> Assignment (exprf e1, op, exprf e2)
           
@@ -1019,6 +1019,8 @@ and vk_type_s = fun bigf t ->
   and k t = 
     let (q, t) = t in
     let (unwrap_q, iiq) = q in
+    (* strip_info_visitor needs iiq to be processed before iit *)
+    let iif_iiq = iif iiq in
     let q' = unwrap_q in     (* todo? a visitor for qualifier *)
     let (unwrap_t, iit) = t in
     let t' = 
@@ -1055,8 +1057,8 @@ and vk_type_s = fun bigf t ->
       | TypeOfExpr e -> TypeOfExpr (vk_expr_s bigf e)
       | TypeOfType t -> TypeOfType (typef t)
     in
-    (q', iif iiq), 
-  (t', iif iit)
+    (q', iif_iiq), 
+    (t', iif iit)
 
 
   in typef t
@@ -1430,7 +1432,7 @@ and vk_node_s = fun bigf node ->
 and vk_param_s = fun bigf ((b, s, t), ii_b_s) -> 
   let iif ii = vk_ii_s bigf ii in
   ((b, s, vk_type_s bigf t), iif ii_b_s)
-        
+
 let vk_args_splitted_s = fun bigf args_splitted -> 
   let iif ii = vk_ii_s bigf ii in
   args_splitted +> List.map (function  

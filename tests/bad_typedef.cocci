@@ -10,6 +10,7 @@ T { ...
 
 @@
 type rule1.T;
+identifier rule1.lock;
 T *x;
 @@
 

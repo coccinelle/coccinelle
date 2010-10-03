@@ -1,5 +1,5 @@
 (*
-* Copyright 2005-2008, Ecole des Mines de Nantes, University of Copenhagen
+* Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
 * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller
 * This file is part of Coccinelle.
 * 
@@ -21,7 +21,7 @@
 
 
 (* create an index for each constructor *)
-(* current max is 146 *)
+(* current max is 147 *)
 
 (* doesn't really work - requires that identical terms with no token
 subterms (eg dots) not appear on the same line *)
@@ -38,42 +38,42 @@ let expression_dots d =
     Ast0.DOTS(l) -> 1::(if l = [] then [ln] else [0])
   | Ast0.CIRCLES(l) -> 2::(if l = [] then [ln] else [0])
   | Ast0.STARS(l) -> 3::(if l = [] then [ln] else [0])
-	
+
 let initialiser_dots d =
   let ln = (Ast0.get_info d).Ast0.line_start in
   match Ast0.unwrap d with
     Ast0.DOTS(l) -> 113::(if l = [] then [ln] else [0])
   | Ast0.CIRCLES(l) -> 114::(if l = [] then [ln] else [0])
   | Ast0.STARS(l) -> 115::(if l = [] then [ln] else [0])
-	
+
 let parameter_dots d =
   let ln = (Ast0.get_info d).Ast0.line_start in
   match Ast0.unwrap d with
     Ast0.DOTS(l) -> 4::(if l = [] then [ln] else [0])
   | Ast0.CIRCLES(l) -> 5::(if l = [] then [ln] else [0])
   | Ast0.STARS(l) -> 6::(if l = [] then [ln] else [0])
-	
+
 let statement_dots d =
   let ln = (Ast0.get_info d).Ast0.line_start in
   match Ast0.unwrap d with
     Ast0.DOTS(l) -> 7::(if l = [] then [ln] else [0])
   | Ast0.CIRCLES(l) -> 8::(if l = [] then [ln] else [0])
   | Ast0.STARS(l) -> 9::(if l = [] then [ln] else [0])
-	
+
 let declaration_dots d =
   let ln = (Ast0.get_info d).Ast0.line_start in
   match Ast0.unwrap d with
     Ast0.DOTS(l) -> 134::(if l = [] then [ln] else [0])
   | Ast0.CIRCLES(l) -> 135::(if l = [] then [ln] else [0])
   | Ast0.STARS(l) -> 136::(if l = [] then [ln] else [0])
-	
+
 let case_line_dots d =
   let ln = (Ast0.get_info d).Ast0.line_start in
   match Ast0.unwrap d with
     Ast0.DOTS(l) -> 138::(if l = [] then [ln] else [0])
   | Ast0.CIRCLES(l) -> 139::(if l = [] then [ln] else [0])
   | Ast0.STARS(l) -> 140::(if l = [] then [ln] else [0])
-	
+
 let ident i =
   match Ast0.unwrap i with
     Ast0.Id(name) -> [10]
@@ -82,7 +82,7 @@ let ident i =
   | Ast0.MetaLocalFunc(name,_,_) -> [13]
   | Ast0.OptIdent(id) -> [14]
   | Ast0.UniqueIdent(id) -> [15]
-	
+
 let expression e =
   match Ast0.unwrap e with
     Ast0.Ident(id) -> [17]
@@ -118,12 +118,13 @@ let expression e =
 let typeC t =
   match Ast0.unwrap t with
     Ast0.ConstVol(cv,ty) -> [44]
-  | Ast0.BaseType(ty,sign) -> [48]
-  | Ast0.ImplicitInt(sign) -> [129]
+  | Ast0.BaseType(ty,strings) -> [48]
+  | Ast0.Signed(sign,ty) -> [129]
   | Ast0.Pointer(ty,star) -> [49]
   | Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) -> [131]
   | Ast0.FunctionType(ty,lp1,params,rp1) -> [132]
   | Ast0.Array(ty,lb,size,rb) -> [50]
+  | Ast0.EnumName(kind,name) -> [146]
   | Ast0.StructUnionName(kind,name) -> [51]
   | Ast0.StructUnionDef(ty,lb,decls,rb) -> [117]
   | Ast0.TypeName(name) -> [52]
@@ -131,7 +132,7 @@ let typeC t =
   | Ast0.DisjType(_,type_list,_,_) -> [130]
   | Ast0.OptType(ty) -> [45]
   | Ast0.UniqueType(ty) -> [46]
-	
+
 let declaration d =
   match Ast0.unwrap d with
     Ast0.Init(stg,ty,id,eq,exp,sem) -> [54]
@@ -168,7 +169,7 @@ let parameterTypeDef p =
   | Ast0.Pcircles(dots) -> [65]
   | Ast0.OptParam(param) -> [66]
   | Ast0.UniqueParam(param) -> [67]
-	
+
 let statement s =
   match Ast0.unwrap s with
     Ast0.FunDecl(bef,fninfo,name,lp,params,rp,lbrace,body,rbrace) -> [68]

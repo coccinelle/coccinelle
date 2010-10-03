@@ -1,5 +1,5 @@
 (*
-* Copyright 2005-2008, Ecole des Mines de Nantes, University of Copenhagen
+* Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
 * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller
 * This file is part of Coccinelle.
 * 
@@ -36,6 +36,8 @@ let return b = if b then MAYBE else NO
 
 let unify_mcode (x,_,_,_) (y,_,_,_) = x = y
 
+let ret_unify_mcode a b = return (unify_mcode a b)
+
 let unify_option f t1 t2 =
   match (t1,t2) with
     (Some t1, Some t2) -> f t1 t2
@@ -60,7 +62,7 @@ let conjunct_bindings b1 b2 =
 let disjunct_bindings b1 b2 =
   match b1 with MAYBE -> b1 | NO -> b2
 
-let disjunct_all_bindings = List.fold_left disjunct_bindings NO 
+let disjunct_all_bindings = List.fold_left disjunct_bindings NO
 
 (* --------------------------------------------------------------------- *)
 
@@ -220,10 +222,16 @@ and unify_fullType ft1 ft2 =
 
 and unify_typeC t1 t2 =
   match (Ast.unwrap t1,Ast.unwrap t2) with
-    (Ast.BaseType(ty1,sgn1),Ast.BaseType(ty2,sgn2)) ->
-      return (unify_mcode ty1 ty2 && bool_unify_option unify_mcode sgn1 sgn2)
-  | (Ast.ImplicitInt(sgn1),Ast.ImplicitInt(sgn2)) ->
-      return (unify_mcode sgn1 sgn2)
+    (Ast.BaseType(ty1,stringsa),Ast.BaseType(ty2,stringsb)) ->
+      if ty1 = ty2
+      then
+	unify_lists ret_unify_mcode (function _ -> false (* not dots*))
+	  stringsa stringsb
+      else return false
+  | (Ast.SignedT(sgn1,ty1),Ast.SignedT(sgn2,ty2)) ->
+      if unify_mcode sgn1 sgn2
+      then unify_option unify_typeC ty1 ty2
+      else return false
   | (Ast.Pointer(ty1,s1),Ast.Pointer(ty2,s2)) -> unify_fullType ty1 ty2
   | (Ast.FunctionPointer(tya,lp1a,stara,rp1a,lp2a,paramsa,rp2a),
      Ast.FunctionPointer(tyb,lp1b,starb,rp1b,lp2b,paramsb,rp2b)) ->
@@ -244,6 +252,8 @@ and unify_typeC t1 t2 =
   | (Ast.Array(ty1,lb1,e1,rb1),Ast.Array(ty2,lb2,e2,rb2)) ->
       conjunct_bindings
 	(unify_fullType ty1 ty2) (unify_option unify_expression e1 e2)
+  | (Ast.EnumName(s1,ts1),Ast.EnumName(s2,ts2)) ->
+      if unify_mcode s1 s2 then unify_ident ts1 ts2 else return false
   | (Ast.StructUnionName(s1,Some ts1),Ast.StructUnionName(s2,Some ts2)) ->
       if unify_mcode s1 s2 then unify_ident ts1 ts2 else return false
   | (Ast.StructUnionName(s1,None),Ast.StructUnionName(s2,None)) ->
@@ -323,7 +333,7 @@ and unify_initialiser i1 i2 =
        conjunct_bindings (unify_expression exp1a exp1b)
 	 (conjunct_bindings (unify_expression exp2a exp2b)
 	    (unify_initialiser inia inib))
-	
+
   | (Ast.OptIni(_),_)
   | (Ast.UniqueIni(_),_)
   | (_,Ast.OptIni(_))
@@ -486,7 +496,6 @@ and subexp f =
   let donothing r k e = k e in
   let recursor = V.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      mcode
       donothing donothing donothing donothing
       donothing expr donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing in
@@ -500,7 +509,6 @@ and subtype f =
   let donothing r k e = k e in
   let recursor = V.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      mcode
       donothing donothing donothing donothing
       donothing donothing fullType donothing donothing donothing donothing
       donothing donothing donothing donothing donothing in

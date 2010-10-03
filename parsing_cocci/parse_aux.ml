@@ -1,5 +1,5 @@
 (*
-* Copyright 2005-2008, Ecole des Mines de Nantes, University of Copenhagen
+* Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
 * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller
 * This file is part of Coccinelle.
 * 
@@ -262,6 +262,7 @@ let check_meta tok =
   | Ast.MetaExpListDecl(Ast.NONE,(rule,name),len_name) ->
       (match lookup rule name with
 	Ast.MetaExpListDecl(_,_,_) -> ()
+      | Ast.MetaParamListDecl(_,_,_) when not (!Flag.make_hrule = None) -> ()
       | _ ->
 	  raise
 	    (Semantic_cocci.Semantic
@@ -458,6 +459,16 @@ let make_cocci_rule_name_result nm d i a e ee =
       with Not_found -> ());
       Ast.CocciRulename (Some n,d,i,a,e,ee)
   | None -> Ast.CocciRulename (None,d,i,a,e,ee)
+
+let make_generated_rule_name_result nm d i a e ee =
+  match nm with
+    Some nm ->
+      let n = id2name nm in
+      (try let _ =  Hashtbl.find Data.all_metadecls n in
+      raise (Semantic_cocci.Semantic ("repeated rule name"))
+      with Not_found -> ());
+      Ast.GeneratedRulename (Some n,d,i,a,e,ee)
+  | None -> Ast.GeneratedRulename (None,d,i,a,e,ee)
 
 let make_script_rule_name_result lang deps =
   let l = id2name lang in

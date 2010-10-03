@@ -1,4 +1,4 @@
-# Copyright 2005-2008, Ecole des Mines de Nantes, University of Copenhagen
+# Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
 # Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller
 # This file is part of Coccinelle.
 # 
@@ -37,7 +37,7 @@ INCLUDES = -I ../commons -I ../globals \
 OCAMLCFLAGS ?= -g -dtypes
 OCAMLC =ocamlc$(OPTBIN) $(OCAMLCFLAGS) $(INCLUDES)
 OCAMLOPT = ocamlopt$(OPTBIN) $(OPTFLAGS) $(INCLUDES)
-OCAMLDEP = ocamldep$(OPTBIN) $(INCLUDES)
+OCAMLDEP = ocamldep$(OPTBIN) #$(INCLUDES)
 OCAMLMKTOP=ocamlmktop -g -custom
 
 

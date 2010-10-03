@@ -1,5 +1,5 @@
 (*
-* Copyright 2005-2008, Ecole des Mines de Nantes, University of Copenhagen
+* Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
 * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller
 * This file is part of Coccinelle.
 * 
@@ -103,7 +103,7 @@ let modif_after x =
       (match !mc with
 	(Ast.AFTER _,_,_) -> true
       |	(Ast.BEFOREAFTER _,_,_) -> true
-      |	_ -> false)    
+      |	_ -> false)
 
 (* Identifier *)
 let rec left_ident i =
@@ -158,14 +158,14 @@ and left_typeC t =
   modif_before t or
   match Ast0.unwrap t with
     Ast0.ConstVol(cv,ty) -> modif_before_mcode cv
-  | Ast0.BaseType(ty,Some sgn) -> modif_before_mcode sgn
-  | Ast0.BaseType(ty,None) -> modif_before_mcode ty
-  | Ast0.ImplicitInt(sgn) -> modif_before_mcode sgn
+  | Ast0.BaseType(ty,strings) -> modif_before_mcode (List.hd strings)
+  | Ast0.Signed(sgn,ty) -> modif_before_mcode sgn
   | Ast0.Pointer(ty,star) -> left_typeC ty
   | Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) -> left_typeC ty
   | Ast0.FunctionType(Some ty,lp1,params,rp1) -> left_typeC ty
   | Ast0.FunctionType(None,lp1,params,rp1) -> modif_before_mcode lp1
   | Ast0.Array(ty,lb,size,rb) -> left_typeC ty
+  | Ast0.EnumName(kind,name) -> modif_before_mcode kind
   | Ast0.StructUnionName(kind,name) -> modif_before_mcode kind
   | Ast0.StructUnionDef(ty,lb,decls,rb) -> left_typeC ty
   | Ast0.TypeName(name) -> modif_before_mcode name
@@ -365,7 +365,6 @@ and contains_only_minus =
 
   V0.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    mcode
     dots dots dots dots dots dots
     donothing expression typeC donothing donothing declaration
     statement donothing donothing
@@ -550,7 +549,7 @@ let rec statement dots_before dots_after s =
   | Ast0.Dots(d,whn) | Ast0.Circles(d,whn) | Ast0.Stars(d,whn) -> s
   | Ast0.Include(inc,string) -> s (* doesn't affect the need for braces *)
   | Ast0.Define(def,id,params,body) -> s (* same as include *)
-  | Ast0.OptStm(re) -> 
+  | Ast0.OptStm(re) ->
       Ast0.rewrap s
 	(Ast0.OptStm(statement dots_before dots_after re))
   | Ast0.UniqueStm(re) ->
@@ -565,7 +564,7 @@ and case_line c =
     | Ast0.Case(case,exp,colon,code) ->
 	Ast0.Case(case,exp,colon,statement_dots false false code)
     | Ast0.OptCase(case) -> Ast0.OptCase(case_line c))
-  
+
 and do_statement_dots dots_before dots_after = function
     [] -> []
   | [x] -> [statement dots_before dots_after x]
@@ -577,7 +576,7 @@ and do_statement_dots dots_before dots_after = function
   | x::rest ->
       (statement dots_before false x)::
       do_statement_dots false dots_after rest
-	
+
 and statement_dots dots_before dots_after d =
   Ast0.rewrap d
     (match Ast0.unwrap d with

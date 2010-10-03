@@ -292,7 +292,7 @@ clean::
 
 depend: 
 	$(OCAMLDEP) *.mli *.ml  > .depend
-	for i in $(SUBDIRS); do ocamldep $$i/*.ml $$i/*.mli >> .depend; done
+	for i in $(SUBDIRS); do $(OCAMLDEP) $$i/*.ml $$i/*.mli >> .depend; done
 
 distclean::
 	rm -f .depend

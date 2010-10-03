@@ -1,5 +1,5 @@
 (*
-* Copyright 2005-2008, Ecole des Mines de Nantes, University of Copenhagen
+* Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
 * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller
 * This file is part of Coccinelle.
 * 
@@ -33,6 +33,8 @@ module Ast = Ast_cocci
 module Ast0 = Ast0_cocci
 module V0 = Visitor_ast0
 module CN = Context_neg
+
+let empty_isos = ref false
 
 let get_option f = function
     None -> []
@@ -88,7 +90,6 @@ it *)
   let res =
     V0.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      mcode
       (donothing Ast0.dotsExpr) (donothing Ast0.dotsInit)
       (donothing Ast0.dotsParam) (donothing Ast0.dotsStmt)
       (donothing Ast0.dotsDecl) (donothing Ast0.dotsCase)
@@ -303,7 +304,6 @@ bind to that; not good for isomorphisms *)
 
   V0.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    mcode
     edots idots pdots sdots ddots cdots
     ident expression typeC initialiser param decl statement case_line do_top
 
@@ -411,7 +411,6 @@ let process_minus minus =
 (* --------------------------------------------------------------------- *)
 (* collect the plus tokens *)
 
-let mk_baseType x         = Ast.BaseTypeTag x
 let mk_structUnion x      = Ast.StructUnionTag x
 let mk_sign x             = Ast.SignTag x
 let mk_ident x            = Ast.IdentTag (Ast0toast.ident x)
@@ -493,7 +492,7 @@ let collect_plus_nodes root =
     (imcode mk_meta) (imcode mk_token) (mcode mk_constant) (mcode mk_assignOp)
     (mcode mk_fixOp)
     (mcode mk_unaryOp) (mcode mk_binaryOp) (mcode mk_const_vol)
-    (mcode mk_baseType) (mcode mk_sign) (mcode mk_structUnion)
+    (mcode mk_sign) (mcode mk_structUnion)
     (mcode mk_storage) (mcode mk_inc_file)
     (do_nothing mk_exprdots) initdots
     (do_nothing mk_paramdots) stmt_dots (do_nothing mk_decldots)
@@ -732,7 +731,7 @@ let attachbefore (infop,p) = function
 	Ast.BEFORE(bef) ->
 	  let (bef,ti1) = insert p infop bef ti1 in
 	  neighbors := (Ast.BEFORE(bef),ti1,ti2)
-      |	Ast.AFTER(aft) -> 
+      |	Ast.AFTER(aft) ->
 	  let (bef,ti1) = init p infop in
 	  neighbors := (Ast.BEFOREAFTER(bef,aft),ti1,ti2)
       |	Ast.BEFOREAFTER(bef,aft) ->
@@ -754,7 +753,7 @@ let attachafter (infop,p) = function
 	Ast.BEFORE(bef) ->
 	  let (aft,ti2) = init p infop in
 	  neighbors := (Ast.BEFOREAFTER(bef,aft),ti1,ti2)
-      |	Ast.AFTER(aft) -> 
+      |	Ast.AFTER(aft) ->
 	  let (aft,ti2) = insert p infop aft ti2 in
 	  neighbors := (Ast.AFTER(aft),ti1,ti2)
       |	Ast.BEFOREAFTER(bef,aft) ->
@@ -805,7 +804,7 @@ and after_m1 ((f1,infom1,m1) as x1) ((f2,infom2,m2) as x2) rest = function
 	 what it can infer from something being CONTEXT with no top-level
 	 modifications.  for the moment, we thus give an error, asking the
 	 user to rewrite the semantic patch. *)
-      if greater_than_end infop infom1
+      if greater_than_end infop infom1 or is_minus m1 or !empty_isos
       then
 	if less_than_start infop infom2
 	then
@@ -839,6 +838,12 @@ and after_m1 ((f1,infom1,m1) as x1) ((f2,infom2,m2) as x2) rest = function
 	  failwith
 	    "The semantic patch is structured in a way that may give bad results with isomorphisms.  Please try to rewrite it by moving + code out from -/context terms."
 	end
+
+(* not sure this is safe.  if have iso problems, consider changing this
+to always return false *)
+and is_minus = function
+    Ast0.MINUS _ -> true
+  | _ -> false
 
 and before_m2 ((f2,infom2,m2) as x2) rest
     (p : (Ast0.info * Ast.anything list list) list) =
@@ -931,7 +936,6 @@ let reevaluate_contextness =
   let res =
     V0.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      mcode
       donothing donothing donothing donothing donothing donothing donothing
       donothing
       donothing donothing donothing donothing donothing donothing donothing in
@@ -940,7 +944,8 @@ let reevaluate_contextness =
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)
 
-let insert_plus minus plus =
+let insert_plus minus plus ei =
+  empty_isos := ei;
   let minus_stream = process_minus minus in
   let plus_stream = process_plus plus in
   merge minus_stream plus_stream;

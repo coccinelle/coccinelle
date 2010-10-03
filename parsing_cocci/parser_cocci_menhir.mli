@@ -17,6 +17,7 @@ type token =
   | Tinline of (Data.clt)
   | Tfloat of (Data.clt)
   | Textern of (Data.clt)
+  | Tenum of (Data.clt)
   | Tdouble of (Data.clt)
   | Tconst of (Data.clt)
   | Tchar of (Data.clt)
@@ -119,6 +120,7 @@ type token =
   | TIdent of (string * Data.clt)
   | TIdExpression
   | TGoto of (Data.clt)
+  | TGenerated
   | TFunction
   | TFunDecl of (Data.clt)
   | TFresh

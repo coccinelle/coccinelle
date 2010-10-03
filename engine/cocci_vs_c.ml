@@ -1,16 +1,24 @@
-(* Copyright (C) 2006, 2007, 2008 Yoann Padioleau
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License (GPL)
- * version 2 as published by the Free Software Foundation.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * file license.txt for more details.
- * 
- * This file was part of Coccinelle.
- *)
+(*
+* Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+* Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller
+* This file is part of Coccinelle.
+* 
+* Coccinelle is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, according to version 2 of the License.
+* 
+* Coccinelle is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+* 
+* You should have received a copy of the GNU General Public License
+* along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+* 
+* The authors reserve the right to distribute this or future versions of
+* Coccinelle under other licenses.
+*)
+
 
 open Common
 
@@ -2338,11 +2346,7 @@ and (fullTypebis: (A.typeC, Ast_c.fullType) matcher) =
         return (ta, (qub, typb))
       )
 
-
-and (typeC: (A.typeC, Ast_c.typeC) matcher) = 
-  fun ta tb -> 
-  match A.unwrap ta, tb with
-  | A.BaseType (basea, signaopt), (B.BaseType baseb, ii) -> 
+and simulate_signed ta basea stringsa signaopt tb baseb ii rebuilda =
       (* In ii there is a list, sometimes of length 1 or 2 or 3.
        * And even if in baseb we have a Signed Int, that does not mean
        * that ii is of length 2, cos Signed is the default, so if in signa
@@ -2355,49 +2359,53 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
         
       (* handle some iso on type ? (cf complex C rule for possible implicit
 	 casting) *)
-      (match term basea, baseb with
+      match basea, baseb with
       | A.VoidType,  B.Void 
       | A.FloatType, B.FloatType (B.CFloat)
       | A.DoubleType, B.FloatType (B.CDouble) -> 
            assert (signaopt = None); 
+	   let stringa = tuple_of_list1 stringsa in
            let (ibaseb) = tuple_of_list1 ii in 
-           tokenf basea ibaseb >>= (fun basea ibaseb -> 
+           tokenf stringa ibaseb >>= (fun stringa ibaseb -> 
              return (
-               (A.BaseType (basea, signaopt)) +> A.rewrap ta,
+               (rebuilda ([stringa], signaopt)) +> A.rewrap ta,
                (B.BaseType baseb, [ibaseb])
              ))
             
       | A.CharType,  B.IntType B.CChar when signaopt = None -> 
+	  let stringa = tuple_of_list1 stringsa in
           let ibaseb = tuple_of_list1 ii in
-           tokenf basea ibaseb >>= (fun basea ibaseb -> 
+           tokenf stringa ibaseb >>= (fun stringa ibaseb -> 
              return (
-               (A.BaseType (basea, signaopt)) +> A.rewrap ta,
+               (rebuilda ([stringa], signaopt)) +> A.rewrap ta,
                (B.BaseType (B.IntType B.CChar), [ibaseb])
              ))
             
       | A.CharType,B.IntType (B.Si (_sign, B.CChar2)) when signaopt <> None -> 
+	  let stringa = tuple_of_list1 stringsa in
           let ibaseb = tuple_of_list1 iibaseb in
           sign signaopt signbopt >>= (fun signaopt iisignbopt -> 
-          tokenf basea ibaseb >>= (fun basea ibaseb -> 
+          tokenf stringa ibaseb >>= (fun stringa ibaseb -> 
             return (
-               (A.BaseType (basea, signaopt)) +> A.rewrap ta,
+               (rebuilda ([stringa], signaopt)) +> A.rewrap ta,
                (B.BaseType (baseb), iisignbopt ++ [ibaseb])
                )))
           
       | A.ShortType, B.IntType (B.Si (_, B.CShort)) 
       | A.IntType,   B.IntType (B.Si (_, B.CInt))   
       | A.LongType,  B.IntType (B.Si (_, B.CLong))  ->
+	  let stringa = tuple_of_list1 stringsa in
           (match iibaseb with 
           | [] -> 
               (* iso-by-presence ? *)
               (* when unsigned int in SP,  allow have just unsigned in C ? *)
-              if mcode_contain_plus (mcodekind basea)
+              if mcode_contain_plus (mcodekind stringa)
               then fail
               else 
                 
                 sign signaopt signbopt >>= (fun signaopt iisignbopt -> 
                     return (
-                      (A.BaseType (basea, signaopt)) +> A.rewrap ta,
+                      (rebuilda ([stringa], signaopt)) +> A.rewrap ta,
                       (B.BaseType (baseb), iisignbopt ++ [])
                     ))
               
@@ -2409,9 +2417,9 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
 
           | [ibaseb] -> 
           sign signaopt signbopt >>= (fun signaopt iisignbopt -> 
-          tokenf basea ibaseb >>= (fun basea ibaseb -> 
+          tokenf stringa ibaseb >>= (fun stringa ibaseb -> 
             return (
-               (A.BaseType (basea, signaopt)) +> A.rewrap ta,
+               (rebuilda ([stringa], signaopt)) +> A.rewrap ta,
                (B.BaseType (baseb), iisignbopt ++ [ibaseb])
                )))
           | _ -> raise Impossible
@@ -2419,19 +2427,98 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
           )
 
             
-      | _, B.IntType (B.Si (_, B.CLongLong)) 
+      | A.LongLongType, B.IntType (B.Si (_, B.CLongLong)) ->
+	  let (string1a,string2a) = tuple_of_list2 stringsa in
+          (match iibaseb with 
+            [ibase1b;ibase2b] -> 
+              sign signaopt signbopt >>= (fun signaopt iisignbopt -> 
+              tokenf string1a ibase1b >>= (fun base1a ibase1b -> 
+              tokenf string2a ibase2b >>= (fun base2a ibase2b -> 
+              return (
+		(rebuilda ([base1a;base2a], signaopt)) +> A.rewrap ta,
+		(B.BaseType (baseb), iisignbopt ++ [ibase1b;ibase2b])
+              ))))
+	  | [] -> fail (* should something be done in this case? *)
+	  | _ -> raise Impossible)
+
+
       | _, B.FloatType B.CLongDouble 
           -> 
           pr2_once 
-            "warning: long long or long double not handled by ast_cocci";
+            "warning: long double not handled by ast_cocci";
           fail
 
       | _, (B.Void|B.FloatType _|B.IntType _) -> fail
 
-          
-      )
+and simulate_signed_meta ta basea signaopt tb baseb ii rebuilda =
+      (* In ii there is a list, sometimes of length 1 or 2 or 3.
+       * And even if in baseb we have a Signed Int, that does not mean
+       * that ii is of length 2, cos Signed is the default, so if in signa
+       * we have Signed explicitely ? we cant "accrocher" this mcode to 
+       * something :( So for the moment when there is signed in cocci,
+       * we force that there is a signed in c too (done in pattern.ml).
+       *)
+      let signbopt, iibaseb = split_signb_baseb_ii (baseb, ii) in
 
-    | A.ImplicitInt (signa),   (B.BaseType baseb, ii) -> 
+      let match_to_type rebaseb = 
+	sign signaopt signbopt >>= (fun signaopt iisignbopt -> 
+	let ibaseb = tuple_of_list1 iibaseb in
+	let fta = A.rewrap basea (A.Type(None,basea)) in
+	let ftb = Ast_c.nQ,(B.BaseType (rebaseb), [ibaseb]) in
+	fullType fta ftb >>= (fun fta (_,tb) ->
+	  (match A.unwrap fta,tb with
+	    A.Type(_,basea), (B.BaseType baseb, ii) ->
+	      let ibaseb = tuple_of_list1 ii in
+	      return (
+	      (rebuilda (basea, signaopt)) +> A.rewrap ta,
+	      (B.BaseType (baseb), iisignbopt ++ [ibaseb])
+		)
+	  | _ -> failwith "not possible"))) in
+        
+      (* handle some iso on type ? (cf complex C rule for possible implicit
+	 casting) *)
+      match baseb with
+      | B.IntType (B.Si (_sign, B.CChar2)) ->
+	  match_to_type (B.IntType B.CChar)
+          
+      | B.IntType (B.Si (_, ty)) ->
+          (match iibaseb with 
+          | [] -> fail (* metavariable has to match something *)
+
+          | [x;y] -> 
+              pr2_once 
+                "warning: long int or short int not handled by ast_cocci";
+              fail
+
+          | [ibaseb] -> match_to_type (B.IntType (B.Si (B.Signed, ty)))
+          | _ -> raise Impossible
+
+          )
+
+      | (B.Void|B.FloatType _|B.IntType _) -> fail
+
+and (typeC: (A.typeC, Ast_c.typeC) matcher) = 
+  fun ta tb -> 
+  match A.unwrap ta, tb with
+    | A.BaseType (basea,stringsa), (B.BaseType baseb, ii) -> 
+	simulate_signed ta basea stringsa None tb baseb ii
+	  (function (stringsa, signaopt) -> A.BaseType (basea,stringsa))
+    | A.SignedT (signaopt, Some basea), (B.BaseType baseb, ii) -> 
+	(match A.unwrap basea with
+	  A.BaseType (basea1,strings1) ->
+	    simulate_signed ta basea1 strings1 (Some signaopt) tb baseb ii
+	      (function (strings1, Some signaopt) ->
+		A.SignedT
+		  (signaopt,
+		   Some (A.rewrap basea (A.BaseType (basea1,strings1))))
+		| _ -> failwith "not possible")
+	| A.MetaType(ida,keep,inherited) ->
+	    simulate_signed_meta ta basea (Some signaopt) tb baseb ii
+	      (function (basea, Some signaopt) ->
+		A.SignedT(signaopt,Some basea)
+		| _ -> failwith "not possible")
+	| _ -> failwith "not possible")
+    | A.SignedT (signa,None),   (B.BaseType baseb, ii) -> 
         let signbopt, iibaseb = split_signb_baseb_ii (baseb, ii) in
         (match iibaseb, baseb with
         | [], B.IntType (B.Si (_sign, B.CInt)) -> 
@@ -2440,7 +2527,7 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
               | None -> raise Impossible
               | Some signa -> 
                   return (
-                    (A.ImplicitInt (signa)) +> A.rewrap ta,
+                    (A.SignedT (signa,None)) +> A.rewrap ta,
                     (B.BaseType baseb, iisignbopt)
                   )
             )
@@ -2647,13 +2734,21 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
     | _, (B.TypeOfType e, ii) -> fail
 
     | _, (B.ParenType e, ii) -> fail (* todo ?*)
-    | _, (B.EnumName _, _) -> fail (* todo cocci ?*)
+    | A.EnumName(en,namea), (B.EnumName nameb, ii) ->
+        let (ib1,ib2) = tuple_of_list2 ii in
+	ident DontKnow namea (nameb, ib2) >>= (fun namea (nameb, ib2) -> 
+          tokenf en ib1 >>= (fun en ib1 -> 
+          return (
+          (A.EnumName (en, namea)) +> A.rewrap ta,
+          (B.EnumName nameb, [ib1;ib2])
+          )))
+
     | _, (B.Enum _, _) -> fail (* todo cocci ?*)
 
     | _,
-     ((B.TypeName (_, _)|B.StructUnionName (_, _)|
-      B.StructUnion (_, _, _)|
-      B.FunctionType _|B.Array (_, _)|B.Pointer _|
+     ((B.TypeName (_, _) | B.StructUnionName (_, _) | B.EnumName _ |
+      B.StructUnion (_, _, _) |
+      B.FunctionType _ | B.Array (_, _) | B.Pointer _ |
       B.BaseType _),
      _)
      -> fail
@@ -2746,44 +2841,76 @@ and fullType_optional_allminus allminus tya retb =
 
 
 (*---------------------------------------------------------------------------*)
-and compatible_type a (b,_local) = 
+
+and compatible_base_type a signa b =
+  let ok  = return ((),()) in
+
+  match a, b with
+  | Type_cocci.VoidType, B.Void -> 
+      assert (signa = None);
+      ok
+  | Type_cocci.CharType, B.IntType B.CChar when signa = None -> 
+      ok
+  | Type_cocci.CharType, B.IntType (B.Si (signb, B.CChar2)) -> 
+      compatible_sign signa signb 
+  | Type_cocci.ShortType, B.IntType (B.Si (signb, B.CShort)) -> 
+      compatible_sign signa signb
+  | Type_cocci.IntType, B.IntType (B.Si (signb, B.CInt)) -> 
+      compatible_sign signa signb
+  | Type_cocci.LongType, B.IntType (B.Si (signb, B.CLong)) -> 
+      compatible_sign signa signb
+  | _, B.IntType (B.Si (signb, B.CLongLong)) -> 
+      pr2_once "no longlong in cocci";
+      fail
+  | Type_cocci.FloatType, B.FloatType B.CFloat ->
+      assert (signa = None); 
+      ok
+  | Type_cocci.DoubleType, B.FloatType B.CDouble ->
+      assert (signa = None); 
+      ok
+  | _, B.FloatType B.CLongDouble -> 
+      pr2_once "no longdouble in cocci";
+      fail
+  | Type_cocci.BoolType, _ -> failwith "no booltype in C"
+	
+  | _, (B.Void|B.FloatType _|B.IntType _) -> fail
+
+and compatible_base_type_meta a signa qua b ii local =
+  match a, b with
+  | Type_cocci.MetaType(ida,keep,inherited),
+    B.IntType (B.Si (signb, B.CChar2)) -> 
+      compatible_sign signa signb >>= fun _ _ ->
+	let newb = ((qua, (B.BaseType (B.IntType B.CChar),ii)),local) in
+	compatible_type a newb
+  | Type_cocci.MetaType(ida,keep,inherited), B.IntType (B.Si (signb, ty)) -> 
+      compatible_sign signa signb >>= fun _ _ ->
+	let newb =
+	  ((qua, (B.BaseType (B.IntType (B.Si (B.Signed, ty))),ii)),local) in
+	compatible_type a newb
+  | _, B.FloatType B.CLongDouble -> 
+      pr2_once "no longdouble in cocci";
+      fail
+	
+  | _, (B.Void|B.FloatType _|B.IntType _) -> fail
+
+
+and compatible_type a (b,local) = 
   let ok  = return ((),()) in
 
   let rec loop = function
-    | Type_cocci.BaseType (a, signa), (qua, (B.BaseType b,ii)) -> 
-	(match a, b with
-	| Type_cocci.VoidType, B.Void -> 
-            assert (signa = None);
-            ok
-	| Type_cocci.CharType, B.IntType B.CChar when signa = None -> 
-            ok
-	| Type_cocci.CharType, B.IntType (B.Si (signb, B.CChar2)) -> 
-            compatible_sign signa signb 
-	| Type_cocci.ShortType, B.IntType (B.Si (signb, B.CShort)) -> 
-            compatible_sign signa signb
-	| Type_cocci.IntType, B.IntType (B.Si (signb, B.CInt)) -> 
-            compatible_sign signa signb
-	| Type_cocci.LongType, B.IntType (B.Si (signb, B.CLong)) -> 
-            compatible_sign signa signb
-	| _, B.IntType (B.Si (signb, B.CLongLong)) -> 
-            pr2_once "no longlong in cocci";
-            fail
-	| Type_cocci.FloatType, B.FloatType B.CFloat ->
-	    assert (signa = None); 
-            ok
-	| Type_cocci.DoubleType, B.FloatType B.CDouble ->
-	    assert (signa = None); 
-            ok
-	| _, B.FloatType B.CLongDouble -> 
-            pr2_once "no longdouble in cocci";
-            fail
-	| Type_cocci.BoolType, _ -> failwith "no booltype in C"
+    | Type_cocci.BaseType a, (qua, (B.BaseType b,ii)) -> 
+	compatible_base_type a None b
 
+    | Type_cocci.SignedT (signa,None), (qua, (B.BaseType b,ii)) -> 
+	compatible_base_type Type_cocci.IntType (Some signa) b
 
-        | _, (B.Void|B.FloatType _|B.IntType _) -> fail
-      )
-
-
+    | Type_cocci.SignedT (signa,Some ty), (qua, (B.BaseType b,ii)) -> 
+	(match ty with
+	  Type_cocci.BaseType ty ->
+	    compatible_base_type ty (Some signa) b
+	| Type_cocci.MetaType(ida,keep,inherited) ->
+	    compatible_base_type_meta ty (Some signa) qua b ii local
+	| _ -> failwith "not possible")
 
     | Type_cocci.Pointer  a, (qub, (B.Pointer b, ii)) -> 
 	loop (a,b)
@@ -2798,7 +2925,11 @@ and compatible_type a (b,_local) =
 	  if equal_structUnion_type_cocci sua sub && sa = sb
 	  then ok
 	  else fail
-
+    | Type_cocci.EnumName (_, sa),
+	(qub, (B.EnumName (sb),ii)) -> 
+	  if sa = sb
+	  then ok
+	  else fail
     | Type_cocci.TypeName sa, (qub, (B.TypeName (sb,_typb), ii)) -> 
 	if sa = sb 
 	then ok
