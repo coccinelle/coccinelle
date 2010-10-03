@@ -73,12 +73,12 @@
   "Highlighting the rule names")
 
 (defface cocci-minus-face
-  '((((background light)) (:foreground "dark green"))
+  '((((background light)) (:foreground "red"))
     (((background dark)) (:foreground "SeaGreen3")))
   "Highlighting lines to be removed")
 
 (defface cocci-plus-face
-  '((((background light)) (:foreground "red"))
+  '((((background light)) (:foreground "dark green"))
     (((background dark)) (:foreground "salmon")))
   "Highlighting lines to be added")
 

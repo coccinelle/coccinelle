@@ -20,6 +20,8 @@
 
 #note: if you add a file (a .mli or .ml), dont forget to do a   make depend
 
+-include ../Makefile.config
+
 TARGET = popl
 
 SRC = ast_popl.ml asttopopl.ml insert_quantifiers.ml insert_befaft.ml \

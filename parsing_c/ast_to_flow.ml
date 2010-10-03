@@ -1,3 +1,16 @@
+(* Yoann Padioleau
+ * 
+ * Copyright (C) 2006, 2007 Ecole des Mines de Nantes
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License (GPL)
+ * version 2 as published by the Free Software Foundation.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * file license.txt for more details.
+ *)
 open Common
 
 open Ast_c
@@ -1237,7 +1250,7 @@ let deadcode_detection g =
       | x -> 
           (match Control_flow_c.extract_fullstatement node with
           | Some (st, ii) -> raise (Error (DeadCode (Some (pinfo_of_ii ii))))
-          | _ -> pr2 "CFG: orphelin nodes, maybe something wierd happened"
+          | _ -> pr2 "CFG: orphelin nodes, maybe something weird happened"
           )
       )
   )

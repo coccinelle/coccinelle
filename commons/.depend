@@ -72,6 +72,12 @@ ocollection/oassoc_buffer.cmo: ocamlextra/setb.cmi ocollection/osetb.cmo \
 ocollection/oassoc_buffer.cmx: ocamlextra/setb.cmx ocollection/osetb.cmx \
     ocollection/oassocb.cmx oassoc.cmx common.cmx \
     ocollection/oassoc_buffer.cmi 
+ocollection/oassoc_cache.cmo: ocamlextra/setb.cmi ocollection/osetb.cmo \
+    ocollection/oassocb.cmo oassoc.cmi common.cmi \
+    ocollection/oassoc_cache.cmi 
+ocollection/oassoc_cache.cmx: ocamlextra/setb.cmx ocollection/osetb.cmx \
+    ocollection/oassocb.cmx oassoc.cmx common.cmx \
+    ocollection/oassoc_cache.cmi 
 ocollection/oassocb.cmo: oassoc.cmi ocamlextra/mapb.cmo common.cmi 
 ocollection/oassocb.cmx: oassoc.cmx ocamlextra/mapb.cmx common.cmx 
 ocollection/oassocbdb.cmo: ocollection/oassoc_buffer.cmi oassoc.cmi \
@@ -101,6 +107,7 @@ ocollection/oseti.cmx: seti.cmx oset.cmx ocollection.cmx
 ocollection/osetpt.cmo: ocamlextra/setPt.cmo oset.cmi ocollection.cmi 
 ocollection/osetpt.cmx: ocamlextra/setPt.cmx oset.cmx ocollection.cmx 
 ocollection/oassoc_buffer.cmi: ocollection.cmi oassoc.cmi 
+ocollection/oassoc_cache.cmi: ocollection.cmi oassoc.cmi 
 ocollection/oassocbdb.cmi: ocollection.cmi ocollection/oassoc_buffer.cmi \
     oassoc.cmi 
 ocollection/oassocbdb_string.cmi: ocollection.cmi \

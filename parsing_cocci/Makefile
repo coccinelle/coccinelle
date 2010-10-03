@@ -18,6 +18,8 @@
 # Coccinelle under other licenses.
 
 
+-include ../Makefile.config
+
 TARGET=cocci_parser
 
 LEXER_SOURCES = lexer_cocci.mll
@@ -29,7 +31,7 @@ visitor_ast.ml visitor_ast0.ml compute_lines.ml comm_assoc.ml \
 iso_pattern.ml iso_compile.ml single_statement.ml simple_assignments.ml \
 ast0toast.ml check_meta.ml top_level.ml type_infer.ml test_exps.ml \
 unitary_ast0.ml arity.ml index.ml context_neg.ml \
-insert_plus.ml function_prototypes.ml \
+adjust_pragmas.ml insert_plus.ml function_prototypes.ml \
 unify_ast.ml semantic_cocci.ml data.ml free_vars.ml parse_aux.ml disjdistr.ml \
 $(LEXER_SOURCES:.mll=.ml) $(PARSER_SOURCES:.mly=.ml) \
 $(SCRIPT_LEXER_SOURCES:.mll=.ml) \
@@ -54,7 +56,7 @@ OCAMLC =ocamlc$(OPTBIN) $(OCAMLCFLAGS) $(INCLUDES)
 OCAMLOPT = ocamlopt$(OPTBIN) $(OPTFLAGS) $(INCLUDES)
 OCAMLLEX = ocamllex$(OPTBIN)
 OCAMLYACC= menhir --table
-OCAMLDEP = ocamldep$(OPTBIN) #$(INCLUDES)
+OCAMLDEP = ocamldep$(OPTBIN) $(INCLUDES)
 EXEC=$(TARGET).byte
 EXEC=$(TARGET)
 LIB=$(TARGET).cma

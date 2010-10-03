@@ -1,3 +1,18 @@
+(* Yoann Padioleau
+ * 
+ * Copyright (C) 2007, 2008 Ecole des Mines de Nantes
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License (GPL)
+ * version 2 as published by the Free Software Foundation.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * file license.txt for more details.
+ *)
+
+
 open Common
 
 open Parser_c
@@ -6,10 +21,10 @@ open Parser_c
 (* Is_xxx, categories *)
 (*****************************************************************************)
 
-(* todo? could define a type 
- *   token_class = Comment | Ident | Operator | ... 
- * but sometimes tokens belon to multiple classes. Could maybe return then 
- * a set of classes
+(* could define a type  token_class = Comment | Ident | Operator | ... 
+ * update: now token_c can maybe do that.
+ * but still, sometimes tokens belon to multiple classes. Could maybe 
+ * return then a set of classes.
  *)
 
 let is_space = function
@@ -19,16 +34,19 @@ let is_space = function
 
 let is_whitespace = is_space
 
-let is_comment_or_space = function
+let is_just_comment_or_space = function
   | TComment _ -> true
   | TCommentSpace _ -> true
   | TCommentNewline _ -> true
   | _ -> false
-let is_real_comment = is_comment_or_space
+let is_real_comment = is_just_comment_or_space
 
 let is_just_comment = function
   | TComment _ -> true
   | _ -> false
+
+
+
 
 let is_comment = function
   | TComment _    
@@ -37,7 +55,12 @@ let is_comment = function
   | TCommentMisc _ -> true
   | _ -> false
 
-
+(* coupling with comment_annotater_c.ml.
+ * In fact more tokens than comments are not in the ast, but
+ * they were usually temporally created by ocamllex and removed 
+ * in parsing_hacks.
+*)
+let is_not_in_ast = is_comment
 
 let is_fake_comment = function
   | TCommentCpp _    | TCommentMisc _ 
@@ -48,8 +71,7 @@ let is_not_comment x =
   not (is_comment x)
 
 
-
-
+(* ---------------------------------------------------------------------- *)
 
 let is_cpp_instruction = function
   | TInclude _ 
@@ -73,6 +95,7 @@ let is_gcc_token = function
 
 
 
+(* ---------------------------------------------------------------------- *)
 let is_opar = function
   | TOPar _ | TOParDefine _ -> true
   | _ -> false
@@ -93,6 +116,7 @@ let is_cbrace = function
 
 
 
+(* ---------------------------------------------------------------------- *)
 let is_eof = function
   | EOF x -> true
   | _ -> false
@@ -155,6 +179,7 @@ let is_stuff_taking_parenthized = function
   | _ -> false
 
 
+(* used in the algorithms for "10 most problematic errors" *)
 let is_ident_like = function
   | TIdent _
   | TypedefIdent _
@@ -232,6 +257,9 @@ let info_of_tok = function
   | TCommentNewline      (i) -> i
   | TCommentCpp          (cppkind, i) -> i
   | TCommentMisc         (i) -> i
+
+  | TCommentSkipTagStart (i) -> i
+  | TCommentSkipTagEnd (i) -> i
 
   | TIfdef               (_, i) -> i
   | TIfdefelse           (_, i) -> i
@@ -377,6 +405,9 @@ let visitor_info_of_tok f = function
   | TCommentCpp          (cppkind, i) -> TCommentCpp (cppkind, f i) 
   | TCommentMisc         (i) -> TCommentMisc         (f i) 
 
+  | TCommentSkipTagStart         (i) -> TCommentSkipTagStart         (f i) 
+  | TCommentSkipTagEnd         (i) -> TCommentSkipTagEnd         (f i) 
+
   | TIfdef               (t, i) -> TIfdef               (t, f i) 
   | TIfdefelse           (t, i) -> TIfdefelse           (t, f i) 
   | TIfdefelif           (t, i) -> TIfdefelif           (t, f i) 
@@ -490,5 +521,8 @@ let is_abstract x =
 (*****************************************************************************)
 (* Helpers *)
 (*****************************************************************************)
-let is_same_line line tok = 
-  line_of_tok tok = line
+let is_same_line_or_close line tok = 
+  line_of_tok tok = line || 
+  line_of_tok tok = line - 1 ||
+  line_of_tok tok = line - 2
+

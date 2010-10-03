@@ -7,18 +7,26 @@ let error x s =
 
 let names = ref ([] : (string * int ref) list)
 
+let started_files = ref ([] : (string * bool) list)
+let typedefs = ref ([] : (string * string list ref) list)
+let current_outfile = ref ""
+
+let prefix = "_cocci_"
+
 (* ----------------------------------------------------------------------- *)
 (* Create rule to check for header include *)
 
 let print_header_rule pr srcfile =
   match Str.split (Str.regexp "/") srcfile with
     [x] ->
-      pr "@header@\n@@\n\n#include \""; pr x; pr "\"\n\n"; true
+      pr "@header@\n@@\n\n#include \"";
+      pr x; pr "\"\n\n"; true
   | l ->
       let rec loop = function
 	  [] -> false
 	| [x] ->
-	    pr "@header@\n@@\n\n#include \""; pr x; pr "\"\n\n"; true
+	    pr "@header@\n@@\n\n#include \"";
+	    pr x; pr "\"\n\n"; true
 	| "include"::(x::xs) ->
 	    pr "@header@\n@@\n\n#include <";
 	    let x =
@@ -31,16 +39,16 @@ let print_header_rule pr srcfile =
 (* ----------------------------------------------------------------------- *)
 (* Print check that we are not in the defining function *)
 
-let print_check_rule pr function_name header_req =
+let print_check_rule pr function_name function_name_count header_req =
   (if header_req
-  then pr "@same depends on header@\n"
-  else pr "@same@\n");
+  then pr (Printf.sprintf "@same_%s depends on header@\n" function_name_count)
+  else pr (Printf.sprintf "@same_%s@\n" function_name_count));
   pr "position p;\n";
   pr "@@\n\n";
   pr function_name; pr "@p(...) { ... }\n\n"
 
 (* ----------------------------------------------------------------------- *)
-(* get paramaters of the matched function *)
+(* get parameters of the matched function *)
 
 let rec env_lookup fn = function
     [] -> failwith "no binding"
@@ -119,11 +127,17 @@ let get_function_name rule env =
 (* ----------------------------------------------------------------------- *)
 (* Print metavariable declarations *)
 
-let rec print_typedef pr typedefs = function
+let rec print_typedef pr = function
     (Ast_c.TypeName(s,_),_) ->
+      let typedefs =
+	try List.assoc !current_outfile !typedefs
+	with Not_found ->
+	  let td = ref [] in
+	  typedefs := (!current_outfile,td)::!typedefs;
+	  td in
       if not (List.mem s !typedefs)
       then (typedefs := s::!typedefs; pr "typedef "; pr s; pr ";\n")
-  | (Ast_c.Pointer(_,ty),_) -> print_typedef pr typedefs ty
+  | (Ast_c.Pointer(_,ty),_) -> print_typedef pr ty
   | _ -> ()
 
 let rewrap_str s ii =
@@ -137,16 +151,16 @@ let rewrap_str s ii =
     | Ast_c.AbstractLineTok pi ->
 	Ast_c.AbstractLineTok { pi with Common.str = s;})}
 
-let print_metavar pr typedefs = function
+let print_metavar pr = function
     ((_,Some param,(_,(Ast_c.Pointer(_,(Ast_c.BaseType(Ast_c.Void),_)),_))),_)
     ->
-      pr "expression _"; pr param
+      pr ("expression "^prefix); pr param
   | (((_,Some param,(_,ty)),il) : Ast_c.parameterType) ->
       let il =
 	match List.rev il with
-	  name::rest -> (rewrap_str ("_"^param) name) :: rest
+	  name::rest -> (rewrap_str (prefix^param) name) :: rest
 	| _ -> failwith "no name" in
-      print_typedef pr typedefs ty;
+      print_typedef pr ty;
       Pretty_print_c.pp_param_gen
 	(function x ->
 	  let str = Ast_c.str_of_info x in
@@ -161,19 +175,19 @@ let print_metavar pr typedefs = function
 let make_exp = function
     (((_,Some name,ty),param_ii),comma_ii) ->
       let no_info = (None,Ast_c.NotTest) in
-      let nm = "_"^name in
+      let nm = prefix^name in
       let exp =
 	((Ast_c.Ident nm,ref no_info),
 	 [rewrap_str nm (List.hd(List.rev param_ii))]) in
       (name,(Common.Left exp,comma_ii))
   | _ -> failwith "bad parameter"
 
-let print_extra_typedefs pr typedefs env =
+let print_extra_typedefs pr env =
   let bigf =
     { Visitor_c.default_visitor_c with
       Visitor_c.ktype = (fun (k, bigf) ty -> 
 	match ty with
-	  (_,((Ast_c.TypeName(_,_),_) as ty)) -> print_typedef pr typedefs ty
+	  (_,((Ast_c.TypeName(_,_),_) as ty)) -> print_typedef pr ty
 	| _ -> k ty) } in
   List.iter
     (function (_,vl) ->
@@ -193,7 +207,7 @@ let print_extra_typedefs pr typedefs env =
     env
 
 let rename argids env =
-  let argenv = List.map (function arg -> (arg,"_"^arg)) argids in
+  let argenv = List.map (function arg -> (arg,prefix^arg)) argids in
   let lookup x = try List.assoc x argenv with Not_found -> x in
   let bigf =
     { Visitor_c.default_visitor_c_s with
@@ -228,16 +242,29 @@ let rename argids env =
        | Ast_c.MetaListlenVal _ -> vl))
     env
 
-let print_types pr = function
+let print_one_type pr env = function
+    (Type_cocci.MetaType(name,keep,inherited)) as ty ->
+      (try
+	match List.assoc name env with
+	  Ast_c.MetaTypeVal ty -> 
+	    Pretty_print_c.pp_type_gen
+	      (function x -> pr (Ast_c.str_of_info x))
+	      (function _ -> pr " ")
+	      ty
+        | _ -> failwith "impossible"
+      with Not_found -> pr (Type_cocci.type2c ty))
+  | ty -> pr (Type_cocci.type2c ty)
+
+let print_types pr env = function
     None -> ()
-  | Some [ty] -> pr (Type_cocci.type2c ty)
+  | Some [ty] -> print_one_type pr env ty
   | Some types ->
       pr "{";
-      Common.print_between (function _ -> pr ", ")
-	(function ty -> pr (Type_cocci.type2c ty)) types;
+      Common.print_between (function _ -> pr ", ") (print_one_type pr env)
+	types;
       pr "}"
 
-let pp_meta_decl pr decl =
+let pp_meta_decl pr env decl =
   let no_arity = function Ast.NONE -> () | _ -> failwith "no arity allowed" in
   let pp_name (_,n) = pr n in
   match decl with
@@ -258,20 +285,20 @@ let pp_meta_decl pr decl =
       no_arity ar; pr "parameter list "; pp_name name;
       pr "["; pp_name len; pr "]"; pr ";\n"
   | Ast.MetaConstDecl(ar, name, types) ->
-      no_arity ar; pr "constant "; print_types pr types;
+      no_arity ar; pr "constant "; print_types pr env types;
       pp_name name; pr ";\n"
   | Ast.MetaErrDecl(ar, name) ->
       no_arity ar; pr "error "; pp_name name; pr ";\n"
   | Ast.MetaExpDecl(ar, name, None) ->
       no_arity ar; pr "expression "; pp_name name; pr ";\n"
   | Ast.MetaExpDecl(ar, name, types) ->
-      no_arity ar; print_types pr types; pp_name name; pr ";\n"
+      no_arity ar; print_types pr env types; pp_name name; pr ";\n"
   | Ast.MetaIdExpDecl(ar, name, types) ->
       no_arity ar; pr "idexpression ";
-      print_types pr types; pp_name name; pr ";\n"
+      print_types pr env types; pp_name name; pr ";\n"
   | Ast.MetaLocalIdExpDecl(ar, name, types) ->
       no_arity ar; pr "local idexpression ";
-      print_types pr types; pp_name name; pr ";\n"
+      print_types pr env types; pp_name name; pr ";\n"
   | Ast.MetaExpListDecl(ar, name, None) ->
       no_arity ar; pr "parameter list "; pp_name name; pr ";\n"
   | Ast.MetaExpListDecl(ar, name, Some len) ->
@@ -292,21 +319,20 @@ let pp_meta_decl pr decl =
   | Ast.MetaIteratorDecl(ar, name) ->
       no_arity ar; pr "iterator "; pp_name name; pr ";\n"
 
-let print_metavariables pr local_metas paramst env header_req =
+let print_metavariables pr local_metas paramst env header_req function_name =
   (if header_req
   then pr "@depends on header@\n"
   else pr "@@\n");
-  pr "position _p!=same.p;\n";
+  pr (Printf.sprintf "position _p!=same_%s.p;\n" function_name);
   pr "identifier _f;\n";
-  let typedefs = ref ([] : string list) in
   let rec loop = function
       [] | [(((_,_,(_,(Ast_c.BaseType(Ast_c.Void),_))),_),_)] -> []
     | ((first,_) as f)::rest ->
-	print_metavar pr typedefs first; pr ";\n";
+	print_metavar pr first; pr ";\n";
 	(make_exp f) :: loop rest in
   let args = loop paramst in
-  print_extra_typedefs pr typedefs env;
-  List.iter (pp_meta_decl pr) local_metas;
+  print_extra_typedefs pr env;
+  List.iter (pp_meta_decl pr env) local_metas;
   pr "@@\n\n";
   args
 
@@ -358,20 +384,40 @@ let pp_rule local_metas ast env srcfile =
       Some outdir -> outdir
     | None -> error rule "not possible" in
   let function_name = get_function_name rule env in
-  let outfile = outdir ^ "/" ^ function_name in
-  let outfile =
+  let function_name_count =
     try
-      let cell = List.assoc outfile !names in
+      let cell = List.assoc function_name !names in
       let ct = !cell in
       cell := ct + 1;
-      outfile ^ (string_of_int ct)
+      function_name ^ (string_of_int ct)
     with Not_found ->
-      let cell = ref 1 in names := (outfile,cell) :: !names; outfile in
-  let outfile = outfile ^ ".cocci" in
-  Common.with_open_outfile outfile (fun (pr,chan) ->
-    let header_req = print_header_rule pr srcfile in
-    print_check_rule pr function_name header_req;
-    let args = print_metavariables pr local_metas paramst env header_req in
+      let cell = ref 1 in
+      names := (function_name,cell) :: !names;
+      function_name in
+  let outfile = outdir ^ "/" ^
+    (if !Flag.hrule_per_file
+    then Filename.chop_extension (Filename.basename srcfile)
+    else function_name_count) in
+  let escape_re = Str.regexp_string "/" in
+  let dir = if !Flag.dir = "" then Filename.dirname srcfile else !Flag.dir in
+  let outdirfile = Str.global_replace escape_re "_"dir in
+  let outfile = outfile ^ outdirfile ^ ".cocci" in
+  let saved_header_req =
+    try let res = List.assoc outfile !started_files in Some res
+    with Not_found -> None in
+  current_outfile := outfile;
+  Common.with_open_outfile_append outfile (fun (pr,chan) ->
+    let header_req =
+      match saved_header_req with
+	Some x -> x
+      |	None ->
+	  let res = print_header_rule pr srcfile in
+	  started_files := (outfile,res)::!started_files;
+	  res in
+    print_check_rule pr function_name function_name_count header_req;
+    let args =
+      print_metavariables pr local_metas paramst env header_req
+	function_name_count in
     let (argids,args) = List.split args in
     let env = rename argids env in
     let env = (args_name,Ast_c.MetaExprListVal args)::env in

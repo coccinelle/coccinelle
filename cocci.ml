@@ -489,7 +489,7 @@ let (includes_to_parse:
                   Some (Filename.concat !Flag_cocci.include_path 
                           (Common.join "/" xs))
 		else None
-            | Ast_c.Wierd _ -> None
+            | Ast_c.Weird _ -> None
 		  )
 	  | _ -> None))
 	+> List.concat
@@ -591,7 +591,7 @@ let rec update_include_rel_pos cs =
                      i_rel_pos = aref;
                      i_is_in_ifdef = inifdef}) ->
         (match x with
-        | Ast_c.Wierd _ -> None
+        | Ast_c.Weird _ -> None
         | _ -> 
             if inifdef 
             then None
@@ -605,7 +605,7 @@ let rec update_include_rel_pos cs =
       match c with
       | Ast_c.Local x -> Left (x, aref)
       | Ast_c.NonLocal x -> Right (x, aref)
-      | Ast_c.Wierd x -> raise Impossible
+      | Ast_c.Weird x -> raise Impossible
     ) in
 
   update_rel_pos_bis locals;
@@ -785,11 +785,21 @@ let prepare_cocci ctls free_var_lists negated_pos_lists
 (* --------------------------------------------------------------------- *)
 
 let build_info_program cprogram env = 
-  let (cs, parseinfos) = Common.unzip cprogram in
-  let (cs, envs) =
-    Common.unzip (TAC.annotate_program env (*!g_contain_typedmetavar*) cs) in
+  
+  let (cs, parseinfos) = 
+    Common.unzip cprogram in
 
-  zip (zip cs parseinfos) envs +> List.map (fun ((c, parseinfo), (enva,envb))->
+  let alltoks = 
+    parseinfos +> List.map (fun (s,toks) -> toks) +> List.flatten in
+
+  (* I use cs' but really annotate_xxx work by doing side effects on cs *)
+  let cs' = 
+    Comment_annotater_c.annotate_program alltoks cs in
+  let cs_with_envs = 
+    Type_annoter_c.annotate_program env (*!g_contain_typedmetavar*) cs'
+  in
+  
+  zip cs_with_envs parseinfos +> List.map (fun ((c, (enva,envb)), parseinfo)->
     let (fullstr, tokens) = parseinfo in
 
     let flow = 

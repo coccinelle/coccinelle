@@ -1,4 +1,6 @@
-(* Copyright (C) 2006, 2007, 2008, 2009 Ecole des Mines de Nantes and DIKU
+(* Yoann Padioleau, Julia Lawall
+ * 
+ * Copyright (C) 2006, 2007, 2008, 2009 Ecole des Mines de Nantes and DIKU
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License (GPL)
@@ -195,7 +197,7 @@ let get_fakeInfo_and_tokens celem toks =
         (*old: assert(before +> List.for_all (TH.is_comment)); *)
         before +> List.iter (fun x -> 
           if not (TH.is_comment x)
-          then pr2 ("WIERD: not a comment:" ^ TH.str_of_tok x)
+          then pr2 ("WEIRD: not a comment:" ^ TH.str_of_tok x)
           (* case such as  int asm d3("x"); not yet in ast *)
         );
         before +> List.iter (fun x -> Common.push2 (T1 x) toks_out);
@@ -213,7 +215,7 @@ let get_fakeInfo_and_tokens celem toks =
   Pretty_print_c.pp_program_gen pr_elem pr_space celem;
 
   if not (null !toks_in)
-  then failwith "WIERD: unparsing not finished";
+  then failwith "WEIRD: unparsing not finished";
 
   List.rev !toks_out
 
@@ -277,9 +279,15 @@ let expand_mcode toks =
           
   
     | T1 tok -> 
+	let (a,b) = !((TH.info_of_tok tok).cocci_tag) in
         (* no tag on expandedTok ! *)
-        assert(not (TH.is_expanded tok && 
-            !((TH.info_of_tok tok).cocci_tag) <> Ast_c.emptyAnnot));
+        (if (TH.is_expanded tok && 
+            !((TH.info_of_tok tok).cocci_tag) <> Ast_c.emptyAnnot)
+	then
+	  failwith
+	    (Printf.sprintf
+	       "expanded token %s on line %d is either modified or stored in a metavariable"
+	       (TH.str_of_tok tok) (TH.line_of_tok tok)));
 
         let tok' = tok +> TH.visitor_info_of_tok (fun i -> 
           { i with cocci_tag = ref Ast_c.emptyAnnot; }
@@ -365,13 +373,13 @@ let is_minusable_comment = function
       (* patch: coccinelle *)      
       | Parser_c.TCommentNewline _ (* newline plus whitespace *)
       | Parser_c.TComment _ 
-      | Parser_c.TCommentCpp (Ast_c.CppAttr, _) 
-      | Parser_c.TCommentCpp (Ast_c.CppMacro, _) 
+      | Parser_c.TCommentCpp (Token_c.CppAttr, _) 
+      | Parser_c.TCommentCpp (Token_c.CppMacro, _) 
         -> true
 
       | Parser_c.TCommentMisc _ 
-      | Parser_c.TCommentCpp (Ast_c.CppDirective, _)
-      | Parser_c.TCommentCpp (Ast_c.CppPassingCosWouldGetError, _)
+      | Parser_c.TCommentCpp (Token_c.CppDirective, _)
+      | Parser_c.TCommentCpp (Token_c.CppPassingCosWouldGetError, _)
         -> false
 
       | _ -> false
@@ -396,8 +404,8 @@ let set_minus_comment = function
       | Parser_c.TCommentNewline _ -> ()
 
       | Parser_c.TComment _ 
-      | Parser_c.TCommentCpp (Ast_c.CppAttr, _) 
-      | Parser_c.TCommentCpp (Ast_c.CppMacro, _) 
+      | Parser_c.TCommentCpp (Token_c.CppAttr, _) 
+      | Parser_c.TCommentCpp (Token_c.CppMacro, _) 
         -> 
           pr2 ("ERASING_COMMENTS: " ^ str)
       | _ -> raise Impossible
@@ -583,7 +591,7 @@ let rec adjust_indentation xs =
     let current_tab = List.rev(list_of_string current_tab) in
     let rec loop = function
 	([],new_tab) -> string_of_list (List.rev new_tab)
-      |	(_,[]) -> "" (*wierd; tabbing unit used up more than the current tab*)
+      |	(_,[]) -> "" (*weird; tabbing unit used up more than the current tab*)
       |	(t::ts,n::ns) when t = n -> loop (ts,ns)
       |	(_,ns) -> (* mismatch; remove what we can *)
 	  string_of_list (List.rev ns) in
@@ -643,7 +651,7 @@ let rec adjust_indentation xs =
     | ((T2 (tok,_,_)) as x)::xs when str_of_token2 x = "{" ->  x::aux true xs
     | (Cocci2 "{")::xs -> (Cocci2 "{")::aux true xs
     | ((Cocci2 "\n") as x)::xs -> 
-            (* dont inline in expr because of wierd eval order of ocaml *)
+            (* dont inline in expr because of weird eval order of ocaml *)
         let s = !_current_tabbing in 
         x::Cocci2 (s)::aux started xs
     | x::xs -> x::aux started xs in

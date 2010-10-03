@@ -10,6 +10,9 @@ type visitor_c = {
   kcppdirective: (cpp_directive -> unit) * visitor_c -> cpp_directive -> unit;
   kdefineval : (define_val -> unit) * visitor_c -> define_val -> unit;
   kstatementseq: (statement_sequencable   -> unit) * visitor_c -> statement_sequencable   -> unit;
+  kfield: (field -> unit) * visitor_c -> field -> unit;
+
+
   knode      :      
     (Control_flow_c.node -> unit) * visitor_c -> Control_flow_c.node -> unit;
   ktoplevel: (toplevel -> unit) * visitor_c -> toplevel -> unit;

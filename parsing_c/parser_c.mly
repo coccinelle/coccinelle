@@ -1,5 +1,7 @@
 %{
-(* Copyright (C) 2002, 2006, 2007, 2008 Yoann Padioleau
+(* Yoann Padioleau
+ * 
+ * Copyright (C) 2002, 2006, 2007, 2008 Yoann Padioleau
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License (GPL)
@@ -191,8 +193,9 @@ let fixDeclSpecForFuncDef x =
   (match fst (unwrap storage) with
   | StoTypedef -> 
       raise (Semantic ("function definition declared 'typedef'", fake_pi))
-  | x -> (returnType, storage)
+  | _ -> (returnType, storage)
   )
+  
 
 (* parameter: (this is the context where we give parameter only when
  * in func DEFINITION not in funct DECLARATION) We must have a name.
@@ -248,7 +251,32 @@ let fixFunc (typ, compound, old_style_opt) =
           | (((bool, Some s, fullt), _), _) -> ()
 	  | _ -> ()
                 (* failwith "internal errror: fixOldCDecl not good" *)
-          ));
+          )
+      );
+      (* bugfix: cf tests_c/function_pointer4.c. 
+       * Apparemment en C on peut syntaxiquement ecrire ca:
+       * 
+       *   void a(int)(int x);
+       * mais apres gcc gueule au niveau semantique avec:
+       *   xxx.c:1: error: 'a' declared as function returning a function
+       * Je ne faisais pas cette verif. Sur du code comme 
+       *   void METH(foo)(int x) { ...} , le parser croit (a tort) que foo 
+       * est un typedef, et donc c'est parsé comme l'exemple precedent, 
+       * ce qui ensuite confuse l'unparser qui n'est pas habitué
+       * a avoir dans le returnType un FunctionType et qui donc
+       * pr_elem les ii dans le mauvais sens ce qui genere au final
+       * une exception. Hence this fix to at least detect the error 
+       * at parsing time (not unparsing time).
+       *)
+      (match Ast_c.unwrap_typeC fullt with 
+      | FunctionType _ -> 
+          pr2 (spf "WEIRD: %s declared as function returning a function." s);
+          pr2 (spf "This is probably because of a macro. Extend standard.h");
+          raise (Semantic (spf "error: %s " s, Ast_c.parse_info_of_info iis))
+      | _ -> ()
+      );
+
+
       (* it must be nullQualif,cos parser construct only this*)
       {f_name = s;
        f_type = (fullt, (params, bool));
@@ -292,6 +320,8 @@ let fix_add_params_ident = function
              (* failwith "internal errror: fixOldCDecl not good" *)
       )) 
   | _ -> ()
+
+
 
 (*-------------------------------------------------------------------------- *)
 (* shortcuts *)
@@ -456,14 +486,20 @@ let mk_e e ii = ((e, Ast_c.noType()), ii)
 /*(* other         *)*/
 /*(*---------------*)*/
 
+
+/*(* should disappear after parsing_hack *)*/
+%token <Ast_c.info> TCommentSkipTagStart TCommentSkipTagEnd
+
+
 /*(* appear after parsing_hack *)*/
 %token <Ast_c.info> TCParEOL   
 
 %token <Ast_c.info> TAction
 
 
+/*(* TCommentMisc still useful ? obsolete ? *)*/
 %token <Ast_c.info> TCommentMisc
-%token <(Ast_c.cppcommentkind * Ast_c.info)> TCommentCpp
+%token <(Token_c.cppcommentkind * Ast_c.info)> TCommentCpp
 
 
 /*(*-----------------------------------------*)*/
@@ -642,12 +678,12 @@ postfix_expr:
  | postfix_expr TDec          { mk_e(Postfix ($1, Dec)) [$2] }
 
  /*(* gccext: also called compound literals *)*/
- | topar2 type_name tcpar2 TOBrace TCBrace 
+ | topar2 type_name tcpar2 TOBrace TCBrace
      { mk_e(Constructor ($2, [])) [$1;$3;$4;$5] }
  | topar2 type_name tcpar2 TOBrace initialize_list gcc_comma_opt TCBrace
      { mk_e(Constructor ($2, List.rev $5)) ([$1;$3;$4;$7] ++ $6) }
 
-primary_expr: 
+primary_expr:
  | identifier  { mk_e(Ident  (fst $1)) [snd $1] }
  | TInt    { mk_e(Constant (Int    (fst $1))) [snd $1] }
  | TFloat  { mk_e(Constant (Float  (fst $1))) [snd $1] }
@@ -656,11 +692,12 @@ primary_expr:
  | TOPar expr TCPar { mk_e(ParenExpr ($2)) [$1;$3] }  /*(* forunparser: *)*/
 
  /*(* gccext: cppext: TODO better ast ? *)*/
- | TMacroString { mk_e(Constant (MultiString)) [snd $1] }
- | string_elem string_list { mk_e(Constant (MultiString)) ($1 ++ $2) }
+ | TMacroString { mk_e(Constant (MultiString [fst $1])) [snd $1] }
+ | string_elem string_list
+     { mk_e(Constant (MultiString ["TODO: MultiString"])) ($1 ++ $2) }
 
  /*(* gccext: allow statement as expressions via ({ statement }) *)*/
- | TOPar compound TCPar  { mk_e(StatementExpr ($2)) [$1;$3] } 
+ | TOPar compound TCPar  { mk_e(StatementExpr ($2)) [$1;$3] }
 
 
 
@@ -670,7 +707,7 @@ primary_expr:
 
 /*(* cppext: *)*/
 /*(* to avoid conflicts have to introduce a _not_empty (ne) version *)*/
-argument_ne: 
+argument_ne:
  | assign_expr { Left $1 }
  | parameter_decl { Right (ArgType $1)  }
  | action_higherordermacro_ne { Right (ArgAction $1) }
@@ -1013,11 +1050,20 @@ direct_abstract_declarator:
      { fun x ->$1 (nQ, (Array (Some $3,x),    [$2;$4])) }
  | TOPar TCPar                                       
      { fun x ->   (nQ, (FunctionType (x, ([], (false,  []))),   [$1;$2])) }
- | TOPar parameter_type_list TCPar
+ | topar parameter_type_list tcpar
      { fun x ->   (nQ, (FunctionType (x, $2),           [$1;$3]))}
- | direct_abstract_declarator TOPar TCPar
+/*(* subtle: here must also use topar, not TOPar, otherwise if have for
+   * instance   (xxx ( * )(xxx)) cast, then the second xxx may still be a Tident
+   * but we want to reduce topar, to set the InParameter so that 
+   * parsing_hack can get a chance to change the type of xxx into a typedef.
+   * That's an example where parsing_hack and the lookahead of ocamlyacc does
+   * not go very well together ... we got the info too late. We got 
+   * a similar pb with xxx xxx; declaration, cf parsing_hack.ml and the
+   * "disable typedef cos special case ..." message.
+*)*/
+ | direct_abstract_declarator topar tcpar
      { fun x ->$1 (nQ, (FunctionType (x, (([], (false, [])))),[$2;$3])) }
- | direct_abstract_declarator TOPar parameter_type_list TCPar
+ | direct_abstract_declarator topar parameter_type_list tcpar
      { fun x -> $1 (nQ, (FunctionType (x, $3), [$2;$4])) }
 
 /*(*-----------------------------------------------------------------------*)*/
@@ -1241,7 +1287,7 @@ initialize:
 
 /*
 (* opti: This time we use the weird order of non-terminal which requires in 
- * the "caller" to do a List.rev cos quite critical. With this wierd order it
+ * the "caller" to do a List.rev cos quite critical. With this weird order it
  * allows yacc to use a constant stack space instead of exploding if we would
  * do a  'initialize2 Tcomma initialize_list'.
  *)
@@ -1483,7 +1529,7 @@ cpp_directive:
          | _ when s =~ "^\\<\\(.*\\)\\>$" -> 
              NonLocal (Common.split "/" (matched1 s))
          | _ -> 
-             Wierd s 
+             Weird s 
        in
        Include { i_include = (inc_file, [i1;i2]);
                  i_rel_pos = Ast_c.noRelPos();
@@ -1528,7 +1574,7 @@ define_val:
      {
        (* TOREPUT 
        if fst $5 <> "0" 
-       then pr2 "WIERD: in macro and have not a while(0)";
+       then pr2 "WEIRD: in macro and have not a while(0)";
        *)
        DefineDoWhileZero (($2,$5),   [$1;$3;$4;$6])
      }

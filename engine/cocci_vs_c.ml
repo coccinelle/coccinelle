@@ -798,7 +798,7 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
           | _ -> fail (* multi string, not handled *)
           )
 
-      | _, B.MultiString -> (* todo cocci? *) fail
+      | _, B.MultiString _ -> (* todo cocci? *) fail
       | _, (B.String _ | B.Float _ | B.Char _ | B.Int _) -> fail
       )
 
@@ -1858,7 +1858,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
            tokenf stoa iitypedef >>= (fun stoa iitypedef -> 
              return (stoa, [iitypedef])
            )
-       | _ -> failwith "wierd, have both typedef and inline or nothing";
+       | _ -> failwith "weird, have both typedef and inline or nothing";
        ) >>= (fun stoa iistob -> 
        (match A.unwrap ida with
        | A.MetaType(_,_,_) -> 
@@ -1900,7 +1900,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
              
        
    | _, ({B.v_namei = None;}, _) -> 
-       (* old:   failwith "no variable in this declaration, wierd" *)
+       (* old:   failwith "no variable in this declaration, weird" *)
        fail
 
 

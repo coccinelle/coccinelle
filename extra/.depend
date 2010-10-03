@@ -1,6 +1,9 @@
-classic_patch.cmo: classic_patch.cmi 
-classic_patch.cmx: classic_patch.cmi 
-kbuild.cmo: kbuild.cmi 
-kbuild.cmx: kbuild.cmi 
-maintainers.cmo: maintainers.cmi 
-maintainers.cmx: maintainers.cmi 
+classic_patch.cmi: ../commons/common.cmi 
+kbuild.cmi: ../commons/common.cmi 
+maintainers.cmi: ../commons/common.cmi 
+classic_patch.cmo: ../commons/common.cmi classic_patch.cmi 
+classic_patch.cmx: ../commons/common.cmx classic_patch.cmi 
+kbuild.cmo: ../commons/common.cmi kbuild.cmi 
+kbuild.cmx: ../commons/common.cmx kbuild.cmi 
+maintainers.cmo: ../commons/common.cmi maintainers.cmi 
+maintainers.cmx: ../commons/common.cmx maintainers.cmi 

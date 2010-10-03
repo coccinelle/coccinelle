@@ -1,5 +1,7 @@
-(* Copyright (C) 2007, 2008 Ecole des Mines de Nantes, University of 
- * Urbana Champaign
+(* Yoann Padioleau
+ * 
+ * Copyright (C) 2007, 2008 Ecole des Mines de Nantes, 
+ * Copyright (C) 2009 University of Urbana Champaign
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License (GPL)
@@ -28,7 +30,7 @@ module Lib = Lib_parsing_c
  *    in coccinelle. Partial type annotater.
  *  - Julia extended it in 2008? to have localvar/notlocalvar and 
  *    test/notest information, again used by coccinelle.
- *  - I extended it Fall 2008 to have more type information for the 
+ *  - I extended it in Fall 2008 to have more type information for the 
  *    global analysis. I also added some optimisations to process
  *    included code faster.
  * 
@@ -71,6 +73,10 @@ module Lib = Lib_parsing_c
  * store all posible variations in ast_c ? a list of type instead of just
  * the type ?
  * 
+ * todo: how to handle multiple possible definitions for entities like
+ * struct or typedefs ? Because of ifdef, we should store list of 
+ * possibilities sometimes.
+ * 
  * todo: define a new type ? like type_cocci ? where have a bool ?
  * 
  * semi: How handle scope ? When search for type of field, we return 
@@ -91,6 +97,10 @@ module Lib = Lib_parsing_c
 let pr2 s = 
   if !Flag_parsing_c.verbose_type
   then Common.pr2 s
+
+let pr2_once s = 
+  if !Flag_parsing_c.verbose_type
+  then Common.pr2_once s
 
 (*****************************************************************************)
 (* Environment *)
@@ -377,7 +387,10 @@ let rec type_unfold_one_step ty env =
 
 
 (* normalizer. can be seen as the opposite of the previous function as 
- * we "fold" at least for the structUnion.
+ * we "fold" at least for the structUnion. Should return something that
+ * Type_c.is_completed_fullType likes, something that makes it easier
+ * for the programmer to work on, that has all the needed information
+ * for most tasks.
  *)
 let rec typedef_fix ty env = 
   match Ast_c.unwrap_typeC ty with 
@@ -403,19 +416,25 @@ let rec typedef_fix ty env =
   | StructUnionName (su, s) -> ty
 
   (* keep the typename but complete with more information *)
-  | TypeName (s, _typ) -> 
-      (try 
+  | TypeName (s, typ) -> 
+      (match typ with
+      | Some _ -> 
+          pr2 ("typedef value already there:" ^ s);
+          ty
+      | None -> 
+        (try
           if !typedef_debug then pr2 "typedef_fix: lookup_typedef";
           let (t', env') = lookup_typedef s env in
 
           (* bugfix: termination bug if use env instead of env' below, because
-           * can have some wierd mutually recursive typedef which
+           * can have some weird mutually recursive typedef which
            * each new type alias search for its mutual def.
            *)
           TypeName (s, Some (typedef_fix t' env')) +> Ast_c.rewrap_typeC ty
         with Not_found -> 
           ty
-      )
+      ))
+
   (* remove paren for better matching with typed metavar. kind of iso again *)
   | ParenType t -> 
       typedef_fix t env
@@ -553,7 +572,7 @@ let add_binding2 namedef warning =
     if  memberf [current_scope] && warning
     then pr2 ("Type_annoter: warning, " ^ s ^ 
                  " is already in current binding" ^ "\n" ^
-                 " so there is a wierd shadowing");
+                 " so there is a weird shadowing");
   end;
   add_in_scope namedef
 
@@ -601,7 +620,7 @@ let annotater_expr_visitor_subpart = (fun (k,bigf) expr ->
     (* -------------------------------------------------- *)
     (* todo: should analyse the 's' for int to know if unsigned or not *)
     | Constant (String (s,kind)) -> make_info_def (type_of_s "char *")
-    | Constant MultiString       -> make_info_def (type_of_s "char *")
+    | Constant MultiString _  -> make_info_def (type_of_s "char *")
     | Constant (Char   (s,kind)) -> make_info_def (type_of_s "char")
     | Constant (Int (s))         -> make_info_def (type_of_s "int")
     | Constant (Float (s,kind)) -> 
@@ -683,7 +702,7 @@ let annotater_expr_visitor_subpart = (fun (k,bigf) expr ->
                     Type_c.noTypeHere
                 )
             | None -> 
-                pr2 ("type_annotater: no type for function ident: " ^ s);
+                pr2_once ("type_annotater: no type for function ident: " ^ s);
                 Type_c.noTypeHere
             )
         )
@@ -813,7 +832,7 @@ let annotater_expr_visitor_subpart = (fun (k,bigf) expr ->
                                 "TYPE-ERROR: field '%s' does not belong in struct %s"
                                 fld (match sopt with Some s -> s |_ -> "<anon>"));
                         Type_c.noTypeHere
-                    | MultiFound -> 
+                    | Multi_found -> 
                         pr2 "TAC:MultiFound";
                         Type_c.noTypeHere
                   )

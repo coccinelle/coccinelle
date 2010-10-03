@@ -1,4 +1,6 @@
-(* Copyright (C) 2007, 2008 Ecole des Mines de Nantes
+(* Yoann Padioleau
+ * 
+ * Copyright (C) 2007, 2008 Ecole des Mines de Nantes
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License (GPL)
@@ -218,10 +220,6 @@ let msg_ifdef_funheaders () =
   incr Stat.nIfdefFunheader;
   ()
 
-let msg_ifdef_passing () = 
-  pr2_cpp("IFDEF: or related outside function. I treat it as comment");
-  incr Stat.nIfdefPassing;
-  ()
 
 let msg_attribute s = 
   incr Stat.nMacroAttribute;
@@ -907,6 +905,43 @@ let rec set_ifdef_parenthize_info xs =
 (*****************************************************************************)
 
 (* ------------------------------------------------------------------------- *)
+(* special skip_start skip_end handling *)
+(* ------------------------------------------------------------------------- *)
+
+(* note: after this normally the token list should not contain any more the
+ * TCommentSkipTagStart and End tokens.
+ *)
+let rec commentize_skip_start_to_end xs =
+  match xs with
+  | [] -> ()
+  | x::xs -> 
+      (match x with
+      | {tok = TCommentSkipTagStart info} -> 
+          (try 
+            let (before, x2, after) = 
+              xs +> Common.split_when (function
+              | {tok = TCommentSkipTagEnd _ } -> true
+              | _ -> false 
+              )
+            in
+            let topass = x::x2::before in
+            topass +> List.iter (fun tok -> 
+              set_as_comment Token_c.CppPassingExplicit tok
+            );
+            commentize_skip_start_to_end after
+          with Not_found -> 
+            failwith "could not find end of skip_start special comment"
+          )
+      | {tok = TCommentSkipTagEnd info} -> 
+            failwith "found skip_end comment but no skip_start"
+      | _ -> 
+          commentize_skip_start_to_end xs
+      )
+         
+            
+
+
+(* ------------------------------------------------------------------------- *)
 (* ifdef keeping/passing *)
 (* ------------------------------------------------------------------------- *)
 
@@ -921,18 +956,18 @@ let rec find_ifdef_bool xs =
       (match xxs with
       | [] -> raise Impossible
       | firstclause::xxs -> 
-          info_ifdef_stmt +> List.iter (set_as_comment Ast_c.CppDirective);
+          info_ifdef_stmt +> List.iter (set_as_comment Token_c.CppDirective);
             
           if is_ifdef_positif
           then xxs +> List.iter 
-            (iter_token_ifdef (set_as_comment Ast_c.CppPassingNormal))
+            (iter_token_ifdef (set_as_comment Token_c.CppPassingNormal))
           else begin
-            firstclause +> iter_token_ifdef (set_as_comment Ast_c.CppPassingNormal);
+            firstclause +> iter_token_ifdef (set_as_comment Token_c.CppPassingNormal);
             (match List.rev xxs with
             (* keep only last *)
             | last::startxs -> 
                 startxs +> List.iter 
-                  (iter_token_ifdef (set_as_comment Ast_c.CppPassingNormal))
+                  (iter_token_ifdef (set_as_comment Token_c.CppPassingNormal))
             | [] -> (* not #else *) ()
             );
           end
@@ -977,9 +1012,9 @@ let rec find_ifdef_mid xs =
               msg_ifdef_mid_something();
 
               (* keep only first, treat the rest as comment *)
-              info_ifdef_stmt +> List.iter (set_as_comment Ast_c.CppDirective);
+              info_ifdef_stmt +> List.iter (set_as_comment Token_c.CppDirective);
               (second::rest) +> List.iter 
-                (iter_token_ifdef (set_as_comment Ast_c.CppPassingCosWouldGetError));
+                (iter_token_ifdef (set_as_comment Token_c.CppPassingCosWouldGetError));
             end
               
       );
@@ -1014,10 +1049,10 @@ let rec find_ifdef_funheaders = function
       find_ifdef_funheaders xs;
 
       msg_ifdef_funheaders ();
-      info_ifdef_stmt +> List.iter (set_as_comment Ast_c.CppDirective);
+      info_ifdef_stmt +> List.iter (set_as_comment Token_c.CppDirective);
       let all_toks = [xline2] @ line2 in
-      all_toks +> List.iter (set_as_comment Ast_c.CppPassingCosWouldGetError) ;
-      ifdefblock2 +> iter_token_ifdef (set_as_comment Ast_c.CppPassingCosWouldGetError);
+      all_toks +> List.iter (set_as_comment Token_c.CppPassingCosWouldGetError) ;
+      ifdefblock2 +> iter_token_ifdef (set_as_comment Token_c.CppPassingCosWouldGetError);
 
   (* ifdef with nested ifdef *)
   | Ifdef 
@@ -1036,10 +1071,10 @@ let rec find_ifdef_funheaders = function
       find_ifdef_funheaders xs;
 
       msg_ifdef_funheaders ();
-      info_ifdef_stmt  +> List.iter (set_as_comment Ast_c.CppDirective);
-      info_ifdef_stmt2 +> List.iter (set_as_comment Ast_c.CppDirective);
+      info_ifdef_stmt  +> List.iter (set_as_comment Token_c.CppDirective);
+      info_ifdef_stmt2 +> List.iter (set_as_comment Token_c.CppDirective);
       let all_toks = [xline2;xline3] @ line2 @ line3 in
-      all_toks +> List.iter (set_as_comment Ast_c.CppPassingCosWouldGetError);
+      all_toks +> List.iter (set_as_comment Token_c.CppPassingCosWouldGetError);
 
  (* ifdef with elseif *)
   | Ifdef 
@@ -1054,9 +1089,9 @@ let rec find_ifdef_funheaders = function
       find_ifdef_funheaders xs;
 
       msg_ifdef_funheaders ();
-      info_ifdef_stmt +> List.iter (set_as_comment Ast_c.CppDirective);
+      info_ifdef_stmt +> List.iter (set_as_comment Token_c.CppDirective);
       let all_toks = [xline2;xline3] @ line2 @ line3 in
-      all_toks +> List.iter (set_as_comment Ast_c.CppPassingCosWouldGetError)
+      all_toks +> List.iter (set_as_comment Token_c.CppPassingCosWouldGetError)
         
   (* recurse *)
   | Ifdef (xxs,info_ifdef_stmt)::xs 
@@ -1124,12 +1159,12 @@ let rec apply_macro_defs xs =
 
       (match params with
       | NoParam -> 
-          pr2 ("WIERD: macro without param used before parenthize: " ^ s);
+          pr2 ("WEIRD: macro without param used before parenthize: " ^ s);
           (* ex: PRINTP("NCR53C400 card%s detected\n" ANDP(((struct ... *)
 
           (match body with
           | DefineBody bodymacro -> 
-              set_as_comment (Ast_c.CppMacro) id;
+              set_as_comment (Token_c.CppMacro) id;
               id.new_tokens_before <- bodymacro;
           | DefineHint hint -> 
               msg_apply_known_macro_hint s;
@@ -1145,7 +1180,7 @@ let rec apply_macro_defs xs =
                * the number of arguments. *)
               if List.length params != List.length xxs
               then begin 
-                pr2_once ("WIERD: macro with wrong number of arguments: " ^ s);
+                pr2_once ("WEIRD: macro with wrong number of arguments: " ^ s);
                 (* old: id.new_tokens_before <- bodymacro; *)
                 ()
               end
@@ -1164,8 +1199,8 @@ let rec apply_macro_defs xs =
                  * are all TCommentCpp
                  *)
                 [Parenthised (xxs, info_parens)] +> 
-                  iter_token_paren (set_as_comment Ast_c.CppMacro);
-                set_as_comment Ast_c.CppMacro id;
+                  iter_token_paren (set_as_comment Token_c.CppMacro);
+                set_as_comment Token_c.CppMacro id;
 
             | DefineHint (HintMacroStatement as hint) -> 
                 (* important to do that after have apply the macro, otherwise
@@ -1189,14 +1224,14 @@ let rec apply_macro_defs xs =
                     msg_apply_known_macro_hint s;
                     id.tok <- token_from_parsinghack_hint (s,i1) hint;
                     [Parenthised (xxs, info_parens)] +> 
-                      iter_token_paren (set_as_comment Ast_c.CppMacro);
-                    set_as_comment Ast_c.CppMacro id2;
+                      iter_token_paren (set_as_comment Token_c.CppMacro);
+                    set_as_comment Token_c.CppMacro id2;
 
                 | _ ->
                     msg_apply_known_macro_hint s;
                     id.tok <- token_from_parsinghack_hint (s,i1) hint;
                     [Parenthised (xxs, info_parens)] +> 
-                      iter_token_paren (set_as_comment Ast_c.CppMacro);
+                      iter_token_paren (set_as_comment Token_c.CppMacro);
                 )
                 
 
@@ -1215,7 +1250,7 @@ let rec apply_macro_defs xs =
 
       (match params with
       | Params params -> 
-          pr2 ("WIERD: macro with params but no parens found: " ^ s);
+          pr2 ("WEIRD: macro with params but no parens found: " ^ s);
           (* dont apply the macro, perhaps a redefinition *)
           ()
       | NoParam -> 
@@ -1225,7 +1260,7 @@ let rec apply_macro_defs xs =
               id.tok <- (newtok +> TH.visitor_info_of_tok (fun _ -> 
                 TH.info_of_tok id.tok))
           | DefineBody bodymacro -> 
-              set_as_comment Ast_c.CppMacro id;
+              set_as_comment Token_c.CppMacro id;
               id.new_tokens_before <- bodymacro;
           | DefineHint hint -> 
                 msg_apply_known_macro_hint s;
@@ -1293,8 +1328,8 @@ let rec find_macro_paren xs =
      -> 
       pr2_cpp ("MACRO: __attribute detected ");
       [Parenthised (xxs, info_parens)] +> 
-        iter_token_paren (set_as_comment Ast_c.CppAttr);
-      set_as_comment Ast_c.CppAttr id;
+        iter_token_paren (set_as_comment Token_c.CppAttr);
+      set_as_comment Token_c.CppAttr id;
       find_macro_paren xs
 
 (*
@@ -1342,7 +1377,7 @@ let rec find_macro_paren xs =
       msg_stringification_params s;
       id.tok <- TMacroString (s, TH.info_of_tok id.tok);
       [Parenthised (xxs, info_parens)] +> 
-        iter_token_paren (set_as_comment Ast_c.CppMacro);
+        iter_token_paren (set_as_comment Token_c.CppMacro);
       find_macro_paren xs
 
   (* after case *)
@@ -1354,7 +1389,7 @@ let rec find_macro_paren xs =
       msg_stringification_params s;
       id.tok <- TMacroString (s, TH.info_of_tok id.tok);
       [Parenthised (xxs, info_parens)] +> 
-        iter_token_paren (set_as_comment Ast_c.CppMacro);
+        iter_token_paren (set_as_comment Token_c.CppMacro);
       find_macro_paren xs
 
 
@@ -1500,7 +1535,7 @@ let rec find_macro_lineparen xs =
    * not have positive is to restrict to .*DECLARE.* macros.
    *
    * but there is a grammar rule for that, so don't need this case anymore
-   * unless the parameter of the DECLARE_xxx are wierd and can not be mapped
+   * unless the parameter of the DECLARE_xxx are weird and can not be mapped
    * on a argument_list
    *)
         
@@ -1623,7 +1658,7 @@ let rec find_macro_lineparen xs =
           msg_macro_noptvirg s;
           macro.tok <- TMacroStmt (s, TH.info_of_tok macro.tok);
           [Parenthised (xxs, info_parens)] +> 
-            iter_token_paren (set_as_comment Ast_c.CppMacro);
+            iter_token_paren (set_as_comment Token_c.CppMacro);
         end;
 
       find_macro_lineparen (line2::xs)
@@ -1777,7 +1812,7 @@ and find_actions_params xxs =
           (* certainly because paren detection had a pb because of
            * some ifdef-exp
            *)
-          pr2 "PB: wierd, I try to tag an EOF token as action"
+          pr2 "PB: weird, I try to tag an EOF token as action"
         else 
           x.tok <- TAction (TH.info_of_tok x.tok);
       );
@@ -1868,8 +1903,12 @@ let fix_tokens_cpp2 tokens =
      * 
      *)
 
+    commentize_skip_start_to_end !tokens2;
+
     (* ifdef *)
     let cleaner = !tokens2 +> List.filter (fun x -> 
+      (* is_comment will also filter the TCommentCpp created in 
+       * commentize_skip_start_to_end *)
       not (TH.is_comment x.tok) (* could filter also #define/#include *)
     ) in
     let ifdef_grouped = mk_ifdef cleaner in
@@ -1970,7 +2009,7 @@ let rec define_line_1 acc xs =
       let acc = (TDefine ii) :: acc in
       define_line_2 acc line ii xs
   | TCppEscapedNewline ii::xs ->
-      pr2 "WIERD: a \\ outside a #define";
+      pr2 "WEIRD: a \\ outside a #define";
       let acc = (TCommentSpace ii) :: acc in
       define_line_1 acc xs
   | x::xs -> define_line_1 (x::acc) xs
@@ -1979,7 +2018,7 @@ and define_line_2 acc line lastinfo xs =
   match xs with 
   | [] -> 
       (* should not happened, should meet EOF before *)
-      pr2 "PB: WIERD";   
+      pr2 "PB: WEIRD";   
       List.rev (mark_end_define lastinfo::acc)
   | x::xs -> 
       let line' = TH.line_of_tok x in
@@ -1991,7 +2030,7 @@ and define_line_2 acc line lastinfo xs =
 	  let acc = (EOF ii) :: acc in
           define_line_1 acc xs
       | TCppEscapedNewline ii -> 
-          if (line' <> line) then pr2 "PB: WIERD: not same line number";
+          if (line' <> line) then pr2 "PB: WEIRD: not same line number";
 	  let acc = (TCommentSpace ii) :: acc in
           define_line_2 acc (line+1) info xs
       | x -> 
@@ -2025,7 +2064,7 @@ let rec define_ident acc xs =
 	  let acc = (TIdentDefine (s,i2)) :: acc in
           define_ident acc xs
       | _ -> 
-          pr2 "WIERD: wierd #define body"; 
+          pr2 "WEIRD: weird #define body"; 
           define_ident acc xs
       )
   | x::xs ->
@@ -2524,30 +2563,29 @@ let lookahead2 ~pass next before =
       then TCommentCpp (Ast_c.CppDirective, ii)
       else 
       *)
-         (* not !LP._lexer_hint.toplevel *)
-        if !Flag_parsing_c.ifdef_directive_passing
-            || (pass = 2)
-        then begin
-
-          if (LP.current_context () = LP.InInitializer)
-          then begin 
-            pr2 "In Initializer passing"; (* cheat: dont count in stat *)
-            incr Stat.nIfdefInitializer;
-            
-          end
-          else msg_ifdef_passing ()
-          ;
-
-          TCommentCpp (Ast_c.CppDirective, ii)
-        end
-        else x
-
+      (* not !LP._lexer_hint.toplevel *)
+      if !Flag_parsing_c.ifdef_directive_passing
+        || (pass = 2)
+      then begin
+        
+        if (LP.current_context () = LP.InInitializer)
+        then begin 
+          pr2_cpp "In Initializer passing"; (* cheat: dont count in stat *)
+          incr Stat.nIfdefInitializer;
+        end else begin 
+          pr2_cpp("IFDEF: or related insde function. I treat it as comment");
+          incr Stat.nIfdefPassing;
+        end;
+        TCommentCpp (Token_c.CppDirective, ii)
+      end
+      else x
+        
   | (TUndef (id, ii) as x)::_, _ 
       -> 
         if (pass = 2)
         then begin
-          pr2_once ("CPP-UNDEF: I treat it as comment");
-          TCommentCpp (Ast_c.CppDirective, ii)
+          pr2_cpp("UNDEF: I treat it as comment");
+          TCommentCpp (Token_c.CppDirective, ii)
         end
         else x
 
@@ -2555,8 +2593,8 @@ let lookahead2 ~pass next before =
       -> 
         if (pass = 2)
         then begin
-          pr2_once ("CPP-OTHER: I treat it as comment");
-          TCommentCpp (Ast_c.CppDirective, ii)
+          pr2_cpp ("OTHER directive: I treat it as comment");
+          TCommentCpp (Token_c.CppDirective, ii)
         end
         else x
 

@@ -14,11 +14,14 @@ let get_file l = (* l is a diff line *)
 
 let get_files prefix =
   let files = Array.to_list(Sys.readdir(Sys.getcwd())) in
-  let is_number n = try let _ = int_of_string n in true with _ -> false in
   let relevant name =
-    match Str.split (Str.regexp "\\.") name with
-      [pref;mid;ext] -> prefix = pref && is_number mid && ext = "out"
-    | _ -> false in
+    let rel_re = Str.regexp "\\(.*\\)\\.[0-9]+\\.out" in
+      if Str.string_match rel_re name 0 then
+	let pref = Str.matched_group 1 name in
+	  pref = prefix
+      else
+	false
+  in
   List.filter relevant files
 
 let process_file fl =
@@ -59,11 +62,11 @@ let _ =
   Printf.printf "arg %s\n" arg;
   let arg = Filename.chop_extension arg in
   let files = get_files arg in
-  process_all_files files arg;
+  process_all_files files (arg^".out");
   let tmp_files =
     String.concat " "
       (List.map (function x -> "tmp."^x) (List.sort compare files)) in
-  let _ = Sys.command (Printf.sprintf "cat %s > tmp.%s" tmp_files arg) in
+  let _ = Sys.command (Printf.sprintf "cat %s > %s.tmp" tmp_files arg) in
   List.iter
     (function file ->
       let _ = Sys.command (Printf.sprintf "/bin/rm %s" file) in

@@ -32,35 +32,39 @@ module Ast = Ast_cocci
 let mkres x e left right =
   let lstart = Ast0.get_info left in
   let lend = Ast0.get_info right in
+  let pos_info =
+    { Ast0.line_start = lstart.Ast0.pos_info.Ast0.line_start;
+      Ast0.line_end = lend.Ast0.pos_info.Ast0.line_end;
+      Ast0.logical_start = lstart.Ast0.pos_info.Ast0.logical_start;
+      Ast0.logical_end = lend.Ast0.pos_info.Ast0.logical_end;
+      Ast0.column = lstart.Ast0.pos_info.Ast0.column;
+      Ast0.offset = lstart.Ast0.pos_info.Ast0.offset; } in
   let info =
-    { Ast0.line_start = lstart.Ast0.line_start;
-      Ast0.line_end = lend.Ast0.line_end;
-      Ast0.logical_start = lstart.Ast0.logical_start;
-      Ast0.logical_end = lend.Ast0.logical_end;
+    { Ast0.pos_info = pos_info;
       Ast0.attachable_start = lstart.Ast0.attachable_start;
       Ast0.attachable_end = lend.Ast0.attachable_end;
       Ast0.mcode_start = lstart.Ast0.mcode_start;
       Ast0.mcode_end = lend.Ast0.mcode_end;
-      Ast0.column = lstart.Ast0.column;
-      Ast0.offset = lstart.Ast0.offset;
       (* only for tokens, not inherited upwards *)
-      Ast0.strings_before = []; Ast0.strings_after = []} in
+      Ast0.strings_before = []; Ast0.strings_after = [] } in
   {x with Ast0.node = e; Ast0.info = info}
 
 let mkmultires x e left right (astart,start_mcodes) (aend,end_mcodes) =
   let lstart = Ast0.get_info left in
   let lend = Ast0.get_info right in
+  let pos_info =
+    { Ast0.line_start = lstart.Ast0.pos_info.Ast0.line_start;
+      Ast0.line_end = lend.Ast0.pos_info.Ast0.line_end;
+      Ast0.logical_start = lstart.Ast0.pos_info.Ast0.logical_start;
+      Ast0.logical_end = lend.Ast0.pos_info.Ast0.logical_end;
+      Ast0.column = lstart.Ast0.pos_info.Ast0.column;
+      Ast0.offset = lstart.Ast0.pos_info.Ast0.offset; } in
   let info =
-    { Ast0.line_start = lstart.Ast0.line_start;
-      Ast0.line_end = lend.Ast0.line_end;
-      Ast0.logical_start = lstart.Ast0.logical_start;
-      Ast0.logical_end = lend.Ast0.logical_end;
+    { Ast0.pos_info = pos_info;
       Ast0.attachable_start = astart;
       Ast0.attachable_end = aend;
       Ast0.mcode_start = start_mcodes;
       Ast0.mcode_end = end_mcodes;
-      Ast0.column = lstart.Ast0.column;
-      Ast0.offset = lstart.Ast0.offset;
       (* only for tokens, not inherited upwards *)
       Ast0.strings_before = []; Ast0.strings_after = [] } in
   {x with Ast0.node = e; Ast0.info = info}
@@ -82,31 +86,40 @@ let promote_mcode (_,_,info,mcodekind,_) =
   {(Ast0.wrap ()) with Ast0.info = new_info; Ast0.mcodekind = ref mcodekind}
 
 let promote_mcode_plus_one (_,_,info,mcodekind,_) =
+  let new_pos_info = 
+    {info.Ast0.pos_info with
+      Ast0.line_start = info.Ast0.pos_info.Ast0.line_start + 1;
+      Ast0.logical_start = info.Ast0.pos_info.Ast0.logical_start + 1;
+      Ast0.line_end = info.Ast0.pos_info.Ast0.line_end + 1;
+      Ast0.logical_end = info.Ast0.pos_info.Ast0.logical_end + 1; } in
   let new_info =
     {info with
-      Ast0.line_start = info.Ast0.line_start + 1;
-      Ast0.logical_start = info.Ast0.logical_start + 1;
-      Ast0.line_end = info.Ast0.line_end + 1;
-      Ast0.logical_end = info.Ast0.logical_end + 1;
+      Ast0.pos_info = new_pos_info;
       Ast0.mcode_start = [mcodekind]; Ast0.mcode_end = [mcodekind]} in
   {(Ast0.wrap ()) with Ast0.info = new_info; Ast0.mcodekind = ref mcodekind}
 
 let promote_to_statement stm mcodekind =
   let info = Ast0.get_info stm in
+  let new_pos_info =
+    {info.Ast0.pos_info with
+      Ast0.logical_start = info.Ast0.pos_info.Ast0.logical_end;
+      Ast0.line_start = info.Ast0.pos_info.Ast0.line_end; } in
   let new_info =
     {info with
-      Ast0.logical_start = info.Ast0.logical_end;
-      Ast0.line_start = info.Ast0.line_end;
+      Ast0.pos_info = new_pos_info;
       Ast0.mcode_start = [mcodekind]; Ast0.mcode_end = [mcodekind];
       Ast0.attachable_start = true; Ast0.attachable_end = true} in
   {(Ast0.wrap ()) with Ast0.info = new_info; Ast0.mcodekind = ref mcodekind}
 
 let promote_to_statement_start stm mcodekind =
   let info = Ast0.get_info stm in
+  let new_pos_info =
+    {info.Ast0.pos_info with
+      Ast0.logical_end = info.Ast0.pos_info.Ast0.logical_start;
+      Ast0.line_end = info.Ast0.pos_info.Ast0.line_start; } in
   let new_info =
     {info with
-      Ast0.logical_end = info.Ast0.logical_start;
-      Ast0.line_end = info.Ast0.line_start;
+      Ast0.pos_info = new_pos_info;
       Ast0.mcode_start = [mcodekind]; Ast0.mcode_end = [mcodekind];
       Ast0.attachable_start = true; Ast0.attachable_end = true} in
   {(Ast0.wrap ()) with Ast0.info = new_info; Ast0.mcodekind = ref mcodekind}

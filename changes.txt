@@ -1,10 +1,40 @@
 -*- org -*-
 
-* 0.1.5
+* 0.1.6
 
 ** Features: 
+- grouping of generated rules with -hrule option
+- handling of special coccinelle comments 
+  /* {{coccinelle:skip_start}} */ and
+  /* {{coccinelle:skip_end}} */
+  allowing to give more hints to the C parser.
+  Thanks to Flavien@lebarbe.net for the idea.
+- the ability to add comments
+- the ability to print the values of more (but not all) kinds of
+  metavariables from python
+- new vim SmPL mode.
+  Thanks to Alexander Faroy.
+
+** Bugfix:
+- consider the ident tokens also in the 2 lines before the error line for the 
+  10-most-problematic-parsing-errors diagnostic.
+- SmPL parser allows cast as the argument of a pointer
+- SmPL type checker allows enum as an array index
+- Better generation of fresh metavariables names in hrule
+- no more warnings about things that should be metavariables when there is
+  a disjunction in a function position
+- bugfix in parser, better error message.
+  Thanks to Ali-Erdem OZCAN <ali-erdem.ozcan@st.com> for the bug report.
+
+** Internals: 
+
+* 0.1.5
+
+** Language: 
 - added initialiser metavariable
 - added sequences of designators in structures
+
+** Features: 
 - improved printing of the C code corresponding to metavariables
 - improved printing when code (eg declarations) is removed at the beginning
   of a block, and then is followed by a blank line
@@ -20,13 +50,15 @@
 
 * 0.1.4
 
+** Language: 
+- long long added to SmPL
+
 ** Features: 
 - can match patterns of the form unsigned T or signed T, where T is a
   metavariable
 - dropped the sizeof_parens isomorphism, which was made redundant by the
   paren isomorphism
 - simple rule generation
-- long long added to SmPL
 
 ** Bugfix:
 - trailing , ; and ) no longer left on a line by themselves
@@ -81,16 +113,18 @@
 
 * 0.1.1
 
-** Langage: 
+** Language: 
  - support for initializer at toplevel, cf -test substruct
 
 * 0.1
 
 ** first public release of the source code:
 
-** Features
+** Language: 
  - embeded python scripting
  - position
+
+** Features
 
 * beta 
 

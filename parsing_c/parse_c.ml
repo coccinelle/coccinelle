@@ -1,4 +1,6 @@
-(* Copyright (C) 2006, 2007, 2008 Yoann Padioleau
+(* Yoann Padioleau
+ * 
+ * Copyright (C) 2006, 2007, 2008 Ecole des Mines de Nantes
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License (GPL)
@@ -99,25 +101,25 @@ let commentized xs = xs +> Common.map_filter (function
         match !Flag_parsing_c.filter_passed_level with 
         | 0 -> false
         | 1 -> 
-            List.mem cppkind [Ast_c.CppAttr]
+            List.mem cppkind [Token_c.CppAttr]
             || 
             (s =~ "__.*")
         | 2 -> 
-            List.mem cppkind [Ast_c.CppAttr;Ast_c.CppPassingNormal]
+            List.mem cppkind [Token_c.CppAttr;Token_c.CppPassingNormal]
             || 
             (s =~ "__.*")
         | 3 -> 
-            List.mem cppkind [Ast_c.CppAttr;Ast_c.CppPassingNormal;Ast_c.CppDirective]
+            List.mem cppkind [Token_c.CppAttr;Token_c.CppPassingNormal;Token_c.CppDirective]
             || 
             (s =~ "__.*")
         | 4 -> 
-            List.mem cppkind [Ast_c.CppAttr;Ast_c.CppPassingNormal;Ast_c.CppMacro]
+            List.mem cppkind [Token_c.CppAttr;Token_c.CppPassingNormal;Token_c.CppMacro]
             || 
             (s =~ "__.*")
 
 
         | 5 -> 
-            List.mem cppkind [Ast_c.CppAttr;Ast_c.CppPassingNormal;Ast_c.CppDirective;Ast_c.CppMacro]
+            List.mem cppkind [Token_c.CppAttr;Token_c.CppPassingNormal;Token_c.CppDirective;Token_c.CppMacro]
             || 
             (s =~ "__.*")
 
@@ -670,14 +672,14 @@ let rec comment_until_defeol xs =
   | x::xs -> 
       (match x with
       | Parser_c.TDefEOL i -> 
-          Parser_c.TCommentCpp (Ast_c.CppDirective, TH.info_of_tok x)
+          Parser_c.TCommentCpp (Token_c.CppDirective, TH.info_of_tok x)
           ::xs
       | _ -> 
           let x' = 
             (* bugfix: otherwise may lose a TComment token *)
             if TH.is_real_comment x
             then x
-            else Parser_c.TCommentCpp (Ast_c.CppPassingNormal (*good?*), TH.info_of_tok x)
+            else Parser_c.TCommentCpp (Token_c.CppPassingNormal (*good?*), TH.info_of_tok x)
           in
           x'::comment_until_defeol xs
       )
@@ -864,7 +866,7 @@ let rec lexer_function ~pass tr = fun lexbuf ->
           then begin
             incr Stat.nDefinePassing;
             pr2_once ("CPP-DEFINE: inside function, I treat it as comment");
-            let v' = Parser_c.TCommentCpp (Ast_c.CppDirective,TH.info_of_tok v)
+            let v' = Parser_c.TCommentCpp (Token_c.CppDirective,TH.info_of_tok v)
             in
             tr.passed <- v'::tr.passed;
             tr.rest       <- comment_until_defeol tr.rest;
@@ -883,7 +885,7 @@ let rec lexer_function ~pass tr = fun lexbuf ->
           then begin
             incr Stat.nIncludePassing;
             pr2_once ("CPP-INCLUDE: inside function, I treat it as comment");
-            let v = Parser_c.TCommentCpp(Ast_c.CppDirective, info) in
+            let v = Parser_c.TCommentCpp(Token_c.CppDirective, info) in
             tr.passed <- v::tr.passed;
             lexer_function ~pass tr lexbuf
           end
@@ -1087,7 +1089,7 @@ let parse_print_error_heuristic2 file =
               | _ -> false
               )
             else begin
-              pr2 "WIERD: length list of error recovery tokens < 2 ";
+              pr2 "WEIRD: length list of error recovery tokens < 2 ";
               false 
             end
           in
@@ -1132,7 +1134,7 @@ let parse_print_error_heuristic2 file =
 
           let pbline = 
             toks_of_bads 
-            +> Common.filter (TH.is_same_line line_error)
+            +> Common.filter (TH.is_same_line_or_close line_error)
             +> Common.filter TH.is_ident_like 
           in
           let error_info = 

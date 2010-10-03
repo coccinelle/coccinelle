@@ -30,7 +30,8 @@ type fresh = bool
 
 type clt =
     line_type * int * int * int * int (* starting spaces *) *
-      string list (* code before *) * string list (* code after *) *
+      (string * Ast0.position_info) list (* code before *) *
+      (string * Ast0.position_info) list (* code after *) *
       Ast0.meta_pos (* position variable, minus only *)
 
 (* ---------------------------------------------------------------------- *)

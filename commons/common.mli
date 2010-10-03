@@ -280,11 +280,15 @@ val laws2 :
 (* Persistence *)
 (*****************************************************************************)
 
-(* just wrappers around Marshall *)
+(* just wrappers around Marshal *)
 val get_value : filename -> 'a
 val read_value : filename -> 'a (* alias *)
 val write_value : 'a -> filename -> unit
 val write_back : ('a -> 'b) -> filename -> unit
+
+(* wrappers that also use profile_code *)
+val marshal__to_string:   'a -> Marshal.extern_flags list -> string
+val marshal__from_string:   string -> int -> 'a
 
 (*****************************************************************************)
 (* Counter *)
@@ -329,6 +333,10 @@ val format_to_string : (unit -> unit) (* printer *) -> string
  * printing (with pr* and indent_do) *)
 val adjust_pp_with_indent : (unit -> unit) -> unit
 val adjust_pp_with_indent_and_header : string -> (unit -> unit) -> unit
+
+
+val mk_str_func_of_assoc_conv: 
+  ('a * string) list -> (string -> 'a) * ('a -> string)
 
 (*****************************************************************************)
 (* Macro *)
@@ -441,7 +449,7 @@ exception Impossible
 exception Here
 exception ReturnExn
 
-exception MultiFound
+exception Multi_found
 
 exception WrongFormat of string
 
@@ -576,6 +584,7 @@ val (=*=): 'a -> 'a -> bool
 val ( ||| ) : 'a -> 'a -> 'a
 val ( ==> ) : bool -> bool -> bool
 val xor : 'a -> 'a -> bool
+
 
 
 (*****************************************************************************)
@@ -759,6 +768,14 @@ val partition_either :
 val filter_some : 'a option list -> 'a list
 val map_filter : ('a -> 'b option) -> 'a list -> 'b list
 val find_some : ('a -> 'b option) -> 'a list -> 'b
+
+val list_to_single_or_exn: 'a list -> 'a
+
+(*****************************************************************************)
+(* TriBool *)
+(*****************************************************************************)
+type bool3 = True3 | False3 | TrueFalsePb3 of string
+
 
 (*****************************************************************************)
 (* Strings *)
@@ -951,6 +968,7 @@ val floattime_of_string: string -> float_time
 val dmy_to_unixtime: date_dmy -> float_time * Unix.tm
 val unixtime_to_dmy: Unix.tm -> date_dmy
 val unixtime_to_floattime: Unix.tm -> float_time
+val floattime_to_unixtime: float_time -> Unix.tm
 
 val sec_to_days : int -> string
 val sec_to_hours : int -> string
@@ -1024,6 +1042,7 @@ val cmd_to_list_and_status : string -> string list * Unix.process_status
 val command2 : string -> unit
 val _batch_mode: bool ref
 val command2_y_or_no : string -> bool
+val command2_y_or_no_exit_if_no : string -> unit
 
 val do_in_fork : (unit -> unit) -> int
 
@@ -1157,6 +1176,7 @@ val fpartition : ('a -> 'b option) -> 'a list -> 'b list * 'a list
 val groupBy : ('a -> 'a -> bool) -> 'a list -> 'a list list
 val exclude_but_keep_attached: ('a -> bool) -> 'a list -> ('a * 'a list) list
 val group_by_post: ('a -> bool) -> 'a list -> ('a list * 'a) list * 'a list
+val group_by_mapped_key: ('a -> 'b) -> 'a list -> ('b * 'a list) list
 
 (* Use hash internally to not be in O(n2). If you want to use it on a
  * simple list, then first do a List.map to generate a key, for instance the
@@ -1462,6 +1482,9 @@ val sort_by_val_highfirst: ('a,'b) assoc -> ('a * 'b) list
 
 val sort_by_key_lowfirst: (int,'b) assoc -> (int * 'b) list
 val sort_by_key_highfirst: (int,'b) assoc -> (int * 'b) list
+
+val sortgen_by_key_lowfirst: ('a,'b) assoc -> ('a * 'b) list
+val sortgen_by_key_highfirst: ('a,'b) assoc -> ('a * 'b) list
 
 (*****************************************************************************)
 (* Assoc, specialized. *)

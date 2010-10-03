@@ -6,3 +6,6 @@ install: spatch_linux cleanup
 
 cleanup: cleanup.ml
 	ocamlc -o cleanup str.cma cleanup.ml
+
+clean:
+	rm -f cleanup cleanup.cmi cleanup.cmo spatch_linux

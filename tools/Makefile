@@ -1,3 +1,5 @@
+-include ../Makefile.config
+
 PROGS=gitgrep split_patch extract_c_and_res #generate_dependencies
 
 all: $(SUBDIRS) $(PROGS)
@@ -38,7 +40,7 @@ OCAMLOPT=ocamlopt$(OPTBIN)   $(INCLUDE) $(OPTFLAGS)
 #OCAMLLEX=ocamllex$(OPTBIN) -ml
 OCAMLLEX=ocamllex$(OPTBIN)
 OCAMLYACC=ocamlyacc -v
-OCAMLDEP=ocamldep$(OPTBIN) #$(INCLUDE)
+OCAMLDEP=ocamldep$(OPTBIN) $(INCLUDE)
 OCAMLMKTOP=ocamlmktop -g -custom $(INCLUDE)
 
 split_patch: split_patch.cmo

@@ -1,4 +1,6 @@
-(* Copyright (C) 2006, 2007, 2008, 2009 Ecole des Mines de Nantes
+(* Yoann Padioleau
+ * 
+ * Copyright (C) 2006, 2007, 2008, 2009 Ecole des Mines de Nantes
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License (GPL)
@@ -33,7 +35,7 @@ module F = Control_flow_c
  * and some of our analysis need only to specify an action for 
  * specific cases, such as the function call case, and recurse
  * for the other cases. 
- * Here is an simplification of our AST: 
+ * Here is a simplification of our AST: 
  *  
  * type ctype = 
  *  | Basetype of ...
@@ -84,6 +86,22 @@ module F = Control_flow_c
  * kfunction_call, kident, kpostfix hooks as one can just
  * use pattern matching with kexpr to achieve the same effect.
  * 
+ * Note: when want to apply recursively, always apply the continuator
+ * on the toplevel expression, otherwise may miss some intermediate steps.
+ * Do
+ *         match expr with
+ *         | FunCall (e, es) -> ...
+ *             k expr
+ * Or
+ *         match expr with
+ *         | FunCall (e, es) -> ...
+ *             Visitor_c.vk_expr bigf e
+ * Not
+ *         match expr with
+ *         | FunCall (e, es) -> ...
+ *             k e
+ *
+ * 
  * 
  * 
  * 
@@ -99,10 +117,10 @@ module F = Control_flow_c
  *       | other -> super#expr other
  *      end in analysis#expr
  * 
- * Problem is that you don't have control about what is generated 
+ * The problem is that you don't have control about what is generated 
  * and in our case we sometimes dont want to visit too much. For instance
  * our visitor don't recuse on the type annotation of expressions
- * Ok, this could be worked around, but the pb remain, you 
+ * Ok, this could be worked around, but the pb remains, you 
  * don't have control and at some point you may want. In the same
  * way we want to enforce a certain order in the visit (ok this is not good,
  * but it's convenient) of ast elements. For instance first
@@ -221,6 +239,8 @@ type visitor_c =
    kdefineval : (define_val -> unit) * visitor_c -> define_val -> unit;
    kstatementseq: (statement_sequencable   -> unit) * visitor_c -> statement_sequencable   -> unit;
 
+   kfield: (field -> unit) * visitor_c -> field -> unit;
+
    (* CFG *)
    knode: (F.node -> unit) * visitor_c -> F.node -> unit;
    (* AST *)
@@ -242,6 +262,7 @@ let default_visitor_c =
     kcppdirective = (fun (k,_) p  -> k p);
     kdefineval = (fun (k,_) p  -> k p);
     kstatementseq    = (fun (k,_) p  -> k p);
+    kfield    = (fun (k,_) p  -> k p);
   } 
 
 
@@ -287,9 +308,6 @@ let rec vk_expr = fun bigf expr ->
         iif is;
         statxs +> List.iter (vk_statement_sequencable bigf);
 
-    (* TODO, we will certainly have to then do a special visitor for 
-     * initializer 
-     *)
     | Constructor (t, initxs) -> 
         vk_type bigf t;
         initxs +> List.iter (fun (ini, ii) -> 
@@ -495,9 +513,15 @@ and vk_designator = fun bigf design ->
 (* ------------------------------------------------------------------------ *)
 
 and vk_struct_fields = fun bigf fields -> 
+  fields +> List.iter (vk_struct_field bigf);
+
+and vk_struct_field = fun bigf field -> 
   let iif ii = vk_ii bigf ii in
 
-  fields +> List.iter (fun (xfield, ii) -> 
+  let f = bigf.kfield in
+  let rec k field = 
+
+    let (xfield, ii) = field in
     iif ii;
     match xfield with 
     | DeclarationField 
@@ -513,8 +537,11 @@ and vk_struct_fields = fun bigf fields ->
         vk_cpp_directive bigf directive
     | IfdefStruct ifdef -> 
         vk_ifdef_directive bigf ifdef
+  in
+  f (k, bigf) field
+  
 
-  )
+  
 
 and vk_struct_fieldkinds = fun bigf onefield_multivars -> 
   let iif ii = vk_ii bigf ii in
@@ -1095,6 +1122,7 @@ and vk_asmbody_s = fun bigf (string_list, colon_list) ->
   
 
 
+(* todo? a visitor for qualifier *)
 and vk_type_s = fun bigf t -> 
   let rec typef t = bigf.ktype_s (k,bigf) t
   and iif ii = vk_ii_s bigf ii
@@ -1103,7 +1131,7 @@ and vk_type_s = fun bigf t ->
     let (unwrap_q, iiq) = q in
     (* strip_info_visitor needs iiq to be processed before iit *)
     let iif_iiq = iif iiq in
-    let q' = unwrap_q in     (* todo? a visitor for qualifier *)
+    let q' = unwrap_q in
     let (unwrap_t, iit) = t in
     let t' = 
       match unwrap_t with

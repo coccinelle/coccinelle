@@ -51,7 +51,7 @@ type token =
   | TPure
   | TPtrOp of (Data.clt)
   | TPtVirg of (Data.clt)
-  | TPragma of (string)
+  | TPragma of (string * Data.clt)
   | TPosition
   | TPosAny
   | TPlusFile of (string * Data.clt)

@@ -116,6 +116,7 @@ let rec propagate_types env =
     | T.BaseType(T.ShortType)
     | T.MetaType(_,_,_)
     | T.TypeName _
+    | T.EnumName _
     | T.SignedT(_,None) -> true
     | T.SignedT(_,Some ty) -> is_int_type ty
     | _ -> false in

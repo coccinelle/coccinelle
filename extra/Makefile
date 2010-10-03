@@ -1,3 +1,5 @@
+-include ../Makefile.config
+
 TARGET=extra
 
 SOURCES = classic_patch.ml kbuild.ml maintainers.ml
@@ -12,7 +14,7 @@ INCLUDES= -I ../commons -I ../globals -I  ../parsing_cocci -I  ../parsing_c
 OCAMLCFLAGS ?= -g -dtypes
 OCAMLC =ocamlc$(OPTBIN) $(OCAMLCFLAGS) $(INCLUDES)
 OCAMLOPT = ocamlopt$(OPTBIN) $(OPTFLAGS) $(INCLUDES)
-OCAMLDEP = ocamldep$(OPTBIN) #$(INCLUDES)
+OCAMLDEP = ocamldep$(OPTBIN) $(INCLUDES)
 OCAMLMKTOP=ocamlmktop -g -custom $(INCLUDES)
 
 

@@ -1,4 +1,6 @@
-(* Copyright (C) 2006, 2007, 2008, 2009 Ecole des Mines de Nantes and DIKU
+(* Yoann Padioleau, Julia Lawall
+ * 
+ * Copyright (C) 2006, 2007, 2008, 2009 Ecole des Mines de Nantes and DIKU
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License (GPL)
@@ -76,7 +78,7 @@ let pretty_print_c pr_elem pr_space pr_nl pr_indent pr_outdent pr_unindent =
     (match exp, ii with
     | Ident (c),         [i]     -> pr_elem i
     (* only a MultiString can have multiple ii *)
-    | Constant (MultiString), is     -> is +> List.iter pr_elem
+    | Constant (MultiString _), is     -> is +> List.iter pr_elem
     | Constant (c),         [i]     -> pr_elem i 
     | FunCall  (e, es),     [i1;i2] -> 
         pp_expression e; pr_elem i1; 
@@ -166,8 +168,8 @@ let pretty_print_c pr_elem pr_space pr_nl pr_indent pr_outdent pr_unindent =
     let rec pp_action (ActMisc ii) = ii +> List.iter pr_elem in
     match argument with
     | Left e -> pp_expression e
-    | Right wierd -> 
-	(match wierd with
+    | Right weird -> 
+	(match weird with
 	| ArgType param -> pp_param param
 	| ArgAction action -> pp_action action)
 	  
@@ -859,7 +861,6 @@ and pp_init (init, iinit) =
     let defbis, ii = def in
     match ii with 
     | is::iifunc1::iifunc2::i1::i2::ifakestart::isto -> 
-	
 	let {f_name = s;
               f_type = (returnt, (paramst, (b, iib)));
               f_storage = sto;
@@ -867,7 +868,6 @@ and pp_init (init, iinit) =
               f_attr = attrs;
 	    } = defbis
 	in
-	
         pr_elem ifakestart;
         
         pp_type_with_ident None (Some (sto, isto)) 
@@ -875,7 +875,6 @@ and pp_init (init, iinit) =
 	
         pp_attributes pr_elem pr_space attrs;
         pr_elem is;
-	
 	
         pr_elem iifunc1;
 	
@@ -1213,6 +1212,17 @@ and pp_init (init, iinit) =
 (* Here we do not use (mcode, env). It is a simple C pretty printer. *)
 let pr_elem info =
   let s = Ast_c.str_of_info info in
+  if !Flag_parsing_c.pretty_print_comment_info then begin
+    let before = !(info.comments_tag).mbefore in
+    if not (null before) then begin
+      pp "-->";
+      before +> List.iter (fun (comment_like, pinfo) -> 
+        let s = pinfo.Common.str in
+        pp s
+      );
+      pp "<--";
+    end;
+  end;
   pp s
     
 let pr_space _ = Format.print_space()

@@ -1,3 +1,6 @@
+
+-include ../Makefile.config
+
 ##############################################################################
 # Variables
 ##############################################################################
@@ -23,7 +26,7 @@ OCAMLOPT= ocamlopt$(OPTBIN) $(OPTFLAGS) $(EXTRAOPT)   $(INCLUDES)
 OCAMLOPT2=ocamlopt$(OPTBIN) $(OPTFLAGS)              $(INCLUDES) 
 OCAMLLEX=ocamllex$(OPTBIN)
 OCAMLYACC=ocamlyacc -v
-OCAMLDEP=ocamldep$(OPTBIN) #$(INCLUDES)
+OCAMLDEP=ocamldep$(OPTBIN) $(INCLUDES)
 OCAMLMKTOP=ocamlmktop -g -custom $(INCLUDES)
 
 OBJS= $(SRC:.ml=.cmo)

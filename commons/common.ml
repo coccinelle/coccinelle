@@ -51,6 +51,7 @@
  *   - List.fold*, List.concat, ... 
  *   - Str.global_replace
  *   - Filename.is_relative
+ *   - String.uppercase, String.lowercase
  * 
  * 
  * The Format library allows to hide passing an indent_level variable.
@@ -580,6 +581,9 @@ let profile_end category = failwith "todo"
 
 (* subtil: don't forget to give all argumens to f, otherwise partial app
  * and will profile nothing.
+ * 
+ * todo: try also detect when complexity augment each time, so can
+ * detect the situation for a function gets worse and worse ? 
  *)  
 let profile_code category f = 
   if not (check_profile category)
@@ -937,6 +941,18 @@ let write_back func filename =
 let read_value f = get_value f
 
 
+let marshal__to_string2 v flags = 
+  Marshal.to_string v flags
+let marshal__to_string a b = 
+  profile_code "Marshalling" (fun () -> marshal__to_string2 a b)
+
+let marshal__from_string2 v flags = 
+  Marshal.from_string v flags
+let marshal__from_string a b = 
+  profile_code "Marshalling" (fun () -> marshal__from_string2 a b)
+
+
+
 (*****************************************************************************)
 (* Counter *)
 (*****************************************************************************)
@@ -1052,6 +1068,17 @@ let format_to_string f =
   String.concat "\n" (List.rev !lines)
 
 
+
+let mk_str_func_of_assoc_conv xs = 
+  let swap (x,y) = (y,x) in
+
+  (fun s -> 
+    let xs' = List.map swap xs in
+    List.assoc s xs'
+  ),
+  (fun a -> 
+    List.assoc a xs
+  )
 
 (*****************************************************************************)
 (* Macro *)
@@ -1286,7 +1313,7 @@ exception Impossible
 exception Here
 exception ReturnExn
 
-exception MultiFound
+exception Multi_found (* to be consistent with Not_found *)
 
 exception WrongFormat of string
 
@@ -1987,6 +2014,20 @@ let map_find f xs =
   xs +> List.map f +> List.find (function Some x -> true | None -> false)
     +> (function Some x -> x | None -> raise Impossible)
 *)
+
+
+let list_to_single_or_exn xs =
+  match xs with
+  | [] -> raise Not_found
+  | x::y::zs -> raise Multi_found
+  | [x] -> x
+
+(*****************************************************************************)
+(* TriBool *)
+(*****************************************************************************)
+
+type bool3 = True3 | False3 | TrueFalsePb3 of string
+
 
 
 (*****************************************************************************)
@@ -2823,6 +2864,9 @@ let unixtime_to_dmy tm =
 let unixtime_to_floattime tm = 
   Unix.mktime tm +> fst
 
+let floattime_to_unixtime sec = 
+  Unix.localtime sec
+
 
 let sec_to_days sec = 
   let minfactor = 60 in
@@ -3049,6 +3093,12 @@ let command2_y_or_no cmd =
     | "n" | "no"  | "N" -> false
     | _ -> failwith "answer by yes or no"
   end
+
+let command2_y_or_no_exit_if_no cmd = 
+  let res = command2_y_or_no cmd in
+  if res
+  then ()
+  else raise (UnixExit (1))
 
   
 
@@ -3492,6 +3542,17 @@ let rec groupBy eq l =
   | x::xs -> 
       let (xs1,xs2) = List.partition (fun x' -> eq x x') xs in
       (x::xs1)::(groupBy eq xs2)
+
+let rec group_by_mapped_key fkey l =
+  match l with
+  | [] -> []
+  | x::xs -> 
+      let k = fkey x in 
+      let (xs1,xs2) = List.partition (fun x' -> let k2 = fkey x' in k=k2) xs in
+      (k, (x::xs1))::(group_by_mapped_key fkey xs2)
+
+
+
 
 let (exclude_but_keep_attached: ('a -> bool) -> 'a list -> ('a * 'a list) list)=
  fun f xs -> 
@@ -4044,6 +4105,12 @@ let sort_by_key_lowfirst xs =
 
 let _ = example (sort_by_key_lowfirst [4, (); 7,()] = [4,(); 7,()])
 let _ = example (sort_by_key_highfirst [4,(); 7,()] = [7,(); 4,()])
+
+
+let sortgen_by_key_highfirst xs = 
+  sort_prof (fun (k1,v1) (k2,v2) -> compare k2 k1) xs
+let sortgen_by_key_lowfirst xs = 
+  sort_prof (fun (k1,v1) (k2,v2) -> compare k1 k2) xs
 
 (*----------------------------------*)
 
@@ -4725,7 +4792,7 @@ let find_treeref f tree =
   match !res with
   | [n,xs] -> NodeRef (n, xs)
   | [] -> raise Not_found
-  | x::y::zs -> raise MultiFound
+  | x::y::zs -> raise Multi_found
 
 
 let find_treeref_with_parents_some f tree = 
@@ -4739,7 +4806,7 @@ let find_treeref_with_parents_some f tree =
   match !res with
   | [v] -> v
   | [] -> raise Not_found
-  | x::y::zs -> raise MultiFound
+  | x::y::zs -> raise Multi_found
 
 let find_multi_treeref_with_parents_some f tree = 
   let res = ref [] in

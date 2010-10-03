@@ -22,6 +22,8 @@
 # Variables
 ##############################################################################
 #TARGET=matcher
+-include ../Makefile.config
+
 TARGET=cocciengine
 CTLTARGET=engine
 
@@ -31,7 +33,7 @@ SRC= flag_matcher.ml lib_engine.ml pretty_print_engine.ml \
       c_vs_c.ml isomorphisms_c_c.ml \
       cocci_vs_c.ml pattern_c.ml sgrep.ml transformation_c.ml  \
       asttomember.ml asttoctl2.ml ctltotex.ml \
-      postprocess_transinfo.ml ctlcocci_integration.ml lib_matcher_c.ml
+      postprocess_transinfo.ml ctlcocci_integration.ml
 
 #c_vs_c.ml
 #SRC= flag_matcher.ml \
@@ -65,7 +67,7 @@ OCAMLC=ocamlc$(OPTBIN) $(OCAMLCFLAGS) $(INCLUDES)
 OCAMLOPT=ocamlopt$(OPTBIN) $(OPTFLAGS) $(INCLUDES)
 OCAMLLEX=ocamllex$(OPTBIN) #-ml
 OCAMLYACC=ocamlyacc -v
-OCAMLDEP=ocamldep$(OPTBIN) #$(INCLUDES)
+OCAMLDEP=ocamldep$(OPTBIN) $(INCLUDES)
 OCAMLMKTOP=ocamlmktop -g -custom $(INCLUDES)
 
 

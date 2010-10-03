@@ -1,17 +1,27 @@
-Release coccinelle-0.1.5
+Release coccinelle-0.1.6
 
 ** Language:
-   - added initialiser metavariable
-   - added sequences of designators in structures
+   - the ability to add comments
 
 ** Features:
-   - improved printing of the C code corresponding to metavariables
-   - improved printing when code (eg declarations) is removed at the beginning
-     of a block, and then is followed by a blank line
-   - slightly less verbose error reporting in parsing_hacks
+   - grouping of generated rules with -hrule option
+   - handling of special coccinelle comments
+     /* {{coccinelle:skip_start}} */ and
+     /* {{coccinelle:skip_end}} */
+     allowing to give more hints to the C parser.
+     Thanks to Flavien@lebarbe.net for the idea.
+   - the ability to print the values of more (but not all) kinds of
+     metavariables from python
+   - new vim SmPL mode.
+     Thanks to Alexander Faroy.
 
 ** Bugfix:
-   - fixed some problems with parsing SmPL code where a nest appears after a |
-   - better treatment of { }, form in macros wrt unparse_c
-   - less quiet for -parse_c
-   - improve parsing heuristics regarding macro statement
+   - consider the ident tokens also in the 2 lines before the error line for the
+     10-most-problematic-parsing-errors diagnostic.
+   - SmPL parser allows cast as the argument of a pointer
+   - SmPL type checker allows enum as an array index
+   - Better generation of fresh metavariables names in hrule
+   - no more warnings about things that should be metavariables when there is
+     a disjunction in a function position
+   - bugfix in parser, better error message.
+     Thanks to Ali-Erdem OZCAN <ali-erdem.ozcan@st.com> for the bug report.

@@ -41,11 +41,13 @@ let get_option fn = function
   | Some x -> Some (fn x)
 
 let make_info line logical_line offset col strbef straft =
-  { Ast0.line_start = line; Ast0.line_end = line;
-    Ast0.logical_start = logical_line; Ast0.logical_end = logical_line;
+  let new_pos_info =
+    {Ast0.line_start = line; Ast0.line_end = line;
+      Ast0.logical_start = logical_line; Ast0.logical_end = logical_line;
+      Ast0.column = col; Ast0.offset = offset;} in
+  { Ast0.pos_info = new_pos_info;
     Ast0.attachable_start = true; Ast0.attachable_end = true;
     Ast0.mcode_start = []; Ast0.mcode_end = [];
-    Ast0.column = col; Ast0.offset = offset;
     Ast0.strings_before = strbef; Ast0.strings_after = straft; }
 
 let clt2info (_,line,logical_line,offset,col,strbef,straft,pos) =

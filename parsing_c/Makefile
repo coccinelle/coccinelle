@@ -1,3 +1,6 @@
+
+-include ../Makefile.config
+
 ##############################################################################
 # Variables
 ##############################################################################
@@ -6,7 +9,7 @@ TARGET=parsing_c
 
 # - type_cocci.ml ast_cocci.ml  # + unparse_hrule 
 SRC= flag_parsing_c.ml parsing_stat.ml \
- ast_c.ml control_flow_c.ml type_c.ml \
+ token_c.ml ast_c.ml control_flow_c.ml type_c.ml \
  visitor_c.ml lib_parsing_c.ml \
  ast_to_flow.ml \
  pretty_print_c.ml \
@@ -15,7 +18,8 @@ SRC= flag_parsing_c.ml parsing_stat.ml \
  unparse_cocci.ml unparse_c.ml unparse_hrule.ml  \
  parse_c.ml \
  cpp_ast_c.ml \
- compare_c.ml type_annoter_c.ml \
+ type_annoter_c.ml comment_annotater_c.ml \
+ compare_c.ml \
  test_parsing_c.ml
 
 
@@ -48,7 +52,7 @@ OCAMLC=ocamlc$(OPTBIN) $(OCAMLCFLAGS) $(INCLUDES)
 OCAMLOPT=ocamlopt$(OPTBIN) $(OPTFLAGS) $(INCLUDES)
 OCAMLLEX=ocamllex$(OPTBIN) #-ml
 OCAMLYACC=ocamlyacc -v
-OCAMLDEP=ocamldep$(OPTBIN) #$(INCLUDES)
+OCAMLDEP=ocamldep$(OPTBIN) $(INCLUDES)
 OCAMLMKTOP=ocamlmktop -g -custom $(INCLUDES)
 
 

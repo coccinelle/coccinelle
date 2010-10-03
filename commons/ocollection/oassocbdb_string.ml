@@ -21,7 +21,7 @@ object(o)
   method private addbis (k,v) = 
     let k' = k in
     let v' = 
-      try Marshal.to_string v [] 
+      try Common.marshal__to_string v [] 
       with Out_of_memory -> 
         pr2 ("PBBBBBBB Out_of_memory in: " ^ namedb);
         raise Out_of_memory
@@ -44,7 +44,7 @@ object(o)
 	    let a = Cursor.dbc_get dbc [Cursor.DB_NEXT] in
             (* minsky ? Cursor.get dbc Cursor.NEXT [] *)
 	    let key  = (fst a) in 
-	    let valu = (Marshal.from_string (snd a) 0) in
+	    let valu = (Common.marshal__from_string (snd a) 0) in
 	    f (key, valu);
             true
 	 with Failure "ending" -> false
@@ -97,7 +97,7 @@ object(o)
       let k' = k in
       let vget = Db.get data (transact()) k' [] in
       (* minsky ? Db.get data ~txn:(transact() *)
-      (Marshal.from_string vget  0)
+      (Common.marshal__from_string vget  0)
     with Not_found -> 
       log3 ("pb assoc with k = " ^ (k)); 
       raise Not_found
@@ -122,7 +122,7 @@ object(o)
             (* minsky ? Cursor.get dbc Cursor.NEXT [] *)
 	    let key  = (fst a) in 
 	    (* 
-               let valu = unv (Marshal.from_string (snd a) 0) in
+               let valu = unv (Common.marshal__from_string (snd a) 0) in
 	       f (key, valu);
             *)
             Common.push2 key res;

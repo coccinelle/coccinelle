@@ -20,6 +20,8 @@
 
 #note: if you add a file (a .mli or .ml), dont forget to do a   make depend
 
+-include ../Makefile.config
+
 TARGET=ctl
 
 SRC=flag_ctl.ml ast_ctl.ml pretty_print_ctl.ml ctl_engine.ml wrapper_ctl.ml
@@ -36,7 +38,7 @@ INCLUDES=-I ../commons -I ../commons/ocamlextra -I ../globals
 OCAMLCFLAGS ?= -g -dtypes
 OCAMLC =ocamlc$(OPTBIN) $(OCAMLCFLAGS) $(INCLUDES)
 OCAMLOPT = ocamlopt$(OPTBIN) $(OPTFLAGS) $(INCLUDES)
-OCAMLDEP = ocamldep$(OPTBIN) #$(INCLUDES)
+OCAMLDEP = ocamldep$(OPTBIN) $(INCLUDES)
 OCAMLMKTOP=ocamlmktop -g -custom $(INCLUDES)
 
 

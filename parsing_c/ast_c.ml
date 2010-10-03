@@ -1,4 +1,6 @@
-(* Copyright (C) 2002, 2006, 2007, 2008 Yoann Padioleau
+(* Yoann Padioleau
+ * 
+ * Copyright (C) 2002, 2006, 2007, 2008, 2009 Yoann Padioleau
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License (GPL)
@@ -21,6 +23,12 @@ open Common
  * For instance one tag may say that the unparser should remove this token.
  * 
  * Update: Now I use a ref! in those 'info' so take care.
+ * 
+ * That means that modifications of the info of tokens can have
+ * an effect on the info stored in the ast (which is sometimes 
+ * convenient, cf unparse_c.ml or comment_annotater_c.ml)
+ * 
+ * 
  * 
  * Sometimes we want to add someting at the beginning or at the end 
  * of a construct. For 'function' and 'decl' we want to add something
@@ -86,6 +94,7 @@ type parse_info =
   | FakeTok of string * virtual_position
   (* Present both in ast and list of tokens.  *)
   | ExpandedTok of Common.parse_info * virtual_position
+
   (* Present neither in ast nor in list of tokens
    * but only in the '+' of the mcode of some tokens. Those kind of tokens
    * are used to be able to use '=' to compare big ast portions.
@@ -98,7 +107,7 @@ type info = {
    * transformations by tagging the tokens involved in this transformation. 
    *)
   cocci_tag: (Ast_cocci.mcodekind * metavars_binding) ref;
-  (* set in comment_annotater.ml *)
+  (* set in comment_annotater_c.ml *)
   comments_tag: comments_around ref;
   (* todo? token_info : sometimes useful to know what token it was *)
   }
@@ -248,7 +257,7 @@ and attribute = attributebis wrap
 (* ------------------------------------------------------------------------- *)
 and expression = (expressionbis * exp_info ref (* semantic: *)) wrap
  and exp_info = exp_type option * test
-  and exp_type = fullType * local
+  and exp_type = fullType (* Type_c.completed_and_simplified *) * local
     and local = LocalVar of parse_info | NotLocalVar (* cocci: *)
   and test = Test | NotTest (* cocci: *)
 
@@ -296,8 +305,8 @@ and expression = (expressionbis * exp_info ref (* semantic: *)) wrap
   (* cppext: IfdefExpr TODO *)
 
   (* cppext: normmally just expression *)
-  and argument = (expression, wierd_argument) either
-   and wierd_argument = 
+  and argument = (expression, weird_argument) either
+   and weird_argument = 
        | ArgType of parameterType
        | ArgAction of action_macro
       and action_macro = 
@@ -314,8 +323,8 @@ and expression = (expressionbis * exp_info ref (* semantic: *)) wrap
    * integer only. *)
 
   and constant = 
-    | String of (string * isWchar) 
-    | MultiString  (* can contain MacroString, todo: more info *)
+    | String of (string * isWchar)
+    | MultiString of string list (* can contain MacroString, todo: more info *)
     | Char   of (string * isWchar) (* normally it is equivalent to Int *)
     | Int    of (string  (* * intType*)) 
     | Float  of (string * floatType)
@@ -562,7 +571,7 @@ and includ =
  and inc_file = 
   | Local    of inc_elem list
   | NonLocal of inc_elem list
-  | Wierd of string (* ex: #include SYSTEM_H *)
+  | Weird of string (* ex: #include SYSTEM_H *)
   and inc_elem = string
 
  (* cocci: to tag the first of #include <xx/> and last of #include <yy/>
@@ -648,11 +657,15 @@ and metavars_binding = (Ast_cocci.meta_name, metavar_binding_kind) assoc
  * (already use for c stuff) and "com" is too long.
  *)
 
-(* this type will be associated to each token *)
+(* this type will be associated to each token.
+ *)
 and comments_around = {
+  mbefore: Token_c.comment_like_token list;
+  mafter:  Token_c.comment_like_token list;
+}
+(* old: can do something simpler than CComment for coccinelle, cf above.
   mbefore: comment_and_relative_pos list;
   mafter:  comment_and_relative_pos list;
-}
   and comment_and_relative_pos = {
 
    minfo: Common.parse_info;
@@ -671,22 +684,7 @@ and comments_around = {
 
 and comment = Common.parse_info
 and com = comment list ref
-
-
-(*****************************************************************************)
-(* Cpp constructs put it comments in lexer or parsing_hack *)
-(*****************************************************************************)
-
-(* This type is not in the Ast but is associated with the TCommentCpp token.
- * I put this enum here because parser_c.mly need it. I could have put
- * it also in lexer_parser.
- *)
-type cppcommentkind = 
-  | CppDirective 
-  | CppAttr 
-  | CppMacro 
-  | CppPassingNormal (* ifdef 0, cplusplus, etc *) 
-  | CppPassingCosWouldGetError (* expr passsing *)
+*)
 
 
 
@@ -747,6 +745,7 @@ let unwrap = fst
 
 let unwrap2 = fst
 
+
 let unwrap_expr ((unwrap_e, typ), iie) = unwrap_e
 let rewrap_expr ((_old_unwrap_e, typ), iie)  newe = ((newe, typ), iie)
 
@@ -759,6 +758,12 @@ let get_onlytype_expr ((unwrap_e, typ), iie) =
   match !typ with
   | Some (ft,_local), _test -> Some ft
   | None, _ -> None
+
+let get_onlylocal_expr ((unwrap_e, typ), iie) = 
+  match !typ with
+  | Some (ft,local), _test -> Some local
+  | None, _ -> None
+
 
 
 let unwrap_typeC (qu, (typeC, ii)) = typeC
@@ -998,13 +1003,13 @@ let s_of_inc_file inc_file =
   match inc_file with
   | Local xs -> xs +> Common.join "/"
   | NonLocal xs -> xs +> Common.join "/"
-  | Wierd s -> s
+  | Weird s -> s
 
 let s_of_inc_file_bis inc_file = 
   match inc_file with
   | Local xs -> "\"" ^ xs +> Common.join "/" ^ "\""
   | NonLocal xs -> "<" ^ xs +> Common.join "/" ^ ">"
-  | Wierd s -> s
+  | Weird s -> s
 
 let fieldname_of_fieldkind fieldkind = 
   match unwrap fieldkind with
@@ -1021,3 +1026,6 @@ let s_of_attr attr =
 let type_of_parameter param = 
   let ((b, sopt, typ), ii) = param in 
   typ
+let name_of_parameter param = 
+  let ((b, sopt, typ), ii) = param in 
+  sopt

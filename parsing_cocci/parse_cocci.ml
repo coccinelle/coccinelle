@@ -109,7 +109,7 @@ let token2c (tok,_) =
   | PC.Tconst(clt) -> "const"^(line_type2c clt)
   | PC.Tvolatile(clt) -> "volatile"^(line_type2c clt)
 
-  | PC.TPragma(s) -> s
+  | PC.TPragma(s,_) -> s
   | PC.TIncludeL(s,clt) -> (pr "#include \"%s\"" s)^(line_type2c clt)
   | PC.TIncludeNL(s,clt) -> (pr "#include <%s>" s)^(line_type2c clt)
   | PC.TDefine(clt,_) -> "#define"^(line_type2c clt)
@@ -272,7 +272,7 @@ let print_tokens s tokens =
 
 type plus = PLUS | NOTPLUS | SKIP
 
-let plus_attachable (tok,_) =
+let plus_attachable only_plus (tok,_) =
   match tok with
     PC.Tchar(clt) | PC.Tshort(clt) | PC.Tint(clt) | PC.Tdouble(clt)
   | PC.Tfloat(clt) | PC.Tlong(clt) | PC.Tvoid(clt) | PC.Tstruct(clt)
@@ -325,7 +325,10 @@ let plus_attachable (tok,_) =
 
   | PC.TEq(clt) | PC.TAssign(_,clt) | PC.TDot(clt) | PC.TComma(clt)
   | PC.TPtVirg(clt) ->
-      if line_type clt = D.PLUS then PLUS else NOTPLUS
+      if line_type clt = D.PLUS
+      then PLUS
+      else if only_plus then NOTPLUS
+      else if line_type clt = D.CONTEXT then PLUS else NOTPLUS
 
   | PC.TOPar0(clt) | PC.TMid0(clt) | PC.TCPar0(clt)
   | PC.TOEllipsis(clt) | PC.TCEllipsis(clt)
@@ -604,7 +607,7 @@ let split_token ((tok,_) as t) =
   | PC.Tinline(clt) | PC.Ttypedef(clt) | PC.Tattr(_,clt)
   | PC.Tconst(clt) | PC.Tvolatile(clt) -> split t clt
 
-  | PC.TPragma(s) -> ([],[t]) (* only allowed in + *)
+  | PC.TPragma(s,_) -> ([],[t]) (* only allowed in + *)
   | PC.TPlusFile(s,clt) | PC.TMinusFile(s,clt)
   | PC.TIncludeL(s,clt) | PC.TIncludeNL(s,clt) ->
       split t clt
@@ -963,51 +966,71 @@ let find_top_init tokens =
   | _ -> tokens
 
 (* ----------------------------------------------------------------------- *)
-(* process pragmas: they can only be used in + code, and adjacent to
-another + token.  They are concatenated to the string representation of
-that other token. *)
+(* Integrate pragmas into some adjacent token.  + tokens are preferred.  Dots
+are not allowed. *)
 
 let rec collect_all_pragmas collected = function
-    (PC.TPragma(s),_)::rest -> collect_all_pragmas (s::collected) rest
+    (PC.TPragma(s,(_,line,logical_line,offset,col,_,_,pos)),_)::rest ->
+      let i =
+	{ Ast0.line_start = line; Ast0.line_end = line;
+	  Ast0.logical_start = logical_line; Ast0.logical_end = logical_line;
+	  Ast0.column = col; Ast0.offset = offset; } in
+      collect_all_pragmas ((s,i)::collected) rest
   | l -> (List.rev collected,l)
 
-let rec collect_up_to_pragmas skipped = function
-    [] -> None (* didn't reach a pragma, so nothing to do *)
-  | ((PC.TPragma(s),_) as t)::rest ->
-      let (pragmas,rest) = collect_all_pragmas [] (t::rest) in
-      Some (List.rev skipped,pragmas,rest)
+let rec collect_pass = function
+    [] -> ([],[])
   | x::xs ->
-      match plus_attachable x with
-	PLUS -> None
-      |	NOTPLUS -> None
-      |	SKIP -> collect_up_to_pragmas (x::skipped) xs
+      match plus_attachable false x with
+	SKIP ->
+	  let (pass,rest) = collect_pass xs in
+	  (x::pass,rest)
+      |	_ -> ([],x::xs)
 
-let rec collect_up_to_plus skipped = function
-    [] -> failwith "nothing to attach a pragma to (empty)"
-  | x::xs ->
-      match plus_attachable x with
-	PLUS -> (List.rev skipped,x,xs)
-      |	NOTPLUS -> failwith "nothing to attach a pragma to"
-      |	SKIP -> collect_up_to_plus (x::skipped) xs
+let plus_attach strict = function
+    None -> NOTPLUS
+  | Some x -> plus_attachable strict x
 
-let rec process_pragmas = function
-    [] -> []
-  | ((PC.TPragma(s),_)::_) as l ->
+let add_bef = function Some x -> [x] | None -> []
+
+(*skips should be things like line end
+skips is things before pragmas that can't be attached to, pass is things
+after.  pass is used immediately.  skips accumulates. *)
+let rec process_pragmas bef skips = function
+    [] -> add_bef bef @ List.rev skips
+  | ((PC.TPragma(s,i),_)::_) as l ->
       let (pragmas,rest) = collect_all_pragmas [] l in
-      let (skipped,aft,rest) = collect_up_to_plus [] rest in
-      let (a,b,c,d,e,strbef,straft,pos) = get_clt aft in
-      skipped@
-      (process_pragmas ((update_clt aft (a,b,c,d,e,pragmas,straft,pos))::rest))
-  | bef::xs ->
-      (match plus_attachable bef with
-	PLUS ->
-	  (match collect_up_to_pragmas [] xs with
-	    Some(skipped,pragmas,rest) ->
+      let (pass,rest0) = collect_pass rest in
+      let (next,rest) =
+	match rest0 with [] -> (None,[]) | next::rest -> (Some next,rest) in
+      (match (bef,plus_attach true bef,next,plus_attach true next) with
+	(Some bef,PLUS,_,_) ->
+	  let (a,b,c,d,e,strbef,straft,pos) = get_clt bef in
+	  (update_clt bef (a,b,c,d,e,strbef,pragmas,pos))::List.rev skips@
+	  pass@process_pragmas None [] rest0
+      |	(_,_,Some next,PLUS) ->
+	  let (a,b,c,d,e,strbef,straft,pos) = get_clt next in
+	  (add_bef bef) @ List.rev skips @ pass @
+	  (process_pragmas
+	     (Some (update_clt next (a,b,c,d,e,pragmas,straft,pos)))
+	     [] rest)
+      |	_ ->
+	  (match (bef,plus_attach false bef,next,plus_attach false next) with
+	    (Some bef,PLUS,_,_) ->
 	      let (a,b,c,d,e,strbef,straft,pos) = get_clt bef in
-	      (update_clt bef (a,b,c,d,e,strbef,pragmas,pos))::
-	      skipped@(process_pragmas rest)
-	  | None -> bef::(process_pragmas xs))
-      |	_ -> bef::(process_pragmas xs))
+	      (update_clt bef (a,b,c,d,e,strbef,pragmas,pos))::List.rev skips@
+	      pass@process_pragmas None [] rest0
+	  | (_,_,Some next,PLUS) ->
+	      let (a,b,c,d,e,strbef,straft,pos) = get_clt next in
+	      (add_bef bef) @ List.rev skips @ pass @
+	      (process_pragmas
+		 (Some (update_clt next (a,b,c,d,e,pragmas,straft,pos)))
+		 [] rest)
+	  | _ -> failwith "nothing to attach pragma to"))
+  | x::xs ->
+      (match plus_attachable false x with
+	SKIP -> process_pragmas bef (x::skips) xs
+      |	_ -> (add_bef bef) @ List.rev skips @ (process_pragmas (Some x) [] xs))
 
 (* ----------------------------------------------------------------------- *)
 (* Drop ... ... .  This is only allowed in + code, and arises when there is
@@ -1391,7 +1414,7 @@ let parse file =
 	    *)
 
 	    let plus_tokens =
-	      process_pragmas
+	      process_pragmas None []
 		(fix (function x -> drop_double_dots (drop_empty_or x))
 		   (drop_when plus_tokens)) in
 	    (*
@@ -1586,6 +1609,7 @@ let process file isofile verbose =
 	       let ((metavars,minus),function_prototypes) =
 		 Function_prototypes.process
 		   rule_name metavars dropped_isos minus plus ruletype in
+	       let plus = Adjust_pragmas.process plus in
           (* warning! context_neg side-effects its arguments *)
 	       let (m,p) = List.split (Context_neg.context_neg minus plus) in
 	       Type_infer.type_infer p;

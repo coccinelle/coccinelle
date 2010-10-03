@@ -224,6 +224,36 @@ let test_type_c infile =
 
 
 (* ---------------------------------------------------------------------- *)
+(* ex: demos/platform_ifdef.c *)
+let test_comment_annotater infile = 
+  let (program2, _stat) =  Parse_c.parse_print_error_heuristic infile in
+  let asts = program2 +> List.map (fun (ast,_) -> ast) in
+  let toks = program2 +> List.map (fun (ast, (s, toks)) -> toks) +> 
+    List.flatten in
+
+  Flag_parsing_c.pretty_print_comment_info := true;
+
+  pr2 "pretty print, before comment annotation: --->";
+  Common.adjust_pp_with_indent (fun () -> 
+  asts +> List.iter (fun ast -> 
+    Pretty_print_c.pp_toplevel_simple ast;
+  );
+  );
+
+  let _ = Comment_annotater_c.annotate_program toks asts in
+
+  Common.adjust_pp_with_indent (fun () -> 
+  pr2 "pretty print, after comment annotation: --->";
+  asts +> List.iter (fun ast -> 
+    Pretty_print_c.pp_toplevel_simple ast;
+  );
+  );
+
+
+  ()
+  
+  
+(* ---------------------------------------------------------------------- *)
 (* used by generic_makefile now *)
 let test_compare_c file1 file2 = 
   let (correct, diffxs) = Compare_c.compare_default file1 file2 in
@@ -336,6 +366,8 @@ let actions () = [
   Common.mk_action_1_arg test_type_c;
   "-compare_c", "   <file1> <file2>", 
   Common.mk_action_2_arg test_compare_c (* result is in unix code *);
+  "-comment_annotater_c", "   <file>", 
+  Common.mk_action_1_arg test_comment_annotater;
 
   "-compare_c_hardcoded", "  ", 
   Common.mk_action_0_arg test_compare_c_hardcoded;

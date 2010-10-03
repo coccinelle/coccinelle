@@ -85,17 +85,11 @@ OPTFLAGS=
 # but is now defined above in this file
 #OPTLIBFLAGS=-cclib dllpycaml_stubs.so
 
-# the OPTBIN variable is here to allow to use ocamlc.opt instead of
-# ocaml, when it is available, which speeds up compilation. So
-# if you want the fast version of the ocaml chain tools, set this var
-# or setenv it to ".opt" in your startup script.
-OPTBIN= #.opt
-
 OCAMLC=ocamlc$(OPTBIN) $(OCAMLCFLAGS)  $(INCLUDES)
 OCAMLOPT=ocamlopt$(OPTBIN) $(OPTFLAGS) $(INCLUDES)
 OCAMLLEX=ocamllex #-ml # -ml for debugging lexer, but slightly slower
 OCAMLYACC=ocamlyacc -v
-OCAMLDEP=ocamldep #$(INCLUDES)
+OCAMLDEP=ocamldep $(INCLUDES)
 OCAMLMKTOP=ocamlmktop -g -custom $(INCLUDES)
 
 # can also be set via 'make static'
@@ -108,7 +102,7 @@ BYTECODE_STATIC=-custom
 # Top rules
 ##############################################################################
 .PHONY: all all.opt opt top clean configure
-.PHONY: $(MAKESUBDIRS) $(MAKESUBDIRS:%=%.opt)
+.PHONY: $(MAKESUBDIRS) $(MAKESUBDIRS:%=%.opt) subdirs subdirs.opt
 
 all:
 	$(MAKE) subdirs
@@ -121,8 +115,11 @@ opt:
 all.opt: opt
 top: $(EXEC).top
 
-subdirs: $(MAKESUBDIRS)
-subdirs.opt: $(MAKESUBDIRS:%=%.opt)
+subdirs:
+	+for D in $(MAKESUBDIRS); do $(MAKE) $$D ; done
+
+subdirs.opt:
+	+for D in $(MAKESUBDIRS); do $(MAKE) $$D.opt ; done
 
 $(MAKESUBDIRS):
 	$(MAKE) -C $@ OCAMLCFLAGS="$(OCAMLCFLAGS)" all
@@ -130,29 +127,29 @@ $(MAKESUBDIRS):
 $(MAKESUBDIRS:%=%.opt):
 	$(MAKE) -C $(@:%.opt=%) OCAMLCFLAGS="$(OCAMLCFLAGS)" all.opt
 
-commons:
-globals:
-menhirlib:
-parsing_cocci:globals menhirlib
-parsing_c:parsing_cocci
-ctl:globals commons
-engine: parsing_cocci parsing_c ctl
-popl09:engine
-extra: parsing_cocci parsing_c ctl
-pycaml:
-python:pycaml parsing_cocci parsing_c
-
-commons.opt:
-globals.opt:
-menhirlib.opt:
-parsing_cocci.opt:globals.opt menhirlib.opt
-parsing_c.opt:parsing_cocci.opt
-ctl.opt:globals.opt commons.opt
-engine.opt: parsing_cocci.opt parsing_c.opt ctl.opt
-popl09.opt:engine.opt
-extra.opt: parsing_cocci.opt parsing_c.opt ctl.opt
-pycaml.opt:
-python.opt:pycaml.opt parsing_cocci.opt parsing_c.opt
+# commons:
+# globals:
+# menhirlib:
+# parsing_cocci: commons globals menhirlib
+# parsing_c:parsing_cocci
+# ctl:globals commons
+# engine: parsing_cocci parsing_c ctl
+# popl09:engine
+# extra: parsing_cocci parsing_c ctl
+# pycaml:
+# python:pycaml parsing_cocci parsing_c
+#
+# commons.opt:
+# globals.opt:
+# menhirlib.opt:
+# parsing_cocci.opt: commons.opt globals.opt menhirlib.opt
+# parsing_c.opt:parsing_cocci.opt
+# ctl.opt:globals.opt commons.opt
+# engine.opt: parsing_cocci.opt parsing_c.opt ctl.opt
+# popl09.opt:engine.opt
+# extra.opt: parsing_cocci.opt parsing_c.opt ctl.opt
+# pycaml.opt:
+# python.opt:pycaml.opt parsing_cocci.opt parsing_c.opt
 
 clean::
 	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i clean; done
@@ -160,8 +157,8 @@ clean::
 configure:
 	./configure
 
-$(LIBS): #$(MAKESUBDIRS)
-$(LIBS:.cma=.cmxa): #$(MAKESUBDIRS:%=%.opt)
+$(LIBS): $(MAKESUBDIRS)
+$(LIBS:.cma=.cmxa): $(MAKESUBDIRS:%=%.opt)
 
 $(OBJS):$(LIBS)
 $(OPTOBJS):$(LIBS:.cma=.cmxa)
@@ -205,12 +202,11 @@ purebytecode:
 ##############################################################################
 
 # don't remove DESTDIR, it can be set by package build system like ebuild
-install: all
+install-common:
 	mkdir -p $(DESTDIR)$(BINDIR)
 	mkdir -p $(DESTDIR)$(LIBDIR)
 	mkdir -p $(DESTDIR)$(SHAREDIR)
 	mkdir -p $(DESTDIR)$(MANDIR)/man1
-	cp spatch $(DESTDIR)$(BINDIR)
 	cp standard.h $(DESTDIR)$(SHAREDIR)
 	cp standard.iso $(DESTDIR)$(SHAREDIR)
 	cp docs/spatch.1 $(DESTDIR)$(MANDIR)/man1/
@@ -221,6 +217,22 @@ install: all
 	@echo "You can also install spatch by copying the program spatch"
 	@echo "(available in this directory) anywhere you want and"
 	@echo "give it the right options to find its configuration files."
+	@echo ""
+
+# user will use spatch to run spatch.opt (native)
+install: all.opt install-common
+	cp spatch.opt $(DESTDIR)$(SHAREDIR)
+	cat scripts/spatch.sh | sed "s|SHAREDIR|$(DESTDIR)$(SHAREDIR)|g" > $(DESTDIR)$(BINDIR)/spatch
+
+# user will use spatch to run spatch (bytecode)
+install-byte: all install-common
+	cp spatch $(DESTDIR)$(SHAREDIR)
+	cat scripts/spatch.sh | sed "s|\.opt||" | sed "s|SHAREDIR|$(DESTDIR)$(SHAREDIR)|g" > $(DESTDIR)$(BINDIR)/spatch
+
+# user will use spatch.opt to run spatch.opt (native)
+install-opt: all.opt install-common
+	cp spatch.opt $(DESTDIR)$(SHAREDIR)
+	cat scripts/spatch.sh | sed "s|SHAREDIR|$(DESTDIR)$(SHAREDIR)|g" > $(DESTDIR)$(BINDIR)/spatch.opt
 
 uninstall:
 	rm -f $(DESTDIR)$(BINDIR)/spatch
@@ -357,6 +369,8 @@ website:
 	cp $(TMP)/$(PACKAGE)-bin-x86.tgz        $(WEBSITE)
 	cp $(TMP)/$(PACKAGE)-bin-x86-static.tgz $(WEBSITE)
 	cp $(TMP)/$(PACKAGE)-bin-bytecode-$(OCAMLVERSION).tgz   $(WEBSITE)
+	rm -f $(WEBSITE)/LATEST* $(WEBSITE)/coccinelle-latest.tgz
+	cd $(WEBSITE); touch LATEST_IS_$(VERSION); ln -s $(PACKAGE).tgz coccinelle-latest.tgz
 
 
 #TXT=$(wildcard *.txt)

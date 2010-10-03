@@ -45,7 +45,7 @@ let find_loop table name =
   loop table
 
 let check_table table minus (name,_,info,_,_) =
-  let rl = info.Ast0.line_start in
+  let rl = info.Ast0.pos_info.Ast0.line_start in
   if minus
   then
     (try (find_loop table name) := true
@@ -83,7 +83,7 @@ let is_ifdef name =
 let ident context old_metas table minus i =
   match Ast0.unwrap i with
     Ast0.Id((name,_,info,_,_) : string Ast0.mcode) ->
-      let rl = info.Ast0.line_start in
+      let rl = info.Ast0.pos_info.Ast0.line_start in
       let err =
 	if List.exists (function x -> x = name) old_metas
 	    && (minus || Ast0.get_mcodekind i = Ast0.PLUS)
@@ -166,7 +166,7 @@ let rec expression context old_metas table minus e =
       check_table table minus name;
       check_table table minus lenname
   | Ast0.DisjExpr(_,exps,_,_) ->
-      List.iter (expression ID old_metas table minus) exps
+      List.iter (expression context old_metas table minus) exps
   | Ast0.NestExpr(_,exp_dots,_,w,_) ->
       dots (expression ID old_metas table minus) exp_dots;
       get_opt (expression ID old_metas table minus) w

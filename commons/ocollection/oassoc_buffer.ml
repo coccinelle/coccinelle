@@ -5,13 +5,7 @@ open Oassoc
 open Oassocb
 open Osetb
 
-(* todo: limit number of entries, and erase all (then better do a ltu) 
- * todo: another cache that behave as in lfs1, 
- * every 100 operation do a flush 
- * 
- * todo: choose between oassocb and oassoch ? 
- * 
- * Also take care that must often redefine all function in the original
+(* Take care that must often redefine all function in the original
  * oassoc.ml because if some methods are not redefined, for instance 
  * #clear, then if do wrapper over a oassocdbm, then even if oassocdbm
  * redefine #clear, it will not be called, but instead the default
@@ -19,7 +13,7 @@ open Osetb
  * So better delegate all the methods and override even the method
  * with a default definition.
  * 
- * In the same way sometimes an exn can occur at wierd time. When
+ * In the same way sometimes an exn can occur at weird time. When
  * we add an element, sometimes this may raise an exn such as Out_of_memory,
  * but as we dont add directly but only at flush time, the exn
  * may happen far later the user added something in this oassoc.
@@ -28,6 +22,8 @@ open Osetb
  * and so the next flush will still generate an exn that again
  * may not be cached. So for the moment if Out_of_memory then
  * do something special and erase the entry in the cache.
+ * 
+ * Cf also oassoc_cache.ml which can be even more efficient.
  *)
 
 (* !!take care!!: this class has side effect, not a pure oassoc *)
@@ -134,33 +130,5 @@ object(o)
     o
 
 end     
-
-
-(*
-class ['a,'b] oassoc_cache cache cached max =  
-  object(o) 
-    inherit ['a,'b] oassoc 
- 
-    val full = ref 0 
-    val max = max 
-    val cache = cache 
-    val cached = cached 
-    val lru = TODO 
-       
-    val data = Hashtbl.create 100 
- 
-    method empty = raise Todo 
-    method add (k,v) = (Hashtbl.add data k v; o) 
-    method iter f = cached#iter f 
-    method view = raise Todo 
- 
-    method del (k,v) = (cache#del (k,v); cached#del (k,v); o) 
-    method mem e = raise Todo 
-    method null = raise Todo 
- 
-    method assoc k = Hashtbl.find data k 
-    method delkey k = (cache#delkey (k,v); cached#del (k,v); o) 
-end    
-*)
 
 

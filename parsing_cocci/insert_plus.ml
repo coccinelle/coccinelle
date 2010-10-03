@@ -158,7 +158,7 @@ let collect_minus_join_points root =
   let option_default = [] in
 
   let mcode (_,_,info,mcodekind,_) =
-    if List.mem (info.Ast0.offset) unfavored_tokens
+    if List.mem (info.Ast0.pos_info.Ast0.offset) unfavored_tokens
     then [(Unfavored,info,mcodekind)]
     else [(Favored,info,mcodekind)] in
 
@@ -372,10 +372,10 @@ let verify l =
   let get_info = function
       (Favored,info,_) | (Unfavored,info,_) | (Toplevel,info,_)
     | (Decl,info,_) -> info in
-  let token_start_line      x = (get_info x).Ast0.logical_start in
-  let token_end_line        x = (get_info x).Ast0.logical_end in
-  let token_real_start_line x = (get_info x).Ast0.line_start in
-  let token_real_end_line   x = (get_info x).Ast0.line_end in
+  let token_start_line    x = (get_info x).Ast0.pos_info.Ast0.logical_start in
+  let token_end_line        x = (get_info x).Ast0.pos_info.Ast0.logical_end in
+  let token_real_start_line x = (get_info x).Ast0.pos_info.Ast0.line_start in
+  let token_real_end_line   x = (get_info x).Ast0.pos_info.Ast0.line_end in
   List.iter
     (function
 	(index,((_::_) as l1)) ->
@@ -448,13 +448,41 @@ let collect_plus_nodes root =
   let bind x y = x @ y in
   let option_default = [] in
 
+  let extract_strings info =
+    let adjust_info =
+      {info with Ast0.strings_before = [];  Ast0.strings_after = []} in
+    let extract = function
+	[] -> []
+      |	strings_before ->
+	  let (_,first) = List.hd strings_before in
+	  let (_,last) = List.hd (List.rev strings_before) in
+	  let new_pos_info =
+	    {Ast0.line_start = first.Ast0.line_start;
+	      Ast0.line_end = last.Ast0.line_start;
+	      Ast0.logical_start = first.Ast0.logical_start;
+	      Ast0.logical_end = last.Ast0.logical_start;
+	      Ast0.column = first.Ast0.column;
+	      Ast0.offset = first.Ast0.offset} in
+	  let new_info = {adjust_info with Ast0.pos_info = new_pos_info} in
+	  let string = List.map (function (s,_) -> s) strings_before in
+	  [(new_info, Ast.Pragma (string))] in
+    let bef = extract info.Ast0.strings_before in
+    let aft = extract info.Ast0.strings_after in
+    (bef,aft) in
+
   let mcode fn (term,_,info,mcodekind,_) =
-    match mcodekind with Ast0.PLUS -> [(info,fn term)] | _ -> [] in
+    match mcodekind with
+      Ast0.PLUS -> [(info,fn term)]
+    | Ast0.CONTEXT _ -> let (bef,aft) = extract_strings info in bef@aft
+    | _ -> [] in
 
   let imcode fn (term,_,info,mcodekind,_) =
     match mcodekind with
       Ast0.PLUS -> [(info,fn term (Ast0toast.convert_info info))]
+    | Ast0.CONTEXT _ -> let (bef,aft) = extract_strings info in bef@aft
     | _ -> [] in
+
+  let info (i,_) = let (bef,aft) = extract_strings i in bef@aft in
 
   let do_nothing fn r k e =
     match Ast0.get_mcodekind e with
@@ -463,13 +491,27 @@ let collect_plus_nodes root =
     | _ -> k e in
 
   (* case for everything that is just a wrapper for a simpler thing *)
+  (* case for things with bef aft *)
   let stmt r k e =
     match Ast0.unwrap e with
       Ast0.Exp(exp) -> r.V0.combiner_expression exp
     | Ast0.TopExp(exp) -> r.V0.combiner_expression exp
     | Ast0.Ty(ty) -> r.V0.combiner_typeC ty
     | Ast0.TopInit(init) -> r.V0.combiner_initialiser init
-    | Ast0.Decl(_,decl) -> r.V0.combiner_declaration decl
+    | Ast0.Decl(bef,decl) ->
+	(info bef) @ (do_nothing mk_statement r k e)
+    | Ast0.FunDecl(bef,fi,name,lp,params,rp,lbrace,body,rbrace) ->
+	(info bef) @ (do_nothing mk_statement r k e)
+    | Ast0.IfThen(iff,lp,exp,rp,branch1,aft) ->
+	(do_nothing mk_statement r k e) @ (info aft)
+    | Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2,aft) ->
+	(do_nothing mk_statement r k e) @ (info aft)
+    | Ast0.While(whl,lp,exp,rp,body,aft) ->
+	(do_nothing mk_statement r k e) @ (info aft)
+    | Ast0.For(fr,lp,e1,sem1,e2,sem2,e3,rp,body,aft) ->
+	(do_nothing mk_statement r k e) @ (info aft)
+    | Ast0.Iterator(nm,lp,args,rp,body,aft) ->
+	(do_nothing mk_statement r k e) @ (info aft)
     | _ -> do_nothing mk_statement r k e in
 
   (* statementTag is preferred, because it indicates that one statement is
@@ -569,11 +611,15 @@ line of n is one less than the starting line of n+1.
 Outer list: For any pair of successive elements, n and n+1, the ending
 line of n is more than one less than the starting line of n+1. *)
 
-let logstart info = info.Ast0.logical_start
-let logend info = info.Ast0.logical_end
+let logstart info = info.Ast0.pos_info.Ast0.logical_start
+let logend info = info.Ast0.pos_info.Ast0.logical_end
 
 let redo info start finish =
-  {{info with Ast0.logical_start = start} with Ast0.logical_end = finish}
+  let new_pos_info =
+    {info.Ast0.pos_info with
+      Ast0.logical_start = start;
+      Ast0.logical_end = finish} in
+  {info with Ast0.pos_info = new_pos_info}
 
 let rec find_neighbors (index,l) :
     int * (Ast0.info * (Ast.anything list list)) list =
@@ -632,11 +678,11 @@ let merge_one = function
 
 (* end of first argument < start/end of second argument *)
 let less_than_start info1 info2 =
-  info1.Ast0.logical_end < info2.Ast0.logical_start
+  info1.Ast0.pos_info.Ast0.logical_end < info2.Ast0.pos_info.Ast0.logical_start
 let less_than_end info1 info2 =
-  info1.Ast0.logical_end < info2.Ast0.logical_end
+  info1.Ast0.pos_info.Ast0.logical_end < info2.Ast0.pos_info.Ast0.logical_end
 let greater_than_end info1 info2 =
-  info1.Ast0.logical_start > info2.Ast0.logical_end
+  info1.Ast0.pos_info.Ast0.logical_start > info2.Ast0.pos_info.Ast0.logical_end
 let good_start info = info.Ast0.attachable_start
 let good_end info = info.Ast0.attachable_end
 
@@ -659,7 +705,8 @@ let predecl_code =
     | Ast.StatementTag _
     | Ast.Rule_elemTag _
     | Ast.StmtDotsTag _
-    | Ast.Code _ -> true
+    | Ast.Code _
+    | Ast.Pragma _ -> true
       (* the following should definitely be false *)
     | Ast.FullTypeTag _ | Ast.BaseTypeTag _ | Ast.StructUnionTag _
     | Ast.SignTag _
@@ -673,9 +720,9 @@ let pr = Printf.sprintf
 let insert thing thinginfo into intoinfo =
   let get_last l = let l = List.rev l in (List.rev(List.tl l),List.hd l) in
   let get_first l = (List.hd l,List.tl l) in
-  let thing_start = thinginfo.Ast0.logical_start in
-  let thing_end = thinginfo.Ast0.logical_end in
-  let thing_offset = thinginfo.Ast0.offset in
+  let thing_start = thinginfo.Ast0.pos_info.Ast0.logical_start in
+  let thing_end = thinginfo.Ast0.pos_info.Ast0.logical_end in
+  let thing_offset = thinginfo.Ast0.pos_info.Ast0.offset in
   let into_start = intoinfo.Ast0.tline_start in
   let into_end = intoinfo.Ast0.tline_end in
   let into_left_offset = intoinfo.Ast0.left_offset in
@@ -715,10 +762,10 @@ let insert thing thinginfo into intoinfo =
 
 let init thing info =
   (thing,
-   {Ast0.tline_start = info.Ast0.logical_start;
-     Ast0.tline_end = info.Ast0.logical_end;
-     Ast0.left_offset = info.Ast0.offset;
-     Ast0.right_offset = info.Ast0.offset})
+   {Ast0.tline_start = info.Ast0.pos_info.Ast0.logical_start;
+     Ast0.tline_end = info.Ast0.pos_info.Ast0.logical_end;
+     Ast0.left_offset = info.Ast0.pos_info.Ast0.offset;
+     Ast0.right_offset = info.Ast0.pos_info.Ast0.offset})
 
 let attachbefore (infop,p) = function
     Ast0.MINUS(replacements) ->
@@ -771,9 +818,9 @@ let attach_all_after ps m =
   List.iter (function x -> attachafter x m) ps
 
 let split_at_end info ps =
-  let split_point =  info.Ast0.logical_end in
+  let split_point =  info.Ast0.pos_info.Ast0.logical_end in
   List.partition
-    (function (info,_) -> info.Ast0.logical_end < split_point)
+    (function (info,_) -> info.Ast0.pos_info.Ast0.logical_end < split_point)
     ps
 
 let allminus = function
@@ -790,7 +837,8 @@ let rec before_m1 ((f1,infom1,m1) as x1) ((f2,infom2,m2) as x2) rest = function
 	then (attachbefore p m1; before_m1 x1 x2 rest ps)
 	else
 	  failwith
-	    (pr "%d: no available token to attach to" infop.Ast0.line_start)
+	    (pr "%d: no available token to attach to"
+	       infop.Ast0.pos_info.Ast0.line_start)
       else after_m1 x1 x2 rest all
 
 and after_m1 ((f1,infom1,m1) as x1) ((f2,infom2,m2) as x2) rest = function
@@ -826,14 +874,18 @@ and after_m1 ((f1,infom1,m1) as x1) ((f2,infom2,m2) as x2) rest = function
 	  then before_m2 x2 rest all
 	  else
 	    failwith
-	      (pr "%d: no available token to attach to" infop.Ast0.line_start)
+	      (pr "%d: no available token to attach to"
+		 infop.Ast0.pos_info.Ast0.line_start)
 	else after_m2 x2 rest all
       else
 	begin
 	  Printf.printf "between: p start %d p end %d m1 start %d m1 end %d m2 start %d m2 end %d\n"
-	    infop.Ast0.line_start infop.Ast0.line_end
-	    infom1.Ast0.line_start infom1.Ast0.line_end
-	    infom2.Ast0.line_start infom2.Ast0.line_end;
+	    infop.Ast0.pos_info.Ast0.line_start
+	    infop.Ast0.pos_info.Ast0.line_end
+	    infom1.Ast0.pos_info.Ast0.line_start
+	    infom1.Ast0.pos_info.Ast0.line_end
+	    infom2.Ast0.pos_info.Ast0.line_start
+	    infom2.Ast0.pos_info.Ast0.line_end;
 	  Pretty_print_cocci.print_anything "" pcode;
 	  failwith
 	    "The semantic patch is structured in a way that may give bad results with isomorphisms.  Please try to rewrite it by moving + code out from -/context terms."
@@ -855,7 +907,8 @@ and before_m2 ((f2,infom2,m2) as x2) rest
       then (attach_all_before bef_m2 m2; after_m2 x2 rest aft_m2)
       else
 	failwith
-	  (pr "%d: no available token to attach to" infop.Ast0.line_start)
+	  (pr "%d: no available token to attach to"
+	     infop.Ast0.pos_info.Ast0.line_start)
   | (m::ms,_) -> before_m1 x2 m ms p
 
 and after_m2 ((f2,infom2,m2) as x2) rest
@@ -867,7 +920,8 @@ and after_m2 ((f2,infom2,m2) as x2) rest
       then attach_all_after p m2
       else
 	failwith
-	  (pr "%d: no available token to attach to" infop.Ast0.line_start)
+	  (pr "%d: no available token to attach to"
+	     infop.Ast0.pos_info.Ast0.line_start)
   | (m::ms,_) -> after_m1 x2 m ms p
 
 let merge_one : (minus_join_point * Ast0.info * 'a) list *
@@ -877,15 +931,19 @@ let merge_one : (minus_join_point * Ast0.info * 'a) list *
   List.iter
     (function (_,info,_) ->
       Printf.printf "start %d end %d real_start %d real_end %d\n"
-	info.Ast0.logical_start info.Ast0.logical_end
-	info.Ast0.line_start info.Ast0.line_end)
+	info.Ast0.pos_info.Ast0.logical_start
+	info.Ast0.pos_info.Ast0.logical_end
+	info.Ast0.pos_info.Ast0.line_start
+	info.Ast0.pos_info.Ast0.line_end)
     m;
   Printf.printf "plus code\n";
   List.iter
     (function (info,p) ->
       Printf.printf "start %d end %d real_start %d real_end %d\n"
-	info.Ast0.logical_start info.Ast0.logical_end
-	info.Ast0.line_end info.Ast0.line_end;
+	info.Ast0.pos_info.Ast0.logical_start
+	info.Ast0.pos_info.Ast0.logical_end
+	info.Ast0.pos_info.Ast0.line_end
+	info.Ast0.pos_info.Ast0.line_end;
       Pretty_print_cocci.print_anything "" p;
       Format.print_newline())
     p;
@@ -925,6 +983,11 @@ let reevaluate_contextness =
        Ast0.CONTEXT(mc) -> let (ba,_,_) = !mc in [ba]
      | _ -> [] in
 
+   let info (_,mc) =
+     match mc with
+       Ast0.CONTEXT(mc) -> let (ba,_,_) = !mc in [ba]
+     | _ -> [] in
+
    let donothing r k e =
      match Ast0.get_mcodekind e with
        Ast0.CONTEXT(mc) ->
@@ -933,12 +996,31 @@ let reevaluate_contextness =
 	 []
      | _ -> let _ = k e in [] in
 
+   (* a case for everything with bef or aft *)
+   let stmt r k e =
+     match Ast0.unwrap e with
+       Ast0.Decl(bef,decl) ->
+	 (info bef) @ (donothing r k e)
+     | Ast0.FunDecl(bef,fi,name,lp,params,rp,lbrace,body,rbrace) ->
+	 (info bef) @ (donothing r k e)
+     | Ast0.IfThen(iff,lp,exp,rp,branch1,aft) ->
+	 (donothing r k e) @ (info aft)
+     | Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2,aft) ->
+	 (donothing r k e) @ (info aft)
+     | Ast0.While(whl,lp,exp,rp,body,aft) ->
+	 (donothing r k e) @ (info aft)
+     | Ast0.For(fr,lp,e1,sem1,e2,sem2,e3,rp,body,aft) ->
+	 (donothing r k e) @ (info aft)
+     | Ast0.Iterator(nm,lp,args,rp,body,aft) ->
+	 (donothing r k e) @ (info aft)
+     | _ -> donothing r k e in
+
   let res =
     V0.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing donothing donothing donothing donothing
       donothing
-      donothing donothing donothing donothing donothing donothing donothing in
+      donothing donothing donothing donothing stmt donothing donothing in
   res.V0.combiner_top_level
 
 (* --------------------------------------------------------------------- *)
