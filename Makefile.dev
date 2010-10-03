@@ -4,7 +4,8 @@
 ##############################################################################
 
 #TOP=/home/pad/mobile/project-coccinelle
-WEBSITE=~/website/distrib
+WEBBASE=~/website
+WEBSITE=$(WEBBASE)/distrib
 
 website:
 	cp $(TMP)/$(PACKAGE).tgz                $(WEBSITE)
@@ -13,12 +14,16 @@ website:
 	cp $(TMP)/$(PACKAGE)-bin-x86-python.tgz $(WEBSITE)
 	cp $(TMP)/$(PACKAGE)-bin-bytecode-$(OCAMLVERSION).tgz          $(WEBSITE)
 	cp $(TMP)/$(PACKAGE)-bin-bytecode-$(OCAMLVERSION)-python.tgz   $(WEBSITE)
-	cvs add $(WEBSITE)/$(PACKAGE).tgz                              \
-		$(WEBSITE)/$(PACKAGE)-bin-x86.tgz                      \
-		$(WEBSITE)/$(PACKAGE)-bin-x86-static.tgz               \
-		$(WEBSITE)/$(PACKAGE)-bin-x86-python.tgz               \
-		$(WEBSITE)/$(PACKAGE)-bin-bytecode-$(OCAMLVERSION).tgz \
-		$(WEBSITE)/$(PACKAGE)-bin-bytecode-$(OCAMLVERSION)-python.tgz
+	cd $(WEBSITE); cvs add $(PACKAGE).tgz               \
+		$(PACKAGE)-bin-x86.tgz                      \
+		$(PACKAGE)-bin-x86-static.tgz               \
+		$(PACKAGE)-bin-x86-python.tgz               \
+		$(PACKAGE)-bin-bytecode-$(OCAMLVERSION).tgz \
+		$(PACKAGE)-bin-bytecode-$(OCAMLVERSION)-python.tgz
+	@echo "\nYou need to manually update those files:\n"
+	@echo "\t$(WEBBASE)/download.php"
+	@echo "\t$(WEBSITE)/change.html\n"
+	@echo "Then commit the changes.\n"
 #	rm -f $(WEBSITE)/LATEST* $(WEBSITE)/coccinelle-latest.tgz
 #	cp changes.txt $(WEBSITE)/changes-$(VERSION).txt
 #	cd $(WEBSITE); touch LATEST_IS_$(VERSION); ln -s $(PACKAGE).tgz coccinelle-latest.tgz
@@ -57,20 +62,23 @@ UBUNTURELEASE=$(UBUNTU:%=ubuntu-%)
 
 ubuntu:
 	for r in $(UBUNTURELEASE); do $(MAKE) $$r ; done
+	@echo "\nYou can now build the Ubuntu source package with\n"
+	@echo "\tmake packsrc\n"
 
 #$(UBUNTURELEASE):
-#	debchange -c debian/changelog.karmic -D karmic -v $(VERSION).deb-0~$(@:ubuntu-%=%)~npalix1 "New release $(VERSION)"
+#	debchange -c debian/changelog.karmic -D karmic -v $(VERSION)~$(@:ubuntu-%=%)~npalix1 "New release $(VERSION)"
 
 ubuntu-karmic:
-	debchange -c debian/changelog.karmic -D karmic -v $(VERSION).deb-0~910npalix1 "New release $(VERSION)"
+	debchange -c debian/changelog.karmic -D karmic -v $(VERSION)~910npalix1 "New release $(VERSION)"
 
 ubuntu-lucid:
-	debchange -c debian/changelog.lucid -D lucid -v $(VERSION).deb-0~1004npalix1 "New release $(VERSION)"
+	debchange -c debian/changelog.lucid -D lucid -v $(VERSION)~1004npalix1 "New release $(VERSION)"
 
 ubuntu-maverik:
 	if [ ! -f debian/changelog.$(@:ubuntu-%=%) ] ; then \
 		debchange --create -c debian/changelog.$(@:ubuntu-%=%) -D UNRELEASED \
-			-v $(VERSION).deb-0~npalix1 "New release $(VERSION)" --package $(PRJNAME) ; \
+			-v $(VERSION)~npalix1 "New release $(VERSION)" --package $(PRJNAME) ; \
 	else \
-		debchange -c debian/changelog.$(@:ubuntu-%=%) -D UNRELEASED -v $(VERSION).deb-0~npalix1 "New release $(VERSION)" ; \
+		debchange -c debian/changelog.$(@:ubuntu-%=%) -D UNRELEASED -v $(VERSION)~npalix1 "New release $(VERSION)" ; \
 	fi
+

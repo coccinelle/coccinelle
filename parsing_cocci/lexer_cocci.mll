@@ -286,14 +286,16 @@ let id_tokens lexbuf =
 
   | "sizeof" ->     TSizeof   linetype
 
-  | "Expression"       -> TIsoExpression
-  | "ArgExpression"    -> TIsoArgExpression
-  | "TestExpression"   -> TIsoTestExpression
-  | "ToTestExpression" -> TIsoToTestExpression
-  | "Statement"        -> TIsoStatement
-  | "Declaration"      -> TIsoDeclaration
-  | "Type"             -> TIsoType
-  | "TopLevel"         -> TIsoTopLevel
+  | "Expression"       when !Data.in_iso -> TIsoExpression
+  | "ArgExpression"    when !Data.in_iso -> TIsoArgExpression
+  | "TestExpression"   when !Data.in_iso -> TIsoTestExpression
+  | "ToTestExpression" when !Data.in_iso -> TIsoToTestExpression
+  | "Statement"        when !Data.in_iso -> TIsoStatement
+  | "Declaration"      when !Data.in_iso -> TIsoDeclaration
+  | "Type"             when !Data.in_iso -> TIsoType
+  | "TopLevel"         when !Data.in_iso -> TIsoTopLevel
+
+  | "_" when !Data.in_meta -> TUnderscore
 
   | s -> check_var s linetype
 
@@ -561,7 +563,7 @@ rule token = parse
           else if !Data.in_meta
 	  then TBang0
           else (add_current_line_type D.UNIQUE; token lexbuf) }
-  | "(" { if not !col_zero
+  | "(" { if !Data.in_meta or not !col_zero
 	  then (start_line true; TOPar (get_current_line_type lexbuf))
           else
             (start_line true; check_context_linetype (tok lexbuf);

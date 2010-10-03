@@ -33,6 +33,7 @@ type token =
   | TWhen of (Data.clt)
   | TVirtual
   | TUsing
+  | TUnderscore
   | TTypedef
   | TTypeId of (string * Data.clt)
   | TType
@@ -180,7 +181,7 @@ type token =
   | EOF
 
 
-val script_meta_main: (Lexing.lexbuf -> token) -> Lexing.lexbuf -> (string * Ast_cocci.meta_name * Ast_cocci.metavar)
+val script_meta_main: (Lexing.lexbuf -> token) -> Lexing.lexbuf -> ((string option (*string*) * string option (*ast*)) * Ast_cocci.meta_name * Ast_cocci.metavar)
 val rule_name: (Lexing.lexbuf -> token) -> Lexing.lexbuf -> (Ast_cocci.rulename)
 val reinit: (Lexing.lexbuf -> token) -> Lexing.lexbuf -> (unit)
 val plus_main: (Lexing.lexbuf -> token) -> Lexing.lexbuf -> (Ast0_cocci.rule)

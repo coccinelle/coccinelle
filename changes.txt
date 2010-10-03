@@ -24,6 +24,7 @@
   identifier metavariable, or from a set containing both concrete
   identifiers and inherited identifier metavariables.
 - support for ocaml scripting
+- ast available in ocaml scripts
 
 ** Features:
 - drop inconsistent paths check when only one node was matched
@@ -43,6 +44,7 @@
   glimpse tokens
 - Add scripts/spatch.bash_completion for automatic completion of common
   options under the bash shell.
+- Print rule name when a script rule crashes
 
 ** Bugfix:
 - drop inconsistent paths check when only one node was matched
@@ -67,6 +69,8 @@
 - manage labels within do while 0 macros
 - added space after : in printing a conditional expression.  Thanks to Josh
   Triplett for noticing the problem.
+- dropped trailing whitespace when code at the end of a line is deleted.
+  Thanks to Josh Triplett for noticing the problem.
 
 * 0.2.2
 ** Language:

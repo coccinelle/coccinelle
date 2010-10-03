@@ -44,6 +44,21 @@ Note: The test target is intended for developers. In particular, you
 Coccinelle with at least OCaml version 3.11.
 
 
+
+ ** Bash integration **
+
+ To have completion under Bash, you can execute the following command:
+
+    make install-bash
+
+ It will install the shell script 'scripts/spatch.bash_completion'
+ in /etc/bash_completion.d/spatch
+
+ You can manually copy that file elsewhere if you have a different
+ bash_completion directory.
+
+
+
  ** Runtime dependencies **
 
  - Basic shell commands:
@@ -68,3 +83,14 @@ Coccinelle with at least OCaml version 3.11.
  ** Dependencies for additional tools **
 
     git, pushd, popd, sed, diffstat, cpp
+
+ ** Uninstall **
+
+    To uninstall Coccinelle, you should use the following command
+
+    make uninstall
+
+
+    To also remove the bash completion script, run
+
+    make uninstall-bash

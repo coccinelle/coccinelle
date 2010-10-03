@@ -274,6 +274,7 @@ let token2c (tok,_) =
   | PC.TIsoStatement -> "Statement"
   | PC.TIsoDeclaration -> "Declaration"
   | PC.TIsoType -> "Type"
+  | PC.TUnderscore -> "_"
   | PC.TScriptData s -> s
 
 let print_tokens s tokens =
@@ -686,7 +687,7 @@ let split_token ((tok,_) as t) =
   | PC.TEq(clt) | PC.TAssign(_,clt) | PC.TDot(clt) | PC.TComma(clt)
   | PC.TPtVirg(clt) -> split t clt
 
-  | PC.EOF | PC.TInvalid -> ([t],[t])
+  | PC.EOF | PC.TInvalid | PC.TUnderscore -> ([t],[t])
 
   | PC.TIso | PC.TRightIso
   | PC.TIsoExpression | PC.TIsoStatement | PC.TIsoDeclaration | PC.TIsoType

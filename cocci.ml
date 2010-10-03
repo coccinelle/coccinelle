@@ -174,13 +174,15 @@ let fix_sgrep_diffs l =
 	then
 	  (match Str.split (Str.regexp " ") s with
 	    bef::min::pl::aft ->
-	      (match Str.split (Str.regexp ",") pl with
-		[n1;n2] ->
-		  let n2 = int_of_string n2 in
-		  (Printf.sprintf "%s %s %s,%d %s" bef min n1 (n2-n)
-		     (String.concat " " aft))
-		  :: loop1 0 ss
-	      | _ -> failwith "bad + line information")
+	      let (n1,n2) =
+		match Str.split (Str.regexp ",") pl with
+		  [n1;n2] -> (n1,n2)
+		| [n1] -> (n1,"1")
+		| _ -> failwith "bad + line information" in
+	      let n2 = int_of_string n2 in
+	      (Printf.sprintf "%s %s %s,%d %s" bef min n1 (n2-n)
+		 (String.concat " " aft))
+	      :: loop1 0 ss
 	  | _ -> failwith "bad @@ information")
 	else s :: loop1 n ss in
   let rec loop2 n = function
@@ -192,18 +194,21 @@ let fix_sgrep_diffs l =
 	then
 	  (match Str.split (Str.regexp " ") s with
 	    bef::min::pl::aft ->
-	      (match (Str.split (Str.regexp ",") min,
-		      Str.split (Str.regexp ",") pl) with
-		([_;m2],[n1;n2]) ->
-		  let n1 =
-		    int_of_string
-		      (String.sub n1 1 ((String.length n1)-1)) in
-		  let m2 = int_of_string m2 in
-		  let n2 = int_of_string n2 in
-		  (Printf.sprintf "%s %s +%d,%d %s" bef min (n1-n) n2
-		     (String.concat " " aft))
-		  :: loop2 (n+(m2-n2)) ss
-	      | _ -> failwith "bad -/+ line information")
+	      let (m2,n1,n2) =
+		match (Str.split (Str.regexp ",") min,
+		       Str.split (Str.regexp ",") pl) with
+		  ([_;m2],[n1;n2]) -> (m2,n1,n2)
+		| ([_],[n1;n2]) -> ("1",n1,n2)
+		| ([_;m2],[n1]) -> (m2,n1,"1")
+		| ([_],[n1]) -> ("1",n1,"1")
+		| _ -> failwith "bad -/+ line information" in
+	      let n1 =
+		int_of_string (String.sub n1 1 ((String.length n1)-1)) in
+	      let m2 = int_of_string m2 in
+	      let n2 = int_of_string n2 in
+	      (Printf.sprintf "%s %s +%d,%d %s" bef min (n1-n) n2
+		 (String.concat " " aft))
+	      :: loop2 (n+(m2-n2)) ss
 	  | _ -> failwith "bad @@ information")
 	else s :: loop2 n ss in
   loop2 0 (List.rev (loop1 0 l))
@@ -581,15 +586,20 @@ let (includes_to_parse:
             | Ast_c.Local xs ->
 		let relpath = Common.join "/" xs in
 		let f = Filename.concat dir (relpath) in
+		if (Sys.file_exists f) then
+		  Some f
+		else
+		  if !Flag_cocci.relax_include_path
 	      (* for our tests, all the files are flat in the current dir *)
-		if not (Sys.file_exists f) && !Flag_cocci.relax_include_path
-		then
-		  let attempt2 = Filename.concat dir (Common.last xs) in
-		  if not (Sys.file_exists f) && all_includes
 		  then
-		    interpret_include_path relpath
-		  else Some attempt2
-		else Some f
+		    let attempt2 = Filename.concat dir (Common.last xs) in
+		      if not (Sys.file_exists attempt2) && all_includes
+		      then
+			interpret_include_path relpath
+		      else Some attempt2
+		  else
+		    if all_includes then interpret_include_path relpath
+		    else None
 
             | Ast_c.NonLocal xs ->
 		let relpath = Common.join "/" xs in
@@ -757,7 +767,9 @@ type toplevel_c_info = {
 type toplevel_cocci_info_script_rule = {
   scr_rulename: string;
   scr_ast_rule:
-      string * (string * Ast_cocci.meta_name * Ast_cocci.metavar) list *
+      string *
+      (Ast_cocci.script_meta_name * Ast_cocci.meta_name *
+	 Ast_cocci.metavar) list *
       string;
   language: string;
   scr_dependencies: Ast_cocci.dependency;
@@ -1160,14 +1172,29 @@ let contains_binding e (_,(r,m),_) =
   with Not_found -> false
 
 let python_application mv ve r =
-  Pycocci.build_classes (List.map (function (x,y) -> x) ve);
-  Pycocci.construct_variables mv ve;
-  let _ = Pycocci.pyrun_simplestring (local_python_code ^r.script_code) in
-  !Pycocci.inc_match
+  let mv =
+    List.map
+      (function
+	  ((Some x,None),y,z) -> (x,y,z)
+	| _ ->
+	    failwith
+	      (Printf.sprintf "unexpected ast metavar in rule %s"
+		 r.scr_rulename))
+      mv in
+  try
+    Pycocci.build_classes (List.map (function (x,y) -> x) ve);
+    Pycocci.construct_variables mv ve;
+    let _ = Pycocci.pyrun_simplestring (local_python_code ^r.script_code) in
+    !Pycocci.inc_match
+  with Pycocci.Pycocciexception ->
+    (pr2 ("Failure in " ^ r.scr_rulename);
+     raise Pycocci.Pycocciexception)
 
 let ocaml_application mv ve r =
-  Run_ocamlcocci.run mv ve r.scr_rulename r.script_code;
-  !Coccilib.inc_match
+  try
+    Run_ocamlcocci.run mv ve r.scr_rulename r.script_code;
+    !Coccilib.inc_match
+  with e -> (pr2 ("Failure in " ^ r.scr_rulename); raise e)
 
 let apply_script_rule r cache newes e rules_that_have_matched
     rules_that_have_ever_matched script_application =
