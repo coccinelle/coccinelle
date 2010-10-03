@@ -1,27 +1,3 @@
-Release coccinelle-0.1.6
+Release coccinelle-0.1.6a
 
-** Language:
-   - the ability to add comments
-
-** Features:
-   - grouping of generated rules with -hrule option
-   - handling of special coccinelle comments
-     /* {{coccinelle:skip_start}} */ and
-     /* {{coccinelle:skip_end}} */
-     allowing to give more hints to the C parser.
-     Thanks to Flavien@lebarbe.net for the idea.
-   - the ability to print the values of more (but not all) kinds of
-     metavariables from python
-   - new vim SmPL mode.
-     Thanks to Alexander Faroy.
-
-** Bugfix:
-   - consider the ident tokens also in the 2 lines before the error line for the
-     10-most-problematic-parsing-errors diagnostic.
-   - SmPL parser allows cast as the argument of a pointer
-   - SmPL type checker allows enum as an array index
-   - Better generation of fresh metavariables names in hrule
-   - no more warnings about things that should be metavariables when there is
-     a disjunction in a function position
-   - bugfix in parser, better error message.
-     Thanks to Ali-Erdem OZCAN <ali-erdem.ozcan@st.com> for the bug report.
+Bugfix.

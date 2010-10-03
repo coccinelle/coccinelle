@@ -202,40 +202,51 @@ purebytecode:
 ##############################################################################
 
 # don't remove DESTDIR, it can be set by package build system like ebuild
+# for staged installation.
 install-common:
 	mkdir -p $(DESTDIR)$(BINDIR)
 	mkdir -p $(DESTDIR)$(LIBDIR)
 	mkdir -p $(DESTDIR)$(SHAREDIR)
 	mkdir -p $(DESTDIR)$(MANDIR)/man1
-	cp standard.h $(DESTDIR)$(SHAREDIR)
-	cp standard.iso $(DESTDIR)$(SHAREDIR)
-	cp docs/spatch.1 $(DESTDIR)$(MANDIR)/man1/
-	mkdir -p $(DESTDIR)$(SHAREDIR)/python
-	cp -a python/coccilib $(DESTDIR)$(SHAREDIR)/python
-	cp -f dllpycaml_stubs.so $(DESTDIR)$(LIBDIR)
+	$(INSTALL_DATA) standard.h $(DESTDIR)$(SHAREDIR)
+	$(INSTALL_DATA) standard.iso $(DESTDIR)$(SHAREDIR)
+	$(INSTALL_DATA) docs/spatch.1 $(DESTDIR)$(MANDIR)/man1/
+	@if [ $(FEATURE_PYTHON) -eq 1 ]; then $(MAKE) install-python; fi
 	@echo ""
 	@echo "You can also install spatch by copying the program spatch"
 	@echo "(available in this directory) anywhere you want and"
 	@echo "give it the right options to find its configuration files."
 	@echo ""
 
+install-python:
+	mkdir -p $(DESTDIR)$(SHAREDIR)/python/coccilib/coccigui
+	$(INSTALL_DATA) python/coccilib/*.py \
+		$(DESTDIR)$(SHAREDIR)/python/coccilib
+	$(INSTALL_DATA) python/coccilib/coccigui/*.py \
+		$(DESTDIR)$(SHAREDIR)/python/coccilib/coccigui
+	$(INSTALL_LIB) dllpycaml_stubs.so $(DESTDIR)$(LIBDIR)
+
 # user will use spatch to run spatch.opt (native)
 install: all.opt install-common
-	cp spatch.opt $(DESTDIR)$(SHAREDIR)
-	cat scripts/spatch.sh | sed "s|SHAREDIR|$(DESTDIR)$(SHAREDIR)|g" > $(DESTDIR)$(BINDIR)/spatch
+	$(INSTALL_PROGRAM) spatch.opt $(DESTDIR)$(SHAREDIR)
+	cat scripts/spatch.sh | sed "s|SHAREDIR|$(SHAREDIR)|g" > $(DESTDIR)$(BINDIR)/spatch
+	chmod 755 $(DESTDIR)$(BINDIR)/spatch
 
 # user will use spatch to run spatch (bytecode)
 install-byte: all install-common
-	cp spatch $(DESTDIR)$(SHAREDIR)
-	cat scripts/spatch.sh | sed "s|\.opt||" | sed "s|SHAREDIR|$(DESTDIR)$(SHAREDIR)|g" > $(DESTDIR)$(BINDIR)/spatch
+	$(INSTALL_PROGRAM) spatch $(DESTDIR)$(SHAREDIR)
+	cat scripts/spatch.sh | sed "s|\.opt||" | sed "s|SHAREDIR|$(SHAREDIR)|g" > $(DESTDIR)$(BINDIR)/spatch
+	chmod 755 $(DESTDIR)$(BINDIR)/spatch
 
 # user will use spatch.opt to run spatch.opt (native)
 install-opt: all.opt install-common
-	cp spatch.opt $(DESTDIR)$(SHAREDIR)
-	cat scripts/spatch.sh | sed "s|SHAREDIR|$(DESTDIR)$(SHAREDIR)|g" > $(DESTDIR)$(BINDIR)/spatch.opt
+	$(INSTALL_PROGRAM) spatch.opt $(DESTDIR)$(SHAREDIR)
+	cat scripts/spatch.sh | sed "s|SHAREDIR|$(SHAREDIR)|g" > $(DESTDIR)$(BINDIR)/spatch.opt
+	chmod 755 $(DESTDIR)$(BINDIR)/spatch.opt
 
 uninstall:
 	rm -f $(DESTDIR)$(BINDIR)/spatch
+	rm -f $(DESTDIR)$(BINDIR)/spatch.opt
 	rm -f $(DESTDIR)$(LIBDIR)/dllpycaml_stubs.so
 	rm -f $(DESTDIR)$(SHAREDIR)/standard.h
 	rm -f $(DESTDIR)$(SHAREDIR)/standard.iso
@@ -305,7 +316,7 @@ srctar:
 	make clean
 	cp -a .  $(TMP)/$(PACKAGE)
 	cd $(TMP)/$(PACKAGE); cd parsing_cocci/; make parser_cocci_menhir.ml
-	cd $(TMP)/$(PACKAGE); rm todo_pos
+	cd $(TMP)/$(PACKAGE); rm -f todo_pos
 	cd $(TMP); tar cvfz $(PACKAGE).tgz --exclude-vcs $(PACKAGE)
 	rm -rf  $(TMP)/$(PACKAGE)
 
