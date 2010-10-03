@@ -32,14 +32,14 @@ open Common
  *
  * If want to test without iso, use -iso_file empty.iso option.
  *)
-let testone x compare_with_expected_flag =
+let testone prefix x compare_with_expected_flag =
   let x    = if x =~ "\\(.*\\)_ver0$" then matched1 x else x in
   let base = if x =~ "\\(.*\\)_ver[0-9]+$" then matched1 x else x in
 
-  let cfile      = "tests/" ^ x ^ ".c" in
-  let cocci_file = "tests/" ^ base ^ ".cocci" in
+  let cfile      = prefix ^ x ^ ".c" in
+  let cocci_file = prefix ^ base ^ ".cocci" in
 
-  let expected_res   = "tests/" ^ x ^ ".res" in
+  let expected_res   = prefix ^ x ^ ".res" in
   begin
     let cocci_infos = Cocci.pre_engine (cocci_file, !Config.std_iso) in
     let res = Cocci.full_engine cocci_infos [cfile] in

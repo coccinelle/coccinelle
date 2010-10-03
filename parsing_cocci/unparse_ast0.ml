@@ -52,7 +52,8 @@ let meta_pos = function
 (* Modified code *)
 
 let mcodekind brackets fn x info mc =
-  List.iter (function (s,_) -> print_string s) info.Ast0.strings_before;
+  let print = function Ast.Noindent s | Ast.Indent s -> print_string s in
+  List.iter (function (s,_) -> print s) info.Ast0.strings_before;
   (match mc with
     Ast0.MINUS(plus_stream) ->
       let (lb,rb) =
@@ -92,7 +93,7 @@ let mcodekind brackets fn x info mc =
       let (plus_streams,_,_) = !plus_streams in
       U.print_around (function x -> print_string lb; fn x; print_string rb)
 	x plus_streams);
-  List.iter (function (s,_) -> print_string s) info.Ast0.strings_after
+  List.iter (function (s,_) -> print s) info.Ast0.strings_after
 
 let mcode fn (x,_,info,mc,pos,adj) =
   let fn x = fn x; meta_pos !pos in

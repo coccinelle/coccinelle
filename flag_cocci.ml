@@ -53,7 +53,7 @@ type include_options =
     I_UNSPECIFIED | I_NO_INCLUDES | I_NORMAL_INCLUDES | I_ALL_INCLUDES
 let include_options = ref I_UNSPECIFIED
 
-let include_path = ref (None : string option)
+let include_path = ref ([] : string list)
 (* if true then when have a #include "../../xx.h", we look also for xx.h in
  * current directory. This is because of how works extract_c_and_res
  *)

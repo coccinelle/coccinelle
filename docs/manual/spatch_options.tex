@@ -171,15 +171,16 @@ specified.  The index may be created using the script {\tt
 http://webglimpse.net/.  In conjunction with the option {\bf -patch\_cocci}
 this option prints the regular expression that will be passed to glimpse.}
 
-\rare{-dir}{ Specify a directory containing C files to process.  By
-  default, the include path will be set to the ``include'' subdirectory of
-  this directory.  A different include path can be specified using the
-  option {\bf -I}.  {\bf -dir} only considers the rightmost directory in
-  the argument list.  This behavior is convenient for creating a script
-  that always works on a single directory, but allows the user of the
-  script to override the provided directory with another one.  Spatch
-  collects the files in the directory using {\tt find} and does not follow
-  symbolic links.}
+\rare{-dir}{ Specify a directory containing C files to process.  A trailing
+  {\tt /} is permitted on the directory name and has no impact on the
+  result.  By default, the include path will be set to the ``include''
+  subdirectory of this directory.  A different include path can be
+  specified using the option {\bf -I}.  {\bf -dir} only considers the
+  rightmost directory in the argument list.  This behavior is convenient
+  for creating a script that always works on a single directory, but allows
+  the user of the script to override the provided directory with another
+  one.  Spatch collects the files in the directory using {\tt find} and
+  does not follow symbolic links.}
 
 \developer{-kbuild\_info $\langle$file$\rangle$}{ The specified file
   contains information about which sets of files should be considered in
@@ -451,6 +452,15 @@ done.}
 
 \rare{-U}{ Set number of diff context lines.}
 
+\rare{-patch $\langle$path$\rangle$}{The prefix of the pathname of the
+  directory or file name that should dropped from the diff line in the
+  generated patch.  This is useful if you want to apply a patch only to a
+  subdirectory of a source code tree but want to create a patch that can be
+  applied at the root of the source code tree.  An example could be {\tt
+  spatch -sp\_file foo.cocci -dir /var/linuxes/linux-next/drivers -patch
+  /var/linuxes/linux-next}.  A trailing {\tt /} is permitted on the
+  directory name and has no impact on the result.}
+
 \rare{-save\_tmp\_files}{Coccinelle creates some temporary
   files in {\tt /tmp} that it deletes after use.  This option causes these
   files to be saved.}
@@ -458,8 +468,6 @@ done.}
 \developer{-debug\_unparsing}{Show some debugging information about the
   generation of the transformed code.  This has the side-effect of
   deleting the transformed code.}
-
-\developer{-patch}{ Deprecated option.}
 
 
 \section{Other options}

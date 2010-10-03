@@ -10,8 +10,7 @@
 { \newcommand{\mynote}[2]{}}
 
 \newcommand\jl[1]{\mynote{Julia}{#1}}
-
-
+\newcommand\np[1]{\mynote{Nicolas}{#1}}
 
 \newcommand{\sizecodebis}[0]{\scriptsize}
 
@@ -30,36 +29,3 @@
 \newcommand{\tttld}{\mbox{\tt \char'176}}
 
 \newcommand{\fixme}[1]{{\color{red} #1}}
-
-
-%------------------------------------------------------------------------------
-%%%Squeeze space in bibliographybg
-%  \let\oldthebibliography=\thebibliography
-%  \let\endoldthebibliography=\endthebibliography
-%  \renewenvironment{thebibliography}[1]{%
-%    \begin{oldthebibliography}{#1}%
-%      \setlength{\parskip}{0ex}%
-%      \setlength{\itemsep}{0ex}%
-%  }%
-%  {%
-%    \end{oldthebibliography}%
-%  }
-
-
-%------------------------------------------------------------------------------
-
-%christian lindig tricks: 
-% http://www.st.cs.uni-saarland.de/~lindig/tex.html
-
-%\newif\ifdraft\drafttrue
-
-%see overfull 
-%\ifdraft
-%\overfullrule3pt
-%\fi
-
-
-
-%\def\<#1>{\texttt{#1}}
-%Now I can write \<some code here>, which feels more natural 
-% in the editor than \texttt{some code here}.

@@ -51,8 +51,8 @@ type info = { pos_info : position_info;
 	      attachable_start : bool; attachable_end : bool;
 	      mcode_start : mcodekind list; mcode_end : mcodekind list;
 	      (* the following are only for + code *)
-	      strings_before : (string * position_info) list;
-	      strings_after : (string * position_info) list }
+	      strings_before : (Ast.added_string * position_info) list;
+	      strings_after : (Ast.added_string * position_info) list }
 
 (* adjacency index is incremented when we skip over dots or nest delimiters
 it is used in deciding how much to remove, when two adjacent code tokens are
@@ -399,8 +399,8 @@ and parsed_rule =
 	(rule * Ast.metavar list) * Ast.ruletype
   | ScriptRule of
       string * Ast.dependency * (string * Ast.meta_name) list * string
-  | InitialScriptRule of string * string
-  | FinalScriptRule of string * string
+  | InitialScriptRule of string * Ast.dependency * string
+  | FinalScriptRule of string * Ast.dependency * string
 
 (* --------------------------------------------------------------------- *)
 

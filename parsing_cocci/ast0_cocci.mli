@@ -46,8 +46,8 @@ type info = { pos_info : position_info;
 	      attachable_start : bool; attachable_end : bool;
 	      mcode_start : mcodekind list; mcode_end : mcodekind list;
 	      (* the following are only for + code *)
-	      strings_before : (string * position_info) list;
-	      strings_after : (string * position_info) list }
+	      strings_before : (Ast_cocci.added_string * position_info) list;
+	      strings_after : (Ast_cocci.added_string * position_info) list }
 
 type 'a mcode =
     'a * arity * info * mcodekind * meta_pos ref (* pos, - only *) *
@@ -393,8 +393,10 @@ and parsed_rule =
   | ScriptRule of
       string * Ast_cocci.dependency * (string * Ast_cocci.meta_name) list *
 	string
-  | InitialScriptRule of string (*language*) * string (*code*)
-  | FinalScriptRule   of string (*language*) * string (*code*)
+  | InitialScriptRule of
+      string (*language*) * Ast_cocci.dependency * string (*code*)
+  | FinalScriptRule   of
+      string (*language*) * Ast_cocci.dependency * string (*code*)
 
 (* --------------------------------------------------------------------- *)
 

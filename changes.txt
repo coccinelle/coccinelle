@@ -12,6 +12,39 @@
 ** Bugfix:
 - Add more information in documentation, man pages and wiki
 
+
+* 0.2.2
+** Language:
+- Added ToTestExpression to iso language, see standard.iso for an
+  explanation
+- Added depends on to initialize and finalize script code
+
+** Features:
+- Update Emacs mode (cocci.el) to support 'virtual' rules and fix other
+  keywords sush as 'depends on', 'using', 'disable'
+- better treatment of != 0 in isos, communtativity for ==/!= for all
+  constants
+- allow adding // comments
+- Add support for multiple -I options
+
+** Bugfix:
+- correct interaction between virtual rules and included .cocci files
+- improvement in treatment of ! in isos, to avoid duplicating + code
+- improvement intreatment of metavars as isos, to avoid duplicating + code
+  between toplevel and variable instantiation
+- test expression of smpl conditional, etc no longer assumed to have type
+  int
+- correct + line numbers in the patch produced when using *
+- iso constant metavariable matches an identifier whose name is all capital
+  letters, eg NULL
+- allow / at the end of the name of a directory (-dir) or patch prefix
+  (-patch)
+- dropped space in + code after the binding of a type metavariable that is
+  a pointer type
+- better handling of . or .. in -dir name
+- allow keywords and metavariable names in identifier constraints (not sure
+  keywords is very useful, though)
+
 * 0.2.1
 ** Language:
 - Add virtual identifiers

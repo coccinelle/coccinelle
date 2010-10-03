@@ -50,7 +50,7 @@ let close_box _ = () in
 let force_newline _ = print_text "\n" in
 
 let start_block () = force_newline(); indent() in
-let end_block () = unindent(); force_newline () in
+let end_block () = unindent true; force_newline () in
 let print_string_box s = print_string s in
 
 let print_option = Common.do_option in
@@ -66,7 +66,7 @@ let outdent _ = () (* should go to leftmost col, does nothing now *) in
 
 let pretty_print_c =
   Pretty_print_c.mk_pretty_printers pr_celem pr_cspace
-    force_newline indent outdent unindent in
+    force_newline indent outdent (function _ -> unindent true) in
 
 (* --------------------------------------------------------------------- *)
 (* Only for make_hrule, print plus code, unbound metavariables *)
@@ -106,12 +106,14 @@ let print_around printer term = function
       print_anything bef; printer term; print_anything aft in
 
 let print_string_befaft fn fn1 x info =
+  let print ln col =
+    function Ast.Noindent s | Ast.Indent s -> print_string s ln col in
   List.iter
-    (function (s,ln,col) -> fn1(); print_string s ln col; force_newline())
+    (function (s,ln,col) -> fn1(); print ln col s; force_newline())
     info.Ast.strbef;
   fn x;
   List.iter
-    (function (s,ln,col) -> force_newline(); fn1(); print_string s ln col)
+    (function (s,ln,col) -> force_newline(); fn1(); print ln col s)
     info.Ast.straft in
 let print_meta (r,x) = print_text x in
 
@@ -135,10 +137,22 @@ let mcode fn (s,info,mc,pos) =
 	  (function line_before ->
 	    function (str,line,col) ->
 	      match line_before with
-		None -> print_string str line col; Some line
-	      |	Some lb when line =|= lb ->
+		None ->
+		  let str =
+		    match str with
+		      Ast.Noindent s -> unindent false; s
+		    | Ast.Indent s -> s in
 		  print_string str line col; Some line
-	      |	_ -> force_newline(); print_string str line col; Some line)
+	      |	Some lb when line =|= lb ->
+		  Printf.printf "some, line same case\n";
+		  let str = match str with Ast.Noindent s | Ast.Indent s -> s in
+		  print_string str line col; Some line
+	      |	_ ->
+		  let str =
+		    match str with
+		      Ast.Noindent s -> unindent false; s
+		    | Ast.Indent s -> s in
+		  force_newline(); print_string str line col; Some line)
 	  lb comments in
       let line_before = print_comments None info.Ast.strbef in
       (match line_before with
@@ -151,10 +165,6 @@ let mcode fn (s,info,mc,pos) =
 	 should really store parsed versions of the strings, but make a cheap
 	 effort here
          print_comments takes care of interior newlines *)
-      (match List.rev info.Ast.straft with
-	(str,_,_)::_ when String.length str > 0 && String.get str 0 = '#' ->
-	  force_newline()
-      |	_ -> ());
       ()
       (* printing for rule generation *)
   | (true, Ast.MINUS(_,_,_,plus_stream)) ->
@@ -199,7 +209,8 @@ let handle_metavar name fn =
 	(* call mcode to preserve the -+ annotation *)
 	mcode (fun _ _ _ -> fn e) name
       else fn e);
-      let rcol = if lcol = unknown then unknown else lcol + (String.length b) in
+      let rcol =
+	if lcol = unknown then unknown else lcol + (String.length b) in
       pr_barrier line rcol
 in
 (* --------------------------------------------------------------------- *)
@@ -536,6 +547,13 @@ and ft_space ty =
     Ast.Type(cv,ty) ->
       (match Ast.unwrap ty with
 	Ast.Pointer(_,_) -> ()
+      | Ast.MetaType(name,_,_) ->
+	  (match List.assoc (Ast.unwrap_mcode name) env with
+            Ast_c.MetaTypeVal (tq,ty) ->
+	      (match Ast_c.unwrap ty with
+		Ast_c.Pointer(_,_) -> ()
+	      |	_ -> pr_space())
+	  | _ -> pr_space())
       | _ -> pr_space())
   | _ -> pr_space()
 
@@ -782,7 +800,7 @@ let indent_if_needed s f =
     Ast.Seq(lbrace,body,rbrace) -> pr_space(); f()
   | _ ->
       (*no newline at the end - someone else will do that*)
-      start_block(); f(); unindent() in
+      start_block(); f(); unindent true in
 
 let rec statement arity s =
   match Ast.unwrap s with
@@ -938,7 +956,9 @@ let rec pp_any = function
   | Ast.CaseLineTag(x) -> case_line "" x; false
 
   | Ast.ConstVolTag(x) -> const_vol x unknown unknown; false
-  | Ast.Pragma(xs) -> print_between force_newline print_text xs; false
+  | Ast.Pragma(xs) ->
+      let print = function Ast.Noindent s | Ast.Indent s -> print_text s in
+      print_between force_newline print xs; false
   | Ast.Token(x,None) -> print_text x; if_open_brace x
   | Ast.Token(x,Some info) ->
       mcode
@@ -980,7 +1000,7 @@ in
 	  (Ast.Token ("}",_)::_) -> true
 	| _ -> false in
       let prnl x =
-	(if unindent_before x then unindent());
+	(if unindent_before x then unindent true);
 	force_newline() in
       let newline_before _ =
 	if before =*= After
@@ -1017,7 +1037,7 @@ in
 	      match (indent_needed,unindent_before x) with
 		(true,true) -> force_newline()
 	      | (true,false) -> force_newline(); indent()
-	      | (false,true) -> unindent(); force_newline()
+	      | (false,true) -> unindent true; force_newline()
 	      | (false,false) -> force_newline());
 	    let space_needed_before = function
 		Ast.ParamTag(x) ->

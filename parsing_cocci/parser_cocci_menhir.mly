@@ -56,7 +56,8 @@ module P = Parse_aux
 
 %token <Data.clt> TIf TElse TWhile TFor TDo TSwitch TCase TDefault TReturn
 %token <Data.clt> TBreak TContinue TGoto TSizeof TFunDecl
-%token <string * Data.clt> TIdent TTypeId TDeclarerId TIteratorId TPragma
+%token <string * Data.clt> TIdent TTypeId TDeclarerId TIteratorId
+%token <Ast_cocci.added_string * Data.clt> TPragma
 
 %token <Parse_aux.idinfo>        TMetaId TMetaFunc TMetaLocalFunc
 %token <Parse_aux.idinfo>        TMetaIterator TMetaDeclarer
@@ -108,7 +109,7 @@ module P = Parse_aux
 %token <Ast_cocci.assignOp * Data.clt> TAssign
 
 %token TIso TRightIso TIsoExpression TIsoStatement TIsoDeclaration TIsoType
-%token TIsoTopLevel TIsoArgExpression TIsoTestExpression
+%token TIsoTopLevel TIsoArgExpression TIsoTestExpression TIsoToTestExpression
 
 %token TInvalid
 
@@ -207,10 +208,10 @@ rule_name:
       { P.make_generated_rule_name_result None d i a e ee }
   | TScript TDotDot lang=pure_ident d=depends TArob
       { P.make_script_rule_name_result lang d }
-  | TInitialize TDotDot lang=pure_ident TArob
-      { P.make_initial_script_rule_name_result lang }
-  | TFinalize TDotDot lang=pure_ident TArob
-      { P.make_final_script_rule_name_result lang }
+  | TInitialize TDotDot lang=pure_ident d=depends TArob
+      { P.make_initial_script_rule_name_result lang d }
+  | TFinalize TDotDot lang=pure_ident d=depends TArob
+      { P.make_final_script_rule_name_result lang d }
 
 extends:
   /* empty */                                     { () }
@@ -1516,20 +1517,20 @@ regexp_eqid:
 	 }
 
 not_eqid:
-       TNotEq i=pure_ident
+       TNotEq i=pure_ident_or_meta_ident
          { (if !Data.in_iso
 	   then failwith "constraints not allowed in iso file");
 	   (if !Data.in_generating
            (* pb: constraints not stored with metavars; too lazy to search for
 	      them in the pattern *)
 	   then failwith "constraints not allowed in a generated rule file");
-	   Ast.IdNegIdSet([fst i]) }
-     | TNotEq TOBrace l=comma_list(pure_ident) TCBrace
+	   Ast.IdNegIdSet([snd i]) }
+     | TNotEq TOBrace l=comma_list(pure_ident_or_meta_ident) TCBrace
 	 { (if !Data.in_iso
 	   then failwith "constraints not allowed in iso file");
 	   (if !Data.in_generating
 	   then failwith "constraints not allowed in a generated rule file");
-	   Ast.IdNegIdSet(List.map fst l)
+	   Ast.IdNegIdSet(List.map snd l)
 	 }
 
 re_or_not_eqe:
@@ -1944,18 +1945,22 @@ any_strict:
 *****************************************************************************/
 
 iso_main:
-  TIsoExpression e1=dexpr el=list(iso(dexpr)) EOF
-    { P.iso_adjust (function x -> Ast0.ExprTag x) e1 el }
-| TIsoArgExpression e1=dexpr el=list(iso(dexpr)) EOF
-    { P.iso_adjust (function x -> Ast0.ArgExprTag x) e1 el }
-| TIsoTestExpression e1=dexpr el=list(iso(dexpr)) EOF
-    { P.iso_adjust (function x -> Ast0.TestExprTag x) e1 el }
+  TIsoExpression e1=eexpr el=list(iso(eexpr)) EOF
+    { let fn x = Ast0.ExprTag x in P.iso_adjust fn fn e1 el }
+| TIsoArgExpression e1=eexpr el=list(iso(eexpr)) EOF
+    { let fn x = Ast0.ArgExprTag x in P.iso_adjust fn fn e1 el }
+| TIsoTestExpression e1=eexpr el=list(iso(eexpr)) EOF
+    { let fn x = Ast0.TestExprTag x in P.iso_adjust fn fn e1 el }
+| TIsoToTestExpression e1=eexpr el=list(iso(eexpr)) EOF
+    { let ffn x = Ast0.ExprTag x in
+      let fn x =  Ast0.TestExprTag x in
+      P.iso_adjust ffn fn e1 el }
 | TIsoStatement s1=single_statement sl=list(iso(single_statement)) EOF
-    { P.iso_adjust (function x -> Ast0.StmtTag x) s1 sl }
+    { let fn x = Ast0.StmtTag x in P.iso_adjust fn fn s1 sl }
 | TIsoType t1=ctype tl=list(iso(ctype)) EOF
-    { P.iso_adjust (function x -> Ast0.TypeCTag x) t1 tl }
+    { let fn x = Ast0.TypeCTag x in P.iso_adjust fn fn t1 tl }
 | TIsoTopLevel e1=nest_start el=list(iso(nest_start)) EOF
-    { P.iso_adjust (function x -> Ast0.DotsStmtTag x) e1 el }
+    { let fn x = Ast0.DotsStmtTag x in P.iso_adjust fn fn e1 el }
 | TIsoDeclaration d1=decl_var dl=list(iso(decl_var)) EOF
     { let check_one = function
 	[x] -> x
@@ -1970,7 +1975,7 @@ iso_main:
 	    Common.Left x -> Common.Left(check_one x)
 	  | Common.Right x -> Common.Right(check_one x))
 	dl in
-    P.iso_adjust (function x -> Ast0.DeclTag x) d1 dl }
+    let fn x = Ast0.DeclTag x in P.iso_adjust fn fn d1 dl }
 
 iso(term):
     TIso t=term { Common.Left t }

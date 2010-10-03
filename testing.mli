@@ -25,7 +25,7 @@ open Common
 (*****************************************************************************)
 (* work with tests/ *)
 (*****************************************************************************)
-val testone : string (*test*) -> bool (*compare_expected*) -> unit
+val testone : string (*prefix*) -> string (*test*) -> bool (*compare_expected*) -> unit
 val testall : ?expected_score_file:string -> unit -> unit
 
 (*****************************************************************************)

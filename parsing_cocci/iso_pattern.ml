@@ -305,6 +305,8 @@ let match_list matcher is_list_matcher do_list_match la lb =
     | _ -> return false in
   loop (la,lb)
 
+let all_caps = Str.regexp "^[A-Z_][A-Z_0-9]*$"
+
 let match_maker checks_needed context_required whencode_allowed =
 
   let check_mcode pmc cmc binding =
@@ -502,6 +504,13 @@ let match_maker checks_needed context_required whencode_allowed =
 	      let rec matches e =
 		match Ast0.unwrap e with
 		  Ast0.Constant(c) -> true
+		| Ast0.Ident(c) ->
+		    (match Ast0.unwrap c with
+		      Ast0.Id(nm) ->
+			let nm = Ast0.unwrap_mcode nm in
+			(* all caps is a const *)
+			Str.string_match all_caps nm 0
+		    | _ -> false)
 		| Ast0.Cast(lp,ty,rp,e) -> matches e
 		| Ast0.SizeOfExpr(se,exp) -> true
 		| Ast0.SizeOfType(se,lp,ty,rp) -> true
@@ -1652,7 +1661,7 @@ let instantiate bindings mv_bindings =
 		  | Ast0.Binary(e1,op,e2) when
 		      same_modif
 			(Ast0.get_mcode_mcodekind unop)
-			(Ast0.get_mcode_mcodekind op)->
+			(Ast0.get_mcode_mcodekind op) ->
 			  let reb nop =
 			    Ast0.rewrap_mcode op (Ast.Logical(nop)) in
 			  let k1 x = k (Ast0.rewrap e x) in
@@ -1670,20 +1679,21 @@ let instantiate bindings mv_bindings =
 			  | Ast.Logical(Ast.NotEq) ->
 			      k1 (Ast0.Binary(e1,reb Ast.Eq,e2))
 			  | Ast.Logical(Ast.AndLog) ->
-			      k1 (Ast0.Binary(negate e1 e1 idcont,
+			      k1 (Ast0.Binary(negate_reb e e1 idcont,
 					      reb Ast.OrLog,
-					      negate e2 e2 idcont))
+					      negate_reb e e2 idcont))
 			  | Ast.Logical(Ast.OrLog) ->
-			      k1 (Ast0.Binary(negate e1 e1 idcont,
+			      k1 (Ast0.Binary(negate_reb e e1 idcont,
 					      reb Ast.AndLog,
-					      negate e2 e2 idcont))
+					      negate_reb e e2 idcont))
 			  | _ ->
 			      Ast0.rewrap e
 				(Ast0.Unary(k res,
 					    Ast0.rewrap_mcode op Ast.Not)))
 		  | Ast0.DisjExpr(lp,exps,mids,rp) ->
 		      (* use res because it is the transformed argument *)
-		      let exps = List.map (function e -> negate e e k) exps in
+		      let exps =
+			List.map (function e1 -> negate_reb e e1 k) exps in
 		      Ast0.rewrap res (Ast0.DisjExpr(lp,exps,mids,rp))
 		  | _ ->
 		      (*use e, because this might be the toplevel expression*)
@@ -1691,7 +1701,14 @@ let instantiate bindings mv_bindings =
 			(Ast0.Unary(k res,Ast0.rewrap_mcode unop Ast.Not))
 		else
 		  Ast0.rewrap e
-		    (Ast0.Unary(k res,Ast0.rewrap_mcode unop Ast.Not)) in
+		    (Ast0.Unary(k res,Ast0.rewrap_mcode unop Ast.Not))
+	      and negate_reb e e1 k =
+		(* used when ! is propagated to multiple places, to avoid
+		   duplicating mcode cells *)
+		let start_line =
+		  Some ((Ast0.get_info e).Ast0.pos_info.Ast0.line_start) in
+		(rebuild_mcode start_line).VT0.rebuilder_rec_expression
+		  (negate e e1 k) in
 	      negate e exp idcont
 	    else e
 	| _ -> e)
@@ -1885,13 +1902,15 @@ let copy_plus printer minusify model e =
   if !Flag.sgrep_mode2
   then e (* no plus code, can cause a "not possible" error, so just avoid it *)
   else
-    let e =
-      match Ast0.get_mcodekind model with
-	Ast0.MINUS(mc) -> minusify e
-      | Ast0.CONTEXT(mc) -> e
-      | _ -> failwith "not possible: copy_plus\n" in
-    merge_plus (Ast0.get_mcodekind model) (Ast0.get_mcodekind e);
-    e
+    begin
+      let e =
+	match Ast0.get_mcodekind model with
+          Ast0.MINUS(mc) -> minusify e
+	| Ast0.CONTEXT(mc) -> e
+	| _ -> failwith "not possible: copy_plus\n" in
+      merge_plus (Ast0.get_mcodekind model) (Ast0.get_mcodekind e);
+      e
+    end
 
 let copy_minus printer minusify model e =
   match Ast0.get_mcodekind model with
@@ -2019,8 +2038,8 @@ let make_new_metavars metavars bindings =
 let do_nothing x = x
 
 let mkdisj matcher metavars alts e instantiater mkiso disj_maker minusify
-    rebuild_mcodes name printer extra_plus update_others =
-  let call_instantiate bindings mv_bindings alts =
+    rebuild_mcodes name printer extra_plus update_others has_context =
+  let call_instantiate bindings mv_bindings alts has_context =
     List.concat
       (List.map
 	 (function (a,_,_,_) ->
@@ -2028,11 +2047,14 @@ let mkdisj matcher metavars alts e instantiater mkiso disj_maker minusify
 	   (* no need to create duplicates when the bindings have no effect *)
 	     (List.map
 		(function bindings ->
-		  Ast0.set_iso
-		    (copy_plus printer minusify e
-		       (extra_plus e
-			  (instantiater bindings mv_bindings
-			     (rebuild_mcodes a))))
+		  let instantiated =
+		    instantiater bindings mv_bindings (rebuild_mcodes a) in
+		  let plus_added =
+		    if has_context (* ie if pat is not just a metavara *)
+		    then
+		      copy_plus printer minusify e (extra_plus e instantiated)
+		    else instantiated in
+		  Ast0.set_iso plus_added
 		    ((name,mkiso a)::(Ast0.get_iso e))) (* keep count, not U *)
 		bindings))
 	 alts) in
@@ -2075,7 +2097,8 @@ let mkdisj matcher metavars alts e instantiater mkiso disj_maker minusify
 		  make_new_metavars metavars (nub(List.concat bindings)) in
 		Common.Right
 		  (new_metavars,
-		   call_instantiate bindings mv_bindings all_alts))) in
+		   call_instantiate bindings mv_bindings all_alts
+		     (has_context pattern)))) in
   let rec outer_loop prev_ecount prev_icount prev_dcount = function
       [] | [[_]] (*only one alternative*)  -> (0,[],e) (* nothing matched *)
     | (alts::rest) as all_alts ->
@@ -2179,6 +2202,8 @@ let transform_type (metavars,alts,name) e =
 	make_disj_type make_minus.VT0.rebuilder_rec_typeC
 	(rebuild_mcode start_line).VT0.rebuilder_rec_typeC
 	name Unparse_ast0.typeC extra_copy_other_plus do_nothing
+	(function x ->
+	  match Ast0.unwrap x with Ast0.MetaType _ -> false | _ -> true)
   | _ -> (0,[],e)
 
 
@@ -2204,9 +2229,21 @@ let transform_expr (metavars,alts,name) e =
       (make_disj_expr e)
       make_minus.VT0.rebuilder_rec_expression
       (rebuild_mcode start_line).VT0.rebuilder_rec_expression
-      name Unparse_ast0.expression extra_copy_other_plus update_others in
+      name Unparse_ast0.expression extra_copy_other_plus update_others
+      (function x ->
+	  match Ast0.unwrap x with
+	    Ast0.MetaExpr _ | Ast0.MetaExprList _ | Ast0.MetaErr _ -> false
+	  | _ -> true)
+  in
   match alts with
-    (Ast0.ExprTag(_)::_)::_ -> process do_nothing
+    (Ast0.ExprTag(_)::r)::rs ->
+      (* hack to accomodate ToTestExpression case, where the first pattern is
+	 a normal expression, but the others are test expressions *)
+      let others = r @ (List.concat rs) in
+      let is_test = function Ast0.TestExprTag(_) -> true | _ -> false in
+      if List.for_all is_test others then process Ast0.set_test_exp
+      else if List.exists is_test others then failwith "inconsistent iso"
+      else process do_nothing
   | (Ast0.ArgExprTag(_)::_)::_ when Ast0.get_arg_exp e -> process do_nothing
   | (Ast0.TestExprTag(_)::_)::_ when Ast0.get_test_pos e ->
       process Ast0.set_test_exp
@@ -2236,6 +2273,7 @@ let transform_decl (metavars,alts,name) e =
 	make_minus.VT0.rebuilder_rec_declaration
 	(rebuild_mcode start_line).VT0.rebuilder_rec_declaration
 	name Unparse_ast0.declaration extra_copy_other_plus do_nothing
+	(function _ -> true (* no metavars *))
   | _ -> (0,[],e)
 
 let transform_stmt (metavars,alts,name) e =
@@ -2261,6 +2299,10 @@ let transform_stmt (metavars,alts,name) e =
 	make_disj_stmt make_minus.VT0.rebuilder_rec_statement
 	(rebuild_mcode start_line).VT0.rebuilder_rec_statement
 	name (Unparse_ast0.statement "") extra_copy_stmt_plus do_nothing
+	(function x ->
+	  match Ast0.unwrap x with
+	    Ast0.MetaStmt _ | Ast0.MetaStmtList _ -> false
+	  | _ -> true)
   | _ -> (0,[],e)
 
 (* sort of a hack, because there is no disj at top level *)
@@ -2308,6 +2350,7 @@ let transform_top (metavars,alts,name) e =
 		make_minus.VT0.rebuilder_rec_statement_dots x)
 	      (rebuild_mcode start_line).VT0.rebuilder_rec_statement_dots
 	      name Unparse_ast0.statement_dots extra_copy_other_plus do_nothing
+	      (function _ -> true)
 	| _ -> (0,[],stmts) in
       (count,mv,Ast0.rewrap e (Ast0.CODE res))
   | _ -> (0,[],e)

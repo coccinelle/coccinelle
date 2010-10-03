@@ -1,5 +1,6 @@
 ;;; cocci.el --- a major mode for editing semantic patches
 
+;; Copyright (C) 2010      Nicolas Palix <npalix@diku.dk>
 ;; Copyright (C) 2006-2007 Yoann Padioleau
 
 ;; Please imagine a long and boring gnu-style copyright notice
@@ -32,6 +33,7 @@
 
 ;;; History
 
+;; 2010-02-01 Nico: Add support for 'disable', 'using', scripting, 'virtual' rules
 ;; 2009-11-05 Nico: Cleanups, Change shortcut % to C-M-% (% is used in Python rule)
 ;; Some cleanups done by Rene Rydhof Hansen
 
@@ -136,6 +138,11 @@
 
 (setq cocci-font-lock-keywords
  `(
+   ; For virtual rule declarations
+   ("^[ \t]*\\(virtual\\)\\b\\(.*\\)"
+    (1 'cocci-special-face)
+    (2 'cocci-rulename-face)
+    )
 
    ; blink possible errors, when - or + is not in first column
    ("^[ \t]+[-+]" . 'cocci-problem-face)
@@ -178,6 +185,27 @@
 
    ("@.*\\b\\(extends\\|\\(depends[ \t]*on\\)\\)\\b.*@"
     (1 'cocci-special-face t))
+
+   ("@.*\\b\\(disable\\)\\b.*@"
+    (1 'cocci-special-face t))
+
+   ("@.*\\b\\(using\\)\\b.*@"
+    (1 'cocci-special-face t))
+
+   ("@.*\\b\\(initialize\\)[ \t]*:[ \t]*\\(.*\\)[ \t]*@"
+    (1 'cocci-special-face t)
+    (2 'cocci-script-face t)
+    )
+
+   ("@.*\\b\\(script\\)[ \t]*:[ \t]*\\(.*\\)[ \t]*@"
+    (1 'cocci-special-face t)
+    (2 'cocci-script-face t)
+    )
+
+   ("@.*\\b\\(finalize\\)[ \t]*:[ \t]*\\(.*\\)[ \t]*@"
+    (1 'cocci-special-face t)
+    (2 'cocci-script-face t)
+    )
 
    ;old: does not work, not easy to handle the   rule1, rule2, rule3  list.
    ;   ("@[ \t]*\\(\\(\\w+\\)[ \t,]*\\)*[ \t]*@"

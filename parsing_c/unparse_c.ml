@@ -61,7 +61,7 @@ type token2 =
   | Cocci2 of string * int (* line *) * int (* lcol *) * int (* rcol *)
   | C2 of string
   | Indent_cocci2
-  | Unindent_cocci2
+  | Unindent_cocci2 of bool (* true for permanent, false for temporary *)
 
 (* not used yet *)
 type token3 =
@@ -99,7 +99,7 @@ let str_of_token2 = function
   | Cocci2 (s,_,_,_) -> s
   | C2 s -> s
   | Indent_cocci2 -> ""
-  | Unindent_cocci2 -> ""
+  | Unindent_cocci2 _ -> ""
 
 let print_token2 = function
   | T2 (t,b,_) ->
@@ -114,7 +114,7 @@ let print_token2 = function
   | Cocci2 (s,_,lc,rc) -> Printf.sprintf "Cocci2:%d:%d%s" lc rc s
   | C2 s -> "C2:"^s
   | Indent_cocci2 -> "Indent"
-  | Unindent_cocci2 -> "Unindent"
+  | Unindent_cocci2 _ -> "Unindent"
 
 let simple_print_all_tokens1 l =
   List.iter (function x -> Printf.printf "%s " (print_token1 x)) l;
@@ -378,7 +378,7 @@ let expand_mcode toks =
     let pr_arity _ = () (* not interested *) in
 
     let indent _   = push2 Indent_cocci2 toks_out in
-    let unindent _ = push2 Unindent_cocci2 toks_out in
+    let unindent x = push2 (Unindent_cocci2 x) toks_out in
 
     let args_pp =
       (env, pr_cocci, pr_c, pr_cspace,
@@ -489,7 +489,7 @@ let is_minusable_comment_nocpp = function
   | _ -> false
 
 let all_coccis = function
-    Cocci2 _ | C2 _ | Indent_cocci2 | Unindent_cocci2 -> true
+    Cocci2 _ | C2 _ | Indent_cocci2 | Unindent_cocci2 _ -> true
   | _ -> false
 
 (*previously gave up if the first character was a newline, but not clear why*)
@@ -518,7 +518,7 @@ let set_minus_comment adj = function
   | _ -> raise Impossible
 
 let set_minus_comment_or_plus adj = function
-    Cocci2 _ | C2 _ | Indent_cocci2 | Unindent_cocci2 as x -> x
+    Cocci2 _ | C2 _ | Indent_cocci2 | Unindent_cocci2 _ as x -> x
   | x -> set_minus_comment adj x
 
 let drop_minus xs =
@@ -843,7 +843,8 @@ let rec adjust_indentation xs =
 	let old_tabbing = !_current_tabbing in
         str_of_token2 x +> new_tabbing +> (fun s -> _current_tabbing := s);
 	(* only trust the indentation after the first { *)
-	(if started then adjust_tabbing_unit old_tabbing !_current_tabbing);
+	(if started
+	then adjust_tabbing_unit old_tabbing !_current_tabbing);
 	let coccis_rest = Common.span all_coccis xs in
 	(match coccis_rest with
 	  (_::_,((T2 (tok,_,_)) as y)::_) when str_of_token2 y =$= "}" ->
@@ -856,7 +857,7 @@ let rec adjust_indentation xs =
 	| Some (tu,_) ->
 	    _current_tabbing := (!_current_tabbing)^tu;
 	    Cocci2 (tu,-1,-1,-1)::aux started xs)
-    | Unindent_cocci2::xs ->
+    | Unindent_cocci2(permanent)::xs ->
 	(match !tabbing_unit with
 	  None -> aux started xs
 	| Some (_,tu) ->
@@ -868,10 +869,12 @@ let rec adjust_indentation xs =
 	x::aux true (y::Indent_cocci2::xs)
     | ((Cocci2 _) as x)::((T2 (tok,_,_)) as y)::xs
       when str_of_token2 y =$= "}" ->
-	x::aux started (y::Unindent_cocci2::xs)
+	x::aux started (y::Unindent_cocci2 true::xs)
     (* starting the body of the function *)
     | ((T2 (tok,_,_)) as x)::xs when str_of_token2 x =$= "{" ->  x::aux true xs
     | ((Cocci2("{",_,_,_)) as a)::xs -> a::aux true xs
+    | ((Cocci2("\n",_,_,_)) as x)::Unindent_cocci2(false)::xs ->
+        x::aux started xs
     | ((Cocci2("\n",_,_,_)) as x)::xs ->
             (* dont inline in expr because of weird eval order of ocaml *)
         let s = !_current_tabbing in
@@ -944,7 +947,7 @@ let kind_of_token2 = function
       | FakeTok _ -> raise Impossible (* now a Fake2 *)
       | AbstractLineTok _ -> raise Impossible (* now a KC *)
       )
-  | Unindent_cocci2 | Indent_cocci2 -> raise Impossible
+  | Unindent_cocci2 _ | Indent_cocci2 -> raise Impossible
 
 let end_mark = "!"
 

@@ -1,16 +1,3 @@
-Release coccinelle-0.2.1
+Release coccinelle-0.2.2-rc1
 
-** Language:
-   - Add virtual identifiers
-   - Add coccilib.report and coccilib.trac Python modules
-   - coccilib.org and coccilib.report are imported by default but not loaded
-     in the current scope.
-
-** Features:
-   - Parse_error_msg now more helpful.  New option -verbose_parsing for even
-     more information.
-   - Improve Python import handling. They are imported once during script
-     initialization.
-
-** Bugfix:
-   - correct treatment of depends on with || for virtual rules
+Release Candidate 1 for coccinelle-0.2.2

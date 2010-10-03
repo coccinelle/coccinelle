@@ -53,7 +53,7 @@ type token =
   | TPure
   | TPtrOp of (Data.clt)
   | TPtVirg of (Data.clt)
-  | TPragma of (string * Data.clt)
+  | TPragma of (Ast_cocci.added_string * Data.clt)
   | TPosition
   | TPosAny
   | TPlusFile of (string * Data.clt)
@@ -107,6 +107,7 @@ type token =
   | TIterator
   | TIsoType
   | TIsoTopLevel
+  | TIsoToTestExpression
   | TIsoTestExpression
   | TIsoStatement
   | TIsoExpression

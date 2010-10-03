@@ -173,7 +173,7 @@ let ty_pointerify ty m =
 
 (* Left is <=>, Right is =>.  Collect <=>s. *)
 (* The parser should have done this, with precedences.  But whatever... *)
-let iso_adjust fn first rest =
+let iso_adjust first_fn fn first rest =
   let rec loop = function
       [] -> [[]]
     | (Common.Left x)::rest ->
@@ -185,7 +185,7 @@ let iso_adjust fn first rest =
 	  front::after -> []::(fn x::front)::after
 	| _ -> failwith "not possible") in
   match loop rest with
-    front::after -> (fn first::front)::after
+    front::after -> (first_fn first::front)::after
   | _ -> failwith "not possible"
 
 let check_meta tok =
@@ -516,13 +516,13 @@ let make_script_rule_name_result lang deps =
   let l = id2name lang in
   Ast.ScriptRulename (l,deps)
 
-let make_initial_script_rule_name_result lang =
+let make_initial_script_rule_name_result lang deps =
   let l = id2name lang in
-  Ast.InitialScriptRulename(l)
+  Ast.InitialScriptRulename(l,deps)
 
-let make_final_script_rule_name_result lang =
+let make_final_script_rule_name_result lang deps =
   let l = id2name lang in
-  Ast.FinalScriptRulename(l)
+  Ast.FinalScriptRulename(l,deps)
 
 (* Allows type alone only when it is void and only when there is only one
     parameter.  This avoids ambiguity problems in the parser. *)

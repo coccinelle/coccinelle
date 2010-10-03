@@ -80,11 +80,10 @@ let print_around printer term = function
       print_anything "<<< " bef; printer term; print_anything ">>> " aft
 
 let print_string_befaft fn x info =
-  List.iter (function (s,_,_) -> print_string s; force_newline())
-    info.Ast.strbef;
+  let print = function Ast.Noindent s | Ast.Indent s -> print_string s in
+  List.iter (function (s,_,_) -> print s; force_newline()) info.Ast.strbef;
   fn x;
-  List.iter (function (s,_,_) -> force_newline(); print_string s)
-    info.Ast.straft
+  List.iter (function (s,_,_) -> force_newline(); print s) info.Ast.straft
 
 let print_meta (r,x) = print_string r; print_string ":"; print_string x
 
@@ -795,7 +794,9 @@ let _ =
     | Ast.ConstVolTag(x) -> const_vol x
     | Ast.Token(x,Some info) -> print_string_befaft print_string x info
     | Ast.Token(x,None) -> print_string x
-    | Ast.Pragma(xs) -> print_between force_newline print_string xs
+    | Ast.Pragma(xs) ->
+	let print = function Ast.Noindent s | Ast.Indent s -> print_string s in
+	print_between force_newline print xs
     | Ast.Code(x) -> let _ = top_level x in ()
     | Ast.ExprDotsTag(x) -> dots (function _ -> ()) expression x
     | Ast.ParamDotsTag(x) -> parameter_list x
@@ -824,38 +825,27 @@ let rec dep in_and = function
   | Ast.NoDep   -> print_string "no_dep"
   | Ast.FailDep -> print_string "fail_dep"
 
+let script_header str lang deps code =
+  print_string "@@";
+  force_newline();
+  print_string (str ^ ":" ^ lang);
+  (match deps with
+    Ast.NoDep -> ()
+  | _ -> print_string " depends on "; dep true deps);
+  force_newline();
+  print_string "@@";
+  force_newline();
+  print_string code;
+  force_newline()
+
 let unparse z =
   match z with
-    Ast.InitialScriptRule (lang,code) ->
-      print_string "@@";
-      force_newline();
-      print_string ("initialize:" ^ lang);
-      force_newline();
-      print_string "@@";
-      force_newline();
-      print_string code;
-      force_newline()
-  | Ast.FinalScriptRule (lang,code) ->
-      print_string "@@";
-      force_newline();
-      print_string ("finalize:" ^ lang);
-      force_newline();
-      print_string "@@";
-      force_newline();
-      print_string code;
-      force_newline()
+    Ast.InitialScriptRule (lang,deps,code) ->
+      script_header "initialize" lang deps code
+  | Ast.FinalScriptRule (lang,deps,code) ->
+      script_header "finalize" lang deps code
   | Ast.ScriptRule (lang,deps,bindings,code) ->
-      print_string "@@";
-      force_newline();
-      print_string ("script:" ^ lang);
-      (match deps with
-	Ast.NoDep -> ()
-      | _ -> print_string " depends on "; dep true deps);
-      force_newline();
-      print_string "@@";
-      force_newline();
-      print_string code;
-      force_newline()
+      script_header "script" lang deps code
   | Ast.CocciRule (nm, (deps, drops, exists), x, _, _) ->
       print_string "@@";
       force_newline();

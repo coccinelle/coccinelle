@@ -30,9 +30,11 @@ type idconstraint =
 (* --------------------------------------------------------------------- *)
 (* Modified code *)
 
+type added_string = Noindent of string | Indent of string
+
 type info = { line : int; column : int;
-	      strbef : (string * int (* line *) * int (* col *)) list;
-	      straft : (string * int (* line *) * int (* col *)) list }
+	      strbef : (added_string * int (* line *) * int (* col *)) list;
+	      straft : (added_string * int (* line *) * int (* col *)) list }
 type line = int
 type meta_name = string * string
 (* need to be careful about rewrapping, to avoid duplicating pos info
@@ -543,8 +545,8 @@ and rulename =
   | GeneratedRulename of string option * dependency *
 	string list * string list * exists * bool
   | ScriptRulename of string * dependency
-  | InitialScriptRulename of string
-  | FinalScriptRulename of string
+  | InitialScriptRulename of string * dependency
+  | FinalScriptRulename of string * dependency
 
 and ruletype = Normal | Generated
 
@@ -553,8 +555,8 @@ and rule =
 	(dependency * string list (* dropped isos *) * exists) * top_level list
 	* bool list * ruletype
   | ScriptRule of string * dependency * (string * meta_name) list * string
-  | InitialScriptRule of string (*language*) * string (*code*)
-  | FinalScriptRule of string (*language*) * string (*code*)
+  | InitialScriptRule of string (*language*) * dependency * string (*code*)
+  | FinalScriptRule of string (*language*) * dependency * string (*code*)
 
 and dependency =
     Dep of string (* rule applies for the current binding *)
@@ -590,7 +592,7 @@ and anything =
   | CaseLineTag         of case_line
   | ConstVolTag         of const_vol
   | Token               of string * info option
-  | Pragma              of string list
+  | Pragma              of added_string list
   | Code                of top_level
   | ExprDotsTag         of expression dots
   | ParamDotsTag        of parameterTypeDef dots

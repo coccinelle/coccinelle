@@ -3,7 +3,8 @@ identifier ptr;
 //statement S;
 @@
 
+// body could be S instead of { ... }
 - if (!ptr) 
 - { 
 - ... 
-- } // could be S instead of { ... }
+- }

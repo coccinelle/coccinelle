@@ -280,13 +280,14 @@ let id_tokens lexbuf =
 
   | "sizeof" ->     TSizeof   linetype
 
-  | "Expression"     -> TIsoExpression
-  | "ArgExpression"  -> TIsoArgExpression
-  | "TestExpression" -> TIsoTestExpression
-  | "Statement"      -> TIsoStatement
-  | "Declaration"    -> TIsoDeclaration
-  | "Type"           -> TIsoType
-  | "TopLevel"       -> TIsoTopLevel
+  | "Expression"       -> TIsoExpression
+  | "ArgExpression"    -> TIsoArgExpression
+  | "TestExpression"   -> TIsoTestExpression
+  | "ToTestExpression" -> TIsoToTestExpression
+  | "Statement"        -> TIsoStatement
+  | "Declaration"      -> TIsoDeclaration
+  | "Type"             -> TIsoType
+  | "TopLevel"         -> TIsoTopLevel
 
   | s -> check_var s linetype
 
@@ -299,6 +300,7 @@ let init _ =
   prev_plus := false;
   line_start := 0;
   current_line_started := false;
+  current_line_type := (D.CONTEXT,0,0);
   col_zero := true;
   pm := UNKNOWN;
   Data.in_rule_name := false;
@@ -456,10 +458,28 @@ let real = pent exp | ((pent? '.' pfract | pent '.' pfract? ) exp?)
 
 
 rule token = parse
-  | [' ' '\t'  ]+             { start_line false; token lexbuf }
-  | ['\n' '\r' '\011' '\012'] { reset_line lexbuf; token lexbuf }
+  | [' ' '\t']* ['\n' '\r' '\011' '\012']
+    { let cls = !current_line_started in
+      
+      if not cls
+      then
+	begin
+	  match !current_line_type with
+	    (D.PLUS,_,_) | (D.PLUSPLUS,_,_) ->
+	      let info = get_current_line_type lexbuf in
+	      reset_line lexbuf;
+	      TPragma (Ast.Noindent "", info)
+	  | _ -> reset_line lexbuf; token lexbuf
+	end
+      else (reset_line lexbuf; token lexbuf) }
 
-  | "//" [^ '\n']* { start_line false; token lexbuf }
+  | [' ' '\t'  ]+  { start_line false; token lexbuf }
+
+  | "//" [^ '\n']* {
+    match !current_line_type with
+      (D.PLUS,_,_) | (D.PLUSPLUS,_,_) ->
+	TPragma (Ast.Indent (tok lexbuf), get_current_line_type lexbuf)
+    | _ -> start_line false; token lexbuf }
 
   | "@@" { start_line true; TArobArob }
   | "@"  { pass_zero();
@@ -670,13 +690,14 @@ rule token = parse
   | "#" [' ' '\t']* "endif" [^'\n']*
   | "#" [' ' '\t']* "error" [^'\n']*
       { start_line true; check_plus_linetype (tok lexbuf);
-	TPragma (tok lexbuf, get_current_line_type lexbuf) }
+	TPragma (Ast.Noindent(tok lexbuf), get_current_line_type lexbuf) }
   | "/*"
       { start_line true; check_plus_linetype (tok lexbuf);
 	(* second argument to TPragma is not quite right, because
 	   it represents only the first token of the comemnt, but that
 	   should be good enough *)
-	TPragma ("/*"^(comment lexbuf), get_current_line_type lexbuf) }
+	TPragma (Ast.Indent("/*"^(comment lexbuf)),
+		 get_current_line_type lexbuf) }
   | "---" [^'\n']*
       { (if !current_line_started
       then lexerr "--- must be at the beginning of the line" "");

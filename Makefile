@@ -24,14 +24,18 @@
 #############################################################################
 
 -include Makefile.config
+-include /etc/lsb-release
 
 VERSION=$(shell cat globals/config.ml.in |grep version |perl -p -e 's/.*"(.*)".*/$$1/;')
 CCVERSION=$(shell cat scripts/coccicheck/README |grep "Coccicheck version" |perl -p -e 's/.*version (.*)[ ]*/$$1/;')
+PKGVERSION=$(shell dpkg-parsechangelog -ldebian/changelog.$(DISTRIB_CODENAME) 2> /dev/null \
+	 | sed -n 's/^Version: \(.*\)/\1/p' )
 
 ##############################################################################
 # Variables
 ##############################################################################
 TARGET=spatch
+PRJNAME=coccinelle
 
 SRC=flag_cocci.ml cocci.ml testing.ml test.ml main.ml
 
@@ -166,6 +170,7 @@ $(MAKESUBDIRS:%=%.opt):
 
 clean::
 	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i $@; done
+	$(MAKE) -C demos/spp $@
 
 $(LIBS): $(MAKESUBDIRS)
 $(LIBS:.cma=.cmxa): $(MAKESUBDIRS:%=%.opt)
@@ -199,7 +204,7 @@ tools:
 	$(MAKE) -C tools
 
 clean::
-	$(MAKE) -C tools clean
+	if [ -d tools ] ; then $(MAKE) -C tools clean ; fi
 
 static:
 	rm -f spatch.opt spatch
@@ -332,6 +337,7 @@ uninstall:
 
 version:
 	@echo "spatch     $(VERSION)"
+	@echo "spatch     $(PKGVERSION) ($(DISTRIB_ID))"
 	@echo "coccicheck $(CCVERSION)"
 
 
@@ -339,7 +345,7 @@ version:
 # Package rules
 ##############################################################################
 
-PACKAGE=coccinelle-$(VERSION)
+PACKAGE=$(PRJNAME)-$(VERSION)
 CCPACKAGE=coccicheck-$(CCVERSION)
 
 BINSRC=spatch env.sh env.csh standard.h standard.iso \
@@ -510,6 +516,40 @@ fixdates:
 
 ocamlversion:
 	@echo $(OCAMLVERSION)
+
+
+##############################################################################
+# Packaging rules -- To build deb packages
+##############################################################################
+EXCL_SYNC=--exclude ".git"          \
+	--exclude ".gitignore"      \
+	--exclude ".cvsignore"      \
+	--exclude "tests"           \
+	--exclude "TODO"            \
+	--cvs-exclude
+
+prepack:
+	rsync -a $(EXCL_SYNC) . $(TMP)/$(PACKAGE)
+	$(MAKE) -C $(TMP)/$(PACKAGE) licensify
+	rm -rf $(TMP)/$(PACKAGE)/tools
+
+packsrc: prepack
+#	$(MAKE) -C $(TMP)/$(PACKAGE)/debian lucid
+	$(MAKE) -C $(TMP)/$(PACKAGE)/debian karmic
+	$(MAKE) push
+	rm -rf  $(TMP)/$(PACKAGE)/
+
+push:
+	cd $(TMP)/ && for p in `ls $(PRJNAME)_$(VERSION).deb*_source.changes`; do dput $(PRJNAME) $$p ; done
+	rm -rf $(TMP)/$(PRJNAME)_$(VERSION).deb*_source.changes
+	rm -rf $(TMP)/$(PRJNAME)_$(VERSION).deb*_source.$(PRJNAME).upload
+	rm -rf $(TMP)/$(PRJNAME)_$(VERSION).deb*.dsc
+	rm -rf $(TMP)/$(PRJNAME)_$(VERSION).deb*.tar.gz
+
+packbin: prepack
+	$(MAKE) -C $(TMP)/$(PACKAGE)/debian binary
+	rm -rf  $(TMP)/$(PACKAGE)/
+	rm -rf $(TMP)/$(PRJNAME)_$(VERSION).deb*_source.build
 
 ##############################################################################
 # Developer rules

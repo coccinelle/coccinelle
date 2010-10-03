@@ -774,6 +774,8 @@ let satisfies_econstraint c exp : bool =
 (*---------------------------------------------------------------------------*)
 let rec (expression: (A.expression, Ast_c.expression) matcher) =
  fun ea eb ->
+   if A.get_test_exp ea && not (Ast_c.is_test eb) then fail
+   else
   X.all_bound (A.get_inherited ea) >&&>
   let wa x = A.rewrap ea x  in
   match A.unwrap ea, eb with
@@ -1071,8 +1073,7 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
 
   | A.Nested (ea1, opa, ea2), eb ->
       let rec loop eb =
-	(if A.get_test_exp ea1 && not (Ast_c.is_test eb) then fail
-	else expression ea1 eb) >|+|>
+	expression ea1 eb >|+|>
 	(match eb with
 	  ((B.Binary (eb1, opb, eb2), typ),ii)
 	  when equal_binaryOp (term opa) opb ->
@@ -1840,7 +1841,6 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
   | _, (B.MacroDecl _ |B.DeclList _) ->       fail
 
 
-
 and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
  X.all_bound (A.get_inherited decla) >&&>
  match A.unwrap decla, declb with
@@ -2480,8 +2480,10 @@ and (struct_field: (A.declaration, B.field) matcher) = fun fa fb ->
   | B.EmptyField _iifield ->
       fail
 
-  | B.MacroDeclField _ ->
-      raise Todo
+  | B.MacroDeclField ((sb,ebs),ii) ->
+      (match A.unwrap fa with
+	A.MacroDecl (sa,lpa,eas,rpa,enda) -> raise Todo
+      |	_ -> fail)
 
   | B.CppDirectiveStruct directive -> fail
   | B.IfdefStruct directive -> fail

@@ -34,7 +34,7 @@ for s in $SMPL;do
     echo "#!/bin/bash" > $RESULTS/$f.sh
 	echo "" >> $RESULTS/$f.sh
 	echo "FLAGS=\"`grep -E \"// +Options *:\" $COCCI/$s | cut -f2 -d\":\"`\"" >> $RESULTS/$f.sh
-	echo "INC=$PROJECT/include" >> $RESULTS/$f.sh
+	echo "INC?=$PROJECT/include" >> $RESULTS/$f.sh
 	echo "echo \"Applying $COCCI/$s with: '\$FLAGS'\"" >> $RESULTS/$f.sh
 	echo "nice -19 $SPATCH $SPFLAGS \$FLAGS -I \$INC -cocci_file $COCCI/$s -dir $PROJECT/ $FLAGS \\" >> $RESULTS/$f.sh
 	echo "> $f.out \\" >> $RESULTS/$f.sh
