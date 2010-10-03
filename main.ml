@@ -277,7 +277,7 @@ let short_options = [
     "  guess what";
 
   "-date",   Arg.Unit (fun () ->
-    pr2 "version: $Date: 2009/07/21 08:21:29 $";
+    pr2 "version: $Date: 2009/07/28 14:05:49 $";
     raise (Common.UnixExit 0)
     ),
   "   guess what";
@@ -848,7 +848,7 @@ let main () =
     let arglist = Array.to_list Sys.argv in
 
     if not (null (Common.inter_set arglist
-	             ["-cocci_file";"-sp_file";"-test";"-testall";
+	             ["-cocci_file";"-sp_file";"-sp";"-test";"-testall";
                       "-test_okfailed";"-test_regression_okfailed"]))
     then run_profile quiet_profile;
 

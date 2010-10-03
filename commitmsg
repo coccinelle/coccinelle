@@ -1,3 +1,55 @@
-Release coccinelle-0.1.9-rc1
+Release coccinelle-0.1.9
 
-Release Candidate 1 for coccinelle-0.1.9
+** Language:
+   - allow fresh identifiers to be declared using ## such that the value mixes
+     both strings and previously declared metavariables
+
+** Features:
+   - better handling of expanded code containing ##. Now compute the
+     result.
+   - more precise warning message for the "'\' outside define".
+     Thanks to Nicholas Mc Guire for pointing out the problem.
+   - more precise warning message related to ifdefization.
+     Thanks to Derek Jones for pointing out the problem.
+   - we don't create any more certain files in /tmp (they may be a cause
+     of security problems).
+     Thanks to Eugeniy Meshcheryakov for pointing out the problem.
+   - More optimization for the case of just deleting a complete function.
+     Allows this to happen without tracing through all the control-flow
+     paths.  Thanks to Francois Bissyande for pointing out the problem.
+   - prevent code from being added to the beginning or end of a disjunction
+   - more information about why a script is not applied when using -debug option
+   - added -no_safe_expressions option
+   - added -no_loops option.  Ignores back edges derived from looping
+     constructs.  This is unsafe, but perhaps useful for bug finding, as it can
+     be more efficient.
+   - for semantic matches, allow "minus" on same code with multiple
+     environments
+   - better error message for mismatch of parenthesis in column 0 with normal
+     parenthesis.  Thanks to Derek Jones for pointing out the problem.
+   - allow disjunctions on function return types.  Thanks to Pierre Habouzit
+     for pointing this out.
+
+** Bugfix:
+   - keep disjunction in the proper order for structure initialization fields
+   - variables declared in different places should not seem to match each
+     other
+   - drop complaints about label metavariables not being used
+   - drop test information from the type of an expression when the expression
+     is bound to a metavariable
+   - nests should not extend beyond the before and after code, even if the
+     before and after code matches the nest code
+   - nests should extend into conditionals that end in error exit
+   - take into account metavariables on "else".  Thanks to Derek Jones for
+     pointing out the problem.
+   - print single quotes on generated character constants
+   - better typedef handling in the initialisation/affectation builtin
+     isomorphism, cf -test init_affect_typedef
+   - support disjunction of types on variable declaration
+   - allow @ within strings in script code.  ignore // comment lines in script
+     code.
+   - don't drop + code placed after the transformed code
+   - drop spaces produced by removing code before semicolons
+   - adjusted spacing within generated code
+   - less verbose -sp.  Thanks to Derek Jones for pointing out the problem.
+   - accept multiple type names in a SmPL typedef declaration.

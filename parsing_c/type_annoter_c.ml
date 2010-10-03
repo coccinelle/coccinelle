@@ -760,12 +760,12 @@ let annotater_expr_visitor_subpart = (fun (k,bigf) expr ->
                       if !Flag_parsing_c.check_annotater then 
                         if not (Hashtbl.mem !_notyped_var s)
                         then begin 
-                          pr2 ("Type_annoter: not finding type for: " ^ s);
+                          pr2 ("Type_annoter: no type found for: " ^ s);
                           Hashtbl.add !_notyped_var s true;
                         end
                         else ()
                       else 
-                        pr2 ("Type_annoter: not finding type for: " ^ s)
+                        pr2 ("Type_annoter: no type found for: " ^ s)
                     ;
                     Type_c.noTypeHere
                 )
@@ -1133,7 +1133,10 @@ let rec visit_toplevel ~just_add_in_env ~depth elem =
           in
           let (i1, i2) = 
             match ii with 
-	      (* what is iifunc1?  it should be a type.  jll *)
+	      (* what is iifunc1?  it should be a type.  jll 
+               * pad: it's the '(' in the function definition. The
+               * return type is part of f_type.
+               *)
             | iifunc1::iifunc2::ibrace1::ibrace2::ifakestart::isto -> 
                 iifunc1, iifunc2
             | _ -> raise Impossible

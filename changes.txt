@@ -48,7 +48,13 @@
 - better typedef handling in the initialisation/affectation builtin
   isomorphism, cf -test init_affect_typedef
 - support disjunction of types on variable declaration
-
+- allow @ within strings in script code.  ignore // comment lines in script
+  code.
+- don't drop + code placed after the transformed code
+- drop spaces produced by removing code before semicolons
+- adjusted spacing within generated code
+- less verbose -sp.  Thanks to Derek Jones for pointing out the problem.
+- accept multiple type names in a SmPL typedef declaration.
 
 * 0.1.8
 

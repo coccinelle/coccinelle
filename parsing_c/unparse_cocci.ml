@@ -52,6 +52,12 @@ let end_block () = unindent(); force_newline () in
 let print_string_box s = print_string s in
 
 let print_option = Common.do_option in
+let print_option_prespace fn = function
+    None -> ()
+  | Some x -> pr_space(); fn x in
+let print_option_space fn = function
+    None -> ()
+  | Some x -> fn x; pr_space() in
 let print_between = Common.print_between in
 
 let outdent _ = () (* should go to leftmost col, does nothing now *) in
@@ -304,7 +310,7 @@ let rec expression e =
         | _ -> raise Impossible
       )
 
-  | Ast.EComma(cm) -> mcode print_string cm; pr_space()
+  | Ast.EComma(cm) -> mcode print_string cm
 
   | Ast.DisjExpr(exp_list) ->
       if generating
@@ -392,9 +398,7 @@ and constant = function
 
 and fullType ft =
   match Ast.unwrap ft with
-    Ast.Type(cv,ty) ->
-      print_option (mcode const_vol) cv;
-      typeC ty
+    Ast.Type(cv,ty) -> print_option_space (mcode const_vol) cv; typeC ty
   | Ast.DisjType _ -> failwith "can't be in plus"
   | Ast.OptType(_) | Ast.UniqueType(_) ->
       raise CantBeInPlus
@@ -412,8 +416,7 @@ and typeC ty =
   match Ast.unwrap ty with
     Ast.BaseType(ty,strings) ->
       print_between pr_space (mcode print_string) strings
-  | Ast.SignedT(sgn,Some ty) -> mcode sign sgn; typeC ty
-  | Ast.SignedT(sgn,None) -> mcode signns sgn
+  | Ast.SignedT(sgn,ty) -> mcode sign sgn; print_option_prespace typeC ty
   | Ast.Pointer(ty,star) -> fullType ty; ft_space ty; mcode print_string star
   | Ast.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
       print_function_pointer (ty,lp1,star,rp1,lp2,params,rp2)
@@ -426,8 +429,7 @@ and typeC ty =
   | Ast.EnumName(kind,name) -> mcode print_string kind; pr_space();
       ident name
   | Ast.StructUnionName(kind,name) ->
-      mcode structUnion kind;
-      print_option ident name
+      mcode structUnion kind; print_option_prespace ident name
   | Ast.StructUnionDef(ty,lb,decls,rb) ->
       fullType ty; ft_space ty;
       mcode print_string lb;
@@ -451,30 +453,26 @@ and baseType = function
   | Ast.LongLongType -> print_string "long long"
 
 and structUnion = function
-    Ast.Struct -> print_string "struct "
-  | Ast.Union -> print_string "union "
+    Ast.Struct -> print_string "struct"
+  | Ast.Union -> print_string "union"
 
 and sign = function
-    Ast.Signed -> print_string "signed "
-  | Ast.Unsigned -> print_string "unsigned "
-
-and signns = function (* no space, like a normal type *)
     Ast.Signed -> print_string "signed"
   | Ast.Unsigned -> print_string "unsigned"
 
 
 and const_vol = function
-    Ast.Const -> print_string "const "
-  | Ast.Volatile -> print_string "volatile "
+    Ast.Const -> print_string "const"
+  | Ast.Volatile -> print_string "volatile"
 
 (* --------------------------------------------------------------------- *)
 (* Function declaration *)
 
 and storage = function
-    Ast.Static -> print_string "static "
-  | Ast.Auto -> print_string "auto "
-  | Ast.Register -> print_string "register "
-  | Ast.Extern -> print_string "extern "
+    Ast.Static -> print_string "static"
+  | Ast.Auto -> print_string "auto"
+  | Ast.Register -> print_string "register"
+  | Ast.Extern -> print_string "extern"
 
 (* --------------------------------------------------------------------- *)
 (* Variable declaration *)
@@ -527,11 +525,13 @@ and declaration d =
   match Ast.unwrap d with
     Ast.Init(stg,ty,id,eq,ini,sem) ->
       print_option (mcode storage) stg;
+      print_option (function _ -> pr_space()) stg;
       print_named_type ty id;
       pr_space(); mcode print_string eq;
       pr_space(); initialiser true ini; mcode print_string sem
   | Ast.UnInit(stg,ty,id,sem) ->
       print_option (mcode storage) stg;
+      print_option (function _ -> pr_space()) stg;
       print_named_type ty id;
       mcode print_string sem
   | Ast.MacroDecl(name,lp,args,rp,sem) ->
@@ -602,7 +602,7 @@ and parameterTypeDef p =
   | Ast.MetaParamList(name,_,_,_) -> 
       failwith "not handling MetaParamList"
 
-  | Ast.PComma(cm) -> mcode print_string cm; pr_space()
+  | Ast.PComma(cm) -> mcode print_string cm
   | Ast.Pdots(dots) | Ast.Pcircles(dots) when generating ->
       mcode print_string dots
   | Ast.Pdots(dots) | Ast.Pcircles(dots) -> raise CantBeInPlus
@@ -921,10 +921,7 @@ let rec pp_any = function
 	  (match x with
 	    "else" -> force_newline()
 	  | _ -> ());
-	  print_string x line lcol;
-	  (match x with
-	    "else" -> pr_space()
-	  | _ -> ()))
+	  print_string x line lcol)
 	(let nomcodekind = Ast.CONTEXT(Ast.DontCarePos,Ast.NOTHING) in
 	(x,info,nomcodekind,Ast.NoMetaPos));
       if_open_brace x
@@ -997,8 +994,37 @@ in
 	      | (true,false) -> force_newline(); indent()
 	      | (false,true) -> unindent(); force_newline()
 	      | (false,false) -> force_newline());
+	    let space_needed_before = function
+		Ast.ParamTag(x) ->
+		  (match Ast.unwrap x with
+		    Ast.PComma _ -> false
+		  | _ -> true)
+	      |	Ast.ExpressionTag(x) ->
+		  (match Ast.unwrap x with
+		    Ast.EComma _ -> false
+		  | _ -> true)
+	      |	Ast.InitTag(x) ->
+		  (match Ast.unwrap x with
+		    Ast.IComma _ -> false
+		  | _ -> true)
+	      |	Ast.Token(t,_) when List.mem t [",";";";"(";")"] -> false
+	      |	_ -> true in
+	    let space_needed_after = function
+		Ast.Token(t,_) when List.mem t ["("] -> (*never needed*) false
+	      |	Ast.Token(t,_) when List.mem t ["if";"for";"while";"do"] ->
+		  (* space always needed *)
+		  pr_space(); false
+	      |	_ -> true in
 	    let indent_needed =
-	      List.fold_left (function indent_needed -> pp_any) false x in
+	      let rec loop space_after indent_needed = function
+		  [] -> indent_needed
+		| x::xs ->
+		    (if space_after && space_needed_before x
+		    then pr_space());
+		    let indent_needed = pp_any x in
+		    let space_after = space_needed_after x in
+		    loop space_after indent_needed xs in
+	      loop false false x in
 	    loop true indent_needed xs in
       loop false false (x::xs);
       (* print a newline at the end, if needed *)

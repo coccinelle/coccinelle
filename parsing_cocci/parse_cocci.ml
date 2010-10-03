@@ -1506,6 +1506,16 @@ let rec parse file =
               (iso, dropiso, dependencies, rule_name, exists)),
               (plus_res, metavars), ruletype), metavars, tokens) in
 
+	  let rec collect_script_tokens = function
+	      [(PC.EOF,_)] | [(PC.TArobArob,_)] | [(PC.TArob,_)] -> ""
+	    | (PC.TScriptData(s),_)::xs -> s^(collect_script_tokens xs)
+	    | toks ->
+		List.iter
+		  (function x ->
+		    Printf.printf "%s\n" (token2c x))
+		  toks;
+		failwith "Malformed script rule" in
+
           let parse_script_rule language old_metas deps =
             let get_tokens = tokens_script_all table file false lexbuf in
 
@@ -1533,11 +1543,7 @@ let rec parse file =
 
               (* script code *)
             let (more, tokens) = get_tokens [PC.TArobArob; PC.TArob] in
-            let data =
-              match List.hd tokens with
-                (PC.TScriptData(s),_) -> s
-              | (PC.TArobArob,_) | (PC.TArob,_) -> ""
-              | _ -> failwith "Malformed script rule" in
+            let data = collect_script_tokens tokens in
             (more,Ast0.ScriptRule(language, deps, metavars, data),[],tokens) in
 
           let parse_if_script_rule k language =
@@ -1545,11 +1551,8 @@ let rec parse file =
 
               (* script code *)
             let (more, tokens) = get_tokens [PC.TArobArob; PC.TArob] in
-            let data =
-              match List.hd tokens with
-                (PC.TScriptData(s),_) -> s
-              | (PC.TArobArob,_) | (PC.TArob,_) -> ""
-              | _ -> failwith "Malformed script rule" in
+	    Printf.printf "script tokens %d\n" (List.length tokens);
+            let data = collect_script_tokens tokens in
             (more,k (language, data),[],tokens) in
 
 	  let parse_iscript_rule =

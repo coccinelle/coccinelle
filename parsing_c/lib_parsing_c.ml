@@ -155,8 +155,7 @@ let semi_al_program =
 
 
 (* really strip, do not keep position nor anything specificities, true
- * abstracted form. *)
-(* is this used for anything? jll *)
+ * abstracted form. This is used outside coccinelle in Yacfe and aComment *)
 let real_strip_info_visitor _ = 
   { Visitor_c.default_visitor_c_s with
     Visitor_c.kinfo_s = (fun (k,_) i ->

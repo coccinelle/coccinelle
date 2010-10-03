@@ -968,12 +968,14 @@ let ifthen ifheader branch ((afvs,_,_,_) as aft) after
   let lv = get_label_ctr() in
   let used = ref false in
   let true_branch =
+    (* no point to put a label on truepred etc; it is local to this construct
+       so it must have the same label *)
     make_seq guard
-      [truepred label; recurse branch Tail new_quantified new_mquantified
+      [truepred None; recurse branch Tail new_quantified new_mquantified
 	  (Some (lv,used)) llabel slabel guard] in
-  let after_pred = aftpred label in
+  let after_pred = aftpred None in
   let or_cases after_branch =
-    ctl_or true_branch (ctl_or (fallpred label) after_branch) in
+    ctl_or true_branch (ctl_or (fallpred None) after_branch) in
   let (if_header,wrapper) =
     if !used
     then
@@ -1044,17 +1046,17 @@ let ifthenelse ifheader branch1 els branch2 ((afvs,_,_,_) as aft) after
   let used = ref false in
   let true_branch =
     make_seq guard
-      [truepred label; recurse branch1 Tail new_quantified new_mquantified
+      [truepred None; recurse branch1 Tail new_quantified new_mquantified
 	  (Some (lv,used)) llabel slabel guard] in
   let false_branch =
     make_seq guard
-      [falsepred label;
+      [falsepred None;
 	quantify guard
 	  (Common.minus_set (Ast.get_fvs els) new_quantified)
-	  (make_match els);
+	  (header_match None guard els);
 	recurse branch2 Tail new_quantified new_mquantified
 	  (Some (lv,used)) llabel slabel guard] in
-  let after_pred = aftpred label in
+  let after_pred = aftpred None in
   let or_cases after_branch =
     ctl_or true_branch (ctl_or false_branch after_branch) in
   let s = guard_to_strict guard in
@@ -1067,8 +1069,8 @@ let ifthenelse ifheader branch1 els branch2 ((afvs,_,_,_) as aft) after
     else (if_header,function x -> x) in
   wrapper
     (end_control_structure bothfvs if_header or_cases after_pred
-      (Some(ctl_and s (ctl_ex (falsepred label)) (ctl_ex after_pred)))
-      (Some(ctl_ex (falsepred label)))
+      (Some(ctl_and s (ctl_ex (falsepred None)) (ctl_ex after_pred)))
+      (Some(ctl_ex (falsepred None)))
       aft after label guard)
 
 let forwhile header body ((afvs,_,_,_) as aft) after
@@ -1094,10 +1096,10 @@ let forwhile header body ((afvs,_,_,_) as aft) after
     let used = ref false in
     let body =
       make_seq guard
-	[inlooppred label;
+	[inlooppred None;
 	  recurse body Tail new_quantified new_mquantified
 	    (Some (lv,used)) (Some (lv,used)) None guard] in
-    let after_pred = fallpred label in
+    let after_pred = fallpred None in
     let or_cases after_branch = ctl_or body after_branch in
     let (header,wrapper) =
       if !used
@@ -1208,20 +1210,25 @@ let svar_minus_or_no_add_after stmt s label quantified d ast
   let prelabel_pred =
     CTL.Pred (Lib_engine.PrefixLabel(label_var),CTL.Control) in
   let matcher d = make_match None guard (make_meta_rule_elem d fvinfo) in
-  let ender =
+  let stmt_fvs = Ast.get_fvs stmt in
+  let fvs = get_unquantified quantified stmt_fvs in
+  let (new_fvs,body) =
     match (d,after) with
       (Ast.CONTEXT(pos,Ast.NOTHING),(Tail|End|VeryEnd)) ->
 	(* just match the root. don't care about label; always ok *)
-	make_raw_match None false ast
+	(fvs,function f -> f(make_raw_match None false ast))
     | (Ast.MINUS(pos,inst,adj,[]),(Tail|End|VeryEnd)) ->
     (* don't have to put anything before the beginning, so don't have to
        distinguish the first node.  so don't have to bother about paths,
        just use the label. label ensures that found nodes match up with
        what they should because it is in the lhs of the andany. *)
-	CTL.HackForStmt(CTL.FORWARD,CTL.NONSTRICT,
-			ctl_and CTL.NONSTRICT label_pred
-			  (make_raw_match label false ast),
-			ctl_and CTL.NONSTRICT (matcher d) prelabel_pred)
+	let ender =
+	  CTL.HackForStmt(CTL.FORWARD,CTL.NONSTRICT,
+			  ctl_and CTL.NONSTRICT label_pred
+			    (make_raw_match label false ast),
+			  ctl_and CTL.NONSTRICT (matcher d) prelabel_pred) in
+	(label_var::fvs,
+	 function f -> ctl_and CTL.NONSTRICT label_pred (f ender))
     | _ ->
 	(* more safe but less efficient *)
 	let first_metamatch = matcher d in
@@ -1233,14 +1240,14 @@ let svar_minus_or_no_add_after stmt s label quantified d ast
 	    | Ast.PLUS -> failwith "not possible") in
 	let rest_nodes = ctl_and CTL.NONSTRICT rest_metamatch prelabel_pred in
 	let last_node = and_after guard (ctl_not prelabel_pred) after in
-	(ctl_and CTL.NONSTRICT (make_raw_match label false ast)
-	   (make_seq guard
-	      [first_metamatch;
-		ctl_au CTL.NONSTRICT rest_nodes last_node])) in
-  let body f = ctl_and CTL.NONSTRICT label_pred (f ender) in
-  let stmt_fvs = Ast.get_fvs stmt in
-  let fvs = get_unquantified quantified stmt_fvs in
-  quantify guard (label_var::fvs)
+	let ender =
+	  ctl_and CTL.NONSTRICT (make_raw_match label false ast)
+	    (make_seq guard
+	       [first_metamatch;
+		 ctl_au CTL.NONSTRICT rest_nodes last_node]) in
+	(label_var::fvs,
+	 function f -> ctl_and CTL.NONSTRICT label_pred (f ender)) in
+  quantify guard new_fvs
     (sequencibility body label_pred process_bef_aft seqible)
 
 (* --------------------------------------------------------------------- *)
@@ -1793,8 +1800,8 @@ and statement stmt after quantified minus_quantified
 	label statement make_match guard
 
   | Ast.Disj(stmt_dots_list) -> (* list shouldn't be empty *)
-      ctl_and
-	(label_pred_maker label)
+      (*ctl_and        seems pointless, disjuncts see label too
+	(label_pred_maker label)*)
 	(List.fold_left ctl_seqor CTL.False
 	   (List.map
 	      (function sl ->

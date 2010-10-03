@@ -230,6 +230,10 @@ sequence of ``u'' and ``l'' annotations following the constant.  If there
 is none, the constant is assumed to be a signed integer.  If there is only
 ``u'', the constant is assumed to be an unsigned integer, etc.}
 
+\rare{-no\_loops}{Drop back edges for loops.  This may make a semantic
+  patch/match run faster, at the cost of not finding matches that wrap
+  around loops.}
+
 \developer{-use\_cache} Use preparsed versions of the C files that are
 stored in a cache.
 

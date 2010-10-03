@@ -979,9 +979,12 @@ decl_var:
 	       (t,P.clt2mcode "(" lp1,P.clt2mcode "*" st,P.clt2mcode ")" rp1,
 		P.clt2mcode "(" lp2,p,P.clt2mcode ")" rp2)) in
       [Ast0.wrap(Ast0.Init(s,fn t,id,P.clt2mcode "=" q,e,P.clt2mcode ";" pv))]}
-  | s=Ttypedef t=typedef_ctype id=typedef_ident pv=TPtVirg
+  | s=Ttypedef t=typedef_ctype id=comma_list(typedef_ident) pv=TPtVirg
       { let s = P.clt2mcode "typedef" s in
-        [Ast0.wrap(Ast0.Typedef(s,t,id,P.clt2mcode ";" pv))] }
+        List.map
+	  (function id ->
+	    Ast0.wrap(Ast0.Typedef(s,t,id,P.clt2mcode ";" pv)))
+	  id }
 
 one_decl_var:
     t=ctype pv=TPtVirg

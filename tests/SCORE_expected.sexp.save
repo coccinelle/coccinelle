@@ -1,7 +1,8 @@
-((a3d.res Ok) (a_and_e.res Ok) (a_and_e_ver1.res Ok) (addelse.res Ok)
- (addif.res Ok) (addif1.res Ok) (addif2.res Ok) (after_if.res Ok)
- (anon.res Ok) (ar.res Ok) (arg.res Ok) (argument.res Ok) (array_init.res Ok)
- (array_size.res Ok) (arraysz.res Ok) (b1.res Ok) (b2.res Ok)
+((a.res Ok) (a3d.res Ok) (a_and_e.res Ok) (a_and_e_ver1.res Ok)
+ (addelse.res Ok) (addif.res Ok) (addif1.res Ok) (addif2.res Ok)
+ (after_if.res Ok) (anon.res Ok) (ar.res Ok) (arg.res Ok) (argument.res Ok)
+ (array_init.res Ok) (array_size.res Ok) (arraysz.res Ok) (b1.res Ok)
+ (b2.res Ok)
  (bad_iso_example.res
   (Pb
    "INCORRECT:diff token: ( VS x\nFile \"tests/bad_iso_example.c\", line 2, column 6,  charpos = 19\n    around = '(', whole content =   if ((x = 3)) return;\nFile \"tests/bad_iso_example.res\", line 2, column 6,  charpos = 19\n    around = 'x', whole content =   if (x) return;\n\n    diff (result(<) vs expected_result(>)) = \n    @@ -1,4 +1,4 @@\n     int main() {\n    -  if ((x = 3)) return;\n    +  if (x) return;\n     }\n     \n"))
@@ -36,7 +37,7 @@
  (expopt2.res Ok) (expopt3.res Ok) (expopt3_ver1.res Ok)
  (expopt3_ver2.res Ok) (fields.res Ok) (fieldsmin.res Ok) (find_long.res Ok)
  (fix_flow_need.res Ok) (fn_todo.res Ok) (fnptr.res Ok) (fnret.res Ok)
- (four.res Ok) (foura.res Ok) (fp.res Ok) (fun.res Ok)
+ (four.res Ok) (foura.res Ok) (fp.res Ok) (fsh.res Ok) (fun.res Ok)
  (gilles-question.res Ok) (gotobreak.res Ok) (hd.res Ok) (headers.res Ok)
  (hex.res Ok) (hil1.res Ok) (if.res Ok) (ifbr.res Ok) (ifdef1.res Ok)
  (ifdef2.res Ok)
@@ -69,7 +70,7 @@
  (labels_metastatement_ver1.res Ok) (local.res Ok) (localid.res Ok)
  (longconst.res Ok) (longlong.res Ok) (longlongint.res Ok) (loop.res Ok)
  (lvalue.res Ok) (macro.res Ok) (macro_int16.res Ok) (match_no_meta.res Ok)
- (max.res Ok)
+ (max.res Ok) (memory.res (Pb "PROBLEM\n   exn = Out of memory\n"))
  (metahex.res
   (Pb
    "INCORRECT:diff token: f VS }\nFile \"tests/metahex.c\", line 2, column 2,  charpos = 15\n    around = 'f', whole content =   f(3);\nFile \"tests/metahex.res\", line 2, column 0,  charpos = 13\n    around = '}', whole content = }\n\n    diff (result(<) vs expected_result(>)) = \n    @@ -1,4 +1,2 @@\n     int main() {\n    -  f(3);\n    -  g(0x03);\n     }\n"))
@@ -81,14 +82,18 @@
    "PROBLEM\n   exn = Failure(\"minus: parse error: \\n = File \\\"tests/multi_func1.cocci\\\", line 12, column 2,  charpos = 102\\n    around = 'fn2', whole content =   fn2(...) {\\n\")\n"))
  (multiplus.res Ok) (multitype.res Ok) (multitypedef.res Ok)
  (multivars.res Ok) (nest.res Ok) (nestone.res Ok) (nestseq.res Ok)
- (neststruct.res Ok) (nl.res Ok) (nocast.res Ok) (not.res Ok) (noty.res Ok)
- (null_type.res Ok)
+ (neststruct.res Ok) (nl.res Ok) (nocast.res Ok) (not.res Ok) (notest.res Ok)
+ (noty.res Ok) (null_type.res Ok)
  (oddifdef.res
   (Pb
    "INCORRECT:diff token: #else\n VS x\nFile <COCCIOUTPUTFILE>, line 10, column 0,  charpos = 114\n    around = '#else\n', whole content = #else\nFile \"tests/oddifdef.res\", line 10, column 2,  charpos = 116\n    around = 'x', whole content =   x = 0;\n\n    diff (result(<) vs expected_result(>)) = \n    @@ -7,8 +7,9 @@\n         a = 5;\n     \n     #ifdef FOO\n    +  x = 0;\n     #else\n    -  \n    +  x = 0;\n     #endif\n     }\n     \n    @@ -21,8 +22,9 @@\n         a = 3;\n     \n     #ifdef FOO\n    +  x = 0;\n     #else\n    -  \n    +  x = 0;\n     #endif\n     }\n     \n    @@ -35,7 +37,8 @@\n     #endif\n     \n     #ifdef FOO\n    +  x = 0;\n     #else\n    -  \n    +  x = 0;\n     #endif\n     }\n"))
  (of.res Ok) (oneline.res Ok) (opt.res Ok) (optional_qualifier.res Ok)
- (optional_storage.res Ok) (orexp.res Ok) (param.res Ok) (param_end.res Ok)
- (param_ver1.res Ok) (parameters_dots.res Ok) (partial.res Ok)
+ (optional_storage.res Ok) (orexp.res Ok)
+ (overshoot.res
+  (Pb
+   "INCORRECT:diff token: b VS g\nFile <COCCIOUTPUTFILE>, line 4, column 2,  charpos = 38\n    around = 'b', whole content =   b();\nFile \"tests/overshoot.res\", line 3, column 14,  charpos = 35\n    around = 'g', whole content =   g();g();g();g();\n\n    diff (result(<) vs expected_result(>)) = \n    @@ -1,6 +1,6 @@\n     int main () {\n       a();\n    -  g();g();g();\n    +  g();g();g();g();\n       b();\n       q();\n     }\n"))
+ (param.res Ok) (param_end.res Ok) (param_ver1.res Ok)
+ (parameters_dots.res Ok) (partial.res Ok)
  (pb_distribute_type.res
   (Pb
    "INCORRECT:PB parsing only in generated-file\n    diff (result(<) vs expected_result(>)) = \n    @@ -5,11 +5,11 @@\n     \n     \n     int foo() {\n    -  int * *x;\n    +  int **x;\n       return 0;\n     }\n     \n     int foo() {\n    -  int[45] *x;\n    +  int (*x)[45];\n       return 0;\n     }\n"))
@@ -106,7 +111,7 @@
   (Pb
    "INCORRECT:not same number of entities (func, decl, ...)\n    diff (result(<) vs expected_result(>)) = \n    @@ -1,10 +1,3 @@\n    -\n    -      .ack    = mpuio_ack_irq,\n    -      .mask   = mpuio_mask_irq,\n    -      .unmask = mpuio_unmask_irq\n    -\n    -  .b = 15,\n    -\n     int hello ( String input )\n     {\n       String input = input.lowercase();\n"))
  (replace_typedef.res Ok) (reserved.res Ok) (retmacro.res Ok) (rets.res Ok)
- (return.res Ok) (return_implicit.res Ok) (same_expr.res Ok)
+ (return.res Ok) (return_implicit.res Ok) (retval.res Ok) (same_expr.res Ok)
  (scope_problem.res
   (Pb
    "INCORRECT:diff token: } VS a\nFile <COCCIOUTPUTFILE>, line 6, column 2,  charpos = 44\n    around = '}', whole content =   }\nFile \"tests/scope_problem.res\", line 7, column 4,  charpos = 49\n    around = 'a', whole content =     a = 2;\n\n    diff (result(<) vs expected_result(>)) = \n    @@ -1,8 +1,10 @@\n     void main(int i) {\n     \n     \n    +\n       if(1) {\n         int a;\n    +    a = 2;\n       }\n     \n     \n"))
@@ -128,7 +133,7 @@
  (three_types.res Ok) (threea.res Ok) (top.res Ok) (topdec.res Ok)
  (topdec_ver1.res Ok) (topdec_ver2.res Ok) (toplevel_macrostmt.res Ok)
  (toplevel_struct.res Ok) (tup.res Ok) (twoproto.res Ok) (ty.res Ok)
- (ty1.res Ok) (ty_tyexp.res Ok) (type.res Ok) (type1.res Ok)
+ (ty1.res Ok) (ty_tyexp.res Ok) (tydisj.res Ok) (type.res Ok) (type1.res Ok)
  (type_annotated.res Ok) (type_ver1.res Ok)
  (type_ver2.res
   (Pb

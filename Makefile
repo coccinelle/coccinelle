@@ -367,6 +367,7 @@ OCAMLVERSION=$(shell ocaml -version |perl -p -e 's/.*version (.*)/$$1/;')
 #  modify globals/config.ml.in
 #  cd globals/; cvs commit -m"new version"  (do not commit from the root!)
 #  ./configure --without-python
+#  can make; ./spatch -testall to check and update the SCORE_expected.sexp
 #  make package
 #  make website
 # Check that run an ocaml in /usr/bin

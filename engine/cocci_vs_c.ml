@@ -292,7 +292,10 @@ let equal_metavarval valu valu' =
     ), _
       -> raise Impossible
 
-let equal_inh_metavarval valu valu' =
+(* probably only one argument needs to be stripped, because inherited
+metavariables containing expressions are stripped in advance. But don't
+know which one is which... *)
+let equal_inh_metavarval valu valu'=
   match valu, valu' with
   | Ast_c.MetaIdVal a, Ast_c.MetaIdVal b -> a =$= b
   | Ast_c.MetaFuncVal a, Ast_c.MetaFuncVal b -> a =$= b
@@ -733,7 +736,7 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
                   let s = Ast_c.str_of_name nameidb in 
                   if s =~ "^[A-Z_][A-Z_0-9]*$" 
                   then begin
-		    pr2_once ("warning: I consider " ^ s ^ " as a constant");
+		    pr2_once ("warning: " ^ s ^ " treated as a constant");
 		    true
                   end
                   else false
