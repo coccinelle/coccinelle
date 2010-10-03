@@ -1259,7 +1259,10 @@ let annotate_test_expressions prog =
     Visitor_c.kexpr = (fun (k,bigf) expr ->
       (match unwrap_expr expr with
 	CondExpr(e,_,_) -> propagate_test e
-      |	_ -> ()
+      |	Binary(e1,Logical(AndLog),e2)
+      | Binary(e1,Logical(OrLog),e2) -> propagate_test e1; propagate_test e2
+      | Unary(e1,Not) -> propagate_test e1
+      | _ -> ()
       );
       k expr
     );
