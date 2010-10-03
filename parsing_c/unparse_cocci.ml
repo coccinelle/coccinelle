@@ -45,7 +45,7 @@ let print_string s line lcol =
   pr s line lcol rcol in
 let print_text s = pr s unknown unknown unknown in
 let close_box _ = () in
-let force_newline () = print_text "\n" in
+let force_newline _ = print_text "\n" in
 
 let start_block () = force_newline(); indent() in
 let end_block () = unindent(); force_newline () in
@@ -111,7 +111,6 @@ let print_string_befaft fn fn1 x info =
   List.iter
     (function (s,ln,col) -> force_newline(); fn1(); print_string s ln col)
     info.Ast.straft in
-
 let print_meta (r,x) = print_text x in
 
 let print_pos = function
@@ -146,6 +145,14 @@ let mcode fn (s,info,mc,pos) =
       |	_ -> force_newline());
       fn s line lcol;
       let _ = print_comments (Some info.Ast.line) info.Ast.straft in
+      (* newline after a pragma
+	 should really store parsed versions of the strings, but make a cheap
+	 effort here
+         print_comments takes care of interior newlines *)
+      (match List.rev info.Ast.straft with
+	(str,_,_)::_ when String.length str > 0 && String.get str 0 = '#' ->
+	  force_newline()
+      |	_ -> ());
       ()
       (* printing for rule generation *)
   | (true, Ast.MINUS(_,_,_,plus_stream)) ->
@@ -256,7 +263,12 @@ let rec expression e =
   | Ast.Constant(const) -> mcode constant const
   | Ast.FunCall(fn,lp,args,rp) ->
       expression fn; mcode print_string_box lp;
-      dots (function _ -> ()) expression args;
+      let comma e =
+	expression e;
+	match Ast.unwrap e with
+	  Ast.EComma(cm) -> pr_space()
+	| _ -> () in
+      dots (function _ -> ()) comma args;
       close_box(); mcode print_string rp
   | Ast.Assignment(left,op,right,_) ->
       expression left; pr_space(); mcode assignOp op;
@@ -608,7 +620,13 @@ and parameterTypeDef p =
   | Ast.Pdots(dots) | Ast.Pcircles(dots) -> raise CantBeInPlus
   | Ast.OptParam(param) | Ast.UniqueParam(param) -> raise CantBeInPlus
 
-and parameter_list l = dots (function _ -> ()) parameterTypeDef l
+and parameter_list l =
+  let comma p =
+    parameterTypeDef p;
+    match Ast.unwrap p with
+      Ast.PComma(cm) -> pr_space()
+    | _ -> () in
+  dots (function _ -> ()) comma l
 in
 
 
@@ -791,8 +809,9 @@ let rec statement arity s =
       indent_if_needed body (function _ -> statement arity body);
       mcode (fun _ _ _ -> ()) ((),Ast.no_info,aft,Ast.NoMetaPos)
 
-  | Ast.Switch(header,lb,cases,rb) ->
+  | Ast.Switch(header,lb,decls,cases,rb) ->
       rule_elem arity header; pr_space(); rule_elem arity lb;
+      dots force_newline (statement arity) decls;
       List.iter (function x -> case_line arity x; force_newline()) cases;
       rule_elem arity rb
 

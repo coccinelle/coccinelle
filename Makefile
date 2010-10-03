@@ -209,6 +209,7 @@ static:
 purebytecode:
 	rm -f spatch.opt spatch
 	$(MAKE) BYTECODE_STATIC="" spatch
+	perl -p -i -e 's/^#!.*/#!\/usr\/bin\/ocamlrun/' spatch
 
 
 ##############################################################################
@@ -341,7 +342,7 @@ PACKAGE=coccinelle-$(VERSION)
 
 BINSRC=spatch env.sh env.csh standard.h standard.iso \
        *.txt \
-       docs/manual/options.pdf docs/manual/cocci_syntax.pdf docs/spatch.1 \
+       docs/manual/manual.pdf docs/manual/options.pdf docs/manual/main_grammar.pdf docs/spatch.1 \
        docs/manual/cocci-python.txt \
        demos/foo.* demos/simple.*
 #      $(PYLIB) python/coccilib/ demos/printloc.*
@@ -387,8 +388,9 @@ package:
 	./configure --without-python
 	make docs
 	make bintar
-	make staticbintar
 	make bytecodetar
+	make staticbintar
+
 
 # I currently pre-generate the parser so the user does not have to
 # install menhir on his machine. We could also do a few cleanups.

@@ -197,8 +197,11 @@ and statement testfn mcode tail stmt : 'a list list =
       then conj (rule_elem header) (statement testfn mcode tail branch)
       else statement testfn mcode tail branch
 
-  | Ast.Switch(header,lb,cases,rb) ->
-      let body_info = case_lines  testfn mcode tail cases in
+  | Ast.Switch(header,lb,decls,cases,rb) ->
+      let body_info =
+	conj
+	  (statement_list testfn mcode false decls)
+	  (case_lines testfn mcode tail cases) in
       if testfn header or testfn lb or testfn rb
       then conj (rule_elem header) body_info
       else body_info

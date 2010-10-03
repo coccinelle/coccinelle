@@ -94,7 +94,7 @@
   '("if" "else" "while" "do" "for" "return" 
     "sizeof"
     "struct" "union"
-    "static" "const" "volatile"
+    "static" "extern" "const" "volatile"
     "break" "continue"
     "switch" "case"
     ))
@@ -105,6 +105,8 @@
     "fresh" 
     "position"
     "idexpression"
+
+    "context"
 
     "typedef" 
     "declarer" "iterator"

@@ -1,5 +1,35 @@
 -*- org -*-
 
+* 0.1.10
+
+** Language:
+- declarations allowed in switch, suggested by Derek M. Jones
+
+** Features:
+- use interval timer for timeouts.  Thanks to Derek M. Jones for the
+  implementation.
+- more flexible env.sh, thanks to Derek Jones.
+- faster Python invocation
+- simplify unparsing in the sgrep case
+
+** Bugfix:
+- for glimpse there is no point to create a pattern containing a numeric
+  constant because glimpse doesn't index them
+- add spaces after commas in function calls and function headers
+- made python integration more like the ubuntu version
+  http://patches.ubuntu.com/by-release/extracted/debian/c/coccinelle/0.1.5dbs-2/01-system-pycaml
+  this fixes some memory management problems with None, True, and False
+- correct labels associated with a switch in the CFG so that a statement
+  metavariable can match a switch.  Thanks to Derek Jones for pointing out
+  the problem.
+- keep switch pattern within switch body.  Thanks to Derek Jones for
+  pointing out the problem.
+- Allow expanded tokens to be stored in metavariables, as long as they are
+  not removed.  But this does currently allow them in + code, which will
+  produce the expansion.  Thanks to Ali-Erdem Ozcan for pointing out the
+  problem.
+- improved adjustment of spacing when code removed at the beginning of a line
+
 * 0.1.9
 
 ** Language:

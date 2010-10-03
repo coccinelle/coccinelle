@@ -646,8 +646,9 @@ and statement arity s =
   | Ast.Iterator(header,body,(_,_,_,aft)) ->
       rule_elem arity header; statement arity body;
       mcode (function _ -> ()) ((),Ast.no_info,aft,Ast.NoMetaPos)
-  | Ast.Switch(header,lb,cases,rb) ->
+  | Ast.Switch(header,lb,decls,cases,rb) ->
       rule_elem arity header; rule_elem arity lb;
+      dots force_newline (statement arity) decls;
       List.iter (function x -> case_line arity x; force_newline()) cases;
       rule_elem arity rb
   | Ast.Atomic(re) -> rule_elem arity re

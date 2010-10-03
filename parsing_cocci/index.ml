@@ -21,7 +21,7 @@
 
 
 (* create an index for each constructor *)
-(* current max is 147, but 107 is free *)
+(* current max is 147 *)
 
 (* doesn't really work - requires that identical terms with no token
 subterms (eg dots) not appear on the same line *)
@@ -181,7 +181,7 @@ let statement s =
   | Ast0.Do(d,body,whl,lp,exp,rp,sem) -> [75]
   | Ast0.For(fr,lp,e1,sem1,e2,sem2,e3,rp,body,_) -> [76]
   | Ast0.Iterator(nm,lp,args,rp,body,_) -> [142]
-  | Ast0.Switch(switch,lp,exp,rp,lb,cases,rb) -> [125]
+  | Ast0.Switch(switch,lp,exp,rp,lb,decls,cases,rb) -> [125]
   | Ast0.Break(br,sem) -> [100]
   | Ast0.Continue(cont,sem) -> [101]
   | Ast0.Label(l,dd) -> [144]
@@ -208,6 +208,7 @@ let case_line c =
   match Ast0.unwrap c with
     Ast0.Default(def,colon,code) -> [126]
   | Ast0.Case(case,exp,colon,code) -> [127]
+  | Ast0.DisjCase(_,case_lines,_,_) -> [107]
   | Ast0.OptCase(case) -> [128]
 
 let top_level t =

@@ -334,8 +334,9 @@ and statement old_metas table minus s =
       ident GLOBAL old_metas table minus nm;
       dots (expression ID old_metas table minus) args;
       statement old_metas table minus body
-  | Ast0.Switch(switch,lp,exp,rp,lb,cases,rb) ->
+  | Ast0.Switch(switch,lp,exp,rp,lb,decls,cases,rb) ->
       expression ID old_metas table minus exp;
+      dots (statement old_metas table minus) decls;
       dots (case_line old_metas table minus) cases
   | Ast0.ReturnExpr(ret,exp,sem) -> expression ID old_metas table minus exp
   | Ast0.MetaStmt(name,_) ->     check_table table minus name
@@ -389,6 +390,8 @@ and case_line old_metas table minus c =
       dots (statement old_metas table minus) code
   | Ast0.Case(case,exp,colon,code) ->
       dots (statement old_metas table minus) code
+  | Ast0.DisjCase(_,case_lines,_,_) ->
+      List.iter (case_line old_metas table minus) case_lines
   | Ast0.OptCase(case) -> failwith "unexpected code"
 
 (* --------------------------------------------------------------------- *)

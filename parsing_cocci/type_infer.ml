@@ -285,24 +285,7 @@ let rec propagate_types env =
     | (s::ss) ->
 	(match Ast0.unwrap s with
 	  Ast0.Decl(_,decl) ->
-	    let rec process_decl decl =
-	      match Ast0.unwrap decl with
-		Ast0.Init(_,ty,id,_,exp,_) ->
-		  let _ =
-		    (propagate_types acc).VT0.combiner_rec_initialiser exp in
-		  [(strip id,Ast0.ast0_type_to_type ty)]
-	      | Ast0.UnInit(_,ty,id,_) ->
-		  [(strip id,Ast0.ast0_type_to_type ty)]
-	      | Ast0.MacroDecl(_,_,_,_,_) -> []
-	      | Ast0.TyDecl(ty,_) -> []
-              (* pad: should handle typedef one day and add a binding *)
-	      | Ast0.Typedef(_,_,_,_) -> []
-	      | Ast0.DisjDecl(_,disjs,_,_) ->
-		  List.concat(List.map process_decl disjs)
-	      | Ast0.Ddots(_,_) -> [] (* not in a statement list anyway *)
-	      | Ast0.OptDecl(decl) -> process_decl decl
-	      | Ast0.UniqueDecl(decl) -> process_decl decl in
-	    let new_acc = (process_decl decl)@acc in
+	    let new_acc = (process_decl acc decl)@acc in
 	    process_statement_list r new_acc ss
 	| Ast0.Dots(_,wc) ->
 	    (* why is this case here?  why is there none for nests? *)
@@ -320,12 +303,47 @@ let rec propagate_types env =
 	    process_statement_list r new_acc ss
 	| _ ->
 	    let _ = (propagate_types acc).VT0.combiner_rec_statement s in
-	    process_statement_list r acc ss) in
+	    process_statement_list r acc ss)
+
+  and process_decl env decl =
+    match Ast0.unwrap decl with
+      Ast0.Init(_,ty,id,_,exp,_) ->
+	let _ =
+	  (propagate_types env).VT0.combiner_rec_initialiser exp in
+	[(strip id,Ast0.ast0_type_to_type ty)]
+    | Ast0.UnInit(_,ty,id,_) ->
+	[(strip id,Ast0.ast0_type_to_type ty)]
+    | Ast0.MacroDecl(_,_,_,_,_) -> []
+    | Ast0.TyDecl(ty,_) -> []
+              (* pad: should handle typedef one day and add a binding *)
+    | Ast0.Typedef(_,_,_,_) -> []
+    | Ast0.DisjDecl(_,disjs,_,_) ->
+	List.concat(List.map (process_decl env) disjs)
+    | Ast0.Ddots(_,_) -> [] (* not in a statement list anyway *)
+    | Ast0.OptDecl(decl) -> process_decl env decl
+    | Ast0.UniqueDecl(decl) -> process_decl env decl in
 
   let statement_dots r k d =
     match Ast0.unwrap d with
       Ast0.DOTS(l) | Ast0.CIRCLES(l) | Ast0.STARS(l) ->
 	let _ = process_statement_list r env l in option_default in
+
+  let post_bool exp =
+    let rec process_test exp =
+      match (Ast0.unwrap exp,Ast0.get_type exp) with
+	(Ast0.Edots(_,_),_) -> None
+      | (Ast0.NestExpr(_,_,_,_,_),_) -> None
+      | (Ast0.MetaExpr(_,_,_,_,_),_) ->
+      (* if a type is known, it is specified in the decl *)
+	  None
+      | (Ast0.Paren(lp,exp,rp),None) -> process_test exp
+      | (_,None) -> Some (int_type)
+      | _ -> None in
+    let new_expty = process_test exp in
+    (match new_expty with
+      None -> () (* leave things as they are *)
+    | Some ty -> Ast0.set_type exp new_expty) in
+
   let statement r k s =
     match Ast0.unwrap s with
       Ast0.FunDecl(_,fninfo,name,lp,params,rp,lbrace,body,rbrace) ->
@@ -339,35 +357,27 @@ let rec propagate_types env =
 	(propagate_types (fenv@env)).VT0.combiner_rec_statement_dots body
     | Ast0.IfThen(_,_,exp,_,_,_) | Ast0.IfThenElse(_,_,exp,_,_,_,_,_)
     | Ast0.While(_,_,exp,_,_,_) | Ast0.Do(_,_,_,_,exp,_,_)
-    | Ast0.For(_,_,_,_,Some exp,_,_,_,_,_) | Ast0.Switch(_,_,exp,_,_,_,_) ->
+    | Ast0.For(_,_,_,_,Some exp,_,_,_,_,_) ->
 	let _ = k s in
-	let rec process_test exp =
-	  match (Ast0.unwrap exp,Ast0.get_type exp) with
-	    (Ast0.Edots(_,_),_) -> None
-	  | (Ast0.NestExpr(_,_,_,_,_),_) -> None
-	  | (Ast0.MetaExpr(_,_,_,_,_),_) ->
-	    (* if a type is known, it is specified in the decl *)
-	      None
-	  | (Ast0.Paren(lp,exp,rp),None) -> process_test exp
-	  | (_,None) -> Some (int_type)
-	  | _ -> None in
-	let new_expty = process_test exp in
-	(match new_expty with
-	  None -> () (* leave things as they are *)
-	| Some ty -> Ast0.set_type exp new_expty);
+	post_bool exp;
 	None
+    | Ast0.Switch(_,_,exp,_,_,decls,cases,_) ->
+	let senv = process_statement_list r env (Ast0.undots decls) in
+	let res =
+	  (propagate_types (senv@env)).VT0.combiner_rec_case_line_dots cases in
+	post_bool exp;
+	res
     |  _ -> k s
 
   and case_line r k c =
     match Ast0.unwrap c with
-      Ast0.Default(def,colon,code) -> let _ = k c in None
-    | Ast0.Case(case,exp,colon,code) ->
+      Ast0.Case(case,exp,colon,code) ->
 	let _ = k c in
 	(match Ast0.get_type exp with
 	  None -> Ast0.set_type exp (Some (int_type))
 	| _ -> ());
 	None
-    | Ast0.OptCase(case) -> k c in
+    | _ -> k c in
 
   V0.combiner bind option_default
     {V0.combiner_functions with

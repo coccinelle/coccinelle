@@ -304,6 +304,7 @@ and base_statement =
 	             statement * (info * mcodekind) (* after info *)
   | Switch        of string mcode (* switch *) * string mcode (* ( *) *
 	             expression * string mcode (* ) *) * string mcode (* { *) *
+	             statement (*decl*) dots *
 	             case_line dots * string mcode (* } *)
   | Break         of string mcode (* break *) * string mcode (* ; *)
   | Continue      of string mcode (* continue *) * string mcode (* ; *)
@@ -358,6 +359,8 @@ and base_case_line =
     Default of string mcode (* default *) * string mcode (*:*) * statement dots
   | Case of string mcode (* case *) * expression * string mcode (*:*) *
 	statement dots
+  | DisjCase of string mcode * case_line list *
+	string mcode list (* the |s *) * string mcode
   | OptCase of case_line
 
 and case_line = base_case_line wrap

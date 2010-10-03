@@ -627,16 +627,17 @@ let visitor mode bind option_default
 	    let (body_n,body) = statement body in
 	    (multibind [nm_n;lp_n;args_n;rp_n;body_n],
 	     Ast0.Iterator(nm,lp,args,rp,body,aft))
-	| Ast0.Switch(switch,lp,exp,rp,lb,cases,rb) ->
+	| Ast0.Switch(switch,lp,exp,rp,lb,decls,cases,rb) ->
 	    let (switch_n,switch) = string_mcode switch in 
 	    let (lp_n,lp) = string_mcode lp in
 	    let (exp_n,exp) = expression exp in
 	    let (rp_n,rp) = string_mcode rp in 
 	    let (lb_n,lb) = string_mcode lb in
+	    let (decls_n,decls) = statement_dots decls in 
 	    let (cases_n,cases) = case_line_dots cases in 
 	    let (rb_n,rb) = string_mcode rb in
-	    (multibind [switch_n;lp_n;exp_n;rp_n;lb_n;cases_n;rb_n],
-      	     Ast0.Switch(switch,lp,exp,rp,lb,cases,rb))
+	    (multibind [switch_n;lp_n;exp_n;rp_n;lb_n;decls_n;cases_n;rb_n],
+      	     Ast0.Switch(switch,lp,exp,rp,lb,decls,cases,rb))
 	| Ast0.Break(br,sem) ->
 	    let (br_n,br) = string_mcode br in
 	    let (sem_n,sem) = string_mcode sem in
@@ -809,6 +810,16 @@ let visitor mode bind option_default
 	    let (code_n,code) = statement_dots code in
 	    (multibind [case_n;exp_n;colon_n;code_n],
 	     Ast0.Case(case,exp,colon,code))
+	| Ast0.DisjCase(starter,case_lines,mids,ender) ->
+	    let (starter_n,starter) = string_mcode starter in
+	    let (case_lines_n,case_lines) = map_split case_line case_lines in
+	    let (mids_n,mids) = map_split string_mcode mids in
+	    let (ender_n,ender) = string_mcode ender in
+	    (multibind
+	       [starter_n;List.hd case_lines_n;
+		 multibind (List.map2 bind mids_n (List.tl case_lines_n));
+		 ender_n],
+	     Ast0.DisjCase(starter,case_lines,mids,ender))
 	| Ast0.OptCase(case) ->
 	    let (n,case) = case_line case in (n,Ast0.OptCase(case))) in
     casefn all_functions k c

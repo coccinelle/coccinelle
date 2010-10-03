@@ -472,11 +472,12 @@ and statement arity s =
 	  close_box(); mcode print_string rp; print_string " ";
 	  statement arity body;
 	  mcode (function _ -> ()) ((),(),info,aft,ref Ast0.NoMetaPos,-1)
-      |	Ast0.Switch(switch,lp,exp,rp,lb,cases,rb) ->
+      |	Ast0.Switch(switch,lp,exp,rp,lb,decls,cases,rb) ->
 	  print_string arity;
 	  mcode print_string switch; print_string " ";
 	  mcode print_string_box lp; expression exp; close_box();
 	  mcode print_string rp; print_string " "; mcode print_string lb;
+	  dots force_newline (statement arity) decls;
 	  dots force_newline (case_line arity) cases;
 	  mcode print_string rb
       | Ast0.Break(br,sem) ->
@@ -586,6 +587,12 @@ and case_line arity c =
 	  mcode print_string case; print_string " "; expression exp;
 	  mcode print_string colon; print_string " ";
 	  dots force_newline (statement arity) code
+      | Ast0.DisjCase(starter,case_lines,mids,ender) ->
+	  print_string "\n("; force_newline();
+	  print_between
+	    (function _ -> print_string "\n|"; force_newline())
+	    (case_line arity) case_lines;
+	  print_string "\n)"
       | Ast0.OptCase(case) -> case_line "?" case)
 
 and statement_dots l = dots (function _ -> ()) (statement "") l

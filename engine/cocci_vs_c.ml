@@ -763,7 +763,7 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
                       "annotate_typer.ml");
             fail
 	      
-        | Some tas, Some tb -> 
+        | Some tas, Some tb ->
             tas +> List.fold_left (fun acc ta ->  
               acc >|+|> compatible_type ta tb) fail
 	) >>=

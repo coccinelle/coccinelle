@@ -341,6 +341,7 @@ let rec top_expression opt_allowed tgt expr =
       let dots = mcode dots in
       let whencode = get_option (expression Ast0.NONE) whencode in
       make_exp expr tgt arity (Ast0.Estars(dots,whencode))
+  (* why does optexp exist???? *)
   | Ast0.OptExp(_) | Ast0.UniqueExp(_) ->
       failwith "unexpected code"
 
@@ -755,7 +756,7 @@ and statement tgt stm =
       let rp = mcode rp in
       let body = statement arity body in
       make_rule_elem stm tgt arity (Ast0.Iterator(nm,lp,args,rp,body,aft))
-  | Ast0.Switch(switch,lp,exp,rp,lb,cases,rb) ->
+  | Ast0.Switch(switch,lp,exp,rp,lb,decls,cases,rb) ->
       let arity =
 	stm_same (mcode2line switch)
 	  (List.map mcode2arity [switch;lp;rp;lb;rb]) in
@@ -764,10 +765,11 @@ and statement tgt stm =
       let exp = expression arity exp in
       let rp = mcode rp in
       let lb = mcode lb in
+      let decls = dots (statement arity) decls in
       let cases = dots (case_line arity) cases in
       let rb = mcode rb in
       make_rule_elem stm tgt arity
-	(Ast0.Switch(switch,lp,exp,rp,lb,cases,rb))
+	(Ast0.Switch(switch,lp,exp,rp,lb,decls,cases,rb))
   | Ast0.Break(br,sem) ->
       let arity = stm_same (mcode2line br) (List.map mcode2arity [br;sem]) in
       let br = mcode br in
@@ -1045,6 +1047,14 @@ and case_line tgt c =
       let colon = mcode colon in
       let code = dots (statement arity) code in
       make_case_line c tgt arity (Ast0.Case(case,exp,colon,code))
+  | Ast0.DisjCase(starter,case_lines,mids,ender) ->
+      let case_lines = List.map (case_line tgt) case_lines in
+      (match List.rev case_lines with
+	_::xs ->
+	  if anyopt xs (function Ast0.OptCase(_) -> true | _ -> false)
+	  then fail c "opt only allowed in the last disjunct"
+      |	_ -> ());
+      Ast0.rewrap c (Ast0.DisjCase(starter,case_lines,mids,ender))
   | Ast0.OptCase(_) -> failwith "unexpected OptCase"
 
 (* --------------------------------------------------------------------- *)

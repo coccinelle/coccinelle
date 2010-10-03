@@ -1,4 +1,4 @@
-((a.res Ok) (a3d.res Ok) (a_and_e.res Ok) (a_and_e_ver1.res Ok)
+((a.res Ok) (a3d.res Ok) (a_and_e.res Ok) (a_and_e_ver1.res Ok) (ab.res Ok)
  (addelse.res Ok) (addif.res Ok) (addif1.res Ok) (addif2.res Ok)
  (after_if.res Ok) (anon.res Ok) (ar.res Ok) (arg.res Ok) (argument.res Ok)
  (array_init.res Ok) (array_size.res Ok) (arraysz.res Ok) (b1.res Ok)
@@ -15,7 +15,7 @@
  (bugloop.res
   (Pb
    "INCORRECT:diff token: PF_FREEZE VS )\nFile <COCCIOUTPUTFILE>, line 12, column 16,  charpos = 390\n    around = 'PF_FREEZE', whole content = \t\t\trefrigerator(PF_FREEZE);\nFile \"tests/bugloop.res\", line 8, column 16,  charpos = 160\n    around = ')', whole content = \t\t\trefrigerator();\n\n    diff (result(<) vs expected_result(>)) = \n    @@ -1,7 +1,3 @@\n    -/* this doesn't work, because on the paths where we don't find refrigerator,\n    -we expect to reach Exit without first going through current->flags & PF_FREEZE,\n    -but of course any path that goes around the loop does precisely that */\n    -\n     static int stir_transmit_thread(void *arg)\n     {\n     \n    @@ -9,7 +5,7 @@\n     \t{\n     \t\t/* if suspending, then power off and wait */\n     \t\tif (unlikely(freezing(current))) {\n    -\t\t\trefrigerator(PF_FREEZE);\n    +\t\t\trefrigerator();\n     \n     \t\t}\n     \t}\n"))
- (bugon.res Ok) (cards.res Ok) (cast.res Ok) (cast_iso.res Ok)
+ (bugon.res Ok) (cards.res Ok) (cast.res Ok) (cast_iso.res Ok) (com.res Ok)
  (compare.res Ok) (const.res Ok) (const1bis.res Ok) (const_adding.res Ok)
  (const_array.res Ok) (const_implicit_iso.res Ok) (constty.res Ok)
  (constx.res Ok) (cs_check.res Ok) (cst.res Ok) (csw.res Ok)
@@ -30,20 +30,20 @@
  (decl_split.res
   (Pb
    "INCORRECT:diff token: int VS }\nFile \"tests/decl_split.c\", line 2, column 8,  charpos = 27\n    around = 'int', whole content =         int x, y;\nFile \"tests/decl_split.res\", line 2, column 0,  charpos = 19\n    around = '}', whole content = }\n\n    diff (result(<) vs expected_result(>)) = \n    @@ -1,3 +1,2 @@\n     int func(int i) { \n    -        int x, y;\n     }\n"))
- (define_exp.res Ok) (define_param.res Ok) (deftodo.res Ok) (deref.res Ok)
- (devlink.res Ok) (disjexpr.res Ok) (disjexpr_ver1.res Ok)
- (disjexpr_ver2.res Ok) (distribute.res Ok) (double.res Ok)
- (double_assign.res Ok) (double_switch.res Ok) (doublepos.res Ok)
- (doubleswitch.res Ok) (dowhile.res Ok) (dropf.res Ok) (dropparam.res Ok)
- (edots.res Ok) (edots_ver1.res Ok) (empty.res Ok) (end_commas.res Ok)
- (endif.res Ok) (enum.res Ok) (exp.res Ok) (expnest.res Ok) (expopt.res Ok)
- (expopt2.res Ok) (expopt3.res Ok) (expopt3_ver1.res Ok)
- (expopt3_ver2.res Ok) (fields.res Ok) (fieldsmin.res Ok) (find_long.res Ok)
- (fix_flow_need.res Ok) (fn_todo.res Ok) (fnptr.res Ok) (fnret.res Ok)
- (four.res Ok) (foura.res Ok) (fp.res Ok) (fsh.res Ok) (fun.res Ok)
- (gilles-question.res Ok) (gotobreak.res Ok) (hd.res Ok) (headers.res Ok)
- (hex.res Ok) (hil1.res Ok) (if.res Ok) (ifbr.res Ok) (ifdef1.res Ok)
- (ifdef2.res Ok)
+ (define_exp.res Ok) (define_param.res Ok) (deftodo.res Ok)
+ (delete_function.res Ok) (deref.res Ok) (devlink.res Ok) (disjexpr.res Ok)
+ (disjexpr_ver1.res Ok) (disjexpr_ver2.res Ok) (distribute.res Ok)
+ (double.res Ok) (double_assign.res Ok) (double_switch.res Ok)
+ (doublepos.res Ok) (doubleswitch.res Ok) (dowhile.res Ok) (dropf.res Ok)
+ (dropparam.res Ok) (edots.res Ok) (edots_ver1.res Ok) (empty.res Ok)
+ (end_commas.res Ok) (endif.res Ok) (enum.res Ok) (exp.res Ok)
+ (expnest.res Ok) (expopt.res Ok) (expopt2.res Ok) (expopt3.res Ok)
+ (expopt3_ver1.res Ok) (expopt3_ver2.res Ok) (fields.res Ok)
+ (fieldsmin.res Ok) (find_long.res Ok) (fix_flow_need.res Ok)
+ (fn_todo.res Ok) (fnptr.res Ok) (fnret.res Ok) (four.res Ok) (foura.res Ok)
+ (fp.res Ok) (fsh.res Ok) (fun.res Ok) (gilles-question.res Ok)
+ (gotobreak.res Ok) (hd.res Ok) (headers.res Ok) (hex.res Ok) (hil1.res Ok)
+ (if.res Ok) (ifbr.res Ok) (ifdef1.res Ok) (ifdef2.res Ok)
  (ifdef3.res
   (Pb
    "PROBLEM\n   exn = Lexer_cocci.Lexical(\"unrecognised symbol, in token rule: #\")\n"))
@@ -70,16 +70,20 @@
  (labels_metastatement.res
   (Pb
    "INCORRECT:diff token: { VS x\nFile <COCCIOUTPUTFILE>, line 4, column 2,  charpos = 30\n    around = '{', whole content =   {\nFile \"tests/labels_metastatement.res\", line 4, column 4,  charpos = 32\n    around = 'x', whole content =     x = 3; foo();\n\n    diff (result(<) vs expected_result(>)) = \n    @@ -1,15 +1,10 @@\n     int foo(int i) {\n     \n       if(1) {\n    -  {\n    -    x = 3;\n    -    foo();\n    -    z = 4;\n    -    foo();\n    -  }\n    -  foo();\n    -  }\n    -  foo(); // we dont want that it add both foo on the } and on the endif\n    +    x = 3; foo();\n    +    z = 4; foo();\n    +  } // we dont want that it add both foo on the } and on the endif\n         // (note: but need correct endif accrochage)\n    +  foo();\n     \n     }\n"))
- (labels_metastatement_ver1.res Ok) (local.res Ok) (localid.res Ok)
- (longconst.res Ok) (longlong.res Ok) (longlongint.res Ok) (loop.res Ok)
- (lvalue.res Ok) (macro.res Ok) (macro_int16.res Ok) (match_no_meta.res Ok)
- (max.res Ok) (memory.res (Pb "PROBLEM\n   exn = Out of memory\n"))
+ (labels_metastatement_ver1.res Ok) (line_before_last.res Ok) (local.res Ok)
+ (localid.res Ok) (longconst.res Ok) (longlong.res Ok) (longlongint.res Ok)
+ (loop.res Ok) (lvalue.res Ok) (macro.res Ok) (macro_int16.res Ok)
+ (match_no_meta.res Ok) (max.res Ok)
+ (memory.res (Pb "PROBLEM\n   exn = Out of memory\n"))
  (metahex.res
   (Pb
    "INCORRECT:diff token: f VS }\nFile \"tests/metahex.c\", line 2, column 2,  charpos = 15\n    around = 'f', whole content =   f(3);\nFile \"tests/metahex.res\", line 2, column 0,  charpos = 13\n    around = '}', whole content = }\n\n    diff (result(<) vs expected_result(>)) = \n    @@ -1,4 +1,2 @@\n     int main() {\n    -  f(3);\n    -  g(0x03);\n     }\n"))
  (metaruleelem.res Ok) (metastatement2.res Ok) (metastatement_for.res Ok)
- (metastatement_if.res Ok) (minstruct.res Ok) (minusdots.res Ok)
- (minusdots_ver1.res Ok)
+ (metastatement_if.res Ok)
+ (mini_null_ref.res
+  (Pb
+   "INCORRECT:diff token: if VS struct\nFile <COCCIOUTPUTFILE>, line 6, column 8,  charpos = 269\n    around = 'if', whole content =         if (!pdata) {\nFile \"tests/mini_null_ref.res\", line 6, column 8,  charpos = 269\n    around = 'struct', whole content =         struct w90p910_keypad *keypad;\n\n    diff (result(<) vs expected_result(>)) = \n    @@ -3,6 +3,8 @@\n             const struct w90p910_keypad_platform_data *pdata =\n                                                     pdev->dev.platform_data;\n             const struct matrix_keymap_data * keymap_data;\n    +        struct w90p910_keypad *keypad;\n    +\n             if (!pdata) {\n                     dev_err(&pdev->dev, \"no platform data defined\\n\");\n                     return -EINVAL;\n"))
+ (minstruct.res Ok) (minusdots.res Ok) (minusdots_ver1.res Ok)
  (multi_func1.res
   (Pb
    "PROBLEM\n   exn = Failure(\"minus: parse error: \\n = File \\\"tests/multi_func1.cocci\\\", line 12, column 2,  charpos = 102\\n    around = 'fn2', whole content =   fn2(...) {\\n\")\n"))
@@ -114,7 +118,7 @@
  (return.res Ok) (return_implicit.res Ok) (retval.res Ok) (same_expr.res Ok)
  (scope_problem.res
   (Pb
-   "INCORRECT:diff token: } VS a\nFile <COCCIOUTPUTFILE>, line 6, column 2,  charpos = 44\n    around = '}', whole content =   }\nFile \"tests/scope_problem.res\", line 7, column 4,  charpos = 49\n    around = 'a', whole content =     a = 2;\n\n    diff (result(<) vs expected_result(>)) = \n    @@ -1,8 +1,10 @@\n     void main(int i) {\n     \n     \n    +\n       if(1) {\n         int a;\n    +    a = 2;\n       }\n     \n     \n"))
+   "INCORRECT:diff token: } VS a\nFile <COCCIOUTPUTFILE>, line 5, column 2,  charpos = 43\n    around = '}', whole content =   }\nFile \"tests/scope_problem.res\", line 7, column 4,  charpos = 49\n    around = 'a', whole content =     a = 2;\n\n    diff (result(<) vs expected_result(>)) = \n    @@ -1,7 +1,10 @@\n     void main(int i) {\n     \n    +  \n    +\n       if(1) {\n         int a;\n    +    a = 2;\n       }\n     \n     \n"))
  (serio.res
   (Pb
    "INCORRECT:diff token: init_MUTEX VS mutex_init\nFile \"tests/serio.c\", line 7, column 1,  charpos = 130\n    around = 'init_MUTEX', whole content = \tinit_MUTEX(&serio->drv_sem);\nFile \"tests/serio.res\", line 7, column 1,  charpos = 130\n    around = 'mutex_init', whole content = \tmutex_init(&serio->new_lock);\n\n    diff (result(<) vs expected_result(>)) = \n    @@ -4,5 +4,5 @@\n     \n     static void serio_init_port(struct serio *serio)\n     {\n    -\tinit_MUTEX(&serio->drv_sem);\n    +\tmutex_init(&serio->new_lock);\n     }\n"))
@@ -125,16 +129,17 @@
  (stm5.res Ok) (stm6.res Ok) (stm7.res Ok) (stm8.res Ok) (stmt.res Ok)
  (strangeorder.res Ok) (string.res Ok) (struct.res Ok)
  (struct_metavar.res Ok) (struct_typedef.res Ok) (structfoo.res Ok)
- (substruct.res Ok) (sw.res Ok) (switch.res Ok) (td.res Ok) (test0.res Ok)
- (test1.res Ok) (test10.res Ok) (test10_ver1.res Ok) (test11.res Ok)
- (test11_ver1.res Ok) (test12.res Ok) (test2.res Ok) (test3.res Ok)
- (test4.res Ok) (test5.res Ok) (test5_ver1.res Ok) (test6.res Ok)
- (test7.res Ok) (test8.res Ok) (test9.res Ok) (test_unsigned_meta.res Ok)
- (three_types.res Ok) (threea.res Ok) (top.res Ok) (topdec.res Ok)
- (topdec_ver1.res Ok) (topdec_ver2.res Ok) (toplevel_macrostmt.res Ok)
- (toplevel_struct.res Ok) (tup.res Ok) (twoproto.res Ok) (ty.res Ok)
- (ty1.res Ok) (ty_tyexp.res Ok) (tydisj.res Ok) (type.res Ok) (type1.res Ok)
- (type_annotated.res Ok) (type_ver1.res Ok)
+ (substruct.res Ok) (sw.res Ok) (switch.res Ok) (switchdecl.res Ok)
+ (td.res Ok) (test0.res Ok) (test1.res Ok) (test10.res Ok)
+ (test10_ver1.res Ok) (test11.res Ok) (test11_ver1.res Ok) (test12.res Ok)
+ (test2.res Ok) (test3.res Ok) (test4.res Ok) (test5.res Ok)
+ (test5_ver1.res Ok) (test6.res Ok) (test7.res Ok) (test8.res Ok)
+ (test9.res Ok) (test_unsigned_meta.res Ok) (three_types.res Ok)
+ (threea.res Ok) (top.res Ok) (topdec.res Ok) (topdec_ver1.res Ok)
+ (topdec_ver2.res Ok) (toplevel_macrostmt.res Ok) (toplevel_struct.res Ok)
+ (tup.res Ok) (twoproto.res Ok) (ty.res Ok) (ty1.res Ok) (ty_tyexp.res Ok)
+ (tydisj.res Ok) (type.res Ok) (type1.res Ok) (type_annotated.res Ok)
+ (type_ver1.res Ok)
  (type_ver2.res
   (Pb
    "INCORRECT:PB parsing only in generated-file\n    diff (result(<) vs expected_result(>)) = \n    @@ -1,5 +1,5 @@\n     int foo() {\n    -  int[10] *x;\n    +  int *x[10];\n       return 0;\n     }\n     \n"))

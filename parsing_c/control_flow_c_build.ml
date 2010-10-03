@@ -570,7 +570,7 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
                end;
                newxi'
              in
-             let newxi = { xi with compound_caller = 
+             let newxi = { xi_lbl with compound_caller = (* was xi *)
                  Switch todo_in_compound 
              } 
              in

@@ -227,7 +227,8 @@ and left_statement s =
   | Ast0.For(fr,lp,e1,sem1,e2,sem2,e3,rp,body,(info,aft)) ->
       modif_before_mcode fr
   | Ast0.Iterator(nm,lp,args,rp,body,(info,aft)) -> left_ident nm
-  | Ast0.Switch(switch,lp,exp,rp,lb,cases,rb) -> modif_before_mcode switch
+  | Ast0.Switch(switch,lp,exp,rp,lb,decls,cases,rb) ->
+      modif_before_mcode switch
   | Ast0.Break(br,sem) -> modif_before_mcode br
   | Ast0.Continue(cont,sem) -> modif_before_mcode cont
   | Ast0.Label(l,dd) -> left_ident l
@@ -267,7 +268,7 @@ and right_statement s =
       modif_after_mcodekind aft
   | Ast0.Iterator(nm,lp,args,rp,body,(info,aft)) ->
       modif_after_mcodekind aft
-  | Ast0.Switch(switch,lp,exp,rp,lb,cases,rb) -> modif_after_mcode rb
+  | Ast0.Switch(switch,lp,exp,rp,lb,decls,cases,rb) -> modif_after_mcode rb
   | Ast0.Break(br,sem) -> modif_after_mcode sem
   | Ast0.Continue(cont,sem) -> modif_after_mcode sem
   | Ast0.Label(l,dd) -> modif_after_mcode dd
@@ -364,11 +365,18 @@ and contains_only_minus =
 	List.for_all r.VT0.combiner_rec_statement_dots statement_dots_list
     | _ -> k e in
 
+  let case_line r k e =
+    mcodekind (Ast0.get_mcodekind e) &&
+    match Ast0.unwrap e with
+      Ast0.DisjCase(starter,case_list,mids,ender) ->
+	List.for_all r.VT0.combiner_rec_case_line case_list
+    | _ -> k e in
+
   V0.flat_combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     dots dots dots dots dots dots
     donothing expression typeC donothing donothing declaration
-    statement donothing donothing
+    statement case_line donothing
 
 
 (* needs a special case when there is a Disj or an empty DOTS *)
@@ -519,12 +527,13 @@ let rec statement dots_before dots_after s =
       do_one
 	(Ast0.rewrap s
 	   (Ast0.Iterator(nm,lp,args,rp,statement false false body,x)))
-  | Ast0.Switch(switch,lp,exp,rp,lb,cases,rb) ->
+  | Ast0.Switch(switch,lp,exp,rp,lb,decls,cases,rb) ->
       do_one
 	(Ast0.rewrap s
-	   (Ast0.Switch(switch,lp,exp,rp,lb,
+	   (Ast0.Switch(switch,lp,exp,rp,lb,decls,
 			Ast0.rewrap cases
-			  (Ast0.DOTS(List.map case_line (Ast0.undots cases))),
+			  (Ast0.DOTS
+			     (List.map case_line (Ast0.undots cases))),
 			rb)))
   | Ast0.Break(br,sem) -> do_one s
   | Ast0.Continue(cont,sem) -> do_one s
@@ -565,6 +574,8 @@ and case_line c =
 	Ast0.Default(def,colon,statement_dots false false code)
     | Ast0.Case(case,exp,colon,code) ->
 	Ast0.Case(case,exp,colon,statement_dots false false code)
+    | Ast0.DisjCase(starter,case_lines,mids,ender) ->
+	Ast0.DisjCase(starter,List.map case_line case_lines,mids,ender)
     | Ast0.OptCase(case) -> Ast0.OptCase(case_line c))
 
 and do_statement_dots dots_before dots_after = function

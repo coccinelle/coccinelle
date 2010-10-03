@@ -109,7 +109,7 @@ let print_token2 = function
 	      (String.concat " " (List.map string_of_int index))
 	| Ctx -> "" in
       "T2:"^b_str^TH.str_of_tok t
-  | Fake2 -> ""
+  | Fake2 -> "fake"
   | Cocci2 (s,_,lc,rc) -> Printf.sprintf "Cocci2:%d:%d%s" lc rc s
   | C2 s -> "C2:"^s
   | Indent_cocci2 -> "Indent"
@@ -120,7 +120,7 @@ let simple_print_all_tokens1 l =
   Printf.printf "\n"
 
 let simple_print_all_tokens2 l =
-  List.iter (function x -> Printf.printf "%s " (print_token2 x)) l;
+  List.iter (function x -> Printf.printf "|%s| " (print_token2 x)) l;
   Printf.printf "\n"
 
 let str_of_token3 = function
@@ -320,8 +320,13 @@ let expand_mcode toks =
     | T1 tok ->
 	(*let (a,b) = !((TH.info_of_tok tok).cocci_tag) in*)
         (* no tag on expandedTok ! *)
-        (if (TH.is_expanded tok && 
-            !((TH.info_of_tok tok).cocci_tag) <> Ast_c.emptyAnnot)
+	let modified = function
+	    None -> false
+	  | Some (Ast_cocci.CONTEXT(pos,Ast_cocci.NOTHING),l) -> false
+	  | _ -> true in
+        (if (TH.is_expanded tok &&
+	     modified !((TH.info_of_tok tok).cocci_tag)
+            (*!((TH.info_of_tok tok).cocci_tag) <> Ast_c.emptyAnnot*))
 	then
 	  failwith
 	    (Printf.sprintf
@@ -400,7 +405,7 @@ let expand_mcode toks =
         (match any_befaft with
         | Ast_cocci.NOTHING -> 
             add_elem t Ctx
-        | Ast_cocci.BEFORE xxs -> 
+        | Ast_cocci.BEFORE xxs ->
             unparser xxs Unparse_cocci.Before;
             add_elem t Ctx
         | Ast_cocci.AFTER xxs -> 
@@ -424,9 +429,18 @@ let expand_mcode toks =
 (*****************************************************************************)
 
 let is_space = function
+  | T2(Parser_c.TCommentSpace _,_b,_i) -> true  (* only whitespace *)
+  | _ -> false 
+
+let is_newline = function
+  | T2(Parser_c.TCommentNewline _,_b,_i) -> true
+  | _ -> false
+
+let is_whitespace = function
   | (T2 (t,_b,_i)) -> 
       (match t with
       | Parser_c.TCommentSpace _ -> true  (* only whitespace *)
+      | Parser_c.TCommentNewline _ (* newline plus whitespace *) -> true
       | _ -> false
       )
   | _ -> false 
@@ -442,6 +456,26 @@ let is_minusable_comment = function
       | Parser_c.TCommentCpp (Token_c.CppMacro, _)
       | Parser_c.TCommentCpp (Token_c.CppDirective, _) (* result was false *)
         -> true
+
+      | Parser_c.TCommentMisc _
+      | Parser_c.TCommentCpp (Token_c.CppPassingCosWouldGetError, _)
+        -> false
+
+      | _ -> false
+      )
+  | _ -> false 
+
+let is_minusable_comment_nocpp = function
+  | (T2 (t,_b,_i)) -> 
+      (match t with
+      | Parser_c.TCommentSpace _   (* only whitespace *)
+      (* patch: coccinelle *)      
+      | Parser_c.TCommentNewline _ (* newline plus whitespace *) -> true
+      | Parser_c.TComment _ -> true
+      | Parser_c.TCommentCpp (Token_c.CppAttr, _)
+      | Parser_c.TCommentCpp (Token_c.CppMacro, _)
+      | Parser_c.TCommentCpp (Token_c.CppDirective, _)
+        -> false
 
       | Parser_c.TCommentMisc _
       | Parser_c.TCommentCpp (Token_c.CppPassingCosWouldGetError, _)
@@ -477,12 +511,18 @@ let set_minus_comment adj = function
       );
       T2 (t, Min adj, idx)
 (* patch: coccinelle *)   
-  | T2 (Parser_c.TCommentNewline _,Min adj,idx) as x -> x
+  | T2 (t,Min adj,idx) as x -> x
   | _ -> raise Impossible
 
 let set_minus_comment_or_plus adj = function
     Cocci2 _ | C2 _ | Indent_cocci2 | Unindent_cocci2 as x -> x
   | x -> set_minus_comment adj x
+
+let drop_minus xs =
+  xs +> Common.exclude (function
+    | T2 (t,Min adj,_) -> true
+    | _ -> false
+  )
 
 let remove_minus_and_between_and_expanded_and_fake xs =
 
@@ -495,34 +535,141 @@ let remove_minus_and_between_and_expanded_and_fake xs =
   )
   in
 
-  (*This drops the space before each completely minused block (no plus code).*)
   let minus_or_comment = function
+      T2(_,Min adj,_) -> true
+    | x -> is_minusable_comment x in
+
+  let minus_or_comment_nocpp = function
+      T2(_,Min adj,_) -> true
+    | x -> is_minusable_comment_nocpp x in
+
+  let common_adj (index1,adj1) (index2,adj2) =
+    adj1 = adj2 (* same adjacency info *) &&
+    (* non-empty intersection of witness trees *)
+    not ((Common.inter_set index1 index2) = []) in
+
+  let rec adjust_around_minus = function
+      [] -> []
+    | (T2(Parser_c.TCommentNewline c,_b,_i) as x)::
+      (((T2(_,Min adj,_))::_) as rest) ->
+	(* an initial newline, as in a replaced statement *)
+	let (between_minus,rest) = Common.span minus_or_comment rest in
+	(match rest with
+	  [] -> (set_minus_comment adj x) ::
+	    (List.map (set_minus_comment adj) between_minus)
+	| T2(_,Ctx,_)::_ when is_newline (List.hd(List.rev between_minus)) ->
+	    (set_minus_comment adj x)::(adjust_within_minus between_minus) @
+	    (adjust_around_minus rest)
+	| _ ->
+	    x :: (adjust_within_minus between_minus) @
+	    (adjust_around_minus rest))
+    | ((T2(_,Min adj,_))::_) as rest ->
+	(* no initial newline, as in a replaced expression *)
+	let (between_minus,rest) = Common.span minus_or_comment rest in
+	(match rest with
+	  [] ->
+	    (List.map (set_minus_comment adj) between_minus)
+	| _ ->
+	    (adjust_within_minus between_minus) @
+	    (adjust_around_minus rest))
+    | x::xs -> x::adjust_around_minus xs
+  and adjust_within_minus = function
+      [] -> []
+    | (T2(_,Min adj1,_) as t1)::xs ->
+	let (between_minus,rest) = Common.span is_minusable_comment xs in
+	(match rest with
+          [] ->
+	    (* keep last newline *)
+	    let (drop,keep) =
+	      try
+		let (drop,nl,keep) =
+		  Common.split_when is_newline between_minus in
+		(drop, nl :: keep)
+	      with Not_found -> (between_minus,[]) in
+	    t1 ::
+	    List.map (set_minus_comment_or_plus adj1) drop @
+	    keep
+	| (T2(_,Min adj2,_) as t2)::rest when common_adj adj1 adj2 ->
+	    t1::
+            List.map (set_minus_comment_or_plus adj1) between_minus @
+            adjust_within_minus (t2::rest)
+	| x::xs ->
+	    t1::(between_minus @ adjust_within_minus (x::xs)))
+    | _ -> failwith "only minus and space possible" in
+
+  (* new idea: collects regions not containing non-space context code
+     if two adjacent adjacent minus tokens satisfy common_adj then delete
+     all spaces, comments etc between them
+     if two adjacent minus tokens do not satisfy common_adj only delete
+     the spaces between them if there are no comments, etc.
+     if the region contain no plus code and is both preceded and followed
+     by a newline, delete the initial newline. *)
+
+  let rec adjust_around_minus = function
+      [] -> []
+    | (T2(Parser_c.TCommentNewline c,_b,_i) as x)::
+      (T2(_,Min adj1,_) as t1)::xs ->
+	let (minus_list,rest) = Common.span not_context (t1::xs) in
+	let contains_plus = List.exists is_plus minus_list in
+	let x =
+	  match List.rev minus_list with
+	    (T2(Parser_c.TCommentNewline c,_b,_i))::rest
+	    when List.for_all minus_or_comment minus_list ->
+	      set_minus_comment_or_plus adj1 x
+	  | _ -> x in
+	x :: adjust_within_minus contains_plus minus_list @
+	adjust_around_minus rest
+    | (T2(_,Min adj1,_) as t1)::xs ->
+	let (minus_list,rest) = Common.span not_context (t1::xs) in
+	let contains_plus = List.exists is_plus minus_list in
+	adjust_within_minus contains_plus minus_list @ adjust_around_minus rest
+    | x::xs -> x :: adjust_around_minus xs
+  and adjust_within_minus cp (* contains plus *) = function
+      (T2(_,Min adj1,_) as t1)::xs ->
+	let not_minus = function T2(_,Min _,_) -> false | _ -> true in
+	let (not_minus_list,rest) = Common.span not_minus xs in
+	t1 ::
+	(match rest with
+	  (T2(_,Min adj2,_) as t2)::xs when common_adj adj1 adj2 ->
+	    (List.map (set_minus_comment_or_plus adj1) not_minus_list)
+	    @ (adjust_within_minus cp (t2::xs))
+	| (T2(_,Min adj2,_) as t2)::xs ->
+	    let is_whitespace_or_plus = function
+		(T2 _) as x -> is_space x
+	      | _ -> true (*plus*) in
+	    if List.for_all is_whitespace_or_plus not_minus_list
+	    then
+	      (List.map (set_minus_comment_or_plus adj1) not_minus_list)
+	      @ (adjust_within_minus cp (t2::xs))
+	    else not_minus_list @ (adjust_within_minus cp (t2::xs))
+	| _ ->
+	    if cp
+	    then xs
+	    else
+	      let (spaces,rest) = Common.span is_space xs in
+	      (List.map (set_minus_comment_or_plus adj1) spaces)
+	      @ rest)
+    | xs -> failwith "should always start with minus"
+  and not_context = function
+      (T2(_,Ctx,_) as x) when not (is_minusable_comment x) -> false
+    | _ -> true
+  and is_plus = function
+      C2 _ | Cocci2 _ -> true
+    | _ -> false in
+
+  let xs = adjust_around_minus xs in
+
+  (* this drops blank lines after a brace introduced by removing code *)
+  let minus_or_comment_nonl = function
       T2(_,Min adj,_) -> true
     | T2(Parser_c.TCommentNewline _,_b,_i) -> false
     | x -> is_minusable_comment x in
 
-  let rec adjust_before_minus = function
-      [] -> []
-(* patch: coccinelle  *)
-    | (T2(Parser_c.TCommentNewline c,_b,_i) as x)::
-      ((T2(_,Min adj,_)::_) as xs) ->
-	let (between_minus,rest) = Common.span minus_or_comment xs in
-	(match rest with
-	  [] -> (set_minus_comment adj x) :: between_minus
-	| T2(Parser_c.TCommentNewline _,_b,_i)::_ ->
-	    (set_minus_comment adj x) :: between_minus @
-	    (adjust_before_minus rest)
-	| _ -> x :: between_minus @ (adjust_before_minus rest))
-    | x::xs -> x::adjust_before_minus xs in
-
-  let xs = adjust_before_minus xs in
-
-  (* this drops blank lines after a brace introduced by removing code *)
   let rec adjust_after_brace = function
       [] -> []
     | ((T2(_,Ctx,_)) as x)::((T2(_,Min adj,_)::_) as xs)
        when str_of_token2 x =$= "{" ->
-	 let (between_minus,rest) = Common.span minus_or_comment xs in
+	 let (between_minus,rest) = Common.span minus_or_comment_nonl xs in
 	 let is_whitespace = function
 	     T2(Parser_c.TCommentSpace _,_b,_i)
 	     (* patch: cocci    *)
@@ -545,43 +692,37 @@ let remove_minus_and_between_and_expanded_and_fake xs =
 
   let xs = adjust_after_brace xs in
 
-  (* this deals with any stuff that is between the minused code, eg
-     spaces, comments, attributes, etc. *)
-  (* The use of is_minusable_comment_or_plus and set_minus_comment_or_plus
-     is because the + code can end up anywhere in the middle of the - code;
-     it is not necessarily to the far left *)
+  (* search backwards from context } over spaces until reaching a newline.
+     then go back over all minus code until reaching some context or + code.
+     get rid of all intervening spaces, newlines, and comments
+     input is reversed *)
+  let rec adjust_before_brace = function
+      [] -> []
+    | ((T2(t,Ctx,_)) as x)::xs when str_of_token2 x =$= "}" or is_newline x ->
+	let (outer_spaces,rest) = Common.span is_space xs in
+	x :: outer_spaces @
+	(match rest with
+	  ((T2 (Parser_c.TCommentNewline _,Ctx,_i)) as h) ::
+	  (* the rest of this code is the same as from_newline below
+	     but merging them seems to be error prone... *)
+	  ((T2 (t, Min adj, idx)) as m) :: rest ->
+	    let (spaces,rest) = Common.span minus_or_comment_nocpp rest in
+	    h :: m ::
+	    (List.map (set_minus_comment adj) spaces) @
+	    (adjust_before_brace rest)
+	| _ -> adjust_before_brace rest)
+    | x::xs -> x :: (adjust_before_brace xs) in
 
-  let common_adj (index1,adj1) (index2,adj2) =
-    adj1 = adj2 (* same adjacency info *) &&
-    (* non-empty intersection of witness trees *)
-    not ((Common.inter_set index1 index2) = []) in
+  let from_newline = function
+      ((T2 (t, Min adj, idx)) as m) :: rest ->
+	let (spaces,rest) = Common.span minus_or_comment_nocpp rest in
+	m ::
+	(List.map (set_minus_comment adj) spaces) @
+	(adjust_before_brace rest)
+    | rest -> adjust_before_brace rest in
 
-  let rec adjust_between_minus xs =
-    match xs with
-    | [] -> []
-    | ((T2 (_,Min adj1,_)) as t1)::xs ->
-        let (between_comments, rest) =
-	  Common.span is_minusable_comment_or_plus xs in
-        (match rest with
-        | [] ->
-	    t1 :: (List.map (set_minus_comment_or_plus adj1) between_comments)
-
-        | ((T2 (_,Min adj2,_)) as t2)::rest when common_adj adj1 adj2 ->
-            t1::
-            (List.map (set_minus_comment_or_plus adj1) between_comments @
-             adjust_between_minus (t2::rest))
-        | x::xs ->
-            t1::(between_comments @ adjust_between_minus (x::xs))
-        )
-
-    | x::xs -> x::adjust_between_minus xs in
-
-  let xs = adjust_between_minus xs in
-
-  let xs = xs +> Common.exclude (function
-    | T2 (t,Min adj,_) -> true
-    | _ -> false
-  ) in
+  let xs = List.rev (from_newline (List.rev xs)) in
+  let xs = drop_minus xs in
   xs
 
 (* normally, in C code, a semicolon is not preceded by a space or newline *)
@@ -894,14 +1035,19 @@ let pp_program2 xs outfile  =
           let toks = expand_mcode toks in
           (* assert Origin;ExpandedTok; + Cocci + C (was AbstractLineTok)
            * and no tag information, just NOTHING. *)
-	  
-          (* phase2: can now start to filter and adjust *)
-          let toks = adjust_indentation toks in
-	  let toks = adjust_before_semicolon toks in (* before remove minus *)
-          let toks = remove_minus_and_between_and_expanded_and_fake toks in
-          (* assert Origin + Cocci + C and no minus *)
-          let toks = add_space toks in
-          let toks = fix_tokens toks in
+
+	  let toks =
+	    if !Flag.sgrep_mode2
+	    then drop_minus toks (* nothing to do for sgrep *)
+	    else
+              (* phase2: can now start to filter and adjust *)
+              let toks = adjust_indentation toks in
+	      let toks = adjust_before_semicolon toks in(*before remove minus*)
+              let toks = remove_minus_and_between_and_expanded_and_fake toks in
+              (* assert Origin + Cocci + C and no minus *)
+              let toks = add_space toks in
+              let toks = fix_tokens toks in
+	      toks in
 
           (* in theory here could reparse and rework the ast! or 
            * apply some SP. Not before cos julia may have generated

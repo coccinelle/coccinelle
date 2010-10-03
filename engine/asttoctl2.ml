@@ -157,8 +157,9 @@ let bclabel_pred_maker = function
       used := true;
       CTL.Pred(Lib_engine.BCLabel(label_var),CTL.Control)
 
-let predmaker guard pred label =
-  ctl_and (guard_to_strict guard) (CTL.Pred pred) (label_pred_maker label)
+(* label used to be used here, but it is not used; label is only needed after
+and within dots *)
+let predmaker guard pred label = CTL.Pred pred
 
 let aftpred     = predmaker false (Lib_engine.After,       CTL.Control)
 let retpred     = predmaker false (Lib_engine.Return,      CTL.Control)
@@ -657,7 +658,9 @@ and get_before_e s a =
   | Ast.Iterator(header,body,aft) ->
       let (bd,_) = get_before_e body [] in
       (Ast.rewrap s (Ast.Iterator(header,bd,aft)),[Ast.Other s])
-  | Ast.Switch(header,lb,cases,rb) ->
+  | Ast.Switch(header,lb,decls,cases,rb) ->
+      let index = count_nested_braces s in
+      let (de,dea) = get_before decls [Ast.WParen(lb,index)] in
       let cases =
 	List.map
 	  (function case_line ->
@@ -667,7 +670,8 @@ and get_before_e s a =
 		Ast.rewrap case_line (Ast.CaseLine(header,body))
 	    | Ast.OptCase(case_line) -> failwith "not supported")
 	  cases in
-      (Ast.rewrap s (Ast.Switch(header,lb,cases,rb)),[Ast.Other s])
+      (Ast.rewrap s (Ast.Switch(header,lb,de,cases,rb)),
+       [Ast.WParen(rb,index)])
   | Ast.FunDecl(header,lbrace,body,rbrace) ->
       let (bd,_) = get_before body [] in
       (Ast.rewrap s (Ast.FunDecl(header,lbrace,bd,rbrace)),[])
@@ -789,17 +793,19 @@ and get_after_e s a =
   | Ast.Iterator(header,body,aft) ->
       let (bd,_) = get_after_e body a in
       (Ast.rewrap s (Ast.Iterator(header,bd,aft)),[Ast.Other s])
-  | Ast.Switch(header,lb,cases,rb) ->
+  | Ast.Switch(header,lb,decls,cases,rb) ->
+      let index = count_nested_braces s in
       let cases =
 	List.map
 	  (function case_line ->
 	    match Ast.unwrap case_line with
 	      Ast.CaseLine(header,body) ->
-		let (body,_) = get_after body [] in
+		let (body,_) = get_after body [Ast.WParen(rb,index)] in
 		Ast.rewrap case_line (Ast.CaseLine(header,body))
 	    | Ast.OptCase(case_line) -> failwith "not supported")
 	  cases in
-      (Ast.rewrap s (Ast.Switch(header,lb,cases,rb)),[Ast.Other s])
+      let (de,_) = get_after decls [] in
+      (Ast.rewrap s (Ast.Switch(header,lb,de,cases,rb)),[Ast.WParen(lb,index)])
   | Ast.FunDecl(header,lbrace,body,rbrace) ->
       let (bd,_) = get_after body [] in
       (Ast.rewrap s (Ast.FunDecl(header,lbrace,bd,rbrace)),[])
@@ -886,7 +892,9 @@ let do_re_matches label guard res quantified minus_quantified =
     let stmt_fvs = Ast.get_fvs x in
     let fvs = get_unquantified quantified stmt_fvs in
     quantify guard fvs (make_match None guard x) in
-  ctl_and CTL.NONSTRICT (label_pred_maker label)
+(* label used to be used here, but it is not use; label is only needed after
+and within dots 
+    ctl_and CTL.NONSTRICT (label_pred_maker label) *)
     (match List.map Ast.unwrap res with
       [] -> failwith "unexpected empty disj"
     | Ast.Exp(e)::rest -> exptymatch res make_match make_guard_match
@@ -906,7 +914,9 @@ let header_match label guard code : ('a, Ast.meta_name, 'b) CTL.generic_ctl =
     Ast.DisjRuleElem(res) ->
       let make_match = make_match None guard in
       let orop = if guard then ctl_or else ctl_seqor in
-      ctl_and CTL.NONSTRICT (label_pred_maker label)
+(* label used to be used here, but it is not use; label is only needed after
+and within dots
+      ctl_and CTL.NONSTRICT (label_pred_maker label) *)
       (List.fold_left orop CTL.False (List.map make_match res))
   | _ -> make_match label guard code
 
@@ -1210,25 +1220,20 @@ let svar_minus_or_no_add_after stmt s label quantified d ast
   let prelabel_pred =
     CTL.Pred (Lib_engine.PrefixLabel(label_var),CTL.Control) in
   let matcher d = make_match None guard (make_meta_rule_elem d fvinfo) in
-  let stmt_fvs = Ast.get_fvs stmt in
-  let fvs = get_unquantified quantified stmt_fvs in
-  let (new_fvs,body) =
+  let ender =
     match (d,after) with
       (Ast.CONTEXT(pos,Ast.NOTHING),(Tail|End|VeryEnd)) ->
 	(* just match the root. don't care about label; always ok *)
-	(fvs,function f -> f(make_raw_match None false ast))
+	make_match None false ast
     | (Ast.MINUS(pos,inst,adj,[]),(Tail|End|VeryEnd)) ->
     (* don't have to put anything before the beginning, so don't have to
        distinguish the first node.  so don't have to bother about paths,
        just use the label. label ensures that found nodes match up with
        what they should because it is in the lhs of the andany. *)
-	let ender =
-	  CTL.HackForStmt(CTL.FORWARD,CTL.NONSTRICT,
-			  ctl_and CTL.NONSTRICT label_pred
-			    (make_raw_match label false ast),
-			  ctl_and CTL.NONSTRICT (matcher d) prelabel_pred) in
-	(label_var::fvs,
-	 function f -> ctl_and CTL.NONSTRICT label_pred (f ender))
+	CTL.HackForStmt(CTL.FORWARD,CTL.NONSTRICT,
+			ctl_and CTL.NONSTRICT label_pred
+			  (make_raw_match label false ast),
+			ctl_and CTL.NONSTRICT (matcher d) prelabel_pred)
     | _ ->
 	(* more safe but less efficient *)
 	let first_metamatch = matcher d in
@@ -1240,14 +1245,14 @@ let svar_minus_or_no_add_after stmt s label quantified d ast
 	    | Ast.PLUS -> failwith "not possible") in
 	let rest_nodes = ctl_and CTL.NONSTRICT rest_metamatch prelabel_pred in
 	let last_node = and_after guard (ctl_not prelabel_pred) after in
-	let ender =
-	  ctl_and CTL.NONSTRICT (make_raw_match label false ast)
-	    (make_seq guard
-	       [first_metamatch;
-		 ctl_au CTL.NONSTRICT rest_nodes last_node]) in
-	(label_var::fvs,
-	 function f -> ctl_and CTL.NONSTRICT label_pred (f ender)) in
-  quantify guard new_fvs
+	ctl_and CTL.NONSTRICT (make_raw_match label false ast)
+	  (make_seq guard
+	     [first_metamatch;
+	       ctl_au CTL.NONSTRICT rest_nodes last_node]) in
+  let body f = ctl_and CTL.NONSTRICT label_pred (f ender) in
+  let stmt_fvs = Ast.get_fvs stmt in
+  let fvs = get_unquantified quantified stmt_fvs in
+  quantify guard (label_var::fvs)
     (sequencibility body label_pred process_bef_aft seqible)
 
 (* --------------------------------------------------------------------- *)
@@ -1279,6 +1284,20 @@ let dots_au is_strict toend label s wrapcode n x seq_after y quantifier =
 	  let lv = get_label_ctr() in
 	  let labelpred = CTL.Pred(Lib_engine.Label lv,CTL.Control) in
 	  let preflabelpred = label_pred_maker (Some (lv,ref true)) in
+	  let is_paren =
+	    (* Rather a special case.  But if the code afterwards is just
+	       a } then there is no point checking after a goto that it does
+	       not appear. *)
+	    (* this optimization doesn't work.  probably depends on whether
+	       the destination of the break/goto is local or more global than
+	       the dots *)
+	    match seq_after with
+	      CTL.And(_,e1,e2) ->
+		let is_paren = function
+		    CTL.Pred(Lib_engine.Paren _,_) -> true
+		  | _ -> false in
+		is_paren e1 or is_paren e2
+	    | _ -> false in
 	  ctl_or (aftpred label)
 	    (quantify false [lv]
 	       (ctl_and CTL.NONSTRICT
@@ -1298,7 +1317,13 @@ let dots_au is_strict toend label s wrapcode n x seq_after y quantifier =
 				(ctl_not seq_after))
 			     (ctl_and CTL.NONSTRICT
 				(ctl_or matchgoto matchbreak)
-				(ctl_ag s (ctl_not seq_after)))))))))) in
+				((*if is_paren
+                                (* an optim that failed see defn is_paren
+                                   and tests/makes_a_loop *)
+				then CTL.True
+				else*)
+				  (ctl_ag s
+				     (ctl_not seq_after))))))))))) in
   let op = if quantifier = !exists then ctl_au else ctl_anti_au in
   let v = get_let_ctr() in
   op s x
@@ -1307,7 +1332,8 @@ let dots_au is_strict toend label s wrapcode n x seq_after y quantifier =
     | Common.Right stop_early ->
 	CTL.Let(v,y,
 		ctl_or (CTL.Ref v)
-		  (stop_early n (CTL.Ref v))))
+		  (ctl_and CTL.NONSTRICT (label_pred_maker label)
+		     (stop_early n (CTL.Ref v)))))
 
 let rec dots_and_nests plus nest whencodes bef aft dotcode after label
     process_bef_aft statement_list statement guard quantified wrapcode =
@@ -1427,8 +1453,13 @@ let rec dots_and_nests plus nest whencodes bef aft dotcode after label
 
   let ender =
     match after with
-      After f -> f
-    | Guard f -> ctl_uncheck f
+      (* label within dots is taken care of elsewhere.  the next two lines
+         put the label on the code following dots *)
+      After f -> ctl_and (guard_to_strict guard) f labelled
+    | Guard f ->
+	(* actually, label should be None based on the only use of Guard... *)
+	assert (label = None);
+	ctl_and CTL.NONSTRICT (ctl_uncheck f) labelled
     | VeryEnd ->
 	let exit = endpred label in
 	let errorexit = exitpred label in
@@ -1857,15 +1888,24 @@ and statement stmt after quantified minus_quantified
 	guard quantified
 	(function x -> Ast.set_fvs [] (Ast.rewrap stmt x))
 
-  | Ast.Switch(header,lb,cases,rb) ->
+  | Ast.Switch(header,lb,decls,cases,rb) ->
       let rec intersect_all = function
 	  [] -> []
 	| [x] -> x
 	| x::xs -> intersect x (intersect_all xs) in
+      let rec intersect_all2 = function (* pairwise *)
+	  [] -> []
+	| x::xs ->
+	    let front =
+	      List.filter
+		(function elem -> List.exists (List.mem elem) xs)
+		x in
+	    Common.union_set front (intersect_all2 xs) in
       let rec union_all l = List.fold_left union [] l in
       (* start normal variables *)
       let header_fvs = Ast.get_fvs header in
       let lb_fvs = Ast.get_fvs lb in
+      let decl_fvs = union_all (List.map Ast.get_fvs (Ast.undots decls)) in
       let case_fvs = List.map Ast.get_fvs cases in
       let rb_fvs = Ast.get_fvs rb in
       let (all_efvs,all_b1fvs,all_lbfvs,all_b2fvs,
@@ -1880,7 +1920,7 @@ and statement stmt after quantified minus_quantified
 		   b2fvs::all_b2fvs,casefvs::all_casefvs,b3fvs::all_b3fvs,
 		   rbfvs::all_rbfvs)
 	      |	_ -> failwith "not possible")
-	  ([],[],[],[],[],[],[]) case_fvs in
+	  ([],[],[],[],[],[],[]) (decl_fvs :: case_fvs) in
       let (all_efvs,all_b1fvs,all_lbfvs,all_b2fvs,
 	   all_casefvs,all_b3fvs,all_rbfvs) =
 	(List.rev all_efvs,List.rev all_b1fvs,List.rev all_lbfvs,
@@ -1892,12 +1932,14 @@ and statement stmt after quantified minus_quantified
 (*      let rbonlyfvs = intersect_all all_rbfvs in*)
       let b1fvs = union_all all_b1fvs in
       let new1_quantified = union b1fvs quantified in
-      let b2fvs = union (union_all all_b1fvs) (intersect_all all_casefvs) in
+      let b2fvs =
+	union (union_all all_b2fvs) (intersect_all2 all_casefvs) in
       let new2_quantified = union b2fvs new1_quantified in
 (*      let b3fvs = union_all all_b3fvs in*)
       (* ------------------- start minus free variables *)
       let header_mfvs = Ast.get_mfvs header in
       let lb_mfvs = Ast.get_mfvs lb in
+      let decl_mfvs = union_all (List.map Ast.get_mfvs (Ast.undots decls)) in
       let case_mfvs = List.map Ast.get_mfvs cases in
       let rb_mfvs = Ast.get_mfvs rb in
       let (all_mefvs,all_mb1fvs,all_mlbfvs,all_mb2fvs,
@@ -1914,7 +1956,7 @@ and statement stmt after quantified minus_quantified
 		   b2fvs::all_b2fvs,casefvs::all_casefvs,b3fvs::all_b3fvs,
 		   rbfvs::all_rbfvs)
 	      |	_ -> failwith "not possible")
-	  ([],[],[],[],[],[],[]) case_mfvs in
+	  ([],[],[],[],[],[],[]) (decl_mfvs::case_mfvs) in
       let (all_mefvs,all_mb1fvs,all_mlbfvs,all_mb2fvs,
 	   all_mcasefvs,all_mb3fvs,all_mrbfvs) =
 	(List.rev all_mefvs,List.rev all_mb1fvs,List.rev all_mlbfvs,
@@ -1924,7 +1966,8 @@ and statement stmt after quantified minus_quantified
 (*      let rbonlyfvs = intersect_all all_rbfvs in*)
       let mb1fvs = union_all all_mb1fvs in
       let new1_mquantified = union mb1fvs quantified in
-      let mb2fvs = union (union_all all_mb1fvs) (intersect_all all_mcasefvs) in
+      let mb2fvs =
+	union (union_all all_mb2fvs) (intersect_all2 all_mcasefvs) in
       let new2_mquantified = union mb2fvs new1_mquantified in
 (*      let b3fvs = union_all all_b3fvs in*)
       (* ------------------- end collection of free variables *)
@@ -1943,10 +1986,22 @@ and statement stmt after quantified minus_quantified
 		quantify guard e1fvs (real_make_match label true header)
 	    | Ast.OptCase(case_line) -> failwith "not supported")
 	  cases in
-      let no_header =
-	ctl_not (List.fold_left ctl_or_fl CTL.False case_headers) in
       let lv = get_label_ctr() in
       let used = ref false in
+      let (decls_exists_code,decls_all_code) =
+	(*don't really understand this*)
+	if (Ast.undots decls) = []
+	then (CTL.True,CTL.False)
+	else
+	let res =
+	  statement_list decls Tail
+	    new2_quantified new2_mquantified (Some (lv,used)) llabel None
+	    false(*?*) guard in
+	(res,res) in
+      let no_header =
+	ctl_not
+	  (List.fold_left ctl_or_fl CTL.False
+	     (decls_all_code::case_headers)) in
       let case_code =
 	List.map
 	  (function case_line ->
@@ -1968,8 +2023,8 @@ and statement stmt after quantified minus_quantified
 		  let new3_mquantified = union mb1fvs new2_mquantified in
 		  let body =
 		    statement_list body Tail
-		      new3_quantified new3_mquantified label llabel
-		      (Some (lv,used)) true(*?*) guard in
+		      new3_quantified new3_mquantified (Some (lv,used)) llabel
+		      (Some (lv,used)) false(*?*) guard in
 		  quantify guard b1fvs (make_seq [case_header; body])
 	    | Ast.OptCase(case_line) -> failwith "not supported")
 	  cases in
@@ -1993,8 +2048,10 @@ and statement stmt after quantified minus_quantified
 		(make_seq
 		   [ctl_and lb
 		       (List.fold_left ctl_and CTL.True
-			  (List.map ctl_ex case_headers));
-		     List.fold_left ctl_or_fl no_header case_code])))
+			  (List.map ctl_ex
+			     (decls_exists_code :: case_headers)));
+		     List.fold_left ctl_or_fl no_header
+		       (decls_all_code :: case_code)])))
 	  after_branch in
       let aft =
 	(rb_fvs,Ast.get_fresh rb,Ast.get_inherited rb,

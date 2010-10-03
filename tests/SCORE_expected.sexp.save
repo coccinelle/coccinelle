@@ -21,7 +21,10 @@
  (constx.res Ok) (cs_check.res Ok) (cst.res Ok) (csw.res Ok)
  (dbg.res
   (Pb
-   "INCORRECT:diff token: else VS (\nFile <COCCIOUTPUTFILE>, line 8, column 2,  charpos = 133\n    around = 'else', whole content = \t\telse pr = NULL;;\nFile \"tests/dbg.res\", line 7, column 5,  charpos = 130\n    around = '(', whole content = \t\tDBG(\"PCI\");\n\n    diff (result(<) vs expected_result(>)) = \n    @@ -4,6 +4,6 @@\n     \tstruct resource *pr, *r = &dev->resource[idx];\n     \n     \tif (pr)\n    -\t\tDBG\n    -\t\telse pr = NULL;;\n    +\t\tDBG(\"PCI\");\n    +\telse pr = NULL;\n     }\n"))
+   "INCORRECT:diff token: else VS (\nFile <COCCIOUTPUTFILE>, line 8, column 2,  charpos = 133\n    around = 'else', whole content = \t\telse pr = NULL;(\"PCI\");\nFile \"tests/dbg.res\", line 7, column 5,  charpos = 130\n    around = '(', whole content = \t\tDBG(\"PCI\");\n\n    diff (result(<) vs expected_result(>)) = \n    @@ -4,6 +4,6 @@\n     \tstruct resource *pr, *r = &dev->resource[idx];\n     \n     \tif (pr)\n    -\t\tDBG\n    -\t\telse pr = NULL;(\"PCI\");\n    +\t\tDBG(\"PCI\");\n    +\telse pr = NULL;\n     }\n"))
+ (dbg1.res
+  (Pb
+   "INCORRECT:diff token: E VS (\nFile <COCCIOUTPUTFILE>, line 5, column 2,  charpos = 75\n    around = 'E', whole content = \t\tE = NULL;(\"PCI\");\nFile \"tests/dbg1.res\", line 4, column 5,  charpos = 72\n    around = '(', whole content = \t\tDBG(\"PCI\");\n\n    diff (result(<) vs expected_result(>)) = \n    @@ -1,6 +1,6 @@\n     \n     static inline void alloc_resource(struct pci_dev *dev, int idx)\n     {\n    -\t\tDBG\n    -\t\tE = NULL;(\"PCI\");\n    +\t\tDBG(\"PCI\");\n    +\t\tE = NULL;\n     }\n"))
  (dc_close.res Ok) (debug.res Ok) (dec.res Ok) (decl.res Ok) (decl2.res Ok)
  (decl_space.res Ok)
  (decl_split.res
@@ -33,7 +36,7 @@
  (double_assign.res Ok) (double_switch.res Ok) (doublepos.res Ok)
  (doubleswitch.res Ok) (dowhile.res Ok) (dropf.res Ok) (dropparam.res Ok)
  (edots.res Ok) (edots_ver1.res Ok) (empty.res Ok) (end_commas.res Ok)
- (endif.res Ok) (exp.res Ok) (expnest.res Ok) (expopt.res Ok)
+ (endif.res Ok) (enum.res Ok) (exp.res Ok) (expnest.res Ok) (expopt.res Ok)
  (expopt2.res Ok) (expopt3.res Ok) (expopt3_ver1.res Ok)
  (expopt3_ver2.res Ok) (fields.res Ok) (fieldsmin.res Ok) (find_long.res Ok)
  (fix_flow_need.res Ok) (fn_todo.res Ok) (fnptr.res Ok) (fnret.res Ok)
@@ -88,12 +91,9 @@
   (Pb
    "INCORRECT:diff token: #else\n VS x\nFile <COCCIOUTPUTFILE>, line 10, column 0,  charpos = 114\n    around = '#else\n', whole content = #else\nFile \"tests/oddifdef.res\", line 10, column 2,  charpos = 116\n    around = 'x', whole content =   x = 0;\n\n    diff (result(<) vs expected_result(>)) = \n    @@ -7,8 +7,9 @@\n         a = 5;\n     \n     #ifdef FOO\n    +  x = 0;\n     #else\n    -  \n    +  x = 0;\n     #endif\n     }\n     \n    @@ -21,8 +22,9 @@\n         a = 3;\n     \n     #ifdef FOO\n    +  x = 0;\n     #else\n    -  \n    +  x = 0;\n     #endif\n     }\n     \n    @@ -35,7 +37,8 @@\n     #endif\n     \n     #ifdef FOO\n    +  x = 0;\n     #else\n    -  \n    +  x = 0;\n     #endif\n     }\n"))
  (of.res Ok) (oneline.res Ok) (opt.res Ok) (optional_qualifier.res Ok)
- (optional_storage.res Ok) (orexp.res Ok)
- (overshoot.res
-  (Pb
-   "INCORRECT:diff token: b VS g\nFile <COCCIOUTPUTFILE>, line 4, column 2,  charpos = 38\n    around = 'b', whole content =   b();\nFile \"tests/overshoot.res\", line 3, column 14,  charpos = 35\n    around = 'g', whole content =   g();g();g();g();\n\n    diff (result(<) vs expected_result(>)) = \n    @@ -1,6 +1,6 @@\n     int main () {\n       a();\n    -  g();g();g();\n    +  g();g();g();g();\n       b();\n       q();\n     }\n"))
- (param.res Ok) (param_end.res Ok) (param_ver1.res Ok)
- (parameters_dots.res Ok) (partial.res Ok)
+ (optional_storage.res Ok) (orexp.res Ok) (overshoot.res Ok) (param.res Ok)
+ (param_end.res Ok) (param_ver1.res Ok) (parameters_dots.res Ok)
+ (partial.res Ok)
  (pb_distribute_type.res
   (Pb
    "INCORRECT:PB parsing only in generated-file\n    diff (result(<) vs expected_result(>)) = \n    @@ -5,11 +5,11 @@\n     \n     \n     int foo() {\n    -  int * *x;\n    +  int **x;\n       return 0;\n     }\n     \n     int foo() {\n    -  int[45] *x;\n    +  int (*x)[45];\n       return 0;\n     }\n"))

@@ -1050,6 +1050,7 @@ let merge_env new_e old_e =
 
 let apply_python_rule r cache newes e rules_that_have_matched
     rules_that_have_ever_matched =
+  Common.profile_code "python" (fun () -> 
   show_or_not_scr_rule_name r.scr_ruleid;
   if not(interpret_dependencies rules_that_have_matched
 	   !rules_that_have_ever_matched r.scr_dependencies)
@@ -1099,7 +1100,7 @@ let apply_python_rule r cache newes e rules_that_have_matched
 	    pr2 (Printf.sprintf "script not applied: %s not bound"
 		   (String.concat ", " (List.map m2c unbound))));
 	  (cache, merge_env [(e, rules_that_have_matched)] newes))
-    end
+    end)
 
 let rec apply_cocci_rule r rules_that_have_ever_matched es
     (ccs:file_info list ref) =
@@ -1575,7 +1576,8 @@ let full_engine2 (cocci_infos,toks) cfiles =
     end
 
 let full_engine a b = 
-  Common.profile_code "full_engine" (fun () -> full_engine2 a b)
+  Common.profile_code "full_engine"
+    (fun () -> let res = full_engine2 a b in (*Gc.print_stat stderr; *)res)
 
 let post_engine2 (cocci_infos,_) =
   let _ =

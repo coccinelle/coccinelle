@@ -569,13 +569,12 @@ let astfvs metavars bound =
     (List.rev matched, List.rev freshvars) in
 
   (* cases for the elements of anything *)
-  let astfvrule_elem recursor k re =
-    let minus_free = nub (collect_all_refs.V.combiner_rule_elem re) in
+  let simple_setup getter k re =
+    let minus_free = nub (getter collect_all_refs re) in
     let minus_nc_free =
-      nub (collect_non_constraint_refs.V.combiner_rule_elem re) in
+      nub (getter collect_non_constraint_refs re) in
     let plus_free =
-      collect_fresh_seed metavars
-	(collect_in_plus_term.V.combiner_rule_elem re) in
+      collect_fresh_seed metavars (getter collect_in_plus_term re) in
     let free = Common.union_set minus_free plus_free in
     let nc_free = Common.union_set minus_nc_free plus_free in
     let unbound =
@@ -591,6 +590,9 @@ let astfvs metavars bound =
       Ast.fresh_vars = fresh;
       Ast.inherited = inherited;
       Ast.saved_witness = []} in
+
+  let astfvrule_elem recursor k re =
+    simple_setup (function x -> x.V.combiner_rule_elem) k re in
 
   let astfvstatement recursor k s =
     let minus_free = nub (collect_all_refs.V.combiner_statement s) in
@@ -644,27 +646,10 @@ let astfvs metavars bound =
       Ast.saved_witness = []} in
 
   let astfvstatement_dots recursor k sd =
-    let minus_free = nub (collect_all_refs.V.combiner_statement_dots sd) in
-    let minus_nc_free =
-      nub (collect_non_constraint_refs.V.combiner_statement_dots sd) in
-    let plus_free =
-      collect_fresh_seed metavars
-	(collect_in_plus_term.V.combiner_statement_dots sd) in
-    let free = Common.union_set minus_free plus_free in
-    let nc_free = Common.union_set minus_nc_free plus_free in
-    let unbound =
-      List.filter (function x -> not(List.mem x bound)) free in
-    let inherited =
-      List.filter (function x -> List.mem x bound) nc_free in
-    let munbound =
-      List.filter (function x -> not(List.mem x bound)) minus_free in
-    let (matched,fresh) = collect_fresh unbound in
-    {(k sd) with
-      Ast.free_vars = matched;
-      Ast.minus_free_vars = munbound;
-      Ast.fresh_vars = fresh;
-      Ast.inherited = inherited;
-      Ast.saved_witness = []} in
+    simple_setup (function x -> x.V.combiner_statement_dots) k sd in
+
+  let astfvcase_line recursor k cl =
+    simple_setup (function x -> x.V.combiner_case_line) k cl in
 
   let astfvtoplevel recursor k tl =
     let saved = collect_saved.V.combiner_top_level tl in
@@ -677,7 +662,7 @@ let astfvs metavars bound =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing astfvstatement_dots donothing
     donothing donothing donothing donothing donothing donothing donothing
-    astfvrule_elem astfvstatement donothing astfvtoplevel donothing
+    astfvrule_elem astfvstatement astfvcase_line astfvtoplevel donothing
 
 (*
 let collect_astfvs rules =

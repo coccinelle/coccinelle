@@ -28,6 +28,28 @@ module StringMap = Map.Make (String)
 
 exception Pycocciexception
 
+(* ------------------------------------------------------------------- *)
+(* The following definitions are from
+http://patches.ubuntu.com/by-release/extracted/debian/c/coccinelle/0.1.5dbs-2/01-system-pycaml
+as well as _pycocci_setargs *)
+
+let _pycocci_none () =
+  let builtins = pyeval_getbuiltins () in
+  pyobject_getitem (builtins, pystring_fromstring "None")
+
+let _pycocci_true () =
+  let builtins = pyeval_getbuiltins () in
+  pyobject_getitem (builtins, pystring_fromstring "True")
+
+let _pycocci_false () =
+  let builtins = pyeval_getbuiltins () in
+  pyobject_getitem (builtins, pystring_fromstring "False")
+
+let _pycocci_tuple6 (a,b,c,d,e,f) =
+  pytuple_fromarray ([|a; b; c; d; e; f|])
+
+(* ------------------------------------------------------------------- *)
+
 let check_return_value v =
   if v =*= (pynull ()) then 
 	  (pyerr_print ();
@@ -41,11 +63,11 @@ let check_int_return_value v =
 
 let initialised = ref false
 
-let coccinelle_module = ref (pynone ())
+let coccinelle_module = ref (_pycocci_none ())
 let cocci_file_name = ref ""
 
 (* dealing with python modules loaded *)
-let module_map = ref (StringMap.add "__main__" (pynone ()) StringMap.empty)
+let module_map = ref (StringMap.add "__main__" (_pycocci_none ()) StringMap.empty)
 
 let get_module module_name =
   StringMap.find module_name (!module_map)
@@ -64,32 +86,6 @@ let load_module module_name =
     m)
   else get_module module_name
 (* end python module handling part *)
-
-(* initialisation routines *)
-let pycocci_init () =
-  (* initialize *)
-  if not !initialised then (
-  initialised := true;
-  Unix.putenv "PYTHONPATH"
-      (Printf.sprintf "%s/coccinelle" (Unix.getenv "HOME"));
-  let _ = if not (py_isinitialized () != 0) then 
-  	(if !Flag.show_misc then Common.pr2 "Initializing python\n%!"; 
-	py_initialize()) in
-
-  (* set argv *)
-  let argv0 = Printf.sprintf "%s%sspatch" (Sys.getcwd ()) (match Sys.os_type with "Win32" -> "\\" | _ -> "/") in
-  let _ = pycaml_setargs argv0 in
-
-  coccinelle_module := (pymodule_new "coccinelle");
-  module_map := StringMap.add "coccinelle" !coccinelle_module !module_map;
-  let _ = load_module "coccilib.elems" in
-  let _ = load_module "coccilib.output" in
-  ()) else
-
-  ()
-
-(*let _ = pycocci_init ()*)
-(* end initialisation routines *)
 
 (* python interaction *)
 let split_fqn fqn =
@@ -119,7 +115,7 @@ let include_match v =
   let truth = pyobject_istrue (pytuple_getitem (v, 1)) in
   check_int_return_value truth;
   inc_match := truth != 0;
-  pynone ()
+  _pycocci_none ()
 
 let build_method (mname, camlfunc, args) pymodule classx classdict =
   let cmx = pymethod_new(pywrap_closure camlfunc, args, classx) in
@@ -130,52 +126,104 @@ let build_method (mname, camlfunc, args) pymodule classx classdict =
 let build_class cname parent methods pymodule =
   let cd = pydict_new() in
   check_return_value cd;
-  let cx = pyclass_new(pytuple_fromsingle (pycocci_get_class_type parent), cd, pystring_fromstring cname) in
+  let cx = pyclass_new(pytuple_fromsingle (pycocci_get_class_type parent), cd,
+		       pystring_fromstring cname) in
   check_return_value cx;
   List.iter (function meth -> build_method meth pymodule cx cd) methods;
   let v = pydict_setitemstring(pymodule_getdict pymodule, cname, cx) in
   check_int_return_value v;
   (cd, cx)
 
-let has_environment_binding env name =
+let the_environment = ref []
+
+let has_environment_binding name =
   let a = pytuple_toarray name in
   let (rule, name) = (Array.get a 1, Array.get a 2) in
   let orule = pystring_asstring rule in
   let oname = pystring_asstring name in
-  let e = List.exists (function (x,y) -> orule =$= x && oname =$= y) env in
-  if e then pytrue () else pyfalse ()
+  let e = List.exists (function (x,y) -> orule =$= x && oname =$= y)
+      !the_environment in
+  if e then _pycocci_true () else _pycocci_false ()
 
-let pyoutputinstance = ref (pynone ())
-let pyoutputdict = ref (pynone ())
+let pyoutputinstance = ref (_pycocci_none ())
+let pyoutputdict = ref (_pycocci_none ())
 
 let get_cocci_file args =
-	pystring_fromstring (!cocci_file_name)
+  pystring_fromstring (!cocci_file_name)
+
+(* initialisation routines *)
+let _pycocci_setargs argv0 =
+  let argv =
+    pysequence_list (pytuple_fromsingle (pystring_fromstring argv0)) in
+  let sys_mod = load_module "sys" in
+  pyobject_setattrstring (sys_mod, "argv", argv)
+
+let pycocci_init () =
+  (* initialize *)
+  if not !initialised then (
+  initialised := true;
+  Unix.putenv "PYTHONPATH"
+      (Printf.sprintf "%s/coccinelle" (Unix.getenv "HOME"));
+  let _ = if not (py_isinitialized () != 0) then 
+  	(if !Flag.show_misc then Common.pr2 "Initializing python\n%!"; 
+	py_initialize()) in
+
+  (* set argv *)
+  let argv0 = Printf.sprintf "%s%sspatch" (Sys.getcwd ()) (match Sys.os_type with "Win32" -> "\\" | _ -> "/") in
+  let _ = _pycocci_setargs argv0 in
+
+  coccinelle_module := (pymodule_new "coccinelle");
+  module_map := StringMap.add "coccinelle" !coccinelle_module !module_map;
+  let _ = load_module "coccilib.elems" in
+  let _ = load_module "coccilib.output" in
+
+  let module_dictionary = pyimport_getmoduledict() in
+  coccinelle_module := pymodule_new "coccinelle";
+  let mx = !coccinelle_module in
+  let (cd, cx) = build_class "Cocci" (!Flag.pyoutput) 
+      [("include_match", include_match, (pynull()));
+	("has_env_binding", has_environment_binding, (pynull()))] mx in
+  pyoutputinstance := cx;
+  pyoutputdict := cd;
+  let v1 = pydict_setitemstring(module_dictionary, "coccinelle", mx) in
+  check_int_return_value v1;
+  let mypystring = pystring_fromstring !cocci_file_name in
+  let v2 = pydict_setitemstring(cd, "cocci_file", mypystring) in
+  check_int_return_value v2;
+  ()) else
+  ()
+
+(*let _ = pycocci_init ()*)
+(* end initialisation routines *)
+
+let added_variables = ref []
 
 let build_classes env =
-	let _ = pycocci_init () in
-	let module_dictionary = pyimport_getmoduledict() in
-        coccinelle_module := pymodule_new "coccinelle";
-	let mx = !coccinelle_module in
-	inc_match := true;
-        let (cd, cx) = build_class "Cocci" (!Flag.pyoutput) 
-		[("include_match", include_match, (pynull()));
-		 ("has_env_binding", has_environment_binding env, (pynull()))] mx in
-	pyoutputinstance := cx;
-	pyoutputdict := cd;
-	let v1 = pydict_setitemstring(module_dictionary, "coccinelle", mx) in
-	check_int_return_value v1;
-        let mypystring = pystring_fromstring !cocci_file_name in
-        let v2 = pydict_setitemstring(cd, "cocci_file", mypystring) in
-	check_int_return_value v2;
-        ()
+  let _ = pycocci_init () in
+  inc_match := true;
+  the_environment := env;
+  let mx = !coccinelle_module in
+  let dict = pymodule_getdict mx in
+  List.iter
+    (function
+	"include_match" | "has_env_binding" -> ()
+      | name ->
+	  let v = pydict_delitemstring(dict,name) in
+	  check_int_return_value v)
+    !added_variables;
+  added_variables := [];
+  ()
 
 let build_variable name value =
   let mx = !coccinelle_module in
-  check_int_return_value (pydict_setitemstring(pymodule_getdict mx, name, value))
+  added_variables := name :: !added_variables;
+  check_int_return_value
+    (pydict_setitemstring(pymodule_getdict mx, name, value))
 
 let contains_binding e (_,(r,m)) =
   try
-    let _ = List.find (function ((re, rm), _) -> r =$= re && m =$= rm) e in true
+    let _ = List.find (function ((re, rm), _) -> r =$= re && m =$= rm) e in
+    true
   with Not_found -> false
 
 let construct_variables mv e =
@@ -188,12 +236,14 @@ let construct_variables mv e =
 
   let instantiate_Expression(x) =
     let str = pystring_fromstring (Pycocci_aux.exprrep x) in
-    pycocci_instantiate_class "coccilib.elems.Expression" (pytuple_fromsingle (str))
+    pycocci_instantiate_class "coccilib.elems.Expression"
+      (pytuple_fromsingle (str))
   in
 
   let instantiate_Identifier(x) =
     let str = pystring_fromstring x in
-    pycocci_instantiate_class "coccilib.elems.Identifier" (pytuple_fromsingle (str))
+    pycocci_instantiate_class "coccilib.elems.Identifier"
+      (pytuple_fromsingle (str))
   in
 
   List.iter (function (py,(r,m)) ->
@@ -211,7 +261,8 @@ let construct_variables mv e =
        let locs =
 	 List.map
 	   (function (fname,current_element,(line,col),(line_end,col_end)) ->
-		pycocci_instantiate_class "coccilib.elems.Location" (pytuple6
+		pycocci_instantiate_class "coccilib.elems.Location"
+	       (_pycocci_tuple6
 		(pystring_fromstring fname,pystring_fromstring current_element,
 		pystring_fromstring (Printf.sprintf "%d" line),
 		pystring_fromstring (Printf.sprintf "%d" col),

@@ -293,7 +293,7 @@ let rec expression e =
   | Ast0.MetaExprList(name,_,_) as ue ->
       let ln = promote_mcode name in mkres e ue ln ln
   | Ast0.EComma(cm) ->
-      let cm = bad_mcode cm in
+      (*let cm = bad_mcode cm in*) (* why was this bad??? *)
       let ln = promote_mcode cm in
       mkres e (Ast0.EComma(cm)) ln ln
   | Ast0.DisjExpr(starter,exps,mids,ender) ->
@@ -540,7 +540,7 @@ and parameterTypeDef p =
   | Ast0.MetaParamList(name,_,_) as up ->
       let ln = promote_mcode name in mkres p up ln ln
   | Ast0.PComma(cm) ->
-      let cm = bad_mcode cm in
+      (*let cm = bad_mcode cm in*) (* why was this bad??? *)
       let ln = promote_mcode cm in
       mkres p (Ast0.PComma(cm)) ln ln
   | Ast0.Pdots(dots) ->
@@ -628,12 +628,20 @@ let rec statement s =
 	let right = promote_to_statement body aft in
 	mkres s (Ast0.Iterator(nm,lp,args,rp,body,(Ast0.get_info right,aft)))
 	  nm right
-    | Ast0.Switch(switch,lp,exp,rp,lb,cases,rb) ->
+    | Ast0.Switch(switch,lp,exp,rp,lb,decls,cases,rb) ->
 	let exp = expression exp in
+	let decls =
+	  dots is_stm_dots (Some(promote_mcode lb))
+	    statement decls in
 	let cases =
-	  dots (function _ -> false) (Some(promote_mcode lb)) case_line cases in
+	  dots (function _ -> false)
+	    (if Ast0.undots decls = []
+	    then (Some(promote_mcode lb))
+	    else None (* not sure this is right, but not sure the case can
+			 arise either *))
+	    case_line cases in
 	mkres s
-	  (Ast0.Switch(switch,lp,exp,rp,lb,cases,rb))
+	  (Ast0.Switch(switch,lp,exp,rp,lb,decls,cases,rb))
 	  (promote_mcode switch) (promote_mcode rb)
     | Ast0.Break(br,sem) as us ->
 	mkres s us (promote_mcode br) (promote_mcode sem)
@@ -768,6 +776,14 @@ and case_line c =
       let exp = expression exp in
       let code = dots is_stm_dots (Some(promote_mcode colon)) statement code in
       mkres c (Ast0.Case(case,exp,colon,code)) (promote_mcode case) code
+  | Ast0.DisjCase(starter,case_lines,mids,ender) ->
+      let starter = bad_mcode starter in
+      let case_lines = List.map case_line case_lines in
+      let mids = List.map bad_mcode mids in
+      let ender = bad_mcode ender in
+      mkmultires c (Ast0.DisjCase(starter,case_lines,mids,ender))
+	(promote_mcode starter) (promote_mcode ender)
+	(get_all_start_info case_lines) (get_all_end_info case_lines)
   | Ast0.OptCase(case) ->
       let case = case_line case in mkres c (Ast0.OptCase(case)) case case
 

@@ -115,6 +115,12 @@ let get_free checker t =
 	detect_unitary_frees(List.map r.VT0.combiner_rec_declaration decls)
     | _ -> k d in
 
+  let case_line r k c =
+    match Ast0.unwrap c with
+      Ast0.DisjCase(starter,case_lines,mids,ender) ->
+	detect_unitary_frees(List.map r.VT0.combiner_rec_case_line case_lines)
+    | _ -> k c in
+
   let statement r k s =
     match Ast0.unwrap s with
       Ast0.MetaStmt(name,_) | Ast0.MetaStmtList(name,_) -> checker name
@@ -146,7 +152,8 @@ let get_free checker t =
 	VT0.combiner_tyfn = typeC;
 	VT0.combiner_paramfn = parameter;
 	VT0.combiner_declfn = declaration;
-	VT0.combiner_stmtfn = statement} in
+	VT0.combiner_stmtfn = statement;
+	VT0.combiner_casefn = case_line} in
 
   collect_unitary_nonunitary
     (List.concat (List.map res.VT0.combiner_rec_top_level t))

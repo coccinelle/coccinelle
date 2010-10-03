@@ -1290,7 +1290,7 @@ let satAW dir ((grp,_,states) as m) s1 s2 reqst =
 	 out of the loop. s1 is like a guard. To see the problem, consider
 	 an example where both s1 and s2 match some code after the loop.
 	 we only want the witness from s2. *)
-      setgfix f (triples_union (drop_wits s1) s2)
+      setgfix f (triples_union (nub(drop_wits s1)) s2)
 ;;
 
 let satAF dir m s reqst = 

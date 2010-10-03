@@ -278,7 +278,7 @@ let orify_rule_elem_param = generic_orify_rule_elem disjparam
 let orify_rule_elem_decl = generic_orify_rule_elem disjdecl
 let orify_rule_elem_ini = generic_orify_rule_elem disjini
 
-let disj_rule_elem r k re =
+let rec disj_rule_elem r k re =
   match Ast.unwrap re with
     Ast.FunHeader(bef,allminus,fninfo,name,lp,params,rp) ->
       generic_orify_rule_elem (disjdots disjparam) re params
@@ -338,7 +338,9 @@ let disj_rule_elem r k re =
   | Ast.Case(case,exp,colon) ->
       orify_rule_elem re exp
 	(function exp -> Ast.rewrap re (Ast.Case(case,exp,colon)))
-  | Ast.DisjRuleElem(_) -> failwith "not possible"
+  | Ast.DisjRuleElem(l) ->
+      (* only case lines *)
+      Ast.rewrap re(Ast.DisjRuleElem(List.map (disj_rule_elem r k) l))
 
 let disj_all =
   let mcode x = x in
