@@ -330,6 +330,8 @@ let rec expression e =
       handle_metavar name  (function
         | Ast_c.MetaExprListVal args ->
             pretty_print_c.Pretty_print_c.arg_list args
+	| Ast_c.MetaParamListVal _ ->
+	    failwith "have meta param list matching meta exp list\n";
         | _ -> raise Impossible
       )
 
@@ -598,7 +600,7 @@ and initialiser nlcomma i =
             pretty_print_c.Pretty_print_c.init ini
         | _ -> raise Impossible)
   | Ast.InitExpr(exp) -> expression exp
-  | Ast.InitList(lb,initlist,rb,[]) ->
+  | Ast.InitList(_,lb,initlist,rb,[]) ->
       mcode print_string lb; start_block();
       (* awkward, because the comma is separate from the initialiser *)
       let rec loop = function
@@ -607,7 +609,7 @@ and initialiser nlcomma i =
 	| x::xs -> initialiser nlcomma x; loop xs in
       loop initlist;
       end_block(); mcode print_string rb
-  | Ast.InitList(lb,initlist,rb,_) -> failwith "unexpected whencode in plus"
+  | Ast.InitList(_,lb,initlist,rb,_) -> failwith "unexpected whencode in plus"
   | Ast.InitGccExt(designators,eq,ini) ->
       List.iter designator designators; pr_space();
       mcode print_string eq; pr_space(); initialiser nlcomma ini

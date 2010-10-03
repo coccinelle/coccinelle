@@ -1,27 +1,7 @@
 (*
- * Copyright 2005-2010, Ecole des Mines de Nantes, University of Copenhagen
- * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
- * This file is part of Coccinelle.
- *
- * Coccinelle is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, according to version 2 of the License.
- *
- * Coccinelle is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
- *
- * The authors reserve the right to distribute this or future versions of
- * Coccinelle under other licenses.
- *)
-
-
-(*
- * Copyright 2005-2010, Ecole des Mines de Nantes, University of Copenhagen
+ * Copyright 2010, INRIA, University of Copenhagen
+ * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
+ * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
  * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
  * This file is part of Coccinelle.
  *
@@ -43,6 +23,7 @@
 
 
 open Common
+open Sexplib
 
 (*****************************************************************************)
 (* Test framework *)
@@ -480,10 +461,11 @@ let test_parse_cocci file =
     Parse_cocci.process file (Some !Config.std_iso) false in
   xs +> List.iter Pretty_print_cocci.unparse;
   Printf.printf "grep tokens\n";
-  List.iter (function x -> Printf.printf "%s\n" (String.concat " " x))
-    grep_tokens;
+  (match grep_tokens with
+    None -> pr "No query"
+  | Some x -> pr (String.concat " || " x));
   match !Flag.scanner with
-    Flag.NoScanner -> ()
+    Flag.NoScanner | Flag.Grep -> ()
   | Flag.Glimpse | Flag.Google _ ->
       (match query with
 	None -> pr "No query"

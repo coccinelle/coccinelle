@@ -8,17 +8,25 @@
 TARGET=commons
 
 # note: if you add a file (a .mli or .ml), dont forget to redo a 'make depend'
-MYSRC=common.ml common_extra.ml \
-      interfaces.ml objet.ml \
-      ocollection.ml \
-      seti.ml \
-      oset.ml oassoc.ml osequence.ml ograph.ml \
-      ocollection/oseti.ml ocollection/oseth.ml ocollection/osetb.ml ocollection/osetpt.ml \
-      ocollection/oassocb.ml ocollection/oassoch.ml ocollection/oassoc_buffer.ml ocollection/oassoc_cache.ml ocollection/oassocid.ml \
-      oarray.ml \
-      ocollection/ograph2way.ml ograph_simple.ml ograph_extended.ml \
-      ofullcommon.ml \
-      glimpse.ml parser_combinators.ml
+MYSRC=	common.ml common_extra.ml                \
+	interfaces.ml objet.ml                   \
+	ocollection.ml                           \
+	seti.ml                                  \
+	oset.ml oassoc.ml osequence.ml ograph.ml \
+	ocollection/oseti.ml                     \
+	ocollection/oseth.ml                     \
+	ocollection/osetb.ml                     \
+	ocollection/osetpt.ml                    \
+	ocollection/oassocb.ml			 \
+	ocollection/oassoch.ml			 \
+	ocollection/oassoc_buffer.ml		 \
+	ocollection/oassoc_cache.ml		 \
+	ocollection/oassocid.ml			 \
+	oarray.ml				 \
+	ocollection/ograph2way.ml		 \
+	ograph_simple.ml ograph_extended.ml	 \
+	ofullcommon.ml                           \
+	glimpse.ml parser_combinators.ml
 
 # src from other authors, got from the web or caml hump
 SRC=ocamlextra/dumper.ml
@@ -62,17 +70,25 @@ PYSYSLIBS=python.cma
 
 #ocamlmpi
 MYMPISRC=distribution.ml
-MPIINCLUDES=-I ../ocamlmpi -I ../../ocamlmpi -I +ocamlmpi 
+MPIINCLUDES=-I ../ocamlmpi -I ../../ocamlmpi -I +ocamlmpi
 MPISYSLIBS=mpi.cma
 
-#pcre 
+#pcre
 #REGEXPINCLUDES=-I +pcre
 MYREGEXPSRC=regexp.ml
 REGEXPINCLUDES=-I ../ocamlpcre/lib  -I ../../ocamlpcre/lib
 
-#sexplib 
+#sexplib
 MYSEXPSRC=sexp_common.ml
-SEXPINCLUDES=-I ../ocamlsexp -I ../ocamltarzan/lib-sexp -I ../../ocamltarzan/lib-sexp
+ifeq ("$(SEXPDIR)","ocamlsexp")
+SEXPDIRUSED=../$(SEXPDIR)
+else
+SEXPDIRUSED=$(SEXPDIR)
+endif # Use local ocamlsexp
+SEXPINCLUDES=-I $(SEXPDIRUSED)        \
+	-I ../ocamltarzan/lib-sexp    \
+	-I ../../ocamltarzan/lib-sexp
+
 #binprot
 MYBINSRC=bin_common.ml
 BININCLUDES=-I ../ocamltarzan/lib-binprot -I ../../ocamltarzan/lib-binprot
@@ -101,9 +117,9 @@ INCLUDES=$(INCLUDEDIRS:%=-I %) $(INCLUDESEXTRA)
 OPTFLAGS=
 #-thread
 
-# The OPTBIN variable is here to allow to use ocamlc.opt instead of 
+# The OPTBIN variable is here to allow to use ocamlc.opt instead of
 # ocaml, when it is available, which speeds up compilation. So
-# if you want the fast version of the ocaml chain tools, set this var 
+# if you want the fast version of the ocaml chain tools, set this var
 # or setenv it to ".opt" in your startup script.
 OPTBIN ?= #.opt
 

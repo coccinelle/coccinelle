@@ -1,27 +1,7 @@
 (*
- * Copyright 2005-2010, Ecole des Mines de Nantes, University of Copenhagen
- * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
- * This file is part of Coccinelle.
- *
- * Coccinelle is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, according to version 2 of the License.
- *
- * Coccinelle is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
- *
- * The authors reserve the right to distribute this or future versions of
- * Coccinelle under other licenses.
- *)
-
-
-(*
- * Copyright 2005-2010, Ecole des Mines de Nantes, University of Copenhagen
+ * Copyright 2010, INRIA, University of Copenhagen
+ * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
+ * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
  * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
  * This file is part of Coccinelle.
  *
@@ -100,11 +80,10 @@ let (need_unordered_initialisers : B.initialiser B.wrap2 list -> bool) =
      | B.InitDesignators _
      | B.InitFieldOld _
      | B.InitIndexOld _
-         -> true
+       -> true
      | B.InitExpr _
      | B.InitList _
-         -> false
-   )
+       -> false)
 
 (* For the #include <linux/...> in the .cocci, need to find where is
  * the '+' attached to this element, to later find the first concrete
@@ -1936,7 +1915,6 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
              )
 
            | A.StructUnionName(sua, sa) ->
-
              fullType tya2 structnameb >>= (fun tya2 structnameb ->
 
                let tya1 = A.StructUnionDef(tya2,lba,declsa,rba)+> A.rewrap tya1
@@ -2199,21 +2177,22 @@ and (initialiser: (A.initialiser, Ast_c.initialiser) matcher) =  fun ia ib ->
         | _ -> fail
         )
 
-    | (A.InitList (ia1, ias, ia2, []), (B.InitList ibs, ii)) ->
+    | (A.InitList (allminus, ia1, ias, ia2, []), (B.InitList ibs, ii)) ->
         (match ii with
         | ib1::ib2::iicommaopt ->
             tokenf ia1 ib1 >>= (fun ia1 ib1 ->
             tokenf ia2 ib2 >>= (fun ia2 ib2 ->
-            initialisers ias (ibs, iicommaopt) >>= (fun ias (ibs,iicommaopt) ->
+            initialisers allminus ias (ibs, iicommaopt) >>=
+	      (fun ias (ibs,iicommaopt) ->
               return (
-                (A.InitList (ia1, ias, ia2, [])) +> A.rewrap ia,
+                (A.InitList (allminus, ia1, ias, ia2, [])) +> A.rewrap ia,
                 (B.InitList ibs, ib1::ib2::iicommaopt)
               ))))
 
         | _ -> raise Impossible
         )
 
-    | (A.InitList (i1, ias, i2, whencode),(B.InitList ibs, _ii)) ->
+    | (A.InitList (allminus, i1, ias, i2, whencode),(B.InitList ibs, _ii)) ->
         failwith "TODO: not handling whencode in initialisers"
 
 
@@ -2310,13 +2289,13 @@ and designator da db =
       fail
 
 
-and initialisers = fun ias (ibs, iicomma) ->
+and initialisers = fun allminus ias (ibs, iicomma) ->
   let ias_unsplit = unsplit_icomma      ias in
   let ibs_split   = resplit_initialiser ibs iicomma in
 
   let f =
     if need_unordered_initialisers ibs
-    then initialisers_unordered2
+    then initialisers_unordered2 allminus
     else initialisers_ordered2
   in
   f ias_unsplit ibs_split >>=
@@ -2347,11 +2326,21 @@ and initialisers_ordered2 = fun ias ibs ->
   | _ -> fail
 
 
-
-and initialisers_unordered2 = fun ias ibs ->
+and initialisers_unordered2 = fun allminus ias ibs ->
 
   match ias, ibs with
-  | [], ys -> return ([], ys)
+  | [], ys ->
+      if allminus
+      then
+	let rec loop = function
+	    [] -> return ([],[])
+	  | (ib,comma)::ibs ->
+	      X.distrf_ini minusizer ib >>= (fun _ ib ->
+		tokenf minusizer comma >>= (fun _ comma ->
+		  loop ibs >>= (fun l ibs ->
+		    return(l,(ib,comma)::ibs)))) in
+	loop ibs
+      else return ([], ys)
   | (x,xcomma)::xs, ys ->
 
       let permut = Common.uncons_permut_lazy ys in
@@ -2371,7 +2360,7 @@ and initialisers_unordered2 = fun ias ibs ->
             )
             >>= (fun x e ->
               let rest = Lazy.force rest in
-              initialisers_unordered2 xs rest >>= (fun xs rest ->
+              initialisers_unordered2 allminus xs rest >>= (fun xs rest ->
                 return (
                   x::xs,
                   Common.insert_elem_pos (e, pos) rest
@@ -2927,12 +2916,17 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
 		 A.Type(None,ty) ->
 		   (match A.unwrap ty with
 		     A.StructUnionName(sua, None) ->
-		       tokenf sua iisub >>= (fun sua iisub ->
-			 let ty =
-			   A.Type(None,
-				  A.StructUnionName(sua, None) +> A.rewrap ty)
-			     +> A.rewrap s in
-			 return (ty,[iisub]))
+		       (match (term sua, sub) with
+			 (A.Struct,B.Struct)
+		       | (A.Union,B.Union) -> return ((),())
+		       | _ -> fail) >>=
+		       (fun _ _ ->
+			 tokenf sua iisub >>= (fun sua iisub ->
+			   let ty =
+			     A.Type(None,
+				    A.StructUnionName(sua, None) +> A.rewrap ty)
+			       +> A.rewrap s in
+			   return (ty,[iisub])))
 		   | _ -> fail)
 	       | A.DisjType(disjs) ->
 		   disjs +>
@@ -3072,14 +3066,62 @@ and storage_optional_allminus allminus stoa (stob, iistob) =
 	let rec loop acc = function
 	    [] -> fail
 	  | i1::iistob ->
-	      let try1 =
-		tokenf x i1 >>= (fun x i1 ->
-		  let rebuilt = (List.rev acc) @ i1 :: iistob in
-		  return (Some x,  ((stobis, inline), rebuilt))) in
-	      let try2 x = loop (i1::acc) iistob x in (* x for laziness *)
-	      try1 >||> try2 in
+	      let str = B.str_of_info i1 in
+	      (match str with
+		"static" | "extern" | "auto" | "register" -> 
+		  (* not very elegant, but tokenf doesn't know what token to
+		     match with *)
+		  tokenf x i1 >>= (fun x i1 ->
+		    let rebuilt = (List.rev acc) @ i1 :: iistob in
+		    return (Some x,  ((stobis, inline), rebuilt)))
+	      |	_ -> loop (i1::acc) iistob) in
 	loop [] iistob
       else fail
+  )
+
+and inline_optional_allminus allminus inla (stob, iistob) =
+  (* "iso-by-absence" for storage, and return type. *)
+  X.optional_storage_flag (fun optional_storage ->
+  match inla, stob with
+  | None, (stobis, inline) ->
+      let do_minus () =
+        if allminus
+        then
+          minusize_list iistob >>= (fun () iistob ->
+            return (None, (stob, iistob))
+          )
+        else return (None, (stob, iistob))
+      in
+
+      if inline
+      then
+	if optional_storage
+	then
+	  begin
+	    if !Flag.show_misc
+            then pr2_once "USING optional_storage builtin isomorphism";
+            do_minus()
+	  end
+	else fail (* inline not in SP and present in C code *)
+      else do_minus()
+
+  | Some x, ((stobis, inline)) ->
+      if inline
+      then
+	let rec loop acc = function
+	    [] -> fail
+	  | i1::iistob ->
+	      let str = B.str_of_info i1 in
+	      (match str with
+		"inline" -> 
+		  (* not very elegant, but tokenf doesn't know what token to
+		     match with *)
+		  tokenf x i1 >>= (fun x i1 ->
+		    let rebuilt = (List.rev acc) @ i1 :: iistob in
+		    return (Some x,  ((stobis, inline), rebuilt)))
+	      |	_ -> loop (i1::acc) iistob) in
+	loop [] iistob
+      else fail (* SP has inline, but the C code does not *)
   )
 
 and fullType_optional_allminus allminus tya retb =
@@ -3624,8 +3666,9 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
 	match List.filter (function A.FType(s) -> true | _ -> false) fninfoa
 	with [A.FType(t)] -> Some t | _ -> None in
 
-      (match List.filter (function A.FInline(i) -> true | _ -> false) fninfoa
-      with [A.FInline(i)] -> failwith "not checking inline" | _ -> ());
+      let inla =
+	match List.filter (function A.FInline(i) -> true | _ -> false) fninfoa
+	with [A.FInline(i)] -> Some i | _ -> None in
 
       (match List.filter (function A.FAttr(a) -> true | _ -> false) fninfoa
       with [A.FAttr(a)] -> failwith "not checking attributes" | _ -> ());
@@ -3645,6 +3688,8 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
             (A.undots paramsa) paramsb >>=
             (fun paramsaundots paramsb ->
               let paramsa = redots paramsa paramsaundots in
+          inline_optional_allminus allminus
+            inla (stob, iistob) >>= (fun inla (stob, iistob) ->
           storage_optional_allminus allminus
             stoa (stob, iistob) >>= (fun stoa (stob, iistob) ->
               (
@@ -3662,6 +3707,7 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
 
              let fninfoa =
                (match stoa with Some st -> [A.FStorage st] | None -> []) ++
+               (match inla with Some i -> [A.FInline i] | None -> []) ++
                (match tya  with Some t -> [A.FType t] | None -> [])
 
              in
@@ -3678,7 +3724,7 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
                            },
                            ioparenb::icparenb::iifakestart::iistob)
                 )
-              ))))))))
+              )))))))))
       | _ -> raise Impossible
       )
 

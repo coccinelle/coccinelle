@@ -1,27 +1,7 @@
 (*
- * Copyright 2005-2010, Ecole des Mines de Nantes, University of Copenhagen
- * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
- * This file is part of Coccinelle.
- *
- * Coccinelle is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, according to version 2 of the License.
- *
- * Coccinelle is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
- *
- * The authors reserve the right to distribute this or future versions of
- * Coccinelle under other licenses.
- *)
-
-
-(*
- * Copyright 2005-2010, Ecole des Mines de Nantes, University of Copenhagen
+ * Copyright 2010, INRIA, University of Copenhagen
+ * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
+ * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
  * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
  * This file is part of Coccinelle.
  *
@@ -337,8 +317,8 @@ and unify_initialiser i1 i2 =
     (Ast.MetaInit(_,_,_),_) | (_,Ast.MetaInit(_,_,_)) -> return true
   | (Ast.InitExpr(expa),Ast.InitExpr(expb)) ->
       unify_expression expa expb
-  | (Ast.InitList(_,initlista,_,whena),
-     Ast.InitList(_,initlistb,_,whenb)) ->
+  | (Ast.InitList(_,_,initlista,_,whena),
+     Ast.InitList(_,_,initlistb,_,whenb)) ->
       (* ignore whencode - returns true safely *)
       unify_lists unify_initialiser (function _ -> false) initlista initlistb
   | (Ast.InitGccExt(designatorsa,_,inia),

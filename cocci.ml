@@ -1,27 +1,7 @@
 (*
- * Copyright 2005-2010, Ecole des Mines de Nantes, University of Copenhagen
- * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
- * This file is part of Coccinelle.
- *
- * Coccinelle is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, according to version 2 of the License.
- *
- * Coccinelle is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
- *
- * The authors reserve the right to distribute this or future versions of
- * Coccinelle under other licenses.
- *)
-
-
-(*
- * Copyright 2005-2010, Ecole des Mines de Nantes, University of Copenhagen
+ * Copyright 2010, INRIA, University of Copenhagen
+ * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
+ * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
  * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
  * This file is part of Coccinelle.
  *
@@ -458,46 +438,44 @@ let worth_trying cfiles tokens =
   (* drop the following line for a list of list by rules.  since we don't
      allow multiple minirules, all the tokens within a rule should be in
      a single CFG entity *)
-  let tokens = Common.union_all tokens in
-  if not !Flag_cocci.windows && not (null tokens)
-  then
+  match (!Flag_cocci.windows,tokens) with
+    (true,_) | (_,None) -> true
+  | (_,Some tokens) ->
    (* could also modify the code in get_constants.ml *)
-    let tokens = tokens +> List.map (fun s ->
-      match () with
-      | _ when s =~ "^[A-Za-z_][A-Za-z_0-9]*$" ->
-          "\\b" ^ s ^ "\\b"
+      let tokens = tokens +> List.map (fun s ->
+	match () with
+	| _ when s =~ "^[A-Za-z_][A-Za-z_0-9]*$" ->
+            "\\b" ^ s ^ "\\b"
 
-      | _ when s =~ "^[A-Za-z_]" ->
-          "\\b" ^ s
+	| _ when s =~ "^[A-Za-z_]" ->
+            "\\b" ^ s
 
-      | _ when s =~ ".*[A-Za-z_]$" ->
-          s ^ "\\b"
-      | _ -> s
+	| _ when s =~ ".*[A-Za-z_]$" ->
+            s ^ "\\b"
+	| _ -> s
 
-    ) in
-    let com = sprintf "egrep -q '(%s)' %s" (join "|" tokens) (join " " cfiles)
-    in
-    (match Sys.command com with
-    | 0 (* success *) -> true
-    | _ (* failure *) ->
-	(if !Flag.show_misc
-	then Printf.printf "grep failed: %s\n" com);
-	false (* no match, so not worth trying *)
-    )
-  else true
+      ) in
+      let com = sprintf "egrep -q '(%s)' %s" (join "|" tokens) (join " " cfiles)
+      in
+      (match Sys.command com with
+      | 0 (* success *) -> true
+      | _ (* failure *) ->
+	  (if !Flag.show_misc
+	  then Printf.printf "grep failed: %s\n" com);
+	  false (* no match, so not worth trying *))
 
-let check_macro_in_sp_and_adjust tokens =
-  let tokens = Common.union_all tokens in
-  tokens +> List.iter (fun s ->
-    if Hashtbl.mem !Parse_c._defs s
-    then begin
-      if !Flag_cocci.verbose_cocci then begin
-        pr2 "warning: macro in semantic patch was in macro definitions";
-        pr2 ("disabling macro expansion for " ^ s);
-      end;
-      Hashtbl.remove !Parse_c._defs s
-    end
-  )
+let check_macro_in_sp_and_adjust = function
+    None -> ()
+  | Some tokens ->
+      tokens +> List.iter (fun s ->
+	if Hashtbl.mem !Parse_c._defs s
+	then begin
+	  if !Flag_cocci.verbose_cocci then begin
+            pr2 "warning: macro in semantic patch was in macro definitions";
+            pr2 ("disabling macro expansion for " ^ s);
+	  end;
+	  Hashtbl.remove !Parse_c._defs s
+	end)
 
 
 let contain_loop gopt =
@@ -806,7 +784,7 @@ type toplevel_cocci_info =
   | FinalScriptRuleCocciInfo of toplevel_cocci_info_script_rule
   | CocciRuleCocciInfo of toplevel_cocci_info_cocci_rule
 
-type cocci_info = toplevel_cocci_info list * string list list (* tokens *)
+type cocci_info = toplevel_cocci_info list * string list option (* tokens *)
 
 type kind_file = Header | Source
 type file_info = {
@@ -1699,8 +1677,11 @@ let full_engine2 (cocci_infos,toks) cfiles =
   if !Flag_cocci.worth_trying_opt && not (worth_trying cfiles toks)
   then
     begin
-      pr2 ("No matches found for " ^ (Common.join " " (Common.union_all toks))
-	   ^ "\nSkipping:" ^ (Common.join " " cfiles));
+      (match toks with
+	None -> ()
+      | Some toks ->
+	  pr2 ("No matches found for " ^ (Common.join " " toks)
+	       ^ "\nSkipping:" ^ (Common.join " " cfiles)));
       cfiles +> List.map (fun s -> s, None)
     end
   else

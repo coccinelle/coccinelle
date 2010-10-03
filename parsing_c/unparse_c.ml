@@ -118,7 +118,7 @@ let print_token2 = function
   | Unindent_cocci2 _ -> "Unindent"
 
 let simple_print_all_tokens1 l =
-  List.iter (function x -> Printf.printf "%s " (print_token1 x)) l;
+  List.iter (function x -> Printf.printf "|%s| " (print_token1 x)) l;
   Printf.printf "\n"
 
 let simple_print_all_tokens2 l =

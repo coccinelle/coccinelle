@@ -1,4 +1,6 @@
-# Copyright 2005-2010, Ecole des Mines de Nantes, University of Copenhagen
+# Copyright 2010, INRIA, University of Copenhagen
+# Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
+# Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
 # Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
 # This file is part of Coccinelle.
 #
@@ -30,16 +32,16 @@ TARGET=coccipython
 
 SOURCES= pycocci_aux.ml pycocci.ml
 
-INCLUDEDIRS = ../commons ../commons/ocamlextra ../globals ../pycaml \
+ifeq ("$(PYCAMLDIR)", "pycaml")
+INCLUDEDIRS = ../commons ../commons/ocamlextra ../globals ../$(PYCAMLDIR) \
 	      ../parsing_c ../parsing_cocci
+else
+INCLUDEDIRS = ../commons ../commons/ocamlextra ../globals $(PYCAMLDIR) \
+	      ../parsing_c ../parsing_cocci
+endif
 
-SYSLIBS = str.cma unix.cma
+SYSLIBS = str.cma unix.cma pycaml.cma
 LIBS=../commons/commons.cma ../globals/globals.cma
-
-#     ../ctl/ctl.cma \
-#     ../parsing_c/c_parser.cma ../parsing_cocci/cocci_parser.cma
-#pycaml/pycaml.cma
-
 
 ##############################################################################
 # Generic variables

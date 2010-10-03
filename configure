@@ -30,6 +30,9 @@ my $prefix="/usr/local";
 my $python=1;
 my $opt=".opt";
 my $tarzan=1;
+my $pydir="pycaml";
+my $menhirdir="menhirlib";
+my $sexpdir="ocamlsexp";
 
 local $_ = join ' ', @ARGV;
 
@@ -181,6 +184,30 @@ We need  3.XX",
 # Librairies
 #---------------------------------------------------------------------
 
+# pycaml. Binding between Python and OCaml
+my $syspydir=`ocamlfind query pycaml 2> /dev/null | xargs echo -n`;
+
+if($syspydir) {
+    $pydir=$syspydir;
+    pr2 "'pycaml' library present in $pydir";
+}
+
+# menhirLib. Runtime system for the parsers generated with menhir
+my $sysmenhirdir=`ocamlfind query menhirLib 2> /dev/null | xargs echo -n`;
+
+if($sysmenhirdir) {
+    $menhirdir=$sysmenhirdir;
+    pr2 "'menhirLib' library present in $menhirdir";
+}
+
+# sexplib. Runtime system for the parsers generated with menhir
+my $syssexpdir=`ocamlfind query sexplib 2> /dev/null | xargs echo -n`;
+
+if($syssexpdir) {
+    $sexpdir=$syssexpdir;
+    pr2 "'sexplib' library present in $sexpdir";
+}
+
 ######################################################################
 # Generate config files (platform/portability issues)
 ######################################################################
@@ -279,6 +306,10 @@ SHAREDIR=$src
 # Features
 FEATURE_PYTHON=$python
 FEATURE_TARZAN=$tarzan
+
+PYCAMLDIR=$pydir
+MENHIRDIR=$menhirdir
+SEXPDIR=$sexpdir
 
 # The OPTBIN variable is here to allow to use ocamlc.opt instead of
 # ocaml, when it is available, which speeds up compilation. So

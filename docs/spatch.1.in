@@ -61,10 +61,10 @@ the semantic patch file
 process all files in directory recursively
 .TP
 .B -iso_file            \fI<file>\fP
-(default=/usr/local/share/coccinelle/standard.iso)
+(default=SHAREDIR/standard.iso)
 .TP
 .B -macro_file          \fI<file>\fP
-(default=/usr/local/share/coccinelle/standard.h)
+(default=SHAREDIR/standard.h)
 .TP
 .B -debug        
 print some information to help debug the matching process
@@ -118,7 +118,7 @@ show summary of options.
 Apply the semantic patch foo.cocci to the C file foo.c.  The semantic patch
 is applied modulo a set of isomorphisms contained in standard.iso
 (standard.iso is by default located in
-/usr/local/share/coccinelle/standard.iso).  A patch showing the effect of
+SHAREDIR/standard.iso).  A patch showing the effect of
 the application, if any, will be generated on the standard output.
 
   ./spatch -sp_file foo.cocci foo.c -o /tmp/newfoo.c
@@ -129,25 +129,25 @@ The same as the above, except that a modified version of foo.c is stored in
 It is also possible to apply spatch to all of the C files in
 a directory: 
 
-  ./spatch -cocci_file foo.cocci -dir foodir . 
+  ./spatch -cocci_file foo.cocci -dir foodir
 
 If the semantic patch is not working as expected, the option -debug
 shows selection of information about the application of
 a semantic patch to a file or directory.
 
 .SH FILES
-.I /usr/local/share/coccinelle/standard.iso
+.I SHAREDIR/standard.iso
 .RS
 This file contains the default set of isomorphisms.
 .RE
-.I /usr/local/share/coccinelle/standard.h
+.I SHAREDIR/standard.h
 .RS
 This file contains the default set of macro hints.
 
 .SH ENVIRONMENT
 .IP COCCINELLE_HOME
 The path to coccinelle share directory. Defaut is 
-.I /usr/local/share/coccinelle
+.I SHAREDIR
 
 .SH REFERENCES
 Y. Padioleau, J.L. Lawall, R.R Hansen, G. Muller

@@ -1,4 +1,6 @@
-# Copyright 2005-2010, Ecole des Mines de Nantes, University of Copenhagen
+# Copyright 2010, INRIA, University of Copenhagen
+# Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
+# Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
 # Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
 # This file is part of Coccinelle.
 #
@@ -35,13 +37,16 @@ adjust_pragmas.ml insert_plus.ml function_prototypes.ml \
 unify_ast.ml semantic_cocci.ml data.ml free_vars.ml parse_aux.ml disjdistr.ml \
 $(LEXER_SOURCES:.mll=.ml) $(PARSER_SOURCES:.mly=.ml) \
 $(SCRIPT_LEXER_SOURCES:.mll=.ml) \
-get_constants.ml get_constants2.ml adjacency.ml parse_cocci.ml
+get_constants2.ml adjacency.ml parse_cocci.ml
 
 LIBS=../commons/commons.cma ../globals/globals.cma
 SYSLIBS = str.cma unix.cma
 
-#MENHIR_PATH=$(shell ocamlfind query menhirLib)
-MENHIR_PATH=../menhirlib
+ifeq ("$(MENHIRDIR)","menhirlib")
+MENHIR_PATH=../$(MENHIRDIR)
+else
+MENHIR_PATH=$(MENHIRDIR)
+endif
 
 INCLUDES = -I ../commons -I ../commons/ocamlextra -I ../globals \
 -I $(MENHIR_PATH)

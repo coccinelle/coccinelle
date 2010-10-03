@@ -1,4 +1,6 @@
-# Copyright 2005-2010, Ecole des Mines de Nantes, University of Copenhagen
+# Copyright 2010, INRIA, University of Copenhagen
+# Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
+# Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
 # Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
 # This file is part of Coccinelle.
 #
@@ -40,36 +42,64 @@ PRJNAME=coccinelle
 SRC=flag_cocci.ml cocci.ml testing.ml test.ml main.ml
 
 ifeq ($(FEATURE_PYTHON),1)
-PYCMA=pycaml/pycaml.cma
-PYDIR=pycaml
-PYLIB=dllpycaml_stubs.so
+PYCMA=pycaml.cma
 # the following is essential for Coccinelle to compile under gentoo (weird)
-OPTLIBFLAGS=-cclib dllpycaml_stubs.so
+#OPTLIBFLAGS=-cclib dllpycaml_stubs.so
 else
 PYCMA=
-PYDIR=
-PYLIB=
+endif
 OPTLIBFLAGS=
+
+ifeq ("$(SEXPDIR)","ocamlsexp")
+SEXPLIB=sexplib.cmo
+OPTSEXPLIB=sexplib.cmx
+else
+SEXPLIB=sexplib.cma
+OPTSEXPLIB=sexplib.cmxa
 endif
 
 SEXPSYSCMA=bigarray.cma nums.cma
 
-SYSLIBS=str.cma unix.cma $(SEXPSYSCMA)
+SYSLIBS=str.cma unix.cma $(SEXPSYSCMA) $(PYCMA)
 LIBS=commons/commons.cma \
-     ocamlsexp/sexplib1.cma commons/commons_sexp.cma \
+     commons/commons_sexp.cma \
      globals/globals.cma \
      ctl/ctl.cma \
      parsing_cocci/cocci_parser.cma parsing_c/parsing_c.cma \
      engine/cocciengine.cma popl09/popl.cma \
-     extra/extra.cma $(PYCMA) python/coccipython.cma
+     extra/extra.cma python/coccipython.cma
+
+# Should we use the local version of pycaml
+ifeq ("$(PYCAMLDIR)","pycaml")
+LOCALPYCAML=pycaml
+else
+LOCALPYCAML=
+endif
+
+# Should we use the local version of menhirLib
+ifeq ("$(MENHIRDIR)","menhirLib")
+LOCALMENHIR=menhirLib
+else
+LOCALMENHIR=
+endif
+
+# Should we use the local version of ocamlsexp
+ifeq ("$(SEXPDIR)","ocamlsexp")
+LOCALSEXP=ocamlsexp
+else
+LOCALSEXP=
+endif
 
 #used for clean: and depend: and a little for rec & rec.opt
-MAKESUBDIRS=commons ocamlsexp \
- globals menhirlib $(PYDIR) ctl parsing_cocci parsing_c \
+MAKESUBDIRS=$(LOCALPYCAML) $(LOCALSEXP) commons \
+ globals $(LOCALMENHIR) ctl parsing_cocci parsing_c \
  engine popl09 extra python
-INCLUDEDIRS=commons commons/ocamlextra ocamlsexp \
- globals menhirlib $(PYDIR) ctl \
+
+INCLUDEDIRSDEP=commons commons/ocamlextra $(LOCALSEXP) \
+ globals $(LOCALMENHIR) $(LOCALPYCAML) ctl \
  parsing_cocci parsing_c engine popl09 extra python
+
+INCLUDEDIRS=$(INCLUDEDIRSDEP) $(SEXPDIR) $(MENHIRDIR) $(PYCAMLDIR)
 
 ##############################################################################
 # Generic variables
@@ -95,15 +125,12 @@ OCAMLCFLAGS=
 # to also link with -g, but even in 3.11 the backtrace support seems buggy so
 # not worth it.
 OPTFLAGS=
-# the following is essential for Coccinelle to compile under gentoo
-# but is now defined above in this file
-#OPTLIBFLAGS=-cclib dllpycaml_stubs.so
 
 OCAMLC=ocamlc$(OPTBIN) $(OCAMLCFLAGS)  $(INCLUDES)
 OCAMLOPT=ocamlopt$(OPTBIN) $(OPTFLAGS) $(INCLUDES)
 OCAMLLEX=ocamllex #-ml # -ml for debugging lexer, but slightly slower
 OCAMLYACC=ocamlyacc -v
-OCAMLDEP=ocamldep $(INCLUDES)
+OCAMLDEP=ocamldep $(INCLUDEDIRSDEP:%=-I %)
 OCAMLMKTOP=ocamlmktop -g -custom $(INCLUDES)
 
 # can also be set via 'make static'
@@ -138,16 +165,18 @@ opt-compil: .depend
 top: $(EXEC).top
 
 subdirs:
-	$(MAKE) -C commons OCAMLCFLAGS="$(OCAMLCFLAGS)"
-	$(MAKE) -C ocamlsexp OCAMLCFLAGS="$(OCAMLCFLAGS)"
-	$(MAKE) -C commons sexp OCAMLCFLAGS="$(OCAMLCFLAGS)"
+#	$(MAKE) -C commons OCAMLCFLAGS="$(OCAMLCFLAGS)"
+#	if [ "$(LOCALSEXP)" != "" ]; then \
+#		$(MAKE) -C ocamlsexp OCAMLCFLAGS="$(OCAMLCFLAGS)" ; fi
 	+for D in $(MAKESUBDIRS); do $(MAKE) $$D || exit 1 ; done
+	$(MAKE) -C commons sexp OCAMLCFLAGS="$(OCAMLCFLAGS)"
 
 subdirs.opt:
-	$(MAKE) -C commons all.opt OCAMLCFLAGS="$(OCAMLCFLAGS)"
-	$(MAKE) -C ocamlsexp all.opt OCAMLCFLAGS="$(OCAMLCFLAGS)"
-	$(MAKE) -C commons sexp.opt OCAMLCFLAGS="$(OCAMLCFLAGS)"
+#	$(MAKE) -C commons all.opt OCAMLCFLAGS="$(OCAMLCFLAGS)"
+#	if [ "$(LOCALSEXP)" != "" ]; then \
+#		$(MAKE) -C ocamlsexp all.opt OCAMLCFLAGS="$(OCAMLCFLAGS)"; fi
 	+for D in $(MAKESUBDIRS); do $(MAKE) $$D.opt || exit 1 ; done
+	$(MAKE) -C commons sexp.opt OCAMLCFLAGS="$(OCAMLCFLAGS)"
 
 $(MAKESUBDIRS):
 	$(MAKE) -C $@ OCAMLCFLAGS="$(OCAMLCFLAGS)" all
@@ -179,17 +208,16 @@ $(OBJS):$(LIBS)
 $(OPTOBJS):$(LIBS:.cma=.cmxa)
 
 $(EXEC): $(LIBS) $(OBJS)
-	$(OCAMLC) $(BYTECODE_STATIC) -o $@ $(SYSLIBS)  $^
+	$(OCAMLC) $(BYTECODE_STATIC) -o $@ $(SYSLIBS) $(SEXPLIB) $^
 
 $(EXEC).opt: $(LIBS:.cma=.cmxa) $(OPTOBJS)
-	$(OCAMLOPT) $(STATIC) -o $@ $(SYSLIBS:.cma=.cmxa) $(OPTLIBFLAGS)  $^
+	$(OCAMLOPT) $(STATIC) -o $@ $(SYSLIBS:.cma=.cmxa) $(OPTSEXPLIB) $(OPTLIBFLAGS)  $^
 
 $(EXEC).top: $(LIBS) $(OBJS)
-	$(OCAMLMKTOP) -custom -o $@ $(SYSLIBS) $^
+	$(OCAMLMKTOP) -custom -o $@ $(SYSLIBS) $(SEXPLIB) $^
 
 clean::
 	rm -f $(TARGET) $(TARGET).opt $(TARGET).top
-	rm -f dllpycaml_stubs.so
 
 .PHONY:: tools configure
 
@@ -235,7 +263,10 @@ distclean::
 # Pre-Install (customization of spatch frontend script)
 ##############################################################################
 
-preinstall: scripts/spatch scripts/spatch.opt scripts/spatch.byte
+preinstall: docs/spatch.1 scripts/spatch scripts/spatch.opt scripts/spatch.byte
+
+docs/spatch.1: Makefile.config
+	$(MAKE) -C docs spatch.1
 
 # user will use spatch to run spatch.opt (native)
 scripts/spatch: Makefile.config
@@ -294,7 +325,8 @@ install-python:
 		$(DESTDIR)$(SHAREDIR)/python/coccilib/coccigui
 	$(INSTALL_DATA) python/coccilib/coccigui/pygui.gladep \
 		$(DESTDIR)$(SHAREDIR)/python/coccilib/coccigui
-	$(INSTALL_LIB) dllpycaml_stubs.so $(DESTDIR)$(LIBDIR)
+	if [ -f pycaml/dllpycaml_stubs.so ]; then \
+		$(INSTALL_LIB) pycaml/dllpycaml_stubs.so $(DESTDIR)$(LIBDIR) ; fi
 
 install: install-common
 	@if test -x spatch -a ! -x spatch.opt ; then \
@@ -330,9 +362,14 @@ uninstall:
 	rm -f $(DESTDIR)$(BINDIR)/spatch
 	rm -f $(DESTDIR)$(BINDIR)/spatch.opt
 	rm -f $(DESTDIR)$(LIBDIR)/dllpycaml_stubs.so
+	rm -f $(DESTDIR)$(SHAREDIR)/spatch
+	rm -f $(DESTDIR)$(SHAREDIR)/spatch.opt
 	rm -f $(DESTDIR)$(SHAREDIR)/standard.h
 	rm -f $(DESTDIR)$(SHAREDIR)/standard.iso
-	rm -rf $(DESTDIR)$(SHAREDIR)/python/coccilib
+	rm -f $(DESTDIR)$(SHAREDIR)/python/coccilib/coccigui/*
+	rm -f $(DESTDIR)$(SHAREDIR)/python/coccilib/*.py
+	rmdir --ignore-fail-on-non-empty -p \
+		$(DESTDIR)$(SHAREDIR)/python/coccilib/coccigui
 	rm -f $(DESTDIR)$(MANDIR)/man1/spatch.1
 
 version:

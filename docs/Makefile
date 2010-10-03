@@ -1,14 +1,16 @@
 SUBDIR=manual
 
-.PHONY: all clean distclean
+.PHONY: all clean distclean spatch.1
 
-all: 
-	make -C $(SUBDIR)
+-include ../Makefile.config
 
-clean:
-	make -C $(SUBDIR) clean
+all:: spatch.1
 
-distclean:
-	make -C $(SUBDIR) distclean
+spatch.1: spatch.1.in
+	sed "s|SHAREDIR|$(SHAREDIR)|g" $^ > $@
 
+clean distclean::
+	rm -f spatch.1
 
+all clean distclean::
+	make -C $(SUBDIR) $@

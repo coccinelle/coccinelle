@@ -1,4 +1,3 @@
-adjacency.cmi: ast0_cocci.cmi 
 adjust_pragmas.cmi: ast0_cocci.cmi 
 arity.cmi: ast0_cocci.cmi 
 ast0_cocci.cmi: type_cocci.cmi ast_cocci.cmi 
@@ -130,7 +129,7 @@ parse_aux.cmx: type_cocci.cmx semantic_cocci.cmx ../globals/flag.cmx data.cmx \
 parse_cocci.cmo: visitor_ast0_types.cmo visitor_ast0.cmi unitary_ast0.cmi \
     type_infer.cmi test_exps.cmi single_statement.cmi simple_assignments.cmi \
     semantic_cocci.cmo pretty_print_cocci.cmi parse_aux.cmo iso_pattern.cmi \
-    iso_compile.cmi insert_plus.cmi get_constants2.cmi get_constants.cmi \
+    iso_compile.cmi insert_plus.cmi get_constants2.cmi \
     function_prototypes.cmi free_vars.cmi flag_parsing_cocci.cmo \
     ../globals/flag.cmo disjdistr.cmi data.cmi context_neg.cmi \
     compute_lines.cmi ../commons/common.cmi comm_assoc.cmi check_meta.cmi \
@@ -139,7 +138,7 @@ parse_cocci.cmo: visitor_ast0_types.cmo visitor_ast0.cmi unitary_ast0.cmi \
 parse_cocci.cmx: visitor_ast0_types.cmx visitor_ast0.cmx unitary_ast0.cmx \
     type_infer.cmx test_exps.cmx single_statement.cmx simple_assignments.cmx \
     semantic_cocci.cmx pretty_print_cocci.cmx parse_aux.cmx iso_pattern.cmx \
-    iso_compile.cmx insert_plus.cmx get_constants2.cmx get_constants.cmx \
+    iso_compile.cmx insert_plus.cmx get_constants2.cmx \
     function_prototypes.cmx free_vars.cmx flag_parsing_cocci.cmx \
     ../globals/flag.cmx disjdistr.cmx data.cmx context_neg.cmx \
     compute_lines.cmx ../commons/common.cmx comm_assoc.cmx check_meta.cmx \

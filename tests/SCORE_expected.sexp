@@ -7,7 +7,8 @@
  (bad_iso_example.res
   (Pb
    "INCORRECT:diff token: ( VS x\nFile \"tests/bad_iso_example.c\", line 2, column 6,  charpos = 19\n    around = '(', whole content =   if ((x = 3)) return;\nFile \"tests/bad_iso_example.res\", line 2, column 6,  charpos = 19\n    around = 'x', whole content =   if (x) return;\n\n    diff (result(<) vs expected_result(>)) = \n    @@ -1,4 +1,4 @@\n     int main() {\n    -  if ((x = 3)) return;\n    +  if (x) return;\n     }\n     \n"))
- (bad_ptr_print.res Ok) (bad_typedef.res Ok) (badexp.res Ok)
+ (bad_kfree.res Ok) (bad_ptr_print.res Ok) (bad_typedef.res Ok)
+ (badexp.res Ok)
  (badpos.res
   (Pb
    "PROBLEM\n   exn = Failure(\"rule starting on line 1: already tagged token:\\nC code context\\nFile \\\"tests/badpos.c\\\", line 5, column 30,  charpos = 139\\n    around = 'reg_ptr', whole content = \\t (int) -(((struct pt_regs *) reg_ptr)->orig_eax + 2));\")\n"))
@@ -17,9 +18,10 @@
   (Pb
    "INCORRECT:diff token: PF_FREEZE VS )\nFile <COCCIOUTPUTFILE>, line 12, column 16,  charpos = 390\n    around = 'PF_FREEZE', whole content = \t\t\trefrigerator(PF_FREEZE);\nFile \"tests/bugloop.res\", line 8, column 16,  charpos = 160\n    around = ')', whole content = \t\t\trefrigerator();\n\n    diff (result(<) vs expected_result(>)) = \n    @@ -1,7 +1,3 @@\n    -/* this doesn't work, because on the paths where we don't find refrigerator,\n    -we expect to reach Exit without first going through current->flags & PF_FREEZE,\n    -but of course any path that goes around the loop does precisely that */\n    -\n     static int stir_transmit_thread(void *arg)\n     {\n     \n    @@ -9,7 +5,7 @@\n     \t{\n     \t\t/* if suspending, then power off and wait */\n     \t\tif (unlikely(freezing(current))) {\n    -\t\t\trefrigerator(PF_FREEZE);\n    +\t\t\trefrigerator();\n     \n     \t\t}\n     \t}\n"))
  (bugon.res Ok) (cards.res Ok) (cast.res Ok) (cast_iso.res Ok) (com.res Ok)
- (compare.res Ok) (const.res Ok) (const1bis.res Ok) (const_adding.res Ok)
- (const_array.res Ok) (const_implicit_iso.res Ok) (constty.res Ok)
- (constx.res Ok) (cs_check.res Ok) (cst.res Ok) (csw.res Ok)
+ (comments.res Ok) (compare.res Ok) (const.res Ok) (const1bis.res Ok)
+ (const_adding.res Ok) (const_array.res Ok) (const_implicit_iso.res Ok)
+ (constty.res Ok) (constx.res Ok) (cs_check.res Ok) (cst.res Ok)
+ (cst_null.res Ok) (csw.res Ok)
  (dbg.res
   (Pb
    "INCORRECT:diff token: else VS (\nFile <COCCIOUTPUTFILE>, line 8, column 2,  charpos = 133\n    around = 'else', whole content = \t\telse pr = NULL;(\"PCI\");\nFile \"tests/dbg.res\", line 7, column 5,  charpos = 130\n    around = '(', whole content = \t\tDBG(\"PCI\");\n\n    diff (result(<) vs expected_result(>)) = \n    @@ -4,6 +4,6 @@\n     \tstruct resource *pr, *r = &dev->resource[idx];\n     \n     \tif (pr)\n    -\t\tDBG\n    -\t\telse pr = NULL;(\"PCI\");\n    +\t\tDBG(\"PCI\");\n    +\telse pr = NULL;\n     }\n"))
@@ -31,11 +33,12 @@
  (decl_split.res
   (Pb
    "INCORRECT:diff token: int VS }\nFile \"tests/decl_split.c\", line 2, column 8,  charpos = 27\n    around = 'int', whole content =         int x, y;\nFile \"tests/decl_split.res\", line 2, column 0,  charpos = 19\n    around = '}', whole content = }\n\n    diff (result(<) vs expected_result(>)) = \n    @@ -1,3 +1,2 @@\n     int func(int i) { \n    -        int x, y;\n     }\n"))
- (define_exp.res Ok) (define_param.res Ok) (deftodo.res Ok)
- (delete_function.res Ok) (deref.res Ok) (devlink.res Ok) (disjexpr.res Ok)
- (disjexpr_ver1.res Ok) (disjexpr_ver2.res Ok) (distribute.res Ok)
- (double.res Ok) (double_assign.res Ok) (double_switch.res Ok)
- (doublepos.res Ok) (doubleswitch.res Ok)
+ (decl_star.res Ok) (define_exp.res Ok) (define_param.res Ok)
+ (deftodo.res Ok) (delete_function.res Ok) (deref.res Ok) (devlink.res Ok)
+ (disjexpr.res Ok) (disjexpr_ver1.res Ok) (disjexpr_ver2.res Ok)
+ (distribute.res Ok) (double.res Ok) (double_assign.res Ok)
+ (double_lines.res Ok) (double_switch.res Ok) (doublepos.res Ok)
+ (doubleswitch.res Ok)
  (doundo.res
   (Pb
    "INCORRECT:diff token: xxx VS new_foo\nFile <COCCIOUTPUTFILE>, line 7, column 2,  charpos = 85\n    around = 'xxx', whole content =   xxx();\nFile \"tests/doundo.res\", line 7, column 2,  charpos = 85\n    around = 'new_foo', whole content =   new_foo();\n\n    diff (result(<) vs expected_result(>)) = \n    @@ -4,5 +4,5 @@\n     {\n       const s8 (*queue_priority_mapping)[2];\n       s8 *noevent;\n    -  xxx();\n    +  new_foo();\n     }\n"))
@@ -44,10 +47,11 @@
  (enum.res Ok) (exp.res Ok) (expnest.res Ok) (expopt.res Ok) (expopt2.res Ok)
  (expopt3.res Ok) (expopt3_ver1.res Ok) (expopt3_ver2.res Ok) (fields.res Ok)
  (fieldsmin.res Ok) (find_long.res Ok) (fix_flow_need.res Ok)
- (fn_todo.res Ok) (fnptr.res Ok) (fnret.res Ok) (four.res Ok) (foura.res Ok)
- (fp.res Ok) (fsh.res Ok) (fun.res Ok) (gilles-question.res Ok)
- (gotobreak.res Ok) (hd.res Ok) (headers.res Ok) (hex.res Ok) (hil1.res Ok)
- (if.res Ok) (ifbr.res Ok) (ifdef1.res Ok) (ifdef2.res Ok)
+ (fn_todo.res Ok) (fnptr.res Ok) (fnret.res Ok) (fnty.res Ok) (four.res Ok)
+ (foura.res Ok) (fp.res Ok) (fsh.res Ok) (fun.res Ok)
+ (gilles-question.res Ok) (gotobreak.res Ok) (hd.res Ok) (headers.res Ok)
+ (hex.res Ok) (hil1.res Ok) (if.res Ok) (ifbr.res Ok) (ifdef1.res Ok)
+ (ifdef2.res Ok)
  (ifdef3.res
   (Pb
    "PROBLEM\n   exn = Lexer_cocci.Lexical(\"unrecognised symbol, in token rule: #\")\n"))
@@ -64,8 +68,8 @@
  (incl.res Ok) (inclifdef.res Ok) (include.res Ok)
  (incompatible_value.res Ok) (inherited.res Ok) (inherited_ver1.res Ok)
  (inhpos.res Ok) (initializer.res Ok) (initializer_many_fields.res Ok)
- (inline.res Ok) (isococci.res Ok) (isotest.res Ok) (isotest2.res Ok)
- (iterator.res Ok)
+ (inline.res Ok) (insdef.res Ok) (isococci.res Ok) (isotest.res Ok)
+ (isotest2.res Ok) (iterator.res Ok)
  (jloop1.res
   (Pb
    "PROBLEM\n   exn = Failure(\"minus: parse error: \\n = File \\\"tests/jloop1.cocci\\\", line 10, column 3,  charpos = 129\\n    around = '...>', whole content =    ...>\\n\")\n"))
@@ -83,15 +87,19 @@
  (metastatement_if.res Ok)
  (mini_null_ref.res
   (Pb
-   "INCORRECT:diff token: if VS struct\nFile <COCCIOUTPUTFILE>, line 6, column 8,  charpos = 269\n    around = 'if', whole content =         if (!pdata) {\nFile \"tests/mini_null_ref.res\", line 6, column 8,  charpos = 269\n    around = 'struct', whole content =         struct w90p910_keypad *keypad;\n\n    diff (result(<) vs expected_result(>)) = \n    @@ -3,6 +3,8 @@\n             const struct w90p910_keypad_platform_data *pdata =\n                                                     pdev->dev.platform_data;\n             const struct matrix_keymap_data * keymap_data;\n    +        struct w90p910_keypad *keypad;\n    +\n             if (!pdata) {\n                     dev_err(&pdev->dev, \"no platform data defined\\n\");\n                     return -EINVAL;\n"))
+   "INCORRECT:diff token: if VS struct\nFile <COCCIOUTPUTFILE>, line 6, column 8,  charpos = 268\n    around = 'if', whole content =         if (!pdata) {\nFile \"tests/mini_null_ref.res\", line 6, column 8,  charpos = 269\n    around = 'struct', whole content =         struct w90p910_keypad *keypad;\n\n    diff (result(<) vs expected_result(>)) = \n    @@ -2,7 +2,9 @@\n     {\n             const struct w90p910_keypad_platform_data *pdata =\n                                                     pdev->dev.platform_data;\n    -        const struct matrix_keymap_data *keymap_data;\n    +        const struct matrix_keymap_data * keymap_data;\n    +        struct w90p910_keypad *keypad;\n    +\n             if (!pdata) {\n                     dev_err(&pdev->dev, \"no platform data defined\\n\");\n                     return -EINVAL;\n"))
  (minstruct.res Ok) (minusdots.res Ok) (minusdots_ver1.res Ok)
  (multi_func1.res
   (Pb
    "PROBLEM\n   exn = Failure(\"minus: parse error: \\n = File \\\"tests/multi_func1.cocci\\\", line 12, column 2,  charpos = 102\\n    around = 'fn2', whole content =   fn2(...) {\\n\")\n"))
  (multiplus.res Ok) (multitype.res Ok) (multitypedef.res Ok)
- (multivars.res Ok) (nest.res Ok) (nestone.res Ok) (nestseq.res Ok)
- (neststruct.res Ok) (nl.res Ok) (nocast.res Ok) (not.res Ok) (notest.res Ok)
- (noty.res Ok) (null_type.res Ok)
+ (multivars.res Ok) (na.res Ok) (nameless.res Ok) (nest.res Ok)
+ (nestone.res Ok) (nestseq.res Ok) (neststruct.res Ok) (nl.res Ok)
+ (nocast.res Ok) (not.res Ok) (notest.res Ok) (noty.res Ok)
+ (null_bool.res
+  (Pb
+   "INCORRECT:diff token: ) VS !=\nFile <COCCIOUTPUTFILE>, line 2, column 8,  charpos = 22\n    around = ')', whole content =   if (12) return;\nFile \"tests/null_bool.res\", line 2, column 9,  charpos = 23\n    around = '!=', whole content =   if (12 != NULL) return;\n\n    diff (result(<) vs expected_result(>)) = \n    @@ -1,6 +1,6 @@\n     int main () {\n    -  if (12) return;\n    -  if (a && 12 && b) return;\n    +  if (12 != NULL) return;\n    +  if (a && 12 != NULL && b) return;\n       if (12) return;\n       if (a && 12 && b) return;\n       x = x + 20;\n"))
+ (null_type.res Ok)
  (oddifdef.res
   (Pb
    "INCORRECT:diff token: #else\n VS x\nFile <COCCIOUTPUTFILE>, line 10, column 0,  charpos = 114\n    around = '#else\n', whole content = #else\nFile \"tests/oddifdef.res\", line 10, column 2,  charpos = 116\n    around = 'x', whole content =   x = 0;\n\n    diff (result(<) vs expected_result(>)) = \n    @@ -7,8 +7,9 @@\n         a = 5;\n     \n     #ifdef FOO\n    +  x = 0;\n     #else\n    -  \n    +  x = 0;\n     #endif\n     }\n     \n    @@ -21,8 +22,9 @@\n         a = 3;\n     \n     #ifdef FOO\n    +  x = 0;\n     #else\n    -  \n    +  x = 0;\n     #endif\n     }\n     \n    @@ -35,7 +37,8 @@\n     #endif\n     \n     #ifdef FOO\n    +  x = 0;\n     #else\n    -  \n    +  x = 0;\n     #endif\n     }\n"))
@@ -101,7 +109,7 @@
  (partial.res Ok)
  (pb_distribute_type.res
   (Pb
-   "INCORRECT:PB parsing only in generated-file\n    diff (result(<) vs expected_result(>)) = \n    @@ -5,11 +5,11 @@\n     \n     \n     int foo() {\n    -  int * *x;\n    +  int **x;\n       return 0;\n     }\n     \n     int foo() {\n    -  int[45] *x;\n    +  int (*x)[45];\n       return 0;\n     }\n"))
+   "INCORRECT:PB parsing only in generated-file\n    diff (result(<) vs expected_result(>)) = \n    @@ -10,6 +10,6 @@\n     }\n     \n     int foo() {\n    -  int[45] *x;\n    +  int (*x)[45];\n       return 0;\n     }\n"))
  (pb_distribute_type2.res
   (Pb
    "INCORRECT:PB parsing only in generated-file\n    diff (result(<) vs expected_result(>)) = \n    @@ -1,5 +1,5 @@\n     int foo() {\n    -  int* x;\n    +  int *x;\n       return 0;\n     }\n     \n    @@ -10,6 +10,6 @@\n     }\n     \n     int foo() {\n    -  int x[45]*;\n    +  int (*x)[45];\n       return 0;\n     }\n"))
@@ -112,10 +120,7 @@
  (posiso.res Ok) (positionc.res Ok) (post.res Ok) (print_return.res Ok)
  (proto.res Ok) (proto2.res Ok) (proto_ver1.res Ok) (proto_ver2.res Ok)
  (protoassert.res Ok) (protox.res Ok) (rcu3.res Ok) (regexp.res Ok)
- (regexp2.res Ok) (regexp3.res Ok)
- (remstruct.res
-  (Pb
-   "INCORRECT:not same number of entities (func, decl, ...)\n    diff (result(<) vs expected_result(>)) = \n    @@ -1,10 +1,3 @@\n    -\n    -      .ack    = mpuio_ack_irq,\n    -      .mask   = mpuio_mask_irq,\n    -      .unmask = mpuio_unmask_irq\n    -\n    -  .b = 15,\n    -\n     int hello ( String input )\n     {\n       String input = input.lowercase();\n"))
+ (regexp2.res Ok) (regexp3.res Ok) (remstruct.res Ok)
  (replace_typedef.res Ok) (reserved.res Ok) (retmacro.res Ok) (rets.res Ok)
  (return.res Ok) (return_implicit.res Ok) (retval.res Ok) (same_expr.res Ok)
  (scope_problem.res
@@ -126,10 +131,9 @@
    "INCORRECT:diff token: init_MUTEX VS mutex_init\nFile \"tests/serio.c\", line 7, column 1,  charpos = 130\n    around = 'init_MUTEX', whole content = \tinit_MUTEX(&serio->drv_sem);\nFile \"tests/serio.res\", line 7, column 1,  charpos = 130\n    around = 'mutex_init', whole content = \tmutex_init(&serio->new_lock);\n\n    diff (result(<) vs expected_result(>)) = \n    @@ -4,5 +4,5 @@\n     \n     static void serio_init_port(struct serio *serio)\n     {\n    -\tinit_MUTEX(&serio->drv_sem);\n    +\tmutex_init(&serio->new_lock);\n     }\n"))
  (shared_brace.res Ok) (signed.res Ok) (sis.res Ok) (sizeof.res Ok)
  (sizeof_julia.res Ok) (sizestar.res Ok) (skip.res Ok) (sp.res Ok)
- (spaces.res Ok) (spl.res Ok)
- (static.res (Pb "PROBLEM\n   exn = Common.Impossible\n")) (stm1.res Ok)
- (stm10.res Ok) (stm10_ver1.res Ok) (stm2.res Ok) (stm3.res Ok) (stm4.res Ok)
- (stm5.res Ok) (stm6.res Ok) (stm7.res Ok) (stm8.res Ok) (stmt.res Ok)
+ (spaces.res Ok) (spl.res Ok) (static.res Ok) (stm1.res Ok) (stm10.res Ok)
+ (stm10_ver1.res Ok) (stm2.res Ok) (stm3.res Ok) (stm4.res Ok) (stm5.res Ok)
+ (stm6.res Ok) (stm7.res Ok) (stm8.res Ok) (stmt.res Ok) (str_init.res Ok)
  (strangeorder.res Ok) (string.res Ok) (struct.res Ok)
  (struct_metavar.res Ok) (struct_typedef.res Ok) (structfoo.res Ok)
  (substruct.res Ok) (sw.res Ok) (switch.res Ok) (switchdecl.res Ok)
