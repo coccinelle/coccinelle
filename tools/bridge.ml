@@ -45,7 +45,7 @@ let parse_line fp l n =
 		(match List.rev splitted with
 		  new_tag::info ->
 		    let rest = loop new_tag rest in
-		    (tag,String.concat "\\ " info)::rest
+		    (tag,String.concat "\\ " (List.rev info))::rest
 		|	_ -> failwith "bad element")
 	    | _ -> failwith "no data" in
 	  Some (cocci,loop (drop_spaces first) others)

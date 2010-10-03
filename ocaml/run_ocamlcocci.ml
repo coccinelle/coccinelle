@@ -34,12 +34,14 @@ let ast_binding vl = function
 
       | Ast_c.MetaTypeVal ty -> Coccilib.Type ty
       | Ast_c.MetaInitVal init -> Coccilib.Init init
+      | Ast_c.MetaDeclVal decl -> Coccilib.Decl decl
+      | Ast_c.MetaFieldVal field -> Coccilib.Field field
       | Ast_c.MetaStmtVal stm -> Coccilib.Stmt stm
 
       | Ast_c.MetaPosVal _ | Ast_c.MetaPosValList _ | Ast_c.MetaListlenVal _ ->
 	  failwith "not associated with a declared metavariable"]
 
-let run mv ve name code =
+let run mv ve script_vars name code =
   (* set up variables *)
   let find_binding (r,m) =
     try
@@ -58,9 +60,12 @@ let run mv ve name code =
 	       (string_binding vl str_name) @ (ast_binding vl ast_name))
 	 mv) in
 
+  let script_args = List.map (function _ -> ref "") script_vars in
+
   (* call the function *)
   Coccilib.include_match true;
   let fn =
     try Hashtbl.find Coccilib.fcts name
     with Not_found -> failwith (Printf.sprintf "%s not found" name) in
-  fn args
+  fn args script_args;
+  List.map (function x -> !x) script_args

@@ -432,7 +432,9 @@ and is_decl_dots s =
 
 and declaration d =
   match Ast0.unwrap d with
-    Ast0.Init(stg,ty,id,eq,exp,sem) ->
+    (Ast0.MetaDecl(name,_) | Ast0.MetaField(name,_)) as up ->
+      let ln = promote_mcode name in mkres d up ln ln
+  | Ast0.Init(stg,ty,id,eq,exp,sem) ->
       let ty = typeC ty in
       let id = ident id in
       let exp = initialiser exp in

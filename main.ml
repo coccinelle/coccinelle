@@ -340,7 +340,7 @@ let short_options = [
     "  guess what";
 
   "-date",   Arg.Unit (fun () ->
-    pr2 "version: $Date: 2010/07/01 13:22:53 $";
+    pr2 "version: $Date: 2010/08/06 12:05:34 $";
     raise (Common.UnixExit 0)
     ),
   "   guess what";
@@ -491,6 +491,11 @@ let other_options = [
     "   disable limit on max depth of iso application";
     "-track_iso", Arg.Set Flag.track_iso_usage,
     "   gather information about isomorphism usage";
+    "-disable_iso",
+    Arg.String
+    (fun s -> Flag_parsing_cocci.disabled_isos :=
+      s :: !Flag_parsing_cocci.disabled_isos),
+    "   disable a specific isomorphism";
     "-profile_iso",
     Arg.Unit
     (function () ->
@@ -738,19 +743,22 @@ let glimpse_filter (coccifile, isofile) dir =
     Cocci.sp_of_file coccifile (Some isofile) in
   match query with
     None -> pr2 "no glimpse keyword inferred from snippet"; None
-  | Some [query] ->
-      (let suffixes = if !include_headers then ["c";"h"] else ["c"] in
-      Printf.fprintf stderr "%s\n" ("glimpse request = " ^ query);
-      let command = spf "glimpse -y -H %s -N -W -w '%s'" dir query in
-      let (glimpse_res,stat) = Common.cmd_to_list_and_status command in
-      match stat with
-	Unix.WEXITED(0) | Unix.WEXITED(1) ->
-	  Some
-	    (glimpse_res +>
-	     List.filter
-	       (fun file -> List.mem (Common.filesuffix file) suffixes))
-      |	_ -> None (* error, eg due to pattern too big *))
-  | _ -> failwith "not possible"
+  | Some queries ->
+      let suffixes = if !include_headers then ["c";"h"] else ["c"] in
+      let rec loop = function
+	  [] -> None (* error, eg due to pattern too big *)
+	| query::queries ->
+	    Printf.fprintf stderr "%s\n" ("glimpse request = " ^ query);
+	    let command = spf "glimpse -y -H %s -N -W -w '%s'" dir query in
+	    let (glimpse_res,stat) = Common.cmd_to_list_and_status command in
+	    match stat with
+	      Unix.WEXITED(0) | Unix.WEXITED(1) ->
+		Some
+		  (glimpse_res +>
+		   List.filter
+		     (fun file -> List.mem (Common.filesuffix file) suffixes))
+	    |	_ -> loop queries (* error, eg due to pattern too big *) in
+      loop queries
 
 (*****************************************************************************)
 (* Main action *)

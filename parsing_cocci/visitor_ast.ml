@@ -247,7 +247,8 @@ let combiner bind option_default
   and declaration d =
     let k d =
       match Ast.unwrap d with
-	Ast.Init(stg,ty,id,eq,ini,sem) ->
+	Ast.MetaDecl(name,_,_) | Ast.MetaField(name,_,_) -> meta_mcode name
+      |	Ast.Init(stg,ty,id,eq,ini,sem) ->
 	  bind (get_option storage_mcode stg)
 	    (bind (named_type ty id)
 	       (multibind
@@ -266,7 +267,6 @@ let combiner bind option_default
       | Ast.DisjDecl(decls) -> multibind (List.map declaration decls)
       |	Ast.Ddots(dots,whencode) ->
 	  bind (string_mcode dots) (get_option declaration whencode)
-      | Ast.MetaDecl(name,_,_) -> meta_mcode name
       | Ast.OptDecl(decl) -> declaration decl
       | Ast.UniqueDecl(decl) -> declaration decl in
     declfn all_functions k d
@@ -745,7 +745,11 @@ let rebuilder
     let k d =
       Ast.rewrap d
 	(match Ast.unwrap d with
-	  Ast.Init(stg,ty,id,eq,ini,sem) ->
+	  Ast.MetaDecl(name,keep,inherited) ->
+	    Ast.MetaDecl(meta_mcode name,keep,inherited)
+	| Ast.MetaField(name,keep,inherited) ->
+	    Ast.MetaField(meta_mcode name,keep,inherited)
+	| Ast.Init(stg,ty,id,eq,ini,sem) ->
 	    Ast.Init(get_option storage_mcode stg, fullType ty, ident id,
 		     string_mcode eq, initialiser ini, string_mcode sem)
 	| Ast.UnInit(stg,ty,id,sem) ->
@@ -761,8 +765,6 @@ let rebuilder
 	| Ast.DisjDecl(decls) -> Ast.DisjDecl(List.map declaration decls)
 	| Ast.Ddots(dots,whencode) ->
 	    Ast.Ddots(string_mcode dots, get_option declaration whencode)
-	| Ast.MetaDecl(name,keep,inherited) ->
-	    Ast.MetaDecl(meta_mcode name,keep,inherited)
 	| Ast.OptDecl(decl) -> Ast.OptDecl(declaration decl)
 	| Ast.UniqueDecl(decl) -> Ast.UniqueDecl(declaration decl)) in
     declfn all_functions k d

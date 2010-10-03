@@ -135,6 +135,12 @@ let add_explist_meta:
     (Ast.meta_name -> Ast.list_len -> Ast0.pure -> unit) ref =
   ref (fun _ -> failwith "uninitialized add_meta")
 
+let add_decl_meta: (Ast.meta_name -> Ast0.pure -> unit) ref =
+  ref (fun _ -> failwith "uninitialized add_meta")
+
+let add_field_meta: (Ast.meta_name -> Ast0.pure -> unit) ref =
+  ref (fun _ -> failwith "uninitialized add_meta")
+
 let add_stm_meta: (Ast.meta_name -> Ast0.pure -> unit) ref =
   ref (fun _ -> failwith "uninitialized add_meta")
 

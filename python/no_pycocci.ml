@@ -82,6 +82,9 @@ let contains_binding e (_,(r,m),_) = failwith "no python"
 
 let construct_variables mv e = failwith "no python"
 
+let construct_script_variables mv = failwith "no python"
+let retrieve_script_variables mv = failwith "no python"
+
 let set_coccifile cocci_file =
 	cocci_file_name := cocci_file;
 	()

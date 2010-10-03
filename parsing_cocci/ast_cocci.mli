@@ -100,6 +100,8 @@ and metavar =
   | MetaLocalIdExpDecl of
       arity * meta_name (* name *) * Type_cocci.typeC list option
   | MetaExpListDecl of arity * meta_name (*name*) * list_len (*len*)
+  | MetaDeclDecl of arity * meta_name (* name *)
+  | MetaFieldDecl of arity * meta_name (* name *)
   | MetaStmDecl of arity * meta_name (* name *)
   | MetaStmListDecl of arity * meta_name (* name *)
   | MetaFuncDecl of arity * meta_name (* name *)
@@ -293,6 +295,7 @@ and base_declaration =
   | Ddots    of string mcode (* ... *) * declaration option (* whencode *)
 
   | MetaDecl of meta_name mcode * keep_binding * inherited
+  | MetaField of meta_name mcode * keep_binding * inherited
 
   | OptDecl    of declaration
   | UniqueDecl of declaration
@@ -548,7 +551,8 @@ and rule =
 	top_level list * bool list (* true if generates an exp *) * ruletype
   | ScriptRule of string (* name *) *
       string * dependency *
-	(script_meta_name * meta_name * metavar) list * string
+	(script_meta_name * meta_name * metavar) list *
+	meta_name list (*script vars*) * string
   | InitialScriptRule of  string (* name *) *
 	string * dependency * string
   | FinalScriptRule of  string (* name *) *

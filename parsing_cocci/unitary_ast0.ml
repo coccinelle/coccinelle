@@ -113,7 +113,8 @@ let get_free checker t =
 
   let declaration r k d =
     match Ast0.unwrap d with
-      Ast0.DisjDecl(starter,decls,mids,ender) ->
+      Ast0.MetaDecl(name,_) | Ast0.MetaField(name,_) -> checker name
+    | Ast0.DisjDecl(starter,decls,mids,ender) ->
 	detect_unitary_frees(List.map r.VT0.combiner_rec_declaration decls)
     | _ -> k d in
 
@@ -243,7 +244,7 @@ let do_unitary rules =
       [] -> ([],[])
     | (r::rules) ->
       match r with
-        Ast0.ScriptRule (_,_,_,_,_)
+        Ast0.ScriptRule (_,_,_,_,_,_)
       | Ast0.InitialScriptRule (_,_,_,_) | Ast0.FinalScriptRule (_,_,_,_) ->
           let (x,rules) = loop rules in
           (x, r::rules)

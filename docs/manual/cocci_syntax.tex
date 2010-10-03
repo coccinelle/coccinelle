@@ -112,7 +112,7 @@ The keyword \KW{disable} is normally used with the names of
 isomorphisms defined in standard.iso or whatever isomorphism file has been
 included.  There are, however, some other isomorphisms that are built into
 the implementation of Coccinelle and that can be disabled as well.  Their
-names are given below.  In each case, the text descibes the standard
+names are given below.  In each case, the text describes the standard
 behavior.  Using \NT{disable-iso} with the given name disables this behavior.
 
 \begin{itemize}
@@ -139,7 +139,10 @@ used in {\tt +} code.  These properties are not expressed in the grammar,
 but are checked by a subsequent analysis.  The metavariables are designated
 according to the kind of terms they can match, such as a statement, an
 identifier, or an expression.  An expression metavariable can be further
-constrained by its type.
+constrained by its type.  A declaration metavariable matches the
+declaration of one or more variables, all sharing the same type
+specification ({\em e.g.}, {\tt int a,b,c=3;}).  A field metavariable does
+the same, but for structure fields.
 
 \begin{grammar}
   \RULE{\rt{metadecl}}
@@ -151,6 +154,8 @@ constrained by its type.
   \CASE{parameter list [ \NT{const} ] \NT{ids} ;}
   \CASE{type \NT{ids} ;}
   \CASE{statement \opt{list} \NT{ids} ;}
+  \CASE{declaration \opt{list} \NT{ids} ;}
+  \CASE{field \opt{list} \NT{ids} ;}
   \CASE{typedef \NT{ids} ;}
   \CASE{declarer name \NT{ids} ;}
 %  \CASE{\opt{local} function \NT{pmid\_with\_not\_eq\_list} ;}
@@ -247,14 +252,16 @@ typing, metavariables for scripts do not include type declarations.
 
 \begin{grammar}
   \RULE{\rt{script\_metavariables}}
-  \CASE{@ script:\NT{language} \OPT{depends on \NT{dep}} @
+  \CASE{@ script:\NT{language} \OPT{\NT{rulename}} \OPT{depends on \NT{dep}} @
         \any{\NT{script\_metadecl}} @@}
   \CASE{@ initialize:\NT{language} \OPT{depends on \NT{dep}} @}
   \CASE{@ finalize:\NT{language} \OPT{depends on \NT{dep}} @}
 
-  \RULE{\rt{language}} \CASE{python}
+  \RULE{\rt{language}} \CASE{python} \CASE{ocaml}
 
-  \RULE{\rt{script\_metadecl}} \CASE{\T{id} <{}< \T{rulename\_id}.\T{id} ;}
+  \RULE{\rt{script\_metadecl}}
+  \CASE{\T{id} <{}< \T{rulename\_id}.\T{id} ;}
+  \CASE{\T{id} ;}
 \end{grammar}
 
 Currently, the only scripting languages that are supported are Python and
@@ -269,6 +276,34 @@ Initialize and finalize script rules do not have access to SmPL
 metavariables.  Nevertheless, a finalize script rule can access any
 variables initialized by the other script rules, allowing information to be
 transmitted from the matching process to the finalize rule.
+
+A script metavariable that does not specify an origin, using \texttt{<<},
+is newly declared by the script.  This metavariable should be assigned to a
+string and can be inherited by subsequent rules as an identifier.  In
+Python, the assignment of such a metavariable $x$ should refer to the
+metavariable as {\tt coccinelle.\(x\)}.  Examples are in the files
+\texttt{demos/pythontococci.cocci} and \texttt{demos/camltococci.cocci}.
+
+In an ocaml script, the following extended form of \textit{script\_metadecl}
+may be used:
+
+\begin{grammar}
+  \RULE{\rt{script\_metadecl}}
+  \CASE{(\T{id},\T{id}) <{}< \T{rulename\_id}.\T{id} ;}
+  \CASE{\T{id} <{}< \T{rulename\_id}.\T{id} ;}
+  \CASE{\T{id} ;}
+\end{grammar}
+
+\noindent
+In a declaration of the form \texttt{(\T{id},\T{id}) <{}<
+  \T{rulename\_id}.\T{id} ;}, the left component of \texttt{(\T{id},\T{id})}
+receives a string representation of the value of the inherited metavariable
+while the right component receives its abstract syntax tree.  The file
+\texttt{parsing\_c/ast\_c.ml} in the Coccinelle implementation gives some
+information about the structure of the abstract syntax tree.  Either the
+left or right component may be replaced by \verb+_+, indicating that the
+string representation or abstract syntax trees representation is not
+wanted, respectively.
 
 \section{Transformation}
 
@@ -455,7 +490,7 @@ some constraints on the use of these annotations:
 
 Each element of a disjunction must be a proper term like an
 expression, a statement, an identifier or a declaration. Thus, the
-rule on the left below is not a syntaxically correct SmPL rule. One may
+rule on the left below is not a syntactically correct SmPL rule. One may
 use the rule on the right instead.
 
 \begin{center}
@@ -656,7 +691,7 @@ T foo() { ... }
 \end{lstlisting}
 
 \noindent
-It may be nencessary to consider several cases to ensure that the added ode
+It may be necessary to consider several cases to ensure that the added ode
 is placed in the right position.  For example, one may need one pattern
 that considers that the function is declared {\tt inline} and another that
 considers that it is not.

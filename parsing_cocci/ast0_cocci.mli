@@ -194,7 +194,9 @@ and typeC = base_typeC wrap
    split out into multiple declarations of a single variable each. *)
 
 and base_declaration =
-    Init       of Ast_cocci.storage mcode option * typeC * ident *
+    MetaDecl   of Ast_cocci.meta_name mcode * pure
+  | MetaField  of Ast_cocci.meta_name mcode * pure (* structure fields *)
+  | Init       of Ast_cocci.storage mcode option * typeC * ident *
 	string mcode (*=*) * initialiser * string mcode (*;*)
   | UnInit     of Ast_cocci.storage mcode option * typeC * ident *
 	string mcode (* ; *)
@@ -399,7 +401,8 @@ and parsed_rule =
   | ScriptRule of string (* name *) *
       string * Ast_cocci.dependency *
 	(Ast_cocci.script_meta_name *
-	   Ast_cocci.meta_name * Ast_cocci.metavar) list *
+	   Ast_cocci.meta_name * Ast_cocci.metavar) list (*inherited vars*) *
+	Ast_cocci.meta_name list (*script vars*) *
 	string
   | InitialScriptRule of string (* name *) *
       string (*language*) * Ast_cocci.dependency * string (*code*)

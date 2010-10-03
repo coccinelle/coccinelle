@@ -465,7 +465,15 @@ and make_decl =
 
 and declaration tgt decl =
   match Ast0.unwrap decl with
-    Ast0.Init(stg,ty,id,eq,exp,sem) ->
+    Ast0.MetaDecl(name,pure) ->
+      let arity = all_same true tgt (mcode2line name) [mcode2arity name] in
+      let name = mcode name in
+      make_decl decl tgt arity (Ast0.MetaDecl(name,pure))
+  | Ast0.MetaField(name,pure) ->
+      let arity = all_same true tgt (mcode2line name) [mcode2arity name] in
+      let name = mcode name in
+      make_decl decl tgt arity (Ast0.MetaField(name,pure))
+  | Ast0.Init(stg,ty,id,eq,exp,sem) ->
       let arity =
 	all_same true tgt (mcode2line eq)
 	  ((match stg with None -> [] | Some x -> [mcode2arity x]) @

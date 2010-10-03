@@ -564,7 +564,19 @@ and ft_space ty =
 
 and declaration d =
   match Ast.unwrap d with
-    Ast.Init(stg,ty,id,eq,ini,sem) ->
+    Ast.MetaDecl(name,_,_) ->
+      handle_metavar name
+	(function
+	    Ast_c.MetaDeclVal d ->
+              pretty_print_c.Pretty_print_c.decl d
+          | _ -> raise Impossible)
+  | Ast.MetaField(name,_,_) ->
+      handle_metavar name
+	(function
+	    Ast_c.MetaFieldVal d ->
+              pretty_print_c.Pretty_print_c.field d
+          | _ -> raise Impossible)
+  | Ast.Init(stg,ty,id,eq,ini,sem) ->
       print_option (mcode storage) stg;
       print_option (function _ -> pr_space()) stg;
       print_named_type ty id;
@@ -584,7 +596,7 @@ and declaration d =
       mcode print_string stg;
       fullType ty; typeC id;
       mcode print_string sem
-  | Ast.DisjDecl(_) | Ast.MetaDecl(_,_,_) -> raise CantBeInPlus
+  | Ast.DisjDecl(_) -> raise CantBeInPlus
   | Ast.Ddots(_,_) -> raise CantBeInPlus
   | Ast.OptDecl(decl)  | Ast.UniqueDecl(decl) ->
       raise CantBeInPlus

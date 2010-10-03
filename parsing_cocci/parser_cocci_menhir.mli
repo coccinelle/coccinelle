@@ -46,7 +46,8 @@ type token =
   | TStrict of (Data.clt)
   | TStatement
   | TSizeof of (Data.clt)
-  | TShOp of (Ast_cocci.arithOp * Data.clt)
+  | TShROp of (Ast_cocci.arithOp * Data.clt)
+  | TShLOp of (Ast_cocci.arithOp * Data.clt)
   | TScriptData of (string)
   | TScript
   | TRuleName of (string)
@@ -96,10 +97,12 @@ type token =
   | TMetaIdExp of (Parse_aux.typed_expinfo)
   | TMetaId of (Parse_aux.idinfo)
   | TMetaFunc of (Parse_aux.idinfo)
+  | TMetaField of (Parse_aux.info)
   | TMetaExpList of (Parse_aux.list_info)
   | TMetaExp of (Parse_aux.typed_expinfo)
   | TMetaErr of (Parse_aux.expinfo)
   | TMetaDeclarer of (Parse_aux.idinfo)
+  | TMetaDecl of (Parse_aux.info)
   | TMetaConst of (Parse_aux.typed_expinfo)
   | TMPtVirg
   | TLogOp of (Ast_cocci.logicalOp * Data.clt)
@@ -136,6 +139,7 @@ type token =
   | TFor of (Data.clt)
   | TFloat of (string * Data.clt)
   | TFinalize
+  | TField
   | TExtends
   | TExpression
   | TExists
@@ -156,6 +160,7 @@ type token =
   | TDefault of (Data.clt)
   | TDeclarerId of (string * Data.clt)
   | TDeclarer
+  | TDeclaration
   | TDec of (Data.clt)
   | TCppConcatOp
   | TContinue of (Data.clt)
@@ -181,7 +186,7 @@ type token =
   | EOF
 
 
-val script_meta_main: (Lexing.lexbuf -> token) -> Lexing.lexbuf -> ((string option (*string*) * string option (*ast*)) * Ast_cocci.meta_name * Ast_cocci.metavar)
+val script_meta_main: (Lexing.lexbuf -> token) -> Lexing.lexbuf -> ((string option (*string*) * string option (*ast*)) * (Ast_cocci.meta_name * Ast_cocci.metavar) option)
 val rule_name: (Lexing.lexbuf -> token) -> Lexing.lexbuf -> (Ast_cocci.rulename)
 val reinit: (Lexing.lexbuf -> token) -> Lexing.lexbuf -> (unit)
 val plus_main: (Lexing.lexbuf -> token) -> Lexing.lexbuf -> (Ast0_cocci.rule)

@@ -1376,31 +1376,30 @@ and vk_struct_fieldkinds_s = fun bigf onefield_multivars ->
     ), iif iicomma
   )
 
-and vk_struct_fields_s = fun bigf fields ->
-
+and vk_struct_field_s = fun bigf field ->
   let iif ii = vk_ii_s bigf ii in
 
-  fields +> List.map (fun (field) ->
-    (match field with
-    | (DeclarationField (FieldDeclList (onefield_multivars, iiptvirg))) ->
-        DeclarationField
-          (FieldDeclList
-              (vk_struct_fieldkinds_s bigf onefield_multivars, iif iiptvirg))
-    | EmptyField info -> EmptyField (vk_info_s bigf info)
-    | MacroDeclField ((s, args),ii) ->
-        MacroDeclField
-          ((s,
-           args +> List.map (fun (e,ii) -> vk_argument_s bigf e, iif ii)
-           ),
-          iif ii)
+  match field with
+    (DeclarationField (FieldDeclList (onefield_multivars, iiptvirg))) ->
+      DeclarationField
+        (FieldDeclList
+           (vk_struct_fieldkinds_s bigf onefield_multivars, iif iiptvirg))
+  | EmptyField info -> EmptyField (vk_info_s bigf info)
+  | MacroDeclField ((s, args),ii) ->
+      MacroDeclField
+        ((s,
+          args +> List.map (fun (e,ii) -> vk_argument_s bigf e, iif ii)
+         ),
+         iif ii)
 
-    | CppDirectiveStruct directive ->
-        CppDirectiveStruct (vk_cpp_directive_s bigf directive)
-    | IfdefStruct ifdef ->
-        IfdefStruct (vk_ifdef_directive_s bigf ifdef)
+  | CppDirectiveStruct directive ->
+      CppDirectiveStruct (vk_cpp_directive_s bigf directive)
+  | IfdefStruct ifdef ->
+      IfdefStruct (vk_ifdef_directive_s bigf ifdef)
 
-    )
-  )
+and vk_struct_fields_s = fun bigf fields ->
+
+  fields +> List.map (vk_struct_field_s bigf)
 
 
 and vk_def_s = fun bigf d ->

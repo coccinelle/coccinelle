@@ -41,6 +41,10 @@ let rec pp_binding_kind = function
       Pretty_print_c.pp_init_simple ini
   | Ast_c.MetaTypeVal      typ ->
       Pretty_print_c.pp_type_simple typ
+  | Ast_c.MetaDeclVal      decl ->
+      Pretty_print_c.pp_decl_simple decl
+  | Ast_c.MetaFieldVal      decl ->
+      Pretty_print_c.pp_field_simple decl
   | Ast_c.MetaStmtVal      statement ->
       Pretty_print_c.pp_statement_simple statement
   | Ast_c.MetaParamVal     params -> pp "<<param>>"

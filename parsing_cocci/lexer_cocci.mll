@@ -205,6 +205,10 @@ let id_tokens lexbuf =
       check_arity_context_linetype s; TGenerated
   | "expression" when in_meta || in_rule_name ->
       check_arity_context_linetype s; TExpression
+  | "declaration" when in_meta || in_rule_name ->
+      check_arity_context_linetype s; TDeclaration
+  | "field" when in_meta || in_rule_name ->
+      check_arity_context_linetype s; TField
   | "initialiser" when in_meta || in_rule_name ->
       check_arity_context_linetype s; TInitialiser
   | "initializer" when in_meta || in_rule_name ->
@@ -379,6 +383,14 @@ let init _ =
   Data.add_explist_meta :=
     (function name -> function lenname -> function pure ->
       let fn clt = TMetaExpList(name,lenname,pure,clt) in
+      Hashtbl.replace metavariables (get_name name) fn);
+  Data.add_decl_meta :=
+    (function name -> function pure ->
+      let fn clt = TMetaDecl(name,pure,clt) in
+      Hashtbl.replace metavariables (get_name name) fn);
+  Data.add_field_meta :=
+    (function name -> function pure ->
+      let fn clt = TMetaField(name,pure,clt) in
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_stm_meta :=
     (function name -> function pure ->
@@ -652,9 +664,9 @@ rule token = parse
   | "||"           { start_line true; TOrLog  (get_current_line_type lexbuf) }
 
   | ">>"           { start_line true;
-		     TShOp(Ast.DecRight,get_current_line_type lexbuf) }
+		     TShROp(Ast.DecRight,get_current_line_type lexbuf) }
   | "<<"           { start_line true;
-		     TShOp(Ast.DecLeft,get_current_line_type lexbuf) }
+		     TShLOp(Ast.DecLeft,get_current_line_type lexbuf) }
 
   | "&"            { start_line true; TAnd    (get_current_line_type lexbuf) }
   | "^"            { start_line true; TXor(get_current_line_type lexbuf) }

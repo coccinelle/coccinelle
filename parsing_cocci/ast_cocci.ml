@@ -114,6 +114,8 @@ and metavar =
   | MetaLocalIdExpDecl of
       arity * meta_name (* name *) * Type_cocci.typeC list option
   | MetaExpListDecl of arity * meta_name (*name*) * list_len (*len*)
+  | MetaDeclDecl of arity * meta_name (* name *)
+  | MetaFieldDecl of arity * meta_name (* name *)
   | MetaStmDecl of arity * meta_name (* name *)
   | MetaStmListDecl of arity * meta_name (* name *)
   | MetaFuncDecl of arity * meta_name (* name *)
@@ -314,6 +316,7 @@ and base_declaration =
   | Ddots    of string mcode (* ... *) * declaration option (* whencode *)
 
   | MetaDecl of meta_name mcode * keep_binding * inherited
+  | MetaField of meta_name mcode * keep_binding * inherited
 
   | OptDecl    of declaration
   | UniqueDecl of declaration
@@ -575,7 +578,8 @@ and rule =
   | ScriptRule of string (* name *) *
       (* metaname for python (untyped), metavar for ocaml (typed) *)
       string * dependency *
-	(script_meta_name * meta_name * metavar) list * string
+	(script_meta_name * meta_name * metavar) list (*inherited vars*) *
+	meta_name list (*script vars*) * string
   | InitialScriptRule of  string (* name *) *
 	string (*language*) * dependency * string (*code*)
   | FinalScriptRule of  string (* name *) *
@@ -700,6 +704,8 @@ let get_meta_name = function
   | MetaIdExpDecl(ar,nm,ty) -> nm
   | MetaLocalIdExpDecl(ar,nm,ty) -> nm
   | MetaExpListDecl(ar,nm,nm1) -> nm
+  | MetaDeclDecl(ar,nm) -> nm
+  | MetaFieldDecl(ar,nm) -> nm
   | MetaStmDecl(ar,nm) -> nm
   | MetaStmListDecl(ar,nm) -> nm
   | MetaFuncDecl(ar,nm) -> nm

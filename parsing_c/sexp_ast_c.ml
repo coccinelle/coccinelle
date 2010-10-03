@@ -2988,6 +2988,18 @@ and metavar_binding_kind_of_sexp__ =
          | [ v1 ] -> let v1 = initialiser_of_sexp v1 in MetaInitVal v1
          | _ -> Conv_error.stag_incorrect_n_args _loc tag sexp)
     | (Sexp.List
+         (Sexp.Atom (("metaDeclVal" | "MetaDeclVal" as tag)) :: sexp_args)
+       as sexp) ->
+        (match sexp_args with
+         | [ v1 ] -> let v1 = declaration_of_sexp v1 in MetaDeclVal v1
+         | _ -> Conv_error.stag_incorrect_n_args _loc tag sexp)
+    | (Sexp.List
+         (Sexp.Atom (("metaFieldVal" | "MetaFieldVal" as tag)) :: sexp_args)
+       as sexp) ->
+        (match sexp_args with
+         | [ v1 ] -> let v1 = field_of_sexp v1 in MetaDeclVal v1
+         | _ -> Conv_error.stag_incorrect_n_args _loc tag sexp)
+    | (Sexp.List
          (Sexp.Atom (("metaStmtVal" | "MetaStmtVal" as tag)) :: sexp_args)
        as sexp) ->
         (match sexp_args with

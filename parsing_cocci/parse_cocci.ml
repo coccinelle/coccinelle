@@ -60,6 +60,8 @@ let token2c (tok,_) =
   | PC.TExpression -> "expression"
   | PC.TIdExpression -> "idexpression"
   | PC.TInitialiser -> "initialiser"
+  | PC.TDeclaration -> "declaration"
+  | PC.TField -> "field"
   | PC.TStatement -> "statement"
   | PC.TPosition -> "position"
   | PC.TPosAny -> "any"
@@ -170,12 +172,8 @@ let token2c (tok,_) =
       |	Ast.SupEq -> ">="
       |	_ -> failwith "not possible")
       ^(line_type2c clt)
-  | PC.TShOp(op,clt) ->
-      (match op with
-	Ast.DecLeft -> "<<"
-      |	Ast.DecRight -> ">>"
-      |	_ -> failwith "not possible")
-      ^(line_type2c clt)
+  | PC.TShLOp(op,clt) -> "<<"^(line_type2c clt)
+  | PC.TShROp(op,clt) -> ">>"^(line_type2c clt)
   | PC.TPlus(clt) -> "+"^(line_type2c clt)
   | PC.TMinus(clt) -> "-"^(line_type2c clt)
   | PC.TMul(clt) -> "*"^(line_type2c clt)
@@ -198,8 +196,10 @@ let token2c (tok,_) =
   | PC.TMetaId(_,_,_,clt)    -> "idmeta"^(line_type2c clt)
   | PC.TMetaType(_,_,clt)    -> "typemeta"^(line_type2c clt)
   | PC.TMetaInit(_,_,clt)    -> "initmeta"^(line_type2c clt)
-  | PC.TMetaStm(_,_,clt)   -> "stmmeta"^(line_type2c clt)
-  | PC.TMetaStmList(_,_,clt)   -> "stmlistmeta"^(line_type2c clt)
+  | PC.TMetaDecl(_,_,clt)    -> "declmeta"^(line_type2c clt)
+  | PC.TMetaField(_,_,clt)   -> "fieldmeta"^(line_type2c clt)
+  | PC.TMetaStm(_,_,clt)     -> "stmmeta"^(line_type2c clt)
+  | PC.TMetaStmList(_,_,clt) -> "stmlistmeta"^(line_type2c clt)
   | PC.TMetaFunc(_,_,_,clt)  -> "funcmeta"^(line_type2c clt)
   | PC.TMetaLocalFunc(_,_,_,clt) -> "funcmeta"^(line_type2c clt)
   | PC.TMetaPos(_,_,_,clt)   -> "posmeta"
@@ -312,7 +312,8 @@ let plus_attachable only_plus (tok,_) =
   | PC.TOrLog(clt) | PC.TAndLog(clt) | PC.TOr(clt) | PC.TXor(clt)
   | PC.TAnd (clt) | PC.TEqEq(clt) | PC.TNotEq(clt) | PC.TTildeEq(clt)
   | PC.TLogOp(_,clt)
-  | PC.TShOp(_,clt) | PC.TPlus(clt) | PC.TMinus(clt) | PC.TMul(clt)
+  | PC.TShLOp(_,clt) | PC.TShROp(_,clt)
+  | PC.TPlus(clt) | PC.TMinus(clt) | PC.TMul(clt)
   | PC.TDmOp(_,clt) | PC.TTilde (clt)
 
   | PC.TMetaParam(_,_,clt) | PC.TMetaParamList(_,_,_,clt)
@@ -322,8 +323,8 @@ let plus_attachable only_plus (tok,_) =
   | PC.TMetaExpList(_,_,_,clt)
   | PC.TMetaId(_,_,_,clt)
   | PC.TMetaType(_,_,clt) | PC.TMetaInit(_,_,clt) | PC.TMetaStm(_,_,clt)
-  | PC.TMetaStmList(_,_,clt)  | PC.TMetaFunc(_,_,_,clt)
-  | PC.TMetaLocalFunc(_,_,_,clt)
+  | PC.TMetaStmList(_,_,clt) | PC.TMetaDecl(_,_,clt) | PC.TMetaField(_,_,clt)
+  | PC.TMetaFunc(_,_,_,clt) | PC.TMetaLocalFunc(_,_,_,clt)
 
   | PC.TWhen(clt) |  PC.TWhenTrue(clt) |  PC.TWhenFalse(clt)
   | PC.TAny(clt) | PC.TStrict(clt) | PC.TEllipsis(clt)
@@ -379,7 +380,8 @@ let get_clt (tok,_) =
   | PC.TOrLog(clt) | PC.TAndLog(clt) | PC.TOr(clt) | PC.TXor(clt)
   | PC.TAnd (clt) | PC.TEqEq(clt) | PC.TNotEq(clt) | PC.TTildeEq(clt)
   | PC.TSub(clt) | PC.TLogOp(_,clt)
-  | PC.TShOp(_,clt) | PC.TPlus(clt) | PC.TMinus(clt) | PC.TMul(clt)
+  | PC.TShLOp(_,clt) | PC.TShROp(_,clt)
+  | PC.TPlus(clt) | PC.TMinus(clt) | PC.TMul(clt)
   | PC.TDmOp(_,clt) | PC.TTilde (clt)
 
   | PC.TMetaParam(_,_,clt) | PC.TMetaParamList(_,_,_,clt)
@@ -389,8 +391,9 @@ let get_clt (tok,_) =
   | PC.TMetaExpList(_,_,_,clt)
   | PC.TMetaId(_,_,_,clt)
   | PC.TMetaType(_,_,clt) | PC.TMetaInit(_,_,clt) | PC.TMetaStm(_,_,clt)
-  | PC.TMetaStmList(_,_,clt)  | PC.TMetaFunc(_,_,_,clt)
-  | PC.TMetaLocalFunc(_,_,_,clt) | PC.TMetaPos(_,_,_,clt)
+  | PC.TMetaStmList(_,_,clt) | PC.TMetaDecl(_,_,clt) | PC.TMetaField(_,_,clt)
+  | PC.TMetaFunc(_,_,_,clt) | PC.TMetaLocalFunc(_,_,_,clt)
+  | PC.TMetaPos(_,_,_,clt)
 
   | PC.TWhen(clt) | PC.TWhenTrue(clt) | PC.TWhenFalse(clt) |
     PC.TAny(clt) | PC.TStrict(clt) | PC.TEllipsis(clt)
@@ -482,7 +485,8 @@ let update_clt (tok,x) clt =
   | PC.TTildeEq(_) -> (PC.TTildeEq(clt),x)
   | PC.TSub(_) -> (PC.TSub(clt),x)
   | PC.TLogOp(op,_) -> (PC.TLogOp(op,clt),x)
-  | PC.TShOp(op,_) -> (PC.TShOp(op,clt),x)
+  | PC.TShLOp(op,_) -> (PC.TShLOp(op,clt),x)
+  | PC.TShROp(op,_) -> (PC.TShROp(op,clt),x)
   | PC.TPlus(_) -> (PC.TPlus(clt),x)
   | PC.TMinus(_) -> (PC.TMinus(clt),x)
   | PC.TMul(_) -> (PC.TMul(clt),x)
@@ -500,8 +504,10 @@ let update_clt (tok,x) clt =
   | PC.TMetaId(a,b,c,_)    -> (PC.TMetaId(a,b,c,clt),x)
   | PC.TMetaType(a,b,_)    -> (PC.TMetaType(a,b,clt),x)
   | PC.TMetaInit(a,b,_)    -> (PC.TMetaInit(a,b,clt),x)
-  | PC.TMetaStm(a,b,_)   -> (PC.TMetaStm(a,b,clt),x)
-  | PC.TMetaStmList(a,b,_)   -> (PC.TMetaStmList(a,b,clt),x)
+  | PC.TMetaDecl(a,b,_)    -> (PC.TMetaDecl(a,b,clt),x)
+  | PC.TMetaField(a,b,_)   -> (PC.TMetaField(a,b,clt),x)
+  | PC.TMetaStm(a,b,_)     -> (PC.TMetaStm(a,b,clt),x)
+  | PC.TMetaStmList(a,b,_) -> (PC.TMetaStmList(a,b,clt),x)
   | PC.TMetaFunc(a,b,c,_)  -> (PC.TMetaFunc(a,b,c,clt),x)
   | PC.TMetaLocalFunc(a,b,c,_) -> (PC.TMetaLocalFunc(a,b,c,clt),x)
 
@@ -609,6 +615,7 @@ let split t clt =
 let split_token ((tok,_) as t) =
   match tok with
     PC.TIdentifier | PC.TConstant | PC.TExpression | PC.TIdExpression
+  | PC.TDeclaration | PC.TField
   | PC.TStatement | PC.TPosition | PC.TPosAny | PC.TInitialiser
   | PC.TFunction | PC.TTypedef | PC.TDeclarer | PC.TIterator | PC.TName
   | PC.TType | PC.TParameter | PC.TLocal | PC.Tlist | PC.TFresh
@@ -642,6 +649,7 @@ let split_token ((tok,_) as t) =
   | PC.TMetaExpList(_,_,_,clt)
   | PC.TMetaParam(_,_,clt) | PC.TMetaParamList(_,_,_,clt)
   | PC.TMetaId(_,_,_,clt) | PC.TMetaType(_,_,clt) | PC.TMetaInit(_,_,clt)
+  | PC.TMetaDecl(_,_,clt) | PC.TMetaField(_,_,clt)
   | PC.TMetaStm(_,_,clt) | PC.TMetaStmList(_,_,clt) | PC.TMetaErr(_,_,_,clt)
   | PC.TMetaFunc(_,_,_,clt) | PC.TMetaLocalFunc(_,_,_,clt)
   | PC.TMetaDeclarer(_,_,_,clt) | PC.TMetaIterator(_,_,_,clt) -> split t clt
@@ -676,7 +684,8 @@ let split_token ((tok,_) as t) =
   | PC.TOrLog(clt) | PC.TAndLog(clt) | PC.TOr(clt) | PC.TXor(clt)
   | PC.TAnd (clt) | PC.TEqEq(clt) | PC.TNotEq(clt) | PC.TTildeEq(clt)
   | PC.TTildeExclEq(clt) | PC.TSub(clt) | PC.TLogOp(_,clt)
-  | PC.TShOp(_,clt) | PC.TPlus(clt) | PC.TMinus(clt) | PC.TMul(clt)
+  | PC.TShLOp(_,clt) | PC.TShROp(_,clt)
+  | PC.TPlus(clt) | PC.TMinus(clt) | PC.TMul(clt)
   | PC.TDmOp(_,clt) | PC.TTilde (clt) -> split t clt
 
   | PC.TOBrace(clt) | PC.TCBrace(clt) | PC.TOInit(clt) -> split t clt
@@ -796,6 +805,8 @@ let detect_types in_meta_decls l =
     | (PC.TMetaExpList(_,_,_,_),_)
     | (PC.TMetaType(_,_,_),_)
     | (PC.TMetaInit(_,_,_),_)
+    | (PC.TMetaDecl(_,_,_),_)
+    | (PC.TMetaField(_,_,_),_)
     | (PC.TMetaStm(_,_,_),_)
     | (PC.TMetaStmList(_,_,_),_)
     | (PC.TMetaPos(_,_,_,_),_) -> in_meta_decls
@@ -876,7 +887,8 @@ let token2line (tok,_) =
 
   | PC.TOrLog(clt) | PC.TAndLog(clt) | PC.TOr(clt) | PC.TXor(clt)
   | PC.TAnd (clt) | PC.TEqEq(clt) | PC.TNotEq(clt) | PC.TLogOp(_,clt)
-  | PC.TShOp(_,clt) | PC.TPlus(clt) | PC.TMinus(clt) | PC.TMul(clt)
+  | PC.TShLOp(_,clt) | PC.TShROp(_,clt)
+  | PC.TPlus(clt) | PC.TMinus(clt) | PC.TMul(clt)
   | PC.TDmOp(_,clt) | PC.TTilde (clt)
 
   | PC.TMetaParam(_,_,clt) | PC.TMetaParamList(_,_,_,clt)
@@ -884,6 +896,7 @@ let token2line (tok,_) =
   | PC.TMetaIdExp(_,_,_,_,clt) | PC.TMetaLocalIdExp(_,_,_,_,clt)
   | PC.TMetaExpList(_,_,_,clt)
   | PC.TMetaId(_,_,_,clt) | PC.TMetaType(_,_,clt) | PC.TMetaInit(_,_,clt)
+  | PC.TMetaDecl(_,_,clt) | PC.TMetaField(_,_,clt)
   | PC.TMetaStm(_,_,clt) | PC.TMetaStmList(_,_,clt) | PC.TMetaFunc(_,_,_,clt)
   | PC.TMetaLocalFunc(_,_,_,clt) | PC.TMetaPos(_,_,_,clt)
 
@@ -1379,8 +1392,8 @@ let get_rule_name parse_fn starts_with_name get_tokens file prefix =
           Ast.CocciRulename (check_name nm,a,b,c,d,e)
       | Ast.GeneratedRulename (nm,a,b,c,d,e) ->
           Ast.GeneratedRulename (check_name nm,a,b,c,d,e)
-      | Ast.ScriptRulename(_,s,deps) ->
-	  Ast.ScriptRulename(check_name None,s,deps)
+      | Ast.ScriptRulename(nm,s,deps) ->
+	  Ast.ScriptRulename(check_name nm,s,deps)
       | Ast.InitialScriptRulename(_,s,deps) ->
 	  Ast.InitialScriptRulename(check_name None,s,deps)
       | Ast.FinalScriptRulename(_,s,deps) ->
@@ -1546,6 +1559,7 @@ let parse file =
 
           let parse_cocci_rule ruletype old_metas
 	      (rule_name, dependencies, iso, dropiso, exists, is_expression) =
+	    let dropiso = !Flag_parsing_cocci.disabled_isos @ dropiso in
             Ast0.rule_name := rule_name;
             Data.inheritable_positions :=
 		rule_name :: !Data.inheritable_positions;
@@ -1641,6 +1655,25 @@ let parse file =
 	      Data.call_in_meta
 		(function _ ->
 		  get_script_metavars PC.script_meta_main table file lexbuf) in
+	    let (metavars,script_metavars) =
+	      List.fold_left
+		(function (metavars,script_metavars) ->
+		  function
+		      (script_var,Some(parent,var)) ->
+			((script_var,parent,var) :: metavars, script_metavars)
+		    | ((Some script_var,None),None) ->
+			(metavars, (name,script_var) :: script_metavars)
+		    | _ -> failwith "not possible")
+		([],[]) metavars in
+	    let metavars = List.rev metavars in
+	    let script_metavars = List.rev script_metavars in
+
+	    Hashtbl.add Data.all_metadecls name
+	      (List.map (function x -> Ast.MetaIdDecl(Ast.NONE,x))
+		 script_metavars);
+	    Hashtbl.add Lexer_cocci.rule_names name ();
+	    (*TODOHashtbl.add Lexer_cocci.all_metavariables name script_metavars;*)
+
 (*
             let exists_in old_metas (py,(r,m)) =
 	      r = "virtual" or
@@ -1662,7 +1695,9 @@ let parse file =
               (* script code *)
             let (more, tokens) = get_tokens [PC.TArobArob; PC.TArob] in
             let data = collect_script_tokens tokens in
-            (more,Ast0.ScriptRule(name, language, deps, metavars, data),
+            (more,
+	     Ast0.ScriptRule(name, language, deps, metavars,
+			     script_metavars, data),
 	     [],tokens) in
 
           let parse_if_script_rule k name language _ deps =
@@ -1783,8 +1818,8 @@ let process file isofile verbose =
   let parsed =
     List.map
       (function
-          Ast0.ScriptRule (a,b,c,d,e) ->
-	    [([],Ast.ScriptRule (a,b,c,d,e))]
+          Ast0.ScriptRule (a,b,c,d,fv,e) ->
+	    [([],Ast.ScriptRule (a,b,c,d,fv,e))]
 	| Ast0.InitialScriptRule(a,b,c,d) ->
 	    [([],Ast.InitialScriptRule (a,b,c,d))]
 	| Ast0.FinalScriptRule (a,b,c,d) ->

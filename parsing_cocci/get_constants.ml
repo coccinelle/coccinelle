@@ -221,7 +221,9 @@ let check_inherited nm =
 
   let strictdecls recursor k d =
     match Ast.unwrap d with
-      Ast.DisjDecl(decls) -> option_default
+      Ast.MetaDecl(name,_,_) | Ast.MetaField(name,_,_) ->
+	bind (k p) (minherited name)
+    | Ast.DisjDecl(decls) -> option_default
     | _ -> k d in
 
   let strictfullType recursor k ty =

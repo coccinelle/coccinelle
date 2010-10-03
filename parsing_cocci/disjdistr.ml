@@ -241,7 +241,8 @@ and designator = function
 
 and disjdecl d =
   match Ast.unwrap d with
-    Ast.Init(stg,ty,id,eq,ini,sem) ->
+    Ast.MetaDecl(_,_,_) | Ast.MetaField(_,_,_) -> [d]
+  | Ast.Init(stg,ty,id,eq,ini,sem) ->
       disjmult2 (disjty ty) (disjini ini)
 	(function ty -> function ini ->
 	  Ast.rewrap d (Ast.Init(stg,ty,id,eq,ini,sem)))
@@ -259,7 +260,7 @@ and disjdecl d =
       let ty = disjty ty in (* disj not allowed in id *)
       List.map (function ty -> Ast.rewrap d (Ast.Typedef(stg,ty,id,sem))) ty
   | Ast.DisjDecl(decls) -> List.concat (List.map disjdecl decls)
-  | Ast.Ddots(_,_) | Ast.MetaDecl(_,_,_) -> [d]
+  | Ast.Ddots(_,_) -> [d]
   | Ast.OptDecl(decl) ->
       let decl = disjdecl decl in
       List.map (function decl -> Ast.rewrap d (Ast.OptDecl(decl))) decl

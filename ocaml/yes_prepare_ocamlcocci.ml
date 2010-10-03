@@ -71,6 +71,8 @@ let ast_rep_binding ctr = function
   | (Some nm,Ast.MetaIdExpDecl _) -> print_match ctr nm "Expr"
   | (Some nm,Ast.MetaLocalIdExpDecl _) -> print_match ctr nm "Expr"
   | (Some nm,Ast.MetaExpListDecl _) -> print_match ctr nm "ExprList"
+  | (Some nm,Ast.MetaDeclDecl _) -> print_match ctr nm "Decl"
+  | (Some nm,Ast.MetaFieldDecl _) -> print_match ctr nm "Field"
   | (Some nm,Ast.MetaStmDecl _) -> print_match ctr nm "Stmt"
   | (Some nm,Ast.MetaStmListDecl _) -> failwith ("not supported: "^nm)
   | (Some nm,Ast.MetaFuncDecl _) -> print_match ctr nm "Str"
@@ -79,11 +81,19 @@ let ast_rep_binding ctr = function
   | (Some nm,Ast.MetaIteratorDecl _) -> print_match ctr nm "Str"
   | (None,_) -> ""
 
-let prepare_rule (name, metavars, code) =
+let manage_script_vars script_vars =
+  let rec loop n = function
+      [] -> ""
+    | (_,x)::xs ->
+	(Printf.sprintf "let %s = List.nth script_args %d in\n" x n) ^
+	(loop (n+1) xs) in
+  loop 0 script_vars
+
+let prepare_rule (name, metavars, script_vars, code) =
   let fname = String.concat "_" (Str.split (Str.regexp " ") name) in
   (* function header *)
   let function_header body =
-    Printf.sprintf "let %s args =\n %s" fname body in
+    Printf.sprintf "let %s args script_args =\n %s" fname body in
   (* parameter list *)
   let build_parameter_list body =
     let ctr = ref 0 in
@@ -98,7 +108,7 @@ let prepare_rule (name, metavars, code) =
 		  let ast_rep = ast_rep_binding ctr (ast_nm,mv) in
 		  ast_rep :: string_rep :: prev)
 	      [] metavars)) in
-    lets ^ body in
+    lets ^ (manage_script_vars script_vars) ^ body in
   (* add to hash table *)
   let hash_add body =
     Printf.sprintf
@@ -119,11 +129,11 @@ let prepare coccifile code =
     List.fold_left
       (function prev ->
 	function
-	    Ast_cocci.ScriptRule (name,"ocaml",deps,mv,code) ->
-	      (name,mv,code) :: prev
+	    Ast_cocci.ScriptRule (name,"ocaml",deps,mv,script_vars,code) ->
+	      (name,mv,script_vars,code) :: prev
 	  | Ast_cocci.InitialScriptRule (name,"ocaml",deps,code) -> prev
 	  | Ast_cocci.FinalScriptRule (name,"ocaml",deps,code) ->
-	      (name,[],code) :: prev
+	      (name,[],[],code) :: prev
 	  | _ -> prev)
       [] code in
   let other_rules = List.rev other_rules in
@@ -222,17 +232,17 @@ let parse_dep mlfile depout =
   | _ ->
       raise
 	(CompileFailure ("Wrong dependencies for "^mlfile^" (Got "^depout^")"))
-	
+
 let dep_flag mlfile =
   let depcmd  = !Flag.ocamldep ^" -modules "^mlfile in
   match Common.cmd_to_list depcmd with
     [dep] -> parse_dep mlfile dep
   | _ -> raise (CompileFailure ("Wrong dependencies for "^mlfile))
-	
+
 let compile_bytecode_cmd flags mlfile =
   let obj = (Filename.chop_extension mlfile) ^ ".cmo" in
   (obj, Printf.sprintf "%s -c %s %s %s" !Flag.ocamlc obj flags mlfile)
-    
+
 let compile_native_cmd flags mlfile =
   let obj = (Filename.chop_extension mlfile) ^ ".cmxs" in
   (obj,

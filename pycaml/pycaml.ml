@@ -398,7 +398,8 @@ let pyimport_importfrozenmodule = fmt5call (pnf ())
 (* 42 *)
 let pyeval_callobjectwithkeywords = fmt42call (pnf ())
 (* 17 *)
-let pyeval_callobject = fmt17call (pnf ())
+(* dropped in Python 2.7
+let pyeval_callobject = fmt17call (pnf ()) *)
 
 (* 29 *)
 let pyeval_getbuiltins = fmt29call (pnf ())

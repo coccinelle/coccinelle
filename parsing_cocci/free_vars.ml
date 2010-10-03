@@ -140,7 +140,8 @@ let collect_refs include_constraints =
   let astfvdecls recursor k d =
     bind (k d)
       (match Ast.unwrap d with
-	Ast.DisjDecl(decls) -> bind_disj (List.map k decls)
+	Ast.MetaDecl(name,_,_) | Ast.MetaField(name,_,_) -> [metaid name]
+      | Ast.DisjDecl(decls) -> bind_disj (List.map k decls)
       | _ -> option_default) in
 
   let astfvfullType recursor k ty =
@@ -283,6 +284,13 @@ let collect_saved =
       | Ast.MetaParamList(name,_,_,_) -> [metaid name]
       | _ -> option_default) in
 
+  let astfvdecls recursor k d =
+    bind (k d)
+      (match Ast.unwrap d with
+	Ast.MetaDecl(name,TC.Saved,_) | Ast.MetaField(name,TC.Saved,_) ->
+	  [metaid name]
+      | _ -> option_default) in
+
   let astfvrule_elem recursor k re =
     (*within a rule_elem, pattern3 manages the coherence of the bindings*)
     bind (k re)
@@ -301,7 +309,7 @@ let collect_saved =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing donothing
     astfvident astfvexpr donothing astfvtypeC astfvinit astfvparam
-    donothing astfvrule_elem donothing donothing donothing donothing
+    astfvdecls astfvrule_elem donothing donothing donothing donothing
 
 (* ---------------------------------------------------------------- *)
 
@@ -550,6 +558,17 @@ let classify_variables metavar_decls minirules used_after =
 	Ast.rewrap e (Ast.MetaParamList(name,lenname,unitary,inherited))
     | _ -> e in
 
+  let decl r k e =
+    let e = k e in
+    match Ast.unwrap e with
+      Ast.MetaDecl(name,_,_) ->
+	let (unitary,inherited) = classify name in
+	Ast.rewrap e (Ast.MetaDecl(name,unitary,inherited))
+    | Ast.MetaField(name,_,_) ->
+	let (unitary,inherited) = classify name in
+	Ast.rewrap e (Ast.MetaField(name,unitary,inherited))
+    | _ -> e in
+
   let rule_elem r k e =
     let e = k e in
     match Ast.unwrap e with
@@ -564,7 +583,7 @@ let classify_variables metavar_decls minirules used_after =
   let fn = V.rebuilder
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing donothing
-      ident expression donothing typeC init param donothing rule_elem
+      ident expression donothing typeC init param decl rule_elem
       donothing donothing donothing donothing in
 
   List.map fn.V.rebuilder_top_level minirules
@@ -717,7 +736,10 @@ let collect_astfvs rules =
       [] -> []
     | (metavars, rule)::rules ->
         match rule with
-          Ast.ScriptRule (_,_,_,_,_)
+          Ast.ScriptRule (_,_,_,_,script_vars,_) ->
+	    (* why are metavars in rule, but outside for cocci rule??? *)
+            let bound = script_vars @ bound in
+	    rule::(loop bound rules)
 	| Ast.InitialScriptRule (_,_,_,_) | Ast.FinalScriptRule (_,_,_,_) ->
 	    (* bound stays as is because script rules have no names, so no
 	       inheritance is possible *)
@@ -789,13 +811,16 @@ let collect_top_level_used_after metavar_rule_list =
     List.fold_right
       (function (metavar_list,r) ->
 	function (used_after,used_after_lists) ->
-	  let locally_defined = List.map Ast.get_meta_name metavar_list in
+	  let locally_defined =
+            match r with
+              Ast.ScriptRule (_,_,_,_,free_vars,_) -> free_vars
+	    | _ -> List.map Ast.get_meta_name metavar_list in
 	  let continue_propagation =
 	    List.filter (function x -> not(List.mem x locally_defined))
 	      used_after in
 	  let free_vars =
             match r with
-              Ast.ScriptRule (_,_,_,mv,_) ->
+              Ast.ScriptRule (_,_,_,mv,_,_) ->
                 drop_virt(List.map (function (_,(r,v),_) -> (r,v)) mv)
             | Ast.InitialScriptRule (_,_,_,_)
 	    | Ast.FinalScriptRule (_,_,_,_) -> []
@@ -905,9 +930,9 @@ let collect_used_after metavar_rule_list =
     (function (metavars,r) ->
       function used_after ->
         match r with
-          Ast.ScriptRule (_,_,_,_,_)
+          Ast.ScriptRule (_,_,_,_,_,_) (* no minirules, so nothing to do? *)
 	| Ast.InitialScriptRule (_,_,_,_) | Ast.FinalScriptRule (_,_,_,_) ->
-	    ([], [used_after], [], [])
+	    ([], [used_after], [[]], [])
         | Ast.CocciRule (name, rule_info, minirules, _,_) ->
           collect_local_used_after metavars minirules used_after
     )
@@ -931,7 +956,7 @@ let free_vars rules =
     List.map
       (function (mv, r) ->
          match r with
-           Ast.ScriptRule _
+           Ast.ScriptRule _ (* doesn't declare position variables *)
 	 | Ast.InitialScriptRule _ | Ast.FinalScriptRule _ -> []
          | Ast.CocciRule (_,_,rule,_,_) ->
            let positions =

@@ -77,6 +77,7 @@ let dumb_astcocci_decl = function
  | A.MacroDecl(fn, _, eas, _, _) -> ()
  | A.Ddots(dots,whencode) -> ()
  | A.MetaDecl _ -> ()
+ | A.MetaField _ -> ()
  | A.Typedef(d,ty1,ty2,pv) -> ()
  | A.DisjDecl xs -> ()
  | A.OptDecl _ | A.UniqueDecl _ -> ()
@@ -90,6 +91,7 @@ let dumb_astcocci_initialiser = function
   | A.DisjDecl(decls) -> ()
   | A.Ddots(dots,whencode) -> ()
   | A.MetaDecl(name,_,_) -> ()
+  | A.MetaField(name,_,_) -> ()
   | A.OptDecl(decl) -> ()
   | A.UniqueDecl(decl) -> ()
 

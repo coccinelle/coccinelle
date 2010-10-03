@@ -55,7 +55,13 @@ let update_after pragmas (info,x) =
 
 let rec right_decl d =
   match Ast0.unwrap d with
-    Ast0.Init(Some stg,ty,id,eq,ini,sem) ->
+    Ast0.MetaDecl(name,pure) ->
+      call_right right_mcode name d
+	(function name -> Ast0.MetaDecl(name,pure))
+  | Ast0.MetaField(name,pure) ->
+      call_right right_mcode name d
+	(function name -> Ast0.MetaField(name,pure))
+  | Ast0.Init(Some stg,ty,id,eq,ini,sem) ->
       call_right right_mcode sem d
 	(function sem -> Ast0.Init(Some stg,ty,id,eq,ini,sem))
   | Ast0.Init(None,ty,id,eq,ini,sem) ->
@@ -241,7 +247,13 @@ let left_fundecl name fninfo =
 
 let rec left_decl decl =
   match Ast0.unwrap decl with
-    Ast0.Init(Some stg,ty,id,eq,ini,sem) ->
+    Ast0.MetaDecl(name,pure) ->
+      call_right right_mcode name decl
+	(function name -> Ast0.MetaDecl(name,pure))
+  | Ast0.MetaField(name,pure) ->
+      call_right right_mcode name decl
+	(function name -> Ast0.MetaField(name,pure))
+  | Ast0.Init(Some stg,ty,id,eq,ini,sem) ->
       call_right left_mcode stg decl
 	(function stg -> Ast0.Init(Some stg,ty,id,eq,ini,sem))
   | Ast0.Init(None,ty,id,eq,ini,sem) ->

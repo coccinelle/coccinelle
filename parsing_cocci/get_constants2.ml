@@ -54,6 +54,52 @@ wanted *)
 type combine =
     And of combine list | Or of combine list | Elem of string | False | True
 
+(* glimpse often fails on large queries.  We can safely remove arguments of
+&& as long as we don't remove all of them (note that there is no negation).
+This tries just removing one of them and then orders the results by
+increasing number of ors (ors are long, increasing the chance of failure,
+and are less restrictive, possibly increasing the chance of irrelevant
+code. *)
+let reduce_glimpse x =
+  let rec loop x k q =
+    match x with
+      Elem _ -> q()
+    | And [x] -> loop x (function changed_l -> k (And [changed_l])) q
+    | And l ->
+	kloop l
+	  (function changed_l -> k (And changed_l))
+	  (function _ ->
+	    let rec rloop l k =
+	      match l with
+		[] -> q()
+	      | x::xs ->
+		  (k xs) ::
+		  rloop xs (function changed_xs -> k (x :: changed_xs)) in
+	    rloop l (function changed_l -> k (And changed_l)))
+    | Or l -> kloop l (function changed_l -> k (Or changed_l)) q
+    | _ -> failwith "not possible"
+  and kloop l k q =
+    match l with
+      [] -> q()
+    | x::xs ->
+	loop x
+	  (function changed_x -> k (changed_x::xs))
+	  (function _ ->
+	    kloop xs
+	      (function changed_xs -> k (x :: changed_xs))
+	      q) in
+  let rec count_ors = function
+      Elem _ -> 0
+    | And l -> List.fold_left (+) 0 (List.map count_ors l)
+    | Or l ->
+	((List.length l) - 1) +
+	  (List.fold_left (+) 0 (List.map count_ors l))
+    | _ -> failwith "not possible" in
+  let res = loop x (function x -> x) (function _ -> []) in
+  let res = List.map (function x -> (count_ors x,x)) res in
+  let res = List.sort compare res in
+  List.map (function (_,x) -> x) res
+
 let interpret_glimpse strict x =
   let rec loop = function
       Elem x -> x
@@ -73,7 +119,8 @@ let interpret_glimpse strict x =
     True -> None
   | False when strict ->
       failwith "False should not be in the final result.  Perhaps your rule doesn't contain any +/-/* code"
-  | _ -> Some [(loop x)]
+  | _ ->
+      Some (if strict then List.map loop (x::reduce_glimpse x) else [loop x])
 
 (* grep only does or *)
 let interpret_grep strict x =
@@ -307,7 +354,9 @@ let do_get_constants constants keywords env neg_pos =
 
   let declaration r k d =
     match Ast.unwrap d with
-      Ast.DisjDecl(decls) ->
+      Ast.MetaDecl(name,_,_) | Ast.MetaField(name,_,_) ->
+	bind (k d) (minherited name)
+    | Ast.DisjDecl(decls) ->
 	disj_union_all (List.map r.V.combiner_declaration decls)
     | Ast.OptDecl(decl) -> option_default
     | Ast.Ddots(dots,whencode) -> option_default
@@ -557,7 +606,7 @@ let run rules neg_pos_vars =
     List.fold_left
       (function (rest_info,in_plus,env,locals(*dom of env*)) ->
         function
-	    (Ast.ScriptRule (_,_,deps,mv,_),_) ->
+	    (Ast.ScriptRule (nm,_,deps,mv,_,_),_) ->
 	      let extra_deps =
 		List.fold_left
 		  (function prev ->
@@ -567,7 +616,7 @@ let run rules neg_pos_vars =
 		      else Ast.AndDep (Ast.Dep rule,prev))
 		  deps mv in
 	      (match dependencies env extra_deps with
-		False -> (rest_info, in_plus, env, locals)
+		False -> (rest_info, in_plus, (nm,True)::env, nm::locals)
 	      | dependencies ->
 		  (build_or dependencies rest_info, in_plus, env, locals))
           | (Ast.InitialScriptRule (_,_,deps,_),_)

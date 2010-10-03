@@ -744,7 +744,10 @@ DL_IMPORT(int) PyImport_ImportFrozenModule(char *);
 /* 42 */
 DL_IMPORT(PyObject *) PyEval_CallObjectWithKeywords(PyObject *, PyObject *, PyObject *);
 /* 17 */
+#if 0
+// dropped in Python 2.7
 DL_IMPORT(PyObject *) PyEval_CallObject(PyObject *, PyObject *);
+#endif
 
 /* 29 */
 DL_IMPORT(PyObject *) PyEval_GetBuiltins(void);
@@ -1203,7 +1206,10 @@ python_func_table the_python_func_table[] = {
 /* 42 */
 { (void *)PyEval_CallObjectWithKeywords, 42, "PyEval_CallObjectWithKeywords" },
 /* 17 */
+#if 0
+// dropped in Python 2.7
 { (void *)PyEval_CallObject, 17, "PyEval_CallObject" },
+#endif
 
 /* 29 */
 { (void *)PyEval_GetBuiltins, 29, "PyEval_GetBuiltins" },

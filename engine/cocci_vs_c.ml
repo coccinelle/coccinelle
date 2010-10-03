@@ -276,6 +276,10 @@ let equal_metavarval valu valu' =
   | Ast_c.MetaExprListVal a, Ast_c.MetaExprListVal b ->
       Lib_parsing_c.al_arguments a =*= Lib_parsing_c.al_arguments b
 
+  | Ast_c.MetaDeclVal a, Ast_c.MetaDeclVal b ->
+      Lib_parsing_c.al_declaration a =*= Lib_parsing_c.al_declaration b
+  | Ast_c.MetaFieldVal a, Ast_c.MetaFieldVal b ->
+      Lib_parsing_c.al_field a =*= Lib_parsing_c.al_field b
   | Ast_c.MetaStmtVal a, Ast_c.MetaStmtVal b ->
       Lib_parsing_c.al_statement a =*= Lib_parsing_c.al_statement b
   | Ast_c.MetaInitVal a, Ast_c.MetaInitVal b ->
@@ -305,7 +309,7 @@ let equal_metavarval valu valu' =
 	l1
 
   | (B.MetaPosValList _|B.MetaListlenVal _|B.MetaPosVal _|B.MetaStmtVal _
-      |B.MetaTypeVal _ |B.MetaInitVal _
+      |B.MetaDeclVal _ |B.MetaFieldVal _ |B.MetaTypeVal _ |B.MetaInitVal _
       |B.MetaParamListVal _|B.MetaParamVal _|B.MetaExprListVal _
       |B.MetaExprVal _|B.MetaLocalFuncVal _|B.MetaFuncVal _|B.MetaIdVal _
     ), _
@@ -333,6 +337,10 @@ let equal_inh_metavarval valu valu'=
   | Ast_c.MetaExprListVal a, Ast_c.MetaExprListVal b ->
       Lib_parsing_c.al_inh_arguments a =*= Lib_parsing_c.al_inh_arguments b
 
+  | Ast_c.MetaDeclVal a, Ast_c.MetaDeclVal b ->
+      Lib_parsing_c.al_inh_declaration a =*= Lib_parsing_c.al_inh_declaration b
+  | Ast_c.MetaFieldVal a, Ast_c.MetaFieldVal b ->
+      Lib_parsing_c.al_inh_field a =*= Lib_parsing_c.al_inh_field b
   | Ast_c.MetaStmtVal a, Ast_c.MetaStmtVal b ->
       Lib_parsing_c.al_inh_statement a =*= Lib_parsing_c.al_inh_statement b
   | Ast_c.MetaInitVal a, Ast_c.MetaInitVal b ->
@@ -362,7 +370,7 @@ let equal_inh_metavarval valu valu'=
 	l1
 
   | (B.MetaPosValList _|B.MetaListlenVal _|B.MetaPosVal _|B.MetaStmtVal _
-      |B.MetaTypeVal _ |B.MetaInitVal _
+      |B.MetaDeclVal _ |B.MetaFieldVal _ |B.MetaTypeVal _ |B.MetaInitVal _
       |B.MetaParamListVal _|B.MetaParamVal _|B.MetaExprListVal _
       |B.MetaExprVal _|B.MetaLocalFuncVal _|B.MetaFuncVal _|B.MetaIdVal _
     ), _
@@ -628,6 +636,10 @@ module type PARAM =
       (A.meta_name A.mcode, Ast_c.parameterType) matcher
     val distrf_ini :
       (A.meta_name A.mcode, Ast_c.initialiser) matcher
+    val distrf_decl :
+      (A.meta_name A.mcode, Ast_c.declaration) matcher
+    val distrf_field :
+      (A.meta_name A.mcode, Ast_c.field) matcher
     val distrf_node :
       (A.meta_name A.mcode, Control_flow_c.node) matcher
 
@@ -1777,12 +1789,15 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
    * be no transform of MetaDecl, just matching are allowed.
    *)
 
-  | A.MetaDecl(ida,_keep,_inherited), _ -> (* keep ? inherited ? *)
-      (* todo: should not happen in transform mode *)
-      return ((mckstart, allminus, decla), declb)
-
-
-
+  | A.MetaDecl (ida,keep,inherited), _ ->
+      let max_min _ =
+	Lib_parsing_c.lin_col_by_pos (Lib_parsing_c.ii_of_decl declb) in
+      X.envf keep inherited (ida, Ast_c.MetaDeclVal declb, max_min) (fun () ->
+        X.distrf_decl ida declb
+          ) >>= (fun ida declb ->
+	    return ((mckstart, allminus,
+		     (A.MetaDecl (ida, keep, inherited))+> A.rewrap decla),
+		    declb))
   | _, (B.DeclList ([var], iiptvirgb::iifakestart::iisto)) ->
       onedecl allminus decla (var,iiptvirgb,iisto) >>=
       (fun decla (var,iiptvirgb,iisto)->
@@ -1835,7 +1850,7 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
                          [iisb;lpb;rpb;iiendb;iifakestart] ++ iistob))
           ))))))))
 
-  | _, (B.MacroDecl _ |B.DeclList _) ->       fail
+  | _, (B.MacroDecl _ |B.DeclList _) ->      fail
 
 
 and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
@@ -1845,6 +1860,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
  (* kind of typedef iso, we must unfold, it's for the case
   * T { }; that we want to match against typedef struct { } xx_t;
   *)
+
  | A.TyDecl (tya0, ptvirga),
    ({B.v_namei = Some (nameidb, None);
      B.v_type = typb0;
@@ -2425,8 +2441,16 @@ and (struct_fields: (A.declaration list, B.field list) matcher) =
 
 and (struct_field: (A.declaration, B.field) matcher) = fun fa fb ->
 
-  match fb with
-  | B.DeclarationField (B.FieldDeclList (onefield_multivars,iiptvirg)) ->
+  match A.unwrap fa,fb with
+  | A.MetaField (ida,keep,inherited), _ ->
+      let max_min _ =
+	Lib_parsing_c.lin_col_by_pos (Lib_parsing_c.ii_of_field fb) in
+      X.envf keep inherited (ida, Ast_c.MetaFieldVal fb, max_min) (fun () ->
+        X.distrf_field ida fb
+          ) >>= (fun ida fb ->
+	    return ((A.MetaField (ida, keep, inherited))+> A.rewrap fa,
+		    fb))
+  | _,B.DeclarationField (B.FieldDeclList (onefield_multivars,iiptvirg)) ->
 
     let iiptvirgb = tuple_of_list1 iiptvirg in
 
@@ -2484,16 +2508,15 @@ and (struct_field: (A.declaration, B.field) matcher) = fun fa fb ->
       pr2_once "PB: More that one variable in decl. Have to split";
       fail
     )
-  | B.EmptyField _iifield ->
+  | _,B.EmptyField _iifield ->
       fail
 
-  | B.MacroDeclField ((sb,ebs),ii) ->
-      (match A.unwrap fa with
-	A.MacroDecl (sa,lpa,eas,rpa,enda) -> raise Todo
-      |	_ -> fail)
+  | A.MacroDecl (sa,lpa,eas,rpa,enda),B.MacroDeclField ((sb,ebs),ii) ->
+      raise Todo
+  | _,B.MacroDeclField ((sb,ebs),ii) -> fail
 
-  | B.CppDirectiveStruct directive -> fail
-  | B.IfdefStruct directive -> fail
+  | _,B.CppDirectiveStruct directive -> fail
+  | _,B.IfdefStruct directive -> fail
 
 
 

@@ -13,6 +13,23 @@
 - Add more information in documentation, man pages and wiki
 
 
+* 0.2.4
+** Language:
+- scripts now have names and can declare metavariables that are seen by
+  SmPL as identifier metavariables, see demos/{python,ocaml}tococci.cocci
+- declaration (match variable declarations) and field (match structure
+  field declarations) metavariables
+
+** Features:
+- compatability with Python 2.7.  Thanks to Richard W.M. Jones for pointing
+  out the problem
+- python and ocaml string representations of parameter lists and expression
+  lists
+- try simpler patterns on glimpse failure
+
+** Bugfix:
+- detect used after metavariables in simple statement metavariable match
+
 * 0.2.3
 ** Language:
 - <= constraints relating an expression metavariable to one or more
