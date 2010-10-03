@@ -20,12 +20,27 @@
  *)
 
 
-(* Constraints on Meta-* Identifiers, Functions *)
-type idconstraint =
-    IdNoConstraint
-  | IdNegIdSet      of string list
-  | IdRegExp        of string * Str.regexp
-  | IdNotRegExp     of string * Str.regexp
+(*
+ * Copyright 2005-2010, Ecole des Mines de Nantes, University of Copenhagen
+ * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+ * This file is part of Coccinelle.
+ *
+ * Coccinelle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, according to version 2 of the License.
+ *
+ * Coccinelle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The authors reserve the right to distribute this or future versions of
+ * Coccinelle under other licenses.
+ *)
+
 
 (* --------------------------------------------------------------------- *)
 (* Modified code *)
@@ -197,7 +212,10 @@ and base_expression =
   | EComma         of string mcode (* only in arg lists *)
 
   | DisjExpr       of expression list
-  | NestExpr       of expression dots * expression option * multi
+  | NestExpr       of string mcode (* <.../<+... *) *
+	              expression dots *
+	              string mcode (* ...>/...+> *) * 
+                      expression option * multi
 
   (* can appear in arg lists, and also inside Nest, as in:
    if(< ... X ... Y ...>)
@@ -211,8 +229,19 @@ and base_expression =
 
 and constraints =
     NoConstraint
-  | NotIdCstrt     of idconstraint
+  | NotIdCstrt     of reconstraint
   | NotExpCstrt    of expression list
+  | SubExpCstrt    of meta_name list
+
+(* Constraints on Meta-* Identifiers, Functions *)
+and idconstraint =
+    IdNoConstraint
+  | IdNegIdSet         of string list * meta_name list
+  | IdRegExpConstraint of reconstraint
+
+and reconstraint =
+  | IdRegExp        of string * Str.regexp
+  | IdNotRegExp     of string * Str.regexp
 
 (* ANY = int E; ID = idexpression int X; CONST = constant int X; *)
 and form = ANY | ID | LocalID | CONST (* form for MetaExp *)
@@ -474,7 +503,8 @@ and base_statement =
 	             statement (*decl*) dots * case_line list * rule_elem(*}*)
   | Atomic        of rule_elem
   | Disj          of statement dots list
-  | Nest          of statement dots *
+  | Nest          of string mcode (* <.../<+... *) * statement dots *
+	             string mcode (* ...>/...+> *) * 
 	             (statement dots,statement) whencode list * multi *
 	             dots_whencode list * dots_whencode list
   | FunDecl       of rule_elem (* header *) * rule_elem (* { *) *

@@ -296,9 +296,9 @@ type specifications on expression metavariables, then the default is {\bf
 -local\_includes}.  Otherwise the default is {\bf -no\_includes}.  At most
 one of these options can be specified.}
 
-\normal{-I $\langle$path$\rangle$}{ This option specifies the directory in
-  which to find non-local include files.  This option should be used only
-  once, as each use will overwrite the preceding one.}
+\normal{-I $\langle$path$\rangle$}{ This option specifies a directory
+  in which to find non-local include files.  This option can be used
+  several times.}
 
 \rare{-relax\_include\_path}{This option when combined with -all\_includes
   causes the search for local
@@ -442,9 +442,15 @@ Normally, the only output is a diff printed to standard output.
 
 \rare{-o $\langle$file$\rangle$}{ The output file.}
 
-\rare{-inplace}{ Modify the input file.}
+\rare{-in\_place}{ Modify the input file.  By default, the input file is
+  overwritten, with no backup.}
 
-\rare{-outplace}{ Store modifications in a .cocci\_res file.}
+\rare{-backup\_suffix}{The suffix of the file to use in making a backup of
+  the original file(s).  This suffix should include the leading ``.'', if
+  one is desired.  This option only has an effect when the option
+  {\tt -in\_place} is also used.}
+
+\rare{-out\_place}{ Store modifications in a .cocci\_res file.}
 
 \rare{-no\_show\_diff}{ Normally, a diff between the original and transformed
 code is printed on the standard output.  This option causes this not to be
@@ -520,3 +526,11 @@ condition occurs, rather than only once.}
 
 \developer{-pad, -hrule $\langle$dir$\rangle$, -xxx, -l1}{}
 
+
+%%% Local Variables:
+%%% mode: LaTeX
+%%% TeX-master: "main_options"
+%%% coding: utf-8
+%%% TeX-PDF-mode: t
+%%% ispell-local-dictionary: "american"
+%%% End:

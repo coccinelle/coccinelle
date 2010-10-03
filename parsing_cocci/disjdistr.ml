@@ -20,6 +20,28 @@
  *)
 
 
+(*
+ * Copyright 2005-2010, Ecole des Mines de Nantes, University of Copenhagen
+ * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+ * This file is part of Coccinelle.
+ *
+ * Coccinelle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, according to version 2 of the License.
+ *
+ * Coccinelle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The authors reserve the right to distribute this or future versions of
+ * Coccinelle under other licenses.
+ *)
+
+
 module Ast = Ast_cocci
 module V = Visitor_ast
 
@@ -171,7 +193,7 @@ and disjexp e =
   | Ast.MetaExprList(_,_,_,_) | Ast.EComma(_) -> [e]
   | Ast.DisjExpr(exp_list) ->
       List.concat (List.map disjexp exp_list)
-  | Ast.NestExpr(expr_dots,whencode,multi) ->
+  | Ast.NestExpr(starter,expr_dots,ender,whencode,multi) ->
       (* not sure what to do here, so ambiguities still possible *)
       [e]
   | Ast.Edots(dots,_) | Ast.Ecircles(dots,_) | Ast.Estars(dots,_) -> [e]

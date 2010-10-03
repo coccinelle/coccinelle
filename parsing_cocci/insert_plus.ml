@@ -20,6 +20,28 @@
  *)
 
 
+(*
+ * Copyright 2005-2010, Ecole des Mines de Nantes, University of Copenhagen
+ * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+ * This file is part of Coccinelle.
+ *
+ * Coccinelle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, according to version 2 of the License.
+ *
+ * Coccinelle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The authors reserve the right to distribute this or future versions of
+ * Coccinelle under other licenses.
+ *)
+
+
 (* The error message "no available token to attach to" often comes in an
 argument list of unbounded length.  In this case, one should move a comma so
 that there is a comma after the + code. *)
@@ -957,7 +979,7 @@ let merge_one : (minus_join_point * Ast0.info * 'a) list *
     m;
   Printf.printf "plus code\n";
   List.iter
-    (function (info,p) ->
+    (function (info,_,p) ->
       Printf.printf "start %d end %d real_start %d real_end %d\n"
 	info.Ast0.pos_info.Ast0.logical_start
 	info.Ast0.pos_info.Ast0.logical_end

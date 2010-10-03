@@ -20,6 +20,28 @@
  *)
 
 
+(*
+ * Copyright 2005-2010, Ecole des Mines de Nantes, University of Copenhagen
+ * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+ * This file is part of Coccinelle.
+ *
+ * Coccinelle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, according to version 2 of the License.
+ *
+ * Coccinelle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The authors reserve the right to distribute this or future versions of
+ * Coccinelle under other licenses.
+ *)
+
+
 (* Arities matter for the minus slice, but not for the plus slice. *)
 
 (* ? only allowed on rule_elems, and on subterms if the context is ? also. *)
@@ -790,7 +812,7 @@ and statement tgt stm =
       let arity =
 	stm_same (mcode2line goto) (List.map mcode2arity [goto;sem]) in
       let goto = mcode goto in
-      let l = ident false tgt l in
+      let l = ident false arity l in
       let sem = mcode sem in
       make_rule_elem stm tgt arity (Ast0.Goto(goto,l,sem))
   | Ast0.Return(ret,sem) ->

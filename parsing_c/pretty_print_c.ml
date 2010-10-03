@@ -427,7 +427,7 @@ let mk_pretty_printers
       | (ParenType t, _)                           -> pp_base_type t sto
       | (Array (eopt, t), [i1;i2])                 -> pp_base_type t sto
       | (FunctionType (returnt, paramst), [i1;i2]) ->
-          pp_base_type returnt sto
+          pp_base_type returnt sto;
 
 
       | (StructUnion (su, sopt, fields),iis) ->

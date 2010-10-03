@@ -32,6 +32,7 @@ A HTML version of this documentation is available online at
   \RULE{\rt{include\_cocci}}
   \CASE{using \NT{string}}
   \CASE{using \NT{pathToIsoFile}}
+  \CASE{virtual \T{id} \ANY{, \T{id}}}
 
   \RULE{\rt{changeset}}
   \CASE{\NT{metavariables} \NT{transformation}}
@@ -46,6 +47,11 @@ first detected when the code is executed.  Furthermore, \texttt{@} should
 not be use in this code.  Spatch scans the script code for the next
 \texttt{@} and considers that to be the beginning of the next rule, even if
 \texttt{@} occurs within e.g., a string or a comment.
+
+\texttt{virtual} keyword is used to declare virtual rules. Virtual
+rules may be subsequently used as a dependency for the rules in the
+SmPL file. Whether a virtual rule is defined or not is controlled by
+the \texttt{-D} option on the command line.
 
 % Between the metavariables and the transformation rule, there can be a
 % specification of constraints on the names of the old and new files,
@@ -74,11 +80,6 @@ section.
   \RULE{\rt{rulename}}
   \CASE{\T{id} \OPT{extends \T{id}} \OPT{depends on \NT{dep}} \opt{\NT{iso}}
     \opt{\NT{disable-iso}} \opt{\NT{exists}} \opt{expression}}
-  \CASE{script:\T{language} \OPT{depends on \NT{dep}}}
-
-  \RULE{\rt{script\_init\_final}}
-  \CASE{initialize:\T{language}}
-  \CASE{finalize:\T{language}}
 
   \RULE{\rt{dep}}
   \CASE{\NT{pnrule}}
@@ -191,8 +192,9 @@ constrained by its type.
   \CASE{\NT{pmid} \~{}= \NT{regexp}}
 
   \RULE{\rt{pmid\_with\_not\_eq}}
-  \CASE{\NT{pmid} \OPT{!= \T{id}}}
-  \CASE{\NT{pmid} \OPT{!= \ttlb~\NT{COMMA\_LIST}\mth{(}\T{id}\mth{)} \ttrb}}
+  \CASE{\NT{pmid} \OPT{!= \NT{id\_or\_meta}}}
+  \CASE{\NT{pmid}
+     \OPT{!= \ttlb~\NT{COMMA\_LIST}\mth{(}\NT{id\_or\_meta}\mth{)} \ttrb}}
 
   \RULE{\rt{pmid\_with\_virt\_or\_not\_eq}}
   \CASE{virtual.\T{id}}
@@ -205,6 +207,10 @@ constrained by its type.
   \RULE{\rt{id\_or\_cst}}
   \CASE{\T{id}}
   \CASE{\T{integer}}
+
+  \RULE{\rt{id\_or\_meta}}
+  \CASE{\T{id}}
+  \CASE{\T{rulename\_id}.\T{id}}
 
   \RULE{\rt{pmid\_with\_not\_eq\_mid}}
   \CASE{\NT{pmid} \OPT{!= \NT{mid}}}
@@ -238,8 +244,8 @@ typing, metavariables for scripts do not include type declarations.
   \RULE{\rt{script\_metavariables}}
   \CASE{@ script:\NT{language} \OPT{depends on \NT{dep}} @
         \any{\NT{script\_metadecl}} @@}
-  \CASE{@ initialize:\NT{language} @}
-  \CASE{@ finalize:\NT{language} @}
+  \CASE{@ initialize:\NT{language} \OPT{depends on \NT{dep}} @}
+  \CASE{@ finalize:\NT{language} \OPT{depends on \NT{dep}} @}
 
   \RULE{\rt{language}} \CASE{python}
 
@@ -812,7 +818,7 @@ in a concise way.
 %%% Local Variables:
 %%% mode: LaTeX
 %%% TeX-master: "main_grammar"
-%%% coding: latin-9
+%%% coding: utf-8
 %%% TeX-PDF-mode: t
 %%% ispell-local-dictionary: "american"
 %%% End:

@@ -20,6 +20,28 @@
  *)
 
 
+(*
+ * Copyright 2005-2010, Ecole des Mines de Nantes, University of Copenhagen
+ * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+ * This file is part of Coccinelle.
+ *
+ * Coccinelle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, according to version 2 of the License.
+ *
+ * Coccinelle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The authors reserve the right to distribute this or future versions of
+ * Coccinelle under other licenses.
+ *)
+
+
 (* exports everything, used only by parser_cocci_menhir.mly *)
 module Ast0 = Ast0_cocci
 module Ast = Ast_cocci
@@ -188,7 +210,7 @@ let iso_adjust first_fn fn first rest =
     front::after -> (first_fn first::front)::after
   | _ -> failwith "not possible"
 
-let check_meta tok =
+let check_meta_tyopt type_irrelevant tok =
   let lookup rule name =
     try
       let info = Hashtbl.find Data.all_metadecls rule in
@@ -254,21 +276,21 @@ let check_meta tok =
 	       ("incompatible inheritance declaration "^name)))
   | Ast.MetaExpDecl(Ast.NONE,(rule,name),ty) ->
       (match lookup rule name with
-	Ast.MetaExpDecl(_,_,ty1) when ty = ty1 -> ()
+	Ast.MetaExpDecl(_,_,ty1) when type_irrelevant or ty = ty1 -> ()
       | _ ->
 	  raise
 	    (Semantic_cocci.Semantic
 	       ("incompatible inheritance declaration "^name)))
   | Ast.MetaIdExpDecl(Ast.NONE,(rule,name),ty) ->
       (match lookup rule name with
-	Ast.MetaIdExpDecl(_,_,ty1) when ty = ty1 -> ()
+	Ast.MetaIdExpDecl(_,_,ty1) when type_irrelevant or ty = ty1 -> ()
       | _ ->
 	  raise
 	    (Semantic_cocci.Semantic
 	       ("incompatible inheritance declaration "^name)))
   | Ast.MetaLocalIdExpDecl(Ast.NONE,(rule,name),ty) ->
       (match lookup rule name with
-	Ast.MetaLocalIdExpDecl(_,_,ty1) when ty = ty1 -> ()
+	Ast.MetaLocalIdExpDecl(_,_,ty1) when type_irrelevant or ty = ty1 -> ()
       | _ ->
 	  raise
 	    (Semantic_cocci.Semantic
@@ -311,7 +333,7 @@ let check_meta tok =
 	       ("incompatible inheritance declaration "^name)))
   | Ast.MetaConstDecl(Ast.NONE,(rule,name),ty) ->
       (match lookup rule name with
-	Ast.MetaConstDecl(_,_,ty1) when ty = ty1 -> ()
+	Ast.MetaConstDecl(_,_,ty1) when type_irrelevant or ty = ty1 -> ()
       | _ ->
 	  raise
 	    (Semantic_cocci.Semantic
@@ -331,6 +353,16 @@ let check_meta tok =
   | _ ->
       raise
 	(Semantic_cocci.Semantic ("arity not allowed on imported declaration"))
+
+let check_meta m = check_meta_tyopt false m
+
+let check_inherited_constraint meta_name fn =
+  match meta_name with
+    (None,_) -> failwith "constraint must be an inherited variable"
+  | (Some rule,name) ->
+      let i = (rule,name) in
+      check_meta_tyopt true (fn i);
+      i
 
 let create_metadec ar ispure kindfn ids current_rule =
   List.concat

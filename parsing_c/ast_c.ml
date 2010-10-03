@@ -685,11 +685,14 @@ and program = toplevel list
  *)
 and metavars_binding = (Ast_cocci.meta_name, metavar_binding_kind) assoc
   and metavar_binding_kind =
-  | MetaIdVal        of string
+  | MetaIdVal        of string *
+	                Ast_cocci.meta_name list (* negative constraints *)
   | MetaFuncVal      of string
   | MetaLocalFuncVal of string
 
-  | MetaExprVal      of expression (* a "clean expr" *)
+  | MetaExprVal      of expression (* a "clean expr" *) *
+	                (*subterm constraints, currently exprs*)
+	                Ast_cocci.meta_name list
   | MetaExprListVal  of argument wrap2 list
   | MetaParamVal     of parameterType
   | MetaParamListVal of parameterType wrap2 list

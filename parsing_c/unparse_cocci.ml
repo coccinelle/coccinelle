@@ -33,6 +33,7 @@ exception CantBeInPlus
 (*****************************************************************************)
 
 type pos = Before | After | InPlace
+type nlhint = StartBox | EndBox | SpaceOrNewline of string ref
 
 let unknown = -1
 
@@ -44,8 +45,11 @@ let rec do_all
 (* Just to be able to copy paste the code from pretty_print_cocci.ml. *)
 let print_string s line lcol =
   let rcol = if lcol = unknown then unknown else lcol + (String.length s) in
-  pr s line lcol rcol in
-let print_text s = pr s unknown unknown unknown in
+  pr s line lcol rcol None in
+let print_string_with_hint hint s line lcol =
+  let rcol = if lcol = unknown then unknown else lcol + (String.length s) in
+  pr s line lcol rcol (Some hint) in
+let print_text s = pr s unknown unknown unknown None in
 let close_box _ = () in
 let force_newline _ = print_text "\n" in
 
@@ -144,7 +148,6 @@ let mcode fn (s,info,mc,pos) =
 		    | Ast.Indent s -> s in
 		  print_string str line col; Some line
 	      |	Some lb when line =|= lb ->
-		  Printf.printf "some, line same case\n";
 		  let str = match str with Ast.Noindent s | Ast.Indent s -> s in
 		  print_string str line col; Some line
 	      |	_ ->
@@ -224,22 +227,15 @@ let dots between fn d =
   | Ast.STARS(l) -> print_between between fn l
 in
 
-let nest_dots multi fn f d =
-  let mo s = if multi then "<+"^s else "<"^s in
-  let mc s = if multi then s^"+>" else s^">" in
-  match Ast.unwrap d with
-    Ast.DOTS(l) ->
-      print_text (mo "..."); f(); start_block();
-      print_between force_newline fn l;
-      end_block(); print_text (mc "...")
-  | Ast.CIRCLES(l) ->
-      print_text (mo "ooo"); f(); start_block();
-      print_between force_newline fn l;
-      end_block(); print_text (mc "ooo")
-  | Ast.STARS(l) ->
-      print_text (mo "***"); f(); start_block();
-      print_between force_newline fn l;
-      end_block(); print_text (mc "***")
+let nest_dots starter ender fn f d =
+  mcode print_string starter;
+  f(); start_block();
+  (match Ast.unwrap d with
+    Ast.DOTS(l)    -> print_between force_newline fn l
+  | Ast.CIRCLES(l) -> print_between force_newline fn l
+  | Ast.STARS(l)   -> print_between force_newline fn l);
+  end_block();
+  mcode print_string ender
 in
 
 (* --------------------------------------------------------------------- *)
@@ -250,7 +246,7 @@ let rec ident i =
       Ast.Id(name) -> mcode print_string name
     | Ast.MetaId(name,_,_,_) ->
 	handle_metavar name (function
-			       | (Ast_c.MetaIdVal id) -> print_text id
+			       | (Ast_c.MetaIdVal (id,_)) -> print_text id
 			       | _ -> raise Impossible
 			    )
     | Ast.MetaFunc(name,_,_,_) ->
@@ -282,14 +278,9 @@ let rec expression e =
     Ast.Ident(id) -> ident id
   | Ast.Constant(const) -> mcode constant const
   | Ast.FunCall(fn,lp,args,rp) ->
-      expression fn; mcode print_string_box lp;
-      let comma e =
-	expression e;
-	match Ast.unwrap e with
-	  Ast.EComma(cm) -> pr_space()
-	| _ -> () in
-      dots (function _ -> ()) comma args;
-      close_box(); mcode print_string rp
+      expression fn; mcode (print_string_with_hint StartBox) lp;
+      dots (function _ -> ()) arg_expression args;
+      mcode (print_string_with_hint EndBox) rp
   | Ast.Assignment(left,op,right,_) ->
       expression left; pr_space(); mcode assignOp op;
       pr_space(); expression right
@@ -330,7 +321,7 @@ let rec expression e =
 
   | Ast.MetaExpr (name,_,_,_typedontcare,_formdontcare,_) ->
       handle_metavar name  (function
-        | Ast_c.MetaExprVal exp ->
+        | Ast_c.MetaExprVal (exp,_) ->
             pretty_print_c.Pretty_print_c.expression exp
         | _ -> raise Impossible
       )
@@ -348,13 +339,14 @@ let rec expression e =
       if generating
       then print_disj_list expression exp_list
       else raise CantBeInPlus
-  | Ast.NestExpr(expr_dots,Some whencode,multi) when generating ->
-      nest_dots multi expression
+  | Ast.NestExpr(starter,expr_dots,ender,Some whencode,multi)
+    when generating ->
+      nest_dots starter ender expression
 	(function _ -> print_text "   when != "; expression whencode)
 	expr_dots
-  | Ast.NestExpr(expr_dots,None,multi) when generating ->
-      nest_dots multi expression (function _ -> ()) expr_dots
-  | Ast.NestExpr(_) -> raise CantBeInPlus
+  | Ast.NestExpr(starter,expr_dots,ender,None,multi) when generating ->
+      nest_dots starter ender expression (function _ -> ()) expr_dots
+  | Ast.NestExpr _ -> raise CantBeInPlus
   | Ast.Edots(dots,Some whencode)
   | Ast.Ecircles(dots,Some whencode)
   | Ast.Estars(dots,Some whencode) ->
@@ -373,6 +365,14 @@ let rec expression e =
 
   | Ast.OptExp(exp) | Ast.UniqueExp(exp) ->
       raise CantBeInPlus
+
+and arg_expression e =
+  match Ast.unwrap e with
+    Ast.EComma(cm) ->
+      (* space is only used by add_newline, and only if not using SMPL
+	 spacing.  pr_cspace uses a " " in unparse_c.ml.  Not so nice... *)
+      mcode (print_string_with_hint (SpaceOrNewline (ref " ")))  cm
+  | _ -> expression e
 
 and  unaryOp = function
     Ast.GetRef -> print_string "&"
@@ -637,7 +637,11 @@ and parameterTypeDef p =
   | Ast.Param(ty,None) -> fullType ty
 
   | Ast.MetaParam(name,_,_) ->
-      failwith "not handling MetaParam"
+      handle_metavar name
+	(function
+	    Ast_c.MetaParamVal p ->
+              pretty_print_c.Pretty_print_c.param p
+          | _ -> raise Impossible)
   | Ast.MetaParamList(name,_,_,_) ->
       failwith "not handling MetaParamList"
 
@@ -867,9 +871,9 @@ let rec statement arity s =
 	   stmt_dots_list;
 	 print_text "\n)")
       else raise CantBeInPlus
-  | Ast.Nest(stmt_dots,whn,multi,_,_) when generating ->
+  | Ast.Nest(starter,stmt_dots,ender,whn,multi,_,_) when generating ->
       pr_arity arity;
-      nest_dots multi (statement arity)
+      nest_dots starter ender (statement arity)
 	(function _ ->
 	  print_between force_newline
 	    (whencode (dots force_newline (statement "")) (statement "")) whn;
@@ -1062,7 +1066,13 @@ in
 	      |	Ast.Token(t,_) when List.mem t ["if";"for";"while";"do"] ->
 		  (* space always needed *)
 		  pr_space(); false
-	      |	_ -> true in
+	      |	Ast.ExpressionTag(e) ->
+		  (match Ast.unwrap e with
+		    Ast.EComma _ ->
+		      (* space always needed *)
+		      pr_space(); false 
+		  | _ -> true)
+	      |	t -> true in
 	    let indent_needed =
 	      let rec loop space_after indent_needed = function
 		  [] -> indent_needed

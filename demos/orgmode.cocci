@@ -37,11 +37,17 @@ coccilib.org.print_safe_link (p2[0], "arr[i]")
 print ""
 
 cocci.print_main ("foo", p1)
-cocci.print_sec ("foo", p2)
+cocci.print_sec  ("foo", p2)
 cocci.print_secs ("foo", p2)
 
 print ""
 
+cocci.print_main ("", p1)
+cocci.print_sec  ("", p2)
+cocci.print_secs ("", p2)
+
+print ""
+
 cocci.print_main ("foo", p1, "ovl-face3")
-cocci.print_sec ("foo", p2, "ovl-face4")
+cocci.print_sec  ("foo", p2, "ovl-face4")
 cocci.print_secs ("foo", p2, "ovl-face4")

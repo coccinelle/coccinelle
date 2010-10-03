@@ -33,6 +33,7 @@
 
 ;;; History
 
+;; 2010-04-02 Nico: Fix 'script' with 'depends on'. Add 'when forall', 'when any'
 ;; 2010-02-01 Nico: Add support for 'disable', 'using', scripting, 'virtual' rules
 ;; 2009-11-05 Nico: Cleanups, Change shortcut % to C-M-% (% is used in Python rule)
 ;; Some cleanups done by Rene Rydhof Hansen
@@ -89,6 +90,11 @@
   '((((background light)) (:foreground "violet red"))
     (((background dark)) (:foreground "purple")))
   "Highlighting lines to be matched (sgrep)")
+
+(defface cocci-script-face
+  '((((background light)) (:foreground "red"))
+    (((background dark)) (:foreground "SeaGreen3")))
+  "Highlighting script language name")
 
 
 ;; can look in lexer_cocci.mll for new identifiers
@@ -197,7 +203,7 @@
     (2 'cocci-script-face t)
     )
 
-   ("@.*\\b\\(script\\)[ \t]*:[ \t]*\\(.*\\)[ \t]*@"
+   ("@.*\\b\\(script\\)[ \t]*:[ \t]*\\([^ ]*\\)[ \t]*.*@"
     (1 'cocci-special-face t)
     (2 'cocci-script-face t)
     )
@@ -241,6 +247,10 @@
    ("\\bWHEN[ \t]+!=" . 'font-lock-keyword-face)
    ("\\bwhen[ \t]+=" . 'font-lock-keyword-face)
    ("\\bWHEN[ \t]+=" . 'font-lock-keyword-face)
+   ("\\bwhen[ \t]+forall" . 'font-lock-keyword-face)
+   ("\\bWHEN[ \t]+forall" . 'font-lock-keyword-face)
+   ("\\bwhen[ \t]+any" . 'font-lock-keyword-face)
+   ("\\bWHEN[ \t]+any" . 'font-lock-keyword-face)
 
    ; used in iso files
    ("<=>" . 'font-lock-keyword-face)

@@ -20,6 +20,28 @@
  *)
 
 
+(*
+ * Copyright 2005-2010, Ecole des Mines de Nantes, University of Copenhagen
+ * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+ * This file is part of Coccinelle.
+ *
+ * Coccinelle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, according to version 2 of the License.
+ *
+ * Coccinelle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The authors reserve the right to distribute this or future versions of
+ * Coccinelle under other licenses.
+ *)
+
+
 (* For each rule return the list of variables that are used after it.
 Also augment various parts of each rule with unitary, inherited, and freshness
 informations *)
@@ -86,8 +108,16 @@ let collect_refs include_constraints =
   let astfvident recursor k i =
     bind (k i)
       (match Ast.unwrap i with
-	Ast.MetaId(name,_,_,_) | Ast.MetaFunc(name,_,_,_)
-      | Ast.MetaLocalFunc(name,_,_,_) -> [metaid name]
+	Ast.MetaId(name,idconstraint,_,_) | Ast.MetaFunc(name,idconstraint,_,_)
+      | Ast.MetaLocalFunc(name,idconstraint,_,_) ->
+	  let metas =
+	    if include_constraints
+	    then
+	      match idconstraint with
+		Ast.IdNegIdSet (_,metas) -> metas
+	      | _ -> []
+	    else [] in
+	  bind (List.rev metas) [metaid name]
       | _ -> option_default) in
 
   let rec type_collect res = function
@@ -101,10 +131,26 @@ let collect_refs include_constraints =
   let astfvexpr recursor k e =
     bind (k e)
       (match Ast.unwrap e with
-	Ast.MetaExpr(name,_,_,Some type_list,_,_) ->
+	Ast.MetaExpr(name,constraints,_,Some type_list,_,_) ->
 	  let types = List.fold_left type_collect option_default type_list in
-	  bind [metaid name] types
-      | Ast.MetaErr(name,_,_,_) | Ast.MetaExpr(name,_,_,_,_,_) -> [metaid name]
+	  let extra =
+	    if include_constraints
+	    then
+	      match constraints with
+		Ast.SubExpCstrt l -> l
+	      |	_ -> []
+	    else [] in
+	  bind extra (bind [metaid name] types)
+      | Ast.MetaErr(name,constraints,_,_)
+      | Ast.MetaExpr(name,constraints,_,_,_,_) ->
+	  let extra =
+	    if include_constraints
+	    then
+	      match constraints with
+		Ast.SubExpCstrt l -> l
+	      |	_ -> []
+	    else [] in
+	  bind extra [metaid name]
       | Ast.MetaExprList(name,None,_,_) -> [metaid name]
       | Ast.MetaExprList(name,Some (lenname,_,_),_,_) ->
 	  [metaid name;metaid lenname]

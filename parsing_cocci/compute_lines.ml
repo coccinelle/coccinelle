@@ -20,6 +20,28 @@
  *)
 
 
+(*
+ * Copyright 2005-2010, Ecole des Mines de Nantes, University of Copenhagen
+ * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+ * This file is part of Coccinelle.
+ *
+ * Coccinelle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, according to version 2 of the License.
+ *
+ * Coccinelle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The authors reserve the right to distribute this or future versions of
+ * Coccinelle under other licenses.
+ *)
+
+
 (* Computes starting and ending logical lines for statements and
 expressions.  every node gets an index as well. *)
 
@@ -28,6 +50,12 @@ module Ast = Ast_cocci
 
 (* --------------------------------------------------------------------- *)
 (* Result *)
+
+(* This is a horrible hack.  We need to have a special treatment for the code
+inside a nest, and this is to avoid threading that information around
+everywhere *)
+let in_nest_count = ref 0
+let check_attachable v = if !in_nest_count > 0 then false else v
 
 let mkres x e left right =
   let lstart = Ast0.get_info left in
@@ -41,8 +69,8 @@ let mkres x e left right =
       Ast0.offset = lstart.Ast0.pos_info.Ast0.offset;} in
   let info =
     { Ast0.pos_info = pos_info;
-      Ast0.attachable_start = lstart.Ast0.attachable_start;
-      Ast0.attachable_end = lend.Ast0.attachable_end;
+      Ast0.attachable_start = check_attachable lstart.Ast0.attachable_start;
+      Ast0.attachable_end = check_attachable lend.Ast0.attachable_end;
       Ast0.mcode_start = lstart.Ast0.mcode_start;
       Ast0.mcode_end = lend.Ast0.mcode_end;
       (* only for tokens, not inherited upwards *)
@@ -71,8 +99,10 @@ let mkmultires x e left right (astart,start_mcodes) (aend,end_mcodes) =
       Ast0.offset = lstart.Ast0.pos_info.Ast0.offset; } in
   let info =
     { Ast0.pos_info = pos_info;
-      Ast0.attachable_start = if !inherit_attachable then astart else false;
-      Ast0.attachable_end = if !inherit_attachable then aend else false;
+      Ast0.attachable_start =
+      check_attachable (if !inherit_attachable then astart else false);
+      Ast0.attachable_end =
+      check_attachable (if !inherit_attachable then aend else false);
       Ast0.mcode_start = start_mcodes;
       Ast0.mcode_end = end_mcodes;
       (* only for tokens, not inherited upwards *)
@@ -118,7 +148,8 @@ let promote_to_statement stm mcodekind =
     {info with
       Ast0.pos_info = new_pos_info;
       Ast0.mcode_start = [mcodekind]; Ast0.mcode_end = [mcodekind];
-      Ast0.attachable_start = true; Ast0.attachable_end = true} in
+      Ast0.attachable_start = check_attachable true;
+      Ast0.attachable_end = check_attachable true} in
   {(Ast0.wrap ()) with Ast0.info = new_info; Ast0.mcodekind = ref mcodekind}
 
 let promote_to_statement_start stm mcodekind =
@@ -131,13 +162,16 @@ let promote_to_statement_start stm mcodekind =
     {info with
       Ast0.pos_info = new_pos_info;
       Ast0.mcode_start = [mcodekind]; Ast0.mcode_end = [mcodekind];
-      Ast0.attachable_start = true; Ast0.attachable_end = true} in
+      Ast0.attachable_start = check_attachable true;
+      Ast0.attachable_end = check_attachable true} in
   {(Ast0.wrap ()) with Ast0.info = new_info; Ast0.mcodekind = ref mcodekind}
 
 (* mcode is good by default *)
 let bad_mcode (t,a,info,mcodekind,pos,adj) =
   let new_info =
-    {info with Ast0.attachable_start = false; Ast0.attachable_end = false} in
+    {info with
+      Ast0.attachable_start = check_attachable false;
+      Ast0.attachable_end = check_attachable false} in
   (t,a,new_info,mcodekind,pos,adj)
 
 let get_all_start_info l =
@@ -174,11 +208,11 @@ let dot_list is_dots fn = function
       let last = List.hd backward in
       let first_info =
 	{ (Ast0.get_info first) with
-	  Ast0.attachable_start = first_attachable;
+	  Ast0.attachable_start = check_attachable first_attachable;
 	  Ast0.mcode_start = first_mcode } in
       let last_info =
 	{ (Ast0.get_info last) with
-	  Ast0.attachable_end = last_attachable;
+	  Ast0.attachable_end = check_attachable last_attachable;
 	  Ast0.mcode_end = last_mcode } in
       let first = Ast0.set_info first first_info in
       let last = Ast0.set_info last last_info in
@@ -191,7 +225,9 @@ let dots is_dots prev fn d =
   | (None,Ast0.DOTS([])) ->
       Ast0.set_info d
 	{(Ast0.get_info d)
-	with Ast0.attachable_start = false; Ast0.attachable_end = false}
+	with
+	  Ast0.attachable_start = check_attachable false;
+	  Ast0.attachable_end = check_attachable false}
   | (_,Ast0.DOTS(x)) ->
       let (l,lstart,lend) = dot_list is_dots fn x in
       mkres d (Ast0.DOTS l) lstart lend
@@ -205,17 +241,21 @@ let dots is_dots prev fn d =
 (* --------------------------------------------------------------------- *)
 (* Identifier *)
 
-let rec ident i =
+(* for #define name, with no value, to compute right side *)
+let mkidres a b c d r = (mkres a b c d,r)
+
+let rec full_ident i =
   match Ast0.unwrap i with
       Ast0.Id(name) as ui ->
-	let name = promote_mcode name in mkres i ui name name
+	let name = promote_mcode name in mkidres i ui name name name
     | Ast0.MetaId(name,_,_)
     | Ast0.MetaFunc(name,_,_) | Ast0.MetaLocalFunc(name,_,_) as ui ->
-	let name = promote_mcode name in mkres i ui name name
+	let name = promote_mcode name in mkidres i ui name name name
     | Ast0.OptIdent(id) ->
-	let id = ident id in mkres i (Ast0.OptIdent(id)) id id
+	let (id,r) = full_ident id in mkidres i (Ast0.OptIdent(id)) id id r
     | Ast0.UniqueIdent(id) ->
-	let id = ident id in mkres i (Ast0.UniqueIdent(id)) id id
+	let (id,r) = full_ident id in mkidres i (Ast0.UniqueIdent(id)) id id r
+and ident i = let (id,_) = full_ident i in id
 
 (* --------------------------------------------------------------------- *)
 (* Expression *)
@@ -593,14 +633,14 @@ let rec define_param p =
       let res = define_param dp in
       mkres p (Ast0.UniqueDParam(res)) res res
 
-let define_parameters x =
+let define_parameters x id =
   match Ast0.unwrap x with
-    Ast0.NoParams -> x (* no info, should be ignored *)
+    Ast0.NoParams -> (x,id) (* no info, should be ignored *)
   | Ast0.DParams(lp,dp,rp) ->
       let dp = dots is_define_param_dots None define_param dp in
       let l = promote_mcode lp in
       let r = promote_mcode rp in
-      mkres x (Ast0.DParams(lp,dp,rp)) l r
+      (mkres x (Ast0.DParams(lp,dp,rp)) l r, r)
 
 (* --------------------------------------------------------------------- *)
 (* Top-level code *)
@@ -731,7 +771,27 @@ let rec statement s =
     | Ast0.Nest(starter,rule_elem_dots,ender,whencode,multi) ->
 	let starter = bad_mcode starter in
 	let ender = bad_mcode ender in
-	let rule_elem_dots = dots is_stm_dots None statement rule_elem_dots in
+	let wrapper f =
+	  match Ast0.get_mcode_mcodekind starter with
+	    Ast0.MINUS _ ->
+	      (* if minus, then all nest code has to be minus.  This is
+		 checked at the token level, in parse_cocci.ml.  All nest code
+		 is also unattachable.  We strip the minus annotations from
+		 the nest code because in the CTL another metavariable will
+		 take care of removing all the code matched by the nest.
+		 Without stripping the minus annotations, we would get a
+		 double transformation.  Perhaps there is a more elegant
+		 way to do this in the CTL, but it is not easy, because of
+		 the interaction with the whencode and the implementation of
+		 plus *)
+	      in_nest_count := !in_nest_count + 1;
+	      let res = f() in
+	      in_nest_count := !in_nest_count - 1;
+	      res
+	  | _ -> f() in
+	let rule_elem_dots =
+	  wrapper
+	    (function _ -> dots is_stm_dots None statement rule_elem_dots) in
 	mkres s (Ast0.Nest(starter,rule_elem_dots,ender,whencode,multi))
 	  (promote_mcode starter) (promote_mcode ender)
     | Ast0.Dots(dots,whencode) ->
@@ -791,9 +851,9 @@ let rec statement s =
     | Ast0.Include(inc,stm) ->
 	mkres s (Ast0.Include(inc,stm)) (promote_mcode inc) (promote_mcode stm)
     | Ast0.Define(def,id,params,body) ->
-	let id = ident id in
-	let params = define_parameters params in
-	let body = dots is_stm_dots None statement body in
+	let (id,right) = full_ident id in
+	let (params,prev) = define_parameters params right in
+	let body = dots is_stm_dots (Some prev) statement body in
 	mkres s (Ast0.Define(def,id,params,body)) (promote_mcode def) body
     | Ast0.OptStm(stm) ->
 	let stm = statement stm in mkres s (Ast0.OptStm(stm)) stm stm
@@ -847,14 +907,17 @@ let top_level t =
 (* Entry points *)
 
 let compute_lines attachable_or x =
+  in_nest_count := 0;
   inherit_attachable := attachable_or;
   List.map top_level x
 
 let compute_statement_lines attachable_or x =
+  in_nest_count := 0;
   inherit_attachable := attachable_or;
   statement x
 
 let compute_statement_dots_lines attachable_or x =
+  in_nest_count := 0;
   inherit_attachable := attachable_or;
   statement_dots x
 

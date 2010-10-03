@@ -20,6 +20,28 @@
  *)
 
 
+(*
+ * Copyright 2005-2010, Ecole des Mines de Nantes, University of Copenhagen
+ * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+ * This file is part of Coccinelle.
+ *
+ * Coccinelle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, according to version 2 of the License.
+ *
+ * Coccinelle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The authors reserve the right to distribute this or future versions of
+ * Coccinelle under other licenses.
+ *)
+
+
 (* detect statements that are between dots in the minus code, because they
 may need a special treatment if they are if branches *)
 
@@ -563,9 +585,13 @@ let rec statement dots_before dots_after s =
 		     statement_dots_list,
 		   mids,ender))
   | Ast0.Nest(starter,stmt_dots,ender,whencode,multi) ->
-      Ast0.rewrap s
-	(Ast0.Nest
-	   (starter,statement_dots true true stmt_dots,ender,whencode,multi))
+      (match Ast0.get_mcode_mcodekind starter with
+	Ast0.MINUS _ -> (* everything removed, like -... *) s
+      |	_ ->
+	  Ast0.rewrap s
+	    (Ast0.Nest
+	       (starter,statement_dots true true stmt_dots,ender,
+		whencode,multi)))
   | Ast0.Exp(exp) -> s
   | Ast0.TopExp(exp) -> s
   | Ast0.Ty(ty) -> s

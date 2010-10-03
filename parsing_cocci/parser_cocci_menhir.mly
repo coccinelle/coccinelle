@@ -20,6 +20,28 @@
  */
 
 
+/*
+ * Copyright 2005-2010, Ecole des Mines de Nantes, University of Copenhagen
+ * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+ * This file is part of Coccinelle.
+ *
+ * Coccinelle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, according to version 2 of the License.
+ *
+ * Coccinelle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The authors reserve the right to distribute this or future versions of
+ * Coccinelle under other licenses.
+ */
+
+
 %{
 
 (* Not clear how to allow function declarations to specify a return type
@@ -92,7 +114,7 @@ module P = Parse_aux
 %token <Data.clt> TOr
 %token <Data.clt> TXor
 %token <Data.clt> TAnd
-%token <Data.clt> TEqEq TNotEq TTildeEq TTildeExclEq
+%token <Data.clt> TEqEq TNotEq TTildeEq TTildeExclEq TSub
 %token <Ast_cocci.logicalOp * Data.clt> TLogOp /* TInf TSup TInfEq TSupEq */
 %token <Ast_cocci.arithOp * Data.clt>   TShOp  /* TShl TShr */
 %token <Ast_cocci.arithOp * Data.clt>   TDmOp  /* TDiv TMod */
@@ -289,12 +311,13 @@ metadec:
     { P.create_metadec_with_constraints ar ispure kindfn ids }
 | ar=arity ispure=pure
   kindfn=metakind_atomic_expi
-  ids=comma_list(pure_ident_or_meta_ident_with_econstraint(re_or_not_eqe))
+  ids=comma_list(pure_ident_or_meta_ident_with_econstraint(re_or_not_eqe_or_sub))
     TMPtVirg
     { P.create_metadec_with_constraints ar ispure kindfn ids }
 | ar=arity ispure=pure
   kindfn=metakind_atomic_expe
-  ids=comma_list(pure_ident_or_meta_ident_with_x_eq(not_ceq)) TMPtVirg
+  ids=comma_list(pure_ident_or_meta_ident_with_econstraint(not_ceq_or_sub))
+    TMPtVirg
     { P.create_metadec_with_constraints ar ispure kindfn ids }
 | ar=arity TPosition a=option(TPosAny)
     ids=comma_list(pure_ident_or_meta_ident_with_x_eq(not_pos)) TMPtVirg
@@ -457,27 +480,31 @@ metadec:
   TExpression
     { (fun arity name pure check_meta constraints ->
       let tok = check_meta(Ast.MetaExpDecl(arity,name,None)) in
-      !Data.add_exp_meta None name (Ast0.NotExpCstrt constraints) pure; tok) }
+      !Data.add_exp_meta None name constraints pure; tok) }
 | vl=meta_exp_type // no error if use $1 but doesn't type check
     { (fun arity name pure check_meta constraints ->
       let ty = Some vl in
-      List.iter
-	(function c ->
-	  match Ast0.unwrap c with
-	    Ast0.Constant(_) ->
-	      if not
-		  (List.exists
-		     (function
-			 Type_cocci.BaseType(Type_cocci.IntType) -> true
-		       | Type_cocci.BaseType(Type_cocci.ShortType) -> true
-		       | Type_cocci.BaseType(Type_cocci.LongType) -> true
-		       | _ -> false)
-		     vl)
-	      then failwith "metavariable with int constraint must be an int"
-	  | _ -> ())
-	constraints;
+      (match constraints with
+	Ast0.NotExpCstrt constraints ->
+	  List.iter
+	    (function c ->
+	      match Ast0.unwrap c with
+		Ast0.Constant(_) ->
+		  if not
+		      (List.exists
+			 (function
+			     Type_cocci.BaseType(Type_cocci.IntType) -> true
+			   | Type_cocci.BaseType(Type_cocci.ShortType) -> true
+			   | Type_cocci.BaseType(Type_cocci.LongType) -> true
+			   | _ -> false)
+			 vl)
+		  then
+		    failwith "metavariable with int constraint must be an int"
+	      | _ -> ())
+	    constraints
+      |	_ -> ());
       let tok = check_meta(Ast.MetaExpDecl(arity,name,ty)) in
-      !Data.add_exp_meta ty name (Ast0.NotExpCstrt constraints) pure; tok)
+      !Data.add_exp_meta ty name constraints pure; tok)
     }
 
 
@@ -680,6 +707,8 @@ includes:
 			    P.clt2mcode
 			      (Ast.NonLocal (Parse_aux.str2inc (P.id2name $1)))
 			      (P.drop_bef clt))) }
+| d=defineop TLineEnd
+    { d (Ast0.wrap(Ast0.DOTS([]))) }
 | d=defineop t=ctype TLineEnd
     { let ty = Ast0.wrap(Ast0.TopExp(Ast0.wrap(Ast0.TypeExp(t)))) in
       d (Ast0.wrap(Ast0.DOTS([ty]))) }
@@ -1497,11 +1526,11 @@ pure_ident_or_meta_ident_with_idconstraint(constraint_type):
     }
 
 re_or_not_eqid:
-   re=regexp_eqid {re}
+   re=regexp_eqid {Ast.IdRegExpConstraint re}
  | ne=not_eqid    {ne}
 
 regexp_eqid:
-       TTildeEq re=TString
+     TTildeEq re=TString
          { (if !Data.in_iso
 	    then failwith "constraints not allowed in iso file");
 	   (if !Data.in_generating
@@ -1524,18 +1553,40 @@ not_eqid:
            (* pb: constraints not stored with metavars; too lazy to search for
 	      them in the pattern *)
 	   then failwith "constraints not allowed in a generated rule file");
-	   Ast.IdNegIdSet([snd i]) }
+	   (match i with
+	     (Some rn,id) ->
+	       let i =
+		 P.check_inherited_constraint i
+		   (function mv -> Ast.MetaIdDecl(Ast.NONE,mv)) in
+	       Ast.IdNegIdSet([],[i])
+	   | (None,i) -> Ast.IdNegIdSet([i],[])) }
      | TNotEq TOBrace l=comma_list(pure_ident_or_meta_ident) TCBrace
 	 { (if !Data.in_iso
 	   then failwith "constraints not allowed in iso file");
 	   (if !Data.in_generating
 	   then failwith "constraints not allowed in a generated rule file");
-	   Ast.IdNegIdSet(List.map snd l)
+	   let (str,meta) =
+	     List.fold_left
+	       (function (str,meta) ->
+		 function 
+		   (Some rn,id) as i ->
+		     let i =
+		       P.check_inherited_constraint i
+			 (function mv -> Ast.MetaIdDecl(Ast.NONE,mv)) in
+		     (str,i::meta)
+		 | (None,i) -> (i::str,meta))
+	       ([],[]) l in
+	   Ast.IdNegIdSet(str,meta)
 	 }
 
-re_or_not_eqe:
-   re=regexp_eqid {Ast0.NotIdCstrt (re)}
- | ne=not_eqe     {Ast0.NotExpCstrt (ne)}
+re_or_not_eqe_or_sub:
+   re=regexp_eqid {Ast0.NotIdCstrt  re}
+ | ne=not_eqe     {Ast0.NotExpCstrt ne}
+ | s=sub          {Ast0.SubExpCstrt s}
+
+not_ceq_or_sub:
+   ceq=not_ceq    {Ast0.NotExpCstrt ceq}
+ | s=sub          {Ast0.SubExpCstrt s}
 
 not_eqe:
        TNotEq i=pure_ident
@@ -1570,6 +1621,30 @@ not_ceq:
 	   then failwith "constraints not allowed in a generated rule file");
 	   l }
 
+sub:
+     (* has to be inherited because not clear how to check subterm constraints
+	in the functorized CTL engine, so need the variable to be bound
+	already when bind the subterm constrained metavariable *)
+       TSub i=meta_ident
+         { (if !Data.in_iso
+	   then failwith "constraints not allowed in iso file");
+	   (if !Data.in_generating
+	   then failwith "constraints not allowed in a generated rule file");
+	   let i =
+	     P.check_inherited_constraint i
+	       (function mv -> Ast.MetaExpDecl(Ast.NONE,mv,None)) in
+	   [i] }
+     | TSub TOBrace l=comma_list(meta_ident) TCBrace
+	 { (if !Data.in_iso
+	   then failwith "constraints not allowed in iso file");
+	   (if !Data.in_generating
+	   then failwith "constraints not allowed in a generated rule file");
+           List.map
+	     (function i ->
+	       P.check_inherited_constraint i
+		 (function mv -> Ast.MetaExpDecl(Ast.NONE,mv,None)))
+	     l}
+
 ident_or_const:
        i=pure_ident { Ast0.wrap(Ast0.Ident(Ast0.wrap(Ast0.Id(P.id2mcode i)))) }
      | TInt
@@ -1582,25 +1657,19 @@ not_pos:
 	   then failwith "constraints not allowed in iso file");
 	   (if !Data.in_generating
 	   then failwith "constraints not allowed in a generated rule file");
-	   match i with
-	     (None,_) -> failwith "constraint must be an inherited variable"
-	   | (Some rule,name) ->
-	       let i = (rule,name) in
-	       P.check_meta(Ast.MetaPosDecl(Ast.NONE,i));
-	       [i] }
+	   let i =
+	     P.check_inherited_constraint i
+	       (function mv -> Ast.MetaPosDecl(Ast.NONE,mv)) in
+	   [i] }
      | TNotEq TOBrace l=comma_list(meta_ident) TCBrace
 	 { (if !Data.in_iso
 	   then failwith "constraints not allowed in iso file");
 	   (if !Data.in_generating
 	   then failwith "constraints not allowed in a generated rule file");
 	   List.map
-	     (function
-		 (None,_) ->
-		   failwith "constraint must be an inherited variable"
-	       | (Some rule,name) ->
-		   let i = (rule,name) in
-		   P.check_meta(Ast.MetaPosDecl(Ast.NONE,i));
-		   i)
+	     (function i ->
+	       P.check_inherited_constraint i
+		 (function mv -> Ast.MetaPosDecl(Ast.NONE,mv)))
 	     l }
 
 func_ident: pure_ident

@@ -20,6 +20,28 @@
  *)
 
 
+(*
+ * Copyright 2005-2010, Ecole des Mines de Nantes, University of Copenhagen
+ * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+ * This file is part of Coccinelle.
+ *
+ * Coccinelle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, according to version 2 of the License.
+ *
+ * Coccinelle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The authors reserve the right to distribute this or future versions of
+ * Coccinelle under other licenses.
+ *)
+
+
 open Format
 module Ast = Ast_cocci
 
@@ -128,22 +150,15 @@ let dots between fn d =
   | Ast.CIRCLES(l) -> print_between between fn l
   | Ast.STARS(l) -> print_between between fn l
 
-let nest_dots multi fn f d =
-  let mo s = if multi then "<+"^s else "<"^s in
-  let mc s = if multi then s^"+>" else s^">" in
-  match Ast.unwrap d with
-    Ast.DOTS(l) ->
-      print_string (mo "..."); f(); start_block();
-      print_between force_newline fn l;
-      end_block(); print_string (mc "...")
-  | Ast.CIRCLES(l) ->
-      print_string (mo "ooo"); f(); start_block();
-      print_between force_newline fn l;
-      end_block(); print_string (mc "ooo")
-  | Ast.STARS(l) ->
-      print_string (mo "***"); f(); start_block();
-      print_between force_newline fn l;
-      end_block(); print_string (mc "***")
+let nest_dots starter ender fn f d =
+  mcode print_string starter;
+  f(); start_block();
+  (match Ast.unwrap d with
+    Ast.DOTS(l)    -> print_between force_newline fn l
+  | Ast.CIRCLES(l) -> print_between force_newline fn l
+  | Ast.STARS(l)   -> print_between force_newline fn l);
+  end_block();
+  mcode print_string ender
 
 (* --------------------------------------------------------------------- *)
 
@@ -165,12 +180,18 @@ let print_type keep info = function
 (* Contraint on Identifier and Function *)
 (* FIXME: Not called at the moment *)
 
-let idconstraint c =
-  match c with
-      Ast.IdNoConstraint  -> print_string "/* No constraint */"
-    | Ast.IdNegIdSet ids     -> List.iter (fun s -> print_string (" "^s)) ids
-    | Ast.IdRegExp (re,_) -> print_string "~= \""; print_string re; print_string "\""
-    | Ast.IdNotRegExp (re,_) -> print_string "~!= \""; print_string re; print_string "\""
+let rec idconstraint = function
+    Ast.IdNoConstraint  -> print_string "/* No constraint */"
+  | Ast.IdNegIdSet (str,meta)     ->
+      List.iter (function s -> print_string (" "^s)) str;
+      List.iter (function (r,n) -> print_string " "; print_meta(r,n)) meta
+  | Ast.IdRegExpConstraint re -> regconstraint re
+
+and regconstraint = function
+    Ast.IdRegExp (re,_) ->
+      print_string "~= \""; print_string re; print_string "\""
+  | Ast.IdNotRegExp (re,_) ->
+      print_string "~!= \""; print_string re; print_string "\""
 
 (* --------------------------------------------------------------------- *)
 (* Identifier *)
@@ -257,12 +278,12 @@ let rec expression e =
   | Ast.MetaExprList(name,_,_,_) -> mcode print_meta name
   | Ast.EComma(cm) -> mcode print_string cm; print_space()
   | Ast.DisjExpr(exp_list) -> print_disj_list expression exp_list
-  | Ast.NestExpr(expr_dots,Some whencode,multi) ->
-      nest_dots multi expression
+  | Ast.NestExpr(starter,expr_dots,ender,Some whencode,multi) ->
+      nest_dots starter ender expression
 	(function _ -> print_string "   when != "; expression whencode)
 	expr_dots
-  | Ast.NestExpr(expr_dots,None,multi) ->
-      nest_dots multi expression (function _ -> ()) expr_dots
+  | Ast.NestExpr(starter,expr_dots,ender,None,multi) ->
+      nest_dots starter ender expression (function _ -> ()) expr_dots
   | Ast.Edots(dots,Some whencode)
   | Ast.Ecircles(dots,Some whencode)
   | Ast.Estars(dots,Some whencode) ->
@@ -681,9 +702,9 @@ and statement arity s =
   | Ast.Define(header,body) ->
       rule_elem arity header; print_string " ";
       dots force_newline (statement arity) body
-  | Ast.Nest(stmt_dots,whn,multi,_,_) ->
+  | Ast.Nest(starter,stmt_dots,ender,whn,multi,_,_) ->
       print_string arity;
-      nest_dots multi (statement arity)
+      nest_dots starter ender (statement arity)
 	(function _ ->
 	  open_box 0;
 	  print_between force_newline

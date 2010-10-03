@@ -249,6 +249,8 @@ let spacing = ref LINUX
 let set_linux_spacing _ = spacing := LINUX (*follow the conventions of Linux*)
 let set_smpl_spacing _ = spacing := SMPL   (*use spacing from the SP*)
 
+let max_width = 78
+
 (*****************************************************************************)
 
 (* drop back edges made by proper loop constructs -

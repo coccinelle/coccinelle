@@ -1617,6 +1617,14 @@ start_fun2: decl_spec declaratorfd
 /*(* workarounds *)*/
 /*(*----------------------------*)*/
 
+/* It would be very nice if we could make declarator aware that this is
+coming from a function definition.  Then on the ( and ) cases, it could
+set the state to something other than InParameter.  Then the case
+(TIdent (s, i1)::(TComma _|TCPar _)::_ , (TComma _ |TOPar _)::_ )
+in parsing_hacks.ml would not have to consider K&R variable declarations
+as typedefs.  Unfortunately, doing something about this problem seems to
+introduce conflicts in the parser. */
+
 declaratorfd:
  | declarator { et "declaratorfd" (); $1, Ast_c.noattr }
  /*(* gccext: *)*/

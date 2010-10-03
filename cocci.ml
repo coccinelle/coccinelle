@@ -20,6 +20,28 @@
  *)
 
 
+(*
+ * Copyright 2005-2010, Ecole des Mines de Nantes, University of Copenhagen
+ * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+ * This file is part of Coccinelle.
+ *
+ * Coccinelle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, according to version 2 of the License.
+ *
+ * Coccinelle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The authors reserve the right to distribute this or future versions of
+ * Coccinelle under other licenses.
+ *)
+
+
 open Common
 
 module CCI = Ctlcocci_integration
@@ -1158,7 +1180,7 @@ let apply_python_rule r cache newes e rules_that_have_matched
     begin
       let (_, mv, _) = r.scr_ast_rule in
       let ve =
-	(List.map (function (n,v) -> (("virtual",n),Ast_c.MetaIdVal v))
+	(List.map (function (n,v) -> (("virtual",n),Ast_c.MetaIdVal (v,[])))
 	   !Flag.defined_virtual_env) @ e in
       let not_bound x = not (Pycocci.contains_binding ve x) in
       (match List.filter not_bound mv with
@@ -1635,7 +1657,9 @@ let pre_engine2 (coccifile, isofile) =
 	 function
 	     InitialScriptRuleCocciInfo(r) ->
 	       (if List.mem r.language languages
-		then failwith ("double initializer found for "^r.language));
+		then
+		 failwith
+		   ("double initializer found for "^r.language));
 	       if interpret_dependencies [] [] r.scr_dependencies
 	       then
 		 begin

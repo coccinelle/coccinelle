@@ -20,6 +20,28 @@
  *)
 
 
+(*
+ * Copyright 2005-2010, Ecole des Mines de Nantes, University of Copenhagen
+ * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+ * This file is part of Coccinelle.
+ *
+ * Coccinelle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, according to version 2 of the License.
+ *
+ * Coccinelle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The authors reserve the right to distribute this or future versions of
+ * Coccinelle under other licenses.
+ *)
+
+
 {
 open Parser_cocci_menhir
 module D = Data
@@ -427,6 +449,13 @@ let init _ =
       List.iter (function (name,fn) -> Hashtbl.add metavariables name fn)
 	(Hashtbl.find all_metavariables parent))
 
+(* the following is needed to properly tokenize include files.  Because an
+include file is included after seeing a @, so current_line_started is true.
+Current_line_started is not important for parsing the name of a rule, so we
+don't have to reset this value to true after parsing an included file. *)
+let include_init _ =
+  current_line_started := false
+
 let drop_spaces s =
   let len = String.length s in
   let rec loop n =
@@ -513,9 +542,9 @@ rule token = parse
 	     TOEllipsis (get_current_line_type lexbuf) }
   | "...>" { start_line true; check_context_linetype (tok lexbuf);
 	     TCEllipsis (get_current_line_type lexbuf) }
-  | "<+..." { start_line true; check_context_linetype (tok lexbuf);
+  | "<+..." { start_line true; check_minus_context_linetype (tok lexbuf);
 	     TPOEllipsis (get_current_line_type lexbuf) }
-  | "...+>" { start_line true; check_context_linetype (tok lexbuf);
+  | "...+>" { start_line true; check_minus_context_linetype (tok lexbuf);
 	     TPCEllipsis (get_current_line_type lexbuf) }
 (*
   | "<ooo" { start_line true; check_context_linetype (tok lexbuf);
@@ -629,7 +658,9 @@ rule token = parse
   | ">="           { start_line true;
 		     TLogOp(Ast.SupEq,get_current_line_type lexbuf) }
   | "<="           { start_line true;
-		     TLogOp(Ast.InfEq,get_current_line_type lexbuf) }
+		     if !Data.in_meta
+		     then TSub(get_current_line_type lexbuf)
+		     else TLogOp(Ast.InfEq,get_current_line_type lexbuf) }
   | "<"            { start_line true;
 		     TLogOp(Ast.Inf,get_current_line_type lexbuf) }
   | ">"            { start_line true;

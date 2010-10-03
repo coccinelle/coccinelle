@@ -20,6 +20,28 @@
  *)
 
 
+(*
+ * Copyright 2005-2010, Ecole des Mines de Nantes, University of Copenhagen
+ * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+ * This file is part of Coccinelle.
+ *
+ * Coccinelle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, according to version 2 of the License.
+ *
+ * Coccinelle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The authors reserve the right to distribute this or future versions of
+ * Coccinelle under other licenses.
+ *)
+
+
 (* ---------------------------------------------------------------- *)
 (* code to check for ambiguities *)
 
@@ -91,19 +113,24 @@ let create_formulas _ =
 	  let match_roots =
 	    List.map (function n -> Ast_ctl.Pred(Node(n)))
 	      (List.sort compare !roots) in
-	  let roots =
+	  let or_roots =
 	    List.fold_left
 	      (function prev -> function cur -> Ast_ctl.Or(prev,cur))
 	      (List.hd match_roots) (List.tl match_roots) in
-	  (node,
-	   Ast_ctl.AF(Ast_ctl.BACKWARD,Ast_ctl.NONSTRICT,
-		      Ast_ctl.Or(roots,Ast_ctl.Pred(After))),
-	   Ast_ctl.And
-	     (Ast_ctl.NONSTRICT,
-	      Ast_ctl.Not(roots),
-	      Ast_ctl.EX
-		(Ast_ctl.BACKWARD,
-		 Ast_ctl.EU(Ast_ctl.BACKWARD,roots,match_node))))
+	  (* no point to search if no path, and the presence of after
+	     in the AF formula can make things slow *)
+	  if List.mem node !roots
+	  then acc
+	  else
+	    (node,
+	     Ast_ctl.AF(Ast_ctl.BACKWARD,Ast_ctl.NONSTRICT,
+			Ast_ctl.Or(or_roots,Ast_ctl.Pred(After))),
+	     Ast_ctl.And
+	       (Ast_ctl.NONSTRICT,
+		Ast_ctl.Not(or_roots),
+		Ast_ctl.EX
+		  (Ast_ctl.BACKWARD,
+		   Ast_ctl.EU(Ast_ctl.BACKWARD,or_roots,match_node))))
 	   (*exef
 	      (wrap(Ast_ctl.And(Ast_ctl.NONSTRICT,match_node,exef(roots))))*)
 	  :: acc)

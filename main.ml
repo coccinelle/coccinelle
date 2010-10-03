@@ -20,6 +20,28 @@
  *)
 
 
+(*
+ * Copyright 2005-2010, Ecole des Mines de Nantes, University of Copenhagen
+ * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+ * This file is part of Coccinelle.
+ *
+ * Coccinelle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, according to version 2 of the License.
+ *
+ * Coccinelle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The authors reserve the right to distribute this or future versions of
+ * Coccinelle under other licenses.
+ *)
+
+
 open Common
 module FC = Flag_cocci
 
@@ -35,7 +57,9 @@ module FC = Flag_cocci
 let cocci_file = ref ""
 
 let output_file = ref ""
-let inplace_modif = ref false  (* but keeps a .cocci_orig *)
+let inplace_modif = ref false  (* but keeps nothing *)
+let backup_suffix =
+  ref (None : string option) (* suffix for backup if one is desired *)
 let outplace_modif = ref false (* generates a .cocci_res  *)
 let preprocess = ref false     (* run the C preprocessor before cocci *)
 let compat_mode = ref false
@@ -268,9 +292,11 @@ let short_options = [
 
   "-o", Arg.Set_string output_file,
   "   <file> the output file";
-  "-inplace", Arg.Set inplace_modif,
+  "-in_place", Arg.Set inplace_modif,
   "   do the modification on the file directly";
-  "-outplace", Arg.Set outplace_modif,
+  "-backup_suffix", Arg.String (function s -> backup_suffix := Some s),
+  "   suffix to use when making a backup for inplace";
+  "-out_place", Arg.Set outplace_modif,
   "   store modifications in a .cocci_res file";
 
   "-U", Arg.Int (fun n -> Flag_parsing_c.diff_lines := Some (i_to_s n)),
@@ -331,7 +357,7 @@ let short_options = [
     "  guess what";
 
   "-date",   Arg.Unit (fun () ->
-    pr2 "version: $Date: 2010/03/09 08:29:04 $";
+    pr2 "version: $Date: 2010/05/03 11:10:04 $";
     raise (Common.UnixExit 0)
     ),
   "   guess what";
@@ -700,7 +726,7 @@ let glimpse_filter (coccifile, isofile) dir =
     None -> pr2 "no glimpse keyword inferred from snippet"; None
   | Some [query] ->
       (let suffixes = if !include_headers then ["c";"h"] else ["c"] in
-      pr2 ("glimpse request = " ^ query);
+      Printf.fprintf stderr "%s\n" ("glimpse request = " ^ query);
       let command = spf "glimpse -y -H %s -N -W -w '%s'" dir query in
       let (glimpse_res,stat) = Common.cmd_to_list_and_status command in
       match stat with
@@ -870,7 +896,10 @@ let main_action xs =
 	    outopt +> Common.do_option (fun outfile ->
 	      if !inplace_modif
 	      then begin
-                Common.command2 ("cp "^infile^" "^infile^".cocci_orig");
+		(match !backup_suffix with
+		  Some backup_suffix ->
+		    Common.command2 ("cp "^infile^" "^infile^backup_suffix)
+		| None -> ());
                 Common.command2 ("cp "^outfile^" "^infile);
 	      end;
 
@@ -975,18 +1004,20 @@ let main () =
     | [x] when !test_mode    ->
 	begin
 	  let prefix = "tests/" in
-	  try
-              FC.include_path := [prefix^"include"];
-              Testing.testone prefix x !compare_with_expected
-	  with error ->
-	    let testfile = prefix ^ x ^ ".cocci" in
-	    if not (Sys.file_exists testfile) then
+	  let testfile = x ^ ".cocci" in
+	    if Sys.file_exists (prefix ^ testfile) then
 	      begin
-		FC.include_path := ["include"];
-		Testing.testone "" x !compare_with_expected
+		FC.include_path := [prefix^"include"];
+		Testing.testone prefix x !compare_with_expected
 	      end
 	    else
-	      raise error
+	      if Sys.file_exists testfile then
+		begin
+		  FC.include_path := ["include"];
+		  Testing.testone "" x !compare_with_expected
+		end
+	      else
+		pr2 (spf "ERROR: File %s does not exist" testfile)
 	end
 
     | []  when !test_all ->

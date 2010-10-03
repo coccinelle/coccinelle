@@ -1394,7 +1394,7 @@ exception WrongFormat of string
 (* old: let _TODO () = failwith "TODO",  now via fix_caml with raise Todo *)
 
 let internal_error s = failwith ("internal error: "^s)
-let error_cant_have x = internal_error ("cant have this case" ^(dump x))
+let error_cant_have x = internal_error ("cant have this case: " ^(dump x))
 let myassert cond = if cond then () else failwith "assert error"
 
 

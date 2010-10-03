@@ -20,6 +20,28 @@
  *)
 
 
+(*
+ * Copyright 2005-2010, Ecole des Mines de Nantes, University of Copenhagen
+ * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+ * This file is part of Coccinelle.
+ *
+ * Coccinelle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, according to version 2 of the License.
+ *
+ * Coccinelle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The authors reserve the right to distribute this or future versions of
+ * Coccinelle under other licenses.
+ *)
+
+
 (* Arities matter for the minus slice, but not for the plus slice. *)
 
 (* + only allowed on code in a nest (in_nest = true).  ? only allowed on
@@ -375,9 +397,11 @@ and expression e =
     | Ast0.EComma(cm)         -> Ast.EComma(mcode cm)
     | Ast0.DisjExpr(_,exps,_,_)     ->
 	Ast.DisjExpr(List.map expression exps)
-    | Ast0.NestExpr(_,exp_dots,_,whencode,multi) ->
+    | Ast0.NestExpr(starter,exp_dots,ender,whencode,multi) ->
+	let starter = mcode starter in
 	let whencode = get_option expression whencode in
-	Ast.NestExpr(dots expression exp_dots,whencode,multi)
+	let ender = mcode ender in
+	Ast.NestExpr(starter,dots expression exp_dots,ender,whencode,multi)
     | Ast0.Edots(dots,whencode) ->
 	let dots = mcode dots in
 	let whencode = get_option expression whencode in
@@ -401,6 +425,7 @@ and constraints c =
       Ast0.NoConstraint        -> Ast.NoConstraint
     | Ast0.NotIdCstrt   idctrt -> Ast.NotIdCstrt idctrt
     | Ast0.NotExpCstrt  exps   -> Ast.NotExpCstrt (List.map expression exps)
+    | Ast0.SubExpCstrt  ids    -> Ast.SubExpCstrt ids
 
 (* --------------------------------------------------------------------- *)
 (* Types *)
@@ -721,9 +746,10 @@ and statement s =
       | Ast0.Disj(_,rule_elem_dots_list,_,_) ->
 	  Ast.Disj(List.map (function x -> statement_dots seqible x)
 		     rule_elem_dots_list)
-      | Ast0.Nest(_,rule_elem_dots,_,whn,multi) ->
+      | Ast0.Nest(starter,rule_elem_dots,ender,whn,multi) ->
 	  Ast.Nest
-	    (statement_dots Ast.Sequencible rule_elem_dots,
+	    (mcode starter,statement_dots Ast.Sequencible rule_elem_dots,
+	     mcode ender,
 	     List.map
 	       (whencode (statement_dots Ast.Sequencible)
 		 (statement Ast.NotSequencible))

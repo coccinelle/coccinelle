@@ -20,6 +20,28 @@
  *)
 
 
+(*
+ * Copyright 2005-2010, Ecole des Mines de Nantes, University of Copenhagen
+ * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+ * This file is part of Coccinelle.
+ *
+ * Coccinelle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, according to version 2 of the License.
+ *
+ * Coccinelle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The authors reserve the right to distribute this or future versions of
+ * Coccinelle under other licenses.
+ *)
+
+
 module Ast0 = Ast0_cocci
 module Ast = Ast_cocci
 
@@ -168,8 +190,11 @@ let combiner bind option_default
       | Ast.MetaExprList(name,_,_,_) -> meta_mcode name
       | Ast.EComma(cm) -> string_mcode cm
       | Ast.DisjExpr(exp_list) -> multibind (List.map expression exp_list)
-      | Ast.NestExpr(expr_dots,whencode,multi) ->
-	  bind (expression_dots expr_dots) (get_option expression whencode)
+      | Ast.NestExpr(starter,expr_dots,ender,whencode,multi) ->
+	  bind (string_mcode starter)
+	    (bind (expression_dots expr_dots)
+	       (bind (string_mcode ender)
+		  (get_option expression whencode)))
       | Ast.Edots(dots,whencode) | Ast.Ecircles(dots,whencode)
       | Ast.Estars(dots,whencode) ->
 	  bind (string_mcode dots) (get_option expression whencode)
@@ -434,9 +459,12 @@ let combiner bind option_default
       | Ast.Atomic(re) -> rule_elem re
       | Ast.Disj(stmt_dots_list) ->
 	  multibind (List.map statement_dots stmt_dots_list)
-      | Ast.Nest(stmt_dots,whn,_,_,_) ->
-	  bind (statement_dots stmt_dots)
-	    (multibind (List.map (whencode statement_dots statement) whn))
+      | Ast.Nest(starter,stmt_dots,ender,whn,_,_,_) ->
+	  bind (string_mcode starter)
+	    (bind (statement_dots stmt_dots)
+	       (bind (string_mcode ender)
+		  (multibind
+		     (List.map (whencode statement_dots statement) whn))))
       | Ast.FunDecl(header,lbrace,body,rbrace) ->
 	  multibind [rule_elem header; rule_elem lbrace;
 		      statement_dots body; rule_elem rbrace]
@@ -675,8 +703,9 @@ let rebuilder
 	    Ast.MetaExprList(meta_mcode name,lenname_inh,keep,inherited)
 	| Ast.EComma(cm) -> Ast.EComma(string_mcode cm)
 	| Ast.DisjExpr(exp_list) -> Ast.DisjExpr(List.map expression exp_list)
-	| Ast.NestExpr(expr_dots,whencode,multi) ->
-	    Ast.NestExpr(expression_dots expr_dots,
+	| Ast.NestExpr(starter,expr_dots,ender,whencode,multi) ->
+	    Ast.NestExpr(string_mcode starter,expression_dots expr_dots,
+			 string_mcode ender,
 			 get_option expression whencode,multi)
 	| Ast.Edots(dots,whencode) ->
 	    Ast.Edots(string_mcode dots,get_option expression whencode)
@@ -943,8 +972,9 @@ let rebuilder
 	| Ast.Atomic(re) -> Ast.Atomic(rule_elem re)
 	| Ast.Disj(stmt_dots_list) ->
 	    Ast.Disj (List.map statement_dots stmt_dots_list)
-	| Ast.Nest(stmt_dots,whn,multi,bef,aft) ->
-	    Ast.Nest(statement_dots stmt_dots,
+	| Ast.Nest(starter,stmt_dots,ender,whn,multi,bef,aft) ->
+	    Ast.Nest(string_mcode starter,statement_dots stmt_dots,
+		     string_mcode ender,
 		     List.map (whencode statement_dots statement) whn,
 		     multi,bef,aft)
 	| Ast.FunDecl(header,lbrace,body,rbrace) ->

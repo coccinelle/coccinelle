@@ -249,13 +249,13 @@ let compare_ast filename1 filename2  =
 
 
 (* Pass only "true" comments, dont pass TCommentMisc and TCommentCpp *)
-let is_normal_space_or_comment = function
-  | Parser_c.TComment _
+let is_normal_space_or_comment to_expected = function
   | Parser_c.TCommentSpace _
   | Parser_c.TCommentNewline _
 
 (*  | Parser_c.TComma _ *) (* UGLY, because of gcc_opt_comma isomorphism  *)
       -> true
+  | Parser_c.TComment _ -> to_expected (* only ignore in compare to expected *)
   | _ -> false
 
 
@@ -263,7 +263,7 @@ let is_normal_space_or_comment = function
  * because when there is a notparsablezone in generated_file, I
  * don't issue a PbOnlyInNotParsedCorrectly
  *)
-let do_compare_token adjust_cvs filename1 filename2 =
+let do_compare_token adjust_cvs to_expected filename1 filename2 =
 
   let rec loop xs ys =
     match xs, ys with
@@ -298,8 +298,10 @@ let do_compare_token adjust_cvs filename1 filename2 =
   in
   let final_loop xs ys =
     loop
-      (xs +> List.filter (fun x -> not (is_normal_space_or_comment x)))
-      (ys +> List.filter (fun x -> not (is_normal_space_or_comment x)))
+      (xs +>
+       List.filter (fun x -> not (is_normal_space_or_comment to_expected x)))
+      (ys +>
+       List.filter (fun x -> not (is_normal_space_or_comment to_expected x)))
   in
 
   (*
@@ -356,16 +358,16 @@ let do_compare_token adjust_cvs filename1 filename2 =
 
   res, xs
 
-let compare_token = do_compare_token true
+let compare_token = do_compare_token true true
 
 
 (*****************************************************************************)
 
 (* compare to a res file *)
-let compare_default = do_compare_token true
+let compare_default = do_compare_token true true
 
 (* compare to the source of the transformation *)
-let compare_to_original = do_compare_token false
+let compare_to_original = do_compare_token false false
 
 
 let compare_result_to_string (correct, diffxs) =

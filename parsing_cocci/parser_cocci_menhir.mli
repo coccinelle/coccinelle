@@ -40,6 +40,7 @@ type token =
   | TTildeEq of (Data.clt)
   | TTilde of (Data.clt)
   | TSwitch of (Data.clt)
+  | TSub of (Data.clt)
   | TString of (string * Data.clt)
   | TStrict of (Data.clt)
   | TStatement

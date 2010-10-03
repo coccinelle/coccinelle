@@ -20,6 +20,28 @@
  *)
 
 
+(*
+ * Copyright 2005-2010, Ecole des Mines de Nantes, University of Copenhagen
+ * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+ * This file is part of Coccinelle.
+ *
+ * Coccinelle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, according to version 2 of the License.
+ *
+ * Coccinelle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The authors reserve the right to distribute this or future versions of
+ * Coccinelle under other licenses.
+ *)
+
+
 (* two goals: first drop from the environments things that are not used,
    and second prompt for the names of fresh variables that are used *)
 
@@ -55,7 +77,7 @@ let get_vars = function
     Lib_engine.Match(re) -> (Ast.get_fvs re, Ast.get_fresh re)
   | _ -> ([],[])
 
-let string2val str = Lib_engine.NormalMetaVal(Ast_c.MetaIdVal(str))
+let string2val str = Lib_engine.NormalMetaVal(Ast_c.MetaIdVal(str,[]))
 
 (* ----------------------------------------------------------------------- *)
 (* Get values for fresh variables *)
@@ -92,7 +114,7 @@ let process_tree inherited_env l =
 		     | Ast.SeedId id ->
 			 try
 			   (match List.assoc id env with
-			     Lib_engine.NormalMetaVal(Ast_c.MetaIdVal(str)) ->
+			     Lib_engine.NormalMetaVal(Ast_c.MetaIdVal(str,_)) ->
 			       str
 			   | _ -> failwith "bad id value")
 			 with

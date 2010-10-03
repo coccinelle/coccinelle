@@ -20,6 +20,28 @@
  *)
 
 
+(*
+ * Copyright 2005-2010, Ecole des Mines de Nantes, University of Copenhagen
+ * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+ * This file is part of Coccinelle.
+ *
+ * Coccinelle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, according to version 2 of the License.
+ *
+ * Coccinelle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The authors reserve the right to distribute this or future versions of
+ * Coccinelle under other licenses.
+ *)
+
+
 module Ast = Ast_cocci
 module V = Visitor_ast
 module TC = Type_cocci
@@ -249,8 +271,8 @@ let do_get_constants constants keywords env neg_pos =
 	bind (k e) (bind (minherited name) (minherited lenname))
     | Ast.SizeOfExpr(sizeof,exp) -> bind (keywords "sizeof") (k e)
     | Ast.SizeOfType(sizeof,lp,ty,rp) -> bind (keywords "sizeof") (k e)
-    | Ast.NestExpr(expr_dots,wc,false) -> option_default
-    | Ast.NestExpr(expr_dots,wc,true) ->
+    | Ast.NestExpr(starter,expr_dots,ender,wc,false) -> option_default
+    | Ast.NestExpr(starter,expr_dots,ender,wc,true) ->
 	r.V.combiner_expression_dots expr_dots
     | Ast.DisjExpr(exps) ->
 	disj_union_all (List.map r.V.combiner_expression exps)
@@ -347,8 +369,8 @@ let do_get_constants constants keywords env neg_pos =
     match Ast.unwrap s with
       Ast.Disj(stmt_dots) ->
 	disj_union_all (List.map r.V.combiner_statement_dots stmt_dots)
-    | Ast.Nest(stmt_dots,whn,false,_,_) -> option_default
-    | Ast.Nest(stmt_dots,whn,true,_,_) ->
+    | Ast.Nest(starter,stmt_dots,ender,whn,false,_,_) -> option_default
+    | Ast.Nest(starter,stmt_dots,ender,whn,true,_,_) ->
 	r.V.combiner_statement_dots stmt_dots
     | Ast.OptStm(s) -> option_default
     | Ast.Dots(d,whn,_,_) | Ast.Circles(d,whn,_,_) | Ast.Stars(d,whn,_,_) ->
@@ -521,16 +543,16 @@ let get_constants rules neg_pos_vars =
 		  let (cur_info,cur_plus) =
 		    rule_fn cur in_plus ((nm,True)::env)
 		      neg_pos_vars in
-		  if List.for_all all_context.V.combiner_top_level cur
-		  then (rest_info,cur_plus,(nm,cur_info)::env,nm::locals)
-		  else
+		  (match dependencies env dep with
+		    False -> (rest_info,cur_plus,env,locals)
+		  | dependencies ->
+		      if List.for_all all_context.V.combiner_top_level cur
+		      then (rest_info,cur_plus,(nm,cur_info)::env,nm::locals)
+		      else
 	       (* no constants if dependent on another rule; then we need to
 	          find the constants of that rule *)
-		    match dependencies env dep with
-		      False -> (rest_info,cur_plus,env,locals)
-		    | dependencies ->
 			(build_or (build_and dependencies cur_info) rest_info,
-			 cur_plus,env,locals))
+			 cur_plus,env,locals)))
 	  (False,[],[],[])
 	  (List.combine (rules : Ast.rule list) neg_pos_vars) in
       interpret true info

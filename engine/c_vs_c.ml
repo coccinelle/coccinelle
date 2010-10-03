@@ -20,6 +20,28 @@
  *)
 
 
+(*
+ * Copyright 2005-2010, Ecole des Mines de Nantes, University of Copenhagen
+ * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+ * This file is part of Coccinelle.
+ *
+ * Coccinelle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, according to version 2 of the License.
+ *
+ * Coccinelle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The authors reserve the right to distribute this or future versions of
+ * Coccinelle under other licenses.
+ *)
+
+
 open Common
 
 open Ast_c
@@ -319,3 +341,31 @@ let eq_type a b =
 
 let merge_type a b =
   Common.profile_code "C_vs_c" (fun () -> merge_type2 a b)
+
+
+(* ------------------------------------------------------------------------- *)
+
+(* This seemed like a reasonable place to put this, given the file name,
+but not sure that it is the case...  This has to be compatible with the
+function equal_inh_metavarval.  It is indeed not so clear why that is
+defined in cocci_vs_c.ml, and not here, since it is comparing C code to C
+code. *)
+
+let subexpression_of_expression small_exp big_exp =
+  let res = ref false in (* because no appropriate functional visitor... *)
+  let expr (k,bigf) big_exp =
+    (* comparison used in Cocci_vs_c.equal_inh_metavarval *)
+    (* have to strip each subexp, because stripping puts some offsets in the
+       term rather than setting everything to 0.  No idea why... *)
+    if small_exp =*= Lib_parsing_c.al_inh_expr big_exp
+    then res := true
+    else k big_exp in
+  let bigf = { Visitor_c.default_visitor_c with Visitor_c.kexpr = expr } in
+  Visitor_c.vk_expr bigf big_exp;
+  (*Printf.printf "comparison gives %b\n" !res;
+  Pretty_print_c.pp_expression_simple small_exp;
+  Format.print_newline();
+  Pretty_print_c.pp_expression_simple big_exp;
+  Format.print_newline();
+  Printf.printf "--------------------------------\n";*)
+  !res

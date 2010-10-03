@@ -20,6 +20,28 @@
  *)
 
 
+(*
+ * Copyright 2005-2010, Ecole des Mines de Nantes, University of Copenhagen
+ * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+ * This file is part of Coccinelle.
+ *
+ * Coccinelle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, according to version 2 of the License.
+ *
+ * Coccinelle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The authors reserve the right to distribute this or future versions of
+ * Coccinelle under other licenses.
+ *)
+
+
 (* get a list of all of the constants in the - slice of a SmPL file, to be
 used to select which files to process *)
 
@@ -72,8 +94,8 @@ let get_minus_constants bind orbind =
     | Ast.DisjExpr(exps) ->
 	disj_union_all (List.map r.V.combiner_expression exps)
     | Ast.Edots(_,_) | Ast.Ecircles(_,_) | Ast.Estars(_,_) -> []
-    | Ast.NestExpr(expr_dots,whencode,false) -> []
-    | Ast.NestExpr(expr_dots,whencode,true) ->
+    | Ast.NestExpr(starter,expr_dots,ender,whencode,false) -> []
+    | Ast.NestExpr(starter,expr_dots,ender,whencode,true) ->
 	r.V.combiner_expression_dots expr_dots
     | _ -> k e in
 
@@ -112,8 +134,9 @@ let get_minus_constants bind orbind =
       Ast.Disj(stmt_dots) ->
 	disj_union_all (List.map r.V.combiner_statement_dots stmt_dots)
     | Ast.Dots(d,whn,_,_) | Ast.Circles(d,whn,_,_) | Ast.Stars(d,whn,_,_) -> []
-    | Ast.Nest(stmt_dots,whn,false,_,_) -> []
-    | Ast.Nest(stmt_dots,whn,true,_,_) -> r.V.combiner_statement_dots stmt_dots
+    | Ast.Nest(starter,stmt_dots,ender,whn,false,_,_) -> []
+    | Ast.Nest(starter,stmt_dots,ender,whn,true,_,_) ->
+	r.V.combiner_statement_dots stmt_dots
     | _ -> k e in
 
   V.combiner bind option_default

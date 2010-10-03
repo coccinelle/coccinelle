@@ -20,6 +20,28 @@
  *)
 
 
+(*
+ * Copyright 2005-2010, Ecole des Mines de Nantes, University of Copenhagen
+ * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+ * This file is part of Coccinelle.
+ *
+ * Coccinelle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, according to version 2 of the License.
+ *
+ * Coccinelle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The authors reserve the right to distribute this or future versions of
+ * Coccinelle under other licenses.
+ *)
+
+
 (* splits the entire file into minus and plus fragments, and parses each
 separately (thus duplicating work for the parsing of the context elements) *)
 
@@ -157,6 +179,7 @@ let token2c (tok,_) =
   | PC.TAnd (clt) -> "&"^(line_type2c clt)
   | PC.TEqEq(clt) -> "=="^(line_type2c clt)
   | PC.TNotEq(clt) -> "!="^(line_type2c clt)
+  | PC.TSub(clt) -> "<="^(line_type2c clt)
   | PC.TTildeEq(clt) -> "~="^(line_type2c clt)
   | PC.TTildeExclEq(clt) -> "~!="^(line_type2c clt)
   | PC.TLogOp(op,clt) ->
@@ -306,7 +329,8 @@ let plus_attachable only_plus (tok,_) =
   | PC.TString(_,clt) | PC.TChar(_,clt) | PC.TFloat(_,clt) | PC.TInt(_,clt)
 
   | PC.TOrLog(clt) | PC.TAndLog(clt) | PC.TOr(clt) | PC.TXor(clt)
-  | PC.TAnd (clt) | PC.TEqEq(clt) | PC.TNotEq(clt) | PC.TTildeEq(clt) | PC.TLogOp(_,clt)
+  | PC.TAnd (clt) | PC.TEqEq(clt) | PC.TNotEq(clt) | PC.TTildeEq(clt)
+  | PC.TLogOp(_,clt)
   | PC.TShOp(_,clt) | PC.TPlus(clt) | PC.TMinus(clt) | PC.TMul(clt)
   | PC.TDmOp(_,clt) | PC.TTilde (clt)
 
@@ -323,6 +347,9 @@ let plus_attachable only_plus (tok,_) =
   | PC.TWhen(clt) |  PC.TWhenTrue(clt) |  PC.TWhenFalse(clt)
   | PC.TAny(clt) | PC.TStrict(clt) | PC.TEllipsis(clt)
   (* | PC.TCircles(clt) | PC.TStars(clt) *)
+  | PC.TOEllipsis(clt) | PC.TCEllipsis(clt)
+  | PC.TPOEllipsis(clt) | PC.TPCEllipsis(clt) (* | PC.TOCircles(clt)
+  | PC.TCCircles(clt) | PC.TOStars(clt) | PC.TCStars(clt) *)
 
   | PC.TWhy(clt) | PC.TDotDot(clt) | PC.TBang(clt) | PC.TOPar(clt)
   | PC.TCPar(clt)
@@ -339,11 +366,9 @@ let plus_attachable only_plus (tok,_) =
       else if only_plus then NOTPLUS
       else if line_type clt = D.CONTEXT then PLUS else NOTPLUS
 
-  | PC.TOPar0(clt) | PC.TMid0(clt) | PC.TCPar0(clt)
-  | PC.TOEllipsis(clt) | PC.TCEllipsis(clt)
-  | PC.TPOEllipsis(clt) | PC.TPCEllipsis(clt) (* | PC.TOCircles(clt)
-  | PC.TCCircles(clt) | PC.TOStars(clt) | PC.TCStars(clt) *) -> NOTPLUS
+  | PC.TOPar0(clt) | PC.TMid0(clt) | PC.TCPar0(clt) -> NOTPLUS
   | PC.TMetaPos(nm,_,_,_) -> NOTPLUS
+  | PC.TSub(clt) -> NOTPLUS
 
   | _ -> SKIP
 
@@ -371,7 +396,8 @@ let get_clt (tok,_) =
   | PC.TString(_,clt) | PC.TChar(_,clt) | PC.TFloat(_,clt) | PC.TInt(_,clt)
 
   | PC.TOrLog(clt) | PC.TAndLog(clt) | PC.TOr(clt) | PC.TXor(clt)
-  | PC.TAnd (clt) | PC.TEqEq(clt) | PC.TNotEq(clt) | PC.TTildeEq(clt) | PC.TLogOp(_,clt)
+  | PC.TAnd (clt) | PC.TEqEq(clt) | PC.TNotEq(clt) | PC.TTildeEq(clt)
+  | PC.TSub(clt) | PC.TLogOp(_,clt)
   | PC.TShOp(_,clt) | PC.TPlus(clt) | PC.TMinus(clt) | PC.TMul(clt)
   | PC.TDmOp(_,clt) | PC.TTilde (clt)
 
@@ -473,6 +499,7 @@ let update_clt (tok,x) clt =
   | PC.TEqEq(_) -> (PC.TEqEq(clt),x)
   | PC.TNotEq(_) -> (PC.TNotEq(clt),x)
   | PC.TTildeEq(_) -> (PC.TTildeEq(clt),x)
+  | PC.TSub(_) -> (PC.TSub(clt),x)
   | PC.TLogOp(op,_) -> (PC.TLogOp(op,clt),x)
   | PC.TShOp(op,_) -> (PC.TShOp(op,clt),x)
   | PC.TPlus(_) -> (PC.TPlus(clt),x)
@@ -644,14 +671,15 @@ let split_token ((tok,_) as t) =
   | PC.TFunDecl(clt)
   | PC.TWhen(clt) | PC.TWhenTrue(clt) | PC.TWhenFalse(clt)
   | PC.TAny(clt) | PC.TStrict(clt) | PC.TLineEnd(clt)
-  | PC.TEllipsis(clt) (* | PC.TCircles(clt) | PC.TStars(clt) *) -> split t clt
+  | PC.TEllipsis(clt) (* | PC.TCircles(clt) | PC.TStars(clt) *)
+  | PC.TOEllipsis(clt) | PC.TCEllipsis(clt)
+  | PC.TPOEllipsis(clt) | PC.TPCEllipsis(clt) -> split t clt
 
-  | PC.TOEllipsis(_) | PC.TCEllipsis(_) (* clt must be context *)
-  | PC.TPOEllipsis(_) | PC.TPCEllipsis(_) (* clt must be context *)
 (*
   | PC.TOCircles(_) | PC.TCCircles(_)   (* clt must be context *)
   | PC.TOStars(_) | PC.TCStars(_)       (* clt must be context *)
 *)
+
   | PC.TBang0 | PC.TPlus0 | PC.TWhy0 ->
       ([t],[t])
 
@@ -665,7 +693,8 @@ let split_token ((tok,_) as t) =
       split t clt
 
   | PC.TOrLog(clt) | PC.TAndLog(clt) | PC.TOr(clt) | PC.TXor(clt)
-  | PC.TAnd (clt) | PC.TEqEq(clt) | PC.TNotEq(clt) | PC.TTildeEq(clt) | PC.TTildeExclEq(clt) | PC.TLogOp(_,clt)
+  | PC.TAnd (clt) | PC.TEqEq(clt) | PC.TNotEq(clt) | PC.TTildeEq(clt)
+  | PC.TTildeExclEq(clt) | PC.TSub(clt) | PC.TLogOp(_,clt)
   | PC.TShOp(_,clt) | PC.TPlus(clt) | PC.TMinus(clt) | PC.TMul(clt)
   | PC.TDmOp(_,clt) | PC.TTilde (clt) -> split t clt
 
@@ -945,6 +974,36 @@ let rec translate_when_true_false = function
   | x::xs -> x :: (translate_when_true_false xs)
 
 (* ----------------------------------------------------------------------- *)
+
+(* In a nest, if the nest is -, all of the nested code must also be -.
+All are converted to context, because the next takes care of the -. *)
+let check_nests tokens =
+  let is_minus t =
+    let (line_type,a,b,c,d,e,f,g) = get_clt t in
+    List.mem line_type [D.MINUS;D.OPTMINUS;D.UNIQUEMINUS] in
+  let drop_minus t =
+    let clt = try Some(get_clt t) with Failure _ -> None in
+	match clt with
+	  Some (line_type,a,b,c,d,e,f,g) ->
+	    (match line_type with
+	      D.MINUS -> update_clt t (D.CONTEXT,a,b,c,d,e,f,g)
+	    | D.OPTMINUS -> update_clt t (D.OPT,a,b,c,d,e,f,g)
+	    | D.UNIQUEMINUS -> update_clt t (D.UNIQUE,a,b,c,d,e,f,g)
+	    | _ -> failwith "minus token expected")
+	| None -> t in
+  let rec outside = function
+      [] -> []
+    | ((PC.TPOEllipsis(clt),q) as t)::r when is_minus t -> t :: inside 0 r
+    | t::r -> t :: outside r
+  and inside stack = function
+      [] -> failwith "missing nest end"
+    | ((PC.TPCEllipsis(clt),q) as t)::r ->
+	(drop_minus t)
+	:: (if stack = 0 then outside r else inside (stack - 1) r)
+    | ((PC.TPOEllipsis(clt),q) as t)::r ->
+	(drop_minus t) :: (inside (stack + 1) r)
+    | t :: r -> (drop_minus t) :: (inside stack r) in
+  outside tokens
 
 let check_parentheses tokens =
   let clt2line (_,line,_,_,_,_,_,_) = line in
@@ -1236,7 +1295,10 @@ let prepare_tokens tokens =
     (translate_when_true_false (* after insert_line_end *)
        (insert_line_end
 	  (detect_types false
-	     (find_function_names (detect_attr (check_parentheses tokens))))))
+	     (find_function_names
+		(detect_attr
+		   (check_nests
+		      (check_parentheses tokens)))))))
 
 let prepare_mv_tokens tokens =
   detect_types false (detect_attr tokens)
@@ -1384,7 +1446,7 @@ let parse_iso file =
 	    let tokens = prepare_tokens (start@tokens) in
             (*
 	       print_tokens "iso tokens" tokens;
-	    *)
+	    å*)
 	    let entry = parse_one "iso main" PC.iso_main file tokens in
 	    let entry = List.map (List.map Test_exps.process_anything) entry in
 	    if more
@@ -1462,6 +1524,7 @@ let eval_depend dep virt =
 let parse file =
   Lexer_cocci.init();
   let rec parse_loop file =
+  Lexer_cocci.include_init ();
   let table = Common.full_charpos_to_pos file in
   Common.with_open_infile file (fun channel ->
   let lexbuf = Lexing.from_channel channel in
@@ -1489,12 +1552,12 @@ let parse file =
 	  List.iter (function x -> Hashtbl.add Lexer_cocci.rule_names x ())
 	    virt;
 
-	  let (extra_iso_files, extra_rules, extra_virt) =
+	  let (extra_iso_files, extra_rules, extra_virt, extra_metas) =
 	    let rec loop = function
-		[] -> ([],[],[])
-	      |	(a,b,c)::rest ->
-		  let (x,y,z) = loop rest in
-		  (a::x,b::y,c::z) in
+		[] -> ([],[],[],[])
+	      |	(a,b,c,d)::rest ->
+		  let (x,y,z,zz) = loop rest in
+		  (a::x,b::y,c::z,d@zz) in
 	    loop (List.map parse_loop include_files) in
 
           let parse_cocci_rule ruletype old_metas
@@ -1694,21 +1757,28 @@ let parse file =
 
             let (more, rule, metavars, tokens) =
               parse_rule old_metas starts_with_name in
+	    let all_metas = metavars @ old_metas in
+
             if more then
-              rule::
-	      (loop (metavars @ old_metas) (gen_starts_with_name more tokens))
-            else [rule] in
+	      let (all_rules,all_metas) =
+		loop all_metas (gen_starts_with_name more tokens) in
+	      (rule::all_rules,all_metas)
+            else ([rule],all_metas) in
+
+	  let (all_rules,all_metas) =
+	    loop extra_metas (x = PC.TArob) in
 
 	  (List.fold_left
 	     (function prev -> function cur -> Common.union_set cur prev)
 	     iso_files extra_iso_files,
 	   (* included rules first *)
 	   List.fold_left (function prev -> function cur -> cur@prev)
-	     (loop [] (x = PC.TArob)) (List.rev extra_rules),
-	   List.fold_left (@) virt extra_virt (*no dups allowed*))
+	     all_rules (List.rev extra_rules),
+	   List.fold_left (@) virt extra_virt (*no dups allowed*),
+	   (all_metas : 'a list))
       |	_ -> failwith "unexpected code before the first rule\n")
   | (false,[(PC.TArobArob,_)]) | (false,[(PC.TArob,_)]) ->
-      ([],([] : Ast0.parsed_rule list),[] (*virtual rules*))
+      ([],([] : Ast0.parsed_rule list),[] (*virtual rules*), [] (*all metas*))
   | _ -> failwith "unexpected code before the first rule\n" in
   res) in
   parse_loop file
@@ -1716,7 +1786,7 @@ let parse file =
 (* parse to ast0 and then convert to ast *)
 let process file isofile verbose =
   let extra_path = Filename.dirname file in
-  let (iso_files, rules, virt) = parse file in
+  let (iso_files, rules, virt, _metas) = parse file in
   eval_virt virt;
   let std_isos =
     match isofile with

@@ -20,6 +20,28 @@
  *)
 
 
+(*
+ * Copyright 2005-2010, Ecole des Mines de Nantes, University of Copenhagen
+ * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+ * This file is part of Coccinelle.
+ *
+ * Coccinelle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, according to version 2 of the License.
+ *
+ * Coccinelle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The authors reserve the right to distribute this or future versions of
+ * Coccinelle under other licenses.
+ *)
+
+
 (* --------------------------------------------------------------------- *)
 (* Given two patterns, A and B, determine whether B can match any matched
 subterms of A.  For simplicity, this doesn't maintain an environment; it
@@ -187,7 +209,7 @@ let rec unify_expression e1 e2 =
       disjunct_all_bindings (List.map (function x -> unify_expression x e2) e1)
   | (_,Ast.DisjExpr(e2)) ->
       disjunct_all_bindings (List.map (function x -> unify_expression e1 x) e2)
-  | (Ast.NestExpr(e1,_,_),Ast.NestExpr(e2,_,_)) ->
+  | (Ast.NestExpr(_,e1,_,_,_),Ast.NestExpr(_,e2,_,_,_)) ->
       unify_dots unify_expression edots e1 e2
 
   (* dots can match against anything.  return true to be safe. *)
@@ -554,7 +576,7 @@ let rec unify_statement s1 s2 =
 	(List.map
 	   (function x -> unify_dots unify_statement sdots s1 x)
 	   s2)
-  | (Ast.Nest(s1,_,_,_,_),Ast.Nest(s2,_,_,_,_)) ->
+  | (Ast.Nest(_,s1,_,_,_,_,_),Ast.Nest(_,s2,_,_,_,_,_)) ->
       unify_dots unify_statement sdots s1 s2
   | (Ast.FunDecl(h1,lb1,s1,rb1),Ast.FunDecl(h2,lb2,s2,rb2)) ->
       conjunct_bindings (unify_rule_elem h1 h2)

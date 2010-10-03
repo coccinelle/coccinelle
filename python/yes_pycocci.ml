@@ -20,6 +20,28 @@
  *)
 
 
+(*
+ * Copyright 2005-2010, Ecole des Mines de Nantes, University of Copenhagen
+ * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+ * This file is part of Coccinelle.
+ *
+ * Coccinelle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, according to version 2 of the License.
+ *
+ * Coccinelle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The authors reserve the right to distribute this or future versions of
+ * Coccinelle under other licenses.
+ *)
+
+
 open Ast_c
 open Common
 open Pycaml
@@ -251,11 +273,11 @@ let construct_variables mv e =
   List.iter (function (py,(r,m)) ->
     match find_binding (r,m) with
       None -> ()
-    | Some (_, Ast_c.MetaExprVal expr) ->
+    | Some (_, Ast_c.MetaExprVal (expr,_)) ->
        let expr_repr = instantiate_Expression(expr) in
        let _ = build_variable py expr_repr in
        ()
-    | Some (_, Ast_c.MetaIdVal id) ->
+    | Some (_, Ast_c.MetaIdVal (id,_)) ->
        let id_repr = instantiate_Identifier(id) in
        let _ = build_variable py id_repr in
        ()

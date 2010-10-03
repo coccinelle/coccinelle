@@ -20,6 +20,28 @@
  *)
 
 
+(*
+ * Copyright 2005-2010, Ecole des Mines de Nantes, University of Copenhagen
+ * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+ * This file is part of Coccinelle.
+ *
+ * Coccinelle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, according to version 2 of the License.
+ *
+ * Coccinelle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The authors reserve the right to distribute this or future versions of
+ * Coccinelle under other licenses.
+ *)
+
+
 open Ast_c
 open Common
 open Pycaml
@@ -34,10 +56,10 @@ let call_pretty f a =
 let exprrep = call_pretty Pretty_print_c.pp_expression_gen
 
 let stringrep mvb = match mvb with
-  Ast_c.MetaIdVal        s -> s
+  Ast_c.MetaIdVal        (s,_) -> s
 | Ast_c.MetaFuncVal      s -> s
 | Ast_c.MetaLocalFuncVal s -> s
-| Ast_c.MetaExprVal      expr -> exprrep expr
+| Ast_c.MetaExprVal      (expr,_) -> exprrep expr
 | Ast_c.MetaExprListVal  expr_list -> "TODO: <<exprlist>>"
 | Ast_c.MetaTypeVal      typ -> call_pretty Pretty_print_c.pp_type_gen typ
 | Ast_c.MetaInitVal      ini -> call_pretty Pretty_print_c.pp_init_gen ini

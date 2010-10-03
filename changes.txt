@@ -13,6 +13,40 @@
 - Add more information in documentation, man pages and wiki
 
 
+* 0.2.3
+** Language:
+- <= constraints relating an expression metavariable to one or more
+  inherited expression metavariables that it should be a subexpression of
+- the -inplace and -outplace options have been renamed -in_place and
+  -out_place.  -in_place no longer makes a backup.  A backup can be
+  requested using the option -backup_suffix, eg -backup_suffix .bk
+- identifiers can be constrained to be different from an inherited
+  identifier metavariable, or from a set containing both concrete
+  identifiers and inherited identifier metavariables.
+
+** Features:
+- drop inconsistent paths check when only one node was matched
+- allow #define id with no definition
+- attempt to add newlines in the generated code when function calls in the
+  smpl cause passing column 80
+- allow - in front of statement level nests, if everything inside the nest
+  is also -
+
+** Bugfix:
+- drop inconsistent paths check when only one node was matched
+- better take into account virtual rules when selecting glimpse tokens
+- print diff when only a comment is added
+- the type of the C code !x should be int regardless of the type of x
+- allow python code at the beginning of an included file
+- better adjustment of whitespace when deleting adjacent lines.  Thanks to
+  Wolfram Sang for pointing out the problem.
+- allow metavariables to be inherited from included files
+- allow ? on goto
+- more graceful failure on finding a strange character in a macro parameter
+  list
+- support Parameter metavariables
+- add space after the last comma in an added portion of an argument list
+
 * 0.2.2
 ** Language:
 - Added ToTestExpression to iso language, see standard.iso for an
@@ -415,7 +449,6 @@
 ** Internals: 
 - isomorphisms don't apply under signed/unsigned, to prevent the creation
   of things like unsigned signed int.  Need a better solution for this.
-
 
 * 0.1.3
 

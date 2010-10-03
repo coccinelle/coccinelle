@@ -20,6 +20,28 @@
  *)
 
 
+(*
+ * Copyright 2005-2010, Ecole des Mines de Nantes, University of Copenhagen
+ * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+ * This file is part of Coccinelle.
+ *
+ * Coccinelle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, according to version 2 of the License.
+ *
+ * Coccinelle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The authors reserve the right to distribute this or future versions of
+ * Coccinelle under other licenses.
+ *)
+
+
 open Common.Infix
 
 open Lib_engine
@@ -30,10 +52,10 @@ let pp = Common.pp
 let pp_meta (_,x) = pp x
 
 let rec pp_binding_kind = function
-  | Ast_c.MetaIdVal        s -> pp ("id " ^ s)
+  | Ast_c.MetaIdVal        (s,_) -> pp ("id " ^ s)
   | Ast_c.MetaFuncVal      s -> pp ("func " ^ s)
   | Ast_c.MetaLocalFuncVal s -> pp ("localfunc " ^ s)
-  | Ast_c.MetaExprVal      expr -> Pretty_print_c.pp_expression_simple expr
+  | Ast_c.MetaExprVal      (expr,_) -> Pretty_print_c.pp_expression_simple expr
   | Ast_c.MetaExprListVal  expr_list -> pp "<<exprlist>>"
   | Ast_c.MetaInitVal      ini ->
       Pretty_print_c.pp_init_simple ini
