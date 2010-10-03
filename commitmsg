@@ -1,3 +1,28 @@
-Release coccinelle-0.1.11rc1
+Release coccinelle-0.1.11
 
-Release Candidate 1 for coccinelle-0.1.11
+** Language:
+   - Meta-identifier/function and constant could be filtered from SmPL by
+     regular expressions using the "~=" and "!~=" operators followed by
+     an OCaml regular expression (see man Str) in double quote.
+   - Virtual rules, which can be referenced in depends, and set and unset
+     using the command-line options -D
+   - ++ for multiple additions
+
+** Features:
+   - coccicheck: a framework to check a series of SmPL files on a project
+     see scripts/coccicheck for more information
+
+** Bugfix:
+   - bind position variables to the correct starting position in the case of a
+     complex statement such as an if or while.  Thanks to Derek Jones for
+     pointing out the problem.
+   - checking for non mentioned case lines in switch should be unchecked.
+   - space should be printed after sizeof when there are no parentheses around
+     the argument.  Thanks to Daniel Walker for pointing out the problem.
+   - avoid introducing sharing in propagating ! over () in treatment of isos
+   - save_excursion has to handle and rethrow exceptions
+   - eliminate unnecessary consideration of CVS strings.  Thanks to David
+     Young for pointing out the problem.
+   - completely new treatment of statement metavariables
+   - better type checking for macro definitions
+   - drop regression testing in -parse_c
