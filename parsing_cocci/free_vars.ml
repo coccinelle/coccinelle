@@ -125,6 +125,12 @@ let collect_refs include_constraints =
 	Ast.MetaType(name,_,_) -> [metaid name]
       | _ -> option_default) in
 
+  let astfvinit recursor k ty =
+    bind (k ty)
+      (match Ast.unwrap ty with
+	Ast.MetaInit(name,_,_) -> [metaid name]
+      | _ -> option_default) in
+
   let astfvparam recursor k p =
     bind (k p)
       (match Ast.unwrap p with
@@ -161,7 +167,7 @@ let collect_refs include_constraints =
   V.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing donothing
-    astfvident astfvexpr astfvfullType astfvtypeC donothing astfvparam
+    astfvident astfvexpr astfvfullType astfvtypeC astfvinit astfvparam
     astfvdecls astfvrule_elem astfvstatement donothing donothing donothing_a
 
 let collect_all_refs = collect_refs true
@@ -224,6 +230,12 @@ let collect_saved =
 	Ast.MetaType(name,TC.Saved,_) -> [metaid name]
       | _ -> option_default) in
 
+  let astfvinit recursor k ty =
+    bind (k ty)
+      (match Ast.unwrap ty with
+	Ast.MetaInit(name,TC.Saved,_) -> [metaid name]
+      | _ -> option_default) in
+
   let astfvparam recursor k p =
     bind (k p)
       (match Ast.unwrap p with
@@ -254,7 +266,7 @@ let collect_saved =
   V.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing donothing
-    astfvident astfvexpr donothing astfvtypeC donothing astfvparam
+    astfvident astfvexpr donothing astfvtypeC astfvinit astfvparam
     donothing astfvrule_elem donothing donothing donothing donothing
 
 (* ---------------------------------------------------------------- *)
@@ -439,6 +451,14 @@ let classify_variables metavars minirules used_after =
 	Ast.rewrap e (Ast.MetaType(name,unitary,inherited))
     | _ -> e in
 
+  let init r k e =
+    let e = k e in
+    match Ast.unwrap e with
+      Ast.MetaInit(name,_,_) ->
+	let (unitary,inherited) = classify name in
+	Ast.rewrap e (Ast.MetaInit(name,unitary,inherited))
+    | _ -> e in
+
   let param r k e =
     let e = k e in
     match Ast.unwrap e with
@@ -470,7 +490,7 @@ let classify_variables metavars minirules used_after =
   let fn = V.rebuilder
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing donothing
-      ident expression donothing typeC donothing param donothing rule_elem
+      ident expression donothing typeC init param donothing rule_elem
       donothing donothing donothing donothing in
 
   List.map fn.V.rebuilder_top_level minirules

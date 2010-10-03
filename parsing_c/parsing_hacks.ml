@@ -27,6 +27,10 @@ let pr2 s =
   if !Flag_parsing_c.verbose_parsing 
   then Common.pr2 s
 
+let pr2_once s = 
+  if !Flag_parsing_c.verbose_parsing 
+  then Common.pr2_once s
+
 let pr2_cpp s = 
   if !Flag_parsing_c.debug_cpp
   then Common.pr2_once ("CPP-" ^ s)
@@ -89,7 +93,8 @@ let msg_typedef s =
 let msg_maybe_dangereous_typedef s =
   if not (is_known_typdef s)
   then 
-    pr2 ("PB MAYBE: dangerous typedef inference, maybe not a typedef: " ^ s)
+    pr2
+      ("PB MAYBE: dangerous typedef inference, maybe not a typedef: " ^ s)
 
 
 
@@ -1131,15 +1136,21 @@ let rec apply_macro_defs xs =
               id.tok <- token_from_parsinghack_hint (s,i1) hint;
           )
       | Params params -> 
-          if List.length params != List.length xxs
-          then begin 
-            pr2 ("WIERD: macro with wrong number of arguments: " ^ s);
-            (* old: id.new_tokens_before <- bodymacro; *)
-            ()
-          end
-          else 
-            (match body with
-            | DefineBody bodymacro -> 
+          (match body with
+          | DefineBody bodymacro -> 
+
+              (* bugfix: better to put this that before the match body, 
+               * cos our macrostatement hint can have variable number of
+               * arguments and so it's ok if it does not match exactly
+               * the number of arguments. *)
+              if List.length params != List.length xxs
+              then begin 
+                pr2_once ("WIERD: macro with wrong number of arguments: " ^ s);
+                (* old: id.new_tokens_before <- bodymacro; *)
+                ()
+              end
+              else 
+
                 let xxs' = xxs +> List.map (fun x -> 
                   (tokens_of_paren_ordered x) +> List.map (fun x -> 
                     TH.visitor_info_of_tok Ast_c.make_expanded x.tok
@@ -1160,11 +1171,33 @@ let rec apply_macro_defs xs =
                 (* important to do that after have apply the macro, otherwise
                  * will pass as argument to the macro some tokens that
                  * are all TCommentCpp
+                 * 
+                 * note: such macrostatement can have a variable number of
+                 * arguments but here we don't care, we just pass all the
+                 * parameters.
                  *)
-                msg_apply_known_macro_hint s;
-                id.tok <- token_from_parsinghack_hint (s,i1) hint;
-                [Parenthised (xxs, info_parens)] +> 
-                  iter_token_paren (set_as_comment Ast_c.CppMacro);
+
+                (match xs with
+                | PToken ({tok = TPtVirg _} as id2)::_ -> 
+                    pr2_once 
+                      ("macro stmt with trailing ';', passing also ';' for: "^
+                       s);
+                    (* sometimes still want pass its params ... as in
+                     *  DEBUGPOLL(static unsigned int prev_mask = 0);
+                     *)
+
+                    msg_apply_known_macro_hint s;
+                    id.tok <- token_from_parsinghack_hint (s,i1) hint;
+                    [Parenthised (xxs, info_parens)] +> 
+                      iter_token_paren (set_as_comment Ast_c.CppMacro);
+                    set_as_comment Ast_c.CppMacro id2;
+
+                | _ ->
+                    msg_apply_known_macro_hint s;
+                    id.tok <- token_from_parsinghack_hint (s,i1) hint;
+                    [Parenthised (xxs, info_parens)] +> 
+                      iter_token_paren (set_as_comment Ast_c.CppMacro);
+                )
                 
 
             | DefineHint hint -> 
@@ -1566,11 +1599,16 @@ let rec find_macro_lineparen xs =
         ) 
         || 
         (col2 <= col1 &&
-              (match other.tok with
-              | TCBrace _ when ctx = InFunction -> true
-              | Treturn _ -> true
-              | Tif _ -> true
-              | Telse _ -> true
+              (match other.tok, restline2 with
+              | TCBrace _, _ when ctx = InFunction -> true
+              | Treturn _, _ -> true
+              | Tif _, _ -> true
+              | Telse _, _ -> true
+
+              (* case of label, usually put in first line *)
+              | TIdent _, (PToken ({tok = TDotDot _}))::_ -> 
+                  true
+
 
               | _ -> false
               )
@@ -1594,6 +1632,8 @@ let rec find_macro_lineparen xs =
    * ex: LOCK
    *     foo();
    *     UNLOCK
+   * 
+   * todo: factorize code with previous rule ?
    *)
   | (Line 
         ([PToken ({tok = TIdent (s,ii); col = col1; where = ctx} as macro);
@@ -2507,6 +2547,15 @@ let lookahead2 ~pass next before =
         if (pass = 2)
         then begin
           pr2_once ("CPP-UNDEF: I treat it as comment");
+          TCommentCpp (Ast_c.CppDirective, ii)
+        end
+        else x
+
+  | (TCppDirectiveOther (ii) as x)::_, _ 
+      -> 
+        if (pass = 2)
+        then begin
+          pr2_once ("CPP-OTHER: I treat it as comment");
           TCommentCpp (Ast_c.CppDirective, ii)
         end
         else x

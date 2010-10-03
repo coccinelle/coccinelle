@@ -449,7 +449,9 @@ and is_init_dots i =
 
 and initialiser i =
   match Ast0.unwrap i with
-    Ast0.InitExpr(exp) ->
+    Ast0.MetaInit(name,_) as ut ->
+      let ln = promote_mcode name in mkres i ut ln ln
+  | Ast0.InitExpr(exp) ->
       let exp = expression exp in
       mkres i (Ast0.InitExpr(exp)) exp exp
   | Ast0.InitList(lb,initlist,rb) ->
@@ -457,24 +459,16 @@ and initialiser i =
 	dots is_init_dots (Some(promote_mcode lb)) initialiser initlist in
       mkres i (Ast0.InitList(lb,initlist,rb))
 	(promote_mcode lb) (promote_mcode rb)
-  | Ast0.InitGccDotName(dot,name,eq,ini) ->
-      let name = ident name in
+  | Ast0.InitGccExt(designators,eq,ini) ->
+      let (delims,designators) = (* non empty due to parsing *)
+	List.split (List.map designator designators) in
       let ini = initialiser ini in
-      mkres i (Ast0.InitGccDotName(dot,name,eq,ini)) (promote_mcode dot) ini
+      mkres i (Ast0.InitGccExt(designators,eq,ini))
+	(promote_mcode (List.hd delims)) ini
   | Ast0.InitGccName(name,eq,ini) ->
       let name = ident name in
       let ini = initialiser ini in
       mkres i (Ast0.InitGccName(name,eq,ini)) name ini
-  | Ast0.InitGccIndex(lb,exp,rb,eq,ini) ->
-      let exp = expression exp in
-      let ini = initialiser ini in
-      mkres i (Ast0.InitGccIndex(lb,exp,rb,eq,ini)) (promote_mcode lb) ini
-  | Ast0.InitGccRange(lb,exp1,dots,exp2,rb,eq,ini) ->
-      let exp1 = expression exp1 in
-      let exp2 = expression exp2 in
-      let ini = initialiser ini in
-      mkres i (Ast0.InitGccRange(lb,exp1,dots,exp2,rb,eq,ini))
-	(promote_mcode lb) ini
   | Ast0.IComma(cm) as up ->
       let ln = promote_mcode cm in mkres i up ln ln
   | Ast0.Idots(dots,whencode) ->
@@ -487,6 +481,14 @@ and initialiser i =
   | Ast0.UniqueIni(ini) ->
       let ini = initialiser ini in
       mkres i (Ast0.UniqueIni(ini)) ini ini
+
+and designator = function
+    Ast0.DesignatorField(dot,id) ->
+      (dot,Ast0.DesignatorField(dot,ident id))
+  | Ast0.DesignatorIndex(lb,exp,rb) ->
+      (lb,Ast0.DesignatorIndex(lb,expression exp,rb))
+  | Ast0.DesignatorRange(lb,min,dots,max,rb) ->
+      (lb,Ast0.DesignatorRange(lb,expression min,dots,expression max,rb))
 
 and initialiser_list prev = dots is_init_dots prev initialiser
 

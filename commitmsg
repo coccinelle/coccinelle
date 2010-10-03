@@ -1,35 +1,17 @@
-Release coccinelle-0.1.4
+Release coccinelle-0.1.5
 
 ** Language:
-   - long long added to SmPL
-
-** Documentation:
-   - add grammar reference and spatch command line options reference
+   - added initialiser metavariable
+   - added sequences of designators in structures
 
 ** Features:
-   - can match patterns of the form unsigned T or signed T, where T is a
-     metavariable
-   - dropped the sizeof_parens isomorphism, which was made redundant by the
-     paren isomorphism
-   - simple rule generation
+   - improved printing of the C code corresponding to metavariables
+   - improved printing when code (eg declarations) is removed at the beginning
+     of a block, and then is followed by a blank line
+   - slightly less verbose error reporting in parsing_hacks
 
 ** Bugfix:
-   - trailing , ; and ) no longer left on a line by themselves
-   - better treatment of error exit when the searched for code matches the
-     error exit condition.
-   - fix incorrect treatment of parentheses in test_exps that could allow +
-     code to be added twice
-   - don't ask whether iterator names and declarer names should be declared as
-     metavariables.
-   - slightly better support for expression list metavariables.
-   - short and long allowed for array index types in SmPL
-   - more restrictions on type inference for pointer arithmetic in SmPL
-   - allow isomorphisms to apply when + code is anywhere within all - terms
-   - changed order of printing const and volatile
-   - allow  eg ... <... in plus code
-   - better formatting of generated if/while/etc. code
-   - better parse error reporting when the problem is at the end of the file
-
-** Internals:
-   - isomorphisms don't apply under signed/unsigned, to prevent the creation
-     of things like unsigned signed int.  Need a better solution for this.
+   - fixed some problems with parsing SmPL code where a nest appears after a |
+   - better treatment of { }, form in macros wrt unparse_c
+   - less quiet for -parse_c
+   - improve parsing heuristics regarding macro statement

@@ -353,6 +353,12 @@ let expression_of_string = parse_gen Parser_c.expr
 (* Consistency checking *)
 (*****************************************************************************)
 
+(* todo:
+ *  could check that an ident has always the same class, be it a typedef
+ *  (but sometimes do 'acpi_val acpi_val;'), an ident, a TMacroStatement, 
+ *  etc.
+ *)
+
 type class_ident = 
   | CIdent (* can be var, func, field, tag, enum constant *)
   | CTypedef
@@ -844,9 +850,13 @@ let rec lexer_function ~pass tr = fun lexbuf ->
       assert (x = v);
       
       (match v with
-      (* fix_define1. Why not in parsing_hacks lookahead and do passing like
+
+      (* fix_define1. 
+       *
+       * Why not in parsing_hacks lookahead and do passing like
        * I do for some ifdef directives ? Because here I also need to 
-       * generate some tokens sometimes. 
+       * generate some tokens sometimes and so I need access to the 
+       * tr.passed, tr.rest, etc.
        *)
       | Parser_c.TDefine (tok) -> 
           if not (LP.current_context () = LP.InTopLevel) && 

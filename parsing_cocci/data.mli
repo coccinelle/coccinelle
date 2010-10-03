@@ -35,6 +35,8 @@ val add_id_meta:
 
 val add_type_meta: (Ast_cocci.meta_name -> Ast0_cocci.pure -> unit) ref
 
+val add_init_meta: (Ast_cocci.meta_name -> Ast0_cocci.pure -> unit) ref
+
 val add_param_meta: (Ast_cocci.meta_name -> Ast0_cocci.pure -> unit) ref
 
 val add_paramlist_meta:

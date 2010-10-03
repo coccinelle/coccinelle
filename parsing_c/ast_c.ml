@@ -626,6 +626,7 @@ and metavars_binding = (Ast_cocci.meta_name, metavar_binding_kind) assoc
   | MetaParamListVal of parameterType wrap2 list
 
   | MetaTypeVal      of fullType
+  | MetaInitVal      of initialiser
   | MetaStmtVal      of statement
 
   (* Could also be in Lib_engine.metavars_binding2 with the ParenVal,
@@ -744,6 +745,7 @@ let noi_content = (None: ((Common.filename * program) option))
 (*****************************************************************************)
 let unwrap = fst
 
+let unwrap2 = fst
 
 let unwrap_expr ((unwrap_e, typ), iie) = unwrap_e
 let rewrap_expr ((_old_unwrap_e, typ), iie)  newe = ((newe, typ), iie)
@@ -1015,3 +1017,7 @@ let s_of_attr attr =
   +> List.map (fun (Attribute s, ii) -> s)
   +> Common.join ","
   
+
+let type_of_parameter param = 
+  let ((b, sopt, typ), ii) = param in 
+  typ

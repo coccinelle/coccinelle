@@ -262,12 +262,13 @@ OCAMLVERSION=$(shell ocaml -version |perl -p -e 's/.*version (.*)/$$1/;')
 
 # Procedure to do each time:
 #  cvs update
+#  make sure that ocaml is the distribution ocaml of /usr/bin, not ~pad/...
 #  modify globals/config.ml
 #  cd globals/; cvs commit -m"new version"  (do not commit from the root!)
 #  ./configure --without-python
 #  make package
 #  make website
-# Check also that run an ocaml in /usr/bin
+# Check that run an ocaml in /usr/bin
 
 # To test you can try compile and run spatch from different instances
 # like my ~/coccinelle, ~/release/coccinelle, and the /tmp/coccinelle-0.X

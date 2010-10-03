@@ -186,6 +186,7 @@ let print_extra_typedefs pr typedefs env =
       | Ast_c.MetaParamListVal(params) -> Visitor_c.vk_param_list bigf params
 
       | Ast_c.MetaTypeVal(ty) -> Visitor_c.vk_type bigf ty
+      | Ast_c.MetaInitVal(ty) -> Visitor_c.vk_ini bigf ty
       | Ast_c.MetaStmtVal(stm) -> Visitor_c.vk_statement bigf stm
       | Ast_c.MetaPosVal _ | Ast_c.MetaPosValList _
       | Ast_c.MetaListlenVal _ -> ())
@@ -219,6 +220,8 @@ let rename argids env =
 
        | Ast_c.MetaTypeVal(ty) ->
 	   Ast_c.MetaTypeVal(Visitor_c.vk_type_s bigf ty)
+       | Ast_c.MetaInitVal(ini) ->
+	   Ast_c.MetaInitVal(Visitor_c.vk_ini_s bigf ini)
        | Ast_c.MetaStmtVal(stm) ->
 	   Ast_c.MetaStmtVal(Visitor_c.vk_statement_s bigf stm)
        | Ast_c.MetaPosVal _ | Ast_c.MetaPosValList _
@@ -244,6 +247,8 @@ let pp_meta_decl pr decl =
       no_arity ar; pr "fresh identifier "; pp_name name; pr ";\n"
   | Ast.MetaTypeDecl(ar, name) ->
       no_arity ar; pr "type "; pp_name name; pr ";\n"
+  | Ast.MetaInitDecl(ar, name) ->
+      no_arity ar; pr "initialiser "; pp_name name; pr ";\n"
   | Ast.MetaListlenDecl(name) -> ()
   | Ast.MetaParamDecl(ar, name) ->
       no_arity ar; pr "parameter "; pp_name name; pr ";\n"

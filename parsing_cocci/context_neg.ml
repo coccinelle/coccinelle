@@ -549,22 +549,32 @@ let equal_declaration d1 d2 =
       failwith "DisjDecl not expected here"
   | _ -> false
 
+let equal_designator d1 d2 =
+  match (d1,d2) with
+    (Ast0.DesignatorField(dot1,_),Ast0.DesignatorField(dot2,_)) ->
+      equal_mcode dot1 dot2
+  | (Ast0.DesignatorIndex(lb1,_,rb1),Ast0.DesignatorIndex(lb2,_,rb2)) ->
+      (equal_mcode lb1 lb2) && (equal_mcode rb1 rb2)
+  | (Ast0.DesignatorRange(lb1,_,dots1,_,rb1),
+     Ast0.DesignatorRange(lb2,_,dots2,_,rb2)) ->
+       (equal_mcode lb1 lb2) && (equal_mcode dots1 dots2) &&
+       (equal_mcode rb1 rb2)
+  | _ -> false
+
 let equal_initialiser i1 i2 =
   match (Ast0.unwrap i1,Ast0.unwrap i2) with
-    (Ast0.InitExpr(_),Ast0.InitExpr(_)) -> true
+    (Ast0.MetaInit(name1,_),Ast0.MetaInit(name2,_)) ->
+      equal_mcode name1 name2
+  | (Ast0.InitExpr(_),Ast0.InitExpr(_)) -> true
   | (Ast0.InitList(lb1,_,rb1),Ast0.InitList(lb2,_,rb2)) ->
       (equal_mcode lb1 lb2) && (equal_mcode rb1 rb2)
-  | (Ast0.InitGccDotName(dot1,_,eq1,_),Ast0.InitGccDotName(dot2,_,eq2,_)) ->
-      (equal_mcode dot1 dot2) && (equal_mcode eq1 eq2)
+  | (Ast0.InitGccExt(designators1,eq1,_),
+     Ast0.InitGccExt(designators2,eq2,_)) ->
+       (List.for_all2 equal_designator designators1 designators2) &&
+       (equal_mcode eq1 eq2)
   | (Ast0.InitGccName(_,eq1,_),Ast0.InitGccName(_,eq2,_)) ->
       equal_mcode eq1 eq2
-  | (Ast0.InitGccIndex(lb1,_,rb1,eq1,_),Ast0.InitGccIndex(lb2,_,rb2,eq2,_)) ->
-      (equal_mcode lb1 lb2) && (equal_mcode rb1 rb2) && (equal_mcode eq1 eq2)
-  | (Ast0.InitGccRange(lb1,_,dots1,_,rb1,eq1,_),
-     Ast0.InitGccRange(lb2,_,dots2,_,rb2,eq2,_)) ->
-      (equal_mcode lb1 lb2) && (equal_mcode dots1 dots2) &&
-       (equal_mcode rb1 rb2) && (equal_mcode eq1 eq2)
- | (Ast0.IComma(cm1),Ast0.IComma(cm2)) -> equal_mcode cm1 cm2
+  | (Ast0.IComma(cm1),Ast0.IComma(cm2)) -> equal_mcode cm1 cm2
   | (Ast0.Idots(d1,_),Ast0.Idots(d2,_)) -> equal_mcode d1 d2
   | (Ast0.OptIni(_),Ast0.OptIni(_)) -> true
   | (Ast0.UniqueIni(_),Ast0.UniqueIni(_)) -> true

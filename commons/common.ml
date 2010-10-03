@@ -1,4 +1,4 @@
-(* Copyright (C) 1998-2008 Yoann Padioleau
+(* Copyright (C) 1998-2009 Yoann Padioleau
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -3436,6 +3436,9 @@ let rec unzip zs =
     (fst e::xs), (snd e::ys)) zs ([],[])
 
 
+let map_withkeep f xs = 
+  xs +> List.map (fun x -> f x, x)
+
 (* now in prelude
  * let rec take n xs = 
  * match (n,xs) with
@@ -3777,6 +3780,19 @@ let rec uniq = function
   | [] -> []
   | e::l -> if List.mem e l then uniq l else e :: uniq l
 
+let has_no_duplicate xs = 
+  List.length xs = List.length (uniq xs)
+let is_set_as_list = has_no_duplicate
+
+
+let rec get_duplicates xs = 
+  match xs with
+  | [] -> []
+  | x::xs -> 
+      if List.mem x xs
+      then x::get_duplicates xs (* todo? could x from xs to avoid double dups?*)
+      else get_duplicates xs
+
 let rec all_assoc e = function
   | [] -> []
   | (e',v) :: l when e=e' -> v :: all_assoc e l
@@ -4013,9 +4029,21 @@ let _ = assert_equal
     (cartesian_product [1;2] ["3";"4";"5"]) 
     [1,"3";1,"4";1,"5";  2,"3";2,"4";2,"5"]
 
+let sort_prof a b = 
+  profile_code "Common.sort_by_xxx" (fun () -> List.sort a b)
 
-let sort_by_val_descending xs = 
-  List.sort (fun (k1,v1) (k2,v2) -> compare v2 v1) xs
+let sort_by_val_highfirst xs = 
+  sort_prof (fun (k1,v1) (k2,v2) -> compare v2 v1) xs
+let sort_by_val_lowfirst xs = 
+  sort_prof (fun (k1,v1) (k2,v2) -> compare v1 v2) xs
+
+let sort_by_key_highfirst xs = 
+  sort_prof (fun (k1,v1) (k2,v2) -> compare k2 k1) xs
+let sort_by_key_lowfirst xs = 
+  sort_prof (fun (k1,v1) (k2,v2) -> compare k1 k2) xs
+
+let _ = example (sort_by_key_lowfirst [4, (); 7,()] = [4,(); 7,()])
+let _ = example (sort_by_key_highfirst [4,(); 7,()] = [7,(); 4,()])
 
 (*----------------------------------*)
 
@@ -4201,6 +4229,9 @@ let (insert_set: 'a -> 'a set -> 'a set) = fun x xs ->
   then (* let _ = print_string "warning insert: already exist" in *) 
     xs 
   else x::xs
+
+let is_set xs = 
+  has_no_duplicate xs
 
 let (single_set: 'a -> 'a set) = fun x -> insert_set x empty_set
 let (set: 'a list -> 'a set) = fun xs -> 

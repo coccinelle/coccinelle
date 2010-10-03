@@ -21,7 +21,7 @@
 
 
 (* create an index for each constructor *)
-(* current max is 147 *)
+(* current max is 147, but 107 is free *)
 
 (* doesn't really work - requires that identical terms with no token
 subterms (eg dots) not appear on the same line *)
@@ -147,12 +147,11 @@ let declaration d =
 
 let initialiser i =
   match Ast0.unwrap i with
-    Ast0.InitExpr(exp) -> [102] (* added after *)
+    Ast0.MetaInit(nm,_) -> [106] (* added after *)
+  | Ast0.InitExpr(exp) -> [102]
   | Ast0.InitList(lb,initlist,rb) -> [103]
-  | Ast0.InitGccDotName(dot,name,eq,ini) -> [104]
+  | Ast0.InitGccExt(designators,eq,ini) -> [104]
   | Ast0.InitGccName(name,eq,ini) -> [105]
-  | Ast0.InitGccIndex(lb,exp,rb,eq,ini) -> [106]
-  | Ast0.InitGccRange(lb,exp1,dots,exp2,rb,eq,ini) -> [107]
   | Ast0.IComma(cm) -> [108]
   | Ast0.Idots(d,whencode) -> [109]
   | Ast0.OptIni(id) -> [110]

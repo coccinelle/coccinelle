@@ -88,6 +88,7 @@ type token =
   | TMetaLocalIdExp of (Parse_aux.typed_info)
   | TMetaLocalFunc of (Parse_aux.idinfo)
   | TMetaIterator of (Parse_aux.idinfo)
+  | TMetaInit of (Parse_aux.info)
   | TMetaIdExp of (Parse_aux.typed_info)
   | TMetaId of (Parse_aux.idinfo)
   | TMetaFunc of (Parse_aux.idinfo)
@@ -112,6 +113,7 @@ type token =
   | TIso
   | TInvalid
   | TInt of (string * Data.clt)
+  | TInitialiser
   | TIncludeNL of (string * Data.clt)
   | TIncludeL of (string * Data.clt)
   | TInc of (Data.clt)

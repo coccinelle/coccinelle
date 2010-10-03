@@ -239,7 +239,7 @@ let short_options = [
     "  guess what";
 
   "-date",   Arg.Unit (fun () -> 
-    pr2 "version: $Date: 2009/01/02 10:28:28 $";
+    pr2 "version: $Date: 2009/02/03 17:17:04 $";
     raise (Common.UnixExit 0)
     ), 
   "   guess what";
@@ -590,8 +590,16 @@ let glimpse_filter (coccifile, isofile) dir =
 (*****************************************************************************)
 let main () = 
   begin
+    let arglist = Array.to_list Sys.argv in
+
+    if not (null (Common.inter_set arglist
+	             ["-cocci_file";"-sp_file";"-test";"-testall";
+                      "-test_okfailed";"-test_regression_okfailed"]))
+    then run_profile quiet_profile;
+
     let args = ref [] in
 
+    (* this call can set up many global flag variables via the cmd line *)
     arg_parse2 (Arg.align all_options) (fun x -> args := x::!args) usage_msg;
 
     (if !dir && List.length !args > 1
@@ -648,7 +656,7 @@ let main () =
     (* Actions, useful to debug subpart of coccinelle *)
     (* --------------------------------------------------------- *)
 
-    | xs when List.mem !action (Common.action_list all_actions) -> 
+    | xs when List.mem !action (Common.action_list all_actions) ->
         Common.do_action !action xs all_actions
 
     | [file] when !action = "-parse_cocci" -> 
@@ -667,6 +675,7 @@ let main () =
     (* This is the main entry *)
     (* --------------------------------------------------------- *)
     | x::xs -> 
+        
 	adjust_stdin x (fun () ->
           if !cocci_file = ""
           then failwith "I need a cocci file,  use -sp_file <file>";
@@ -833,7 +842,6 @@ let main () =
 (*****************************************************************************)
 let _ =
   Common.main_boilerplate (fun () -> 
-    run_profile quiet_profile;
     main ();
     Ctlcocci_integration.print_bench();
   )

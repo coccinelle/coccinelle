@@ -268,31 +268,33 @@ let combiner bind option_default
   and initialiser i =
     let k i =
       match Ast.unwrap i with
-	Ast.InitExpr(exp) -> expression exp
+	Ast.MetaInit(name,_,_) -> meta_mcode name
+      |	Ast.InitExpr(exp) -> expression exp
       | Ast.InitList(lb,initlist,rb,whencode) ->
 	  multibind
 	    [string_mcode lb;
 	      multibind (List.map initialiser initlist);
 	      string_mcode rb;
 	      multibind (List.map initialiser whencode)]
-      | Ast.InitGccDotName(dot,name,eq,ini) ->
-	  multibind
-	    [string_mcode dot; ident name; string_mcode eq; initialiser ini]
       | Ast.InitGccName(name,eq,ini) ->
 	  multibind [ident name; string_mcode eq; initialiser ini]
-      | Ast.InitGccIndex(lb,exp,rb,eq,ini) ->
+      | Ast.InitGccExt(designators,eq,ini) ->
 	  multibind
-	    [string_mcode lb; expression exp; string_mcode rb;
-	      string_mcode eq; initialiser ini]
-      | Ast.InitGccRange(lb,exp1,dots,exp2,rb,eq,ini) ->
-	  multibind
-	    [string_mcode lb; expression exp1; string_mcode dots;
-	      expression exp2; string_mcode rb; string_mcode eq;
-	      initialiser ini]
+	    ((List.map designator designators) @
+	     [string_mcode eq; initialiser ini])
       | Ast.IComma(cm) -> string_mcode cm
       | Ast.OptIni(i) -> initialiser i
       | Ast.UniqueIni(i) -> initialiser i in
     initfn all_functions k i
+
+  and designator = function
+      Ast.DesignatorField(dot,id) -> bind (string_mcode dot) (ident id)
+    | Ast.DesignatorIndex(lb,exp,rb) ->
+	bind (string_mcode lb) (bind (expression exp) (string_mcode rb))
+    | Ast.DesignatorRange(lb,min,dots,max,rb) ->
+	multibind
+	  [string_mcode lb; expression min; string_mcode dots;
+	    expression max; string_mcode rb]
 
   and parameterTypeDef p =
     let k p =
@@ -758,28 +760,31 @@ let rebuilder
     let k i =
       Ast.rewrap i
 	(match Ast.unwrap i with
-	  Ast.InitExpr(exp) -> Ast.InitExpr(expression exp)
+	  Ast.MetaInit(name,keep,inherited) ->
+	    Ast.MetaInit(meta_mcode name,keep,inherited)
+	| Ast.InitExpr(exp) -> Ast.InitExpr(expression exp)
 	| Ast.InitList(lb,initlist,rb,whencode) ->
 	    Ast.InitList(string_mcode lb, List.map initialiser initlist,
 			 string_mcode rb, List.map initialiser whencode)
-	| Ast.InitGccDotName(dot,name,eq,ini) ->
-	    Ast.InitGccDotName
-	      (string_mcode dot, ident name, string_mcode eq, initialiser ini)
 	| Ast.InitGccName(name,eq,ini) ->
 	    Ast.InitGccName(ident name, string_mcode eq, initialiser ini)
-	| Ast.InitGccIndex(lb,exp,rb,eq,ini) ->
-	    Ast.InitGccIndex
-	      (string_mcode lb, expression exp, string_mcode rb,
-	       string_mcode eq, initialiser ini)
-	| Ast.InitGccRange(lb,exp1,dots,exp2,rb,eq,ini) ->
-	    Ast.InitGccRange
-	      (string_mcode lb, expression exp1, string_mcode dots,
-	       expression exp2, string_mcode rb, string_mcode eq,
+	| Ast.InitGccExt(designators,eq,ini) ->
+	    Ast.InitGccExt
+	      (List.map designator designators, string_mcode eq,
 	       initialiser ini)
 	| Ast.IComma(cm) -> Ast.IComma(string_mcode cm)
 	| Ast.OptIni(i) -> Ast.OptIni(initialiser i)
 	| Ast.UniqueIni(i) -> Ast.UniqueIni(initialiser i)) in
     initfn all_functions k i
+
+  and designator = function
+      Ast.DesignatorField(dot,id) ->
+	Ast.DesignatorField(string_mcode dot,ident id)
+    | Ast.DesignatorIndex(lb,exp,rb) ->
+	Ast.DesignatorIndex(string_mcode lb,expression exp,string_mcode rb)
+    | Ast.DesignatorRange(lb,min,dots,max,rb) ->
+	Ast.DesignatorRange(string_mcode lb,expression min,string_mcode dots,
+			     expression max,string_mcode rb)
 
   and parameterTypeDef p =
     let k p =

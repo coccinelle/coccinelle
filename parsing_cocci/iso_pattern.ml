@@ -386,6 +386,12 @@ let match_maker checks_needed context_required whencode_allowed =
 	  Ast0.MetaType(name,pure) -> pure
 	| _ -> Ast0.Impure) in
 
+    let init r k t =
+      bind (bind (pure_mcodekind (Ast0.get_mcodekind t)) (k t))
+	(match Ast0.unwrap t with
+	  Ast0.MetaInit(name,pure) -> pure
+	| _ -> Ast0.Impure) in
+
     let param r k p =
       bind (bind (pure_mcodekind (Ast0.get_mcodekind p)) (k p))
 	(match Ast0.unwrap p with
@@ -401,7 +407,7 @@ let match_maker checks_needed context_required whencode_allowed =
     V0.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing donothing donothing donothing
-      ident expression typeC donothing param donothing stmt donothing
+      ident expression typeC init param donothing stmt donothing
       donothing in
 
   let add_pure_list_binding name pure is_pure builder1 builder2 lst =
@@ -842,56 +848,72 @@ let match_maker checks_needed context_required whencode_allowed =
     else return_false (ContextRequired (Ast0.DeclTag d))
 
   and match_init pattern i =
-    if not(checks_needed) or not(context_required) or is_context i
-    then
-      match (Ast0.unwrap pattern,Ast0.unwrap i) with
-	(Ast0.InitExpr(expa),Ast0.InitExpr(expb)) ->
-	  match_expr expa expb
-      | (Ast0.InitList(lb1,initlista,rb1),Ast0.InitList(lb,initlistb,rb)) ->
-	  conjunct_many_bindings
-	    [check_mcode lb1 lb; check_mcode rb1 rb;
-	      match_dots match_init no_list do_nolist_match
-		initlista initlistb]
-      | (Ast0.InitGccDotName(d1,namea,e1,inia),
-	 Ast0.InitGccDotName(d,nameb,e,inib)) ->
-	   conjunct_many_bindings
-	     [check_mcode d1 d; check_mcode e1 e;
-	       match_ident namea nameb; match_init inia inib]
-      | (Ast0.InitGccName(namea,c1,inia),Ast0.InitGccName(nameb,c,inib)) ->
-	  conjunct_many_bindings
-	    [check_mcode c1 c; match_ident namea nameb;
-	      match_init inia inib]
-      | (Ast0.InitGccIndex(lb1,expa,rb1,e1,inia),
-	 Ast0.InitGccIndex(lb2,expb,rb2,e2,inib)) ->
-	  conjunct_many_bindings
-	     [check_mcode lb1 lb2; check_mcode rb1 rb2; check_mcode e1 e2;
-	       match_expr expa expb; match_init inia inib]
-      | (Ast0.InitGccRange(lb1,exp1a,d1,exp2a,rb1,e1,inia),
-	 Ast0.InitGccRange(lb2,exp1b,d2,exp2b,rb2,e2,inib)) ->
-	  conjunct_many_bindings
-	     [check_mcode lb1 lb2; check_mcode d1 d2;
-	       check_mcode rb1 rb2; check_mcode e1 e2;
-	       match_expr exp1a exp1b; match_expr exp2a exp2b;
-	       match_init inia inib]
-      | (Ast0.IComma(c1),Ast0.IComma(c)) -> check_mcode c1 c
-      | (Ast0.Idots(d1,None),Ast0.Idots(d,None)) -> check_mcode d1 d
-      | (Ast0.Idots(id,None),Ast0.Idots(d,Some wc)) ->
-	  conjunct_bindings (check_mcode id d)
+    match Ast0.unwrap pattern with
+      Ast0.MetaInit(name,pure) ->
+	add_pure_binding name pure pure_sp_code.V0.combiner_initialiser
+	  (function ini -> Ast0.InitTag ini)
+	  i
+    | up ->
+	if not(checks_needed) or not(context_required) or is_context i
+	then
+	  match (up,Ast0.unwrap i) with
+	    (Ast0.InitExpr(expa),Ast0.InitExpr(expb)) ->
+	      match_expr expa expb
+	  | (Ast0.InitList(lb1,initlista,rb1),Ast0.InitList(lb,initlistb,rb))
+	    ->
+	      conjunct_many_bindings
+		[check_mcode lb1 lb; check_mcode rb1 rb;
+		  match_dots match_init no_list do_nolist_match
+		    initlista initlistb]
+	  | (Ast0.InitGccExt(designators1,e1,inia),
+	     Ast0.InitGccExt(designators2,e2,inib)) ->
+	       conjunct_many_bindings
+		 [match_list match_designator
+		     (function _ -> false) (function _ -> failwith "")
+		     designators1 designators2;
+		   check_mcode e1 e2;
+		   match_init inia inib]
+	  | (Ast0.InitGccName(namea,c1,inia),Ast0.InitGccName(nameb,c,inib)) ->
+	      conjunct_many_bindings
+		[check_mcode c1 c; match_ident namea nameb;
+		  match_init inia inib]
+	  | (Ast0.IComma(c1),Ast0.IComma(c)) -> check_mcode c1 c
+	  | (Ast0.Idots(d1,None),Ast0.Idots(d,None)) -> check_mcode d1 d
+	  | (Ast0.Idots(id,None),Ast0.Idots(d,Some wc)) ->
+	      conjunct_bindings (check_mcode id d)
 	  (* hope that mcode of edots is unique somehow *)
-	    (let (_,idots_whencode_allowed,_) = whencode_allowed in
-	    if idots_whencode_allowed
-	    then add_dot_binding id (Ast0.InitTag wc)
-	    else
-	      (Printf.printf "warning: not applying iso because of whencode";
-	       return false))
-      | (Ast0.Idots(_,Some _),_) ->
-	  failwith "whencode not allowed in a pattern2"
-      | (Ast0.OptIni(ia),Ast0.OptIni(ib))
-      | (Ast0.UniqueIni(ia),Ast0.UniqueIni(ib)) -> match_init ia ib
-      | (_,Ast0.OptIni(ib))
-      | (_,Ast0.UniqueIni(ib)) -> match_init pattern ib
-      | _ -> return false
-    else return_false (ContextRequired (Ast0.InitTag i))
+		(let (_,idots_whencode_allowed,_) = whencode_allowed in
+		if idots_whencode_allowed
+		then add_dot_binding id (Ast0.InitTag wc)
+		else
+		  (Printf.printf
+		     "warning: not applying iso because of whencode";
+		   return false))
+	  | (Ast0.Idots(_,Some _),_) ->
+	      failwith "whencode not allowed in a pattern2"
+	  | (Ast0.OptIni(ia),Ast0.OptIni(ib))
+	  | (Ast0.UniqueIni(ia),Ast0.UniqueIni(ib)) -> match_init ia ib
+	  | (_,Ast0.OptIni(ib))
+	  | (_,Ast0.UniqueIni(ib)) -> match_init pattern ib
+	  | _ -> return false
+	else return_false (ContextRequired (Ast0.InitTag i))
+
+  and match_designator pattern d =
+    match (pattern,d) with
+      (Ast0.DesignatorField(dota,ida),Ast0.DesignatorField(dotb,idb)) ->
+	conjunct_bindings (check_mcode dota dotb) (match_ident ida idb)
+    | (Ast0.DesignatorIndex(lba,expa,rba),
+       Ast0.DesignatorIndex(lbb,expb,rbb)) ->
+	 conjunct_many_bindings
+	   [check_mcode lba lbb; match_expr expa expb;
+	     check_mcode rba rbb]
+    | (Ast0.DesignatorRange(lba,mina,dotsa,maxa,rba),
+       Ast0.DesignatorRange(lbb,minb,dotsb,maxb,rbb)) ->
+	 conjunct_many_bindings
+	   [check_mcode lba lbb; match_expr mina minb;
+	     check_mcode dotsa dotsb; match_expr maxa maxb;
+	     check_mcode rba rbb]
+    | _ -> return false
 
   and match_param pattern p =
     match Ast0.unwrap pattern with
@@ -1675,6 +1697,19 @@ let instantiate bindings mv_bindings =
 		(Ast0.MetaType(Ast0.set_mcode_data new_mv name,pure)))
     | _ -> e in
 
+  let initfn r k e =
+    let e = k e in
+    match Ast0.unwrap e with
+      Ast0.MetaInit(name,pure) ->
+	(rebuild_mcode None).V0.rebuilder_initialiser
+	  (match lookup name bindings mv_bindings with
+	    Common.Left(Ast0.InitTag(ty)) -> ty
+	  | Common.Left(_) -> failwith "not possible 1"
+	  | Common.Right(new_mv) ->
+	      Ast0.rewrap e
+		(Ast0.MetaInit(Ast0.set_mcode_data new_mv name,pure)))
+    | _ -> e in
+
   let declfn r k e =
     let e = k e in
     match Ast0.unwrap e with
@@ -1745,7 +1780,7 @@ let instantiate bindings mv_bindings =
   V0.rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     (dots elist) donothing (dots plist) (dots slist) donothing donothing
-    identfn exprfn tyfn donothing paramfn declfn stmtfn donothing donothing
+    identfn exprfn tyfn initfn paramfn declfn stmtfn donothing donothing
 
 (* --------------------------------------------------------------------- *)
 
@@ -1891,6 +1926,8 @@ let get_name = function
       (nm,function nm -> Ast.MetaFreshIdDecl(ar,nm))
   | Ast.MetaTypeDecl(ar,nm) ->
       (nm,function nm -> Ast.MetaTypeDecl(ar,nm))
+  | Ast.MetaInitDecl(ar,nm) ->
+      (nm,function nm -> Ast.MetaInitDecl(ar,nm))
   | Ast.MetaListlenDecl(nm) ->
       failwith "should not be rebuilt"
   | Ast.MetaParamDecl(ar,nm) ->

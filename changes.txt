@@ -1,5 +1,23 @@
 -*- org -*-
 
+* 0.1.5
+
+** Features: 
+- added initialiser metavariable
+- added sequences of designators in structures
+- improved printing of the C code corresponding to metavariables
+- improved printing when code (eg declarations) is removed at the beginning
+  of a block, and then is followed by a blank line
+- slightly less verbose error reporting in parsing_hacks
+
+** Bugfix:
+- fixed some problems with parsing SmPL code where a nest appears after a |
+- better treatment of { }, form in macros wrt unparse_c
+- less quiet for -parse_c
+- improve parsing heuristics regarding macro statement
+
+** Internals: 
+
 * 0.1.4
 
 ** Features: 

@@ -260,6 +260,8 @@ let equal_metavarval valu valu' =
 
   | Ast_c.MetaStmtVal a, Ast_c.MetaStmtVal b -> 
       Lib_parsing_c.al_statement a =*= Lib_parsing_c.al_statement b
+  | Ast_c.MetaInitVal a, Ast_c.MetaInitVal b -> 
+      Lib_parsing_c.al_init a =*= Lib_parsing_c.al_init b
   | Ast_c.MetaTypeVal a, Ast_c.MetaTypeVal b -> 
       (* old: Lib_parsing_c.al_type a =*= Lib_parsing_c.al_type b *)
       C_vs_c.eq_type a b
@@ -285,7 +287,7 @@ let equal_metavarval valu valu' =
 	l1
 
   | (B.MetaPosValList _|B.MetaListlenVal _|B.MetaPosVal _|B.MetaStmtVal _
-      |B.MetaTypeVal _
+      |B.MetaTypeVal _ |B.MetaInitVal _
       |B.MetaParamListVal _|B.MetaParamVal _|B.MetaExprListVal _
       |B.MetaExprVal _|B.MetaLocalFuncVal _|B.MetaFuncVal _|B.MetaIdVal _
     ), _
@@ -813,10 +815,10 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
        * ... could match type. 
        *)
       let (ib1, ib2) = tuple_of_list2 ii in
-      expression ea eb >>= (fun ea eb -> 
-      tokenf ia1 ib1 >>= (fun ia1 ib1 -> 
-      tokenf ia2 ib2 >>= (fun ia2 ib2 -> 
-      arguments (seqstyle eas) (A.undots eas) ebs >>= (fun easundots ebs -> 
+      expression ea eb >>= (fun ea eb ->
+      tokenf ia1 ib1 >>= (fun ia1 ib1 ->
+      tokenf ia2 ib2 >>= (fun ia2 ib2 ->
+      arguments (seqstyle eas) (A.undots eas) ebs >>= (fun easundots ebs ->
         let eas = redots eas easundots in
         return (
           ((A.FunCall (ea, ia1, eas, ia2)) +> wa,
@@ -1317,7 +1319,7 @@ and arguments_bis = fun eas ebs ->
       )
             
       
-and argument arga argb = 
+and argument arga argb =
   X.all_bound (A.get_inherited arga) >&&>
    match A.unwrap arga, argb with
   | A.TypeExp tya,  Right (B.ArgType (((b, sopt, tyb), ii_b_s))) ->
@@ -1335,8 +1337,8 @@ and argument arga argb =
 
   | A.TypeExp tya,  _                                  -> fail
   | _,              Right (B.ArgType (tyb, sto_iisto)) -> fail
-  | _, Left argb -> 
-      expression arga argb >>= (fun arga argb -> 
+  | _, Left argb ->
+      expression arga argb >>= (fun arga argb ->
         return (arga, Left argb)
       )
   | _, Right (B.ArgAction y) -> fail
@@ -1931,6 +1933,18 @@ and (initialiser: (A.initialiser, Ast_c.initialiser) matcher) =  fun ia ib ->
     X.all_bound (A.get_inherited ia) >&&>
     match (A.unwrap ia,ib) with
 
+    | (A.MetaInit(ida,keep,inherited), ib) -> 
+	let max_min _ =
+	  Lib_parsing_c.lin_col_by_pos (Lib_parsing_c.ii_of_ini ib) in
+	X.envf keep inherited (ida, Ast_c.MetaInitVal ib, max_min)
+	  (fun () -> 
+	    X.distrf_ini ida ib >>= (fun ida ib -> 
+	      return (
+	        A.MetaInit (ida,keep,inherited) +> A.rewrap ia,
+	        ib
+	     ))
+	  )
+
     | (A.InitExpr expa, ib) -> 
         (match A.unwrap expa, ib with
         | A.Edots (mcode, None), ib    -> 
@@ -1972,57 +1986,19 @@ and (initialiser: (A.initialiser, Ast_c.initialiser) matcher) =  fun ia ib ->
         failwith "TODO: not handling whencode in initialisers"
 
 
-    | (A.InitGccDotName (ia1, ida, ia2, inia), 
-      (B.InitDesignators ([B.DesignatorField idb,ii1], inib), ii2))->
+    | (A.InitGccExt (designatorsa, ia2, inia), 
+      (B.InitDesignators (designatorsb, inib), ii2))->
 
-        let (iidot, iidb) = tuple_of_list2 ii1 in
         let iieq = tuple_of_list1 ii2 in
 
-        tokenf ia1 iidot >>= (fun ia1 iidot -> 
         tokenf ia2 iieq >>= (fun ia2 iieq -> 
-        ident DontKnow ida (idb, iidb) >>= (fun ida (idb, iidb) -> 
+	designators designatorsa designatorsb >>=
+	  (fun designatorsa designatorsb ->
         initialiser inia inib >>= (fun inia inib -> 
           return (
-            (A.InitGccDotName (ia1, ida, ia2, inia)) +> A.rewrap ia,
-            (B.InitDesignators 
-                ([B.DesignatorField idb, [iidot;iidb]], inib), [iieq])
-          )))))
-
-
-    | (A.InitGccIndex (ia1,ea,ia2,ia3,inia), 
-      (B.InitDesignators ([B.DesignatorIndex eb, ii1], inib), ii2)) -> 
-        
-        let (ib1, ib2) = tuple_of_list2 ii1 in
-        let ib3 = tuple_of_list1 ii2 in
-        tokenf ia1 ib1 >>= (fun ia1 ib1 -> 
-        tokenf ia2 ib2 >>= (fun ia2 ib2 -> 
-        tokenf ia3 ib3 >>= (fun ia3 ib3 -> 
-        expression ea eb >>= (fun ea eb -> 
-        initialiser inia inib >>= (fun inia inib -> 
-          return (
-            (A.InitGccIndex (ia1,ea,ia2,ia3,inia)) +> A.rewrap ia,
-            (B.InitDesignators 
-                ([B.DesignatorIndex eb, [ib1;ib2]], inib), [ib3])
-          ))))))
-
-
-    | (A.InitGccRange (ia1,e1a,ia2,e2a,ia3,ia4,inia), 
-      (B.InitDesignators ([B.DesignatorRange (e1b, e2b), ii1], inib), ii2)) -> 
-
-        let (ib1, ib2, ib3) = tuple_of_list3 ii1 in
-        let (ib4) = tuple_of_list1 ii2 in
-        tokenf ia1 ib1 >>= (fun ia1 ib1 -> 
-        tokenf ia2 ib2 >>= (fun ia2 ib2 -> 
-        tokenf ia3 ib3 >>= (fun ia3 ib3 -> 
-        tokenf ia4 ib4 >>= (fun ia4 ib4 -> 
-        expression e1a e1b >>= (fun e1a e1b -> 
-        expression e2a e2b >>= (fun e2a e2b -> 
-        initialiser inia inib >>= (fun inia inib -> 
-          return (
-            (A.InitGccRange (ia1,e1a,ia2,e2a,ia3,ia4,inia)) +> A.rewrap ia,
-            (B.InitDesignators 
-                ([B.DesignatorRange (e1b, e2b),[ib1;ib2;ib3]], inib), [ib4])
-          ))))))))
+            (A.InitGccExt (designatorsa, ia2, inia)) +> A.rewrap ia,
+            (B.InitDesignators (designatorsb, inib), [iieq])
+          ))))
 
 
 
@@ -2054,9 +2030,53 @@ and (initialiser: (A.initialiser, Ast_c.initialiser) matcher) =  fun ia ib ->
     | _, ((B.InitDesignators (_, _)|B.InitList _|B.InitExpr _), _)
         -> fail
 
+and designators dla dlb =
+  match (dla,dlb) with
+    ([],[]) -> return ([], [])
+  | ([],_) | (_,[]) -> fail
+  | (da::dla,db::dlb) ->
+      designator da db >>= (fun da db ->
+      designators dla dlb >>= (fun dla dlb ->
+      return (da::dla, db::dlb)))
 
+and designator da db =
+  match (da,db) with
+    (A.DesignatorField (ia1, ida), (B.DesignatorField idb,ii1)) ->
 
+        let (iidot, iidb) = tuple_of_list2 ii1 in
+        tokenf ia1 iidot >>= (fun ia1 iidot -> 
+        ident DontKnow ida (idb, iidb) >>= (fun ida (idb, iidb) ->
+          return (
+            A.DesignatorField (ia1, ida),
+            (B.DesignatorField idb, [iidot;iidb])
+          )))
 
+  | (A.DesignatorIndex (ia1,ea,ia2), (B.DesignatorIndex eb, ii1)) ->
+        
+        let (ib1, ib2) = tuple_of_list2 ii1 in
+        tokenf ia1 ib1 >>= (fun ia1 ib1 -> 
+        tokenf ia2 ib2 >>= (fun ia2 ib2 -> 
+        expression ea eb >>= (fun ea eb -> 
+          return (
+            A.DesignatorIndex (ia1,ea,ia2),
+            (B.DesignatorIndex eb, [ib1;ib2])
+          ))))
+
+  | (A.DesignatorRange (ia1,e1a,ia2,e2a,ia3),
+     (B.DesignatorRange (e1b, e2b), ii1)) ->
+
+        let (ib1, ib2, ib3) = tuple_of_list3 ii1 in
+        tokenf ia1 ib1 >>= (fun ia1 ib1 -> 
+        tokenf ia2 ib2 >>= (fun ia2 ib2 -> 
+        tokenf ia3 ib3 >>= (fun ia3 ib3 -> 
+        expression e1a e1b >>= (fun e1a e1b -> 
+        expression e2a e2b >>= (fun e2a e2b -> 
+          return (
+            A.DesignatorRange (ia1,e1a,ia2,e2a,ia3),
+            (B.DesignatorRange (e1b, e2b), [ib1;ib2;ib3])
+          ))))))
+  | (_, ((B.DesignatorField _|B.DesignatorIndex _|B.DesignatorRange _), _)) ->
+      fail
 
 
 and initialisers = fun ias (ibs, iicomma) ->

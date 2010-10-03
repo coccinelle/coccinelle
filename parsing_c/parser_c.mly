@@ -1274,7 +1274,7 @@ initialize2:
 
 
 
-/*(* they can be nested, can have a .x.[3].y *)*/
+/*(* they can be nested, can have a .x[3].y *)*/
 designator: 
  | TDot ident 
      { DesignatorField (fst $2), [$1;snd $2] } 

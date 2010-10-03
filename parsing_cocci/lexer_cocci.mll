@@ -191,6 +191,10 @@ let id_tokens lexbuf =
       check_arity_context_linetype s; TGenerated
   | "expression" when in_meta || in_rule_name ->
       check_arity_context_linetype s; TExpression
+  | "initialiser" when in_meta || in_rule_name ->
+      check_arity_context_linetype s; TInitialiser
+  | "initializer" when in_meta || in_rule_name ->
+      check_arity_context_linetype s; TInitialiser
   | "idexpression" when in_meta ->
       check_arity_context_linetype s; TIdExpression
   | "statement" when in_meta ->  check_arity_context_linetype s; TStatement
@@ -299,6 +303,10 @@ let init _ =
   Data.add_type_meta :=
     (fun name pure ->
       let fn clt = TMetaType(name,pure,clt) in
+      Hashtbl.replace metavariables (get_name name) fn);
+  Data.add_init_meta :=
+    (fun name pure ->
+      let fn clt = TMetaInit(name,pure,clt) in
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_param_meta :=
     (function name -> function pure ->

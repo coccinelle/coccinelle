@@ -535,7 +535,11 @@ and make_init =
 and initialiser tgt i =
   let init_same = all_same true tgt in
   match Ast0.unwrap i with
-    Ast0.InitExpr(exp) ->
+    Ast0.MetaInit(name,pure) ->
+      let arity = init_same (mcode2line name) [mcode2arity name] in
+      let name = mcode name in
+      make_init i tgt arity (Ast0.MetaInit(name,pure))
+  | Ast0.InitExpr(exp) ->
       Ast0.rewrap i (Ast0.InitExpr(expression tgt exp))
   | Ast0.InitList(lb,initlist,rb) ->
       let arity = init_same (mcode2line lb) [mcode2arity lb; mcode2arity rb] in
@@ -543,43 +547,18 @@ and initialiser tgt i =
       let initlist = dots (initialiser arity) initlist in
       let rb = mcode rb in
       make_init i tgt arity (Ast0.InitList(lb,initlist,rb))
-  | Ast0.InitGccDotName(dot,name,eq,ini) ->
-      let arity =
-	init_same (mcode2line dot) [mcode2arity dot; mcode2arity eq] in
-      let dot = mcode dot in
-      let name = ident true arity name in
+  | Ast0.InitGccExt(designators,eq,ini) ->
+      let arity = init_same (mcode2line eq) [mcode2arity eq] in
+      let designators = List.map (designator arity) designators in
       let eq = mcode eq in
       let ini = initialiser arity ini in
-      make_init i tgt arity (Ast0.InitGccDotName(dot,name,eq,ini))
+      make_init i tgt arity (Ast0.InitGccExt(designators,eq,ini))
   | Ast0.InitGccName(name,eq,ini) ->
       let arity = init_same (mcode2line eq) [mcode2arity eq] in
       let name = ident true arity name in
       let eq = mcode eq in
       let ini = initialiser arity ini in
       make_init i tgt arity (Ast0.InitGccName(name,eq,ini))
-  | Ast0.InitGccIndex(lb,exp,rb,eq,ini) ->
-      let arity =
-	init_same (mcode2line lb)
-	  [mcode2arity lb; mcode2arity rb; mcode2arity eq] in
-      let lb = mcode lb in
-      let exp = expression arity exp in
-      let rb = mcode rb in
-      let eq = mcode eq in
-      let ini = initialiser arity ini in
-      make_init i tgt arity (Ast0.InitGccIndex(lb,exp,rb,eq,ini))
-  | Ast0.InitGccRange(lb,exp1,dots,exp2,rb,eq,ini) ->
-      let arity =
-	init_same (mcode2line lb)
-	  [mcode2arity lb; mcode2arity dots; mcode2arity rb; mcode2arity eq] in
-      let lb = mcode lb in
-      let exp1 = expression arity exp1 in
-      let dots = mcode dots in
-      let exp2 = expression arity exp2 in
-      let rb = mcode rb in
-      let eq = mcode eq in
-      let ini = initialiser arity ini in
-      make_init i tgt arity
-	(Ast0.InitGccRange(lb,exp1,dots,exp2,rb,eq,ini))
   | Ast0.IComma(cm) ->
       let arity = init_same (mcode2line cm) [mcode2arity cm] in
       let cm = mcode cm in
@@ -591,6 +570,31 @@ and initialiser tgt i =
       make_init i tgt arity (Ast0.Idots(dots,whencode))
   | Ast0.OptIni(_) | Ast0.UniqueIni(_) ->
       failwith "unexpected code"
+
+and designator tgt d =
+  let dsame = all_same false tgt in
+  match d with
+    Ast0.DesignatorField(dot,id) ->
+      let arity = dsame (mcode2line dot) [mcode2arity dot] in
+      let dot = mcode dot in
+      let id = ident false arity id in
+      Ast0.DesignatorField(dot,id)
+  | Ast0.DesignatorIndex(lb,exp,rb) ->
+      let arity = dsame (mcode2line lb) [mcode2arity lb;mcode2arity rb] in
+      let lb = mcode lb in
+      let exp = top_expression false arity exp in
+      let rb = mcode rb in
+      Ast0.DesignatorIndex(lb,exp,rb)
+  | Ast0.DesignatorRange(lb,min,dots,max,rb) ->
+      let arity =
+	dsame (mcode2line lb)
+	  [mcode2arity lb;mcode2arity dots;mcode2arity rb] in
+      let lb = mcode lb in
+      let min = top_expression false arity min in
+      let dots = mcode dots in
+      let max = top_expression false arity max in
+      let rb = mcode rb in
+      Ast0.DesignatorRange(lb,min,dots,max,rb)
 
 (* --------------------------------------------------------------------- *)
 (* Parameter *)
