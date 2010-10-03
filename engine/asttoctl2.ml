@@ -1106,7 +1106,8 @@ let forwhile header body ((afvs,_,_,_) as aft) after
     (Ast.Atomic(re),(_,_,_,Ast.CONTEXT(_,Ast.NOTHING))) ->
       (match Ast.unwrap re with
 	Ast.MetaStmt((_,_,Ast.CONTEXT(_,Ast.NOTHING),_),
-		     Type_cocci.Unitary,_,false) ->
+		     Type_cocci.Unitary,_,false)
+	when after = Tail or after = End or after = VeryEnd ->
 	  let (efvs) =
 	    match seq_fvs quantified [Ast.get_fvs header] with
 	      [(efvs,_)] -> efvs
@@ -2328,7 +2329,7 @@ let asttoctlz (name,(_,_,exists_flag),l) used_after positions =
 
 let asttoctl r used_after positions =
   match r with
-    Ast.ScriptRule _ -> []
+    Ast.ScriptRule _ | Ast.InitialScriptRule _ | Ast.FinalScriptRule _ -> []
   | Ast.CocciRule (a,b,c,_,Ast_cocci.Normal) ->
       asttoctlz (a,b,c) used_after positions
   | Ast.CocciRule (a,b,c,_,Ast_cocci.Generated) -> [CTL.True]

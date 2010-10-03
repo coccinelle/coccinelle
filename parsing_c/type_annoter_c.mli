@@ -6,7 +6,7 @@ type namedef =
   | StructUnionNameDef of string *
       (Ast_c.structUnion * Ast_c.structType) Ast_c.wrap
 
-  | Macro of string * Ast_c.define_body
+  | Macro of string * (Ast_c.define_kind * Ast_c.define_val)
 
 (* have nested scope, so nested list*)
 type environment = namedef list list 

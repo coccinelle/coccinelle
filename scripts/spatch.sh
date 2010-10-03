@@ -9,9 +9,9 @@ if [ ! -r "$COCCINELLE_HOME"/standard.iso ] ; then
 else
 
  export COCCINELLE_HOME
- export LD_LIBRARY_PATH="$COCCINELLE_HOME:$LD_LIBRARY_PATH"
+ export LD_LIBRARY_PATH="LIBDIR:$LD_LIBRARY_PATH"
  export PYTHONPATH="$COCCINELLE_HOME/python:$PYTHONPATH"
- 
+
 # echo setting LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
 # echo setting PYTHONPATH="$PYTHONPATH"
 

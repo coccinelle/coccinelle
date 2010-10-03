@@ -28,6 +28,7 @@ fresh are used.  What is the issue about error variables? (don't remember) *)
 module Ast0 = Ast0_cocci
 module Ast = Ast_cocci
 module V0 = Visitor_ast0
+module VT0 = Visitor_ast0_types
 
 (* all fresh identifiers *)
 let fresh_table = (Hashtbl.create(50) : ((string * string), unit) Hashtbl.t)
@@ -416,13 +417,13 @@ let positions table rules =
   let bind x y = () in
   let donothing r k e = k e in
   let fn =
-    V0.combiner bind option_default
+    V0.flat_combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing donothing donothing
       donothing donothing in
 
-  List.iter fn.V0.combiner_top_level rules
+  List.iter fn.VT0.combiner_rec_top_level rules
 
 let dup_positions rules =
   let mcode x =
@@ -441,33 +442,33 @@ let dup_positions rules =
     match Ast0.unwrap e with
       Ast0.DisjExpr(_,explist,_,_) ->
 	List.fold_left Common.union_set option_default
-	  (List.map r.V0.combiner_expression explist)
+	  (List.map r.VT0.combiner_rec_expression explist)
     | _ -> k e in
 
   let typeC r k e = (* not sure relevent because "only after iso" *)
     match Ast0.unwrap e with
       Ast0.DisjType(_,types,_,_) ->
 	List.fold_left Common.union_set option_default
-	  (List.map r.V0.combiner_typeC types)
+	  (List.map r.VT0.combiner_rec_typeC types)
     | _ -> k e in
 
   let declaration r k e =
     match Ast0.unwrap e with
       Ast0.DisjDecl(_,decls,_,_) ->
 	List.fold_left Common.union_set option_default
-	  (List.map r.V0.combiner_declaration decls)
+	  (List.map r.VT0.combiner_rec_declaration decls)
     | _ -> k e in
 
   let statement r k e =
     match Ast0.unwrap e with
       Ast0.Disj(_,stmts,_,_) ->
 	List.fold_left Common.union_set option_default
-	  (List.map r.V0.combiner_statement_dots stmts)
+	  (List.map r.VT0.combiner_rec_statement_dots stmts)
     | _ -> k e in
 
   let donothing r k e = k e in
   let fn =
-    V0.combiner bind option_default
+    V0.flat_combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing donothing donothing donothing
       donothing expression typeC donothing donothing declaration statement
@@ -476,7 +477,7 @@ let dup_positions rules =
   let res =
     List.sort compare
       (List.fold_left Common.union_set option_default
-	 (List.map fn.V0.combiner_top_level rules)) in
+	 (List.map fn.VT0.combiner_rec_top_level rules)) in
   let rec loop = function
       [] | [_] -> ()
     | ((rule,name) as x)::y::_ when x = y ->

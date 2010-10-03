@@ -21,6 +21,10 @@ open Ast_c
 module TH = Token_helpers
 
 
+(* should keep comments and directives in between adjacent deleted terms,
+but not comments and directives within deleted terms.  should use the
+labels found in the control-flow graph *)
+
 
 
 (*****************************************************************************)
@@ -193,7 +197,7 @@ let get_fakeInfo_and_tokens celem toks =
         let (before, x, after) = !toks_in +> Common.split_when (fun tok -> 
 	  info =*= TH.info_of_tok tok)
         in
-        assert(info = TH.info_of_tok x);
+        assert(info =*= TH.info_of_tok x);
         (*old: assert(before +> List.for_all (TH.is_comment)); *)
         before +> List.iter (fun x -> 
           if not (TH.is_comment x)
@@ -263,6 +267,11 @@ let displace_fake_nodes toks =
 (* Tokens2 generation *)
 (*****************************************************************************)
 
+let comment2t2 = function
+    (Token_c.TCommentCpp x,(info : Token_c.info)) ->
+      C2("\n"^info.Common.str^"\n")
+  | x -> failwith (Printf.sprintf "unexpected comment %s" (Common.dump x))
+
 let expand_mcode toks = 
   let toks_out = ref [] in
 
@@ -272,14 +281,14 @@ let expand_mcode toks =
     match t with
     | Fake1 info -> 
         let str = Ast_c.str_of_info info in
-        if str = ""
+        if str =$= ""
         then push2 (Fake2) toks_out
         (* perhaps the fake ',' *)
         else push2 (C2 str) toks_out
           
   
     | T1 tok -> 
-	let (a,b) = !((TH.info_of_tok tok).cocci_tag) in
+	(*let (a,b) = !((TH.info_of_tok tok).cocci_tag) in*)
         (* no tag on expandedTok ! *)
         (if (TH.is_expanded tok && 
             !((TH.info_of_tok tok).cocci_tag) <> Ast_c.emptyAnnot)
@@ -312,12 +321,18 @@ let expand_mcode toks =
       push2 (Cocci2 s) toks_out 
     in
     let pr_c info = 
-      match Ast_c.pinfo_of_info info with
-	Ast_c.AbstractLineTok _ -> push2 (C2 (Ast_c.str_of_info info)) toks_out
-      |	Ast_c.FakeTok (s,_) -> push2 (C2 s) toks_out
+      (match Ast_c.pinfo_of_info info with
+	Ast_c.AbstractLineTok _ ->
+	  push2 (C2 (Ast_c.str_of_info info)) toks_out
+      |	Ast_c.FakeTok (s,_) ->
+	  push2 (C2 s) toks_out
       |	_ ->
 	  Printf.printf "line: %s\n" (Common.dump info);
-	  failwith "not an abstract line" in
+	  failwith "not an abstract line");
+      (!(info.Ast_c.comments_tag)).Ast_c.mafter +>
+      List.iter (fun x -> Common.push2 (comment2t2 x) toks_out) in
+
+
 
     let pr_space _ = push2 (C2 " ") toks_out in
 
@@ -367,18 +382,18 @@ let expand_mcode toks =
 (*****************************************************************************)
 
 let is_minusable_comment = function
-  | T2 (t,_b,_i) -> 
+  | (T2 (t,_b,_i)) -> 
       (match t with
       | Parser_c.TCommentSpace _   (* only whitespace *)
       (* patch: coccinelle *)      
       | Parser_c.TCommentNewline _ (* newline plus whitespace *)
       | Parser_c.TComment _ 
       | Parser_c.TCommentCpp (Token_c.CppAttr, _) 
-      | Parser_c.TCommentCpp (Token_c.CppMacro, _) 
+      | Parser_c.TCommentCpp (Token_c.CppMacro, _)
+      | Parser_c.TCommentCpp (Token_c.CppDirective, _) (* result was false *)
         -> true
 
-      | Parser_c.TCommentMisc _ 
-      | Parser_c.TCommentCpp (Token_c.CppDirective, _)
+      | Parser_c.TCommentMisc _
       | Parser_c.TCommentCpp (Token_c.CppPassingCosWouldGetError, _)
         -> false
 
@@ -390,10 +405,8 @@ let all_coccis = function
     Cocci2 _ | C2 _ | Indent_cocci2 | Unindent_cocci2 -> true
   | _ -> false
 
-let is_minusable_comment_or_plus = function
-(* patch: coccinelle *)
-    T2(Parser_c.TCommentNewline _,_b,_i) -> false
-  | x -> is_minusable_comment x or all_coccis x
+(*previously gave up if the first character was a newline, but not clear why*)
+let is_minusable_comment_or_plus x = is_minusable_comment x or all_coccis x
 
 let set_minus_comment = function
   | T2 (t,false,idx) -> 
@@ -405,9 +418,11 @@ let set_minus_comment = function
 
       | Parser_c.TComment _ 
       | Parser_c.TCommentCpp (Token_c.CppAttr, _) 
-      | Parser_c.TCommentCpp (Token_c.CppMacro, _) 
+      | Parser_c.TCommentCpp (Token_c.CppMacro, _)
+      | Parser_c.TCommentCpp (Token_c.CppDirective, _)
         -> 
-          pr2 ("ERASING_COMMENTS: " ^ str)
+          pr2 (Printf.sprintf "%d: ERASING_COMMENTS: %s"
+		 (TH.line_of_tok t) str)
       | _ -> raise Impossible
       );
       T2 (t, true, idx)
@@ -418,7 +433,6 @@ let set_minus_comment = function
 let set_minus_comment_or_plus = function
     Cocci2 _ | C2 _ | Indent_cocci2 | Unindent_cocci2 as x -> x
   | x -> set_minus_comment x
-      
 
 let remove_minus_and_between_and_expanded_and_fake xs =
 
@@ -456,7 +470,7 @@ let remove_minus_and_between_and_expanded_and_fake xs =
   let rec adjust_after_brace = function
       [] -> []
     | ((T2(_,false,_)) as x)::((T2(_,true,_)::_) as xs)
-       when str_of_token2 x = "{" ->
+       when str_of_token2 x =$= "{" ->
 	 let (between_minus,rest) = Common.span minus_or_comment xs in
 	 let is_whitespace = function
 	     T2(Parser_c.TCommentSpace _,_b,_i)
@@ -485,7 +499,7 @@ let remove_minus_and_between_and_expanded_and_fake xs =
   (* The use of is_minusable_comment_or_plus and set_minus_comment_or_plus
      is because the + code can end up anywhere in the middle of the - code;
      it is not necessarily to the far left *)
-  let rec adjust_between_minus xs = 
+  let rec adjust_between_minus xs =
     match xs with
     | [] -> []
     | (T2 (t1,true,idx1))::xs -> 
@@ -496,12 +510,12 @@ let remove_minus_and_between_and_expanded_and_fake xs =
         | [] -> [(T2 (t1, true,idx1))]
 
         | (T2 (t2, true,idx2))::rest ->
-             (T2 (t1, true,idx1))::
-               (List.map set_minus_comment_or_plus between_comments @
-               adjust_between_minus ((T2 (t2, true, idx2))::rest))
-        | x::xs -> 
-             (T2 (t1, true, idx1))::
-               (between_comments @ adjust_between_minus (x::xs))
+            (T2 (t1, true,idx1))::
+            (List.map set_minus_comment_or_plus between_comments @
+             adjust_between_minus ((T2 (t2, true, idx2))::rest))
+        | x::xs ->
+            (T2 (t1, true, idx1))::
+            (between_comments @ adjust_between_minus (x::xs))
         )
 
     | x::xs -> x::adjust_between_minus xs in
@@ -559,7 +573,7 @@ let rec add_space xs =
 let new_tabbing2 space = 
   (list_of_string space)
     +> List.rev
-    +> Common.take_until (fun c -> c = '\n')
+    +> Common.take_until (fun c -> c =<= '\n')
     +> List.rev
     +> List.map string_of_char
     +> String.concat ""
@@ -576,7 +590,7 @@ let rec adjust_indentation xs =
 
   (* try to pick a tabbing unit for the plus code *)
   let adjust_tabbing_unit old_tab new_tab =
-    if !tabbing_unit = None && String.length new_tab > String.length old_tab
+    if !tabbing_unit =*= None && String.length new_tab > String.length old_tab
     then
       let old_tab = list_of_string old_tab in
       let new_tab = list_of_string new_tab in
@@ -592,14 +606,14 @@ let rec adjust_indentation xs =
     let rec loop = function
 	([],new_tab) -> string_of_list (List.rev new_tab)
       |	(_,[]) -> "" (*weird; tabbing unit used up more than the current tab*)
-      |	(t::ts,n::ns) when t = n -> loop (ts,ns)
+      |	(t::ts,n::ns) when t =<= n -> loop (ts,ns)
       |	(_,ns) -> (* mismatch; remove what we can *)
 	  string_of_list (List.rev ns) in
     loop (tu,current_tab) in
 
   let rec find_first_tab started = function
       [] -> ()
-    | ((T2 (tok,_,_)) as x)::xs when str_of_token2 x = "{" ->
+    | ((T2 (tok,_,_)) as x)::xs when str_of_token2 x =$= "{" ->
 	find_first_tab true xs
 (* patch: coccinelle *)
     | ((T2 (Parser_c.TCommentNewline s, _, _)) as x)::_
@@ -614,7 +628,7 @@ let rec adjust_indentation xs =
     | [] ->  []
 (* patch: coccinelle *)
     | ((T2 (tok,_,_)) as x)::(T2 (Parser_c.TCommentNewline s, _, _))::
-      (Cocci2 "{")::xs when started && str_of_token2 x = ")" ->
+      (Cocci2 "{")::xs when started && str_of_token2 x =$= ")" ->
 	(* to be done for if, etc, but not for a function header *)
 	x::(Cocci2 " {")::(aux started xs)
     | ((T2 (Parser_c.TCommentNewline s, _, _)) as x)::xs ->
@@ -624,7 +638,7 @@ let rec adjust_indentation xs =
 	(if started then adjust_tabbing_unit old_tabbing !_current_tabbing);
 	let coccis_rest = Common.span all_coccis xs in
 	(match coccis_rest with
-	  (_::_,((T2 (tok,_,_)) as y)::_) when str_of_token2 y = "}" ->
+	  (_::_,((T2 (tok,_,_)) as y)::_) when str_of_token2 y =$= "}" ->
 	    (* the case where cocci code has been added before a close } *)
 	    x::aux started (Indent_cocci2::xs)
         | _ -> x::aux started xs)
@@ -642,13 +656,13 @@ let rec adjust_indentation xs =
 	    aux started xs)
     (* border between existing code and cocci code *)
     | ((T2 (tok,_,_)) as x)::((Cocci2 "\n") as y)::xs
-      when str_of_token2 x = "{" ->
+      when str_of_token2 x =$= "{" ->
 	x::aux true (y::Indent_cocci2::xs)
     | ((Cocci2 _) as x)::((T2 (tok,_,_)) as y)::xs
-      when str_of_token2 y = "}" ->
+      when str_of_token2 y =$= "}" ->
 	x::aux started (y::Unindent_cocci2::xs)
     (* starting the body of the function *)
-    | ((T2 (tok,_,_)) as x)::xs when str_of_token2 x = "{" ->  x::aux true xs
+    | ((T2 (tok,_,_)) as x)::xs when str_of_token2 x =$= "{" ->  x::aux true xs
     | (Cocci2 "{")::xs -> (Cocci2 "{")::aux true xs
     | ((Cocci2 "\n") as x)::xs -> 
             (* dont inline in expr because of weird eval order of ocaml *)
@@ -663,15 +677,15 @@ let rec find_paren_comma = function
 
   (* do nothing if was like this in original file *)
   | ({ str = "("; idx = Some p1 } as _x1)::({ str = ","; idx = Some p2} as x2)
-    ::xs when p2 = p1 + 1 -> 
+    ::xs when p2 =|= p1 + 1 -> 
       find_paren_comma (x2::xs)
 
   | ({ str = ","; idx = Some p1 } as _x1)::({ str = ","; idx = Some p2} as x2)
-    ::xs when p2 = p1 + 1 -> 
+    ::xs when p2 =|= p1 + 1 -> 
       find_paren_comma (x2::xs)
 
   | ({ str = ","; idx = Some p1 } as _x1)::({ str = ")"; idx = Some p2} as x2)
-    ::xs when p2 = p1 + 1 -> 
+    ::xs when p2 =|= p1 + 1 -> 
       find_paren_comma (x2::xs)
 
   (* otherwise yes can adjust *)
@@ -739,7 +753,7 @@ let print_all_tokens2 pr xs =
     let current_kind = ref KOrigin in
     xs +> List.iter (fun t -> 
       let newkind = kind_of_token2 t in
-      if newkind = !current_kind
+      if newkind =*= !current_kind
       then pr (str_of_token2 t)
       else begin
         pr (end_mark);

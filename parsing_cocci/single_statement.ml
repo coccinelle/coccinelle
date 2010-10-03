@@ -26,6 +26,7 @@ may need a special treatment if they are if branches *)
 module Ast0 = Ast0_cocci
 module Ast = Ast_cocci
 module V0 = Visitor_ast0
+module VT0 = Visitor_ast0_types
 
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)
@@ -311,7 +312,7 @@ let rec adding_something s =
       let (text,tinfo1,tinfo2) = !mc in
       (match text with Ast.NOTHING -> false | _ -> true)
   | Ast0.MIXED(_) ->
-      not(contains_only_minus.V0.combiner_statement s) (*&&
+      not(contains_only_minus.VT0.combiner_rec_statement s) (*&&
       (left_statement s) or (right_statement s)*)
   | _ -> failwith "unexpected plus code"
 
@@ -339,31 +340,31 @@ and contains_only_minus =
     mcodekind (Ast0.get_mcodekind e) &&
     match Ast0.unwrap e with
       Ast0.DisjExpr(starter,expr_list,mids,ender) ->
-	List.for_all r.V0.combiner_expression expr_list
+	List.for_all r.VT0.combiner_rec_expression expr_list
     | _ -> k e in
 
   let declaration r k e =
     mcodekind (Ast0.get_mcodekind e) &&
     match Ast0.unwrap e with
       Ast0.DisjDecl(starter,decls,mids,ender) ->
-	List.for_all r.V0.combiner_declaration decls
+	List.for_all r.VT0.combiner_rec_declaration decls
     | _ -> k e in
 
   let typeC r k e =
     mcodekind (Ast0.get_mcodekind e) &&
     match Ast0.unwrap e with
       Ast0.DisjType(starter,types,mids,ender) ->
-	List.for_all r.V0.combiner_typeC types
+	List.for_all r.VT0.combiner_rec_typeC types
     | _ -> k e in
 
   let statement r k e =
     mcodekind (Ast0.get_mcodekind e) &&
     match Ast0.unwrap e with
       Ast0.Disj(starter,statement_dots_list,mids,ender) ->
-	List.for_all r.V0.combiner_statement_dots statement_dots_list
+	List.for_all r.VT0.combiner_rec_statement_dots statement_dots_list
     | _ -> k e in
 
-  V0.combiner bind option_default
+  V0.flat_combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     dots dots dots dots dots dots
     donothing expression typeC donothing donothing declaration
@@ -387,7 +388,8 @@ branch, so the braces get added in oddly.
 *)
 
 let add_braces orig_s =
-  let s = (Iso_pattern.rebuild_mcode None).V0.rebuilder_statement orig_s in
+  let s =
+    (Iso_pattern.rebuild_mcode None).VT0.rebuilder_rec_statement orig_s in
   let new_mcodekind =
     match Ast0.get_mcodekind s with
       Ast0.MINUS(mc) ->

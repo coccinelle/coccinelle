@@ -815,36 +815,54 @@ let rec dep in_and = function
 
 let unparse z =
   match z with
-    Ast.ScriptRule (lang,deps,bindings,code) ->
-    print_string "@@";
-    force_newline();
-    print_string ("script:" ^ lang);
-    (match deps with
-      Ast.NoDep -> ()
-    | _ -> print_string " depends on "; dep true deps);
-    force_newline();
-    print_string "@@";
-    force_newline();
-    print_string code;
-    force_newline()
+    Ast.InitialScriptRule (lang,code) ->
+      print_string "@@";
+      force_newline();
+      print_string ("initialize:" ^ lang);
+      force_newline();
+      print_string "@@";
+      force_newline();
+      print_string code;
+      force_newline()
+  | Ast.FinalScriptRule (lang,code) ->
+      print_string "@@";
+      force_newline();
+      print_string ("finalize:" ^ lang);
+      force_newline();
+      print_string "@@";
+      force_newline();
+      print_string code;
+      force_newline()
+  | Ast.ScriptRule (lang,deps,bindings,code) ->
+      print_string "@@";
+      force_newline();
+      print_string ("script:" ^ lang);
+      (match deps with
+	Ast.NoDep -> ()
+      | _ -> print_string " depends on "; dep true deps);
+      force_newline();
+      print_string "@@";
+      force_newline();
+      print_string code;
+      force_newline()
   | Ast.CocciRule (nm, (deps, drops, exists), x, _, _) ->
-    print_string "@@";
-    force_newline();
-    print_string nm;
-    (match deps with
-      Ast.NoDep -> ()
-    | _ -> print_string " depends on "; dep true deps);
+      print_string "@@";
+      force_newline();
+      print_string nm;
+      (match deps with
+	Ast.NoDep -> ()
+      | _ -> print_string " depends on "; dep true deps);
     (*
     print_string "line ";
     print_int (Ast.get_line (List.hd x));
     *)
-    force_newline();
-    print_string "@@";
-    print_newlines_disj := true;
-    force_newline();
-    force_newline();
-    rule x;
-    force_newline()
+      force_newline();
+      print_string "@@";
+      print_newlines_disj := true;
+      force_newline();
+      force_newline();
+      rule x;
+      force_newline()
 
 let rule_elem_to_string x =
   print_newlines_disj := true;

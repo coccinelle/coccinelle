@@ -34,6 +34,8 @@ val clear_meta: (unit -> unit) ref
 val add_id_meta:
     (Ast_cocci.meta_name -> iconstraints -> Ast0_cocci.pure -> unit) ref
 
+val add_fresh_id_meta: (Ast_cocci.meta_name -> unit) ref
+
 val add_type_meta: (Ast_cocci.meta_name -> Ast0_cocci.pure -> unit) ref
 
 val add_init_meta: (Ast_cocci.meta_name -> Ast0_cocci.pure -> unit) ref

@@ -29,7 +29,7 @@ let strip_info_visitor _ =
     (* traversal should be deterministic... *)
     (let ctr = ref 0 in 
     (function (k,_) ->
-    function i -> ctr := !ctr + 1; Ast_c.al_info !ctr i));
+    function i -> ctr := !ctr + 1; Ast_c.al_info_cpp !ctr i));
 
     Visitor_c.kexpr_s = (fun (k,_) e -> 
       let (e', ty),ii' = k e in
@@ -70,7 +70,7 @@ let al_ii    x = Visitor_c.vk_ii_s (strip_info_visitor()) x
 
 let semi_strip_info_visitor = (* keep position information *)
   { Visitor_c.default_visitor_c_s with
-    Visitor_c.kinfo_s = (fun (k,_) i -> Ast_c.semi_al_info i);
+    Visitor_c.kinfo_s = (fun (k,_) i -> Ast_c.semi_al_info_cpp i);
 
     Visitor_c.kexpr_s = (fun (k,_) e -> 
       let (e', ty),ii' = k e in
@@ -87,7 +87,8 @@ let semi_al_param     = Visitor_c.vk_param_s     semi_strip_info_visitor
 let semi_al_params    = Visitor_c.vk_params_s    semi_strip_info_visitor
 let semi_al_arguments = Visitor_c.vk_arguments_s semi_strip_info_visitor
 
-let semi_al_program = List.map (Visitor_c.vk_toplevel_s semi_strip_info_visitor)
+let semi_al_program =
+  List.map (Visitor_c.vk_toplevel_s semi_strip_info_visitor)
 
 
 
@@ -97,7 +98,7 @@ let semi_al_program = List.map (Visitor_c.vk_toplevel_s semi_strip_info_visitor)
 let real_strip_info_visitor _ = 
   { Visitor_c.default_visitor_c_s with
     Visitor_c.kinfo_s = (fun (k,_) i ->
-      Ast_c.real_al_info i
+      Ast_c.real_al_info_cpp i
     );
 
     Visitor_c.kexpr_s = (fun (k,_) e -> 
@@ -164,7 +165,7 @@ let max_min_ii_by_pos xs =
   | [] -> failwith "empty list, max_min_ii_by_pos"
   | [x] -> (x, x)
   | x::xs -> 
-      let pos_leq p1 p2 = (Ast_c.compare_pos p1 p2) = (-1) in
+      let pos_leq p1 p2 = (Ast_c.compare_pos p1 p2) =|= (-1) in
       xs +> List.fold_left (fun (maxii,minii) e -> 
         let maxii' = if pos_leq maxii e then e else maxii in
         let minii' = if pos_leq e minii then e else minii in

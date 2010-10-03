@@ -67,7 +67,7 @@ let test_parse_gen xs ext =
       sprintf "bad = %d, timeout = %B" 
         stat.Parsing_stat.bad stat.Parsing_stat.have_timeout
     in
-    if stat.Parsing_stat.bad = 0 && not stat.Parsing_stat.have_timeout
+    if stat.Parsing_stat.bad =|= 0 && not stat.Parsing_stat.have_timeout
     then Hashtbl.add newscore file (Common.Ok)
     else Hashtbl.add newscore file (Common.Pb s)
   );
@@ -84,7 +84,7 @@ let test_parse_gen xs ext =
     pr2_xxxxxxxxxxxxxxxxx();
     let str = Str.global_replace (Str.regexp "/") "__" dirname in
     let def = if !Flag_parsing_c.filter_define_error then "_def_" else "" in
-    let ext = if ext = "c" then "" else ext in
+    let ext = if ext =$= "c" then "" else ext in
     Common.regression_testing newscore 
       (Filename.concat score_path
        ("score_parsing__" ^str ^ def ^ ext ^ ".marshalled"))
@@ -131,7 +131,7 @@ let test_cfg file =
       match specific_func, e with
       | None, _ -> true
       | Some s, Ast_c.Definition (defbis,_)  -> 
-          s = defbis.Ast_c.f_name
+          s =$= Ast_c.str_of_name (defbis.Ast_c.f_name)
       | _, _ -> false 
     in
           
@@ -284,7 +284,7 @@ let test_attributes file =
   Visitor_c.vk_program { Visitor_c.default_visitor_c with
     Visitor_c.kdef = (fun (k, bigf) (defbis, ii) -> 
       let sattr  = Ast_c.s_of_attr defbis.f_attr in
-      pr2 (spf "%-30s: %s" defbis.f_name sattr);
+      pr2 (spf "%-30s: %s" (Ast_c.str_of_name (defbis.f_name)) sattr);
     );
     Visitor_c.kdecl = (fun (k, bigf) decl -> 
       match decl with
@@ -294,7 +294,7 @@ let test_attributes file =
             let sattr  = Ast_c.s_of_attr onedecl.v_attr in
             let idname = 
               match onedecl.v_namei with
-              | Some ((s,ini), _) -> s
+              | Some (name, ini) -> Ast_c.str_of_name name
               | None -> "novar"
             in
             pr2 (spf "%-30s: %s" idname sattr);

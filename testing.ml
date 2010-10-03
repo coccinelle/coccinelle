@@ -41,7 +41,9 @@ let testone x compare_with_expected_flag =
 
   let expected_res   = "tests/" ^ x ^ ".res" in
   begin
-    let res = Cocci.full_engine (cocci_file, !Config.std_iso) [cfile] in
+    let cocci_infos = Cocci.pre_engine (cocci_file, !Config.std_iso) in
+    let res = Cocci.full_engine cocci_infos [cfile] in
+    Cocci.post_engine cocci_infos;
     let generated = 
       match Common.optionise (fun () -> List.assoc cfile res) with
       | Some (Some outfile) -> 
@@ -68,7 +70,7 @@ let testone x compare_with_expected_flag =
 (* ------------------------------------------------------------------------ *)
 let testall () =
 
-  let newscore  = empty_score () in
+  let score  = empty_score () in
 
   let expected_result_files = 
     Common.glob "tests/*.res" 
@@ -79,8 +81,8 @@ let testall () =
 
   begin
     expected_result_files +> List.iter (fun res -> 
-      let x = if res =~ "\\(.*\\).res" then matched1 res else raise Impossible 
-      in
+      let x = 
+        if res =~ "\\(.*\\).res" then matched1 res else raise Impossible in
       let base = if x =~ "\\(.*\\)_ver[0-9]+" then matched1 x else x in 
       let cfile      = "tests/" ^ x ^ ".c" in
       let cocci_file = "tests/" ^ base ^ ".cocci" in
@@ -90,8 +92,11 @@ let testall () =
 
       try (
         Common.timeout_function timeout_testall  (fun () -> 
-          
-          let xs = Cocci.full_engine (cocci_file, !Config.std_iso) [cfile] in
+
+	  let cocci_infos = Cocci.pre_engine (cocci_file, !Config.std_iso) in
+          let xs = Cocci.full_engine cocci_infos [cfile] in
+	  Cocci.post_engine cocci_infos;
+
           let generated = 
             match List.assoc cfile xs with
             | Some generated -> generated
@@ -106,7 +111,7 @@ let testall () =
            * I want to indent a little more the messages.
            *)
           (match correct with
-          | Compare_c.Correct -> Hashtbl.add newscore res Common.Ok;
+          | Compare_c.Correct -> Hashtbl.add score res Common.Ok;
           | Compare_c.Pb s -> 
               let s = Str.global_replace 
                 (Str.regexp "\"/tmp/cocci-output.*\"") "<COCCIOUTPUTFILE>" s
@@ -116,20 +121,20 @@ let testall () =
                 "    diff (result(<) vs expected_result(>)) = \n" ^
                 (diffxs +> List.map(fun s -> "    "^s^"\n") +> Common.join "")
               in
-              Hashtbl.add newscore res (Common.Pb s)
+              Hashtbl.add score res (Common.Pb s)
           | Compare_c.PbOnlyInNotParsedCorrectly s -> 
               let s = 
                 "seems incorrect, but only because of code that " ^
                 "was not parsable" ^ s
               in
-              Hashtbl.add newscore res (Common.Pb s)
+              Hashtbl.add score res (Common.Pb s)
           )
         )
       )
       with exn -> 
         Common.reset_pr_indent();
         let s = "PROBLEM\n" ^ ("   exn = " ^ Printexc.to_string exn ^ "\n") in
-        Hashtbl.add newscore res (Common.Pb s)
+        Hashtbl.add score res (Common.Pb s)
     );
 
 
@@ -137,7 +142,7 @@ let testall () =
     pr2 "statistics";
     pr2 "--------------------------------";
 
-    Common.hash_to_list newscore +> List.iter (fun (s, v) -> 
+    Common.hash_to_list score +> List.iter (fun (s, v) -> 
       pr_no_nl (Printf.sprintf "%-30s: " s);
       pr_no_nl (
         match v with
@@ -150,20 +155,63 @@ let testall () =
     pr2 "--------------------------------";
     pr2 "regression testing  information";
     pr2 "--------------------------------";
-    Common.regression_testing newscore 
-      (Filename.concat Config.path "tests/score_cocci_best.marshalled");
 
-
-    pr2 "--------------------------------";
-    pr2 "total score";
-    pr2 "--------------------------------";
-    let total = Common.hash_to_list newscore +> List.length in
-    let good  = Common.hash_to_list newscore +> List.filter 
-      (fun (s, v) -> v = Ok) +> List.length 
-    in
+    let expected_score_file = "tests/SCORE_expected.sexp" in
+    let best_of_both_file = "tests/SCORE_best_of_both.sexp" in
+    let actual_score_file = "tests/SCORE_actual.sexp" in
     
-    pr2 (sprintf "good = %d/%d" good total);
+    pr2 ("regression file: "^ expected_score_file);
+    let (expected_score : score) = 
+      if Sys.file_exists expected_score_file
+      then 
+        let sexp = Sexp.load_sexp expected_score_file in
+        Sexp_common.score_of_sexp sexp
+      else empty_score()
+    in
 
+    let new_bestscore = Common.regression_testing_vs score expected_score in
+
+
+    let xs = Common.hash_to_list score in
+    let sexp = Sexp_common.sexp_of_score_list xs in
+    let s_score = Sexp.to_string_hum sexp in
+    Common.write_file ~file:(actual_score_file) s_score;
+
+    let xs2 = Common.hash_to_list new_bestscore in
+    let sexp2 = Sexp_common.sexp_of_score_list xs2 in
+    let s_score2 = Sexp.to_string_hum sexp2 in
+    Common.write_file ~file:(best_of_both_file) s_score2;
+
+    Common.print_total_score score;
+
+    let (good, total)                   = Common.total_scores score in
+    let (expected_good, expected_total) = Common.total_scores expected_score in
+
+    if good = expected_good 
+    then begin 
+      pr2 "Current score is equal to expected score; everything is fine";
+      raise (UnixExit 0);
+    end
+    else 
+      if good < expected_good
+      then begin 
+        pr2 "Current score is lower than expected, :(";
+        pr2 "";
+        pr2 "If you think it's normal, then maybe you need to update the";
+        pr2 (spf "score file %s, copying info from %s."
+                expected_score_file actual_score_file);
+        raise (UnixExit 1);
+      end
+      else begin
+        pr2 "Current score is greater than expected, :)";
+        pr2 "Generating new expected score file and saving old one";
+        Common.command2_y_or_no_exit_if_no
+          (spf "mv %s %s" expected_score_file (expected_score_file ^ ".save"));
+        Common.command2_y_or_no_exit_if_no
+          (spf "mv %s %s" best_of_both_file expected_score_file);
+        raise (UnixExit 0);
+      end
+     
   end
 
 (* ------------------------------------------------------------------------ *)
@@ -208,9 +256,9 @@ let test_okfailed cocci_file cfiles =
     try (
       Common.timeout_function_opt !Flag_cocci.timeout (fun () ->
 
-        
-        let outfiles = Cocci.full_engine (cocci_file, !Config.std_iso) cfiles
-        in
+	let cocci_infos = Cocci.pre_engine (cocci_file, !Config.std_iso) in
+        let outfiles = Cocci.full_engine cocci_infos cfiles in
+	Cocci.post_engine cocci_infos;
 
         let time_str = time_per_file_str () in
           
@@ -251,14 +299,14 @@ let test_okfailed cocci_file cfiles =
               
               let diff = Compare_c.compare_default outfile expected_res in
               let s1 = (Compare_c.compare_result_to_string diff) in
-              if fst diff = Compare_c.Correct
+              if fst diff =*= Compare_c.Correct
               then push2 (infile ^ (t_to_s Ok), [s1;time_str]) final_files
               else 
                 if Common.lfile_exists expected_res2
                 then begin
                   let diff = Compare_c.compare_default outfile expected_res2 in
                   let s2 = Compare_c.compare_result_to_string diff in
-                  if fst diff = Compare_c.Correct
+                  if fst diff =*= Compare_c.Correct
                   then push2 (infile ^ (t_to_s SpatchOK),[s2;s1;time_str]) 
                       final_files
                   else push2 (infile ^ (t_to_s Failed), [s2;s1;time_str]) 
@@ -354,14 +402,14 @@ let compare_with_expected outfiles =
         in
         let diff = Compare_c.compare_default outfile expected_res in
         let s1 = (Compare_c.compare_result_to_string diff) in
-        if fst diff = Compare_c.Correct
+        if fst diff =*= Compare_c.Correct
         then pr2_no_nl (infile ^ " " ^ s1)
         else 
           if Common.lfile_exists expected_res2
           then begin
             let diff = Compare_c.compare_default outfile expected_res2 in
             let s2 = Compare_c.compare_result_to_string diff in
-            if fst diff = Compare_c.Correct
+            if fst diff =*= Compare_c.Correct
             then pr2 (infile ^ " is spatchOK " ^ s2)
             else pr2 (infile ^ " is failed " ^ s2)
           end

@@ -10,7 +10,7 @@ SRC= infiniteArray.ml packedIntArray.ml rowDisplacement.ml engineTypes.ml \
   engine.ml tableFormat.ml tableInterpreter.ml convert.ml
 
 LIBS=
-INCLUDES= 
+INCLUDES=
 
 # copy what the menhir authors do
 EXTRAOPT=-for-pack MenhirLib
@@ -21,9 +21,9 @@ EXTRAOPT=-for-pack MenhirLib
 OCAMLCFLAGS=-g -dtypes
 OPTFLAGS=
 
-OCAMLC=ocamlc$(OPTBIN)     $(OCAMLCFLAGS) $(INCLUDES) 
-OCAMLOPT= ocamlopt$(OPTBIN) $(OPTFLAGS) $(EXTRAOPT)   $(INCLUDES) 
-OCAMLOPT2=ocamlopt$(OPTBIN) $(OPTFLAGS)              $(INCLUDES) 
+OCAMLC=ocamlc$(OPTBIN)     $(OCAMLCFLAGS) $(INCLUDES)
+OCAMLOPT= ocamlopt$(OPTBIN) $(OPTFLAGS) $(EXTRAOPT)   $(INCLUDES)
+OCAMLOPT2=ocamlopt$(OPTBIN) $(OPTFLAGS)              $(INCLUDES)
 OCAMLLEX=ocamllex$(OPTBIN)
 OCAMLYACC=ocamlyacc -v
 OCAMLDEP=ocamldep$(OPTBIN) $(INCLUDES)
@@ -46,9 +46,9 @@ $(TARGET).cma: $(OBJS) $(LIBS)
 $(TARGET).cmxa: $(OPTOBJS) $(LIBS:.cma=.cmxa)
 	$(OCAMLOPT) -a -o $@ $(OPTOBJS)
 
-# I thought at first that only one file menhirLib.ml 
+# I thought at first that only one file menhirLib.ml
 # was needed but in fact it's a wierd cos menhirLib.cmo results from multi
-# files. They used the -pack ocamlc option, and for strange reason 
+# files. They used the -pack ocamlc option, and for strange reason
 # decided to produce a .cma instead of a classical .cma.
 # So I put all the necesseray files in this directory.
 
@@ -71,7 +71,7 @@ menhirLib.cmx: $(OPTOBJS)
 .ml.cmx:
 	$(OCAMLOPT) -c $<
 
-.ml.mldepend: 
+.ml.mldepend:
 	$(OCAMLC) -i $<
 
 clean::
@@ -84,5 +84,8 @@ beforedepend::
 
 depend:: beforedepend
 	$(OCAMLDEP) *.mli *.ml    > .depend
+
+distclean::
+	rm -f .depend
 
 -include .depend

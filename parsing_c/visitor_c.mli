@@ -4,18 +4,23 @@ type visitor_c = {
   kexpr      : (expression  -> unit)  * visitor_c -> expression  -> unit;
   kstatement : (statement   -> unit)  * visitor_c -> statement   -> unit;
   ktype      : (fullType    -> unit)  * visitor_c -> fullType    -> unit;
+
   kdecl      : (declaration -> unit)  * visitor_c -> declaration -> unit;
   kdef       : (definition  -> unit)  * visitor_c -> definition  -> unit;
+  kname      : (name  -> unit)        * visitor_c -> name        -> unit;
+
   kini       : (initialiser -> unit)  * visitor_c -> initialiser -> unit;
+  kfield     : (field -> unit)        * visitor_c -> field       -> unit;
+
   kcppdirective: (cpp_directive -> unit) * visitor_c -> cpp_directive -> unit;
-  kdefineval : (define_val -> unit) * visitor_c -> define_val -> unit;
+  kdefineval :   (define_val -> unit)    * visitor_c -> define_val    -> unit;
   kstatementseq: (statement_sequencable   -> unit) * visitor_c -> statement_sequencable   -> unit;
-  kfield: (field -> unit) * visitor_c -> field -> unit;
 
 
-  knode      :      
+  knode:      
     (Control_flow_c.node -> unit) * visitor_c -> Control_flow_c.node -> unit;
   ktoplevel: (toplevel -> unit) * visitor_c -> toplevel -> unit;
+
   kinfo      : (info        -> unit)  * visitor_c -> info        -> unit;
 }
 
@@ -27,6 +32,7 @@ val vk_type      : visitor_c -> fullType    -> unit
 val vk_decl      : visitor_c -> declaration -> unit
 val vk_onedecl   : visitor_c -> onedecl -> unit
 val vk_ini       : visitor_c -> initialiser -> unit
+val vk_name      : visitor_c -> name -> unit
 val vk_def       : visitor_c -> definition  -> unit
 val vk_node      : visitor_c -> Control_flow_c.node -> unit
 val vk_info      : visitor_c -> info -> unit
@@ -51,23 +57,29 @@ val vk_define_params_splitted :
 
 
 
-
+(* ------------------------------------------------------------------------ *)
 type 'a inout = 'a -> 'a
 type visitor_c_s = {
   kexpr_s      : expression     inout * visitor_c_s -> expression     inout;
   kstatement_s : statement      inout * visitor_c_s -> statement      inout;
   ktype_s      : fullType       inout * visitor_c_s -> fullType       inout;
+
   kdecl_s      : declaration    inout * visitor_c_s -> declaration    inout;
   kdef_s       : definition     inout * visitor_c_s -> definition     inout;
+  kname_s      : name           inout * visitor_c_s -> name           inout;
+
   kini_s       : initialiser    inout * visitor_c_s -> initialiser    inout;
+
   kcppdirective_s : (cpp_directive inout * visitor_c_s) -> cpp_directive inout;
   kdefineval_s : (define_val inout * visitor_c_s) -> define_val inout;
   kstatementseq_s: (statement_sequencable inout * visitor_c_s) -> statement_sequencable inout;
   kstatementseq_list_s: 
     (statement_sequencable list inout * visitor_c_s) -> statement_sequencable list inout;
+
   knode_s      : 
     Control_flow_c.node inout * visitor_c_s -> Control_flow_c.node    inout;
   ktoplevel_s  : toplevel inout * visitor_c_s -> toplevel inout;
+
   kinfo_s      : info           inout * visitor_c_s -> info           inout;
   }
 

@@ -321,6 +321,6 @@ let asttomemberz (_,_,l) used_after =
 
 let asttomember r used_after =
   match r with
-    Ast.ScriptRule _ -> []
+    Ast.ScriptRule _ | Ast.InitialScriptRule _ | Ast.FinalScriptRule _ -> []
   | Ast.CocciRule (a,b,c,_,_) -> asttomemberz (a,b,c) used_after
 

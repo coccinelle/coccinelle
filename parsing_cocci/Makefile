@@ -26,7 +26,7 @@ LEXER_SOURCES = lexer_cocci.mll
 SCRIPT_LEXER_SOURCES = lexer_script.mll
 PARSER_SOURCES = parser_cocci_menhir.mly
 SOURCES = flag_parsing_cocci.ml type_cocci.ml ast_cocci.ml ast0_cocci.ml \
-pretty_print_cocci.ml unparse_ast0.ml \
+pretty_print_cocci.ml unparse_ast0.ml visitor_ast0_types.ml \
 visitor_ast.ml visitor_ast0.ml compute_lines.ml comm_assoc.ml \
 iso_pattern.ml iso_compile.ml single_statement.ml simple_assignments.ml \
 ast0toast.ml check_meta.ml top_level.ml type_infer.ml test_exps.ml \
@@ -37,7 +37,7 @@ $(LEXER_SOURCES:.mll=.ml) $(PARSER_SOURCES:.mly=.ml) \
 $(SCRIPT_LEXER_SOURCES:.mll=.ml) \
 get_constants.ml get_constants2.ml parse_cocci.ml
 
-LIBS=../commons/commons.cma ../globals/globals.cma 
+LIBS=../commons/commons.cma ../globals/globals.cma
 SYSLIBS = str.cma unix.cma
 
 #MENHIR_PATH=$(shell ocamlfind query menhirLib)
@@ -77,7 +77,7 @@ $(LIB): $(GENERATED) $(OBJS)
 	$(OCAMLC) -I $(MENHIR_PATH) -a -o $(LIB) $(MENHIR) $(OBJS)
 
 
-$(OPTLIB): $(GENERATED) $(OPTOBJS) 
+$(OPTLIB): $(GENERATED) $(OPTOBJS)
 	$(OCAMLOPT) -I $(MENHIR_PATH) -a -o $(OPTLIB) $(MENHIRO) $(OPTOBJS)
 
 
@@ -89,7 +89,7 @@ $(EXEC): $(OBJS) main.cmo $(LIBS)
 
 clean::
 	rm -f $(LIB)
-	rm -f $(OPTLIB) $(LIB:.cma=.a) 	
+	rm -f $(OPTLIB) $(LIB:.cma=.a)
 	rm -f $(TARGET)
 
 
@@ -122,7 +122,10 @@ clean::
 # clean rule for others files
 clean::
 	rm -f *.cm[iox] *.o *.annot
-	rm -f *~ .*~ #*# 
+	rm -f *~ .*~ #*#
+
+distclean::
+	rm -f .depend
 
 depend: $(GENERATED)
 	$(OCAMLDEP) *.mli *.ml > .depend

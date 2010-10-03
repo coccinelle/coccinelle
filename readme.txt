@@ -3,7 +3,10 @@ style-preserving source-to-source transformations on C source code,
 like for instance to perform some refactorings.
 
 To install Coccinelle from its source, see the instructions in install.txt.
-For more information on Coccinelle see the files in the docs/ directory.
+For more information on Coccinelle, type 'make docs' and see look at the 
+files in the docs/ directory. You may need to install the texlive-fonts-extra
+packages from your distribution to compile some of the LaTeX documentation
+files.
 
 Once you have installed Coccinelle (either from the source or from one
 of the binary form available on the Coccinelle website), You may have

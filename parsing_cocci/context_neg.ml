@@ -29,6 +29,7 @@ plus subtrees. *)
 module Ast = Ast_cocci
 module Ast0 = Ast0_cocci
 module V0 = Visitor_ast0
+module VT0 = Visitor_ast0_types
 module U = Unparse_ast0
 
 (* --------------------------------------------------------------------- *)
@@ -143,12 +144,12 @@ let collect_plus_lines top =
       Ast0.PLUS -> insert info.Ast0.pos_info.Ast0.line_start
     | _ -> () in
   let fn =
-    V0.combiner bind option_default
+    V0.flat_combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing donothing donothing
       donothing donothing in
-  fn.V0.combiner_top_level top
+  fn.VT0.combiner_rec_top_level top
 
 (* --------------------------------------------------------------------- *)
 
@@ -330,7 +331,7 @@ let classify is_minus all_marked table code =
       | Ast0.Estars(dots,whencode) ->
 	  k (Ast0.rewrap e (Ast0.Estars(dots,None)))
       | Ast0.DisjExpr(starter,expr_list,_,ender) ->
-	  disj_cases e starter expr_list r.V0.combiner_expression ender
+	  disj_cases e starter expr_list r.VT0.combiner_rec_expression ender
       |	_ -> k e) in
 
   (* not clear why we have the next two cases, since DisjDecl and
@@ -339,7 +340,7 @@ let classify is_minus all_marked table code =
     compute_result Ast0.decl e
       (match Ast0.unwrap e with
 	Ast0.DisjDecl(starter,decls,_,ender) ->
-	  disj_cases e starter decls r.V0.combiner_declaration ender
+	  disj_cases e starter decls r.VT0.combiner_rec_declaration ender
       | Ast0.Ddots(dots,whencode) ->
 	  k (Ast0.rewrap e (Ast0.Ddots(dots,None)))
 	(* Need special cases for the following so that the type will be
@@ -353,14 +354,14 @@ let classify is_minus all_marked table code =
 	   reordering their components. *)
       |	Ast0.Init(stg,ty,id,eq,ini,sem) ->
 	  bind (match stg with Some stg -> mcode stg | _ -> option_default)
-	    (bind (r.V0.combiner_typeC ty)
-	       (bind (r.V0.combiner_ident id)
+	    (bind (r.VT0.combiner_rec_typeC ty)
+	       (bind (r.VT0.combiner_rec_ident id)
 		  (bind (mcode eq)
-		     (bind (r.V0.combiner_initialiser ini) (mcode sem)))))
+		     (bind (r.VT0.combiner_rec_initialiser ini) (mcode sem)))))
       | Ast0.UnInit(stg,ty,id,sem) ->
 	  bind (match stg with Some stg -> mcode stg | _ -> option_default)
-	    (bind (r.V0.combiner_typeC ty)
-	       (bind (r.V0.combiner_ident id) (mcode sem)))
+	    (bind (r.VT0.combiner_rec_typeC ty)
+	       (bind (r.VT0.combiner_rec_ident id) (mcode sem)))
       |	_ -> k e) in
 
   let param r k e =
@@ -368,14 +369,14 @@ let classify is_minus all_marked table code =
       (match Ast0.unwrap e with
 	Ast0.Param(ty,Some id) ->
 	  (* needed for the same reason as in the Init and UnInit cases *)
-	  bind (r.V0.combiner_typeC ty) (r.V0.combiner_ident id)
+	  bind (r.VT0.combiner_rec_typeC ty) (r.VT0.combiner_rec_ident id)
       |	_ -> k e) in
 
   let typeC r k e =
     compute_result Ast0.typeC e
       (match Ast0.unwrap e with
 	Ast0.DisjType(starter,types,_,ender) ->
-	  disj_cases e starter types r.V0.combiner_typeC ender
+	  disj_cases e starter types r.VT0.combiner_rec_typeC ender
       |	_ -> k e) in
 
   let initialiser r k i =
@@ -397,7 +398,7 @@ let classify is_minus all_marked table code =
       | Ast0.Stars(dots,whencode) ->
 	  k (Ast0.rewrap s (Ast0.Stars(dots,[])))
       | Ast0.Disj(starter,statement_dots_list,_,ender) ->
-	  disj_cases s starter statement_dots_list r.V0.combiner_statement_dots
+	  disj_cases s starter statement_dots_list r.VT0.combiner_rec_statement_dots
 	    ender
 	(* cases for everything with extra mcode *)
       |	Ast0.FunDecl((info,bef),_,_,_,_,_,_,_,_)
@@ -416,14 +417,14 @@ let classify is_minus all_marked table code =
   let do_top builder r k e = compute_result builder e (k e) in
 
   let combiner =
-    V0.combiner bind option_default
+    V0.flat_combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       (do_nothing Ast0.dotsExpr) (do_nothing Ast0.dotsInit)
       (do_nothing Ast0.dotsParam) (do_nothing Ast0.dotsStmt)
       (do_nothing Ast0.dotsDecl) (do_nothing Ast0.dotsCase)
       (do_nothing Ast0.ident) expression typeC initialiser param declaration
       statement (do_nothing Ast0.case_line) (do_top Ast0.top) in
-  combiner.V0.combiner_top_level code
+  combiner.VT0.combiner_rec_top_level code
 
 (* --------------------------------------------------------------------- *)
 (* Traverse the hash tables and find corresponding context nodes that have
@@ -753,7 +754,7 @@ let contextify_all =
   let mcode x = () in
   let do_nothing r k e = Ast0.set_mcodekind e (default_context()); k e in
 
-  V0.combiner bind option_default
+  V0.flat_combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
     do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
@@ -762,8 +763,6 @@ let contextify_all =
 let contextify_whencode =
   let bind x y = () in
   let option_default = () in
-  let mcode x = () in
-  let do_nothing r k e = k e in
 
   let expression r k e =
     k e;
@@ -772,21 +771,21 @@ let contextify_whencode =
     | Ast0.Edots(_,Some whencode)
     | Ast0.Ecircles(_,Some whencode)
     | Ast0.Estars(_,Some whencode) ->
-	contextify_all.V0.combiner_expression whencode
+	contextify_all.VT0.combiner_rec_expression whencode
     | _ -> () in
 
   let initialiser r k i =
     match Ast0.unwrap i with
       Ast0.Idots(dots,Some whencode) ->
-	contextify_all.V0.combiner_initialiser whencode
+	contextify_all.VT0.combiner_rec_initialiser whencode
     | _ -> k i in
 
   let whencode = function
-      Ast0.WhenNot sd -> contextify_all.V0.combiner_statement_dots sd
-    | Ast0.WhenAlways s -> contextify_all.V0.combiner_statement s
+      Ast0.WhenNot sd -> contextify_all.VT0.combiner_rec_statement_dots sd
+    | Ast0.WhenAlways s -> contextify_all.VT0.combiner_rec_statement s
     | Ast0.WhenModifier(_) -> ()
-    | Ast0.WhenNotTrue(e) -> contextify_all.V0.combiner_expression e
-    | Ast0.WhenNotFalse(e) -> contextify_all.V0.combiner_expression e in
+    | Ast0.WhenNotTrue(e) -> contextify_all.VT0.combiner_rec_expression e
+    | Ast0.WhenNotFalse(e) -> contextify_all.VT0.combiner_rec_expression e in
 
   let statement r k (s : Ast0.statement) =
     k s;
@@ -798,13 +797,11 @@ let contextify_whencode =
 
   let combiner =
     V0.combiner bind option_default
-      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
-      do_nothing
-      expression
-      do_nothing initialiser do_nothing do_nothing statement do_nothing
-      do_nothing in
-  combiner.V0.combiner_top_level
+      {V0.combiner_functions with
+	VT0.combiner_exprfn = expression;
+	VT0.combiner_initfn = initialiser;
+	VT0.combiner_stmtfn = statement} in
+  combiner.VT0.combiner_rec_top_level
 
 (* --------------------------------------------------------------------- *)
 

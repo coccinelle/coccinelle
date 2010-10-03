@@ -82,6 +82,7 @@ open Ast_c
 
 (*****************************************************************************)
 
+type fullstatement = statement 
 
 (* ---------------------------------------------------------------------- *)
 (* The string is for debugging. Used by Ograph_extended.print_graph. 
@@ -227,9 +228,9 @@ type node = node1 * string
   | Break    of statement * unit wrap
 
   (* no counter part in cocci *)
-  | CaseRange of statement * (expression * expression) wrap
-  | Label of statement * string wrap
-  | Goto of statement * string wrap
+  | CaseRange of fullstatement * (expression * expression) wrap
+  | Label of fullstatement * name * unit wrap (* : *)
+  | Goto of fullstatement * name * unit wrap (* goto *)
 
 
   | Asm of statement * asmbody wrap
@@ -356,11 +357,11 @@ let extract_fullstatement node =
   | Return     (st, _)
   | ReturnExpr (st, _)
   (* no counter part in cocci *)
-  | Label (st, _)
+  | Label (st, _, _)
   | Case  (st,_)
   | CaseRange (st, _)
   | Default   (st, _)
-  | Goto (st, _)
+  | Goto (st, _, _)
   | Continue (st, _)
   | Break    (st, _)
   | Asm (st,_)

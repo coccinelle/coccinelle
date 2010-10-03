@@ -1,6 +1,8 @@
 ##############################################################################
 # Variables
 ##############################################################################
+
+# The main library
 -include ../Makefile.config
 
 TARGET=commons
@@ -19,15 +21,15 @@ MYSRC=common.ml common_extra.ml \
       glimpse.ml parser_combinators.ml
 
 # src from other authors, got from the web or caml hump
-SRC=ocamlextra/dumper.ml 
-SRC+=ocamlextra/ANSITerminal.ml 
+SRC=ocamlextra/dumper.ml
+SRC+=ocamlextra/ANSITerminal.ml
 SRC+=ocamlextra/setb.ml ocamlextra/mapb.ml # defunctorized version of standard set/map
 SRC+=ocamlextra/setPt.ml
 SRC+=$(MYSRC)
 SRC+=ocamlextra/enum.ml ocamlextra/dynArray.ml
-SRC+=ocamlextra/suffix_tree.ml ocamlextra/suffix_tree_ext.ml 
+SRC+=ocamlextra/suffix_tree.ml ocamlextra/suffix_tree_ext.ml
 
-SYSLIBS=str.cma unix.cma   
+SYSLIBS=str.cma unix.cma
 
 INCLUDEDIRS=ocamlextra ocollection
 SUBDIRS=ocamlextra ocollection
@@ -36,45 +38,53 @@ SUBDIRS=ocamlextra ocollection
 # Other common (thin wrapper) libraries
 #-----------------------------------------------------------------------------
 
+#format: XXXSRC, XXXINCLUDE, XXXSYSLIBS
+
 #gdbm
 MYGDBMSRC=ocollection/oassocdbm.ml
 GDBMSYSLIBS=dbm.cma
 
 #berkeley db (ocamlbdb)
-BDBINCLUDES=-I ../ocamlbdb
 MYBDBSRC=ocollection/oassocbdb.ml ocollection/oassocbdb_string.ml
+BDBINCLUDES=-I ../ocamlbdb
 BDBSYSLIBS=bdb.cma
 
 
 #lablgtk (ocamlgtk)
-GUIINCLUDES=-I +lablgtk2 -I +lablgtksourceview -I ../ocamlgtk/src
 MYGUISRC=gui.ml
+GUIINCLUDES=-I +lablgtk2 -I +lablgtksourceview -I ../ocamlgtk/src
 GUISYSLIBS=lablgtk.cma lablgtksourceview.cma
 
 #pycaml (ocamlpython)
-PYINCLUDES=-I ../ocamlpython -I ../../ocamlpython
 MYPYSRC=python.ml
+PYINCLUDES=-I ../ocamlpython -I ../../ocamlpython
 PYSYSLIBS=python.cma
 
 #ocamlmpi
-MPIINCLUDES=-I ../ocamlmpi -I ../../ocamlmpi -I +ocamlmpi 
 MYMPISRC=distribution.ml
+MPIINCLUDES=-I ../ocamlmpi -I ../../ocamlmpi -I +ocamlmpi 
 MPISYSLIBS=mpi.cma
 
-
-#-----------------------------------------------------------------------------
 #pcre 
 #REGEXPINCLUDES=-I +pcre
-REGEXPINCLUDES=-I ../ocamlpcre/lib
 MYREGEXPSRC=regexp.ml
+REGEXPINCLUDES=-I ../ocamlpcre/lib  -I ../../ocamlpcre/lib
+
+#sexplib 
+MYSEXPSRC=sexp_common.ml
+SEXPINCLUDES=-I ../ocamlsexp -I ../ocamltarzan/lib-sexp -I ../../ocamltarzan/lib-sexp
+#binprot
+MYBINSRC=bin_common.ml
+BININCLUDES=-I ../ocamltarzan/lib-binprot -I ../../ocamltarzan/lib-binprot
 
 #-----------------------------------------------------------------------------
 # Other stuff
 #-----------------------------------------------------------------------------
 
 #backtrace
-BACKTRACEINCLUDES=-I $(shell ocamlc -where)
 MYBACKTRACESRC=backtrace.ml
+BACKTRACEINCLUDES=-I $(shell ocamlc -where)
+
 
 ##############################################################################
 # Generic variables
@@ -88,8 +98,14 @@ INCLUDES=$(INCLUDEDIRS:%=-I %) $(INCLUDESEXTRA)
 
 # This flag can also be used in subdirectories so don't change its name here.
 # For profiling use:  -p -inline 0
-OPTFLAGS= 
+OPTFLAGS=
 #-thread
+
+# The OPTBIN variable is here to allow to use ocamlc.opt instead of 
+# ocaml, when it is available, which speeds up compilation. So
+# if you want the fast version of the ocaml chain tools, set this var 
+# or setenv it to ".opt" in your startup script.
+#OPTBIN= #.opt
 
 OCAMLCFLAGS ?= -g -dtypes
 
@@ -103,7 +119,7 @@ OCAMLMKTOP=ocamlmktop -g -custom $(INCLUDES)
 
 # if need C code
 OCAMLMKLIB=ocamlmklib
-CC=gcc 
+CC=gcc
 
 ##############################################################################
 # Top rules
@@ -136,7 +152,7 @@ clean::
 # Other commons libs target
 ##############################################################################
 
-all_libs: gdbm bdb gui mpi backtrace
+all_libs: gdbm bdb gui mpi regexp backtrace
 
 #-----------------------------------------------------------------------------
 gdbm: commons_gdbm.cma
@@ -150,9 +166,9 @@ commons_gdbm.cmxa: $(MYGDBMSRC:.ml=.cmx)
 
 
 #-----------------------------------------------------------------------------
-bdb: 
+bdb:
 	$(MAKE) INCLUDESEXTRA="$(BDBINCLUDES)" commons_bdb.cma
-bdb.opt: 
+bdb.opt:
 	$(MAKE) INCLUDESEXTRA="$(BDBINCLUDES)" commons_bdb.cmxa
 
 commons_bdb.cma: $(MYBDBSRC:.ml=.cmo)
@@ -178,9 +194,9 @@ commons_gui.cmxa: $(MYGUISRC:.ml=.cmx)
 
 
 #-----------------------------------------------------------------------------
-mpi: 
+mpi:
 	$(MAKE) INCLUDESEXTRA="$(MPIINCLUDES)" commons_mpi.cma
-mpi.opt: 
+mpi.opt:
 	$(MAKE) INCLUDESEXTRA="$(MPIINCLUDES)" commons_mpi.cmxa
 
 commons_mpi.cma: $(MYMPISRC:.ml=.cmo)
@@ -196,9 +212,9 @@ distribution.opt: mpi.opt
 
 
 #-----------------------------------------------------------------------------
-python: 
+python:
 	$(MAKE) INCLUDESEXTRA="$(PYINCLUDES)" commons_python.cma
-python.opt: 
+python.opt:
 	$(MAKE) INCLUDESEXTRA="$(PYINCLUDES)" commons_python.cmxa
 
 
@@ -239,6 +255,44 @@ clean::
 	rm -f dllcommons_backtrace.so
 
 
+
+#-----------------------------------------------------------------------------
+sexp:
+	$(MAKE) INCLUDESEXTRA="$(SEXPINCLUDES)" commons_sexp.cma
+sexp.opt:
+	$(MAKE) INCLUDESEXTRA="$(SEXPINCLUDES)" commons_sexp.cmxa
+
+commons_sexp.cma: $(MYSEXPSRC:.ml=.cmo)
+	$(OCAMLC) -a -o $@ $^
+
+commons_sexp.cmxa: $(MYSEXPSRC:.ml=.cmx)
+	$(OCAMLOPT) -a -o $@ $^
+
+binprot:
+	$(MAKE) INCLUDESEXTRA="$(BININCLUDES)" commons_bin.cma
+binprot.opt:
+	$(MAKE) INCLUDESEXTRA="$(BININCLUDES)" commons_bin.cmxa
+
+commons_bin.cma: $(MYBINSRC:.ml=.cmo)
+	$(OCAMLC) -a -o $@ $^
+
+commons_bin.cmxa: $(MYBINSRC:.ml=.cmx)
+	$(OCAMLOPT) -a -o $@ $^
+
+##############################################################################
+# The global "features" lib wrapper
+##############################################################################
+
+features: commons_features.cma
+features.opt: commons_features.cmxa
+
+commons_features.cma: features.cmo
+	$(OCAMLC) -a -o $@ $^
+
+commons_features.cmxa: features.cmx
+	$(OCAMLOPT) -a -o $@ $^
+
+
 ##############################################################################
 # Developer rules
 ##############################################################################
@@ -247,7 +301,7 @@ tags:
 	otags -no-mli-tags -r  .
 
 clean::
-	rm -f gmon.out 
+	rm -f gmon.out
 
 forprofiling:
 	$(MAKE) OPTFLAGS="-p -inline 0 " opt
@@ -278,7 +332,7 @@ dependencygraph2:
 
 clean::
 	rm -f *.cm[iox] *.o *.a *.cma *.cmxa *.annot
-	rm -f *~ .*~ #*# 
+	rm -f *~ .*~ #*#
 
 clean::
 	for i in $(SUBDIRS); do (cd $$i; \
@@ -286,7 +340,7 @@ clean::
         cd ..; ) \
 	done
 
-depend: 
+depend:
 	$(OCAMLDEP) *.mli *.ml  > .depend
 	for i in $(SUBDIRS); do $(OCAMLDEP) $$i/*.ml $$i/*.mli >> .depend; done
 

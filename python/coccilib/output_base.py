@@ -1,7 +1,3 @@
-import pygtk
-import gtk, gobject
-import coccilib.coccigui
-import coccilib.coccigui.coccigui
 from threading import Thread, Lock
 import time
 from copy import deepcopy

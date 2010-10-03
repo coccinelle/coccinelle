@@ -4,12 +4,12 @@ TARGET=extra
 
 SOURCES = classic_patch.ml kbuild.ml maintainers.ml
 
-SYSLIBS = str.cma unix.cma 
+SYSLIBS = str.cma unix.cma
 
-LIBS=../commons/commons.cma ../parsing_c/parsing_c.cma ../globals/globals.cma 
+LIBS=../commons/commons.cma ../parsing_c/parsing_c.cma ../globals/globals.cma
 INCLUDES= -I ../commons -I ../globals -I  ../parsing_cocci -I  ../parsing_c
 
-#for warning:  -w A 
+#for warning:  -w A
 #for profiling:  -p -inline 0   with OCAMLOPT
 OCAMLCFLAGS ?= -g -dtypes
 OCAMLC =ocamlc$(OPTBIN) $(OCAMLCFLAGS) $(INCLUDES)
@@ -55,14 +55,15 @@ clean::
 .ml.cmx:
 	$(OCAMLOPT) -c $<
 
-.ml.mldepend: 
+.ml.mldepend:
 	$(OCAMLC) -i $<
 
 clean::
 	rm -f *.cm[ioxa] *.o *.a *.cmxa *.annot
-
-clean::
 	rm -f *~ .*~ gmon.out #*#
+
+distclean::
+	rm -f .depend
 
 beforedepend::
 

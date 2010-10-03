@@ -384,6 +384,8 @@ and parsed_rule =
 	(rule * Ast.metavar list) * Ast.ruletype
   | ScriptRule of
       string * Ast.dependency * (string * Ast.meta_name) list * string
+  | InitialScriptRule of string * string
+  | FinalScriptRule of string * string
 
 (* --------------------------------------------------------------------- *)
 

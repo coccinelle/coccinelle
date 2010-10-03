@@ -23,6 +23,7 @@
 module Ast0 = Ast0_cocci
 module Ast = Ast_cocci
 module V0 = Visitor_ast0
+module VT0 = Visitor_ast0_types
 
 (* find assignments that can match an initialization *)
 
@@ -103,16 +104,11 @@ let rec exp mc e1 =
   | _ -> e1
 
 let simple_assignments l =
-  let mcode x = x in
-  let donothing r k e = k e in
   let statement r k e =
     match Ast0.unwrap e with
       Ast0.Exp(e1) -> Ast0.rewrap e (Ast0.Exp(exp (Ast0.get_mcodekind e) e1))
     | _ -> k e in
   let fn =
     V0.rebuilder
-      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing donothing donothing statement
-      donothing donothing in
-  List.map fn.V0.rebuilder_top_level l
+      {V0.rebuilder_functions with VT0.rebuilder_stmtfn = statement} in
+  List.map fn.VT0.rebuilder_rec_top_level l

@@ -209,7 +209,11 @@ on the $project website. !!!!
 All seems fine for $project.
 
 To compile $project type:
- make depend; make
+ (make depend); make all
+or alternatively, for the optimized version:
+ (make depend); make all.opt
+If you want both, you could use:
+ (make depend); make world
 
 To install type:
  make install
@@ -278,7 +282,7 @@ my $pythonprefix = $python ? "yes_" : "no_";
 `cd python; ln -s ${pythonprefix}pycocci_aux.ml pycocci_aux.ml;`;
 `cd python; make depend`;
 
-my $command = "perl -p -i -e 's#Not_found.\*#Not_found->\\\"$src\\\"#' globals/config.ml";
+my $command = "perl -p -e 's#Not_found.\*#Not_found->\\\"$src\\\"#' globals/config.ml.in > globals/config.ml";
 `$command`;
 
 #

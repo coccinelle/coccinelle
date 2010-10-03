@@ -29,13 +29,13 @@ install_bridge: bridge
 .PHONY: $(SUBDIRS)
 
 
-SYSLIBS = str.cma unix.cma 
+SYSLIBS = str.cma unix.cma
 
 INCLUDE=-I ../commons -I ../extra -I  ../parsing_c
 LIBS=../commons/commons.cma ../globals/globals.cma \
-     ../parsing_c/parsing_c.cma ../extra/extra.cma 
+     ../parsing_c/parsing_c.cma ../extra/extra.cma
 
-OCAMLC=ocamlc$(OPTBIN) -g -dtypes   $(INCLUDE) 
+OCAMLC=ocamlc$(OPTBIN) -g -dtypes   $(INCLUDE)
 OCAMLOPT=ocamlopt$(OPTBIN)   $(INCLUDE) $(OPTFLAGS)
 #OCAMLLEX=ocamllex$(OPTBIN) -ml
 OCAMLLEX=ocamllex$(OPTBIN)
@@ -69,5 +69,8 @@ beforedepend::
 
 depend:: beforedepend
 	ocamldep $(INCLUDE) *.mli *.ml    > .depend
+
+distclean::
+	rm -f .depend
 
 -include .depend

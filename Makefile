@@ -24,7 +24,7 @@
 
 -include Makefile.config
 
-VERSION=$(shell cat globals/config.ml |grep version |perl -p -e 's/.*"(.*)".*/$$1/;')
+VERSION=$(shell cat globals/config.ml.in |grep version |perl -p -e 's/.*"(.*)".*/$$1/;')
 
 ##############################################################################
 # Variables
@@ -33,12 +33,11 @@ TARGET=spatch
 
 SRC=flag_cocci.ml cocci.ml testing.ml test.ml main.ml
 
-
 ifeq ($(FEATURE_PYTHON),1)
 PYCMA=pycaml/pycaml.cma
 PYDIR=pycaml
 PYLIB=dllpycaml_stubs.so
-# the following is essential for Coccinelle to compile under gentoo (wierd)
+# the following is essential for Coccinelle to compile under gentoo (weird)
 OPTLIBFLAGS=-cclib dllpycaml_stubs.so
 else
 PYCMA=
@@ -47,18 +46,24 @@ PYLIB=
 OPTLIBFLAGS=
 endif
 
+SEXPSYSCMA=bigarray.cma nums.cma
 
-SYSLIBS=str.cma unix.cma
-LIBS=commons/commons.cma globals/globals.cma\
+SYSLIBS=str.cma unix.cma $(SEXPSYSCMA)
+LIBS=commons/commons.cma \
+     ocamlsexp/sexplib1.cma commons/commons_sexp.cma \
+     globals/globals.cma \
      ctl/ctl.cma \
      parsing_cocci/cocci_parser.cma parsing_c/parsing_c.cma \
-     engine/cocciengine.cma popl09/popl.cma \
+     engine/cocciengine.cma \
      extra/extra.cma $(PYCMA) python/coccipython.cma
 
-MAKESUBDIRS=commons globals menhirlib $(PYDIR) ctl parsing_cocci parsing_c \
- engine popl09 extra python
-INCLUDEDIRS=commons commons/ocamlextra globals menhirlib $(PYDIR) ctl \
- parsing_cocci parsing_c engine popl09 extra python
+#used for clean: and depend: and a little for rec & rec.opt
+MAKESUBDIRS=commons ocamlsexp \
+ globals menhirlib $(PYDIR) ctl parsing_cocci parsing_c \
+ engine extra python
+INCLUDEDIRS=commons commons/ocamlextra ocamlsexp \
+ globals menhirlib $(PYDIR) ctl \
+ parsing_cocci parsing_c engine extra python
 
 ##############################################################################
 # Generic variables
@@ -101,25 +106,42 @@ BYTECODE_STATIC=-custom
 ##############################################################################
 # Top rules
 ##############################################################################
-.PHONY: all all.opt opt top clean configure
-.PHONY: $(MAKESUBDIRS) $(MAKESUBDIRS:%=%.opt) subdirs subdirs.opt
+.PHONY:: all all.opt byte opt top clean distclean configure
+.PHONY:: $(MAKESUBDIRS) $(MAKESUBDIRS:%=%.opt) subdirs subdirs.opt
 
-all:
+all: byte
+	$(MAKE) preinstall
+
+opt: all.opt
+all.opt: opt-compil
+	$(MAKE) preinstall
+
+world: 
+	$(MAKE) byte
+	$(MAKE) opt
+	$(MAKE) preinstall
+
+byte: .depend
 	$(MAKE) subdirs
 	$(MAKE) $(EXEC)
 
-opt:
+opt-compil: .depend
 	$(MAKE) subdirs.opt
 	$(MAKE) $(EXEC).opt
 
-all.opt: opt
 top: $(EXEC).top
 
 subdirs:
-	+for D in $(MAKESUBDIRS); do $(MAKE) $$D ; done
+	$(MAKE) -C commons OCAMLCFLAGS="$(OCAMLCFLAGS)"
+	$(MAKE) -C ocamlsexp OCAMLCFLAGS="$(OCAMLCFLAGS)"
+	$(MAKE) -C commons sexp OCAMLCFLAGS="$(OCAMLCFLAGS)"
+	+for D in $(MAKESUBDIRS); do $(MAKE) $$D || exit 1 ; done
 
 subdirs.opt:
-	+for D in $(MAKESUBDIRS); do $(MAKE) $$D.opt ; done
+	$(MAKE) -C commons all.opt OCAMLCFLAGS="$(OCAMLCFLAGS)"
+	$(MAKE) -C ocamlsexp all.opt OCAMLCFLAGS="$(OCAMLCFLAGS)"
+	$(MAKE) -C commons sexp.opt OCAMLCFLAGS="$(OCAMLCFLAGS)"
+	+for D in $(MAKESUBDIRS); do $(MAKE) $$D.opt || exit 1 ; done
 
 $(MAKESUBDIRS):
 	$(MAKE) -C $@ OCAMLCFLAGS="$(OCAMLCFLAGS)" all
@@ -127,6 +149,7 @@ $(MAKESUBDIRS):
 $(MAKESUBDIRS:%=%.opt):
 	$(MAKE) -C $(@:%.opt=%) OCAMLCFLAGS="$(OCAMLCFLAGS)" all.opt
 
+#dependencies:
 # commons:
 # globals:
 # menhirlib:
@@ -134,28 +157,12 @@ $(MAKESUBDIRS:%=%.opt):
 # parsing_c:parsing_cocci
 # ctl:globals commons
 # engine: parsing_cocci parsing_c ctl
-# popl09:engine
 # extra: parsing_cocci parsing_c ctl
 # pycaml:
 # python:pycaml parsing_cocci parsing_c
-#
-# commons.opt:
-# globals.opt:
-# menhirlib.opt:
-# parsing_cocci.opt: commons.opt globals.opt menhirlib.opt
-# parsing_c.opt:parsing_cocci.opt
-# ctl.opt:globals.opt commons.opt
-# engine.opt: parsing_cocci.opt parsing_c.opt ctl.opt
-# popl09.opt:engine.opt
-# extra.opt: parsing_cocci.opt parsing_c.opt ctl.opt
-# pycaml.opt:
-# python.opt:pycaml.opt parsing_cocci.opt parsing_c.opt
 
 clean::
-	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i clean; done
-
-configure:
-	./configure
+	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i $@; done
 
 $(LIBS): $(MAKESUBDIRS)
 $(LIBS:.cma=.cmxa): $(MAKESUBDIRS:%=%.opt)
@@ -179,13 +186,16 @@ clean::
 	rm -f dllpycaml_stubs.so
 
 
-.PHONY: tools all configure
+.PHONY:: tools configure
+
+configure:
+	./configure
 
 tools:
 	$(MAKE) -C tools
+
 clean::
 	$(MAKE) -C tools clean
-
 
 static:
 	rm -f spatch.opt spatch
@@ -196,6 +206,52 @@ purebytecode:
 	rm -f spatch.opt spatch
 	$(MAKE) BYTECODE_STATIC="" spatch
 
+
+##############################################################################
+# Build documentation
+##############################################################################
+.PHONY:: docs
+
+docs:
+	make -C docs
+
+clean::
+	make -C docs clean
+
+distclean::
+	make -C docs distclean
+
+##############################################################################
+# Pre-Install (customization of spatch frontend script)
+##############################################################################
+.PHONY:: preinstall preinstall-def preinstall-byte preinstall-opt
+
+preinstall: preinstall-def preinstall-byte preinstall-opt
+
+# user will use spatch to run spatch.opt (native)
+preinstall-def:
+	cp scripts/spatch.sh scripts/spatch.tmp2
+	sed "s|SHAREDIR|$(SHAREDIR)|g" scripts/spatch.tmp2 > scripts/spatch.tmp
+	sed "s|LIBDIR|$(LIBDIR)|g" scripts/spatch.tmp > scripts/spatch
+	rm -f scripts/spatch.tmp2 scripts/spatch.tmp
+
+# user will use spatch to run spatch (bytecode)
+preinstall-byte:
+	cp scripts/spatch.sh scripts/spatch.tmp3
+	sed "s|\.opt||" scripts/spatch.tmp3 > scripts/spatch.tmp2
+	sed "s|SHAREDIR|$(SHAREDIR)|g" scripts/spatch.tmp2 > scripts/spatch.tmp
+	sed "s|LIBDIR|$(LIBDIR)|g" scripts/spatch.tmp > scripts/spatch.byte
+	rm -f scripts/spatch.tmp3 scripts/spatch.tmp2 scripts/spatch.tmp
+
+# user will use spatch.opt to run spatch.opt (native)
+preinstall-opt:
+	cp scripts/spatch.sh scripts/spatch.opt.tmp2
+	sed "s|SHAREDIR|$(SHAREDIR)|g" scripts/spatch.opt.tmp2 > scripts/spatch.opt.tmp
+	sed "s|LIBDIR|$(LIBDIR)|g" scripts/spatch.opt.tmp > scripts/spatch.opt
+	rm -f scripts/spatch.opt.tmp scripts/spatch.opt.tmp2
+
+clean::
+	rm -f scripts/spatch scripts/spatch.byte scripts/spatch.opt
 
 ##############################################################################
 # Install
@@ -224,25 +280,36 @@ install-python:
 		$(DESTDIR)$(SHAREDIR)/python/coccilib
 	$(INSTALL_DATA) python/coccilib/coccigui/*.py \
 		$(DESTDIR)$(SHAREDIR)/python/coccilib/coccigui
+	$(INSTALL_DATA) python/coccilib/coccigui/pygui.glade \
+		$(DESTDIR)$(SHAREDIR)/python/coccilib/coccigui
+	$(INSTALL_DATA) python/coccilib/coccigui/pygui.gladep \
+		$(DESTDIR)$(SHAREDIR)/python/coccilib/coccigui
 	$(INSTALL_LIB) dllpycaml_stubs.so $(DESTDIR)$(LIBDIR)
 
+install:
+	@if test -x spatch -a ! -x spatch.opt ; then \
+		$(MAKE) install-byte;fi
+	@if test ! -x spatch -a -x spatch.opt ; then \
+		$(MAKE) install-def; $(MAKE) install-opt;fi
+	@if test -x spatch -a -x spatch.opt ; then \
+		$(MAKE) install-byte; $(MAKE) install-opt;fi
+	@if test ! -x spatch -a ! -x spatch.opt ; then \
+		echo "\n\n\t==> Run 'make', 'make opt', or both first. <==\n\n";fi
+
 # user will use spatch to run spatch.opt (native)
-install: all.opt install-common
+install-def: install-common
 	$(INSTALL_PROGRAM) spatch.opt $(DESTDIR)$(SHAREDIR)
-	cat scripts/spatch.sh | sed "s|SHAREDIR|$(SHAREDIR)|g" > $(DESTDIR)$(BINDIR)/spatch
-	chmod 755 $(DESTDIR)$(BINDIR)/spatch
+	$(INSTALL_PROGRAM) scripts/spatch $(DESTDIR)$(BINDIR)/spatch
 
 # user will use spatch to run spatch (bytecode)
-install-byte: all install-common
+install-byte: install-common
 	$(INSTALL_PROGRAM) spatch $(DESTDIR)$(SHAREDIR)
-	cat scripts/spatch.sh | sed "s|\.opt||" | sed "s|SHAREDIR|$(SHAREDIR)|g" > $(DESTDIR)$(BINDIR)/spatch
-	chmod 755 $(DESTDIR)$(BINDIR)/spatch
+	$(INSTALL_PROGRAM) scripts/spatch.byte $(DESTDIR)$(BINDIR)/spatch
 
 # user will use spatch.opt to run spatch.opt (native)
-install-opt: all.opt install-common
+install-opt: install-common
 	$(INSTALL_PROGRAM) spatch.opt $(DESTDIR)$(SHAREDIR)
-	cat scripts/spatch.sh | sed "s|SHAREDIR|$(SHAREDIR)|g" > $(DESTDIR)$(BINDIR)/spatch.opt
-	chmod 755 $(DESTDIR)$(BINDIR)/spatch.opt
+	$(INSTALL_PROGRAM) scripts/spatch.opt $(DESTDIR)$(BINDIR)/spatch.opt
 
 uninstall:
 	rm -f $(DESTDIR)$(BINDIR)/spatch
@@ -252,8 +319,6 @@ uninstall:
 	rm -f $(DESTDIR)$(SHAREDIR)/standard.iso
 	rm -rf $(DESTDIR)$(SHAREDIR)/python/coccilib
 	rm -f $(DESTDIR)$(MANDIR)/man1/spatch.1
-
-
 
 version:
 	@echo $(VERSION)
@@ -266,7 +331,9 @@ version:
 PACKAGE=coccinelle-$(VERSION)
 
 BINSRC=spatch env.sh env.csh standard.h standard.iso \
-       *.txt docs/* \
+       *.txt \
+       docs/options.pdf docs/grammar/cocci_syntax.pdf docs/spatch.1 \
+       docs/cocci-python.txt \
        demos/foo.* demos/simple.*
 #      $(PYLIB) python/coccilib/ demos/printloc.*
 BINSRC2=$(BINSRC:%=$(PACKAGE)/%)
@@ -282,6 +349,8 @@ OCAMLVERSION=$(shell ocaml -version |perl -p -e 's/.*version (.*)/$$1/;')
 #  touch **/*
 #  make licensify
 #  remember to comment the -g -dtypes in this Makefile
+#  You can also remove a few things, for instance I removed in this
+#   Makefile things related to popl/ and popl09/
 
 # Procedure to do each time:
 #  cvs update
@@ -305,18 +374,25 @@ OCAMLVERSION=$(shell ocaml -version |perl -p -e 's/.*version (.*)/$$1/;')
 
 package:
 	make srctar
+	./configure --without-python
+	make docs
 	make bintar
 	make staticbintar
 	make bytecodetar
 
 # I currently pre-generate the parser so the user does not have to
-# install menhir on his machine. I also do a few cleanups like 'rm todo_pos'.
+# install menhir on his machine. We could also do a few cleanups.
 # You may have first to do a 'make licensify'.
+#
+# update: make docs generates pdf but also some ugly .log files, so 
+# make clean is there to remove them while not removing the pdf
+# (only distclean remove the pdfs).
 srctar:
+	make distclean
+	make docs
 	make clean
 	cp -a .  $(TMP)/$(PACKAGE)
 	cd $(TMP)/$(PACKAGE); cd parsing_cocci/; make parser_cocci_menhir.ml
-	cd $(TMP)/$(PACKAGE); rm -f todo_pos
 	cd $(TMP); tar cvfz $(PACKAGE).tgz --exclude-vcs $(PACKAGE)
 	rm -rf  $(TMP)/$(PACKAGE)
 
@@ -350,7 +426,7 @@ clean::
 
 
 
-TOLICENSIFY=ctl engine parsing_cocci popl popl09 python
+TOLICENSIFY=ctl engine parsing_cocci python
 licensify:
 	ocaml tools/licensify.ml
 	set -e; for i in $(TOLICENSIFY); do cd $$i; ocaml ../tools/licensify.ml; cd ..; done
@@ -381,6 +457,7 @@ website:
 	cp $(TMP)/$(PACKAGE)-bin-x86-static.tgz $(WEBSITE)
 	cp $(TMP)/$(PACKAGE)-bin-bytecode-$(OCAMLVERSION).tgz   $(WEBSITE)
 	rm -f $(WEBSITE)/LATEST* $(WEBSITE)/coccinelle-latest.tgz
+	cp changes.txt $(WEBSITE)/changes-$(VERSION).txt
 	cd $(WEBSITE); touch LATEST_IS_$(VERSION); ln -s $(PACKAGE).tgz coccinelle-latest.tgz
 
 
@@ -403,6 +480,11 @@ update_darcs:
 diff_darcs:
 	set -e; for i in $(DARCSFORESTS); do cd $$i; darcs diff -u; cd ..; done
 
+##############################################################################
+# Git Developer rules
+##############################################################################
+gitupdate:
+	git cvsimport -d :ext:topps:/var/cvs/cocci  coccinelle
 
 ##############################################################################
 # Developer rules
@@ -429,7 +511,7 @@ tags:
 	otags -no-mli-tags -r  .
 
 dependencygraph:
-	find  -name "*.ml" |grep -v "scripts" | xargs ocamldep -I commons -I globals -I ctl -I parsing_cocci -I parsing_c -I engine -I popl09 -I extra > /tmp/dependfull.depend
+	find  -name "*.ml" |grep -v "scripts" | xargs ocamldep -I commons -I globals -I ctl -I parsing_cocci -I parsing_c -I engine -I extra > /tmp/dependfull.depend
 	ocamldot -lr /tmp/dependfull.depend > /tmp/dependfull.dot
 	dot -Tps /tmp/dependfull.dot > /tmp/dependfull.ps
 	ps2pdf /tmp/dependfull.ps /tmp/dependfull.pdf
@@ -474,14 +556,28 @@ beforedepend:: test.ml
 
 clean::
 	rm -f *.cm[iox] *.o *.annot
-
-clean::
 	rm -f *~ .*~ *.exe #*#
+
+distclean:: clean
+	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i $@; done
+	rm -f .depend
+	rm -f Makefile.config
+	rm -f python/coccilib/output.py
+	rm -f python/pycocci.ml
+	rm -f python/pycocci_aux.ml
+	rm -f globals/config.ml
+	rm -f TAGS
+	rm -f tests/SCORE_actual.sexp
+	rm -f tests/SCORE_best_of_both.sexp
+	find -name ".#*1.*" | xargs rm -f
 
 beforedepend::
 
 depend:: beforedepend
 	$(OCAMLDEP) *.mli *.ml > .depend
-	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i depend; done
+	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i $@; done
+
+.depend::
+	@if [ ! -f .depend ] ; then $(MAKE) depend ; fi
 
 -include .depend

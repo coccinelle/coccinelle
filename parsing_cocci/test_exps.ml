@@ -23,6 +23,7 @@
 module Ast = Ast_cocci
 module Ast0 = Ast0_cocci
 module V0 = Visitor_ast0
+module VT0 = Visitor_ast0_types
 
 (* call set_test_pos on test expressions *)
 
@@ -42,9 +43,6 @@ let rec process_exp e =
   | _ -> e
 
 let set_test_poss =
-  let donothing r k e = k e in
-  let mcode x = x in
-
   let expression r k e =
     let e = k e in
     match Ast0.unwrap e with
@@ -87,12 +85,10 @@ let set_test_poss =
     | _ -> s in
 
   V0.rebuilder
-      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      donothing donothing donothing donothing donothing donothing
-      donothing expression donothing donothing donothing donothing statement
-      donothing donothing
+    {V0.rebuilder_functions with
+      VT0.rebuilder_exprfn = expression; VT0.rebuilder_stmtfn = statement}
 
-let process = List.map set_test_poss.V0.rebuilder_top_level
+let process = List.map set_test_poss.VT0.rebuilder_rec_top_level
 
-let process_anything = set_test_poss.V0.rebuilder_anything
+let process_anything = set_test_poss.VT0.rebuilder_rec_anything
 

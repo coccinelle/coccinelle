@@ -385,7 +385,8 @@ let disj rules =
   List.map
     (function (mv,r) ->
       match r with
-        Ast.ScriptRule _ -> (mv, r)
+        Ast.ScriptRule _
+      | Ast.InitialScriptRule _ | Ast.FinalScriptRule _ -> (mv, r)
       | Ast.CocciRule (nm, rule_info, r, isexp, ruletype) ->
 	  let res =
 	    List.map

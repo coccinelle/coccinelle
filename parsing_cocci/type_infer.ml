@@ -24,6 +24,7 @@ module T = Type_cocci
 module Ast = Ast_cocci
 module Ast0 = Ast0_cocci
 module V0 = Visitor_ast0
+module VT0 = Visitor_ast0_types
 
 (* Type inference:
 Just propagates information based on declarations.  Could try to infer
@@ -92,8 +93,6 @@ let lub_envs envs =
 let rec propagate_types env =
   let option_default = None in
   let bind x y = option_default in (* no generic way of combining types *)
-
-  let mcode x = option_default in
 
   let ident r k i =
     match Ast0.unwrap i with
@@ -248,21 +247,19 @@ let rec propagate_types env =
 	      List.iter (function e -> Ast0.set_type e (Some t)) exp_list;
 	      Some t)
       | Ast0.NestExpr(starter,expr_dots,ender,None,multi) ->
-	  let _ = r.V0.combiner_expression_dots expr_dots in None
+	  let _ = r.VT0.combiner_rec_expression_dots expr_dots in None
       | Ast0.NestExpr(starter,expr_dots,ender,Some e,multi) ->
-	  let _ = r.V0.combiner_expression_dots expr_dots in
-	  let _ = r.V0.combiner_expression e in None
+	  let _ = r.VT0.combiner_rec_expression_dots expr_dots in
+	  let _ = r.VT0.combiner_rec_expression e in None
       | Ast0.Edots(_,None) | Ast0.Ecircles(_,None) | Ast0.Estars(_,None) ->
 	  None
       | Ast0.Edots(_,Some e) | Ast0.Ecircles(_,Some e)
       | Ast0.Estars(_,Some e) ->
-	  let _ = r.V0.combiner_expression e in None
+	  let _ = r.VT0.combiner_rec_expression e in None
       | Ast0.OptExp(exp) -> Ast0.get_type exp
       | Ast0.UniqueExp(exp) -> Ast0.get_type exp in
     Ast0.set_type e ty;
     ty in
-
-  let donothing r k e = k e in
 
   let rec strip id =
     match Ast0.unwrap id with
@@ -292,7 +289,7 @@ let rec propagate_types env =
 	      match Ast0.unwrap decl with
 		Ast0.Init(_,ty,id,_,exp,_) ->
 		  let _ =
-		    (propagate_types acc).V0.combiner_initialiser exp in
+		    (propagate_types acc).VT0.combiner_rec_initialiser exp in
 		  [(strip id,Ast0.ast0_type_to_type ty)]
 	      | Ast0.UnInit(_,ty,id,_) ->
 		  [(strip id,Ast0.ast0_type_to_type ty)]
@@ -310,8 +307,8 @@ let rec propagate_types env =
 	| Ast0.Dots(_,wc) ->
 	    (* why is this case here?  why is there none for nests? *)
 	    List.iter
-	      (process_whencode r.V0.combiner_statement_dots
-		 r.V0.combiner_statement r.V0.combiner_expression)
+	      (process_whencode r.VT0.combiner_rec_statement_dots
+		 r.VT0.combiner_rec_statement r.VT0.combiner_rec_expression)
 	      wc;
 	    process_statement_list r acc ss
 	| Ast0.Disj(_,statement_dots_list,_,_) ->
@@ -322,7 +319,7 @@ let rec propagate_types env =
 		   statement_dots_list) in
 	    process_statement_list r new_acc ss
 	| _ ->
-	    let _ = (propagate_types acc).V0.combiner_statement s in
+	    let _ = (propagate_types acc).VT0.combiner_rec_statement s in
 	    process_statement_list r acc ss) in
 
   let statement_dots r k d =
@@ -339,7 +336,7 @@ let rec propagate_types env =
 	  | Ast0.OptParam(param) -> get_binding param
 	  | _ -> [] in
 	let fenv = List.concat (List.map get_binding (Ast0.undots params)) in
-	(propagate_types (fenv@env)).V0.combiner_statement_dots body
+	(propagate_types (fenv@env)).VT0.combiner_rec_statement_dots body
     | Ast0.IfThen(_,_,exp,_,_,_) | Ast0.IfThenElse(_,_,exp,_,_,_,_,_)
     | Ast0.While(_,_,exp,_,_,_) | Ast0.Do(_,_,_,_,exp,_,_)
     | Ast0.For(_,_,_,_,Some exp,_,_,_,_,_) | Ast0.Switch(_,_,exp,_,_,_,_) ->
@@ -373,13 +370,15 @@ let rec propagate_types env =
     | Ast0.OptCase(case) -> k c in
 
   V0.combiner bind option_default
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    donothing donothing donothing statement_dots donothing donothing
-    ident expression donothing donothing donothing donothing statement
-    case_line donothing
+    {V0.combiner_functions with
+      VT0.combiner_dotsstmtfn = statement_dots;
+      VT0.combiner_identfn = ident;
+      VT0.combiner_exprfn = expression;
+      VT0.combiner_stmtfn = statement;
+      VT0.combiner_casefn = case_line}
 
 let type_infer code =
   let prop = propagate_types [(Id("NULL"),T.Pointer(T.Unknown))] in
-  let fn = prop.V0.combiner_top_level in
+  let fn = prop.VT0.combiner_rec_top_level in
   let _ = List.map fn code in
   ()

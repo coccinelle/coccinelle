@@ -16,6 +16,19 @@ open Common
 (*****************************************************************************)
 (* The AST C related types *)
 (*****************************************************************************)
+(*
+ * Some stuff are tagged semantic: which means that they are computed
+ * after parsing. 
+ * 
+ * This means that some elements in this AST are present only if 
+ * some annotation/transformation has been done on the original AST returned
+ * by the parser. Cf type_annotater, comment_annotater, cpp_ast_c, etc.
+ *)
+
+
+(* ------------------------------------------------------------------------- *)
+(* Token/info *)
+(* ------------------------------------------------------------------------- *)
 
 (* To allow some transformations over the AST, we keep as much information 
  * as possible in the AST such as the tokens content and their locations. 
@@ -23,12 +36,11 @@ open Common
  * For instance one tag may say that the unparser should remove this token.
  * 
  * Update: Now I use a ref! in those 'info' so take care.
- * 
  * That means that modifications of the info of tokens can have
  * an effect on the info stored in the ast (which is sometimes 
  * convenient, cf unparse_c.ml or comment_annotater_c.ml)
  * 
- * 
+ * convention: I often use 'ii' for the name of a list of info. 
  * 
  * Sometimes we want to add someting at the beginning or at the end 
  * of a construct. For 'function' and 'decl' we want to add something
@@ -36,29 +48,6 @@ open Common
  * We want some kinds of "virtual placeholders" that represent the start or
  * end of a construct. We use fakeInfo for that purpose.
  * To identify those cases I have added a fakestart/fakeend comment.
- * 
- * convention: I often use 'ii' for the name of a list of info. 
- * 
- * update: I now allow ifdefs in the ast but there must be only between
- * "sequencable" elements. They can be put in a type only if this type
- * is used only in a list, like at toplevel, used in 'toplevel list', 
- * or inside compound, used in 'statement list'. I must not allow 
- * ifdef anywhere. For instance I can not make ifdef a statement 
- * cos some instruction like If accept only one statement and the
- * ifdef directive must not take the place of a legitimate instruction.
- * We had a similar phenomena in SmPL where we have the notion
- * of statement and sequencable statement too. Once you have 
- * such a type of sequencable thing, then s/xx list/xx_sequencable list/
- * and introduce the ifdef.
- * 
- * update: those ifdefs are either passed, or present in the AST but in
- * a flat form. To structure those flat ifdefs you have to run
- * a transformation that will put in a tree the statements inside
- * ifdefs branches. Cf cpp_ast_c.ml. This is for instance the difference
- * between a IfdefStmt (flat) and IfdefStmt2 (tree structured).
- * 
- * Some stuff are tagged semantic: which means that they are computed
- * after parsing. 
  * 
  * cocci: Each token will be decorated in the future by the mcodekind
  * of cocci. It is the job of the pretty printer to look at this
@@ -73,10 +62,6 @@ open Common
  * because the pending '+' may contain metavariables that refer to some
  * C code.
  * 
- * 
- * All of this means that some elements in this AST are present only if 
- * some annotation/transformation has been done on the original AST returned
- * by the parser. Cf type_annotater, comment_annotater, cpp_ast_c, etc.
  *)
 
 (* forunparser: *)
@@ -103,12 +88,14 @@ type parse_info =
 
 type info = { 
   pinfo : parse_info;
-  (* this tag can be changed, which is how we can express some program
+
+  (* this cocci_tag can be changed, which is how we can express some program
    * transformations by tagging the tokens involved in this transformation. 
    *)
   cocci_tag: (Ast_cocci.mcodekind * metavars_binding) ref;
   (* set in comment_annotater_c.ml *)
   comments_tag: comments_around ref;
+
   (* todo? token_info : sometimes useful to know what token it was *)
   }
 and il = info list
@@ -118,6 +105,24 @@ and il = info list
  * follows, so in 'a,b' I will have in the list [(a,[]); (b,[','])]. *)
 and 'a wrap  = 'a * il
 and 'a wrap2 = 'a * il
+
+(* ------------------------------------------------------------------------- *)
+(* Name *)
+(* ------------------------------------------------------------------------- *)
+
+(* was called 'ident' before, but 'name' is I think better
+ * as concatenated strings can be used not only for identifiers and for 
+ * declarators, but also for fields, for labels, etc.
+ *)
+and name = 
+   | RegularName of string wrap
+   | CppConcatenatedName of (string wrap) wrap2 (* the ## separators *) list
+   (* normally only used inside list of things, as in parameters or arguments
+    * in which case, cf cpp-manual, it has a special meaning *)
+   | CppVariadicName of string wrap (* ## s *)
+   | CppIdentBuilder of string wrap (* s ( ) *) * 
+                       ((string wrap) wrap2 list) (* arguments *)
+
 
 (* ------------------------------------------------------------------------- *)
 (* C Type *)
@@ -141,15 +146,13 @@ and 'a wrap2 = 'a * il
  * have an exprStatement and a new (local) struct defined. Same for
  * Constructor.
  * 
- * Some stuff are tagged semantic: which means that they are computed
- * after parsing. 
-*)
+ *)
 
 
 and fullType = typeQualifier * typeC
-and  typeC = typeCbis wrap
+ and typeC = typeCbis wrap
 
-and typeCbis =
+  and typeCbis =
   | BaseType        of baseType
 
   | Pointer         of fullType
@@ -162,13 +165,13 @@ and typeCbis =
   | EnumName        of string
   | StructUnionName of structUnion * string 
 
-  | TypeName   of string * fullType option (* semantic: filled later *)
+  | TypeName   of name * fullType option (* semantic: filled later *)
  
   | ParenType of fullType (* forunparser: *)
 
-  (* gccext: TypeOfType may seems useless; why declare a 
+  (* gccext: TypeOfType below may seems useless; Why declare a 
    *     __typeof__(int) x; ? 
-   * But when used with macro, it allows to fix a problem of C which
+   * When used with macros, it allows to fix a problem of C which
    * is that type declaration can be spread around the ident. Indeed it
    * may be difficult to have a macro such as 
    *    '#define macro(type, ident) type ident;' 
@@ -176,7 +179,8 @@ and typeCbis =
    *     macro(char[256], x), 
    * then it will generate invalid code, but with a 
    *       '#define macro(type, ident) __typeof(type) ident;' 
-   * it will work. *)
+   * it will work. 
+   *)
   | TypeOfExpr of expression  
   | TypeOfType of fullType    
 
@@ -207,7 +211,9 @@ and typeCbis =
         and field = fieldbis wrap 
          and fieldbis = 
            | DeclarationField of field_declaration
-           | EmptyField (* gccext: *)
+           (* gccext: *)
+           | EmptyField 
+
             (* cppext: *)
            | MacroStructDeclTodo
 
@@ -224,15 +230,15 @@ and typeCbis =
            * But it seems that gcc allow char i:4. C rule must say that you
            * can cast into int so enum too, ... 
            *)
-           and fieldkind = fieldkindbis wrap (* s : *)
-            and fieldkindbis = 
-                | Simple   of string option * fullType
-                | BitField of string option * fullType * constExpression
-                 (* fullType => BitFieldInt | BitFieldUnsigned *) 
+           and fieldkind = 
+             | Simple   of name option * fullType
+             | BitField of name option * fullType * 
+                 info (* : *) * constExpression
+              (* fullType => BitFieldInt | BitFieldUnsigned *) 
 
 
      (* -------------------------------------- *)    
-     and enumType = (string * constExpression option) wrap (* s = *) 
+     and enumType = (name * (info (* = *) * constExpression) option) 
                     wrap2 (* , *) list 
                    (* => string * int list *)
 
@@ -240,8 +246,12 @@ and typeCbis =
      (* -------------------------------------- *)    
      (* return * (params * has "...") *)
      and functionType = fullType * (parameterType wrap2 list * bool wrap)
-        and parameterType = (bool * string option * fullType) wrap (* reg s *)
-              (* => (bool (register) * fullType) list * bool *)
+        and parameterType = 
+        { p_namei: name option;
+          p_register: bool wrap;
+          p_type: fullType;
+        }
+        (* => (bool (register) * fullType) list * bool *)
 
 
 and typeQualifier = typeQualifierbis wrap 
@@ -265,12 +275,12 @@ and expression = (expressionbis * exp_info ref (* semantic: *)) wrap
 
   (* Ident can be a enumeration constant, a simple variable, a name of a func.
    * With cppext, Ident can also be the name of a macro. Sparse says
-   * "an identifier with a meaning is a symbol".
-   *)
-  | Ident          of string  (* todo? more semantic info such as LocalFunc *)
+   * "an identifier with a meaning is a symbol" *)
+  | Ident          of name (* todo? more semantic info such as LocalFunc *)
+
   | Constant       of constant                                  
   | FunCall        of expression * argument wrap2 (* , *) list
-  (* gccext: x ? /* empty */ : y <=> x ? x : y; *)
+  (* gccext: x ? /* empty */ : y <=> x ? x : y;  hence the 'option' below *)
   | CondExpr       of expression * expression option * expression
 
   (* should be considered as statements, bad C langage *)
@@ -287,8 +297,8 @@ and expression = (expressionbis * exp_info ref (* semantic: *)) wrap
   | ArrayAccess    of expression * expression
 
   (* field ident access *)
-  | RecordAccess   of expression * string 
-  | RecordPtAccess of expression * string 
+  | RecordAccess   of expression * name
+  | RecordPtAccess of expression * name
   (* redundant normally, could replace it by DeRef RecordAcces *)
 
   | SizeOfExpr     of expression                                
@@ -318,7 +328,7 @@ and expression = (expressionbis * exp_info ref (* semantic: *)) wrap
    * OCaml int are 31 bits. So simpler to do string. Same reason to have
    * string instead of int list for the String case.
    * 
-   * note: that -2 is not a constant, it is the unary operator '-'
+   * note: -2 is not a constant, it is the unary operator '-'
    * applied to constant 2. So the string must represent a positive
    * integer only. *)
 
@@ -352,7 +362,6 @@ and expression = (expressionbis * exp_info ref (* semantic: *)) wrap
  and constExpression = expression (* => int *)
 
 
-
 (* ------------------------------------------------------------------------- *)
 (* C statement *)
 (* ------------------------------------------------------------------------- *)
@@ -360,10 +369,12 @@ and expression = (expressionbis * exp_info ref (* semantic: *)) wrap
  * wonderful C langage.
  * 
  * note: I use 'and' for type definition cos gccext allow statement as
- * expression, so need mutual recursive type definition. *)
+ * expression, so need mutual recursive type definition. 
+ * 
+ *)
 
 and statement = statementbis wrap 
-and statementbis = 
+ and statementbis = 
   | Labeled       of labeled
   | Compound      of compound   (* new scope *)
   | ExprStatement of exprStatement
@@ -383,7 +394,7 @@ and statementbis =
   
 
 
-  and labeled = Label   of string * statement
+  and labeled = Label   of name * statement
               | Case    of expression * statement 
               | CaseRange of expression * expression * statement (* gccext: *)
 	      |	Default of statement
@@ -394,12 +405,31 @@ and statementbis =
    * Simplify cocci to just have statement list, by integrating Decl in stmt.
    * 
    * update: now introduce also the _sequencable to allow ifdef in the middle.
+   * Indeed, I now allow ifdefs in the ast but they must be only between
+   * "sequencable" elements. They can be put in a type only if this type
+   * is used in a list, like at the toplevel, used in a 'toplevel list', 
+   * or inside a compound, used in a 'statement list'. I must not allow 
+   * ifdef anywhere. For instance I can not make ifdef a statement 
+   * cos some instruction like If accept only one statement and the
+   * ifdef directive must not take the place of a legitimate instruction.
+   * We had a similar phenomena in SmPL where we have the notion
+   * of statement and sequencable statement too. Once you have 
+   * such a type of sequencable thing, then s/xx list/xx_sequencable list/
+   * and introduce the ifdef.
+   * 
+   * update: those ifdefs are either passed, or present in the AST but in
+   * a flat form. To structure those flat ifdefs you have to run
+   * a transformation that will put in a tree the statements inside
+   * ifdefs branches. Cf cpp_ast_c.ml. This is for instance the difference
+   * between a IfdefStmt (flat) and IfdefStmt2 (tree structured).
+   * 
    *)
   and compound = statement_sequencable list 
 
   (* cppext: easier to put at statement_list level than statement level *)
   and statement_sequencable = 
     | StmtElem of statement
+
     (* cppext: *) 
     | CppDirectiveStmt of cpp_directive
     | IfdefStmt of ifdef_directive 
@@ -425,7 +455,7 @@ and statementbis =
     (* cppext: *)
     | MacroIteration of string * argument wrap2 list * statement
 
-  and jump  = Goto of string
+  and jump  = Goto of name
             | Continue | Break 
             | Return   | ReturnExpr of expression
             | GotoComputed of expression (* gccext: goto *exp ';' *)
@@ -444,7 +474,7 @@ and statementbis =
 (* (string * ...) option cos can have empty declaration or struct tag 
  * declaration.
  *   
- * Before I had Typedef constructor, but why make this special case and not 
+ * Before I had a Typedef constructor, but why make this special case and not 
  * have StructDef, EnumDef, ... so that 'struct t {...} v' will generate 2 
  * declarations ? So I try to generalise and not have Typedef either. This
  * requires more work in parsing. Better to separate concern.
@@ -455,15 +485,13 @@ and statementbis =
  * accepts it. 
  *)
 
-and local_decl = LocalDecl | NotLocalDecl
-
 and declaration = 
   | DeclList of onedecl wrap2 (* , *) list wrap (* ; fakestart sto *)
   (* cppext: *)
   | MacroDecl of (string * argument wrap2 list) wrap
 
      and onedecl = 
-       { v_namei: (string * initialiser option) wrap (* s = *) option;
+       { v_namei: (name * (info (* = *) * initialiser) option) option;
          v_type: fullType;
          v_storage: storage;
          v_local: local_decl; (* cocci: *)
@@ -472,6 +500,8 @@ and declaration =
      and storage       = storagebis * bool (* gccext: inline or not *)
      and storagebis    = NoSto | StoTypedef | Sto of storageClass
      and storageClass  = Auto  | Static | Register | Extern
+
+     and local_decl = LocalDecl | NotLocalDecl
 
      and initialiser = initialiserbis wrap
        and initialiserbis = 
@@ -495,15 +525,17 @@ and declaration =
 (* Normally we should define another type functionType2 because there 
  * are more restrictions on what can define a function than a pointer 
  * function. For instance a function declaration can omit the name of the
- * parameter wheras a function definition can not. But, in some cases such
+ * parameter whereas a function definition can not. But, in some cases such
  * as 'f(void) {', there is no name too, so I simplified and reused the 
  * same functionType type for both declaration and function definition.
- * Also old style C does not have type in the parameter.
+ * 
+ * Also old style C does not have type in the parameter, so again simpler
+ * to abuse the functionType and allow missing type.
  *)
-and definition = definitionbis wrap (* s ( ) { } fakestart sto *)
+and definition = definitionbis wrap (* ( ) { } fakestart sto *)
   and definitionbis = 
-  { f_name: string;
-    f_type: functionType;
+  { f_name: name;
+    f_type: functionType; (* todo? a functionType2 ? *)
     f_storage: storage;
     f_body: compound;
     f_attr: attribute list; (* gccext: *)
@@ -515,34 +547,19 @@ and definition = definitionbis wrap (* s ( ) { } fakestart sto *)
 (* cppext: cpp directives, #ifdef, #define and #include body *)
 (* ------------------------------------------------------------------------- *)
 and cpp_directive =
-  | Include of includ 
   | Define of define 
+  | Include of includ 
   | Undef of string wrap
   | PragmaAndCo of il 
+(*| Ifdef ? no, ifdefs are handled differently, cf ifdef_directive below *)
 
-(* to specialize if someone need more info *)
-and ifdef_directive = (* or and 'a ifdefed = 'a list wrap *)
-  | IfdefDirective of (ifdefkind * matching_tag) wrap
-  and ifdefkind = 
-    | Ifdef (* todo? of string ? of formula_cpp *)
-    | IfdefElseif (* same *)
-    | IfdefElse (* same *)
-    | IfdefEndif 
-  (* set in Parsing_hacks.set_ifdef_parenthize_info. It internally use 
-   * a global so it means if you parse same file twice you may get
-   * different id. I try now to avoid this pb by resetting it each 
-   * time I parse a file.
-   *)
-  and matching_tag = 
-    IfdefTag of (int (* tag *) * int (* total with this tag *))
-
-and define = string wrap * define_body   (* #define s *)
- and define_body = define_kind * define_val
+and define = string wrap (* #define s *) * (define_kind * define_val)
    and define_kind =
    | DefineVar
    | DefineFunc   of ((string wrap) wrap2 list) wrap (* () *)
    and define_val = 
-     | DefineExpr of expression (* most common case, to define int constant *)
+     (* most common case; e.g. to define int constant *)
+     | DefineExpr of expression 
 
      | DefineStmt of statement
      | DefineType of fullType
@@ -550,6 +567,7 @@ and define = string wrap * define_body   (* #define s *)
 
      | DefineFunction of definition
      | DefineInit of initialiser (* in practice only { } with possible ',' *)
+
      (* TODO DefineMulti of define_val list *)
 
      | DefineText of string wrap
@@ -588,6 +606,23 @@ and includ =
    last_of :  string list list;
  }
 
+
+
+(* todo? to specialize if someone need more info *)
+and ifdef_directive = (* or and 'a ifdefed = 'a list wrap *)
+  | IfdefDirective of (ifdefkind * matching_tag) wrap
+  and ifdefkind = 
+    | Ifdef (* todo? of string ? of formula_cpp ? *)
+    | IfdefElseif (* same *)
+    | IfdefElse (* same *)
+    | IfdefEndif 
+  (* set in Parsing_hacks.set_ifdef_parenthize_info. It internally use 
+   * a global so it means if you parse the same file twice you may get
+   * different id. I try now to avoid this pb by resetting it each 
+   * time I parse a file.
+   *)
+  and matching_tag = 
+    IfdefTag of (int (* tag *) * int (* total with this tag *))
 
 
 
@@ -700,6 +735,7 @@ let defaultInt = (BaseType (IntType (Si (Signed, CInt))))
 let noType () = ref (None,NotTest)
 let noInstr = (ExprStatement (None), [])
 let noTypedefDef () = None
+
 
 let emptyMetavarsBinding = 
   ([]: metavars_binding)
@@ -854,9 +890,9 @@ let compare_pos ii1 ii2 =
     (Real p1, Real p2) ->
       compare p1.Common.charpos p2.Common.charpos
   | (Virt (p1,_), Real p2) ->
-      if (compare p1.Common.charpos p2.Common.charpos) = (-1) then (-1) else 1
+      if (compare p1.Common.charpos p2.Common.charpos) =|= (-1) then (-1) else 1
   | (Real p1, Virt (p2,_)) ->
-      if (compare p1.Common.charpos p2.Common.charpos) = 1 then 1 else (-1)
+      if (compare p1.Common.charpos p2.Common.charpos) =|= 1 then 1 else (-1)
   | (Virt (p1,o1), Virt (p2,o2)) ->
       let poi1 = p1.Common.charpos in
       let poi2 = p2.Common.charpos in
@@ -881,7 +917,7 @@ let info_to_fixpos ii =
 let is_test (e : expression) =
   let (_,info) = unwrap e in
   let (_,test) = !info in
-  test = Test
+  test =*= Test
 
 (*****************************************************************************)
 (* Abstract line *)
@@ -929,6 +965,46 @@ let real_al_info x =
     comments_tag = ref emptyComments;
   }
 
+let al_comments x =
+  let keep_cpp l =
+    List.filter (function (Token_c.TCommentCpp _,_) -> true | _ -> false) l in
+  let al_com (x,i) =
+    (x,{i with Common.charpos = magic_real_number;
+	 Common.line = magic_real_number;
+	 Common.column = magic_real_number}) in
+  {mbefore = []; (* duplicates mafter of the previous token *)
+    mafter = List.map al_com (keep_cpp x.mafter)}
+
+let al_info_cpp tokenindex x = 
+  { pinfo =
+    (AbstractLineTok
+       {charpos = tokenindex;
+	 line = tokenindex;
+	 column = tokenindex;
+	 file = "";
+	 str = str_of_info x});
+    cocci_tag = ref emptyAnnot;
+    comments_tag = ref (al_comments !(x.comments_tag));
+  }
+
+let semi_al_info_cpp x = 
+  { x with
+    cocci_tag = ref emptyAnnot;
+    comments_tag = ref (al_comments !(x.comments_tag));
+  }
+
+let real_al_info_cpp x = 
+  { pinfo =
+    (AbstractLineTok
+       {charpos = magic_real_number;
+	 line = magic_real_number;
+	 column = magic_real_number;
+	 file = "";
+	 str = str_of_info x});
+    cocci_tag = ref emptyAnnot;
+    comments_tag =  ref (al_comments !(x.comments_tag));
+  }
+
 
 (*****************************************************************************)
 (* Views *)
@@ -961,15 +1037,6 @@ let rec (unsplit_comma: ('a, il) either list -> 'a wrap2 list) =
   | Right ii::_ -> 
       raise Impossible
 
-
-
-
-let split_register_param = fun (hasreg, idb, ii_b_s) -> 
-  match hasreg, idb,  ii_b_s with
-  | false, Some s, [i1] -> Left (s, [], i1)
-  | true, Some s, [i1;i2] -> Left (s, [i1], i2)
-  | _, None, ii -> Right ii
-  | _ -> raise Impossible
 
 
 
@@ -1012,20 +1079,48 @@ let s_of_inc_file_bis inc_file =
   | Weird s -> s
 
 let fieldname_of_fieldkind fieldkind = 
-  match unwrap fieldkind with
+  match fieldkind with
   | Simple (sopt, ft) -> sopt
-  | BitField (sopt, ft, expr) -> sopt
+  | BitField (sopt, ft, info, expr) -> sopt
 
 
 let s_of_attr attr = 
   attr
   +> List.map (fun (Attribute s, ii) -> s)
   +> Common.join ","
-  
 
-let type_of_parameter param = 
-  let ((b, sopt, typ), ii) = param in 
-  typ
+let str_of_name ident = 
+  match ident with
+  | RegularName (s,ii) -> s
+  | CppConcatenatedName xs -> 
+      xs +> List.map (fun (x,iiop) -> unwrap x) +> Common.join "##"
+  | CppVariadicName (s, ii) -> "##" ^ s
+  | CppIdentBuilder ((s,iis), xs) -> 
+      s ^ "(" ^ 
+        (xs +> List.map (fun ((x,iix), iicomma) -> x) +> Common.join ",") ^
+        ")"
+
+let info_of_name ident = 
+  match ident with
+  | RegularName (s,ii) -> List.hd ii
+  | CppConcatenatedName xs -> 
+      (match xs with
+      | [] -> raise Impossible
+      | ((x,ii1),ii2)::xs -> 
+          List.hd ii1
+      )
+  | CppVariadicName (s, ii) -> 
+      let (iihash, iis) = Common.tuple_of_list2 ii in 
+      iihash
+  | CppIdentBuilder ((s,iis),xs) -> 
+      List.hd iis
+
+let get_s_and_ii_of_name name = 
+  match name with
+  | RegularName (s, iis) -> s, List.hd iis 
+  | _ -> raise Todo
+
+
 let name_of_parameter param = 
-  let ((b, sopt, typ), ii) = param in 
-  sopt
+  param.p_namei +> Common.map_option (str_of_name)
+

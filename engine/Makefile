@@ -39,16 +39,16 @@ SRC= flag_matcher.ml lib_engine.ml pretty_print_engine.ml \
 #SRC= flag_matcher.ml \
 #  c_vs_c.ml cocci_vs_c.ml \
 #  lib_engine.ml \
-#  pattern_c.ml transformation_c.ml 
+#  pattern_c.ml transformation_c.ml
 
 #LIBS=../commons/commons.cma ../parsing_c/parsing_c.cma
 #INCLUDES= -I ../commons -I ../parsing_c
 INCLUDES = -I ../commons -I ../commons/ocamlextra -I ../globals \
-	       -I ../ctl -I ../parsing_cocci -I ../parsing_c 
+	       -I ../ctl -I ../parsing_cocci -I ../parsing_c
 LIBS=../commons/commons.cma ../globals/globals.cma \
      ../ctl/ctl.cma ../parsing_c/parsing_c.cma ../parsing_cocci/cocci_parser.cma
 
-SYSLIBS= str.cma unix.cma 
+SYSLIBS= str.cma unix.cma
 
 
 # just to test asttoctl
@@ -59,7 +59,7 @@ SYSLIBS= str.cma unix.cma
 # Generic variables
 ##############################################################################
 
-#for warning:  -w A 
+#for warning:  -w A
 #for profiling:  -p -inline 0   with OCAMLOPT
 OCAMLCFLAGS ?= -g -dtypes
 
@@ -112,13 +112,15 @@ clean::
 .ml.cmx:
 	$(OCAMLOPT) -c $<
 
-.ml.mldepend: 
+.ml.mldepend:
 	$(OCAMLC) -i $<
 
 clean::
 	rm -f *.cm[ioxa] *.o *.a *.cmxa *.annot
-clean::
 	rm -f *~ .*~ gmon.out #*#
+
+distclean::
+	rm -f .depend
 
 beforedepend::
 

@@ -19,14 +19,14 @@ object(o: 'o)
 
   (* is_intersect, equal, subset *)
   method is_subset_of: 'o -> bool = fun o2 -> 
-    ((o2#minus o)#cardinal >= 0) && ((o#minus o2)#cardinal = 0)
+    ((o2#minus o)#cardinal >= 0) && ((o#minus o2)#cardinal =|= 0)
 
   method is_equal: 'o -> bool = fun o2 -> 
-    ((o2#minus o)#cardinal = 0) && ((o#minus o2)#cardinal = 0)
+    ((o2#minus o)#cardinal =|= 0) && ((o#minus o2)#cardinal =|= 0)
       
 
   method is_singleton: bool = (* can be short circuited *)
-    o#length = 1
+    o#length =|= 1
   method cardinal: int = (* just to keep naming conventions *)
     o#length 
       (* dont work: 

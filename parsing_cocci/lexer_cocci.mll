@@ -225,7 +225,9 @@ let id_tokens lexbuf =
   | "exists" when in_rule_name  -> check_context_linetype s; TExists
   | "forall" when in_rule_name  -> check_context_linetype s; TForall
   | "reverse" when in_rule_name -> check_context_linetype s; TReverse
-  | "script" when in_rule_name -> check_context_linetype s; TScript
+  | "script" when in_rule_name  -> check_context_linetype s; TScript
+  | "initialize" when in_rule_name -> check_context_linetype s; TInitialize
+  | "finalize" when in_rule_name   -> check_context_linetype s; TFinalize
 
   | "char" ->       Tchar     linetype
   | "short" ->      Tshort    linetype
@@ -299,6 +301,10 @@ let init _ =
   Data.add_id_meta :=
     (fun name constraints pure ->
       let fn clt = TMetaId(name,constraints,pure,clt) in
+      Hashtbl.replace metavariables (get_name name) fn);
+  Data.add_fresh_id_meta :=
+    (fun name ->
+      let fn clt = TMetaId(name,[],Ast0.Impure,clt) in
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_type_meta :=
     (fun name pure ->

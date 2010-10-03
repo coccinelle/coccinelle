@@ -113,12 +113,12 @@ let annotate_program toks asts =
    in
 
   (* merge *)
-   assert(List.length toks_with_after = List.length toks_with_before);
+   assert(List.length toks_with_after =|= List.length toks_with_before);
 
    Common.zip toks_with_before toks_with_after 
    +> List.iter (fun ((t1, before), (t2, after)) -> 
 
-     assert(t1 = t2);
+     assert(t1 =*= t2);
 
      let before' = before +> List.map convert_relevant_tokens in
      let after' = after  +> List.map convert_relevant_tokens in

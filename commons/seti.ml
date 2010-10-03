@@ -46,9 +46,10 @@ let empty = []
 
 let pack newi j = function
   | [] -> [Interv (newi,j)]
-  | (Exact z)::xs -> (Interv (newi, j))::(if newi = z then xs else (Exact z)::xs)
+  | (Exact z)::xs -> 
+      (Interv (newi, j))::(if newi =|= z then xs else (Exact z)::xs)
   | (Interv (i', j'))::xs -> 
-      if newi = j' 
+      if newi =|= j' 
       then (Interv (i', j))::xs  (* merge *)
       else (Interv (newi, j))::(Interv (i', j'))::xs
         
@@ -58,19 +59,19 @@ let rec (add2: int -> seti -> seti) = fun x -> function
   | [] -> [Exact x]
   | (Exact i)::xs when x > i+1 -> (Exact x)::(Exact i)::xs
   | (Interv (i,j)::xs) when x > j+1 -> (Exact x)::(Interv (i,j))::xs
-  | (Interv (i,j)::xs) when x = j+1 -> (Interv (i,x))::xs
-  | (Exact i)::xs when x = i+1 -> (Interv (i,x))::xs
+  | (Interv (i,j)::xs) when x =|= j+1 -> (Interv (i,x))::xs
+  | (Exact i)::xs when x =|= i+1 -> (Interv (i,x))::xs
       
-  | (Exact i)::xs when i = x   -> (Exact i)::xs
+  | (Exact i)::xs when i =|= x   -> (Exact i)::xs
   | (Interv (i,j)::xs) when x <= j && x >= i -> (Interv (i,j))::xs
   | other -> 
 (*         let _ = log "Cache miss" in *)
       let _ = count2 () in
       (match other with
-      |       (Exact i)::xs when x = i-1 -> pack x i xs 
+      |       (Exact i)::xs when x =|= i-1 -> pack x i xs 
       |       (Exact i)::xs when x < i-1 -> (Exact i)::add x xs
                 
-      |       (Interv (i,j)::xs) when x = i-1 -> pack x j xs
+      |       (Interv (i,j)::xs) when x =|= i-1 -> pack x j xs
       |       (Interv (i,j)::xs) when x < i-1 -> (Interv (i,j))::add x xs
       |       _ -> raise Impossible
       )
@@ -89,9 +90,9 @@ let intervise = function
   | Exact x -> Interv (x,x)
   | y -> y
 let exactize = function
-  | Interv (i,j) when i = j -> Exact i
+  | Interv (i,j) when i =|= j -> Exact i
   | y -> y
-let exactize2 x y = if x = y then Exact x else Interv (x,y)
+let exactize2 x y = if x =|= y then Exact x else Interv (x,y)
 
 
 let rec (remove: int -> seti -> seti) = fun x xs -> 
@@ -110,8 +111,8 @@ let rec (remove: int -> seti -> seti) = fun x xs ->
           (
             let _ = assert (j > i) in (* otherwise can lead to construct seti such as [7,6] when removing 6 from [6,6] *)
             match () with
-            | _ when x = i -> [exactize2 (i+1) j]
-            | _ when x = j -> [exactize2 i (j-1)]
+            | _ when x =|= i -> [exactize2 (i+1) j]
+            | _ when x =|= j -> [exactize2 i (j-1)]
             | _ -> [exactize2 (x+1) j; exactize2 i (x-1)]
           ) @ zs
       else (Interv (i,j))::remove x zs
@@ -146,7 +147,7 @@ let iter f xs = xs +> List.iter
   | Interv (i, j) -> for k = i to j do f k done
   )
         
-let is_empty xs = xs = []
+let is_empty xs = xs =*= []
 let choose = function
   | [] -> failwith "not supposed to be called with empty set"
   | (Exact i)::xs -> i
@@ -328,7 +329,7 @@ let rec debug = function
 let patch1 xs = List.map exactize xs
 let patch2 xs = xs +> List.map (fun e -> 
   match e with
-  | Interv (i,j) when i > j && i = j+1 -> 
+  | Interv (i,j) when i > j && i =|= j+1 -> 
       let _ = pr2 (sprintf "i = %d, j = %d" i j) in
       Exact i
   | e -> e
@@ -338,7 +339,7 @@ let patch3 xs =
     xs +> List.fold_left (fun (min,acc) e -> 
       match e with 
       | Exact i -> 
-          if i = min 
+          if i =|= min 
           then (min, acc)
           else (i, (Exact i)::acc)
       | Interv (i,j) -> 

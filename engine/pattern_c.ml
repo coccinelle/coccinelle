@@ -18,8 +18,6 @@
 * The authors reserve the right to distribute this or future versions of
 * Coccinelle under other licenses.
 *)
-
-
 open Common
 
 module Flag_engine = Flag_matcher
@@ -250,10 +248,10 @@ module XMATCH = struct
     match mck with 
     | Ast_cocci.PLUS -> Ast_cocci.PLUS
     | Ast_cocci.CONTEXT (pos, xs) -> 
-        assert (pos = Ast_cocci.NoPos || pos = Ast_cocci.DontCarePos);
+        assert (pos =*= Ast_cocci.NoPos || pos =*= Ast_cocci.DontCarePos);
         Ast_cocci.CONTEXT (posmck, xs)
     | Ast_cocci.MINUS (pos, xs) -> 
-        assert (pos = Ast_cocci.NoPos || pos = Ast_cocci.DontCarePos);
+        assert (pos =*= Ast_cocci.NoPos || pos =*= Ast_cocci.DontCarePos);
         Ast_cocci.MINUS (posmck, xs)
   
 

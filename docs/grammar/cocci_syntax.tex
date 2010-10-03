@@ -7,6 +7,7 @@
 \usepackage[pdfborder={0 0 0}]{hyperref}
 \usepackage{listings}
 \usepackage[usenames,dvipsnames]{color}
+\usepackage{times}
 \usepackage[T1]{fontenc}
 \usepackage{multirow}
 
@@ -100,9 +101,9 @@ part, the grammar is written using standard notation.  In some rules,
 however, the left-hand side is in all uppercase letters.  These are
 macros, which take one or more grammar rule right-hand-sides as
 arguments.  The grammar also uses some unspecified nonterminals, such
-as {\sf id}, {\sf const}, etc.  These refer to the sets suggested by
-the name, {\em i.e.}, {\sf id} refers to the set of possible
-C-language identifiers, while {\sf const} refers to the set of
+as \T{id}, \T{const}, etc.  These refer to the sets suggested by
+the name, {\em i.e.}, \T{id} refers to the set of possible
+C-language identifiers, while \T{const} refers to the set of
 possible C-language constants.  \ifhevea A PDF version of this
 documentation is available at
 \url{http://www.emn.fr/x-info/coccinelle/docs/cocci_syntax.pdf}.\else
@@ -127,16 +128,21 @@ A HTML version of this documentation is available online at
 
   \RULE{\rt{changeset}}
   \CASE{\NT{metavariables} \NT{transformation}}
+  \CASE{\NT{script\_metavariables} \T{script\_code}}
 %  \CASE{\NT{metavariables} \ANY{--- filename +++ filename} \NT{transformation}}
-
 \end{grammar}
+
+\noindent
+\T{script\_code} is any code in the chosen scripting language.  Parsing of
+the semantic patch does not check the validity of this code; any errors are
+first detected when the code is executed.
 
 % Between the metavariables and the transformation rule, there can be a
 % specification of constraints on the names of the old and new files,
 % analogous to the filename specifications in the standard patch syntax.
 % (see Figure \ref{scsiglue_patch}).
 
-\section{Metavariables}
+\section{Metavariables for transformations}
 
 The \NT{rulename} portion of the metavariable declaration can specify
 properties of a rule such as its name, the names of the rules that it
@@ -159,6 +165,10 @@ section.
   \CASE{\T{id} \OPT{extends \T{id}} \OPT{depends on \NT{dep}} \opt{\NT{iso}}
     \opt{\NT{disable-iso}} \opt{\NT{exists}} \opt{expression}}
   \CASE{script:\T{language} \OPT{depends on \NT{dep}}}
+
+  \RULE{\rt{script\_init\_final}}
+  \CASE{initialize:\T{language}}
+  \CASE{finalize:\T{language}}
 
   \RULE{\rt{dep}}
   \CASE{\NT{pnrule}}
@@ -187,7 +197,7 @@ section.
   \CASE{\NT{elem} \ANY{, \NT{elem}}}
 \end{grammar}
 
-The keyword \NT{disable-iso} is normally used with the names of
+The keyword \KW{disable} is normally used with the names of
 isomorphisms defined in standard.iso or whatever isomorphism file has been
 included.  There are, however, some other isomorphisms that are built into
 the implementation of Coccinelle and that can be disabled as well.  Their
@@ -290,6 +300,36 @@ that was declared using \texttt{type} and stands for any type.
 The \NT{ctype} and \NT{ctypes} nonterminals are used by both the grammar of
 metavariable declarations and the grammar of transformations, and are
 defined on page~\pageref{types}.
+
+\section{Metavariables for scripts}
+
+Metavariables for scripts can only be inherited from transformation rules.
+In the spirit of scripting languages such as Python that use dynamic
+typing, metavariables for scripts do not include type declarations.
+
+\begin{grammar}
+  \RULE{\rt{script\_metavariables}}
+  \CASE{@ script:\NT{language} \OPT{depends on \NT{dep}} @
+        \any{\NT{script\_metadecl}} @@}
+  \CASE{@ initialize:\NT{language} @}
+  \CASE{@ finalize:\NT{language} @}
+
+  \RULE{\rt{language}} \CASE{python}
+
+  \RULE{\rt{script\_metadecl}} \CASE{\T{id} <{}< \T{rulename\_id}.\T{id} ;}
+\end{grammar}
+
+Currently, the only scripting language that is supported is Python.  The
+set of available scripting languages may be extended at some point.
+
+Script rules declared with \KW{initialize} are run before the treatment of
+any file.  Script rules declared with \KW{finalize} are run when the
+treatment of all of the files has completed.  There can be at most one of
+each per scripting language (thus currently at most one of each).
+Initialize and finalize script rules do not have access to SmPL
+metavariables.  Nevertheless, a finalize script rule can access any
+variables initialized by the other script rules, allowing information to be
+transmitted from the matching process to the finalize rule.
 
 \section{Transformation}
 

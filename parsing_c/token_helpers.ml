@@ -235,10 +235,13 @@ let info_of_tok = function
   | TCppEscapedNewline (ii) -> ii
   | TDefParamVariadic (s, i1) ->     i1
 
+  | TCppConcatOp (ii) -> ii
+
   | TOBraceDefineInit (i1) ->     i1
 
   | TUnknown             (i) -> i
 
+  | TMacroIdentBuilder             (s, i) -> i
   | TMacroAttr             (s, i) -> i
   | TMacroAttrStorage             (s, i) -> i
   | TMacroStmt             (s, i) -> i
@@ -375,6 +378,9 @@ let visitor_info_of_tok f = function
 
   | TCppEscapedNewline (i1) -> TCppEscapedNewline (f i1)
   | TDefEOL (i1) -> TDefEOL (f i1)
+
+  | TCppConcatOp (ii) -> TCppConcatOp (f ii)
+
   | TOParDefine (i1) -> TOParDefine (f i1)
   | TIdentDefine  (s, i) -> TIdentDefine (s, f i)
 
@@ -385,6 +391,7 @@ let visitor_info_of_tok f = function
 
   | TUnknown             (i) -> TUnknown                (f i)
 
+  | TMacroIdentBuilder             (s, i) -> TMacroIdentBuilder (s, f i)
   | TMacroAttr           (s, i)   -> TMacroAttr            (s, f i)
   | TMacroAttrStorage           (s, i)   -> TMacroAttrStorage         (s, f i)
   | TMacroStmt           (s, i)   -> TMacroStmt            (s, f i)
@@ -522,7 +529,7 @@ let is_abstract x =
 (* Helpers *)
 (*****************************************************************************)
 let is_same_line_or_close line tok = 
-  line_of_tok tok = line || 
-  line_of_tok tok = line - 1 ||
-  line_of_tok tok = line - 2
+  line_of_tok tok =|= line || 
+  line_of_tok tok =|= line - 1 ||
+  line_of_tok tok =|= line - 2
 

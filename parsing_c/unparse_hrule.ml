@@ -128,7 +128,8 @@ let get_function_name rule env =
 (* Print metavariable declarations *)
 
 let rec print_typedef pr = function
-    (Ast_c.TypeName(s,_),_) ->
+    (Ast_c.TypeName(name,_),_) ->
+      let s = Ast_c.str_of_name name in
       let typedefs =
 	try List.assoc !current_outfile !typedefs
 	with Not_found ->
@@ -151,34 +152,50 @@ let rewrap_str s ii =
     | Ast_c.AbstractLineTok pi ->
 	Ast_c.AbstractLineTok { pi with Common.str = s;})}
 
+let rewrap_prefix_name prefix name = 
+  match name with
+  | Ast_c.RegularName (s, iiname) -> 
+      let iis = Common.tuple_of_list1 iiname in 
+      let iis' = rewrap_str (prefix^s) iis in
+      Ast_c.RegularName (prefix ^ s, [iis'])
+  | Ast_c.CppConcatenatedName _ | Ast_c.CppVariadicName _ 
+  | Ast_c.CppIdentBuilder _
+      -> raise Common.Todo
+
+
 let print_metavar pr = function
-    ((_,Some param,(_,(Ast_c.Pointer(_,(Ast_c.BaseType(Ast_c.Void),_)),_))),_)
+  | {Ast_c.p_namei = Some name;
+     p_type = (_,(Ast_c.Pointer(_,(Ast_c.BaseType(Ast_c.Void),_)),_));
+    }
     ->
+      let param = Ast_c.str_of_name name in
       pr ("expression "^prefix); pr param
-  | (((_,Some param,(_,ty)),il) : Ast_c.parameterType) ->
-      let il =
-	match List.rev il with
-	  name::rest -> (rewrap_str (prefix^param) name) :: rest
-	| _ -> failwith "no name" in
+  | ({Ast_c.p_namei = Some name; p_type = (_,ty)} : Ast_c.parameterType) ->
+
+      let name' = rewrap_prefix_name prefix name in 
+
       print_typedef pr ty;
+
       Pretty_print_c.pp_param_gen
 	(function x ->
 	  let str = Ast_c.str_of_info x in
 	  if not (List.mem str ["const";"volatile"])
 	  then pr str)
 	(function _ -> pr " ")
-	((false,Some param,
-	  (({Ast_c.const = false; Ast_c.volatile = false},[]),ty)),
-	 il)
+        {Ast_c.p_register = (false,[]);
+         p_namei = Some name';
+         p_type = (({Ast_c.const = false; Ast_c.volatile = false},[]),ty)
+        }
   | _ -> failwith "function must have named parameters"
 
 let make_exp = function
-    (((_,Some name,ty),param_ii),comma_ii) ->
+    ({Ast_c.p_namei = Some name; p_type = ty}, comma_ii) ->
       let no_info = (None,Ast_c.NotTest) in
-      let nm = prefix^name in
+
+      let name' = rewrap_prefix_name prefix name in
+
       let exp =
-	((Ast_c.Ident nm,ref no_info),
-	 [rewrap_str nm (List.hd(List.rev param_ii))]) in
+	((Ast_c.Ident (name'),ref no_info),Ast_c.noii) in
       (name,(Common.Left exp,comma_ii))
   | _ -> failwith "bad parameter"
 
@@ -207,15 +224,23 @@ let print_extra_typedefs pr env =
     env
 
 let rename argids env =
-  let argenv = List.map (function arg -> (arg,prefix^arg)) argids in
+  let argenv = List.map (function name -> 
+    let arg = Ast_c.str_of_name name in
+    (arg,prefix^arg)
+  ) argids in
   let lookup x = try List.assoc x argenv with Not_found -> x in
   let bigf =
     { Visitor_c.default_visitor_c_s with
     Visitor_c.kexpr_s = (fun (k,bigf) e -> 
       match e with
-	((Ast_c.Ident s, info), [ii]) ->
+	((Ast_c.Ident (name), info), []) ->
+
+          (* pad: assert is_regular_ident ? *)
+          let s = Ast_c.str_of_name name in
+          let ii = Ast_c.info_of_name name in
 	  let new_name = lookup s in
-	  ((Ast_c.Ident new_name, info), [rewrap_str new_name ii])
+          let new_id = Ast_c.RegularName (new_name, [rewrap_str new_name ii]) in
+	  ((Ast_c.Ident (new_id), info), Ast_c.noii)
       | _ -> k e) } in
   List.map
     (function (x,vl) ->
@@ -270,8 +295,10 @@ let pp_meta_decl pr env decl =
   match decl with
     Ast.MetaIdDecl(ar, name) ->
       no_arity ar; pr "identifier "; pp_name name; pr ";\n"
-  | Ast.MetaFreshIdDecl(ar, name) ->
-      no_arity ar; pr "fresh identifier "; pp_name name; pr ";\n"
+  | Ast.MetaFreshIdDecl(name, None) ->
+      pr "fresh identifier "; pp_name name; pr ";\n"
+  | Ast.MetaFreshIdDecl(name, Some x) ->
+      pr "fresh identifier "; pp_name name; pr " = \""; pr x; pr "\";\n"
   | Ast.MetaTypeDecl(ar, name) ->
       no_arity ar; pr "type "; pp_name name; pr ";\n"
   | Ast.MetaInitDecl(ar, name) ->
@@ -326,7 +353,7 @@ let print_metavariables pr local_metas paramst env header_req function_name =
   pr (Printf.sprintf "position _p!=same_%s.p;\n" function_name);
   pr "identifier _f;\n";
   let rec loop = function
-      [] | [(((_,_,(_,(Ast_c.BaseType(Ast_c.Void),_))),_),_)] -> []
+      [] | [{Ast_c.p_type =(_,(Ast_c.BaseType(Ast_c.Void),_))},_] -> []
     | ((first,_) as f)::rest ->
 	print_metavar pr first; pr ";\n";
 	(make_exp f) :: loop rest in
@@ -349,15 +376,15 @@ let print_end pr =
 (* Print call to the defined function *)
 
 let print_param_name pr = function
-    ((_,Some param,_),_) -> pr param
+    {Ast_c.p_namei = Some name} -> pr (Ast_c.str_of_name name)
   | _ -> failwith "function must have named parameters"
 
 let pp_def_gen pr defn isexp =
-  let {Ast_c.f_name = s; f_type = (_, (paramst, (b, iib))); } = defn in
-  pr s; pr "(";
+  let {Ast_c.f_name = name; f_type = (_, (paramst, (b, iib))); } = defn in
+  pr (Ast_c.str_of_name name); pr "(";
   (if b then failwith "not handling variable argument functions");
   (match paramst with
-    [] | [(((_,_,(_,(Ast_c.BaseType(Ast_c.Void),_))),_),_)] -> ()
+    [] | [{Ast_c.p_type = (_,(Ast_c.BaseType(Ast_c.Void),_))},_] -> ()
   | (first,_)::rest ->
       print_param_name pr first;
       List.iter (function (x,_) -> pr ", "; print_param_name pr x) rest);

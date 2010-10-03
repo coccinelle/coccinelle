@@ -113,6 +113,7 @@ type token =
   | TIso
   | TInvalid
   | TInt of (string * Data.clt)
+  | TInitialize
   | TInitialiser
   | TIncludeNL of (string * Data.clt)
   | TIncludeL of (string * Data.clt)
@@ -129,6 +130,7 @@ type token =
   | TForall
   | TFor of (Data.clt)
   | TFloat of (string * Data.clt)
+  | TFinalize
   | TExtends
   | TExpression
   | TExists

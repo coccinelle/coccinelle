@@ -76,7 +76,7 @@ let pretty_print_c pr_elem pr_space pr_nl pr_indent pr_outdent pr_unindent =
   
   let rec pp_expression = fun ((exp, typ), ii) -> 
     (match exp, ii with
-    | Ident (c),         [i]     -> pr_elem i
+    | Ident (ident),         []     -> pp_name ident
     (* only a MultiString can have multiple ii *)
     | Constant (MultiString _), is     -> is +> List.iter pr_elem
     | Constant (c),         [i]     -> pr_elem i 
@@ -102,10 +102,10 @@ let pretty_print_c pr_elem pr_space pr_nl pr_indent pr_outdent pr_unindent =
           
     | ArrayAccess    (e1, e2),   [i1;i2] -> 
         pp_expression e1; pr_elem i1; pp_expression e2; pr_elem i2
-    | RecordAccess   (e, s),     [i1;i2] -> 
-        pp_expression e; pr_elem i1; pr_elem i2
-    | RecordPtAccess (e, s),     [i1;i2] -> 
-        pp_expression e; pr_elem i1; pr_elem i2
+    | RecordAccess   (e, name),     [i1] -> 
+        pp_expression e; pr_elem i1; pp_name name;
+    | RecordPtAccess (e, name),     [i1] -> 
+        pp_expression e; pr_elem i1; pp_name name;
 	  
     | SizeOfExpr  (e),     [i] -> pr_elem i; pp_expression e
     | SizeOfType  (t),     [i1;i2;i3] -> 
@@ -174,9 +174,32 @@ let pretty_print_c pr_elem pr_space pr_nl pr_indent pr_outdent pr_unindent =
 	| ArgAction action -> pp_action action)
 	  
 (* ---------------------- *)
+  and pp_name = function
+    | RegularName (s, ii) -> 
+        let (i1) = Common.tuple_of_list1 ii in
+        pr_elem i1
+    | CppConcatenatedName xs -> 
+        xs +> List.iter (fun ((x,ii1), ii2) -> 
+          ii2 +> List.iter pr_elem;
+          ii1 +> List.iter pr_elem;
+        )
+    | CppVariadicName (s, ii) -> 
+        ii +> List.iter pr_elem
+    | CppIdentBuilder ((s,iis), xs) -> 
+        let (iis, iop, icp) = Common.tuple_of_list3 iis in
+        pr_elem iis;
+        pr_elem iop;
+        xs +> List.iter (fun ((x,iix), iicomma) -> 
+          iicomma +> List.iter pr_elem;
+          iix +> List.iter pr_elem;
+        );
+        pr_elem icp
+
+(* ---------------------- *)
   and pp_statement = function
-    | Labeled (Label (s, st)), [i1;i2] ->
-	pr_outdent(); pr_elem i1; pr_elem i2; pr_nl(); pp_statement st
+    | Labeled (Label (name, st)), ii ->
+        let (i2) = Common.tuple_of_list1 ii in
+	pr_outdent(); pp_name name; pr_elem i2; pr_nl(); pp_statement st
     | Labeled (Case  (e, st)), [i1;i2] -> 
 	pr_unindent();
         pr_elem i1; pp_expression e; pr_elem i2; pr_nl(); pr_indent();
@@ -252,8 +275,9 @@ let pretty_print_c pr_elem pr_space pr_nl pr_indent pr_outdent pr_unindent =
         indent_if_needed st (function _ -> pp_statement st);
         pr_elem iifakend
           
-    | Jump (Goto s), [i1;i2;i3]               -> 
-        pr_elem i1; pr_space(); pr_elem i2; pr_elem i3;
+    | Jump (Goto name), ii               -> 
+        let (i1, i3) = Common.tuple_of_list2 ii in
+        pr_elem i1; pr_space(); pp_name name; pr_elem i3;
     | Jump ((Continue|Break|Return)), [i1;i2] -> pr_elem i1; pr_elem i2;
     | Jump (ReturnExpr e), [i1;i2] ->
 	pr_elem i1; pr_space(); pp_expression e; pr_elem i2
@@ -280,14 +304,14 @@ let pretty_print_c pr_elem pr_space pr_nl pr_indent pr_outdent pr_unindent =
     | MacroStmt, ii -> 
         ii +> List.iter pr_elem ;
 	
-    | ( Labeled (Label (_,_)) | Labeled (Case  (_,_)) 
+    | (Labeled (Case  (_,_)) 
     | Labeled (CaseRange  (_,_,_)) | Labeled (Default _)
     | Compound _ | ExprStatement _ 
     | Selection  (If (_, _, _)) | Selection  (Switch (_, _))
     | Iteration  (While (_, _)) | Iteration  (DoWhile (_, _)) 
     | Iteration  (For ((_,_), (_,_), (_, _), _))
     | Iteration  (MacroIteration (_,_,_))
-    | Jump (Goto _) | Jump ((Continue|Break|Return)) | Jump (ReturnExpr _)
+    | Jump ((Continue|Break|Return)) | Jump (ReturnExpr _)
     | Jump (GotoComputed _)
     | Decl _ 
 	), _ -> raise Impossible
@@ -418,58 +442,58 @@ let pretty_print_c pr_elem pr_space pr_nl pr_indent pr_outdent pr_unindent =
                        first var, we print the whole type *)
 			
 		      (match x with
-		      | (Simple (sopt, typ), iis), iivirg -> 
+		      | (Simple (nameopt, typ)), iivirg -> 
                         (* first var cant have a preceding ',' *)
-			  assert (List.length iivirg = 0); 
+			  assert (List.length iivirg =|= 0); 
 			  let identinfo = 
-                            (match sopt, iis with 
-			      None,_ -> None 
-                            | (Some s, [iis]) -> Some (s, iis) 
-                            | x -> raise Impossible) in
+                            match nameopt with 
+			    | None -> None 
+                            | Some name -> Some (get_s_and_ii_of_name name)
+                          in
 			  pp_type_with_ident identinfo None typ Ast_c.noattr;
 			    
-		      | (BitField (sopt, typ, expr), ii), iivirg -> 
+		      | (BitField (nameopt, typ, iidot, expr)), iivirg -> 
                       (* first var cant have a preceding ',' *)
-			  assert (List.length iivirg = 0); 
-			  (match sopt, ii with
-			  | (None , [idot]) -> 
+			  assert (List.length iivirg =|= 0); 
+			  (match nameopt with
+			  | None -> 
 			      pp_type typ;
-			      pr_elem idot;
-			      pp_expression expr
-			  | (Some s, [is;idot]) -> 
+			  | Some name -> 
+                              let (s, is) = get_s_and_ii_of_name name in
 			      pp_type_with_ident
 				(Some (s, is)) None typ Ast_c.noattr;
-			      pr_elem idot;
-			      pp_expression expr
-			  | x -> raise Impossible
-			)); (* match x, first onefield_multivars *)
+			  );
+                          pr_elem iidot;
+			  pp_expression expr
+                            
+                      ); (* match x, first onefield_multivars *)
 			
                   (* for other vars *)
 		      xs +> List.iter (function
-			| (Simple (sopt, typ), iis), iivirg -> 
+			| (Simple (nameopt, typ)), iivirg -> 
 			    iivirg +> List.iter pr_elem;
 			    let identinfo = 
-			      (match sopt, iis with 
-			      | None,_ -> None 
-			      | (Some s, [iis]) -> Some (s, iis) 
-			      | x -> raise Impossible) 
+			      match nameopt with 
+			      | None -> None 
+			      | Some name -> Some (get_s_and_ii_of_name name)
 			    in
 			    pp_type_with_ident_rest identinfo typ Ast_c.noattr
 
-			| (BitField (sopt, typ, expr), ii), iivirg -> 
+			| (BitField (nameopt, typ, iidot, expr)), iivirg -> 
 			    iivirg +> List.iter pr_elem;
-			    (match sopt, ii with
-			    | (Some s, [is;idot]) -> 
+			    (match nameopt with
+			    | Some name -> 
+                                let (s,is) = get_s_and_ii_of_name name in
 				pp_type_with_ident_rest
 				  (Some (s, is)) typ Ast_c.noattr;
-				pr_elem idot;
+				pr_elem iidot;
 				pp_expression expr
 			    | x -> raise Impossible
 			    )); (* iter other vars *)
 			
 		  | [] -> raise Impossible
 		  ); (* onefield_multivars *)
-		  assert (List.length iiptvirg = 1);
+		  assert (List.length iiptvirg =|= 1);
 		  iiptvirg +> List.iter pr_elem;
 		    
 		    
@@ -501,13 +525,13 @@ let pretty_print_c pr_elem pr_space pr_nl pr_indent pr_outdent pr_unindent =
           | x -> raise Impossible
 	  );
 	    
-          enumt +> List.iter (fun (((s, eopt),ii_s_eq), iicomma) -> 
+          enumt +> List.iter (fun ((name, eopt), iicomma) -> 
             assert (List.length iicomma <= 1);
             iicomma +> List.iter (function x -> pr_elem x; pr_space());
-            (match eopt, ii_s_eq with
-            | None, [is] -> pr_elem is;
-            | Some e, [is;ieq] -> pr_elem is; pr_elem ieq; pp_expression e
-            | _ -> raise Impossible
+            pp_name name;
+            eopt +> Common.do_option (fun (ieq, e) -> 
+              pr_elem ieq;
+              pp_expression e;
 	  ));
 	    
           (match sopt, iis with
@@ -527,16 +551,17 @@ let pretty_print_c pr_elem pr_space pr_nl pr_indent pr_outdent pr_unindent =
           print_sto_qu_ty (sto, qu, iis);
 	    
       | (StructUnionName (s, structunion), iis) -> 
-          assert (List.length iis = 2);
+          assert (List.length iis =|= 2);
           print_sto_qu_ty (sto, qu, iis);
 	    
       | (EnumName  s, iis) -> 
-          assert (List.length iis = 2);
+          assert (List.length iis =|= 2);
           print_sto_qu_ty (sto, qu, iis);
 	    
-      | (TypeName (s,_typ), iis) -> 
-          assert (List.length iis = 1);  
-          print_sto_qu_ty (sto, qu, iis);
+      | (TypeName (name,_typ), noii) -> 
+          assert (null noii);
+          let (_s, iis) = get_s_and_ii_of_name name in
+          print_sto_qu_ty (sto, qu, [iis]);
 	    
       | (TypeOfExpr (e), iis) -> 
           print_sto_qu (sto, qu);
@@ -585,7 +610,7 @@ let pretty_print_c pr_elem pr_space pr_nl pr_indent pr_outdent pr_unindent =
       | (StructUnion (_, sopt, fields),iis)     -> print_ident ident
       | (StructUnionName (s, structunion), iis) -> print_ident ident
       | (EnumName  s, iis)                      -> print_ident ident
-      | (TypeName (s,_typ), iis)                -> print_ident ident
+      | (TypeName (_name,_typ), iis)            -> print_ident ident
       | (TypeOfExpr (e), iis)                   -> print_ident ident
       | (TypeOfType (e), iis)                   -> print_ident ident
 	    
@@ -675,7 +700,7 @@ let pretty_print_c pr_elem pr_space pr_nl pr_indent pr_outdent pr_unindent =
       | (StructUnion (_, sopt, fields),iis)  -> ()    
       | (StructUnionName (s, structunion), iis) -> ()    
       | (EnumName  s, iis) -> ()    
-      | (TypeName (s,_typ), iis) -> ()
+      | (TypeName (_name,_typ), iis) -> ()
 	    
       | TypeOfType _, _ -> ()
       | TypeOfExpr _, _ -> ()
@@ -683,22 +708,22 @@ let pretty_print_c pr_elem pr_space pr_nl pr_indent pr_outdent pr_unindent =
       | (FunctionType _ | Array _ | Pointer _), _ -> raise Impossible
 
       
-  and pp_param ((b, sopt, t), ii_b_s) =
-    match b, sopt, ii_b_s with
-    | false, None, [] -> 
-	pp_type t
-    | true, None, [i1] -> 
-	pr_elem i1;
-	pp_type t
-	  
-    | false, Some s, [i1] -> 
+  and pp_param param = 
+    let {p_namei = nameopt;
+         p_register = (b,iib);
+         p_type=t;} = param in
+    
+    iib +> List.iter pr_elem;
+
+    match nameopt with
+    | None -> 
+        pp_type t
+    | Some name -> 
+        let (s,i1) = get_s_and_ii_of_name name in
 	pp_type_with_ident
-          (Some (s, i1)) None t Ast_c.noattr;
-    | true, Some s, [i1;i2] -> 
-	pr_elem i1;
-	pp_type_with_ident
-          (Some (s, i2)) None t Ast_c.noattr;
-    | _ -> raise Impossible                
+          (Some (s, i1)) None t Ast_c.noattr
+          
+        
 	  
 	  
   and pp_type_right (((qu, iiqu), (ty, iity)) : fullType) = 
@@ -731,7 +756,7 @@ let pretty_print_c pr_elem pr_space pr_nl pr_indent pr_outdent pr_unindent =
     | (StructUnion (_, sopt, fields),iis)-> ()      
     | (StructUnionName (s, structunion), iis) -> ()    
     | (EnumName  s, iis) -> ()    
-    | (TypeName (s,_typ), iis) -> ()
+    | (TypeName (name,_typ), iis) -> ()
 	    
     | TypeOfType _, _ -> ()
     | TypeOfExpr _, _ -> ()
@@ -743,49 +768,54 @@ let pretty_print_c pr_elem pr_space pr_nl pr_indent pr_outdent pr_unindent =
       
 (* ---------------------- *)
   and pp_decl = function
-    | DeclList ((({v_namei = var; v_type = returnType;
-                    v_storage = storage; v_attr = attrs;
+    | DeclList ((({v_namei = var; 
+                   v_type = returnType;
+                   v_storage = storage; 
+                   v_attr = attrs;
                   },[])::xs), 
-		iivirg::ifakestart::iisto) -> 
+	       iivirg::ifakestart::iisto) -> 
+	
+	pr_elem ifakestart;
 		  
-		  pr_elem ifakestart;
+        (* old: iisto +> List.iter pr_elem; *)
 		  
-      (* old: iisto +> List.iter pr_elem; *)
-		  
-		  
-      (* handling the first var. Special case, we print the whole type *)
-		  (match var with
-		  | Some ((s, ini),  iis::iini) -> 
-		      pp_type_with_ident
-			(Some (s, iis)) (Some (storage, iisto))
-			returnType attrs;
-		      ini +> do_option (fun init -> 
-			List.iter pr_elem iini; pp_init init);
-		  | None -> pp_type returnType
-		  | _ -> raise Impossible
-			);
+	
+        (* handling the first var. Special case, we print the whole type *)
+	(match var with
+	| Some (name, iniopt) -> 
+            let (s,iis) = get_s_and_ii_of_name name in
+	    pp_type_with_ident
+	      (Some (s, iis)) (Some (storage, iisto))
+	      returnType attrs;
+	    iniopt +> do_option (fun (iini, init) -> 
+	      pr_elem iini; 
+              pp_init init);
+	| None -> pp_type returnType
+	);
 		  
       (* for other vars, we just call pp_type_with_ident_rest. *)
-		  xs +> List.iter (function
-		    | ({v_namei = Some ((s, ini), iis::iini);
-			 v_type = returnType;
-			 v_storage = storage2;
-			 v_attr = attrs;
-		       }, iivirg) ->
+	xs +> List.iter (function
+	| ({v_namei = Some (name, iniopt);
+	    v_type = returnType;
+	    v_storage = storage2;
+	    v_attr = attrs;
+	  }, iivirg) ->
 			 
-			 assert (storage2 = storage);
-			 iivirg +> List.iter pr_elem;
-			 pp_type_with_ident_rest
-			   (Some (s, iis)) returnType attrs;
-			 ini +> do_option (fun (init) -> 
-			   List.iter pr_elem iini; pp_init init);
-			 
-			 
-		    | x -> raise Impossible
-		  );
-		  
-		  pr_elem iivirg;
-		  
+            let (s,iis) = get_s_and_ii_of_name name in
+	    assert (storage2 =*= storage);
+	    iivirg +> List.iter pr_elem;
+	    pp_type_with_ident_rest
+	      (Some (s, iis)) returnType attrs;
+	    iniopt +> do_option (fun (iini, init) -> 
+	      pr_elem iini; pp_init init
+            );
+	    
+	    
+	| x -> raise Impossible
+	);
+	
+	pr_elem iivirg;
+	
     | MacroDecl ((s, es), iis::lp::rp::iiend::ifakestart::iisto) -> 
 	pr_elem ifakestart;
 	iisto +> List.iter pr_elem; (* static and const *)
@@ -860,13 +890,13 @@ and pp_init (init, iinit) =
   and pp_def def = 
     let defbis, ii = def in
     match ii with 
-    | is::iifunc1::iifunc2::i1::i2::ifakestart::isto -> 
-	let {f_name = s;
-              f_type = (returnt, (paramst, (b, iib)));
-              f_storage = sto;
-              f_body = statxs;
-              f_attr = attrs;
-	    } = defbis
+    | iifunc1::iifunc2::i1::i2::ifakestart::isto -> 
+	let {f_name = name;
+             f_type = (returnt, (paramst, (b, iib)));
+             f_storage = sto;
+             f_body = statxs;
+             f_attr = attrs;
+	} = defbis
 	in
         pr_elem ifakestart;
         
@@ -874,7 +904,7 @@ and pp_init (init, iinit) =
           returnt Ast_c.noattr;
 	
         pp_attributes pr_elem pr_space attrs;
-        pr_elem is;
+        pp_name name;
 	
         pr_elem iifunc1;
 	
@@ -1145,10 +1175,10 @@ and pp_init (init, iinit) =
     | F.Return   (st,((),ii)) -> 
         (* iif ii *)
 	pr2 "XXX"
-    | F.Goto  (st, (s,ii)) -> 
+    | F.Goto  (st, name, ((),ii)) -> 
         (* iif ii *)
 	pr2 "XXX"
-    | F.Label (st, (s,ii)) -> 
+    | F.Label (st, name, ((),ii)) -> 
         (* iif ii *)
 	pr2 "XXX"
     | F.EndStatement iopt -> 

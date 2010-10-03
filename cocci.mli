@@ -4,13 +4,18 @@ open Common
  * returns a list associating to the input cfiles, and maybe header
  * files that was also required to be modified, the files containing the
  * result (in general files in /tmp).
+ * pre_engine does the compilation of the SmPL code and runs any initially
+ * scripts
+ * post_engine runs any finally scripts
  * 
- * This function use memoisation internally, which is useful when 
- * use -dir to not redo twice the same work. So take care!
+ * This function uses memoisation internally, which is useful when 
+ * using -dir to not redo twice the same work. So take care!
  *)
-val full_engine : 
-  (filename * filename) -> filename list -> 
-  (filename * filename option) list
+type cocci_info
+val pre_engine : (filename * filename) -> cocci_info
+val full_engine :
+  cocci_info -> filename list -> (filename * filename option) list
+val post_engine : cocci_info -> unit
 
 (* because of the #include "toto.c" and also because we may associate the 
  * same C file to multiple drivers because they share code, we can

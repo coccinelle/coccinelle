@@ -23,6 +23,7 @@
 module Ast0 = Ast0_cocci
 module Ast = Ast_cocci
 module V0 = Visitor_ast0
+module VT0 = Visitor_ast0_types
 
 type id = Id of string | Meta of (string * string)
 
@@ -73,7 +74,8 @@ let get_all_functions rule =
     | _ -> [] in
   List.map
     (function (nm,def,vl) ->
-      (nm,(def,(Iso_pattern.rebuild_mcode None).V0.rebuilder_statement vl)))
+      (nm,
+       (def,(Iso_pattern.rebuild_mcode None).VT0.rebuilder_rec_statement vl)))
     res
 
 (* --------------------------------------------------------------------- *)
@@ -156,7 +158,7 @@ and strip =
 	     Ast0.MetaParamList(nm,lenname,Ast0.Pure)
 	 | e -> e)) in
 
-  V0.rebuilder
+  V0.flat_rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing donothing
     ident donothing typeC donothing param donothing donothing
@@ -165,8 +167,8 @@ and strip =
 and changed_proto = function
     (mname,mdef,mproto,None) -> true
   | (mname,mdef,mproto,Some pproto) ->
-      not ((strip.V0.rebuilder_statement mproto) =
-	   (strip.V0.rebuilder_statement pproto))
+      not ((strip.VT0.rebuilder_rec_statement mproto) =
+	   (strip.VT0.rebuilder_rec_statement pproto))
 
 (* --------------------------------------------------------------------- *)
 (* make rules *)
@@ -180,7 +182,7 @@ let rec drop_param_name p =
     | p -> p)
 
 let drop_names dec =
-  let dec = (Iso_pattern.rebuild_mcode None).V0.rebuilder_statement dec in
+  let dec = (Iso_pattern.rebuild_mcode None).VT0.rebuilder_rec_statement dec in
   match Ast0.unwrap dec with
     Ast0.Decl(info,uninit) ->
       (match Ast0.unwrap uninit with

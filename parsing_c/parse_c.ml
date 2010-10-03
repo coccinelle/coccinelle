@@ -55,7 +55,7 @@ let print_bad line_error (start_line, end_line) filelines  =
     for i = start_line to end_line do 
       let line = filelines.(i) in 
 
-      if i = line_error 
+      if i =|= line_error 
       then  pr2 ("BAD:!!!!!" ^ " " ^ line) 
       else  pr2 ("bad:" ^ " " ^      line) 
     done
@@ -87,7 +87,7 @@ let mk_info_item a b =
 
 
 let info_same_line line xs = 
-  xs +> List.filter (fun info -> Ast_c.line_of_info info = line)
+  xs +> List.filter (fun info -> Ast_c.line_of_info info =|= line)
 
 
 (*****************************************************************************)
@@ -182,10 +182,10 @@ let print_commentized xs =
 	    let s = Str.global_substitute 
 		(Str.regexp "\n") (fun s -> "") s 
 	    in
-	    if newline = !line
+	    if newline =|= !line
 	    then prerr_string (s ^ " ")
 	    else begin
-              if !line = -1 
+              if !line =|= -1 
               then pr2_no_nl "passed:" 
               else pr2_no_nl "\npassed:";
               line := newline;
@@ -397,6 +397,10 @@ type class_token =
   | CReservedKwd (type | decl | qualif | flow | misc | attr)
 *)
 
+let ident_to_typename ident =
+  (Ast_c.nQ, (Ast_c.TypeName  (ident, Ast_c.noTypedefDef()), Ast_c.noii))
+                  
+
 (* parse_typedef_fix4 *)
 let consistency_checking2 xs = 
 
@@ -411,7 +415,8 @@ let consistency_checking2 xs =
 
     Visitor_c.kexpr = (fun (k,bigf) x -> 
       match Ast_c.unwrap_expr x with
-      | Ast_c.Ident s -> 
+      | Ast_c.Ident (id) -> 
+          let s = Ast_c.str_of_name id in
           stat +> 
             Common.hfind_default s v1 +> Common.hfind_default CIdent v2 +> 
             (fun aref -> incr aref)
@@ -420,7 +425,8 @@ let consistency_checking2 xs =
     );
     Visitor_c.ktype = (fun (k,bigf) t -> 
       match Ast_c.unwrap_typeC t with
-      | Ast_c.TypeName (s,_typ) -> 
+      | Ast_c.TypeName (name,_typ) -> 
+          let s = Ast_c.str_of_name name in
           stat +> 
             Common.hfind_default s v1 +> Common.hfind_default CTypedef v2 +> 
             (fun aref -> incr aref)
@@ -442,7 +448,7 @@ let consistency_checking2 xs =
     then begin 
       pr2 ("CONFLICT:" ^ k);
       let sorted = xs +> List.sort (fun (ka,va) (kb,vb) -> 
-        if !va = !vb then
+        if !va =|= !vb then
           (match ka, kb with
           | CTypedef, _ -> 1 (* first is smaller *)
           | _, CTypedef -> -1
@@ -474,11 +480,13 @@ let consistency_checking2 xs =
         match x with
         | Ast_c.DefineExpr e -> 
             (match e with
-            | (Ast_c.Ident s, _), ii when List.mem s !ident_to_type -> 
-                let t = (Ast_c.nQ, 
-                        (Ast_c.TypeName  (s, Ast_c.noTypedefDef()), ii)) in
-
-                Ast_c.DefineType t
+            | (Ast_c.Ident (ident), _), _ii  -> 
+                let s = Ast_c.str_of_name ident in 
+                if List.mem s !ident_to_type
+                then
+                  let t = ident_to_typename ident in
+                  Ast_c.DefineType t
+                else k x
             | _ -> k x
             )
         | _ -> k x
@@ -490,12 +498,15 @@ let consistency_checking2 xs =
             (match e with
             | (Ast_c.ParenExpr e, _), iiparen -> 
                 (match e with
-                | (Ast_c.Ident s, _), ii when List.mem s !ident_to_type -> 
-                    let (i2, i3) = tuple_of_list2 iiparen in
-                    let t = (Ast_c.nQ, 
-                            (Ast_c.TypeName  (s, Ast_c.noTypedefDef()), ii)) in
-                    (Ast_c.SizeOfType t, tref), [i1;i2;i3]
-                      
+                | (Ast_c.Ident (ident), _), _ii  -> 
+
+                    let s = Ast_c.str_of_name ident in 
+                    if List.mem s !ident_to_type
+                    then
+                      let t = ident_to_typename ident in
+                      let (i2, i3) = tuple_of_list2 iiparen in
+                      (Ast_c.SizeOfType t, tref), [i1;i2;i3]
+                    else  k x
                 | _ -> k x
                 )
             | _ -> k x
@@ -583,7 +594,7 @@ and find_next_synchro_orig next already_passed =
       pr2 "ERROR-RECOV: end of file while in recovery mode"; 
       already_passed, []
 
-  | (Parser_c.TCBrace i as v)::xs when TH.col_of_tok v = 0 -> 
+  | (Parser_c.TCBrace i as v)::xs when TH.col_of_tok v =|= 0 -> 
       pr2 ("ERROR-RECOV: found sync '}' at line "^i_to_s (TH.line_of_tok v));
 
       (match xs with
@@ -622,7 +633,7 @@ and find_next_synchro_orig next already_passed =
       | _ -> 
           v::already_passed, xs
       )
-  | v::xs when TH.col_of_tok v = 0 && TH.is_start_of_something v  -> 
+  | v::xs when TH.col_of_tok v =|= 0 && TH.is_start_of_something v  -> 
       pr2 ("ERROR-RECOV: found sync col 0 at line "^ i_to_s(TH.line_of_tok v));
       already_passed, v::xs
         
@@ -849,7 +860,7 @@ let rec lexer_function ~pass tr = fun lexbuf ->
     else begin
       let x = List.hd tr.rest_clean  in
       tr.rest_clean <- List.tl tr.rest_clean;
-      assert (x = v);
+      assert (x =*= v);
       
       (match v with
 
@@ -861,8 +872,8 @@ let rec lexer_function ~pass tr = fun lexbuf ->
        * tr.passed, tr.rest, etc.
        *)
       | Parser_c.TDefine (tok) -> 
-          if not (LP.current_context () = LP.InTopLevel) && 
-            (!Flag_parsing_c.cpp_directive_passing || (pass = 2))
+          if not (LP.current_context () =*= LP.InTopLevel) && 
+            (!Flag_parsing_c.cpp_directive_passing || (pass =|= 2))
           then begin
             incr Stat.nDefinePassing;
             pr2_once ("CPP-DEFINE: inside function, I treat it as comment");
@@ -880,8 +891,8 @@ let rec lexer_function ~pass tr = fun lexbuf ->
           end
             
       | Parser_c.TInclude (includes, filename, inifdef, info) -> 
-          if not (LP.current_context () = LP.InTopLevel)  &&
-            (!Flag_parsing_c.cpp_directive_passing || (pass = 2))
+          if not (LP.current_context () =*= LP.InTopLevel)  &&
+            (!Flag_parsing_c.cpp_directive_passing || (pass =|= 2))
           then begin
             incr Stat.nIncludePassing;
             pr2_once ("CPP-INCLUDE: inside function, I treat it as comment");
@@ -910,7 +921,7 @@ let rec lexer_function ~pass tr = fun lexbuf ->
                 if 
                   LP.is_typedef s && 
                     not (!Flag_parsing_c.disable_add_typedef) &&
-                    pass = 1
+                    pass =|= 1
                 then Parser_c.TypedefIdent (s, ii)
                 else Parser_c.TIdent (s, ii)
             | x -> x
@@ -961,7 +972,7 @@ let get_one_elem ~pass tr (file, filelines) =
         Left (Parser_c.celem (lexer_function ~pass tr) lexbuf_fake)
       )
     with e -> begin
-      if (pass = 1 && !Flag_parsing_c.disable_two_pass)|| (pass = 2) 
+      if (pass =|= 1 && !Flag_parsing_c.disable_two_pass)|| (pass =|= 2) 
       then begin 
         (match e with
         (* Lexical is not anymore launched I think *)
@@ -1097,7 +1108,8 @@ let parse_print_error_heuristic2 file =
           then ()
           else 
             (* bugfix: *)
-            if (checkpoint_file = checkpoint2_file) && checkpoint_file = file
+            if (checkpoint_file =$= checkpoint2_file) && 
+                checkpoint_file =$= file
             then print_bad line_error (checkpoint, checkpoint2) filelines
             else pr2 "PB: bad: but on tokens not from original file"
           );
@@ -1106,7 +1118,7 @@ let parse_print_error_heuristic2 file =
     
 
     let diffline = 
-      if (checkpoint_file = checkpoint2_file) && (checkpoint_file = file)
+      if (checkpoint_file =$= checkpoint2_file) && (checkpoint_file =$= file)
       then (checkpoint2 - checkpoint) 
       else 0
         (* TODO? so if error come in middle of something ? where the

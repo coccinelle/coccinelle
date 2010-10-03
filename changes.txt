@@ -1,6 +1,49 @@
 -*- org -*-
 
+* 0.1.7
+
+** Language: 
+- initialize and finalize script code, cf demos/initial_final.cocci
+
+** Features:
+- -iso_limit option to limit the depth of isomorphism application
+- with the dir option, the include path is implicitly set to the "include"
+  subdirectory of the specified directory, if the option -I is not used.
+- give a seed for the name of a fresh identifier
+- better handling of cpp "constructed" identifiers as in a##b, that in
+  the futur will make it easier to match over those idents. 
+  cf tests/pb_parsing_macro.c. Thanks to Ali-Erdem Ozcan for pointing
+  out the problem. A new "parsing hack hint" is also available:
+  YACFE_IDENT_BUILDER, cf standard.h.
+
+** Bugfix:
+- drop excessive "optimization" in ctl generation for while and for loops
+- allow . as the name of the directory
+- for type inference for an assignment, take the type of the right-hand
+  side expression, not the type of the assigned variable
+- allow for with a declartion in the first header element, as in C++
+  (partial support)
+- allow for matching against variable declarations that include only
+  storage, eg static, but no type at all.
+- allow for matching against types that contain both short/long and int
+- allow the type metavariable in the SmPL code "unsigned T" to match a T
+  that is a type consisting of more than one word, eg long int.
+- -ifdef_to_if option made to process nested ifdefs
+  (partial support)
+
+** Internals: 
+- improve and fix installation process (usable on BSD)
+- improve and fix testing process
+- apply patches from Eugeniy Meshcheryakov
+- reorganize the way we parse C identifiers, especially concatenated cpp 
+  identifiers as in a##b. This may lead to some regressions as we may
+  not parse as much code as before.
+- removed popl/ and popl09/ and popl related stuff from official distrib.
+
 * 0.1.6
+
+** Language:
+- the ability to add comments
 
 ** Features: 
 - grouping of generated rules with -hrule option
@@ -9,7 +52,6 @@
   /* {{coccinelle:skip_end}} */
   allowing to give more hints to the C parser.
   Thanks to Flavien@lebarbe.net for the idea.
-- the ability to add comments
 - the ability to print the values of more (but not all) kinds of
   metavariables from python
 - new vim SmPL mode.

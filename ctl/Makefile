@@ -33,7 +33,7 @@ INCLUDES=-I ../commons -I ../commons/ocamlextra -I ../globals
 
 
 #The Caml compilers.
-#for warning:  -w A 
+#for warning:  -w A
 #for profiling:  -p -inline 0   with OCAMLOPT
 OCAMLCFLAGS ?= -g -dtypes
 OCAMLC =ocamlc$(OPTBIN) $(OCAMLCFLAGS) $(INCLUDES)
@@ -83,9 +83,9 @@ clean::
 # clean rule for others files
 clean::
 	rm -f *.cm[iox] *.o *.annot
-	rm -f *~ .*~ #*# 
+	rm -f *~ .*~ #*#
 
-depend: 
+depend:
 	$(OCAMLDEP) *.mli *.ml > .depend
 
 distclean::

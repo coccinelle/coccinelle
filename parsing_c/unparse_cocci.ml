@@ -106,13 +106,13 @@ let mcode fn arg =
 	    function (str,line,col) ->
 	      match line_before with
 		None -> print_string str; Some line
-	      |	Some lb when line = lb -> print_string str; Some line
+	      |	Some lb when line =|= lb -> print_string str; Some line
 	      |	_ -> print_string "\n"; print_string str; Some line)
 	  lb comments in
       let line_before = print_comments None info.Ast.strbef in
       (match line_before with
 	None -> ()
-      |	Some lb when lb = info.Ast.line -> ()
+      |	Some lb when lb =|= info.Ast.line -> ()
       |	_ -> print_string "\n");
       fn s;
       let _ = print_comments (Some info.Ast.line) info.Ast.straft in
@@ -941,7 +941,7 @@ in
 	(if unindent_before x then unindent());
 	pr "\n" in
       let newline_before _ =
-	if before = After
+	if before =*= After
 	then
 	  let hd = List.hd xxs in
 	  match hd with
@@ -952,7 +952,7 @@ in
 	  | (Ast.DeclarationTag _::_) | (Ast.Token ("}",_)::_) -> prnl hd
           | _ -> () in
       let newline_after _ =
-	if before = Before
+	if before =*= Before
 	then
 	  match List.rev(List.hd(List.rev xxs)) with
 	    (Ast.StatementTag s::_) ->
