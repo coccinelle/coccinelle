@@ -1,5 +1,3 @@
-from threading import Thread, Lock
-import time
 from copy import deepcopy
 
 class Output:
@@ -29,15 +27,17 @@ class Output:
 	def finalise(self):
 		pass
 
-	def print_main(self, msg, p) :
-		print "* TODO [[view:%s::face=ovl-face1::linb=%s::colb=%s::cole=%s][%s %s::%s]]" % (p[0].file,p[0].line,p[0].column,p[0].column_end,msg,p[0].file,p[0].line)
+	def print_main (self, *args):
+		from coccilib.org import print_main
+		print_main(*args)
 
-	def print_sec(self, msg, p) :
-		print "[[view:%s::face=ovl-face2::linb=%s::colb=%s::cole=%s][%s]]" % (p[0].file,p[0].line,p[0].column,p[0].column_end,msg)
+	def print_sec (self, *args):
+		from coccilib.org import print_sec
+		print_sec(*args)
 
-	def print_secs(self, msg, ps) :
-		for i in ps:
-			print "[[view:%s::face=ovl-face2::linb=%s::colb=%s::cole=%s][%s]]" % (i.file,i.line,i.column,i.column_end,msg)
+	def print_secs (self, *args):
+		from coccilib.org import print_secs
+		print_secs(*args)
 
 class Console(Output):
 	def __init__(self):
@@ -49,8 +49,10 @@ class Console(Output):
 			for variable, message in messages:
 				print "%s:%s:%s: %s - %s" % (variable.location.file, variable.location.line, variable.location.column, message, variable)
 
+from threading import Thread
 class GtkRunner(Thread):
 	def __init__(self):
+		from threading import Lock
 		Thread.__init__(self)
 		self.lock = Lock()
 		self.rows = []
@@ -80,12 +82,15 @@ class GtkRunner(Thread):
 			self.lock.release()
 
 	def update(self):
+		import gobject
 		while self.has_row():
 			cocci, l = self.get_row()
 			self.gui.add_result(cocci, l)
 		gobject.timeout_add(1000, self.update)
 
 	def run(self):
+		import gtk,gobject
+		import coccilib.coccigui.coccigui
 		self.gui = coccilib.coccigui.coccigui.pycocci()
 		globals()['gtk_sock'] = self.gui
 		gobject.timeout_add(1000, self.update)
@@ -102,6 +107,7 @@ class GtkRunner(Thread):
 
 class Gtk(Output):
 	def check_availability(self):
+		import time
 		if not globals().has_key('gtk_sock'):
 			t = GtkRunner()
 			globals()['gtk_thread'] = t

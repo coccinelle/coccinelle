@@ -1,23 +1,23 @@
 (*
-* Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
-* Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller
-* This file is part of Coccinelle.
-* 
-* Coccinelle is free software: you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation, according to version 2 of the License.
-* 
-* Coccinelle is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-* GNU General Public License for more details.
-* 
-* You should have received a copy of the GNU General Public License
-* along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
-* 
-* The authors reserve the right to distribute this or future versions of
-* Coccinelle under other licenses.
-*)
+ * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+ * This file is part of Coccinelle.
+ *
+ * Coccinelle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, according to version 2 of the License.
+ *
+ * Coccinelle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The authors reserve the right to distribute this or future versions of
+ * Coccinelle under other licenses.
+ *)
 
 
 module Ast0 = Ast0_cocci
@@ -28,7 +28,9 @@ module Ast = Ast_cocci
    metavariables *)
 type fresh = bool
 
-type incl_iso = Include of string | Iso of (string,string) Common.either
+type incl_iso =
+    Include of string | Iso of (string,string) Common.either
+  | Virt of string list (* virtual rules *)
 
 type clt =
     line_type * int * int * int * int (* starting spaces *) *
@@ -42,11 +44,11 @@ type clt =
 
 and line_type =
     MINUS | OPTMINUS | UNIQUEMINUS
-  | PLUS
+  | PLUS | PLUSPLUS
   | CONTEXT | UNIQUE | OPT
 
-type iconstraints = Ast0.ident list
-type econstraints = Ast0.expression list
+type iconstraints = Ast.idconstraint
+type econstraints = Ast0.constraints
 type pconstraints = Ast.meta_name list
 
 let in_rule_name = ref false

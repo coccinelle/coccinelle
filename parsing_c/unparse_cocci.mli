@@ -3,7 +3,7 @@ exception CantBeInPlus
 type pos = Before | After | InPlace
 
 val pp_list_list_any :
-  Ast_c.metavars_binding *
+  Ast_c.metavars_binding list *
   (* pr cocci *)
   (string -> int (*line*) -> int (*lcol*) -> int (*rcol*) -> unit) *
     (Ast_c.info -> unit) (* pr c *) *

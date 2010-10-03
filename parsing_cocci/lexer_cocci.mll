@@ -1,23 +1,23 @@
 (*
-* Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
-* Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller
-* This file is part of Coccinelle.
-* 
-* Coccinelle is free software: you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation, according to version 2 of the License.
-* 
-* Coccinelle is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-* GNU General Public License for more details.
-* 
-* You should have received a copy of the GNU General Public License
-* along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
-* 
-* The authors reserve the right to distribute this or future versions of
-* Coccinelle under other licenses.
-*)
+ * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+ * This file is part of Coccinelle.
+ *
+ * Coccinelle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, according to version 2 of the License.
+ *
+ * Coccinelle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The authors reserve the right to distribute this or future versions of
+ * Coccinelle under other licenses.
+ *)
 
 
 {
@@ -49,7 +49,7 @@ let get_current_line_type lexbuf =
   let preceeding_spaces =
     if !line_start < 0 then 0 else lex_start - !line_start in
   (*line_start := -1;*)
-  prev_plus := (c = D.PLUS);
+  prev_plus := (c = D.PLUS) or (c = D.PLUSPLUS);
   (c,l,ll,lex_start,preceeding_spaces,[],[],Ast0.NoMetaPos)
 let current_line_started = ref false
 let col_zero = ref true
@@ -87,6 +87,8 @@ let add_current_line_type x =
       current_line_type := (D.OPTMINUS,ln,lln)
   | (D.PLUS,(D.CONTEXT,ln,lln))   ->
       current_line_type := (D.PLUS,ln,lln)
+  | (D.PLUSPLUS,(D.CONTEXT,ln,lln))   ->
+      current_line_type := (D.PLUSPLUS,ln,lln)
   | (D.UNIQUE,(D.CONTEXT,ln,lln)) ->
       current_line_type := (D.UNIQUE,ln,lln)
   | (D.OPT,(D.CONTEXT,ln,lln))    ->
@@ -95,7 +97,7 @@ let add_current_line_type x =
 
 let check_minus_context_linetype s =
   match !current_line_type with
-    (D.PLUS,_,_) -> lexerr "invalid in a + context: " s
+    (D.PLUS,_,_) | (D.PLUSPLUS,_,_) -> lexerr "invalid in a + context: " s
   | _ -> ()
 
 let check_context_linetype s =
@@ -105,17 +107,18 @@ let check_context_linetype s =
 
 let check_plus_linetype s =
   match !current_line_type with
-    (D.PLUS,_,_) -> ()
+    (D.PLUS,_,_) | (D.PLUSPLUS,_,_) -> ()
   | _ -> lexerr "invalid in a non + context: " s
 
 let check_arity_context_linetype s =
   match !current_line_type with
-    (D.CONTEXT,_,_) | (D.PLUS,_,_) | (D.UNIQUE,_,_) | (D.OPT,_,_) -> ()
+    (D.CONTEXT,_,_) | (D.PLUS,_,_) | (D.PLUSPLUS,_,_)
+  | (D.UNIQUE,_,_) | (D.OPT,_,_) -> ()
   | _ -> lexerr "invalid in a nonempty context: " s
 
 let process_include start finish str =
   (match !current_line_type with
-    (D.PLUS,_,_) ->
+    (D.PLUS,_,_) | (D.PLUSPLUS,_,_) ->
       (try
 	let _ = Str.search_forward (Str.regexp "\\.\\.\\.") str start in
 	lexerr "... not allowed in + include" ""
@@ -216,6 +219,7 @@ let id_tokens lexbuf =
   | "words" when in_meta ->      check_context_linetype s; TWords
 
   | "using" when in_rule_name || in_prolog ->  check_context_linetype s; TUsing
+  | "virtual" when in_prolog ->  check_context_linetype s; TVirtual
   | "disable" when in_rule_name ->  check_context_linetype s; TDisable
   | "extends" when in_rule_name -> check_context_linetype s; TExtends
   | "depends" when in_rule_name -> check_context_linetype s; TDepends
@@ -309,7 +313,7 @@ let init _ =
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_fresh_id_meta :=
     (fun name ->
-      let fn clt = TMetaId(name,[],Ast0.Impure,clt) in
+      let fn clt = TMetaId(name,Ast.IdNoConstraint,Ast0.Impure,clt) in
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_type_meta :=
     (fun name pure ->
@@ -448,6 +452,8 @@ rule token = parse
 	   then (start_line true; TArob)
 	   else (check_minus_context_linetype "@"; TPArob) }
 
+  | "~="  { start_line true; TTildeEq (get_current_line_type lexbuf) }
+  | "!~=" { start_line true; TTildeExclEq (get_current_line_type lexbuf) }
   | "WHEN" | "when"
       { start_line true; check_minus_context_linetype (tok lexbuf);
 	TWhen (get_current_line_type lexbuf) }
@@ -553,7 +559,12 @@ rule token = parse
 		     TDmOp (Ast.Mod,get_current_line_type lexbuf) }
   | '~'            { start_line true;  TTilde (get_current_line_type lexbuf) }
 
-  | "++"           { start_line true;  TInc (get_current_line_type lexbuf) }
+  | "++"           { pass_zero();
+ 		     if !current_line_started
+ 		     then
+ 		       (start_line true; TInc (get_current_line_type lexbuf))
+ 		     else (patch_or_match PATCH;
+ 			   add_current_line_type D.PLUSPLUS; token lexbuf) }
   | "--"           { start_line true;  TDec (get_current_line_type lexbuf) }
 
   | "="            { start_line true; TEq (get_current_line_type lexbuf) }
@@ -574,8 +585,8 @@ rule token = parse
 
   | ":"            { start_line true; TDotDot (get_current_line_type lexbuf) }
 
-  | "=="           { start_line true; TEqEq   (get_current_line_type lexbuf) }
-  | "!="           { start_line true; TNotEq  (get_current_line_type lexbuf) }
+  | "=="           { start_line true; TEqEq    (get_current_line_type lexbuf) }
+  | "!="           { start_line true; TNotEq   (get_current_line_type lexbuf) }
   | ">="           { start_line true;
 		     TLogOp(Ast.SupEq,get_current_line_type lexbuf) }
   | "<="           { start_line true;
@@ -741,7 +752,7 @@ and comment = parse
   (* noteopti: *)
   | [^ '*'] { start_line true; let s = tok lexbuf in s ^ comment lexbuf }
   | [ '*']   { start_line true; let s = tok lexbuf in s ^ comment lexbuf }
-  | _  
+  | _
       { start_line true; let s = tok lexbuf in
         Common.pr2 ("LEXER: unrecognised symbol in comment:"^s);
         s ^ comment lexbuf

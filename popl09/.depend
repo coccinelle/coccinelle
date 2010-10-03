@@ -1,0 +1,33 @@
+asttopopl.cmi: ast_popl.cmo ../parsing_cocci/ast_cocci.cmi 
+insert_quantifiers.cmi: ast_popl.cmo 
+popl.cmi: ../ctl/wrapper_ctl.cmi ../engine/lib_engine.cmo ../ctl/ast_ctl.cmo \
+    ../parsing_cocci/ast_cocci.cmi 
+popltoctl.cmi: ../ctl/wrapper_ctl.cmi ../engine/lib_engine.cmo ast_popl.cmo \
+    ../ctl/ast_ctl.cmo ../parsing_cocci/ast_cocci.cmi 
+pretty_print_popl.cmi: ast_popl.cmo 
+ast_popl.cmo: ../parsing_cocci/ast_cocci.cmi 
+ast_popl.cmx: ../parsing_cocci/ast_cocci.cmx 
+asttopopl.cmo: ../parsing_cocci/pretty_print_cocci.cmi ast_popl.cmo \
+    ../parsing_cocci/ast_cocci.cmi asttopopl.cmi 
+asttopopl.cmx: ../parsing_cocci/pretty_print_cocci.cmx ast_popl.cmx \
+    ../parsing_cocci/ast_cocci.cmx asttopopl.cmi 
+insert_quantifiers.cmo: ../commons/common.cmi ast_popl.cmo \
+    ../parsing_cocci/ast_cocci.cmi insert_quantifiers.cmi 
+insert_quantifiers.cmx: ../commons/common.cmx ast_popl.cmx \
+    ../parsing_cocci/ast_cocci.cmx insert_quantifiers.cmi 
+popl.cmo: ../ctl/wrapper_ctl.cmi popltoctl.cmi ../engine/lib_engine.cmo \
+    insert_quantifiers.cmi asttopopl.cmi ../ctl/ast_ctl.cmo \
+    ../parsing_cocci/ast_cocci.cmi popl.cmi 
+popl.cmx: ../ctl/wrapper_ctl.cmx popltoctl.cmx ../engine/lib_engine.cmx \
+    insert_quantifiers.cmx asttopopl.cmx ../ctl/ast_ctl.cmx \
+    ../parsing_cocci/ast_cocci.cmx popl.cmi 
+popltoctl.cmo: ../ctl/wrapper_ctl.cmi ../parsing_cocci/visitor_ast.cmi \
+    ../engine/lib_engine.cmo flag_popl.cmo ast_popl.cmo ../ctl/ast_ctl.cmo \
+    ../parsing_cocci/ast_cocci.cmi popltoctl.cmi 
+popltoctl.cmx: ../ctl/wrapper_ctl.cmx ../parsing_cocci/visitor_ast.cmx \
+    ../engine/lib_engine.cmx flag_popl.cmx ast_popl.cmx ../ctl/ast_ctl.cmx \
+    ../parsing_cocci/ast_cocci.cmx popltoctl.cmi 
+pretty_print_popl.cmo: ../parsing_cocci/pretty_print_cocci.cmi ast_popl.cmo \
+    ../parsing_cocci/ast_cocci.cmi pretty_print_popl.cmi 
+pretty_print_popl.cmx: ../parsing_cocci/pretty_print_cocci.cmx ast_popl.cmx \
+    ../parsing_cocci/ast_cocci.cmx pretty_print_popl.cmi 

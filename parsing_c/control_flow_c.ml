@@ -263,6 +263,7 @@ type node = node1 * string
 
   | AfterNode
   | FallThroughNode
+  | LoopFallThroughNode
 
   | ErrorExit
 
@@ -382,5 +383,6 @@ let extract_fullstatement node =
   | InLoopNode
   | AfterNode
   | FallThroughNode
+  | LoopFallThroughNode
   | ErrorExit
     -> None

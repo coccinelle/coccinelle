@@ -1,23 +1,23 @@
 (*
-* Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
-* Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller
-* This file is part of Coccinelle.
-* 
-* Coccinelle is free software: you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation, according to version 2 of the License.
-* 
-* Coccinelle is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-* GNU General Public License for more details.
-* 
-* You should have received a copy of the GNU General Public License
-* along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
-* 
-* The authors reserve the right to distribute this or future versions of
-* Coccinelle under other licenses.
-*)
+ * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+ * This file is part of Coccinelle.
+ *
+ * Coccinelle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, according to version 2 of the License.
+ *
+ * Coccinelle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The authors reserve the right to distribute this or future versions of
+ * Coccinelle under other licenses.
+ *)
 
 
 (* Arities matter for the minus slice, but not for the plus slice. *)
@@ -155,32 +155,32 @@ let make_id =
 
 let ident opt_allowed tgt i =
   match Ast0.unwrap i with
-    Ast0.Id(name) ->
-      let arity =
-	all_same opt_allowed tgt (mcode2line name)
-	  [mcode2arity name] in
-      let name = mcode name in
-      make_id i tgt arity (Ast0.Id(name))
-  | Ast0.MetaId(name,constraints,pure) ->
-      let arity =
-	all_same opt_allowed tgt (mcode2line name)
-	  [mcode2arity name] in
-      let name = mcode name in
-      make_id i tgt arity (Ast0.MetaId(name,constraints,pure))
-  | Ast0.MetaFunc(name,constraints,pure) ->
-      let arity =
-	all_same opt_allowed tgt (mcode2line name)
-	  [mcode2arity name] in
-      let name = mcode name in
-      make_id i tgt arity (Ast0.MetaFunc(name,constraints,pure))
-  | Ast0.MetaLocalFunc(name,constraints,pure) ->
-      let arity =
-	all_same opt_allowed tgt (mcode2line name)
-	  [mcode2arity name] in
-      let name = mcode name in
-      make_id i tgt arity (Ast0.MetaLocalFunc(name,constraints,pure))
-  | Ast0.OptIdent(_) | Ast0.UniqueIdent(_) ->
-      failwith "unexpected code"
+      Ast0.Id(name) ->
+	let arity =
+	  all_same opt_allowed tgt (mcode2line name)
+	    [mcode2arity name] in
+	let name = mcode name in
+	  make_id i tgt arity (Ast0.Id(name))
+    | Ast0.MetaId(name,constraints,pure) ->
+	let arity =
+	  all_same opt_allowed tgt (mcode2line name)
+	    [mcode2arity name] in
+	let name = mcode name in
+	  make_id i tgt arity (Ast0.MetaId(name,constraints,pure))
+    | Ast0.MetaFunc(name,constraints,pure) ->
+	let arity =
+	  all_same opt_allowed tgt (mcode2line name)
+	    [mcode2arity name] in
+	let name = mcode name in
+	  make_id i tgt arity (Ast0.MetaFunc(name,constraints,pure))
+    | Ast0.MetaLocalFunc(name,constraints,pure) ->
+	let arity =
+	  all_same opt_allowed tgt (mcode2line name)
+	    [mcode2arity name] in
+	let name = mcode name in
+	  make_id i tgt arity (Ast0.MetaLocalFunc(name,constraints,pure))
+    | Ast0.OptIdent(_) | Ast0.UniqueIdent(_) ->
+	failwith "unexpected code"
 
 (* --------------------------------------------------------------------- *)
 (* Expression *)

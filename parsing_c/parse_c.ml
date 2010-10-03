@@ -253,7 +253,7 @@ let tokens2 file =
 let time_lexing ?(profile=true) a = 
   if profile 
   then Common.profile_code_exclusif "LEXING" (fun () -> tokens2 a)
-  else tokens2 a 
+  else tokens2 a
 let tokens ?profile a = 
   Common.profile_code "C parsing.tokens" (fun () -> time_lexing ?profile a)
 

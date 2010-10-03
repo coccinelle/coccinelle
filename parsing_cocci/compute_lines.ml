@@ -1,23 +1,23 @@
 (*
-* Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
-* Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller
-* This file is part of Coccinelle.
-* 
-* Coccinelle is free software: you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation, according to version 2 of the License.
-* 
-* Coccinelle is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-* GNU General Public License for more details.
-* 
-* You should have received a copy of the GNU General Public License
-* along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
-* 
-* The authors reserve the right to distribute this or future versions of
-* Coccinelle under other licenses.
-*)
+ * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+ * This file is part of Coccinelle.
+ *
+ * Coccinelle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, according to version 2 of the License.
+ *
+ * Coccinelle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The authors reserve the right to distribute this or future versions of
+ * Coccinelle under other licenses.
+ *)
 
 
 (* Computes starting and ending logical lines for statements and
@@ -207,15 +207,15 @@ let dots is_dots prev fn d =
 
 let rec ident i =
   match Ast0.unwrap i with
-    Ast0.Id(name) as ui ->
-      let name = promote_mcode name in mkres i ui name name
-  | Ast0.MetaId(name,_,_)
-  | Ast0.MetaFunc(name,_,_) | Ast0.MetaLocalFunc(name,_,_) as ui ->
-      let name = promote_mcode name in mkres i ui name name
-  | Ast0.OptIdent(id) ->
-      let id = ident id in mkres i (Ast0.OptIdent(id)) id id
-  | Ast0.UniqueIdent(id) ->
-      let id = ident id in mkres i (Ast0.UniqueIdent(id)) id id
+      Ast0.Id(name) as ui ->
+	let name = promote_mcode name in mkres i ui name name
+    | Ast0.MetaId(name,_,_)
+    | Ast0.MetaFunc(name,_,_) | Ast0.MetaLocalFunc(name,_,_) as ui ->
+	let name = promote_mcode name in mkres i ui name name
+    | Ast0.OptIdent(id) ->
+	let id = ident id in mkres i (Ast0.OptIdent(id)) id id
+    | Ast0.UniqueIdent(id) ->
+	let id = ident id in mkres i (Ast0.UniqueIdent(id)) id id
 
 (* --------------------------------------------------------------------- *)
 (* Expression *)

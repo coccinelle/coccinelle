@@ -31,10 +31,13 @@ type token =
   | TWhenTrue of (Data.clt)
   | TWhenFalse of (Data.clt)
   | TWhen of (Data.clt)
+  | TVirtual
   | TUsing
   | TTypedef
   | TTypeId of (string * Data.clt)
   | TType
+  | TTildeExclEq of (Data.clt)
+  | TTildeEq of (Data.clt)
   | TTilde of (Data.clt)
   | TSwitch of (Data.clt)
   | TString of (string * Data.clt)
@@ -84,18 +87,18 @@ type token =
   | TMetaPos of (Parse_aux.pos_info)
   | TMetaParamList of (Parse_aux.list_info)
   | TMetaParam of (Parse_aux.info)
-  | TMetaLocalIdExp of (Parse_aux.typed_info)
+  | TMetaLocalIdExp of (Parse_aux.typed_expinfo)
   | TMetaLocalFunc of (Parse_aux.idinfo)
   | TMetaIterator of (Parse_aux.idinfo)
   | TMetaInit of (Parse_aux.info)
-  | TMetaIdExp of (Parse_aux.typed_info)
+  | TMetaIdExp of (Parse_aux.typed_expinfo)
   | TMetaId of (Parse_aux.idinfo)
   | TMetaFunc of (Parse_aux.idinfo)
   | TMetaExpList of (Parse_aux.list_info)
-  | TMetaExp of (Parse_aux.typed_info)
+  | TMetaExp of (Parse_aux.typed_expinfo)
   | TMetaErr of (Parse_aux.expinfo)
   | TMetaDeclarer of (Parse_aux.idinfo)
-  | TMetaConst of (Parse_aux.typed_info)
+  | TMetaConst of (Parse_aux.typed_expinfo)
   | TMPtVirg
   | TLogOp of (Ast_cocci.logicalOp * Data.clt)
   | TLocal

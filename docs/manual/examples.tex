@@ -415,8 +415,8 @@ p1 << r.p1;
 p2 << r.p2;
 @@@M
 
-cocci.print_main("",p1)
-cocci.print_sec("return",p2)
+cocci.print_main(p1)
+cocci.print_sec(p2,"return")
 \end{lstlisting}
 \end{tabular}\\
 
@@ -426,6 +426,94 @@ every matched position should be printed.
 
 Any metavariable could be inherited in the Python code. However,
 accessible fields are not currently equally supported among them.
+
+\newpage
+\subsection{Filtering identifiers, declarers or iterators with regular expression}
+
+If you consider the following SmPL file which uses the regexp functionality to
+filter the identifiers that contain, begin or end by \texttt{foo},
+
+\begin{tabular}{c@{\hspace{2cm}}c}
+\begin{lstlisting}[language=Cocci, name=Regexp]
+@M@anyid@
+type t;
+identifier id;
+@@@M
+t id () {...}
+
+@M@script:python@
+x << anyid.id;
+@@@M
+print "Identifier: %s" % x
+
+@M@contains@
+type t;
+identifier foo ~= ".*foo";
+@@@M
+t foo () {...}
+
+@M@script:python@
+x << contains.foo;
+@@@M
+print "Contains foo: %s" % x
+
+\end{lstlisting}
+&
+\begin{lstlisting}[language=Cocci,name=Regexp]
+@M@endsby@
+type t;
+identifier foo ~= ".*foo$";
+@@@M
+
+t foo () {...}
+
+@M@script:python@
+x << endsby.foo;
+@@@M
+print "Ends by foo: %s" % x
+
+@M@beginsby@
+type t;
+identifier foo ~= "^foo";
+@@@M
+t foo () {...}
+
+@M@script:python@
+x << beginsby.foo;
+@@@M
+print "Begins by foo: %s" % x
+\end{lstlisting}
+\end{tabular}\\
+
+and the following C program, on the left, which defines the functions
+\texttt{foo}, \texttt{bar}, \texttt{foobar}, \texttt{barfoobar} and
+\texttt{barfoo}, you will get the result on the right.
+
+\begin{tabular}{c@{\hspace{2cm}}c}
+\begin{lstlisting}
+int foo () { return 0; }
+int bar () { return 0; }
+int foobar () { return 0; }
+int barfoobar () { return 0; }
+int barfoo () { return 0; }
+\end{lstlisting}
+&
+\begin{lstlisting}
+Identifier: foo
+Identifier: bar
+Identifier: foobar
+Identifier: barfoobar
+Identifier: barfoo
+Contains foo: foo
+Contains foo: foobar
+Contains foo: barfoobar
+Contains foo: barfoo
+Ends by foo: foo
+Ends by foo: barfoo
+Begins by foo: foo
+Begins by foo: foobar
+\end{lstlisting}
+\end{tabular}
 
 % \begin{tabular}{ccc}
 % Before & Semantic patch & After \\
@@ -447,7 +535,7 @@ accessible fields are not currently equally supported among them.
 
 %%% Local Variables:
 %%% mode: LaTeX
-%%% TeX-master: "cocci_syntax"
+%%% TeX-master: "main_grammar"
 %%% coding: latin-9
 %%% TeX-PDF-mode: t
 %%% ispell-local-dictionary: "american"

@@ -1,23 +1,23 @@
 (*
-* Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
-* Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller
-* This file is part of Coccinelle.
-* 
-* Coccinelle is free software: you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation, according to version 2 of the License.
-* 
-* Coccinelle is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-* GNU General Public License for more details.
-* 
-* You should have received a copy of the GNU General Public License
-* along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
-* 
-* The authors reserve the right to distribute this or future versions of
-* Coccinelle under other licenses.
-*)
+ * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+ * This file is part of Coccinelle.
+ *
+ * Coccinelle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, according to version 2 of the License.
+ *
+ * Coccinelle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The authors reserve the right to distribute this or future versions of
+ * Coccinelle under other licenses.
+ *)
 
 
 (* Arities matter for the minus slice, but not for the plus slice. *)
@@ -94,7 +94,7 @@ let inline_mcodes =
 		else starter @ ender in
 	  (lst,
 	   {endinfo with Ast0.tline_start = startinfo.Ast0.tline_start}) in
-	let attach_bef bef beforeinfo = function
+	let attach_bef bef beforeinfo befit = function
 	    (true,mcl) ->
 	      List.iter
 		(function
@@ -103,27 +103,31 @@ let inline_mcodes =
 		      mreplacements := concat bef beforeinfo mrepl tokeninfo
 		  | Ast0.CONTEXT(mbefaft) ->
 		      (match !mbefaft with
-			(Ast.BEFORE(mbef),mbeforeinfo,a) ->
+			(Ast.BEFORE(mbef,it),mbeforeinfo,a) ->
 			  let (newbef,newinfo) =
 			    concat bef beforeinfo mbef mbeforeinfo in
-			  mbefaft := (Ast.BEFORE(newbef),newinfo,a)
-		      | (Ast.AFTER(maft),_,a) ->
+			  let it = Ast.lub_count befit it in
+			  mbefaft := (Ast.BEFORE(newbef,it),newinfo,a)
+		      | (Ast.AFTER(maft,it),_,a) ->
+			  let it = Ast.lub_count befit it in
 			  mbefaft :=
-			    (Ast.BEFOREAFTER(bef,maft),beforeinfo,a)
-		      | (Ast.BEFOREAFTER(mbef,maft),mbeforeinfo,a) ->
+			    (Ast.BEFOREAFTER(bef,maft,it),beforeinfo,a)
+		      | (Ast.BEFOREAFTER(mbef,maft,it),mbeforeinfo,a) ->
 			  let (newbef,newinfo) =
 			    concat bef beforeinfo mbef mbeforeinfo in
+			  let it = Ast.lub_count befit it in
 			  mbefaft :=
-			    (Ast.BEFOREAFTER(newbef,maft),newinfo,a)
+			    (Ast.BEFOREAFTER(newbef,maft,it),newinfo,a)
 		      | (Ast.NOTHING,_,a) ->
-			  mbefaft := (Ast.BEFORE(bef),beforeinfo,a))
+			  mbefaft :=
+			    (Ast.BEFORE(bef,befit),beforeinfo,a))
 		  |	_ -> failwith "unexpected annotation")
 		mcl
 	  | _ ->
 	      Printf.printf "before %s\n" (Dumper.dump bef);
 	      failwith
 		"context tree should not have bad code before" in
-	let attach_aft aft afterinfo = function
+	let attach_aft aft afterinfo aftit = function
 	    (true,mcl) ->
 	      List.iter
 		(function
@@ -132,39 +136,42 @@ let inline_mcodes =
 		      mreplacements := concat mrepl tokeninfo aft afterinfo
 		  | Ast0.CONTEXT(mbefaft) ->
 		      (match !mbefaft with
-			(Ast.BEFORE(mbef),b,_) ->
+			(Ast.BEFORE(mbef,it),b,_) ->
+			  let it = Ast.lub_count aftit it in
 			  mbefaft :=
-			    (Ast.BEFOREAFTER(mbef,aft),b,afterinfo)
-		      | (Ast.AFTER(maft),b,mafterinfo) ->
+			    (Ast.BEFOREAFTER(mbef,aft,it),b,afterinfo)
+		      | (Ast.AFTER(maft,it),b,mafterinfo) ->
 			  let (newaft,newinfo) =
 			    concat maft mafterinfo aft afterinfo in
-			  mbefaft := (Ast.AFTER(newaft),b,newinfo)
-		      | (Ast.BEFOREAFTER(mbef,maft),b,mafterinfo) ->
+			  let it = Ast.lub_count aftit it in
+			  mbefaft := (Ast.AFTER(newaft,it),b,newinfo)
+		      | (Ast.BEFOREAFTER(mbef,maft,it),b,mafterinfo) ->
 			  let (newaft,newinfo) =
 			    concat maft mafterinfo aft afterinfo in
+			  let it = Ast.lub_count aftit it in
 			  mbefaft :=
-			    (Ast.BEFOREAFTER(mbef,newaft),b,newinfo)
+			    (Ast.BEFOREAFTER(mbef,newaft,it),b,newinfo)
 		      | (Ast.NOTHING,b,_) ->
-			  mbefaft := (Ast.AFTER(aft),b,afterinfo))
+			  mbefaft := (Ast.AFTER(aft,aftit),b,afterinfo))
 		  |	_ -> failwith "unexpected annotation")
 		mcl
 	  | _ ->
 	      failwith
 		"context tree should not have bad code after" in
 	(match !befaft with
-	  (Ast.BEFORE(bef),beforeinfo,_) ->
-	    attach_bef bef beforeinfo
+	  (Ast.BEFORE(bef,it),beforeinfo,_) ->
+	    attach_bef bef beforeinfo it
 	      (einfo.Ast0.attachable_start,einfo.Ast0.mcode_start)
-	| (Ast.AFTER(aft),_,afterinfo) ->
-	    attach_aft aft afterinfo
+	| (Ast.AFTER(aft,it),_,afterinfo) ->
+	    attach_aft aft afterinfo it
 	      (einfo.Ast0.attachable_end,einfo.Ast0.mcode_end)
-	| (Ast.BEFOREAFTER(bef,aft),beforeinfo,afterinfo) ->
-	    attach_bef bef beforeinfo
+	| (Ast.BEFOREAFTER(bef,aft,it),beforeinfo,afterinfo) ->
+	    attach_bef bef beforeinfo it
 	      (einfo.Ast0.attachable_start,einfo.Ast0.mcode_start);
-	    attach_aft aft afterinfo
+	    attach_aft aft afterinfo it
 	      (einfo.Ast0.attachable_end,einfo.Ast0.mcode_end)
 	| (Ast.NOTHING,_,_) -> ())
-    | Ast0.PLUS -> () in
+    | Ast0.PLUS _ -> () in
   V0.flat_combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode mcode
@@ -249,7 +256,7 @@ let convert_mcodekind adj = function
     Ast0.MINUS(replacements) ->
       let (replacements,_) = !replacements in
       Ast.MINUS(Ast.NoPos,[],adj,replacements)
-  | Ast0.PLUS -> Ast.PLUS
+  | Ast0.PLUS count -> Ast.PLUS count
   | Ast0.CONTEXT(befaft) ->
       let (befaft,_,_) = !befaft in Ast.CONTEXT(Ast.NoPos,befaft)
   | Ast0.MIXED(_) -> failwith "not possible for mcode"
@@ -296,18 +303,15 @@ let rec do_isos l = List.map (function (nm,x) -> (nm,anything x)) l
 and ident i =
   rewrap i (do_isos (Ast0.get_iso i))
     (match Ast0.unwrap i with
-      Ast0.Id(name) -> Ast.Id(mcode name)
-    | Ast0.MetaId(name,constraints,_) ->
-	let constraints = List.map ident constraints in
-	Ast.MetaId(mcode name,constraints,unitary,false)
-    | Ast0.MetaFunc(name,constraints,_) ->
-	let constraints = List.map ident constraints in
-	Ast.MetaFunc(mcode name,constraints,unitary,false)
-    | Ast0.MetaLocalFunc(name,constraints,_) ->
-	let constraints = List.map ident constraints in
-	Ast.MetaLocalFunc(mcode name,constraints,unitary,false)
-    | Ast0.OptIdent(id) -> Ast.OptIdent(ident id)
-    | Ast0.UniqueIdent(id) -> Ast.UniqueIdent(ident id))
+	 Ast0.Id(name) -> Ast.Id(mcode name)
+       | Ast0.MetaId(name,constraints,_) ->
+	     Ast.MetaId(mcode name,constraints,unitary,false)
+       | Ast0.MetaFunc(name,constraints,_) ->
+	     Ast.MetaFunc(mcode name,constraints,unitary,false)
+       | Ast0.MetaLocalFunc(name,constraints,_) ->
+	     Ast.MetaLocalFunc(mcode name,constraints,unitary,false)
+       | Ast0.OptIdent(id) -> Ast.OptIdent(ident id)
+       | Ast0.UniqueIdent(id) -> Ast.UniqueIdent(ident id))
 
 (* --------------------------------------------------------------------- *)
 (* Expression *)
@@ -359,12 +363,10 @@ and expression e =
     | Ast0.SizeOfType(szf,lp,ty,rp) ->
 	Ast.SizeOfType(mcode szf, mcode lp,typeC ty,mcode rp)
     | Ast0.TypeExp(ty) -> Ast.TypeExp(typeC ty)
-    | Ast0.MetaErr(name,constraints,_)  ->
-	let constraints = List.map expression constraints in
-	Ast.MetaErr(mcode name,constraints,unitary,false)
-    | Ast0.MetaExpr(name,constraints,ty,form,_)  ->
-	let constraints = List.map expression constraints in
-	Ast.MetaExpr(mcode name,constraints,unitary,ty,form,false)
+    | Ast0.MetaErr(name,cstrts,_)  ->
+	  Ast.MetaErr(mcode name,constraints cstrts,unitary,false)
+    | Ast0.MetaExpr(name,cstrts,ty,form,_)  ->
+	  Ast.MetaExpr(mcode name,constraints cstrts,unitary,ty,form,false)
     | Ast0.MetaExprList(name,Some lenname,_) ->
 	Ast.MetaExprList(mcode name,Some (mcode lenname,unitary,false),
 			 unitary,false)
@@ -393,6 +395,12 @@ and expression e =
   if Ast0.get_test_exp e then Ast.set_test_exp e1 else e1
 
 and expression_dots ed = dots expression ed
+
+and constraints c =
+  match c with
+      Ast0.NoConstraint        -> Ast.NoConstraint
+    | Ast0.NotIdCstrt   idctrt -> Ast.NotIdCstrt idctrt
+    | Ast0.NotExpCstrt  exps   -> Ast.NotExpCstrt (List.map expression exps)
 
 (* --------------------------------------------------------------------- *)
 (* Types *)

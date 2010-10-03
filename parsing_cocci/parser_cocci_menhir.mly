@@ -1,23 +1,23 @@
 /*
-* Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
-* Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller
-* This file is part of Coccinelle.
-* 
-* Coccinelle is free software: you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation, according to version 2 of the License.
-* 
-* Coccinelle is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-* GNU General Public License for more details.
-* 
-* You should have received a copy of the GNU General Public License
-* along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
-* 
-* The authors reserve the right to distribute this or future versions of
-* Coccinelle under other licenses.
-*/
+ * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+ * This file is part of Coccinelle.
+ *
+ * Coccinelle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, according to version 2 of the License.
+ *
+ * Coccinelle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The authors reserve the right to distribute this or future versions of
+ * Coccinelle under other licenses.
+ */
 
 
 %{
@@ -43,7 +43,7 @@ module P = Parse_aux
 %token TPure TContext TGenerated
 %token TTypedef TDeclarer TIterator TName TPosition TPosAny
 %token TUsing TDisable TExtends TDepends TOn TEver TNever TExists TForall
-%token TScript TInitialize TFinalize TNothing
+%token TScript TInitialize TFinalize TNothing TVirtual
 %token<string> TRuleName
 
 %token<Data.clt> Tchar Tshort Tint Tdouble Tfloat Tlong
@@ -58,14 +58,14 @@ module P = Parse_aux
 %token <Data.clt> TBreak TContinue TGoto TSizeof TFunDecl
 %token <string * Data.clt> TIdent TTypeId TDeclarerId TIteratorId TPragma
 
-%token <Parse_aux.idinfo>     TMetaId TMetaFunc TMetaLocalFunc
-%token <Parse_aux.idinfo>     TMetaIterator TMetaDeclarer
-%token <Parse_aux.expinfo>    TMetaErr
-%token <Parse_aux.info>       TMetaParam TMetaStm TMetaStmList TMetaType
-%token <Parse_aux.info>       TMetaInit
-%token <Parse_aux.list_info>  TMetaParamList TMetaExpList
-%token <Parse_aux.typed_info> TMetaExp TMetaIdExp TMetaLocalIdExp TMetaConst
-%token <Parse_aux.pos_info>   TMetaPos
+%token <Parse_aux.idinfo>        TMetaId TMetaFunc TMetaLocalFunc
+%token <Parse_aux.idinfo>        TMetaIterator TMetaDeclarer
+%token <Parse_aux.expinfo>       TMetaErr
+%token <Parse_aux.info>          TMetaParam TMetaStm TMetaStmList TMetaType
+%token <Parse_aux.info>          TMetaInit
+%token <Parse_aux.list_info>     TMetaParamList TMetaExpList
+%token <Parse_aux.typed_expinfo> TMetaExp TMetaIdExp TMetaLocalIdExp TMetaConst
+%token <Parse_aux.pos_info>      TMetaPos
 
 %token TArob TArobArob TPArob
 %token <string> TScriptData
@@ -91,7 +91,7 @@ module P = Parse_aux
 %token <Data.clt> TOr
 %token <Data.clt> TXor
 %token <Data.clt> TAnd
-%token <Data.clt> TEqEq TNotEq
+%token <Data.clt> TEqEq TNotEq TTildeEq TTildeExclEq
 %token <Ast_cocci.logicalOp * Data.clt> TLogOp /* TInf TSup TInfEq TSupEq */
 %token <Ast_cocci.arithOp * Data.clt>   TShOp  /* TShl TShr */
 %token <Ast_cocci.arithOp * Data.clt>   TDmOp  /* TDiv TMod */
@@ -256,6 +256,13 @@ incl:
   TIncludeL           { let (x,_) = $1 in Data.Include(x) }
 | TUsing TString      { Data.Iso(Common.Left(P.id2name $2)) }
 | TUsing TPathIsoFile { Data.Iso(Common.Right $2) }
+| TVirtual comma_list(pure_ident)
+    { let names = List.map P.id2name $2 in
+      (* ensure that the names of virtual and real rules don't overlap *)
+      List.iter
+      (function name -> Hashtbl.add Data.all_metadecls name [])
+      names;
+      Data.Virt(names) }
 
 metadec:
   ar=arity ispure=pure
@@ -266,18 +273,18 @@ metadec:
     { P.create_fresh_metadec kindfn ids }
 | ar=arity ispure=pure
   kindfn=metakind_atomic
-  ids=comma_list(pure_ident_or_meta_ident_with_not_eq(not_eq)) TMPtVirg
-    { P.create_metadec_ne ar ispure kindfn ids }
+  ids=comma_list(pure_ident_or_meta_ident_with_idconstraint(re_or_not_eqid)) TMPtVirg
+    { P.create_metadec_with_constraints ar ispure kindfn ids }
 | ar=arity ispure=pure
   kindfn=metakind_atomic_expi
-  ids=comma_list(pure_ident_or_meta_ident_with_not_eq(not_eqe)) TMPtVirg
-    { P.create_metadec_ne ar ispure kindfn ids }
+  ids=comma_list(pure_ident_or_meta_ident_with_econstraint(re_or_not_eqe)) TMPtVirg
+    { P.create_metadec_with_constraints ar ispure kindfn ids }
 | ar=arity ispure=pure
   kindfn=metakind_atomic_expe
-  ids=comma_list(pure_ident_or_meta_ident_with_not_eq(not_ceq)) TMPtVirg
-    { P.create_metadec_ne ar ispure kindfn ids }
+  ids=comma_list(pure_ident_or_meta_ident_with_x_eq(not_ceq)) TMPtVirg
+    { P.create_metadec_with_constraints ar ispure kindfn ids }
 | ar=arity TPosition a=option(TPosAny)
-    ids=comma_list(pure_ident_or_meta_ident_with_not_eq(not_pos)) TMPtVirg
+    ids=comma_list(pure_ident_or_meta_ident_with_x_eq(not_pos)) TMPtVirg
     (* pb: position variables can't be inherited from normal rules, and then
        there is no way to inherit from a generated rule, so there is no point
        to have a position variable *)
@@ -287,7 +294,7 @@ metadec:
       let tok = check_meta(Ast.MetaPosDecl(arity,name)) in
       let any = match a with None -> Ast.PER | Some _ -> Ast.ALL in
       !Data.add_pos_meta name constraints any; tok in
-    P.create_metadec_ne ar false kindfn ids }
+    P.create_metadec_with_constraints ar false kindfn ids }
 | ar=arity ispure=pure
     TParameter Tlist TOCro id=pure_ident_or_meta_ident TCCro
     ids=comma_list(pure_ident_or_meta_ident) TMPtVirg
@@ -358,7 +365,6 @@ metadec:
       then (!Data.add_iterator_name name; [])
       else raise (Semantic_cocci.Semantic "bad iterator")) }
 
-
 %inline metakind_atomic:
   TIdentifier
     { (fun arity name pure check_meta constraints ->
@@ -425,7 +431,7 @@ metadec:
   TExpression
     { (fun arity name pure check_meta constraints ->
       let tok = check_meta(Ast.MetaExpDecl(arity,name,None)) in
-      !Data.add_exp_meta None name constraints pure; tok) }
+      !Data.add_exp_meta None name (Ast0.NotExpCstrt constraints) pure; tok) }
 | vl=meta_exp_type // no error if use $1 but doesn't type check
     { (fun arity name pure check_meta constraints ->
       let ty = Some vl in
@@ -445,7 +451,8 @@ metadec:
 	  | _ -> ())
 	constraints;
       let tok = check_meta(Ast.MetaExpDecl(arity,name,ty)) in
-      !Data.add_exp_meta ty name constraints pure; tok) }
+      !Data.add_exp_meta ty name (Ast0.NotExpCstrt constraints) pure; tok)
+    }
 
 
 meta_exp_type:
@@ -1084,12 +1091,12 @@ initialize2:
 | ident TDotDot initialize2
     { Ast0.wrap(Ast0.InitGccName($1,P.clt2mcode ":" $2,$3)) } /* in old kernel */
 
-designator: 
- | TDot ident 
-     { Ast0.DesignatorField (P.clt2mcode "." $1,$2) } 
- | TOCro eexpr TCCro 
+designator:
+ | TDot ident
+     { Ast0.DesignatorField (P.clt2mcode "." $1,$2) }
+ | TOCro eexpr TCCro
      { Ast0.DesignatorIndex (P.clt2mcode "[" $1,$2,P.clt2mcode "]" $3) }
- | TOCro eexpr TEllipsis eexpr TCCro 
+ | TOCro eexpr TEllipsis eexpr TCCro
      { Ast0.DesignatorRange (P.clt2mcode "[" $1,$2,P.clt2mcode "..." $3,
 			     $4,P.clt2mcode "]" $5) }
 
@@ -1425,10 +1432,49 @@ seed_elem:
       P.check_meta(Ast.MetaIdDecl(Ast.NONE,nm));
       Ast.SeedId nm }
 
-pure_ident_or_meta_ident_with_not_eq(not_eq):
-       i=pure_ident_or_meta_ident l=loption(not_eq) { (i,l) }
+pure_ident_or_meta_ident_with_x_eq(x_eq):
+       i=pure_ident_or_meta_ident l=loption(x_eq)
+    {
+      (i, l)
+    }
 
-not_eq:
+pure_ident_or_meta_ident_with_econstraint(x_eq):
+       i=pure_ident_or_meta_ident optc=option(x_eq)
+    {
+      match optc with
+	  None   -> (i, Ast0.NoConstraint)
+	| Some c -> (i, c)
+    }
+
+pure_ident_or_meta_ident_with_idconstraint(constraint_type):
+       i=pure_ident_or_meta_ident c=option(constraint_type)
+    {
+      match c with
+	  None -> (i, Ast.IdNoConstraint)
+	| Some constraint_ -> (i,constraint_)
+    }
+
+re_or_not_eqid:
+   re=regexp_eqid {re}
+ | ne=not_eqid    {ne}
+
+regexp_eqid:
+       TTildeEq re=TString
+         { (if !Data.in_iso
+	    then failwith "constraints not allowed in iso file");
+	   (if !Data.in_generating
+	    then failwith "constraints not allowed in a generated rule file");
+	   let (s,_) = re in Ast.IdRegExp (s,Str.regexp s)
+	 }
+ | TTildeExclEq re=TString
+         { (if !Data.in_iso
+	    then failwith "constraints not allowed in iso file");
+	   (if !Data.in_generating
+	    then failwith "constraints not allowed in a generated rule file");
+	   let (s,_) = re in Ast.IdNotRegExp (s,Str.regexp s)
+	 }
+
+not_eqid:
        TNotEq i=pure_ident
          { (if !Data.in_iso
 	   then failwith "constraints not allowed in iso file");
@@ -1436,13 +1482,18 @@ not_eq:
            (* pb: constraints not stored with metavars; too lazy to search for
 	      them in the pattern *)
 	   then failwith "constraints not allowed in a generated rule file");
-	   [Ast0.wrap(Ast0.Id(P.id2mcode i))] }
+	   Ast.IdNegIdSet([fst i]) }
      | TNotEq TOBrace l=comma_list(pure_ident) TCBrace
 	 { (if !Data.in_iso
 	   then failwith "constraints not allowed in iso file");
 	   (if !Data.in_generating
 	   then failwith "constraints not allowed in a generated rule file");
-	   List.map (function i -> Ast0.wrap(Ast0.Id(P.id2mcode i))) l }
+	   Ast.IdNegIdSet(List.map fst l)
+	 }
+
+re_or_not_eqe:
+   re=regexp_eqid {Ast0.NotIdCstrt (re)}
+ | ne=not_eqe     {Ast0.NotExpCstrt (ne)}
 
 not_eqe:
        TNotEq i=pure_ident
@@ -1450,7 +1501,8 @@ not_eqe:
 	   then failwith "constraints not allowed in iso file");
 	   (if !Data.in_generating
 	   then failwith "constraints not allowed in a generated rule file");
-	   [Ast0.wrap(Ast0.Ident(Ast0.wrap(Ast0.Id(P.id2mcode i))))] }
+	   [Ast0.wrap(Ast0.Ident(Ast0.wrap(Ast0.Id(P.id2mcode i))))]
+	 }
      | TNotEq TOBrace l=comma_list(pure_ident) TCBrace
 	 { (if !Data.in_iso
 	   then failwith "constraints not allowed in iso file");
@@ -1458,8 +1510,9 @@ not_eqe:
 	   then failwith "constraints not allowed in a generated rule file");
 	   List.map
 	     (function i ->
-	       Ast0.wrap(Ast0.Ident(Ast0.wrap(Ast0.Id(P.id2mcode i)))))
-	     l }
+		Ast0.wrap(Ast0.Ident(Ast0.wrap(Ast0.Id(P.id2mcode i)))))
+	     l
+	 }
 
 not_ceq:
        TNotEq i=ident_or_const

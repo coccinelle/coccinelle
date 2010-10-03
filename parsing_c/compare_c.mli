@@ -8,10 +8,11 @@ type compare_result =
 
 val compare_ast : 
  Common.filename -> Common.filename -> compare_result * string list 
-val compare_token :
+
+val compare_default : (* compare to a res file *)
   Common.filename -> Common.filename -> compare_result * string list
 
-val compare_default : 
+val compare_to_original : (* compare to the source of the transformation *)
   Common.filename -> Common.filename -> compare_result * string list
 
 

@@ -1,29 +1,30 @@
 (*
-* Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
-* Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller
-* This file is part of Coccinelle.
-* 
-* Coccinelle is free software: you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation, according to version 2 of the License.
-* 
-* Coccinelle is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-* GNU General Public License for more details.
-* 
-* You should have received a copy of the GNU General Public License
-* along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
-* 
-* The authors reserve the right to distribute this or future versions of
-* Coccinelle under other licenses.
-*)
+ * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+ * This file is part of Coccinelle.
+ *
+ * Coccinelle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, according to version 2 of the License.
+ *
+ * Coccinelle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The authors reserve the right to distribute this or future versions of
+ * Coccinelle under other licenses.
+ *)
 
 
 (* Find a directive or comment at the end of a statement.  Things with aft
 given None, because they can accomodate their own directives or comments *)
 
 module Ast0 = Ast0_cocci
+module Ast = Ast_cocci
 module V0 = Visitor_ast0
 module VT0 = Visitor_ast0_types
 
@@ -34,21 +35,21 @@ let call_right processor data s cont =
 
 let left_mcode (a,b,info,mcodekind,d,e) =
   match (info.Ast0.strings_before,mcodekind) with
-    ([],_) | (_,Ast0.PLUS) -> None
+    ([],_) | (_,Ast0.PLUS _) -> None
   | (l,_) -> Some(l,(a,b,{info with Ast0.strings_before = []},mcodekind,d,e))
 
 let right_mcode (a,b,info,mcodekind,d,e) =
   match (info.Ast0.strings_after,mcodekind) with
-    ([],_) | (_,Ast0.PLUS) -> None
+    ([],_) | (_,Ast0.PLUS _) -> None
   | (l,_) -> Some(l,(a,b,{info with Ast0.strings_after = []},mcodekind,d,e))
 
 let update_before pragmas (info,x) =
   ({info with Ast0.strings_before = pragmas @ info.Ast0.strings_before},
-   Ast0.PLUS)
+   Ast0.PLUS Ast.ONE) (* not sure what the arg should be... one seems safe *)
 
 let update_after pragmas (info,x) =
   ({info with Ast0.strings_after = info.Ast0.strings_after @ pragmas},
-   Ast0.PLUS)
+   Ast0.PLUS Ast.ONE) (* not sure what the arg should be... one seems safe *)
 
 let rec right_decl d =
   match Ast0.unwrap d with
@@ -200,22 +201,22 @@ let rec left_ty t =
 
 let rec left_ident i =
   match Ast0.unwrap i with
-    Ast0.Id(name) ->
-      call_right left_mcode name i
-	(function name -> Ast0.Id(name))
-  | Ast0.MetaId(name,a,b) ->
-      call_right left_mcode name i
-	(function name -> Ast0.MetaId(name,a,b))
-  | Ast0.MetaFunc(name,a,b) ->
-      call_right left_mcode name i
-	(function name -> Ast0.MetaFunc(name,a,b))
-  | Ast0.MetaLocalFunc(name,a,b) ->
-      call_right left_mcode name i
-	(function name -> Ast0.MetaLocalFunc(name,a,b))
-  | Ast0.OptIdent(id) ->
-      call_right left_ident id i (function id -> Ast0.OptIdent(id))
-  | Ast0.UniqueIdent(id) ->
-      call_right left_ident id i (function id -> Ast0.UniqueIdent(id))
+      Ast0.Id(name) ->
+	call_right left_mcode name i
+	  (function name -> Ast0.Id(name))
+    | Ast0.MetaId(name,a,b) ->
+	call_right left_mcode name i
+	  (function name -> Ast0.MetaId(name,a,b))
+    | Ast0.MetaFunc(name,a,b) ->
+	call_right left_mcode name i
+	  (function name -> Ast0.MetaFunc(name,a,b))
+    | Ast0.MetaLocalFunc(name,a,b) ->
+	call_right left_mcode name i
+	  (function name -> Ast0.MetaLocalFunc(name,a,b))
+    | Ast0.OptIdent(id) ->
+	call_right left_ident id i (function id -> Ast0.OptIdent(id))
+    | Ast0.UniqueIdent(id) ->
+	call_right left_ident id i (function id -> Ast0.UniqueIdent(id))
 
 let left_fundecl name fninfo =
   let fncall_right processor data cont =

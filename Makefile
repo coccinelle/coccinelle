@@ -1,21 +1,22 @@
 # Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
-# Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller
+# Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
 # This file is part of Coccinelle.
-# 
+#
 # Coccinelle is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, according to version 2 of the License.
-# 
+#
 # Coccinelle is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
-# 
+#
 # The authors reserve the right to distribute this or future versions of
 # Coccinelle under other licenses.
+
 
 
 #############################################################################
@@ -25,6 +26,7 @@
 -include Makefile.config
 
 VERSION=$(shell cat globals/config.ml.in |grep version |perl -p -e 's/.*"(.*)".*/$$1/;')
+CCVERSION=$(shell cat scripts/coccicheck/README |grep "Coccicheck version" |perl -p -e 's/.*version (.*)[ ]*/$$1/;')
 
 ##############################################################################
 # Variables
@@ -54,16 +56,16 @@ LIBS=commons/commons.cma \
      globals/globals.cma \
      ctl/ctl.cma \
      parsing_cocci/cocci_parser.cma parsing_c/parsing_c.cma \
-     engine/cocciengine.cma \
+     engine/cocciengine.cma popl09/popl.cma \
      extra/extra.cma $(PYCMA) python/coccipython.cma
 
 #used for clean: and depend: and a little for rec & rec.opt
 MAKESUBDIRS=commons ocamlsexp \
  globals menhirlib $(PYDIR) ctl parsing_cocci parsing_c \
- engine extra python
+ engine popl09 extra python
 INCLUDEDIRS=commons commons/ocamlextra ocamlsexp \
  globals menhirlib $(PYDIR) ctl \
- parsing_cocci parsing_c engine extra python
+ parsing_cocci parsing_c engine popl09 extra python
 
 ##############################################################################
 # Generic variables
@@ -80,7 +82,7 @@ EXEC=$(TARGET)
 # Generic ocaml variables
 ##############################################################################
 
-OCAMLCFLAGS= #-g -dtypes # -w A
+OCAMLCFLAGS= -g -dtypes # -w A
 
 # for profiling add  -p -inline 0
 # but 'make forprofiling' below does that for you.
@@ -157,6 +159,7 @@ $(MAKESUBDIRS:%=%.opt):
 # parsing_c:parsing_cocci
 # ctl:globals commons
 # engine: parsing_cocci parsing_c ctl
+# popl09:engine
 # extra: parsing_cocci parsing_c ctl
 # pycaml:
 # python:pycaml parsing_cocci parsing_c
@@ -291,7 +294,7 @@ install-python:
 		$(DESTDIR)$(SHAREDIR)/python/coccilib/coccigui
 	$(INSTALL_LIB) dllpycaml_stubs.so $(DESTDIR)$(LIBDIR)
 
-install: install-common 
+install: install-common
 	@if test -x spatch -a ! -x spatch.opt ; then \
 		$(MAKE) install-byte;fi
 	@if test ! -x spatch -a -x spatch.opt ; then \
@@ -331,7 +334,8 @@ uninstall:
 	rm -f $(DESTDIR)$(MANDIR)/man1/spatch.1
 
 version:
-	@echo $(VERSION)
+	@echo "spatch     $(VERSION)"
+	@echo "coccicheck $(CCVERSION)"
 
 
 ##############################################################################
@@ -339,6 +343,7 @@ version:
 ##############################################################################
 
 PACKAGE=coccinelle-$(VERSION)
+CCPACKAGE=coccicheck-$(CCVERSION)
 
 BINSRC=spatch env.sh env.csh standard.h standard.iso \
        *.txt \
@@ -382,21 +387,26 @@ OCAMLVERSION=$(shell ocaml -version |perl -p -e 's/.*version (.*)/$$1/;')
 # the scripts/licensify has been run at least once.
 # For the 'make bintar' I can do it from my original repo.
 
+prepackage:
+	cvs up -CdP
+	$(MAKE) distclean
+	$(MAKE) licensify
 
 package:
-	make srctar
+	$(MAKE) srctar
 	./configure --without-python
-	make docs
-	make bintar
-	make bytecodetar
-	make staticbintar
+	$(MAKE) docs
+	$(MAKE) bintar
+	$(MAKE) bytecodetar
+	$(MAKE) staticbintar
+	$(MAKE) coccicheck
 
 
 # I currently pre-generate the parser so the user does not have to
 # install menhir on his machine. We could also do a few cleanups.
 # You may have first to do a 'make licensify'.
 #
-# update: make docs generates pdf but also some ugly .log files, so 
+# update: make docs generates pdf but also some ugly .log files, so
 # make clean is there to remove them while not removing the pdf
 # (only distclean remove the pdfs).
 srctar:
@@ -430,18 +440,26 @@ bytecodetar: all
 	cd $(TMP); tar cvfz $(PACKAGE)-bin-bytecode-$(OCAMLVERSION).tgz --exclude-vcs $(BINSRC2)
 	rm -f $(TMP)/$(PACKAGE)
 
+coccicheck:
+	cp -a `pwd`/scripts/coccicheck $(TMP)/$(CCPACKAGE)
+	tar cvfz $(TMP)/$(CCPACKAGE).tgz -C $(TMP) --exclude-vcs $(CCPACKAGE)
+	rm -rf $(TMP)/$(CCPACKAGE)
+
 clean::
-	rm -f $(PACKAGE)
-	rm -f $(PACKAGE)-bin-x86.tgz
-	rm -f $(PACKAGE)-bin-x86-static.tgz
-	rm -f $(PACKAGE)-bin-bytecode-$(OCAMLVERSION).tgz
+	rm -f $(TMP)/$(PACKAGE).tgz
+	rm -f $(TMP)/$(PACKAGE)-bin-x86.tgz
+	rm -f $(TMP)/$(PACKAGE)-bin-x86-static.tgz
+	rm -f $(TMP)/$(PACKAGE)-bin-bytecode-$(OCAMLVERSION).tgz
+	rm -f $(TMP)/$(CCPACKAGE).tgz
 
-
-
-TOLICENSIFY=ctl engine parsing_cocci python
+#
+# No need to licensify 'demos'. Because these is basic building blocks
+# to use SmPL.
+#
+TOLICENSIFY=ctl engine globals parsing_cocci popl popl09 python scripts tools
 licensify:
-	ocaml tools/licensify.ml
-	set -e; for i in $(TOLICENSIFY); do cd $$i; ocaml ../tools/licensify.ml; cd ..; done
+	ocaml str.cma tools/licensify.ml
+	set -e; for i in $(TOLICENSIFY); do cd $$i; ocaml str.cma ../tools/licensify.ml; cd ..; done
 
 # When checking out the source from diku sometimes I have some "X in the future"
 # error messages.
@@ -524,7 +542,7 @@ tags:
 	otags -no-mli-tags -r  .
 
 dependencygraph:
-	find  -name "*.ml" |grep -v "scripts" | xargs ocamldep -I commons -I globals -I ctl -I parsing_cocci -I parsing_c -I engine -I extra > /tmp/dependfull.depend
+	find  -name "*.ml" |grep -v "scripts" | xargs ocamldep -I commons -I globals -I ctl -I parsing_cocci -I parsing_c -I engine -I popl09 -I extra > /tmp/dependfull.depend
 	ocamldot -lr /tmp/dependfull.depend > /tmp/dependfull.dot
 	dot -Tps /tmp/dependfull.dot > /tmp/dependfull.ps
 	ps2pdf /tmp/dependfull.ps /tmp/dependfull.pdf

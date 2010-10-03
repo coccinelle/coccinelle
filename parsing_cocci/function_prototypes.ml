@@ -1,23 +1,23 @@
 (*
-* Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
-* Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller
-* This file is part of Coccinelle.
-* 
-* Coccinelle is free software: you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation, according to version 2 of the License.
-* 
-* Coccinelle is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-* GNU General Public License for more details.
-* 
-* You should have received a copy of the GNU General Public License
-* along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
-* 
-* The authors reserve the right to distribute this or future versions of
-* Coccinelle under other licenses.
-*)
+ * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+ * This file is part of Coccinelle.
+ *
+ * Coccinelle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, according to version 2 of the License.
+ *
+ * Coccinelle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The authors reserve the right to distribute this or future versions of
+ * Coccinelle under other licenses.
+ *)
 
 
 module Ast0 = Ast0_cocci
@@ -29,11 +29,11 @@ type id = Id of string | Meta of (string * string)
 
 let rec get_name name =
   match Ast0.unwrap name with
-    Ast0.Id(nm) -> Id(Ast0.unwrap_mcode nm)
-  | Ast0.MetaId(nm,_,_) | Ast0.MetaFunc(nm,_,_)
-  | Ast0.MetaLocalFunc(nm,_,_) -> Meta(Ast0.unwrap_mcode nm)
-  | Ast0.OptIdent(id) | Ast0.UniqueIdent(id) ->
-      get_name id
+      Ast0.Id(nm) -> Id(Ast0.unwrap_mcode nm)
+    | Ast0.MetaId(nm,_,_) | Ast0.MetaFunc(nm,_,_)
+    | Ast0.MetaLocalFunc(nm,_,_) -> Meta(Ast0.unwrap_mcode nm)
+    | Ast0.OptIdent(id) | Ast0.UniqueIdent(id) ->
+	get_name id
 
 (* --------------------------------------------------------------------- *)
 (* collect all of the functions *)
@@ -126,9 +126,11 @@ let rec align all_minus all_plus =
 
 and strip =
   let donothing r k e =
-    {(Ast0.wrap (Ast0.unwrap (k e))) with Ast0.mcodekind = ref Ast0.PLUS} in
+    {(Ast0.wrap (Ast0.unwrap (k e))) with
+      Ast0.mcodekind = ref  (Ast0.PLUS Ast.ONE)} in
   let mcode (mc,_,_,_,_,_) =
-    (mc,Ast0.NONE,Ast0.default_info(),Ast0.PLUS,ref Ast0.NoMetaPos,-1) in
+    (mc,Ast0.NONE,Ast0.default_info(),Ast0.PLUS Ast.ONE,
+     ref Ast0.NoMetaPos,-1) in
 
   (* need a case for everything that has an unvisited component and can be in
      a function prototype *)

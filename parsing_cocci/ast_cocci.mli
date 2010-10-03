@@ -1,3 +1,32 @@
+(*
+ * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+ * This file is part of Coccinelle.
+ *
+ * Coccinelle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, according to version 2 of the License.
+ *
+ * Coccinelle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The authors reserve the right to distribute this or future versions of
+ * Coccinelle under other licenses.
+ *)
+
+
+(* Constraints on Meta-* Identifiers, Functions *)
+type idconstraint =
+    IdNoConstraint
+  | IdNegIdSet      of string list
+  | IdRegExp        of string * Str.regexp
+  | IdNotRegExp     of string * Str.regexp
+
 (* --------------------------------------------------------------------- *)
 (* Modified code *)
 
@@ -21,9 +50,9 @@ type 'a wrap =
       iso_info : (string*anything) list }
 
 and 'a befaft =
-    BEFORE      of 'a list list
-  | AFTER       of 'a list list
-  | BEFOREAFTER of 'a list list * 'a list list
+    BEFORE      of 'a list list * count
+  | AFTER       of 'a list list * count
+  | BEFOREAFTER of 'a list list * 'a list list * count
   | NOTHING
 
 and 'a mcode = 'a * info * mcodekind * meta_pos (* pos variable *)
@@ -32,7 +61,8 @@ and 'a mcode = 'a * info * mcodekind * meta_pos (* pos variable *)
  and mcodekind =
     MINUS       of pos * int list * int * anything list list
   | CONTEXT     of pos * anything befaft
-  | PLUS
+  | PLUS        of count
+ and count = ONE (* + *) | MANY (* ++ *)
  and fixpos =
     Real of int (* charpos *) | Virt of int * int (* charpos + offset *)
  and pos = NoPos | DontCarePos | FixPos of (fixpos * fixpos)
@@ -99,11 +129,10 @@ and 'a dots = 'a base_dots wrap
 (* Identifier *)
 
 and base_ident =
-    Id of string mcode
-
-  | MetaId        of meta_name mcode * ident list * keep_binding * inherited
-  | MetaFunc      of meta_name mcode * ident list * keep_binding * inherited
-  | MetaLocalFunc of meta_name mcode * ident list * keep_binding * inherited
+    Id            of string mcode
+  | MetaId        of meta_name mcode * idconstraint * keep_binding * inherited
+  | MetaFunc      of meta_name mcode * idconstraint * keep_binding * inherited
+  | MetaLocalFunc of meta_name mcode * idconstraint * keep_binding * inherited
 
   | OptIdent      of ident
   | UniqueIdent   of ident
@@ -141,9 +170,9 @@ and base_expression =
   | Paren          of string mcode (* ( *) * expression *
                       string mcode (* ) *)
 
-  | MetaErr        of meta_name mcode * expression list * keep_binding *
+  | MetaErr        of meta_name mcode * constraints * keep_binding *
 	              inherited
-  | MetaExpr       of meta_name mcode * expression list * keep_binding *
+  | MetaExpr       of meta_name mcode * constraints * keep_binding *
 	              Type_cocci.typeC list option * form * inherited
   | MetaExprList   of meta_name mcode * listlen option *
 	              keep_binding * inherited (* only in arg lists *)
@@ -162,6 +191,11 @@ and base_expression =
 
   | OptExp         of expression
   | UniqueExp      of expression
+
+and constraints =
+    NoConstraint
+  | NotIdCstrt     of idconstraint
+  | NotExpCstrt    of expression list
 
 and form = ANY | ID | LocalID | CONST (* form for MetaExp *)
 
@@ -550,6 +584,8 @@ and exists = Exists | Forall | Undetermined
 val mkToken : string -> anything
 
 val undots : 'a dots -> 'a list
+
+val lub_count : count -> count -> count
 
 (* --------------------------------------------------------------------- *)
 

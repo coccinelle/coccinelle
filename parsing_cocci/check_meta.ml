@@ -1,23 +1,23 @@
 (*
-* Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
-* Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller
-* This file is part of Coccinelle.
-* 
-* Coccinelle is free software: you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation, according to version 2 of the License.
-* 
-* Coccinelle is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-* GNU General Public License for more details.
-* 
-* You should have received a copy of the GNU General Public License
-* along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
-* 
-* The authors reserve the right to distribute this or future versions of
-* Coccinelle under other licenses.
-*)
+ * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+ * This file is part of Coccinelle.
+ *
+ * Coccinelle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, according to version 2 of the License.
+ *
+ * Coccinelle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The authors reserve the right to distribute this or future versions of
+ * Coccinelle under other licenses.
+ *)
 
 
 (* For minus fragment, checks that all of the identifier metavariables that
@@ -83,31 +83,33 @@ let is_ifdef name =
 
 let ident context old_metas table minus i =
   match Ast0.unwrap i with
-    Ast0.Id((name,_,info,_,_,_) : string Ast0.mcode) ->
-      let rl = info.Ast0.pos_info.Ast0.line_start in
-      let err =
-	if List.exists (function x -> x = name) old_metas
-	    && (minus || Ast0.get_mcodekind i = Ast0.PLUS)
-	then
-	  begin
-	    warning
-	      (Printf.sprintf
-		 "line %d: %s, previously declared as a metavariable, is used as an identifier" rl name);
-	      true
-	  end
-	else false in
-      (match context with
-	ID ->
-	  if not (is_ifdef name) && minus && not err(* warn only once per id *)
+      Ast0.Id((name,_,info,_,_,_) : string Ast0.mcode) ->
+	let rl = info.Ast0.pos_info.Ast0.line_start in
+	let is_plus i =
+ 	  match Ast0.get_mcodekind i with Ast0.PLUS _ -> true | _ -> false in
+	let err =
+	  if List.exists (function x -> x = name) old_metas
+	    && (minus || is_plus i)
 	  then
-	    warning
-	      (Printf.sprintf "line %d: should %s be a metavariable?" rl name)
-      | _ -> ())
-  | Ast0.MetaId(name,_,_) -> check_table table minus name
-  | Ast0.MetaFunc(name,_,_) -> check_table table minus name
-  | Ast0.MetaLocalFunc(name,_,_) -> check_table table minus name
-  | Ast0.OptIdent(_) | Ast0.UniqueIdent(_) ->
-      failwith "unexpected code"
+	    begin
+	      warning
+		(Printf.sprintf
+		   "line %d: %s, previously declared as a metavariable, is used as an identifier" rl name);
+	      true
+	    end
+	  else false in
+	  (match context with
+	       ID ->
+		 if not (is_ifdef name) && minus && not err(* warn only once per id *)
+		 then
+		   warning
+		     (Printf.sprintf "line %d: should %s be a metavariable?" rl name)
+	     | _ -> ())
+    | Ast0.MetaId(name,_,_) -> check_table table minus name
+    | Ast0.MetaFunc(name,_,_) -> check_table table minus name
+    | Ast0.MetaLocalFunc(name,_,_) -> check_table table minus name
+    | Ast0.OptIdent(_) | Ast0.UniqueIdent(_) ->
+	failwith "unexpected code"
 
 (* --------------------------------------------------------------------- *)
 (* Expression *)

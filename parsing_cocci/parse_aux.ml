@@ -1,23 +1,23 @@
 (*
-* Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
-* Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller
-* This file is part of Coccinelle.
-* 
-* Coccinelle is free software: you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation, according to version 2 of the License.
-* 
-* Coccinelle is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-* GNU General Public License for more details.
-* 
-* You should have received a copy of the GNU General Public License
-* along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
-* 
-* The authors reserve the right to distribute this or future versions of
-* Coccinelle under other licenses.
-*)
+ * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+ * This file is part of Coccinelle.
+ *
+ * Coccinelle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, according to version 2 of the License.
+ *
+ * Coccinelle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The authors reserve the right to distribute this or future versions of
+ * Coccinelle under other licenses.
+ *)
 
 
 (* exports everything, used only by parser_cocci_menhir.mly *)
@@ -30,7 +30,7 @@ type idinfo = Ast.meta_name * Data.iconstraints * Ast0.pure * Data.clt
 type expinfo = Ast.meta_name * Data.econstraints * Ast0.pure * Data.clt
 type tyinfo = Ast.meta_name * Ast0.typeC list * Ast0.pure * Data.clt
 type list_info = Ast.meta_name * Ast.meta_name option * Ast0.pure * Data.clt
-type typed_info =
+type typed_expinfo =
     Ast.meta_name * Data.econstraints * Ast0.pure *
       Type_cocci.typeC list option * Data.clt
 type pos_info = Ast.meta_name * Data.pconstraints * Ast.meta_collect * Data.clt
@@ -70,8 +70,11 @@ let clt2mcode str = function
       (str,Ast0.UNIQUE,make_info line lline offset col strbef straft,
        Ast0.MINUS(ref([],Ast0.default_token_info)),ref pos,-1)
   | (Data.PLUS,line,lline,offset,col,strbef,straft,pos)        ->
-      (str,Ast0.NONE,make_info line lline offset col strbef straft,Ast0.PLUS,
-       ref pos,-1)
+      (str,Ast0.NONE,make_info line lline offset col strbef straft,
+       Ast0.PLUS(Ast.ONE),ref pos,-1)
+  | (Data.PLUSPLUS,line,lline,offset,col,strbef,straft,pos)        ->
+      (str,Ast0.NONE,make_info line lline offset col strbef straft,
+       Ast0.PLUS(Ast.MANY),ref pos,-1)
   | (Data.CONTEXT,line,lline,offset,col,strbef,straft,pos)     ->
       (str,Ast0.NONE,make_info line lline offset col strbef straft,
        Ast0.CONTEXT(ref(Ast.NOTHING,
@@ -353,17 +356,17 @@ let create_fresh_metadec kindfn ids current_rule =
 	 kindfn rule checker seed)
        ids)
 
-let create_metadec_ne ar ispure kindfn ids current_rule =
+let create_metadec_with_constraints ar ispure kindfn ids current_rule =
   List.concat
     (List.map
        (function ((rule,nm),constraints) ->
 	 let (rule,checker) =
 	   match rule with
-	     None -> ((current_rule,nm),function x -> [Common.Left x])
-	   | Some rule ->
-	       ((rule,nm),
-		function x -> check_meta x; [Common.Right x]) in
-	 kindfn ar rule ispure checker constraints)
+	       None -> ((current_rule,nm),function x -> [Common.Left x])
+	     | Some rule ->
+		 ((rule,nm),
+		  function x -> check_meta x; [Common.Right x]) in
+	   kindfn ar rule ispure checker constraints)
        ids)
 
 let create_metadec_ty ar ispure kindfn ids current_rule =

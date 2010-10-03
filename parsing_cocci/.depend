@@ -36,10 +36,10 @@ adjacency.cmo: visitor_ast0_types.cmo visitor_ast0.cmi ast0_cocci.cmi \
     adjacency.cmi 
 adjacency.cmx: visitor_ast0_types.cmx visitor_ast0.cmx ast0_cocci.cmx \
     adjacency.cmi 
-adjust_pragmas.cmo: visitor_ast0_types.cmo visitor_ast0.cmi ast0_cocci.cmi \
-    adjust_pragmas.cmi 
-adjust_pragmas.cmx: visitor_ast0_types.cmx visitor_ast0.cmx ast0_cocci.cmx \
-    adjust_pragmas.cmi 
+adjust_pragmas.cmo: visitor_ast0_types.cmo visitor_ast0.cmi ast_cocci.cmi \
+    ast0_cocci.cmi adjust_pragmas.cmi 
+adjust_pragmas.cmx: visitor_ast0_types.cmx visitor_ast0.cmx ast_cocci.cmx \
+    ast0_cocci.cmx adjust_pragmas.cmi 
 arity.cmo: ast_cocci.cmi ast0_cocci.cmi arity.cmi 
 arity.cmx: ast_cocci.cmx ast0_cocci.cmx arity.cmi 
 ast0_cocci.cmo: type_cocci.cmi ../globals/flag.cmo ../commons/common.cmi \

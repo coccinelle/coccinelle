@@ -228,7 +228,7 @@ let test =
  * Note that I don't visit necesserally in the order of the token
  * found in the original file. So don't assume such hypothesis!
  * 
- * todo? parameter ? onedecl ?
+ * todo? parameter ?
  *)
 type visitor_c = 
  { 
@@ -237,6 +237,8 @@ type visitor_c =
    ktype:      (fullType    -> unit) * visitor_c -> fullType    -> unit;
 
    kdecl:      (declaration -> unit) * visitor_c -> declaration -> unit;
+   konedecl:   (onedecl -> unit)      * visitor_c -> onedecl -> unit;
+   kparam:  (parameterType -> unit)      * visitor_c -> parameterType -> unit;
    kdef:       (definition  -> unit) * visitor_c -> definition  -> unit; 
    kname     : (name -> unit)        * visitor_c -> name       -> unit;
 
@@ -261,6 +263,8 @@ let default_visitor_c =
     kstatement    = (fun (k,_) st -> k st);
     ktype         = (fun (k,_) t  -> k t);
     kdecl         = (fun (k,_) d  -> k d);
+    konedecl      = (fun (k,_) d  -> k d);
+    kparam        = (fun (k,_) d  -> k d);
     kdef          = (fun (k,_) d  -> k d);
     kini          = (fun (k,_) ie  -> k ie);
     kname         = (fun (k,_) x -> k x);
@@ -502,6 +506,8 @@ and vk_decl = fun bigf d ->
 
 and vk_onedecl = fun bigf onedecl -> 
   let iif ii = vk_ii bigf ii in
+  let f = bigf.konedecl in 
+  let rec k onedecl = 
   match onedecl with
   | ({v_namei = var; 
       v_type = t; 
@@ -519,6 +525,7 @@ and vk_onedecl = fun bigf onedecl ->
       vk_ini bigf ini;
       );
     )
+  in f (k, bigf) onedecl
 
 and vk_ini = fun bigf ini -> 
   let iif ii = vk_ii bigf ii in
@@ -831,8 +838,8 @@ and vk_node = fun bigf node ->
 
     | (
         F.TopNode|F.EndNode|
-        F.ErrorExit|F.Exit|F.Enter|
-        F.FallThroughNode|F.AfterNode|F.FalseNode|F.TrueNode|F.InLoopNode|
+        F.ErrorExit|F.Exit|F.Enter|F.LoopFallThroughNode|F.FallThroughNode|
+        F.AfterNode|F.FalseNode|F.TrueNode|F.InLoopNode|
         F.Fake
       ) -> ()
 
@@ -873,10 +880,13 @@ and vk_argument_list = fun bigf es ->
 
 and vk_param = fun bigf param  ->
   let iif ii = vk_ii bigf ii in
-  let {p_namei = swrapopt; p_register = (b, iib); p_type=ft} = param in
-  swrapopt +> Common.do_option (vk_name bigf);
-  iif iib;
-  vk_type bigf ft
+  let f = bigf.kparam in 
+  let rec k param =
+    let {p_namei = swrapopt; p_register = (b, iib); p_type=ft} = param in
+    swrapopt +> Common.do_option (vk_name bigf);
+    iif iib;
+    vk_type bigf ft
+  in f (k, bigf) param
 
 and vk_param_list = fun bigf ts -> 
   let iif ii = vk_ii bigf ii in
@@ -1632,8 +1642,8 @@ and vk_node_s = fun bigf node ->
     | (
         (
           F.TopNode|F.EndNode|
-          F.ErrorExit|F.Exit|F.Enter|
-          F.FallThroughNode|F.AfterNode|F.FalseNode|F.TrueNode|F.InLoopNode|
+          F.ErrorExit|F.Exit|F.Enter|F.LoopFallThroughNode|F.FallThroughNode|
+          F.AfterNode|F.FalseNode|F.TrueNode|F.InLoopNode|
           F.Fake
         ) as x) -> x
 

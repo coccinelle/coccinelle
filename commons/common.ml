@@ -1259,7 +1259,7 @@ type 'a mylazy = (unit -> 'a)
 (* a la emacs *)
 let save_excursion reference f = 
   let old = !reference in
-  let res = f() in
+  let res = try f() with e -> reference := old; raise e in
   reference := old;
   res
 
@@ -5515,7 +5515,6 @@ let full_charpos_to_pos_large2 = fun filename ->
     let line  = ref 0 in
 
     let rec full_charpos_to_pos_aux () =
-     try
        let s = (input_line chan) in
        incr line;
 
@@ -5526,19 +5525,18 @@ let full_charpos_to_pos_large2 = fun filename ->
          arr2.{!charpos + i} <- i;
        done;
        charpos := !charpos + slength s + 1;
-       full_charpos_to_pos_aux();
-       
-     with End_of_file -> 
-       for i = !charpos to (* old: Array.length arr *) 
-         Bigarray.Array1.dim arr1 - 1 do
-         (* old: arr.(i) <- (!line, 0); *)
-         arr1.{i} <- !line;
-         arr2.{i} <- 0;
-       done;
-       ();
-    in 
+       full_charpos_to_pos_aux() in
     begin 
-      full_charpos_to_pos_aux ();
+      (try
+	full_charpos_to_pos_aux ();
+      with End_of_file -> 
+	for i = !charpos to (* old: Array.length arr *) 
+          Bigarray.Array1.dim arr1 - 1 do
+         (* old: arr.(i) <- (!line, 0); *)
+          arr1.{i} <- !line;
+          arr2.{i} <- 0;
+	done;
+	());
       close_in chan;
       (fun i -> arr1.{i}, arr2.{i})
     end

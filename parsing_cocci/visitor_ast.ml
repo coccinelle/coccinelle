@@ -1,23 +1,23 @@
 (*
-* Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
-* Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller
-* This file is part of Coccinelle.
-* 
-* Coccinelle is free software: you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation, according to version 2 of the License.
-* 
-* Coccinelle is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-* GNU General Public License for more details.
-* 
-* You should have received a copy of the GNU General Public License
-* along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
-* 
-* The authors reserve the right to distribute this or future versions of
-* Coccinelle under other licenses.
-*)
+ * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+ * This file is part of Coccinelle.
+ *
+ * Coccinelle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, according to version 2 of the License.
+ *
+ * Coccinelle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The authors reserve the right to distribute this or future versions of
+ * Coccinelle under other licenses.
+ *)
 
 
 module Ast0 = Ast0_cocci
@@ -115,13 +115,13 @@ let combiner bind option_default
   and ident i =
     let k i =
       match Ast.unwrap i with
-	Ast.Id(name) -> string_mcode name
-      | Ast.MetaId(name,_,_,_) -> meta_mcode name
-      | Ast.MetaFunc(name,_,_,_) -> meta_mcode name
-      | Ast.MetaLocalFunc(name,_,_,_) -> meta_mcode name
-      | Ast.OptIdent(id) -> ident id
-      | Ast.UniqueIdent(id) -> ident id in
-    identfn all_functions k i
+	  Ast.Id(name) -> string_mcode name
+	| Ast.MetaId(name,_,_,_) -> meta_mcode name
+	| Ast.MetaFunc(name,_,_,_) -> meta_mcode name
+	| Ast.MetaLocalFunc(name,_,_,_) -> meta_mcode name
+	| Ast.OptIdent(id) -> ident id
+	| Ast.UniqueIdent(id) -> ident id in
+      identfn all_functions k i
 
   and expression e =
     let k e =

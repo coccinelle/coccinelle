@@ -1,0 +1,27 @@
+#!/bin/bash
+
+MODE=$1
+PROJECT=$2
+
+if [ "$MODE" == "" -o "$PROJECT" == "" ]; then
+	echo -e "\n\tUsage: $0 mode path\n"
+	echo -e "\tmode\torg or diff according to your needs"
+	echo -e "\tpath\tyour project path\n"
+	exit 1
+fi
+
+echo "Using PREFIX="${PREFIX:=`pwd`}
+echo "Using PROJECT="${PROJECT:=$PREFIX/project}
+echo "Using COCCI="${COCCI:=$PREFIX/cocci}
+echo "Using RESULTS="${RESULTS:=$PREFIX/results}
+echo "Using SPFLAGS="${SPFLAGS:="-timeout 60 -use_glimpse -D $MODE"}
+
+echo -e "\nFor efficiency, run \`<coccinelle dir>/scripts/glimpseindex_cocci.sh\`"
+echo -e "in $PROJECT\n"
+
+sed -i "s|^PREFIX?=.*$|PREFIX?=${PREFIX}|" Makefile
+sed -i "s|^PROJECT?=.*$|PROJECT?=${PROJECT}|" Makefile
+sed -i "s|^COCCI?=.*$|COCCI?=${COCCI}|" Makefile
+sed -i "s|^RESULTS?=.*$|RESULTS?=${RESULTS}|" Makefile
+sed -i "s|^SPFLAGS?=.*$|SPFLAGS?=\"${SPFLAGS}\"|" Makefile
+

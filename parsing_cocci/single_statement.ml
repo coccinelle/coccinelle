@@ -1,23 +1,23 @@
 (*
-* Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
-* Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller
-* This file is part of Coccinelle.
-* 
-* Coccinelle is free software: you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation, according to version 2 of the License.
-* 
-* Coccinelle is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-* GNU General Public License for more details.
-* 
-* You should have received a copy of the GNU General Public License
-* along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
-* 
-* The authors reserve the right to distribute this or future versions of
-* Coccinelle under other licenses.
-*)
+ * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+ * This file is part of Coccinelle.
+ *
+ * Coccinelle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, according to version 2 of the License.
+ *
+ * Coccinelle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The authors reserve the right to distribute this or future versions of
+ * Coccinelle under other licenses.
+ *)
 
 
 (* detect statements that are between dots in the minus code, because they
@@ -45,7 +45,7 @@ let right_dots f l =
 let modif_before_mcode mc =
   match Ast0.get_mcode_mcodekind mc with
     Ast0.MINUS mc -> true (*conservative; don't want to hunt right for + code*)
-  | Ast0.PLUS -> failwith "not possible"
+  | Ast0.PLUS _ -> failwith "not possible"
   | Ast0.CONTEXT mc ->
       (match !mc with
 	(Ast.BEFORE _,_,_) -> true
@@ -55,7 +55,7 @@ let modif_before_mcode mc =
 
 let modif_after_mcodekind = function
     Ast0.MINUS mc -> true (*conservative; don't want to hunt right for + code*)
-  | Ast0.PLUS -> failwith "not possible"
+  | Ast0.PLUS _ -> failwith "not possible"
   | Ast0.CONTEXT mc ->
       (match !mc with
 	(Ast.AFTER _,_,_) -> true
@@ -74,14 +74,14 @@ let any_statements =
 
 let modif_before x =
   match Ast0.get_mcodekind x with
-    Ast0.PLUS -> failwith "not possible"
+    Ast0.PLUS _ -> failwith "not possible"
   | Ast0.MINUS mc ->
       (match !mc with
 	(* do better for the common case of replacing a stmt by another one *)
-	([[Ast.StatementTag(s)]],_) ->
+	([[Ast.StatementTag(s)]],ti) ->
 	  (match Ast.unwrap s with
 	    Ast.IfThen(_,_,_) -> true (* potentially dangerous *)
-	  | _ -> false)
+	  | _ -> mc := ([[Ast.StatementTag(s)]],ti); false)
       |	(_,_) -> true)
   | Ast0.CONTEXT mc | Ast0.MIXED mc ->
       (match !mc with
@@ -91,15 +91,16 @@ let modif_before x =
 
 let modif_after x =
   match Ast0.get_mcodekind x with
-    Ast0.PLUS -> failwith "not possible"
+    Ast0.PLUS _ -> failwith "not possible"
   | Ast0.MINUS mc ->
       (match !mc with
 	(* do better for the common case of replacing a stmt by another one *)
-	([[Ast.StatementTag(s)]],_) ->
+	([[Ast.StatementTag(s)]],ti) ->
 	  (match Ast.unwrap s with
 	    Ast.IfThen(_,_,_) -> true (* potentially dangerous *)
-	  | _ -> false)
-      |	(l,_) -> any_statements l)
+	  | _ -> mc := ([[Ast.StatementTag(s)]],ti); false)
+      |	(l,_) when any_statements l -> true
+      |	(l,ti) -> mc := (l,ti); false)
   | Ast0.CONTEXT mc | Ast0.MIXED mc ->
       (match !mc with
 	(Ast.AFTER _,_,_) -> true
@@ -304,10 +305,10 @@ let rec adding_something s =
     Ast0.MINUS(mc) ->
       (match !mc with
 	(* do better for the common case of replacing a stmt by another one *)
-	([[Ast.StatementTag(s)]],_) ->
+	([[Ast.StatementTag(s)]],ti) ->
 	  (match Ast.unwrap s with
 	    Ast.IfThen(_,_,_) -> true (* potentially dangerous *)
-	  | _ -> false)
+	  | _ -> mc := ([[Ast.StatementTag(s)]],ti); false)
       |	(_,_) -> true)
   | Ast0.CONTEXT(mc) ->
       let (text,tinfo1,tinfo2) = !mc in
@@ -406,28 +407,40 @@ let add_braces orig_s =
     | Ast0.CONTEXT(mc) ->
 	let (text,tinfo1,tinfo2) = !mc in
 	let new_text =
+	  (* this is going to be a mess if we allow it to be iterable...
+	     there would be one level of braces for every added things.
+	     need to come up with something better, or just add {} in the
+	     source code. *)
 	  match text with
-	    Ast.BEFORE(bef) ->
-	      Ast.BEFOREAFTER([Ast.mkToken "{"]::bef,[[Ast.mkToken "}"]])
-	  | Ast.AFTER(aft) ->
-	      Ast.BEFOREAFTER([[Ast.mkToken "{"]],aft@[[Ast.mkToken "}"]])
-	  | Ast.BEFOREAFTER(bef,aft) ->
-	      Ast.BEFOREAFTER([Ast.mkToken "{"]::bef,aft@[[Ast.mkToken "}"]])
+	    Ast.BEFORE(bef,_) ->
+	      Ast.BEFOREAFTER([Ast.mkToken "{"]::bef,[[Ast.mkToken "}"]],
+			      Ast.ONE)
+	  | Ast.AFTER(aft,_) ->
+	      Ast.BEFOREAFTER([[Ast.mkToken "{"]],aft@[[Ast.mkToken "}"]],
+			      Ast.ONE)
+	  | Ast.BEFOREAFTER(bef,aft,_) ->
+	      Ast.BEFOREAFTER([Ast.mkToken "{"]::bef,aft@[[Ast.mkToken "}"]],
+			      Ast.ONE)
 	  | Ast.NOTHING ->
-	      Ast.BEFOREAFTER([[Ast.mkToken "{"]],[[Ast.mkToken "}"]]) in
+	      Ast.BEFOREAFTER([[Ast.mkToken "{"]],[[Ast.mkToken "}"]],
+			      Ast.ONE) in
 	Ast0.CONTEXT(ref(new_text,tinfo1,tinfo2))
     | Ast0.MIXED(mc) ->
 	let (text,tinfo1,tinfo2) = !mc in
 	let new_text =
 	  match text with
-	    Ast.BEFORE(bef) ->
-	      Ast.BEFOREAFTER([Ast.mkToken "{"]::bef,[[Ast.mkToken "}"]])
-	  | Ast.AFTER(aft) ->
-	      Ast.BEFOREAFTER([[Ast.mkToken "{"]],aft@[[Ast.mkToken "}"]])
-	  | Ast.BEFOREAFTER(bef,aft) ->
-	      Ast.BEFOREAFTER([Ast.mkToken "{"]::bef,aft@[[Ast.mkToken "}"]])
+	    Ast.BEFORE(bef,_) ->
+	      Ast.BEFOREAFTER([Ast.mkToken "{"]::bef,[[Ast.mkToken "}"]],
+			      Ast.ONE)
+	  | Ast.AFTER(aft,_) ->
+	      Ast.BEFOREAFTER([[Ast.mkToken "{"]],aft@[[Ast.mkToken "}"]],
+			      Ast.ONE)
+	  | Ast.BEFOREAFTER(bef,aft,_) ->
+	      Ast.BEFOREAFTER([Ast.mkToken "{"]::bef,aft@[[Ast.mkToken "}"]],
+			      Ast.ONE)
 	  | Ast.NOTHING ->
-	      Ast.BEFOREAFTER([[Ast.mkToken "{"]],[[Ast.mkToken "}"]]) in
+	      Ast.BEFOREAFTER([[Ast.mkToken "{"]],[[Ast.mkToken "}"]],
+			      Ast.ONE) in
 	Ast0.MIXED(ref(new_text,tinfo1,tinfo2))
     | _ -> failwith "unexpected plus code" in
   Ast0.set_mcodekind s new_mcodekind;

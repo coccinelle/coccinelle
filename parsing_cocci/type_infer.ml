@@ -1,23 +1,23 @@
 (*
-* Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
-* Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller
-* This file is part of Coccinelle.
-* 
-* Coccinelle is free software: you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation, according to version 2 of the License.
-* 
-* Coccinelle is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-* GNU General Public License for more details.
-* 
-* You should have received a copy of the GNU General Public License
-* along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
-* 
-* The authors reserve the right to distribute this or future versions of
-* Coccinelle under other licenses.
-*)
+ * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+ * This file is part of Coccinelle.
+ *
+ * Coccinelle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, according to version 2 of the License.
+ *
+ * Coccinelle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The authors reserve the right to distribute this or future versions of
+ * Coccinelle under other licenses.
+ *)
 
 
 module T = Type_cocci
@@ -124,151 +124,151 @@ let rec propagate_types env =
     let res = k e in
     let ty =
       match Ast0.unwrap e with
-        (* pad: the type of id is set in the ident visitor *)
-	Ast0.Ident(id) -> Ast0.set_type e res; res
-      | Ast0.Constant(const) ->
-	  (match Ast0.unwrap_mcode const with
-	    Ast.String(_) -> Some (T.Pointer(char_type))
-	  | Ast.Char(_) -> Some (char_type)
-	  | Ast.Int(_) -> Some (int_type)
-	  | Ast.Float(_) ->  Some (float_type))
-        (* pad: note that in C can do either ptr(...) or ( *ptr)(...)
-         * so I am not sure this code is enough.
-         *)
-      | Ast0.FunCall(fn,lp,args,rp) ->
-	  (match Ast0.get_type fn with
-	    Some (T.FunctionPointer(ty)) -> Some ty
-	  |  _ ->
-	      (match Ast0.unwrap fn with
-		Ast0.Ident(id) ->
-		  (match Ast0.unwrap id with
-		    Ast0.Id(id) ->
-		      if List.mem (Ast0.unwrap_mcode id) bool_functions
-		      then Some(bool_type)
-		      else None
-		  | _ -> None)
-	      |	_ -> None))
-      | Ast0.Assignment(exp1,op,exp2,_) ->
-	  let ty = lub_type (Ast0.get_type exp1) (Ast0.get_type exp2) in
-	  Ast0.set_type exp1 ty; Ast0.set_type exp2 ty; ty
-      | Ast0.CondExpr(exp1,why,Some exp2,colon,exp3) ->
-	  let ty = lub_type (Ast0.get_type exp2) (Ast0.get_type exp3) in
-	  Ast0.set_type exp2 ty; Ast0.set_type exp3 ty; ty
-      | Ast0.CondExpr(exp1,why,None,colon,exp3) -> Ast0.get_type exp3
-      | Ast0.Postfix(exp,op) | Ast0.Infix(exp,op) -> (* op is dec or inc *)
-	  Ast0.get_type exp
-      | Ast0.Unary(exp,op) ->
-	  (match Ast0.unwrap_mcode op with
-	    Ast.GetRef ->
-	      (match Ast0.get_type exp with
-		None -> Some (T.Pointer(T.Unknown))
-	      |	Some t -> Some (T.Pointer(t)))
-	  | Ast.DeRef ->
-	      (match Ast0.get_type exp with
-		Some (T.Pointer(t)) -> Some t
-	      |	_ -> None)
-	  | Ast.UnPlus -> Ast0.get_type exp
-	  | Ast.UnMinus -> Ast0.get_type exp
-	  | Ast.Tilde -> Ast0.get_type exp
-	  | Ast.Not -> Some(bool_type))
-      | Ast0.Nested(exp1,op,exp2) -> failwith "nested in type inf not possible"
-      | Ast0.Binary(exp1,op,exp2) ->
-	  let ty1 = Ast0.get_type exp1 in
-	  let ty2 = Ast0.get_type exp2 in
-	  let same_type = function
-	      (None,None) -> Some (int_type)
+          (* pad: the type of id is set in the ident visitor *)
+	  Ast0.Ident(id) -> Ast0.set_type e res; res
+	| Ast0.Constant(const) ->
+	    (match Ast0.unwrap_mcode const with
+		 Ast.String(_) -> Some (T.Pointer(char_type))
+	       | Ast.Char(_) -> Some (char_type)
+	       | Ast.Int(_) -> Some (int_type)
+	       | Ast.Float(_) ->  Some (float_type))
+              (* pad: note that in C can do either ptr(...) or ( *ptr)(...)
+               * so I am not sure this code is enough.
+               *)
+	| Ast0.FunCall(fn,lp,args,rp) ->
+	    (match Ast0.get_type fn with
+		 Some (T.FunctionPointer(ty)) -> Some ty
+	       |  _ ->
+		    (match Ast0.unwrap fn with
+			 Ast0.Ident(id) ->
+			   (match Ast0.unwrap id with
+				Ast0.Id(id) ->
+				  if List.mem (Ast0.unwrap_mcode id) bool_functions
+				  then Some(bool_type)
+				  else None
+			      | _ -> None)
+		       |	_ -> None))
+	| Ast0.Assignment(exp1,op,exp2,_) ->
+	    let ty = lub_type (Ast0.get_type exp1) (Ast0.get_type exp2) in
+	      Ast0.set_type exp1 ty; Ast0.set_type exp2 ty; ty
+	| Ast0.CondExpr(exp1,why,Some exp2,colon,exp3) ->
+	    let ty = lub_type (Ast0.get_type exp2) (Ast0.get_type exp3) in
+	      Ast0.set_type exp2 ty; Ast0.set_type exp3 ty; ty
+	| Ast0.CondExpr(exp1,why,None,colon,exp3) -> Ast0.get_type exp3
+	| Ast0.Postfix(exp,op) | Ast0.Infix(exp,op) -> (* op is dec or inc *)
+	    Ast0.get_type exp
+	| Ast0.Unary(exp,op) ->
+	    (match Ast0.unwrap_mcode op with
+		 Ast.GetRef ->
+		   (match Ast0.get_type exp with
+			None -> Some (T.Pointer(T.Unknown))
+		      |	Some t -> Some (T.Pointer(t)))
+	       | Ast.DeRef ->
+		   (match Ast0.get_type exp with
+			Some (T.Pointer(t)) -> Some t
+		      |	_ -> None)
+	       | Ast.UnPlus -> Ast0.get_type exp
+	       | Ast.UnMinus -> Ast0.get_type exp
+	       | Ast.Tilde -> Ast0.get_type exp
+	       | Ast.Not -> Some(bool_type))
+	| Ast0.Nested(exp1,op,exp2) -> failwith "nested in type inf not possible"
+	| Ast0.Binary(exp1,op,exp2) ->
+	    let ty1 = Ast0.get_type exp1 in
+	    let ty2 = Ast0.get_type exp2 in
+	    let same_type = function
+		(None,None) -> Some (int_type)
 
-            (* pad: pointer arithmetic handling as in ptr+1 *)
-	    | (Some (T.Pointer ty1),Some ty2) when is_int_type ty2 ->
-		Some (T.Pointer ty1)
-	    | (Some ty1,Some (T.Pointer ty2)) when is_int_type ty1 ->
-		Some (T.Pointer ty2)
+              (* pad: pointer arithmetic handling as in ptr+1 *)
+	      | (Some (T.Pointer ty1),Some ty2) when is_int_type ty2 ->
+		  Some (T.Pointer ty1)
+	      | (Some ty1,Some (T.Pointer ty2)) when is_int_type ty1 ->
+		  Some (T.Pointer ty2)
 
-	    | (t1,t2) ->
-		let ty = lub_type t1 t2 in
-		Ast0.set_type exp1 ty; Ast0.set_type exp2 ty; ty in
-	  (match Ast0.unwrap_mcode op with
-	    Ast.Arith(op) -> same_type (ty1, ty2)
-	  | Ast.Logical(op) ->
-	      let ty = lub_type ty1 ty2 in
-	      Ast0.set_type exp1 ty; Ast0.set_type exp2 ty;
-	      Some(bool_type))
-      | Ast0.Paren(lp,exp,rp) -> Ast0.get_type exp
-      | Ast0.ArrayAccess(exp1,lb,exp2,rb) ->
-	  (match strip_cv (Ast0.get_type exp2) with
-	    None -> Ast0.set_type exp2 (Some(int_type))
-	  | Some(ty) when is_int_type ty -> ()
-	  | Some ty -> err exp2 ty "bad type for an array index");
-	  (match strip_cv (Ast0.get_type exp1) with
-	    None -> None
-	  | Some (T.Array(ty)) -> Some ty
-	  | Some (T.Pointer(ty)) -> Some ty
-	  | Some (T.MetaType(_,_,_)) -> None
-	  | Some x -> err exp1 x "ill-typed array reference")
-      (* pad: should handle structure one day and look 'field' in environment *)
-      | Ast0.RecordAccess(exp,pt,field) ->
-	  (match strip_cv (Ast0.get_type exp) with
-	    None -> None
-	  | Some (T.StructUnionName(_,_,_)) -> None
-	  | Some (T.TypeName(_)) -> None
-	  | Some (T.MetaType(_,_,_)) -> None
-	  | Some x -> err exp x "non-structure type in field ref")
-      | Ast0.RecordPtAccess(exp,ar,field) ->
-	  (match strip_cv (Ast0.get_type exp) with
-	    None -> None
-	  | Some (T.Pointer(t)) ->
-	      (match strip_cv (Some t) with
-	      | Some (T.Unknown) -> None
-	      | Some (T.MetaType(_,_,_)) -> None
-	      | Some (T.TypeName(_)) -> None
-	      | Some (T.StructUnionName(_,_,_)) -> None
-	      | Some x ->
-		  err exp (T.Pointer(t))
-		    "non-structure pointer type in field ref"
-	      |	_ -> failwith "not possible")
-	  | Some (T.MetaType(_,_,_)) -> None
-	  | Some (T.TypeName(_)) -> None
-	  | Some x -> err exp x "non-structure pointer type in field ref")
-      | Ast0.Cast(lp,ty,rp,exp) -> Some(Ast0.ast0_type_to_type ty)
-      | Ast0.SizeOfExpr(szf,exp) -> Some(int_type)
-      | Ast0.SizeOfType(szf,lp,ty,rp) -> Some(int_type)
-      | Ast0.TypeExp(ty) -> None
-      | Ast0.MetaErr(name,_,_) -> None
-      | Ast0.MetaExpr(name,_,Some [ty],_,_) -> Some ty
-      | Ast0.MetaExpr(name,_,ty,_,_) -> None
-      | Ast0.MetaExprList(name,_,_) -> None
-      | Ast0.EComma(cm) -> None
-      | Ast0.DisjExpr(_,exp_list,_,_) ->
-	  let types = List.map Ast0.get_type exp_list in
-	  let combined = List.fold_left lub_type None types in
-	  (match combined with
-	    None -> None
-	  | Some t ->
-	      List.iter (function e -> Ast0.set_type e (Some t)) exp_list;
-	      Some t)
-      | Ast0.NestExpr(starter,expr_dots,ender,None,multi) ->
-	  let _ = r.VT0.combiner_rec_expression_dots expr_dots in None
-      | Ast0.NestExpr(starter,expr_dots,ender,Some e,multi) ->
-	  let _ = r.VT0.combiner_rec_expression_dots expr_dots in
-	  let _ = r.VT0.combiner_rec_expression e in None
-      | Ast0.Edots(_,None) | Ast0.Ecircles(_,None) | Ast0.Estars(_,None) ->
-	  None
-      | Ast0.Edots(_,Some e) | Ast0.Ecircles(_,Some e)
-      | Ast0.Estars(_,Some e) ->
-	  let _ = r.VT0.combiner_rec_expression e in None
-      | Ast0.OptExp(exp) -> Ast0.get_type exp
-      | Ast0.UniqueExp(exp) -> Ast0.get_type exp in
-    Ast0.set_type e ty;
-    ty in
+	      | (t1,t2) ->
+		  let ty = lub_type t1 t2 in
+		    Ast0.set_type exp1 ty; Ast0.set_type exp2 ty; ty in
+	      (match Ast0.unwrap_mcode op with
+		   Ast.Arith(op) -> same_type (ty1, ty2)
+		 | Ast.Logical(op) ->
+		     let ty = lub_type ty1 ty2 in
+		       Ast0.set_type exp1 ty; Ast0.set_type exp2 ty;
+		       Some(bool_type))
+	| Ast0.Paren(lp,exp,rp) -> Ast0.get_type exp
+	| Ast0.ArrayAccess(exp1,lb,exp2,rb) ->
+	    (match strip_cv (Ast0.get_type exp2) with
+		 None -> Ast0.set_type exp2 (Some(int_type))
+	       | Some(ty) when is_int_type ty -> ()
+	       | Some ty -> err exp2 ty "bad type for an array index");
+	    (match strip_cv (Ast0.get_type exp1) with
+		 None -> None
+	       | Some (T.Array(ty)) -> Some ty
+	       | Some (T.Pointer(ty)) -> Some ty
+	       | Some (T.MetaType(_,_,_)) -> None
+	       | Some x -> err exp1 x "ill-typed array reference")
+	      (* pad: should handle structure one day and look 'field' in environment *)
+	| Ast0.RecordAccess(exp,pt,field) ->
+	    (match strip_cv (Ast0.get_type exp) with
+		 None -> None
+	       | Some (T.StructUnionName(_,_,_)) -> None
+	       | Some (T.TypeName(_)) -> None
+	       | Some (T.MetaType(_,_,_)) -> None
+	       | Some x -> err exp x "non-structure type in field ref")
+	| Ast0.RecordPtAccess(exp,ar,field) ->
+	    (match strip_cv (Ast0.get_type exp) with
+		 None -> None
+	       | Some (T.Pointer(t)) ->
+		   (match strip_cv (Some t) with
+		      | Some (T.Unknown) -> None
+		      | Some (T.MetaType(_,_,_)) -> None
+		      | Some (T.TypeName(_)) -> None
+		      | Some (T.StructUnionName(_,_,_)) -> None
+		      | Some x ->
+			  err exp (T.Pointer(t))
+			    "non-structure pointer type in field ref"
+		      |	_ -> failwith "not possible")
+	       | Some (T.MetaType(_,_,_)) -> None
+	       | Some (T.TypeName(_)) -> None
+	       | Some x -> err exp x "non-structure pointer type in field ref")
+	| Ast0.Cast(lp,ty,rp,exp) -> Some(Ast0.ast0_type_to_type ty)
+	| Ast0.SizeOfExpr(szf,exp) -> Some(int_type)
+	| Ast0.SizeOfType(szf,lp,ty,rp) -> Some(int_type)
+	| Ast0.TypeExp(ty) -> None
+	| Ast0.MetaErr(name,_,_) -> None
+	| Ast0.MetaExpr(name,_,Some [ty],_,_) -> Some ty
+	| Ast0.MetaExpr(name,_,ty,_,_) -> None
+	| Ast0.MetaExprList(name,_,_) -> None
+	| Ast0.EComma(cm) -> None
+	| Ast0.DisjExpr(_,exp_list,_,_) ->
+	    let types = List.map Ast0.get_type exp_list in
+	    let combined = List.fold_left lub_type None types in
+	      (match combined with
+		   None -> None
+		 | Some t ->
+		     List.iter (function e -> Ast0.set_type e (Some t)) exp_list;
+		     Some t)
+	| Ast0.NestExpr(starter,expr_dots,ender,None,multi) ->
+	    let _ = r.VT0.combiner_rec_expression_dots expr_dots in None
+	| Ast0.NestExpr(starter,expr_dots,ender,Some e,multi) ->
+	    let _ = r.VT0.combiner_rec_expression_dots expr_dots in
+	    let _ = r.VT0.combiner_rec_expression e in None
+	| Ast0.Edots(_,None) | Ast0.Ecircles(_,None) | Ast0.Estars(_,None) ->
+	    None
+	| Ast0.Edots(_,Some e) | Ast0.Ecircles(_,Some e)
+	| Ast0.Estars(_,Some e) ->
+	    let _ = r.VT0.combiner_rec_expression e in None
+	| Ast0.OptExp(exp) -> Ast0.get_type exp
+	| Ast0.UniqueExp(exp) -> Ast0.get_type exp in
+      Ast0.set_type e ty;
+      ty in
 
   let rec strip id =
     match Ast0.unwrap id with
-      Ast0.Id(name)              -> Id(Ast0.unwrap_mcode name)
+      Ast0.Id(name)                -> Id(Ast0.unwrap_mcode name)
     | Ast0.MetaId(name,_,_)        -> Meta(Ast0.unwrap_mcode name)
     | Ast0.MetaFunc(name,_,_)      -> Meta(Ast0.unwrap_mcode name)
     | Ast0.MetaLocalFunc(name,_,_) -> Meta(Ast0.unwrap_mcode name)
-    | Ast0.OptIdent(id)    -> strip id
-    | Ast0.UniqueIdent(id) -> strip id in
+    | Ast0.OptIdent(id)            -> strip id
+    | Ast0.UniqueIdent(id)         -> strip id in
 
   let process_whencode notfn allfn exp = function
       Ast0.WhenNot(x) -> let _ = notfn x in ()

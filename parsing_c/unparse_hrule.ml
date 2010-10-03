@@ -94,12 +94,12 @@ let get_function_name rule env =
       Ast.MINUS(_,_,_,any_list_list) -> do_any_list_list r any_list_list
     | Ast.CONTEXT(_,any_befaft) ->
 	(match any_befaft with
-	  Ast.BEFORE(any_list_list) | Ast.AFTER(any_list_list) ->
+	  Ast.BEFORE(any_list_list,_) | Ast.AFTER(any_list_list,_) ->
 	    do_any_list_list r any_list_list
-	| Ast.BEFOREAFTER(ba,aa) ->
+	| Ast.BEFOREAFTER(ba,aa,_) ->
 	    bind (do_any_list_list r ba) (do_any_list_list r aa)
 	| Ast.NOTHING -> [])
-    | Ast.PLUS -> [] in
+    | Ast.PLUS _ -> [] in
   let expression r k e =
     bind (k e)
     (match Ast.unwrap e with
@@ -108,8 +108,8 @@ let get_function_name rule env =
 	  [e] ->
 	    (match Ast.unwrap e with
 	      Ast.MetaExprList(nm,_,_,_) ->
-		(match Ast.unwrap_mcode nm with
-		  (_,"ARGS") when Ast.get_mcodekind nm = Ast.PLUS ->
+		(match (Ast.unwrap_mcode nm,Ast.get_mcodekind nm) with
+		  ((_,"ARGS"), Ast.PLUS _) ->
 		    (match Ast.unwrap fn with
 		      Ast.Ident(id) ->
 			(match Ast.unwrap id with
@@ -475,7 +475,7 @@ let pp_rule local_metas ast env srcfile =
 	  error rule "not an abstract line" in
     let pr_space _ = pr " " in
     Unparse_cocci.pp_list_list_any
-      (env, (fun s _ _ _ -> pr s), pr_c, pr_space, pr_space, pr,
+      ([env], (fun s _ _ _ -> pr s), pr_c, pr_space, pr_space, pr,
        (fun _ _ -> ()), (function _ -> ()), (function _ -> ()))
       true printable Unparse_cocci.InPlace;
     print_end pr;

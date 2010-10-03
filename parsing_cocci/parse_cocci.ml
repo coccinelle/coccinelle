@@ -1,23 +1,23 @@
 (*
-* Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
-* Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller
-* This file is part of Coccinelle.
-* 
-* Coccinelle is free software: you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation, according to version 2 of the License.
-* 
-* Coccinelle is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-* GNU General Public License for more details.
-* 
-* You should have received a copy of the GNU General Public License
-* along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
-* 
-* The authors reserve the right to distribute this or future versions of
-* Coccinelle under other licenses.
-*)
+ * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+ * This file is part of Coccinelle.
+ *
+ * Coccinelle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, according to version 2 of the License.
+ *
+ * Coccinelle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The authors reserve the right to distribute this or future versions of
+ * Coccinelle under other licenses.
+ *)
 
 
 (* splits the entire file into minus and plus fragments, and parses each
@@ -46,6 +46,7 @@ let line_type2c tok =
   match line_type tok with
     D.MINUS | D.OPTMINUS | D.UNIQUEMINUS -> ":-"
   | D.PLUS -> ":+"
+  | D.PLUSPLUS -> ":++"
   | D.CONTEXT | D.UNIQUE | D.OPT -> ""
 
 let token2c (tok,_) =
@@ -73,6 +74,7 @@ let token2c (tok,_) =
   | PC.TName -> "name"
   | PC.TRuleName str -> "rule_name-"^str
   | PC.TUsing -> "using"
+  | PC.TVirtual -> "virtual"
   | PC.TPathIsoFile str -> "path_iso_file-"^str
   | PC.TDisable -> "disable"
   | PC.TExtends -> "extends"
@@ -154,6 +156,8 @@ let token2c (tok,_) =
   | PC.TAnd (clt) -> "&"^(line_type2c clt)
   | PC.TEqEq(clt) -> "=="^(line_type2c clt)
   | PC.TNotEq(clt) -> "!="^(line_type2c clt)
+  | PC.TTildeEq(clt) -> "~="^(line_type2c clt)
+  | PC.TTildeExclEq(clt) -> "~!="^(line_type2c clt)
   | PC.TLogOp(op,clt) ->
       (match op with
 	Ast.Inf -> "<"
@@ -300,7 +304,7 @@ let plus_attachable only_plus (tok,_) =
   | PC.TString(_,clt) | PC.TChar(_,clt) | PC.TFloat(_,clt) | PC.TInt(_,clt)
 
   | PC.TOrLog(clt) | PC.TAndLog(clt) | PC.TOr(clt) | PC.TXor(clt)
-  | PC.TAnd (clt) | PC.TEqEq(clt) | PC.TNotEq(clt) | PC.TLogOp(_,clt)
+  | PC.TAnd (clt) | PC.TEqEq(clt) | PC.TNotEq(clt) | PC.TTildeEq(clt) | PC.TLogOp(_,clt)
   | PC.TShOp(_,clt) | PC.TPlus(clt) | PC.TMinus(clt) | PC.TMul(clt)
   | PC.TDmOp(_,clt) | PC.TTilde (clt)
 
@@ -328,7 +332,7 @@ let plus_attachable only_plus (tok,_) =
 
   | PC.TEq(clt) | PC.TAssign(_,clt) | PC.TDot(clt) | PC.TComma(clt)
   | PC.TPtVirg(clt) ->
-      if line_type clt = D.PLUS
+      if List.mem (line_type clt) [D.PLUS;D.PLUSPLUS]
       then PLUS
       else if only_plus then NOTPLUS
       else if line_type clt = D.CONTEXT then PLUS else NOTPLUS
@@ -365,7 +369,7 @@ let get_clt (tok,_) =
   | PC.TString(_,clt) | PC.TChar(_,clt) | PC.TFloat(_,clt) | PC.TInt(_,clt)
 
   | PC.TOrLog(clt) | PC.TAndLog(clt) | PC.TOr(clt) | PC.TXor(clt)
-  | PC.TAnd (clt) | PC.TEqEq(clt) | PC.TNotEq(clt) | PC.TLogOp(_,clt)
+  | PC.TAnd (clt) | PC.TEqEq(clt) | PC.TNotEq(clt) | PC.TTildeEq(clt) | PC.TLogOp(_,clt)
   | PC.TShOp(_,clt) | PC.TPlus(clt) | PC.TMinus(clt) | PC.TMul(clt)
   | PC.TDmOp(_,clt) | PC.TTilde (clt)
 
@@ -466,6 +470,7 @@ let update_clt (tok,x) clt =
   | PC.TAnd (_) -> (PC.TAnd (clt),x)
   | PC.TEqEq(_) -> (PC.TEqEq(clt),x)
   | PC.TNotEq(_) -> (PC.TNotEq(clt),x)
+  | PC.TTildeEq(_) -> (PC.TTildeEq(clt),x)
   | PC.TLogOp(op,_) -> (PC.TLogOp(op,clt),x)
   | PC.TShOp(op,_) -> (PC.TShOp(op,clt),x)
   | PC.TPlus(_) -> (PC.TPlus(clt),x)
@@ -588,7 +593,7 @@ let split t clt =
   let (d,_,_,_,_,_,_,_) = clt in
   match d with
     D.MINUS | D.OPTMINUS | D.UNIQUEMINUS -> ([t],[])
-  | D.PLUS -> ([],[t])
+  | D.PLUS | D.PLUSPLUS -> ([],[t])
   | D.CONTEXT | D.UNIQUE | D.OPT -> ([t],[t])
 
 let split_token ((tok,_) as t) =
@@ -598,8 +603,8 @@ let split_token ((tok,_) as t) =
   | PC.TFunction | PC.TTypedef | PC.TDeclarer | PC.TIterator | PC.TName
   | PC.TType | PC.TParameter | PC.TLocal | PC.Tlist | PC.TFresh
   | PC.TCppConcatOp | PC.TPure
-  | PC.TContext | PC.TRuleName(_) | PC.TUsing | PC.TDisable | PC.TExtends
-  | PC.TPathIsoFile(_)
+  | PC.TContext | PC.TRuleName(_) | PC.TUsing | PC.TVirtual | PC.TDisable
+  | PC.TExtends | PC.TPathIsoFile(_)
   | PC.TDepends | PC.TOn | PC.TEver | PC.TNever | PC.TExists | PC.TForall
   | PC.TError | PC.TWords | PC.TGenerated | PC.TNothing -> ([t],[t])
 
@@ -658,7 +663,7 @@ let split_token ((tok,_) as t) =
       split t clt
 
   | PC.TOrLog(clt) | PC.TAndLog(clt) | PC.TOr(clt) | PC.TXor(clt)
-  | PC.TAnd (clt) | PC.TEqEq(clt) | PC.TNotEq(clt) | PC.TLogOp(_,clt)
+  | PC.TAnd (clt) | PC.TEqEq(clt) | PC.TNotEq(clt) | PC.TTildeEq(clt) | PC.TTildeExclEq(clt) | PC.TLogOp(_,clt)
   | PC.TShOp(_,clt) | PC.TPlus(clt) | PC.TMinus(clt) | PC.TMul(clt)
   | PC.TDmOp(_,clt) | PC.TTilde (clt) -> split t clt
 
@@ -1101,7 +1106,7 @@ let minus_to_nothing l =
       let (d,_,_,_,_,_,_,_) = get_clt tok in
       (match d with
 	D.MINUS | D.OPTMINUS | D.UNIQUEMINUS -> true
-      | D.PLUS -> false
+      | D.PLUS | D.PLUSPLUS -> false
       | D.CONTEXT | D.UNIQUE | D.OPT -> false)
     with _ -> false in
   let rec minus_loop = function
@@ -1250,7 +1255,7 @@ let rec consume_minus_positions = function
 let any_modif rule =
   let mcode x =
     match Ast0.get_mcode_mcodekind x with
-      Ast0.MINUS _ | Ast0.PLUS -> true
+      Ast0.MINUS _ | Ast0.PLUS _ -> true
     | _ -> false in
   let donothing r k e = k e in
   let bind x y = x or y in
@@ -1262,6 +1267,27 @@ let any_modif rule =
       donothing donothing donothing donothing donothing donothing donothing
       donothing donothing in
   List.exists fn.VT0.combiner_rec_top_level rule
+
+let eval_virt virt =
+  List.iter
+    (function x ->
+      if not (List.mem x virt)
+      then
+	failwith
+	  (Printf.sprintf "unknown virtual rule %s\n" x))
+    (!Flag_parsing_cocci.defined_virtual_rules @
+     !Flag_parsing_cocci.undefined_virtual_rules);
+  List.map
+    (function x ->
+      if List.mem x !Flag_parsing_cocci.defined_virtual_rules
+      then (x,true)
+      else if List.mem x !Flag_parsing_cocci.undefined_virtual_rules
+      then (x,false)
+      else
+	(*Printf.fprintf stderr
+	   "warning: no value specified for virtual rule %s, assuming unmatched\n" x;*)
+	 (x,false))
+    virt
 
 let drop_last extra l = List.rev(extra@(List.tl(List.rev l)))
 
@@ -1423,16 +1449,24 @@ let rec parse file =
 	  let include_and_iso_files =
 	    parse_one "include and iso file names" PC.include_main file data in
 
-	  let (include_files,iso_files) =
+	  let (include_files,iso_files,virt) =
 	    List.fold_left
-	      (function (include_files,iso_files) ->
+	      (function (include_files,iso_files,virt) ->
 		function
-		    Data.Include s -> (s::include_files,iso_files)
-		  | Data.Iso s -> (include_files,s::iso_files))
-	      ([],[]) include_and_iso_files in
+		    Data.Include s -> (s::include_files,iso_files,virt)
+		  | Data.Iso s -> (include_files,s::iso_files,virt)
+		  | Data.Virt l -> (include_files,iso_files,l@virt))
+	      ([],[],[]) include_and_iso_files in
+	  List.iter (function x -> Hashtbl.add Lexer_cocci.rule_names x ())
+	    virt;
 
-	  let (extra_iso_files, extra_rules) =
-	    List.split (List.map parse include_files) in
+	  let (extra_iso_files, extra_rules, extra_virt) =
+	    let rec loop = function
+		[] -> ([],[],[])
+	      |	(a,b,c)::rest ->
+		  let (x,y,z) = loop rest in
+		  (a::x,b::y,c::z) in
+	    loop (List.map parse include_files) in
 
           let parse_cocci_rule ruletype old_metas
 	      (rule_name, dependencies, iso, dropiso, exists, is_expression) =
@@ -1604,12 +1638,12 @@ let rec parse file =
 	  (List.fold_left
 	     (function prev -> function cur -> Common.union_set cur prev)
 	     iso_files extra_iso_files,
-	   List.fold_left
-	     (function prev -> function cur -> cur @ prev)
-	     (loop [] (x = PC.TArob)) extra_rules)
+	   (* included rules first *)
+	   List.fold_left (@) (loop [] (x = PC.TArob)) (List.rev extra_rules),
+	   List.fold_left (@) virt extra_virt (*no dups allowed*))
       |	_ -> failwith "unexpected code before the first rule\n")
   | (false,[(PC.TArobArob,_)]) | (false,[(PC.TArob,_)]) ->
-      ([],([] : Ast0.parsed_rule list))
+      ([],([] : Ast0.parsed_rule list),[] (*virtual rules*))
   | _ -> failwith "unexpected code before the first rule\n" in
   res)
 
@@ -1617,7 +1651,8 @@ let rec parse file =
 let process file isofile verbose =
   let extra_path = Filename.dirname file in
   Lexer_cocci.init();
-  let (iso_files, rules) = parse file in
+  let (iso_files, rules, virt) = parse file in
+  let virt = eval_virt virt in
   let std_isos =
     match isofile with
       None -> []
@@ -1715,6 +1750,7 @@ let process file isofile verbose =
 	       let minus_ast =
 		 Ast0toast.ast0toast rule_name dependencies dropped_isos
 		   exists minus is_exp ruletype in
+	       
 	       match function_prototypes with
 		 None -> [(extra_meta @ metavars, minus_ast)]
 	       | Some mv_fp -> [(extra_meta @ metavars, minus_ast); mv_fp])
@@ -1731,6 +1767,7 @@ let process file isofile verbose =
     Common.profile_code "get_constants"
       (fun () -> Get_constants.get_constants code) in (* for grep *)
   let glimpse_tokens2 =
-    Common.profile_code "get_glimpse_constants"
-      (fun () -> Get_constants2.get_constants code neg_pos) in(* for glimpse *)
-  (metavars,code,fvs,neg_pos,ua,pos,grep_tokens,glimpse_tokens2)
+    Common.profile_code "get_glimpse_constants" (* for glimpse *)
+      (fun () -> Get_constants2.get_constants code neg_pos virt) in
+
+  (metavars,code,fvs,neg_pos,ua,pos,grep_tokens,glimpse_tokens2,virt)

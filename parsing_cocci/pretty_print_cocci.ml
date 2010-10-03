@@ -1,23 +1,23 @@
 (*
-* Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
-* Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller
-* This file is part of Coccinelle.
-* 
-* Coccinelle is free software: you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation, according to version 2 of the License.
-* 
-* Coccinelle is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-* GNU General Public License for more details.
-* 
-* You should have received a copy of the GNU General Public License
-* along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
-* 
-* The authors reserve the right to distribute this or future versions of
-* Coccinelle under other licenses.
-*)
+ * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+ * This file is part of Coccinelle.
+ *
+ * Coccinelle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, according to version 2 of the License.
+ *
+ * Coccinelle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The authors reserve the right to distribute this or future versions of
+ * Coccinelle under other licenses.
+ *)
 
 
 open Format
@@ -74,9 +74,9 @@ and print_anything_list = function
 
 let print_around printer term = function
     Ast.NOTHING -> printer term
-  | Ast.BEFORE(bef) -> print_anything "<<< " bef; printer term
-  | Ast.AFTER(aft) -> printer term; print_anything ">>> " aft
-  | Ast.BEFOREAFTER(bef,aft) ->
+  | Ast.BEFORE(bef,_) -> print_anything "<<< " bef; printer term
+  | Ast.AFTER(aft,_) -> printer term; print_anything ">>> " aft
+  | Ast.BEFOREAFTER(bef,aft,_) ->
       print_anything "<<< " bef; printer term; print_anything ">>> " aft
 
 let print_string_befaft fn x info =
@@ -107,7 +107,7 @@ let mcode fn = function
 	let fn x = fn x; print_pos pos in
 	print_around fn x plus_streams
       else (fn x; print_pos pos)
-  | (x, info, Ast.PLUS, pos) ->
+  | (x, info, Ast.PLUS _, pos) ->
       let fn x = fn x; print_pos pos in
       print_string_befaft fn x info
 
@@ -117,7 +117,7 @@ let print_mcodekind = function
       print_anything ">>> " plus_stream
   | Ast.CONTEXT(_,plus_streams) ->
       print_around (function _ -> print_string "CONTEXT") () plus_streams
-  | Ast.PLUS -> print_string "PLUS"
+  | Ast.PLUS _ -> print_string "PLUS"
 
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)
@@ -163,16 +163,27 @@ let print_type keep info = function
       print_string " */"*)
 
 (* --------------------------------------------------------------------- *)
+(* Contraint on Identifier and Function *)
+(* FIXME: Not called at the moment *)
+
+let idconstraint c =
+  match c with
+      Ast.IdNoConstraint  -> print_string "/* No constraint */"
+    | Ast.IdNegIdSet ids     -> List.iter (fun s -> print_string (" "^s)) ids
+    | Ast.IdRegExp (re,_) -> print_string "~= \""; print_string re; print_string "\""
+    | Ast.IdNotRegExp (re,_) -> print_string "~!= \""; print_string re; print_string "\""
+
+(* --------------------------------------------------------------------- *)
 (* Identifier *)
 
 let rec ident i =
   match Ast.unwrap i with
-    Ast.Id(name) -> mcode print_string name
-  | Ast.MetaId(name,_,keep,inherited) -> mcode print_meta name
-  | Ast.MetaFunc(name,_,_,_) -> mcode print_meta name
-  | Ast.MetaLocalFunc(name,_,_,_) -> mcode print_meta name
-  | Ast.OptIdent(id) -> print_string "?"; ident id
-  | Ast.UniqueIdent(id) -> print_string "!"; ident id
+      Ast.Id(name) -> mcode print_string name
+    | Ast.MetaId(name,_,keep,inherited) -> mcode print_meta name
+    | Ast.MetaFunc(name,_,_,_) -> mcode print_meta name
+    | Ast.MetaLocalFunc(name,_,_,_) -> mcode print_meta name
+    | Ast.OptIdent(id) -> print_string "?"; ident id
+    | Ast.UniqueIdent(id) -> print_string "!"; ident id
 
 and print_unitary = function
     Type_cocci.Unitary -> print_string "unitary"

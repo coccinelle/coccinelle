@@ -135,16 +135,17 @@ type body_function_grouped =
  * part of a mid-ifdef-expression.
 *)
 let rec mk_parenthised xs = 
-  match xs with
-  | [] -> []
+  let rec loop acc = function
+  | [] -> acc
   | x::xs -> 
       (match x.tok with 
       | TOPar _ | TOParDefine _ -> 
           let body, extras, xs = mk_parameters [x] [] xs in
-          Parenthised (body,extras)::mk_parenthised xs
+          loop (Parenthised (body,extras)::acc) xs
       | _ -> 
-          PToken x::mk_parenthised xs
-      )
+          loop (PToken x::acc) xs
+      ) in
+  List.rev(loop [] xs)
 
 (* return the body of the parenthised expression and the rest of the tokens *)
 and mk_parameters extras acc_before_sep  xs = 
@@ -178,19 +179,19 @@ and mk_parameters extras acc_before_sep  xs =
 
 
 let rec mk_braceised xs = 
-  match xs with
-  | [] -> []
-  | x::xs -> 
-      (match x.tok with 
-      | TOBrace _ -> 
-          let body, endbrace, xs = mk_braceised_aux [] xs in
-          Braceised (body, x, endbrace)::mk_braceised xs
-      | TCBrace _ -> 
-          pr2 "PB: found closing brace alone in fuzzy parsing";
-          BToken x::mk_braceised xs
-      | _ -> 
-          BToken x::mk_braceised xs
-      )
+  let rec loop acc = function
+    | [] -> acc
+    | x::xs -> 
+	(match x.tok with 
+	| TOBrace _ -> 
+            let body, endbrace, xs = mk_braceised_aux [] xs in
+            loop (Braceised (body, x, endbrace)::acc) xs
+	| TCBrace _ -> 
+            pr2 "PB: found closing brace alone in fuzzy parsing";
+            loop (BToken x::acc) xs
+	| _ -> 
+            loop (BToken x::acc) xs) in
+  List.rev(loop [] xs)
 
 (* return the body of the parenthised expression and the rest of the tokens *)
 and mk_braceised_aux acc xs = 

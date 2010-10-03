@@ -749,5 +749,3 @@ do {									\
 
 // rule10
 //#define	 ACPI_MODULE_NAME(x)
-
-

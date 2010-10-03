@@ -1,23 +1,40 @@
 (*
-* Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
-* Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller
-* This file is part of Coccinelle.
-* 
-* Coccinelle is free software: you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation, according to version 2 of the License.
-* 
-* Coccinelle is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-* GNU General Public License for more details.
-* 
-* You should have received a copy of the GNU General Public License
-* along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
-* 
-* The authors reserve the right to distribute this or future versions of
-* Coccinelle under other licenses.
-*)
+ * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+ * This file is part of Coccinelle.
+ *
+ * Coccinelle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, according to version 2 of the License.
+ *
+ * Coccinelle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The authors reserve the right to distribute this or future versions of
+ * Coccinelle under other licenses.
+ *)
+
+
+(* Yoann Padioleau
+ *
+ * Copyright (C) 2006, 2007 Ecole des Mines de Nantes
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License (GPL)
+ * version 2 as published by the Free Software Foundation.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * file license.txt for more details.
+ * 
+ * This file was part of Coccinelle.
+ *)
 open Common
 
 module Flag_engine = Flag_matcher
@@ -246,7 +263,7 @@ module XMATCH = struct
   (* ------------------------------------------------------------------------*)
   let tag_mck_pos mck posmck =
     match mck with 
-    | Ast_cocci.PLUS -> Ast_cocci.PLUS
+    | Ast_cocci.PLUS c -> Ast_cocci.PLUS c
     | Ast_cocci.CONTEXT (pos, xs) -> 
         assert (pos =*= Ast_cocci.NoPos || pos =*= Ast_cocci.DontCarePos);
         Ast_cocci.CONTEXT (posmck, xs)
@@ -280,9 +297,17 @@ module XMATCH = struct
 
 
   (* ------------------------------------------------------------------------*)
-  (* Constraints on metavariable values *) 
+  (* Constraints on metavariable values *)
   (* ------------------------------------------------------------------------*)
-  let check_constraints matcher constraints exp = fun f tin ->
+  let check_idconstraint matcher c id = fun f tin ->
+    if matcher c id then
+      (* success *)
+      f () tin
+    else
+      (* failure *)
+      fail tin
+
+  let check_constraints_ne matcher constraints exp = fun f tin ->
     let rec loop = function
 	[] -> f () tin (* success *)
       |	c::cs ->
@@ -292,7 +317,7 @@ module XMATCH = struct
     loop constraints
 
   let check_pos_constraints constraints pvalu f tin =
-    check_constraints
+    check_constraints_ne
       (fun c exp tin ->
 	let success = [[]] in
 	let failure = [] in

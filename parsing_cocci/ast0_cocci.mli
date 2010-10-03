@@ -1,3 +1,25 @@
+(*
+ * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+ * This file is part of Coccinelle.
+ *
+ * Coccinelle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, according to version 2 of the License.
+ *
+ * Coccinelle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The authors reserve the right to distribute this or future versions of
+ * Coccinelle under other licenses.
+ *)
+
+
 (* --------------------------------------------------------------------- *)
 (* Modified code *)
 
@@ -10,7 +32,7 @@ val default_token_info : token_info
 
 type mcodekind =
     MINUS       of (Ast_cocci.anything list list * token_info) ref
-  | PLUS
+  | PLUS        of Ast_cocci.count
   | CONTEXT     of (Ast_cocci.anything Ast_cocci.befaft *
 		      token_info * token_info) ref
   | MIXED       of (Ast_cocci.anything Ast_cocci.befaft *
@@ -68,10 +90,10 @@ and 'a dots = 'a base_dots wrap
 (* Identifier *)
 
 and base_ident =
-    Id of string mcode
-  | MetaId        of Ast_cocci.meta_name mcode * ident list * pure
-  | MetaFunc      of Ast_cocci.meta_name mcode * ident list * pure
-  | MetaLocalFunc of Ast_cocci.meta_name mcode * ident list * pure
+    Id            of string mcode
+  | MetaId        of Ast_cocci.meta_name mcode * Ast_cocci.idconstraint * pure
+  | MetaFunc      of Ast_cocci.meta_name mcode * Ast_cocci.idconstraint * pure
+  | MetaLocalFunc of Ast_cocci.meta_name mcode * Ast_cocci.idconstraint * pure
   | OptIdent      of ident
   | UniqueIdent   of ident
 
@@ -106,8 +128,8 @@ and base_expression =
   | SizeOfType     of string mcode (* sizeof *) * string mcode (* ( *) *
                       typeC * string mcode (* ) *)
   | TypeExp        of typeC
-  | MetaErr        of Ast_cocci.meta_name mcode * expression list * pure
-  | MetaExpr       of Ast_cocci.meta_name mcode * expression list *
+  | MetaErr        of Ast_cocci.meta_name mcode * constraints * pure
+  | MetaExpr       of Ast_cocci.meta_name mcode * constraints *
 	              Type_cocci.typeC list option * Ast_cocci.form * pure
   | MetaExprList   of Ast_cocci.meta_name mcode (* only in arglists *) *
 	              listlen * pure
@@ -123,6 +145,11 @@ and base_expression =
   | UniqueExp      of expression
 
 and expression = base_expression wrap
+
+and constraints =
+    NoConstraint
+  | NotIdCstrt     of Ast_cocci.idconstraint
+  | NotExpCstrt    of expression list
 
 and listlen = Ast_cocci.meta_name mcode option
 
@@ -366,8 +393,8 @@ and parsed_rule =
   | ScriptRule of
       string * Ast_cocci.dependency * (string * Ast_cocci.meta_name) list *
 	string
-  | InitialScriptRule of string * string
-  | FinalScriptRule of string * string
+  | InitialScriptRule of string (*language*) * string (*code*)
+  | FinalScriptRule   of string (*language*) * string (*code*)
 
 (* --------------------------------------------------------------------- *)
 

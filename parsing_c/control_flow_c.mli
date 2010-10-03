@@ -85,6 +85,7 @@ type node = node1 * string (* For debugging. Used by print_graph *)
   | InLoopNode
   | AfterNode
   | FallThroughNode
+  | LoopFallThroughNode
   | ErrorExit
 
 type edge = Direct
