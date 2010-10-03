@@ -43,7 +43,7 @@ open Common
  *)
 
 (*****************************************************************************)
-(* Cpp constructs put it comments in lexer or parsing_hack *)
+(* Cpp constructs put in comments in lexer or parsing_hack *)
 (*****************************************************************************)
 
 (* history: was in ast_c.ml before:

@@ -215,7 +215,7 @@ module XTRANS = struct
 
     | (Ast_cocci.MINUS(old_pos,old_inst,old_adj,[]),
        Ast_cocci.MINUS(new_pos,new_inst,new_adj,[]))
-	when old_pos = new_pos && oldenv =*= tin.binding
+	when old_pos = new_pos && (oldenv =*= tin.binding or !Flag.sgrep_mode2)
 	    (* no way to combine adjacency information, just drop one *)
       ->
         cocciinforef := Some
@@ -473,7 +473,7 @@ module XTRANS = struct
   let meta_name_to_str (s1, s2) = 
     s1 ^ "." ^ s2
 
-  let envf keep _inherited = fun (s, value, _) f tin -> 
+  let envf keep inherited = fun (s, value, _) f tin -> 
     let s = Ast_cocci.unwrap_mcode s in
     let v = 
       if keep =*= Type_cocci.Saved
@@ -504,7 +504,11 @@ module XTRANS = struct
          *)
 
         (*f () tin*)
-        if Cocci_vs_c.equal_metavarval value value' 
+	let equal =
+	  if inherited
+	  then Cocci_vs_c.equal_inh_metavarval
+	  else Cocci_vs_c.equal_metavarval in
+        if equal value value' 
         then f () tin
         else fail tin
 

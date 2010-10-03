@@ -58,7 +58,7 @@ let test_parse_gen xs ext =
     pr2 "";
     pr2 ("PARSING: " ^ file);
 
-    let (xs, stat) = Parse_c.parse_print_error_heuristic file in
+    let (xs, stat) = Parse_c.parse_c_and_cpp file in
     xs +> List.iter (fun (ast, (s, toks)) -> 
       Parse_c.print_commentized toks
     );
@@ -100,64 +100,11 @@ let test_parse_h xs =
 let test_parse_ch xs = 
   test_parse_gen xs "[ch]"
 
-
-(* ---------------------------------------------------------------------- *)
-
-let test_parse xs = 
-
-  Flag_parsing_c.filter_msg_define_error := true;
-  Flag_parsing_c.filter_define_error := true;
-  Flag_parsing_c.verbose_lexing := false;
-  Flag_parsing_c.verbose_parsing := false;
-
-  let dirname_opt = 
-    match xs with
-    | [x] when is_directory x -> Some x
-    | _ -> None
-  in
-  dirname_opt +> Common.do_option (fun dir -> 
-
-    let ext = "h" in 
-    let fullxs = Common.files_of_dir_or_files_no_vcs ext [dir] in
-    fullxs +> List.iter (fun file -> 
-      let xs = Parse_c.parse_cpp_define_file file in
-      xs +> List.iter (fun (x, def) -> 
-        let (s, params, body) = def in 
-        Hashtbl.replace !Parse_c._defs s (s, params, body);
-      );
-    );
-  );
-
-  let ext = "[ch]" in
-
-  let fullxs = Common.files_of_dir_or_files_no_vcs ext xs in
-
-  let stat_list = ref [] in
-  Common.check_stack_nbfiles (List.length fullxs);
-
-  fullxs +> List.iter (fun file -> 
-    if not (file =~ (".*\\."^ext))
-    then pr2 ("warning: seems not a ."^ext^" file");
-
-    pr2 "";
-    pr2 ("PARSING: " ^ file);
-
-    let (xs, stat) = Parse_c.parse_print_error_heuristic file in
-    xs +> List.iter (fun (ast, (s, toks)) -> 
-      Parse_c.print_commentized toks
-    );
-
-    Common.push2 stat stat_list;
-  );
-  
-  if not (null !stat_list) 
-  then begin 
-    Parsing_stat.print_recurring_problematic_tokens !stat_list;
-    Parsing_stat.print_parsing_stat_list !stat_list;
-  end;
-  ()
-
-
+(* could use a simpler parser than heavy parse_c_and_cpp here as there 
+ * is no more cpp stuff in the .i files
+ *)
+let test_parse_i xs = 
+  test_parse_gen xs "i"
 
 
 
@@ -180,7 +127,7 @@ let test_cfg file =
   if not (file =~ ".*\\.c") 
   then pr2 "warning: seems not a .c file";
 
-  let (program, _stat) = Parse_c.parse_print_error_heuristic file in
+  let (program, _stat) = Parse_c.parse_c_and_cpp file in
 
   program +> List.iter (fun (e,_) -> 
     let toprocess = 
@@ -218,7 +165,7 @@ let test_cfg file =
 
 
 let test_cfg_ifdef file = 
-  let (ast2, _stat) = Parse_c.parse_print_error_heuristic file in
+  let (ast2, _stat) = Parse_c.parse_c_and_cpp file in
   let ast = Parse_c.program_of_program2 ast2 in
 
   let ast = Cpp_ast_c.cpp_ifdef_statementize ast in
@@ -240,7 +187,7 @@ let test_parse_unparse infile =
   if not (infile =~ ".*\\.c") 
   then pr2 "warning: seems not a .c file";
 
-  let (program2, _stat) = Parse_c.parse_print_error_heuristic infile in
+  let (program2, _stat) = Parse_c.parse_c_and_cpp infile in
   let program2_with_ppmethod = 
     program2 +> List.map (fun x -> x, Unparse_c.PPnormal)
   in
@@ -252,6 +199,22 @@ let test_parse_unparse infile =
   ()
 
 
+let parse_and_print_sexp file = 
+  let (ast2,_stat) = Parse_c.parse_c_and_cpp file in
+  let ast = Parse_c.program_of_program2 ast2 in
+  let _ast = 
+    Type_annoter_c.annotate_program !Type_annoter_c.initial_env ast
+  in
+
+  (*
+  let sexp = Sexp_ast_c.sexp_of_program ast in
+  let s = Sexp.to_string_hum sexp in
+  *)
+  Sexp_ast_c.show_info := false;
+  let s = Sexp_ast_c.string_of_program ast in
+  pr2 s;
+  ()
+
 
 
 let test_type_c infile = 
@@ -260,7 +223,7 @@ let test_type_c infile =
 
   Flag_parsing_c.pretty_print_type_info := true;
 
-  let (program2, _stat) =  Parse_c.parse_print_error_heuristic infile in
+  let (program2, _stat) =  Parse_c.parse_c_and_cpp infile in
   let _program2 =
     program2 
     +> Common.unzip 
@@ -282,7 +245,7 @@ let test_type_c infile =
 (* ---------------------------------------------------------------------- *)
 (* ex: demos/platform_ifdef.c *)
 let test_comment_annotater infile = 
-  let (program2, _stat) =  Parse_c.parse_print_error_heuristic infile in
+  let (program2, _stat) =  Parse_c.parse_c_and_cpp infile in
   let asts = program2 +> List.map (fun (ast,_) -> ast) in
   let toks = program2 +> List.map (fun (ast, (s, toks)) -> toks) +> 
     List.flatten in
@@ -372,61 +335,114 @@ let test_cpp file =
   let (ast2, _stat) = Parse_c.parse_c_and_cpp file in
   let dirname = Filename.dirname file in
   let ast = Parse_c.program_of_program2 ast2 in
-  let _ast' = Cpp_ast_c.cpp_expand_include (cpp_options()) dirname ast in
+  let ast = Cpp_ast_c.cpp_expand_include (cpp_options()) dirname ast in
+  let _ast = Cpp_ast_c.cpp_ifdef_statementize ast in
+  
   
   ()
 
 
 
-let extract_macros ~selection x = 
-  (* CONFIG [ch] ? also do for .c ? maybe less needed now that I 
-   * add local_macros.
-   *)
-
+(* CONFIG [ch] ? also do for .c ? maybe less needed now that I 
+ * add local_macros.
+ *)
+let extract_macros ~selection dir = 
   let ext = "h" in 
-  let fullxs = Common.files_of_dir_or_files_no_vcs ext [x] in
-  fullxs +> List.iter (fun file -> 
-   
+  let fullxs = Common.files_of_dir_or_files_no_vcs ext [dir] in
+  let macros_and_filename = 
+    fullxs +> List.map (fun file -> 
+      pr2 (spf "processing: %s" file);
+      let xs = Parse_c.extract_macros file in
+      file, xs
+    )
+  in
+
+  let macros = 
+    if selection
+    then Cpp_analysis_c.extract_dangerous_macros macros_and_filename 
+    else macros_and_filename
+  in
+  macros +> List.iter (fun (file, defs) -> 
     pr ("/* PARSING: " ^ file ^ " */");
-    let xs = Parse_c.parse_cpp_define_file file in
-    xs +> List.iter (fun (x, def) -> 
-      let (s, params, body) = def in 
-      assert(s = x);
-      (match params, body with
-      | Cpp_token_c.NoParam, Cpp_token_c.DefineBody [Parser_c.TInt _]
-      | Cpp_token_c.NoParam, Cpp_token_c.DefineBody [] -> 
-          ()
-      | _ -> 
+    defs +> List.iter (fun (s, def) -> 
+      let str = Cpp_token_c.string_of_define_def def in
+      pr str;
+    )
+  );
+  ()
 
-          let s1 = 
-            match params with
-            | Cpp_token_c.NoParam -> spf "#define %s " s
-            | Cpp_token_c.Params xs -> 
-                spf "#define %s(%s) "
-                  s (Common.join "," xs)
-          in
-          let s2, bodytoks = 
-            match body with
-            | Cpp_token_c.DefineHint _ -> 
-                failwith "weird, hint in regular header file"
-            | Cpp_token_c.DefineBody xs -> 
-                Common.join " " (xs +> List.map Token_helpers.str_of_tok),
-                xs
-          in
 
-          let print = 
-            match () with
-            | () when s ==~ Parsing_hacks.regexp_annot -> true
-            | () when List.exists (function
-              | Parser_c.Tattribute _ -> true
-              | _ -> false) bodytoks -> true
-            | () -> false
-          in
-          if print || not selection then pr (s1 ^ s2)
+let test_parse xs = 
+
+  Flag_parsing_c.filter_msg_define_error := true;
+  Flag_parsing_c.filter_define_error := true;
+  Flag_parsing_c.verbose_lexing := false;
+  Flag_parsing_c.verbose_parsing := false;
+
+  let dirname_opt = 
+    match xs with
+    | [x] when is_directory x -> Some x
+    | _ -> None
+  in
+  dirname_opt +> Common.do_option (fun dir -> 
+
+    let ext = "h" in 
+    let fullxs = Common.files_of_dir_or_files_no_vcs ext [dir] in
+
+    let macros_and_filename = 
+      fullxs +> List.map (fun file -> 
+        pr2 (spf "processing: %s" file);
+        let xs = Parse_c.extract_macros file in
+        file, xs
+      )
+    in
+    let macros = 
+      Cpp_analysis_c.extract_dangerous_macros macros_and_filename 
+    in
+    macros +> List.iter (fun (file, xs) -> 
+      xs +> List.iter (fun (x, def) -> 
+        let (s, params, body) = def in 
+        let str = Cpp_token_c.string_of_define_def def in
+        pr str;
+        (* builtins ? *)
+        Hashtbl.replace !Parse_c._defs_builtins s (s, params, body);
       );
     );
   );
+
+  let ext = "[ch]" in
+
+  let fullxs = Common.files_of_dir_or_files_no_vcs ext xs in
+
+  let stat_list = ref [] in
+  Common.check_stack_nbfiles (List.length fullxs);
+
+  fullxs +> List.iter (fun file -> 
+    if not (file =~ (".*\\."^ext))
+    then pr2 ("warning: seems not a ."^ext^" file");
+
+    pr2 "";
+    pr2 ("PARSING: " ^ file);
+
+    let (xs, stat) = Parse_c.parse_c_and_cpp file in
+    xs +> List.iter (fun (ast, (s, toks)) -> 
+      Parse_c.print_commentized toks
+    );
+
+    Common.push2 stat stat_list;
+  );
+  
+  if not (null !stat_list) 
+  then begin 
+    Parsing_stat.print_recurring_problematic_tokens !stat_list;
+    Parsing_stat.print_parsing_stat_list !stat_list;
+  end;
   ()
+
+
+
+
+
 
 
 
@@ -460,6 +476,8 @@ let actions () = [
   Common.mk_action_n_arg test_parse_h;
   "-parse_ch", "   <file or dir>", 
   Common.mk_action_n_arg test_parse_ch;
+  "-parse_i", "   <file or dir>", 
+  Common.mk_action_n_arg test_parse_i;
 
   "-parse", "   <file or dir>", 
   Common.mk_action_n_arg test_parse;
@@ -472,6 +490,8 @@ let actions () = [
   Common.mk_action_1_arg test_cfg_ifdef;
   "-parse_unparse", "   <file>", 
   Common.mk_action_1_arg test_parse_unparse;
+  "-parse_and_print_sexp", "   <file>", 
+    Common.mk_action_1_arg parse_and_print_sexp;
   "-type_c", "   <file>", 
   Common.mk_action_1_arg test_type_c;
   "-compare_c", "   <file1> <file2>", 

@@ -24,11 +24,23 @@ let pr2, pr2_once = Common.mk_pr2_wrappers Flag_parsing_c.verbose_parsing
 
 (* todo?: al_expr doit enlever les infos de type ? et doit remettre en
  *  emptyAnnot ? 
+
+No!  Keeping the type information is important to ensuring that variables
+of different type and declared in different places do not seem to match
+each other.  On the other hand, we don't want to keep around the
+information about whether the expression is a test expression, because a
+term that is a test expression should match one that is not.  The test
+information is only useful for matching to the CTL.
+
  *)
 
 (* drop all info information *)
 
 let strip_info_visitor _ = 
+  let drop_test ty =
+    let (ty,_) = !ty in
+    ref (ty,Ast_c.NotTest) in
+
   { Visitor_c.default_visitor_c_s with
     Visitor_c.kinfo_s =
     (* traversal should be deterministic... *)
@@ -38,7 +50,7 @@ let strip_info_visitor _ =
 
     Visitor_c.kexpr_s = (fun (k,_) e -> 
       let (e', ty), ii' = k e in
-      (e', Ast_c.noType()(*ref !ty*)), ii' (* keep type - jll *)
+      (e', drop_test ty), ii' (* keep type - jll *)
     );
 
 (*
@@ -71,15 +83,59 @@ let al_ii    x = Visitor_c.vk_ii_s (strip_info_visitor()) x
 
 
 
+let strip_inh_info_visitor _ =  (* for inherited metavariables *)
+  let drop_test_lv ty =
+    let (ty,_) = !ty in
+    let ty =
+      match ty with
+	None -> None
+      |	Some (ty,_) -> Some (ty,Ast_c.NotLocalVar) in
+    ref (ty,Ast_c.NotTest) in
+
+  { Visitor_c.default_visitor_c_s with
+    Visitor_c.kinfo_s =
+    (* traversal should be deterministic... *)
+    (let ctr = ref 0 in 
+    (function (k,_) ->
+    function i -> ctr := !ctr + 1; Ast_c.al_info_cpp !ctr i));
+
+    Visitor_c.kexpr_s = (fun (k,_) e -> 
+      let (e', ty), ii' = k e in
+      (e', drop_test_lv ty), ii' (* keep type - jll *)
+    );
+
+(*
+    Visitor_c.ktype_s = (fun (k,_) ft -> 
+      let ft' = k ft in
+      match Ast_c.unwrap_typeC ft' with
+      | Ast_c.TypeName (s,_typ) -> 
+          Ast_c.TypeName (s, Ast_c.noTypedefDef()) +> Ast_c.rewrap_typeC ft'
+      | _ -> ft'
+
+    );
+*)
+    
+  }
+
+let al_inh_expr      x = Visitor_c.vk_expr_s      (strip_inh_info_visitor()) x
+let al_inh_statement x = Visitor_c.vk_statement_s (strip_inh_info_visitor()) x
+let al_inh_type      x = Visitor_c.vk_type_s      (strip_inh_info_visitor()) x
+let al_inh_init      x = Visitor_c.vk_ini_s       (strip_inh_info_visitor()) x
+let al_inh_arguments x = Visitor_c.vk_arguments_s (strip_inh_info_visitor()) x
+
 
 
 let semi_strip_info_visitor = (* keep position information *)
+  let drop_test ty =
+    let (ty,_) = !ty in
+    ref (ty,Ast_c.NotTest) in
+
   { Visitor_c.default_visitor_c_s with
     Visitor_c.kinfo_s = (fun (k,_) i -> Ast_c.semi_al_info_cpp i);
 
     Visitor_c.kexpr_s = (fun (k,_) e -> 
       let (e', ty),ii' = k e in
-      (e', Ast_c.noType()(*ref !ty*)), ii' (* keep type - jll *)
+      (e', drop_test ty), ii' (* keep type - jll *)
     );
     
   }
@@ -100,6 +156,7 @@ let semi_al_program =
 
 (* really strip, do not keep position nor anything specificities, true
  * abstracted form. *)
+(* is this used for anything? jll *)
 let real_strip_info_visitor _ = 
   { Visitor_c.default_visitor_c_s with
     Visitor_c.kinfo_s = (fun (k,_) i ->

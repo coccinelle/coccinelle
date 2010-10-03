@@ -120,8 +120,9 @@ let inline_mcodes =
 		  |	_ -> failwith "unexpected annotation")
 		mcl
 	  | _ ->
+	      Printf.printf "before %s\n" (Dumper.dump bef);
 	      failwith
-		"context tree should not have bad code on both sides" in
+		"context tree should not have bad code before" in
 	let attach_aft aft afterinfo = function
 	    (true,mcl) ->
 	      List.iter
@@ -149,7 +150,7 @@ let inline_mcodes =
 		mcl
 	  | _ ->
 	      failwith
-		"context tree should not have bad code on both sides" in
+		"context tree should not have bad code after" in
 	(match !befaft with
 	  (Ast.BEFORE(bef),beforeinfo,_) ->
 	    attach_bef bef beforeinfo
@@ -364,7 +365,8 @@ and expression e =
     | Ast0.MetaExprList(name,None,_) ->
 	Ast.MetaExprList(mcode name,None,unitary,false)
     | Ast0.EComma(cm)         -> Ast.EComma(mcode cm)
-    | Ast0.DisjExpr(_,exps,_,_)     -> Ast.DisjExpr(List.map expression exps)
+    | Ast0.DisjExpr(_,exps,_,_)     ->
+	Ast.DisjExpr(List.map expression exps)
     | Ast0.NestExpr(_,exp_dots,_,whencode,multi) ->
 	let whencode = get_option expression whencode in
 	Ast.NestExpr(dots expression exp_dots,whencode,multi)

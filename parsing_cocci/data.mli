@@ -3,6 +3,8 @@
    metavariables *)
 type fresh = bool
 
+type incl_iso = Include of string | Iso of (string,string) Common.either
+
 type clt =
     line_type * int * int * int * int (* starting spaces *) *
       (string * Ast0_cocci.position_info) list (* code before *) *
@@ -25,7 +27,10 @@ val in_meta : bool ref      (* true if parsing the metavariable decls *)
 val in_iso : bool ref       (* true if parsing the isomorphisms *)
 val in_generating : bool ref(* true if generating a rule *)
 val in_prolog : bool ref    (* true if parsing the beginning of an SP *)
+val saw_struct : bool ref   (* true if saw struct/union *)
 val inheritable_positions : string list ref
+
+val call_in_meta : (unit -> 'a) -> 'a
 
 val all_metadecls : (string, Ast_cocci.metavar list) Hashtbl.t
 

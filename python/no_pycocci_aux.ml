@@ -54,7 +54,7 @@ let call_pretty f a =
   let str = ref ([] : string list) in
   let pr_elem info = str := (Ast_c.str_of_info info) :: !str in
   let pr_sp _ = () in
-  f pr_elem pr_sp a;
+  f ~pr_elem ~pr_space:pr_sp a;
   String.concat " " (List.rev !str)
 
 let stringrep mvb = match mvb with

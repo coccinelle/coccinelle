@@ -1,6 +1,6 @@
 -include ../Makefile.config
 
-PROGS=gitgrep split_patch extract_c_and_res #generate_dependencies
+PROGS=spp gitgrep split_patch extract_c_and_res #generate_dependencies
 
 all: $(SUBDIRS) $(PROGS)
 
@@ -29,7 +29,7 @@ install_bridge: bridge
 .PHONY: $(SUBDIRS)
 
 
-SYSLIBS = str.cma unix.cma
+SYSLIBS = str.cma unix.cma bigarray.cma
 
 INCLUDE=-I ../commons -I ../extra -I  ../parsing_c
 LIBS=../commons/commons.cma ../globals/globals.cma \
@@ -42,6 +42,10 @@ OCAMLLEX=ocamllex$(OPTBIN)
 OCAMLYACC=ocamlyacc -v
 OCAMLDEP=ocamldep$(OPTBIN) $(INCLUDE)
 OCAMLMKTOP=ocamlmktop -g -custom $(INCLUDE)
+
+spp: spp.ml
+	$(OCAMLC) -o $@ $(SYSLIBS) $(INCLUDE) $(LIBS)  $+
+#	ocamlc -I ../commons/ -o spp str.cma unix.cma bigarray.cma  ../commons/common.cmo spp.ml
 
 split_patch: split_patch.cmo
 	$(OCAMLC) -o $@ $(SYSLIBS) $(INCLUDE) $(LIBS)  $+

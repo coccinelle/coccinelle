@@ -8,7 +8,7 @@ check_meta.cmi: ast_cocci.cmi ast0_cocci.cmi
 comm_assoc.cmi: ast0_cocci.cmi 
 compute_lines.cmi: ast0_cocci.cmi 
 context_neg.cmi: ../commons/common.cmi ast0_cocci.cmi 
-data.cmi: type_cocci.cmi ast_cocci.cmi ast0_cocci.cmi 
+data.cmi: type_cocci.cmi ../commons/common.cmi ast_cocci.cmi ast0_cocci.cmi 
 disjdistr.cmi: ast_cocci.cmi 
 free_vars.cmi: ast_cocci.cmi 
 function_prototypes.cmi: ast_cocci.cmi ast0_cocci.cmi 
@@ -42,16 +42,16 @@ adjust_pragmas.cmx: visitor_ast0_types.cmx visitor_ast0.cmx ast0_cocci.cmx \
     adjust_pragmas.cmi 
 arity.cmo: ast_cocci.cmi ast0_cocci.cmi arity.cmi 
 arity.cmx: ast_cocci.cmx ast0_cocci.cmx arity.cmi 
-ast0_cocci.cmo: type_cocci.cmi ../globals/flag.cmo ast_cocci.cmi \
-    ast0_cocci.cmi 
-ast0_cocci.cmx: type_cocci.cmx ../globals/flag.cmx ast_cocci.cmx \
-    ast0_cocci.cmi 
+ast0_cocci.cmo: type_cocci.cmi ../globals/flag.cmo ../commons/common.cmi \
+    ast_cocci.cmi ast0_cocci.cmi 
+ast0_cocci.cmx: type_cocci.cmx ../globals/flag.cmx ../commons/common.cmx \
+    ast_cocci.cmx ast0_cocci.cmi 
 ast0toast.cmo: visitor_ast0_types.cmo visitor_ast0.cmi visitor_ast.cmi \
-    type_cocci.cmi ../globals/flag.cmo ast_cocci.cmi ast0_cocci.cmi \
-    ast0toast.cmi 
+    type_cocci.cmi ../globals/flag.cmo ../commons/ocamlextra/dumper.cmi \
+    ast_cocci.cmi ast0_cocci.cmi ast0toast.cmi 
 ast0toast.cmx: visitor_ast0_types.cmx visitor_ast0.cmx visitor_ast.cmx \
-    type_cocci.cmx ../globals/flag.cmx ast_cocci.cmx ast0_cocci.cmx \
-    ast0toast.cmi 
+    type_cocci.cmx ../globals/flag.cmx ../commons/ocamlextra/dumper.cmx \
+    ast_cocci.cmx ast0_cocci.cmx ast0toast.cmi 
 ast_cocci.cmo: type_cocci.cmi ../commons/common.cmi ast_cocci.cmi 
 ast_cocci.cmx: type_cocci.cmx ../commons/common.cmx ast_cocci.cmi 
 check_meta.cmo: visitor_ast0_types.cmo visitor_ast0.cmi type_cocci.cmi \
@@ -70,8 +70,10 @@ context_neg.cmo: visitor_ast0_types.cmo visitor_ast0.cmi unparse_ast0.cmi \
 context_neg.cmx: visitor_ast0_types.cmx visitor_ast0.cmx unparse_ast0.cmx \
     index.cmx ../globals/flag.cmx compute_lines.cmx ../commons/common.cmx \
     ast_cocci.cmx ast0_cocci.cmx context_neg.cmi 
-data.cmo: type_cocci.cmi ast_cocci.cmi ast0_cocci.cmi data.cmi 
-data.cmx: type_cocci.cmx ast_cocci.cmx ast0_cocci.cmx data.cmi 
+data.cmo: type_cocci.cmi ../commons/common.cmi ast_cocci.cmi ast0_cocci.cmi \
+    data.cmi 
+data.cmx: type_cocci.cmx ../commons/common.cmx ast_cocci.cmx ast0_cocci.cmx \
+    data.cmi 
 disjdistr.cmo: visitor_ast.cmi ../globals/flag.cmo ../commons/common.cmi \
     ast_cocci.cmi disjdistr.cmi 
 disjdistr.cmx: visitor_ast.cmx ../globals/flag.cmx ../commons/common.cmx \

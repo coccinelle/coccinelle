@@ -58,7 +58,6 @@ let pr2, pr2_once = Common.mk_pr2_wrappers Flag_parsing_c.verbose_parsing
 (* Types *)
 (*****************************************************************************)
 
-
 (* ------------------------------------------------------------------------- *)
 (* mimic standard.h *)
 (* ------------------------------------------------------------------------- *)
@@ -80,6 +79,9 @@ type define_def = string * define_param * define_body
      | HintMacroIdentBuilder
 
 
+(*****************************************************************************)
+(* Parsing and helpers of hints  *)
+(*****************************************************************************)
 
 (* cf also data/test.h *)
 let assoc_hint_string = [
@@ -96,6 +98,11 @@ let assoc_hint_string = [
 
 let (parsinghack_hint_of_string: string -> parsinghack_hint option) = fun s -> 
   Common.assoc_option s assoc_hint_string
+let (string_of_parsinghack_hint: parsinghack_hint -> string) = fun hint -> 
+  let assoc' = assoc_hint_string +> List.map (fun (a,b) -> (b,a) ) in
+  Common.assoc hint assoc'
+
+
 
 let (is_parsinghack_hint: string -> bool) = fun s -> 
   parsinghack_hint_of_string s <> None
@@ -118,8 +125,24 @@ let (token_from_parsinghack_hint:
        Parser_c.TMacroIdentBuilder (s, ii)
   
 
+(* used in extract_macros for example *)
+let string_of_define_def (s, params, body) =
 
-
+  let s1 = 
+    match params with
+    | NoParam -> 
+        spf "#define %s " s
+    | Params xs -> 
+        spf "#define %s(%s) " s (Common.join "," xs)
+  in
+  let s2 = 
+    match body with
+    | DefineHint hint -> 
+        string_of_parsinghack_hint hint
+    | DefineBody xs -> 
+        Common.join " " (xs +> List.map Token_helpers.str_of_tok)
+  in
+  s1 ^ s2
 
 
 (*****************************************************************************)
@@ -153,7 +176,7 @@ let rec remap_keyword_tokens xs =
           let ii = TH.info_of_tok y in
           if s ==~ Common.regexp_alpha
           then begin
-            pr2 (spf "remaping: %s to an ident in expanded code" s);
+            pr2 (spf "remapping: %s to an ident in expanded code" s);
             x::(Parser_c.TIdent (s, ii))::remap_keyword_tokens xs
           end
           else 
@@ -164,7 +187,7 @@ let rec remap_keyword_tokens xs =
           let ii = TH.info_of_tok x in
           if s ==~ Common.regexp_alpha
           then begin
-            pr2 (spf "remaping: %s to an ident in expanded code" s);
+            pr2 (spf "remapping: %s to an ident in expanded code" s);
             (Parser_c.TIdent (s, ii))::remap_keyword_tokens (y::xs)
           end
           else 
@@ -172,6 +195,60 @@ let rec remap_keyword_tokens xs =
 
       | _, _ -> 
           x::remap_keyword_tokens (y::xs)
+      )
+
+
+(* works with agglomerate_concat_op_ident below *)
+let rec get_ident_in_concat_op xs = 
+  match xs with
+  | [] -> 
+      pr2 "weird: ident after ## operator not found";
+      "", []
+  | [x] -> 
+      (match x with
+      | Parser_c.TIdent (s, i1) -> s, []
+      | _ -> 
+          pr2 "weird: ident after ## operator not found";
+          "", [x]
+      )
+  | x::y::xs -> 
+      (match x, y with
+      | Parser_c.TIdent (s,i1), Parser_c.TCppConcatOp (i2) -> 
+          let (s2, rest) = get_ident_in_concat_op xs in
+          s ^ s2, rest
+      | Parser_c.TIdent (s, i1), _ -> 
+          s, (y::xs)
+      | _ -> 
+          pr2 "weird: ident after ## operator not found";
+          "", x::y::xs
+      )
+
+(* must be run after the expansion has been done for the parameter so
+ * that all idents are actually ident, not macro parameter names.
+ *)
+let rec agglomerate_concat_op_ident xs = 
+  match xs with
+  | [] -> []
+  | [x] -> [x]
+  | x::y::xs -> 
+      (* can we have ## id, and so ## as first token ? yes 
+       * but the semantic is different as it represents variadic
+       * names so this must be handled elsewhere.
+       *)
+      (match x, y with
+      | Parser_c.TIdent (s,i1), Parser_c.TCppConcatOp (i2) -> 
+          let (all_str_ident, rest_toks) = 
+            get_ident_in_concat_op xs
+          in
+          let new_s = s ^ all_str_ident in
+          let i1' = Ast_c.rewrap_str new_s i1 in
+          Parser_c.TIdent (new_s, i1')::agglomerate_concat_op_ident rest_toks
+      | Parser_c.TCppConcatOp _, _ -> 
+          pr2 "weird, ## alone";
+          x::agglomerate_concat_op_ident (y::xs)
+      | _ -> 
+          x::agglomerate_concat_op_ident (y::xs)
+          
       )
               
           
@@ -194,14 +271,17 @@ let rec remap_keyword_tokens xs =
  * for instance transform some of the back into some TypedefIdent
  * so cpp_engine may be fooled?
  *)
-let rec (cpp_engine: (string , Parser_c.token list) assoc -> 
+let rec (cpp_engine: 
+          ?evaluate_concatop:bool ->
+          (string , Parser_c.token list) assoc -> 
           Parser_c.token list -> Parser_c.token list) = 
- fun env xs ->
+ fun ?(evaluate_concatop=true) env xs ->
   xs +> List.map (fun tok -> 
     (* expand only TIdent ? no cos the parameter of the macro
      * can actually be some 'register' so may have to look for 
      * any tokens candidates for the expansion.
      * Only subtelity is maybe dont expand the TDefineIdent.
+     * 
      * update: in fact now the caller (define_parse) will have done 
      * the job right and already replaced the macro parameter with a TIdent.
      *)
@@ -211,6 +291,11 @@ let rec (cpp_engine: (string , Parser_c.token list) assoc ->
   )
   +> List.flatten
   +> remap_keyword_tokens
+  +> (fun xs -> 
+       if evaluate_concatop
+       then agglomerate_concat_op_ident xs
+       else xs
+  ) 
 
 
 
@@ -231,6 +316,8 @@ let rec (cpp_engine: (string , Parser_c.token list) assoc ->
 let rec apply_macro_defs 
  ~msg_apply_known_macro 
  ~msg_apply_known_macro_hint 
+ ?evaluate_concatop
+ ?(inplace_when_single=true)
  defs xs = 
  let rec apply_macro_defs xs = 
   match xs with
@@ -301,7 +388,8 @@ let rec apply_macro_defs
                 ) in
                 id.new_tokens_before <-
                   (* !!! cpp expansion job here  !!! *)
-                  cpp_engine (Common.zip params xxs') bodymacro;
+                  cpp_engine ?evaluate_concatop 
+                    (Common.zip params xxs') bodymacro;
 
                 (* important to do that after have apply the macro, otherwise
                  * will pass as argument to the macro some tokens that
@@ -364,7 +452,10 @@ let rec apply_macro_defs
           ()
       | NoParam -> 
           (match body with
-          | DefineBody [newtok] -> 
+          (* bugfix: we prefer not using this special case when we come
+           * from extract_macros context
+           *)
+          | DefineBody [newtok] when inplace_when_single -> 
              (* special case when 1-1 substitution, we reuse the token *)
               id.tok <- (newtok +> TH.visitor_info_of_tok (fun _ -> 
                 TH.info_of_tok id.tok))
@@ -391,162 +482,10 @@ let rec apply_macro_defs
 
 
 
-
 (*****************************************************************************)
-(* The parsing hack for #define *)
+(* extracting define_def from a standard.h  *)
 (*****************************************************************************)
-
-(* To parse macro definitions I need to do some tricks 
- * as some information can be get only at the lexing level. For instance
- * the space after the name of the macro in '#define foo (x)' is meaningful
- * but the grammar can not get this information. So define_ident below
- * look at such space and generate a special TOpardefine. In a similar
- * way macro definitions can contain some antislash and newlines
- * and the grammar need to know where the macro ends (which is 
- * a line-level and so low token-level information). Hence the 
- * function 'define_line' below and the TDefEol.
- * 
- * update: TDefEol is handled in a special way at different places, 
- * a little bit like EOF, especially for error recovery, so this
- * is an important token that should not be retagged!
- * 
- * 
- * ugly hack, a better solution perhaps would be to erase TDefEOL 
- * from the Ast and list of tokens in parse_c. 
- * 
- * note: I do a +1 somewhere, it's for the unparsing to correctly sync.
- * 
- * note: can't replace mark_end_define by simply a fakeInfo(). The reason
- * is where is the \n TCommentSpace. Normally there is always a last token
- * to synchronize on, either EOF or the token of the next toplevel.
- * In the case of the #define we got in list of token 
- * [TCommentSpace "\n"; TDefEOL] but if TDefEOL is a fakeinfo then we will
- * not synchronize on it and so we will not print the "\n".
- * A solution would be to put the TDefEOL before the "\n".
- * 
- * todo?: could put a ExpandedTok for that ? 
- *)
-let mark_end_define ii = 
-  let ii' = 
-    { Ast_c.pinfo = Ast_c.OriginTok { (Ast_c.parse_info_of_info ii) with 
-        Common.str = ""; 
-        Common.charpos = Ast_c.pos_of_info ii + 1
-      };
-      cocci_tag = ref Ast_c.emptyAnnot;
-      comments_tag = ref Ast_c.emptyComments;
-    } 
-  in
-  TDefEOL (ii')
-
-(* put the TDefEOL at the good place *)
-let rec define_line_1 acc xs = 
-  match xs with
-  | [] -> List.rev acc
-  | TDefine ii::xs ->
-      let line = Ast_c.line_of_info ii in
-      let acc = (TDefine ii) :: acc in
-      define_line_2 acc line ii xs
-  | TCppEscapedNewline ii::xs ->
-      pr2 "WEIRD: a \\ outside a #define";
-      let acc = (TCommentSpace ii) :: acc in
-      define_line_1 acc xs
-  | x::xs -> define_line_1 (x::acc) xs
-
-and define_line_2 acc line lastinfo xs = 
-  match xs with 
-  | [] -> 
-      (* should not happened, should meet EOF before *)
-      pr2 "PB: WEIRD";   
-      List.rev (mark_end_define lastinfo::acc)
-  | x::xs -> 
-      let line' = TH.line_of_tok x in
-      let info = TH.info_of_tok x in
-
-      (match x with
-      | EOF ii -> 
-	  let acc = (mark_end_define lastinfo) :: acc in
-	  let acc = (EOF ii) :: acc in
-          define_line_1 acc xs
-      | TCppEscapedNewline ii -> 
-          if (line' <> line) then pr2 "PB: WEIRD: not same line number";
-	  let acc = (TCommentSpace ii) :: acc in
-          define_line_2 acc (line+1) info xs
-      | x -> 
-          if line' =|= line
-          then define_line_2 (x::acc) line info xs 
-          else define_line_1 (mark_end_define lastinfo::acc) (x::xs)
-      )
-
-let rec define_ident acc xs = 
-  match xs with
-  | [] -> List.rev acc
-  | TDefine ii::xs -> 
-      let acc = TDefine ii :: acc in
-      (match xs with
-      | TCommentSpace i1::TIdent (s,i2)::TOPar (i3)::xs -> 
-          (* Change also the kind of TIdent to avoid bad interaction
-           * with other parsing_hack tricks. For instant if keep TIdent then
-           * the stringication algo can believe the TIdent is a string-macro.
-           * So simpler to change the kind of the ident too.
-           *)
-          (* if TOParDefine sticked to the ident, then 
-           * it's a macro-function. Change token to avoid ambiguity
-           * between #define foo(x)  and   #define foo   (x)
-           *)
-	  let acc = (TCommentSpace i1) :: acc in
-	  let acc = (TIdentDefine (s,i2)) :: acc in
-	  let acc = (TOParDefine i3) :: acc in
-          define_ident acc xs
-
-      | TCommentSpace i1::TIdent (s,i2)::xs -> 
-	  let acc = (TCommentSpace i1) :: acc in
-	  let acc = (TIdentDefine (s,i2)) :: acc in
-          define_ident acc xs
-
-      (* bugfix: ident of macro (as well as params, cf below) can be tricky
-       * note, do we need to subst in the body of the define ? no cos
-       * here the issue is the name of the macro, as in #define inline,
-       * so obviously the name of this macro will not be used in its 
-       * body (it would be a recursive macro, which is forbidden).
-       *)
-       
-      | TCommentSpace i1::t::xs -> 
-
-          let s = TH.str_of_tok t in
-          let ii = TH.info_of_tok t in
-          if s ==~ Common.regexp_alpha
-          then begin
-            pr2 (spf "remaping: %s to an ident in macro name" s);
-	    let acc = (TCommentSpace i1) :: acc in
-	    let acc = (TIdentDefine (s,ii)) :: acc in
-            define_ident acc xs
-          end
-          else begin
-            pr2 "WEIRD: weird #define body"; 
-            define_ident acc xs
-          end
-
-      | _ -> 
-          pr2 "WEIRD: weird #define body"; 
-          define_ident acc xs
-      )
-  | x::xs ->
-      let acc = x :: acc in
-      define_ident acc xs
-  
-
-
-let fix_tokens_define2 xs = 
-  define_ident [] (define_line_1 [] xs)
-
-let fix_tokens_define a = 
-  Common.profile_code "C parsing.fix_define" (fun () -> fix_tokens_define2 a)
-      
-
-
-(*****************************************************************************)
-(* for the cpp-builtin, standard.h, part 0 *)
-(*****************************************************************************)
+(* was the cpp-builtin, standard.h, part 0 *)
 
 let macro_body_to_maybe_hint body = 
   match body with
@@ -559,7 +498,8 @@ let macro_body_to_maybe_hint body =
   | xs -> DefineBody body
 
 
-let rec define_parse xs = 
+let rec (define_parse: Parser_c.token list -> (string * define_def) list) = 
+ fun xs ->
   match xs with
   | [] -> []
   | TDefine i1::TIdentDefine (s,i2)::TOParDefine i3::xs -> 
@@ -585,7 +525,7 @@ let rec define_parse xs =
             let s = TH.str_of_tok x in
             if s ==~ Common.regexp_alpha
             then begin
-              pr2 (spf "remaping: %s to a macro parameter" s);
+              pr2 (spf "remapping: %s to a macro parameter" s);
               Some s
             end
             else 
@@ -602,7 +542,7 @@ let rec define_parse xs =
             let ii = TH.info_of_tok tok in 
             if s ==~ Common.regexp_alpha && List.mem s params
             then begin
-              pr2 (spf "remaping: %s to an ident in macro body" s);
+              pr2 (spf "remapping: %s to an ident in macro body" s);
               TIdent (s, ii)
             end
             else tok
@@ -628,12 +568,10 @@ let rec define_parse xs =
       
 
 
-let extract_cpp_define xs = 
+let extract_macros xs = 
   let cleaner = xs +> List.filter (fun x -> 
     not (TH.is_comment x)
   ) in
   define_parse cleaner
-  
-
 
 

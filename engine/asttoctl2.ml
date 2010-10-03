@@ -25,7 +25,7 @@
 (* true = don't see all matched nodes, only modified ones *)
 let onlyModif = ref true(*false*)
 
-type ex = Exists | Forall | ReverseForall
+type ex = Exists | Forall
 let exists = ref Forall
 
 module Ast = Ast_cocci
@@ -92,7 +92,6 @@ let ctl_ax s = function
       match !exists with
 	Exists -> CTL.EX(CTL.FORWARD,x)
       |	Forall -> CTL.AX(CTL.FORWARD,s,x)
-      |	ReverseForall -> failwith "not supported"
 
 let ctl_ax_absolute s = function
     CTL.True -> CTL.True
@@ -130,20 +129,16 @@ let ctl_au s x y =
   match (x,!exists) with
     (CTL.True,Exists) -> CTL.EF(CTL.FORWARD,y)
   | (CTL.True,Forall) -> CTL.AF(CTL.FORWARD,s,y)
-  | (CTL.True,ReverseForall) -> failwith "not supported"
   | (_,Exists) -> CTL.EU(CTL.FORWARD,x,y)
   | (_,Forall) -> CTL.AU(CTL.FORWARD,s,x,y)
-  | (_,ReverseForall) -> failwith "not supported"
 
 let ctl_anti_au s x y = (* only for ..., where the quantifier is changed *)
   CTL.XX
     (match (x,!exists) with
       (CTL.True,Exists) -> CTL.AF(CTL.FORWARD,s,y)
     | (CTL.True,Forall) -> CTL.EF(CTL.FORWARD,y)
-    | (CTL.True,ReverseForall) -> failwith "not supported"
     | (_,Exists) -> CTL.AU(CTL.FORWARD,s,x,y)
-    | (_,Forall) -> CTL.EU(CTL.FORWARD,x,y)
-    | (_,ReverseForall) -> failwith "not supported")
+    | (_,Forall) -> CTL.EU(CTL.FORWARD,x,y))
 
 let ctl_uncheck = function
     CTL.True -> CTL.True
@@ -609,7 +604,8 @@ and get_before_e s a =
   | Ast.Nest(stmt_dots,w,multi,_,aft) ->
       let w = get_before_whencode w in
       let (sd,_) = get_before stmt_dots a in
-      let a =
+      (*let a =
+	got rid of this, don't want to let nests overshoot
 	List.filter
 	  (function
 	      Ast.Other a ->
@@ -625,7 +621,7 @@ and get_before_e s a =
 		  Unify_ast.MAYBE -> false
 		| _ -> true)
 	    | _ -> true)
-	  a in
+	  a in*)
       (Ast.rewrap s (Ast.Nest(sd,w,multi,a,aft)),[Ast.Other_dots stmt_dots])
   | Ast.Disj(stmt_dots_list) ->
       let (dsl,dsla) =
@@ -711,7 +707,8 @@ and get_after_e s a =
   | Ast.Nest(stmt_dots,w,multi,bef,_) ->
       let w = get_after_whencode a w in
       let (sd,_) = get_after stmt_dots a in
-      let a =
+      (*let a =
+	 got rid of this. don't want to let nests overshoot
 	List.filter
 	  (function
 	      Ast.Other a ->
@@ -727,7 +724,7 @@ and get_after_e s a =
 		  Unify_ast.MAYBE -> false
 		| _ -> true)
 	    | _ -> true)
-	  a in
+	  a in*)
       (Ast.rewrap s (Ast.Nest(sd,w,multi,bef,a)),[Ast.Other_dots stmt_dots])
   | Ast.Disj(stmt_dots_list) ->
       let (dsl,dsla) =
@@ -856,7 +853,15 @@ let exptymatch l make_match make_guard_match =
   let rec suffixes = function
       [] -> []
     | x::xs -> xs::(suffixes xs) in
-  let prefixes = List.rev (suffixes (List.rev guard_matches)) in
+  let prefixes =
+    (* normally, we check that an expression does not match something
+       earlier in the disjunction (calculated as prefixes).  But for large
+       disjunctions, this can result in a very big CTL formula.  So we
+       give the user the option to say he doesn't want this feature, if that is
+       the case. *)
+    if !Flag_matcher.no_safe_expressions
+    then List.map (function _ -> []) matches
+    else List.rev (suffixes (List.rev guard_matches)) in
   let info = (* not null *)
     List.map2
       (function matcher ->
@@ -890,8 +895,7 @@ let do_re_matches label guard res quantified minus_quantified =
 	if List.exists (function Ast.Exp(_) | Ast.Ty(_) -> true | _ -> false)
 	    all
 	then failwith "unexpected exp or ty";
-	List.fold_left ctl_seqor CTL.False
-	  (List.rev (List.map make_match res)))
+	List.fold_left ctl_seqor CTL.False (List.map make_match res))
 
 (* code might be a DisjRuleElem, in which case we break it apart
    code doesn't contain an Exp or Ty
@@ -1004,10 +1008,12 @@ let ifthenelse ifheader branch1 els branch2 ((afvs,_,_,_) as aft) after
     | _ -> failwith "not possible" in
   let (e2fvs,b2fvs,s2fvs) =
     (* fvs on else? *)
-    match seq_fvs quantified
-	[Ast.get_fvs ifheader;Ast.get_fvs branch2;afvs] with
+    (* just combine with the else branch.  no point to have separate
+       quantifier, since there is only one possible control-flow path *)
+    let else_fvs = Common.union_set (Ast.get_fvs els) (Ast.get_fvs branch2) in
+    match seq_fvs quantified [Ast.get_fvs ifheader;else_fvs;afvs] with
       [(e2fvs,b2fvs);(s2fvs,b2afvs);_] ->
-	(e2fvs,Common.union_set b2fvs b2afvs,s2fvs)
+        (e2fvs,Common.union_set b2fvs b2afvs,s2fvs)
     | _ -> failwith "not possible" in
   let bothfvs        = union (union b1fvs b2fvs) (intersect s1fvs s2fvs) in
   let exponlyfvs     = intersect e1fvs e2fvs in
@@ -1021,8 +1027,11 @@ let ifthenelse ifheader branch1 els branch2 ((afvs,_,_,_) as aft) after
     | _ -> failwith "not possible" in
   let (me2fvs,mb2fvs,ms2fvs) =
     (* fvs on else? *)
-    match seq_fvs minus_quantified
-	[Ast.get_mfvs ifheader;Ast.get_mfvs branch2;[]] with
+    (* just combine with the else branch.  no point to have separate
+       quantifier, since there is only one possible control-flow path *)
+    let else_mfvs =
+      Common.union_set (Ast.get_mfvs els) (Ast.get_mfvs branch2) in
+    match seq_fvs minus_quantified [Ast.get_mfvs ifheader;else_mfvs;[]] with
       [(e2fvs,b2fvs);(s2fvs,b2afvs);_] ->
 	(e2fvs,Common.union_set b2fvs b2afvs,s2fvs)
     | _ -> failwith "not possible" in
@@ -1039,7 +1048,10 @@ let ifthenelse ifheader branch1 els branch2 ((afvs,_,_,_) as aft) after
 	  (Some (lv,used)) llabel slabel guard] in
   let false_branch =
     make_seq guard
-      [falsepred label; make_match els;
+      [falsepred label;
+	quantify guard
+	  (Common.minus_set (Ast.get_fvs els) new_quantified)
+	  (make_match els);
 	recurse branch2 Tail new_quantified new_mquantified
 	  (Some (lv,used)) llabel slabel guard] in
   let after_pred = aftpred label in
@@ -1234,7 +1246,7 @@ let svar_minus_or_no_add_after stmt s label quantified d ast
 (* --------------------------------------------------------------------- *)
 (* dots and nests *)
 
-let dots_au is_strict toend label s wrapcode x seq_after y quantifier =
+let dots_au is_strict toend label s wrapcode n x seq_after y quantifier =
   let matchgoto = gotopred None in
   let matchbreak =
     make_match None false
@@ -1253,7 +1265,10 @@ let dots_au is_strict toend label s wrapcode x seq_after y quantifier =
     then Common.Left(aftpred label)
     else
       Common.Right
-	(function v ->
+	(function vx -> function v ->
+	  (* vx is the contents of the nest, if any.  we can only stop early
+	     if we find neither the ending code nor the nest contents in
+	     the if branch.  not sure if this is a good idea. *)
 	  let lv = get_label_ctr() in
 	  let labelpred = CTL.Pred(Lib_engine.Label lv,CTL.Control) in
 	  let preflabelpred = label_pred_maker (Some (lv,ref true)) in
@@ -1262,7 +1277,8 @@ let dots_au is_strict toend label s wrapcode x seq_after y quantifier =
 	       (ctl_and CTL.NONSTRICT
 		  (ctl_and CTL.NONSTRICT (truepred label) labelpred)
 		  (ctl_au CTL.NONSTRICT
-		     (ctl_and CTL.NONSTRICT (ctl_not v) preflabelpred)
+		     (ctl_and CTL.NONSTRICT (ctl_not v)
+			(ctl_and CTL.NONSTRICT vx preflabelpred))
 		     (ctl_and CTL.NONSTRICT preflabelpred
 			(if !Flag_matcher.only_return_is_error_exit
 			then
@@ -1280,9 +1296,11 @@ let dots_au is_strict toend label s wrapcode x seq_after y quantifier =
   let v = get_let_ctr() in
   op s x
     (match stop_early with
-      Common.Left x -> ctl_or y x
+      Common.Left x1 -> ctl_or y x1
     | Common.Right stop_early ->
-	CTL.Let(v,y,ctl_or (CTL.Ref v) (stop_early (CTL.Ref v))))
+	CTL.Let(v,y,
+		ctl_or (CTL.Ref v)
+		  (stop_early n (CTL.Ref v))))
 
 let rec dots_and_nests plus nest whencodes bef aft dotcode after label
     process_bef_aft statement_list statement guard quantified wrapcode =
@@ -1341,7 +1359,11 @@ let rec dots_and_nests plus nest whencodes bef aft dotcode after label
 	    | Ast.WhenNotFalse(e) ->
 		(poswhen,
 		  ctl_or (whencond_false e label guard quantified) negwhen))
-	(CTL.True,bef_aft) (List.rev whencodes) in
+	(CTL.True,CTL.False(*bef_aft*)) (List.rev whencodes) in
+    (*bef_aft modifies arg so that inside of a nest can't cause the next
+       to overshoot its boundaries, eg a() <...f()...> b() where f is
+       a metavariable and the whole thing matches code in a loop;
+       don't want f to match eg b(), allowing to go around the loop again*)
     let poswhen = ctl_and_ns arg poswhen in
     let negwhen =
 (*    if !exists
@@ -1360,9 +1382,11 @@ let rec dots_and_nests plus nest whencodes bef aft dotcode after label
       on the "true" in between code *)
   let plus_var = if plus then get_label_ctr() else string2var "" in
   let plus_var2 = if plus then get_label_ctr() else string2var "" in
-  let ornest =
+  let (ornest,just_nest) =
+    (* just_nest is used when considering whether to stop early, to continue
+       to collect nest information in the if branch *)
     match (nest,guard && not plus) with
-      (None,_) | (_,true) -> whencodes CTL.True
+      (None,_) | (_,true) -> (whencodes CTL.True,CTL.True)
     | (Some nest,false) ->
 	let v = get_let_ctr() in
 	let is_plus x =
@@ -1379,9 +1403,11 @@ let rec dots_and_nests plus nest whencodes bef aft dotcode after label
 			       CTL.Pred(Lib_engine.BindGood(plus_var),
 					CTL.Modif plus_var2)))
 	  else x in
-        CTL.Let(v,nest,
-		CTL.Or(is_plus (CTL.Ref v),
-		       whencodes (CTL.Not(ctl_uncheck (CTL.Ref v))))) in
+	let body = 
+	  CTL.Let(v,nest,
+		  CTL.Or(is_plus (CTL.Ref v),
+			 whencodes (CTL.Not(ctl_uncheck (CTL.Ref v))))) in
+        (body,body) in
   let plus_modifier x =
     if plus
     then
@@ -1417,8 +1443,9 @@ let rec dots_and_nests plus nest whencodes bef aft dotcode after label
 	else exit (* end at the real end of the function *) *) in
   plus_modifier
     (dots_au is_strict ((after = Tail) or (after = VeryEnd))
-       label (guard_to_strict guard) wrapcode
-      (ctl_and_ns dotcode (ctl_and_ns ornest labelled))
+       label (guard_to_strict guard) wrapcode just_nest
+      (ctl_and_ns dotcode
+	 (ctl_and_ns (ctl_and_ns (ctl_not bef_aft) ornest) labelled))
       aft ender quantifier)
 
 and get_whencond_exps e =
@@ -1748,7 +1775,7 @@ and statement stmt after quantified minus_quantified
 		      (quantify guard b2fvs
 			 (statement_list body Tail
 			    new_quantified2 new_mquantified2
-			    (Some (lv,ref true))
+			    None(*no label because past the goto*)
 			    llabel slabel false guard))])) in
 	ctl_or pattern_as_given (ctl_or pattern2 pattern3)
       else pattern_as_given
@@ -2022,81 +2049,113 @@ and statement stmt after quantified minus_quantified
 	Common.union_set mb1fvs
 	  (Common.union_set mb2fvs
 	     (Common.union_set mb3fvs minus_quantified)) in
-      let fn_nest =
+      let optim1 =
 	match (Ast.undots body,
 	       contains_modif rbrace or contains_pos rbrace) with
 	  ([body],false) ->
 	    (match Ast.unwrap body with
-	      Ast.Nest(stmt_dots,[],multi,_,_) ->
-		if multi
-		then None (* not sure how to optimize this case *)
-		else Some (Common.Left stmt_dots)
-	    | Ast.Dots(_,whencode,_,_) when
+	      Ast.Nest(stmt_dots,[],false,_,_) ->
+            (* special case for function header + body - header is unambiguous
+	       and unique, so we can just look for the nested body anywhere
+	       else in the CFG *)
+		Some
+		  (CTL.AndAny
+		     (CTL.FORWARD,guard_to_strict guard,start_brace,
+		      statement_list stmt_dots
+		 (* discards match on right brace, but don't need it *)
+			(Guard (make_seq_after end_brace after))
+			new_quantified3 new_mquantified3
+			None llabel slabel true guard))
+	    | Ast.Dots((_,i,d,_),whencode,_,_) when
 		(List.for_all
 		   (* flow sensitive, so not optimizable *)
 		   (function Ast.WhenNotTrue(_) | Ast.WhenNotFalse(_) ->
 		      false
 		 | _ -> true) whencode) ->
-		Some (Common.Right whencode)
+     	    (* try to be more efficient for the case where the body is just
+	       ...  Perhaps this is too much of a special case, but useful
+	       for dropping a parameter and checking that it is never used. *)
+		     (match d with
+		       Ast.MINUS(_,_,_,_) -> None
+		     | _ ->
+			 Some (
+			 make_seq
+			   [start_brace;
+			     match whencode with
+			       [] -> CTL.True
+			     | _ ->
+				 let leftarg =
+				   ctl_and
+				     (ctl_not
+					(List.fold_left
+					   (function prev ->
+					     function
+						 Ast.WhenAlways(s) -> prev
+					       | Ast.WhenNot(sl) ->
+						   let x =
+						     statement_list sl Tail
+						       new_quantified3
+						       new_mquantified3
+						       label llabel slabel
+						       true true in
+						   ctl_or prev x
+					       | Ast.WhenNotTrue(_)
+					       | Ast.WhenNotFalse(_) ->
+						   failwith "unexpected"
+					       | Ast.WhenModifier
+						   (Ast.WhenAny) -> CTL.False
+					       | Ast.WhenModifier(_) -> prev)
+					   CTL.False whencode))
+				     (List.fold_left
+					(function prev ->
+					  function
+					      Ast.WhenAlways(s) ->
+						let x =
+						  statement s Tail
+						    new_quantified3
+						    new_mquantified3
+						    label llabel slabel true in
+						ctl_and prev x
+					    | Ast.WhenNot(sl) -> prev
+					    | Ast.WhenNotTrue(_)
+					    | Ast.WhenNotFalse(_) ->
+						failwith "unexpected"
+					    | Ast.WhenModifier(Ast.WhenAny) ->
+						CTL.True
+					    | Ast.WhenModifier(_) -> prev)
+					CTL.True whencode) in
+				 ctl_au leftarg (make_match stripped_rbrace)]))
+	    | _ -> None)
+	| _ -> None in
+      let optim2 =
+	(* function body is all minus, no whencode *)
+	match Ast.undots body with
+	  [body] ->
+	    (match Ast.unwrap body with 
+	      Ast.Dots
+		((_,i,(Ast.MINUS(_,_,_,[]) as d),_),[],_,_) ->
+		  (match (Ast.unwrap lbrace,Ast.unwrap rbrace) with
+		    (Ast.SeqStart((_,_,Ast.MINUS(_,_,_,[]),_)),
+		     Ast.SeqEnd((_,_,Ast.MINUS(_,_,_,[]),_)))
+		    when not (contains_pos rbrace) ->
+		      Some
+			(* andany drops everything to the end, including close
+			   braces - not just function body, could check
+			   label to keep braces *)
+			(ctl_and start_brace
+			   (ctl_ax
+			      (CTL.AndAny
+				 (CTL.FORWARD,guard_to_strict guard,CTL.True,
+				  make_match
+				    (make_meta_rule_elem d ([],[],[]))))))
+		  | _ -> None)
 	    | _ -> None)
 	| _ -> None in
       let body_code =
-	match fn_nest with
-	  Some (Common.Left stmt_dots) ->
-	    (* special case for function header + body - header is unambiguous
-	       and unique, so we can just look for the nested body anywhere
-	       else in the CFG *)
-	    CTL.AndAny
-	      (CTL.FORWARD,guard_to_strict guard,start_brace,
-	       statement_list stmt_dots
-		 (* discards match on right brace, but don't need it *)
-		 (Guard (make_seq_after end_brace after))
-		 new_quantified3 new_mquantified3
-		 None llabel slabel true guard)
-	| Some (Common.Right whencode) ->
-	    (* try to be more efficient for the case where the body is just
-	       ...  Perhaps this is too much of a special case, but useful
-	       for dropping a parameter and checking that it is never used. *)
-	    make_seq
-	      [start_brace;
-		match whencode with
-		  [] -> CTL.True
-		| _ ->
-		    let leftarg =
-		      ctl_and
-			(ctl_not
-			   (List.fold_left
-			      (function prev ->
-				function
-				    Ast.WhenAlways(s) -> prev
-				  | Ast.WhenNot(sl) ->
-				      let x =
-					statement_list sl Tail
-					  new_quantified3 new_mquantified3
-					  label llabel slabel true true in
-				      ctl_or prev x
-				  | Ast.WhenNotTrue(_) | Ast.WhenNotFalse(_) ->
-				      failwith "unexpected"
-				  | Ast.WhenModifier(Ast.WhenAny) -> CTL.False
-				  | Ast.WhenModifier(_) -> prev)
-			      CTL.False whencode))
-			 (List.fold_left
-			   (function prev ->
-			     function
-				 Ast.WhenAlways(s) ->
-				   let x =
-				     statement s Tail
-				       new_quantified3 new_mquantified3
-				       label llabel slabel true in
-				   ctl_and prev x
-			       | Ast.WhenNot(sl) -> prev
-			       | Ast.WhenNotTrue(_) | Ast.WhenNotFalse(_) ->
-				   failwith "unexpected"
-			       | Ast.WhenModifier(Ast.WhenAny) -> CTL.True
-			       | Ast.WhenModifier(_) -> prev)
-			   CTL.True whencode) in
-		    ctl_au leftarg (make_match stripped_rbrace)]
-	| None ->
+	match (optim1,optim2) with
+	  (Some o1,_) -> o1
+	| (_,Some o2) -> o2
+	| _ ->
 	    make_seq
 	      [start_brace;
 		quantify guard b3fvs
@@ -2224,11 +2283,13 @@ let rec cleanup c =
 (* --------------------------------------------------------------------- *)
 (* Function declaration *)
 
-let top_level name (ua,pos) t =
+(* ua = used_after, fua = fresh_used_after, fuas = fresh_used_after_seeds *)
+
+let top_level name ((ua,pos),fua) (fuas,t) =
   let ua = List.filter (function (nm,_) -> nm = name) ua in
   used_after := ua;
   saved := Ast.get_saved t;
-  let quantified = Common.minus_set ua pos in
+  let quantified = Common.minus_set (Common.union_set ua fuas) pos in
   quantify false quantified
     (match Ast.unwrap t with
       Ast.FILEINFO(old_file,new_file) -> failwith "not supported fileinfo"
@@ -2272,13 +2333,13 @@ let top_level name (ua,pos) t =
 (* --------------------------------------------------------------------- *)
 (* Entry points *)
 
-let asttoctlz (name,(_,_,exists_flag),l) used_after positions =
+let asttoctlz (name,(_,_,exists_flag),l)
+    (used_after,fresh_used_after,fresh_used_after_seeds) positions =
   letctr := 0;
   labelctr := 0;
   (match exists_flag with
     Ast.Exists -> exists := Exists
   | Ast.Forall -> exists := Forall
-  | Ast.ReverseForall -> exists := ReverseForall
   | Ast.Undetermined ->
       exists := if !Flag.sgrep_mode2 then Exists else Forall);
 
@@ -2288,7 +2349,10 @@ let asttoctlz (name,(_,_,exists_flag),l) used_after positions =
 	 (function (t,_) ->
 	   match Ast.unwrap t with Ast.ERRORWORDS(exps) -> false | _ -> true)
 	 (List.combine l (List.combine used_after positions))) in
-  let res = List.map2 (top_level name) used_after l in
+  let res =
+    List.map2 (top_level name)
+      (List.combine used_after fresh_used_after)
+      (List.combine fresh_used_after_seeds l) in
   exists := Forall;
   res
 

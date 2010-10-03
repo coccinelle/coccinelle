@@ -35,6 +35,9 @@ let only_return_is_error_exit = ref false
 (* a hack to allow adding code in some more sgrep-like uses *)
 let allow_inconsistent_paths = ref false
 
+(* see the use of this variable in asttoctl2.ml *)
+let no_safe_expressions = ref false
+
 let show_misc = ref true
 
 

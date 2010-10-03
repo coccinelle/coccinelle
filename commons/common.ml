@@ -417,27 +417,46 @@ let xxx_once f s =
 let pr2_once s = xxx_once pr2 s
 
 (* ---------------------------------------------------------------------- *)
-let mk_pr2_wrappers aref = 
-  let fpr2 s = 
+let mk_pr2_wrappers aref =
+  let fpr2 s =
     if !aref
     then pr2 s
-    else 
+    else
       (* just to the log file *)
       out_chan_pr2 s
   in
-  let fpr2_once s = 
+  let fpr2_once s =
     if !aref
     then pr2_once s
-    else 
+    else
       xxx_once out_chan_pr2 s
   in
-  fpr2, fpr2_once
-
+    fpr2, fpr2_once
 
 (* ---------------------------------------------------------------------- *)
 (* could also be in File section *)
 
-let redirect_stdout_stderr file f = 
+let redirect_stdout file f =
+  begin
+    let chan = open_out file in
+    let descr = Unix.descr_of_out_channel chan in
+
+    let saveout = Unix.dup Unix.stdout in
+      Unix.dup2 descr Unix.stdout;
+      flush stdout;
+      let res = f() in
+	flush stdout;
+	Unix.dup2 saveout Unix.stdout;
+	close_out chan;
+	res
+  end
+
+let redirect_stdout_opt optfile f =
+  match optfile with
+    | None -> f()
+    | Some outfile -> redirect_stdout outfile f
+
+let redirect_stdout_stderr file f =
   begin
     let chan = open_out file in
     let descr = Unix.descr_of_out_channel chan in
@@ -454,7 +473,7 @@ let redirect_stdout_stderr file f =
     close_out chan;
   end
 
-let redirect_stdin file f = 
+let redirect_stdin file f =
   begin
     let chan = open_in file in
     let descr = Unix.descr_of_in_channel chan in
@@ -466,7 +485,7 @@ let redirect_stdin file f =
     close_in chan;
   end
 
-let redirect_stdin_opt optfile f = 
+let redirect_stdin_opt optfile f =
   match optfile with
   | None -> f()
   | Some infile -> redirect_stdin infile f
@@ -701,7 +720,7 @@ let report_if_take_time timethreshold s f =
   let res = f () in
   let t' = Unix.gettimeofday () in
   if (t' -. t  > float_of_int timethreshold) 
-  then pr2 (sprintf "NOTE: this code takes more than: %ds %s" timethreshold s);
+  then pr2 (sprintf "Note: processing took %7.1fs: %s" (t' -. t) s);
   res
 
 let profile_code2 category f = 
@@ -2052,6 +2071,16 @@ let partition_either f l =
       | Left  e -> part_either (e :: left) right l
       | Right e -> part_either left (e :: right) l) in
   part_either [] [] l
+
+let partition_either3 f l =
+  let rec part_either left middle right = function
+  | [] -> (List.rev left, List.rev middle, List.rev right)
+  | x :: l -> 
+      (match f x with
+      | Left3  e -> part_either (e :: left) middle right l
+      | Middle3  e -> part_either left (e :: middle) right l
+      | Right3 e -> part_either left middle (e :: right) l) in
+  part_either [] [] [] l
 
 
 (* pixel *)
@@ -3479,7 +3508,7 @@ let timeout_function_opt timeoutvalopt f =
 
 (* creation of tmp files, a la gcc *)
 
-let _temp_files_created = ref [] 
+let _temp_files_created = ref ([] : filename list)
 
 (* ex: new_temp_file "cocci" ".c" will give "/tmp/cocci-3252-434465.c" *)
 let new_temp_file prefix suffix = 
@@ -3498,6 +3527,14 @@ let erase_temp_files () =
     );
     _temp_files_created := []
   end
+
+let erase_this_temp_file f =
+  if not !save_tmp_files then begin
+    _temp_files_created :=
+      List.filter (function x -> not (x =$= f)) !_temp_files_created;
+    command2 ("rm -f " ^ f)
+  end
+
 
 (* now in prelude: exception UnixExit of int *)
 let exn_to_real_unixexit f = 

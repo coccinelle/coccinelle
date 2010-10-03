@@ -511,6 +511,10 @@ and declaration =
      and onedecl = 
        { v_namei: (name * (info (* = *) * initialiser) option) option;
          v_type: fullType;
+         (* semantic: set in type annotated and used in cocci_vs_c 
+          * when we transform some initialisation into affectation
+          *)
+         v_type_bis: fullType (* Type_c.completed_and_simplified *) option ref;
          v_storage: storage;
          v_local: local_decl; (* cocci: *)
          v_attr: attribute list; (* gccext: *)
@@ -521,6 +525,9 @@ and declaration =
 
      and local_decl = LocalDecl | NotLocalDecl
 
+     (* fullType is the type used if the type should be converted to
+	an assignment.  It can be adjusted in the type annotation
+	phase when typedef information is availalble *)
      and initialiser = initialiserbis wrap
        and initialiserbis = 
           | InitExpr of expression 
@@ -916,6 +923,9 @@ let mcode_of_info ii = fst (mcode_and_env_of_cocciref ii.cocci_tag)
 let pinfo_of_info ii = ii.pinfo
 let parse_info_of_info ii = get_pi ii.pinfo
 
+let strloc_of_info ii = 
+  spf "%s:%d" (file_of_info ii) (line_of_info ii)
+
 let is_fake ii =
   match ii.pinfo with
     FakeTok (_,_) -> true
@@ -1162,8 +1172,6 @@ let ii_of_name name =
   let (s,ii) = get_s_and_ii_of_name name in
   ii
 
-
-
 let get_local_ii_of_expr_inlining_ii_of_name e = 
   let (ebis,_),ii = e in
   match ebis, ii with
@@ -1181,6 +1189,15 @@ let get_local_ii_of_tybis_inlining_ii_of_name ty =
   match ty with
   | TypeName (name, _typ), [] -> ii_of_name name
   | _, ii -> ii
+
+(* the following is used to obtain the argument to LocalVar *)
+let info_of_type ft = 
+  let (qu, ty) = ft in
+  (* bugfix: because of string->name, the ii can be deeper *)
+  let ii = get_local_ii_of_tybis_inlining_ii_of_name ty in
+  match ii with
+  | ii::_ -> ii.pinfo
+  | [] -> failwith "type has no text; need to think again"
 
 (* only Label and Goto have name *)
 let get_local_ii_of_st_inlining_ii_of_name st =

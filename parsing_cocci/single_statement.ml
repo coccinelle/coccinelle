@@ -423,7 +423,7 @@ let add_braces orig_s =
 	Ast0.MIXED(ref(new_text,tinfo1,tinfo2))
     | _ -> failwith "unexpected plus code" in
   Ast0.set_mcodekind s new_mcodekind;
-  Compute_lines.statement s
+  Compute_lines.compute_statement_lines true s
 
 (* ---------------------------------------------------------------------- *)
 

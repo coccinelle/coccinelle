@@ -28,6 +28,8 @@ module Ast = Ast_cocci
    metavariables *)
 type fresh = bool
 
+type incl_iso = Include of string | Iso of (string,string) Common.either
+
 type clt =
     line_type * int * int * int * int (* starting spaces *) *
       (string * Ast0.position_info) list (* code before *) *
@@ -52,8 +54,16 @@ let in_meta = ref false
 let in_iso = ref false
 let in_generating = ref false
 let in_prolog = ref false
+(* state machine for lexer..., allows smpl keywords as type names *)
+let saw_struct = ref false
 let inheritable_positions =
   ref ([] : string list) (* rules from which posns can be inherited *)
+
+let call_in_meta f =
+  in_meta := true; saw_struct := false;
+  let res = f() in
+  in_meta := false;
+  res
 
 let all_metadecls =
   (Hashtbl.create(100) : (string, Ast.metavar list) Hashtbl.t)

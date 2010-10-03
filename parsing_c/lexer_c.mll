@@ -135,6 +135,9 @@ let keyword_table = Common.hash_of_list [
   "__typeof__", (fun ii -> Ttypeof ii);
   "__typeof", (fun ii -> Ttypeof ii);
 
+        (* found a lot in expanded code *)
+  "__extension__", (fun ii -> TattributeNoarg ii); 
+
 
   (* gccext: alias *)
   "__signed__",     (fun ii -> Tsigned ii);
@@ -145,6 +148,14 @@ let keyword_table = Common.hash_of_list [
   "__volatile__",  (fun ii -> Tvolatile ii); 
   "__volatile",    (fun ii -> Tvolatile ii);  
 
+  (* windowsext: *)
+  "__declspec", (fun ii -> Tattribute ii);
+
+  "__stdcall", (fun ii -> TattributeNoarg ii);
+  "__cdecl", (fun ii -> TattributeNoarg ii);
+  "WINAPI", (fun ii -> TattributeNoarg ii);
+  "APIENTRY", (fun ii -> TattributeNoarg ii);
+  "CALLBACK", (fun ii -> TattributeNoarg ii);
 
   (* c99:  *)
   (* no just "restrict" ? maybe for backward compatibility they avoided 
@@ -158,7 +169,7 @@ let keyword_table = Common.hash_of_list [
 let error_radix s = 
   ("numeric " ^ s ^ " constant contains digits beyond the radix:")
 
-(* functions for figuring out the type of integers *)
+(* julia: functions for figuring out the type of integers *)
 
 let is_long_dec s int uint long ulong =
   match !Flag_parsing_c.int_thresholds with
@@ -256,8 +267,13 @@ rule token = parse
   (* ----------------------------------------------------------------------- *)
 
   (* note: this lexer generate tokens for comments!! so can not give 
-   * this lexer as-is to the parsing function. Must preprocess it, hence
-   * use techniques like cur_tok ref in parse_c.ml
+   * this lexer as-is to the parsing function. The caller must preprocess 
+   * it, e.g. by using techniques like cur_tok ref in parse_c.ml.
+   * 
+   * update: we now also generate a separate token for newlines, so now
+   * the caller may also have to reagglomerate all those commentspace
+   * tokens if he was assuming that spaces were agglomerate in a single
+   * token. 
    *)
 
   | ['\n'] [' ' '\t' '\r' '\011' '\012' ]*

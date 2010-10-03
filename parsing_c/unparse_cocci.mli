@@ -6,7 +6,7 @@ val pp_list_list_any :
   Ast_c.metavars_binding *
   (* pr cocci *)
   (string -> int (*line*) -> int (*lcol*) -> int (*rcol*) -> unit) *
-    Pretty_print_c.pr_elem_func (* pr c *) *
+    (Ast_c.info -> unit) (* pr c *) *
     (unit -> unit) (* pr C space *) *
     (unit -> unit) (* pr space *) *
     (string -> unit) (* pr arity *) *

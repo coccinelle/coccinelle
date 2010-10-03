@@ -13,12 +13,14 @@
 
 #TODO check python 2.5 ?
 
+# need latex and hevea if want to compile the documentation
+
 #old: --with-menhir=/path/to/menhirLib or `ocamlfind query menhirLib`
 
 my $project =
     "coccinelle";
 my $projectcmdline =
-    "spatch -sp_file demos/simple.cocci demos/simple.c";
+    "spatch -sp_file demos/simple.cocci demos/simple.c -o /tmp/new_simple.c";
 
 ######################################################################
 # Options
@@ -28,6 +30,7 @@ my $prefix="/usr/local";
 my $python=1;
 my $trac=0;
 my $opt=".opt";
+my $tarzan=1;
 
 local $_ = join ' ', @ARGV;
 
@@ -39,6 +42,9 @@ local $_ = join ' ', @ARGV;
 /--with-trac/ and $trac = 1;
 /--no-opt/ and $opt = "";
 /--opt/ and $opt = ".opt";
+
+#tarzan by default (used by score file parsing and now also for sexp_ast_c.ml)
+
 
 #if($ARGV[0] =~ "--prefix=(.*)") {
 #    $prefix = $1;
@@ -275,6 +281,7 @@ SHAREDIR=$src
 
 # Features
 FEATURE_PYTHON=$python
+FEATURE_TARZAN=$tarzan
 
 # The OPTBIN variable is here to allow to use ocamlc.opt instead of
 # ocaml, when it is available, which speeds up compilation. So

@@ -49,6 +49,16 @@ let mkres x e left right =
       Ast0.strings_before = []; Ast0.strings_after = [] } in
   {x with Ast0.node = e; Ast0.info = info}
 
+(* This looks like it is there to allow distribution of plus code
+over disjunctions.  But this doesn't work with single_statement, as the
+plus code has not been distributed to the place that it expects.  So the
+only reasonably easy solution seems to be to disallow distribution. *)
+(* inherit attachable is because single_statement doesn't work well when +
+code is attached outside an or, but this has to be allowed after
+isomorphisms have been introduced.  So only set it to true then, or when we
+know that the code involved cannot contain a statement, ie it is a
+declaration. *)
+let inherit_attachable = ref false
 let mkmultires x e left right (astart,start_mcodes) (aend,end_mcodes) =
   let lstart = Ast0.get_info left in
   let lend = Ast0.get_info right in
@@ -61,8 +71,8 @@ let mkmultires x e left right (astart,start_mcodes) (aend,end_mcodes) =
       Ast0.offset = lstart.Ast0.pos_info.Ast0.offset; } in
   let info =
     { Ast0.pos_info = pos_info;
-      Ast0.attachable_start = astart;
-      Ast0.attachable_end = aend;
+      Ast0.attachable_start = if !inherit_attachable then astart else false;
+      Ast0.attachable_end = if !inherit_attachable then aend else false;
       Ast0.mcode_start = start_mcodes;
       Ast0.mcode_end = end_mcodes;
       (* only for tokens, not inherited upwards *)
@@ -780,5 +790,15 @@ let top_level t =
 (* --------------------------------------------------------------------- *)
 (* Entry points *)
 
-let compute_lines = List.map top_level
+let compute_lines attachable_or x =
+  inherit_attachable := attachable_or;
+  List.map top_level x
+
+let compute_statement_lines attachable_or x =
+  inherit_attachable := attachable_or;
+  statement x
+
+let compute_statement_dots_lines attachable_or x =
+  inherit_attachable := attachable_or;
+  statement_dots x
 

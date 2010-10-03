@@ -13,21 +13,15 @@ arguments.  The grammar also uses some unspecified nonterminals, such
 as \T{id}, \T{const}, etc.  These refer to the sets suggested by
 the name, {\em i.e.}, \T{id} refers to the set of possible
 C-language identifiers, while \T{const} refers to the set of
-possible C-language constants.  
+possible C-language constants.
 %
-\ifhevea 
+\ifhevea
 A PDF version of this documentation is available at
-\url{http://www.emn.fr/x-info/coccinelle/docs/cocci_syntax.pdf}.
+\url{http://www.emn.fr/x-info/coccinelle/docs/main_grammar.pdf}.
 \else
 A HTML version of this documentation is available online at
-\url{http://www.emn.fr/x-info/coccinelle/docs/cocci_syntax.html}. 
+\url{http://www.emn.fr/x-info/coccinelle/docs/main_grammar.html}.
 \fi
-
-%% \ifhevea A PDF
-%% version of this documentation is available at
-%% \url{http://localhost:8080/coccinelle/cocci_syntax.pdf}.\else A HTML
-%% version of this documentation is available online at
-%% \url{http://localhost:8080/coccinelle/cocci_syntax.html}. \fi
 
 \section{Program}
 
@@ -48,7 +42,10 @@ A HTML version of this documentation is available online at
 \noindent
 \T{script\_code} is any code in the chosen scripting language.  Parsing of
 the semantic patch does not check the validity of this code; any errors are
-first detected when the code is executed.
+first detected when the code is executed.  Furthermore, \texttt{@} should
+not be use in this code.  Spatch scans the script code for the next
+\texttt{@} and considers that to be the beginning of the next rule, even if
+\texttt{@} occurs within e.g., a string or a comment.
 
 % Between the metavariables and the transformation rule, there can be a
 % specification of constraints on the names of the old and new files,

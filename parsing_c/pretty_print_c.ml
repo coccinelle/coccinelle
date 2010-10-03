@@ -13,8 +13,9 @@
  *)
 open Common
 
-
 open Ast_c
+
+module F = Control_flow_c
 
 (*****************************************************************************)
 (* Wrappers *)
@@ -22,42 +23,31 @@ open Ast_c
 let pr2, pr2_once = Common.mk_pr2_wrappers Flag_parsing_c.verbose_unparsing
 
 (*****************************************************************************)
+(* Types *)
+(*****************************************************************************)
 
-type pr_elem_func = Ast_c.info -> unit
-type pr_space_func = unit -> unit
-type pr_nl_func = unit -> unit
-type pr_indent_func = unit -> unit
-type pr_outdent_func = unit -> unit
-type pr_unindent_func = unit -> unit
-
-type expression_printer = Ast_c.expression -> unit
-type arg_list_printer = Ast_c.argument Ast_c.wrap2 list -> unit
-type statement_printer = Ast_c.statement -> unit
-type declaration_printer = Ast_c.declaration -> unit
-type initialiser_printer = Ast_c.initialiser -> unit
-type param_printer = Ast_c.parameterType -> unit
-type type_printer = Ast_c.fullType -> unit
-type type_with_ident_printer =
+type type_with_ident =
     (string * Ast_c.info) option ->
-      (Ast_c.storage * Ast_c.il) option -> Ast_c.fullType ->
-	Ast_c.attribute list -> unit
-type toplevel_printer = Ast_c.toplevel -> unit
-type flow_printer = Control_flow_c.node -> unit
+    (Ast_c.storage * Ast_c.il) option -> 
+    Ast_c.fullType ->
+    Ast_c.attribute list -> unit
 
-(* result type *)
-type pretty_printers =
-    {expression : expression_printer;
-      arg_list : arg_list_printer;
-      statement : statement_printer;
-      decl : declaration_printer;
-      init : initialiser_printer;
-      param : param_printer;
-      ty : type_printer;
-      type_with_ident : type_with_ident_printer;
-      toplevel : toplevel_printer;
-      flow : flow_printer}
+type 'a printer = 'a -> unit 
 
-module F = Control_flow_c
+type pretty_printers = {
+  expression      : Ast_c.expression printer;
+  arg_list        : (Ast_c.argument Ast_c.wrap2 list) printer;
+  statement       : Ast_c.statement printer;
+  decl            : Ast_c.declaration printer;
+  init            : Ast_c.initialiser printer;
+  param           : Ast_c.parameterType printer;
+  ty              : Ast_c.fullType printer;
+  type_with_ident : type_with_ident;
+  toplevel        : Ast_c.toplevel printer;
+  flow            : Control_flow_c.node printer
+}
+
+
 
 (*****************************************************************************)
 
@@ -70,7 +60,10 @@ module F = Control_flow_c
  * to pretty print some piece of C that was generated, or some
  * abstract-lined piece of code, etc. *)
 
-let pretty_print_c pr_elem pr_space pr_nl pr_indent pr_outdent pr_unindent =
+let mk_pretty_printers
+    ~pr_elem ~pr_space 
+    ~pr_nl ~pr_indent ~pr_outdent ~pr_unindent 
+ =
   let start_block () = pr_nl(); pr_indent() in
   let end_block   () = pr_unindent(); pr_nl() in
   
@@ -81,6 +74,9 @@ let pretty_print_c pr_elem pr_space pr_nl pr_indent pr_outdent pr_unindent =
         (*no newline at the end - someone else will do that*)
 	start_block(); f(); pr_unindent() in
   
+
+
+
   let rec pp_expression = fun ((exp, typ), ii) -> 
     (match exp, ii with
     | Ident (ident),         []     -> pp_name ident
@@ -1276,7 +1272,7 @@ and pp_init (init, iinit) =
         pr2 "YYY" in
 
 
-  {expression = pp_expression;
+  { expression = pp_expression;
     arg_list = pp_arg_list;
     statement = pp_statement;
     decl = pp_decl;
@@ -1285,7 +1281,8 @@ and pp_init (init, iinit) =
     ty = pp_type;
     type_with_ident = pp_type_with_ident;
     toplevel = pp_toplevel;
-    flow = pp_flow}
+    flow = pp_flow;
+  }
     
 (*****************************************************************************)
     
@@ -1312,9 +1309,11 @@ let pr_indent _ = ()
 let pr_outdent _ = ()
 let pr_unindent _ = ()
 
+
 let ppc =
-  pretty_print_c pr_elem pr_space pr_nl pr_outdent pr_indent pr_unindent
-    
+  mk_pretty_printers 
+    ~pr_elem ~pr_space ~pr_nl ~pr_outdent ~pr_indent ~pr_unindent
+
 let pp_expression_simple = ppc.expression
 let pp_statement_simple  = ppc.statement
 let pp_type_simple       = ppc.ty
@@ -1322,47 +1321,49 @@ let pp_init_simple       = ppc.init
 let pp_toplevel_simple   = ppc.toplevel
 let pp_flow_simple       = ppc.flow
 
-let pp_elem_sp pr_elem pr_space =
-  pretty_print_c pr_elem pr_space pr_nl pr_outdent pr_indent pr_unindent
 
-let pp_expression_gen pr_elem pr_space =
+let pp_elem_sp ~pr_elem ~pr_space =
+  mk_pretty_printers
+    ~pr_elem ~pr_space 
+    ~pr_nl ~pr_outdent ~pr_indent ~pr_unindent
+
+let pp_expression_gen ~pr_elem ~pr_space =
   (pp_elem_sp pr_elem pr_space).expression
 
 let pp_arg_list_gen pr_elem pr_space =
   (pp_elem_sp pr_elem pr_space).arg_list
 
-let pp_statement_gen pr_elem pr_space =
+let pp_statement_gen ~pr_elem ~pr_space =
   (pp_elem_sp pr_elem pr_space).statement
 
 let pp_decl_gen pr_elem pr_space =
   (pp_elem_sp pr_elem pr_space).decl
 
-let pp_init_gen pr_elem pr_space =
+let pp_init_gen ~pr_elem ~pr_space =
   (pp_elem_sp pr_elem pr_space).init
 
-let pp_param_gen pr_elem pr_space =
+let pp_param_gen ~pr_elem ~pr_space =
   (pp_elem_sp pr_elem pr_space).param
 
-let pp_type_gen pr_elem pr_space =
+let pp_type_gen ~pr_elem ~pr_space =
   (pp_elem_sp pr_elem pr_space).ty
 
 let pp_type_with_ident_gen pr_elem pr_space =
   (pp_elem_sp pr_elem pr_space).type_with_ident
 
-let pp_program_gen pr_elem pr_space =
+let pp_program_gen ~pr_elem ~pr_space =
   (pp_elem_sp pr_elem pr_space).toplevel
-
 
 
 let string_of_expression e = 
   Common.format_to_string (fun () ->
     pp_expression_simple e
-      )
+  )
 
 let string_of_toplevel top = 
   Common.format_to_string (fun () ->
     pp_toplevel_simple top
-      )
+  )
     
 let (debug_info_of_node:
        Ograph_extended.nodei -> Control_flow_c.cflow -> string) = 

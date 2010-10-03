@@ -1,3 +1,16 @@
+(* Copyright (C) 2006, 2007 Julia Lawall
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License (GPL)
+ * version 2 as published by the Free Software Foundation.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * file license.txt for more details.
+ * 
+ * This file was part of Coccinelle.
+ *)
 open Common
 
 (*****************************************************************************)
@@ -44,7 +57,7 @@ let print_between = Common.print_between in
 let outdent _ = () (* should go to leftmost col, does nothing now *) in
 
 let pretty_print_c =
-  Pretty_print_c.pretty_print_c pr_celem pr_cspace
+  Pretty_print_c.mk_pretty_printers pr_celem pr_cspace
     force_newline indent outdent unindent in
 
 (* --------------------------------------------------------------------- *)
@@ -369,7 +382,7 @@ and  logicalOp = function
 
 and constant = function
     Ast.String(s) -> print_string ("\""^s^"\"")
-  | Ast.Char(s) -> print_string s
+  | Ast.Char(s) -> print_string ("\'"^s^"\'")
   | Ast.Int(s) -> print_string s
   | Ast.Float(s) -> print_string s
 

@@ -350,6 +350,7 @@ let info_of_tok = function
   | Tsizeof              (i) -> i
   | Tasm                 (i) -> i
   | Tattribute           (i) -> i
+  | TattributeNoarg           (i) -> i
   | Tinline              (i) -> i
   | Ttypeof              (i) -> i
 
@@ -499,6 +500,7 @@ let visitor_info_of_tok f = function
   | Tsizeof              (i) -> Tsizeof              (f i) 
   | Tasm                 (i) -> Tasm                 (f i) 
   | Tattribute           (i) -> Tattribute           (f i) 
+  | TattributeNoarg           (i) -> TattributeNoarg           (f i) 
   | Tinline              (i) -> Tinline              (f i) 
   | Ttypeof              (i) -> Ttypeof              (f i) 
   | EOF                  (i) -> EOF                  (f i) 

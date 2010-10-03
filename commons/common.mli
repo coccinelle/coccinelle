@@ -145,6 +145,7 @@ val pr2_once : string -> unit
 val mk_pr2_wrappers: bool ref -> (string -> unit) * (string -> unit)
 
 
+val redirect_stdout_opt : filename option -> (unit -> 'a) -> 'a
 val redirect_stdout_stderr : filename -> (unit -> unit) -> unit
 val redirect_stdin : filename -> (unit -> unit) -> unit
 val redirect_stdin_opt : filename option -> (unit -> unit) -> unit
@@ -785,6 +786,8 @@ val some_or : 'a option -> 'a -> 'a
 
 val partition_either :
   ('a -> ('b, 'c) either) -> 'a list -> 'b list * 'c list
+val partition_either3 :
+    ('a -> ('b, 'c, 'd) either3) -> 'a list -> 'b list * 'c list * 'd list
 
 val filter_some : 'a option list -> 'a list
 val map_filter : ('a -> 'b option) -> 'a list -> 'b list
@@ -1139,6 +1142,7 @@ val _temp_files_created : string list ref
 (* see flag: val save_tmp_files : bool ref *)
 val new_temp_file : string (* prefix *) -> string (* suffix *) -> filename
 val erase_temp_files : unit -> unit
+val erase_this_temp_file : filename -> unit
 
 (* If the user use some exit 0 in his code, then no one can intercept this
  * exit and do something before exiting. There is exn handler for exit 0

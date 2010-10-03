@@ -2,7 +2,7 @@
 Thanks to 
  - Richard Jones for his dumper module, 
  - Brian Hurt and Nicolas Cannasse for their dynArray module,
- - Troestler Christophe for his ANSITerminal module,
+ - Christophe Troestler for his ANSITerminal module,
  - Sebastien ferre for his suffix tree module
 
- - Jane street for the backtrace module
+ - Jane Street for the backtrace module

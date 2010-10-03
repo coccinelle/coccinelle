@@ -1,5 +1,3 @@
-open Common 
-
 (* This module tries to detect some cpp idioms so that we can parse as-is
  * files by adjusting or commenting some tokens. Parsing hack style. 
  * Sometime we use some indentation information,
@@ -50,13 +48,35 @@ val filter_cpp_stuff :
 val insert_virtual_positions: 
   Parser_c.token list -> Parser_c.token list
 
+
+(* will among other things interally call cpp_token_c to macro
+ * expand some macros *)
 val fix_tokens_cpp : 
   macro_defs:(string, Cpp_token_c.define_def) Hashtbl.t ->
   Parser_c.token list -> Parser_c.token list
+
 
 (* next stream tokens -> passed stream tokens -> final next token *)
 val lookahead : 
   pass:int -> 
   Parser_c.token list -> Parser_c.token list -> Parser_c.token
 
+
+
+(* ------------------------------------------------------------------------ *)
+(* Parsing hack helpers related to #define or #include *)
+(* ------------------------------------------------------------------------ *)
+
+(* generate virtual end-of-line token, TDefEol, pass the antislash, etc *)
+val fix_tokens_define : 
+  Parser_c.token list -> Parser_c.token list
+
+(* called when need to pass some tokens during some error recovery *)
+val drop_until_defeol: Parser_c.token list -> Parser_c.token list
+val comment_until_defeol: Parser_c.token list -> Parser_c.token list
+
+(* generates TIncludeStart and TIncludeFilename tokens *)
+val tokens_include: 
+  Ast_c.info * string * string * bool ref ->
+  Parser_c.token * Parser_c.token list
 

@@ -24,6 +24,9 @@
 Also augment various parts of each rule with unitary, inherited, and freshness
 informations *)
 
+(* metavar decls should be better integrated into computations of free
+variables in plus code *)
+
 module Ast = Ast_cocci
 module V = Visitor_ast
 module TC = Type_cocci
@@ -292,7 +295,42 @@ let cip_mcodekind r mck =
       | Ast.NOTHING -> [])
   | Ast.PLUS -> []
 
+
+let collect_fresh_seed_env metavars l =
+  let fresh =
+    List.fold_left
+      (function prev ->
+	function
+	    Ast.MetaFreshIdDecl(_,seed) as x ->
+	      ((Ast.get_meta_name x),seed)::prev
+	  | _ -> prev)
+      [] metavars in
+  let (seed_env,seeds) =
+    List.fold_left
+      (function (seed_env,seeds) as prev ->
+	function x ->
+	  try
+	    (let v = List.assoc x fresh in
+	    match v with
+	      Ast.ListSeed l ->
+		let ids =
+		  List.fold_left
+		    (function prev ->
+		      function
+			  Ast.SeedId(id) -> id::prev
+			| _ -> prev)
+		    [] l in
+		((x,ids)::seed_env,Common.union_set ids seeds)
+	    | _ -> ((x,[])::seed_env,seeds))
+	  with Not_found -> prev)
+      ([],l) l in
+  (List.rev seed_env,List.rev seeds)
+
+let collect_fresh_seed metavars l =
+  let (_,seeds) = collect_fresh_seed_env metavars l in seeds
+
 let collect_in_plus_term =
+
   let bind x y = x @ y in
   let option_default = [] in
   let donothing r k e = k e in
@@ -347,10 +385,11 @@ let collect_in_plus_term =
     donothing donothing donothing donothing donothing donothing
     donothing astfvrule_elem astfvstatement donothing donothing donothing
 
-let collect_in_plus minirules =
+let collect_in_plus metavars minirules =
   nub
-    (List.concat
-       (List.map collect_in_plus_term.V.combiner_top_level minirules))
+    (collect_fresh_seed metavars
+       (List.concat
+	  (List.map collect_in_plus_term.V.combiner_top_level minirules)))
 
 (* ---------------------------------------------------------------- *)
 
@@ -366,10 +405,10 @@ let collect_all_multirefs minirules =
 (* classify as unitary (no binding) or nonunitary (env binding) or saved
 (witness binding) *)
 
-let classify_variables metavars minirules used_after =
-  let metavars = List.map Ast.get_meta_name metavars in
+let classify_variables metavar_decls minirules used_after =
+  let metavars = List.map Ast.get_meta_name metavar_decls in
   let (unitary,nonunitary) = collect_all_multirefs minirules in
-  let inplus = collect_in_plus minirules in
+  let inplus = collect_in_plus metavar_decls minirules in
 
   let donothing r k e = k e in
   let check_unitary name inherited =
@@ -520,20 +559,23 @@ let astfvs metavars bound =
       [] metavars in
 
   let collect_fresh l =
-    List.rev
-      (List.fold_left
-	(function prev ->
+    let (matched,freshvars) =
+      List.fold_left
+	(function (matched,freshvars) ->
 	  function x ->
-	    try let v = List.assoc x fresh in (x,v)::prev
-	    with Not_found -> prev)
-	[] l) in
+	    try let v = List.assoc x fresh in (matched,(x,v)::freshvars)
+	    with Not_found -> (x::matched,freshvars))
+	([],[]) l in
+    (List.rev matched, List.rev freshvars) in
 
   (* cases for the elements of anything *)
   let astfvrule_elem recursor k re =
     let minus_free = nub (collect_all_refs.V.combiner_rule_elem re) in
     let minus_nc_free =
       nub (collect_non_constraint_refs.V.combiner_rule_elem re) in
-    let plus_free = collect_in_plus_term.V.combiner_rule_elem re in
+    let plus_free =
+      collect_fresh_seed metavars
+	(collect_in_plus_term.V.combiner_rule_elem re) in
     let free = Common.union_set minus_free plus_free in
     let nc_free = Common.union_set minus_nc_free plus_free in
     let unbound =
@@ -542,10 +584,11 @@ let astfvs metavars bound =
       List.filter (function x -> List.mem x bound) nc_free in
     let munbound =
       List.filter (function x -> not(List.mem x bound)) minus_free in
+    let (matched,fresh) = collect_fresh unbound in
     {(k re) with
-      Ast.free_vars = unbound;
+      Ast.free_vars = matched;
       Ast.minus_free_vars = munbound;
-      Ast.fresh_vars = collect_fresh unbound;
+      Ast.fresh_vars = fresh;
       Ast.inherited = inherited;
       Ast.saved_witness = []} in
 
@@ -553,7 +596,9 @@ let astfvs metavars bound =
     let minus_free = nub (collect_all_refs.V.combiner_statement s) in
     let minus_nc_free =
       nub (collect_non_constraint_refs.V.combiner_statement s) in
-    let plus_free = collect_in_plus_term.V.combiner_statement s in
+    let plus_free =
+      collect_fresh_seed metavars
+	(collect_in_plus_term.V.combiner_statement s) in
     let free = Common.union_set minus_free plus_free in
     let nc_free = Common.union_set minus_nc_free plus_free in
     let classify free minus_free =
@@ -561,41 +606,40 @@ let astfvs metavars bound =
 	List.partition (function x -> not(List.mem x bound)) free in
       let munbound =
 	List.filter (function x -> not(List.mem x bound)) minus_free in
-      (unbound,munbound,collect_fresh unbound,inherited) in
+      let (matched,fresh) = collect_fresh unbound in
+      (matched,munbound,fresh,inherited) in
     let res = k s in
     let s =
+      let cip_plus aft =
+	collect_fresh_seed metavars
+	  (cip_mcodekind collect_in_plus_term aft) in
       match Ast.unwrap res with
 	Ast.IfThen(header,branch,(_,_,_,aft)) ->
-	  let (unbound,_,fresh,inherited) =
-	    classify (cip_mcodekind collect_in_plus_term aft) [] in
+	  let (unbound,_,fresh,inherited) = classify (cip_plus aft) [] in
 	  Ast.IfThen(header,branch,(unbound,fresh,inherited,aft))
       | Ast.IfThenElse(header,branch1,els,branch2,(_,_,_,aft)) ->
-	  let (unbound,_,fresh,inherited) =
-	    classify (cip_mcodekind collect_in_plus_term aft) [] in
+	  let (unbound,_,fresh,inherited) = classify (cip_plus aft) [] in
 	  Ast.IfThenElse(header,branch1,els,branch2,
 			 (unbound,fresh,inherited,aft))
       | Ast.While(header,body,(_,_,_,aft)) ->
-	  let (unbound,_,fresh,inherited) =
-	    classify (cip_mcodekind collect_in_plus_term aft) [] in
+	  let (unbound,_,fresh,inherited) = classify (cip_plus aft) [] in
 	  Ast.While(header,body,(unbound,fresh,inherited,aft))
       | Ast.For(header,body,(_,_,_,aft)) ->
-	  let (unbound,_,fresh,inherited) =
-	    classify (cip_mcodekind collect_in_plus_term aft) [] in
+	  let (unbound,_,fresh,inherited) = classify (cip_plus aft) [] in
 	  Ast.For(header,body,(unbound,fresh,inherited,aft))
       | Ast.Iterator(header,body,(_,_,_,aft)) ->
-	  let (unbound,_,fresh,inherited) =
-	    classify (cip_mcodekind collect_in_plus_term aft) [] in
+	  let (unbound,_,fresh,inherited) = classify (cip_plus aft) [] in
 	  Ast.Iterator(header,body,(unbound,fresh,inherited,aft))
       |	s -> s in
 
-    let (unbound,munbound,fresh,_) = classify free minus_free in
+    let (matched,munbound,fresh,_) = classify free minus_free in
     let inherited =
       List.filter (function x -> List.mem x bound) nc_free in
     {res with
       Ast.node = s;
-      Ast.free_vars = unbound;
+      Ast.free_vars = matched;
       Ast.minus_free_vars = munbound;
-      Ast.fresh_vars = collect_fresh unbound;
+      Ast.fresh_vars = fresh;
       Ast.inherited = inherited;
       Ast.saved_witness = []} in
 
@@ -603,7 +647,9 @@ let astfvs metavars bound =
     let minus_free = nub (collect_all_refs.V.combiner_statement_dots sd) in
     let minus_nc_free =
       nub (collect_non_constraint_refs.V.combiner_statement_dots sd) in
-    let plus_free = collect_in_plus_term.V.combiner_statement_dots sd in
+    let plus_free =
+      collect_fresh_seed metavars
+	(collect_in_plus_term.V.combiner_statement_dots sd) in
     let free = Common.union_set minus_free plus_free in
     let nc_free = Common.union_set minus_nc_free plus_free in
     let unbound =
@@ -612,10 +658,11 @@ let astfvs metavars bound =
       List.filter (function x -> List.mem x bound) nc_free in
     let munbound =
       List.filter (function x -> not(List.mem x bound)) minus_free in
+    let (matched,fresh) = collect_fresh unbound in
     {(k sd) with
-      Ast.free_vars = unbound;
+      Ast.free_vars = matched;
       Ast.minus_free_vars = munbound;
-      Ast.fresh_vars = collect_fresh unbound;
+      Ast.fresh_vars = fresh;
       Ast.inherited = inherited;
       Ast.saved_witness = []} in
 
@@ -732,7 +779,7 @@ let collect_top_level_used_after metavar_rule_list =
             | Ast.InitialScriptRule (_,_) | Ast.FinalScriptRule (_,_) -> []
             | Ast.CocciRule (_,_,rule,_,_) ->
 	        Common.union_set (nub (collect_all_rule_refs rule))
-	          (collect_in_plus rule) in
+	          (collect_in_plus metavar_list rule) in
 	  let inherited =
 	    List.filter (function x -> not (List.mem x locally_defined))
 	      free_vars in
@@ -748,26 +795,85 @@ let collect_top_level_used_after metavar_rule_list =
 
 let collect_local_used_after metavars minirules used_after =
   let locally_defined = List.map Ast.get_meta_name metavars in
-  let rec loop defined = function
-      [] -> (used_after,[],[])
+  let rec loop = function
+      [] -> (used_after,[],[],[],[])
     | minirule::rest ->
-	let free_vars =
-	  Common.union_set
-	    (nub (collect_all_minirule_refs minirule))
-	    (collect_in_plus_term.V.combiner_top_level minirule) in
-	let local_free_vars =
-	  List.filter (function x -> List.mem x locally_defined) free_vars in
-	let new_defined = Common.union_set local_free_vars defined in
-	let (mini_used_after,fvs_lists,mini_used_after_lists) =
-	  loop new_defined rest in
-	let local_used = Common.union_set local_free_vars mini_used_after in
-	let (new_used_after,new_list) =
-	  List.partition (function x -> List.mem x defined) mini_used_after in
-	let new_used_after = Common.union_set local_used new_used_after in
-	(new_used_after,free_vars::fvs_lists,
-	 new_list::mini_used_after_lists) in
-  let (_,fvs_lists,used_after_lists) = loop [] minirules in
-  (fvs_lists,used_after_lists)
+	(* In a rule there are three kinds of local variables:
+	   1. Variables referenced in the minus or context code.
+	   These get a value by matching.  This value can be used in
+	   subsequent rules.
+	   2. Fresh variables referenced in the plus code.
+	   3. Variables referenced in the seeds of the fresh variables.
+	   There are also non-local variables. These may either be variables
+	   referenced in the minus, context, or plus code, or they may be
+	   variables referenced in the seeds of the fresh variables. *)
+	(* Step 1: collect all references in minus/context, plus, seed
+	   code *)
+	let variables_referenced_in_minus_context_code =
+	  nub (collect_all_minirule_refs minirule) in
+	let variables_referenced_in_plus_code =
+	  collect_in_plus_term.V.combiner_top_level minirule in
+	let (env_of_fresh_seeds,seeds_and_plus) =
+	  collect_fresh_seed_env
+	    metavars variables_referenced_in_plus_code in
+	let all_free_vars =
+	  Common.union_set variables_referenced_in_minus_context_code
+	    seeds_and_plus in
+	(* Step 2: identify locally defined ones *)
+	let local_fresh = List.map fst env_of_fresh_seeds in
+	let is_local =
+	  List.partition (function x -> List.mem x locally_defined) in
+	let local_env_of_fresh_seeds =
+	  (* these have to be restricted to only one value if the associated
+	     fresh variable is used after *)
+	  List.map (function (f,ss) -> (f,is_local ss)) env_of_fresh_seeds in
+	let (local_all_free_vars,nonlocal_all_free_vars) =
+	  is_local all_free_vars in
+	(* Step 3, recurse on the rest of the rules, making available whatever
+	   has been defined in this one *)
+	let (mini_used_after,fvs_lists,mini_used_after_lists,
+	     mini_fresh_used_after_lists,mini_fresh_used_after_seeds) =
+	  loop rest in
+	(* Step 4: collect the results.  These are:
+	   1. All of the variables used non-locally in the rules starting
+	   with this one
+	   2. All of the free variables to the end of the semantic patch
+	   3. The variables that are used afterwards and defined here by
+	   matching (minus or context code)
+	   4. The variables that are used afterwards and are defined here as
+	   fresh
+	   5. The variables that are used as seeds in computing the bindings
+	   of the variables collected in part 4. *)
+	let (local_used_after, nonlocal_used_after) =
+	  is_local mini_used_after in
+	let (fresh_local_used_after(*4*),matched_local_used_after) =
+	  List.partition (function x -> List.mem x local_fresh)
+	    local_used_after in
+	let matched_local_used_after(*3*) =
+	  Common.union_set matched_local_used_after nonlocal_used_after in
+	let new_used_after = (*1*)
+	  Common.union_set nonlocal_all_free_vars nonlocal_used_after in
+	let fresh_local_used_after_seeds =
+	  List.filter
+	    (* no point to keep variables that already are gtd to have only
+	       one value *)
+	    (function x -> not (List.mem x matched_local_used_after))
+	    (List.fold_left (function p -> function c -> Common.union_set c p)
+	       []
+	       (List.map
+		  (function fua ->
+		    fst (List.assoc fua local_env_of_fresh_seeds))
+		  fresh_local_used_after)) in
+	(new_used_after,all_free_vars::fvs_lists(*2*),
+	 matched_local_used_after::mini_used_after_lists,
+	 fresh_local_used_after::mini_fresh_used_after_lists,
+	 fresh_local_used_after_seeds::mini_fresh_used_after_seeds) in
+  let (_,fvs_lists,used_after_lists(*ua*),
+       fresh_used_after_lists(*fua*),fresh_used_after_lists_seeds(*fuas*)) =
+    loop minirules in
+  (fvs_lists,used_after_lists,
+   fresh_used_after_lists,fresh_used_after_lists_seeds)
+
 
 
 let collect_used_after metavar_rule_list =
@@ -778,19 +884,26 @@ let collect_used_after metavar_rule_list =
         match r with
           Ast.ScriptRule (_,_,_,_)
 	| Ast.InitialScriptRule (_,_) | Ast.FinalScriptRule (_,_) ->
-	    ([], [used_after])
+	    ([], [used_after], [], [])
         | Ast.CocciRule (name, rule_info, minirules, _,_) ->
           collect_local_used_after metavars minirules used_after
     )
     metavar_rule_list used_after_lists
+
+let rec split4 = function
+    [] -> ([],[],[],[])
+  | (a,b,c,d)::l -> let (a1,b1,c1,d1) = split4 l in (a::a1,b::b1,c::c1,d::d1)
 
 (* ---------------------------------------------------------------- *)
 (* entry point *)
 
 let free_vars rules =
   let metavars = List.map (function (mv,rule) -> mv) rules in
-  let (fvs_lists,used_after_lists) = List.split (collect_used_after rules) in
-  let neg_pos_lists = List.map2 get_neg_pos_list rules used_after_lists in
+  let (fvs_lists,used_after_matched_lists,
+       fresh_used_after_lists,fresh_used_after_lists_seeds) =
+    split4 (collect_used_after rules) in
+  let neg_pos_lists =
+    List.map2 get_neg_pos_list rules used_after_matched_lists in
   let positions_list = (* for all rules, assume all positions are used after *)
     List.map
       (function (mv, r) ->
@@ -808,15 +921,20 @@ let free_vars rules =
   let new_rules =
     List.map2
       (function (mv,r) ->
-	function ua ->
+	function (ua,fua) ->
           match r with
             Ast.ScriptRule _
 	  | Ast.InitialScriptRule _ | Ast.FinalScriptRule _ -> r
           | Ast.CocciRule (nm, rule_info, r, is_exp,ruletype) ->
 	      Ast.CocciRule
-		(nm, rule_info, classify_variables mv r (List.concat ua),
+		(nm, rule_info,
+		 classify_variables mv r
+		   ((List.concat ua) @ (List.concat fua)),
 		 is_exp,ruletype))
-      rules used_after_lists in
+      rules (List.combine used_after_matched_lists fresh_used_after_lists) in
   let new_rules = collect_astfvs (List.combine metavars new_rules) in
   (metavars,new_rules,
-   fvs_lists,neg_pos_lists,used_after_lists,positions_list)
+   fvs_lists,neg_pos_lists,
+   (used_after_matched_lists,
+    fresh_used_after_lists,fresh_used_after_lists_seeds),
+   positions_list)

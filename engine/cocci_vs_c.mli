@@ -32,6 +32,10 @@ type mode = PatternMode | TransformMode
 val equal_metavarval : 
   Ast_c.metavar_binding_kind -> Ast_c.metavar_binding_kind -> bool
 
+(* for inherited metavariables.  no declaration link on expressions *)
+val equal_inh_metavarval : 
+  Ast_c.metavar_binding_kind -> Ast_c.metavar_binding_kind -> bool
+
 (*****************************************************************************)
 (* The parameter of the functor (the specific actions) *)
 (*****************************************************************************)

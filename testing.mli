@@ -40,7 +40,12 @@ val sp_of_file :
   Ast_cocci.metavar list list * Ast_cocci.rule list *
       Ast_cocci.meta_name list list list *
       Ast_cocci.meta_name list list list *
-      Ast_cocci.meta_name list list list * Ast_cocci.meta_name list list list *
+      (Ast_cocci.meta_name list list list (*used after list*) *
+	 (*fresh used after list*)
+	 Ast_cocci.meta_name list list list *
+	 (*fresh used after list seeds*)
+	 Ast_cocci.meta_name list list list) *
+      Ast_cocci.meta_name list list list *
       string list list *
       string option
 

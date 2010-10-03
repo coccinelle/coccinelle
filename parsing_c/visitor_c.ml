@@ -505,10 +505,12 @@ and vk_onedecl = fun bigf onedecl ->
   match onedecl with
   | ({v_namei = var; 
       v_type = t; 
+      v_type_bis = tbis;
       v_storage = _sto; 
       v_attr = attrs})  -> 
 
     vk_type bigf t;
+    (* dont go in tbis *)
     attrs +> List.iter (vk_attribute bigf);
     var +> Common.do_option (fun (name, iniopt) -> 
       vk_name bigf name;
@@ -1285,6 +1287,7 @@ and vk_decl_s = fun bigf d ->
 
   and aux ({v_namei = var; 
             v_type = t; 
+            v_type_bis = tbis; 
             v_storage = sto; 
             v_local= local; 
             v_attr = attrs}, iicomma) = 
@@ -1296,6 +1299,8 @@ and vk_decl_s = fun bigf d ->
           vk_ini_s bigf init
         )));
      v_type = vk_type_s bigf t;
+    (* !!! dont go in semantic related stuff !!! *)
+     v_type_bis = tbis;
      v_storage = sto;
      v_local = local;
      v_attr = attrs +> List.map (vk_attribute_s bigf);

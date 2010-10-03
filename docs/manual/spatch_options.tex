@@ -376,6 +376,12 @@ version of {\bf -partial\_match}.}
   that the pattern {\tt f(E)}, with metavariable {\tt E}, matches with {\tt
     E} as {\tt x} will not be considered.}
 
+\rare{-no\_safe\_expressions}{normally, we check that an expression does
+       not match something earlier in the disjunction.  But for large
+       disjunctions, this can result in a very big CTL formula.  So this
+       option give the user the option to say he doesn't want this feature,
+       if that is the case.}
+
 \rare{-pyoutput coccilib.output.Gtk, -pyoutput coccilib.output.Console}{
 This controls whether Python output is sent to Gtk or to the console.  {\bf
   -pyoutput coccilib.output.Console} is the default.  The Gtk option is

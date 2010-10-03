@@ -179,7 +179,7 @@ let id_tokens lexbuf =
   let s = tok lexbuf in
   let linetype = get_current_line_type lexbuf in
   let in_rule_name = !Data.in_rule_name in
-  let in_meta = !Data.in_meta in
+  let in_meta = !Data.in_meta && not !Data.saw_struct in
   let in_iso = !Data.in_iso in
   let in_prolog = !Data.in_prolog in
   match s with
@@ -222,9 +222,9 @@ let id_tokens lexbuf =
   | "on" when in_rule_name      -> check_context_linetype s; TOn
   | "ever" when in_rule_name    -> check_context_linetype s; TEver
   | "never" when in_rule_name   -> check_context_linetype s; TNever
+  (* exists and forall for when are reparsed in parse_cocci.ml *)
   | "exists" when in_rule_name  -> check_context_linetype s; TExists
   | "forall" when in_rule_name  -> check_context_linetype s; TForall
-  | "reverse" when in_rule_name -> check_context_linetype s; TReverse
   | "script" when in_rule_name  -> check_context_linetype s; TScript
   | "initialize" when in_rule_name -> check_context_linetype s; TInitialize
   | "finalize" when in_rule_name   -> check_context_linetype s; TFinalize
@@ -236,9 +236,11 @@ let id_tokens lexbuf =
   | "float" ->      Tfloat    linetype
   | "long" ->       Tlong     linetype
   | "void" ->       Tvoid     linetype
-  | "struct" ->     Tstruct   linetype
-  | "union" ->      Tunion    linetype
-  | "enum" ->       Tenum     linetype
+  (* in_meta is only for the first keyword; drop it now to allow any type
+     name *)
+  | "struct" ->     Data.saw_struct := true; Tstruct   linetype
+  | "union" ->      Data.saw_struct := true; Tunion    linetype
+  | "enum" ->       Data.saw_struct := true; Tenum     linetype
   | "unsigned" ->   Tunsigned linetype
   | "signed" ->     Tsigned   linetype
 
@@ -291,6 +293,7 @@ let init _ =
   Data.in_rule_name := false;
   Data.in_meta := false;
   Data.in_prolog := false;
+  Data.saw_struct := false;
   Data.inheritable_positions := [];
   Hashtbl.clear all_metavariables;
   Hashtbl.clear Data.all_metadecls;
@@ -593,6 +596,7 @@ rule token = parse
   | "&"            { start_line true; TAnd    (get_current_line_type lexbuf) }
   | "^"            { start_line true; TXor(get_current_line_type lexbuf) }
 
+  | "##"            { start_line true; TCppConcatOp }
   | (( ("#" [' ' '\t']*  "define" [' ' '\t']+)) as def)
     ( (letter (letter |digit)*) as ident)
       { start_line true;

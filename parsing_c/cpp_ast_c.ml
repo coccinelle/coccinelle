@@ -18,7 +18,8 @@ open Ast_c
 (*****************************************************************************)
 (* Wrappers *)
 (*****************************************************************************)
-let pr2, pr2_once = Common.mk_pr2_wrappers Flag_parsing_c.verbose_cpp_ast
+let pr2, pr2_once = 
+  Common.mk_pr2_wrappers Flag_parsing_c.verbose_cpp_ast
 let pr2_debug,pr2_debug_once = 
   Common.mk_pr2_wrappers Flag_parsing_c.debug_cpp_ast
 
@@ -99,8 +100,35 @@ let cpp_option_of_cmdline (xs, ys) =
   ))
 
 (*****************************************************************************)
+(* Debug *)
+(*****************************************************************************)
+let (show_cpp_i_opts: string list -> unit) = fun xs -> 
+  if not (null xs) then begin 
+    pr2 "-I";
+    xs +> List.iter pr2
+  end
+
+  
+let (show_cpp_d_opts: string list -> unit) = fun xs ->
+  if not (null xs) then begin
+    pr2 "-D";
+    xs +> List.iter pr2
+  end
+
+(* ---------------------------------------------------------------------- *)
+let trace_cpp_process depth mark inc_file =
+  pr2_debug (spf "%s>%s %s" 
+          (Common.repeat "-" depth +> Common.join "")
+          mark
+          (s_of_inc_file_bis inc_file));
+  ()
+
+
+
+(*****************************************************************************)
 (* Helpers *)
 (*****************************************************************************)
+
 
 let _hcandidates = Hashtbl.create 101
 
@@ -172,15 +200,6 @@ let find_header_file cppopts dirname inc_file =
 
 
 (* ---------------------------------------------------------------------- *)
-let trace_cpp_process depth mark inc_file =
-  pr2_debug (spf "%s>%s %s" 
-          (Common.repeat "-" depth +> Common.join "")
-          mark
-          (s_of_inc_file_bis inc_file));
-  ()
-
-
-(* ---------------------------------------------------------------------- *)
 let _headers_hash = Hashtbl.create 101 
 
 (* On freebsd ocaml is trashing, use up to 1.6Go of memory and then
@@ -193,10 +212,12 @@ let _headers_hash = Hashtbl.create 101
  * even if the cache is small. That's because huge single 
  * ast element and probably the ast marshalling fail.
  *)
-let threshold_cache_nb_files = ref 200
+let default_threshold_cache_nb_files = 200
 
-let parse_c_and_cpp_cache file =
-  if Hashtbl.length _headers_hash > !threshold_cache_nb_files
+let parse_c_and_cpp_cache 
+  ?(threshold_cache_nb_files= default_threshold_cache_nb_files) file =
+
+  if Hashtbl.length _headers_hash > threshold_cache_nb_files
   then Hashtbl.clear _headers_hash;
 
   Common.memoized _headers_hash file (fun () -> 
@@ -204,19 +225,6 @@ let parse_c_and_cpp_cache file =
   )
 
 
-(* ---------------------------------------------------------------------- *)
-let (show_cpp_i_opts: string list -> unit) = fun xs -> 
-  if not (null xs) then begin 
-    pr2 "-I";
-    xs +> List.iter pr2
-  end
-
-  
-let (show_cpp_d_opts: string list -> unit) = fun xs ->
-  if not (null xs) then begin
-    pr2 "-D";
-    xs +> List.iter pr2
-  end
 
 (*****************************************************************************)
 (* Main entry *)
@@ -225,8 +233,9 @@ let (show_cpp_d_opts: string list -> unit) = fun xs ->
 
 let (cpp_expand_include2: 
  ?depth_limit:int option ->
+ ?threshold_cache_nb_files:int ->
  cpp_option list -> Common.dirname -> Ast_c.program -> Ast_c.program) =
- fun ?(depth_limit=None) iops dirname ast -> 
+ fun ?(depth_limit=None) ?threshold_cache_nb_files iops dirname ast -> 
 
   if !Flag_parsing_c.debug_cpp_ast
   then pr2_xxxxxxxxxxxxxxxxx();
@@ -262,7 +271,9 @@ let (cpp_expand_include2:
                   (* CONFIG *)
                   Flag_parsing_c.verbose_parsing := false; 
                   Flag_parsing_c.verbose_lexing := false; 
-                  let (ast2, _stat) = parse_c_and_cpp_cache file in
+                  let (ast2, _stat) = 
+                    parse_c_and_cpp_cache ?threshold_cache_nb_files file 
+                  in
 
                   let ast = Parse_c.program_of_program2 ast2 in
                   let dirname' = Filename.dirname file in 
@@ -293,9 +304,9 @@ let (cpp_expand_include2:
   aux [] dirname ast
     
 
-let cpp_expand_include ?depth_limit a b c = 
+let cpp_expand_include ?depth_limit ?threshold_cache_nb_files a b c = 
   Common.profile_code "cpp_expand_include"
-   (fun () -> cpp_expand_include2 ?depth_limit a b c)
+   (fun () -> cpp_expand_include2 ?depth_limit ?threshold_cache_nb_files a b c)
 
 (* 
 let unparse_showing_include_content ?
@@ -325,12 +336,14 @@ let is_ifdef_and_same_tag tag x =
  * indice. Or simply count  the number of directives with the same tag and
  * put this information in the tag. Hence the total_with_this_tag below.
  *)
-let should_ifdefize tag ifdefs_directives xxs = 
+let should_ifdefize (tag,ii) ifdefs_directives xxs = 
   let IfdefTag (_tag, total_with_this_tag) = tag in
   
   if total_with_this_tag <> List.length ifdefs_directives
   then begin
-    pr2 "CPPASTC: can not ifdefize, some of its directives were passed";
+    let strloc = Ast_c.strloc_of_info (List.hd ii) in
+    pr2 (spf "CPPASTC: can not ifdefize ifdef at %s" strloc);
+    pr2 "CPPASTC: some of its directives were passed";
     false 
   end else 
     (* todo? put more condition ? dont ifdefize declaration ? *)
@@ -373,7 +386,7 @@ let rec cpp_ifdef_statementize ast =
                 | IfdefDirective ((Ifdef,tag),ii) -> 
 
                     let (restifdefs, xxs, xs') = group_ifdef tag xs in
-                    if should_ifdefize tag (ifdef::restifdefs) xxs 
+                    if should_ifdefize (tag,ii) (ifdef::restifdefs) xxs 
                     then
                       let res = IfdefStmt2 (ifdef::restifdefs, xxs) in
                       Visitor_c.vk_statement_sequencable_s bigf res::aux xs'

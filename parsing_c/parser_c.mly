@@ -21,7 +21,6 @@ open Lexer_parser (* for the fields *)
 
 open Semantic_c (* Semantic exn *)
 
-module Stat = Parsing_stat
 
 (*****************************************************************************)
 (* Wrappers *)
@@ -446,6 +445,7 @@ let mk_string_wrap (s,info) = (s, [info])
 /*(*-----------------------------------------*)*/
 %token <Ast_c.info> Tasm
 %token <Ast_c.info> Tattribute
+%token <Ast_c.info> TattributeNoarg
 %token <Ast_c.info> Tinline
 %token <Ast_c.info> Ttypeof
 
@@ -1269,6 +1269,7 @@ decl2:
        DeclList ([{v_namei = None; v_type = returnType; 
                    v_storage = unwrap storage; v_local = local;
                    v_attr = Ast_c.noattr;
+                   v_type_bis = ref None;
                 },[]],  
                 ($2::iistart::snd storage))
      } 
@@ -1291,6 +1292,7 @@ decl2:
             v_storage = unwrap storage;
             v_local = local;
             v_attr = attrs;
+            v_type_bis = ref None;
            },
            iivirg 
          )

@@ -250,3 +250,7 @@ let set_linux_spacing _ = spacing := LINUX (*follow the conventions of Linux*)
 let set_smpl_spacing _ = spacing := SMPL   (*use spacing from the SP*)
 
 (*****************************************************************************)
+
+(* drop back edges made by proper loop constructs -
+   unsafe but more efficient *)
+let no_loops = ref false

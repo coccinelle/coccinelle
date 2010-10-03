@@ -1,3 +1,17 @@
+(* Copyright (C) 2006, 2007 Julia Lawall
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License (GPL)
+ * version 2 as published by the Free Software Foundation.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * file license.txt for more details.
+ * 
+ * This file was part of Coccinelle.
+ *)
+
 module Ast = Ast_cocci
 module V = Visitor_ast
 
@@ -295,10 +309,12 @@ let pp_meta_decl pr env decl =
   match decl with
     Ast.MetaIdDecl(ar, name) ->
       no_arity ar; pr "identifier "; pp_name name; pr ";\n"
-  | Ast.MetaFreshIdDecl(name, None) ->
+  | Ast.MetaFreshIdDecl(name, Ast.NoVal) ->
       pr "fresh identifier "; pp_name name; pr ";\n"
-  | Ast.MetaFreshIdDecl(name, Some x) ->
+  | Ast.MetaFreshIdDecl(name, Ast.StringSeed x) ->
       pr "fresh identifier "; pp_name name; pr " = \""; pr x; pr "\";\n"
+  | Ast.MetaFreshIdDecl(name, Ast.ListSeed x) ->
+      failwith "unparse_hrule: not supported"
   | Ast.MetaTypeDecl(ar, name) ->
       no_arity ar; pr "type "; pp_name name; pr ";\n"
   | Ast.MetaInitDecl(ar, name) ->

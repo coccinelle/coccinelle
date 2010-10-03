@@ -46,7 +46,6 @@ type token =
   | TScript
   | TRuleName of (string)
   | TRightIso
-  | TReverse
   | TReturn of (Data.clt)
   | TPure
   | TPtrOp of (Data.clt)
@@ -152,6 +151,7 @@ type token =
   | TDeclarerId of (string * Data.clt)
   | TDeclarer
   | TDec of (Data.clt)
+  | TCppConcatOp
   | TContinue of (Data.clt)
   | TContext
   | TConstant
@@ -187,4 +187,4 @@ val meta_main: (Lexing.lexbuf -> token) -> Lexing.lexbuf -> ((Ast_cocci.metavar,
 val iso_rule_name: (Lexing.lexbuf -> token) -> Lexing.lexbuf -> (Ast_cocci.rulename)
 val iso_meta_main: (Lexing.lexbuf -> token) -> Lexing.lexbuf -> ((Ast_cocci.metavar,Ast_cocci.metavar) Common.either list)
 val iso_main: (Lexing.lexbuf -> token) -> Lexing.lexbuf -> (Ast0_cocci.anything list list)
-val include_main: (Lexing.lexbuf -> token) -> Lexing.lexbuf -> ((string,string) Common.either list)
+val include_main: (Lexing.lexbuf -> token) -> Lexing.lexbuf -> (Data.incl_iso list)

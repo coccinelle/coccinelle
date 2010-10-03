@@ -1,54 +1,50 @@
-open Common
-
 (* The main function is parse_c_and_cpp. It uses globals in Lexer_Parser and 
- * Parsing_hacks. Especially Parsing_hacks._defs which often comes
- * from a standard.h macro file. Cf also init_defs below.
+ * and also _defs below which often comes from a standard.h macro file. 
+ * cf also init_defs_xxx below.
  *)
 
-(* ---------------------------------------------------------------------- *)
 type program2 = toplevel2 list
    and toplevel2 = Ast_c.toplevel * info_item
-
-    (* the token list contains now also the comment-tokens *)
-    and info_item = (string * Parser_c.token list)
-
-(* ---------------------------------------------------------------------- *)
-(* a few globals *)
-val parse_cpp_define_file : 
-  filename -> (string, Cpp_token_c.define_def) assoc
+     (* the token list contains now also the comment-tokens *)
+       and info_item = (string * Parser_c.token list)
 
 (* usually correspond to what is inside your macros.h *)
 val _defs : (string, Cpp_token_c.define_def) Hashtbl.t ref
 (* usually correspond to what is inside your standard.h *)
 val _defs_builtins : (string, Cpp_token_c.define_def) Hashtbl.t ref
 
-val init_defs_macros : filename -> unit
-val init_defs_builtins : filename -> unit
+val init_defs_macros : Common.filename -> unit
+val init_defs_builtins : Common.filename -> unit
 
 
-(* ---------------------------------------------------------------------- *)
 (* This is the main function *)
-val parse_print_error_heuristic:  
-  filename (*cfile*) -> (program2 * Parsing_stat.parsing_stat)
-(* alias of previous func *)
 val parse_c_and_cpp : 
-  filename (*cfile*) -> (program2 * Parsing_stat.parsing_stat)
+  Common.filename (*cfile*) -> (program2 * Parsing_stat.parsing_stat)
 
 (* use some .ast_raw memoized version, and take care if obsolete *)
 val parse_cache:
-  filename (*cfile*) -> (program2 * Parsing_stat.parsing_stat)
+  Common.filename (*cfile*) -> (program2 * Parsing_stat.parsing_stat)
+
+
+(* ---------------------------------------------------------------------- *)
+(* used to extract macros from standard.h, but also now from regular C files
+ * in -extract_macros to later feed an automatically build standard.h *)
+val extract_macros : 
+  Common.filename -> (string, Cpp_token_c.define_def) Common.assoc
+
+
+
+
 
 (* ---------------------------------------------------------------------- *)
 (* used also for the standard.h file *)
-val tokens:      ?profile:bool -> filename -> Parser_c.token list
+val tokens:      ?profile:bool -> Common.filename -> Parser_c.token list
 val tokens_of_string: string -> Parser_c.token list
 
-val parse:                        filename -> Ast_c.program
-val parse_print_error:            filename -> Ast_c.program
+val parse:                        Common.filename -> Ast_c.program
+val parse_print_error:            Common.filename -> Ast_c.program
 val parse_gen: 
     ((Lexing.lexbuf -> Parser_c.token) -> Lexing.lexbuf -> 'a) -> string -> 'a
-
-
 
 (* ---------------------------------------------------------------------- *)
 (* Easy way to build complex Ast elements from simple strings.
@@ -62,14 +58,9 @@ val cstatement_of_string  : string -> Ast_c.statement
 val cexpression_of_string : string -> Ast_c.expression
 
 
-
-
 (* ---------------------------------------------------------------------- *)
 (* a few helpers *)
 val print_commentized       : Parser_c.token list -> unit
 
 val program_of_program2 : program2 -> Ast_c.program
 val with_program2: (Ast_c.program -> Ast_c.program) -> program2 -> program2
-
-
-

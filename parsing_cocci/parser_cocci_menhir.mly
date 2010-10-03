@@ -43,7 +43,7 @@ module P = Parse_aux
 %token TPure TContext TGenerated
 %token TTypedef TDeclarer TIterator TName TPosition TPosAny
 %token TUsing TDisable TExtends TDepends TOn TEver TNever TExists TForall
-%token TScript TInitialize TFinalize TReverse TNothing
+%token TScript TInitialize TFinalize TNothing
 %token<string> TRuleName
 
 %token<Data.clt> Tchar Tshort Tint Tdouble Tfloat Tlong
@@ -103,7 +103,7 @@ module P = Parse_aux
 
 %token <Data.clt> TPtrOp
 
-%token TMPtVirg
+%token TMPtVirg TCppConcatOp
 %token <Data.clt> TEq TDot TComma TPtVirg
 %token <Ast_cocci.assignOp * Data.clt> TAssign
 
@@ -143,7 +143,7 @@ module P = Parse_aux
 %type <Ast0_cocci.rule> plus_exp_main
 
 %start include_main
-%type <(string,string) Common.either list> include_main
+%type <Data.incl_iso list> include_main
 
 %start iso_rule_name
 %type <Ast_cocci.rulename>
@@ -242,7 +242,6 @@ disable:
 exists:
   TExists { Ast.Exists }
 | TForall { Ast.Forall }
-| TReverse TForall { Ast.ReverseForall }
 |         { Ast.Undetermined }
 
 is_expression: // for more flexible parsing of top level expressions
@@ -254,8 +253,9 @@ include_main:
 | list(incl) TArobArob { $1 }
 
 incl:
-  TUsing TString      { Common.Left(P.id2name $2) }
-| TUsing TPathIsoFile { Common.Right $2 }
+  TIncludeL           { let (x,_) = $1 in Data.Include(x) }
+| TUsing TString      { Data.Iso(Common.Left(P.id2name $2)) }
+| TUsing TPathIsoFile { Data.Iso(Common.Right $2) }
 
 metadec:
   ar=arity ispure=pure
@@ -449,7 +449,7 @@ metadec:
 
 
 meta_exp_type:
-  t=ctype
+  t=typedef_ctype
     { [Ast0_cocci.ast0_type_to_type t] }
 | TOBrace t=comma_list(ctype) TCBrace m=list(TMul)
     { List.map
@@ -461,57 +461,91 @@ arity: TBang0 { Ast.UNIQUE }
      | TPlus0 { Ast.MULTI }
      | /* empty */ { Ast.NONE }
 
-generic_ctype_full:
-       q=ctype_qualif_opt ty=Tchar
-        { q (Ast0.wrap(Ast0.BaseType(Ast.CharType,[P.clt2mcode "char" ty]))) }
-     | q=ctype_qualif_opt ty=Tshort
-        { q (Ast0.wrap(Ast0.BaseType(Ast.ShortType,[P.clt2mcode "short" ty])))}
-     | q=ctype_qualif_opt ty=Tint
-         { q (Ast0.wrap(Ast0.BaseType(Ast.IntType,[P.clt2mcode "int" ty]))) }
-     | t=Tdouble
-         { Ast0.wrap(Ast0.BaseType(Ast.DoubleType,[P.clt2mcode "double" t])) }
-     | t=Tfloat
-         { Ast0.wrap(Ast0.BaseType(Ast.FloatType,[P.clt2mcode "float" t])) }
-     | q=ctype_qualif_opt ty=Tlong
-         { q (Ast0.wrap(Ast0.BaseType(Ast.LongType,[P.clt2mcode "long" ty]))) }
-     | q=ctype_qualif_opt ty=Tlong ty1=Tlong
-         { q (Ast0.wrap
-		(Ast0.BaseType
-		   (Ast.LongLongType,
-		      [P.clt2mcode "long" ty;P.clt2mcode "long" ty1]))) }
-     | s=Tenum i=ident
-	 { Ast0.wrap(Ast0.EnumName(P.clt2mcode "enum" s, i)) }
-     | s=struct_or_union i=ident
-	 { Ast0.wrap(Ast0.StructUnionName(s, Some i)) }
-     | s=struct_or_union i=ioption(ident)
-       l=TOBrace d=struct_decl_list r=TCBrace
-	 { (if i = None && !Data.in_iso
-	   then failwith "structures must be named in the iso file");
-           Ast0.wrap(Ast0.StructUnionDef(Ast0.wrap(Ast0.StructUnionName(s, i)),
-					 P.clt2mcode "{" l,
-					 d, P.clt2mcode "}" r)) }
-     | s=TMetaType l=TOBrace d=struct_decl_list r=TCBrace
-	 { let (nm,pure,clt) = s in
-	 let ty =
-	   Ast0.wrap(Ast0.MetaType(P.clt2mcode nm clt,pure)) in
-	 Ast0.wrap
-	   (Ast0.StructUnionDef(ty,P.clt2mcode "{" l,d,P.clt2mcode "}" r)) }
-     | r=TRuleName TDot p=TIdent
-	 { let nm = (r,P.id2name p) in
-	 (* this is only possible when we are in a metavar decl.  Otherwise,
-	    it will be represented already as a MetaType *)
-	 let _ = P.check_meta(Ast.MetaTypeDecl(Ast.NONE,nm)) in
-	 Ast0.wrap(Ast0.MetaType(P.clt2mcode nm (P.id2clt p),
-				 Ast0.Impure (*will be ignored*))) }
-     | p=TTypeId
-	 { Ast0.wrap(Ast0.TypeName(P.id2mcode p)) }
-     | q=ctype_qualif_opt p=TMetaType
-	 { let (nm,pure,clt) = p in
-	 q (Ast0.wrap(Ast0.MetaType(P.clt2mcode nm clt,pure))) }
+/* ---------------------------------------------------------------------- */
 
-generic_ctype:
-       q=ctype_qualif     { q None }
-     | generic_ctype_full { $1 }
+%inline
+signable_types:
+  ty=Tchar
+    { Ast0.wrap(Ast0.BaseType(Ast.CharType,[P.clt2mcode "char" ty])) }
+| ty=Tshort
+    { Ast0.wrap(Ast0.BaseType(Ast.ShortType,[P.clt2mcode "short" ty])) }
+| ty=Tint
+    { Ast0.wrap(Ast0.BaseType(Ast.IntType,[P.clt2mcode "int" ty])) }
+| p=TMetaType
+    { let (nm,pure,clt) = p in
+      Ast0.wrap(Ast0.MetaType(P.clt2mcode nm clt,pure)) }
+| r=TRuleName TDot p=TIdent
+    { let nm = (r,P.id2name p) in
+    (* this is only possible when we are in a metavar decl.  Otherwise,
+       it will be represented already as a MetaType *)
+    let _ = P.check_meta(Ast.MetaTypeDecl(Ast.NONE,nm)) in
+    Ast0.wrap(Ast0.MetaType(P.clt2mcode nm (P.id2clt p),
+			    Ast0.Impure (*will be ignored*))) }
+| ty=Tlong
+    { Ast0.wrap(Ast0.BaseType(Ast.LongType,[P.clt2mcode "long" ty])) }
+| ty1=Tlong ty2=Tlong
+    { Ast0.wrap
+	(Ast0.BaseType
+	   (Ast.LongLongType,
+	    [P.clt2mcode "long" ty1;P.clt2mcode "long" ty2])) }
+
+%inline
+non_signable_types:
+  ty=Tvoid
+    { Ast0.wrap(Ast0.BaseType(Ast.VoidType,[P.clt2mcode "void" ty])) }
+| ty=Tdouble
+    { Ast0.wrap(Ast0.BaseType(Ast.DoubleType,[P.clt2mcode "double" ty])) }
+| ty=Tfloat
+    { Ast0.wrap(Ast0.BaseType(Ast.FloatType,[P.clt2mcode "float" ty])) }
+| s=Tenum i=ident
+    { Ast0.wrap(Ast0.EnumName(P.clt2mcode "enum" s, i)) }
+| s=struct_or_union i=ident
+    { Ast0.wrap(Ast0.StructUnionName(s, Some i)) }
+| s=struct_or_union i=ioption(ident)
+    l=TOBrace d=struct_decl_list r=TCBrace
+    { (if i = None && !Data.in_iso
+    then failwith "structures must be named in the iso file");
+      Ast0.wrap(Ast0.StructUnionDef(Ast0.wrap(Ast0.StructUnionName(s, i)),
+				    P.clt2mcode "{" l,
+				    d, P.clt2mcode "}" r)) }
+| s=TMetaType l=TOBrace d=struct_decl_list r=TCBrace
+    { let (nm,pure,clt) = s in
+    let ty = Ast0.wrap(Ast0.MetaType(P.clt2mcode nm clt,pure)) in
+    Ast0.wrap(Ast0.StructUnionDef(ty,P.clt2mcode "{" l,d,P.clt2mcode "}" r)) }
+| p=TTypeId
+    { Ast0.wrap(Ast0.TypeName(P.id2mcode p)) }
+
+%inline
+all_basic_types:
+  r=Tsigned ty=signable_types
+    { Ast0.wrap(Ast0.Signed(P.clt2mcode Ast.Signed r,Some ty)) }
+| r=Tunsigned ty=signable_types
+    { Ast0.wrap(Ast0.Signed(P.clt2mcode Ast.Unsigned r,Some ty)) }
+| ty=signable_types { ty }
+| ty=non_signable_types { ty }
+
+ctype:
+  cv=ioption(const_vol) ty=all_basic_types m=list(TMul)
+    { P.pointerify (P.make_cv cv ty) m }
+| r=Tsigned
+    { Ast0.wrap(Ast0.Signed(P.clt2mcode Ast.Signed r,None)) }
+| r=Tunsigned
+    { Ast0.wrap(Ast0.Signed(P.clt2mcode Ast.Unsigned r,None)) }
+| lp=TOPar0 t=midzero_list(ctype,ctype) rp=TCPar0
+    { let (mids,code) = t in
+      Ast0.wrap
+	(Ast0.DisjType(P.clt2mcode "(" lp,code,mids, P.clt2mcode ")" rp)) }
+
+/* signed, unsigned alone not allowed */
+typedef_ctype:
+  cv=ioption(const_vol) ty=all_basic_types m=list(TMul)
+    { P.pointerify (P.make_cv cv ty) m }
+| lp=TOPar0 t=midzero_list(ctype,ctype) rp=TCPar0
+    { let (mids,code) = t in
+      Ast0.wrap
+	(Ast0.DisjType(P.clt2mcode "(" lp,code,mids, P.clt2mcode ")" rp)) }
+
+/* ---------------------------------------------------------------------- */
 
 struct_or_union:
        s=Tstruct { P.clt2mcode Ast.Struct s }
@@ -522,7 +556,7 @@ struct_decl:
     | t=ctype d=d_ident pv=TPtVirg
 	 { let (id,fn) = d in
 	 [Ast0.wrap(Ast0.UnInit(None,fn t,id,P.clt2mcode ";" pv))] }
-    | t=fn_ctype lp1=TOPar st=TMul d=d_ident rp1=TCPar
+    | t=ctype lp1=TOPar st=TMul d=d_ident rp1=TCPar
 	lp2=TOPar p=decl_list(name_opt_decl) rp2=TCPar pv=TPtVirg
         { let (id,fn) = d in
         let t =
@@ -550,49 +584,6 @@ continue_struct_decl_list:
 | struct_decl struct_decl_list_start { $1@$2 }
 | struct_decl                        { $1 }
 
-ctype:
-       cv=ioption(const_vol) ty=generic_ctype m=list(TMul)
-	 { P.pointerify (P.make_cv cv ty) m }
-     | cv=ioption(const_vol) t=Tvoid m=nonempty_list(TMul)
-         { let ty =
-	     Ast0.wrap(Ast0.BaseType(Ast.VoidType,[P.clt2mcode "void" t])) in
-	   P.pointerify (P.make_cv cv ty) m }
-   | lp=TOPar0 t=midzero_list(ctype,ctype) rp=TCPar0
-      /* more hacks */
-    { let (mids,code) = t in
-      Ast0.wrap
-	(Ast0.DisjType(P.clt2mcode "(" lp,code,mids, P.clt2mcode ")" rp)) }
-
-ctype_full:
-       cv=ioption(const_vol) ty=generic_ctype_full m=list(TMul)
-	 { P.pointerify (P.make_cv cv ty) m }
-     | cv=ioption(const_vol) t=Tvoid m=nonempty_list(TMul)
-         { let ty =
-	     Ast0.wrap(Ast0.BaseType(Ast.VoidType,[P.clt2mcode "void" t])) in
-	   P.pointerify (P.make_cv cv ty) m }
-   | lp=TOPar0 t=midzero_list(ctype,ctype) rp=TCPar0
-      /* more hacks */
-    { let (mids,code) = t in
-      Ast0.wrap
-	(Ast0.DisjType(P.clt2mcode "(" lp,code,mids, P.clt2mcode ")" rp)) }
-
-
-fn_ctype: // allows metavariables
-       ty=generic_ctype m=list(TMul) { P.pointerify ty m }
-     | t=Tvoid m=list(TMul)
-         { P.pointerify
-	     (Ast0.wrap(Ast0.BaseType(Ast.VoidType,[P.clt2mcode "void" t])))
-	     m }
-
-%inline ctype_qualif:
-  r=Tunsigned
-   { function x -> Ast0.wrap(Ast0.Signed(P.clt2mcode Ast.Unsigned r,x)) }
-| r=Tsigned
-   { function x -> Ast0.wrap(Ast0.Signed(P.clt2mcode Ast.Signed r,x)) }
-
-%inline ctype_qualif_opt:
-  s=ctype_qualif  { function x -> s (Some x) }
-| /* empty */   { function x -> x }
 
 /*****************************************************************************/
 
@@ -602,30 +593,30 @@ declarations, statements, and expressions for the subterms */
 minus_body:
     f=loption(filespec)
     b=loption(minus_start)
-    ew=loption(error_words)
-    { match f@b@ew with
+    /*ew=loption(error_words)*/
+    { match f@b(*@ew*) with
       [] -> raise (Semantic_cocci.Semantic "minus slice can't be empty")
     | code -> Top_level.top_level code }
 
 plus_body:
     f=loption(filespec)
     b=loption(plus_start)
-    ew=loption(error_words)
-    { Top_level.top_level (f@b@ew) }
+    /*ew=loption(error_words)*/
+    { Top_level.top_level (f@b(*@ew*)) }
 
 minus_exp_body:
     f=loption(filespec)
     b=top_eexpr
-    ew=loption(error_words)
-    { match f@[b]@ew with
+    /*ew=loption(error_words)*/
+    { match f@[b](*@ew*) with
       [] -> raise (Semantic_cocci.Semantic "minus slice can't be empty")
     | code -> Top_level.top_level code }
 
 plus_exp_body:
     f=loption(filespec)
     b=top_eexpr
-    ew=loption(error_words)
-    { Top_level.top_level (f@[b]@ew) }
+    /*ew=loption(error_words)*/
+    { Top_level.top_level (f@[b](*@ew*)) }
 
 filespec:
   TMinusFile TPlusFile
@@ -750,23 +741,13 @@ funproto:
 		(Ast0.FunctionType(Some t,
 				   P.clt2mcode "(" lp, d, P.clt2mcode ")" rp)),
 	      id, P.clt2mcode ";" pt)) }
-| s=ioption(storage) t=Tvoid
-  id=func_ident lp=TOPar d=decl_list(name_opt_decl) rp=TCPar pt=TPtVirg
-    { let t = Ast0.wrap(Ast0.BaseType(Ast.VoidType,[P.clt2mcode "void" t])) in
-      Ast0.wrap
-        (Ast0.UnInit
-	   (s,
-	    Ast0.wrap
-	      (Ast0.FunctionType(Some t,
-				 P.clt2mcode "(" lp, d, P.clt2mcode ")" rp)),
-	    id, P.clt2mcode ";" pt)) }
-
 
 fundecl:
   f=fninfo
   TFunDecl i=func_ident lp=TOPar d=decl_list(decl) rp=TCPar
   lb=TOBrace b=fun_start rb=TCBrace
-      { Ast0.wrap(Ast0.FunDecl((Ast0.default_info(),Ast0.context_befaft()),
+      { P.verify_parameter_declarations (Ast0.undots d);
+	Ast0.wrap(Ast0.FunDecl((Ast0.default_info(),Ast0.context_befaft()),
 			       f, i,
 			       P.clt2mcode "(" lp, d,
 			       P.clt2mcode ")" rp,
@@ -781,7 +762,7 @@ fninfo:
 	  List.find (function Ast0.FStorage(_) -> true | _ -> false) $2 in
 	raise (Semantic_cocci.Semantic "duplicate storage")
       with Not_found -> (Ast0.FStorage($1))::$2 }
-  | t=fn_ctype r=fninfo_nt { (Ast0.FType(t))::r }
+  | t=ctype r=fninfo_nt { (Ast0.FType(t))::r }
   | Tinline  fninfo
       { try
 	let _ = List.find (function Ast0.FInline(_) -> true | _ -> false) $2 in
@@ -820,7 +801,8 @@ storage:
 
 decl: t=ctype i=ident
 	{ Ast0.wrap(Ast0.Param(t, Some i)) }
-    | t=fn_ctype lp=TOPar s=TMul i=ident rp=TCPar
+    | t=ctype { (*verify in FunDecl*) Ast0.wrap(Ast0.Param(t, None)) }
+    | t=ctype lp=TOPar s=TMul i=ident rp=TCPar
 	lp1=TOPar d=decl_list(name_opt_decl) rp1=TCPar
         { let fnptr =
 	  Ast0.wrap
@@ -828,18 +810,13 @@ decl: t=ctype i=ident
 	       (t,P.clt2mcode "(" lp,P.clt2mcode "*" s,P.clt2mcode ")" rp,
 		P.clt2mcode "(" lp1,d,P.clt2mcode ")" rp1)) in
 	Ast0.wrap(Ast0.Param(fnptr, Some i)) }
-    | t=Tvoid
-	{ let ty =
-	  Ast0.wrap(Ast0.BaseType(Ast.VoidType,[P.clt2mcode "void" t])) in
-          Ast0.wrap(Ast0.VoidParam(ty)) }
     | TMetaParam
 	{ let (nm,pure,clt) = $1 in
 	Ast0.wrap(Ast0.MetaParam(P.clt2mcode nm clt,pure)) }
 
 name_opt_decl:
       decl  { $1 }
-    | t=ctype { Ast0.wrap(Ast0.Param(t, None)) }
-    | t=fn_ctype lp=TOPar s=TMul rp=TCPar
+    | t=ctype lp=TOPar s=TMul rp=TCPar
 	lp1=TOPar d=decl_list(name_opt_decl) rp1=TCPar
         { let fnptr =
 	  Ast0.wrap
@@ -978,7 +955,7 @@ decl_var:
 			   P.clt2mcode ";" pv))] }
   /* function pointer type */
   | s=ioption(storage)
-    t=fn_ctype lp1=TOPar st=TMul d=d_ident rp1=TCPar
+    t=ctype lp1=TOPar st=TMul d=d_ident rp1=TCPar
     lp2=TOPar p=decl_list(name_opt_decl) rp2=TCPar
     pv=TPtVirg
       { let (id,fn) = d in
@@ -992,7 +969,7 @@ decl_var:
       { [Ast0.wrap(Ast0.MacroDecl($1,P.clt2mcode "(" $2,$3,
 				  P.clt2mcode ")" $4,P.clt2mcode ";" $5))] }
   | s=ioption(storage)
-    t=fn_ctype lp1=TOPar st=TMul d=d_ident rp1=TCPar
+    t=ctype lp1=TOPar st=TMul d=d_ident rp1=TCPar
     lp2=TOPar p=decl_list(name_opt_decl) rp2=TCPar
     q=TEq e=initialize pv=TPtVirg
       { let (id,fn) = d in
@@ -1002,7 +979,7 @@ decl_var:
 	       (t,P.clt2mcode "(" lp1,P.clt2mcode "*" st,P.clt2mcode ")" rp1,
 		P.clt2mcode "(" lp2,p,P.clt2mcode ")" rp2)) in
       [Ast0.wrap(Ast0.Init(s,fn t,id,P.clt2mcode "=" q,e,P.clt2mcode ";" pv))]}
-  | s=Ttypedef t=ctype_full id=typedef_ident pv=TPtVirg
+  | s=Ttypedef t=typedef_ctype id=typedef_ident pv=TPtVirg
       { let s = P.clt2mcode "typedef" s in
         [Ast0.wrap(Ast0.Typedef(s,t,id,P.clt2mcode ";" pv))] }
 
@@ -1031,7 +1008,7 @@ one_decl_var:
 			   P.clt2mcode ";" pv)) }
   /* function pointer type */
   | s=ioption(storage)
-    t=fn_ctype lp1=TOPar st=TMul d=d_ident rp1=TCPar
+    t=ctype lp1=TOPar st=TMul d=d_ident rp1=TCPar
     lp2=TOPar p=decl_list(name_opt_decl) rp2=TCPar
     pv=TPtVirg
       { let (id,fn) = d in
@@ -1045,7 +1022,7 @@ one_decl_var:
       { Ast0.wrap(Ast0.MacroDecl($1,P.clt2mcode "(" $2,$3,
 				  P.clt2mcode ")" $4,P.clt2mcode ";" $5)) }
   | s=ioption(storage)
-    t=fn_ctype lp1=TOPar st=TMul d=d_ident rp1=TCPar
+    t=ctype lp1=TOPar st=TMul d=d_ident rp1=TCPar
     lp2=TOPar p=decl_list(name_opt_decl) rp2=TCPar
     q=TEq e=initialize pv=TPtVirg
       { let (id,fn) = d in
@@ -1401,14 +1378,44 @@ meta_ident:
 pure_ident_or_meta_ident:
        pure_ident                { (None,P.id2name $1) }
      | meta_ident                { $1 }
-     | Tlist                     { (None,"list") }
-     | TError                    { (None,"error") }
-     | TType                     { (None,"type") }
-     | TName                     { (None,"name") }
+     | TIdentifier { (None, "identifier") }
+     | TExpression { (None, "expression") }
+     | TStatement { (None, "statement") }
+     | TFunction { (None, "function") }
+     | TLocal { (None, "local") }
+     | TType { (None, "type") }
+     | TParameter { (None, "parameter") }
+     | TIdExpression { (None, "idexpression") }
+     | TInitialiser { (None, "initialiser") }
+     | Tlist { (None, "list") }
+     | TFresh { (None, "fresh") }
+     | TConstant { (None, "constant") }
+     | TError { (None, "error") }
+     | TWords { (None, "words") }
+     | TPure { (None, "pure") }
+     | TContext { (None, "context") }
+     | TGenerated { (None, "generated") }
+     | TTypedef { (None, "typedef") }
+     | TDeclarer { (None, "declarer") }
+     | TIterator { (None, "iterator") }
+     | TName { (None, "name") }
+     | TPosition { (None, "position") }
 
 pure_ident_or_meta_ident_with_seed:
-       pure_ident_or_meta_ident { ($1,None) }
-     | pure_ident_or_meta_ident TEq s=TString { ($1,Some (P.id2name s)) }
+       pure_ident_or_meta_ident { ($1,Ast.NoVal) }
+     | pure_ident_or_meta_ident TEq
+	 separated_nonempty_list(TCppConcatOp,seed_elem)
+	 { match $3 with
+	   [Ast.SeedString s] -> ($1,Ast.StringSeed s)
+	 | _ -> ($1,Ast.ListSeed $3) }
+
+seed_elem:
+  TString { let (x,_) = $1 in Ast.SeedString x }
+| TMetaId { let (x,_,_,_) = $1 in Ast.SeedId x }
+| TRuleName TDot pure_ident
+    { let nm = ($1,P.id2name $3) in
+      P.check_meta(Ast.MetaIdDecl(Ast.NONE,nm));
+      Ast.SeedId nm }
 
 pure_ident_or_meta_ident_with_not_eq(not_eq):
        i=pure_ident_or_meta_ident l=loption(not_eq) { (i,l) }
@@ -1574,9 +1581,15 @@ comma_decls(dotter,decl):
 
 /* ---------------------------------------------------------------------- */
 
-error_words:
+/* error words make it complicated to be able to use error as a metavariable
+name or a type in a metavariable list; for that we would like to allow TError
+as an ident, but that makes conflicts with this rule.  To add back error words,
+need to find some appropriate delimiter for it, but it has not been used much
+so just drop it */
+/*error_words:
     TError TWords TEq TOCro cl=comma_list(dexpr) TCCro
       { [Ast0.wrap(Ast0.ERRORWORDS(cl))] }
+*/
 
 /* ---------------------------------------------------------------------- */
 /* sequences of statements and expressions */
@@ -1820,11 +1833,6 @@ whens(when_grammar,simple_when_grammar,any_strict):
 any_strict:
     TAny    { Ast.WhenAny }
   | TStrict { Ast.WhenStrict }
-  | TForall { Ast.WhenForall }
-  | TExists { Ast.WhenExists }
-
-any_only:
-    TAny    { Ast.WhenAny }
   | TForall { Ast.WhenForall }
   | TExists { Ast.WhenExists }
 

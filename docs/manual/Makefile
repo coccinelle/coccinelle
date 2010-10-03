@@ -10,7 +10,7 @@ SRC=$(wildcard *.tex)
 # xfig
 # emacs, auctex, ediff
 # darcs
-# latexdiff 
+# latexdiff
 
 ##############################################################################
 # Top rules
@@ -18,28 +18,23 @@ SRC=$(wildcard *.tex)
 .PHONY: all clean distclean
 .SUFFIXES: .pdf .tex
 
-all: manual.pdf cocci_syntax.pdf options.pdf
+all: manual.pdf main_grammar.pdf options.pdf
 
 manual.pdf: $(SRC)
 	pdflatex main.tex
 	pdflatex main.tex
 	mv main.pdf manual.pdf
 
-
-
-
-cocci_syntax.pdf: main_grammar.tex cocci_syntax.tex  macros_listing_cocci.tex macros_grammar.tex macros_common.tex examples.tex tips.tex
+main_grammar.pdf: main_grammar.tex cocci_syntax.tex  macros_listing_cocci.tex macros_grammar.tex macros_common.tex examples.tex tips.tex
 	pdflatex main_grammar.tex
 	pdflatex main_grammar.tex
-	mv main_grammar.pdf cocci_syntax.pdf
 
-options.pdf: main_options.tex spatch_options.tex   macros_options.tex 
+main_options.pdf: main_options.tex spatch_options.tex   macros_options.tex
 	pdflatex main_options.tex
 	pdflatex main_options.tex
+
+options.pdf: main_options.pdf
 	mv main_options.pdf options.pdf
-
-
-
 
 distclean:: clean
 	rm -f manual.pdf cocci_syntax.pdf options.pdf
@@ -50,7 +45,7 @@ distclean:: clean
 #
 #pdf:	    $(PDF)
 #
-#%.pdf:	%.tex 
+#%.pdf:	%.tex
 #	    $(PDFLATEX) $<
 #	    if egrep -s '$(RERUN)' $*.log ;then $(PDFLATEX) $<; fi
 #	    if egrep -s '$(RERUN)' $*.log ;then $(PDFLATEX) $<; fi
@@ -58,13 +53,13 @@ distclean:: clean
 ##############################################################################
 # Html version
 ##############################################################################
-.PHONY: html check 
+.PHONY: html check
 
 .SUFFIXES: .html .tex
 
-TEX=cocci_syntax.tex
+TEX=main_grammar.tex
 WEB=/var/www/localhost/htdocs/coccinelle/
-EMNWEB=~/website/docs/
+EMNWEB=~/website
 
 PDF=$(TEX:.tex=.pdf)
 HTML=$(TEX:.tex=.html)
@@ -91,11 +86,9 @@ install:
 	chmod a-w -R $(WEB)
 
 emn_install: world
-	cp *.css *.gif *.html $(EMNWEB)
-	cp $(PDF) $(EMNWEB)
-
-
-
+	cp *.css *.gif *.html $(EMNWEB)/docs
+	cp $(PDF) $(EMNWEB)/docs
+	cp options.pdf $(EMNWEB)/
 
 .tex.html:
 # For Gentoo: /usr/lib64/hevea
@@ -113,7 +106,8 @@ emn_install: world
 	else \
 	echo -e "\n\n *** Hevea: Unable to find xxdate.exe ***\n\n"; \
 	fi
-	hacha -o index.html cocci_syntax.html
+	hacha -o index.html main_grammar.html
+#	hacha -o index.html cocci_syntax.html
 
 
 ##############################################################################

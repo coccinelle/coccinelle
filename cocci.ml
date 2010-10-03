@@ -43,7 +43,7 @@ module Ast_to_flow = Control_flow_c_build
 (* C related *)
 (* --------------------------------------------------------------------- *)
 let cprogram_of_file file = 
-  let (program2, _stat) = Parse_c.parse_print_error_heuristic file in
+  let (program2, _stat) = Parse_c.parse_c_and_cpp file in
   program2 
 
 let cprogram_of_file_cached file = 
@@ -104,15 +104,15 @@ let ast_to_flow_with_error_messages a =
 (* Ctl related *)
 (* --------------------------------------------------------------------- *)
 
-let ctls_of_ast2 ast ua pos =
+let ctls_of_ast2 ast (ua,fua,fuas) pos =
   List.map2
-    (function ast -> function (ua,pos) ->
+    (function ast -> function (ua,(fua,(fuas,pos))) ->
       List.combine
 	(if !Flag_cocci.popl
 	then failwith "no popl here" (* Popl.popl ast *)
-	else Asttoctl2.asttoctl ast ua pos)
+	else Asttoctl2.asttoctl ast (ua,fua,fuas) pos)
 	(Asttomember.asttomember ast ua))
-    ast (List.combine ua pos)
+    ast (List.combine ua (List.combine fua (List.combine fuas pos)))
 
 let ctls_of_ast ast ua =
   Common.profile_code "asttoctl2" (fun () -> ctls_of_ast2 ast ua)
@@ -752,15 +752,16 @@ let gen_pdf_graph () =
 
 (* --------------------------------------------------------------------- *)
 let prepare_cocci ctls free_var_lists negated_pos_lists
-    used_after_lists positions_list metavars astcocci = 
+    (ua,fua,fuas) positions_list metavars astcocci = 
 
   let gathered = Common.index_list_1
-      (zip (zip (zip (zip (zip (zip ctls metavars) astcocci) free_var_lists)
-		   negated_pos_lists) used_after_lists) positions_list)
+      (zip (zip (zip (zip (zip (zip (zip (zip ctls metavars) astcocci)
+				  free_var_lists)
+		   negated_pos_lists) ua) fua) fuas) positions_list)
   in
   gathered +> List.map 
-    (fun (((((((ctl_toplevel_list,metavars),ast),free_var_list),
-	     negated_pos_list),used_after_list),positions_list),rulenb) -> 
+    (fun (((((((((ctl_toplevel_list,metavars),ast),free_var_list),
+	     negated_pos_list),ua),fua),fuas),positions_list),rulenb) -> 
       
       let is_script_rule r =
         match r with
@@ -819,7 +820,7 @@ let prepare_cocci ctls free_var_lists negated_pos_lists
             dropped_isos = dropped_isos;
             free_vars = List.hd free_var_list;
             negated_pos_vars = List.hd negated_pos_list;
-            used_after = List.hd used_after_list;
+            used_after = (List.hd ua) @ (List.hd fua);
             positions = List.hd positions_list;
             ruleid = rulenb;
 	    ruletype = ruletype;
@@ -1063,9 +1064,9 @@ let apply_python_rule r cache newes e rules_that_have_matched
   else
     begin
       let (_, mv, _) = r.scr_ast_rule in
-      if List.for_all (Pycocci.contains_binding e) mv
-      then
-	begin
+      let not_bound x = not (Pycocci.contains_binding e x) in
+      (match List.filter not_bound mv with
+	[] ->
 	  let relevant_bindings =
 	    List.filter
 	      (function ((re,rm),_) ->
@@ -1091,8 +1092,13 @@ let apply_python_rule r cache newes e rules_that_have_matched
 	  if !Pycocci.inc_match
 	  then (new_cache, merge_env [(e, rules_that_have_matched)] newes)
 	  else (new_cache, newes)
-	end
-      else (cache, merge_env [(e, rules_that_have_matched)] newes)
+      |	unbound ->
+	  (if !Flag_cocci.show_dependencies
+	  then
+	    let m2c (_,(r,x)) = r^"."^x in
+	    pr2 (Printf.sprintf "script not applied: %s not bound"
+		   (String.concat ", " (List.map m2c unbound))));
+	  (cache, merge_env [(e, rules_that_have_matched)] newes))
     end
 
 let rec apply_cocci_rule r rules_that_have_ever_matched es

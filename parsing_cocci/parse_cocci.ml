@@ -64,6 +64,7 @@ let token2c (tok,_) =
   | PC.TLocal -> "local"
   | PC.Tlist -> "list"
   | PC.TFresh -> "fresh"
+  | PC.TCppConcatOp -> "##"
   | PC.TPure -> "pure"
   | PC.TContext -> "context"
   | PC.TTypedef -> "typedef"
@@ -81,7 +82,6 @@ let token2c (tok,_) =
   | PC.TNever -> "never"
   | PC.TExists -> "exists"
   | PC.TForall -> "forall"
-  | PC.TReverse -> "reverse"
   | PC.TError -> "error"
   | PC.TWords -> "words"
   | PC.TGenerated -> "generated"
@@ -596,11 +596,11 @@ let split_token ((tok,_) as t) =
     PC.TIdentifier | PC.TConstant | PC.TExpression | PC.TIdExpression
   | PC.TStatement | PC.TPosition | PC.TPosAny | PC.TInitialiser
   | PC.TFunction | PC.TTypedef | PC.TDeclarer | PC.TIterator | PC.TName
-  | PC.TType | PC.TParameter | PC.TLocal | PC.Tlist | PC.TFresh | PC.TPure
+  | PC.TType | PC.TParameter | PC.TLocal | PC.Tlist | PC.TFresh
+  | PC.TCppConcatOp | PC.TPure
   | PC.TContext | PC.TRuleName(_) | PC.TUsing | PC.TDisable | PC.TExtends
   | PC.TPathIsoFile(_)
   | PC.TDepends | PC.TOn | PC.TEver | PC.TNever | PC.TExists | PC.TForall
-  | PC.TReverse
   | PC.TError | PC.TWords | PC.TGenerated | PC.TNothing -> ([t],[t])
 
   | PC.Tchar(clt) | PC.Tshort(clt) | PC.Tint(clt) | PC.Tdouble(clt)
@@ -937,6 +937,42 @@ let rec translate_when_true_false = function
   | x::xs -> x :: (translate_when_true_false xs)
 
 (* ----------------------------------------------------------------------- *)
+
+let check_parentheses tokens =
+  let clt2line (_,line,_,_,_,_,_,_) = line in
+  let rec loop seen_open = function
+      [] -> tokens
+    | (PC.TOPar(clt),q) :: rest
+    | (PC.TDefineParam(clt,_,_,_),q) :: rest ->
+	loop (Common.Left (clt2line clt) :: seen_open) rest
+    | (PC.TOPar0(clt),q) :: rest ->
+	loop (Common.Right (clt2line clt) :: seen_open) rest
+    | (PC.TCPar(clt),q) :: rest ->
+	(match seen_open with
+	  [] ->
+	    failwith
+	      (Printf.sprintf
+		 "unexpected close parenthesis in line %d\n" (clt2line clt))
+	| Common.Left _ :: seen_open -> loop seen_open rest
+	| Common.Right open_line :: _ -> 
+	    failwith
+	      (Printf.sprintf
+		 "disjunction parenthesis in line %d column 0 matched to normal parenthesis on line %d\n" open_line (clt2line clt)))
+    | (PC.TCPar0(clt),q) :: rest ->
+	(match seen_open with
+	  [] ->
+	    failwith
+	      (Printf.sprintf
+		 "unexpected close parenthesis in line %d\n" (clt2line clt))
+	| Common.Right _ :: seen_open -> loop seen_open rest
+	| Common.Left open_line :: _ -> 
+	    failwith
+	      (Printf.sprintf
+		 "normal parenthesis in line %d matched to disjunction parenthesis on line %d column 0\n" open_line (clt2line clt)))
+    | x::rest -> loop seen_open rest in
+  loop [] tokens
+
+(* ----------------------------------------------------------------------- *)
 (* top level initializers: a sequence of braces followed by a dot *)
 
 let find_top_init tokens =
@@ -1191,7 +1227,8 @@ let prepare_tokens tokens =
   find_top_init
     (translate_when_true_false (* after insert_line_end *)
        (insert_line_end
-	  (detect_types false (find_function_names (detect_attr tokens)))))
+	  (detect_types false
+	     (find_function_names (detect_attr (check_parentheses tokens))))))
 
 let prepare_mv_tokens tokens =
   detect_types false (detect_attr tokens)
@@ -1240,7 +1277,9 @@ let partition_either l =
 let get_metavars parse_fn table file lexbuf =
   let rec meta_loop acc (* read one decl at a time *) =
     let (_,tokens) =
-      tokens_all table file true lexbuf [PC.TArobArob;PC.TMPtVirg] in
+      Data.call_in_meta
+	(function _ ->
+	  tokens_all table file true lexbuf [PC.TArobArob;PC.TMPtVirg]) in
     let tokens = prepare_mv_tokens tokens in
     match tokens with
       [(PC.TArobArob,_)] -> List.rev acc
@@ -1312,12 +1351,10 @@ let parse_iso file =
               | _ -> failwith "Script rules cannot appear in isomorphism rules"
               in
 	    Ast0.rule_name := rule_name;
-	    Data.in_meta := true;
 	    let iso_metavars =
 	      match get_metavars PC.iso_meta_main table file lexbuf with
 		(iso_metavars,[]) -> iso_metavars
-	      |	_ -> failwith "unexpected inheritance in iso" in
-	    Data.in_meta := false;
+	      | _ -> failwith "unexpected inheritance in iso" in
 	    (* get the rule *)
 	    let (more,tokens) =
 	      get_tokens
@@ -1370,7 +1407,7 @@ let parse_iso_files existing_isos iso_files extra_path =
   Data.in_iso := false;
   existing_isos@(List.concat (List.rev res))
 
-let parse file =
+let rec parse file =
   let table = Common.full_charpos_to_pos file in
   Common.with_open_infile file (fun channel ->
   let lexbuf = Lexing.from_channel channel in
@@ -1383,8 +1420,19 @@ let parse file =
     (true,data) ->
       (match List.rev data with
 	((PC.TArobArob as x),_)::_ | ((PC.TArob as x),_)::_ ->
-	  let iso_files =
-	    parse_one "iso file names" PC.include_main file data in
+	  let include_and_iso_files =
+	    parse_one "include and iso file names" PC.include_main file data in
+
+	  let (include_files,iso_files) =
+	    List.fold_left
+	      (function (include_files,iso_files) ->
+		function
+		    Data.Include s -> (s::include_files,iso_files)
+		  | Data.Iso s -> (include_files,s::iso_files))
+	      ([],[]) include_and_iso_files in
+
+	  let (extra_iso_files, extra_rules) =
+	    List.split (List.map parse include_files) in
 
           let parse_cocci_rule ruletype old_metas
 	      (rule_name, dependencies, iso, dropiso, exists, is_expression) =
@@ -1393,10 +1441,8 @@ let parse file =
 		rule_name :: !Data.inheritable_positions;
 
             (* get metavariable declarations *)
-            Data.in_meta := true;
             let (metavars, inherited_metavars) =
-              get_metavars PC.meta_main table file lexbuf in
-            Data.in_meta := false;
+	      get_metavars PC.meta_main table file lexbuf in
             Hashtbl.add Data.all_metadecls rule_name metavars;
             Hashtbl.add Lexer_cocci.rule_names rule_name ();
             Hashtbl.add Lexer_cocci.all_metavariables rule_name
@@ -1464,10 +1510,10 @@ let parse file =
             let get_tokens = tokens_script_all table file false lexbuf in
 
               (* meta-variables *)
-            Data.in_meta := true;
             let metavars =
-	      get_script_metavars PC.script_meta_main table file lexbuf in
-            Data.in_meta := false;
+	      Data.call_in_meta
+		(function _ ->
+		  get_script_metavars PC.script_meta_main table file lexbuf) in
 
             let exists_in old_metas (py,(r,m)) =
               let test (rr,mr) x =
@@ -1551,11 +1597,14 @@ let parse file =
             if more then
               rule::
 	      (loop (metavars @ old_metas) (gen_starts_with_name more tokens))
-            else [rule];
+            else [rule] in
 
-            in
-
-	  (iso_files, loop [] (x = PC.TArob))
+	  (List.fold_left
+	     (function prev -> function cur -> Common.union_set cur prev)
+	     iso_files extra_iso_files,
+	   List.fold_left
+	     (function prev -> function cur -> cur @ prev)
+	     (loop [] (x = PC.TArob)) extra_rules)
       |	_ -> failwith "unexpected code before the first rule\n")
   | (false,[(PC.TArobArob,_)]) | (false,[(PC.TArob,_)]) ->
       ([],([] : Ast0.parsed_rule list))
@@ -1622,8 +1671,8 @@ let process file isofile verbose =
 		     failwith
 		       "bad list of reserved names - all must be at start" in
 	       let minus = Test_exps.process minus in
-	       let minus = Compute_lines.compute_lines minus in
-	       let plus = Compute_lines.compute_lines plus in
+	       let minus = Compute_lines.compute_lines false minus in
+	       let plus = Compute_lines.compute_lines false plus in
 	       let is_exp =
 		 (* only relevant to Flag.make_hrule *)
 		 (* doesn't handle multiple minirules properly, but since
@@ -1666,8 +1715,7 @@ let process file isofile verbose =
 		   exists minus is_exp ruletype in
 	       match function_prototypes with
 		 None -> [(extra_meta @ metavars, minus_ast)]
-	       | Some mv_fp ->
-		   [(extra_meta @ metavars, minus_ast); mv_fp])
+	       | Some mv_fp -> [(extra_meta @ metavars, minus_ast); mv_fp])
 (*          Ast0.CocciRule ((minus, metavarsm, (iso, dropiso, dependencies, rule_name, exists)), (plus, metavars))*)
       rules in
   let parsed = List.concat parsed in

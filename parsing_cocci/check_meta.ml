@@ -366,6 +366,7 @@ and statement old_metas table minus s =
   | Ast0.Define(def,id,_,body) ->
       ident GLOBAL old_metas table minus id;
       dots (statement old_metas table minus) body
+  | Ast0.Label(i,_) -> ident ID old_metas table minus i
   | Ast0.Goto(_,i,_) -> ident ID old_metas table minus i
   | _ -> () (* no metavariable subterms *)
 
