@@ -164,7 +164,10 @@ and constraints =
   | NotExpCstrt    of expression list
   | SubExpCstrt    of Ast.meta_name list
 
-and listlen = Ast.meta_name mcode option
+and listlen =
+    MetaListLen of Ast.meta_name mcode
+  | CstListLen of int
+  | AnyListLen
 
 (* --------------------------------------------------------------------- *)
 (* Types *)

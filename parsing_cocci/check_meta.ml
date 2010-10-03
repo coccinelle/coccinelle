@@ -165,11 +165,11 @@ let rec expression context old_metas table minus e =
       check_table table minus name
   | Ast0.MetaExpr(name,_,_,_,_) | Ast0.MetaErr(name,_,_) ->
       check_table table minus name
-  | Ast0.MetaExprList(name,None,_) ->
-      check_table table minus name
-  | Ast0.MetaExprList(name,Some lenname,_) ->
+  | Ast0.MetaExprList(name,Ast0.MetaListLen lenname,_) ->
       check_table table minus name;
       check_table table minus lenname
+  | Ast0.MetaExprList(name,_,_) ->
+      check_table table minus name
   | Ast0.DisjExpr(_,exps,_,_) ->
       List.iter (expression context old_metas table minus) exps
   | Ast0.NestExpr(_,exp_dots,_,w,_) ->
@@ -298,11 +298,11 @@ and parameterTypeDef old_metas table minus param =
       typeC old_metas table minus ty
   | Ast0.MetaParam(name,_) ->
       check_table table minus name
-  | Ast0.MetaParamList(name,None,_) ->
-      check_table table minus name
-  | Ast0.MetaParamList(name,Some lenname,_) ->
+  | Ast0.MetaParamList(name,Ast0.MetaListLen lenname,_) ->
       check_table table minus name;
       check_table table minus lenname
+  | Ast0.MetaParamList(name,_,_) ->
+      check_table table minus name
   | _ -> () (* no metavariable subterms *)
 
 and parameter_list old_metas table minus =

@@ -1233,7 +1233,9 @@ let apply_script_rule r cache newes e rules_that_have_matched
 		!rules_that_have_ever_matched
 		r.scr_dependencies;
 	      show_or_not_binding "in" e;
-	      (cache,newes)
+	      (* env might be bigger than what was cached against, so have to
+		 merge with newes anyway *)
+	      (cache,merge_env [(e, rules_that_have_matched)] newes)
 	    end
 	  else
 	    begin

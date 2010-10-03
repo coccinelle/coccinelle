@@ -131,9 +131,9 @@ let collect_refs include_constraints =
 	      |	_ -> []
 	    else [] in
 	  bind extra [metaid name]
-      | Ast.MetaExprList(name,None,_,_) -> [metaid name]
-      | Ast.MetaExprList(name,Some (lenname,_,_),_,_) ->
+      | Ast.MetaExprList(name,Ast.MetaListLen (lenname,_,_),_,_) ->
 	  [metaid name;metaid lenname]
+      | Ast.MetaExprList(name,_,_,_) -> [metaid name]
       | Ast.DisjExpr(exps) -> bind_disj (List.map k exps)
       | _ -> option_default) in
 
@@ -165,9 +165,9 @@ let collect_refs include_constraints =
     bind (k p)
       (match Ast.unwrap p with
 	Ast.MetaParam(name,_,_) -> [metaid name]
-      | Ast.MetaParamList(name,None,_,_) -> [metaid name]
-      | Ast.MetaParamList(name,Some(lenname,_,_),_,_) ->
+      | Ast.MetaParamList(name,Ast.MetaListLen(lenname,_,_),_,_) ->
 	  [metaid name;metaid lenname]
+      | Ast.MetaParamList(name,_,_,_) -> [metaid name]
       | _ -> option_default) in
 
   let astfvrule_elem recursor k re =
@@ -247,13 +247,14 @@ let collect_saved =
       bind (k e)
 	(match Ast.unwrap e with
 	  Ast.MetaErr(name,_,TC.Saved,_) | Ast.MetaExpr(name,_,TC.Saved,_,_,_)
-	| Ast.MetaExprList(name,None,TC.Saved,_) -> [metaid name]
-	| Ast.MetaExprList(name,Some (lenname,ls,_),ns,_) ->
+	  -> [metaid name]
+	| Ast.MetaExprList(name,Ast.MetaListLen (lenname,ls,_),ns,_) ->
 	    let namesaved =
 	      match ns with TC.Saved -> [metaid name] | _ -> [] in
 	    let lensaved =
 	      match ls with TC.Saved -> [metaid lenname] | _ -> [] in
 	    lensaved @ namesaved
+	| Ast.MetaExprList(name,_,TC.Saved,_) -> [metaid name]
 	| _ -> option_default) in
     bind tymetas vars in
 
@@ -272,14 +273,14 @@ let collect_saved =
   let astfvparam recursor k p =
     bind (k p)
       (match Ast.unwrap p with
-	Ast.MetaParam(name,TC.Saved,_)
-      | Ast.MetaParamList(name,None,_,_) -> [metaid name]
-      | Ast.MetaParamList(name,Some (lenname,ls,_),ns,_) ->
+	Ast.MetaParam(name,TC.Saved,_) -> [metaid name]
+      | Ast.MetaParamList(name,Ast.MetaListLen (lenname,ls,_),ns,_) ->
 	  let namesaved =
 	    match ns with TC.Saved -> [metaid name] | _ -> [] in
 	  let lensaved =
 	    match ls with TC.Saved -> [metaid lenname] | _ -> [] in
 	  lensaved @ namesaved
+      | Ast.MetaParamList(name,_,_,_) -> [metaid name]
       | _ -> option_default) in
 
   let astfvrule_elem recursor k re =
@@ -498,19 +499,21 @@ let classify_variables metavar_decls minirules used_after =
 	let (unitary,inherited) = classify name in
 	let ty = get_option (List.map type_infos) ty in
 	Ast.rewrap e (Ast.MetaExpr(name,constraints,unitary,ty,form,inherited))
-    | Ast.MetaExprList(name,None,_,_) ->
-	(* lenname should have the same properties of being unitary or
-	   inherited as name *)
-	let (unitary,inherited) = classify name in
-	Ast.rewrap e (Ast.MetaExprList(name,None,unitary,inherited))
-    | Ast.MetaExprList(name,Some(lenname,_,_),_,_) ->
+    | Ast.MetaExprList(name,Ast.MetaListLen(lenname,_,_),_,_) ->
 	(* lenname should have the same properties of being unitary or
 	   inherited as name *)
 	let (unitary,inherited) = classify name in
 	let (lenunitary,leninherited) = classify lenname in
 	Ast.rewrap e
 	  (Ast.MetaExprList
-	     (name,Some(lenname,lenunitary,leninherited),unitary,inherited))
+	     (name,
+	      Ast.MetaListLen(lenname,lenunitary,leninherited),
+	      unitary,inherited))
+    | Ast.MetaExprList(name,lenname,_,_) ->
+	(* lenname should have the same properties of being unitary or
+	   inherited as name *)
+	let (unitary,inherited) = classify name in
+	Ast.rewrap e (Ast.MetaExprList(name,lenname,unitary,inherited))
     | _ -> e in
 
   let typeC r k e =
@@ -535,15 +538,16 @@ let classify_variables metavar_decls minirules used_after =
       Ast.MetaParam(name,_,_) ->
 	let (unitary,inherited) = classify name in
 	Ast.rewrap e (Ast.MetaParam(name,unitary,inherited))
-    | Ast.MetaParamList(name,None,_,_) ->
-	let (unitary,inherited) = classify name in
-	Ast.rewrap e (Ast.MetaParamList(name,None,unitary,inherited))
-    | Ast.MetaParamList(name,Some (lenname,_,_),_,_) ->
+    | Ast.MetaParamList(name,Ast.MetaListLen (lenname,_,_),_,_) ->
 	let (unitary,inherited) = classify name in
 	let (lenunitary,leninherited) = classify lenname in
 	Ast.rewrap e
 	  (Ast.MetaParamList
-	     (name,Some (lenname,lenunitary,leninherited),unitary,inherited))
+	     (name,Ast.MetaListLen(lenname,lenunitary,leninherited),
+	      unitary,inherited))
+    | Ast.MetaParamList(name,lenname,_,_) ->
+	let (unitary,inherited) = classify name in
+	Ast.rewrap e (Ast.MetaParamList(name,lenname,unitary,inherited))
     | _ -> e in
 
   let rule_elem r k e =

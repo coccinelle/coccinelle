@@ -1595,9 +1595,12 @@ and whencond_false e label guard quantified =
   let e1 = get_whencond_exps e in
   let (if_headers, while_headers, for_headers) =
     make_whencond_headers e e1 label guard quantified in
+  (* if with else *)
   ctl_or (ctl_and CTL.NONSTRICT (falsepred label) (ctl_back_ex if_headers))
-    (ctl_and CTL.NONSTRICT (loopfallpred label)
-       (ctl_or (ctl_back_ex if_headers)
+    (* if without else *)
+    (ctl_or (ctl_and CTL.NONSTRICT (fallpred label) (ctl_back_ex if_headers))
+       (* failure of loop test *)
+       (ctl_and CTL.NONSTRICT (loopfallpred label)
 	  (ctl_or (ctl_back_ex while_headers) (ctl_back_ex for_headers))))
 
 (* --------------------------------------------------------------------- *)

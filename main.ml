@@ -340,7 +340,7 @@ let short_options = [
     "  guess what";
 
   "-date",   Arg.Unit (fun () ->
-    pr2 "version: $Date: 2010/06/20 01:46:52 $";
+    pr2 "version: $Date: 2010/07/01 13:22:53 $";
     raise (Common.UnixExit 0)
     ),
   "   guess what";
@@ -887,6 +887,8 @@ let main_action xs =
 							   )
 		    with
 		      | Common.UnixExit x -> raise (Common.UnixExit x)
+		      |	Pycocci.Pycocciexception ->
+			  raise Pycocci.Pycocciexception
 		      | e ->
 			  (*pr2 "previous";
 			  pr2 s;

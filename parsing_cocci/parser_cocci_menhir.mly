@@ -314,23 +314,25 @@ metadec:
       !Data.add_pos_meta name constraints any; tok in
     P.create_metadec_with_constraints ar false kindfn ids }
 | ar=arity ispure=pure
-    TParameter Tlist TOCro id=pure_ident_or_meta_ident TCCro
+    TParameter Tlist TOCro len=list_len TCCro
     ids=comma_list(pure_ident_or_meta_ident) TMPtVirg
     { P.create_len_metadec ar ispure
 	(fun lenname arity name pure check_meta ->
-	  let tok =
-	    check_meta(Ast.MetaParamListDecl(arity,name,Some lenname)) in
-	  !Data.add_paramlist_meta name (Some lenname) pure; tok)
-	id ids }
+	  let tok = check_meta(Ast.MetaParamListDecl(arity,name,lenname)) in
+	  !Data.add_paramlist_meta name lenname pure; tok)
+	len ids }
 | ar=arity ispure=pure
-    TExpression Tlist TOCro id=pure_ident_or_meta_ident TCCro
+    TExpression Tlist TOCro len=list_len TCCro
     ids=comma_list(pure_ident_or_meta_ident) TMPtVirg
     { P.create_len_metadec ar ispure
 	(fun lenname arity name pure check_meta ->
-	  let tok =
-	    check_meta(Ast.MetaExpListDecl(arity,name,Some lenname)) in
-	  !Data.add_explist_meta name (Some lenname) pure; tok)
-	id ids }
+	  let tok = check_meta(Ast.MetaExpListDecl(arity,name,lenname)) in
+	  !Data.add_explist_meta name lenname pure; tok)
+	len ids }
+
+list_len:
+  pure_ident_or_meta_ident { Common.Left $1 }
+| TInt { let (x,clt) = $1 in Common.Right (int_of_string x) }
 
 %inline metakind_fresh:
   TFresh TIdentifier
@@ -346,12 +348,14 @@ metadec:
       !Data.add_param_meta name pure; tok) }
 | TParameter Tlist
     { (fun arity name pure check_meta ->
-      let tok = check_meta(Ast.MetaParamListDecl(arity,name,None)) in
-      !Data.add_paramlist_meta name None pure; tok) }
+      let len = Ast.AnyLen in
+      let tok = check_meta(Ast.MetaParamListDecl(arity,name,len)) in
+      !Data.add_paramlist_meta name len pure; tok) }
 | TExpression Tlist
     { (fun arity name pure check_meta ->
-      let tok = check_meta(Ast.MetaExpListDecl(arity,name,None)) in
-      !Data.add_explist_meta name None pure; tok) }
+      let len = Ast.AnyLen in
+      let tok = check_meta(Ast.MetaExpListDecl(arity,name,len)) in
+      !Data.add_explist_meta name len pure; tok) }
 | TType
     { (fun arity name pure check_meta ->
       let tok = check_meta(Ast.MetaTypeDecl(arity,name)) in
@@ -1722,10 +1726,11 @@ one_dec(decl):
 | TMetaParamList
     { let (nm,lenname,pure,clt) = $1 in
     let nm = P.clt2mcode nm clt in
-    let lenname =
-      match lenname with
-	Some nm -> Some(P.clt2mcode nm clt)
-      | None -> None in
+      let lenname =
+	match lenname with
+	  Ast.AnyLen -> Ast0.AnyListLen
+	| Ast.MetaLen nm -> Ast0.MetaListLen(P.clt2mcode nm clt)
+	| Ast.CstLen n -> Ast0.CstListLen n in
     Ast0.wrap(Ast0.MetaParamList(nm,lenname,pure)) }
 
 comma_decls(dotter,decl):
@@ -1941,8 +1946,9 @@ aexpr:
       let nm = P.clt2mcode nm clt in
       let lenname =
 	match lenname with
-	  Some nm -> Some(P.clt2mcode nm clt)
-	| None -> None in
+	  Ast.AnyLen -> Ast0.AnyListLen
+	| Ast.MetaLen nm -> Ast0.MetaListLen(P.clt2mcode nm clt)
+	| Ast.CstLen n -> Ast0.CstListLen n in
       Ast0.wrap(Ast0.MetaExprList(nm,lenname,pure)) }
   | ctype
       { Ast0.set_arg_exp(Ast0.wrap(Ast0.TypeExp($1))) }

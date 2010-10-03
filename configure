@@ -113,6 +113,7 @@ $noocamlscripting = check_config("echo \"1;;\\n\" | ocaml |",
                  "OCaml >= 3.11 is present. OCaml scripting activated.",
                  "OCaml scripting disabled. We need at least OCaml 3.11",
                  );
+my $ocamlprefix = $noocamlscripting ? "no" : "yes";
 
 if ($opt eq ".opt") {
    my $opt_check = `which ocamlc.opt 2> /dev/null`;
@@ -317,6 +318,7 @@ FEATURE_TARZAN=$tarzan
 PYCAMLDIR=$pydir
 MENHIRDIR=$menhirdir
 SEXPDIR=$sexpdir
+DYNLINK=$ocamlprefix
 
 # The OPTBIN variable is here to allow to use ocamlc.opt instead of
 # ocaml, when it is available, which speeds up compilation. So
@@ -332,7 +334,6 @@ pr2 "Support for python scripting : $pythonprefix";
 `cd python; ln -sf ${pythonprefix}_pycocci_aux.ml pycocci_aux.ml;`;
 `cd python; make depend`;
 
-my $ocamlprefix = $noocamlscripting ? "no" : "yes";
 pr2 "Support for ocaml scripting : $ocamlprefix";
 `cd ocaml; ln -sf ${ocamlprefix}_prepare_ocamlcocci.ml prepare_ocamlcocci.ml;`;
 `cd ocaml; make depend`;

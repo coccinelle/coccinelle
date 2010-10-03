@@ -45,6 +45,9 @@
 - Add scripts/spatch.bash_completion for automatic completion of common
   options under the bash shell.
 - Print rule name when a script rule crashes
+- Allow the declaration of an expression list or parameter list
+  metavariable to specify the number of expressions or parameters,
+  respectively.
 
 ** Bugfix:
 - drop inconsistent paths check when only one node was matched
@@ -71,6 +74,9 @@
   Triplett for noticing the problem.
 - dropped trailing whitespace when code at the end of a line is deleted.
   Thanks to Josh Triplett for noticing the problem.
+- Fixed environment management when script rule uses cache.  Thanks to
+  Bissyande for finding the problem.
+- when false matches if with no else
 
 * 0.2.2
 ** Language:

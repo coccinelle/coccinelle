@@ -89,7 +89,7 @@ and metavar =
   | MetaInitDecl of arity * meta_name (* name *)
   | MetaListlenDecl of meta_name (* name *)
   | MetaParamDecl of arity * meta_name (* name *)
-  | MetaParamListDecl of arity * meta_name (*name*) * meta_name option (*len*)
+  | MetaParamListDecl of arity * meta_name (*name*) * list_len (*len*)
   | MetaConstDecl of
       arity * meta_name (* name *) * Type_cocci.typeC list option
   | MetaErrDecl of arity * meta_name (* name *)
@@ -99,7 +99,7 @@ and metavar =
       arity * meta_name (* name *) * Type_cocci.typeC list option
   | MetaLocalIdExpDecl of
       arity * meta_name (* name *) * Type_cocci.typeC list option
-  | MetaExpListDecl of arity * meta_name (*name*) * meta_name option (*len*)
+  | MetaExpListDecl of arity * meta_name (*name*) * list_len (*len*)
   | MetaStmDecl of arity * meta_name (* name *)
   | MetaStmListDecl of arity * meta_name (* name *)
   | MetaFuncDecl of arity * meta_name (* name *)
@@ -107,6 +107,8 @@ and metavar =
   | MetaPosDecl of arity * meta_name (* name *)
   | MetaDeclarerDecl of arity * meta_name (* name *)
   | MetaIteratorDecl of arity * meta_name (* name *)
+
+and list_len = AnyLen | MetaLen of meta_name | CstLen of int
 
 and seed = NoVal | StringSeed of string | ListSeed of seed_elem list
 and seed_elem = SeedString of string | SeedId of meta_name
@@ -171,7 +173,7 @@ and base_expression =
 	              inherited
   | MetaExpr       of meta_name mcode * constraints * keep_binding *
 	              Type_cocci.typeC list option * form * inherited
-  | MetaExprList   of meta_name mcode * listlen option *
+  | MetaExprList   of meta_name mcode * listlen *
 	              keep_binding * inherited (* only in arg lists *)
 
   | EComma         of string mcode (* only in arg lists *)
@@ -212,7 +214,10 @@ and form = ANY | ID | LocalID | CONST (* form for MetaExp *)
 
 and expression = base_expression wrap
 
-and listlen = meta_name mcode * keep_binding * inherited
+and listlen =
+    MetaListLen of meta_name mcode * keep_binding * inherited
+  | CstListLen of int
+  | AnyListLen
 
 and  unaryOp = GetRef | DeRef | UnPlus |  UnMinus | Tilde | Not
 and  assignOp = SimpleAssign | OpAssign of arithOp
@@ -329,8 +334,7 @@ and base_parameterTypeDef =
   | Param         of fullType * ident option
 
   | MetaParam     of meta_name mcode * keep_binding * inherited
-  | MetaParamList of meta_name mcode * listlen option * keep_binding *
-	             inherited
+  | MetaParamList of meta_name mcode * listlen * keep_binding * inherited
 
   | PComma        of string mcode
 

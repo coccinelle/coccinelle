@@ -1449,11 +1449,15 @@ and arguments_bis = fun eas ebs ->
                 let len = List.length  startxs' in
 
 		(match leninfo with
-		| Some (lenname,lenkeep,leninherited) ->
+		| A.MetaListLen (lenname,lenkeep,leninherited) ->
 		    let max_min _ = failwith "no pos" in
                     X.envf lenkeep leninherited
                       (lenname, Ast_c.MetaListlenVal (len), max_min)
-		| None -> function f -> f()
+		| A.CstListLen n ->
+		    if len = n
+		    then (function f -> f())
+		    else (function f -> fail)
+		| A.AnyListLen -> function f -> f()
                 )
                 (fun () ->
 		  let max_min _ =
@@ -1610,11 +1614,15 @@ and parameters_bis eas ebs =
                 let len = List.length  startxs' in
 
 		(match leninfo with
-		  Some (lenname,lenkeep,leninherited) ->
+		  A.MetaListLen (lenname,lenkeep,leninherited) ->
 		    let max_min _ = failwith "no pos" in
                     X.envf lenkeep leninherited
 		      (lenname, Ast_c.MetaListlenVal (len), max_min)
-		| None -> function f -> f()
+		| A.CstListLen n ->
+		    if len = n
+		    then (function f -> f())
+		    else (function f -> fail)
+		| A.AnyListLen -> function f -> f()
                 )
 	        (fun () ->
 		  let max_min _ =

@@ -148,6 +148,7 @@ constrained by its type.
   \CASE{identifier \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_virt\_or\_not\_eq}\mth{)} ;}
   \CASE{parameter \opt{list} \NT{ids} ;}
   \CASE{parameter list [ \NT{id} ] \NT{ids} ;}
+  \CASE{parameter list [ \NT{const} ] \NT{ids} ;}
   \CASE{type \NT{ids} ;}
   \CASE{statement \opt{list} \NT{ids} ;}
   \CASE{typedef \NT{ids} ;}
@@ -165,7 +166,8 @@ constrained by its type.
   \CASE{expression list \NT{ids} ;}
   \CASE{expression \some{*} \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq}\mth{)} ;}
   \CASE{expression \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_ceq}\mth{)} ;}
-  \CASE{expression list [ ident ] \NT{ids} ;}
+  \CASE{expression list [ \NT{id} ] \NT{ids} ;}
+  \CASE{expression list [ \NT{const} ] \NT{ids} ;}
   \CASE{\NT{ctype} [ ] \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq}\mth{)} ;}
   \CASE{\NT{ctype} \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_ceq}\mth{)} ;}
   \CASE{\ttlb \NT{ctypes}\ttrb~\any{*} \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_ceq}\mth{)} ;}
@@ -174,6 +176,9 @@ constrained by its type.
   \CASE{constant \OPT{\ttlb \NT{ctypes}\ttrb~\any{*}} \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq}\mth{)} ;}
   \CASE{position \opt{any} \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq\_mid}\mth{)} ;}
 \end{grammar}
+
+It is possible to specify that an expression list or a parameter list
+metavariable should match a specific number of expressions or parameters.
 
 \begin{grammar}
   \RULE{\rt{ids}}

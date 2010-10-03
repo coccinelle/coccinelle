@@ -80,7 +80,7 @@ val add_init_meta: (Ast_cocci.meta_name -> Ast0_cocci.pure -> unit) ref
 val add_param_meta: (Ast_cocci.meta_name -> Ast0_cocci.pure -> unit) ref
 
 val add_paramlist_meta:
-    (Ast_cocci.meta_name -> Ast_cocci.meta_name option -> Ast0_cocci.pure ->
+    (Ast_cocci.meta_name -> Ast_cocci.list_len -> Ast0_cocci.pure ->
       unit) ref
 
 val add_const_meta:
@@ -103,7 +103,7 @@ val add_local_idexp_meta:
       econstraints -> Ast0_cocci.pure -> unit) ref
 
 val add_explist_meta:
-    (Ast_cocci.meta_name -> Ast_cocci.meta_name option -> Ast0_cocci.pure ->
+    (Ast_cocci.meta_name -> Ast_cocci.list_len -> Ast0_cocci.pure ->
       unit) ref
 
 val add_stm_meta: (Ast_cocci.meta_name -> Ast0_cocci.pure -> unit) ref

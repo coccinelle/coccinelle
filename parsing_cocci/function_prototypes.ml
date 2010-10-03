@@ -246,9 +246,10 @@ let rec rename_param old_name all param =
       let new_id =
 	Ast0.rewrap param
 	  (Ast0.MetaParamList(Ast0.rewrap_mcode d nm,
-			      Some (Ast0.rewrap_mcode d nml),
+			      Ast0.MetaListLen (Ast0.rewrap_mcode d nml),
 			      Ast0.Pure)) in
-      ([Ast.MetaParamListDecl(Ast.NONE,nm,Some nml);Ast.MetaListlenDecl(nml)],
+      ([Ast.MetaParamListDecl(Ast.NONE,nm,Ast.MetaLen nml);
+	 Ast.MetaListlenDecl(nml)],
        new_id)
   | Ast0.OptParam(p) ->
       let (metavars,p) = rename_param old_name all p in
