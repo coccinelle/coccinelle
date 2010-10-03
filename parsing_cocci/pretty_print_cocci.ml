@@ -1,25 +1,3 @@
-(*
- * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
- * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
- * This file is part of Coccinelle.
- *
- * Coccinelle is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, according to version 2 of the License.
- *
- * Coccinelle is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
- *
- * The authors reserve the right to distribute this or future versions of
- * Coccinelle under other licenses.
- *)
-
-
 open Format
 module Ast = Ast_cocci
 
@@ -821,7 +799,8 @@ let rec dep in_and = function
       if not in_and
       then print_or ()
       else (print_string "("; print_or(); print_string ")")
-  | Ast.NoDep -> failwith "not possible"
+  | Ast.NoDep   -> print_string "no_dep"
+  | Ast.FailDep -> print_string "fail_dep"
 
 let unparse z =
   match z with

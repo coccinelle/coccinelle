@@ -1,25 +1,3 @@
-(*
- * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
- * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
- * This file is part of Coccinelle.
- *
- * Coccinelle is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, according to version 2 of the License.
- *
- * Coccinelle is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
- *
- * The authors reserve the right to distribute this or future versions of
- * Coccinelle under other licenses.
- *)
-
-
 open Common
 
 module CCI = Ctlcocci_integration
@@ -510,28 +488,27 @@ let (includes_to_parse:
 	+> List.concat
 	+> Common.uniq
       
-let rec interpret_dependencies local global virt = function
-    Ast_cocci.Dep s      ->
-      (try List.assoc s virt with Not_found -> List.mem s local)
+let rec interpret_dependencies local global = function
+    Ast_cocci.Dep s      -> List.mem s local
   | Ast_cocci.AntiDep s  ->
       (if !Flag_ctl.steps != None
       then failwith "steps and ! dependency incompatible");
-      (try not(List.assoc s virt) with Not_found -> not (List.mem s local))
-  | Ast_cocci.EverDep s  ->
-      (try List.assoc s virt with Not_found -> List.mem s global)
+      not (List.mem s local)
+  | Ast_cocci.EverDep s  -> List.mem s global
   | Ast_cocci.NeverDep s ->
       (if !Flag_ctl.steps != None
       then failwith "steps and ! dependency incompatible");
-      (try not(List.assoc s virt) with Not_found -> not (List.mem s global))
+      not (List.mem s global)
   | Ast_cocci.AndDep(s1,s2) ->
-      (interpret_dependencies local global virt s1) &&
-      (interpret_dependencies local global virt s2)
+      (interpret_dependencies local global s1) &&
+      (interpret_dependencies local global s2)
   | Ast_cocci.OrDep(s1,s2)  ->
-      (interpret_dependencies local global virt s1) or
-      (interpret_dependencies local global virt s2)
+      (interpret_dependencies local global s1) or
+      (interpret_dependencies local global s2)
   | Ast_cocci.NoDep -> true
+  | Ast_cocci.FailDep -> false
 	
-let rec print_dependencies str local global virt dep =
+let rec print_dependencies str local global dep =
   if !Flag_cocci.show_dependencies
   then
     begin
@@ -542,7 +519,7 @@ let rec print_dependencies str local global virt dep =
 	      if not (List.mem s !seen)
 	      then
 		begin
-		  if try List.assoc s virt with Not_found -> List.mem s local
+		  if List.mem s local
 		  then pr2 (s^" satisfied")
 		  else pr2 (s^" not satisfied");
 		  seen := s :: !seen
@@ -551,7 +528,7 @@ let rec print_dependencies str local global virt dep =
 	      if not (List.mem s !seen)
 	      then
 		begin
-		  if try List.assoc s virt with Not_found -> List.mem s global
+		  if List.mem s global
 		  then pr2 (s^" satisfied")
 		  else pr2 (s^" not satisfied");
 		  seen := s :: !seen
@@ -562,7 +539,8 @@ let rec print_dependencies str local global virt dep =
 	| Ast_cocci.OrDep(s1,s2)  ->
 	    loop s1;
 	    loop s2
-	| Ast_cocci.NoDep -> () in
+	| Ast_cocci.NoDep -> ()
+	| Ast_cocci.FailDep -> pr2 "False not satisfied" in
       loop dep
     end
 
@@ -701,8 +679,7 @@ type toplevel_cocci_info =
   | FinalScriptRuleCocciInfo of toplevel_cocci_info_script_rule
   | CocciRuleCocciInfo of toplevel_cocci_info_cocci_rule
 
-type cocci_info = toplevel_cocci_info list * string list list (* tokens *) *
-      (string * bool) list (* matched and unmatched virtual rules *)
+type cocci_info = toplevel_cocci_info list * string list list (* tokens *)
 
 type kind_file = Header | Source 
 type file_info = { 
@@ -1052,16 +1029,16 @@ let merge_env new_e old_e =
   old_e @ (List.rev ext)
 
 let apply_python_rule r cache newes e rules_that_have_matched
-    rules_that_have_ever_matched virtual_methods =
+    rules_that_have_ever_matched =
   Common.profile_code "python" (fun () ->
   show_or_not_scr_rule_name r.scr_ruleid;
   if not(interpret_dependencies rules_that_have_matched
-	   !rules_that_have_ever_matched virtual_methods r.scr_dependencies)
+	   !rules_that_have_ever_matched r.scr_dependencies)
   then
     begin
       print_dependencies "dependencies for script not satisfied:"
 	rules_that_have_matched
-	!rules_that_have_ever_matched virtual_methods r.scr_dependencies;
+	!rules_that_have_ever_matched r.scr_dependencies;
       show_or_not_binding "in environment" e;
       (cache, (e, rules_that_have_matched)::newes)
     end
@@ -1083,7 +1060,7 @@ let apply_python_rule r cache newes e rules_that_have_matched
 		print_dependencies
 		  "dependencies for script satisfied, but cached:"
 		  rules_that_have_matched
-		  !rules_that_have_ever_matched virtual_methods
+		  !rules_that_have_ever_matched
 		  r.scr_dependencies;
 		show_or_not_binding "in" e;
 		cache
@@ -1092,7 +1069,7 @@ let apply_python_rule r cache newes e rules_that_have_matched
 	      begin
 		print_dependencies "dependencies for script satisfied:"
 		  rules_that_have_matched
-		  !rules_that_have_ever_matched virtual_methods
+		  !rules_that_have_ever_matched
 		  r.scr_dependencies;
 		show_or_not_binding "in" e;
 		Pycocci.build_classes (List.map (function (x,y) -> x) e);
@@ -1115,7 +1092,7 @@ let apply_python_rule r cache newes e rules_that_have_matched
 	  (cache, merge_env [(e, rules_that_have_matched)] newes))
     end)
 
-let rec apply_cocci_rule r rules_that_have_ever_matched virtual_methods es
+let rec apply_cocci_rule r rules_that_have_ever_matched es
     (ccs:file_info list ref) =
   Common.profile_code r.rulename (fun () -> 
     show_or_not_rule_name r.ast_rule r.ruleid;
@@ -1130,14 +1107,14 @@ let rec apply_cocci_rule r rules_that_have_ever_matched virtual_methods es
 	(function (cache,newes) ->
 	  function ((e,rules_that_have_matched),relevant_bindings) ->
 	    if not(interpret_dependencies rules_that_have_matched
-		     !rules_that_have_ever_matched  virtual_methods
+		     !rules_that_have_ever_matched
 		     r.dependencies)
 	    then
 	      begin
 		print_dependencies
 		  ("dependencies for rule "^r.rulename^" not satisfied:")
 		  rules_that_have_matched
-		  !rules_that_have_ever_matched virtual_methods r.dependencies;
+		  !rules_that_have_ever_matched r.dependencies;
 		show_or_not_binding "in environment" e;
 		(cache,
 		 merge_env
@@ -1153,7 +1130,7 @@ let rec apply_cocci_rule r rules_that_have_ever_matched virtual_methods es
 		    print_dependencies
 		      ("dependencies for rule "^r.rulename^" satisfied:")
 		      rules_that_have_matched
-		      !rules_that_have_ever_matched  virtual_methods
+		      !rules_that_have_ever_matched
 		      r.dependencies;
 		    show_or_not_binding "in" e;
 		    show_or_not_binding "relevant in" relevant_bindings;
@@ -1200,7 +1177,7 @@ let rec apply_cocci_rule r rules_that_have_ever_matched virtual_methods es
 		    if !Flag_ctl.partial_match
 		    then
 		      printf
-			"Empty list of bindings, I will restart from old env";
+			"Empty list of bindings, I will restart from old env\n";
 		    [(old_bindings_to_keep,rules_that_have_matched)]
 		  end
 		else
@@ -1391,8 +1368,9 @@ and process_a_ctl_a_env_a_toplevel  a b c f=
     (fun () -> process_a_ctl_a_env_a_toplevel2 a b c f)
 
 
-let rec bigloop2 rs virtual_methods (ccs: file_info list) =
-  let es = ref [(Ast_c.emptyMetavarsBinding,[])] in
+let rec bigloop2 rs (ccs: file_info list) =
+  let init_es = [(Ast_c.emptyMetavarsBinding,[])] in
+  let es = ref init_es in
   let ccs = ref ccs in
   let rules_that_have_ever_matched = ref [] in
 
@@ -1423,7 +1401,7 @@ let rec bigloop2 rs virtual_methods (ccs: file_info list) =
 		match r.language with
                   "python" ->
 		    apply_python_rule r cache newes e rules_that_have_matched
-		      rules_that_have_ever_matched virtual_methods
+		      rules_that_have_ever_matched
 		| "test" ->
 		    concat_headers_and_c !ccs +> List.iter (fun (c,_) -> 
 		      if c.flow <> None 
@@ -1436,9 +1414,9 @@ let rec bigloop2 rs virtual_methods (ccs: file_info list) =
 		      )
             ([],[]) !es in
 
-        es := newes;
+        es := (if newes = [] then init_es else newes);
     | CocciRuleCocciInfo r ->
-	apply_cocci_rule r rules_that_have_ever_matched virtual_methods
+	apply_cocci_rule r rules_that_have_ever_matched
 	  es ccs);
 
   if !Flag.sgrep_mode2
@@ -1475,7 +1453,7 @@ let initial_final_bigloop2 ty rebuild r =
     "python" ->
       (* include_match makes no sense in an initial or final rule, although
 	 er have no way to prevent it *)
-      let _ = apply_python_rule r [] [] [] [] (ref []) [] in
+      let _ = apply_python_rule r [] [] [] [] (ref []) in
       ()
   | _ ->
       Printf.printf "Unknown language for initial/final script: %s\n"
@@ -1503,7 +1481,7 @@ let pre_engine2 (coccifile, isofile) =
 
   (* useful opti when use -dir *)
   let (metavars,astcocci,free_var_lists,negated_pos_lists,used_after_lists,
-       positions_lists,toks,_,virt) = 
+       positions_lists,toks,_) = 
       sp_of_file coccifile isofile in
   let ctls = ctls_of_ast astcocci used_after_lists positions_lists in
 
@@ -1531,12 +1509,12 @@ let pre_engine2 (coccifile, isofile) =
 	  | _ -> languages)
       [] cocci_infos in
 
-  (cocci_infos,toks,virt)
+  (cocci_infos,toks)
 
 let pre_engine a = 
   Common.profile_code "pre_engine" (fun () -> pre_engine2 a)
 
-let full_engine2 (cocci_infos,toks,virt) cfiles = 
+let full_engine2 (cocci_infos,toks) cfiles = 
 
   show_or_not_cfiles  cfiles;
 
@@ -1544,7 +1522,8 @@ let full_engine2 (cocci_infos,toks,virt) cfiles =
   if !Flag_cocci.worth_trying_opt && not (worth_trying cfiles toks)
   then
     begin 
-      pr2 ("not worth trying:" ^ Common.join " " cfiles);
+      pr2 ("No matches found for " ^ (Common.join " " (Common.union_all toks))
+	   ^ "\nSkipping:" ^ (Common.join " " cfiles));
       cfiles +> List.map (fun s -> s, None)
     end
   else
@@ -1564,7 +1543,7 @@ let full_engine2 (cocci_infos,toks,virt) cfiles =
       let c_infos  = prepare_c cfiles choose_includes in
 
       (* ! the big loop ! *)
-      let c_infos' = bigloop cocci_infos virt c_infos in
+      let c_infos' = bigloop cocci_infos c_infos in
 
       if !Flag.show_misc then Common.pr_xxxxxxxxxxxxxxxxx ();
       if !Flag.show_misc then pr "Finished";
@@ -1597,7 +1576,7 @@ let full_engine a b =
   Common.profile_code "full_engine"
     (fun () -> let res = full_engine2 a b in (*Gc.print_stat stderr; *)res)
 
-let post_engine2 (cocci_infos,_,_) =
+let post_engine2 (cocci_infos,_) =
   let _ =
     List.fold_left
       (function languages ->

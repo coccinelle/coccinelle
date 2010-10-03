@@ -1,25 +1,3 @@
-(*
- * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
- * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
- * This file is part of Coccinelle.
- *
- * Coccinelle is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, according to version 2 of the License.
- *
- * Coccinelle is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
- *
- * The authors reserve the right to distribute this or future versions of
- * Coccinelle under other licenses.
- *)
-
-
 (* For minus fragment, checks that all of the identifier metavariables that
 are used are not declared as fresh, and check that all declared variables
 are used.  For plus fragment, just check that the variables declared as
@@ -366,12 +344,26 @@ and statement old_metas table minus s =
       parameter_list old_metas table minus params;
       dots (statement old_metas table minus) body
   | Ast0.Include(inc,s) -> () (* no metavariables possible *)
-  | Ast0.Define(def,id,_,body) ->
+  | Ast0.Define(def,id,params,body) ->
       ident GLOBAL old_metas table minus id;
+      define_parameters old_metas table minus params;
       dots (statement old_metas table minus) body
   | Ast0.Label(i,_) -> ident ID old_metas table minus i
   | Ast0.Goto(_,i,_) -> ident ID old_metas table minus i
   | _ -> () (* no metavariable subterms *)
+
+and define_param old_metas table minus p =
+  match Ast0.unwrap p with
+    Ast0.DParam(id) -> ident GLOBAL old_metas table minus id
+  | Ast0.DPComma(_) | Ast0.DPdots(_) | Ast0.DPcircles(_) ->
+      () (* no metavariable subterms *)
+  | Ast0.OptDParam(dp)    -> define_param old_metas table minus dp
+  | Ast0.UniqueDParam(dp) -> define_param old_metas table minus dp
+
+and define_parameters old_metas table minus x =
+  match Ast0.unwrap x with
+    Ast0.NoParams -> ()
+  | Ast0.DParams(lp,dp,rp) -> dots (define_param old_metas table minus) dp
 
 and fninfo old_metas table minus = function
     Ast0.FStorage(stg) -> ()

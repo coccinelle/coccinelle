@@ -295,7 +295,8 @@ one of these options can be specified.}
   which to find non-local include files.  This option should be used only
   once, as each use will overwrite the preceding one.}
 
-\rare{-relax\_include\_path}{This option causes the search for local
+\rare{-relax\_include\_path}{This option when combined with -all\_includes
+  causes the search for local
   include files to consider the directory specified using {\bf -I} if the
   included file is not found in the current directory.}
 
@@ -412,6 +413,8 @@ These options use a simplified version of the SmPL language.  {\bf
 \section{Generation of the result}
 
 Normally, the only output is a diff printed to standard output.
+
+\normal{-keep\_comments}{Don't remove comments adjacent to removed code.}
 
 \normal{-linux\_spacing, -smpl\_spacing}{Control the spacing within the code
   added by the semantic patch.  The option {\bf -linux\_spacing} causes

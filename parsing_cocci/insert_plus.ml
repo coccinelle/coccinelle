@@ -1,25 +1,3 @@
-(*
- * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
- * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
- * This file is part of Coccinelle.
- *
- * Coccinelle is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, according to version 2 of the License.
- *
- * Coccinelle is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
- *
- * The authors reserve the right to distribute this or future versions of
- * Coccinelle under other licenses.
- *)
-
-
 (* The error message "no available token to attach to" often comes in an
 argument list of unbounded length.  In this case, one should move a comma so
 that there is a comma after the + code. *)
@@ -158,7 +136,7 @@ let collect_minus_join_points root =
   let bind x y = x @ y in
   let option_default = [] in
 
-  let mcode (_,_,info,mcodekind,_,_) =
+  let mcode (x,_,info,mcodekind,_,_) =
     if List.mem (info.Ast0.pos_info.Ast0.offset) unfavored_tokens
     then [(Unfavored,info,mcodekind)]
     else [(Favored,info,mcodekind)] in
@@ -390,7 +368,7 @@ let verify l =
 		  then
 		    failwith
 		      (Printf.sprintf
-			 "error in collection of - tokens %d less than %d"
+			 "error in collection of - tokens: line %d less than line %d"
 			 (token_real_start_line cur) real_prev);
 		  (token_end_line cur,token_real_end_line cur))
 	      (token_end_line (List.hd l1), token_real_end_line (List.hd l1))

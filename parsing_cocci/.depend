@@ -26,6 +26,7 @@ simple_assignments.cmi: ast0_cocci.cmi
 single_statement.cmi: ast0_cocci.cmi 
 test_exps.cmi: ast0_cocci.cmi 
 top_level.cmi: ast0_cocci.cmi 
+type_cocci.cmi: 
 type_infer.cmi: ast0_cocci.cmi 
 unify_ast.cmi: ast_cocci.cmi 
 unitary_ast0.cmi: ast0_cocci.cmi 
@@ -78,6 +79,8 @@ disjdistr.cmo: visitor_ast.cmi ../globals/flag.cmo ../commons/common.cmi \
     ast_cocci.cmi disjdistr.cmi 
 disjdistr.cmx: visitor_ast.cmx ../globals/flag.cmx ../commons/common.cmx \
     ast_cocci.cmx disjdistr.cmi 
+flag_parsing_cocci.cmo: 
+flag_parsing_cocci.cmx: 
 free_vars.cmo: visitor_ast.cmi type_cocci.cmi ../commons/common.cmi \
     ast_cocci.cmi free_vars.cmi 
 free_vars.cmx: visitor_ast.cmx type_cocci.cmx ../commons/common.cmx \
@@ -148,6 +151,8 @@ pretty_print_cocci.cmo: type_cocci.cmi ../globals/flag.cmo \
     ../commons/common.cmi ast_cocci.cmi pretty_print_cocci.cmi 
 pretty_print_cocci.cmx: type_cocci.cmx ../globals/flag.cmx \
     ../commons/common.cmx ast_cocci.cmx pretty_print_cocci.cmi 
+semantic_cocci.cmo: 
+semantic_cocci.cmx: 
 simple_assignments.cmo: visitor_ast0_types.cmo visitor_ast0.cmi \
     ../globals/flag.cmo ../commons/common.cmi ast_cocci.cmi ast0_cocci.cmi \
     simple_assignments.cmi 

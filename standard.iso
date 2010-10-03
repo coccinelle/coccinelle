@@ -306,6 +306,37 @@ identifier i;
 for(X;Y;i++) S <=> for(X;Y;++i) S
 
 
+// ****************************************************************************
+// gcc specific isomorphisms 
+// ****************************************************************************
+
+// likely and unlikely are used to give hints to gcc to improve performance.
+
+Expression
+@ likely @ 
+expression E; 
+@@
+
+unlikely(E) <=> likely(E) => E
+
+// ---------------------------------------------------------------------------
+// Parenthesis isomorphisms
+// ---------------------------------------------------------------------------
+//Expression
+//@@ expression E; @@
+// E => (E)
+//// E => ((E))
+
+// todo: isomorphism avec les () around ? cf sizeof 3.
+// (E) => E    with some conditions.
+
+Expression
+@ paren @
+expression E;
+@@
+
+ (E) => E
+
 // ---------------------------------------------------------------------------
 // Pointer isomorphisms
 // ---------------------------------------------------------------------------
@@ -392,26 +423,6 @@ ArgExpression
 @ zero_multiple_format @
 @@
  0 => '\0'
-
-// ****************************************************************************
-// gcc specific isomorphisms 
-// ****************************************************************************
-
-// likely and unlikely are used to give hints to gcc to improve performance.
-
-Expression
-@ unlikely @ 
-expression E; 
-@@
-
-unlikely(E) => E
-
-Expression
-@ likely @ 
-expression E; 
-@@
-
-likely(E) => E
 
 // ****************************************************************************
 // if structure isomorphisms 
@@ -559,24 +570,6 @@ return ...; => return;
 // ---------------------------------------------------------------------------
 // They are handled in engine.
 // 'X = Y'  should also match  'type X = Y'; 
-
-// ---------------------------------------------------------------------------
-// Parenthesis isomorphisms
-// ---------------------------------------------------------------------------
-//Expression
-//@@ expression E; @@
-// E => (E)
-//// E => ((E))
-
-// todo: isomorphism avec les () around ? cf sizeof 3.
-// (E) => E    with some conditions.
-
-Expression
-@ paren @
-expression E;
-@@
-
- (E) => E
 
 // ---------------------------------------------------------------------------
 // Pointer/Array isomorphisms

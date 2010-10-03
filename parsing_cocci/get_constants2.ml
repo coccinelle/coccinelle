@@ -1,25 +1,3 @@
-(*
- * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
- * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
- * This file is part of Coccinelle.
- *
- * Coccinelle is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, according to version 2 of the License.
- *
- * Coccinelle is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
- *
- * The authors reserve the right to distribute this or future versions of
- * Coccinelle under other licenses.
- *)
-
-
 module Ast = Ast_cocci
 module V = Visitor_ast
 module TC = Type_cocci
@@ -431,6 +409,7 @@ let rec dependencies env = function
   | Ast.AndDep (d1,d2) -> build_and (dependencies env d1) (dependencies env d2)
   | Ast.OrDep (d1,d2) -> build_or (dependencies env d1) (dependencies env d2)
   | Ast.NoDep -> True
+  | Ast.FailDep -> False
 
 (* ------------------------------------------------------------------------ *)
 
@@ -487,12 +466,10 @@ let rule_fn tls in_plus env neg_pos =
 	| x -> (build_or x rest_info, new_plusses))
     (False,in_plus) (List.combine tls neg_pos)
 
-let get_constants rules neg_pos_vars virt =
+let get_constants rules neg_pos_vars =
   match !Flag.scanner with
     Flag.NoScanner -> None
   | Flag.Glimpse | Flag.Google _ ->
-      let virt =
-	List.map (function (x,v) -> (x, if v then True else False)) virt in
       let (info,_,_,_) =
 	List.fold_left
 	  (function (rest_info,in_plus,env,locals(*dom of env*)) ->
@@ -523,6 +500,6 @@ let get_constants rules neg_pos_vars virt =
 		    | dependencies ->
 			(build_or (build_and dependencies cur_info) rest_info,
 			 cur_plus,env,locals))
-	  (False,[],virt,[])
+	  (False,[],[],[])
 	  (List.combine (rules : Ast.rule list) neg_pos_vars) in
       interpret true info

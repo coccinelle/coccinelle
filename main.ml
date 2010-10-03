@@ -1,25 +1,3 @@
-(*
- * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
- * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
- * This file is part of Coccinelle.
- *
- * Coccinelle is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, according to version 2 of the License.
- *
- * Coccinelle is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
- *
- * The authors reserve the right to distribute this or future versions of
- * Coccinelle under other licenses.
- *)
-
-
 open Common
 module FC = Flag_cocci
 
@@ -273,13 +251,14 @@ let short_options = [
 
 
   "-version",   Arg.Unit (fun () ->
-    pr2 (spf "spatch version: %s" Config.version);
+    let withpython = if Pycocci.python_support then "with" else "without" in
+    pr2 (spf "spatch version %s %s Python support" Config.version withpython);
     exit 0;
   ),
     "  guess what";
 
   "-date",   Arg.Unit (fun () ->
-    pr2 "version: $Date: 2009/09/26 14:17:24 $";
+    pr2 "version: $Date: 2010/01/04 11:16:30 $";
     raise (Common.UnixExit 0)
     ),
   "   guess what";
@@ -458,6 +437,9 @@ let other_options = [
       Flag.make_hrule := Some s; FC.include_options := FC.I_NO_INCLUDES),
     "    semantic patch generation";
 
+    "-keep_comments", Arg.Set Flag_parsing_c.keep_comments,
+    "   keep comments around removed code";
+
     "-loop",              Arg.Set Flag_ctl.loop_in_src_code,    " ";
     "-no_loops",          Arg.Set Flag_parsing_c.no_loops,
     "   drop all back edges derived from looping constructs - unsafe";
@@ -479,7 +461,7 @@ let other_options = [
 
 
     "-disallow_nested_exps", Arg.Set Flag_matcher.disallow_nested_exps,
-       "disallow an expresion pattern from matching a term and its subterm";
+       " disallow an expresion pattern from matching a term and its subterm";
     "-disable_worth_trying_opt", Arg.Clear FC.worth_trying_opt,
     "  ";
     "-only_return_is_error_exit",
@@ -635,7 +617,7 @@ let adjust_stdin cfile k =
 
 let glimpse_filter (coccifile, isofile) dir =
   let (_metavars,astcocci,_free_var_lists,_negated_positions,
-       _used_after_lists,_positions_lists,_,query,_virt) =
+       _used_after_lists,_positions_lists,_,query) =
     Cocci.sp_of_file coccifile (Some isofile) in
   match query with
     None -> pr2 "no glimpse keyword inferred from snippet"; None

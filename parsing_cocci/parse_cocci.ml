@@ -1,25 +1,3 @@
-(*
- * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
- * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
- * This file is part of Coccinelle.
- *
- * Coccinelle is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, according to version 2 of the License.
- *
- * Coccinelle is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
- *
- * The authors reserve the right to distribute this or future versions of
- * Coccinelle under other licenses.
- *)
-
-
 (* splits the entire file into minus and plus fragments, and parses each
 separately (thus duplicating work for the parsing of the context elements) *)
 
@@ -1273,21 +1251,9 @@ let eval_virt virt =
     (function x ->
       if not (List.mem x virt)
       then
-	failwith
-	  (Printf.sprintf "unknown virtual rule %s\n" x))
-    (!Flag_parsing_cocci.defined_virtual_rules @
-     !Flag_parsing_cocci.undefined_virtual_rules);
-  List.map
-    (function x ->
-      if List.mem x !Flag_parsing_cocci.defined_virtual_rules
-      then (x,true)
-      else if List.mem x !Flag_parsing_cocci.undefined_virtual_rules
-      then (x,false)
-      else
-	(*Printf.fprintf stderr
-	   "warning: no value specified for virtual rule %s, assuming unmatched\n" x;*)
-	 (x,false))
-    virt
+        failwith
+          (Printf.sprintf "unknown virtual rule %s\n" x))
+    !Flag_parsing_cocci.defined_virtual_rules
 
 let drop_last extra l = List.rev(extra@(List.tl(List.rev l)))
 
@@ -1433,7 +1399,42 @@ let parse_iso_files existing_isos iso_files extra_path =
   Data.in_iso := false;
   existing_isos@(List.concat (List.rev res))
 
+(* None = dependency not satisfied
+   Some dep = dependency satisfied or unknown and dep has virts optimized
+   away *)
+let eval_depend dep virt =
+  let rec loop dep =
+    match dep with
+      Ast.Dep req | Ast.EverDep req ->
+	if List.mem req virt
+	then
+	  if List.mem req !Flag_parsing_cocci.defined_virtual_rules
+	  then Some Ast.NoDep
+	  else None
+	else Some dep
+    | Ast.AntiDep antireq | Ast.NeverDep antireq ->
+	if List.mem antireq virt
+	then
+	  if not(List.mem antireq !Flag_parsing_cocci.defined_virtual_rules)
+	  then Some Ast.NoDep
+	  else None
+	else Some dep
+    | Ast.AndDep(d1,d2) ->
+	(match (loop d1, loop d2) with
+	  (None,_) | (_,None) -> None
+	| (Some Ast.NoDep,x) | (x,Some Ast.NoDep) -> x
+	| (Some x,Some y) -> Some (Ast.AndDep(x,y)))
+    | Ast.OrDep(d1,d2) ->
+	(match (loop d1, loop d2) with
+	  (None,None) -> None
+	| (Some Ast.NoDep,x) | (x,Some Ast.NoDep) | (None,x) | (x,None) -> x
+	| (Some x,Some y) -> Some (Ast.OrDep(x,y)))
+    | Ast.NoDep | Ast.FailDep -> Some dep
+    in
+  loop dep
+
 let rec parse file =
+  Lexer_cocci.init();
   let table = Common.full_charpos_to_pos file in
   Common.with_open_infile file (fun channel ->
   let lexbuf = Lexing.from_channel channel in
@@ -1457,6 +1458,7 @@ let rec parse file =
 		  | Data.Iso s -> (include_files,s::iso_files,virt)
 		  | Data.Virt l -> (include_files,iso_files,l@virt))
 	      ([],[],[]) include_and_iso_files in
+
 	  List.iter (function x -> Hashtbl.add Lexer_cocci.rule_names x ())
 	    virt;
 
@@ -1489,6 +1491,11 @@ let rec parse file =
             let (minus_tokens, _) = split_token_stream tokens in
             let (_, plus_tokens) =
 	      split_token_stream (minus_to_nothing tokens) in
+
+	    (*
+	       print_tokens "minus tokens" minus_tokens;
+	       print_tokens "plus tokens" plus_tokens;
+	    *)
 
 	    let minus_tokens = consume_minus_positions minus_tokens in
 	    let minus_tokens = prepare_tokens minus_tokens in
@@ -1603,19 +1610,41 @@ let rec parse file =
 	      get_rule_name PC.rule_name starts_with_name get_tokens file
 		"rule" in
             match rulename with
-              Ast.CocciRulename (Some s, a, b, c, d, e) ->
-                parse_cocci_rule Ast.Normal old_metas (s, a, b, c, d, e)
-            | Ast.GeneratedRulename (Some s, a, b, c, d, e) ->
-		Data.in_generating := true;
-                let res =
-		  parse_cocci_rule Ast.Generated old_metas (s,a,b,c,d,e) in
-		Data.in_generating := false;
-		res
-            | Ast.ScriptRulename(l,deps) -> parse_script_rule l old_metas deps
+              Ast.CocciRulename (Some s, dep, b, c, d, e) ->
+		(match eval_depend dep virt with
+		  Some (dep) ->
+		    parse_cocci_rule Ast.Normal old_metas (s,dep,b,c,d,e)
+		| None ->
+		    D.ignore_patch_or_match := true;
+                    let res =
+		      parse_cocci_rule Ast.Normal old_metas
+			(s, Ast.FailDep, b, c, d, e) in
+		    D.ignore_patch_or_match := false;
+		    res)
+            | Ast.GeneratedRulename (Some s, dep, b, c, d, e) ->
+		(match eval_depend dep virt with
+		  Some (dep) ->
+		    Data.in_generating := true;
+		    let res =
+		      parse_cocci_rule Ast.Normal old_metas (s,dep,b,c,d,e) in
+		    Data.in_generating := false;
+		    res
+		| None ->
+		    D.ignore_patch_or_match := true;
+		    Data.in_generating := true;
+                    let res =
+		      parse_cocci_rule Ast.Normal old_metas
+			(s, Ast.FailDep, b, c, d, e) in
+		    D.ignore_patch_or_match := false;
+		    Data.in_generating := false;
+		    res)
+            | Ast.ScriptRulename(l,deps) ->
+		(match eval_depend deps virt with
+		  Some deps -> parse_script_rule l old_metas deps
+		| None ->  parse_script_rule l old_metas Ast.FailDep)
             | Ast.InitialScriptRulename(l) -> parse_iscript_rule l
-            | Ast.FinalScriptRulename(l) -> parse_fscript_rule l
-            | _ -> failwith "Malformed rule name"
-            in
+            | Ast.FinalScriptRulename(l)   -> parse_fscript_rule l
+            | _ -> failwith "Malformed rule name" in
 
 	  let rec loop old_metas starts_with_name =
 	    (!Data.init_rule)();
@@ -1639,7 +1668,8 @@ let rec parse file =
 	     (function prev -> function cur -> Common.union_set cur prev)
 	     iso_files extra_iso_files,
 	   (* included rules first *)
-	   List.fold_left (@) (loop [] (x = PC.TArob)) (List.rev extra_rules),
+	   List.fold_left (function prev -> function cur -> cur@prev)
+	     (loop [] (x = PC.TArob)) (List.rev extra_rules),
 	   List.fold_left (@) virt extra_virt (*no dups allowed*))
       |	_ -> failwith "unexpected code before the first rule\n")
   | (false,[(PC.TArobArob,_)]) | (false,[(PC.TArob,_)]) ->
@@ -1650,9 +1680,8 @@ let rec parse file =
 (* parse to ast0 and then convert to ast *)
 let process file isofile verbose =
   let extra_path = Filename.dirname file in
-  Lexer_cocci.init();
   let (iso_files, rules, virt) = parse file in
-  let virt = eval_virt virt in
+  eval_virt virt;
   let std_isos =
     match isofile with
       None -> []
@@ -1768,6 +1797,6 @@ let process file isofile verbose =
       (fun () -> Get_constants.get_constants code) in (* for grep *)
   let glimpse_tokens2 =
     Common.profile_code "get_glimpse_constants" (* for glimpse *)
-      (fun () -> Get_constants2.get_constants code neg_pos virt) in
+      (fun () -> Get_constants2.get_constants code neg_pos) in
 
-  (metavars,code,fvs,neg_pos,ua,pos,grep_tokens,glimpse_tokens2,virt)
+  (metavars,code,fvs,neg_pos,ua,pos,grep_tokens,glimpse_tokens2)

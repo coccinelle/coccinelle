@@ -451,6 +451,7 @@ let is_minusable_comment = function
       | Parser_c.TCommentSpace _   (* only whitespace *)
       (* patch: coccinelle *)      
       | Parser_c.TCommentNewline _ (* newline plus whitespace *) -> true
+      | Parser_c.TComment _ when !Flag_parsing_c.keep_comments -> false
       | Parser_c.TComment _
       | Parser_c.TCommentCpp (Token_c.CppAttr, _)
       | Parser_c.TCommentCpp (Token_c.CppMacro, _)
@@ -471,6 +472,7 @@ let is_minusable_comment_nocpp = function
       | Parser_c.TCommentSpace _   (* only whitespace *)
       (* patch: coccinelle *)      
       | Parser_c.TCommentNewline _ (* newline plus whitespace *) -> true
+      | Parser_c.TComment _ when !Flag_parsing_c.keep_comments -> false
       | Parser_c.TComment _ -> true
       | Parser_c.TCommentCpp (Token_c.CppAttr, _)
       | Parser_c.TCommentCpp (Token_c.CppMacro, _)

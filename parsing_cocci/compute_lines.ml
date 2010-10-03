@@ -1,25 +1,3 @@
-(*
- * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
- * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
- * This file is part of Coccinelle.
- *
- * Coccinelle is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, according to version 2 of the License.
- *
- * Coccinelle is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
- *
- * The authors reserve the right to distribute this or future versions of
- * Coccinelle under other licenses.
- *)
-
-
 (* Computes starting and ending logical lines for statements and
 expressions.  every node gets an index as well. *)
 
@@ -564,6 +542,45 @@ and parameter_list prev = dots is_param_dots prev parameterTypeDef
 let parameter_dots x = dots is_param_dots None parameterTypeDef x
 
 (* --------------------------------------------------------------------- *)
+
+let is_define_param_dots s =
+  match Ast0.unwrap s with
+    Ast0.DPdots(_) | Ast0.DPcircles(_) -> true
+  | _ -> false
+
+let rec define_param p =
+  match Ast0.unwrap p with
+    Ast0.DParam(id) ->
+      let id = ident id in mkres p (Ast0.DParam(id)) id id
+  | Ast0.DPComma(cm) ->
+      (*let cm = bad_mcode cm in*) (* why was this bad??? *)
+      let ln = promote_mcode cm in
+      mkres p (Ast0.DPComma(cm)) ln ln
+  | Ast0.DPdots(dots) ->
+      let dots = bad_mcode dots in
+      let ln = promote_mcode dots in
+      mkres p (Ast0.DPdots(dots)) ln ln
+  | Ast0.DPcircles(dots) ->
+      let dots = bad_mcode dots in
+      let ln = promote_mcode dots in
+      mkres p (Ast0.DPcircles(dots)) ln ln
+  | Ast0.OptDParam(dp) ->
+      let res = define_param dp in
+      mkres p (Ast0.OptDParam(res)) res res
+  | Ast0.UniqueDParam(dp) ->
+      let res = define_param dp in
+      mkres p (Ast0.UniqueDParam(res)) res res
+
+let define_parameters x =
+  match Ast0.unwrap x with
+    Ast0.NoParams -> x (* no info, should be ignored *)
+  | Ast0.DParams(lp,dp,rp) ->
+      let dp = dots is_define_param_dots None define_param dp in
+      let l = promote_mcode lp in
+      let r = promote_mcode rp in
+      mkres x (Ast0.DParams(lp,dp,rp)) l r
+
+(* --------------------------------------------------------------------- *)
 (* Top-level code *)
 
 let is_stm_dots s =
@@ -753,6 +770,7 @@ let rec statement s =
 	mkres s (Ast0.Include(inc,stm)) (promote_mcode inc) (promote_mcode stm)
     | Ast0.Define(def,id,params,body) ->
 	let id = ident id in
+	let params = define_parameters params in
 	let body = dots is_stm_dots None statement body in
 	mkres s (Ast0.Define(def,id,params,body)) (promote_mcode def) body
     | Ast0.OptStm(stm) ->

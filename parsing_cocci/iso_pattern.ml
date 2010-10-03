@@ -1,25 +1,3 @@
-(*
- * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
- * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
- * This file is part of Coccinelle.
- *
- * Coccinelle is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, according to version 2 of the License.
- *
- * Coccinelle is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
- *
- * The authors reserve the right to distribute this or future versions of
- * Coccinelle under other licenses.
- *)
-
-
 (* Potential problem: offset of mcode is not updated when an iso is
 instantiated, implying that a term may end up with many mcodes with the
 same offset.  On the other hand, at the moment offset only seems to be used
@@ -2205,11 +2183,16 @@ let transform_expr (metavars,alts,name) e =
       make_minus.VT0.rebuilder_rec_expression
       (rebuild_mcode start_line).VT0.rebuilder_rec_expression
       name Unparse_ast0.expression extra_copy_other_plus update_others in
+  let set_property model e =
+    let e = if Ast0.get_test_pos model then Ast0.set_test_exp e else e in
+    if Ast0.get_arg_exp model then Ast0.set_arg_exp e else e in
   match alts with
-    (Ast0.ExprTag(_)::_)::_ -> process do_nothing
-  | (Ast0.ArgExprTag(_)::_)::_ when Ast0.get_arg_exp e -> process do_nothing
+    (Ast0.ExprTag(_)::_)::_ ->
+      process (set_property e)
+  | (Ast0.ArgExprTag(_)::_)::_ when Ast0.get_arg_exp e ->
+      process (set_property e)
   | (Ast0.TestExprTag(_)::_)::_ when Ast0.get_test_pos e ->
-      process Ast0.set_test_exp
+      process (set_property e)
   | _ -> (0,[],e)
 
 let transform_decl (metavars,alts,name) e =

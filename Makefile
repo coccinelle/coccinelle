@@ -1,23 +1,3 @@
-# Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
-# Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
-# This file is part of Coccinelle.
-#
-# Coccinelle is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, according to version 2 of the License.
-#
-# Coccinelle is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
-#
-# The authors reserve the right to distribute this or future versions of
-# Coccinelle under other licenses.
-
-
 
 #############################################################################
 # Configuration section
@@ -82,7 +62,7 @@ EXEC=$(TARGET)
 # Generic ocaml variables
 ##############################################################################
 
-OCAMLCFLAGS= -g -dtypes # -w A
+OCAMLCFLAGS=# -g -dtypes # -w A
 
 # for profiling add  -p -inline 0
 # but 'make forprofiling' below does that for you.
@@ -184,17 +164,14 @@ $(EXEC).top: $(LIBS) $(OBJS)
 
 clean::
 	rm -f $(TARGET) $(TARGET).opt $(TARGET).top
-
-clean::
 	rm -f dllpycaml_stubs.so
-
 
 .PHONY:: tools configure
 
 configure:
 	./configure
 
-Makefile.config:    
+Makefile.config:
 	@echo "Makefile.config is missing. Have you run ./configure?"
 	@exit 1
 
@@ -358,24 +335,28 @@ OCAMLVERSION=$(shell ocaml -version |perl -p -e 's/.*version (.*)/$$1/;')
 
 # Procedure to do first time:
 #  cd ~/release
-#  cvs checkout coccinelle
+#  cvs checkout coccinelle -dP
 #  cd coccinelle
-#  cvs update -d -P
-#  touch **/*
-#  make licensify
-#  remember to comment the -g -dtypes in this Makefile
+#
+# Procedure to do each time:
+#
+#  1) make prepackage # WARN: These will clean your local rep. of pending modifications
+#
+#  UPDATE VERSION number in globals/config.ml.in
+#  and commit it with
+#
+#  2) make release
+#
+#  The project is then automatically licensified.
+#
+#  Remember to comment the -g -dtypes in this Makefile
 #  You can also remove a few things, for instance I removed in this
 #   Makefile things related to popl/ and popl09/
-
-# Procedure to do each time:
-#  cvs update
 #  make sure that ocaml is the distribution ocaml of /usr/bin, not ~pad/...
-#  modify globals/config.ml.in
-#  cd globals/; cvs commit -m"new version"  (do not commit from the root!)
-#  ./configure --without-python
-#  can make; ./spatch -testall to check and update the SCORE_expected.sexp
-#  make package
-#  make website
+#
+#  3) make package
+#
+#  if WEBSITE is set properly, you can also run 'make website'
 # Check that run an ocaml in /usr/bin
 
 # To test you can try compile and run spatch from different instances
@@ -387,14 +368,27 @@ OCAMLVERSION=$(shell ocaml -version |perl -p -e 's/.*version (.*)/$$1/;')
 # the scripts/licensify has been run at least once.
 # For the 'make bintar' I can do it from my original repo.
 
+prepackage:
+	cvs up -CdP
+	$(MAKE) distclean
+
+release:
+	cvs ci -m "Release $(VERSION)" globals/config.ml-in
+	$(MAKE) licensify
 
 package:
+	$(MAKE) distclean       # Clean project
 	$(MAKE) srctar
 	./configure --without-python
 	$(MAKE) docs
 	$(MAKE) bintar
 	$(MAKE) bytecodetar
 	$(MAKE) staticbintar
+	$(MAKE) distclean       # Clean project
+	./configure             # Reconfigure project with Python support
+	$(MAKE) docs
+	$(MAKE) bintar-python
+	$(MAKE) bytecodetar-python
 	$(MAKE) coccicheck
 
 
@@ -436,16 +430,32 @@ bytecodetar: all
 	cd $(TMP); tar cvfz $(PACKAGE)-bin-bytecode-$(OCAMLVERSION).tgz --exclude-vcs $(BINSRC2)
 	rm -f $(TMP)/$(PACKAGE)
 
+bintar-python: all
+	rm -f $(TMP)/$(PACKAGE)
+	ln -s `pwd` $(TMP)/$(PACKAGE)
+	cd $(TMP); tar cvfz $(PACKAGE)-bin-x86-python.tgz --exclude-vcs $(BINSRC2)
+	rm -f $(TMP)/$(PACKAGE)
+
+# add ocaml version in name ?
+bytecodetar-python: all
+	rm -f $(TMP)/$(PACKAGE)
+	ln -s `pwd` $(TMP)/$(PACKAGE)
+	make purebytecode
+	cd $(TMP); tar cvfz $(PACKAGE)-bin-bytecode-$(OCAMLVERSION)-python.tgz --exclude-vcs $(BINSRC2)
+	rm -f $(TMP)/$(PACKAGE)
+
 coccicheck:
 	cp -a `pwd`/scripts/coccicheck $(TMP)/$(CCPACKAGE)
 	tar cvfz $(TMP)/$(CCPACKAGE).tgz -C $(TMP) --exclude-vcs $(CCPACKAGE)
 	rm -rf $(TMP)/$(CCPACKAGE)
 
-clean::
+clean-packages::
 	rm -f $(TMP)/$(PACKAGE).tgz
 	rm -f $(TMP)/$(PACKAGE)-bin-x86.tgz
 	rm -f $(TMP)/$(PACKAGE)-bin-x86-static.tgz
 	rm -f $(TMP)/$(PACKAGE)-bin-bytecode-$(OCAMLVERSION).tgz
+	rm -f $(TMP)/$(PACKAGE)-bin-x86-python.tgz
+	rm -f $(TMP)/$(PACKAGE)-bin-bytecode-$(OCAMLVERSION)-python.tgz
 	rm -f $(TMP)/$(CCPACKAGE).tgz
 
 #
@@ -469,53 +479,11 @@ fixdates:
 ocamlversion:
 	@echo $(OCAMLVERSION)
 
-
-##############################################################################
-# Pad specific rules
-##############################################################################
-
-#TOP=/home/pad/mobile/project-coccinelle
-WEBSITE=/home/pad/mobile/homepage/software/project-coccinelle
-
-website:
-	cp $(TMP)/$(PACKAGE).tgz                $(WEBSITE)
-	cp $(TMP)/$(PACKAGE)-bin-x86.tgz        $(WEBSITE)
-	cp $(TMP)/$(PACKAGE)-bin-x86-static.tgz $(WEBSITE)
-	cp $(TMP)/$(PACKAGE)-bin-bytecode-$(OCAMLVERSION).tgz   $(WEBSITE)
-	rm -f $(WEBSITE)/LATEST* $(WEBSITE)/coccinelle-latest.tgz
-	cp changes.txt $(WEBSITE)/changes-$(VERSION).txt
-	cd $(WEBSITE); touch LATEST_IS_$(VERSION); ln -s $(PACKAGE).tgz coccinelle-latest.tgz
-	cp readme.txt $(WEBSITE)
-
-
-#TXT=$(wildcard *.txt)
-syncwiki:
-#	unison ~/public_html/wiki/wiki-LFS/data/pages/ docs/wiki/
-#	set -e; for i in $(TXT); do unison $$i docs/wiki/$$i; done
-
-darcsweb:
-#	@echo pull from ~/public_html/darcs/c-coccinelle and c-commons and lib-xxx
-
-DARCSFORESTS=commons ocamlsexp \
- parsing_c parsing_cocci engine
-
-update_darcs:
-	darcs pull
-	set -e; for i in $(DARCSFORESTS); do cd $$i; darcs pull; cd ..; done
-
-#darcs diff -u
-diff_darcs:
-	set -e; for i in $(DARCSFORESTS); do cd $$i; darcs diff -u; cd ..; done
-
-##############################################################################
-# Git Developer rules
-##############################################################################
-gitupdate:
-	git cvsimport -d :ext:topps:/var/cvs/cocci  coccinelle
-
 ##############################################################################
 # Developer rules
 ##############################################################################
+
+-include Makefile.dev
 
 test: $(TARGET)
 	./$(TARGET) -testall

@@ -11,6 +11,8 @@ asttopopl.cmo: ../parsing_cocci/pretty_print_cocci.cmi ast_popl.cmo \
     ../parsing_cocci/ast_cocci.cmi asttopopl.cmi 
 asttopopl.cmx: ../parsing_cocci/pretty_print_cocci.cmx ast_popl.cmx \
     ../parsing_cocci/ast_cocci.cmx asttopopl.cmi 
+flag_popl.cmo: 
+flag_popl.cmx: 
 insert_quantifiers.cmo: ../commons/common.cmi ast_popl.cmo \
     ../parsing_cocci/ast_cocci.cmi insert_quantifiers.cmi 
 insert_quantifiers.cmx: ../commons/common.cmx ast_popl.cmx \

@@ -1,25 +1,3 @@
-/*
- * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
- * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
- * This file is part of Coccinelle.
- *
- * Coccinelle is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, according to version 2 of the License.
- *
- * Coccinelle is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
- *
- * The authors reserve the right to distribute this or future versions of
- * Coccinelle under other licenses.
- */
-
-
 %{
 
 (* Not clear how to allow function declarations to specify a return type
@@ -273,11 +251,13 @@ metadec:
     { P.create_fresh_metadec kindfn ids }
 | ar=arity ispure=pure
   kindfn=metakind_atomic
-  ids=comma_list(pure_ident_or_meta_ident_with_idconstraint(re_or_not_eqid)) TMPtVirg
+  ids=comma_list(pure_ident_or_meta_ident_with_idconstraint(re_or_not_eqid))
+    TMPtVirg
     { P.create_metadec_with_constraints ar ispure kindfn ids }
 | ar=arity ispure=pure
   kindfn=metakind_atomic_expi
-  ids=comma_list(pure_ident_or_meta_ident_with_econstraint(re_or_not_eqe)) TMPtVirg
+  ids=comma_list(pure_ident_or_meta_ident_with_econstraint(re_or_not_eqe))
+    TMPtVirg
     { P.create_metadec_with_constraints ar ispure kindfn ids }
 | ar=arity ispure=pure
   kindfn=metakind_atomic_expe
@@ -634,7 +614,8 @@ filespec:
 includes:
   TIncludeL
     { Ast0.wrap
-	      (Ast0.Include(P.clt2mcode "#include" (P.drop_aft (P.id2clt $1)),
+	      (Ast0.Include(P.clt2mcode "#include"
+			      (P.drop_pos (P.drop_aft (P.id2clt $1))),
 			    let (arity,ln,lln,offset,col,strbef,straft,pos) =
 			      P.id2clt $1 in
 			    let clt =
@@ -644,7 +625,8 @@ includes:
 			      (P.drop_bef clt))) }
 | TIncludeNL
     { Ast0.wrap
-	      (Ast0.Include(P.clt2mcode "#include" (P.drop_aft (P.id2clt $1)),
+	      (Ast0.Include(P.clt2mcode "#include"
+			      (P.drop_pos (P.drop_aft (P.id2clt $1))),
 			    let (arity,ln,lln,offset,col,strbef,straft,pos) =
 			      P.id2clt $1 in
 			    let clt =

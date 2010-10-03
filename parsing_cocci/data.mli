@@ -1,25 +1,3 @@
-(*
- * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
- * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
- * This file is part of Coccinelle.
- *
- * Coccinelle is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, according to version 2 of the License.
- *
- * Coccinelle is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
- *
- * The authors reserve the right to distribute this or future versions of
- * Coccinelle under other licenses.
- *)
-
-
 (* types that clutter the .mly file *)
 (* for iso metavariables, true if they can only match nonmodified, unitary
    metavariables *)
@@ -50,6 +28,7 @@ val in_rule_name : bool ref (* true if parsing the rule name *)
 val in_meta : bool ref      (* true if parsing the metavariable decls *)
 val in_iso : bool ref       (* true if parsing the isomorphisms *)
 val in_generating : bool ref(* true if generating a rule *)
+val ignore_patch_or_match : bool ref (* skip rules not satisfying virt *)
 val in_prolog : bool ref    (* true if parsing the beginning of an SP *)
 val saw_struct : bool ref   (* true if saw struct/union *)
 val inheritable_positions : string list ref
