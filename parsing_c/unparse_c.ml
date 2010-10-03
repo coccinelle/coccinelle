@@ -61,6 +61,7 @@ type token2 =
   | Cocci2 of string * int (* line *) * int (* lcol *) * int (* rcol *)
 	* Unparse_cocci.nlhint option
   | C2 of string
+  | Comma of string
   | Indent_cocci2
   | Unindent_cocci2 of bool (* true for permanent, false for temporary *)
 
@@ -99,6 +100,7 @@ let str_of_token2 = function
   | Fake2 -> ""
   | Cocci2 (s,_,_,_,_) -> s
   | C2 s -> s
+  | Comma s -> s
   | Indent_cocci2 -> ""
   | Unindent_cocci2 _ -> ""
 
@@ -114,6 +116,7 @@ let print_token2 = function
   | Fake2 -> "fake"
   | Cocci2 (s,_,lc,rc,_) -> Printf.sprintf "Cocci2:%d:%d%s" lc rc s
   | C2 s -> "C2:"^s
+  | Comma s -> "Comma:"^s
   | Indent_cocci2 -> "Indent"
   | Unindent_cocci2 _ -> "Unindent"
 
@@ -320,8 +323,9 @@ let expand_mcode toks =
         let str = Ast_c.str_of_info info in
         if str =$= ""
         then push2 (Fake2) toks_out
-        (* perhaps the fake ',' *)
-        else push2 (C2 str) toks_out
+	(* fx the fake "," at the end of a structure or enum.
+	   no idea what other fake info there can be... *)
+	else push2 (Comma str) toks_out
 
 
     | T1 tok ->
@@ -495,7 +499,7 @@ let is_minusable_comment_nocpp = function
   | _ -> false
 
 let all_coccis = function
-    Cocci2 _ | C2 _ | Indent_cocci2 | Unindent_cocci2 _ -> true
+    Cocci2 _ | C2 _ | Comma _ | Indent_cocci2 | Unindent_cocci2 _ -> true
   | _ -> false
 
 (*previously gave up if the first character was a newline, but not clear why*)
@@ -524,7 +528,7 @@ let set_minus_comment adj = function
   | _ -> raise Impossible
 
 let set_minus_comment_or_plus adj = function
-    Cocci2 _ | C2 _ | Indent_cocci2 | Unindent_cocci2 _ as x -> x
+    Cocci2 _ | C2 _ | Comma _ | Indent_cocci2 | Unindent_cocci2 _ as x -> x
   | x -> set_minus_comment adj x
 
 let drop_minus xs =
@@ -535,7 +539,7 @@ let drop_minus xs =
 
 let remove_minus_and_between_and_expanded_and_fake xs =
 
-  (* get rid of exampled and fake tok *)
+  (* get rid of expanded and fake tok *)
   let xs = xs +> Common.exclude (function
     | T2 (t,_,_) when TH.is_expanded t -> true
     | Fake2 -> true
@@ -555,55 +559,6 @@ let remove_minus_and_between_and_expanded_and_fake xs =
     adj1 = adj2 (* same adjacency info *) &&
     (* non-empty intersection of witness trees *)
     not ((Common.inter_set index1 index2) = []) in
-
-  let rec adjust_around_minus = function
-      [] -> []
-    | (T2(Parser_c.TCommentNewline c,_b,_i) as x)::
-      (((T2(_,Min adj,_))::_) as rest) ->
-	(* an initial newline, as in a replaced statement *)
-	let (between_minus,rest) = Common.span minus_or_comment rest in
-	(match rest with
-	  [] -> (set_minus_comment adj x) ::
-	    (List.map (set_minus_comment adj) between_minus)
-	| T2(_,Ctx,_)::_ when is_newline (List.hd(List.rev between_minus)) ->
-	    (set_minus_comment adj x)::(adjust_within_minus between_minus) @
-	    (adjust_around_minus rest)
-	| _ ->
-	    x :: (adjust_within_minus between_minus) @
-	    (adjust_around_minus rest))
-    | ((T2(_,Min adj,_))::_) as rest ->
-	(* no initial newline, as in a replaced expression *)
-	let (between_minus,rest) = Common.span minus_or_comment rest in
-	(match rest with
-	  [] ->
-	    (List.map (set_minus_comment adj) between_minus)
-	| _ ->
-	    (adjust_within_minus between_minus) @
-	    (adjust_around_minus rest))
-    | x::xs -> x::adjust_around_minus xs
-  and adjust_within_minus = function
-      [] -> []
-    | (T2(_,Min adj1,_) as t1)::xs ->
-	let (between_minus,rest) = Common.span is_minusable_comment xs in
-	(match rest with
-          [] ->
-	    (* keep last newline *)
-	    let (drop,keep) =
-	      try
-		let (drop,nl,keep) =
-		  Common.split_when is_newline between_minus in
-		(drop, nl :: keep)
-	      with Not_found -> (between_minus,[]) in
-	    t1 ::
-	    List.map (set_minus_comment_or_plus adj1) drop @
-	    keep
-	| (T2(_,Min adj2,_) as t2)::rest when common_adj adj1 adj2 ->
-	    t1::
-            List.map (set_minus_comment_or_plus adj1) between_minus @
-            adjust_within_minus (t2::rest)
-	| x::xs ->
-	    t1::(between_minus @ adjust_within_minus (x::xs)))
-    | _ -> failwith "only minus and space possible" in
 
   (* new idea: collects regions not containing non-space context code
      if two adjacent adjacent minus tokens satisfy common_adj then delete
@@ -631,7 +586,8 @@ let remove_minus_and_between_and_expanded_and_fake xs =
 	let (minus_list,rest) = Common.span not_context (t1::xs) in
 	let contains_plus = List.exists is_plus minus_list in
 	adjust_within_minus contains_plus minus_list @ adjust_around_minus rest
-    | x::xs -> x :: adjust_around_minus xs
+    | x::xs ->
+	x :: adjust_around_minus xs
   and adjust_within_minus cp (* contains plus *) = function
       (T2(_,Min adj1,_) as t1)::xs ->
 	let not_minus = function T2(_,Min _,_) -> false | _ -> true in
@@ -662,7 +618,7 @@ let remove_minus_and_between_and_expanded_and_fake xs =
       (T2(_,Ctx,_) as x) when not (is_minusable_comment x) -> false
     | _ -> true
   and is_plus = function
-      C2 _ | Cocci2 _ -> true
+      C2 _ | Comma _ | Cocci2 _ -> true
     | _ -> false in
 
   let xs = adjust_around_minus xs in
@@ -727,6 +683,18 @@ let remove_minus_and_between_and_expanded_and_fake xs =
 	m ::
 	(List.map (set_minus_comment adj) spaces) @
 	(adjust_before_brace rest)
+    | ((T2 (t0, Ctx, idx0)) as m0) :: ((T2 (t, Min adj, idx)) as m) :: rest
+	when TH.str_of_tok t0 = "" ->
+	  (* This is for the case of a #define that is completely deleted,
+	     because a #define has a strange EOL token at the end.
+	     We hope there i no other kind of token that is represented by
+	     "", but it seems like changing the kind of token might break
+	     the end of entity recognition in the C parser.
+	     See parsing_hacks.ml *)
+	  let (spaces,rest) = Common.span minus_or_comment_nocpp rest in
+	  m0 :: m ::
+	  (List.map (set_minus_comment adj) spaces) @
+	  (adjust_before_brace rest)
     | rest -> adjust_before_brace rest in
 
   let xs = List.rev (from_newline (List.rev xs)) in
@@ -803,6 +771,20 @@ let rec add_space xs =
       then x::C2 " "::(add_space (y::xs))
       else x::(add_space (y::xs))
 
+(* A fake comma is added at the end of an unordered initlist or a enum
+decl, if the initlist or enum doesn't already end in a comma.  This is only
+needed if there is + code, ie if we see Cocci after it in the code sequence *)
+
+let rec drop_end_comma = function
+    [] -> []
+  | [x] -> [x]
+  | ((Comma ",") as x) :: rest ->
+      let (newlines,rest2) = Common.span is_whitespace rest in
+      (match rest2 with
+	(Cocci2 _) :: _ -> x :: drop_end_comma rest
+      |	_ -> drop_end_comma rest)
+  | x :: xs -> x :: drop_end_comma xs
+
 (* The following only works for the outermost function call.  Stack records
 the column of all open parentheses.  Space_cell contains the most recent
 comma in the outermost function call.  The goal is to decide whether this
@@ -865,6 +847,7 @@ let add_newlines toks tabbing_unit =
 	      | _ -> loop info count xs) in
 	a :: rest
     | ((C2(s)) as a)::xs -> a :: loop info (string_length s count) xs
+    | ((Comma(s)) as a)::xs -> a :: loop info (string_length s count) xs
     | Fake2 :: _ | Indent_cocci2 :: _
     | Unindent_cocci2 _::_ ->
 	failwith "unexpected fake, indent, or unindent" in
@@ -1049,6 +1032,7 @@ let kind_of_token2 = function
   | Fake2 -> KFake
   | Cocci2 _ -> KCocci
   | C2 _ -> KC
+  | Comma _ -> KC
   | T2 (t,_,_) ->
       (match TH.pinfo_of_tok t with
       | ExpandedTok _ -> KExpanded
@@ -1148,8 +1132,10 @@ let pp_program2 xs outfile  =
 	  let toks = displace_fake_nodes toks in
           (* assert Origin;ExpandedTok;Faketok *)
           let toks = expand_mcode toks in
+
           (* assert Origin;ExpandedTok; + Cocci + C (was AbstractLineTok)
            * and no tag information, just NOTHING. *)
+
 
 	  let toks =
 	    if !Flag.sgrep_mode2
@@ -1160,6 +1146,7 @@ let pp_program2 xs outfile  =
 	      let toks = adjust_before_semicolon toks in(*before remove minus*)
 	      let toks = drop_space_at_endline toks in
 	      let toks = paren_to_space toks in
+	      let toks = drop_end_comma toks in
               let toks = remove_minus_and_between_and_expanded_and_fake toks in
               (* assert Origin + Cocci + C and no minus *)
               let toks = add_space toks in

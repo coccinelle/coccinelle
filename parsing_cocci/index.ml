@@ -1,5 +1,29 @@
+(*
+ * Copyright 2010, INRIA, University of Copenhagen
+ * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
+ * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+ * This file is part of Coccinelle.
+ *
+ * Coccinelle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, according to version 2 of the License.
+ *
+ * Coccinelle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The authors reserve the right to distribute this or future versions of
+ * Coccinelle under other licenses.
+ *)
+
+
 (* create an index for each constructor *)
-(* current max is 149 *)
+(* current max is 150 *)
 
 (* doesn't really work - requires that identical terms with no token
 subterms (eg dots) not appear on the same line *)
@@ -103,6 +127,7 @@ let typeC t =
   | Ast0.FunctionType(ty,lp1,params,rp1) -> [132]
   | Ast0.Array(ty,lb,size,rb) -> [50]
   | Ast0.EnumName(kind,name) -> [146]
+  | Ast0.EnumDef(ty,lb,decls,rb) -> [150]
   | Ast0.StructUnionName(kind,name) -> [51]
   | Ast0.StructUnionDef(ty,lb,decls,rb) -> [117]
   | Ast0.TypeName(name) -> [52]
@@ -129,7 +154,7 @@ let initialiser i =
   match Ast0.unwrap i with
     Ast0.MetaInit(nm,_) -> [106] (* added after *)
   | Ast0.InitExpr(exp) -> [102]
-  | Ast0.InitList(lb,initlist,rb) -> [103]
+  | Ast0.InitList(lb,initlist,rb,ordered) -> [103]
   | Ast0.InitGccExt(designators,eq,ini) -> [104]
   | Ast0.InitGccName(name,eq,ini) -> [105]
   | Ast0.IComma(cm) -> [108]

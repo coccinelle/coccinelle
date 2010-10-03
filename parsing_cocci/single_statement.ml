@@ -1,3 +1,27 @@
+(*
+ * Copyright 2010, INRIA, University of Copenhagen
+ * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
+ * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+ * This file is part of Coccinelle.
+ *
+ * Coccinelle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, according to version 2 of the License.
+ *
+ * Coccinelle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The authors reserve the right to distribute this or future versions of
+ * Coccinelle under other licenses.
+ *)
+
+
 (* detect statements that are between dots in the minus code, because they
 may need a special treatment if they are if branches *)
 
@@ -146,6 +170,7 @@ and left_typeC t =
   | Ast0.FunctionType(None,lp1,params,rp1) -> modif_before_mcode lp1
   | Ast0.Array(ty,lb,size,rb) -> left_typeC ty
   | Ast0.EnumName(kind,name) -> modif_before_mcode kind
+  | Ast0.EnumDef(ty,lb,ids,rb) -> left_typeC ty
   | Ast0.StructUnionName(kind,name) -> modif_before_mcode kind
   | Ast0.StructUnionDef(ty,lb,decls,rb) -> left_typeC ty
   | Ast0.TypeName(name) -> modif_before_mcode name

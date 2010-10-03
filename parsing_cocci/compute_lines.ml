@@ -1,3 +1,27 @@
+(*
+ * Copyright 2010, INRIA, University of Copenhagen
+ * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
+ * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+ * This file is part of Coccinelle.
+ *
+ * Coccinelle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, according to version 2 of the License.
+ *
+ * Coccinelle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The authors reserve the right to distribute this or future versions of
+ * Coccinelle under other licenses.
+ *)
+
+
 (* Computes starting and ending logical lines for statements and
 expressions.  every node gets an index as well. *)
 
@@ -365,9 +389,16 @@ and typeC t =
       let ty = typeC ty in
       mkres t (Ast0.Array(ty,lb,get_option expression size,rb))
 	ty (promote_mcode rb)
-  | Ast0.EnumName(kind,name) ->
+  | Ast0.EnumName(kind,Some name) ->
       let name = ident name in
-      mkres t (Ast0.EnumName(kind,name)) (promote_mcode kind) name
+      mkres t (Ast0.EnumName(kind,Some name)) (promote_mcode kind) name
+  | Ast0.EnumName(kind,None) ->
+      let mc = promote_mcode kind in
+      mkres t (Ast0.EnumName(kind,None)) mc mc
+  | Ast0.EnumDef(ty,lb,ids,rb) ->
+      let ty = typeC ty in
+      let ids = dots is_exp_dots (Some(promote_mcode lb)) expression ids in
+      mkres t (Ast0.EnumDef(ty,lb,ids,rb)) ty (promote_mcode rb)
   | Ast0.StructUnionName(kind,Some name) ->
       let name = ident name in
       mkres t (Ast0.StructUnionName(kind,Some name)) (promote_mcode kind) name
@@ -475,10 +506,10 @@ and initialiser i =
   | Ast0.InitExpr(exp) ->
       let exp = expression exp in
       mkres i (Ast0.InitExpr(exp)) exp exp
-  | Ast0.InitList(lb,initlist,rb) ->
+  | Ast0.InitList(lb,initlist,rb,ordered) ->
       let initlist =
 	dots is_init_dots (Some(promote_mcode lb)) initialiser initlist in
-      mkres i (Ast0.InitList(lb,initlist,rb))
+      mkres i (Ast0.InitList(lb,initlist,rb,ordered))
 	(promote_mcode lb) (promote_mcode rb)
   | Ast0.InitGccExt(designators,eq,ini) ->
       let (delims,designators) = (* non empty due to parsing *)

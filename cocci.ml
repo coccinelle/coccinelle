@@ -1,3 +1,27 @@
+(*
+ * Copyright 2010, INRIA, University of Copenhagen
+ * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
+ * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+ * This file is part of Coccinelle.
+ *
+ * Coccinelle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, according to version 2 of the License.
+ *
+ * Coccinelle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The authors reserve the right to distribute this or future versions of
+ * Coccinelle under other licenses.
+ *)
+
+
 open Common
 
 module CCI = Ctlcocci_integration
@@ -51,7 +75,8 @@ let sp_of_file2 file iso   =
     | Some ocaml_script_file ->
         (* compile file *)
 	Prepare_ocamlcocci.load_file ocaml_script_file;
-	Prepare_ocamlcocci.clean_file ocaml_script_file);
+	if not !Common.save_tmp_files
+	then Prepare_ocamlcocci.clean_file ocaml_script_file);
     res)
 let sp_of_file file iso    =
   Common.profile_code "parse cocci" (fun () -> sp_of_file2 file iso)
@@ -492,7 +517,7 @@ let sp_contain_typed_metavar_z toplevel_list_list =
   let combiner =
     Visitor_ast.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      donothing donothing donothing donothing
+      donothing donothing donothing donothing donothing
       donothing expression donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing
   in
@@ -1207,21 +1232,23 @@ let apply_script_rule r cache newes e rules_that_have_matched
 		List.exists (function (_,(r,m),_) -> r =*= re && m =$= rm) mv)
 	      e in
 	  (try
-	    let script_vals =  List.assoc relevant_bindings cache in
-	    print_dependencies
-	      "dependencies for script satisfied, but cached:"
-	      rules_that_have_matched
-	      !rules_that_have_ever_matched
-	      r.scr_rule_info.dependencies;
-	    show_or_not_binding "in" e;
+	    match List.assoc relevant_bindings cache with
+	      None -> (cache,newes)
+	    | Some script_vals ->
+		print_dependencies
+		  "dependencies for script satisfied, but cached:"
+		  rules_that_have_matched
+		  !rules_that_have_ever_matched
+		  r.scr_rule_info.dependencies;
+		show_or_not_binding "in" e;
 	      (* env might be bigger than what was cached against, so have to
 		 merge with newes anyway *)
-	    let new_e = (List.combine script_vars script_vals) @ e in
-	    let new_e =
-	      new_e +>
-	      List.filter
-		(fun (s,v) -> List.mem s r.scr_rule_info.used_after) in
-	    (cache,merge_env [(new_e, rules_that_have_matched)] newes)
+		let new_e = (List.combine script_vars script_vals) @ e in
+		let new_e =
+		  new_e +>
+		  List.filter
+		    (fun (s,v) -> List.mem s r.scr_rule_info.used_after) in
+		(cache,merge_env [(new_e, rules_that_have_matched)] newes)
 	  with Not_found ->
 	    begin
 	      print_dependencies "dependencies for script satisfied:"
@@ -1232,7 +1259,7 @@ let apply_script_rule r cache newes e rules_that_have_matched
 	      match script_application mv ve script_vars r with
 		None ->
 		  (* failure means we should drop e, no new bindings *)
-		  (((relevant_bindings,[]) :: cache), newes)
+		  (((relevant_bindings,None) :: cache), newes)
 	      | Some script_vals ->
 		  let script_vals =
 		    List.map (function x -> Ast_c.MetaIdVal(x,[]))
@@ -1244,7 +1271,7 @@ let apply_script_rule r cache newes e rules_that_have_matched
 		    List.filter
 		      (fun (s,v) -> List.mem s r.scr_rule_info.used_after) in
 		  r.scr_rule_info.was_matched := true;
-		  (((relevant_bindings,script_vals) :: cache),
+		  (((relevant_bindings,Some script_vals) :: cache),
 		   merge_env
 		     [(new_e,
 		       r.scr_rule_info.rulename :: rules_that_have_matched)]
@@ -1529,7 +1556,8 @@ and process_a_ctl_a_env_a_toplevel2 r e c f =
 
     r.rule_info.was_matched := true;
 
-    if not (null trans_info)
+    if not (null trans_info) &&
+      not (!Flag.sgrep_mode2 && not !Flag_cocci.show_diff)
     then begin
       c.was_modified := true;
       try
@@ -1606,7 +1634,7 @@ let rec bigloop2 rs (ccs: file_info list) =
 	then
 	  Common.push2 r.scr_rule_info.rulename rules_that_have_ever_matched);
 
-        es := (if newes = [] then init_es else newes);
+        es := newes (*(if newes = [] then init_es else newes)*);
     | CocciRuleCocciInfo r ->
 	apply_cocci_rule r rules_that_have_ever_matched
 	  es ccs);
@@ -1657,8 +1685,8 @@ let initial_final_bigloop2 ty rebuild r =
       let _ = apply_script_rule r [] [] [] [] (ref []) ocaml_application in
       ()
   | _ ->
-      Printf.printf "Unknown language for initial/final script: %s\n"
-	r.language
+      failwith ("Unknown language for initial/final script: "^
+		r.language)
 
 let initial_final_bigloop a b c =
   Common.profile_code "initial_final_bigloop"

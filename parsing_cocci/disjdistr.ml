@@ -1,3 +1,27 @@
+(*
+ * Copyright 2010, INRIA, University of Copenhagen
+ * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
+ * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+ * This file is part of Coccinelle.
+ *
+ * Coccinelle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, according to version 2 of the License.
+ *
+ * Coccinelle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The authors reserve the right to distribute this or future versions of
+ * Coccinelle under other licenses.
+ *)
+
+
 module Ast = Ast_cocci
 module V = Visitor_ast
 
@@ -71,6 +95,10 @@ and disjtypeC bty =
 	(function ty -> function size ->
 	  Ast.rewrap bty (Ast.Array(ty,lb,size,rb)))
   | Ast.EnumName(_,_) | Ast.StructUnionName(_,_) -> [bty]
+  | Ast.EnumDef(ty,lb,ids,rb) ->
+      disjmult2 (disjty ty) (disjdots disjexp ids)
+	(function ty -> function ids ->
+	  Ast.rewrap bty (Ast.EnumDef(ty,lb,ids,rb)))
   | Ast.StructUnionDef(ty,lb,decls,rb) ->
       disjmult2 (disjty ty) (disjdots disjdecl decls)
 	(function ty -> function decls ->
@@ -181,10 +209,15 @@ and disjini i =
   | Ast.InitExpr(exp) ->
       let exp = disjexp exp in
       List.map (function exp -> Ast.rewrap i (Ast.InitExpr(exp))) exp
-  | Ast.InitList(allminus,lb,initlist,rb,whencode) ->
+  | Ast.ArInitList(lb,initlist,rb) ->
       List.map
 	(function initlist ->
-	  Ast.rewrap i (Ast.InitList(allminus,lb,initlist,rb,whencode)))
+	  Ast.rewrap i (Ast.ArInitList(lb,initlist,rb)))
+	(disjdots disjini initlist)
+  | Ast.StrInitList(allminus,lb,initlist,rb,whencode) ->
+      List.map
+	(function initlist ->
+	  Ast.rewrap i (Ast.StrInitList(allminus,lb,initlist,rb,whencode)))
 	(disjmult disjini initlist)
   | Ast.InitGccExt(designators,eq,ini) ->
       let designators = disjmult designator designators in
@@ -198,6 +231,7 @@ and disjini i =
 	(function ini -> Ast.rewrap i (Ast.InitGccName(name,eq,ini)))
 	ini
   | Ast.IComma(comma) -> [i]
+  | Ast.Idots(dots,_) -> [i]
   | Ast.OptIni(ini) ->
       let ini = disjini ini in
       List.map (function ini -> Ast.rewrap i (Ast.OptIni(ini))) ini
@@ -326,7 +360,7 @@ let disj_all =
   let donothing r k e = k e in
   V.rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
     disj_rule_elem donothing donothing donothing donothing
 
@@ -343,7 +377,7 @@ let collect_all_isos =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
-    donothing doanything
+    donothing donothing doanything
 
 let collect_iso_info =
   let mcode x = x in
@@ -357,6 +391,7 @@ let collect_iso_info =
   V.rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing donothing donothing
+     donothing
     donothing donothing donothing donothing rule_elem donothing donothing
     donothing donothing
 

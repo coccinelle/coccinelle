@@ -257,10 +257,10 @@ and fullType = typeQualifier * typeC
 
 
      (* -------------------------------------- *)
-     and enumType = (name * (info (* = *) * constExpression) option)
-                    wrap2 (* , *) list
+     and enumType = oneEnumType wrap2 (* , *) list
                    (* => string * int list *)
 
+     and oneEnumType = name * (info (* = *) * constExpression) option
 
      (* -------------------------------------- *)
      (* return * (params * has "...") *)

@@ -792,6 +792,7 @@ val partition_either3 :
 
 val filter_some : 'a option list -> 'a list
 val map_filter : ('a -> 'b option) -> 'a list -> 'b list
+val tail_map_filter : ('a -> 'b option) -> 'a list -> 'b list
 val find_some : ('a -> 'b option) -> 'a list -> 'b
 
 val list_to_single_or_exn: 'a list -> 'a
@@ -1757,6 +1758,7 @@ val empty_graph : 'a list * 'b list
 (* mostly alias to functions in List *)
 
 val map : ('a -> 'b) -> 'a list -> 'b list
+val tail_map : ('a -> 'b) -> 'a list -> 'b list
 val filter : ('a -> bool) -> 'a list -> 'a list
 val fold : ('a -> 'b -> 'a) -> 'a -> 'b list -> 'a
 

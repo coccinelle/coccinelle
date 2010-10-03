@@ -460,8 +460,14 @@ and typeC ty =
   | Ast.Array(ty,lb,size,rb) ->
       fullType ty; mcode print_string lb; print_option expression size;
       mcode print_string rb
-  | Ast.EnumName(kind,name) -> mcode print_string kind; pr_space();
-      ident name
+  | Ast.EnumName(kind,name) ->
+      mcode print_string kind;
+      print_option_prespace ident name
+  | Ast.EnumDef(ty,lb,ids,rb) ->
+      fullType ty; ft_space ty;
+      mcode print_string lb;
+      dots force_newline expression ids;
+      mcode print_string rb
   | Ast.StructUnionName(kind,name) ->
       mcode structUnion kind; print_option_prespace ident name
   | Ast.StructUnionDef(ty,lb,decls,rb) ->
@@ -612,7 +618,11 @@ and initialiser nlcomma i =
             pretty_print_c.Pretty_print_c.init ini
         | _ -> raise Impossible)
   | Ast.InitExpr(exp) -> expression exp
-  | Ast.InitList(_,lb,initlist,rb,[]) ->
+  | Ast.ArInitList(lb,initlist,rb) ->
+      mcode print_string lb; start_block();
+      dots force_newline (initialiser false) initlist;
+      end_block(); mcode print_string rb
+  | Ast.StrInitList(_,lb,initlist,rb,[]) ->
       mcode print_string lb; start_block();
       (* awkward, because the comma is separate from the initialiser *)
       let rec loop = function
@@ -621,7 +631,8 @@ and initialiser nlcomma i =
 	| x::xs -> initialiser nlcomma x; loop xs in
       loop initlist;
       end_block(); mcode print_string rb
-  | Ast.InitList(_,lb,initlist,rb,_) -> failwith "unexpected whencode in plus"
+  | Ast.StrInitList(_,lb,initlist,rb,_) ->
+      failwith "unexpected whencode in plus"
   | Ast.InitGccExt(designators,eq,ini) ->
       List.iter designator designators; pr_space();
       mcode print_string eq; pr_space(); initialiser nlcomma ini
@@ -630,6 +641,17 @@ and initialiser nlcomma i =
   | Ast.IComma(comma) ->
       mcode print_string comma;
       if nlcomma then force_newline()
+  | Ast.Idots(dots,Some whencode) ->
+      if generating
+      then
+	(mcode print_string dots;
+	 print_text "   when != ";
+	 initialiser nlcomma whencode)
+      else raise CantBeInPlus
+  | Ast.Idots(dots,None) ->
+      if generating
+      then mcode print_string dots
+      else raise CantBeInPlus
   | Ast.OptIni(ini) | Ast.UniqueIni(ini) ->
       raise CantBeInPlus
 

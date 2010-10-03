@@ -1,3 +1,27 @@
+(*
+ * Copyright 2010, INRIA, University of Copenhagen
+ * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
+ * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+ * This file is part of Coccinelle.
+ *
+ * Coccinelle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, according to version 2 of the License.
+ *
+ * Coccinelle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The authors reserve the right to distribute this or future versions of
+ * Coccinelle under other licenses.
+ *)
+
+
 (* --------------------------------------------------------------------- *)
 (* Modified code *)
 
@@ -234,7 +258,9 @@ and base_typeC =
                    string mcode (* ) *)
   | Array           of fullType * string mcode (* [ *) *
 	               expression option * string mcode (* ] *)
-  | EnumName        of string mcode (*enum*) * ident (* name *)
+  | EnumName        of string mcode (*enum*) * ident option (* name *)
+  | EnumDef  of fullType (* either EnumName or metavar *) *
+	string mcode (* { *) * expression dots * string mcode (* } *)
   | StructUnionName of structUnion mcode * ident option (* name *)
   | StructUnionDef  of fullType (* either StructUnionName or metavar *) *
 	string mcode (* { *) * declaration dots * string mcode (* } *)
@@ -284,7 +310,8 @@ and declaration = base_declaration wrap
 and base_initialiser =
     MetaInit of meta_name mcode * keep_binding * inherited
   | InitExpr of expression
-  | InitList of bool (* true if all are - *) *
+  | ArInitList of string mcode (*{*) * initialiser dots * string mcode (*}*)
+  | StrInitList of bool (* true if all are - *) *
         string mcode (*{*) * initialiser list * string mcode (*}*) *
 	initialiser list (* whencode: elements that shouldn't appear in init *)
   | InitGccExt of
@@ -293,6 +320,7 @@ and base_initialiser =
   | InitGccName of ident (* name *) * string mcode (*:*) *
 	initialiser
   | IComma of string mcode (* , *)
+  | Idots  of string mcode (* ... *) * initialiser option (* whencode *)
   | OptIni    of initialiser
   | UniqueIni of initialiser
 

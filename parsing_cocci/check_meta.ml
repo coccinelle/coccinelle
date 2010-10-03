@@ -1,3 +1,27 @@
+(*
+ * Copyright 2010, INRIA, University of Copenhagen
+ * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
+ * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+ * This file is part of Coccinelle.
+ *
+ * Coccinelle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, according to version 2 of the License.
+ *
+ * Coccinelle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The authors reserve the right to distribute this or future versions of
+ * Coccinelle under other licenses.
+ *)
+
+
 (* For minus fragment, checks that all of the identifier metavariables that
 are used are not declared as fresh, and check that all declared variables
 are used.  For plus fragment, just check that the variables declared as
@@ -184,7 +208,10 @@ and typeC old_metas table minus t =
       check_table table minus name
   | Ast0.DisjType(_,types,_,_) ->
       List.iter (typeC old_metas table minus) types
-  | Ast0.EnumName(en,id) -> ident GLOBAL old_metas table minus id
+  | Ast0.EnumName(en,Some id) -> ident GLOBAL old_metas table minus id
+  | Ast0.EnumDef(ty,lb,ids,rb) ->
+      typeC old_metas table minus ty;
+      dots (expression GLOBAL old_metas table minus) ids
   | Ast0.StructUnionName(su,Some id) -> ident GLOBAL old_metas table minus id
   | Ast0.StructUnionDef(ty,lb,decls,rb) ->
       typeC old_metas table minus ty;
@@ -241,7 +268,7 @@ and initialiser old_metas table minus ini =
     Ast0.MetaInit(name,_) ->
       check_table table minus name
   | Ast0.InitExpr(exp) -> expression ID old_metas table minus exp
-  | Ast0.InitList(lb,initlist,rb) ->
+  | Ast0.InitList(lb,initlist,rb,ordered) ->
       dots (initialiser old_metas table minus) initlist
   | Ast0.InitGccExt(designators,eq,ini) ->
       List.iter (designator old_metas table minus) designators;
@@ -385,6 +412,7 @@ and case_line old_metas table minus c =
     Ast0.Default(def,colon,code) ->
       dots (statement old_metas table minus) code
   | Ast0.Case(case,exp,colon,code) ->
+      expression GLOBAL old_metas table minus exp;
       dots (statement old_metas table minus) code
   | Ast0.DisjCase(_,case_lines,_,_) ->
       List.iter (case_line old_metas table minus) case_lines

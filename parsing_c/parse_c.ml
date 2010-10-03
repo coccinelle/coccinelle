@@ -108,7 +108,7 @@ let print_bad line_error (start_line, end_line) filelines  =
 (* Stats on what was passed/commentized  *)
 (*****************************************************************************)
 
-let commentized xs = xs +> Common.map_filter (function
+let commentized xs = xs +> Common.tail_map_filter (function
   | Parser_c.TCommentCpp (cppkind, ii) ->
       let s = Ast_c.str_of_info ii in
       let legal_passing =
@@ -613,7 +613,7 @@ let get_one_elem ~pass tr (file, filelines) =
       (* Call parser *)
       (* -------------------------------------------------- *)
       Common.profile_code_exclusif "YACC" (fun () ->
-        Left (Parser_c.celem (lexer_function ~pass tr) lexbuf_fake)
+	Left (Parser_c.celem (lexer_function ~pass tr) lexbuf_fake)
       )
     with e ->
       LP.restore_typedef_state();
@@ -691,7 +691,7 @@ let find_optional_macro_to_expand2 ~defs toks =
 
   let defs = Common.hash_of_list defs in
 
-  let toks = toks +> Common.map (function
+  let toks = toks +> Common.tail_map (function
 
     (* special cases to undo *)
     | Parser_c.TMacroIterator (s, ii) ->

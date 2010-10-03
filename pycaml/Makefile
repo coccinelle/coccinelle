@@ -28,6 +28,7 @@ clean::
 	rm -f *.cm[aiox] *.a
 
 distclean:: clean
+	rm -rf ._d
 
 depend: # added by julia, undoubtedly wrong
 

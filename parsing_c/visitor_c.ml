@@ -454,14 +454,7 @@ and vk_type = fun bigf t ->
         )
 
     | Enum  (sopt, enumt) ->
-        enumt +> List.iter (fun ((name, eopt), iicomma) ->
-          vk_name bigf name;
-          iif iicomma;
-          eopt +> Common.do_option (fun (info, e) ->
-            iif [info];
-            vk_expr bigf e
-          )
-        );
+        vk_enum_fields bigf enumt
 
     | StructUnion (sopt, _su, fields) ->
         vk_struct_fields bigf fields
@@ -610,6 +603,21 @@ and vk_struct_fieldkinds = fun bigf onefield_multivars ->
         vk_expr bigf expr;
         vk_type bigf t
   )
+
+
+and vk_enum_fields = fun bigf enumt ->
+  let iif ii = vk_ii bigf ii in
+  enumt +> List.iter (fun ((name, eopt), iicomma) ->
+    vk_oneEnum bigf (name, eopt);
+    iif iicomma)
+
+and vk_oneEnum = fun bigf (name, eopt) ->
+  let iif ii = vk_ii bigf ii in
+  vk_name bigf name;
+  eopt +> Common.do_option (fun (info, e) ->
+    iif [info];
+    vk_expr bigf e
+      )
 
 (* ------------------------------------------------------------------------ *)
 
@@ -919,29 +927,18 @@ and vk_asmbody = fun bigf (string_list, colon_list) ->
 
 
 (* ------------------------------------------------------------------------ *)
-let vk_args_splitted = fun bigf args_splitted ->
+let vk_splitted element = fun bigf args_splitted ->
   let iif ii = vk_ii bigf ii in
   args_splitted +> List.iter (function
-  | Left arg -> vk_argument bigf arg
+  | Left arg -> element bigf arg
   | Right ii -> iif ii
   )
 
-
-let vk_define_params_splitted = fun bigf args_splitted ->
-  let iif ii = vk_ii bigf ii in
-  args_splitted +> List.iter (function
-  | Left (s, iis) -> vk_ii bigf iis
-  | Right ii -> iif ii
-  )
-
-
-
-let vk_params_splitted = fun bigf args_splitted ->
-  let iif ii = vk_ii bigf ii in
-  args_splitted +> List.iter (function
-  | Left arg -> vk_param bigf arg
-  | Right ii -> iif ii
-  )
+let vk_args_splitted = vk_splitted vk_argument
+let vk_define_params_splitted = vk_splitted (fun bigf (_,ii) -> vk_ii bigf ii)
+let vk_params_splitted = vk_splitted vk_param
+let vk_enum_fields_splitted = vk_splitted vk_oneEnum
+let vk_inis_splitted = vk_splitted vk_ini
 
 (* ------------------------------------------------------------------------ *)
 let vk_cst = fun bigf (cst, ii) ->
@@ -1246,17 +1243,7 @@ and vk_type_s = fun bigf t ->
             ))
 
       | Enum  (sopt, enumt) ->
-          Enum (sopt,
-               enumt +> List.map (fun ((name, eopt), iicomma) ->
-
-                 ((vk_name_s bigf name,
-                  eopt +> Common.fmap (fun (info, e) ->
-                    vk_info_s bigf info,
-                    vk_expr_s bigf e
-                 )),
-                 iif iicomma)
-               )
-               )
+          Enum (sopt, vk_enum_fields_s bigf enumt)
       | StructUnion (sopt, su, fields) ->
           StructUnion (sopt, su, vk_struct_fields_s bigf fields)
 
@@ -1400,9 +1387,20 @@ and vk_struct_field_s = fun bigf field ->
       IfdefStruct (vk_ifdef_directive_s bigf ifdef)
 
 and vk_struct_fields_s = fun bigf fields ->
-
   fields +> List.map (vk_struct_field_s bigf)
 
+and vk_enum_fields_s = fun bigf enumt ->
+  let iif ii = vk_ii_s bigf ii in
+  enumt +> List.map (fun ((name, eopt), iicomma) ->
+    vk_oneEnum_s bigf (name, eopt), iif iicomma)
+
+and vk_oneEnum_s = fun bigf oneEnum ->
+  let (name,eopt) = oneEnum in
+  (vk_name_s bigf name,
+   eopt +> Common.fmap (fun (info, e) ->
+     vk_info_s bigf info,
+     vk_expr_s bigf e
+       ))
 
 and vk_def_s = fun bigf d ->
   let f = bigf.kdef_s in
@@ -1663,35 +1661,13 @@ and vk_param_s = fun bigf param ->
     p_type = vk_type_s bigf ft;
   }
 
-let vk_args_splitted_s = fun bigf args_splitted ->
-  let iif ii = vk_ii_s bigf ii in
-  args_splitted +> List.map (function
-  | Left arg -> Left (vk_argument_s bigf arg)
-  | Right ii -> Right (iif ii)
-  )
-
 let vk_arguments_s = fun bigf args ->
   let iif ii = vk_ii_s bigf ii in
   args +> List.map (fun (e, ii) -> vk_argument_s bigf e, iif ii)
 
-
-let vk_params_splitted_s = fun bigf args_splitted ->
-  let iif ii = vk_ii_s bigf ii in
-  args_splitted +> List.map (function
-  | Left arg -> Left (vk_param_s bigf arg)
-  | Right ii -> Right (iif ii)
-  )
-
 let vk_params_s = fun bigf args ->
   let iif ii = vk_ii_s bigf ii in
   args +> List.map (fun (p,ii) -> vk_param_s bigf p, iif ii)
-
-let vk_define_params_splitted_s = fun bigf args_splitted ->
-  let iif ii = vk_ii_s bigf ii in
-  args_splitted +> List.map (function
-  | Left (s, iis) -> Left (s, vk_ii_s bigf iis)
-  | Right ii -> Right (iif ii)
-  )
 
 let vk_cst_s = fun bigf (cst, ii) ->
   let iif ii = vk_ii_s bigf ii in
@@ -1699,3 +1675,19 @@ let vk_cst_s = fun bigf (cst, ii) ->
   | Left cst -> Left cst
   | Right s -> Right s
   ), iif ii
+
+(* ------------------------------------------------------------------------ *)
+
+let vk_splitted_s element = fun bigf args_splitted ->
+  let iif ii = vk_ii_s bigf ii in
+  args_splitted +> List.map (function
+  | Left arg -> Left (element bigf arg)
+  | Right ii -> Right (iif ii)
+  )
+
+let vk_args_splitted_s = vk_splitted_s vk_argument_s
+let vk_params_splitted_s = vk_splitted_s vk_param_s
+let vk_define_params_splitted_s =
+  vk_splitted_s (fun bigf (s,ii) -> (s,vk_ii_s bigf ii))
+let vk_enum_fields_splitted_s = vk_splitted_s vk_oneEnum_s
+let vk_inis_splitted_s = vk_splitted_s vk_ini_s

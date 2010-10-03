@@ -1,3 +1,27 @@
+(*
+ * Copyright 2010, INRIA, University of Copenhagen
+ * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
+ * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+ * This file is part of Coccinelle.
+ *
+ * Coccinelle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, according to version 2 of the License.
+ *
+ * Coccinelle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The authors reserve the right to distribute this or future versions of
+ * Coccinelle under other licenses.
+ *)
+
+
 (* Arities matter for the minus slice, but not for the plus slice. *)
 
 (* ? only allowed on rule_elems, and on subterms if the context is ? also. *)
@@ -387,8 +411,17 @@ and top_typeC tgt opt_allowed typ =
       let arity =
 	all_same opt_allowed tgt (mcode2line kind) [mcode2arity kind] in
       let kind = mcode kind in
-      let name = ident false arity name in
+      let name = get_option (ident false arity) name in
       make_typeC typ tgt arity (Ast0.EnumName(kind,name))
+  | Ast0.EnumDef(ty,lb,decls,rb) ->
+      let arity =
+	all_same opt_allowed tgt (mcode2line lb)
+	  (List.map mcode2arity [lb;rb]) in
+      let ty = typeC arity ty in
+      let lb = mcode lb in
+      let ids = dots (expression tgt) decls in
+      let rb = mcode rb in
+      make_typeC typ tgt arity (Ast0.EnumDef(ty,lb,ids,rb))
   | Ast0.StructUnionName(kind,name) ->
       let arity =
 	all_same opt_allowed tgt (mcode2line kind)
@@ -529,12 +562,12 @@ and initialiser tgt i =
       make_init i tgt arity (Ast0.MetaInit(name,pure))
   | Ast0.InitExpr(exp) ->
       Ast0.rewrap i (Ast0.InitExpr(expression tgt exp))
-  | Ast0.InitList(lb,initlist,rb) ->
+  | Ast0.InitList(lb,initlist,rb,ordered) ->
       let arity = init_same (mcode2line lb) [mcode2arity lb; mcode2arity rb] in
       let lb = mcode lb in
       let initlist = dots (initialiser arity) initlist in
       let rb = mcode rb in
-      make_init i tgt arity (Ast0.InitList(lb,initlist,rb))
+      make_init i tgt arity (Ast0.InitList(lb,initlist,rb,ordered))
   | Ast0.InitGccExt(designators,eq,ini) ->
       let arity = init_same (mcode2line eq) [mcode2arity eq] in
       let designators = List.map (designator arity) designators in

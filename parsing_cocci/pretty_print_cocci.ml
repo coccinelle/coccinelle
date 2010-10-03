@@ -1,3 +1,27 @@
+(*
+ * Copyright 2010, INRIA, University of Copenhagen
+ * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
+ * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+ * This file is part of Coccinelle.
+ *
+ * Coccinelle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, according to version 2 of the License.
+ *
+ * Coccinelle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The authors reserve the right to distribute this or future versions of
+ * Coccinelle under other licenses.
+ *)
+
+
 open Format
 module Ast = Ast_cocci
 
@@ -348,8 +372,13 @@ and typeC ty =
   | Ast.Array(ty,lb,size,rb) ->
       fullType ty; mcode print_string lb; print_option expression size;
       mcode print_string rb
-  | Ast.EnumName(kind,name) -> mcode print_string kind; print_string " ";
-      ident name
+  | Ast.EnumName(kind,name) ->
+      mcode print_string kind;
+      print_option (function x -> ident x; print_string " ") name
+  | Ast.EnumDef(ty,lb,ids,rb) ->
+      fullType ty; mcode print_string lb;
+      dots force_newline expression ids;
+      mcode print_string rb
   | Ast.StructUnionName(kind,name) ->
       mcode structUnion kind;
       print_option (function x -> ident x; print_string " ") name
@@ -449,7 +478,11 @@ and initialiser i =
     Ast.MetaInit(name,_,_) ->
       mcode print_meta name; print_string " "
   | Ast.InitExpr(exp) -> expression exp
-  | Ast.InitList(allminus,lb,initlist,rb,whencode) ->
+  | Ast.ArInitList(lb,initlist,rb) ->
+      mcode print_string lb; open_box 0;
+      dots force_newline initialiser initlist; close_box();
+      mcode print_string rb
+  | Ast.StrInitList(allminus,lb,initlist,rb,whencode) ->
       mcode print_string lb; open_box 0;
       if not (whencode = [])
       then
@@ -465,6 +498,9 @@ and initialiser i =
   | Ast.InitGccName(name,eq,ini) ->
       ident name; mcode print_string eq; initialiser ini
   | Ast.IComma(comma) -> mcode print_string comma; force_newline()
+  | Ast.Idots(dots,Some whencode) ->
+      mcode print_string dots; print_string "   when != "; initialiser whencode
+  | Ast.Idots(dots,None) -> mcode print_string dots
   | Ast.OptIni(ini) -> print_string "?"; initialiser ini
   | Ast.UniqueIni(ini) -> print_string "!"; initialiser ini
 

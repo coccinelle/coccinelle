@@ -1,3 +1,27 @@
+(*
+ * Copyright 2010, INRIA, University of Copenhagen
+ * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
+ * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+ * This file is part of Coccinelle.
+ *
+ * Coccinelle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, according to version 2 of the License.
+ *
+ * Coccinelle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The authors reserve the right to distribute this or future versions of
+ * Coccinelle under other licenses.
+ *)
+
+
 (* Potential problem: offset of mcode is not updated when an iso is
 instantiated, implying that a term may end up with many mcodes with the
 same offset.  On the other hand, at the moment offset only seems to be used
@@ -101,6 +125,7 @@ type reason =
   | ContextRequired of Ast0.anything
   | NonMatch
   | Braces of Ast0.statement
+  | Nest of Ast0.statement
   | Position of Ast.meta_name
   | TypeMatch of reason list
 
@@ -134,6 +159,10 @@ let rec interpret_reason name line reason printer =
       Unparse_ast0.unparse_anything term
   | Braces(s) ->
       Printf.printf "braces must be all minus (plus code allowed) or all\ncontext (plus code not allowed in the body) to match:\n";
+      Unparse_ast0.statement "" s;
+      Format.print_newline()
+  | Nest(s) ->
+      Printf.printf "iso with nest doesn't match whencode (TODO):\n";
       Unparse_ast0.statement "" s;
       Format.print_newline()
   | Position(rule,name) ->
@@ -760,9 +789,16 @@ let match_maker checks_needed context_required whencode_allowed =
 	      conjunct_many_bindings
 		[check_mcode lb1 lb; check_mcode rb1 rb;
 		  match_typeC tya tyb; match_option match_expr sizea sizeb]
-	  | (Ast0.EnumName(kinda,namea),Ast0.EnumName(kindb,nameb)) ->
+	  | (Ast0.EnumName(kinda,Some namea),
+	     Ast0.EnumName(kindb,Some nameb)) ->
 	      conjunct_bindings (check_mcode kinda kindb)
 		(match_ident namea nameb)
+	  | (Ast0.EnumDef(tya,lb1,idsa,rb1),
+	     Ast0.EnumDef(tyb,lb,idsb,rb)) ->
+	       conjunct_many_bindings
+		 [check_mcode lb1 lb; check_mcode rb1 rb;
+		   match_typeC tya tyb;
+		   match_dots match_expr no_list do_nolist_match idsa idsb]
 	  | (Ast0.StructUnionName(kinda,Some namea),
 	     Ast0.StructUnionName(kindb,Some nameb)) ->
 	       if mcode_equal kinda kindb
@@ -869,8 +905,9 @@ let match_maker checks_needed context_required whencode_allowed =
 	  match (up,Ast0.unwrap i) with
 	    (Ast0.InitExpr(expa),Ast0.InitExpr(expb)) ->
 	      match_expr expa expb
-	  | (Ast0.InitList(lb1,initlista,rb1),Ast0.InitList(lb,initlistb,rb))
-	    ->
+	  | (Ast0.InitList(lb1,initlista,rb1,oa),
+	     Ast0.InitList(lb,initlistb,rb,ob))
+	    when oa = ob ->
 	      conjunct_many_bindings
 		[check_mcode lb1 lb; check_mcode rb1 rb;
 		  match_dots match_init no_list do_nolist_match
@@ -1076,8 +1113,25 @@ let match_maker checks_needed context_required whencode_allowed =
 		[check_mcode r1 r; check_mcode sc1 sc; match_expr expa expb]
 	  | (Ast0.Disj(_,statement_dots_lista,_,_),_) ->
 	      failwith "disj not supported in patterns"
+	  | (Ast0.Nest(_,stmt_dotsa,_,[],multia),
+	     Ast0.Nest(_,stmt_dotsb,_,wc,multib)) ->
+	       if multia = multib
+	       then
+		 (match wc with
+		   [] ->
+		  (* not sure this is correct, perhaps too restrictive *)
+		     if not(checks_needed) or is_minus s or
+		       (is_context s &&
+			List.for_all is_pure_context (Ast0.undots stmt_dotsb))
+		     then
+		       match_dots match_statement
+			 is_slist_matcher do_slist_match
+			 stmt_dotsa stmt_dotsb
+		     else return_false (Braces(s))
+		 | _ -> return_false (Nest(s)))
+	       else return false (* diff kind of nest *)
 	  | (Ast0.Nest(_,stmt_dotsa,_,_,_),_) ->
-	      failwith "nest not supported in patterns"
+	      failwith "nest with whencode not supported in patterns"
 	  | (Ast0.Exp(expa),Ast0.Exp(expb)) -> match_expr expa expb
 	  | (Ast0.TopExp(expa),Ast0.TopExp(expb)) -> match_expr expa expb
 	  | (Ast0.Exp(expa),Ast0.TopExp(expb)) -> match_expr expa expb

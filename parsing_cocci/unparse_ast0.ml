@@ -1,3 +1,27 @@
+(*
+ * Copyright 2010, INRIA, University of Copenhagen
+ * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
+ * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+ * This file is part of Coccinelle.
+ *
+ * Coccinelle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, according to version 2 of the License.
+ *
+ * Coccinelle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The authors reserve the right to distribute this or future versions of
+ * Coccinelle under other licenses.
+ *)
+
+
 open Format
 module Ast = Ast_cocci
 module Ast0 = Ast0_cocci
@@ -249,8 +273,13 @@ and typeC t =
       | Ast0.Array(ty,lb,size,rb) ->
 	  typeC ty; mcode print_string lb; print_option expression size;
 	  mcode print_string rb
-      | Ast0.EnumName(kind,name) -> mcode print_string kind; print_string " ";
-	  ident name
+      | Ast0.EnumName(kind,name) ->
+	  mcode print_string kind;
+	  print_option (function x -> ident x; print_string " ") name
+      | Ast0.EnumDef(ty,lb,ids,rb) ->
+	  typeC ty; mcode print_string lb;
+	  dots force_newline expression ids;
+	  mcode print_string rb
       | Ast0.StructUnionName(kind,name) ->
 	  mcode U.structUnion kind;
 	  print_option (function x -> ident x; print_string " ") name
@@ -342,7 +371,8 @@ and initialiser i =
       match Ast0.unwrap i with
 	Ast0.MetaInit(name,_)-> mcode print_meta name; print_string " "
       |	Ast0.InitExpr(exp) -> expression exp
-      | Ast0.InitList(lb,initlist,rb) ->
+      | Ast0.InitList(lb,initlist,rb,ordered) ->
+          (*doesn't show commas dropped in unordered case*)
 	  mcode print_string lb; open_box 0;
 	  let _ = dots (function _ -> ()) initialiser initlist in
 	  close_box(); mcode print_string rb

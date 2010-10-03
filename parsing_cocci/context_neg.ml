@@ -1,3 +1,27 @@
+(*
+ * Copyright 2010, INRIA, University of Copenhagen
+ * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
+ * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+ * This file is part of Coccinelle.
+ *
+ * Coccinelle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, according to version 2 of the License.
+ *
+ * Coccinelle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The authors reserve the right to distribute this or future versions of
+ * Coccinelle under other licenses.
+ *)
+
+
 (* Detects subtrees that are all minus/plus and nodes that are "binding
 context nodes".  The latter is a node whose structure and immediate tokens
 are the same in the minus and plus trees, and such that for every child,
@@ -517,6 +541,8 @@ let rec equal_typeC t1 t2 =
       equal_mcode lb1 lb2 && equal_mcode rb1 rb2
   | (Ast0.EnumName(kind1,_),Ast0.EnumName(kind2,_)) ->
       equal_mcode kind1 kind2
+  | (Ast0.EnumDef(_,lb1,_,rb1),Ast0.EnumDef(_,lb2,_,rb2)) ->
+       equal_mcode lb1 lb2 && equal_mcode rb1 rb2
   | (Ast0.StructUnionName(kind1,_),Ast0.StructUnionName(kind2,_)) ->
       equal_mcode kind1 kind2
   | (Ast0.FunctionType(ty1,lp1,p1,rp1),Ast0.FunctionType(ty2,lp2,p2,rp2)) ->
@@ -572,7 +598,9 @@ let equal_initialiser i1 i2 =
     (Ast0.MetaInit(name1,_),Ast0.MetaInit(name2,_)) ->
       equal_mcode name1 name2
   | (Ast0.InitExpr(_),Ast0.InitExpr(_)) -> true
-  | (Ast0.InitList(lb1,_,rb1),Ast0.InitList(lb2,_,rb2)) ->
+  | (Ast0.InitList(lb1,_,rb1,o1),Ast0.InitList(lb2,_,rb2,o2)) ->
+      (* can't compare orderedness, because this can differ between -
+	 and + code *)
       (equal_mcode lb1 lb2) && (equal_mcode rb1 rb2)
   | (Ast0.InitGccExt(designators1,eq1,_),
      Ast0.InitGccExt(designators2,eq2,_)) ->

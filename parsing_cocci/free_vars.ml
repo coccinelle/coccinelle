@@ -1,3 +1,27 @@
+(*
+ * Copyright 2010, INRIA, University of Copenhagen
+ * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
+ * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+ * This file is part of Coccinelle.
+ *
+ * Coccinelle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, according to version 2 of the License.
+ *
+ * Coccinelle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The authors reserve the right to distribute this or future versions of
+ * Coccinelle under other licenses.
+ *)
+
+
 (* For each rule return the list of variables that are used after it.
 Also augment various parts of each rule with unitary, inherited, and freshness
 informations *)
@@ -173,7 +197,7 @@ let collect_refs include_constraints =
 
   V.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing
     astfvident astfvexpr astfvfullType astfvtypeC astfvinit astfvparam
     astfvdecls astfvrule_elem astfvstatement donothing donothing donothing_a
 
@@ -283,7 +307,7 @@ let collect_saved =
 
   V.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing
     astfvident astfvexpr donothing astfvtypeC astfvinit astfvparam
     astfvdecls astfvrule_elem donothing donothing donothing donothing
 
@@ -396,7 +420,7 @@ let collect_in_plus_term =
 
   V.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing
     donothing astfvrule_elem astfvstatement donothing donothing donothing
 
@@ -558,7 +582,7 @@ let classify_variables metavar_decls minirules used_after =
 
   let fn = V.rebuilder
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      donothing donothing donothing donothing
+      donothing donothing donothing donothing donothing
       ident expression donothing typeC init param decl rule_elem
       donothing donothing donothing donothing in
 
@@ -690,7 +714,7 @@ let astfvs metavars bound =
 
   V.rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    donothing donothing astfvstatement_dots donothing
+    donothing donothing astfvstatement_dots donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
     astfvrule_elem astfvstatement astfvcase_line astfvtoplevel donothing
 
@@ -752,7 +776,7 @@ let get_neg_pos_list (_,rule) used_after_list =
   let v =
     V.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing in
   match rule with

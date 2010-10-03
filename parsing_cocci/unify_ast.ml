@@ -1,3 +1,27 @@
+(*
+ * Copyright 2010, INRIA, University of Copenhagen
+ * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
+ * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+ * This file is part of Coccinelle.
+ *
+ * Coccinelle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, according to version 2 of the License.
+ *
+ * Coccinelle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The authors reserve the right to distribute this or future versions of
+ * Coccinelle under other licenses.
+ *)
+
+
 (* --------------------------------------------------------------------- *)
 (* Given two patterns, A and B, determine whether B can match any matched
 subterms of A.  For simplicity, this doesn't maintain an environment; it
@@ -86,6 +110,11 @@ let dpdots e =
 let sdots s =
   match Ast.unwrap s with
     Ast.Dots(_,_,_,_) | Ast.Circles(_,_,_,_) | Ast.Stars(_,_,_,_) -> true
+  | _ -> false
+
+let idots e =
+  match Ast.unwrap e with
+    Ast.Idots(_,_) -> true
   | _ -> false
 
 (* --------------------------------------------------------------------- *)
@@ -230,12 +259,17 @@ and unify_typeC t1 t2 =
   | (Ast.Array(ty1,lb1,e1,rb1),Ast.Array(ty2,lb2,e2,rb2)) ->
       conjunct_bindings
 	(unify_fullType ty1 ty2) (unify_option unify_expression e1 e2)
-  | (Ast.EnumName(s1,ts1),Ast.EnumName(s2,ts2)) ->
+  | (Ast.EnumName(s1,Some ts1),Ast.EnumName(s2,Some ts2)) ->
       if unify_mcode s1 s2 then unify_ident ts1 ts2 else return false
+  | (Ast.EnumName(s1,None),Ast.EnumName(s2,None)) ->
+      return true
+  | (Ast.EnumDef(ty1,lb1,ids1,rb1),Ast.EnumDef(ty2,lb2,ids2,rb2)) ->
+       conjunct_bindings (unify_fullType ty1 ty2)
+	 (unify_dots unify_expression edots ids1 ids2)
   | (Ast.StructUnionName(s1,Some ts1),Ast.StructUnionName(s2,Some ts2)) ->
       if unify_mcode s1 s2 then unify_ident ts1 ts2 else return false
   | (Ast.StructUnionName(s1,None),Ast.StructUnionName(s2,None)) ->
-      return true
+      return (unify_mcode s1 s2)
   | (Ast.StructUnionDef(ty1,lb1,decls1,rb1),
      Ast.StructUnionDef(ty2,lb2,decls2,rb2)) ->
        conjunct_bindings (unify_fullType ty1 ty2)
@@ -295,8 +329,12 @@ and unify_initialiser i1 i2 =
     (Ast.MetaInit(_,_,_),_) | (_,Ast.MetaInit(_,_,_)) -> return true
   | (Ast.InitExpr(expa),Ast.InitExpr(expb)) ->
       unify_expression expa expb
-  | (Ast.InitList(_,_,initlista,_,whena),
-     Ast.InitList(_,_,initlistb,_,whenb)) ->
+  | (Ast.ArInitList(_,initlista,_),
+     Ast.ArInitList(_,initlistb,_)) ->
+      (* ignore whencode - returns true safely *)
+      unify_dots unify_initialiser idots initlista initlistb
+  | (Ast.StrInitList(_,_,initlista,_,whena),
+     Ast.StrInitList(_,_,initlistb,_,whenb)) ->
       (* ignore whencode - returns true safely *)
       unify_lists unify_initialiser (function _ -> false) initlista initlistb
   | (Ast.InitGccExt(designatorsa,_,inia),
@@ -482,7 +520,7 @@ and subexp f =
   let donothing r k e = k e in
   let recursor = V.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      donothing donothing donothing donothing
+      donothing donothing donothing donothing donothing
       donothing expr donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing in
   recursor.V.combiner_rule_elem
@@ -495,7 +533,7 @@ and subtype f =
   let donothing r k e = k e in
   let recursor = V.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      donothing donothing donothing donothing
+      donothing donothing donothing donothing donothing
       donothing donothing fullType donothing donothing donothing donothing
       donothing donothing donothing donothing donothing in
   recursor.V.combiner_rule_elem

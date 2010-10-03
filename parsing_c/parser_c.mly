@@ -1557,9 +1557,9 @@ struct_decl_list_gcc:
 /*(* enum *)*/
 /*(*************************************************************************)*/
 enum_spec:
- | Tenum        tobrace_enum enumerator_list gcc_comma_opt tcbrace_enum
+ | Tenum        tobrace_enum enumerator_list gcc_comma_opt_struct tcbrace_enum
      { Enum (None,    $3),           [$1;$2;$5] ++ $4 }
- | Tenum ident  tobrace_enum enumerator_list gcc_comma_opt tcbrace_enum
+ | Tenum ident  tobrace_enum enumerator_list gcc_comma_opt_struct tcbrace_enum
      { Enum (Some (fst $2), $4),     [$1; snd $2; $3;$6] ++ $5 }
  | Tenum ident
      { EnumName (fst $2),       [$1; snd $2] }

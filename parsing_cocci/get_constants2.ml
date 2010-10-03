@@ -1,3 +1,27 @@
+(*
+ * Copyright 2010, INRIA, University of Copenhagen
+ * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
+ * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+ * This file is part of Coccinelle.
+ *
+ * Coccinelle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, according to version 2 of the License.
+ *
+ * Coccinelle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The authors reserve the right to distribute this or future versions of
+ * Coccinelle under other licenses.
+ *)
+
+
 module Ast = Ast_cocci
 module V = Visitor_ast
 module TC = Type_cocci
@@ -406,7 +430,7 @@ let do_get_constants constants keywords env neg_pos =
 
   V.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing
     ident expression fullType typeC initialiser parameter declaration
     rule_elem statement donothing donothing donothing
 
@@ -439,7 +463,7 @@ let get_all_constants minus_only =
   V.combiner bind option_default
     other mcode other other other other other other other other other other
 
-    donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing
 
@@ -483,7 +507,7 @@ let get_plus_constants =
 
   V.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
     rule_elem statement donothing donothing donothing
 
@@ -518,7 +542,7 @@ let all_context =
 
   let initialiser r k e =
     match Ast.unwrap e with
-      Ast.InitList(all_minus,_,_,_,_) ->
+      Ast.StrInitList(all_minus,_,_,_,_) ->
 	not all_minus && k e
     | _ -> k e in
 
@@ -537,7 +561,7 @@ let all_context =
 
   V.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing
     donothing donothing donothing donothing initialiser donothing
     donothing rule_elem statement donothing donothing donothing
 

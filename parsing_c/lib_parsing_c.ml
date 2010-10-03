@@ -77,6 +77,7 @@ let al_param     x = Visitor_c.vk_param_s     (strip_info_visitor()) x
 let al_params    x = Visitor_c.vk_params_s    (strip_info_visitor()) x
 let al_arguments x = Visitor_c.vk_arguments_s (strip_info_visitor()) x
 let al_fields    x = Visitor_c.vk_struct_fields_s (strip_info_visitor()) x
+let al_name      x = Visitor_c.vk_name_s      (strip_info_visitor()) x
 
 let al_node      x = Visitor_c.vk_node_s      (strip_info_visitor()) x
 
@@ -190,6 +191,8 @@ let real_strip_info_visitor _ =
 let real_al_expr      x = Visitor_c.vk_expr_s   (real_strip_info_visitor()) x
 let real_al_node      x = Visitor_c.vk_node_s   (real_strip_info_visitor()) x
 let real_al_type      x = Visitor_c.vk_type_s   (real_strip_info_visitor()) x
+let real_al_statement x =
+  Visitor_c.vk_statement_s (real_strip_info_visitor()) x
 
 
 (*****************************************************************************)
@@ -216,8 +219,10 @@ let ii_of_stmt = extract_info_visitor Visitor_c.vk_statement
 let ii_of_args = extract_info_visitor Visitor_c.vk_args_splitted
 let ii_of_type = extract_info_visitor Visitor_c.vk_type
 let ii_of_ini  = extract_info_visitor Visitor_c.vk_ini
+let ii_of_inis  = extract_info_visitor Visitor_c.vk_inis_splitted
 let ii_of_param = extract_info_visitor Visitor_c.vk_param
 let ii_of_params = extract_info_visitor Visitor_c.vk_params_splitted
+let ii_of_enum_fields = extract_info_visitor Visitor_c.vk_enum_fields_splitted
 let ii_of_struct_fields = extract_info_visitor Visitor_c.vk_struct_fields
 (*let ii_of_struct_field = extract_info_visitor Visitor_c.vk_struct_field*)
 let ii_of_struct_fieldkinds = extract_info_visitor Visitor_c.vk_struct_fieldkinds

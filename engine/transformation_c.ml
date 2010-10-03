@@ -1,3 +1,27 @@
+(*
+ * Copyright 2010, INRIA, University of Copenhagen
+ * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
+ * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+ * This file is part of Coccinelle.
+ *
+ * Coccinelle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, according to version 2 of the License.
+ *
+ * Coccinelle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The authors reserve the right to distribute this or future versions of
+ * Coccinelle under other licenses.
+ *)
+
+
 1(* Yoann Padioleau
  *
  * Copyright (C) 2006, 2007 Ecole des Mines de Nantes
@@ -402,6 +426,9 @@ module XTRANS = struct
   let distribute_mck_ini (maxpos, minpos) = fun (lop,mop,rop,bop) -> fun x ->
     Visitor_c.vk_ini_s (mk_bigf (maxpos, minpos) (lop,mop,rop,bop)) x
 
+  let distribute_mck_inis (maxpos, minpos) = fun (lop,mop,rop,bop) -> fun x ->
+    Visitor_c.vk_inis_splitted_s (mk_bigf (maxpos, minpos) (lop,mop,rop,bop)) x
+
   let distribute_mck_param (maxpos, minpos) = fun (lop,mop,rop,bop) -> fun x ->
     Visitor_c.vk_param_s (mk_bigf (maxpos, minpos) (lop,mop,rop,bop)) x
 
@@ -412,6 +439,12 @@ module XTRANS = struct
   let distribute_mck_node (maxpos, minpos) = fun (lop,mop,rop,bop) ->fun x ->
     Visitor_c.vk_node_s (mk_bigf (maxpos, minpos) (lop,mop,rop,bop))
       x
+
+  let distribute_mck_enum_fields (maxpos, minpos) =
+    fun (lop,mop,rop,bop) ->fun x ->
+      Visitor_c.vk_enum_fields_splitted_s
+	(mk_bigf (maxpos, minpos) (lop,mop,rop,bop))
+        x
 
   let distribute_mck_struct_fields (maxpos, minpos) =
     fun (lop,mop,rop,bop) ->fun x ->
@@ -475,9 +508,12 @@ module XTRANS = struct
   let distrf_param  = distrf (Lib_parsing_c.ii_of_param, distribute_mck_param)
   let distrf_params = distrf (Lib_parsing_c.ii_of_params,distribute_mck_params)
   let distrf_ini = distrf (Lib_parsing_c.ii_of_ini,distribute_mck_ini)
+  let distrf_inis = distrf (Lib_parsing_c.ii_of_inis,distribute_mck_inis)
   let distrf_decl = distrf (Lib_parsing_c.ii_of_decl,distribute_mck_decl)
   let distrf_field = distrf (Lib_parsing_c.ii_of_field,distribute_mck_field)
   let distrf_node = distrf (Lib_parsing_c.ii_of_node,distribute_mck_node)
+  let distrf_enum_fields =
+    distrf (Lib_parsing_c.ii_of_enum_fields, distribute_mck_enum_fields)
   let distrf_struct_fields =
     distrf (Lib_parsing_c.ii_of_struct_fields, distribute_mck_struct_fields)
   let distrf_cst =

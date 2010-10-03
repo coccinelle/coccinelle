@@ -1,3 +1,27 @@
+(*
+ * Copyright 2010, INRIA, University of Copenhagen
+ * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
+ * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+ * This file is part of Coccinelle.
+ *
+ * Coccinelle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, according to version 2 of the License.
+ *
+ * Coccinelle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The authors reserve the right to distribute this or future versions of
+ * Coccinelle under other licenses.
+ *)
+
+
 (*****************************************************************************)
 (* Cocci vs C *)
 (*****************************************************************************)
@@ -103,6 +127,9 @@ module type PARAM =
 
     val distrf_ini :
       (Ast_cocci.meta_name Ast_cocci.mcode, Ast_c.initialiser) matcher
+    val distrf_inis :
+      (Ast_cocci.meta_name Ast_cocci.mcode,
+       (Ast_c.initialiser, Ast_c.il) Common.either list) matcher
     val distrf_decl :
       (Ast_cocci.meta_name Ast_cocci.mcode, Ast_c.declaration) matcher
     val distrf_field :
@@ -115,6 +142,10 @@ module type PARAM =
       (Ast_cocci.meta_name Ast_cocci.mcode,
       (string Ast_c.wrap, Ast_c.il) Common.either list)
       matcher
+
+    val distrf_enum_fields :
+      (Ast_cocci.meta_name Ast_cocci.mcode,
+       (Ast_c.oneEnumType, Ast_c.il) Common.either list) matcher
 
     val distrf_struct_fields :
       (Ast_cocci.meta_name Ast_cocci.mcode, Ast_c.field list)

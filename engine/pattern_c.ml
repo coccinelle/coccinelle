@@ -1,3 +1,27 @@
+(*
+ * Copyright 2010, INRIA, University of Copenhagen
+ * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
+ * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+ * This file is part of Coccinelle.
+ *
+ * Coccinelle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, according to version 2 of the License.
+ *
+ * Coccinelle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The authors reserve the right to distribute this or future versions of
+ * Coccinelle under other licenses.
+ *)
+
+
 (* Yoann Padioleau
  *
  * Copyright (C) 2006, 2007 Ecole des Mines de Nantes
@@ -270,9 +294,11 @@ module XMATCH = struct
   let distrf_param  = distrf (Lib_parsing_c.ii_of_param)
   let distrf_params = distrf (Lib_parsing_c.ii_of_params)
   let distrf_ini    = distrf (Lib_parsing_c.ii_of_ini)
+  let distrf_inis   = distrf (Lib_parsing_c.ii_of_inis)
   let distrf_decl   = distrf (Lib_parsing_c.ii_of_decl)
   let distrf_field  = distrf (Lib_parsing_c.ii_of_field)
   let distrf_node   = distrf (Lib_parsing_c.ii_of_node)
+  let distrf_enum_fields = distrf (Lib_parsing_c.ii_of_enum_fields)
   let distrf_struct_fields = distrf (Lib_parsing_c.ii_of_struct_fields)
   let distrf_cst    = distrf (Lib_parsing_c.ii_of_cst)
   let distrf_define_params = distrf (Lib_parsing_c.ii_of_define_params)

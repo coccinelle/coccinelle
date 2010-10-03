@@ -1,6 +1,28 @@
+# Copyright 2010, INRIA, University of Copenhagen
+# Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
+# Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+# Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+# This file is part of Coccinelle.
+#
+# Coccinelle is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, according to version 2 of the License.
+#
+# Coccinelle is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+#
+# The authors reserve the right to distribute this or future versions of
+# Coccinelle under other licenses.
+
+
 -include ../Makefile.config
 
-PROGS=spp gitgrep split_patch extract_c_and_res #generate_dependencies
+PROGS=spp gitgrep splitpatch extract_c_and_res #generate_dependencies
 
 all: $(SUBDIRS) $(PROGS)
 
@@ -47,8 +69,8 @@ spp: spp.ml
 	$(OCAMLC) -o $@ $(SYSLIBS) $(INCLUDE) $(LIBS)  $+
 #	ocamlc -I ../commons/ -o spp str.cma unix.cma bigarray.cma  ../commons/common.cmo spp.ml
 
-split_patch: split_patch.cmo
-	$(OCAMLC) -o $@ $(SYSLIBS) $(INCLUDE) $(LIBS)  $+
+splitpatch: splitpatch.cmo
+	$(OCAMLC) -o $@ $(SYSLIBS) $(INCLUDE) $+
 
 extract_c_and_res: extract_c_and_res.cmo
 	$(OCAMLC) -o $@ $(SYSLIBS) $(INCLUDE) $(LIBS)  $+
@@ -74,7 +96,7 @@ beforedepend::
 depend:: beforedepend
 	ocamldep $(INCLUDE) *.mli *.ml    > .depend
 
-distclean::
+distclean:: clean
 	rm -f .depend
 
 -include .depend

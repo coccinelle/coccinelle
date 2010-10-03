@@ -1,3 +1,27 @@
+(*
+ * Copyright 2010, INRIA, University of Copenhagen
+ * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
+ * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+ * This file is part of Coccinelle.
+ *
+ * Coccinelle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, according to version 2 of the License.
+ *
+ * Coccinelle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The authors reserve the right to distribute this or future versions of
+ * Coccinelle under other licenses.
+ *)
+
+
 (* exports everything, used only by parser_cocci_menhir.mly *)
 module Ast0 = Ast0_cocci
 module Ast = Ast_cocci
@@ -104,6 +128,11 @@ let mkddots str (dot,whencode) =
   match (str,whencode) with
     ("...",None) -> Ast0.wrap(Ast0.Ddots(clt2mcode str dot, None))
   | ("...",Some [w]) -> Ast0.wrap(Ast0.Ddots(clt2mcode str dot, Some w))
+  | _ -> failwith "cannot happen"
+
+let mkddots_one str (dot,whencode) =
+  match str with
+    "..." -> Ast0.wrap(Ast0.Ddots(clt2mcode str dot, whencode))
   | _ -> failwith "cannot happen"
 
 let mkpdots str dot =
@@ -545,3 +574,31 @@ let verify_parameter_declarations = function
 		   (Ast0.get_line t))
 	  | _ -> ())
 	l
+
+(* ---------------------------------------------------------------------- *)
+(* decide whether an init list is ordered or unordered *)
+
+let struct_initializer initlist =
+  let rec loop i =
+    match Ast0.unwrap i with
+      Ast0.InitGccExt _ -> true
+    | Ast0.InitGccName _ -> true
+    | Ast0.OptIni i | Ast0.UniqueIni i -> loop i
+    | Ast0.MetaInit _ -> true (* ambiguous... *)
+    | _ -> false in
+  let l = Ast0.undots initlist in
+  (l = []) or (List.exists loop l)
+
+let drop_dot_commas initlist =
+  match Ast0.unwrap initlist with
+    Ast0.DOTS(l) ->
+      let rec loop after_comma = function
+	  [] -> []
+	| x::xs ->
+	    (match Ast0.unwrap x with
+	      Ast0.Idots(dots,whencode) -> x :: (loop true xs)
+	    | Ast0.IComma(comma) when after_comma -> (*drop*) loop false xs
+	    | _ -> x :: (loop false xs)) in
+      Ast0.rewrap initlist (Ast0.DOTS(loop false l))
+  | _ -> failwith "not supported"
+

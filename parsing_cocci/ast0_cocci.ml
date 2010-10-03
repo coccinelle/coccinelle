@@ -1,3 +1,27 @@
+(*
+ * Copyright 2010, INRIA, University of Copenhagen
+ * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
+ * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+ * This file is part of Coccinelle.
+ *
+ * Coccinelle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, according to version 2 of the License.
+ *
+ * Coccinelle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The authors reserve the right to distribute this or future versions of
+ * Coccinelle under other licenses.
+ *)
+
+
 module Ast = Ast_cocci
 
 (* --------------------------------------------------------------------- *)
@@ -161,7 +185,9 @@ and base_typeC =
                        string mcode (* ) *)
   | Array           of typeC * string mcode (* [ *) *
 	               expression option * string mcode (* ] *)
-  | EnumName        of string mcode (*enum*) * ident (* name *)
+  | EnumName        of string mcode (*enum*) * ident option (* name *)
+  | EnumDef  of typeC (* either StructUnionName or metavar *) *
+	string mcode (* { *) * expression dots * string mcode (* } *)
   | StructUnionName of Ast.structUnion mcode * ident option (* name *)
   | StructUnionDef  of typeC (* either StructUnionName or metavar *) *
 	string mcode (* { *) * declaration dots * string mcode (* } *)
@@ -207,7 +233,9 @@ and declaration = base_declaration wrap
 and base_initialiser =
     MetaInit of Ast.meta_name mcode * pure
   | InitExpr of expression
-  | InitList of string mcode (*{*) * initialiser_list * string mcode (*}*)
+  | InitList of string mcode (*{*) * initialiser_list * string mcode (*}*) *
+	(* true if ordered, as for array, false if unordered, as for struct *)
+	bool
   | InitGccExt of
       designator list (* name *) * string mcode (*=*) *
 	initialiser (* gccext: *)
@@ -451,6 +479,7 @@ let default_befaft _ =
   MIXED(ref (Ast.NOTHING,default_token_info,default_token_info))
 let context_befaft _ =
   CONTEXT(ref (Ast.NOTHING,default_token_info,default_token_info))
+let minus_befaft _ = MINUS(ref ([],default_token_info))
 
 let wrap x =
   { node = x;
@@ -541,7 +570,7 @@ let rec ast0_type_to_type ty =
       Type_cocci.FunctionPointer(ast0_type_to_type ty)
   | FunctionType _ -> failwith "not supported"
   | Array(ety,_,_,_) -> Type_cocci.Array(ast0_type_to_type ety)
-  | EnumName(su,tag) ->
+  | EnumName(su,Some tag) ->
       (match unwrap tag with
 	Id(tag) ->
 	  Type_cocci.EnumName(false,unwrap_mcode tag)
@@ -553,6 +582,8 @@ let rec ast0_type_to_type ty =
 	   let (rule,tag) = unwrap_mcode tag in
 	   Type_cocci.EnumName(true,rule^tag))
       | _ -> failwith "unexpected enum type name")
+  | EnumName(su,None) -> failwith "nameless enum - what to do???"
+  | EnumDef(ty,_,_,_) -> ast0_type_to_type ty
   | StructUnionName(su,Some tag) ->
       (match unwrap tag with
 	Id(tag) ->
@@ -608,6 +639,8 @@ has been lost.  but since it is only used for metavariable types in the isos,
 perhaps it doesn't matter *)
 and make_mcode x = (x,NONE,default_info(),context_befaft(),ref NoMetaPos,-1)
 let make_mcode_info x info = (x,NONE,info,context_befaft(),ref NoMetaPos,-1)
+and make_minus_mcode x =
+  (x,NONE,default_info(),minus_befaft(),ref NoMetaPos,-1)
 
 exception TyConv
 
@@ -629,10 +662,10 @@ let rec reverse_type ty =
 	let rule = "" in
 	EnumName
 	  (make_mcode "enum",
-	   context_wrap(MetaId(make_mcode (rule,tag),Ast.IdNoConstraint,
-			       Impure)))
+	   Some (context_wrap(MetaId(make_mcode (rule,tag),Ast.IdNoConstraint,
+				     Impure))))
       else
-	EnumName(make_mcode "enum",context_wrap(Id(make_mcode tag)))
+	EnumName(make_mcode "enum",Some(context_wrap(Id(make_mcode tag))))
   | Type_cocci.StructUnionName(su,mv,tag) ->
       if mv
       then

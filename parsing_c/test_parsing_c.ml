@@ -119,7 +119,8 @@ let test_parse_i xs =
 
 (* ---------------------------------------------------------------------- *)
 (* file can be   "foo.c"  or "foo.c:main" *)
-let test_cfg file =
+(* local function that is parameterized by whether to launch gv *)
+let local_test_cfg launchgv file =
   let (file, specific_func) =
     if file =~ "\\(.*\\.c\\):\\(.*\\)"
     then
@@ -161,11 +162,13 @@ let test_cfg file =
               flow
             in
 	    let filename = Filename.temp_file "output" ".dot" in
-            Ograph_extended.print_ograph_mutable flow' (filename) true
+            Ograph_extended.print_ograph_mutable flow' (filename) launchgv
           )
         with Ast_to_flow.Error (x) -> Ast_to_flow.report_error x
       )
   )
+
+let test_cfg = local_test_cfg true
 
 
 
@@ -488,9 +491,11 @@ let actions () = [
   Common.mk_action_n_arg test_parse;
 
   "-show_flow", "   <file or file:function>",
-  Common.mk_action_1_arg test_cfg;
+  Common.mk_action_1_arg (local_test_cfg true);
   "-control_flow", "   <file or file:function>",
-  Common.mk_action_1_arg test_cfg;
+  Common.mk_action_1_arg (local_test_cfg true);
+  "-control_flow_to_file", "   <file or file:function>",
+  Common.mk_action_1_arg (local_test_cfg false);
   "-test_cfg_ifdef", " <file>",
   Common.mk_action_1_arg test_cfg_ifdef;
   "-parse_unparse", "   <file>",

@@ -2101,6 +2101,17 @@ let rec filter_some = function
 
 let map_filter f xs = xs +> List.map f +> filter_some
 
+(* avoid recursion *)
+let tail_map_filter f xs =
+  List.rev
+    (List.fold_left
+       (function prev ->
+	 function cur ->
+	   match f cur with
+	     Some x -> x :: prev
+	   | None -> prev)
+       [] xs)
+
 let rec find_some p = function
   | [] -> raise Not_found
   | x :: l ->
@@ -3691,14 +3702,15 @@ let rec group_by_mapped_key fkey l =
 
 let (exclude_but_keep_attached: ('a -> bool) -> 'a list -> ('a * 'a list) list)=
  fun f xs ->
-   let rec aux_filter acc = function
-   | [] -> [] (* drop what was accumulated because nothing to attach to *)
+   let rec aux_filter acc ans = function
+   | [] -> (* drop what was accumulated because nothing to attach to *)
+       List.rev ans
    | x::xs ->
        if f x
-       then aux_filter (x::acc) xs
-       else (x, List.rev acc)::aux_filter [] xs
+       then aux_filter (x::acc) ans xs
+       else aux_filter [] ((x, List.rev acc)::ans) xs
    in
-   aux_filter [] xs
+   aux_filter [] [] xs
 let _ = example
   (exclude_but_keep_attached (fun x -> x =|= 3) [3;3;1;3;2;3;3;3] =*=
       [(1,[3;3]);(2,[3])])
@@ -5234,6 +5246,12 @@ let length = List.length
 let head = List.hd
 let tail = List.tl
 let is_singleton = fun xs -> List.length xs =|= 1
+
+let tail_map f l = (* tail recursive map, using rev *)
+  let rec loop acc = function
+      [] -> acc
+    | x::xs -> loop ((f x) :: acc) xs in
+  List.rev(loop [] l)
 
 (*****************************************************************************)
 (* Geometry (raytracer) *)
