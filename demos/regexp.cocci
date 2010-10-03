@@ -30,7 +30,7 @@ print "Contains foo: %s" % x
 
 @nocontain@
 type t;
-identifier foo ~!= ".*foo";
+identifier foo !~= ".*foo";
 @@
 
 t foo () {

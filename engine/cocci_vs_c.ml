@@ -1,3 +1,25 @@
+(*
+ * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+ * This file is part of Coccinelle.
+ *
+ * Coccinelle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, according to version 2 of the License.
+ *
+ * Coccinelle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The authors reserve the right to distribute this or future versions of
+ * Coccinelle under other licenses.
+ *)
+
+
 (* Yoann Padioleau, Julia Lawall
  *
  * Copyright (C) 2006, 2007, 2008 Ecole des Mines de Nantes
@@ -2359,7 +2381,10 @@ and (struct_fields: (A.declaration list, B.field list) matcher) =
           if optwhen <> None then failwith "not handling when in argument";
 
           (* '...' can take more or less the beginnings of the arguments *)
-          let startendxs = Common.zip (Common.inits ys) (Common.tails ys) in
+          let startendxs =
+	    if eas = []
+	    then [(ys,[])] (* hack! the only one that can work *)
+	    else Common.zip (Common.inits ys) (Common.tails ys) in
           startendxs +> List.fold_left (fun acc (startxs, endxs) -> 
             acc >||> (
               
@@ -2915,7 +2940,7 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
 	 | _ -> fail in
 
        process_type
-	 >>= (fun ty ii_sub_sb -> 
+	 >>= (fun ty ii_sub_sb ->
 
             tokenf lba lbb >>= (fun lba lbb -> 
             tokenf rba rbb >>= (fun rba rbb -> 

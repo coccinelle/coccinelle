@@ -1,3 +1,25 @@
+(*
+ * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+ * This file is part of Coccinelle.
+ *
+ * Coccinelle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, according to version 2 of the License.
+ *
+ * Coccinelle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The authors reserve the right to distribute this or future versions of
+ * Coccinelle under other licenses.
+ *)
+
+
 (* splits the entire file into minus and plus fragments, and parses each
 separately (thus duplicating work for the parsing of the context elements) *)
 
@@ -1479,10 +1501,10 @@ let rec parse file =
             (* get metavariable declarations *)
             let (metavars, inherited_metavars) =
 	      get_metavars PC.meta_main table file lexbuf in
-            Hashtbl.add Data.all_metadecls rule_name metavars;
-            Hashtbl.add Lexer_cocci.rule_names rule_name ();
-            Hashtbl.add Lexer_cocci.all_metavariables rule_name
-              (Hashtbl.fold
+	    Hashtbl.add Data.all_metadecls rule_name metavars;
+	    Hashtbl.add Lexer_cocci.rule_names rule_name ();
+	    Hashtbl.add Lexer_cocci.all_metavariables rule_name
+	      (Hashtbl.fold
 		 (fun key v rest -> (key,v)::rest)
 		 Lexer_cocci.metavariables []);
 
@@ -1523,7 +1545,9 @@ let rec parse file =
 	       Printf.printf "before plus parse\n";
 	    *)
 	    let plus_res =
-	      if !Flag.sgrep_mode2
+	      (* put ignore_patch_or_match with * case, which is less
+		 constraining *)
+	      if !Flag.sgrep_mode2 or !D.ignore_patch_or_match
 	      then (* not actually used for anything, except context_neg *)
 		List.map
 		  (Iso_pattern.rebuild_mcode None).VT0.rebuilder_rec_top_level

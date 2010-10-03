@@ -512,7 +512,7 @@ let rec lexer_function ~pass tr = fun lexbuf ->
        * generate some tokens sometimes and so I need access to the 
        * tr.passed, tr.rest, etc.
        *)
-      | Parser_c.TDefine (tok) -> 
+      | Parser_c.TDefine (tok) ->
           if not (LP.current_context () =*= LP.InTopLevel) && 
             (!Flag_parsing_c.cpp_directive_passing || (pass >= 2))
           then begin

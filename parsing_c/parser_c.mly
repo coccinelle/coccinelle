@@ -1065,7 +1065,6 @@ attribute:
  /*(* cppext: *)*/
  | TMacroAttr { Attribute (fst $1), [snd $1] }
 
-
 attribute_storage:
  | TMacroAttrStorage { $1 }
 
@@ -1587,8 +1586,14 @@ decl_list:
  | decl           { [$1 Ast_c.LocalDecl]   }
  | decl_list decl { $1 ++ [$2 Ast_c.LocalDecl] }
 
+/* hack : to drop when a better solution is found */
+cpp_directive_list: 
+ | cpp_directive                    { }
+ | cpp_directive_list cpp_directive { }
+
 function_def: 
  | start_fun compound      { LP.del_scope(); ($1, $2, None) }
+ | start_fun cpp_directive_list compound { LP.del_scope(); ($1, $3, None) }
  | start_fun decl_list compound      { 
      (* TODO: undo the typedef added ? *)
      LP.del_scope(); 
