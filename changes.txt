@@ -77,6 +77,8 @@
 - Fixed environment management when script rule uses cache.  Thanks to
   Bissyande for finding the problem.
 - when false matches if with no else
+- ensure { ... } with whencode checks to the end of the function.  Thanks to
+  Rene Rydhof Hansen for finding the problem.
 
 * 0.2.2
 ** Language:

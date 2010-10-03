@@ -2221,9 +2221,14 @@ and statement stmt after quantified minus_quantified
 		     (match d with
 		       Ast.MINUS(_,_,_,_) -> None
 		     | _ ->
+			 let pv =
+			   (* no nested braces, because only dots *)
+			   string2var ("p1") in
+			 let paren_pred =
+			   CTL.Pred(Lib_engine.Paren pv,CTL.Control) in
 			 Some (
 			 make_seq
-			   [start_brace;
+			   [ctl_and start_brace paren_pred;
 			     match whencode with
 			       [] -> CTL.True
 			     | _ ->
@@ -2267,7 +2272,10 @@ and statement stmt after quantified minus_quantified
 						CTL.True
 					    | Ast.WhenModifier(_) -> prev)
 					CTL.True whencode) in
-				 ctl_au leftarg (make_match stripped_rbrace)]))
+				 ctl_au leftarg
+				   (ctl_and
+				      (make_match stripped_rbrace)
+				      paren_pred)]))
 	    | _ -> None)
 	| _ -> None in
       let optim2 =
