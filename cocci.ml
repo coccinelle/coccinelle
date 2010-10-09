@@ -245,24 +245,26 @@ let show_or_not_diff2 cfile outfile =
 	      let diff_line =
 		match List.rev(Str.split (Str.regexp " ") line) with
 		  new_file::old_file::cmdrev ->
+		    let old_base_file = drop_prefix old_file in
 		    if !Flag.sgrep_mode2
 		    then
 		      String.concat " "
-			(List.rev ("/tmp/nothing" :: old_file :: cmdrev))
+			(List.rev
+			   (("/tmp/nothing"^old_base_file)
+			    :: old_file :: cmdrev))
 		    else
-		      let old_base_file = drop_prefix old_file in
 		      String.concat " "
 			(List.rev
 			   (("b"^old_base_file)::("a"^old_base_file)::cmdrev))
 		| _ -> failwith "bad command" in
 	      let (minus_line,plus_line) =
-		if !Flag.sgrep_mode2
-		then (minus_file,"+++ /tmp/nothing")
-		else
-		  match (Str.split (Str.regexp "[ \t]") minus_file,
-			 Str.split (Str.regexp "[ \t]") plus_file) with
-		    ("---"::old_file::old_rest,"+++"::new_file::new_rest) ->
-		      let old_base_file = drop_prefix old_file in
+		match (Str.split (Str.regexp "[ \t]") minus_file,
+		       Str.split (Str.regexp "[ \t]") plus_file) with
+		  ("---"::old_file::old_rest,"+++"::new_file::new_rest) ->
+		    let old_base_file = drop_prefix old_file in
+		    if !Flag.sgrep_mode2
+		    then (minus_file,"+++ /tmp/nothing"^old_base_file)
+		    else
 		      (String.concat " "
 			 ("---"::("a"^old_base_file)::old_rest),
 		       String.concat " "
