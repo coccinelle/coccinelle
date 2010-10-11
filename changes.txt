@@ -45,7 +45,9 @@
 - better pretty printing of asm code containing
   "::[input]"r"(&coherence_data[i])"
 - allow pretty printing of C code with nameless bit fields
-- avoid adding an error message to standard output if ocamlfind is not found
+- avoid adding an error message to standard output if ocamlfind is not
+  found
+- struct-typed metavariables with an metavariable type name
 
 * 0.2.3
 ** Language:

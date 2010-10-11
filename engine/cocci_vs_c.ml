@@ -3274,10 +3274,21 @@ and compatible_type a (b,local) =
     | Type_cocci.Array   a, (qub, (B.Array (eopt, b),ii)) ->
       (* no size info for cocci *)
 	loop (a,b)
-    | Type_cocci.StructUnionName (sua, _, sa),
+    | Type_cocci.StructUnionName (sua, Type_cocci.Name sa),
 	(qub, (B.StructUnionName (sub, sb),ii)) ->
 	  if equal_structUnion_type_cocci sua sub && sa =$= sb
 	  then ok
+	  else fail
+    | Type_cocci.StructUnionName (sua, Type_cocci.MV (ida,keep,inherited)),
+	(qub, (B.StructUnionName (sub, sb),ii)) ->
+	  if equal_structUnion_type_cocci sua sub
+	  then
+	    (* degenerate version of MetaId, no transformation possible *)
+            let (ib1, ib2) = tuple_of_list2 ii in
+	    let max_min _ = Lib_parsing_c.lin_col_by_pos [ib2] in
+	    let mida = A.make_mcode ida in
+	    X.envf keep inherited (mida, B.MetaIdVal (sb,[]), max_min)
+	      (fun () -> ok)
 	  else fail
     | Type_cocci.EnumName (_, sa),
 	(qub, (B.EnumName (sb),ii)) ->
