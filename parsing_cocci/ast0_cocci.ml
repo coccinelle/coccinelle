@@ -546,13 +546,8 @@ let rec ast0_type_to_type ty =
   | FunctionPointer(ty,_,_,_,_,params,_) ->
       TC.FunctionPointer(ast0_type_to_type ty)
   | FunctionType _ -> failwith "not supported"
-<<<<<<< ast0_cocci.ml
   | Array(ety,_,_,_) -> TC.Array(ast0_type_to_type ety)
-  | EnumName(su,tag) ->
-=======
-  | Array(ety,_,_,_) -> Type_cocci.Array(ast0_type_to_type ety)
   | EnumName(su,Some tag) ->
->>>>>>> 1.136
       (match unwrap tag with
 	Id(tag) ->
 	  TC.EnumName(false,unwrap_mcode tag)
@@ -651,38 +646,19 @@ let rec reverse_type ty =
 	   Some (context_wrap(MetaId(make_mcode (rule,tag),Ast.IdNoConstraint,
 				     Impure))))
       else
-<<<<<<< ast0_cocci.ml
-	EnumName(make_mcode "enum",context_wrap(Id(make_mcode tag)))
-  | TC.StructUnionName(su,TC.MV(name,_,_)) ->
+	EnumName(make_mcode "enum",Some(context_wrap(Id(make_mcode tag))))
+  |  TC.StructUnionName(su,TC.MV(name,_,_)) ->
       (* not right?... *)
       StructUnionName
 	(reverse_structUnion su,
 	 Some(context_wrap(MetaId(make_mcode name,Ast.IdNoConstraint,
 				  Impure(*not really right*)))))
-  | TC.StructUnionName(su,TC.Name tag) ->
+  |  TC.StructUnionName(su,TC.Name tag) ->
       StructUnionName
 	(reverse_structUnion su,
 	 Some (context_wrap(Id(make_mcode tag))))
   | TC.TypeName(name) -> TypeName(make_mcode name)
   | TC.MetaType(name,_,_) ->
-=======
-	EnumName(make_mcode "enum",Some(context_wrap(Id(make_mcode tag))))
-  | Type_cocci.StructUnionName(su,mv,tag) ->
-      if mv
-      then
-	(* not right... *)
-	let rule = "" in
-	StructUnionName
-	  (reverse_structUnion su,
-	   Some(context_wrap(MetaId(make_mcode (rule,tag),Ast.IdNoConstraint,
-				    Impure))))
-      else
-	StructUnionName
-	  (reverse_structUnion su,
-	   Some (context_wrap(Id(make_mcode tag))))
-  | Type_cocci.TypeName(name) -> TypeName(make_mcode name)
-  | Type_cocci.MetaType(name,_,_) ->
->>>>>>> 1.136
       MetaType(make_mcode name,Impure(*not really right*))
   | _ -> raise TyConv
 
