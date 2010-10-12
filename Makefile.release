@@ -211,7 +211,7 @@ EXCL_SYNC=--exclude ".git"          \
 packsrc: prepack
 	$(MAKE) -C $(TMP)/$(PACKAGE)/debian lucid
 	$(MAKE) -C $(TMP)/$(PACKAGE)/debian karmic
-#	$(MAKE) -C $(TMP)/$(PACKAGE)/debian maverik
+	$(MAKE) -C $(TMP)/$(PACKAGE)/debian maverick
 	$(MAKE) push
 	rm -rf  $(TMP)/$(PACKAGE)/
 

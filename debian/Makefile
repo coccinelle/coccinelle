@@ -3,7 +3,7 @@ include /etc/lsb-release
 all:
 	debuild -S
 
-karmic lucid maverik:
+karmic lucid maverick:
 	cp changelog.$@ changelog
 	$(MAKE)
 
