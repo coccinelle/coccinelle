@@ -5837,7 +5837,6 @@ let del_scope_h scoped_env =
     List.hd !scoped_env.scoped_list +> List.iter (fun (k, v) ->
       Hashtbl.remove !scoped_env.scoped_h k
     );
-    flush stdout;
     scoped_env := {!scoped_env with scoped_list =
         List.tl !scoped_env.scoped_list
     }

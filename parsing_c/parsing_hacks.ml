@@ -81,7 +81,7 @@ let is_known_typdef =
  * because it would compute msg_typedef at compile time when
  * the flag debug_typedef is always false
  *)
-let msg_typedef s = flush stdout; flush stderr;
+let msg_typedef s =
   incr Stat.nTypedefInfer;
   msg_gen (!Flag_parsing_c.debug_typedef)
     is_known_typdef
@@ -1653,10 +1653,7 @@ let lookahead2 ~pass next before =
         ->
          (* && not_annot s2 BUT lead to false positive*)
 
-	  (*Printf.printf "about to do an add of %s\n" (Dumper.dump i1);
-	  Printf.printf "because of %s\n" (Dumper.dump i2);
-      Printf.printf "b\n"; msg_typedef s; LP.add_typedef_root s;
-	  flush stdout; flush stderr;*)
+      msg_typedef s; LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
 
@@ -1836,7 +1833,7 @@ let lookahead2 ~pass next before =
       (take_safe 1 !passed_tok <> [Tenum]))
       &&
       !LP._lexer_hint = Some LP.Toplevel ->
-      Printf.printf "t\n"; msg_typedef s; LP.add_typedef_root s;
+      msg_typedef s; LP.add_typedef_root s;
       TypedefIdent s
      *)
 
@@ -1943,14 +1940,13 @@ let lookahead2 ~pass next before =
     when not (TH.is_stuff_taking_parenthized x)
       && ok_typedef s
         ->
-      Printf.printf "a4\n"; msg_typedef s; LP.add_typedef_root s;
+      msg_typedef s; LP.add_typedef_root s;
       (* TOPar info *)
       TypedefIdent (s, i1)
   *)
-  (* special case:  = (xx) (    yy). also when preceded by ( or ,
-     as in arg list *)
+  (* special case:  = (xx) (    yy) *)
   | (TIdent (s, i1)::TCPar _::TOPar _::_ ,
-    (TOPar info)::(TEq _ |TEqEq _|TOPar _|TComma _)::_)
+    (TOPar info)::(TEq _ |TEqEq _)::_)
     when ok_typedef s
         ->
       msg_typedef s; LP.add_typedef_root s;
@@ -1978,7 +1974,7 @@ let lookahead2 ~pass next before =
 
         (* can have sizeof on expression
            | (Tsizeof::TOPar::TIdent s::TCPar::_,   _) ->
-           Printf.printf "a\n"; msg_typedef s; LP.add_typedef_root s;
+           msg_typedef s; LP.add_typedef_root s;
            Tsizeof
          *)
 

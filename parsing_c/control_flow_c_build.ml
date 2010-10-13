@@ -550,13 +550,11 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
               * So need pass a todo_in_compound2 function.
               *)
              let todo_in_compound newi newxi =
-
                let newxi' = { newxi with
                  ctx = SwitchInfo (newi(*!!*), newendswitch, xi.braces, lbl);
                  ctx_stack = newxi.ctx::newxi.ctx_stack
                }
                in
-
                !g#add_arc ((newswitchi, newi), Direct);
                (* new: if have not a default case, then must add an edge
                 * between start to end.

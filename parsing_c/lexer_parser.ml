@@ -72,7 +72,7 @@ let add_typedef  s = Common.add_in_scope_h _typedef (s, TypeDefI)
 let add_ident s    = Common.add_in_scope_h _typedef (s, IdentI)
 
 let add_typedef_root s =
-  if !Flag_parsing_c.add_typedef_root && false
+  if !Flag_parsing_c.add_typedef_root
   then
     Hashtbl.add !_typedef.scoped_h s TypeDefI
   else add_typedef s (* have far more .failed without this *)

@@ -452,13 +452,13 @@ let clone_tokens_state tr =
     passed = tr.passed;
     passed_clean = tr.passed_clean;
   }
-let copy_tokens_state ~src ~dst = () (*
+let copy_tokens_state ~src ~dst =
   dst.rest <- src.rest;
   dst.rest_clean <- src.rest_clean;
   dst.current <- src.current;
   dst.passed <- src.passed;
   dst.passed_clean <-  src.passed_clean;
-  () *)
+  ()
 
 (* todo? agglomerate the x##b ? *)
 let rec filter_noise n xs =
@@ -858,7 +858,6 @@ let parse_print_error_heuristic2 file =
     (* call the parser *)
     let elem =
       let pass1 =
-	LP.new_scope(); (* for typedefs *)
         Common.profile_code "Parsing: 1st pass" (fun () ->
           get_one_elem ~pass:1 tr (file, filelines)
         ) in
@@ -871,7 +870,6 @@ let parse_print_error_heuristic2 file =
             Common.profile_code "Parsing: multi pass" (fun () ->
 
             pr2_err "parsing pass2: try again";
-	    LP.del_scope(); LP.new_scope(); (* drop bad typedefs, try again *)
             let toks = List.rev passed ++ tr.rest in
             let new_tr = mk_tokens_state toks in
             copy_tokens_state ~src:new_tr ~dst:tr;
@@ -883,13 +881,14 @@ let parse_print_error_heuristic2 file =
                 let candidates =
                   candidate_macros_in_passed ~defs:macros passed
                 in
+
+
                 if is_define_passed passed || null candidates
                 then passx
                 else begin
                   (* todo factorize code *)
 
                   pr2_err "parsing pass3: try again";
-		  LP.del_scope(); LP.new_scope(); (* drop bad typedefs... *)
                   let toks = List.rev passed ++ tr.rest in
                   let toks' =
                     find_optional_macro_to_expand ~defs:candidates toks in
@@ -901,7 +900,6 @@ let parse_print_error_heuristic2 file =
                   | Left e -> passx
                   | Right (info,line_err,passed,passed_before_error,cur,exn) ->
                       pr2_err "parsing pass4: try again";
-		      LP.del_scope(); LP.new_scope(); (* drop bad typedefs... *)
 
                       let candidates =
                         candidate_macros_in_passed
