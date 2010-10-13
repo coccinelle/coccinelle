@@ -1142,7 +1142,7 @@ let pp_program2 xs outfile  =
 	    then drop_minus toks (* nothing to do for sgrep *)
 	    else
               (* phase2: can now start to filter and adjust *)
-              let (toks,tu) = adjust_indentation toks in
+	      let (toks,tu) = adjust_indentation toks in
 	      let toks = adjust_before_semicolon toks in(*before remove minus*)
 	      let toks = drop_space_at_endline toks in
 	      let toks = paren_to_space toks in

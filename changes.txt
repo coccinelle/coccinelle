@@ -32,6 +32,7 @@
 - spatch returns -1 when a virtual rule is requested that is not supported
 - no transformation when using * with the option -no_show_diff
 - expanded +++ file name for match output
+- struct *^* and enum *^* metavariable types
 
 ** Bugfix:
 - detect used after metavariables in simple statement metavariable match
@@ -47,7 +48,7 @@
 - allow pretty printing of C code with nameless bit fields
 - avoid adding an error message to standard output if ocamlfind is not
   found
-- struct-typed metavariables with an metavariable type name
+- struct/union/enum-typed metavariables with a metavariable type name
 
 * 0.2.3
 ** Language:

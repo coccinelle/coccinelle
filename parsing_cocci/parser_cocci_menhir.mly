@@ -431,9 +431,9 @@ list_len:
       | Some _ ->
 	  !Data.add_local_idexp_meta ty name constraints pure;
 	  check_meta(Ast.MetaLocalIdExpDecl(arity,name,ty))) }
-| TExpression m=nonempty_list(TMul)
+| TExpression ty=expression_type
     { (fun arity name pure check_meta constraints ->
-      let ty = Some [P.ty_pointerify Type_cocci.Unknown m] in
+      let ty = Some [ty] in
       let tok = check_meta(Ast.MetaExpDecl(arity,name,ty)) in
       !Data.add_exp_meta ty name constraints pure; tok) }
 | vl=meta_exp_type TOCro TCCro
@@ -445,6 +445,17 @@ list_len:
     { (fun arity name pure check_meta constraints ->
       let tok = check_meta(Ast.MetaConstDecl(arity,name,ty)) in
       !Data.add_const_meta ty name constraints pure; tok) }
+
+expression_type:
+  m=nonempty_list(TMul) { P.ty_pointerify Type_cocci.Unknown m }
+| Tenum m=list(TMul)
+    { P.ty_pointerify (Type_cocci.EnumName Type_cocci.NoName) m }
+| Tstruct m=list(TMul)
+    { P.ty_pointerify
+	(Type_cocci.StructUnionName (Type_cocci.Struct,Type_cocci.NoName)) m }
+| Tunion m=list(TMul)
+    { P.ty_pointerify
+	(Type_cocci.StructUnionName (Type_cocci.Union,Type_cocci.NoName)) m }
 
 %inline metakind_atomic_expe:
   TExpression

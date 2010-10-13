@@ -926,6 +926,7 @@ let end_control_structure fvs header body after_pred
       Ast.CONTEXT(_,Ast.NOTHING) ->
 	(false,make_seq_after2 guard after_pred after)
     | _ ->
+	Printf.printf "making an after branch in end_control_structure\n";
 	let match_endif =
 	  make_match label guard
 	    (make_meta_rule_elem aft (afvs,afresh,ainh)) in

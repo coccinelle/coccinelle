@@ -81,7 +81,7 @@ let is_known_typdef =
  * because it would compute msg_typedef at compile time when
  * the flag debug_typedef is always false
  *)
-let msg_typedef s =
+let msg_typedef s = flush stdout; flush stderr;
   incr Stat.nTypedefInfer;
   msg_gen (!Flag_parsing_c.debug_typedef)
     is_known_typdef
@@ -1653,7 +1653,10 @@ let lookahead2 ~pass next before =
         ->
          (* && not_annot s2 BUT lead to false positive*)
 
-      msg_typedef s; LP.add_typedef_root s;
+	  (*Printf.printf "about to do an add of %s\n" (Dumper.dump i1);
+	  Printf.printf "because of %s\n" (Dumper.dump i2);
+      Printf.printf "b\n"; msg_typedef s; LP.add_typedef_root s;
+	  flush stdout; flush stderr;*)
       TypedefIdent (s, i1)
 
 
@@ -1833,7 +1836,7 @@ let lookahead2 ~pass next before =
       (take_safe 1 !passed_tok <> [Tenum]))
       &&
       !LP._lexer_hint = Some LP.Toplevel ->
-      msg_typedef s; LP.add_typedef_root s;
+      Printf.printf "t\n"; msg_typedef s; LP.add_typedef_root s;
       TypedefIdent s
      *)
 
@@ -1940,13 +1943,14 @@ let lookahead2 ~pass next before =
     when not (TH.is_stuff_taking_parenthized x)
       && ok_typedef s
         ->
-      msg_typedef s; LP.add_typedef_root s;
+      Printf.printf "a4\n"; msg_typedef s; LP.add_typedef_root s;
       (* TOPar info *)
       TypedefIdent (s, i1)
   *)
-  (* special case:  = (xx) (    yy) *)
+  (* special case:  = (xx) (    yy). also when preceded by ( or ,
+     as in arg list *)
   | (TIdent (s, i1)::TCPar _::TOPar _::_ ,
-    (TOPar info)::(TEq _ |TEqEq _)::_)
+    (TOPar info)::(TEq _ |TEqEq _|TOPar _|TComma _)::_)
     when ok_typedef s
         ->
       msg_typedef s; LP.add_typedef_root s;
@@ -1974,7 +1978,7 @@ let lookahead2 ~pass next before =
 
         (* can have sizeof on expression
            | (Tsizeof::TOPar::TIdent s::TCPar::_,   _) ->
-           msg_typedef s; LP.add_typedef_root s;
+           Printf.printf "a\n"; msg_typedef s; LP.add_typedef_root s;
            Tsizeof
          *)
 
@@ -2056,7 +2060,6 @@ let lookahead2 ~pass next before =
        * will be considered as a loop
        *)
         ->
-
 
       if s ==~ regexp_foreach &&
         is_really_foreach (Common.take_safe forLOOKAHEAD rest)

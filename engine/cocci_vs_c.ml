@@ -3274,27 +3274,13 @@ and compatible_type a (b,local) =
     | Type_cocci.Array   a, (qub, (B.Array (eopt, b),ii)) ->
       (* no size info for cocci *)
 	loop (a,b)
-    | Type_cocci.StructUnionName (sua, Type_cocci.Name sa),
-	(qub, (B.StructUnionName (sub, sb),ii)) ->
-	  if equal_structUnion_type_cocci sua sub && sa =$= sb
-	  then ok
-	  else fail
-    | Type_cocci.StructUnionName (sua, Type_cocci.MV (ida,keep,inherited)),
+    | Type_cocci.StructUnionName (sua, name),
 	(qub, (B.StructUnionName (sub, sb),ii)) ->
 	  if equal_structUnion_type_cocci sua sub
-	  then
-	    (* degenerate version of MetaId, no transformation possible *)
-            let (ib1, ib2) = tuple_of_list2 ii in
-	    let max_min _ = Lib_parsing_c.lin_col_by_pos [ib2] in
-	    let mida = A.make_mcode ida in
-	    X.envf keep inherited (mida, B.MetaIdVal (sb,[]), max_min)
-	      (fun () -> ok)
+	  then structure_type_name name sb ii
 	  else fail
-    | Type_cocci.EnumName (_, sa),
-	(qub, (B.EnumName (sb),ii)) ->
-	  if sa =$= sb
-	  then ok
-	  else fail
+    | Type_cocci.EnumName (name),
+	(qub, (B.EnumName (sb),ii)) -> structure_type_name name sb ii
     | Type_cocci.TypeName sa, (qub, (B.TypeName (namesb, _typb),noii)) ->
         let sb = Ast_c.str_of_name namesb in
 	if sa =$= sb
@@ -3330,10 +3316,6 @@ and compatible_type a (b,local) =
       (* kind of typedef iso *)
 	loop (a,b)
 
-
-
-
-
   (* for metavariables of type expression *^* *)
     | Type_cocci.Unknown , _ -> ok
 
@@ -3355,6 +3337,20 @@ and compatible_type a (b,local) =
       ),
       _))) -> fail
 
+and structure_type_name nm sb ii =
+    match nm with
+      Type_cocci.NoName -> ok
+    | Type_cocci.Name sa ->
+	if sa =$= sb
+	then ok
+	else fail
+    | Type_cocci.MV(ida,keep,inherited) ->
+	(* degenerate version of MetaId, no transformation possible *)
+        let (ib1, ib2) = tuple_of_list2 ii in
+	let max_min _ = Lib_parsing_c.lin_col_by_pos [ib2] in
+	let mida = A.make_mcode ida in
+	X.envf keep inherited (mida, B.MetaIdVal (sb,[]), max_min)
+	  (fun () -> ok)
 
   in
   loop (a,b)

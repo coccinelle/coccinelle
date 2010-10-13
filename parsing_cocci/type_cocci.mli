@@ -11,14 +11,15 @@ type typeC =
   | Pointer         of typeC
   | FunctionPointer of typeC (* only return type *)
   | Array           of typeC (* drop size info *)
-  | EnumName        of bool (* true if a metaId *) * string
+  | EnumName        of name
   | StructUnionName of structUnion * name
   | TypeName        of string
   | MetaType        of meta_name * keep_binding * inherited
   | Unknown (* for metavariables of type expression *^* *)
 
 and name =
-    Name of string
+    NoName
+  | Name of string
   | MV of meta_name * keep_binding * inherited
 
 and tagged_string = string

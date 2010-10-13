@@ -550,14 +550,13 @@ let rec ast0_type_to_type ty =
   | EnumName(su,Some tag) ->
       (match unwrap tag with
 	Id(tag) ->
-	  TC.EnumName(false,unwrap_mcode tag)
+	  TC.EnumName(TC.Name(unwrap_mcode tag))
       | MetaId(tag,_,_) ->
 	  (Printf.printf
 	     "warning: enum with a metavariable name detected.\n";
 	   Printf.printf
 	     "For type checking assuming the name of the metavariable is the name of the type\n";
-	   let (rule,tag) = unwrap_mcode tag in
-	   TC.EnumName(true,rule^tag))
+	   TC.EnumName(TC.MV(unwrap_mcode tag,TC.Unitary,false)))
       | _ -> failwith "unexpected enum type name")
   | EnumName(su,None) -> failwith "nameless enum - what to do???"
   | EnumDef(ty,_,_,_) -> ast0_type_to_type ty
@@ -636,18 +635,14 @@ let rec reverse_type ty =
       Signed(reverse_sign sgn,Some (context_wrap(reverse_type ty)))
   | TC.Pointer(ty) ->
       Pointer(context_wrap(reverse_type ty),make_mcode "*")
-  | TC.EnumName(mv,tag) ->
-      if mv
-      then
-	(* not right... *)
-	let rule = "" in
-	EnumName
-	  (make_mcode "enum",
-	   Some (context_wrap(MetaId(make_mcode (rule,tag),Ast.IdNoConstraint,
-				     Impure))))
-      else
-	EnumName(make_mcode "enum",Some(context_wrap(Id(make_mcode tag))))
-  |  TC.StructUnionName(su,TC.MV(name,_,_)) ->
+  | TC.EnumName(TC.MV(name,_,_)) ->
+      EnumName
+	(make_mcode "enum",
+	 Some (context_wrap(MetaId(make_mcode name,Ast.IdNoConstraint,
+				   Impure))))
+  | TC.EnumName(TC.Name tag) ->
+      EnumName(make_mcode "enum",Some(context_wrap(Id(make_mcode tag))))
+  | TC.StructUnionName(su,TC.MV(name,_,_)) ->
       (* not right?... *)
       StructUnionName
 	(reverse_structUnion su,

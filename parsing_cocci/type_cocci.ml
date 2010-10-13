@@ -12,14 +12,15 @@ type typeC =
   | Pointer         of typeC
   | FunctionPointer of typeC (* only return type *)
   | Array           of typeC (* drop size info *)
-  | EnumName        of bool (* true if a metaId *) * string
+  | EnumName        of name
   | StructUnionName of structUnion * name
   | TypeName        of string
   | MetaType        of meta_name * keep_binding * inherited
   | Unknown (* for metavariables of type expression *^* *)
 
 and name =
-    Name of string
+    NoName
+  | Name of string
   | MV of meta_name * keep_binding * inherited
 
 and tagged_string = string
@@ -45,9 +46,8 @@ let rec type2c = function
   | Pointer(ty) -> (type2c ty) ^ "*"
   | FunctionPointer(ty) -> (type2c ty) ^ "(*)(...)"
   | Array(ty) -> (type2c ty) ^ "[] "
-  | EnumName(mv,name) -> "enum " ^ name ^ " "
-  | StructUnionName(kind,MV ((_,name),_,_)) -> (structUnion kind) ^ name ^ " "
-  | StructUnionName(kind,Name name) -> (structUnion kind) ^ name ^ " "
+  | EnumName(name) -> "enum " ^ (print_name name)
+  | StructUnionName(kind,name) -> (structUnion kind) ^ (print_name name)
   | TypeName(name) -> name ^ " "
   | MetaType((rule,name),keep,inherited) -> name ^ " "
       (*
@@ -61,6 +61,11 @@ let rec type2c = function
       print_string " */"
       *)
   | Unknown -> "unknown "
+
+and print_name = function
+    NoName -> ""
+  | MV ((_,name),_,_) -> name ^ " "
+  | Name name -> name ^ " "
 
 and baseType = function
     VoidType -> "void "
