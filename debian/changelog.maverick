@@ -1,3 +1,9 @@
+coccinelle (0.2.4rc3~1010npalix2) maverick; urgency=low
+
+  * New release 0.2.4rc3
+
+ -- Nicolas Palix <npalix.work@gmail.com>  Wed, 13 Oct 2010 01:41:03 +0200
+
 coccinelle (0.2.4rc3~1010npalix1) maverick; urgency=low
 
   * New release 0.2.4rc3
