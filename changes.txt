@@ -33,6 +33,8 @@
 - no transformation when using * with the option -no_show_diff
 - expanded +++ file name for match output
 - struct *^* and enum *^* metavariable types
+- allow an assignment to match a variable initialization, even if multiple
+  variables are declared at the same time.
 
 ** Bugfix:
 - detect used after metavariables in simple statement metavariable match

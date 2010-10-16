@@ -481,6 +481,41 @@ let structdef_to_struct_name ty =
   | _ -> raise Impossible
 
 (*---------------------------------------------------------------------------*)
+let one_initialisation_to_affectation x =
+  let ({B.v_namei = var;
+         B.v_type = returnType;
+         B.v_type_bis = tybis;
+         B.v_storage = storage;
+         B.v_local = local},
+       iisep) = x in
+  match var with
+  | Some (name, iniopt) ->
+      (match iniopt with
+      | Some (iini, (B.InitExpr e, ii_empty2)) ->
+	  let local =
+	    match local with
+	      Ast_c.NotLocalDecl -> Ast_c.NotLocalVar
+	    | Ast_c.LocalDecl ->
+		Ast_c.LocalVar (Ast_c.info_of_type returnType) in
+          let typexp =
+                    (* old: Lib_parsing_c.al_type returnType
+                       * but this type has not the typename completed so
+                       * instead try to use tybis
+                    *)
+            match !tybis with
+            | Some ty_with_typename_completed -> ty_with_typename_completed
+            | None -> raise Impossible
+          in
+	  
+          let typ = ref (Some (typexp,local), Ast_c.NotTest) in
+          let ident = name in
+          let idexpr = Ast_c.mk_e_bis (B.Ident ident) typ Ast_c.noii in
+          let assign =
+            Ast_c.mk_e (B.Assignment (idexpr,B.SimpleAssign, e)) [iini] in
+          Some assign
+      | _ -> None)
+  | _ -> None  
+    
 let initialisation_to_affectation decl =
   match decl with
   | B.MacroDecl _ -> F.Decl decl
@@ -489,68 +524,23 @@ let initialisation_to_affectation decl =
       (* todo?: should not do that if the variable is an array cos
        *  will have x[] = , mais de toute facon ca sera pas un InitExp
        *)
-      (match xs with
-      | [] -> raise Impossible
-      | [x] ->
-          let ({B.v_namei = var;
-                B.v_type = returnType;
-                B.v_type_bis = tybis;
-                B.v_storage = storage;
-                B.v_local = local},
-              iisep) = x in
-
-
-
-          (match var with
-          | Some (name, iniopt) ->
-              (match iniopt with
-              | Some (iini, (B.InitExpr e, ii_empty2)) ->
-
-		  let local =
-		    match local with
-		      Ast_c.NotLocalDecl -> Ast_c.NotLocalVar
-		    | Ast_c.LocalDecl ->
-			Ast_c.LocalVar (Ast_c.info_of_type returnType) in
-
-                  let typexp =
-                    (* old: Lib_parsing_c.al_type returnType
-                     * but this type has not the typename completed so
-                     * instead try to use tybis
-                     *)
-                    match !tybis with
-                    | Some ty_with_typename_completed ->
-                        ty_with_typename_completed
-                    | None -> raise Impossible
-                  in
-
-                  let typ =
-		    ref (Some (typexp,local),
-			       Ast_c.NotTest) in
-                  let ident = name in
-                  let idexpr =
-                    Ast_c.mk_e_bis (B.Ident (ident)) typ Ast_c.noii
-                  in
-                  let assign =
-                    Ast_c.mk_e
-                      (B.Assignment (idexpr,B.SimpleAssign, e)) [iini] in
-                  F.DefineExpr assign
-
-              | _ -> F.Decl decl
-              )
-          | _ -> F.Decl decl
-          )
-      | x::xs ->
-          pr2_once "TODO: initialisation_to_affectation for multi vars";
-          (* todo? do a fold_left and generate 'x = a, y = b' etc, use
-           * the Sequence expression operator of C and make an
-           * ExprStatement from that.
-           *)
-          F.Decl decl
-      )
-
-
-
-
+      let possible_assignment =
+	List.fold_left
+	  (function prev ->
+	    function x ->
+	      match prev,one_initialisation_to_affectation x with
+		_,None -> prev
+	      |	None,Some x -> Some x
+	      |	Some prev,Some x ->
+		  (* [] is clearly an invalid ii value for a sequence.
+		     hope that no one looks at it, since nothing will
+		     match the sequence.  Fortunately, SmPL doesn't
+		     support , expressions. *)
+		  Some (Ast_c.mk_e (Ast_c.Sequence (prev, x)) []))
+	  None xs in
+      match possible_assignment with
+	Some x -> F.DefineExpr x
+      |	None -> F.Decl decl
 
 (*****************************************************************************)
 (* Functor parameter combinators *)
