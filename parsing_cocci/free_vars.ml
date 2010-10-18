@@ -103,6 +103,10 @@ let collect_refs include_constraints =
   let rec type_collect res = function
       TC.ConstVol(_,ty) | TC.Pointer(ty) | TC.FunctionPointer(ty)
     | TC.Array(ty) -> type_collect res ty
+    | TC.EnumName(TC.MV(tyname,_,_)) ->
+	bind [tyname] res
+    | TC.StructUnionName(_,TC.MV(tyname,_,_)) ->
+	bind [tyname] res
     | TC.MetaType(tyname,_,_) ->
 	bind [tyname] res
     | TC.SignedT(_,Some ty) -> type_collect res ty
@@ -233,6 +237,10 @@ let collect_saved =
   let rec type_collect res = function
       TC.ConstVol(_,ty) | TC.Pointer(ty) | TC.FunctionPointer(ty)
     | TC.Array(ty) -> type_collect res ty
+    | TC.EnumName(TC.MV(tyname,TC.Saved,_)) ->
+	bind [tyname] res
+    | TC.StructUnionName(_,TC.MV(tyname,TC.Saved,_)) ->
+	bind [tyname] res
     | TC.MetaType(tyname,TC.Saved,_) ->
 	bind [tyname] res
     | TC.SignedT(_,Some ty) -> type_collect res ty
@@ -491,6 +499,12 @@ let classify_variables metavar_decls minirules used_after =
     | TC.Pointer(ty) -> TC.Pointer(type_infos ty)
     | TC.FunctionPointer(ty) -> TC.FunctionPointer(type_infos ty)
     | TC.Array(ty) -> TC.Array(type_infos ty)
+    | TC.EnumName(TC.MV(name,_,_)) ->
+	let (unitary,inherited) = classify (name,(),(),Ast.NoMetaPos) in
+	TC.EnumName(TC.MV(name,unitary,inherited))
+    | TC.StructUnionName(su,TC.MV(name,_,_)) ->
+	let (unitary,inherited) = classify (name,(),(),Ast.NoMetaPos) in
+	TC.StructUnionName(su,TC.MV(name,unitary,inherited))
     | TC.MetaType(name,_,_) ->
 	let (unitary,inherited) = classify (name,(),(),Ast.NoMetaPos) in
 	Type_cocci.MetaType(name,unitary,inherited)

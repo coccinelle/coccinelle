@@ -217,7 +217,7 @@ let rec propagate_types env =
 	| Ast0.RecordAccess(exp,pt,field) ->
 	    (match strip_cv (Ast0.get_type exp) with
 		 None -> None
-	       | Some (T.StructUnionName(_,_,_)) -> None
+	       | Some (T.StructUnionName(_,_)) -> None
 	       | Some (T.TypeName(_)) -> None
 	       | Some (T.MetaType(_,_,_)) -> None
 	       | Some x -> err exp x "non-structure type in field ref")
@@ -229,7 +229,7 @@ let rec propagate_types env =
 		      | Some (T.Unknown) -> None
 		      | Some (T.MetaType(_,_,_)) -> None
 		      | Some (T.TypeName(_)) -> None
-		      | Some (T.StructUnionName(_,_,_)) -> None
+		      | Some (T.StructUnionName(_,_)) -> None
 		      | Some x ->
 			  err exp (T.Pointer(t))
 			    "non-structure pointer type in field ref"

@@ -23,6 +23,7 @@
 
 
 module Ast = Ast_cocci
+module TC = Type_cocci
 
 (* --------------------------------------------------------------------- *)
 (* Modified code *)
@@ -68,7 +69,7 @@ and 'a wrap =
       info : info;
       index : int ref;
       mcodekind : mcodekind ref;
-      exp_ty : Type_cocci.typeC option ref; (* only for expressions *)
+      exp_ty : TC.typeC option ref; (* only for expressions *)
       bef_aft : dots_bef_aft; (* only for statements *)
       true_if_arg : bool; (* true if "arg_exp", only for exprs *)
       true_if_test : bool; (* true if "test position", only for exprs *)
@@ -142,7 +143,7 @@ and base_expression =
   | TypeExp        of typeC (* type name used as an expression, only in args *)
   | MetaErr        of Ast.meta_name mcode * constraints * pure
   | MetaExpr       of Ast.meta_name mcode * constraints *
-	              Type_cocci.typeC list option * Ast.form * pure
+	              TC.typeC list option * Ast.form * pure
   | MetaExprList   of Ast.meta_name mcode (* only in arg lists *) *
 	              listlen * pure
   | EComma         of string mcode (* only in arg lists *)
@@ -557,81 +558,84 @@ let undots d =
 
 let rec ast0_type_to_type ty =
   match unwrap ty with
-    ConstVol(cv,ty) -> Type_cocci.ConstVol(const_vol cv,ast0_type_to_type ty)
+    ConstVol(cv,ty) -> TC.ConstVol(const_vol cv,ast0_type_to_type ty)
   | BaseType(bty,strings) ->
-      Type_cocci.BaseType(baseType bty)
+      TC.BaseType(baseType bty)
   | Signed(sgn,None) ->
-      Type_cocci.SignedT(sign sgn,None)
+      TC.SignedT(sign sgn,None)
   | Signed(sgn,Some ty) ->
       let bty = ast0_type_to_type ty in
-      Type_cocci.SignedT(sign sgn,Some bty)
-  | Pointer(ty,_) -> Type_cocci.Pointer(ast0_type_to_type ty)
+      TC.SignedT(sign sgn,Some bty)
+  | Pointer(ty,_) -> TC.Pointer(ast0_type_to_type ty)
   | FunctionPointer(ty,_,_,_,_,params,_) ->
-      Type_cocci.FunctionPointer(ast0_type_to_type ty)
+      TC.FunctionPointer(ast0_type_to_type ty)
   | FunctionType _ -> failwith "not supported"
-  | Array(ety,_,_,_) -> Type_cocci.Array(ast0_type_to_type ety)
+  | Array(ety,_,_,_) -> TC.Array(ast0_type_to_type ety)
   | EnumName(su,Some tag) ->
       (match unwrap tag with
 	Id(tag) ->
-	  Type_cocci.EnumName(false,unwrap_mcode tag)
+	  TC.EnumName(TC.Name(unwrap_mcode tag))
       | MetaId(tag,_,_) ->
 	  (Printf.printf
 	     "warning: enum with a metavariable name detected.\n";
 	   Printf.printf
 	     "For type checking assuming the name of the metavariable is the name of the type\n";
-	   let (rule,tag) = unwrap_mcode tag in
-	   Type_cocci.EnumName(true,rule^tag))
+	   TC.EnumName(TC.MV(unwrap_mcode tag,TC.Unitary,false)))
       | _ -> failwith "unexpected enum type name")
   | EnumName(su,None) -> failwith "nameless enum - what to do???"
   | EnumDef(ty,_,_,_) -> ast0_type_to_type ty
   | StructUnionName(su,Some tag) ->
       (match unwrap tag with
 	Id(tag) ->
-	  Type_cocci.StructUnionName(structUnion su,false,unwrap_mcode tag)
-      | MetaId(tag,_,_) ->
+	  TC.StructUnionName(structUnion su,TC.Name(unwrap_mcode tag))
+      | MetaId(tag,Ast.IdNoConstraint,_) ->
 	  (Common.pr2
 	     "warning: struct/union with a metavariable name detected.\n";
 	   Common.pr2
 	     "For type checking assuming the name of the metavariable is the name of the type\n";
-	   let (rule,tag) = unwrap_mcode tag in
-	   Type_cocci.StructUnionName(structUnion su,true,rule^tag))
+	   TC.StructUnionName(structUnion su,
+			      TC.MV(unwrap_mcode tag,TC.Unitary,false)))
+      | MetaId(tag,_,_) ->
+	  (* would have to duplicate the type in type_cocci.ml?
+	     perhaps polymorphism would help? *)
+	  failwith "constraints not supported on struct type name"
       | _ -> failwith "unexpected struct/union type name")
   | StructUnionName(su,None) -> failwith "nameless structure - what to do???"
   | StructUnionDef(ty,_,_,_) -> ast0_type_to_type ty
-  | TypeName(name) -> Type_cocci.TypeName(unwrap_mcode name)
+  | TypeName(name) -> TC.TypeName(unwrap_mcode name)
   | MetaType(name,_) ->
-      Type_cocci.MetaType(unwrap_mcode name,Type_cocci.Unitary,false)
+      TC.MetaType(unwrap_mcode name,TC.Unitary,false)
   | DisjType(_,types,_,_) ->
       Common.pr2_once
 	"disjtype not supported in smpl type inference, assuming unknown";
-      Type_cocci.Unknown
+      TC.Unknown
   | OptType(ty) | UniqueType(ty) ->
       ast0_type_to_type ty
 
 and baseType = function
-    Ast.VoidType -> Type_cocci.VoidType
-  | Ast.CharType -> Type_cocci.CharType
-  | Ast.ShortType -> Type_cocci.ShortType
-  | Ast.IntType -> Type_cocci.IntType
-  | Ast.DoubleType -> Type_cocci.DoubleType
-  | Ast.FloatType -> Type_cocci.FloatType
-  | Ast.LongType -> Type_cocci.LongType
-  | Ast.LongLongType -> Type_cocci.LongLongType
+    Ast.VoidType -> TC.VoidType
+  | Ast.CharType -> TC.CharType
+  | Ast.ShortType -> TC.ShortType
+  | Ast.IntType -> TC.IntType
+  | Ast.DoubleType -> TC.DoubleType
+  | Ast.FloatType -> TC.FloatType
+  | Ast.LongType -> TC.LongType
+  | Ast.LongLongType -> TC.LongLongType
 
 and structUnion t =
   match unwrap_mcode t with
-    Ast.Struct -> Type_cocci.Struct
-  | Ast.Union -> Type_cocci.Union
+    Ast.Struct -> TC.Struct
+  | Ast.Union -> TC.Union
 
 and sign t =
   match unwrap_mcode t with
-    Ast.Signed -> Type_cocci.Signed
-  | Ast.Unsigned -> Type_cocci.Unsigned
+    Ast.Signed -> TC.Signed
+  | Ast.Unsigned -> TC.Unsigned
 
 and const_vol t =
   match unwrap_mcode t with
-    Ast.Const -> Type_cocci.Const
-  | Ast.Volatile -> Type_cocci.Volatile
+    Ast.Const -> TC.Const
+  | Ast.Volatile -> TC.Volatile
 
 (* --------------------------------------------------------------------- *)
 (* this function is a rather minimal attempt.  the problem is that information
@@ -646,72 +650,65 @@ exception TyConv
 
 let rec reverse_type ty =
   match ty with
-    Type_cocci.ConstVol(cv,ty) ->
+    TC.ConstVol(cv,ty) ->
       ConstVol(reverse_const_vol cv,context_wrap(reverse_type ty))
-  | Type_cocci.BaseType(bty) ->
+  | TC.BaseType(bty) ->
       BaseType(reverse_baseType bty,[(* not used *)])
-  | Type_cocci.SignedT(sgn,None) -> Signed(reverse_sign sgn,None)
-  | Type_cocci.SignedT(sgn,Some bty) ->
+  | TC.SignedT(sgn,None) -> Signed(reverse_sign sgn,None)
+  | TC.SignedT(sgn,Some bty) ->
       Signed(reverse_sign sgn,Some (context_wrap(reverse_type ty)))
-  | Type_cocci.Pointer(ty) ->
+  | TC.Pointer(ty) ->
       Pointer(context_wrap(reverse_type ty),make_mcode "*")
-  | Type_cocci.EnumName(mv,tag) ->
-      if mv
-      then
-	(* not right... *)
-	let rule = "" in
-	EnumName
-	  (make_mcode "enum",
-	   Some (context_wrap(MetaId(make_mcode (rule,tag),Ast.IdNoConstraint,
-				     Impure))))
-      else
-	EnumName(make_mcode "enum",Some(context_wrap(Id(make_mcode tag))))
-  | Type_cocci.StructUnionName(su,mv,tag) ->
-      if mv
-      then
-	(* not right... *)
-	let rule = "" in
-	StructUnionName
-	  (reverse_structUnion su,
-	   Some(context_wrap(MetaId(make_mcode (rule,tag),Ast.IdNoConstraint,
-				    Impure))))
-      else
-	StructUnionName
-	  (reverse_structUnion su,
-	   Some (context_wrap(Id(make_mcode tag))))
-  | Type_cocci.TypeName(name) -> TypeName(make_mcode name)
-  | Type_cocci.MetaType(name,_,_) ->
+  | TC.EnumName(TC.MV(name,_,_)) ->
+      EnumName
+	(make_mcode "enum",
+	 Some (context_wrap(MetaId(make_mcode name,Ast.IdNoConstraint,
+				   Impure))))
+  | TC.EnumName(TC.Name tag) ->
+      EnumName(make_mcode "enum",Some(context_wrap(Id(make_mcode tag))))
+  | TC.StructUnionName(su,TC.MV(name,_,_)) ->
+      (* not right?... *)
+      StructUnionName
+	(reverse_structUnion su,
+	 Some(context_wrap(MetaId(make_mcode name,Ast.IdNoConstraint,
+				  Impure(*not really right*)))))
+  |  TC.StructUnionName(su,TC.Name tag) ->
+      StructUnionName
+	(reverse_structUnion su,
+	 Some (context_wrap(Id(make_mcode tag))))
+  | TC.TypeName(name) -> TypeName(make_mcode name)
+  | TC.MetaType(name,_,_) ->
       MetaType(make_mcode name,Impure(*not really right*))
   | _ -> raise TyConv
 
 and reverse_baseType = function
-    Type_cocci.VoidType -> Ast.VoidType
-  | Type_cocci.CharType -> Ast.CharType
-  | Type_cocci.BoolType -> Ast.IntType
-  | Type_cocci.ShortType -> Ast.ShortType
-  | Type_cocci.IntType -> Ast.IntType
-  | Type_cocci.DoubleType -> Ast.DoubleType
-  | Type_cocci.FloatType -> Ast.FloatType
-  | Type_cocci.LongType -> Ast.LongType
-  | Type_cocci.LongLongType -> Ast.LongLongType
+    TC.VoidType -> Ast.VoidType
+  | TC.CharType -> Ast.CharType
+  | TC.BoolType -> Ast.IntType
+  | TC.ShortType -> Ast.ShortType
+  | TC.IntType -> Ast.IntType
+  | TC.DoubleType -> Ast.DoubleType
+  | TC.FloatType -> Ast.FloatType
+  | TC.LongType -> Ast.LongType
+  | TC.LongLongType -> Ast.LongLongType
 
 and reverse_structUnion t =
   make_mcode
     (match t with
-      Type_cocci.Struct -> Ast.Struct
-    | Type_cocci.Union -> Ast.Union)
+      TC.Struct -> Ast.Struct
+    | TC.Union -> Ast.Union)
 
 and reverse_sign t =
   make_mcode
     (match t with
-      Type_cocci.Signed -> Ast.Signed
-    | Type_cocci.Unsigned -> Ast.Unsigned)
+      TC.Signed -> Ast.Signed
+    | TC.Unsigned -> Ast.Unsigned)
 
 and reverse_const_vol t =
   make_mcode
     (match t with
-      Type_cocci.Const -> Ast.Const
-    | Type_cocci.Volatile -> Ast.Volatile)
+      TC.Const -> Ast.Const
+    | TC.Volatile -> Ast.Volatile)
 
 (* --------------------------------------------------------------------- *)
 

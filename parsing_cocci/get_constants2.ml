@@ -293,8 +293,8 @@ let do_get_constants constants keywords env neg_pos =
     | TC.MetaType(tyname,_,_) ->
 	inherited tyname
     | TC.TypeName(s) -> constants s
-    | TC.EnumName(false,s) -> constants s
-    | TC.StructUnionName(_,false,s) -> constants s
+    | TC.EnumName(TC.Name s) -> constants s
+    | TC.StructUnionName(_,TC.Name s) -> constants s
     | ty -> res in
 
   (* no point to do anything special for records because glimpse is

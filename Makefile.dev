@@ -55,7 +55,7 @@ diff_darcs:
 gitupdate:
 	git cvsimport -d :ext:topps:/var/cvs/cocci  coccinelle
 
-UBUNTU=karmic lucid
+UBUNTU=karmic lucid maverick
 UBUNTURELEASE=$(UBUNTU:%=ubuntu-%)
 
 .PHONY:: ubuntu $(UBUNTURELEASE)
@@ -75,7 +75,10 @@ ubuntu-karmic:
 ubuntu-lucid:
 	debchange -c debian/changelog.lucid -D lucid -v $(VERSION)~1004npalix$(IDX) "New release $(VERSION)"
 
-ubuntu-maverik:
+ubuntu-maverick:
+	debchange -c debian/changelog.maverick -D maverick -v $(VERSION)~1010npalix$(IDX) "New release $(VERSION)"
+
+ubuntu-natty:
 	if [ ! -f debian/changelog.$(@:ubuntu-%=%) ] ; then \
 		debchange --create -c debian/changelog.$(@:ubuntu-%=%) -D UNRELEASED \
 			-v $(VERSION)~npalix$(IDX) "New release $(VERSION)" --package $(PRJNAME) ; \

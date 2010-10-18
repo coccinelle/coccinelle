@@ -31,6 +31,8 @@
   command line, but not in the rule
 - spatch returns -1 when a virtual rule is requested that is not supported
 - no transformation when using * with the option -no_show_diff
+- expanded +++ file name for match output
+- struct *^* and enum *^* metavariable types
 
 ** Bugfix:
 - detect used after metavariables in simple statement metavariable match
@@ -39,12 +41,14 @@
 - treat top-level tokens in decl visitor.  Thanks to Peter Tummeltshammer
   for noticing a resulting problem.
 - improve typing of the result of an assignment expression
-- eliminate some recursive calls in C code parsing to avoid tack overflows
+- eliminate some recursive calls in C code parsing to avoid stack overflows
 - better pretty printing of #define when the whole line is removed
 - better pretty printing of asm code containing
   "::[input]"r"(&coherence_data[i])"
 - allow pretty printing of C code with nameless bit fields
-- avoid adding an error message to standard output if ocamlfind is not found
+- avoid adding an error message to standard output if ocamlfind is not
+  found
+- struct/union/enum-typed metavariables with a metavariable type name
 
 * 0.2.3
 ** Language:

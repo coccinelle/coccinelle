@@ -2057,7 +2057,6 @@ let lookahead2 ~pass next before =
        *)
         ->
 
-
       if s ==~ regexp_foreach &&
         is_really_foreach (Common.take_safe forLOOKAHEAD rest)
 

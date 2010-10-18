@@ -183,6 +183,8 @@ and get_type_name = function
     Type_cocci.ConstVol(_,ty) | Type_cocci.SignedT(_,Some ty)
   | Type_cocci.Pointer(ty)
   | Type_cocci.FunctionPointer(ty) | Type_cocci.Array(ty) -> get_type_name ty
+  | Type_cocci.EnumName(Type_cocci.MV(nm,_,_)) -> Some nm
+  | Type_cocci.StructUnionName(_,Type_cocci.MV(nm,_,_)) -> Some nm
   | Type_cocci.MetaType(nm,_,_) -> Some nm
   | _ -> None
 
