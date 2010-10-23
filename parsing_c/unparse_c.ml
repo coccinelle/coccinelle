@@ -51,7 +51,8 @@ type token1 =
  * type.
  *)
 type min =
-    Min of (int list (* match numbers *) * int (* adjacency information *))
+    Min of (int list (* match numbers from witness trees *) *
+	      int (* adjacency information *))
   | Ctx
 
 type token2 =
@@ -601,11 +602,12 @@ let remove_minus_and_between_and_expanded_and_fake xs =
 	    let is_whitespace_or_plus = function
 		(T2 _) as x -> is_whitespace x
 	      | _ -> true (*plus*) in
-	    if List.for_all is_whitespace_or_plus not_minus_list
+	    if not cp && List.for_all is_whitespace not_minus_list
 	    then
 	      (List.map (set_minus_comment_or_plus adj1) not_minus_list)
 	      @ (adjust_within_minus cp (t2::xs))
-	    else not_minus_list @ (adjust_within_minus cp (t2::xs))
+	    else
+	      not_minus_list @ (adjust_within_minus cp (t2::xs))
 	| _ ->
 	    if cp
 	    then xs
@@ -1142,7 +1144,7 @@ let pp_program2 xs outfile  =
 	    then drop_minus toks (* nothing to do for sgrep *)
 	    else
               (* phase2: can now start to filter and adjust *)
-              let (toks,tu) = adjust_indentation toks in
+	      let (toks,tu) = adjust_indentation toks in
 	      let toks = adjust_before_semicolon toks in(*before remove minus*)
 	      let toks = drop_space_at_endline toks in
 	      let toks = paren_to_space toks in

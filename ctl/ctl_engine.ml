@@ -1314,8 +1314,11 @@ let satEG dir ((_,_,states) as m) s reqst =
 (* **************************************************************** *)
 (* applied to the result of matching a node.  collect witnesses when the
 states and environments are the same *)
+(* not a good idea, poses problem for unparsing, because don't realize that
+adjacent things come from different matches, leading to loss of newlines etc.
+exple struct I { ... - int x; + int y; ...} *)
 
-let inner_and trips =
+let inner_and trips = trips (*
   let rec loop = function
       [] -> ([],[])
     | (s,th,w)::trips ->
@@ -1332,7 +1335,7 @@ let inner_and trips =
 	| _ -> ([(s,th,w)],cur@acc)) in
   let (cur,acc) =
     loop (List.sort state_compare trips) (* is this sort needed? *) in
-  cur@acc
+  cur@acc *)
 
 (* *************** *)
 (* Partial matches *)

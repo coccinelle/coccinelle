@@ -51,6 +51,8 @@
 - avoid adding an error message to standard output if ocamlfind is not
   found
 - struct/union/enum-typed metavariables with a metavariable type name
+- better management of whitespace between deleted lines.  Thanks to 
+  Andriy Gapon for noticing the proble.
 
 * 0.2.3
 ** Language:
