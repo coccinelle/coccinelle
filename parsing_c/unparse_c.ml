@@ -538,15 +538,17 @@ let drop_minus xs =
     | _ -> false
   )
 
-let remove_minus_and_between_and_expanded_and_fake xs =
-
-  (* get rid of expanded and fake tok *)
-  let xs = xs +> Common.exclude (function
+let drop_expanded_and_fake xs =
+  xs +> Common.exclude (function
     | T2 (t,_,_) when TH.is_expanded t -> true
     | Fake2 -> true
     | _ -> false
   )
-  in
+
+let remove_minus_and_between_and_expanded_and_fake xs =
+
+  (* get rid of expanded and fake tok *)
+  let xs = drop_expanded_and_fake xs in
 
   let minus_or_comment = function
       T2(_,Min adj,_) -> true
@@ -599,9 +601,6 @@ let remove_minus_and_between_and_expanded_and_fake xs =
 	    (List.map (set_minus_comment_or_plus adj1) not_minus_list)
 	    @ (adjust_within_minus cp (t2::xs))
 	| (T2(_,Min adj2,_) as t2)::xs ->
-	    let is_whitespace_or_plus = function
-		(T2 _) as x -> is_whitespace x
-	      | _ -> true (*plus*) in
 	    if not cp && List.for_all is_whitespace not_minus_list
 	    then
 	      (List.map (set_minus_comment_or_plus adj1) not_minus_list)
@@ -1141,7 +1140,9 @@ let pp_program2 xs outfile  =
 
 	  let toks =
 	    if !Flag.sgrep_mode2
-	    then drop_minus toks (* nothing to do for sgrep *)
+	    then
+	      (* nothing else to do for sgrep *)
+	      drop_expanded_and_fake (drop_minus toks)
 	    else
               (* phase2: can now start to filter and adjust *)
 	      let (toks,tu) = adjust_indentation toks in
@@ -1154,7 +1155,7 @@ let pp_program2 xs outfile  =
               let toks = add_space toks in
 	      let toks = add_newlines toks tu in
               let toks = fix_tokens toks in
-	      toks in
+	       toks in
 
           (* in theory here could reparse and rework the ast! or
            * apply some SP. Not before cos julia may have generated
