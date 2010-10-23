@@ -436,11 +436,6 @@ list_len:
       let ty = Some [ty] in
       let tok = check_meta(Ast.MetaExpDecl(arity,name,ty)) in
       !Data.add_exp_meta ty name constraints pure; tok) }
-| vl=meta_exp_type TOCro TCCro
-    { (fun arity name pure check_meta constraints ->
-      let ty = Some (List.map (function x -> Type_cocci.Array x) vl) in
-      let tok = check_meta(Ast.MetaExpDecl(arity,name,ty)) in
-      !Data.add_exp_meta ty name constraints pure; tok) }
 | TConstant ty=ioption(meta_exp_type)
     { (fun arity name pure check_meta constraints ->
       let tok = check_meta(Ast.MetaConstDecl(arity,name,ty)) in
@@ -488,10 +483,11 @@ expression_type:
       !Data.add_exp_meta ty name constraints pure; tok)
     }
 
-
 meta_exp_type:
   t=typedef_ctype
     { [Ast0_cocci.ast0_type_to_type t] }
+| t=typedef_ctype TOCro TCCro
+    { [Type_cocci.Array (Ast0_cocci.ast0_type_to_type t)] }
 | TOBrace t=comma_list(ctype) TCBrace m=list(TMul)
     { List.map
 	(function x -> P.ty_pointerify (Ast0_cocci.ast0_type_to_type x) m)
