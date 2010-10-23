@@ -54,8 +54,10 @@
 - better management of whitespace between deleted lines.  Thanks to
   Andriy Gapon for noticing the problem.
 - improved parsing recovery for badly parsed struct/enum typedefs
-- drop expanded tokens in sgrep output.  Thanks to
-  Andriy Gapon for noticing the problem.
+- drop expanded tokens in sgrep output.  Thanks to Andriy Gapon for
+  noticing the problem.
+- constant strings have array type, not pointer type.  Thanks to Vasiliy
+  Kulikov for noticing the problem.
 
 * 0.2.3
 ** Language:
