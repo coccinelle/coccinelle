@@ -223,6 +223,7 @@ packbin: prepack
 prepack:
 	rsync -a $(EXCL_SYNC) . $(TMP)/$(PACKAGE)
 	$(MAKE) -C $(TMP)/$(PACKAGE) licensify
+	sed -i "s|^OCAMLCFLAGS=.*$$|OCAMLCFLAGS=|" $(TMP)/$(PACKAGE)/Makefile
 	rm -rf $(TMP)/$(PACKAGE)/tools
 
 push:
