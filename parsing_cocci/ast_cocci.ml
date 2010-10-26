@@ -61,7 +61,7 @@ and 'a mcode = 'a * info * mcodekind * meta_pos (* pos variable *)
     (* int list is the match instances, which are only meaningful in annotated
        C code *)
     (* int is the adjacency index, which is incremented on context dots *)
-(* iteration is only allowed on contect code, the intuition vaguely being
+(* iteration is only allowed on context code, the intuition vaguely being
 that there is no way to replace something more than once.  Actually,
 allowing iterated additions on minus code would cause problems with some
 heuristics for adding braces, because one couldn't identify simple

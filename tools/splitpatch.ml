@@ -177,7 +177,10 @@ let get_template_information file =
       if message = []
       then (subject,None,cover)
       else (subject,Some cover,message)
-  | _ -> failwith "Subject must be exactly one line"
+  | _ ->
+      failwith
+	("Subject must be exactly one line "^
+	 (string_of_int (List.length subject)))
 
 (* ------------------------------------------------------------------------ *)
 (* ------------------------------------------------------------------------ *)

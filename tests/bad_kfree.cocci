@@ -1,5 +1,5 @@
 @print@
-constant char *c;
+constant char [] c;
 expression E1;
 position p;
 identifier f;

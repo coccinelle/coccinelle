@@ -623,7 +623,6 @@ let get_one_elem ~pass tr (file, filelines) =
 
       let passed_before_error = tr.passed in
       let current = tr.current in
-
       (*  error recovery, go to next synchro point *)
       let (passed', rest') =
         Parsing_recovery_c.find_next_synchro tr.rest tr.passed in

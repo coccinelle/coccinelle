@@ -116,9 +116,9 @@ and find_next_synchro_orig next already_passed =
       | Parser_c.TCommentSpace sp::Parser_c.TIdent x::Parser_c.TPtVirg iptvirg
         ::xs ->
           pr2_err "ERROR-RECOV: found sync bis, eating ident, }, and ;";
+          (Parser_c.TPtVirg iptvirg)::
+          (Parser_c.TIdent x)::
           (Parser_c.TCommentSpace sp)::
-            (Parser_c.TPtVirg iptvirg)::
-            (Parser_c.TIdent x)::
             v::
             already_passed,
           xs
@@ -126,9 +126,9 @@ and find_next_synchro_orig next already_passed =
       | Parser_c.TCommentNewline sp::Parser_c.TIdent x::Parser_c.TPtVirg iptvirg
         ::xs ->
           pr2_err "ERROR-RECOV: found sync bis, eating ident, }, and ;";
+          (Parser_c.TPtVirg iptvirg)::
+          (Parser_c.TIdent x)::
           (Parser_c.TCommentNewline sp)::
-            (Parser_c.TPtVirg iptvirg)::
-            (Parser_c.TIdent x)::
             v::
             already_passed,
           xs
