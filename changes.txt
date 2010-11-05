@@ -58,6 +58,8 @@
   noticing the problem.
 - constant strings have array type, not pointer type.  Thanks to Vasiliy
   Kulikov for noticing the problem.
+- return type of sizeof converted to unsigned long.  Thanks to Vasiliy
+  Kulikov for noticing the problem.
 
 * 0.2.3
 ** Language:

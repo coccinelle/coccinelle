@@ -244,7 +244,9 @@ let dep_flag mlfile =
   let depcmd  = !Flag.ocamldep ^" -modules "^mlfile in
   match Common.cmd_to_list depcmd with
     [dep] -> parse_dep mlfile dep
-  | _ -> raise (CompileFailure ("Wrong dependencies for "^mlfile))
+  | err ->
+      List.iter (function x -> Common.pr2 (x^"\n")) err;
+      raise (CompileFailure ("Failed ocamldep for "^mlfile))
 
 let compile_bytecode_cmd flags mlfile =
   let obj = (Filename.chop_extension mlfile) ^ ".cmo" in
