@@ -12,5 +12,7 @@ val process :
 	     (*fresh used after list seeds*)
 	     Ast_cocci.meta_name list list list) *
 	  Ast_cocci.meta_name list list list (*positions list*) *
-	  string list option (* non metavars in - code, for grep *) *
-	  string list option (* non metavars in - code, for glimpse/google *)
+	  (string list option (*non metavars in - code, for grep*) *
+	     string list option (*non metavars in - code, for glimpse/google*) *
+	     (*non metavars in - code, for other tools*)
+	     Get_constants2.combine option)

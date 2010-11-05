@@ -45,7 +45,7 @@ let _hctl = Hashtbl.create 101
 (* --------------------------------------------------------------------- *)
 let sp_of_file2 file iso   =
   Common.memoized _hparse (file, iso) (fun () ->
-    let (_,xs,_,_,_,_,_,_) as res = Parse_cocci.process file iso false in
+    let (_,xs,_,_,_,_,_) as res = Parse_cocci.process file iso false in
     (match Prepare_ocamlcocci.prepare file xs with
       None -> ()
     | Some ocaml_script_file ->
@@ -1689,7 +1689,7 @@ let pre_engine2 (coccifile, isofile) =
   (* useful opti when use -dir *)
   let (metavars,astcocci,
        free_var_lists,negated_pos_lists,used_after_lists,
-       positions_lists,toks,_) =
+       positions_lists,(toks,_,_)) =
       sp_of_file coccifile isofile in
   let ctls = ctls_of_ast astcocci used_after_lists positions_lists in
 

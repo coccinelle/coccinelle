@@ -923,6 +923,15 @@ let rec adjust_indentation xs =
     | x::xs -> find_first_tab started xs in
   find_first_tab false xs;
 
+  let rec balanced ct = function
+      [] -> ct >= 0
+    | ((T2(tok,_,_)) as x)::xs ->
+	(match str_of_token2 x with
+	  "(" -> balanced (ct+1) xs
+	| ")" -> balanced (ct-1) xs
+	| _ -> balanced ct xs)
+    | x::xs -> balanced ct xs in
+
   let rec aux started xs =
     match xs with
     | [] ->  []
@@ -932,7 +941,8 @@ let rec adjust_indentation xs =
       when started && str_of_token2 x =$= ")" ->
 	(* to be done for if, etc, but not for a function header *)
 	x::(C2 " ")::a::(aux started xs)
-    | ((T2 (Parser_c.TCommentNewline s, _, _)) as x)::xs ->
+    | ((T2 (Parser_c.TCommentNewline s, _, _)) as x)::xs
+      when balanced 0 (fst(Common.span (function x -> not(is_newline x)) xs)) ->
 	let old_tabbing = !_current_tabbing in
         str_of_token2 x +> new_tabbing +> (fun s -> _current_tabbing := s);
 	(* only trust the indentation after the first { *)

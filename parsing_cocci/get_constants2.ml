@@ -620,14 +620,17 @@ let run rules neg_pos_vars =
     
 let get_constants rules neg_pos_vars =
   match !Flag.scanner with
-    Flag.NoScanner -> (None,None)
+    Flag.NoScanner -> (None,None,None)
   | Flag.Grep ->
       let res = run rules neg_pos_vars in
-      (interpret_grep true res,None)
+      (interpret_grep true res,None,None)
   | Flag.Glimpse ->
       let res = run rules neg_pos_vars in
-      (interpret_grep true res,interpret_glimpse true res)
+      (interpret_grep true res,interpret_glimpse true res,None)
   | Flag.Google _ ->
       let res = run rules neg_pos_vars in
-      (interpret_grep true res,interpret_google true res)
+      (interpret_grep true res,interpret_google true res,None)
+  | Flag.IdUtils _ ->
+      let res = run rules neg_pos_vars in
+      (interpret_grep true res,None,Some res)
       
