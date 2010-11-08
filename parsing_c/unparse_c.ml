@@ -768,7 +768,7 @@ let rec add_space xs =
   | x::y::xs ->
       let sx = str_of_token2 x in
       let sy = str_of_token2 y in
-      if is_ident_like sx && is_ident_like sy
+      if is_ident_like sx && (is_ident_like sy or List.mem sy ["="])
       then x::C2 " "::(add_space (y::xs))
       else x::(add_space (y::xs))
 

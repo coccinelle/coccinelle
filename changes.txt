@@ -62,6 +62,8 @@
   arguments.
 - return type of sizeof converted to unsigned long.  Thanks to Vasiliy
   Kulikov for noticing the problem.
+- improve spacing when adding structure initializers.  Thanks to Vasiliy
+  Kulikov for noticing the problem.
 
 * 0.2.3
 ** Language:

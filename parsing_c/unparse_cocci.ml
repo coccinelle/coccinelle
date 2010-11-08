@@ -619,9 +619,14 @@ and initialiser nlcomma i =
         | _ -> raise Impossible)
   | Ast.InitExpr(exp) -> expression exp
   | Ast.ArInitList(lb,initlist,rb) ->
-      mcode print_string lb; start_block();
-      dots force_newline (initialiser false) initlist;
-      end_block(); mcode print_string rb
+      (match Ast.undots initlist with
+	[] -> mcode print_string lb; mcode print_string rb
+      |	_ ->
+	  mcode print_string lb; start_block();
+	  dots force_newline (initialiser false) initlist;
+	  end_block(); mcode print_string rb)
+  | Ast.StrInitList(_,lb,[],rb,[]) ->
+      mcode print_string lb; mcode print_string rb
   | Ast.StrInitList(_,lb,initlist,rb,[]) ->
       mcode print_string lb; start_block();
       (* awkward, because the comma is separate from the initialiser *)
