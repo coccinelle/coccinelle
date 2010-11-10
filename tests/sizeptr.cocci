@@ -6,6 +6,13 @@ size_t x;
 + ASIZE(x)
 
 @@
+ssize_t x;
+@@
+
+- x
++ ASSIZE(x)
+
+@@
 ptrdiff_t x;
 @@
 
