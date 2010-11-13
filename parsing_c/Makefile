@@ -8,21 +8,20 @@ TARGET=parsing_c
 
 -include ../Makefile.config
 
-ifeq ($(FEATURE_TARZAN), 1)
-TARZANSRC=sexp_ast_c.ml
-ifeq ("$(SEXPDIR)","ocamlsexp")
-TARZANINCLUDE=-I ../$(SEXPDIR)
-else
-TARZANINCLUDE=-I $(SEXPDIR)
-endif # Use local ocamlsexp
-endif # FEATURE_TARZAN
+# ifeq ($(FEATURE_TARZAN), 1)
+# TARZANSRC=sexp_ast_c.ml
+# ifeq ("$(SEXPDIR)","ocamlsexp")
+# TARZANINCLUDE=-I ../$(SEXPDIR)
+# else
+# TARZANINCLUDE=-I $(SEXPDIR)
+# endif # Use local ocamlsexp
+# endif # FEATURE_TARZAN
 
 
 
 # - type_cocci.ml ast_cocci.ml  # + unparse_hrule
 SRC= flag_parsing_c.ml parsing_stat.ml \
  token_c.ml ast_c.ml control_flow_c.ml \
- $(TARZANSRC) \
  visitor_c.ml lib_parsing_c.ml \
  control_flow_c_build.ml \
  pretty_print_c.ml \

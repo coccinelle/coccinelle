@@ -454,7 +454,7 @@ let test_parse_cocci file =
   | Some x -> pr (String.concat " || " x));
   match !Flag.scanner with
     Flag.NoScanner | Flag.Grep -> ()
-  | Flag.Glimpse | Flag.Google _ ->
+  | Flag.Glimpse | Flag.IdUtils | Flag.Google _ ->
       Printf.printf "%s tokens\n"
 	(if !Flag.scanner = Flag.Glimpse then "glimpse" else "google");
       (match query with

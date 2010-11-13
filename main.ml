@@ -750,7 +750,7 @@ let idutils_filter (coccifile, isofile) dir =
     None -> pr2 "no inferred idutils keywords"; None
   | Some query ->
       let suffixes = if !include_headers then ["c";"h"] else ["c"] in
-      let files = [](*Id_utils.interpret dir query*) in
+      let files = Id_utils.interpret dir query in
       Printf.fprintf stderr "got files\n"; flush stderr;
       Some
 	(files +>
