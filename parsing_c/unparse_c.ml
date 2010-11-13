@@ -765,10 +765,16 @@ let rec add_space xs =
 	   something should be done to add newlines too, rather than
 	   printing them explicitly in unparse_cocci. *)
 	x::C2 (String.make (lcoly-rcolx) ' ')::add_space (y::xs)
-  | x::y::xs ->
+  | ((T2(_,Ctx,_)) as x)::((Cocci2 _) as y)::xs -> (* add space on boundary *)
       let sx = str_of_token2 x in
       let sy = str_of_token2 y in
       if is_ident_like sx && (is_ident_like sy or List.mem sy ["="])
+      then x::C2 " "::(add_space (y::xs))
+      else x::(add_space (y::xs))
+  | x::y::xs -> (* not boundary, not sure if it is possible *)
+      let sx = str_of_token2 x in
+      let sy = str_of_token2 y in
+      if is_ident_like sx && is_ident_like sy
       then x::C2 " "::(add_space (y::xs))
       else x::(add_space (y::xs))
 

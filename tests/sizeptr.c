@@ -5,7 +5,7 @@ int main () {
   ssize_t b;
   ptrdiff_t c;
 
-  foo(sizeof(*x),a);
+  foo(sizeof *x,a);
   foo(*x,b);
   foo(x-y,c);
 }
