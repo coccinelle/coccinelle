@@ -35,6 +35,7 @@
 - struct *^* and enum *^* metavariable types
 - allow an assignment to match a variable initialization, even if multiple
   variables are declared at the same time.
+- add the option -recursive_includes
 
 ** Bugfix:
 - detect used after metavariables in simple statement metavariable match

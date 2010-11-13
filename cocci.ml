@@ -552,7 +552,9 @@ let (includes_to_parse:
     Flag_cocci.I_UNSPECIFIED -> failwith "not possible"
   | Flag_cocci.I_NO_INCLUDES -> []
   | x ->
-      let all_includes = x =*= Flag_cocci.I_ALL_INCLUDES in
+      let all_includes =
+	List.mem x
+	  [Flag_cocci.I_ALL_INCLUDES; Flag_cocci.I_REALLY_ALL_INCLUDES] in
       xs +> List.map (fun (file, cs) ->
 	let dir = Common.dirname file in
 
@@ -591,7 +593,7 @@ let (includes_to_parse:
 		  )
 	  | _ -> None))
 	+> List.concat
-	+> Common.uniq
+	+> (fun x -> (List.rev (Common.uniq (List.rev x)))) (*uniq keeps last*)
 
 let rec interpret_dependencies local global = function
     Ast_cocci.Dep s      -> List.mem s local
@@ -1013,63 +1015,75 @@ let rebuild_info_c_and_headers ccs isexp =
       rebuild_info_program c_or_h.asts c_or_h.full_fname isexp }
   )
 
-
+let rec prepare_h seen env hpath choose_includes : file_info list =
+  if not (Common.lfile_exists hpath)
+  then
+    begin
+      pr2 ("TYPE: header " ^ hpath ^ " not found");
+      []
+    end
+  else
+    begin
+      let h_cs = cprogram_of_file_cached hpath in
+      let local_includes =
+	if choose_includes =*= Flag_cocci.I_REALLY_ALL_INCLUDES
+	then
+	  List.filter
+	    (function x -> not (List.mem x !seen))
+	    (includes_to_parse [(hpath,h_cs)] choose_includes)
+	else [] in
+      seen := local_includes @ !seen;
+      let others =
+	List.concat
+	  (List.map (function x -> prepare_h seen env x choose_includes)
+	     local_includes) in
+      let info_h_cs = build_info_program h_cs !env in
+      env :=
+	if null info_h_cs
+	then !env
+	else last_env_toplevel_c_info info_h_cs;
+      others@
+      [{
+	fname = Common.basename hpath;
+	full_fname = hpath;
+	asts = info_h_cs;
+	was_modified_once = ref false;
+	fpath = hpath;
+	fkind = Header;
+      }]
+    end
 
 let prepare_c files choose_includes : file_info list =
   let cprograms = List.map cprogram_of_file_cached files in
   let includes = includes_to_parse (zip files cprograms) choose_includes in
+  let seen = ref includes in
 
   (* todo?: may not be good to first have all the headers and then all the c *)
-  let all =
-    (includes +> List.map (fun hpath -> Right hpath))
-    ++
-    ((zip files cprograms) +>
-     List.map (fun (file, asts) -> Left (file, asts)))
-  in
-
   let env = ref !TAC.initial_env in
 
-  let ccs = all +> Common.map_filter (fun x ->
-    match x with
-    | Right hpath ->
-        if not (Common.lfile_exists hpath)
-        then begin
-          pr2 ("TYPE: header " ^ hpath ^ " not found");
-          None
-        end
-        else
-          let h_cs = cprogram_of_file_cached hpath in
-          let info_h_cs = build_info_program h_cs !env in
-          env :=
-            if null info_h_cs
-            then !env
-            else last_env_toplevel_c_info info_h_cs
-          ;
-          Some {
-            fname = Common.basename hpath;
-            full_fname = hpath;
-            asts = info_h_cs;
-            was_modified_once = ref false;
-            fpath = hpath;
-            fkind = Header;
-          }
-    | Left (file, cprogram) ->
-        (* todo?: don't update env ? *)
+  let includes =
+    includes +>
+    List.map (function hpath -> prepare_h seen env hpath choose_includes) +>
+    List.concat in
+
+  let cfiles =
+    (zip files cprograms) +>
+    List.map
+      (function (file, cprogram) ->
+      (* todo?: don't update env ? *)
         let cs = build_info_program cprogram !env in
         (* we do that only for the c, not for the h *)
         ignore(update_include_rel_pos (cs +> List.map (fun x -> x.ast_c)));
-        Some {
-          fname = Common.basename file;
-          full_fname = file;
-          asts = cs;
-          was_modified_once = ref false;
-          fpath = file;
-          fkind = Source;
-        }
-  )
-  in
-  ccs
+        {
+        fname = Common.basename file;
+        full_fname = file;
+        asts = cs;
+        was_modified_once = ref false;
+        fpath = file;
+        fkind = Source
+      }) in
 
+  includes @ cfiles
 
 (*****************************************************************************)
 (* Processing the ctls and toplevel C elements *)

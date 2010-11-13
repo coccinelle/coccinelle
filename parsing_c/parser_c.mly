@@ -428,6 +428,7 @@ let mk_string_wrap (s,info) = (s, [info])
 
 %token <Ast_c.info>
        Tchar Tshort Tint Tdouble Tfloat Tlong Tunsigned Tsigned Tvoid
+       Tsize_t Tssize_t Tptrdiff_t
        Tauto Tregister Textern Tstatic
        Ttypedef
        Tconst Tvolatile
@@ -1012,6 +1013,9 @@ type_spec2:
  | Tint                 { Right3 (BaseType (IntType (Si (Signed,CInt)))), [$1]}
  | Tfloat               { Right3 (BaseType (FloatType CFloat)),  [$1]}
  | Tdouble              { Right3 (BaseType (FloatType CDouble)), [$1] }
+ | Tsize_t              { Right3 (BaseType SizeType),            [$1] }
+ | Tssize_t             { Right3 (BaseType SSizeType),           [$1] }
+ | Tptrdiff_t           { Right3 (BaseType PtrDiffType),         [$1] }
  | Tshort               { Middle3 Short,  [$1]}
  | Tlong                { Middle3 Long,   [$1]}
  | Tsigned              { Left3 Signed,   [$1]}

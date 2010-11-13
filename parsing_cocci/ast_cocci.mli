@@ -248,7 +248,7 @@ and fullType = base_fullType wrap
 and typeC = base_typeC wrap
 
 and baseType = VoidType | CharType | ShortType | IntType | DoubleType
-  | FloatType | LongType | LongLongType
+  | FloatType | LongType | LongLongType | SizeType | SSizeType | PtrDiffType
 
 and structUnion = Struct | Union
 

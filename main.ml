@@ -268,9 +268,12 @@ let short_options = [
   "-macro_file_builtins", Arg.Set_string Config.std_h,
   " <file> (default=" ^ !Config.std_h ^ ")";
 
+  "-recursive_includes",
+  Arg.Unit (function _ -> FC.include_options := FC.I_REALLY_ALL_INCLUDES),
+  "  causes all available include files, both those included in the C file(s) and those included in header files, to be used";
   "-all_includes",
   Arg.Unit (function _ -> FC.include_options := FC.I_ALL_INCLUDES),
-  "  causes all available include files to be used";
+  "  causes all available include files included in the C file(s) to be used";
   "-no_includes",
   Arg.Unit (function _ -> FC.include_options := FC.I_NO_INCLUDES),
   "  causes not even local include files to be used";
@@ -747,7 +750,7 @@ let idutils_filter (coccifile, isofile) dir =
     None -> pr2 "no inferred idutils keywords"; None
   | Some query ->
       let suffixes = if !include_headers then ["c";"h"] else ["c"] in
-      let files = Id_utils.interpret dir query in
+      let files = [](*Id_utils.interpret dir query*) in
       Printf.fprintf stderr "got files\n"; flush stderr;
       Some
 	(files +>

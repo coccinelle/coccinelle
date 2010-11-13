@@ -28,7 +28,8 @@ let popl = ref false
 let ifdef_to_if = ref true(*false*)
 
 type include_options =
-    I_UNSPECIFIED | I_NO_INCLUDES | I_NORMAL_INCLUDES | I_ALL_INCLUDES
+    I_UNSPECIFIED | I_NO_INCLUDES | I_NORMAL_INCLUDES
+  | I_ALL_INCLUDES | I_REALLY_ALL_INCLUDES
 let include_options = ref I_UNSPECIFIED
 
 let include_path = ref ([] : string list)

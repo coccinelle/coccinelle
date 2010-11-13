@@ -298,15 +298,18 @@ other \#ifdef.}
 
 \subsubsection*{Include files}
 
-\normal{-all\_includes, -local\_includes, -no\_includes}{
-These options control which include files mentioned in a C file are taken into
-account.  {\bf -all\_includes} indicates that all included files will be
-processed.  {\bf -local\_includes} indicates that only included files in
-the current directory will be processed.  {\bf -no\_includes} indicates
-that no included files will be processed.  If the semantic patch contains
-type specifications on expression metavariables, then the default is {\bf
--local\_includes}.  Otherwise the default is {\bf -no\_includes}.  At most
-one of these options can be specified.}
+\normal{-recursive\_includes, -all\_includes, -local\_includes,
+  -no\_includes}{ These options control which include files mentioned in a
+  C file are taken into account.  {\bf -really\_all\_includes} indicates
+  that all included files mentioned in the .c file(s) or any included files
+  will be processed.  {\bf -all\_includes} indicates that all included
+  files mentioned in the .c file(s) will be processed.  {\bf
+    -local\_includes} indicates that only included files in the current
+  directory will be processed.  {\bf -no\_includes} indicates that no
+  included files will be processed.  If the semantic patch contains type
+  specifications on expression metavariables, then the default is {\bf
+    -local\_includes}.  Otherwise the default is {\bf -no\_includes}.  At
+  most one of these options can be specified.}
 
 \normal{-I $\langle$path$\rangle$}{ This option specifies a directory
   in which to find non-local include files.  This option can be used

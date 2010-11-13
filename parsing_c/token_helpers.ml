@@ -158,7 +158,7 @@ let is_statement = function
 
 let is_start_of_something = function
   | Tchar _  | Tshort _ | Tint _ | Tdouble _ |  Tfloat _ | Tlong _
-  | Tunsigned _ | Tsigned _ | Tvoid _
+  | Tunsigned _ | Tsigned _ | Tvoid _ | Tsize_t _ | Tssize_t _ | Tptrdiff_t _
   | Tauto _ | Tregister _ | Textern _ | Tstatic _
   | Tconst _ | Tvolatile _
   | Ttypedef _
@@ -323,6 +323,9 @@ let info_of_tok = function
   | Tunsigned            (i) -> i
   | Tsigned              (i) -> i
   | Tvoid                (i) -> i
+  | Tsize_t              (i) -> i
+  | Tssize_t             (i) -> i
+  | Tptrdiff_t           (i) -> i
   | Tauto                (i) -> i
   | Tregister            (i) -> i
   | Textern              (i) -> i
@@ -473,6 +476,9 @@ let visitor_info_of_tok f = function
   | Tunsigned            (i) -> Tunsigned            (f i)
   | Tsigned              (i) -> Tsigned              (f i)
   | Tvoid                (i) -> Tvoid                (f i)
+  | Tsize_t              (i) -> Tsize_t              (f i)
+  | Tssize_t             (i) -> Tssize_t             (f i)
+  | Tptrdiff_t           (i) -> Tptrdiff_t           (f i)
   | Tauto                (i) -> Tauto                (f i)
   | Tregister            (i) -> Tregister            (f i)
   | Textern              (i) -> Textern              (f i)

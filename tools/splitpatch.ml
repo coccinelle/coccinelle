@@ -191,6 +191,7 @@ let split_patch i =
   let get_size l =
     match Str.split_delim (Str.regexp ",") l with
       [_;size] -> int_of_string size
+    | [_] -> 1
     | _ -> failwith ("bad size: "^l) in
   let rec read_diff_or_atat _ =
     let l = input_line i in

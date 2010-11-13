@@ -375,6 +375,9 @@ and baseType = function
   | Ast.FloatType -> print_string "float "
   | Ast.LongType -> print_string "long "
   | Ast.LongLongType -> print_string "long long "
+  | Ast.SizeType -> print_string "size_t "
+  | Ast.SSizeType -> print_string "ssize_t "
+  | Ast.PtrDiffType -> print_string "ptrdiff_t "
 
 and structUnion = function
     Ast.Struct -> print_string "struct "

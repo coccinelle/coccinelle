@@ -903,7 +903,7 @@ let annotater_expr_visitor_subpart = (fun (k,bigf) expr ->
 
     | SizeOfType _|SizeOfExpr _ ->
         k expr; (* recurse to set the types-ref of sub expressions *)
-        make_info_def (type_of_s "unsigned long")
+        make_info_def (type_of_s "size_t")
 
     | Constructor (ft, ini) ->
         k expr; (* recurse to set the types-ref of sub expressions *)
