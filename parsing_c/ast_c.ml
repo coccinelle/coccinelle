@@ -209,6 +209,9 @@ and fullType = typeQualifier * typeC
      and  baseType = Void
                    | IntType   of intType
 		   | FloatType of floatType
+		   | SizeType
+		   | SSizeType
+		   | PtrDiffType
 
 	  (* stdC: type section
            * add  a | SizeT ?

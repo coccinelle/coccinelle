@@ -50,6 +50,7 @@ and tagged_string = string
 
 and baseType = VoidType | CharType | ShortType | IntType | DoubleType
 | FloatType | LongType | LongLongType | BoolType
+| SizeType | SSizeType | PtrDiffType
 
 and structUnion = Struct | Union
 

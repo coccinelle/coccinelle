@@ -51,6 +51,7 @@ and tagged_string = string
 
 and baseType = VoidType | CharType | ShortType | IntType | DoubleType
 | FloatType | LongType | LongLongType | BoolType
+| SizeType | SSizeType | PtrDiffType
 
 and structUnion = Struct | Union
 
@@ -101,6 +102,10 @@ and baseType = function
   | LongType -> "long "
   | LongLongType -> "long long "
   | BoolType -> "bool "
+  | SizeType -> "size_t "
+  | SSizeType -> "ssize_t "
+  | PtrDiffType -> "ptrdiff_t "
+
 
 and structUnion = function
     Struct -> "struct "

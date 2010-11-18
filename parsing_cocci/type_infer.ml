@@ -48,6 +48,9 @@ let int_type = T.BaseType(T.IntType)
 let bool_type = T.BaseType(T.BoolType)
 let char_type = T.BaseType(T.CharType)
 let float_type = T.BaseType(T.FloatType)
+let size_type = T.BaseType(T.SizeType)
+let ssize_type = T.BaseType(T.SSizeType)
+let ptrdiff_type = T.BaseType(T.PtrDiffType)
 
 let rec lub_type t1 t2 =
   match (t1,t2) with

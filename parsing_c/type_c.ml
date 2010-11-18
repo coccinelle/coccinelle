@@ -73,24 +73,29 @@ type removed_typedef = Ast_c.fullType
  * use Ast_c.nQ, Ast_c.defaultInt, Ast_c.emptyAnnotCocci,
  * Ast_c.emptyMetavarsBinding, Ast_c.emptyComments
 *)
-let (int_type: Ast_c.fullType) =
-  (* Lib_parsing_c.al_type   (Parse_c.type_of_string "int")*)
+let mk_fulltype bt str =
   Ast_c.mk_ty
-   (Ast_c.BaseType (Ast_c.IntType (Ast_c.Si (Ast_c.Signed, Ast_c.CInt))))
+   (Ast_c.BaseType bt)
    [Ast_c.al_info 0 (* al *)
     {Ast_c.pinfo =
      Ast_c.OriginTok
-      {Common.str = "int"; Common.charpos = 0; Common.line = -1;
+      {Common.str = str; Common.charpos = 0; Common.line = -1;
        Common.column = -1; Common.file = ""};
     Ast_c.cocci_tag =
-     {contents = Some (Ast_cocci.CONTEXT (Ast_cocci.NoPos, Ast_cocci.NOTHING), [])};
+     {contents =
+       Some (Ast_cocci.CONTEXT (Ast_cocci.NoPos, Ast_cocci.NOTHING), [])};
     Ast_c.comments_tag = {contents =
         {Ast_c.mbefore = []; Ast_c.mafter = [];
          Ast_c.mbefore2 = []; Ast_c.mafter2 = []
         }}}]
 
+let (int_type: Ast_c.fullType) =
+  (* Lib_parsing_c.al_type   (Parse_c.type_of_string "int")*)
+  mk_fulltype (Ast_c.IntType (Ast_c.Si (Ast_c.Signed, Ast_c.CInt))) "int"
 
-
+let (ptr_diff_type: Ast_c.fullType) =
+  (* Lib_parsing_c.al_type   (Parse_c.type_of_string "int")*)
+  mk_fulltype Ast_c.PtrDiffType "ptrdiff_t"
 
 (* normally if the type annotated has done a good job, this should always
  * return true. Cf type_annotater_c.typedef_fix.
@@ -363,6 +368,13 @@ let lub op t1 t2 =
 	    | Ast_c.FloatType(Ast_c.CFloat),_ -> Some t1
 	    | _,Ast_c.FloatType(Ast_c.CFloat) -> Some t2
 
+	    | Ast_c.PtrDiffType,_ -> Some t1
+	    | _,Ast_c.PtrDiffType -> Some t2
+	    | Ast_c.SSizeType,_ -> Some t1
+	    | _,Ast_c.SSizeType -> Some t2
+	    | Ast_c.SizeType,_ -> Some t1
+	    | _,Ast_c.SizeType -> Some t2
+
 	    | Ast_c.IntType(Ast_c.Si(Ast_c.UnSigned,Ast_c.CLongLong)),_ ->
 		Some t1
 	    | _,Ast_c.IntType(Ast_c.Si(Ast_c.UnSigned,Ast_c.CLongLong)) ->
@@ -394,7 +406,7 @@ let lub op t1 t2 =
 	| Ast_c.Minus,Ast_c.BaseType(Ast_c.IntType _),Ast_c.Pointer _ ->
 	    Some t2
 	| Ast_c.Minus,Ast_c.Pointer _,Ast_c.Pointer _ ->
-	    Some int_type
+	    Some ptr_diff_type
         (* todo, Pointer, Typedef, etc *)
         | _, _, _ -> Some t1
         )

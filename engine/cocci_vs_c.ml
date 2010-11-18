@@ -432,6 +432,11 @@ let split_signb_baseb_ii (baseb, ii) =
 	  failwith ("strange type1, maybe because of weird order: "^
 		    (String.concat " " (List.map fst iis))) in
       (signed,base_res)
+
+  | B.SizeType, ["size_t",i1] -> None, [i1]
+  | B.SSizeType, ["ssize_t",i1] -> None, [i1]
+  | B.PtrDiffType, ["ptrdiff_t",i1] -> None, [i1]
+
   | _ -> failwith ("strange type2, maybe because of weird order: "^
 		   (String.concat " " (List.map fst iis)))
 
@@ -2605,9 +2610,12 @@ and simulate_signed ta basea stringsa signaopt tb baseb ii rebuilda =
       (* handle some iso on type ? (cf complex C rule for possible implicit
 	 casting) *)
       match basea, baseb with
-      | A.VoidType,  B.Void
-      | A.FloatType, B.FloatType (B.CFloat)
-      | A.DoubleType, B.FloatType (B.CDouble) ->
+      | A.VoidType,   B.Void
+      | A.FloatType,  B.FloatType (B.CFloat)
+      | A.DoubleType, B.FloatType (B.CDouble)
+      |	A.SizeType,   B.SizeType
+      |	A.SSizeType,  B.SSizeType
+      |	A.PtrDiffType,B.PtrDiffType ->
            assert (signaopt =*= None);
 	   let stringa = tuple_of_list1 stringsa in
            let (ibaseb) = tuple_of_list1 ii in
@@ -2693,7 +2701,8 @@ and simulate_signed ta basea stringsa signaopt tb baseb ii rebuilda =
             "warning: long double not handled by ast_cocci";
           fail
 
-      | _, (B.Void|B.FloatType _|B.IntType _) -> fail
+      | _, (B.Void|B.FloatType _|B.IntType _
+	    |B.SizeType|B.SSizeType|B.PtrDiffType) -> fail
 
 and simulate_signed_meta ta basea signaopt tb baseb ii rebuilda =
       (* In ii there is a list, sometimes of length 1 or 2 or 3.
@@ -2732,7 +2741,8 @@ and simulate_signed_meta ta basea signaopt tb baseb ii rebuilda =
 
           )
 
-      | (B.Void|B.FloatType _|B.IntType _) -> fail
+      | (B.Void|B.FloatType _|B.IntType _
+         |B.SizeType|B.SSizeType|B.PtrDiffType) -> fail
 
 and (typeC: (A.typeC, Ast_c.typeC) matcher) =
   fun ta tb ->
@@ -3214,7 +3224,10 @@ and compatible_base_type a signa b =
   let ok  = return ((),()) in
 
   match a, b with
-  | Type_cocci.VoidType, B.Void ->
+  | Type_cocci.VoidType,    B.Void
+  | Type_cocci.SizeType,    B.SizeType
+  | Type_cocci.SSizeType,   B.SSizeType
+  | Type_cocci.PtrDiffType, B.PtrDiffType ->
       assert (signa =*= None);
       ok
   | Type_cocci.CharType, B.IntType B.CChar when signa =*= None ->
@@ -3241,7 +3254,8 @@ and compatible_base_type a signa b =
       fail
   | Type_cocci.BoolType, _ -> failwith "no booltype in C"
 
-  | _, (B.Void|B.FloatType _|B.IntType _) -> fail
+  | _, (B.Void|B.FloatType _|B.IntType _
+        |B.SizeType|B.SSizeType|B.PtrDiffType) -> fail
 
 and compatible_base_type_meta a signa qua b ii local =
   match a, b with
@@ -3259,7 +3273,8 @@ and compatible_base_type_meta a signa qua b ii local =
       pr2_once "no longdouble in cocci";
       fail
 
-  | _, (B.Void|B.FloatType _|B.IntType _) -> fail
+  | _, (B.Void|B.FloatType _|B.IntType _
+        |B.SizeType|B.SSizeType|B.PtrDiffType) -> fail
 
 
 and compatible_type a (b,local) =

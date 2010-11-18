@@ -491,6 +491,9 @@ and baseType = function
   | Ast.FloatType -> print_string "float"
   | Ast.LongType -> print_string "long"
   | Ast.LongLongType -> print_string "long long"
+  | Ast.SizeType -> print_string "size_t "
+  | Ast.SSizeType -> print_string "ssize_t "
+  | Ast.PtrDiffType -> print_string "ptrdiff_t "
 
 and structUnion = function
     Ast.Struct -> print_string "struct"
@@ -619,9 +622,14 @@ and initialiser nlcomma i =
         | _ -> raise Impossible)
   | Ast.InitExpr(exp) -> expression exp
   | Ast.ArInitList(lb,initlist,rb) ->
-      mcode print_string lb; start_block();
-      dots force_newline (initialiser false) initlist;
-      end_block(); mcode print_string rb
+      (match Ast.undots initlist with
+	[] -> mcode print_string lb; mcode print_string rb
+      |	_ ->
+	  mcode print_string lb; start_block();
+	  dots force_newline (initialiser false) initlist;
+	  end_block(); mcode print_string rb)
+  | Ast.StrInitList(_,lb,[],rb,[]) ->
+      mcode print_string lb; mcode print_string rb
   | Ast.StrInitList(_,lb,initlist,rb,[]) ->
       mcode print_string lb; start_block();
       (* awkward, because the comma is separate from the initialiser *)

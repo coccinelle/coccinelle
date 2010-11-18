@@ -257,6 +257,9 @@ let id_tokens lexbuf =
   | "float" ->      Tfloat    linetype
   | "long" ->       Tlong     linetype
   | "void" ->       Tvoid     linetype
+  | "size_t" ->     Tsize_t   linetype
+  | "ssize_t" ->    Tssize_t  linetype
+  | "ptrdiff_t" ->  Tptrdiff_t linetype
   (* in_meta is only for the first keyword; drop it now to allow any type
      name *)
   | "struct" ->     Data.saw_struct := true; Tstruct   linetype

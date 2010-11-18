@@ -621,6 +621,9 @@ and baseType = function
   | Ast.FloatType -> TC.FloatType
   | Ast.LongType -> TC.LongType
   | Ast.LongLongType -> TC.LongLongType
+  | Ast.SizeType -> TC.SizeType
+  | Ast.SSizeType -> TC.SSizeType
+  | Ast.PtrDiffType -> TC.PtrDiffType
 
 and structUnion t =
   match unwrap_mcode t with
@@ -691,6 +694,10 @@ and reverse_baseType = function
   | TC.FloatType -> Ast.FloatType
   | TC.LongType -> Ast.LongType
   | TC.LongLongType -> Ast.LongLongType
+  | TC.SizeType -> Ast.SizeType
+  | TC.SSizeType -> Ast.SSizeType
+  | TC.PtrDiffType -> Ast.PtrDiffType
+
 
 and reverse_structUnion t =
   make_mcode

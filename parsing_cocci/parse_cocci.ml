@@ -104,6 +104,9 @@ let token2c (tok,_) =
   | PC.Tfloat(clt) -> "float"^(line_type2c clt)
   | PC.Tlong(clt) -> "long"^(line_type2c clt)
   | PC.Tvoid(clt) -> "void"^(line_type2c clt)
+  | PC.Tsize_t(clt) -> "size_t"^(line_type2c clt)
+  | PC.Tssize_t(clt) -> "ssize_t"^(line_type2c clt)
+  | PC.Tptrdiff_t(clt) -> "ptrdiff_t"^(line_type2c clt)
   | PC.Tstruct(clt) -> "struct"^(line_type2c clt)
   | PC.Tunion(clt) -> "union"^(line_type2c clt)
   | PC.Tenum(clt) -> "enum"^(line_type2c clt)
@@ -291,7 +294,9 @@ type plus = PLUS | NOTPLUS | SKIP
 let plus_attachable only_plus (tok,_) =
   match tok with
     PC.Tchar(clt) | PC.Tshort(clt) | PC.Tint(clt) | PC.Tdouble(clt)
-  | PC.Tfloat(clt) | PC.Tlong(clt) | PC.Tvoid(clt) | PC.Tstruct(clt)
+  | PC.Tfloat(clt) | PC.Tlong(clt)
+  | PC.Tsize_t(clt) | PC.Tssize_t(clt) | PC.Tptrdiff_t(clt)
+  | PC.Tstruct(clt)
   | PC.Tunion(clt) | PC.Tenum(clt) | PC.Tunsigned(clt) | PC.Tsigned(clt)
   | PC.Tstatic(clt)
   | PC.Tinline(clt) | PC.Ttypedef(clt) | PC.Tattr(_,clt)
@@ -360,7 +365,9 @@ let plus_attachable only_plus (tok,_) =
 let get_clt (tok,_) =
   match tok with
     PC.Tchar(clt) | PC.Tshort(clt) | PC.Tint(clt) | PC.Tdouble(clt)
-  | PC.Tfloat(clt) | PC.Tlong(clt) | PC.Tvoid(clt) | PC.Tstruct(clt)
+  | PC.Tfloat(clt) | PC.Tlong(clt) | PC.Tvoid(clt)
+  | PC.Tsize_t(clt) | PC.Tssize_t(clt) | PC.Tptrdiff_t(clt)
+  | PC.Tstruct(clt)
   | PC.Tunion(clt) | PC.Tenum(clt) | PC.Tunsigned(clt) | PC.Tsigned(clt)
   | PC.Tstatic(clt)
   | PC.Tinline(clt) | PC.Tattr(_,clt) | PC.Tauto(clt) | PC.Tregister(clt)
@@ -429,6 +436,9 @@ let update_clt (tok,x) clt =
   | PC.Tfloat(_) -> (PC.Tfloat(clt),x)
   | PC.Tlong(_) -> (PC.Tlong(clt),x)
   | PC.Tvoid(_) -> (PC.Tvoid(clt),x)
+  | PC.Tsize_t(_) -> (PC.Tsize_t(clt),x)
+  | PC.Tssize_t(_) -> (PC.Tssize_t(clt),x)
+  | PC.Tptrdiff_t(_) -> (PC.Tptrdiff_t(clt),x)
   | PC.Tstruct(_) -> (PC.Tstruct(clt),x)
   | PC.Tunion(_) -> (PC.Tunion(clt),x)
   | PC.Tenum(_) -> (PC.Tenum(clt),x)
@@ -629,7 +639,9 @@ let split_token ((tok,_) as t) =
   | PC.TError | PC.TWords | PC.TGenerated | PC.TNothing -> ([t],[t])
 
   | PC.Tchar(clt) | PC.Tshort(clt) | PC.Tint(clt) | PC.Tdouble(clt)
-  | PC.Tfloat(clt) | PC.Tlong(clt) | PC.Tvoid(clt) | PC.Tstruct(clt)
+  | PC.Tfloat(clt) | PC.Tlong(clt) | PC.Tvoid(clt)
+  | PC.Tsize_t(clt) | PC.Tssize_t(clt) | PC.Tptrdiff_t(clt)
+  | PC.Tstruct(clt)
   | PC.Tunion(clt) | PC.Tenum(clt) | PC.Tunsigned(clt) | PC.Tsigned(clt)
   | PC.Tstatic(clt) | PC.Tauto(clt) | PC.Tregister(clt) | PC.Textern(clt)
   | PC.Tinline(clt) | PC.Ttypedef(clt) | PC.Tattr(_,clt)
@@ -871,7 +883,9 @@ let detect_types in_meta_decls l =
 let token2line (tok,_) =
   match tok with
     PC.Tchar(clt) | PC.Tshort(clt) | PC.Tint(clt) | PC.Tdouble(clt)
-  | PC.Tfloat(clt) | PC.Tlong(clt) | PC.Tvoid(clt) | PC.Tstruct(clt)
+  | PC.Tfloat(clt) | PC.Tlong(clt) | PC.Tvoid(clt)
+  | PC.Tsize_t(clt) | PC.Tssize_t(clt) | PC.Tptrdiff_t(clt)
+  | PC.Tstruct(clt)
   | PC.Tunion(clt) | PC.Tenum(clt) | PC.Tunsigned(clt) | PC.Tsigned(clt)
   | PC.Tstatic(clt) | PC.Tauto(clt) | PC.Tregister(clt) | PC.Textern(clt)
   | PC.Tinline(clt) | PC.Ttypedef(clt) | PC.Tattr(_,clt) | PC.Tconst(clt)
@@ -1926,8 +1940,8 @@ let process file isofile verbose =
   if !Flag_parsing_cocci.show_SP
   then List.iter Pretty_print_cocci.unparse code;
 
-  let (grep_tokens,glimpse_tokens) =
+  let search_tokens =
     Common.profile_code "get_glimpse_constants" (* for glimpse *)
       (fun () -> Get_constants2.get_constants code neg_pos) in
 
-  (metavars,code,fvs,neg_pos,ua,pos, grep_tokens,glimpse_tokens)
+  (metavars,code,fvs,neg_pos,ua,pos,search_tokens)

@@ -343,7 +343,10 @@ let do_get_constants constants keywords env neg_pos =
     | Ast.IntType -> keywords "int "
     | Ast.DoubleType -> keywords "double "
     | Ast.FloatType -> keywords "float "
-    | Ast.LongType | Ast.LongLongType -> keywords "long " in
+    | Ast.LongType | Ast.LongLongType -> keywords "long "
+    | Ast.SizeType -> keywords "size_t "
+    | Ast.SSizeType -> keywords "ssize_t "
+    | Ast.PtrDiffType -> keywords "ptrdiff_t " in
 
   let typeC r k ty =
     match Ast.unwrap ty with
@@ -644,14 +647,17 @@ let run rules neg_pos_vars =
     
 let get_constants rules neg_pos_vars =
   match !Flag.scanner with
-    Flag.NoScanner -> (None,None)
+    Flag.NoScanner -> (None,None,None)
   | Flag.Grep ->
       let res = run rules neg_pos_vars in
-      (interpret_grep true res,None)
+      (interpret_grep true res,None,None)
   | Flag.Glimpse ->
       let res = run rules neg_pos_vars in
-      (interpret_grep true res,interpret_glimpse true res)
+      (interpret_grep true res,interpret_glimpse true res,None)
   | Flag.Google _ ->
       let res = run rules neg_pos_vars in
-      (interpret_grep true res,interpret_google true res)
+      (interpret_grep true res,interpret_google true res,None)
+  | Flag.IdUtils _ ->
+      let res = run rules neg_pos_vars in
+      (interpret_grep true res,None,Some res)
       

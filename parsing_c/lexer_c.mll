@@ -86,6 +86,9 @@ let keyword_table = Common.hash_of_list [
   "long",   (fun ii -> Tlong ii);
   "float",  (fun ii -> Tfloat ii);
   "double", (fun ii -> Tdouble ii);
+  "size_t", (fun ii -> Tsize_t ii);
+  "ssize_t", (fun ii -> Tssize_t ii);
+  "ptrdiff_t", (fun ii -> Tptrdiff_t ii);
 
   "unsigned", (fun ii -> Tunsigned ii);
   "signed",   (fun ii -> Tsigned ii);

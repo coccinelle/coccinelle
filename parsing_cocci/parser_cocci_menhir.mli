@@ -8,9 +8,12 @@ type token =
   | Ttypedef of (Data.clt)
   | Tstruct of (Data.clt)
   | Tstatic of (Data.clt)
+  | Tssize_t of (Data.clt)
+  | Tsize_t of (Data.clt)
   | Tsigned of (Data.clt)
   | Tshort of (Data.clt)
   | Tregister of (Data.clt)
+  | Tptrdiff_t of (Data.clt)
   | Tlong of (Data.clt)
   | Tlist
   | Tint of (Data.clt)

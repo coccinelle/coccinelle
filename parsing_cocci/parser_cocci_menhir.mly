@@ -49,6 +49,7 @@ module P = Parse_aux
 %token<string> TRuleName
 
 %token<Data.clt> Tchar Tshort Tint Tdouble Tfloat Tlong
+%token<Data.clt> Tsize_t Tssize_t Tptrdiff_t
 %token<Data.clt> Tvoid Tstruct Tunion Tenum
 %token<Data.clt> Tunsigned Tsigned
 
@@ -558,6 +559,12 @@ non_signable_types:
     { Ast0.wrap(Ast0.BaseType(Ast.DoubleType,[P.clt2mcode "double" ty])) }
 | ty=Tfloat
     { Ast0.wrap(Ast0.BaseType(Ast.FloatType,[P.clt2mcode "float" ty])) }
+| ty=Tsize_t
+    { Ast0.wrap(Ast0.BaseType(Ast.SizeType,[P.clt2mcode "size_t" ty])) }
+| ty=Tssize_t
+    { Ast0.wrap(Ast0.BaseType(Ast.SSizeType,[P.clt2mcode "ssize_t" ty])) }
+| ty=Tptrdiff_t
+    { Ast0.wrap(Ast0.BaseType(Ast.PtrDiffType,[P.clt2mcode "ptrdiff_t" ty])) }
 | s=Tenum i=ident
     { Ast0.wrap(Ast0.EnumName(P.clt2mcode "enum" s, Some i)) }
 | s=Tenum i=ioption(ident) l=TOBrace ids=enum_decl_list r=TCBrace

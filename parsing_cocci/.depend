@@ -13,12 +13,13 @@ free_vars.cmi: ast_cocci.cmi
 function_prototypes.cmi: ast_cocci.cmi ast0_cocci.cmi
 get_constants.cmi: ast_cocci.cmi
 get_constants2.cmi: ast_cocci.cmi
+id_utils.cmi: get_constants2.cmi
 index.cmi: ast0_cocci.cmi
 insert_plus.cmi: ast0_cocci.cmi
 iso_compile.cmi: iso_pattern.cmi
 iso_pattern.cmi: visitor_ast0_types.cmo ast_cocci.cmi ast0_cocci.cmi
 merge.cmi: ast_cocci.cmi ast0_cocci.cmi
-parse_cocci.cmi: ast_cocci.cmi
+parse_cocci.cmi: get_constants2.cmi ast_cocci.cmi
 plus.cmi: ast_cocci.cmi
 pretty_print_cocci.cmi: ast_cocci.cmi
 simple_assignments.cmi: ast0_cocci.cmi
@@ -98,6 +99,8 @@ get_constants2.cmo: visitor_ast.cmi type_cocci.cmi ../globals/flag.cmo \
     ../commons/common.cmi ast_cocci.cmi get_constants2.cmi
 get_constants2.cmx: visitor_ast.cmx type_cocci.cmx ../globals/flag.cmx \
     ../commons/common.cmx ast_cocci.cmx get_constants2.cmi
+id_utils.cmo: get_constants2.cmi ../commons/common.cmi id_utils.cmi
+id_utils.cmx: get_constants2.cmx ../commons/common.cmx id_utils.cmi
 index.cmo: ast_cocci.cmi ast0_cocci.cmi index.cmi
 index.cmx: ast_cocci.cmx ast0_cocci.cmx index.cmi
 insert_plus.cmo: visitor_ast0_types.cmo visitor_ast0.cmi \
