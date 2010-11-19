@@ -36,6 +36,8 @@
 - allow an assignment to match a variable initialization, even if multiple
   variables are declared at the same time.
 - add the option -recursive_includes
+- added the option -use_idutils.  The requires the previous use of the
+  script idutils_index.sh
 
 ** Bugfix:
 - detect used after metavariables in simple statement metavariable match
