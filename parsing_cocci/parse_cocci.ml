@@ -1910,6 +1910,7 @@ let process file isofile verbose =
 (*          Ast0.CocciRule ((minus, metavarsm, (iso, dropiso, dependencies, rule_name, exists)), (plus, metavars))*)
       rules in
   let parsed = List.concat parsed in
+  let parsed = Safe_for_multi_decls.safe_for_multi_decls parsed in
   let disjd = Disjdistr.disj parsed in
 
   let (metavars,code,fvs,neg_pos,ua,pos) = Free_vars.free_vars disjd in

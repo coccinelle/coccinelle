@@ -647,7 +647,6 @@ module type PARAM =
     val optional_qualifier_flag : (bool -> tin -> 'x tout) -> (tin -> 'x tout)
     val value_format_flag: (bool -> tin -> 'x tout) -> (tin -> 'x tout)
 
-
   end
 
 (*****************************************************************************)
@@ -1696,17 +1695,19 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
           )))
 
   | _, (B.DeclList (xs, iiptvirgb::iifakestart::iisto)) ->
-      if X.mode =*= PatternMode
+      if X.mode =*= PatternMode || A.get_safe_decl decla
       then
         xs +> List.fold_left (fun acc var ->
-          acc >||> (
+          acc >||> (function tin -> (if not (X.mode =*= PatternMode) then Printf.printf "trying %s\n" (Dumper.dump var)); (
             X.tokenf_mck mckstart iifakestart >>= (fun mckstart iifakestart ->
               onedecl allminus decla (var, iiptvirgb, iisto) >>=
                 (fun decla (var, iiptvirgb, iisto) ->
+		  (if not (X.mode =*= PatternMode)
+		  then Printf.printf "found a match %s\n" (Dumper.dump var));
                   return (
                     (mckstart, allminus, decla),
                     (B.DeclList ([var], iiptvirgb::iifakestart::iisto))
-                  )))))
+                  )))) tin))
           fail
       else
         failwith "More that one variable in decl. Have to split to transform."

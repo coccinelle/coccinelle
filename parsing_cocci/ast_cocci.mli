@@ -19,6 +19,8 @@ type 'a wrap =
       bef_aft : dots_bef_aft;
       pos_info : meta_name mcode option; (* pos info, try not to duplicate *)
       true_if_test_exp : bool;(* true if "test_exp from iso", only for exprs *)
+      (* the following is only for declarations *)
+      safe_for_multi_decls : bool;
       (* isos relevant to the term; ultimately only used for rule_elems *)
       iso_info : (string*anything) list }
 
@@ -621,6 +623,7 @@ val get_pos : 'a wrap -> meta_name mcode option
 val set_pos : 'a wrap -> meta_name mcode option -> 'a wrap
 val get_test_exp : 'a wrap -> bool
 val set_test_exp : expression -> expression
+val get_safe_decl : 'a wrap -> bool
 val get_isos : 'a wrap -> (string*anything) list
 val set_isos : 'a wrap -> (string*anything) list -> 'a wrap
 val get_pos_var : 'a mcode -> meta_pos
