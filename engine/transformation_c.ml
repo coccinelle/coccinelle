@@ -145,7 +145,6 @@ module XTRANS = struct
      | Ast_cocci.PLUS _ -> raise Impossible
      | Ast_cocci.CONTEXT (Ast_cocci.FixPos (i1,i2),_)
      | Ast_cocci.MINUS   (Ast_cocci.FixPos (i1,i2),_,_,_) ->
-	 Printf.printf "pos %s i1 %s i2 %s\n" (Dumper.dump pos) (Dumper.dump i1) (Dumper.dump i2);
          pos <= i2 && pos >= i1
      | Ast_cocci.CONTEXT (Ast_cocci.DontCarePos,_)
      | Ast_cocci.MINUS   (Ast_cocci.DontCarePos,_,_,_) ->
@@ -269,12 +268,11 @@ module XTRANS = struct
     ib
 
   let tokenf ia ib = fun tin ->
-    Printf.printf "ia %s\n" (Dumper.dump ia);
     let (_,i,mck,_) = ia in
     let pos = Ast_c.info_to_fixpos ib in
     if check_pos (Some i) mck pos
-    then (Printf.printf "success\n"; return (ia, tag_with_mck mck ib tin) tin)
-    else (Printf.printf "failure %s\n" (Dumper.dump ib); fail tin)
+    then return (ia, tag_with_mck mck ib tin) tin
+    else fail tin
 
   let tokenf_mck mck ib = fun tin ->
     let pos = Ast_c.info_to_fixpos ib in
@@ -548,7 +546,6 @@ module TRANS  = Cocci_vs_c.COCCI_VS_C (XTRANS)
 
 
 let transform_re_node a b tin =
-  Printf.printf "in transform_re_node\n";
   match TRANS.rule_elem_node a b tin with
   | None -> raise Impossible
   | Some (_sp, b') -> b'
@@ -556,13 +553,7 @@ let transform_re_node a b tin =
 let (transform2: string (* rule name *) -> string list (* dropped_isos *) ->
   Lib_engine.metavars_binding (* inherited bindings *) ->
   Lib_engine.numbered_transformation_info -> F.cflow -> F.cflow) =
- fun rule_name dropped_isos binding0 xs cflow -> Printf.printf "starting transform2 %d\n" (List.length xs);
-
-   List.iter
-     (function x ->
-       Printf.printf "--> %s\n\n" (Dumper.dump x))
-     xs;
-
+ fun rule_name dropped_isos binding0 xs cflow ->
    let extra = {
      optional_storage_iso   = not(List.mem "optional_storage" dropped_isos);
      optional_qualifier_iso = not(List.mem "optional_qualifier" dropped_isos);
@@ -586,7 +577,6 @@ let (transform2: string (* rule name *) -> string list (* dropped_isos *) ->
         XTRANS.binding0 = []; (* not used - everything constant for trans *)
       } in
 
-      Printf.printf "index: %s\n" (Dumper.dump index);
       let node' = transform_re_node rule_elem node tin in
 
       (* assert that have done something. But with metaruleElem sometimes
