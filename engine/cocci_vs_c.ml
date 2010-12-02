@@ -1359,14 +1359,17 @@ and (ident_cpp: info_ident -> (A.ident, B.name) matcher) =
  fun infoidb ida idb ->
    match idb with
    | B.RegularName (s, iis) ->
+       Printf.printf "regular name\n";
        let iis = tuple_of_list1 iis in
        ident infoidb ida (s, iis) >>= (fun ida (s,iis) ->
+	 Printf.printf "after ident\n";
          return (
            ida,
            (B.RegularName (s, [iis]))
          ))
    | B.CppConcatenatedName _ | B.CppVariadicName _ |B.CppIdentBuilder _
        ->
+       Printf.printf "strange name\n";
 	 (* This should be moved to the Id case of ident.  Metavariables
 	 should be allowed to be bound to such variables.  But doing so
 	 would require implementing an appropriate distr function *)
@@ -1386,7 +1389,7 @@ and (ident: info_ident -> (A.ident, string * Ast_c.info) matcher) =
 	   (fun () -> return (meta_id_val [],())) in
   X.all_bound (A.get_inherited ida) >&&>
   match A.unwrap ida with
-  | A.Id sa ->
+  | A.Id sa -> Printf.printf "id\n";
       if (term sa) =$= idb then
       tokenf sa iib >>= (fun sa iib ->
         return (
@@ -1395,15 +1398,20 @@ and (ident: info_ident -> (A.ident, string * Ast_c.info) matcher) =
         ))
       else fail
 
-  | A.MetaId(mida,constraints,keep,inherited) ->
+  | A.MetaId(mida,constraints,keep,inherited) -> Printf.printf "metaid\n";
       check_constraints constraints idb >>=
       (fun wrapper () ->
+	Printf.printf "metaid 1\n";
       let max_min _ = Lib_parsing_c.lin_col_by_pos [iib] in
       (* use drop_pos for ids so that the pos is not added a second time in
 	 the call to tokenf *)
       X.envf keep inherited (A.drop_pos mida, wrapper idb, max_min)
 	(fun () ->
+	Printf.printf "metaid 2\n%s\n" (Dumper.dump iib);
+	  Pretty_print_cocci.ident ida;
+	  Format.print_newline();
         tokenf mida iib >>= (fun mida iib ->
+	Printf.printf "metaid 3\n";
           return (
             ((A.MetaId (mida, constraints, keep, inherited)) +> A.rewrap ida,
             (idb, iib)
@@ -1677,6 +1685,7 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
    *)
 
   | A.MetaDecl (ida,keep,inherited), _ ->
+      Printf.printf "thing 1\n";
       let max_min _ =
 	Lib_parsing_c.lin_col_by_pos (Lib_parsing_c.ii_of_decl declb) in
       X.envf keep inherited (ida, Ast_c.MetaDeclVal declb, max_min) (fun () ->
@@ -1686,33 +1695,53 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
 		     (A.MetaDecl (ida, keep, inherited))+> A.rewrap decla),
 		    declb))
   | _, (B.DeclList ([var], iiptvirgb::iifakestart::iisto)) ->
+      Printf.printf "thing 2\n%s\n%s\n"
+	  (Dumper.dump var) (Dumper.dump decla);
       onedecl allminus decla (var,iiptvirgb,iisto) >>=
       (fun decla (var,iiptvirgb,iisto)->
+	Printf.printf "thing 2 step 1\n";
         X.tokenf_mck mckstart iifakestart >>= (fun mckstart iifakestart ->
+	Printf.printf "thing 2 step 2\n";
           return (
             (mckstart, allminus, decla),
             (B.DeclList ([var], iiptvirgb::iifakestart::iisto))
           )))
 
   | _, (B.DeclList (xs, iiptvirgb::iifakestart::iisto)) ->
+      let indexify l =
+	let rec loop n = function
+	    [] -> []
+	  | x::xs -> (n,x)::(loop (n+1) xs) in
+	loop 0 l in
+      let rec repln n vl cur = function
+	  [] -> []
+	| x::xs ->
+	    if n = cur then vl :: xs else x :: (repln n vl (cur+1) xs) in
+      Printf.printf "thing 3\n";
       if X.mode =*= PatternMode || A.get_safe_decl decla
       then
-        xs +> List.fold_left (fun acc var ->
+        (indexify xs) +> List.fold_left (fun acc (n,var) ->
           acc >||> (function tin -> (if not (X.mode =*= PatternMode) then Printf.printf "trying %s\n" (Dumper.dump var)); (
             X.tokenf_mck mckstart iifakestart >>= (fun mckstart iifakestart ->
+	      Printf.printf "step one\n";
               onedecl allminus decla (var, iiptvirgb, iisto) >>=
                 (fun decla (var, iiptvirgb, iisto) ->
+	      Printf.printf "step two\n";
 		  (if not (X.mode =*= PatternMode)
-		  then Printf.printf "found a match %s\n" (Dumper.dump var));
+		  then (Printf.printf "found a match\n%s\n%s\n"
+			  (Dumper.dump var) (Dumper.dump decla);
+			Pretty_print_cocci.declaration decla;
+			Format.print_newline()));
                   return (
                     (mckstart, allminus, decla),
-                    (B.DeclList ([var], iiptvirgb::iifakestart::iisto))
+                    (B.DeclList (repln n var 0 xs(*[var]*), iiptvirgb::iifakestart::iisto))
                   )))) tin))
           fail
       else
         failwith "More that one variable in decl. Have to split to transform."
 
   | A.MacroDecl (sa,lpa,eas,rpa,enda), B.MacroDecl ((sb,ebs),ii) ->
+      Printf.printf "thing 4\n";
       let (iisb, lpb, rpb, iiendb, iifakestart, iistob) =
         (match ii with
         | iisb::lpb::rpb::iiendb::iifakestart::iisto ->
@@ -1883,10 +1912,11 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
        B.v_attr = attrs;
        B.v_type_bis = typbbis;
      }, iivirg) ->
-
        tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb ->
        fullType typa typb >>= (fun typa typb ->
        ident_cpp DontKnow ida nameidb >>= (fun ida nameidb ->
+	 Printf.printf "ida %s nameidb %s\n"
+	   (Dumper.dump ida) (Dumper.dump nameidb);
        storage_optional_allminus allminus stoa (stob, iistob) >>=
         (fun stoa (stob, iistob) ->
          return (
@@ -3449,18 +3479,18 @@ and define_parameter = fun parama paramb ->
 we want a MetaStmtVal, and for the others, it's not clear what we want *)
 
 let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
- fun re node ->
+ fun re node -> Printf.printf "step a\n";
   let rewrap x =
     x >>= (fun a b -> return (A.rewrap re a, F.rewrap node b))
   in
   X.all_bound (A.get_inherited re) >&&>
 
-  rewrap (
+  rewrap (Printf.printf "step b\n";
   match A.unwrap re, F.unwrap node with
 
   (* note: the order of the clauses is important. *)
 
-  | _, F.Enter | _, F.Exit | _, F.ErrorExit -> fail2()
+  | _, F.Enter | _, F.Exit | _, F.ErrorExit -> Printf.printf "case13\n"; fail2()
 
   (* the metaRuleElem contains just '-' information. We dont need to add
    * stuff in the environment. If we need stuff in environment, because
@@ -3526,17 +3556,17 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
   | _, F.TrueNode | _, F.FalseNode | _, F.AfterNode
   | _, F.FallThroughNode | _, F.LoopFallThroughNode
   | _, F.InLoopNode
-    -> fail2()
+    -> Printf.printf "case12\n"; fail2()
 
   (* really ? diff between pattern.ml and transformation.ml *)
-  | _, F.Fake -> fail2()
+  | _, F.Fake -> Printf.printf "case11\n"; fail2()
 
 
   (* cas general: a Meta can match everything. It matches only
    * "header"-statement. We transform only MetaRuleElem, not MetaStmt.
    * So can't have been called in transform.
    *)
-  | A.MetaStmt (ida,keep,metainfoMaybeTodo,inherited),  F.Decl(_) -> fail
+  | A.MetaStmt (ida,keep,metainfoMaybeTodo,inherited),  F.Decl(_) -> Printf.printf "case10\n"; fail
 
   | A.MetaStmt (ida,keep,metainfoMaybeTodo,inherited),  unwrap_node ->
       (* todo: should not happen in transform mode *)
@@ -3553,7 +3583,7 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
 		unwrap_node
 	      )
 	    )
-      | None -> fail
+      | None -> Printf.printf "case9\n"; fail
       )
 
   (* not me?: *)
@@ -3575,7 +3605,7 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
               A.TopExp (A.rewrap ea (A.TypeExp(ft))),
               F.DefineType eb
             ))
-      |	_ -> fail)
+      |	_ -> Printf.printf "case8\n"; fail)
 
 
 
@@ -3742,6 +3772,7 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
 
 
   | A.Decl (mckstart,allminus,decla), F.Decl declb ->
+      Printf.printf "in decl case\n";
       declaration (mckstart,allminus,decla) declb >>=
        (fun (mckstart,allminus,decla) declb ->
         return (
@@ -3940,7 +3971,7 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
                        B.i_content = copt;
             }
           )))
-      else fail
+      else (Printf.printf "case7\n"; fail)
 
 
 
@@ -3967,7 +3998,7 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
                 B.DefineFunc (ebs,[lpb;rpb])
                 )
             )))
-      | _ -> fail
+      | _ -> Printf.printf "case6\n"; fail
       ) >>= (fun params defkind ->
         return (
           A.DefineHeader (definea, ida, params),
@@ -4003,7 +4034,7 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
       List.fold_left (fun acc ea -> acc >|+|> (rule_elem_node ea node)) fail)
 	>>= (fun ea eb -> return (A.unwrap ea,F.unwrap eb))
 
-  | _, F.ExprStatement (_, (None, ii)) -> fail (* happen ? *)
+  | _, F.ExprStatement (_, (None, ii)) -> Printf.printf "case5\n"; fail (* happen ? *)
 
   | A.Label(id,dd), F.Label (st, nameb, ((),ii)) ->
       let (ib2) = tuple_of_list1 ii in
@@ -4029,14 +4060,14 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
   | _, F.CaseRange _
   | _, F.Asm _
   | _, F.MacroTop _
-    -> fail2()
+    -> Printf.printf "case4\n"; fail2()
 
   | _, (F.IfdefEndif _|F.IfdefElse _|F.IfdefHeader _)
-    -> fail2 ()
+    -> Printf.printf "case3\n"; fail2 ()
 
   | _,
     (F.MacroStmt (_, _)| F.DefineDoWhileZeroHeader _| F.EndNode|F.TopNode)
-      -> fail
+      -> Printf.printf "case2\n"; fail
   | _,
     (F.Label (_, _, _)|F.Break (_, _)|F.Continue (_, _)|F.Default (_, _)|
     F.Case (_, _)|F.Include _|F.Goto _|F.ExprStatement _|
@@ -4046,7 +4077,7 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
     F.WhileHeader (_, _)|F.Else _|F.IfHeader (_, _)|
     F.SeqEnd (_, _)|F.SeqStart (_, _, _)|
     F.Decl _|F.FunHeader _)
-      -> fail
+      -> Printf.printf "case1\n"; fail
 
 
   )
