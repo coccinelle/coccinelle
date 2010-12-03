@@ -22,47 +22,6 @@
  *)
 
 
-(*
- * Copyright 2010, INRIA, University of Copenhagen
- * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
- * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
- * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
- * This file is part of Coccinelle.
- *
- * Coccinelle is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, according to version 2 of the License.
- *
- * Coccinelle is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
- *
- * The authors reserve the right to distribute this or future versions of
- * Coccinelle under other licenses.
- *)
-
-
-(* Yoann Padioleau, Julia Lawall
- *
- * Copyright (C) 2006, 2007, 2008 Ecole des Mines de Nantes
- * Copyright (C) 2009, 2010 DIKU, INRIA, LIP6
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License (GPL)
- * version 2 as published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * file license.txt for more details.
- *
- * This file was part of Coccinelle.
- *)
-
 open Common
 
 module A = Ast_cocci
@@ -711,7 +670,6 @@ module type PARAM =
     val optional_storage_flag : (bool -> tin -> 'x tout) -> (tin -> 'x tout)
     val optional_qualifier_flag : (bool -> tin -> 'x tout) -> (tin -> 'x tout)
     val value_format_flag: (bool -> tin -> 'x tout) -> (tin -> 'x tout)
-
 
   end
 
@@ -1761,17 +1719,29 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
           )))
 
   | _, (B.DeclList (xs, iiptvirgb::iifakestart::iisto)) ->
-      if X.mode =*= PatternMode
+      let indexify l =
+	let rec loop n = function
+	    [] -> []
+	  | x::xs -> (n,x)::(loop (n+1) xs) in
+	loop 0 l in
+      let rec repln n vl cur = function
+	  [] -> []
+	| x::xs ->
+	    if n = cur then vl :: xs else x :: (repln n vl (cur+1) xs) in
+      if X.mode =*= PatternMode || A.get_safe_decl decla
       then
-        xs +> List.fold_left (fun acc var ->
-          acc >||> (
+        (indexify xs) +> List.fold_left (fun acc (n,var) ->
+	  (* consider all possible matches *)
+          acc >||> (function tin -> (
             X.tokenf_mck mckstart iifakestart >>= (fun mckstart iifakestart ->
               onedecl allminus decla (var, iiptvirgb, iisto) >>=
                 (fun decla (var, iiptvirgb, iisto) ->
                   return (
                     (mckstart, allminus, decla),
-                    (B.DeclList ([var], iiptvirgb::iifakestart::iisto))
-                  )))))
+		    (* adjust the variable that was chosen *)
+                    (B.DeclList (repln n var 0 xs,
+				 iiptvirgb::iifakestart::iisto))
+                  )))) tin))
           fail
       else
         failwith "More that one variable in decl. Have to split to transform."
@@ -1947,7 +1917,6 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
        B.v_attr = attrs;
        B.v_type_bis = typbbis;
      }, iivirg) ->
-
        tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb ->
        fullType typa typb >>= (fun typa typb ->
        ident_cpp DontKnow ida nameidb >>= (fun ida nameidb ->
@@ -3589,8 +3558,7 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
   | _, F.EndStatement _ | _, F.CaseNode _
   | _, F.TrueNode | _, F.FalseNode | _, F.AfterNode
   | _, F.FallThroughNode | _, F.LoopFallThroughNode
-  | _, F.InLoopNode
-    -> fail2()
+  | _, F.InLoopNode -> fail2()
 
   (* really ? diff between pattern.ml and transformation.ml *)
   | _, F.Fake -> fail2()

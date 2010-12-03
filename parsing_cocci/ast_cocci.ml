@@ -22,30 +22,6 @@
  *)
 
 
-(*
- * Copyright 2010, INRIA, University of Copenhagen
- * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
- * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
- * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
- * This file is part of Coccinelle.
- *
- * Coccinelle is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, according to version 2 of the License.
- *
- * Coccinelle is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
- *
- * The authors reserve the right to distribute this or future versions of
- * Coccinelle under other licenses.
- *)
-
-
 (* --------------------------------------------------------------------- *)
 (* Modified code *)
 
@@ -70,6 +46,8 @@ type 'a wrap =
       (* the following is for or expressions *)
       pos_info : meta_name mcode option; (* pos info, try not to duplicate *)
       true_if_test_exp : bool;(* true if "test_exp from iso", only for exprs *)
+      (* the following is only for declarations *)
+      safe_for_multi_decls : bool;
       (* isos relevant to the term; ultimately only used for rule_elems *)
       iso_info : (string*anything) list }
 
@@ -697,8 +675,9 @@ let get_dots_bef_aft x     = x.bef_aft
 let set_dots_bef_aft d x   = {x with bef_aft = d}
 let get_pos x              = x.pos_info
 let set_pos x pos          = {x with pos_info = pos}
-let get_test_exp x      = x.true_if_test_exp
-let set_test_exp x      = {x with true_if_test_exp = true}
+let get_test_exp x         = x.true_if_test_exp
+let set_test_exp x         = {x with true_if_test_exp = true}
+let get_safe_decl x        = x.safe_for_multi_decls
 let get_isos x             = x.iso_info
 let set_isos x isos        = {x with iso_info = isos}
 let get_pos_var (_,_,_,p)  = p
@@ -793,6 +772,7 @@ let make_term x =
     bef_aft = NoDots;
     pos_info = None;
     true_if_test_exp = false;
+    safe_for_multi_decls = false;
     iso_info = [] }
 
 let make_meta_rule_elem s d (fvs,fresh,inh) =

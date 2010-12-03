@@ -22,6 +22,6 @@
  *)
 
 
-val plus :
-    Ast_cocci.rule ->
-      (Ast_cocci.anything * int * int * int * int) list list list
+val safe_for_multi_decls :
+    Ast_cocci.rule_with_metavars list ->
+      Ast_cocci.rule_with_metavars list

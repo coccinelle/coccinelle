@@ -13,6 +13,15 @@
 - Add more information in documentation, man pages and wiki
 
 
+* 0.2.5
+** Language:
+
+** Features:
+- support transformations on variables (only) in declarations that declare
+  multiple variables
+
+** Bugfix:
+
 * 0.2.4
 ** Language:
 - scripts now have names and can declare metavariables that are seen by

@@ -22,30 +22,6 @@
  *)
 
 
-(*
- * Copyright 2010, INRIA, University of Copenhagen
- * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
- * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
- * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
- * This file is part of Coccinelle.
- *
- * Coccinelle is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, according to version 2 of the License.
- *
- * Coccinelle is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
- *
- * The authors reserve the right to distribute this or future versions of
- * Coccinelle under other licenses.
- *)
-
-
 (* --------------------------------------------------------------------- *)
 (* Modified code *)
 
@@ -67,6 +43,8 @@ type 'a wrap =
       bef_aft : dots_bef_aft;
       pos_info : meta_name mcode option; (* pos info, try not to duplicate *)
       true_if_test_exp : bool;(* true if "test_exp from iso", only for exprs *)
+      (* the following is only for declarations *)
+      safe_for_multi_decls : bool;
       (* isos relevant to the term; ultimately only used for rule_elems *)
       iso_info : (string*anything) list }
 
@@ -669,6 +647,7 @@ val get_pos : 'a wrap -> meta_name mcode option
 val set_pos : 'a wrap -> meta_name mcode option -> 'a wrap
 val get_test_exp : 'a wrap -> bool
 val set_test_exp : expression -> expression
+val get_safe_decl : 'a wrap -> bool
 val get_isos : 'a wrap -> (string*anything) list
 val set_isos : 'a wrap -> (string*anything) list -> 'a wrap
 val get_pos_var : 'a mcode -> meta_pos

@@ -34,7 +34,8 @@ iso_pattern.ml iso_compile.ml single_statement.ml simple_assignments.ml \
 ast0toast.ml check_meta.ml top_level.ml type_infer.ml \
 test_exps.ml unitary_ast0.ml arity.ml index.ml context_neg.ml \
 adjust_pragmas.ml insert_plus.ml function_prototypes.ml \
-unify_ast.ml semantic_cocci.ml data.ml free_vars.ml parse_aux.ml disjdistr.ml \
+unify_ast.ml semantic_cocci.ml data.ml free_vars.ml safe_for_multi_decls.ml \
+parse_aux.ml disjdistr.ml \
 $(LEXER_SOURCES:.mll=.ml) $(PARSER_SOURCES:.mly=.ml) \
 $(SCRIPT_LEXER_SOURCES:.mll=.ml) \
 get_constants2.ml id_utils.ml adjacency.ml parse_cocci.ml

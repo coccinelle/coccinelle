@@ -22,30 +22,6 @@
  *)
 
 
-(*
- * Copyright 2010, INRIA, University of Copenhagen
- * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
- * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
- * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
- * This file is part of Coccinelle.
- *
- * Coccinelle is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, according to version 2 of the License.
- *
- * Coccinelle is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
- *
- * The authors reserve the right to distribute this or future versions of
- * Coccinelle under other licenses.
- *)
-
-
 (*external c_counter : unit -> int = "c_counter"*)
 let timeout = 800
 (* Optimize triples_conj by first extracting the intersection of the two sets,
@@ -332,7 +308,8 @@ type ('pred,'anno) triples =
 let (print_generic_substitution : substitution -> unit) = fun substxs ->
   let print_generic_subst = function
       A.Subst (mvar, v) ->
-	SUB.print_mvar mvar; Format.print_string " --> "; SUB.print_value v
+	SUB.print_mvar mvar; Format.print_string " --> "; SUB.print_value v;
+	Format.print_string (Dumper.dump v)
     | A.NegSubst (mvar, v) ->
 	SUB.print_mvar mvar; Format.print_string " -/-> "; SUB.print_value v in
   Format.print_string "[";
