@@ -821,6 +821,8 @@ and statement s =
 		      tokenwrap rbrace s (Ast.SeqEnd(rbrace)))
       |	Ast0.Include(inc,str) ->
 	  Ast.Atomic(rewrap_rule_elem s (Ast.Include(mcode inc,mcode str)))
+      |	Ast0.Undef(def,id) ->
+	  Ast.Atomic(rewrap_rule_elem s (Ast.Undef(mcode def,ident id)))
       | Ast0.Define(def,id,params,body) ->
 	  Ast.Define
 	    (rewrap_rule_elem s

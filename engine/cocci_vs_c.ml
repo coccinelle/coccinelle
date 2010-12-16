@@ -3950,7 +3950,15 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
           )))
       else fail
 
-
+  | A.Undef(undefa,ida), F.Undef ((idb, ii)) ->
+      let (undefb, iidb) = tuple_of_list2 ii in
+      ident DontKnow ida (idb, iidb) >>= (fun ida (idb, iidb) ->
+      tokenf undefa undefb >>= (fun undefa undefb ->
+        return (
+          A.Undef (undefa, ida),
+          F.Undef ((idb,[undefb;iidb]))
+        ))
+      )
 
   | A.DefineHeader(definea,ida,params), F.DefineHeader ((idb, ii), defkind) ->
       let (defineb, iidb, ieol) = tuple_of_list3 ii in
@@ -4048,8 +4056,9 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
   | _,
     (F.Label (_, _, _)|F.Break (_, _)|F.Continue (_, _)|F.Default (_, _)|
     F.Case (_, _)|F.Include _|F.Goto _|F.ExprStatement _|
-    F.DefineType _|F.DefineExpr _|F.DefineTodo|
-    F.DefineHeader (_, _)|F.ReturnExpr (_, _)|F.Return (_, _)|F.MacroIterHeader (_, _)|
+    F.DefineType _|F.DefineExpr _|F.DefineTodo|F.Undef _|
+    F.DefineHeader (_, _)|F.ReturnExpr (_, _)|F.Return (_, _)|
+    F.MacroIterHeader (_, _)|
     F.SwitchHeader (_, _)|F.ForHeader (_, _)|F.DoWhileTail _|F.DoHeader (_, _)|
     F.WhileHeader (_, _)|F.Else _|F.IfHeader (_, _)|
     F.SeqEnd (_, _)|F.SeqStart (_, _, _)|

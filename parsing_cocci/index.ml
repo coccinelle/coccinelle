@@ -1,5 +1,5 @@
 (* create an index for each constructor *)
-(* current max is 150 *)
+(* current max is 151 *)
 
 (* doesn't really work - requires that identical terms with no token
 subterms (eg dots) not appear on the same line *)
@@ -181,6 +181,7 @@ let statement s =
   | Ast0.Circles(d,whencode) -> [85]
   | Ast0.Stars(d,whencode) -> [86]
   | Ast0.Include(inc,name) -> [118]
+  | Ast0.Undef(def,id) -> [151]
   | Ast0.Define(def,id,params,body) -> [119]
   | Ast0.OptStm(re) -> [87]
   | Ast0.UniqueStm(re) -> [88]

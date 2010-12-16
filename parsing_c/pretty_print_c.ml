@@ -1041,6 +1041,10 @@ and pp_init (init, iinit) =
     | Include {i_include = (s, ii);} ->
 	let (i1,i2) = Common.tuple_of_list2 ii in
 	pr_elem i1; pr_space(); pr_elem i2
+    | Undef ((s,ii)) ->
+	let (iundef,iident) = Common.tuple_of_list2 ii in
+	pr_elem iundef;
+	pr_elem iident
     | Define ((s,ii), (defkind, defval)) ->
 	let (idefine,iident,ieol) = Common.tuple_of_list3 ii in
 	pr_elem idefine;
@@ -1083,8 +1087,6 @@ and pp_init (init, iinit) =
 	define_val defval;
 	pr_elem ieol
 
-    | Undef (s, ii) ->
-	List.iter pr_elem ii
     | PragmaAndCo (ii) ->
 	List.iter pr_elem ii in
 
@@ -1204,6 +1206,13 @@ and pp_init (init, iinit) =
 
     | F.DefineType ft  ->
         (* vk_type bigf ft *)
+	pr2 "XXX"
+
+    | F.Undef ((s,ii))  ->
+        (*
+           iif ii;
+           vk_define_kind bigf defkind;
+        *)
 	pr2 "XXX"
 
     | F.DefineHeader ((s,ii), (defkind))  ->

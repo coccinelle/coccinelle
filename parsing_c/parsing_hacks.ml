@@ -419,6 +419,10 @@ let rec define_line_1 acc xs =
       let line = Ast_c.line_of_info ii in
       let acc = (TDefine ii) :: acc in
       define_line_2 acc line ii xs
+  | TUndef ii::xs ->
+      let line = Ast_c.line_of_info ii in
+      let acc = (TUndef ii) :: acc in
+      define_line_2 acc line ii xs
   | TCppEscapedNewline ii::xs ->
       pr2 ("SUSPICIOUS: a \\ character appears outside of a #define at");
       pr2 (Ast_c.strloc_of_info ii);
@@ -460,6 +464,17 @@ and define_line_2 acc line lastinfo xs =
 let rec define_ident acc xs =
   match xs with
   | [] -> List.rev acc
+  | TUndef ii::xs ->
+      let acc = TUndef ii :: acc in
+      (match xs with
+	TCommentSpace i1::TIdent (s,i2)::xs ->
+	  let acc = (TCommentSpace i1) :: acc in
+	  let acc = (TIdentDefine (s,i2)) :: acc in
+          define_ident acc xs
+      | _ ->
+          pr2 "WEIRD: weird #define body";
+          define_ident acc xs
+      )
   | TDefine ii::xs ->
       let acc = TDefine ii :: acc in
       (match xs with
@@ -2027,7 +2042,7 @@ let lookahead2 ~pass next before =
       end
       else x
 
-  | (TUndef (id, ii) as x)::_, _
+  | (TUndef (ii) as x)::_, _
       ->
         if (pass >= 2)
         then begin

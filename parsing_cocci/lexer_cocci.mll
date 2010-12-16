@@ -651,6 +651,17 @@ rule token = parse
   | "^"            { start_line true; TXor(get_current_line_type lexbuf) }
 
   | "##"            { start_line true; TCppConcatOp }
+  | (( ("#" [' ' '\t']*  "undef" [' ' '\t']+)) as def)
+    ( (letter (letter |digit)*) as ident)
+      { start_line true;
+	let (arity,line,lline,offset,col,strbef,straft,pos) as lt =
+	  get_current_line_type lexbuf in
+	let off = String.length def in
+	(* -1 in the code below because the ident is not at the line start *)
+	TUndef
+	  (lt,
+	   check_var ident
+	     (arity,line,lline,offset+off,col+off,[],[],Ast0.NoMetaPos)) }
   | (( ("#" [' ' '\t']*  "define" [' ' '\t']+)) as def)
     ( (letter (letter |digit)*) as ident)
       { start_line true;

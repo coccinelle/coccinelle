@@ -216,6 +216,7 @@ type node = node1 * string
   | DefineDoWhileZeroHeader of unit wrap
   | DefineTodo
 
+  | Undef of string wrap
   | Include of includ
 
   (* obsolete? *)
@@ -340,7 +341,7 @@ let extract_fullstatement node =
   | MacroStmt (st, _) -> Some st
   | MacroIterHeader (st, _) -> Some st
 
-  | Include _
+  | Include _ | Undef _
   | DefineHeader _ | DefineType _ | DefineExpr  _ | DefineDoWhileZeroHeader _
   | DefineTodo
   | MacroTop _

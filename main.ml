@@ -1047,13 +1047,15 @@ let main () =
 	  let testfile = x ^ ".cocci" in
 	    if Sys.file_exists (prefix ^ testfile) then
 	      begin
-		FC.include_path := [prefix^"include"];
+		(if !FC.include_path = []
+		then FC.include_path := [prefix^"include"]);
 		Testing.testone prefix x !compare_with_expected
 	      end
 	    else
 	      if Sys.file_exists testfile then
 		begin
-		  FC.include_path := ["include"];
+		  (if !FC.include_path = []
+		  then FC.include_path := ["include"]);
 		  Testing.testone "" x !compare_with_expected
 		end
 	      else
@@ -1061,7 +1063,8 @@ let main () =
 	end
 
     | []  when !test_all ->
-        FC.include_path := ["tests/include"];
+        (if !FC.include_path = []
+	then FC.include_path := ["tests/include"]);
         if !expected_score_file <> ""
         then Testing.testall ~expected_score_file:!expected_score_file ()
         else Testing.testall ()

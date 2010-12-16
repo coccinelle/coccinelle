@@ -1167,6 +1167,7 @@ let ast_to_control_flow e =
 
   | Ast_c.Declaration _
   | Ast_c.CppTop (Ast_c.Include _)
+  | Ast_c.CppTop (Ast_c.Undef _)
   | Ast_c.MacroTop _
     ->
       let (elem, str) =
@@ -1175,6 +1176,8 @@ let ast_to_control_flow e =
             (Control_flow_c.Decl decl),  "decl"
         | Ast_c.CppTop (Ast_c.Include inc) ->
             (Control_flow_c.Include inc), "#include"
+        | Ast_c.CppTop (Ast_c.Undef def) ->
+            (Control_flow_c.Undef def), "#undef"
         | Ast_c.MacroTop (s, args, ii) ->
             let (st, (e, ii)) = specialdeclmacro_to_stmt (s, args, ii) in
             (Control_flow_c.ExprStatement (st, (Some e, ii))), "macrotoplevel"

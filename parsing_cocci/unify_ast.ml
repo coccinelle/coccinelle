@@ -429,6 +429,7 @@ and unify_rule_elem re1 re2 =
      Ast.IteratorHeader(nm2,lp2,args2,rp2)) ->
       conjunct_bindings (unify_ident nm1 nm2)
 	 (unify_dots unify_expression edots args1 args2)
+  | (Ast.Undef(_,n1),Ast.Undef(_,n2)) -> unify_ident n1 n2
   | (Ast.DefineHeader(_,n1,p1),Ast.DefineHeader(_,n2,p2)) ->
       conjunct_bindings (unify_ident n1 n2)
 	(unify_define_parameters p1 p2)

@@ -527,23 +527,39 @@ let sp_contain_typed_metavar rules =
  * For the moment we base in part our heuristic on the name of the file, e.g.
  * serio.c is related we think to #include <linux/serio.h>
  *)
-let rec search_include_path searchlist relpath =
-  match searchlist with
-      []       -> Some relpath
-    | hd::tail ->
-	let file = Filename.concat hd relpath in
-	if Sys.file_exists file then
-	  Some file
-	else
-	  search_include_path tail relpath
-
 let interpret_include_path relpath =
+  let maxdepth = List.length relpath in
+  let unique_file_exists dir f =
+    let cmd =
+      Printf.sprintf "find %s -maxdepth %d -mindepth %d -path \"*/%s\""
+	dir maxdepth maxdepth f in
+    match Common.cmd_to_list cmd with
+      [x] -> Some x
+    | _ -> None in
+  let native_file_exists dir f =
+    let f = Filename.concat dir f in
+    if Sys.file_exists f
+    then Some f
+    else None in
+  let rec search_include_path exists searchlist relpath =
+    match searchlist with
+      []       -> None
+    | hd::tail ->
+	(match exists hd relpath with
+	  Some x -> Some x
+	| None -> search_include_path exists tail relpath) in
+  let rec search_path exists searchlist = function
+      [] -> Some (Common.concat "/" relpath)
+    | (hd::tail) as relpath ->
+	let relpath = Common.concat "/" relpath in
+	(match search_include_path exists searchlist relpath with
+	  None -> search_path unique_file_exists searchlist tail
+	| Some f -> Some f) in
   let searchlist =
     match !Flag_cocci.include_path with
-	[] -> ["include"]
-      | x -> List.rev x
-  in
-    search_include_path searchlist relpath
+      [] -> ["include"]
+    | x -> List.rev x
+  in search_path native_file_exists searchlist relpath
 
 let (includes_to_parse:
        (Common.filename * Parse_c.program2) list ->
@@ -566,7 +582,7 @@ let (includes_to_parse:
 	    (match x with
             | Ast_c.Local xs ->
 		let relpath = Common.join "/" xs in
-		let f = Filename.concat dir (relpath) in
+		let f = Filename.concat dir relpath in
 		if (Sys.file_exists f) then
 		  Some f
 		else
@@ -576,18 +592,17 @@ let (includes_to_parse:
 		    let attempt2 = Filename.concat dir (Common.last xs) in
 		      if not (Sys.file_exists attempt2) && all_includes
 		      then
-			interpret_include_path relpath
+			interpret_include_path xs
 		      else Some attempt2
 		  else
-		    if all_includes then interpret_include_path relpath
+		    if all_includes then interpret_include_path xs
 		    else None
 
             | Ast_c.NonLocal xs ->
-		let relpath = Common.join "/" xs in
 		if all_includes ||
 	        Common.fileprefix (Common.last xs) =$= Common.fileprefix file
 		then
-		  interpret_include_path relpath
+		  interpret_include_path xs
 		else None
             | Ast_c.Weird _ -> None
 		  )

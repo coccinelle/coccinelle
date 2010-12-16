@@ -58,7 +58,7 @@ module P = Parse_aux
 
 %token <string>  TPathIsoFile
 %token <string * Data.clt> TIncludeL TIncludeNL
-%token <Data.clt * token> TDefine
+%token <Data.clt * token> TDefine TUndef
 %token <Data.clt * token * int * int> TDefineParam
 %token <string * Data.clt> TMinusFile TPlusFile
 
@@ -734,6 +734,20 @@ includes:
 			    P.clt2mcode
 			      (Ast.NonLocal (Parse_aux.str2inc (P.id2name $1)))
 			      (P.drop_bef clt))) }
+| TUndef TLineEnd
+    { let (clt,ident) = $1 in
+      Ast0.wrap
+      (Ast0.Undef
+	 (P.clt2mcode "#undef" clt,
+	  (match ident with
+	    TMetaId((nm,constraints,pure,clt)) ->
+	      Ast0.wrap(Ast0.MetaId(P.clt2mcode nm clt,constraints,pure))
+	  | TIdent(nm_pure) ->
+	      Ast0.wrap(Ast0.Id(P.id2mcode nm_pure))
+	  | _ ->
+	      raise
+		(Semantic_cocci.Semantic
+		   "unexpected name for a #define")))) }
 | d=defineop TLineEnd
     { d (Ast0.wrap(Ast0.DOTS([]))) }
 | d=defineop t=ctype TLineEnd

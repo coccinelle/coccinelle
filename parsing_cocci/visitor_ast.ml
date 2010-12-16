@@ -340,6 +340,8 @@ let combiner bind option_default
       | Ast.Ty(ty) -> fullType ty
       | Ast.TopInit(init) -> initialiser init
       |	Ast.Include(inc,name) -> bind (string_mcode inc) (inc_file_mcode name)
+      |	Ast.Undef(def,id) ->
+	  multibind [string_mcode def; ident id]
       |	Ast.DefineHeader(def,id,params) ->
 	  multibind [string_mcode def; ident id; define_parameters params]
       |	Ast.Default(def,colon) -> bind (string_mcode def) (string_mcode colon)
@@ -838,6 +840,8 @@ let rebuilder
 	| Ast.TopInit(init) -> Ast.TopInit(initialiser init)
 	| Ast.Include(inc,name) ->
 	    Ast.Include(string_mcode inc,inc_file_mcode name)
+	| Ast.Undef(def,id) ->
+	    Ast.Undef(string_mcode def,ident id)
 	| Ast.DefineHeader(def,id,params) ->
 	    Ast.DefineHeader(string_mcode def,ident id,
 			     define_parameters params)

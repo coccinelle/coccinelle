@@ -815,6 +815,9 @@ let rec statement s =
 
     | Ast0.Include(inc,stm) ->
 	mkres s (Ast0.Include(inc,stm)) (promote_mcode inc) (promote_mcode stm)
+    | Ast0.Undef(def,id) ->
+	let (id,right) = full_ident id in
+	mkres s (Ast0.Undef(def,id)) (promote_mcode def) id
     | Ast0.Define(def,id,params,body) ->
 	let (id,right) = full_ident id in
 	let (params,prev) = define_parameters params right in

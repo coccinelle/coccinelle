@@ -19,6 +19,7 @@
 ** Features:
 - support transformations on variables (only) in declarations that declare
   multiple variables
+- allow #endif XXX in C code
 
 ** Bugfix:
 

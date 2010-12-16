@@ -229,7 +229,7 @@ let info_of_tok = function
   | TDefine (ii) -> ii
   | TInclude (includes, filename, inifdef, i1) ->     i1
 
-  | TUndef (s, ii) -> ii
+  | TUndef (ii) -> ii
   | TCppDirectiveOther (ii) -> ii
 
   | TIncludeStart (i1, inifdef) ->     i1
@@ -376,7 +376,7 @@ let visitor_info_of_tok f = function
 
   | TDefine (i1) -> TDefine(f i1)
 
-  | TUndef (s,i1) -> TUndef(s, f i1)
+  | TUndef (i1) -> TUndef(f i1)
   | TCppDirectiveOther (i1) -> TCppDirectiveOther(f i1)
 
   | TInclude (includes, filename, inifdef, i1) ->

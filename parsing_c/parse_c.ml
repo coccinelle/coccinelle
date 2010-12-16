@@ -519,7 +519,28 @@ let rec lexer_function ~pass tr = fun lexbuf ->
           then begin
             incr Stat.nDefinePassing;
             pr2_once ("CPP-DEFINE: inside function, I treat it as comment");
-            let v' = Parser_c.TCommentCpp (Token_c.CppDirective,TH.info_of_tok v)
+            let v' =
+	      Parser_c.TCommentCpp (Token_c.CppDirective,TH.info_of_tok v)
+            in
+            tr.passed <- v'::tr.passed;
+            tr.rest       <- Parsing_hacks.comment_until_defeol tr.rest;
+            tr.rest_clean <- Parsing_hacks.drop_until_defeol tr.rest_clean;
+            lexer_function ~pass tr lexbuf
+          end
+          else begin
+            tr.passed <- v::tr.passed;
+            tr.passed_clean <- v::tr.passed_clean;
+            v
+          end
+
+      | Parser_c.TUndef (tok) ->
+          if not (LP.current_context () =*= LP.InTopLevel) &&
+            (!Flag_parsing_c.cpp_directive_passing || (pass >= 2))
+          then begin
+            incr Stat.nUndefPassing;
+            pr2_once ("CPP-UNDEF: inside function, I treat it as comment");
+            let v' =
+	      Parser_c.TCommentCpp (Token_c.CppDirective,TH.info_of_tok v)
             in
             tr.passed <- v'::tr.passed;
             tr.rest       <- Parsing_hacks.comment_until_defeol tr.rest;
@@ -544,7 +565,7 @@ let rec lexer_function ~pass tr = fun lexbuf ->
           end
           else begin
             let (v,new_tokens) =
-              Parsing_hacks.tokens_include (info, includes, filename, inifdef) in
+              Parsing_hacks.tokens_include(info, includes, filename, inifdef) in
             let new_tokens_clean =
               new_tokens +> List.filter TH.is_not_comment  in
 
