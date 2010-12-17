@@ -527,6 +527,8 @@ let sp_contain_typed_metavar rules =
  * For the moment we base in part our heuristic on the name of the file, e.g.
  * serio.c is related we think to #include <linux/serio.h>
  *)
+let include_table = Hashtbl.create(100)
+
 let interpret_include_path relpath =
   let maxdepth = List.length relpath in
   let unique_file_exists dir f =
@@ -549,17 +551,24 @@ let interpret_include_path relpath =
 	  Some x -> Some x
 	| None -> search_include_path exists tail relpath) in
   let rec search_path exists searchlist = function
-      [] -> Some (Common.concat "/" relpath)
-    | (hd::tail) as relpath ->
-	let relpath = Common.concat "/" relpath in
-	(match search_include_path exists searchlist relpath with
+      [] ->
+	let res = Common.concat "/" relpath in
+	Hashtbl.add include_table (searchlist,relpath) res;
+	Some res
+    | (hd::tail) as relpath1 ->
+	let relpath1 = Common.concat "/" relpath1 in
+	(match search_include_path exists searchlist relpath1 with
 	  None -> search_path unique_file_exists searchlist tail
-	| Some f -> Some f) in
+	| Some f ->
+	    Hashtbl.add include_table (searchlist,relpath) f;
+	    Some f) in
   let searchlist =
     match !Flag_cocci.include_path with
       [] -> ["include"]
-    | x -> List.rev x
-  in search_path native_file_exists searchlist relpath
+    | x -> List.rev x in
+  try Some(Hashtbl.find include_table (searchlist,relpath))
+  with Not_found ->
+    search_path native_file_exists searchlist relpath
 
 let (includes_to_parse:
        (Common.filename * Parse_c.program2) list ->
