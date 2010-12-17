@@ -1720,7 +1720,7 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
                   )))) tin))
           fail
       else
-        failwith "More that one variable in decl. Have to split to transform."
+        failwith "More that one variable in decl. Have to split to transform.  Check that there is no transformation on the type or the ;"
 
   | A.MacroDecl (sa,lpa,eas,rpa,enda), B.MacroDecl ((sb,ebs),ii) ->
       let (iisb, lpb, rpb, iiendb, iifakestart, iistob) =
