@@ -9,7 +9,7 @@ let from = ref "email@xyz.org"
 let git_tree = ref "/var/linuxes/linux-next"
 let git_options = ref "--cc=kernel-janitors@vger.kernel.org --suppress-cc=self"
 let prefix_before = ref (Some "/var/linuxes/linux-next")
-let prefix_after = ref (Some "/home/julia/linuxcopy")
+let prefix_after = ref (Some "/var/julia/linuxcopy")
 
 (* ------------------------------------------------------------------------ *)
 (* misc *)
