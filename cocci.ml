@@ -1043,7 +1043,7 @@ let rec prepare_h seen env hpath choose_includes : file_info list =
   if not (Common.lfile_exists hpath)
   then
     begin
-      pr2 ("TYPE: header " ^ hpath ^ " not found");
+      pr2_once ("TYPE: header " ^ hpath ^ " not found");
       []
     end
   else

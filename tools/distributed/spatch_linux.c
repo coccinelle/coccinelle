@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define MAX 9
+#define MAX 45
 
 #ifndef HOME
 #define HOME "/home/julia/coccinelle/tools/distributed/"
