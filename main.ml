@@ -558,6 +558,8 @@ let other_options = [
     "  spacing of + code follows the semantic patch";
     "-D", Arg.String Flag.set_defined_virtual_rules,
     "  indicate that a virtual rule should be considered to be matched";
+    "-c++", Arg.Set Flag.c_plus_plus,
+    "  make a small attempt to parse C++ files"
   ];
 
   "misc options",

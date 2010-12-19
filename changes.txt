@@ -15,6 +15,9 @@
 
 * 0.2.5
 ** Language:
+- Make a very small attempt to parse C++ code, amounting to accepting
+  identifiers containing ::, tilde, and template invocations.  Use the
+  option -c++.  This is not likely to be very useful in practice.
 
 ** Features:
 - support transformations on variables (only) in declarations that declare

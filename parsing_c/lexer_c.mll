@@ -673,6 +673,22 @@ rule token = parse
         pr2 ("LEXER: identifier with dollar: "  ^ s);
         TIdent (s, info)
       }
+  | (letter | '$' | '~') (letter | digit | '$' | '~') *
+    ("::" (letter | '$' | '~') (letter | digit | '$' | '~') *
+      ('<' (letter | '$' | '~') (letter | digit | '$' | '~') * '>') ?) *
+
+      {
+        if !Flag.c_plus_plus
+	then
+	  begin
+            let info = tokinfo lexbuf in
+            let s = tok lexbuf in
+            TIdent (s, info)
+	  end
+	else
+	  raise
+	    (Lexical "~ and :: not allowed in C identifiers, try -c++ option")
+      }
 
 
   (* ----------------------------------------------------------------------- *)
