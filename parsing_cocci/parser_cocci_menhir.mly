@@ -1249,11 +1249,13 @@ decl_statement_expr:
 
 /*****************************************************************************/
 
-/* The following cannot contain <... ...> at the top level.  This can only
-be allowed as an expression when the expression is delimited on both sides
-by expression-specific markers.  In that case, the rule eexpr is used, which
+/* expr cannot contain <... ...> at the top level.  This can only
+be allowed as an expression when the expression is delimited on the left
+by an expression-specific marker.  In that case, the rule eexpr is used, which
 allows <... ...> anywhere.  Hopefully, this will not be too much of a problem
-in practice. */
+in practice.
+dot_expressions is the most permissive.  all three kinds of expressions use
+this once an expression_specific token has been seen */
 expr:  basic_expr(expr,invalid) { $1 }
 /* allows ... and nests */
 eexpr: basic_expr(eexpr,dot_expressions) { $1 }
@@ -1310,40 +1312,73 @@ assign_expr_bis:
 
 cond_expr(r,pe):
     arith_expr(r,pe)                         { $1 }
-  | l=arith_expr(r,pe) w=TWhy t=option(eexpr) dd=TDotDot r=cond_expr(r,pe)
+  | l=arith_expr(r,pe) w=TWhy t=option(eexpr) dd=TDotDot r=eexpr/*see parser_c*/
       { Ast0.wrap(Ast0.CondExpr (l, P.clt2mcode "?" w, t,
 				 P.clt2mcode ":" dd, r)) }
 
 arith_expr(r,pe):
     cast_expr(r,pe)                         { $1 }
-  | arith_expr(r,pe) TMul    arith_expr(r,pe)
+  | arith_expr(r,pe) TMul    arith_expr_bis
       { P.arith_op Ast.Mul $1 $2 $3 }
-  | arith_expr(r,pe) TDmOp    arith_expr(r,pe)
+  | arith_expr(r,pe) TDmOp    arith_expr_bis
       { let (op,clt) = $2 in P.arith_op op $1 clt $3 }
-  | arith_expr(r,pe) TPlus   arith_expr(r,pe)
+  | arith_expr(r,pe) TPlus   arith_expr_bis
       { P.arith_op Ast.Plus $1 $2 $3 }
-  | arith_expr(r,pe) TMinus  arith_expr(r,pe)
+  | arith_expr(r,pe) TMinus  arith_expr_bis
       { P.arith_op Ast.Minus $1 $2 $3 }
-  | arith_expr(r,pe) TShLOp    arith_expr(r,pe)
+  | arith_expr(r,pe) TShLOp    arith_expr_bis
       { let (op,clt) = $2 in P.arith_op op $1 clt $3 }
-  | arith_expr(r,pe) TShROp    arith_expr(r,pe)
+  | arith_expr(r,pe) TShROp    arith_expr_bis
       { let (op,clt) = $2 in P.arith_op op $1 clt $3 }
-  | arith_expr(r,pe) TLogOp    arith_expr(r,pe)
+  | arith_expr(r,pe) TLogOp    arith_expr_bis
       { let (op,clt) = $2 in P.logic_op op $1 clt $3 }
-  | arith_expr(r,pe) TEqEq   arith_expr(r,pe)
+  | arith_expr(r,pe) TEqEq   arith_expr_bis
       { P.logic_op Ast.Eq $1 $2 $3 }
-  | arith_expr(r,pe) TNotEq  arith_expr(r,pe)
+  | arith_expr(r,pe) TNotEq  arith_expr_bis
       { P.logic_op Ast.NotEq $1 $2 $3 }
-  | arith_expr(r,pe) TAnd    arith_expr(r,pe)
+  | arith_expr(r,pe) TAnd    arith_expr_bis
       { P.arith_op Ast.And $1 $2 $3 }
-  | arith_expr(r,pe) TOr     arith_expr(r,pe)
+  | arith_expr(r,pe) TOr     arith_expr_bis
       { P.arith_op Ast.Or $1 $2 $3 }
-  | arith_expr(r,pe) TXor    arith_expr(r,pe)
+  | arith_expr(r,pe) TXor    arith_expr_bis
       { P.arith_op Ast.Xor $1 $2 $3 }
-  | arith_expr(r,pe) TAndLog arith_expr(r,pe)
+  | arith_expr(r,pe) TAndLog arith_expr_bis
       { P.logic_op Ast.AndLog $1 $2 $3 }
-  | arith_expr(r,pe) TOrLog  arith_expr(r,pe)
+  | arith_expr(r,pe) TOrLog  arith_expr_bis
       { P.logic_op Ast.OrLog $1 $2 $3 }
+
+// allows dots now that an expression-specific token has been seen
+// need an extra rule because of recursion restrictions
+arith_expr_bis:
+    cast_expr(eexpr,dot_expressions)                         { $1 }
+  | arith_expr_bis TMul    arith_expr_bis
+      { P.arith_op Ast.Mul $1 $2 $3 }
+  | arith_expr_bis TDmOp    arith_expr_bis
+      { let (op,clt) = $2 in P.arith_op op $1 clt $3 }
+  | arith_expr_bis TPlus   arith_expr_bis
+      { P.arith_op Ast.Plus $1 $2 $3 }
+  | arith_expr_bis TMinus  arith_expr_bis
+      { P.arith_op Ast.Minus $1 $2 $3 }
+  | arith_expr_bis TShLOp    arith_expr_bis
+      { let (op,clt) = $2 in P.arith_op op $1 clt $3 }
+  | arith_expr_bis TShROp    arith_expr_bis
+      { let (op,clt) = $2 in P.arith_op op $1 clt $3 }
+  | arith_expr_bis TLogOp    arith_expr_bis
+      { let (op,clt) = $2 in P.logic_op op $1 clt $3 }
+  | arith_expr_bis TEqEq   arith_expr_bis
+      { P.logic_op Ast.Eq $1 $2 $3 }
+  | arith_expr_bis TNotEq  arith_expr_bis
+      { P.logic_op Ast.NotEq $1 $2 $3 }
+  | arith_expr_bis TAnd    arith_expr_bis
+      { P.arith_op Ast.And $1 $2 $3 }
+  | arith_expr_bis TOr     arith_expr_bis
+      { P.arith_op Ast.Or $1 $2 $3 }
+  | arith_expr_bis TXor    arith_expr_bis
+      { P.arith_op Ast.Xor $1 $2 $3 }
+  | arith_expr_bis TAndLog arith_expr_bis
+      { P.logic_op Ast.AndLog $1 $2 $3 }
+// no OrLog because it is left associative and this is for
+// a right argument, not sure why not the same problem for AndLog
 
 cast_expr(r,pe):
     unary_expr(r,pe)                      { $1 }
@@ -1353,16 +1388,35 @@ cast_expr(r,pe):
 
 unary_expr(r,pe):
     postfix_expr(r,pe)                   { $1 }
-  | TInc unary_expr(r,pe)
+  | TInc unary_expr_bis
       { Ast0.wrap(Ast0.Infix ($2, P.clt2mcode Ast.Inc $1)) }
-  | TDec unary_expr(r,pe)
+  | TDec unary_expr_bis
       { Ast0.wrap(Ast0.Infix ($2, P.clt2mcode Ast.Dec $1)) }
   | unary_op cast_expr(r,pe)
       { let mcode = $1 in Ast0.wrap(Ast0.Unary($2, mcode)) }
-  | TBang unary_expr(r,pe)
+  | TBang unary_expr_bis
       { let mcode = P.clt2mcode Ast.Not $1 in
       Ast0.wrap(Ast0.Unary($2, mcode)) }
-  | TSizeof unary_expr(r,pe)
+  | TSizeof unary_expr_bis
+      { Ast0.wrap(Ast0.SizeOfExpr (P.clt2mcode "sizeof" $1, $2)) }
+  | s=TSizeof lp=TOPar t=ctype rp=TCPar
+      { Ast0.wrap(Ast0.SizeOfType (P.clt2mcode "sizeof" s,
+                                   P.clt2mcode "(" lp,t,
+                                   P.clt2mcode ")" rp)) }
+
+// version that allows dots
+unary_expr_bis:
+    postfix_expr(eexpr,dot_expressions)                   { $1 }
+  | TInc unary_expr_bis
+      { Ast0.wrap(Ast0.Infix ($2, P.clt2mcode Ast.Inc $1)) }
+  | TDec unary_expr_bis
+      { Ast0.wrap(Ast0.Infix ($2, P.clt2mcode Ast.Dec $1)) }
+  | unary_op cast_expr(eexpr,dot_expressions)
+      { let mcode = $1 in Ast0.wrap(Ast0.Unary($2, mcode)) }
+  | TBang unary_expr_bis
+      { let mcode = P.clt2mcode Ast.Not $1 in
+      Ast0.wrap(Ast0.Unary($2, mcode)) }
+  | TSizeof unary_expr_bis
       { Ast0.wrap(Ast0.SizeOfExpr (P.clt2mcode "sizeof" $1, $2)) }
   | s=TSizeof lp=TOPar t=ctype rp=TCPar
       { Ast0.wrap(Ast0.SizeOfType (P.clt2mcode "sizeof" s,
