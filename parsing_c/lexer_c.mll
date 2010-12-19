@@ -673,7 +673,7 @@ rule token = parse
         pr2 ("LEXER: identifier with dollar: "  ^ s);
         TIdent (s, info)
       }
-  | (letter | '$' | '~') (letter | digit | '$' | '~') *
+  | (letter | '$') (letter | digit | '$' | '~') *
     ("::" (letter | '$' | '~') (letter | digit | '$' | '~') *
       ('<' (letter | '$' | '~') (letter | digit | '$' | '~') * '>') ?) *
 
