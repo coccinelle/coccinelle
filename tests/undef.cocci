@@ -1,0 +1,5 @@
+@@
+identifier x;
+@@
+
+- #undef x
