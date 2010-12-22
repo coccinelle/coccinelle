@@ -705,8 +705,6 @@ and vk_cpp_directive bigf directive =
         iif ii;
         vk_define_kind bigf defkind;
         vk_define_val bigf defval
-    | Undef (s, ii) ->
-        iif ii
     | PragmaAndCo (ii) ->
         iif ii
   in f (k, bigf) directive
@@ -721,6 +719,7 @@ and vk_define_kind bigf defkind =
         vk_ii bigf iis;
         vk_ii bigf iicomma;
       )
+  | Undef -> ()
 
 and vk_define_val bigf defval =
   let f = bigf.kdefineval in
@@ -815,9 +814,6 @@ and vk_node = fun bigf node ->
     | F.DefineTodo ->
         pr2_once "DefineTodo";
         ()
-
-    | F.Undef ((s,ii))  ->
-        iif ii
 
     | F.Include {i_include = (s, ii);} -> iif ii;
 
@@ -1485,7 +1481,6 @@ and vk_cpp_directive_s = fun bigf top ->
     | Define ((s,ii), (defkind, defval)) ->
         Define ((s, iif ii),
                (vk_define_kind_s bigf defkind, vk_define_val_s bigf defval))
-    | Undef (s, ii) -> Undef (s, iif ii)
     | PragmaAndCo (ii) -> PragmaAndCo (iif ii)
 
   in f (k, bigf) top
@@ -1507,6 +1502,7 @@ and vk_define_kind_s  = fun bigf defkind ->
         ),
         vk_ii_s bigf ii
         )
+  | Undef -> Undef
 
 
 and vk_define_val_s = fun bigf x ->
@@ -1599,8 +1595,6 @@ and vk_node_s = fun bigf node ->
     | F.DefineDoWhileZeroHeader ((),ii) ->
         F.DefineDoWhileZeroHeader ((),iif ii)
     | F.DefineTodo -> F.DefineTodo
-
-    | F.Undef((s,ii)) -> F.Undef ((s, iif ii))
 
     | F.Include {i_include = (s, ii);
                  i_rel_pos = h_rel_pos;

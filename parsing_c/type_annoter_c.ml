@@ -701,8 +701,11 @@ let annotater_expr_visitor_subpart = (fun (k,bigf) expr ->
                 | DefineVar, _ ->
                     pr2 ("Type_annoter: not a macro-func: " ^ s);
                     Type_c.noTypeHere
+                | Undef, _ ->
+                    pr2 ("Type_annoter: not a macro-func: " ^ s);
+                    Type_c.noTypeHere
                 | DefineFunc _, _ ->
-                    (* normally the FunCall case should have catch it *)
+                    (* normally the FunCall case should have caught it *)
                     pr2 ("Type_annoter: not a macro-func-expr: " ^ s);
                     Type_c.noTypeHere
                 )
@@ -749,6 +752,9 @@ let annotater_expr_visitor_subpart = (fun (k,bigf) expr ->
                 | DefineFunc _, _ ->
                     (* normally the FunCall case should have catch it *)
                     pr2 ("Type_annoter: not a macro-var: " ^ s);
+                    Type_c.noTypeHere
+                | Undef, _ ->
+                    pr2 ("Type_annoter: not a expression: " ^ s);
                     Type_c.noTypeHere
                 )
             | None ->
@@ -1027,7 +1033,6 @@ let rec visit_toplevel ~just_add_in_env ~depth elem =
 
           add_binding (Macro (s, (defkind, defval) )) true;
 
-      | Undef _
       | PragmaAndCo _ -> ()
     );
 

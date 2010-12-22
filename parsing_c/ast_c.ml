@@ -578,7 +578,6 @@ and definition = definitionbis wrap (* ( ) { } fakestart sto *)
 and cpp_directive =
   | Define of define
   | Include of includ
-  | Undef of string wrap
   | PragmaAndCo of il
 (*| Ifdef ? no, ifdefs are handled differently, cf ifdef_directive below *)
 
@@ -586,6 +585,7 @@ and define = string wrap (* #define s eol *) * (define_kind * define_val)
    and define_kind =
    | DefineVar
    | DefineFunc   of ((string wrap) wrap2 list) wrap (* () *)
+   | Undef
    and define_val =
      (* most common case; e.g. to define int constant *)
      | DefineExpr of expression

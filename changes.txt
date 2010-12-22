@@ -26,6 +26,7 @@
 - relax_include_path now applied to non local includes too, in which case
   it tries to find a unique file with a suffix of the provided name.
   this is useful for directories that are intended to be symbolic links.
+- support matching and removing #undef
 
 ** Bugfix:
 - improved parsing of expressions to allow ... to the right of operators in

@@ -51,7 +51,6 @@ type node = node1 * string (* For debugging. Used by print_graph *)
 
   | DefineTodo
 
-  | Undef of string wrap
   | Include of includ
 
   | MacroTop of string * argument wrap2 list * il

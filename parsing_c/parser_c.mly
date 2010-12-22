@@ -1672,12 +1672,12 @@ cpp_directive:
   *)*/
  | TDefine TIdentDefine TOParDefine param_define_list TCPar define_val TDefEOL
      { Define
-         ((fst $2, [$1; snd $2;$7]),
+         ((fst $2, [$1; snd $2; $7]),
            (DefineFunc ($4, [$3;$5]), $6))
      }
 
  | TUndef TIdentDefine TDefEOL
-     { Undef ((fst $2, [$1; snd $2])) }
+     { Define((fst $2, [$1; snd $2; $3]), (Undef,DefineEmpty)) }
  | TCppDirectiveOther { PragmaAndCo ([$1]) }
 
 
