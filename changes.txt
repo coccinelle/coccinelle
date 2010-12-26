@@ -27,6 +27,7 @@
   it tries to find a unique file with a suffix of the provided name.
   this is useful for directories that are intended to be symbolic links.
 - support matching and removing #undef
+- support for iteration in ocaml, requires use of -no_show_diff
 
 ** Bugfix:
 - improved parsing of expressions to allow ... to the right of operators in

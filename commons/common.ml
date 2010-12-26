@@ -490,9 +490,10 @@ let redirect_stdin file f =
 
     let savein = Unix.dup Unix.stdin in
     Unix.dup2 descr Unix.stdin;
-    f();
+    let res = f() in
     Unix.dup2 savein Unix.stdin;
     close_in chan;
+    res
   end
 
 let redirect_stdin_opt optfile f =

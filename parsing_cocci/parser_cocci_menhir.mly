@@ -240,6 +240,8 @@ incl:
 | TUsing TPathIsoFile { Data.Iso(Common.Right $2) }
 | TVirtual comma_list(pure_ident)
     { let names = List.map P.id2name $2 in
+      Iteration.parsed_virtual_rules :=
+	Common.union_set names !Iteration.parsed_virtual_rules;
       (* ensure that the names of virtual and real rules don't overlap *)
       List.iter
       (function name -> Hashtbl.add Data.all_metadecls name [])
@@ -384,6 +386,9 @@ list_len:
 	 let vl = List.assoc name virtual_env in
 	 !Data.add_virt_id_meta_found name vl; []
        with Not_found ->
+	 Iteration.parsed_virtual_identifiers :=
+	   Common.union_set [name]
+	     !Iteration.parsed_virtual_identifiers;
 	 let name = ("virtual",name) in
 	 let tok = check_meta(Ast.MetaIdDecl(arity,name)) in
 	 !Data.add_virt_id_meta_not_found name pure; tok in
@@ -2150,6 +2155,9 @@ script_name_decl:
         (($2, nm), mv) }
   | TShLOp TVirtual TDot cocci=pure_ident
       { let nm = P.id2name cocci in
+	 Iteration.parsed_virtual_identifiers :=
+	   Common.union_set [nm]
+	     !Iteration.parsed_virtual_identifiers;
         let name = ("virtual", nm) in
         let mv = Ast.MetaIdDecl(Ast.NONE,name) in
         (name,mv) }

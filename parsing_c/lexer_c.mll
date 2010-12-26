@@ -229,6 +229,7 @@ let ulong = (UnSigned,CLong)
 
 (*****************************************************************************)
 let letter = ['A'-'Z' 'a'-'z' '_']
+let extended_letter = ['A'-'Z' 'a'-'z' '_' ':' '<' '>' '~'](*for c++, not used*)
 let digit  = ['0'-'9']
 
 (* not used for the moment *)

@@ -38,22 +38,31 @@ let cfile_of_program program2_with_ppmethod outf =
 
 (* for memoization, contains only one entry, the one for the SP *)
 let _hparse = Hashtbl.create 101
+let _h_ocaml_init = Hashtbl.create 101
 let _hctl = Hashtbl.create 101
 
 (* --------------------------------------------------------------------- *)
 (* Cocci related *)
 (* --------------------------------------------------------------------- *)
 let sp_of_file2 file iso   =
-  Common.memoized _hparse (file, iso) (fun () ->
-    let (_,xs,_,_,_,_,_) as res = Parse_cocci.process file iso false in
-    (match Prepare_ocamlcocci.prepare file xs with
-      None -> ()
-    | Some ocaml_script_file ->
-        (* compile file *)
-	Prepare_ocamlcocci.load_file ocaml_script_file;
-	if not !Common.save_tmp_files
-	then Prepare_ocamlcocci.clean_file ocaml_script_file);
-    res)
+  Common.memoized _hparse
+    (file, iso, !Flag.defined_virtual_rules, !Flag.defined_virtual_env)
+    (fun () ->
+      let (_,xs,_,_,_,_,_) as res = Parse_cocci.process file iso false in
+      (* if there is already a compiled ML code, do nothing and use that *)
+      try let _ = Hashtbl.find _h_ocaml_init (file,iso) in res
+      with Not_found ->
+	begin
+	  Hashtbl.add _h_ocaml_init (file,iso) ();
+	  match Prepare_ocamlcocci.prepare file xs with
+	    None -> res
+	  | Some ocaml_script_file ->
+	    (* compile file *)
+	      Prepare_ocamlcocci.load_file ocaml_script_file;
+	      (if not !Common.save_tmp_files
+	      then Prepare_ocamlcocci.clean_file ocaml_script_file);
+	      res
+	end)
 let sp_of_file file iso    =
   Common.profile_code "parse cocci" (fun () -> sp_of_file2 file iso)
 
@@ -1219,6 +1228,7 @@ let ocaml_application mv ve script_vars r =
     else None
   with e -> (pr2 ("Failure in " ^ r.scr_rule_info.rulename); raise e)
 
+(* returns Left in case of dependency failure, Right otherwise *)
 let apply_script_rule r cache newes e rules_that_have_matched
     rules_that_have_ever_matched script_application =
   Common.profile_code r.language (fun () ->
@@ -1753,32 +1763,42 @@ let pre_engine2 (coccifile, isofile) =
 	   | _ -> languages)
       [] cocci_infos in
 
+  let runrule r =
+    let rlang = r.language in
+    let rname = r.scr_rule_info.rulename in
+    try
+      let _ = List.assoc (rlang,rname) !Iteration.initialization_stack in
+      ()
+    with Not_found ->
+      begin
+	Iteration.initialization_stack :=
+	  ((rlang,rname),!Flag.defined_virtual_rules) ::
+	  !Iteration.initialization_stack;
+	initial_final_bigloop Initial
+	  (fun (x,_,_,y) -> fun deps ->
+	    Ast_cocci.InitialScriptRule(rname,x,deps,y))
+	  r
+      end in
+  
   let initialized_languages =
     List.fold_left
       (function languages ->
-	 function
-	     InitialScriptRuleCocciInfo(r) ->
-	       (if List.mem r.language languages
-		then
-		 failwith
-		   ("double initializer found for "^r.language));
-	       if interpret_dependencies [] [] r.scr_rule_info.dependencies
-	       then
-		 begin
-		   initial_final_bigloop Initial
-		     (fun (x,_,_,y) -> fun deps ->
-		       Ast_cocci.InitialScriptRule(r.scr_rule_info.rulename,x,deps,y))
-		     r;
-		   r.language::languages
-		 end
-	       else languages
-	   | _ -> languages)
+	function
+	    InitialScriptRuleCocciInfo(r) ->
+	      let rlang = r.language in
+	      (if List.mem rlang languages
+	      then failwith ("double initializer found for "^rlang));
+	      if interpret_dependencies [] [] r.scr_rule_info.dependencies
+	      then begin runrule r; rlang::languages end
+	      else languages
+	  | _ -> languages)
       [] cocci_infos in
 
   let uninitialized_languages =
     List.filter
       (fun used -> not (List.mem used initialized_languages))
       used_languages in
+
   List.iter
     (fun lgg ->
       let rule_info =
@@ -1787,10 +1807,7 @@ let pre_engine2 (coccifile, isofile) =
 	  used_after = [];
 	  ruleid = (-1);
 	  was_matched = ref false;} in
-      initial_final_bigloop Initial
-	(fun (x,_,_,y) -> fun deps ->
-	  Ast_cocci.InitialScriptRule("",x,deps,y))
-	(make_init lgg "" rule_info))
+      runrule (make_init lgg "" rule_info))
     uninitialized_languages;
 
   (cocci_infos,toks)
@@ -1863,21 +1880,26 @@ let full_engine a b =
     (fun () -> let res = full_engine2 a b in (*Gc.print_stat stderr; *)res)
 
 let post_engine2 (cocci_infos,_) =
-  let _ =
-    List.fold_left
-      (function languages ->
-	function
-	    FinalScriptRuleCocciInfo(r) ->
-	      (if List.mem r.language languages
-	      then failwith ("double finalizer found for "^r.language));
-	      initial_final_bigloop Final
-		(fun (x,_,_,y) -> fun deps ->
-		  Ast_cocci.FinalScriptRule(r.scr_rule_info.rulename,x,deps,y))
-		r;
-	      r.language::languages
-	  | _ -> languages)
-      [] cocci_infos in
-  ()
+  List.iter
+    (function ((language,_),virt_rules) ->
+      Flag.defined_virtual_rules := virt_rules;
+      let _ =
+	List.fold_left
+	  (function languages ->
+	    function
+		FinalScriptRuleCocciInfo(r) ->
+		  (if r.language = language && List.mem r.language languages
+		  then failwith ("double finalizer found for "^r.language));
+		  initial_final_bigloop Final
+		    (fun (x,_,_,y) -> fun deps ->
+		      Ast_cocci.FinalScriptRule(r.scr_rule_info.rulename,
+						x,deps,y))
+		    r;
+		  r.language::languages
+	      | _ -> languages)
+	  [] cocci_infos in
+      ())
+    !Iteration.initialization_stack
 
 let post_engine a =
   Common.profile_code "post_engine" (fun () -> post_engine2 a)

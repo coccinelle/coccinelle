@@ -30,3 +30,27 @@ let fcts : (string, param_type list -> string ref list -> unit) Hashtbl.t =
 let inc_match = ref true
 let include_match x = inc_match := x
 let dir () = !Flag.dir
+
+(* ---------------------------------------------------------------------- *)
+(* Iteration management *)
+
+class iteration () =
+  object
+    val mutable files = !Iteration.base_file_list
+    val mutable virtual_rules = ([] : string list)
+    val mutable virtual_identifiers = ([] : (string * string) list)
+    method set_files f = files <- f
+    method add_virtual_rule r =
+      Iteration.check_virtual_rule r;
+      virtual_rules <- Common.union_set [r] virtual_rules
+    method add_virtual_identifier i v =
+      Iteration.check_virtual_ident i;
+      try
+	let v1 = List.assoc i virtual_identifiers in
+	if not (v = v1)
+	then failwith ("multiple values specified for "^i)
+      with Not_found ->
+	virtual_identifiers <- (i,v) :: virtual_identifiers
+    method register () =
+      Iteration.add_pending_instance (files,virtual_rules,virtual_identifiers)
+  end

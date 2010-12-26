@@ -28,3 +28,17 @@ val fcts : (string, param_type list -> string ref list -> unit) Hashtbl.t
 val inc_match : bool ref
 val include_match : bool -> unit
 val dir : unit -> string
+
+(* ---------------------------------------------------------------------- *)
+(* Iteration management *)
+
+class iteration : unit ->
+    object
+      val mutable files : string list
+      val mutable virtual_identifiers : (string * string) list
+      val mutable virtual_rules : string list
+      method set_files : string list -> unit
+      method add_virtual_rule : string -> unit
+      method add_virtual_identifier : string -> string -> unit
+      method register : unit -> unit
+    end
