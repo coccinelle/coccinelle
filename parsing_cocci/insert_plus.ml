@@ -378,6 +378,7 @@ let verify l =
     l
 
 let process_minus minus =
+  Hashtbl.clear root_token_table;
   create_root_token_table minus;
   List.concat
     (List.map

@@ -1097,7 +1097,7 @@ let main () =
         Common.do_action !action xs all_actions
 
     | [file] when !action =$= "-parse_cocci" ->
-        Testing.test_parse_cocci file
+	Testing.test_parse_cocci file
 
      (* I think this is used by some scripts in some Makefile for our
       * big-tests. So dont remove.
