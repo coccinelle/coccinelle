@@ -1581,7 +1581,14 @@ pure_ident_or_meta_ident_with_idconstraint_virt(constraint_type):
 	  None -> (i, Ast.IdNoConstraint)
 	| Some constraint_ -> (i,constraint_))
     }
-| TVirtual TDot pure_ident { Common.Right (P.id2name $3) }
+| TVirtual TDot pure_ident
+    {
+     let nm = P.id2name $3 in
+     Iteration.parsed_virtual_identifiers :=
+       Common.union_set [nm]
+	 !Iteration.parsed_virtual_identifiers;
+     Common.Right nm
+    }
 
 pure_ident_or_meta_ident_with_idconstraint(constraint_type):
        i=pure_ident_or_meta_ident c=option(constraint_type)

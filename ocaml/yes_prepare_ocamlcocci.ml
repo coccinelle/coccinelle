@@ -132,10 +132,11 @@ let print_iteration_code o =
     Printf.fprintf o "
 class iteration () =
   object
-    val mutable files = !Iteration.base_file_list
+    val mutable files = None
+    val mutable files_changed = false
     val mutable virtual_rules = ([] : string list)
     val mutable virtual_identifiers = ([] : (string * string) list)
-    method set_files f = files <- f
+    method set_files f = files <- Some f
     %s%s
     method register () =
       Iteration.add_pending_instance (files,virtual_rules,virtual_identifiers)
@@ -199,7 +200,6 @@ let prepare coccifile code =
       let basefile =
 	String.concat "_" (Str.split (Str.regexp "-") basefile) in
       let (file,o) = Filename.open_temp_file  basefile ".ml" in
-      Printf.printf "file is %s\n" file;
       (* Global initialization *)
       Printf.fprintf o "%s\n" (init_ocamlcocci());
       (* virtual rules and identifiers *)

@@ -772,8 +772,7 @@ let main_action xs =
        * as some elements in xs may also be directories, or individual
        * files.
        *)
-	if Common.is_directory x
-	then dir := true;
+	  dir := (Common.is_directory x);
 	
           if !cocci_file =$= ""
           then failwith "I need a cocci file,  use -sp_file <file>";
@@ -793,8 +792,7 @@ let main_action xs =
             Common.profile_code "Main.infiles computation" (fun () ->
 	      match !dir, !kbuild_info, !Flag.scanner with
             (* glimpse *)
-              | false, _, (Flag.Glimpse|Flag.IdUtils) ->
-                  failwith "-use_glimpse or -id_utils works only with -dir"
+              | false, _, (Flag.Glimpse|Flag.IdUtils) -> [x::xs]
               | true, s, (Flag.Glimpse|Flag.IdUtils) when s <> "" ->
                   failwith
 		    "-use_glimpse or -id_utils does not work with -kbuild"

@@ -15,16 +15,27 @@ type pending_info = string list (* files to treat *) *
       string list * (* defined virtual rules *)
       (string * string) list (* virtual identifiers *)
 
-let pending_instances = ref ([] : pending_info list)
+let pending_instances_file = ref ([] : pending_info list)
+let pending_instances_dir = ref ([] : pending_info list)
 
-let add_pending_instance x =
-  pending_instances := !pending_instances @ [x]
+let add_pending_instance ((files,a,b) as x) =
+  match files with
+    None ->
+      pending_instances_dir := (!base_file_list,a,b) :: !pending_instances_dir
+  | Some f ->
+      (* if one specifies a file, it is assumed to be the current one *)
+      pending_instances_file := (f,a,b) :: !pending_instances_file
 					      
 let get_pending_instance _ =
-  match !pending_instances with
-    [] -> None
+  match !pending_instances_file with
+    [] ->
+      (match !pending_instances_dir with
+	[] -> None
+      | x::xs ->
+	  pending_instances_dir := xs;
+	  Some x)
   | x::xs ->
-      pending_instances := xs;
+      pending_instances_file := xs;
       Some x
 
 (* ----------------------------------------------------------------------- *)
