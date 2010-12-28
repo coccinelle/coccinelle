@@ -44,10 +44,12 @@ let _hctl = Hashtbl.create 101
 (* --------------------------------------------------------------------- *)
 (* Cocci related *)
 (* --------------------------------------------------------------------- *)
-let sp_of_file2 file iso   =
-  Common.memoized _hparse
-    (file, iso, !Flag.defined_virtual_rules, !Flag.defined_virtual_env)
-    (fun () ->
+(* for a given pair (file,iso), only keep an instance for the most recent
+virtual rules and virtual_env *)
+
+let sp_of_file2 file iso =
+  let redo _ =
+    let new_code =
       let (_,xs,_,_,_,_,_) as res = Parse_cocci.process file iso false in
       (* if there is already a compiled ML code, do nothing and use that *)
       try let _ = Hashtbl.find _h_ocaml_init (file,iso) in res
@@ -62,7 +64,17 @@ let sp_of_file2 file iso   =
 	      (if not !Common.save_tmp_files
 	      then Prepare_ocamlcocci.clean_file ocaml_script_file);
 	      res
-	end)
+	end in
+    Hashtbl.add _hparse (file,iso)
+      (!Flag.defined_virtual_rules,!Flag.defined_virtual_env,new_code);
+    new_code in
+  try
+    let (rules,env,code) = Hashtbl.find _hparse (file,iso) in
+    if rules = !Flag.defined_virtual_rules && env = !Flag.defined_virtual_env
+    then code
+    else redo()
+  with Not_found -> redo()
+    
 let sp_of_file file iso    =
   Common.profile_code "parse cocci" (fun () -> sp_of_file2 file iso)
 

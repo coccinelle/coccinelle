@@ -18,7 +18,7 @@ type pending_info = string list (* files to treat *) *
 let pending_instances_file = ref ([] : pending_info list)
 let pending_instances_dir = ref ([] : pending_info list)
 
-let add_pending_instance ((files,a,b) as x) =
+let add_pending_instance (files,a,b) =
   match files with
     None ->
       pending_instances_dir := (!base_file_list,a,b) :: !pending_instances_dir
@@ -27,6 +27,11 @@ let add_pending_instance ((files,a,b) as x) =
       pending_instances_file := (f,a,b) :: !pending_instances_file
 					      
 let get_pending_instance _ =
+  Common.pr2
+    (Printf.sprintf
+       "%d pending new file instances\n%d pending original file instances\n"
+       (List.length !pending_instances_file)
+       (List.length !pending_instances_dir));
   match !pending_instances_file with
     [] ->
       (match !pending_instances_dir with
