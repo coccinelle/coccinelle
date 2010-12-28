@@ -140,7 +140,7 @@ class iteration () =
     %s%s
     method register () =
       Iteration.add_pending_instance (files,virtual_rules,virtual_identifiers)
-  end" add_virt_rules_method add_virt_ids_method
+  end\n\n" add_virt_rules_method add_virt_ids_method
 
 (* ---------------------------------------------------------------------- *)
 
