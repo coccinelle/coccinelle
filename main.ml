@@ -929,6 +929,7 @@ let main_action xs =
 		begin
 		  Flag.defined_virtual_rules := virt_rules;
 		  Flag.defined_virtual_env := virt_ids;
+		  Common.erase_temp_files();
 		  toploop files
 		end
 	      else
