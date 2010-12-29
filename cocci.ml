@@ -72,7 +72,7 @@ let sp_of_file2 file iso =
     let (rules,env,code) = Hashtbl.find _hparse (file,iso) in
     if rules = !Flag.defined_virtual_rules && env = !Flag.defined_virtual_env
     then code
-    else redo()
+    else (Hashtbl.remove _hparse (file,iso); redo())
   with Not_found -> redo()
     
 let sp_of_file file iso    =
