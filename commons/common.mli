@@ -142,6 +142,7 @@ val dump: 'a -> string
 (* see flag: val disable_pr2_once : bool ref *)
 val _already_printed : (string, bool) Hashtbl.t
 val pr2_once : string -> unit
+val clear_pr2_once : unit -> unit
 
 val mk_pr2_wrappers: bool ref -> (string -> unit) * (string -> unit)
 

@@ -27,11 +27,14 @@ let add_pending_instance (files,a,b) =
       pending_instances_file := (f,a,b) :: !pending_instances_file
 					      
 let get_pending_instance _ =
-  Common.pr2
-    (Printf.sprintf
-       "%d pending new file instances\n%d pending original file instances\n"
-       (List.length !pending_instances_file)
-       (List.length !pending_instances_dir));
+  (if (List.length !pending_instances_file) > 0 or
+    (List.length !pending_instances_dir) > 0
+  then
+    Common.pr2
+      (Printf.sprintf
+	 "%d pending new file instances\n%d pending original file instances\n"
+	 (List.length !pending_instances_file)
+	 (List.length !pending_instances_dir)));
   match !pending_instances_file with
     [] ->
       (match !pending_instances_dir with

@@ -426,6 +426,8 @@ let xxx_once f s =
 
 let pr2_once s = xxx_once pr2 s
 
+let clear_pr2_once _ = Hashtbl.clear _already_printed
+
 (* ---------------------------------------------------------------------- *)
 let mk_pr2_wrappers aref =
   let fpr2 s =
