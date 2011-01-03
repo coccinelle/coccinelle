@@ -647,7 +647,6 @@ let annotater_expr_visitor_subpart = (fun (k,bigf) expr ->
     | FunCall (e1, args) ->
      (match Ast_c.unwrap_expr e1 with
      | Ident (ident) ->
-
         (* recurse *)
         args +> List.iter (fun (e,ii) ->
           (* could typecheck if arguments agree with prototype *)
@@ -1263,6 +1262,14 @@ let annotate_test_expressions prog =
     | Binary(e1,Logical(OrLog),e2) -> propagate_test e1; propagate_test e2
     | Unary(e1,Not) -> propagate_test e1
     | ParenExpr(e) -> propagate_test e
+    | FunCall(e,args) -> (* not very nice, but so painful otherwise *)
+	(match (unwrap e,args) with
+	  ((Ident(i),_),[(Left a,_)]) ->
+	    let nm = str_of_name i in
+	    if List.mem nm ["likely";"unlikely"]
+	    then propagate_test a
+		else ()
+	| _ -> ())
     | _ -> () in
 
   let bigf = { Visitor_c.default_visitor_c with

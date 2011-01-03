@@ -28,6 +28,8 @@
   this is useful for directories that are intended to be symbolic links.
 - support matching and removing #undef
 - support for iteration in ocaml, requires use of -no_show_diff
+- calls to likely and unlikely propagate test expression status to their
+  arguments
 
 ** Bugfix:
 - improved parsing of expressions to allow ... to the right of operators in
