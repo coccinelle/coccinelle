@@ -65,7 +65,7 @@ open Common
  *
  *)
 
-(* forunparser: *)
+(* for unparser: *)
 
 type posl = int * int (* line-col, for MetaPosValList, for position variables *)
  (* with sexp *)
@@ -186,7 +186,7 @@ and fullType = typeQualifier * typeC
 
   | TypeName   of name * fullType option (* semantic: filled later *)
 
-  | ParenType of fullType (* forunparser: *)
+  | ParenType of fullType (* for unparser: *)
 
   (* gccext: TypeOfType below may seems useless; Why declare a
    *     __typeof__(int) x; ?
@@ -331,7 +331,7 @@ and expression = (expressionbis * exp_info ref (* semantic: *)) wrap3
   | StatementExpr of compound wrap (* ( )     new scope *)
   | Constructor  of fullType * initialiser wrap2 (* , *) list
 
-  (* forunparser: *)
+  (* for unparser: *)
   | ParenExpr of expression
 
   (* cppext: IfdefExpr TODO *)
