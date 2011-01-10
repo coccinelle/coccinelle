@@ -198,7 +198,7 @@ We need  3.XX",
 if($python) {
     if(check_config(
 	"python --version 2>&1 |",
-	"Python 2\.[567]\..*",
+	"Python 2\.([567]|[567]\.\S*)",
 	"python is present",
 	"python is missing or is not a good version."
        ))
