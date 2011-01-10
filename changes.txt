@@ -5,6 +5,7 @@
 - Semantic patch for other languages
 - Support metavariables, virtual rules and virtual identifiers
   in initialize and finalize rules
+- Support for matching #ifdef, etc.
 
 ** Features:
 - New scripting languages
