@@ -35,6 +35,7 @@
 ** Bugfix:
 - improved parsing of expressions to allow ... to the right of operators in
   more places
+- Fix check_config for Python 2.7 on Fedora 14 (Reported-by: Michael Stefaniuc)
 
 * 0.2.4
 ** Language:
