@@ -1140,7 +1140,6 @@ let pp_program2 xs outfile  =
       match ppmethod with
       | PPnormal ->
           (* now work on tokens *)
-
           (* phase1: just get all the tokens, all the information *)
           assert(toks_e +> List.for_all (fun t ->
 	    TH.is_origin t or TH.is_expanded t
@@ -1152,7 +1151,6 @@ let pp_program2 xs outfile  =
 
           (* assert Origin;ExpandedTok; + Cocci + C (was AbstractLineTok)
            * and no tag information, just NOTHING. *)
-
 
 	  let toks =
 	    if !Flag.sgrep_mode2

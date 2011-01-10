@@ -229,6 +229,7 @@ let ulong = (UnSigned,CLong)
 
 (*****************************************************************************)
 let letter = ['A'-'Z' 'a'-'z' '_']
+let extended_letter = ['A'-'Z' 'a'-'z' '_' ':' '<' '>' '~'](*for c++, not used*)
 let digit  = ['0'-'9']
 
 (* not used for the moment *)
@@ -371,12 +372,7 @@ rule token = parse
   (* note: in some cases can have stuff after the ident as in #undef XXX 50,
    * but I currently don't handle it cos I think it's bad code.
    *)
-  | (("#" [' ' '\t']* "undef" [' ' '\t']+) as _undef) (id as id)
-      { let info = tokinfo lexbuf in
-        TUndef (id, info)
-        (*+> tok_add_s (cpp_eat_until_nl lexbuf))*)
-      }
-
+  | "#" [' ' '\t']* "undef" { TUndef (tokinfo lexbuf) }
 
   (* ---------------------- *)
   (* #include *)
@@ -508,6 +504,8 @@ rule token = parse
       }
 
 
+  | "#" [' ''\t']* "endif"  [' ''\t']+ (letter|digit) ((letter|digit)*) [' ''\t']*
+      { TEndif (no_ifdef_mark(), tokinfo lexbuf) }
   (* bugfix: can have #endif LINUX  but at the same time if I eat everything
    * until next line, I may miss some TComment which for some tools
    * are important such as aComment
@@ -675,6 +673,22 @@ rule token = parse
         let s = tok lexbuf in
         pr2 ("LEXER: identifier with dollar: "  ^ s);
         TIdent (s, info)
+      }
+  | (letter | '$') (letter | digit | '$' | '~') *
+    ("::" (letter | '$' | '~') (letter | digit | '$' | '~') *
+      ('<' (letter | '$' | '~') (letter | digit | '$' | '~') * '>') ?) *
+
+      {
+        if !Flag.c_plus_plus
+	then
+	  begin
+            let info = tokinfo lexbuf in
+            let s = tok lexbuf in
+            TIdent (s, info)
+	  end
+	else
+	  raise
+	    (Lexical "~ and :: not allowed in C identifiers, try -c++ option")
       }
 
 

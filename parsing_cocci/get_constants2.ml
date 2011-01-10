@@ -657,7 +657,7 @@ let get_constants rules neg_pos_vars =
   | Flag.Google _ ->
       let res = run rules neg_pos_vars in
       (interpret_grep true res,interpret_google true res,None)
-  | Flag.IdUtils _ ->
+  | Flag.IdUtils ->
       let res = run rules neg_pos_vars in
       (interpret_grep true res,None,Some res)
       

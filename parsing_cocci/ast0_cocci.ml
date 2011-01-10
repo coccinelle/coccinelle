@@ -358,6 +358,7 @@ and base_statement =
 	string mcode (* { *) * statement dots *
 	string mcode (* } *)
   | Include of string mcode (* #include *) * Ast.inc_file mcode (* file *)
+  | Undef of string mcode (* #define *) * ident (* name *)
   | Define of string mcode (* #define *) * ident (* name *) *
 	define_parameters (*params*) * statement dots
   | OptStm   of statement

@@ -65,7 +65,7 @@ open Common
  *
  *)
 
-(* forunparser: *)
+(* for unparser: *)
 
 type posl = int * int (* line-col, for MetaPosValList, for position variables *)
  (* with sexp *)
@@ -186,7 +186,7 @@ and fullType = typeQualifier * typeC
 
   | TypeName   of name * fullType option (* semantic: filled later *)
 
-  | ParenType of fullType (* forunparser: *)
+  | ParenType of fullType (* for unparser: *)
 
   (* gccext: TypeOfType below may seems useless; Why declare a
    *     __typeof__(int) x; ?
@@ -331,7 +331,7 @@ and expression = (expressionbis * exp_info ref (* semantic: *)) wrap3
   | StatementExpr of compound wrap (* ( )     new scope *)
   | Constructor  of fullType * initialiser wrap2 (* , *) list
 
-  (* forunparser: *)
+  (* for unparser: *)
   | ParenExpr of expression
 
   (* cppext: IfdefExpr TODO *)
@@ -578,7 +578,6 @@ and definition = definitionbis wrap (* ( ) { } fakestart sto *)
 and cpp_directive =
   | Define of define
   | Include of includ
-  | Undef of string wrap
   | PragmaAndCo of il
 (*| Ifdef ? no, ifdefs are handled differently, cf ifdef_directive below *)
 
@@ -586,6 +585,7 @@ and define = string wrap (* #define s eol *) * (define_kind * define_val)
    and define_kind =
    | DefineVar
    | DefineFunc   of ((string wrap) wrap2 list) wrap (* () *)
+   | Undef
    and define_val =
      (* most common case; e.g. to define int constant *)
      | DefineExpr of expression

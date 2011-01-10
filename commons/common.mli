@@ -142,14 +142,15 @@ val dump: 'a -> string
 (* see flag: val disable_pr2_once : bool ref *)
 val _already_printed : (string, bool) Hashtbl.t
 val pr2_once : string -> unit
+val clear_pr2_once : unit -> unit
 
 val mk_pr2_wrappers: bool ref -> (string -> unit) * (string -> unit)
 
 
 val redirect_stdout_opt : filename option -> (unit -> 'a) -> 'a
 val redirect_stdout_stderr : filename -> (unit -> unit) -> unit
-val redirect_stdin : filename -> (unit -> unit) -> unit
-val redirect_stdin_opt : filename option -> (unit -> unit) -> unit
+val redirect_stdin : filename -> (unit -> 'a) -> 'a
+val redirect_stdin_opt : filename option -> (unit -> 'a) -> 'a
 
 val with_pr2_to_string: (unit -> unit) -> string list
 

@@ -37,6 +37,7 @@ type token =
   | TVirtual
   | TUsing
   | TUnderscore
+  | TUndef of (Data.clt * token)
   | TTypedef
   | TTypeId of (string * Data.clt)
   | TType

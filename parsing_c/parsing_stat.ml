@@ -214,6 +214,7 @@ let nIfdefExprPassing = ref 0
 let nIfdefPassing = ref 0
 
 let nIncludePassing = ref 0
+let nUndefPassing = ref 0
 let nDefinePassing = ref 0
 
 let nIfdefZero = ref 0
@@ -293,6 +294,7 @@ let assoc_stat_number =
 
     "nIncludePassing", nIncludePassing;
     "nDefinePassing", nDefinePassing;
+    "nUndefPassing", nUndefPassing;
 
     "nMacroExpand", nMacroExpand;
     "nMacroHint", nMacroHint;

@@ -28,10 +28,10 @@
 ##############################################################################
 TARGET=globals
 
-SRC= flag.ml config.ml
+SRC= flag.ml config.ml iteration.ml
 
 LIBS=
-INCLUDES=
+INCLUDES= -I ../commons
 
 ##############################################################################
 # Generic variables

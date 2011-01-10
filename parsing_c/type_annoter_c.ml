@@ -647,7 +647,6 @@ let annotater_expr_visitor_subpart = (fun (k,bigf) expr ->
     | FunCall (e1, args) ->
      (match Ast_c.unwrap_expr e1 with
      | Ident (ident) ->
-
         (* recurse *)
         args +> List.iter (fun (e,ii) ->
           (* could typecheck if arguments agree with prototype *)
@@ -701,8 +700,11 @@ let annotater_expr_visitor_subpart = (fun (k,bigf) expr ->
                 | DefineVar, _ ->
                     pr2 ("Type_annoter: not a macro-func: " ^ s);
                     Type_c.noTypeHere
+                | Undef, _ ->
+                    pr2 ("Type_annoter: not a macro-func: " ^ s);
+                    Type_c.noTypeHere
                 | DefineFunc _, _ ->
-                    (* normally the FunCall case should have catch it *)
+                    (* normally the FunCall case should have caught it *)
                     pr2 ("Type_annoter: not a macro-func-expr: " ^ s);
                     Type_c.noTypeHere
                 )
@@ -749,6 +751,9 @@ let annotater_expr_visitor_subpart = (fun (k,bigf) expr ->
                 | DefineFunc _, _ ->
                     (* normally the FunCall case should have catch it *)
                     pr2 ("Type_annoter: not a macro-var: " ^ s);
+                    Type_c.noTypeHere
+                | Undef, _ ->
+                    pr2 ("Type_annoter: not a expression: " ^ s);
                     Type_c.noTypeHere
                 )
             | None ->
@@ -1027,7 +1032,6 @@ let rec visit_toplevel ~just_add_in_env ~depth elem =
 
           add_binding (Macro (s, (defkind, defval) )) true;
 
-      | Undef _
       | PragmaAndCo _ -> ()
     );
 
@@ -1258,6 +1262,14 @@ let annotate_test_expressions prog =
     | Binary(e1,Logical(OrLog),e2) -> propagate_test e1; propagate_test e2
     | Unary(e1,Not) -> propagate_test e1
     | ParenExpr(e) -> propagate_test e
+    | FunCall(e,args) -> (* not very nice, but so painful otherwise *)
+	(match (unwrap e,args) with
+	  ((Ident(i),_),[(Left a,_)]) ->
+	    let nm = str_of_name i in
+	    if List.mem nm ["likely";"unlikely"]
+	    then propagate_test a
+		else ()
+	| _ -> ())
     | _ -> () in
 
   let bigf = { Visitor_c.default_visitor_c with

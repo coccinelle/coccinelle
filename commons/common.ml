@@ -426,6 +426,8 @@ let xxx_once f s =
 
 let pr2_once s = xxx_once pr2 s
 
+let clear_pr2_once _ = Hashtbl.clear _already_printed
+
 (* ---------------------------------------------------------------------- *)
 let mk_pr2_wrappers aref =
   let fpr2 s =
@@ -490,9 +492,10 @@ let redirect_stdin file f =
 
     let savein = Unix.dup Unix.stdin in
     Unix.dup2 descr Unix.stdin;
-    f();
+    let res = f() in
     Unix.dup2 savein Unix.stdin;
     close_in chan;
+    res
   end
 
 let redirect_stdin_opt optfile f =

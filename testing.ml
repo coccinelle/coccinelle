@@ -463,15 +463,15 @@ let test_parse_cocci file =
   Format.print_newline();
   (* compile ocaml script code *)
   (match Prepare_ocamlcocci.prepare file xs with
-       None -> ()
-     | Some ocaml_script_file ->
-	 (* compile file *)
-	 Prepare_ocamlcocci.load_file ocaml_script_file;
-	 (* remove file *)
-	 (if not !Common.save_tmp_files
-	 then Prepare_ocamlcocci.clean_file ocaml_script_file);
-	 (* Print the list of registered functions *)
-	 Prepare_ocamlcocci.test ());
+    None -> ()
+  | Some ocaml_script_file ->
+      (* compile file *)
+      Prepare_ocamlcocci.load_file ocaml_script_file;
+      (* remove file *)
+      (if not !Common.save_tmp_files
+      then Prepare_ocamlcocci.clean_file ocaml_script_file);
+      (* Print the list of registered functions *)
+      Prepare_ocamlcocci.test ());
   Printf.printf "grep tokens\n";
   (match grep_tokens with
     None -> pr "No query"

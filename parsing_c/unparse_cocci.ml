@@ -794,6 +794,8 @@ and rule_elem arity re =
   | Ast.TopInit(init) -> initialiser false init
   | Ast.Include(inc,s) ->
       mcode print_string inc; print_text " "; mcode inc_file s
+  | Ast.Undef(def,id) ->
+      mcode print_string def; pr_space(); ident id
   | Ast.DefineHeader(def,id,params) ->
       mcode print_string def; pr_space(); ident id;
       print_define_parameters params

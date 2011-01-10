@@ -120,6 +120,16 @@ let rec left_ident i =
   | Ast0.OptIdent(id) -> left_ident id
   | Ast0.UniqueIdent(id) -> left_ident id
 
+let rec right_ident i =
+  modif_after i or
+  match Ast0.unwrap i with
+    Ast0.Id(name) -> modif_after_mcode name
+  | Ast0.MetaId(name,_,_) -> modif_after_mcode name
+  | Ast0.MetaFunc(name,_,_) -> modif_after_mcode name
+  | Ast0.MetaLocalFunc(name,_,_) -> modif_after_mcode name
+  | Ast0.OptIdent(id) -> right_ident id
+  | Ast0.UniqueIdent(id) -> right_ident id
+
 (* --------------------------------------------------------------------- *)
 (* Expression *)
 
@@ -253,6 +263,7 @@ and left_statement s =
   | Ast0.TopInit(init) -> false (* can only be replaced by an init *)
   | Ast0.Dots(d,whn) | Ast0.Circles(d,whn) | Ast0.Stars(d,whn) -> false
   | Ast0.Include(inc,s) -> modif_before_mcode inc
+  | Ast0.Undef(def,id) -> modif_before_mcode def
   | Ast0.Define(def,id,params,body) -> modif_before_mcode def
   | Ast0.OptStm(re) -> left_statement re
   | Ast0.UniqueStm(re) -> left_statement re
@@ -293,6 +304,7 @@ and right_statement s =
   | Ast0.TopInit(init) -> false (* can only be replaced by an init *)
   | Ast0.Dots(d,whn) | Ast0.Circles(d,whn) | Ast0.Stars(d,whn) -> false
   | Ast0.Include(inc,s) -> modif_after_mcode s
+  | Ast0.Undef(def,id) -> right_ident id
   | Ast0.Define(def,id,params,body) -> right_dots right_statement body
   | Ast0.OptStm(re) -> right_statement re
   | Ast0.UniqueStm(re) -> right_statement re
@@ -581,6 +593,7 @@ let rec statement dots_before dots_after s =
   | Ast0.TopInit(init) -> s
   | Ast0.Dots(d,whn) | Ast0.Circles(d,whn) | Ast0.Stars(d,whn) -> s
   | Ast0.Include(inc,string) -> s (* doesn't affect the need for braces *)
+  | Ast0.Undef(def,id) -> s (* same as include *)
   | Ast0.Define(def,id,params,body) -> s (* same as include *)
   | Ast0.OptStm(re) ->
       Ast0.rewrap s

@@ -346,6 +346,7 @@ let rec disj_rule_elem r k re =
       orify_rule_elem_ini re init
 	(function init -> Ast.rewrap init (Ast.TopInit(init)))
   | Ast.Include(inc,s) -> re
+  | Ast.Undef(def,id) -> re
   | Ast.DefineHeader(def,id,params) -> re
   | Ast.Default(def,colon) -> re
   | Ast.Case(case,exp,colon) ->

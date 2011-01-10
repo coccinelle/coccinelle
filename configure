@@ -109,7 +109,7 @@ $error +=
                  "The program ocaml is missing or is not a good version. We need at least 3.09",
                  );
 
-unless ($noocamlscripting) { 
+unless ($noocamlscripting) {
 $noocamlscripting = check_config("echo \"1;;\\n\" | ocaml |",
                  "Objective(.*) 3.1[1-9]",
                  "OCaml >= 3.11 is present. OCaml scripting activated.",
@@ -186,7 +186,6 @@ $error += check_config(
 We need  3.XX",
 );
 
-
 #---------------------------------------------------------------------
 # More developers tools
 #---------------------------------------------------------------------
@@ -194,6 +193,33 @@ We need  3.XX",
 #---------------------------------------------------------------------
 # Librairies
 #---------------------------------------------------------------------
+
+# Python dev
+if($python) {
+    if(check_config(
+	"python --version 2>&1 |",
+	"Python 2\.[567]\..*",
+	"python is present",
+	"python is missing or is not a good version."
+       ))
+    {
+	$python=0;
+    }
+    if($python) {
+	my $PY_PREFIX = `python pycaml/getprefix.py | tr -d '\n'`;
+	my $PY_VERSION = `python pycaml/getversion.py | tr -d '\n'`;
+	my $python_hdr = "$PY_PREFIX/include/python$PY_VERSION/Python.h";
+	if(check_config(
+	    "ls $python_hdr 2> /dev/null | ",
+	    $python_hdr,
+	    "Python.h found",
+	    "Python.h missing - You need to install python-dev"
+	    ))
+	{
+	    $python=0
+	}
+    }
+}
 
 # pycaml. Binding between Python and OCaml
 my $syspydir=`ocamlfind query pycaml 2> /dev/null | xargs echo -n`;

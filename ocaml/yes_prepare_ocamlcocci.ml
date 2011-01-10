@@ -96,6 +96,54 @@ let manage_script_vars script_vars =
 	(loop (n+1) xs) in
   loop 0 script_vars
 
+(* ---------------------------------------------------------------------- *)
+(* Iteration management *)
+
+let print_iteration_code o =
+  let translator l =
+    String.concat "\n              | "
+      (List.map
+	 (function x -> Printf.sprintf "%s -> \"%s\""
+	     (String.capitalize x) x)
+	 l) in
+  let add_virt_rules_method =
+    match !Iteration.parsed_virtual_rules with
+      [] -> ""
+    | l ->
+	Printf.sprintf "
+    method add_virtual_rule r =
+      let r = match r with %s in
+      virtual_rules <- Common.union_set [r] virtual_rules\n"
+	  (translator l) in
+  let add_virt_ids_method =
+    match !Iteration.parsed_virtual_identifiers with
+      [] -> ""
+    | l ->
+	Printf.sprintf "
+    method add_virtual_identifier i v =
+      let i = match i with %s in
+      try
+	let v1 = List.assoc i virtual_identifiers in
+	if not (v = v1)
+	then failwith (\"multiple values specified for \"^i)
+      with Not_found ->
+	virtual_identifiers <- (i,v) :: virtual_identifiers"
+					 (translator l) in
+    Printf.fprintf o "
+class iteration () =
+  object
+    val mutable files = None
+    val mutable files_changed = false
+    val mutable virtual_rules = ([] : string list)
+    val mutable virtual_identifiers = ([] : (string * string) list)
+    method set_files f = files <- Some f
+    %s%s
+    method register () =
+      Iteration.add_pending_instance (files,virtual_rules,virtual_identifiers)
+  end\n\n" add_virt_rules_method add_virt_ids_method
+
+(* ---------------------------------------------------------------------- *)
+
 let prepare_rule (name, metavars, script_vars, code) =
   let fname = String.concat "_" (Str.split (Str.regexp " ") name) in
   (* function header *)
@@ -147,20 +195,37 @@ let prepare coccifile code =
   if init_rules = [] && other_rules = []
   then None
   else
-    let basefile = Filename.basename (Filename.chop_extension coccifile) in
-    let basefile =
-      String.concat "_" (Str.split (Str.regexp "-") basefile) in
-    let (file,o) = Filename.open_temp_file  basefile ".ml" in
+    begin
+      let basefile = Filename.basename (Filename.chop_extension coccifile) in
+      let basefile =
+	String.concat "_" (Str.split (Str.regexp "-") basefile) in
+      let (file,o) = Filename.open_temp_file  basefile ".ml" in
       (* Global initialization *)
-      Printf.fprintf o "%s" (init_ocamlcocci());
+      Printf.fprintf o "%s\n" (init_ocamlcocci());
+      (* virtual rules and identifiers *)
+      (if !Iteration.parsed_virtual_rules != []
+      then
+	Printf.fprintf o "type __virtual_rules__ = %s\n\n"
+	  (String.concat " | "
+	     (List.map String.capitalize !Iteration.parsed_virtual_rules)));
+      (if !Iteration.parsed_virtual_identifiers != []
+      then
+	Printf.fprintf o "type __virtual_identifiers__ = %s\n\n"
+	  (String.concat " | "
+	     (List.map
+		(function x -> Printf.sprintf "%s" x)
+		(List.map String.capitalize
+		   !Iteration.parsed_virtual_identifiers))));
+      print_iteration_code o;
       (* Semantic patch specific initialization *)
       Printf.fprintf o "%s" (String.concat "\n\n" init_rules);
       (* Semantic patch rules and finalizer *)
       let rule_code = List.map prepare_rule other_rules in
-	Printf.fprintf o "%s" (String.concat "\n\n" rule_code);
-	close_out o;
-	check_runtime ();
-	Some file
+      Printf.fprintf o "%s" (String.concat "\n\n" rule_code);
+      close_out o;
+      check_runtime ();
+      Some file
+    end
 
 let filter_dep (accld, accinc) dep =
   match dep with
@@ -182,7 +247,8 @@ let filter_dep (accld, accinc) dep =
     | "Weak"
 
     (* Coccilib is filtered out too *)
-    | "Coccilib" | "Common" | "Ast_c" | "Visitor_c" | "Lib_parsing_c" ->
+    | "Coccilib" | "Common" | "Ast_c" | "Visitor_c" | "Lib_parsing_c"
+    | "Iteration" ->
 	(accld, accinc)
 
     | "Dbm"      -> ("dbm"::accld, accinc)
@@ -295,8 +361,8 @@ let load_file mlfile =
 (*   let linklibs = link_libs lklibs in *)
   let flags =
     Printf.sprintf
-    "-thread -g -dtypes -I %s %s -I %s/ocaml -I %s/parsing_c -I %s/commons "
-      sysdir inc Config.path Config.path Config.path in
+    "-thread -g -dtypes -I %s %s -I %s/globals -I %s/ocaml -I %s/parsing_c -I %s/commons "
+      sysdir inc Config.path Config.path Config.path Config.path in
   let (obj, cmd) =
     if Dynlink.is_native
     then compile_native_cmd flags mlfile

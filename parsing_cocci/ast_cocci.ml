@@ -466,6 +466,7 @@ and base_rule_elem =
   | Ty            of fullType (* only at SP top level, matches a subterm *)
   | TopInit       of initialiser (* only at top level *)
   | Include       of string mcode (*#include*) * inc_file mcode (*file *)
+  | Undef         of string mcode (* #define *) * ident (* name *)
   | DefineHeader  of string mcode (* #define *) * ident (* name *) *
 	             define_parameters (*params*)
   | Case          of string mcode (* case *) * expression * string mcode (*:*)

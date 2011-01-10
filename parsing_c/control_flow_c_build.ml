@@ -1189,7 +1189,10 @@ let ast_to_control_flow e =
       Some !g
 
   | Ast_c.CppTop (Ast_c.Define ((id,ii), (defkind, defval)))  ->
-      let s = ("#define " ^ id) in
+      let s =
+	match defkind with
+	  Ast_c.Undef -> "#undef " ^ id
+	| _ -> "#define " ^ id in
       let headeri = !g+>add_node (DefineHeader ((id, ii), defkind)) lbl_0 s in
       !g#add_arc ((topi, headeri),Direct);
 

@@ -503,8 +503,7 @@ let mk_string_wrap (s,info) = (s, [info])
 /*(* other         *)*/
 /*(*---------------*)*/
 
-
-%token <string * Ast_c.info> TUndef
+%token <Ast_c.info> TUndef
 
 %token <Ast_c.info> TCppDirectiveOther
 
@@ -1673,11 +1672,12 @@ cpp_directive:
   *)*/
  | TDefine TIdentDefine TOParDefine param_define_list TCPar define_val TDefEOL
      { Define
-         ((fst $2, [$1; snd $2;$7]),
+         ((fst $2, [$1; snd $2; $7]),
            (DefineFunc ($4, [$3;$5]), $6))
      }
 
- | TUndef             { Undef (fst $1, [snd $1]) }
+ | TUndef TIdentDefine TDefEOL
+     { Define((fst $2, [$1; snd $2; $3]), (Undef,DefineEmpty)) }
  | TCppDirectiveOther { PragmaAndCo ([$1]) }
 
 

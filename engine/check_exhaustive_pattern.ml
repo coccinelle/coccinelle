@@ -65,6 +65,7 @@ let dumb_astcocci_rule_elem = function
  | A.Return _ -> ()
  | A.ReturnExpr (_, ea, _) -> ()
  | A.DefineHeader _ -> ()
+ | A.Undef _ -> ()
  | A.Include _ -> ()
  | A.Default _ -> ()
  | A.Case _ -> ()

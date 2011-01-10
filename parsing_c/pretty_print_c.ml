@@ -1069,7 +1069,7 @@ and pp_init (init, iinit) =
           | DefineTodo -> pr2 "DefineTodo"
 	in
 	(match defkind with
-	| DefineVar -> ()
+	| DefineVar | Undef -> ()
 	| DefineFunc (params, ii) ->
             let (i1,i2) = tuple_of_list2 ii in
             pr_elem i1;
@@ -1083,8 +1083,6 @@ and pp_init (init, iinit) =
 	define_val defval;
 	pr_elem ieol
 
-    | Undef (s, ii) ->
-	List.iter pr_elem ii
     | PragmaAndCo (ii) ->
 	List.iter pr_elem ii in
 
