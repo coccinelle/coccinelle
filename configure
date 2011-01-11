@@ -221,6 +221,13 @@ if($python) {
     }
 }
 
+check_config(
+	"which ocamlfind 2> /dev/null |",
+	'/ocamlfind$',
+	"ocamlfind is present",
+	"ocamlfind is missing -- Switch to local library copies."
+    );
+
 # pycaml. Binding between Python and OCaml
 my $syspydir=`ocamlfind query pycaml 2> /dev/null | xargs echo -n`;
 
