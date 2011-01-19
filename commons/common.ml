@@ -5835,6 +5835,7 @@ let member_h_env_key k env =
 
 let new_scope_h scoped_env =
   scoped_env := {!scoped_env with scoped_list = []::!scoped_env.scoped_list}
+
 let del_scope_h scoped_env =
   begin
     List.hd !scoped_env.scoped_list +> List.iter (fun (k, v) ->
@@ -5844,6 +5845,13 @@ let del_scope_h scoped_env =
         List.tl !scoped_env.scoped_list
     }
   end
+
+let clean_scope_h scoped_env = (* keep only top level (last scope) *)
+  let rec loop _ =
+    match (!scoped_env).scoped_list with
+      [] | [_] -> ()
+    | _::_ -> del_scope_h scoped_env; loop () in
+  loop()
 
 let do_in_new_scope_h scoped_env f =
   begin

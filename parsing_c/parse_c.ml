@@ -823,7 +823,7 @@ let with_program2 f program2 =
  * tokens_stat record and parsing_stat record.
  *)
 
-let parse_print_error_heuristic2 file =
+let parse_print_error_heuristic2 reset_typedefs file =
 
   let filelines = Common.cat_array file in
   let stat = Parsing_stat.default_stat file in
@@ -831,7 +831,7 @@ let parse_print_error_heuristic2 file =
   (* -------------------------------------------------- *)
   (* call lexer and get all the tokens *)
   (* -------------------------------------------------- *)
-  LP.lexer_reset_typedef();
+  LP.lexer_reset_typedef reset_typedefs;
   Parsing_hacks.ifdef_paren_cnt := 0;
 
   let toks_orig = tokens file in
@@ -1033,21 +1033,23 @@ let parse_print_error_heuristic2 file =
   (v, stat)
 
 
-let time_total_parsing a  =
-  Common.profile_code "TOTAL" (fun () -> parse_print_error_heuristic2 a)
+let time_total_parsing a b =
+  Common.profile_code "TOTAL" (fun () -> parse_print_error_heuristic2 a b)
 
-let parse_print_error_heuristic a  =
-  Common.profile_code "C parsing" (fun () -> time_total_parsing a)
+let parse_print_error_heuristic a b =
+  Common.profile_code "C parsing" (fun () -> time_total_parsing a b)
 
 
 (* alias *)
-let parse_c_and_cpp a = parse_print_error_heuristic a
+let parse_c_and_cpp a = parse_print_error_heuristic true a
+let parse_c_and_cpp_keep_typedefs a = parse_print_error_heuristic false a
 
 (*****************************************************************************)
 (* Same but faster cos memoize stuff *)
 (*****************************************************************************)
 let parse_cache file =
-  if not !Flag_parsing_c.use_cache then parse_print_error_heuristic file
+  if not !Flag_parsing_c.use_cache
+  then parse_print_error_heuristic true file
   else
   let _ = pr2 "TOFIX" in
   let need_no_changed_files =
@@ -1071,7 +1073,7 @@ let parse_cache file =
   Common.cache_computation_robust
     file ".ast_raw"
     (need_no_changed_files, need_no_changed_variables) ".depend_raw"
-    (fun () -> parse_print_error_heuristic file)
+    (fun () -> parse_print_error_heuristic true file)
 
 
 

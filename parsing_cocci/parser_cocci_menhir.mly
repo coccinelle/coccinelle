@@ -553,9 +553,9 @@ non_signable_types:
     then failwith "enums must be named in the iso file");
       Ast0.wrap(Ast0.EnumDef(Ast0.wrap(Ast0.EnumName(P.clt2mcode "enum" s, i)),
 			     P.clt2mcode "{" l, ids, P.clt2mcode "}" r)) }
-| s=struct_or_union i=ident
+| s=struct_or_union i=type_ident // allow typedef name
     { Ast0.wrap(Ast0.StructUnionName(s, Some i)) }
-| s=struct_or_union i=ioption(ident)
+| s=struct_or_union i=ioption(type_ident)
     l=TOBrace d=struct_decl_list r=TCBrace
     { (if i = None && !Data.in_iso
     then failwith "structures must be named in the iso file");
@@ -1759,6 +1759,14 @@ func_ident: pure_ident
 	   (Ast0.MetaLocalFunc(P.clt2mcode nm clt,constraints,pure)) }
 
 ident: pure_ident
+         { Ast0.wrap(Ast0.Id(P.id2mcode $1)) }
+     | TMetaId
+         { let (nm,constraints,pure,clt) = $1 in
+         Ast0.wrap(Ast0.MetaId(P.clt2mcode nm clt,constraints,pure)) }
+
+type_ident: pure_ident
+         { Ast0.wrap(Ast0.Id(P.id2mcode $1)) }
+     | TTypeId
          { Ast0.wrap(Ast0.Id(P.id2mcode $1)) }
      | TMetaId
          { let (nm,constraints,pure,clt) = $1 in

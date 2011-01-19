@@ -20,8 +20,11 @@ module Ast_to_flow = Control_flow_c_build
 (* --------------------------------------------------------------------- *)
 (* C related *)
 (* --------------------------------------------------------------------- *)
-let cprogram_of_file file =
-  let (program2, _stat) = Parse_c.parse_c_and_cpp file in
+let cprogram_of_file reset_typedefs file =
+  let (program2, _stat) =
+    if reset_typedefs
+    then Parse_c.parse_c_and_cpp file
+    else Parse_c.parse_c_and_cpp_keep_typedefs file in
   program2
 
 let cprogram_of_file_cached file =
@@ -1036,7 +1039,7 @@ let rebuild_info_program cs file isexp =
         file;
 
       (* Common.command2 ("cat " ^ file); *)
-      let cprogram = cprogram_of_file file in
+      let cprogram = cprogram_of_file false file in
       let xs = build_info_program cprogram c.env_typing_before in
 
       (* TODO: assert env has not changed,

@@ -19,11 +19,13 @@ val init_defs_builtins : Common.filename -> unit
 
 (* This is the main function *)
 val parse_c_and_cpp :
-  Common.filename (*cfile*) -> (program2 * Parsing_stat.parsing_stat)
+    Common.filename (*cfile*) -> (program2 * Parsing_stat.parsing_stat)
+val parse_c_and_cpp_keep_typedefs :
+    Common.filename (*cfile*) -> (program2 * Parsing_stat.parsing_stat)
 
 (* use some .ast_raw memoized version, and take care if obsolete *)
 val parse_cache:
-  Common.filename (*cfile*) -> (program2 * Parsing_stat.parsing_stat)
+    Common.filename (*cfile*) -> (program2 * Parsing_stat.parsing_stat)
 
 
 (* ---------------------------------------------------------------------- *)
