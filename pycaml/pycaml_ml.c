@@ -1444,7 +1444,7 @@ value pymodule_initmodule( value name, value funclist ) {
     for( i = 0; i < Wosize_val(funclist); i++ ) {
 	item = Field(funclist,i);
 	methods[i].ml_name = String_val(Field(item,0));
-	methods[i].ml_meth = pywrap_closure(Field(item,1));
+	methods[i].ml_meth = (void *)(uintptr_t)pywrap_closure(Field(item,1));
 	methods[i].ml_flags = Int_val(Field(item,2));
 	methods[i].ml_doc = String_val(Field(item,3));
     }
