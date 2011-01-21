@@ -38,6 +38,7 @@
   more places
 - Fix check_config for Python 2.7 on Fedora 14 (Reported-by: Michael Stefaniuc)
 - Check for ocamlfind in configure (Reported-by: Paul E. McKenney)
+- Postpone use of ocamlfind at runtime to report fewer errors
 
 * 0.2.4
 ** Language:
