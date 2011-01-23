@@ -793,7 +793,10 @@ let init_defs_builtins file_h =
 type info_item =  string * Parser_c.token list
 
 type program2 = toplevel2 list
-     and toplevel2 = Ast_c.toplevel * info_item
+   and extended_program2 = toplevel2 list *
+      (string, Lexer_parser.identkind) Common.scoped_h_env (* type defs *) *
+      (string, Cpp_token_c.define_def) Hashtbl.t (* macro defs *)
+   and toplevel2 = Ast_c.toplevel * info_item
 
 let program_of_program2 xs =
   xs +> List.map fst
@@ -823,7 +826,7 @@ let with_program2 f program2 =
  * tokens_stat record and parsing_stat record.
  *)
 
-let parse_print_error_heuristic2 reset_typedefs file =
+let parse_print_error_heuristic2 saved_typedefs saved_macros file =
 
   let filelines = Common.cat_array file in
   let stat = Parsing_stat.default_stat file in
@@ -831,7 +834,7 @@ let parse_print_error_heuristic2 reset_typedefs file =
   (* -------------------------------------------------- *)
   (* call lexer and get all the tokens *)
   (* -------------------------------------------------- *)
-  LP.lexer_reset_typedef reset_typedefs;
+  LP.lexer_reset_typedef saved_typedefs;
   Parsing_hacks.ifdef_paren_cnt := 0;
 
   let toks_orig = tokens file in
@@ -841,7 +844,8 @@ let parse_print_error_heuristic2 reset_typedefs file =
   (* expand macros on demand trick, preparation phase *)
   let macros =
     Common.profile_code "MACRO mgmt prep 1" (fun () ->
-      let macros = Hashtbl.copy !_defs in
+      let macros =
+	match saved_macros with None -> Hashtbl.copy !_defs | Some h -> h in
       (* include also builtins as some macros may generate some builtins too
        * like __decl_spec or __stdcall
        *)
@@ -1030,6 +1034,10 @@ let parse_print_error_heuristic2 reset_typedefs file =
   in
   let v = loop tr in
   let v = with_program2 Parsing_consistency_c.consistency_checking v in
+  let v =
+    let new_td = ref (Common.clone_scoped_h_env !LP._typedef) in
+    Common.clean_scope_h new_td;
+    (v, !new_td, macros) in
   (v, stat)
 
 
@@ -1041,15 +1049,17 @@ let parse_print_error_heuristic a b =
 
 
 (* alias *)
-let parse_c_and_cpp a = parse_print_error_heuristic true a
-let parse_c_and_cpp_keep_typedefs a = parse_print_error_heuristic false a
+let parse_c_and_cpp a =
+  let ((c,_,_),stat) = parse_print_error_heuristic None None a in (c,stat)
+let parse_c_and_cpp_keep_typedefs td macs a =
+  parse_print_error_heuristic td macs a
 
 (*****************************************************************************)
 (* Same but faster cos memoize stuff *)
 (*****************************************************************************)
 let parse_cache file =
   if not !Flag_parsing_c.use_cache
-  then parse_print_error_heuristic true file
+  then parse_print_error_heuristic None None file
   else
   let _ = pr2 "TOFIX" in
   let need_no_changed_files =
@@ -1073,7 +1083,7 @@ let parse_cache file =
   Common.cache_computation_robust
     file ".ast_raw"
     (need_no_changed_files, need_no_changed_variables) ".depend_raw"
-    (fun () -> parse_print_error_heuristic true file)
+    (fun () -> parse_print_error_heuristic None None file)
 
 
 

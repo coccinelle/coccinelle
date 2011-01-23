@@ -20,21 +20,22 @@ module Ast_to_flow = Control_flow_c_build
 (* --------------------------------------------------------------------- *)
 (* C related *)
 (* --------------------------------------------------------------------- *)
-let cprogram_of_file reset_typedefs file =
+let cprogram_of_file saved_typedefs saved_macros file =
   let (program2, _stat) =
-    if reset_typedefs
-    then Parse_c.parse_c_and_cpp file
-    else Parse_c.parse_c_and_cpp_keep_typedefs file in
+    Parse_c.parse_c_and_cpp_keep_typedefs
+      (Some saved_typedefs) (Some saved_macros) file in
   program2
 
 let cprogram_of_file_cached file =
-  let (program2, _stat) = Parse_c.parse_cache file in
+  let ((program2,typedefs,macros), _stat) = Parse_c.parse_cache file in
   if !Flag_cocci.ifdef_to_if
   then
-    program2 +> Parse_c.with_program2 (fun asts ->
-      Cpp_ast_c.cpp_ifdef_statementize asts
-    )
-  else program2
+    let p2 =
+      program2 +> Parse_c.with_program2 (fun asts ->
+	Cpp_ast_c.cpp_ifdef_statementize asts
+	  ) in
+    (p2,typedefs,macros)
+  else (program2,typedefs,macros)
 
 let cfile_of_program program2_with_ppmethod outf =
   Unparse_c.pp_program program2_with_ppmethod outf
@@ -595,7 +596,7 @@ let interpret_include_path relpath =
     search_path native_file_exists searchlist relpath
 
 let (includes_to_parse:
-       (Common.filename * Parse_c.program2) list ->
+       (Common.filename * Parse_c.extended_program2) list ->
 	 Flag_cocci.include_options -> 'a) = fun xs choose_includes ->
   match choose_includes with
     Flag_cocci.I_UNSPECIFIED -> failwith "not possible"
@@ -604,6 +605,7 @@ let (includes_to_parse:
       let all_includes =
 	List.mem x
 	  [Flag_cocci.I_ALL_INCLUDES; Flag_cocci.I_REALLY_ALL_INCLUDES] in
+      let xs = List.map (function (file,(cs,_,_)) -> (file,cs)) xs in
       xs +> List.map (fun (file, cs) ->
 	let dir = Common.dirname file in
 
@@ -789,6 +791,9 @@ type toplevel_c_info = {
   env_typing_after:  TAC.environment;
 
   was_modified: bool ref;
+
+  all_typedefs: (string, Lexer_parser.identkind) Common.scoped_h_env;
+  all_macros: (string, Cpp_token_c.define_def) Hashtbl.t;
 
   (* id: int *)
 }
@@ -977,7 +982,7 @@ let prepare_cocci ctls free_var_lists negated_pos_lists
 
 (* --------------------------------------------------------------------- *)
 
-let build_info_program cprogram env =
+let build_info_program (cprogram,typedefs,macros) env =
 
   let (cs, parseinfos) =
     Common.unzip cprogram in
@@ -1023,6 +1028,9 @@ let build_info_program cprogram env =
       env_typing_after = envb;
 
       was_modified = ref false;
+
+      all_typedefs = typedefs;
+      all_macros = macros;
     }
   )
 
@@ -1039,7 +1047,7 @@ let rebuild_info_program cs file isexp =
         file;
 
       (* Common.command2 ("cat " ^ file); *)
-      let cprogram = cprogram_of_file false file in
+      let cprogram = cprogram_of_file c.all_typedefs c.all_macros file in
       let xs = build_info_program cprogram c.env_typing_before in
 
       (* TODO: assert env has not changed,

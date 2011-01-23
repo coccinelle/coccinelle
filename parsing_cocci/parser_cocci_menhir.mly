@@ -1291,7 +1291,7 @@ nest_expressions:
 //whenexp: TWhen TNotEq w=eexpr TLineEnd { w }
 
 basic_expr(recurser,primary_extra):
-  assign_expr(recurser,primary_extra)                        { $1 }
+   assign_expr(recurser,primary_extra)                     { $1 }
 
 assign_expr(r,pe):
     cond_expr(r,pe)                        { $1 }

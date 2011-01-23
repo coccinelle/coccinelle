@@ -22,7 +22,7 @@ val del_scope : unit -> unit
 val is_typedef : string -> bool
 
 val lexer_reset_typedef :
-    bool (* true if clear complete typedefs list *) -> unit
+    (string, identkind) Common.scoped_h_env option (* known typedefs *) -> unit
 
 val _old_state : (string, identkind) Common.scoped_h_env ref
 val save_typedef_state : unit -> unit

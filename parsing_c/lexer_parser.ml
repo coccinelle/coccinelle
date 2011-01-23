@@ -127,11 +127,11 @@ let pop_context () =
 
 
 
-let lexer_reset_typedef reset_typedefs =
+let lexer_reset_typedef saved_typedefs =
   begin
     _handle_typedef := true;
-    (if reset_typedefs
-    then _typedef := Common.empty_scoped_h_env ()
-    else Common.clean_scope_h _typedef);
+    (match saved_typedefs with
+      None -> _typedef := Common.empty_scoped_h_env ()
+    | Some t -> _typedef := t);
     _lexer_hint := (default_hint ());
   end

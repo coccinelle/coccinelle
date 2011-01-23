@@ -4,7 +4,11 @@
  *)
 
 type program2 = toplevel2 list
-   and toplevel2 = Ast_c.toplevel * info_item
+   and extended_program2 = toplevel2 list *
+      (string, Lexer_parser.identkind) Common.scoped_h_env (* type defs *) *
+      (string, Cpp_token_c.define_def) Hashtbl.t (* macro defs *)
+   and toplevel2 =
+    Ast_c.toplevel * info_item
      (* the token list contains now also the comment-tokens *)
        and info_item = (string * Parser_c.token list)
 
@@ -21,11 +25,14 @@ val init_defs_builtins : Common.filename -> unit
 val parse_c_and_cpp :
     Common.filename (*cfile*) -> (program2 * Parsing_stat.parsing_stat)
 val parse_c_and_cpp_keep_typedefs :
-    Common.filename (*cfile*) -> (program2 * Parsing_stat.parsing_stat)
+    (string, Lexer_parser.identkind) Common.scoped_h_env option (*typedefs*) ->
+      (string, Cpp_token_c.define_def) Hashtbl.t option (* macro defs *) ->
+	Common.filename (*cfile*) ->
+	  (extended_program2 * Parsing_stat.parsing_stat)
 
 (* use some .ast_raw memoized version, and take care if obsolete *)
 val parse_cache:
-    Common.filename (*cfile*) -> (program2 * Parsing_stat.parsing_stat)
+    Common.filename (*cfile*) -> (extended_program2 * Parsing_stat.parsing_stat)
 
 
 (* ---------------------------------------------------------------------- *)
