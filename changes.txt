@@ -31,7 +31,8 @@
 - support for iteration in ocaml, requires use of -no_show_diff
 - calls to likely and unlikely propagate test expression status to their
   arguments
-- reuse typedefs from complete parsing when reparsing the transformed code
+- reuse typedefs and macros from complete parsing when reparsing the
+  transformed code
 
 ** Bugfix:
 - improved parsing of expressions to allow ... to the right of operators in
