@@ -1,3 +1,9 @@
+coccinelle (0.2.5-rc3~910npalix1) karmic; urgency=low
+
+  * New release 0.2.5-rc3
+
+ -- Nicolas Palix <nicolas.palix@gmail.com>  Tue, 25 Jan 2011 09:03:48 +0100
+
 coccinelle (0.2.5-rc2~910npalix1) karmic; urgency=low
 
   * New release 0.2.5-rc2
