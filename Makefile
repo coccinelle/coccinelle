@@ -316,6 +316,7 @@ install-common:
 	mkdir -p $(DESTDIR)$(LIBDIR)
 	mkdir -p $(DESTDIR)$(SHAREDIR)/ocaml
 	mkdir -p $(DESTDIR)$(SHAREDIR)/commons
+	mkdir -p $(DESTDIR)$(SHAREDIR)/globals
 	mkdir -p $(DESTDIR)$(SHAREDIR)/parsing_c
 	mkdir -p $(DESTDIR)$(MANDIR)/man1
 	$(INSTALL_DATA) standard.h $(DESTDIR)$(SHAREDIR)
@@ -323,6 +324,7 @@ install-common:
 	$(INSTALL_DATA) ocaml/coccilib.cmi $(DESTDIR)$(SHAREDIR)/ocaml/
 	$(INSTALL_DATA) parsing_c/*.cmi $(DESTDIR)$(SHAREDIR)/parsing_c/
 	$(INSTALL_DATA) commons/*.cmi $(DESTDIR)$(SHAREDIR)/commons/
+	$(INSTALL_DATA) globals/iteration.cmi $(DESTDIR)$(SHAREDIR)/globals/
 	$(INSTALL_DATA) docs/spatch.1 $(DESTDIR)$(MANDIR)/man1/
 	@if [ $(FEATURE_PYTHON) -eq 1 ]; then $(MAKE) install-python; fi
 
@@ -391,11 +393,17 @@ uninstall:
 	rm -f $(DESTDIR)$(SHAREDIR)/standard.iso
 	rm -f $(DESTDIR)$(SHAREDIR)/ocaml/coccilib.cmi
 	rm -f $(DESTDIR)$(SHAREDIR)/parsing_c/*.cmi
-	rm -f $(DESTDIR)$(SHAREDIR)/commons*.cmi
+	rm -f $(DESTDIR)$(SHAREDIR)/commons/*.cmi
+	rm -f $(DESTDIR)$(SHAREDIR)/globals/*.cmi
 	rm -f $(DESTDIR)$(SHAREDIR)/python/coccilib/coccigui/*
 	rm -f $(DESTDIR)$(SHAREDIR)/python/coccilib/*.py
 	rmdir --ignore-fail-on-non-empty -p \
 		$(DESTDIR)$(SHAREDIR)/python/coccilib/coccigui
+	rmdir $(DESTDIR)$(SHAREDIR)/globals
+	rmdir $(DESTDIR)$(SHAREDIR)/commons
+	rmdir $(DESTDIR)$(SHAREDIR)/parsing_c
+	rmdir $(DESTDIR)$(SHAREDIR)/ocaml
+	rmdir $(DESTDIR)$(SHAREDIR)
 	rm -f $(DESTDIR)$(MANDIR)/man1/spatch.1
 
 uninstall-bash:

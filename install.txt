@@ -15,7 +15,8 @@ You must first install a recent version of
 
 On Debian/Ubuntu, install the following packages
  - ocaml-native-compilers (or alternatively ocaml) 
- - pycaml
+ - ocaml-findlib
+ - libpycaml-ocaml-dev
  - libsexplib-camlp4-dev
  - menhir and libmenhir-ocaml-dev
 

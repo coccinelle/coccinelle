@@ -1959,6 +1959,7 @@ val member_h_env_key : 'a -> ('a, 'b) scoped_h_env -> bool
 
 val new_scope_h : ('a, 'b) scoped_h_env ref -> unit
 val del_scope_h : ('a, 'b) scoped_h_env ref -> unit
+val clean_scope_h : ('a, 'b) scoped_h_env ref -> unit
 
 val do_in_new_scope_h : ('a, 'b) scoped_h_env ref -> (unit -> unit) -> unit
 

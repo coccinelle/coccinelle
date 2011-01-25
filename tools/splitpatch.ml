@@ -133,12 +133,12 @@ let read_configs template =
 
 let maintainer_command file =
   Printf.sprintf
-    "cd %s; scripts/get_maintainer.pl --separator , --nogit -f %s"
+    "cd %s; scripts/get_maintainer.pl --separator , --nogit --norolestats -f %s"
     !git_tree file
 
 let subsystem_command file =
   Printf.sprintf
-    "cd %s; scripts/get_maintainer.pl --nogit --subsystem -f %s | grep -v @"
+    "cd %s; scripts/get_maintainer.pl --nogit --subsystem --norolestats -f %s | grep -v @"
     !git_tree file
 
 let checkpatch_command file =

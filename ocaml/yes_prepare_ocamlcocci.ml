@@ -4,9 +4,8 @@ exception CompileFailure of string
 exception LinkFailure of string
 
 let ext = if Dynlink.is_native then ".cmxs" else ".cma"
-let has_ocamlfind = ref false
 
-let sysdir = 
+let sysdir =
   let sysdircmd = !Flag.ocamlfind ^ " printconf stdlib" in
   match Common.cmd_to_list sysdircmd with
     [sysdir] -> sysdir
@@ -21,8 +20,6 @@ let check_cmd cmd =
 let check_runtime () =
   let has_opt  = check_cmd (!Flag.ocamlc ^".opt -version 2>&1 > /dev/null") in
   let has_c    = check_cmd (!Flag.ocamlc ^" -version 2>&1 > /dev/null") in
-  let has_find = check_cmd (!Flag.ocamlfind ^ " printconf 2>&1 > /dev/null") in
-    has_ocamlfind := has_find;
     if has_opt then
       begin
 	Flag.ocamlc   := !Flag.ocamlc   ^ ".opt";
@@ -273,33 +270,35 @@ let parse_dep mlfile depout =
       let deplist = Str.split (Str.regexp_string " ") dep in
       let (libs, orderdep) = List.fold_left filter_dep ([],[]) deplist in
       if libs <> [] || orderdep <> [] then
-	if !has_ocamlfind
-	then
-	  let packages = List.rev orderdep in
-	  let inclflags = List.map get_dir packages in
-	  let intlib = List.map get_dir libs in
-	  let alllibs = List.rev_append intlib inclflags in
-	  let plist =
-	    List.fold_left (fun acc (_,p) -> acc ^" "^p) "" alllibs in
-	  let flags =
-	    String.concat " " (List.map (fun (d,_) -> "-I "^d) inclflags) in
-	  if flags <> "" || libs <> []
+	begin
+	  if check_cmd (!Flag.ocamlfind ^ " printconf 2>&1 > /dev/null")
 	  then
-	    begin
-	      Common.pr2
-		("Extra OCaml packages used in the semantic patch:"^ plist);
-	      (alllibs (* , inclflags *), flags)
-	    end
+	    let packages = List.rev orderdep in
+	    let inclflags = List.map get_dir packages in
+	    let intlib = List.map get_dir libs in
+	    let alllibs = List.rev_append intlib inclflags in
+	    let plist =
+	      List.fold_left (fun acc (_,p) -> acc ^" "^p) "" alllibs in
+	    let flags =
+	      String.concat " " (List.map (fun (d,_) -> "-I "^d) inclflags) in
+	    if flags <> "" || libs <> []
+	    then
+	      begin
+		Common.pr2
+		  ("Extra OCaml packages used in the semantic patch:"^ plist);
+		(alllibs (* , inclflags *), flags)
+	      end
+	    else
+	      raise
+		(CompileFailure
+		   ("ocamlfind did not find "^
+		       (if (List.length libs + List.length orderdep) = 1
+			then "this package:"
+			else "one of these packages:")^ plist))
 	  else
 	    raise
-	      (CompileFailure
-		 ("ocamlfind did not find "^
-		  (if (List.length libs + List.length orderdep) = 1
-		  then "this package:"
-		  else "one of these packages:")^ plist))
-	else
-	  raise
-	    (CompileFailure ("ocamlfind not found but "^mlfile^" uses "^dep))
+	      (CompileFailure ("ocamlfind not found but "^mlfile^" uses "^dep))
+	end
       else
 	([] (* , [] *), "")
   | _ ->

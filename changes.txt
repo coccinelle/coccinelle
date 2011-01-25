@@ -5,6 +5,7 @@
 - Semantic patch for other languages
 - Support metavariables, virtual rules and virtual identifiers
   in initialize and finalize rules
+- Support for matching #ifdef, etc.
 
 ** Features:
 - New scripting languages
@@ -30,10 +31,15 @@
 - support for iteration in ocaml, requires use of -no_show_diff
 - calls to likely and unlikely propagate test expression status to their
   arguments
+- reuse typedefs and macros from complete parsing when reparsing the
+  transformed code
 
 ** Bugfix:
 - improved parsing of expressions to allow ... to the right of operators in
   more places
+- Fix check_config for Python 2.7 on Fedora 14 (Reported-by: Michael Stefaniuc)
+- Check for ocamlfind in configure (Reported-by: Paul E. McKenney)
+- Postpone use of ocamlfind at runtime to report fewer errors
 
 * 0.2.4
 ** Language:

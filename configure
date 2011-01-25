@@ -198,7 +198,7 @@ We need  3.XX",
 if($python) {
     if(check_config(
 	"python --version 2>&1 |",
-	"Python 2\.[567]\..*",
+	'^Python 2\.([567]|[567]\.\S*)$',
 	"python is present",
 	"python is missing or is not a good version."
        ))
@@ -220,6 +220,13 @@ if($python) {
 	}
     }
 }
+
+my $ocamlfind=!check_config(
+	"which ocamlfind 2> /dev/null |",
+	'/ocamlfind$',
+	"ocamlfind is present",
+	"ocamlfind is missing -- Switch to local library copies."
+    );
 
 # pycaml. Binding between Python and OCaml
 my $syspydir=`ocamlfind query pycaml 2> /dev/null | xargs echo -n`;
@@ -301,20 +308,23 @@ Then, to test $project simply type:
 
 ";
 
-if($python) {
-        pr2
+    if($python) {
+	pr2
 "To use the python SmPL feature you may have to set some environment variables.
 However, they are automatically set by the front-end installed in $prefix/bin.
 For bash do:
 export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:$prefix/lib
 export PYTHONPATH=\$PYTHONPATH:$src/python"
     }
+
     pr2 "----------------------------------------------------------------------";
 }
 
 ######################################################################
 # Generating the configuration
 ######################################################################
+
+pr2 "  Compilation configuration\n";
 
 pr2 "$project target prefix: $prefix (you can use --prefix to override it)";
 pr2 "Generating Makefile.config";
@@ -358,11 +368,11 @@ OPTBIN=$opt
 
 
 my $pythonprefix = $python ? "yes" : "no";
-pr2 "Support for python scripting : $pythonprefix";
+pr2 "Support for python scripting: $pythonprefix";
 `cd python; ln -sf ${pythonprefix}_pycocci.ml pycocci.ml; `;
 `cd python; make depend`;
 
-pr2 "Support for ocaml scripting : $ocamlprefix";
+pr2 "Support for ocaml scripting: $ocamlprefix";
 `cd ocaml; ln -sf ${ocamlprefix}_prepare_ocamlcocci.ml prepare_ocamlcocci.ml;`;
 `cd ocaml; make depend`;
 
@@ -370,3 +380,14 @@ pr2 "Modifying globals/config.ml";
 my $command = "perl -p -e 's#Not_found.\*#Not_found->\\\"$src\\\"#' globals/config.ml.in > globals/config.ml";
 `$command`;
 
+pr2 "----------------------------------------------------------------------";
+pr2 "  Runtime dependency\n";
+
+if ($ocamlfind) {
+pr2 "Support for external ocaml library in ocaml scripting: yes (ocamlfind found)";
+}
+else {
+pr2 "Support for external ocaml library in ocaml scripting: no (ocamlfind may be required at runtime)";
+}
+
+pr2 "";
