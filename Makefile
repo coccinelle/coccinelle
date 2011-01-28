@@ -54,10 +54,12 @@ LIBS=commons/commons.cma \
      extra/extra.cma python/coccipython.cma ocaml/cocciocaml.cma
 
 # Should we use the local version of pycaml
+ifeq ($(FEATURE_PYTHON),1)
 ifeq ("$(PYCAMLDIR)","pycaml")
 LOCALPYCAML=pycaml
 else
 LOCALPYCAML=
+endif
 endif
 
 # Should we use the local version of menhirLib

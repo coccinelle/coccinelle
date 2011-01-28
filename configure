@@ -195,10 +195,11 @@ We need  3.XX",
 #---------------------------------------------------------------------
 
 # Python dev
+my $PY_VERSION;
 if($python) {
     if(check_config(
 	"python --version 2>&1 |",
-	'^Python 2\.([567]|[567]\.\S*)$',
+	'^Python 2\.([4567]|[4567]\.\S*)$',
 	"python is present",
 	"python is missing or is not a good version."
        ))
@@ -207,7 +208,7 @@ if($python) {
     }
     if($python) {
 	my $PY_PREFIX = `python pycaml/getprefix.py | tr -d '\n'`;
-	my $PY_VERSION = `python pycaml/getversion.py | tr -d '\n'`;
+	$PY_VERSION = `python pycaml/getversion.py | tr -d '\n'`;
 	my $python_hdr = "$PY_PREFIX/include/python$PY_VERSION/Python.h";
 	if(check_config(
 	    "ls $python_hdr 2> /dev/null | ",
@@ -353,7 +354,13 @@ BASH_COMPLETION_DIR=/etc/bash_completion.d
 # Features
 FEATURE_PYTHON=$python
 FEATURE_TARZAN=$tarzan
+";
 
+if ($python) {
+print CONFIG "PYVER=$PY_VERSION";
+}
+
+print CONFIG "
 PYCAMLDIR=$pydir
 MENHIRDIR=$menhirdir
 SEXPDIR=$sexpdir
