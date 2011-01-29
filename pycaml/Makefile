@@ -33,6 +33,7 @@ clean::
 
 distclean:: clean
 	rm -rf ._d
+	rm -f ../dllpycaml_stubs.so
 
 depend: # added by julia, undoubtedly wrong
 
