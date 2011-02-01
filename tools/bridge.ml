@@ -189,7 +189,7 @@ let process_line env (cocci,tags) =
       List.iter
 	(function (tag,tagval) ->
 	  command
-	    (Printf.sprintf "sed s/%s/%s/ %s > %s_out; cp %s_out %s"
+	    (Printf.sprintf "sed s+%s+%s+ %s > %s_out; cp %s_out %s"
 	       tag tagval temp_file temp_file temp_file temp_file))
 	tags;
       command

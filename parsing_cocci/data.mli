@@ -39,6 +39,8 @@ val all_metadecls : (string, Ast_cocci.metavar list) Hashtbl.t
 
 val clear_meta: (unit -> unit) ref
 
+val add_meta_meta: (Ast_cocci.meta_name -> Ast0_cocci.pure -> unit) ref
+
 val add_id_meta:
     (Ast_cocci.meta_name -> iconstraints -> Ast0_cocci.pure -> unit) ref
 

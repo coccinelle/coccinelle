@@ -146,6 +146,7 @@ the same, but for structure fields.
 
 \begin{grammar}
   \RULE{\rt{metadecl}}
+  \CASE{metavariable \NT{ids} ;}
   \CASE{fresh identifier \NT{ids} ;}
   \CASE{identifier \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_regexp}\mth{)} ;}
   \CASE{identifier \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_virt\_or\_not\_eq}\mth{)} ;}
@@ -237,6 +238,18 @@ indicates the {\it metakind} used in the declaration of the variable.
 For example, \mth{\msf{metaid}^{\ssf{Type}}} refers to a metavariable
 that was declared using \texttt{type} and stands for any type.
 
+{\tt metavariable} declares a metavariable for which the parser tried to
+figure out the metavariable type based on the usage context.  Such a
+metavariable must be used consistently.  These metavariables cannot be used
+in all contexts; specifically, they cannot be used in context that would
+make the parsing ambiguous.  Some examples are the leftmost term of an
+expression, such as the left-hand side of an assignment, or the type in a
+variable declaration.  These restrictions may seems somewhat arbitrary from
+the user's point of view.  Thus, it is better to use metavariables with
+metavariable types.  If Coccinelle is givent the argument -parse_cocci, it
+will print information about the type that is inferred for each
+metavariable.
+
 The \NT{ctype} and \NT{ctypes} nonterminals are used by both the grammar of
 metavariable declarations and the grammar of transformations, and are
 defined on page~\pageref{types}.
@@ -308,6 +321,9 @@ information about the structure of the abstract syntax tree.  Either the
 left or right component may be replaced by \verb+_+, indicating that the
 string representation or abstract syntax trees representation is not
 wanted, respectively.
+
+The abstract syntax tree of a metavariable declared using {\tt
+  metavariable} is not available.
 
 \section{Transformation}
 

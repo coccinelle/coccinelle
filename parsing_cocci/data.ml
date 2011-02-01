@@ -52,6 +52,9 @@ let all_metadecls =
 let clear_meta: (unit -> unit) ref =
   ref (fun _ -> failwith "uninitialized add_meta")
 
+let add_meta_meta: (Ast.meta_name -> Ast0.pure -> unit) ref =
+  ref (fun _ -> failwith "uninitialized add_meta")
+
 let add_id_meta:
     (Ast.meta_name -> iconstraints -> Ast0.pure -> unit) ref =
   ref (fun _ -> failwith "uninitialized add_meta")

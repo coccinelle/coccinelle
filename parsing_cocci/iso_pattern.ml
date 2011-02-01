@@ -2019,7 +2019,9 @@ let new_mv (_,s) =
   "_"^s^"_"^(string_of_int ct)
 
 let get_name = function
-    Ast.MetaIdDecl(ar,nm) ->
+    Ast.MetaMetaDecl(ar,nm) ->
+      (nm,function nm -> Ast.MetaMetaDecl(ar,nm))
+  | Ast.MetaIdDecl(ar,nm) ->
       (nm,function nm -> Ast.MetaIdDecl(ar,nm))
   | Ast.MetaFreshIdDecl(nm,seed) ->
       (nm,function nm -> Ast.MetaFreshIdDecl(nm,seed))
