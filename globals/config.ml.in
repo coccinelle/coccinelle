@@ -1,4 +1,4 @@
-let version = "0.2.5-rc3"
+let version = "0.2.5-rc4"
 
 let path =
   try (Sys.getenv "COCCINELLE_HOME")
