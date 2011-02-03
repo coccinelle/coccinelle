@@ -19,6 +19,7 @@
 - Make a very small attempt to parse C++ code, amounting to accepting
   identifiers containing ::, tilde, and template invocations.  Use the
   option -c++.  This is not likely to be very useful in practice.
+- Added metavariable metavariable type.
 
 ** Features:
 - support transformations on variables (only) in declarations that declare
@@ -40,6 +41,7 @@
 - Fix check_config for Python 2.7 on Fedora 14 (Reported-by: Michael Stefaniuc)
 - Check for ocamlfind in configure (Reported-by: Paul E. McKenney)
 - Postpone use of ocamlfind at runtime to report fewer errors
+- Add support for Python 2.4 binding with the provided pycaml library
 
 * 0.2.4
 ** Language:

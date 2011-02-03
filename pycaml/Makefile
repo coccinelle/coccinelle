@@ -9,7 +9,11 @@ SOURCES = pycaml.ml pycaml_ml.c
 RESULT = pycaml
 THREADS = yes
 NO_CUSTOM = NO_CUSTOM
+
 CFLAGS = -fPIC
+ifeq ("$(PY_VERSION)","2.4")
+export CPPFLAGS =-DPYTHON24
+endif
 
 LIBDIRS = $(PY_PREFIX)/lib/python$(PY_VERSION)/config
 INCDIRS = $(PY_PREFIX)/include/python$(PY_VERSION)
@@ -29,6 +33,7 @@ clean::
 
 distclean:: clean
 	rm -rf ._d
+	rm -f ../dllpycaml_stubs.so
 
 depend: # added by julia, undoubtedly wrong
 

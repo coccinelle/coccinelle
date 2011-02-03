@@ -197,7 +197,8 @@ let id_tokens lexbuf =
   let in_iso = !Data.in_iso in
   let in_prolog = !Data.in_prolog in
   match s with
-    "identifier" when in_meta -> check_arity_context_linetype s; TIdentifier
+    "metavariable" when in_meta -> check_arity_context_linetype s; TMetavariable
+  | "identifier" when in_meta -> check_arity_context_linetype s; TIdentifier
   | "type" when in_meta ->       check_arity_context_linetype s; TType
   | "parameter" when in_meta ->  check_arity_context_linetype s; TParameter
   | "constant"  when in_meta ->  check_arity_context_linetype s; TConstant
@@ -331,6 +332,10 @@ let init _ =
   Hashtbl.clear iterator_names;
   Hashtbl.clear declarer_names;
   let get_name (_,x) = x in
+  Data.add_meta_meta :=
+    (fun name pure ->
+      let fn clt = TMeta(name,pure,clt) in
+      Hashtbl.replace metavariables (get_name name) fn);
   Data.add_id_meta :=
     (fun name constraints pure ->
       let fn clt = TMetaId(name,constraints,pure,clt) in

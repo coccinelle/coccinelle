@@ -88,6 +88,7 @@ type token =
   | TMinusFile of (string * Data.clt)
   | TMinus of (Data.clt)
   | TMid0 of (Data.clt)
+  | TMetavariable
   | TMetaType of (Parse_aux.info)
   | TMetaStmList of (Parse_aux.info)
   | TMetaStm of (Parse_aux.info)
@@ -108,6 +109,7 @@ type token =
   | TMetaDeclarer of (Parse_aux.idinfo)
   | TMetaDecl of (Parse_aux.info)
   | TMetaConst of (Parse_aux.typed_expinfo)
+  | TMeta of (Parse_aux.info)
   | TMPtVirg
   | TLogOp of (Ast_cocci.logicalOp * Data.clt)
   | TLocal

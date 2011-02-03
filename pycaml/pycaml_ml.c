@@ -101,7 +101,7 @@ void *caml_aux( PyObject *obj ) {
 PyObject *pycall_callback( PyObject *obj, PyObject *args ) {
     value out;
     value *v;
-    
+
     if( !PyCObject_Check(obj) ) {
 	Py_INCREF(Py_None);
 	return Py_None;
@@ -228,7 +228,7 @@ value pygencall( value format, value arg ) {
 			 pyunwrap(Field(arg,3)),
 			 pyunwrap(Field(arg,4))));
 	    break;
-	    
+
 	case 11:
 	    rv = pywrap(((type_11)func)
 			(f,
@@ -239,10 +239,10 @@ value pygencall( value format, value arg ) {
 			 Int_val(Field(arg,5))));
 	    break;
 	}
-	
+
 	fclose( f );
 	CAMLreturn( rv );
-	
+
     case 8:
 	CAMLreturn(copy_string(((type_8)func)()));
 
@@ -276,19 +276,19 @@ value pygencall( value format, value arg ) {
 	CAMLreturn(pywrap(((type_15)func)
 			  (pyunwrap(Field(arg,0)),
 			   pyunwrap(Field(arg,1)),Int_val(Field(arg,2)))));
-	
+
     case 16:
 	CAMLreturn(pywrap(((type_16)func)
 			  (pyunwrap(Field(arg,0)),
 			   String_val(Field(arg,1)))));
-	
+
     case 17:
 	CAMLreturn(pywrap(((type_17)func)
 			  (pyunwrap(Field(arg,0)),pyunwrap(Field(arg,1)))));
-	
+
     case 18:
 	CAMLreturn(Val_int(((type_18)func)(pyunwrap(arg))));
-	
+
     case 19:
 	CAMLreturn(Val_int(((type_19)func)
 			   (pyunwrap(Field(arg,0)),
@@ -385,7 +385,7 @@ value pygencall( value format, value arg ) {
 
     case 39:
 	CAMLreturn(pywrap(((type_39)func)(Int_val(arg))));
-	
+
     case 40:
 	CAMLreturn(pywrap(((type_40)func)
 			  (pyunwrap(Field(arg,0)),
@@ -432,12 +432,12 @@ value pygencall( value format, value arg ) {
 	    (pyunwrap(Field(arg,0)),
 	     pyunwrap(Field(arg,1)));
 	CAMLreturn(Val_unit);
-	
+
     case 46:
 	((type_46)func)
 	    (pyunwrap(Field(arg,0)),String_val(Field(arg,1)));
 	CAMLreturn(Val_unit);
-	
+
     case 47:
 	ob1 = pyunwrap(Field(arg,0));
 	ob2 = pyunwrap(Field(arg,1));
@@ -448,7 +448,7 @@ value pygencall( value format, value arg ) {
 	Field(rv,1) = pywrap(ob2);
 	Field(rv,2) = pywrap(ob3);
 	CAMLreturn(rv);
-	
+
     case 48:
 	((type_48)func)
 	    (pyunwrap(Field(arg,0)),
@@ -460,7 +460,7 @@ value pygencall( value format, value arg ) {
 	CAMLreturn(pywrap(((type_49)func)
 			  (pyunwrap(Field(arg,0)),
 			   String_val(Field(arg,1)))));
-	
+
     case 50:
 	CAMLreturn(pywrap(((type_50)func)
 			  (String_val(Field(arg,0)),
@@ -492,7 +492,7 @@ value pygencall( value format, value arg ) {
 			    Int_val(Field(arg,1)),
 			    Int_val(Field(arg,2)))));
     }
-    
+
     CAMLreturn(rv);
 }
 
@@ -964,7 +964,7 @@ typedef struct _python_func_table {
     int format;
     char *desc;
 } python_func_table;
-    
+
 python_func_table the_python_func_table[] = {
 /* 1 */
     { (void *)Py_Initialize, 1, "Py_Initialize" },
@@ -1435,7 +1435,7 @@ value pywrap_closure( value closure ) {
 value pymodule_initmodule( value name, value funclist ) {
     CAMLparam2(name,funclist);
     int i;
-    PyMethodDef *methods = malloc( sizeof( PyMethodDef ) * 
+    PyMethodDef *methods = malloc( sizeof( PyMethodDef ) *
 				   Wosize_val(funclist) );
     CAMLlocal1(item);
 
@@ -1444,7 +1444,11 @@ value pymodule_initmodule( value name, value funclist ) {
     for( i = 0; i < Wosize_val(funclist); i++ ) {
 	item = Field(funclist,i);
 	methods[i].ml_name = String_val(Field(item,0));
+#ifdef PYTHON24
+	methods[i].ml_meth = pywrap_closure(Field(item,1));
+#else
 	methods[i].ml_meth = (void *)(uintptr_t)pywrap_closure(Field(item,1));
+#endif
 	methods[i].ml_flags = Int_val(Field(item,2));
 	methods[i].ml_doc = String_val(Field(item,3));
     }

@@ -56,7 +56,8 @@ let line_type2c tok =
 
 let token2c (tok,_) =
  match tok with
-    PC.TIdentifier -> "identifier"
+    PC.TMetavariable -> "metavariable"
+  | PC.TIdentifier -> "identifier"
   | PC.TType -> "type"
   | PC.TParameter -> "parameter"
   | PC.TConstant -> "constant"
@@ -192,6 +193,7 @@ let token2c (tok,_) =
       ^(line_type2c clt)
   | PC.TTilde (clt) -> "~"^(line_type2c clt)
 
+  | PC.TMeta(_,_,clt) -> "meta"^(line_type2c clt)
   | PC.TMetaParam(_,_,clt) -> "parammeta"^(line_type2c clt)
   | PC.TMetaParamList(_,_,_,clt) -> "paramlistmeta"^(line_type2c clt)
   | PC.TMetaConst(_,_,_,_,clt) -> "constmeta"^(line_type2c clt)
@@ -326,7 +328,7 @@ let plus_attachable only_plus (tok,_) =
   | PC.TPlus(clt) | PC.TMinus(clt) | PC.TMul(clt)
   | PC.TDmOp(_,clt) | PC.TTilde (clt)
 
-  | PC.TMetaParam(_,_,clt) | PC.TMetaParamList(_,_,_,clt)
+  | PC.TMeta(_,_,clt) | PC.TMetaParam(_,_,clt) | PC.TMetaParamList(_,_,_,clt)
   | PC.TMetaConst(_,_,_,_,clt) | PC.TMetaErr(_,_,_,clt)
   | PC.TMetaExp(_,_,_,_,clt) | PC.TMetaIdExp(_,_,_,_,clt)
   | PC.TMetaLocalIdExp(_,_,_,_,clt)
@@ -397,7 +399,7 @@ let get_clt (tok,_) =
   | PC.TPlus(clt) | PC.TMinus(clt) | PC.TMul(clt)
   | PC.TDmOp(_,clt) | PC.TTilde (clt)
 
-  | PC.TMetaParam(_,_,clt) | PC.TMetaParamList(_,_,_,clt)
+  | PC.TMeta(_,_,clt) | PC.TMetaParam(_,_,clt) | PC.TMetaParamList(_,_,_,clt)
   | PC.TMetaConst(_,_,_,_,clt) | PC.TMetaErr(_,_,_,clt)
   | PC.TMetaExp(_,_,_,_,clt) | PC.TMetaIdExp(_,_,_,_,clt)
   | PC.TMetaLocalIdExp(_,_,_,_,clt)
@@ -510,6 +512,7 @@ let update_clt (tok,x) clt =
   | PC.TDmOp(op,_) -> (PC.TDmOp(op,clt),x)
   | PC.TTilde (_) -> (PC.TTilde (clt),x)
 
+  | PC.TMeta(a,b,_)      -> (PC.TMeta(a,b,clt),x)
   | PC.TMetaParam(a,b,_) -> (PC.TMetaParam(a,b,clt),x)
   | PC.TMetaParamList(a,b,c,_) -> (PC.TMetaParamList(a,b,c,clt),x)
   | PC.TMetaConst(a,b,c,d,_) -> (PC.TMetaConst(a,b,c,d,clt),x)
@@ -631,7 +634,8 @@ let split t clt =
 
 let split_token ((tok,_) as t) =
   match tok with
-    PC.TIdentifier | PC.TConstant | PC.TExpression | PC.TIdExpression
+    PC.TMetavariable | PC.TIdentifier
+  | PC.TConstant | PC.TExpression | PC.TIdExpression
   | PC.TDeclaration | PC.TField
   | PC.TStatement | PC.TPosition | PC.TPosAny | PC.TInitialiser
   | PC.TFunction | PC.TTypedef | PC.TDeclarer | PC.TIterator | PC.TName
@@ -664,7 +668,7 @@ let split_token ((tok,_) as t) =
   | PC.TReturn(clt) | PC.TBreak(clt) | PC.TContinue(clt) | PC.TGoto(clt)
   | PC.TIdent(_,clt)
   | PC.TTypeId(_,clt) | PC.TDeclarerId(_,clt) | PC.TIteratorId(_,clt)
-  | PC.TMetaConst(_,_,_,_,clt) | PC.TMetaExp(_,_,_,_,clt)
+  | PC.TMeta(_,_,clt) | PC.TMetaConst(_,_,_,_,clt) | PC.TMetaExp(_,_,_,_,clt)
   | PC.TMetaIdExp(_,_,_,_,clt) | PC.TMetaLocalIdExp(_,_,_,_,clt)
   | PC.TMetaExpList(_,_,_,clt)
   | PC.TMetaParam(_,_,clt) | PC.TMetaParamList(_,_,_,clt)
@@ -744,6 +748,7 @@ seem very convenient to refactor the grammar to get around the problem. *)
 let rec find_function_names = function
     [] -> []
   | ((PC.TIdent(_,clt),info) as t1) :: ((PC.TOPar(_),_) as t2) :: rest
+  | ((PC.TMeta(_,_,clt),info) as t1) :: ((PC.TOPar(_),_) as t2) :: rest
   | ((PC.TMetaId(_,_,_,clt),info) as t1) :: ((PC.TOPar(_),_) as t2) :: rest
   | ((PC.TMetaFunc(_,_,_,clt),info) as t1) :: ((PC.TOPar(_),_) as t2) :: rest
   | ((PC.TMetaLocalFunc(_,_,_,clt),info) as t1)::((PC.TOPar(_),_) as t2)::rest
@@ -913,7 +918,7 @@ let token2line (tok,_) =
   | PC.TPlus(clt) | PC.TMinus(clt) | PC.TMul(clt)
   | PC.TDmOp(_,clt) | PC.TTilde (clt)
 
-  | PC.TMetaParam(_,_,clt) | PC.TMetaParamList(_,_,_,clt)
+  | PC.TMeta(_,_,clt) | PC.TMetaParam(_,_,clt) | PC.TMetaParamList(_,_,_,clt)
   | PC.TMetaConst(_,_,_,_,clt) | PC.TMetaExp(_,_,_,_,clt)
   | PC.TMetaIdExp(_,_,_,_,clt) | PC.TMetaLocalIdExp(_,_,_,_,clt)
   | PC.TMetaExpList(_,_,_,clt)

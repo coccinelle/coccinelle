@@ -205,7 +205,14 @@ let lookup rule name =
 	(Semantic_cocci.Semantic("bad rule "^rule^" or bad variable "^name))
 
 let check_meta_tyopt type_irrelevant = function
-    Ast.MetaIdDecl(Ast.NONE,(rule,name)) ->
+    Ast.MetaMetaDecl(Ast.NONE,(rule,name)) ->
+      (match lookup rule name with
+	Ast.MetaMetaDecl(_,_) -> ()
+      | _ ->
+	  raise
+	    (Semantic_cocci.Semantic
+	       ("incompatible inheritance declaration "^name)))
+  | Ast.MetaIdDecl(Ast.NONE,(rule,name)) ->
       (match lookup rule name with
 	Ast.MetaIdDecl(_,_) | Ast.MetaFreshIdDecl(_,_) -> ()
       | _ ->
@@ -601,4 +608,3 @@ let drop_dot_commas initlist =
 	    | _ -> x :: (loop false xs)) in
       Ast0.rewrap initlist (Ast0.DOTS(loop false l))
   | _ -> failwith "not supported"
-

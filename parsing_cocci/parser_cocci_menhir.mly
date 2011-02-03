@@ -35,12 +35,75 @@ parameter needs both a type and an identifier *)
 module Ast0 = Ast0_cocci
 module Ast = Ast_cocci
 module P = Parse_aux
+
+(* ---------------------------------------------------------------------- *)
+(* support for TMeta *)
+
+let print_meta (r,n) = r^"."^n
+
+let meta_metatable = Hashtbl.create(101)
+
+let coerce_tmeta newty name builder matcher =
+  try
+    let x = Hashtbl.find meta_metatable name in
+    if not (matcher x)
+    then
+      failwith
+	(Printf.sprintf "Metavariable %s is used as %s"
+	   (print_meta name) newty)
+  with Not_found ->
+    (if !Flag_parsing_cocci.show_SP
+    then
+      Common.pr2
+	(Printf.sprintf
+	   "Metavariable %s is assumed to be %s metavariable"
+	   (print_meta name) newty));
+    Hashtbl.add meta_metatable name builder
+
+let tmeta_to_type (name,pure,clt) =
+  (coerce_tmeta "a type" name (TMetaType(name,pure,clt))
+     (function TMetaType(_,_,_) -> true | _ -> false));
+  Ast0.wrap(Ast0.MetaType(P.clt2mcode name clt,pure))
+
+let tmeta_to_field (name,pure,clt) =
+  (coerce_tmeta "a field" name (TMetaField(name,pure,clt))
+     (function TMetaField(_,_,_) -> true | _ -> false));
+  P.meta_field (name,pure,clt)
+
+let tmeta_to_exp (name,pure,clt) =
+  (coerce_tmeta "an expression" name
+     (TMetaExp(name,Ast0.NoConstraint,pure,None,clt))
+     (function TMetaExp(_,_,_,_,_) -> true | _ -> false));
+  Ast0.wrap
+    (Ast0.MetaExpr(P.clt2mcode name clt,Ast0.NoConstraint,None,Ast.ANY,pure))
+
+let tmeta_to_param (name,pure,clt) =
+  (coerce_tmeta "a parameter" name (TMetaParam(name,pure,clt))
+     (function TMetaParam(_,_,_) -> true | _ -> false));
+  Ast0.wrap(Ast0.MetaParam(P.clt2mcode name clt,pure))
+
+let tmeta_to_statement (name,pure,clt) =
+  (coerce_tmeta "a statement" name (TMetaType(name,pure,clt))
+     (function TMetaType(_,_,_) -> true | _ -> false));
+  P.meta_stm (name,pure,clt)
+
+let tmeta_to_seed_id (name,pure,clt) =
+  (coerce_tmeta "an identifier" name
+     (TMetaId(name,Ast.IdNoConstraint,pure,clt))
+     (function TMetaId(_,_,_,_) -> true | _ -> false));
+  Ast.SeedId name
+
+let tmeta_to_ident (name,pure,clt) =
+  (coerce_tmeta "an identifier" name
+     (TMetaId(name,Ast.IdNoConstraint,pure,clt))
+     (function TMetaId(_,_,_,_) -> true | _ -> false));
+  Ast0.wrap(Ast0.MetaId(P.clt2mcode name clt,Ast.IdNoConstraint,pure))
 %}
 
 %token EOF
 
 %token TIdentifier TExpression TStatement TFunction TLocal TType TParameter
-%token TIdExpression TInitialiser TDeclaration TField
+%token TIdExpression TInitialiser TDeclaration TField TMetavariable
 %token Tlist TFresh TConstant TError TWords TWhy0 TPlus0 TBang0
 %token TPure TContext TGenerated
 %token TTypedef TDeclarer TIterator TName TPosition TPosAny
@@ -66,7 +129,7 @@ module P = Parse_aux
 %token <Parse_aux.idinfo>        TMetaIterator TMetaDeclarer
 %token <Parse_aux.expinfo>       TMetaErr
 %token <Parse_aux.info>          TMetaParam TMetaStm TMetaStmList TMetaType
-%token <Parse_aux.info>          TMetaInit TMetaDecl TMetaField
+%token <Parse_aux.info>          TMetaInit TMetaDecl TMetaField TMeta
 %token <Parse_aux.list_info>     TMetaParamList TMetaExpList
 %token <Parse_aux.typed_expinfo> TMetaExp TMetaIdExp TMetaLocalIdExp TMetaConst
 %token <Parse_aux.pos_info>      TMetaPos
@@ -345,7 +408,11 @@ list_len:
 
 /* metavariable kinds with no constraints, etc */
 %inline metakind:
-  TParameter
+  TMetavariable
+    { (fun arity name pure check_meta ->
+      let tok = check_meta(Ast.MetaMetaDecl(arity,name)) in
+      !Data.add_meta_meta name pure; tok) }
+| TParameter
     { (fun arity name pure check_meta ->
       let tok = check_meta(Ast.MetaParamDecl(arity,name)) in
       !Data.add_param_meta name pure; tok) }
@@ -614,14 +681,19 @@ ctype:
       Ast0.wrap
 	(Ast0.DisjType(P.clt2mcode "(" lp,code,mids, P.clt2mcode ")" rp)) }
 
+mctype:
+| TMeta { tmeta_to_type $1 }
+| ctype {$1}
+
 /* signed, unsigned alone not allowed */
 typedef_ctype:
   cv=ioption(const_vol) ty=all_basic_types m=list(TMul)
     { P.pointerify (P.make_cv cv ty) m }
-| lp=TOPar0 t=midzero_list(ctype,ctype) rp=TCPar0
+| lp=TOPar0 t=midzero_list(mctype,mctype) rp=TCPar0
     { let (mids,code) = t in
       Ast0.wrap
 	(Ast0.DisjType(P.clt2mcode "(" lp,code,mids, P.clt2mcode ")" rp)) }
+| TMeta { tmeta_to_type $1 }
 
 /* ---------------------------------------------------------------------- */
 
@@ -635,6 +707,7 @@ struct_decl:
 
 struct_decl_one:
     | TMetaField { P.meta_field $1 }
+    | TMeta { tmeta_to_field $1 }
     | t=ctype d=d_ident pv=TPtVirg
 	 { let (id,fn) = d in
 	 Ast0.wrap(Ast0.UnInit(None,fn t,id,P.clt2mcode ";" pv)) }
@@ -671,8 +744,8 @@ continue_struct_decl_list:
 /* very restricted what kinds of expressions can appear in an enum decl */
 
 enum_decl_one:
-    | ident    { Ast0.wrap(Ast0.Ident($1)) }
-    | ident TEq enum_val
+    | mident    { Ast0.wrap(Ast0.Ident($1)) }
+    | mident TEq enum_val
 	{ let id = Ast0.wrap(Ast0.Ident($1)) in
 	Ast0.wrap
 	  (Ast0.Assignment
@@ -684,6 +757,7 @@ enum_val:
  | TInt
      { let (x,clt) = $1 in
      Ast0.wrap(Ast0.Constant (P.clt2mcode (Ast.Int x) clt)) }
+ | TMeta { tmeta_to_exp $1 }
  | TMetaConst
      { let (nm,constraints,pure,ty,clt) = $1 in
      Ast0.wrap
@@ -835,7 +909,7 @@ defineop:
 
 /* ---------------------------------------------------------------------- */
 
-dparam: ident { Ast0.wrap(Ast0.DParam $1) }
+dparam: mident { Ast0.wrap(Ast0.DParam $1) }
 
 define_param_list_option:
     empty_list_start(dparam,TEllipsis)
@@ -849,7 +923,7 @@ define_param_list_option:
 
 funproto:
   s=ioption(storage) t=ctype
-  id=func_ident lp=TOPar d=decl_list(name_opt_decl) rp=TCPar pt=TPtVirg
+  id=fn_ident lp=TOPar d=decl_list(name_opt_decl) rp=TCPar pt=TPtVirg
       { Ast0.wrap
 	  (Ast0.UnInit
 	     (s,
@@ -860,7 +934,7 @@ funproto:
 
 fundecl:
   f=fninfo
-  TFunDecl i=func_ident lp=TOPar d=decl_list(decl) rp=TCPar
+  TFunDecl i=fn_ident lp=TOPar d=decl_list(decl) rp=TCPar
   lb=TOBrace b=fun_start rb=TCBrace
       { P.verify_parameter_declarations (Ast0.undots d);
 	Ast0.wrap(Ast0.FunDecl((Ast0.default_info(),Ast0.context_befaft()),
@@ -929,6 +1003,7 @@ decl: t=ctype i=ident
     | TMetaParam
 	{ let (nm,pure,clt) = $1 in
 	Ast0.wrap(Ast0.MetaParam(P.clt2mcode nm clt,pure)) }
+    | TMeta { tmeta_to_param $1 }
 
 name_opt_decl:
       decl  { $1 }
@@ -949,6 +1024,7 @@ const_vol:
 
 statement:
   includes { $1 } /* shouldn't be allowed to be a single_statement... */
+| TMeta { tmeta_to_statement $1}
 | TMetaStm
     { P.meta_stm $1 }
 | expr TPtVirg
@@ -972,8 +1048,8 @@ statement:
 | TReturn TPtVirg { P.ret $1 $2 }
 | TBreak TPtVirg { P.break $1 $2 }
 | TContinue TPtVirg { P.cont $1 $2 }
-| ident TDotDot { P.label $1 $2 }
-| TGoto ident TPtVirg { P.goto $1 $2 $3 }
+| mident TDotDot { P.label $1 $2 }
+| TGoto mident TPtVirg { P.goto $1 $2 $3 }
 | TOBrace fun_start TCBrace
     { P.seq $1 $2 $3 }
 
@@ -1161,7 +1237,7 @@ one_decl_var:
 
 
 d_ident:
-    ident list(array_dec)
+    mident list(array_dec)
       { ($1,
 	 function t ->
 	   List.fold_right
@@ -1201,11 +1277,11 @@ initialize2:
            /* gccext:, labeled elements */
 | list(designator) TEq initialize2 /*can we have another of these on the rhs?*/
     { Ast0.wrap(Ast0.InitGccExt($1,P.clt2mcode "=" $2,$3)) }
-| ident TDotDot initialize2
+| mident TDotDot initialize2
     { Ast0.wrap(Ast0.InitGccName($1,P.clt2mcode ":" $2,$3)) } /* in old kernel */
 
 designator:
- | TDot ident
+ | TDot mident
      { Ast0.DesignatorField (P.clt2mcode "." $1,$2) }
  | TOCro eexpr TCCro
      { Ast0.DesignatorIndex (P.clt2mcode "[" $1,$2,P.clt2mcode "]" $3) }
@@ -1311,6 +1387,7 @@ nest_expressions:
     { Ast0.wrap(Ast0.NestExpr(P.clt2mcode "<+..." $1,
 			      Ast0.wrap(Ast0.DOTS(e (P.mkedots "..."))),
 			      P.clt2mcode "...+>" c, None, true)) }
+| TMeta { tmeta_to_exp $1 }
 
 //whenexp: TWhen TNotEq w=eexpr TLineEnd { w }
 
@@ -1463,9 +1540,9 @@ postfix_expr(r,pe):
  | postfix_expr(r,pe) TOCro eexpr TCCro
      { Ast0.wrap(Ast0.ArrayAccess ($1,P.clt2mcode "[" $2,$3,
 				       P.clt2mcode "]" $4)) }
- | postfix_expr(r,pe) TDot   ident
+ | postfix_expr(r,pe) TDot   mident
      { Ast0.wrap(Ast0.RecordAccess($1, P.clt2mcode "." $2, $3)) }
- | postfix_expr(r,pe) TPtrOp ident
+ | postfix_expr(r,pe) TPtrOp mident
      { Ast0.wrap(Ast0.RecordPtAccess($1, P.clt2mcode "->" $2,
 				     $3)) }
  | postfix_expr(r,pe) TInc
@@ -1578,6 +1655,7 @@ pure_ident_or_meta_ident_with_seed:
 seed_elem:
   TString { let (x,_) = $1 in Ast.SeedString x }
 | TMetaId { let (x,_,_,_) = $1 in Ast.SeedId x }
+| TMeta {failwith "tmeta"}
 | TRuleName TDot pure_ident
     { let nm = ($1,P.id2name $3) in
       P.check_meta(Ast.MetaIdDecl(Ast.NONE,nm));
@@ -1769,11 +1847,16 @@ not_pos:
 		 (function mv -> Ast.MetaPosDecl(Ast.NONE,mv)))
 	     l }
 
-func_ident: pure_ident
-         { Ast0.wrap(Ast0.Id(P.id2mcode $1)) }
-     | TMetaId
+func_ident: ident { $1 }
+     | TMetaFunc
          { let (nm,constraints,pure,clt) = $1 in
-	 Ast0.wrap(Ast0.MetaId(P.clt2mcode nm clt,constraints,pure)) }
+	 Ast0.wrap(Ast0.MetaFunc(P.clt2mcode nm clt,constraints,pure)) }
+     | TMetaLocalFunc
+	 { let (nm,constraints,pure,clt) = $1 in
+	 Ast0.wrap
+	   (Ast0.MetaLocalFunc(P.clt2mcode nm clt,constraints,pure)) }
+
+fn_ident: mident { $1 }
      | TMetaFunc
          { let (nm,constraints,pure,clt) = $1 in
 	 Ast0.wrap(Ast0.MetaFunc(P.clt2mcode nm clt,constraints,pure)) }
@@ -1788,13 +1871,16 @@ ident: pure_ident
          { let (nm,constraints,pure,clt) = $1 in
          Ast0.wrap(Ast0.MetaId(P.clt2mcode nm clt,constraints,pure)) }
 
-type_ident: pure_ident
+mident: pure_ident
          { Ast0.wrap(Ast0.Id(P.id2mcode $1)) }
-     | TTypeId
-         { Ast0.wrap(Ast0.Id(P.id2mcode $1)) }
+     | TMeta { tmeta_to_ident $1 }
      | TMetaId
          { let (nm,constraints,pure,clt) = $1 in
          Ast0.wrap(Ast0.MetaId(P.clt2mcode nm clt,constraints,pure)) }
+
+type_ident: mident { $1 }
+     | TTypeId
+         { Ast0.wrap(Ast0.Id(P.id2mcode $1)) }
 
 decl_ident:
        TDeclarerId
@@ -1813,6 +1899,7 @@ iter_ident:
 typedef_ident:
        pure_ident
          { Ast0.wrap(Ast0.TypeName(P.id2mcode $1)) }
+     | TMeta { tmeta_to_type $1 }
      | TMetaType
          { let (nm,pure,clt) = $1 in
 	 Ast0.wrap(Ast0.MetaType(P.clt2mcode nm clt,pure)) }
