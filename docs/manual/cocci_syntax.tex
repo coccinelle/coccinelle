@@ -642,6 +642,7 @@ $^\dag$ The optional \texttt{when} construct ends at the end of the line.
   \RULE{\rt{funid}}
   \CASE{\T{id}}
   \CASE{\mth{\T{metaid}^{\ssf{Id}}}}
+  \CASE{\NT{OR}\mth{(}\NT{stmt}\mth{)}}
 %   \CASE{\mth{\T{metaid}^{\ssf{Func}}}}
 %   \CASE{\mth{\T{metaid}^{\ssf{LocalFunc}}}}
 
@@ -917,7 +918,7 @@ in a concise way.
 
 \end{grammar}
 
-\section{Constant, Identifiers and Types for Transformations}
+\section{Constants, Identifiers and Types for Transformations}
 
 \begin{grammar}
   \RULE{\rt{const}}
@@ -929,7 +930,8 @@ in a concise way.
   \CASE{"\any{[\^{}"]}"}
 
   \RULE{\rt{id}}
-  \CASE{\T{id} \OR \mth{\T{metaid}^{\ssf{Id}}}}
+  \CASE{\T{id} \OR \mth{\T{metaid}^{\ssf{Id}}}
+        \OR {\NT{OR}\mth{(}\NT{stmt}\mth{)}}}
 
   \RULE{\rt{typedef\_ident}}
   \CASE{\T{id} \OR \mth{\T{metaid}^{\ssf{Type}}}}
