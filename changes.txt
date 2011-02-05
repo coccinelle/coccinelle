@@ -34,6 +34,7 @@
   arguments
 - reuse typedefs and macros from complete parsing when reparsing the
   transformed code
+- optimization for an if branch that is just { ... }
 
 ** Bugfix:
 - improved parsing of expressions to allow ... to the right of operators in

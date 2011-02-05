@@ -1767,17 +1767,14 @@ and statement stmt after quantified minus_quantified
       let (lbfvs,b1fvs,b2fvs,rbfvs) =
 	match
 	  seq_fvs quantified
-	    [Ast.get_fvs lbrace;
-	      Ast.get_fvs body;Ast.get_fvs rbrace]
+	    [Ast.get_fvs lbrace;Ast.get_fvs body;Ast.get_fvs rbrace]
 	with
-	  [(lbfvs,b1fvs);(_,b2fvs);(rbfvs,_)] ->
-	    (lbfvs,b1fvs,b2fvs,rbfvs)
+	  [(lbfvs,b1fvs);(_,b2fvs);(rbfvs,_)] -> (lbfvs,b1fvs,b2fvs,rbfvs)
 	| _ -> failwith "not possible" in
       let (mlbfvs,mb1fvs,mb2fvs,mrbfvs) =
 	match
 	  seq_fvs minus_quantified
-	    [Ast.get_mfvs lbrace;
-	      Ast.get_mfvs body;Ast.get_mfvs rbrace]
+	    [Ast.get_mfvs lbrace;Ast.get_mfvs body;Ast.get_mfvs rbrace]
 	with
 	  [(lbfvs,b1fvs);(_,b2fvs);(rbfvs,_)] ->
 	    (lbfvs,b1fvs,b2fvs,rbfvs)
@@ -1799,9 +1796,7 @@ and statement stmt after quantified minus_quantified
 	(* label is not needed; paren_pred is enough *)
 	quantify guard rbfvs
 	  (ctl_au (make_match empty_rbrace)
-	     (ctl_and
-		(real_make_match None guard rbrace)
-		paren_pred)) in
+	     (ctl_and (real_make_match None guard rbrace) paren_pred)) in
       let new_quantified2 =
 	Common.union_set b1fvs (Common.union_set b2fvs quantified) in
       let new_mquantified2 =
@@ -1820,7 +1815,23 @@ and statement stmt after quantified minus_quantified
 			   new_quantified2 new_mquantified2
 			   (Some (lv,ref true))
 			   llabel slabel false guard)))])) in
-      if ends_in_return body
+      let empty_body =
+	match Ast.undots body with
+	  [body] ->
+	    (match Ast.unwrap body with
+	      Ast.Dots
+		((_,i,(Ast.CONTEXT(_,Ast.NOTHING) as d),_),[],_,_) ->
+		  (match Ast.unwrap rbrace with
+		    Ast.SeqEnd((_,_,Ast.CONTEXT(_,Ast.NOTHING),_))
+		    when not (contains_pos rbrace) -> true
+		  | _ -> false)
+	    | _ -> false)
+	| _ -> false in
+      if empty_body && after = Tail
+	  (* for just a match of an if branch of the form { ... }, just
+	     match the first brace *)
+      then quantify guard lbfvs (make_match lbrace)
+      else if ends_in_return body
       then
 	(* matching error handling code *)
 	(* Cases:
