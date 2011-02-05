@@ -965,10 +965,10 @@ storage:
        | s=Tregister    { P.clt2mcode Ast.Register s }
        | s=Textern      { P.clt2mcode Ast.Extern s }
 
-decl: t=ctype i=ident
+decl: t=ctype i=disj_ident
 	{ Ast0.wrap(Ast0.Param(t, Some i)) }
     | t=ctype { (*verify in FunDecl*) Ast0.wrap(Ast0.Param(t, None)) }
-    | t=ctype lp=TOPar s=TMul i=ident rp=TCPar
+    | t=ctype lp=TOPar s=TMul i=disj_ident rp=TCPar
 	lp1=TOPar d=decl_list(name_opt_decl) rp1=TCPar
         { let fnptr =
 	  Ast0.wrap
