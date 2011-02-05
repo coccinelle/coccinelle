@@ -171,6 +171,12 @@ let check_allminus =
     | _ -> false in
 
   (* special case for disj *)
+  let ident r k e =
+    match Ast0.unwrap e with
+      Ast0.DisjId(starter,id_list,mids,ender) ->
+	List.for_all r.VT0.combiner_rec_ident id_list
+    | _ -> k e in
+
   let expression r k e =
     match Ast0.unwrap e with
       Ast0.DisjExpr(starter,expr_list,mids,ender) ->
@@ -205,7 +211,7 @@ let check_allminus =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode mcode
     donothing donothing donothing donothing donothing donothing
-    donothing expression typeC donothing donothing declaration
+    ident expression typeC donothing donothing declaration
     statement case_line donothing
 
 (* --------------------------------------------------------------------- *)
@@ -310,15 +316,17 @@ let rec do_isos l = List.map (function (nm,x) -> (nm,anything x)) l
 and ident i =
   rewrap i (do_isos (Ast0.get_iso i))
     (match Ast0.unwrap i with
-	 Ast0.Id(name) -> Ast.Id(mcode name)
-       | Ast0.MetaId(name,constraints,_) ->
-	     Ast.MetaId(mcode name,constraints,unitary,false)
-       | Ast0.MetaFunc(name,constraints,_) ->
-	     Ast.MetaFunc(mcode name,constraints,unitary,false)
-       | Ast0.MetaLocalFunc(name,constraints,_) ->
-	     Ast.MetaLocalFunc(mcode name,constraints,unitary,false)
-       | Ast0.OptIdent(id) -> Ast.OptIdent(ident id)
-       | Ast0.UniqueIdent(id) -> Ast.UniqueIdent(ident id))
+      Ast0.Id(name) -> Ast.Id(mcode name)
+    | Ast0.DisjId(_,id_list,_,_) ->
+	Ast.DisjId(List.map ident id_list)
+    | Ast0.MetaId(name,constraints,_) ->
+	Ast.MetaId(mcode name,constraints,unitary,false)
+    | Ast0.MetaFunc(name,constraints,_) ->
+	Ast.MetaFunc(mcode name,constraints,unitary,false)
+    | Ast0.MetaLocalFunc(name,constraints,_) ->
+	Ast.MetaLocalFunc(mcode name,constraints,unitary,false)
+    | Ast0.OptIdent(id) -> Ast.OptIdent(ident id)
+    | Ast0.UniqueIdent(id) -> Ast.UniqueIdent(ident id))
 
 (* --------------------------------------------------------------------- *)
 (* Expression *)

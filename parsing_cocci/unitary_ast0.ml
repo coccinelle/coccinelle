@@ -65,6 +65,8 @@ let get_free checker t =
     match Ast0.unwrap i with
       Ast0.MetaId(name,_,_) | Ast0.MetaFunc(name,_,_)
     | Ast0.MetaLocalFunc(name,_,_) -> checker name
+    | Ast0.DisjId(starter,id_list,mids,ender) ->
+	detect_unitary_frees(List.map r.VT0.combiner_rec_ident id_list)
     | _ -> k i in
 
   let expression r k e =

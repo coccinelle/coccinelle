@@ -1,5 +1,5 @@
 (* create an index for each constructor *)
-(* current max is 151 *)
+(* current max is 152 *)
 
 (* doesn't really work - requires that identical terms with no token
 subterms (eg dots) not appear on the same line *)
@@ -58,6 +58,7 @@ let ident i =
     | Ast0.MetaId(name,_,_) -> [11]
     | Ast0.MetaFunc(name,_,_) -> [12]
     | Ast0.MetaLocalFunc(name,_,_) -> [13]
+    | Ast0.DisjId(_,id_list,_,_) -> [152]
     | Ast0.OptIdent(id) -> [14]
     | Ast0.UniqueIdent(id) -> [15]
 

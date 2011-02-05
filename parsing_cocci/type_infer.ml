@@ -83,6 +83,14 @@ let rec propagate_types env =
     | Ast0.MetaId(id,_,_) ->
 	(try Some(List.assoc (Meta(Ast0.unwrap_mcode id)) env)
 	with Not_found -> None)
+    | Ast0.DisjId(_,id_list,_,_) ->
+	let types = List.map Ast0.get_type id_list in
+	let combined = List.fold_left lub_type None types in
+	(match combined with
+	  None -> None
+	| Some t ->
+	    List.iter (function i -> Ast0.set_type i (Some t)) id_list;
+	    Some t)
     | _ -> k i in
 
   let strip_cv = function
@@ -250,10 +258,11 @@ let rec propagate_types env =
 
   let rec strip id =
     match Ast0.unwrap id with
-      Ast0.Id(name)                -> Id(Ast0.unwrap_mcode name)
-    | Ast0.MetaId(name,_,_)        -> Meta(Ast0.unwrap_mcode name)
-    | Ast0.MetaFunc(name,_,_)      -> Meta(Ast0.unwrap_mcode name)
-    | Ast0.MetaLocalFunc(name,_,_) -> Meta(Ast0.unwrap_mcode name)
+      Ast0.Id(name)                -> [Id(Ast0.unwrap_mcode name)]
+    | Ast0.MetaId(name,_,_)        -> [Meta(Ast0.unwrap_mcode name)]
+    | Ast0.MetaFunc(name,_,_)      -> [Meta(Ast0.unwrap_mcode name)]
+    | Ast0.MetaLocalFunc(name,_,_) -> [Meta(Ast0.unwrap_mcode name)]
+    | Ast0.DisjId(_,id_list,_,_)   -> List.concat (List.map strip id_list)
     | Ast0.OptIdent(id)            -> strip id
     | Ast0.UniqueIdent(id)         -> strip id in
 
@@ -298,9 +307,11 @@ let rec propagate_types env =
     | Ast0.Init(_,ty,id,_,exp,_) ->
 	let _ =
 	  (propagate_types env).VT0.combiner_rec_initialiser exp in
-	[(strip id,Ast0.ast0_type_to_type ty)]
+	let ty = Ast0.ast0_type_to_type ty in
+	List.map (function i -> (i,ty)) (strip id)
     | Ast0.UnInit(_,ty,id,_) ->
-	[(strip id,Ast0.ast0_type_to_type ty)]
+	let ty = Ast0.ast0_type_to_type ty in
+	List.map (function i -> (i,ty)) (strip id)
     | Ast0.MacroDecl(_,_,_,_,_) -> []
     | Ast0.TyDecl(ty,_) -> []
               (* pad: should handle typedef one day and add a binding *)
@@ -340,7 +351,8 @@ let rec propagate_types env =
 	let rec get_binding p =
 	  match Ast0.unwrap p with
 	    Ast0.Param(ty,Some id) ->
-	      [(strip id,Ast0.ast0_type_to_type ty)]
+	      let ty = Ast0.ast0_type_to_type ty in
+	      List.map (function i -> (i,ty)) (strip id)
 	  | Ast0.OptParam(param) -> get_binding param
 	  | _ -> [] in
 	let fenv = List.concat (List.map get_binding (Ast0.undots params)) in

@@ -79,13 +79,14 @@ let combiner bind option_default
   and ident i =
     let k i =
       match Ast.unwrap i with
-	  Ast.Id(name) -> string_mcode name
-	| Ast.MetaId(name,_,_,_) -> meta_mcode name
-	| Ast.MetaFunc(name,_,_,_) -> meta_mcode name
-	| Ast.MetaLocalFunc(name,_,_,_) -> meta_mcode name
-	| Ast.OptIdent(id) -> ident id
-	| Ast.UniqueIdent(id) -> ident id in
-      identfn all_functions k i
+	Ast.Id(name) -> string_mcode name
+      | Ast.MetaId(name,_,_,_) -> meta_mcode name
+      | Ast.MetaFunc(name,_,_,_) -> meta_mcode name
+      | Ast.MetaLocalFunc(name,_,_,_) -> meta_mcode name
+      | Ast.DisjId(id_list) -> multibind (List.map ident id_list)
+      | Ast.OptIdent(id) -> ident id
+      | Ast.UniqueIdent(id) -> ident id in
+    identfn all_functions k i
 
   and expression e =
     let k e =
@@ -586,6 +587,7 @@ let rebuilder
 	    Ast.MetaFunc(meta_mcode name,constraints,keep,inherited)
 	| Ast.MetaLocalFunc(name,constraints,keep,inherited) ->
 	    Ast.MetaLocalFunc(meta_mcode name,constraints,keep,inherited)
+	| Ast.DisjId(id_list) -> Ast.DisjId(List.map ident id_list)
 	| Ast.OptIdent(id) -> Ast.OptIdent(ident id)
 	| Ast.UniqueIdent(id) -> Ast.UniqueIdent(ident id)) in
     identfn all_functions k i

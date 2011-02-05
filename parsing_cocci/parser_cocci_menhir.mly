@@ -720,8 +720,8 @@ continue_struct_decl_list:
 /* very restricted what kinds of expressions can appear in an enum decl */
 
 enum_decl_one:
-    | mident    { Ast0.wrap(Ast0.Ident($1)) }
-    | mident TEq enum_val
+    | disj_ident    { Ast0.wrap(Ast0.Ident($1)) }
+    | disj_ident TEq enum_val
 	{ let id = Ast0.wrap(Ast0.Ident($1)) in
 	Ast0.wrap
 	  (Ast0.Assignment
@@ -1025,7 +1025,7 @@ statement:
 | TBreak TPtVirg { P.break $1 $2 }
 | TContinue TPtVirg { P.cont $1 $2 }
 | mident TDotDot { P.label $1 $2 }
-| TGoto mident TPtVirg { P.goto $1 $2 $3 }
+| TGoto disj_ident TPtVirg { P.goto $1 $2 $3 }
 | TOBrace fun_start TCBrace
     { P.seq $1 $2 $3 }
 
@@ -1213,7 +1213,7 @@ one_decl_var:
 
 
 d_ident:
-    mident list(array_dec)
+    disj_ident list(array_dec)
       { ($1,
 	 function t ->
 	   List.fold_right
@@ -1257,7 +1257,7 @@ initialize2:
     { Ast0.wrap(Ast0.InitGccName($1,P.clt2mcode ":" $2,$3)) } /* in old kernel */
 
 designator:
- | TDot mident
+ | TDot disj_ident
      { Ast0.DesignatorField (P.clt2mcode "." $1,$2) }
  | TOCro eexpr TCCro
      { Ast0.DesignatorIndex (P.clt2mcode "[" $1,$2,P.clt2mcode "]" $3) }
@@ -1516,9 +1516,9 @@ postfix_expr(r,pe):
  | postfix_expr(r,pe) TOCro eexpr TCCro
      { Ast0.wrap(Ast0.ArrayAccess ($1,P.clt2mcode "[" $2,$3,
 				       P.clt2mcode "]" $4)) }
- | postfix_expr(r,pe) TDot   mident
+ | postfix_expr(r,pe) TDot   disj_ident
      { Ast0.wrap(Ast0.RecordAccess($1, P.clt2mcode "." $2, $3)) }
- | postfix_expr(r,pe) TPtrOp mident
+ | postfix_expr(r,pe) TPtrOp disj_ident
      { Ast0.wrap(Ast0.RecordPtAccess($1, P.clt2mcode "->" $2,
 				     $3)) }
  | postfix_expr(r,pe) TInc
@@ -1832,7 +1832,7 @@ func_ident: ident { $1 }
 	 Ast0.wrap
 	   (Ast0.MetaLocalFunc(P.clt2mcode nm clt,constraints,pure)) }
 
-fn_ident: mident { $1 }
+fn_ident: disj_ident { $1 }
      | TMetaFunc
          { let (nm,constraints,pure,clt) = $1 in
 	 Ast0.wrap(Ast0.MetaFunc(P.clt2mcode nm clt,constraints,pure)) }
@@ -1854,7 +1854,14 @@ mident: pure_ident
          { let (nm,constraints,pure,clt) = $1 in
          Ast0.wrap(Ast0.MetaId(P.clt2mcode nm clt,constraints,pure)) }
 
-type_ident: mident { $1 }
+disj_ident:
+       mident { $1 }
+     | lp=TOPar0 t=midzero_list(disj_ident,disj_ident) rp=TCPar0
+	 { let (mids,code) = t in
+	 Ast0.wrap
+	   (Ast0.DisjId(P.clt2mcode "(" lp,code,mids, P.clt2mcode ")" rp)) }
+
+type_ident: disj_ident { $1 }
      | TTypeId
          { Ast0.wrap(Ast0.Id(P.id2mcode $1)) }
 

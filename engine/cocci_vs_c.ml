@@ -1373,7 +1373,7 @@ and (ident_cpp: info_ident -> (A.ident, B.name) matcher) =
 	 fail
 
 and (ident: info_ident -> (A.ident, string * Ast_c.info) matcher) =
- fun infoidb ida ((idb, iib)) -> (* (idb, iib) as ib *)
+ fun infoidb ida ((idb, iib) as ib) -> (* (idb, iib) as ib *)
    let check_constraints constraints idb =
      let meta_id_val l x = Ast_c.MetaIdVal(x,l) in
      match constraints with
@@ -1452,6 +1452,10 @@ and (ident: info_ident -> (A.ident, string * Ast_c.info) matcher) =
       | Function -> fail
       | DontKnow -> failwith "MetaLocalFunc, need more semantic info about id"
       )
+
+  (* not clear why disj things are needed, after disjdistr? *)
+  | A.DisjId ias ->
+      ias +> List.fold_left (fun acc ia -> acc >|+|> (ident infoidb ia ib)) fail
 
   | A.OptIdent _ | A.UniqueIdent _ ->
       failwith "not handling Opt/Unique for ident"

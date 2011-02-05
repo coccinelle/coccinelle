@@ -261,6 +261,7 @@ let do_get_constants constants keywords env neg_pos =
 	  | nm -> constants nm)
     | Ast.MetaId(name,_,_,_) | Ast.MetaFunc(name,_,_,_)
     | Ast.MetaLocalFunc(name,_,_,_) -> bind (k i) (minherited name)
+    | Ast.DisjId(ids) -> disj_union_all (List.map r.V.combiner_ident ids)
     | _ -> k i in
 
   let rec type_collect res = function

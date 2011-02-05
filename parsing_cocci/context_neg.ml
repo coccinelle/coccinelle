@@ -306,6 +306,13 @@ let classify is_minus all_marked table code =
 
   (* no whencode in plus tree so have to drop it *)
   (* need special cases for dots, nests, and disjs *)
+  let ident r k e =
+    compute_result Ast0.ident e
+      (match Ast0.unwrap e with
+	Ast0.DisjId(starter,id_list,_,ender) ->
+	  disj_cases e starter id_list r.VT0.combiner_rec_ident ender
+      |	_ -> k e) in
+
   let expression r k e =
     compute_result Ast0.expr e
       (match Ast0.unwrap e with
@@ -416,7 +423,7 @@ let classify is_minus all_marked table code =
       (do_nothing Ast0.dotsExpr) (do_nothing Ast0.dotsInit)
       (do_nothing Ast0.dotsParam) (do_nothing Ast0.dotsStmt)
       (do_nothing Ast0.dotsDecl) (do_nothing Ast0.dotsCase)
-      (do_nothing Ast0.ident) expression typeC initialiser param declaration
+      ident expression typeC initialiser param declaration
       statement case_line (do_top Ast0.top) in
   combiner.VT0.combiner_rec_top_level code
 
@@ -451,6 +458,11 @@ let rec equal_ident i1 i2 =
       equal_mcode name1 name2
   | (Ast0.MetaLocalFunc(name1,_,_),Ast0.MetaLocalFunc(name2,_,_)) ->
       equal_mcode name1 name2
+  | (Ast0.DisjId(starter1,_,mids1,ender1),
+     Ast0.DisjId(starter2,_,mids2,ender2)) ->
+      equal_mcode starter1 starter2 &&
+      List.for_all2 equal_mcode mids1 mids2 &&
+      equal_mcode ender1 ender2
   | (Ast0.OptIdent(_),Ast0.OptIdent(_)) -> true
   | (Ast0.UniqueIdent(_),Ast0.UniqueIdent(_)) -> true
   | _ -> false

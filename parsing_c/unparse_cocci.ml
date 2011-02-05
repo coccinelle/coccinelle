@@ -238,6 +238,11 @@ let nest_dots starter ender fn f d =
   mcode print_string ender
 in
 
+let print_disj_list fn l =
+  print_text "\n(\n";
+  print_between (function _ -> print_text "\n|\n") fn l;
+  print_text "\n)\n" in
+
 (* --------------------------------------------------------------------- *)
 (* Identifier *)
 
@@ -260,6 +265,10 @@ let rec ident i =
 			       | _ -> raise Impossible
 			    )
 
+    | Ast.DisjId(id_list) ->
+	if generating
+	then print_disj_list ident id_list
+	else raise CantBeInPlus
     | Ast.OptIdent(_) | Ast.UniqueIdent(_) ->
 	raise CantBeInPlus
 
@@ -267,11 +276,6 @@ in
 
 (* --------------------------------------------------------------------- *)
 (* Expression *)
-
-let print_disj_list fn l =
-  print_text "\n(\n";
-  print_between (function _ -> print_text "\n|\n") fn l;
-  print_text "\n)\n" in
 
 let rec expression e =
   match Ast.unwrap e with

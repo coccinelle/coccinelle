@@ -195,6 +195,18 @@ let dots is_dots prev fn d =
       mkres d (Ast0.STARS l) lstart lend
 
 (* --------------------------------------------------------------------- *)
+(* Disjunctions *)
+
+let do_disj e starter xs mids ender processor rebuilder =
+  let starter = bad_mcode starter in
+  let xs = List.map processor xs in
+  let mids = List.map bad_mcode mids in
+  let ender = bad_mcode ender in
+  mkmultires e (rebuilder starter xs mids ender)
+    (promote_mcode starter) (promote_mcode ender)
+    (get_all_start_info xs) (get_all_end_info xs)
+
+(* --------------------------------------------------------------------- *)
 (* Identifier *)
 
 (* for #define name, with no value, to compute right side *)
@@ -202,15 +214,21 @@ let mkidres a b c d r = (mkres a b c d,r)
 
 let rec full_ident i =
   match Ast0.unwrap i with
-      Ast0.Id(name) as ui ->
-	let name = promote_mcode name in mkidres i ui name name name
-    | Ast0.MetaId(name,_,_)
-    | Ast0.MetaFunc(name,_,_) | Ast0.MetaLocalFunc(name,_,_) as ui ->
-	let name = promote_mcode name in mkidres i ui name name name
-    | Ast0.OptIdent(id) ->
-	let (id,r) = full_ident id in mkidres i (Ast0.OptIdent(id)) id id r
-    | Ast0.UniqueIdent(id) ->
-	let (id,r) = full_ident id in mkidres i (Ast0.UniqueIdent(id)) id id r
+    Ast0.Id(name) as ui ->
+      let name = promote_mcode name in mkidres i ui name name (Some name)
+  | Ast0.MetaId(name,_,_)
+  | Ast0.MetaFunc(name,_,_) | Ast0.MetaLocalFunc(name,_,_) as ui ->
+      let name = promote_mcode name in mkidres i ui name name (Some name)
+  | Ast0.DisjId(starter,ids,mids,ender) ->
+      let res =
+	do_disj i starter ids mids ender ident
+	  (fun starter ids mids ender ->
+	    Ast0.DisjId(starter,ids,mids,ender)) in
+      (res,None)
+  | Ast0.OptIdent(id) ->
+      let (id,r) = full_ident id in mkidres i (Ast0.OptIdent(id)) id id r
+  | Ast0.UniqueIdent(id) ->
+      let (id,r) = full_ident id in mkidres i (Ast0.UniqueIdent(id)) id id r
 and ident i = let (id,_) = full_ident i in id
 
 (* --------------------------------------------------------------------- *)
@@ -293,13 +311,8 @@ let rec expression e =
       let ln = promote_mcode cm in
       mkres e (Ast0.EComma(cm)) ln ln
   | Ast0.DisjExpr(starter,exps,mids,ender) ->
-      let starter = bad_mcode starter in
-      let exps = List.map expression exps in
-      let mids = List.map bad_mcode mids in
-      let ender = bad_mcode ender in
-      mkmultires e (Ast0.DisjExpr(starter,exps,mids,ender))
-	(promote_mcode starter) (promote_mcode ender)
-	(get_all_start_info exps) (get_all_end_info exps)
+      do_disj e starter exps mids ender expression
+	(fun starter exps mids ender -> Ast0.DisjExpr(starter,exps,mids,ender))
   | Ast0.NestExpr(starter,exp_dots,ender,whencode,multi) ->
       let exp_dots = dots is_exp_dots None expression exp_dots in
       let starter = bad_mcode starter in
@@ -391,13 +404,9 @@ and typeC t =
   | Ast0.MetaType(name,_) as ut ->
       let ln = promote_mcode name in mkres t ut ln ln
   | Ast0.DisjType(starter,types,mids,ender) ->
-      let starter = bad_mcode starter in
-      let types = List.map typeC types in
-      let mids = List.map bad_mcode mids in
-      let ender = bad_mcode ender in
-      mkmultires t (Ast0.DisjType(starter,types,mids,ender))
-	(promote_mcode starter) (promote_mcode ender)
-	(get_all_start_info types) (get_all_end_info types)
+      do_disj t starter types mids ender typeC
+	(fun starter types mids ender ->
+	  Ast0.DisjType(starter,types,mids,ender))
   | Ast0.OptType(ty) ->
       let ty = typeC ty in mkres t (Ast0.OptType(ty)) ty ty
   | Ast0.UniqueType(ty) ->
@@ -449,13 +458,9 @@ and declaration d =
       mkres d (Ast0.Typedef(stg,ty,id,sem))
 	(promote_mcode stg) (promote_mcode sem)
   | Ast0.DisjDecl(starter,decls,mids,ender) ->
-      let starter = bad_mcode starter in
-      let decls = List.map declaration decls in
-      let mids = List.map bad_mcode mids in
-      let ender = bad_mcode ender in
-      mkmultires d (Ast0.DisjDecl(starter,decls,mids,ender))
-	(promote_mcode starter) (promote_mcode ender)
-	(get_all_start_info decls) (get_all_end_info decls)
+      do_disj d starter decls mids ender declaration
+	(fun starter decls mids ender ->
+	  Ast0.DisjDecl(starter,decls,mids,ender))
   | Ast0.Ddots(dots,whencode) ->
       let dots = bad_mcode dots in
       let ln = promote_mcode dots in
@@ -816,13 +821,16 @@ let rec statement s =
     | Ast0.Include(inc,stm) ->
 	mkres s (Ast0.Include(inc,stm)) (promote_mcode inc) (promote_mcode stm)
     | Ast0.Undef(def,id) ->
-	let (id,right) = full_ident id in
+	let id = ident id in
 	mkres s (Ast0.Undef(def,id)) (promote_mcode def) id
     | Ast0.Define(def,id,params,body) ->
 	let (id,right) = full_ident id in
-	let (params,prev) = define_parameters params right in
-	let body = dots is_stm_dots (Some prev) statement body in
-	mkres s (Ast0.Define(def,id,params,body)) (promote_mcode def) body
+	(match right with
+	  None -> failwith "no disj id for #define"
+	| Some right ->
+	    let (params,prev) = define_parameters params right in
+	    let body = dots is_stm_dots (Some prev) statement body in
+	    mkres s (Ast0.Define(def,id,params,body)) (promote_mcode def) body)
     | Ast0.OptStm(stm) ->
 	let stm = statement stm in mkres s (Ast0.OptStm(stm)) stm stm
     | Ast0.UniqueStm(stm) ->
@@ -845,13 +853,9 @@ and case_line c =
       let code = dots is_stm_dots (Some(promote_mcode colon)) statement code in
       mkres c (Ast0.Case(case,exp,colon,code)) (promote_mcode case) code
   | Ast0.DisjCase(starter,case_lines,mids,ender) ->
-      let starter = bad_mcode starter in
-      let case_lines = List.map case_line case_lines in
-      let mids = List.map bad_mcode mids in
-      let ender = bad_mcode ender in
-      mkmultires c (Ast0.DisjCase(starter,case_lines,mids,ender))
-	(promote_mcode starter) (promote_mcode ender)
-	(get_all_start_info case_lines) (get_all_end_info case_lines)
+      do_disj c starter case_lines mids ender case_line
+	(fun starter case_lines mids ender ->
+	  Ast0.DisjCase(starter,case_lines,mids,ender))
   | Ast0.OptCase(case) ->
       let case = case_line case in mkres c (Ast0.OptCase(case)) case case
 

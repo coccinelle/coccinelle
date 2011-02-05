@@ -81,9 +81,20 @@ and disjtypeC bty =
 	  Ast.rewrap bty (Ast.StructUnionDef(ty,lb,decls,rb)))
   | Ast.TypeName(_) | Ast.MetaType(_,_,_) -> [bty]
 
+and disjident e =
+  match Ast.unwrap e with
+    Ast.DisjId(id_list) -> List.concat (List.map disjident id_list)
+  | Ast.OptIdent(id) ->
+      let id = disjident id in
+      List.map (function id -> Ast.rewrap e (Ast.OptIdent(id))) id
+  | Ast.UniqueIdent(id) ->
+      let id = disjident id in
+      List.map (function id -> Ast.rewrap e (Ast.UniqueIdent(id))) id
+  | _ -> [e]
+
 and disjexp e =
   match Ast.unwrap e with
-    Ast.Ident(_) | Ast.Constant(_) -> [e]
+    Ast.Ident(_) | Ast.Constant(_) -> [e] (* even Ident can't contain disj *)
   | Ast.FunCall(fn,lp,args,rp) ->
       disjmult2 (disjexp fn) (disjdots disjexp args)
 	(function fn -> function args ->
@@ -151,8 +162,7 @@ and disjexp e =
       List.map (function ty -> Ast.rewrap e (Ast.TypeExp(ty))) ty
   | Ast.MetaErr(_,_,_,_) | Ast.MetaExpr(_,_,_,_,_,_)
   | Ast.MetaExprList(_,_,_,_) | Ast.EComma(_) -> [e]
-  | Ast.DisjExpr(exp_list) ->
-      List.concat (List.map disjexp exp_list)
+  | Ast.DisjExpr(exp_list) -> List.concat (List.map disjexp exp_list)
   | Ast.NestExpr(starter,expr_dots,ender,whencode,multi) ->
       (* not sure what to do here, so ambiguities still possible *)
       [e]

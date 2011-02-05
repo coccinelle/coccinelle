@@ -83,6 +83,8 @@ and base_ident =
   | MetaId        of Ast.meta_name mcode * Ast.idconstraint * pure
   | MetaFunc      of Ast.meta_name mcode * Ast.idconstraint * pure
   | MetaLocalFunc of Ast.meta_name mcode * Ast.idconstraint * pure
+  | DisjId        of string mcode * ident list *
+                     string mcode list (* the |s *) * string mcode
   | OptIdent      of ident
   | UniqueIdent   of ident
 

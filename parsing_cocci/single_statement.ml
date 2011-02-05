@@ -93,6 +93,7 @@ let rec left_ident i =
   | Ast0.MetaId(name,_,_) -> modif_before_mcode name
   | Ast0.MetaFunc(name,_,_) -> modif_before_mcode name
   | Ast0.MetaLocalFunc(name,_,_) -> modif_before_mcode name
+  | Ast0.DisjId(_,id_list,_,_) -> List.exists left_ident id_list
   | Ast0.OptIdent(id) -> left_ident id
   | Ast0.UniqueIdent(id) -> left_ident id
 
@@ -103,6 +104,7 @@ let rec right_ident i =
   | Ast0.MetaId(name,_,_) -> modif_after_mcode name
   | Ast0.MetaFunc(name,_,_) -> modif_after_mcode name
   | Ast0.MetaLocalFunc(name,_,_) -> modif_after_mcode name
+  | Ast0.DisjId(_,id_list,_,_) -> List.exists right_ident id_list
   | Ast0.OptIdent(id) -> right_ident id
   | Ast0.UniqueIdent(id) -> right_ident id
 
@@ -331,6 +333,13 @@ and contains_only_minus =
       Ast0.DOTS([]) | Ast0.CIRCLES([]) | Ast0.STARS([]) -> true
     | _ -> k e in
 
+  let identifier r k e =
+    mcodekind (Ast0.get_mcodekind e) &&
+    match Ast0.unwrap e with
+      Ast0.DisjId(starter,id_list,mids,ender) ->
+	List.for_all r.VT0.combiner_rec_ident id_list
+    | _ -> k e in
+
   let expression r k e =
     mcodekind (Ast0.get_mcodekind e) &&
     match Ast0.unwrap e with
@@ -369,7 +378,7 @@ and contains_only_minus =
   V0.flat_combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     dots dots dots dots dots dots
-    donothing expression typeC donothing donothing declaration
+    identifier expression typeC donothing donothing declaration
     statement case_line donothing
 
 

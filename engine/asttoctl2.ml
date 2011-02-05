@@ -1820,7 +1820,7 @@ and statement stmt after quantified minus_quantified
 	  [body] ->
 	    (match Ast.unwrap body with
 	      Ast.Dots
-		((_,i,(Ast.CONTEXT(_,Ast.NOTHING) as d),_),[],_,_) ->
+		((_,i,Ast.CONTEXT(_,Ast.NOTHING),_),[],_,_) ->
 		  (match Ast.unwrap rbrace with
 		    Ast.SeqEnd((_,_,Ast.CONTEXT(_,Ast.NOTHING),_))
 		    when not (contains_pos rbrace) -> true

@@ -476,6 +476,8 @@ let match_maker checks_needed context_required whencode_allowed =
 	      if mcode_equal namea nameb
 	      then check_mcode namea nameb
 	      else return false
+	  | (Ast0.DisjId(_,ids,_,_),_) ->
+	      failwith "not allowed in the pattern of an isomorphism"
 	  | (Ast0.OptIdent(ida),Ast0.OptIdent(idb))
 	  | (Ast0.UniqueIdent(ida),Ast0.UniqueIdent(idb)) ->
 	      match_ident ida idb
@@ -792,7 +794,7 @@ let match_maker checks_needed context_required whencode_allowed =
 	      if mcode_equal namea nameb
 	      then check_mcode namea nameb
 	      else return false
-	  | (Ast0.DisjType(_,typesa,_,_),Ast0.DisjType(_,typesb,_,_)) ->
+	  | (Ast0.DisjType(_,typesa,_,_),_) ->
 	      failwith "not allowed in the pattern of an isomorphism"
 	  | (Ast0.OptType(tya),Ast0.OptType(tyb))
 	  | (Ast0.UniqueType(tya),Ast0.UniqueType(tyb)) -> match_typeC tya tyb
@@ -845,7 +847,7 @@ let match_maker checks_needed context_required whencode_allowed =
 	  | (Ast0.Typedef(stga,tya,ida,sc1),Ast0.Typedef(stgb,tyb,idb,sc)) ->
 	      conjunct_bindings (check_mcode sc1 sc)
 		(conjunct_bindings (match_typeC tya tyb) (match_typeC ida idb))
-	  | (Ast0.DisjDecl(_,declsa,_,_),Ast0.DisjDecl(_,declsb,_,_)) ->
+	  | (Ast0.DisjDecl(_,declsa,_,_),_) ->
 	      failwith "not allowed in the pattern of an isomorphism"
 	  | (Ast0.Ddots(d1,None),Ast0.Ddots(d,None)) -> check_mcode d1 d
 	  |	(Ast0.Ddots(dd,None),Ast0.Ddots(d,Some wc)) ->

@@ -20,6 +20,7 @@
   identifiers containing ::, tilde, and template invocations.  Use the
   option -c++.  This is not likely to be very useful in practice.
 - Added metavariable metavariable type.
+- Add disjunctions on identifiers in some contexts
 
 ** Features:
 - support transformations on variables (only) in declarations that declare
