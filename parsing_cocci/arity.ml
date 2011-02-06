@@ -155,38 +155,46 @@ let make_id =
     (function x -> Ast0.OptIdent x)
     (function x -> Ast0.UniqueIdent x)
 
-let ident opt_allowed tgt i =
+let rec ident opt_allowed tgt i =
   match Ast0.unwrap i with
-      Ast0.Id(name) ->
-	let arity =
-	  all_same opt_allowed tgt (mcode2line name)
-	    [mcode2arity name] in
-	let name = mcode name in
-	  make_id i tgt arity (Ast0.Id(name))
-    | Ast0.MetaId(name,constraints,pure) ->
-	let arity =
-	  all_same opt_allowed tgt (mcode2line name)
-	    [mcode2arity name] in
-	let name = mcode name in
-	  make_id i tgt arity (Ast0.MetaId(name,constraints,pure))
-    | Ast0.MetaFunc(name,constraints,pure) ->
-	let arity =
-	  all_same opt_allowed tgt (mcode2line name)
-	    [mcode2arity name] in
-	let name = mcode name in
-	  make_id i tgt arity (Ast0.MetaFunc(name,constraints,pure))
-    | Ast0.MetaLocalFunc(name,constraints,pure) ->
-	let arity =
-	  all_same opt_allowed tgt (mcode2line name)
-	    [mcode2arity name] in
-	let name = mcode name in
-	  make_id i tgt arity (Ast0.MetaLocalFunc(name,constraints,pure))
-    | Ast0.OptIdent(_) | Ast0.UniqueIdent(_) ->
-	failwith "unexpected code"
-
+    Ast0.Id(name) ->
+      let arity =
+	all_same opt_allowed tgt (mcode2line name)
+	  [mcode2arity name] in
+      let name = mcode name in
+      make_id i tgt arity (Ast0.Id(name))
+  | Ast0.MetaId(name,constraints,pure) ->
+      let arity =
+	all_same opt_allowed tgt (mcode2line name)
+	  [mcode2arity name] in
+      let name = mcode name in
+      make_id i tgt arity (Ast0.MetaId(name,constraints,pure))
+  | Ast0.MetaFunc(name,constraints,pure) ->
+      let arity =
+	all_same opt_allowed tgt (mcode2line name)
+	  [mcode2arity name] in
+      let name = mcode name in
+      make_id i tgt arity (Ast0.MetaFunc(name,constraints,pure))
+  | Ast0.MetaLocalFunc(name,constraints,pure) ->
+      let arity =
+	all_same opt_allowed tgt (mcode2line name)
+	  [mcode2arity name] in
+      let name = mcode name in
+      make_id i tgt arity (Ast0.MetaLocalFunc(name,constraints,pure))
+  | Ast0.DisjId(starter,id_list,mids,ender) ->
+      let id_list = List.map (ident opt_allowed tgt) id_list in
+      (match List.rev id_list with
+	_::xs ->
+	  if anyopt xs (function Ast0.OptIdent(_) -> true | _ -> false)
+	  then fail i "opt only allowed in the last disjunct"
+      |	_ -> ());
+      Ast0.rewrap i (Ast0.DisjId(starter,id_list,mids,ender))
+  | Ast0.OptIdent(_) | Ast0.UniqueIdent(_) ->
+      failwith "unexpected code"
+	
 (* --------------------------------------------------------------------- *)
 (* Expression *)
-
+	
 let make_exp =
   make_opt_unique
     (function x -> Ast0.OptExp x)

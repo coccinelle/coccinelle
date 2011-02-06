@@ -83,7 +83,7 @@ type context = ID | FIELD | FN | GLOBAL
 let is_ifdef name =
   String.length name > 2 && String.uppercase name = name
 
-let ident context old_metas table minus i =
+let rec ident context old_metas table minus i =
   match Ast0.unwrap i with
     Ast0.Id((name,_,info,_,_,_) : string Ast0.mcode) ->
       let rl = info.Ast0.pos_info.Ast0.line_start in
@@ -110,6 +110,8 @@ let ident context old_metas table minus i =
   | Ast0.MetaId(name,_,_) -> check_table table minus name
   | Ast0.MetaFunc(name,_,_) -> check_table table minus name
   | Ast0.MetaLocalFunc(name,_,_) -> check_table table minus name
+  | Ast0.DisjId(_,id_list,_,_) ->
+      List.iter (ident context old_metas table minus) id_list
   | Ast0.OptIdent(_) | Ast0.UniqueIdent(_) ->
       failwith "unexpected code"
 	

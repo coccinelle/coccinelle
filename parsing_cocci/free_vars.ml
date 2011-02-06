@@ -98,6 +98,7 @@ let collect_refs include_constraints =
 	      | _ -> []
 	    else [] in
 	  bind (List.rev metas) [metaid name]
+      | Ast.DisjId(ids) -> bind_disj (List.map k ids)
       | _ -> option_default) in
 
   let rec type_collect res = function
@@ -230,8 +231,7 @@ let collect_saved =
       (match Ast.unwrap i with
 	Ast.MetaId(name,_,TC.Saved,_)
       | Ast.MetaFunc(name,_,TC.Saved,_)
-      | Ast.MetaLocalFunc(name,_,TC.Saved,_) ->
-	  [metaid name]
+      | Ast.MetaLocalFunc(name,_,TC.Saved,_) -> [metaid name]
       | _ -> option_default) in
 
   let rec type_collect res = function

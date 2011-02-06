@@ -202,7 +202,7 @@ let token2c (tok,_) =
   | PC.TMetaIdExp(_,_,_,_,clt) -> "idexpmeta"^(line_type2c clt)
   | PC.TMetaLocalIdExp(_,_,_,_,clt) -> "localidexpmeta"^(line_type2c clt)
   | PC.TMetaExpList(_,_,_,clt) -> "explistmeta"^(line_type2c clt)
-  | PC.TMetaId(_,_,_,clt)    -> "idmeta"^(line_type2c clt)
+  | PC.TMetaId(nm,_,_,clt)    -> "idmeta-"^(Dumper.dump nm)^(line_type2c clt)
   | PC.TMetaType(_,_,clt)    -> "typemeta"^(line_type2c clt)
   | PC.TMetaInit(_,_,clt)    -> "initmeta"^(line_type2c clt)
   | PC.TMetaDecl(_,_,clt)    -> "declmeta"^(line_type2c clt)
@@ -745,36 +745,77 @@ distinguish a function declaration from a function call even if the latter
 has no return type.  Undoubtedly, this is not very nice, but it doesn't
 seem very convenient to refactor the grammar to get around the problem. *)
 
-let rec find_function_names = function
-    [] -> []
-  | ((PC.TIdent(_,clt),info) as t1) :: ((PC.TOPar(_),_) as t2) :: rest
-  | ((PC.TMeta(_,_,clt),info) as t1) :: ((PC.TOPar(_),_) as t2) :: rest
-  | ((PC.TMetaId(_,_,_,clt),info) as t1) :: ((PC.TOPar(_),_) as t2) :: rest
-  | ((PC.TMetaFunc(_,_,_,clt),info) as t1) :: ((PC.TOPar(_),_) as t2) :: rest
-  | ((PC.TMetaLocalFunc(_,_,_,clt),info) as t1)::((PC.TOPar(_),_) as t2)::rest
-    ->
-      let rec skip level = function
-	  [] -> ([],false,[])
-	| ((PC.TCPar(_),_) as t)::rest ->
-	    let level = level - 1 in
-	    if level = 0
-	    then ([t],true,rest)
-	    else let (pre,found,post) = skip level rest in (t::pre,found,post)
-	| ((PC.TOPar(_),_) as t)::rest ->
-	    let level = level + 1 in
-	    let (pre,found,post) = skip level rest in (t::pre,found,post)
-	| ((PC.TArobArob,_) as t)::rest
-	| ((PC.TArob,_) as t)::rest
-	| ((PC.EOF,_) as t)::rest -> ([t],false,rest)
-	| t::rest ->
-      	    let (pre,found,post) = skip level rest in (t::pre,found,post) in
-      let (pre,found,post) = skip 1 rest in
-      (match (found,post) with
-	(true,((PC.TOBrace(_),_) as t3)::rest) ->
-	  (PC.TFunDecl(clt),info) :: t1 :: t2 :: pre @
-	  t3 :: (find_function_names rest)
-      |	_ -> t1 :: t2 :: pre @ find_function_names post)
-  | t :: rest -> t :: find_function_names rest
+exception Irrelevant
+
+let rec find_function_names l =
+  let is_ident = function
+      (PC.TIdent(_,clt),info)
+    | (PC.TMeta(_,_,clt),info)
+    | (PC.TMetaId(_,_,_,clt),info)
+    | (PC.TMetaFunc(_,_,_,clt),info)
+    | (PC.TMetaLocalFunc(_,_,_,clt),info) -> true
+    | _ -> false in
+  let is_mid = function
+      (PC.TMid0(_),info) -> true
+    | _ -> false in
+  let is_par = function
+      (PC.TOPar0(_),info) -> true
+    | _ -> false in
+  let rec split acc = function
+      [] | [_] -> raise Irrelevant
+    | ((PC.TCPar(_),_) as t1) :: ((PC.TOBrace(_),_) as t2) :: rest ->
+	(List.rev (t1::acc),(t2::rest))
+    | x::xs -> split (x::acc) xs in
+  let rec balanced_name level = function
+      [] -> raise Irrelevant
+    | (PC.TCPar0(_),_)::rest ->
+	let level = level - 1 in
+	if level = 0
+	then rest
+	else balanced_name level rest
+    | (PC.TOPar0(_),_)::rest ->
+	let level = level + 1 in
+	balanced_name level rest
+    | (PC.TArobArob,_)::_ | (PC.TArob,_)::_ | (PC.EOF,_)::_ ->
+	raise Irrelevant
+    | t::rest when is_ident t && level = 0 -> rest
+    | t::rest when is_ident t or is_mid t -> balanced_name level rest
+    | _ -> raise Irrelevant in
+  let rec balanced_args level = function
+      [] -> raise Irrelevant
+    | (PC.TCPar(_),_)::rest ->
+	let level = level - 1 in
+	if level = 0
+	then rest
+	else balanced_args level rest
+    | (PC.TOPar(_),_)::rest ->
+	let level = level + 1 in
+	balanced_args level rest
+    | (PC.TArobArob,_)::_ | (PC.TArob,_)::_ | (PC.EOF,_)::_ ->
+	raise Irrelevant
+    | t::rest -> balanced_args level rest in
+  let rec loop = function
+      [] -> []
+    | t :: rest ->
+	if is_par t or is_mid t or is_ident t
+	then
+	  let (t,rest) =
+	    try
+	      let (bef,aft) = split [] (t::rest) in
+	      let rest = balanced_name 0 bef in
+	      (match rest with
+		(PC.TOPar(_),_)::_ ->
+		  (match balanced_args 0 rest with
+		    [] ->
+		      let (_,info) as h = List.hd bef in
+		      let clt = get_clt h in
+		      (((PC.TFunDecl(clt),info) :: bef), aft)
+		  | _ -> raise Irrelevant)
+	      | _ -> raise Irrelevant)
+	    with Irrelevant -> ([t],rest) in
+	  t @ (loop rest)
+	else t :: (loop rest) in
+  loop l
 
 (* ----------------------------------------------------------------------- *)
 (* an attribute is an identifier that preceeds another identifier and

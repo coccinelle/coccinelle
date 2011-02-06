@@ -138,6 +138,7 @@ and base_ident =
   | MetaFunc      of meta_name mcode * idconstraint * keep_binding * inherited
   | MetaLocalFunc of meta_name mcode * idconstraint * keep_binding * inherited
 
+  | DisjId        of ident list
   | OptIdent      of ident
   | UniqueIdent   of ident
 

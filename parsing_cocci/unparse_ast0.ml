@@ -123,6 +123,15 @@ let dots between fn d =
       | Ast0.STARS(l) -> print_between between fn l)
 
 (* --------------------------------------------------------------------- *)
+(* Disjunctions *)
+
+let do_disj lst processor =
+  print_string "\n("; force_newline();
+  print_between (function _ -> print_string "\n|"; force_newline())
+    processor lst;
+  print_string "\n)"
+
+(* --------------------------------------------------------------------- *)
 
 let print_types = function
     None -> ()
@@ -144,6 +153,7 @@ let rec ident i =
       | Ast0.MetaId(name,_,_) -> mcode print_meta name
       | Ast0.MetaFunc(name,_,_) -> mcode print_meta name
       | Ast0.MetaLocalFunc(name,_,_) -> mcode print_meta name
+      | Ast0.DisjId(_,id_list,_,_) -> do_disj id_list ident
       | Ast0.OptIdent(id) -> print_string "?"; ident id
       | Ast0.UniqueIdent(id) -> print_string "!"; ident id)
 
@@ -214,12 +224,7 @@ let rec expression e =
 	  | Ast0.PureContext -> print_string "pure_context")*)
       | Ast0.MetaExprList(name,_,_) -> mcode print_meta name
       | Ast0.EComma(cm) -> mcode print_string cm; print_space()
-      | Ast0.DisjExpr(_,exp_list,_,_) ->
-	  print_string "\n("; force_newline();
-	  print_between
-	    (function _ -> print_string "\n|"; force_newline())
-	    expression exp_list;
-	  print_string "\n)"
+      | Ast0.DisjExpr(_,exp_list,_,_) -> do_disj exp_list expression
       | Ast0.NestExpr(starter,expr_dots,ender,None,multi) ->
 	  mcode print_string starter;
 	  start_block(); dots force_newline expression expr_dots; end_block();
@@ -289,12 +294,7 @@ and typeC t =
 	  mcode print_string rb
       | Ast0.TypeName(name)-> mcode print_string name; print_string " "
       | Ast0.MetaType(name,_)-> mcode print_meta name; print_string " "
-      | Ast0.DisjType(lp,types,mids,rp) ->
-	  print_string "\n"; mcode print_string lp; force_newline();
-	  print_between
-	    (function _ -> print_string "\n|"; force_newline())
-	    typeC types;
-	  print_string "\n"; mcode print_string rp
+      | Ast0.DisjType(_,types,_,_) -> do_disj types typeC
       | Ast0.OptType(ty) -> print_string "?"; typeC ty
       | Ast0.UniqueType(ty) -> print_string "!"; typeC ty)
 

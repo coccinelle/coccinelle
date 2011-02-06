@@ -141,6 +141,23 @@ let nest_dots starter ender fn f d =
   mcode print_string ender
 
 (* --------------------------------------------------------------------- *)
+(* Disjunctions *)
+
+let print_disj_list fn l =
+  if !print_newlines_disj
+  then (force_newline(); print_string "("; force_newline())
+  else print_string "(";
+  print_between
+    (function _ ->
+      if !print_newlines_disj
+      then (force_newline(); print_string "|"; force_newline())
+      else print_string " | ")
+    fn l;
+  if !print_newlines_disj
+  then (force_newline(); print_string ")"; force_newline())
+  else print_string ")"
+
+(* --------------------------------------------------------------------- *)
 
 let print_type keep info = function
     None -> ()
@@ -178,12 +195,13 @@ and regconstraint = function
 
 let rec ident i =
   match Ast.unwrap i with
-      Ast.Id(name) -> mcode print_string name
-    | Ast.MetaId(name,_,keep,inherited) -> mcode print_meta name
-    | Ast.MetaFunc(name,_,_,_) -> mcode print_meta name
-    | Ast.MetaLocalFunc(name,_,_,_) -> mcode print_meta name
-    | Ast.OptIdent(id) -> print_string "?"; ident id
-    | Ast.UniqueIdent(id) -> print_string "!"; ident id
+    Ast.Id(name) -> mcode print_string name
+  | Ast.MetaId(name,_,keep,inherited) -> mcode print_meta name
+  | Ast.MetaFunc(name,_,_,_) -> mcode print_meta name
+  | Ast.MetaLocalFunc(name,_,_,_) -> mcode print_meta name
+  | Ast.DisjId(id_list) -> print_disj_list ident id_list
+  | Ast.OptIdent(id) -> print_string "?"; ident id
+  | Ast.UniqueIdent(id) -> print_string "!"; ident id
 
 and print_unitary = function
     Type_cocci.Unitary -> print_string "unitary"
@@ -192,20 +210,6 @@ and print_unitary = function
 
 (* --------------------------------------------------------------------- *)
 (* Expression *)
-
-let print_disj_list fn l =
-  if !print_newlines_disj
-  then (force_newline(); print_string "("; force_newline())
-  else print_string "(";
-  print_between
-    (function _ ->
-      if !print_newlines_disj
-      then (force_newline(); print_string "|"; force_newline())
-      else print_string " | ")
-    fn l;
-  if !print_newlines_disj
-  then (force_newline(); print_string ")"; force_newline())
-  else print_string ")"
 
 let rec expression e =
   match Ast.unwrap e with

@@ -96,6 +96,8 @@ and base_ident =
   | MetaId        of Ast_cocci.meta_name mcode * Ast_cocci.idconstraint * pure
   | MetaFunc      of Ast_cocci.meta_name mcode * Ast_cocci.idconstraint * pure
   | MetaLocalFunc of Ast_cocci.meta_name mcode * Ast_cocci.idconstraint * pure
+  | DisjId        of string mcode * ident list *
+                     string mcode list (* the |s *) * string mcode
   | OptIdent      of ident
   | UniqueIdent   of ident
 

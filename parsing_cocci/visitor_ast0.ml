@@ -52,6 +52,15 @@ let visitor mode bind option_default
   let get_option f = function
       Some x -> let (n,e) = f x in (n,Some e)
     | None -> (option_default,None) in
+  let do_disj starter lst mids ender processor rebuilder =
+    let (starter_n,starter) = string_mcode starter in
+    let (lst_n,lst) = map_split processor lst in
+    let (mids_n,mids) = map_split string_mcode mids in
+    let (ender_n,ender) = string_mcode ender in
+    (multibind
+       [starter_n;List.hd lst_n;
+	 multibind (List.map2 bind mids_n (List.tl lst_n));ender_n],
+     rebuilder starter lst mids ender) in
   let rec expression_dots d =
     let k d =
       rewrap d
@@ -141,6 +150,10 @@ let visitor mode bind option_default
 	| Ast0.MetaLocalFunc(name,constraints,pure) ->
 	    let (n,name) = meta_mcode name in
 	    (n,Ast0.MetaLocalFunc(name,constraints,pure))
+	| Ast0.DisjId(starter,id_list,mids,ender) ->
+	    do_disj starter id_list mids ender ident
+	      (fun starter id_list mids ender ->
+		Ast0.DisjId(starter,id_list,mids,ender))
 	| Ast0.OptIdent(id) ->
 	    let (n,id) = ident id in (n,Ast0.OptIdent(id))
 	| Ast0.UniqueIdent(id) ->
@@ -250,15 +263,9 @@ let visitor mode bind option_default
 	| Ast0.EComma(cm) ->
 	    let (cm_n,cm) = string_mcode cm in (cm_n,Ast0.EComma(cm))
 	| Ast0.DisjExpr(starter,expr_list,mids,ender) ->
-	    let (starter_n,starter) = string_mcode starter in
-	    let (expr_list_n,expr_list) = map_split expression expr_list in
-	    let (mids_n,mids) = map_split string_mcode mids in
-	    let (ender_n,ender) = string_mcode ender in
-	    (multibind
-	       [starter_n;List.hd expr_list_n;
-		 multibind (List.map2 bind mids_n (List.tl expr_list_n));
-		 ender_n],
-	     Ast0.DisjExpr(starter,expr_list,mids,ender))
+	    do_disj starter expr_list mids ender expression
+	      (fun starter expr_list mids ender ->
+		Ast0.DisjExpr(starter,expr_list,mids,ender))
 	| Ast0.NestExpr(starter,expr_dots,ender,whencode,multi) ->
 	    let (starter_n,starter) = string_mcode starter in
 	    let (expr_dots_n,expr_dots) = expression_dots expr_dots in
@@ -337,15 +344,9 @@ let visitor mode bind option_default
 	    let (name_n,name) = meta_mcode name in
 	    (name_n,Ast0.MetaType(name,pure))
 	| Ast0.DisjType(starter,types,mids,ender) ->
-	    let (starter_n,starter) = string_mcode starter in
-	    let (types_n,types) = map_split typeC types in
-	    let (mids_n,mids) = map_split string_mcode mids in
-	    let (ender_n,ender) = string_mcode ender in
-	    (multibind
-	       [starter_n;List.hd types_n;
-		 multibind (List.map2 bind mids_n (List.tl types_n));
-		 ender_n],
-	    Ast0.DisjType(starter,types,mids,ender))
+	    do_disj starter types mids ender typeC
+	      (fun starter types mids ender ->
+		Ast0.DisjType(starter,types,mids,ender))
 	| Ast0.OptType(ty) ->
 	    let (ty_n,ty) = typeC ty in (ty_n, Ast0.OptType(ty))
 	| Ast0.UniqueType(ty) ->
@@ -436,15 +437,9 @@ let visitor mode bind option_default
 	    let (sem_n,sem) = string_mcode sem in
 	    (multibind [stg_n;ty_n;id_n;sem_n], Ast0.Typedef(stg,ty,id,sem))
 	| Ast0.DisjDecl(starter,decls,mids,ender) ->
-	    let (starter_n,starter) = string_mcode starter in
-	    let (decls_n,decls) = map_split declaration decls in
-	    let (mids_n,mids) = map_split string_mcode mids in
-	    let (ender_n,ender) = string_mcode ender in
-	    (multibind
-	       [starter_n;List.hd decls_n;
-		 multibind (List.map2 bind mids_n (List.tl decls_n));
-		 ender_n],
-	     Ast0.DisjDecl(starter,decls,mids,ender))
+	    do_disj starter decls mids ender declaration
+	      (fun starter decls mids ender ->
+		Ast0.DisjDecl(starter,decls,mids,ender))
 	| Ast0.Ddots(dots,whencode) ->
 	    let (dots_n,dots) = string_mcode dots in
 	    let (whencode_n,whencode) = get_option declaration whencode in
@@ -686,16 +681,9 @@ let visitor mode bind option_default
 	    let (name_n,name) = meta_mcode name in
 	    (name_n,Ast0.MetaStmtList(name,pure))
 	| Ast0.Disj(starter,statement_dots_list,mids,ender) ->
-	    let (starter_n,starter) = string_mcode starter in
-	    let (s_n,statement_dots_list) =
-	      map_split statement_dots statement_dots_list in
-	    let (mids_n,mids) = map_split string_mcode mids in
-	    let (ender_n,ender) = string_mcode ender in
-	    (multibind
-	       [starter_n;List.hd s_n;
-		 multibind (List.map2 bind mids_n (List.tl s_n));
-		 ender_n],
-	     Ast0.Disj(starter,statement_dots_list,mids,ender))
+	    do_disj starter statement_dots_list mids ender statement_dots
+	      (fun starter statement_dots_list mids ender ->
+		Ast0.Disj(starter,statement_dots_list,mids,ender))
 	| Ast0.Nest(starter,stmt_dots,ender,whn,multi) ->
 	    let (starter_n,starter) = string_mcode starter in
 	    let (stmt_dots_n,stmt_dots) = statement_dots stmt_dots in
@@ -830,15 +818,9 @@ let visitor mode bind option_default
 	    (multibind [case_n;exp_n;colon_n;code_n],
 	     Ast0.Case(case,exp,colon,code))
 	| Ast0.DisjCase(starter,case_lines,mids,ender) ->
-	    let (starter_n,starter) = string_mcode starter in
-	    let (case_lines_n,case_lines) = map_split case_line case_lines in
-	    let (mids_n,mids) = map_split string_mcode mids in
-	    let (ender_n,ender) = string_mcode ender in
-	    (multibind
-	       [starter_n;List.hd case_lines_n;
-		 multibind (List.map2 bind mids_n (List.tl case_lines_n));
-		 ender_n],
-	     Ast0.DisjCase(starter,case_lines,mids,ender))
+	    do_disj starter case_lines mids ender case_line
+	      (fun starter case_lines mids ender ->
+		Ast0.DisjCase(starter,case_lines,mids,ender))
 	| Ast0.OptCase(case) ->
 	    let (n,case) = case_line case in (n,Ast0.OptCase(case))) in
     casefn all_functions k c

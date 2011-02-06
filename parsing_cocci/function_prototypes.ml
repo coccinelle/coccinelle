@@ -31,11 +31,12 @@ type id = Id of string | Meta of Ast.meta_name
 
 let rec get_name name =
   match Ast0.unwrap name with
-      Ast0.Id(nm) -> Id(Ast0.unwrap_mcode nm)
-    | Ast0.MetaId(nm,_,_) | Ast0.MetaFunc(nm,_,_)
-    | Ast0.MetaLocalFunc(nm,_,_) -> Meta(Ast0.unwrap_mcode nm)
-    | Ast0.OptIdent(id) | Ast0.UniqueIdent(id) ->
-	get_name id
+    Ast0.Id(nm) -> [Id(Ast0.unwrap_mcode nm)]
+  | Ast0.MetaId(nm,_,_) | Ast0.MetaFunc(nm,_,_)
+  | Ast0.MetaLocalFunc(nm,_,_) -> [Meta(Ast0.unwrap_mcode nm)]
+  | Ast0.DisjId(_,id_list,_,_) -> List.concat (List.map get_name id_list)
+  | Ast0.OptIdent(id) | Ast0.UniqueIdent(id) ->
+      get_name id
 
 (* --------------------------------------------------------------------- *)
 (* collect all of the functions *)
@@ -58,15 +59,18 @@ let collect_function (stm : Ast0.statement) =
 	match
 	  List.filter (function Ast0.FType(_) -> true | _ -> false)
 	    fninfo with [Ast0.FType(t)] -> Some t | _ -> None in
-      [(get_name name,stm,
-	Ast0.copywrap stm
-	  (Ast0.Decl((Ast0.default_info(),Ast0.context_befaft()),
-		     Ast0.copywrap stm
-		       (Ast0.UnInit
-			  (stg,
-			   Ast0.copywrap stm
-			     (Ast0.FunctionType(ty,lp,params,rp)),
-			   name,brace_to_semi lbrace)))))]
+      List.map
+	(function nm ->
+	  (nm,stm,
+	   Ast0.copywrap stm
+	     (Ast0.Decl((Ast0.default_info(),Ast0.context_befaft()),
+			Ast0.copywrap stm
+			  (Ast0.UnInit
+			     (stg,
+			      Ast0.copywrap stm
+				(Ast0.FunctionType(ty,lp,params,rp)),
+			      name,brace_to_semi lbrace))))))
+	(get_name name)
   | _ -> []
 
 let collect_functions stmt_dots =

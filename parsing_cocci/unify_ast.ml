@@ -120,7 +120,7 @@ let idots e =
 (* --------------------------------------------------------------------- *)
 (* Identifier *)
 
-and unify_ident i1 i2 =
+let rec unify_ident i1 i2 =
   match (Ast.unwrap i1,Ast.unwrap i2) with
     (Ast.Id(i1),Ast.Id(i2)) -> return (unify_mcode i1 i2)
 
@@ -131,6 +131,11 @@ and unify_ident i1 i2 =
   | (_,Ast.MetaFunc(_,_,_,_))
   | (_,Ast.MetaLocalFunc(_,_,_,_)) -> return true
 
+  | (Ast.DisjId(i1),_) ->
+      disjunct_all_bindings (List.map (function x -> unify_ident x i2) i1)
+  | (_,Ast.DisjId(i2)) ->
+      disjunct_all_bindings (List.map (function x -> unify_ident i1 x) i2)
+
   | (Ast.OptIdent(_),_)
   | (Ast.UniqueIdent(_),_)
   | (_,Ast.OptIdent(_))
@@ -139,7 +144,7 @@ and unify_ident i1 i2 =
 (* --------------------------------------------------------------------- *)
 (* Expression *)
 
-let rec unify_expression e1 e2 =
+and unify_expression e1 e2 =
   match (Ast.unwrap e1,Ast.unwrap e2) with
     (Ast.Ident(i1),Ast.Ident(i2)) -> unify_ident i1 i2
   | (Ast.Constant(c1),Ast.Constant(c2))-> return (unify_mcode c1 c2)

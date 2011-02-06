@@ -216,22 +216,20 @@ let rec left_ty t =
 
 let rec left_ident i =
   match Ast0.unwrap i with
-      Ast0.Id(name) ->
-	call_right left_mcode name i
-	  (function name -> Ast0.Id(name))
-    | Ast0.MetaId(name,a,b) ->
-	call_right left_mcode name i
-	  (function name -> Ast0.MetaId(name,a,b))
-    | Ast0.MetaFunc(name,a,b) ->
-	call_right left_mcode name i
-	  (function name -> Ast0.MetaFunc(name,a,b))
-    | Ast0.MetaLocalFunc(name,a,b) ->
-	call_right left_mcode name i
-	  (function name -> Ast0.MetaLocalFunc(name,a,b))
-    | Ast0.OptIdent(id) ->
-	call_right left_ident id i (function id -> Ast0.OptIdent(id))
-    | Ast0.UniqueIdent(id) ->
-	call_right left_ident id i (function id -> Ast0.UniqueIdent(id))
+    Ast0.Id(name) ->
+      call_right left_mcode name i (function name -> Ast0.Id(name))
+  | Ast0.MetaId(name,a,b) ->
+      call_right left_mcode name i (function name -> Ast0.MetaId(name,a,b))
+  | Ast0.MetaFunc(name,a,b) ->
+      call_right left_mcode name i (function name -> Ast0.MetaFunc(name,a,b))
+  | Ast0.MetaLocalFunc(name,a,b) ->
+      call_right left_mcode name i
+	(function name -> Ast0.MetaLocalFunc(name,a,b))
+  | Ast0.DisjId(starter,ids,mids,ender) -> None
+  | Ast0.OptIdent(id) ->
+      call_right left_ident id i (function id -> Ast0.OptIdent(id))
+  | Ast0.UniqueIdent(id) ->
+      call_right left_ident id i (function id -> Ast0.UniqueIdent(id))
 
 let left_fundecl name fninfo =
   let fncall_right processor data cont =
