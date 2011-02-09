@@ -435,7 +435,7 @@ let mk_string_wrap (s,info) = (s, [info])
        Tstruct Tunion Tenum
        Tbreak Telse Tswitch Tcase Tcontinue Tfor Tdo Tif  Twhile Treturn
        Tgoto Tdefault
-       Tsizeof
+       Tsizeof Tnew
 
 /*(* C99 *)*/
 %token <Ast_c.info>
@@ -735,6 +735,7 @@ unary_expr:
  | unary_op cast_expr              { mk_e(Unary ($2, fst $1)) [snd $1] }
  | Tsizeof unary_expr              { mk_e(SizeOfExpr ($2))    [$1] }
  | Tsizeof topar2 type_name tcpar2 { mk_e(SizeOfType ($3))    [$1;$2;$4] }
+ | Tnew parameter_decl             { mk_e(New $2)             [$1] }
 
 unary_op:
  | TAnd   { GetRef,     $1 }
@@ -1094,12 +1095,21 @@ declarator:
 
 /*(* so must do  int * const p; if the pointer is constant, not the pointee *)*/
 pointer:
- | TMul                   { fun x -> mk_ty (Pointer x) [$1] }
- | TMul pointer           { fun x -> mk_ty (Pointer ($2 x)) [$1] }
- | TMul type_qualif_list
+ | tmul                   { fun x -> mk_ty (Pointer x) [$1] }
+ | tmul pointer           { fun x -> mk_ty (Pointer ($2 x)) [$1] }
+ | tmul type_qualif_list
      { fun x -> ($2.qualifD, mk_tybis (Pointer x) [$1])}
- | TMul type_qualif_list pointer
+ | tmul type_qualif_list pointer
      { fun x -> ($2.qualifD, mk_tybis (Pointer ($3 x)) [$1]) }
+
+tmul:
+   TMul { $1 }
+ | TAnd
+     { if !Flag.c_plus_plus
+     then $1
+     else
+       let i = Ast_c.parse_info_of_info $1 in
+       raise (Semantic("& not allowed in C types, try -c++ option", i)) }
 
 
 direct_d:

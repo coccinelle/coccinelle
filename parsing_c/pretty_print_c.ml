@@ -145,6 +145,8 @@ let mk_pretty_printers
 
     | ParenExpr (e), [i1;i2] -> pr_elem i1; pp_expression e; pr_elem i2;
 
+    | New  (t),      [i1] -> pr_elem i1; pp_type t
+
     | (Ident (_) | Constant _ | FunCall (_,_) | CondExpr (_,_,_)
     | Sequence (_,_)
     | Assignment (_,_,_)
@@ -152,7 +154,7 @@ let mk_pretty_printers
     | ArrayAccess (_,_) | RecordAccess (_,_) | RecordPtAccess (_,_)
     | SizeOfExpr (_) | SizeOfType (_) | Cast (_,_)
     | StatementExpr (_) | Constructor _
-    | ParenExpr (_)),_ -> raise Impossible
+    | ParenExpr (_) | New (_)),_ -> raise Impossible
     );
 
     if !Flag_parsing_c.pretty_print_type_info

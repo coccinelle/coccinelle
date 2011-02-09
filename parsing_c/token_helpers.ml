@@ -357,6 +357,7 @@ let info_of_tok = function
   | TattributeNoarg           (i) -> i
   | Tinline              (i) -> i
   | Ttypeof              (i) -> i
+  | Tnew                 (i) -> i
 
   | EOF                  (i) -> i
 
@@ -510,6 +511,7 @@ let visitor_info_of_tok f = function
   | TattributeNoarg           (i) -> TattributeNoarg           (f i)
   | Tinline              (i) -> Tinline              (f i)
   | Ttypeof              (i) -> Ttypeof              (f i)
+  | Tnew                 (i) -> Tnew                 (f i)
   | EOF                  (i) -> EOF                  (f i)
 
 

@@ -21,6 +21,7 @@
   option -c++.  This is not likely to be very useful in practice.
 - Added metavariable metavariable type.
 - Add disjunctions on identifiers in some contexts
+- Pretend that & indicates a pointer in -c++ mode
 
 ** Features:
 - support transformations on variables (only) in declarations that declare

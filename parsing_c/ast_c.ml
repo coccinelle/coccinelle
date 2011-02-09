@@ -334,6 +334,9 @@ and expression = (expressionbis * exp_info ref (* semantic: *)) wrap3
   (* for unparser: *)
   | ParenExpr of expression
 
+  (* for C++: *)
+  | New of fullType
+
   (* cppext: IfdefExpr TODO *)
 
   (* cppext: normmally just expression *)

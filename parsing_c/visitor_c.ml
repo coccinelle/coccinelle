@@ -330,6 +330,8 @@ let rec vk_expr = fun bigf expr ->
 
     | ParenExpr (e) -> exprf e
 
+    | New  (t) -> vk_type bigf t
+
 
   in exprf expr
 
@@ -1053,6 +1055,8 @@ let rec vk_expr_s = fun bigf expr ->
             ))
 
       | ParenExpr (e) -> ParenExpr (exprf e)
+
+      | New  (t) -> New (vk_type_s bigf t)
 
     in
     (e', typ'), (iif ii)
