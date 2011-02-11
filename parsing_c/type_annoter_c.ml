@@ -336,6 +336,7 @@ let rec find_final_type ty env =
 let rec type_unfold_one_step ty env =
 
   match Ast_c.unwrap_typeC ty with
+  | NoType        -> ty
   | BaseType x    -> ty
   | Pointer t     -> ty
   | Array (e, t)  -> ty
@@ -391,6 +392,8 @@ let rec type_unfold_one_step ty env =
  *)
 let rec typedef_fix ty env =
   match Ast_c.unwrap_typeC ty with
+  | NoType  ->
+      ty
   | BaseType x  ->
       ty
   | Pointer t ->

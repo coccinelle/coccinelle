@@ -102,6 +102,7 @@ let (ptr_diff_type: Ast_c.fullType) =
  *)
 let rec is_completed_and_simplified ty =
   match Ast_c.unwrap_typeC ty with
+  | NoType  -> true
   | BaseType x  -> true
   | Pointer t -> is_completed_and_simplified t
   | Array (e, t) -> is_completed_and_simplified t

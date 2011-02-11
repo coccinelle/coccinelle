@@ -330,7 +330,7 @@ let rec vk_expr = fun bigf expr ->
 
     | ParenExpr (e) -> exprf e
 
-    | New  (t) -> vk_type bigf t
+    | New  t -> vk_argument bigf t
 
 
   in exprf expr
@@ -442,6 +442,7 @@ and vk_type = fun bigf t ->
     iif iiq;
     iif iit;
     match unwrap_t with
+    | NoType _ -> ()
     | BaseType _ -> ()
     | Pointer t -> typef t
     | Array (eopt, t) ->
@@ -1056,7 +1057,7 @@ let rec vk_expr_s = fun bigf expr ->
 
       | ParenExpr (e) -> ParenExpr (exprf e)
 
-      | New  (t) -> New (vk_type_s bigf t)
+      | New  t        -> New (vk_argument_s bigf t)
 
     in
     (e', typ'), (iif ii)
@@ -1231,6 +1232,7 @@ and vk_type_s = fun bigf t ->
     let (unwrap_t, iit) = t in
     let t' =
       match unwrap_t with
+      | NoType -> NoType
       | BaseType x -> BaseType x
       | Pointer t  -> Pointer (typef t)
       | Array (eopt, t) -> Array (fmap (vk_expr_s bigf) eopt, typef t)

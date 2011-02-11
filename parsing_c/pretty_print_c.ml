@@ -145,7 +145,7 @@ let mk_pretty_printers
 
     | ParenExpr (e), [i1;i2] -> pr_elem i1; pp_expression e; pr_elem i2;
 
-    | New  (t),      [i1] -> pr_elem i1; pp_type t
+    | New  (t),      [i1] -> pr_elem i1; pp_argument t
 
     | (Ident (_) | Constant _ | FunCall (_,_) | CondExpr (_,_,_)
     | Sequence (_,_)
@@ -439,6 +439,7 @@ let mk_pretty_printers
       in
 
       match ty, iity with
+      |	(NoType,_) -> ()
       | (Pointer t, [i])                           -> pp_base_type t sto
       | (ParenType t, _)                           -> pp_base_type t sto
       | (Array (eopt, t), [i1;i2])                 -> pp_base_type t sto
@@ -660,6 +661,7 @@ let mk_pretty_printers
 
       match ty, iity with
       (* the work is to do in base_type !! *)
+      | (NoType _, iis)                         -> failwith "printing notype"
       | (BaseType _, iis)                       -> print_ident ident
       | (Enum  (sopt, enumt), iis)              -> print_ident ident
       | (StructUnion (_, sopt, fields),iis)     -> print_ident ident
@@ -753,6 +755,7 @@ let mk_pretty_printers
   and (pp_type_left: fullType -> unit) =
     fun ((qu, iiqu), (ty, iity)) ->
       match ty, iity with
+	(NoType,_) -> failwith "pp_type_left: unexpected NoType"
       | (Pointer t, [i]) ->
           pr_elem i;
           iiqu +> List.iter pr_elem; (* le const est forcement apres le '*' *)
@@ -797,6 +800,7 @@ let mk_pretty_printers
 
   and pp_type_right (((qu, iiqu), (ty, iity)) : fullType) =
     match ty, iity with
+      (NoType,_) -> failwith "pp_type_right: unexpected NoType"
     | (Pointer t, [i]) ->  pp_type_right t
 
     | (Array (eopt, t), [i1;i2]) ->

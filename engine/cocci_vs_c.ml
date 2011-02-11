@@ -2966,6 +2966,7 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
         )
 
 
+    | _, (B.NoType, ii) -> fail
     | _, (B.TypeOfExpr e, ii) -> fail
     | _, (B.TypeOfType e, ii) -> fail
 
@@ -3255,6 +3256,8 @@ and compatible_type a (b,local) =
   let ok  = return ((),()) in
 
   let rec loop = function
+    | _, (qua, (B.NoType, _)) ->
+	failwith "compatible_type: matching with NoType"
     | Type_cocci.BaseType a, (qua, (B.BaseType b,ii)) ->
 	compatible_base_type a None b
 

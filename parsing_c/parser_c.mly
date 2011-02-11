@@ -735,7 +735,16 @@ unary_expr:
  | unary_op cast_expr              { mk_e(Unary ($2, fst $1)) [snd $1] }
  | Tsizeof unary_expr              { mk_e(SizeOfExpr ($2))    [$1] }
  | Tsizeof topar2 type_name tcpar2 { mk_e(SizeOfType ($3))    [$1;$2;$4] }
- | Tnew parameter_decl             { mk_e(New $2)             [$1] }
+ | Tnew new_argument               { mk_e(New $2)             [$1] }
+
+new_argument:
+ | postfix_expr { Left $1 }
+ | decl_spec
+     { let ((returnType,hasreg), iihasreg) = fixDeclSpecForParam $1 in
+       Right (ArgType { p_namei = None; p_type = returnType;
+			p_register = hasreg, iihasreg;
+		      } )
+     }
 
 unary_op:
  | TAnd   { GetRef,     $1 }
@@ -748,8 +757,6 @@ unary_op:
     * cf gcc manual "local labels as values".
     *)*/
  | TAndLog { GetRefLabel, $1 }
-
-
 
 postfix_expr:
  | primary_expr               { $1 }
@@ -1625,6 +1632,12 @@ start_fun2: decl_spec declaratorfd
        let (id, attrs) = $2 in
        (fst id, fixOldCDecl ((snd id) returnType) , storage, attrs)
      }
+ | identifier_cpp {
+   let id = $1 in
+   let ty = mk_ty NoType [] in
+   let storage = ((NoSto,false),[]) in
+   let attrs = [] in
+   (id, ty, storage, attrs) }
 
 /*(*----------------------------*)*/
 /*(* workarounds *)*/
