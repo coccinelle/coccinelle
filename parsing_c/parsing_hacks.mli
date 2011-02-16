@@ -48,13 +48,11 @@ val filter_cpp_stuff :
 val insert_virtual_positions:
   Parser_c.token list -> Parser_c.token list
 
-
 (* will among other things interally call cpp_token_c to macro
  * expand some macros *)
 val fix_tokens_cpp :
   macro_defs:(string, Cpp_token_c.define_def) Hashtbl.t ->
   Parser_c.token list -> Parser_c.token list
-
 
 (* next stream tokens -> passed stream tokens -> final next token *)
 val lookahead :

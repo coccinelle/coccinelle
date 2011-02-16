@@ -1511,8 +1511,8 @@ let insert_virtual_positions l =
 	| _ -> x::skip_fake xs in
   skip_fake l
 
-
 (* ------------------------------------------------------------------------- *)
+
 let fix_tokens_cpp2 ~macro_defs tokens =
   let tokens2 = ref (tokens +> Common.acc_map TV.mk_token_extended) in
 

@@ -222,6 +222,7 @@ let info_of_tok = function
   | TAssign  (assignOp, i) -> i
 
   | TIdent  (s, i) -> i
+  | Tconstructorname  (s, i) -> i
   | TypedefIdent  (s, i) -> i
 
   | TInt  (s, i) -> i
@@ -371,9 +372,10 @@ let visitor_info_of_tok f = function
   | TFloat ((s, floatType), i) -> TFloat ((s, floatType), f i)
   | TAssign  (assignOp, i)     -> TAssign  (assignOp, f i)
 
-  | TIdent  (s, i)       -> TIdent  (s, f i)
-  | TypedefIdent  (s, i) -> TypedefIdent  (s, f i)
-  | TInt  (s, i)         -> TInt  (s, f i)
+  | TIdent  (s, i)         -> TIdent  (s, f i)
+  | Tconstructorname(s, i) -> Tconstructorname  (s, f i)
+  | TypedefIdent  (s, i)   -> TypedefIdent  (s, f i)
+  | TInt  (s, i)           -> TInt  (s, f i)
 
   | TDefine (i1) -> TDefine(f i1)
 
@@ -508,7 +510,7 @@ let visitor_info_of_tok f = function
   | Tsizeof              (i) -> Tsizeof              (f i)
   | Tasm                 (i) -> Tasm                 (f i)
   | Tattribute           (i) -> Tattribute           (f i)
-  | TattributeNoarg           (i) -> TattributeNoarg           (f i)
+  | TattributeNoarg      (i) -> TattributeNoarg           (f i)
   | Tinline              (i) -> Tinline              (f i)
   | Ttypeof              (i) -> Ttypeof              (f i)
   | Tnew                 (i) -> Tnew                 (f i)

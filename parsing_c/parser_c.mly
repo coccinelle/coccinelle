@@ -400,6 +400,7 @@ let mk_string_wrap (s,info) = (s, [info])
 %token <(string * Ast_c.isWchar) * Ast_c.info>   TString
 
 %token <string * Ast_c.info> TIdent
+%token <string * Ast_c.info> Tconstructorname /* parsing_hack for c++ */
 /*(* appears mostly after some fix_xxx in parsing_hack *)*/
 %token <string * Ast_c.info> TypedefIdent
 
@@ -613,7 +614,8 @@ let mk_string_wrap (s,info) = (s, [info])
 /*(*************************************************************************)*/
 /*(* no more used; now that use error recovery *)*/
 
-main:  translation_unit EOF     { $1 }
+main:
+ translation_unit EOF     { $1 }
 
 translation_unit:
  | external_declaration
@@ -930,9 +932,6 @@ stat_or_decl:
      { CppDirectiveStmt $1 }
  | cpp_ifdef_directive/*(* stat_or_decl_list ...*)*/
      { IfdefStmt $1 }
-
-
-
 
 
 expr_statement:
@@ -1632,12 +1631,23 @@ start_fun2: decl_spec declaratorfd
        let (id, attrs) = $2 in
        (fst id, fixOldCDecl ((snd id) returnType) , storage, attrs)
      }
- | identifier_cpp {
-   let id = $1 in
-   let ty = mk_ty NoType [] in
-   let storage = ((NoSto,false),[]) in
-   let attrs = [] in
-   (id, ty, storage, attrs) }
+   | ctor_dtor { $1 }
+
+ctor_dtor:
+ | Tconstructorname topar tcpar {
+     let id = RegularName (mk_string_wrap $1) in
+     let ret = mk_ty NoType [] in
+     let ty = mk_ty (FunctionType (ret, (([], (false, []))))) [$2;$3] in
+     let storage = ((NoSto,false),[]) in
+     let attrs = [] in
+     (id, ty, storage, attrs) }
+ | Tconstructorname topar parameter_type_list tcpar {
+     let id = RegularName (mk_string_wrap $1) in
+     let ret = mk_ty NoType [] in
+     let ty = mk_ty (FunctionType (ret, $3)) [$2;$4] in
+     let storage = ((NoSto,false),[]) in
+     let attrs = [] in
+     (id, ty, storage, attrs) }
 
 /*(*----------------------------*)*/
 /*(* workarounds *)*/
@@ -1841,7 +1851,7 @@ external_declaration:
 
 
 celem:
- | external_declaration                         { $1 }
+   | external_declaration                         { $1 }
 
  /*(* cppext: *)*/
  | cpp_directive
