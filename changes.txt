@@ -38,6 +38,7 @@
 - reuse typedefs and macros from complete parsing when reparsing the
   transformed code
 - optimization for an if branch that is just { ... }
+- spatch -control_flow_to_file file.c generates a file file.dot
 
 ** Bugfix:
 - improved parsing of expressions to allow ... to the right of operators in
