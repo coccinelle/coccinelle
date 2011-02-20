@@ -164,7 +164,7 @@ let local_test_cfg launchgv file =
 	    let filename =
 	      if launchgv
 	      then Filename.temp_file "output" ".dot"
-	      else (Filename.chop_extension file)^".dot" in
+	      else (Filename.chop_extension (Filename.basename file))^".dot" in
             Ograph_extended.print_ograph_mutable flow' (filename) launchgv
           )
         with Ast_to_flow.Error (x) -> Ast_to_flow.report_error x
