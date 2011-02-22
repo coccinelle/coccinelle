@@ -1253,6 +1253,12 @@ and expressionbis_of_sexp__ =
         (match sexp_args with
          | [ v1 ] -> let v1 = expression_of_sexp v1 in ParenExpr v1
          | _ -> Conv_error.stag_incorrect_n_args _loc tag sexp)
+    | (Sexp.List
+         (Sexp.Atom (("new" | "New" as tag)) :: sexp_args)
+       as sexp) ->
+        (match sexp_args with
+         | [ v1 ] -> let v1 = fullType_of_sexp v1 in New v1
+         | _ -> Conv_error.stag_incorrect_n_args _loc tag sexp)
     | (Sexp.Atom ("ident" | "Ident") as sexp) ->
         Conv_error.stag_takes_args _loc sexp
     | (Sexp.Atom ("constant" | "Constant") as sexp) ->
@@ -1290,6 +1296,8 @@ and expressionbis_of_sexp__ =
     | (Sexp.Atom ("constructor" | "Constructor") as sexp) ->
         Conv_error.stag_takes_args _loc sexp
     | (Sexp.Atom ("parenExpr" | "ParenExpr") as sexp) ->
+        Conv_error.stag_takes_args _loc sexp
+    | (Sexp.Atom ("new" | "New") as sexp) ->
         Conv_error.stag_takes_args _loc sexp
     | (Sexp.List (Sexp.List _ :: _) as sexp) ->
         Conv_error.nested_list_invalid_sum _loc sexp

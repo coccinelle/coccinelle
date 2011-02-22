@@ -169,6 +169,9 @@ let keyword_table = Common.hash_of_list [
 
  ]
 
+let cpp_keyword_table = Common.hash_of_list [
+  "new",   (fun ii -> Tnew ii) ]
+
 let error_radix s =
   ("numeric " ^ s ^ " constant contains digits beyond the radix:")
 
@@ -645,9 +648,16 @@ rule token = parse
       { let info = tokinfo lexbuf in
         let s = tok lexbuf in
         Common.profile_code "C parsing.lex_ident" (fun () ->
-          match Common.optionise (fun () -> Hashtbl.find keyword_table s)
-          with
-          | Some f -> f info
+	  let tok =
+	    if !Flag.c_plus_plus 
+	    then Common.optionise (fun () -> Hashtbl.find cpp_keyword_table s)
+	    else None in
+	  match tok with
+	    Some f -> f info
+	  | None ->
+              match Common.optionise (fun () -> Hashtbl.find keyword_table s)
+              with
+              | Some f -> f info
 
            (* parse_typedef_fix.
             *    if Lexer_parser.is_typedef s
@@ -660,7 +670,7 @@ rule token = parse
             * now done in parse_c.ml.
             *)
 
-          | None -> TIdent (s, info)
+              | None -> TIdent (s, info)
         )
       }
   (* gccext: apparently gcc allows dollar in variable names. found such
@@ -674,8 +684,26 @@ rule token = parse
         pr2 ("LEXER: identifier with dollar: "  ^ s);
         TIdent (s, info)
       }
-  | (letter | '$') (letter | digit | '$' | '~') *
-    ("::" (letter | '$' | '~') (letter | digit | '$' | '~') *
+  | (letter | '$') (letter | digit | '$') *
+    ("::~" (letter | '$') (letter | digit | '$') *
+      ('<' (letter | '$' | '~') (letter | digit | '$' | '~') * '>') ?) +
+
+      {
+        if !Flag.c_plus_plus
+	then
+	  begin
+            let info = tokinfo lexbuf in
+            let s = tok lexbuf in
+            Tconstructorname (s, info)
+	  end
+	else
+	  raise
+	    (Lexical "~ and :: not allowed in C identifiers, try -c++ option")
+      }
+  | (((letter | '$') (letter | digit | '$') *) as first)
+    "::" (((letter | '$') (letter | digit | '$') *) as second)
+      ('<' (letter | '$' | '~') (letter | digit | '$' | '~') * '>') ?
+    ("::" ((letter | '$') (letter | digit | '$') *)
       ('<' (letter | '$' | '~') (letter | digit | '$' | '~') * '>') ?) *
 
       {
@@ -684,7 +712,9 @@ rule token = parse
 	  begin
             let info = tokinfo lexbuf in
             let s = tok lexbuf in
-            TIdent (s, info)
+	    if first = second
+	    then Tconstructorname (s, info)
+            else TIdent (s, info)
 	  end
 	else
 	  raise

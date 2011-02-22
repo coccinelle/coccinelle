@@ -172,6 +172,7 @@ and fullType = typeQualifier * typeC
  and typeC = typeCbis wrap (* todo reput wrap3 *)
 
   and typeCbis =
+    NoType (* for c++ only *)
   | BaseType        of baseType
 
   | Pointer         of fullType
@@ -334,6 +335,9 @@ and expression = (expressionbis * exp_info ref (* semantic: *)) wrap3
   (* for unparser: *)
   | ParenExpr of expression
 
+  (* for C++: *)
+  | New of argument
+
   (* cppext: IfdefExpr TODO *)
 
   (* cppext: normmally just expression *)
@@ -382,7 +386,6 @@ and expression = (expressionbis * exp_info ref (* semantic: *)) wrap3
          | AndLog | OrLog
 
  and constExpression = expression (* => int *)
-
 
 (* ------------------------------------------------------------------------- *)
 (* C statement *)
