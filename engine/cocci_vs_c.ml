@@ -1337,6 +1337,7 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
   | _, ((B.StatementExpr _,_),_)
   | _, ((B.Constructor _,_),_)
   | _, ((B.New _,_),_)
+  | _, ((B.Delete _,_),_)
     -> fail
 
 

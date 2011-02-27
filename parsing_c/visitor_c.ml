@@ -330,7 +330,8 @@ let rec vk_expr = fun bigf expr ->
 
     | ParenExpr (e) -> exprf e
 
-    | New  t -> vk_argument bigf t
+    | New  t   -> vk_argument bigf t
+    | Delete e -> vk_expr bigf e
 
 
   in exprf expr
@@ -1058,6 +1059,7 @@ let rec vk_expr_s = fun bigf expr ->
       | ParenExpr (e) -> ParenExpr (exprf e)
 
       | New  t        -> New (vk_argument_s bigf t)
+      | Delete e      -> Delete (vk_expr_s bigf e)
 
     in
     (e', typ'), (iif ii)

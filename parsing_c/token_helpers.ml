@@ -359,6 +359,7 @@ let info_of_tok = function
   | Tinline              (i) -> i
   | Ttypeof              (i) -> i
   | Tnew                 (i) -> i
+  | Tdelete              (i) -> i
   | TOParCplusplusInit   (i) -> i
 
   | EOF                  (i) -> i
@@ -515,6 +516,7 @@ let visitor_info_of_tok f = function
   | Tinline              (i) -> Tinline              (f i)
   | Ttypeof              (i) -> Ttypeof              (f i)
   | Tnew                 (i) -> Tnew                 (f i)
+  | Tdelete              (i) -> Tdelete              (f i)
   | TOParCplusplusInit   (i) -> TOParCplusplusInit   (f i)
   | EOF                  (i) -> EOF                  (f i)
 

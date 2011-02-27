@@ -337,10 +337,11 @@ and expression = (expressionbis * exp_info ref (* semantic: *)) wrap3
 
   (* for C++: *)
   | New of argument
+  | Delete of expression
 
   (* cppext: IfdefExpr TODO *)
 
-  (* cppext: normmally just expression *)
+  (* cppext: normally just expression *)
   and argument = (expression, weird_argument) Common.either
    and weird_argument =
        | ArgType of parameterType

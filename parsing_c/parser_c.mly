@@ -436,7 +436,7 @@ let mk_string_wrap (s,info) = (s, [info])
        Tstruct Tunion Tenum
        Tbreak Telse Tswitch Tcase Tcontinue Tfor Tdo Tif  Twhile Treturn
        Tgoto Tdefault
-       Tsizeof Tnew TOParCplusplusInit
+       Tsizeof Tnew Tdelete TOParCplusplusInit
 
 /*(* C99 *)*/
 %token <Ast_c.info>
@@ -738,6 +738,7 @@ unary_expr:
  | Tsizeof unary_expr              { mk_e(SizeOfExpr ($2))    [$1] }
  | Tsizeof topar2 type_name tcpar2 { mk_e(SizeOfType ($3))    [$1;$2;$4] }
  | Tnew new_argument               { mk_e(New $2)             [$1] }
+ | Tdelete cast_expr               { mk_e(Delete $2)          [$1] }
 
 new_argument:
  | TIdent TOPar argument_list_ne TCPar
