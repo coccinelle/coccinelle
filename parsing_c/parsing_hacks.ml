@@ -1644,12 +1644,12 @@ let lookahead2 ~pass next before =
 
   match (next, before) with
 
+  (* c++ hacks *)
   (* yy xx(   and in function *)
   | TOPar i1::_,              TIdent(s,i2)::TypedefIdent _::_
       when !Flag.c_plus_plus && (LP.current_context () = (LP.InFunction)) ->
         pr2_cpp("constructed_object: "  ^s);
         TOParCplusplusInit i1
-
 
   (*-------------------------------------------------------------*)
   (* typedef inference, parse_typedef_fix3 *)
