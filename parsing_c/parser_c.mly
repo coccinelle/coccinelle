@@ -740,13 +740,35 @@ unary_expr:
  | Tnew new_argument               { mk_e(New $2)             [$1] }
 
 new_argument:
- | postfix_expr { Left $1 }
- | decl_spec
-     { let ((returnType,hasreg), iihasreg) = fixDeclSpecForParam $1 in
+ | TIdent TOPar argument_list_ne TCPar
+     { let fn = mk_e(Ident (RegularName (mk_string_wrap $1))) [] in
+       Left (mk_e(FunCall (fn, $3)) [$2;$4]) }
+ | TIdent TOPar TCPar
+     { let fn = mk_e(Ident (RegularName (mk_string_wrap $1))) [] in
+       Left(mk_e(FunCall (fn, [])) [$2;$3]) }
+ | TypedefIdent TOPar argument_list_ne TCPar
+     { let fn = mk_e(Ident (RegularName (mk_string_wrap $1))) [] in
+       Left (mk_e(FunCall (fn, $3)) [$2;$4]) }
+ | TypedefIdent TOPar TCPar
+     { let fn = mk_e(Ident (RegularName (mk_string_wrap $1))) [] in
+       Left (mk_e(FunCall (fn, [])) [$2;$3]) }
+ | type_spec
+     { let ty = addTypeD ($1,nullDecl) in
+       let ((returnType,hasreg), iihasreg) = fixDeclSpecForParam ty in
        Right (ArgType { p_namei = None; p_type = returnType;
 			p_register = hasreg, iihasreg;
 		      } )
      }
+ | new_argument TOCro expr TCCro
+     {
+       match $1 with
+	 Left(e) -> Left(mk_e(ArrayAccess (e, $3)) [$2;$4])
+       | Right(ArgType(ty)) -> (* lots of hacks to make the right type *)
+	   let fty = mk_ty (Array (Some $3, ty.Ast_c.p_type)) [$2;$4] in
+	   let pty = { ty with p_type = fty } in
+	   Right(ArgType pty)
+       | _ -> raise Impossible
+     } 
 
 unary_op:
  | TAnd   { GetRef,     $1 }
