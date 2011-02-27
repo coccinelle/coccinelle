@@ -1085,9 +1085,13 @@ let rec visit_toplevel ~just_add_in_env ~depth elem =
 
                   if need_annotate_body then begin
                     (* int x = sizeof(x) is legal so need process ini *)
-                    iniopt +> Common.do_option (fun (info, ini) ->
-                      Visitor_c.vk_ini bigf ini
-                    );
+		    match iniopt with
+		      Ast_c.NoInit -> ()
+		    | Ast_c.ValInit(iini,init) -> Visitor_c.vk_ini bigf init
+		    | Ast_c.ConstrInit((args,_)) ->
+			args +> List.iter (fun (e,ii) ->
+			  Visitor_c.vk_argument bigf e
+			)
                   end
             );
           );

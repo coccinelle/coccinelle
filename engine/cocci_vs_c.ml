@@ -479,7 +479,7 @@ let one_initialisation_to_affectation x =
   match var with
   | Some (name, iniopt) ->
       (match iniopt with
-      | Some (iini, (B.InitExpr e, ii_empty2)) ->
+      | B.ValInit (iini, (B.InitExpr e, ii_empty2)) ->
 	  let local =
 	    match local with
 	      Ast_c.NotLocalDecl -> Ast_c.NotLocalVar
@@ -1766,7 +1766,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
   *)
 
  | A.TyDecl (tya0, ptvirga),
-   ({B.v_namei = Some (nameidb, None);
+   ({B.v_namei = Some (nameidb, B.NoInit);
      B.v_type = typb0;
      B.v_storage = (B.StoTypedef, inl);
      B.v_local = local;
@@ -1830,7 +1830,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
 
                      return (
                      (A.TyDecl (tya0, ptvirga)) +> A.rewrap decla,
-                     (({B.v_namei = Some (nameidb, None);
+                     (({B.v_namei = Some (nameidb, B.NoInit);
                         B.v_type = typb0;
                         B.v_storage = (B.StoTypedef, inl);
                         B.v_local = local;
@@ -1859,7 +1859,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
 
                    return (
                      (A.TyDecl (tya0, ptvirga)) +> A.rewrap decla,
-                     (({B.v_namei = Some (nameidb, None);
+                     (({B.v_namei = Some (nameidb, B.NoInit);
                         B.v_type = typb0;
                         B.v_storage = (B.StoTypedef, inl);
                         B.v_local = local;
@@ -1891,7 +1891,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
 
     (* could handle iso here but handled in standard.iso *)
    | A.UnInit (stoa, typa, ida, ptvirga),
-     ({B.v_namei = Some (nameidb, None);
+     ({B.v_namei = Some (nameidb, B.NoInit);
        B.v_type = typb;
        B.v_storage = stob;
        B.v_local = local;
@@ -1905,7 +1905,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
         (fun stoa (stob, iistob) ->
          return (
            (A.UnInit (stoa, typa, ida, ptvirga)) +>  A.rewrap decla,
-           (({B.v_namei = Some (nameidb, None);
+           (({B.v_namei = Some (nameidb, B.NoInit);
               B.v_type = typb;
               B.v_storage = stob;
               B.v_local = local;
@@ -1916,7 +1916,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
          )))))
 
    | A.Init (stoa, typa, ida, eqa, inia, ptvirga),
-     ({B.v_namei = Some(nameidb, Some (iieqb, inib));
+     ({B.v_namei = Some(nameidb, B.ValInit (iieqb, inib));
        B.v_type = typb;
        B.v_storage = stob;
        B.v_local = local;
@@ -1933,7 +1933,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
        initialiser inia inib >>= (fun inia inib ->
          return (
            (A.Init (stoa, typa, ida, eqa, inia, ptvirga)) +> A.rewrap decla,
-           (({B.v_namei = Some(nameidb, Some (iieqb, inib));
+           (({B.v_namei = Some(nameidb, B.ValInit (iieqb, inib));
               B.v_type = typb;
               B.v_storage = stob;
               B.v_local = local;
@@ -1942,6 +1942,16 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
            },iivirg),
            iiptvirgb,iistob)
          )))))))
+
+   | A.Init (stoa, typa, ida, eqa, inia, ptvirga),
+     ({B.v_namei = Some(nameidb, B.ConstrInit _);
+       B.v_type = typb;
+       B.v_storage = stob;
+       B.v_local = local;
+       B.v_attr = attrs;
+       B.v_type_bis = typbbis;
+     },iivirg)
+       -> fail (* C++ constructor declaration not supported in SmPL *)
 
    (* do iso-by-absence here ? allow typedecl and var ? *)
    | A.TyDecl (typa, ptvirga),
@@ -1970,7 +1980,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
 
 
    | A.Typedef (stoa, typa, ida, ptvirga),
-     ({B.v_namei = Some (nameidb, None);
+     ({B.v_namei = Some (nameidb, B.NoInit);
        B.v_type = typb;
        B.v_storage = (B.StoTypedef,inline);
        B.v_local = local;
@@ -2023,7 +2033,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
        ) >>= (fun ida nameidb ->
          return (
            (A.Typedef (stoa, typa, ida, ptvirga)) +> A.rewrap decla,
-           (({B.v_namei = Some (nameidb, None);
+           (({B.v_namei = Some (nameidb, B.NoInit);
               B.v_type = typb;
               B.v_storage = (B.StoTypedef,inline);
               B.v_local = local;
@@ -2379,7 +2389,7 @@ and (struct_field: (A.declaration, B.field) matcher) = fun fa fb ->
           let iisto = [] in
           let stob = B.NoSto, false in
           let fake_var =
-            ({B.v_namei = Some (nameidb, None);
+            ({B.v_namei = Some (nameidb, B.NoInit);
               B.v_type = typb;
               B.v_storage = stob;
               B.v_local = Ast_c.NotLocalDecl;
@@ -2394,7 +2404,7 @@ and (struct_field: (A.declaration, B.field) matcher) = fun fa fb ->
             (fun fa (var,iiptvirgb,iisto) ->
 
               match fake_var with
-              | ({B.v_namei = Some (nameidb, None);
+              | ({B.v_namei = Some (nameidb, B.NoInit);
                   B.v_type = typb;
                   B.v_storage = stob;
                 }, iivirg) ->

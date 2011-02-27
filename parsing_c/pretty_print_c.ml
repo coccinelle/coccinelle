@@ -860,9 +860,12 @@ let mk_pretty_printers
 	    pp_type_with_ident
 	      (Some (s, iis)) (Some (storage, iisto))
 	      returnType attrs;
-	    iniopt +> do_option (fun (iini, init) ->
-	      pr_elem iini;
-              pp_init init);
+	    (match iniopt with
+	      Ast_c.NoInit -> ()
+	    | Ast_c.ValInit(iini,init) -> pr_elem iini; pp_init init
+	    | Ast_c.ConstrInit((init,[lp;rp])) ->
+		pr_elem lp; pp_arg_list init; pr_elem rp
+	    | Ast_c.ConstrInit _ -> raise Impossible)
 	| None -> pp_type returnType
 	);
 
@@ -879,9 +882,12 @@ let mk_pretty_printers
 	    iivirg +> List.iter pr_elem;
 	    pp_type_with_ident_rest
 	      (Some (s, iis)) returnType attrs;
-	    iniopt +> do_option (fun (iini, init) ->
-	      pr_elem iini; pp_init init
-            );
+	    (match iniopt with
+	      Ast_c.NoInit -> ()
+	    | Ast_c.ValInit(iini,init) -> pr_elem iini; pp_init init
+	    | Ast_c.ConstrInit((init,[lp;rp])) ->
+		pr_elem lp; pp_arg_list init; pr_elem rp
+	    | Ast_c.ConstrInit _ -> raise Impossible);
 
 
 	| x -> raise Impossible

@@ -436,7 +436,7 @@ let mk_string_wrap (s,info) = (s, [info])
        Tstruct Tunion Tenum
        Tbreak Telse Tswitch Tcase Tcontinue Tfor Tdo Tif  Twhile Treturn
        Tgoto Tdefault
-       Tsizeof Tnew
+       Tsizeof Tnew TOParCplusplusInit
 
 /*(* C99 *)*/
 %token <Ast_c.info>
@@ -1298,14 +1298,9 @@ decl2:
        DeclList (
          ($2 +> List.map (fun ((((name,f),attrs), ini), iivirg) ->
            let s = str_of_name name in
-           let iniopt =
-             match ini with
-             | None -> None
-             | Some (ini, iini) -> Some (iini, ini)
-           in
 	   if fst (unwrap storage) =*= StoTypedef
 	   then LP.add_typedef s;
-           {v_namei = Some (name, iniopt);
+           {v_namei = Some (name, ini);
             v_type = f returnType;
             v_storage = unwrap storage;
             v_local = local;
@@ -1370,9 +1365,11 @@ decl_spec: decl_spec2    { dt "declspec" (); $1  }
 /*(* declarators (right part of type and variable) *)*/
 /*(*-----------------------------------------------------------------------*)*/
 init_declarator2:
- | declaratori                  { ($1, None) }
- | declaratori teq initialize   { ($1, Some ($3, $2)) }
-
+ | declaratori                  { ($1, NoInit) }
+ | declaratori teq initialize   { ($1, ValInit($2, $3)) }
+ /* C++ only */
+ | declaratori TOParCplusplusInit argument_list TCPar
+     { ($1, ConstrInit($3,[$2;$4])) }
 
 
 /*(*----------------------------*)*/
