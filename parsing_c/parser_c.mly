@@ -801,6 +801,7 @@ postfix_expr:
  | topar2 type_name tcpar2 TOBrace initialize_list gcc_comma_opt TCBrace
      { mk_e(Constructor ($2, List.rev $5)) ([$1;$3;$4;$7] ++ $6) }
 
+
 primary_expr:
  | identifier_cpp  { mk_e(Ident  ($1)) [] }
  | TInt

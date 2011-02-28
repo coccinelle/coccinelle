@@ -1650,6 +1650,9 @@ let lookahead2 ~pass next before =
       when !Flag.c_plus_plus && (LP.current_context () = (LP.InFunction)) ->
         pr2_cpp("constructed_object: "  ^s);
         TOParCplusplusInit i1
+  | TypedefIdent(s,i)::TOPar i1::_,_
+      when !Flag.c_plus_plus && (LP.current_context () = (LP.InFunction)) ->
+	TIdent(s,i)
 
   (*-------------------------------------------------------------*)
   (* typedef inference, parse_typedef_fix3 *)
