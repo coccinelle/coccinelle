@@ -22,7 +22,7 @@
 - Added metavariable metavariable type.
 - Add disjunctions on identifiers in some contexts
 - Pretend that & indicates a pointer in -c++ mode
-- Support for new
+- Support for new and delete
 
 ** Features:
 - support transformations on variables (only) in declarations that declare
