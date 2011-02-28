@@ -22,13 +22,9 @@
 - Added metavariable metavariable type.
 - Add disjunctions on identifiers in some contexts
 - Pretend that & indicates a pointer in -c++ mode
-<<<<<<< changes.txt
-- Support for new
-- allow arrays in smpl parameter declarations.  Thanks to Jesper Louis
-  Andersen for pointing out the problem.
-=======
 - Support for new and delete
->>>>>>> 1.262
+- Allow arrays in smpl parameter declarations.  Thanks to Jesper Louis
+  Andersen for pointing out the problem.
 
 ** Features:
 - support transformations on variables (only) in declarations that declare

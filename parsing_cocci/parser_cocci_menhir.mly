@@ -965,8 +965,8 @@ storage:
        | s=Tregister    { P.clt2mcode Ast.Register s }
        | s=Textern      { P.clt2mcode Ast.Extern s }
 
-decl: t=ctype i=disj_ident
-	{ Ast0.wrap(Ast0.Param(t, Some i)) }
+decl: t=ctype i=disj_ident a=list(array_dec)
+	{ let t = P.arrayify t a in Ast0.wrap(Ast0.Param(t, Some i)) }
     | t=ctype { (*verify in FunDecl*) Ast0.wrap(Ast0.Param(t, None)) }
     | t=ctype lp=TOPar s=TMul i=disj_ident rp=TCPar
 	lp1=TOPar d=decl_list(name_opt_decl) rp1=TCPar
@@ -1214,14 +1214,7 @@ one_decl_var:
 
 d_ident:
     disj_ident list(array_dec)
-      { ($1,
-	 function t ->
-	   List.fold_right
-	     (function (l,i,r) ->
-	       function rest ->
-		 Ast0.wrap
-		   (Ast0.Array(rest,P.clt2mcode "[" l,i,P.clt2mcode "]" r)))
-	     $2 t) }
+      { ($1, function t -> P.arrayify t $2) }
 
 array_dec: l=TOCro i=option(eexpr) r=TCCro { (l,i,r) }
 
