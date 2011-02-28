@@ -154,6 +154,13 @@ let ty_pointerify ty m =
     (function inner -> function cur -> Type_cocci.Pointer(inner))
     ty m
 
+let arrayify ty ar =
+  List.fold_right
+    (function (l,i,r) ->
+      function rest ->
+	Ast0.wrap (Ast0.Array(rest,clt2mcode "[" l,i,clt2mcode "]" r)))
+    ar ty
+
 (* Left is <=>, Right is =>.  Collect <=>s. *)
 (* The parser should have done this, with precedences.  But whatever... *)
 let iso_adjust first_fn fn first rest =
