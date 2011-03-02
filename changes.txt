@@ -49,6 +49,8 @@
 - Check for ocamlfind in configure (Reported-by: Paul E. McKenney)
 - Postpone use of ocamlfind at runtime to report fewer errors
 - Add support for Python 2.4 binding with the provided pycaml library
+- Allow '@' in script code.  Thanks to Laurent Reveillere for noticing the
+  problem.
 
 * 0.2.4
 ** Language:
