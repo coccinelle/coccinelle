@@ -191,9 +191,8 @@ let real_strip_info_visitor _ =
 let real_al_expr      x = Visitor_c.vk_expr_s   (real_strip_info_visitor()) x
 let real_al_node      x = Visitor_c.vk_node_s   (real_strip_info_visitor()) x
 let real_al_type      x = Visitor_c.vk_type_s   (real_strip_info_visitor()) x
-let real_al_statement x =
-  Visitor_c.vk_statement_s (real_strip_info_visitor()) x
-
+let real_al_statement x = Visitor_c.vk_statement_s (real_strip_info_visitor()) x
+let real_al_def       x = Visitor_c.vk_toplevel_s (real_strip_info_visitor()) x
 
 (*****************************************************************************)
 (* Extract infos *)
