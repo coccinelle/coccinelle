@@ -443,7 +443,7 @@ and vk_type = fun bigf t ->
     iif iiq;
     iif iit;
     match unwrap_t with
-    | NoType _ -> ()
+    | NoType -> ()
     | BaseType _ -> ()
     | Pointer t -> typef t
     | Array (eopt, t) ->
