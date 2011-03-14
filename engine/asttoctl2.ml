@@ -54,7 +54,8 @@ let ctl_or_fl x y     =
 
 let ctl_seqor x y     =
   match (x,y) with
-    (CTL.True,_) | (_,CTL.True) -> CTL.True
+    (* drop x or true case because x might have side effects *)
+    (CTL.True,_) (* | (_,CTL.True) *) -> CTL.True
   | (CTL.False,a) | (a,CTL.False) -> a
   | _ -> CTL.SeqOr(x,y)
 
