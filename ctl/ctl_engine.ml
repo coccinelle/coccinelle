@@ -284,8 +284,7 @@ type ('pred,'anno) triples =
 let (print_generic_substitution : substitution -> unit) = fun substxs ->
   let print_generic_subst = function
       A.Subst (mvar, v) ->
-	SUB.print_mvar mvar; Format.print_string " --> "; SUB.print_value v;
-	Format.print_string (Dumper.dump v)
+	SUB.print_mvar mvar; Format.print_string " --> "; SUB.print_value v
     | A.NegSubst (mvar, v) ->
 	SUB.print_mvar mvar; Format.print_string " -/-> "; SUB.print_value v in
   Format.print_string "[";
