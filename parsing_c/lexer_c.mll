@@ -170,7 +170,8 @@ let keyword_table = Common.hash_of_list [
  ]
 
 let cpp_keyword_table = Common.hash_of_list [
-  "new",   (fun ii -> Tnew ii) ]
+  "new",   (fun ii -> Tnew ii);
+  "delete",(fun ii -> Tdelete ii) ]
 
 let error_radix s =
   ("numeric " ^ s ^ " constant contains digits beyond the radix:")
@@ -685,6 +686,7 @@ rule token = parse
         TIdent (s, info)
       }
   | (letter | '$') (letter | digit | '$') *
+      ('<' (letter | '$' | '~') (letter | digit | '$' | '~') * '>') ?
     ("::~" (letter | '$') (letter | digit | '$') *
       ('<' (letter | '$' | '~') (letter | digit | '$' | '~') * '>') ?) +
 
@@ -700,7 +702,23 @@ rule token = parse
 	  raise
 	    (Lexical "~ and :: not allowed in C identifiers, try -c++ option")
       }
+  | ((letter | '$') (letter | digit | '$') *)
+      ('<' (letter | '$' | '~') (letter | digit | '$' | '~') * '>')
+
+      {
+        if !Flag.c_plus_plus
+	then
+	  begin
+            let info = tokinfo lexbuf in
+            let s = tok lexbuf in
+            TypedefIdent (s, info)
+	  end
+	else raise (Lexical "<> detected, try -c++ option")
+      }
+
+
   | (((letter | '$') (letter | digit | '$') *) as first)
+      ('<' (letter | '$' | '~') (letter | digit | '$' | '~') * '>') ?
     "::" (((letter | '$') (letter | digit | '$') *) as second)
       ('<' (letter | '$' | '~') (letter | digit | '$' | '~') * '>') ?
     ("::" ((letter | '$') (letter | digit | '$') *)
@@ -715,6 +733,24 @@ rule token = parse
 	    if first = second
 	    then Tconstructorname (s, info)
             else TIdent (s, info)
+	  end
+	else
+	  raise
+	    (Lexical "~ and :: not allowed in C identifiers, try -c++ option")
+      }
+
+   | "::" ((letter | '$') (letter | digit | '$') *)
+      ('<' (letter | '$' | '~') (letter | digit | '$' | '~') * '>') ?
+    ("::" ((letter | '$') (letter | digit | '$') *)
+      ('<' (letter | '$' | '~') (letter | digit | '$' | '~') * '>') ?) *
+
+      {
+        if !Flag.c_plus_plus
+	then
+	  begin
+            let info = tokinfo lexbuf in
+            let s = tok lexbuf in
+	    TIdent (s, info)
 	  end
 	else
 	  raise

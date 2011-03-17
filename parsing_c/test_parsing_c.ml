@@ -138,16 +138,18 @@ let local_test_cfg launchgv file =
   program +> List.iter (fun (e,_) ->
     let toprocess =
       match specific_func, e with
-      | None, _ -> true
+      | None, Ast_c.Definition (defbis,_) ->
+	  Some (Ast_c.str_of_name (defbis.Ast_c.f_name))
       | Some s, Ast_c.Definition (defbis,_)  ->
-          s =$= Ast_c.str_of_name (defbis.Ast_c.f_name)
-      | _, _ -> false
+	  let nm = Ast_c.str_of_name (defbis.Ast_c.f_name) in
+          if s =$= nm then Some nm else None
+      | _, _ -> None
     in
 
-    if toprocess
-    then
-      (* old: Flow_to_ast.test !Flag.show_flow def *)
-      (try
+    match toprocess with
+      None -> ()
+    | Some fn -> (* old: Flow_to_ast.test !Flag.show_flow def *)
+	try
           let flow = Ast_to_flow.ast_to_control_flow e in
           flow +> do_option (fun flow ->
             Ast_to_flow.deadcode_detection flow;
@@ -161,12 +163,16 @@ let local_test_cfg launchgv file =
 *)
               flow
             in
-	    let filename = Filename.temp_file "output" ".dot" in
+	    let filename =
+	      if launchgv
+	      then Filename.temp_file "output" ".dot"
+	      else
+		let fl = Filename.chop_extension (Filename.basename file) in 
+		fl^":"^fn^".dot" in
             Ograph_extended.print_ograph_mutable flow' (filename) launchgv
           )
         with Ast_to_flow.Error (x) -> Ast_to_flow.report_error x
       )
-  )
 
 let test_cfg = local_test_cfg true
 

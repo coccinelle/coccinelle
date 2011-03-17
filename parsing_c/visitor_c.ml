@@ -330,7 +330,8 @@ let rec vk_expr = fun bigf expr ->
 
     | ParenExpr (e) -> exprf e
 
-    | New  t -> vk_argument bigf t
+    | New  t   -> vk_argument bigf t
+    | Delete e -> vk_expr bigf e
 
 
   in exprf expr
@@ -519,10 +520,10 @@ and vk_onedecl = fun bigf onedecl ->
     attrs +> List.iter (vk_attribute bigf);
     var +> Common.do_option (fun (name, iniopt) ->
       vk_name bigf name;
-      iniopt +> Common.do_option (fun (info, ini) ->
-      iif [info];
-      vk_ini bigf ini;
-      );
+      (match iniopt with
+	Ast_c.NoInit -> ()
+      |	Ast_c.ValInit(iini,init) -> iif [iini]; vk_ini bigf init
+      |	Ast_c.ConstrInit((init,ii)) -> iif ii; vk_argument_list bigf init)
     )
   in f (k, bigf) onedecl
 
@@ -1058,6 +1059,7 @@ let rec vk_expr_s = fun bigf expr ->
       | ParenExpr (e) -> ParenExpr (exprf e)
 
       | New  t        -> New (vk_argument_s bigf t)
+      | Delete e      -> Delete (vk_expr_s bigf e)
 
     in
     (e', typ'), (iif ii)
@@ -1298,10 +1300,15 @@ and vk_decl_s = fun bigf d ->
     {v_namei =
       (var +> map_option (fun (name, iniopt) ->
         vk_name_s bigf name,
-        iniopt +> map_option (fun (info, init) ->
-          vk_info_s bigf info,
-          vk_ini_s bigf init
-        )));
+	(match iniopt with
+	Ast_c.NoInit -> iniopt
+      |	Ast_c.ValInit(iini,init) ->
+	  Ast_c.ValInit(vk_info_s bigf iini,vk_ini_s bigf init)
+      |	Ast_c.ConstrInit((init,ii)) ->
+	  let init =
+	    init +> List.map (fun (e,ii) -> vk_argument_s bigf e, iif ii) in
+	  Ast_c.ConstrInit((init, List.map (vk_info_s bigf) ii)))
+        ));
      v_type = vk_type_s bigf t;
     (* !!! dont go in semantic related stuff !!! *)
      v_type_bis = tbis;

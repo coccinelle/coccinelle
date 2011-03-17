@@ -22,6 +22,7 @@
 - Added metavariable metavariable type.
 - Add disjunctions on identifiers in some contexts
 - Pretend that & indicates a pointer in -c++ mode
+- Support for new
 
 ** Features:
 - support transformations on variables (only) in declarations that declare
@@ -37,6 +38,7 @@
 - reuse typedefs and macros from complete parsing when reparsing the
   transformed code
 - optimization for an if branch that is just { ... }
+- spatch -control_flow_to_file file.c generates a file file.dot
 
 ** Bugfix:
 - improved parsing of expressions to allow ... to the right of operators in

@@ -945,6 +945,11 @@ let annotater_expr_visitor_subpart = (fun (k,bigf) expr ->
 	pr2_once "Type annotater:not handling New";
 	Type_c.noTypeHere (* TODO *)
 
+    | Delete e ->
+	k expr;
+	pr2_once "Type annotater:not handling Delete";
+	Type_c.noTypeHere (* TODO *)
+
   in
   Ast_c.set_type_expr expr ty
 
@@ -1085,9 +1090,13 @@ let rec visit_toplevel ~just_add_in_env ~depth elem =
 
                   if need_annotate_body then begin
                     (* int x = sizeof(x) is legal so need process ini *)
-                    iniopt +> Common.do_option (fun (info, ini) ->
-                      Visitor_c.vk_ini bigf ini
-                    );
+		    match iniopt with
+		      Ast_c.NoInit -> ()
+		    | Ast_c.ValInit(iini,init) -> Visitor_c.vk_ini bigf init
+		    | Ast_c.ConstrInit((args,_)) ->
+			args +> List.iter (fun (e,ii) ->
+			  Visitor_c.vk_argument bigf e
+			)
                   end
             );
           );

@@ -145,7 +145,8 @@ let mk_pretty_printers
 
     | ParenExpr (e), [i1;i2] -> pr_elem i1; pp_expression e; pr_elem i2;
 
-    | New  (t),      [i1] -> pr_elem i1; pp_argument t
+    | New   (t),     [i1] -> pr_elem i1; pp_argument t
+    | Delete(t),     [i1] -> pr_elem i1; pp_expression t
 
     | (Ident (_) | Constant _ | FunCall (_,_) | CondExpr (_,_,_)
     | Sequence (_,_)
@@ -154,7 +155,7 @@ let mk_pretty_printers
     | ArrayAccess (_,_) | RecordAccess (_,_) | RecordPtAccess (_,_)
     | SizeOfExpr (_) | SizeOfType (_) | Cast (_,_)
     | StatementExpr (_) | Constructor _
-    | ParenExpr (_) | New (_)),_ -> raise Impossible
+    | ParenExpr (_) | New (_) | Delete (_)),_ -> raise Impossible
     );
 
     if !Flag_parsing_c.pretty_print_type_info
@@ -860,9 +861,12 @@ let mk_pretty_printers
 	    pp_type_with_ident
 	      (Some (s, iis)) (Some (storage, iisto))
 	      returnType attrs;
-	    iniopt +> do_option (fun (iini, init) ->
-	      pr_elem iini;
-              pp_init init);
+	    (match iniopt with
+	      Ast_c.NoInit -> ()
+	    | Ast_c.ValInit(iini,init) -> pr_elem iini; pp_init init
+	    | Ast_c.ConstrInit((init,[lp;rp])) ->
+		pr_elem lp; pp_arg_list init; pr_elem rp
+	    | Ast_c.ConstrInit _ -> raise Impossible)
 	| None -> pp_type returnType
 	);
 
@@ -879,9 +883,12 @@ let mk_pretty_printers
 	    iivirg +> List.iter pr_elem;
 	    pp_type_with_ident_rest
 	      (Some (s, iis)) returnType attrs;
-	    iniopt +> do_option (fun (iini, init) ->
-	      pr_elem iini; pp_init init
-            );
+	    (match iniopt with
+	      Ast_c.NoInit -> ()
+	    | Ast_c.ValInit(iini,init) -> pr_elem iini; pp_init init
+	    | Ast_c.ConstrInit((init,[lp;rp])) ->
+		pr_elem lp; pp_arg_list init; pr_elem rp
+	    | Ast_c.ConstrInit _ -> raise Impossible);
 
 
 	| x -> raise Impossible

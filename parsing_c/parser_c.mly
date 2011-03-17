@@ -436,7 +436,7 @@ let mk_string_wrap (s,info) = (s, [info])
        Tstruct Tunion Tenum
        Tbreak Telse Tswitch Tcase Tcontinue Tfor Tdo Tif  Twhile Treturn
        Tgoto Tdefault
-       Tsizeof Tnew
+       Tsizeof Tnew Tdelete TOParCplusplusInit
 
 /*(* C99 *)*/
 %token <Ast_c.info>
@@ -738,15 +738,38 @@ unary_expr:
  | Tsizeof unary_expr              { mk_e(SizeOfExpr ($2))    [$1] }
  | Tsizeof topar2 type_name tcpar2 { mk_e(SizeOfType ($3))    [$1;$2;$4] }
  | Tnew new_argument               { mk_e(New $2)             [$1] }
+ | Tdelete cast_expr               { mk_e(Delete $2)          [$1] }
 
 new_argument:
- | postfix_expr { Left $1 }
- | decl_spec
-     { let ((returnType,hasreg), iihasreg) = fixDeclSpecForParam $1 in
+ | TIdent TOPar argument_list_ne TCPar
+     { let fn = mk_e(Ident (RegularName (mk_string_wrap $1))) [] in
+       Left (mk_e(FunCall (fn, $3)) [$2;$4]) }
+ | TIdent TOPar TCPar
+     { let fn = mk_e(Ident (RegularName (mk_string_wrap $1))) [] in
+       Left(mk_e(FunCall (fn, [])) [$2;$3]) }
+ | TypedefIdent TOPar argument_list_ne TCPar
+     { let fn = mk_e(Ident (RegularName (mk_string_wrap $1))) [] in
+       Left (mk_e(FunCall (fn, $3)) [$2;$4]) }
+ | TypedefIdent TOPar TCPar
+     { let fn = mk_e(Ident (RegularName (mk_string_wrap $1))) [] in
+       Left (mk_e(FunCall (fn, [])) [$2;$3]) }
+ | type_spec
+     { let ty = addTypeD ($1,nullDecl) in
+       let ((returnType,hasreg), iihasreg) = fixDeclSpecForParam ty in
        Right (ArgType { p_namei = None; p_type = returnType;
 			p_register = hasreg, iihasreg;
 		      } )
      }
+ | new_argument TOCro expr TCCro
+     {
+       match $1 with
+	 Left(e) -> Left(mk_e(ArrayAccess (e, $3)) [$2;$4])
+       | Right(ArgType(ty)) -> (* lots of hacks to make the right type *)
+	   let fty = mk_ty (Array (Some $3, ty.Ast_c.p_type)) [$2;$4] in
+	   let pty = { ty with p_type = fty } in
+	   Right(ArgType pty)
+       | _ -> raise Impossible
+     } 
 
 unary_op:
  | TAnd   { GetRef,     $1 }
@@ -777,6 +800,7 @@ postfix_expr:
      { mk_e(Constructor ($2, [])) [$1;$3;$4;$5] }
  | topar2 type_name tcpar2 TOBrace initialize_list gcc_comma_opt TCBrace
      { mk_e(Constructor ($2, List.rev $5)) ([$1;$3;$4;$7] ++ $6) }
+
 
 primary_expr:
  | identifier_cpp  { mk_e(Ident  ($1)) [] }
@@ -1298,14 +1322,9 @@ decl2:
        DeclList (
          ($2 +> List.map (fun ((((name,f),attrs), ini), iivirg) ->
            let s = str_of_name name in
-           let iniopt =
-             match ini with
-             | None -> None
-             | Some (ini, iini) -> Some (iini, ini)
-           in
 	   if fst (unwrap storage) =*= StoTypedef
 	   then LP.add_typedef s;
-           {v_namei = Some (name, iniopt);
+           {v_namei = Some (name, ini);
             v_type = f returnType;
             v_storage = unwrap storage;
             v_local = local;
@@ -1370,9 +1389,11 @@ decl_spec: decl_spec2    { dt "declspec" (); $1  }
 /*(* declarators (right part of type and variable) *)*/
 /*(*-----------------------------------------------------------------------*)*/
 init_declarator2:
- | declaratori                  { ($1, None) }
- | declaratori teq initialize   { ($1, Some ($3, $2)) }
-
+ | declaratori                  { ($1, NoInit) }
+ | declaratori teq initialize   { ($1, ValInit($2, $3)) }
+ /* C++ only */
+ | declaratori TOParCplusplusInit argument_list TCPar
+     { ($1, ConstrInit($3,[$2;$4])) }
 
 
 /*(*----------------------------*)*/

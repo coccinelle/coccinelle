@@ -337,10 +337,11 @@ and expression = (expressionbis * exp_info ref (* semantic: *)) wrap3
 
   (* for C++: *)
   | New of argument
+  | Delete of expression
 
   (* cppext: IfdefExpr TODO *)
 
-  (* cppext: normmally just expression *)
+  (* cppext: normally just expression *)
   and argument = (expression, weird_argument) Common.either
    and weird_argument =
        | ArgType of parameterType
@@ -516,7 +517,7 @@ and declaration =
   | MacroDecl of (string * argument wrap2 list) wrap (* fakestart *)
 
      and onedecl =
-       { v_namei: (name * (info (* = *) * initialiser) option) option;
+       { v_namei: (name * v_init) option;
          v_type: fullType;
          (* semantic: set in type annotated and used in cocci_vs_c
           * when we transform some initialisation into affectation
@@ -526,6 +527,9 @@ and declaration =
          v_local: local_decl; (* cocci: *)
          v_attr: attribute list; (* gccext: *)
        }
+     and v_init =
+       NoInit | ValInit of info * initialiser
+     | ConstrInit of argument wrap2 (* , *) list wrap
      and storage       = storagebis * bool (* gccext: inline or not *)
      and storagebis    = NoSto | StoTypedef | Sto of storageClass
      and storageClass  = Auto  | Static | Register | Extern
