@@ -123,7 +123,9 @@ let strip_inh_info_visitor _ =  (* for inherited metavariables *)
 
 let al_inh_expr      x = Visitor_c.vk_expr_s      (strip_inh_info_visitor()) x
 let al_inh_declaration x = Visitor_c.vk_decl_s    (strip_inh_info_visitor()) x
-let al_inh_field  x = Visitor_c.vk_struct_field_s (strip_inh_info_visitor()) x
+let al_inh_field    x = Visitor_c.vk_struct_field_s (strip_inh_info_visitor()) x
+let al_inh_field_list x =
+  Visitor_c.vk_struct_fields_s (strip_inh_info_visitor()) x
 let al_inh_statement x = Visitor_c.vk_statement_s (strip_inh_info_visitor()) x
 let al_inh_type      x = Visitor_c.vk_type_s      (strip_inh_info_visitor()) x
 let al_inh_init      x = Visitor_c.vk_ini_s       (strip_inh_info_visitor()) x
@@ -149,6 +151,7 @@ let semi_strip_info_visitor = (* keep position information *)
 let semi_al_expr      = Visitor_c.vk_expr_s      semi_strip_info_visitor
 let semi_al_declaration = Visitor_c.vk_decl_s    semi_strip_info_visitor
 let semi_al_field = Visitor_c.vk_struct_field_s  semi_strip_info_visitor
+let semi_al_fields = Visitor_c.vk_struct_fields_s semi_strip_info_visitor
 let semi_al_statement = Visitor_c.vk_statement_s semi_strip_info_visitor
 let semi_al_type      = Visitor_c.vk_type_s      semi_strip_info_visitor
 let semi_al_init      = Visitor_c.vk_ini_s       semi_strip_info_visitor
@@ -191,9 +194,8 @@ let real_strip_info_visitor _ =
 let real_al_expr      x = Visitor_c.vk_expr_s   (real_strip_info_visitor()) x
 let real_al_node      x = Visitor_c.vk_node_s   (real_strip_info_visitor()) x
 let real_al_type      x = Visitor_c.vk_type_s   (real_strip_info_visitor()) x
-let real_al_statement x =
-  Visitor_c.vk_statement_s (real_strip_info_visitor()) x
-
+let real_al_statement x = Visitor_c.vk_statement_s (real_strip_info_visitor()) x
+let real_al_def       x = Visitor_c.vk_toplevel_s (real_strip_info_visitor()) x
 
 (*****************************************************************************)
 (* Extract infos *)

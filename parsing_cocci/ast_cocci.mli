@@ -25,7 +25,7 @@
 (* --------------------------------------------------------------------- *)
 (* Modified code *)
 
-type added_string = Noindent of string | Indent of string
+type added_string = Noindent of string | Indent of string | Space of string
 
 type info = { line : int; column : int;
 	      strbef : (added_string * int (* line *) * int (* col *)) list;
@@ -105,6 +105,7 @@ and metavar =
   | MetaExpListDecl of arity * meta_name (*name*) * list_len (*len*)
   | MetaDeclDecl of arity * meta_name (* name *)
   | MetaFieldDecl of arity * meta_name (* name *)
+  | MetaFieldListDecl of arity * meta_name (* name *) * list_len (*len*)
   | MetaStmDecl of arity * meta_name (* name *)
   | MetaStmListDecl of arity * meta_name (* name *)
   | MetaFuncDecl of arity * meta_name (* name *)
@@ -302,6 +303,7 @@ and base_declaration =
 
   | MetaDecl of meta_name mcode * keep_binding * inherited
   | MetaField of meta_name mcode * keep_binding * inherited
+  | MetaFieldList of meta_name mcode * listlen * keep_binding * inherited
 
   | OptDecl    of declaration
   | UniqueDecl of declaration

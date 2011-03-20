@@ -416,7 +416,9 @@ let match_maker checks_needed context_required whencode_allowed =
     let decl r k d =
       bind (bind (pure_mcodekind (Ast0.get_mcodekind d)) (k d))
 	(match Ast0.unwrap d with
-	  Ast0.MetaDecl(name,pure) | Ast0.MetaField(name,pure) -> pure
+	  Ast0.MetaDecl(name,pure) | Ast0.MetaField(name,pure)
+	| Ast0.MetaFieldList(name,_,pure) ->
+	    pure
 	| _ -> Ast0.Impure) in
 
     let stmt r k s =
@@ -837,6 +839,7 @@ let match_maker checks_needed context_required whencode_allowed =
 	add_pure_binding name pure pure_sp_code.VT0.combiner_rec_declaration
 	  (function d -> Ast0.DeclTag d)
 	  d
+    | Ast0.MetaFieldList(name,_,pure) -> failwith "metafieldlist not supporte"
     | up ->
 	if not(checks_needed) or not(context_required) or is_context d
 	then
@@ -1830,6 +1833,8 @@ let instantiate bindings mv_bindings =
 	  | Common.Right(new_mv) ->
 	      Ast0.rewrap e
 		(Ast0.MetaField(Ast0.set_mcode_data new_mv name, pure)))
+    | Ast0.MetaFieldList(name,lenname,pure) ->
+	failwith "metafieldlist not supported"
     | Ast0.Ddots(d,_) ->
 	(try
 	  (match List.assoc (dot_term d) bindings with
@@ -2075,6 +2080,8 @@ let get_name = function
       (nm,function nm -> Ast.MetaExpListDecl(ar,nm,nm1))
   | Ast.MetaDeclDecl(ar,nm) ->
       (nm,function nm -> Ast.MetaDeclDecl(ar,nm))
+  | Ast.MetaFieldListDecl(ar,nm,nm1) ->
+      (nm,function nm -> Ast.MetaFieldListDecl(ar,nm,nm1))
   | Ast.MetaFieldDecl(ar,nm) ->
       (nm,function nm -> Ast.MetaFieldDecl(ar,nm))
   | Ast.MetaStmDecl(ar,nm) ->

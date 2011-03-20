@@ -125,6 +125,7 @@ let token2c (tok,_) =
 
   | PC.TPragma(Ast.Noindent s,_) -> s
   | PC.TPragma(Ast.Indent s,_)   -> s
+  | PC.TPragma(Ast.Space s,_)   -> s
   | PC.TIncludeL(s,clt) -> (pr "#include \"%s\"" s)^(line_type2c clt)
   | PC.TIncludeNL(s,clt) -> (pr "#include <%s>" s)^(line_type2c clt)
   | PC.TUndef(clt,_) -> "#undef"^(line_type2c clt)
@@ -207,6 +208,7 @@ let token2c (tok,_) =
   | PC.TMetaInit(_,_,clt)    -> "initmeta"^(line_type2c clt)
   | PC.TMetaDecl(_,_,clt)    -> "declmeta"^(line_type2c clt)
   | PC.TMetaField(_,_,clt)   -> "fieldmeta"^(line_type2c clt)
+  | PC.TMetaFieldList(_,_,_,clt)   -> "fieldlistmeta"^(line_type2c clt)
   | PC.TMetaStm(_,_,clt)     -> "stmmeta"^(line_type2c clt)
   | PC.TMetaStmList(_,_,clt) -> "stmlistmeta"^(line_type2c clt)
   | PC.TMetaFunc(_,_,_,clt)  -> "funcmeta"^(line_type2c clt)
@@ -335,7 +337,9 @@ let plus_attachable only_plus (tok,_) =
   | PC.TMetaExpList(_,_,_,clt)
   | PC.TMetaId(_,_,_,clt)
   | PC.TMetaType(_,_,clt) | PC.TMetaInit(_,_,clt) | PC.TMetaStm(_,_,clt)
-  | PC.TMetaStmList(_,_,clt) | PC.TMetaDecl(_,_,clt) | PC.TMetaField(_,_,clt)
+  | PC.TMetaStmList(_,_,clt)
+  | PC.TMetaDecl(_,_,clt) | PC.TMetaField(_,_,clt)
+  | PC.TMetaFieldList(_,_,_,clt)
   | PC.TMetaFunc(_,_,_,clt) | PC.TMetaLocalFunc(_,_,_,clt)
 
   | PC.TWhen(clt) |  PC.TWhenTrue(clt) |  PC.TWhenFalse(clt)
@@ -406,7 +410,9 @@ let get_clt (tok,_) =
   | PC.TMetaExpList(_,_,_,clt)
   | PC.TMetaId(_,_,_,clt)
   | PC.TMetaType(_,_,clt) | PC.TMetaInit(_,_,clt) | PC.TMetaStm(_,_,clt)
-  | PC.TMetaStmList(_,_,clt) | PC.TMetaDecl(_,_,clt) | PC.TMetaField(_,_,clt)
+  | PC.TMetaStmList(_,_,clt)
+  | PC.TMetaDecl(_,_,clt) | PC.TMetaField(_,_,clt)
+  | PC.TMetaFieldList(_,_,_,clt)
   | PC.TMetaFunc(_,_,_,clt) | PC.TMetaLocalFunc(_,_,_,clt)
   | PC.TMetaPos(_,_,_,clt)
 
@@ -526,6 +532,7 @@ let update_clt (tok,x) clt =
   | PC.TMetaInit(a,b,_)    -> (PC.TMetaInit(a,b,clt),x)
   | PC.TMetaDecl(a,b,_)    -> (PC.TMetaDecl(a,b,clt),x)
   | PC.TMetaField(a,b,_)   -> (PC.TMetaField(a,b,clt),x)
+  | PC.TMetaFieldList(a,b,c,_)   -> (PC.TMetaFieldList(a,b,c,clt),x)
   | PC.TMetaStm(a,b,_)     -> (PC.TMetaStm(a,b,clt),x)
   | PC.TMetaStmList(a,b,_) -> (PC.TMetaStmList(a,b,clt),x)
   | PC.TMetaFunc(a,b,c,_)  -> (PC.TMetaFunc(a,b,c,clt),x)
@@ -674,6 +681,7 @@ let split_token ((tok,_) as t) =
   | PC.TMetaParam(_,_,clt) | PC.TMetaParamList(_,_,_,clt)
   | PC.TMetaId(_,_,_,clt) | PC.TMetaType(_,_,clt) | PC.TMetaInit(_,_,clt)
   | PC.TMetaDecl(_,_,clt) | PC.TMetaField(_,_,clt)
+  | PC.TMetaFieldList(_,_,_,clt)
   | PC.TMetaStm(_,_,clt) | PC.TMetaStmList(_,_,clt) | PC.TMetaErr(_,_,_,clt)
   | PC.TMetaFunc(_,_,_,clt) | PC.TMetaLocalFunc(_,_,_,clt)
   | PC.TMetaDeclarer(_,_,_,clt) | PC.TMetaIterator(_,_,_,clt) -> split t clt
@@ -873,6 +881,7 @@ let detect_types in_meta_decls l =
     | (PC.TMetaInit(_,_,_),_)
     | (PC.TMetaDecl(_,_,_),_)
     | (PC.TMetaField(_,_,_),_)
+    | (PC.TMetaFieldList(_,_,_,_),_)
     | (PC.TMetaStm(_,_,_),_)
     | (PC.TMetaStmList(_,_,_),_)
     | (PC.TMetaPos(_,_,_,_),_) -> in_meta_decls
@@ -965,6 +974,7 @@ let token2line (tok,_) =
   | PC.TMetaExpList(_,_,_,clt)
   | PC.TMetaId(_,_,_,clt) | PC.TMetaType(_,_,clt) | PC.TMetaInit(_,_,clt)
   | PC.TMetaDecl(_,_,clt) | PC.TMetaField(_,_,clt)
+  | PC.TMetaFieldList(_,_,_,clt)
   | PC.TMetaStm(_,_,clt) | PC.TMetaStmList(_,_,clt) | PC.TMetaFunc(_,_,_,clt)
   | PC.TMetaLocalFunc(_,_,_,clt) | PC.TMetaPos(_,_,_,clt)
 
@@ -1141,6 +1151,8 @@ are not allowed. *)
 
 let rec collect_all_pragmas collected = function
     (PC.TPragma(s,(_,line,logical_line,offset,col,_,_,pos)),_)::rest ->
+      Printf.printf "Pragma on line %d and logical line %d\n" line
+	logical_line;
       let i =
 	{ Ast0.line_start = line; Ast0.line_end = line;
 	  Ast0.logical_start = logical_line; Ast0.logical_end = logical_line;

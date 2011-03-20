@@ -422,6 +422,12 @@ module XMATCH = struct
 		   (if strip
 		   then Lib_parsing_c.al_field a
 		   else Lib_parsing_c.semi_al_field a))
+          | Ast_c.MetaFieldListVal a ->
+	      success
+		(Ast_c.MetaFieldListVal
+		   (if strip
+		   then Lib_parsing_c.al_fields a
+		   else Lib_parsing_c.semi_al_fields a))
           | Ast_c.MetaStmtVal a ->
 	      success
 		(Ast_c.MetaStmtVal

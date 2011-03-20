@@ -41,6 +41,7 @@ type pretty_printers = {
   statement       : Ast_c.statement printer;
   decl            : Ast_c.declaration printer;
   field           : Ast_c.field printer;
+  field_list      : Ast_c.field list printer;
   init            : Ast_c.initialiser printer;
   param           : Ast_c.parameterType printer;
   paramlist       : (Ast_c.parameterType Ast_c.wrap2 list) printer;
@@ -553,6 +554,7 @@ let mk_pretty_printers
             (* | TypeOfExpr _ | TypeOfType _ *)
          ), _ -> raise Impossible
 
+  and pp_field_list fields = fields +>  Common.print_between pr_nl pp_field
   and pp_field = function
       DeclarationField(FieldDeclList(onefield_multivars,iiptvirg))->
         (match onefield_multivars with
@@ -1309,9 +1311,10 @@ and pp_init (init, iinit) =
     statement  = pp_statement;
     decl       = pp_decl;
     field      = pp_field;
+    field_list = pp_field_list;
     init       = pp_init;
     param      = pp_param;
-    paramlist = pp_param_list;
+    paramlist  = pp_param_list;
     ty         = pp_type;
     type_with_ident = pp_type_with_ident;
     toplevel   = pp_toplevel;
@@ -1377,6 +1380,9 @@ let pp_decl_gen ~pr_elem ~pr_space =
 
 let pp_field_gen ~pr_elem ~pr_space =
   (pp_elem_sp pr_elem pr_space).field
+
+let pp_field_list_gen ~pr_elem ~pr_space =
+  (pp_elem_sp pr_elem pr_space).field_list
 
 let pp_init_gen ~pr_elem ~pr_space =
   (pp_elem_sp pr_elem pr_space).init

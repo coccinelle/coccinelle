@@ -45,6 +45,8 @@ let rec pp_binding_kind = function
       Pretty_print_c.pp_decl_simple decl
   | Ast_c.MetaFieldVal      decl ->
       Pretty_print_c.pp_field_simple decl
+  | Ast_c.MetaFieldListVal      decls ->
+      List.iter Pretty_print_c.pp_field_simple decls
   | Ast_c.MetaStmtVal      statement ->
       Pretty_print_c.pp_statement_simple statement
   | Ast_c.MetaParamVal     params -> pp "<<param>>"

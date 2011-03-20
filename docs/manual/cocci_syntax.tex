@@ -134,12 +134,12 @@ behavior.  Using \NT{disable-iso} with the given name disables this behavior.
 
 The possible types of metavariable declarations are defined by the grammar
 rule below.  Metavariables should occur at least once in the transformation
-immediately following their declaration.  Fresh metavariables must only be
-used in {\tt +} code.  These properties are not expressed in the grammar,
-but are checked by a subsequent analysis.  The metavariables are designated
-according to the kind of terms they can match, such as a statement, an
-identifier, or an expression.  An expression metavariable can be further
-constrained by its type.  A declaration metavariable matches the
+immediately following their declaration.  Fresh identifier metavariables
+must only be used in {\tt +} code.  These properties are not expressed in
+the grammar, but are checked by a subsequent analysis.  The metavariables
+are designated according to the kind of terms they can match, such as a
+statement, an identifier, or an expression.  An expression metavariable can
+be further constrained by its type.  A declaration metavariable matches the
 declaration of one or more variables, all sharing the same type
 specification ({\em e.g.}, {\tt int a,b,c=3;}).  A field metavariable does
 the same, but for structure fields.
@@ -185,6 +185,21 @@ the same, but for structure fields.
   \CASE{constant \OPT{\ttlb \NT{ctypes}\ttrb~\any{*}} \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq}\mth{)} ;}
   \CASE{position \opt{any} \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq\_mid}\mth{)} ;}
 \end{grammar}
+
+A metavariable declaration local idexpression v means that v is restricted
+to be a local variable.  If it should just be a variable, but not
+necessarily a local one, then drop local.  A more complex description of a
+location, such as a->b is considered to be an expression, not an
+ideexpression.
+
+Constant is for constants, such as 27.  But it also considers an identifier
+that is all capital letters (possibly containing numbers) as a constant as
+well, because the names gives to macros in Linux usually have this form.
+
+An identifier is the name of a structure field, a macro, a function, or a
+variable.  Is is the name of something rather than an expression that has a
+value.  But an identifier can be used in the position of an expression as
+well, where it represents a variable.
 
 It is possible to specify that an expression list or a parameter list
 metavariable should match a specific number of expressions or parameters.

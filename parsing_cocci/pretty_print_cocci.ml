@@ -82,7 +82,8 @@ let print_around printer term = function
       print_anything "<<< " bef; printer term; print_anything ">>> " aft
 
 let print_string_befaft fn x info =
-  let print = function Ast.Noindent s | Ast.Indent s -> print_string s in
+  let print = function
+      Ast.Noindent s | Ast.Indent s | Ast.Space s -> print_string s in
   List.iter (function (s,_,_) -> print s; force_newline()) info.Ast.strbef;
   fn x;
   List.iter (function (s,_,_) -> force_newline(); print s) info.Ast.straft
@@ -454,7 +455,9 @@ and print_named_type ty id =
 
 and declaration d =
   match Ast.unwrap d with
-    Ast.MetaDecl(name,_,_) | Ast.MetaField(name,_,_) -> mcode print_meta name
+    Ast.MetaDecl(name,_,_) | Ast.MetaField(name,_,_)
+  | Ast.MetaFieldList(name,_,_,_) ->
+      mcode print_meta name
   | Ast.Init(stg,ty,id,eq,ini,sem) ->
       print_option (mcode storage) stg; print_named_type ty id;
       print_string " "; mcode print_string eq;
@@ -817,7 +820,8 @@ let _ =
     | Ast.Token(x,Some info) -> print_string_befaft print_string x info
     | Ast.Token(x,None) -> print_string x
     | Ast.Pragma(xs) ->
-	let print = function Ast.Noindent s | Ast.Indent s -> print_string s in
+	let print = function
+	    Ast.Noindent s | Ast.Indent s | Ast.Space s -> print_string s in
 	print_between force_newline print xs
     | Ast.Code(x) -> let _ = top_level x in ()
     | Ast.ExprDotsTag(x) -> dots (function _ -> ()) expression x

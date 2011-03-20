@@ -102,6 +102,7 @@ type token =
   | TMetaIdExp of (Parse_aux.typed_expinfo)
   | TMetaId of (Parse_aux.idinfo)
   | TMetaFunc of (Parse_aux.idinfo)
+  | TMetaFieldList of (Parse_aux.list_info)
   | TMetaField of (Parse_aux.info)
   | TMetaExpList of (Parse_aux.list_info)
   | TMetaExp of (Parse_aux.typed_expinfo)

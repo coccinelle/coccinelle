@@ -198,8 +198,9 @@ and typeC = base_typeC wrap
    split out into multiple declarations of a single variable each. *)
 
 and base_declaration =
-    MetaDecl   of Ast_cocci.meta_name mcode * pure
+    MetaDecl   of Ast_cocci.meta_name mcode * pure (* variables *)
   | MetaField  of Ast_cocci.meta_name mcode * pure (* structure fields *)
+  | MetaFieldList of Ast_cocci.meta_name mcode * listlen * pure
   | Init       of Ast_cocci.storage mcode option * typeC * ident *
 	string mcode (*=*) * initialiser * string mcode (*;*)
   | UnInit     of Ast_cocci.storage mcode option * typeC * ident *

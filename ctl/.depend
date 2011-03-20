@@ -4,11 +4,11 @@ wrapper_ctl.cmi: ctl_engine.cmi ast_ctl.cmo
 ast_ctl.cmo: 
 ast_ctl.cmx: 
 ctl_engine.cmo: pretty_print_ctl.cmi ../commons/ograph_extended.cmi \
-    flag_ctl.cmo ../globals/flag.cmo ../commons/ocamlextra/dumper.cmi \
-    ../commons/common.cmi ast_ctl.cmo ctl_engine.cmi 
+    flag_ctl.cmo ../globals/flag.cmo ../commons/common.cmi ast_ctl.cmo \
+    ctl_engine.cmi 
 ctl_engine.cmx: pretty_print_ctl.cmx ../commons/ograph_extended.cmx \
-    flag_ctl.cmx ../globals/flag.cmx ../commons/ocamlextra/dumper.cmx \
-    ../commons/common.cmx ast_ctl.cmx ctl_engine.cmi 
+    flag_ctl.cmx ../globals/flag.cmx ../commons/common.cmx ast_ctl.cmx \
+    ctl_engine.cmi 
 flag_ctl.cmo: 
 flag_ctl.cmx: 
 pretty_print_ctl.cmo: flag_ctl.cmo ../commons/common.cmi ast_ctl.cmo \

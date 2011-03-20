@@ -327,7 +327,8 @@ let rec propagate_types env =
 
   and process_decl env decl =
     match Ast0.unwrap decl with
-      Ast0.MetaDecl(_,_) | Ast0.MetaField(_,_) -> []
+      Ast0.MetaDecl(_,_) | Ast0.MetaField(_,_)
+    | Ast0.MetaFieldList(_,_,_) -> []
     | Ast0.Init(_,ty,id,_,exp,_) ->
 	let _ =
 	  (propagate_types env).VT0.combiner_rec_initialiser exp in

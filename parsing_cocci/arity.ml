@@ -490,6 +490,10 @@ and declaration tgt decl =
       let arity = all_same true tgt (mcode2line name) [mcode2arity name] in
       let name = mcode name in
       make_decl decl tgt arity (Ast0.MetaField(name,pure))
+  | Ast0.MetaFieldList(name,lenname,pure) ->
+      let arity = all_same true tgt (mcode2line name) [mcode2arity name] in
+      let name = mcode name in
+      make_decl decl tgt arity (Ast0.MetaFieldList(name,lenname,pure))
   | Ast0.Init(stg,ty,id,eq,exp,sem) ->
       let arity =
 	all_same true tgt (mcode2line eq)

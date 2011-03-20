@@ -239,7 +239,9 @@ let combiner bind option_default
   and declaration d =
     let k d =
       match Ast.unwrap d with
-	Ast.MetaDecl(name,_,_) | Ast.MetaField(name,_,_) -> meta_mcode name
+	Ast.MetaDecl(name,_,_) | Ast.MetaField(name,_,_)
+      |	Ast.MetaFieldList(name,_,_,_) ->
+	  meta_mcode name
       |	Ast.Init(stg,ty,id,eq,ini,sem) ->
 	  bind (get_option storage_mcode stg)
 	    (bind (named_type ty id)
@@ -734,6 +736,8 @@ let rebuilder
 	    Ast.MetaDecl(meta_mcode name,keep,inherited)
 	| Ast.MetaField(name,keep,inherited) ->
 	    Ast.MetaField(meta_mcode name,keep,inherited)
+	| Ast.MetaFieldList(name,lenname_inh,keep,inherited) ->
+	    Ast.MetaFieldList(meta_mcode name,lenname_inh,keep,inherited)
 	| Ast.Init(stg,ty,id,eq,ini,sem) ->
 	    Ast.Init(get_option storage_mcode stg, fullType ty, ident id,
 		     string_mcode eq, initialiser ini, string_mcode sem)

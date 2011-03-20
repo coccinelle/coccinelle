@@ -233,6 +233,11 @@ and declaration context old_metas table minus d =
   match Ast0.unwrap d with
     Ast0.MetaDecl(name,_) | Ast0.MetaField(name,_) ->
       check_table table minus name
+  | Ast0.MetaFieldList(name,Ast0.MetaListLen lenname,_) ->
+      check_table table minus name;
+      check_table table minus lenname
+  | Ast0.MetaFieldList(name,_,_) ->
+      check_table table minus name
   | Ast0.Init(stg,ty,id,eq,ini,sem) ->
       (match Ast0.unwrap ini with
 	Ast0.InitExpr exp ->

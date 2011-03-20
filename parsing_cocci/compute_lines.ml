@@ -448,7 +448,8 @@ and is_decl_dots s =
 
 and declaration d =
   match Ast0.unwrap d with
-    (Ast0.MetaDecl(name,_) | Ast0.MetaField(name,_)) as up ->
+    (Ast0.MetaDecl(name,_) | Ast0.MetaField(name,_)
+  | Ast0.MetaFieldList(name,_,_)) as up ->
       let ln = promote_mcode name in mkres d up ln ln
   | Ast0.Init(stg,ty,id,eq,exp,sem) ->
       let ty = typeC ty in
@@ -569,9 +570,7 @@ and parameterTypeDef p =
       let ty = typeC ty in mkres p (Ast0.Param(ty,Some id)) ty id
   | Ast0.Param(ty,None) ->
       let ty = typeC ty in mkres p (Ast0.Param(ty,None)) ty ty
-  | Ast0.MetaParam(name,_) as up ->
-      let ln = promote_mcode name in mkres p up ln ln
-  | Ast0.MetaParamList(name,_,_) as up ->
+  | (Ast0.MetaParam(name,_) | Ast0.MetaParamList(name,_,_)) as up ->
       let ln = promote_mcode name in mkres p up ln ln
   | Ast0.PComma(cm) ->
       (*let cm = bad_mcode cm in*) (* why was this bad??? *)

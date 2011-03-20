@@ -131,6 +131,7 @@ let tmeta_to_ident (name,pure,clt) =
 %token <Parse_aux.info>          TMetaParam TMetaStm TMetaStmList TMetaType
 %token <Parse_aux.info>          TMetaInit TMetaDecl TMetaField TMeta
 %token <Parse_aux.list_info>     TMetaParamList TMetaExpList
+%token <Parse_aux.list_info>     TMetaFieldList
 %token <Parse_aux.typed_expinfo> TMetaExp TMetaIdExp TMetaLocalIdExp TMetaConst
 %token <Parse_aux.pos_info>      TMetaPos
 
@@ -395,6 +396,14 @@ metadec:
 	  let tok = check_meta(Ast.MetaExpListDecl(arity,name,lenname)) in
 	  !Data.add_explist_meta name lenname pure; tok)
 	len ids }
+| ar=arity ispure=pure
+    TField Tlist TOCro len=list_len TCCro
+    ids=comma_list(pure_ident_or_meta_ident) TMPtVirg
+    { P.create_len_metadec ar ispure
+	(fun lenname arity name pure check_meta ->
+	  let tok = check_meta(Ast.MetaFieldListDecl(arity,name,lenname)) in
+	  !Data.add_field_list_meta name lenname pure; tok)
+	len ids }
 
 list_len:
   pure_ident_or_meta_ident { Common.Left $1 }
@@ -446,6 +455,11 @@ list_len:
     { (fun arity name pure check_meta ->
       let tok = check_meta(Ast.MetaFieldDecl(arity,name)) in
       !Data.add_field_meta name pure; tok) }
+| TField Tlist
+    { (fun arity name pure check_meta ->
+      let len = Ast.AnyLen in
+      let tok = check_meta(Ast.MetaFieldListDecl(arity,name,len)) in
+      !Data.add_field_list_meta name len pure; tok) }
 | TStatement Tlist
     { (fun arity name pure check_meta ->
       let tok = check_meta(Ast.MetaStmListDecl(arity,name)) in
@@ -707,6 +721,7 @@ struct_decl:
 
 struct_decl_one:
     | TMetaField { P.meta_field $1 }
+    | TMetaFieldList { P.meta_field_list $1 }
     | TMeta { tmeta_to_field $1 }
     | t=ctype d=d_ident pv=TPtVirg
 	 { let (id,fn) = d in
@@ -989,8 +1004,8 @@ storage:
        | s=Tregister    { P.clt2mcode Ast.Register s }
        | s=Textern      { P.clt2mcode Ast.Extern s }
 
-decl: t=ctype i=disj_ident
-	{ Ast0.wrap(Ast0.Param(t, Some i)) }
+decl: t=ctype i=disj_ident a=list(array_dec)
+	{ let t = P.arrayify t a in Ast0.wrap(Ast0.Param(t, Some i)) }
     | t=ctype { (*verify in FunDecl*) Ast0.wrap(Ast0.Param(t, None)) }
     | t=ctype lp=TOPar s=TMul i=disj_ident rp=TCPar
 	lp1=TOPar d=decl_list(name_opt_decl) rp1=TCPar
@@ -1238,14 +1253,7 @@ one_decl_var:
 
 d_ident:
     disj_ident list(array_dec)
-      { ($1,
-	 function t ->
-	   List.fold_right
-	     (function (l,i,r) ->
-	       function rest ->
-		 Ast0.wrap
-		   (Ast0.Array(rest,P.clt2mcode "[" l,i,P.clt2mcode "]" r)))
-	     $2 t) }
+      { ($1, function t -> P.arrayify t $2) }
 
 array_dec: l=TOCro i=option(eexpr) r=TCCro { (l,i,r) }
 

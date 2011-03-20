@@ -685,6 +685,7 @@ rule token = parse
         pr2 ("LEXER: identifier with dollar: "  ^ s);
         TIdent (s, info)
       }
+
   | (letter | '$') (letter | digit | '$') *
       ('<' (letter | '$' | '~') (letter | digit | '$' | '~') * '>') ?
     ("::~" (letter | '$') (letter | digit | '$') *
@@ -702,7 +703,7 @@ rule token = parse
 	  raise
 	    (Lexical "~ and :: not allowed in C identifiers, try -c++ option")
       }
-  | ((letter | '$') (letter | digit | '$') *)
+  | ((letter | '$') (letter | digit | '$') * )
       ('<' (letter | '$' | '~') (letter | digit | '$' | '~') * '>')
 
       {
@@ -717,11 +718,11 @@ rule token = parse
       }
 
 
-  | (((letter | '$') (letter | digit | '$') *) as first)
+  | (((letter | '$') (letter | digit | '$') * ) as first)
       ('<' (letter | '$' | '~') (letter | digit | '$' | '~') * '>') ?
-    "::" (((letter | '$') (letter | digit | '$') *) as second)
+    "::" (((letter | '$') (letter | digit | '$') * ) as second)
       ('<' (letter | '$' | '~') (letter | digit | '$' | '~') * '>') ?
-    ("::" ((letter | '$') (letter | digit | '$') *)
+    ("::" ((letter | '$') (letter | digit | '$') * )
       ('<' (letter | '$' | '~') (letter | digit | '$' | '~') * '>') ?) *
 
       {
@@ -739,9 +740,9 @@ rule token = parse
 	    (Lexical "~ and :: not allowed in C identifiers, try -c++ option")
       }
 
-   | "::" ((letter | '$') (letter | digit | '$') *)
+   | "::" ((letter | '$') (letter | digit | '$') * )
       ('<' (letter | '$' | '~') (letter | digit | '$' | '~') * '>') ?
-    ("::" ((letter | '$') (letter | digit | '$') *)
+    ("::" ((letter | '$') (letter | digit | '$') * )
       ('<' (letter | '$' | '~') (letter | digit | '$' | '~') * '>') ?) *
 
       {
@@ -756,7 +757,6 @@ rule token = parse
 	  raise
 	    (Lexical "~ and :: not allowed in C identifiers, try -c++ option")
       }
-
 
   (* ----------------------------------------------------------------------- *)
   (* C constant *)

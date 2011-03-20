@@ -12,6 +12,7 @@ type pretty_printers = {
   statement       : Ast_c.statement printer;
   decl            : Ast_c.declaration printer;
   field           : Ast_c.field printer;
+  field_list      : Ast_c.field list printer;
   init            : Ast_c.initialiser printer;
   param           : Ast_c.parameterType printer;
   paramlist       : (Ast_c.parameterType Ast_c.wrap2 list) printer;
@@ -39,6 +40,8 @@ val pp_decl_gen: pr_elem:Ast_c.info printer -> pr_space: unit printer ->
   Ast_c.declaration printer
 val pp_field_gen: pr_elem:Ast_c.info printer -> pr_space: unit printer ->
   Ast_c.field printer
+val pp_field_list_gen: pr_elem:Ast_c.info printer -> pr_space: unit printer ->
+  Ast_c.field list printer
 val pp_statement_gen: pr_elem:Ast_c.info printer -> pr_space: unit printer ->
   Ast_c.statement printer
 val pp_param_gen:  pr_elem:Ast_c.info printer -> pr_space: unit printer ->

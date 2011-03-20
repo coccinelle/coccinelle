@@ -178,6 +178,13 @@ let ty_pointerify ty m =
     (function inner -> function cur -> Type_cocci.Pointer(inner))
     ty m
 
+let arrayify ty ar =
+  List.fold_right
+    (function (l,i,r) ->
+      function rest ->
+	Ast0.wrap (Ast0.Array(rest,clt2mcode "[" l,i,clt2mcode "]" r)))
+    ar ty
+
 (* Left is <=>, Right is =>.  Collect <=>s. *)
 (* The parser should have done this, with precedences.  But whatever... *)
 let iso_adjust first_fn fn first rest =
@@ -449,6 +456,15 @@ let meta_decl name =
 let meta_field name =
   let (nm,pure,clt) = name in
   Ast0.wrap(Ast0.MetaField(clt2mcode nm clt,pure))
+
+let meta_field_list name =
+  let (nm,lenname,pure,clt) = name in
+  let lenname =
+    match lenname with
+      Ast.AnyLen -> Ast0.AnyListLen
+    | Ast.MetaLen nm -> Ast0.MetaListLen(clt2mcode nm clt)
+    | Ast.CstLen n -> Ast0.CstListLen n in
+  Ast0.wrap(Ast0.MetaFieldList(clt2mcode nm clt,lenname,pure))
 
 let meta_stm name =
   let (nm,pure,clt) = name in

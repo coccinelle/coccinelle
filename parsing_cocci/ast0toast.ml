@@ -528,6 +528,8 @@ and declaration d =
     (match Ast0.unwrap d with
       Ast0.MetaDecl(name,_) -> Ast.MetaDecl(mcode name,unitary,false)
     | Ast0.MetaField(name,_) -> Ast.MetaField(mcode name,unitary,false)
+    | Ast0.MetaFieldList(name,lenname,_) ->
+	Ast.MetaFieldList(mcode name,do_lenname lenname,unitary,false)
     | Ast0.Init(stg,ty,id,eq,ini,sem) ->
 	let stg = get_option mcode stg in
 	let ty = typeC ty in

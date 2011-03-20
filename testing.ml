@@ -484,7 +484,7 @@ let test_parse_cocci file =
 	(if !Flag.scanner = Flag.Glimpse then "glimpse" else "google");
       (match query with
 	None -> pr "No query"
-      | Some x -> pr (String.concat " ||\n" x))
+      | Some x -> pr (String.concat "\nor on glimpse failure\n" x))
 
 
 

@@ -345,7 +345,7 @@ let short_options = [
     "  guess what";
 
   "-date",   Arg.Unit (fun () ->
-    pr2 "version: $Date: 2010/12/29 13:42:18 $";
+    pr2 "version: $Date: 2011/03/14 21:16:17 $";
     raise (Common.UnixExit 0)
     ),
   "   guess what";
@@ -786,6 +786,24 @@ let idutils_filter (coccifile, isofile) dir =
 (* Main action *)
 (*****************************************************************************)
 
+let get_files path =
+  let ch =
+    Common.cmd_to_list (* same as "true, "", _" case *)
+      (if !include_headers
+			  (* FIXME : Could we remove xs ?
+			     -use_glimpse requires a singleton.
+			     This is checked some lines before.
+			     then ("find "^(join " " (x::xs))^" -name \"*.[ch]\"")
+			     else ("find "^(join " " (x::xs))^" -name \"*.c\"")
+			  *)
+      then ("find "^ path ^" -name \"*.[ch]\"")
+      else ("find "^ path ^" -name \"*.c\"")) in
+  let cpp =
+    if !Flag.c_plus_plus
+    then Common.cmd_to_list ("find "^ path ^" -name \"*.cpp\"")
+    else [] in
+  cpp @ ch
+
 let main_action xs =
   Iteration.base_file_list := xs;
   let rec toploop = function
@@ -826,17 +844,7 @@ let main_action xs =
 		  
                   let files =
 		    match glimpse_filter (!cocci_file, !Config.std_iso) x with
-		      None ->
-			Common.cmd_to_list (* same as "true, "", _" case *)
-			  (if !include_headers
-			  (* FIXME : Could we remove xs ?
-			     -use_glimpse requires a singleton.
-			     This is checked some lines before.
-			     then ("find "^(join " " (x::xs))^" -name \"*.[ch]\"")
-			     else ("find "^(join " " (x::xs))^" -name \"*.c\"")
-			  *)
-			  then ("find "^ x ^" -name \"*.[ch]\"")
-			  else ("find "^ x ^" -name \"*.c\""))
+		      None -> get_files x
 		    | Some files -> files in
                   files +> List.map (fun x -> [x])
               | true, "", Flag.IdUtils ->
@@ -845,27 +853,13 @@ let main_action xs =
 		  
                   let files =
 		    match idutils_filter (!cocci_file, !Config.std_iso) x with
-		      None ->
-			Common.cmd_to_list (* same as "true, "", _" case *)
-			  (if !include_headers
-			  (* FIXME : Could we remove xs ?
-			     -use_glimpse requires a singleton.
-			     This is checked some lines before.
-			     then ("find "^(join " " (x::xs))^" -name \"*.[ch]\"")
-			     else ("find "^(join " " (x::xs))^" -name \"*.c\"")
-			  *)
-			  then ("find "^ x ^" -name \"*.[ch]\"")
-			  else ("find "^ x ^" -name \"*.c\""))
+		      None -> get_files x
 		    | Some files -> files in
                   files +> List.map (fun x -> [x])
                   (* normal *)
 	      | false, _, _ -> [x::xs]
 	      | true, "", _ ->
-		  Common.cmd_to_list
-		    (if !include_headers
-		    then ("find "^(join " " (x::xs))^" -name \"*.[ch]\"")
-		    else ("find "^(join " " (x::xs))^" -name \"*.c\""))
-		    +> List.map (fun x -> [x])
+		  get_files (join " " (x::xs)) +> List.map (fun x -> [x])
 		    
             (* kbuild *)
 	      | true, kbuild_info_file,_ ->

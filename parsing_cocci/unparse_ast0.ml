@@ -54,7 +54,8 @@ let meta_pos = function
 (* Modified code *)
 
 let mcodekind brackets fn x info mc =
-  let print = function Ast.Noindent s | Ast.Indent s -> print_string s in
+  let print = function
+      Ast.Noindent s | Ast.Indent s | Ast.Space s -> print_string s in
   List.iter (function (s,_) -> print s) info.Ast0.strings_before;
   (match mc with
     Ast0.MINUS(plus_stream) ->
@@ -329,7 +330,9 @@ and declaration d =
   print_context d
     (function _ ->
       match Ast0.unwrap d with
-	Ast0.MetaDecl(name,_) | Ast0.MetaField(name,_) -> mcode print_meta name
+	Ast0.MetaDecl(name,_) | Ast0.MetaField(name,_)
+      | Ast0.MetaFieldList(name,_,_) ->
+	  mcode print_meta name
       |	Ast0.Init(stg,ty,id,eq,ini,sem) ->
 	  print_option (mcode U.storage) stg;
 	  print_named_type ty id;
