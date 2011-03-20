@@ -30,7 +30,8 @@ let meta_pos = function
 (* Modified code *)
 
 let mcodekind brackets fn x info mc =
-  let print = function Ast.Noindent s | Ast.Indent s -> print_string s in
+  let print = function
+      Ast.Noindent s | Ast.Indent s | Ast.Space s -> print_string s in
   List.iter (function (s,_) -> print s) info.Ast0.strings_before;
   (match mc with
     Ast0.MINUS(plus_stream) ->

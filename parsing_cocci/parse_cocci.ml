@@ -101,6 +101,7 @@ let token2c (tok,_) =
 
   | PC.TPragma(Ast.Noindent s,_) -> s
   | PC.TPragma(Ast.Indent s,_)   -> s
+  | PC.TPragma(Ast.Space s,_)   -> s
   | PC.TIncludeL(s,clt) -> (pr "#include \"%s\"" s)^(line_type2c clt)
   | PC.TIncludeNL(s,clt) -> (pr "#include <%s>" s)^(line_type2c clt)
   | PC.TUndef(clt,_) -> "#undef"^(line_type2c clt)
