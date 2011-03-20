@@ -493,12 +493,14 @@ rule token = parse
   | "//" [^ '\n']* {
     match !current_line_type with
       (D.PLUS,_,_) | (D.PLUSPLUS,_,_) ->
+	start_line true;
 	TPragma (Ast.Indent (tok lexbuf), get_current_line_type lexbuf)
     | _ -> start_line false; token lexbuf }
 
   | "__attribute__" [' ' '\t']* "((" _* "))"
    { match !current_line_type with
       (D.PLUS,_,_) | (D.PLUSPLUS,_,_) ->
+	start_line true;
 	TPragma (Ast.Space (tok lexbuf), get_current_line_type lexbuf)
     | _ -> failwith "attributes only allowedin + code" }
 

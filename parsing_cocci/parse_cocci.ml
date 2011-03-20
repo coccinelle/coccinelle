@@ -1126,6 +1126,8 @@ are not allowed. *)
 
 let rec collect_all_pragmas collected = function
     (PC.TPragma(s,(_,line,logical_line,offset,col,_,_,pos)),_)::rest ->
+      Printf.printf "Pragma on line %d and logical line %d\n" line
+	logical_line;
       let i =
 	{ Ast0.line_start = line; Ast0.line_end = line;
 	  Ast0.logical_start = logical_line; Ast0.logical_end = logical_line;
