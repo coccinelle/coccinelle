@@ -14,6 +14,11 @@ let pr2, pr2_once = Common.mk_pr2_wrappers Flag_matcher.verbose_matcher
 
 let (+++) a b = match a with Some x -> Some x | None -> b
 
+let error ii str =
+  match ii with
+    [] -> failwith str
+  | ii::_ -> failwith (Printf.sprintf "%d: %s" (Ast_c.line_of_info ii) str)
+
 (*****************************************************************************)
 (* Helpers *)
 (*****************************************************************************)
@@ -242,6 +247,8 @@ let equal_metavarval valu valu' =
       Lib_parsing_c.al_declaration a =*= Lib_parsing_c.al_declaration b
   | Ast_c.MetaFieldVal a, Ast_c.MetaFieldVal b ->
       Lib_parsing_c.al_field a =*= Lib_parsing_c.al_field b
+  | Ast_c.MetaFieldListVal a, Ast_c.MetaFieldListVal b ->
+      Lib_parsing_c.al_fields a =*= Lib_parsing_c.al_fields b
   | Ast_c.MetaStmtVal a, Ast_c.MetaStmtVal b ->
       Lib_parsing_c.al_statement a =*= Lib_parsing_c.al_statement b
   | Ast_c.MetaInitVal a, Ast_c.MetaInitVal b ->
@@ -271,7 +278,8 @@ let equal_metavarval valu valu' =
 	l1
 
   | (B.MetaPosValList _|B.MetaListlenVal _|B.MetaPosVal _|B.MetaStmtVal _
-      |B.MetaDeclVal _ |B.MetaFieldVal _ |B.MetaTypeVal _ |B.MetaInitVal _
+      |B.MetaDeclVal _ |B.MetaFieldVal _ |B.MetaFieldListVal _ 
+      |B.MetaTypeVal _ |B.MetaInitVal _
       |B.MetaParamListVal _|B.MetaParamVal _|B.MetaExprListVal _
       |B.MetaExprVal _|B.MetaLocalFuncVal _|B.MetaFuncVal _|B.MetaIdVal _
     ), _
@@ -303,6 +311,8 @@ let equal_inh_metavarval valu valu'=
       Lib_parsing_c.al_inh_declaration a =*= Lib_parsing_c.al_inh_declaration b
   | Ast_c.MetaFieldVal a, Ast_c.MetaFieldVal b ->
       Lib_parsing_c.al_inh_field a =*= Lib_parsing_c.al_inh_field b
+  | Ast_c.MetaFieldListVal a, Ast_c.MetaFieldListVal b ->
+      Lib_parsing_c.al_inh_field_list a =*= Lib_parsing_c.al_inh_field_list b
   | Ast_c.MetaStmtVal a, Ast_c.MetaStmtVal b ->
       Lib_parsing_c.al_inh_statement a =*= Lib_parsing_c.al_inh_statement b
   | Ast_c.MetaInitVal a, Ast_c.MetaInitVal b ->
@@ -332,7 +342,8 @@ let equal_inh_metavarval valu valu'=
 	l1
 
   | (B.MetaPosValList _|B.MetaListlenVal _|B.MetaPosVal _|B.MetaStmtVal _
-      |B.MetaDeclVal _ |B.MetaFieldVal _ |B.MetaTypeVal _ |B.MetaInitVal _
+      |B.MetaDeclVal _ |B.MetaFieldVal _ |B.MetaFieldListVal _
+      |B.MetaTypeVal _ |B.MetaInitVal _
       |B.MetaParamListVal _|B.MetaParamVal _|B.MetaExprListVal _
       |B.MetaExprVal _|B.MetaLocalFuncVal _|B.MetaFuncVal _|B.MetaIdVal _
     ), _
@@ -373,8 +384,8 @@ let split_signb_baseb_ii (baseb, ii) =
 	| B.CInt, ["",i1] -> (* no type is specified at all *)
 	    (match i1.B.pinfo with
 	      B.FakeTok(_,_) -> []
-	    | _ -> failwith ("unrecognized signed int: "^
-			     (String.concat " "(List.map fst iis))))
+	    | _ -> error [i1] ("unrecognized signed int: "^
+			      (String.concat " "(List.map fst iis))))
 
 	| B.CChar2, ["char",i2] -> [i2]
 
@@ -388,16 +399,19 @@ let split_signb_baseb_ii (baseb, ii) =
 	| B.CLongLong, ["long",i1;"long",i2;"int",i3] -> [i1;i2;i3]
 
 	| _ ->
-	  failwith ("strange type1, maybe because of weird order: "^
-		    (String.concat " " (List.map fst iis))) in
+	    error (List.map snd iis)
+	      ("strange type1, maybe because of weird order: "^
+	       (String.concat " " (List.map fst iis))) in
       (signed,base_res)
 
   | B.SizeType, ["size_t",i1] -> None, [i1]
   | B.SSizeType, ["ssize_t",i1] -> None, [i1]
   | B.PtrDiffType, ["ptrdiff_t",i1] -> None, [i1]
 
-  | _ -> failwith ("strange type2, maybe because of weird order: "^
-		   (String.concat " " (List.map fst iis)))
+  | _ ->
+      error (List.map snd iis)
+	("strange type2, maybe because of weird order: "^
+	 (String.concat " " (List.map fst iis)))
 
 (*---------------------------------------------------------------------------*)
 
@@ -421,8 +435,8 @@ let resplit_initialiser ibs iicomma =
   | [], [] -> []
   | [], _ ->
       failwith "should have a iicomma, do you generate fakeInfo in parser?"
-  | _, [] ->
-      failwith "shouldn't have a iicomma"
+  | iicommas, [] ->
+      error iicommas "shouldn't have a iicomma"
   | [iicomma], x::xs ->
       let elems = List.map fst (x::xs) in
       let commas = List.map snd (x::xs) +> List.flatten in
@@ -1700,7 +1714,7 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
             (B.DeclList ([var], iiptvirgb::iifakestart::iisto))
           )))
 
-  | _, (B.DeclList (xs, iiptvirgb::iifakestart::iisto)) ->
+  | _, (B.DeclList (xs, ((iiptvirgb::iifakestart::iisto) as ii))) ->
       let indexify l =
 	let rec loop n = function
 	    [] -> []
@@ -1726,7 +1740,8 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
                   )))) tin))
           fail
       else
-        failwith "More that one variable in decl. Have to split to transform.  Check that there is no transformation on the type or the ;"
+        error ii
+	  "More than one variable in the declaration, and so it cannot be transformed.  Check that there is no transformation on the type or the ;"
 
   | A.MacroDecl (sa,lpa,eas,rpa,enda), B.MacroDecl ((sb,ebs),ii) ->
       let (iisb, lpb, rpb, iiendb, iifakestart, iistob) =
@@ -1996,7 +2011,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
            tokenf stoa iitypedef >>= (fun stoa iitypedef ->
              return (stoa, [iitypedef])
            )
-       | _ -> failwith "weird, have both typedef and inline or nothing";
+       | _ -> error iistob "weird, have both typedef and inline or nothing";
        ) >>= (fun stoa iistob ->
        (match A.unwrap ida with
        | A.MetaType(_,_,_) ->
@@ -2340,9 +2355,17 @@ and (struct_fields: (A.declaration list, B.field list) matcher) =
   let build_dots (mcode, optexpr) = A.Ddots(mcode, optexpr) in
   let match_comma ea = None in
   let build_comma ia1 = failwith "not possible" in
-  let match_metalist ea = None in
-  let build_metalist (ida,leninfo,keep,inherited) = failwith "not possible" in
-  let mktermval v = failwith "not possible" in
+  let match_metalist ea =
+    match A.unwrap ea with
+      A.MetaFieldList(ida,leninfo,keep,inherited) ->
+	Some(ida,leninfo,keep,inherited)
+    | _ -> None in
+  let build_metalist (ida,leninfo,keep,inherited) =
+    A.MetaFieldList(ida,leninfo,keep,inherited) in
+  let mktermval v =
+    (* drop empty ii information, because nothing between elements *)
+    let v = List.map Ast_c.unwrap v in
+    Ast_c.MetaFieldListVal v in
   let special_cases ea eas ebs = None in
   let no_ii x = failwith "not possible" in
   let make_ebs ebs = List.map (function x -> Left x) ebs in
@@ -2896,7 +2919,7 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
 	 match ii with
 	   [iisub; lbb; rbb] -> (Common.Left iisub,lbb,rbb)
 	 | [iisub; iisb; lbb; rbb] -> (Common.Right (iisub,iisb),lbb,rbb)
-	 | _ -> failwith "list of length 3 or 4 expected" in
+	 | _ -> error ii "list of length 3 or 4 expected" in
 
        let process_type =
          match (sbopt,ii_sub_sb) with
@@ -3000,7 +3023,7 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
 	     (Common.Left iisub,lbb,rbb,comma_opt)
 	 | [iisub; iisb; lbb; rbb; comma_opt] ->
 	     (Common.Right (iisub,iisb),lbb,rbb,comma_opt)
-	 | _ -> failwith "list of length 4 or 5 expected" in
+	 | _ -> error ii "list of length 4 or 5 expected" in
 
        let process_type =
          match (sbopt,ii_sub_sb) with

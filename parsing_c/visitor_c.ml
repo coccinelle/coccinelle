@@ -503,6 +503,8 @@ and vk_decl = fun bigf d ->
         vk_argument_list bigf args;
   in f (k, bigf) d
 
+and vk_decl_list = fun bigf ts ->
+  ts +> List.iter (vk_decl bigf)
 
 and vk_onedecl = fun bigf onedecl ->
   let iif ii = vk_ii bigf ii in
@@ -1319,6 +1321,9 @@ and vk_decl_s = fun bigf d ->
     iif iicomma
 
   in f (k, bigf) d
+
+and vk_decl_list_s = fun bigf decls ->
+  decls +> List.map (vk_decl_s bigf)
 
 and vk_ini_s = fun bigf ini ->
   let rec inif ini = bigf.kini_s (k,bigf) ini

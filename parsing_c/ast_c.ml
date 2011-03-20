@@ -711,6 +711,7 @@ and metavars_binding = (Ast_cocci.meta_name, metavar_binding_kind) assoc
   | MetaInitVal      of initialiser
   | MetaDeclVal      of declaration
   | MetaFieldVal     of field
+  | MetaFieldListVal of field list
   | MetaStmtVal      of statement
 
   (* Could also be in Lib_engine.metavars_binding2 with the ParenVal,

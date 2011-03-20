@@ -376,6 +376,10 @@ let init _ =
     (function name -> function pure ->
       let fn clt = TMetaField(name,pure,clt) in
       Hashtbl.replace metavariables (get_name name) fn);
+  Data.add_field_list_meta :=
+    (function name -> function lenname -> function pure ->
+      let fn clt = TMetaFieldList(name,lenname,pure,clt) in
+      Hashtbl.replace metavariables (get_name name) fn);
   Data.add_stm_meta :=
     (function name -> function pure ->
       let fn clt = TMetaStm(name,pure,clt) in
@@ -491,6 +495,12 @@ rule token = parse
       (D.PLUS,_,_) | (D.PLUSPLUS,_,_) ->
 	TPragma (Ast.Indent (tok lexbuf), get_current_line_type lexbuf)
     | _ -> start_line false; token lexbuf }
+
+  | "__attribute__" [' ' '\t']* "((" _* "))"
+   { match !current_line_type with
+      (D.PLUS,_,_) | (D.PLUSPLUS,_,_) ->
+	TPragma (Ast.Space (tok lexbuf), get_current_line_type lexbuf)
+    | _ -> failwith "attributes only allowedin + code" }
 
   | "@@" { start_line true; TArobArob }
   | "@"  { pass_zero();

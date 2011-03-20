@@ -107,6 +107,7 @@ let tmeta_to_ident (name,pure,clt) =
 %token <Parse_aux.info>          TMetaParam TMetaStm TMetaStmList TMetaType
 %token <Parse_aux.info>          TMetaInit TMetaDecl TMetaField TMeta
 %token <Parse_aux.list_info>     TMetaParamList TMetaExpList
+%token <Parse_aux.list_info>     TMetaFieldList
 %token <Parse_aux.typed_expinfo> TMetaExp TMetaIdExp TMetaLocalIdExp TMetaConst
 %token <Parse_aux.pos_info>      TMetaPos
 
@@ -371,6 +372,14 @@ metadec:
 	  let tok = check_meta(Ast.MetaExpListDecl(arity,name,lenname)) in
 	  !Data.add_explist_meta name lenname pure; tok)
 	len ids }
+| ar=arity ispure=pure
+    TField Tlist TOCro len=list_len TCCro
+    ids=comma_list(pure_ident_or_meta_ident) TMPtVirg
+    { P.create_len_metadec ar ispure
+	(fun lenname arity name pure check_meta ->
+	  let tok = check_meta(Ast.MetaFieldListDecl(arity,name,lenname)) in
+	  !Data.add_field_list_meta name lenname pure; tok)
+	len ids }
 
 list_len:
   pure_ident_or_meta_ident { Common.Left $1 }
@@ -422,6 +431,11 @@ list_len:
     { (fun arity name pure check_meta ->
       let tok = check_meta(Ast.MetaFieldDecl(arity,name)) in
       !Data.add_field_meta name pure; tok) }
+| TField Tlist
+    { (fun arity name pure check_meta ->
+      let len = Ast.AnyLen in
+      let tok = check_meta(Ast.MetaFieldListDecl(arity,name,len)) in
+      !Data.add_field_list_meta name len pure; tok) }
 | TStatement Tlist
     { (fun arity name pure check_meta ->
       let tok = check_meta(Ast.MetaStmListDecl(arity,name)) in
@@ -683,6 +697,7 @@ struct_decl:
 
 struct_decl_one:
     | TMetaField { P.meta_field $1 }
+    | TMetaFieldList { P.meta_field_list $1 }
     | TMeta { tmeta_to_field $1 }
     | t=ctype d=d_ident pv=TPtVirg
 	 { let (id,fn) = d in

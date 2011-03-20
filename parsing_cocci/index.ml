@@ -117,6 +117,7 @@ let declaration d =
   match Ast0.unwrap d with
     Ast0.MetaDecl(name,_) -> [148]
   | Ast0.MetaField(name,_) -> [149]
+  | Ast0.MetaFieldList(name,_,_) -> [152]
   | Ast0.Init(stg,ty,id,eq,exp,sem) -> [54]
   | Ast0.UnInit(stg,ty,id,sem) -> [55]
   | Ast0.MacroDecl(name,lp,args,rp,sem) -> [137]

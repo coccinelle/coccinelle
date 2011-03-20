@@ -336,6 +336,8 @@ let do_get_constants constants keywords env neg_pos =
     match Ast.unwrap d with
       Ast.MetaDecl(name,_,_) | Ast.MetaField(name,_,_) ->
 	bind (k d) (minherited name)
+    | Ast.MetaFieldList(name,Ast.MetaListLen(lenname,_,_),_,_) ->
+	bind (minherited name) (bind (minherited lenname) (k d))
     | Ast.DisjDecl(decls) ->
 	disj_union_all (List.map r.V.combiner_declaration decls)
     | Ast.OptDecl(decl) -> option_default
@@ -637,4 +639,3 @@ let get_constants rules neg_pos_vars =
   | Flag.IdUtils ->
       let res = run rules neg_pos_vars in
       (interpret_grep true res,None,Some res)
-      

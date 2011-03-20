@@ -236,6 +236,7 @@ let print_extra_typedefs pr env =
       | Ast_c.MetaInitVal(ty) -> Visitor_c.vk_ini bigf ty
       | Ast_c.MetaDeclVal(decl) -> Visitor_c.vk_decl bigf decl
       | Ast_c.MetaFieldVal(field) -> Visitor_c.vk_struct_field bigf field
+      | Ast_c.MetaFieldListVal(fields) -> Visitor_c.vk_struct_fields bigf fields
       | Ast_c.MetaStmtVal(stm) -> Visitor_c.vk_statement bigf stm
       | Ast_c.MetaPosVal _ | Ast_c.MetaPosValList _
       | Ast_c.MetaListlenVal _ -> ())
@@ -283,6 +284,8 @@ let rename argids env =
 	   Ast_c.MetaDeclVal(Visitor_c.vk_decl_s bigf stm)
        | Ast_c.MetaFieldVal(stm) ->
 	   Ast_c.MetaFieldVal(Visitor_c.vk_struct_field_s bigf stm)
+       | Ast_c.MetaFieldListVal(stm) ->
+	   Ast_c.MetaFieldListVal(Visitor_c.vk_struct_fields_s bigf stm)
        | Ast_c.MetaStmtVal(stm) ->
 	   Ast_c.MetaStmtVal(Visitor_c.vk_statement_s bigf stm)
        | Ast_c.MetaPosVal _ | Ast_c.MetaPosValList _
@@ -311,6 +314,13 @@ let print_types pr env = function
 	types;
       pr "}"
 
+let pp_len pr len =
+  let pp_name (_,n) = pr n in
+  match len with
+    Ast.AnyLen -> ()
+  | Ast.MetaLen len -> pr "["; pp_name len; pr "]"
+  | Ast.CstLen len -> pr "["; pr (string_of_int len); pr "]"
+
 let pp_meta_decl pr env decl =
   let no_arity = function Ast.NONE -> () | _ -> failwith "no arity allowed" in
   let pp_name (_,n) = pr n in
@@ -334,14 +344,8 @@ let pp_meta_decl pr env decl =
   | Ast.MetaListlenDecl(name) -> ()
   | Ast.MetaParamDecl(ar, name) ->
       no_arity ar; pr "parameter "; pp_name name; pr ";\n"
-  | Ast.MetaParamListDecl(ar, name, Ast.AnyLen) ->
-      no_arity ar; pr "parameter list "; pp_name name; pr ";\n"
-  | Ast.MetaParamListDecl(ar, name, Ast.MetaLen len) ->
-      no_arity ar; pr "parameter list "; pp_name name;
-      pr "["; pp_name len; pr "]"; pr ";\n"
-  | Ast.MetaParamListDecl(ar, name, Ast.CstLen len) ->
-      no_arity ar; pr "parameter list "; pr (string_of_int len);
-      pr "["; pr (string_of_int len); pr "]"; pr ";\n"
+  | Ast.MetaParamListDecl(ar, name, len) ->
+      no_arity ar; pr "parameter list "; pp_name name; pp_len pr len; pr ";\n"
   | Ast.MetaConstDecl(ar, name, types) ->
       no_arity ar; pr "constant "; print_types pr env types;
       pp_name name; pr ";\n"
@@ -357,18 +361,14 @@ let pp_meta_decl pr env decl =
   | Ast.MetaLocalIdExpDecl(ar, name, types) ->
       no_arity ar; pr "local idexpression ";
       print_types pr env types; pp_name name; pr ";\n"
-  | Ast.MetaExpListDecl(ar, name, Ast.AnyLen) ->
-      no_arity ar; pr "parameter list "; pp_name name; pr ";\n"
-  | Ast.MetaExpListDecl(ar, name, Ast.MetaLen len) ->
-      no_arity ar; pr "parameter list ";
-      pp_name name; pr "["; pp_name len; pr "]"; pr ";\n"
-  | Ast.MetaExpListDecl(ar, name, Ast.CstLen len) ->
-      no_arity ar; pr "parameter list ";
-      pp_name name; pr "["; pr (string_of_int len); pr "]"; pr ";\n"
+  | Ast.MetaExpListDecl(ar, name, len) ->
+      no_arity ar; pr "parameter list "; pp_name name; pp_len pr len; pr ";\n"
   | Ast.MetaDeclDecl(ar, name) ->
       no_arity ar; pr "declaration "; pp_name name; pr ";\n"
   | Ast.MetaFieldDecl(ar, name) ->
       no_arity ar; pr "field "; pp_name name; pr ";\n"
+  | Ast.MetaFieldListDecl(ar, name, len) ->
+      no_arity ar; pr "field list "; pp_name name; pp_len pr len; pr ";\n"
   | Ast.MetaStmDecl(ar, name) ->
       no_arity ar; pr "statement "; pp_name name; pr ";\n"
   | Ast.MetaStmListDecl(ar, name) ->

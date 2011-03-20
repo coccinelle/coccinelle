@@ -175,7 +175,9 @@ and left_typeC t =
 and left_declaration d =
   modif_before d or
   match Ast0.unwrap d with
-    Ast0.MetaDecl(name,_) | Ast0.MetaField(name,_) -> modif_before_mcode name
+    Ast0.MetaDecl(name,_) | Ast0.MetaField(name,_)
+  | Ast0.MetaFieldList(name,_,_) ->
+      modif_before_mcode name
   | Ast0.Init(Some stg,ty,id,eq,ini,sem) -> modif_before_mcode stg
   | Ast0.Init(None,ty,id,eq,ini,sem) -> left_typeC ty
   | Ast0.UnInit(Some stg,ty,id,sem) -> modif_before_mcode stg
@@ -191,7 +193,9 @@ and left_declaration d =
 and right_declaration d =
   modif_before d or
   match Ast0.unwrap d with
-    Ast0.MetaDecl(name,_) | Ast0.MetaField(name,_) -> modif_before_mcode name
+    Ast0.MetaDecl(name,_) | Ast0.MetaField(name,_)
+  | Ast0.MetaFieldList(name,_,_) ->
+      modif_before_mcode name
   | Ast0.Init(_,ty,id,eq,ini,sem) -> modif_after_mcode sem
   | Ast0.UnInit(_,ty,id,sem) -> modif_after_mcode sem
   | Ast0.MacroDecl(name,lp,args,rp,sem) -> modif_after_mcode sem

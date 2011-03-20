@@ -305,7 +305,9 @@ and declaration d =
   print_context d
     (function _ ->
       match Ast0.unwrap d with
-	Ast0.MetaDecl(name,_) | Ast0.MetaField(name,_) -> mcode print_meta name
+	Ast0.MetaDecl(name,_) | Ast0.MetaField(name,_)
+      | Ast0.MetaFieldList(name,_,_) ->
+	  mcode print_meta name
       |	Ast0.Init(stg,ty,id,eq,ini,sem) ->
 	  print_option (mcode U.storage) stg;
 	  print_named_type ty id;

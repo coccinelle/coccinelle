@@ -37,6 +37,9 @@ let rec right_decl d =
   | Ast0.MetaField(name,pure) ->
       call_right right_mcode name d
 	(function name -> Ast0.MetaField(name,pure))
+  | Ast0.MetaFieldList(name,lenname,pure) ->
+      call_right right_mcode name d
+	(function name -> Ast0.MetaFieldList(name,lenname,pure))
   | Ast0.Init(Some stg,ty,id,eq,ini,sem) ->
       call_right right_mcode sem d
 	(function sem -> Ast0.Init(Some stg,ty,id,eq,ini,sem))
@@ -234,6 +237,9 @@ let rec left_decl decl =
   | Ast0.MetaField(name,pure) ->
       call_right right_mcode name decl
 	(function name -> Ast0.MetaField(name,pure))
+  | Ast0.MetaFieldList(name,lenname,pure) ->
+      call_right right_mcode name decl
+	(function name -> Ast0.MetaFieldList(name,lenname,pure))
   | Ast0.Init(Some stg,ty,id,eq,ini,sem) ->
       call_right left_mcode stg decl
 	(function stg -> Ast0.Init(Some stg,ty,id,eq,ini,sem))

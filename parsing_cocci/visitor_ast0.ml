@@ -381,6 +381,9 @@ let visitor mode bind option_default
 	| Ast0.MetaField(name,pure) ->
 	    let (n,name) = meta_mcode name in
 	    (n,Ast0.MetaField(name,pure))
+	| Ast0.MetaFieldList(name,lenname,pure) ->
+	    let (n,name) = meta_mcode name in
+	    (n,Ast0.MetaFieldList(name,lenname,pure))
 	| Ast0.Init(stg,ty,id,eq,ini,sem) ->
 	    let (stg_n,stg) = get_option storage_mcode stg in
 	    let ((ty_id_n,ty),id) = named_type ty id in

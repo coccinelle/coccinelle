@@ -36,4 +36,4 @@ and char = parse
   | (_ as x) "'"                                     { String.make 1 x }
   | (("\\" (oct | oct oct | oct oct oct)) as x  "'") { x }
   | (("\\x" (hex | hex hex)) as x  "'")       { x }
-  | (("\\" (_ as v)) as x "'") { x }
+  | (("\\" _ ) as x "'") { x }

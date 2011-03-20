@@ -35,6 +35,9 @@ exception CantBeInPlus
 type pos = Before | After | InPlace
 type nlhint = StartBox | EndBox | SpaceOrNewline of string ref
 
+let get_string_info = function
+    Ast.Noindent s | Ast.Indent s | Ast.Space s -> s
+
 let unknown = -1
 
 let rec do_all
@@ -110,8 +113,7 @@ let print_around printer term = function
       print_anything bef; printer term; print_anything aft in
 
 let print_string_befaft fn fn1 x info =
-  let print ln col =
-    function Ast.Noindent s | Ast.Indent s -> print_string s ln col in
+  let print ln col s = print_string (get_string_info s) ln col in
   List.iter
     (function (s,ln,col) -> fn1(); print ln col s; force_newline())
     info.Ast.strbef;
@@ -145,11 +147,11 @@ let mcode fn (s,info,mc,pos) =
 		  let str =
 		    match str with
 		      Ast.Noindent s -> unindent false; s
-		    | Ast.Indent s -> s in
+		    | Ast.Indent s -> s
+		    | Ast.Space s -> s in
 		  print_string str line col; Some line
 	      |	Some lb when line =|= lb ->
-		  let str = match str with Ast.Noindent s | Ast.Indent s -> s in
-		  print_string str line col; Some line
+		  print_string (get_string_info str) line col; Some line
 	      |	_ ->
 		  force_newline();
 		  (* not super elegant to put side-effecting unindent in a let
@@ -157,7 +159,8 @@ let mcode fn (s,info,mc,pos) =
 		  let str =
 		    match str with
 		      Ast.Noindent s -> unindent false; s
-		    | Ast.Indent s -> s in
+		    | Ast.Indent s -> s
+		    | Ast.Space s -> s in
 		  print_string str line col; Some line)
 	  lb comments in
       let line_before = print_comments None info.Ast.strbef in
@@ -586,9 +589,17 @@ and declaration d =
   | Ast.MetaField(name,_,_) ->
       handle_metavar name
 	(function
-	    Ast_c.MetaFieldVal d ->
-              pretty_print_c.Pretty_print_c.field d
+	    Ast_c.MetaFieldVal f ->
+              pretty_print_c.Pretty_print_c.field f
           | _ -> raise Impossible)
+
+  | Ast.MetaFieldList(name,_,_,_) ->
+      handle_metavar name
+	(function
+	    Ast_c.MetaFieldListVal f ->
+	      print_between force_newline pretty_print_c.Pretty_print_c.field f
+          | _ -> raise Impossible)
+
   | Ast.Init(stg,ty,id,eq,ini,sem) ->
       print_option (mcode storage) stg;
       print_option (function _ -> pr_space()) stg;
@@ -691,7 +702,11 @@ and parameterTypeDef p =
               pretty_print_c.Pretty_print_c.param p
           | _ -> raise Impossible)
   | Ast.MetaParamList(name,_,_,_) ->
-      failwith "not handling MetaParamList"
+      handle_metavar name
+	(function
+	    Ast_c.MetaParamListVal p ->
+              pretty_print_c.Pretty_print_c.paramlist p
+          | _ -> raise Impossible)
 
   | Ast.PComma(cm) -> mcode print_string cm
   | Ast.Pdots(dots) | Ast.Pcircles(dots) when generating ->
@@ -1014,8 +1029,16 @@ let rec pp_any = function
 
   | Ast.ConstVolTag(x) -> const_vol x unknown unknown; false
   | Ast.Pragma(xs) ->
-      let print = function Ast.Noindent s | Ast.Indent s -> print_text s in
-      print_between force_newline print xs; false
+      (match xs with (Ast.Space s)::_ -> pr_space() | _ -> ());
+      let rec loop = function
+	  [] -> ()
+	| [(Ast.Indent s | Ast.Noindent s)] -> print_text s
+	| (Ast.Space s) :: (((Ast.Indent _ | Ast.Noindent _) :: _) as rest) ->
+	    print_text s; force_newline(); loop rest
+	| (Ast.Space s) :: rest -> print_text s; pr_space(); loop rest
+	| (Ast.Indent s | Ast.Noindent s) :: rest ->
+	    print_text s; force_newline(); loop rest in
+      loop xs; false
   | Ast.Token(x,None) -> print_text x; if_open_brace x
   | Ast.Token(x,Some info) ->
       mcode
@@ -1064,7 +1087,10 @@ in
 	then
 	  let hd = List.hd xxs in
 	  match hd with
-            (Ast.StatementTag s::_) when isfn s ->
+	    (Ast.Pragma l::_)
+	      when List.for_all (function Ast.Space x -> true | _ -> false) l ->
+		()
+          | (Ast.StatementTag s::_) when isfn s ->
 	      force_newline(); force_newline()
 	  | (Ast.Pragma _::_)
           | (Ast.Rule_elemTag _::_) | (Ast.StatementTag _::_)

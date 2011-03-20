@@ -33,6 +33,7 @@ val vk_statement : visitor_c -> statement   -> unit
 val vk_statement_sequencable : visitor_c -> statement_sequencable -> unit
 val vk_type      : visitor_c -> fullType    -> unit
 val vk_decl      : visitor_c -> declaration -> unit
+val vk_decl_list : visitor_c -> declaration list -> unit
 val vk_onedecl   : visitor_c -> onedecl -> unit
 val vk_ini       : visitor_c -> initialiser -> unit
 val vk_inis_splitted :
@@ -100,6 +101,7 @@ val vk_statement_s : visitor_c_s -> statement -> statement
 val vk_statement_sequencable_s : visitor_c_s -> statement_sequencable -> statement_sequencable
 val vk_type_s : visitor_c_s -> fullType -> fullType
 val vk_decl_s : visitor_c_s -> declaration -> declaration
+val vk_decl_list_s : visitor_c_s -> declaration list -> declaration list
 val vk_ini_s : visitor_c_s -> initialiser -> initialiser
 
 val vk_inis_splitted_s :

@@ -6,6 +6,7 @@
 - Support metavariables, virtual rules and virtual identifiers
   in initialize and finalize rules
 - Support for matching #ifdef, etc.
+- function-typed metavariables
 
 ** Features:
 - New scripting languages
@@ -25,6 +26,8 @@
 - Support for new and delete
 - Allow arrays in smpl parameter declarations.  Thanks to Jesper Louis
   Andersen for pointing out the problem.
+- field list metavariables
+- add the ability to add __attributes__ (NB, no matching on attributes)
 
 ** Features:
 - support transformations on variables (only) in declarations that declare
@@ -39,9 +42,13 @@
   arguments
 - reuse typedefs and macros from complete parsing when reparsing the
   transformed code
+<<<<<<< changes.txt
+- better explanation when presenting glimpse tokens
+=======
 - optimization for an if branch that is just { ... }
 - spatch -control_flow_to_file file.c generates a file file.dot
 - include files with names ending in .cpp if -c++ option is given
+>>>>>>> 1.267
 
 ** Bugfix:
 - improved parsing of expressions to allow ... to the right of operators in

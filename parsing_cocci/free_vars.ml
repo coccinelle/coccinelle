@@ -122,6 +122,10 @@ let collect_refs include_constraints =
     bind (k d)
       (match Ast.unwrap d with
 	Ast.MetaDecl(name,_,_) | Ast.MetaField(name,_,_) -> [metaid name]
+      | Ast.MetaFieldList(name,Ast.MetaListLen(lenname,_,_),_,_) ->
+	  [metaid name;metaid lenname]
+      | Ast.MetaFieldList(name,_,_,_) ->
+	  [metaid name]
       | Ast.DisjDecl(decls) -> bind_disj (List.map k decls)
       | _ -> option_default) in
 
@@ -265,7 +269,7 @@ let collect_saved =
 	  let lensaved =
 	    match ls with TC.Saved -> [metaid lenname] | _ -> [] in
 	  lensaved @ namesaved
-      | Ast.MetaParamList(name,_,_,_) -> [metaid name]
+      | Ast.MetaParamList(name,_,TC.Saved,_) -> [metaid name]
       | _ -> option_default) in
 
   let astfvdecls recursor k d =
@@ -273,6 +277,13 @@ let collect_saved =
       (match Ast.unwrap d with
 	Ast.MetaDecl(name,TC.Saved,_) | Ast.MetaField(name,TC.Saved,_) ->
 	  [metaid name]
+      | Ast.MetaFieldList(name,Ast.MetaListLen (lenname,ls,_),ns,_) ->
+	  let namesaved =
+	    match ns with TC.Saved -> [metaid name] | _ -> [] in
+	  let lensaved =
+	    match ls with TC.Saved -> [metaid lenname] | _ -> [] in
+	  lensaved @ namesaved
+      | Ast.MetaFieldList(name,_,TC.Saved,_) -> [metaid name]
       | _ -> option_default) in
 
   let astfvrule_elem recursor k re =
@@ -557,6 +568,16 @@ let classify_variables metavar_decls minirules used_after =
     | Ast.MetaField(name,_,_) ->
 	let (unitary,inherited) = classify name in
 	Ast.rewrap e (Ast.MetaField(name,unitary,inherited))
+    | Ast.MetaFieldList(name,Ast.MetaListLen (lenname,_,_),_,_) ->
+	let (unitary,inherited) = classify name in
+	let (lenunitary,leninherited) = classify lenname in
+	Ast.rewrap e
+	  (Ast.MetaFieldList
+	     (name,Ast.MetaListLen(lenname,lenunitary,leninherited),
+	      unitary,inherited))
+    | Ast.MetaFieldList(name,lenname,_,_) ->
+	let (unitary,inherited) = classify name in
+	Ast.rewrap e (Ast.MetaFieldList(name,lenname,unitary,inherited))
     | _ -> e in
 
   let rule_elem r k e =

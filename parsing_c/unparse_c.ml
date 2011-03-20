@@ -725,6 +725,11 @@ let is_ident_like s = s ==~ Common.regexp_alpha
 let rec drop_space_at_endline = function
     [] -> []
   | [x] -> [x]
+  | (C2 " ") ::
+    ((((T2(Parser_c.TCommentSpace _,Ctx,_i)) |
+    (T2(Parser_c.TCommentNewline _,Ctx,_i))) :: _) as rest) ->
+      (* when unparse_cocci doesn't know whether space is needed *)
+      drop_space_at_endline rest
   | ((T2(Parser_c.TCommentSpace _,Ctx,_i)) as a)::rest ->
       let (outer_spaces,rest) = Common.span is_space rest in
       let minus_or_comment_or_space_nocpp = function

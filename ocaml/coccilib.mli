@@ -18,6 +18,7 @@ type param_type =
   | ExprList of Ast_c.argument Ast_c.wrap2 list
   | Decl of Ast_c.declaration
   | Field of Ast_c.field
+  | FieldList of Ast_c.field list
   | Stmt of Ast_c.statement
 
 val fcts : (string, param_type list -> string ref list -> unit) Hashtbl.t

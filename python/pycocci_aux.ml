@@ -23,6 +23,8 @@ let stringrep = function
     call_pretty Pretty_print_c.pp_decl_gen decl
 | Ast_c.MetaFieldVal      field ->
     call_pretty Pretty_print_c.pp_field_gen field
+| Ast_c.MetaFieldListVal      field ->
+    call_pretty Pretty_print_c.pp_field_list_gen field
 | Ast_c.MetaStmtVal      statement ->
     call_pretty Pretty_print_c.pp_statement_gen statement
 | Ast_c.MetaParamVal     param ->

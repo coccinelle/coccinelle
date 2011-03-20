@@ -430,7 +430,9 @@ and print_named_type ty id =
 
 and declaration d =
   match Ast.unwrap d with
-    Ast.MetaDecl(name,_,_) | Ast.MetaField(name,_,_) -> mcode print_meta name
+    Ast.MetaDecl(name,_,_) | Ast.MetaField(name,_,_)
+  | Ast.MetaFieldList(name,_,_,_) ->
+      mcode print_meta name
   | Ast.Init(stg,ty,id,eq,ini,sem) ->
       print_option (mcode storage) stg; print_named_type ty id;
       print_string " "; mcode print_string eq;

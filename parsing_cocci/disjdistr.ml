@@ -237,7 +237,8 @@ and designator = function
 
 and disjdecl d =
   match Ast.unwrap d with
-    Ast.MetaDecl(_,_,_) | Ast.MetaField(_,_,_) -> [d]
+    Ast.MetaDecl(_,_,_) | Ast.MetaField(_,_,_)
+  | Ast.MetaFieldList(_,_,_,_) -> [d]
   | Ast.Init(stg,ty,id,eq,ini,sem) ->
       disjmult2 (disjty ty) (disjini ini)
 	(function ty -> function ini ->

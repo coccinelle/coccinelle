@@ -190,6 +190,7 @@ and base_declaration =
        they don't match the same thin at all.  Consider whether there
        should be a separate type for fields, as in the C AST *)
   | MetaField of Ast.meta_name mcode * pure (* structure fields *)
+  | MetaFieldList of Ast.meta_name mcode * listlen * pure (* structure fields *)
   | Init of Ast.storage mcode option * typeC * ident * string mcode (*=*) *
 	initialiser * string mcode (*;*)
   | UnInit of Ast.storage mcode option * typeC * ident * string mcode (* ; *)

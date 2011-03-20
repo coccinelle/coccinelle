@@ -433,6 +433,15 @@ let meta_field name =
   let (nm,pure,clt) = name in
   Ast0.wrap(Ast0.MetaField(clt2mcode nm clt,pure))
 
+let meta_field_list name =
+  let (nm,lenname,pure,clt) = name in
+  let lenname =
+    match lenname with
+      Ast.AnyLen -> Ast0.AnyListLen
+    | Ast.MetaLen nm -> Ast0.MetaListLen(clt2mcode nm clt)
+    | Ast.CstLen n -> Ast0.CstListLen n in
+  Ast0.wrap(Ast0.MetaFieldList(clt2mcode nm clt,lenname,pure))
+
 let meta_stm name =
   let (nm,pure,clt) = name in
   Ast0.wrap(Ast0.MetaStmt(clt2mcode nm clt,pure))

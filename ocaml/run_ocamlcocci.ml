@@ -36,6 +36,7 @@ let ast_binding vl = function
       | Ast_c.MetaInitVal init -> Coccilib.Init init
       | Ast_c.MetaDeclVal decl -> Coccilib.Decl decl
       | Ast_c.MetaFieldVal field -> Coccilib.Field field
+      | Ast_c.MetaFieldListVal field -> Coccilib.FieldList field
       | Ast_c.MetaStmtVal stm -> Coccilib.Stmt stm
 
       | Ast_c.MetaPosVal _ | Ast_c.MetaPosValList _ | Ast_c.MetaListlenVal _ ->
