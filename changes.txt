@@ -26,8 +26,11 @@
 - Support for new and delete
 - Allow arrays in smpl parameter declarations.  Thanks to Jesper Louis
   Andersen for pointing out the problem.
-- field list metavariables
-- add the ability to add __attributes__ (NB, no matching on attributes)
+- Field list metavariables
+- Add the ability to add __attributes__ (NB, no matching on attributes)
+- Slightly improved the error message for transformation on multiple
+  variable declaration.  Thanks to Jonathan Nieder for pointing out the
+  problem.
 
 ** Features:
 - support transformations on variables (only) in declarations that declare
