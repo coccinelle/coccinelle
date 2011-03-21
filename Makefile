@@ -126,7 +126,9 @@ OCAMLDEP=ocamldep $(INCLUDEDIRSDEP:%=-I %)
 OCAMLMKTOP=ocamlmktop -g -custom $(INCLUDES)
 
 # can also be set via 'make static'
-STATIC= #-ccopt -static
+CFLAGS=-pie -fPIE -fpic -fPIC -static 
+STATICCFLAGS=$(CFLAGS:%=-ccopt %)
+STATIC= # $(STATICCFLAGS)
 
 # can also be unset via 'make purebytecode'
 BYTECODE_STATIC=-custom
@@ -222,7 +224,7 @@ distclean::
 
 static:
 	rm -f spatch.opt spatch
-	$(MAKE) STATIC="-ccopt -static" spatch.opt
+	$(MAKE) STATIC="$(STATICCFLAGS)" spatch.opt
 	cp spatch.opt spatch
 
 purebytecode:
