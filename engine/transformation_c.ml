@@ -176,7 +176,11 @@ module XTRANS = struct
     (match mck, Ast_c.pinfo_of_info ib with
     | _,                  Ast_c.AbstractLineTok _ -> raise Impossible
     | Ast_cocci.MINUS(_), Ast_c.ExpandedTok _ ->
-        failwith ("try to delete an expanded token: " ^ (Ast_c.str_of_info ib))
+        failwith
+	  (Printf.sprintf
+	     "%s: %d: try to delete an expanded token: %s"
+	     (Ast_c.file_of_info ib)
+	     (Ast_c.line_of_info ib) (Ast_c.str_of_info ib))
     | _ -> ()
     );
 
