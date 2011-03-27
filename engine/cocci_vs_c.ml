@@ -17,7 +17,10 @@ let (+++) a b = match a with Some x -> Some x | None -> b
 let error ii str =
   match ii with
     [] -> failwith str
-  | ii::_ -> failwith (Printf.sprintf "%d: %s" (Ast_c.line_of_info ii) str)
+  | ii::_ ->
+      failwith
+	(Printf.sprintf "%s: %d: %s"
+	   (Ast_c.file_of_info ii) (Ast_c.line_of_info ii) str)
 
 (*****************************************************************************)
 (* Helpers *)

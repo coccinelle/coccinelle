@@ -14,7 +14,6 @@
 ** Bugfix:
 - Add more information in documentation, man pages and wiki
 
-
 * 0.2.5
 ** Language:
 - Make a very small attempt to parse C++ code, amounting to accepting
