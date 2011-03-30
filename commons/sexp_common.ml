@@ -123,6 +123,7 @@ let sexp_of_assoc _of_a _of_b =
     (fun (v1, v2) ->
        let v1 = _of_a v1 and v2 = _of_b v2 in Sexp.List [ v1; v2 ])
 
+(*
 let hashset_of_sexp__ =
   let _loc = "Xxx.hashset"
   in fun _of_a -> Conv.hashtbl_of_sexp _of_a Conv.bool_of_sexp
@@ -133,6 +134,7 @@ let hashset_of_sexp _of_a sexp =
   | Conv_error.No_variant_match ((msg, sexp)) -> Conv.of_sexp_error msg sexp
 
 let sexp_of_hashset _of_a = Conv.sexp_of_hashtbl _of_a Conv.sexp_of_bool
+*)
 
 let stack_of_sexp__ =
   let _loc = "Xxx.stack" in fun _of_a -> Conv.list_of_sexp _of_a
