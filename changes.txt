@@ -63,6 +63,9 @@
 - Remove an optimization of x or true to true in asttoctl2 for the case
   where x may make a modification, eg the case of -thing ?-thing
 - Allow adding comments before a function.
+- Introduction of newlines in function arguments needs to take into account
+  that the code added by SmPL can include newlines.  Thanks to Thomas
+  Gleixner for finding the problem.
 
 * 0.2.4
 ** Language:
