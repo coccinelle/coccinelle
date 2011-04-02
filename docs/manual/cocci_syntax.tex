@@ -155,7 +155,7 @@ the same, but for structure fields.
   \CASE{parameter list [ \NT{const} ] \NT{ids} ;}
   \CASE{type \NT{ids} ;}
   \CASE{statement \opt{list} \NT{ids} ;}
-  \CASE{declaration \opt{list} \NT{ids} ;}
+  \CASE{declaration \NT{ids} ;}
   \CASE{field \opt{list} \NT{ids} ;}
   \CASE{typedef \NT{ids} ;}
   \CASE{declarer name \NT{ids} ;}
@@ -539,7 +539,7 @@ T b;
 (
  writeb(...,
 |
- readb(
+ readb(...,
 )
 @--(T)
  b)
@@ -563,6 +563,9 @@ write
     \\
   \end{tabular}
 \end{center}
+
+Some kinds of terms can only appear in + code.  These include comments,
+ifdefs, and attributes (\texttt{\_\_attribute\_\_((...))}).
 
 \section{Types}
 \label{types}
