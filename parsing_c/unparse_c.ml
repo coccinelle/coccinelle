@@ -837,12 +837,12 @@ let add_newlines toks tabbing_unit =
 	let (stack,space_cell) = info in
 	let rest =
 	  match hint with
-	    None -> loop info (count + (String.length s)) xs
+	    None -> loop info (string_length s count) xs
 	  | Some Unparse_cocci.StartBox ->
-	      let count = count + (String.length s) in
+	      let count = string_length s count in
 	      loop (count::stack,space_cell) count xs
 	  | Some Unparse_cocci.EndBox ->
-	      let count = count + (String.length s) in
+	      let count = string_length s count in
 	      (match stack with
 		[x] ->
 		  (match check_for_newline count x space_cell with
@@ -850,7 +850,7 @@ let add_newlines toks tabbing_unit =
 		  | None -> loop ([],None) count xs)
 	      | _ -> loop (List.tl stack,space_cell) count xs)
 	  | Some (Unparse_cocci.SpaceOrNewline sp) ->
-	      let count = count + (String.length s) + 1 (*space*) in
+	      let count = string_length s (count + 1 (*space*)) in
 	      (match stack with
 		[x] ->
 		  (match check_for_newline count x space_cell with

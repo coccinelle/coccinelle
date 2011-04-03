@@ -20,6 +20,13 @@ On Debian/Ubuntu, install the following packages
  - libsexplib-camlp4-dev
  - menhir and libmenhir-ocaml-dev
 
+On Fedora, install the following packages
+ - ocaml
+ - ocaml-findlib
+ - ocaml-sexplib-devel
+
+Note that on Fedora, there is currently not
+package for menhir and pycaml.
 
 Then simply type
  ./configure

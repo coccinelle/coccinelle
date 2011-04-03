@@ -49,6 +49,7 @@
 - spatch -control_flow_to_file file.c generates a file file.dot
 - include files with names ending in .cpp if -c++ option is given
 - removed use of the no longer supported sexplib function Conv.hashtbl_of_sexp
+- add information about which Fedora packages are needed
 
 ** Bugfix:
 - improved parsing of expressions to allow ... to the right of operators in
@@ -62,6 +63,9 @@
 - Remove an optimization of x or true to true in asttoctl2 for the case
   where x may make a modification, eg the case of -thing ?-thing
 - Allow adding comments before a function.
+- Introduction of newlines in function arguments needs to take into account
+  that the code added by SmPL can include newlines.  Thanks to Thomas
+  Gleixner for finding the problem.
 
 * 0.2.4
 ** Language:
