@@ -14,10 +14,10 @@ T f@p (...) {...}
 p << first_fct.p;
 @@
 
-if p[0].line > first && first == 0:
+if p[0].line > first and first == 0:
    first = p[0].line
 else:
-   cocci.include_match(false)
+   cocci.include_match(False)
 
 @@
 type T;

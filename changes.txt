@@ -14,6 +14,15 @@
 ** Bugfix:
 - Add more information in documentation, man pages and wiki
 
+* 1.0.0
+** Language:
+
+** Features:
+
+** Bugfix:
+- Corrected parsing of script strings delimited by a single quote.  Thanks
+  to Eugeniy Meshcheryakov for reporting the problem.
+
 * 0.2.5
 ** Language:
 - Make a very small attempt to parse C++ code, amounting to accepting

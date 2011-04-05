@@ -22,18 +22,15 @@ rule token = parse
   | "/"  { TScriptData (tok lexbuf) }
   | "//" [^ '\n']* { token lexbuf } (* skip SmPL comments *)
   | '"'  { TScriptData (Printf.sprintf "\"%s\"" (string lexbuf)) }
-  | "'"  { TScriptData (Printf.sprintf "'%s'" (char lexbuf)) }
+  | "'"  { TScriptData (Printf.sprintf "'%s'" (cstring lexbuf)) }
   | eof  { EOF }
   | _ { raise (Lexical ("unrecognised symbol, in token rule:"^tok lexbuf)) }
 
 (* These are C strings.  Perhaps they require some adjustment. *)
 and string  = parse
   | '"'                 { "" }
-  | (_ as x)            { Common.string_of_char x ^ string lexbuf }
-  | ("\\" _) as x       { x ^ string lexbuf }
+  | (_ as x)            { (String.make 1 x) ^ string lexbuf }
 
-and char = parse
-  | (_ as x) "'"                                     { String.make 1 x }
-  | (("\\" (oct | oct oct | oct oct oct)) as x  "'") { x }
-  | (("\\x" (hex | hex hex)) as x  "'")       { x }
-  | (("\\" _ ) as x "'") { x }
+and cstring  = parse
+  | "'"                 { "" }
+  | (_ as x)            { (String.make 1 x) ^ cstring lexbuf }
