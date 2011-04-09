@@ -69,6 +69,7 @@ let ast_rep_binding ctr = function
   | (Some nm,Ast.MetaFreshIdDecl _) -> print_match ctr nm "Str"
   | (Some nm,Ast.MetaTypeDecl _) -> print_match ctr nm "Type"
   | (Some nm,Ast.MetaInitDecl _) -> print_match ctr nm "Init"
+  | (Some nm,Ast.MetaInitListDecl _) -> print_match ctr nm "InitList"
   | (Some nm,Ast.MetaListlenDecl _) ->
       failwith
 	(Printf.sprintf "%s: No AST representation for listlen variables" nm)

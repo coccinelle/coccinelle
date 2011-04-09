@@ -106,7 +106,7 @@ let tmeta_to_ident (name,pure,clt) =
 %token <Parse_aux.expinfo>       TMetaErr
 %token <Parse_aux.info>          TMetaParam TMetaStm TMetaStmList TMetaType
 %token <Parse_aux.info>          TMetaInit TMetaDecl TMetaField TMeta
-%token <Parse_aux.list_info>     TMetaParamList TMetaExpList
+%token <Parse_aux.list_info>     TMetaParamList TMetaExpList TMetaInitList
 %token <Parse_aux.list_info>     TMetaFieldList
 %token <Parse_aux.typed_expinfo> TMetaExp TMetaIdExp TMetaLocalIdExp TMetaConst
 %token <Parse_aux.pos_info>      TMetaPos
@@ -380,6 +380,14 @@ metadec:
 	  let tok = check_meta(Ast.MetaFieldListDecl(arity,name,lenname)) in
 	  !Data.add_field_list_meta name lenname pure; tok)
 	len ids }
+| ar=arity ispure=pure
+    TInitialiser Tlist TOCro len=list_len TCCro
+    ids=comma_list(pure_ident_or_meta_ident) TMPtVirg
+    { P.create_len_metadec ar ispure
+	(fun lenname arity name pure check_meta ->
+	  let tok = check_meta(Ast.MetaInitListDecl(arity,name,lenname)) in
+	  !Data.add_initlist_meta name lenname pure; tok)
+	len ids }
 
 list_len:
   pure_ident_or_meta_ident { Common.Left $1 }
@@ -418,6 +426,11 @@ list_len:
 | TInitialiser
     { (fun arity name pure check_meta ->
       let tok = check_meta(Ast.MetaInitDecl(arity,name)) in
+      !Data.add_init_meta name pure; tok) }
+| TInitialiser Tlist
+    { (fun arity name pure check_meta ->
+      let len = Ast.AnyLen in
+      let tok = check_meta(Ast.MetaInitListDecl(arity,name,len)) in
       !Data.add_init_meta name pure; tok) }
 | TStatement
     { (fun arity name pure check_meta ->
@@ -1246,6 +1259,15 @@ initialize:
   | TMetaInit
       {let (nm,pure,clt) = $1 in
       Ast0.wrap(Ast0.MetaInit(P.clt2mcode nm clt,pure)) }
+  | TMetaInitList
+      {let (nm,lenname,pure,clt) = $1 in
+      let nm = P.clt2mcode nm clt in
+      let lenname =
+	match lenname with
+	  Ast.AnyLen -> Ast0.AnyListLen
+	| Ast.MetaLen nm -> Ast0.MetaListLen(P.clt2mcode nm clt)
+	| Ast.CstLen n -> Ast0.CstListLen n in
+      Ast0.wrap(Ast0.MetaInitList(nm,lenname,pure)) }
 
 initialize2:
   /*arithexpr and not eexpr because can have ambiguity with comma*/

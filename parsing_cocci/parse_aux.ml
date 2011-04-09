@@ -227,6 +227,13 @@ let check_meta_tyopt type_irrelevant = function
 	  raise
 	    (Semantic_cocci.Semantic
 	       ("incompatible inheritance declaration "^name)))
+  | Ast.MetaInitListDecl(Ast.NONE,(rule,name),len_name) ->
+      (match lookup rule name with
+	Ast.MetaInitListDecl(_,_,_) -> ()
+      | _ ->
+	  raise
+	    (Semantic_cocci.Semantic
+	       ("incompatible inheritance declaration "^name)))
   | Ast.MetaParamDecl(Ast.NONE,(rule,name)) ->
       (match lookup rule name with
 	Ast.MetaParamDecl(_,_) -> ()
@@ -583,7 +590,7 @@ let struct_initializer initlist =
       Ast0.InitGccExt _ -> true
     | Ast0.InitGccName _ -> true
     | Ast0.OptIni i | Ast0.UniqueIni i -> loop i
-    | Ast0.MetaInit _ -> true (* ambiguous... *)
+    | Ast0.MetaInit _ | Ast0.MetaInitList _ -> true (* ambiguous... *)
     | _ -> false in
   let l = Ast0.undots initlist in
   (l = []) or (List.exists loop l)

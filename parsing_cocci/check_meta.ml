@@ -252,6 +252,11 @@ and initialiser old_metas table minus ini =
   match Ast0.unwrap ini with
     Ast0.MetaInit(name,_) ->
       check_table table minus name
+  | Ast0.MetaInitList(name,Ast0.MetaListLen lenname,_) ->
+      check_table table minus name;
+      check_table table minus lenname
+  | Ast0.MetaInitList(name,_,_) ->
+      check_table table minus name
   | Ast0.InitExpr(exp) -> expression ID old_metas table minus exp
   | Ast0.InitList(lb,initlist,rb,ordered) ->
       dots (initialiser old_metas table minus) initlist

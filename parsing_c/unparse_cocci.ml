@@ -635,6 +635,11 @@ and initialiser nlcomma i =
           Ast_c.MetaInitVal ini ->
             pretty_print_c.Pretty_print_c.init ini
         | _ -> raise Impossible)
+  | Ast.MetaInitList(name,_,_,_) ->
+      handle_metavar name  (function
+          Ast_c.MetaInitListVal ini ->
+	    pretty_print_c.Pretty_print_c.init_list ini
+        | _ -> raise Impossible)
   | Ast.InitExpr(exp) -> expression exp
   | Ast.ArInitList(lb,initlist,rb) ->
       (match Ast.undots initlist with

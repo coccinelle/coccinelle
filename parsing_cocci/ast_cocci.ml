@@ -80,6 +80,7 @@ and metavar =
   | MetaFreshIdDecl of meta_name (* name *) * seed (* seed *)
   | MetaTypeDecl of arity * meta_name (* name *)
   | MetaInitDecl of arity * meta_name (* name *)
+  | MetaInitListDecl of arity * meta_name (* name *) * list_len (*len*)
   | MetaListlenDecl of meta_name (* name *)
   | MetaParamDecl of arity * meta_name (* name *)
   | MetaParamListDecl of arity * meta_name (*name*) * list_len (*len*)
@@ -312,6 +313,7 @@ and declaration = base_declaration wrap
 
 and base_initialiser =
     MetaInit of meta_name mcode * keep_binding * inherited
+  | MetaInitList of meta_name mcode * listlen * keep_binding * inherited
   | InitExpr of expression
   | ArInitList of string mcode (*{*) * initialiser dots * string mcode (*}*)
   | StrInitList of bool (* true if all are - *) *
@@ -684,6 +686,7 @@ let get_meta_name = function
   | MetaFreshIdDecl(nm,seed) -> nm
   | MetaTypeDecl(ar,nm) -> nm
   | MetaInitDecl(ar,nm) -> nm
+  | MetaInitListDecl(ar,nm,nm1) -> nm
   | MetaListlenDecl(nm) -> nm
   | MetaParamDecl(ar,nm) -> nm
   | MetaParamListDecl(ar,nm,nm1) -> nm

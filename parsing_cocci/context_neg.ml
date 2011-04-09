@@ -586,6 +586,8 @@ let equal_initialiser i1 i2 =
   match (Ast0.unwrap i1,Ast0.unwrap i2) with
     (Ast0.MetaInit(name1,_),Ast0.MetaInit(name2,_)) ->
       equal_mcode name1 name2
+  | (Ast0.MetaInitList(name1,_,_),Ast0.MetaInitList(name2,_,_)) ->
+      equal_mcode name1 name2
   | (Ast0.InitExpr(_),Ast0.InitExpr(_)) -> true
   | (Ast0.InitList(lb1,_,rb1,o1),Ast0.InitList(lb2,_,rb2,o2)) ->
       (* can't compare orderedness, because this can differ between -

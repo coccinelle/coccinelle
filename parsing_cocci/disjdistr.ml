@@ -191,7 +191,7 @@ and disjparam p =
 
 and disjini i =
   match Ast.unwrap i with
-    Ast.MetaInit(_,_,_) -> [i]
+    Ast.MetaInit(_,_,_) | Ast.MetaInitList(_,_,_,_) -> [i]
   | Ast.InitExpr(exp) ->
       let exp = disjexp exp in
       List.map (function exp -> Ast.rewrap i (Ast.InitExpr(exp))) exp

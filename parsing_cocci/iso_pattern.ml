@@ -380,7 +380,7 @@ let match_maker checks_needed context_required whencode_allowed =
     let init r k t =
       bind (bind (pure_mcodekind (Ast0.get_mcodekind t)) (k t))
 	(match Ast0.unwrap t with
-	  Ast0.MetaInit(name,pure) -> pure
+	  Ast0.MetaInit(name,pure) | Ast0.MetaInitList(name,_,pure) -> pure
 	| _ -> Ast0.Impure) in
 
     let param r k p =

@@ -336,6 +336,10 @@ let init _ =
     (fun name pure ->
       let fn clt = TMetaInit(name,pure,clt) in
       Hashtbl.replace metavariables (get_name name) fn);
+  Data.add_initlist_meta :=
+    (function name -> function lenname -> function pure ->
+      let fn clt = TMetaInitList(name,lenname,pure,clt) in
+      Hashtbl.replace metavariables (get_name name) fn);
   Data.add_param_meta :=
     (function name -> function pure ->
       let fn clt = TMetaParam(name,pure,clt) in

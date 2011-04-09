@@ -256,6 +256,8 @@ let equal_metavarval valu valu' =
       Lib_parsing_c.al_statement a =*= Lib_parsing_c.al_statement b
   | Ast_c.MetaInitVal a, Ast_c.MetaInitVal b ->
       Lib_parsing_c.al_init a =*= Lib_parsing_c.al_init b
+  | Ast_c.MetaInitListVal a, Ast_c.MetaInitListVal b ->
+      Lib_parsing_c.al_inits a =*= Lib_parsing_c.al_inits b
   | Ast_c.MetaTypeVal a, Ast_c.MetaTypeVal b ->
       (* old: Lib_parsing_c.al_type a =*= Lib_parsing_c.al_type b *)
       C_vs_c.eq_type a b
@@ -282,7 +284,7 @@ let equal_metavarval valu valu' =
 
   | (B.MetaPosValList _|B.MetaListlenVal _|B.MetaPosVal _|B.MetaStmtVal _
       |B.MetaDeclVal _ |B.MetaFieldVal _ |B.MetaFieldListVal _ 
-      |B.MetaTypeVal _ |B.MetaInitVal _
+      |B.MetaTypeVal _ |B.MetaInitVal _ |B.MetaInitListVal _
       |B.MetaParamListVal _|B.MetaParamVal _|B.MetaExprListVal _
       |B.MetaExprVal _|B.MetaLocalFuncVal _|B.MetaFuncVal _|B.MetaIdVal _
     ), _
@@ -320,6 +322,8 @@ let equal_inh_metavarval valu valu'=
       Lib_parsing_c.al_inh_statement a =*= Lib_parsing_c.al_inh_statement b
   | Ast_c.MetaInitVal a, Ast_c.MetaInitVal b ->
       Lib_parsing_c.al_inh_init a =*= Lib_parsing_c.al_inh_init b
+  | Ast_c.MetaInitListVal a, Ast_c.MetaInitListVal b ->
+      Lib_parsing_c.al_inh_inits a =*= Lib_parsing_c.al_inh_inits b
   | Ast_c.MetaTypeVal a, Ast_c.MetaTypeVal b ->
       (* old: Lib_parsing_c.al_inh_type a =*= Lib_parsing_c.al_inh_type b *)
       C_vs_c.eq_type a b
@@ -346,7 +350,7 @@ let equal_inh_metavarval valu valu'=
 
   | (B.MetaPosValList _|B.MetaListlenVal _|B.MetaPosVal _|B.MetaStmtVal _
       |B.MetaDeclVal _ |B.MetaFieldVal _ |B.MetaFieldListVal _
-      |B.MetaTypeVal _ |B.MetaInitVal _
+      |B.MetaTypeVal _ |B.MetaInitVal _ |B.MetaInitListVal _
       |B.MetaParamListVal _|B.MetaParamVal _|B.MetaExprListVal _
       |B.MetaExprVal _|B.MetaLocalFuncVal _|B.MetaFuncVal _|B.MetaIdVal _
     ), _

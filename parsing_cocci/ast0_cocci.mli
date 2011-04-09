@@ -198,6 +198,7 @@ and declaration = base_declaration wrap
 
 and base_initialiser =
     MetaInit of Ast_cocci.meta_name mcode * pure
+  | MetaInitList of Ast_cocci.meta_name mcode * listlen * pure
   | InitExpr of expression
   | InitList of string mcode (*{*) * initialiser_list * string mcode (*}*) *
 	bool (* true if ordered, false if unordered *)

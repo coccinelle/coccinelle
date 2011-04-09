@@ -463,6 +463,8 @@ and initialiser i =
   match Ast.unwrap i with
     Ast.MetaInit(name,_,_) ->
       mcode print_meta name; print_string " "
+  | Ast.MetaInitList(name,_,_,_) ->
+      mcode print_meta name; print_string " "
   | Ast.InitExpr(exp) -> expression exp
   | Ast.ArInitList(lb,initlist,rb) ->
       mcode print_string lb; open_box 0;

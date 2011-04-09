@@ -212,6 +212,7 @@ and declaration = base_declaration wrap
 
 and base_initialiser =
     MetaInit of Ast.meta_name mcode * pure
+  | MetaInitList of Ast.meta_name mcode * listlen * pure
   | InitExpr of expression
   | InitList of string mcode (*{*) * initialiser_list * string mcode (*}*) *
 	(* true if ordered, as for array, false if unordered, as for struct *)

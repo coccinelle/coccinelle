@@ -601,6 +601,8 @@ and initialiser i =
   rewrap i no_isos
     (match Ast0.unwrap i with
       Ast0.MetaInit(name,_) -> Ast.MetaInit(mcode name,unitary,false)
+    | Ast0.MetaInitList(name,lenname,_) ->
+	Ast.MetaInitList(mcode name,do_lenname lenname,unitary,false)
     | Ast0.InitExpr(exp) -> Ast.InitExpr(expression exp)
     | Ast0.InitList(lb,initlist,rb,true) ->
 	let initlist = add_init_comma initlist in
