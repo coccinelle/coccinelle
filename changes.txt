@@ -16,6 +16,7 @@
 
 * 1.0.0
 ** Language:
+- Allow multiple position variables per token
 
 ** Features:
 

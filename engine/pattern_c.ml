@@ -450,33 +450,39 @@ module XMATCH = struct
 	      success(Ast_c.MetaPosVal (pos1,pos2))
           | Ast_c.MetaPosValList l -> success (Ast_c.MetaPosValList l))
 
+  let pos_variables tin ia get_pvalu finish =
+    match Ast_cocci.get_pos_var ia with
+      [] -> finish tin
+    | positions ->
+	let pvalu = Ast_c.MetaPosValList(get_pvalu()) in
+	let rec loop tin = function
+	    [] -> finish tin
+	  | Ast_cocci.MetaPos(name,constraints,per,keep,inherited) :: rest ->
+	      check_pos_constraints constraints pvalu
+		(function () ->
+	    (* constraints are satisfied, now see if we are compatible
+	       with existing bindings *)
+		  function new_tin ->
+		    let x = Ast_cocci.unwrap_mcode name in
+		    let new_binding =
+		      check_add_metavars_binding false keep inherited
+			(x, pvalu) tin in
+		    (match  new_binding with
+		      Some binding -> loop {tin with binding = binding} rest
+		    | None -> fail tin))
+		tin in
+	loop tin positions
+
   let envf keep inherited = fun (k, valu, get_max_min) f tin ->
     let x = Ast_cocci.unwrap_mcode k in
     match check_add_metavars_binding true keep inherited (x, valu) tin with
     | Some binding ->
 	let new_tin = {tin with binding = binding} in
-	(match Ast_cocci.get_pos_var k with
-	  Ast_cocci.MetaPos(name,constraints,per,keep,inherited) ->
-	    let pvalu =
-	      let (file,current_element,min,max) = get_max_min() in
-	      Ast_c.MetaPosValList[(file,current_element,min,max)] in
-	    (* check constraints.  success means that there is a match with
-	       one of the constraints, which will ultimately result in
-	       failure. *)
-	    check_pos_constraints constraints pvalu
-	      (function () ->
-		(* constraints are satisfied, now see if we are compatible
-		   with existing bindings *)
-		function new_tin ->
-		  let x = Ast_cocci.unwrap_mcode name in
-		  (match
-		    check_add_metavars_binding false keep inherited (x, pvalu)
-		      new_tin with
-		  | Some binding ->
-		      f () {new_tin with binding = binding}
-		  | None -> fail tin))
-	      new_tin
-	| Ast_cocci.NoMetaPos -> f () new_tin)
+	pos_variables new_tin k
+	  (function _ ->
+	    let (file,current_element,min,max) = get_max_min() in
+	    [(file,current_element,min,max)])
+	  (f ())
     | None -> fail tin
 
   (* ------------------------------------------------------------------------*)
@@ -513,24 +519,9 @@ module XMATCH = struct
     let pos = Ast_c.info_to_fixpos ib in
     let posmck = Ast_cocci.FixPos (pos, pos) in
     let finish tin = tag_mck_pos_mcode ia posmck ib tin in
-    match Ast_cocci.get_pos_var ia with
-      Ast_cocci.MetaPos(name,constraints,per,keep,inherited) ->
-	let mpos = Lib_parsing_c.lin_col_by_pos [ib] in
-	let pvalu = Ast_c.MetaPosValList [mpos] in
-	check_pos_constraints constraints pvalu
-	  (function () ->
-	    (* constraints are satisfied, now see if we are compatible
-	       with existing bindings *)
-	    function new_tin ->
-	      let x = Ast_cocci.unwrap_mcode name in
-	      (match
-		check_add_metavars_binding false keep inherited (x, pvalu) tin
-	      with
-		Some binding -> finish {tin with binding = binding}
-	      | None -> fail tin))
-	  tin
-    | _ -> finish tin
-
+    pos_variables tin ia (function _ -> [Lib_parsing_c.lin_col_by_pos [ib]])
+      finish
+      
   let tokenf_mck mck ib = fun tin ->
     let pos = Ast_c.info_to_fixpos ib in
     let posmck = Ast_cocci.FixPos (pos, pos) in

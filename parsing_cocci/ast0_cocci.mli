@@ -28,7 +28,7 @@ type info = { pos_info : position_info;
 	      strings_after : (Ast_cocci.added_string * position_info) list }
 
 type 'a mcode =
-    'a * arity * info * mcodekind * meta_pos ref (* pos, - only *) *
+    'a * arity * info * mcodekind * meta_pos list ref (* pos, - only *) *
       int (* adjacency_index *)
 
 and 'a wrap =
@@ -361,7 +361,6 @@ and case_line = base_case_line wrap
 and meta_pos =
     MetaPos of Ast_cocci.meta_name mcode * Ast_cocci.meta_name list *
 	Ast_cocci.meta_collect
-  | NoMetaPos
 
 (* --------------------------------------------------------------------- *)
 (* Top-level code *)
@@ -451,9 +450,9 @@ val unwrap_mcode : 'a mcode -> 'a
 val rewrap : 'a wrap -> 'b -> 'b wrap
 val rewrap_mcode : 'a mcode -> 'b -> 'b mcode
 val copywrap : 'a wrap -> 'b -> 'b wrap
-val get_pos : 'a mcode -> meta_pos
-val get_pos_ref : 'a mcode -> meta_pos ref
-val set_pos : meta_pos -> 'a mcode -> 'a mcode
+val get_pos : 'a mcode -> meta_pos list
+val get_pos_ref : 'a mcode -> meta_pos list ref
+val set_pos : meta_pos list -> 'a mcode -> 'a mcode
 val get_info : 'a wrap -> info
 val set_info : 'a wrap -> info -> 'a wrap
 val get_index : 'a wrap -> int

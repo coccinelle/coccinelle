@@ -102,7 +102,7 @@ let minusizer =
   ("fake","fake"),
   {A.line = 0; A.column =0; A.strbef=[]; A.straft=[];},
   (A.MINUS(A.DontCarePos,[],-1,[])),
-  A.NoMetaPos
+  []
 
 let generalize_mcode ia =
   let (s1, i, mck, pos) = ia in

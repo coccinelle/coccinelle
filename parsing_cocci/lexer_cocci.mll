@@ -28,7 +28,7 @@ let get_current_line_type lexbuf =
     if !line_start < 0 then 0 else lex_start - !line_start in
   (*line_start := -1;*)
   prev_plus := (c = D.PLUS) or (c = D.PLUSPLUS);
-  (c,l,ll,lex_start,preceeding_spaces,[],[],Ast0.NoMetaPos)
+  (c,l,ll,lex_start,preceeding_spaces,[],[],[])
 let current_line_started = ref false
 let col_zero = ref true
 
@@ -682,7 +682,7 @@ rule token = parse
 	TUndef
 	  (lt,
 	   check_var ident
-	     (arity,line,lline,offset+off,col+off,[],[],Ast0.NoMetaPos)) }
+	     (arity,line,lline,offset+off,col+off,[],[],[])) }
   | (( ("#" [' ' '\t']*  "define" [' ' '\t']+)) as def)
     ( (letter (letter |digit)*) as ident)
       { start_line true;
@@ -693,7 +693,7 @@ rule token = parse
 	TDefine
 	  (lt,
 	   check_var ident
-	     (arity,line,lline,offset+off,col+off,[],[],Ast0.NoMetaPos)) }
+	     (arity,line,lline,offset+off,col+off,[],[],[])) }
   | (( ("#" [' ' '\t']*  "define" [' ' '\t']+)) as def)
     ( (letter (letter | digit)*) as ident)
     '('

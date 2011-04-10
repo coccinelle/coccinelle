@@ -123,11 +123,13 @@ let print_string_befaft fn fn1 x info =
     info.Ast.straft in
 let print_meta (r,x) = print_text x in
 
-let print_pos = function
-    Ast.MetaPos(name,_,_,_,_) ->
-      let name = Ast.unwrap_mcode name in
-      print_text "@"; print_meta name
-  | _ -> () in
+let print_pos l =
+  List.iter
+    (function
+	Ast.MetaPos(name,_,_,_,_) ->
+	  let name = Ast.unwrap_mcode name in
+	  print_text "@"; print_meta name)
+    l in
 
 (* --------------------------------------------------------------------- *)
 
@@ -908,7 +910,7 @@ let rec statement arity s =
   | Ast.Iterator(header,body,(_,_,_,aft)) ->
       rule_elem arity header;
       indent_if_needed body (function _ -> statement arity body);
-      mcode (fun _ _ _ -> ()) ((),Ast.no_info,aft,Ast.NoMetaPos)
+      mcode (fun _ _ _ -> ()) ((),Ast.no_info,aft,[])
 
   | Ast.Switch(header,lb,decls,cases,rb) ->
       rule_elem arity header; pr_space(); rule_elem arity lb;
@@ -1053,7 +1055,7 @@ let rec pp_any = function
 	  | _ -> ());
 	  print_string x line lcol)
 	(let nomcodekind = Ast.CONTEXT(Ast.DontCarePos,Ast.NOTHING) in
-	(x,info,nomcodekind,Ast.NoMetaPos));
+	(x,info,nomcodekind,[]));
       if_open_brace x
 
   | Ast.Code(x) -> let _ = top_level x in false

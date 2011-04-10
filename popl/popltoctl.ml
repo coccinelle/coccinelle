@@ -25,8 +25,8 @@ let contains_modif =
     let res = k re in
     match Ast.unwrap re with
       Ast.FunHeader(bef,_,fninfo,name,lp,params,rp) ->
-      bind (mcode r ((),(),bef,Ast.NoMetaPos)) res
-    | Ast.Decl(bef,_,decl) -> bind (mcode r ((),(),bef,Ast.NoMetaPos)) res
+      bind (mcode r ((),(),bef,[])) res
+    | Ast.Decl(bef,_,decl) -> bind (mcode r ((),(),bef,[])) res
     | _ -> res in
   let recursor =
     V.combiner bind option_default

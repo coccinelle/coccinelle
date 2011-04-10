@@ -25,7 +25,7 @@ type isomorphism =
 let strip_info =
   let mcode (term,_,_,_,_,_) =
     (term,Ast0.NONE,Ast0.default_info(),Ast0.PLUS Ast.ONE,
-     ref Ast0.NoMetaPos,-1) in
+     ref [],-1) in
   let donothing r k e =
     let x = k e in
     {(Ast0.wrap (Ast0.unwrap x)) with
@@ -103,6 +103,7 @@ type reason =
   | Braces of Ast0.statement
   | Nest of Ast0.statement
   | Position of Ast.meta_name
+  | Multiposition
   | TypeMatch of reason list
 
 let rec interpret_reason name line reason printer =
@@ -143,7 +144,9 @@ let rec interpret_reason name line reason printer =
       Format.print_newline()
   | Position(rule,name) ->
       Printf.printf "position variable %s.%s conflicts with an isomorphism\n"
-	rule name;
+	rule name
+  | Multiposition _ ->
+      Printf.printf "multiple position variables conflict with an isomorphism\n"
   | TypeMatch reason_list ->
       List.iter (function r -> interpret_reason name line r printer)
 	reason_list
@@ -294,18 +297,20 @@ let all_caps = Str.regexp "^[A-Z_][A-Z_0-9]*$"
 
 let match_maker checks_needed context_required whencode_allowed =
 
-  let check_mcode pmc cmc binding =
+  let check_mcode pmc (*pattern*) cmc (*code*) binding =
     if checks_needed
     then
       match Ast0.get_pos cmc with
-	(Ast0.MetaPos (name,_,_)) as x ->
+	 [(Ast0.MetaPos (name,_,_)) as x] ->
 	  (match Ast0.get_pos pmc with
-	    Ast0.MetaPos (name1,_,_) ->
+	    [Ast0.MetaPos (name1,_,_)] ->
 	      add_binding name1 (Ast0.MetaPosTag x) binding
-	  | Ast0.NoMetaPos ->
+	  | [] ->
 	      let (rule,name) = Ast0.unwrap_mcode name in
-	      Fail (Position(rule,name)))
-      | Ast0.NoMetaPos -> OK binding
+	      Fail (Position(rule,name))
+	  | _ -> Fail Multiposition)
+      | [] -> OK binding
+      | _ -> Fail Multiposition
     else OK binding in
 
   let match_dots matcher is_list_matcher do_list_match d1 d2 =
@@ -1497,14 +1502,19 @@ let lookup name bindings mv_bindings =
 isomorphism *)
 let instantiate bindings mv_bindings =
   let mcode x =
-    match Ast0.get_pos x with
-      Ast0.MetaPos(name,_,_) ->
-	(try
-	  match lookup name bindings mv_bindings with
-	    Common.Left(Ast0.MetaPosTag(id)) -> Ast0.set_pos id x
-	  | _ -> failwith "not possible"
-	with Not_found -> Ast0.set_pos Ast0.NoMetaPos x)
-    | _ -> x in
+    let pos_names =
+      List.map (function Ast0.MetaPos(name,_,_) -> name) (Ast0.get_pos x) in
+    let new_names =
+      List.fold_left
+	(function prev ->
+	  function name ->
+	    try
+	      match lookup name bindings mv_bindings with
+		Common.Left(Ast0.MetaPosTag(id)) -> id::prev
+	      | _ -> failwith "not possible"
+	    with Not_found -> prev)
+	[] pos_names in
+    Ast0.set_pos new_names x in
   let donothing r k e = k e in
 
   (* cases where metavariables can occur *)
@@ -2036,6 +2046,8 @@ let get_name = function
       (nm,function nm -> Ast.MetaTypeDecl(ar,nm))
   | Ast.MetaInitDecl(ar,nm) ->
       (nm,function nm -> Ast.MetaInitDecl(ar,nm))
+  | Ast.MetaInitListDecl(ar,nm,nm1) ->
+      (nm,function nm -> Ast.MetaInitListDecl(ar,nm,nm1))
   | Ast.MetaListlenDecl(nm) ->
       failwith "should not be rebuilt"
   | Ast.MetaParamDecl(ar,nm) ->

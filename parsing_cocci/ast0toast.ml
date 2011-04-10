@@ -246,14 +246,14 @@ let convert_mcodekind adj = function
 
 let pos_mcode(term,_,info,mcodekind,pos,adj) =
   (* avoids a recursion problem *)
-  (term,convert_info info,convert_mcodekind adj mcodekind,Ast.NoMetaPos)
+  (term,convert_info info,convert_mcodekind adj mcodekind,[])
 
 let mcode (term,_,info,mcodekind,pos,adj) =
   let pos =
-    match !pos with
-      Ast0.MetaPos(pos,constraints,per) ->
-	Ast.MetaPos(pos_mcode pos,constraints,per,unitary,false)
-    | _ -> Ast.NoMetaPos in
+    List.map
+      (function Ast0.MetaPos(pos,constraints,per) ->
+	Ast.MetaPos(pos_mcode pos,constraints,per,unitary,false))
+      !pos in
   (term,convert_info info,convert_mcodekind adj mcodekind,pos)
 
 (* --------------------------------------------------------------------- *)

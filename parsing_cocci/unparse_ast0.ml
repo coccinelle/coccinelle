@@ -19,12 +19,14 @@ let print_between = Common.print_between
 (* --------------------------------------------------------------------- *)
 (* Positions *)
 
-let meta_pos = function
-    Ast0.MetaPos(name,_,_) ->
-      print_string "@";
-      let (_,name) = Ast0.unwrap_mcode name in
-      print_string name
-  | Ast0.NoMetaPos -> ()
+let meta_pos l =
+  List.iter
+    (function
+	Ast0.MetaPos(name,_,_) ->
+	  print_string "@";
+	  let (_,name) = Ast0.unwrap_mcode name in
+	  print_string name)
+    l
 
 (* --------------------------------------------------------------------- *)
 (* Modified code *)
@@ -427,7 +429,7 @@ and statement arity s =
 	  mcode print_string iff; print_string " "; mcode print_string_box lp;
 	  expression exp; close_box(); mcode print_string rp; print_string " ";
 	  statement arity branch1;
-	  mcode (function _ -> ()) ((),(),info,aft,ref Ast0.NoMetaPos,-1)
+	  mcode (function _ -> ()) ((),(),info,aft,ref [],-1)
       | Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2,(info,aft)) ->
 	  print_string arity;
 	  mcode print_string iff; print_string " "; mcode print_string_box lp;
@@ -435,13 +437,13 @@ and statement arity s =
 	  statement arity branch1;
 	  print_string arity; mcode print_string els; print_string " ";
 	  statement arity branch2;
-	  mcode (function _ -> ()) ((),(),info,aft,ref Ast0.NoMetaPos,-1)
+	  mcode (function _ -> ()) ((),(),info,aft,ref [],-1)
       | Ast0.While(whl,lp,exp,rp,body,(info,aft)) ->
 	  print_string arity;
 	  mcode print_string whl; print_string " "; mcode print_string_box lp;
 	  expression exp; close_box(); mcode print_string rp; print_string " ";
 	  statement arity body;
-	  mcode (function _ -> ()) ((),(),info,aft,ref Ast0.NoMetaPos,-1)
+	  mcode (function _ -> ()) ((),(),info,aft,ref [],-1)
       | Ast0.Do(d,body,whl,lp,exp,rp,sem) ->
 	  print_string arity; mcode print_string d; print_string " ";
 	  statement arity body;
@@ -456,14 +458,14 @@ and statement arity s =
 	  print_option expression e2; mcode print_string sem2;
 	  print_option expression e3; close_box();
 	  mcode print_string rp; print_string " "; statement arity body;
-	  mcode (function _ -> ()) ((),(),info,aft,ref Ast0.NoMetaPos,-1)
+	  mcode (function _ -> ()) ((),(),info,aft,ref [],-1)
       | Ast0.Iterator(nm,lp,args,rp,body,(info,aft)) ->
 	  print_string arity;
 	  ident nm; print_string " "; mcode print_string_box lp;
 	  let _ = dots (function _ -> ()) expression args in
 	  close_box(); mcode print_string rp; print_string " ";
 	  statement arity body;
-	  mcode (function _ -> ()) ((),(),info,aft,ref Ast0.NoMetaPos,-1)
+	  mcode (function _ -> ()) ((),(),info,aft,ref [],-1)
       |	Ast0.Switch(switch,lp,exp,rp,lb,decls,cases,rb) ->
 	  print_string arity;
 	  mcode print_string switch; print_string " ";
@@ -647,7 +649,7 @@ let unparse_anything x =
   | Ast0.IsoWhenTag(x)   -> U.print_when_modif x
   | Ast0.IsoWhenTTag(e)  -> expression e
   | Ast0.IsoWhenFTag(e)  -> expression e
-  | Ast0.MetaPosTag(var) -> meta_pos var);
+  | Ast0.MetaPosTag(var) -> meta_pos [var]);
   quiet := q;
   print_newline()
 

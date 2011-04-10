@@ -33,7 +33,7 @@ and 'a befaft =
   | BEFOREAFTER of 'a list list * 'a list list * count
   | NOTHING
 
-and 'a mcode = 'a * info * mcodekind * meta_pos (* pos variable *)
+and 'a mcode = 'a * info * mcodekind * meta_pos list (* pos variables *)
     (* pos is an offset indicating where in the C code the mcodekind
        has an effect *)
     (* int list is the match instances, which are only meaningful in annotated
@@ -388,8 +388,7 @@ and meta_collect = PER | ALL
 
 and meta_pos =
     MetaPos of meta_name mcode * meta_name list *
-	meta_collect * keep_binding * inherited
-  | NoMetaPos
+      meta_collect * keep_binding * inherited
 
 (* --------------------------------------------------------------------- *)
 (* Function declaration *)
@@ -665,7 +664,7 @@ let get_isos x             = x.iso_info
 let set_isos x isos        = {x with iso_info = isos}
 let get_pos_var (_,_,_,p)  = p
 let set_pos_var vr (a,b,c,_) = (a,b,c,vr)
-let drop_pos (a,b,c,_)     = (a,b,c,NoMetaPos)
+let drop_pos (a,b,c,_)     = (a,b,c,[])
 
 let get_wcfvs (whencode : ('a wrap, 'b wrap) whencode list) =
   Common.union_all
@@ -764,16 +763,16 @@ let make_term x =
 let make_meta_rule_elem s d (fvs,fresh,inh) =
   let rule = "" in
   {(make_term
-      (MetaRuleElem(((rule,s),no_info,d,NoMetaPos),Type_cocci.Unitary,false)))
+      (MetaRuleElem(((rule,s),no_info,d,[]),Type_cocci.Unitary,false)))
   with free_vars = fvs; fresh_vars = fresh; inherited = inh}
 
 let make_meta_decl s d (fvs,fresh,inh) =
   let rule = "" in
   {(make_term
-      (MetaDecl(((rule,s),no_info,d,NoMetaPos),Type_cocci.Unitary,false))) with
+      (MetaDecl(((rule,s),no_info,d,[]),Type_cocci.Unitary,false))) with
     free_vars = fvs; fresh_vars = fresh; inherited = inh}
 
-let make_mcode x = (x,no_info,CONTEXT(NoPos,NOTHING),NoMetaPos)
+let make_mcode x = (x,no_info,CONTEXT(NoPos,NOTHING),[])
 
 (* --------------------------------------------------------------------- *)
 

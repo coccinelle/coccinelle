@@ -178,9 +178,11 @@ let collect_refs include_constraints =
   let mcode r mc =
     if include_constraints
     then
-      match Ast.get_pos_var mc with
-	Ast.MetaPos(name,constraints,_,_,_) -> (metaid name)::constraints
-      | _ -> option_default
+      List.concat
+	(List.map
+	   (function Ast.MetaPos(name,constraints,_,_,_) ->
+	     (metaid name)::constraints)
+	   (Ast.get_pos_var mc))
     else option_default in
 
   V.combiner bind option_default
@@ -299,9 +301,12 @@ let collect_saved =
 	 | _ -> option_default)) in
 
   let mcode r e =
-    match Ast.get_pos_var e with
-      Ast.MetaPos(name,_,_,TC.Saved,_) -> [metaid name]
-    | _ -> option_default in
+    List.fold_left
+      (function acc ->
+	function
+	    Ast.MetaPos(name,_,_,TC.Saved,_) -> (metaid name) :: acc
+	  | _ -> acc)
+      option_default (Ast.get_pos_var e) in
 
   V.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
@@ -462,12 +467,13 @@ let classify_variables metavar_decls minirules used_after =
     (check_unitary name inherited,inherited) in
 
   let mcode mc =
-    match Ast.get_pos_var mc with
-      Ast.MetaPos(name,constraints,per,unitary,inherited) ->
-	let (unitary,inherited) = classify name in
-	Ast.set_pos_var (Ast.MetaPos(name,constraints,per,unitary,inherited))
-	  mc
-    | _ -> mc in
+    let p =
+      List.map
+	(function Ast.MetaPos(name,constraints,per,unitary,inherited) ->
+	  let (unitary,inherited) = classify name in
+	  Ast.MetaPos(name,constraints,per,unitary,inherited))
+	(Ast.get_pos_var mc) in
+    Ast.set_pos_var p mc in
 
   let ident r k e =
     let e = k e in
@@ -490,13 +496,13 @@ let classify_variables metavar_decls minirules used_after =
     | TC.FunctionPointer(ty) -> TC.FunctionPointer(type_infos ty)
     | TC.Array(ty) -> TC.Array(type_infos ty)
     | TC.EnumName(TC.MV(name,_,_)) ->
-	let (unitary,inherited) = classify (name,(),(),Ast.NoMetaPos) in
+	let (unitary,inherited) = classify (name,(),(),[]) in
 	TC.EnumName(TC.MV(name,unitary,inherited))
     | TC.StructUnionName(su,TC.MV(name,_,_)) ->
-	let (unitary,inherited) = classify (name,(),(),Ast.NoMetaPos) in
+	let (unitary,inherited) = classify (name,(),(),[]) in
 	TC.StructUnionName(su,TC.MV(name,unitary,inherited))
     | TC.MetaType(name,_,_) ->
-	let (unitary,inherited) = classify (name,(),(),Ast.NoMetaPos) in
+	let (unitary,inherited) = classify (name,(),(),[]) in
 	Type_cocci.MetaType(name,unitary,inherited)
     | TC.SignedT(sgn,Some ty) -> TC.SignedT(sgn,Some (type_infos ty))
     | ty -> ty in
@@ -781,12 +787,14 @@ let get_neg_pos_list (_,rule) used_after_list =
   let option_default = ([],[]) in
   let metaid (x,_,_,_) = x in
   let mcode r mc =
-    match Ast.get_pos_var mc with
-      Ast.MetaPos(name,constraints,Ast.PER,_,_) ->
-	([metaid name],constraints)
-    | Ast.MetaPos(name,constraints,Ast.ALL,_,_) ->
-	([],(metaid name)::constraints)
-    | _ -> option_default in
+    List.fold_left
+      (function (a,b) ->
+	(function
+	    Ast.MetaPos(name,constraints,Ast.PER,_,_) ->
+	      ((metaid name)::a,constraints@b)
+	  | Ast.MetaPos(name,constraints,Ast.ALL,_,_) ->
+	      (a,(metaid name)::constraints@b)))
+      option_default (Ast.get_pos_var mc) in
   let v =
     V.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode

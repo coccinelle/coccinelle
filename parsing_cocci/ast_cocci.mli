@@ -30,7 +30,7 @@ and 'a befaft =
   | BEFOREAFTER of 'a list list * 'a list list * count
   | NOTHING
 
-and 'a mcode = 'a * info * mcodekind * meta_pos (* pos variable *)
+and 'a mcode = 'a * info * mcodekind * meta_pos list (* pos variables *)
  (* pos is an offset indicating where in the C code the mcodekind has an
  effect *)
  and mcodekind =
@@ -367,7 +367,6 @@ and meta_collect = PER | ALL
 and meta_pos =
     MetaPos of meta_name mcode * meta_name list *
 	meta_collect * keep_binding * inherited
-  | NoMetaPos
 
 (* --------------------------------------------------------------------- *)
 (* Function declaration *)
@@ -633,8 +632,8 @@ val set_test_exp : expression -> expression
 val get_safe_decl : 'a wrap -> bool
 val get_isos : 'a wrap -> (string*anything) list
 val set_isos : 'a wrap -> (string*anything) list -> 'a wrap
-val get_pos_var : 'a mcode -> meta_pos
-val set_pos_var : meta_pos -> 'a mcode -> 'a mcode
+val get_pos_var : 'a mcode -> meta_pos list
+val set_pos_var : meta_pos list -> 'a mcode -> 'a mcode
 val drop_pos : 'a mcode -> 'a mcode
 
 val get_meta_name : metavar -> meta_name

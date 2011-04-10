@@ -40,7 +40,7 @@ and print_term = function
     Past.Atomic(term) -> Pretty_print_cocci.rule_elem "" term
   | Past.IfThen(test,thn,(_,_,_,aft)) ->
       print_term test; print_term thn;
-      mcode (function _ -> ()) ((),Ast.no_info,aft,Ast.NoMetaPos)
+      mcode (function _ -> ()) ((),Ast.no_info,aft,[])
   | Past.TExists((_,v),term) -> print_string "exists "; print_string v;
       print_string " ."; force_newline(); print_term term
 

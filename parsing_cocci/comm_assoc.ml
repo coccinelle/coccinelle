@@ -21,8 +21,7 @@ let is_context e =
     Ast0.CONTEXT(cell) -> true
   | _ -> false)
 
-let nopos mc =
-  match Ast0.get_pos mc with Ast0.MetaPos _ -> false | Ast0.NoMetaPos -> true
+let nopos mc = (Ast0.get_pos mc) = []
 
 let process_binops rule_name =
   let expr r k e1 =

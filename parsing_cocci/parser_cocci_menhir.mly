@@ -895,7 +895,7 @@ defineop:
       let (arity,line,lline,offset,col,strbef,straft,pos) = clt in
       let lp =
 	P.clt2mcode "("
-	  (arity,line,lline,parenoff,parencol,[],[],Ast0.NoMetaPos) in
+	  (arity,line,lline,parenoff,parencol,[],[],[]) in
       function body ->
 	Ast0.wrap
 	  (Ast0.Define
