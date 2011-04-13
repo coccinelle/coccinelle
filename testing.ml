@@ -430,7 +430,6 @@ let compare_with_expected outfiles =
 (*****************************************************************************)
 
 let test_parse_cocci file =
-  Flag_parsing_cocci.show_SP := true;
   if not (file =~ ".*\\.cocci")
   then pr2 "warning: seems not a .cocci file";
 

@@ -646,20 +646,15 @@ and initialiser nlcomma i =
   | Ast.ArInitList(lb,initlist,rb) ->
       (match Ast.undots initlist with
 	[] -> mcode print_string lb; mcode print_string rb
-      |	_ ->
+      |	lst ->
 	  mcode print_string lb; start_block();
-	  dots force_newline (initialiser false) initlist;
+	  initialiser_list nlcomma lst;
 	  end_block(); mcode print_string rb)
   | Ast.StrInitList(_,lb,[],rb,[]) ->
       mcode print_string lb; mcode print_string rb
   | Ast.StrInitList(_,lb,initlist,rb,[]) ->
       mcode print_string lb; start_block();
-      (* awkward, because the comma is separate from the initialiser *)
-      let rec loop = function
-	  [] -> ()
-	| [x] -> initialiser false x
-	| x::xs -> initialiser nlcomma x; loop xs in
-      loop initlist;
+      initialiser_list nlcomma initlist;
       end_block(); mcode print_string rb
   | Ast.StrInitList(_,lb,initlist,rb,_) ->
       failwith "unexpected whencode in plus"
@@ -670,7 +665,7 @@ and initialiser nlcomma i =
       ident name; mcode print_string eq; initialiser nlcomma ini
   | Ast.IComma(comma) ->
       mcode print_string comma;
-      if nlcomma then force_newline()
+      if nlcomma then force_newline() else pr_space()
   | Ast.Idots(dots,Some whencode) ->
       if generating
       then
@@ -684,6 +679,12 @@ and initialiser nlcomma i =
       else raise CantBeInPlus
   | Ast.OptIni(ini) | Ast.UniqueIni(ini) ->
       raise CantBeInPlus
+
+and initialiser_list nlcomma = function
+  (* awkward, because the comma is separate from the initialiser *)
+    [] -> ()
+  | [x] -> initialiser false x
+  | x::xs -> initialiser nlcomma x; initialiser_list nlcomma xs
 
 and designator = function
     Ast.DesignatorField(dot,id) -> mcode print_string dot; ident id
@@ -1039,11 +1040,14 @@ let rec pp_any = function
       (match xs with (Ast.Space s)::_ -> pr_space() | _ -> ());
       let rec loop = function
 	  [] -> ()
-	| [(Ast.Indent s | Ast.Noindent s)] -> print_text s
+	| [Ast.Noindent s] -> unindent false; print_text s
+	| [Ast.Indent s] -> print_text s
 	| (Ast.Space s) :: (((Ast.Indent _ | Ast.Noindent _) :: _) as rest) ->
 	    print_text s; force_newline(); loop rest
 	| (Ast.Space s) :: rest -> print_text s; pr_space(); loop rest
-	| (Ast.Indent s | Ast.Noindent s) :: rest ->
+	| Ast.Noindent s :: rest ->
+	    unindent false; print_text s; force_newline(); loop rest
+	| Ast.Indent s :: rest ->
 	    print_text s; force_newline(); loop rest in
       loop xs; false
   | Ast.Token(x,None) -> print_text x; if_open_brace x

@@ -262,6 +262,12 @@ let collect_saved =
     bind (k ty)
       (match Ast.unwrap ty with
 	Ast.MetaInit(name,TC.Saved,_) -> [metaid name]
+      |	Ast.MetaInitList(name,Ast.MetaListLen (lenname,ls,_),ns,_) ->
+	  let namesaved =
+	    match ns with TC.Saved -> [metaid name] | _ -> [] in
+	  let lensaved =
+	    match ls with TC.Saved -> [metaid lenname] | _ -> [] in
+	  lensaved @ namesaved
       | _ -> option_default) in
 
   let astfvparam recursor k p =
@@ -548,6 +554,16 @@ let classify_variables metavar_decls minirules used_after =
       Ast.MetaInit(name,_,_) ->
 	let (unitary,inherited) = classify name in
 	Ast.rewrap e (Ast.MetaInit(name,unitary,inherited))
+    | Ast.MetaInitList(name,Ast.MetaListLen (lenname,_,_),_,_) ->
+	let (unitary,inherited) = classify name in
+	let (lenunitary,leninherited) = classify lenname in
+	Ast.rewrap e
+	  (Ast.MetaInitList
+	     (name,Ast.MetaListLen(lenname,lenunitary,leninherited),
+	      unitary,inherited))
+    | Ast.MetaInitList(name,lenname,_,_) ->
+	let (unitary,inherited) = classify name in
+	Ast.rewrap e (Ast.MetaInitList(name,lenname,unitary,inherited))
     | _ -> e in
 
   let param r k e =

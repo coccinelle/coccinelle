@@ -1158,12 +1158,17 @@ let add_bef = function Some x -> [x] | None -> []
 
 (*skips should be things like line end
 skips is things before pragmas that can't be attached to, pass is things
-after.  pass is used immediately.  skips accumulates. *)
+after.  pass is used immediately.  skips accumulates.
+When stuff is added before some + code, the logical line of the + code
+becomes that of the pragma.  context_neg relies on things that are adjacent
+having sequential logical lines.  Not sure that this is good enough,
+as it might result in later gaps in the logical lines... *)
 let rec process_pragmas bef skips = function
     [] -> add_bef bef @ List.rev skips
   | ((PC.TPragma(s,i),_)::_) as l ->
       let (pragmas,rest) = collect_all_pragmas [] l in
       let (pass,rest0) = collect_pass rest in
+      let (_,_,prag_lline,_,_,_,_,_) = i in
       let (next,rest) =
 	match rest0 with [] -> (None,[]) | next::rest -> (Some next,rest) in
       (match (bef,plus_attach true bef,next,plus_attach true next) with
@@ -1172,10 +1177,10 @@ let rec process_pragmas bef skips = function
 	  (update_clt bef (a,b,c,d,e,strbef,pragmas,pos))::List.rev skips@
 	  pass@process_pragmas None [] rest0
       |	(_,_,Some next,PLUS) ->
-	  let (a,b,c,d,e,strbef,straft,pos) = get_clt next in
+	  let (a,b,lline,d,e,strbef,straft,pos) = get_clt next in
 	  (add_bef bef) @ List.rev skips @ pass @
 	  (process_pragmas
-	     (Some (update_clt next (a,b,c,d,e,pragmas,straft,pos)))
+	     (Some (update_clt next (a,b,prag_lline,d,e,pragmas,straft,pos)))
 	     [] rest)
       |	_ ->
 	  (match (bef,plus_attach false bef,next,plus_attach false next) with
@@ -1184,10 +1189,11 @@ let rec process_pragmas bef skips = function
 	      (update_clt bef (a,b,c,d,e,strbef,pragmas,pos))::List.rev skips@
 	      pass@process_pragmas None [] rest0
 	  | (_,_,Some next,PLUS) ->
-	      let (a,b,c,d,e,strbef,straft,pos) = get_clt next in
+	      let (a,b,lline,d,e,strbef,straft,pos) = get_clt next in
 	      (add_bef bef) @ List.rev skips @ pass @
 	      (process_pragmas
-		 (Some (update_clt next (a,b,c,d,e,pragmas,straft,pos)))
+		 (Some
+		    (update_clt next (a,b,prag_lline,d,e,pragmas,straft,pos)))
 		 [] rest)
 	  | _ -> failwith "nothing to attach pragma to"))
   | x::xs ->
@@ -1685,6 +1691,7 @@ let parse file =
 		then parse_one "plus" PC.plus_exp_main file plus_tokens
 		else parse_one "plus" PC.plus_main file plus_tokens in
 	    (*
+	       Unparse_ast0.unparse plus_res;
 	       Printf.printf "after plus parse\n";
 	    *)
 

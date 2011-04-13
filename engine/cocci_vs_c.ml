@@ -857,10 +857,11 @@ let list_matcher match_dots rebuild_dots match_comma rebuild_comma
 			  X.envf lenkeep leninherited
 			    (lenname, Ast_c.MetaListlenVal (len), max_min)
 		      | A.CstListLen n ->
+			  Printf.printf "cstlen\n";
 			  if len = n
 			  then (function f -> f())
 			  else (function f -> fail)
-		      | A.AnyListLen -> function f -> f()
+		      | A.AnyListLen -> Printf.printf "anylen\n"; function f -> f()
 			    )
 			(fun () ->
 			  let max_min _ =
@@ -2304,15 +2305,19 @@ and initialisers_ordered2 = fun ias ibs ->
       A.IComma ia1 -> Some ia1
     |  _ -> None in
   let build_comma ia1 = A.IComma ia1 in
-  let match_metalist ea = None in
-  let build_metalist (ida,leninfo,keep,inherited) = failwith "not possible" in
-  let mktermval v = failwith "not possible" in
+  let match_metalist ea =
+    match A.unwrap ea with
+      A.MetaInitList(ida,leninfo,keep,inherited) ->
+	Some(ida,leninfo,keep,inherited)
+    | _ -> None in
+  let build_metalist (ida,leninfo,keep,inherited) =
+    A.MetaInitList(ida,leninfo,keep,inherited) in
+  let mktermval v = Ast_c.MetaInitListVal v in
   let special_cases ea eas ebs = None in
   let no_ii x = failwith "not possible" in
   list_matcher match_dots build_dots match_comma build_comma
     match_metalist build_metalist mktermval
     special_cases initialiser X.distrf_inis no_ii ias ibs
-
 
 and initialisers_unordered2 = fun allminus ias ibs ->
   match ias, ibs with

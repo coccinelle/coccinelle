@@ -494,11 +494,15 @@ rule token = parse
 
   | [' ' '\t'  ]+  { start_line false; token lexbuf }
 
-  | "//" [^ '\n']* {
+  | [' ' '\t'  ]* (("//" [^ '\n']*) as after) {
     match !current_line_type with
       (D.PLUS,_,_) | (D.PLUSPLUS,_,_) ->
+	let str =
+	  if !current_line_started
+	  then (tok lexbuf)
+	  else after in
 	start_line true;
-	TPragma (Ast.Indent (tok lexbuf), get_current_line_type lexbuf)
+	TPragma (Ast.Indent str, get_current_line_type lexbuf)
     | _ -> start_line false; token lexbuf }
 
   | "__attribute__" [' ' '\t']* "((" _* "))"
