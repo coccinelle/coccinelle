@@ -11,6 +11,7 @@ type param_type =
   | Str of string
   | Type of Ast_c.fullType
   | Init of Ast_c.initialiser
+  | InitList of Ast_c.initialiser Ast_c.wrap2 list
   | Int of int
   | Param of Ast_c.parameterType
   | ParamList of Ast_c.parameterType Ast_c.wrap2 list

@@ -43,6 +43,7 @@ type pretty_printers = {
   field           : Ast_c.field printer;
   field_list      : Ast_c.field list printer;
   init            : Ast_c.initialiser printer;
+  init_list       : (Ast_c.initialiser wrap2 list) printer;
   param           : Ast_c.parameterType printer;
   paramlist       : (Ast_c.parameterType Ast_c.wrap2 list) printer;
   ty              : Ast_c.fullType printer;
@@ -79,7 +80,11 @@ let mk_pretty_printers
 	start_block(); f(); pr_unindent() in
 
 
-
+  let pp_list printer l =
+    l +> List.iter (fun (e, opt) ->
+      assert (List.length opt <= 1); (* opt must be a comma? *)
+      opt +> List.iter (function x -> pr_elem x; pr_space());
+      printer e) in
 
   let rec pp_expression = fun ((exp, typ), ii) ->
     (match exp, ii with
@@ -173,11 +178,7 @@ let mk_pretty_printers
       pr_elem (Ast_c.fakeInfo() +> Ast_c.rewrap_str "*/");
     end
 
-  and pp_arg_list es =
-    es +> List.iter (fun (e, opt) ->
-      assert (List.length opt <= 1); (* opt must be a comma? *)
-      opt +> List.iter (function x -> pr_elem x; pr_space());
-      pp_argument e)
+  and pp_arg_list es = pp_list pp_argument es
 
   and pp_argument argument =
     let rec pp_action (ActMisc ii) = ii +> List.iter pr_elem in
@@ -946,7 +947,7 @@ and pp_init (init, iinit) =
       | InitList _ | InitExpr _
 	  ), _ -> raise Impossible
 
-
+  and pp_init_list ini = pp_list pp_init ini
 
   and pp_designator = function
     | DesignatorField (s), [i1; i2] ->
@@ -1038,11 +1039,7 @@ and pp_init (init, iinit) =
         pr_elem i2;
     | _ -> raise Impossible
 
-  and pp_param_list paramst =
-    paramst +> List.iter (fun (param,iicomma) ->
-      assert ((List.length iicomma) <= 1);
-      iicomma +> List.iter (function x -> pr_elem x; pr_space());
-      pp_param param)
+  and pp_param_list paramst = pp_list pp_param paramst
 
 (* ---------------------- *)
 
@@ -1313,6 +1310,7 @@ and pp_init (init, iinit) =
     field      = pp_field;
     field_list = pp_field_list;
     init       = pp_init;
+    init_list  = pp_init_list;
     param      = pp_param;
     paramlist  = pp_param_list;
     ty         = pp_type;
@@ -1386,6 +1384,9 @@ let pp_field_list_gen ~pr_elem ~pr_space =
 
 let pp_init_gen ~pr_elem ~pr_space =
   (pp_elem_sp pr_elem pr_space).init
+
+let pp_init_list_gen ~pr_elem ~pr_space =
+  (pp_elem_sp pr_elem pr_space).init_list
 
 let pp_param_gen ~pr_elem ~pr_space =
   (pp_elem_sp pr_elem pr_space).param

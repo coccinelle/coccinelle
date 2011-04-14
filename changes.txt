@@ -14,6 +14,22 @@
 ** Bugfix:
 - Add more information in documentation, man pages and wiki
 
+* 1.0.0
+** Language:
+- Addition of initializer list metavariables.  Thanks to Michael Stefaniuc
+  for noticing the need for them.
+- Allow multiple position variables per token
+
+** Features:
+- Preserve spacing before // comments when not at the beginning of a line
+
+** Bugfix:
+- Corrected parsing of script strings delimited by a single quote.  Thanks
+  to Eugeniy Meshcheryakov for reporting the problem.
+- Improved indentation of added ifdefs.
+- Allow added comments and #ifdefs to precede other added code.  Thanks to
+  Jani Monoses for noticing the problem.
+
 * 0.2.5
 ** Language:
 - Make a very small attempt to parse C++ code, amounting to accepting

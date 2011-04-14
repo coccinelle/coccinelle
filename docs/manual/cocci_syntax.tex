@@ -768,11 +768,13 @@ considers that it is not.
   \RULE{\rt{initialize}}
   \CASE{\NT{dot\_expr}}
   \CASE{\mth{\T{metaid}^{\ssf{Initialiser}}}}
-  \CASE{\ttlb~\opt{\NT{COMMA\_LIST}\mth{(}\NT{dot\_expr}\mth{)}}~\ttrb}
+  \CASE{\ttlb~\opt{\NT{COMMA\_LIST}\mth{(}\NT{init\_list\_elem}\mth{)}}~\ttrb}
 
   \RULE{\rt{init\_list\_elem}}
   \CASE{\NT{dot\_expr}}
   \CASE{\NT{designator} = \NT{dot\_expr}}
+  \CASE{\mth{\T{metaid}^{\ssf{Initialiser}}}}
+  \CASE{\mth{\T{metaid}^{\ssf{InitialiserList}}}}
   \CASE{\NT{id} : \NT{dot\_expr}}
 
   \RULE{\rt{designator}}
@@ -784,6 +786,10 @@ considers that it is not.
   \CASE{\T{DeclarerId}}
   \CASE{\mth{\T{metaid}^{\ssf{Declarer}}}}
 \end{grammar}
+
+An initializer for a structure can be ordered or unordered.  It is
+considered to be unordered if there is at least one key-value pair
+initializer, e.g., \texttt{.x = e}.
 
 \section{Statements}
 

@@ -38,7 +38,7 @@ type clt =
     line_type * int * int * int * int (* starting spaces *) *
       (Ast_cocci.added_string * Ast0.position_info) list (* code before *) *
       (Ast_cocci.added_string * Ast0.position_info) list (* code after *) *
-      Ast0.meta_pos (* position variable, minus only *)
+      Ast0.meta_pos list (* position variable, minus only *)
 
 (* ---------------------------------------------------------------------- *)
 
@@ -97,6 +97,10 @@ let add_type_meta: (Ast.meta_name -> Ast0.pure -> unit) ref =
   ref (fun _ -> failwith "uninitialized add_meta")
 
 let add_init_meta: (Ast.meta_name -> Ast0.pure -> unit) ref =
+  ref (fun _ -> failwith "uninitialized add_meta")
+
+let add_initlist_meta:
+    (Ast.meta_name -> Ast.list_len -> Ast0.pure -> unit) ref =
   ref (fun _ -> failwith "uninitialized add_meta")
 
 let add_param_meta: (Ast.meta_name -> Ast0.pure -> unit) ref =

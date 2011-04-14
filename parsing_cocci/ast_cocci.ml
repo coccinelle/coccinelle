@@ -57,7 +57,7 @@ and 'a befaft =
   | BEFOREAFTER of 'a list list * 'a list list * count
   | NOTHING
 
-and 'a mcode = 'a * info * mcodekind * meta_pos (* pos variable *)
+and 'a mcode = 'a * info * mcodekind * meta_pos list (* pos variables *)
     (* pos is an offset indicating where in the C code the mcodekind
        has an effect *)
     (* int list is the match instances, which are only meaningful in annotated
@@ -104,6 +104,7 @@ and metavar =
   | MetaFreshIdDecl of meta_name (* name *) * seed (* seed *)
   | MetaTypeDecl of arity * meta_name (* name *)
   | MetaInitDecl of arity * meta_name (* name *)
+  | MetaInitListDecl of arity * meta_name (* name *) * list_len (*len*)
   | MetaListlenDecl of meta_name (* name *)
   | MetaParamDecl of arity * meta_name (* name *)
   | MetaParamListDecl of arity * meta_name (*name*) * list_len (*len*)
@@ -336,6 +337,7 @@ and declaration = base_declaration wrap
 
 and base_initialiser =
     MetaInit of meta_name mcode * keep_binding * inherited
+  | MetaInitList of meta_name mcode * listlen * keep_binding * inherited
   | InitExpr of expression
   | ArInitList of string mcode (*{*) * initialiser dots * string mcode (*}*)
   | StrInitList of bool (* true if all are - *) *
@@ -410,8 +412,7 @@ and meta_collect = PER | ALL
 
 and meta_pos =
     MetaPos of meta_name mcode * meta_name list *
-	meta_collect * keep_binding * inherited
-  | NoMetaPos
+      meta_collect * keep_binding * inherited
 
 (* --------------------------------------------------------------------- *)
 (* Function declaration *)
@@ -687,7 +688,7 @@ let get_isos x             = x.iso_info
 let set_isos x isos        = {x with iso_info = isos}
 let get_pos_var (_,_,_,p)  = p
 let set_pos_var vr (a,b,c,_) = (a,b,c,vr)
-let drop_pos (a,b,c,_)     = (a,b,c,NoMetaPos)
+let drop_pos (a,b,c,_)     = (a,b,c,[])
 
 let get_wcfvs (whencode : ('a wrap, 'b wrap) whencode list) =
   Common.union_all
@@ -708,6 +709,7 @@ let get_meta_name = function
   | MetaFreshIdDecl(nm,seed) -> nm
   | MetaTypeDecl(ar,nm) -> nm
   | MetaInitDecl(ar,nm) -> nm
+  | MetaInitListDecl(ar,nm,nm1) -> nm
   | MetaListlenDecl(nm) -> nm
   | MetaParamDecl(ar,nm) -> nm
   | MetaParamListDecl(ar,nm,nm1) -> nm
@@ -785,16 +787,16 @@ let make_term x =
 let make_meta_rule_elem s d (fvs,fresh,inh) =
   let rule = "" in
   {(make_term
-      (MetaRuleElem(((rule,s),no_info,d,NoMetaPos),Type_cocci.Unitary,false)))
+      (MetaRuleElem(((rule,s),no_info,d,[]),Type_cocci.Unitary,false)))
   with free_vars = fvs; fresh_vars = fresh; inherited = inh}
 
 let make_meta_decl s d (fvs,fresh,inh) =
   let rule = "" in
   {(make_term
-      (MetaDecl(((rule,s),no_info,d,NoMetaPos),Type_cocci.Unitary,false))) with
+      (MetaDecl(((rule,s),no_info,d,[]),Type_cocci.Unitary,false))) with
     free_vars = fvs; fresh_vars = fresh; inherited = inh}
 
-let make_mcode x = (x,no_info,CONTEXT(NoPos,NOTHING),NoMetaPos)
+let make_mcode x = (x,no_info,CONTEXT(NoPos,NOTHING),[])
 
 (* --------------------------------------------------------------------- *)
 

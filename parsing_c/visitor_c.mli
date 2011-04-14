@@ -36,6 +36,7 @@ val vk_decl      : visitor_c -> declaration -> unit
 val vk_decl_list : visitor_c -> declaration list -> unit
 val vk_onedecl   : visitor_c -> onedecl -> unit
 val vk_ini       : visitor_c -> initialiser -> unit
+val vk_ini_list  : visitor_c -> initialiser wrap2 list -> unit
 val vk_inis_splitted :
     visitor_c -> (initialiser, il) Common.either list -> unit
 val vk_name      : visitor_c -> name -> unit
@@ -117,9 +118,9 @@ val vk_ii_s : visitor_c_s -> info list -> info list
 val vk_node_s : visitor_c_s -> Control_flow_c.node -> Control_flow_c.node
 val vk_program_s  : visitor_c_s -> program -> program
 
-val vk_arguments_s :
-  visitor_c_s ->
-  argument wrap2 list -> argument wrap2 list
+val vk_arguments_s : visitor_c_s -> argument wrap2 list -> argument wrap2 list
+
+val vk_inis_s : visitor_c_s -> initialiser wrap2 list -> initialiser wrap2 list
 
 val vk_args_splitted_s :
   visitor_c_s ->

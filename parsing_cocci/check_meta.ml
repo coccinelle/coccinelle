@@ -276,6 +276,11 @@ and initialiser old_metas table minus ini =
   match Ast0.unwrap ini with
     Ast0.MetaInit(name,_) ->
       check_table table minus name
+  | Ast0.MetaInitList(name,Ast0.MetaListLen lenname,_) ->
+      check_table table minus name;
+      check_table table minus lenname
+  | Ast0.MetaInitList(name,_,_) ->
+      check_table table minus name
   | Ast0.InitExpr(exp) -> expression ID old_metas table minus exp
   | Ast0.InitList(lb,initlist,rb,ordered) ->
       dots (initialiser old_metas table minus) initlist
@@ -447,11 +452,11 @@ let rule old_metas table minus rules =
 
 let positions table rules =
   let mcode x =
-    match Ast0.get_pos x with
-      Ast0.MetaPos(name,constraints,_) ->
+    List.iter
+      (function Ast0.MetaPos(name,constraints,_) ->
 	let pos = Ast0.unwrap_mcode name in
-	(find_loop table pos) := true
-    | _ -> () in
+	(find_loop table pos) := true)
+      (Ast0.get_pos x) in
   let option_default = () in
   let bind x y = () in
   let donothing r k e = k e in
@@ -466,10 +471,9 @@ let positions table rules =
 
 let dup_positions rules =
   let mcode x =
-    match Ast0.get_pos x with
-      Ast0.MetaPos(name,constraints,_) ->
-	let pos = Ast0.unwrap_mcode name in [pos]
-    | _ -> [] in
+    List.map
+      (function Ast0.MetaPos(name,constraints,_) -> Ast0.unwrap_mcode name)
+      (Ast0.get_pos x) in
   let option_default = [] in
   let bind x y = x@y in
 

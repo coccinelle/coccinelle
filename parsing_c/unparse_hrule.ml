@@ -234,6 +234,7 @@ let print_extra_typedefs pr env =
 
       | Ast_c.MetaTypeVal(ty) -> Visitor_c.vk_type bigf ty
       | Ast_c.MetaInitVal(ty) -> Visitor_c.vk_ini bigf ty
+      | Ast_c.MetaInitListVal(ty) -> Visitor_c.vk_ini_list bigf ty
       | Ast_c.MetaDeclVal(decl) -> Visitor_c.vk_decl bigf decl
       | Ast_c.MetaFieldVal(field) -> Visitor_c.vk_struct_field bigf field
       | Ast_c.MetaFieldListVal(fields) -> Visitor_c.vk_struct_fields bigf fields
@@ -280,6 +281,8 @@ let rename argids env =
 	   Ast_c.MetaTypeVal(Visitor_c.vk_type_s bigf ty)
        | Ast_c.MetaInitVal(ini) ->
 	   Ast_c.MetaInitVal(Visitor_c.vk_ini_s bigf ini)
+       | Ast_c.MetaInitListVal(ini) ->
+	   Ast_c.MetaInitListVal(Visitor_c.vk_inis_s bigf ini)
        | Ast_c.MetaDeclVal(stm) ->
 	   Ast_c.MetaDeclVal(Visitor_c.vk_decl_s bigf stm)
        | Ast_c.MetaFieldVal(stm) ->
@@ -341,6 +344,8 @@ let pp_meta_decl pr env decl =
       no_arity ar; pr "type "; pp_name name; pr ";\n"
   | Ast.MetaInitDecl(ar, name) ->
       no_arity ar; pr "initialiser "; pp_name name; pr ";\n"
+  | Ast.MetaInitListDecl(ar, name, len) ->
+      no_arity ar; pr "initialiser list "; pp_name name; pp_len pr len; pr ";\n"
   | Ast.MetaListlenDecl(name) -> ()
   | Ast.MetaParamDecl(ar, name) ->
       no_arity ar; pr "parameter "; pp_name name; pr ";\n"

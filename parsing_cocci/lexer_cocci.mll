@@ -52,7 +52,7 @@ let get_current_line_type lexbuf =
     if !line_start < 0 then 0 else lex_start - !line_start in
   (*line_start := -1;*)
   prev_plus := (c = D.PLUS) or (c = D.PLUSPLUS);
-  (c,l,ll,lex_start,preceeding_spaces,[],[],Ast0.NoMetaPos)
+  (c,l,ll,lex_start,preceeding_spaces,[],[],[])
 let current_line_started = ref false
 let col_zero = ref true
 
@@ -360,6 +360,10 @@ let init _ =
     (fun name pure ->
       let fn clt = TMetaInit(name,pure,clt) in
       Hashtbl.replace metavariables (get_name name) fn);
+  Data.add_initlist_meta :=
+    (function name -> function lenname -> function pure ->
+      let fn clt = TMetaInitList(name,lenname,pure,clt) in
+      Hashtbl.replace metavariables (get_name name) fn);
   Data.add_param_meta :=
     (function name -> function pure ->
       let fn clt = TMetaParam(name,pure,clt) in
@@ -514,11 +518,15 @@ rule token = parse
 
   | [' ' '\t'  ]+  { start_line false; token lexbuf }
 
-  | "//" [^ '\n']* {
+  | [' ' '\t'  ]* (("//" [^ '\n']*) as after) {
     match !current_line_type with
       (D.PLUS,_,_) | (D.PLUSPLUS,_,_) ->
+	let str =
+	  if !current_line_started
+	  then (tok lexbuf)
+	  else after in
 	start_line true;
-	TPragma (Ast.Indent (tok lexbuf), get_current_line_type lexbuf)
+	TPragma (Ast.Indent str, get_current_line_type lexbuf)
     | _ -> start_line false; token lexbuf }
 
   | "__attribute__" [' ' '\t']* "((" _* "))"
@@ -702,7 +710,7 @@ rule token = parse
 	TUndef
 	  (lt,
 	   check_var ident
-	     (arity,line,lline,offset+off,col+off,[],[],Ast0.NoMetaPos)) }
+	     (arity,line,lline,offset+off,col+off,[],[],[])) }
   | (( ("#" [' ' '\t']*  "define" [' ' '\t']+)) as def)
     ( (letter (letter |digit)*) as ident)
       { start_line true;
@@ -713,7 +721,7 @@ rule token = parse
 	TDefine
 	  (lt,
 	   check_var ident
-	     (arity,line,lline,offset+off,col+off,[],[],Ast0.NoMetaPos)) }
+	     (arity,line,lline,offset+off,col+off,[],[],[])) }
   | (( ("#" [' ' '\t']*  "define" [' ' '\t']+)) as def)
     ( (letter (letter | digit)*) as ident)
     '('

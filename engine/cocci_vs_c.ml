@@ -126,7 +126,7 @@ let minusizer =
   ("fake","fake"),
   {A.line = 0; A.column =0; A.strbef=[]; A.straft=[];},
   (A.MINUS(A.DontCarePos,[],-1,[])),
-  A.NoMetaPos
+  []
 
 let generalize_mcode ia =
   let (s1, i, mck, pos) = ia in
@@ -280,6 +280,8 @@ let equal_metavarval valu valu' =
       Lib_parsing_c.al_statement a =*= Lib_parsing_c.al_statement b
   | Ast_c.MetaInitVal a, Ast_c.MetaInitVal b ->
       Lib_parsing_c.al_init a =*= Lib_parsing_c.al_init b
+  | Ast_c.MetaInitListVal a, Ast_c.MetaInitListVal b ->
+      Lib_parsing_c.al_inits a =*= Lib_parsing_c.al_inits b
   | Ast_c.MetaTypeVal a, Ast_c.MetaTypeVal b ->
       (* old: Lib_parsing_c.al_type a =*= Lib_parsing_c.al_type b *)
       C_vs_c.eq_type a b
@@ -306,7 +308,7 @@ let equal_metavarval valu valu' =
 
   | (B.MetaPosValList _|B.MetaListlenVal _|B.MetaPosVal _|B.MetaStmtVal _
       |B.MetaDeclVal _ |B.MetaFieldVal _ |B.MetaFieldListVal _ 
-      |B.MetaTypeVal _ |B.MetaInitVal _
+      |B.MetaTypeVal _ |B.MetaInitVal _ |B.MetaInitListVal _
       |B.MetaParamListVal _|B.MetaParamVal _|B.MetaExprListVal _
       |B.MetaExprVal _|B.MetaLocalFuncVal _|B.MetaFuncVal _|B.MetaIdVal _
     ), _
@@ -344,6 +346,8 @@ let equal_inh_metavarval valu valu'=
       Lib_parsing_c.al_inh_statement a =*= Lib_parsing_c.al_inh_statement b
   | Ast_c.MetaInitVal a, Ast_c.MetaInitVal b ->
       Lib_parsing_c.al_inh_init a =*= Lib_parsing_c.al_inh_init b
+  | Ast_c.MetaInitListVal a, Ast_c.MetaInitListVal b ->
+      Lib_parsing_c.al_inh_inits a =*= Lib_parsing_c.al_inh_inits b
   | Ast_c.MetaTypeVal a, Ast_c.MetaTypeVal b ->
       (* old: Lib_parsing_c.al_inh_type a =*= Lib_parsing_c.al_inh_type b *)
       C_vs_c.eq_type a b
@@ -370,7 +374,7 @@ let equal_inh_metavarval valu valu'=
 
   | (B.MetaPosValList _|B.MetaListlenVal _|B.MetaPosVal _|B.MetaStmtVal _
       |B.MetaDeclVal _ |B.MetaFieldVal _ |B.MetaFieldListVal _
-      |B.MetaTypeVal _ |B.MetaInitVal _
+      |B.MetaTypeVal _ |B.MetaInitVal _ |B.MetaInitListVal _
       |B.MetaParamListVal _|B.MetaParamVal _|B.MetaExprListVal _
       |B.MetaExprVal _|B.MetaLocalFuncVal _|B.MetaFuncVal _|B.MetaIdVal _
     ), _
@@ -877,10 +881,11 @@ let list_matcher match_dots rebuild_dots match_comma rebuild_comma
 			  X.envf lenkeep leninherited
 			    (lenname, Ast_c.MetaListlenVal (len), max_min)
 		      | A.CstListLen n ->
+			  Printf.printf "cstlen\n";
 			  if len = n
 			  then (function f -> f())
 			  else (function f -> fail)
-		      | A.AnyListLen -> function f -> f()
+		      | A.AnyListLen -> Printf.printf "anylen\n"; function f -> f()
 			    )
 			(fun () ->
 			  let max_min _ =
@@ -2324,15 +2329,19 @@ and initialisers_ordered2 = fun ias ibs ->
       A.IComma ia1 -> Some ia1
     |  _ -> None in
   let build_comma ia1 = A.IComma ia1 in
-  let match_metalist ea = None in
-  let build_metalist (ida,leninfo,keep,inherited) = failwith "not possible" in
-  let mktermval v = failwith "not possible" in
+  let match_metalist ea =
+    match A.unwrap ea with
+      A.MetaInitList(ida,leninfo,keep,inherited) ->
+	Some(ida,leninfo,keep,inherited)
+    | _ -> None in
+  let build_metalist (ida,leninfo,keep,inherited) =
+    A.MetaInitList(ida,leninfo,keep,inherited) in
+  let mktermval v = Ast_c.MetaInitListVal v in
   let special_cases ea eas ebs = None in
   let no_ii x = failwith "not possible" in
   list_matcher match_dots build_dots match_comma build_comma
     match_metalist build_metalist mktermval
     special_cases initialiser X.distrf_inis no_ii ias ibs
-
 
 and initialisers_unordered2 = fun allminus ias ibs ->
   match ias, ibs with

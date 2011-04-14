@@ -48,9 +48,9 @@ let contains_modif used_after x =
       let res = k re in
       match Ast.unwrap re with
 	Ast.FunHeader(bef,_,fninfo,name,lp,params,rp) ->
-	  bind (mcode r ((),(),bef,Ast.NoMetaPos)) res
+	  bind (mcode r ((),(),bef,[])) res
       | Ast.Decl(bef,_,decl) ->
-	  bind (mcode r ((),(),bef,Ast.NoMetaPos)) res
+	  bind (mcode r ((),(),bef,[])) res
       | _ -> res in
     let recursor =
       V.combiner bind option_default
@@ -195,7 +195,7 @@ and statement testfn mcode tail stmt : 'a list list =
   | Ast.While(header,branch,(_,_,_,aft))
   | Ast.For(header,branch,(_,_,_,aft))
   | Ast.Iterator(header,branch,(_,_,_,aft)) ->
-      if testfn header or mcode () ((),(),aft,Ast.NoMetaPos)
+      if testfn header or mcode () ((),(),aft,[])
       then conj (rule_elem header) (statement testfn mcode tail branch)
       else statement testfn mcode tail branch
 
@@ -213,7 +213,7 @@ and statement testfn mcode tail stmt : 'a list list =
 	conj
 	  (statement testfn mcode tail branch1)
 	  (statement testfn mcode tail branch2) in
-      if testfn ifheader or mcode () ((),(),aft,Ast.NoMetaPos)
+      if testfn ifheader or mcode () ((),(),aft,[])
       then conj (rule_elem ifheader) branches
       else branches
 

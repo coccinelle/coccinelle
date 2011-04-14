@@ -709,6 +709,7 @@ and metavars_binding = (Ast_cocci.meta_name, metavar_binding_kind) assoc
 
   | MetaTypeVal      of fullType
   | MetaInitVal      of initialiser
+  | MetaInitListVal  of initialiser wrap2 list
   | MetaDeclVal      of declaration
   | MetaFieldVal     of field
   | MetaFieldListVal of field list

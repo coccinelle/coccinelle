@@ -98,6 +98,7 @@ type token =
   | TMetaLocalIdExp of (Parse_aux.typed_expinfo)
   | TMetaLocalFunc of (Parse_aux.idinfo)
   | TMetaIterator of (Parse_aux.idinfo)
+  | TMetaInitList of (Parse_aux.list_info)
   | TMetaInit of (Parse_aux.info)
   | TMetaIdExp of (Parse_aux.typed_expinfo)
   | TMetaId of (Parse_aux.idinfo)

@@ -445,8 +445,8 @@ let contains_modif =
     let res = k re in
     match Ast.unwrap re with
       Ast.FunHeader(bef,_,fninfo,name,lp,params,rp) ->
-	bind (mcode r ((),(),bef,Ast.NoMetaPos)) res
-    | Ast.Decl(bef,_,decl) -> bind (mcode r ((),(),bef,Ast.NoMetaPos)) res
+	bind (mcode r ((),(),bef,[])) res
+    | Ast.Decl(bef,_,decl) -> bind (mcode r ((),(),bef,[])) res
     | _ -> res in
   let init r k i =
     let res = k i in
@@ -464,17 +464,14 @@ let contains_modif =
 let contains_pos =
   let bind x y = x or y in
   let option_default = false in
-  let mcode r (_,_,kind,metapos) =
-    match metapos with
-      Ast.MetaPos(_,_,_,_,_) -> true
-    | Ast.NoMetaPos -> false in
+  let mcode r (_,_,kind,metapos) = not (metapos = []) in
   let do_nothing r k e = k e in
   let rule_elem r k re =
     let res = k re in
     match Ast.unwrap re with
       Ast.FunHeader(bef,_,fninfo,name,lp,params,rp) ->
-	bind (mcode r ((),(),bef,Ast.NoMetaPos)) res
-    | Ast.Decl(bef,_,decl) -> bind (mcode r ((),(),bef,Ast.NoMetaPos)) res
+	bind (mcode r ((),(),bef,[])) res
+    | Ast.Decl(bef,_,decl) -> bind (mcode r ((),(),bef,[])) res
     | _ -> res in
   let recursor =
     V.combiner bind option_default

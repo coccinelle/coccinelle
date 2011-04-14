@@ -35,7 +35,7 @@ type clt =
     line_type * int * int * int * int (* starting spaces *) *
       (Ast_cocci.added_string * Ast0_cocci.position_info) list (*code before*) *
       (Ast_cocci.added_string * Ast0_cocci.position_info) list (*code after *) *
-      Ast0_cocci.meta_pos (* position variable, minus only *)
+      Ast0_cocci.meta_pos list (* position variable, minus only *)
 
 (* ---------------------------------------------------------------------- *)
 
@@ -78,6 +78,10 @@ val add_fresh_id_meta: (Ast_cocci.meta_name -> unit) ref
 val add_type_meta: (Ast_cocci.meta_name -> Ast0_cocci.pure -> unit) ref
 
 val add_init_meta: (Ast_cocci.meta_name -> Ast0_cocci.pure -> unit) ref
+
+val add_initlist_meta:
+    (Ast_cocci.meta_name -> Ast_cocci.list_len -> Ast0_cocci.pure ->
+      unit) ref
 
 val add_param_meta: (Ast_cocci.meta_name -> Ast0_cocci.pure -> unit) ref
 

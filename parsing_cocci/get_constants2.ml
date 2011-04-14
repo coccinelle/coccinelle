@@ -269,9 +269,10 @@ let do_get_constants constants keywords env neg_pos =
     else (try List.assoc nm1 env with Not_found -> False) in
   let minherited name = inherited (Ast.unwrap_mcode name) in
   let mcode _ x =
-    match Ast.get_pos_var x with
-      Ast.MetaPos(name,constraints,_,keep,inh) -> minherited name
-    | _ -> option_default in
+    List.fold_left bind option_default
+      (List.map
+	 (function Ast.MetaPos(name,constraints,_,keep,inh) -> minherited name)
+	 (Ast.get_pos_var x)) in
 
   (* if one branch gives no information, then we have to take anything *)
   let disj_union_all = List.fold_left build_or False in

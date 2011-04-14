@@ -61,7 +61,7 @@ type info = { pos_info : position_info;
 it is used in deciding how much to remove, when two adjacent code tokens are
 removed. *)
 type 'a mcode =
-    'a * arity * info * mcodekind * meta_pos ref (* pos, - only *) *
+    'a * arity * info * mcodekind * meta_pos list ref (* pos, - only *) *
       int (* adjacency_index *)
 (* int ref is an index *)
 and 'a wrap =
@@ -236,6 +236,7 @@ and declaration = base_declaration wrap
 
 and base_initialiser =
     MetaInit of Ast.meta_name mcode * pure
+  | MetaInitList of Ast.meta_name mcode * listlen * pure
   | InitExpr of expression
   | InitList of string mcode (*{*) * initialiser_list * string mcode (*}*) *
 	(* true if ordered, as for array, false if unordered, as for struct *)
@@ -397,7 +398,6 @@ and case_line = base_case_line wrap
 
 and meta_pos =
     MetaPos of Ast.meta_name mcode * Ast.meta_name list * Ast.meta_collect
-  | NoMetaPos
 
 (* --------------------------------------------------------------------- *)
 (* Top-level code *)
@@ -648,10 +648,10 @@ and const_vol t =
 (* this function is a rather minimal attempt.  the problem is that information
 has been lost.  but since it is only used for metavariable types in the isos,
 perhaps it doesn't matter *)
-and make_mcode x = (x,NONE,default_info(),context_befaft(),ref NoMetaPos,-1)
-let make_mcode_info x info = (x,NONE,info,context_befaft(),ref NoMetaPos,-1)
+and make_mcode x = (x,NONE,default_info(),context_befaft(),ref [],-1)
+let make_mcode_info x info = (x,NONE,info,context_befaft(),ref [],-1)
 and make_minus_mcode x =
-  (x,NONE,default_info(),minus_befaft(),ref NoMetaPos,-1)
+  (x,NONE,default_info(),minus_befaft(),ref [],-1)
 
 exception TyConv
 

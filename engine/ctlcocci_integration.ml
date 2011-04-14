@@ -466,6 +466,8 @@ let strip env =
 	    Ast_c.MetaStmtVal(Lib_parsing_c.al_inh_statement a)
 	| Ast_c.MetaInitVal a ->
 	    Ast_c.MetaInitVal(Lib_parsing_c.al_inh_init a)
+	| Ast_c.MetaInitListVal a ->
+	    Ast_c.MetaInitListVal(Lib_parsing_c.al_inh_inits a)
 	| x -> (*don't contain binding info*) x in
       (v,vl))
     env

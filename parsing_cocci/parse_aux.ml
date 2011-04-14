@@ -60,8 +60,14 @@ let drop_bef (arity,line,lline,offset,col,strbef,straft,pos) =
 let drop_aft (arity,line,lline,offset,col,strbef,straft,pos) =
   (arity,line,lline,offset,col,strbef,[],pos)
 
+(* used for #define, to put aft on ident/( *)
+let get_aft (arity,line,lline,offset,col,strbef,straft,pos) = straft
+
+let set_aft aft (arity,line,lline,offset,col,strbef,_,pos) =
+  (arity,line,lline,offset,col,strbef,aft,pos)
+
 let drop_pos (arity,line,lline,offset,col,strbef,straft,pos) =
-  (arity,line,lline,offset,col,strbef,straft,Ast0.NoMetaPos)
+  (arity,line,lline,offset,col,strbef,straft,[])
 
 let clt2mcode str = function
     (Data.MINUS,line,lline,offset,col,strbef,straft,pos)       ->
@@ -247,6 +253,13 @@ let check_meta_tyopt type_irrelevant = function
   | Ast.MetaInitDecl(Ast.NONE,(rule,name)) ->
       (match lookup rule name with
 	Ast.MetaInitDecl(_,_) -> ()
+      | _ ->
+	  raise
+	    (Semantic_cocci.Semantic
+	       ("incompatible inheritance declaration "^name)))
+  | Ast.MetaInitListDecl(Ast.NONE,(rule,name),len_name) ->
+      (match lookup rule name with
+	Ast.MetaInitListDecl(_,_,_) -> ()
       | _ ->
 	  raise
 	    (Semantic_cocci.Semantic
@@ -607,7 +620,7 @@ let struct_initializer initlist =
       Ast0.InitGccExt _ -> true
     | Ast0.InitGccName _ -> true
     | Ast0.OptIni i | Ast0.UniqueIni i -> loop i
-    | Ast0.MetaInit _ -> true (* ambiguous... *)
+    | Ast0.MetaInit _ | Ast0.MetaInitList _ -> false (* ambiguous... *)
     | _ -> false in
   let l = Ast0.undots initlist in
   (l = []) or (List.exists loop l)

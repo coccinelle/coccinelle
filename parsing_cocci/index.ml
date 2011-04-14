@@ -23,7 +23,7 @@
 
 
 (* create an index for each constructor *)
-(* current max is 152 *)
+(* current max is 153 *)
 
 (* doesn't really work - requires that identical terms with no token
 subterms (eg dots) not appear on the same line *)
@@ -155,6 +155,7 @@ let declaration d =
 let initialiser i =
   match Ast0.unwrap i with
     Ast0.MetaInit(nm,_) -> [106] (* added after *)
+  | Ast0.MetaInitList(nm,_,_) -> [153] (* added after *)
   | Ast0.InitExpr(exp) -> [102]
   | Ast0.InitList(lb,initlist,rb,ordered) -> [103]
   | Ast0.InitGccExt(designators,eq,ini) -> [104]

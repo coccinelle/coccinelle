@@ -90,11 +90,13 @@ let print_string_befaft fn x info =
 
 let print_meta (r,x) = print_string r; print_string ":"; print_string x
 
-let print_pos = function
-    Ast.MetaPos(name,_,_,_,_) ->
-      let name = Ast.unwrap_mcode name in
-      print_string "@"; print_meta name
-  | _ -> ()
+let print_pos l =
+  List.iter
+    (function
+	Ast.MetaPos(name,_,_,_,_) ->
+	  let name = Ast.unwrap_mcode name in
+	  print_string "@"; print_meta name)
+    l
 
 let mcode fn = function
     (x, _, Ast.MINUS(_,_,adj,plus_stream), pos) ->
@@ -487,6 +489,8 @@ and initialiser i =
   match Ast.unwrap i with
     Ast.MetaInit(name,_,_) ->
       mcode print_meta name; print_string " "
+  | Ast.MetaInitList(name,_,_,_) ->
+      mcode print_meta name; print_string " "
   | Ast.InitExpr(exp) -> expression exp
   | Ast.ArInitList(lb,initlist,rb) ->
       mcode print_string lb; open_box 0;
@@ -546,13 +550,13 @@ and parameter_list l = dots (function _ -> ()) parameterTypeDef l
 let rec rule_elem arity re =
   match Ast.unwrap re with
     Ast.FunHeader(bef,allminus,fninfo,name,lp,params,rp) ->
-      mcode (function _ -> ()) ((),Ast.no_info,bef,Ast.NoMetaPos);
+      mcode (function _ -> ()) ((),Ast.no_info,bef,[]);
       print_string arity; List.iter print_fninfo fninfo;
       ident name; mcode print_string_box lp;
       parameter_list params; close_box(); mcode print_string rp;
       print_string " "
   | Ast.Decl(bef,allminus,decl) ->
-      mcode (function _ -> ()) ((),Ast.no_info,bef,Ast.NoMetaPos);
+      mcode (function _ -> ()) ((),Ast.no_info,bef,[]);
       print_string arity;
       declaration decl
   | Ast.SeqStart(brace) ->
@@ -664,23 +668,23 @@ and statement arity s =
       rule_elem arity rbrace
   | Ast.IfThen(header,branch,(_,_,_,aft)) ->
       rule_elem arity header; statement arity branch;
-      mcode (function _ -> ()) ((),Ast.no_info,aft,Ast.NoMetaPos)
+      mcode (function _ -> ()) ((),Ast.no_info,aft,[])
   | Ast.IfThenElse(header,branch1,els,branch2,(_,_,_,aft)) ->
       rule_elem arity header; statement arity branch1; print_string " ";
       rule_elem arity els; statement arity branch2;
-      mcode (function _ -> ()) ((),Ast.no_info,aft,Ast.NoMetaPos)
+      mcode (function _ -> ()) ((),Ast.no_info,aft,[])
   | Ast.While(header,body,(_,_,_,aft)) ->
       rule_elem arity header; statement arity body;
-      mcode (function _ -> ()) ((),Ast.no_info,aft,Ast.NoMetaPos)
+      mcode (function _ -> ()) ((),Ast.no_info,aft,[])
   | Ast.Do(header,body,tail) ->
       rule_elem arity header; statement arity body;
       rule_elem arity tail
   | Ast.For(header,body,(_,_,_,aft)) ->
       rule_elem arity header; statement arity body;
-      mcode (function _ -> ()) ((),Ast.no_info,aft,Ast.NoMetaPos)
+      mcode (function _ -> ()) ((),Ast.no_info,aft,[])
   | Ast.Iterator(header,body,(_,_,_,aft)) ->
       rule_elem arity header; statement arity body;
-      mcode (function _ -> ()) ((),Ast.no_info,aft,Ast.NoMetaPos)
+      mcode (function _ -> ()) ((),Ast.no_info,aft,[])
   | Ast.Switch(header,lb,decls,cases,rb) ->
       rule_elem arity header; rule_elem arity lb;
       dots force_newline (statement arity) decls;

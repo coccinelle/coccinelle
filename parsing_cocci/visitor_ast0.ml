@@ -460,6 +460,9 @@ let visitor mode bind option_default
 	  Ast0.MetaInit(name,pure) ->
 	    let (name_n,name) = meta_mcode name in
 	    (name_n,Ast0.MetaInit(name,pure))
+	| Ast0.MetaInitList(name,lenname,pure) ->
+	    let (name_n,name) = meta_mcode name in
+	    (name_n,Ast0.MetaInitList(name,lenname,pure))
 	| Ast0.InitExpr(exp) ->
 	    let (exp_n,exp) = expression exp in
 	    (exp_n,Ast0.InitExpr(exp))

@@ -65,7 +65,7 @@ let get_p _ =
   let c = !pctr in
   pctr := c + 1;
   let name = ("",Printf.sprintf "p%d" c) in
-  Ast0.MetaPos(Ast0.make_mcode name,[],Ast.PER)
+  [Ast0.MetaPos(Ast0.make_mcode name,[],Ast.PER)]
 
 let process_info l =
    let rec loop = function
@@ -80,13 +80,13 @@ let process_info l =
 	   let rec find_first_available a = function
 	       [] -> raise Not_found
 	     | (str,pos)::xs ->
-		 if str = a && !pos = Ast0.NoMetaPos
+		 if str = a && !pos = []
 		 then pos
 		 else find_first_available a xs in
 	   List.iter
 	     (function (str,pos) ->
 	       match !pos with
-		 Ast0.NoMetaPos ->
+		 [] ->
 		   (try
 		     let entries = List.map (find_first_available str) all in
 		     let p = get_p() in

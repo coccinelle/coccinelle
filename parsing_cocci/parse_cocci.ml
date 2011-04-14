@@ -206,6 +206,7 @@ let token2c (tok,_) =
   | PC.TMetaId(nm,_,_,clt)    -> "idmeta-"^(Dumper.dump nm)^(line_type2c clt)
   | PC.TMetaType(_,_,clt)    -> "typemeta"^(line_type2c clt)
   | PC.TMetaInit(_,_,clt)    -> "initmeta"^(line_type2c clt)
+  | PC.TMetaInitList(_,_,_,clt)    -> "initlistmeta"^(line_type2c clt)
   | PC.TMetaDecl(_,_,clt)    -> "declmeta"^(line_type2c clt)
   | PC.TMetaField(_,_,clt)   -> "fieldmeta"^(line_type2c clt)
   | PC.TMetaFieldList(_,_,_,clt)   -> "fieldlistmeta"^(line_type2c clt)
@@ -336,7 +337,8 @@ let plus_attachable only_plus (tok,_) =
   | PC.TMetaLocalIdExp(_,_,_,_,clt)
   | PC.TMetaExpList(_,_,_,clt)
   | PC.TMetaId(_,_,_,clt)
-  | PC.TMetaType(_,_,clt) | PC.TMetaInit(_,_,clt) | PC.TMetaStm(_,_,clt)
+  | PC.TMetaType(_,_,clt) | PC.TMetaInit(_,_,clt) | PC.TMetaInitList(_,_,_,clt)
+  | PC.TMetaStm(_,_,clt)
   | PC.TMetaStmList(_,_,clt)
   | PC.TMetaDecl(_,_,clt) | PC.TMetaField(_,_,clt)
   | PC.TMetaFieldList(_,_,_,clt)
@@ -409,7 +411,8 @@ let get_clt (tok,_) =
   | PC.TMetaLocalIdExp(_,_,_,_,clt)
   | PC.TMetaExpList(_,_,_,clt)
   | PC.TMetaId(_,_,_,clt)
-  | PC.TMetaType(_,_,clt) | PC.TMetaInit(_,_,clt) | PC.TMetaStm(_,_,clt)
+  | PC.TMetaType(_,_,clt) | PC.TMetaInit(_,_,clt) | PC.TMetaInitList(_,_,_,clt)
+  | PC.TMetaStm(_,_,clt)
   | PC.TMetaStmList(_,_,clt)
   | PC.TMetaDecl(_,_,clt) | PC.TMetaField(_,_,clt)
   | PC.TMetaFieldList(_,_,_,clt)
@@ -530,6 +533,7 @@ let update_clt (tok,x) clt =
   | PC.TMetaId(a,b,c,_)    -> (PC.TMetaId(a,b,c,clt),x)
   | PC.TMetaType(a,b,_)    -> (PC.TMetaType(a,b,clt),x)
   | PC.TMetaInit(a,b,_)    -> (PC.TMetaInit(a,b,clt),x)
+  | PC.TMetaInitList(a,b,c,_) -> (PC.TMetaInitList(a,b,c,clt),x)
   | PC.TMetaDecl(a,b,_)    -> (PC.TMetaDecl(a,b,clt),x)
   | PC.TMetaField(a,b,_)   -> (PC.TMetaField(a,b,clt),x)
   | PC.TMetaFieldList(a,b,c,_)   -> (PC.TMetaFieldList(a,b,c,clt),x)
@@ -679,7 +683,8 @@ let split_token ((tok,_) as t) =
   | PC.TMetaIdExp(_,_,_,_,clt) | PC.TMetaLocalIdExp(_,_,_,_,clt)
   | PC.TMetaExpList(_,_,_,clt)
   | PC.TMetaParam(_,_,clt) | PC.TMetaParamList(_,_,_,clt)
-  | PC.TMetaId(_,_,_,clt) | PC.TMetaType(_,_,clt) | PC.TMetaInit(_,_,clt)
+  | PC.TMetaId(_,_,_,clt) | PC.TMetaType(_,_,clt)
+  | PC.TMetaInit(_,_,clt) | PC.TMetaInitList(_,_,_,clt)
   | PC.TMetaDecl(_,_,clt) | PC.TMetaField(_,_,clt)
   | PC.TMetaFieldList(_,_,_,clt)
   | PC.TMetaStm(_,_,clt) | PC.TMetaStmList(_,_,clt) | PC.TMetaErr(_,_,_,clt)
@@ -879,6 +884,7 @@ let detect_types in_meta_decls l =
     | (PC.TMetaExpList(_,_,_,_),_)
     | (PC.TMetaType(_,_,_),_)
     | (PC.TMetaInit(_,_,_),_)
+    | (PC.TMetaInitList(_,_,_,_),_)
     | (PC.TMetaDecl(_,_,_),_)
     | (PC.TMetaField(_,_,_),_)
     | (PC.TMetaFieldList(_,_,_,_),_)
@@ -972,7 +978,8 @@ let token2line (tok,_) =
   | PC.TMetaConst(_,_,_,_,clt) | PC.TMetaExp(_,_,_,_,clt)
   | PC.TMetaIdExp(_,_,_,_,clt) | PC.TMetaLocalIdExp(_,_,_,_,clt)
   | PC.TMetaExpList(_,_,_,clt)
-  | PC.TMetaId(_,_,_,clt) | PC.TMetaType(_,_,clt) | PC.TMetaInit(_,_,clt)
+  | PC.TMetaId(_,_,_,clt) | PC.TMetaType(_,_,clt)
+  | PC.TMetaInit(_,_,clt) | PC.TMetaInitList(_,_,_,clt)
   | PC.TMetaDecl(_,_,clt) | PC.TMetaField(_,_,clt)
   | PC.TMetaFieldList(_,_,_,clt)
   | PC.TMetaStm(_,_,clt) | PC.TMetaStmList(_,_,clt) | PC.TMetaFunc(_,_,_,clt)
@@ -1175,12 +1182,17 @@ let add_bef = function Some x -> [x] | None -> []
 
 (*skips should be things like line end
 skips is things before pragmas that can't be attached to, pass is things
-after.  pass is used immediately.  skips accumulates. *)
+after.  pass is used immediately.  skips accumulates.
+When stuff is added before some + code, the logical line of the + code
+becomes that of the pragma.  context_neg relies on things that are adjacent
+having sequential logical lines.  Not sure that this is good enough,
+as it might result in later gaps in the logical lines... *)
 let rec process_pragmas bef skips = function
     [] -> add_bef bef @ List.rev skips
   | ((PC.TPragma(s,i),_)::_) as l ->
       let (pragmas,rest) = collect_all_pragmas [] l in
       let (pass,rest0) = collect_pass rest in
+      let (_,_,prag_lline,_,_,_,_,_) = i in
       let (next,rest) =
 	match rest0 with [] -> (None,[]) | next::rest -> (Some next,rest) in
       (match (bef,plus_attach true bef,next,plus_attach true next) with
@@ -1189,10 +1201,10 @@ let rec process_pragmas bef skips = function
 	  (update_clt bef (a,b,c,d,e,strbef,pragmas,pos))::List.rev skips@
 	  pass@process_pragmas None [] rest0
       |	(_,_,Some next,PLUS) ->
-	  let (a,b,c,d,e,strbef,straft,pos) = get_clt next in
+	  let (a,b,lline,d,e,strbef,straft,pos) = get_clt next in
 	  (add_bef bef) @ List.rev skips @ pass @
 	  (process_pragmas
-	     (Some (update_clt next (a,b,c,d,e,pragmas,straft,pos)))
+	     (Some (update_clt next (a,b,prag_lline,d,e,pragmas,straft,pos)))
 	     [] rest)
       |	_ ->
 	  (match (bef,plus_attach false bef,next,plus_attach false next) with
@@ -1201,10 +1213,11 @@ let rec process_pragmas bef skips = function
 	      (update_clt bef (a,b,c,d,e,strbef,pragmas,pos))::List.rev skips@
 	      pass@process_pragmas None [] rest0
 	  | (_,_,Some next,PLUS) ->
-	      let (a,b,c,d,e,strbef,straft,pos) = get_clt next in
+	      let (a,b,lline,d,e,strbef,straft,pos) = get_clt next in
 	      (add_bef bef) @ List.rev skips @ pass @
 	      (process_pragmas
-		 (Some (update_clt next (a,b,c,d,e,pragmas,straft,pos)))
+		 (Some
+		    (update_clt next (a,b,prag_lline,d,e,pragmas,straft,pos)))
 		 [] rest)
 	  | _ -> failwith "nothing to attach pragma to"))
   | x::xs ->
@@ -1383,13 +1396,13 @@ let rec consume_minus_positions = function
   | ((PC.TOPar0(_),_) as x)::xs | ((PC.TCPar0(_),_) as x)::xs
   | ((PC.TMid0(_),_) as x)::xs -> x::consume_minus_positions xs
   | x::(PC.TPArob,_)::(PC.TMetaPos(name,constraints,per,clt),_)::xs ->
-      let (arity,ln,lln,offset,col,strbef,straft,_) = get_clt x in
+      let (arity,ln,lln,offset,col,strbef,straft,pos) = get_clt x in
       let name = Parse_aux.clt2mcode name clt in
       let x =
 	update_clt x
 	  (arity,ln,lln,offset,col,strbef,straft,
-	   Ast0.MetaPos(name,constraints,per)) in
-      x::(consume_minus_positions xs)
+	   (Ast0.MetaPos(name,constraints,per)::pos)) in
+      (consume_minus_positions (x::xs))
   | x::xs -> x::consume_minus_positions xs
 
 let any_modif rule =
@@ -1702,6 +1715,7 @@ let parse file =
 		then parse_one "plus" PC.plus_exp_main file plus_tokens
 		else parse_one "plus" PC.plus_main file plus_tokens in
 	    (*
+	       Unparse_ast0.unparse plus_res;
 	       Printf.printf "after plus parse\n";
 	    *)
 

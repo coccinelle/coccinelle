@@ -553,6 +553,12 @@ and vk_ini = fun bigf ini ->
 
   in inif ini
 
+and vk_ini_list = fun bigf ts ->
+  let iif ii = vk_ii bigf ii in
+  ts +> List.iter (fun (ini,iicomma) ->
+    vk_ini bigf ini;
+    iif iicomma;
+  )
 
 and vk_designator = fun bigf design ->
   let iif ii = vk_ii bigf ii in
@@ -1680,6 +1686,10 @@ and vk_param_s = fun bigf param ->
 let vk_arguments_s = fun bigf args ->
   let iif ii = vk_ii_s bigf ii in
   args +> List.map (fun (e, ii) -> vk_argument_s bigf e, iif ii)
+
+let vk_inis_s = fun bigf inis ->
+  let iif ii = vk_ii_s bigf ii in
+  inis +> List.map (fun (e, ii) -> vk_ini_s bigf e, iif ii)
 
 let vk_params_s = fun bigf args ->
   let iif ii = vk_ii_s bigf ii in

@@ -726,8 +726,8 @@ let rec drop_space_at_endline = function
     [] -> []
   | [x] -> [x]
   | (C2 " ") ::
-    ((((T2(Parser_c.TCommentSpace _,Ctx,_i)) |
-    (T2(Parser_c.TCommentNewline _,Ctx,_i))) :: _) as rest) ->
+    ((((T2(Parser_c.TCommentSpace _,Ctx,_)) | Cocci2("\n",_,_,_,_) |
+    (T2(Parser_c.TCommentNewline _,Ctx,_))) :: _) as rest) ->
       (* when unparse_cocci doesn't know whether space is needed *)
       drop_space_at_endline rest
   | ((T2(Parser_c.TCommentSpace _,Ctx,_i)) as a)::rest ->
@@ -747,7 +747,8 @@ let rec drop_space_at_endline = function
 	    minus@a::(drop_space_at_endline rest)
 	| _ -> fail()
       else fail()
-  | a :: rest -> a :: drop_space_at_endline rest
+  | a :: rest ->
+      a :: drop_space_at_endline rest
 
 (* if a removed ( is between two tokens, then add a space *)
 let rec paren_to_space = function
@@ -947,6 +948,9 @@ let rec adjust_indentation xs =
     match xs with
     | [] ->  []
 (* patch: coccinelle *)
+    | (T2 (Parser_c.TCommentNewline _,_,_))::Unindent_cocci2(false)::xs
+    | (Cocci2("\n",_,_,_,_))::Unindent_cocci2(false)::xs ->
+        (C2 "\n")::aux started xs
     | ((T2 (tok,_,_)) as x)::(T2 (Parser_c.TCommentNewline s, _, _))::
       ((Cocci2 ("{",_,_,_,_)) as a)::xs
       when started && str_of_token2 x =$= ")" ->
@@ -987,8 +991,6 @@ let rec adjust_indentation xs =
     (* starting the body of the function *)
     | ((T2 (tok,_,_)) as x)::xs when str_of_token2 x =$= "{" ->  x::aux true xs
     | ((Cocci2("{",_,_,_,_)) as a)::xs -> a::aux true xs
-    | ((Cocci2("\n",_,_,_,_)) as x)::Unindent_cocci2(false)::xs ->
-        x::aux started xs
     | ((Cocci2("\n",_,_,_,_)) as x)::xs ->
             (* dont inline in expr because of weird eval order of ocaml *)
         let s = !_current_tabbing in

@@ -130,7 +130,7 @@ let tmeta_to_ident (name,pure,clt) =
 %token <Parse_aux.expinfo>       TMetaErr
 %token <Parse_aux.info>          TMetaParam TMetaStm TMetaStmList TMetaType
 %token <Parse_aux.info>          TMetaInit TMetaDecl TMetaField TMeta
-%token <Parse_aux.list_info>     TMetaParamList TMetaExpList
+%token <Parse_aux.list_info>     TMetaParamList TMetaExpList TMetaInitList
 %token <Parse_aux.list_info>     TMetaFieldList
 %token <Parse_aux.typed_expinfo> TMetaExp TMetaIdExp TMetaLocalIdExp TMetaConst
 %token <Parse_aux.pos_info>      TMetaPos
@@ -404,6 +404,14 @@ metadec:
 	  let tok = check_meta(Ast.MetaFieldListDecl(arity,name,lenname)) in
 	  !Data.add_field_list_meta name lenname pure; tok)
 	len ids }
+| ar=arity ispure=pure
+    TInitialiser Tlist TOCro len=list_len TCCro
+    ids=comma_list(pure_ident_or_meta_ident) TMPtVirg
+    { P.create_len_metadec ar ispure
+	(fun lenname arity name pure check_meta ->
+	  let tok = check_meta(Ast.MetaInitListDecl(arity,name,lenname)) in
+	  !Data.add_initlist_meta name lenname pure; tok)
+	len ids }
 
 list_len:
   pure_ident_or_meta_ident { Common.Left $1 }
@@ -443,6 +451,11 @@ list_len:
     { (fun arity name pure check_meta ->
       let tok = check_meta(Ast.MetaInitDecl(arity,name)) in
       !Data.add_init_meta name pure; tok) }
+| TInitialiser Tlist
+    { (fun arity name pure check_meta ->
+      let len = Ast.AnyLen in
+      let tok = check_meta(Ast.MetaInitListDecl(arity,name,len)) in
+      !Data.add_initlist_meta name len pure; tok) }
 | TStatement
     { (fun arity name pure check_meta ->
       let tok = check_meta(Ast.MetaStmDecl(arity,name)) in
@@ -854,14 +867,17 @@ includes:
 			      (P.drop_bef clt))) }
 | TUndef TLineEnd
     { let (clt,ident) = $1 in
+      let aft = P.get_aft clt in (* move stuff after the define to the ident *)
       Ast0.wrap
       (Ast0.Undef
-	 (P.clt2mcode "#undef" clt,
+	 (P.clt2mcode "#undef" (P.drop_aft clt),
 	  (match ident with
 	    TMetaId((nm,constraints,pure,clt)) ->
+	      let clt = P.set_aft aft clt in
 	      Ast0.wrap(Ast0.MetaId(P.clt2mcode nm clt,constraints,pure))
-	  | TIdent(nm_pure) ->
-	      Ast0.wrap(Ast0.Id(P.id2mcode nm_pure))
+	  | TIdent((nm,clt)) ->
+	      let clt = P.set_aft aft clt in
+	      Ast0.wrap(Ast0.Id(P.clt2mcode nm clt))
 	  | _ ->
 	      raise
 		(Semantic_cocci.Semantic
@@ -885,15 +901,18 @@ includes:
 defineop:
   TDefine
     { let (clt,ident) = $1 in
+      let aft = P.get_aft clt in (* move stuff after the define to the ident *)
       function body ->
 	Ast0.wrap
 	  (Ast0.Define
-	     (P.clt2mcode "#define" clt,
+	     (P.clt2mcode "#define" (P.drop_aft clt),
 	      (match ident with
 		TMetaId((nm,constraints,pure,clt)) ->
+		  let clt = P.set_aft aft clt in
 		  Ast0.wrap(Ast0.MetaId(P.clt2mcode nm clt,constraints,pure))
-	      | TIdent(nm_pure) ->
-		  Ast0.wrap(Ast0.Id(P.id2mcode nm_pure))
+	      | TIdent((nm,clt)) ->
+		  let clt = P.set_aft aft clt in
+		  Ast0.wrap(Ast0.Id(P.clt2mcode nm clt))
 	      | _ ->
 		  raise
 		    (Semantic_cocci.Semantic
@@ -902,25 +921,27 @@ defineop:
 	      body)) }
 | TDefineParam define_param_list_option TCPar
     { let (clt,ident,parenoff,parencol) = $1 in
+      let aft = P.get_aft clt in (* move stuff after the define to the ( *)
       (* clt is the start of the #define itself *)
       let (arity,line,lline,offset,col,strbef,straft,pos) = clt in
       let lp =
 	P.clt2mcode "("
-	  (arity,line,lline,parenoff,parencol,[],[],Ast0.NoMetaPos) in
+	  (arity,line,lline,parenoff,parencol,[],[],[]) in
       function body ->
 	Ast0.wrap
 	  (Ast0.Define
-	     (P.clt2mcode "#define" clt,
+	     (P.clt2mcode "#define" (P.drop_aft clt),
 	      (match ident with
 		TMetaId((nm,constraints,pure,clt)) ->
 		  Ast0.wrap(Ast0.MetaId(P.clt2mcode nm clt,constraints,pure))
-	      | TIdent(nm_pure) ->
-		  Ast0.wrap(Ast0.Id(P.id2mcode nm_pure))
+	      | TIdent((nm,clt)) ->
+		  Ast0.wrap(Ast0.Id(P.clt2mcode nm clt))
 	      | _ ->
 		  raise
 		    (Semantic_cocci.Semantic
 		       "unexpected name for a #define")),
-	      Ast0.wrap (Ast0.DParams (lp,$2,P.clt2mcode ")" $3)),body)) }
+	      (let clt = P.set_aft aft $3 in
+	      Ast0.wrap (Ast0.DParams (lp,$2,P.clt2mcode ")" clt))),body)) }
 
 /* ---------------------------------------------------------------------- */
 
@@ -1287,6 +1308,18 @@ initialize2:
     { Ast0.wrap(Ast0.InitGccExt($1,P.clt2mcode "=" $2,$3)) }
 | mident TDotDot initialize2
     { Ast0.wrap(Ast0.InitGccName($1,P.clt2mcode ":" $2,$3)) } /* in old kernel */
+  | TMetaInit
+      {let (nm,pure,clt) = $1 in
+      Ast0.wrap(Ast0.MetaInit(P.clt2mcode nm clt,pure)) }
+  | TMetaInitList
+      {let (nm,lenname,pure,clt) = $1 in
+      let nm = P.clt2mcode nm clt in
+      let lenname =
+	match lenname with
+	  Ast.AnyLen -> Ast0.AnyListLen
+	| Ast.MetaLen nm -> Ast0.MetaListLen(P.clt2mcode nm clt)
+	| Ast.CstLen n -> Ast0.CstListLen n in
+      Ast0.wrap(Ast0.MetaInitList(nm,lenname,pure)) }
 
 designator:
  | TDot disj_ident

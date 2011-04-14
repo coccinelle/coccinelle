@@ -572,6 +572,10 @@ and initialiser tgt i =
       let arity = init_same (mcode2line name) [mcode2arity name] in
       let name = mcode name in
       make_init i tgt arity (Ast0.MetaInit(name,pure))
+  | Ast0.MetaInitList(name,lenname,pure) ->
+      let arity = init_same (mcode2line name) [mcode2arity name] in
+      let name = mcode name in
+      make_init i tgt arity (Ast0.MetaInitList(name,lenname,pure))
   | Ast0.InitExpr(exp) ->
       Ast0.rewrap i (Ast0.InitExpr(expression tgt exp))
   | Ast0.InitList(lb,initlist,rb,ordered) ->

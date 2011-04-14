@@ -334,6 +334,7 @@ and unify_declaration d1 d2 =
 and unify_initialiser i1 i2 =
   match (Ast.unwrap i1,Ast.unwrap i2) with
     (Ast.MetaInit(_,_,_),_) | (_,Ast.MetaInit(_,_,_)) -> return true
+  | (Ast.MetaInitList(_,_,_,_),_) | (_,Ast.MetaInitList(_,_,_,_)) -> return true
   | (Ast.InitExpr(expa),Ast.InitExpr(expb)) ->
       unify_expression expa expb
   | (Ast.ArInitList(_,initlista,_),

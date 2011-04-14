@@ -123,11 +123,13 @@ let print_string_befaft fn fn1 x info =
     info.Ast.straft in
 let print_meta (r,x) = print_text x in
 
-let print_pos = function
-    Ast.MetaPos(name,_,_,_,_) ->
-      let name = Ast.unwrap_mcode name in
-      print_text "@"; print_meta name
-  | _ -> () in
+let print_pos l =
+  List.iter
+    (function
+	Ast.MetaPos(name,_,_,_,_) ->
+	  let name = Ast.unwrap_mcode name in
+	  print_text "@"; print_meta name)
+    l in
 
 (* --------------------------------------------------------------------- *)
 
@@ -635,24 +637,24 @@ and initialiser nlcomma i =
           Ast_c.MetaInitVal ini ->
             pretty_print_c.Pretty_print_c.init ini
         | _ -> raise Impossible)
+  | Ast.MetaInitList(name,_,_,_) ->
+      handle_metavar name  (function
+          Ast_c.MetaInitListVal ini ->
+	    pretty_print_c.Pretty_print_c.init_list ini
+        | _ -> raise Impossible)
   | Ast.InitExpr(exp) -> expression exp
   | Ast.ArInitList(lb,initlist,rb) ->
       (match Ast.undots initlist with
 	[] -> mcode print_string lb; mcode print_string rb
-      |	_ ->
+      |	lst ->
 	  mcode print_string lb; start_block();
-	  dots force_newline (initialiser false) initlist;
+	  initialiser_list nlcomma lst;
 	  end_block(); mcode print_string rb)
   | Ast.StrInitList(_,lb,[],rb,[]) ->
       mcode print_string lb; mcode print_string rb
   | Ast.StrInitList(_,lb,initlist,rb,[]) ->
       mcode print_string lb; start_block();
-      (* awkward, because the comma is separate from the initialiser *)
-      let rec loop = function
-	  [] -> ()
-	| [x] -> initialiser false x
-	| x::xs -> initialiser nlcomma x; loop xs in
-      loop initlist;
+      initialiser_list nlcomma initlist;
       end_block(); mcode print_string rb
   | Ast.StrInitList(_,lb,initlist,rb,_) ->
       failwith "unexpected whencode in plus"
@@ -663,7 +665,7 @@ and initialiser nlcomma i =
       ident name; mcode print_string eq; initialiser nlcomma ini
   | Ast.IComma(comma) ->
       mcode print_string comma;
-      if nlcomma then force_newline()
+      if nlcomma then force_newline() else pr_space()
   | Ast.Idots(dots,Some whencode) ->
       if generating
       then
@@ -677,6 +679,12 @@ and initialiser nlcomma i =
       else raise CantBeInPlus
   | Ast.OptIni(ini) | Ast.UniqueIni(ini) ->
       raise CantBeInPlus
+
+and initialiser_list nlcomma = function
+  (* awkward, because the comma is separate from the initialiser *)
+    [] -> ()
+  | [x] -> initialiser false x
+  | x::xs -> initialiser nlcomma x; initialiser_list nlcomma xs
 
 and designator = function
     Ast.DesignatorField(dot,id) -> mcode print_string dot; ident id
@@ -903,7 +911,7 @@ let rec statement arity s =
   | Ast.Iterator(header,body,(_,_,_,aft)) ->
       rule_elem arity header;
       indent_if_needed body (function _ -> statement arity body);
-      mcode (fun _ _ _ -> ()) ((),Ast.no_info,aft,Ast.NoMetaPos)
+      mcode (fun _ _ _ -> ()) ((),Ast.no_info,aft,[])
 
   | Ast.Switch(header,lb,decls,cases,rb) ->
       rule_elem arity header; pr_space(); rule_elem arity lb;
@@ -1032,11 +1040,14 @@ let rec pp_any = function
       (match xs with (Ast.Space s)::_ -> pr_space() | _ -> ());
       let rec loop = function
 	  [] -> ()
-	| [(Ast.Indent s | Ast.Noindent s)] -> print_text s
+	| [Ast.Noindent s] -> unindent false; print_text s
+	| [Ast.Indent s] -> print_text s
 	| (Ast.Space s) :: (((Ast.Indent _ | Ast.Noindent _) :: _) as rest) ->
 	    print_text s; force_newline(); loop rest
 	| (Ast.Space s) :: rest -> print_text s; pr_space(); loop rest
-	| (Ast.Indent s | Ast.Noindent s) :: rest ->
+	| Ast.Noindent s :: rest ->
+	    unindent false; print_text s; force_newline(); loop rest
+	| Ast.Indent s :: rest ->
 	    print_text s; force_newline(); loop rest in
       loop xs; false
   | Ast.Token(x,None) -> print_text x; if_open_brace x
@@ -1048,7 +1059,7 @@ let rec pp_any = function
 	  | _ -> ());
 	  print_string x line lcol)
 	(let nomcodekind = Ast.CONTEXT(Ast.DontCarePos,Ast.NOTHING) in
-	(x,info,nomcodekind,Ast.NoMetaPos));
+	(x,info,nomcodekind,[]));
       if_open_brace x
 
   | Ast.Code(x) -> let _ = top_level x in false
