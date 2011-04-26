@@ -394,7 +394,8 @@ if ($ocamlfind) {
 pr2 "Support for external ocaml library in ocaml scripting: yes (ocamlfind found)";
 }
 else {
-pr2 "Support for external ocaml library in ocaml scripting: no (ocamlfind may be required at runtime)";
+pr2 "Support for external ocaml library in ocaml scripting: no";
+pr2 "!!!!!!! WARNING !!!!!!! ocamlfind may be required at runtime";
 }
 
 pr2 "";
