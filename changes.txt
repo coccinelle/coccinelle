@@ -29,6 +29,8 @@
 - Improved indentation of added ifdefs.
 - Allow added comments and #ifdefs to precede other added code.  Thanks to
   Jani Monoses for noticing the problem.
+- Corrected failure to due missing ocamlfind. Thanks to Derek M. Jones for
+  reporting the problem.
 
 * 0.2.5
 ** Language:

@@ -61,12 +61,12 @@ let sp_of_file2 file iso =
 	begin
 	  Hashtbl.add _h_ocaml_init (file,iso) ();
 	  match Prepare_ocamlcocci.prepare file xs with
-	    None -> res
-	  | Some ocaml_script_file ->
-	    (* compile file *)
+	      None -> res
+	    | Some ocaml_script_file ->
+	      (* compile file *)
 	      Prepare_ocamlcocci.load_file ocaml_script_file;
 	      (if not !Common.save_tmp_files
-	      then Prepare_ocamlcocci.clean_file ocaml_script_file);
+	       then Prepare_ocamlcocci.clean_file ocaml_script_file);
 	      res
 	end in
     Hashtbl.add _hparse (file,iso)
