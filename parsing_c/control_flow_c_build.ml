@@ -1031,8 +1031,13 @@ and aux_statement_list starti (xi, newxi) statxs =
 
         let (head, body, tail) = Common.head_middle_tail ifdefs in
 
-        let newi = !g +> add_node (IfdefHeader (head)) newxi'.labels "[ifdef]" in
-        let taili = !g +> add_node (IfdefEndif (tail)) newxi'.labels "[endif]" in
+        let newi =
+	  !g +> add_node (IfdefHeader (head)) newxi'.labels "[ifdef]" in
+        let taili =
+	  !g +> add_node (IfdefEndif (tail)) newxi'.labels "[endif]" in
+        (* do like for a close brace, see endi.{c,cocci} *)
+	let taili_dup =
+	  mk_fake_node (IfdefEndif (tail)) newxi'.labels [] "[endif]" in
         !g +> add_arc_opt (starti, newi);
 
         let elsenodes =
@@ -1045,8 +1050,12 @@ and aux_statement_list starti (xi, newxi) statxs =
 
         let _finalxs =
           Common.zip (newi::elsenodes) xxs +> List.map (fun (start_nodei, xs)->
+	    (* not sure if this is correct... newxi seems to relate to
+               the assigned level number *)
+	    let newerxi =
+	      { newxi with braces = taili_dup:: newxi.braces } in
             let finalthen =
-              aux_statement_list (Some start_nodei) (newxi, newxi) xs in
+              aux_statement_list (Some start_nodei) (newxi, newerxi) xs in
             !g +> add_arc_opt (finalthen, taili);
           )
         in

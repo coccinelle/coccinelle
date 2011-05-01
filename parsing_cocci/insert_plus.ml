@@ -832,6 +832,8 @@ let allminus = function
 let rec before_m1 ((f1,infom1,m1) as x1) ((f2,infom2,m2) as x2) rest = function
     [] -> ()
   | (((infop,_,pcode) as p) :: ps) as all ->
+      Printf.printf "less than start %b\n"
+	(less_than_start infop infom1);
       if less_than_start infop infom1 or
 	(allminus m1 && less_than_end infop infom1) (* account for trees *)
       then

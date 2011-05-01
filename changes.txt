@@ -22,6 +22,7 @@
 
 ** Features:
 - Preserve spacing before // comments when not at the beginning of a line
+- adjusted parsing of endif to put it after jump code
 
 ** Bugfix:
 - Corrected parsing of script strings delimited by a single quote.  Thanks
