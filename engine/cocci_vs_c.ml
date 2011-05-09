@@ -101,7 +101,7 @@ let mcode_simple_minus = function
 let minusizer =
   ("fake","fake"),
   {A.line = 0; A.column =0; A.strbef=[]; A.straft=[];},
-  (A.MINUS(A.DontCarePos,[],-1,[])),
+  (A.MINUS(A.DontCarePos,[],A.ALLMINUS,[])),
   []
 
 let generalize_mcode ia =
@@ -857,12 +857,10 @@ let list_matcher match_dots rebuild_dots match_comma rebuild_comma
 			  X.envf lenkeep leninherited
 			    (lenname, Ast_c.MetaListlenVal (len), max_min)
 		      | A.CstListLen n ->
-			  Printf.printf "cstlen\n";
 			  if len = n
 			  then (function f -> f())
 			  else (function f -> fail)
-		      | A.AnyListLen -> Printf.printf "anylen\n"; function f -> f()
-			    )
+		      | A.AnyListLen -> function f -> f())
 			(fun () ->
 			  let max_min _ =
 			    Lib_parsing_c.lin_col_by_pos (get_iis startxs) in

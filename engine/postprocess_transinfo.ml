@@ -118,14 +118,26 @@ let collect_used_after used_after envs l inherited_env =
 
 (* ----------------------------------------------------------------------- *)
 (* distinguish between distinct witness trees, each gets an index n *)
+(* index should be global, so that it can extend over environments *)
+
+let index = ref (-1)
+
+let fold_left_with_index f acc =
+  let rec fold_lwi_aux acc = function
+    | [] -> acc
+    | x::xs ->
+	let n = !index in
+	index := !index + 1;
+	fold_lwi_aux (f acc x n) xs
+  in fold_lwi_aux acc
 
 let numberify trees =
   let trees =
-    Common.fold_left_with_index
+    fold_left_with_index
       (function acc -> function xs -> function n ->
 	(List.map (function x -> (n,x)) xs) @ acc)
       [] trees in
-  List.fold_left
+    List.fold_left
     (function res ->
       function (n,x) ->
 	let (same,diff) = List.partition (function (ns,xs) -> x = xs) res in

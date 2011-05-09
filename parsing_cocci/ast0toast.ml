@@ -238,11 +238,15 @@ let convert_info info =
 let convert_mcodekind adj = function
     Ast0.MINUS(replacements) ->
       let (replacements,_) = !replacements in
-      Ast.MINUS(Ast.NoPos,[],adj,replacements)
+      Ast.MINUS(Ast.NoPos,[],Ast.ADJ adj,replacements)
   | Ast0.PLUS count -> Ast.PLUS count
   | Ast0.CONTEXT(befaft) ->
-      let (befaft,_,_) = !befaft in Ast.CONTEXT(Ast.NoPos,befaft)
+      let (befaft,_,_) = !befaft in
+      Ast.CONTEXT(Ast.NoPos,befaft)
   | Ast0.MIXED(_) -> failwith "not possible for mcode"
+
+let convert_allminus_mcodekind allminus bef =
+  do_convert_mcodekind (-1) allminus bef
 
 let pos_mcode(term,_,info,mcodekind,pos,adj) =
   (* avoids a recursion problem *)
@@ -673,10 +677,10 @@ and statement s =
     rewrap_stmt s
       (match Ast0.unwrap s with
 	Ast0.Decl((_,bef),decl) ->
+	  let allminus = check_allminus.VT0.combiner_rec_statement s in
 	  Ast.Atomic(rewrap_rule_elem s
-		       (Ast.Decl(convert_mcodekind (-1) bef,
-				 check_allminus.VT0.combiner_rec_statement s,
-				 declaration decl)))
+		       (Ast.Decl(convert_allminus_mcodekind allminus bef,
+				 allminus,declaration decl)))
       | Ast0.Seq(lbrace,body,rbrace) ->
 	  let lbrace = mcode lbrace in
 	  let body = dots (statement seqible) body in
@@ -826,8 +830,9 @@ and statement s =
 	  let rbrace = mcode rbrace in
 	  let allminus = check_allminus.VT0.combiner_rec_statement s in
 	  Ast.FunDecl(rewrap_rule_elem s
-			(Ast.FunHeader(convert_mcodekind (-1) bef,
-				       allminus,fi,name,lp,params,rp)),
+			(Ast.FunHeader
+			   (convert_allminus_mcodekind allminus bef,
+			    allminus,fi,name,lp,params,rp)),
 		      tokenwrap lbrace s (Ast.SeqStart(lbrace)),
 		      body,
 		      tokenwrap rbrace s (Ast.SeqEnd(rbrace)))
