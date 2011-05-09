@@ -23,8 +23,9 @@
 
 ** Features:
 - Preserve spacing before // comments when not at the beginning of a line
-- adjusted parsing of endif to put it after jump code
-- improve warning message when using -use_cache
+- Adjusted parsing of endif to put it after jump code
+- Improve warning message when using -use_cache
+- Allow - nest expressions
 
 ** Bugfix:
 - Corrected parsing of script strings delimited by a single quote.  Thanks
