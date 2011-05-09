@@ -24,6 +24,7 @@
 ** Features:
 - Preserve spacing before // comments when not at the beginning of a line
 - adjusted parsing of endif to put it after jump code
+- improve warning message when using -use_cache
 
 ** Bugfix:
 - Corrected parsing of script strings delimited by a single quote.  Thanks
@@ -33,6 +34,12 @@
   Jani Monoses for noticing the problem.
 - Corrected failure to due missing ocamlfind. Thanks to Derek M. Jones for
   reporting the problem.
+- Allow fake nodes to be - in the allminus case, to drop tokens related to
+  a function definition or forward declaration but before the first code
+  mentioned in the semantic patch.
+- Drop __init etc when deleting a whole function.
+- Cause appropriate newlines to be preserved when multiple matches (trees)
+  contain adjacent modifications derived from the same SmPL code.
 
 * 0.2.5
 ** Language:

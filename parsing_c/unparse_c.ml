@@ -271,7 +271,7 @@ let get_fakeInfo_and_tokens celem toks =
 
   List.rev !toks_out
 
-(* Fake nodes that have BEFORE code should be moved over any subsequent
+(* Fake nodes that have BEFORE code or are - should be moved over any subsequent
 whitespace and newlines, but not any comments, to get as close to the affected
 code as possible.  Similarly, fake nodes that have AFTER code should be moved
 backwards.  No fake nodes should have both before and after code. *)
@@ -292,7 +292,8 @@ let displace_fake_nodes toks =
 	(match !(info.cocci_tag) with
         | Some x ->
           (match x with
-	    (Ast_cocci.CONTEXT(_,Ast_cocci.BEFORE _),_) ->
+	    (Ast_cocci.CONTEXT(_,Ast_cocci.BEFORE _),_)
+	  | (Ast_cocci.MINUS(_,_,_,Ast_cocci.REPLACEMENT _),_) ->
 	    (* move the fake node forwards *)
 	      let (whitespace,rest) = Common.span is_whitespace aft in
 	      bef @ whitespace @ fake :: (loop rest)

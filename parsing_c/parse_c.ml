@@ -1061,7 +1061,7 @@ let parse_cache file =
   if not !Flag_parsing_c.use_cache
   then parse_print_error_heuristic None None file
   else
-  let _ = pr2 "TOFIX" in
+  let _ = pr2 "TOFIX: use_cache is not sensitive to changes in the considered macros, include files, etc" in
   let need_no_changed_files =
     (* should use Sys.argv.(0), would be safer. *)
 
