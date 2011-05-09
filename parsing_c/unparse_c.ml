@@ -179,8 +179,8 @@ let mcode_contain_plus = function
   | Ast_cocci.CONTEXT (_,Ast_cocci.NOTHING) -> false
   | Ast_cocci.CONTEXT _ -> true
 (* patch: when need full coccinelle transformation *)
-  | Ast_cocci.MINUS (_,_,_,[]) -> false
-  | Ast_cocci.MINUS (_,_,_,x::xs) -> true
+  | Ast_cocci.MINUS (_,_,_,Ast_cocci.NOREPLACEMENT) -> false
+  | Ast_cocci.MINUS (_,_,_,Ast_cocci.REPLACEMENT _) -> true(*REPL is not empty*)
   | Ast_cocci.PLUS _ -> raise Impossible
 
 let contain_plus info =
@@ -429,7 +429,10 @@ let expand_mcode toks =
          * set of tokens, so I can then process and remove the
          * is_between_two_minus for instance *)
         add_elem t (Min (inst,adj));
-        unparser any_xxs Unparse_cocci.InPlace
+	(match any_xxs with
+	  Ast_cocci.NOREPLACEMENT -> ()
+	| Ast_cocci.REPLACEMENT(any_xxs,_) ->
+            unparser any_xxs Unparse_cocci.InPlace)
     | Ast_cocci.CONTEXT (_,any_befaft) ->
         (match any_befaft with
         | Ast_cocci.NOTHING ->

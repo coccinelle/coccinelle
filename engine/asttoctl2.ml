@@ -1259,12 +1259,13 @@ let svar_minus_or_no_add_after stmt s label quantified d ast
     | (Ast.MINUS(pos,inst,adj,l),after) ->
 	let (first_metamatch,last_metamatch,rest_metamatch) =
 	  match l with
-	    [] -> (matcher(Ast.CONTEXT(pos,Ast.NOTHING)),CTL.True,matcher d)
+	    Ast.NOREPLACEMENT ->
+	      (matcher(Ast.CONTEXT(pos,Ast.NOTHING)),CTL.True,matcher d)
 	  | _ -> (matcher d,
-		  matcher(Ast.MINUS(pos,inst,adj,[])),
+		  matcher(Ast.MINUS(pos,inst,adj,Ast.NOREPLACEMENT)),
 		  ctl_and CTL.NONSTRICT
 		    (ctl_not (make_raw_match label false ast))
-		    (matcher(Ast.MINUS(pos,inst,adj,[])))) in
+		    (matcher(Ast.MINUS(pos,inst,adj,Ast.NOREPLACEMENT)))) in
 	(* try to follow after link *)
 	let to_end = ctl_or (aftpred None) (loopfallpred None) in
 	let is_compound =
@@ -1705,13 +1706,29 @@ and statement stmt after quantified minus_quantified
 		  (Ast.MINUS(_,inst1,adj1,l1),Ast.MINUS(_,_,_,l2))
 		  when !Flag.sgrep_mode2 ->
 		    (* in sgrep mode, we can propagate the - *)
-		    Some (Ast.MINUS(Ast.NoPos,inst1,adj1,l1@l2))
+		    let new_info =
+		      match (l1,l2) with
+			(Ast.NOREPLACEMENT,Ast.NOREPLACEMENT) ->
+			  Ast.NOREPLACEMENT
+		      |	_ ->
+			  failwith "no replacements allowed in sgrep mode" in
+		    Some (Ast.MINUS(Ast.NoPos,inst1,adj1,new_info))
 		| (Ast.MINUS(_,_,_,l1),Ast.MINUS(_,_,_,l2)) ->
-		    Some (Ast.CONTEXT(Ast.NoPos,Ast.BEFORE(l1@l2,Ast.ONE)))
+		    let change =
+		      match (l1,l2) with
+			(Ast.NOREPLACEMENT,Ast.NOREPLACEMENT) ->
+			  Ast.NOTHING
+		      |	(Ast.NOREPLACEMENT,Ast.REPLACEMENT(l,ct))
+		      |	(Ast.REPLACEMENT(l,ct),Ast.NOREPLACEMENT) ->
+			  Ast.BEFORE(l,ct)
+		      |	(Ast.REPLACEMENT(l1,ct1),Ast.REPLACEMENT(l2,ct2)) ->
+			  Ast.BEFORE(l1@l2,Ast.lub_count ct1 ct2) in
+		    Some (Ast.CONTEXT(Ast.NoPos,change))
 		| (Ast.CONTEXT(_,Ast.BEFORE(l1,c1)),
 		   Ast.CONTEXT(_,Ast.AFTER(l2,c2))) ->
-		     (if not (c1 = c2) then failwith "bad + code");
-		    Some (Ast.CONTEXT(Ast.NoPos,Ast.BEFORE(l1@l2,c1)))
+		     Some
+		       (Ast.CONTEXT(Ast.NoPos,
+				    Ast.BEFORE(l1@l2,Ast.lub_count c1 c2)))
 		| (Ast.CONTEXT(_,Ast.BEFORE(_)),Ast.CONTEXT(_,Ast.NOTHING))
 		| (Ast.CONTEXT(_,Ast.NOTHING),Ast.CONTEXT(_,Ast.NOTHING)) ->
 		    Some retmc
@@ -2275,10 +2292,10 @@ and statement stmt after quantified minus_quantified
 	  [body] ->
 	    (match Ast.unwrap body with
 	      Ast.Dots
-		((_,i,(Ast.MINUS(_,_,_,[]) as d),_),[],_,_) ->
+		((_,i,(Ast.MINUS(_,_,_,Ast.NOREPLACEMENT) as d),_),[],_,_) ->
 		  (match (Ast.unwrap lbrace,Ast.unwrap rbrace) with
-		    (Ast.SeqStart((_,_,Ast.MINUS(_,_,_,[]),_)),
-		     Ast.SeqEnd((_,_,Ast.MINUS(_,_,_,[]),_)))
+		    (Ast.SeqStart((_,_,Ast.MINUS(_,_,_,Ast.NOREPLACEMENT),_)),
+		     Ast.SeqEnd((_,_,Ast.MINUS(_,_,_,Ast.NOREPLACEMENT),_)))
 		    when not (contains_pos rbrace) ->
 		      Some
 			(* andany drops everything to the end, including close

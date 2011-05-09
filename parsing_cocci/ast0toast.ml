@@ -30,7 +30,7 @@ let inline_mcodes =
     match (Ast0.get_mcodekind e) with
       Ast0.MINUS(replacements) ->
 	(match !replacements with
-	  ([],_) -> ()
+	  (Ast.NOREPLACEMENT,_) -> ()
 	| replacements ->
 	    let minus_try = function
 		(true,mc) ->
@@ -71,13 +71,25 @@ let inline_mcodes =
 		else starter @ ender in
 	  (lst,
 	   {endinfo with Ast0.tline_start = startinfo.Ast0.tline_start}) in
+	let it2c = function Ast.ONE -> "one" | Ast.MANY -> "many" in
 	let attach_bef bef beforeinfo befit = function
 	    (true,mcl) ->
 	      List.iter
 		(function
 		    Ast0.MINUS(mreplacements) ->
-		      let (mrepl,tokeninfo) = !mreplacements in
-		      mreplacements := concat bef beforeinfo mrepl tokeninfo
+		      (match !mreplacements with
+			(Ast.NOREPLACEMENT,tokeninfo) ->
+			  Printf.printf "attach bef 1 %s\n" (it2c befit);
+			  mreplacements :=
+			    (Ast.REPLACEMENT(bef,befit),beforeinfo)
+		      |	(Ast.REPLACEMENT(anythings,it),tokeninfo) ->
+			  let (newbef,newinfo) =
+			    concat bef beforeinfo anythings tokeninfo in
+			  Printf.printf "attach bef 2 %s %s\n"
+			    (it2c befit) (it2c it);
+			  let it = Ast.lub_count befit it in
+			  mreplacements :=
+			    (Ast.REPLACEMENT(newbef,it),newinfo))
 		  | Ast0.CONTEXT(mbefaft) ->
 		      (match !mbefaft with
 			(Ast.BEFORE(mbef,it),mbeforeinfo,a) ->
@@ -109,8 +121,19 @@ let inline_mcodes =
 	      List.iter
 		(function
 		    Ast0.MINUS(mreplacements) ->
-		      let (mrepl,tokeninfo) = !mreplacements in
-		      mreplacements := concat mrepl tokeninfo aft afterinfo
+		      (match !mreplacements with
+			(Ast.NOREPLACEMENT,tokeninfo) ->
+			  Printf.printf "attach aft 1 %s\n" (it2c aftit);
+			  mreplacements :=
+			    (Ast.REPLACEMENT(aft,aftit),afterinfo)
+		      |	(Ast.REPLACEMENT(anythings,it),tokeninfo) ->
+			  let (newaft,newinfo) =
+			    concat aft afterinfo anythings tokeninfo in
+			  Printf.printf "attach aft 2 %s %s\n"
+			    (it2c aftit) (it2c it);
+			  let it = Ast.lub_count aftit it in
+			  mreplacements :=
+			    (Ast.REPLACEMENT(newaft,it),newinfo))
 		  | Ast0.CONTEXT(mbefaft) ->
 		      (match !mbefaft with
 			(Ast.BEFORE(mbef,it),b,_) ->
@@ -167,7 +190,7 @@ let check_allminus =
   let option_default = true in
   let mcode (_,_,_,mc,_,_) =
     match mc with
-      Ast0.MINUS(r) -> let (plusses,_) = !r in plusses = []
+      Ast0.MINUS(r) -> let (plusses,_) = !r in plusses = Ast.NOREPLACEMENT
     | _ -> false in
 
   (* special case for disj *)
@@ -245,8 +268,20 @@ let convert_mcodekind adj = function
       Ast.CONTEXT(Ast.NoPos,befaft)
   | Ast0.MIXED(_) -> failwith "not possible for mcode"
 
-let convert_allminus_mcodekind allminus bef =
-  do_convert_mcodekind (-1) allminus bef
+let convert_allminus_mcodekind allminus = function
+    Ast0.CONTEXT(befaft) ->
+      let (befaft,_,_) = !befaft in
+      if allminus
+      then
+	(match befaft with
+	  Ast.NOTHING ->
+	    Ast.MINUS(Ast.NoPos,[],Ast.ALLMINUS,Ast.NOREPLACEMENT)
+	| Ast.BEFORE(a,ct) | Ast.AFTER(a,ct) ->
+	    Ast.MINUS(Ast.NoPos,[],Ast.ALLMINUS,Ast.REPLACEMENT(a,ct))
+	| Ast.BEFOREAFTER(b,a,ct) ->
+	    Ast.MINUS(Ast.NoPos,[],Ast.ALLMINUS,Ast.REPLACEMENT(b@a,ct)))
+      else Ast.CONTEXT(Ast.NoPos,befaft)
+  | _ -> failwith "convert_allminus_mcodekind: unexpected mcodekind"
 
 let pos_mcode(term,_,info,mcodekind,pos,adj) =
   (* avoids a recursion problem *)

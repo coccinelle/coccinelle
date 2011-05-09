@@ -81,12 +81,12 @@ let mcodekind mc = A.get_mcodekind mc
 let mcode_contain_plus = function
   | A.CONTEXT (_,A.NOTHING) -> false
   | A.CONTEXT _ -> true
-  | A.MINUS (_,_,_,[]) -> false
-  | A.MINUS (_,_,_,x::xs) -> true
+  | A.MINUS (_,_,_,A.NOREPLACEMENT) -> false
+  | A.MINUS (_,_,_,A.REPLACEMENT _) -> true (* repl is nonempty *)
   | A.PLUS _ -> raise Impossible
 
 let mcode_simple_minus = function
-  | A.MINUS (_,_,_,[]) -> true
+  | A.MINUS (_,_,_,A.NOREPLACEMENT) -> true
   | _ -> false
 
 
@@ -101,7 +101,7 @@ let mcode_simple_minus = function
 let minusizer =
   ("fake","fake"),
   {A.line = 0; A.column =0; A.strbef=[]; A.straft=[];},
-  (A.MINUS(A.DontCarePos,[],A.ALLMINUS,[])),
+  (A.MINUS(A.DontCarePos,[],A.ALLMINUS,A.NOREPLACEMENT)),
   []
 
 let generalize_mcode ia =

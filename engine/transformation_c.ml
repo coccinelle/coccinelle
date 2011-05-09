@@ -184,9 +184,13 @@ module XTRANS = struct
     | _ -> ()
     );
 
-    let many_count = function
+    let many_context_count = function
 	Ast_cocci.BEFORE(_,Ast_cocci.MANY) | Ast_cocci.AFTER(_,Ast_cocci.MANY)
       |	 Ast_cocci.BEFOREAFTER(_,_,Ast_cocci.MANY) -> true
+      |	_ -> false in
+
+    let many_minus_count = function
+	Ast_cocci.REPLACEMENT(_,Ast_cocci.MANY) -> true
       |	_ -> false in
 
     (match (oldmcode,mck) with
@@ -200,23 +204,39 @@ module XTRANS = struct
     | (_,   Ast_cocci.CONTEXT(_,Ast_cocci.NOTHING)) ->
 	(* can this case occur? stay with the old stuff *)
 	()
-    | (Ast_cocci.MINUS(old_pos,old_inst,old_adj,[]),
-       Ast_cocci.MINUS(new_pos,new_inst,new_adj,[]))
-	when old_pos = new_pos &&
-	  (List.mem tin.binding oldenvs or !Flag.sgrep_mode2)
+    | (Ast_cocci.MINUS(old_pos,old_inst,old_adj,Ast_cocci.NOREPLACEMENT),
+       Ast_cocci.MINUS(new_pos,new_inst,new_adj,Ast_cocci.NOREPLACEMENT))
+	when old_pos = new_pos
+	    (* not sure why the following condition is useful.
+	       should be ok to double remove even if the environments are
+	       different *)
+          (* &&
+	  (List.mem tin.binding oldenvs or !Flag.sgrep_mode2) *)
 	    (* no way to combine adjacency information, just drop one *)
       ->
         cocciinforef := Some
 	  (Ast_cocci.MINUS
-	     (old_pos,Common.union_set old_inst new_inst,old_adj,[]),
+	     (old_pos,Common.union_set old_inst new_inst,old_adj,
+	      Ast_cocci.NOREPLACEMENT),
 	   [tin.binding]);
         (if !Flag_matcher.show_misc
-        then pr2 "already tagged but only removed, so safe")
+        then pr2_once "already tagged but only removed, so safe")
+
+    (* ++ cases *)
+    | (Ast_cocci.MINUS(old_pos,old_inst,old_adj,old_modif),
+       Ast_cocci.MINUS(new_pos,new_inst,new_adj,new_modif))
+	when old_pos = new_pos &&
+	  old_modif = new_modif && many_minus_count old_modif ->
+
+          cocciinforef :=
+	    Some(Ast_cocci.MINUS(old_pos,Common.union_set old_inst new_inst,
+				 old_adj,old_modif),
+		 tin.binding::oldenvs)
 
     | (Ast_cocci.CONTEXT(old_pos,old_modif),
        Ast_cocci.CONTEXT(new_pos,new_modif))
 	when old_pos = new_pos &&
-	  old_modif = new_modif && many_count old_modif ->
+	  old_modif = new_modif && many_context_count old_modif ->
 	    (* iteration only allowed on context; no way to replace something
 	       more than once; now no need for iterable; just check a flag *)
 
@@ -311,9 +331,11 @@ module XTRANS = struct
           (fun ib ->
 	    tag_with_mck (Ast_cocci.MINUS (pos,inst,adj,any_xxs)) ib tin),
           (fun ib ->
-	    tag_with_mck (Ast_cocci.MINUS (pos,inst,adj,[])) ib tin),
+	    tag_with_mck
+	      (Ast_cocci.MINUS (pos,inst,adj,Ast_cocci.NOREPLACEMENT)) ib tin),
           (fun ib ->
-	    tag_with_mck (Ast_cocci.MINUS (pos,inst,adj,[])) ib tin),
+	    tag_with_mck
+	      (Ast_cocci.MINUS (pos,inst,adj,Ast_cocci.NOREPLACEMENT)) ib tin),
           (fun ib ->
 	    tag_with_mck (Ast_cocci.MINUS (pos,inst,adj,any_xxs)) ib tin)
         ) expr

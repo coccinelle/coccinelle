@@ -14,10 +14,9 @@ let default_token_info =
 
 (* MIXED is like CONTEXT, since sometimes MIXED things have to revert to
 CONTEXT - see insert_plus.ml *)
-type count = ONE (* + *) | MANY (* ++ *)
 
 type mcodekind =
-    MINUS       of (Ast.anything list list * token_info) ref
+    MINUS       of (Ast.anything Ast.replacement * token_info) ref
   | PLUS        of Ast.count
   | CONTEXT     of (Ast.anything Ast.befaft * token_info * token_info) ref
   | MIXED       of (Ast.anything Ast.befaft * token_info * token_info) ref
@@ -460,7 +459,7 @@ let default_befaft _ =
   MIXED(ref (Ast.NOTHING,default_token_info,default_token_info))
 let context_befaft _ =
   CONTEXT(ref (Ast.NOTHING,default_token_info,default_token_info))
-let minus_befaft _ = MINUS(ref ([],default_token_info))
+	  let minus_befaft _ = MINUS(ref (Ast.NOREPLACEMENT,default_token_info))
 
 let wrap x =
   { node = x;

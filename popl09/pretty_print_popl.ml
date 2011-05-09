@@ -23,7 +23,10 @@ let print_around printer term = function
 let mcode fn = function
     (x, _, Ast.MINUS(_,_,_,plus_stream), pos) ->
       print_string "-"; fn x;
-      Pretty_print_cocci.print_anything ">>> " plus_stream
+      (match plus_stream with
+	Ast.NOREPLACEMENT -> ()
+      | Ast.REPLACEMENT(plus_stream,_) ->
+	  Pretty_print_cocci.print_anything ">>> " plus_stream)
   | (x, _, Ast.CONTEXT(_,plus_streams), pos) ->
 	print_around fn x plus_streams
   | (x, info, Ast.PLUS _, pos) -> fn x

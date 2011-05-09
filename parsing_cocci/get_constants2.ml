@@ -465,7 +465,7 @@ let get_plus_constants =
 	     bind ((get_all_constants false).V.combiner_anything cur) prev))
       [] l in
   let process_mcodekind = function
-      Ast.MINUS(_,_,_,anythings) -> recurse anythings
+      Ast.MINUS(_,_,_,Ast.REPLACEMENT(anythings,_)) -> recurse anythings
     | Ast.CONTEXT(_,Ast.BEFORE(a,_)) -> recurse a
     | Ast.CONTEXT(_,Ast.AFTER(a,_)) -> recurse a
     | Ast.CONTEXT(_,Ast.BEFOREAFTER(a1,a2,_)) ->

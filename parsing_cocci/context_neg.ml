@@ -1002,7 +1002,8 @@ let context_neg minus plus =
 	  List.map
 	    (function m ->
 	      classify true
-		(function _ -> Ast0.MINUS(ref([],Ast0.default_token_info)))
+		(function _ ->
+		  Ast0.MINUS(ref(Ast.NOREPLACEMENT,Ast0.default_token_info)))
 		minus_table m)
 	    minus in
 	[]
@@ -1028,7 +1029,8 @@ let context_neg minus plus =
 	    collect_plus_lines p;
 	    let _ =
 	      classify true
-		(function _ -> Ast0.MINUS(ref([],Ast0.default_token_info)))
+		(function _ ->
+		  Ast0.MINUS(ref(Ast.NOREPLACEMENT,Ast0.default_token_info)))
 		minus_table m in
 	    let _ = classify false (function c -> Ast0.PLUS c) plus_table p in
 	    traverse minus_table plus_table;
@@ -1044,7 +1046,9 @@ let context_neg minus plus =
 		plus_lines := [];
 		let _ =
 		  classify true
-		    (function _ -> Ast0.MINUS(ref([],Ast0.default_token_info)))
+		    (function _ ->
+		      Ast0.MINUS(ref(Ast.NOREPLACEMENT,
+				     Ast0.default_token_info)))
 		    minus_table m in
 		loop(minus,pall)
 	      end

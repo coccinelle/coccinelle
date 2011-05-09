@@ -19,6 +19,7 @@
 - Addition of initializer list metavariables.  Thanks to Michael Stefaniuc
   for noticing the need for them.
 - Allow multiple position variables per token
+- ++ can now be associated with - code
 
 ** Features:
 - Preserve spacing before // comments when not at the beginning of a line

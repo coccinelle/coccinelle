@@ -33,6 +33,8 @@ and 'a befaft =
   | BEFOREAFTER of 'a list list * 'a list list * count
   | NOTHING
 
+and 'a replacement = REPLACEMENT of 'a list list * count | NOREPLACEMENT
+
 and 'a mcode = 'a * info * mcodekind * meta_pos list (* pos variables *)
     (* pos is an offset indicating where in the C code the mcodekind
        has an effect *)
@@ -49,7 +51,7 @@ iterated addition of code before context code where the context code is
 immediately followed by removed code. *)
 and adjacency = ALLMINUS | ADJ of int
 and mcodekind =
-    MINUS       of pos * int list * adjacency * anything list list
+    MINUS       of pos * int list * adjacency * anything replacement
   | CONTEXT     of pos * anything befaft
   | PLUS        of count
 and count = ONE (* + *) | MANY (* ++ *)

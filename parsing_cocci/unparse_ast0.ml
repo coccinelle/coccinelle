@@ -49,7 +49,9 @@ let mcodekind brackets fn x info mc =
       then fn x
       else (print_string "-";
 	    print_string lb; fn x; print_string rb);
-      U.print_anything ">>> " plus_stream
+      (match plus_stream with
+	Ast.NOREPLACEMENT -> ()
+      | Ast.REPLACEMENT(plus_stream,_) -> U.print_anything ">>> " plus_stream)
   | Ast0.CONTEXT(plus_streams) ->
       let (lb,rb) =
 	if !quiet

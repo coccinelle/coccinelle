@@ -182,7 +182,9 @@ let mcode fn (s,info,mc,pos) =
       force_newline();
       print_text "- ";
       fn s line lcol; print_pos pos;
-      print_anything plus_stream
+      (match plus_stream with
+	Ast.NOREPLACEMENT -> ()
+      |	Ast.REPLACEMENT(plus_stream,ct) -> print_anything plus_stream)
   | (true, Ast.CONTEXT(_,plus_streams)) ->
       let fn s = force_newline(); fn s line lcol; print_pos pos in
       print_around fn s plus_streams

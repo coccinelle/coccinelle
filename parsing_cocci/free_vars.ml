@@ -332,7 +332,10 @@ let cip_mcodekind r mck =
       (List.map (function l -> List.fold_left (@) [] (List.map astfvs l))
 	 anythings) in
   match mck with
-    Ast.MINUS(_,_,_,anythings) -> process_anything_list_list anythings
+    Ast.MINUS(_,_,_,replacement) ->
+      (match replacement with
+	Ast.REPLACEMENT(anythings,_) -> process_anything_list_list anythings
+      |	Ast.NOREPLACEMENT -> [])
   | Ast.CONTEXT(_,befaft) ->
       (match befaft with
 	Ast.BEFORE(ll,_) -> process_anything_list_list ll
