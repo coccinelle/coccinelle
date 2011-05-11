@@ -25,6 +25,7 @@ let mkres x e left right =
       Ast0.offset = lstart.Ast0.pos_info.Ast0.offset;} in
   let info =
     { Ast0.pos_info = pos_info;
+      (* not clear that the next two lines serve any purpose *)
       Ast0.attachable_start = check_attachable lstart.Ast0.attachable_start;
       Ast0.attachable_end = check_attachable lend.Ast0.attachable_end;
       Ast0.mcode_start = lstart.Ast0.mcode_start;
@@ -130,6 +131,16 @@ let bad_mcode (t,a,info,mcodekind,pos,adj) =
       Ast0.attachable_end = check_attachable false} in
   (t,a,new_info,mcodekind,pos,adj)
 
+let normal_mcode (t,a,info,mcodekind,pos,adj) =
+  let new_info =
+    if !in_nest_count > 0
+    then
+      {info with
+	Ast0.attachable_start = check_attachable false;
+	Ast0.attachable_end = check_attachable false}
+    else info in
+  (t,a,new_info,mcodekind,pos,adj)
+
 let get_all_start_info l =
   (List.for_all (function x -> (Ast0.get_info x).Ast0.attachable_start) l,
    List.concat (List.map (function x -> (Ast0.get_info x).Ast0.mcode_start) l))
@@ -214,11 +225,22 @@ let mkidres a b c d r = (mkres a b c d,r)
 
 let rec full_ident i =
   match Ast0.unwrap i with
-    Ast0.Id(name) as ui ->
-      let name = promote_mcode name in mkidres i ui name name (Some name)
-  | Ast0.MetaId(name,_,_)
-  | Ast0.MetaFunc(name,_,_) | Ast0.MetaLocalFunc(name,_,_) as ui ->
-      let name = promote_mcode name in mkidres i ui name name (Some name)
+    Ast0.Id(nm) ->
+      let nm = normal_mcode nm in
+      let name = promote_mcode nm in
+      mkidres i (Ast0.Id(nm)) name name (Some name)
+  | Ast0.MetaId(nm,a,b) ->
+      let nm = normal_mcode nm in
+      let name = promote_mcode nm in
+      mkidres i (Ast0.MetaId(nm,a,b)) name name (Some name)
+  | Ast0.MetaFunc(nm,a,b) ->
+      let nm = normal_mcode nm in
+      let name = promote_mcode nm in
+      mkidres i (Ast0.MetaFunc(nm,a,b)) name name (Some name)
+  | Ast0.MetaLocalFunc(nm,a,b) ->
+      let nm = normal_mcode nm in
+      let name = promote_mcode nm in
+      mkidres i (Ast0.MetaLocalFunc(nm,a,b)) name name (Some name)
   | Ast0.DisjId(starter,ids,mids,ender) ->
       let res =
 	do_disj i starter ids mids ender ident
@@ -244,77 +266,120 @@ let rec expression e =
     Ast0.Ident(id) ->
       let id = ident id in
       mkres e (Ast0.Ident(id)) id id
-  | Ast0.Constant(const) as ue ->
+  | Ast0.Constant(const) ->
+      let const = normal_mcode const in
       let ln = promote_mcode const in
-      mkres e ue ln ln
+      mkres e (Ast0.Constant(const)) ln ln
   | Ast0.FunCall(fn,lp,args,rp) ->
       let fn = expression fn in
+      let lp = normal_mcode lp in
+      let rp = normal_mcode rp in
       let args = dots is_exp_dots (Some(promote_mcode lp)) expression args in
       mkres e (Ast0.FunCall(fn,lp,args,rp)) fn (promote_mcode rp)
   | Ast0.Assignment(left,op,right,simple) ->
       let left = expression left in
+      let op = normal_mcode op in
       let right = expression right in
       mkres e (Ast0.Assignment(left,op,right,simple)) left right
   | Ast0.CondExpr(exp1,why,exp2,colon,exp3) ->
       let exp1 = expression exp1 in
+      let why = normal_mcode why in
       let exp2 = get_option expression exp2 in
+      let colon = normal_mcode colon in
       let exp3 = expression exp3 in
       mkres e (Ast0.CondExpr(exp1,why,exp2,colon,exp3)) exp1 exp3
   | Ast0.Postfix(exp,op) ->
       let exp = expression exp in
+      let op = normal_mcode op in
       mkres e (Ast0.Postfix(exp,op)) exp (promote_mcode op)
   | Ast0.Infix(exp,op) ->
       let exp = expression exp in
+      let op = normal_mcode op in
       mkres e (Ast0.Infix(exp,op)) (promote_mcode op) exp
   | Ast0.Unary(exp,op) ->
       let exp = expression exp in
+      let op = normal_mcode op in
       mkres e (Ast0.Unary(exp,op)) (promote_mcode op) exp
   | Ast0.Binary(left,op,right) ->
       let left = expression left in
+      let op = normal_mcode op in
       let right = expression right in
       mkres e (Ast0.Binary(left,op,right)) left right
   | Ast0.Nested(left,op,right) ->
       let left = expression left in
+      let op = normal_mcode op in
       let right = expression right in
       mkres e (Ast0.Nested(left,op,right)) left right
   | Ast0.Paren(lp,exp,rp) ->
+      let lp = normal_mcode lp in
+      let rp = normal_mcode rp in
       mkres e (Ast0.Paren(lp,expression exp,rp))
 	(promote_mcode lp) (promote_mcode rp)
   | Ast0.ArrayAccess(exp1,lb,exp2,rb) ->
       let exp1 = expression exp1 in
+      let lb = normal_mcode lb in
       let exp2 = expression exp2 in
+      let rb = normal_mcode rb in
       mkres e (Ast0.ArrayAccess(exp1,lb,exp2,rb)) exp1 (promote_mcode rb)
   | Ast0.RecordAccess(exp,pt,field) ->
       let exp = expression exp in
+      let pt = normal_mcode pt in
       let field = ident field in
       mkres e (Ast0.RecordAccess(exp,pt,field)) exp field
   | Ast0.RecordPtAccess(exp,ar,field) ->
       let exp = expression exp in
+      let ar = normal_mcode ar in
       let field = ident field in
       mkres e (Ast0.RecordPtAccess(exp,ar,field)) exp field
   | Ast0.Cast(lp,ty,rp,exp) ->
+      let lp = normal_mcode lp in
       let exp = expression exp in
+      let rp = normal_mcode rp in
       mkres e (Ast0.Cast(lp,typeC ty,rp,exp)) (promote_mcode lp) exp
   | Ast0.SizeOfExpr(szf,exp) ->
+      let szf = normal_mcode szf in
       let exp = expression exp in
       mkres e (Ast0.SizeOfExpr(szf,exp)) (promote_mcode szf) exp
   | Ast0.SizeOfType(szf,lp,ty,rp) ->
+      let szf = normal_mcode szf in
+      let lp = normal_mcode lp in
+      let rp = normal_mcode rp in
       mkres e (Ast0.SizeOfType(szf,lp,typeC ty,rp))
         (promote_mcode szf)  (promote_mcode rp)
   | Ast0.TypeExp(ty) ->
       let ty = typeC ty in mkres e (Ast0.TypeExp(ty)) ty ty
-  | Ast0.MetaErr(name,_,_) | Ast0.MetaExpr(name,_,_,_,_)
-  | Ast0.MetaExprList(name,_,_) as ue ->
-      let ln = promote_mcode name in mkres e ue ln ln
+  | Ast0.MetaErr(name,a,b) ->
+      let name = normal_mcode name in
+      let ln = promote_mcode name in
+      mkres e (Ast0.MetaErr(name,a,b)) ln ln
+  | Ast0.MetaExpr(name,a,b,c,d) ->
+      let name = normal_mcode name in
+      let ln = promote_mcode name in
+      mkres e (Ast0.MetaExpr(name,a,b,c,d)) ln ln
+  | Ast0.MetaExprList(name,a,b) ->
+      let name = normal_mcode name in
+      let ln = promote_mcode name in
+      mkres e (Ast0.MetaExprList(name,a,b)) ln ln
   | Ast0.EComma(cm) ->
       (*let cm = bad_mcode cm in*) (* why was this bad??? *)
+      let cm = normal_mcode cm in
       let ln = promote_mcode cm in
       mkres e (Ast0.EComma(cm)) ln ln
   | Ast0.DisjExpr(starter,exps,mids,ender) ->
       do_disj e starter exps mids ender expression
 	(fun starter exps mids ender -> Ast0.DisjExpr(starter,exps,mids,ender))
   | Ast0.NestExpr(starter,exp_dots,ender,whencode,multi) ->
-      let exp_dots = dots is_exp_dots None expression exp_dots in
+      (* See explanation on Nest *)
+	let wrapper f =
+	  match Ast0.get_mcode_mcodekind starter with
+	    Ast0.MINUS _ ->
+	      in_nest_count := !in_nest_count + 1;
+	      let res = f() in
+	      in_nest_count := !in_nest_count - 1;
+	      res
+	  | _ -> f() in
+      let exp_dots =
+	wrapper (function _ -> dots is_exp_dots None expression exp_dots) in
       let starter = bad_mcode starter in
       let ender = bad_mcode ender in
       mkres e (Ast0.NestExpr(starter,exp_dots,ender,whencode,multi))
@@ -346,63 +411,92 @@ and expression_dots x = dots is_exp_dots None expression x
 and typeC t =
   match Ast0.unwrap t with
     Ast0.ConstVol(cv,ty) ->
+      let cv = normal_mcode cv in
       let ty = typeC ty in
       mkres t (Ast0.ConstVol(cv,ty)) (promote_mcode cv) ty
-  | Ast0.BaseType(ty,strings) as ut ->
+  | Ast0.BaseType(ty,strings) ->
+      let strings = List.map normal_mcode strings in
       let first = List.hd strings in
       let last = List.hd (List.rev strings) in
-      mkres t ut (promote_mcode first) (promote_mcode last)
-  | Ast0.Signed(sgn,None) as ut ->
-      mkres t ut (promote_mcode sgn) (promote_mcode sgn)
+      mkres t (Ast0.BaseType(ty,strings))
+	(promote_mcode first) (promote_mcode last)
+  | Ast0.Signed(sgn,None) ->
+      let sgn = normal_mcode sgn in
+      mkres t (Ast0.Signed(sgn,None)) (promote_mcode sgn) (promote_mcode sgn)
   | Ast0.Signed(sgn,Some ty) ->
+      let sgn = normal_mcode sgn in
       let ty = typeC ty in
       mkres t (Ast0.Signed(sgn,Some ty)) (promote_mcode sgn) ty
   | Ast0.Pointer(ty,star) ->
       let ty = typeC ty in
+      let star = normal_mcode star in
       mkres t (Ast0.Pointer(ty,star)) ty (promote_mcode star)
   | Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
       let ty = typeC ty in
+      let lp1 = normal_mcode lp1 in
+      let star = normal_mcode star in
+      let rp1 = normal_mcode rp1 in
+      let lp2 = normal_mcode lp2 in
       let params = parameter_list (Some(promote_mcode lp2)) params in
+      let rp2 = normal_mcode rp2 in
       mkres t (Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2))
 	ty (promote_mcode rp2)
   | Ast0.FunctionType(Some ty,lp1,params,rp1) ->
       let ty = typeC ty in
+      let lp1 = normal_mcode lp1 in
       let params = parameter_list (Some(promote_mcode lp1)) params in
+      let rp1 = normal_mcode rp1 in
       let res = Ast0.FunctionType(Some ty,lp1,params,rp1) in
       mkres t res ty (promote_mcode rp1)
   | Ast0.FunctionType(None,lp1,params,rp1) ->
+      let lp1 = normal_mcode lp1 in
       let params = parameter_list (Some(promote_mcode lp1)) params in
+      let rp1 = normal_mcode rp1 in
       let res = Ast0.FunctionType(None,lp1,params,rp1) in
       mkres t res (promote_mcode lp1) (promote_mcode rp1)
   | Ast0.Array(ty,lb,size,rb) ->
       let ty = typeC ty in
+      let lb = normal_mcode lb in
+      let rb = normal_mcode rb in
       mkres t (Ast0.Array(ty,lb,get_option expression size,rb))
 	ty (promote_mcode rb)
   | Ast0.EnumName(kind,Some name) ->
+      let kind = normal_mcode kind in
       let name = ident name in
       mkres t (Ast0.EnumName(kind,Some name)) (promote_mcode kind) name
   | Ast0.EnumName(kind,None) ->
+      let kind = normal_mcode kind in
       let mc = promote_mcode kind in
       mkres t (Ast0.EnumName(kind,None)) mc mc
   | Ast0.EnumDef(ty,lb,ids,rb) ->
       let ty = typeC ty in
+      let lb = normal_mcode lb in
       let ids = dots is_exp_dots (Some(promote_mcode lb)) expression ids in
+      let rb = normal_mcode rb in
       mkres t (Ast0.EnumDef(ty,lb,ids,rb)) ty (promote_mcode rb)
   | Ast0.StructUnionName(kind,Some name) ->
+      let kind = normal_mcode kind in
       let name = ident name in
       mkres t (Ast0.StructUnionName(kind,Some name)) (promote_mcode kind) name
   | Ast0.StructUnionName(kind,None) ->
+      let kind = normal_mcode kind in
       let mc = promote_mcode kind in
       mkres t (Ast0.StructUnionName(kind,None)) mc mc
   | Ast0.StructUnionDef(ty,lb,decls,rb) ->
       let ty = typeC ty in
+      let lb = normal_mcode lb in
       let decls =
 	dots is_decl_dots (Some(promote_mcode lb)) declaration decls in
+      let rb = normal_mcode rb in
       mkres t (Ast0.StructUnionDef(ty,lb,decls,rb)) ty (promote_mcode rb)
-  | Ast0.TypeName(name) as ut ->
-      let ln = promote_mcode name in mkres t ut ln ln
-  | Ast0.MetaType(name,_) as ut ->
-      let ln = promote_mcode name in mkres t ut ln ln
+  | Ast0.TypeName(name) ->
+      let name = normal_mcode name in
+      let ln = promote_mcode name in
+      mkres t (Ast0.TypeName(name)) ln ln
+  | Ast0.MetaType(name,a) ->
+      let name = normal_mcode name in
+      let ln = promote_mcode name in
+      mkres t (Ast0.MetaType(name,a)) ln ln
   | Ast0.DisjType(starter,types,mids,ender) ->
       do_disj t starter types mids ender typeC
 	(fun starter types mids ender ->
@@ -424,38 +518,58 @@ and is_decl_dots s =
 
 and declaration d =
   match Ast0.unwrap d with
-    (Ast0.MetaDecl(name,_) | Ast0.MetaField(name,_)
-  | Ast0.MetaFieldList(name,_,_)) as up ->
-      let ln = promote_mcode name in mkres d up ln ln
+    Ast0.MetaDecl(name,a) ->
+      let name = normal_mcode name in
+      let ln = promote_mcode name in
+      mkres d (Ast0.MetaDecl(name,a)) ln ln
+  | Ast0.MetaField(name,a) ->
+      let name = normal_mcode name in
+      let ln = promote_mcode name in
+      mkres d (Ast0.MetaField(name,a)) ln ln
+  | Ast0.MetaFieldList(name,a,b) ->
+      let name = normal_mcode name in
+      let ln = promote_mcode name in
+      mkres d (Ast0.MetaFieldList(name,a,b)) ln ln
   | Ast0.Init(stg,ty,id,eq,exp,sem) ->
       let ty = typeC ty in
       let id = ident id in
+      let eq = normal_mcode eq in
       let exp = initialiser exp in
+      let sem = normal_mcode sem in
       (match stg with
 	None ->
 	  mkres d (Ast0.Init(stg,ty,id,eq,exp,sem)) ty (promote_mcode sem)
       | Some x ->
+	  let stg = Some (normal_mcode x) in
 	  mkres d (Ast0.Init(stg,ty,id,eq,exp,sem))
 	    (promote_mcode x) (promote_mcode sem))
   | Ast0.UnInit(stg,ty,id,sem) ->
       let ty = typeC ty in
       let id = ident id in
+      let sem = normal_mcode sem in
       (match stg with
 	None ->
 	  mkres d (Ast0.UnInit(stg,ty,id,sem)) ty (promote_mcode sem)
       | Some x ->
+	  let stg = Some (normal_mcode x) in
 	  mkres d (Ast0.UnInit(stg,ty,id,sem))
 	    (promote_mcode x) (promote_mcode sem))
   | Ast0.MacroDecl(name,lp,args,rp,sem) ->
       let name = ident name in
+      let lp = normal_mcode lp in
       let args = dots is_exp_dots (Some(promote_mcode lp)) expression args in
+      let rp = normal_mcode rp in
+      let sem = normal_mcode sem in
       mkres d (Ast0.MacroDecl(name,lp,args,rp,sem)) name (promote_mcode sem)
   | Ast0.TyDecl(ty,sem) ->
       let ty = typeC ty in
+      let sem = normal_mcode sem in
       mkres d (Ast0.TyDecl(ty,sem)) ty (promote_mcode sem)
   | Ast0.Typedef(stg,ty,id,sem) ->
+      let stg = normal_mcode stg in
       let ty = typeC ty in
       let id = typeC id in
+      let sem = normal_mcode sem in
       mkres d (Ast0.Typedef(stg,ty,id,sem))
 	(promote_mcode stg) (promote_mcode sem)
   | Ast0.DisjDecl(starter,decls,mids,ender) ->
@@ -483,28 +597,40 @@ and is_init_dots i =
 
 and initialiser i =
   match Ast0.unwrap i with
-    (Ast0.MetaInit(name,_) | Ast0.MetaInitList(name,_,_)) as ut ->
-      let ln = promote_mcode name in mkres i ut ln ln
+    Ast0.MetaInit(name,a) ->
+      let name = normal_mcode name in
+      let ln = promote_mcode name in
+      mkres i (Ast0.MetaInit(name,a)) ln ln
+  | Ast0.MetaInitList(name,a,b) ->
+      let name = normal_mcode name in
+      let ln = promote_mcode name in
+      mkres i (Ast0.MetaInitList(name,a,b)) ln ln
   | Ast0.InitExpr(exp) ->
       let exp = expression exp in
       mkres i (Ast0.InitExpr(exp)) exp exp
   | Ast0.InitList(lb,initlist,rb,ordered) ->
+      let lb = normal_mcode lb in
       let initlist =
 	dots is_init_dots (Some(promote_mcode lb)) initialiser initlist in
+      let rb = normal_mcode rb in
       mkres i (Ast0.InitList(lb,initlist,rb,ordered))
 	(promote_mcode lb) (promote_mcode rb)
   | Ast0.InitGccExt(designators,eq,ini) ->
       let (delims,designators) = (* non empty due to parsing *)
 	List.split (List.map designator designators) in
+      let eq = normal_mcode eq in
       let ini = initialiser ini in
       mkres i (Ast0.InitGccExt(designators,eq,ini))
 	(promote_mcode (List.hd delims)) ini
   | Ast0.InitGccName(name,eq,ini) ->
       let name = ident name in
+      let eq = normal_mcode eq in
       let ini = initialiser ini in
       mkres i (Ast0.InitGccName(name,eq,ini)) name ini
-  | Ast0.IComma(cm) as up ->
-      let ln = promote_mcode cm in mkres i up ln ln
+  | Ast0.IComma(cm) ->
+      let cm = normal_mcode cm in
+      let ln = promote_mcode cm in
+      mkres i (Ast0.IComma(cm)) ln ln
   | Ast0.Idots(dots,whencode) ->
       let dots = bad_mcode dots in
       let ln = promote_mcode dots in
@@ -518,10 +644,16 @@ and initialiser i =
 
 and designator = function
     Ast0.DesignatorField(dot,id) ->
+      let dot = normal_mcode dot in
       (dot,Ast0.DesignatorField(dot,ident id))
   | Ast0.DesignatorIndex(lb,exp,rb) ->
+      let lb = normal_mcode lb in
+      let rb = normal_mcode rb in
       (lb,Ast0.DesignatorIndex(lb,expression exp,rb))
   | Ast0.DesignatorRange(lb,min,dots,max,rb) ->
+      let lb = normal_mcode lb in
+      let dots = normal_mcode dots in
+      let rb = normal_mcode rb in
       (lb,Ast0.DesignatorRange(lb,expression min,dots,expression max,rb))
 
 and initialiser_list prev = dots is_init_dots prev initialiser
@@ -546,10 +678,17 @@ and parameterTypeDef p =
       let ty = typeC ty in mkres p (Ast0.Param(ty,Some id)) ty id
   | Ast0.Param(ty,None) ->
       let ty = typeC ty in mkres p (Ast0.Param(ty,None)) ty ty
-  | (Ast0.MetaParam(name,_) | Ast0.MetaParamList(name,_,_)) as up ->
-      let ln = promote_mcode name in mkres p up ln ln
+  | Ast0.MetaParam(name,a) ->
+      let name = normal_mcode name in
+      let ln = promote_mcode name in
+      mkres p (Ast0.MetaParam(name,a)) ln ln
+  | Ast0.MetaParamList(name,a,b) ->
+      let name = normal_mcode name in
+      let ln = promote_mcode name in
+      mkres p (Ast0.MetaParamList(name,a,b)) ln ln
   | Ast0.PComma(cm) ->
       (*let cm = bad_mcode cm in*) (* why was this bad??? *)
+      let cm = normal_mcode cm in
       let ln = promote_mcode cm in
       mkres p (Ast0.PComma(cm)) ln ln
   | Ast0.Pdots(dots) ->
@@ -585,6 +724,7 @@ let rec define_param p =
       let id = ident id in mkres p (Ast0.DParam(id)) id id
   | Ast0.DPComma(cm) ->
       (*let cm = bad_mcode cm in*) (* why was this bad??? *)
+      let cm = normal_mcode cm in
       let ln = promote_mcode cm in
       mkres p (Ast0.DPComma(cm)) ln ln
   | Ast0.DPdots(dots) ->
@@ -606,7 +746,9 @@ let define_parameters x id =
   match Ast0.unwrap x with
     Ast0.NoParams -> (x,id) (* no info, should be ignored *)
   | Ast0.DParams(lp,dp,rp) ->
+      let lp = normal_mcode lp in
       let dp = dots is_define_param_dots None define_param dp in
+      let rp = normal_mcode rp in
       let l = promote_mcode lp in
       let r = promote_mcode rp in
       (mkres x (Ast0.DParams(lp,dp,rp)) l r, r)
@@ -627,22 +769,32 @@ let rec statement s =
 	let left = promote_to_statement_start decl bef in
 	mkres s (Ast0.Decl((Ast0.get_info left,bef),decl)) decl decl
     | Ast0.Seq(lbrace,body,rbrace) ->
+	let lbrace = normal_mcode lbrace in
 	let body =
 	  dots is_stm_dots (Some(promote_mcode lbrace)) statement body in
+	let rbrace = normal_mcode rbrace in
 	mkres s (Ast0.Seq(lbrace,body,rbrace))
 	  (promote_mcode lbrace) (promote_mcode rbrace)
     | Ast0.ExprStatement(exp,sem) ->
 	let exp = expression exp in
+	let sem = normal_mcode sem in
 	mkres s (Ast0.ExprStatement(exp,sem)) exp (promote_mcode sem)
     | Ast0.IfThen(iff,lp,exp,rp,branch,(_,aft)) ->
+	let iff = normal_mcode iff in
+	let lp = normal_mcode lp in
 	let exp = expression exp in
+	let rp = normal_mcode rp in
 	let branch = statement branch in
 	let right = promote_to_statement branch aft in
 	mkres s (Ast0.IfThen(iff,lp,exp,rp,branch,(Ast0.get_info right,aft)))
 	  (promote_mcode iff) right
     | Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2,(_,aft)) ->
+	let iff = normal_mcode iff in
+	let lp = normal_mcode lp in
 	let exp = expression exp in
+	let rp = normal_mcode rp in
 	let branch1 = statement branch1 in
+	let els = normal_mcode els in
 	let branch2 = statement branch2 in
 	let right = promote_to_statement branch2 aft in
 	mkres s
@@ -650,20 +802,32 @@ let rec statement s =
 	    (Ast0.get_info right,aft)))
 	  (promote_mcode iff) right
     | Ast0.While(wh,lp,exp,rp,body,(_,aft)) ->
+	let wh = normal_mcode wh in
+	let lp = normal_mcode lp in
 	let exp = expression exp in
+	let rp = normal_mcode rp in
 	let body = statement body in
 	let right = promote_to_statement body aft in
 	mkres s (Ast0.While(wh,lp,exp,rp,body,(Ast0.get_info right,aft)))
 	  (promote_mcode wh) right
     | Ast0.Do(d,body,wh,lp,exp,rp,sem) ->
+	let d = normal_mcode d in
 	let body = statement body in
+	let wh = normal_mcode wh in
+	let lp = normal_mcode lp in
 	let exp = expression exp in
+	let rp = normal_mcode rp in
 	mkres s (Ast0.Do(d,body,wh,lp,exp,rp,sem))
 	  (promote_mcode d) (promote_mcode sem)
     | Ast0.For(fr,lp,exp1,sem1,exp2,sem2,exp3,rp,body,(_,aft)) ->
+	let fr = normal_mcode fr in
+	let lp = normal_mcode lp in
 	let exp1 = get_option expression exp1 in
+	let sem1 = normal_mcode sem1 in
 	let exp2 = get_option expression exp2 in
+	let sem2 = normal_mcode sem2 in
 	let exp3 = get_option expression exp3 in
+	let rp = normal_mcode rp in
 	let body = statement body in
 	let right = promote_to_statement body aft in
 	mkres s (Ast0.For(fr,lp,exp1,sem1,exp2,sem2,exp3,rp,body,
@@ -671,13 +835,19 @@ let rec statement s =
 	  (promote_mcode fr) right
     | Ast0.Iterator(nm,lp,args,rp,body,(_,aft)) ->
 	let nm = ident nm in
+	let lp = normal_mcode lp in
 	let args = dots is_exp_dots (Some(promote_mcode lp)) expression args in
+	let rp = normal_mcode rp in
 	let body = statement body in
 	let right = promote_to_statement body aft in
 	mkres s (Ast0.Iterator(nm,lp,args,rp,body,(Ast0.get_info right,aft)))
 	  nm right
     | Ast0.Switch(switch,lp,exp,rp,lb,decls,cases,rb) ->
+	let switch = normal_mcode switch in
+	let lp = normal_mcode lp in
 	let exp = expression exp in
+	let rp = normal_mcode rp in
+	let lb = normal_mcode lb in
 	let decls =
 	  dots is_stm_dots (Some(promote_mcode lb))
 	    statement decls in
@@ -688,29 +858,45 @@ let rec statement s =
 	    else None (* not sure this is right, but not sure the case can
 			 arise either *))
 	    case_line cases in
+	let rb = normal_mcode rb in
 	mkres s
 	  (Ast0.Switch(switch,lp,exp,rp,lb,decls,cases,rb))
 	  (promote_mcode switch) (promote_mcode rb)
-    | Ast0.Break(br,sem) as us ->
-	mkres s us (promote_mcode br) (promote_mcode sem)
-    | Ast0.Continue(cont,sem) as us ->
-	mkres s us (promote_mcode cont) (promote_mcode sem)
+    | Ast0.Break(br,sem) ->
+	let br = normal_mcode br in
+	let sem = normal_mcode sem in
+	mkres s (Ast0.Break(br,sem)) (promote_mcode br) (promote_mcode sem)
+    | Ast0.Continue(cont,sem) ->
+	let cont = normal_mcode cont in
+	let sem = normal_mcode sem in
+	mkres s (Ast0.Continue(cont,sem))
+	  (promote_mcode cont) (promote_mcode sem)
     | Ast0.Label(l,dd) ->
 	let l = ident l in
+	let dd = normal_mcode dd in
 	mkres s (Ast0.Label(l,dd)) l (promote_mcode dd)
     | Ast0.Goto(goto,id,sem) ->
+	let goto = normal_mcode goto in
 	let id = ident id in
+	let sem = normal_mcode sem in
 	mkres s (Ast0.Goto(goto,id,sem))
 	  (promote_mcode goto) (promote_mcode sem)
-    | Ast0.Return(ret,sem) as us ->
-	mkres s us (promote_mcode ret) (promote_mcode sem)
+    | Ast0.Return(ret,sem) ->
+	let ret = normal_mcode ret in
+	let sem = normal_mcode sem in
+	mkres s (Ast0.Return(ret,sem)) (promote_mcode ret) (promote_mcode sem)
     | Ast0.ReturnExpr(ret,exp,sem) ->
+	let ret = normal_mcode ret in
 	let exp = expression exp in
+	let sem = normal_mcode sem in
 	mkres s (Ast0.ReturnExpr(ret,exp,sem))
 	  (promote_mcode ret) (promote_mcode sem)
-    | Ast0.MetaStmt(name,_)
-    | Ast0.MetaStmtList(name,_) as us ->
-	let ln = promote_mcode name in mkres s us ln ln
+    | Ast0.MetaStmt(name,a) ->
+	let ln = promote_mcode name in
+	mkres s (Ast0.MetaStmt(name,a)) ln ln
+    | Ast0.MetaStmtList(name,a) ->
+	let ln = promote_mcode name in
+	mkres s (Ast0.MetaStmtList(name,a)) ln ln
     | Ast0.Exp(exp) ->
 	let exp = expression exp in
 	mkres s (Ast0.Exp(exp)) exp exp
@@ -781,9 +967,13 @@ let rec statement s =
 	    (function Ast0.FType(ty) -> Ast0.FType(typeC ty) | x -> x)
 	    fninfo in
 	let name = ident name in
+	let lp = normal_mcode lp in
 	let params = parameter_list (Some(promote_mcode lp)) params in
+	let rp = normal_mcode rp in
+	let lbrace = normal_mcode lbrace in
 	let body =
 	  dots is_stm_dots (Some(promote_mcode lbrace)) statement body in
+	let rbrace = normal_mcode rbrace in
 	let left =
 	(* cases on what is leftmost *)
 	  match fninfo with
@@ -818,11 +1008,15 @@ let rec statement s =
 	    mkres s res (promote_mcode attr) (promote_mcode rbrace))
 
     | Ast0.Include(inc,stm) ->
+	let inc = normal_mcode inc in
+	let stm = normal_mcode stm in
 	mkres s (Ast0.Include(inc,stm)) (promote_mcode inc) (promote_mcode stm)
     | Ast0.Undef(def,id) ->
+	let def = normal_mcode def in
 	let id = ident id in
 	mkres s (Ast0.Undef(def,id)) (promote_mcode def) id
     | Ast0.Define(def,id,params,body) ->
+	let def = normal_mcode def in
 	let (id,right) = full_ident id in
 	(match right with
 	  None -> failwith "no disj id for #define"
@@ -845,10 +1039,14 @@ let rec statement s =
 and case_line c =
   match Ast0.unwrap c with
     Ast0.Default(def,colon,code) ->
+      let def = normal_mcode def in
+      let colon = normal_mcode colon in
       let code = dots is_stm_dots (Some(promote_mcode colon)) statement code in
       mkres c (Ast0.Default(def,colon,code)) (promote_mcode def) code
   | Ast0.Case(case,exp,colon,code) ->
+      let case = normal_mcode case in
       let exp = expression exp in
+      let colon = normal_mcode colon in
       let code = dots is_stm_dots (Some(promote_mcode colon)) statement code in
       mkres c (Ast0.Case(case,exp,colon,code)) (promote_mcode case) code
   | Ast0.DisjCase(starter,case_lines,mids,ender) ->

@@ -945,15 +945,18 @@ and after_m2 ((f2,infom2,m2) as x2) rest
 let merge_one : (minus_join_point * Ast0.info * 'a) list *
     (Ast0.info * Ast.count * Ast.anything list list) list -> unit =
       function (m,p) ->
-  (*
+  (**)
   Printf.printf "minus code\n";
   List.iter
     (function (_,info,_) ->
-      Printf.printf "start %d end %d real_start %d real_end %d\n"
+      Printf.printf
+	"start %d end %d real_start %d real_end %d attachable start %b attachable end %b\n"
 	info.Ast0.pos_info.Ast0.logical_start
 	info.Ast0.pos_info.Ast0.logical_end
 	info.Ast0.pos_info.Ast0.line_start
-	info.Ast0.pos_info.Ast0.line_end)
+	info.Ast0.pos_info.Ast0.line_end
+	info.Ast0.attachable_start
+	info.Ast0.attachable_end)
     m;
   Printf.printf "plus code\n";
   List.iter
@@ -966,7 +969,7 @@ let merge_one : (minus_join_point * Ast0.info * 'a) list *
       Pretty_print_cocci.print_anything "" p;
       Format.print_newline())
     p;
-  *)
+  (**)
   match (m,p) with
     (_,[]) -> ()
   | (m1::m2::restm,p) -> before_m1 m1 m2 restm p

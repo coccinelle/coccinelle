@@ -79,14 +79,11 @@ let inline_mcodes =
 		    Ast0.MINUS(mreplacements) ->
 		      (match !mreplacements with
 			(Ast.NOREPLACEMENT,tokeninfo) ->
-			  Printf.printf "attach bef 1 %s\n" (it2c befit);
 			  mreplacements :=
 			    (Ast.REPLACEMENT(bef,befit),beforeinfo)
 		      |	(Ast.REPLACEMENT(anythings,it),tokeninfo) ->
 			  let (newbef,newinfo) =
 			    concat bef beforeinfo anythings tokeninfo in
-			  Printf.printf "attach bef 2 %s %s\n"
-			    (it2c befit) (it2c it);
 			  let it = Ast.lub_count befit it in
 			  mreplacements :=
 			    (Ast.REPLACEMENT(newbef,it),newinfo))
@@ -123,14 +120,11 @@ let inline_mcodes =
 		    Ast0.MINUS(mreplacements) ->
 		      (match !mreplacements with
 			(Ast.NOREPLACEMENT,tokeninfo) ->
-			  Printf.printf "attach aft 1 %s\n" (it2c aftit);
 			  mreplacements :=
 			    (Ast.REPLACEMENT(aft,aftit),afterinfo)
 		      |	(Ast.REPLACEMENT(anythings,it),tokeninfo) ->
 			  let (newaft,newinfo) =
 			    concat aft afterinfo anythings tokeninfo in
-			  Printf.printf "attach aft 2 %s %s\n"
-			    (it2c aftit) (it2c it);
 			  let it = Ast.lub_count aftit it in
 			  mreplacements :=
 			    (Ast.REPLACEMENT(newaft,it),newinfo))
