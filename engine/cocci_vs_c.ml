@@ -1317,12 +1317,14 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
       (match A.unwrap exps with
 	A.DOTS [exp] ->
 	  X.cocciExpExp expression exp eb >>= (fun exp eb ->
+          X.distrf_e (dots2metavar starter) eb >>= (fun mcode eb ->
             return (
             (A.NestExpr
-	       (starter,A.rewrap exps (A.DOTS [exp]),ender,None,true)) +> wa,
+	       (metavar2dots mcode,
+		A.rewrap exps (A.DOTS [exp]),ender,None,true)) +> wa,
             eb
             )
-	  )
+	  ))
       |	_ ->
 	  failwith
 	    "for nestexpr, only handling the case with dots and only one exp")

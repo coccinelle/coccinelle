@@ -26,6 +26,8 @@
 - Adjusted parsing of endif to put it after jump code
 - Improve warning message when using -use_cache
 - Allow - nest expressions
+- More helpful initial value for exported variables in python
+- Support - on expression nests
 
 ** Bugfix:
 - Corrected parsing of script strings delimited by a single quote.  Thanks

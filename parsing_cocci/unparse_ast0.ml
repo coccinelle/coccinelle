@@ -3,7 +3,7 @@ module Ast = Ast_cocci
 module Ast0 = Ast0_cocci
 module U = Pretty_print_cocci
 
-let quiet = ref true (* true = no decoration on - context, etc *)
+let quiet = ref false (* true = no decoration on - context, etc *)
 
 let full_ids = ref false (* true = print rule name as well *)
 
