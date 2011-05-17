@@ -1,0 +1,5 @@
+coccinelle (1.0.0-rc1~1104npalix1) natty; urgency=low
+
+  * New release 1.0.0-rc1
+
+ -- Nicolas Palix <nicolas.palix@gmail.com>  Tue, 17 May 2011 15:44:21 +0200
