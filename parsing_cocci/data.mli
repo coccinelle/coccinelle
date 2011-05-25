@@ -49,7 +49,7 @@ val add_virt_id_meta_found: (string -> string -> unit) ref
 val add_virt_id_meta_not_found:
     (Ast_cocci.meta_name -> Ast0_cocci.pure -> unit) ref
 
-val add_fresh_id_meta: (Ast_cocci.meta_name -> unit) ref
+val add_fresh_id_meta: (Ast_cocci.meta_name -> Ast_cocci.seed -> unit) ref
 
 val add_type_meta: (Ast_cocci.meta_name -> Ast0_cocci.pure -> unit) ref
 

@@ -74,7 +74,9 @@ let process_tree inherited_env l =
 			       str
 			   | _ -> failwith "bad id value")
 			 with
-			   Not_found -> failwith "fresh: no binding for meta")
+			   Not_found ->
+			     failwith
+			       ("fresh: no binding for meta "^(Dumper.dump id)))
 		   seed in
 	    string2val(String.concat "" strings)))
       all_fresh in

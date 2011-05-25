@@ -366,7 +366,7 @@ let match_maker checks_needed context_required whencode_allowed =
     let ident r k i =
       bind (bind (pure_mcodekind (Ast0.get_mcodekind i)) (k i))
 	(match Ast0.unwrap i with
-	  Ast0.MetaId(name,_,pure) | Ast0.MetaFunc(name,_,pure)
+	  Ast0.MetaId(name,_,_,pure) | Ast0.MetaFunc(name,_,pure)
 	| Ast0.MetaLocalFunc(name,_,pure) -> pure
 	| _ -> Ast0.Impure) in
 
@@ -472,7 +472,7 @@ let match_maker checks_needed context_required whencode_allowed =
 
   let rec match_ident pattern id =
     match Ast0.unwrap pattern with
-      Ast0.MetaId(name,_,pure) ->
+      Ast0.MetaId(name,_,_,pure) ->
 	(add_pure_binding name pure pure_sp_code.VT0.combiner_rec_ident
 	  (function id -> Ast0.IdentTag id) id)
     | Ast0.MetaFunc(name,_,pure) -> failwith "metafunc not supported"
@@ -1526,7 +1526,7 @@ let instantiate bindings mv_bindings =
   let identfn r k e =
     let e = k e in
     match Ast0.unwrap e with
-      Ast0.MetaId(name,constraints,pure) ->
+      Ast0.MetaId(name,constraints,seed,pure) ->
 	(rebuild_mcode None).VT0.rebuilder_rec_ident
 	  (match lookup name bindings mv_bindings with
 	    Common.Left(Ast0.IdentTag(id)) -> id
@@ -1534,7 +1534,7 @@ let instantiate bindings mv_bindings =
 	  | Common.Right(new_mv) ->
 	      Ast0.rewrap e
 		(Ast0.MetaId
-		   (Ast0.set_mcode_data new_mv name,constraints,pure)))
+		   (Ast0.set_mcode_data new_mv name,constraints,seed,pure)))
     | Ast0.MetaFunc(name,_,pure) -> failwith "metafunc not supported"
     | Ast0.MetaLocalFunc(name,_,pure) -> failwith "metalocalfunc not supported"
     | _ -> e in

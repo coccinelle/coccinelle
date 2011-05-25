@@ -389,6 +389,7 @@ and arg_expression e =
 
 and  unaryOp = function
     Ast.GetRef -> print_string "&"
+  | Ast.GetRefLabel -> print_string "&&"
   | Ast.DeRef -> print_string "*"
   | Ast.UnPlus -> print_string "+"
   | Ast.UnMinus -> print_string "-"

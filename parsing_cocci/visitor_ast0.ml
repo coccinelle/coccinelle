@@ -117,9 +117,9 @@ let visitor mode bind option_default
 	(match Ast0.unwrap i with
 	  Ast0.Id(name) ->
 	    let (n,name) = string_mcode name in (n,Ast0.Id(name))
-	| Ast0.MetaId(name,constraints,pure) ->
+	| Ast0.MetaId(name,constraints,seed,pure) ->
 	    let (n,name) = meta_mcode name in
-	    (n,Ast0.MetaId(name,constraints,pure))
+	    (n,Ast0.MetaId(name,constraints,seed,pure))
 	| Ast0.MetaFunc(name,constraints,pure) ->
 	    let (n,name) = meta_mcode name in
 	    (n,Ast0.MetaFunc(name,constraints,pure))

@@ -46,7 +46,7 @@ the semantic patch does not check the validity of this code; any errors are
 first detected when the code is executed.  Furthermore, \texttt{@} should
 not be use in this code.  Spatch scans the script code for the next
 \texttt{@} and considers that to be the beginning of the next rule, even if
-\texttt{@} occurs within e.g., a string or a comment.
+\texttt{@} occurs within e.g., a comment.
 
 \texttt{virtual} keyword is used to declare virtual rules. Virtual
 rules may be subsequently used as a dependency for the rules in the
@@ -204,6 +204,10 @@ well, where it represents a variable.
 It is possible to specify that an expression list or a parameter list
 metavariable should match a specific number of expressions or parameters.
 
+It is possible to specify some information about the definition of a fresh
+identifier.  See the wiki.
+
+
 \begin{grammar}
   \RULE{\rt{ids}}
   \CASE{\NT{COMMA\_LIST}\mth{(}\NT{pmid}\mth{)}}
@@ -275,6 +279,55 @@ rule that declares an identifier metavariable with the name {\tt
   virtual.alloc}, then the command line could contain {\tt -D
   alloc=kmalloc}.  There should not be space around the {\tt =}.  An
 example is in {\tt demos/vm.cocci} and {\tt demos/vm.c}.
+
+
+\paragraph*{Warning:} Each metavariable declaration causes the declared
+metavariables to be immediately usable, without any inheritance
+indication.  Thus the following are correct:
+
+\begin{quote}
+\begin{verbatim}
+@@
+type r.T;
+T x;
+@@
+
+[...] // some semantic patch code
+\end{verbatim}
+\end{quote}
+
+\begin{quote}
+\begin{verbatim}
+@@
+r.T x;
+type r.T;
+@@
+
+[...] // some semantic patch code
+\end{verbatim}
+\end{quote}
+
+\noindent
+But the following is not correct:
+
+\begin{quote}
+\begin{verbatim}
+@@
+type r.T;
+r.T x;
+@@
+
+[...] // some semantic patch code
+\end{verbatim}
+\end{quote}
+
+This applies to position variables, type metavariables, identifier
+metavariables that may be used in specifying a structure type, and
+metavariables used in the initialization of a fresh identifier.  In the
+case of a structure type, any identifier metavariable indeed has to be
+declared as an identifier metavariable in advance.  The syntax does not
+permit {\tt r.n} as the name of a structure or union type in such a
+declaration.
 
 \section{Metavariables for scripts}
 
@@ -970,6 +1023,12 @@ in a concise way.
   \CASE{"\any{[\^{}"]}"}
 \end{grammar}
 
+\section{Comments}
+
+A \verb+//+ or \verb+/* */+ comment that is annotated with + in the
+leftmost column is considered to be added code.  A \verb+//+ or
+\verb+/* */+ comment wthout such an annotation is considered to be a
+comment about the SmPL code, and thus is not matched in the C code.
 
 %%% Local Variables:
 %%% mode: LaTeX

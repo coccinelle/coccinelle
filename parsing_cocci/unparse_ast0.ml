@@ -131,7 +131,7 @@ let rec ident i =
     (function _ ->
       match Ast0.unwrap i with
 	Ast0.Id(name) -> mcode print_string name
-      | Ast0.MetaId(name,_,_) -> mcode print_meta name
+      | Ast0.MetaId(name,_,_,_) -> mcode print_meta name
       | Ast0.MetaFunc(name,_,_) -> mcode print_meta name
       | Ast0.MetaLocalFunc(name,_,_) -> mcode print_meta name
       | Ast0.DisjId(_,id_list,_,_) -> do_disj id_list ident

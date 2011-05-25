@@ -66,7 +66,7 @@ let add_virt_id_meta_not_found:
     (Ast_cocci.meta_name -> Ast0_cocci.pure -> unit) ref =
   ref (fun _ -> failwith "uninitialized add_meta")
 
-let add_fresh_id_meta: (Ast.meta_name -> unit) ref =
+let add_fresh_id_meta: (Ast.meta_name -> Ast.seed -> unit) ref =
   ref (fun _ -> failwith "uninitialized add_meta")
 
 let add_type_meta: (Ast.meta_name -> Ast0.pure -> unit) ref =

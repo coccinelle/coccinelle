@@ -21,6 +21,7 @@ let err wrapped ty s =
 type id = Id of string | Meta of Ast.meta_name
 
 let int_type = T.BaseType(T.IntType)
+let void_type = T.BaseType(T.VoidType)
 let bool_type = T.BaseType(T.BoolType)
 let char_type = T.BaseType(T.CharType)
 let float_type = T.BaseType(T.FloatType)
@@ -80,7 +81,7 @@ let rec propagate_types env =
       Ast0.Id(id) ->
 	(try Some(List.assoc (Id(Ast0.unwrap_mcode id)) env)
 	with Not_found -> None)
-    | Ast0.MetaId(id,_,_) ->
+    | Ast0.MetaId(id,_,_,_) ->
 	(try Some(List.assoc (Meta(Ast0.unwrap_mcode id)) env)
 	with Not_found -> None)
     | Ast0.DisjId(_,id_list,_,_) ->
@@ -152,6 +153,7 @@ let rec propagate_types env =
 		   (match Ast0.get_type exp with
 			None -> Some (T.Pointer(T.Unknown))
 		      |	Some t -> Some (T.Pointer(t)))
+	       | Ast.GetRefLabel -> Some (T.Pointer(void_type))
 	       | Ast.DeRef ->
 		   (match Ast0.get_type exp with
 			Some (T.Pointer(t)) -> Some t
@@ -259,7 +261,7 @@ let rec propagate_types env =
   let rec strip id =
     match Ast0.unwrap id with
       Ast0.Id(name)                -> [Id(Ast0.unwrap_mcode name)]
-    | Ast0.MetaId(name,_,_)        -> [Meta(Ast0.unwrap_mcode name)]
+    | Ast0.MetaId(name,_,_,_)      -> [Meta(Ast0.unwrap_mcode name)]
     | Ast0.MetaFunc(name,_,_)      -> [Meta(Ast0.unwrap_mcode name)]
     | Ast0.MetaLocalFunc(name,_,_) -> [Meta(Ast0.unwrap_mcode name)]
     | Ast0.DisjId(_,id_list,_,_)   -> List.concat (List.map strip id_list)

@@ -71,7 +71,6 @@ let inline_mcodes =
 		else starter @ ender in
 	  (lst,
 	   {endinfo with Ast0.tline_start = startinfo.Ast0.tline_start}) in
-	let it2c = function Ast.ONE -> "one" | Ast.MANY -> "many" in
 	let attach_bef bef beforeinfo befit = function
 	    (true,mcl) ->
 	      List.iter
@@ -352,7 +351,7 @@ and ident i =
       Ast0.Id(name) -> Ast.Id(mcode name)
     | Ast0.DisjId(_,id_list,_,_) ->
 	Ast.DisjId(List.map ident id_list)
-    | Ast0.MetaId(name,constraints,_) ->
+    | Ast0.MetaId(name,constraints,_,_) ->
 	Ast.MetaId(mcode name,constraints,unitary,false)
     | Ast0.MetaFunc(name,constraints,_) ->
 	Ast.MetaFunc(mcode name,constraints,unitary,false)

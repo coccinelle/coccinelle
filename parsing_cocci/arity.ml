@@ -139,12 +139,12 @@ let rec ident opt_allowed tgt i =
 	  [mcode2arity name] in
       let name = mcode name in
       make_id i tgt arity (Ast0.Id(name))
-  | Ast0.MetaId(name,constraints,pure) ->
+  | Ast0.MetaId(name,constraints,seed,pure) ->
       let arity =
 	all_same opt_allowed tgt (mcode2line name)
 	  [mcode2arity name] in
       let name = mcode name in
-      make_id i tgt arity (Ast0.MetaId(name,constraints,pure))
+      make_id i tgt arity (Ast0.MetaId(name,constraints,seed,pure))
   | Ast0.MetaFunc(name,constraints,pure) ->
       let arity =
 	all_same opt_allowed tgt (mcode2line name)

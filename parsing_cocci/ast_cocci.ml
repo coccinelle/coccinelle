@@ -222,7 +222,7 @@ and listlen =
   | CstListLen of int
   | AnyListLen
 
-and  unaryOp = GetRef | DeRef | UnPlus |  UnMinus | Tilde | Not
+and  unaryOp = GetRef | GetRefLabel | DeRef | UnPlus |  UnMinus | Tilde | Not
 and  assignOp = SimpleAssign | OpAssign of arithOp
 and  fixOp = Dec | Inc
 

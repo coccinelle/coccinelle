@@ -179,7 +179,7 @@ let token2c (tok,_) =
   | PC.TMetaIdExp(_,_,_,_,clt) -> "idexpmeta"^(line_type2c clt)
   | PC.TMetaLocalIdExp(_,_,_,_,clt) -> "localidexpmeta"^(line_type2c clt)
   | PC.TMetaExpList(_,_,_,clt) -> "explistmeta"^(line_type2c clt)
-  | PC.TMetaId(nm,_,_,clt)    -> "idmeta-"^(Dumper.dump nm)^(line_type2c clt)
+  | PC.TMetaId(nm,_,_,_,clt)    -> "idmeta-"^(Dumper.dump nm)^(line_type2c clt)
   | PC.TMetaType(_,_,clt)    -> "typemeta"^(line_type2c clt)
   | PC.TMetaInit(_,_,clt)    -> "initmeta"^(line_type2c clt)
   | PC.TMetaInitList(_,_,_,clt)    -> "initlistmeta"^(line_type2c clt)
@@ -312,7 +312,7 @@ let plus_attachable only_plus (tok,_) =
   | PC.TMetaExp(_,_,_,_,clt) | PC.TMetaIdExp(_,_,_,_,clt)
   | PC.TMetaLocalIdExp(_,_,_,_,clt)
   | PC.TMetaExpList(_,_,_,clt)
-  | PC.TMetaId(_,_,_,clt)
+  | PC.TMetaId(_,_,_,_,clt)
   | PC.TMetaType(_,_,clt) | PC.TMetaInit(_,_,clt) | PC.TMetaInitList(_,_,_,clt)
   | PC.TMetaStm(_,_,clt)
   | PC.TMetaStmList(_,_,clt)
@@ -386,7 +386,7 @@ let get_clt (tok,_) =
   | PC.TMetaExp(_,_,_,_,clt) | PC.TMetaIdExp(_,_,_,_,clt)
   | PC.TMetaLocalIdExp(_,_,_,_,clt)
   | PC.TMetaExpList(_,_,_,clt)
-  | PC.TMetaId(_,_,_,clt)
+  | PC.TMetaId(_,_,_,_,clt)
   | PC.TMetaType(_,_,clt) | PC.TMetaInit(_,_,clt) | PC.TMetaInitList(_,_,_,clt)
   | PC.TMetaStm(_,_,clt)
   | PC.TMetaStmList(_,_,clt)
@@ -506,7 +506,7 @@ let update_clt (tok,x) clt =
   | PC.TMetaIdExp(a,b,c,d,_) -> (PC.TMetaIdExp(a,b,c,d,clt),x)
   | PC.TMetaLocalIdExp(a,b,c,d,_) -> (PC.TMetaLocalIdExp(a,b,c,d,clt),x)
   | PC.TMetaExpList(a,b,c,_) -> (PC.TMetaExpList(a,b,c,clt),x)
-  | PC.TMetaId(a,b,c,_)    -> (PC.TMetaId(a,b,c,clt),x)
+  | PC.TMetaId(a,b,c,d,_)    -> (PC.TMetaId(a,b,c,d,clt),x)
   | PC.TMetaType(a,b,_)    -> (PC.TMetaType(a,b,clt),x)
   | PC.TMetaInit(a,b,_)    -> (PC.TMetaInit(a,b,clt),x)
   | PC.TMetaInitList(a,b,c,_) -> (PC.TMetaInitList(a,b,c,clt),x)
@@ -659,7 +659,7 @@ let split_token ((tok,_) as t) =
   | PC.TMetaIdExp(_,_,_,_,clt) | PC.TMetaLocalIdExp(_,_,_,_,clt)
   | PC.TMetaExpList(_,_,_,clt)
   | PC.TMetaParam(_,_,clt) | PC.TMetaParamList(_,_,_,clt)
-  | PC.TMetaId(_,_,_,clt) | PC.TMetaType(_,_,clt)
+  | PC.TMetaId(_,_,_,_,clt) | PC.TMetaType(_,_,clt)
   | PC.TMetaInit(_,_,clt) | PC.TMetaInitList(_,_,_,clt)
   | PC.TMetaDecl(_,_,clt) | PC.TMetaField(_,_,clt)
   | PC.TMetaFieldList(_,_,_,clt)
@@ -740,7 +740,7 @@ let rec find_function_names l =
   let is_ident = function
       (PC.TIdent(_,clt),info)
     | (PC.TMeta(_,_,clt),info)
-    | (PC.TMetaId(_,_,_,clt),info)
+    | (PC.TMetaId(_,_,_,_,clt),info)
     | (PC.TMetaFunc(_,_,_,clt),info)
     | (PC.TMetaLocalFunc(_,_,_,clt),info) -> true
     | _ -> false in
@@ -812,7 +812,7 @@ let rec find_function_names l =
 
 let rec detect_attr l =
   let is_id = function
-      (PC.TIdent(_,_),_) | (PC.TMetaId(_,_,_,_),_) | (PC.TMetaFunc(_,_,_,_),_)
+      (PC.TIdent(_,_),_) | (PC.TMetaId(_,_,_,_,_),_) | (PC.TMetaFunc(_,_,_,_),_)
     | (PC.TMetaLocalFunc(_,_,_,_),_) -> true
     | _ -> false in
   let rec loop = function
@@ -848,7 +848,7 @@ let detect_types in_meta_decls l =
   let is_choices_delim = function
       (PC.TOBrace(_),_) | (PC.TComma(_),_) -> true | _ -> false in
   let is_id = function
-      (PC.TIdent(_,_),_) | (PC.TMetaId(_,_,_,_),_) | (PC.TMetaFunc(_,_,_,_),_)
+      (PC.TIdent(_,_),_) | (PC.TMetaId(_,_,_,_,_),_) | (PC.TMetaFunc(_,_,_,_),_)
     | (PC.TMetaLocalFunc(_,_,_,_),_) -> true
     | (PC.TMetaParam(_,_,_),_)
     | (PC.TMetaParamList(_,_,_,_),_)
@@ -954,7 +954,7 @@ let token2line (tok,_) =
   | PC.TMetaConst(_,_,_,_,clt) | PC.TMetaExp(_,_,_,_,clt)
   | PC.TMetaIdExp(_,_,_,_,clt) | PC.TMetaLocalIdExp(_,_,_,_,clt)
   | PC.TMetaExpList(_,_,_,clt)
-  | PC.TMetaId(_,_,_,clt) | PC.TMetaType(_,_,clt)
+  | PC.TMetaId(_,_,_,_,clt) | PC.TMetaType(_,_,clt)
   | PC.TMetaInit(_,_,clt) | PC.TMetaInitList(_,_,_,clt)
   | PC.TMetaDecl(_,_,clt) | PC.TMetaField(_,_,clt)
   | PC.TMetaFieldList(_,_,_,clt)

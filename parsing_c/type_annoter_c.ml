@@ -811,7 +811,6 @@ let annotater_expr_visitor_subpart = (fun (k,bigf) expr ->
           make_info_def_fix ft
         )
 
-
     (* -------------------------------------------------- *)
     (* fields *)
     | RecordAccess  (e, namefld)

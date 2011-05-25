@@ -314,7 +314,7 @@ let init _ =
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_id_meta :=
     (fun name constraints pure ->
-      let fn clt = TMetaId(name,constraints,pure,clt) in
+      let fn clt = TMetaId(name,constraints,Ast.NoVal,pure,clt) in
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_virt_id_meta_found :=
     (fun name vl ->
@@ -322,11 +322,11 @@ let init _ =
       Hashtbl.replace metavariables name fn);
   Data.add_virt_id_meta_not_found :=
     (fun name pure ->
-      let fn clt = TMetaId(name,Ast.IdNoConstraint,pure,clt) in
+      let fn clt = TMetaId(name,Ast.IdNoConstraint,Ast.NoVal,pure,clt) in
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_fresh_id_meta :=
-    (fun name ->
-      let fn clt = TMetaId(name,Ast.IdNoConstraint,Ast0.Impure,clt) in
+    (fun name seed ->
+      let fn clt = TMetaId(name,Ast.IdNoConstraint,seed,Ast0.Impure,clt) in
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_type_meta :=
     (fun name pure ->
@@ -736,12 +736,16 @@ rule token = parse
       { start_line true; check_plus_linetype (tok lexbuf);
 	TPragma (Ast.Noindent(tok lexbuf), get_current_line_type lexbuf) }
   | "/*"
-      { start_line true; check_plus_linetype (tok lexbuf);
+      {
+       match !current_line_type with
+        (D.PLUS,_,_) | (D.PLUSPLUS,_,_) ->
+        start_line true;
 	(* second argument to TPragma is not quite right, because
 	   it represents only the first token of the comment, but that
 	   should be good enough *)
-	TPragma (Ast.Indent("/*"^(comment lexbuf)),
-		 get_current_line_type lexbuf) }
+	TPragma (Ast.Indent("/*"^(comment check_comment lexbuf)),
+		 get_current_line_type lexbuf)
+      |	_ -> let _ = comment (fun _ -> ()) lexbuf in token lexbuf }
   | "---" [^'\n']*
       { (if !current_line_started
       then lexerr "--- must be at the beginning of the line" "");
@@ -822,27 +826,28 @@ and string  = parse
        }
   | _ { lexerr "unrecognised symbol: " (tok lexbuf) }
 
-and comment = parse
+and comment check_comment = parse
   | "*/" { let s = tok lexbuf in check_comment s; start_line true; s }
   | ['\n' '\r' '\011' '\012']
       { let s = tok lexbuf in
         (* even blank line should have a + *)
         check_comment s;
-        reset_line lexbuf; s ^ comment lexbuf }
+        reset_line lexbuf; s ^ comment check_comment lexbuf }
   | "+" { pass_zero();
 	  if !current_line_started
-	  then (start_line true; let s = tok lexbuf in s^(comment lexbuf))
-	  else (start_line true; comment lexbuf) }
+	  then (start_line true;
+		let s = tok lexbuf in s^(comment check_comment lexbuf))
+	  else (start_line true; comment check_comment lexbuf) }
   (* noteopti: *)
   | [^ '*']
       { let s = tok lexbuf in
-        check_comment s; start_line true; s ^ comment lexbuf }
+        check_comment s; start_line true; s ^ comment check_comment lexbuf }
   | [ '*']
       { let s = tok lexbuf in
-        check_comment s; start_line true; s ^ comment lexbuf }
+        check_comment s; start_line true; s ^ comment check_comment lexbuf }
   | _
       { start_line true; let s = tok lexbuf in
         Common.pr2 ("LEXER: unrecognised symbol in comment:"^s);
-        s ^ comment lexbuf
+        s ^ comment check_comment lexbuf
       }
 

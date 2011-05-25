@@ -79,7 +79,7 @@ and 'a dots = 'a base_dots wrap
 
 and base_ident =
     Id            of string mcode
-  | MetaId        of Ast.meta_name mcode * Ast.idconstraint * pure
+  | MetaId        of Ast.meta_name mcode * Ast.idconstraint * Ast.seed * pure
   | MetaFunc      of Ast.meta_name mcode * Ast.idconstraint * pure
   | MetaLocalFunc of Ast.meta_name mcode * Ast.idconstraint * pure
   | DisjId        of string mcode * ident list *
@@ -554,7 +554,7 @@ let rec ast0_type_to_type ty =
       (match unwrap tag with
 	Id(tag) ->
 	  TC.EnumName(TC.Name(unwrap_mcode tag))
-      | MetaId(tag,_,_) ->
+      | MetaId(tag,_,_,_) ->
 	  (Printf.printf
 	     "warning: enum with a metavariable name detected.\n";
 	   Printf.printf
@@ -567,14 +567,14 @@ let rec ast0_type_to_type ty =
       (match unwrap tag with
 	Id(tag) ->
 	  TC.StructUnionName(structUnion su,TC.Name(unwrap_mcode tag))
-      | MetaId(tag,Ast.IdNoConstraint,_) ->
+      | MetaId(tag,Ast.IdNoConstraint,_,_) ->
 	  (Common.pr2
 	     "warning: struct/union with a metavariable name detected.\n";
 	   Common.pr2
 	     "For type checking assuming the name of the metavariable is the name of the type\n";
 	   TC.StructUnionName(structUnion su,
 			      TC.MV(unwrap_mcode tag,TC.Unitary,false)))
-      | MetaId(tag,_,_) ->
+      | MetaId(tag,_,_,_) ->
 	  (* would have to duplicate the type in type_cocci.ml?
 	     perhaps polymorphism would help? *)
 	  failwith "constraints not supported on struct type name"
@@ -644,7 +644,7 @@ let rec reverse_type ty =
   | TC.EnumName(TC.MV(name,_,_)) ->
       EnumName
 	(make_mcode "enum",
-	 Some (context_wrap(MetaId(make_mcode name,Ast.IdNoConstraint,
+	 Some (context_wrap(MetaId(make_mcode name,Ast.IdNoConstraint,Ast.NoVal,
 				   Impure))))
   | TC.EnumName(TC.Name tag) ->
       EnumName(make_mcode "enum",Some(context_wrap(Id(make_mcode tag))))
@@ -652,7 +652,7 @@ let rec reverse_type ty =
       (* not right?... *)
       StructUnionName
 	(reverse_structUnion su,
-	 Some(context_wrap(MetaId(make_mcode name,Ast.IdNoConstraint,
+	 Some(context_wrap(MetaId(make_mcode name,Ast.IdNoConstraint,Ast.NoVal,
 				  Impure(*not really right*)))))
   |  TC.StructUnionName(su,TC.Name tag) ->
       StructUnionName

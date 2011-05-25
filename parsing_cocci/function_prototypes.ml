@@ -8,7 +8,7 @@ type id = Id of string | Meta of Ast.meta_name
 let rec get_name name =
   match Ast0.unwrap name with
     Ast0.Id(nm) -> [Id(Ast0.unwrap_mcode nm)]
-  | Ast0.MetaId(nm,_,_) | Ast0.MetaFunc(nm,_,_)
+  | Ast0.MetaId(nm,_,_,_) | Ast0.MetaFunc(nm,_,_)
   | Ast0.MetaLocalFunc(nm,_,_) -> [Meta(Ast0.unwrap_mcode nm)]
   | Ast0.DisjId(_,id_list,_,_) -> List.concat (List.map get_name id_list)
   | Ast0.OptIdent(id) | Ast0.UniqueIdent(id) ->
@@ -121,8 +121,8 @@ and strip =
     donothing r k
       (Ast0.rewrap e
 	 (match Ast0.unwrap e with
-	   Ast0.MetaId(nm,constraints,pure) ->
-	     Ast0.MetaId(nm,constraints,Ast0.Pure)
+	   Ast0.MetaId(nm,constraints,seed,pure) ->
+	     Ast0.MetaId(nm,constraints,seed,Ast0.Pure)
 	 | Ast0.MetaFunc(nm,constraints,pure) ->
 	     Ast0.MetaFunc(nm,constraints,Ast0.Pure)
 	 | Ast0.MetaLocalFunc(nm,constraints,pure) ->
@@ -210,12 +210,12 @@ let rec rename_param old_name all param =
     Ast0.Param(ty,Some id) when all ->
       (match Ast0.unwrap id with
 	Ast0.MetaId
-	  (((_,name),arity,info,mcodekind,pos,adj),constraints,pure) ->
+	  (((_,name),arity,info,mcodekind,pos,adj),constraints,seed,pure) ->
 	  let nm = ("__no_name__",new_name name) in
 	  let new_id =
 	    Ast0.rewrap id
 	      (Ast0.MetaId
-		 ((nm,arity,info,mcodekind,pos,adj),constraints,
+		 ((nm,arity,info,mcodekind,pos,adj),constraints,seed,
 		  Ast0.Pure)) in
 	  ([Ast.MetaIdDecl(Ast.NONE,nm)],
 	   Ast0.rewrap param (Ast0.Param(ty,Some new_id)))

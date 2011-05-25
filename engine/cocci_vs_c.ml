@@ -146,13 +146,14 @@ let equal_c_int s1 s2 =
 let equal_unaryOp a b =
   match a, b with
   | A.GetRef   , B.GetRef  -> true
+  | A.GetRefLabel, B.GetRefLabel -> true
   | A.DeRef    , B.DeRef   -> true
   | A.UnPlus   , B.UnPlus  -> true
   | A.UnMinus  , B.UnMinus -> true
   | A.Tilde    , B.Tilde   -> true
   | A.Not      , B.Not     -> true
-  | _, B.GetRefLabel -> false (* todo cocci? *)
-  | _, (B.Not|B.Tilde|B.UnMinus|B.UnPlus|B.DeRef|B.GetRef) -> false
+  | _, (B.Not|B.Tilde|B.UnMinus|B.UnPlus|B.DeRef|B.GetRef|B.GetRefLabel) ->
+      false
 
 
 

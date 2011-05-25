@@ -69,7 +69,8 @@ and 'a dots = 'a base_dots wrap
 
 and base_ident =
     Id            of string mcode
-  | MetaId        of Ast_cocci.meta_name mcode * Ast_cocci.idconstraint * pure
+  | MetaId        of Ast_cocci.meta_name mcode * Ast_cocci.idconstraint *
+	Ast_cocci.seed * pure
   | MetaFunc      of Ast_cocci.meta_name mcode * Ast_cocci.idconstraint * pure
   | MetaLocalFunc of Ast_cocci.meta_name mcode * Ast_cocci.idconstraint * pure
   | DisjId        of string mcode * ident list *

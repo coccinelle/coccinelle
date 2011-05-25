@@ -20,6 +20,8 @@
   for noticing the need for them.
 - Allow multiple position variables per token
 - ++ can now be associated with - code
+- Allow /* */ comments as smpl comments, not only as + code
+- Add support for && (label addresses)
 
 ** Features:
 - Preserve spacing before // comments when not at the beginning of a line
@@ -43,6 +45,7 @@
 - Drop __init etc when deleting a whole function.
 - Cause appropriate newlines to be preserved when multiple matches (trees)
   contain adjacent modifications derived from the same SmPL code.
+- check_meta takes into account fresh identifier seed information.
 
 * 0.2.5
 ** Language:
