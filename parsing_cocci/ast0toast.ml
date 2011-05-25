@@ -719,7 +719,7 @@ and statement s =
 		  tokenwrap rbrace s (Ast.SeqEnd(rbrace)))
       | Ast0.ExprStatement(exp,sem) ->
 	  Ast.Atomic(rewrap_rule_elem s
-		       (Ast.ExprStatement(expression exp,mcode sem)))
+		       (Ast.ExprStatement(get_option expression exp,mcode sem)))
       | Ast0.IfThen(iff,lp,exp,rp,branch,(_,aft)) ->
 	  Ast.IfThen
 	    (rewrap_rule_elem s

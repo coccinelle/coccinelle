@@ -413,7 +413,7 @@ and base_rule_elem =
   | SeqStart      of string mcode (* { *)
   | SeqEnd        of string mcode (* } *)
 
-  | ExprStatement of expression * string mcode (*;*)
+  | ExprStatement of expression option * string mcode (*;*)
   | IfHeader      of string mcode (* if *) * string mcode (* ( *) *
 	             expression * string mcode (* ) *)
   | Else          of string mcode (* else *)

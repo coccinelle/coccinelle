@@ -766,7 +766,7 @@ and rule_elem arity re =
       end_block(); pr_arity arity; mcode print_string brace
 
   | Ast.ExprStatement(exp,sem) ->
-      pr_arity arity; expression exp; mcode print_string sem
+      pr_arity arity; print_option expression exp; mcode print_string sem
 
   | Ast.IfHeader(iff,lp,exp,rp) ->
       pr_arity arity;

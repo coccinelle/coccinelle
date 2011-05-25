@@ -935,7 +935,7 @@ let rec is_toplevel s =
     Ast0.Decl(_,e) -> true
   | Ast0.FunDecl(_,_,_,_,_,_,_,_,_) -> true
   | Ast0.Disj(_,stmts,_,_) -> isall is_toplevel stmts
-  | Ast0.ExprStatement(fc,_) ->
+  | Ast0.ExprStatement(Some fc,_) ->
       (match Ast0.unwrap fc with
 	Ast0.FunCall(_,_,_,_) -> true
       |	_ -> false)

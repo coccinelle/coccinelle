@@ -417,7 +417,7 @@ and unify_rule_elem re1 re2 =
   | (Ast.SeqEnd(rb1),Ast.SeqEnd(rb2)) -> return true
 
   | (Ast.ExprStatement(e1,s1),Ast.ExprStatement(e2,s2)) ->
-      unify_expression e1 e2
+      unify_option unify_expression e1 e2
   | (Ast.IfHeader(if1,lp1,e1,rp1),Ast.IfHeader(if2,lp2,e2,rp2)) ->
       unify_expression e1 e2
   | (Ast.Else(e1),Ast.Else(e2)) -> return true

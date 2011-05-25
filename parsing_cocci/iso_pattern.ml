@@ -1031,7 +1031,8 @@ let match_maker checks_needed context_required whencode_allowed =
 		       bodya bodyb
 		   else return_false (Braces(s))))
 	  | (Ast0.ExprStatement(expa,sc1),Ast0.ExprStatement(expb,sc)) ->
-	      conjunct_bindings (check_mcode sc1 sc) (match_expr expa expb)
+	      conjunct_bindings (check_mcode sc1 sc)
+		(match_option match_expr expa expb)
 	  | (Ast0.IfThen(if1,lp1,expa,rp1,branch1a,_),
 	     Ast0.IfThen(if2,lp2,expb,rp2,branch1b,_)) ->
 	       conjunct_many_bindings

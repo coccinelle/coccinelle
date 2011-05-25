@@ -560,7 +560,7 @@ let visitor mode bind option_default
 	    (multibind [lbrace_n;body_n;rbrace_n],
 	     Ast0.Seq(lbrace,body,rbrace))
 	| Ast0.ExprStatement(exp,sem) ->
-	    let (exp_n,exp) = expression exp in
+	    let (exp_n,exp) = get_option expression exp in
 	    let (sem_n,sem) = string_mcode sem in
 	    (bind exp_n sem_n, Ast0.ExprStatement(exp,sem))
 	| Ast0.IfThen(iff,lp,exp,rp,branch1,aft) ->

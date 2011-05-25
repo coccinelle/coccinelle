@@ -700,7 +700,7 @@ and statement tgt stm =
       make_rule_elem stm tgt arity (Ast0.Seq(lbrace,body,rbrace))
   | Ast0.ExprStatement(exp,sem) ->
       let arity = stm_same (mcode2line sem) [mcode2arity sem] in
-      let exp = expression arity exp in
+      let exp = get_option (expression arity) exp in
       let sem = mcode sem in
       make_rule_elem stm tgt arity (Ast0.ExprStatement(exp,sem))
   | Ast0.IfThen(iff,lp,exp,rp,branch,aft) ->

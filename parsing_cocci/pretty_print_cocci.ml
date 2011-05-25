@@ -548,7 +548,7 @@ let rec rule_elem arity re =
       if !print_newlines_disj then end_block();
       print_string arity; mcode print_string brace
   | Ast.ExprStatement(exp,sem) ->
-      print_string arity; expression exp; mcode print_string sem
+      print_string arity; print_option expression exp; mcode print_string sem
   | Ast.IfHeader(iff,lp,exp,rp) ->
       print_string arity;
       mcode print_string iff; print_string " "; mcode print_string_box lp;

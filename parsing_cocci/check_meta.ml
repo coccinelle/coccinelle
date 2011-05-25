@@ -322,7 +322,8 @@ and statement old_metas table minus s =
   match Ast0.unwrap s with
     Ast0.Decl(_,decl) -> declaration ID old_metas table minus decl
   | Ast0.Seq(lbrace,body,rbrace) -> dots (statement old_metas table minus) body
-  | Ast0.ExprStatement(exp,sem) -> expression ID old_metas table minus exp
+  | Ast0.ExprStatement(exp,sem) ->
+      get_opt (expression ID old_metas table minus) exp
   | Ast0.IfThen(iff,lp,exp,rp,branch,_) ->
       expression ID old_metas table minus exp;
       statement old_metas table minus branch

@@ -216,7 +216,8 @@ and left_statement s =
       (* irrelevant *) false
   | Ast0.Decl(_,decl) -> left_declaration decl
   | Ast0.Seq(lbrace,body,rbrace) -> modif_before_mcode lbrace
-  | Ast0.ExprStatement(exp,sem) -> left_expression exp
+  | Ast0.ExprStatement(Some exp,sem) -> left_expression exp
+  | Ast0.ExprStatement(None,sem) -> modif_before_mcode sem
   | Ast0.IfThen(iff,lp,exp,rp,branch1,(info,aft)) -> modif_before_mcode iff
   | Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2,(info,aft)) ->
       modif_before_mcode iff

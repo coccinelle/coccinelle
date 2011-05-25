@@ -268,7 +268,7 @@ and base_statement =
     Decl          of (info * mcodekind) (* before the decl *) * declaration
   | Seq           of string mcode (* { *) * statement dots *
  	             string mcode (* } *)
-  | ExprStatement of expression * string mcode (*;*)
+  | ExprStatement of expression option * string mcode (*;*)
   | IfThen        of string mcode (* if *) * string mcode (* ( *) *
 	             expression * string mcode (* ) *) *
 	             statement * (info * mcodekind)

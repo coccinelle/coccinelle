@@ -1042,7 +1042,7 @@ statement:
 | TMeta { tmeta_to_statement $1}
 | TMetaStm
     { P.meta_stm $1 }
-| expr TPtVirg
+| option(expr) TPtVirg
     { P.exp_stm $1 $2 }
 | TIf TOPar eexpr TCPar single_statement %prec TIf
     { P.ifthen $1 $2 $3 $4 $5 }
@@ -1098,7 +1098,7 @@ what about statement metavariables? */
 rule_elem_statement:
   one_decl_var
     { Ast0.wrap(Ast0.Decl((Ast0.default_info(),Ast0.context_befaft()),$1)) }
-| expr TPtVirg { P.exp_stm $1 $2 }
+| option(expr) TPtVirg { P.exp_stm $1 $2 }
 | TReturn eexpr TPtVirg { P.ret_exp $1 $2 $3 }
 | TReturn TPtVirg { P.ret $1 $2 }
 | TBreak TPtVirg { P.break $1 $2 }

@@ -775,10 +775,14 @@ let rec statement s =
 	let rbrace = normal_mcode rbrace in
 	mkres s (Ast0.Seq(lbrace,body,rbrace))
 	  (promote_mcode lbrace) (promote_mcode rbrace)
-    | Ast0.ExprStatement(exp,sem) ->
+    | Ast0.ExprStatement(Some exp,sem) ->
 	let exp = expression exp in
 	let sem = normal_mcode sem in
-	mkres s (Ast0.ExprStatement(exp,sem)) exp (promote_mcode sem)
+	mkres s (Ast0.ExprStatement(Some exp,sem)) exp (promote_mcode sem)
+    | Ast0.ExprStatement(None,sem) ->
+	let sem = normal_mcode sem in
+	let promoted_sem = promote_mcode sem in
+	mkres s (Ast0.ExprStatement(None,sem)) promoted_sem promoted_sem
     | Ast0.IfThen(iff,lp,exp,rp,branch,(_,aft)) ->
 	let iff = normal_mcode iff in
 	let lp = normal_mcode lp in

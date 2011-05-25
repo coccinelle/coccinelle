@@ -3824,15 +3824,24 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
           F.SeqEnd (level, i1)
           ))
 
-  | A.ExprStatement (ea, ia1), F.ExprStatement (st, (Some eb, ii)) ->
+  | A.ExprStatement (Some ea, ia1), F.ExprStatement (st, (Some eb, ii)) ->
       let ib1 = tuple_of_list1 ii in
       expression ea eb >>= (fun ea eb ->
       tokenf ia1 ib1 >>= (fun ia1 ib1 ->
         return (
-          A.ExprStatement (ea, ia1),
+          A.ExprStatement (Some ea, ia1),
           F.ExprStatement (st, (Some eb, [ib1]))
         )
       ))
+
+  | A.ExprStatement (None, ia1), F.ExprStatement (st, (None, ii)) ->
+      let ib1 = tuple_of_list1 ii in
+      tokenf ia1 ib1 >>= (fun ia1 ib1 ->
+        return (
+          A.ExprStatement (None, ia1),
+          F.ExprStatement (st, (None, [ib1]))
+        )
+      )
 
 
   | A.IfHeader (ia1,ia2, ea, ia3), F.IfHeader (st, (eb,ii)) ->
