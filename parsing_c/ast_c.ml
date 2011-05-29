@@ -291,7 +291,8 @@ and attribute = attributebis wrap
 and expression = (expressionbis * exp_info ref (* semantic: *)) wrap3
  and exp_info = exp_type option * test
   and exp_type = fullType (* Type_c.completed_and_simplified *) * local
-    and local = LocalVar of parse_info | NotLocalVar (* cocci: *)
+    and local = LocalVar of parse_info | StaticLocalVar of parse_info
+              | NotLocalVar (* cocci: *)
   and test = Test | NotTest (* cocci: *)
 
  and expressionbis =

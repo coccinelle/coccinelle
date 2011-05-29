@@ -643,6 +643,8 @@ let remove_minus_and_between_and_expanded_and_fake xs =
 	    if cp
 	    then xs
 	    else
+	      (* remove spaces after removed stuff, eg a comma after a
+		 function argument *)
 	      let (spaces,rest) = Common.span is_space xs in
 	      (List.map (set_minus_comment_or_plus adj1) spaces)
 	      @ rest)
@@ -744,7 +746,7 @@ let adjust_before_semicolon toks =
       [] -> []
     | ((T2(_,Ctx,_)) as x)::xs | ((Cocci2 _) as x)::xs ->
 	if List.mem (str_of_token2 x) [";";")";","]
-	then x :: search_minus false xs
+	then x :: search_semic (search_minus false xs)
 	else x :: search_semic xs
     | x::xs -> x :: search_semic xs
   and search_minus seen_minus xs =
@@ -754,6 +756,28 @@ let adjust_before_semicolon toks =
       ((T2(_,Min _,_)) as a)::rerest -> a :: search_minus true rerest
     | _ -> if seen_minus then rest else xs in
   List.rev (search_semic toks)
+
+(* normally, in C code, a ( is not followed by a space or newline *)
+let adjust_after_paren toks =
+  let rec search_paren = function
+      [] -> []
+    | ((T2(_,Ctx,_)) as x)::xs | ((Cocci2 _) as x)::xs ->
+	if List.mem (str_of_token2 x) ["("] (* other things? *)
+	then x :: search_paren(search_minus false xs)
+	else x :: search_paren xs
+    | x::xs -> x :: search_paren xs
+  and search_minus seen_minus xs =
+    let (spaces, rest) = Common.span is_space xs in
+    (* only delete spaces if something is actually deleted *)
+    match rest with
+      ((T2(_,Min _,_)) as a)::rerest -> (* minus *)
+	a :: search_minus true rerest
+    | ((T2(_,Ctx,_)) as a)::rerest when str_of_token2 a = "," ->
+	(* comma after ( will be deleted, so consider it as minus code
+	   already *)
+	a :: search_minus true rerest
+    | _ -> if seen_minus then rest else xs in (* drop trailing space *)
+  search_paren toks
 
 let is_ident_like s = s ==~ Common.regexp_alpha
 
@@ -1199,10 +1223,11 @@ let pp_program2 xs outfile  =
 	    then
 	      (* nothing else to do for sgrep *)
 	      drop_expanded(drop_fake(drop_minus toks))
-	    else
+	    else (
               (* phase2: can now start to filter and adjust *)
 	      let (toks,tu) = adjust_indentation toks in
 	      let toks = adjust_before_semicolon toks in(*before remove minus*)
+	      let toks = adjust_after_paren toks in(*also before remove minus*)
 	      let toks = drop_space_at_endline toks in
 	      let toks = paren_to_space toks in
 	      let toks = drop_end_comma toks in
@@ -1211,7 +1236,7 @@ let pp_program2 xs outfile  =
               let toks = add_space toks in
 	      let toks = add_newlines toks tu in
               let toks = fix_tokens toks in
-	       toks in
+	       toks) in
 
           (* in theory here could reparse and rework the ast! or
            * apply some SP. Not before cos julia may have generated
