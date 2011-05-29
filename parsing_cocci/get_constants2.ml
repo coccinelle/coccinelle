@@ -315,16 +315,16 @@ let do_get_constants constants keywords env neg_pos =
     | _ -> k ft in
 
   let baseType = function
-      Ast.VoidType -> keywords "void "
-    | Ast.CharType -> keywords "char "
-    | Ast.ShortType -> keywords "short "
-    | Ast.IntType -> keywords "int "
-    | Ast.DoubleType -> keywords "double "
-    | Ast.FloatType -> keywords "float "
-    | Ast.LongType | Ast.LongLongType -> keywords "long "
-    | Ast.SizeType -> keywords "size_t "
-    | Ast.SSizeType -> keywords "ssize_t "
-    | Ast.PtrDiffType -> keywords "ptrdiff_t " in
+      Ast.VoidType -> keywords "void"
+    | Ast.CharType -> keywords "char"
+    | Ast.ShortType -> keywords "short"
+    | Ast.IntType -> keywords "int"
+    | Ast.DoubleType -> keywords "double"
+    | Ast.FloatType -> keywords "float"
+    | Ast.LongType | Ast.LongLongType -> keywords "long"
+    | Ast.SizeType -> keywords "size_t"
+    | Ast.SSizeType -> keywords "ssize_t"
+    | Ast.PtrDiffType -> keywords "ptrdiff_t" in
 
   let typeC r k ty =
     match Ast.unwrap ty with

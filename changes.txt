@@ -46,6 +46,7 @@
 - Cause appropriate newlines to be preserved when multiple matches (trees)
   contain adjacent modifications derived from the same SmPL code.
 - check_meta takes into account fresh identifier seed information.
+- types for worth-trying optimization should not be followed by space
 
 * 0.2.5
 ** Language:
