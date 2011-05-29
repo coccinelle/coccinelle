@@ -22,6 +22,7 @@
 - ++ can now be associated with - code
 - Allow /* */ comments as smpl comments, not only as + code
 - Add support for && (label addresses)
+- local idexpression metavariable no longer matches static local x
 
 ** Features:
 - Preserve spacing before // comments when not at the beginning of a line
