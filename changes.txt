@@ -28,7 +28,6 @@
 - Preserve spacing before // comments when not at the beginning of a line
 - Adjusted parsing of endif to put it after jump code
 - Improve warning message when using -use_cache
-- Allow - nest expressions
 - More helpful initial value for exported variables in python
 - Support - on expression nests
 
@@ -48,7 +47,9 @@
   contain adjacent modifications derived from the same SmPL code.
 - check_meta takes into account fresh identifier seed information.
 - Types for worth-trying optimization should not be followed by space
-- Improved pretty printing when the first parameter of a function is dropped
+- Improved pretty printing when the first parameter of a function is
+  dropped
+- Drop positions before creating function prototype rules
 
 * 0.2.5
 ** Language:

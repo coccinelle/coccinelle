@@ -52,6 +52,18 @@ let collect_function (stm : Ast0.statement) =
 let collect_functions stmt_dots =
   List.concat (List.map collect_function (Ast0.undots stmt_dots))
 
+let drop_positions =
+  let mcode (term,arity,info,mc,_,adj) =
+    (term,arity,info,mc,ref [],adj) in
+  let donothing r k e = k e in
+  let res =
+    V0.flat_rebuilder
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    donothing donothing donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing donothing
+    donothing donothing in
+  res.VT0.rebuilder_rec_statement
+
 let get_all_functions rule =
   let res =
     match Ast0.unwrap rule with
@@ -61,7 +73,9 @@ let get_all_functions rule =
   List.map
     (function (nm,def,vl) ->
       (nm,
-       (def,(Iso_pattern.rebuild_mcode None).VT0.rebuilder_rec_statement vl)))
+       (def,
+	drop_positions
+	  ((Iso_pattern.rebuild_mcode None).VT0.rebuilder_rec_statement vl))))
     res
 
 (* --------------------------------------------------------------------- *)
