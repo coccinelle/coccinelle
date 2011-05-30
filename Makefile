@@ -301,6 +301,7 @@ install-common:
 	mkdir -p $(DESTDIR)$(SHAREDIR)/globals
 	mkdir -p $(DESTDIR)$(SHAREDIR)/parsing_c
 	mkdir -p $(DESTDIR)$(MANDIR)/man1
+	mkdir -p $(DESTDIR)$(MANDIR)/man3
 	$(INSTALL_DATA) standard.h $(DESTDIR)$(SHAREDIR)
 	$(INSTALL_DATA) standard.iso $(DESTDIR)$(SHAREDIR)
 	$(INSTALL_DATA) ocaml/coccilib.cmi $(DESTDIR)$(SHAREDIR)/ocaml/
@@ -308,6 +309,7 @@ install-common:
 	$(INSTALL_DATA) commons/*.cmi $(DESTDIR)$(SHAREDIR)/commons/
 	$(INSTALL_DATA) globals/iteration.cmi $(DESTDIR)$(SHAREDIR)/globals/
 	$(INSTALL_DATA) docs/spatch.1 $(DESTDIR)$(MANDIR)/man1/
+	$(INSTALL_DATA) docs/Coccilib.3cocci $(DESTDIR)$(MANDIR)/man3/
 	@if [ $(FEATURE_PYTHON) -eq 1 ]; then $(MAKE) install-python; fi
 
 install-bash:
@@ -387,6 +389,7 @@ uninstall:
 	rmdir $(DESTDIR)$(SHAREDIR)/ocaml
 	rmdir $(DESTDIR)$(SHAREDIR)
 	rm -f $(DESTDIR)$(MANDIR)/man1/spatch.1
+	rm -f $(DESTDIR)$(MANDIR)/man3/Coccilib.3cocci
 
 uninstall-bash:
 	rm -f $(DESTDIR)$(BASH_COMPLETION_DIR)/spatch
