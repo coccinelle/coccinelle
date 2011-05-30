@@ -1080,6 +1080,8 @@ let rec pp_any = function
   | Ast.SgrepEndTag(x) -> failwith "unexpected end tag"
 in
 
+(*Printf.printf "start of the function\n";*)
+
   anything := (function x -> let _ = pp_any x in ());
 
   (* todo? imitate what is in pretty_print_cocci ? *)
@@ -1149,10 +1151,12 @@ in
 		  (match Ast.unwrap x with
 		    Ast.IComma _ -> false
 		  | _ -> true)
-	      |	Ast.Token(t,_) when List.mem t [",";";";"(";")"] -> false
+	      |	Ast.Token(t,_) when List.mem t [",";";";"(";")";".";"->"] ->
+		  false
 	      |	_ -> true in
 	    let space_needed_after = function
-		Ast.Token(t,_) when List.mem t ["("] -> (*never needed*) false
+		Ast.Token(t,_)
+		when List.mem t ["(";".";"->"] -> (*never needed*) false
 	      |	Ast.Token(t,_) when List.mem t ["if";"for";"while";"do"] ->
 		  (* space always needed *)
 		  pr_space(); false

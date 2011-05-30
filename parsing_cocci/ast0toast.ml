@@ -123,7 +123,7 @@ let inline_mcodes =
 			    (Ast.REPLACEMENT(aft,aftit),afterinfo)
 		      |	(Ast.REPLACEMENT(anythings,it),tokeninfo) ->
 			  let (newaft,newinfo) =
-			    concat aft afterinfo anythings tokeninfo in
+			    concat anythings tokeninfo aft afterinfo in
 			  let it = Ast.lub_count aftit it in
 			  mreplacements :=
 			    (Ast.REPLACEMENT(newaft,it),newinfo))

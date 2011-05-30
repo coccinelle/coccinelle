@@ -1223,7 +1223,7 @@ let pp_program2 xs outfile  =
 	    then
 	      (* nothing else to do for sgrep *)
 	      drop_expanded(drop_fake(drop_minus toks))
-	    else (
+	    else
               (* phase2: can now start to filter and adjust *)
 	      let (toks,tu) = adjust_indentation toks in
 	      let toks = adjust_before_semicolon toks in(*before remove minus*)
@@ -1236,7 +1236,7 @@ let pp_program2 xs outfile  =
               let toks = add_space toks in
 	      let toks = add_newlines toks tu in
               let toks = fix_tokens toks in
-	       toks) in
+	       toks in
 
           (* in theory here could reparse and rework the ast! or
            * apply some SP. Not before cos julia may have generated
