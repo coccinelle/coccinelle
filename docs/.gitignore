@@ -1,0 +1,6 @@
+*.aux
+*.log
+*.pdf
+*.out
+*.toc
+spatch.1
