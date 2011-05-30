@@ -779,6 +779,24 @@ let adjust_after_paren toks =
     | _ -> if seen_minus then rest else xs in (* drop trailing space *)
   search_paren toks
 
+(* this is for the case where braces are added around an if branch *)
+let paren_then_brace toks =
+  let rec search_paren = function
+      [] -> []
+    | ((T2(_,Ctx,_)) as x)::xs ->
+	if List.mem (str_of_token2 x) [")"]
+	then x :: search_paren(search_plus xs)
+	else x :: search_paren xs
+    | x::xs -> x :: search_paren xs
+  and search_plus xs =
+    let (spaces, rest) = Common.span is_whitespace xs in
+    match rest with
+      (* move the brace up to the previous line *)
+      ((Cocci2("{",_,_,_,_)) as x) :: (((Cocci2 _) :: _) as rest) ->
+	(C2 " ") :: x :: spaces @ rest
+    | _ -> xs in
+  search_paren toks
+
 let is_ident_like s = s ==~ Common.regexp_alpha
 
 let rec drop_space_at_endline = function
@@ -1235,6 +1253,7 @@ let pp_program2 xs outfile  =
               (* assert Origin + Cocci + C and no minus *)
               let toks = add_space toks in
 	      let toks = add_newlines toks tu in
+	      let toks = paren_then_brace toks in
               let toks = fix_tokens toks in
 	       toks in
 

@@ -50,6 +50,8 @@
 - Improved pretty printing when the first parameter of a function is
   dropped
 - Drop positions before creating function prototype rules
+- Adjust position of { introduced by adding multiple statements in a
+  single-statement position
 
 * 0.2.5
 ** Language:
