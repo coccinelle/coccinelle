@@ -5,7 +5,7 @@ exception LinkFailure of string
 
 let ext = if Dynlink.is_native then ".cmxs" else ".cma"
 
-let sysdir =
+let sysdir () =
   let sysdircmd = !Flag.ocamlfind ^ " printconf stdlib" in
   match Common.cmd_to_list sysdircmd with
     [sysdir] -> sysdir
@@ -368,7 +368,7 @@ let load_file mlfile =
   let flags =
     Printf.sprintf
     "-thread -g -dtypes -I %s %s -I %s/globals -I %s/ocaml -I %s/parsing_c -I %s/commons "
-      sysdir inc Config.path Config.path Config.path Config.path in
+      (sysdir ()) inc Config.path Config.path Config.path Config.path in
   let (obj, cmd) =
     if Dynlink.is_native
     then compile_native_cmd flags mlfile

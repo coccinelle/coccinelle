@@ -52,13 +52,13 @@ type token1 =
  *)
 type min =
     Min of (int list (* match numbers from witness trees *) *
-	      int (* adjacency information *))
+	      Ast_cocci.adjacency (* adjacency information *))
   | Ctx
 
 type token2 =
   | T2 of Parser_c.token * min *
           int option (* orig index, abstracting away comments and space *)
-  | Fake2
+  | Fake2 of min
   | Cocci2 of string * int (* line *) * int (* lcol *) * int (* rcol *)
 	* Unparse_cocci.nlhint option
   | C2 of string
@@ -98,7 +98,7 @@ let print_token1 = function
 
 let str_of_token2 = function
   | T2 (t,_,_) -> TH.str_of_tok t
-  | Fake2 -> ""
+  | Fake2 _ -> ""
   | Cocci2 (s,_,_,_,_) -> s
   | C2 s -> s
   | Comma s -> s
@@ -107,14 +107,31 @@ let str_of_token2 = function
 
 let print_token2 = function
   | T2 (t,b,_) ->
+      let t_str =
+	match t with
+	| Parser_c.TCommentSpace _ -> " sp "
+	| Parser_c.TCommentNewline _ -> " nl "
+	| Parser_c.TCommentCpp _ -> " cp "
+	| Parser_c.TCommentMisc _ -> " misc "
+	| Parser_c.TComment _ -> " comment "
+	| _ -> "" in
       let b_str =
 	match b with
 	  Min (index,adj) ->
-	    Printf.sprintf "-%d[%s]" adj
+	    Printf.sprintf "-%d[%s]"
+	      (match adj with Ast_cocci.ADJ n -> n | _ -> -1)
 	      (String.concat " " (List.map string_of_int index))
 	| Ctx -> "" in
-      "T2:"^b_str^TH.str_of_tok t
-  | Fake2 -> "fake"
+      "T2:"^b_str^t_str^TH.str_of_tok t
+  | Fake2 b ->
+      let b_str =
+	match b with
+	  Min (index,adj) ->
+	    Printf.sprintf "-%d[%s]"
+	      (match adj with Ast_cocci.ADJ n -> n | _ -> -1)
+	      (String.concat " " (List.map string_of_int index))
+	| Ctx -> "" in
+      b_str^"fake"
   | Cocci2 (s,_,lc,rc,_) -> Printf.sprintf "Cocci2:%d:%d%s" lc rc s
   | C2 s -> "C2:"^s
   | Comma s -> "Comma:"^s
@@ -162,8 +179,8 @@ let mcode_contain_plus = function
   | Ast_cocci.CONTEXT (_,Ast_cocci.NOTHING) -> false
   | Ast_cocci.CONTEXT _ -> true
 (* patch: when need full coccinelle transformation *)
-  | Ast_cocci.MINUS (_,_,_,[]) -> false
-  | Ast_cocci.MINUS (_,_,_,x::xs) -> true
+  | Ast_cocci.MINUS (_,_,_,Ast_cocci.NOREPLACEMENT) -> false
+  | Ast_cocci.MINUS (_,_,_,Ast_cocci.REPLACEMENT _) -> true(*REPL is not empty*)
   | Ast_cocci.PLUS _ -> raise Impossible
 
 let contain_plus info =
@@ -254,7 +271,7 @@ let get_fakeInfo_and_tokens celem toks =
 
   List.rev !toks_out
 
-(* Fake nodes that have BEFORE code should be moved over any subsequent
+(* Fake nodes that have BEFORE code or are - should be moved over any subsequent
 whitespace and newlines, but not any comments, to get as close to the affected
 code as possible.  Similarly, fake nodes that have AFTER code should be moved
 backwards.  No fake nodes should have both before and after code. *)
@@ -275,7 +292,8 @@ let displace_fake_nodes toks =
 	(match !(info.cocci_tag) with
         | Some x ->
           (match x with
-	    (Ast_cocci.CONTEXT(_,Ast_cocci.BEFORE _),_) ->
+	    (Ast_cocci.CONTEXT(_,Ast_cocci.BEFORE _),_)
+	  | (Ast_cocci.MINUS(_,_,_,Ast_cocci.REPLACEMENT _),_) ->
 	    (* move the fake node forwards *)
 	      let (whitespace,rest) = Common.span is_whitespace aft in
 	      bef @ whitespace @ fake :: (loop rest)
@@ -323,7 +341,7 @@ let expand_mcode toks =
     | Fake1 info ->
         let str = Ast_c.str_of_info info in
         if str =$= ""
-        then push2 (Fake2) toks_out
+        then push2 (Fake2 minus) toks_out
 	(* fx the fake "," at the end of a structure or enum.
 	   no idea what other fake info there can be... *)
 	else push2 (Comma str) toks_out
@@ -412,7 +430,10 @@ let expand_mcode toks =
          * set of tokens, so I can then process and remove the
          * is_between_two_minus for instance *)
         add_elem t (Min (inst,adj));
-        unparser any_xxs Unparse_cocci.InPlace
+	(match any_xxs with
+	  Ast_cocci.NOREPLACEMENT -> ()
+	| Ast_cocci.REPLACEMENT(any_xxs,_) ->
+            unparser any_xxs Unparse_cocci.InPlace)
     | Ast_cocci.CONTEXT (_,any_befaft) ->
         (match any_befaft with
         | Ast_cocci.NOTHING ->
@@ -526,6 +547,7 @@ let set_minus_comment adj = function
       T2 (t, Min adj, idx)
 (* patch: coccinelle *)
   | T2 (t,Min adj,idx) as x -> x
+  | Fake2 _ as x -> x
   | _ -> raise Impossible
 
 let set_minus_comment_or_plus adj = function
@@ -538,17 +560,22 @@ let drop_minus xs =
     | _ -> false
   )
 
-let drop_expanded_and_fake xs =
+let drop_expanded xs =
   xs +> Common.exclude (function
     | T2 (t,_,_) when TH.is_expanded t -> true
-    | Fake2 -> true
+    | _ -> false
+  )
+
+let drop_fake xs =
+  xs +> Common.exclude (function
+    | Fake2 _ -> true
     | _ -> false
   )
 
 let remove_minus_and_between_and_expanded_and_fake xs =
 
-  (* get rid of expanded and fake tok *)
-  let xs = drop_expanded_and_fake xs in
+  (* get rid of expanded tok *)
+  let xs = drop_expanded xs in
 
   let minus_or_comment = function
       T2(_,Min adj,_) -> true
@@ -559,7 +586,11 @@ let remove_minus_and_between_and_expanded_and_fake xs =
     | x -> is_minusable_comment_nocpp x in
 
   let common_adj (index1,adj1) (index2,adj2) =
-    adj1 = adj2 (* same adjacency info *) &&
+    let same_adj = (* same adjacency info *)
+      match (adj1,adj2) with
+	(Ast_cocci.ADJ adj1,Ast_cocci.ADJ adj2) -> adj1 = adj2
+      | (Ast_cocci.ALLMINUS,_) | (_,Ast_cocci.ALLMINUS) -> true in
+    same_adj &&
     (* non-empty intersection of witness trees *)
     not ((Common.inter_set index1 index2) = []) in
 
@@ -574,7 +605,7 @@ let remove_minus_and_between_and_expanded_and_fake xs =
   let rec adjust_around_minus = function
       [] -> []
     | (T2(Parser_c.TCommentNewline c,_b,_i) as x)::
-      (T2(_,Min adj1,_) as t1)::xs ->
+      ((Fake2(Min adj1) | T2(_,Min adj1,_)) as t1)::xs ->
 	let (minus_list,rest) = Common.span not_context (t1::xs) in
 	let contains_plus = List.exists is_plus minus_list in
 	let x =
@@ -585,22 +616,23 @@ let remove_minus_and_between_and_expanded_and_fake xs =
 	  | _ -> x in
 	x :: adjust_within_minus contains_plus minus_list @
 	adjust_around_minus rest
-    | (T2(_,Min adj1,_) as t1)::xs ->
+    | ((Fake2(Min adj1) | T2(_,Min adj1,_)) as t1)::xs ->
 	let (minus_list,rest) = Common.span not_context (t1::xs) in
 	let contains_plus = List.exists is_plus minus_list in
 	adjust_within_minus contains_plus minus_list @ adjust_around_minus rest
     | x::xs ->
 	x :: adjust_around_minus xs
   and adjust_within_minus cp (* contains plus *) = function
-      (T2(_,Min adj1,_) as t1)::xs ->
+      ((Fake2(Min adj1) | T2(_,Min adj1,_)) as t1)::xs ->
 	let not_minus = function T2(_,Min _,_) -> false | _ -> true in
 	let (not_minus_list,rest) = Common.span not_minus xs in
 	t1 ::
 	(match rest with
-	  (T2(_,Min adj2,_) as t2)::xs when common_adj adj1 adj2 ->
+	  ((Fake2(Min adj2) | T2(_,Min adj2,_)) as t2)::xs
+	  when common_adj adj1 adj2 ->
 	    (List.map (set_minus_comment_or_plus adj1) not_minus_list)
 	    @ (adjust_within_minus cp (t2::xs))
-	| (T2(_,Min adj2,_) as t2)::xs ->
+	| ((Fake2(Min adj2) | T2(_,Min adj2,_)) as t2)::xs ->
 	    if not cp && List.for_all is_whitespace not_minus_list
 	    then
 	      (List.map (set_minus_comment_or_plus adj1) not_minus_list)
@@ -611,6 +643,8 @@ let remove_minus_and_between_and_expanded_and_fake xs =
 	    if cp
 	    then xs
 	    else
+	      (* remove spaces after removed stuff, eg a comma after a
+		 function argument *)
 	      let (spaces,rest) = Common.span is_space xs in
 	      (List.map (set_minus_comment_or_plus adj1) spaces)
 	      @ rest)
@@ -623,6 +657,9 @@ let remove_minus_and_between_and_expanded_and_fake xs =
     | _ -> false in
 
   let xs = adjust_around_minus xs in
+
+  (* get rid of fake tok *)
+  let xs = drop_fake xs in
 
   (* this drops blank lines after a brace introduced by removing code *)
   let minus_or_comment_nonl = function
@@ -709,7 +746,7 @@ let adjust_before_semicolon toks =
       [] -> []
     | ((T2(_,Ctx,_)) as x)::xs | ((Cocci2 _) as x)::xs ->
 	if List.mem (str_of_token2 x) [";";")";","]
-	then x :: search_minus false xs
+	then x :: search_semic (search_minus false xs)
 	else x :: search_semic xs
     | x::xs -> x :: search_semic xs
   and search_minus seen_minus xs =
@@ -719,6 +756,28 @@ let adjust_before_semicolon toks =
       ((T2(_,Min _,_)) as a)::rerest -> a :: search_minus true rerest
     | _ -> if seen_minus then rest else xs in
   List.rev (search_semic toks)
+
+(* normally, in C code, a ( is not followed by a space or newline *)
+let adjust_after_paren toks =
+  let rec search_paren = function
+      [] -> []
+    | ((T2(_,Ctx,_)) as x)::xs | ((Cocci2 _) as x)::xs ->
+	if List.mem (str_of_token2 x) ["("] (* other things? *)
+	then x :: search_paren(search_minus false xs)
+	else x :: search_paren xs
+    | x::xs -> x :: search_paren xs
+  and search_minus seen_minus xs =
+    let (spaces, rest) = Common.span is_space xs in
+    (* only delete spaces if something is actually deleted *)
+    match rest with
+      ((T2(_,Min _,_)) as a)::rerest -> (* minus *)
+	a :: search_minus true rerest
+    | ((T2(_,Ctx,_)) as a)::rerest when str_of_token2 a = "," ->
+	(* comma after ( will be deleted, so consider it as minus code
+	   already *)
+	a :: search_minus true rerest
+    | _ -> if seen_minus then rest else xs in (* drop trailing space *)
+  search_paren toks
 
 let is_ident_like s = s ==~ Common.regexp_alpha
 
@@ -861,7 +920,7 @@ let add_newlines toks tabbing_unit =
 	a :: rest
     | ((C2(s)) as a)::xs -> a :: loop info (string_length s count) xs
     | ((Comma(s)) as a)::xs -> a :: loop info (string_length s count) xs
-    | Fake2 :: _ | Indent_cocci2 :: _
+    | Fake2 _ :: _ | Indent_cocci2 :: _
     | Unindent_cocci2 _::_ ->
 	failwith "unexpected fake, indent, or unindent" in
   let redo_spaces prev = function
@@ -1053,7 +1112,7 @@ let fix_tokens toks =
 type kind_token2 = KFake | KCocci | KC | KExpanded | KOrigin
 
 let kind_of_token2 = function
-  | Fake2 -> KFake
+  | Fake2 _ -> KFake
   | Cocci2 _ -> KCocci
   | C2 _ -> KC
   | Comma _ -> KC
@@ -1163,11 +1222,12 @@ let pp_program2 xs outfile  =
 	    if !Flag.sgrep_mode2
 	    then
 	      (* nothing else to do for sgrep *)
-	      drop_expanded_and_fake (drop_minus toks)
+	      drop_expanded(drop_fake(drop_minus toks))
 	    else
               (* phase2: can now start to filter and adjust *)
 	      let (toks,tu) = adjust_indentation toks in
 	      let toks = adjust_before_semicolon toks in(*before remove minus*)
+	      let toks = adjust_after_paren toks in(*also before remove minus*)
 	      let toks = drop_space_at_endline toks in
 	      let toks = paren_to_space toks in
 	      let toks = drop_end_comma toks in

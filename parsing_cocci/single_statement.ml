@@ -80,10 +80,10 @@ let modif_before x =
   | Ast0.MINUS mc ->
       (match !mc with
 	(* do better for the common case of replacing a stmt by another one *)
-	([[Ast.StatementTag(s)]],ti) ->
+	((Ast.REPLACEMENT([[Ast.StatementTag(s)]],c)) as old,ti) ->
 	  (match Ast.unwrap s with
 	    Ast.IfThen(_,_,_) -> true (* potentially dangerous *)
-	  | _ -> mc := ([[Ast.StatementTag(s)]],ti); false)
+	  | _ -> mc := (old,ti); false)
       |	(_,_) -> true)
   | Ast0.CONTEXT mc | Ast0.MIXED mc ->
       (match !mc with
@@ -97,11 +97,11 @@ let modif_after x =
   | Ast0.MINUS mc ->
       (match !mc with
 	(* do better for the common case of replacing a stmt by another one *)
-	([[Ast.StatementTag(s)]],ti) ->
+	((Ast.REPLACEMENT([[Ast.StatementTag(s)]],count)) as old,ti) ->
 	  (match Ast.unwrap s with
 	    Ast.IfThen(_,_,_) -> true (* potentially dangerous *)
-	  | _ -> mc := ([[Ast.StatementTag(s)]],ti); false)
-      |	(l,_) when any_statements l -> true
+	  | _ -> mc := (old,ti); false)
+      |	(Ast.REPLACEMENT(l,_),_) when any_statements l -> true
       |	(l,ti) -> mc := (l,ti); false)
   | Ast0.CONTEXT mc | Ast0.MIXED mc ->
       (match !mc with
@@ -114,7 +114,7 @@ let rec left_ident i =
   modif_before i or
   match Ast0.unwrap i with
     Ast0.Id(name) -> modif_before_mcode name
-  | Ast0.MetaId(name,_,_) -> modif_before_mcode name
+  | Ast0.MetaId(name,_,_,_) -> modif_before_mcode name
   | Ast0.MetaFunc(name,_,_) -> modif_before_mcode name
   | Ast0.MetaLocalFunc(name,_,_) -> modif_before_mcode name
   | Ast0.DisjId(_,id_list,_,_) -> List.exists left_ident id_list
@@ -125,7 +125,7 @@ let rec right_ident i =
   modif_after i or
   match Ast0.unwrap i with
     Ast0.Id(name) -> modif_after_mcode name
-  | Ast0.MetaId(name,_,_) -> modif_after_mcode name
+  | Ast0.MetaId(name,_,_,_) -> modif_after_mcode name
   | Ast0.MetaFunc(name,_,_) -> modif_after_mcode name
   | Ast0.MetaLocalFunc(name,_,_) -> modif_after_mcode name
   | Ast0.DisjId(_,id_list,_,_) -> List.exists right_ident id_list
@@ -240,7 +240,8 @@ and left_statement s =
       (* irrelevant *) false
   | Ast0.Decl(_,decl) -> left_declaration decl
   | Ast0.Seq(lbrace,body,rbrace) -> modif_before_mcode lbrace
-  | Ast0.ExprStatement(exp,sem) -> left_expression exp
+  | Ast0.ExprStatement(Some exp,sem) -> left_expression exp
+  | Ast0.ExprStatement(None,sem) -> modif_before_mcode sem
   | Ast0.IfThen(iff,lp,exp,rp,branch1,(info,aft)) -> modif_before_mcode iff
   | Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2,(info,aft)) ->
       modif_before_mcode iff
@@ -328,10 +329,10 @@ let rec adding_something s =
     Ast0.MINUS(mc) ->
       (match !mc with
 	(* do better for the common case of replacing a stmt by another one *)
-	([[Ast.StatementTag(s)]],ti) ->
+	((Ast.REPLACEMENT([[Ast.StatementTag(s)]],c)) as old,ti) ->
 	  (match Ast.unwrap s with
 	    Ast.IfThen(_,_,_) -> true (* potentially dangerous *)
-	  | _ -> mc := ([[Ast.StatementTag(s)]],ti); false)
+	  | _ -> mc := (old,ti); false)
       |	(_,_) -> true)
   | Ast0.CONTEXT(mc) ->
       let (text,tinfo1,tinfo2) = !mc in
@@ -348,7 +349,7 @@ and contains_only_minus =
   let mcodekind = function
       Ast0.MINUS(mc) ->
 	(match !mc with
-	  ([],_) -> true
+	  (Ast.NOREPLACEMENT,_) -> true
 	| _ -> false)
     | Ast0.CONTEXT(mc) -> false
     | _ -> false in
@@ -433,7 +434,14 @@ let add_braces orig_s =
     match Ast0.get_mcodekind s with
       Ast0.MINUS(mc) ->
 	let (text,tinfo) = !mc in
-	Ast0.MINUS(ref([Ast.mkToken "{"]::text@[[Ast.mkToken "}"]],tinfo))
+	let inner_text =
+	  match text with
+	    Ast.NOREPLACEMENT -> [[Ast.mkToken "{}"]]
+	  | Ast.REPLACEMENT(anythings,Ast.ONE) ->
+	      [Ast.mkToken "{"]::anythings@[[Ast.mkToken "}"]]
+	  | Ast.REPLACEMENT(anythings,Ast.MANY) ->
+	      failwith "++ not supported when braces must be added" in
+	Ast0.MINUS(ref(Ast.REPLACEMENT(inner_text,Ast.ONE),tinfo))
     | Ast0.CONTEXT(mc) ->
 	let (text,tinfo1,tinfo2) = !mc in
 	let new_text =
@@ -491,7 +499,8 @@ let all_minus s =
 
 let rec unchanged_minus s =
   match Ast0.get_mcodekind s with
-    Ast0.MINUS(mc) -> (match !mc with ([],_) -> true | _ -> false)
+    Ast0.MINUS(mc) ->
+      (match !mc with (Ast.NOREPLACEMENT,_) -> true | _ -> false)
   | _ -> false
 
 let rec do_branch s =

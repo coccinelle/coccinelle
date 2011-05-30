@@ -87,7 +87,7 @@ let get_free checker t =
 
   let ident r k i =
     match Ast0.unwrap i with
-      Ast0.MetaId(name,_,_) | Ast0.MetaFunc(name,_,_)
+      Ast0.MetaId(name,_,_,_) | Ast0.MetaFunc(name,_,_)
     | Ast0.MetaLocalFunc(name,_,_) -> checker name
     | Ast0.DisjId(starter,id_list,mids,ender) ->
 	detect_unitary_frees(List.map r.VT0.combiner_rec_ident id_list)
@@ -178,8 +178,8 @@ let update_unitary unitary =
 
   let ident r k i =
     match Ast0.unwrap i with
-      Ast0.MetaId(name,constraints,_) ->
-	Ast0.rewrap i (Ast0.MetaId(name,constraints,is_unitary name))
+      Ast0.MetaId(name,constraints,seed,_) ->
+	Ast0.rewrap i (Ast0.MetaId(name,constraints,seed,is_unitary name))
     | Ast0.MetaFunc(name,constraints,_) ->
 	Ast0.rewrap i (Ast0.MetaFunc(name,constraints,is_unitary name))
     | Ast0.MetaLocalFunc(name,constraints,_) ->

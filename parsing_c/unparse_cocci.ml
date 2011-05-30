@@ -182,7 +182,9 @@ let mcode fn (s,info,mc,pos) =
       force_newline();
       print_text "- ";
       fn s line lcol; print_pos pos;
-      print_anything plus_stream
+      (match plus_stream with
+	Ast.NOREPLACEMENT -> ()
+      |	Ast.REPLACEMENT(plus_stream,ct) -> print_anything plus_stream)
   | (true, Ast.CONTEXT(_,plus_streams)) ->
       let fn s = force_newline(); fn s line lcol; print_pos pos in
       print_around fn s plus_streams
@@ -387,6 +389,7 @@ and arg_expression e =
 
 and  unaryOp = function
     Ast.GetRef -> print_string "&"
+  | Ast.GetRefLabel -> print_string "&&"
   | Ast.DeRef -> print_string "*"
   | Ast.UnPlus -> print_string "+"
   | Ast.UnMinus -> print_string "-"
@@ -763,7 +766,7 @@ and rule_elem arity re =
       end_block(); pr_arity arity; mcode print_string brace
 
   | Ast.ExprStatement(exp,sem) ->
-      pr_arity arity; expression exp; mcode print_string sem
+      pr_arity arity; print_option expression exp; mcode print_string sem
 
   | Ast.IfHeader(iff,lp,exp,rp) ->
       pr_arity arity;
@@ -1077,6 +1080,8 @@ let rec pp_any = function
   | Ast.SgrepEndTag(x) -> failwith "unexpected end tag"
 in
 
+(*Printf.printf "start of the function\n";*)
+
   anything := (function x -> let _ = pp_any x in ());
 
   (* todo? imitate what is in pretty_print_cocci ? *)
@@ -1146,10 +1151,12 @@ in
 		  (match Ast.unwrap x with
 		    Ast.IComma _ -> false
 		  | _ -> true)
-	      |	Ast.Token(t,_) when List.mem t [",";";";"(";")"] -> false
+	      |	Ast.Token(t,_) when List.mem t [",";";";"(";")";".";"->"] ->
+		  false
 	      |	_ -> true in
 	    let space_needed_after = function
-		Ast.Token(t,_) when List.mem t ["("] -> (*never needed*) false
+		Ast.Token(t,_)
+		when List.mem t ["(";".";"->"] -> (*never needed*) false
 	      |	Ast.Token(t,_) when List.mem t ["if";"for";"while";"do"] ->
 		  (* space always needed *)
 		  pr_space(); false

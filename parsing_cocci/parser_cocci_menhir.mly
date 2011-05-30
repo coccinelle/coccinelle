@@ -89,15 +89,15 @@ let tmeta_to_statement (name,pure,clt) =
 
 let tmeta_to_seed_id (name,pure,clt) =
   (coerce_tmeta "an identifier" name
-     (TMetaId(name,Ast.IdNoConstraint,pure,clt))
-     (function TMetaId(_,_,_,_) -> true | _ -> false));
+     (TMetaId(name,Ast.IdNoConstraint,Ast.NoVal,pure,clt))
+     (function TMetaId(_,_,_,_,_) -> true | _ -> false));
   Ast.SeedId name
 
 let tmeta_to_ident (name,pure,clt) =
   (coerce_tmeta "an identifier" name
-     (TMetaId(name,Ast.IdNoConstraint,pure,clt))
-     (function TMetaId(_,_,_,_) -> true | _ -> false));
-  Ast0.wrap(Ast0.MetaId(P.clt2mcode name clt,Ast.IdNoConstraint,pure))
+     (TMetaId(name,Ast.IdNoConstraint,Ast.NoVal,pure,clt))
+     (function TMetaId(_,_,_,_,_) -> true | _ -> false));
+  Ast0.wrap(Ast0.MetaId(P.clt2mcode name clt,Ast.IdNoConstraint,Ast.NoVal,pure))
 %}
 
 %token EOF
@@ -125,7 +125,8 @@ let tmeta_to_ident (name,pure,clt) =
 %token <string * Data.clt> TIdent TTypeId TDeclarerId TIteratorId
 %token <Ast_cocci.added_string * Data.clt> TPragma
 
-%token <Parse_aux.idinfo>        TMetaId TMetaFunc TMetaLocalFunc
+%token <Parse_aux.midinfo>       TMetaId
+%token <Parse_aux.idinfo>        TMetaFunc TMetaLocalFunc
 %token <Parse_aux.idinfo>        TMetaIterator TMetaDeclarer
 %token <Parse_aux.expinfo>       TMetaErr
 %token <Parse_aux.info>          TMetaParam TMetaStm TMetaStmList TMetaType
@@ -421,7 +422,7 @@ list_len:
   TFresh TIdentifier
     { (fun name check_meta seed ->
       let tok = check_meta(Ast.MetaFreshIdDecl(name,seed)) in
-      !Data.add_fresh_id_meta name; tok) }
+      !Data.add_fresh_id_meta name seed; tok) }
 
 /* metavariable kinds with no constraints, etc */
 %inline metakind:
@@ -872,9 +873,9 @@ includes:
       (Ast0.Undef
 	 (P.clt2mcode "#undef" (P.drop_aft clt),
 	  (match ident with
-	    TMetaId((nm,constraints,pure,clt)) ->
+	    TMetaId((nm,constraints,seed,pure,clt)) ->
 	      let clt = P.set_aft aft clt in
-	      Ast0.wrap(Ast0.MetaId(P.clt2mcode nm clt,constraints,pure))
+	      Ast0.wrap(Ast0.MetaId(P.clt2mcode nm clt,constraints,seed,pure))
 	  | TIdent((nm,clt)) ->
 	      let clt = P.set_aft aft clt in
 	      Ast0.wrap(Ast0.Id(P.clt2mcode nm clt))
@@ -907,9 +908,10 @@ defineop:
 	  (Ast0.Define
 	     (P.clt2mcode "#define" (P.drop_aft clt),
 	      (match ident with
-		TMetaId((nm,constraints,pure,clt)) ->
+		TMetaId((nm,constraints,seed,pure,clt)) ->
 		  let clt = P.set_aft aft clt in
-		  Ast0.wrap(Ast0.MetaId(P.clt2mcode nm clt,constraints,pure))
+		  Ast0.wrap
+		    (Ast0.MetaId(P.clt2mcode nm clt,constraints,seed,pure))
 	      | TIdent((nm,clt)) ->
 		  let clt = P.set_aft aft clt in
 		  Ast0.wrap(Ast0.Id(P.clt2mcode nm clt))
@@ -932,8 +934,9 @@ defineop:
 	  (Ast0.Define
 	     (P.clt2mcode "#define" (P.drop_aft clt),
 	      (match ident with
-		TMetaId((nm,constraints,pure,clt)) ->
-		  Ast0.wrap(Ast0.MetaId(P.clt2mcode nm clt,constraints,pure))
+		TMetaId((nm,constraints,seed,pure,clt)) ->
+		  Ast0.wrap
+		    (Ast0.MetaId(P.clt2mcode nm clt,constraints,seed,pure))
 	      | TIdent((nm,clt)) ->
 		  Ast0.wrap(Ast0.Id(P.clt2mcode nm clt))
 	      | _ ->
@@ -1063,7 +1066,7 @@ statement:
 | TMeta { tmeta_to_statement $1}
 | TMetaStm
     { P.meta_stm $1 }
-| expr TPtVirg
+| option(expr) TPtVirg
     { P.exp_stm $1 $2 }
 | TIf TOPar eexpr TCPar single_statement %prec TIf
     { P.ifthen $1 $2 $3 $4 $5 }
@@ -1119,7 +1122,7 @@ what about statement metavariables? */
 rule_elem_statement:
   one_decl_var
     { Ast0.wrap(Ast0.Decl((Ast0.default_info(),Ast0.context_befaft()),$1)) }
-| expr TPtVirg { P.exp_stm $1 $2 }
+| option(expr) TPtVirg { P.exp_stm $1 $2 }
 | TReturn eexpr TPtVirg { P.ret_exp $1 $2 $3 }
 | TReturn TPtVirg { P.ret $1 $2 }
 | TBreak TPtVirg { P.break $1 $2 }
@@ -1597,6 +1600,9 @@ postfix_expr(r,pe):
 
 primary_expr(recurser,primary_extra):
    func_ident   { Ast0.wrap(Ast0.Ident($1)) }
+ | TAndLog ident
+     { let op = P.clt2mcode Ast.GetRefLabel $1 in
+     Ast0.wrap(Ast0.Unary(Ast0.wrap(Ast0.Ident($2)), op)) }
  | TInt
      { let (x,clt) = $1 in
      Ast0.wrap(Ast0.Constant (P.clt2mcode (Ast.Int x) clt)) }
@@ -1695,8 +1701,15 @@ pure_ident_or_meta_ident_with_seed:
 
 seed_elem:
   TString { let (x,_) = $1 in Ast.SeedString x }
-| TMetaId { let (x,_,_,_) = $1 in Ast.SeedId x }
+| TMetaId { let (x,_,_,_,_) = $1 in Ast.SeedId x }
 | TMeta {failwith "tmeta"}
+| TVirtual TDot pure_ident
+    { let nm = ("virtual",P.id2name $3) in
+     Iteration.parsed_virtual_identifiers :=
+       Common.union_set [snd nm]
+	 !Iteration.parsed_virtual_identifiers;
+    try Ast.SeedString (List.assoc (snd nm) !Flag.defined_virtual_env)
+    with Not_found -> Ast.SeedId nm }
 | TRuleName TDot pure_ident
     { let nm = ($1,P.id2name $3) in
       P.check_meta(Ast.MetaIdDecl(Ast.NONE,nm));
@@ -1888,7 +1901,8 @@ not_pos:
 		 (function mv -> Ast.MetaPosDecl(Ast.NONE,mv)))
 	     l }
 
-func_ident: ident { $1 }
+func_ident:
+       ident { $1 }
      | TMetaFunc
          { let (nm,constraints,pure,clt) = $1 in
 	 Ast0.wrap(Ast0.MetaFunc(P.clt2mcode nm clt,constraints,pure)) }
@@ -1909,15 +1923,15 @@ fn_ident: disj_ident { $1 }
 ident: pure_ident
          { Ast0.wrap(Ast0.Id(P.id2mcode $1)) }
      | TMetaId
-         { let (nm,constraints,pure,clt) = $1 in
-         Ast0.wrap(Ast0.MetaId(P.clt2mcode nm clt,constraints,pure)) }
+         { let (nm,constraints,seed,pure,clt) = $1 in
+         Ast0.wrap(Ast0.MetaId(P.clt2mcode nm clt,constraints,seed,pure)) }
 
 mident: pure_ident
          { Ast0.wrap(Ast0.Id(P.id2mcode $1)) }
      | TMeta { tmeta_to_ident $1 }
      | TMetaId
-         { let (nm,constraints,pure,clt) = $1 in
-         Ast0.wrap(Ast0.MetaId(P.clt2mcode nm clt,constraints,pure)) }
+         { let (nm,constraints,seed,pure,clt) = $1 in
+         Ast0.wrap(Ast0.MetaId(P.clt2mcode nm clt,constraints,seed,pure)) }
 
 disj_ident:
        mident { $1 }
@@ -1935,14 +1949,14 @@ decl_ident:
          { Ast0.wrap(Ast0.Id(P.id2mcode $1)) }
      | TMetaDeclarer
          { let (nm,constraints,pure,clt) = $1 in
-         Ast0.wrap(Ast0.MetaId(P.clt2mcode nm clt,constraints,pure)) }
+         Ast0.wrap(Ast0.MetaId(P.clt2mcode nm clt,constraints,Ast.NoVal,pure)) }
 
 iter_ident:
        TIteratorId
          { Ast0.wrap(Ast0.Id(P.id2mcode $1)) }
      | TMetaIterator
          { let (nm,constraints,pure,clt) = $1 in
-         Ast0.wrap(Ast0.MetaId(P.clt2mcode nm clt,constraints,pure)) }
+         Ast0.wrap(Ast0.MetaId(P.clt2mcode nm clt,constraints,Ast.NoVal,pure)) }
 
 typedef_ident:
        pure_ident

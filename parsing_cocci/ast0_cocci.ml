@@ -38,10 +38,9 @@ let default_token_info =
 
 (* MIXED is like CONTEXT, since sometimes MIXED things have to revert to
 CONTEXT - see insert_plus.ml *)
-type count = ONE (* + *) | MANY (* ++ *)
 
 type mcodekind =
-    MINUS       of (Ast.anything list list * token_info) ref
+    MINUS       of (Ast.anything Ast.replacement * token_info) ref
   | PLUS        of Ast.count
   | CONTEXT     of (Ast.anything Ast.befaft * token_info * token_info) ref
   | MIXED       of (Ast.anything Ast.befaft * token_info * token_info) ref
@@ -104,7 +103,7 @@ and 'a dots = 'a base_dots wrap
 
 and base_ident =
     Id            of string mcode
-  | MetaId        of Ast.meta_name mcode * Ast.idconstraint * pure
+  | MetaId        of Ast.meta_name mcode * Ast.idconstraint * Ast.seed * pure
   | MetaFunc      of Ast.meta_name mcode * Ast.idconstraint * pure
   | MetaLocalFunc of Ast.meta_name mcode * Ast.idconstraint * pure
   | DisjId        of string mcode * ident list *
@@ -306,7 +305,7 @@ and base_statement =
     Decl          of (info * mcodekind) (* before the decl *) * declaration
   | Seq           of string mcode (* { *) * statement dots *
  	             string mcode (* } *)
-  | ExprStatement of expression * string mcode (*;*)
+  | ExprStatement of expression option * string mcode (*;*)
   | IfThen        of string mcode (* if *) * string mcode (* ( *) *
 	             expression * string mcode (* ) *) *
 	             statement * (info * mcodekind) (* after info *)
@@ -484,7 +483,7 @@ let default_befaft _ =
   MIXED(ref (Ast.NOTHING,default_token_info,default_token_info))
 let context_befaft _ =
   CONTEXT(ref (Ast.NOTHING,default_token_info,default_token_info))
-let minus_befaft _ = MINUS(ref ([],default_token_info))
+	  let minus_befaft _ = MINUS(ref (Ast.NOREPLACEMENT,default_token_info))
 
 let wrap x =
   { node = x;
@@ -579,7 +578,7 @@ let rec ast0_type_to_type ty =
       (match unwrap tag with
 	Id(tag) ->
 	  TC.EnumName(TC.Name(unwrap_mcode tag))
-      | MetaId(tag,_,_) ->
+      | MetaId(tag,_,_,_) ->
 	  (Printf.printf
 	     "warning: enum with a metavariable name detected.\n";
 	   Printf.printf
@@ -592,14 +591,14 @@ let rec ast0_type_to_type ty =
       (match unwrap tag with
 	Id(tag) ->
 	  TC.StructUnionName(structUnion su,TC.Name(unwrap_mcode tag))
-      | MetaId(tag,Ast.IdNoConstraint,_) ->
+      | MetaId(tag,Ast.IdNoConstraint,_,_) ->
 	  (Common.pr2
 	     "warning: struct/union with a metavariable name detected.\n";
 	   Common.pr2
 	     "For type checking assuming the name of the metavariable is the name of the type\n";
 	   TC.StructUnionName(structUnion su,
 			      TC.MV(unwrap_mcode tag,TC.Unitary,false)))
-      | MetaId(tag,_,_) ->
+      | MetaId(tag,_,_,_) ->
 	  (* would have to duplicate the type in type_cocci.ml?
 	     perhaps polymorphism would help? *)
 	  failwith "constraints not supported on struct type name"
@@ -669,7 +668,7 @@ let rec reverse_type ty =
   | TC.EnumName(TC.MV(name,_,_)) ->
       EnumName
 	(make_mcode "enum",
-	 Some (context_wrap(MetaId(make_mcode name,Ast.IdNoConstraint,
+	 Some (context_wrap(MetaId(make_mcode name,Ast.IdNoConstraint,Ast.NoVal,
 				   Impure))))
   | TC.EnumName(TC.Name tag) ->
       EnumName(make_mcode "enum",Some(context_wrap(Id(make_mcode tag))))
@@ -677,7 +676,7 @@ let rec reverse_type ty =
       (* not right?... *)
       StructUnionName
 	(reverse_structUnion su,
-	 Some(context_wrap(MetaId(make_mcode name,Ast.IdNoConstraint,
+	 Some(context_wrap(MetaId(make_mcode name,Ast.IdNoConstraint,Ast.NoVal,
 				  Impure(*not really right*)))))
   |  TC.StructUnionName(su,TC.Name tag) ->
       StructUnionName

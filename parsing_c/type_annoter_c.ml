@@ -811,7 +811,6 @@ let annotater_expr_visitor_subpart = (fun (k,bigf) expr ->
           make_info_def_fix ft
         )
 
-
     (* -------------------------------------------------- *)
     (* fields *)
     | RecordAccess  (e, namefld)
@@ -1072,9 +1071,11 @@ let rec visit_toplevel ~just_add_in_env ~depth elem =
 
 
 	    let local =
-	      match local with
-	      | Ast_c.NotLocalDecl -> Ast_c.NotLocalVar
-	      |	Ast_c.LocalDecl -> Ast_c.LocalVar (Ast_c.info_of_type t)
+	      match (sto,local) with
+	      | (_,Ast_c.NotLocalDecl) -> Ast_c.NotLocalVar
+	      |	((Ast_c.Sto Ast_c.Static, _), Ast_c.LocalDecl) ->
+		  Ast_c.StaticLocalVar (Ast_c.info_of_type t)
+	      |	(_,Ast_c.LocalDecl) -> Ast_c.LocalVar (Ast_c.info_of_type t)
             in
             var +> Common.do_option (fun (name, iniopt) ->
               let s = Ast_c.str_of_name name in

@@ -329,7 +329,7 @@ let combiner bind option_default
       | Ast.SeqStart(brace) -> string_mcode brace
       | Ast.SeqEnd(brace) -> string_mcode brace
       | Ast.ExprStatement(exp,sem) ->
-	  bind (expression exp) (string_mcode sem)
+	  bind (get_option expression exp) (string_mcode sem)
       | Ast.IfHeader(iff,lp,exp,rp) ->
 	  multibind [string_mcode iff; string_mcode lp; expression exp;
 		      string_mcode rp]
@@ -827,7 +827,7 @@ let rebuilder
 	| Ast.SeqStart(brace) -> Ast.SeqStart(string_mcode brace)
 	| Ast.SeqEnd(brace) -> Ast.SeqEnd(string_mcode brace)
 	| Ast.ExprStatement(exp,sem) ->
-	    Ast.ExprStatement (expression exp, string_mcode sem)
+	    Ast.ExprStatement (get_option expression exp, string_mcode sem)
 	| Ast.IfHeader(iff,lp,exp,rp) ->
 	    Ast.IfHeader(string_mcode iff, string_mcode lp, expression exp,
 	      string_mcode rp)

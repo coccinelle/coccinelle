@@ -299,7 +299,7 @@ let rec is_pure_context s =
       | Ast0.MINUS(mc) ->
 	  (match !mc with
 	(* do better for the common case of replacing a stmt by another one *)
-	    ([[Ast.StatementTag(s)]],_) ->
+	    (Ast.REPLACEMENT([[Ast.StatementTag(s)]],_),_) ->
 	      (match Ast.unwrap s with
 		Ast.IfThen(_,_,_) -> false (* potentially dangerous *)
 	      | _ -> true)
@@ -375,7 +375,9 @@ let match_maker checks_needed context_required whencode_allowed =
 	      (Ast.NOTHING,_,_) -> Ast0.PureContext
 	    | _ -> Ast0.Context)
 	| Ast0.MINUS(mc) ->
-	    (match !mc with ([],_) -> Ast0.Pure | _ ->  Ast0.Impure)
+	    (match !mc with
+	      (Ast.NOREPLACEMENT,_) -> Ast0.Pure
+	    | _ ->  Ast0.Impure)
 	| _ -> Ast0.Impure in
     let donothing r k e =
       bind (pure_mcodekind (Ast0.get_mcodekind e)) (k e) in
@@ -388,7 +390,7 @@ let match_maker checks_needed context_required whencode_allowed =
     let ident r k i =
       bind (bind (pure_mcodekind (Ast0.get_mcodekind i)) (k i))
 	(match Ast0.unwrap i with
-	  Ast0.MetaId(name,_,pure) | Ast0.MetaFunc(name,_,pure)
+	  Ast0.MetaId(name,_,_,pure) | Ast0.MetaFunc(name,_,pure)
 	| Ast0.MetaLocalFunc(name,_,pure) -> pure
 	| _ -> Ast0.Impure) in
 
@@ -494,7 +496,7 @@ let match_maker checks_needed context_required whencode_allowed =
 
   let rec match_ident pattern id =
     match Ast0.unwrap pattern with
-      Ast0.MetaId(name,_,pure) ->
+      Ast0.MetaId(name,_,_,pure) ->
 	(add_pure_binding name pure pure_sp_code.VT0.combiner_rec_ident
 	  (function id -> Ast0.IdentTag id) id)
     | Ast0.MetaFunc(name,_,pure) -> failwith "metafunc not supported"
@@ -1053,7 +1055,8 @@ let match_maker checks_needed context_required whencode_allowed =
 		       bodya bodyb
 		   else return_false (Braces(s))))
 	  | (Ast0.ExprStatement(expa,sc1),Ast0.ExprStatement(expb,sc)) ->
-	      conjunct_bindings (check_mcode sc1 sc) (match_expr expa expb)
+	      conjunct_bindings (check_mcode sc1 sc)
+		(match_option match_expr expa expb)
 	  | (Ast0.IfThen(if1,lp1,expa,rp1,branch1a,_),
 	     Ast0.IfThen(if2,lp2,expb,rp2,branch1b,_)) ->
 	       conjunct_many_bindings
@@ -1278,7 +1281,8 @@ let make_minus =
      match mcodekind with
        Ast0.CONTEXT(mc) ->
 	 (match !mc with
-	   (Ast.NOTHING,_,_) -> Ast0.MINUS(ref([],Ast0.default_token_info))
+	   (Ast.NOTHING,_,_) ->
+	     Ast0.MINUS(ref(Ast.NOREPLACEMENT,Ast0.default_token_info))
 	 | _ -> failwith "make_minus: unexpected befaft")
      | Ast0.MINUS(mc) -> mcodekind (* in the part copied from the src term *)
      | _ -> failwith "make_minus mcode: unexpected mcodekind" in
@@ -1289,7 +1293,8 @@ let make_minus =
       Ast0.CONTEXT(mc) ->
 	(match !mc with
 	  (Ast.NOTHING,_,_) ->
-	    mcodekind := Ast0.MINUS(ref([],Ast0.default_token_info))
+	    mcodekind :=
+	      Ast0.MINUS(ref(Ast.NOREPLACEMENT,Ast0.default_token_info))
 	| _ -> failwith "make_minus: unexpected befaft")
     | Ast0.MINUS(_mc) -> () (* in the part copied from the src term *)
     | Ast0.PLUS _ -> failwith "make_minus donothing: unexpected plus mcodekind"
@@ -1370,7 +1375,8 @@ let make_minus =
 	  Ast0.MIXED(mc) | Ast0.CONTEXT(mc) ->
 	    (match !mc with
 	      (Ast.NOTHING,_,_) ->
-		mcodekind := Ast0.MINUS(ref([],Ast0.default_token_info));
+		mcodekind :=
+		  Ast0.MINUS(ref(Ast.NOREPLACEMENT,Ast0.default_token_info));
 		e
 	    | _ -> failwith "make_minus: unexpected befaft")
 	  (* code already processed by an enclosing iso *)
@@ -1545,7 +1551,7 @@ let instantiate bindings mv_bindings =
   let identfn r k e =
     let e = k e in
     match Ast0.unwrap e with
-      Ast0.MetaId(name,constraints,pure) ->
+      Ast0.MetaId(name,constraints,seed,pure) ->
 	(rebuild_mcode None).VT0.rebuilder_rec_ident
 	  (match lookup name bindings mv_bindings with
 	    Common.Left(Ast0.IdentTag(id)) -> id
@@ -1553,7 +1559,7 @@ let instantiate bindings mv_bindings =
 	  | Common.Right(new_mv) ->
 	      Ast0.rewrap e
 		(Ast0.MetaId
-		   (Ast0.set_mcode_data new_mv name,constraints,pure)))
+		   (Ast0.set_mcode_data new_mv name,constraints,seed,pure)))
     | Ast0.MetaFunc(name,_,pure) -> failwith "metafunc not supported"
     | Ast0.MetaLocalFunc(name,_,pure) -> failwith "metalocalfunc not supported"
     | _ -> e in
@@ -1688,7 +1694,7 @@ let instantiate bindings mv_bindings =
 	    let nomodif = function
 		Ast0.MINUS(x) ->
 		  (match !x with
-		    ([],_) -> true
+		    (Ast.NOREPLACEMENT,_) -> true
 		  | _ -> false)
 	      |	Ast0.CONTEXT(x) | Ast0.MIXED(x) ->
 		  (match !x with
@@ -1935,7 +1941,8 @@ let merge_plus model_mcode e_mcode =
 	Ast0.MINUS(emc) ->
 	  emc :=
 	    (match (!mc,!emc) with
-	      (([],_),(x,t)) | ((x,_),([],t)) -> (x,t)
+	      ((Ast.NOREPLACEMENT,_),(x,t))
+	    | ((x,_),(Ast.NOREPLACEMENT,t)) -> (x,t)
 	    | _ -> failwith "how can we combine minuses?")
       |	_ -> failwith "not possible 6")
   | Ast0.CONTEXT(mc) ->
@@ -1970,12 +1977,22 @@ let merge_plus model_mcode e_mcode =
       |	Ast0.MINUS(emc) ->
 	  let (anything_bef_aft,_,_) = !mc in
 	  let (anythings,t) = !emc in
-	  emc :=
-	    (match anything_bef_aft with
-	      Ast.BEFORE(b,_) -> (b@anythings,t)
-	    | Ast.AFTER(a,_) -> (anythings@a,t)
-	    | Ast.BEFOREAFTER(b,a,_) -> (b@anythings@a,t)
-	    | Ast.NOTHING -> (anythings,t))
+	  (match (anything_bef_aft,anythings) with
+	    (Ast.BEFORE(b1,it1),Ast.NOREPLACEMENT) ->
+	      emc := (Ast.REPLACEMENT(b1,it1),t)
+	  | (Ast.AFTER(a1,it1),Ast.NOREPLACEMENT) ->
+	      emc := (Ast.REPLACEMENT(a1,it1),t)
+	  | (Ast.BEFOREAFTER(b1,a1,it1),Ast.NOREPLACEMENT) ->
+	      emc := (Ast.REPLACEMENT(b1@a1,it1),t)
+	  | (Ast.NOTHING,Ast.NOREPLACEMENT) ->
+	      emc := (Ast.NOREPLACEMENT,t)
+	  | (Ast.BEFORE(b1,it1),Ast.REPLACEMENT(a2,it2)) ->
+	      emc := (Ast.REPLACEMENT(b1@a2,Ast.lub_count it1 it2),t)
+	  | (Ast.AFTER(a1,it1),Ast.REPLACEMENT(a2,it2)) ->
+	      emc := (Ast.REPLACEMENT(a2@a1,Ast.lub_count it1 it2),t)
+	  | (Ast.BEFOREAFTER(b1,a1,it1),Ast.REPLACEMENT(a2,it2)) ->
+	      emc := (Ast.REPLACEMENT(b1@a2@a1,Ast.lub_count it1 it2),t)
+	  | (Ast.NOTHING,Ast.REPLACEMENT(a2,it2)) -> ()) (* no change *)
       | Ast0.MIXED(_) -> failwith "how did this become mixed?"
       |	_ -> failwith "not possible 7")
   | Ast0.MIXED(_) -> failwith "not possible 8"

@@ -141,9 +141,9 @@ let visitor mode bind option_default
 	(match Ast0.unwrap i with
 	  Ast0.Id(name) ->
 	    let (n,name) = string_mcode name in (n,Ast0.Id(name))
-	| Ast0.MetaId(name,constraints,pure) ->
+	| Ast0.MetaId(name,constraints,seed,pure) ->
 	    let (n,name) = meta_mcode name in
-	    (n,Ast0.MetaId(name,constraints,pure))
+	    (n,Ast0.MetaId(name,constraints,seed,pure))
 	| Ast0.MetaFunc(name,constraints,pure) ->
 	    let (n,name) = meta_mcode name in
 	    (n,Ast0.MetaFunc(name,constraints,pure))
@@ -584,7 +584,7 @@ let visitor mode bind option_default
 	    (multibind [lbrace_n;body_n;rbrace_n],
 	     Ast0.Seq(lbrace,body,rbrace))
 	| Ast0.ExprStatement(exp,sem) ->
-	    let (exp_n,exp) = expression exp in
+	    let (exp_n,exp) = get_option expression exp in
 	    let (sem_n,sem) = string_mcode sem in
 	    (bind exp_n sem_n, Ast0.ExprStatement(exp,sem))
 	| Ast0.IfThen(iff,lp,exp,rp,branch1,aft) ->

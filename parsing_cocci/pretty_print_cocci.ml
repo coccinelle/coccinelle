@@ -104,7 +104,10 @@ let mcode fn = function
       then print_string (if !Flag.sgrep_mode2 then "*" else "-");
       fn x; print_pos pos;
       if !print_plus_flag
-      then print_anything ">>> " plus_stream
+      then
+	(match plus_stream with
+	  Ast.NOREPLACEMENT -> ()
+	| Ast.REPLACEMENT(plus_stream,_) -> print_anything ">>> " plus_stream)
   | (x, _, Ast.CONTEXT(_,plus_streams), pos) ->
       if !print_plus_flag
       then
@@ -118,7 +121,9 @@ let mcode fn = function
 let print_mcodekind = function
     Ast.MINUS(_,_,_,plus_stream) ->
       print_string "MINUS";
-      print_anything ">>> " plus_stream
+      (match plus_stream with
+	Ast.NOREPLACEMENT -> ()
+      | Ast.REPLACEMENT(plus_stream,_) -> print_anything ">>> " plus_stream)
   | Ast.CONTEXT(_,plus_streams) ->
       print_around (function _ -> print_string "CONTEXT") () plus_streams
   | Ast.PLUS _ -> print_string "PLUS"
@@ -283,6 +288,7 @@ let rec expression e =
 
 and  unaryOp = function
     Ast.GetRef -> print_string "&"
+  | Ast.GetRefLabel -> print_string "&&"
   | Ast.DeRef -> print_string "*"
   | Ast.UnPlus -> print_string "+"
   | Ast.UnMinus -> print_string "-"
@@ -566,7 +572,7 @@ let rec rule_elem arity re =
       if !print_newlines_disj then end_block();
       print_string arity; mcode print_string brace
   | Ast.ExprStatement(exp,sem) ->
-      print_string arity; expression exp; mcode print_string sem
+      print_string arity; print_option expression exp; mcode print_string sem
   | Ast.IfHeader(iff,lp,exp,rp) ->
       print_string arity;
       mcode print_string iff; print_string " "; mcode print_string_box lp;

@@ -107,13 +107,25 @@ let rec ident context old_metas table minus i =
 	    warning
 	      (Printf.sprintf "line %d: should %s be a metavariable?" rl name)
       | _ -> ())
-  | Ast0.MetaId(name,_,_) -> check_table table minus name
+  | Ast0.MetaId(name,_,seedval,_) ->
+      check_table table minus name;
+      seed table minus seedval
   | Ast0.MetaFunc(name,_,_) -> check_table table minus name
   | Ast0.MetaLocalFunc(name,_,_) -> check_table table minus name
   | Ast0.DisjId(_,id_list,_,_) ->
       List.iter (ident context old_metas table minus) id_list
   | Ast0.OptIdent(_) | Ast0.UniqueIdent(_) ->
       failwith "unexpected code"
+
+and seed table minus = function
+    Ast.NoVal -> ()
+  | Ast.StringSeed _ -> ()
+  | Ast.ListSeed elems ->
+      List.iter
+	(function
+	    Ast.SeedString _ -> ()
+	  | Ast.SeedId name -> check_table table minus (promote name))
+	elems
 	
 (* --------------------------------------------------------------------- *)
 (* Expression *)
@@ -334,7 +346,8 @@ and statement old_metas table minus s =
   match Ast0.unwrap s with
     Ast0.Decl(_,decl) -> declaration ID old_metas table minus decl
   | Ast0.Seq(lbrace,body,rbrace) -> dots (statement old_metas table minus) body
-  | Ast0.ExprStatement(exp,sem) -> expression ID old_metas table minus exp
+  | Ast0.ExprStatement(exp,sem) ->
+      get_opt (expression ID old_metas table minus) exp
   | Ast0.IfThen(iff,lp,exp,rp,branch,_) ->
       expression ID old_metas table minus exp;
       statement old_metas table minus branch

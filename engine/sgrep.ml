@@ -22,6 +22,8 @@
  *)
 
 
+(* no longer used *)
+
 type marker =
     NoMark | BefMark of string | AftMark of string
   | BefAftMark of string * string

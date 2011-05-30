@@ -972,7 +972,6 @@ let rec find_macro_paren xs =
       (* recurse, may have other storage attributes *)
       find_macro_paren (PToken (tok1)::xs)
 
-
 *)
 
   (* storage attribute *)

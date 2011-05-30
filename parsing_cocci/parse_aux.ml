@@ -28,6 +28,8 @@ module Ast = Ast_cocci
 
 (* types for metavariable tokens *)
 type info = Ast.meta_name * Ast0.pure * Data.clt
+type midinfo =
+    Ast.meta_name * Data.iconstraints * Ast.seed * Ast0.pure * Data.clt
 type idinfo = Ast.meta_name * Data.iconstraints * Ast0.pure * Data.clt
 type expinfo = Ast.meta_name * Data.econstraints * Ast0.pure * Data.clt
 type tyinfo = Ast.meta_name * Ast0.typeC list * Ast0.pure * Data.clt
@@ -72,13 +74,13 @@ let drop_pos (arity,line,lline,offset,col,strbef,straft,pos) =
 let clt2mcode str = function
     (Data.MINUS,line,lline,offset,col,strbef,straft,pos)       ->
       (str,Ast0.NONE,make_info line lline offset col strbef straft,
-       Ast0.MINUS(ref([],Ast0.default_token_info)),ref pos,-1)
+       Ast0.MINUS(ref(Ast.NOREPLACEMENT,Ast0.default_token_info)),ref pos,-1)
   | (Data.OPTMINUS,line,lline,offset,col,strbef,straft,pos)    ->
       (str,Ast0.OPT,make_info line lline offset col strbef straft,
-       Ast0.MINUS(ref([],Ast0.default_token_info)),ref pos,-1)
+       Ast0.MINUS(ref(Ast.NOREPLACEMENT,Ast0.default_token_info)),ref pos,-1)
   | (Data.UNIQUEMINUS,line,lline,offset,col,strbef,straft,pos) ->
       (str,Ast0.UNIQUE,make_info line lline offset col strbef straft,
-       Ast0.MINUS(ref([],Ast0.default_token_info)),ref pos,-1)
+       Ast0.MINUS(ref(Ast.NOREPLACEMENT,Ast0.default_token_info)),ref pos,-1)
   | (Data.PLUS,line,lline,offset,col,strbef,straft,pos)        ->
       (str,Ast0.NONE,make_info line lline offset col strbef straft,
        Ast0.PLUS(Ast.ONE),ref pos,-1)

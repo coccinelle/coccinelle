@@ -54,7 +54,7 @@ let inline_mcodes =
     match (Ast0.get_mcodekind e) with
       Ast0.MINUS(replacements) ->
 	(match !replacements with
-	  ([],_) -> ()
+	  (Ast.NOREPLACEMENT,_) -> ()
 	| replacements ->
 	    let minus_try = function
 		(true,mc) ->
@@ -100,8 +100,16 @@ let inline_mcodes =
 	      List.iter
 		(function
 		    Ast0.MINUS(mreplacements) ->
-		      let (mrepl,tokeninfo) = !mreplacements in
-		      mreplacements := concat bef beforeinfo mrepl tokeninfo
+		      (match !mreplacements with
+			(Ast.NOREPLACEMENT,tokeninfo) ->
+			  mreplacements :=
+			    (Ast.REPLACEMENT(bef,befit),beforeinfo)
+		      |	(Ast.REPLACEMENT(anythings,it),tokeninfo) ->
+			  let (newbef,newinfo) =
+			    concat bef beforeinfo anythings tokeninfo in
+			  let it = Ast.lub_count befit it in
+			  mreplacements :=
+			    (Ast.REPLACEMENT(newbef,it),newinfo))
 		  | Ast0.CONTEXT(mbefaft) ->
 		      (match !mbefaft with
 			(Ast.BEFORE(mbef,it),mbeforeinfo,a) ->
@@ -133,8 +141,16 @@ let inline_mcodes =
 	      List.iter
 		(function
 		    Ast0.MINUS(mreplacements) ->
-		      let (mrepl,tokeninfo) = !mreplacements in
-		      mreplacements := concat mrepl tokeninfo aft afterinfo
+		      (match !mreplacements with
+			(Ast.NOREPLACEMENT,tokeninfo) ->
+			  mreplacements :=
+			    (Ast.REPLACEMENT(aft,aftit),afterinfo)
+		      |	(Ast.REPLACEMENT(anythings,it),tokeninfo) ->
+			  let (newaft,newinfo) =
+			    concat anythings tokeninfo aft afterinfo in
+			  let it = Ast.lub_count aftit it in
+			  mreplacements :=
+			    (Ast.REPLACEMENT(newaft,it),newinfo))
 		  | Ast0.CONTEXT(mbefaft) ->
 		      (match !mbefaft with
 			(Ast.BEFORE(mbef,it),b,_) ->
@@ -191,7 +207,7 @@ let check_allminus =
   let option_default = true in
   let mcode (_,_,_,mc,_,_) =
     match mc with
-      Ast0.MINUS(r) -> let (plusses,_) = !r in plusses = []
+      Ast0.MINUS(r) -> let (plusses,_) = !r in plusses = Ast.NOREPLACEMENT
     | _ -> false in
 
   (* special case for disj *)
@@ -262,11 +278,27 @@ let convert_info info =
 let convert_mcodekind adj = function
     Ast0.MINUS(replacements) ->
       let (replacements,_) = !replacements in
-      Ast.MINUS(Ast.NoPos,[],adj,replacements)
+      Ast.MINUS(Ast.NoPos,[],Ast.ADJ adj,replacements)
   | Ast0.PLUS count -> Ast.PLUS count
   | Ast0.CONTEXT(befaft) ->
-      let (befaft,_,_) = !befaft in Ast.CONTEXT(Ast.NoPos,befaft)
+      let (befaft,_,_) = !befaft in
+      Ast.CONTEXT(Ast.NoPos,befaft)
   | Ast0.MIXED(_) -> failwith "not possible for mcode"
+
+let convert_allminus_mcodekind allminus = function
+    Ast0.CONTEXT(befaft) ->
+      let (befaft,_,_) = !befaft in
+      if allminus
+      then
+	(match befaft with
+	  Ast.NOTHING ->
+	    Ast.MINUS(Ast.NoPos,[],Ast.ALLMINUS,Ast.NOREPLACEMENT)
+	| Ast.BEFORE(a,ct) | Ast.AFTER(a,ct) ->
+	    Ast.MINUS(Ast.NoPos,[],Ast.ALLMINUS,Ast.REPLACEMENT(a,ct))
+	| Ast.BEFOREAFTER(b,a,ct) ->
+	    Ast.MINUS(Ast.NoPos,[],Ast.ALLMINUS,Ast.REPLACEMENT(b@a,ct)))
+      else Ast.CONTEXT(Ast.NoPos,befaft)
+  | _ -> failwith "convert_allminus_mcodekind: unexpected mcodekind"
 
 let pos_mcode(term,_,info,mcodekind,pos,adj) =
   (* avoids a recursion problem *)
@@ -343,7 +375,7 @@ and ident i =
       Ast0.Id(name) -> Ast.Id(mcode name)
     | Ast0.DisjId(_,id_list,_,_) ->
 	Ast.DisjId(List.map ident id_list)
-    | Ast0.MetaId(name,constraints,_) ->
+    | Ast0.MetaId(name,constraints,_,_) ->
 	Ast.MetaId(mcode name,constraints,unitary,false)
     | Ast0.MetaFunc(name,constraints,_) ->
 	Ast.MetaFunc(mcode name,constraints,unitary,false)
@@ -697,10 +729,10 @@ and statement s =
     rewrap_stmt s
       (match Ast0.unwrap s with
 	Ast0.Decl((_,bef),decl) ->
+	  let allminus = check_allminus.VT0.combiner_rec_statement s in
 	  Ast.Atomic(rewrap_rule_elem s
-		       (Ast.Decl(convert_mcodekind (-1) bef,
-				 check_allminus.VT0.combiner_rec_statement s,
-				 declaration decl)))
+		       (Ast.Decl(convert_allminus_mcodekind allminus bef,
+				 allminus,declaration decl)))
       | Ast0.Seq(lbrace,body,rbrace) ->
 	  let lbrace = mcode lbrace in
 	  let body = dots (statement seqible) body in
@@ -711,7 +743,7 @@ and statement s =
 		  tokenwrap rbrace s (Ast.SeqEnd(rbrace)))
       | Ast0.ExprStatement(exp,sem) ->
 	  Ast.Atomic(rewrap_rule_elem s
-		       (Ast.ExprStatement(expression exp,mcode sem)))
+		       (Ast.ExprStatement(get_option expression exp,mcode sem)))
       | Ast0.IfThen(iff,lp,exp,rp,branch,(_,aft)) ->
 	  Ast.IfThen
 	    (rewrap_rule_elem s
@@ -850,8 +882,9 @@ and statement s =
 	  let rbrace = mcode rbrace in
 	  let allminus = check_allminus.VT0.combiner_rec_statement s in
 	  Ast.FunDecl(rewrap_rule_elem s
-			(Ast.FunHeader(convert_mcodekind (-1) bef,
-				       allminus,fi,name,lp,params,rp)),
+			(Ast.FunHeader
+			   (convert_allminus_mcodekind allminus bef,
+			    allminus,fi,name,lp,params,rp)),
 		      tokenwrap lbrace s (Ast.SeqStart(lbrace)),
 		      body,
 		      tokenwrap rbrace s (Ast.SeqEnd(rbrace)))

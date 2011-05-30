@@ -781,14 +781,21 @@ let init thing info =
      Ast0.left_offset = info.Ast0.pos_info.Ast0.offset;
      Ast0.right_offset = info.Ast0.pos_info.Ast0.offset})
 
+let it2c = function Ast.ONE -> "one" | Ast.MANY -> "many"
+
 let attachbefore (infop,c,p) = function
     Ast0.MINUS(replacements) ->
       let (repl,ti) = !replacements in
-      let (bef,ti) =
- 	match repl with
- 	  [] -> init p infop
- 	| repl -> insert p infop repl ti in
-      replacements := (bef,ti)
+      (match repl with
+ 	Ast.NOREPLACEMENT ->
+	  let (bef,ti) = init p infop in
+	  Printf.printf "attachbefore 1 %s\n" (it2c c);
+	  replacements := (Ast.REPLACEMENT(bef,c),ti)
+      | Ast.REPLACEMENT(repl,it) ->
+	  Printf.printf "attachbefore 2 %s %s\n" (it2c c) (it2c it);
+	  let it = Ast.lub_count it c in
+	  let (bef,ti) = insert p infop repl ti in
+	  replacements := (Ast.REPLACEMENT(bef,it),ti))
   | Ast0.CONTEXT(neighbors) ->
       let (repl,ti1,ti2) = !neighbors in
       (match repl with
@@ -812,11 +819,14 @@ let attachbefore (infop,c,p) = function
 let attachafter (infop,c,p) = function
     Ast0.MINUS(replacements) ->
        let (repl,ti) = !replacements in
-       let (aft,ti) =
- 	match repl with
- 	  [] -> init p infop
- 	| repl -> insert p infop repl ti in
-       replacements := (aft,ti)
+       (match repl with
+ 	Ast.NOREPLACEMENT ->
+	  let (aft,ti) = init p infop in
+	  replacements := (Ast.REPLACEMENT(aft,c),ti)
+      | Ast.REPLACEMENT(repl,it) ->
+	  let it = Ast.lub_count it c in
+	  let (aft,ti) = insert p infop repl ti in
+	  replacements := (Ast.REPLACEMENT(aft,it),ti))
   | Ast0.CONTEXT(neighbors) ->
       let (repl,ti1,ti2) = !neighbors in
       (match repl with
@@ -963,11 +973,14 @@ let merge_one : (minus_join_point * Ast0.info * 'a) list *
   Printf.printf "minus code\n";
   List.iter
     (function (_,info,_) ->
-      Printf.printf "start %d end %d real_start %d real_end %d\n"
+      Printf.printf
+	"start %d end %d real_start %d real_end %d attachable start %b attachable end %b\n"
 	info.Ast0.pos_info.Ast0.logical_start
 	info.Ast0.pos_info.Ast0.logical_end
 	info.Ast0.pos_info.Ast0.line_start
-	info.Ast0.pos_info.Ast0.line_end)
+	info.Ast0.pos_info.Ast0.line_end
+	info.Ast0.attachable_start
+	info.Ast0.attachable_end)
     m;
   Printf.printf "plus code\n";
   List.iter

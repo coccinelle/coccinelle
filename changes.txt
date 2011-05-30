@@ -19,9 +19,18 @@
 - Addition of initializer list metavariables.  Thanks to Michael Stefaniuc
   for noticing the need for them.
 - Allow multiple position variables per token
+- ++ can now be associated with - code
+- Allow /* */ comments as smpl comments, not only as + code
+- Add support for && (label addresses)
+- local idexpression metavariable no longer matches static local x
 
 ** Features:
 - Preserve spacing before // comments when not at the beginning of a line
+- Adjusted parsing of endif to put it after jump code
+- Improve warning message when using -use_cache
+- Allow - nest expressions
+- More helpful initial value for exported variables in python
+- Support - on expression nests
 
 ** Bugfix:
 - Corrected parsing of script strings delimited by a single quote.  Thanks
@@ -29,6 +38,17 @@
 - Improved indentation of added ifdefs.
 - Allow added comments and #ifdefs to precede other added code.  Thanks to
   Jani Monoses for noticing the problem.
+- Corrected failure to due missing ocamlfind. Thanks to Derek M. Jones for
+  reporting the problem.
+- Allow fake nodes to be - in the allminus case, to drop tokens related to
+  a function definition or forward declaration but before the first code
+  mentioned in the semantic patch.
+- Drop __init etc when deleting a whole function.
+- Cause appropriate newlines to be preserved when multiple matches (trees)
+  contain adjacent modifications derived from the same SmPL code.
+- check_meta takes into account fresh identifier seed information.
+- Types for worth-trying optimization should not be followed by space
+- Improved pretty printing when the first parameter of a function is dropped
 
 * 0.2.5
 ** Language:

@@ -163,12 +163,12 @@ let rec ident opt_allowed tgt i =
 	  [mcode2arity name] in
       let name = mcode name in
       make_id i tgt arity (Ast0.Id(name))
-  | Ast0.MetaId(name,constraints,pure) ->
+  | Ast0.MetaId(name,constraints,seed,pure) ->
       let arity =
 	all_same opt_allowed tgt (mcode2line name)
 	  [mcode2arity name] in
       let name = mcode name in
-      make_id i tgt arity (Ast0.MetaId(name,constraints,pure))
+      make_id i tgt arity (Ast0.MetaId(name,constraints,seed,pure))
   | Ast0.MetaFunc(name,constraints,pure) ->
       let arity =
 	all_same opt_allowed tgt (mcode2line name)
@@ -724,7 +724,7 @@ and statement tgt stm =
       make_rule_elem stm tgt arity (Ast0.Seq(lbrace,body,rbrace))
   | Ast0.ExprStatement(exp,sem) ->
       let arity = stm_same (mcode2line sem) [mcode2arity sem] in
-      let exp = expression arity exp in
+      let exp = get_option (expression arity) exp in
       let sem = mcode sem in
       make_rule_elem stm tgt arity (Ast0.ExprStatement(exp,sem))
   | Ast0.IfThen(iff,lp,exp,rp,branch,aft) ->

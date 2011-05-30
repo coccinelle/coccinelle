@@ -314,9 +314,10 @@ let rec disj_rule_elem r k re =
 	(function decl -> Ast.rewrap re (Ast.Decl(bef,allminus,decl)))
   | Ast.SeqStart(brace) -> re
   | Ast.SeqEnd(brace) -> re
-  | Ast.ExprStatement(exp,sem) ->
+  | Ast.ExprStatement(Some exp,sem) ->
       orify_rule_elem re exp
-	(function exp -> Ast.rewrap re (Ast.ExprStatement(exp,sem)))
+	(function exp -> Ast.rewrap re (Ast.ExprStatement(Some exp,sem)))
+  | Ast.ExprStatement(None,sem) -> re
   | Ast.IfHeader(iff,lp,exp,rp) ->
       orify_rule_elem re exp
 	(function exp -> Ast.rewrap re (Ast.IfHeader(iff,lp,exp,rp)))

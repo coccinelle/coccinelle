@@ -339,16 +339,16 @@ let do_get_constants constants keywords env neg_pos =
     | _ -> k ft in
 
   let baseType = function
-      Ast.VoidType -> keywords "void "
-    | Ast.CharType -> keywords "char "
-    | Ast.ShortType -> keywords "short "
-    | Ast.IntType -> keywords "int "
-    | Ast.DoubleType -> keywords "double "
-    | Ast.FloatType -> keywords "float "
-    | Ast.LongType | Ast.LongLongType -> keywords "long "
-    | Ast.SizeType -> keywords "size_t "
-    | Ast.SSizeType -> keywords "ssize_t "
-    | Ast.PtrDiffType -> keywords "ptrdiff_t " in
+      Ast.VoidType -> keywords "void"
+    | Ast.CharType -> keywords "char"
+    | Ast.ShortType -> keywords "short"
+    | Ast.IntType -> keywords "int"
+    | Ast.DoubleType -> keywords "double"
+    | Ast.FloatType -> keywords "float"
+    | Ast.LongType | Ast.LongLongType -> keywords "long"
+    | Ast.SizeType -> keywords "size_t"
+    | Ast.SSizeType -> keywords "ssize_t"
+    | Ast.PtrDiffType -> keywords "ptrdiff_t" in
 
   let typeC r k ty =
     match Ast.unwrap ty with
@@ -489,7 +489,7 @@ let get_plus_constants =
 	     bind ((get_all_constants false).V.combiner_anything cur) prev))
       [] l in
   let process_mcodekind = function
-      Ast.MINUS(_,_,_,anythings) -> recurse anythings
+      Ast.MINUS(_,_,_,Ast.REPLACEMENT(anythings,_)) -> recurse anythings
     | Ast.CONTEXT(_,Ast.BEFORE(a,_)) -> recurse a
     | Ast.CONTEXT(_,Ast.AFTER(a,_)) -> recurse a
     | Ast.CONTEXT(_,Ast.BEFOREAFTER(a1,a2,_)) ->

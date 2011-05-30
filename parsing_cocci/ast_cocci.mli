@@ -54,11 +54,14 @@ and 'a befaft =
   | BEFOREAFTER of 'a list list * 'a list list * count
   | NOTHING
 
+and 'a replacement = REPLACEMENT of 'a list list * count | NOREPLACEMENT
+
 and 'a mcode = 'a * info * mcodekind * meta_pos list (* pos variables *)
  (* pos is an offset indicating where in the C code the mcodekind has an
  effect *)
+and adjacency = ALLMINUS | ADJ of int
  and mcodekind =
-    MINUS       of pos * int list * int * anything list list
+    MINUS       of pos * int list * adjacency * anything replacement
   | CONTEXT     of pos * anything befaft
   | PLUS        of count
  and count = ONE (* + *) | MANY (* ++ *)
@@ -227,7 +230,7 @@ and listlen =
   | CstListLen of int
   | AnyListLen
 
-and  unaryOp = GetRef | DeRef | UnPlus |  UnMinus | Tilde | Not
+and  unaryOp = GetRef | GetRefLabel | DeRef | UnPlus |  UnMinus | Tilde | Not
 and  assignOp = SimpleAssign | OpAssign of arithOp
 and  fixOp = Dec | Inc
 
@@ -412,7 +415,7 @@ and base_rule_elem =
   | SeqStart      of string mcode (* { *)
   | SeqEnd        of string mcode (* } *)
 
-  | ExprStatement of expression * string mcode (*;*)
+  | ExprStatement of expression option * string mcode (*;*)
   | IfHeader      of string mcode (* if *) * string mcode (* ( *) *
 	             expression * string mcode (* ) *)
   | Else          of string mcode (* else *)

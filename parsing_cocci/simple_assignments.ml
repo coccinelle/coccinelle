@@ -77,7 +77,7 @@ let rec exp mc e1 =
 	  match mc with
 	    Ast0.MINUS(mc) ->
 	      (match !mc with
-		([[Ast.ExpressionTag(e2)]],_) ->
+		(Ast.REPLACEMENT([[Ast.ExpressionTag(e2)]],_),_) ->
 		  (match Ast.unwrap e2 with
 		    Ast.Assignment(left',op',_,_) ->
 		      if is_simple_ast_assign left' op' left

@@ -105,12 +105,12 @@ let mcodekind mc = A.get_mcodekind mc
 let mcode_contain_plus = function
   | A.CONTEXT (_,A.NOTHING) -> false
   | A.CONTEXT _ -> true
-  | A.MINUS (_,_,_,[]) -> false
-  | A.MINUS (_,_,_,x::xs) -> true
+  | A.MINUS (_,_,_,A.NOREPLACEMENT) -> false
+  | A.MINUS (_,_,_,A.REPLACEMENT _) -> true (* repl is nonempty *)
   | A.PLUS _ -> raise Impossible
 
 let mcode_simple_minus = function
-  | A.MINUS (_,_,_,[]) -> true
+  | A.MINUS (_,_,_,A.NOREPLACEMENT) -> true
   | _ -> false
 
 
@@ -125,7 +125,7 @@ let mcode_simple_minus = function
 let minusizer =
   ("fake","fake"),
   {A.line = 0; A.column =0; A.strbef=[]; A.straft=[];},
-  (A.MINUS(A.DontCarePos,[],-1,[])),
+  (A.MINUS(A.DontCarePos,[],A.ALLMINUS,A.NOREPLACEMENT)),
   []
 
 let generalize_mcode ia =
@@ -170,13 +170,14 @@ let equal_c_int s1 s2 =
 let equal_unaryOp a b =
   match a, b with
   | A.GetRef   , B.GetRef  -> true
+  | A.GetRefLabel, B.GetRefLabel -> true
   | A.DeRef    , B.DeRef   -> true
   | A.UnPlus   , B.UnPlus  -> true
   | A.UnMinus  , B.UnMinus -> true
   | A.Tilde    , B.Tilde   -> true
   | A.Not      , B.Not     -> true
-  | _, B.GetRefLabel -> false (* todo cocci? *)
-  | _, (B.Not|B.Tilde|B.UnMinus|B.UnPlus|B.DeRef|B.GetRef) -> false
+  | _, (B.Not|B.Tilde|B.UnMinus|B.UnPlus|B.DeRef|B.GetRef|B.GetRefLabel) ->
+      false
 
 
 
@@ -881,12 +882,10 @@ let list_matcher match_dots rebuild_dots match_comma rebuild_comma
 			  X.envf lenkeep leninherited
 			    (lenname, Ast_c.MetaListlenVal (len), max_min)
 		      | A.CstListLen n ->
-			  Printf.printf "cstlen\n";
 			  if len = n
 			  then (function f -> f())
 			  else (function f -> fail)
-		      | A.AnyListLen -> Printf.printf "anylen\n"; function f -> f()
-			    )
+		      | A.AnyListLen -> function f -> f())
 			(fun () ->
 			  let max_min _ =
 			    Lib_parsing_c.lin_col_by_pos (get_iis startxs) in
@@ -1340,18 +1339,17 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
       ))))
 
   | A.NestExpr(starter,exps,ender,None,true), eb ->
-      (match A.get_mcodekind starter with
-	A.MINUS _ -> failwith "TODO: only context nests supported"
-      |	_ -> ());
       (match A.unwrap exps with
 	A.DOTS [exp] ->
 	  X.cocciExpExp expression exp eb >>= (fun exp eb ->
+          X.distrf_e (dots2metavar starter) eb >>= (fun mcode eb ->
             return (
             (A.NestExpr
-	       (starter,A.rewrap exps (A.DOTS [exp]),ender,None,true)) +> wa,
+	       (metavar2dots mcode,
+		A.rewrap exps (A.DOTS [exp]),ender,None,true)) +> wa,
             eb
             )
-	  )
+	  ))
       |	_ ->
 	  failwith
 	    "for nestexpr, only handling the case with dots and only one exp")
@@ -3850,15 +3848,24 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
           F.SeqEnd (level, i1)
           ))
 
-  | A.ExprStatement (ea, ia1), F.ExprStatement (st, (Some eb, ii)) ->
+  | A.ExprStatement (Some ea, ia1), F.ExprStatement (st, (Some eb, ii)) ->
       let ib1 = tuple_of_list1 ii in
       expression ea eb >>= (fun ea eb ->
       tokenf ia1 ib1 >>= (fun ia1 ib1 ->
         return (
-          A.ExprStatement (ea, ia1),
+          A.ExprStatement (Some ea, ia1),
           F.ExprStatement (st, (Some eb, [ib1]))
         )
       ))
+
+  | A.ExprStatement (None, ia1), F.ExprStatement (st, (None, ii)) ->
+      let ib1 = tuple_of_list1 ii in
+      tokenf ia1 ib1 >>= (fun ia1 ib1 ->
+        return (
+          A.ExprStatement (None, ia1),
+          F.ExprStatement (st, (None, [ib1]))
+        )
+      )
 
 
   | A.IfHeader (ia1,ia2, ea, ia3), F.IfHeader (st, (eb,ii)) ->

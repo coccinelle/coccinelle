@@ -33,7 +33,7 @@ SRC= flag_matcher.ml lib_engine.ml pretty_print_engine.ml \
       check_exhaustive_pattern.ml \
       check_reachability.ml \
       c_vs_c.ml isomorphisms_c_c.ml \
-      cocci_vs_c.ml pattern_c.ml sgrep.ml transformation_c.ml  \
+      cocci_vs_c.ml pattern_c.ml transformation_c.ml  \
       asttomember.ml asttoctl2.ml ctltotex.ml \
       postprocess_transinfo.ml ctlcocci_integration.ml
 

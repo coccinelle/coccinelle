@@ -73,7 +73,9 @@ let mcodekind brackets fn x info mc =
       then fn x
       else (print_string "-";
 	    print_string lb; fn x; print_string rb);
-      U.print_anything ">>> " plus_stream
+      (match plus_stream with
+	Ast.NOREPLACEMENT -> ()
+      | Ast.REPLACEMENT(plus_stream,_) -> U.print_anything ">>> " plus_stream)
   | Ast0.CONTEXT(plus_streams) ->
       let (lb,rb) =
 	if !quiet
@@ -153,7 +155,7 @@ let rec ident i =
     (function _ ->
       match Ast0.unwrap i with
 	Ast0.Id(name) -> mcode print_string name
-      | Ast0.MetaId(name,_,_) -> mcode print_meta name
+      | Ast0.MetaId(name,_,_,_) -> mcode print_meta name
       | Ast0.MetaFunc(name,_,_) -> mcode print_meta name
       | Ast0.MetaLocalFunc(name,_,_) -> mcode print_meta name
       | Ast0.DisjId(_,id_list,_,_) -> do_disj id_list ident
@@ -447,7 +449,8 @@ and statement arity s =
 	  dots force_newline (statement arity) body;
 	  end_block(); print_string arity; mcode print_string rbrace
       | Ast0.ExprStatement(exp,sem) ->
-	  print_string arity; expression exp; mcode print_string sem
+	  print_string arity; print_option expression exp;
+	  mcode print_string sem
       | Ast0.IfThen(iff,lp,exp,rp,branch1,(info,aft)) ->
 	  print_string arity;
 	  mcode print_string iff; print_string " "; mcode print_string_box lp;

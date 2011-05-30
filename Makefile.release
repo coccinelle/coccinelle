@@ -59,10 +59,18 @@ OCAMLVERSION=$(shell ocaml -version |perl -p -e 's/.*version (.*)/$$1/;')
 
 prerelease:
 	cvs up -CdP
+	$(MAKE) fix-expected
 	$(MAKE) distclean
 	sed -i "s|^OCAMLCFLAGS=.*$$|OCAMLCFLAGS=|" Makefile
 	@echo "\n\tEdit globals/config.ml.in"
 	@echo "\tCommit with 'make release'\n"
+
+fix-expected:
+	$(MAKE) distclean
+	./configure --without-python
+	$(MAKE) world
+	yes | ./spatch.opt -testall
+	cp tests/SCORE_actual.sexp tests/SCORE_expected_orig.sexp
 
 release:
 	cvs ci -m "Release $(VERSION)" globals/config.ml.in
@@ -212,6 +220,7 @@ packsrc: prepack
 	$(MAKE) -C $(TMP)/$(PACKAGE)/debian lucid
 	$(MAKE) -C $(TMP)/$(PACKAGE)/debian karmic
 	$(MAKE) -C $(TMP)/$(PACKAGE)/debian maverick
+	$(MAKE) -C $(TMP)/$(PACKAGE)/debian natty
 	$(MAKE) push
 	rm -rf  $(TMP)/$(PACKAGE)/
 

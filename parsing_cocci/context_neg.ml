@@ -476,7 +476,7 @@ let dots fn d1 d2 =
 let rec equal_ident i1 i2 =
   match (Ast0.unwrap i1,Ast0.unwrap i2) with
     (Ast0.Id(name1),Ast0.Id(name2)) -> equal_mcode name1 name2
-  | (Ast0.MetaId(name1,_,_),Ast0.MetaId(name2,_,_)) ->
+  | (Ast0.MetaId(name1,_,_,_),Ast0.MetaId(name2,_,_,_)) ->
       equal_mcode name1 name2
   | (Ast0.MetaFunc(name1,_,_),Ast0.MetaFunc(name2,_,_)) ->
       equal_mcode name1 name2
@@ -959,7 +959,7 @@ let rec is_toplevel s =
     Ast0.Decl(_,e) -> true
   | Ast0.FunDecl(_,_,_,_,_,_,_,_,_) -> true
   | Ast0.Disj(_,stmts,_,_) -> isall is_toplevel stmts
-  | Ast0.ExprStatement(fc,_) ->
+  | Ast0.ExprStatement(Some fc,_) ->
       (match Ast0.unwrap fc with
 	Ast0.FunCall(_,_,_,_) -> true
       |	_ -> false)
@@ -1026,7 +1026,8 @@ let context_neg minus plus =
 	  List.map
 	    (function m ->
 	      classify true
-		(function _ -> Ast0.MINUS(ref([],Ast0.default_token_info)))
+		(function _ ->
+		  Ast0.MINUS(ref(Ast.NOREPLACEMENT,Ast0.default_token_info)))
 		minus_table m)
 	    minus in
 	[]
@@ -1052,7 +1053,8 @@ let context_neg minus plus =
 	    collect_plus_lines p;
 	    let _ =
 	      classify true
-		(function _ -> Ast0.MINUS(ref([],Ast0.default_token_info)))
+		(function _ ->
+		  Ast0.MINUS(ref(Ast.NOREPLACEMENT,Ast0.default_token_info)))
 		minus_table m in
 	    let _ = classify false (function c -> Ast0.PLUS c) plus_table p in
 	    traverse minus_table plus_table;
@@ -1068,7 +1070,9 @@ let context_neg minus plus =
 		plus_lines := [];
 		let _ =
 		  classify true
-		    (function _ -> Ast0.MINUS(ref([],Ast0.default_token_info)))
+		    (function _ ->
+		      Ast0.MINUS(ref(Ast.NOREPLACEMENT,
+				     Ast0.default_token_info)))
 		    minus_table m in
 		loop(minus,pall)
 	      end

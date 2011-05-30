@@ -33,7 +33,7 @@ type token_info =
 val default_token_info : token_info
 
 type mcodekind =
-    MINUS       of (Ast_cocci.anything list list * token_info) ref
+    MINUS       of (Ast_cocci.anything Ast_cocci.replacement * token_info) ref
   | PLUS        of Ast_cocci.count
   | CONTEXT     of (Ast_cocci.anything Ast_cocci.befaft *
 		      token_info * token_info) ref
@@ -93,7 +93,8 @@ and 'a dots = 'a base_dots wrap
 
 and base_ident =
     Id            of string mcode
-  | MetaId        of Ast_cocci.meta_name mcode * Ast_cocci.idconstraint * pure
+  | MetaId        of Ast_cocci.meta_name mcode * Ast_cocci.idconstraint *
+	Ast_cocci.seed * pure
   | MetaFunc      of Ast_cocci.meta_name mcode * Ast_cocci.idconstraint * pure
   | MetaLocalFunc of Ast_cocci.meta_name mcode * Ast_cocci.idconstraint * pure
   | DisjId        of string mcode * ident list *
@@ -291,7 +292,7 @@ and base_statement =
     Decl          of (info * mcodekind) (* before the decl *) * declaration
   | Seq           of string mcode (* { *) * statement dots *
  	             string mcode (* } *)
-  | ExprStatement of expression * string mcode (*;*)
+  | ExprStatement of expression option * string mcode (*;*)
   | IfThen        of string mcode (* if *) * string mcode (* ( *) *
 	             expression * string mcode (* ) *) *
 	             statement * (info * mcodekind)
