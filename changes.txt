@@ -52,6 +52,8 @@
 - Drop positions before creating function prototype rules
 - Adjust position of { introduced by adding multiple statements in a
   single-statement position
+- Drop newline after function call ( when all arguments on that line are
+  eliminated
 
 * 0.2.5
 ** Language:

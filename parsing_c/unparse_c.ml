@@ -767,7 +767,7 @@ let adjust_after_paren toks =
 	else x :: search_paren xs
     | x::xs -> x :: search_paren xs
   and search_minus seen_minus xs =
-    let (spaces, rest) = Common.span is_space xs in
+    let (spaces, rest) = Common.span is_whitespace xs in
     (* only delete spaces if something is actually deleted *)
     match rest with
       ((T2(_,Min _,_)) as a)::rerest -> (* minus *)
