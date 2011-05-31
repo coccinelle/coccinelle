@@ -47,8 +47,7 @@
   contain adjacent modifications derived from the same SmPL code.
 - check_meta takes into account fresh identifier seed information.
 - Types for worth-trying optimization should not be followed by space
-- Improved pretty printing when the first parameter of a function is
-  dropped
+- Improved filtering of result of matching atomic patterns
 - Drop positions before creating function prototype rules
 - Adjust position of { introduced by adding multiple statements in a
   single-statement position
