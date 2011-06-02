@@ -461,7 +461,7 @@ let combiner bind option_default
       match Ast.unwrap t with
 	Ast.FILEINFO(old_file,new_file) ->
 	  bind (string_mcode old_file) (string_mcode new_file)
-      | Ast.DECL(stmt) -> statement stmt
+      | Ast.NONDECL(stmt) -> statement stmt
       | Ast.CODE(stmt_dots) -> statement_dots stmt_dots
       | Ast.ERRORWORDS(exps) -> multibind (List.map expression exps) in
     topfn all_functions k t
@@ -986,7 +986,7 @@ let rebuilder
 	(match Ast.unwrap t with
 	  Ast.FILEINFO(old_file,new_file) ->
 	    Ast.FILEINFO (string_mcode old_file, string_mcode new_file)
-	| Ast.DECL(stmt) -> Ast.DECL(statement stmt)
+	| Ast.NONDECL(stmt) -> Ast.NONDECL(statement stmt)
 	| Ast.CODE(stmt_dots) -> Ast.CODE(statement_dots stmt_dots)
 	| Ast.ERRORWORDS(exps) -> Ast.ERRORWORDS (List.map expression exps)) in
     topfn all_functions k t

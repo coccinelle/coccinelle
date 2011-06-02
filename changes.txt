@@ -30,6 +30,8 @@
 - Improve warning message when using -use_cache
 - More helpful initial value for exported variables in python
 - Support - on expression nests
+- Better handling of the case of a matched declaration that should only
+  be replaced by other top level things.
 
 ** Bugfix:
 - Corrected parsing of script strings delimited by a single quote.  Thanks
@@ -53,6 +55,8 @@
   single-statement position
 - Drop newline after function call ( when all arguments on that line are
   eliminated
+- Accept removal of a single declaration, replaced by arbitrary,
+  non-declaration code
 
 * 0.2.5
 ** Language:

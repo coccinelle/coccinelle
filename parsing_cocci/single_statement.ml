@@ -636,7 +636,7 @@ and statement_dots dots_before dots_after d =
 let top_level t =
   Ast0.rewrap t
     (match Ast0.unwrap t with
-      Ast0.DECL(stmt_dots) -> Ast0.DECL(statement true true stmt_dots)
+      Ast0.NONDECL(stmt_dots) -> Ast0.NONDECL(statement true true stmt_dots)
     | Ast0.CODE(stmt_dots) -> Ast0.CODE(statement_dots true true stmt_dots)
     | t -> t)
 

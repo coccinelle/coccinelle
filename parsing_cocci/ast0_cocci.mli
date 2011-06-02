@@ -367,7 +367,8 @@ and meta_pos =
 (* Top-level code *)
 
 and base_top_level =
-    DECL of statement
+    NONDECL of statement (* cannot match all of a top-level declaration *)
+  | TOPCODE of statement dots
   | CODE of statement dots
   | FILEINFO of string mcode (* old file *) * string mcode (* new file *)
   | ERRORWORDS of expression list

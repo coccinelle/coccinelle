@@ -13,8 +13,8 @@ module CTL = Ast_ctl
 let warning s = Printf.fprintf stderr "warning: %s\n" s
 
 type cocci_predicate = Lib_engine.predicate * Ast.meta_name Ast_ctl.modif
-type formula =
-    (cocci_predicate,Ast.meta_name, Wrapper_ctl.info) Ast_ctl.generic_ctl
+type formula = Lib_engine.ctlcocci
+type top_formula = NONDECL of Lib_engine.ctlcocci | CODE of Lib_engine.ctlcocci
 
 let union = Common.union_set
 let intersect l1 l2 = List.filter (function x -> List.mem x l2) l1
@@ -2449,13 +2449,15 @@ let top_level name ((ua,pos),fua) (fuas,t) =
   used_after := ua;
   saved := Ast.get_saved t;
   let quantified = Common.minus_set (Common.union_set ua fuas) pos in
-  quantify false quantified
-    (match Ast.unwrap t with
+  let (wrap,formula) =
+    match Ast.unwrap t with
       Ast.FILEINFO(old_file,new_file) -> failwith "not supported fileinfo"
-    | Ast.DECL(stmt) ->
+    | Ast.NONDECL(stmt) ->
 	let unopt = elim_opt.V.rebuilder_statement stmt in
 	let unopt = preprocess_dots_e unopt in
-	cleanup(statement unopt VeryEnd quantified [] None None None false)
+	let formula =
+	  cleanup(statement unopt VeryEnd quantified [] None None None false) in
+	((function x -> NONDECL x), formula)
     | Ast.CODE(stmt_dots) ->
 	let unopt = elim_opt.V.rebuilder_statement_dots stmt_dots in
 	let unopt = preprocess_dots unopt in
@@ -2477,17 +2479,20 @@ let top_level name ((ua,pos),fua) (fuas,t) =
 	let res =
 	  statement_list unopt VeryEnd quantified [] None None None
 	    false false in
-	cleanup
-	  (if starts_with_dots
-	  then
+	let formula =
+	  cleanup
+	    (if starts_with_dots
+	    then
 	  (* EX because there is a loop on enter/top *)
-	    ctl_and CTL.NONSTRICT (toppred None) (ctl_ex res)
-	  else if starts_with_brace
-	  then
-	     ctl_and CTL.NONSTRICT
-	      (ctl_not(CTL.EX(CTL.BACKWARD,(funpred None)))) res
-	  else res)
-    | Ast.ERRORWORDS(exps) -> failwith "not supported errorwords")
+	      ctl_and CTL.NONSTRICT (toppred None) (ctl_ex res)
+	    else if starts_with_brace
+	    then
+	      ctl_and CTL.NONSTRICT
+		(ctl_not(CTL.EX(CTL.BACKWARD,(funpred None)))) res
+	    else res) in
+	((function x -> CODE x), formula)
+    | Ast.ERRORWORDS(exps) -> failwith "not supported errorwords" in
+  wrap (quantify false quantified formula)
 
 (* --------------------------------------------------------------------- *)
 (* Entry points *)
@@ -2520,7 +2525,7 @@ let asttoctl r used_after positions =
     Ast.ScriptRule _ | Ast.InitialScriptRule _ | Ast.FinalScriptRule _ -> []
   | Ast.CocciRule (a,b,c,_,Ast_cocci.Normal) ->
       asttoctlz (a,b,c) used_after positions
-  | Ast.CocciRule (a,b,c,_,Ast_cocci.Generated) -> [CTL.True]
+  | Ast.CocciRule (a,b,c,_,Ast_cocci.Generated) -> [CODE CTL.True]
 
 let pp_cocci_predicate (pred,modif) =
   Pretty_print_engine.pp_predicate pred

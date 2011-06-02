@@ -767,7 +767,7 @@ let top_level t =
     Ast.FILEINFO(old_file,new_file) ->
       print_string "--- "; mcode print_string old_file; force_newline();
       print_string "+++ "; mcode print_string new_file
-  | Ast.DECL(stmt) -> statement "" stmt
+  | Ast.NONDECL(stmt) -> statement "" stmt
   | Ast.CODE(stmt_dots) ->
       dots force_newline (statement "") stmt_dots
   | Ast.ERRORWORDS(exps) ->

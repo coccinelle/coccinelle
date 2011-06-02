@@ -1,5 +1,5 @@
 (* create an index for each constructor *)
-(* current max is 153 *)
+(* current max is 154 *)
 
 (* doesn't really work - requires that identical terms with no token
 subterms (eg dots) not appear on the same line *)
@@ -198,10 +198,11 @@ let case_line c =
 
 let top_level t =
   match Ast0.unwrap t with
-    Ast0.DECL(stmt) -> [90]
+    Ast0.NONDECL(stmt) -> [90]
   | Ast0.FILEINFO(old_file,new_file) -> [92]
   | Ast0.CODE(stmt_dots) -> [94]
   | Ast0.ERRORWORDS(exps) -> [95]
   | Ast0.OTHER(_) -> [96]
+  | Ast0.TOPCODE(_) -> [154]
 
 (* 99-101 already used *)

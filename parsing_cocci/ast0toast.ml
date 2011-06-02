@@ -1054,11 +1054,10 @@ and top_level t =
     (match Ast0.unwrap t with
       Ast0.FILEINFO(old_file,new_file) ->
 	Ast.FILEINFO(mcode old_file,mcode new_file)
-    | Ast0.DECL(stmt) -> Ast.DECL(statement stmt)
-    | Ast0.CODE(rule_elem_dots) ->
-	Ast.CODE(statement_dots rule_elem_dots)
+    | Ast0.NONDECL(stmt) -> Ast.NONDECL(statement stmt)
+    | Ast0.CODE(rule_elem_dots) -> Ast.CODE(statement_dots rule_elem_dots)
     | Ast0.ERRORWORDS(exps) -> Ast.ERRORWORDS(List.map expression exps)
-    | Ast0.OTHER(_) -> failwith "eliminated by top_level")
+    | Ast0.OTHER(_) | Ast0.TOPCODE(_) -> failwith "eliminated by top_level")
 
 (* --------------------------------------------------------------------- *)
 (* Entry point for minus code *)

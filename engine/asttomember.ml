@@ -246,7 +246,7 @@ and case_line testfn mcode tail case =
 let top_level testfn mcode t : 'a list list =
   match Ast.unwrap t with
     Ast.FILEINFO(old_file,new_file) -> failwith "not supported fileinfo"
-  | Ast.DECL(stmt) -> statement testfn mcode false stmt
+  | Ast.NONDECL(stmt) -> statement testfn mcode false stmt
   | Ast.CODE(stmt_dots) -> statement_list testfn mcode false stmt_dots
   | Ast.ERRORWORDS(exps) -> failwith "not supported errorwords"
 

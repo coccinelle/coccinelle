@@ -505,7 +505,7 @@ let collect_plus_nodes root =
 
   let toplevel r k e =
     match Ast0.unwrap e with
-      Ast0.DECL(s) -> r.VT0.combiner_rec_statement s
+      Ast0.NONDECL(s) -> r.VT0.combiner_rec_statement s
     | Ast0.CODE(sdots) -> r.VT0.combiner_rec_statement_dots sdots
     | _ -> do_nothing mk_code r k e in
 

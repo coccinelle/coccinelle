@@ -177,4 +177,4 @@ and guard_ctl_dots keep_wit = function
 
 (* --------------------------------------------------------------------- *)
 
-let toctl sl = ctl_seq true ctl_true sl
+let toctl sl = Asttoctl2.CODE (ctl_seq true ctl_true sl)

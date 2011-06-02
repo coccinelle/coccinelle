@@ -2,4 +2,4 @@ type cocci_predicate = Lib_engine.predicate * Ast_cocci.meta_name Ast_ctl.modif
 type formula =
     (cocci_predicate,Ast_cocci.meta_name, Wrapper_ctl.info) Ast_ctl.generic_ctl
 
-val toctl : Ast_popl.sequence -> formula
+val toctl : Ast_popl.sequence -> Asttoctl2.top_formula

@@ -1068,13 +1068,13 @@ and statement_dots x = dots is_stm_dots None statement x
 let top_level t =
   match Ast0.unwrap t with
     Ast0.FILEINFO(old_file,new_file) -> t
-  | Ast0.DECL(stmt) ->
-      let stmt = statement stmt in mkres t (Ast0.DECL(stmt)) stmt stmt
+  | Ast0.NONDECL(stmt) ->
+      let stmt = statement stmt in mkres t (Ast0.NONDECL(stmt)) stmt stmt
   | Ast0.CODE(rule_elem_dots) ->
       let rule_elem_dots = dots is_stm_dots None statement rule_elem_dots in
       mkres t (Ast0.CODE(rule_elem_dots)) rule_elem_dots rule_elem_dots
   | Ast0.ERRORWORDS(exps) -> t
-  | Ast0.OTHER(_) -> failwith "eliminated by top_level"
+  | Ast0.OTHER(_) | Ast0.TOPCODE(_) -> failwith "eliminated by top_level"
 
 (* --------------------------------------------------------------------- *)
 (* Entry points *)

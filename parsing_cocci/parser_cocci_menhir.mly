@@ -791,13 +791,13 @@ minus_body:
     /*ew=loption(error_words)*/
     { match f@b(*@ew*) with
       [] -> raise (Semantic_cocci.Semantic "minus slice can't be empty")
-    | code -> Top_level.top_level code }
+    | code -> code }
 
 plus_body:
     f=loption(filespec)
     b=loption(plus_start)
     /*ew=loption(error_words)*/
-    { Top_level.top_level (f@b(*@ew*)) }
+    { f@b(*@ew*) }
 
 minus_exp_body:
     f=loption(filespec)
@@ -805,13 +805,13 @@ minus_exp_body:
     /*ew=loption(error_words)*/
     { match f@[b](*@ew*) with
       [] -> raise (Semantic_cocci.Semantic "minus slice can't be empty")
-    | code -> Top_level.top_level code }
+    | code -> code }
 
 plus_exp_body:
     f=loption(filespec)
     b=top_eexpr
     /*ew=loption(error_words)*/
-    { Top_level.top_level (f@[b](*@ew*)) }
+    { f@[b](*@ew*) }
 
 filespec:
   TMinusFile TPlusFile
@@ -2051,7 +2051,7 @@ when_body_sequence.
 
 /* doesn't allow only ... */
 minus_start:
-  fundecl                { [Ast0.wrap(Ast0.DECL($1))] }
+  fundecl                { [Ast0.wrap(Ast0.OTHER($1))] }
 | ctype                  { [Ast0.wrap(Ast0.OTHER(Ast0.wrap(Ast0.Ty($1))))] }
 | top_init          { [Ast0.wrap(Ast0.OTHER(Ast0.wrap(Ast0.TopInit($1))))] }
 | toplevel_seq_startne(toplevel_after_dots_init)
@@ -2109,7 +2109,7 @@ plus_start:
                                           { (Ast0.wrap(Ast0.OTHER($1)))::$2 }
 | expr plus_after_exp
                      { (Ast0.wrap(Ast0.OTHER(Ast0.wrap(Ast0.Exp($1)))))::$2 }
-| fundecl plus_after_stm                     { Ast0.wrap(Ast0.DECL($1))::$2 }
+| fundecl plus_after_stm                     { Ast0.wrap(Ast0.OTHER($1))::$2 }
 | decl_statement_expr plus_after_stm
                 { (List.map (function x -> Ast0.wrap(Ast0.OTHER(x))) $1)@$2 }
 
@@ -2122,14 +2122,14 @@ plus_after_dots:
 | TNothing plus_after_exp                                                {$2}
 | expr plus_after_exp
                      { (Ast0.wrap(Ast0.OTHER(Ast0.wrap(Ast0.Exp($1)))))::$2 }
-| fundecl plus_after_stm                     { Ast0.wrap(Ast0.DECL($1))::$2 }
+| fundecl plus_after_stm                     { Ast0.wrap(Ast0.OTHER($1))::$2 }
 | decl_statement_expr plus_after_stm
                 { (List.map (function x -> Ast0.wrap(Ast0.OTHER(x))) $1)@$2 }
 
 plus_after_stm:
   /* empty */                                                            {[]}
 | stm_dots plus_after_dots                { (Ast0.wrap(Ast0.OTHER($1)))::$2 }
-| fundecl plus_after_stm                     { Ast0.wrap(Ast0.DECL($1))::$2 }
+| fundecl plus_after_stm                     { Ast0.wrap(Ast0.OTHER($1))::$2 }
 | decl_statement plus_after_stm
                 { (List.map (function x -> Ast0.wrap(Ast0.OTHER(x))) $1)@$2 }
 

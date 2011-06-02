@@ -1685,11 +1685,25 @@ let parse file =
 	      then (* not actually used for anything, except context_neg *)
 		List.map
 		  (Iso_pattern.rebuild_mcode None).VT0.rebuilder_rec_top_level
-		  minus_res
+		  (Top_level.top_level false minus_res)
 	      else
 		if is_expression
 		then parse_one "plus" PC.plus_exp_main file plus_tokens
 		else parse_one "plus" PC.plus_main file plus_tokens in
+	    let plus_res = Top_level.top_level false plus_res in
+	    (* minus code has to be CODE if the + code is CODE, otherwise
+	       doesn't matter if + code is CODE or DECL or TOPCODE *)
+	    let minus_res =
+	      let any_code =
+		List.exists
+		  (function x ->
+		    match Ast0.unwrap x with Ast0.CODE _ -> true | _ -> false)
+		  plus_res in
+	      if any_code
+	      then Top_level.top_level true minus_res
+	      else Top_level.top_level false minus_res in
+	    let minus_res = Top_level.clean minus_res in
+	    let plus_res = Top_level.clean plus_res in
 	    (*
 	       Unparse_ast0.unparse plus_res;
 	       Printf.printf "after plus parse\n";

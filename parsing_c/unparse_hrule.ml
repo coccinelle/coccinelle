@@ -448,7 +448,7 @@ let pp_rule local_metas ast env srcfile =
       Ast.CocciRule(_,_,[body],_,_) -> (* could extend to use attributes *)
 	(body,
 	 match Ast.unwrap body with
-	   Ast.DECL(s) -> [[Ast.StatementTag s]]
+	   Ast.NONDECL(s) -> [[Ast.StatementTag s]]
 	 | Ast.CODE(ss) -> [[Ast.StmtDotsTag ss]]
 	 | _ -> error body "bad rule body")
     | _ -> failwith "bad rule" in

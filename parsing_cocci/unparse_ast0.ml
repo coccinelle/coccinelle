@@ -607,8 +607,8 @@ let top_level t =
 	Ast0.FILEINFO(old_file,new_file) ->
 	  print_string "--- "; mcode print_string old_file; force_newline();
 	  print_string "+++ "; mcode print_string new_file
-      | Ast0.DECL(stmt) -> statement "" stmt
-      | Ast0.CODE(stmt_dots) ->
+      | Ast0.NONDECL(stmt) -> statement "" stmt
+      | Ast0.CODE(stmt_dots) | Ast0.TOPCODE(stmt_dots) ->
 	  dots force_newline (statement "") stmt_dots
       | Ast0.ERRORWORDS(exps) ->
 	  print_string "error words = [";

@@ -1,5 +1,6 @@
 @@
 declarer name MODULE_PARM;
+declarer name module_param;
 @@
 
 - MODULE_PARM(...);

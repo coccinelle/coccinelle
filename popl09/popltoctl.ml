@@ -212,4 +212,4 @@ and do_between_dots keep_wit ba term after =
 
 (* --------------------------------------------------------------------- *)
 
-let toctl sl = ctl_seq true ctl_true sl
+let toctl sl = Asttoctl2.CODE (ctl_seq true ctl_true sl)
