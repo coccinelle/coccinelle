@@ -549,7 +549,7 @@ let rec ast0_type_to_type ty =
   | Pointer(ty,_) -> TC.Pointer(ast0_type_to_type ty)
   | FunctionPointer(ty,_,_,_,_,params,_) ->
       TC.FunctionPointer(ast0_type_to_type ty)
-  | FunctionType _ -> failwith "not supported"
+  | FunctionType _ -> TC.Unknown (*failwith "not supported"*)
   | Array(ety,_,_,_) -> TC.Array(ast0_type_to_type ety)
   | EnumName(su,Some tag) ->
       (match unwrap tag with

@@ -349,6 +349,7 @@ let rec propagate_types env =
     | Some ty -> Ast0.set_type exp new_expty) in
 
   let statement r k s =
+    Printf.printf "in statement\n";
     match Ast0.unwrap s with
       Ast0.FunDecl(_,fninfo,name,lp,params,rp,lbrace,body,rbrace) ->
 	let rec get_binding p =

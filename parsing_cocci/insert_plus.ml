@@ -765,10 +765,8 @@ let attachbefore (infop,c,p) = function
       (match repl with
  	Ast.NOREPLACEMENT ->
 	  let (bef,ti) = init p infop in
-	  Printf.printf "attachbefore 1 %s\n" (it2c c);
 	  replacements := (Ast.REPLACEMENT(bef,c),ti)
       | Ast.REPLACEMENT(repl,it) ->
-	  Printf.printf "attachbefore 2 %s %s\n" (it2c c) (it2c it);
 	  let it = Ast.lub_count it c in
 	  let (bef,ti) = insert p infop repl ti in
 	  replacements := (Ast.REPLACEMENT(bef,it),ti))
