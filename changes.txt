@@ -57,6 +57,7 @@
   eliminated
 - Accept removal of a single declaration, replaced by arbitrary,
   non-declaration code
+- smpl_spacing takes into account newlines, indentation
 
 * 0.2.5
 ** Language:
