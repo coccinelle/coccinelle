@@ -1071,7 +1071,8 @@ let rec adjust_indentation xs =
 	  None -> aux started xs
 	| Some (tu,_) ->
 	    _current_tabbing := tu::(!_current_tabbing);
-	    C2 (tu)::aux started xs)
+	     (* can't be C2, for later phases *)
+	     Cocci2 (tu,-1,-1,-1,None)::aux started xs)
     | Unindent_cocci2(permanent)::xs ->
 	(match !_current_tabbing with
 	  [] -> aux started xs
@@ -1091,7 +1092,8 @@ let rec adjust_indentation xs =
     | ((Cocci2("\n",_,_,_,_)) as x)::xs ->
             (* dont inline in expr because of weird eval order of ocaml *)
         let s = String.concat "" !_current_tabbing in
-        x::C2 (s)::aux started xs
+        (* can't be C2, for later phases *)
+        x::Cocci2 (s,-1,-1,-1,None)::aux started xs
     | x::xs -> x::aux started xs in
   (aux false xs,!tabbing_unit)
 
@@ -1263,7 +1265,7 @@ let pp_program2 xs outfile  =
 	      drop_expanded(drop_fake(drop_minus toks))
 	    else
               (* phase2: can now start to filter and adjust *)
-	       let (toks,tu) = adjust_indentation toks in
+	       (let (toks,tu) = adjust_indentation toks in
 	      let toks = adjust_before_semicolon toks in(*before remove minus*)
 	      let toks = adjust_after_paren toks in(*also before remove minus*)
 	      let toks = drop_space_at_endline toks in
@@ -1275,7 +1277,7 @@ let pp_program2 xs outfile  =
 	      let toks = add_newlines toks tu in
 	      let toks = paren_then_brace toks in
               let toks = fix_tokens toks in
-	       toks in
+	       toks) in
 
           (* in theory here could reparse and rework the ast! or
            * apply some SP. Not before cos julia may have generated
