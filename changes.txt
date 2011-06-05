@@ -32,6 +32,9 @@
 - Support - on expression nests
 - Better handling of the case of a matched declaration that should only
   be replaced by other top level things.
+- Allow a semantic patch beginning and ending with braces to match the
+  complete body of a function if the braces are not removed and if nothing
+  is added before the first brace or after the last one.
 
 ** Bugfix:
 - Corrected parsing of script strings delimited by a single quote.  Thanks
@@ -58,6 +61,9 @@
 - Accept removal of a single declaration, replaced by arbitrary,
   non-declaration code
 - smpl_spacing takes into account newlines, indentation
+- Improved prevention of transformations on toplevel { ... } from causing
+  changes outside function boundaries; also outside ifs, whiles, etc.
+  Changes are still allowed on { ... } present for other reasons.
 
 * 0.2.5
 ** Language:

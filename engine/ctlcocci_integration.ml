@@ -119,6 +119,15 @@ let (labels_for_ctl: string list (* dropped isos *) ->
       | Lib_engine.ErrorExit,   F.ErrorExit -> [nodei, (p,[])]
       |	Lib_engine.Goto,        F.Goto(_,_,_) -> [nodei, (p,[])]
 
+      | Lib_engine.UnsafeBrace, node ->
+	  (* cases where it it not safe to put something on the outer side
+	     of braces *)
+	  (match node with
+	    F.FunHeader _ | F.DoHeader _ | F.TrueNode _ | F.Else _
+	  | F.InLoopNode _ (* while, for *) | F.SwitchHeader _ ->
+	      [nodei, (p,[])]
+	  | _ -> [])
+
       | Lib_engine.InLoop , _ -> []
       | Lib_engine.TrueBranch , _ -> []
       | Lib_engine.FalseBranch, _ -> []
