@@ -741,7 +741,7 @@ let equal_case_line c1 c2 =
 
 let rec equal_top_level t1 t2 =
   match (Ast0.unwrap t1,Ast0.unwrap t2) with
-    (Ast0.DECL(_),Ast0.DECL(_)) -> true
+    (Ast0.NONDECL(_),Ast0.NONDECL(_)) -> true
   | (Ast0.FILEINFO(old_file1,new_file1),Ast0.FILEINFO(old_file2,new_file2)) ->
       equal_mcode old_file1 old_file2 && equal_mcode new_file1 new_file2
   | (Ast0.CODE(_),Ast0.CODE(_)) -> true
@@ -861,10 +861,11 @@ let plus_table =
 
 let iscode t =
   match Ast0.unwrap t with
-    Ast0.DECL(_) -> true
+    Ast0.NONDECL(_) -> true
   | Ast0.FILEINFO(_) -> true
   | Ast0.ERRORWORDS(_) -> false
   | Ast0.CODE(_) -> true
+  | Ast0.TOPCODE(_)
   | Ast0.OTHER(_) -> failwith "unexpected top level code"
 
 (* ------------------------------------------------------------------- *)
@@ -878,7 +879,7 @@ let concat = function
 	  [] -> []
 	| x::rest ->
 	    (match Ast0.unwrap x with
-	      Ast0.DECL(s) -> let stms = loop rest in s::stms
+	      Ast0.NONDECL(s) -> let stms = loop rest in s::stms
 	    | Ast0.CODE(ss) ->
 		let stms = loop rest in
 		(match Ast0.unwrap ss with
@@ -968,6 +969,8 @@ let rec is_toplevel s =
   | Ast0.Define(_,_,_,_) -> true
   | _ -> false
 
+(* consider code and topcode to be the same; difference handled
+in top_level.ml *)
 let check_compatible m p =
   let fail _ =
     failwith
@@ -975,17 +978,21 @@ let check_compatible m p =
 	 "incompatible minus and plus code starting on lines %d and %d"
 	 (Ast0.get_line m) (Ast0.get_line p)) in
   match (Ast0.unwrap m, Ast0.unwrap p) with
-    (Ast0.DECL(decl1),Ast0.DECL(decl2)) ->
+    (Ast0.NONDECL(decl1),Ast0.NONDECL(decl2)) ->
       if not (is_decl decl1 && is_decl decl2)
       then fail()
-  | (Ast0.DECL(decl1),Ast0.CODE(code2)) ->
+  | (Ast0.NONDECL(decl1),Ast0.CODE(code2)) ->
+      (* This is probably the only important case.  We don't want to
+	 replace top-level declarations by arbitrary code. *)
       let v1 = is_decl decl1 in
       let v2 = List.for_all is_toplevel (Ast0.undots code2) in
-      if !Flag.make_hrule = None && v1 && not v2 then fail()
-  | (Ast0.CODE(code1),Ast0.DECL(decl2)) ->
+      if !Flag.make_hrule = None && v1 && not v2
+      then fail()
+  | (Ast0.CODE(code1),Ast0.NONDECL(decl2)) ->
       let v1 = List.for_all is_toplevel (Ast0.undots code1) in
       let v2 = is_decl decl2 in
-      if v1 && not v2 then fail()
+      if v1 && not v2
+      then fail()
   | (Ast0.CODE(code1),Ast0.CODE(code2)) ->
       let v1 = isonly is_init code1 in
       let v2a = isonly is_init code2 in
@@ -1003,7 +1010,8 @@ let check_compatible m p =
 	  testers;
 	let v1 = isonly is_fndecl code1 in
 	let v2 = List.for_all is_toplevel (Ast0.undots code2) in
-	if !Flag.make_hrule = None && v1 && not v2 then fail()
+	if !Flag.make_hrule = None && v1 && not v2
+	then fail()
   | (Ast0.FILEINFO(_,_),Ast0.FILEINFO(_,_)) -> ()
   | (Ast0.OTHER(_),Ast0.OTHER(_)) -> ()
   | _ -> fail()

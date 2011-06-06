@@ -738,6 +738,7 @@ but I don't know how to declare polymorphism across functors *)
 let dots2metavar (_,info,mcodekind,pos) =
   (("","..."),info,mcodekind,pos)
 let metavar2dots (_,info,mcodekind,pos) = ("...",info,mcodekind,pos)
+let metavar2ndots (_,info,mcodekind,pos) = ("<+...",info,mcodekind,pos)
 
 let satisfies_regexpconstraint c id : bool =
   match c with
@@ -1345,7 +1346,7 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
           X.distrf_e (dots2metavar starter) eb >>= (fun mcode eb ->
             return (
             (A.NestExpr
-	       (metavar2dots mcode,
+	       (metavar2ndots mcode,
 		A.rewrap exps (A.DOTS [exp]),ender,None,true)) +> wa,
             eb
             )

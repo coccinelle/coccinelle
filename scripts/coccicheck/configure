@@ -97,5 +97,8 @@ clean:
 distclean:
 	rm -rf \$(RESULTS)
 
+maintclean: distclean
+	rm Makefile
+
 depend: update
 EOF

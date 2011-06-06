@@ -839,12 +839,15 @@ let visitor mode bind option_default
 	    let (old_file_n,old_file) = string_mcode old_file in
 	    let (new_file_n,new_file) = string_mcode new_file in
 	    (bind old_file_n new_file_n,Ast0.FILEINFO(old_file,new_file))
-	| Ast0.DECL(statement_dots) ->
+	| Ast0.NONDECL(statement_dots) ->
 	    let (n,statement_dots) = statement statement_dots in
-	    (n,Ast0.DECL(statement_dots))
+	    (n,Ast0.NONDECL(statement_dots))
 	| Ast0.CODE(stmt_dots) ->
 	    let (stmt_dots_n,stmt_dots) = statement_dots stmt_dots in
 	    (stmt_dots_n, Ast0.CODE(stmt_dots))
+	| Ast0.TOPCODE(stmt_dots) ->
+	    let (stmt_dots_n,stmt_dots) = statement_dots stmt_dots in
+	    (stmt_dots_n, Ast0.TOPCODE(stmt_dots))
 	| Ast0.ERRORWORDS(exps) ->
 	    let (n,exps) = map_split_bind expression exps in
 	    (n, Ast0.ERRORWORDS(exps))

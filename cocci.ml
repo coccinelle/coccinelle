@@ -335,6 +335,12 @@ let show_or_not_diff a b =
 
 let show_or_not_ctl_tex2 astcocci ctls =
   if !Flag_cocci.show_ctl_tex then begin
+    let ctls =
+      List.map
+	(List.map
+	   (function ((Asttoctl2.NONDECL ctl | Asttoctl2.CODE ctl),x) ->
+	     (ctl,x)))
+	ctls in
     Ctltotex.totex ("/tmp/__cocci_ctl.tex") astcocci ctls;
     Common.command2 ("cd /tmp; latex __cocci_ctl.tex; " ^
 		     "dvips __cocci_ctl.dvi -o __cocci_ctl.ps;" ^
@@ -380,7 +386,7 @@ let show_or_not_ctl_text2 ctl ast rulenb =
       );
 
     pr "CTL = ";
-    let (ctl,_) = ctl in
+    let ((Asttoctl2.CODE ctl | Asttoctl2.NONDECL ctl),_) = ctl in
     adjust_pp_with_indent (fun () ->
       Format.force_newline();
       Pretty_print_engine.pp_ctlcocci
@@ -843,7 +849,7 @@ type toplevel_cocci_info_script_rule = {
 }
 
 type toplevel_cocci_info_cocci_rule = {
-  ctl: Lib_engine.ctlcocci * (CCI.pred list list);
+  ctl: Asttoctl2.top_formula * (CCI.pred list list);
   metavars: Ast_cocci.metavar list;
   ast_rule: Ast_cocci.rule;
   isexp: bool; (* true if + code is an exp, only for Flag.make_hrule *)
@@ -1607,47 +1613,57 @@ and process_a_generated_a_env_a_toplevel rule env ccs =
 (* does side effects on C ast and on Cocci info rule *)
 and process_a_ctl_a_env_a_toplevel2 r e c f =
  indent_do (fun () ->
-  show_or_not_celem "trying" c.ast_c;
-  Flag.currentfile := Some (f ^ ":" ^get_celem c.ast_c);
-  let (trans_info, returned_any_states, inherited_bindings, newbindings) =
-    Common.save_excursion Flag_ctl.loop_in_src_code (fun () ->
-      Flag_ctl.loop_in_src_code := !Flag_ctl.loop_in_src_code||c.contain_loop;
+   show_or_not_celem "trying" c.ast_c;
+   Flag.currentfile := Some (f ^ ":" ^get_celem c.ast_c);
+   match (r.ctl,c.ast_c) with
+     ((Asttoctl2.NONDECL ctl,t),Ast_c.Declaration _) -> None
+   | ((Asttoctl2.NONDECL ctl,t), _)
+   | ((Asttoctl2.CODE ctl,t), _) ->
+       let ctl = (ctl,t) in (* ctl and other info *)
+       let (trans_info, returned_any_states, inherited_bindings, newbindings) =
+	 Common.save_excursion Flag_ctl.loop_in_src_code (fun () ->
+	   Flag_ctl.loop_in_src_code :=
+	     !Flag_ctl.loop_in_src_code||c.contain_loop;
 
       (***************************************)
       (* !Main point! The call to the engine *)
       (***************************************)
-      let model_ctl  = CCI.model_for_ctl r.dropped_isos (Common.some c.flow) e
-      in CCI.mysat model_ctl r.ctl (r.rule_info.used_after, e)
-    )
-  in
-  if not returned_any_states
-  then None
-  else begin
-    show_or_not_celem "found match in" c.ast_c;
-    show_or_not_trans_info trans_info;
-    List.iter (show_or_not_binding "out") newbindings;
+	     let model_ctl =
+	       CCI.model_for_ctl r.dropped_isos (Common.some c.flow) e
+	     in CCI.mysat model_ctl ctl (r.rule_info.used_after, e))
+       in
+       if not returned_any_states
+       then None
+       else
+	 begin
+	   show_or_not_celem "found match in" c.ast_c;
+	   show_or_not_trans_info trans_info;
+	   List.iter (show_or_not_binding "out") newbindings;
 
-    r.rule_info.was_matched := true;
+	   r.rule_info.was_matched := true;
 
-    if not (null trans_info) &&
-      not (!Flag.sgrep_mode2 && not !Flag_cocci.show_diff)
-    then begin
-      c.was_modified := true;
-      try
-        (* les "more than one var in a decl" et "already tagged token"
-         * font crasher coccinelle. Si on a 5 fichiers, donc on a 5
-         * failed. Le try limite le scope des crashes pendant la
-         * trasformation au fichier concerne. *)
+	   if not (null trans_info) &&
+	     not (!Flag.sgrep_mode2 && not !Flag_cocci.show_diff)
+	   then
+	     begin
+	       c.was_modified := true;
+	       try
+               (* les "more than one var in a decl" et "already tagged token"
+                * font crasher coccinelle. Si on a 5 fichiers, donc on a 5
+                * failed. Le try limite le scope des crashes pendant la
+                * trasformation au fichier concerne. *)
 
-        (* modify ast via side effect *)
-        ignore(Transformation_c.transform r.rule_info.rulename r.dropped_isos
-                  inherited_bindings trans_info (Common.some c.flow));
-      with Timeout -> raise Timeout | UnixExit i -> raise (UnixExit i)
-    end;
+               (* modify ast via side effect *)
+		 ignore
+		   (Transformation_c.transform r.rule_info.rulename
+		      r.dropped_isos
+		      inherited_bindings trans_info (Common.some c.flow));
+	       with Timeout -> raise Timeout | UnixExit i -> raise (UnixExit i)
+	     end;
 
-    Some (List.map (function x -> x@inherited_bindings) newbindings)
-  end
- )
+	   Some (List.map (function x -> x@inherited_bindings) newbindings)
+	 end
+   )
 
 and process_a_ctl_a_env_a_toplevel  a b c f=
   Common.profile_code "process_a_ctl_a_env_a_toplevel"

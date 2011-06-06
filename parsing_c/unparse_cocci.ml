@@ -995,7 +995,7 @@ and case_line arity c =
 let top_level t =
   match Ast.unwrap t with
     Ast.FILEINFO(old_file,new_file) -> raise CantBeInPlus
-  | Ast.DECL(stmt) -> statement "" stmt
+  | Ast.NONDECL(stmt) -> statement "" stmt
   | Ast.CODE(stmt_dots) -> dots force_newline (statement "") stmt_dots
   | Ast.ERRORWORDS(exps) -> raise CantBeInPlus
 in

@@ -565,7 +565,7 @@ and inc_elem =
   | IncDots
 
 and base_top_level =
-    DECL of statement
+    NONDECL of statement
   | CODE of statement dots
   | FILEINFO of string mcode (* old file *) * string mcode (* new file *)
   | ERRORWORDS of expression list

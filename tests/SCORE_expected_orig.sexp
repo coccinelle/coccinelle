@@ -1,9 +1,9 @@
 ((a.res Ok) (a3d.res Ok) (a_and_e.res Ok) (a_and_e_ver1.res Ok) (ab.res Ok)
  (addaft.res Ok) (addbefore.res Ok) (addbeforeafter.res Ok) (addelse.res Ok)
- (addif.res Ok) (addif1.res Ok) (addif2.res Ok) (addtoo.res Ok)
- (after_if.res Ok) (anon.res Ok) (ar.res Ok) (arg.res Ok) (argument.res Ok)
- (arparam.res Ok) (array_init.res Ok) (array_size.res Ok) (arraysz.res Ok)
- (attradd.res Ok) (b1.res Ok) (b2.res Ok)
+ (addfield.res Ok) (addif.res Ok) (addif1.res Ok) (addif2.res Ok)
+ (addtoo.res Ok) (after_if.res Ok) (anon.res Ok) (ar.res Ok) (arg.res Ok)
+ (argument.res Ok) (arparam.res Ok) (array_init.res Ok) (array_size.res Ok)
+ (arraysz.res Ok) (attradd.res Ok) (b1.res Ok) (b2.res Ok)
  (bad_iso_example.res
   (Pb
    "INCORRECT:diff token: ( VS x\nFile \"tests/bad_iso_example.c\", line 2, column 6,  charpos = 19\n    around = '(', whole content =   if ((x = 3)) return;\nFile \"tests/bad_iso_example.res\", line 2, column 6,  charpos = 19\n    around = 'x', whole content =   if (x) return;\n\n    diff (result(<) vs expected_result(>)) = \n    @@ -1,4 +1,4 @@\n     int main() {\n    -  if ((x = 3)) return;\n    +  if (x) return;\n     }\n     \n"))
@@ -126,7 +126,7 @@
    "INCORRECT:diff token: init_MUTEX VS mutex_init\nFile \"tests/serio.c\", line 7, column 1,  charpos = 130\n    around = 'init_MUTEX', whole content = \tinit_MUTEX(&serio->drv_sem);\nFile \"tests/serio.res\", line 7, column 1,  charpos = 130\n    around = 'mutex_init', whole content = \tmutex_init(&serio->new_lock);\n\n    diff (result(<) vs expected_result(>)) = \n    @@ -4,5 +4,5 @@\n     \n     static void serio_init_port(struct serio *serio)\n     {\n    -\tinit_MUTEX(&serio->drv_sem);\n    +\tmutex_init(&serio->new_lock);\n     }\n"))
  (shared_brace.res Ok) (signed.res Ok) (sis.res Ok) (sizeof.res Ok)
  (sizeof_julia.res Ok) (sizeptr.res Ok) (sizestar.res Ok) (skip.res Ok)
- (sp.res Ok) (spaces.res Ok) (spl.res Ok) (static.res Ok)
+ (sp.res Ok) (spaces.res Ok) (spacing.res Ok) (spl.res Ok) (static.res Ok)
  (stm1.res (Pb "PROBLEM\n   exn = Failure(\"no python\")\n")) (stm10.res Ok)
  (stm10_ver1.res Ok) (stm2.res Ok) (stm3.res Ok) (stm4.res Ok) (stm5.res Ok)
  (stm6.res Ok) (stm7.res (Pb "PROBLEM\n   exn = Failure(\"no python\")\n"))

@@ -6,7 +6,7 @@
 PACKAGE=$(PRJNAME)-$(VERSION)
 CCPACKAGE=coccicheck-$(CCVERSION)
 
-EXCLUDE=debian
+EXCLUDE=$(PACKAGE)/debian .depend
 
 BINSRC=spatch env.sh env.csh standard.h standard.iso \
        *.txt \
@@ -15,7 +15,7 @@ BINSRC=spatch env.sh env.csh standard.h standard.iso \
        demos/*
 BINSRC-PY=$(BINSRC) $(PYLIB) python/coccilib/
 
-EXCL=$(EXCLUDE:%=--exclude=$(PACKAGE)/%)
+EXCL=$(EXCLUDE:%=--exclude=%)
 BINSRC2=$(BINSRC:%=$(PACKAGE)/%)
 BINSRC2-PY=$(BINSRC-PY:%=$(PACKAGE)/%)
 

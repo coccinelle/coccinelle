@@ -402,7 +402,8 @@ and meta_pos =
 (* Top-level code *)
 
 and base_top_level =
-    DECL of statement
+    NONDECL of statement
+  | TOPCODE of statement dots
   | CODE of statement dots
   | FILEINFO of string mcode (* old file *) * string mcode (* new file *)
   | ERRORWORDS of expression list
@@ -572,7 +573,7 @@ let rec ast0_type_to_type ty =
   | Pointer(ty,_) -> TC.Pointer(ast0_type_to_type ty)
   | FunctionPointer(ty,_,_,_,_,params,_) ->
       TC.FunctionPointer(ast0_type_to_type ty)
-  | FunctionType _ -> failwith "not supported"
+  | FunctionType _ -> TC.Unknown (*failwith "not supported"*)
   | Array(ety,_,_,_) -> TC.Array(ast0_type_to_type ety)
   | EnumName(su,Some tag) ->
       (match unwrap tag with

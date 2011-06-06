@@ -452,8 +452,9 @@ and case_line old_metas table minus c =
 
 let top_level old_metas table minus t =
   match Ast0.unwrap t with
-    Ast0.DECL(stmt) -> statement old_metas table minus stmt
-  | Ast0.CODE(stmt_dots) -> dots (statement old_metas table minus) stmt_dots
+    Ast0.NONDECL(stmt) -> statement old_metas table minus stmt
+  | Ast0.CODE(stmt_dots) | Ast0.TOPCODE(stmt_dots) ->
+      dots (statement old_metas table minus) stmt_dots
   | Ast0.ERRORWORDS(exps) ->
       List.iter (expression FN old_metas table minus) exps
   | _ -> () (* no metavariables possible *)

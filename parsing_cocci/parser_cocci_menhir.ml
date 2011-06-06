@@ -23270,7 +23270,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
 # 816 "parser_cocci_menhir.mly"
     ( match f@b(*@ew*) with
       [] -> raise (Semantic_cocci.Semantic "minus slice can't be empty")
-    | code -> Top_level.top_level code )
+    | code -> code )
 # 23275 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
@@ -23302,7 +23302,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
 # 830 "parser_cocci_menhir.mly"
     ( match f@[b](*@ew*) with
       [] -> raise (Semantic_cocci.Semantic "minus slice can't be empty")
-    | code -> Top_level.top_level code )
+    | code -> code )
 # 23307 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
@@ -23518,7 +23518,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _endpos = _endpos__1_ in
         let _v : 'tv_minus_start = 
 # 2078 "parser_cocci_menhir.mly"
-                         ( [Ast0.wrap(Ast0.DECL(_1))] )
+                         ( [Ast0.wrap(Ast0.OTHER(_1))] )
 # 23523 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
@@ -28257,7 +28257,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _endpos = _endpos__2_ in
         let _v : 'tv_plus_after_dots = 
 # 2149 "parser_cocci_menhir.mly"
-                                             ( Ast0.wrap(Ast0.DECL(_1))::_2 )
+                                             ( Ast0.wrap(Ast0.OTHER(_1))::_2 )
 # 28262 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
@@ -28411,7 +28411,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _endpos = _endpos__2_ in
         let _v : 'tv_plus_after_stm = 
 # 2156 "parser_cocci_menhir.mly"
-                                             ( Ast0.wrap(Ast0.DECL(_1))::_2 )
+                                             ( Ast0.wrap(Ast0.OTHER(_1))::_2 )
 # 28416 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
@@ -28471,7 +28471,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _endpos = _endpos_b_ in
         let _v : 'tv_plus_body = 
 # 824 "parser_cocci_menhir.mly"
-    ( Top_level.top_level (f@b(*@ew*)) )
+    ( f@b(*@ew*) )
 # 28476 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
@@ -28501,7 +28501,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _endpos = _endpos_b_ in
         let _v : 'tv_plus_exp_body = 
 # 838 "parser_cocci_menhir.mly"
-    ( Top_level.top_level (f@[b](*@ew*)) )
+    ( f@[b](*@ew*) )
 # 28506 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {
@@ -28831,7 +28831,7 @@ module MenhirInterpreter = MenhirLib.TableInterpreter.Make (struct
         let _endpos = _endpos__2_ in
         let _v : 'tv_plus_start = 
 # 2136 "parser_cocci_menhir.mly"
-                                             ( Ast0.wrap(Ast0.DECL(_1))::_2 )
+                                             ( Ast0.wrap(Ast0.OTHER(_1))::_2 )
 # 28836 "parser_cocci_menhir.ml"
          in
         _menhir_env.MenhirLib.EngineTypes.stack <- {

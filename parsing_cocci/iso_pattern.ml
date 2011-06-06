@@ -2421,7 +2421,7 @@ let transform_stmt (metavars,alts,name) e =
 (* sort of a hack, because there is no disj at top level *)
 let transform_top (metavars,alts,name) e =
   match Ast0.unwrap e with
-    Ast0.DECL(declstm) ->
+    Ast0.NONDECL(declstm) ->
       (try
 	let strip alts =
 	  List.map
@@ -2434,7 +2434,7 @@ let transform_top (metavars,alts,name) e =
 		 | _ -> raise (Failure "")))
 	    alts in
 	let (count,mv,s) = transform_stmt (metavars,strip alts,name) declstm in
-	(count,mv,Ast0.rewrap e (Ast0.DECL(s)))
+	(count,mv,Ast0.rewrap e (Ast0.NONDECL(s)))
       with Failure _ -> (0,[],e))
   | Ast0.CODE(stmts) ->
       let (count,mv,res) =

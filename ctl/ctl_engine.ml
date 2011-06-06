@@ -1525,19 +1525,20 @@ let satLabel label required p =
 	    (List.map (function (st,th,_) -> (st,th)) triples);
 	  triples
     else setify(label p) in
-    normalize
-      (if !pREQUIRED_ENV_OPT
-      then
-	foldl
-	  (function rest ->
-	    function ((s,th,_) as t) ->
-	      if List.for_all
-		  (List.exists (function th' -> not(conj_subst th th' = None)))
-		  required
-	      then t::rest
-	      else rest)
-	  [] triples
-      else triples)
+    (* normalize first; conj_subst relies on sorting *)
+    let ntriples = normalize triples in
+    if !pREQUIRED_ENV_OPT
+    then
+      foldl
+	(function rest ->
+	  function ((s,th,_) as t) ->
+	    if List.for_all
+		(List.exists (function th' -> not(conj_subst th th' = None)))
+		required
+	    then t::rest
+	    else rest)
+	[] ntriples
+    else ntriples
 
 let get_required_states l =
   if !pREQUIRED_STATES_OPT && not !Flag_ctl.partial_match

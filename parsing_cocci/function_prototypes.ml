@@ -76,16 +76,30 @@ let collect_function (stm : Ast0.statement) =
 let collect_functions stmt_dots =
   List.concat (List.map collect_function (Ast0.undots stmt_dots))
 
+let drop_positions =
+  let mcode (term,arity,info,mc,_,adj) =
+    (term,arity,info,mc,ref [],adj) in
+  let donothing r k e = k e in
+  let res =
+    V0.flat_rebuilder
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    donothing donothing donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing donothing
+    donothing donothing in
+  res.VT0.rebuilder_rec_statement
+
 let get_all_functions rule =
   let res =
     match Ast0.unwrap rule with
-      Ast0.DECL(stmt) -> collect_function stmt
+      Ast0.NONDECL(stmt) -> collect_function stmt
     | Ast0.CODE(rule_elem_dots) -> collect_functions rule_elem_dots
     | _ -> [] in
   List.map
     (function (nm,def,vl) ->
       (nm,
-       (def,(Iso_pattern.rebuild_mcode None).VT0.rebuilder_rec_statement vl)))
+       (def,
+	drop_positions
+	  ((Iso_pattern.rebuild_mcode None).VT0.rebuilder_rec_statement vl))))
     res
 
 (* --------------------------------------------------------------------- *)
@@ -343,21 +357,20 @@ let no_names dec =
       |	_ -> dec)
   | _ -> dec
 
+let mkcode proto =
+  Ast0.copywrap proto (Ast0.CODE(Ast0.copywrap proto (Ast0.DOTS [proto])))
+
 let merge mproto pproto =
-  let mproto =
-    Compute_lines.compute_lines true
-      [Ast0.copywrap mproto (Ast0.DECL mproto)] in
-  let pproto =
-    Compute_lines.compute_lines true
-      [Ast0.copywrap pproto (Ast0.DECL pproto)] in
+  let mproto = Compute_lines.compute_lines true [mkcode mproto] in
+  let pproto = Compute_lines.compute_lines true [mkcode pproto] in
   let (m,p) = List.split(Context_neg.context_neg mproto pproto) in
   Insert_plus.insert_plus m p true (* no isos for protos *);
   (* convert to ast so that the + code will fall down to the tokens
-     and off the artificially added Ast0.DECL *)
+     and off the artificially added Ast0.CODE *)
   let mproto = Ast0toast.ast0toast_toplevel (List.hd mproto) in
   (* clean up the wrapping added above *)
   match Ast.unwrap mproto with
-    Ast.DECL mproto -> mproto
+    Ast.CODE mproto -> List.hd (Ast.undots mproto)
   | _ -> failwith "not possible"
 
 let make_rule rule_name = function
@@ -385,10 +398,10 @@ let reinsert mdefs minus =
   List.map
     (function x ->
       match Ast0.unwrap x with
-	Ast0.DECL(stmt) ->
+	Ast0.NONDECL(stmt) ->
 	  (match Ast0.unwrap stmt with
 	    Ast0.FunDecl(_,fninfo,name,lp,params,rp,lbrace,body,rbrace) ->
-	      (try Ast0.rewrap x (Ast0.DECL(List.assoc name table))
+	      (try Ast0.rewrap x (Ast0.NONDECL(List.assoc name table))
 	      with Not_found -> x)
 	  | _ -> x)
       | Ast0.CODE(rule_elem_dots) ->
@@ -404,6 +417,9 @@ let rec split4 = function
     [] -> ([],[],[],[])
   | (a,b,c,d)::rest ->
       let (ax,bx,cx,dx) = split4 rest in (a::ax,b::bx,c::cx,d::dx)
+
+let mk_ast_code proto =
+  Ast.rewrap proto (Ast.CODE(Ast.rewrap proto (Ast.DOTS [proto])))
 
 let process rule_name rule_metavars dropped_isos minus plus ruletype =
   let minus_functions = List.concat (List.map get_all_functions minus) in
@@ -430,7 +446,7 @@ let process rule_name rule_metavars dropped_isos minus plus ruletype =
 	      Ast.CocciRule
 		("proto for "^rule_name,
 		 (Ast.Dep rule_name,dropped_isos,Ast.Forall),
-		 [Ast.rewrap x (Ast.DECL x)],
+		 [mk_ast_code x],
 		 [false],ruletype)))
       |	x::_ ->
 	  let drules =
@@ -439,6 +455,6 @@ let process rule_name rule_metavars dropped_isos minus plus ruletype =
             Ast.CocciRule
 	    ("proto for "^rule_name,
 	     (Ast.Dep rule_name,dropped_isos,Ast.Forall),
-	     [Ast.rewrap x (Ast.DECL (Ast.rewrap x (Ast.Disj drules)))],
+	     [mk_ast_code (Ast.rewrap x (Ast.Disj drules))],
 	     [false],ruletype) in
 	  ((mdef_metavars,minus),Some(metavars,res))

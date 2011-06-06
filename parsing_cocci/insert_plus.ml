@@ -529,7 +529,7 @@ let collect_plus_nodes root =
 
   let toplevel r k e =
     match Ast0.unwrap e with
-      Ast0.DECL(s) -> r.VT0.combiner_rec_statement s
+      Ast0.NONDECL(s) -> r.VT0.combiner_rec_statement s
     | Ast0.CODE(sdots) -> r.VT0.combiner_rec_statement_dots sdots
     | _ -> do_nothing mk_code r k e in
 
@@ -789,10 +789,8 @@ let attachbefore (infop,c,p) = function
       (match repl with
  	Ast.NOREPLACEMENT ->
 	  let (bef,ti) = init p infop in
-	  Printf.printf "attachbefore 1 %s\n" (it2c c);
 	  replacements := (Ast.REPLACEMENT(bef,c),ti)
       | Ast.REPLACEMENT(repl,it) ->
-	  Printf.printf "attachbefore 2 %s %s\n" (it2c c) (it2c it);
 	  let it = Ast.lub_count it c in
 	  let (bef,ti) = insert p infop repl ti in
 	  replacements := (Ast.REPLACEMENT(bef,it),ti))

@@ -1108,10 +1108,11 @@ let top_level tgt t =
 	if mcode2arity old_file = Ast0.NONE && mcode2arity new_file = Ast0.NONE
 	then Ast0.FILEINFO(mcode old_file,mcode new_file)
 	else fail t "unexpected arity for file info"
-    | Ast0.DECL(stmt) ->
-	Ast0.DECL(statement tgt stmt)
+    | Ast0.NONDECL(stmt) ->
+	Ast0.NONDECL(statement tgt stmt)
     | Ast0.CODE(rule_elem_dots) ->
 	Ast0.CODE(concat_dots (statement tgt) rule_elem_dots)
+    | Ast0.TOPCODE(rule_elem_dots) ->  fail t "eliminated by top_level"
     | Ast0.ERRORWORDS(exps) ->
 	Ast0.ERRORWORDS(List.map (top_expression false Ast0.NONE) exps)
     | Ast0.OTHER(_) -> fail t "eliminated by top_level")

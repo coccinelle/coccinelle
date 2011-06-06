@@ -767,7 +767,7 @@ let adjust_after_paren toks =
 	else x :: search_paren xs
     | x::xs -> x :: search_paren xs
   and search_minus seen_minus xs =
-    let (spaces, rest) = Common.span is_space xs in
+    let (spaces, rest) = Common.span is_whitespace xs in
     (* only delete spaces if something is actually deleted *)
     match rest with
       ((T2(_,Min _,_)) as a)::rerest -> (* minus *)
@@ -777,6 +777,24 @@ let adjust_after_paren toks =
 	   already *)
 	a :: search_minus true rerest
     | _ -> if seen_minus then rest else xs in (* drop trailing space *)
+  search_paren toks
+
+(* this is for the case where braces are added around an if branch *)
+let paren_then_brace toks =
+  let rec search_paren = function
+      [] -> []
+    | ((T2(_,Ctx,_)) as x)::xs ->
+	if List.mem (str_of_token2 x) [")"]
+	then x :: search_paren(search_plus xs)
+	else x :: search_paren xs
+    | x::xs -> x :: search_paren xs
+  and search_plus xs =
+    let (spaces, rest) = Common.span is_whitespace xs in
+    match rest with
+      (* move the brace up to the previous line *)
+      ((Cocci2("{",_,_,_,_)) as x) :: (((Cocci2 _) :: _) as rest) ->
+	(C2 " ") :: x :: spaces @ rest
+    | _ -> xs in
   search_paren toks
 
 let is_ident_like s = s ==~ Common.regexp_alpha
@@ -830,6 +848,15 @@ let rec add_space xs =
 	   something should be done to add newlines too, rather than
 	   printing them explicitly in unparse_cocci. *)
 	x::C2 (String.make (lcoly-rcolx) ' ')::add_space (y::xs)
+  | (Cocci2(sx,lnx,_,rcolx,_) as x)::((Cocci2(sy,lny,lcoly,_,_)) as y)::xs
+    when !Flag_parsing_c.spacing = Flag_parsing_c.SMPL &&
+      not (lnx = -1) && lnx < lny && not (rcolx = -1) ->
+	(* this only works within a line.  could consider whether
+	   something should be done to add newlines too, rather than
+	   printing them explicitly in unparse_cocci. *)
+	x::C2 (String.make (lny-lnx) '\n')::
+	C2 (String.make (lcoly-1) ' '):: (* -1 is for the + *)
+	add_space (y::xs)
   | ((T2(_,Ctx,_)) as x)::((Cocci2 _) as y)::xs -> (* add space on boundary *)
       let sx = str_of_token2 x in
       let sy = str_of_token2 y in
@@ -954,7 +981,7 @@ let new_tabbing a =
 
 let rec adjust_indentation xs =
 
-  let _current_tabbing = ref "" in
+  let _current_tabbing = ref ([] : string list) in
   let tabbing_unit = ref None in
 
   let string_of_list l = String.concat "" (List.map string_of_char l) in
@@ -972,15 +999,18 @@ let rec adjust_indentation xs =
 	| (o::os,n::ns) -> loop (os,ns) in (* could check for equality *)
       loop (old_tab,new_tab) in
 
+(*
   let remtab tu current_tab =
     let current_tab = List.rev(list_of_string current_tab) in
     let rec loop = function
 	([],new_tab) -> string_of_list (List.rev new_tab)
-      |	(_,[]) -> "" (*weird; tabbing unit used up more than the current tab*)
+      |	(_,[]) -> (-*weird; tabbing unit used up more than the current tab*-)
+        ""
       |	(t::ts,n::ns) when t =<= n -> loop (ts,ns)
-      |	(_,ns) -> (* mismatch; remove what we can *)
+      |	(_,ns) -> (-* mismatch; remove what we can *-)
 	  string_of_list (List.rev ns) in
     loop (tu,current_tab) in
+*)
 
   let rec find_first_tab started = function
       [] -> ()
@@ -1018,27 +1048,36 @@ let rec adjust_indentation xs =
     | ((T2 (Parser_c.TCommentNewline s, _, _)) as x)::xs
       when balanced 0 (fst(Common.span (function x -> not(is_newline x)) xs)) ->
 	let old_tabbing = !_current_tabbing in
-        str_of_token2 x +> new_tabbing +> (fun s -> _current_tabbing := s);
+        str_of_token2 x +> new_tabbing +> (fun s -> _current_tabbing := [s]);
 	(* only trust the indentation after the first { *)
 	(if started
-	then adjust_tabbing_unit old_tabbing !_current_tabbing);
+	then
+	  adjust_tabbing_unit
+	    (String.concat "" old_tabbing)
+	    (String.concat "" !_current_tabbing));
 	let coccis_rest = Common.span all_coccis xs in
 	(match coccis_rest with
 	  (_::_,((T2 (tok,_,_)) as y)::_) when str_of_token2 y =$= "}" ->
 	    (* the case where cocci code has been added before a close } *)
 	    x::aux started (Indent_cocci2::xs)
         | _ -> x::aux started xs)
+    | Indent_cocci2::((Cocci2(sy,lny,lcoly,_,_)) as y)::xs
+      when !Flag_parsing_c.spacing = Flag_parsing_c.SMPL ->
+	let tu = String.make (lcoly-1) ' ' in
+	_current_tabbing := tu::(!_current_tabbing);
+	C2 (tu)::aux started (y::xs)
     | Indent_cocci2::xs ->
 	(match !tabbing_unit with
 	  None -> aux started xs
 	| Some (tu,_) ->
-	    _current_tabbing := (!_current_tabbing)^tu;
-	    Cocci2 (tu,-1,-1,-1,None)::aux started xs)
+	    _current_tabbing := tu::(!_current_tabbing);
+	     (* can't be C2, for later phases *)
+	     Cocci2 (tu,-1,-1,-1,None)::aux started xs)
     | Unindent_cocci2(permanent)::xs ->
-	(match !tabbing_unit with
-	  None -> aux started xs
-	| Some (_,tu) ->
-	    _current_tabbing := remtab tu (!_current_tabbing);
+	(match !_current_tabbing with
+	  [] -> aux started xs
+	| _::new_tabbing ->
+	    _current_tabbing := new_tabbing;
 	    aux started xs)
     (* border between existing code and cocci code *)
     | ((T2 (tok,_,_)) as x)::((Cocci2("\n",_,_,_,_)) as y)::xs
@@ -1052,7 +1091,8 @@ let rec adjust_indentation xs =
     | ((Cocci2("{",_,_,_,_)) as a)::xs -> a::aux true xs
     | ((Cocci2("\n",_,_,_,_)) as x)::xs ->
             (* dont inline in expr because of weird eval order of ocaml *)
-        let s = !_current_tabbing in
+        let s = String.concat "" !_current_tabbing in
+        (* can't be C2, for later phases *)
         x::Cocci2 (s,-1,-1,-1,None)::aux started xs
     | x::xs -> x::aux started xs in
   (aux false xs,!tabbing_unit)
@@ -1225,7 +1265,7 @@ let pp_program2 xs outfile  =
 	      drop_expanded(drop_fake(drop_minus toks))
 	    else
               (* phase2: can now start to filter and adjust *)
-	      let (toks,tu) = adjust_indentation toks in
+	       (let (toks,tu) = adjust_indentation toks in
 	      let toks = adjust_before_semicolon toks in(*before remove minus*)
 	      let toks = adjust_after_paren toks in(*also before remove minus*)
 	      let toks = drop_space_at_endline toks in
@@ -1235,8 +1275,9 @@ let pp_program2 xs outfile  =
               (* assert Origin + Cocci + C and no minus *)
               let toks = add_space toks in
 	      let toks = add_newlines toks tu in
+	      let toks = paren_then_brace toks in
               let toks = fix_tokens toks in
-	       toks in
+	       toks) in
 
           (* in theory here could reparse and rework the ast! or
            * apply some SP. Not before cos julia may have generated

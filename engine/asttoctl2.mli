@@ -23,8 +23,7 @@
 
 
 type cocci_predicate = Lib_engine.predicate * Ast_cocci.meta_name Ast_ctl.modif
-type formula =
-    (cocci_predicate,Ast_cocci.meta_name, Wrapper_ctl.info) Ast_ctl.generic_ctl
+type top_formula = NONDECL of Lib_engine.ctlcocci | CODE of Lib_engine.ctlcocci
 
 val asttoctl :
     Ast_cocci.rule ->
@@ -32,7 +31,7 @@ val asttoctl :
 	 Ast_cocci.meta_name list list (* fresh used after *) *
 	 Ast_cocci.meta_name list list (* fresh used after seeds *)) ->
       Ast_cocci.meta_name list list (* positions *) ->
-      formula list
+      top_formula list
 
 val pp_cocci_predicate : cocci_predicate -> unit
 
