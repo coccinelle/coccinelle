@@ -35,6 +35,7 @@
 - Allow a semantic patch beginning and ending with braces to match the
   complete body of a function if the braces are not removed and if nothing
   is added before the first brace or after the last one.
+- Add -cache_prefix option, to specify where to put cached files.
 
 ** Bugfix:
 - Corrected parsing of script strings delimited by a single quote.  Thanks

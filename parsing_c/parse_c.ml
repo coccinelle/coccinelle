@@ -1080,7 +1080,8 @@ let parse_cache file =
     (* could add some of the flags of flag_parsing_c.ml *)
     []
   in
-  Common.cache_computation_robust
+  Common.cache_computation_robust_in_dir
+    !Flag_parsing_c.cache_prefix
     file ".ast_raw"
     (need_no_changed_files, need_no_changed_variables) ".depend_raw"
     (fun () -> parse_print_error_heuristic None None file)

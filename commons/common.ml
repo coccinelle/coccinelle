@@ -3335,19 +3335,38 @@ let cache_computation ?verbose ?use_cache a b c =
 
 
 let cache_computation_robust2
- file ext_cache
+ dest_dir file ext_cache
  (need_no_changed_files, need_no_changed_variables) ext_depend
  f =
-  if not (Sys.file_exists file)
-  then failwith ("can't find: "  ^ file);
+  (if not (Sys.file_exists file)
+  then failwith ("can't find: "  ^ file));
 
-  let file_cache = (file ^ ext_cache) in
-  let dependencies_cache = (file ^ ext_depend) in
-
+  let (file_cache,dependencies_cache) =
+    let file_cache = (file ^ ext_cache) in
+    let dependencies_cache = (file ^ ext_depend) in
+    match dest_dir with
+      None -> (file_cache, dependencies_cache)
+    | Some dir ->
+	let file_cache =
+	  Filename.concat dir
+	    (if String.get file_cache 0 =*= '/'
+	    then String.sub file_cache 1 ((String.length file_cache) - 1)
+	    else file_cache) in
+	let dependencies_cache =
+	  Filename.concat dir
+	    (if String.get dependencies_cache 0 =*= '/'
+	    then
+	      String.sub dependencies_cache 1
+		((String.length dependencies_cache) - 1)
+	    else dependencies_cache) in
+	let _ = Sys.command
+	    (Printf.sprintf "mkdir -p %s" (Filename.dirname file_cache)) in
+	(file_cache,dependencies_cache) in
+  
   let dependencies =
     (* could do md5sum too *)
     ((file::need_no_changed_files) +> List.map (fun f -> f, filemtime f),
-    need_no_changed_variables)
+     need_no_changed_variables)
   in
 
   if Sys.file_exists dependencies_cache &&
@@ -3363,7 +3382,11 @@ let cache_computation_robust2
 
 let cache_computation_robust a b c d e =
   profile_code "Common.cache_computation_robust" (fun () ->
-    cache_computation_robust2 a b c d e)
+    cache_computation_robust2 None a b c d e)
+
+let cache_computation_robust_in_dir a b c d e f =
+  profile_code "Common.cache_computation_robust" (fun () ->
+    cache_computation_robust2 a b c d e f)
 
 
 
