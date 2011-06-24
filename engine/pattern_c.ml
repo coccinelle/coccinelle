@@ -10,6 +10,7 @@ type xinfo = {
   optional_storage_iso : bool;
   optional_qualifier_iso : bool;
   value_format_iso : bool;
+  optional_declarer_semicolon_iso : bool;
 }
 
 module XMATCH = struct
@@ -512,6 +513,9 @@ module XMATCH = struct
   let value_format_flag f = fun tin ->
     f (tin.extra.value_format_iso) tin
 
+  let optional_declarer_semicolon_flag f = fun tin ->
+    f (tin.extra.optional_declarer_semicolon_iso) tin
+
   (* ------------------------------------------------------------------------*)
   (* Tokens *)
   (* ------------------------------------------------------------------------*)
@@ -542,6 +546,8 @@ let match_re_node2 dropped_isos a b binding0 =
       optional_storage_iso   = not(List.mem "optional_storage"   dropped_isos);
       optional_qualifier_iso = not(List.mem "optional_qualifier" dropped_isos);
       value_format_iso       = not(List.mem "value_format"       dropped_isos);
+      optional_declarer_semicolon_iso =
+        not(List.mem "optional_declarer_semicolon"   dropped_isos);
     };
     XMATCH.binding = [];
     XMATCH.binding0 = binding0;

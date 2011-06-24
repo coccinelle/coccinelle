@@ -23,6 +23,7 @@
 - Allow /* */ comments as smpl comments, not only as + code
 - Add support for && (label addresses)
 - local idexpression metavariable no longer matches static local x
+- Consider using to be a comment in C++ code.  Patch submitted by Jani Monoses.
 
 ** Features:
 - Preserve spacing before // comments when not at the beginning of a line
@@ -36,6 +37,8 @@
   complete body of a function if the braces are not removed and if nothing
   is added before the first brace or after the last one.
 - Add -cache_prefix option, to specify where to put cached files.
+- Allow module_init(foo); to match module_init(foo) (or likewise for any
+  declarer), when no transformation is specified on the semicolon.
 
 ** Bugfix:
 - Corrected parsing of script strings delimited by a single quote.  Thanks

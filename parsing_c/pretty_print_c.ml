@@ -899,7 +899,7 @@ let mk_pretty_printers
 
 	pr_elem iivirg;
 
-    | MacroDecl ((s, es), iis::lp::rp::iiend::ifakestart::iisto) ->
+    | MacroDecl ((s, es, true), iis::lp::rp::iiend::ifakestart::iisto) ->
 	pr_elem ifakestart;
 	iisto +> List.iter pr_elem; (* static and const *)
 	pr_elem iis;
@@ -912,6 +912,19 @@ let mk_pretty_printers
 
 	pr_elem rp;
 	pr_elem iiend;
+
+    | MacroDecl ((s, es, false), iis::lp::rp::ifakestart::iisto) ->
+	pr_elem ifakestart;
+	iisto +> List.iter pr_elem; (* static and const *)
+	pr_elem iis;
+	pr_elem lp;
+	es +> List.iter (fun (e, opt) ->
+          assert (List.length opt <= 1);
+          opt +> List.iter pr_elem;
+          pp_argument e;
+	);
+
+	pr_elem rp;
 
     | (DeclList (_, _) | (MacroDecl _)) -> raise Impossible
 

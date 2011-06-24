@@ -667,7 +667,9 @@ module type PARAM =
 
     val optional_storage_flag : (bool -> tin -> 'x tout) -> (tin -> 'x tout)
     val optional_qualifier_flag : (bool -> tin -> 'x tout) -> (tin -> 'x tout)
-    val value_format_flag: (bool -> tin -> 'x tout) -> (tin -> 'x tout)
+    val value_format_flag : (bool -> tin -> 'x tout) -> (tin -> 'x tout)
+    val optional_declarer_semicolon_flag :
+	(bool -> tin -> 'x tout) -> (tin -> 'x tout)
 
   end
 
@@ -1750,7 +1752,7 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
         error ii
 	  "More than one variable in the declaration, and so it cannot be transformed.  Check that there is no transformation on the type or the ;"
 
-  | A.MacroDecl (sa,lpa,eas,rpa,enda), B.MacroDecl ((sb,ebs),ii) ->
+  | A.MacroDecl (sa,lpa,eas,rpa,enda), B.MacroDecl ((sb,ebs,true),ii) ->
       let (iisb, lpb, rpb, iiendb, iifakestart, iistob) =
         (match ii with
         | iisb::lpb::rpb::iiendb::iifakestart::iisto ->
@@ -1773,9 +1775,40 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
           return (
             (mckstart, allminus,
             (A.MacroDecl (sa,lpa,eas,rpa,enda)) +> A.rewrap decla),
-            (B.MacroDecl ((sb,ebs),
+            (B.MacroDecl ((sb,ebs,true),
                          [iisb;lpb;rpb;iiendb;iifakestart] ++ iistob))
           ))))))))
+
+  | A.MacroDecl (sa,lpa,eas,rpa,enda), B.MacroDecl ((sb,ebs,false),ii) ->
+      X.optional_declarer_semicolon_flag (fun optional_declarer_semicolon ->
+      match mcodekind enda, optional_declarer_semicolon with
+	A.CONTEXT (_,A.NOTHING), true ->
+	  let (iisb, lpb, rpb, iifakestart, iistob) =
+            (match ii with
+            | iisb::lpb::rpb::iifakestart::iisto ->
+		(iisb,lpb,rpb,iifakestart,iisto)
+            | _ -> raise Impossible) in
+	  (if allminus
+	  then minusize_list iistob
+	  else return ((), iistob)) >>=
+	  (fun () iistob ->
+
+	    X.tokenf_mck mckstart iifakestart >>=
+	    (fun mckstart iifakestart ->
+	      ident DontKnow sa (sb, iisb) >>= (fun sa (sb, iisb) ->
+	      tokenf lpa lpb >>= (fun lpa lpb ->
+	      tokenf rpa rpb >>= (fun rpa rpb ->
+	      arguments (seqstyle eas) (A.undots eas) ebs >>=
+		(fun easundots ebs ->
+		  let eas = redots eas easundots in
+
+		  return (
+		  (mckstart, allminus,
+		   (A.MacroDecl (sa,lpa,eas,rpa,enda)) +> A.rewrap decla),
+		  (B.MacroDecl ((sb,ebs,false),
+				[iisb;lpb;rpb;iifakestart] ++ iistob))
+		  )))))))
+      | _ -> fail)
 
   | _, (B.MacroDecl _ |B.DeclList _) ->      fail
 
@@ -4107,8 +4140,9 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
   (* todo?: print a warning at least ? *)
   | _, F.CaseRange _
   | _, F.Asm _
-  | _, F.MacroTop _
     -> fail2()
+  | _, F.MacroTop _
+    -> Printf.printf "have macrotop\n"; fail2()
 
   | _, (F.IfdefEndif _|F.IfdefElse _|F.IfdefHeader _)
     -> fail2 ()
@@ -4131,4 +4165,3 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
 
   )
 end
-

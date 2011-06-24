@@ -498,7 +498,7 @@ and vk_decl = fun bigf d ->
         iif ii;
         vk_onedecl bigf x;
       );
-    | MacroDecl ((s, args),ii) ->
+    | MacroDecl ((s, args, ptvg),ii) ->
         iif ii;
         vk_argument_list bigf args;
   in f (k, bigf) d
@@ -1291,11 +1291,11 @@ and vk_decl_s = fun bigf d ->
     match decl with
     | DeclList (xs, ii) ->
         DeclList (List.map aux xs,   iif ii)
-    | MacroDecl ((s, args),ii) ->
+    | MacroDecl ((s, args, ptvg),ii) ->
         MacroDecl
           ((s,
-           args +> List.map (fun (e,ii) -> vk_argument_s bigf e, iif ii)
-           ),
+           args +> List.map (fun (e,ii) -> vk_argument_s bigf e, iif ii),
+           ptvg),
           iif ii)
 
 

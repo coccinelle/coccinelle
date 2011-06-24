@@ -171,7 +171,8 @@ let keyword_table = Common.hash_of_list [
 
 let cpp_keyword_table = Common.hash_of_list [
   "new",   (fun ii -> Tnew ii);
-  "delete",(fun ii -> Tdelete ii) ]
+  "delete",(fun ii -> Tdelete ii);
+  "using", (fun ii -> TComment ii) ]
 
 let error_radix s =
   ("numeric " ^ s ^ " constant contains digits beyond the radix:")
