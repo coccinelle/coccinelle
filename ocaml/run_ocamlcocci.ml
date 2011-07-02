@@ -66,6 +66,7 @@ let run mv ve script_vars name code =
 
   (* call the function *)
   Coccilib.include_match true;
+  Coccilib.exited := false;
   let fn =
     try Hashtbl.find Coccilib.fcts name
     with Not_found -> failwith (Printf.sprintf "%s not found" name) in

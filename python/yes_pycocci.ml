@@ -91,11 +91,16 @@ let pycocci_instantiate_class fqn args =
 (* end python interaction *)
 
 let inc_match = ref true
+let exited = ref false
 
 let include_match v =
   let truth = pyobject_istrue (pytuple_getitem (v, 1)) in
   check_int_return_value truth;
   inc_match := truth != 0;
+  _pycocci_none ()
+
+let sp_exit _ =
+  exited := true;
   _pycocci_none ()
 
 let build_method (mname, camlfunc, args) pymodule classx classdict =
@@ -162,7 +167,8 @@ let pycocci_init () =
   coccinelle_module := pymodule_new "coccinelle";
   let mx = !coccinelle_module in
   let (cd, cx) = build_class "Cocci" (!Flag.pyoutput)
-      [("include_match", include_match, (pynull()));
+      [("exit", sp_exit, (pynull()));
+	("include_match", include_match, (pynull()));
 	("has_env_binding", has_environment_binding, (pynull()))] mx in
   pyoutputinstance := cx;
   pyoutputdict := cd;
@@ -182,12 +188,13 @@ let added_variables = ref []
 let build_classes env =
   let _ = pycocci_init () in
   inc_match := true;
+  exited := false;
   the_environment := env;
   let mx = !coccinelle_module in
   let dict = pymodule_getdict mx in
   List.iter
     (function
-	"include_match" | "has_env_binding" -> ()
+	"include_match" | "has_env_binding" | "exit" -> ()
       | name ->
 	  let v = pydict_delitemstring(dict,name) in
 	  check_int_return_value v)

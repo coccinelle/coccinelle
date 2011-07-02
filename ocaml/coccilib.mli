@@ -29,4 +29,6 @@ val fcts : (string, param_type list -> string ref list -> unit) Hashtbl.t
 
 val inc_match : bool ref
 val include_match : bool -> unit
+val exited : bool ref
+val exit : unit -> unit
 val dir : unit -> string

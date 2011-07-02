@@ -1225,6 +1225,8 @@ let contains_binding e (_,(r,m),_) =
     true
   with Not_found -> false
 
+exception Exited
+
 let python_application mv ve script_vars r =
   let mv =
     List.map
@@ -1240,7 +1242,9 @@ let python_application mv ve script_vars r =
     Pycocci.construct_variables mv ve;
     Pycocci.construct_script_variables script_vars;
     let _ = Pycocci.pyrun_simplestring (local_python_code ^r.script_code) in
-    if !Pycocci.inc_match
+    if !Pycocci.exited
+    then raise Exited
+    else if !Pycocci.inc_match
     then Some (Pycocci.retrieve_script_variables script_vars)
     else None
   with Pycocci.Pycocciexception ->
@@ -1252,7 +1256,9 @@ let ocaml_application mv ve script_vars r =
     let script_vals =
       Run_ocamlcocci.run mv ve script_vars
 	r.scr_rule_info.rulename r.script_code in
-    if !Coccilib.inc_match
+    if !Coccilib.exited
+    then raise Exited
+    else if !Coccilib.inc_match
     then Some script_vals
     else None
   with e -> (pr2 ("Failure in " ^ r.scr_rule_info.rulename); raise e)
@@ -1652,6 +1658,8 @@ let rec bigloop2 rs (ccs: file_info list) =
   let ccs = ref ccs in
   let rules_that_have_ever_matched = ref [] in
 
+  (try
+
   (* looping over the rules *)
   rs +> List.iter (fun r ->
     match r with
@@ -1699,10 +1707,13 @@ let rec bigloop2 rs (ccs: file_info list) =
 	then
 	  Common.push2 r.scr_rule_info.rulename rules_that_have_ever_matched);
 
-        es := newes (*(if newes = [] then init_es else newes)*);
+	(* just newes can't work, because if one does include_match false
+           on everything that binds a variable, then nothing is left *)
+        es := (*newes*) (if newes = [] then init_es else newes)
     | CocciRuleCocciInfo r ->
 	apply_cocci_rule r rules_that_have_ever_matched
-	  es ccs);
+	  es ccs)
+  with Exited -> ());
 
   if !Flag.sgrep_mode2
   then begin

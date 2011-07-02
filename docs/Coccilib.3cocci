@@ -143,13 +143,12 @@ the argument is false, discard this environment.  By default, the
 environment is retained.
 .sp
 
-.I val inc_match 
+.I val exit
 : 
-.B bool ref
+.B unit -> unit
 .sp
-True if the environment with respect to which the
-ocaml script code is being executed is to be retained for use in
-subsequent rules, and false otherwise.
+If called, aborts the treatment of the current file.  All previous changes
+take effect.
 .sp
 
 .I val dir

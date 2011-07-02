@@ -5,6 +5,7 @@ val construct_variables :
 val construct_script_variables : Ast_cocci.meta_name list -> unit
 val pyrun_simplestring : string -> int
 val inc_match : bool ref
+val exited : bool ref
 val retrieve_script_variables : Ast_cocci.meta_name list -> string list
 exception Pycocciexception 
 val set_coccifile : string -> unit
