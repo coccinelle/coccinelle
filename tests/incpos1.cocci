@@ -48,7 +48,7 @@ position second_hdr.p;
 +#include <foo.h>
 #include "..."@p
 
-@@
+@depends on never done@
 @@
 
 +#include <foo.h>
