@@ -38,8 +38,11 @@ let pycocci_instantiate_class fqn args = failwith "no python"
 (* end python interaction *)
 
 let inc_match = ref false
+let exited = ref false
 
 let include_match v = failwith "no python"
+
+let sp_exit _ = failwith "no python"
 
 let build_method (mname, camlfunc, args) pymodule classx classdict =
   failwith "no python"
