@@ -72,6 +72,8 @@
   Changes are still allowed on { ... } present for other reasons.
 - Fix bug in include_match that caused everything to halt when all matches
   were discarded
+- Don't call Insert_plus on rules that cannot be evaluated due to failed
+  dependencies.
 
 * 0.2.5
 ** Language:

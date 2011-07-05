@@ -1974,7 +1974,7 @@ let process file isofile verbose =
           (* warning! context_neg side-effects its arguments *)
 	       let (m,p) = List.split (Context_neg.context_neg minus plus) in
 	       Type_infer.type_infer p;
-	       (if not !Flag.sgrep_mode2
+	       (if not (!Flag.sgrep_mode2 or dependencies = Ast.FailDep)
 	       then Insert_plus.insert_plus m p (chosen_isos = []));
 	       Type_infer.type_infer minus;
 	       let (extra_meta, minus) =
