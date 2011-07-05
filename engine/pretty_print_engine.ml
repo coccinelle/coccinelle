@@ -107,6 +107,7 @@ let rec pp_predicate = function
   | FallThrough -> pp "FallThrough"
   | LoopFallThrough -> pp "LoopFallThrough"
   | Return -> pp "Return"
+  | UnsafeBrace -> pp "UnsafeBrace"
   | FunHeader -> pp "FunHeader"
   | Top -> pp "Top"
   | ErrorExit -> pp "ErrorExit"

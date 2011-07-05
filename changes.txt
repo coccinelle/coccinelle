@@ -23,6 +23,7 @@
 - Allow /* */ comments as smpl comments, not only as + code
 - Add support for && (label addresses)
 - local idexpression metavariable no longer matches static local x
+- Consider using to be a comment in C++ code.  Patch submitted by Jani Monoses.
 
 ** Features:
 - Preserve spacing before // comments when not at the beginning of a line
@@ -32,6 +33,14 @@
 - Support - on expression nests
 - Better handling of the case of a matched declaration that should only
   be replaced by other top level things.
+- Allow a semantic patch beginning and ending with braces to match the
+  complete body of a function if the braces are not removed and if nothing
+  is added before the first brace or after the last one.
+- Add -cache_prefix option, to specify where to put cached files.
+- Allow module_init(foo); to match module_init(foo) (or likewise for any
+  declarer), when no transformation is specified on the semicolon.
+- Add Coccilib.exit() for ocaml code and cocci.exit() for python code,
+  to abort the treatment of the current file.
 
 ** Bugfix:
 - Corrected parsing of script strings delimited by a single quote.  Thanks
@@ -58,6 +67,11 @@
 - Accept removal of a single declaration, replaced by arbitrary,
   non-declaration code
 - smpl_spacing takes into account newlines, indentation
+- Improved prevention of transformations on toplevel { ... } from causing
+  changes outside function boundaries; also outside ifs, whiles, etc.
+  Changes are still allowed on { ... } present for other reasons.
+- Fix bug in include_match that caused everything to halt when all matches
+  were discarded
 
 * 0.2.5
 ** Language:

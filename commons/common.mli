@@ -439,6 +439,14 @@ val cache_computation_robust :
   (unit -> 'a) ->
   'a
 
+val cache_computation_robust_in_dir :
+  string option (* destination directory *) -> filename ->
+  string (* extension for marshalled object *) ->
+  (filename list * 'x) ->
+  string (* extension for marshalled dependencies *) ->
+  (unit -> 'a) ->
+  'a
+
 
 
 val once : ('a -> unit) -> ('a -> unit)

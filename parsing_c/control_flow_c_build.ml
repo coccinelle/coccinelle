@@ -350,6 +350,8 @@ let rec (aux_statement: (nodei option * xinfo) -> statement -> nodei option) =
             let endi = !g#add_node endnode in
 	    if xi.compound_caller = Statement
 	    then
+	      (* Problem! This edge is only created if the block does not
+		 have return on all execution paths. *)
 	      (let afteri = !g +> add_node AfterNode lbl "[after]" in
 	      !g#add_arc ((newi, afteri), Direct);
 	      !g#add_arc ((afteri, endi), Direct));

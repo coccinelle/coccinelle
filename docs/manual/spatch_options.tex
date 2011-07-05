@@ -256,8 +256,11 @@ is none, the constant is assumed to be a signed integer.  If there is only
   patch/match run faster, at the cost of not finding matches that wrap
   around loops.}
 
-\developer{-use\_cache} Use preparsed versions of the C files that are
-stored in a cache.
+\developer{-use\_cache}{Use preparsed versions of the C files that are
+stored in a cache.}
+
+\developer{-cache\_prefix}{Specify the directory in which to store 
+preparsed versions of the C files.  This sets {-use\_cache}}
 
 \developer{-debug\_cpp, -debug\_lexer, -debug\_etdt,
   -debug\_typedef}{Various options for debugging the C parser.}

@@ -1339,13 +1339,13 @@ decl2:
 
  | TMacroDecl TOPar argument_list TCPar TPtVirg
      { function _ ->
-       MacroDecl ((fst $1, $3), [snd $1;$2;$4;$5;fakeInfo()]) }
+       MacroDecl ((fst $1, $3, true), [snd $1;$2;$4;$5;fakeInfo()]) }
  | Tstatic TMacroDecl TOPar argument_list TCPar TPtVirg
      { function _ ->
-       MacroDecl ((fst $2, $4), [snd $2;$3;$5;$6;fakeInfo();$1]) }
+       MacroDecl ((fst $2, $4, true), [snd $2;$3;$5;$6;fakeInfo();$1]) }
  | Tstatic TMacroDeclConst TMacroDecl TOPar argument_list TCPar TPtVirg
      { function _ ->
-       MacroDecl ((fst $3, $5), [snd $3;$4;$6;$7;fakeInfo();$1;$2])}
+       MacroDecl ((fst $3, $5, true), [snd $3;$4;$6;$7;fakeInfo();$1;$2])}
 
 
 /*(*-----------------------------------------------------------------------*)*/
@@ -1849,13 +1849,13 @@ cpp_other:
     *)*/
  | identifier TOPar argument_list TCPar TPtVirg
      {
-       Declaration (MacroDecl ((fst $1, $3), [snd $1;$2;$4;$5;fakeInfo()]))
+       Declaration(MacroDecl((fst $1, $3, true), [snd $1;$2;$4;$5;fakeInfo()]))
        (* old: MacroTop (fst $1, $3,    [snd $1;$2;$4;$5])  *)
      }
 
  /*(* TCParEOL to fix the end-of-stream bug of ocamlyacc *)*/
  | identifier TOPar argument_list TCParEOL
-     { MacroTop (fst $1, $3,    [snd $1;$2;$4;fakeInfo()]) }
+     { Declaration (MacroDecl ((fst $1, $3, false), [snd $1;$2;$4;fakeInfo()])) }
 
   /*(* ex: EXPORT_NO_SYMBOLS; *)*/
  | identifier TPtVirg { EmptyDef [snd $1;$2] }

@@ -126,6 +126,11 @@ behavior.  Using \NT{disable-iso} with the given name disables this behavior.
   not have to be specified in the SmPL code, but may be present in the C code.
 \item \KW{value\_format}: Integers in various formats, e.g., 1 and 0x1, are
   considered to be equivalent in the matching process.
+\item \KW{optional\_declarer\_semicolon}: Some declarers (top-level terms
+  that look like function calls but serve to declare some variable) don't
+  require a semicolon.  This isomorphism allows a SmPL declarer with a semicolon
+  to match such a C declarer, if no transformation is specified on the SmPL
+  semicolon.
 \item \KW{comm\_assoc}: An expression of the form \NT{exp} \NT{bin\_op}
   \KW{...}, where \NT{bin\_op} is commutative and associative, is
   considered to match any top-level sequence of \NT{bin\_op} operators

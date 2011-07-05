@@ -201,7 +201,8 @@ module type PARAM =
     val optional_storage_flag : (bool -> tin -> 'x tout) -> (tin -> 'x tout)
     val optional_qualifier_flag : (bool -> tin -> 'x tout) -> (tin -> 'x tout)
     val value_format_flag: (bool -> tin -> 'x tout) -> (tin -> 'x tout)
-
+    val optional_declarer_semicolon_flag :
+	(bool -> tin -> 'x tout) -> (tin -> 'x tout)
 
   end
 

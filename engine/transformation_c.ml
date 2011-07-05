@@ -35,6 +35,7 @@ type xinfo = {
   optional_storage_iso : bool;
   optional_qualifier_iso : bool;
   value_format_iso : bool;
+  optional_declarer_semicolon_iso : bool;
   current_rule_name : string; (* used for errors *)
   index : int list (* witness tree indices *)
 }
@@ -102,6 +103,9 @@ module XTRANS = struct
 
   let value_format_flag f = fun tin ->
     f (tin.extra.value_format_iso) tin
+
+  let optional_declarer_semicolon_flag f = fun tin ->
+    f (tin.extra.optional_declarer_semicolon_iso) tin
 
   let mode = Cocci_vs_c.TransformMode
 
@@ -608,6 +612,8 @@ let (transform2: string (* rule name *) -> string list (* dropped_isos *) ->
      optional_storage_iso   = not(List.mem "optional_storage" dropped_isos);
      optional_qualifier_iso = not(List.mem "optional_qualifier" dropped_isos);
      value_format_iso = not(List.mem "value_format" dropped_isos);
+     optional_declarer_semicolon_iso =
+       not(List.mem "optional_declarer_semicolon"   dropped_isos);
      current_rule_name = rule_name;
      index = [];
    } in

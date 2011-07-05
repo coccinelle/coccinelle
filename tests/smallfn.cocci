@@ -1,0 +1,8 @@
+@@
+statement S;
+@@
+
+ {
+ S
+ }
++foo();

@@ -345,7 +345,7 @@ let short_options = [
     "  guess what";
 
   "-date",   Arg.Unit (fun () ->
-    pr2 "version: $Date: 2011/03/14 21:16:17 $";
+    pr2 "version: $Date: 2011/06/23 11:11:16 $";
     raise (Common.UnixExit 0)
     ),
   "   guess what";
@@ -614,6 +614,11 @@ let other_options = [
   [
     "-use_cache", Arg.Set Flag_parsing_c.use_cache,
     "   use .ast_raw pre-parsed cached C file";
+    "-cache_prefix",
+    Arg.String (function s ->
+      Flag_parsing_c.cache_prefix := Some s;
+      Flag_parsing_c.use_cache := true),
+    "   directory of cached ASTs, sets -use_cache";
     (* could use Flag_parsing_c.options_pad instead *)
   ];
 
@@ -872,7 +877,7 @@ let main_action xs =
 		  groups +> List.map (function Kbuild.Group xs -> xs)
 		    )
           in
-	  
+
 	  let infiles =
 	    match (!distrib_index,!distrib_max) with
 	      (None,None) -> infiles
@@ -940,7 +945,8 @@ let main_action xs =
 	      (cocci_infos,res)) in
 	  let outfiles = List.concat outfiles in
 	  (match Iteration.get_pending_instance() with
-	    None -> (x,xs,cocci_infos,outfiles)
+	    None ->
+	      (x,xs,cocci_infos,outfiles)
 	  | Some (files,virt_rules,virt_ids) ->
 	      if outfiles = [] or outfiles = [] or not !FC.show_diff
 	      then
