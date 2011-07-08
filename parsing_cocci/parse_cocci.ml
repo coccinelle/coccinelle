@@ -267,7 +267,7 @@ let token2c (tok,_) =
 
 let print_tokens s tokens =
   Printf.printf "%s\n" s;
-  List.iter (function x -> Printf.printf "%s " (token2c x)) tokens;
+  List.iter (function x -> Printf.printf "|%s| " (token2c x)) tokens;
   Printf.printf "\n\n";
   flush stdout
 
