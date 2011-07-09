@@ -468,7 +468,6 @@ module XTRANS = struct
   let distrf (ii_of_x_f, distribute_mck_x_f) =
     fun ia x -> fun tin ->
     let mck = Ast_cocci.get_mcodekind ia in
-    Printf.printf "ia %s\n" (Dumper.dump ia);
     let (max, min) = Lib_parsing_c.max_min_by_pos (ii_of_x_f x)
     in
     if
