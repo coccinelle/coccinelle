@@ -601,7 +601,7 @@ let (transform2: string (* rule name *) -> string list (* dropped_isos *) ->
       let node  = acc#nodes#assoc nodei in
 
       if !Flag.show_transinfo
-      then pr2 "transform one node";
+      then pr2 (Printf.sprintf "transform one node: %d" nodei);
 
       let tin = {
         XTRANS.extra = {extra with index = index};
