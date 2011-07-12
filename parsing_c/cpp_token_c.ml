@@ -320,6 +320,7 @@ let rec apply_macro_defs
  ?evaluate_concatop
  ?(inplace_when_single=true)
  defs xs =
+
  let rec apply_macro_defs xs =
   match xs with
   | [] -> ()

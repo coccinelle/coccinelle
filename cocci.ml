@@ -999,6 +999,7 @@ let build_info_program (cprogram,typedefs,macros) env =
   (* I use cs' but really annotate_xxx work by doing side effects on cs *)
   let cs' =
     Comment_annotater_c.annotate_program alltoks cs in
+
   let cs_with_envs =
     Type_annoter_c.annotate_program env (*!g_contain_typedmetavar*) cs'
   in

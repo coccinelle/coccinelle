@@ -86,6 +86,35 @@ module XTRANS = struct
   let mode = Cocci_vs_c.TransformMode
 
   (* ------------------------------------------------------------------------*)
+  (* Env *)
+  (* ------------------------------------------------------------------------*)
+
+  (* When env is used in + code, have to strip it more to avoid circular
+  references due to local variable information *)
+
+  let clean_env env =
+    List.map
+      (function (v,vl) ->
+	match vl with
+	| Ast_c.MetaExprVal(e,ml) ->
+	    (v,Ast_c.MetaExprVal(Lib_parsing_c.real_al_expr e,ml))
+	| Ast_c.MetaExprListVal(es) ->
+	    (v,Ast_c.MetaExprListVal(Lib_parsing_c.real_al_arguments es))
+	| Ast_c.MetaTypeVal(ty) ->
+	    (v,Ast_c.MetaTypeVal(Lib_parsing_c.real_al_type ty))
+	| Ast_c.MetaInitVal(i) ->
+	    (v,Ast_c.MetaInitVal(Lib_parsing_c.real_al_init i))
+	| Ast_c.MetaInitListVal(is) ->
+	    (v,Ast_c.MetaInitListVal(Lib_parsing_c.real_al_inits is))
+	| Ast_c.MetaDeclVal(d) ->
+	    (v,Ast_c.MetaDeclVal(Lib_parsing_c.real_al_decl d))
+	| Ast_c.MetaStmtVal(s) ->
+	    (v,Ast_c.MetaStmtVal(Lib_parsing_c.real_al_statement s))
+	| _ -> (v,vl))
+      env
+
+
+  (* ------------------------------------------------------------------------*)
   (* Exp  *)
   (* ------------------------------------------------------------------------*)
   let cocciExp = fun expf expa node -> fun tin ->
@@ -204,7 +233,10 @@ module XTRANS = struct
 	    Ast_cocci.MINUS (pos,_,adj,any_xxs) ->
 	      Ast_cocci.MINUS (pos,inst,adj,any_xxs)
 	  | mck -> mck in
-        cocciinforef := Some (update_inst tin.extra.index mck, [tin.binding])
+	(* clean_env actually only needed if there is an addition
+	   not sure the extra efficiency would be worth duplicating the code *)
+        cocciinforef :=
+	  Some (update_inst tin.extra.index mck, [clean_env tin.binding])
     | (_,   Ast_cocci.CONTEXT(_,Ast_cocci.NOTHING)) ->
 	(* can this case occur? stay with the old stuff *)
 	()
@@ -235,7 +267,7 @@ module XTRANS = struct
           cocciinforef :=
 	    Some(Ast_cocci.MINUS(old_pos,Common.union_set old_inst new_inst,
 				 old_adj,old_modif),
-		 tin.binding::oldenvs)
+		 (clean_env tin.binding)::oldenvs)
 
     | (Ast_cocci.CONTEXT(old_pos,old_modif),
        Ast_cocci.CONTEXT(new_pos,new_modif))
@@ -245,7 +277,8 @@ module XTRANS = struct
 	       more than once; now no need for iterable; just check a flag *)
 
           cocciinforef :=
-	    Some(Ast_cocci.CONTEXT(old_pos,old_modif),tin.binding::oldenvs)
+	    Some(Ast_cocci.CONTEXT(old_pos,old_modif),
+		 (clean_env tin.binding)::oldenvs)
 
     | _ ->
           (* coccionly:

@@ -84,6 +84,11 @@ let ctl_ex = function
 
 (* This stays being AX even for sgrep_mode, because it is used to identify
 the structure of the term, not matching the pattern. *)
+let ctl_back_ag = function
+    CTL.True -> CTL.True
+  | CTL.False -> CTL.False
+  | x -> CTL.AG(CTL.BACKWARD,CTL.NONSTRICT,x)
+
 let ctl_back_ax = function
     CTL.True -> CTL.True
   | CTL.False -> CTL.False
@@ -1758,15 +1763,16 @@ and statement stmt top after quantified minus_quantified
 		  ctl_or normal_res
 		    (ctl_and (make_match mod_rbrace)
 		       (ctl_and
-			  (ctl_back_ax
-			     (ctl_not
-				(ctl_uncheck
-				   (ctl_or simple_return return_expr))))
 			  (ctl_au
 			     (make_match stripped_rbrace)
 			     (* error exit not possible; it is in the middle
 				of code, so a return is needed *)
-			     exit)))
+			     exit)
+			  (* worry about perf, but seems correct, not ax *)
+			  (ctl_back_ag
+			     (ctl_not
+				(ctl_uncheck
+				   (ctl_or simple_return return_expr))))))
 	      |	_ ->
 		  (* some change in the middle of the return, so have to
 		     find an actual return *)

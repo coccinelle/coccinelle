@@ -243,7 +243,7 @@ let get_fakeInfo_and_tokens celem toks =
         (* get the associated comments/space/cppcomment tokens *)
         let (before, x, after) =
 	  !toks_in +> Common.split_when (fun tok ->
-	  info =*= TH.info_of_tok tok)
+	    info =*= TH.info_of_tok tok)
         in
         assert(info =*= TH.info_of_tok x);
         (*old: assert(before +> List.for_all (TH.is_comment)); *)

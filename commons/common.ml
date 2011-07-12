@@ -3771,15 +3771,15 @@ let _ = example
       ([1;1], [(3,[2]); (3,[4;5]); (3,[6;6;6])]))
 
 
-let rec (split_when: ('a -> bool) -> 'a list -> 'a list * 'a * 'a list) =
- fun p -> function
+let (split_when: ('a -> bool) -> 'a list -> 'a list * 'a * 'a list) =
+ fun p l ->
+  let rec loop acc = function
   | []    -> raise Not_found
   | x::xs ->
       if p x then
-        [], x, xs
-      else
-        let (l1, a, l2) = split_when p xs in
-        (x::l1, a, l2)
+        List.rev acc, x, xs
+      else loop (x :: acc) xs in
+  loop [] l
 let _ = example (split_when (fun x -> x =|= 3)
                     [1;2;3;4;1;2] =*= ([1;2],3,[4;1;2]))
 

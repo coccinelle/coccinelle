@@ -446,7 +446,6 @@ let extract_dangerous_macros xs =
     ) (build_empty_set ())
   in
 
-
   (* Now prepare for fixpoint expansion of macros to avoid doing
    * the work in cpp_engine.
    *)
