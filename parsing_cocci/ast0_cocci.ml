@@ -556,9 +556,9 @@ let rec ast0_type_to_type ty =
 	Id(tag) ->
 	  TC.EnumName(TC.Name(unwrap_mcode tag))
       | MetaId(tag,_,_,_) ->
-	  (Printf.printf
+	  (Common.pr2_once
 	     "warning: enum with a metavariable name detected.\n";
-	   Printf.printf
+	   Common.pr2_once
 	     "For type checking assuming the name of the metavariable is the name of the type\n";
 	   TC.EnumName(TC.MV(unwrap_mcode tag,TC.Unitary,false)))
       | _ -> failwith "unexpected enum type name")

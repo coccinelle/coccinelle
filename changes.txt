@@ -24,6 +24,7 @@
 - Add support for && (label addresses)
 - local idexpression metavariable no longer matches static local x
 - Consider using to be a comment in C++ code.  Patch submitted by Jani Monoses.
+- Command line cocci
 
 ** Features:
 - Preserve spacing before // comments when not at the beginning of a line
@@ -41,6 +42,9 @@
   declarer), when no transformation is specified on the semicolon.
 - Add Coccilib.exit() for ocaml code and cocci.exit() for python code,
   to abort the treatment of the current file.
+- Don't multiply print the same patch for the same file
+- Drop date in diff
+- Don't repeat smpl type warnings
 
 ** Bugfix:
 - Corrected parsing of script strings delimited by a single quote.  Thanks
