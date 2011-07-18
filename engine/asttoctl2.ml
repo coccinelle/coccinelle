@@ -1293,7 +1293,7 @@ let svar_minus_or_no_add_after stmt s label quantified d ast
 	  (CTL.HackForStmt(CTL.FORWARD,CTL.NONSTRICT,
 			   ctl_and CTL.NONSTRICT label_pred
 			     (make_raw_match label false ast),
-			   ctl_and CTL.NONSTRICT rest_metamatch prelabel_pred))
+			   ctl_and CTL.NONSTRICT prelabel_pred rest_metamatch))
   in
   let body f = ctl_and CTL.NONSTRICT label_pred (f ender) in
   let stmt_fvs = Ast.get_fvs stmt in

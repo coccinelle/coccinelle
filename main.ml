@@ -670,9 +670,9 @@ let rec arg_parse_no_fail l f msg =
 	raise Impossible  (* -help is specified in speclist *)
 
 (* copy paste of Arg.parse. Don't want the default -help msg *)
-let arg_parse2 l f msg =
+let arg_parse2 l f msg argv =
   (try
-    Arg.parse_argv Sys.argv l f msg;
+    Arg.parse_argv argv l f msg;
   with
   | Arg.Bad emsg -> (* eprintf "%s" msg; exit 2; *)
       if not !ignore_unknown_opt then
@@ -994,6 +994,7 @@ let main_action xs =
 let main () =
   begin
     let arglist = Array.to_list Sys.argv in
+    let arglist = Command_line.command_line arglist in
     
     if not (null (Common.inter_set arglist
 	            ["-cocci_file";"-sp_file";"-sp";"-test";"-testall";
@@ -1005,7 +1006,8 @@ let main () =
     (* Gc.set {(Gc.get ()) with Gc.stack_limit = 1024 * 1024};*)
     
     (* this call can set up many global flag variables via the cmd line *)
-    arg_parse2 (Arg.align all_options) (fun x -> args := x::!args) usage_msg;
+    arg_parse2 (Arg.align all_options) (fun x -> args := x::!args) usage_msg
+      (Array.of_list arglist);
     
     (* julia hack so that one can override directories specified on
        * the command line. *)
