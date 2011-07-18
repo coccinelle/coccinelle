@@ -17,7 +17,7 @@ PKGVERSION=$(shell dpkg-parsechangelog -ldebian/changelog.$(DISTRIB_CODENAME) 2>
 TARGET=spatch
 PRJNAME=coccinelle
 
-SRC=flag_cocci.ml cocci.ml testing.ml test.ml main.ml
+SRC=flag_cocci.ml cocci.ml testing.ml test.ml command_line.ml main.ml
 
 ifeq ($(FEATURE_PYTHON),1)
 PYCMA=pycaml.cma

@@ -13,6 +13,8 @@
 
 ** Bugfix:
 - Add more information in documentation, man pages and wiki
+- typedef should use use time info, not decl time info
+- problem of types with *s
 
 * 1.0.0
 ** Language:

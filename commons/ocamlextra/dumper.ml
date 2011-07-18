@@ -70,7 +70,7 @@ let rec dump r =
       "Tag" ^ string_of_int t ^
       " (" ^ String.concat ", " (List.map dump fields) ^ ")"
     )
-    else if t = string_tag then ( Printf.printf "string: %s\n" (String.escaped (magic r : string)); flush stdout;
+    else if t = string_tag then (
       "\"" ^ String.escaped (magic r : string) ^ "\""
     )
     else if t = double_tag then (

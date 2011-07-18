@@ -1852,7 +1852,7 @@ and statement stmt top after quantified minus_quantified
 		  | _ -> false)
 	    | _ -> false)
 	| _ -> false in
-      if empty_body && after = Tail
+      if empty_body && List.mem after [Tail;End;VeryEnd]
 	  (* for just a match of an if branch of the form { ... }, just
 	     match the first brace *)
       then quantify guard lbfvs (make_match lbrace)
