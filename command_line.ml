@@ -29,7 +29,12 @@ let find_metavariables tokens =
     | x :: xs ->
 	(* single upper case letter is a metavariable *)
 	let (x,xs,env) =
-	  if String.length x = 1 && String.uppercase x = x
+(*	  if String.length x = 1 && String.uppercase x = x *)
+(*
+  Testing for uppercase and length is not enough as "+" is
+  a single character identical in upper/lower case.
+*)
+	  if Str.string_match (Str.regexp "[A-Z]") x 0
 	  then
 	    begin
 	      try let _ = Some(List.assoc x env) in (x,xs,env)
@@ -39,7 +44,14 @@ let find_metavariables tokens =
 	    end
 	  else
 	    begin
-	      match Str.split (Str.regexp ":") x with
+	      (*
+		The ":" delimiter could not be used two times
+		1) Str.split
+		2) split_when (ends_with ...)
+
+		Otherwise split_when will raise a Not_found exception.
+	      *)
+	      match Str.bounded_split (Str.regexp ":") x 2 with
 		[before;after] ->
 		  let (ty,endty,afterty) =
 		    split_when (ends_with ':') (after::xs) in
@@ -107,6 +119,18 @@ let reparse tokens =
   close_out o;
   out
 
+let tokenize first =
+  (* (Str.split (Str.regexp " ") first) *)
+  let lexbuf = Lexing.from_string first in
+  let rec loop b =
+    let tok = Cli_lexer.token b in
+    if not (tok = Cli_lexer.EOF) then
+      let s = Cli_lexer.pretty_print tok in
+      s :: loop b
+    else
+      []
+  in loop lexbuf
+
 (* ---------------------------------------------------------------------- *)
 (* entry point *)
 
@@ -120,6 +144,6 @@ let command_line args =
       (match post_args with
 	first::post_args ->
 	  pre_args @ "-sp_file" ::
-		     (reparse (Str.split (Str.regexp " ") first)) ::
+		     (reparse (tokenize first)) ::
 		     post_args
       | [] -> failwith "-sp needs an argument")

@@ -17,7 +17,8 @@ PKGVERSION=$(shell dpkg-parsechangelog -ldebian/changelog.$(DISTRIB_CODENAME) 2>
 TARGET=spatch
 PRJNAME=coccinelle
 
-SRC=flag_cocci.ml cocci.ml testing.ml test.ml command_line.ml main.ml
+LEXER_SOURCES = cli_lexer.mll
+SRC=flag_cocci.ml cocci.ml testing.ml test.ml $(LEXER_SOURCES:.mll=.ml) command_line.ml main.ml
 
 ifeq ($(FEATURE_PYTHON),1)
 PYCMA=pycaml.cma
@@ -481,6 +482,9 @@ beforedepend:: test.ml
 
 .ml.mldepend:
 	$(OCAMLC) -i $<
+
+$(LEXER_SOURCES:.mll=.ml) :	$(LEXER_SOURCES)
+	$(OCAMLLEX) $(LEXER_SOURCES)
 
 clean::
 	rm -f *.cm[iox] *.o *.annot
