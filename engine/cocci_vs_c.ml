@@ -720,8 +720,8 @@ let metavar2ndots (_,info,mcodekind,pos) = ("<+...",info,mcodekind,pos)
 
 let satisfies_regexpconstraint c id : bool =
   match c with
-    A.IdRegExp (_,recompiled)    -> Str.string_match recompiled id 0
-  | A.IdNotRegExp (_,recompiled) -> not (Str.string_match recompiled id 0)
+    A.IdRegExp (_,recompiled)    -> Regexp.string_match recompiled id
+  | A.IdNotRegExp (_,recompiled) -> not (Regexp.string_match recompiled id)
 
 let satisfies_iconstraint c id : bool =
   not (List.mem id c)

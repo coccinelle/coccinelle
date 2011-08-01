@@ -28,6 +28,7 @@ my $projectcmdline =
 
 my $prefix="/usr/local";
 my $python=1;
+my $pcre=1;
 my $noocamlscripting=0;
 my $opt=".opt";
 my $tarzan=1;
@@ -38,8 +39,14 @@ my $sexpdir="ocamlsexp";
 local $_ = join ' ', @ARGV;
 
 # Parse options
-/-h/ || /--help/ and die "usage: $0 [--prefix=path] [--without-python] [--without-ocaml] [--no-opt]\n\n\t--no-opt\tDo not use the optimimized version of OCaml\n\t--opt\tUse the optimimized version of OCaml\n\n";
+/-h/ || /--help/ and die "usage: $0 [--prefix=path] [--without-FEATURE] [--no-opt]\n
+\t--without-python\tDisable scripting in Python
+\t--without-ocaml\t\tDisable scripting in Ocaml
+\t--without-pcre\t\tDisable regexp with PCRE
+\t--no-opt\t\tDo not use the optimimized version of OCaml
+\t--opt\t\t\tUse the optimimized version of OCaml\n\n";
 /--prefix=([^ ]*)/ and $prefix = $1;
+/--without-pcre/ and $pcre = 0;
 /--without-python/ and $python = 0;
 /--without-ocaml/ and $noocamlscripting = 1;
 /--no-opt/ and $opt = "";
@@ -246,7 +253,7 @@ if($sysmenhirdir) {
     $menhirdir=$sysmenhirdir;
     pr2 "'menhirLib' library is present in $menhirdir";
 } else {
-    pr2 "'menhirLib' library is not present. A local copy will be used..";
+    pr2 "'menhirLib' library is not present. A local copy will be used.";
 }
 
 # sexplib. Runtime system for the parsers generated with menhir
@@ -256,7 +263,23 @@ if($syssexpdir) {
     $sexpdir=$syssexpdir;
     pr2 "'sexplib' library is present in $sexpdir";
 } else {
-    pr2 "'sexplib' library is not present. A local copy will be used..";
+    pr2 "'sexplib' library is not present. A local copy will be used.";
+}
+
+# Check if libpcre-ocaml is available
+# when pcre feature is enabled.
+my $pcredir="";
+if($pcre) {
+    $pcredir=`ocamlfind query pcre 2> /dev/null | xargs echo -n `;
+    if(check_config(
+	   "echo -n $pcredir | ",
+	   '^/.*$',
+	   "'pcre-ocaml' library is present in $pcredir",
+	   "'pcre-ocaml' library is not present - You need to install libpcre-ocaml-dev"
+       ))
+    {
+	$pcre=0
+    }
 }
 
 ######################################################################
@@ -360,6 +383,11 @@ if ($python) {
 print CONFIG "PYVER=$PY_VERSION";
 }
 
+if($pcre) {
+print CONFIG "
+PCREDIR=$pcredir"
+}
+
 print CONFIG "
 PYCAMLDIR=$pydir
 MENHIRDIR=$menhirdir
@@ -382,6 +410,11 @@ pr2 "Support for python scripting: $pythonprefix";
 pr2 "Support for ocaml scripting: $ocamlprefix";
 `cd ocaml; ln -sf ${ocamlprefix}_prepare_ocamlcocci.ml prepare_ocamlcocci.ml;`;
 `cd ocaml; make depend`;
+
+my $pcresuffix = $pcre ? "pcre" : "str";
+pr2 "Support for regexp: $pcresuffix";
+`cd commons; ln -sf regexp_${pcresuffix}.ml regexp.ml; `;
+`cd commons; make depend`;
 
 pr2 "Modifying globals/config.ml";
 my $command = "perl -p -e 's#Not_found.\*#Not_found->\\\"$src\\\"#' globals/config.ml.in > globals/config.ml";

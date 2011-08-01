@@ -26,7 +26,8 @@ MYSRC=	common.ml common_extra.ml                \
 	ocollection/ograph2way.ml		 \
 	ograph_simple.ml ograph_extended.ml	 \
 	ofullcommon.ml                           \
-	glimpse.ml parser_combinators.ml
+	glimpse.ml parser_combinators.ml         \
+	regexp.ml
 
 # src from other authors, got from the web or caml hump
 SRC=ocamlextra/dumper.ml
@@ -37,9 +38,16 @@ SRC+=$(MYSRC)
 SRC+=ocamlextra/enum.ml ocamlextra/dynArray.ml
 SRC+=ocamlextra/suffix_tree.ml ocamlextra/suffix_tree_ext.ml
 
-SYSLIBS=str.cma bigarray.cma unix.cma
+ifdef PCREDIR
+PCRELIB=pcre.cma
+else
+PCRELIB=
+PCREDIR=
+endif
 
-INCLUDEDIRS=ocamlextra ocollection
+SYSLIBS=str.cma bigarray.cma unix.cma $(PCRELIB)
+
+INCLUDEDIRS=ocamlextra ocollection $(PCREDIR)
 SUBDIRS=ocamlextra ocollection
 
 #-----------------------------------------------------------------------------
@@ -72,11 +80,6 @@ PYSYSLIBS=python.cma
 MYMPISRC=distribution.ml
 MPIINCLUDES=-I ../ocamlmpi -I ../../ocamlmpi -I +ocamlmpi
 MPISYSLIBS=mpi.cma
-
-#pcre
-#REGEXPINCLUDES=-I +pcre
-MYREGEXPSRC=regexp.ml
-REGEXPINCLUDES=-I ../ocamlpcre/lib  -I ../../ocamlpcre/lib
 
 #sexplib
 MYSEXPSRC=sexp_common.ml
@@ -168,7 +171,7 @@ clean::
 # Other commons libs target
 ##############################################################################
 
-all_libs: gdbm bdb gui mpi regexp backtrace
+all_libs: gdbm bdb gui mpi backtrace
 
 #-----------------------------------------------------------------------------
 gdbm: commons_gdbm.cma
@@ -239,20 +242,6 @@ commons_python.cma: $(MYPYSRC:.ml=.cmo)
 
 commons_python.cmxa: $(MYPYSRC:.ml=.cmx)
 	$(OCAMLOPT) -a -o $@ $^
-
-
-#-----------------------------------------------------------------------------
-regexp:
-	$(MAKE) INCLUDESEXTRA="$(REGEXPINCLUDES)" commons_regexp.cma
-regexp.opt:
-	$(MAKE) INCLUDESEXTRA="$(REGEXPINCLUDES)" commons_regexp.cmxa
-
-commons_regexp.cma: $(MYREGEXPSRC:.ml=.cmo)
-	$(OCAMLC) -a -o $@ $^
-
-commons_regexp.cmxa: $(MYREGEXPSRC:.ml=.cmx)
-	$(OCAMLOPT) -a -o $@ $^
-
 
 #-----------------------------------------------------------------------------
 backtrace: commons_backtrace.cma

@@ -209,8 +209,8 @@ and idconstraint =
   | IdRegExpConstraint of reconstraint
 
 and reconstraint =
-  | IdRegExp        of string * Str.regexp
-  | IdNotRegExp     of string * Str.regexp
+  | IdRegExp        of string * Regexp.regexp
+  | IdNotRegExp     of string * Regexp.regexp
 
 (* ANY = int E; ID = idexpression int X; CONST = constant int X; *)
 and form = ANY | ID | LocalID | CONST (* form for MetaExp *)

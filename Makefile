@@ -43,9 +43,16 @@ else
 DYNLINK=dynlink.cma
 endif
 
+ifdef PCREDIR
+PCRELIB=pcre.cma
+else
+PCRELIB=
+PCREDIR=
+endif
+
 SEXPSYSCMA=bigarray.cma nums.cma
 
-SYSLIBS=str.cma unix.cma $(SEXPSYSCMA) $(PYCMA) $(DYNLINK) # threads.cma
+SYSLIBS=str.cma unix.cma $(SEXPSYSCMA) $(PYCMA) $(DYNLINK) $(PCRELIB) # threads.cma
 LIBS=commons/commons.cma \
      commons/commons_sexp.cma \
      globals/globals.cma \
@@ -93,7 +100,7 @@ INCLUDEDIRSDEP=commons commons/ocamlextra $(LOCALSEXP) \
  globals $(LOCALMENHIR) $(LOCALPYCAML) ctl \
  parsing_cocci parsing_c engine popl09 extra python ocaml
 
-INCLUDEDIRS=$(INCLUDEDIRSDEP) $(SEXPDIR) $(MENHIRDIR) $(PYCAMLDIR)
+INCLUDEDIRS=$(INCLUDEDIRSDEP) $(SEXPDIR) $(MENHIRDIR) $(PYCAMLDIR) $(PCREDIR)
 
 ##############################################################################
 # Generic variables
@@ -127,7 +134,7 @@ OCAMLDEP=ocamldep $(INCLUDEDIRSDEP:%=-I %)
 OCAMLMKTOP=ocamlmktop -g -custom $(INCLUDES)
 
 # can also be set via 'make static'
-CFLAGS=-pie -fPIE -fpic -fPIC -static 
+CFLAGS=-pie -fPIE -fpic -fPIC -static
 STATICCFLAGS=$(CFLAGS:%=-ccopt %)
 STATIC= # $(STATICCFLAGS)
 
