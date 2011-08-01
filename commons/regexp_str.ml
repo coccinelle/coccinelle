@@ -1,6 +1,8 @@
 
 type regexp = Str.regexp
 
+let support = "Str"
+
 let regexp string =
   Str.regexp string
 

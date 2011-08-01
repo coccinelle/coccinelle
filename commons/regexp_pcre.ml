@@ -1,6 +1,8 @@
 
 type regexp = Pcre.regexp
 
+let support = "PCRE"
+
 let regexp string =
   Pcre.regexp string
 

@@ -315,7 +315,11 @@ let short_options = [
 
   "-version",   Arg.Unit (fun () ->
     let withpython = if Pycocci.python_support then "with" else "without" in
-    pr2 (spf "spatch version %s %s Python support" Config.version withpython);
+    let whichregexp =
+      if Regexp.support = "PCRE" then "with PCRE support"
+      else "with Str regexp support "
+    in
+    pr2 (spf "spatch version %s %s Python support and %s" Config.version withpython whichregexp);
     exit 0;
   ),
     "  guess what";
