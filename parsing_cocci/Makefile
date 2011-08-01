@@ -27,8 +27,10 @@ else
 MENHIR_PATH=$(MENHIRDIR)
 endif
 
-INCLUDES = -I ../commons -I ../commons/ocamlextra -I ../globals \
--I $(MENHIR_PATH)
+INCLUDES = -I ../commons \
+	   -I ../commons/ocamlextra \
+	   -I ../globals \
+	   -I $(MENHIR_PATH)
 
 MENHIR=$(MENHIR_PATH)/menhirLib.cmo
 MENHIRO=$(MENHIR_PATH)/menhirLib.cmx
@@ -40,7 +42,7 @@ OCAMLC =ocamlc$(OPTBIN) $(OCAMLCFLAGS) $(INCLUDES)
 OCAMLOPT = ocamlopt$(OPTBIN) $(OPTFLAGS) $(INCLUDES)
 OCAMLLEX = ocamllex$(OPTBIN)
 OCAMLYACC= menhir --table
-OCAMLDEP = ocamldep$(OPTBIN) $(INCLUDES)
+OCAMLDEP = ocamldep$(OPTBIN) #$(INCLUDES)
 EXEC=$(TARGET).byte
 EXEC=$(TARGET)
 LIB=$(TARGET).cma

@@ -6,8 +6,8 @@ XSBC-Original-Maintainer: Debian OCaml Maintainers <debian-ocaml-maint@lists.deb
 Uploaders: Євгеній Мещеряков <eugen@debian.org>
 Build-Depends: debhelper (>= 7), ocaml-nox (>= 3.11.0), pycaml (>= 0.82-10) | libpycaml-ocaml-dev (>= 0.82-13~), python,
  menhir (>= 20090204.dfsg), libmenhir-ocaml-dev (>= 20090204.dfsg), ocaml-findlib, dh-ocaml,
- ocaml-best-compilers, python2.6-dev, python-support (>= 0.6), libsexplib-camlp4-dev
-Standards-Version: 3.8.4
+ ocaml-best-compilers, python2.6-dev, python-support (>= 0.6), libsexplib-camlp4-dev, libpcre-ocaml-dev
+Standards-Version: 3.9.1
 Homepage: http://coccinelle.lip6.fr
 Vcs-Git: git://git.debian.org/git/pkg-ocaml-maint/packages/coccinelle.git
 Vcs-Browser: http://git.debian.org/?p=pkg-ocaml-maint/packages/coccinelle.git
@@ -15,7 +15,7 @@ Vcs-Browser: http://git.debian.org/?p=pkg-ocaml-maint/packages/coccinelle.git
 Package: coccinelle
 Architecture: any
 XB-Python-Version: 2.6
-Depends: ${misc:Depends}, ${shlibs:Depends}, ${F:OCamlRun}, ${python:Depends}
+Depends: ${misc:Depends}, ${shlibs:Depends}, ${F:OCamlRun}, ${python:Depends}, libpcre-ocaml
 Recommends: python-gobject, python-gtk2, python-glade2, ocaml-native-compilers (>= 3.11.0) | ocaml-nox (>= 3.11.0), ocaml-findlib
 Suggests: vim-addon-manager
 Description: semantic patching tool for C
