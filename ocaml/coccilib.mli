@@ -1,4 +1,15 @@
+(** Library of functions for use with Coccinelle OCaml script code
+*)
 
+(** A value of type pos describes a position in a source file.
+    current_element is the name of the function containing the matched
+    position; file is the name of the file containing the matched
+    position; line is the number of the line containing the first
+    character of the matched position; col is the column containing the
+    first character of the matched position; line_end is the number of the
+    line containing the last character of the matched position; col_end is
+    the column containing the last character of the matched position.
+*)
 type pos = { current_element : string;
 	     file :string ;
 	     line : int;
@@ -28,7 +39,20 @@ val fcts : (string, param_type list -> string ref list -> unit) Hashtbl.t
 (* Match management *)
 
 val inc_match : bool ref
+
+(** If the argument is true, retain the environment with respect to
+    which the ocaml script code is being executed for use in subsequent
+    rules.  If the argument is false, discard this environment.  By
+    default, the environment is retained.
+*)
 val include_match : bool -> unit
+
 val exited : bool ref
+
+(** If called, aborts the treatment of the current file.  All previous
+    changes take effect.
+*)
 val exit : unit -> unit
+
+(** Returns the directory on which spatch was launched.*)
 val dir : unit -> string

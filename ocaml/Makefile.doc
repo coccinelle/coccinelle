@@ -1,0 +1,19 @@
+OCAMLDOC=ocamldoc
+API=coccilib.mli
+DEST=../docs
+FLAGS=$(INCLUDES) -hide Pervasives
+HTMLFLAGS=-all-params -colorize-code
+
+doc: html
+
+html:
+	mkdir -p $(DEST)/html
+	$(OCAMLDOC) $(FLAGS) -html $(HTMLFLAGS) -d $(DEST)/html $(API)
+
+man:
+	mkdir -p $(DEST)/man
+	$(OCAMLDOC) $(FLAGS) -man -d $(DEST)/man $(API)
+
+cleandoc:
+	rm -rf $(DEST)/html $(DEST)/man
+
