@@ -36,11 +36,6 @@ type param_type =
   | FieldList of Ast_c.field list
   | Stmt of Ast_c.statement
 
-(**
-   For internal use only
-*)
-val fcts : (string, param_type list -> string ref list -> unit) Hashtbl.t
-
 (* ---------------------------------------------------------------------- *)
 (* Match management *)
 
@@ -69,6 +64,9 @@ val exited : bool ref
 (** Returns the directory on which spatch was launched.*)
 val dir : unit -> string
 
-(**
+(**/**)
 
+(**
+   For internal use only
 *)
+val fcts : (string, param_type list -> string ref list -> unit) Hashtbl.t
