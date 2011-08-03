@@ -156,6 +156,7 @@ let debug_profile = (
     FC.show_binding_in_out;
     FC.show_dependencies;
 
+    Flag_parsing_cocci.keep_ml_script;
     Flag_parsing_cocci.show_iso_failures;
 
     FC.verbose_cocci;

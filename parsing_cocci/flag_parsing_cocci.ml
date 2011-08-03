@@ -8,3 +8,6 @@ let show_iso_failures = ref true
 
 let iso_limit = ref (None : int option) (*(Some 3)*)
 let disabled_isos = ref ([] : string list)
+
+(* Used to debug embedded ML scripts *)
+let keep_ml_script = ref false

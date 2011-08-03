@@ -394,7 +394,7 @@ let clean_file mlfile =
       [basefile ^ ".cmo";
        basefile ^ ".annot"]
   in
-    Sys.remove mlfile;
+    if not !Flag_parsing_cocci.keep_ml_script then Sys.remove mlfile;
     Sys.remove (basefile^".cmi");
     List.iter (fun f -> try Sys.remove f with _ -> ()) files
 
