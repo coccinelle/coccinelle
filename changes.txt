@@ -80,6 +80,7 @@
   were discarded
 - Don't call Insert_plus on rules that cannot be evaluated due to failed
   dependencies.
+- Do not anchor Str regexp at the beginning of the string to check
 
 * 0.2.5
 ** Language:
