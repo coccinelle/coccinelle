@@ -31,6 +31,8 @@ let fcts : (string, param_type list -> string ref list -> unit) Hashtbl.t =
 
 let inc_match = ref true
 let include_match x = inc_match := x
-let exited = ref true
+
+let exited = ref false
 let exit _ = exited := true
+
 let dir () = !Flag.dir
