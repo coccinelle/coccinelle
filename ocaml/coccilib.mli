@@ -1,21 +1,28 @@
 (** Library of functions for use with Coccinelle OCaml script code
 *)
 
-(** A value of type pos describes a position in a source file.
-    current_element is the name of the function containing the matched
-    position; file is the name of the file containing the matched
-    position; line is the number of the line containing the first
-    character of the matched position; col is the column containing the
-    first character of the matched position; line_end is the number of the
-    line containing the last character of the matched position; col_end is
-    the column containing the last character of the matched position.
+(** A value of type {b pos} describes a position in a source file.
 *)
-type pos = { current_element : string;
-	     file :string ;
-	     line : int;
-	     col : int;
-	     line_end : int;
-	     col_end : int; }
+type pos = {
+  current_element : string;
+  (** {b current_element} is the name of the function containing the
+      matched position *)
+  file :string ;
+  (** {b file} is the name of the file containing the matched
+      position *)
+  line : int;
+  (** {b line} is the number of the line containing the first
+      character of the matched position *)
+  col : int;
+  (** {b col} is the column containing the first character of the
+      matched position *)
+  line_end : int;
+  (** {b line_end} is the number of the line containing the last
+      character of the matched position *)
+  col_end : int;
+  (** {b col_end} is the column containing the last character of the
+       matched position. *)
+}
 
 (**
    Types describing the metavariables
