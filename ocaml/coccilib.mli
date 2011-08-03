@@ -17,6 +17,9 @@ type pos = { current_element : string;
 	     line_end : int;
 	     col_end : int; }
 
+(**
+   Types describing the metavariables
+*)
 type param_type =
     Pos of pos list
   | Str of string
@@ -33,12 +36,13 @@ type param_type =
   | FieldList of Ast_c.field list
   | Stmt of Ast_c.statement
 
+(**
+   For internal use only
+*)
 val fcts : (string, param_type list -> string ref list -> unit) Hashtbl.t
 
 (* ---------------------------------------------------------------------- *)
 (* Match management *)
-
-val inc_match : bool ref
 
 (** If the argument is true, retain the environment with respect to
     which the ocaml script code is being executed for use in subsequent
@@ -47,12 +51,20 @@ val inc_match : bool ref
 *)
 val include_match : bool -> unit
 
-val exited : bool ref
+(**
+   See include_match
+*)
+val inc_match : bool ref
 
 (** If called, aborts the treatment of the current file.  All previous
     changes take effect.
 *)
 val exit : unit -> unit
+
+(**
+   See exit
+*)
+val exited : bool ref
 
 (** Returns the directory on which spatch was launched.*)
 val dir : unit -> string
