@@ -56,3 +56,7 @@ val exit : unit -> unit
 
 (** Returns the directory on which spatch was launched.*)
 val dir : unit -> string
+
+(**
+
+*)
