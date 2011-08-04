@@ -13,8 +13,6 @@
 
 ** Bugfix:
 - Add more information in documentation, man pages and wiki
-- typedef should use use time info, not decl time info
-- problem of types with *s
 
 * 1.0.0
 ** Language:
@@ -81,6 +79,10 @@
 - Don't call Insert_plus on rules that cannot be evaluated due to failed
   dependencies.
 - Do not anchor Str regexp at the beginning of the string to check
+- Type annotation for C code uses most recent env for typedefs when
+  possible.  Thanks to Andrea Canciani for pointing out the problem.
+- Pretty print pointer types without a trailing space.  Thanks to Michael
+  Stefaniuc for pointing out the problem.
 
 * 0.2.5
 ** Language:

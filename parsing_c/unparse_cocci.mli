@@ -13,6 +13,7 @@ val pp_list_list_any :
     (unit -> unit) (* pr space *) *
     (string -> unit) (* pr arity *) *
     (int (*line*) -> int (*lcol*) -> unit) (* pr barrier *) *
-    (unit -> unit) (* indent *) * (bool -> unit) (* unindent *) ->
+    (unit -> unit) (* indent *) * (bool -> unit) (* unindent *) *
+    (unit -> unit) (* eat_space *)->
   bool (*true if generating*) -> Ast_cocci.anything list list -> pos ->
   unit

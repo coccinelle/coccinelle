@@ -65,6 +65,7 @@ type token2 =
   | Comma of string
   | Indent_cocci2
   | Unindent_cocci2 of bool (* true for permanent, false for temporary *)
+  | EatSpace2
 
 (* not used yet *)
 type token3 =
@@ -104,6 +105,7 @@ let str_of_token2 = function
   | Comma s -> s
   | Indent_cocci2 -> ""
   | Unindent_cocci2 _ -> ""
+  | EatSpace2 -> ""
 
 let print_token2 = function
   | T2 (t,b,_) ->
@@ -137,6 +139,7 @@ let print_token2 = function
   | Comma s -> "Comma:"^s
   | Indent_cocci2 -> "Indent"
   | Unindent_cocci2 _ -> "Unindent"
+  | EatSpace2 -> "EatSpace"
 
 let simple_print_all_tokens1 l =
   List.iter (function x -> Printf.printf "|%s| " (print_token1 x)) l;
@@ -408,6 +411,7 @@ let expand_mcode toks =
 
     let indent _   = push2 Indent_cocci2 toks_out in
     let unindent x = push2 (Unindent_cocci2 x) toks_out in
+    let eat_space _   = push2 EatSpace2 toks_out in
 
     let args_pp =
       (env, pr_cocci, pr_c, pr_cspace,
@@ -416,7 +420,7 @@ let expand_mcode toks =
        pr_arity,
        (match !Flag_parsing_c.spacing with
 	 Flag_parsing_c.SMPL -> pr_barrier | _ -> pr_nobarrier),
-       indent, unindent) in
+       indent, unindent, eat_space) in
 
     (* old: when for yacfe with partial cocci:
      *    add_elem t false;
@@ -521,7 +525,8 @@ let is_minusable_comment_nocpp = function
   | _ -> false
 
 let all_coccis = function
-    Cocci2 _ | C2 _ | Comma _ | Indent_cocci2 | Unindent_cocci2 _ -> true
+    Cocci2 _ | C2 _ | Comma _ | Indent_cocci2 | Unindent_cocci2 _
+  | EatSpace2 -> true
   | _ -> false
 
 (*previously gave up if the first character was a newline, but not clear why*)
@@ -551,7 +556,8 @@ let set_minus_comment adj = function
   | _ -> raise Impossible
 
 let set_minus_comment_or_plus adj = function
-    Cocci2 _ | C2 _ | Comma _ | Indent_cocci2 | Unindent_cocci2 _ as x -> x
+    Cocci2 _ | C2 _ | Comma _ | Indent_cocci2 | Unindent_cocci2 _
+  | EatSpace2 as x -> x
   | x -> set_minus_comment adj x
 
 let drop_minus xs =
@@ -738,6 +744,16 @@ let remove_minus_and_between_and_expanded_and_fake xs =
   let xs = List.rev (from_newline (List.rev xs)) in
   let xs = drop_minus xs in
   xs
+
+(* things that should not be followed by space - boundary between SmPL
+   code and C code *)
+let adjust_eat_space toks =
+  let rec loop = function
+      [] -> []
+    | EatSpace2 :: x :: rest when is_space x -> loop rest
+    | EatSpace2 :: rest -> loop rest
+    | x :: xs -> x :: loop xs in
+  loop toks
 
 (* normally, in C code, a semicolon is not preceded by a space or newline *)
 let adjust_before_semicolon toks =
@@ -948,8 +964,8 @@ let add_newlines toks tabbing_unit =
     | ((C2(s)) as a)::xs -> a :: loop info (string_length s count) xs
     | ((Comma(s)) as a)::xs -> a :: loop info (string_length s count) xs
     | Fake2 _ :: _ | Indent_cocci2 :: _
-    | Unindent_cocci2 _::_ ->
-	failwith "unexpected fake, indent, or unindent" in
+    | Unindent_cocci2 _::_ | EatSpace2::_ ->
+	failwith "unexpected fake, indent, unindent, or eatspace" in
   let redo_spaces prev = function
       Cocci2(s,line,lcol,rcol,Some (Unparse_cocci.SpaceOrNewline sp)) ->
         C2 !sp :: Cocci2(s,line,lcol,rcol,None) :: prev
@@ -1163,7 +1179,7 @@ let kind_of_token2 = function
       | FakeTok _ -> raise Impossible (* now a Fake2 *)
       | AbstractLineTok _ -> raise Impossible (* now a KC *)
       )
-  | Unindent_cocci2 _ | Indent_cocci2 -> raise Impossible
+  | Unindent_cocci2 _ | Indent_cocci2 | EatSpace2 -> raise Impossible
 
 let end_mark = "!"
 
@@ -1266,6 +1282,7 @@ let pp_program2 xs outfile  =
 	    else
               (* phase2: can now start to filter and adjust *)
 	       (let (toks,tu) = adjust_indentation toks in
+	      let toks = adjust_eat_space toks in
 	      let toks = adjust_before_semicolon toks in(*before remove minus*)
 	      let toks = adjust_after_paren toks in(*also before remove minus*)
 	      let toks = drop_space_at_endline toks in
