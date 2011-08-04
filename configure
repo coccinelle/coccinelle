@@ -413,7 +413,7 @@ pr2 "Support for ocaml scripting: $ocamlprefix";
 
 my $pcresuffix = $pcre ? "pcre" : "str";
 pr2 "Support for regexp: $pcresuffix";
-`cd commons; ln -sf regexp_${pcresuffix}.ml regexp.ml; `;
+`cd commons; ln -sf regexp_${pcresuffix}.ml regexp.ml; touch regexp.ml;`;
 `cd commons; make depend`;
 
 pr2 "Modifying globals/config.ml";
