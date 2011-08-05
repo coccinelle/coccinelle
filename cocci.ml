@@ -23,7 +23,8 @@ module Ast_to_flow = Control_flow_c_build
 let cprogram_of_file saved_typedefs saved_macros file =
   let (program2, _stat) =
     Parse_c.parse_c_and_cpp_keep_typedefs
-      (Some saved_typedefs) (Some saved_macros) file in
+      (if !Flag_cocci.use_saved_typedefs then (Some saved_typedefs) else None)
+      (Some saved_macros) file in
   program2
 
 let cprogram_of_file_cached file =
@@ -312,6 +313,7 @@ let show_or_not_diff2 cfile outfile =
 	      diff_line::minus_line::plus_line::rest
 	  | _ -> res in
 	let xs = if !Flag.sgrep_mode2 then fix_sgrep_diffs xs else xs in
+	let cfile = normalize_path cfile in
 	let patches =
 	  try Hashtbl.find generated_patches cfile
 	  with Not_found ->

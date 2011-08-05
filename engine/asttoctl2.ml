@@ -782,16 +782,16 @@ and get_after_e s a =
       let (br2,_) = get_after_e branch2 a in
       (Ast.rewrap s (Ast.IfThenElse(ifheader,br1,els,br2,aft)),[Ast.Other s])
   | Ast.While(header,body,aft) ->
-      let (bd,_) = get_after_e body a in
+      let (bd,_) = get_after_e body ((Ast.Other s) :: a) in
       (Ast.rewrap s (Ast.While(header,bd,aft)),[Ast.Other s])
   | Ast.For(header,body,aft) ->
-      let (bd,_) = get_after_e body a in
+      let (bd,_) = get_after_e body ((Ast.Other s) :: a) in
       (Ast.rewrap s (Ast.For(header,bd,aft)),[Ast.Other s])
   | Ast.Do(header,body,tail) ->
-      let (bd,_) = get_after_e body a in
+      let (bd,_) = get_after_e body ((Ast.Other s) :: a) in
       (Ast.rewrap s (Ast.Do(header,bd,tail)),[Ast.Other s])
   | Ast.Iterator(header,body,aft) ->
-      let (bd,_) = get_after_e body a in
+      let (bd,_) = get_after_e body ((Ast.Other s) :: a) in
       (Ast.rewrap s (Ast.Iterator(header,bd,aft)),[Ast.Other s])
   | Ast.Switch(header,lb,decls,cases,rb) ->
       let index = count_nested_braces s in

@@ -2096,8 +2096,6 @@ let lookahead2 ~pass next before =
       end
       else TIdent (s, i1)
 
-
-
  (*-------------------------------------------------------------*)
  | v::xs, _ -> v
  | _ -> raise Impossible

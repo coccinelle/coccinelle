@@ -4142,7 +4142,7 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
   | _, F.Asm _
     -> fail2()
   | _, F.MacroTop _
-    -> Printf.printf "have macrotop\n"; fail2()
+    -> fail2()
 
   | _, (F.IfdefEndif _|F.IfdefElse _|F.IfdefHeader _)
     -> fail2 ()

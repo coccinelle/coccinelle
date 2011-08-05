@@ -15,13 +15,8 @@
 
 ** Bugfix:
 - Add more information in documentation, man pages and wiki
-<<<<<<< changes.txt
-- typedef should use use time info, not decl time info
-- problem of types with *s
 - typedefs from C code should not be used before their point of inference
   (saved_typedefs in cprogram_of_file)
-=======
->>>>>>> 1.303
 
 * 1.0.0
 ** Language:

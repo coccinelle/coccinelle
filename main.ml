@@ -522,6 +522,8 @@ let other_options = [
     "   drop all back edges derived from looping constructs - unsafe";
     "-no_gotos",          Arg.Set Flag_parsing_c.no_gotos,
     "   drop all jumps derived from gotos - unsafe";
+    "-no_saved_typedefs", Arg.Clear Flag_cocci.use_saved_typedefs,
+    "   drop all inferred typedefs from one parse of some code to the next";
 
     "-l1",                Arg.Clear Flag_parsing_c.label_strategy_2, " ";
     "-ifdef_to_if",       Arg.Set FC.ifdef_to_if,

@@ -897,11 +897,16 @@ statement2:
    * a Case  (1, (Case (2, i++)))  :(
    *)*/
 labeled:
- | ident_cpp        TDotDot statement   { Label ($1, $3),  [$2] }
- | Tcase const_expr TDotDot statement   { Case ($2, $4),       [$1; $3] }
- | Tcase const_expr TEllipsis const_expr TDotDot statement
+ | ident_cpp        TDotDot sw_stat_or_decl   { Label ($1, $3),  [$2] }
+ | Tcase const_expr TDotDot sw_stat_or_decl   { Case ($2, $4),       [$1; $3] }
+ | Tcase const_expr TEllipsis const_expr TDotDot sw_stat_or_decl
      { CaseRange ($2, $4, $6), [$1;$3;$5] } /*(* gccext: allow range *)*/
- | Tdefault         TDotDot statement   { Default $3,             [$1; $2] }
+ | Tdefault    TDotDot sw_stat_or_decl   { Default $3,             [$1; $2] }
+
+sw_stat_or_decl:
+ | decl      { mk_st (Decl ($1 Ast_c.LocalDecl)) Ast_c.noii }
+ | statement { $1 }
+
 
 end_labeled:
  /*(* gccext:  allow toto: }
