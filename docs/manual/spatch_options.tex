@@ -450,6 +450,10 @@ currently not well supported.}
   contain a loop, and {\sf AW} may be used if it does.  This option causes
   {\sf AW} always to be used.}
 
+\rare{-ocaml\_regexps}{Use the regular expressions provided by the OCaml
+  \texttt{Str} library.  This is the default if the PCRE library is not
+  available.  Otherwise PCRE regular expressions are used by default.}
+
 \developer{-steps $\langle$int$\rangle$}{
 This limits the number of steps performed by the CTL engine to the
 specified number.  This option is unsafe as it might cause a rule to fail

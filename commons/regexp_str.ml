@@ -1,7 +1,7 @@
 
 type regexp = Str.regexp
 
-let support = "Str"
+let pcre_support = ref false
 
 let regexp string =
   Str.regexp string
