@@ -43,14 +43,16 @@ let find_metavariables tokens =
 	  match Str.bounded_split (Str.regexp ":") x 2 with
 	    [before;after] ->
 	      let (ty,endty,afterty) = split_when (ends_with ':') (after::xs) in
-	      (try let _ = List.assoc x env in failwith (x^"already declared")
+	      let decl = 
+		Printf.sprintf "%s %s;\n"
+		  (String.concat "" (ty@[endty]))
+		  before in
+	      (try
+		if decl = List.assoc before env
+		then (before,afterty,env)
+		else failwith (before^" already declared with another type")
 	      with Not_found ->
-		let env =
-		  (before,
-		   (Printf.sprintf "%s %s;\n"
-		      (String.concat "" (ty@[endty]))
-		      before)) ::
-		  env in
+		let env = (before, decl) :: env in
 		(before,afterty,env))
 	  | _ ->
 	      if Str.string_match (Str.regexp "[A-Z]") x 0

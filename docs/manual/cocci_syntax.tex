@@ -1049,24 +1049,24 @@ Some examples of semantic matches that can be given as an argument to {\tt
   -sp} are as follows:
 
 \begin{itemize}
-\item {\tt f(e)}: This only matches the expression {\tt f(e)}.
-\item {\tt f(E)}: This matches a call to f with any argument.
-\item {\tt F(E)}: This gives a parse error; the semantic patch parser
-  cannot figure out what kind of metavariable {\tt F} is.
-\item {\tt F:identifier:(E)}: This matches any one argument function call.
-\item {\tt F:identifier:(F)}: This matches any one argument function call
+\item \texttt{f(e)}: This only matches the expression \texttt{f(e)}.
+\item \texttt{f(E)}: This matches a call to f with any argument.
+\item \texttt{F(E)}: This gives a parse error; the semantic patch parser
+  cannot figure out what kind of metavariable \texttt{F} is.
+\item \texttt{F:identifier:(E)}: This matches any one argument function call.
+\item \texttt{F:identifier:(F)}: This matches any one argument function call
   where the argument is the name of the function itself.  This example
   shows that it is not necessary to repeat the metavariable type name.
-\item {\tt F:identifier:(F:identifier:)}: This matches any one argument
+\item \texttt{F:identifier:(F:identifier:)}: This matches any one argument
   function call 
   where the argument is the name of the function itself.  This example
   shows that it is possible to repeat the metavariable type name.
 \end{itemize}
 
-When constraints, \textit{e.g.} {\tt when != e}, are allowed but the
-expression {\tt e} must be represented as a single token.
+When constraints, \textit{e.g.} \texttt{when != e}, are allowed but the
+expression \texttt{e} must be represented as a single token.
 
-The generated semantic patch behaves as though there is a {\tt *} in front
+The generated semantic patch behaves as though there is a \texttt{*} in front
 of every token.
 
 %%% Local Variables:
