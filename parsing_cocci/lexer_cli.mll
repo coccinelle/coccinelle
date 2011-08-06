@@ -15,8 +15,8 @@
   let pretty_print tok =
     match tok with
 	Id s    -> s
-      | NotEq   -> "!="
-      | EqEq    -> "=="
+      | NotEq   -> "when !="
+      | EqEq    -> "when =="
       | Other s -> s
       | EOF     -> ""
 }
@@ -29,9 +29,9 @@ let alphanum = (letter | dec)
 let id = letter (alphanum | special)*
 
 rule token = parse
-  | " "  { token lexbuf      }
-  | "!=" { NotEq             }
-  | "==" { EqEq              }
+  | "when" [' ' '\t']* "!=" [' ' '\t']* { NotEq }
+  | "when" [' ' '\t']* "==" [' ' '\t']* { EqEq  }
+  | [' ' '\t']+ { Other(" ") }
   | id   { Id(tok lexbuf)    }
   | eof  { EOF               }
   | _    { Other(tok lexbuf) }

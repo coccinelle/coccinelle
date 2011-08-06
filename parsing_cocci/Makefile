@@ -2,7 +2,7 @@
 
 TARGET=cocci_parser
 
-LEXER_SOURCES = lexer_cocci.mll
+LEXER_SOURCES = lexer_cocci.mll lexer_cli.mll
 SCRIPT_LEXER_SOURCES = lexer_script.mll
 PARSER_SOURCES = parser_cocci_menhir.mly
 SOURCES = flag_parsing_cocci.ml type_cocci.ml ast_cocci.ml ast0_cocci.ml \
@@ -16,7 +16,7 @@ unify_ast.ml semantic_cocci.ml data.ml free_vars.ml safe_for_multi_decls.ml \
 parse_aux.ml disjdistr.ml \
 $(LEXER_SOURCES:.mll=.ml) $(PARSER_SOURCES:.mly=.ml) \
 $(SCRIPT_LEXER_SOURCES:.mll=.ml) \
-get_constants2.ml id_utils.ml adjacency.ml parse_cocci.ml
+get_constants2.ml id_utils.ml adjacency.ml parse_cocci.ml command_line.ml
 
 LIBS=../commons/commons.cma ../globals/globals.cma
 SYSLIBS = str.cma unix.cma
@@ -125,3 +125,4 @@ lexer_cocci.ml: lexer_cocci.mll
 parser_cocci_menhir.ml: parser_cocci_menhir.mly lexer_cocci.mll
 parser_cocci_menhir.mli: parser_cocci_menhir.mly lexer_cocci.mll
 lexer_script.ml: lexer_script.mll
+lexer_cli.ml: lexer_cli.mll

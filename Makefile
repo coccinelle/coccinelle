@@ -17,8 +17,8 @@ PKGVERSION=$(shell dpkg-parsechangelog -ldebian/changelog.$(DISTRIB_CODENAME) 2>
 TARGET=spatch
 PRJNAME=coccinelle
 
-LEXER_SOURCES = cli_lexer.mll
-SRC=flag_cocci.ml cocci.ml testing.ml test.ml $(LEXER_SOURCES:.mll=.ml) command_line.ml main.ml
+LEXER_SOURCES =
+SRC=flag_cocci.ml cocci.ml testing.ml test.ml $(LEXER_SOURCES:.mll=.ml) main.ml
 
 ifeq ($(FEATURE_PYTHON),1)
 PYCMA=pycaml.cma

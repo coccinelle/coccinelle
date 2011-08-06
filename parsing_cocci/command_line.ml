@@ -29,44 +29,40 @@ let find_metavariables tokens =
     | x :: xs ->
 	(* single upper case letter is a metavariable *)
 	let (x,xs,env) =
-(*	  if String.length x = 1 && String.uppercase x = x *)
 (*
   Testing for uppercase and length is not enough as "+" is
   a single character identical in upper/lower case.
 *)
-	  if Str.string_match (Str.regexp "[A-Z]") x 0
-	  then
-	    begin
-	      try let _ = Some(List.assoc x env) in (x,xs,env)
-	      with Not_found ->
-		let env = (x,(Printf.sprintf "metavariable %s;\n" x)) :: env in
-		(x,xs,env)
-	    end
-	  else
-	    begin
-	      (*
+	  (*
 		The ":" delimiter could not be used two times
 		1) Str.split
 		2) split_when (ends_with ...)
 
 		Otherwise split_when will raise a Not_found exception.
-	      *)
-	      match Str.bounded_split (Str.regexp ":") x 2 with
-		[before;after] ->
-		  let (ty,endty,afterty) =
-		    split_when (ends_with ':') (after::xs) in
-		  (try
-		    let _ = List.assoc x env in failwith (x^"already declared")
+	  *)
+	  match Str.bounded_split (Str.regexp ":") x 2 with
+	    [before;after] ->
+	      let (ty,endty,afterty) = split_when (ends_with ':') (after::xs) in
+	      (try let _ = List.assoc x env in failwith (x^"already declared")
+	      with Not_found ->
+		let env =
+		  (before,
+		   (Printf.sprintf "%s %s;\n"
+		      (String.concat "" (ty@[endty]))
+		      before)) ::
+		  env in
+		(before,afterty,env))
+	  | _ ->
+	      if Str.string_match (Str.regexp "[A-Z]") x 0
+	      then
+		begin
+		  try let _ = Some(List.assoc x env) in (x,xs,env)
 		  with Not_found ->
 		    let env =
-		      (before,
-		       (Printf.sprintf "%s %s;\n"
-			  (String.concat " " (ty@[endty]))
-			  before)) ::
-			env in
-		    (before,afterty,env))
-	      | _ -> (x,xs,env)
-	    end in
+		      (x,(Printf.sprintf "metavariable %s;\n" x)) :: env in
+		    (x,xs,env)
+		end
+	      else (x,xs,env) in
 	let (env,sp) = loop env xs in
 	(env,x::sp) in
   loop [] tokens
@@ -74,12 +70,12 @@ let find_metavariables tokens =
 let find_when_dots tokens =
   let rec loop = function
       [] -> []
-    | "when" :: "!=" :: e :: rest ->
-	"when" :: "!=" :: e :: "\n" :: (loop rest)
-    | "when" :: "==" :: e :: rest ->
-	"when" :: "==" :: e :: "\n" :: (loop rest)
-    | "when" :: e :: rest ->
-	"when" :: e :: "\n" :: (loop rest)
+    | "when !=" :: e :: rest ->
+	"when != " :: e :: "\n" :: (loop rest)
+    | "when ==" :: e :: rest ->
+	"when == " :: e :: "\n" :: (loop rest)
+    | "when" :: " " :: e :: rest ->
+	"when" :: " " :: e :: "\n" :: (loop rest)
     | "..." :: "when" :: rest -> "\n" :: "..." :: (loop ("when" :: rest))
     | "..." :: rest -> "\n" :: "..." :: "\n" :: (loop rest)
     | x::xs -> x::(loop xs) in
@@ -88,8 +84,9 @@ let find_when_dots tokens =
 let add_stars tokens =
   let rec loop = function
       [] -> []
-    | "when" :: rest -> "when" :: skip rest
-    | "..." :: rest -> "..." :: skip rest
+    | "." :: "." :: "." :: rest -> "..." :: skip rest
+    | "<" :: "." :: "." :: "." :: rest -> "<..." :: skip rest
+    | "<" :: "+" :: "." :: "." :: "." :: rest -> "<+..." :: skip rest
     | "\n" :: rest -> "\n" :: loop rest
     | x :: xs -> ("* " ^ x) :: (skip xs)
   and skip = function
@@ -106,13 +103,12 @@ let rec add_spaces = function
 
 let reparse tokens =
   let (env,code) = find_metavariables tokens in
-  let env = String.concat " " (List.map snd env) in
+  let env = String.concat "" (List.map snd env) in
   let code = find_when_dots code in
   let code = add_stars code in
-  let code = add_spaces code in
   let code = String.concat "" code in
-  let res = "@@\n"^env^"\n@@\n"^code in
-  Printf.printf "semantic patch:\n%s\n" res;
+  let res = "@@\n"^env^"@@\n"^code in
+  Printf.printf "%s\n\n" res;
   let out = Common.new_temp_file "sp" ".cocci" in
   let o = open_out out in
   Printf.fprintf o "%s\n" res;
@@ -120,12 +116,11 @@ let reparse tokens =
   out
 
 let tokenize first =
-  (* (Str.split (Str.regexp " ") first) *)
   let lexbuf = Lexing.from_string first in
   let rec loop b =
-    let tok = Cli_lexer.token b in
-    if not (tok = Cli_lexer.EOF) then
-      let s = Cli_lexer.pretty_print tok in
+    let tok = Lexer_cli.token b in
+    if not (tok = Lexer_cli.EOF) then
+      let s = Lexer_cli.pretty_print tok in
       s :: loop b
     else
       []
