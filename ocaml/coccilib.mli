@@ -77,3 +77,9 @@ val dir : unit -> string
    For internal use only
 *)
 val fcts : (string, param_type list -> string ref list -> unit) Hashtbl.t
+
+(* org mode *)
+
+val print_main : ?color:string -> string -> pos list -> unit
+val print_sec  : ?color:string -> string -> pos list -> unit
+val print_secs : ?color:string -> string -> pos list -> unit

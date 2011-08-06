@@ -29,6 +29,7 @@
 - local idexpression metavariable no longer matches static local x
 - Consider using to be a comment in C++ code.  Patch submitted by Jani Monoses.
 - Command line cocci
+- print_main etc for ocaml Coccilib
 
 ** Features:
 - Preserve spacing before // comments when not at the beginning of a line

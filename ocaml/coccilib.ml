@@ -36,3 +36,52 @@ let exited = ref false
 let exit _ = exited := true
 
 let dir () = !Flag.dir
+
+(* ---------------------------------------------------------------------- *)
+(* org mode *)
+
+let build_link p msg color =
+  Printf.sprintf
+    "[[view:%s::face=%s::linb=%d::colb=%d::cole=%d][%s]]"
+    p.file color p.line p.col p.col_end msg
+
+let print_todo ?color:(color="ovl-face1") ?msg:(msg="") p =
+  let msg =
+    if msg = ""
+    then Printf.sprintf "%s::%d" p.file p.line
+    else msg in
+  Printf.printf "* TODO %s\n" (build_link p msg color)
+
+let print_link ?color:(color="ovl-face2") ?msg:(msg="") p =
+  let msg =
+    if msg = ""
+    then Printf.sprintf "%s::%d" p.file p.line
+    else msg in
+  Printf.printf "%s\n" (build_link p msg color)
+
+let print_safe_todo ?color:(color="ovl-face1") ?msg:(msg="") p =
+  let msg = String.concat "@(" (Str.split_delim (Str.regexp_string "[") msg) in
+  let msg = String.concat ")" (Str.split_delim (Str.regexp_string "]") msg) in
+  print_todo ~color:color ~msg:msg p
+
+let print_safe_link ?color:(color="ovl-face2") ?msg:(msg="") p =
+  let msg = String.concat "@(" (Str.split_delim (Str.regexp_string "[") msg) in
+  let msg = String.concat ")" (Str.split_delim (Str.regexp_string "]") msg) in
+  print_link ~color:color ~msg:msg p
+
+(*
+print_main, print_sec and print_secs
+*)
+let print_main ?color:(color="ovl-face1") msg ps =
+  let p = List.hd ps in
+  let oldmsgfmt =
+    if msg == ""
+    then Printf.sprintf "%s::%d" p.file p.line
+    else Printf.sprintf "%s %s::%d" msg p.file p.line in
+  print_todo ~color:color ~msg:oldmsgfmt p
+
+let print_sec ?color:(color="ovl-face2") msg ps =
+  print_link ~color:color ~msg:msg (List.hd ps)
+
+let print_secs ?color:(color="ovl-face2") msg ps =
+  List.iter (function i -> print_link ~color:color ~msg:msg i) ps
