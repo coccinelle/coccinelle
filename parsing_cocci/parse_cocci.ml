@@ -1287,6 +1287,16 @@ let strip_for_fix l =
 	  (PC.TMetaFunc(nm,Ast.IdNoConstraint,pure,clt),info)
       |	(PC.TMetaLocalFunc(nm,_,pure,clt),info) ->
 	  (PC.TMetaLocalFunc(nm,Ast.IdNoConstraint,pure,clt),info)
+      |	(PC.TMetaErr(nm,_,pure,clt),info) ->
+	  (PC.TMetaErr(nm,Ast0.NoConstraint,pure,clt),info)
+      |	(PC.TMetaExp(nm,_,pure,ty,clt),info) ->
+	  (PC.TMetaExp(nm,Ast0.NoConstraint,pure,ty,clt),info)
+      |	(PC.TMetaIdExp(nm,_,pure,ty,clt),info) ->
+	  (PC.TMetaIdExp(nm,Ast0.NoConstraint,pure,ty,clt),info)
+      |	(PC.TMetaLocalIdExp(nm,_,pure,ty,clt),info) ->
+	  (PC.TMetaLocalIdExp(nm,Ast0.NoConstraint,pure,ty,clt),info)
+      |	(PC.TMetaConst(nm,_,pure,ty,clt),info) ->
+	  (PC.TMetaConst(nm,Ast0.NoConstraint,pure,ty,clt),info)
       |	t -> t)
     l
 
