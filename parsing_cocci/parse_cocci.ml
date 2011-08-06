@@ -1277,9 +1277,25 @@ let rec drop_double_dots l =
     [] -> []
   | (x::xs) -> x :: loop x xs
 
-let rec fix f l =
-  let cur = f l in
-  if l = cur then l else fix f cur
+(* ignore uncomparable pcre regular expressions *)
+let strip_for_fix l =
+  List.map
+    (function
+	(PC.TMetaId(nm,_,seed,pure,clt),info) ->
+	  (PC.TMetaId(nm,Ast.IdNoConstraint,seed,pure,clt),info)
+      |	(PC.TMetaFunc(nm,_,pure,clt),info) ->
+	  (PC.TMetaFunc(nm,Ast.IdNoConstraint,pure,clt),info)
+      |	(PC.TMetaLocalFunc(nm,_,pure,clt),info) ->
+	  (PC.TMetaLocalFunc(nm,Ast.IdNoConstraint,pure,clt),info)
+      |	t -> t)
+    l
+
+let fix f l =
+  let rec loop f l stripped_l =
+    let cur = f l in
+    let stripped_cur = strip_for_fix cur in
+    if stripped_l = stripped_cur then l else loop f cur stripped_cur in
+  loop f l (strip_for_fix l)
 
 (* ( | ... | ) also causes parsing problems *)
 
