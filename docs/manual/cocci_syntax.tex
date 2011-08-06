@@ -1035,6 +1035,40 @@ leftmost column is considered to be added code.  A \verb+//+ or
 \verb+/* */+ comment wthout such an annotation is considered to be a
 comment about the SmPL code, and thus is not matched in the C code.
 
+\section{Command-line semantic match}
+
+It is possible to specify a semantic match on the spatch command line,
+using the argument {\tt -sp}.  In such a semantic match, any token
+beginning with a capital letter is assumed to be a metavariable of type
+{\tt metavariable}.  That is, the parser must be able to figure out what
+kind of metavariable it is.  It is also possible to specify the type of a
+metavariable by enclosing the type in :'s, concatenated directly to the
+metavariable name.
+
+Some examples of semantic matches that can be given as an argument to {\tt
+  -sp} are as follows:
+
+\begin{itemize}
+\item {\tt f(e)}: This only matches the expression {\tt f(e)}.
+\item {\tt f(E)}: This matches a call to f with any argument.
+\item {\tt F(E)}: This gives a parse error; the semantic patch parser
+  cannot figure out what kind of metavariable {\tt F} is.
+\item {\tt F:identifier:(E)}: This matches any one argument function call.
+\item {\tt F:identifier:(F)}: This matches any one argument function call
+  where the argument is the name of the function itself.  This example
+  shows that it is not necessary to repeat the metavariable type name.
+\item {\tt F:identifier:(F:identifier:)}: This matches any one argument
+  function call 
+  where the argument is the name of the function itself.  This example
+  shows that it is possible to repeat the metavariable type name.
+\end{itemize}
+
+When constraints, \textit{e.g.} {\tt when != e}, are allowed but the
+expression {\tt e} must be represented as a single token.
+
+The generated semantic patch behaves as though there is a {\tt *} in front
+of every token.
+
 %%% Local Variables:
 %%% mode: LaTeX
 %%% TeX-master: "main_grammar"
