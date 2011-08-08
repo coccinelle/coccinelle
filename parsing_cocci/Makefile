@@ -2,7 +2,8 @@
 
 TARGET=cocci_parser
 
-LEXER_SOURCES = lexer_cocci.mll lexer_cli.mll
+LEXER_SOURCES = lexer_cocci.mll
+CLI_LEXER_SOURCES = lexer_cli.mll
 SCRIPT_LEXER_SOURCES = lexer_script.mll
 PARSER_SOURCES = parser_cocci_menhir.mly
 SOURCES = flag_parsing_cocci.ml type_cocci.ml ast_cocci.ml ast0_cocci.ml \
@@ -15,7 +16,7 @@ adjust_pragmas.ml insert_plus.ml function_prototypes.ml \
 unify_ast.ml semantic_cocci.ml data.ml free_vars.ml safe_for_multi_decls.ml \
 parse_aux.ml disjdistr.ml \
 $(LEXER_SOURCES:.mll=.ml) $(PARSER_SOURCES:.mly=.ml) \
-$(SCRIPT_LEXER_SOURCES:.mll=.ml) \
+$(CLI_LEXER_SOURCES:.mll=.ml) $(SCRIPT_LEXER_SOURCES:.mll=.ml) \
 get_constants2.ml id_utils.ml adjacency.ml parse_cocci.ml command_line.ml
 
 LIBS=../commons/commons.cma ../globals/globals.cma
@@ -48,7 +49,8 @@ EXEC=$(TARGET)
 LIB=$(TARGET).cma
 OPTLIB=$(LIB:.cma=.cmxa)
 
-GENERATED= $(LEXER_SOURCES:.mll=.ml) $(SCRIPT_LEXER_SOURCES:.mll=.ml) \
+GENERATED= $(LEXER_SOURCES:.mll=.ml) \
+	   $(CLI_LEXER_SOURCES:.mll=.ml) $(SCRIPT_LEXER_SOURCES:.mll=.ml) \
 	   $(PARSER_SOURCES:.mly=.ml) $(PARSER_SOURCES:.mly=.mli)
 OBJS = $(SOURCES:.ml=.cmo)
 OPTOBJS = $(OBJS:.cmo=.cmx)
@@ -98,6 +100,9 @@ $(LEXER_SOURCES:.mll=.ml) :	$(LEXER_SOURCES)
 
 $(PARSER_SOURCES:.mly=.ml) $(PARSER_SOURCES:.mly=.mli) : $(PARSER_SOURCES)
 	$(OCAMLYACC) $(PARSER_SOURCES)
+
+$(CLI_LEXER_SOURCES:.mll=.ml): $(CLI_LEXER_SOURCES)
+	$(OCAMLLEX) $(CLI_LEXER_SOURCES)
 
 $(SCRIPT_LEXER_SOURCES:.mll=.ml): $(SCRIPT_LEXER_SOURCES)
 	$(OCAMLLEX) $(SCRIPT_LEXER_SOURCES)
