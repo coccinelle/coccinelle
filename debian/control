@@ -1,7 +1,7 @@
 Source: coccinelle
 Section: devel
 Priority: optional
-Maintainer: Nicolas Palix <npalix@diku.dk>
+Maintainer: Nicolas Palix <npalix.work@gmail.com>
 XSBC-Original-Maintainer: Debian OCaml Maintainers <debian-ocaml-maint@lists.debian.org>
 Uploaders: Євгеній Мещеряков <eugen@debian.org>
 Build-Depends:
