@@ -84,16 +84,13 @@
   were discarded
 - Don't call Insert_plus on rules that cannot be evaluated due to failed
   dependencies.
-<<<<<<< changes.txt
 - Allow variable declaration right after a case in switch.
-- The top os a loop is also after the body of a loop, for ... in loop body
-=======
+- The top of a loop is also after the body of a loop, for ... in loop body
 - Do not anchor Str regexp at the beginning of the string to check
 - Type annotation for C code uses most recent env for typedefs when
   possible.  Thanks to Andrea Canciani for pointing out the problem.
 - Pretty print pointer types without a trailing space.  Thanks to Michael
   Stefaniuc for pointing out the problem.
->>>>>>> 1.303
 
 * 0.2.5
 ** Language:
