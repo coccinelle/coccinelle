@@ -247,15 +247,16 @@ purebytecode:
 .PHONY:: docs
 
 docs:
-	make -C docs
-#	make -C ocaml doc
+	$(MAKE) -C docs
+	if [ -x "$(TARGET)" -o -x "$(TARGET).opt" ]; \
+		then $(MAKE) -C ocaml doc; fi
 
 clean::
-	make -C docs clean
-#	make -C ocaml cleandoc
+	$(MAKE) -C docs clean
+	$(MAKE) -C ocaml cleandoc
 
 distclean::
-	make -C docs distclean
+	$(MAKE) -C docs distclean
 
 ##############################################################################
 # Pre-Install (customization of spatch frontend script)
