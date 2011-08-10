@@ -26,8 +26,7 @@ MYSRC=	common.ml common_extra.ml                \
 	ocollection/ograph2way.ml		 \
 	ograph_simple.ml ograph_extended.ml	 \
 	ofullcommon.ml                           \
-	glimpse.ml parser_combinators.ml         \
-	regexp.ml
+	glimpse.ml parser_combinators.ml
 
 # src from other authors, got from the web or caml hump
 SRC=ocamlextra/dumper.ml
@@ -38,16 +37,9 @@ SRC+=$(MYSRC)
 SRC+=ocamlextra/enum.ml ocamlextra/dynArray.ml
 SRC+=ocamlextra/suffix_tree.ml ocamlextra/suffix_tree_ext.ml
 
-ifdef PCREDIR
-PCRELIB=pcre.cma
-else
-PCRELIB=
-PCREDIR=
-endif
+SYSLIBS=str.cma bigarray.cma unix.cma
 
-SYSLIBS=str.cma bigarray.cma unix.cma $(PCRELIB)
-
-INCLUDEDIRS=ocamlextra ocollection $(PCREDIR)
+INCLUDEDIRS=ocamlextra ocollection
 SUBDIRS=ocamlextra ocollection
 
 #-----------------------------------------------------------------------------

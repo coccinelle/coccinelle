@@ -413,8 +413,8 @@ pr2 "Support for ocaml scripting: $ocamlprefix";
 
 my $pcresuffix = $pcre ? "pcre" : "str";
 pr2 "Support for regexp: $pcresuffix";
-`cd commons; ln -sf regexp_${pcresuffix}.ml regexp.ml; touch regexp.ml;`;
-`cd commons; make depend`;
+`cd globals; ln -sf regexp_${pcresuffix}.ml regexp.ml; touch regexp.ml;`;
+`cd globals; make depend`;
 
 pr2 "Modifying globals/config.ml";
 my $command = "perl -p -e 's#Not_found.\*#Not_found->\\\"$src\\\"#' globals/config.ml.in > globals/config.ml";
