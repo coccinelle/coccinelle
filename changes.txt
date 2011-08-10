@@ -12,6 +12,7 @@
 
 ** Features:
 - New scripting languages
+- more than one SP on the command line
 
 ** Bugfix:
 - Add more information in documentation, man pages and wiki
