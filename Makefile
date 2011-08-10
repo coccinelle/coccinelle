@@ -311,17 +311,19 @@ install-common:
 	mkdir -p $(DESTDIR)$(SHAREDIR)/commons
 	mkdir -p $(DESTDIR)$(SHAREDIR)/globals
 	mkdir -p $(DESTDIR)$(SHAREDIR)/parsing_c
-	mkdir -p $(DESTDIR)$(MANDIR)/man1
-	mkdir -p $(DESTDIR)$(MANDIR)/man3
 	$(INSTALL_DATA) standard.h $(DESTDIR)$(SHAREDIR)
 	$(INSTALL_DATA) standard.iso $(DESTDIR)$(SHAREDIR)
 	$(INSTALL_DATA) ocaml/coccilib.cmi $(DESTDIR)$(SHAREDIR)/ocaml/
 	$(INSTALL_DATA) parsing_c/*.cmi $(DESTDIR)$(SHAREDIR)/parsing_c/
 	$(INSTALL_DATA) commons/*.cmi $(DESTDIR)$(SHAREDIR)/commons/
 	$(INSTALL_DATA) globals/iteration.cmi $(DESTDIR)$(SHAREDIR)/globals/
+	@if [ $(FEATURE_PYTHON) -eq 1 ]; then $(MAKE) install-python; fi
+
+install-man:
+	mkdir -p $(DESTDIR)$(MANDIR)/man1
+	mkdir -p $(DESTDIR)$(MANDIR)/man3
 	$(INSTALL_DATA) docs/spatch.1 $(DESTDIR)$(MANDIR)/man1/
 	$(INSTALL_DATA) docs/Coccilib.3cocci $(DESTDIR)$(MANDIR)/man3/
-	@if [ $(FEATURE_PYTHON) -eq 1 ]; then $(MAKE) install-python; fi
 
 install-bash:
 	mkdir -p $(DESTDIR)$(BASH_COMPLETION_DIR)
@@ -348,7 +350,7 @@ install-python:
 	if [ -f pycaml/dllpycaml_stubs.so ]; then \
 		$(INSTALL_LIB) pycaml/dllpycaml_stubs.so $(DESTDIR)$(LIBDIR) ; fi
 
-install: install-common
+install: install-man install-common
 	@if test -x spatch -a ! -x spatch.opt ; then \
 		$(MAKE) install-byte;fi
 	@if test ! -x spatch -a -x spatch.opt ; then \

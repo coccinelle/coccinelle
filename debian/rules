@@ -10,40 +10,35 @@ COCCI_FLAGS = BYTECODE_STATIC="" MANDIR=/usr/share/man
 VIM_ADIR = $(CURDIR)/debian/coccinelle/usr/share/vim/addons
 VIM_RDIR = $(CURDIR)/debian/coccinelle/usr/share/vim/registry
 
-COMMON_CONFIG = --prefix=/usr --with-python
+COMMON_CONFIG = --prefix=/usr
 
-ifeq ($(OCAML_HAVE_OCAMLOPT),yes)
-OCAMLRUN =
+ifeq ($(OCAML_NATDYNLINK),yes)
 CONFIG_FLAGS = $(COMMON_CONFIG) --opt
 MAKE_TGT = all.opt
 else
-OCAMLRUN = $(OCAML_RUNTIME_NOX), pycaml (>= 0.82-10)
 CONFIG_FLAGS = $(COMMON_CONFIG) --no-opt
 MAKE_TGT = all
 endif
 
-build: build-stamp
-#build-stamp: $(QUILT_STAMPFN)
-build-stamp:
-	dh build --before dh_auto_configure
+build clean binary binary-arch binary-indep install:
+	dh --with ocaml $@
+
+
+override_dh_auto_configure:
 	./configure $(CONFIG_FLAGS)
+
+override_dh_auto_build:
 	$(MAKE) $(COCCI_FLAGS) depend
 	$(MAKE) $(COCCI_FLAGS) $(MAKE_TGT)
-	dh build --after dh_auto_test
-	touch build-stamp
+	# make all.opt does not build documentation
+	mkdir texmf-var
+	mkdir texmf-config
+	TEXMFVAR="$(CURDIR)/texmf-var" TEXMFCONFIG="$(CURDIR)/texmf-config" $(MAKE) $(COCCI_FLAGS) docs
 
-# this is needed because patches modify clean target
-unpatch: patched-clean
-patched-clean:
-	$(MAKE) distclean
+override_dh_auto_test:
+	# Nothing
 
-clean: unpatch
-	dh clean --before dh_auto_clean
-	dh clean --after dh_auto_clean
-
-install: install-stamp
-install-stamp: build-stamp
-	dh install --before dh_auto_install
+override_dh_auto_install:
 	$(MAKE) DESTDIR=$(CURDIR)/debian/coccinelle $(COCCI_FLAGS) install
 	$(MAKE) DESTDIR=$(CURDIR)/debian/coccinelle                install-bash
 	# install the wrapper script, i dont like upstreams one
@@ -63,18 +58,12 @@ install-stamp: build-stamp
 	# Emacs files
 	cp $(CURDIR)/editors/emacs/cocci.el $(CURDIR)/debian/coccinelle/usr/share/emacs/site-lisp/
 
-	dh install --after dh_auto_install --before dh_compress
-	dh_compress -X.pdf
-	dh install --after dh_compress
-	touch install-stamp
+override_dh_auto_clean:
+	$(MAKE) CLEANSUBDIRS=\$$\(MAKESUBDIRS\) distclean
+	rm -rf texmf-var texmf-config
 
-binary-arch: install
-	dh binary-arch --before dh_gencontrol
-	dh_gencontrol -a -- -VF:OCamlRun="$(OCAMLRUN)"
-	dh binary-arch --after dh_gencontrol
-
-binary-indep: install
-
-binary: binary-indep binary-arch
+override_dh_compress:
+	dh_compress -X.pdf -X.cocci -X.c
 
 .PHONY: build clean binary-indep binary-arch binary install
+.PHONY: override_dh_auto_configure override_dh_auto_build override_dh_auto_test override_dh_auto_install
