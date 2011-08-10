@@ -65,7 +65,9 @@ patch file and print out some information about it.}
 \minimum{-sp\_file $\langle$file$\rangle$, -c $\langle$file$\rangle$, 
 -cocci\_file $\langle$file$\rangle$}{ Specify the name of the file
   containing the semantic patch.  The file name should end in {\tt .cocci}.
-All three options do the same thing.}
+All three options do the same thing.  These options are optional.  If they
+are not used, the single file whose name ends in \texttt{.cocci} is
+assoumed to be the name of the file containing the semantic patch.}
 
 \rare{-sp ``semantic patch string''}{Specify a semantic match as a
   command-line argument.  See the section ``Command-line semantic match''

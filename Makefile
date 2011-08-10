@@ -248,11 +248,11 @@ purebytecode:
 
 docs:
 	make -C docs
-	make -C ocaml doc
+#	make -C ocaml doc
 
 clean::
 	make -C docs clean
-	make -C ocaml cleandoc
+#	make -C ocaml cleandoc
 
 distclean::
 	make -C docs distclean

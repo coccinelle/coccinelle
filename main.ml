@@ -796,6 +796,12 @@ let get_files path =
   cpp @ ch
 
 let main_action xs =
+  let (cocci_files,xs) =
+    List.partition (function nm -> Filename.check_suffix nm ".cocci") xs in
+  (match (!cocci_file,cocci_files) with
+    "",[fl] -> cocci_file := fl
+  | _,[] -> ()
+  | _ -> failwith "only one .cocci file allowed");
   Iteration.base_file_list := xs;
   let rec toploop = function
       [] -> raise Impossible

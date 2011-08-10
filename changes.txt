@@ -51,6 +51,9 @@
 - Don't multiply print the same patch for the same file
 - Drop date in diff
 - Don't repeat smpl type warnings
+- -sp_file/-cocci_file are now optional.  If not present an argument that
+  ends in .cocci is assumed to be the name of the file containing the
+  semantic patch.
 
 ** Bugfix:
 - Corrected parsing of script strings delimited by a single quote.  Thanks
