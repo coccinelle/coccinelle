@@ -1,3 +1,21 @@
+coccinelle (1.0.0-rc5~1004npalix5) lucid; urgency=low
+
+  * New release 1.0.0-rc5
+
+ -- Nicolas Palix <nicolas.palix@gmail.com>  Thu, 11 Aug 2011 20:35:29 +0200
+
+coccinelle (1.0.0-rc5~1004npalix4) lucid; urgency=low
+
+  * New release 1.0.0-rc5
+
+ -- Nicolas Palix <nicolas.palix@gmail.com>  Thu, 11 Aug 2011 18:34:29 +0200
+
+coccinelle (1.0.0-rc5~1004npalix3) lucid; urgency=low
+
+  * New release 1.0.0-rc5
+
+ -- Nicolas Palix <nicolas.palix@gmail.com>  Thu, 11 Aug 2011 17:56:59 +0200
+
 coccinelle (1.0.0-rc5~1004npalix2) lucid; urgency=low
 
   * New release 1.0.0-rc5

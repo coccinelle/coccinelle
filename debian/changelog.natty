@@ -1,3 +1,21 @@
+coccinelle (1.0.0-rc5~1104npalix5) natty; urgency=low
+
+  * New release 1.0.0-rc5
+
+ -- Nicolas Palix <nicolas.palix@gmail.com>  Thu, 11 Aug 2011 20:35:30 +0200
+
+coccinelle (1.0.0-rc5~1104npalix4) natty; urgency=low
+
+  * New release 1.0.0-rc5
+
+ -- Nicolas Palix <nicolas.palix@gmail.com>  Thu, 11 Aug 2011 18:34:31 +0200
+
+coccinelle (1.0.0-rc5~1104npalix3) natty; urgency=low
+
+  * New release 1.0.0-rc5
+
+ -- Nicolas Palix <nicolas.palix@gmail.com>  Thu, 11 Aug 2011 17:57:00 +0200
+
 coccinelle (1.0.0-rc5~1104npalix2) natty; urgency=low
 
   * New release 1.0.0-rc5

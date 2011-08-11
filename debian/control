@@ -6,10 +6,11 @@ XSBC-Original-Maintainer: Debian OCaml Maintainers <debian-ocaml-maint@lists.deb
 Uploaders: Євгеній Мещеряков <eugen@debian.org>
 Build-Depends:
  debhelper (>= 7.0.50~),
- dh-ocaml (>= 0.9.4~),
- ocaml-best-compilers (>= 3.11.0),
+ dh-ocaml,
+ ocaml-nox (>= 3.11.0),
+ ocaml-best-compilers,
  ocaml-findlib,
- libpycaml-ocaml-dev (>= 0.82-13~),
+ pycaml (>= 0.82-10) | libpycaml-ocaml-dev (>= 0.82-13),
  python-dev,
  python-support (>= 0.6),
  menhir (>= 20090204.dfsg),
@@ -28,7 +29,6 @@ Vcs-Browser: http://git.debian.org/?p=pkg-ocaml-maint/packages/coccinelle.git
 
 Package: coccinelle
 Architecture: any
-XB-Python-Version: 2.6
 Depends:
  ${misc:Depends},
  ${shlibs:Depends},
@@ -38,7 +38,7 @@ Recommends:
  python-gobject,
  python-gtk2,
  python-glade2,
- ocaml-best-compilers (>= 3.11.0),
+ ocaml-best-compilers,
  ocaml-findlib,
  libpcre-ocaml
 Suggests: vim-addon-manager
