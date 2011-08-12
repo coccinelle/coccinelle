@@ -268,6 +268,11 @@ stored in a cache.}
 \developer{-cache\_prefix}{Specify the directory in which to store 
 preparsed versions of the C files.  This sets {-use\_cache}}
 
+\developer{-cache\_limit}{Specify the maximum number of
+preparsed C files to store.  The cache is cleared of all files with names
+ending in .ast\_raw and .depend\_raw on reaching this limit.  Only
+effective if -cache\_prefix is used as well.}
+
 \developer{-debug\_cpp, -debug\_lexer, -debug\_etdt,
   -debug\_typedef}{Various options for debugging the C parser.}
 

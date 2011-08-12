@@ -1,5 +1,5 @@
 @@
-identifier SPAM ~= "\(WINE_\)?\(ERR\|FIXME\|WARN\)";
+identifier SPAM =~ "\(WINE_\)?\(ERR\|FIXME\|WARN\)";
 @@
 
 -SPAM

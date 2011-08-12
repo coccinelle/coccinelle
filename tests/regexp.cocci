@@ -9,7 +9,7 @@ t id;
 
 @contains@
 type t;
-identifier anyid.id ~= "foo";
+identifier anyid.id =~ "foo";
 fresh identifier contains = id ##"_contains_foo";
 @@
 
@@ -18,7 +18,7 @@ t id;
 
 @nocontain@
 type t;
-identifier anyid.id !~= "foo";
+identifier anyid.id !=~ "foo";
 fresh identifier nocontain = id ##"_doesn_t_contain_foo";
 @@
 
@@ -27,7 +27,7 @@ t id;
 
 @endsby@
 type t;
-identifier anyid.id ~= "foo$";
+identifier anyid.id =~ "foo$";
 fresh identifier endsby = id ##"_ends_by_foo";
 @@
 
@@ -36,7 +36,7 @@ t id;
 
 @beginsby@
 type t;
-identifier anyid.id ~= "^foo";
+identifier anyid.id =~ "^foo";
 fresh identifier beginsby = id ##"_begins_by_foo";
 @@
 

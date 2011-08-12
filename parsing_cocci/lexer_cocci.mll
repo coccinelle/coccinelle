@@ -518,8 +518,8 @@ rule token = parse
 	   then (start_line true; TArob)
 	   else (check_minus_context_linetype "@"; TPArob) }
 
-  | "~="  { start_line true; TTildeEq (get_current_line_type lexbuf) }
-  | "!~=" { start_line true; TTildeExclEq (get_current_line_type lexbuf) }
+  | "=~"  { start_line true; TTildeEq (get_current_line_type lexbuf) }
+  | "!=~" { start_line true; TTildeExclEq (get_current_line_type lexbuf) }
   | "WHEN" | "when"
       { start_line true; check_minus_context_linetype (tok lexbuf);
 	TWhen (get_current_line_type lexbuf) }

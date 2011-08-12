@@ -194,6 +194,7 @@ let diff_lines = ref (None : string option) (* number of lines of context *)
 (* for parse_c *)
 let use_cache = ref false
 let cache_prefix = ref (None : string option)
+let cache_limit = ref (None : int option)
 
 let cmdline_flags_other () =
   [
