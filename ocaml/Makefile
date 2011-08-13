@@ -3,6 +3,7 @@
 ##############################################################################
 #TARGET=cocciocaml
 -include ../Makefile.config
+-include Makefile.doc
 
 TARGET=cocciocaml
 

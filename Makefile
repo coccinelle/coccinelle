@@ -39,7 +39,8 @@ PKGVERSION=$(shell dpkg-parsechangelog -ldebian/changelog.$(DISTRIB_CODENAME) 2>
 TARGET=spatch
 PRJNAME=coccinelle
 
-SRC=flag_cocci.ml cocci.ml testing.ml test.ml main.ml
+LEXER_SOURCES =
+SRC=flag_cocci.ml cocci.ml testing.ml test.ml $(LEXER_SOURCES:.mll=.ml) main.ml
 
 ifeq ($(FEATURE_PYTHON),1)
 PYCMA=pycaml.cma
@@ -64,9 +65,16 @@ else
 DYNLINK=dynlink.cma
 endif
 
+ifdef PCREDIR
+PCRELIB=pcre.cma
+else
+PCRELIB=
+PCREDIR=
+endif
+
 SEXPSYSCMA=bigarray.cma nums.cma
 
-SYSLIBS=str.cma unix.cma $(SEXPSYSCMA) $(PYCMA) $(DYNLINK) # threads.cma
+SYSLIBS=str.cma unix.cma $(SEXPSYSCMA) $(PYCMA) $(DYNLINK) $(PCRELIB) # threads.cma
 LIBS=commons/commons.cma \
      commons/commons_sexp.cma \
      globals/globals.cma \
@@ -114,7 +122,7 @@ INCLUDEDIRSDEP=commons commons/ocamlextra $(LOCALSEXP) \
  globals $(LOCALMENHIR) $(LOCALPYCAML) ctl \
  parsing_cocci parsing_c engine popl09 extra python ocaml
 
-INCLUDEDIRS=$(INCLUDEDIRSDEP) $(SEXPDIR) $(MENHIRDIR) $(PYCAMLDIR)
+INCLUDEDIRS=$(INCLUDEDIRSDEP) $(SEXPDIR) $(MENHIRDIR) $(PYCAMLDIR) $(PCREDIR)
 
 ##############################################################################
 # Generic variables
@@ -148,7 +156,7 @@ OCAMLDEP=ocamldep $(INCLUDEDIRSDEP:%=-I %)
 OCAMLMKTOP=ocamlmktop -g -custom $(INCLUDES)
 
 # can also be set via 'make static'
-CFLAGS=-pie -fPIE -fpic -fPIC -static 
+CFLAGS=-pie -fPIE -fpic -fPIC -static
 STATICCFLAGS=$(CFLAGS:%=-ccopt %)
 STATIC= # $(STATICCFLAGS)
 
@@ -262,9 +270,11 @@ purebytecode:
 
 docs:
 	make -C docs
+#	make -C ocaml doc
 
 clean::
 	make -C docs clean
+#	make -C ocaml cleandoc
 
 distclean::
 	make -C docs distclean
@@ -503,6 +513,9 @@ beforedepend:: test.ml
 
 .ml.mldepend:
 	$(OCAMLC) -i $<
+
+$(LEXER_SOURCES:.mll=.ml) :	$(LEXER_SOURCES)
+	$(OCAMLLEX) $(LEXER_SOURCES)
 
 clean::
 	rm -f *.cm[iox] *.o *.annot

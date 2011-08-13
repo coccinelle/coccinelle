@@ -108,6 +108,11 @@ let ctl_ex = function
 
 (* This stays being AX even for sgrep_mode, because it is used to identify
 the structure of the term, not matching the pattern. *)
+let ctl_back_ag = function
+    CTL.True -> CTL.True
+  | CTL.False -> CTL.False
+  | x -> CTL.AG(CTL.BACKWARD,CTL.NONSTRICT,x)
+
 let ctl_back_ax = function
     CTL.True -> CTL.True
   | CTL.False -> CTL.False
@@ -801,16 +806,16 @@ and get_after_e s a =
       let (br2,_) = get_after_e branch2 a in
       (Ast.rewrap s (Ast.IfThenElse(ifheader,br1,els,br2,aft)),[Ast.Other s])
   | Ast.While(header,body,aft) ->
-      let (bd,_) = get_after_e body a in
+      let (bd,_) = get_after_e body ((Ast.Other s) :: a) in
       (Ast.rewrap s (Ast.While(header,bd,aft)),[Ast.Other s])
   | Ast.For(header,body,aft) ->
-      let (bd,_) = get_after_e body a in
+      let (bd,_) = get_after_e body ((Ast.Other s) :: a) in
       (Ast.rewrap s (Ast.For(header,bd,aft)),[Ast.Other s])
   | Ast.Do(header,body,tail) ->
-      let (bd,_) = get_after_e body a in
+      let (bd,_) = get_after_e body ((Ast.Other s) :: a) in
       (Ast.rewrap s (Ast.Do(header,bd,tail)),[Ast.Other s])
   | Ast.Iterator(header,body,aft) ->
-      let (bd,_) = get_after_e body a in
+      let (bd,_) = get_after_e body ((Ast.Other s) :: a) in
       (Ast.rewrap s (Ast.Iterator(header,bd,aft)),[Ast.Other s])
   | Ast.Switch(header,lb,decls,cases,rb) ->
       let index = count_nested_braces s in
@@ -1312,7 +1317,7 @@ let svar_minus_or_no_add_after stmt s label quantified d ast
 	  (CTL.HackForStmt(CTL.FORWARD,CTL.NONSTRICT,
 			   ctl_and CTL.NONSTRICT label_pred
 			     (make_raw_match label false ast),
-			   ctl_and CTL.NONSTRICT rest_metamatch prelabel_pred))
+			   ctl_and CTL.NONSTRICT prelabel_pred rest_metamatch))
   in
   let body f = ctl_and CTL.NONSTRICT label_pred (f ender) in
   let stmt_fvs = Ast.get_fvs stmt in
@@ -1782,15 +1787,16 @@ and statement stmt top after quantified minus_quantified
 		  ctl_or normal_res
 		    (ctl_and (make_match mod_rbrace)
 		       (ctl_and
-			  (ctl_back_ax
-			     (ctl_not
-				(ctl_uncheck
-				   (ctl_or simple_return return_expr))))
 			  (ctl_au
 			     (make_match stripped_rbrace)
 			     (* error exit not possible; it is in the middle
 				of code, so a return is needed *)
-			     exit)))
+			     exit)
+			  (* worry about perf, but seems correct, not ax *)
+			  (ctl_back_ag
+			     (ctl_not
+				(ctl_uncheck
+				   (ctl_or simple_return return_expr))))))
 	      |	_ ->
 		  (* some change in the middle of the return, so have to
 		     find an actual return *)
@@ -1870,7 +1876,7 @@ and statement stmt top after quantified minus_quantified
 		  | _ -> false)
 	    | _ -> false)
 	| _ -> false in
-      if empty_body && after = Tail
+      if empty_body && List.mem after [Tail;End;VeryEnd]
 	  (* for just a match of an if branch of the form { ... }, just
 	     match the first brace *)
       then quantify guard lbfvs (make_match lbrace)

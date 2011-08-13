@@ -78,8 +78,7 @@
  (lid.res Ok) (line_before_last.res Ok) (list_test.res Ok) (local.res Ok)
  (localid.res Ok) (longconst.res Ok) (longlong.res Ok) (longlongint.res Ok)
  (loop.res Ok) (lvalue.res Ok) (macro.res Ok) (macro_int16.res Ok)
- (match_init.res Ok) (match_no_meta.res Ok) (max.res Ok)
- (memory.res (Pb "PROBLEM\n   exn = Out of memory\n"))
+ (match_init.res Ok) (match_no_meta.res Ok) (max.res Ok) (memory.res Ok)
  (metahex.res
   (Pb
    "INCORRECT:diff token: f VS }\nFile \"tests/metahex.c\", line 2, column 2,  charpos = 15\n    around = 'f', whole content =   f(3);\nFile \"tests/metahex.res\", line 2, column 0,  charpos = 13\n    around = '}', whole content = }\n\n    diff (result(<) vs expected_result(>)) = \n    @@ -1,4 +1,2 @@\n     int main() {\n    -  f(3);\n    -  g(0x03);\n     }\n"))
@@ -131,9 +130,9 @@
  (shared_brace.res Ok) (signed.res Ok) (sis.res Ok) (sizeof.res Ok)
  (sizeof_julia.res Ok) (sizeptr.res Ok) (sizestar.res Ok) (skip.res Ok)
  (smallfn.res Ok) (sp.res Ok) (spaces.res Ok) (spacing.res Ok) (spl.res Ok)
- (static.res Ok) (stm1.res Ok) (stm10.res Ok) (stm10_ver1.res Ok)
- (stm2.res Ok) (stm3.res Ok) (stm4.res Ok) (stm5.res Ok) (stm6.res Ok)
- (stm7.res Ok) (stm8.res Ok) (stmt.res Ok) (str_init.res Ok)
+ (starprint.res Ok) (static.res Ok) (stm1.res Ok) (stm10.res Ok)
+ (stm10_ver1.res Ok) (stm2.res Ok) (stm3.res Ok) (stm4.res Ok) (stm5.res Ok)
+ (stm6.res Ok) (stm7.res Ok) (stm8.res Ok) (stmt.res Ok) (str_init.res Ok)
  (strangeorder.res Ok) (strid.res Ok) (strid2.res Ok) (string.res Ok)
  (struct.res Ok) (struct_metavar.res Ok) (struct_typedef.res Ok)
  (structfoo.res Ok) (substruct.res Ok) (sw.res Ok) (switch.res Ok)

@@ -164,6 +164,19 @@ type namedef =
   (* cppext: *)
   | Macro        of string * (define_kind * define_val)
 
+let print_scoped_env e =
+  List.iter
+    (function e ->
+      List.iter
+	(function
+	    VarOrFunc(s,_) -> Printf.printf "%s " s
+	  | EnumConstant(s,_) -> Printf.printf "%s " s
+	  | TypeDef(s,t) -> Printf.printf "%s" s
+	  | StructUnionNameDef(s,_) -> Printf.printf "%s " s
+	  | Macro(s,_) -> Printf.printf "%s " s)
+	e;
+      Printf.printf "\n")
+    e
 
 (* Because have nested scope, have nested list, hence the list list.
  *
@@ -334,6 +347,7 @@ let rec find_final_type ty env =
 
 (* ------------------------------------------------------------ *)
 let rec type_unfold_one_step ty env =
+  let rec loop seen ty env =
 
   match Ast_c.unwrap_typeC ty with
   | NoType        -> ty
@@ -365,7 +379,9 @@ let rec type_unfold_one_step ty env =
       (try
           if !typedef_debug then pr2 "type_unfold_one_step: lookup_typedef";
           let (t', env') = lookup_typedef s env in
-          type_unfold_one_step t' env'
+	  if List.mem s seen (* avoid pb with recursive typedefs *)
+	  then type_unfold_one_step t' env'
+          else loop (s::seen) t' env
        with Not_found ->
           ty
       )
@@ -374,7 +390,8 @@ let rec type_unfold_one_step ty env =
   | TypeOfExpr e ->
       pr2_once ("Type_annoter: not handling typeof");
       ty
-  | TypeOfType t -> type_unfold_one_step t env
+  | TypeOfType t -> type_unfold_one_step t env in
+  loop [] ty env
 
 
 
@@ -391,60 +408,68 @@ let rec type_unfold_one_step ty env =
  * for most tasks.
  *)
 let rec typedef_fix ty env =
-  match Ast_c.unwrap_typeC ty with
-  | NoType  ->
-      ty
-  | BaseType x  ->
-      ty
-  | Pointer t ->
-      Pointer (typedef_fix t env)  +> Ast_c.rewrap_typeC ty
-  | Array (e, t) ->
-      Array (e, typedef_fix t env) +> Ast_c.rewrap_typeC ty
-  | StructUnion (su, sopt, fields) ->
+  let rec loop seen ty env =
+    match Ast_c.unwrap_typeC ty with
+    | NoType  ->
+	ty
+    | BaseType x  ->
+	ty
+    | Pointer t ->
+	Pointer (typedef_fix t env)  +> Ast_c.rewrap_typeC ty
+    | Array (e, t) ->
+	Array (e, typedef_fix t env) +> Ast_c.rewrap_typeC ty
+    | StructUnion (su, sopt, fields) ->
       (* normalize, fold.
-       * todo? but what if correspond to a nested struct def ?
-       *)
-      Type_c.structdef_to_struct_name ty
-  | FunctionType ft ->
-      (FunctionType ft) (* todo ? *) +> Ast_c.rewrap_typeC ty
-  | Enum  (s, enumt) ->
-      (Enum  (s, enumt)) (* todo? *) +> Ast_c.rewrap_typeC ty
-  | EnumName s ->
-      (EnumName s) (* todo? *) +> Ast_c.rewrap_typeC ty
-
+	 * todo? but what if correspond to a nested struct def ?
+      *)
+	Type_c.structdef_to_struct_name ty
+    | FunctionType ft ->
+	(FunctionType ft) (* todo ? *) +> Ast_c.rewrap_typeC ty
+    | Enum  (s, enumt) ->
+	(Enum  (s, enumt)) (* todo? *) +> Ast_c.rewrap_typeC ty
+    | EnumName s ->
+	(EnumName s) (* todo? *) +> Ast_c.rewrap_typeC ty
+	  
   (* we prefer StructUnionName to StructUnion when it comes to typed metavar *)
-  | StructUnionName (su, s) -> ty
-
+    | StructUnionName (su, s) ->
+	ty
+	  
   (* keep the typename but complete with more information *)
-  | TypeName (name, typ) ->
-      let s = Ast_c.str_of_name name in
-      (match typ with
-      | Some _ ->
-          pr2 ("typedef value already there:" ^ s);
-          ty
-      | None ->
-        (try
-          if !typedef_debug then pr2 "typedef_fix: lookup_typedef";
-          let (t', env') = lookup_typedef s env in
-
+    | TypeName (name, typ) ->
+	let s = Ast_c.str_of_name name in
+	(match typ with
+	| Some _ ->
+            pr2 ("typedef value already there:" ^ s);
+            ty
+	| None ->
+            (try
+              if !typedef_debug then pr2 "typedef_fix: lookup_typedef";
+              let (t', env') = lookup_typedef s env in
+	      
           (* bugfix: termination bug if use env instead of env' below, because
-           * can have some weird mutually recursive typedef which
-           * each new type alias search for its mutual def.
-           *)
-          TypeName (name, Some (typedef_fix t' env')) +> Ast_c.rewrap_typeC ty
-        with Not_found ->
-          ty
-      ))
+             * can have some weird mutually recursive typedef which
+             * each new type alias search for its mutual def.
+	     * seen is an attempt to do better.
+          *)
+	      let fixed =
+		if List.mem s seen
+		then loop (s::seen) t' env
+		else typedef_fix t' env' in
+	      TypeName (name, Some fixed) +>
+	      Ast_c.rewrap_typeC ty
+            with Not_found ->
+              ty))
 
   (* remove paren for better matching with typed metavar. kind of iso again *)
-  | ParenType t ->
-      typedef_fix t env
-  | TypeOfExpr e ->
-      pr2_once ("Type_annoter: not handling typeof");
-      ty
+    | ParenType t ->
+	typedef_fix t env
+    | TypeOfExpr e ->
+	pr2_once ("Type_annoter: not handling typeof");
+	ty
 
-  | TypeOfType t ->
-      typedef_fix t env
+    | TypeOfType t ->
+	typedef_fix t env in
+  loop [] ty env
 
 
 (*****************************************************************************)
@@ -515,7 +540,6 @@ let do_in_new_scope f =
 let add_in_scope namedef =
   let (current, older) = Common.uncons !_scoped_env in
   _scoped_env := (namedef::current)::older
-
 
 (* ------------------------------------------------------------ *)
 
@@ -740,8 +764,7 @@ let annotater_expr_visitor_subpart = (fun (k,bigf) expr ->
     | Ident (ident) ->
         let s = Ast_c.str_of_name ident in
         (match lookup_opt_env lookup_var s with
-        | Some ((typ,local),_nextenv) ->
-            make_info_fix (typ,local)
+        | Some ((typ,local),_nextenv) -> make_info_fix (typ,local)
         | None  ->
             (match lookup_opt_env lookup_macro s with
             | Some ((defkind, defval), _nextenv) ->

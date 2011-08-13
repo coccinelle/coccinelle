@@ -20,7 +20,6 @@ def print_safe_link(p, msg="", color="ovl-face1") :
 
 #
 # print_main, print_sec and print_secs
-# will be deprecated.
 #
 def print_main(msg, p, color="ovl-face1") :
 	if msg == "" :

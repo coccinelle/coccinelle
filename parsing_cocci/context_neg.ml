@@ -354,6 +354,7 @@ let classify is_minus all_marked table code =
 
   (* not clear why we have the next two cases, since DisjDecl and
   DisjType shouldn't have been constructed yet, as they only come from isos *)
+  (* actually, DisjDecl now allowed in source struct decls *)
   let declaration r k e =
     compute_result Ast0.decl e
       (match Ast0.unwrap e with
@@ -590,8 +591,11 @@ let equal_declaration d1 d2 =
   | (Ast0.Ddots(dots1,_),Ast0.Ddots(dots2,_)) -> equal_mcode dots1 dots2
   | (Ast0.OptDecl(_),Ast0.OptDecl(_)) -> true
   | (Ast0.UniqueDecl(_),Ast0.UniqueDecl(_)) -> true
-  | (Ast0.DisjDecl _,_) | (_,Ast0.DisjDecl _) ->
-      failwith "DisjDecl not expected here"
+  | (Ast0.DisjDecl(starter1,_,mids1,ender1),
+     Ast0.DisjDecl(starter2,_,mids2,ender2)) ->
+       equal_mcode starter1 starter2 &&
+       List.for_all2 equal_mcode mids1 mids2 &&
+       equal_mcode ender1 ender2
   | _ -> false
 
 let equal_designator d1 d2 =

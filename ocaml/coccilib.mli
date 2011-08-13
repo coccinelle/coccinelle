@@ -1,11 +1,32 @@
+(** Library of functions for use with Coccinelle OCaml script code
+*)
 
-type pos = { current_element : string;
-	     file :string ;
-	     line : int;
-	     col : int;
-	     line_end : int;
-	     col_end : int; }
+(** A value of type {b pos} describes a position in a source file.
+*)
+type pos = {
+  current_element : string;
+  (** {b current_element} is the name of the function containing the
+      matched position *)
+  file :string ;
+  (** {b file} is the name of the file containing the matched
+      position *)
+  line : int;
+  (** {b line} is the number of the line containing the first
+      character of the matched position *)
+  col : int;
+  (** {b col} is the column containing the first character of the
+      matched position *)
+  line_end : int;
+  (** {b line_end} is the number of the line containing the last
+      character of the matched position *)
+  col_end : int;
+  (** {b col_end} is the column containing the last character of the
+       matched position. *)
+}
 
+(**
+   Types describing the metavariables
+*)
 type param_type =
     Pos of pos list
   | Str of string
@@ -22,13 +43,43 @@ type param_type =
   | FieldList of Ast_c.field list
   | Stmt of Ast_c.statement
 
-val fcts : (string, param_type list -> string ref list -> unit) Hashtbl.t
-
 (* ---------------------------------------------------------------------- *)
 (* Match management *)
 
-val inc_match : bool ref
+(** If the argument is true, retain the environment with respect to
+    which the ocaml script code is being executed for use in subsequent
+    rules.  If the argument is false, discard this environment.  By
+    default, the environment is retained.
+*)
 val include_match : bool -> unit
-val exited : bool ref
+
+(**
+   See include_match
+*)
+val inc_match : bool ref
+
+(** If called, aborts the treatment of the current file.  All previous
+    changes take effect.
+*)
 val exit : unit -> unit
+
+(**
+   See exit
+*)
+val exited : bool ref
+
+(** Returns the directory on which spatch was launched.*)
 val dir : unit -> string
+
+(**/**)
+
+(**
+   For internal use only
+*)
+val fcts : (string, param_type list -> string ref list -> unit) Hashtbl.t
+
+(* org mode *)
+
+val print_main : ?color:string -> string -> pos list -> unit
+val print_sec  : ?color:string -> string -> pos list -> unit
+val print_secs : ?color:string -> string -> pos list -> unit

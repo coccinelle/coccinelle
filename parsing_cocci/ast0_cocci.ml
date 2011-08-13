@@ -580,9 +580,9 @@ let rec ast0_type_to_type ty =
 	Id(tag) ->
 	  TC.EnumName(TC.Name(unwrap_mcode tag))
       | MetaId(tag,_,_,_) ->
-	  (Printf.printf
-	     "warning: enum with a metavariable name detected.\n";
-	   Printf.printf
+	  (Common.pr2_once
+	     "warning: enum with a metavariable name detected.";
+	   Common.pr2_once
 	     "For type checking assuming the name of the metavariable is the name of the type\n";
 	   TC.EnumName(TC.MV(unwrap_mcode tag,TC.Unitary,false)))
       | _ -> failwith "unexpected enum type name")
@@ -593,9 +593,9 @@ let rec ast0_type_to_type ty =
 	Id(tag) ->
 	  TC.StructUnionName(structUnion su,TC.Name(unwrap_mcode tag))
       | MetaId(tag,Ast.IdNoConstraint,_,_) ->
-	  (Common.pr2
-	     "warning: struct/union with a metavariable name detected.\n";
-	   Common.pr2
+	  (Common.pr2_once
+	     "warning: struct/union with a metavariable name detected.";
+	   Common.pr2_once
 	     "For type checking assuming the name of the metavariable is the name of the type\n";
 	   TC.StructUnionName(structUnion su,
 			      TC.MV(unwrap_mcode tag,TC.Unitary,false)))

@@ -22,16 +22,16 @@
  *)
 
 
-(* uses E rather than A and adds comments indicating the start and end of
-each matched term *)
 
-let sgrep_mode = ref false (* no longer supported, subsumed by sgrep2 *)
+type regexp = Str.regexp
 
-let show_SP = ref false
-let show_iso_failures = ref true
+let pcre_support = ref false
 
-let iso_limit = ref (None : int option) (*(Some 3)*)
-let disabled_isos = ref ([] : string list)
+let regexp string =
+  Str.regexp string
 
-(* Used to debug embedded ML scripts *)
-let keep_ml_script = ref false
+let string_match regexp string =
+  try
+	Str.search_forward regexp string 0;
+	true
+  with _ -> false

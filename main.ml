@@ -180,6 +180,7 @@ let debug_profile = (
     FC.show_binding_in_out;
     FC.show_dependencies;
 
+    Flag_parsing_cocci.keep_ml_script;
     Flag_parsing_cocci.show_iso_failures;
 
     FC.verbose_cocci;
@@ -339,13 +340,17 @@ let short_options = [
 
   "-version",   Arg.Unit (fun () ->
     let withpython = if Pycocci.python_support then "with" else "without" in
-    pr2 (spf "spatch version %s %s Python support" Config.version withpython);
+    let whichregexp =
+      if !Regexp.pcre_support then "with PCRE support"
+      else "with Str regexp support "
+    in
+    pr2 (spf "spatch version %s %s Python support and %s" Config.version withpython whichregexp);
     exit 0;
   ),
     "  guess what";
 
   "-date",   Arg.Unit (fun () ->
-    pr2 "version: $Date: 2011/06/23 11:11:16 $";
+    pr2 "version: $Date: 2011/08/10 19:05:54 $";
     raise (Common.UnixExit 0)
     ),
   "   guess what";
@@ -541,6 +546,11 @@ let other_options = [
     "   drop all back edges derived from looping constructs - unsafe";
     "-no_gotos",          Arg.Set Flag_parsing_c.no_gotos,
     "   drop all jumps derived from gotos - unsafe";
+    "-no_saved_typedefs", Arg.Clear Flag_cocci.use_saved_typedefs,
+    "   drop all inferred typedefs from one parse of some code to the next";
+
+    "-ocaml_regexps", Arg.Clear Regexp.pcre_support,
+    "   use OCaml Str regular expressions for constraints";
 
     "-l1",                Arg.Clear Flag_parsing_c.label_strategy_2, " ";
     "-ifdef_to_if",       Arg.Set FC.ifdef_to_if,
@@ -694,9 +704,9 @@ let rec arg_parse_no_fail l f msg =
 	raise Impossible  (* -help is specified in speclist *)
 
 (* copy paste of Arg.parse. Don't want the default -help msg *)
-let arg_parse2 l f msg =
+let arg_parse2 l f msg argv =
   (try
-    Arg.parse_argv Sys.argv l f msg;
+    Arg.parse_argv argv l f msg;
   with
   | Arg.Bad emsg -> (* eprintf "%s" msg; exit 2; *)
       if not !ignore_unknown_opt then
@@ -810,6 +820,12 @@ let get_files path =
   cpp @ ch
 
 let main_action xs =
+  let (cocci_files,xs) =
+    List.partition (function nm -> Filename.check_suffix nm ".cocci") xs in
+  (match (!cocci_file,cocci_files) with
+    "",[fl] -> cocci_file := fl
+  | _,[] -> ()
+  | _ -> failwith "only one .cocci file allowed");
   Iteration.base_file_list := xs;
   let rec toploop = function
       [] -> raise Impossible
@@ -1018,6 +1034,7 @@ let main_action xs =
 let main () =
   begin
     let arglist = Array.to_list Sys.argv in
+    let arglist = Command_line.command_line arglist in
     
     if not (null (Common.inter_set arglist
 	            ["-cocci_file";"-sp_file";"-sp";"-test";"-testall";
@@ -1029,7 +1046,8 @@ let main () =
     (* Gc.set {(Gc.get ()) with Gc.stack_limit = 1024 * 1024};*)
     
     (* this call can set up many global flag variables via the cmd line *)
-    arg_parse2 (Arg.align all_options) (fun x -> args := x::!args) usage_msg;
+    arg_parse2 (Arg.align all_options) (fun x -> args := x::!args) usage_msg
+      (Array.of_list arglist);
     
     (* julia hack so that one can override directories specified on
        * the command line. *)

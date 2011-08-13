@@ -737,6 +737,10 @@ struct_decl_one:
     | TMetaField { P.meta_field $1 }
     | TMetaFieldList { P.meta_field_list $1 }
     | TMeta { tmeta_to_field $1 }
+    | lp=TOPar0 t=midzero_list(struct_decl_one,struct_decl_one) rp=TCPar0
+	{ let (mids,code) = t in
+	Ast0.wrap
+	  (Ast0.DisjDecl(P.clt2mcode "(" lp,code,mids, P.clt2mcode ")" rp)) }
     | t=ctype d=d_ident pv=TPtVirg
 	 { let (id,fn) = d in
 	 Ast0.wrap(Ast0.UnInit(None,fn t,id,P.clt2mcode ";" pv)) }
@@ -1764,14 +1768,14 @@ regexp_eqid:
 	    then failwith "constraints not allowed in iso file");
 	   (if !Data.in_generating
 	    then failwith "constraints not allowed in a generated rule file");
-	   let (s,_) = re in Ast.IdRegExp (s,Str.regexp s)
+	   let (s,_) = re in Ast.IdRegExp (s,Regexp.regexp s)
 	 }
  | TTildeExclEq re=TString
          { (if !Data.in_iso
 	    then failwith "constraints not allowed in iso file");
 	   (if !Data.in_generating
 	    then failwith "constraints not allowed in a generated rule file");
-	   let (s,_) = re in Ast.IdNotRegExp (s,Str.regexp s)
+	   let (s,_) = re in Ast.IdNotRegExp (s,Regexp.regexp s)
 	 }
 
 not_eqid:

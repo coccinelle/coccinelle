@@ -42,7 +42,7 @@ let unknown = -1
 
 let rec do_all
     (env, pr, pr_celem, pr_cspace, pr_space, pr_arity, pr_barrier,
-     indent, unindent)
+     indent, unindent, eatspace)
     generating xxs before =
 
 (* Just to be able to copy paste the code from pretty_print_cocci.ml. *)
@@ -411,7 +411,7 @@ and  binaryOp = function
   | Ast.Logical(lop) -> logicalOp lop
 
 and  arithOp = function
-    Ast.Plus -> print_string "+"
+   Ast.Plus -> print_string "+"
   | Ast.Minus -> print_string "-"
   | Ast.Mul -> print_string "*"
   | Ast.Div -> print_string "/"
@@ -463,7 +463,8 @@ and typeC ty =
     Ast.BaseType(ty,strings) ->
       print_between pr_space (mcode print_string) strings
   | Ast.SignedT(sgn,ty) -> mcode sign sgn; print_option_prespace typeC ty
-  | Ast.Pointer(ty,star) -> fullType ty; ft_space ty; mcode print_string star
+  | Ast.Pointer(ty,star) ->
+      fullType ty; ft_space ty; mcode print_string star; eatspace()
   | Ast.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
       print_function_pointer (ty,lp1,star,rp1,lp2,params,rp2)
 	(function _ -> ())
@@ -1183,11 +1184,11 @@ in
       newline_after()
 
 let rec pp_list_list_any (envs, pr, pr_celem, pr_cspace, pr_space, pr_arity,
-			  pr_barrier, indent, unindent)
+			  pr_barrier, indent, unindent, eatspace)
     generating xxs before =
   List.iter
     (function env ->
       do_all (env, pr, pr_celem, pr_cspace, pr_space, pr_arity, pr_barrier,
-	      indent, unindent)
+	      indent, unindent, eatspace)
 	generating xxs before)
     envs

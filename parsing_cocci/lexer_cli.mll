@@ -22,16 +22,41 @@
  *)
 
 
-(* uses E rather than A and adds comments indicating the start and end of
-each matched term *)
+(* Lexer for the command line mode *)
 
-let sgrep_mode = ref false (* no longer supported, subsumed by sgrep2 *)
+{
+  exception Lexical of string
 
-let show_SP = ref false
-let show_iso_failures = ref true
+  let tok = Lexing.lexeme
 
-let iso_limit = ref (None : int option) (*(Some 3)*)
-let disabled_isos = ref ([] : string list)
+  type cli_tok =
+      Id of string
+    | NotEq
+    | EqEq
+    | Other of string
+    | EOF
 
-(* Used to debug embedded ML scripts *)
-let keep_ml_script = ref false
+  let pretty_print tok =
+    match tok with
+	Id s    -> s
+      | NotEq   -> "when !="
+      | EqEq    -> "when =="
+      | Other s -> s
+      | EOF     -> ""
+}
+
+let special = ':'
+let letter  = ['A'-'Z' 'a'-'z' '_']
+let dec     = ['0'-'9']
+
+let alphanum = (letter | dec)
+let id = letter (alphanum | special)*
+
+rule token = parse
+  | "when" [' ' '\t']* "!=" [' ' '\t']* { NotEq }
+  | "when" [' ' '\t']* "==" [' ' '\t']* { EqEq  }
+  | [' ' '\t']+ { Other(" ") }
+  | id   { Id(tok lexbuf)    }
+  | eof  { EOF               }
+  | _    { Other(tok lexbuf) }
+

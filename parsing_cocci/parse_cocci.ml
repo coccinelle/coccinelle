@@ -291,7 +291,7 @@ let token2c (tok,_) =
 
 let print_tokens s tokens =
   Printf.printf "%s\n" s;
-  List.iter (function x -> Printf.printf "%s " (token2c x)) tokens;
+  List.iter (function x -> Printf.printf "|%s| " (token2c x)) tokens;
   Printf.printf "\n\n";
   flush stdout
 
@@ -1301,9 +1301,35 @@ let rec drop_double_dots l =
     [] -> []
   | (x::xs) -> x :: loop x xs
 
-let rec fix f l =
-  let cur = f l in
-  if l = cur then l else fix f cur
+(* ignore uncomparable pcre regular expressions *)
+let strip_for_fix l =
+  List.map
+    (function
+	(PC.TMetaId(nm,_,seed,pure,clt),info) ->
+	  (PC.TMetaId(nm,Ast.IdNoConstraint,seed,pure,clt),info)
+      |	(PC.TMetaFunc(nm,_,pure,clt),info) ->
+	  (PC.TMetaFunc(nm,Ast.IdNoConstraint,pure,clt),info)
+      |	(PC.TMetaLocalFunc(nm,_,pure,clt),info) ->
+	  (PC.TMetaLocalFunc(nm,Ast.IdNoConstraint,pure,clt),info)
+      |	(PC.TMetaErr(nm,_,pure,clt),info) ->
+	  (PC.TMetaErr(nm,Ast0.NoConstraint,pure,clt),info)
+      |	(PC.TMetaExp(nm,_,pure,ty,clt),info) ->
+	  (PC.TMetaExp(nm,Ast0.NoConstraint,pure,ty,clt),info)
+      |	(PC.TMetaIdExp(nm,_,pure,ty,clt),info) ->
+	  (PC.TMetaIdExp(nm,Ast0.NoConstraint,pure,ty,clt),info)
+      |	(PC.TMetaLocalIdExp(nm,_,pure,ty,clt),info) ->
+	  (PC.TMetaLocalIdExp(nm,Ast0.NoConstraint,pure,ty,clt),info)
+      |	(PC.TMetaConst(nm,_,pure,ty,clt),info) ->
+	  (PC.TMetaConst(nm,Ast0.NoConstraint,pure,ty,clt),info)
+      |	t -> t)
+    l
+
+let fix f l =
+  let rec loop f l stripped_l =
+    let cur = f l in
+    let stripped_cur = strip_for_fix cur in
+    if stripped_l = stripped_cur then l else loop f cur stripped_cur in
+  loop f l (strip_for_fix l)
 
 (* ( | ... | ) also causes parsing problems *)
 
@@ -1998,7 +2024,7 @@ let process file isofile verbose =
           (* warning! context_neg side-effects its arguments *)
 	       let (m,p) = List.split (Context_neg.context_neg minus plus) in
 	       Type_infer.type_infer p;
-	       (if not !Flag.sgrep_mode2
+	       (if not (!Flag.sgrep_mode2 or dependencies = Ast.FailDep)
 	       then Insert_plus.insert_plus m p (chosen_isos = []));
 	       Type_infer.type_infer minus;
 	       let (extra_meta, minus) =

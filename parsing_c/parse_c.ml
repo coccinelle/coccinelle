@@ -834,6 +834,7 @@ let parse_print_error_heuristic2 saved_typedefs saved_macros file =
   (* -------------------------------------------------- *)
   (* call lexer and get all the tokens *)
   (* -------------------------------------------------- *)
+
   LP.lexer_reset_typedef saved_typedefs;
   Parsing_hacks.ifdef_paren_cnt := 0;
 

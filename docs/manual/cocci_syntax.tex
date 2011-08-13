@@ -1035,6 +1035,45 @@ leftmost column is considered to be added code.  A \verb+//+ or
 \verb+/* */+ comment wthout such an annotation is considered to be a
 comment about the SmPL code, and thus is not matched in the C code.
 
+\section{Command-line semantic match}
+
+It is possible to specify a semantic match on the spatch command line,
+using the argument {\tt -sp}.  In such a semantic match, any token
+beginning with a capital letter is assumed to be a metavariable of type
+{\tt metavariable}.  In this case, the parser must be able to figure out what
+kind of metavariable it is.  It is also possible to specify the type of a
+metavariable by enclosing the type in :'s, concatenated directly to the
+metavariable name.
+
+Some examples of semantic matches that can be given as an argument to {\tt
+  -sp} are as follows:
+
+\begin{itemize}
+\item \texttt{f(e)}: This only matches the expression \texttt{f(e)}.
+\item \texttt{f(E)}: This matches a call to f with any argument.
+\item \texttt{F(E)}: This gives a parse error; the semantic patch parser
+  cannot figure out what kind of metavariable \texttt{F} is.
+\item \texttt{F:identifier:(E)}: This matches any one argument function
+  call.
+\item \texttt{f:identifier:(e:struct foo *:)}: This matches any one
+  argument function call where the argument has type \texttt{struct foo
+    *}.  Since the types of the metavariables are specified, it is not
+  necessary for the metavariable names to begin with a capital letter.
+\item \texttt{F:identifier:(F)}: This matches any one argument function call
+  where the argument is the name of the function itself.  This example
+  shows that it is not necessary to repeat the metavariable type name.
+\item \texttt{F:identifier:(F:identifier:)}: This matches any one argument
+  function call 
+  where the argument is the name of the function itself.  This example
+  shows that it is possible to repeat the metavariable type name.
+\end{itemize}
+
+\texttt{When} constraints, \textit{e.g.} \texttt{when != e}, are allowed
+but the expression \texttt{e} must be represented as a single token.
+
+The generated semantic match behaves as though there were a \texttt{*} in front
+of every token.
+
 %%% Local Variables:
 %%% mode: LaTeX
 %%% TeX-master: "main_grammar"

@@ -66,3 +66,5 @@ let relax_include_path = ref false
 let timeout = ref (None : int option)
 
 let worth_trying_opt = ref true
+
+let use_saved_typedefs = ref true (* hack! *)

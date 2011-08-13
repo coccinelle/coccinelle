@@ -65,7 +65,13 @@ patch file and print out some information about it.}
 \minimum{-sp\_file $\langle$file$\rangle$, -c $\langle$file$\rangle$, 
 -cocci\_file $\langle$file$\rangle$}{ Specify the name of the file
   containing the semantic patch.  The file name should end in {\tt .cocci}.
-All three options do the same thing; the last two are deprecated.}
+All three options do the same thing.  These options are optional.  If they
+are not used, the single file whose name ends in \texttt{.cocci} is
+assoumed to be the name of the file containing the semantic patch.}
+
+\rare{-sp ``semantic patch string''}{Specify a semantic match as a
+  command-line argument.  See the section ``Command-line semantic match''
+  in the manual.}
 
 \subsection{Isomorphisms}
 
@@ -445,6 +451,10 @@ currently not well supported.}
   the CTL operator {\sf AU} is used if the current function does not
   contain a loop, and {\sf AW} may be used if it does.  This option causes
   {\sf AW} always to be used.}
+
+\rare{-ocaml\_regexps}{Use the regular expressions provided by the OCaml
+  \texttt{Str} library.  This is the default if the PCRE library is not
+  available.  Otherwise PCRE regular expressions are used by default.}
 
 \developer{-steps $\langle$int$\rangle$}{
 This limits the number of steps performed by the CTL engine to the
