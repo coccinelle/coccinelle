@@ -609,18 +609,19 @@ let run rules neg_pos_vars =
 	      (rest_info, in_plus, env, locals)
           | (Ast.CocciRule (nm,(dep,_,_),cur,_,_),neg_pos_vars) ->
 	      let (cur_info,cur_plus) =
-		rule_fn cur in_plus ((nm,True)::env)
-		  neg_pos_vars in
+		rule_fn cur in_plus ((nm,True)::env) neg_pos_vars in
 	      (match dependencies env dep with
 		False -> (rest_info,cur_plus,env,locals)
 	      | dependencies ->
 		  if List.for_all all_context.V.combiner_top_level cur
-		  then (rest_info,cur_plus,(nm,cur_info)::env,nm::locals)
+		  then
+		    let cur_info = build_and dependencies cur_info in
+		    (rest_info,cur_plus,(nm,cur_info)::env,nm::locals)
 		  else
 	       (* no constants if dependent on another rule; then we need to
 	          find the constants of that rule *)
-		    (build_or (build_and dependencies cur_info) rest_info,
-		     cur_plus,env,locals)))
+		      (build_or (build_and dependencies cur_info) rest_info,
+		       cur_plus,(nm,cur_info)::env,locals)))
       (False,[],[],[])
       (List.combine (rules : Ast.rule list) neg_pos_vars) in
   info
