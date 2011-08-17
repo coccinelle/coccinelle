@@ -100,6 +100,7 @@
 - Pretty print pointer types without a trailing space.  Thanks to Michael
   Stefaniuc for pointing out the problem.
 - Propagate dependencies further in get_constants2
+- Make lexer more dos friendly
 
 * 0.2.5
 ** Language:
