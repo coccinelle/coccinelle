@@ -318,10 +318,13 @@ let do_get_constants constants keywords env neg_pos =
       Ast.VoidType -> keywords "void"
     | Ast.CharType -> keywords "char"
     | Ast.ShortType -> keywords "short"
+    | Ast.ShortIntType -> keywords "short"
     | Ast.IntType -> keywords "int"
     | Ast.DoubleType -> keywords "double"
+    | Ast.LongDoubleType -> keywords "double"
     | Ast.FloatType -> keywords "float"
-    | Ast.LongType | Ast.LongLongType -> keywords "long"
+    | Ast.LongType | Ast.LongLongType
+    | Ast.LongIntType | Ast.LongLongIntType -> keywords "long"
     | Ast.SizeType -> keywords "size_t"
     | Ast.SSizeType -> keywords "ssize_t"
     | Ast.PtrDiffType -> keywords "ptrdiff_t" in

@@ -33,6 +33,7 @@
 - print_main etc for ocaml Coccilib
 - =~ not ~= is used to indicate a regular expression constraint on an
   identifier.
+- allow long double, short int, long int, and long long int in SmPL code.
 
 ** Features:
 - Preserve spacing before // comments when not at the beginning of a line
