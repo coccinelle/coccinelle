@@ -59,6 +59,8 @@
 - Allow limiting the size of a named cache using -cache_limit
 - Cache name specified with -cache_prefix is extended according to the
   index (parallelism), if any.
+- Allow multi-character constants in C code and SmPL code.  Thanks to Kamil
+  Pilch for pointing out the problem.
 
 ** Bugfix:
 - Corrected parsing of script strings delimited by a single quote.  Thanks

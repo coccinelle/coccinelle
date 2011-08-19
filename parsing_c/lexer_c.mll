@@ -860,14 +860,14 @@ rule token = parse
 
 (*****************************************************************************)
 and char = parse
-  | (_ as x)                                    "'"  { String.make 1 x }
+  | (_ as x)                           { String.make 1 x ^ restchars lexbuf }
   (* todo?: as for octal, do exception  beyond radix exception ? *)
-  | (("\\" (oct | oct oct | oct oct oct)) as x  "'") { x }
+  | (("\\" (oct | oct oct | oct oct oct)) as x     ) { x ^ restchars lexbuf }
   (* this rule must be after the one with octal, lex try first longest
    * and when \7  we want an octal, not an exn.
    *)
-  | (("\\x" ((hex | hex hex))) as x        "'")      { x }
-  | (("\\" (_ as v))           as x        "'")
+  | (("\\x" ((hex | hex hex))) as x           )      { x ^ restchars lexbuf }
+  | (("\\" (_ as v))           as x           )
 	{
           (match v with (* Machine specific ? *)
           | 'n' -> ()  | 't' -> ()   | 'v' -> ()  | 'b' -> () | 'r' -> ()
@@ -877,13 +877,38 @@ and char = parse
 	  | _ ->
               pr2 ("LEXER: unrecognised symbol in char:"^tok lexbuf);
 	  );
-          x
+          x ^ restchars lexbuf
 	}
   | _
       { pr2 ("LEXER: unrecognised symbol in char:"^tok lexbuf);
-        tok lexbuf
+        tok lexbuf ^ restchars lexbuf
       }
 
+and restchars = parse
+  | "'"                                { "" }
+  | (_ as x)                           { String.make 1 x ^ restchars lexbuf }
+  (* todo?: as for octal, do exception  beyond radix exception ? *)
+  | (("\\" (oct | oct oct | oct oct oct)) as x     ) { x ^ restchars lexbuf }
+  (* this rule must be after the one with octal, lex try first longest
+   * and when \7  we want an octal, not an exn.
+   *)
+  | (("\\x" ((hex | hex hex))) as x           )      { x ^ restchars lexbuf }
+  | (("\\" (_ as v))           as x           )
+	{
+          (match v with (* Machine specific ? *)
+          | 'n' -> ()  | 't' -> ()   | 'v' -> ()  | 'b' -> () | 'r' -> ()
+          | 'f' -> () | 'a' -> ()
+	  | '\\' -> () | '?'  -> () | '\'' -> ()  | '"' -> ()
+          | 'e' -> () (* linuxext: ? *)
+	  | _ ->
+              pr2 ("LEXER: unrecognised symbol in char:"^tok lexbuf);
+	  );
+          x ^ restchars lexbuf
+	}
+  | _
+      { pr2 ("LEXER: unrecognised symbol in char:"^tok lexbuf);
+        tok lexbuf ^ restchars lexbuf
+      }
 
 
 (*****************************************************************************)
