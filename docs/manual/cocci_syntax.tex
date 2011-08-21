@@ -227,8 +227,8 @@ identifier.  See the wiki.
   \RULE{\rt{mid}}  \CASE{\T{rulename\_id}.\T{id}}
 
   \RULE{\rt{pmid\_with\_regexp}}
-  \CASE{\NT{pmid} \~{}= \NT{regexp}}
-  \CASE{\NT{pmid} !\~{}= \NT{regexp}}
+  \CASE{\NT{pmid} =\~{} \NT{regexp}}
+  \CASE{\NT{pmid} !=\~{} \NT{regexp}}
 
   \RULE{\rt{pmid\_with\_not\_eq}}
   \CASE{\NT{pmid} \OPT{!= \NT{id\_or\_meta}}}
