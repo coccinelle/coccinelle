@@ -71,7 +71,6 @@ let distrib_index = ref (None : int option)
 let distrib_max   = ref (None : int option)
 let mod_distrib   = ref false
 
-
 (*****************************************************************************)
 (* Profiles *)
 (*****************************************************************************)
@@ -350,7 +349,7 @@ let short_options = [
     "  guess what";
 
   "-date",   Arg.Unit (fun () ->
-    pr2 "version: $Date: 2011/08/10 19:05:54 $";
+    pr2 "version: $Date: 2011/08/12 09:45:03 $";
     raise (Common.UnixExit 0)
     ),
   "   guess what";
@@ -630,6 +629,10 @@ let other_options = [
       Flag_parsing_c.use_cache := true),
     "   directory of cached ASTs, sets -use_cache";
     (* could use Flag_parsing_c.options_pad instead *)
+    "-cache_limit",
+      Arg.Int (function n ->
+	Flag_parsing_c.cache_limit := Some n),
+    "   maximum number of cached ASTs, sets -use_cache";
   ];
 
 
@@ -893,6 +896,13 @@ let main_action xs =
 		  groups +> List.map (function Kbuild.Group xs -> xs)
 		    )
           in
+
+	  (* make cache unique in parallel case *)
+	  (match (!distrib_index,!Flag_parsing_c.cache_prefix) with
+	    (Some index,Some str) ->
+	      Flag_parsing_c.cache_prefix :=
+		Some (Printf.sprintf "%s/d%d" str index)
+	  | _ -> ());
 
 	  let infiles =
 	    match (!distrib_index,!distrib_max) with

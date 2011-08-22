@@ -31,6 +31,9 @@
 - Consider using to be a comment in C++ code.  Patch submitted by Jani Monoses.
 - Command line cocci
 - print_main etc for ocaml Coccilib
+- =~ not ~= is used to indicate a regular expression constraint on an
+  identifier.
+- allow long double, short int, long int, and long long int in SmPL code.
 
 ** Features:
 - Preserve spacing before // comments when not at the beginning of a line
@@ -54,6 +57,11 @@
 - -sp_file/-cocci_file are now optional.  If not present an argument that
   ends in .cocci is assumed to be the name of the file containing the
   semantic patch.
+- Allow limiting the size of a named cache using -cache_limit
+- Cache name specified with -cache_prefix is extended according to the
+  index (parallelism), if any.
+- Allow multi-character constants in C code and SmPL code.  Thanks to Kamil
+  Pilch for pointing out the problem.
 
 ** Bugfix:
 - Corrected parsing of script strings delimited by a single quote.  Thanks
@@ -94,6 +102,8 @@
   possible.  Thanks to Andrea Canciani for pointing out the problem.
 - Pretty print pointer types without a trailing space.  Thanks to Michael
   Stefaniuc for pointing out the problem.
+- Propagate dependencies further in get_constants2
+- Make lexer more dos friendly
 
 * 0.2.5
 ** Language:

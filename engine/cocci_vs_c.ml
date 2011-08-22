@@ -2740,8 +2740,8 @@ and simulate_signed ta basea stringsa signaopt tb baseb ii rebuilda =
 
 
           | [x;y] ->
-              pr2_once
-                "warning: long int or short int not handled by ast_cocci";
+              (*pr2_once
+                "warning: long int or short int not handled by ast_cocci";*)
               fail
 
           | [ibaseb] ->
@@ -2755,8 +2755,27 @@ and simulate_signed ta basea stringsa signaopt tb baseb ii rebuilda =
 
           )
 
+      | A.LongLongIntType, B.IntType (B.Si (_, B.CLongLong)) ->
+	  let (string1a,string2a,string3a) = tuple_of_list3 stringsa in
+          (match iibaseb with
+            [ibase1b;ibase2b;ibase3b] ->
+              sign signaopt signbopt >>= (fun signaopt iisignbopt ->
+              tokenf string1a ibase1b >>= (fun base1a ibase1b ->
+              tokenf string2a ibase2b >>= (fun base2a ibase2b ->
+              tokenf string3a ibase3b >>= (fun base3a ibase3b ->
+              return (
+		(rebuilda ([base1a;base2a;base3a], signaopt)) +> A.rewrap ta,
+		(B.BaseType (baseb), iisignbopt ++ [ibase1b;ibase2b;ibase3b])
+              )))))
+	  | [ibase1b;ibase2b] -> fail (* int omitted *)
+	  | [] -> fail (* should something be done in this case? *)
+	  | _ -> raise Impossible)
 
-      | A.LongLongType, B.IntType (B.Si (_, B.CLongLong)) ->
+
+      | A.LongLongType, B.IntType (B.Si (_, B.CLongLong))
+      | A.LongIntType,  B.IntType (B.Si (_, B.CLong))
+      | A.ShortIntType, B.IntType (B.Si (_, B.CShort))
+      | A.LongDoubleType, B.FloatType B.CLongDouble ->
 	  let (string1a,string2a) = tuple_of_list2 stringsa in
           (match iibaseb with
             [ibase1b;ibase2b] ->
@@ -2767,15 +2786,10 @@ and simulate_signed ta basea stringsa signaopt tb baseb ii rebuilda =
 		(rebuilda ([base1a;base2a], signaopt)) +> A.rewrap ta,
 		(B.BaseType (baseb), iisignbopt ++ [ibase1b;ibase2b])
               ))))
+	  | [ibase1b] -> fail (* short or long *)
+	  | [ibase1b;ibase2b;ibase3b] -> fail (* long long case *)
 	  | [] -> fail (* should something be done in this case? *)
 	  | _ -> raise Impossible)
-
-
-      | _, B.FloatType B.CLongDouble
-          ->
-          pr2_once
-            "warning: long double not handled by ast_cocci";
-          fail
 
       | _, (B.Void|B.FloatType _|B.IntType _
 	    |B.SizeType|B.SSizeType|B.PtrDiffType) -> fail

@@ -542,8 +542,8 @@ rule token = parse
 	   then (start_line true; TArob)
 	   else (check_minus_context_linetype "@"; TPArob) }
 
-  | "~="  { start_line true; TTildeEq (get_current_line_type lexbuf) }
-  | "!~=" { start_line true; TTildeExclEq (get_current_line_type lexbuf) }
+  | "=~"  { start_line true; TTildeEq (get_current_line_type lexbuf) }
+  | "!=~" { start_line true; TTildeExclEq (get_current_line_type lexbuf) }
   | "WHEN" | "when"
       { start_line true; check_minus_context_linetype (tok lexbuf);
 	TWhen (get_current_line_type lexbuf) }
@@ -815,20 +815,55 @@ rule token = parse
 
 
 and char = parse
-  | (_ as x) "'"                                     { String.make 1 x }
-  | (("\\" (oct | oct oct | oct oct oct)) as x  "'") { x }
-  | (("\\x" (hex | hex hex)) as x  "'")       { x }
-  | (("\\" (_ as v)) as x "'")
-	{ (match v with
-            | 'n' -> ()  | 't' -> ()   | 'v' -> ()  | 'b' -> ()
-	    | 'r' -> ()  | 'f' -> () | 'a' -> ()
-	    | '\\' -> () | '?'  -> () | '\'' -> ()  | '"' -> ()
-            | 'e' -> ()
-	    | _ -> lexerr "unrecognised symbol: " (tok lexbuf)
-	    );
-          x
+  | (_ as x)                           { String.make 1 x ^ restchars lexbuf }
+  (* todo?: as for octal, do exception  beyond radix exception ? *)
+  | (("\\" (oct | oct oct | oct oct oct)) as x     ) { x ^ restchars lexbuf }
+  (* this rule must be after the one with octal, lex try first longest
+   * and when \7  we want an octal, not an exn.
+   *)
+  | (("\\x" ((hex | hex hex))) as x           )      { x ^ restchars lexbuf }
+  | (("\\" (_ as v))           as x           )
+	{
+          (match v with (* Machine specific ? *)
+          | 'n' -> ()  | 't' -> ()   | 'v' -> ()  | 'b' -> () | 'r' -> ()
+          | 'f' -> () | 'a' -> ()
+	  | '\\' -> () | '?'  -> () | '\'' -> ()  | '"' -> ()
+          | 'e' -> () (* linuxext: ? *)
+	  | _ ->
+              Common.pr2 ("LEXER: unrecognised symbol in char:"^tok lexbuf);
+	  );
+          x ^ restchars lexbuf
 	}
-  | _ { lexerr "unrecognised symbol: " (tok lexbuf) }
+  | _
+      { Common.pr2 ("LEXER: unrecognised symbol in char:"^tok lexbuf);
+        tok lexbuf ^ restchars lexbuf
+      }
+
+and restchars = parse
+  | "'"                                { "" }
+  | (_ as x)                           { String.make 1 x ^ restchars lexbuf }
+  (* todo?: as for octal, do exception  beyond radix exception ? *)
+  | (("\\" (oct | oct oct | oct oct oct)) as x     ) { x ^ restchars lexbuf }
+  (* this rule must be after the one with octal, lex try first longest
+   * and when \7  we want an octal, not an exn.
+   *)
+  | (("\\x" ((hex | hex hex))) as x           )      { x ^ restchars lexbuf }
+  | (("\\" (_ as v))           as x           )
+	{
+          (match v with (* Machine specific ? *)
+          | 'n' -> ()  | 't' -> ()   | 'v' -> ()  | 'b' -> () | 'r' -> ()
+          | 'f' -> () | 'a' -> ()
+	  | '\\' -> () | '?'  -> () | '\'' -> ()  | '"' -> ()
+          | 'e' -> () (* linuxext: ? *)
+	  | _ ->
+              Common.pr2 ("LEXER: unrecognised symbol in char:"^tok lexbuf);
+	  );
+          x ^ restchars lexbuf
+	}
+  | _
+      { Common.pr2 ("LEXER: unrecognised symbol in char:"^tok lexbuf);
+        tok lexbuf ^ restchars lexbuf
+      }
 
 and string  = parse
   | '"'                                       { "" }

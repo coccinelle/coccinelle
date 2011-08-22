@@ -49,9 +49,10 @@ and name =
 
 and tagged_string = string
 
-and baseType = VoidType | CharType | ShortType | IntType | DoubleType
-| FloatType | LongType | LongLongType | BoolType
-| SizeType | SSizeType | PtrDiffType
+and baseType = VoidType | CharType | ShortType | ShortIntType | IntType
+| DoubleType | LongDoubleType | FloatType
+| LongType | LongIntType | LongLongType | LongLongIntType
+| SizeType | SSizeType | PtrDiffType | BoolType
 
 and structUnion = Struct | Union
 
@@ -96,11 +97,15 @@ and baseType = function
     VoidType -> "void "
   | CharType -> "char "
   | ShortType -> "short "
+  | ShortIntType -> "short int "
   | IntType -> "int "
   | DoubleType -> "double "
+  | LongDoubleType -> "long double "
   | FloatType -> "float "
   | LongType -> "long "
+  | LongIntType -> "long int "
   | LongLongType -> "long long "
+  | LongLongIntType -> "long long int "
   | BoolType -> "bool "
   | SizeType -> "size_t "
   | SSizeType -> "ssize_t "

@@ -3,8 +3,11 @@ API=coccilib.mli
 DEST=../docs
 FLAGS=$(INCLUDES) -hide Pervasives
 HTMLFLAGS=-all-params -colorize-code
+MANFLAGS=-man-mini
 
-doc: html
+.PHONY:
+
+doc: html man
 
 html:
 	mkdir -p $(DEST)/html
@@ -12,8 +15,7 @@ html:
 
 man:
 	mkdir -p $(DEST)/man
-	$(OCAMLDOC) $(FLAGS) -man -d $(DEST)/man $(API)
+	$(OCAMLDOC) $(FLAGS) -man $(MANFLAGS) -d $(DEST)/man $(API)
 
 cleandoc:
 	rm -rf $(DEST)/html $(DEST)/man
-

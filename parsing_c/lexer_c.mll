@@ -348,19 +348,19 @@ rule token = parse
    * http://gcc.gnu.org/onlinedocs/gcc/Pragmas.html
    *)
 
-  | "#" spopt "pragma"  sp  [^'\n']* '\n'
-  | "#" spopt "ident"   sp  [^'\n']* '\n'
-  | "#" spopt "line"    sp  [^'\n']* '\n'
-  | "#" spopt "error"   sp  [^'\n']* '\n'
-  | "#" spopt "warning" sp  [^'\n']* '\n'
-  | "#" spopt "abort"   sp  [^'\n']* '\n'
+  | "#" spopt "pragma"  sp  [^'\n' '\r']* ('\n' | "\r\n")
+  | "#" spopt "ident"   sp  [^'\n' '\r']* ('\n' | "\r\n")
+  | "#" spopt "line"    sp  [^'\n' '\r']* ('\n' | "\r\n")
+  | "#" spopt "error"   sp  [^'\n' '\r']* ('\n' | "\r\n")
+  | "#" spopt "warning" sp  [^'\n' '\r']* ('\n' | "\r\n")
+  | "#" spopt "abort"   sp  [^'\n' '\r']* ('\n' | "\r\n")
       { TCppDirectiveOther (tokinfo lexbuf) }
 
-  | "#" [' ' '\t']* '\n'
+  | "#" [' ' '\t']* ('\n' | "\r\n")
       { TCppDirectiveOther (tokinfo lexbuf) }
 
   (* only after cpp, ex: # 1 "include/linux/module.h" 1 *)
-  | "#" sp pent sp  '"' [^ '"']* '"' (spopt pent)*  spopt '\n'
+  | "#" sp pent sp  '"' [^ '"']* '"' (spopt pent)*  spopt ('\n' | "\r\n")
       { TCppDirectiveOther (tokinfo lexbuf) }
 
 
@@ -426,7 +426,7 @@ rule token = parse
       }
 
  (* DO NOT cherry pick to lexer_cplusplus !!! often used for the extern "C" { *)
-  | "#" [' ' '\t']* "if" sp "defined" sp "(" spopt "__cplusplus" spopt ")" [^'\n']* '\n'
+  | "#" [' ' '\t']* "if" sp "defined" sp "(" spopt "__cplusplus" spopt ")" [^'\n' '\r']* ('\n' | "\r\n")
       { let info = tokinfo lexbuf in
         TIfdefMisc (false, no_ifdef_mark(), info)
       }
@@ -521,7 +521,7 @@ rule token = parse
   (* can be at eof *)
   (*| "#" [' ' '\t']* "endif"                { TEndif     (tokinfo lexbuf) }*)
 
-  | "#" [' ' '\t']* "else" [' ' '\t' '\n']
+  | "#" [' ' '\t']* "else" ([' ' '\t' '\n'] | "\r\n")
       { TIfdefelse (no_ifdef_mark(), tokinfo lexbuf) }
 
 
@@ -532,7 +532,7 @@ rule token = parse
   (* ---------------------- *)
 
   (* only in cpp directives normally *)
-  | "\\" '\n' { TCppEscapedNewline (tokinfo lexbuf) }
+  | "\\" ('\n' | "\r\n") { TCppEscapedNewline (tokinfo lexbuf) }
 
   (* We must generate separate tokens for #, ## and extend the grammar.
    * Note there can be "elaborated" idents in many different places, in
@@ -860,14 +860,14 @@ rule token = parse
 
 (*****************************************************************************)
 and char = parse
-  | (_ as x)                                    "'"  { String.make 1 x }
+  | (_ as x)                           { String.make 1 x ^ restchars lexbuf }
   (* todo?: as for octal, do exception  beyond radix exception ? *)
-  | (("\\" (oct | oct oct | oct oct oct)) as x  "'") { x }
+  | (("\\" (oct | oct oct | oct oct oct)) as x     ) { x ^ restchars lexbuf }
   (* this rule must be after the one with octal, lex try first longest
    * and when \7  we want an octal, not an exn.
    *)
-  | (("\\x" ((hex | hex hex))) as x        "'")      { x }
-  | (("\\" (_ as v))           as x        "'")
+  | (("\\x" ((hex | hex hex))) as x           )      { x ^ restchars lexbuf }
+  | (("\\" (_ as v))           as x           )
 	{
           (match v with (* Machine specific ? *)
           | 'n' -> ()  | 't' -> ()   | 'v' -> ()  | 'b' -> () | 'r' -> ()
@@ -877,13 +877,38 @@ and char = parse
 	  | _ ->
               pr2 ("LEXER: unrecognised symbol in char:"^tok lexbuf);
 	  );
-          x
+          x ^ restchars lexbuf
 	}
   | _
       { pr2 ("LEXER: unrecognised symbol in char:"^tok lexbuf);
-        tok lexbuf
+        tok lexbuf ^ restchars lexbuf
       }
 
+and restchars = parse
+  | "'"                                { "" }
+  | (_ as x)                           { String.make 1 x ^ restchars lexbuf }
+  (* todo?: as for octal, do exception  beyond radix exception ? *)
+  | (("\\" (oct | oct oct | oct oct oct)) as x     ) { x ^ restchars lexbuf }
+  (* this rule must be after the one with octal, lex try first longest
+   * and when \7  we want an octal, not an exn.
+   *)
+  | (("\\x" ((hex | hex hex))) as x           )      { x ^ restchars lexbuf }
+  | (("\\" (_ as v))           as x           )
+	{
+          (match v with (* Machine specific ? *)
+          | 'n' -> ()  | 't' -> ()   | 'v' -> ()  | 'b' -> () | 'r' -> ()
+          | 'f' -> () | 'a' -> ()
+	  | '\\' -> () | '?'  -> () | '\'' -> ()  | '"' -> ()
+          | 'e' -> () (* linuxext: ? *)
+	  | _ ->
+              pr2 ("LEXER: unrecognised symbol in char:"^tok lexbuf);
+	  );
+          x ^ restchars lexbuf
+	}
+  | _
+      { pr2 ("LEXER: unrecognised symbol in char:"^tok lexbuf);
+        tok lexbuf ^ restchars lexbuf
+      }
 
 
 (*****************************************************************************)
@@ -965,7 +990,7 @@ and cpp_eat_until_nl = parse
   (* noteopti:
    * update: need also deal with comments chars now
    *)
-  | [^ '\n' '\\'      '/' '*'  ]+
+  | [^ '\n' '\r' '\\'      '/' '*'  ]+
      { let s = tok lexbuf in s ^ cpp_eat_until_nl lexbuf }
   | eof { pr2 "LEXER: end of file in cpp_eat_until_nl"; ""}
   | _   { let s = tok lexbuf in s ^ cpp_eat_until_nl lexbuf }

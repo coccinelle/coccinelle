@@ -620,11 +620,15 @@ and baseType = function
     Ast.VoidType -> TC.VoidType
   | Ast.CharType -> TC.CharType
   | Ast.ShortType -> TC.ShortType
+  | Ast.ShortIntType -> TC.ShortIntType
   | Ast.IntType -> TC.IntType
   | Ast.DoubleType -> TC.DoubleType
+  | Ast.LongDoubleType -> TC.LongDoubleType
   | Ast.FloatType -> TC.FloatType
   | Ast.LongType -> TC.LongType
+  | Ast.LongIntType -> TC.LongIntType
   | Ast.LongLongType -> TC.LongLongType
+  | Ast.LongLongIntType -> TC.LongLongIntType
   | Ast.SizeType -> TC.SizeType
   | Ast.SSizeType -> TC.SSizeType
   | Ast.PtrDiffType -> TC.PtrDiffType
@@ -693,11 +697,15 @@ and reverse_baseType = function
   | TC.CharType -> Ast.CharType
   | TC.BoolType -> Ast.IntType
   | TC.ShortType -> Ast.ShortType
+  | TC.ShortIntType -> Ast.ShortIntType
   | TC.IntType -> Ast.IntType
   | TC.DoubleType -> Ast.DoubleType
+  | TC.LongDoubleType -> Ast.LongDoubleType
   | TC.FloatType -> Ast.FloatType
   | TC.LongType -> Ast.LongType
+  | TC.LongIntType -> Ast.LongIntType
   | TC.LongLongType -> Ast.LongLongType
+  | TC.LongLongIntType -> Ast.LongLongIntType
   | TC.SizeType -> Ast.SizeType
   | TC.SSizeType -> Ast.SSizeType
   | TC.PtrDiffType -> Ast.PtrDiffType

@@ -43,9 +43,12 @@
  (doubleswitch.res Ok) (doundo.res Ok) (dowhile.res Ok) (dropf.res Ok)
  (dropparam.res Ok) (eb1.res Ok) (edots.res Ok) (edots_ver1.res Ok)
  (empty.res Ok) (end_commas.res Ok) (endif.res Ok) (enum.res Ok)
- (exitc.res Ok) (exitp.res (Pb "PROBLEM\n   exn = Failure(\"no python\")\n"))
- (exp.res Ok) (expnest.res Ok) (expopt.res Ok) (expopt2.res Ok)
- (expopt3.res Ok) (expopt3_ver1.res Ok) (expopt3_ver2.res Ok) (fields.res Ok)
+ (exitc.res
+  (Pb
+   "PROBLEM\n   exn = Prepare_ocamlcocci.LinkFailure(\"/tmp/exitc141503.cmxs\")\n"))
+ (exitp.res (Pb "PROBLEM\n   exn = Failure(\"no python\")\n")) (exp.res Ok)
+ (expnest.res Ok) (expopt.res Ok) (expopt2.res Ok) (expopt3.res Ok)
+ (expopt3_ver1.res Ok) (expopt3_ver2.res Ok) (fields.res Ok)
  (fieldsmin.res Ok) (find_long.res Ok) (fix_flow_need.res Ok)
  (fn_todo.res Ok) (fnptr.res Ok) (fnret.res Ok) (fnty.res Ok) (four.res Ok)
  (foura.res Ok) (fp.res Ok) (fsh.res Ok) (fun.res Ok)
@@ -89,10 +92,10 @@
  (multi_func1.res
   (Pb
    "PROBLEM\n   exn = Failure(\"minus: parse error: \\n = File \\\"tests/multi_func1.cocci\\\", line 12, column 2,  charpos = 102\\n    around = 'fn2', whole content =   fn2(...) {\\n\")\n"))
- (multiplus.res Ok) (multitype.res Ok) (multitypedef.res Ok)
- (multivars.res Ok) (na.res Ok) (nameless.res Ok) (nest.res Ok)
- (nestone.res Ok) (nestseq.res Ok) (neststruct.res Ok) (nl.res Ok)
- (nocast.res Ok) (not.res Ok) (notest.res Ok) (noty.res Ok)
+ (multichars.res Ok) (multiplus.res Ok) (multitype.res Ok)
+ (multitypedef.res Ok) (multivars.res Ok) (na.res Ok) (nameless.res Ok)
+ (nest.res Ok) (nestone.res Ok) (nestseq.res Ok) (neststruct.res Ok)
+ (nl.res Ok) (nocast.res Ok) (not.res Ok) (notest.res Ok) (noty.res Ok)
  (null_bool.res
   (Pb
    "INCORRECT:diff token: ) VS !=\nFile <COCCIOUTPUTFILE>, line 2, column 8,  charpos = 22\n    around = ')', whole content =   if (12) return;\nFile \"tests/null_bool.res\", line 2, column 9,  charpos = 23\n    around = '!=', whole content =   if (12 != NULL) return;\n\n    diff (result(<) vs expected_result(>)) = \n    @@ -1,6 +1,6 @@\n     int main () {\n    -  if (12) return;\n    -  if (a && 12 && b) return;\n    +  if (12 != NULL) return;\n    +  if (a && 12 != NULL && b) return;\n       if (12) return;\n       if (a && 12 && b) return;\n       x = x + 20;\n"))

@@ -299,8 +299,10 @@ and base_typeC =
 and fullType = base_fullType wrap
 and typeC = base_typeC wrap
 
-and baseType = VoidType | CharType | ShortType | IntType | DoubleType
-  | FloatType | LongType | LongLongType | SizeType | SSizeType | PtrDiffType
+and baseType = VoidType | CharType | ShortType | ShortIntType | IntType
+| DoubleType | LongDoubleType | FloatType
+| LongType | LongIntType | LongLongType | LongLongIntType
+| SizeType | SSizeType | PtrDiffType
 
 and structUnion = Struct | Union
 

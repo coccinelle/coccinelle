@@ -268,6 +268,13 @@ stored in a cache.}
 \developer{-cache\_prefix}{Specify the directory in which to store 
 preparsed versions of the C files.  This sets {-use\_cache}}
 
+\developer{-cache\_limit}{Specify the maximum number of
+preparsed C files to store.  The cache is cleared of all files with names
+ending in .ast\_raw and .depend\_raw on reaching this limit.  Only
+effective if -cache\_prefix is used as well.  This is most useful when
+iteration is used to process a file multiple times within a single run of
+Coccinelle.}
+
 \developer{-debug\_cpp, -debug\_lexer, -debug\_etdt,
   -debug\_typedef}{Various options for debugging the C parser.}
 
@@ -316,7 +323,7 @@ other \#ifdef.}
 
 \normal{-recursive\_includes, -all\_includes, -local\_includes,
   -no\_includes}{ These options control which include files mentioned in a
-  C file are taken into account.  {\bf -really\_all\_includes} indicates
+  C file are taken into account.  {\bf -recursive\_includes} indicates
   that all included files mentioned in the .c file(s) or any included files
   will be processed.  {\bf -all\_includes} indicates that all included
   files mentioned in the .c file(s) will be processed.  {\bf

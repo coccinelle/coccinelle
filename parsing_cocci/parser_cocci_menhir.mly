@@ -631,6 +631,10 @@ signable_types:
     { Ast0.wrap(Ast0.BaseType(Ast.CharType,[P.clt2mcode "char" ty])) }
 | ty=Tshort
     { Ast0.wrap(Ast0.BaseType(Ast.ShortType,[P.clt2mcode "short" ty])) }
+| ty1=Tshort ty2=Tint
+    { Ast0.wrap
+	(Ast0.BaseType
+	   (Ast.ShortIntType,[P.clt2mcode "short" ty1;P.clt2mcode "int" ty2])) }
 | ty=Tint
     { Ast0.wrap(Ast0.BaseType(Ast.IntType,[P.clt2mcode "int" ty])) }
 | p=TMetaType
@@ -643,18 +647,33 @@ signable_types:
     let _ = P.check_meta(Ast.MetaTypeDecl(Ast.NONE,nm)) in
     Ast0.wrap(Ast0.MetaType(P.clt2mcode nm (P.id2clt p),
 			    Ast0.Impure (*will be ignored*))) }
-| ty=Tlong
-    { Ast0.wrap(Ast0.BaseType(Ast.LongType,[P.clt2mcode "long" ty])) }
+| ty1=Tlong
+    { Ast0.wrap(Ast0.BaseType(Ast.LongType,[P.clt2mcode "long" ty1])) }
+| ty1=Tlong ty2=Tint
+    { Ast0.wrap
+	(Ast0.BaseType
+	   (Ast.LongIntType,[P.clt2mcode "long" ty1;P.clt2mcode "int" ty2])) }
 | ty1=Tlong ty2=Tlong
     { Ast0.wrap
 	(Ast0.BaseType
 	   (Ast.LongLongType,
 	    [P.clt2mcode "long" ty1;P.clt2mcode "long" ty2])) }
+| ty1=Tlong ty2=Tlong ty3=Tint
+    { Ast0.wrap
+	(Ast0.BaseType
+	   (Ast.LongLongIntType,
+	    [P.clt2mcode "long" ty1;P.clt2mcode "long" ty2;
+	      P.clt2mcode "int" ty3])) }
 
 %inline
 non_signable_types:
   ty=Tvoid
     { Ast0.wrap(Ast0.BaseType(Ast.VoidType,[P.clt2mcode "void" ty])) }
+| ty1=Tlong ty2=Tdouble
+    { Ast0.wrap
+	(Ast0.BaseType
+	   (Ast.LongDoubleType,
+	    [P.clt2mcode "long" ty1;P.clt2mcode "double" ty2])) }
 | ty=Tdouble
     { Ast0.wrap(Ast0.BaseType(Ast.DoubleType,[P.clt2mcode "double" ty])) }
 | ty=Tfloat

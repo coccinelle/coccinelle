@@ -1075,17 +1075,35 @@ let parse_cache file =
       *)
       !Config.std_h;
       *)
-    ]
-  in
+    ] in
   let need_no_changed_variables =
     (* could add some of the flags of flag_parsing_c.ml *)
-    []
-  in
+    [] in
   Common.cache_computation_robust_in_dir
-    !Flag_parsing_c.cache_prefix
-    file ".ast_raw"
+    !Flag_parsing_c.cache_prefix file ".ast_raw"
     (need_no_changed_files, need_no_changed_variables) ".depend_raw"
-    (fun () -> parse_print_error_heuristic None None file)
+    (fun () ->
+      (* check whether to clear the cache *)
+      (match (!Flag_parsing_c.cache_limit,!Flag_parsing_c.cache_prefix) with
+	(None,_) | (_,None) -> ()
+      |	(Some limit,Some prefix) ->
+	  let count =
+	    Common.cmd_to_list
+	      (Printf.sprintf
+		 "test -e %s && ls %s/*.ast_raw %s/*.depend_raw | wc -l"
+		 prefix prefix prefix) in
+	  match count with
+	    [c] ->
+	      if int_of_string c >= limit
+	      then
+		let _ =
+		  Sys.command
+		    (Printf.sprintf "/bin/rm -r %s/*.ast_raw %s/*.depend_raw"
+		       prefix prefix) in
+		()
+	  | _ -> ());
+      (* recompute *)
+      parse_print_error_heuristic None None file)
 
 
 

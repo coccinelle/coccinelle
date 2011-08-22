@@ -227,8 +227,8 @@ identifier.  See the wiki.
   \RULE{\rt{mid}}  \CASE{\T{rulename\_id}.\T{id}}
 
   \RULE{\rt{pmid\_with\_regexp}}
-  \CASE{\NT{pmid} \~{}= \NT{regexp}}
-  \CASE{\NT{pmid} !\~{}= \NT{regexp}}
+  \CASE{\NT{pmid} =\~{} \NT{regexp}}
+  \CASE{\NT{pmid} !=\~{} \NT{regexp}}
 
   \RULE{\rt{pmid\_with\_not\_eq}}
   \CASE{\NT{pmid} \OPT{!= \NT{id\_or\_meta}}}
@@ -646,10 +646,14 @@ ifdefs, and attributes (\texttt{\_\_attribute\_\_((...))}).
   \CASE{\NT{ctype\_qualif}}
   \CASE{\opt{\NT{ctype\_qualif}} char}
   \CASE{\opt{\NT{ctype\_qualif}} short}
+  \CASE{\opt{\NT{ctype\_qualif}} short int}
   \CASE{\opt{\NT{ctype\_qualif}} int}
   \CASE{\opt{\NT{ctype\_qualif}} long}
+  \CASE{\opt{\NT{ctype\_qualif}} long int}
   \CASE{\opt{\NT{ctype\_qualif}} long long}
+  \CASE{\opt{\NT{ctype\_qualif}} long long int}
   \CASE{double}
+  \CASE{long double}
   \CASE{float}
   \CASE{size\_t} \CASE{ssize\_t} \CASE{ptrdiff\_t}
   \CASE{enum \NT{id} \{ \NT{PARAMSEQ}\mth{(}\NT{dot\_expr}, \NT{exp\_whencode}\mth{)} \OPT{,} \}}

@@ -48,9 +48,10 @@ and name =
 
 and tagged_string = string
 
-and baseType = VoidType | CharType | ShortType | IntType | DoubleType
-| FloatType | LongType | LongLongType | BoolType
-| SizeType | SSizeType | PtrDiffType
+and baseType = VoidType | CharType | ShortType | ShortIntType | IntType
+| DoubleType | LongDoubleType | FloatType
+| LongType | LongIntType | LongLongType | LongLongIntType
+| SizeType | SSizeType | PtrDiffType | BoolType
 
 and structUnion = Struct | Union
 

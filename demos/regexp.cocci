@@ -15,7 +15,7 @@ print "Identifier: %s" % x
 
 @contains@
 type t;
-identifier foo ~= "foo";
+identifier foo =~ "foo";
 @@
 
 t foo () {
@@ -30,7 +30,7 @@ print "Contains foo: %s" % x
 
 @nocontain@
 type t;
-identifier foo !~= "foo";
+identifier foo !=~ "foo";
 @@
 
 t foo () {
@@ -45,7 +45,7 @@ print "Does not contain foo: %s" % x
 
 @endsby@
 type t;
-identifier foo ~= "foo$";
+identifier foo =~ "foo$";
 @@
 
 t foo () {
@@ -60,7 +60,7 @@ print "Ends by foo: %s" % x
 
 @beginsby@
 type t;
-identifier foo ~= "^foo";
+identifier foo =~ "^foo";
 @@
 
 t foo () {

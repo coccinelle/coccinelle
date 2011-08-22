@@ -8,11 +8,15 @@ CCPACKAGE=coccicheck-$(CCVERSION)
 
 EXCLUDE=$(PACKAGE)/debian .depend
 
+DOC=docs/manual/manual.pdf       \
+    docs/manual/options.pdf      \
+    docs/manual/main_grammar.pdf \
+    docs/html                    \
+    docs/man                     \
+    docs/spatch.1                \
+    docs/manual/cocci-python.txt
 BINSRC=spatch env.sh env.csh standard.h standard.iso \
-       *.txt \
-       docs/manual/manual.pdf docs/manual/options.pdf docs/manual/main_grammar.pdf docs/spatch.1 \
-       docs/manual/cocci-python.txt \
-       demos/*
+       *.txt $(DOC) demos/*
 BINSRC-PY=$(BINSRC) $(PYLIB) python/coccilib/
 
 EXCL=$(EXCLUDE:%=--exclude=%)
@@ -92,7 +96,6 @@ package-src:
 package-nopython:
 	$(MAKE) distclean       # Clean project
 	./configure --without-python
-	$(MAKE) docs
 	$(MAKE) bintar
 	$(MAKE) bytecodetar
 #	$(MAKE) staticbintar
@@ -100,7 +103,6 @@ package-nopython:
 package-python:
 	$(MAKE) distclean       # Clean project
 	./configure             # Reconfigure project with Python support
-	$(MAKE) docs
 	$(MAKE) bintar-python
 	$(MAKE) bytecodetar-python
 
@@ -113,7 +115,6 @@ package-python:
 # make clean is there to remove them while not removing the pdf
 # (only distclean remove the pdfs).
 srctar:
-	$(MAKE) distclean
 	$(MAKE) docs
 	$(MAKE) clean
 	cp -a .  $(TMP)/$(PACKAGE)
@@ -122,12 +123,14 @@ srctar:
 	rm -rf  $(TMP)/$(PACKAGE)
 
 bintar: all
+	$(MAKE) docs
 	rm -f $(TMP)/$(PACKAGE)
 	ln -s `pwd` $(TMP)/$(PACKAGE)
 	cd $(TMP); tar cvfz $(PACKAGE)-bin-x86.tgz --exclude-vcs $(BINSRC2)
 	rm -f $(TMP)/$(PACKAGE)
 
 staticbintar: all.opt
+	$(MAKE) docs
 	rm -f $(TMP)/$(PACKAGE)
 	ln -s `pwd` $(TMP)/$(PACKAGE)
 	$(MAKE) static
@@ -136,6 +139,7 @@ staticbintar: all.opt
 
 # add ocaml version in name ?
 bytecodetar: all
+	$(MAKE) docs
 	rm -f $(TMP)/$(PACKAGE)
 	ln -s `pwd` $(TMP)/$(PACKAGE)
 	$(MAKE) purebytecode
@@ -143,6 +147,7 @@ bytecodetar: all
 	rm -f $(TMP)/$(PACKAGE)
 
 bintar-python: all
+	$(MAKE) docs
 	rm -f $(TMP)/$(PACKAGE)
 	ln -s `pwd` $(TMP)/$(PACKAGE)
 	cd $(TMP); tar cvfz $(PACKAGE)-bin-x86-python.tgz --exclude-vcs $(BINSRC2-PY)
@@ -150,6 +155,7 @@ bintar-python: all
 
 # add ocaml version in name ?
 bytecodetar-python: all
+	$(MAKE) docs
 	rm -f $(TMP)/$(PACKAGE)
 	ln -s `pwd` $(TMP)/$(PACKAGE)
 	$(MAKE) purebytecode
