@@ -136,18 +136,11 @@ let mk_pretty_printers
         statxs +> List.iter pp_statement_seq;
         pr_elem ii2;
         pr_elem i2;
-    | Constructor (t, xs), lp::rp::i1::i2::iicommaopt ->
+    | Constructor (t, init), [lp;rp] ->
         pr_elem lp;
         pp_type t;
         pr_elem rp;
-        pr_elem i1;
-        xs +> List.iter (fun (x, ii) ->
-          assert (List.length ii <= 1);
-          ii +> List.iter (function x -> pr_elem x; pr_space());
-          pp_init x
-        );
-        iicommaopt +> List.iter pr_elem;
-        pr_elem i2;
+	pp_init init
 
     | ParenExpr (e), [i1;i2] -> pr_elem i1; pp_expression e; pr_elem i2;
 

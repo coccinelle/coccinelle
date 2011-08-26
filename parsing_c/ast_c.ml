@@ -331,7 +331,7 @@ and expression = (expressionbis * exp_info ref (* semantic: *)) wrap3
 
   (* gccext: *)
   | StatementExpr of compound wrap (* ( )     new scope *)
-  | Constructor  of fullType * initialiser wrap2 (* , *) list
+  | Constructor  of fullType * initialiser
 
   (* for unparser: *)
   | ParenExpr of expression

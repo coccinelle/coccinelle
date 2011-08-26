@@ -321,12 +321,8 @@ let rec vk_expr = fun bigf expr ->
         iif is;
         statxs +> List.iter (vk_statement_sequencable bigf);
 
-    | Constructor (t, initxs) ->
-        vk_type bigf t;
-        initxs +> List.iter (fun (ini, ii) ->
-          vk_ini bigf ini;
-          vk_ii bigf ii;
-        )
+    | Constructor (t, init) ->
+        vk_type bigf t; vk_ini bigf init
 
     | ParenExpr (e) -> exprf e
 
@@ -1057,12 +1053,8 @@ let rec vk_expr_s = fun bigf expr ->
           StatementExpr (
             vk_statement_sequencable_list_s bigf statxs,
             iif is)
-      | Constructor (t, initxs) ->
-          Constructor
-            (vk_type_s bigf t,
-            (initxs +> List.map (fun (ini, ii) ->
-              vk_ini_s bigf ini, vk_ii_s bigf ii)
-            ))
+      | Constructor (t, init) ->
+          Constructor (vk_type_s bigf t, vk_ini_s bigf init)
 
       | ParenExpr (e) -> ParenExpr (exprf e)
 

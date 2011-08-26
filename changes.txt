@@ -34,6 +34,8 @@
 - =~ not ~= is used to indicate a regular expression constraint on an
   identifier.
 - allow long double, short int, long int, and long long int in SmPL code.
+- gcc constructors allowed in SmPL.  Thanks to Uwe Kleine-Koenig for
+  pointing out the problem.
 
 ** Features:
 - Preserve spacing before // comments when not at the beginning of a line

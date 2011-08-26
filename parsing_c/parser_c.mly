@@ -797,9 +797,9 @@ postfix_expr:
 
  /*(* gccext: also called compound literals *)*/
  | topar2 type_name tcpar2 TOBrace TCBrace
-     { mk_e(Constructor ($2, [])) [$1;$3;$4;$5] }
+     { mk_e(Constructor ($2, (InitList [], [$4;$5]))) [$1;$3] }
  | topar2 type_name tcpar2 TOBrace initialize_list gcc_comma_opt TCBrace
-     { mk_e(Constructor ($2, List.rev $5)) ([$1;$3;$4;$7] ++ $6) }
+     { mk_e(Constructor ($2, (InitList (List.rev $5),[$4;$7]++$6))) [$1;$3] }
 
 
 primary_expr:
