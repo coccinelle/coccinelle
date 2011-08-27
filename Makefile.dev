@@ -55,7 +55,8 @@ diff_darcs:
 gitupdate:
 	git cvsimport -d :ext:topps:/var/cvs/cocci  coccinelle
 
-UBUNTU=karmic lucid maverick natty
+#UBUNTU=karmic lucid maverick natty
+UBUNTU=lucid maverick natty
 UBUNTURELEASE=$(UBUNTU:%=ubuntu-%)
 
 .PHONY:: ubuntu $(UBUNTURELEASE)
