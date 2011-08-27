@@ -18,7 +18,7 @@ t id;
 
 @nocontain@
 type t;
-identifier anyid.id !=~ "foo";
+identifier anyid.id !~ "foo";
 fresh identifier nocontain = id ##"_doesn_t_contain_foo";
 @@
 

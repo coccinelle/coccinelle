@@ -21,7 +21,7 @@ t id = cst;
 @nocontain@
 type t;
 identifier anyid.id;
-constant char [] anyid.cst !=~ ".*FOO";
+constant char [] anyid.cst !~ ".*FOO";
 fresh identifier nocontain = id ##"_equals_cst_that_doesn_t_contain_FOO";
 @@
 
