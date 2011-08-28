@@ -106,6 +106,8 @@
   Stefaniuc for pointing out the problem.
 - Propagate dependencies further in get_constants2
 - Make lexer more dos friendly
+- Strip constraints from metavariables in function prototype treatment
+  before comparison, due to incomparability of pcre regexps.
 
 * 0.2.5
 ** Language:
