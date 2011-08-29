@@ -171,8 +171,7 @@ BYTECODE_STATIC=-custom
 
 all: Makefile.config byte preinstall
 
-opt: all.opt
-all.opt: opt-compil preinstall
+opt all.opt: opt-compil preinstall
 
 world: preinstall
 	$(MAKE) byte

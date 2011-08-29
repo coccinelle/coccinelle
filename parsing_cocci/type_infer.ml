@@ -254,6 +254,7 @@ let rec propagate_types env =
 	| Ast0.SizeOfExpr(szf,exp) -> Some(int_type)
 	| Ast0.SizeOfType(szf,lp,ty,rp) -> Some(int_type)
 	| Ast0.TypeExp(ty) -> None
+	| Ast0.Constructor(lp,ty,rp,init) -> Some(Ast0.ast0_type_to_type ty)
 	| Ast0.MetaErr(name,_,_) -> None
 	| Ast0.MetaExpr(name,_,Some [ty],_,_) -> Some ty
 	| Ast0.MetaExpr(name,_,ty,_,_) -> None

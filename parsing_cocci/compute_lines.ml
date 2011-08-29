@@ -372,6 +372,11 @@ let rec expression e =
         (promote_mcode szf)  (promote_mcode rp)
   | Ast0.TypeExp(ty) ->
       let ty = typeC ty in mkres e (Ast0.TypeExp(ty)) ty ty
+  | Ast0.Constructor(lp,ty,rp,init) ->
+      let lp = normal_mcode lp in
+      let init = initialiser init in
+      let rp = normal_mcode rp in
+      mkres e (Ast0.Constructor(lp,typeC ty,rp,init)) (promote_mcode lp) init
   | Ast0.MetaErr(name,a,b) ->
       let name = normal_mcode name in
       let ln = promote_mcode name in

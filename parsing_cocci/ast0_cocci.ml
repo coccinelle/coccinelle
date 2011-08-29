@@ -142,6 +142,8 @@ and base_expression =
   | SizeOfType     of string mcode (* sizeof *) * string mcode (* ( *) *
                       typeC * string mcode (* ) *)
   | TypeExp        of typeC (* type name used as an expression, only in args *)
+  | Constructor    of string mcode (* ( *) * typeC * string mcode (* ) *) *
+	              initialiser
   | MetaErr        of Ast.meta_name mcode * constraints * pure
   | MetaExpr       of Ast.meta_name mcode * constraints *
 	              TC.typeC list option * Ast.form * pure

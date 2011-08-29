@@ -713,6 +713,11 @@ let match_maker checks_needed context_required whencode_allowed =
 	       conjunct_many_bindings
 		 [check_mcode lp1 lp; check_mcode rp1 rp;
 		   check_mcode szf1 szf; match_typeC tya tyb]
+	  | (Ast0.Constructor(lp1,tya,rp1,inita),
+	     Ast0.Constructor(lp,tyb,rp,initb)) ->
+	      conjunct_many_bindings
+		[check_mcode lp1 lp; check_mcode rp1 rp;
+		  match_typeC tya tyb; match_init inita initb]
 	  | (Ast0.TypeExp(tya),Ast0.TypeExp(tyb)) ->
 	      match_typeC tya tyb
 	  | (Ast0.EComma(cm1),Ast0.EComma(cm)) -> check_mcode cm1 cm

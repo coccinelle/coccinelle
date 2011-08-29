@@ -184,6 +184,10 @@ and disjexp e =
   | Ast.TypeExp(ty) ->
       let ty = disjty ty in
       List.map (function ty -> Ast.rewrap e (Ast.TypeExp(ty))) ty
+  | Ast.Constructor(lp,ty,rp,init) ->
+      disjmult2 (disjty ty) (disjini init)
+	(function ty ->
+	  function exp -> Ast.rewrap e (Ast.Constructor(lp,ty,rp,init)))
   | Ast.MetaErr(_,_,_,_) | Ast.MetaExpr(_,_,_,_,_,_)
   | Ast.MetaExprList(_,_,_,_) | Ast.EComma(_) -> [e]
   | Ast.DisjExpr(exp_list) -> List.concat (List.map disjexp exp_list)

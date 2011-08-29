@@ -152,6 +152,9 @@ let combiner bind option_default
 	  multibind
 	    [string_mcode szf; string_mcode lp; fullType ty; string_mcode rp]
       | Ast.TypeExp(ty) -> fullType ty
+      | Ast.Constructor(lp,ty,rp,init) ->
+	  multibind
+	    [string_mcode lp; fullType ty; string_mcode rp; initialiser init]
       | Ast.MetaErr(name,_,_,_)
       | Ast.MetaExpr(name,_,_,_,_,_)
       | Ast.MetaExprList(name,_,_,_) -> meta_mcode name
@@ -660,6 +663,9 @@ let rebuilder
 	    Ast.SizeOfType(string_mcode szf,string_mcode lp, fullType ty,
                            string_mcode rp)
 	| Ast.TypeExp(ty) -> Ast.TypeExp(fullType ty)
+	| Ast.Constructor(lp,ty,rp,init) ->
+	    Ast.Constructor(string_mcode lp, fullType ty, string_mcode rp,
+		     initialiser init)
 	| Ast.MetaErr(name,constraints,keep,inherited) ->
 	    Ast.MetaErr(meta_mcode name,constraints,keep,inherited)
 	| Ast.MetaExpr(name,constraints,keep,ty,form,inherited) ->

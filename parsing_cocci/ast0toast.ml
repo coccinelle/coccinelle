@@ -434,6 +434,8 @@ and expression e =
     | Ast0.SizeOfType(szf,lp,ty,rp) ->
 	Ast.SizeOfType(mcode szf, mcode lp,typeC ty,mcode rp)
     | Ast0.TypeExp(ty) -> Ast.TypeExp(typeC ty)
+    | Ast0.Constructor(lp,ty,rp,init) ->
+	Ast.Constructor(mcode lp,typeC ty,mcode rp,initialiser init)
     | Ast0.MetaErr(name,cstrts,_)  ->
 	  Ast.MetaErr(mcode name,constraints cstrts,unitary,false)
     | Ast0.MetaExpr(name,cstrts,ty,form,_)  ->

@@ -228,7 +228,7 @@ identifier.  See the wiki.
 
   \RULE{\rt{pmid\_with\_regexp}}
   \CASE{\NT{pmid} =\~{} \NT{regexp}}
-  \CASE{\NT{pmid} !=\~{} \NT{regexp}}
+  \CASE{\NT{pmid} !\~{} \NT{regexp}}
 
   \RULE{\rt{pmid\_with\_not\_eq}}
   \CASE{\NT{pmid} \OPT{!= \NT{id\_or\_meta}}}
@@ -974,6 +974,7 @@ in a concise way.
   \CASE{\NT{exp} -> \NT{id}}
   \CASE{\NT{exp}(\opt{\NT{PARAMSEQ}\mth{(}\NT{arg}, \NT{exp\_whencode}\mth{)}})}
   \CASE{\NT{id}}
+  \CASE{(\NT{type}) \ttlb~{\NT{COMMA\_LIST}\mth{(}\NT{init\_list\_elem}\mth{)}}~\ttrb}
 %   \CASE{\mth{\T{metaid}^{\ssf{Func}}}}
 %   \CASE{\mth{\T{metaid}^{\ssf{LocalFunc}}}}
   \CASE{\mth{\T{metaid}^{\ssf{Exp}}}}

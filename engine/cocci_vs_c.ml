@@ -1363,6 +1363,17 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
   (* only in arg lists or in define body *)
   | A.TypeExp _,    _ -> fail
 
+  | A.Constructor (ia1, typa, ia2, ia), ((B.Constructor (typb, ib), typ),ii) ->
+      let (ib1, ib2) = tuple_of_list2 ii in
+      fullType typa typb >>= (fun typa typb ->
+      initialiser ia ib >>= (fun ia ib ->
+      tokenf ia1 ib1 >>= (fun ia1 ib1 ->
+      tokenf ia2 ib2 >>= (fun ia2 ib2 ->
+        return (
+          ((A.Constructor (ia1, typa, ia2, ia))) +> wa,
+          ((B.Constructor (typb, ib),typ),[ib1;ib2])
+        )))))
+
   (* only in arg lists *)
   | A.MetaExprList _,    _
   | A.EComma _,    _
@@ -1382,7 +1393,6 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
  (* have not a counter part in coccinelle, for the moment *)
   | _, ((B.Sequence _,_),_)
   | _, ((B.StatementExpr _,_),_)
-  | _, ((B.Constructor _,_),_)
   | _, ((B.New _,_),_)
   | _, ((B.Delete _,_),_)
     -> fail
@@ -1390,6 +1400,7 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
 
   | _,
      (((B.Cast (_, _)|B.ParenExpr _|B.SizeOfType _|B.SizeOfExpr _|
+     B.Constructor (_, _)|
      B.RecordPtAccess (_, _)|
      B.RecordAccess (_, _)|B.ArrayAccess (_, _)|
      B.Binary (_, _, _)|B.Unary (_, _)|

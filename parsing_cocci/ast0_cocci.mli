@@ -133,6 +133,8 @@ and base_expression =
   | SizeOfType     of string mcode (* sizeof *) * string mcode (* ( *) *
                       typeC * string mcode (* ) *)
   | TypeExp        of typeC
+  | Constructor    of string mcode (* ( *) * typeC * string mcode (* ) *) *
+ 	              initialiser
   | MetaErr        of Ast_cocci.meta_name mcode * constraints * pure
   | MetaExpr       of Ast_cocci.meta_name mcode * constraints *
 	              Type_cocci.typeC list option * Ast_cocci.form * pure

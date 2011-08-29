@@ -18,8 +18,8 @@
  (cast_iso.res Ok) (com.res Ok) (comadd.res Ok) (comments.res Ok)
  (compare.res Ok) (condexp.res Ok) (const.res Ok) (const1bis.res Ok)
  (const_adding.res Ok) (const_array.res Ok) (const_implicit_iso.res Ok)
- (constty.res Ok) (constx.res Ok) (cs_check.res Ok) (cst.res Ok)
- (cst_null.res Ok) (csw.res Ok)
+ (constructor.res Ok) (constty.res Ok) (constx.res Ok) (cs_check.res Ok)
+ (cst.res Ok) (cst_null.res Ok) (csw.res Ok)
  (dbg.res
   (Pb
    "INCORRECT:diff token: else VS (\nFile <COCCIOUTPUTFILE>, line 8, column 2,  charpos = 133\n    around = 'else', whole content = \t\telse pr = NULL;(\"PCI\");\nFile \"tests/dbg.res\", line 7, column 5,  charpos = 130\n    around = '(', whole content = \t\tDBG(\"PCI\");\n\n    diff (result(<) vs expected_result(>)) = \n    @@ -4,6 +4,6 @@\n     \tstruct resource *pr, *r = &dev->resource[idx];\n     \n     \tif (pr)\n    -\t\tDBG\n    -\t\telse pr = NULL;(\"PCI\");\n    +\t\tDBG(\"PCI\");\n    +\telse pr = NULL;\n     }\n"))
@@ -43,13 +43,10 @@
  (doubleswitch.res Ok) (doundo.res Ok) (dowhile.res Ok) (dropf.res Ok)
  (dropparam.res Ok) (eb1.res Ok) (edots.res Ok) (edots_ver1.res Ok)
  (empty.res Ok) (end_commas.res Ok) (endif.res Ok) (enum.res Ok)
- (exitc.res
-  (Pb
-   "PROBLEM\n   exn = Prepare_ocamlcocci.LinkFailure(\"/tmp/exitc141503.cmxs\")\n"))
- (exitp.res (Pb "PROBLEM\n   exn = Failure(\"no python\")\n")) (exp.res Ok)
- (expnest.res Ok) (expopt.res Ok) (expopt2.res Ok) (expopt3.res Ok)
- (expopt3_ver1.res Ok) (expopt3_ver2.res Ok) (fields.res Ok)
- (fieldsmin.res Ok) (find_long.res Ok) (fix_flow_need.res Ok)
+ (exitc.res Ok) (exitp.res (Pb "PROBLEM\n   exn = Failure(\"no python\")\n"))
+ (exp.res Ok) (expnest.res Ok) (expopt.res Ok) (expopt2.res Ok)
+ (expopt3.res Ok) (expopt3_ver1.res Ok) (expopt3_ver2.res Ok) (extra.res Ok)
+ (fields.res Ok) (fieldsmin.res Ok) (find_long.res Ok) (fix_flow_need.res Ok)
  (fn_todo.res Ok) (fnptr.res Ok) (fnret.res Ok) (fnty.res Ok) (four.res Ok)
  (foura.res Ok) (fp.res Ok) (fsh.res Ok) (fun.res Ok)
  (gilles-question.res Ok) (gotobreak.res Ok) (hd.res Ok) (headers.res Ok)

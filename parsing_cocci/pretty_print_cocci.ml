@@ -263,6 +263,9 @@ let rec expression e =
       mcode print_string_box lp; fullType ty; close_box();
       mcode print_string rp
   | Ast.TypeExp(ty) -> fullType ty
+  | Ast.Constructor(lp,ty,rp,init) ->
+      mcode print_string_box lp; fullType ty; close_box();
+      mcode print_string rp; initialiser init
 
   | Ast.MetaErr(name,_,_,_) -> mcode print_meta name
   | Ast.MetaExpr(name,_,keep,ty,form,inherited) ->

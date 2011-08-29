@@ -180,6 +180,8 @@ and base_expression =
   | Paren          of string mcode (* ( *) * expression *
                       string mcode (* ) *)
 
+  | Constructor    of string mcode (* ( *) * fullType * string mcode (* ) *) *
+	              initialiser
   | MetaErr        of meta_name mcode * constraints * keep_binding *
 	              inherited
   | MetaExpr       of meta_name mcode * constraints * keep_binding *

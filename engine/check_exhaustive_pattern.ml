@@ -122,6 +122,7 @@ let dumb_astcocci_expr = function
  | A.SizeOfExpr (_, ea) -> ()
  | A.SizeOfType (_, _, typa, _) -> ()
  | A.TypeExp (typa) -> ()
+ | A.Constructor (_, typa, _, ia) -> ()
  | A.Paren (_, ea, _) -> ()
  | A.NestExpr _ -> ()
  | A.MetaExprList _ -> ()

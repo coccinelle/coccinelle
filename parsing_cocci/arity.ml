@@ -351,6 +351,13 @@ let rec top_expression opt_allowed tgt expr =
       let dots = mcode dots in
       let whencode = get_option (expression Ast0.NONE) whencode in
       make_exp expr tgt arity (Ast0.Estars(dots,whencode))
+  | Ast0.Constructor(lp,ty,rp,init) ->
+      let arity = exp_same (mcode2line lp) [mcode2arity lp;mcode2arity rp] in
+      let lp = mcode lp in
+      let ty = typeC arity ty in
+      let rp = mcode rp in
+      let init = initialiser arity init in
+      make_exp expr tgt arity (Ast0.Constructor(lp,ty,rp,init))
   (* why does optexp exist???? *)
   | Ast0.OptExp(_) | Ast0.UniqueExp(_) ->
       failwith "unexpected code"

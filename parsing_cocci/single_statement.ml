@@ -156,6 +156,7 @@ let rec left_expression e =
   | Ast0.SizeOfExpr(szf,exp) -> modif_before_mcode szf
   | Ast0.SizeOfType(szf,lp,ty,rp) -> modif_before_mcode szf
   | Ast0.TypeExp(ty) -> left_typeC ty
+  | Ast0.Constructor(lp,ty,rp,init) -> modif_before_mcode lp
   | Ast0.MetaErr(name,_,_) -> modif_before_mcode name
   | Ast0.MetaExpr(name,_,ty,_,_) -> modif_before_mcode name
   | Ast0.MetaExprList(name,_,_) -> modif_before_mcode name

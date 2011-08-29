@@ -251,6 +251,12 @@ let visitor mode bind option_default
 	| Ast0.TypeExp(ty) ->
 	    let (ty_n,ty) = typeC ty in
 	    (ty_n,Ast0.TypeExp(ty))
+	| Ast0.Constructor(lp,ty,rp,init) ->
+	    let (lp_n,lp) = string_mcode lp in
+	    let (ty_n,ty) = typeC ty in
+	    let (rp_n,rp) = string_mcode rp in
+	    let (init_n,init) = initialiser init in
+	    (multibind [lp_n;ty_n;rp_n;init_n], Ast0.Constructor(lp,ty,rp,init))
 	| Ast0.MetaErr(name,constraints,pure) ->
 	    let (name_n,name) = meta_mcode name in
 	    (name_n,Ast0.MetaErr(name,constraints,pure))

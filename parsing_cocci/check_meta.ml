@@ -169,6 +169,8 @@ let rec expression context old_metas table minus e =
   | Ast0.SizeOfExpr(szf,exp) -> expression ID old_metas table minus exp
   | Ast0.SizeOfType(szf,lp,ty,rp) -> typeC old_metas table minus ty
   | Ast0.TypeExp(ty) -> typeC old_metas table minus ty
+  | Ast0.Constructor(lp,ty,rp,init) ->
+      typeC old_metas table minus ty; initialiser old_metas table minus init
   | Ast0.MetaExpr(name,_,Some tys,_,_) ->
       List.iter
 	(function x ->

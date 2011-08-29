@@ -1620,6 +1620,20 @@ postfix_expr(r,pe):
      { Ast0.wrap(Ast0.FunCall($1,P.clt2mcode "(" $2,
 			      $3,
 			      P.clt2mcode ")" $4)) }
+ /*(* gccext: also called compound literals *)
+   empty case causes conflicts */
+ | TOPar ctype TCPar TOBrace initialize_list TCBrace
+     { let init =
+       if P.struct_initializer $5
+       then
+	 let il = P.drop_dot_commas $5 in
+	 Ast0.wrap
+	   (Ast0.InitList(P.clt2mcode "{" $4,il,P.clt2mcode "}" $6,false))
+       else
+	 Ast0.wrap
+	   (Ast0.InitList(P.clt2mcode "{" $4,$5,P.clt2mcode "}" $6,true)) in
+     Ast0.wrap
+       (Ast0.Constructor(P.clt2mcode "(" $1, $2, P.clt2mcode ")" $3, init)) }
 
 primary_expr(recurser,primary_extra):
    func_ident   { Ast0.wrap(Ast0.Ident($1)) }
