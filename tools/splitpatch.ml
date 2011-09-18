@@ -8,6 +8,7 @@ create a .splitpatch file in your home directory. *)
 let from = ref "email@xyz.org"
 let git_tree = ref "/var/linuxes/linux-next"
 let git_options = ref "--cc=kernel-janitors@vger.kernel.org --suppress-cc=self"
+let not_linux = ref "--suppress-cc=self"
 let prefix_before = ref (Some "/var/linuxes/linux-next")
 let prefix_after = ref (Some "/var/julia/linuxcopy")
 
@@ -95,7 +96,7 @@ let read_configs template =
       (match Str.bounded_split (Str.regexp "[ \t]*=[ \t]*") l 2 with
 	["from";s] -> from := s
       | ["git_tree";s] -> temporary_git_tree := Some s
-      | ["git_options";s] -> git_options := s
+      | ["git_options";s] -> git_options := s; not_linux := s
       | ["prefix_before";s] -> prefix_before := Some s
       | ["prefix_after";s] -> prefix_after := Some s
       | _ -> Printf.fprintf stderr "unknown line: %s\n" l);
@@ -235,6 +236,10 @@ let split_patch i =
 
 (* ------------------------------------------------------------------------ *)
 
+let uctr = ref 0
+
+let found_a_maintainer = ref false
+
 let resolve_maintainers patches =
   let maintainer_table = Hashtbl.create (List.length patches) in
   List.iter
@@ -245,7 +250,11 @@ let resolve_maintainers patches =
 	      (match Str.split spaces after with
 		file::_ ->
 		  let maintainers =
-		    List.hd (cmd_to_list (maintainer_command file)) in
+		    match (cmd_to_list (maintainer_command file)) with
+		      m::_ -> found_a_maintainer := true; m
+		    | [] ->
+			uctr := !uctr + 1;
+			"unknown"^(string_of_int !uctr) in
 		  let subsystems =
 		    cmd_to_list (subsystem_command file) in
 		  let info = (subsystems,maintainers) in
@@ -442,7 +451,6 @@ let _ =
   let message_file = (safe_chop_extension file)^".msg" in
   (* set up environment *)
   read_configs message_file;
-  (if not (git_args = "") then git_options := !git_options^" "^git_args);
   (* get message information *)
   let (subject,cover,message) = get_template_information message_file in
   (* split patch *)
@@ -450,4 +458,6 @@ let _ =
   let patches = split_patch i in
   close_in i;
   let maintainer_table = resolve_maintainers patches in
+  (if !found_a_maintainer = false then git_options := !not_linux);
+  (if not (git_args = "") then git_options := !git_options^" "^git_args);
   make_output_files subject cover message maintainer_table file
