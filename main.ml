@@ -372,6 +372,8 @@ let other_options = [
   [
     "-show_diff"           , Arg.Set FC.show_diff, " ";
     "-no_show_diff"           , Arg.Clear FC.show_diff, " ";
+    "-force_diff"           , Arg.Set FC.force_diff,
+       "show diff even if only spacing changes";
     "-show_flow"              , Arg.Set FC.show_flow,        " ";
     (* works in conjunction with -show_ctl_text *)
     "-ctl_inline_let",
