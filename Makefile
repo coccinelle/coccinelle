@@ -102,6 +102,9 @@ INCLUDEDIRSDEP=commons commons/ocamlextra $(LOCALSEXP) \
 
 INCLUDEDIRS=$(INCLUDEDIRSDEP) $(SEXPDIR) $(MENHIRDIR) $(PYCAMLDIR) $(PCREDIR)
 
+EXTRALINKS=pcre
+LINKFLAGS=$(EXTRALINKS:%=-cclib -l%)
+
 ##############################################################################
 # Generic variables
 ##############################################################################
@@ -126,8 +129,8 @@ OCAMLCFLAGS= -g
 # to also link with -g.
 OPTFLAGS= -g
 
-OCAMLC=ocamlc$(OPTBIN) $(OCAMLCFLAGS)  $(INCLUDES)
-OCAMLOPT=ocamlopt$(OPTBIN) $(OPTFLAGS) $(INCLUDES)
+OCAMLC=ocamlc$(OPTBIN) $(OCAMLCFLAGS) $(LINKFLAGS) $(INCLUDES)
+OCAMLOPT=ocamlopt$(OPTBIN) $(OPTFLAGS) $(LINKFLAGS) $(INCLUDES)
 OCAMLLEX=ocamllex #-ml # -ml for debugging lexer, but slightly slower
 OCAMLYACC=ocamlyacc -v
 OCAMLDEP=ocamldep $(INCLUDEDIRSDEP:%=-I %)
