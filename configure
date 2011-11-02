@@ -35,6 +35,7 @@ my $tarzan=1;
 my $pydir="pycaml";
 my $menhirdir="menhirlib";
 my $sexpdir="ocamlsexp";
+my $python_cmd="python";
 
 local $_ = join ' ', @ARGV;
 
@@ -51,6 +52,7 @@ local $_ = join ' ', @ARGV;
 /--without-ocaml/ and $noocamlscripting = 1;
 /--no-opt/ and $opt = "";
 /--opt/ and $opt = ".opt";
+/--with-python=([^ ]*)/ and $python_cmd = $1;
 
 #tarzan by default (used by score file parsing and now also for sexp_ast_c.ml)
 
@@ -205,8 +207,8 @@ We need  3.XX",
 my $PY_VERSION;
 if($python) {
     if(check_config(
-	"python --version 2>&1 |",
-	'^Python 2\.([4567]|[4567]\.\S*)$',
+	"$python_cmd --version 2>&1 |",
+	'^Python [23]\.',
 	"python is present",
 	"python is missing or is not a good version."
        ))
@@ -214,8 +216,8 @@ if($python) {
 	$python=0;
     }
     if($python) {
-	my $PY_PREFIX = `python pycaml/getprefix.py | tr -d '\n'`;
-	$PY_VERSION = `python pycaml/getversion.py | tr -d '\n'`;
+	my $PY_PREFIX = `$python_cmd pycaml/getprefix.py | tr -d '\n'`;
+	$PY_VERSION = `$python_cmd pycaml/getversion.py | tr -d '\n'`;
 	my $python_hdr = "$PY_PREFIX/include/python$PY_VERSION/Python.h";
 	if(check_config(
 	    "ls $python_hdr 2> /dev/null | ",
@@ -380,7 +382,8 @@ FEATURE_TARZAN=$tarzan
 ";
 
 if ($python) {
-print CONFIG "PYVER=$PY_VERSION";
+print CONFIG "PYVER=$PY_VERSION\n";
+print CONFIG "PYCMD=$python_cmd\n";
 }
 
 if($pcre) {

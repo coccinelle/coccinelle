@@ -1,3 +1,3 @@
 import sys
 
-print sys.version[:3]
+print(sys.version[:3])

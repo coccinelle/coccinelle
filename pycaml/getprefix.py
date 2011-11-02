@@ -1,3 +1,3 @@
 import sys
 
-print sys.exec_prefix
+print(sys.exec_prefix)
