@@ -1,0 +1,43 @@
+#
+# Static configuration of Ocaml libraries
+# Add these libraries to the library list in configure in order to use them.
+#
+# Template:
+# LOCAL_$lib     = modules to include when compiling $lib locally with bytecode ocaml
+# LOCALOPT_$lib  = moduels to include when compiling $lib locally with optimizing ocaml
+# GLOBAL_$lib    = modules to include when using $lib globally with bytecode ocaml
+# GLOBALOPT_$lib = modules to include when using $lib globally with optimizing ocaml
+# FLAGS_$lib     = extra flags to pass to optimizing ocaml when using $lib at link time
+#
+# This file is included in the Makefile where these variables may be used depending
+# on your actual configuration.
+#
+
+
+# pycaml library
+LOCAL_pycaml     = pycaml.cma
+LOCALOPT_pycaml  = pycaml.cmxa
+GLOBAL_pycaml    = pycaml.cma
+GLOBALOPT_pycaml = pycaml.cmxa
+FLAGS_pycaml     = 
+
+# sexplib library
+LOCAL_sexplib     = sexplib.cmo
+LOCALOPT_sexplib  = sexplib.cmx
+GLOBAL_sexplib    = sexplib.cma
+GLOBALOPT_sexplib = sexplib.cmxa
+FLAGS_sexplib     =
+
+# pcre library
+LOCAL_pcre     = pcre.cmo
+LOCALOPT_pcre  = pcre.cmx
+GLOBAL_pcre    = pcre.cma
+GLOBALOPT_pcre = pcre.cmxa
+FLAGS_pcre     = -cclib -lpcre
+
+# dynlink library
+LOCAL_dynlink     =
+LOCALOPT_dynlink  =
+GLOBAL_dynlink    = dynlink.cma
+GLOBALOPT_dynlink = dynlink.cmxa
+

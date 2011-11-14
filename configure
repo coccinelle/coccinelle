@@ -37,6 +37,23 @@ my $menhirdir="menhirlib";
 my $sexpdir="ocamlsexp";
 my $python_cmd="python";
 
+# generic ocaml libraries (set entries to 0 to disable by default)
+# 0: disabled, 1: use global library, >1: use local library
+my %libs=
+  ( "pycaml"    => 1
+  , "menhirLib" => 1
+  , "sexplib"   => 1
+  , "pcre"      => 1
+  , "dynlink"   => 0
+  );
+
+# add additional dependencies that some of these libraries may have
+# these will be added automatically
+my %deps=
+  ( # "pycaml" => ["str"]    # example
+    # "sexplib" => ["unix", "bigarray", "num"]
+  );
+
 local $_ = join ' ', @ARGV;
 
 # Parse options
@@ -44,6 +61,7 @@ local $_ = join ' ', @ARGV;
 \t--without-python\tDisable scripting in Python
 \t--without-ocaml\t\tDisable scripting in Ocaml
 \t--without-pcre\t\tDisable regexp with PCRE
+\t--with-pyton=PATH\t\tSpecify path to python executable
 \t--no-opt\t\tDo not use the optimimized version of OCaml
 \t--opt\t\t\tUse the optimimized version of OCaml\n\n";
 /--prefix=([^ ]*)/ and $prefix = $1;
@@ -54,8 +72,30 @@ local $_ = join ' ', @ARGV;
 /--opt/ and $opt = ".opt";
 /--with-python=([^ ]*)/ and $python_cmd = $1;
 
+foreach my $lib (keys %libs) {
+  /--with-$lib/ and $libs{$lib} = 1;
+  /--without-$lib/ and $libs{$lib} = 0;
+}
+
 #tarzan by default (used by score file parsing and now also for sexp_ast_c.ml)
 
+
+# extend the feature set based on their dependencies
+my $changedLibs = 1;
+while($changedLibs) {
+  $changedLibs = 0;
+  foreach $dep (keys %deps) {
+    if ($libs{$dep}) {
+      my $reqs = $deps{$dep};
+      foreach $req (@$reqs) {
+        if (!$libs{$req}) {
+	  $libs{$req}  = 1;
+	  $changedLibs = 1;
+	}
+      }
+    }
+  }
+}
 
 #if($ARGV[0] =~ "--prefix=(.*)") {
 #    $prefix = $1;
@@ -285,6 +325,44 @@ if($pcre) {
 }
 
 ######################################################################
+# Printing of library selection
+######################################################################
+
+
+pr2 "----------------------------------------------------------------------";
+pr2 "Library configuration:";
+
+my %libPaths = {};
+foreach my $lib (keys %libs) {
+  my $isSelected = $libs{$lib};
+  if ($isSelected) {
+    my $libdir = `ocamlfind query $lib 2> /dev/null | xargs echo -n`;
+    if ($libdir) {
+      $libs{$lib} = 1;
+      $libPaths{$lib} = $libdir;
+    }
+    else {
+      if (-d $lib) {      # test if local directory exists
+        $libs{$lib} = 2;  # use local version
+	$libPaths{$lib} = $lib;
+      } else {
+        $libs{$lib} = 0;  # disable the feature
+	$libPaths{$lib} = "";
+      }
+    }
+  }
+
+  my $choice = $libs{$lib};
+  if ($choice == 0) {
+    pr2 "$lib: disabled";
+  } elsif ($choice == 1) {
+    pr2 "$lib: global version in $libPaths{$lib}";
+  } else {
+    pr2 "$lib: local version selected";
+  }
+}
+
+######################################################################
 # Generate config files (platform/portability issues)
 ######################################################################
 
@@ -296,7 +374,6 @@ if($pcre) {
 ######################################################################
 # Diagnostic
 ######################################################################
-
 
 if($error) {
     pr2 "
@@ -402,6 +479,82 @@ DYNLINK=$ocamlprefix
 # if you want the fast version of the ocaml chain tools, set this var
 # or setenv it to \".opt\" in your startup script.
 OPTBIN=$opt
+";
+
+#
+# Generate variables for handling the ocaml libraries
+#
+
+my @sellibs     = ();
+my @makelibs    = ();
+my @cleanlibs   = ();
+my @deplibs     = ();
+my @lnklibs     = ();
+my @optlnklibs  = ();
+my @inclibs     = ();
+my @flagslibs   = ();
+my @featurelibs = ();
+my @pathlibs    = ();
+
+sub strVar {
+  return "\$(" . $_[0] . "_" . $_[1] . ")";
+}
+
+foreach $lib (keys %libs) {
+  my $sel     = $libs{$lib};
+  my $path    = $libPaths{$lib};
+  my $pathvar = strVar("PATH", $lib);
+
+  if ($sel == 1) {              # global version
+    push(@lnklibs,    strVar("GLOBAL", $lib));
+    push(@optlnklibs, strVar("GLOBALOPT", $lib));
+  } elsif ($sel == 2) {         # local version
+    push(@lnklibs,    strVar("LOCAL", $lib));
+    push(@optlnklibs, strVar("LOCALOPT", $lib));
+    if (-e "$path/Makefile") {  # does it have a Makefile?
+      push(@makelibs,  $pathvar);
+      push(@cleanlibs, $pathvar);
+      push(@deplibs,   $pathvar);
+    }
+  }
+
+  if ($sel >= 1) {  # indifferent of global/local
+    push(@sellibs,     $lib);
+    push(@inclibs,     $pathvar);
+    push(@flagslibs,   strVar("FLAGS", $lib));
+    
+    push(@featurelibs, "FEATURE_$lib=1");
+    push(@pathlibs,    "PATH_$lib=$path");
+  }
+}
+
+my $strSellibs    = join(" ", @sellibs);
+my $strMakelibs   = join(" ", @makelibs);
+my $strCleanlibs  = join(" ", @cleanlibs);
+my $strDeplibs    = join(" ", @deplibs);
+my $strLnklibs    = join(" ", @lnklibs);
+my $strOptlnklibs = join(" ", @optlnklibs);
+my $strInclibs    = join(" ", @inclibs);
+my $strFlagslibs  = join(" ", @flagslibs);
+my $strFeatures   = join("\n", @featurelibs);
+my $strPaths      = join("\n", @pathlibs);
+
+print CONFIG "
+# selected libraries
+$strFeatures
+
+# library paths
+$strPaths
+
+# collected config vars
+SELLIBS=$strSellibs
+MAKELIBS=$strMakelibs
+CLEANLIBS=$strCleanlibs
+DEPLIBS=$strDeplibs
+LNKLIBS=$strLnklibs
+OPTLNKLIBS=$strOptlnklibs
+INCLIBS=$strInclibs
+FLAGSLIBS=$strFlagslibs
 ";
 
 
