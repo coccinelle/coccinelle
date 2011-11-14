@@ -834,8 +834,10 @@ type rule_info = {
   dependencies: Ast_cocci.dependency;
   used_after: Ast_cocci.meta_name list;
   ruleid: int;
-  was_matched: bool ref;
 } 
+
+let rule_was_matched = true
+let rule_was_not_matched = false
 
 type toplevel_cocci_info_script_rule = {
   scr_ast_rule:
@@ -959,8 +961,7 @@ let prepare_cocci ctls free_var_lists negated_pos_lists
 	{rulename = rulename;
 	  dependencies = deps;
 	  used_after = (List.hd ua) @ (List.hd fua);
-	  ruleid = rulenb;
-	  was_matched = ref false;} in
+	  ruleid = rulenb;} in
 
       let is_script_rule r =
         match r with
@@ -1302,7 +1303,7 @@ let apply_script_rule r cache newes e rules_that_have_matched
 	rules_that_have_matched
 	!rules_that_have_ever_matched r.scr_rule_info.dependencies;
       show_or_not_binding "in environment" e;
-      (cache, (e, rules_that_have_matched)::newes)
+      (cache, (e, rules_that_have_matched)::newes,rule_was_not_matched)
     end
   else
     begin
@@ -1320,7 +1321,7 @@ let apply_script_rule r cache newes e rules_that_have_matched
 	      e in
 	  (try
 	    match List.assoc relevant_bindings cache with
-	      None -> (cache,newes)
+	      None -> (cache,newes,rule_was_not_matched)
 	    | Some script_vals ->
 		print_dependencies
 		  "dependencies for script satisfied, but cached:"
@@ -1335,7 +1336,8 @@ let apply_script_rule r cache newes e rules_that_have_matched
 		  new_e +>
 		  List.filter
 		    (fun (s,v) -> List.mem s r.scr_rule_info.used_after) in
-		(cache,merge_env [(new_e, rules_that_have_matched)] newes)
+		(cache,merge_env [(new_e, rules_that_have_matched)] newes,
+		 rule_was_not_matched)
 	  with Not_found ->
 	    begin
 	      print_dependencies "dependencies for script satisfied:"
@@ -1346,7 +1348,8 @@ let apply_script_rule r cache newes e rules_that_have_matched
 	      match script_application mv ve script_vars r with
 		None ->
 		  (* failure means we should drop e, no new bindings *)
-		  (((relevant_bindings,None) :: cache), newes)
+		  (((relevant_bindings,None) :: cache), newes,
+		   rule_was_not_matched)
 	      | Some script_vals ->
 		  let script_vals =
 		    List.map (function x -> Ast_c.MetaIdVal(x,[]))
@@ -1357,12 +1360,12 @@ let apply_script_rule r cache newes e rules_that_have_matched
 		    new_e +>
 		    List.filter
 		      (fun (s,v) -> List.mem s r.scr_rule_info.used_after) in
-		  r.scr_rule_info.was_matched := true;
 		  (((relevant_bindings,Some script_vals) :: cache),
 		   merge_env
 		     [(new_e,
 		       r.scr_rule_info.rulename :: rules_that_have_matched)]
-		     newes)
+		     newes,
+		   rule_was_matched)
 	    end)
       |	unbound ->
 	  (if !Flag_cocci.show_dependencies
@@ -1374,7 +1377,8 @@ let apply_script_rule r cache newes e rules_that_have_matched
 	    e +>
 	    List.filter
 	      (fun (s,v) -> List.mem s r.scr_rule_info.used_after) in
-	  (cache, merge_env [(e, rules_that_have_matched)] newes))
+	  (cache, merge_env [(e, rules_that_have_matched)] newes,
+	   rule_was_not_matched))
     end)
 
 let rec apply_cocci_rule r rules_that_have_ever_matched es
@@ -1387,9 +1391,9 @@ let rec apply_cocci_rule r rules_that_have_ever_matched es
       reassociate_positions r.free_vars r.negated_pos_vars !es in
 
     (* looping over the environments *)
-    let (_,newes (* envs for next round/rule *)) =
+    let (_,newes (* envs for next round/rule *),rule_matched) =
       List.fold_left
-	(function (cache,newes) ->
+	(function (cache,newes,rule_matched) ->
 	  function ((e,rules_that_have_matched),relevant_bindings) ->
 	    if not(interpret_dependencies rules_that_have_matched
 		     !rules_that_have_ever_matched
@@ -1408,11 +1412,12 @@ let rec apply_cocci_rule r rules_that_have_ever_matched es
 		     List.filter
 		       (fun (s,v) -> List.mem s r.rule_info.used_after),
 		     rules_that_have_matched)]
-		   newes)
+		   newes,
+		 rule_matched)
 	      end
 	    else
-	      let new_bindings =
-		try List.assoc relevant_bindings cache
+	      let (new_bindings,rule_matched) =
+		try (List.assoc relevant_bindings cache,rule_matched)
 		with
 		  Not_found ->
 		    print_dependencies
@@ -1429,31 +1434,29 @@ let rec apply_cocci_rule r rules_that_have_ever_matched es
 		      Ast_cocci.Normal ->
                       (* looping over the functions and toplevel elements in
 			 .c and .h *)
-			List.rev
-			  (concat_headers_and_c !ccs +>
-			   List.fold_left (fun children_e (c,f) ->
-			     if c.flow <> None
-			     then
-                             (* does also some side effects on c and r *)
-			       let processed =
-				 process_a_ctl_a_env_a_toplevel r
-				   relevant_bindings c f in
-			       match processed with
-			       | None -> children_e
-			       | Some newbindings ->
-				   newbindings +>
-				   List.fold_left
-				     (fun children_e newbinding ->
-				       if List.mem newbinding children_e
-				       then children_e
-				       else newbinding :: children_e)
-				     children_e
-			     else children_e)
-			     [])
+			let all_processed =
+			  (*List.map*)Parmap.parmap
+			    (function (c,f) ->
+			      if c.flow <> None
+			      then
+				process_a_ctl_a_env_a_toplevel r
+				  relevant_bindings c f
+			      else None)
+			    (Parmap.L(concat_headers_and_c !ccs)) in
+			let (children_e,rule_matched) =
+			  List.fold_left
+			    (function (children_e,rule_matched) ->
+			      function
+				  None -> (children_e,rule_matched)
+				| Some newbindings ->
+				    (Common.union_set newbindings children_e,
+				     rule_was_matched))
+			    ([],rule_matched) all_processed in
+			(List.rev children_e,rule_matched)
 		    | Ast_cocci.Generated ->
 			process_a_generated_a_env_a_toplevel r
 			  relevant_bindings !ccs;
-			[]) in
+		        ([],rule_matched)) in
 
 	      let old_bindings_to_keep =
 		Common.nub
@@ -1499,9 +1502,9 @@ let rec apply_cocci_rule r rules_that_have_ever_matched es
 		       r.rule_info.rulename::rules_that_have_matched))
 		    new_bindings_to_add in
 	      ((relevant_bindings,new_bindings)::cache,
-	       merge_env new_e newes))
-	([],[]) reorganized_env in (* end iter es *)
-    if !(r.rule_info.was_matched)
+	       merge_env new_e newes, rule_matched))
+	([],[],rule_was_not_matched) reorganized_env in (* end iter es *)
+    if rule_matched
     then Common.push2 r.rule_info.rulename rules_that_have_ever_matched;
 
     es := newes;
@@ -1618,7 +1621,7 @@ and process_a_generated_a_env_a_toplevel rule env ccs =
   Common.profile_code "process_a_ctl_a_env_a_toplevel"
     (fun () -> process_a_generated_a_env_a_toplevel2 rule env ccs)
 
-(* does side effects on C ast and on Cocci info rule *)
+(* does side effects on C ast *)
 and process_a_ctl_a_env_a_toplevel2 r e c f =
  indent_do (fun () ->
    show_or_not_celem "trying" c.ast_c;
@@ -1647,8 +1650,6 @@ and process_a_ctl_a_env_a_toplevel2 r e c f =
 	   show_or_not_celem "found match in" c.ast_c;
 	   show_or_not_trans_info trans_info;
 	   List.iter (show_or_not_binding "out") newbindings;
-
-	   r.rule_info.was_matched := true;
 
 	   if not (null trans_info) &&
 	     not (!Flag.sgrep_mode2 && not !Flag_cocci.show_diff)
@@ -1707,29 +1708,37 @@ let rec bigloop2 rs (ccs: file_info list) =
 
 	if !Flag.show_misc then print_endline "RESULT =";
 
-        let (_, newes) =
+        let (_, newes, rule_matched) =
           List.fold_left
-            (function (cache, newes) ->
+            (function (cache, newes, rule_matched) ->
               function (e, rules_that_have_matched) ->
 		match r.language with
                   "python" ->
-		    apply_script_rule r cache newes e rules_that_have_matched
-		      rules_that_have_ever_matched python_application
+		    let (cache, newes, local_rule_matched) =
+		      apply_script_rule r cache newes e rules_that_have_matched
+			rules_that_have_ever_matched python_application in
+		    if local_rule_matched
+		    then (cache, newes, local_rule_matched)
+		    else (cache, newes, rule_matched)
                 | "ocaml" ->
-		    apply_script_rule r cache newes e rules_that_have_matched
-		      rules_that_have_ever_matched ocaml_application
+		    let (cache, newes, local_rule_matched) =
+		      apply_script_rule r cache newes e rules_that_have_matched
+			rules_that_have_ever_matched ocaml_application in
+		    if local_rule_matched
+		    then (cache, newes, local_rule_matched)
+		    else (cache, newes, rule_matched)
 		| "test" ->
 		    concat_headers_and_c !ccs +> List.iter (fun (c,_) ->
 		      if c.flow <> None
 		      then
 			Printf.printf "Flow: %s\r\nFlow!\r\n%!" c.fullstring);
-		    (cache, newes)
+		    (cache, newes, rule_matched)
 		| _ ->
                     Printf.printf "Unknown language: %s\n" r.language;
-                    (cache, newes))
-            ([],[]) !es in
+                    (cache, newes, rule_matched))
+            ([],[],rule_was_not_matched) !es in
 
-	(if !(r.scr_rule_info.was_matched)
+	(if rule_matched
 	then
 	  Common.push2 r.scr_rule_info.rulename rules_that_have_ever_matched);
 
@@ -1881,8 +1890,7 @@ let pre_engine2 (coccifile, isofile) =
       	{rulename = "";
 	  dependencies = Ast_cocci.NoDep;
 	  used_after = [];
-	  ruleid = (-1);
-	  was_matched = ref false;} in
+	  ruleid = (-1);} in
       runrule (make_init lgg "" rule_info))
     uninitialized_languages;
 

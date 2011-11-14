@@ -6,10 +6,10 @@ These values are not used.  See the README file for information on how to
 create a .splitpatch file in your home directory. *)
 
 let from = ref "email@xyz.org"
-let git_tree = ref "/var/linuxes/linux-next-history"
+let git_tree = ref "/var/linuxes/linux-next"
 let git_options = ref "--cc=kernel-janitors@vger.kernel.org --suppress-cc=self"
 let not_linux = ref "--suppress-cc=self"
-let prefix_before = ref (Some "/var/linuxes/linux-next-history")
+let prefix_before = ref (Some "/var/linuxes/linux-next")
 let prefix_after = ref (Some "/var/julia/linuxcopy")
 
 (* ------------------------------------------------------------------------ *)

@@ -22,6 +22,7 @@ val structUnion : Ast_cocci.structUnion -> unit
 val storage : Ast_cocci.storage -> unit
 val baseType : Ast_cocci.baseType -> unit
 val fullType : Ast_cocci.fullType -> unit
+val typeC : Ast_cocci.typeC -> unit
 val inc_file : Ast_cocci.inc_file -> unit
 
 val print_around :

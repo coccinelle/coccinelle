@@ -3318,9 +3318,8 @@ and compatible_base_type a signa b =
       compatible_sign signa signb
   | Type_cocci.LongType, B.IntType (B.Si (signb, B.CLong)) ->
       compatible_sign signa signb
-  | _, B.IntType (B.Si (signb, B.CLongLong)) ->
-      pr2_once "no longlong in cocci";
-      fail
+  | Type_cocci.LongLongType, B.IntType (B.Si (signb, B.CLongLong)) ->
+      compatible_sign signa signb
   | Type_cocci.FloatType, B.FloatType B.CFloat ->
       assert (signa =*= None);
       ok

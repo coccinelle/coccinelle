@@ -35,6 +35,9 @@ my $tarzan=1;
 my $pydir="pycaml";
 my $menhirdir="menhirlib";
 my $sexpdir="ocamlsexp";
+<<<<<<< configure
+my $parmapdir="parmap";
+=======
 my $python_cmd="python";
 
 # generic ocaml libraries (set entries to 0 to disable by default)
@@ -53,6 +56,7 @@ my %deps=
   ( # "pycaml" => ["str"]    # example
     # "sexplib" => ["unix", "bigarray", "num"]
   );
+>>>>>>> 1.47
 
 local $_ = join ' ', @ARGV;
 
@@ -298,7 +302,7 @@ if($sysmenhirdir) {
     pr2 "'menhirLib' library is not present. A local copy will be used.";
 }
 
-# sexplib. Runtime system for the parsers generated with menhir
+# sexplib.
 my $syssexpdir=`ocamlfind query sexplib 2> /dev/null | xargs echo -n`;
 
 if($syssexpdir) {
@@ -306,6 +310,16 @@ if($syssexpdir) {
     pr2 "'sexplib' library is present in $sexpdir";
 } else {
     pr2 "'sexplib' library is not present. A local copy will be used.";
+}
+
+# parmap.
+my $sysparmap=`ocamlfind query parmap 2> /dev/null | xargs echo -n`;
+
+if($sysparmap) {
+    $parmapdir=$sysparmap;
+    pr2 "'parmap' library is present in $parmapdir";
+} else {
+    pr2 "'parmap' library is not present. Compilation will fail.";
 }
 
 # Check if libpcre-ocaml is available
@@ -472,6 +486,7 @@ print CONFIG "
 PYCAMLDIR=$pydir
 MENHIRDIR=$menhirdir
 SEXPDIR=$sexpdir
+PARMAPDIR=$parmapdir
 DYNLINK=$ocamlprefix
 
 # The OPTBIN variable is here to allow to use ocamlc.opt instead of
