@@ -35,9 +35,6 @@ my $tarzan=1;
 my $pydir="pycaml";
 my $menhirdir="menhirlib";
 my $sexpdir="ocamlsexp";
-<<<<<<< configure
-my $parmapdir="parmap";
-=======
 my $python_cmd="python";
 
 # generic ocaml libraries (set entries to 0 to disable by default)
@@ -48,6 +45,8 @@ my %libs=
   , "sexplib"   => 1
   , "pcre"      => 1
   , "dynlink"   => 0
+  , "parmap"    => 0
+  , "extlib"    => 0
   );
 
 # add additional dependencies that some of these libraries may have
@@ -56,7 +55,6 @@ my %deps=
   ( # "pycaml" => ["str"]    # example
     # "sexplib" => ["unix", "bigarray", "num"]
   );
->>>>>>> 1.47
 
 local $_ = join ' ', @ARGV;
 
