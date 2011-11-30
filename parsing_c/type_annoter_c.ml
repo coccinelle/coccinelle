@@ -838,7 +838,6 @@ let annotater_expr_visitor_subpart = (fun (k,bigf) expr ->
     (* fields *)
     | RecordAccess  (e, namefld)
     | RecordPtAccess (e, namefld) as x ->
-
         let fld = Ast_c.str_of_name namefld in
 
         k expr; (* recurse to set the types-ref of sub expressions *)

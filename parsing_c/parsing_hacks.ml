@@ -81,13 +81,16 @@ let is_known_typdef =
  * because it would compute msg_typedef at compile time when
  * the flag debug_typedef is always false
  *)
-let msg_typedef s n =
+let msg_typedef s ii n =
   incr Stat.nTypedefInfer;
   msg_gen (!Flag_parsing_c.debug_typedef)
     is_known_typdef
     (fun s ->
-      (*pr2_cpp (Printf.sprintf "TYPEDEF: promoting(%d): %s" n s)*)
-      pr2_cpp (Printf.sprintf "TYPEDEF: promoting: %s" s)
+      pr2_cpp
+	(Printf.sprintf "TYPEDEF: promoting:(%d) %s on line %d" n s
+	   (Ast_c.line_of_info ii))
+	(*(Printf.sprintf "TYPEDEF: promoting: %s on line %d" s
+	   (Ast_c.line_of_info ii))*)
     )
     s
 
@@ -1240,6 +1243,8 @@ let rec find_macro_lineparen xs =
     ::xs
     (* when s ==~ regexp_macro *)
     ->
+      (* This can give a false positive for K&R functions if the function
+         name is in the same column as the first parameter declaration. *)
       let condition =
         (col1 =|= col2 &&
             (match other.tok with
@@ -1639,8 +1644,32 @@ let pointer = function
   | TAnd _ when !Flag.c_plus_plus -> true
   | _ -> false
 
-let lookahead2 ~pass next before =
+(* This function is inefficient, because it will look over a K&R header,
+or function prototype multiple times.  At least when we see a , and are in a
+parameter list, we know we will eventually see a close paren, and it
+should come fairly soon. *)
+let k_and_r l =
+  let l1 = drop_until (function (TCPar _) -> true | _ -> false) l in
+  match l1 with
+    (TCPar _) :: (TOCro _) :: _ -> false
+  | (TCPar _) :: _ -> true
+  | _ -> false
 
+(* (a)(b) is ambiguous, because (a) could be a function name or a cast.
+At this point, we just see an ident for a; we don't know if it is eg a local
+variable.  This function sees at least if b is the only argument, ie there
+are no commas at top level *)
+let paren_before_comma l =
+  let rec loop level = function
+      [] -> false
+    | (TComma _)::_ when level = 1 -> false
+    | (TCPar _)::_ when level = 1 -> true
+    | (TCPar _)::rest -> loop (level-1) rest
+    | (TOPar _)::rest -> loop (level+1) rest
+    | x::rest -> loop level rest in
+  loop 0 l
+
+let lookahead2 ~pass next before =
   match (next, before) with
 
   (* c++ hacks *)
@@ -1673,7 +1702,7 @@ let lookahead2 ~pass next before =
 
       LP.disable_typedef();
 
-      msg_typedef s 1; LP.add_typedef_root s;
+      msg_typedef s i1 1; LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
   (* xx yy *)
@@ -1682,7 +1711,7 @@ let lookahead2 ~pass next before =
         ->
          (* && not_annot s2 BUT lead to false positive*)
 
-      msg_typedef s 2; LP.add_typedef_root s;
+      msg_typedef s i1 2; LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
 
@@ -1690,17 +1719,24 @@ let lookahead2 ~pass next before =
   | (TIdent (s, i1)::Tinline i2::_  , _) when not_struct_enum before
       && ok_typedef s
       ->
-      msg_typedef s 3; LP.add_typedef_root s;
+      msg_typedef s i1 3; LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
 
   (* [,(] xx [,)] AND param decl *)
-  | (TIdent (s, i1)::(TComma _|TCPar _)::_ , (TComma _ |TOPar _)::_ )
+  | (TIdent (s, i1)::(((TComma _|TCPar _)::_) as rest) ,
+     (TComma _ |TOPar _)::_ )
+    when not_struct_enum before && (LP.current_context() =*= LP.InParameter)
+      && k_and_r rest
+      ->
+	TKRParam(s,i1)
+
+  | (TIdent (s, i1)::((TComma _|TCPar _)::_) , (TComma _ |TOPar _)::_ )
     when not_struct_enum before && (LP.current_context() =*= LP.InParameter)
       && ok_typedef s
       ->
-      msg_typedef s 4; LP.add_typedef_root s;
-      TypedefIdent (s, i1)
+	msg_typedef s i1 4; LP.add_typedef_root s;
+	TypedefIdent (s, i1)
 
   (* xx* [,)] *)
   (* specialcase:  [,(] xx* [,)] *)
@@ -1709,7 +1745,7 @@ let lookahead2 ~pass next before =
         (* && !LP._lexer_hint = Some LP.ParameterDeclaration *)
       && ok_typedef s
     ->
-      msg_typedef s 5; LP.add_typedef_root s;
+      msg_typedef s i1 5; LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
 
@@ -1720,7 +1756,7 @@ let lookahead2 ~pass next before =
       (* && !LP._lexer_hint = Some LP.ParameterDeclaration *)
       && ok_typedef s
     ->
-      msg_typedef s 6; LP.add_typedef_root s;
+      msg_typedef s i1 6; LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
 
@@ -1732,7 +1768,7 @@ let lookahead2 ~pass next before =
       && ok_typedef s
       ->
 
-      msg_typedef s 7; LP.add_typedef_root s;
+      msg_typedef s i1 7; LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
   (* xx const *)
@@ -1742,7 +1778,7 @@ let lookahead2 ~pass next before =
       (* && !LP._lexer_hint = Some LP.ParameterDeclaration *)
       ->
 
-      msg_typedef s 8; LP.add_typedef_root s;
+      msg_typedef s i1 8; LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
 
@@ -1753,14 +1789,14 @@ let lookahead2 ~pass next before =
       ->
       (* && !LP._lexer_hint = Some LP.ParameterDeclaration *)
 
-      msg_typedef s 9; LP.add_typedef_root s;
+      msg_typedef s i1 9; LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
 
   (* ( const xx)  *)
   | (TIdent (s, i1)::TCPar _::_,  (Tconst _ | Tvolatile _|Trestrict _)::TOPar _::_) when
       ok_typedef s ->
-      msg_typedef s 10; LP.add_typedef_root s;
+      msg_typedef s i1 10; LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
 
@@ -1770,7 +1806,7 @@ let lookahead2 ~pass next before =
     when not_struct_enum before
       && ok_typedef s
     ->
-      msg_typedef s 11; LP.add_typedef_root s;
+      msg_typedef s i1 11; LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
   (* [(,] xx [   AND parameterdeclaration *)
@@ -1778,7 +1814,7 @@ let lookahead2 ~pass next before =
       when (LP.current_context() =*= LP.InParameter)
       && ok_typedef s
      ->
-      msg_typedef s 12; LP.add_typedef_root s;
+      msg_typedef s i1 12; LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
   (*------------------------------------------------------------*)
@@ -1791,7 +1827,7 @@ let lookahead2 ~pass next before =
      (Tregister _|Tstatic _  |Tvolatile _|Tconst _|Trestrict _)::_) when
       pointer ptr && ok_typedef s
         ->
-      msg_typedef s 13; LP.add_typedef_root s;
+      msg_typedef s i1 13; LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
   (*  TODO  xx * yy ; AND in start of compound element  *)
@@ -1803,7 +1839,7 @@ let lookahead2 ~pass next before =
       && pointer ptr && ok_typedef s
       ->
 
-      msg_typedef s 14; LP.add_typedef_root s;
+      msg_typedef s i1 14; LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
 
@@ -1814,7 +1850,7 @@ let lookahead2 ~pass next before =
     when not_struct_enum before && pointer ptr &&
       (LP.is_top_or_struct (LP.current_context ()))
       ->
-      msg_typedef s 15; LP.add_typedef_root s;
+      msg_typedef s i1 15; LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
   (*  xx * yy ,     AND in Toplevel  *)
@@ -1823,7 +1859,7 @@ let lookahead2 ~pass next before =
       && ok_typedef s && pointer ptr
       ->
 
-      msg_typedef s 16; LP.add_typedef_root s;
+      msg_typedef s i1 16; LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
   (*  xx * yy (     AND in Toplevel  *)
@@ -1832,7 +1868,7 @@ let lookahead2 ~pass next before =
       && (LP.is_top_or_struct (LP.current_context ()))
       && ok_typedef s && pointer ptr
       ->
-      msg_typedef s 17; LP.add_typedef_root s;
+      msg_typedef s i1 17; LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
   (* xx * yy [ *)
@@ -1842,7 +1878,7 @@ let lookahead2 ~pass next before =
       (LP.is_top_or_struct (LP.current_context ()))
       && ok_typedef s && pointer ptr
       ->
-      msg_typedef s 18;  LP.add_typedef_root s;
+      msg_typedef s i1 18;  LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
   (* u16: 10; in struct *)
@@ -1850,7 +1886,7 @@ let lookahead2 ~pass next before =
     when       (LP.is_top_or_struct (LP.current_context ()))
       && ok_typedef s
       ->
-      msg_typedef s 19;  LP.add_typedef_root s;
+      msg_typedef s i1 19;  LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
 
@@ -1872,7 +1908,7 @@ let lookahead2 ~pass next before =
     when not_struct_enum before
       && ok_typedef s && pointer ptr
       ->
-      msg_typedef s 21; LP.add_typedef_root s;
+      msg_typedef s i1 21; LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
 
@@ -1881,7 +1917,7 @@ let lookahead2 ~pass next before =
       when not_struct_enum before && (LP.current_context () =*= LP.InParameter)
       && ok_typedef s && pointer ptr
         ->
-      msg_typedef s 22; LP.add_typedef_root s;
+      msg_typedef s i1 22; LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
 
@@ -1890,7 +1926,7 @@ let lookahead2 ~pass next before =
      (TOBrace _| TPtVirg _)::_)  when not_struct_enum before
       && ok_typedef s & pointer ptr
         ->
-      msg_typedef s 23;  LP.add_typedef_root s;
+      msg_typedef s i1 23;  LP.add_typedef_root s;
       msg_maybe_dangereous_typedef s;
       TypedefIdent (s, i1)
 
@@ -1900,7 +1936,7 @@ let lookahead2 ~pass next before =
      (TOBrace _| TPtVirg _)::_) when
       ok_typedef s && pointer ptr
     ->
-      msg_typedef s 24; LP.add_typedef_root s;
+      msg_typedef s i1 24; LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
 
@@ -1910,7 +1946,7 @@ let lookahead2 ~pass next before =
         (* struct user_info_t sometimes *)
       && ok_typedef s && pointer ptr
         ->
-      msg_typedef s 25; LP.add_typedef_root s;
+      msg_typedef s i1 25; LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
   (*  xx ** yy *)  (* wrong ? *)
@@ -1919,7 +1955,7 @@ let lookahead2 ~pass next before =
         (* && !LP._lexer_hint = Some LP.ParameterDeclaration *)
       && ok_typedef s
       ->
-      msg_typedef s 26; LP.add_typedef_root s;
+      msg_typedef s i1 26; LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
   (* xx *** yy *)
@@ -1928,7 +1964,7 @@ let lookahead2 ~pass next before =
       && ok_typedef s
         (* && !LP._lexer_hint = Some LP.ParameterDeclaration *)
       ->
-      msg_typedef s 27; LP.add_typedef_root s;
+      msg_typedef s i1 27; LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
   (*  xx ** ) *)
@@ -1937,7 +1973,7 @@ let lookahead2 ~pass next before =
         (* && !LP._lexer_hint = Some LP.ParameterDeclaration *)
       && ok_typedef s
       ->
-      msg_typedef s 28; LP.add_typedef_root s;
+      msg_typedef s i1 28; LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
 
@@ -1957,7 +1993,7 @@ let lookahead2 ~pass next before =
       && ok_typedef s
       ->
 
-      msg_typedef s 29; LP.add_typedef_root s;
+      msg_typedef s i1 29; LP.add_typedef_root s;
       (*TOPar info*)
       TypedefIdent (s, i1)
 
@@ -1975,11 +2011,11 @@ let lookahead2 ~pass next before =
       TypedefIdent (s, i1)
   *)
   (* special case:  = (xx) (    yy) *)
-  | (TIdent (s, i1)::TCPar _::TOPar _::_ ,
+  | (TIdent (s, i1)::TCPar _::((TOPar _::_) as rest) ,
     (TOPar info)::(TEq _ |TEqEq _)::_)
-    when ok_typedef s
+    when ok_typedef s && paren_before_comma rest
         ->
-      msg_typedef s 31; LP.add_typedef_root s;
+      msg_typedef s i1 31; LP.add_typedef_root s;
       (* TOPar info *)
       TypedefIdent (s, i1)
 
@@ -1988,7 +2024,7 @@ let lookahead2 ~pass next before =
   | (TIdent (s, i1)::ptr::TCPar _::TIdent (s2, i2)::_ , (TOPar info)::_)
     when ok_typedef s && pointer ptr
         ->
-      msg_typedef s 32; LP.add_typedef_root s;
+      msg_typedef s i1 32; LP.add_typedef_root s;
       (*TOPar info*)
       TypedefIdent (s,i1)
 
@@ -1998,7 +2034,7 @@ let lookahead2 ~pass next before =
       when (*s ==~ regexp_typedef && *) not (TH.is_stuff_taking_parenthized x)
       && ok_typedef s
         ->
-      msg_typedef s 33; LP.add_typedef_root s;
+      msg_typedef s i1 33; LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
 
@@ -2015,7 +2051,7 @@ let lookahead2 ~pass next before =
       when not_struct_enum before
       && ok_typedef s
         ->
-      msg_typedef s 34; LP.add_typedef_root s;
+      msg_typedef s i1 34; LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
   (* x* ( *y )(params),  function pointer 2 *)
@@ -2023,7 +2059,7 @@ let lookahead2 ~pass next before =
       when not_struct_enum before
       && ok_typedef s
         ->
-      msg_typedef s 35; LP.add_typedef_root s;
+      msg_typedef s i1 35; LP.add_typedef_root s;
       TypedefIdent (s, i1)
 
 

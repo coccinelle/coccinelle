@@ -64,6 +64,8 @@
   index (parallelism), if any.
 - Allow multi-character constants in C code and SmPL code.  Thanks to Kamil
   Pilch for pointing out the problem.
+- Better parsing of K&R C functions.  No longer convert all parameters to
+  typedefs.
 
 ** Bugfix:
 - Corrected parsing of script strings delimited by a single quote.  Thanks
@@ -109,6 +111,7 @@
 - slightly better handling of long long
 - Strip constraints from metavariables in function prototype treatment
   before comparison, due to incomparability of pcre regexps.
+- Fixed obsolete regexp doc, thanks to Dmitry Osmakov
 
 * 0.2.5
 ** Language:

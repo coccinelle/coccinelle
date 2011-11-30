@@ -98,8 +98,8 @@ let addTypeD     = function
   | ((Middle3 x,ii),      ({typeD = ((a,None,c),ii2)} as v))  ->
       {v with typeD = (a, Some x,c),ii++ii2}
 
-  | ((Right3 t,ii),       ({typeD = ((a,b,Some _),ii2)} as _v)) ->
-      raise (Semantic ("two or more data types", fake_pi))
+  | ((Right3 t,ii),       ({typeD = ((a,b,Some x),ii2)} as _v)) ->
+      raise (Semantic ((Printf.sprintf "two or more data types: t %s ii %s\ntypeD %s ii2 %s\n" (Dumper.dump t) (Dumper.dump ii) (Dumper.dump x) (Dumper.dump ii2)), fake_pi))
   | ((Right3 t,ii),       ({typeD = ((a,b,None),ii2)} as v))   ->
       {v with typeD = (a,b, Some t),ii++ii2}
 
@@ -231,7 +231,7 @@ let (fixOldCDecl: fullType -> fullType) = fun ty ->
           | BaseType Void ->
               ty
           | _ ->
-              pr2 ("SEMANTIC:parameter name omitted, but I continue");
+              pr2_once ("SEMANTIC:parameter name omitted, but I continue");
               ty
           )
 
@@ -240,7 +240,7 @@ let (fixOldCDecl: fullType -> fullType) = fun ty ->
             match param with
             | {p_namei = None} ->
               (* if majuscule, then certainly macro-parameter *)
-                pr2 ("SEMANTIC:parameter name omitted, but I continue");
+                pr2_once ("SEMANTIC:parameter name omitted, but I continue");
 	    | _ -> ()
           ));
           ty
@@ -400,6 +400,7 @@ let mk_string_wrap (s,info) = (s, [info])
 %token <(string * Ast_c.isWchar) * Ast_c.info>   TString
 
 %token <string * Ast_c.info> TIdent
+%token <string * Ast_c.info> TKRParam
 %token <string * Ast_c.info> Tconstructorname /* parsing_hack for c++ */
 /*(* appears mostly after some fix_xxx in parsing_hack *)*/
 %token <string * Ast_c.info> TypedefIdent
@@ -1219,6 +1220,14 @@ parameter_type_list:
 
 
 parameter_decl2:
+   TKRParam {
+     let name = RegularName (mk_string_wrap $1) in
+     LP.add_ident (str_of_name name);
+     { p_namei = Some name;
+       p_type = mk_ty NoType [];
+       p_register = (false, []);
+     }
+   }
  | decl_spec declaratorp
      { let ((returnType,hasreg),iihasreg) = fixDeclSpecForParam $1 in
        let (name, ftyp) = $2 in
