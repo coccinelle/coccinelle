@@ -50,7 +50,8 @@ my %libs=
   );
 
 # add additional dependencies that some of these libraries may have
-# these will be added automatically
+# these will then be added automatically
+# (we don't really make use of this here)
 my %deps=
   ( # "pycaml" => ["str"]    # example
     # "sexplib" => ["unix", "bigarray", "num"]
@@ -74,8 +75,10 @@ local $_ = join ' ', @ARGV;
 /--opt/ and $opt = ".opt";
 /--with-python=([^ ]*)/ and $python_cmd = $1;
 
+# todo: also print these options as part of the help message...
 foreach my $lib (keys %libs) {
   /--with-$lib/ and $libs{$lib} = 1;
+  /--with-local-$lib/ and $libs{$lib} = 2;
   /--without-$lib/ and $libs{$lib} = 0;
 }
 
@@ -284,8 +287,13 @@ my $ocamlfind=!check_config(
 my $syspydir=`ocamlfind query pycaml 2> /dev/null | xargs echo -n`;
 
 if($syspydir) {
-    $pydir=$syspydir;
-    pr2 "'pycaml' library is present in $pydir";
+    pr2 "'pycaml' library is present in $syspydir";
+    if ($libs{'pycaml'} > 1) {
+        pr2 "... but a local copy of 'pycaml' will be used.";
+    }
+    else {
+        $pydir=$syspydir;
+    }
 } else {
     pr2 "'pycaml' library is not present. A local copy will be used.";
 }
@@ -349,7 +357,7 @@ foreach my $lib (keys %libs) {
   my $isSelected = $libs{$lib};
   if ($isSelected) {
     my $libdir = `ocamlfind query $lib 2> /dev/null | xargs echo -n`;
-    if ($libdir) {
+    if ($libdir && $libs{$lib} <= 1) {
       $libs{$lib} = 1;
       $libPaths{$lib} = $libdir;
     }
@@ -521,7 +529,7 @@ foreach $lib (keys %libs) {
   if ($sel == 1) {              # global version
     push(@lnklibs,    strVar("GLOBAL", $lib));
     push(@optlnklibs, strVar("GLOBALOPT", $lib));
-  } elsif ($sel == 2) {         # local version
+  } elsif ($sel > 1) {         # local version
     push(@lnklibs,    strVar("LOCAL", $lib));
     push(@optlnklibs, strVar("LOCALOPT", $lib));
     if (-e "$path/Makefile") {  # does it have a Makefile?
