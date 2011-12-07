@@ -86,7 +86,7 @@ LOCALSEXP=
 endif
 
 # used for depend: and a little for rec & rec.opt
-MAKESUBDIRS=$(LOCALPYCAML) $(LOCALSEXP) commons \
+MAKESUBDIRS=$(LOCALSEXP) commons \
  globals $(LOCALMENHIR) ctl parsing_cocci parsing_c \
  engine popl09 extra python ocaml \
  $(MAKELIBS)
