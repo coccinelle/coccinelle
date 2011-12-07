@@ -254,8 +254,8 @@ if($python) {
     if(check_config(
 	"$python_cmd --version 2>&1 |",
 	'^Python [23]\.',
-	"python is present",
-	"python is missing or is not a good version."
+	"$python_cmd is present",
+	"$python_cmd is missing or is not a good version."
        ))
     {
 	$python=0;
