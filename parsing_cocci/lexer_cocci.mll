@@ -173,7 +173,8 @@ let id_tokens lexbuf =
   let in_iso = !Data.in_iso in
   let in_prolog = !Data.in_prolog in
   match s with
-    "metavariable" when in_meta -> check_arity_context_linetype s; TMetavariable
+  | "symbol" when in_meta -> check_arity_context_linetype s; TSymbol
+  | "metavariable" when in_meta -> check_arity_context_linetype s; TMetavariable
   | "identifier" when in_meta -> check_arity_context_linetype s; TIdentifier
   | "type" when in_meta ->       check_arity_context_linetype s; TType
   | "parameter" when in_meta ->  check_arity_context_linetype s; TParameter

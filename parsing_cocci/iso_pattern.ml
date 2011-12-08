@@ -2058,7 +2058,9 @@ let new_mv (_,s) =
   "_"^s^"_"^(string_of_int ct)
 
 let get_name = function
-    Ast.MetaMetaDecl(ar,nm) ->
+    Ast.MetaSymDecl(nm) ->
+      (nm,function nm -> Ast.MetaSymDecl(nm))
+  | Ast.MetaMetaDecl(ar,nm) ->
       (nm,function nm -> Ast.MetaMetaDecl(ar,nm))
   | Ast.MetaIdDecl(ar,nm) ->
       (nm,function nm -> Ast.MetaIdDecl(ar,nm))

@@ -60,6 +60,7 @@ let ast_rep_binding ctr = function
     (Some nm,Ast.MetaPosDecl _) ->
       failwith
 	(Printf.sprintf "%s: No AST representation for position variables" nm)
+  | (Some nm,Ast.MetaSymDecl _) -> print_match ctr nm "Symbol"
   | (Some nm,Ast.MetaMetaDecl _) ->
       failwith
 	(Printf.sprintf

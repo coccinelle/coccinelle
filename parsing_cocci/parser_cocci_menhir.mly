@@ -79,7 +79,7 @@ let tmeta_to_ident (name,pure,clt) =
 %token EOF
 
 %token TIdentifier TExpression TStatement TFunction TLocal TType TParameter
-%token TIdExpression TInitialiser TDeclaration TField TMetavariable
+%token TIdExpression TInitialiser TDeclaration TField TMetavariable TSymbol
 %token Tlist TFresh TConstant TError TWords TWhy0 TPlus0 TBang0
 %token TPure TContext TGenerated
 %token TTypedef TDeclarer TIterator TName TPosition TPosAny
@@ -320,6 +320,9 @@ metadec:
 | kindfn=metakind_fresh ids=comma_list(pure_ident_or_meta_ident_with_seed)
     TMPtVirg
     { P.create_fresh_metadec kindfn ids }
+| kindfn=metakind_symbol ids=comma_list(pure_ident_or_meta_ident)
+    TMPtVirg
+    { P.create_metadec_symbol kindfn ids }
 | ar=arity ispure=pure
   kindfn=metakind_atomic_maybe_virt
   ids=
@@ -394,6 +397,12 @@ list_len:
   pure_ident_or_meta_ident { Common.Left $1 }
 | TInt { let (x,clt) = $1 in Common.Right (int_of_string x) }
 
+%inline metakind_symbol:
+  TSymbol
+    { (fun name check_meta ->
+      let tok = check_meta(Ast.MetaSymDecl(name)) in
+      tok) }
+
 %inline metakind_fresh:
   TFresh TIdentifier
     { (fun name check_meta seed ->
@@ -402,7 +411,7 @@ list_len:
 
 /* metavariable kinds with no constraints, etc */
 %inline metakind:
-  TMetavariable
+ TMetavariable
     { (fun arity name pure check_meta ->
       let tok = check_meta(Ast.MetaMetaDecl(arity,name)) in
       !Data.add_meta_meta name pure; tok) }

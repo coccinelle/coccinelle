@@ -332,7 +332,9 @@ let pp_meta_decl pr env decl =
   let no_arity = function Ast.NONE -> () | _ -> failwith "no arity allowed" in
   let pp_name (_,n) = pr n in
   match decl with
-    Ast.MetaMetaDecl(ar, name) ->
+  | Ast.MetaSymDecl(name) ->
+      pr "symbol "; pp_name name; pr ";\n"
+  | Ast.MetaMetaDecl(ar, name) ->
       (* ignore virtual *)
       no_arity ar; pr "metavariable "; pp_name name; pr ";\n"
   | Ast.MetaIdDecl(ar, name) ->

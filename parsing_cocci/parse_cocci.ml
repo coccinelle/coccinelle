@@ -32,7 +32,8 @@ let line_type2c tok =
 
 let token2c (tok,_) =
  match tok with
-    PC.TMetavariable -> "metavariable"
+    PC.TSymbol -> "symbol"
+  | PC.TMetavariable -> "metavariable"
   | PC.TIdentifier -> "identifier"
   | PC.TType -> "type"
   | PC.TParameter -> "parameter"
@@ -621,7 +622,7 @@ let split t clt =
 
 let split_token ((tok,_) as t) =
   match tok with
-    PC.TMetavariable | PC.TIdentifier
+    PC.TSymbol | PC.TMetavariable | PC.TIdentifier
   | PC.TConstant | PC.TExpression | PC.TIdExpression
   | PC.TDeclaration | PC.TField
   | PC.TStatement | PC.TPosition | PC.TPosAny | PC.TInitialiser
