@@ -171,7 +171,7 @@ and base_expression =
   | DisjExpr       of expression list
   | NestExpr       of string mcode (* <.../<+... *) *
 	              expression dots *
-	              string mcode (* ...>/...+> *) *
+	              string mcode (* ...>/...+> *) * 
                       expression option * multi
 
   (* can appear in arg lists, and also inside Nest, as in:
@@ -465,7 +465,7 @@ and base_statement =
   | Atomic        of rule_elem
   | Disj          of statement dots list
   | Nest          of string mcode (* <.../<+... *) * statement dots *
-	             string mcode (* ...>/...+> *) *
+	             string mcode (* ...>/...+> *) * 
 	             (statement dots,statement) whencode list * multi *
 	             dots_whencode list * dots_whencode list
   | FunDecl       of rule_elem (* header *) * rule_elem (* { *) *

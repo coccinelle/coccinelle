@@ -876,7 +876,7 @@ let match_maker checks_needed context_required whencode_allowed =
 		   return false))
 	  | (Ast0.Ddots(_,Some _),_) ->
 	      failwith "whencode not allowed in a pattern1"
-
+		
 	  | (Ast0.OptDecl(decla),Ast0.OptDecl(declb))
 	  | (Ast0.UniqueDecl(decla),Ast0.UniqueDecl(declb)) ->
 	      match_decl decla declb
@@ -885,7 +885,7 @@ let match_maker checks_needed context_required whencode_allowed =
 	      match_decl pattern declb
 	  | _ -> return false
 	else return_false (ContextRequired (Ast0.DeclTag d))
-
+	    
   and match_init pattern i =
     match Ast0.unwrap pattern with
       Ast0.MetaInit(name,pure) ->
@@ -2059,7 +2059,7 @@ let new_mv (_,s) =
 
 let get_name = function
     Ast.MetaSymDecl(nm) ->
-      failwith "cannot get_name a symbol metavar"
+      (nm,function nm -> Ast.MetaSymDecl(nm))
   | Ast.MetaMetaDecl(ar,nm) ->
       (nm,function nm -> Ast.MetaMetaDecl(ar,nm))
   | Ast.MetaIdDecl(ar,nm) ->
