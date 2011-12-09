@@ -538,11 +538,11 @@ let add_to_fresh_table l =
       let name = Ast.get_meta_name x in Hashtbl.replace fresh_table name ())
     l
 
-let check_all_marked rname err table after_err =
+let check_all_marked rname err symbols table after_err =
   Hashtbl.iter
     (function name ->
       function (cell) ->
-	if not (!cell)
+	if not (!cell) && not (List.exists (function nm -> nm == snd name) symbols)
 	then
 	  let (_,name) = name in
 	  warning
@@ -576,9 +576,9 @@ let check_meta rname old_metas inherited_metavars metavars minus plus =
   rule old_metas symbols [iother_table;other_table;err_table] true minus;
   positions [iother_table;other_table] minus;
   dup_positions minus;
-  check_all_marked rname "metavariable" other_table "in the - or context code";
+  check_all_marked rname "metavariable" symbols other_table "in the - or context code";
   rule old_metas symbols [iother_table;fresh_table;err_table] false plus;
-  check_all_marked rname "inherited metavariable" iother_table
+  check_all_marked rname "inherited metavariable" symbols iother_table
     "in the -, +, or context code";
-  check_all_marked rname "metavariable" fresh_table "in the + code";
-  check_all_marked rname "error metavariable" err_table ""
+  check_all_marked rname "metavariable" symbols fresh_table "in the + code";
+  check_all_marked rname "error metavariable" symbols err_table ""
