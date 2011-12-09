@@ -196,14 +196,7 @@ let lookup rule name =
 	(Semantic_cocci.Semantic("bad rule "^rule^" or bad variable "^name))
 
 let check_meta_tyopt type_irrelevant = function
-  | Ast.MetaSymDecl(rule,name) ->
-      (match lookup rule name with
-        Ast.MetaSymDecl(_) -> ()
-      | _ -> (* perhaps we should forbit inheritance of symbol meta vars in general *)
-          raise
-            (Semantic_cocci.Semantic
-	       ("Incompatible inheritance declaration "^name)))
-  | Ast.MetaMetaDecl(Ast.NONE,(rule,name)) ->
+    Ast.MetaMetaDecl(Ast.NONE,(rule,name)) ->
       (match lookup rule name with
 	Ast.MetaMetaDecl(_,_) -> ()
       | _ ->
@@ -373,18 +366,6 @@ let create_metadec ar ispure kindfn ids current_rule =
 	 kindfn ar rule ispure checker)
        ids)
 
-let create_metadec_symbol kindfn ids current_rule =
-  List.concat
-    (List.map
-      (function (rule,nm) ->
-        let (rule,checker) =
-	  match rule with
-	    None -> ((current_rule,nm),function x -> [Common.Left x])
-	  | Some rule ->
-	      ((rule,nm),
-	       function x -> check_meta x; [Common.Right x]) in
-	kindfn rule checker)
-      ids)
 
 let create_metadec_virt ar ispure kindfn ids current_rule =
   List.concat

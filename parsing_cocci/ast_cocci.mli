@@ -64,8 +64,7 @@ and end_info =
 and arity = UNIQUE | OPT | MULTI | NONE
 
 and metavar =
-  | MetaSymDecl of meta_name (* name *)
-  | MetaMetaDecl of arity * meta_name (* name *)
+    MetaMetaDecl of arity * meta_name (* name *)
   | MetaIdDecl of arity * meta_name (* name *)
   | MetaFreshIdDecl of meta_name (* name *) * seed (* seed *)
   | MetaTypeDecl of arity * meta_name (* name *)
