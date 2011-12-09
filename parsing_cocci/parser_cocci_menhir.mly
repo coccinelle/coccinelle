@@ -1819,7 +1819,7 @@ not_eqid:
 	   let (str,meta) =
 	     List.fold_left
 	       (function (str,meta) ->
-		 function 
+		 function
 		   (Some rn,id) as i ->
 		     let i =
 		       P.check_inherited_constraint i
