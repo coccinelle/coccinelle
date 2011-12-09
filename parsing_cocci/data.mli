@@ -92,6 +92,8 @@ val add_decl_meta: (Ast_cocci.meta_name -> Ast0_cocci.pure -> unit) ref
 
 val add_field_meta: (Ast_cocci.meta_name -> Ast0_cocci.pure -> unit) ref
 
+val add_symbol_meta: (string -> unit) ref
+
 val add_field_list_meta:
     (Ast_cocci.meta_name -> Ast_cocci.list_len -> Ast0_cocci.pure -> unit) ref
 

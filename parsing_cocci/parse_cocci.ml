@@ -40,6 +40,7 @@ let token2c (tok,_) =
   | PC.TExpression -> "expression"
   | PC.TIdExpression -> "idexpression"
   | PC.TInitialiser -> "initialiser"
+  | PC.TSymbol -> "symbol"
   | PC.TDeclaration -> "declaration"
   | PC.TField -> "field"
   | PC.TStatement -> "statement"
@@ -624,7 +625,7 @@ let split_token ((tok,_) as t) =
     PC.TMetavariable | PC.TIdentifier
   | PC.TConstant | PC.TExpression | PC.TIdExpression
   | PC.TDeclaration | PC.TField
-  | PC.TStatement | PC.TPosition | PC.TPosAny | PC.TInitialiser
+  | PC.TStatement | PC.TPosition | PC.TPosAny | PC.TInitialiser | PC.TSymbol
   | PC.TFunction | PC.TTypedef | PC.TDeclarer | PC.TIterator | PC.TName
   | PC.TType | PC.TParameter | PC.TLocal | PC.Tlist | PC.TFresh
   | PC.TCppConcatOp | PC.TPure

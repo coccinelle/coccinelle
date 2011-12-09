@@ -145,6 +145,8 @@ let declarer_names = (Hashtbl.create(100) : (string, D.clt -> token) Hashtbl.t)
 
 let iterator_names = (Hashtbl.create(100) : (string, D.clt -> token) Hashtbl.t)
 
+let symbol_names = (Hashtbl.create(15) : (string, D.clt -> token) Hashtbl.t)
+
 let rule_names = (Hashtbl.create(100) : (string, unit) Hashtbl.t)
 
 let check_var s linetype =
@@ -160,7 +162,10 @@ let check_var s linetype =
 	  (try (Hashtbl.find declarer_names s) linetype
 	  with Not_found ->
 	    (try (Hashtbl.find iterator_names s) linetype
-	    with Not_found -> TIdent (s,linetype)))) in
+	    with Not_found ->
+	      (try (Hashtbl.find symbol_names s) linetype
+	      with Not_found ->
+                TIdent (s,linetype))))) in
   if !Data.in_meta or !Data.in_rule_name
   then (try Hashtbl.find rule_names s; TRuleName s with Not_found -> fail())
   else fail()
@@ -209,6 +214,7 @@ let id_tokens lexbuf =
       check_arity_context_linetype s; TContext
   | "error" when in_meta ->      check_arity_context_linetype s; TError
   | "words" when in_meta ->      check_context_linetype s; TWords
+  | "symbol" when in_meta ->     check_arity_context_linetype s; TSymbol
 
   | "using" when in_rule_name || in_prolog ->  check_context_linetype s; TUsing
   | "virtual" when in_prolog or in_rule_name or in_meta ->
@@ -307,6 +313,7 @@ let init _ =
   Hashtbl.clear rule_names;
   Hashtbl.clear iterator_names;
   Hashtbl.clear declarer_names;
+  Hashtbl.clear symbol_names;
   let get_name (_,x) = x in
   Data.add_meta_meta :=
     (fun name pure ->
@@ -429,6 +436,10 @@ let init _ =
     (function name ->
       let fn clt = TIteratorId(name,clt) in
       Hashtbl.replace iterator_names name fn);
+  Data.add_symbol_meta :=
+    (function name ->
+      let fn clt = TIdent (name,clt) in
+      Hashtbl.replace symbol_names name fn);
   Data.init_rule := (function _ -> Hashtbl.clear metavariables);
   Data.install_bindings :=
     (function parent ->
@@ -479,7 +490,7 @@ let real = pent exp | ((pent? '.' pfract | pent '.' pfract? ) exp?)
 rule token = parse
   | [' ' '\t']* ['\n' '\r' '\011' '\012']
     { let cls = !current_line_started in
-      
+
       if not cls
       then
 	begin

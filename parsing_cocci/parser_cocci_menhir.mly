@@ -79,7 +79,7 @@ let tmeta_to_ident (name,pure,clt) =
 %token EOF
 
 %token TIdentifier TExpression TStatement TFunction TLocal TType TParameter
-%token TIdExpression TInitialiser TDeclaration TField TMetavariable
+%token TIdExpression TInitialiser TDeclaration TField TMetavariable TSymbol
 %token Tlist TFresh TConstant TError TWords TWhy0 TPlus0 TBang0
 %token TPure TContext TGenerated
 %token TTypedef TDeclarer TIterator TName TPosition TPosAny
@@ -389,6 +389,11 @@ metadec:
 	  let tok = check_meta(Ast.MetaInitListDecl(arity,name,lenname)) in
 	  !Data.add_initlist_meta name lenname pure; tok)
 	len ids }
+| TSymbol ids=comma_list(pure_ident) TMPtVirg
+    { (fun _ ->
+        let add_sym = fun (nm,_) -> !Data.add_symbol_meta nm in
+          List.iter add_sym ids; [])
+    }
 
 list_len:
   pure_ident_or_meta_ident { Common.Left $1 }
@@ -1810,7 +1815,7 @@ not_eqid:
 	   let (str,meta) =
 	     List.fold_left
 	       (function (str,meta) ->
-		 function 
+		 function
 		   (Some rn,id) as i ->
 		     let i =
 		       P.check_inherited_constraint i
