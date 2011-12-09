@@ -876,7 +876,7 @@ let match_maker checks_needed context_required whencode_allowed =
 		   return false))
 	  | (Ast0.Ddots(_,Some _),_) ->
 	      failwith "whencode not allowed in a pattern1"
-		
+
 	  | (Ast0.OptDecl(decla),Ast0.OptDecl(declb))
 	  | (Ast0.UniqueDecl(decla),Ast0.UniqueDecl(declb)) ->
 	      match_decl decla declb
@@ -885,7 +885,7 @@ let match_maker checks_needed context_required whencode_allowed =
 	      match_decl pattern declb
 	  | _ -> return false
 	else return_false (ContextRequired (Ast0.DeclTag d))
-	    
+
   and match_init pattern i =
     match Ast0.unwrap pattern with
       Ast0.MetaInit(name,pure) ->
@@ -2216,7 +2216,8 @@ let disj_starter lst =
     { Ast0.pos_info = new_pos_info;
       Ast0.attachable_start = false; Ast0.attachable_end = false;
       Ast0.mcode_start = []; Ast0.mcode_end = [];
-      Ast0.strings_before = []; Ast0.strings_after = [] } in
+      Ast0.strings_before = []; Ast0.strings_after = [];
+      Ast0.isSymbolIdent = false; } in
   Ast0.make_mcode_info "(" info
 
 let disj_ender lst =
@@ -2229,7 +2230,8 @@ let disj_ender lst =
     { Ast0.pos_info = new_pos_info;
       Ast0.attachable_start = false; Ast0.attachable_end = false;
       Ast0.mcode_start = []; Ast0.mcode_end = [];
-      Ast0.strings_before = []; Ast0.strings_after = [] } in
+      Ast0.strings_before = []; Ast0.strings_after = [];
+      Ast0.isSymbolIdent = false; } in
   Ast0.make_mcode_info ")" info
 
 let disj_mid _ = Ast0.make_mcode "|"

@@ -130,6 +130,7 @@ let token2c (tok,_) =
   | PC.TTypeId(s,clt) -> (pr "typename-%s" s)^(line_type2c clt)
   | PC.TDeclarerId(s,clt) -> (pr "declarername-%s" s)^(line_type2c clt)
   | PC.TIteratorId(s,clt) -> (pr "iteratorname-%s" s)^(line_type2c clt)
+  | PC.TSymId(s,clt)      -> (pr "symbol-%s" s)^(line_type2c clt)
   | PC.TMetaDeclarer(_,_,_,clt) -> "declmeta"^(line_type2c clt)
   | PC.TMetaIterator(_,_,_,clt) -> "itermeta"^(line_type2c clt)
 
@@ -655,7 +656,7 @@ let split_token ((tok,_) as t) =
   | PC.TSizeof(clt)
   | PC.TReturn(clt) | PC.TBreak(clt) | PC.TContinue(clt) | PC.TGoto(clt)
   | PC.TIdent(_,clt)
-  | PC.TTypeId(_,clt) | PC.TDeclarerId(_,clt) | PC.TIteratorId(_,clt)
+  | PC.TTypeId(_,clt) | PC.TDeclarerId(_,clt) | PC.TIteratorId(_,clt) | PC.TSymId(_,clt)
   | PC.TMeta(_,_,clt) | PC.TMetaConst(_,_,_,_,clt) | PC.TMetaExp(_,_,_,_,clt)
   | PC.TMetaIdExp(_,_,_,_,clt) | PC.TMetaLocalIdExp(_,_,_,_,clt)
   | PC.TMetaExpList(_,_,_,clt)

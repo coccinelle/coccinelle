@@ -438,7 +438,7 @@ let init _ =
       Hashtbl.replace iterator_names name fn);
   Data.add_symbol_meta :=
     (function name ->
-      let fn clt = TIdent (name,clt) in
+      let fn clt = TSymId (name,clt) in
       Hashtbl.replace symbol_names name fn);
   Data.init_rule := (function _ -> Hashtbl.clear metavariables);
   Data.install_bindings :=

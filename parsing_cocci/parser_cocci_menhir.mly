@@ -98,7 +98,7 @@ let tmeta_to_ident (name,pure,clt) =
 
 %token <Data.clt> TIf TElse TWhile TFor TDo TSwitch TCase TDefault TReturn
 %token <Data.clt> TBreak TContinue TGoto TSizeof TFunDecl
-%token <string * Data.clt> TIdent TTypeId TDeclarerId TIteratorId
+%token <string * Data.clt> TIdent TTypeId TDeclarerId TIteratorId TSymId
 %token <Ast_cocci.added_string * Data.clt> TPragma
 
 %token <Parse_aux.midinfo>       TMetaId
@@ -753,7 +753,7 @@ struct_decl_one:
 	       (t,P.clt2mcode "(" lp1,P.clt2mcode "*" st,P.clt2mcode ")" rp1,
 		P.clt2mcode "(" lp2,p,P.clt2mcode ")" rp2)) in
         Ast0.wrap(Ast0.UnInit(None,fn t,id,P.clt2mcode ";" pv)) }
-     | cv=ioption(const_vol) i=pure_ident d=d_ident pv=TPtVirg
+     | cv=ioption(const_vol) i=pure_ident_or_symbol d=d_ident pv=TPtVirg
 	 { let (id,fn) = d in
 	 let idtype = P.make_cv cv (Ast0.wrap (Ast0.TypeName(P.id2mcode i))) in
 	 Ast0.wrap(Ast0.UnInit(None,fn idtype,id,P.clt2mcode ";" pv)) }
@@ -883,6 +883,9 @@ includes:
 	  | TIdent((nm,clt)) ->
 	      let clt = P.set_aft aft clt in
 	      Ast0.wrap(Ast0.Id(P.clt2mcode nm clt))
+	  | TSymId(nm,clt) ->
+	      let clt = P.set_aft aft clt in
+	      Ast0.wrap(Ast0.Id(P.clt2mcode nm clt))
 	  | _ ->
 	      raise
 		(Semantic_cocci.Semantic
@@ -919,6 +922,9 @@ defineop:
 	      | TIdent((nm,clt)) ->
 		  let clt = P.set_aft aft clt in
 		  Ast0.wrap(Ast0.Id(P.clt2mcode nm clt))
+	      | TSymId(nm,clt) ->
+		  let clt = P.set_aft aft clt in
+		  Ast0.wrap(Ast0.Id(P.clt2mcode nm clt))
 	      | _ ->
 		  raise
 		    (Semantic_cocci.Semantic
@@ -942,6 +948,8 @@ defineop:
 		  Ast0.wrap
 		    (Ast0.MetaId(P.clt2mcode nm clt,constraints,seed,pure))
 	      | TIdent((nm,clt)) ->
+		  Ast0.wrap(Ast0.Id(P.clt2mcode nm clt))
+	      | TSymId(nm,clt) ->
 		  Ast0.wrap(Ast0.Id(P.clt2mcode nm clt))
 	      | _ ->
 		  raise
@@ -1179,7 +1187,7 @@ decl_var:
       {let (id,fn) = d in
       [Ast0.wrap(Ast0.Init(s,fn t,id,P.clt2mcode "=" q,e,P.clt2mcode ";" pv))]}
   /* type is a typedef name */
-  | s=ioption(storage) cv=ioption(const_vol) i=pure_ident
+  | s=ioption(storage) cv=ioption(const_vol) i=pure_ident_or_symbol
       d=comma_list(d_ident) pv=TPtVirg
       { List.map
 	  (function (id,fn) ->
@@ -1187,7 +1195,7 @@ decl_var:
 	      P.make_cv cv (Ast0.wrap (Ast0.TypeName(P.id2mcode i))) in
 	    Ast0.wrap(Ast0.UnInit(s,fn idtype,id,P.clt2mcode ";" pv)))
 	  d }
-  | s=ioption(storage) cv=ioption(const_vol) i=pure_ident d=d_ident q=TEq
+  | s=ioption(storage) cv=ioption(const_vol) i=pure_ident_or_symbol d=d_ident q=TEq
       e=initialize pv=TPtVirg
       { let (id,fn) = d in
       !Data.add_type_name (P.id2name i);
@@ -1239,12 +1247,12 @@ one_decl_var:
       { let (id,fn) = d in
       Ast0.wrap(Ast0.Init(s,fn t,id,P.clt2mcode "=" q,e,P.clt2mcode ";" pv)) }
   /* type is a typedef name */
-  | s=ioption(storage) cv=ioption(const_vol) i=pure_ident
+  | s=ioption(storage) cv=ioption(const_vol) i=pure_ident_or_symbol
       d=d_ident pv=TPtVirg
       { let (id,fn) = d in
         let idtype = P.make_cv cv (Ast0.wrap (Ast0.TypeName(P.id2mcode i))) in
 	Ast0.wrap(Ast0.UnInit(s,fn idtype,id,P.clt2mcode ";" pv)) }
-  | s=ioption(storage) cv=ioption(const_vol) i=pure_ident d=d_ident q=TEq
+  | s=ioption(storage) cv=ioption(const_vol) i=pure_ident_or_symbol d=d_ident q=TEq
       e=initialize pv=TPtVirg
       { let (id,fn) = d in
       !Data.add_type_name (P.id2name i);
@@ -1676,6 +1684,10 @@ no_dot_start_end(grammar,dotter):
 pure_ident:
      TIdent { $1 }
 
+pure_ident_or_symbol:
+    pure_ident { $1 }
+  | TSymId { $1 }
+
 pure_ident_kwd:
    | TIdentifier { "identifier" }
    | TExpression { "expression" }
@@ -1699,6 +1711,7 @@ pure_ident_kwd:
    | TIterator { "iterator" }
    | TName { "name" }
    | TPosition { "position" }
+   | TSymbol { "symbol" }
 
 meta_ident:
      TRuleName TDot pure_ident     { (Some $1,P.id2name $3) }
@@ -1708,6 +1721,9 @@ pure_ident_or_meta_ident:
        pure_ident                { (None,P.id2name $1) }
      | pure_ident_kwd            { (None,$1) }
      | meta_ident                { $1 }
+
+wrapped_sym_ident:
+  TSymId { Ast0.wrap(Ast0.Id(P.sym2mcode $1)) }
 
 pure_ident_or_meta_ident_with_seed:
        pure_ident_or_meta_ident { ($1,Ast.NoVal) }
@@ -1894,6 +1910,7 @@ sub:
 
 ident_or_const:
        i=pure_ident { Ast0.wrap(Ast0.Ident(Ast0.wrap(Ast0.Id(P.id2mcode i)))) }
+     | wrapped_sym_ident { Ast0.wrap(Ast0.Ident($1)) }
      | TInt
 	 { let (x,clt) = $1 in
 	 Ast0.wrap(Ast0.Constant (P.clt2mcode (Ast.Int x) clt)) }
@@ -1940,12 +1957,14 @@ fn_ident: disj_ident { $1 }
 
 ident: pure_ident
          { Ast0.wrap(Ast0.Id(P.id2mcode $1)) }
+     | wrapped_sym_ident { $1 }
      | TMetaId
          { let (nm,constraints,seed,pure,clt) = $1 in
          Ast0.wrap(Ast0.MetaId(P.clt2mcode nm clt,constraints,seed,pure)) }
 
 mident: pure_ident
          { Ast0.wrap(Ast0.Id(P.id2mcode $1)) }
+     | wrapped_sym_ident { $1 }
      | TMeta { tmeta_to_ident $1 }
      | TMetaId
          { let (nm,constraints,seed,pure,clt) = $1 in
@@ -1977,7 +1996,7 @@ iter_ident:
          Ast0.wrap(Ast0.MetaId(P.clt2mcode nm clt,constraints,Ast.NoVal,pure)) }
 
 typedef_ident:
-       pure_ident
+       pure_ident_or_symbol
          { Ast0.wrap(Ast0.TypeName(P.id2mcode $1)) }
      | TMeta { tmeta_to_type $1 }
      | TMetaType

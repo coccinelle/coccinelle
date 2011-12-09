@@ -31,7 +31,8 @@ let mkres x e left right =
       Ast0.mcode_start = lstart.Ast0.mcode_start;
       Ast0.mcode_end = lend.Ast0.mcode_end;
       (* only for tokens, not inherited upwards *)
-      Ast0.strings_before = []; Ast0.strings_after = [] } in
+      Ast0.strings_before = []; Ast0.strings_after = [];
+      Ast0.isSymbolIdent = false; } in
   {x with Ast0.node = e; Ast0.info = info}
 
 (* This looks like it is there to allow distribution of plus code
@@ -63,7 +64,8 @@ let mkmultires x e left right (astart,start_mcodes) (aend,end_mcodes) =
       Ast0.mcode_start = start_mcodes;
       Ast0.mcode_end = end_mcodes;
       (* only for tokens, not inherited upwards *)
-      Ast0.strings_before = []; Ast0.strings_after = [] } in
+      Ast0.strings_before = []; Ast0.strings_after = [];
+      Ast0.isSymbolIdent = false; } in
   {x with Ast0.node = e; Ast0.info = info}
 
 (* --------------------------------------------------------------------- *)

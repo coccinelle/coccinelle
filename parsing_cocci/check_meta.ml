@@ -78,7 +78,7 @@ let rec ident context old_metas table minus i =
 	else false in
       (match context with
 	ID ->
-	  if not (is_ifdef name) && minus && not err(* warn only once per id *)
+	  if not (is_ifdef name) && minus && not err(* warn only once per id *) && not info.Ast0.isSymbolIdent
 	  then
 	    warning
 	      (Printf.sprintf "line %d: should %s be a metavariable?" rl name)
@@ -102,7 +102,7 @@ and seed table minus = function
 	    Ast.SeedString _ -> ()
 	  | Ast.SeedId name -> check_table table minus (promote name))
 	elems
-	
+
 (* --------------------------------------------------------------------- *)
 (* Expression *)
 

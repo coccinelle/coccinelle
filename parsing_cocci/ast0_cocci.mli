@@ -25,7 +25,8 @@ type info = { pos_info : position_info;
 	      mcode_start : mcodekind list; mcode_end : mcodekind list;
 	      (* the following are only for + code *)
 	      strings_before : (Ast_cocci.added_string * position_info) list;
-	      strings_after : (Ast_cocci.added_string * position_info) list }
+	      strings_after : (Ast_cocci.added_string * position_info) list;
+	      isSymbolIdent : bool; (* is the token a symbol identifier or not *) }
 
 type 'a mcode =
     'a * arity * info * mcodekind * meta_pos list ref (* pos, - only *) *

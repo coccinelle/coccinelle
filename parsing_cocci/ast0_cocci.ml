@@ -30,7 +30,8 @@ type info = { pos_info : position_info;
 	      mcode_start : mcodekind list; mcode_end : mcodekind list;
 	      (* the following are only for + code *)
 	      strings_before : (Ast.added_string * position_info) list;
-	      strings_after : (Ast.added_string * position_info) list }
+	      strings_after : (Ast.added_string * position_info) list;
+	      isSymbolIdent : bool; (* is the token a symbol identifier or not *) }
 
 (* adjacency index is incremented when we skip over dots or nest delimiters
 it is used in deciding how much to remove, when two adjacent code tokens are
@@ -456,7 +457,7 @@ let default_info _ = (* why is this a function? *)
   { pos_info = pos_info;
     attachable_start = true; attachable_end = true;
     mcode_start = []; mcode_end = [];
-    strings_before = []; strings_after = [] }
+    strings_before = []; strings_after = []; isSymbolIdent = false; }
 
 let default_befaft _ =
   MIXED(ref (Ast.NOTHING,default_token_info,default_token_info))

@@ -19,7 +19,7 @@ let get_option fn = function
     None -> None
   | Some x -> Some (fn x)
 
-let make_info line logical_line offset col strbef straft =
+let make_info line logical_line offset col strbef straft isSymbol =
   let new_pos_info =
     {Ast0.line_start = line; Ast0.line_end = line;
       Ast0.logical_start = logical_line; Ast0.logical_end = logical_line;
@@ -27,10 +27,11 @@ let make_info line logical_line offset col strbef straft =
   { Ast0.pos_info = new_pos_info;
     Ast0.attachable_start = true; Ast0.attachable_end = true;
     Ast0.mcode_start = []; Ast0.mcode_end = [];
-    Ast0.strings_before = strbef; Ast0.strings_after = straft; }
+    Ast0.strings_before = strbef; Ast0.strings_after = straft;
+    Ast0.isSymbolIdent = isSymbol; }
 
 let clt2info (_,line,logical_line,offset,col,strbef,straft,pos) =
-  make_info line logical_line offset col strbef straft
+  make_info line logical_line offset col strbef straft false
 
 let drop_bef (arity,line,lline,offset,col,strbef,straft,pos) =
   (arity,line,lline,offset,col,[],straft,pos)
@@ -47,41 +48,43 @@ let set_aft aft (arity,line,lline,offset,col,strbef,_,pos) =
 let drop_pos (arity,line,lline,offset,col,strbef,straft,pos) =
   (arity,line,lline,offset,col,strbef,straft,[])
 
-let clt2mcode str = function
+let clt2mcode_ext str isSymbol = function
     (Data.MINUS,line,lline,offset,col,strbef,straft,pos)       ->
-      (str,Ast0.NONE,make_info line lline offset col strbef straft,
+      (str,Ast0.NONE,make_info line lline offset col strbef straft isSymbol,
        Ast0.MINUS(ref(Ast.NOREPLACEMENT,Ast0.default_token_info)),ref pos,-1)
   | (Data.OPTMINUS,line,lline,offset,col,strbef,straft,pos)    ->
-      (str,Ast0.OPT,make_info line lline offset col strbef straft,
+      (str,Ast0.OPT,make_info line lline offset col strbef straft isSymbol,
        Ast0.MINUS(ref(Ast.NOREPLACEMENT,Ast0.default_token_info)),ref pos,-1)
   | (Data.UNIQUEMINUS,line,lline,offset,col,strbef,straft,pos) ->
-      (str,Ast0.UNIQUE,make_info line lline offset col strbef straft,
+      (str,Ast0.UNIQUE,make_info line lline offset col strbef straft isSymbol,
        Ast0.MINUS(ref(Ast.NOREPLACEMENT,Ast0.default_token_info)),ref pos,-1)
   | (Data.PLUS,line,lline,offset,col,strbef,straft,pos)        ->
-      (str,Ast0.NONE,make_info line lline offset col strbef straft,
+      (str,Ast0.NONE,make_info line lline offset col strbef straft isSymbol,
        Ast0.PLUS(Ast.ONE),ref pos,-1)
   | (Data.PLUSPLUS,line,lline,offset,col,strbef,straft,pos)        ->
-      (str,Ast0.NONE,make_info line lline offset col strbef straft,
+      (str,Ast0.NONE,make_info line lline offset col strbef straft isSymbol,
        Ast0.PLUS(Ast.MANY),ref pos,-1)
   | (Data.CONTEXT,line,lline,offset,col,strbef,straft,pos)     ->
-      (str,Ast0.NONE,make_info line lline offset col strbef straft,
+      (str,Ast0.NONE,make_info line lline offset col strbef straft isSymbol,
        Ast0.CONTEXT(ref(Ast.NOTHING,
 			Ast0.default_token_info,Ast0.default_token_info)),
        ref pos,-1)
   | (Data.OPT,line,lline,offset,col,strbef,straft,pos)         ->
-      (str,Ast0.OPT,make_info line lline offset col strbef straft,
+      (str,Ast0.OPT,make_info line lline offset col strbef straft isSymbol,
        Ast0.CONTEXT(ref(Ast.NOTHING,
 			Ast0.default_token_info,Ast0.default_token_info)),
        ref pos,-1)
   | (Data.UNIQUE,line,lline,offset,col,strbef,straft,pos)      ->
-      (str,Ast0.UNIQUE,make_info line lline offset col strbef straft,
+      (str,Ast0.UNIQUE,make_info line lline offset col strbef straft isSymbol,
        Ast0.CONTEXT(ref(Ast.NOTHING,
 			Ast0.default_token_info,Ast0.default_token_info)),
        ref pos,-1)
 
+let clt2mcode name clt = clt2mcode_ext name false clt
 let id2name   (name, clt) = name
 let id2clt    (name, clt) = clt
 let id2mcode  (name, clt) = clt2mcode name clt
+let sym2mcode (name, clt) = clt2mcode_ext name true clt
 
 let mkdots str (dot,whencode) =
   match str with
