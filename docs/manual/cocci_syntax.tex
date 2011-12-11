@@ -189,6 +189,7 @@ the same, but for structure fields.
   \CASE{constant \opt{\NT{ctype}} \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq}\mth{)} ;}
   \CASE{constant \OPT{\ttlb \NT{ctypes}\ttrb~\any{*}} \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq}\mth{)} ;}
   \CASE{position \opt{any} \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq\_mid}\mth{)} ;}
+  \CASE{symbol \NT{ids};}
 \end{grammar}
 
 A metavariable declaration local idexpression v means that v is restricted
@@ -211,6 +212,11 @@ metavariable should match a specific number of expressions or parameters.
 
 It is possible to specify some information about the definition of a fresh
 identifier.  See the wiki.
+
+A symbol declaration specifies that the provided identifiers should be
+considered C identifiers when encountered in the body of the rule.
+Identifiers in the body of the rule that are not declared explicitly are
+by default considered symbols, thus symbol declarations are optional.
 
 
 \begin{grammar}
