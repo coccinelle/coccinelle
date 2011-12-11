@@ -9,6 +9,7 @@
 - function-typed metavariables
 - virtual typedef, declarer name, iterator name
 - regexps for type metavariables
+- 'symbol' metadeclaration for C identifiers that are guaranteed not intended as meta variables. 
 
 ** Features:
 - New scripting languages
