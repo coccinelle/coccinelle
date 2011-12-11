@@ -770,7 +770,7 @@ all information associated with the function definition, including any
 comments preceeding the function definition.  On the other hand, if the new
 code is associated with the function, such as the addition of the keyword
 {\tt static}, the new code is placed exactly where it appears with respect
-to the rest of the function definition in the semantic patch.  For example, 
+to the rest of the function definition in the semantic patch.  For example,
 
 \begin{lstlisting}[language=Cocci]
 @@
@@ -834,7 +834,7 @@ considers that it is not.
 
   \RULE{\rt{init\_list\_elem}}
   \CASE{\NT{dot\_expr}}
-  \CASE{\NT{designator} = \NT{dot\_expr}}
+  \CASE{\NT{designator} = \NT{initialize}}
   \CASE{\mth{\T{metaid}^{\ssf{Initialiser}}}}
   \CASE{\mth{\T{metaid}^{\ssf{InitialiserList}}}}
   \CASE{\NT{id} : \NT{dot\_expr}}
@@ -1068,7 +1068,7 @@ Some examples of semantic matches that can be given as an argument to {\tt
   where the argument is the name of the function itself.  This example
   shows that it is not necessary to repeat the metavariable type name.
 \item \texttt{F:identifier:(F:identifier:)}: This matches any one argument
-  function call 
+  function call
   where the argument is the name of the function itself.  This example
   shows that it is possible to repeat the metavariable type name.
 \end{itemize}
