@@ -162,11 +162,11 @@ world: preinstall
 	$(MAKE) byte
 	$(MAKE) opt-compil
 
-byte: .depend
+byte: .depend version.ml
 	$(MAKE) subdirs
 	$(MAKE) $(EXEC)
 
-opt-compil: .depend
+opt-compil: .depend version.ml
 	$(MAKE) subdirs.opt
 	$(MAKE) $(EXEC).opt
 
@@ -248,6 +248,12 @@ purebytecode:
 	$(MAKE) BYTECODE_STATIC="" spatch
 	perl -p -i -e 's/^#!.*/#!\/usr\/bin\/ocamlrun/' spatch
 
+##############################################################################
+# Build version information
+##############################################################################
+
+version.ml:
+	./scripts/genversion.sh > version.ml
 
 ##############################################################################
 # Build documentation

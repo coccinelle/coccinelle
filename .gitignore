@@ -12,6 +12,7 @@ scripts/spatch.byte
 
 .depend
 test.ml
+version.ml
 
 Makefile.config
 
