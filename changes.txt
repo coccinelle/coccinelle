@@ -113,6 +113,7 @@
 - Strip constraints from metavariables in function prototype treatment
   before comparison, due to incomparability of pcre regexps.
 - Fixed obsolete regexp doc, thanks to Dmitry Osmakov
+- Improved x || ... || y to avoid double modification
 
 * 0.2.5
 ** Language:

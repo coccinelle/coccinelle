@@ -1214,17 +1214,19 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
 		    ((B.Binary (eb1, opb, eb2), typ),[opbi]
 		       )))))) in
 	    let in_left =
-              (loop eb1 >>= (fun ea1 eb1 ->
-		expression ea2 eb2 >>= (fun ea2 eb2 ->
-		  tokenf opa opbi >>= (fun opa opbi ->
+              (expression ea2 eb2 >>= (fun ea2 eb2 ->
+		tokenf opa opbi >>= (fun opa opbi ->
+		  (* be last, to be sure the rest is marked *)
+		  loop eb1 >>= (fun ea1 eb1 ->
 		    return (
 		    ((A.Nested (ea1, opa, ea2))) +> wa,
 		    ((B.Binary (eb1, opb, eb2), typ),[opbi]
 		       )))))) in
 	    let in_right =
               (expression ea2 eb1 >>= (fun ea2 eb1 ->
-		loop eb2 >>= (fun ea1 eb2 ->
-		  tokenf opa opbi >>= (fun opa opbi ->
+		tokenf opa opbi >>= (fun opa opbi ->
+		  (* be last, to be sure the rest is marked *)
+		  loop eb2 >>= (fun ea1 eb2 ->
 		    return (
 		    ((A.Nested (ea1, opa, ea2))) +> wa,
 		    ((B.Binary (eb1, opb, eb2), typ),[opbi]
@@ -1513,7 +1515,7 @@ and (arguments: sequence ->
    * in the Ecomma matching rule.
    *
    * old: Must do some try, for instance when f(...,X,Y,...) have to
-   * test the transfo for all the combinaitions    and if multiple transfo
+   * test the transfo for all the combinations    and if multiple transfo
    * possible ? pb ? => the type is to return a expression option ? use
    * some combinators to help ?
    * update: with the tag-SP approach, no more a problem.
