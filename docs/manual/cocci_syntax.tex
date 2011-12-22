@@ -407,17 +407,22 @@ The abstract syntax tree of a metavariable declared using {\tt
 
 \section{Transformation}
 
-The transformation specification essentially has the form of C code,
-except that lines to remove are annotated with \verb+-+ in the first
-column, and lines to add are annotated with \verb-+-.  A
-transformation specification can also use {\em dots}, ``\verb-...-'',
-describing an arbitrary sequence of function arguments or instructions
-within a control-flow path.  Dots may be modified with a {\tt when}
-clause, indicating a pattern that should not occur anywhere within the
-matched sequence.  Finally, a transformation can specify a disjunction
-of patterns, of the form \mtt{( \mth{\mita{pat}_1} | \mita{\ldots} |
-  \mth{\mita{pat}_n} )} where each \texttt{(}, \texttt{|} or
-\texttt{)} is in column 0 or preceded by \texttt{\textbackslash}.
+The transformation specification essentially has the form of C code, except
+that lines to remove are annotated with \verb+-+ in the first column, and
+lines to add are annotated with \verb-+-.  A transformation specification
+can also use {\em dots}, ``\verb-...-'', describing an arbitrary sequence
+of function arguments or instructions within a control-flow path.
+Implicitly, ``\verb-...-'' matches the shortest path between something that
+matches the pattern before the dots (or the beginning of the function, if
+there is nothing before the dots) and something that matches the pattern
+after the dots (or the end of the function, if there is nothing after the
+dots).  Dots may be modified with a {\tt when} clause, indicating a pattern
+that should not occur anywhere within the matched sequence.  {\tt when any}
+removes the aforementioned constraint that ``\verb-...-'' matches the
+shortest path.  Finally, a transformation can specify a disjunction of
+patterns, of the form \mtt{( \mth{\mita{pat}_1} | \mita{\ldots} |
+  \mth{\mita{pat}_n} )} where each \texttt{(}, \texttt{|} or \texttt{)} is
+in column 0 or preceded by \texttt{\textbackslash}.
 
 The grammar that we present for the transformation is not actually the
 grammar of the SmPL code that can be written by the programmer, but is
