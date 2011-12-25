@@ -69,6 +69,9 @@
   typedefs.
 - Implement newes as a hash table, for more efficiency on big sets of
   environments.
+- A local variable that is declared without a type is not considered to be
+  a local variable.  Actually, such a variable is probably really a macro
+  that expends to a declaration, and this macro is not the variable name.
 
 ** Bugfix:
 - Corrected parsing of script strings delimited by a single quote.  Thanks
