@@ -506,7 +506,9 @@ let one_initialisation_to_affectation x =
 	    match local with
 	      Ast_c.NotLocalDecl -> Ast_c.NotLocalVar
 	    | Ast_c.LocalDecl ->
-		Ast_c.LocalVar (Ast_c.info_of_type returnType) in
+		(match Ast_c.info_of_type returnType with
+		  None -> failwith "no returnType info"
+		| Some ii -> Ast_c.LocalVar ii) in
           let typexp =
                     (* old: Lib_parsing_c.al_type returnType
                        * but this type has not the typename completed so

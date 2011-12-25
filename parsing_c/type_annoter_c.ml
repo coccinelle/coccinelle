@@ -1096,8 +1096,17 @@ let rec visit_toplevel ~just_add_in_env ~depth elem =
 	      match (sto,local) with
 	      | (_,Ast_c.NotLocalDecl) -> Ast_c.NotLocalVar
 	      |	((Ast_c.Sto Ast_c.Static, _), Ast_c.LocalDecl) ->
-		  Ast_c.StaticLocalVar (Ast_c.info_of_type t)
-	      |	(_,Ast_c.LocalDecl) -> Ast_c.LocalVar (Ast_c.info_of_type t)
+		  (match Ast_c.info_of_type t with
+		    (* if there is no info about the type it must not be
+		       present, so we don't know what the variable is *)
+		    None -> Ast_c.NotLocalVar
+		  | Some ii -> Ast_c.StaticLocalVar ii)
+	      |	(_,Ast_c.LocalDecl) ->
+		  (match Ast_c.info_of_type t with
+		    (* if there is no info about the type it must not be
+		       present, so we don't know what the variable is *)
+		    None -> Ast_c.NotLocalVar
+		  | Some ii -> Ast_c.LocalVar ii)
             in
             var +> Common.do_option (fun (name, iniopt) ->
               let s = Ast_c.str_of_name name in
@@ -1210,7 +1219,14 @@ let rec visit_toplevel ~just_add_in_env ~depth elem =
                     match nameopt with
                     | Some name ->
                         let s = Ast_c.str_of_name name in
-		        let local = Ast_c.LocalVar (Ast_c.info_of_type t) in
+		        let local =
+			  (match Ast_c.info_of_type t with
+			    (* if there is no info about the type it must
+			       not be present, so we don't know what the
+			       variable is *)
+			    None -> Ast_c.NotLocalVar
+			  | Some ii -> Ast_c.LocalVar ii)
+			in
 		        add_binding (VarOrFunc (s,(Lib.al_type t,local))) true
                     | None ->
                     pr2 "no type, certainly because Void type ?"

@@ -67,6 +67,8 @@
   Pilch for pointing out the problem.
 - Better parsing of K&R C functions.  No longer convert all parameters to
   typedefs.
+- Implement newes as a hash table, for more efficiency on big sets of
+  environments.
 
 ** Bugfix:
 - Corrected parsing of script strings delimited by a single quote.  Thanks
