@@ -119,6 +119,8 @@
   before comparison, due to incomparability of pcre regexps.
 - Fixed obsolete regexp doc, thanks to Dmitry Osmakov
 - Improved x || ... || y to avoid double modification
+- Transparently allow \( \| and \) to be on lines beginning with -.  The -
+  has no effect.
 
 * 0.2.5
 ** Language:
