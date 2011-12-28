@@ -1916,11 +1916,11 @@ let full_engine2 (cocci_infos,toks) cfiles =
 	begin
 	  (match !Flag.defined_virtual_rules with
 	    [] -> ()
-	  | l -> pr (Printf.sprintf "Defined virtual rules: %s\n"
+	  | l -> pr (Printf.sprintf "Defined virtual rules: %s"
 		       (String.concat " " l)));
 	  List.iter
 	    (function (v,vl) ->
-	      pr (Printf.sprintf "%s = %s\n" v vl))
+	      pr (Printf.sprintf "%s = %s" v vl))
 	    !Flag.defined_virtual_env;
 	  Common.pr_xxxxxxxxxxxxxxxxx()
 	end;
