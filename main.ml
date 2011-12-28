@@ -800,7 +800,7 @@ let get_files path =
     else [] in
   cpp @ ch
 
-let main_action xs =
+let rec main_action xs =
   let (cocci_files,xs) =
     List.partition (function nm -> Filename.check_suffix nm ".cocci") xs in
   (match (!cocci_file,cocci_files) with
@@ -953,18 +953,22 @@ let main_action xs =
 	      (x,xs,cocci_infos,outfiles)
 	  | Some (files,virt_rules,virt_ids) ->
 	      if outfiles = [] or outfiles = [] or not !FC.show_diff
+		  or !inplace_modif
 	      then
 		begin
+		  (if !inplace_modif then generate_outfiles outfiles x xs);
 		  Flag.defined_virtual_rules := virt_rules;
 		  Flag.defined_virtual_env := virt_ids;
 		  Common.erase_temp_files();
 		  Common.clear_pr2_once();
+		  distrib_index := None;
+		  distrib_max := None;
 		  toploop files
 		end
 	      else
 		begin
 		  Common.pr2
-		    "Transformation not compatible with iteration. Aborting.";
+		    "Out of place transformation not compatible with iteration. Aborting.\n consider using -no_show_diff or -in_place";
 		  (x,xs,cocci_infos,outfiles)
 		end) in
       let (x,xs,cocci_infos,outfiles) = toploop xs in
@@ -972,21 +976,26 @@ let main_action xs =
       Cocci.post_engine cocci_infos;
       Common.profile_code "Main.result analysis" (fun () ->
 	Ctlcocci_integration.print_bench();
-        let outfiles = Cocci.check_duplicate_modif outfiles in
-        outfiles +> List.iter (fun (infile, outopt) ->
-	  outopt +> Common.do_option (fun outfile ->
-	    if !inplace_modif
-	    then begin
-	      (match !backup_suffix with
-		Some backup_suffix ->
-		  Common.command2 ("cp "^infile^" "^infile^backup_suffix)
-	      | None -> ());
-              Common.command2 ("cp "^outfile^" "^infile);
-	    end;
-	    
-	    if !outplace_modif
-	    then Common.command2 ("cp "^outfile^" "^infile^".cocci_res");
-	    
+	generate_outfiles outfiles x xs;
+        if !compare_with_expected
+        then Testing.compare_with_expected outfiles)
+
+and generate_outfiles outfiles x (* front file *) xs (* other files *) =
+  let outfiles = Cocci.check_duplicate_modif outfiles in
+  outfiles +> List.iter (fun (infile, outopt) ->
+    outopt +> Common.do_option (fun outfile ->
+      if !inplace_modif
+      then begin
+	(match !backup_suffix with
+	  Some backup_suffix ->
+	    Common.command2 ("cp "^infile^" "^infile^backup_suffix)
+	| None -> ());
+        Common.command2 ("cp "^outfile^" "^infile);
+      end;
+      
+      if !outplace_modif
+      then Common.command2 ("cp "^outfile^" "^infile^".cocci_res")
+      
 	      (* potential source of security pb if the /tmp/ file is
 		 * a symlink, so simpler to not produce any regular file
 		 * (files created by Common.new_temp_file are still ok)
@@ -1001,21 +1010,17 @@ let main_action xs =
 	         end
               *)
 	    ));
-        if !output_file <> "" && not !compat_mode then
-	  (match outfiles with
-	  | [infile, Some outfile] when infile =$= x && null xs ->
-              Common.command2 ("cp " ^outfile^ " " ^ !output_file);
-	  | [infile, None] when infile =$= x && null xs ->
-              Common.command2 ("cp " ^infile^ " " ^ !output_file);
-	  | _ ->
-              failwith
-                ("-o can not be applied because there are multiple " ^
-                 "modified files");
-	      );
-        if !compare_with_expected
-        then Testing.compare_with_expected outfiles)
-	
-	
+  if !output_file <> "" && not !compat_mode then
+    (match outfiles with
+    | [infile, Some outfile] when infile =$= x && null xs ->
+        Common.command2 ("cp " ^outfile^ " " ^ !output_file)
+    | [infile, None] when infile =$= x && null xs ->
+        Common.command2 ("cp " ^infile^ " " ^ !output_file)
+    | _ ->
+        failwith
+          ("-o can not be applied because there are multiple " ^
+           "modified files"))
+
 (*****************************************************************************)
 (* The coccinelle main entry point *)
 (*****************************************************************************)

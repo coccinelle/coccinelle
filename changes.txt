@@ -72,6 +72,8 @@
 - A local variable that is declared without a type is not considered to be
   a local variable.  Actually, such a variable is probably really a macro
   that expends to a declaration, and this macro is not the variable name.
+- Allow iteration to make modifications when the modifications are done
+  inplace.
 
 ** Bugfix:
 - Corrected parsing of script strings delimited by a single quote.  Thanks
