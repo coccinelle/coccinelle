@@ -1911,6 +1911,20 @@ let full_engine2 (cocci_infos,toks) cfiles =
       if !Flag.show_misc then pr "let's go";
       if !Flag.show_misc then Common.pr_xxxxxxxxxxxxxxxxx();
 
+      if !Flag_cocci.show_binding_in_out
+      then
+	begin
+	  (match !Flag.defined_virtual_rules with
+	    [] -> ()
+	  | l -> pr (Printf.sprintf "Defined virtual rules: %s\n"
+		       (String.concat " " l)));
+	  List.iter
+	    (function (v,vl) ->
+	      pr (Printf.sprintf "%s = %s\n" v vl))
+	    !Flag.defined_virtual_env;
+	  Common.pr_xxxxxxxxxxxxxxxxx()
+	end;
+
       let choose_includes =
 	match !Flag_cocci.include_options with
 	  Flag_cocci.I_UNSPECIFIED ->

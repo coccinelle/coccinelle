@@ -74,6 +74,8 @@
   that expends to a declaration, and this macro is not the variable name.
 - Allow iteration to make modifications when the modifications are done
   inplace.
+- -debug gives information about defined virtual rules and about virtual
+  identifier bindings.
 
 ** Bugfix:
 - Corrected parsing of script strings delimited by a single quote.  Thanks
