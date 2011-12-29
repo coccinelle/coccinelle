@@ -565,9 +565,9 @@ The grammar for the minus or plus slice of a transformation is as follows:
 \begin{grammar}
   \RULE{\rt{OPTDOTSEQ}\mth{(}\rt{grammar\_ds}, \rt{when\_ds}\mth{)}}
   \CASE{}\multicolumn{3}{r}{\hspace{1cm}
-  \KW{\opt{... \opt{\NT{when\_ds}}} \NT{grammar\_ds}
-    \ANY{... \opt{\NT{when\_ds}} \NT{grammar\_ds}}
-    \opt{... \opt{\NT{when\_ds}}}}
+  \KW{\opt{... \ANY{\NT{when\_ds}}} \NT{grammar\_ds}
+    \ANY{... \ANY{\NT{when\_ds}} \NT{grammar\_ds}}
+    \opt{... \ANY{\NT{when\_ds}}}}
   }
 
 %  \CASE{\opt{... \opt{\NT{when\_ds}}} \NT{grammar}
