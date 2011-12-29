@@ -581,7 +581,8 @@ The grammar for the minus or plus slice of a transformation is as follows:
 \noindent
 Lines may be annotated with an element of the set $\{\mtt{-}, \mtt{+},
 \mtt{*}\}$ or the singleton $\mtt{?}$, or one of each set. \mtt{?}
-represents at most one match of the given pattern. \mtt{*} is used for
+represents at most one match of the given pattern, ie a match of the
+pattern is optional. \mtt{*} is used for
 semantic match, \emph{i.e.}, a pattern that highlights the fragments
 annotated with \mtt{*}, but does not perform any modification of the
 matched code. \mtt{*} cannot be mixed with \mtt{-} and \mtt{+}.  There are
