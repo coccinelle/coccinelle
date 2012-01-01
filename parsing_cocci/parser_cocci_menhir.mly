@@ -303,9 +303,8 @@ incl:
   TIncludeL           { let (x,_) = $1 in Data.Include(x) }
 | TUsing TString      { Data.Iso(Common.Left(P.id2name $2)) }
 | TUsing TPathIsoFile { Data.Iso(Common.Right $2) }
-| TVirtual comma_list(pure_ident)
-    { let names = List.map P.id2name $2 in
-      Iteration.parsed_virtual_rules :=
+| TVirtual names=comma_list(virtual_ident)
+    { Iteration.parsed_virtual_rules :=
 	Common.union_set names !Iteration.parsed_virtual_rules;
       (* ensure that the names of virtual and real rules don't overlap *)
       List.iter
@@ -1717,6 +1716,10 @@ meta_ident:
      TRuleName TDot pure_ident     { (Some $1,P.id2name $3) }
    | TRuleName TDot pure_ident_kwd { (Some $1,$3) }
 
+virtual_ident:
+     pure_ident     { P.id2name $1 }
+   | pure_ident_kwd { $1 }
+
 pure_ident_or_meta_ident:
        pure_ident                { (None,P.id2name $1) }
      | pure_ident_kwd            { (None,$1) }
@@ -1737,8 +1740,8 @@ seed_elem:
   TString { let (x,_) = $1 in Ast.SeedString x }
 | TMetaId { let (x,_,_,_,_) = $1 in Ast.SeedId x }
 | TMeta {failwith "tmeta"}
-| TVirtual TDot pure_ident
-    { let nm = ("virtual",P.id2name $3) in
+| TVirtual TDot virtual_ident
+    { let nm = ("virtual",$3) in
      Iteration.parsed_virtual_identifiers :=
        Common.union_set [snd nm]
 	 !Iteration.parsed_virtual_identifiers;
@@ -1771,9 +1774,8 @@ pure_ident_or_meta_ident_with_idconstraint_virt(constraint_type):
 	  None -> (i, Ast.IdNoConstraint)
 	| Some constraint_ -> (i,constraint_))
     }
-| TVirtual TDot pure_ident
+| TVirtual TDot nm=virtual_ident
     {
-     let nm = P.id2name $3 in
      Iteration.parsed_virtual_identifiers :=
        Common.union_set [nm]
 	 !Iteration.parsed_virtual_identifiers;
@@ -2374,13 +2376,14 @@ script_meta_main:
   { ((Some (P.id2name str), Some (P.id2name ast)), Some $6) }
 
 script_name_decl:
-    TShLOp TRuleName TDot cocci=pure_ident
-      { let nm = P.id2name cocci in
-        let mv = Parse_aux.lookup $2 nm in
-        (($2, nm), mv) }
-  | TShLOp TVirtual TDot cocci=pure_ident
-      { let nm = P.id2name cocci in
-	 Iteration.parsed_virtual_identifiers :=
+    TShLOp meta_ident
+      { match $2 with
+         (Some rule,nm) ->
+           let mv = Parse_aux.lookup rule nm in
+           ((rule, nm), mv)
+       | (None,_) -> failwith "not possible" }
+  | TShLOp TVirtual TDot nm=virtual_ident
+      { Iteration.parsed_virtual_identifiers :=
 	   Common.union_set [nm]
 	     !Iteration.parsed_virtual_identifiers;
         let name = ("virtual", nm) in

@@ -76,6 +76,8 @@
   inplace.
 - -debug gives information about defined virtual rules and about virtual
   identifier bindings.
+- Allow metavariable types as variable names in scripts.  Thanks to Markus
+  Elfring for pointing out the problem.
 
 ** Bugfix:
 - Corrected parsing of script strings delimited by a single quote.  Thanks

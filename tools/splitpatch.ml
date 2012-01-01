@@ -13,6 +13,11 @@ let prefix_before = ref (Some "/var/linuxes/linux-next")
 let prefix_after = ref (Some "/var/julia/linuxcopy")
 
 (* ------------------------------------------------------------------------ *)
+
+(* the only argument to splitpatch *)
+let split_by_file = ref false
+
+(* ------------------------------------------------------------------------ *)
 (* misc *)
 
 let process_output_to_list2 = fun command ->
@@ -331,7 +336,7 @@ let make_message_files subject cover message date maintainer_table
       (function (services,maintainers) ->
 	function diffs ->
 	  function rest ->
-	    if services=[default_string]
+	    if services=[default_string] or !split_by_file
 	    then
 	      (* if no maintainer, then one file per diff *)
 	      (List.map
@@ -449,6 +454,11 @@ let parse_args l =
     List.partition
       (function a -> String.length a > 1 && String.get a 0 = '-')
       l in
+  let (split,other_args) =
+    List.partition
+      (function a -> a = "-split_by_file")
+      other_args in
+  (match split with [] -> () | _ -> split_by_file := true);
   match files with
     [file] -> (file,String.concat " " other_args)
   | _ -> failwith "Only one file allowed"
