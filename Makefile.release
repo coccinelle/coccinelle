@@ -62,7 +62,7 @@ OCAMLVERSION=$(shell ocaml -version |perl -p -e 's/.*version (.*)/$$1/;')
 # For the 'make bintar' I can do it from my original repo.
 
 prerelease:
-	cvs up -CdP
+	git pull --rebase
 	$(MAKE) fix-expected
 	$(MAKE) distclean
 	sed -i "s|^OCAMLCFLAGS=.*$$|OCAMLCFLAGS=|" Makefile
