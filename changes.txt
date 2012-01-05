@@ -37,6 +37,8 @@
 - allow long double, short int, long int, and long long int in SmPL code.
 - gcc constructors allowed in SmPL.  Thanks to Uwe Kleine-Koenig for
   pointing out the problem.
+- Allow ! to appear before () in depends.  Thanks to SF Markus Elfring for
+  noticing the problem.
 
 ** Features:
 - Preserve spacing before // comments when not at the beginning of a line
@@ -77,6 +79,7 @@
 - -debug gives information about defined virtual rules and about virtual
   identifier bindings.
 - no more crashing on c++-like code without the c++ argument.
+- dependencies can have ! on ()
 
 ** Bugfix:
 - Corrected parsing of script strings delimited by a single quote.  Thanks
@@ -126,6 +129,9 @@
 - Improved x || ... || y to avoid double modification
 - Transparently allow \( \| and \) to be on lines beginning with -.  The -
   has no effect.
+- Remove memory leak related to pr2_once management.  Thanks to Robert
+  Gomulka for helping to solve the problem.  Don't use once hashtable if
+  messages won't be printed anyway.
 
 * 0.2.5
 ** Language:
