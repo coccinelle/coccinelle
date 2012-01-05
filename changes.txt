@@ -132,6 +132,8 @@
 - Remove memory leak related to pr2_once management.  Thanks to Robert
   Gomulka for helping to solve the problem.  Don't use once hashtable if
   messages won't be printed anyway.
+- Change the type of subtraction mixing pointer and array to have int result.
+  Thanks to Robert Gomulka for noticing the problem.
 
 * 0.2.5
 ** Language:
