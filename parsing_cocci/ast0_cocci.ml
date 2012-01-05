@@ -406,6 +406,17 @@ and parsed_rule =
 
 (* --------------------------------------------------------------------- *)
 
+and dependency =
+    Dep of string (* rule applies for the current binding *)
+  | AntiDep of dependency (* rule doesn't apply for the current binding *)
+  | EverDep of string (* rule applies for some binding *)
+  | NeverDep of string (* rule never applies for any binding *)
+  | AndDep of dependency * dependency
+  | OrDep of dependency * dependency
+  | NoDep | FailDep
+
+(* --------------------------------------------------------------------- *)
+
 and anything =
     DotsExprTag of expression dots
   | DotsInitTag of initialiser dots

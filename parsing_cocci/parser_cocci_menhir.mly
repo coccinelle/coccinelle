@@ -265,19 +265,18 @@ extends:
     { !Data.install_bindings (parent) }
 
 depends:
-  /* empty */              { Ast.NoDep }
+  /* empty */              { Ast0.NoDep }
 | TDepends TOn parents=dep { parents }
 
 dep:
-  pnrule           { $1 }
-| dep TAndLog dep  { Ast.AndDep($1, $3) }
-| dep TOrLog  dep  { Ast.OrDep ($1, $3) }
-
-pnrule:
-  TRuleName        { Ast.Dep      $1 }
-| TBang TRuleName  { Ast.AntiDep  $2 }
-| TEver TRuleName  { Ast.EverDep  $2 }
-| TNever TRuleName { Ast.NeverDep $2 }
+  TRuleName        { Ast0.Dep $1 }
+| TBang TRuleName  { Ast0.AntiDep (Ast0.Dep $2) }
+| TBang TOPar dep TCPar
+                   { Ast0.AntiDep $3 }
+| TEver TRuleName  { Ast0.EverDep $2 }
+| TNever TRuleName { Ast0.NeverDep $2 }
+| dep TAndLog dep  { Ast0.AndDep($1, $3) }
+| dep TOrLog  dep  { Ast0.OrDep ($1, $3) }
 | TOPar dep TCPar  { $2 }
 
 choose_iso:

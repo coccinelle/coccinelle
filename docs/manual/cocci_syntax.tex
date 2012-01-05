@@ -83,15 +83,13 @@ section.
     \opt{\NT{disable-iso}} \opt{\NT{exists}} \opt{expression}}
 
   \RULE{\rt{dep}}
-  \CASE{\NT{pnrule}}
-  \CASE{\NT{dep} \&\& \NT{dep}}
-  \CASE{\NT{dep} || \NT{dep}}
-
-  \RULE{\rt{pnrule}}
   \CASE{\T{id}}
   \CASE{!\T{id}}
+  \CASE{!(\NT{dep})}
   \CASE{ever \T{id}}
   \CASE{never \T{id}}
+  \CASE{\NT{dep} \&\& \NT{dep}}
+  \CASE{\NT{dep} || \NT{dep}}
   \CASE{(\NT{dep})}
 
   \RULE{\rt{iso}}
