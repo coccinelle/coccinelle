@@ -406,7 +406,8 @@ let lub op t1 t2 =
 	    Some t1
 	| Ast_c.Minus,Ast_c.BaseType(Ast_c.IntType _),Ast_c.Pointer _ ->
 	    Some t2
-	| Ast_c.Minus,Ast_c.Pointer _,Ast_c.Pointer _ ->
+	| Ast_c.Minus,(Ast_c.Pointer _ | Ast_c.Array _),
+	  (Ast_c.Pointer _ | Ast_c.Array _) ->
 	    Some ptr_diff_type
         (* todo, Pointer, Typedef, etc *)
         | _, _, _ -> Some t1
@@ -416,8 +417,6 @@ let lub op t1 t2 =
   match ftopt with
   | None -> None, Ast_c.NotTest
   | Some ft ->  Some (ft, Ast_c.NotLocalVar), Ast_c.NotTest
-
-
 
 (*****************************************************************************)
 (* type lookup *)
