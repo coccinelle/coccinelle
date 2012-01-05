@@ -45,7 +45,6 @@ my %libs=
   , "sexplib"   => 1
   , "pcre"      => 1
   , "dynlink"   => 0
-  , "parmap"    => 0
   , "extlib"    => 0
   );
 
@@ -318,16 +317,6 @@ if($syssexpdir) {
     pr2 "'sexplib' library is not present. A local copy will be used.";
 }
 
-# parmap.
-my $sysparmap=`ocamlfind query parmap 2> /dev/null | xargs echo -n`;
-
-if($sysparmap) {
-    $parmapdir=$sysparmap;
-    pr2 "'parmap' library is present in $parmapdir";
-} else {
-    pr2 "'parmap' library is not present. Compilation will fail.";
-}
-
 # Check if libpcre-ocaml is available
 # when pcre feature is enabled.
 my $pcredir="";
@@ -492,7 +481,6 @@ print CONFIG "
 PYCAMLDIR=$pydir
 MENHIRDIR=$menhirdir
 SEXPDIR=$sexpdir
-PARMAPDIR=$parmapdir
 DYNLINK=$ocamlprefix
 
 # The OPTBIN variable is here to allow to use ocamlc.opt instead of
