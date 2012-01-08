@@ -137,6 +137,7 @@
 - Fix interpretation of dependencies in the presence of virtual rules.
   Ignore constraints on inherited position metavariables in a rule that
   will be ignored.
+- Better support meta iterator and meta declarer tokens, and symid tokens.
 
 * 0.2.5
 ** Language:

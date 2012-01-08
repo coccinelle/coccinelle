@@ -370,8 +370,9 @@ let get_clt (tok,_) =
   | PC.TIf(clt) | PC.TElse(clt) | PC.TWhile(clt) | PC.TFor(clt) | PC.TDo(clt)
   | PC.TSwitch(clt) | PC.TCase(clt) | PC.TDefault(clt) | PC.TReturn(clt)
   | PC.TBreak(clt) | PC.TContinue(clt) | PC.TGoto(clt) | PC.TIdent(_,clt)
-  | PC.TTypeId(_,clt) | PC.TDeclarerId(_,clt) | PC.TIteratorId(_,clt)
-
+  | PC.TTypeId(_,clt) | PC.TSymId(_,clt)
+  | PC.TDeclarerId(_,clt) | PC.TIteratorId(_,clt)
+  
   | PC.TSizeof(clt)
 
   | PC.TString(_,clt) | PC.TChar(_,clt) | PC.TFloat(_,clt) | PC.TInt(_,clt)
@@ -396,6 +397,7 @@ let get_clt (tok,_) =
   | PC.TMetaFieldList(_,_,_,clt)
   | PC.TMetaFunc(_,_,_,clt) | PC.TMetaLocalFunc(_,_,_,clt)
   | PC.TMetaPos(_,_,_,clt)
+  | PC.TMetaDeclarer(_,_,_,clt) | PC.TMetaIterator(_,_,_,clt)
 
   | PC.TWhen(clt) | PC.TWhenTrue(clt) | PC.TWhenFalse(clt) |
     PC.TAny(clt) | PC.TStrict(clt) | PC.TEllipsis(clt)
@@ -473,6 +475,7 @@ let update_clt (tok,x) clt =
   | PC.TTypeId(s,_) -> (PC.TTypeId(s,clt),x)
   | PC.TDeclarerId(s,_) -> (PC.TDeclarerId(s,clt),x)
   | PC.TIteratorId(s,_) -> (PC.TIteratorId(s,clt),x)
+  | PC.TSymId(a,_) -> (PC.TSymId(a,clt),x)
 
   | PC.TSizeof(_) -> (PC.TSizeof(clt),x)
 
@@ -519,6 +522,9 @@ let update_clt (tok,x) clt =
   | PC.TMetaStmList(a,b,_) -> (PC.TMetaStmList(a,b,clt),x)
   | PC.TMetaFunc(a,b,c,_)  -> (PC.TMetaFunc(a,b,c,clt),x)
   | PC.TMetaLocalFunc(a,b,c,_) -> (PC.TMetaLocalFunc(a,b,c,clt),x)
+
+  | PC.TMetaDeclarer(a,b,c,_) -> (PC.TMetaDeclarer(a,b,c,clt),x)
+  | PC.TMetaIterator(a,b,c,_) -> (PC.TMetaIterator(a,b,c,clt),x)
 
   | PC.TWhen(_) -> (PC.TWhen(clt),x)
   | PC.TWhenTrue(_) -> (PC.TWhenTrue(clt),x)
@@ -656,7 +662,8 @@ let split_token ((tok,_) as t) =
   | PC.TSizeof(clt)
   | PC.TReturn(clt) | PC.TBreak(clt) | PC.TContinue(clt) | PC.TGoto(clt)
   | PC.TIdent(_,clt)
-  | PC.TTypeId(_,clt) | PC.TDeclarerId(_,clt) | PC.TIteratorId(_,clt) | PC.TSymId(_,clt)
+  | PC.TTypeId(_,clt) | PC.TDeclarerId(_,clt) | PC.TIteratorId(_,clt)
+  | PC.TSymId(_,clt)
   | PC.TMeta(_,_,clt) | PC.TMetaConst(_,_,_,_,clt) | PC.TMetaExp(_,_,_,_,clt)
   | PC.TMetaIdExp(_,_,_,_,clt) | PC.TMetaLocalIdExp(_,_,_,_,clt)
   | PC.TMetaExpList(_,_,_,clt)
@@ -943,6 +950,8 @@ let token2line (tok,_) =
   | PC.TIdent(_,clt)
   | PC.TTypeId(_,clt) | PC.TDeclarerId(_,clt) | PC.TIteratorId(_,clt)
   | PC.TMetaDeclarer(_,_,_,clt) | PC.TMetaIterator(_,_,_,clt)
+
+  | PC.TSymId(_,clt)
 
   | PC.TString(_,clt) | PC.TChar(_,clt) | PC.TFloat(_,clt) | PC.TInt(_,clt)
 
