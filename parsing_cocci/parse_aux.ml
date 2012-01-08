@@ -333,7 +333,8 @@ let check_meta_tyopt type_irrelevant = function
   | Ast.MetaPosDecl(Ast.NONE,(rule,name)) ->
       (match lookup rule name with
 	Ast.MetaPosDecl(_,_) ->
-	  if not (List.mem rule !Data.inheritable_positions)
+	  if not (List.mem rule !Data.inheritable_positions) &&
+	    not !Data.ignore_patch_or_match
 	  then
 	    raise
 	      (Semantic_cocci.Semantic

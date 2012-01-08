@@ -134,6 +134,9 @@
   messages won't be printed anyway.
 - Change the type of subtraction mixing pointer and array to have int result.
   Thanks to Robert Gomulka for noticing the problem.
+- Fix interpretation of dependencies in the presence of virtual rules.
+  Ignore constraints on inherited position metavariables in a rule that
+  will be ignored.
 
 * 0.2.5
 ** Language:

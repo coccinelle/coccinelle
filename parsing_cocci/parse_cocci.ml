@@ -1589,28 +1589,27 @@ let eval_depend dep virt =
 	if List.mem req virt
 	then
 	  if List.mem req !Flag.defined_virtual_rules
-	  then Some Ast.NoDep
-	  else None
-	else Some dep
+	  then Ast.NoDep
+	  else Ast.FailDep
+	else dep
     | Ast.AntiDep antireq | Ast.NeverDep antireq ->
 	if List.mem antireq virt
 	then
 	  if not(List.mem antireq !Flag.defined_virtual_rules)
-	  then Some Ast.NoDep
-	  else None
-	else Some dep
+	  then Ast.NoDep
+	  else Ast.FailDep
+	else dep
     | Ast.AndDep(d1,d2) ->
 	(match (loop d1, loop d2) with
-	  (None,_) | (_,None) -> None
-	| (Some Ast.NoDep,x) | (x,Some Ast.NoDep) -> x
-	| (Some x,Some y) -> Some (Ast.AndDep(x,y)))
+	  (Ast.NoDep,x) | (x,Ast.NoDep) -> x
+	| (Ast.FailDep,x) | (x,Ast.FailDep) -> Ast.FailDep
+	| (x,y) -> Ast.AndDep(x,y))
     | Ast.OrDep(d1,d2) ->
 	(match (loop d1, loop d2) with
-	  (None,None) -> None
-	| (Some Ast.NoDep,x) | (x,Some Ast.NoDep) -> Some Ast.NoDep
-	| (None,x) | (x,None) -> x
-	| (Some x,Some y) -> Some (Ast.OrDep(x,y)))
-    | Ast.NoDep | Ast.FailDep -> Some dep
+	  (Ast.NoDep,x) | (x,Ast.NoDep) -> Ast.NoDep
+	| (Ast.FailDep,x) | (x,Ast.FailDep) -> x
+	| (x,y) -> Ast.OrDep(x,y))
+    | Ast.NoDep | Ast.FailDep -> dep
     in
   loop dep
 
@@ -1831,9 +1830,7 @@ let parse file =
 		Ast0.FinalScriptRule(name,language,deps,data)) in
 
 	  let do_parse_script_rule fn name l old_metas deps =
-	    match eval_depend deps virt with
-	      Some deps -> fn name l old_metas deps
-	    | None ->  fn name l old_metas Ast.FailDep in
+	    fn name l old_metas (eval_depend deps virt) in
 
           let parse_rule old_metas starts_with_name =
             let rulename =
@@ -1842,31 +1839,30 @@ let parse file =
             match rulename with
               Ast.CocciRulename (Some s, dep, b, c, d, e) ->
 		(match eval_depend dep virt with
-		  Some (dep) ->
-		    parse_cocci_rule Ast.Normal old_metas (s,dep,b,c,d,e)
-		| None ->
+		  Ast.FailDep ->
 		    D.ignore_patch_or_match := true;
                     let res =
 		      parse_cocci_rule Ast.Normal old_metas
 			(s, Ast.FailDep, b, c, d, e) in
 		    D.ignore_patch_or_match := false;
-		    res)
+		    res
+		| dep -> parse_cocci_rule Ast.Normal old_metas (s,dep,b,c,d,e))
             | Ast.GeneratedRulename (Some s, dep, b, c, d, e) ->
 		(match eval_depend dep virt with
-		  Some (dep) ->
-		    Data.in_generating := true;
-		    let res =
-		      parse_cocci_rule Ast.Generated old_metas
-			(s,dep,b,c,d,e) in
-		    Data.in_generating := false;
-		    res
-		| None ->
+		  Ast.FailDep ->
 		    D.ignore_patch_or_match := true;
 		    Data.in_generating := true;
                     let res =
 		      parse_cocci_rule Ast.Generated old_metas
 			(s, Ast.FailDep, b, c, d, e) in
 		    D.ignore_patch_or_match := false;
+		    Data.in_generating := false;
+		    res
+		| dep ->
+		    Data.in_generating := true;
+		    let res =
+		      parse_cocci_rule Ast.Generated old_metas
+			(s,dep,b,c,d,e) in
 		    Data.in_generating := false;
 		    res)
             | Ast.ScriptRulename(Some s,l,deps) ->
