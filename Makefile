@@ -51,9 +51,9 @@ PCRELIB=
 PCREDIR=
 endif
 
-SEXPSYSCMA=bigarray.cma nums.cma sexplib.cma
+SEXPSYSCMA=bigarray.cma nums.cma
 
-SYSLIBS=str.cma unix.cma $(SEXPSYSCMA) $(DYNLINK) $(PCRELIB) # threads.cma
+SYSLIBS=str.cma unix.cma $(SEXPSYSCMA) $(SEXPLIB) $(DYNLINK) $(PCRELIB) # threads.cma
 LIBS=commons/commons.cma \
      commons/commons_sexp.cma \
      globals/globals.cma \
