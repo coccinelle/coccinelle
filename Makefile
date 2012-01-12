@@ -51,7 +51,7 @@ PCRELIB=
 PCREDIR=
 endif
 
-SEXPSYSCMA=bigarray.cma nums.cma
+SEXPSYSCMA=bigarray.cma nums.cma sexplib.cma
 
 SYSLIBS=str.cma unix.cma $(SEXPSYSCMA) $(DYNLINK) $(PCRELIB) # threads.cma
 LIBS=commons/commons.cma \
@@ -106,7 +106,7 @@ INCLUDEDIRSDEP=commons commons/ocamlextra $(LOCALSEXP) \
 
 INCLUDEDIRS=$(INCLUDEDIRSDEP) $(SEXPDIR) $(MENHIRDIR) $(PYCAMLDIR) $(PCREDIR) $(INCLIBS)
 
-EXTRALINKS=pcre
+EXTRALINKS=
 LINKFLAGS=$(EXTRALINKS:%=-cclib -l%)
 
 ##############################################################################
