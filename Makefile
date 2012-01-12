@@ -31,7 +31,7 @@ endif
 OPTLIBFLAGS=
 
 ifeq ("$(SEXPDIR)","ocamlsexp")
-SEXPLIB=sexplib.cmo
+SEXPLIB=ocamlsexp/sexplib.cmo
 OPTSEXPLIB=sexplib.cmx
 else
 SEXPLIB=sexplib.cma
@@ -53,7 +53,7 @@ endif
 
 SEXPSYSCMA=bigarray.cma nums.cma
 
-SYSLIBS=str.cma unix.cma $(SEXPSYSCMA) $(SEXPLIB) $(DYNLINK) $(PCRELIB) # threads.cma
+SYSLIBS=str.cma unix.cma $(SEXPSYSCMA) $(DYNLINK) $(PCRELIB) # threads.cma
 LIBS=commons/commons.cma \
      commons/commons_sexp.cma \
      globals/globals.cma \
@@ -212,13 +212,13 @@ $(OBJS):$(LIBS) $(LNKLIBS)
 $(OPTOBJS):$(LIBS:.cma=.cmxa) $(LNKOPTLIBS)
 
 $(EXEC): $(LIBS) $(OBJS)
-	$(OCAMLC) $(BYTECODE_STATIC) -o $@ $(SYSLIBS) $(LNKLIBS) $^
+	$(OCAMLC) $(BYTECODE_STATIC) -o $@ $(SYSLIBS) $(SEXPLIB) $(LNKLIBS) $^
 
 $(EXEC).opt: $(LIBS:.cma=.cmxa) $(OPTOBJS)
-	$(OCAMLOPT) $(STATIC) -o $@ $(SYSLIBS:.cma=.cmxa) $(OPTLIBFLAGS) $(FLAGSLIB) $(OPTLNKLIBS) $^
+	$(OCAMLOPT) $(STATIC) -o $@ $(SYSLIBS:.cma=.cmxa) $(SEXPLIBOPT) $(OPTLIBFLAGS) $(FLAGSLIB) $(OPTLNKLIBS) $^
 
 $(EXEC).top: $(LIBS) $(OBJS) $(LNKLIBS)
-	$(OCAMLMKTOP) -custom -o $@ $(SYSLIBS) $(LNKLIBS) $^
+	$(OCAMLMKTOP) -custom -o $@ $(SYSLIBS) $(SEXPLIB) $(LNKLIBS) $^
 
 clean::
 	rm -f $(TARGET) $(TARGET).opt $(TARGET).top
