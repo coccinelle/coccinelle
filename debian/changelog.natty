@@ -1,3 +1,9 @@
+coccinelle (1.0.0-rc8~1104npalix2) natty; urgency=low
+
+  * New release 1.0.0-rc8
+
+ -- Nicolas Palix <nicolas.palix@gmail.com>  Fri, 13 Jan 2012 02:04:22 +0100
+
 coccinelle (1.0.0-rc8~1104npalix1) natty; urgency=low
 
   * New release 1.0.0-rc8
