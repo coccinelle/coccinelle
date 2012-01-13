@@ -252,7 +252,7 @@ let filter_dep (accld, accinc) dep =
 
     (* Coccilib is filtered out too *)
     | "Coccilib" | "Common" | "Ast_c" | "Visitor_c" | "Lib_parsing_c"
-    | "Iteration" ->
+    | "Iteration" | "Flag" ->
 	(accld, accinc)
 
     | "Dbm"      -> ("dbm"::accld, accinc)
