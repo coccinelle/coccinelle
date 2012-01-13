@@ -84,7 +84,7 @@ release:
 	git add globals/config.ml.in
 	git commit -m "Release $(VERSION)"
 	git tag -a -m "Release $(VERSION)" $(VERSION)
-	git push --all
+	git push --mirror
 	$(MAKE) licensify
 	@echo "\n\tRun 'make package'\n"
 
