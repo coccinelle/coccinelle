@@ -28,7 +28,7 @@ OCAMLVERSION=$(shell ocaml -version |perl -p -e 's/.*version (.*)/$$1/;')
 
 # Procedure to do first time:
 #  cd ~/release
-#  cvs checkout coccinelle -dP
+#  git clone ... coccinelle
 #  cd coccinelle
 #
 # Procedure to do each time:
@@ -61,6 +61,10 @@ OCAMLVERSION=$(shell ocaml -version |perl -p -e 's/.*version (.*)/$$1/;')
 # the scripts/licensify has been run at least once.
 # For the 'make bintar' I can do it from my original repo.
 
+# The 'git rebase' is in there just in case you started with
+# unpushed changes. However, that is probably something you should
+# not do in the first place.
+
 prerelease:
 	git pull --rebase
 	$(MAKE) fix-expected
@@ -77,7 +81,10 @@ fix-expected:
 	cp tests/SCORE_actual.sexp tests/SCORE_expected_orig.sexp
 
 release:
-	cvs ci -m "Release $(VERSION)" globals/config.ml.in
+	git add globals/config.ml.in
+	git commit -m "Release $(VERSION)"
+	git tag -a -m "Release $(VERSION)" $(VERSION)
+	git push --all
 	$(MAKE) licensify
 	@echo "\n\tRun 'make package'\n"
 
@@ -86,7 +93,7 @@ package:
 	$(MAKE) package-nopython
 	$(MAKE) package-python
 	@echo "\tPut online with 'make website'"
-	@echo "\tThe coccinelle CVS repository must be in $(WEBBASE)\n"
+	@echo "\tThe coccinelle SVN repository must be in $(WEBBASE)\n"
 
 package-src:
 	$(MAKE) distclean       # Clean project
@@ -190,10 +197,6 @@ licensify:
 fixdates:
 	echo do 'touch **/*.*'
 
-#fixCVS:
-#	cvs update -d -P
-#	echo do 'rm -rf **/CVS'
-
 ocamlversion:
 	@echo $(OCAMLVERSION)
 
@@ -218,6 +221,7 @@ ocamlversion:
 EXCL_SYNC=--exclude ".git"          \
 	--exclude ".gitignore"      \
 	--exclude ".cvsignore"      \
+	--exclude ".svn"	    \
 	--exclude "tests"           \
 	--exclude "TODO"            \
 	--cvs-exclude
