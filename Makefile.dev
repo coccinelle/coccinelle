@@ -14,7 +14,7 @@ website:
 	cp $(TMP)/$(PACKAGE)-bin-x86-python.tgz $(WEBSITE)
 	cp $(TMP)/$(PACKAGE)-bin-bytecode-$(OCAMLVERSION).tgz          $(WEBSITE)
 	cp $(TMP)/$(PACKAGE)-bin-bytecode-$(OCAMLVERSION)-python.tgz   $(WEBSITE)
-	cd $(WEBSITE); cvs add $(PACKAGE).tgz               \
+	cd $(WEBSITE); svn add $(PACKAGE).tgz               \
 		$(PACKAGE)-bin-x86.tgz                      \
 		$(PACKAGE)-bin-x86-python.tgz               \
 		$(PACKAGE)-bin-bytecode-$(OCAMLVERSION).tgz \
@@ -53,7 +53,8 @@ diff_darcs:
 # Git Developer rules
 ##############################################################################
 gitupdate:
-	git cvsimport -d :ext:topps:/var/cvs/cocci  coccinelle
+	echo "you should pull from the git repository"
+#	git cvsimport -d :ext:topps:/var/cvs/cocci  coccinelle
 
 #UBUNTU=karmic lucid maverick natty
 UBUNTU=lucid maverick natty
