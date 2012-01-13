@@ -31,7 +31,7 @@ endif
 OPTLIBFLAGS=
 
 ifeq ("$(SEXPDIR)","ocamlsexp")
-SEXPLIB=sexplib.cmo
+SEXPLIB=ocamlsexp/sexplib.cmo
 OPTSEXPLIB=sexplib.cmx
 else
 SEXPLIB=sexplib.cma
@@ -106,7 +106,7 @@ INCLUDEDIRSDEP=commons commons/ocamlextra $(LOCALSEXP) \
 
 INCLUDEDIRS=$(INCLUDEDIRSDEP) $(SEXPDIR) $(MENHIRDIR) $(PYCAMLDIR) $(PCREDIR) $(INCLIBS)
 
-EXTRALINKS=pcre
+EXTRALINKS=
 LINKFLAGS=$(EXTRALINKS:%=-cclib -l%)
 
 ##############################################################################
@@ -212,13 +212,13 @@ $(OBJS):$(LIBS) $(LNKLIBS)
 $(OPTOBJS):$(LIBS:.cma=.cmxa) $(LNKOPTLIBS)
 
 $(EXEC): $(LIBS) $(OBJS)
-	$(OCAMLC) $(BYTECODE_STATIC) -o $@ $(SYSLIBS) $(LNKLIBS) $^
+	$(OCAMLC) $(BYTECODE_STATIC) -o $@ $(SYSLIBS) $(SEXPLIB) $(LNKLIBS) $^
 
 $(EXEC).opt: $(LIBS:.cma=.cmxa) $(OPTOBJS)
-	$(OCAMLOPT) $(STATIC) -o $@ $(SYSLIBS:.cma=.cmxa) $(OPTLIBFLAGS) $(FLAGSLIB) $(OPTLNKLIBS) $^
+	$(OCAMLOPT) $(STATIC) -o $@ $(SYSLIBS:.cma=.cmxa) $(OPTSEXPLIB) $(OPTLIBFLAGS) $(FLAGSLIB) $(OPTLNKLIBS) $^
 
 $(EXEC).top: $(LIBS) $(OBJS) $(LNKLIBS)
-	$(OCAMLMKTOP) -custom -o $@ $(SYSLIBS) $(LNKLIBS) $^
+	$(OCAMLMKTOP) -custom -o $@ $(SYSLIBS) $(SEXPLIB) $(LNKLIBS) $^
 
 clean::
 	rm -f $(TARGET) $(TARGET).opt $(TARGET).top
