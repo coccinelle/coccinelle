@@ -39,6 +39,7 @@
   pointing out the problem.
 - Allow ! to appear before () in depends.  Thanks to SF Markus Elfring for
   noticing the problem.
+- Can add code containing #pragma or #line.
 
 ** Features:
 - Preserve spacing before // comments when not at the beginning of a line
@@ -139,6 +140,7 @@
   Ignore constraints on inherited position metavariables in a rule that
   will be ignored.
 - Better support meta iterator and meta declarer tokens, and symid tokens.
+- Better indentation after added noindent.
 
 * 0.2.5
 ** Language:

@@ -750,6 +750,8 @@ rule token = parse
   | "#" [' ' '\t']* "elif" [^'\n']*
   | "#" [' ' '\t']* "endif" [^'\n']*
   | "#" [' ' '\t']* "error" [^'\n']*
+  | "#" [' ' '\t']* "pragma" [^'\n']*
+  | "#" [' ' '\t']* "line" [^'\n']*
       { start_line true; check_plus_linetype (tok lexbuf);
 	TPragma (Ast.Noindent(tok lexbuf), get_current_line_type lexbuf) }
   | "/*"

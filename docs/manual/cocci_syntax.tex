@@ -778,7 +778,7 @@ isomorphism.  If one adds code before a function declaration, then the
 effect depends on the kind of code that is added.  If the added code is a
 function definition or CPP code, then the new code is placed before
 all information associated with the function definition, including any
-comments preceeding the function definition.  On the other hand, if the new
+comments preceding the function definition.  On the other hand, if the new
 code is associated with the function, such as the addition of the keyword
 {\tt static}, the new code is placed exactly where it appears with respect
 to the rest of the function definition in the semantic patch.  For example,
@@ -1044,12 +1044,27 @@ in a concise way.
   \CASE{"\any{[\^{}"]}"}
 \end{grammar}
 
-\section{Comments}
+\section{Comments and preprocessor directives}
 
 A \verb+//+ or \verb+/* */+ comment that is annotated with + in the
 leftmost column is considered to be added code.  A \verb+//+ or
-\verb+/* */+ comment wthout such an annotation is considered to be a
+\verb+/* */+ comment without such an annotation is considered to be a
 comment about the SmPL code, and thus is not matched in the C code.
+
+The following preprocessor directives can likewise be added.  They cannot
+be matched against.  The entire line is added, but it is not parsed.
+
+\begin{itemize}
+\item \verb+if+
+\item \verb+ifdef+
+\item \verb+ifndef+
+\item \verb+else+
+\item \verb+elif+
+\item \verb+endif+
+\item \verb+error+
+\item \verb+pragma+
+\item \verb+line+
+\end{itemize}
 
 \section{Command-line semantic match}
 
