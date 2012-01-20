@@ -582,8 +582,12 @@ pr2 "Support for regexp: $pcresuffix";
 `cd globals; make depend`;
 
 pr2 "Modifying globals/config.ml";
-my $command = "perl -p -e 's#Not_found.\*#Not_found->\\\"$src\\\"#' globals/config.ml.in > globals/config.ml";
-`$command`;
+my $version = `cat ./version | tr -d '\n'`;
+`echo -n "$version" > ./version`; # make sure that there are no newlines after version
+my $command1 = "sed -i -e 's|^let version = \".*\"\$|let version = \"$version\"|g' globals/config.ml.in"; # substitute version
+my $command2 = "perl -p -e 's#Not_found.\*#Not_found->\\\"$src\\\"#' globals/config.ml.in > globals/config.ml";
+`$command1`;
+`$command2`;
 
 pr2 "----------------------------------------------------------------------";
 pr2 "  Runtime dependency\n";
