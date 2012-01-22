@@ -12,7 +12,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* $Id: infiniteArray.ml,v 1.2 2010/01/28 14:23:47 npalix Exp $ *)
+(* $Id$ *)
 
 (** This module implements infinite arrays, that is, arrays that grow
     transparently upon demand. *)

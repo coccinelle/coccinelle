@@ -35,6 +35,26 @@ my $tarzan=1;
 my $pydir="pycaml";
 my $menhirdir="menhirlib";
 my $sexpdir="ocamlsexp";
+my $python_cmd="python";
+
+# generic ocaml libraries (set entries to 0 to disable by default)
+# 0: disabled, 1: use global library, >1: use local library
+my %libs=
+  ( "pycaml"    => 1
+  , "menhirLib" => 1
+  , "sexplib"   => 1
+  , "pcre"      => 1
+  , "dynlink"   => 0
+  , "extlib"    => 0
+  );
+
+# add additional dependencies that some of these libraries may have
+# these will then be added automatically
+# (we don't really make use of this here)
+my %deps=
+  ( # "pycaml" => ["str"]    # example
+    # "sexplib" => ["unix", "bigarray", "num"]
+  );
 
 local $_ = join ' ', @ARGV;
 
@@ -43,6 +63,7 @@ local $_ = join ' ', @ARGV;
 \t--without-python\tDisable scripting in Python
 \t--without-ocaml\t\tDisable scripting in Ocaml
 \t--without-pcre\t\tDisable regexp with PCRE
+\t--with-pyton=PATH\t\tSpecify path to python executable
 \t--no-opt\t\tDo not use the optimimized version of OCaml
 \t--opt\t\t\tUse the optimimized version of OCaml\n\n";
 /--prefix=([^ ]*)/ and $prefix = $1;
@@ -51,9 +72,34 @@ local $_ = join ' ', @ARGV;
 /--without-ocaml/ and $noocamlscripting = 1;
 /--no-opt/ and $opt = "";
 /--opt/ and $opt = ".opt";
+/--with-python=([^ ]*)/ and $python_cmd = $1;
+
+# todo: also print these options as part of the help message...
+foreach my $lib (keys %libs) {
+  /--with-$lib/ and $libs{$lib} = 1;
+  /--with-local-$lib/ and $libs{$lib} = 2;
+  /--without-$lib/ and $libs{$lib} = 0;
+}
 
 #tarzan by default (used by score file parsing and now also for sexp_ast_c.ml)
 
+
+# extend the feature set based on their dependencies
+my $changedLibs = 1;
+while($changedLibs) {
+  $changedLibs = 0;
+  foreach $dep (keys %deps) {
+    if ($libs{$dep}) {
+      my $reqs = $deps{$dep};
+      foreach $req (@$reqs) {
+        if (!$libs{$req}) {
+	  $libs{$req}  = 1;
+	  $changedLibs = 1;
+	}
+      }
+    }
+  }
+}
 
 #if($ARGV[0] =~ "--prefix=(.*)") {
 #    $prefix = $1;
@@ -205,17 +251,17 @@ We need  3.XX",
 my $PY_VERSION;
 if($python) {
     if(check_config(
-	"python --version 2>&1 |",
-	'^Python 2\.([4567]|[4567]\.\S*)$',
-	"python is present",
-	"python is missing or is not a good version."
+	"$python_cmd --version 2>&1 |",
+	'^Python [23]\.',
+	"$python_cmd is present",
+	"$python_cmd is missing or is not a good version."
        ))
     {
 	$python=0;
     }
     if($python) {
-	my $PY_PREFIX = `python pycaml/getprefix.py | tr -d '\n'`;
-	$PY_VERSION = `python pycaml/getversion.py | tr -d '\n'`;
+	my $PY_PREFIX = `$python_cmd pycaml/getprefix.py | tr -d '\n'`;
+	$PY_VERSION = `$python_cmd pycaml/getversion.py | tr -d '\n'`;
 	my $python_hdr = "$PY_PREFIX/include/python$PY_VERSION/Python.h";
 	if(check_config(
 	    "ls $python_hdr 2> /dev/null | ",
@@ -240,8 +286,13 @@ my $ocamlfind=!check_config(
 my $syspydir=`ocamlfind query pycaml 2> /dev/null | xargs echo -n`;
 
 if($syspydir) {
-    $pydir=$syspydir;
-    pr2 "'pycaml' library is present in $pydir";
+    pr2 "'pycaml' library is present in $syspydir";
+    if ($libs{'pycaml'} > 1) {
+        pr2 "... but a local copy of 'pycaml' will be used.";
+    }
+    else {
+        $pydir=$syspydir;
+    }
 } else {
     pr2 "'pycaml' library is not present. A local copy will be used.";
 }
@@ -256,7 +307,7 @@ if($sysmenhirdir) {
     pr2 "'menhirLib' library is not present. A local copy will be used.";
 }
 
-# sexplib. Runtime system for the parsers generated with menhir
+# sexplib.
 my $syssexpdir=`ocamlfind query sexplib 2> /dev/null | xargs echo -n`;
 
 if($syssexpdir) {
@@ -283,6 +334,44 @@ if($pcre) {
 }
 
 ######################################################################
+# Printing of library selection
+######################################################################
+
+
+pr2 "----------------------------------------------------------------------";
+pr2 "Library configuration:";
+
+my %libPaths = {};
+foreach my $lib (keys %libs) {
+  my $isSelected = $libs{$lib};
+  if ($isSelected) {
+    my $libdir = `ocamlfind query $lib 2> /dev/null | xargs echo -n`;
+    if ($libdir && $libs{$lib} <= 1) {
+      $libs{$lib} = 1;
+      $libPaths{$lib} = $libdir;
+    }
+    else {
+      if (-d $lib) {      # test if local directory exists
+        $libs{$lib} = 2;  # use local version
+	$libPaths{$lib} = $lib;
+      } else {
+        $libs{$lib} = 0;  # disable the feature
+	$libPaths{$lib} = "";
+      }
+    }
+  }
+
+  my $choice = $libs{$lib};
+  if ($choice == 0) {
+    pr2 "$lib: disabled";
+  } elsif ($choice == 1) {
+    pr2 "$lib: global version in $libPaths{$lib}";
+  } else {
+    pr2 "$lib: local version selected";
+  }
+}
+
+######################################################################
 # Generate config files (platform/portability issues)
 ######################################################################
 
@@ -294,7 +383,6 @@ if($pcre) {
 ######################################################################
 # Diagnostic
 ######################################################################
-
 
 if($error) {
     pr2 "
@@ -380,7 +468,8 @@ FEATURE_TARZAN=$tarzan
 ";
 
 if ($python) {
-print CONFIG "PYVER=$PY_VERSION";
+print CONFIG "PYVER=$PY_VERSION\n";
+print CONFIG "PYCMD=$python_cmd\n";
 }
 
 if($pcre) {
@@ -399,6 +488,82 @@ DYNLINK=$ocamlprefix
 # if you want the fast version of the ocaml chain tools, set this var
 # or setenv it to \".opt\" in your startup script.
 OPTBIN=$opt
+";
+
+#
+# Generate variables for handling the ocaml libraries
+#
+
+my @sellibs     = ();
+my @makelibs    = ();
+my @cleanlibs   = ();
+my @deplibs     = ();
+my @lnklibs     = ();
+my @optlnklibs  = ();
+my @inclibs     = ();
+my @flagslibs   = ();
+my @featurelibs = ();
+my @pathlibs    = ();
+
+sub strVar {
+  return "\$(" . $_[0] . "_" . $_[1] . ")";
+}
+
+foreach $lib (keys %libs) {
+  my $sel     = $libs{$lib};
+  my $path    = $libPaths{$lib};
+  my $pathvar = strVar("PATH", $lib);
+
+  if ($sel == 1) {              # global version
+    push(@lnklibs,    strVar("GLOBAL", $lib));
+    push(@optlnklibs, strVar("GLOBALOPT", $lib));
+  } elsif ($sel > 1) {         # local version
+    push(@lnklibs,    strVar("LOCAL", $lib));
+    push(@optlnklibs, strVar("LOCALOPT", $lib));
+    if (-e "$path/Makefile") {  # does it have a Makefile?
+      push(@makelibs,  $pathvar);
+      push(@cleanlibs, $pathvar);
+      push(@deplibs,   $pathvar);
+    }
+  }
+
+  if ($sel >= 1) {  # indifferent of global/local
+    push(@sellibs,     $lib);
+    push(@inclibs,     $pathvar);
+    push(@flagslibs,   strVar("FLAGS", $lib));
+    
+    push(@featurelibs, "FEATURE_$lib=1");
+    push(@pathlibs,    "PATH_$lib=$path");
+  }
+}
+
+my $strSellibs    = join(" ", @sellibs);
+my $strMakelibs   = join(" ", @makelibs);
+my $strCleanlibs  = join(" ", @cleanlibs);
+my $strDeplibs    = join(" ", @deplibs);
+my $strLnklibs    = join(" ", @lnklibs);
+my $strOptlnklibs = join(" ", @optlnklibs);
+my $strInclibs    = join(" ", @inclibs);
+my $strFlagslibs  = join(" ", @flagslibs);
+my $strFeatures   = join("\n", @featurelibs);
+my $strPaths      = join("\n", @pathlibs);
+
+print CONFIG "
+# selected libraries
+$strFeatures
+
+# library paths
+$strPaths
+
+# collected config vars
+SELLIBS=$strSellibs
+MAKELIBS=$strMakelibs
+CLEANLIBS=$strCleanlibs
+DEPLIBS=$strDeplibs
+LNKLIBS=$strLnklibs
+OPTLNKLIBS=$strOptlnklibs
+INCLIBS=$strInclibs
+FLAGSLIBS=$strFlagslibs
 ";
 
 

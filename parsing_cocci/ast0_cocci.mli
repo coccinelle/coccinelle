@@ -49,7 +49,8 @@ type info = { pos_info : position_info;
 	      mcode_start : mcodekind list; mcode_end : mcodekind list;
 	      (* the following are only for + code *)
 	      strings_before : (Ast_cocci.added_string * position_info) list;
-	      strings_after : (Ast_cocci.added_string * position_info) list }
+	      strings_after : (Ast_cocci.added_string * position_info) list;
+	      isSymbolIdent : bool; (* is the token a symbol identifier or not *) }
 
 type 'a mcode =
     'a * arity * info * mcodekind * meta_pos list ref (* pos, - only *) *
@@ -419,6 +420,17 @@ and parsed_rule =
       string (*language*) * Ast_cocci.dependency * string (*code*)
   | FinalScriptRule of string (* name *) *
       string (*language*) * Ast_cocci.dependency * string (*code*)
+
+(* --------------------------------------------------------------------- *)
+
+and dependency =
+    Dep of string (* rule applies for the current binding *)
+  | AntiDep of dependency (* rule doesn't apply for the current binding *)
+  | EverDep of string (* rule applies for some binding *)
+  | NeverDep of string (* rule never applies for any binding *)
+  | AndDep of dependency * dependency
+  | OrDep of dependency * dependency
+  | NoDep | FailDep
 
 (* --------------------------------------------------------------------- *)
 

@@ -9,6 +9,7 @@
 - function-typed metavariables
 - virtual typedef, declarer name, iterator name
 - regexps for type metavariables
+- 'symbol' metadeclaration for C identifiers that are guaranteed not intended as meta variables. 
 
 ** Features:
 - New scripting languages
@@ -36,6 +37,9 @@
 - allow long double, short int, long int, and long long int in SmPL code.
 - gcc constructors allowed in SmPL.  Thanks to Uwe Kleine-Koenig for
   pointing out the problem.
+- Allow ! to appear before () in depends.  Thanks to SF Markus Elfring for
+  noticing the problem.
+- Can add code containing #pragma or #line.
 
 ** Features:
 - Preserve spacing before // comments when not at the beginning of a line
@@ -64,6 +68,20 @@
   index (parallelism), if any.
 - Allow multi-character constants in C code and SmPL code.  Thanks to Kamil
   Pilch for pointing out the problem.
+- Better parsing of K&R C functions.  No longer convert all parameters to
+  typedefs.
+- Implement newes as a hash table, for more efficiency on big sets of
+  environments.
+- A local variable that is declared without a type is not considered to be
+  a local variable.  Actually, such a variable is probably really a macro
+  that expends to a declaration, and this macro is not the variable name.
+- Allow iteration to make modifications when the modifications are done
+  inplace.
+- -debug gives information about defined virtual rules and about virtual
+  identifier bindings.
+- no more crashing on c++-like code without the c++ argument.
+- dependencies can have ! on ()
+- Give ocaml code access to Flag and thus the current file name.
 
 ** Bugfix:
 - Corrected parsing of script strings delimited by a single quote.  Thanks
@@ -106,6 +124,23 @@
   Stefaniuc for pointing out the problem.
 - Propagate dependencies further in get_constants2
 - Make lexer more dos friendly
+- slightly better handling of long long
+- Strip constraints from metavariables in function prototype treatment
+  before comparison, due to incomparability of pcre regexps.
+- Fixed obsolete regexp doc, thanks to Dmitry Osmakov
+- Improved x || ... || y to avoid double modification
+- Transparently allow \( \| and \) to be on lines beginning with -.  The -
+  has no effect.
+- Remove memory leak related to pr2_once management.  Thanks to Robert
+  Gomulka for helping to solve the problem.  Don't use once hashtable if
+  messages won't be printed anyway.
+- Change the type of subtraction mixing pointer and array to have int result.
+  Thanks to Robert Gomulka for noticing the problem.
+- Fix interpretation of dependencies in the presence of virtual rules.
+  Ignore constraints on inherited position metavariables in a rule that
+  will be ignored.
+- Better support meta iterator and meta declarer tokens, and symid tokens.
+- Better indentation after added noindent.
 
 * 0.2.5
 ** Language:

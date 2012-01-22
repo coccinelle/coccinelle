@@ -448,7 +448,7 @@ print "Identifier: %s" % x
 
 @M@contains@
 type t;
-identifier foo ~= ".*foo";
+identifier foo =~ ".*foo";
 @@@M
 t foo () {...}
 
@@ -462,7 +462,7 @@ print "Contains foo: %s" % x
 \begin{lstlisting}[language=Cocci,name=Regexp]
 @M@endsby@
 type t;
-identifier foo ~= ".*foo$";
+identifier foo =~ ".*foo$";
 @@@M
 
 t foo () {...}
@@ -474,7 +474,7 @@ print "Ends by foo: %s" % x
 
 @M@beginsby@
 type t;
-identifier foo ~= "^foo";
+identifier foo =~ "^foo";
 @@@M
 t foo () {...}
 

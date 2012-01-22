@@ -25,6 +25,7 @@
 # Configuration section
 #############################################################################
 
+-include Makefile.libs
 -include Makefile.config
 -include /etc/lsb-release
 
@@ -52,7 +53,7 @@ endif
 OPTLIBFLAGS=
 
 ifeq ("$(SEXPDIR)","ocamlsexp")
-SEXPLIB=sexplib.cmo
+SEXPLIB=ocamlsexp/sexplib.cmo
 OPTSEXPLIB=sexplib.cmx
 else
 SEXPLIB=sexplib.cma
@@ -74,7 +75,7 @@ endif
 
 SEXPSYSCMA=bigarray.cma nums.cma
 
-SYSLIBS=str.cma unix.cma $(SEXPSYSCMA) $(PYCMA) $(DYNLINK) $(PCRELIB) # threads.cma
+SYSLIBS=str.cma unix.cma $(SEXPSYSCMA) $(DYNLINK) $(PCRELIB) # threads.cma
 LIBS=commons/commons.cma \
      commons/commons_sexp.cma \
      globals/globals.cma \
@@ -107,22 +108,28 @@ LOCALSEXP=
 endif
 
 # used for depend: and a little for rec & rec.opt
-MAKESUBDIRS=$(LOCALPYCAML) $(LOCALSEXP) commons \
+MAKESUBDIRS=$(LOCALSEXP) commons \
  globals $(LOCALMENHIR) ctl parsing_cocci parsing_c \
- engine popl09 extra python ocaml
+ engine popl09 extra python ocaml \
+ $(MAKELIBS)
 
 # used for clean:
 # It is like MAKESUBDIRS but also
 # force cleaning of local library copies
 CLEANSUBDIRS=pycaml ocamlsexp commons \
  globals menhirlib ctl parsing_cocci parsing_c \
- engine popl09 extra python ocaml
+ engine popl09 extra python ocaml \
+ $(CLEANLIBS)
 
 INCLUDEDIRSDEP=commons commons/ocamlextra $(LOCALSEXP) \
  globals $(LOCALMENHIR) $(LOCALPYCAML) ctl \
- parsing_cocci parsing_c engine popl09 extra python ocaml
+ parsing_cocci parsing_c engine popl09 extra python ocaml \
+ $(DEPLIBS)
 
-INCLUDEDIRS=$(INCLUDEDIRSDEP) $(SEXPDIR) $(MENHIRDIR) $(PYCAMLDIR) $(PCREDIR)
+INCLUDEDIRS=$(INCLUDEDIRSDEP) $(SEXPDIR) $(MENHIRDIR) $(PYCAMLDIR) $(PCREDIR) $(INCLIBS)
+
+EXTRALINKS=
+LINKFLAGS=$(EXTRALINKS:%=-cclib -l%)
 
 ##############################################################################
 # Generic variables
@@ -148,8 +155,8 @@ OCAMLCFLAGS=
 # to also link with -g.
 OPTFLAGS= -g
 
-OCAMLC=ocamlc$(OPTBIN) $(OCAMLCFLAGS)  $(INCLUDES)
-OCAMLOPT=ocamlopt$(OPTBIN) $(OPTFLAGS) $(INCLUDES)
+OCAMLC=ocamlc$(OPTBIN) $(OCAMLCFLAGS) $(LINKFLAGS) $(INCLUDES)
+OCAMLOPT=ocamlopt$(OPTBIN) $(OPTFLAGS) $(LINKFLAGS) $(INCLUDES)
 OCAMLLEX=ocamllex #-ml # -ml for debugging lexer, but slightly slower
 OCAMLYACC=ocamlyacc -v
 OCAMLDEP=ocamldep $(INCLUDEDIRSDEP:%=-I %)
@@ -220,18 +227,20 @@ clean::
 
 $(LIBS): $(MAKESUBDIRS)
 $(LIBS:.cma=.cmxa): $(MAKESUBDIRS:%=%.opt)
+$(LNKLIBS) : $(MAKESUBDIRS)
+$(LNKOPTLIBS) : $(MAKESUBDIRS:%=%.opt)
 
-$(OBJS):$(LIBS)
-$(OPTOBJS):$(LIBS:.cma=.cmxa)
+$(OBJS):$(LIBS) $(LNKLIBS)
+$(OPTOBJS):$(LIBS:.cma=.cmxa) $(LNKOPTLIBS)
 
 $(EXEC): $(LIBS) $(OBJS)
-	$(OCAMLC) $(BYTECODE_STATIC) -o $@ $(SYSLIBS) $(SEXPLIB) $^
+	$(OCAMLC) $(BYTECODE_STATIC) -o $@ $(SYSLIBS) $(SEXPLIB) $(LNKLIBS) $^
 
 $(EXEC).opt: $(LIBS:.cma=.cmxa) $(OPTOBJS)
-	$(OCAMLOPT) $(STATIC) -o $@ $(SYSLIBS:.cma=.cmxa) $(OPTSEXPLIB) $(OPTLIBFLAGS)  $^
+	$(OCAMLOPT) $(STATIC) -o $@ $(SYSLIBS:.cma=.cmxa) $(OPTSEXPLIB) $(OPTLIBFLAGS) $(FLAGSLIB) $(OPTLNKLIBS) $^
 
-$(EXEC).top: $(LIBS) $(OBJS)
-	$(OCAMLMKTOP) -custom -o $@ $(SYSLIBS) $(SEXPLIB) $^
+$(EXEC).top: $(LIBS) $(OBJS) $(LNKLIBS)
+	$(OCAMLMKTOP) -custom -o $@ $(SYSLIBS) $(SEXPLIB) $(LNKLIBS) $^
 
 clean::
 	rm -f $(TARGET) $(TARGET).opt $(TARGET).top
@@ -245,7 +254,7 @@ Makefile.config:
 	@echo "Makefile.config is missing. Have you run ./configure?"
 	@exit 1
 
-tools: $(LIBS)
+tools: $(LIBS) $(LNKLIBS)
 	$(MAKE) -C tools
 
 distclean::

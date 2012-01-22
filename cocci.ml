@@ -1198,6 +1198,20 @@ let prepare_c files choose_includes : file_info list =
   includes @ cfiles
 
 (*****************************************************************************)
+(* Manage environments as they are being built up *)
+(*****************************************************************************)
+
+let init_env _ = Hashtbl.create 101
+
+let update_env env v i = Hashtbl.replace env v i; env
+
+(* know that there are no conflicts *)
+let safe_update_env env v i = Hashtbl.add env v i; env
+
+let end_env env =
+  List.sort compare (Hashtbl.fold (fun k v rest -> (k,v) :: rest) env [])
+
+(*****************************************************************************)
 (* Processing the ctls and toplevel C elements *)
 (*****************************************************************************)
 
@@ -1248,26 +1262,11 @@ let prepare_c files choose_includes : file_info list =
 
 (* r(ule), c(element in C code), e(nvironment) *)
 
-let findk f l =
-  let rec loop k = function
-      [] -> None
-    | x::xs ->
-	if f x
-	then Some (x, function n -> k (n :: xs))
-	else loop (function vs -> k (x :: vs)) xs in
-  loop (function x -> x) l
-
 let merge_env new_e old_e =
-  let (ext,old_e) =
-    List.fold_left
-      (function (ext,old_e) ->
-	function (e,rules) as elem ->
-	  match findk (function (e1,_) -> e =*= e1) old_e with
-	    None -> (elem :: ext,old_e)
-	  | Some((_,old_rules),k) ->
-	      (ext,k (e,Common.union_set rules old_rules)))
-      ([],old_e) new_e in
-  old_e @ (List.rev ext)
+  List.iter
+    (function (e,rules) ->
+      let _ = update_env old_e e rules in ()) new_e;
+  old_e
 
 let contains_binding e (_,(r,m),_) =
   try
@@ -1326,7 +1325,7 @@ let apply_script_rule r cache newes e rules_that_have_matched
 	rules_that_have_matched
 	!rules_that_have_ever_matched r.scr_rule_info.dependencies;
       show_or_not_binding "in environment" e;
-      (cache, (e, rules_that_have_matched)::newes)
+      (cache, safe_update_env newes e rules_that_have_matched)
     end
   else
     begin
@@ -1359,7 +1358,7 @@ let apply_script_rule r cache newes e rules_that_have_matched
 		  new_e +>
 		  List.filter
 		    (fun (s,v) -> List.mem s r.scr_rule_info.used_after) in
-		(cache,merge_env [(new_e, rules_that_have_matched)] newes)
+		(cache,update_env newes new_e rules_that_have_matched)
 	  with Not_found ->
 	    begin
 	      print_dependencies "dependencies for script satisfied:"
@@ -1375,18 +1374,15 @@ let apply_script_rule r cache newes e rules_that_have_matched
 		  let script_vals =
 		    List.map (function x -> Ast_c.MetaIdVal(x,[]))
 		      script_vals in
-		  let new_e =
-		    (List.combine script_vars script_vals) @ e in
+		  let new_e = (List.combine script_vars script_vals) @ e in
 		  let new_e =
 		    new_e +>
 		    List.filter
 		      (fun (s,v) -> List.mem s r.scr_rule_info.used_after) in
 		  r.scr_rule_info.was_matched := true;
 		  (((relevant_bindings,Some script_vals) :: cache),
-		   merge_env
-		     [(new_e,
-		       r.scr_rule_info.rulename :: rules_that_have_matched)]
-		     newes)
+		   update_env newes new_e
+		     (r.scr_rule_info.rulename :: rules_that_have_matched))
 	    end)
       |	unbound ->
 	  (if !Flag_cocci.show_dependencies
@@ -1396,9 +1392,8 @@ let apply_script_rule r cache newes e rules_that_have_matched
 		   (String.concat ", " (List.map m2c unbound))));
 	  let e =
 	    e +>
-	    List.filter
-	      (fun (s,v) -> List.mem s r.scr_rule_info.used_after) in
-	  (cache, merge_env [(e, rules_that_have_matched)] newes))
+	    List.filter (fun (s,v) -> List.mem s r.scr_rule_info.used_after) in
+	  (cache, update_env newes e rules_that_have_matched))
     end)
 
 let rec apply_cocci_rule r rules_that_have_ever_matched es
@@ -1427,12 +1422,11 @@ let rec apply_cocci_rule r rules_that_have_ever_matched es
 		  !rules_that_have_ever_matched r.rule_info.dependencies;
 		show_or_not_binding "in environment" e;
 		(cache,
-		 merge_env
-		   [(e +>
-		     List.filter
-		       (fun (s,v) -> List.mem s r.rule_info.used_after),
-		     rules_that_have_matched)]
-		   newes)
+		 update_env newes
+		   (e +>
+		    List.filter
+		      (fun (s,v) -> List.mem s r.rule_info.used_after))
+		   rules_that_have_matched)
 	      end
 	    else
 	      let new_bindings =
@@ -1523,12 +1517,13 @@ let rec apply_cocci_rule r rules_that_have_ever_matched es
 		       r.rule_info.rulename::rules_that_have_matched))
 		    new_bindings_to_add in
 	      ((relevant_bindings,new_bindings)::cache,
-	       merge_env new_e newes))
-	([],[]) reorganized_env in (* end iter es *)
+  Common.profile_code "merge_env" (function _ ->
+	       merge_env new_e newes)))
+	([],init_env()) reorganized_env in (* end iter es *)
     if !(r.rule_info.was_matched)
     then Common.push2 r.rule_info.rulename rules_that_have_ever_matched;
 
-    es := newes;
+    es := end_env newes;
 
     (* apply the tagged modifs and reparse *)
     if not !Flag.sgrep_mode2
@@ -1751,7 +1746,7 @@ let rec bigloop2 rs (ccs: file_info list) =
 		| _ ->
                     Printf.printf "Unknown language: %s\n" r.language;
                     (cache, newes))
-            ([],[]) !es in
+            ([],init_env()) !es in
 
 	(if !(r.scr_rule_info.was_matched)
 	then
@@ -1759,7 +1754,8 @@ let rec bigloop2 rs (ccs: file_info list) =
 
 	(* just newes can't work, because if one does include_match false
            on everything that binds a variable, then nothing is left *)
-        es := (*newes*) (if newes = [] then init_es else newes)
+        es := (*newes*)
+	  (if Hashtbl.length newes = 0 then init_es else end_env newes)
     | CocciRuleCocciInfo r ->
 	apply_cocci_rule r rules_that_have_ever_matched
 	  es ccs)
@@ -1802,13 +1798,15 @@ let initial_final_bigloop2 ty rebuild r =
     "python" ->
       (* include_match makes no sense in an initial or final rule, although
 	 we have no way to prevent it *)
-      let _ = apply_script_rule r [] [] [] [] (ref []) python_application in
+      let newes = init_env() in
+      let _ = apply_script_rule r [] newes [] [] (ref []) python_application in
       ()
   | "ocaml" when ty = Initial -> () (* nothing to do *)
   | "ocaml" ->
       (* include_match makes no sense in an initial or final rule, although
 	 we have no way to prevent it *)
-      let _ = apply_script_rule r [] [] [] [] (ref []) ocaml_application in
+      let newes = init_env() in
+      let _ = apply_script_rule r [] newes [] [] (ref []) ocaml_application in
       ()
   | _ ->
       failwith ("Unknown language for initial/final script: "^
@@ -1936,6 +1934,20 @@ let full_engine2 (cocci_infos,toks) cfiles =
       if !Flag.show_misc then Common.pr_xxxxxxxxxxxxxxxxx();
       if !Flag.show_misc then pr "let's go";
       if !Flag.show_misc then Common.pr_xxxxxxxxxxxxxxxxx();
+
+      if !Flag_cocci.show_binding_in_out
+      then
+	begin
+	  (match !Flag.defined_virtual_rules with
+	    [] -> ()
+	  | l -> pr (Printf.sprintf "Defined virtual rules: %s"
+		       (String.concat " " l)));
+	  List.iter
+	    (function (v,vl) ->
+	      pr (Printf.sprintf "%s = %s" v vl))
+	    !Flag.defined_virtual_env;
+	  Common.pr_xxxxxxxxxxxxxxxxx()
+	end;
 
       let choose_includes =
 	match !Flag_cocci.include_options with

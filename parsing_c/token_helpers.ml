@@ -189,6 +189,7 @@ let is_stuff_taking_parenthized = function
 (* used in the algorithms for "10 most problematic errors" *)
 let is_ident_like = function
   | TIdent _
+  | TKRParam _
   | TypedefIdent _
   | TIdentDefine  _
   | TDefParamVariadic _
@@ -222,6 +223,7 @@ let info_of_tok = function
   | TAssign  (assignOp, i) -> i
 
   | TIdent  (s, i) -> i
+  | TKRParam  (s, i) -> i
   | Tconstructorname  (s, i) -> i
   | TypedefIdent  (s, i) -> i
 
@@ -375,6 +377,7 @@ let visitor_info_of_tok f = function
   | TAssign  (assignOp, i)     -> TAssign  (assignOp, f i)
 
   | TIdent  (s, i)         -> TIdent  (s, f i)
+  | TKRParam(s, i)         -> TKRParam(s, f i)
   | Tconstructorname(s, i) -> Tconstructorname  (s, f i)
   | TypedefIdent  (s, i)   -> TypedefIdent  (s, f i)
   | TInt  (s, i)           -> TInt  (s, f i)

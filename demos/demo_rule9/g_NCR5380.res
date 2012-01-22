@@ -79,10 +79,7 @@
  */
 
 /*
- * $Log: g_NCR5380.res,v $
- * Revision 1.1  2007/11/01 09:43:07  julia
- * *** empty log message ***
- *
+ * $Log: not supported by cvs2svn $
  * Revision 1.1.1.1  2007/03/28 16:38:53  pad
  * your commit message
  *

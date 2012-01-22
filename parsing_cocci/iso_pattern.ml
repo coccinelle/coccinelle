@@ -298,7 +298,7 @@ let rec is_pure_context s =
 	  | _ -> false)
       | Ast0.MINUS(mc) ->
 	  (match !mc with
-	(* do better for the common case of replacing a stmt by another one *)
+ 	(* do better for the common case of replacing a stmt by another one *)
 	    (Ast.REPLACEMENT([[Ast.StatementTag(s)]],_),_) ->
 	      (match Ast.unwrap s with
 		Ast.IfThen(_,_,_) -> false (* potentially dangerous *)
@@ -325,7 +325,7 @@ let match_maker checks_needed context_required whencode_allowed =
     if checks_needed
     then
       match Ast0.get_pos cmc with
-	 [(Ast0.MetaPos (name,_,_)) as x] ->
+	[(Ast0.MetaPos (name,_,_)) as x] ->
 	  (match Ast0.get_pos pmc with
 	    [Ast0.MetaPos (name1,_,_)] ->
 	      add_binding name1 (Ast0.MetaPosTag x) binding
@@ -599,7 +599,7 @@ let match_maker checks_needed context_required whencode_allowed =
 				attempts
 			    then
 				(* not sure why this is ok. can there be more
-				 than one OK? *)
+				   than one OK? *)
 			      OK (List.concat
 				    (List.map
 				       (function Fail _ -> [] | OK x -> x)
@@ -715,9 +715,9 @@ let match_maker checks_needed context_required whencode_allowed =
 		   check_mcode szf1 szf; match_typeC tya tyb]
 	  | (Ast0.Constructor(lp1,tya,rp1,inita),
 	     Ast0.Constructor(lp,tyb,rp,initb)) ->
-	      conjunct_many_bindings
-		[check_mcode lp1 lp; check_mcode rp1 rp;
-		  match_typeC tya tyb; match_init inita initb]
+	       conjunct_many_bindings
+		 [check_mcode lp1 lp; check_mcode rp1 rp;
+		   match_typeC tya tyb; match_init inita initb]
 	  | (Ast0.TypeExp(tya),Ast0.TypeExp(tyb)) ->
 	      match_typeC tya tyb
 	  | (Ast0.EComma(cm1),Ast0.EComma(cm)) -> check_mcode cm1 cm
@@ -807,8 +807,8 @@ let match_maker checks_needed context_required whencode_allowed =
 		  match_typeC tya tyb; match_option match_expr sizea sizeb]
 	  | (Ast0.EnumName(kinda,Some namea),
 	     Ast0.EnumName(kindb,Some nameb)) ->
-	      conjunct_bindings (check_mcode kinda kindb)
-		(match_ident namea nameb)
+	       conjunct_bindings (check_mcode kinda kindb)
+		 (match_ident namea nameb)
 	  | (Ast0.EnumDef(tya,lb1,idsa,rb1),
 	     Ast0.EnumDef(tyb,lb,idsb,rb)) ->
 	       conjunct_many_bindings
@@ -909,7 +909,7 @@ let match_maker checks_needed context_required whencode_allowed =
 	      match_decl pattern declb
 	  | _ -> return false
 	else return_false (ContextRequired (Ast0.DeclTag d))
-	    
+
   and match_init pattern i =
     match Ast0.unwrap pattern with
       Ast0.MetaInit(name,pure) ->
@@ -1049,7 +1049,7 @@ let match_maker checks_needed context_required whencode_allowed =
 		 single_statement can't deal with this case, perhaps because
 		 it starts introducing too many braces?  don't remember the
 		 exact problem...
-	      *)
+              *)
 	      conjunct_bindings (check_mcode lb1 lb)
 		(conjunct_bindings (check_mcode rb1 rb)
 		   (if not(checks_needed) or is_minus s or
@@ -1137,7 +1137,7 @@ let match_maker checks_needed context_required whencode_allowed =
 	       then
 		 (match wc with
 		   [] ->
-		  (* not sure this is correct, perhaps too restrictive *)
+		   (* not sure this is correct, perhaps too restrictive *)
 		     if not(checks_needed) or is_minus s or
 		       (is_context s &&
 			List.for_all is_pure_context (Ast0.undots stmt_dotsb))
@@ -1316,13 +1316,13 @@ let make_minus =
     let mcodekind = Ast0.get_mcodekind_ref e in
     match Ast0.unwrap e with
       Ast0.Edots(d,whencode) ->
-	(*don't recurse because whencode hasn't been processed by context_neg*)
+       (*don't recurse because whencode hasn't been processed by context_neg*)
 	update_mc mcodekind e; Ast0.rewrap e (Ast0.Edots(mcode d,whencode))
     | Ast0.Ecircles(d,whencode) ->
-	(*don't recurse because whencode hasn't been processed by context_neg*)
+       (*don't recurse because whencode hasn't been processed by context_neg*)
 	update_mc mcodekind e; Ast0.rewrap e (Ast0.Ecircles(mcode d,whencode))
     | Ast0.Estars(d,whencode) ->
-	(*don't recurse because whencode hasn't been processed by context_neg*)
+       (*don't recurse because whencode hasn't been processed by context_neg*)
 	update_mc mcodekind e; Ast0.rewrap e (Ast0.Estars(mcode d,whencode))
     | Ast0.NestExpr(starter,expr_dots,ender,whencode,multi) ->
 	update_mc mcodekind e;
@@ -1336,7 +1336,7 @@ let make_minus =
     let mcodekind = Ast0.get_mcodekind_ref e in
     match Ast0.unwrap e with
       Ast0.Ddots(d,whencode) ->
-	(*don't recurse because whencode hasn't been processed by context_neg*)
+       (*don't recurse because whencode hasn't been processed by context_neg*)
 	update_mc mcodekind e; Ast0.rewrap e (Ast0.Ddots(mcode d,whencode))
     | _ -> donothing r k e in
 
@@ -1344,7 +1344,7 @@ let make_minus =
     let mcodekind = Ast0.get_mcodekind_ref e in
     match Ast0.unwrap e with
       Ast0.Dots(d,whencode) ->
-	(*don't recurse because whencode hasn't been processed by context_neg*)
+       (*don't recurse because whencode hasn't been processed by context_neg*)
 	update_mc mcodekind e; Ast0.rewrap e (Ast0.Dots(mcode d,whencode))
     | Ast0.Circles(d,whencode) ->
 	update_mc mcodekind e; Ast0.rewrap e (Ast0.Circles(mcode d,whencode))
@@ -1362,7 +1362,7 @@ let make_minus =
     let mcodekind = Ast0.get_mcodekind_ref e in
     match Ast0.unwrap e with
       Ast0.Idots(d,whencode) ->
-	(*don't recurse because whencode hasn't been processed by context_neg*)
+       (*don't recurse because whencode hasn't been processed by context_neg*)
 	update_mc mcodekind e; Ast0.rewrap e (Ast0.Idots(mcode d,whencode))
     | _ -> donothing r k e in
 
@@ -1416,7 +1416,7 @@ let rebuild_mcode start_line =
     | Ast0.PLUS count ->
 	(* this function is used elsewhere where we need to rebuild the
 	   indices, and so we allow PLUS code as well *)
-        Ast0.PLUS count in
+	Ast0.PLUS count in
 
   let mcode (term,arity,info,mcodekind,pos,adj) =
     let info =
@@ -1534,7 +1534,7 @@ let lookup name bindings mv_bindings =
       Common.Right (List.assoc (term name) mv_bindings)
 
 (* mv_bindings is for the fresh metavariables that are introduced by the
-isomorphism *)
+   isomorphism *)
 let instantiate bindings mv_bindings =
   let mcode x =
     let pos_names =
@@ -1595,13 +1595,13 @@ let instantiate bindings mv_bindings =
 	  Ast0.MetaParamList(name,lenname,pure) ->
 	    failwith "meta_param_list in iso not supported"
 	    (*match lookup name bindings mv_bindings with
-	      Common.Left(Ast0.DotsParamTag(param)) ->
+		Common.Left(Ast0.DotsParamTag(param)) ->
 		(match same_dots param with
-		  Some l -> l
+		Some l -> l
 		| None -> failwith "dots put in incompatible context")
-	    | Common.Left(Ast0.ParamTag(param)) -> [param]
-	    | Common.Left(_) -> failwith "not possible 1"
-	    | Common.Right(new_mv) ->
+		| Common.Left(Ast0.ParamTag(param)) -> [param]
+		| Common.Left(_) -> failwith "not possible 1"
+		| Common.Right(new_mv) ->
 		failwith "MetaExprList in SP not supported"*)
 	| _ -> [r.VT0.rebuilder_rec_parameter x])
     | x::xs -> (r.VT0.rebuilder_rec_parameter x)::(plist r same_dots xs) in
@@ -1654,7 +1654,8 @@ let instantiate bindings mv_bindings =
 		    let rec renamer = function
 			Type_cocci.MetaType(name,keep,inherited) ->
 			  (match
-			    lookup (name,(),(),(),None,-1) bindings mv_bindings
+			    lookup (name,(),(),(),None,-1)
+			      bindings mv_bindings
 			  with
 			    Common.Left(Ast0.TypeCTag(t)) ->
 			      Ast0.ast0_type_to_type t
@@ -1712,9 +1713,9 @@ let instantiate bindings mv_bindings =
 		 surely has no + code) *)
 	      match (newop,oldop) with
 		(Ast0.MINUS(x1),Ast0.MINUS(x2)) -> nomodif oldop
-	      |	(Ast0.CONTEXT(x1),Ast0.CONTEXT(x2)) -> nomodif oldop
-	      |	(Ast0.MIXED(x1),Ast0.MIXED(x2)) -> nomodif oldop
-	      |	_ -> false in
+	      | (Ast0.CONTEXT(x1),Ast0.CONTEXT(x2)) -> nomodif oldop
+	      | (Ast0.MIXED(x1),Ast0.MIXED(x2)) -> nomodif oldop
+	      | _ -> false in
 	    if was_meta
 	    then
 	      let idcont x = x in
@@ -1977,7 +1978,7 @@ let merge_plus model_mcode e_mcode =
 	    | (Ast.BEFOREAFTER(b,a1,it1),Ast.AFTER(a2,it2)) ->
 		Ast.BEFOREAFTER(b,a2@a1,Ast.lub_count it1 it2)
 	    | (Ast.BEFOREAFTER(b1,a1,it1),Ast.BEFOREAFTER(b2,a2,it2)) ->
-		 Ast.BEFOREAFTER(b1@b2,a2@a1,Ast.lub_count it1 it2) in
+		Ast.BEFOREAFTER(b1@b2,a2@a1,Ast.lub_count it1 it2) in
 	  emc := (merged,tb,ta)
       |	Ast0.MINUS(emc) ->
 	  let (anything_bef_aft,_,_) = !mc in
@@ -2240,7 +2241,8 @@ let disj_starter lst =
     { Ast0.pos_info = new_pos_info;
       Ast0.attachable_start = false; Ast0.attachable_end = false;
       Ast0.mcode_start = []; Ast0.mcode_end = [];
-      Ast0.strings_before = []; Ast0.strings_after = [] } in
+      Ast0.strings_before = []; Ast0.strings_after = [];
+      Ast0.isSymbolIdent = false; } in
   Ast0.make_mcode_info "(" info
 
 let disj_ender lst =
@@ -2253,7 +2255,8 @@ let disj_ender lst =
     { Ast0.pos_info = new_pos_info;
       Ast0.attachable_start = false; Ast0.attachable_end = false;
       Ast0.mcode_start = []; Ast0.mcode_end = [];
-      Ast0.strings_before = []; Ast0.strings_after = [] } in
+      Ast0.strings_before = []; Ast0.strings_after = [];
+      Ast0.isSymbolIdent = false; } in
   Ast0.make_mcode_info ")" info
 
 let disj_mid _ = Ast0.make_mcode "|"
@@ -2349,9 +2352,9 @@ let transform_expr (metavars,alts,name) e =
       (rebuild_mcode start_line).VT0.rebuilder_rec_expression
       name Unparse_ast0.expression extra_copy_other_plus update_others
       (function x ->
-	  match Ast0.unwrap x with
-	    Ast0.MetaExpr _ | Ast0.MetaExprList _ | Ast0.MetaErr _ -> false
-	  | _ -> true)
+	 match Ast0.unwrap x with
+	   Ast0.MetaExpr _ | Ast0.MetaExprList _ | Ast0.MetaErr _ -> false
+	 | _ -> true)
   in
   match alts with
     (Ast0.ExprTag(_)::r)::rs ->
@@ -2445,7 +2448,7 @@ let transform_top (metavars,alts,name) e =
       let (count,mv,res) =
 	match alts with
 	  (Ast0.DotsStmtTag(_)::_)::_ ->
-	       (* start line is given to any leaves in the iso code *)
+	      (* start line is given to any leaves in the iso code *)
 	    let start_line =
 	      Some ((Ast0.get_info e).Ast0.pos_info.Ast0.line_start) in
 	    let alts =

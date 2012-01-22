@@ -44,6 +44,8 @@ type token =
   | TTildeExclEq of (Data.clt)
   | TTildeEq of (Data.clt)
   | TTilde of (Data.clt)
+  | TSymbol
+  | TSymId of (string * Data.clt)
   | TSwitch of (Data.clt)
   | TSub of (Data.clt)
   | TString of (string * Data.clt)

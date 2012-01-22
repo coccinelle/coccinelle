@@ -54,7 +54,8 @@ type info = { pos_info : position_info;
 	      mcode_start : mcodekind list; mcode_end : mcodekind list;
 	      (* the following are only for + code *)
 	      strings_before : (Ast.added_string * position_info) list;
-	      strings_after : (Ast.added_string * position_info) list }
+	      strings_after : (Ast.added_string * position_info) list;
+	      isSymbolIdent : bool; (* is the token a symbol identifier or not *) }
 
 (* adjacency index is incremented when we skip over dots or nest delimiters
 it is used in deciding how much to remove, when two adjacent code tokens are
@@ -429,6 +430,17 @@ and parsed_rule =
 
 (* --------------------------------------------------------------------- *)
 
+and dependency =
+    Dep of string (* rule applies for the current binding *)
+  | AntiDep of dependency (* rule doesn't apply for the current binding *)
+  | EverDep of string (* rule applies for some binding *)
+  | NeverDep of string (* rule never applies for any binding *)
+  | AndDep of dependency * dependency
+  | OrDep of dependency * dependency
+  | NoDep | FailDep
+
+(* --------------------------------------------------------------------- *)
+
 and anything =
     DotsExprTag of expression dots
   | DotsInitTag of initialiser dots
@@ -480,7 +492,7 @@ let default_info _ = (* why is this a function? *)
   { pos_info = pos_info;
     attachable_start = true; attachable_end = true;
     mcode_start = []; mcode_end = [];
-    strings_before = []; strings_after = [] }
+    strings_before = []; strings_after = []; isSymbolIdent = false; }
 
 let default_befaft _ =
   MIXED(ref (Ast.NOTHING,default_token_info,default_token_info))

@@ -216,6 +216,60 @@ module XTRANS = struct
 	 | None ->
 	     failwith "weird: dont have position info for the mcodekind"
 
+    (* these remove constraints, at least those that contain pcre regexps,
+       which cannot be compared (problem in the unparser) *)
+  let strip_anything anything =
+    let donothing r k e = k e in
+    let mcode mc = mc in
+    let ident r k e =
+      let e = k e in
+      match Ast_cocci.unwrap e with
+	Ast_cocci.MetaId(name,constraints,u,i) ->
+          Ast_cocci.rewrap e
+	    (Ast_cocci.MetaId(name,Ast_cocci.IdNoConstraint,u,i))
+      |  Ast_cocci.MetaFunc(name,constraints,u,i) ->
+          Ast_cocci.rewrap e
+	    (Ast_cocci.MetaFunc(name,Ast_cocci.IdNoConstraint,u,i))
+      |  Ast_cocci.MetaLocalFunc(name,constraints,u,i) ->
+          Ast_cocci.rewrap e
+	    (Ast_cocci.MetaLocalFunc(name,Ast_cocci.IdNoConstraint,u,i))
+      |  _ -> e in
+    let expression r k e =
+      let e = k e in
+      match Ast_cocci.unwrap e with
+	Ast_cocci.MetaErr(name,constraints,u,i) ->
+	  Ast_cocci.rewrap e
+	    (Ast_cocci.MetaErr(name,Ast_cocci.NoConstraint,u,i))
+      | Ast_cocci.MetaExpr(name,constraints,u,ty,form,i) ->
+          Ast_cocci.rewrap e
+	    (Ast_cocci.MetaExpr(name,Ast_cocci.NoConstraint,u,ty,form,i))
+      | _ -> e in
+    let fn = Visitor_ast.rebuilder
+	mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+	donothing donothing donothing donothing donothing
+	ident expression donothing donothing donothing donothing
+	donothing donothing donothing donothing donothing donothing in
+
+  fn.Visitor_ast.rebuilder_anything anything
+
+  let strip_minus_code = function
+      Ast_cocci.REPLACEMENT(l,c) ->
+	Ast_cocci.REPLACEMENT(List.map (List.map strip_anything) l,c)
+    | Ast_cocci.NOREPLACEMENT -> Ast_cocci.NOREPLACEMENT
+  let strip_context_code = function
+      Ast_cocci.BEFORE(l,c) ->
+	Ast_cocci.BEFORE(List.map (List.map strip_anything) l,c)
+    | Ast_cocci.AFTER(l,c) ->
+	Ast_cocci.AFTER(List.map (List.map strip_anything) l,c)
+    | Ast_cocci.BEFOREAFTER(l1,l2,c) ->
+	Ast_cocci.BEFOREAFTER(List.map (List.map strip_anything) l1,
+			      List.map (List.map strip_anything) l2,c)
+    | Ast_cocci.NOTHING -> Ast_cocci.NOTHING
+  let strip_mck_code = function
+      Ast_cocci.MINUS(p,l,a,repl) ->
+	Ast_cocci.MINUS(p,l,a,strip_minus_code repl)
+    | Ast_cocci.CONTEXT(p,ba) -> Ast_cocci.CONTEXT(p,strip_context_code ba)
+    | Ast_cocci.PLUS(c) -> Ast_cocci.PLUS(c)
 
   let tag_with_mck mck ib = fun tin ->
 
@@ -257,10 +311,11 @@ module XTRANS = struct
 	    Ast_cocci.MINUS (pos,_,adj,any_xxs) ->
 	      Ast_cocci.MINUS (pos,inst,adj,any_xxs)
 	  | mck -> mck in
+	let mck = strip_mck_code (update_inst tin.extra.index mck) in
 	(* clean_env actually only needed if there is an addition
 	   not sure the extra efficiency would be worth duplicating the code *)
         cocciinforef :=
-	  Some (update_inst tin.extra.index mck, [clean_env tin.binding])
+	  Some (mck, [clean_env tin.binding])
     | (_,   Ast_cocci.CONTEXT(_,Ast_cocci.NOTHING)) ->
 	(* can this case occur? stay with the old stuff *)
 	()
@@ -286,7 +341,8 @@ module XTRANS = struct
     | (Ast_cocci.MINUS(old_pos,old_inst,old_adj,old_modif),
        Ast_cocci.MINUS(new_pos,new_inst,new_adj,new_modif))
 	when old_pos = new_pos &&
-	  old_modif = new_modif && many_minus_count old_modif ->
+	  old_modif = strip_minus_code new_modif &&
+	  many_minus_count old_modif ->
 
           cocciinforef :=
 	    Some(Ast_cocci.MINUS(old_pos,Common.union_set old_inst new_inst,
@@ -296,7 +352,8 @@ module XTRANS = struct
     | (Ast_cocci.CONTEXT(old_pos,old_modif),
        Ast_cocci.CONTEXT(new_pos,new_modif))
 	when old_pos = new_pos &&
-	  old_modif = new_modif && many_context_count old_modif ->
+	  old_modif = strip_context_code new_modif &&
+	  many_context_count old_modif ->
 	    (* iteration only allowed on context; no way to replace something
 	       more than once; now no need for iterable; just check a flag *)
 

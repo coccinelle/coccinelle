@@ -693,29 +693,29 @@ rule token = parse
       ('<' (letter | '$' | '~') (letter | digit | '$' | '~') * '>') ?) +
 
       {
+        let info = tokinfo lexbuf in
+        let s = tok lexbuf in
         if !Flag.c_plus_plus
-	then
-	  begin
-            let info = tokinfo lexbuf in
-            let s = tok lexbuf in
-            Tconstructorname (s, info)
-	  end
+	then Tconstructorname (s, info)
 	else
-	  raise
-	    (Lexical "~ and :: not allowed in C identifiers, try -c++ option")
+	  begin
+	    pr2_once "~ and :: not allowed in C identifiers, try -c++ option";
+            TIdent (s, info)
+	  end
       }
   | ((letter | '$') (letter | digit | '$') * )
       ('<' (letter | '$' | '~') (letter | digit | '$' | '~') * '>')
 
       {
+        let info = tokinfo lexbuf in
+        let s = tok lexbuf in
         if !Flag.c_plus_plus
-	then
+	then TypedefIdent (s, info)
+	else
 	  begin
-            let info = tokinfo lexbuf in
-            let s = tok lexbuf in
-            TypedefIdent (s, info)
+	    pr2_once "<> detected, try -c++ option";
+            TIdent (s, info)
 	  end
-	else raise (Lexical "<> detected, try -c++ option")
       }
 
 
@@ -727,18 +727,20 @@ rule token = parse
       ('<' (letter | '$' | '~') (letter | digit | '$' | '~') * '>') ?) *
 
       {
+        let info = tokinfo lexbuf in
+        let s = tok lexbuf in
         if !Flag.c_plus_plus
 	then
 	  begin
-            let info = tokinfo lexbuf in
-            let s = tok lexbuf in
 	    if first = second
 	    then Tconstructorname (s, info)
             else TIdent (s, info)
 	  end
 	else
-	  raise
-	    (Lexical "~ and :: not allowed in C identifiers, try -c++ option")
+	  begin
+	    pr2_once "~ and :: not allowed in C identifiers, try -c++ option";
+	    TIdent (s, info)
+	  end
       }
 
    | "::" ((letter | '$') (letter | digit | '$') * )
@@ -747,16 +749,12 @@ rule token = parse
       ('<' (letter | '$' | '~') (letter | digit | '$' | '~') * '>') ?) *
 
       {
-        if !Flag.c_plus_plus
+        let info = tokinfo lexbuf in
+        let s = tok lexbuf in
+        (if not !Flag.c_plus_plus
 	then
-	  begin
-            let info = tokinfo lexbuf in
-            let s = tok lexbuf in
-	    TIdent (s, info)
-	  end
-	else
-	  raise
-	    (Lexical "~ and :: not allowed in C identifiers, try -c++ option")
+	  pr2_once "~ and :: not allowed in C identifiers, try -c++ option");
+	TIdent (s, info)
       }
 
   (* ----------------------------------------------------------------------- *)

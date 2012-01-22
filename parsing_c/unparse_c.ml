@@ -1049,11 +1049,24 @@ let rec adjust_indentation xs =
 	| _ -> balanced ct xs)
     | x::xs -> balanced ct xs in
 
+  let update_tabbing started s x =
+    let old_tabbing = !_current_tabbing in
+    str_of_token2 x +> new_tabbing +> (fun s -> _current_tabbing := [s]);
+    (* only trust the indentation after the first { *)
+    if started
+    then
+      adjust_tabbing_unit
+	(String.concat "" old_tabbing)
+	(String.concat "" !_current_tabbing) in
+
   let rec aux started xs =
     match xs with
     | [] ->  []
 (* patch: coccinelle *)
-    | (T2 (Parser_c.TCommentNewline _,_,_))::Unindent_cocci2(false)::xs
+    | ((T2 (Parser_c.TCommentNewline s,_,_)) as x)::
+      Unindent_cocci2(false)::xs ->
+	update_tabbing started s x;
+        (C2 "\n")::aux started xs
     | (Cocci2("\n",_,_,_,_))::Unindent_cocci2(false)::xs ->
         (C2 "\n")::aux started xs
     | ((T2 (tok,_,_)) as x)::(T2 (Parser_c.TCommentNewline s, _, _))::
@@ -1062,15 +1075,9 @@ let rec adjust_indentation xs =
 	(* to be done for if, etc, but not for a function header *)
 	x::(C2 " ")::a::(aux started xs)
     | ((T2 (Parser_c.TCommentNewline s, _, _)) as x)::xs
-      when balanced 0 (fst(Common.span (function x -> not(is_newline x)) xs)) ->
-	let old_tabbing = !_current_tabbing in
-        str_of_token2 x +> new_tabbing +> (fun s -> _current_tabbing := [s]);
-	(* only trust the indentation after the first { *)
-	(if started
-	then
-	  adjust_tabbing_unit
-	    (String.concat "" old_tabbing)
-	    (String.concat "" !_current_tabbing));
+      when
+	balanced 0 (fst(Common.span (function x -> not(is_newline x)) xs)) ->
+	update_tabbing started s x;
 	let coccis_rest = Common.span all_coccis xs in
 	(match coccis_rest with
 	  (_::_,((T2 (tok,_,_)) as y)::_) when str_of_token2 y =$= "}" ->

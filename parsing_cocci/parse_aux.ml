@@ -43,7 +43,7 @@ let get_option fn = function
     None -> None
   | Some x -> Some (fn x)
 
-let make_info line logical_line offset col strbef straft =
+let make_info line logical_line offset col strbef straft isSymbol =
   let new_pos_info =
     {Ast0.line_start = line; Ast0.line_end = line;
       Ast0.logical_start = logical_line; Ast0.logical_end = logical_line;
@@ -51,10 +51,11 @@ let make_info line logical_line offset col strbef straft =
   { Ast0.pos_info = new_pos_info;
     Ast0.attachable_start = true; Ast0.attachable_end = true;
     Ast0.mcode_start = []; Ast0.mcode_end = [];
-    Ast0.strings_before = strbef; Ast0.strings_after = straft; }
+    Ast0.strings_before = strbef; Ast0.strings_after = straft;
+    Ast0.isSymbolIdent = isSymbol; }
 
 let clt2info (_,line,logical_line,offset,col,strbef,straft,pos) =
-  make_info line logical_line offset col strbef straft
+  make_info line logical_line offset col strbef straft false
 
 let drop_bef (arity,line,lline,offset,col,strbef,straft,pos) =
   (arity,line,lline,offset,col,[],straft,pos)
@@ -71,41 +72,43 @@ let set_aft aft (arity,line,lline,offset,col,strbef,_,pos) =
 let drop_pos (arity,line,lline,offset,col,strbef,straft,pos) =
   (arity,line,lline,offset,col,strbef,straft,[])
 
-let clt2mcode str = function
+let clt2mcode_ext str isSymbol = function
     (Data.MINUS,line,lline,offset,col,strbef,straft,pos)       ->
-      (str,Ast0.NONE,make_info line lline offset col strbef straft,
+      (str,Ast0.NONE,make_info line lline offset col strbef straft isSymbol,
        Ast0.MINUS(ref(Ast.NOREPLACEMENT,Ast0.default_token_info)),ref pos,-1)
   | (Data.OPTMINUS,line,lline,offset,col,strbef,straft,pos)    ->
-      (str,Ast0.OPT,make_info line lline offset col strbef straft,
+      (str,Ast0.OPT,make_info line lline offset col strbef straft isSymbol,
        Ast0.MINUS(ref(Ast.NOREPLACEMENT,Ast0.default_token_info)),ref pos,-1)
   | (Data.UNIQUEMINUS,line,lline,offset,col,strbef,straft,pos) ->
-      (str,Ast0.UNIQUE,make_info line lline offset col strbef straft,
+      (str,Ast0.UNIQUE,make_info line lline offset col strbef straft isSymbol,
        Ast0.MINUS(ref(Ast.NOREPLACEMENT,Ast0.default_token_info)),ref pos,-1)
   | (Data.PLUS,line,lline,offset,col,strbef,straft,pos)        ->
-      (str,Ast0.NONE,make_info line lline offset col strbef straft,
+      (str,Ast0.NONE,make_info line lline offset col strbef straft isSymbol,
        Ast0.PLUS(Ast.ONE),ref pos,-1)
   | (Data.PLUSPLUS,line,lline,offset,col,strbef,straft,pos)        ->
-      (str,Ast0.NONE,make_info line lline offset col strbef straft,
+      (str,Ast0.NONE,make_info line lline offset col strbef straft isSymbol,
        Ast0.PLUS(Ast.MANY),ref pos,-1)
   | (Data.CONTEXT,line,lline,offset,col,strbef,straft,pos)     ->
-      (str,Ast0.NONE,make_info line lline offset col strbef straft,
+      (str,Ast0.NONE,make_info line lline offset col strbef straft isSymbol,
        Ast0.CONTEXT(ref(Ast.NOTHING,
 			Ast0.default_token_info,Ast0.default_token_info)),
        ref pos,-1)
   | (Data.OPT,line,lline,offset,col,strbef,straft,pos)         ->
-      (str,Ast0.OPT,make_info line lline offset col strbef straft,
+      (str,Ast0.OPT,make_info line lline offset col strbef straft isSymbol,
        Ast0.CONTEXT(ref(Ast.NOTHING,
 			Ast0.default_token_info,Ast0.default_token_info)),
        ref pos,-1)
   | (Data.UNIQUE,line,lline,offset,col,strbef,straft,pos)      ->
-      (str,Ast0.UNIQUE,make_info line lline offset col strbef straft,
+      (str,Ast0.UNIQUE,make_info line lline offset col strbef straft isSymbol,
        Ast0.CONTEXT(ref(Ast.NOTHING,
 			Ast0.default_token_info,Ast0.default_token_info)),
        ref pos,-1)
 
+let clt2mcode name clt = clt2mcode_ext name false clt
 let id2name   (name, clt) = name
 let id2clt    (name, clt) = clt
 let id2mcode  (name, clt) = clt2mcode name clt
+let sym2mcode (name, clt) = clt2mcode_ext name true clt
 
 let mkdots str (dot,whencode) =
   match str with
@@ -354,7 +357,8 @@ let check_meta_tyopt type_irrelevant = function
   | Ast.MetaPosDecl(Ast.NONE,(rule,name)) ->
       (match lookup rule name with
 	Ast.MetaPosDecl(_,_) ->
-	  if not (List.mem rule !Data.inheritable_positions)
+	  if not (List.mem rule !Data.inheritable_positions) &&
+	    not !Data.ignore_patch_or_match
 	  then
 	    raise
 	      (Semantic_cocci.Semantic
@@ -568,23 +572,44 @@ let make_iso_rule_name_result n =
   Ast.CocciRulename
     (Some n,Ast.NoDep,[],[],Ast.Undetermined,false (*discarded*))
 
+let fix_dependencies d =
+  let rec loop inverted = function
+      Ast0.Dep s when inverted -> Ast.AntiDep s
+    | Ast0.Dep s -> Ast.Dep s
+    | Ast0.AntiDep d -> loop (not inverted) d
+    | Ast0.EverDep s when inverted -> Ast.NeverDep s
+    | Ast0.EverDep s -> Ast.EverDep s
+    | Ast0.NeverDep s when inverted -> Ast.EverDep s
+    | Ast0.NeverDep s -> Ast.NeverDep s
+    | Ast0.AndDep(d1,d2) when inverted ->
+	Ast.OrDep(loop inverted d1,loop inverted d2)
+    | Ast0.AndDep(d1,d2) ->
+	Ast.AndDep(loop inverted d1,loop inverted d2)
+    | Ast0.OrDep(d1,d2) when inverted ->
+	Ast.AndDep(loop inverted d1,loop inverted d2)
+    | Ast0.OrDep(d1,d2) ->
+	Ast.OrDep(loop inverted d1,loop inverted d2)
+    | Ast0.NoDep -> Ast.NoDep
+    | Ast0.FailDep -> Ast.FailDep in
+  loop false d
+
 let make_cocci_rule_name_result nm d i a e ee =
-  Ast.CocciRulename (check_rule_name nm,d,i,a,e,ee)
+  Ast.CocciRulename (check_rule_name nm,fix_dependencies d,i,a,e,ee)
 
 let make_generated_rule_name_result nm d i a e ee =
-  Ast.GeneratedRulename (check_rule_name nm,d,i,a,e,ee)
+  Ast.GeneratedRulename (check_rule_name nm,fix_dependencies d,i,a,e,ee)
 
 let make_script_rule_name_result lang nm deps =
   let l = id2name lang in
-  Ast.ScriptRulename (check_rule_name nm,l,deps)
+  Ast.ScriptRulename (check_rule_name nm,l,fix_dependencies deps)
 
 let make_initial_script_rule_name_result lang deps =
   let l = id2name lang in
-  Ast.InitialScriptRulename(None,l,deps)
+  Ast.InitialScriptRulename(None,l,fix_dependencies deps)
 
 let make_final_script_rule_name_result lang deps =
   let l = id2name lang in
-  Ast.FinalScriptRulename(None,l,deps)
+  Ast.FinalScriptRulename(None,l,fix_dependencies deps)
 
 (* Allows type alone only when it is void and only when there is only one
     parameter.  This avoids ambiguity problems in the parser. *)

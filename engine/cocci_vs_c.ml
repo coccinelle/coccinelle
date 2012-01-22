@@ -124,7 +124,7 @@ let mcode_simple_minus = function
 
 let minusizer =
   ("fake","fake"),
-  {A.line = 0; A.column =0; A.strbef=[]; A.straft=[];},
+  {A.line = 0; A.column =0; A.strbef=[]; A.straft=[]},
   (A.MINUS(A.DontCarePos,[],A.ALLMINUS,A.NOREPLACEMENT)),
   []
 
@@ -308,7 +308,7 @@ let equal_metavarval valu valu' =
 	l1
 
   | (B.MetaPosValList _|B.MetaListlenVal _|B.MetaPosVal _|B.MetaStmtVal _
-      |B.MetaDeclVal _ |B.MetaFieldVal _ |B.MetaFieldListVal _ 
+      |B.MetaDeclVal _ |B.MetaFieldVal _ |B.MetaFieldListVal _
       |B.MetaTypeVal _ |B.MetaInitVal _ |B.MetaInitListVal _
       |B.MetaParamListVal _|B.MetaParamVal _|B.MetaExprListVal _
       |B.MetaExprVal _|B.MetaLocalFuncVal _|B.MetaFuncVal _|B.MetaIdVal _
@@ -530,7 +530,9 @@ let one_initialisation_to_affectation x =
 	    match local with
 	      Ast_c.NotLocalDecl -> Ast_c.NotLocalVar
 	    | Ast_c.LocalDecl ->
-		Ast_c.LocalVar (Ast_c.info_of_type returnType) in
+		(match Ast_c.info_of_type returnType with
+		  None -> failwith "no returnType info"
+		| Some ii -> Ast_c.LocalVar ii) in
           let typexp =
                     (* old: Lib_parsing_c.al_type returnType
                        * but this type has not the typename completed so
@@ -540,7 +542,7 @@ let one_initialisation_to_affectation x =
             | Some ty_with_typename_completed -> ty_with_typename_completed
             | None -> raise Impossible
           in
-	  
+
           let typ = ref (Some (typexp,local), Ast_c.NotTest) in
           let ident = name in
           let idexpr = Ast_c.mk_e_bis (B.Ident ident) typ Ast_c.noii in
@@ -548,8 +550,8 @@ let one_initialisation_to_affectation x =
             Ast_c.mk_e (B.Assignment (idexpr,B.SimpleAssign, e)) [iini] in
           Some assign
       | _ -> None)
-  | _ -> None  
-    
+  | _ -> None
+
 let initialisation_to_affectation decl =
   match decl with
   | B.MacroDecl _ -> F.Decl decl
@@ -793,14 +795,14 @@ let list_matcher match_dots rebuild_dots match_comma rebuild_comma
 	    Some (mcode, optexpr), ys ->
           (* todo: if optexpr, then a WHEN and so may have to filter yys *)
               if optexpr <> None then failwith "not handling when in a list";
-	      
+
           (* '...' can take more or less the beginnings of the arguments *)
               let startendxs =
 		Common.zip (Common.inits ys) (Common.tails ys) in
 	      Some
 		(startendxs +> List.fold_left (fun acc (startxs, endxs) ->
 		  acc >||> (
-		  
+
               (* allow '...', and maybe its associated ',' to match nothing.
 		 * for the associated ',' see below how we handle the EComma
 		 * to match nothing.
@@ -822,7 +824,7 @@ let list_matcher match_dots rebuild_dots match_comma rebuild_comma
                     (match Common.last startxs with
                     | Right _ -> fail
                     | Left _ -> distrf (dots2metavar mcode) startxs))
-		    
+
 		    >>= (fun mcode startxs ->
 		      let mcode = metavar2dots mcode in
                       loop (eas, endxs) >>= (fun eas endxs ->
@@ -832,7 +834,7 @@ let list_matcher match_dots rebuild_dots match_comma rebuild_comma
 			  )))
 		    )
 		    ) fail)
-		
+
 	  | None,_ -> None)
 	    +++
 	    (match match_comma ea, ebs with
@@ -878,7 +880,7 @@ let list_matcher match_dots rebuild_dots match_comma rebuild_comma
 		    else
 		      let startxs' = Ast_c.unsplit_comma startxs in
 		      let len = List.length  startxs' in
-		      
+
 		      (match leninfo with
 		      | A.MetaListLen (lenname,lenkeep,leninherited) ->
 			  let max_min _ = failwith "no pos" in
@@ -1238,17 +1240,19 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
 		    ((B.Binary (eb1, opb, eb2), typ),[opbi]
 		       )))))) in
 	    let in_left =
-              (loop eb1 >>= (fun ea1 eb1 ->
-		expression ea2 eb2 >>= (fun ea2 eb2 ->
-		  tokenf opa opbi >>= (fun opa opbi ->
+              (expression ea2 eb2 >>= (fun ea2 eb2 ->
+		tokenf opa opbi >>= (fun opa opbi ->
+		  (* be last, to be sure the rest is marked *)
+		  loop eb1 >>= (fun ea1 eb1 ->
 		    return (
 		    ((A.Nested (ea1, opa, ea2))) +> wa,
 		    ((B.Binary (eb1, opb, eb2), typ),[opbi]
 		       )))))) in
 	    let in_right =
               (expression ea2 eb1 >>= (fun ea2 eb1 ->
-		loop eb2 >>= (fun ea1 eb2 ->
-		  tokenf opa opbi >>= (fun opa opbi ->
+		tokenf opa opbi >>= (fun opa opbi ->
+		  (* be last, to be sure the rest is marked *)
+		  loop eb2 >>= (fun ea1 eb2 ->
 		    return (
 		    ((A.Nested (ea1, opa, ea2))) +> wa,
 		    ((B.Binary (eb1, opb, eb2), typ),[opbi]
@@ -1519,7 +1523,7 @@ and (ident: info_ident -> (A.ident, string * Ast_c.info) matcher) =
 
   | A.OptIdent _ | A.UniqueIdent _ ->
       failwith "not handling Opt/Unique for ident"
-    
+
 (* ------------------------------------------------------------------------- *)
 and (arguments: sequence ->
   (A.expression list, Ast_c.argument Ast_c.wrap2 list) matcher) =
@@ -1537,12 +1541,12 @@ and (arguments: sequence ->
    * in the Ecomma matching rule.
    *
    * old: Must do some try, for instance when f(...,X,Y,...) have to
-   * test the transfo for all the combinaitions    and if multiple transfo
+   * test the transfo for all the combinations    and if multiple transfo
    * possible ? pb ? => the type is to return a expression option ? use
    * some combinators to help ?
    * update: with the tag-SP approach, no more a problem.
 *)
-	  
+
 and arguments_bis = fun eas ebs ->
   let match_dots ea =
     match A.unwrap ea with
@@ -1639,7 +1643,7 @@ and parameters_bis eas ebs =
               let {B.p_register=(hasreg,iihasreg);
                     p_namei = idbopt;
                     p_type=tb; } = eb in
-	      
+
               if idbopt =*= None && not hasreg
               then
                 match tb with
@@ -1659,7 +1663,7 @@ and parameters_bis eas ebs =
     match_metalist build_metalist mktermval
     special_cases parameter X.distrf_params
     Lib_parsing_c.ii_of_params eas ebs
-    
+
 (*
    let split_register_param = fun (hasreg, idb, ii_b_s) ->
    match hasreg, idb,  ii_b_s with
@@ -1668,8 +1672,8 @@ and parameters_bis eas ebs =
    | _, None, ii -> Right ii
    | _ -> raise Impossible
 *)
-    
-    
+
+
 and parameter = fun parama paramb ->
   match A.unwrap parama, paramb with
     A.MetaParam (ida,keep,inherited), eb ->
@@ -1684,7 +1688,7 @@ and parameter = fun parama paramb ->
       let {B.p_register = (hasreg,iihasreg);
 	    p_namei = nameidbopt;
 	    p_type = typb;} = paramb in
-      
+
       fullType typa typb >>= (fun typa typb ->
 	match idaopt, nameidbopt with
 	| Some ida, Some nameidb ->
@@ -1696,7 +1700,7 @@ and parameter = fun parama paramb ->
 		p_namei = Some (nameidb);
 		p_type = typb}
 		))
-	      
+
 	| None, None ->
 	    return (
             A.Param (typa, None)+> A.rewrap parama,
@@ -1719,7 +1723,7 @@ and parameter = fun parama paramb ->
 	| Some _, None -> fail
 	| None, Some _ -> fail)
   | (A.OptParam _ | A.UniqueParam _), _ ->
-      failwith "not handling Opt/Unique for Param"	  
+      failwith "not handling Opt/Unique for Param"
   | A.Pcircles (_), ys -> raise Impossible (* in Ordered mode *)
   | _ -> fail
 
@@ -3247,7 +3251,7 @@ and storage_optional_allminus allminus stoa (stob, iistob) =
 	  | i1::iistob ->
 	      let str = B.str_of_info i1 in
 	      (match str with
-		"static" | "extern" | "auto" | "register" -> 
+		"static" | "extern" | "auto" | "register" ->
 		  (* not very elegant, but tokenf doesn't know what token to
 		     match with *)
 		  tokenf x i1 >>= (fun x i1 ->
@@ -3292,7 +3296,7 @@ and inline_optional_allminus allminus inla (stob, iistob) =
 	  | i1::iistob ->
 	      let str = B.str_of_info i1 in
 	      (match str with
-		"inline" -> 
+		"inline" ->
 		  (* not very elegant, but tokenf doesn't know what token to
 		     match with *)
 		  tokenf x i1 >>= (fun x i1 ->
@@ -3342,9 +3346,8 @@ and compatible_base_type a signa b =
       compatible_sign signa signb
   | Type_cocci.LongType, B.IntType (B.Si (signb, B.CLong)) ->
       compatible_sign signa signb
-  | _, B.IntType (B.Si (signb, B.CLongLong)) ->
-      pr2_once "no longlong in cocci";
-      fail
+  | Type_cocci.LongLongType, B.IntType (B.Si (signb, B.CLongLong)) ->
+      compatible_sign signa signb
   | Type_cocci.FloatType, B.FloatType B.CFloat ->
       assert (signa =*= None);
       ok

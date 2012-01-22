@@ -273,7 +273,8 @@ let convert_info info =
   { Ast.line = info.Ast0.pos_info.Ast0.line_start;
     Ast.column = info.Ast0.pos_info.Ast0.column;
     Ast.strbef = strings_to_s info.Ast0.strings_before;
-    Ast.straft = strings_to_s info.Ast0.strings_after;}
+    Ast.straft = strings_to_s info.Ast0.strings_after;
+  }
 
 let convert_mcodekind adj = function
     Ast0.MINUS(replacements) ->
@@ -641,7 +642,7 @@ and strip_idots initlist =
 	      |	Ast0.Idots(dots,None) ->
 		  let (restwhen,restinit,dotinfo) = loop rest in
 		  (restwhen, restinit, (isminus dots)::dotinfo)
-	      |	_ -> 
+	      |	_ ->
 		  let (restwhen,restinit,dotinfo) = loop rest in
 		  (restwhen,x::restinit,dotinfo)) in
 	loop l in

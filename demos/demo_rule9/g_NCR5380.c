@@ -79,10 +79,7 @@
  */
 
 /*
- * $Log: g_NCR5380.c,v $
- * Revision 1.1  2007/11/01 09:43:07  julia
- * *** empty log message ***
- *
+ * $Log$
  * Revision 1.1.1.1  2007/03/28 16:38:53  pad
  * your commit message
  *

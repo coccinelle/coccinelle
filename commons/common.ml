@@ -6105,6 +6105,7 @@ let main_boilerplate f =
          if !profile <> PNONE
          then pr2 (profile_diagnostic ());
          erase_temp_files ();
+	 clear_pr2_once()
        )
     )
 (* let _ = if not !Sys.interactive then (main ()) *)

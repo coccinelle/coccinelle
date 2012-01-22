@@ -153,18 +153,19 @@ and strip =
      ref [],-1) in
 
   (* need a case for everything that has an unvisited component and can be in
-     a function prototype *)
+     a function prototype.  Also get rid of constraints because pcre
+     constraints cannot be compared. *)
 
   let ident r k e =
     donothing r k
       (Ast0.rewrap e
 	 (match Ast0.unwrap e with
 	   Ast0.MetaId(nm,constraints,seed,pure) ->
-	     Ast0.MetaId(nm,constraints,seed,Ast0.Pure)
+	     Ast0.MetaId(nm,Ast.IdNoConstraint,seed,Ast0.Pure)
 	 | Ast0.MetaFunc(nm,constraints,pure) ->
-	     Ast0.MetaFunc(nm,constraints,Ast0.Pure)
+	     Ast0.MetaFunc(nm,Ast.IdNoConstraint,Ast0.Pure)
 	 | Ast0.MetaLocalFunc(nm,constraints,pure) ->
-	     Ast0.MetaLocalFunc(nm,constraints,Ast0.Pure)
+	     Ast0.MetaLocalFunc(nm,Ast.IdNoConstraint,Ast0.Pure)
 	 | e -> e)) in
 
   let typeC r k e =

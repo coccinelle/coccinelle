@@ -27,7 +27,7 @@
  * Wrapping for FUNCTORS and MODULES
  *
  *
- * $Id: wrapper_ctl.ml,v 1.68 2010/01/28 14:23:46 npalix Exp $
+ * $Id$
  *
  * **********************************************************************)
 
