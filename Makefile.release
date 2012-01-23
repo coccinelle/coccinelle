@@ -35,7 +35,7 @@ OCAMLVERSION=$(shell ocaml -version |perl -p -e 's/.*version (.*)/$$1/;')
 #
 #  1) make prerelease # WARN: These will clean your local rep. of pending modifications
 #
-#  UPDATE VERSION number in globals/config.ml.in
+#  UPDATE VERSION number in ./version
 #  and commit it with
 #
 #  2) make release
@@ -70,7 +70,7 @@ prerelease:
 	$(MAKE) fix-expected
 	$(MAKE) distclean
 	sed -i "s|^OCAMLCFLAGS=.*$$|OCAMLCFLAGS=|" Makefile
-	@echo "\n\tEdit globals/config.ml.in"
+	@echo "\n\tEdit ./version"
 	@echo "\tCommit with 'make release'\n"
 
 fix-expected:
@@ -81,7 +81,7 @@ fix-expected:
 	cp tests/SCORE_actual.sexp tests/SCORE_expected_orig.sexp
 
 release:
-	git add globals/config.ml.in
+	git add ./ version globals/config.ml.in
 	git commit -m "Release $(VERSION)"
 	git tag -a -m "Release $(VERSION)" $(VERSION)
 	git push --mirror
@@ -252,3 +252,11 @@ push:
 	rm -rf $(TMP)/$(PRJNAME)_$(VERSION)*.dsc
 	rm -rf $(TMP)/$(PRJNAME)_$(VERSION)*.tar.gz
 
+# Produces a source tarball
+# Note: start from a fresh working directory
+# Note: configure first
+dist:
+	$(MAKE) licensify
+	$(MAKE) docs
+	$(MAKE) clean
+	tar cvfz $(PACKAGE).tar.gz --transform="s,^,$(PACKAGE)/,S" --exclude=$(PACKAGE).tar.gz --exclude-backups --exclude-vcs *
