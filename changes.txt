@@ -141,6 +141,7 @@
   will be ignored.
 - Better support meta iterator and meta declarer tokens, and symid tokens.
 - Better indentation after added noindent.
+- Fixed length bug in the treatment of structures.
 
 * 0.2.5
 ** Language:

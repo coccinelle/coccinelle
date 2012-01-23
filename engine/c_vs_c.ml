@@ -194,7 +194,9 @@ and typeC tya tyb =
   | StructUnion (sua, saopt, sta), StructUnion (sub, sbopt, stb) ->
       (sua =*= sub && saopt =*= sbopt && List.length sta =|= List.length stb)
       >&&>
-      Common.zip sta stb +> List.fold_left
+      (function tin ->
+	(* zip is only safe if the above succeeds *)
+      (Common.zip sta stb +> List.fold_left
         (fun acc ((fielda), (fieldb)) ->
           acc >>= (fun xs ->
             match fielda, fieldb with
@@ -241,7 +243,7 @@ and typeC tya tyb =
         ) (return [])
         >>= (fun stx ->
           return (StructUnion (sua, saopt, List.rev stx), iix)
-        )
+        )) tin)
 
 
 
