@@ -208,8 +208,9 @@ and typeC tya tyb =
               DeclarationField (FieldDeclList (fb, iiptb)) ->
                 let iipt = iipta in (* TODO ?*)
                 (List.length fa =|= List.length fb) >&&>
-
-                Common.zip fa fb +> List.fold_left
+		(function tin ->
+		  (* only executable if the length is correct *)
+                (Common.zip fa fb +> List.fold_left
                   (fun acc2 ((fielda,iia),(fieldb,iib))->
                     let iix = iia in
                     acc2 >>= (fun xs ->
@@ -231,7 +232,7 @@ and typeC tya tyb =
                           )
                       | _,_ -> fail
                     )
-                  ) (return [])
+                  ) (return [])) tin)
                  >>= (fun fx ->
                    return (((DeclarationField
                                (FieldDeclList (List.rev fx,iipt))))::xs)
