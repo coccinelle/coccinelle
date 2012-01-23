@@ -5,27 +5,30 @@
 , officialRelease ? false
 }:
 
-rec {
-
+let
+  
   # The source tarball taken from the repository.
   # The tarball should actually be compilable using
   #   ./configure && make depend && make opt && make install
   # on systems other than nix.
   tarball =
-    let pkgs = import nixpkgs {
-          # use ocaml 3.12
-          config.packageOverrides =
-            pkgs:
-            { ocaml = pkgs.ocaml_3_12_1;
-              ocamlPackages = pkgs.ocamlPackages_3_12_1;
-            };
-        };
-    in with pkgs; with ocamlPackages; releaseTools.sourceTarball rec {
+    let
+      pkgs = import nixpkgs {
+        # use ocaml 3.12
+        config.packageOverrides =
+          pkgs:
+          { ocaml = pkgs.ocaml_3_12_1;
+            ocamlPackages = pkgs.ocamlPackages_3_12_1;
+          };
+      };
+      version = builtins.readFile ./version;
+      versionSuffix = if officialRelease then "" else "pre${toString cocciSrc.revCount}-${cocciSrc.gitTag}";
+    in with pkgs; with ocamlPackages; releaseTools.sourceTarball {
       name = "coccinelle-tarball";
       src = cocciSrc;
       inherit officialRelease;
-      version = builtins.readFile ./version;
-      versionSuffix = if officialRelease then "" else "pre${toString cocciSrc.revCount}-${cocciSrc.gitTag}";
+      inherit version;
+      inherit versionSuffix;
 
       buildInputs = [
         perl python texLiveFull
@@ -124,6 +127,9 @@ rec {
   libs_rse  = mkOcamlEnv (libs: with libs; [ ocaml_pcre ocaml_sexplib ocaml_extlib ]);
   libs_se   = mkOcamlEnv (libs: with libs; [ ocaml_sexplib ocaml_extlib ]);
   libs_null = mkOcamlEnv (libs: []);
+
+in # list of jobs
+{ inherit tarball;
 
   # different configurations of coccinelle builds based on different ocamls/available libraries
   build = mkBuild { name = "coccinelle"; ocamlVer = selOcaml312; mkEnv = libs_full; };
