@@ -82,6 +82,7 @@
 - no more crashing on c++-like code without the c++ argument.
 - dependencies can have ! on ()
 - Give ocaml code access to Flag and thus the current file name.
+- Slightly more efficient handling of lists.
 
 ** Bugfix:
 - Corrected parsing of script strings delimited by a single quote.  Thanks
