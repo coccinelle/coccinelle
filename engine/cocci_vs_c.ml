@@ -774,7 +774,16 @@ let list_matcher match_dots rebuild_dots match_comma rebuild_comma
 
           (* '...' can take more or less the beginnings of the arguments *)
               let startendxs =
-		Common.zip (Common.inits ys) (Common.tails ys) in
+		(* if eas is empty there is only one possible match.
+		   the same if eas is just a comma *)
+		match eas with
+		  [] -> [(ys,[])]
+		| [c] when
+		   (match match_comma c with Some _ -> true | None -> false) ->
+		    let r = List.rev ys in
+		    [(List.rev(List.tl r),[List.hd r])]
+		| _ ->
+		  Common.zip (Common.inits ys) (Common.tails ys) in
 	      Some
 		(startendxs +> List.fold_left (fun acc (startxs, endxs) ->
 		  acc >||> (

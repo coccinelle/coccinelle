@@ -313,11 +313,14 @@ let dots fn d =
 
 (* commas in dotted lists, here due to polymorphism restrictions *)
 
-let add_comma is_comma make_comma itemlist =
+let add_comma is_comma is_dots make_comma itemlist =
   match Ast0.unwrap itemlist with
     Ast0.DOTS(x) ->
       (match List.rev x with
 	[] -> itemlist
+(* Not sure if comma is needed if the list is just ...; leave it there for
+now. See list_matcher in cocci_vs_c.ml in first try_matches case. *)
+(*      |	[e] when is_dots e -> itemlist*)
       | e::es ->
 	  if is_comma e
 	  then itemlist
@@ -334,11 +337,13 @@ let add_comma is_comma make_comma itemlist =
 let add_exp_comma =
   add_comma
     (function x -> match Ast0.unwrap x with Ast0.EComma _ -> true | _ -> false)
+    (function x -> match Ast0.unwrap x with Ast0.Edots _  -> true | _ -> false)
     (function x -> Ast0.EComma x)
 
 and add_init_comma =
   add_comma
     (function x -> match Ast0.unwrap x with Ast0.IComma _ -> true | _ -> false)
+    (function x -> match Ast0.unwrap x with Ast0.Idots _  -> true | _ -> false)
     (function x -> Ast0.IComma x)
 
 (* --------------------------------------------------------------------- *)
