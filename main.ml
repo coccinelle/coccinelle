@@ -809,7 +809,7 @@ let rec main_action xs =
   | _ -> failwith "only one .cocci file allowed");
   Iteration.base_file_list := xs;
   let rec toploop = function
-      [] -> raise Impossible
+      [] -> failwith "no C files provided"
     | x::xs ->
       (* a more general solution would be to use
        * Common.files_of_dir_or_files (x::xs)
