@@ -1633,7 +1633,8 @@ and process_a_ctl_a_env_a_toplevel2 r e c f =
       (***************************************)
 	     let model_ctl =
 	       CCI.model_for_ctl r.dropped_isos (Common.some c.flow) e
-	     in CCI.mysat model_ctl ctl (r.rule_info.used_after, e))
+	     in CCI.mysat model_ctl ctl
+	       (r.rule_info.rulename, r.rule_info.used_after, e))
        in
        if not returned_any_states
        then None

@@ -18,7 +18,7 @@ type pred = Lib_engine.predicate * Ast_cocci.meta_name Ast_ctl.modif
 val mysat :
   Lib_engine.model ->
   (Lib_engine.ctlcocci * (pred list list)) ->
-  (Lib_engine.mvar list * Lib_engine.metavars_binding) ->
+  (string (*rulename*) * Lib_engine.mvar list * Lib_engine.metavars_binding)->
   (Lib_engine.numbered_transformation_info *  bool *
      Lib_engine.metavars_binding * Lib_engine.metavars_binding list)
 

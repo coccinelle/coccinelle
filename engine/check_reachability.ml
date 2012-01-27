@@ -177,7 +177,7 @@ type ('a,'b,'c,'d,'e) triples =
       ('b, ('c, 'd) Wrapper_ctl.wrapped_binding) CTL.generic_subst list, 'e)
      CTL.generic_witnesstree list) list
 
-let check_reachability triples cfg =
+let check_reachability rulename triples cfg =
   Hashtbl.clear modified;
   List.iter build_modified triples;
   let formulas = create_formulas() in
@@ -187,11 +187,15 @@ let check_reachability triples cfg =
       then
 	if test_formula node ef_formula cfg
 	then
-	  Printf.printf "warning: node %d may be inconsistently modified\n"
-	    node
+	  let n = cfg#nodes#find node in
+	  Printf.printf
+	    "warning: %s, node %d: %s in %s may be inconsistently modified\n"
+	    rulename node (snd n) !Flag.current_element
 	else ()
       else
+	let n = cfg#nodes#find node in
 	failwith
 	  (Printf.sprintf
-	     "node %d reachable by inconsistent control-flow paths" node))
+	     "%s: node %d: %s in %s reachable by inconsistent control-flow paths"
+	     rulename node (snd n) !Flag.current_element))
     formulas

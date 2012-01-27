@@ -83,6 +83,7 @@
 - dependencies can have ! on ()
 - Give ocaml code access to Flag and thus the current file name.
 - Slightly more efficient handling of lists.
+- Slightly better error message in the case of inconsistent paths
 
 ** Bugfix:
 - Corrected parsing of script strings delimited by a single quote.  Thanks
