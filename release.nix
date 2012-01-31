@@ -7,6 +7,10 @@
 
 let
   
+  # version information
+  version = builtins.readFile ./version;
+  versionSuffix = if officialRelease then "" else "pre${toString cocciSrc.revCount}-${cocciSrc.gitTag}";
+
   # The source tarball taken from the repository.
   # The tarball should actually be compilable using
   #   ./configure && make depend && make opt && make install
@@ -21,8 +25,7 @@ let
             ocamlPackages = pkgs.ocamlPackages_3_12_1;
           };
       };
-      version = builtins.readFile ./version;
-      versionSuffix = if officialRelease then "" else "pre${toString cocciSrc.revCount}-${cocciSrc.gitTag}";
+      
     in with pkgs; with ocamlPackages; releaseTools.sourceTarball {
       name = "coccinelle-tarball";
       src = cocciSrc;
@@ -159,8 +162,46 @@ let
   makeDeb_i686 = makeDeb "i686-linux";
   makeDeb_x86_64 = makeDeb "x86_64-linux";
 
+  mkReport = inputs:
+    with import nixpkgs {}; stdenv.mkDerivation {
+      name = "report-${version}${versionSuffix}";
+
+      builds = map (i: i {}) inputs;
+
+      phases = [ "buildPhase" ];
+      buildPhase = ''
+        echo "collecting logs"
+        touch result.log
+        for build in $builds; do
+          cat "$build/nix-support/make.log" >> result.log
+        done
+
+        echo "grepping OCaml warnings"
+        if grep -2 "Warning " result.log
+        then
+          echo "found warnings!"
+          false
+        else
+          echo "there are apparently no significant warnings"
+        fi
+
+        ensureDir "$out"
+        cp result.log "$out/"
+
+        ensureDir "$out/nix-support"
+        echo "report log $out/result.log" > "$out/nix-support/hydra-build-products"
+        echo "$name" > "$out/nix-support/hydra-release-name"
+      '';
+
+      meta = {
+        description = "Analysis of the coccinelle build reports";
+        schedulingPriority = 5;
+      };
+    };
+
 in # list of jobs
-{ inherit tarball;
+rec {
+  inherit tarball;
 
   # different configurations of coccinelle builds based on different ocamls/available libraries
   build = mkBuild { name = "coccinelle"; ocamlVer = selOcaml312; mkEnv = libs_full; inclPython = true; };
@@ -171,6 +212,8 @@ in # list of jobs
   build_null_12_np = mkBuild { name = "coccinelle_config5"; ocamlVer = selOcaml312; mkEnv = libs_null; inclPython = false; };
   build_null_11_np = mkBuild { name = "coccinelle_config6"; ocamlVer = selOcaml311; mkEnv = libs_null; inclPython = false; };
   build_rse_np = mkBuild { name = "coccinelle_config7"; ocamlVer = selOcaml312; mkEnv = libs_rse; inclPython = false; };
+
+  report = mkReport [ build build_rse build_se build_null_12 build_null_11 build_null_12_np build_null_11_np build_rse_np ];
 
   # different debian builds
   # deb_ubuntu1010_i386 = makeDeb_i686 (disk: disk.ubuntu1010i386);
