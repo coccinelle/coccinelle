@@ -300,11 +300,14 @@ let match_maker checks_needed context_required whencode_allowed =
   let check_mcode pmc (*pattern*) cmc (*code*) binding =
     if checks_needed
     then
-      match Ast0.get_pos cmc with
-	[(Ast0.MetaPos (name,_,_)) as x] ->
+      let get_meta_poses = function
+	  Ast0.MetaPosTag _ -> true
+	| _ -> false in
+      match List.filter get_meta_poses (Ast0.get_pos cmc) with
+	[(Ast0.MetaPosTag(Ast0.MetaPos (name,_,_))) as x] ->
 	  (match Ast0.get_pos pmc with
-	    [Ast0.MetaPos (name1,_,_)] ->
-	      add_binding name1 (Ast0.MetaPosTag x) binding
+	    [Ast0.MetaPosTag(Ast0.MetaPos (name1,_,_))] ->
+	      add_binding name1 x binding
 	  | [] ->
 	      let (rule,name) = Ast0.unwrap_mcode name in
 	      Fail (Position(rule,name))
@@ -635,6 +638,14 @@ let match_maker checks_needed context_required whencode_allowed =
 		   [check_mcode opa opb; match_expr lefta leftb;
 		     match_expr righta rightb]
 	       else return false
+	  | (Ast0.Sequence(lefta,opa,righta),
+	     Ast0.Sequence(leftb,opb,rightb)) ->
+	       if mcode_equal opa opb
+	       then
+		 conjunct_many_bindings
+		   [check_mcode opa opb; match_expr lefta leftb;
+		     match_expr righta rightb]
+	       else return false
 	  | (Ast0.CondExpr(exp1a,lp1,exp2a,rp1,exp3a),
 	     Ast0.CondExpr(exp1b,lp,exp2b,rp,exp3b)) ->
 	       conjunct_many_bindings
@@ -720,7 +731,8 @@ let match_maker checks_needed context_required whencode_allowed =
 	  | (Ast0.Estars(_,Some _),_) ->
 	      failwith "whencode not allowed in a pattern1"
 	  | (Ast0.OptExp(expa),Ast0.OptExp(expb))
-	  | (Ast0.UniqueExp(expa),Ast0.UniqueExp(expb)) -> match_expr expa expb
+	  | (Ast0.UniqueExp(expa),Ast0.UniqueExp(expb)) ->
+	      match_expr expa expb
 	  | (_,Ast0.OptExp(expb))
 	  | (_,Ast0.UniqueExp(expb)) -> match_expr pattern expb
 	  | _ -> return false
@@ -1513,15 +1525,15 @@ let lookup name bindings mv_bindings =
    isomorphism *)
 let instantiate bindings mv_bindings =
   let mcode x =
-    let pos_names =
-      List.map (function Ast0.MetaPos(name,_,_) -> name) (Ast0.get_pos x) in
+    let pos_names = List.map Ast0.meta_pos_name (Ast0.get_pos x) in
     let new_names =
       List.fold_left
 	(function prev ->
 	  function name ->
 	    try
+	      (* not at all sure that this is good enough *)
 	      match lookup name bindings mv_bindings with
-		Common.Left(Ast0.MetaPosTag(id)) -> id::prev
+		Common.Left((Ast0.MetaPosTag(_)) as id) -> id::prev
 	      | _ -> failwith "not possible"
 	    with Not_found -> prev)
 	[] pos_names in

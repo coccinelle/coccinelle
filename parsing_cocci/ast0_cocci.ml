@@ -37,7 +37,7 @@ type info = { pos_info : position_info;
 it is used in deciding how much to remove, when two adjacent code tokens are
 removed. *)
 type 'a mcode =
-    'a * arity * info * mcodekind * meta_pos list ref (* pos, - only *) *
+    'a * arity * info * mcodekind * anything list ref (* pos, - only *) *
       int (* adjacency_index *)
 (* int ref is an index *)
 and 'a wrap =
@@ -100,6 +100,7 @@ and base_expression =
                       expression dots * string mcode (* ) *)
   | Assignment     of expression * Ast.assignOp mcode * expression *
 	              bool (* true if it can match an initialization *)
+  | Sequence       of expression * string mcode (* , *) * expression
   | CondExpr       of expression * string mcode (* ? *) * expression option *
 	              string mcode (* : *) * expression
   | Postfix        of expression * Ast.fixOp mcode
@@ -126,6 +127,7 @@ and base_expression =
 	              TC.typeC list option * Ast.form * pure
   | MetaExprList   of Ast.meta_name mcode (* only in arg lists *) *
 	              listlen * pure
+  | AsExpr         of expression * expression (* as expr, always metavar *)
   | EComma         of string mcode (* only in arg lists *)
   | DisjExpr       of string mcode * expression list *
 	              string mcode list (* the |s *) * string mcode
@@ -174,6 +176,7 @@ and base_typeC =
 	string mcode (* { *) * declaration dots * string mcode (* } *)
   | TypeName        of string mcode
   | MetaType        of Ast.meta_name mcode * pure
+  | AsType          of typeC * typeC (* as type, always metavar *)
   | DisjType        of string mcode * typeC list * (* only after iso *)
                        string mcode list (* the |s *)  * string mcode
   | OptType         of typeC
@@ -193,6 +196,7 @@ and base_declaration =
        should be a separate type for fields, as in the C AST *)
   | MetaField of Ast.meta_name mcode * pure (* structure fields *)
   | MetaFieldList of Ast.meta_name mcode * listlen * pure (* structure fields *)
+  | AsDecl        of declaration * declaration
   | Init of Ast.storage mcode option * typeC * ident * string mcode (*=*) *
 	initialiser * string mcode (*;*)
   | UnInit of Ast.storage mcode option * typeC * ident * string mcode (* ; *)
@@ -215,6 +219,7 @@ and declaration = base_declaration wrap
 and base_initialiser =
     MetaInit of Ast.meta_name mcode * pure
   | MetaInitList of Ast.meta_name mcode * listlen * pure
+  | AsInit of initialiser * initialiser (* as init, always metavar *)
   | InitExpr of expression
   | InitList of string mcode (*{*) * initialiser_list * string mcode (*}*) *
 	(* true if ordered, as for array, false if unordered, as for struct *)
@@ -320,6 +325,7 @@ and base_statement =
 	             string mcode (* ; *)
   | MetaStmt      of Ast.meta_name mcode * pure
   | MetaStmtList  of Ast.meta_name mcode(*only in statement lists*) * pure
+  | AsStmt        of statement * statement (* as statement, always metavar *)
   | Exp           of expression  (* only in dotted statement lists *)
   | TopExp        of expression (* for macros body *)
   | Ty            of typeC (* only at top level *)
@@ -536,6 +542,32 @@ let set_mcode_data data (_,ar,info,mc,pos,adj) = (data,ar,info,mc,pos,adj)
 
 (* --------------------------------------------------------------------- *)
 
+let meta_pos_name = function
+    MetaPosTag(MetaPos(name,constraints,_)) -> name
+  | ExprTag(e) ->
+      (match unwrap e with
+	MetaExpr(name,constraints,ty,form,pure) -> name
+      |	_ -> failwith "bad metavariable")
+  | TypeCTag(t) ->
+      (match unwrap t with
+	MetaType(name,pure) -> name
+      |	_ -> failwith "bad metavariable")
+  | DeclTag(d) ->
+      (match unwrap d with
+	MetaDecl(name,pure) -> name
+      |	_ -> failwith "bad metavariable")
+  | InitTag(i) ->
+      (match unwrap i with
+	MetaInit(name,pure) -> name
+      |	_ -> failwith "bad metavariable")
+  | StmtTag(s) ->
+      (match unwrap s with
+	MetaStmt(name,pure) -> name
+      | _ -> failwith "bad metavariable")
+  | _ -> failwith "bad metavariable"
+    
+(* --------------------------------------------------------------------- *)
+
 (* unique indices, for mcode and tree nodes *)
 let index_counter = ref 0
 let fresh_index _ = let cur = !index_counter in index_counter := cur + 1; cur
@@ -599,6 +631,7 @@ let rec ast0_type_to_type ty =
   | TypeName(name) -> TC.TypeName(unwrap_mcode name)
   | MetaType(name,_) ->
       TC.MetaType(unwrap_mcode name,TC.Unitary,false)
+  | AsType(ty,asty) -> failwith "not created yet"
   | DisjType(_,types,_,_) ->
       Common.pr2_once
 	"disjtype not supported in smpl type inference, assuming unknown";

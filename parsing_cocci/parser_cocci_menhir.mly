@@ -1415,12 +1415,17 @@ by an expression-specific marker.  In that case, the rule eexpr is used, which
 allows <... ...> anywhere.  Hopefully, this will not be too much of a problem
 in practice.
 dot_expressions is the most permissive.  all three kinds of expressions use
-this once an expression_specific token has been seen */
+this once an expression_specific token has been seen
+The arg versions don't allow sequences, to avoid conflicting with commas in
+argument lists.
+ */
 expr:  basic_expr(expr,invalid) { $1 }
 /* allows ... and nests */
-eexpr: basic_expr(eexpr,dot_expressions) { $1 }
+eexpr: pre_basic_expr(eexpr,dot_expressions) { $1 }
+eargexpr: basic_expr(eexpr,dot_expressions) { $1 } /* no sequences */
 /* allows nests but not .... */
-dexpr: basic_expr(eexpr,nest_expressions) { $1 }
+dexpr: pre_basic_expr(eexpr,nest_expressions) { $1 }
+dargexpr: basic_expr(eexpr,nest_expressions) { $1 } /* no sequences */
 
 top_eexpr:
   eexpr { Ast0.wrap(Ast0.OTHER(Ast0.wrap(Ast0.Exp($1)))) }
@@ -1445,6 +1450,12 @@ nest_expressions:
 | TMeta { tmeta_to_exp $1 }
 
 //whenexp: TWhen TNotEq w=eexpr TLineEnd { w }
+
+pre_basic_expr(recurser,primary_extra):
+   basic_expr(recurser,primary_extra)                     { $1 }
+ | pre_basic_expr(recurser,primary_extra) TComma
+     basic_expr(recurser,primary_extra)
+     { Ast0.wrap(Ast0.Sequence($1,P.clt2mcode "," $2,$3)) }
 
 basic_expr(recurser,primary_extra):
    assign_expr(recurser,primary_extra)                     { $1 }
@@ -1473,7 +1484,8 @@ assign_expr_bis:
 
 cond_expr(r,pe):
     arith_expr(r,pe)                         { $1 }
-  | l=arith_expr(r,pe) w=TWhy t=option(eexpr) dd=TDotDot r=eexpr/*see parser_c*/
+  | l=arith_expr(r,pe) w=TWhy t=option(eexpr)
+      dd=TDotDot r=eargexpr/*see parser_c*/
       { Ast0.wrap(Ast0.CondExpr (l, P.clt2mcode "?" w, t,
 				 P.clt2mcode ":" dd, r)) }
 
@@ -2257,7 +2269,7 @@ when_start:
 
 /* arg expr.  may contain a type or a explist metavariable */
 aexpr:
-    dexpr { Ast0.set_arg_exp $1 }
+    dargexpr { Ast0.set_arg_exp $1 }
   | TMetaExpList
       { let (nm,lenname,pure,clt) = $1 in
       let nm = P.clt2mcode nm clt in

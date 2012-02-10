@@ -40,6 +40,9 @@ let rec disjty ft =
     Ast.Type(cv,ty) ->
       let ty = disjtypeC ty in
       List.map (function ty -> Ast.rewrap ft (Ast.Type(cv,ty))) ty
+  | Ast.AsType(ty,asty) -> (* as ty doesn't contain disj *)
+      let ty = disjty ty in
+      List.map (function ty -> Ast.rewrap ft (Ast.AsType(ty,asty))) ty
   | Ast.DisjType(types) -> List.concat (List.map disjty types)
   | Ast.OptType(ty) ->
       let ty = disjty ty in
@@ -103,6 +106,10 @@ and disjexp e =
       disjmult2 (disjexp left) (disjexp right)
 	(function left -> function right ->
 	  Ast.rewrap e (Ast.Assignment(left,op,right,simple)))
+  | Ast.Sequence(left,op,right) ->
+      disjmult2 (disjexp left) (disjexp right)
+	(function left -> function right ->
+	  Ast.rewrap e (Ast.Sequence(left,op,right)))
   | Ast.CondExpr(exp1,why,Some exp2,colon,exp3) ->
       let res = disjmult disjexp [exp1;exp2;exp3] in
       List.map
@@ -166,6 +173,9 @@ and disjexp e =
 	  function exp -> Ast.rewrap e (Ast.Constructor(lp,ty,rp,init)))
   | Ast.MetaErr(_,_,_,_) | Ast.MetaExpr(_,_,_,_,_,_)
   | Ast.MetaExprList(_,_,_,_) | Ast.EComma(_) -> [e]
+  | Ast.AsExpr(exp,asexp) -> (* as exp doesn't contain disj *)
+      let exp = disjexp exp in
+      List.map (function exp -> Ast.rewrap e (Ast.AsExpr(exp,asexp))) exp
   | Ast.DisjExpr(exp_list) -> List.concat (List.map disjexp exp_list)
   | Ast.NestExpr(starter,expr_dots,ender,whencode,multi) ->
       (* not sure what to do here, so ambiguities still possible *)
@@ -196,6 +206,9 @@ and disjparam p =
 and disjini i =
   match Ast.unwrap i with
     Ast.MetaInit(_,_,_) | Ast.MetaInitList(_,_,_,_) -> [i]
+  | Ast.AsInit(ini,asini) ->
+      let ini = disjini ini in
+      List.map (function ini -> Ast.rewrap i (Ast.AsInit(ini,asini))) ini
   | Ast.InitExpr(exp) ->
       let exp = disjexp exp in
       List.map (function exp -> Ast.rewrap i (Ast.InitExpr(exp))) exp
@@ -243,6 +256,9 @@ and disjdecl d =
   match Ast.unwrap d with
     Ast.MetaDecl(_,_,_) | Ast.MetaField(_,_,_)
   | Ast.MetaFieldList(_,_,_,_) -> [d]
+  | Ast.AsDecl(decl,asdecl) ->
+      let decl = disjdecl decl in
+      List.map (function decl -> Ast.rewrap d (Ast.AsDecl(decl,asdecl))) decl
   | Ast.Init(stg,ty,id,eq,ini,sem) ->
       disjmult2 (disjty ty) (disjini ini)
 	(function ty -> function ini ->

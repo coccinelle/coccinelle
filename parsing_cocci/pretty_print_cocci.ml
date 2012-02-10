@@ -206,6 +206,9 @@ let rec expression e =
   | Ast.Assignment(left,op,right,simple) ->
       expression left; print_string " "; mcode assignOp op;
       print_string " "; expression right
+  | Ast.Sequence(left,op,right) ->
+      expression left; mcode print_string op;
+      print_string " "; expression right
   | Ast.CondExpr(exp1,why,exp2,colon,exp3) ->
       expression exp1; print_string " "; mcode print_string why;
       print_option (function e -> print_string " "; expression e) exp2;
@@ -247,6 +250,7 @@ let rec expression e =
   | Ast.MetaExpr(name,_,keep,ty,form,inherited) ->
       mcode print_meta name; print_type keep inherited ty
   | Ast.MetaExprList(name,_,_,_) -> mcode print_meta name
+  | Ast.AsExpr(exp,asexp) -> expression exp; print_string "@"; expression asexp
   | Ast.EComma(cm) -> mcode print_string cm; print_space()
   | Ast.DisjExpr(exp_list) -> print_disj_list expression exp_list
   | Ast.NestExpr(starter,expr_dots,ender,Some whencode,multi) ->
@@ -331,6 +335,7 @@ and fullType ft =
     Ast.Type(cv,ty) ->
       print_option (function x -> mcode const_vol x; print_string " ") cv;
       typeC ty
+  | Ast.AsType(ty,asty) -> fullType ty; print_string "@"; fullType asty
   | Ast.DisjType(decls) -> print_disj_list fullType decls
   | Ast.OptType(ty) -> print_string "?"; fullType ty
   | Ast.UniqueType(ty) -> print_string "!"; fullType ty
@@ -449,6 +454,8 @@ and declaration d =
     Ast.MetaDecl(name,_,_) | Ast.MetaField(name,_,_)
   | Ast.MetaFieldList(name,_,_,_) ->
       mcode print_meta name
+  | Ast.AsDecl(decl,asdecl) -> declaration decl; print_string "@";
+      declaration asdecl
   | Ast.Init(stg,ty,id,eq,ini,sem) ->
       print_option (mcode storage) stg; print_named_type ty id;
       print_string " "; mcode print_string eq;
@@ -480,6 +487,8 @@ and initialiser i =
       mcode print_meta name; print_string " "
   | Ast.MetaInitList(name,_,_,_) ->
       mcode print_meta name; print_string " "
+  | Ast.AsInit(ini,asini) -> initialiser ini; print_string "@";
+      initialiser asini
   | Ast.InitExpr(exp) -> expression exp
   | Ast.ArInitList(lb,initlist,rb) ->
       mcode print_string lb; open_box 0;
@@ -699,6 +708,8 @@ and statement arity s =
   | Ast.Define(header,body) ->
       rule_elem arity header; print_string " ";
       dots force_newline (statement arity) body
+  | Ast.AsStmt(stm,asstm) ->
+      statement arity stm; print_string "@"; statement arity asstm
   | Ast.Nest(starter,stmt_dots,ender,whn,multi,_,_) ->
       print_string arity;
       nest_dots starter ender (statement arity)

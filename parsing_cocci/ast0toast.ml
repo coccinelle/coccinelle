@@ -283,11 +283,14 @@ let pos_mcode(term,_,info,mcodekind,pos,adj) =
 
 let mcode (term,_,info,mcodekind,pos,adj) =
   let pos =
-    List.map
-      (function Ast0.MetaPos(pos,constraints,per) ->
-	Ast.MetaPos(pos_mcode pos,constraints,per,unitary,false))
-      !pos in
-  (term,convert_info info,convert_mcodekind adj mcodekind,pos)
+    List.fold_left
+      (function prev ->
+	function
+	    Ast0.MetaPosTag(Ast0.MetaPos(pos,constraints,per)) ->
+	      (Ast.MetaPos(pos_mcode pos,constraints,per,unitary,false))::prev
+	  | _ -> prev)
+      [] !pos in
+  (term,convert_info info,convert_mcodekind adj mcodekind,List.rev pos)
 
 (* --------------------------------------------------------------------- *)
 (* Dots *)
@@ -384,6 +387,8 @@ and expression e =
 	Ast.FunCall(fn,lp,args,rp)
     | Ast0.Assignment(left,op,right,simple) ->
 	Ast.Assignment(expression left,mcode op,expression right,simple)
+    | Ast0.Sequence(left,op,right) ->
+	Ast.Sequence(expression left,mcode op,expression right)
     | Ast0.CondExpr(exp1,why,exp2,colon,exp3) ->
 	let exp1 = expression exp1 in
 	let why = mcode why in
@@ -424,6 +429,8 @@ and expression e =
 	  Ast.MetaExpr(mcode name,constraints cstrts,unitary,ty,form,false)
     | Ast0.MetaExprList(name,lenname,_) ->
 	Ast.MetaExprList(mcode name,do_lenname lenname,unitary,false)
+    | Ast0.AsExpr(expr,asexpr) ->
+	Ast.AsExpr(expression expr,expression asexpr)
     | Ast0.EComma(cm)         -> Ast.EComma(mcode cm)
     | Ast0.DisjExpr(_,exps,_,_)     ->
 	Ast.DisjExpr(List.map expression exps)
@@ -497,6 +504,7 @@ and typeC t =
     | Ast0.TypeName(_) | Ast0.MetaType(_,_) ->
 	Ast.Type(None,rewrap t no_isos (base_typeC t))
     | Ast0.DisjType(_,types,_,_) -> Ast.DisjType(List.map typeC types)
+    | Ast0.AsType(ty,asty) -> Ast.AsType(typeC ty,typeC asty)
     | Ast0.OptType(ty) -> Ast.OptType(typeC ty)
     | Ast0.UniqueType(ty) -> Ast.UniqueType(typeC ty))
 
@@ -546,6 +554,8 @@ and declaration d =
     | Ast0.MetaField(name,_) -> Ast.MetaField(mcode name,unitary,false)
     | Ast0.MetaFieldList(name,lenname,_) ->
 	Ast.MetaFieldList(mcode name,do_lenname lenname,unitary,false)
+    | Ast0.AsDecl(decl,asdecl) ->
+	Ast.AsDecl(declaration decl,declaration asdecl)
     | Ast0.Init(stg,ty,id,eq,ini,sem) ->
 	let stg = get_option mcode stg in
 	let ty = typeC ty in
@@ -643,6 +653,8 @@ and initialiser i =
       Ast0.MetaInit(name,_) -> Ast.MetaInit(mcode name,unitary,false)
     | Ast0.MetaInitList(name,lenname,_) ->
 	Ast.MetaInitList(mcode name,do_lenname lenname,unitary,false)
+    | Ast0.AsInit(init,asinit) ->
+	Ast.AsInit(initialiser init,initialiser asinit)
     | Ast0.InitExpr(exp) -> Ast.InitExpr(expression exp)
     | Ast0.InitList(lb,initlist,rb,true) ->
 	let initlist = add_init_comma initlist in
@@ -811,6 +823,8 @@ and statement s =
       | Ast0.MetaStmtList(name,_) ->
 	  Ast.Atomic(rewrap_rule_elem s
 		       (Ast.MetaStmtList(mcode name,unitary,false)))
+      | Ast0.AsStmt(stmt,asstmt) ->
+	  Ast.AsStmt(statement seqible stmt,statement seqible asstmt)
       | Ast0.TopExp(exp) ->
 	  Ast.Atomic(rewrap_rule_elem s (Ast.TopExp(expression exp)))
       | Ast0.Exp(exp) ->

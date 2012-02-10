@@ -3371,9 +3371,13 @@ let cache_computation_robust2
 
   if Sys.file_exists dependencies_cache &&
      get_value dependencies_cache =*= dependencies
-  then get_value file_cache
+  then
+    (*begin
+    pr2 ("cache computation reuse " ^ file);*)
+    get_value file_cache
+    (*end*)
   else begin
-    pr2 ("cache computation recompute " ^ file);
+    (*pr2 ("cache computation recompute " ^ file);*)
     let res = f () in
     write_value dependencies dependencies_cache;
     write_value res file_cache;

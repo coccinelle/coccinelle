@@ -41,7 +41,7 @@ let get_p _ =
   let c = !pctr in
   pctr := c + 1;
   let name = ("",Printf.sprintf "p%d" c) in
-  [Ast0.MetaPos(Ast0.make_mcode name,[],Ast.PER)]
+  [Ast0.MetaPosTag(Ast0.MetaPos(Ast0.make_mcode name,[],Ast.PER))]
 
 let process_info l =
    let rec loop = function

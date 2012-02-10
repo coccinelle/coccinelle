@@ -283,6 +283,11 @@ let rec expression e =
       let op = normal_mcode op in
       let right = expression right in
       mkres e (Ast0.Assignment(left,op,right,simple)) left right
+  | Ast0.Sequence(left,op,right) ->
+      let left = expression left in
+      let op = normal_mcode op in
+      let right = expression right in
+      mkres e (Ast0.Sequence(left,op,right)) left right
   | Ast0.CondExpr(exp1,why,exp2,colon,exp3) ->
       let exp1 = expression exp1 in
       let why = normal_mcode why in
@@ -409,6 +414,7 @@ let rec expression e =
   | Ast0.UniqueExp(exp) ->
       let exp = expression exp in
       mkres e (Ast0.UniqueExp(exp)) exp exp
+  | Ast0.AsExpr _ -> failwith "not possible"
 
 and expression_dots x = dots is_exp_dots None expression x
 
@@ -512,6 +518,7 @@ and typeC t =
       let ty = typeC ty in mkres t (Ast0.OptType(ty)) ty ty
   | Ast0.UniqueType(ty) ->
       let ty = typeC ty in mkres t (Ast0.UniqueType(ty)) ty ty
+  | Ast0.AsType _ -> failwith "not possible"
 
 (* --------------------------------------------------------------------- *)
 (* Variable declaration *)
@@ -593,6 +600,7 @@ and declaration d =
   | Ast0.UniqueDecl(decl) ->
       let decl = declaration decl in
       mkres d (Ast0.UniqueDecl(declaration decl)) decl decl
+  | Ast0.AsDecl _ -> failwith "not possible"
 
 (* --------------------------------------------------------------------- *)
 (* Initializer *)
@@ -648,6 +656,7 @@ and initialiser i =
   | Ast0.UniqueIni(ini) ->
       let ini = initialiser ini in
       mkres i (Ast0.UniqueIni(ini)) ini ini
+  | Ast0.AsInit _ -> failwith "not possible"
 
 and designator = function
     Ast0.DesignatorField(dot,id) ->
@@ -1038,7 +1047,8 @@ let rec statement s =
     | Ast0.OptStm(stm) ->
 	let stm = statement stm in mkres s (Ast0.OptStm(stm)) stm stm
     | Ast0.UniqueStm(stm) ->
-	let stm = statement stm in mkres s (Ast0.UniqueStm(stm)) stm stm in
+	let stm = statement stm in mkres s (Ast0.UniqueStm(stm)) stm stm
+    | Ast0.AsStmt _ -> failwith "not possible" in
   Ast0.set_dots_bef_aft res
     (match Ast0.get_dots_bef_aft res with
       Ast0.NoDots -> Ast0.NoDots

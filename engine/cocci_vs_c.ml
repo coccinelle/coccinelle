@@ -748,7 +748,7 @@ let satisfies_econstraint c exp : bool =
       (match cst with
       | Ast_c.String (str, _) -> satisfies_regexpconstraint c str
       | Ast_c.MultiString strlist ->
-	  warning "Unable to apply a constraint on an multistring constant!"
+	  warning "Unable to apply a constraint on a multistring constant!"
       | Ast_c.Char  (char , _) -> satisfies_regexpconstraint c char
       | Ast_c.Int   (int  , _) -> satisfies_regexpconstraint c int
       | Ast_c.Float (float, _) -> satisfies_regexpconstraint c float)
@@ -778,7 +778,7 @@ let list_matcher match_dots rebuild_dots match_comma rebuild_comma
 		   the same if eas is just a comma *)
 		match eas with
 		  [] -> [(ys,[])]
-		| [c] when
+		| [c] when not(ys=[]) &&
 		   (match match_comma c with Some _ -> true | None -> false) ->
 		    let r = List.rev ys in
 		    [(List.rev(List.tl r),[List.hd r])]
@@ -1018,6 +1018,12 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
    * any checks. Hopefully now have tagged SP technique.
    *)
 
+  | A.AsExpr(exp,asexp), expb ->
+      expression exp expb >>= (fun exp expb ->
+      expression asexp expb >>= (fun asexp expb ->
+	return(
+	  ((A.AsExpr(exp,asexp)) +> wa,
+	   expb))))
 
   (* old:
    * | A.Edots _, _ -> raise Impossible.
@@ -1121,9 +1127,6 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
           ((B.FunCall (eb, ebs),typ), [ib1;ib2])
         ))))))
 
-
-
-
   | A.Assignment (ea1, opa, ea2, simple),
       ((B.Assignment (eb1, opb, eb2), typ),ii) ->
       let (opbi) = tuple_of_list1 ii in
@@ -1137,6 +1140,17 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
             ((B.Assignment (eb1, opb, eb2), typ), [opbi])
         ))))
       else fail
+
+  | A.Sequence (ea1, opa, ea2),
+      ((B.Sequence (eb1, eb2), typ),ii) ->
+      let (opbi) = tuple_of_list1 ii in
+        expression ea1 eb1 >>= (fun ea1 eb1 ->
+        expression ea2 eb2 >>= (fun ea2 eb2 ->
+        tokenf opa opbi >>= (fun opa opbi ->
+          return (
+            (A.Sequence (ea1, opa, ea2)) +> wa,
+            ((B.Sequence (eb1, eb2), typ), [opbi])
+        ))))
 
   | A.CondExpr(ea1,ia1,ea2opt,ia2,ea3),((B.CondExpr(eb1,eb2opt,eb3),typ),ii) ->
       let (ib1, ib2) = tuple_of_list2 ii in
@@ -1738,6 +1752,17 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
 	    return ((mckstart, allminus,
 		     (A.MetaDecl (ida, keep, inherited))+> A.rewrap decla),
 		    declb))
+
+  | A.AsDecl(dec,asdec), decb ->
+      declaration (mckstart, allminus, dec) decb >>=
+      (fun (mckstart, allminus, dec) decb ->
+	let asmckstart = A.CONTEXT(A.NoPos,A.NOTHING) in
+      declaration (asmckstart,false,asdec) decb >>= (fun (_,_,asdec) decb ->
+	return(
+	((mckstart, allminus,
+	  (A.AsDecl(dec,asdec)) +> A.rewrap decla),
+	 decb))))
+
   | _, (B.DeclList ([var], iiptvirgb::iifakestart::iisto)) ->
       onedecl allminus decla (var,iiptvirgb,iisto) >>=
       (fun decla (var,iiptvirgb,iisto)->
@@ -2172,6 +2197,13 @@ and (initialiser: (A.initialiser, Ast_c.initialiser) matcher) =  fun ia ib ->
 	     ))
 	  )
 
+    | A.AsInit(ini,asini), inib ->
+	initialiser ini inib >>= (fun ini inib ->
+	initialiser asini inib >>= (fun asini inib ->
+	  return(
+	  ((A.AsInit(ini,asini)) +> A.rewrap ia,
+	   inib))))
+
     | (A.InitExpr expa, ib) ->
         (match A.unwrap expa, ib with
         | A.Edots (mcode, None), ib    ->
@@ -2472,7 +2504,7 @@ and (struct_field: (A.declaration, B.field) matcher) = fun fa fb ->
           pr2_once "warning: bitfield not handled by ast_cocci";
           fail
       | B.Simple (None, typb) ->
-          pr2_once "warning: unamed struct field not handled by ast_cocci";
+          pr2_once "warning: unnamed struct field not handled by ast_cocci";
           fail
       | B.Simple (Some nameidb, typb) ->
 
@@ -2635,6 +2667,13 @@ and (fullType: (A.fullType, Ast_c.fullType) matcher) =
            )
        )
 
+  | A.AsType(ty,asty), tyb ->
+      fullType ty tyb >>= (fun ty tyb ->
+      fullType asty tyb >>= (fun asty tyb ->
+	return(
+	  ((A.AsType(ty,asty)) +> A.rewrap typa,
+	   tyb))))
+
   | A.DisjType typas, typb ->
       typas +>
       List.fold_left (fun acc typa -> acc >|+|> (fullType typa typb)) fail
@@ -2676,7 +2715,7 @@ and simulate_signed ta basea stringsa signaopt tb baseb ii rebuilda =
       (* In ii there is a list, sometimes of length 1 or 2 or 3.
        * And even if in baseb we have a Signed Int, that does not mean
        * that ii is of length 2, cos Signed is the default, so if in signa
-       * we have Signed explicitely ? we cant "accrocher" this mcode to
+       * we have Signed explicitly ? we cant "accrocher" this mcode to
        * something :( So for the moment when there is signed in cocci,
        * we force that there is a signed in c too (done in pattern.ml).
        *)
@@ -2962,7 +3001,7 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
 
 
 
-    (* todo: handle the iso on optionnal size specifification ? *)
+    (* todo: handle the iso on optional size specification ? *)
     | A.Array (typa, ia1, eaopt, ia2), (B.Array (ebopt, typb), ii) ->
         let (ib1, ib2) = tuple_of_list2 ii in
         fullType typa typb >>= (fun typa typb ->
@@ -3391,7 +3430,7 @@ and compatible_type a (b,local) =
 	loop (a,b)
     | Type_cocci.FunctionPointer a, _ ->
 	failwith
-	  "TODO: function pointer type doesn't store enough information to determine compatability"
+	  "TODO: function pointer type doesn't store enough information to determine compatibility"
     | Type_cocci.Array   a, (qub, (B.Array (eopt, b),ii)) ->
       (* no size info for cocci *)
 	loop (a,b)

@@ -132,6 +132,8 @@ and unify_expression e1 e2 =
       if unify_mcode op1 op2
       then conjunct_bindings (unify_expression l1 l2) (unify_expression r1 r2)
       else return false
+  | (Ast.Sequence(l1,_,r1),Ast.Sequence(l2,_,r2)) ->
+      conjunct_bindings (unify_expression l1 l2) (unify_expression r1 r2)
   | (Ast.CondExpr(tst1,q1,thn1,c1,els1),Ast.CondExpr(tst2,q2,thn2,c2,els2)) ->
       conjunct_bindings (unify_expression tst1 tst2)
 	(conjunct_bindings (unify_option unify_expression thn1 thn2)
@@ -171,6 +173,13 @@ and unify_expression e1 e2 =
   | (_,Ast.MetaExpr(_,_,_,_,_,_))
   | (_,Ast.MetaExprList(_,_,_,_)) -> return true
 
+  | (Ast.AsExpr(exp1,asexp1),_) ->
+      disjunct_all_bindings
+	(List.map (function x -> unify_expression x e2) [exp1;asexp1])
+  | (_,Ast.AsExpr(exp2,asexp2)) ->
+      disjunct_all_bindings
+	(List.map (function x -> unify_expression x e1) [exp2;asexp2])
+
   | (Ast.EComma(cm1),Ast.EComma(cm2)) -> return true
 
   | (Ast.DisjExpr(e1),_) ->
@@ -200,6 +209,12 @@ and unify_fullType ft1 ft2 =
       if bool_unify_option unify_mcode cv1 cv2
       then unify_typeC ty1 ty2
       else return false
+  | (Ast.AsType(ty1,asty1),_) ->
+      disjunct_all_bindings
+	(List.map (function x -> unify_fullType x ft2) [ty1;asty1])
+  | (_,Ast.AsType(ty2,asty2)) ->
+      disjunct_all_bindings
+	(List.map (function x -> unify_fullType x ft1) [ty2;asty2])
   | (Ast.DisjType(ft1),_) ->
       disjunct_all_bindings (List.map (function x -> unify_fullType x ft2) ft1)
   | (_,Ast.DisjType(ft2)) ->

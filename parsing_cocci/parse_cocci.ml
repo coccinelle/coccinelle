@@ -1414,7 +1414,7 @@ let rec consume_minus_positions = function
       let x =
 	update_clt x
 	  (arity,ln,lln,offset,col,strbef,straft,
-	   (Ast0.MetaPos(name,constraints,per)::pos)) in
+	   (Ast0.MetaPosTag(Ast0.MetaPos(name,constraints,per))::pos)) in
       (consume_minus_positions (x::xs))
   | x::xs -> x::consume_minus_positions xs
 

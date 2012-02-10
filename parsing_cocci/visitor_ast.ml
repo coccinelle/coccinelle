@@ -98,6 +98,8 @@ let combiner bind option_default
 		      string_mcode rp]
       | Ast.Assignment(left,op,right,simple) ->
 	  multibind [expression left; assign_mcode op; expression right]
+      | Ast.Sequence(left,op,right) ->
+	  multibind [expression left; string_mcode op; expression right]
       | Ast.CondExpr(exp1,why,exp2,colon,exp3) ->
 	  multibind [expression exp1; string_mcode why;
 		      get_option expression exp2; string_mcode colon;
@@ -134,6 +136,7 @@ let combiner bind option_default
       | Ast.MetaErr(name,_,_,_)
       | Ast.MetaExpr(name,_,_,_,_,_)
       | Ast.MetaExprList(name,_,_,_) -> meta_mcode name
+      |	Ast.AsExpr(exp,asexp) -> bind (expression exp) (expression asexp)
       | Ast.EComma(cm) -> string_mcode cm
       | Ast.DisjExpr(exp_list) -> multibind (List.map expression exp_list)
       | Ast.NestExpr(starter,expr_dots,ender,whencode,multi) ->
@@ -152,6 +155,7 @@ let combiner bind option_default
     let k ft =
       match Ast.unwrap ft with
 	Ast.Type(cv,ty) -> bind (get_option cv_mcode cv) (typeC ty)
+      |	Ast.AsType(ty,asty) -> bind (fullType ty) (fullType asty)
       | Ast.DisjType(types) -> multibind (List.map fullType types)
       | Ast.OptType(ty) -> fullType ty
       | Ast.UniqueType(ty) -> fullType ty in
@@ -221,6 +225,8 @@ let combiner bind option_default
 	Ast.MetaDecl(name,_,_) | Ast.MetaField(name,_,_)
       |	Ast.MetaFieldList(name,_,_,_) ->
 	  meta_mcode name
+      |	Ast.AsDecl(decl,asdecl) ->
+	  bind (declaration decl) (declaration asdecl)
       |	Ast.Init(stg,ty,id,eq,ini,sem) ->
 	  bind (get_option storage_mcode stg)
 	    (bind (named_type ty id)
@@ -249,6 +255,8 @@ let combiner bind option_default
       match Ast.unwrap i with
 	Ast.MetaInit(name,_,_) -> meta_mcode name
       |	Ast.MetaInitList(name,_,_,_) -> meta_mcode name
+      |	Ast.AsInit(init,asinit) ->
+	  bind (initialiser init) (initialiser asinit)
       |	Ast.InitExpr(exp) -> expression exp
       | Ast.ArInitList(lb,initlist,rb) ->
 	  multibind
@@ -431,6 +439,8 @@ let combiner bind option_default
 		      statement_dots body; rule_elem rbrace]
       | Ast.Define(header,body) ->
 	  bind (rule_elem header) (statement_dots body)
+      |	Ast.AsStmt(stm,asstm) ->
+	  bind (statement stm) (statement asstm)
       | Ast.Dots(d,whn,_,_) | Ast.Circles(d,whn,_,_) | Ast.Stars(d,whn,_,_) ->
 	  bind (string_mcode d)
 	    (multibind (List.map (whencode statement_dots statement) whn))
@@ -610,6 +620,8 @@ let rebuilder
 	| Ast.Assignment(left,op,right,simple) ->
 	    Ast.Assignment(expression left, assign_mcode op, expression right,
 			   simple)
+	| Ast.Sequence(left,op,right) ->
+	    Ast.Sequence(expression left, string_mcode op, expression right)
 	| Ast.CondExpr(exp1,why,exp2,colon,exp3) ->
 	    Ast.CondExpr(expression exp1, string_mcode why,
 			 get_option expression exp2, string_mcode colon,
@@ -648,6 +660,7 @@ let rebuilder
 	    Ast.MetaExpr(meta_mcode name,constraints,keep,ty,form,inherited)
 	| Ast.MetaExprList(name,lenname_inh,keep,inherited) ->
 	    Ast.MetaExprList(meta_mcode name,lenname_inh,keep,inherited)
+	| Ast.AsExpr(exp,asexp) -> Ast.AsExpr(expression exp,expression asexp)
 	| Ast.EComma(cm) -> Ast.EComma(string_mcode cm)
 	| Ast.DisjExpr(exp_list) -> Ast.DisjExpr(List.map expression exp_list)
 	| Ast.NestExpr(starter,expr_dots,ender,whencode,multi) ->
@@ -669,6 +682,7 @@ let rebuilder
       Ast.rewrap ft
 	(match Ast.unwrap ft with
 	  Ast.Type(cv,ty) -> Ast.Type (get_option cv_mcode cv, typeC ty)
+	| Ast.AsType(ty,asty) -> Ast.AsType(fullType ty,fullType asty)
 	| Ast.DisjType(types) -> Ast.DisjType(List.map fullType types)
 	| Ast.OptType(ty) -> Ast.OptType(fullType ty)
 	| Ast.UniqueType(ty) -> Ast.UniqueType(fullType ty)) in
@@ -721,6 +735,8 @@ let rebuilder
 	    Ast.MetaField(meta_mcode name,keep,inherited)
 	| Ast.MetaFieldList(name,lenname_inh,keep,inherited) ->
 	    Ast.MetaFieldList(meta_mcode name,lenname_inh,keep,inherited)
+	| Ast.AsDecl(decl,asdecl) ->
+	    Ast.AsDecl(declaration decl,declaration asdecl)
 	| Ast.Init(stg,ty,id,eq,ini,sem) ->
 	    Ast.Init(get_option storage_mcode stg, fullType ty, ident id,
 		     string_mcode eq, initialiser ini, string_mcode sem)
@@ -749,6 +765,8 @@ let rebuilder
 	    Ast.MetaInit(meta_mcode name,keep,inherited)
 	| Ast.MetaInitList(name,lenname_inh,keep,inherited) ->
 	    Ast.MetaInitList(meta_mcode name,lenname_inh,keep,inherited)
+	| Ast.AsInit(ini,asini) ->
+	    Ast.AsInit(initialiser ini,initialiser asini)
 	| Ast.InitExpr(exp) -> Ast.InitExpr(expression exp)
 	| Ast.ArInitList(lb,initlist,rb) ->
 	    Ast.ArInitList(string_mcode lb, initialiser_dots initlist,
@@ -946,6 +964,7 @@ let rebuilder
 			statement_dots body, rule_elem rbrace)
 	| Ast.Define(header,body) ->
 	    Ast.Define(rule_elem header,statement_dots body)
+	| Ast.AsStmt(stm,asstm) -> Ast.AsStmt(statement stm,statement asstm)
 	| Ast.Dots(d,whn,bef,aft) ->
 	    Ast.Dots(string_mcode d,
 		     List.map (whencode statement_dots statement) whn,bef,aft)

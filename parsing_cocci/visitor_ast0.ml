@@ -156,6 +156,12 @@ let visitor mode bind option_default
 	    let (right_n,right) = expression right in
 	    (multibind [left_n;op_n;right_n],
 	     Ast0.Assignment(left,op,right,simple))
+	| Ast0.Sequence(left,op,right) ->
+	    let (left_n,left) = expression left in
+	    let (op_n,op) = string_mcode op in
+	    let (right_n,right) = expression right in
+	    (multibind [left_n;op_n;right_n],
+	     Ast0.Sequence(left,op,right))
 	| Ast0.CondExpr(exp1,why,exp2,colon,exp3) ->
 	    let (exp1_n,exp1) = expression exp1 in
 	    let (why_n,why) = string_mcode why in
@@ -272,7 +278,11 @@ let visitor mode bind option_default
 	    (exp_n,Ast0.OptExp(exp))
 	| Ast0.UniqueExp(exp) ->
 	    let (exp_n,exp) = expression exp in
-	    (exp_n,Ast0.UniqueExp(exp))) in
+	    (exp_n,Ast0.UniqueExp(exp))
+	| Ast0.AsExpr(exp,asexp) ->
+	    let (exp_n,exp) = expression exp in
+	    let (asexp_n,asexp) = expression asexp in
+	    (bind exp_n asexp_n, Ast0.AsExpr(exp,asexp))) in
     exprfn all_functions k e
   and typeC t =
     let k t =
@@ -332,7 +342,11 @@ let visitor mode bind option_default
 	| Ast0.OptType(ty) ->
 	    let (ty_n,ty) = typeC ty in (ty_n, Ast0.OptType(ty))
 	| Ast0.UniqueType(ty) ->
-	    let (ty_n,ty) = typeC ty in (ty_n, Ast0.UniqueType(ty))) in
+	    let (ty_n,ty) = typeC ty in (ty_n, Ast0.UniqueType(ty))
+	| Ast0.AsType(ty,asty) ->
+	    let (ty_n,ty) = typeC ty in
+	    let (asty_n,asty) = typeC asty in
+	    (bind ty_n asty_n, Ast0.AsType(ty,asty))) in
     tyfn all_functions k t
 
   and function_pointer (ty,lp1,star,rp1,lp2,params,rp2) extra =
@@ -432,7 +446,11 @@ let visitor mode bind option_default
 	| Ast0.OptDecl(decl) ->
 	    let (n,decl) = declaration decl in (n,Ast0.OptDecl(decl))
 	| Ast0.UniqueDecl(decl) ->
-	    let (n,decl) = declaration decl in (n,Ast0.UniqueDecl(decl))) in
+	    let (n,decl) = declaration decl in (n,Ast0.UniqueDecl(decl))
+	| Ast0.AsDecl(decl,asdecl) ->
+	    let (decl_n,decl) = declaration decl in
+	    let (asdecl_n,asdecl) = declaration asdecl in
+	    (bind decl_n asdecl_n, Ast0.AsDecl(decl,asdecl))) in
     declfn all_functions k d
 
   and initialiser i =
@@ -473,7 +491,11 @@ let visitor mode bind option_default
 	| Ast0.OptIni(i) ->
 	    let (n,i) = initialiser i in (n,Ast0.OptIni(i))
 	| Ast0.UniqueIni(i) ->
-	    let (n,i) = initialiser i in (n,Ast0.UniqueIni(i))) in
+	    let (n,i) = initialiser i in (n,Ast0.UniqueIni(i))
+	| Ast0.AsInit(ini,asini) ->
+	    let (ini_n,ini) = initialiser ini in
+	    let (asini_n,asini) = initialiser asini in
+	    (bind ini_n asini_n, Ast0.AsInit(ini,asini))) in
     initfn all_functions k i
 
   and designator = function
@@ -725,7 +747,11 @@ let visitor mode bind option_default
 	| Ast0.OptStm(re) ->
 	    let (re_n,re) = statement re in (re_n,Ast0.OptStm(re))
 	| Ast0.UniqueStm(re) ->
-	    let (re_n,re) = statement re in (re_n,Ast0.UniqueStm(re))) in
+	    let (re_n,re) = statement re in (re_n,Ast0.UniqueStm(re))
+	| Ast0.AsStmt(stm,asstm) ->
+	    let (stm_n,stm) = statement stm in
+	    let (asstm_n,asstm) = statement asstm in
+	    (bind stm_n asstm_n, Ast0.AsStmt(stm,asstm))) in
     let (n,s) = stmtfn all_functions k s in
     (n,if mode = REBUILDER then process_bef_aft s else s)
 
