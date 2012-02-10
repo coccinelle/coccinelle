@@ -164,9 +164,9 @@ let
   makeDeb_x86_64 = makeDeb "x86_64-linux";
 
   mkTask =
-    argsfun:
-    let pkgs = import nixpkgs {};
-        args = argsfun pkgs;
+    argsfun: { system ? builtins.currentSystem }:
+    let pkgs = import nixpkgs { inherit system; };
+        args = argsfun pkgs system;
         name = "${args.name}-${version}${versionSuffix}";
     in pkgs.stdenv.mkDerivation ({
       phases = [ "runPhase" ];
@@ -188,7 +188,7 @@ let
       };
     } // args // { inherit name; });
 
-  mkReport = inputs: mkTask (pkgs: with pkgs; {
+  mkReport = inputs: mkTask (pkgs: _: with pkgs; {
     name = "report";
     builds = map (i: i {}) inputs;
 
@@ -214,24 +214,24 @@ let
       schedulingPriority = 5;
     };
   });
-  /*
-  mkTest = cocci:
-    with import nixpkgs {}; stdenv.mkDerivation {
-      name = "tests-${version}${versionSuffix}";
 
-      phases = [ "buildPhase" ];
+  mkTest = mkCocci: mkTask (pkgs: system: with pkgs;
+    let coccinelle = mkCocci { inherit system; };
+    in {
+      name = "regression-${toString testsSrc.rev}";
+      buildInputs = [ coccinelle ];
 
-      buildPhase = ''
-        ensureDir "$out";
-        ensureDir "$out/nix-support";
+      execPhase = ''
+        echo "not doing anything useful here yet."
+        find ${testsSrc}
+        spatch -version
       '';
 
       meta = {
-        description = "Large coccinelle test";
+        description = "Regression test of Coccinelle";
         schedulingPriority = 8;
       };
-    };
-    */
+    });
 
 in # list of jobs
 rec {
@@ -253,5 +253,5 @@ rec {
   # deb_ubuntu1010_i386 = makeDeb_i686 (disk: disk.ubuntu1010i386);
   # deb_ubuntu1010_x86_64 = makeDeb_x86_64 (disk: disk.ubuntu1010x86_64);
 
-  # test = mkTest build;
+  test = mkTest build;
 }
