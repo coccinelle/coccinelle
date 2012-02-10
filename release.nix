@@ -169,24 +169,19 @@ let
         args = argsfun pkgs;
         name = "${args.name}-${version}${versionSuffix}";
     in pkgs.stdenv.mkDerivation ({
-      phases = [ "preRun" "runPhase" "postRun" ];
-
-      preRun = ''
-        ensureDir "$out"
-        ensureDir "$out/nix-support"
-      '';
+      phases = [ "runPhase" ];
 
       runPhase = ''
-        exec > >(tee -a "$out/nix-support/result.log") 2> >(tee -a "$out/nix-support/result.log" >&2)
+        ensureDir "$out"
+        ensureDir "$out/nix-support"
+        touch result.log
+        exec > >(tee -a result.log) 2> >(tee -a result.log >&2)
         runHook execPhase
-      '';
-
-      postRun = ''
         cp result.log "$out/"
         echo "report log $out/result.log" > "$out/nix-support/hydra-build-products"
         echo "$name" > "$out/nix-support/hydra-release-name"
       '';
-      
+
       meta = {
         description = "Coccinelle post-build task";
         schedulingPriority = 8;
