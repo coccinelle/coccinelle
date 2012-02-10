@@ -2,6 +2,7 @@
 
 { nixpkgs ? /etc/nixos/nixpkgs
 , cocciSrc ? { outPath = ./.; revCount = 1234; gitTag = "abcdef"; }
+, testsSrc ? { outPath = ../big-tests; rev = 1234; }
 , officialRelease ? false
 }:
 
@@ -162,42 +163,80 @@ let
   makeDeb_i686 = makeDeb "i686-linux";
   makeDeb_x86_64 = makeDeb "x86_64-linux";
 
-  mkReport = inputs:
-    with import nixpkgs {}; stdenv.mkDerivation {
-      name = "report-${version}${versionSuffix}";
+  mkTask =
+    argsfun:
+    let pkgs = import nixpkgs {};
+        args = argsfun pkgs;
+        name = "${args.name}-${version}${versionSuffix}";
+    in pkgs.stdenv.mkDerivation ({
+      phases = [ "preRun" "runPhase" "postRun" ];
 
-      builds = map (i: i {}) inputs;
-
-      phases = [ "buildPhase" ];
-      buildPhase = ''
-        echo "collecting logs"
-        touch result.log
-        for build in $builds; do
-          cat "$build/nix-support/make.log" >> result.log
-        done
-
-        echo "grepping OCaml warnings"
-        if grep -2 "Warning " result.log
-        then
-          echo "found warnings!"
-          false
-        else
-          echo "there are apparently no significant warnings"
-        fi
-
+      preRun = ''
         ensureDir "$out"
-        cp result.log "$out/"
-
         ensureDir "$out/nix-support"
+      '';
+
+      runPhase = ''
+        exec > >(tee -a "$out/nix-support/result.log") 2> >(tee -a "$out/nix-support/result.log" >&2)
+        runHook execPhase
+      '';
+
+      postRun = ''
+        cp result.log "$out/"
         echo "report log $out/result.log" > "$out/nix-support/hydra-build-products"
         echo "$name" > "$out/nix-support/hydra-release-name"
       '';
+      
+      meta = {
+        description = "Coccinelle post-build task";
+        schedulingPriority = 8;
+      };
+    } // args // { inherit name; });
+
+  mkReport = inputs: mkTask (pkgs: with pkgs; {
+    name = "report";
+    builds = map (i: i {}) inputs;
+
+    execPhase = ''
+      echo "collecting logs"
+      for build in $builds; do
+        echo "$build/nix-support/make.log"
+        cat "$build/nix-support/make.log"
+      done
+
+      echo "grepping OCaml warnings"
+      if grep -2 "Warning " result.log
+      then
+        echo "found warnings!"
+        false
+      else
+        echo "there are apparently no significant warnings"
+      fi
+    '';
+
+    meta = {
+      description = "Analysis of the coccinelle build reports";
+      schedulingPriority = 5;
+    };
+  });
+  /*
+  mkTest = cocci:
+    with import nixpkgs {}; stdenv.mkDerivation {
+      name = "tests-${version}${versionSuffix}";
+
+      phases = [ "buildPhase" ];
+
+      buildPhase = ''
+        ensureDir "$out";
+        ensureDir "$out/nix-support";
+      '';
 
       meta = {
-        description = "Analysis of the coccinelle build reports";
-        schedulingPriority = 5;
+        description = "Large coccinelle test";
+        schedulingPriority = 8;
       };
     };
+    */
 
 in # list of jobs
 rec {
@@ -218,4 +257,6 @@ rec {
   # different debian builds
   # deb_ubuntu1010_i386 = makeDeb_i686 (disk: disk.ubuntu1010i386);
   # deb_ubuntu1010_x86_64 = makeDeb_x86_64 (disk: disk.ubuntu1010x86_64);
+
+  # test = mkTest build;
 }
