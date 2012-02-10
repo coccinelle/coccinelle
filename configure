@@ -101,6 +101,10 @@ while($changedLibs) {
   }
 }
 
+if (!$python) {
+  $libs{'pycaml'} = 0;
+}
+
 #if($ARGV[0] =~ "--prefix=(.*)") {
 #    $prefix = $1;
 #}
