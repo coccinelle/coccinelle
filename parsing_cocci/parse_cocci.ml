@@ -676,8 +676,8 @@ let split_token ((tok,_) as t) =
   | PC.TMetaFunc(_,_,_,clt) | PC.TMetaLocalFunc(_,_,_,clt)
   | PC.TMetaDeclarer(_,_,_,clt) | PC.TMetaIterator(_,_,_,clt) -> split t clt
   | PC.TMPtVirg | PC.TArob | PC.TArobArob | PC.TScript
-  | PC.TInitialize | PC.TFinalize -> ([t],[t])
-  | PC.TPArob | PC.TMetaPos(_,_,_,_) -> ([t],[])
+  | PC.TInitialize | PC.TFinalize
+  | PC.TPArob | PC.TMetaPos(_,_,_,_) -> ([t],[t])
 
   | PC.TFunDecl(clt)
   | PC.TWhen(clt) | PC.TWhenTrue(clt) | PC.TWhenFalse(clt)
@@ -1404,19 +1404,58 @@ let prepare_tokens tokens =
 let prepare_mv_tokens tokens =
   detect_types false (detect_attr tokens)
 
+let process_minus_positions x name clt meta =
+  let (arity,ln,lln,offset,col,strbef,straft,pos) = get_clt x in
+  let name = Parse_aux.clt2mcode name clt in
+  update_clt x (arity,ln,lln,offset,col,strbef,straft,meta name::pos)
+
 let rec consume_minus_positions = function
     [] -> []
   | ((PC.TOPar0(_),_) as x)::xs | ((PC.TCPar0(_),_) as x)::xs
   | ((PC.TMid0(_),_) as x)::xs -> x::consume_minus_positions xs
   | x::(PC.TPArob,_)::(PC.TMetaPos(name,constraints,per,clt),_)::xs ->
-      let (arity,ln,lln,offset,col,strbef,straft,pos) = get_clt x in
-      let name = Parse_aux.clt2mcode name clt in
       let x =
-	update_clt x
-	  (arity,ln,lln,offset,col,strbef,straft,
-	   (Ast0.MetaPosTag(Ast0.MetaPos(name,constraints,per))::pos)) in
+	process_minus_positions x name clt
+	  (function name ->
+	    Ast0.MetaPosTag(Ast0.MetaPos(name,constraints,per))) in
+      (consume_minus_positions (x::xs))
+  | x::(PC.TPArob,_)::(PC.TMetaExp(name,constraints,pure,ty,clt),_)::xs ->
+      let x =
+	process_minus_positions x name clt
+	  (function name ->
+	    Ast0.ExprTag
+	      (Ast0.wrap(Ast0.MetaExpr(name,constraints,ty,Ast.ANY,pure)))) in
+      (consume_minus_positions (x::xs))
+  | x::(PC.TPArob,_)::(PC.TMetaInit(name,pure,clt),_)::xs ->
+      let x =
+	process_minus_positions x name clt
+	  (function name ->
+	    Ast0.InitTag(Ast0.wrap(Ast0.MetaInit(name,pure)))) in
+      (consume_minus_positions (x::xs))
+  | x::(PC.TPArob,_)::(PC.TMetaType(name,pure,clt),_)::xs ->
+      let x =
+	process_minus_positions x name clt
+	  (function name ->
+	    Ast0.TypeCTag(Ast0.wrap(Ast0.MetaType(name,pure)))) in
+      (consume_minus_positions (x::xs))
+  | x::(PC.TPArob,_)::(PC.TMetaDecl(name,pure,clt),_)::xs ->
+      let x =
+	process_minus_positions x name clt
+	  (function name ->
+	    Ast0.DeclTag(Ast0.wrap(Ast0.MetaDecl(name,pure)))) in
+      (consume_minus_positions (x::xs))
+  | x::(PC.TPArob,_)::(PC.TMetaStm(name,pure,clt),_)::xs ->
+      let x =
+	process_minus_positions x name clt
+	  (function name ->
+	    Ast0.StmtTag(Ast0.wrap(Ast0.MetaStmt(name,pure)))) in
       (consume_minus_positions (x::xs))
   | x::xs -> x::consume_minus_positions xs
+
+let rec consume_plus_positions = function
+    [] -> []
+  | (PC.TPArob,_)::x::xs -> consume_plus_positions xs
+  | x::xs -> x::consume_plus_positions xs
 
 let any_modif rule =
   let mcode x =
@@ -1690,6 +1729,7 @@ let parse file =
 	    *)
 
 	    let minus_tokens = consume_minus_positions minus_tokens in
+	    let plus_tokens = consume_plus_positions plus_tokens in
 	    let minus_tokens = prepare_tokens minus_tokens in
 	    let plus_tokens = prepare_tokens plus_tokens in
 
@@ -2023,6 +2063,8 @@ let process file isofile verbose =
 		 if !Flag.sgrep_mode2 then minus
 		 else Single_statement.single_statement minus in
 	       let minus = Simple_assignments.simple_assignments minus in
+	       (* has to be last, introduced AsExpr, etc *)
+	       let minus = Get_metas.process minus in
 	       let minus_ast =
 		 Ast0toast.ast0toast rule_name dependencies dropped_isos
 		   exists minus is_exp ruletype in

@@ -788,7 +788,7 @@ let adjust_after_paren toks =
     match rest with
       ((T2(_,Min _,_)) as a)::rerest -> (* minus *)
 	a :: search_minus true rerest
-    | ((T2(_,Ctx,_)) as a)::rerest when str_of_token2 a = "," ->
+    | ((T2(_,Ctx,_)) as a)::rerest when seen_minus && str_of_token2 a = "," ->
 	(* comma after ( will be deleted, so consider it as minus code
 	   already *)
 	a :: search_minus true rerest
