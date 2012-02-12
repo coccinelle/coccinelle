@@ -437,7 +437,8 @@ and anything =
   | IsoWhenTag of Ast_cocci.when_modifier (*only for when code, in iso phase*)
   | IsoWhenTTag of expression(*only for when code, in iso phase*)
   | IsoWhenFTag of expression(*only for when code, in iso phase*)
-  | MetaPosTag of meta_pos (* only in iso phase *)
+  | MetaPosTag of meta_pos
+  | HiddenVarTag of anything list (* in iso_compile/pattern only *)
 
 val dotsExpr : expression dots -> anything
 val dotsInit : initialiser dots -> anything

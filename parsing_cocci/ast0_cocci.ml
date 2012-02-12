@@ -445,6 +445,7 @@ and anything =
   | IsoWhenTTag of expression
   | IsoWhenFTag of expression
   | MetaPosTag of meta_pos
+  | HiddenVarTag of anything list (* in iso_compile/pattern only *)
 
 let dotsExpr x = DotsExprTag x
 let dotsParam x = DotsParamTag x

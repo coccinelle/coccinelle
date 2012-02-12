@@ -217,13 +217,6 @@ let check_meta_tyopt type_irrelevant = function
       raise
 	(Semantic_cocci.Semantic
 	   "can't inherit the freshness of an identifier")
-  | Ast.MetaListlenDecl((rule,name)) ->
-      (match lookup rule name with
-	Ast.MetaListlenDecl(_) -> ()
-      | _ ->
-	  raise
-	    (Semantic_cocci.Semantic
-	       ("incompatible inheritance declaration "^name)))
   | Ast.MetaTypeDecl(Ast.NONE,(rule,name)) ->
       (match lookup rule name with
 	Ast.MetaTypeDecl(_,_) -> ()
@@ -245,6 +238,13 @@ let check_meta_tyopt type_irrelevant = function
 	  raise
 	    (Semantic_cocci.Semantic
 	       ("incompatible inheritance declaration "^name)))
+  | Ast.MetaListlenDecl((rule,name)) ->
+      (match lookup rule name with
+	Ast.MetaListlenDecl(_) -> ()
+      | _ ->
+	  raise
+	    (Semantic_cocci.Semantic
+	       ("incompatible inheritance declaration "^name)))
   | Ast.MetaParamDecl(Ast.NONE,(rule,name)) ->
       (match lookup rule name with
 	Ast.MetaParamDecl(_,_) -> ()
@@ -255,6 +255,13 @@ let check_meta_tyopt type_irrelevant = function
   | Ast.MetaParamListDecl(Ast.NONE,(rule,name),len_name) ->
       (match lookup rule name with
 	Ast.MetaParamListDecl(_,_,_) -> ()
+      | _ ->
+	  raise
+	    (Semantic_cocci.Semantic
+	       ("incompatible inheritance declaration "^name)))
+  | Ast.MetaConstDecl(Ast.NONE,(rule,name),ty) ->
+      (match lookup rule name with
+	Ast.MetaConstDecl(_,_,ty1) when type_irrelevant or ty = ty1 -> ()
       | _ ->
 	  raise
 	    (Semantic_cocci.Semantic
@@ -295,6 +302,27 @@ let check_meta_tyopt type_irrelevant = function
 	  raise
 	    (Semantic_cocci.Semantic
 	       ("incompatible inheritance declaration "^name)))
+  | Ast.MetaDeclDecl(Ast.NONE,(rule,name)) ->
+      (match lookup rule name with
+	Ast.MetaDeclDecl(_,_) -> ()
+      | _ ->
+	  raise
+	    (Semantic_cocci.Semantic
+	       ("incompatible inheritance declaration "^name)))
+  | Ast.MetaFieldDecl(Ast.NONE,(rule,name)) ->
+      (match lookup rule name with
+	Ast.MetaFieldDecl(_,_) -> ()
+      | _ ->
+	  raise
+	    (Semantic_cocci.Semantic
+	       ("incompatible inheritance declaration "^name)))
+  | Ast.MetaFieldListDecl(Ast.NONE,(rule,name),len_name) ->
+      (match lookup rule name with
+	Ast.MetaFieldListDecl(_,_,_) -> ()
+      | _ ->
+	  raise
+	    (Semantic_cocci.Semantic
+	       ("incompatible inheritance declaration "^name)))
   | Ast.MetaStmDecl(Ast.NONE,(rule,name)) ->
       (match lookup rule name with
 	Ast.MetaStmDecl(_,_) -> ()
@@ -319,13 +347,6 @@ let check_meta_tyopt type_irrelevant = function
   | Ast.MetaLocalFuncDecl(Ast.NONE,(rule,name)) ->
       (match lookup rule name with
 	Ast.MetaLocalFuncDecl(_,_) -> ()
-      | _ ->
-	  raise
-	    (Semantic_cocci.Semantic
-	       ("incompatible inheritance declaration "^name)))
-  | Ast.MetaConstDecl(Ast.NONE,(rule,name),ty) ->
-      (match lookup rule name with
-	Ast.MetaConstDecl(_,_,ty1) when type_irrelevant or ty = ty1 -> ()
       | _ ->
 	  raise
 	    (Semantic_cocci.Semantic

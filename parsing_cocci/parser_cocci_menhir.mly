@@ -112,7 +112,8 @@ let tmeta_to_ident (name,pure,clt) =
 %token <Parse_aux.typed_expinfo> TMetaExp TMetaIdExp TMetaLocalIdExp TMetaConst
 %token <Parse_aux.pos_info>      TMetaPos
 
-%token TArob TArobArob TPArob
+%token TArob TArobArob
+%token <Data.clt> TPArob
 %token <string> TScriptData
 
 %token <Data.clt> TEllipsis TOEllipsis TCEllipsis TPOEllipsis TPCEllipsis

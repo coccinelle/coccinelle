@@ -217,6 +217,11 @@ and statement testfn mcode tail stmt : 'a list list =
   | Ast.Define(header,body) ->
       conj_one testfn header (statement_list testfn mcode tail body)
 
+  | Ast.AsStmt(stm,asstm) ->
+      conj
+	(statement testfn mcode tail stm)
+	(statement testfn mcode tail asstm)
+
   | Ast.OptStm(stm) -> []
 
   | Ast.UniqueStm(stm) -> statement testfn mcode tail stm

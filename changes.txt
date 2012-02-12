@@ -84,7 +84,8 @@
 - Give ocaml code access to Flag and thus the current file name.
 - Slightly more efficient handling of lists.
 - Slightly better error message in the case of inconsistent paths
-- improve limited size caching
+- Improve limited size caching
+- Allow multiple types of hidden metavariables, each preceded by @
 
 ** Bugfix:
 - Corrected parsing of script strings delimited by a single quote.  Thanks
@@ -145,6 +146,9 @@
 - Better support meta iterator and meta declarer tokens, and symid tokens.
 - Better indentation after added noindent.
 - Fixed length bug in the treatment of structures.
+- Allow inheriting declaration/field metavariables.
+- Don't drop spaces after parentheses in when no minus code present.
+  Thanks to Terry Wilson for reporting the problem.
 
 * 0.2.5
 ** Language:

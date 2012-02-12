@@ -666,7 +666,8 @@ let unparse_anything x =
   | Ast0.IsoWhenTag(x)   -> U.print_when_modif x
   | Ast0.IsoWhenTTag(e)  -> expression e
   | Ast0.IsoWhenFTag(e)  -> expression e
-  | Ast0.MetaPosTag(var) -> meta_pos [x]);
+  | Ast0.MetaPosTag(var) -> meta_pos [x]
+  | Ast0.HiddenVarTag(var) -> failwith "should not need to be printed");
   quiet := q;
   print_newline()
 

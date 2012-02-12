@@ -35,7 +35,8 @@ let set_mcodekind x mcodekind =
   | Ast0.IsoWhenTag(_) -> failwith "only within iso phase"
   | Ast0.IsoWhenTTag(_) -> failwith "only within iso phase"
   | Ast0.IsoWhenFTag(_) -> failwith "only within iso phase"
-  | Ast0.MetaPosTag(p) -> failwith "metapostag only within iso phase"
+  | Ast0.MetaPosTag(p) -> failwith "invisible at this stage"
+  | Ast0.HiddenVarTag(p) -> failwith "hiddenvar only within iso phase"
 
 let set_index x index =
   match x with
@@ -59,7 +60,8 @@ let set_index x index =
   | Ast0.IsoWhenTag(_) -> failwith "only within iso phase"
   | Ast0.IsoWhenTTag(_) -> failwith "only within iso phase"
   | Ast0.IsoWhenFTag(_) -> failwith "only within iso phase"
-  | Ast0.MetaPosTag(p) -> failwith "metapostag only within iso phase"
+  | Ast0.MetaPosTag(p) -> failwith "invisible at this stage"
+  | Ast0.HiddenVarTag(p) -> failwith "hiddenvar only within iso phase"
 
 let get_index = function
     Ast0.DotsExprTag(d) -> Index.expression_dots d
@@ -82,7 +84,8 @@ let get_index = function
   | Ast0.IsoWhenTag(_) -> failwith "only within iso phase"
   | Ast0.IsoWhenTTag(_) -> failwith "only within iso phase"
   | Ast0.IsoWhenFTag(_) -> failwith "only within iso phase"
-  | Ast0.MetaPosTag(p) -> failwith "metapostag only within iso phase"
+  | Ast0.MetaPosTag(p) -> failwith "invisible at this stage"
+  | Ast0.HiddenVarTag(p) -> failwith "hiddenvar only within iso phase"
 
 (* --------------------------------------------------------------------- *)
 (* Collect the line numbers of the plus code.  This is used for disjunctions.

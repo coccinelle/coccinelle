@@ -922,7 +922,8 @@ let visitor mode bind option_default
       | Ast0.IsoWhenFTag(e) ->
 	  let (e_n,e) = expression e in
 	  (e_n,Ast0.IsoWhenFTag(e))
-      |	Ast0.MetaPosTag(var) -> failwith "not supported" in
+      |	Ast0.MetaPosTag(var) -> failwith "not supported"
+      |	Ast0.HiddenVarTag(var) -> failwith "not supported" in
     k a
 
   (* not done for combiner, because the statement is assumed to be already

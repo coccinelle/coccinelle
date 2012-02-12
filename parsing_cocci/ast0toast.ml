@@ -186,7 +186,7 @@ let check_allminus =
       Ast0.MINUS(r) -> let (plusses,_) = !r in plusses = Ast.NOREPLACEMENT
     | _ -> false in
 
-  (* special case for disj *)
+  (* special case for disj and asExpr etc *)
   let ident r k e =
     match Ast0.unwrap e with
       Ast0.DisjId(starter,id_list,mids,ender) ->
@@ -197,24 +197,33 @@ let check_allminus =
     match Ast0.unwrap e with
       Ast0.DisjExpr(starter,expr_list,mids,ender) ->
 	List.for_all r.VT0.combiner_rec_expression expr_list
+    | Ast0.AsExpr(exp,asexp) -> k exp
     | _ -> k e in
 
   let declaration r k e =
     match Ast0.unwrap e with
       Ast0.DisjDecl(starter,decls,mids,ender) ->
 	List.for_all r.VT0.combiner_rec_declaration decls
+    | Ast0.AsDecl(decl,asdecl) -> k decl
     | _ -> k e in
 
   let typeC r k e =
     match Ast0.unwrap e with
       Ast0.DisjType(starter,decls,mids,ender) ->
 	List.for_all r.VT0.combiner_rec_typeC decls
+    | Ast0.AsType(ty,asty) -> k ty
+    | _ -> k e in
+
+  let initialiser r k e =
+    match Ast0.unwrap e with
+      Ast0.AsInit(init,asinit) -> k init
     | _ -> k e in
 
   let statement r k e =
     match Ast0.unwrap e with
       Ast0.Disj(starter,statement_dots_list,mids,ender) ->
 	List.for_all r.VT0.combiner_rec_statement_dots statement_dots_list
+    | Ast0.AsStmt(stmt,asstmt) -> k stmt
     | _ -> k e in
 
   let case_line r k e =
@@ -227,7 +236,7 @@ let check_allminus =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode mcode
     donothing donothing donothing donothing donothing donothing
-    ident expression typeC donothing donothing declaration
+    ident expression typeC initialiser donothing declaration
     statement case_line donothing
 
 (* --------------------------------------------------------------------- *)
@@ -1066,6 +1075,7 @@ and anything = function
   | Ast0.IsoWhenTTag(_) -> failwith "not possible"
   | Ast0.IsoWhenFTag(_) -> failwith "not possible"
   | Ast0.MetaPosTag _ -> failwith "not possible"
+  | Ast0.HiddenVarTag _ -> failwith "not possible"
 
 (* --------------------------------------------------------------------- *)
 (* Function declaration *)
