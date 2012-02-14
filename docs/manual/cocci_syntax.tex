@@ -217,6 +217,12 @@ considered C identifiers when encountered in the body of the rule.
 Identifiers in the body of the rule that are not declared explicitly are
 by default considered symbols, thus symbol declarations are optional.
 
+A position metavariable is used by attaching it using \texttt{@} to any
+token, including another metavariable.  Its value is the position (file,
+line number, etc.) of the code matched by the token.  It is also possible
+to attach expression, declaration, type, initialiser, and statement
+metavariables in this manner.  In that case, the metavariable is bound to
+the closest enclosing expression, declaration, etc.
 
 \begin{grammar}
   \RULE{\rt{ids}}
