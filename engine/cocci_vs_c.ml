@@ -2359,7 +2359,8 @@ and str_initialisers = fun allminus ias (ibs, iicomma) ->
   let ibs_split   = resplit_initialiser ibs iicomma in
 
   if need_unordered_initialisers ibs
-  then initialisers_unordered2 allminus ias_unsplit ibs_split >>=
+  then
+    initialisers_unordered2 allminus ias_unsplit ibs_split >>=
     (fun ias_unsplit ibs_split ->
       return (
       split_icomma ias_unsplit,
@@ -2375,6 +2376,7 @@ and ar_initialisers = fun ias (ibs, iicomma) ->
       (List.map (function (elem,comma) -> [Left elem; Right [comma]]) ibs) in
   initialisers_ordered2 ias ibs >>=
   (fun ias ibs_split ->
+
     let ibs,iicomma =
       match List.rev ibs_split with
 	(Right comma)::rest -> (Ast_c.unsplit_comma (List.rev rest),comma)
@@ -3905,11 +3907,6 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
               )))))))))
       | _ -> raise Impossible
       )
-
-
-
-
-
 
   | A.Decl (mckstart,allminus,decla), F.Decl declb ->
       declaration (mckstart,allminus,decla) declb >>=

@@ -504,7 +504,7 @@ val make_mcode : 'a -> 'a mcode
 val make_mcode_info : 'a -> info -> 'a mcode
 val make_minus_mcode : 'a -> 'a mcode
 
-val meta_pos_name : anything -> Ast_cocci.meta_name mcode
+val meta_pos_name : anything -> Ast_cocci.meta_name
 
 val ast0_type_to_type : typeC -> Type_cocci.typeC
 val reverse_type : Type_cocci.typeC -> base_typeC

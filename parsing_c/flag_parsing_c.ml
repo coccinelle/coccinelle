@@ -22,7 +22,7 @@ let common_h   = ref (mk_macro_path ~cocci_path:!path "common_macros.h")
 
 let cmdline_flags_macrofile () =
   [
-    "-macro_file_builtins", Arg.Set_string std_h,
+    "--macro-file-builtins", Arg.Set_string std_h,
     " <file> (default=" ^ !std_h ^ ")";
   ]
 
@@ -47,7 +47,7 @@ let std_envir = ref (Filename.concat !path "config/envos/environment_splint.h")
 
 let cmdline_flags_envfile () =
   [
-    "-env_file", Arg.Set_string std_envir,
+    "--env-file", Arg.Set_string std_envir,
     " <file> (default=" ^ !std_envir ^ ")";
   ]
 
@@ -87,22 +87,22 @@ let show_flow_labels = ref true
 
 let cmdline_flags_verbose () =
   [
-    "-no_verbose_parsing", Arg.Clear verbose_parsing , "  ";
-    "-no_verbose_lexing", Arg.Clear verbose_lexing , "  ";
-    "-no_verbose_annotater", Arg.Clear verbose_annotater , "  ";
+    "--no-verbose-parsing", Arg.Clear verbose_parsing , "  ";
+    "--no-verbose-lexing", Arg.Clear verbose_lexing , "  ";
+    "--no-verbose-annotater", Arg.Clear verbose_annotater , "  ";
 
-    "-no_parse_error_msg", Arg.Clear verbose_parsing, " ";
-    "-no_type_error_msg",  Arg.Clear verbose_type, " ";
+    "--no-parse-error-msg", Arg.Clear verbose_parsing, " ";
+    "--no-type-error-msg",  Arg.Clear verbose_type, " ";
 
 
-    "-filter_msg",      Arg.Set  filter_msg ,
+    "--filter-msg",      Arg.Set  filter_msg ,
     "  filter some cpp message when the macro is a \"known\" cpp construct";
-    "-filter_msg_define_error",Arg.Set filter_msg_define_error,
+    "--filter-msg-define-error",Arg.Set filter_msg_define_error,
     "  filter the error msg";
 
-    "-filter_define_error",Arg.Set filter_define_error,
+    "--filter-define-error",Arg.Set filter_define_error,
     "  filter the error, which will not be added in the stat";
-    "-filter_passed_level",Arg.Set_int filter_passed_level,"  ";
+    "--filter-passed-level",Arg.Set_int filter_passed_level,"  ";
   ]
 
 
@@ -124,13 +124,13 @@ let debug_cfg = ref false
 (*   "debug C parsing/unparsing", "" *)
 let cmdline_flags_debugging () =
   [
-  "-debug_cpp",          Arg.Set  debug_cpp, " ";
-  "-debug_lexer",        Arg.Set  debug_lexer , " ";
-  "-debug_etdt",         Arg.Set  debug_etdt , "  ";
-  "-debug_typedef",      Arg.Set  debug_typedef, "  ";
+  "--debug-cpp",          Arg.Set  debug_cpp, " ";
+  "--debug-lexer",        Arg.Set  debug_lexer , " ";
+  "--debug-etdt",         Arg.Set  debug_etdt , "  ";
+  "--debug-typedef",      Arg.Set  debug_typedef, "  ";
 
-  "-debug_cfg",          Arg.Set debug_cfg , "  ";
-  "-debug_unparsing",      Arg.Set  debug_unparsing, "  ";
+  "--debug-cfg",          Arg.Set debug_cfg , "  ";
+  "--debug-unparsing",      Arg.Set  debug_unparsing, "  ";
   ]
 
 (*****************************************************************************)
@@ -140,8 +140,8 @@ let cmdline_flags_debugging () =
 let check_annotater = ref true
 let cmdline_flags_checks () =
   [
-  "-disable_check_annotater",          Arg.Clear  check_annotater, " ";
-  "-enable_check_annotater",          Arg.Set  check_annotater, " ";
+  "--disable-check-annotater",          Arg.Clear  check_annotater, " ";
+  "--enable-check-annotater",          Arg.Set  check_annotater, " ";
   ]
 
 (*****************************************************************************)
@@ -153,7 +153,7 @@ let label_strategy_2 = ref false
 
 let cmdline_flags_algos () =
   [
-    "-l1",                Arg.Clear label_strategy_2, " ";
+    "--l1",                Arg.Clear label_strategy_2, " ";
   ]
 
 (*****************************************************************************)
@@ -171,17 +171,17 @@ let add_typedef_root = ref true
 
 let cmdline_flags_parsing_algos () = [
 
-    "-directive_passing",              Arg.Set cpp_directive_passing,
+    "--directive-passing",              Arg.Set cpp_directive_passing,
     "   pass most cpp directives, especially when inside function";
-    "-ifdef_passing",              Arg.Set ifdef_directive_passing,
+    "--ifdef-passing",              Arg.Set ifdef_directive_passing,
     "   pass ifdef directives ";
 
-    "-noif0_passing",   Arg.Clear if0_passing,
+    "--noif0-passing",   Arg.Clear if0_passing,
     " ";
-    "-noadd_typedef_root",   Arg.Clear add_typedef_root, " ";
-    "-noadd_typedef",   Arg.Set disable_add_typedef, " ";
+    "--noadd-typedef-root",   Arg.Clear add_typedef_root, " ";
+    "--noadd-typedef",   Arg.Set disable_add_typedef, " ";
 
-    "-disable_multi_pass", Arg.Set disable_multi_pass, " ";
+    "--disable-multi-pass", Arg.Set disable_multi_pass, " ";
 ]
 
 (*****************************************************************************)
@@ -201,7 +201,7 @@ let cmdline_flags_other () =
     "-U", Arg.Int (fun n -> diff_lines := Some (Common.i_to_s n)),
     "  set number of diff context lines";
 
-    "-use_cache", Arg.Set use_cache,
+    "--use-cache", Arg.Set use_cache,
     "   use .ast_raw pre-parsed cached C file";
   ]
 

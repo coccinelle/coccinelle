@@ -773,6 +773,20 @@ let make_term x =
     safe_for_multi_decls = false;
     iso_info = [] }
 
+let make_inherited_term x inherited =
+  {node = x;
+    node_line = 0;
+    free_vars = [];
+    minus_free_vars = [];
+    fresh_vars = [];
+    inherited = inherited;
+    saved_witness = [];
+    bef_aft = NoDots;
+    pos_info = None;
+    true_if_test_exp = false;
+    safe_for_multi_decls = false;
+    iso_info = [] }
+
 let make_meta_rule_elem s d (fvs,fresh,inh) =
   let rule = "" in
   {(make_term

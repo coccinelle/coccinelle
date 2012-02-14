@@ -81,9 +81,12 @@ let print_info = function
 
 (* --------------------------------------------------------------------- *)
 
-(* drop all distinguishing information from a term *)
-let strip =
-  let do_nothing r k e = Ast.make_term (Ast.unwrap (k e)) in
+(* drop all distinguishing information from a term except inherited
+   variables, which are used to improve efficiency of matching process *)
+let strip x =
+  let do_nothing r k e =
+    let inh = Ast.get_inherited e in
+    Ast.make_inherited_term (Ast.unwrap (k e)) inh in
   let do_absolutely_nothing r k e = k e in
   let mcode m = Ast.make_mcode(Ast.unwrap_mcode m) in
   let rule_elem r k re =
@@ -102,7 +105,7 @@ let strip =
       do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
       do_nothing rule_elem do_nothing do_nothing
       do_nothing do_absolutely_nothing in
-  recursor.V.rebuilder_rule_elem
+  recursor.V.rebuilder_rule_elem x
 
 (* --------------------------------------------------------------------- *)
 

@@ -1701,6 +1701,7 @@ let rec bigloop2 rs (ccs: file_info list) =
 	      (Ast_cocci.ScriptRule (nm,l,deps,mv,script_vars,code)));
 	end;
 
+      (*pr2 (List.hd(cmd_to_list "free -m | grep Mem"));*)
 	if !Flag.show_misc then print_endline "RESULT =";
 
         let (_, newes) =

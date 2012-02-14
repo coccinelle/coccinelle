@@ -666,6 +666,7 @@ val make_meta_decl :
       declaration
 
 val make_term : 'a -> 'a wrap
+val make_inherited_term : 'a -> meta_name list (* inherited vars *) -> 'a wrap
 val make_mcode : 'a -> 'a mcode
 
 val equal_pos : fixpos -> fixpos -> bool

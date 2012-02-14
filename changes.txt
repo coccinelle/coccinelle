@@ -40,6 +40,9 @@
 - Allow ! to appear before () in depends.  Thanks to SF Markus Elfring for
   noticing the problem.
 - Can add code containing #pragma or #line.
+- Multicharacter command-line options now begin with -- and contain -
+  rather than _.
+- Allow multiple types of hidden metavariables, each preceded by @.
 
 ** Features:
 - Preserve spacing before // comments when not at the beginning of a line
@@ -85,7 +88,6 @@
 - Slightly more efficient handling of lists.
 - Slightly better error message in the case of inconsistent paths
 - Improve limited size caching
-- Allow multiple types of hidden metavariables, each preceded by @
 
 ** Bugfix:
 - Corrected parsing of script strings delimited by a single quote.  Thanks
@@ -149,6 +151,7 @@
 - Allow inheriting declaration/field metavariables.
 - Don't drop spaces after parentheses in when no minus code present.
   Thanks to Terry Wilson for reporting the problem.
+- Keep inherited metavariables in asttomember (preprocessing for matching)
 
 * 0.2.5
 ** Language:

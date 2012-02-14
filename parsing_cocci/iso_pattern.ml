@@ -306,7 +306,7 @@ let match_maker checks_needed context_required whencode_allowed =
 	  (match hidden_pattern with
 	    [Ast0.HiddenVarTag([Ast0.MetaPosTag(Ast0.MetaPos (name1,_,_))])] ->
 	      add_binding name1 (Ast0.HiddenVarTag(hidden_code)) binding
-	  | [] -> Fail(Position(Ast0.unwrap_mcode(Ast0.meta_pos_name a)))
+	  | [] -> Fail(Position(Ast0.meta_pos_name a))
 	  | _ -> failwith "badly compiled iso - multiple hidden variable")
     else OK binding in
 

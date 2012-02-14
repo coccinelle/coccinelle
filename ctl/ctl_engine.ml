@@ -1624,7 +1624,7 @@ let rec satloop unchecked required required_states
 	triples_union
 	  (loop unchecked required required_states phi1)
 	  (loop unchecked required required_states phi2)
-    | A.SeqOr(phi1,phi2)      ->
+    | A.SeqOr(phi1,phi2)   ->
 	let res1 = loop unchecked required required_states phi1 in
 	let res2 = loop unchecked required required_states phi2 in
 	let res1neg = unwitify res1 in
@@ -1719,21 +1719,21 @@ let rec satloop unchecked required required_states
 		      phi1res phi2res))
     | A.InnerAnd(phi) ->
 	inner_and(loop unchecked required required_states phi)
-    | A.EX(dir,phi)      ->
+    | A.EX(dir,phi)   ->
 	let new_required_states =
 	  get_children_required_states dir m required_states in
 	satEX dir m (loop unchecked required new_required_states phi)
 	  required_states
-    | A.AX(dir,strict,phi)      ->
+    | A.AX(dir,strict,phi) ->
 	let new_required_states =
 	  get_children_required_states dir m required_states in
 	let res = loop unchecked required new_required_states phi in
 	strict_A1 strict satAX satEX dir m res required_states
-    | A.EF(dir,phi)            ->
+    | A.EF(dir,phi) ->
 	let new_required_states = get_reachable dir m required_states in
 	satEF dir m (loop unchecked required new_required_states phi)
 	  new_required_states
-    | A.AF(dir,strict,phi)            ->
+    | A.AF(dir,strict,phi) ->
 	if !Flag_ctl.loop_in_src_code
 	then
 	  loop unchecked required required_states
@@ -1742,15 +1742,15 @@ let rec satloop unchecked required required_states
 	  let new_required_states = get_reachable dir m required_states in
 	  let res = loop unchecked required new_required_states phi in
 	  strict_A1 strict satAF satEF dir m res new_required_states
-    | A.EG(dir,phi)            ->
+    | A.EG(dir,phi) ->
 	let new_required_states = get_reachable dir m required_states in
 	satEG dir m (loop unchecked required new_required_states phi)
 	  new_required_states
-    | A.AG(dir,strict,phi)            ->
+    | A.AG(dir,strict,phi) ->
 	let new_required_states = get_reachable dir m required_states in
 	let res = loop unchecked required new_required_states phi in
 	strict_A1 strict satAG satEF dir m res new_required_states
-    | A.EU(dir,phi1,phi2)      ->
+    | A.EU(dir,phi1,phi2) ->
 	let new_required_states = get_reachable dir m required_states in
 	(match loop unchecked required new_required_states phi2 with
 	  [] when !pLazyOpt -> []
@@ -1798,17 +1798,17 @@ let rec satloop unchecked required required_states
 		)
     | A.Implies(phi1,phi2) ->
 	loop unchecked required required_states (A.Or(A.Not phi1,phi2))
-    | A.Exists (keep,v,phi)     ->
+    | A.Exists (keep,v,phi) ->
 	let new_required = drop_required v required in
 	triples_witness v unchecked (not keep)
 	  (loop unchecked new_required required_states phi)
-    | A.Let(v,phi1,phi2)   ->
+    | A.Let(v,phi1,phi2) ->
 	(* should only be used when the properties unchecked, required,
 	   and required_states are known to be the same or at least
 	   compatible between all the uses.  this is not checked. *)
 	let res = loop unchecked required required_states phi1 in
 	satloop unchecked required required_states m phi2 ((v,res) :: env)
-    | A.LetR(dir,v,phi1,phi2)   ->
+    | A.LetR(dir,v,phi1,phi2) ->
 	(* should only be used when the properties unchecked, required,
 	   and required_states are known to be the same or at least
 	   compatible between all the uses.  this is not checked. *)
@@ -1816,7 +1816,7 @@ let rec satloop unchecked required required_states
 	let new_required_states = get_reachable dir m required_states in
 	let res = loop unchecked required new_required_states phi1 in
 	satloop unchecked required required_states m phi2 ((v,res) :: env)
-    | A.Ref(v)             ->
+    | A.Ref(v) ->
 	let res = List.assoc v env in
 	if unchecked
 	then List.map (function (s,th,_) -> (s,th,[])) res
@@ -2471,7 +2471,6 @@ let sat m phi reqopt =
       then Common.pr2 "missing something required";
        [])
   with Steps -> []
-;;
 
 (* ********************************************************************** *)
 (* End of Module: CTL_ENGINE                                              *)

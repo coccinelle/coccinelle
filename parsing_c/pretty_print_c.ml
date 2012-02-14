@@ -38,6 +38,7 @@ type 'a printer = 'a -> unit
 type pretty_printers = {
   expression      : Ast_c.expression printer;
   arg_list        : (Ast_c.argument Ast_c.wrap2 list) printer;
+  arg             : Ast_c.argument printer;
   statement       : Ast_c.statement printer;
   decl            : Ast_c.declaration printer;
   field           : Ast_c.field printer;
@@ -1311,6 +1312,7 @@ and pp_init (init, iinit) =
 
   { expression = pp_expression;
     arg_list   = pp_arg_list;
+    arg        = pp_argument;
     statement  = pp_statement;
     decl       = pp_decl;
     field      = pp_field;
@@ -1375,6 +1377,9 @@ let pp_expression_gen ~pr_elem ~pr_space =
 
 let pp_arg_list_gen ~pr_elem ~pr_space =
   (pp_elem_sp pr_elem pr_space).arg_list
+
+let pp_arg_gen ~pr_elem ~pr_space =
+  (pp_elem_sp pr_elem pr_space).arg
 
 let pp_statement_gen ~pr_elem ~pr_space =
   (pp_elem_sp pr_elem pr_space).statement

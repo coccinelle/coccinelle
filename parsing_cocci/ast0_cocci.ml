@@ -543,29 +543,31 @@ let set_mcode_data data (_,ar,info,mc,pos,adj) = (data,ar,info,mc,pos,adj)
 
 (* --------------------------------------------------------------------- *)
 
-let meta_pos_name = function
-    MetaPosTag(MetaPos(name,constraints,_)) -> name
-  | ExprTag(e) ->
-      (match unwrap e with
-	MetaExpr(name,constraints,ty,form,pure) -> name
-      |	_ -> failwith "bad metavariable")
-  | TypeCTag(t) ->
-      (match unwrap t with
-	MetaType(name,pure) -> name
-      |	_ -> failwith "bad metavariable")
-  | DeclTag(d) ->
-      (match unwrap d with
-	MetaDecl(name,pure) -> name
-      |	_ -> failwith "bad metavariable")
-  | InitTag(i) ->
-      (match unwrap i with
-	MetaInit(name,pure) -> name
-      |	_ -> failwith "bad metavariable")
-  | StmtTag(s) ->
-      (match unwrap s with
-	MetaStmt(name,pure) -> name
-      | _ -> failwith "bad metavariable")
-  | _ -> failwith "bad metavariable"
+let meta_pos_name nm =
+  unwrap_mcode
+    (match nm with
+      MetaPosTag(MetaPos(name,constraints,_)) -> name
+    | ExprTag(e) ->
+	(match unwrap e with
+	  MetaExpr(name,constraints,ty,form,pure) -> name
+	|	_ -> failwith "bad metavariable")
+    | TypeCTag(t) ->
+	(match unwrap t with
+	  MetaType(name,pure) -> name
+	|	_ -> failwith "bad metavariable")
+    | DeclTag(d) ->
+	(match unwrap d with
+	  MetaDecl(name,pure) -> name
+	|	_ -> failwith "bad metavariable")
+    | InitTag(i) ->
+	(match unwrap i with
+	  MetaInit(name,pure) -> name
+	|	_ -> failwith "bad metavariable")
+    | StmtTag(s) ->
+	(match unwrap s with
+	  MetaStmt(name,pure) -> name
+	| _ -> failwith "bad metavariable")
+    | _ -> failwith "bad metavariable")
     
 (* --------------------------------------------------------------------- *)
 

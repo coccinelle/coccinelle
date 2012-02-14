@@ -22,7 +22,7 @@ let print_between = Common.print_between
 let meta_pos l =
   List.iter
     (function var ->
-      let (_,name) = Ast0.unwrap_mcode (Ast0.meta_pos_name var) in
+      let (_,name) = Ast0.meta_pos_name var in
       print_string "@";
       print_string name)
     l

@@ -10,6 +10,29 @@ let call_pretty f a =
 
 let exprrep = call_pretty Pretty_print_c.pp_expression_gen
 
+let commalistrep list_printer elem_printer comma_printer x =
+  (call_pretty list_printer x,
+   List.map
+     (function x ->
+       call_pretty elem_printer (comma_printer x) (* drop commas *))
+     x)
+
+let exprlistrep =
+  commalistrep Pretty_print_c.pp_arg_list_gen Pretty_print_c.pp_arg_gen
+    Ast_c.unwrap
+
+let paramlistrep =
+  commalistrep Pretty_print_c.pp_param_list_gen Pretty_print_c.pp_param_gen
+    Ast_c.unwrap
+
+let initlistrep =
+  commalistrep Pretty_print_c.pp_init_list_gen Pretty_print_c.pp_init_gen
+    Ast_c.unwrap
+
+let fieldlistrep =
+  commalistrep Pretty_print_c.pp_field_list_gen Pretty_print_c.pp_field_gen
+    (function x -> x)
+
 let stringrep = function
   Ast_c.MetaIdVal        (s,_) -> s
 | Ast_c.MetaFuncVal      s -> s
