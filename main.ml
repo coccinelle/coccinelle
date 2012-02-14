@@ -1040,9 +1040,16 @@ let main () =
     let arglist = Command_line.command_line arglist in
     let arglist = List.map fix_chars arglist in
 
+    let contains_cocci =
+      (* rather a hack... don't want to think about all possible options *)
+      List.exists
+	(function x -> Filename.check_suffix x ".cocci")
+	arglist &&
+      not (List.mem "--parse-cocci" arglist) in
     if not (null (Common.inter_set arglist
 	            ["--cocci-file";"--sp-file";"--sp";"--test";"--testall";
                       "--test-okfailed";"--test-regression-okfailed"]))
+	or contains_cocci
     then run_profile quiet_profile;
     
     let args = ref [] in
