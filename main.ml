@@ -922,7 +922,7 @@ let rec main_action xs =
 	      let res =
 		infiles +> List.map (fun cfiles ->
 		  pr2 ("HANDLING: " ^ (join " " cfiles));
-		  pr2 (List.hd(Common.cmd_to_list "free -m | grep Mem"));
+		  (*pr2 (List.hd(Common.cmd_to_list "free -m | grep Mem"));*)
 		  flush stderr;
 		    
 		  Common.timeout_function_opt !FC.timeout (fun () ->

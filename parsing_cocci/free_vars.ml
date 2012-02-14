@@ -685,10 +685,6 @@ let astfvs metavars bound =
       Ast.saved_witness = []} in
 
   let astfvrule_elem recursor k re =
-      (match Ast.unwrap re with
-	Ast.Decl (mckstart,allminus,decla) -> "decl"
-      |	Ast.TopInit init -> "topinit"
-      |	_ -> "other");
     simple_setup (function x -> x.V.combiner_rule_elem) k re in
 
   let astfvstatement recursor k s =

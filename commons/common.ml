@@ -3556,7 +3556,7 @@ let timeout_function timeoutval = fun f ->
   with Timeout ->
     begin
       log "timeout (we abort)";
-      pr2 (List.hd(cmd_to_list "free -m | grep Mem"));
+      (*pr2 (List.hd(cmd_to_list "free -m | grep Mem"));*)
       raise Timeout;
     end
   | e ->

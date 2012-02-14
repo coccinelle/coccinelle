@@ -43,6 +43,11 @@
 - Multicharacter command-line options now begin with -- and contain -
   rather than _.
 - Allow multiple types of hidden metavariables, each preceded by @.
+- Python code now receives a structure containing a list of matched
+  elements for list metavariables.  Thanks to Michael Stefaniuc for
+  suggesting this features.
+- Python code now receives expressions and identifiers as ordinary strings,
+  not as elements of specific structures.
 
 ** Features:
 - Preserve spacing before // comments when not at the beginning of a line
