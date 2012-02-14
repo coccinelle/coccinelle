@@ -2,6 +2,7 @@
 
 { nixpkgs ? /etc/nixos/nixpkgs
 , cocciSrc ? { outPath = ./.; revCount = 1234; gitTag = "abcdef"; }
+, testsSrc ? { outPath = ../big-tests; rev = 1234; }
 , officialRelease ? false
 }:
 
@@ -162,42 +163,75 @@ let
   makeDeb_i686 = makeDeb "i686-linux";
   makeDeb_x86_64 = makeDeb "x86_64-linux";
 
-  mkReport = inputs:
-    with import nixpkgs {}; stdenv.mkDerivation {
-      name = "report-${version}${versionSuffix}";
+  mkTask =
+    argsfun: { system ? builtins.currentSystem }:
+    let pkgs = import nixpkgs { inherit system; };
+        args = argsfun pkgs system;
+        name = "${args.name}-${version}${versionSuffix}";
+    in pkgs.stdenv.mkDerivation ({
+      phases = [ "runPhase" ];
 
-      builds = map (i: i {}) inputs;
-
-      phases = [ "buildPhase" ];
-      buildPhase = ''
-        echo "collecting logs"
-        touch result.log
-        for build in $builds; do
-          cat "$build/nix-support/make.log" >> result.log
-        done
-
-        echo "grepping OCaml warnings"
-        if grep -2 "Warning " result.log
-        then
-          echo "found warnings!"
-          false
-        else
-          echo "there are apparently no significant warnings"
-        fi
-
+      runPhase = ''
         ensureDir "$out"
-        cp result.log "$out/"
-
         ensureDir "$out/nix-support"
+        touch result.log
+        exec > >(tee -a result.log) 2> >(tee -a result.log >&2)
+        runHook execPhase
+        cp result.log "$out/"
         echo "report log $out/result.log" > "$out/nix-support/hydra-build-products"
         echo "$name" > "$out/nix-support/hydra-release-name"
       '';
 
       meta = {
-        description = "Analysis of the coccinelle build reports";
-        schedulingPriority = 5;
+        description = "Coccinelle post-build task";
+        schedulingPriority = 8;
       };
+    } // args // { inherit name; });
+
+  mkReport = inputs: mkTask (pkgs: _: with pkgs; {
+    name = "report";
+    builds = map (i: i {}) inputs;
+
+    execPhase = ''
+      echo "collecting logs"
+      for build in $builds; do
+        echo "$build/nix-support/make.log"
+        cat "$build/nix-support/make.log"
+      done
+
+      echo "grepping OCaml warnings"
+      if grep -2 "Warning " result.log
+      then
+        echo "found warnings!"
+        false
+      else
+        echo "there are apparently no significant warnings"
+      fi
+    '';
+
+    meta = {
+      description = "Analysis of the coccinelle build reports";
+      schedulingPriority = 5;
     };
+  });
+
+  mkTest = mkCocci: mkTask (pkgs: system: with pkgs;
+    let coccinelle = mkCocci { inherit system; };
+    in {
+      name = "regression-${toString testsSrc.rev}";
+      buildInputs = [ coccinelle ];
+
+      execPhase = ''
+        echo "not doing anything useful here yet."
+        find ${testsSrc}
+        spatch -version
+      '';
+
+      meta = {
+        description = "Regression test of Coccinelle";
+        schedulingPriority = 8;
+      };
+    });
 
 in # list of jobs
 rec {
@@ -218,4 +252,6 @@ rec {
   # different debian builds
   # deb_ubuntu1010_i386 = makeDeb_i686 (disk: disk.ubuntu1010i386);
   # deb_ubuntu1010_x86_64 = makeDeb_x86_64 (disk: disk.ubuntu1010x86_64);
+
+  test = mkTest build;
 }
