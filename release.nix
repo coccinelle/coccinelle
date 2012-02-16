@@ -182,7 +182,7 @@ let
         exec > >(tee -a result.log) 2> >(tee -a result.log >&2)
         runHook execPhase
         cp result.log "$out/"
-        echo "report log $out/result.log" > "$out/nix-support/hydra-build-products"
+        echo "report log $out/result.log" >> "$out/nix-support/hydra-build-products"
         echo "$name" > "$out/nix-support/hydra-release-name"
       '';
 
@@ -219,8 +219,13 @@ let
     };
   });
 
-  mkTest = mkCocci: mkTask (pkgs: system: with pkgs;
-    let coccinelle = mkCocci { inherit system; };
+  # Produces regression test results, which can be positive or
+  # negative. The build should succeed regardless of the outcome
+  # of individual tests unless coccinelle is horribly broken.
+  # The resulting files are stored in a tarball so that it allows
+  # manual inspection.
+  mkRegress = cocciSelect: mkTask (pkgs: system: with pkgs;
+    let coccinelle = cocciSelect { inherit system; };
     in {
       name = "regression-${toString testsSrc.rev}";
       buildInputs = [ coccinelle ];
@@ -237,7 +242,7 @@ let
 
 	# initialize essential environment variables
         # for the makefile
-        export COCCIDIR=$TMP
+        export COCCIDIR=$TMPDIR
         export SPATCH=${coccinelle}/bin/spatch.opt
         export ISO=${coccinelle}/share/coccinelle/standard.iso
         export DEFS=${coccinelle}/share/coccinelle/standard.h
@@ -245,9 +250,48 @@ let
 	# generate the test outcomes
         make -e all
 
-        # report the results
-	make -e failedlog
-	make -e check
+        # collect the results
+	# note: the tarball is likely to contain useless
+        # symbolic links to files in the nix store. So be it.
+        cd "$TMPDIR"
+        tar -czf "$out/results.tar.gz" ./tests
+	echo "file binary-dist $out/results.tar.gz" >> "$out/nix-support/hydra-build-products"
+      '';
+
+      meta = {
+        description = "Regression test of Coccinelle";
+        schedulingPriority = 8;
+      };
+    });
+
+  # Checks whether the regression tests meet our expectations.
+  # If the set of failed tests is different than specified in
+  # the tests repository, this check fails.
+  checkRegress = regressSelect: mkTask (pkgs: system: with pkgs;
+    let regress = regressSelect { inherit system; };
+    in {
+      name = "test-${toString testsSrc.rev}";
+
+      execPhase = ''
+        # prepare a writeable tests directory
+        # as this directory contains large
+        # files, we'll create links to the
+        # individual files.
+        ensureDir "$TMPDIR/tests"
+        cp -rs ${testsSrc}/* "$TMPDIR/tests/"
+	chmod -R u+w "$TMPDIR/tests/"
+
+        # extract the outcome of the regression test over it
+	echo "reconstructing regression directory"
+        cd "$TMPDIR"
+        tar xfz "${regress}/results.tar.gz"
+        cd "$TMPDIR/tests"
+
+	echo "analyzing results"
+	make failedlog
+
+	echo "verifying the outcome"
+	make check
       '';
 
       meta = {
@@ -276,5 +320,7 @@ rec {
   # deb_ubuntu1010_i386 = makeDeb_i686 (disk: disk.ubuntu1010i386);
   # deb_ubuntu1010_x86_64 = makeDeb_x86_64 (disk: disk.ubuntu1010x86_64);
 
-  test = mkTest build;
+  # extensive tests
+  regress = mkRegress build;
+  test = checkRegress regress;
 }
