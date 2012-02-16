@@ -109,6 +109,10 @@ let
          --prefix "LD_LIBRARY_PATH" ":" "$out/lib"                 \
          --prefix "PYTHONPATH" ":" "$out/share/coccinelle/python"
 
+        wrapProgram "$out/bin/spatch.opt"                          \
+         --prefix "LD_LIBRARY_PATH" ":" "$out/lib"                 \
+         --prefix "PYTHONPATH" ":" "$out/share/coccinelle/python"
+
         yes | make test
       '';
     };
@@ -222,9 +226,28 @@ let
       buildInputs = [ coccinelle ];
 
       execPhase = ''
-        echo "not doing anything useful here yet."
-        find ${testsSrc}
-        spatch -version
+        # prepare a writeable tests directory
+        # as this directory contains large
+        # files, we'll create links to the
+        # individual files.
+        ensureDir "$TMPDIR/tests"
+        cp -rs ${testsSrc}/* "$TMPDIR/tests/"
+	chmod -R u+w "$TMPDIR/tests/"
+        cd "$TMPDIR/tests"
+
+	# initialize essential environment variables
+        # for the makefile
+        export COCCIDIR=$TMP
+        export SPATCH=${coccinelle}/bin/spatch.opt
+        export ISO=${coccinelle}/share/coccinelle/standard.iso
+        export DEFS=${coccinelle}/share/coccinelle/standard.h
+
+	# generate the test outcomes
+        make -e all
+
+        # report the results
+	make -e faillog
+	make -e check
       '';
 
       meta = {
