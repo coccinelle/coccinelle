@@ -246,7 +246,7 @@ let
         make -e all
 
         # report the results
-	make -e faillog
+	make -e failedlog
 	make -e check
       '';
 
