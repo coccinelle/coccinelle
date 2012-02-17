@@ -178,10 +178,10 @@ let
       runPhase = ''
         ensureDir "$out"
         ensureDir "$out/nix-support"
-        touch result.log
-        exec > >(tee -a result.log) 2> >(tee -a result.log >&2)
+        touch "$TMPDIR/result.log"
+        exec > >(tee -a "$TMPDIR/result.log") 2> >(tee -a "$TMPDIR/result.log" >&2)
         runHook execPhase
-        cp result.log "$out/"
+        cp "$TMPDIR/result.log" "$out/"
         echo "report log $out/result.log" >> "$out/nix-support/hydra-build-products"
         echo "$name" > "$out/nix-support/hydra-release-name"
       '';
@@ -204,7 +204,7 @@ let
       done
 
       echo "grepping OCaml warnings"
-      if grep -2 "Warning " result.log
+      if grep -2 "Warning " "$TMPDIR/result.log"
       then
         echo "found warnings!"
         false
