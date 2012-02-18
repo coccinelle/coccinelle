@@ -1412,55 +1412,64 @@ let unminus (d,x1,x2,x3,x4,x5,x6,x7) = (* for hidden variables *)
   | D.PLUSPLUS -> failwith "unexpected plus code"
   | D.CONTEXT | D.UNIQUE | D.OPT -> (D.CONTEXT,x1,x2,x3,x4,x5,x6,x7)
 
-
 let process_minus_positions x name clt meta =
   let (arity,ln,lln,offset,col,strbef,straft,pos) = get_clt x in
   let name = Parse_aux.clt2mcode name (unminus clt) in
   update_clt x (arity,ln,lln,offset,col,strbef,straft,meta name::pos)
 
-let rec consume_minus_positions = function
-    [] -> []
-  | ((PC.TOPar0(_),_) as x)::xs | ((PC.TCPar0(_),_) as x)::xs
-  | ((PC.TMid0(_),_) as x)::xs -> x::consume_minus_positions xs
-  | x::(PC.TPArob _,_)::(PC.TMetaPos(name,constraints,per,clt),_)::xs ->
-      let x =
-	process_minus_positions x name clt
-	  (function name ->
-	    Ast0.MetaPosTag(Ast0.MetaPos(name,constraints,per))) in
-      (consume_minus_positions (x::xs))
-  | x::(PC.TPArob _,_)::(PC.TMetaExp(name,constraints,pure,ty,clt),_)::xs ->
-      let x =
-	process_minus_positions x name clt
-	  (function name ->
-	    Ast0.ExprTag
-	      (Ast0.wrap(Ast0.MetaExpr(name,constraints,ty,Ast.ANY,pure)))) in
-      (consume_minus_positions (x::xs))
-  | x::(PC.TPArob _,_)::(PC.TMetaInit(name,pure,clt),_)::xs ->
-      let x =
-	process_minus_positions x name clt
-	  (function name ->
-	    Ast0.InitTag(Ast0.wrap(Ast0.MetaInit(name,pure)))) in
-      (consume_minus_positions (x::xs))
-  | x::(PC.TPArob _,_)::(PC.TMetaType(name,pure,clt),_)::xs ->
-      let x =
-	process_minus_positions x name clt
-	  (function name ->
-	    Ast0.TypeCTag(Ast0.wrap(Ast0.MetaType(name,pure)))) in
-      (consume_minus_positions (x::xs))
-  | x::(PC.TPArob _,_)::(PC.TMetaDecl(name,pure,clt),_)::xs ->
-      let x =
-	process_minus_positions x name clt
-	  (function name ->
-	    Ast0.DeclTag(Ast0.wrap(Ast0.MetaDecl(name,pure)))) in
-      (consume_minus_positions (x::xs))
-  | x::(PC.TPArob _,_)::(PC.TMetaStm(name,pure,clt),_)::xs ->
-      let x =
-	process_minus_positions x name clt
-	  (function name ->
-	    Ast0.StmtTag(Ast0.wrap(Ast0.MetaStmt(name,pure)))) in
-      (consume_minus_positions (x::xs))
-  | x::xs -> x::consume_minus_positions xs
-
+(* first attach positions, then the others, so that positions can refer to
+the larger term represented by the preceding metavariable *)
+let rec consume_minus_positions toks =
+  let rec loop_pos = function
+      [] -> []
+    | ((PC.TOPar0(_),_) as x)::xs | ((PC.TCPar0(_),_) as x)::xs
+    | ((PC.TMid0(_),_) as x)::xs -> x::loop_pos xs
+    | x::(PC.TPArob _,_)::(PC.TMetaPos(name,constraints,per,clt),_)::xs ->
+	let x =
+	  process_minus_positions x name clt
+	    (function name ->
+	      Ast0.MetaPosTag(Ast0.MetaPos(name,constraints,per))) in
+	(loop_pos (x::xs))
+    | x::xs -> x::loop_pos xs in
+  let rec loop_other = function
+      [] -> []
+    | ((PC.TOPar0(_),_) as x)::xs | ((PC.TCPar0(_),_) as x)::xs
+    | ((PC.TMid0(_),_) as x)::xs -> x::loop_other xs
+    | x::(PC.TPArob _,_)::(PC.TMetaExp(name,constraints,pure,ty,clt),_)::xs ->
+	let x =
+	  process_minus_positions x name clt
+	    (function name ->
+	      Ast0.ExprTag
+		(Ast0.wrap
+		   (Ast0.MetaExpr(name,constraints,ty,Ast.ANY,pure)))) in
+	(loop_other (x::xs))
+    | x::(PC.TPArob _,_)::(PC.TMetaInit(name,pure,clt),_)::xs ->
+	let x =
+	  process_minus_positions x name clt
+	    (function name ->
+	      Ast0.InitTag(Ast0.wrap(Ast0.MetaInit(name,pure)))) in
+	(loop_other (x::xs))
+    | x::(PC.TPArob _,_)::(PC.TMetaType(name,pure,clt),_)::xs ->
+	let x =
+	  process_minus_positions x name clt
+	    (function name ->
+	      Ast0.TypeCTag(Ast0.wrap(Ast0.MetaType(name,pure)))) in
+	(loop_other (x::xs))
+    | x::(PC.TPArob _,_)::(PC.TMetaDecl(name,pure,clt),_)::xs ->
+	let x =
+	  process_minus_positions x name clt
+	    (function name ->
+	      Ast0.DeclTag(Ast0.wrap(Ast0.MetaDecl(name,pure)))) in
+	(loop_other (x::xs))
+    | x::(PC.TPArob _,_)::(PC.TMetaStm(name,pure,clt),_)::xs ->
+	let x =
+	  process_minus_positions x name clt
+	    (function name ->
+	      Ast0.StmtTag(Ast0.wrap(Ast0.MetaStmt(name,pure)))) in
+	(loop_other (x::xs))
+    | x::xs -> x::loop_other xs in
+  loop_other(loop_pos toks)
+    
 let rec consume_plus_positions = function
     [] -> []
   | (PC.TPArob _,_)::x::xs -> consume_plus_positions xs

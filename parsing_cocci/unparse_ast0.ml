@@ -19,12 +19,14 @@ let print_between = Common.print_between
 (* --------------------------------------------------------------------- *)
 (* Positions *)
 
-let meta_pos l =
+let rec meta_pos l =
   List.iter
     (function var ->
-      let (_,name) = Ast0.meta_pos_name var in
+      let current_name = Ast0.meta_pos_name var in
+      let (_,name) = Ast0.unwrap_mcode current_name in
       print_string "@";
-      print_string name)
+      print_string name;
+      meta_pos (Ast0.get_pos current_name))
     l
 
 (* --------------------------------------------------------------------- *)
@@ -431,7 +433,12 @@ and statement arity s =
 	  print_string arity; mcode print_string lbrace; start_block();
 	  dots force_newline (statement arity) body;
 	  end_block(); print_string arity; mcode print_string rbrace
-      | Ast0.Decl(_,decl) -> print_string arity; declaration decl
+      | Ast0.Decl(_,decl) ->
+	  Printf.printf "statement mcodekind %s\n"
+	    (Dumper.dump (Ast0.get_mcodekind s));
+	  Printf.printf "decl mcodekind %s\n"
+	    (Dumper.dump (Ast0.get_mcodekind decl));
+	  print_string arity; declaration decl
       | Ast0.Seq(lbrace,body,rbrace) ->
 	  print_string arity; mcode print_string lbrace; start_block();
 	  dots force_newline (statement arity) body;

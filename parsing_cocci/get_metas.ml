@@ -1,5 +1,7 @@
 (* --------------------------------------------------------------------- *)
-(* Generic traversal: rebuilder *)
+(* creates AsExpr, etc *)
+(* @ attached metavariables can only be associated with positions, so nothing
+to do for them *)
 
 module Ast = Ast_cocci
 module Ast0 = Ast0_cocci
@@ -795,6 +797,8 @@ let process t =
 	       "rule starting on line %d contains unattached metavariables: %s"
 	       (Ast0.get_line x)
 	       (String.concat ", "
-		  (List.map (function (r,n) -> r^"."^n)
+		  (List.map
+		     (function nm ->
+		       let (r,n) = Ast0.unwrap_mcode nm in r^"."^n)
 		     (List.map Ast0.meta_pos_name l)))))
     t

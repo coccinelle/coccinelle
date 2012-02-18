@@ -403,7 +403,8 @@ let classify is_minus all_marked table code =
       | Ast0.Stars(dots,whencode) ->
 	  k (Ast0.rewrap s (Ast0.Stars(dots,[])))
       | Ast0.Disj(starter,statement_dots_list,_,ender) ->
-	  disj_cases s starter statement_dots_list r.VT0.combiner_rec_statement_dots
+	  disj_cases s starter statement_dots_list
+	    r.VT0.combiner_rec_statement_dots
 	    ender
 	(* cases for everything with extra mcode *)
       |	Ast0.FunDecl((info,bef),_,_,_,_,_,_,_,_)

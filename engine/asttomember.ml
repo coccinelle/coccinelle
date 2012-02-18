@@ -135,9 +135,13 @@ let conj_wrapped x l = conj [List.map (function x -> (1,strip x)) x] l
 (* --------------------------------------------------------------------- *)
 (* the main translation loop *)
 
-let rule_elem re =
+let rec rule_elem re =
   match Ast.unwrap re with
-    Ast.DisjRuleElem(res) -> [[(List.length res,strip re)]]
+    Ast.DisjRuleElem(res) ->
+      (* why was the following doesn?  it doesn't work right with checks on
+	 inherited metavars, because those are branch sensitive *)
+      (*[[(List.length res,strip re)]]*)
+      List.concat (List.map rule_elem res)
   | _ -> [[(1,strip re)]]
 
 let conj_one testfn x l =

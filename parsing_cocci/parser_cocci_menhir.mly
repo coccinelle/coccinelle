@@ -1158,6 +1158,15 @@ single_statement:
 		     List.map (function x -> Ast0.wrap(Ast0.DOTS([x]))) code,
 		     mids, P.clt2mcode ")" $3)) }
 
+iso_statement: /* statement or declaration used in statement context */
+    statement                         { $1 }
+  | decl_var
+      { match $1 with
+	[decl] ->
+	  Ast0.wrap
+	    (Ast0.Decl((Ast0.default_info(),Ast0.context_befaft()),decl))
+      |	_ -> failwith "exactly one decl allowed in statement iso" }
+
 case_line:
     TDefault TDotDot fun_start
       { Ast0.wrap
@@ -2338,7 +2347,7 @@ iso_main:
     { let ffn x = Ast0.ExprTag x in
       let fn x =  Ast0.TestExprTag x in
       P.iso_adjust ffn fn e1 el }
-| TIsoStatement s1=single_statement sl=list(iso(single_statement)) EOF
+| TIsoStatement s1=iso_statement sl=list(iso(iso_statement)) EOF
     { let fn x = Ast0.StmtTag x in P.iso_adjust fn fn s1 sl }
 | TIsoType t1=ctype tl=list(iso(ctype)) EOF
     { let fn x = Ast0.TypeCTag x in P.iso_adjust fn fn t1 tl }
