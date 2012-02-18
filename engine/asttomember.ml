@@ -138,7 +138,7 @@ let conj_wrapped x l = conj [List.map (function x -> (1,strip x)) x] l
 let rec rule_elem re =
   match Ast.unwrap re with
     Ast.DisjRuleElem(res) ->
-      (* why was the following doesn?  it doesn't work right with checks on
+      (* why was the following done?  it doesn't work right with checks on
 	 inherited metavars, because those are branch sensitive *)
       (*[[(List.length res,strip re)]]*)
       List.concat (List.map rule_elem res)
