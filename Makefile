@@ -124,7 +124,7 @@ EXEC=$(TARGET)
 # Generic ocaml variables
 ##############################################################################
 
-OCAMLCFLAGS= -g
+OCAMLCFLAGS=
 
 # for profiling add  -p -inline 0
 # but 'make forprofiling' below does that for you.
