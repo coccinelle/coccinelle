@@ -1,16 +1,16 @@
 @r@
-expression a,b;
+expression a,b,c;
 @@
 
 (
-foo(a);
+foo(a,c);
 |
-bar(b);
+bar(b,c);
 )
 
 @@
-expression r.a,r.b;
+expression r.a,r.b,r.c;
 @@
 
-- xxx(\(a\|b\));
+- xxx(\(a\|b\),c);
 + yyy();
