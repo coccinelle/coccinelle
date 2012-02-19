@@ -123,7 +123,7 @@ let ctls_of_ast2 ast (ua,fua,fuas) pos =
 	(if !Flag_cocci.popl
 	then Popl.popl ast
 	else Asttoctl2.asttoctl ast (ua,fua,fuas) pos)
-	(Common.profile_code "astomember" (fun () -> (Asttomember.asttomember ast ua))))
+	(Asttomember.asttomember ast ua))
     ast (List.combine ua (List.combine fua (List.combine fuas pos)))
 
 let ctls_of_ast ast ua pl =
@@ -1813,21 +1813,19 @@ let pre_engine2 (coccifile, isofile) =
   (* useful opti when use -dir *)
   let (metavars,astcocci,
        free_var_lists,negated_pos_lists,used_after_lists,
-       positions_lists,(toks,_,_)) =
-      Common.profile_code "one" (fun () -> sp_of_file coccifile isofile) in
+       positions_lists,(toks,_,_)) = sp_of_file coccifile isofile in
 
-  let ctls = Common.profile_code "two" (fun () -> ctls_of_ast astcocci used_after_lists positions_lists) in
+  let ctls = ctls_of_ast astcocci used_after_lists positions_lists in
 
   g_contain_typedmetavar := sp_contain_typed_metavar astcocci;
 
-  Common.profile_code "three" (fun () -> check_macro_in_sp_and_adjust toks);
+  check_macro_in_sp_and_adjust toks;
 
   show_or_not_ctl_tex astcocci ctls;
 
   let cocci_infos =
-Common.profile_code "four" (fun () -> 
     prepare_cocci ctls free_var_lists negated_pos_lists
-      used_after_lists positions_lists metavars astcocci) in
+      used_after_lists positions_lists metavars astcocci in
 
   let used_languages =
     List.fold_left
