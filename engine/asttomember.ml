@@ -138,10 +138,19 @@ let conj_wrapped x l = conj [List.map (function x -> (1,strip x)) x] l
 let rec rule_elem re =
   match Ast.unwrap re with
     Ast.DisjRuleElem(res) ->
-      (* why was the following done?  it doesn't work right with checks on
-	 inherited metavars, because those are branch sensitive *)
-      (*[[(List.length res,strip re)]]*)
-      List.concat (List.map rule_elem res)
+      (* why was the following done?  ors have to be kept together for
+	efficiency, so they are considered at once and not individually
+        anded with everything else *)
+      let re =
+	let all_inhs = List.map Ast.get_inherited res in
+	let inhs =
+	  List.fold_left
+	    (function prev ->
+	      function inh ->
+		Common.inter_set inh prev)
+	    (List.hd all_inhs) (List.tl all_inhs) in
+	Ast.make_inherited_term (Ast.unwrap re) inhs in
+      [[(List.length res,strip re)]]
   | _ -> [[(1,strip re)]]
 
 let conj_one testfn x l =
@@ -309,5 +318,7 @@ let asttomemberz (_,_,l) used_after =
 let asttomember r used_after =
   match r with
     Ast.ScriptRule _ | Ast.InitialScriptRule _ | Ast.FinalScriptRule _ -> []
-  | Ast.CocciRule (a,b,c,_,_) -> asttomemberz (a,b,c) used_after
+  | Ast.CocciRule (a,b,c,_,_) ->
+      Printf.printf "%s\n" a;
+      asttomemberz (a,b,c) used_after
 
