@@ -45,13 +45,13 @@
  (empty.res Ok) (end_commas.res Ok) (endif.res Ok) (enum.res Ok)
  (exitc.res
   (Pb
-   "PROBLEM\n   exn = Prepare_ocamlcocci.LinkFailure(\"/tmp/exitc48aa39.cmxs\")\n"))
+   "PROBLEM\n   exn = Prepare_ocamlcocci.LinkFailure(\"/tmp/exitc25130e.cmxs\")\n"))
  (exitp.res (Pb "PROBLEM\n   exn = Failure(\"no python\")\n")) (exp.res Ok)
  (expnest.res Ok) (expopt.res Ok) (expopt2.res Ok) (expopt3.res Ok)
  (expopt3_ver1.res Ok) (expopt3_ver2.res Ok)
  (extra.res
   (Pb
-   "PROBLEM\n   exn = Prepare_ocamlcocci.LinkFailure(\"/tmp/extrad4c1f9.cmxs\")\n"))
+   "PROBLEM\n   exn = Prepare_ocamlcocci.LinkFailure(\"/tmp/extra2a5e47.cmxs\")\n"))
  (fields.res Ok) (fieldsmin.res Ok) (find_long.res Ok) (fix_flow_need.res Ok)
  (fn_todo.res Ok) (fnptr.res Ok) (fnret.res Ok) (fnty.res Ok) (four.res Ok)
  (foura.res Ok) (fp.res Ok) (fsh.res Ok) (fun.res Ok)
@@ -151,9 +151,9 @@
  (test9.res Ok) (test_s.res Ok) (test_unsigned_meta.res Ok)
  (three_types.res Ok) (threea.res Ok) (top.res Ok) (topdec.res Ok)
  (topdec_ver1.res Ok) (topdec_ver2.res Ok) (toplevel_macrostmt.res Ok)
- (toplevel_struct.res Ok) (tup.res Ok) (twoproto.res Ok) (ty.res Ok)
- (ty1.res Ok) (ty_tyexp.res Ok) (tydisj.res Ok) (tyex.res Ok) (type.res Ok)
- (type1.res Ok) (type_annotated.res Ok) (type_ver1.res Ok)
+ (toplevel_struct.res Ok) (tup.res Ok) (twomatch.res Ok) (twoproto.res Ok)
+ (ty.res Ok) (ty1.res Ok) (ty_tyexp.res Ok) (tydisj.res Ok) (tyex.res Ok)
+ (type.res Ok) (type1.res Ok) (type_annotated.res Ok) (type_ver1.res Ok)
  (type_ver2.res
   (Pb
    "INCORRECT:PB parsing only in generated-file\n    diff (result(<) vs expected_result(>)) = \n    @@ -1,5 +1,5 @@\n     int foo() {\n    -  int[10] *x;\n    +  int *x[10];\n       return 0;\n     }\n     \n"))
