@@ -299,13 +299,10 @@ let construct_variables mv e =
 let construct_script_variables mv =
   List.iter
     (function (_,py) ->
-      let vl =
-	let str =
-	  pystring_fromstring
-	    "initial value: consider using coccinelle.varname" in
-	pycocci_instantiate_class "coccilib.elems.Identifier"
-	  (pytuple_fromsingle (str)) in
-      let _ = build_variable py vl in
+      let str =
+	pystring_fromstring
+	  "initial value: consider using coccinelle.varname" in
+      let _ = build_variable py str in
       ())
     mv
 
