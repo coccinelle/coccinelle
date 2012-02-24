@@ -247,7 +247,7 @@ let short_options = [
   "--sp-file",  Arg.Set_string cocci_file,
   " <file> the semantic patch file";
 
-  "--o", Arg.Set_string output_file,
+  "-o", Arg.Set_string output_file,
   "   <file> the output file";
   "--in-place", Arg.Set inplace_modif,
   "   do the modification on the file directly";
