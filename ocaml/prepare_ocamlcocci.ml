@@ -1,1 +1,0 @@
-yes_prepare_ocamlcocci.ml
