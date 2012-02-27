@@ -460,7 +460,7 @@ tags:
 	otags -no-mli-tags -r  .
 
 dependencygraph:
-	find  -name "*.ml" |grep -v "scripts" | xargs ocamldep -I commons -I globals -I ctl -I parsing_cocci -I parsing_c -I engine -I popl09 -I extra > /tmp/dependfull.depend
+	find . -name "*.ml" |grep -v "scripts" | xargs ocamldep -I commons -I globals -I ctl -I parsing_cocci -I parsing_c -I engine -I popl09 -I extra > /tmp/dependfull.depend
 	ocamldot -lr /tmp/dependfull.depend > /tmp/dependfull.dot
 	dot -Tps /tmp/dependfull.dot > /tmp/dependfull.ps
 	ps2pdf /tmp/dependfull.ps /tmp/dependfull.pdf
@@ -518,7 +518,7 @@ distclean:: clean
 	rm -f TAGS
 	rm -f tests/SCORE_actual.sexp
 	rm -f tests/SCORE_best_of_both.sexp
-	find -name ".#*1.*" | xargs rm -f
+	find . -name ".#*1.*" | xargs rm -f
 
 beforedepend::
 
