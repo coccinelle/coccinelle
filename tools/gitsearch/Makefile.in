@@ -1,0 +1,15 @@
+OCAMLMAKEFILE:=@OCAMLMAKEFILE@
+
+# configuration
+THREADS = yes
+ANNOTATE = yes
+# LIBS =
+# CLIBS = 
+
+SOURCES = src/options.ml src/git.ml src/main.ml
+RESULT = gitsearch
+all: native-code
+-include $(OCAMLMAKEFILE)
+
+test: native-code
+	./gitsearch --from "HEAD~3" --to "HEAD" --script test.sh
