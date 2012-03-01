@@ -2,31 +2,52 @@
   Analyzer wrapper on git C repositories.
 *)
 
-let processRev rev =
-  Git.checkout rev;
+let processBase base =
+  (* collect removed lines *)
+  (* convert to changed 'blocks' *)
+  Command.exec_hook Options.opts.Options.hookBase
 
-  (* do something of interest here *)
-  print_endline rev;
+let processRev rev =
+  (* collect added lines *)
+  (* convert to changed 'blocks' *)
+  Command.exec_hook Options.opts.Options.hookRev
+
+let processChangeset base rev =
+  Git.checkout base;
+  Command.exec_hook Options.opts.Options.hookBegin;
+  processBase base;
+  Git.checkout rev;
+  processRev rev;
+
+  Command.exec_hook Options.opts.Options.hookAnalyze;
+  Command.exec_hook Options.opts.Options.hookFinish;
   Git.reset ()
 
-let setup opts =
+let setup () =
   let cdir = Sys.getcwd () in
-  match opts.Options.target with
-    Options.Temp ->
-      let dir = Git.clone opts.Options.repo opts.Options.local in
-      at_exit (function () -> Sys.chdir cdir; let _ = Unix.system ("rm -rf " ^ dir) in ());
-      Sys.chdir dir
-  | Options.Exists dir ->
-      at_exit (function () -> Sys.chdir cdir);
-      Sys.chdir dir;
-      Git.reset ()
+  at_exit (function () -> Sys.chdir cdir);
+  let target = !(Options.opts.Options.target) in
+  let wdir =
+        match target with
+          Options.Temp -> Git.clone !(Options.opts.Options.repo) !(Options.opts.Options.local)
+        | Options.Exists dir -> dir in
+  Sys.chdir wdir;
+  match target with
+    Options.Temp     -> ()
+  | Options.Exists _ -> Git.reset ()
 
 let main () =
   Options.initialize Sys.argv;
-  let opts = Options.get_opts () in
-  setup opts;
-  let revs = Git.intermediate_revs opts.Options.fromRev opts.Options.toRev in
-  Queue.iter processRev revs
+  setup ();
+  let revs = Git.intermediate_revs !(Options.opts.Options.fromRev) !(Options.opts.Options.toRev) in
+  Command.exec_hook Options.opts.Options.hookSetup;
+  let prev = ref (Queue.pop revs) in
+  let process rev =
+        let base = !prev in
+        processChangeset base rev;
+        prev := rev in
+  Queue.iter process revs;
+  Command.exec_hook Options.opts.Options.hookTearDown
 
 let prefix_app_name str =
   Sys.argv.(0) ^ ": " ^ str
@@ -34,8 +55,8 @@ let prefix_app_name str =
 let catch_errors f =
   let errMsg = ref None in
   let _ = try f () with
-      Arg.Bad msg     -> errMsg := Some msg
-    | Git.Git_cmd cmd -> errMsg := Some ("command failed: " ^ cmd)
+      Arg.Bad msg -> errMsg := Some msg
+    | Command.Cmd_failed cmd -> errMsg := Some ("command failed: " ^ cmd)
   in !errMsg
 
 let _ = match catch_errors main with

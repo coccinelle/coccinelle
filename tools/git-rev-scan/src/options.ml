@@ -1,78 +1,85 @@
 type target = Temp | Exists of string
 
 type options = {
-  repo : string;
-  fromRev : string;
-  toRev : string;
-  script : string;
-  local : bool;
-  target : target;
+  repo         : string ref;
+  fromRev      : string ref;
+  toRev        : string ref;
+  local        : bool ref;
+  target       : target ref;
+
+  hookSetup    : (string option) ref;
+  hookBegin    : (string option) ref;
+  hookBase     : (string option) ref;
+  hookRev      : (string option) ref;
+  hookAnalyze  : (string option) ref;
+  hookFinish   : (string option) ref;
+  hookTearDown : (string option) ref;
 }
 
-let init = {
-  repo = ".";
-  fromRev = "";
-  toRev = "";
-  script = ".";
-  local = false;
-  target = Temp;
+let opts = {
+  repo         = ref ".";
+  fromRev      = ref "";
+  toRev        = ref "";
+  local        = ref false;
+  target       = ref Temp;
+  
+  hookSetup    = ref None;
+  hookBegin    = ref None;
+  hookBase     = ref None;
+  hookRev      = ref None;
+  hookAnalyze  = ref None;
+  hookFinish   = ref None;
+  hookTearDown = ref None;
 }
-
-let opts = ref init
-
-let get_opts () = !opts
 
 let fail_anon_arg str =
   raise (Arg.Bad ("unexpected anonymous argument: " ^ str))
 
+let is_dir path = Sys.file_exists path && Sys.is_directory path
+let is_script path = Sys.file_exists path && not (Sys.is_directory path)
+
 let set_target targetRef str =
   if String.length str == 0
   then targetRef := Temp
-  else if (not (Sys.file_exists str)) || (not (Sys.is_directory str))
+  else if not (is_dir str)
        then raise (Arg.Bad ("not a directory: " ^ str));
        targetRef := Exists str
 
-let mk_args_spec repoRef fromRef toRef scriptRef localRef targetRef = [
-  ("--repo", Arg.Set_string repoRef, "path to the git repository");
-  ("--from", Arg.Set_string fromRef, "starting revision");
-  ("--to", Arg.Set_string toRef, "ending revision");
-  ("--script", Arg.Set_string scriptRef, "script to execute");
-  ("--local", Arg.Set localRef, "use a local clone");
-  ("--target", Arg.String (set_target targetRef), "path to existing repo (omit for temp)");
+let set_hook hookRef str =
+  if String.length str == 0
+  then hookRef := None
+  else if not (is_script str)
+       then raise (Arg.Bad ("not a script: " ^ str));
+       hookRef := Some str
+
+let args_spec = [
+  ("--repo",         Arg.Set_string opts.repo, "path to the git repository");
+  ("--from",         Arg.Set_string opts.fromRev, "starting revision");
+  ("--to",           Arg.Set_string opts.toRev, "ending revision");
+  ("--local",        Arg.Set opts.local, "use a local clone");
+  ("--target",       Arg.String (set_target opts.target),     "path to existing repo (omit for temp)");
+  ("--hook-setup",   Arg.String (set_hook opts.hookSetup),    "setup/initialize hook");
+  ("--hook-begin",   Arg.String (set_hook opts.hookBegin),    "begin hook");
+  ("--hook-base",    Arg.String (set_hook opts.hookBase),     "old rev hook");
+  ("--hook-rev",     Arg.String (set_hook opts.hookRev),      "new rev hook");
+  ("--hook-analyze", Arg.String (set_hook opts.hookAnalyze),  "analyze hook");
+  ("--hook-finish",  Arg.String (set_hook opts.hookFinish),   "finishup hook");
+  ("--hook-tear",    Arg.String (set_hook opts.hookTearDown), "tear down hook");
 ]
 
 let mk_usage_str argv = "Usage: " ^ argv.(0) ^ " --repo <path>"
 
-let get_settings argv =
-  let repoRef = ref init.repo in
-  let fromRef = ref init.fromRev in
-  let toRef = ref init.toRev in
-  let scriptRef = ref init.script in
-  let localRef = ref init.local in
-  let targetRef = ref init.target in
+let initialize argv =
   let usageStr = mk_usage_str argv in
-  let argsSpec = mk_args_spec repoRef fromRef toRef scriptRef localRef targetRef in
   let current = ref 0 in
-  Arg.parse_argv ~current argv argsSpec fail_anon_arg usageStr;
-  { repo = !repoRef; fromRev = !fromRef; toRev = !toRef; script = !scriptRef;
-    local = !localRef; target = !targetRef;
-  }
+  Arg.parse_argv ~current argv args_spec fail_anon_arg usageStr;
 
-let check_settings opts =
-  if (not (Sys.file_exists opts.repo)) || (not (Sys.is_directory opts.repo))
-  then raise (Arg.Bad ("not a directory: " ^ opts.repo));
-  
-  if (not (Sys.file_exists opts.script)) || Sys.is_directory opts.script
-  then raise (Arg.Bad ("not a script: " ^ opts.script));
+  if not (is_dir !(opts.repo))
+  then raise (Arg.Bad ("repository does not point to a directory: " ^ !(opts.repo)));
 
-  if String.length opts.fromRev == 0
+  if String.length !(opts.fromRev) == 0
   then raise (Arg.Bad ("no 'from' revision given."));
 
-  if String.length opts.toRev == 0
+  if String.length !(opts.toRev) == 0
   then raise (Arg.Bad ("no 'to' revision given."));
   ()
-
-let initialize argv =
-  let newOpts = get_settings argv in
-  check_settings newOpts;
-  opts := newOpts
