@@ -7,9 +7,9 @@ ANNOTATE = yes
 # CLIBS = 
 
 SOURCES = src/options.ml src/git.ml src/main.ml
-RESULT = gitsearch
+RESULT = @PACKAGE_NAME@
 all: native-code
 -include $(OCAMLMAKEFILE)
 
 test: native-code
-	./gitsearch --from "HEAD~3" --to "HEAD" --script test.sh
+	./${RESULT} --repo "/home/amiddelk/Work/abl/coccinelle" --from "HEAD~3" --to "HEAD" --script test.sh
