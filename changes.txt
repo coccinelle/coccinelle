@@ -158,6 +158,7 @@
 - Don't drop spaces after parentheses in when no minus code present.
   Thanks to Terry Wilson for reporting the problem.
 - Keep inherited metavariables in asttomember (preprocessing for matching)
+- allminus for types, to allow removing const, not just matching it
 
 * 0.2.5
 ** Language:
