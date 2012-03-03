@@ -154,7 +154,7 @@ let combiner bind option_default
   and fullType ft =
     let k ft =
       match Ast.unwrap ft with
-	Ast.Type(cv,ty) -> bind (get_option cv_mcode cv) (typeC ty)
+	Ast.Type(_,cv,ty) -> bind (get_option cv_mcode cv) (typeC ty)
       |	Ast.AsType(ty,asty) -> bind (fullType ty) (fullType asty)
       | Ast.DisjType(types) -> multibind (List.map fullType types)
       | Ast.OptType(ty) -> fullType ty
@@ -209,7 +209,7 @@ let combiner bind option_default
 
   and named_type ty id =
     match Ast.unwrap ty with
-      Ast.Type(None,ty1) ->
+      Ast.Type(_,None,ty1) ->
 	(match Ast.unwrap ty1 with
 	  Ast.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
 	    function_pointer (ty,lp1,star,rp1,lp2,params,rp2) [ident id]
@@ -239,6 +239,11 @@ let combiner bind option_default
 	  multibind
 	    [ident name; string_mcode lp; expression_dots args;
 	      string_mcode rp; string_mcode sem]
+      | Ast.MacroDeclInit(name,lp,args,rp,eq,ini,sem) ->
+	  multibind
+	    [ident name; string_mcode lp; expression_dots args;
+	      string_mcode rp; string_mcode eq; initialiser ini;
+	      string_mcode sem]
       | Ast.TyDecl(ty,sem) -> bind (fullType ty) (string_mcode sem)
       | Ast.Typedef(stg,ty,id,sem) ->
 	  bind (string_mcode stg)
@@ -681,7 +686,8 @@ let rebuilder
     let k ft =
       Ast.rewrap ft
 	(match Ast.unwrap ft with
-	  Ast.Type(cv,ty) -> Ast.Type (get_option cv_mcode cv, typeC ty)
+	  Ast.Type(allminus,cv,ty) ->
+	    Ast.Type (allminus,get_option cv_mcode cv, typeC ty)
 	| Ast.AsType(ty,asty) -> Ast.AsType(fullType ty,fullType asty)
 	| Ast.DisjType(types) -> Ast.DisjType(List.map fullType types)
 	| Ast.OptType(ty) -> Ast.OptType(fullType ty)
@@ -746,6 +752,11 @@ let rebuilder
 	| Ast.MacroDecl(name,lp,args,rp,sem) ->
 	    Ast.MacroDecl(ident name, string_mcode lp, expression_dots args,
 			  string_mcode rp,string_mcode sem)
+	| Ast.MacroDeclInit(name,lp,args,rp,eq,ini,sem) ->
+	    Ast.MacroDeclInit
+	      (ident name, string_mcode lp, expression_dots args,
+	       string_mcode rp,string_mcode eq,initialiser ini,
+	       string_mcode sem)
 	| Ast.TyDecl(ty,sem) -> Ast.TyDecl(fullType ty, string_mcode sem)
 	| Ast.Typedef(stg,ty,id,sem) ->
 	    Ast.Typedef(string_mcode stg, fullType ty, typeC id,

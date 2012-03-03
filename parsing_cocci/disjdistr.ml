@@ -37,9 +37,9 @@ let disjdots f d =
 
 let rec disjty ft =
   match Ast.unwrap ft with
-    Ast.Type(cv,ty) ->
+    Ast.Type(allminus,cv,ty) ->
       let ty = disjtypeC ty in
-      List.map (function ty -> Ast.rewrap ft (Ast.Type(cv,ty))) ty
+      List.map (function ty -> Ast.rewrap ft (Ast.Type(allminus,cv,ty))) ty
   | Ast.AsType(ty,asty) -> (* as ty doesn't contain disj *)
       let ty = disjty ty in
       List.map (function ty -> Ast.rewrap ft (Ast.AsType(ty,asty))) ty
@@ -270,6 +270,10 @@ and disjdecl d =
       List.map
 	(function args -> Ast.rewrap d (Ast.MacroDecl(name,lp,args,rp,sem)))
 	(disjdots disjexp args)
+  | Ast.MacroDeclInit(name,lp,args,rp,eq,ini,sem) ->
+      disjmult2 (disjdots disjexp args) (disjini ini)
+	(function args -> function ini ->
+	  Ast.rewrap d (Ast.MacroDeclInit(name,lp,args,rp,eq,ini,sem)))
   | Ast.TyDecl(ty,sem) ->
       let ty = disjty ty in
       List.map (function ty -> Ast.rewrap d (Ast.TyDecl(ty,sem))) ty

@@ -311,14 +311,16 @@ let rec propagate_types env =
       Ast0.MetaDecl(_,_) | Ast0.MetaField(_,_)
     | Ast0.MetaFieldList(_,_,_) -> []
     | Ast0.Init(_,ty,id,_,exp,_) ->
-	let _ =
-	  (propagate_types env).VT0.combiner_rec_initialiser exp in
+	let _ = (propagate_types env).VT0.combiner_rec_initialiser exp in
 	let ty = Ast0.ast0_type_to_type ty in
 	List.map (function i -> (i,ty)) (strip id)
     | Ast0.UnInit(_,ty,id,_) ->
 	let ty = Ast0.ast0_type_to_type ty in
 	List.map (function i -> (i,ty)) (strip id)
     | Ast0.MacroDecl(_,_,_,_,_) -> []
+    | Ast0.MacroDeclInit(_,_,_,_,_,exp,_) ->
+        let _ = (propagate_types env).VT0.combiner_rec_initialiser exp in
+	[]
     | Ast0.TyDecl(ty,_) -> []
               (* pad: should handle typedef one day and add a binding *)
     | Ast0.Typedef(_,_,_,_) -> []

@@ -378,6 +378,16 @@ and declaration d =
 	  let (sem_n,sem) = mcode sem in
 	  (multibind [name_n;lp_n;args_n;rp_n;sem_n],
 	   Ast0.MacroDecl(name,lp,args,rp,sem))
+      | Ast0.MacroDeclInit(name,lp,args,rp,eq,ini,sem) ->
+          let (name_n,name) = ident name in
+          let (lp_n,lp) = mcode lp in
+          let (args_n,args) = dots expression args in
+          let (rp_n,rp) = mcode rp in
+          let (eq_n,eq) = mcode eq in
+          let (ini_n,ini) = initialiser ini in
+          let (sem_n,sem) = mcode sem in
+          (multibind [name_n;lp_n;args_n;rp_n;eq_n;ini_n;sem_n],
+           Ast0.MacroDeclInit(name,lp,args,rp,eq,ini,sem))
       | Ast0.TyDecl(ty,sem) ->
 	  let (ty_n,ty) = typeC ty in
 	  let (sem_n,sem) = mcode sem in

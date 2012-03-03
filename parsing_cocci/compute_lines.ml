@@ -575,6 +575,16 @@ and declaration d =
       let rp = normal_mcode rp in
       let sem = normal_mcode sem in
       mkres d (Ast0.MacroDecl(name,lp,args,rp,sem)) name (promote_mcode sem)
+  | Ast0.MacroDeclInit(name,lp,args,rp,eq,ini,sem) ->
+      let name = ident name in
+      let lp = normal_mcode lp in
+      let args = dots is_exp_dots (Some(promote_mcode lp)) expression args in
+      let rp = normal_mcode rp in
+      let eq = normal_mcode eq in
+      let ini = initialiser ini in
+      let sem = normal_mcode sem in
+      mkres d (Ast0.MacroDeclInit(name,lp,args,rp,eq,ini,sem))
+	name (promote_mcode sem)
   | Ast0.TyDecl(ty,sem) ->
       let ty = typeC ty in
       let sem = normal_mcode sem in

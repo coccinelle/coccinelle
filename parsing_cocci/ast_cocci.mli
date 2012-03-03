@@ -229,7 +229,8 @@ and constant =
 (* Types *)
 
 and base_fullType =
-    Type            of const_vol mcode option * typeC
+    Type            of bool (* true if all minus *) *
+                       const_vol mcode option * typeC
   | AsType          of fullType * fullType (* as type, always metavar *)
   | DisjType        of fullType list (* only after iso *)
   | OptType         of fullType
@@ -284,6 +285,9 @@ and base_declaration =
   | TyDecl of fullType * string mcode (* ; *)
   | MacroDecl of ident (* name *) * string mcode (* ( *) *
         expression dots * string mcode (* ) *) * string mcode (* ; *)
+  | MacroDeclInit of ident (* name *) * string mcode (* ( *) *
+        expression dots * string mcode (* ) *) * string mcode (*=*) *
+        initialiser * string mcode (* ; *)
   | Typedef of string mcode (*typedef*) * fullType * typeC * string mcode (*;*)
   | DisjDecl   of declaration list
   | Ddots    of string mcode (* ... *) * declaration option (* whencode *)

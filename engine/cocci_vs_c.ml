@@ -1859,6 +1859,8 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
 		  )))))))
       | _ -> fail)
 
+  | A.MacroDeclInit (sa,lpa,eas,rpa,weqa,inia,enda), _ ->
+      failwith "TODO - macro decl init not supported by the C parser???"
   | _, (B.MacroDecl _ |B.DeclList _) ->      fail
 
 
@@ -1880,7 +1882,8 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
    }, iivirg) ->
 
    (match A.unwrap tya0, typb0 with
-   | A.Type(cv1,tya1), ((qu,il),typb1) ->
+   | A.Type(allminus,cv1,tya1), ((qu,il),typb1) ->
+       (* allminus doesn't seem useful here - nothing done with cv1 *)
 
      (match A.unwrap tya1, typb1 with
      | A.StructUnionDef(tya2, lba, declsa, rba),
@@ -1916,14 +1919,14 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
          let declsa = redots declsa undeclsa in
 
          (match A.unwrap tya2 with
-         | A.Type(cv3, tya3) ->
+         | A.Type(allminus, cv3, tya3) -> (* again allminus not used *)
            (match A.unwrap tya3 with
            | A.MetaType(ida,keep, inherited) ->
 
                fullType tya2 fake_typeb >>= (fun tya2 fake_typeb ->
 		 let tya1 =
 		   A.StructUnionDef(tya2,lba,declsa,rba)+> A.rewrap tya1 in
-		 let tya0 = A.Type(cv1, tya1) +> A.rewrap tya0 in
+		 let tya0 = A.Type(allminus, cv1, tya1) +> A.rewrap tya0 in
 
 
 		 let typb1 = B.StructUnion (sub,sbopt, declsb),
@@ -1953,7 +1956,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
 
                let tya1 = A.StructUnionDef(tya2,lba,declsa,rba)+> A.rewrap tya1
                in
-               let tya0 = A.Type(cv1, tya1) +> A.rewrap tya0 in
+               let tya0 = A.Type(allminus, cv1, tya1) +> A.rewrap tya0 in
 
                match structnameb with
                | _nQ, (B.StructUnionName (sub, s), [iisub;iisbopt]) ->
@@ -2607,7 +2610,7 @@ and (fullType: (A.fullType, Ast_c.fullType) matcher) =
    X.optional_qualifier_flag (fun optional_qualifier ->
    X.all_bound (A.get_inherited typa) >&&>
    match A.unwrap typa, typb with
-   | A.Type(cv,ty1), ((qu,il),ty2) ->
+   | A.Type(allminus,cv,ty1), ((qu,il),ty2) ->
 
        if qu.B.const && qu.B.volatile
        then
@@ -2626,11 +2629,15 @@ and (fullType: (A.fullType, Ast_c.fullType) matcher) =
        (* "iso-by-absence" *)
        | None ->
            let do_stuff () =
+             (if allminus
+	     then minusize_list il
+	     else return ((), il)
+	     ) >>= (fun () il ->
              fullTypebis ty1 ((qu,il), ty2) >>= (fun ty1 fullty2 ->
-               return (
-                 (A.Type(None, ty1)) +> A.rewrap typa,
+	       return (
+                 (A.Type(allminus, None, ty1)) +> A.rewrap typa,
                  fullty2
-               ))
+               )))
            in
            (match optional_qualifier, qu.B.const || qu.B.volatile with
            | false, false -> do_stuff ()
@@ -2653,7 +2660,7 @@ and (fullType: (A.fullType, Ast_c.fullType) matcher) =
                tokenf x i1 >>= (fun x i1 ->
                fullTypebis ty1 (Ast_c.nQ,ty2) >>= (fun ty1 (_, ty2) ->
                  return (
-                   (A.Type(Some x, ty1)) +> A.rewrap typa,
+                   (A.Type(allminus, Some x, ty1)) +> A.rewrap typa,
                    ((qu, [i1]), ty2)
                  )))
 
@@ -2661,7 +2668,7 @@ and (fullType: (A.fullType, Ast_c.fullType) matcher) =
                tokenf x i1 >>= (fun x i1 ->
                fullTypebis ty1 (Ast_c.nQ,ty2) >>= (fun ty1 (_, ty2) ->
                  return (
-                   (A.Type(Some x, ty1)) +> A.rewrap typa,
+                   (A.Type(allminus, Some x, ty1)) +> A.rewrap typa,
                    ((qu, [i1]), ty2)
                  )))
 
@@ -2847,11 +2854,11 @@ and simulate_signed_meta ta basea signaopt tb baseb ii rebuilda =
 
       let match_to_type rebaseb =
 	sign signaopt signbopt >>= (fun signaopt iisignbopt ->
-	let fta = A.rewrap basea (A.Type(None,basea)) in
+	let fta = A.rewrap basea (A.Type(false(*don't know*),None,basea)) in
 	let ftb = Ast_c.nQ,(B.BaseType (rebaseb), iibaseb) in
 	fullType fta ftb >>= (fun fta (_,tb) ->
 	  (match A.unwrap fta,tb with
-	    A.Type(_,basea), (B.BaseType baseb, ii) ->
+	    A.Type(_,_,basea), (B.BaseType baseb, ii) ->
 	      return (
 	      (rebuilda (basea, signaopt)) +> A.rewrap ta,
 	      (B.BaseType (baseb), iisignbopt ++ ii)
@@ -3051,7 +3058,7 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
 		the part that matched *)
 	     let rec loop s =
 	       match A.unwrap s with
-		 A.Type(None,ty) ->
+		 A.Type(allminus,None,ty) ->
 		   (match A.unwrap ty with
 		     A.StructUnionName(sua, None) ->
 		       (match (term sua, sub) with
@@ -3061,7 +3068,7 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
 		       (fun _ _ ->
 			 tokenf sua iisub >>= (fun sua iisub ->
 			   let ty =
-			     A.Type(None,
+			     A.Type(allminus,None,
 				    A.StructUnionName(sua, None) +> A.rewrap ty)
 			       +> A.rewrap s in
 			   return (ty,[iisub])))
@@ -3155,12 +3162,13 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
 		the part that matched *)
 	     let rec loop s =
 	       match A.unwrap s with
-		 A.Type(None,ty) ->
+		 A.Type(allminus,None,ty) ->
 		   (match A.unwrap ty with
 		     A.EnumName(sua, None) ->
 		       tokenf sua iisub >>= (fun sua iisub ->
 			 let ty =
-			   A.Type(None,A.EnumName(sua, None) +> A.rewrap ty)
+			   A.Type(allminus,None,A.EnumName(sua, None) +>
+				  A.rewrap ty)
 			     +> A.rewrap s in
 			 return (ty,[iisub]))
 		   | _ -> fail)

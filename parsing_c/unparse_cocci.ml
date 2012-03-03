@@ -452,7 +452,7 @@ and constant = function
 
 and fullType ft =
   match Ast.unwrap ft with
-    Ast.Type(cv,ty) -> print_option_space (mcode const_vol) cv; typeC ty
+    Ast.Type(_,cv,ty) -> print_option_space (mcode const_vol) cv; typeC ty
   | Ast.AsType(ty, asty) -> fullType ty
   | Ast.DisjType _ -> failwith "can't be in plus"
   | Ast.OptType(_) | Ast.UniqueType(_) ->
@@ -548,7 +548,7 @@ and storage = function
 
 and print_named_type ty id =
   match Ast.unwrap ty with
-    Ast.Type(None,ty1) ->
+    Ast.Type(_,None,ty1) ->
       (match Ast.unwrap ty1 with
 	Ast.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
 	  print_function_pointer (ty,lp1,star,rp1,lp2,params,rp2)
@@ -561,7 +561,7 @@ and print_named_type ty id =
 	    match Ast.unwrap ty with
 	      Ast.Array(ty,lb,size,rb) ->
 		(match Ast.unwrap ty with
-		  Ast.Type(None,ty) ->
+		  Ast.Type(_,None,ty) ->
 		    loop ty
 		      (function _ ->
 			k ();
@@ -584,7 +584,7 @@ and ty_space ty =
 
 and ft_space ty =
   match Ast.unwrap ty with
-    Ast.Type(cv,ty) ->
+    Ast.Type(_,cv,ty) ->
       (match Ast.unwrap ty with
 	Ast.Pointer(_,_) -> ()
       | Ast.MetaType(name,_,_) ->
@@ -636,6 +636,12 @@ and declaration d =
       ident name; mcode print_string_box lp;
       dots (function _ -> ()) expression args;
       close_box(); mcode print_string rp; mcode print_string sem
+  | Ast.MacroDeclInit(name,lp,args,rp,eq,ini,sem) ->
+      ident name; mcode print_string_box lp;
+      dots (function _ -> ()) expression args;
+      close_box(); mcode print_string rp;
+      pr_space(); mcode print_string eq;
+      pr_space(); initialiser true ini; mcode print_string sem
   | Ast.TyDecl(ty,sem) -> fullType ty; mcode print_string sem
   | Ast.Typedef(stg,ty,id,sem) ->
       mcode print_string stg;

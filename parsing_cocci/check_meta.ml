@@ -235,10 +235,10 @@ and declaration context old_metas table minus d =
       check_table table minus name
   | Ast0.AsDecl(decl,asdecl) -> failwith "not generated yet"
   | Ast0.Init(stg,ty,id,eq,ini,sem) ->
+      typeC old_metas table minus ty;
+      ident context old_metas table minus id;
       (match Ast0.unwrap ini with
 	Ast0.InitExpr exp ->
-	  typeC old_metas table minus ty;
-	  ident context old_metas table minus id;
 	  expression ID old_metas table minus exp
       |	_ ->
 	  (*
@@ -246,14 +246,18 @@ and declaration context old_metas table minus d =
 	  then
 	    failwith "complex initializer specification not allowed in - code"
 	  else*)
-	    (typeC old_metas table minus ty;
-	     ident context old_metas table minus id;
-	     initialiser old_metas table minus ini))
+	    initialiser old_metas table minus ini)
   | Ast0.UnInit(stg,ty,id,sem) ->
       typeC old_metas table minus ty; ident context old_metas table minus id
   | Ast0.MacroDecl(name,lp,args,rp,sem) ->
       ident GLOBAL old_metas table minus name;
       dots (expression ID old_metas table minus) args
+  | Ast0.MacroDeclInit(name,lp,args,rp,eq,ini,sem) ->
+      ident GLOBAL old_metas table minus name;
+      dots (expression ID old_metas table minus) args;
+      (match Ast0.unwrap ini with
+	Ast0.InitExpr exp -> expression ID old_metas table minus exp
+      |	_ -> initialiser old_metas table minus ini)
   | Ast0.TyDecl(ty,sem) -> typeC old_metas table minus ty
   | Ast0.Typedef(stg,ty,id,sem) ->
       typeC old_metas table minus ty;

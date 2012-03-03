@@ -52,6 +52,7 @@ let dumb_astcocci_decl = function
  | A.Init (stg, typa, sa, _, expa, _) -> ()
  | A.TyDecl (typa, _)     -> ()
  | A.MacroDecl(fn, _, eas, _, _) -> ()
+ | A.MacroDeclInit(fn, _, eas, _, _, _, _) -> ()
  | A.Ddots(dots,whencode) -> ()
  | A.MetaDecl _ -> ()
  | A.MetaField _ -> ()
@@ -61,10 +62,11 @@ let dumb_astcocci_decl = function
  | A.DisjDecl xs -> ()
  | A.OptDecl _ | A.UniqueDecl _ -> ()
 
-let dumb_astcocci_initialiser = function
+let dumb_astcocci_initialiser = function (* seems same as the above *)
     A.Init(stg,ty,id,eq,ini,sem) -> ()
   | A.UnInit(stg,ty,id,sem) -> ()
   | A.MacroDecl(fn, _, eas, _, _) -> ()
+  | A.MacroDeclInit(fn, _, eas, _, _, _, _) -> ()
   | A.TyDecl(ty,sem) -> ()
   | A.Typedef(d,ty1,ty2,pv) -> ()
   | A.DisjDecl(decls) -> ()
@@ -114,7 +116,7 @@ let dumb_astcocci_expr = function
  | A.OptExp _ -> ()
 
 let dumb_astcocci_fulltype = function
-    A.Type(cv,ty) -> ()
+    A.Type(_,cv,ty) -> ()
   | A.AsType(_,_) -> ()
   | A.DisjType(types) -> ()
   | A.OptType(ty) -> ()

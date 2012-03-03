@@ -56,6 +56,9 @@ let rec right_decl d =
   | Ast0.MacroDecl(name,lp,args,rp,sem) ->
       call_right right_mcode sem d
 	(function sem -> Ast0.MacroDecl(name,lp,args,rp,sem))
+  | Ast0.MacroDeclInit(name,lp,args,rp,eq,ini,sem) ->
+      call_right right_mcode sem d
+	(function sem -> Ast0.MacroDeclInit(name,lp,args,rp,eq,ini,sem))
   | Ast0.TyDecl(ty,sem) ->
       call_right right_mcode sem d
 	(function sem -> Ast0.TyDecl(ty,sem))
@@ -259,6 +262,9 @@ let rec left_decl decl =
   | Ast0.MacroDecl(name,lp,args,rp,sem) ->
       call_right left_ident name decl
 	(function name -> Ast0.MacroDecl(name,lp,args,rp,sem))
+  | Ast0.MacroDeclInit(name,lp,args,rp,eq,ini,sem) ->
+      call_right left_ident name decl
+	(function name -> Ast0.MacroDeclInit(name,lp,args,rp,eq,ini,sem))
   | Ast0.TyDecl(ty,sem) ->
       call_right left_ty ty decl (function ty -> Ast0.TyDecl(ty,sem))
   | Ast0.Typedef(stg,ty,id,sem) ->

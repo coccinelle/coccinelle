@@ -336,6 +336,13 @@ and declaration d =
 	  ident name; mcode print_string_box lp;
 	  let _ = dots (function _ -> ()) expression args in
 	  close_box(); mcode print_string rp; mcode print_string sem
+      | Ast0.MacroDeclInit(name,lp,args,rp,eq,ini,sem) ->
+	  ident name; mcode print_string_box lp;
+	  let _ = dots (function _ -> ()) expression args in
+	  close_box(); mcode print_string rp;
+          print_string " ";
+          mcode print_string eq; print_string " "; initialiser ini;
+	  mcode print_string sem
       | Ast0.TyDecl(ty,sem) -> typeC ty; mcode print_string sem
       | Ast0.Typedef(stg,ty,id,sem) ->
 	  mcode print_string stg; typeC ty; typeC id;

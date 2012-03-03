@@ -421,7 +421,7 @@ let mk_paramdots x = Ast.ParamDotsTag (Ast0toast.parameter_list x)
 let mk_stmtdots x  = Ast.StmtDotsTag (Ast0toast.statement_dots x)
 let mk_decldots x  = Ast.DeclDotsTag (Ast0toast.declaration_dots x)
 let mk_casedots x  = failwith "+ case lines not supported"
-let mk_typeC x     = Ast.FullTypeTag (Ast0toast.typeC x)
+let mk_typeC x     = Ast.FullTypeTag (Ast0toast.typeC false x)
 let mk_init x      = Ast.InitTag (Ast0toast.initialiser x)
 let mk_param x     = Ast.ParamTag (Ast0toast.parameterTypeDef x)
 

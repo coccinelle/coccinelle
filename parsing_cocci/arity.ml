@@ -507,13 +507,26 @@ and declaration tgt decl =
       make_decl decl tgt arity (Ast0.UnInit(stg,ty,id,sem))
   | Ast0.MacroDecl(name,lp,args,rp,sem) ->
       let arity =
-	all_same true tgt (mcode2line lp) (List.map mcode2arity [lp;rp;sem]) in
+	all_same true tgt (mcode2line lp)
+	  (List.map mcode2arity [lp;rp;sem]) in
       let name = ident false arity name in
       let lp = mcode lp in
       let args = dots (expression arity) args in
       let rp = mcode rp in
       let sem = mcode sem in
       make_decl decl tgt arity (Ast0.MacroDecl(name,lp,args,rp,sem))
+  | Ast0.MacroDeclInit(name,lp,args,rp,eq,ini,sem) ->
+      let arity =
+	all_same true tgt (mcode2line lp)
+	  (List.map mcode2arity [lp;rp;eq;sem]) in
+      let name = ident false arity name in
+      let lp = mcode lp in
+      let args = dots (expression arity) args in
+      let rp = mcode rp in
+      let ini = initialiser arity ini in
+      let sem = mcode sem in
+      make_decl decl tgt arity
+	(Ast0.MacroDeclInit(name,lp,args,rp,eq,ini,sem))
   | Ast0.TyDecl(ty,sem) ->
       let arity =
 	all_same true tgt (mcode2line sem) [mcode2arity sem] in

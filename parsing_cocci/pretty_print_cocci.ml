@@ -332,7 +332,7 @@ and storage = function
 
 and fullType ft =
   match Ast.unwrap ft with
-    Ast.Type(cv,ty) ->
+    Ast.Type(_,cv,ty) ->
       print_option (function x -> mcode const_vol x; print_string " ") cv;
       typeC ty
   | Ast.AsType(ty,asty) -> fullType ty; print_string "@"; fullType asty
@@ -423,7 +423,7 @@ and const_vol = function
 
 and print_named_type ty id =
   match Ast.unwrap ty with
-    Ast.Type(None,ty1) ->
+    Ast.Type(_,None,ty1) ->
       (match Ast.unwrap ty1 with
 	Ast.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
 	  print_function_pointer (ty,lp1,star,rp1,lp2,params,rp2)
@@ -436,7 +436,7 @@ and print_named_type ty id =
 	    match Ast.unwrap ty with
 	      Ast.Array(ty,lb,size,rb) ->
 		(match Ast.unwrap ty with
-		  Ast.Type(None,ty) ->
+		  Ast.Type(_,None,ty) ->
 		    loop ty
 		      (function _ ->
 			k ();
@@ -467,6 +467,12 @@ and declaration d =
       ident name; mcode print_string_box lp;
       dots (function _ -> ()) expression args;
       close_box(); mcode print_string rp; mcode print_string sem
+  | Ast.MacroDeclInit(name,lp,args,rp,eq,ini,sem) ->
+      ident name; mcode print_string_box lp;
+      dots (function _ -> ()) expression args;
+      close_box(); mcode print_string rp;
+      print_string " "; mcode print_string eq;
+      print_string " "; initialiser ini; mcode print_string sem
   | Ast.TyDecl(ty,sem) -> fullType ty; mcode print_string sem
   | Ast.Typedef(stg,ty,id,sem) ->
       mcode print_string stg; print_string " "; fullType ty; typeC id;

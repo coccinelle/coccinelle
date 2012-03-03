@@ -188,6 +188,7 @@ and left_declaration d =
   | Ast0.UnInit(Some stg,ty,id,sem) -> modif_before_mcode stg
   | Ast0.UnInit(None,ty,id,sem) -> left_typeC ty
   | Ast0.MacroDecl(name,lp,args,rp,sem) -> left_ident name
+  | Ast0.MacroDeclInit(name,lp,args,rp,eq,ini,sem) -> left_ident name
   | Ast0.TyDecl(ty,sem) -> left_typeC ty
   | Ast0.Typedef(stg,ty,id,sem) -> modif_before_mcode stg
   | Ast0.DisjDecl(_,decls,_,_) -> List.exists left_declaration decls
@@ -205,6 +206,7 @@ and right_declaration d =
   | Ast0.Init(_,ty,id,eq,ini,sem) -> modif_after_mcode sem
   | Ast0.UnInit(_,ty,id,sem) -> modif_after_mcode sem
   | Ast0.MacroDecl(name,lp,args,rp,sem) -> modif_after_mcode sem
+  | Ast0.MacroDeclInit(name,lp,args,rp,eq,ini,sem) -> modif_after_mcode sem
   | Ast0.TyDecl(ty,sem) -> modif_after_mcode sem
   | Ast0.Typedef(stg,ty,id,sem) -> modif_after_mcode sem
   | Ast0.DisjDecl(_,decls,_,_) -> List.exists right_declaration decls

@@ -424,14 +424,19 @@ and expression e =
     | Ast0.RecordPtAccess(exp,ar,field) ->
 	Ast.RecordPtAccess(expression exp,mcode ar,ident field)
     | Ast0.Cast(lp,ty,rp,exp) ->
-	Ast.Cast(mcode lp,typeC ty,mcode rp,expression exp)
+	let allminus = check_allminus.VT0.combiner_rec_expression e in
+	Ast.Cast(mcode lp,typeC allminus ty,mcode rp,expression exp)
     | Ast0.SizeOfExpr(szf,exp) ->
 	Ast.SizeOfExpr(mcode szf,expression exp)
     | Ast0.SizeOfType(szf,lp,ty,rp) ->
-	Ast.SizeOfType(mcode szf, mcode lp,typeC ty,mcode rp)
-    | Ast0.TypeExp(ty) -> Ast.TypeExp(typeC ty)
+	let allminus = check_allminus.VT0.combiner_rec_expression e in
+	Ast.SizeOfType(mcode szf, mcode lp,typeC allminus ty,mcode rp)
+    | Ast0.TypeExp(ty) ->
+	let allminus = check_allminus.VT0.combiner_rec_expression e in
+	Ast.TypeExp(typeC allminus ty)
     | Ast0.Constructor(lp,ty,rp,init) ->
-	Ast.Constructor(mcode lp,typeC ty,mcode rp,initialiser init)
+	let allminus = check_allminus.VT0.combiner_rec_expression e in
+	Ast.Constructor(mcode lp,typeC allminus ty,mcode rp,initialiser init)
     | Ast0.MetaErr(name,cstrts,_)  ->
 	  Ast.MetaErr(mcode name,constraints cstrts,unitary,false)
     | Ast0.MetaExpr(name,cstrts,ty,form,_)  ->
@@ -483,7 +488,7 @@ and do_lenname = function
 
 and rewrap_iso t t1 = rewrap t (do_isos (Ast0.get_iso t)) t1
 
-and typeC t =
+and typeC allminus t =
   rewrap t (do_isos (Ast0.get_iso t))
     (match Ast0.unwrap t with
       Ast0.ConstVol(cv,ty) ->
@@ -498,7 +503,8 @@ and typeC t =
 	  List.map
 	    (function ty ->
 	      Ast.Type
-		(Some (mcode cv),rewrap_iso ty (base_typeC ty)))
+		(allminus, Some (mcode cv),
+		 rewrap_iso ty (base_typeC allminus ty)))
 	    (collect_disjs ty) in
 	(* one could worry that isos are lost because we flatten the
 	   disjunctions.  but there should not be isos on the disjunctions
@@ -511,39 +517,43 @@ and typeC t =
     | Ast0.Array(_,_,_,_) | Ast0.EnumName(_,_) | Ast0.StructUnionName(_,_)
     | Ast0.StructUnionDef(_,_,_,_) | Ast0.EnumDef(_,_,_,_)
     | Ast0.TypeName(_) | Ast0.MetaType(_,_) ->
-	Ast.Type(None,rewrap t no_isos (base_typeC t))
-    | Ast0.DisjType(_,types,_,_) -> Ast.DisjType(List.map typeC types)
-    | Ast0.AsType(ty,asty) -> Ast.AsType(typeC ty,typeC asty)
-    | Ast0.OptType(ty) -> Ast.OptType(typeC ty)
-    | Ast0.UniqueType(ty) -> Ast.UniqueType(typeC ty))
+	Ast.Type(allminus,None,rewrap t no_isos (base_typeC allminus t))
+    | Ast0.DisjType(_,types,_,_) ->
+	Ast.DisjType(List.map (typeC allminus) types)
+    | Ast0.AsType(ty,asty) ->
+	Ast.AsType(typeC allminus ty,typeC allminus asty)
+    | Ast0.OptType(ty) -> Ast.OptType(typeC allminus ty)
+    | Ast0.UniqueType(ty) -> Ast.UniqueType(typeC allminus ty))
 
-and base_typeC t =
+and base_typeC allminus t =
   match Ast0.unwrap t with
     Ast0.BaseType(ty,strings) -> Ast.BaseType(ty,List.map mcode strings)
   | Ast0.Signed(sgn,ty) ->
-      Ast.SignedT(mcode sgn,
-		  get_option (function x -> rewrap_iso x (base_typeC x)) ty)
-  | Ast0.Pointer(ty,star) -> Ast.Pointer(typeC ty,mcode star)
+      Ast.SignedT
+	(mcode sgn,
+	 get_option (function x -> rewrap_iso x (base_typeC allminus x)) ty)
+  | Ast0.Pointer(ty,star) -> Ast.Pointer(typeC allminus ty,mcode star)
   | Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
       Ast.FunctionPointer
-	(typeC ty,mcode lp1,mcode star,mcode rp1,
+	(typeC allminus ty,mcode lp1,mcode star,mcode rp1,
 	 mcode lp2,parameter_list params,mcode rp2)
   | Ast0.FunctionType(ret,lp,params,rp) ->
       let allminus = check_allminus.VT0.combiner_rec_typeC t in
       Ast.FunctionType
-	(allminus,get_option typeC ret,mcode lp,
+	(allminus,get_option (typeC allminus) ret,mcode lp,
 	 parameter_list params,mcode rp)
   | Ast0.Array(ty,lb,size,rb) ->
-      Ast.Array(typeC ty,mcode lb,get_option expression size,mcode rb)
+      Ast.Array(typeC allminus ty,mcode lb,get_option expression size,
+		mcode rb)
   | Ast0.EnumName(kind,name) ->
       Ast.EnumName(mcode kind,get_option ident name)
   | Ast0.EnumDef(ty,lb,ids,rb) ->
       let ids = add_exp_comma ids in
-      Ast.EnumDef(typeC ty,mcode lb,dots expression ids,mcode rb)
+      Ast.EnumDef(typeC allminus ty,mcode lb,dots expression ids,mcode rb)
   | Ast0.StructUnionName(kind,name) ->
       Ast.StructUnionName(mcode kind,get_option ident name)
   | Ast0.StructUnionDef(ty,lb,decls,rb) ->
-      Ast.StructUnionDef(typeC ty,mcode lb,
+      Ast.StructUnionDef(typeC allminus ty,mcode lb,
 			 dots declaration decls,
 			 mcode rb)
   | Ast0.TypeName(name) -> Ast.TypeName(mcode name)
@@ -566,8 +576,9 @@ and declaration d =
     | Ast0.AsDecl(decl,asdecl) ->
 	Ast.AsDecl(declaration decl,declaration asdecl)
     | Ast0.Init(stg,ty,id,eq,ini,sem) ->
+	let allminus = check_allminus.VT0.combiner_rec_declaration d in
 	let stg = get_option mcode stg in
-	let ty = typeC ty in
+	let ty = typeC allminus ty in
 	let id = ident id in
 	let eq = mcode eq in
 	let ini = initialiser ini in
@@ -580,13 +591,17 @@ and declaration d =
 	    Ast.UnInit(get_option mcode stg,
 		       rewrap ty (do_isos (Ast0.get_iso ty))
 			 (Ast.Type
-			    (None,
+			    (allminus,None,
 			     rewrap ty no_isos
 			       (Ast.FunctionType
-				  (allminus,get_option typeC tyx,mcode lp1,
+				  (allminus,get_option (typeC allminus) tyx,
+				   mcode lp1,
 				   parameter_list params,mcode rp1)))),
 		       ident id,mcode sem)
-	| _ -> Ast.UnInit(get_option mcode stg,typeC ty,ident id,mcode sem))
+	| _ ->
+	    let allminus = check_allminus.VT0.combiner_rec_declaration d in
+	    Ast.UnInit(get_option mcode stg,typeC allminus ty,ident id,
+		       mcode sem))
     | Ast0.MacroDecl(name,lp,args,rp,sem) ->
 	let name = ident name in
 	let lp = mcode lp in
@@ -594,12 +609,24 @@ and declaration d =
 	let rp = mcode rp in
 	let sem = mcode sem in
 	Ast.MacroDecl(name,lp,args,rp,sem)
-    | Ast0.TyDecl(ty,sem) -> Ast.TyDecl(typeC ty,mcode sem)
+    | Ast0.MacroDeclInit(name,lp,args,rp,eq,ini,sem) ->
+	let name = ident name in
+	let lp = mcode lp in
+	let args = dots expression args in
+	let rp = mcode rp in
+	let eq = mcode eq in
+	let ini = initialiser ini in
+	let sem = mcode sem in
+	Ast.MacroDeclInit(name,lp,args,rp,eq,ini,sem)
+    | Ast0.TyDecl(ty,sem) ->
+	let allminus = check_allminus.VT0.combiner_rec_declaration d in
+	Ast.TyDecl(typeC allminus ty,mcode sem)
     | Ast0.Typedef(stg,ty,id,sem) ->
-	let id = typeC id in
+	let allminus = check_allminus.VT0.combiner_rec_declaration d in
+	let id = typeC allminus id in
 	(match Ast.unwrap id with
-	  Ast.Type(None,id) -> (* only MetaType or Id *)
-	    Ast.Typedef(mcode stg,typeC ty,id,mcode sem)
+	  Ast.Type(_,None,id) -> (* only MetaType or Id *)
+	    Ast.Typedef(mcode stg,typeC allminus ty,id,mcode sem)
 	| _ -> failwith "bad typedef")
     | Ast0.DisjDecl(_,decls,_,_) -> Ast.DisjDecl(List.map declaration decls)
     | Ast0.Ddots(dots,whencode) ->
@@ -701,8 +728,10 @@ and designator = function
 and parameterTypeDef p =
   rewrap p no_isos
     (match Ast0.unwrap p with
-      Ast0.VoidParam(ty) -> Ast.VoidParam(typeC ty)
-    | Ast0.Param(ty,id) -> Ast.Param(typeC ty,get_option ident id)
+      Ast0.VoidParam(ty) -> Ast.VoidParam(typeC false ty)
+    | Ast0.Param(ty,id) ->
+	let allminus = check_allminus.VT0.combiner_rec_parameter p in
+	Ast.Param(typeC allminus ty,get_option ident id)
     | Ast0.MetaParam(name,_) ->
 	Ast.MetaParam(mcode name,unitary,false)
     | Ast0.MetaParamList(name,lenname,_) ->
@@ -841,7 +870,8 @@ and statement s =
       | Ast0.TopInit(init) ->
 	  Ast.Atomic(rewrap_rule_elem s (Ast.TopInit(initialiser init)))
       | Ast0.Ty(ty) ->
-	  Ast.Atomic(rewrap_rule_elem s (Ast.Ty(typeC ty)))
+	  let allminus = check_allminus.VT0.combiner_rec_statement s in
+	  Ast.Atomic(rewrap_rule_elem s (Ast.Ty(typeC allminus ty)))
       | Ast0.Disj(_,rule_elem_dots_list,_,_) ->
 	  Ast.Disj(List.map (function x -> statement_dots seqible x)
 		     rule_elem_dots_list)
@@ -1020,7 +1050,7 @@ and statement s =
 
 and fninfo = function
     Ast0.FStorage(stg) -> Ast.FStorage(mcode stg)
-  | Ast0.FType(ty) -> Ast.FType(typeC ty)
+  | Ast0.FType(ty) -> Ast.FType(typeC false ty)
   | Ast0.FInline(inline) -> Ast.FInline(mcode inline)
   | Ast0.FAttr(attr) -> Ast.FAttr(mcode attr)
 
@@ -1064,7 +1094,7 @@ and anything = function
   | Ast0.ExprTag(d) -> Ast.ExpressionTag(expression d)
   | Ast0.ArgExprTag(d) | Ast0.TestExprTag(d) ->
      failwith "only in isos, not converted to ast"
-  | Ast0.TypeCTag(d) -> Ast.FullTypeTag(typeC d)
+  | Ast0.TypeCTag(d) -> Ast.FullTypeTag(typeC false d)
   | Ast0.ParamTag(d) -> Ast.ParamTag(parameterTypeDef d)
   | Ast0.InitTag(d) -> Ast.InitTag(initialiser d)
   | Ast0.DeclTag(d) -> Ast.DeclarationTag(declaration d)

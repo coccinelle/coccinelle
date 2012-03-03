@@ -1204,8 +1204,8 @@ decl_var:
 	      P.make_cv cv (Ast0.wrap (Ast0.TypeName(P.id2mcode i))) in
 	    Ast0.wrap(Ast0.UnInit(s,fn idtype,id,P.clt2mcode ";" pv)))
 	  d }
-  | s=ioption(storage) cv=ioption(const_vol) i=pure_ident_or_symbol d=d_ident q=TEq
-      e=initialize pv=TPtVirg
+  | s=ioption(storage) cv=ioption(const_vol) i=pure_ident_or_symbol
+      d=d_ident q=TEq e=initialize pv=TPtVirg
       { let (id,fn) = d in
       !Data.add_type_name (P.id2name i);
       let idtype = P.make_cv cv (Ast0.wrap (Ast0.TypeName(P.id2mcode i))) in
@@ -1226,6 +1226,12 @@ decl_var:
   | decl_ident TOPar eexpr_list_option TCPar TPtVirg
       { [Ast0.wrap(Ast0.MacroDecl($1,P.clt2mcode "(" $2,$3,
 				  P.clt2mcode ")" $4,P.clt2mcode ";" $5))] }
+  | decl_ident TOPar eexpr_list_option TCPar q=TEq e=initialize TPtVirg
+      { [Ast0.wrap
+	    (Ast0.MacroDeclInit
+	       ($1,P.clt2mcode "(" $2,$3,
+		P.clt2mcode ")" $4,P.clt2mcode "=" q,e,
+		P.clt2mcode ";" $7))] }
   | s=ioption(storage)
     t=ctype lp1=TOPar st=TMul d=d_ident rp1=TCPar
     lp2=TOPar p=decl_list(name_opt_decl) rp2=TCPar
@@ -1261,8 +1267,8 @@ one_decl_var:
       { let (id,fn) = d in
         let idtype = P.make_cv cv (Ast0.wrap (Ast0.TypeName(P.id2mcode i))) in
 	Ast0.wrap(Ast0.UnInit(s,fn idtype,id,P.clt2mcode ";" pv)) }
-  | s=ioption(storage) cv=ioption(const_vol) i=pure_ident_or_symbol d=d_ident q=TEq
-      e=initialize pv=TPtVirg
+  | s=ioption(storage) cv=ioption(const_vol) i=pure_ident_or_symbol
+      d=d_ident q=TEq e=initialize pv=TPtVirg
       { let (id,fn) = d in
       !Data.add_type_name (P.id2name i);
       let idtype = P.make_cv cv (Ast0.wrap (Ast0.TypeName(P.id2mcode i))) in
@@ -1283,6 +1289,12 @@ one_decl_var:
   | decl_ident TOPar eexpr_list_option TCPar TPtVirg
       { Ast0.wrap(Ast0.MacroDecl($1,P.clt2mcode "(" $2,$3,
 				  P.clt2mcode ")" $4,P.clt2mcode ";" $5)) }
+  | decl_ident TOPar eexpr_list_option TCPar q=TEq e=initialize TPtVirg
+      { Ast0.wrap
+            (Ast0.MacroDeclInit
+               ($1,P.clt2mcode "(" $2,$3,
+                P.clt2mcode ")" $4,P.clt2mcode "=" q,e,
+                P.clt2mcode ";" $7)) }
   | s=ioption(storage)
     t=ctype lp1=TOPar st=TMul d=d_ident rp1=TCPar
     lp2=TOPar p=decl_list(name_opt_decl) rp2=TCPar
