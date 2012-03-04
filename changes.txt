@@ -159,6 +159,7 @@
   Thanks to Terry Wilson for reporting the problem.
 - Keep inherited metavariables in asttomember (preprocessing for matching)
 - allminus for types, to allow removing const, not just matching it
+- improved pretty printing when something is added before a closed brace
 
 * 0.2.5
 ** Language:
