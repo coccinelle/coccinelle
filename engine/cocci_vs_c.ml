@@ -531,6 +531,7 @@ let one_initialisation_to_affectation x =
 let initialisation_to_affectation decl =
   match decl with
   | B.MacroDecl _ -> F.Decl decl
+  | B.MacroDeclInit _ -> F.Decl decl (* not sure... *)
   | B.DeclList (xs, iis) ->
 
       (* todo?: should not do that if the variable is an array cos
@@ -1859,9 +1860,37 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
 		  )))))))
       | _ -> fail)
 
-  | A.MacroDeclInit (sa,lpa,eas,rpa,weqa,inia,enda), _ ->
-      failwith "TODO - macro decl init not supported by the C parser???"
-  | _, (B.MacroDecl _ |B.DeclList _) ->      fail
+  | A.MacroDeclInit (sa,lpa,eas,rpa,weqa,inia,enda),
+      B.MacroDeclInit ((sb,ebs,inib),ii) ->
+      let (iisb, lpb, rpb, weqb, iiendb, iifakestart, iistob) =
+        (match ii with
+        |  iisb::lpb::rpb::weqb::iiendb::iifakestart::iisto ->
+            (iisb,lpb,rpb,weqb,iiendb, iifakestart,iisto)
+        |  _ -> raise Impossible
+        ) in
+      (if allminus
+      then minusize_list iistob
+      else return ((), iistob)
+      ) >>= (fun () iistob ->
+
+        X.tokenf_mck mckstart iifakestart >>= (fun mckstart iifakestart ->
+        ident DontKnow sa (sb, iisb) >>= (fun sa (sb, iisb) ->
+        tokenf lpa lpb >>= (fun lpa lpb ->
+        tokenf rpa rpb >>= (fun rpa rpb ->
+        tokenf rpa rpb >>= (fun rpa rpb ->
+        tokenf weqa weqb >>= (fun weqa weqb ->
+        tokenf enda iiendb >>= (fun enda iiendb ->
+        arguments (seqstyle eas) (A.undots eas) ebs >>= (fun easundots ebs ->
+	initialiser inia inib >>= (fun inia inib ->
+        let eas = redots eas easundots in
+
+          return (
+            (mckstart, allminus,
+            (A.MacroDecl (sa,lpa,eas,rpa,enda)) +> A.rewrap decla),
+            (B.MacroDecl ((sb,ebs,true),
+                         [iisb;lpb;rpb;iiendb;iifakestart] ++ iistob))
+          )))))))))))
+  | _, (B.MacroDecl _ |B.MacroDeclInit _ |B.DeclList _) ->      fail
 
 
 and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->

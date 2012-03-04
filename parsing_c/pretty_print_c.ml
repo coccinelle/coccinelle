@@ -920,8 +920,25 @@ let mk_pretty_printers
 
 	pr_elem rp;
 
-    | (DeclList (_, _) | (MacroDecl _)) -> raise Impossible
+    | MacroDeclInit
+	((s, es, ini), iis::lp::rp::eq::iiend::ifakestart::iisto) ->
+	pr_elem ifakestart;
+	iisto +> List.iter pr_elem; (* static and const *)
+	pr_elem iis;
+	pr_elem lp;
+	es +> List.iter (fun (e, opt) ->
+          assert (List.length opt <= 1);
+          opt +> List.iter pr_elem;
+          pp_argument e;
+	);
 
+	pr_elem rp;
+	pr_elem eq;
+	pp_init ini;
+	pr_elem iiend;
+
+    | (DeclList (_, _) | (MacroDecl _) | (MacroDeclInit _)) ->
+	raise Impossible
 
 (* ---------------------- *)
 and pp_init (init, iinit) =

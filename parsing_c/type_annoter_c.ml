@@ -1132,7 +1132,7 @@ let rec visit_toplevel ~just_add_in_env ~depth elem =
                   end
             );
           );
-      | MacroDecl _ ->
+      | MacroDecl _ | MacroDeclInit _ ->
           if need_annotate_body
           then k d
       );

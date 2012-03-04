@@ -517,6 +517,8 @@ and declaration =
   (* cppext: *)
     (* bool is true if there is a ; at the end *)
   | MacroDecl of (string * argument wrap2 list * bool) wrap (* fakestart *)
+  | MacroDeclInit of
+      (string * argument wrap2 list * initialiser) wrap (* fakestart *)
 
      and onedecl =
        { v_namei: (name * v_init) option;

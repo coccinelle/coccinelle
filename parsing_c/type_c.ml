@@ -243,7 +243,7 @@ let type_of_decl decl =
           (* TODO normalize ? what if nested structure definition ? *)
           v_type
       )
-  | Ast_c.MacroDecl _ ->
+  | Ast_c.MacroDecl _ | Ast_c.MacroDeclInit _ ->
       pr2_once "not handling MacroDecl type yet";
       raise Todo
 
@@ -268,7 +268,7 @@ let structdef_of_decl decl =
           | _ -> raise Impossible
           )
       )
-  | Ast_c.MacroDecl _ -> raise Impossible
+  | Ast_c.MacroDecl _ | Ast_c.MacroDeclInit _ -> raise Impossible
 
 
 

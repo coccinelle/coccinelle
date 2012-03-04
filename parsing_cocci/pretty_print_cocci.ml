@@ -436,7 +436,10 @@ and print_named_type ty id =
 	    match Ast.unwrap ty with
 	      Ast.Array(ty,lb,size,rb) ->
 		(match Ast.unwrap ty with
-		  Ast.Type(_,None,ty) ->
+		  Ast.Type(_,cv,ty) ->
+		    print_option
+		      (function x -> mcode const_vol x; print_string " ")
+		      cv;
 		    loop ty
 		      (function _ ->
 			k ();

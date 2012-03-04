@@ -162,6 +162,7 @@
 - improved pretty printing when something is added before a closed brace
 - Allow matching on nameless structs.  Thanks to Ron Minnich for reporting
   the problem.
+- Pretty printing of const/volatile arrays in smpl code.
 
 * 0.2.5
 ** Language:
