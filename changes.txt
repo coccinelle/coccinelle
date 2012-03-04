@@ -160,6 +160,8 @@
 - Keep inherited metavariables in asttomember (preprocessing for matching)
 - allminus for types, to allow removing const, not just matching it
 - improved pretty printing when something is added before a closed brace
+- Allow matching on nameles structs.  Thanks to Ron Minnich for reporting
+  the problem.
 
 * 0.2.5
 ** Language:

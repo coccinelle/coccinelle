@@ -615,7 +615,7 @@ let rec ast0_type_to_type ty =
 	     "For type checking assuming the name of the metavariable is the name of the type\n";
 	   TC.EnumName(TC.MV(unwrap_mcode tag,TC.Unitary,false)))
       | _ -> failwith "unexpected enum type name")
-  | EnumName(su,None) -> failwith "nameless enum - what to do???"
+  | EnumName(su,None) -> TC.EnumName TC.NoName
   | EnumDef(ty,_,_,_) -> ast0_type_to_type ty
   | StructUnionName(su,Some tag) ->
       (match unwrap tag with
@@ -633,7 +633,7 @@ let rec ast0_type_to_type ty =
 	     perhaps polymorphism would help? *)
 	  failwith "constraints not supported on struct type name"
       | _ -> failwith "unexpected struct/union type name")
-  | StructUnionName(su,None) -> failwith "nameless structure - what to do???"
+  | StructUnionName(su,None) -> TC.StructUnionName(structUnion su,TC.NoName)
   | StructUnionDef(ty,_,_,_) -> ast0_type_to_type ty
   | TypeName(name) -> TC.TypeName(unwrap_mcode name)
   | MetaType(name,_) ->
