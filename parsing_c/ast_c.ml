@@ -517,6 +517,8 @@ and declaration =
   (* cppext: *)
     (* bool is true if there is a ; at the end *)
   | MacroDecl of (string * argument wrap2 list * bool) wrap (* fakestart *)
+  | MacroDeclInit of
+      (string * argument wrap2 list * initialiser) wrap (* fakestart *)
 
      and onedecl =
        { v_namei: (name * v_init) option;
@@ -1216,8 +1218,8 @@ let info_of_type ft =
   (* bugfix: because of string->name, the ii can be deeper *)
   let ii = get_local_ii_of_tybis_inlining_ii_of_name ty in
   match ii with
-  | ii::_ -> ii.pinfo
-  | [] -> failwith "type has no text; need to think again"
+  | ii::_ -> Some ii.pinfo
+  | [] -> None
 
 (* only Label and Goto have name *)
 let get_local_ii_of_st_inlining_ii_of_name st =

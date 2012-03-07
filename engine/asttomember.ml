@@ -81,9 +81,12 @@ let print_info = function
 
 (* --------------------------------------------------------------------- *)
 
-(* drop all distinguishing information from a term *)
-let strip =
-  let do_nothing r k e = Ast.make_term (Ast.unwrap (k e)) in
+(* drop all distinguishing information from a term except inherited
+   variables, which are used to improve efficiency of matching process *)
+let strip x =
+  let do_nothing r k e =
+    let inh = Ast.get_inherited e in
+    Ast.make_inherited_term (Ast.unwrap (k e)) inh in
   let do_absolutely_nothing r k e = k e in
   let mcode m = Ast.make_mcode(Ast.unwrap_mcode m) in
   let rule_elem r k re =
@@ -102,7 +105,7 @@ let strip =
       do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
       do_nothing rule_elem do_nothing do_nothing
       do_nothing do_absolutely_nothing in
-  recursor.V.rebuilder_rule_elem
+  recursor.V.rebuilder_rule_elem x
 
 (* --------------------------------------------------------------------- *)
 
@@ -132,9 +135,22 @@ let conj_wrapped x l = conj [List.map (function x -> (1,strip x)) x] l
 (* --------------------------------------------------------------------- *)
 (* the main translation loop *)
 
-let rule_elem re =
+let rec rule_elem re =
   match Ast.unwrap re with
-    Ast.DisjRuleElem(res) -> [[(List.length res,strip re)]]
+    Ast.DisjRuleElem(res) ->
+      (* why was the following done?  ors have to be kept together for
+	efficiency, so they are considered at once and not individually
+        anded with everything else *)
+      let re =
+	let all_inhs = List.map Ast.get_inherited res in
+	let inhs =
+	  List.fold_left
+	    (function prev ->
+	      function inh ->
+		Common.inter_set inh prev)
+	    (List.hd all_inhs) (List.tl all_inhs) in
+	Ast.make_inherited_term (Ast.unwrap re) inhs in
+      [[(List.length res,strip re)]]
   | _ -> [[(1,strip re)]]
 
 let conj_one testfn x l =
@@ -216,6 +232,11 @@ and statement testfn mcode tail stmt : 'a list list =
 
   | Ast.Define(header,body) ->
       conj_one testfn header (statement_list testfn mcode tail body)
+
+  | Ast.AsStmt(stm,asstm) ->
+      conj
+	(statement testfn mcode tail stm)
+	(statement testfn mcode tail asstm)
 
   | Ast.OptStm(stm) -> []
 

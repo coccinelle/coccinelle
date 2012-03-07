@@ -29,7 +29,7 @@ type info = { pos_info : position_info;
 	      isSymbolIdent : bool; (* is the token a symbol identifier or not *) }
 
 type 'a mcode =
-    'a * arity * info * mcodekind * meta_pos list ref (* pos, - only *) *
+    'a * arity * info * mcodekind * anything list ref (* pos, - only *) *
       int (* adjacency_index *)
 
 and 'a wrap =
@@ -91,6 +91,7 @@ and base_expression =
                       expression dots * string mcode (* ) *)
   | Assignment     of expression * Ast_cocci.assignOp mcode * expression *
 	              bool (* true if it can match an initialization *)
+  | Sequence       of expression * string mcode (* , *) * expression
   | CondExpr       of expression * string mcode (* ? *) * expression option *
 	              string mcode (* : *) * expression
   | Postfix        of expression * Ast_cocci.fixOp mcode
@@ -117,6 +118,7 @@ and base_expression =
 	              Type_cocci.typeC list option * Ast_cocci.form * pure
   | MetaExprList   of Ast_cocci.meta_name mcode (* only in arglists *) *
 	              listlen * pure
+  | AsExpr         of expression * expression (* as expr, always metavar *)
   | EComma         of string mcode (* only in arglists *)
   | DisjExpr       of string mcode * expression list * string mcode list *
 	              string mcode
@@ -165,6 +167,7 @@ and base_typeC =
 	string mcode (* { *) * declaration dots * string mcode (* } *)
   | TypeName        of string mcode
   | MetaType        of Ast_cocci.meta_name mcode * pure
+  | AsType          of typeC * typeC (* as type, always metavar *)
   | DisjType        of string mcode * typeC list * (* only after iso *)
                        string mcode list (* the |s *)  * string mcode
   | OptType         of typeC
@@ -181,6 +184,7 @@ and base_declaration =
     MetaDecl   of Ast_cocci.meta_name mcode * pure (* variables *)
   | MetaField  of Ast_cocci.meta_name mcode * pure (* structure fields *)
   | MetaFieldList of Ast_cocci.meta_name mcode * listlen * pure
+  | AsDecl        of declaration * declaration
   | Init       of Ast_cocci.storage mcode option * typeC * ident *
 	string mcode (*=*) * initialiser * string mcode (*;*)
   | UnInit     of Ast_cocci.storage mcode option * typeC * ident *
@@ -188,6 +192,9 @@ and base_declaration =
   | TyDecl of typeC * string mcode (* ; *)
   | MacroDecl of ident (* name *) * string mcode (* ( *) *
         expression dots * string mcode (* ) *) * string mcode (* ; *)
+  | MacroDeclInit of ident (* name *) * string mcode (* ( *) *
+        expression dots * string mcode (* ) *) * string mcode (*=*) *
+        initialiser * string mcode (* ; *)
   | Typedef of string mcode (* typedef *) * typeC * typeC * string mcode (*;*)
   | DisjDecl   of string mcode * declaration list * string mcode list *
 	          string mcode
@@ -203,6 +210,7 @@ and declaration = base_declaration wrap
 and base_initialiser =
     MetaInit of Ast_cocci.meta_name mcode * pure
   | MetaInitList of Ast_cocci.meta_name mcode * listlen * pure
+  | AsInit of initialiser * initialiser (* as init, always metavar *)
   | InitExpr of expression
   | InitList of string mcode (*{*) * initialiser_list * string mcode (*}*) *
 	bool (* true if ordered, false if unordered *)
@@ -308,6 +316,7 @@ and base_statement =
   | MetaStmt      of Ast_cocci.meta_name mcode * pure
   | MetaStmtList  of Ast_cocci.meta_name mcode (*only in statement lists*) *
 	             pure
+  | AsStmt        of statement * statement (* as statement, always metavar *)
   | Exp           of expression  (* only in dotted statement lists *)
   | TopExp        of expression (* for macros body *)
   | Ty            of typeC (* only at top level *)
@@ -399,6 +408,17 @@ and parsed_rule =
 
 (* --------------------------------------------------------------------- *)
 
+and dependency =
+    Dep of string (* rule applies for the current binding *)
+  | AntiDep of dependency (* rule doesn't apply for the current binding *)
+  | EverDep of string (* rule applies for some binding *)
+  | NeverDep of string (* rule never applies for any binding *)
+  | AndDep of dependency * dependency
+  | OrDep of dependency * dependency
+  | NoDep | FailDep
+
+(* --------------------------------------------------------------------- *)
+
 and anything =
     DotsExprTag of expression dots
   | DotsInitTag of initialiser dots
@@ -420,7 +440,8 @@ and anything =
   | IsoWhenTag of Ast_cocci.when_modifier (*only for when code, in iso phase*)
   | IsoWhenTTag of expression(*only for when code, in iso phase*)
   | IsoWhenFTag of expression(*only for when code, in iso phase*)
-  | MetaPosTag of meta_pos (* only in iso phase *)
+  | MetaPosTag of meta_pos
+  | HiddenVarTag of anything list (* in iso_compile/pattern only *)
 
 val dotsExpr : expression dots -> anything
 val dotsInit : initialiser dots -> anything
@@ -455,9 +476,9 @@ val unwrap_mcode : 'a mcode -> 'a
 val rewrap : 'a wrap -> 'b -> 'b wrap
 val rewrap_mcode : 'a mcode -> 'b -> 'b mcode
 val copywrap : 'a wrap -> 'b -> 'b wrap
-val get_pos : 'a mcode -> meta_pos list
-val get_pos_ref : 'a mcode -> meta_pos list ref
-val set_pos : meta_pos list -> 'a mcode -> 'a mcode
+val get_pos : 'a mcode -> anything list
+val get_pos_ref : 'a mcode -> anything list ref
+val set_pos : anything list -> 'a mcode -> 'a mcode
 val get_info : 'a wrap -> info
 val set_info : 'a wrap -> info -> 'a wrap
 val get_index : 'a wrap -> int
@@ -485,6 +506,8 @@ val set_mcode_data : 'a -> 'a mcode -> 'a mcode
 val make_mcode : 'a -> 'a mcode
 val make_mcode_info : 'a -> info -> 'a mcode
 val make_minus_mcode : 'a -> 'a mcode
+
+val meta_pos_name : anything -> Ast_cocci.meta_name mcode
 
 val ast0_type_to_type : typeC -> Type_cocci.typeC
 val reverse_type : Type_cocci.typeC -> base_typeC

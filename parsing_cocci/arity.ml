@@ -205,6 +205,12 @@ let rec top_expression opt_allowed tgt expr =
       let op = mcode op in
       let right = expression arity right in
       make_exp expr tgt arity (Ast0.Assignment(left,op,right,simple))
+  | Ast0.Sequence(left,op,right) ->
+      let arity = exp_same (mcode2line op) [mcode2arity op] in
+      let left = expression arity left in
+      let op = mcode op in
+      let right = expression arity right in
+      make_exp expr tgt arity (Ast0.Sequence(left,op,right))
   | Ast0.CondExpr(exp1,why,exp2,colon,exp3) ->
       let arity =
 	exp_same (mcode2line why) [mcode2arity why; mcode2arity colon] in
@@ -335,7 +341,7 @@ let rec top_expression opt_allowed tgt expr =
       let init = initialiser arity init in
       make_exp expr tgt arity (Ast0.Constructor(lp,ty,rp,init))
   (* why does optexp exist???? *)
-  | Ast0.OptExp(_) | Ast0.UniqueExp(_) ->
+  | Ast0.OptExp(_) | Ast0.UniqueExp(_) | Ast0.AsExpr _ ->
       failwith "unexpected code"
 
 and expression tgt exp = top_expression false tgt exp
@@ -448,7 +454,7 @@ and top_typeC tgt opt_allowed typ =
       |	_ -> ());
       let res = Ast0.DisjType(starter,types,mids,ender) in
       Ast0.rewrap typ res
-  | Ast0.OptType(_) | Ast0.UniqueType(_) ->
+  | Ast0.OptType(_) | Ast0.UniqueType(_) | Ast0.AsType _ ->
       failwith "unexpected code"
 
 and typeC tgt ty = top_typeC tgt false ty
@@ -501,13 +507,26 @@ and declaration tgt decl =
       make_decl decl tgt arity (Ast0.UnInit(stg,ty,id,sem))
   | Ast0.MacroDecl(name,lp,args,rp,sem) ->
       let arity =
-	all_same true tgt (mcode2line lp) (List.map mcode2arity [lp;rp;sem]) in
+	all_same true tgt (mcode2line lp)
+	  (List.map mcode2arity [lp;rp;sem]) in
       let name = ident false arity name in
       let lp = mcode lp in
       let args = dots (expression arity) args in
       let rp = mcode rp in
       let sem = mcode sem in
       make_decl decl tgt arity (Ast0.MacroDecl(name,lp,args,rp,sem))
+  | Ast0.MacroDeclInit(name,lp,args,rp,eq,ini,sem) ->
+      let arity =
+	all_same true tgt (mcode2line lp)
+	  (List.map mcode2arity [lp;rp;eq;sem]) in
+      let name = ident false arity name in
+      let lp = mcode lp in
+      let args = dots (expression arity) args in
+      let rp = mcode rp in
+      let ini = initialiser arity ini in
+      let sem = mcode sem in
+      make_decl decl tgt arity
+	(Ast0.MacroDeclInit(name,lp,args,rp,eq,ini,sem))
   | Ast0.TyDecl(ty,sem) ->
       let arity =
 	all_same true tgt (mcode2line sem) [mcode2arity sem] in
@@ -537,7 +556,7 @@ and declaration tgt decl =
       let dots = mcode dots in
       let whencode = get_option (declaration Ast0.NONE) whencode in
       make_decl decl tgt arity (Ast0.Ddots(dots,whencode))
-  | Ast0.OptDecl(_) | Ast0.UniqueDecl(_) ->
+  | Ast0.OptDecl(_) | Ast0.UniqueDecl(_) | Ast0.AsDecl _ ->
       failwith "unexpected code"
 
 (* --------------------------------------------------------------------- *)
@@ -588,7 +607,7 @@ and initialiser tgt i =
       let dots = mcode dots in
       let whencode = get_option (initialiser Ast0.NONE) whencode in
       make_init i tgt arity (Ast0.Idots(dots,whencode))
-  | Ast0.OptIni(_) | Ast0.UniqueIni(_) ->
+  | Ast0.OptIni(_) | Ast0.UniqueIni(_) | Ast0.AsInit _ ->
       failwith "unexpected code"
 
 and designator tgt d =
@@ -974,7 +993,7 @@ and statement tgt stm =
       let params = define_parameters arity params in
       let body = dots (statement arity) body in
       make_rule_elem stm tgt arity (Ast0.Define(def,id,params,body))
-  | Ast0.OptStm(_) | Ast0.UniqueStm(_) ->
+  | Ast0.OptStm(_) | Ast0.UniqueStm(_) | Ast0.AsStmt _ ->
       failwith "unexpected code"
 
 and define_parameters tgt params =

@@ -118,6 +118,7 @@ let rec left_expression e =
   | Ast0.Constant(const) -> modif_before_mcode const
   | Ast0.FunCall(fn,lp,args,rp) -> left_expression fn
   | Ast0.Assignment(left,op,right,_) -> left_expression left
+  | Ast0.Sequence(left,op,right) -> left_expression left
   | Ast0.CondExpr(exp1,why,exp2,colon,exp3) -> left_expression exp1
   | Ast0.Postfix(exp,op) -> left_expression exp
   | Ast0.Infix(exp,op) -> modif_before_mcode op
@@ -143,6 +144,7 @@ let rec left_expression e =
   | Ast0.Edots(dots,_) | Ast0.Ecircles(dots,_) | Ast0.Estars(dots,_) -> false
   | Ast0.OptExp(exp) -> left_expression exp
   | Ast0.UniqueExp(exp) -> left_expression exp
+  | Ast0.AsExpr _ -> failwith "not possible"
 
 (* --------------------------------------------------------------------- *)
 (* Types *)
@@ -167,6 +169,8 @@ and left_typeC t =
   | Ast0.DisjType(lp,types,mids,rp) -> List.exists left_typeC types
   | Ast0.OptType(ty) -> left_typeC ty
   | Ast0.UniqueType(ty) -> left_typeC ty
+  | Ast0.AsType _ -> failwith "not possible"
+
 
 (* --------------------------------------------------------------------- *)
 (* Variable declaration *)
@@ -184,12 +188,14 @@ and left_declaration d =
   | Ast0.UnInit(Some stg,ty,id,sem) -> modif_before_mcode stg
   | Ast0.UnInit(None,ty,id,sem) -> left_typeC ty
   | Ast0.MacroDecl(name,lp,args,rp,sem) -> left_ident name
+  | Ast0.MacroDeclInit(name,lp,args,rp,eq,ini,sem) -> left_ident name
   | Ast0.TyDecl(ty,sem) -> left_typeC ty
   | Ast0.Typedef(stg,ty,id,sem) -> modif_before_mcode stg
   | Ast0.DisjDecl(_,decls,_,_) -> List.exists left_declaration decls
   | Ast0.Ddots(dots,_) -> false
   | Ast0.OptDecl(decl) -> left_declaration decl
   | Ast0.UniqueDecl(decl) -> left_declaration decl
+  | Ast0.AsDecl _ -> failwith "not possible"
 
 and right_declaration d =
   modif_before d or
@@ -200,12 +206,14 @@ and right_declaration d =
   | Ast0.Init(_,ty,id,eq,ini,sem) -> modif_after_mcode sem
   | Ast0.UnInit(_,ty,id,sem) -> modif_after_mcode sem
   | Ast0.MacroDecl(name,lp,args,rp,sem) -> modif_after_mcode sem
+  | Ast0.MacroDeclInit(name,lp,args,rp,eq,ini,sem) -> modif_after_mcode sem
   | Ast0.TyDecl(ty,sem) -> modif_after_mcode sem
   | Ast0.Typedef(stg,ty,id,sem) -> modif_after_mcode sem
   | Ast0.DisjDecl(_,decls,_,_) -> List.exists right_declaration decls
   | Ast0.Ddots(dots,_) -> false
   | Ast0.OptDecl(decl) -> right_declaration decl
   | Ast0.UniqueDecl(decl) -> right_declaration decl
+  | Ast0.AsDecl _ -> failwith "not possible"
 
 (* --------------------------------------------------------------------- *)
 (* Top-level code *)
@@ -251,6 +259,7 @@ and left_statement s =
   | Ast0.Define(def,id,params,body) -> modif_before_mcode def
   | Ast0.OptStm(re) -> left_statement re
   | Ast0.UniqueStm(re) -> left_statement re
+  | Ast0.AsStmt _ -> failwith "not possible"
 
 and right_statement s =
   modif_after s or
@@ -292,6 +301,7 @@ and right_statement s =
   | Ast0.Define(def,id,params,body) -> right_dots right_statement body
   | Ast0.OptStm(re) -> right_statement re
   | Ast0.UniqueStm(re) -> right_statement re
+  | Ast0.AsStmt _ -> failwith "not possible"
 
 (* --------------------------------------------------------------------- *)
 
@@ -600,6 +610,7 @@ let rec statement dots_before dots_after s =
   | Ast0.UniqueStm(re) ->
       Ast0.rewrap s
 	(Ast0.UniqueStm(statement dots_before dots_after re))
+  | Ast0.AsStmt _ -> failwith "not possible"
 
 and case_line c =
   Ast0.rewrap c

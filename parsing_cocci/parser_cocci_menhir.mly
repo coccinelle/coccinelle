@@ -112,7 +112,8 @@ let tmeta_to_ident (name,pure,clt) =
 %token <Parse_aux.typed_expinfo> TMetaExp TMetaIdExp TMetaLocalIdExp TMetaConst
 %token <Parse_aux.pos_info>      TMetaPos
 
-%token TArob TArobArob TPArob
+%token TArob TArobArob
+%token <Data.clt> TPArob
 %token <string> TScriptData
 
 %token <Data.clt> TEllipsis TOEllipsis TCEllipsis TPOEllipsis TPCEllipsis
@@ -265,19 +266,18 @@ extends:
     { !Data.install_bindings (parent) }
 
 depends:
-  /* empty */              { Ast.NoDep }
+  /* empty */              { Ast0.NoDep }
 | TDepends TOn parents=dep { parents }
 
 dep:
-  pnrule           { $1 }
-| dep TAndLog dep  { Ast.AndDep($1, $3) }
-| dep TOrLog  dep  { Ast.OrDep ($1, $3) }
-
-pnrule:
-  TRuleName        { Ast.Dep      $1 }
-| TBang TRuleName  { Ast.AntiDep  $2 }
-| TEver TRuleName  { Ast.EverDep  $2 }
-| TNever TRuleName { Ast.NeverDep $2 }
+  TRuleName        { Ast0.Dep $1 }
+| TBang TRuleName  { Ast0.AntiDep (Ast0.Dep $2) }
+| TBang TOPar dep TCPar
+                   { Ast0.AntiDep $3 }
+| TEver TRuleName  { Ast0.EverDep $2 }
+| TNever TRuleName { Ast0.NeverDep $2 }
+| dep TAndLog dep  { Ast0.AndDep($1, $3) }
+| dep TOrLog  dep  { Ast0.OrDep ($1, $3) }
 | TOPar dep TCPar  { $2 }
 
 choose_iso:
@@ -1158,6 +1158,15 @@ single_statement:
 		     List.map (function x -> Ast0.wrap(Ast0.DOTS([x]))) code,
 		     mids, P.clt2mcode ")" $3)) }
 
+iso_statement: /* statement or declaration used in statement context */
+    statement                         { $1 }
+  | decl_var
+      { match $1 with
+	[decl] ->
+	  Ast0.wrap
+	    (Ast0.Decl((Ast0.default_info(),Ast0.context_befaft()),decl))
+      |	_ -> failwith "exactly one decl allowed in statement iso" }
+
 case_line:
     TDefault TDotDot fun_start
       { Ast0.wrap
@@ -1195,8 +1204,8 @@ decl_var:
 	      P.make_cv cv (Ast0.wrap (Ast0.TypeName(P.id2mcode i))) in
 	    Ast0.wrap(Ast0.UnInit(s,fn idtype,id,P.clt2mcode ";" pv)))
 	  d }
-  | s=ioption(storage) cv=ioption(const_vol) i=pure_ident_or_symbol d=d_ident q=TEq
-      e=initialize pv=TPtVirg
+  | s=ioption(storage) cv=ioption(const_vol) i=pure_ident_or_symbol
+      d=d_ident q=TEq e=initialize pv=TPtVirg
       { let (id,fn) = d in
       !Data.add_type_name (P.id2name i);
       let idtype = P.make_cv cv (Ast0.wrap (Ast0.TypeName(P.id2mcode i))) in
@@ -1217,6 +1226,12 @@ decl_var:
   | decl_ident TOPar eexpr_list_option TCPar TPtVirg
       { [Ast0.wrap(Ast0.MacroDecl($1,P.clt2mcode "(" $2,$3,
 				  P.clt2mcode ")" $4,P.clt2mcode ";" $5))] }
+  | decl_ident TOPar eexpr_list_option TCPar q=TEq e=initialize TPtVirg
+      { [Ast0.wrap
+	    (Ast0.MacroDeclInit
+	       ($1,P.clt2mcode "(" $2,$3,
+		P.clt2mcode ")" $4,P.clt2mcode "=" q,e,
+		P.clt2mcode ";" $7))] }
   | s=ioption(storage)
     t=ctype lp1=TOPar st=TMul d=d_ident rp1=TCPar
     lp2=TOPar p=decl_list(name_opt_decl) rp2=TCPar
@@ -1252,8 +1267,8 @@ one_decl_var:
       { let (id,fn) = d in
         let idtype = P.make_cv cv (Ast0.wrap (Ast0.TypeName(P.id2mcode i))) in
 	Ast0.wrap(Ast0.UnInit(s,fn idtype,id,P.clt2mcode ";" pv)) }
-  | s=ioption(storage) cv=ioption(const_vol) i=pure_ident_or_symbol d=d_ident q=TEq
-      e=initialize pv=TPtVirg
+  | s=ioption(storage) cv=ioption(const_vol) i=pure_ident_or_symbol
+      d=d_ident q=TEq e=initialize pv=TPtVirg
       { let (id,fn) = d in
       !Data.add_type_name (P.id2name i);
       let idtype = P.make_cv cv (Ast0.wrap (Ast0.TypeName(P.id2mcode i))) in
@@ -1274,6 +1289,12 @@ one_decl_var:
   | decl_ident TOPar eexpr_list_option TCPar TPtVirg
       { Ast0.wrap(Ast0.MacroDecl($1,P.clt2mcode "(" $2,$3,
 				  P.clt2mcode ")" $4,P.clt2mcode ";" $5)) }
+  | decl_ident TOPar eexpr_list_option TCPar q=TEq e=initialize TPtVirg
+      { Ast0.wrap
+            (Ast0.MacroDeclInit
+               ($1,P.clt2mcode "(" $2,$3,
+                P.clt2mcode ")" $4,P.clt2mcode "=" q,e,
+                P.clt2mcode ";" $7)) }
   | s=ioption(storage)
     t=ctype lp1=TOPar st=TMul d=d_ident rp1=TCPar
     lp2=TOPar p=decl_list(name_opt_decl) rp2=TCPar
@@ -1416,12 +1437,17 @@ by an expression-specific marker.  In that case, the rule eexpr is used, which
 allows <... ...> anywhere.  Hopefully, this will not be too much of a problem
 in practice.
 dot_expressions is the most permissive.  all three kinds of expressions use
-this once an expression_specific token has been seen */
+this once an expression_specific token has been seen
+The arg versions don't allow sequences, to avoid conflicting with commas in
+argument lists.
+ */
 expr:  basic_expr(expr,invalid) { $1 }
 /* allows ... and nests */
-eexpr: basic_expr(eexpr,dot_expressions) { $1 }
+eexpr: pre_basic_expr(eexpr,dot_expressions) { $1 }
+eargexpr: basic_expr(eexpr,dot_expressions) { $1 } /* no sequences */
 /* allows nests but not .... */
-dexpr: basic_expr(eexpr,nest_expressions) { $1 }
+dexpr: pre_basic_expr(eexpr,nest_expressions) { $1 }
+dargexpr: basic_expr(eexpr,nest_expressions) { $1 } /* no sequences */
 
 top_eexpr:
   eexpr { Ast0.wrap(Ast0.OTHER(Ast0.wrap(Ast0.Exp($1)))) }
@@ -1446,6 +1472,12 @@ nest_expressions:
 | TMeta { tmeta_to_exp $1 }
 
 //whenexp: TWhen TNotEq w=eexpr TLineEnd { w }
+
+pre_basic_expr(recurser,primary_extra):
+   basic_expr(recurser,primary_extra)                     { $1 }
+ | pre_basic_expr(recurser,primary_extra) TComma
+     basic_expr(recurser,primary_extra)
+     { Ast0.wrap(Ast0.Sequence($1,P.clt2mcode "," $2,$3)) }
 
 basic_expr(recurser,primary_extra):
    assign_expr(recurser,primary_extra)                     { $1 }
@@ -1474,7 +1506,8 @@ assign_expr_bis:
 
 cond_expr(r,pe):
     arith_expr(r,pe)                         { $1 }
-  | l=arith_expr(r,pe) w=TWhy t=option(eexpr) dd=TDotDot r=eexpr/*see parser_c*/
+  | l=arith_expr(r,pe) w=TWhy t=option(eexpr)
+      dd=TDotDot r=eargexpr/*see parser_c*/
       { Ast0.wrap(Ast0.CondExpr (l, P.clt2mcode "?" w, t,
 				 P.clt2mcode ":" dd, r)) }
 
@@ -2258,7 +2291,7 @@ when_start:
 
 /* arg expr.  may contain a type or a explist metavariable */
 aexpr:
-    dexpr { Ast0.set_arg_exp $1 }
+    dargexpr { Ast0.set_arg_exp $1 }
   | TMetaExpList
       { let (nm,lenname,pure,clt) = $1 in
       let nm = P.clt2mcode nm clt in
@@ -2326,7 +2359,7 @@ iso_main:
     { let ffn x = Ast0.ExprTag x in
       let fn x =  Ast0.TestExprTag x in
       P.iso_adjust ffn fn e1 el }
-| TIsoStatement s1=single_statement sl=list(iso(single_statement)) EOF
+| TIsoStatement s1=iso_statement sl=list(iso(iso_statement)) EOF
     { let fn x = Ast0.StmtTag x in P.iso_adjust fn fn s1 sl }
 | TIsoType t1=ctype tl=list(iso(ctype)) EOF
     { let fn x = Ast0.TypeCTag x in P.iso_adjust fn fn t1 tl }

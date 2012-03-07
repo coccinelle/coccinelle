@@ -32,6 +32,9 @@ let get_current_line_type lexbuf =
 let current_line_started = ref false
 let col_zero = ref true
 
+let contextify (c,l,ll,lex_start,preceeding_spaces,bef,aft,pos) =
+  (D.CONTEXT,l,ll,lex_start,preceeding_spaces,bef,aft,pos)
+
 let reset_line lexbuf =
   line := !line + 1;
   current_line_type := (D.CONTEXT,!line,!logical_line);
@@ -527,7 +530,8 @@ rule token = parse
   | "@"  { pass_zero();
 	   if !Data.in_rule_name or not !current_line_started
 	   then (start_line true; TArob)
-	   else (check_minus_context_linetype "@"; TPArob) }
+	   else (check_minus_context_linetype "@";
+		 TPArob (get_current_line_type lexbuf)) }
 
   | "=~"  { start_line true; TTildeEq (get_current_line_type lexbuf) }
   | "!~" { start_line true; TTildeExclEq (get_current_line_type lexbuf) }
@@ -595,19 +599,22 @@ rule token = parse
           else
             (start_line true; check_context_linetype (tok lexbuf);
 	     TOPar0 (get_current_line_type lexbuf))}
-  | "\\(" { start_line true; TOPar0 (get_current_line_type lexbuf) }
+  | "\\(" { start_line true;
+	    TOPar0 (contextify(get_current_line_type lexbuf)) }
   | "|" { if not (!col_zero)
 	  then (start_line true; TOr(get_current_line_type lexbuf))
           else (start_line true;
 		check_context_linetype (tok lexbuf);
 		TMid0 (get_current_line_type lexbuf))}
-  | "\\|" { start_line true; TMid0 (get_current_line_type lexbuf) }
+  | "\\|" { start_line true;
+	    TMid0 (contextify(get_current_line_type lexbuf)) }
   | ")" { if not !col_zero
 	  then (start_line true; TCPar (get_current_line_type lexbuf))
           else
             (start_line true; check_context_linetype (tok lexbuf);
 	     TCPar0 (get_current_line_type lexbuf))}
-  | "\\)" { start_line true; TCPar0 (get_current_line_type lexbuf) }
+  | "\\)" { start_line true;
+	    TCPar0 (contextify(get_current_line_type lexbuf)) }
 
   | '[' { start_line true; TOCro (get_current_line_type lexbuf)   }
   | ']' { start_line true; TCCro (get_current_line_type lexbuf)   }
@@ -744,6 +751,8 @@ rule token = parse
   | "#" [' ' '\t']* "elif" [^'\n']*
   | "#" [' ' '\t']* "endif" [^'\n']*
   | "#" [' ' '\t']* "error" [^'\n']*
+  | "#" [' ' '\t']* "pragma" [^'\n']*
+  | "#" [' ' '\t']* "line" [^'\n']*
       { start_line true; check_plus_linetype (tok lexbuf);
 	TPragma (Ast.Noindent(tok lexbuf), get_current_line_type lexbuf) }
   | "/*"

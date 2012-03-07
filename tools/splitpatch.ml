@@ -253,8 +253,15 @@ let resolve_maintainers patches =
 		    match (cmd_to_list (maintainer_command file)) with
 		      m::_ -> found_a_maintainer := true; m
 		    | [] ->
-			uctr := !uctr + 1;
-			"unknown"^(string_of_int !uctr) in
+			(* maybe the file is new? *)
+			(match
+			  (cmd_to_list
+			     (maintainer_command (Filename.dirname file)))
+			with
+			  m::_ -> found_a_maintainer := true; m
+			| [] ->
+			    uctr := !uctr + 1;
+			    "unknown"^(string_of_int !uctr)) in
 		  let subsystems =
 		    cmd_to_list (subsystem_command file) in
 		  let info = (subsystems,maintainers) in

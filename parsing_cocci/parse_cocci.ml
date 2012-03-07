@@ -196,7 +196,7 @@ let token2c (tok,_) =
   | PC.TMPtVirg -> ";"
   | PC.TArobArob -> "@@"
   | PC.TArob -> "@"
-  | PC.TPArob -> "P@"
+  | PC.TPArob clt -> "P@"
   | PC.TScript -> "script"
   | PC.TInitialize -> "initialize"
   | PC.TFinalize -> "finalize"
@@ -370,8 +370,9 @@ let get_clt (tok,_) =
   | PC.TIf(clt) | PC.TElse(clt) | PC.TWhile(clt) | PC.TFor(clt) | PC.TDo(clt)
   | PC.TSwitch(clt) | PC.TCase(clt) | PC.TDefault(clt) | PC.TReturn(clt)
   | PC.TBreak(clt) | PC.TContinue(clt) | PC.TGoto(clt) | PC.TIdent(_,clt)
-  | PC.TTypeId(_,clt) | PC.TDeclarerId(_,clt) | PC.TIteratorId(_,clt)
-
+  | PC.TTypeId(_,clt) | PC.TSymId(_,clt)
+  | PC.TDeclarerId(_,clt) | PC.TIteratorId(_,clt)
+  
   | PC.TSizeof(clt)
 
   | PC.TString(_,clt) | PC.TChar(_,clt) | PC.TFloat(_,clt) | PC.TInt(_,clt)
@@ -396,6 +397,7 @@ let get_clt (tok,_) =
   | PC.TMetaFieldList(_,_,_,clt)
   | PC.TMetaFunc(_,_,_,clt) | PC.TMetaLocalFunc(_,_,_,clt)
   | PC.TMetaPos(_,_,_,clt)
+  | PC.TMetaDeclarer(_,_,_,clt) | PC.TMetaIterator(_,_,_,clt)
 
   | PC.TWhen(clt) | PC.TWhenTrue(clt) | PC.TWhenFalse(clt) |
     PC.TAny(clt) | PC.TStrict(clt) | PC.TEllipsis(clt)
@@ -410,7 +412,7 @@ let get_clt (tok,_) =
   | PC.TPtrOp(clt)
 
   | PC.TEq(clt) | PC.TAssign(_,clt) | PC.TDot(clt) | PC.TComma(clt)
-  | PC.TPtVirg(clt)
+  | PC.TPArob(clt) | PC.TPtVirg(clt)
 
   | PC.TOPar0(clt) | PC.TMid0(clt) | PC.TCPar0(clt)
   | PC.TOEllipsis(clt) | PC.TCEllipsis(clt)
@@ -473,6 +475,7 @@ let update_clt (tok,x) clt =
   | PC.TTypeId(s,_) -> (PC.TTypeId(s,clt),x)
   | PC.TDeclarerId(s,_) -> (PC.TDeclarerId(s,clt),x)
   | PC.TIteratorId(s,_) -> (PC.TIteratorId(s,clt),x)
+  | PC.TSymId(a,_) -> (PC.TSymId(a,clt),x)
 
   | PC.TSizeof(_) -> (PC.TSizeof(clt),x)
 
@@ -520,6 +523,9 @@ let update_clt (tok,x) clt =
   | PC.TMetaFunc(a,b,c,_)  -> (PC.TMetaFunc(a,b,c,clt),x)
   | PC.TMetaLocalFunc(a,b,c,_) -> (PC.TMetaLocalFunc(a,b,c,clt),x)
 
+  | PC.TMetaDeclarer(a,b,c,_) -> (PC.TMetaDeclarer(a,b,c,clt),x)
+  | PC.TMetaIterator(a,b,c,_) -> (PC.TMetaIterator(a,b,c,clt),x)
+
   | PC.TWhen(_) -> (PC.TWhen(clt),x)
   | PC.TWhenTrue(_) -> (PC.TWhenTrue(clt),x)
   | PC.TWhenFalse(_) -> (PC.TWhenFalse(clt),x)
@@ -563,6 +569,7 @@ let update_clt (tok,x) clt =
   | PC.TAssign(s,_) -> (PC.TAssign(s,clt),x)
   | PC.TDot(_) -> (PC.TDot(clt),x)
   | PC.TComma(_) -> (PC.TComma(clt),x)
+  | PC.TPArob(_) -> (PC.TPArob(clt),x)
   | PC.TPtVirg(_) -> (PC.TPtVirg(clt),x)
 
   | PC.TLineEnd(_) -> (PC.TLineEnd(clt),x)
@@ -656,7 +663,8 @@ let split_token ((tok,_) as t) =
   | PC.TSizeof(clt)
   | PC.TReturn(clt) | PC.TBreak(clt) | PC.TContinue(clt) | PC.TGoto(clt)
   | PC.TIdent(_,clt)
-  | PC.TTypeId(_,clt) | PC.TDeclarerId(_,clt) | PC.TIteratorId(_,clt) | PC.TSymId(_,clt)
+  | PC.TTypeId(_,clt) | PC.TDeclarerId(_,clt) | PC.TIteratorId(_,clt)
+  | PC.TSymId(_,clt)
   | PC.TMeta(_,_,clt) | PC.TMetaConst(_,_,_,_,clt) | PC.TMetaExp(_,_,_,_,clt)
   | PC.TMetaIdExp(_,_,_,_,clt) | PC.TMetaLocalIdExp(_,_,_,_,clt)
   | PC.TMetaExpList(_,_,_,clt)
@@ -670,7 +678,7 @@ let split_token ((tok,_) as t) =
   | PC.TMetaDeclarer(_,_,_,clt) | PC.TMetaIterator(_,_,_,clt) -> split t clt
   | PC.TMPtVirg | PC.TArob | PC.TArobArob | PC.TScript
   | PC.TInitialize | PC.TFinalize -> ([t],[t])
-  | PC.TPArob | PC.TMetaPos(_,_,_,_) -> ([t],[])
+  | PC.TPArob clt | PC.TMetaPos(_,_,_,clt) -> split t clt
 
   | PC.TFunDecl(clt)
   | PC.TWhen(clt) | PC.TWhenTrue(clt) | PC.TWhenFalse(clt)
@@ -944,6 +952,8 @@ let token2line (tok,_) =
   | PC.TTypeId(_,clt) | PC.TDeclarerId(_,clt) | PC.TIteratorId(_,clt)
   | PC.TMetaDeclarer(_,_,_,clt) | PC.TMetaIterator(_,_,_,clt)
 
+  | PC.TSymId(_,clt)
+
   | PC.TString(_,clt) | PC.TChar(_,clt) | PC.TFloat(_,clt) | PC.TInt(_,clt)
 
   | PC.TOrLog(clt) | PC.TAndLog(clt) | PC.TOr(clt) | PC.TXor(clt)
@@ -985,7 +995,7 @@ let token2line (tok,_) =
   | PC.TIncludeL(_,clt) | PC.TIncludeNL(_,clt)
 
   | PC.TEq(clt) | PC.TAssign(_,clt) | PC.TDot(clt) | PC.TComma(clt)
-  | PC.TPtVirg(clt) ->
+  | PC.TPArob(clt) | PC.TPtVirg(clt) ->
       let (_,line,_,_,_,_,_,_) = clt in Some line
 
   | _ -> None
@@ -1018,8 +1028,8 @@ and find_line_end inwhen line clt q = function
       (PC.TExists,a) :: (find_line_end inwhen line clt q xs)
   | ((PC.TComma(clt),a) as x)::xs when token2line x = line ->
       (PC.TComma(clt),a) :: (find_line_end inwhen line clt q xs)
-  | ((PC.TPArob,a) as x)::xs -> (* no line #, just assume on the same line *)
-      x :: (find_line_end inwhen line clt q xs)
+  | ((PC.TPArob(clt),a) as x)::xs when token2line x = line ->
+      (PC.TPArob(clt),a) :: (find_line_end inwhen line clt q xs)
   | x::xs when token2line x = line -> x :: (find_line_end inwhen line clt q xs)
   | xs -> (PC.TLineEnd(clt),q)::(insert_line_end xs)
 
@@ -1395,19 +1405,75 @@ let prepare_tokens tokens =
 let prepare_mv_tokens tokens =
   detect_types false (detect_attr tokens)
 
-let rec consume_minus_positions = function
+let unminus (d,x1,x2,x3,x4,x5,x6,x7) = (* for hidden variables *)
+  match d with
+    D.MINUS | D.OPTMINUS | D.UNIQUEMINUS -> (D.CONTEXT,x1,x2,x3,x4,x5,x6,x7)
+  | D.PLUS -> failwith "unexpected plus code"
+  | D.PLUSPLUS -> failwith "unexpected plus code"
+  | D.CONTEXT | D.UNIQUE | D.OPT -> (D.CONTEXT,x1,x2,x3,x4,x5,x6,x7)
+
+let process_minus_positions x name clt meta =
+  let (arity,ln,lln,offset,col,strbef,straft,pos) = get_clt x in
+  let name = Parse_aux.clt2mcode name (unminus clt) in
+  update_clt x (arity,ln,lln,offset,col,strbef,straft,meta name::pos)
+
+(* first attach positions, then the others, so that positions can refer to
+the larger term represented by the preceding metavariable *)
+let rec consume_minus_positions toks =
+  let rec loop_pos = function
+      [] -> []
+    | ((PC.TOPar0(_),_) as x)::xs | ((PC.TCPar0(_),_) as x)::xs
+    | ((PC.TMid0(_),_) as x)::xs -> x::loop_pos xs
+    | x::(PC.TPArob _,_)::(PC.TMetaPos(name,constraints,per,clt),_)::xs ->
+	let x =
+	  process_minus_positions x name clt
+	    (function name ->
+	      Ast0.MetaPosTag(Ast0.MetaPos(name,constraints,per))) in
+	(loop_pos (x::xs))
+    | x::xs -> x::loop_pos xs in
+  let rec loop_other = function
+      [] -> []
+    | ((PC.TOPar0(_),_) as x)::xs | ((PC.TCPar0(_),_) as x)::xs
+    | ((PC.TMid0(_),_) as x)::xs -> x::loop_other xs
+    | x::(PC.TPArob _,_)::(PC.TMetaExp(name,constraints,pure,ty,clt),_)::xs ->
+	let x =
+	  process_minus_positions x name clt
+	    (function name ->
+	      Ast0.ExprTag
+		(Ast0.wrap
+		   (Ast0.MetaExpr(name,constraints,ty,Ast.ANY,pure)))) in
+	(loop_other (x::xs))
+    | x::(PC.TPArob _,_)::(PC.TMetaInit(name,pure,clt),_)::xs ->
+	let x =
+	  process_minus_positions x name clt
+	    (function name ->
+	      Ast0.InitTag(Ast0.wrap(Ast0.MetaInit(name,pure)))) in
+	(loop_other (x::xs))
+    | x::(PC.TPArob _,_)::(PC.TMetaType(name,pure,clt),_)::xs ->
+	let x =
+	  process_minus_positions x name clt
+	    (function name ->
+	      Ast0.TypeCTag(Ast0.wrap(Ast0.MetaType(name,pure)))) in
+	(loop_other (x::xs))
+    | x::(PC.TPArob _,_)::(PC.TMetaDecl(name,pure,clt),_)::xs ->
+	let x =
+	  process_minus_positions x name clt
+	    (function name ->
+	      Ast0.DeclTag(Ast0.wrap(Ast0.MetaDecl(name,pure)))) in
+	(loop_other (x::xs))
+    | x::(PC.TPArob _,_)::(PC.TMetaStm(name,pure,clt),_)::xs ->
+	let x =
+	  process_minus_positions x name clt
+	    (function name ->
+	      Ast0.StmtTag(Ast0.wrap(Ast0.MetaStmt(name,pure)))) in
+	(loop_other (x::xs))
+    | x::xs -> x::loop_other xs in
+  loop_other(loop_pos toks)
+    
+let rec consume_plus_positions = function
     [] -> []
-  | ((PC.TOPar0(_),_) as x)::xs | ((PC.TCPar0(_),_) as x)::xs
-  | ((PC.TMid0(_),_) as x)::xs -> x::consume_minus_positions xs
-  | x::(PC.TPArob,_)::(PC.TMetaPos(name,constraints,per,clt),_)::xs ->
-      let (arity,ln,lln,offset,col,strbef,straft,pos) = get_clt x in
-      let name = Parse_aux.clt2mcode name clt in
-      let x =
-	update_clt x
-	  (arity,ln,lln,offset,col,strbef,straft,
-	   (Ast0.MetaPos(name,constraints,per)::pos)) in
-      (consume_minus_positions (x::xs))
-  | x::xs -> x::consume_minus_positions xs
+  | (PC.TPArob _,_)::x::xs -> consume_plus_positions xs
+  | x::xs -> x::consume_plus_positions xs
 
 let any_modif rule =
   let mcode x =
@@ -1539,7 +1605,7 @@ let parse_iso file =
 	    let tokens = prepare_tokens (start@tokens) in
             (*
 	       print_tokens "iso tokens" tokens;
-	    å*)
+	    *)
 	    let entry = parse_one "iso main" PC.iso_main file tokens in
 	    let entry = List.map (List.map Test_exps.process_anything) entry in
 	    if more
@@ -1555,6 +1621,7 @@ let parse_iso file =
 	    else [(iso_metavars,entry,rule_name)] in
 	  loop starts_with_name start
       | (false,_) -> [] in
+    List.iter Iso_compile.process res;
     res)
 
 let parse_iso_files existing_isos iso_files extra_path =
@@ -1589,28 +1656,27 @@ let eval_depend dep virt =
 	if List.mem req virt
 	then
 	  if List.mem req !Flag.defined_virtual_rules
-	  then Some Ast.NoDep
-	  else None
-	else Some dep
+	  then Ast.NoDep
+	  else Ast.FailDep
+	else dep
     | Ast.AntiDep antireq | Ast.NeverDep antireq ->
 	if List.mem antireq virt
 	then
 	  if not(List.mem antireq !Flag.defined_virtual_rules)
-	  then Some Ast.NoDep
-	  else None
-	else Some dep
+	  then Ast.NoDep
+	  else Ast.FailDep
+	else dep
     | Ast.AndDep(d1,d2) ->
 	(match (loop d1, loop d2) with
-	  (None,_) | (_,None) -> None
-	| (Some Ast.NoDep,x) | (x,Some Ast.NoDep) -> x
-	| (Some x,Some y) -> Some (Ast.AndDep(x,y)))
+	  (Ast.NoDep,x) | (x,Ast.NoDep) -> x
+	| (Ast.FailDep,x) | (x,Ast.FailDep) -> Ast.FailDep
+	| (x,y) -> Ast.AndDep(x,y))
     | Ast.OrDep(d1,d2) ->
 	(match (loop d1, loop d2) with
-	  (None,None) -> None
-	| (Some Ast.NoDep,x) | (x,Some Ast.NoDep) -> Some Ast.NoDep
-	| (None,x) | (x,None) -> x
-	| (Some x,Some y) -> Some (Ast.OrDep(x,y)))
-    | Ast.NoDep | Ast.FailDep -> Some dep
+	  (Ast.NoDep,x) | (x,Ast.NoDep) -> Ast.NoDep
+	| (Ast.FailDep,x) | (x,Ast.FailDep) -> x
+	| (x,y) -> Ast.OrDep(x,y))
+    | Ast.NoDep | Ast.FailDep -> dep
     in
   loop dep
 
@@ -1682,6 +1748,7 @@ let parse file =
 	    *)
 
 	    let minus_tokens = consume_minus_positions minus_tokens in
+	    let plus_tokens = consume_plus_positions plus_tokens in
 	    let minus_tokens = prepare_tokens minus_tokens in
 	    let plus_tokens = prepare_tokens plus_tokens in
 
@@ -1831,9 +1898,7 @@ let parse file =
 		Ast0.FinalScriptRule(name,language,deps,data)) in
 
 	  let do_parse_script_rule fn name l old_metas deps =
-	    match eval_depend deps virt with
-	      Some deps -> fn name l old_metas deps
-	    | None ->  fn name l old_metas Ast.FailDep in
+	    fn name l old_metas (eval_depend deps virt) in
 
           let parse_rule old_metas starts_with_name =
             let rulename =
@@ -1842,31 +1907,30 @@ let parse file =
             match rulename with
               Ast.CocciRulename (Some s, dep, b, c, d, e) ->
 		(match eval_depend dep virt with
-		  Some (dep) ->
-		    parse_cocci_rule Ast.Normal old_metas (s,dep,b,c,d,e)
-		| None ->
+		  Ast.FailDep ->
 		    D.ignore_patch_or_match := true;
                     let res =
 		      parse_cocci_rule Ast.Normal old_metas
 			(s, Ast.FailDep, b, c, d, e) in
 		    D.ignore_patch_or_match := false;
-		    res)
+		    res
+		| dep -> parse_cocci_rule Ast.Normal old_metas (s,dep,b,c,d,e))
             | Ast.GeneratedRulename (Some s, dep, b, c, d, e) ->
 		(match eval_depend dep virt with
-		  Some (dep) ->
-		    Data.in_generating := true;
-		    let res =
-		      parse_cocci_rule Ast.Generated old_metas
-			(s,dep,b,c,d,e) in
-		    Data.in_generating := false;
-		    res
-		| None ->
+		  Ast.FailDep ->
 		    D.ignore_patch_or_match := true;
 		    Data.in_generating := true;
                     let res =
 		      parse_cocci_rule Ast.Generated old_metas
 			(s, Ast.FailDep, b, c, d, e) in
 		    D.ignore_patch_or_match := false;
+		    Data.in_generating := false;
+		    res
+		| dep ->
+		    Data.in_generating := true;
+		    let res =
+		      parse_cocci_rule Ast.Generated old_metas
+			(s,dep,b,c,d,e) in
 		    Data.in_generating := false;
 		    res)
             | Ast.ScriptRulename(Some s,l,deps) ->
@@ -1967,7 +2031,6 @@ let process file isofile verbose =
 		   List.filter
 		     (function (_,_,nm) -> not (List.mem nm dropiso))
 		     chosen_isos in
-	       List.iter Iso_compile.process chosen_isos;
 	       let dropped_isos =
 		 match reserved_names with
 		   "all"::others ->
@@ -2018,6 +2081,8 @@ let process file isofile verbose =
 		 if !Flag.sgrep_mode2 then minus
 		 else Single_statement.single_statement minus in
 	       let minus = Simple_assignments.simple_assignments minus in
+	       (* has to be last, introduced AsExpr, etc *)
+	       let minus = Get_metas.process minus in
 	       let minus_ast =
 		 Ast0toast.ast0toast rule_name dependencies dropped_isos
 		   exists minus is_exp ruletype in

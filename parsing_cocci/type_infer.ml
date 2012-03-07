@@ -141,6 +141,7 @@ let rec propagate_types env =
 	| Ast0.Assignment(exp1,op,exp2,_) ->
 	    let ty = lub_type (Ast0.get_type exp1) (Ast0.get_type exp2) in
 	      Ast0.set_type exp1 ty; Ast0.set_type exp2 ty; ty
+	| Ast0.Sequence(exp1,op,exp2) -> Ast0.get_type exp2
 	| Ast0.CondExpr(exp1,why,Some exp2,colon,exp3) ->
 	    let ty = lub_type (Ast0.get_type exp2) (Ast0.get_type exp3) in
 	      Ast0.set_type exp2 ty; Ast0.set_type exp3 ty; ty
@@ -255,7 +256,8 @@ let rec propagate_types env =
 	| Ast0.Estars(_,Some e) ->
 	    let _ = r.VT0.combiner_rec_expression e in None
 	| Ast0.OptExp(exp) -> Ast0.get_type exp
-	| Ast0.UniqueExp(exp) -> Ast0.get_type exp in
+	| Ast0.UniqueExp(exp) -> Ast0.get_type exp
+	| Ast0.AsExpr _ -> failwith "not possible" in
       Ast0.set_type e ty;
       ty in
 
@@ -309,14 +311,16 @@ let rec propagate_types env =
       Ast0.MetaDecl(_,_) | Ast0.MetaField(_,_)
     | Ast0.MetaFieldList(_,_,_) -> []
     | Ast0.Init(_,ty,id,_,exp,_) ->
-	let _ =
-	  (propagate_types env).VT0.combiner_rec_initialiser exp in
+	let _ = (propagate_types env).VT0.combiner_rec_initialiser exp in
 	let ty = Ast0.ast0_type_to_type ty in
 	List.map (function i -> (i,ty)) (strip id)
     | Ast0.UnInit(_,ty,id,_) ->
 	let ty = Ast0.ast0_type_to_type ty in
 	List.map (function i -> (i,ty)) (strip id)
     | Ast0.MacroDecl(_,_,_,_,_) -> []
+    | Ast0.MacroDeclInit(_,_,_,_,_,exp,_) ->
+        let _ = (propagate_types env).VT0.combiner_rec_initialiser exp in
+	[]
     | Ast0.TyDecl(ty,_) -> []
               (* pad: should handle typedef one day and add a binding *)
     | Ast0.Typedef(_,_,_,_) -> []
@@ -324,7 +328,8 @@ let rec propagate_types env =
 	List.concat(List.map (process_decl env) disjs)
     | Ast0.Ddots(_,_) -> [] (* not in a statement list anyway *)
     | Ast0.OptDecl(decl) -> process_decl env decl
-    | Ast0.UniqueDecl(decl) -> process_decl env decl in
+    | Ast0.UniqueDecl(decl) -> process_decl env decl
+    | Ast0.AsDecl _ -> failwith "not possible" in
 
   let statement_dots r k d =
     match Ast0.unwrap d with

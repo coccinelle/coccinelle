@@ -30,6 +30,7 @@ A HTML version of this documentation is available online at
   \CASE{\any{\NT{include\_cocci}} \some{\NT{changeset}}}
 
   \RULE{\rt{include\_cocci}}
+  \CASE{include \NT{string}}
   \CASE{using \NT{string}}
   \CASE{using \NT{pathToIsoFile}}
   \CASE{virtual \T{id} \ANY{, \T{id}}}
@@ -82,15 +83,13 @@ section.
     \opt{\NT{disable-iso}} \opt{\NT{exists}} \opt{expression}}
 
   \RULE{\rt{dep}}
-  \CASE{\NT{pnrule}}
-  \CASE{\NT{dep} \&\& \NT{dep}}
-  \CASE{\NT{dep} || \NT{dep}}
-
-  \RULE{\rt{pnrule}}
   \CASE{\T{id}}
   \CASE{!\T{id}}
+  \CASE{!(\NT{dep})}
   \CASE{ever \T{id}}
   \CASE{never \T{id}}
+  \CASE{\NT{dep} \&\& \NT{dep}}
+  \CASE{\NT{dep} || \NT{dep}}
   \CASE{(\NT{dep})}
 
   \RULE{\rt{iso}}
@@ -218,6 +217,17 @@ considered C identifiers when encountered in the body of the rule.
 Identifiers in the body of the rule that are not declared explicitly are
 by default considered symbols, thus symbol declarations are optional.
 
+A position metavariable is used by attaching it using \texttt{@} to any
+token, including another metavariable.  Its value is the position (file,
+line number, etc.) of the code matched by the token.  It is also possible
+to attach expression, declaration, type, initialiser, and statement
+metavariables in this manner.  In that case, the metavariable is bound to
+the closest enclosing expression, declaration, etc.  If such a metavariable
+is itself followed by a position metavariable, the position metavariable
+applies to the metavariable that it follows, and not to the attached token.
+This makes it possible to get eg the starting and ending position of {\tt
+  f(...)}, by writing {\tt f(...)@E@p}, for expression metavariable {\tt E}
+and position metavariable {\tt p}.
 
 \begin{grammar}
   \RULE{\rt{ids}}
@@ -406,17 +416,22 @@ The abstract syntax tree of a metavariable declared using {\tt
 
 \section{Transformation}
 
-The transformation specification essentially has the form of C code,
-except that lines to remove are annotated with \verb+-+ in the first
-column, and lines to add are annotated with \verb-+-.  A
-transformation specification can also use {\em dots}, ``\verb-...-'',
-describing an arbitrary sequence of function arguments or instructions
-within a control-flow path.  Dots may be modified with a {\tt when}
-clause, indicating a pattern that should not occur anywhere within the
-matched sequence.  Finally, a transformation can specify a disjunction
-of patterns, of the form \mtt{( \mth{\mita{pat}_1} | \mita{\ldots} |
-  \mth{\mita{pat}_n} )} where each \texttt{(}, \texttt{|} or
-\texttt{)} is in column 0 or preceded by \texttt{\textbackslash}.
+The transformation specification essentially has the form of C code, except
+that lines to remove are annotated with \verb+-+ in the first column, and
+lines to add are annotated with \verb-+-.  A transformation specification
+can also use {\em dots}, ``\verb-...-'', describing an arbitrary sequence
+of function arguments or instructions within a control-flow path.
+Implicitly, ``\verb-...-'' matches the shortest path between something that
+matches the pattern before the dots (or the beginning of the function, if
+there is nothing before the dots) and something that matches the pattern
+after the dots (or the end of the function, if there is nothing after the
+dots).  Dots may be modified with a {\tt when} clause, indicating a pattern
+that should not occur anywhere within the matched sequence.  {\tt when any}
+removes the aforementioned constraint that ``\verb-...-'' matches the
+shortest path.  Finally, a transformation can specify a disjunction of
+patterns, of the form \mtt{( \mth{\mita{pat}_1} | \mita{\ldots} |
+  \mth{\mita{pat}_n} )} where each \texttt{(}, \texttt{|} or \texttt{)} is
+in column 0 or preceded by \texttt{\textbackslash}.
 
 The grammar that we present for the transformation is not actually the
 grammar of the SmPL code that can be written by the programmer, but is
@@ -559,9 +574,9 @@ The grammar for the minus or plus slice of a transformation is as follows:
 \begin{grammar}
   \RULE{\rt{OPTDOTSEQ}\mth{(}\rt{grammar\_ds}, \rt{when\_ds}\mth{)}}
   \CASE{}\multicolumn{3}{r}{\hspace{1cm}
-  \KW{\opt{... \opt{\NT{when\_ds}}} \NT{grammar\_ds}
-    \ANY{... \opt{\NT{when\_ds}} \NT{grammar\_ds}}
-    \opt{... \opt{\NT{when\_ds}}}}
+  \KW{\opt{... \ANY{\NT{when\_ds}}} \NT{grammar\_ds}
+    \ANY{... \ANY{\NT{when\_ds}} \NT{grammar\_ds}}
+    \opt{... \ANY{\NT{when\_ds}}}}
   }
 
 %  \CASE{\opt{... \opt{\NT{when\_ds}}} \NT{grammar}
@@ -575,7 +590,8 @@ The grammar for the minus or plus slice of a transformation is as follows:
 \noindent
 Lines may be annotated with an element of the set $\{\mtt{-}, \mtt{+},
 \mtt{*}\}$ or the singleton $\mtt{?}$, or one of each set. \mtt{?}
-represents at most one match of the given pattern. \mtt{*} is used for
+represents at most one match of the given pattern, ie a match of the
+pattern is optional. \mtt{*} is used for
 semantic match, \emph{i.e.}, a pattern that highlights the fragments
 annotated with \mtt{*}, but does not perform any modification of the
 matched code. \mtt{*} cannot be mixed with \mtt{-} and \mtt{+}.  There are
@@ -773,7 +789,7 @@ isomorphism.  If one adds code before a function declaration, then the
 effect depends on the kind of code that is added.  If the added code is a
 function definition or CPP code, then the new code is placed before
 all information associated with the function definition, including any
-comments preceeding the function definition.  On the other hand, if the new
+comments preceding the function definition.  On the other hand, if the new
 code is associated with the function, such as the addition of the keyword
 {\tt static}, the new code is placed exactly where it appears with respect
 to the rest of the function definition in the semantic patch.  For example,
@@ -1039,12 +1055,27 @@ in a concise way.
   \CASE{"\any{[\^{}"]}"}
 \end{grammar}
 
-\section{Comments}
+\section{Comments and preprocessor directives}
 
 A \verb+//+ or \verb+/* */+ comment that is annotated with + in the
 leftmost column is considered to be added code.  A \verb+//+ or
-\verb+/* */+ comment wthout such an annotation is considered to be a
+\verb+/* */+ comment without such an annotation is considered to be a
 comment about the SmPL code, and thus is not matched in the C code.
+
+The following preprocessor directives can likewise be added.  They cannot
+be matched against.  The entire line is added, but it is not parsed.
+
+\begin{itemize}
+\item \verb+if+
+\item \verb+ifdef+
+\item \verb+ifndef+
+\item \verb+else+
+\item \verb+elif+
+\item \verb+endif+
+\item \verb+error+
+\item \verb+pragma+
+\item \verb+line+
+\end{itemize}
 
 \section{Command-line semantic match}
 

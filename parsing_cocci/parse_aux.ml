@@ -217,13 +217,6 @@ let check_meta_tyopt type_irrelevant = function
       raise
 	(Semantic_cocci.Semantic
 	   "can't inherit the freshness of an identifier")
-  | Ast.MetaListlenDecl((rule,name)) ->
-      (match lookup rule name with
-	Ast.MetaListlenDecl(_) -> ()
-      | _ ->
-	  raise
-	    (Semantic_cocci.Semantic
-	       ("incompatible inheritance declaration "^name)))
   | Ast.MetaTypeDecl(Ast.NONE,(rule,name)) ->
       (match lookup rule name with
 	Ast.MetaTypeDecl(_,_) -> ()
@@ -245,6 +238,13 @@ let check_meta_tyopt type_irrelevant = function
 	  raise
 	    (Semantic_cocci.Semantic
 	       ("incompatible inheritance declaration "^name)))
+  | Ast.MetaListlenDecl((rule,name)) ->
+      (match lookup rule name with
+	Ast.MetaListlenDecl(_) -> ()
+      | _ ->
+	  raise
+	    (Semantic_cocci.Semantic
+	       ("incompatible inheritance declaration "^name)))
   | Ast.MetaParamDecl(Ast.NONE,(rule,name)) ->
       (match lookup rule name with
 	Ast.MetaParamDecl(_,_) -> ()
@@ -255,6 +255,13 @@ let check_meta_tyopt type_irrelevant = function
   | Ast.MetaParamListDecl(Ast.NONE,(rule,name),len_name) ->
       (match lookup rule name with
 	Ast.MetaParamListDecl(_,_,_) -> ()
+      | _ ->
+	  raise
+	    (Semantic_cocci.Semantic
+	       ("incompatible inheritance declaration "^name)))
+  | Ast.MetaConstDecl(Ast.NONE,(rule,name),ty) ->
+      (match lookup rule name with
+	Ast.MetaConstDecl(_,_,ty1) when type_irrelevant or ty = ty1 -> ()
       | _ ->
 	  raise
 	    (Semantic_cocci.Semantic
@@ -295,6 +302,27 @@ let check_meta_tyopt type_irrelevant = function
 	  raise
 	    (Semantic_cocci.Semantic
 	       ("incompatible inheritance declaration "^name)))
+  | Ast.MetaDeclDecl(Ast.NONE,(rule,name)) ->
+      (match lookup rule name with
+	Ast.MetaDeclDecl(_,_) -> ()
+      | _ ->
+	  raise
+	    (Semantic_cocci.Semantic
+	       ("incompatible inheritance declaration "^name)))
+  | Ast.MetaFieldDecl(Ast.NONE,(rule,name)) ->
+      (match lookup rule name with
+	Ast.MetaFieldDecl(_,_) -> ()
+      | _ ->
+	  raise
+	    (Semantic_cocci.Semantic
+	       ("incompatible inheritance declaration "^name)))
+  | Ast.MetaFieldListDecl(Ast.NONE,(rule,name),len_name) ->
+      (match lookup rule name with
+	Ast.MetaFieldListDecl(_,_,_) -> ()
+      | _ ->
+	  raise
+	    (Semantic_cocci.Semantic
+	       ("incompatible inheritance declaration "^name)))
   | Ast.MetaStmDecl(Ast.NONE,(rule,name)) ->
       (match lookup rule name with
 	Ast.MetaStmDecl(_,_) -> ()
@@ -323,17 +351,11 @@ let check_meta_tyopt type_irrelevant = function
 	  raise
 	    (Semantic_cocci.Semantic
 	       ("incompatible inheritance declaration "^name)))
-  | Ast.MetaConstDecl(Ast.NONE,(rule,name),ty) ->
-      (match lookup rule name with
-	Ast.MetaConstDecl(_,_,ty1) when type_irrelevant or ty = ty1 -> ()
-      | _ ->
-	  raise
-	    (Semantic_cocci.Semantic
-	       ("incompatible inheritance declaration "^name)))
   | Ast.MetaPosDecl(Ast.NONE,(rule,name)) ->
       (match lookup rule name with
 	Ast.MetaPosDecl(_,_) ->
-	  if not (List.mem rule !Data.inheritable_positions)
+	  if not (List.mem rule !Data.inheritable_positions) &&
+	    not !Data.ignore_patch_or_match
 	  then
 	    raise
 	      (Semantic_cocci.Semantic
@@ -547,23 +569,44 @@ let make_iso_rule_name_result n =
   Ast.CocciRulename
     (Some n,Ast.NoDep,[],[],Ast.Undetermined,false (*discarded*))
 
+let fix_dependencies d =
+  let rec loop inverted = function
+      Ast0.Dep s when inverted -> Ast.AntiDep s
+    | Ast0.Dep s -> Ast.Dep s
+    | Ast0.AntiDep d -> loop (not inverted) d
+    | Ast0.EverDep s when inverted -> Ast.NeverDep s
+    | Ast0.EverDep s -> Ast.EverDep s
+    | Ast0.NeverDep s when inverted -> Ast.EverDep s
+    | Ast0.NeverDep s -> Ast.NeverDep s
+    | Ast0.AndDep(d1,d2) when inverted ->
+	Ast.OrDep(loop inverted d1,loop inverted d2)
+    | Ast0.AndDep(d1,d2) ->
+	Ast.AndDep(loop inverted d1,loop inverted d2)
+    | Ast0.OrDep(d1,d2) when inverted ->
+	Ast.AndDep(loop inverted d1,loop inverted d2)
+    | Ast0.OrDep(d1,d2) ->
+	Ast.OrDep(loop inverted d1,loop inverted d2)
+    | Ast0.NoDep -> Ast.NoDep
+    | Ast0.FailDep -> Ast.FailDep in
+  loop false d
+
 let make_cocci_rule_name_result nm d i a e ee =
-  Ast.CocciRulename (check_rule_name nm,d,i,a,e,ee)
+  Ast.CocciRulename (check_rule_name nm,fix_dependencies d,i,a,e,ee)
 
 let make_generated_rule_name_result nm d i a e ee =
-  Ast.GeneratedRulename (check_rule_name nm,d,i,a,e,ee)
+  Ast.GeneratedRulename (check_rule_name nm,fix_dependencies d,i,a,e,ee)
 
 let make_script_rule_name_result lang nm deps =
   let l = id2name lang in
-  Ast.ScriptRulename (check_rule_name nm,l,deps)
+  Ast.ScriptRulename (check_rule_name nm,l,fix_dependencies deps)
 
 let make_initial_script_rule_name_result lang deps =
   let l = id2name lang in
-  Ast.InitialScriptRulename(None,l,deps)
+  Ast.InitialScriptRulename(None,l,fix_dependencies deps)
 
 let make_final_script_rule_name_result lang deps =
   let l = id2name lang in
-  Ast.FinalScriptRulename(None,l,deps)
+  Ast.FinalScriptRulename(None,l,fix_dependencies deps)
 
 (* Allows type alone only when it is void and only when there is only one
     parameter.  This avoids ambiguity problems in the parser. *)

@@ -40,6 +40,7 @@ let rec right_decl d =
   | Ast0.MetaFieldList(name,lenname,pure) ->
       call_right right_mcode name d
 	(function name -> Ast0.MetaFieldList(name,lenname,pure))
+  | Ast0.AsDecl(decl,asdecl) -> failwith "not possible"
   | Ast0.Init(Some stg,ty,id,eq,ini,sem) ->
       call_right right_mcode sem d
 	(function sem -> Ast0.Init(Some stg,ty,id,eq,ini,sem))
@@ -55,6 +56,9 @@ let rec right_decl d =
   | Ast0.MacroDecl(name,lp,args,rp,sem) ->
       call_right right_mcode sem d
 	(function sem -> Ast0.MacroDecl(name,lp,args,rp,sem))
+  | Ast0.MacroDeclInit(name,lp,args,rp,eq,ini,sem) ->
+      call_right right_mcode sem d
+	(function sem -> Ast0.MacroDeclInit(name,lp,args,rp,eq,ini,sem))
   | Ast0.TyDecl(ty,sem) ->
       call_right right_mcode sem d
 	(function sem -> Ast0.TyDecl(ty,sem))
@@ -115,6 +119,7 @@ let rec right_statement s =
   | Ast0.MetaStmtList(name,pure) ->
       call_right right_mcode name s
 	(function name -> Ast0.MetaStmtList(name,pure))
+  | Ast0.AsStmt(stm,asstm) -> failwith "not possible"
   | Ast0.Disj(starter,statement_dots_list,mids,ender) -> None
   | Ast0.Nest(starter,stmt_dots,ender,whn,multi) -> None
   (* the following are None, because they can't be adjacent to an aft node *)
@@ -187,6 +192,7 @@ let rec left_ty t =
       call_right left_mcode name t (function name -> Ast0.TypeName(name))
   | Ast0.MetaType(name,x) ->
       call_right left_mcode name t (function name -> Ast0.MetaType(name,x))
+  | Ast0.AsType(ty,asty) -> failwith "not possible"
   | Ast0.DisjType(starter,types,mids,ender) -> None
   | Ast0.OptType(ty) ->
       call_right left_ty ty t (function ty -> Ast0.OptType(ty))
@@ -240,6 +246,7 @@ let rec left_decl decl =
   | Ast0.MetaFieldList(name,lenname,pure) ->
       call_right right_mcode name decl
 	(function name -> Ast0.MetaFieldList(name,lenname,pure))
+  | Ast0.AsDecl(decl,asdecl) -> failwith "not possible"
   | Ast0.Init(Some stg,ty,id,eq,ini,sem) ->
       call_right left_mcode stg decl
 	(function stg -> Ast0.Init(Some stg,ty,id,eq,ini,sem))
@@ -255,6 +262,9 @@ let rec left_decl decl =
   | Ast0.MacroDecl(name,lp,args,rp,sem) ->
       call_right left_ident name decl
 	(function name -> Ast0.MacroDecl(name,lp,args,rp,sem))
+  | Ast0.MacroDeclInit(name,lp,args,rp,eq,ini,sem) ->
+      call_right left_ident name decl
+	(function name -> Ast0.MacroDeclInit(name,lp,args,rp,eq,ini,sem))
   | Ast0.TyDecl(ty,sem) ->
       call_right left_ty ty decl (function ty -> Ast0.TyDecl(ty,sem))
   | Ast0.Typedef(stg,ty,id,sem) ->

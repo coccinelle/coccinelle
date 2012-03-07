@@ -492,11 +492,15 @@ and vk_decl = fun bigf d ->
 	iif ii;
 	xs +> List.iter (fun (x,ii) ->
         iif ii;
-        vk_onedecl bigf x;
+        vk_onedecl bigf x
       );
     | MacroDecl ((s, args, ptvg),ii) ->
         iif ii;
+        vk_argument_list bigf args
+    | MacroDeclInit ((s, args, ini),ii) ->
+        iif ii;
         vk_argument_list bigf args;
+	vk_ini bigf ini
   in f (k, bigf) d
 
 and vk_decl_list = fun bigf ts ->
@@ -1288,6 +1292,12 @@ and vk_decl_s = fun bigf d ->
           ((s,
            args +> List.map (fun (e,ii) -> vk_argument_s bigf e, iif ii),
            ptvg),
+          iif ii)
+    | MacroDeclInit ((s, args, ini),ii) ->
+        MacroDeclInit
+          ((s,
+           args +> List.map (fun (e,ii) -> vk_argument_s bigf e, iif ii),
+	   vk_ini_s bigf ini),
           iif ii)
 
 

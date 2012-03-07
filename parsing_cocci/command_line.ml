@@ -133,14 +133,14 @@ let tokenize first =
 
 let command_line args =
   let info =
-    try Some (Common.split_when (function x -> x = "-sp") args)
+    try Some (Common.split_when (function x -> List.mem x ["-sp";"--sp"]) args)
     with Not_found -> None in
   match info with
     None -> args
   | Some(pre_args,sp,post_args) ->
       (match post_args with
 	first::post_args ->
-	  pre_args @ "-sp_file" ::
+	  pre_args @ "--sp_file" ::
 		     (reparse (tokenize first)) ::
 		     post_args
-      | [] -> failwith "-sp needs an argument")
+      | [] -> failwith "--sp needs an argument")

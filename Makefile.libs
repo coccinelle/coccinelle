@@ -41,13 +41,6 @@ LOCALOPT_dynlink  =
 GLOBAL_dynlink    = dynlink.cma
 GLOBALOPT_dynlink = dynlink.cmxa
 
-# parmap library
-LOCAL_parmap     =
-LOCALOPT_parmap  =
-GLOBAL_parmap    = parmap.cma
-GLOBALOPT_parmap = parmap.cmxa
-FLAGS_parmap     =
-
 # extlib library
 LOCAL_extlib     =
 LOCALOPT_extlib  =

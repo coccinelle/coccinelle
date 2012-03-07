@@ -4,7 +4,7 @@ module Ast0 = Ast0_cocci
 module Ast = Ast_cocci
 
 (* Detects where position variables can be present in the match of an
-isomorpshims.  This is allowed if all elements of an isomorphism have only
+isomorphism.  This is allowed if all elements of an isomorphism have only
 one token or if we can somehow match up equal tokens of all of the
 isomorphic variants. *)
 
@@ -27,7 +27,7 @@ let sequence_tokens =
 
 [[tokens1;tokens2;tokens3];[tokens4;tokens5;tokens6];[tokens7;tokens8]]
 
-If all of the lists tokens contain only one element, we are done.
+If all of the lists of tokens contain only one element, we are done.
 
 Otherwise, we focus on tokens1.  For each of its elements, if they are
 present in all of the others, then a position is assigned, and if not then
@@ -41,37 +41,50 @@ let get_p _ =
   let c = !pctr in
   pctr := c + 1;
   let name = ("",Printf.sprintf "p%d" c) in
-  [Ast0.MetaPos(Ast0.make_mcode name,[],Ast.PER)]
+  (* pos var just gives a name we can look up, used for historical reasons *)
+  Ast0.HiddenVarTag
+    ([Ast0.MetaPosTag(Ast0.MetaPos(Ast0.make_mcode name,[],Ast.PER))])
 
 let process_info l =
-   let rec loop = function
+   let rec loop previously_used = function
        [] -> ()
      | ((f::r)::xs) as a ->
-	 if List.for_all (List.for_all (function e -> List.length e = 1)) a
-	 then
-	   let p = get_p() in
-	   List.iter (List.iter (List.iter (function (_,pos) -> pos := p))) a
-	 else
-	   let all = r @ List.concat xs in
-	   let rec find_first_available a = function
-	       [] -> raise Not_found
-	     | (str,pos)::xs ->
-		 if str = a && !pos = []
-		 then pos
-		 else find_first_available a xs in
-	   List.iter
-	     (function (str,pos) ->
-	       match !pos with
-		 [] ->
-		   (try
-		     let entries = List.map (find_first_available str) all in
-		     let p = get_p() in
-		     pos := p;
-		     List.iter (function pos -> pos := p) entries
-		   with Not_found -> ())
-	       | _ -> (* already have a variable *) ())
-	     f;
-	   loop xs
+	 let safe_add p pos =
+	   (* don't add pos var where a pos var is already present *)
+	   if Common.inter_set previously_used pos = [] then p::pos else pos in
+	 let p =
+	   if List.for_all (List.for_all (function e -> List.length e = 1)) a
+	   then
+	     let p = get_p() in
+             List.iter
+	       (List.iter
+		  (List.iter (function (_,pos) -> pos := safe_add p !pos)))
+	       a;
+	     [p]
+	   else
+	     let all = r @ List.concat xs in
+	     let rec find_first_available a = function
+		 [] -> raise Not_found
+	       | (str,pos)::xs ->
+		   if str = a && Common.inter_set previously_used !pos = []
+		   then pos
+		   else find_first_available a xs in
+	     List.fold_left
+	       (function prev ->
+		 function (str,pos) ->
+		   if Common.inter_set previously_used !pos = []
+		   then
+		     try
+		       let entries = List.map (find_first_available str) all in
+		       let p = get_p() in
+		       pos := p::!pos;
+		       List.iter (function pos -> pos := p :: !pos) entries;
+		       p::prev
+		     with Not_found -> prev
+		   (* otherwise already annotated *)
+		   else prev)
+	       [] f in
+	 loop (p@previously_used) xs
      | _ -> failwith "bad iso" in
    loop l
 
@@ -80,4 +93,4 @@ let process_info l =
 let process (metavars,alts,name) =
   let toks =
     List.map (List.map sequence_tokens.VT0.combiner_rec_anything) alts in
-  process_info toks
+  process_info [] toks

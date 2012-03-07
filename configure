@@ -45,7 +45,6 @@ my %libs=
   , "sexplib"   => 1
   , "pcre"      => 1
   , "dynlink"   => 0
-  , "parmap"    => 0
   , "extlib"    => 0
   );
 
@@ -100,6 +99,10 @@ while($changedLibs) {
       }
     }
   }
+}
+
+if (!$python) {
+  $libs{'pycaml'} = 0;
 }
 
 #if($ARGV[0] =~ "--prefix=(.*)") {
@@ -173,8 +176,8 @@ $noocamlscripting = check_config("echo \"1;;\\n\" | ocaml |",
 my $ocamlprefix = $noocamlscripting ? "no" : "yes";
 
 if ($opt eq ".opt") {
-   my $opt_check = `which ocamlc.opt 2> /dev/null`;
-   if($opt_check =~ "/ocamlc.opt\$") {
+   my $opt_check1 = `ocamlc.opt -version 2>/dev/null`;
+   if($opt_check1 =~ /[0-9\.]+/) {
 	pr2 "ocamlc.opt is present.";
    }
    else {
@@ -182,8 +185,8 @@ if ($opt eq ".opt") {
 	pr2 "ocamlc.opt not found";
    }
 
-   my $opt_check = `which ocamlopt.opt 2> /dev/null`;
-   if($opt_check =~ "/ocamlopt.opt\$") {
+   my $opt_check2 = `ocamlopt.opt -version 2>/dev/null`;
+   if($opt_check2 =~ /[0-9\.]+/) {
 	pr2 "ocamlopt.opt is present.";
    }
    else {
@@ -191,8 +194,8 @@ if ($opt eq ".opt") {
 	pr2 "ocamlopt.opt not found";
    }
 
-   my $opt_check = `which ocamldep.opt 2> /dev/null`;
-   if($opt_check =~ "/ocamldep.opt\$") {
+   my $opt_check3 = `ocamldep.opt -version 2>/dev/null`;
+   if($opt_check3 =~ /[0-9\.]+/) {
 	pr2 "ocamldep.opt is present.";
    }
    else {
@@ -200,8 +203,8 @@ if ($opt eq ".opt") {
 	pr2 "ocamldep.opt not found";
    }
 
-   my $opt_check = `which ocamllex.opt 2> /dev/null`;
-   if($opt_check =~ "/ocamllex.opt\$") {
+   my $opt_check4 = `ocamllex.opt -version 2>/dev/null`;
+   if($opt_check4 =~ /[0-9\.]+/) {
 	pr2 "ocamllex.opt is present.";
    }
    else {
@@ -277,8 +280,8 @@ if($python) {
 }
 
 my $ocamlfind=!check_config(
-	"which ocamlfind 2> /dev/null |",
-	'/ocamlfind$',
+	"ocamlfind ocamlc -version 2> /dev/null | ",
+	'^[0-9\.]+',
 	"ocamlfind is present",
 	"ocamlfind is missing -- Switch to local library copies."
     );
@@ -318,16 +321,6 @@ if($syssexpdir) {
     pr2 "'sexplib' library is not present. A local copy will be used.";
 }
 
-# parmap.
-my $sysparmap=`ocamlfind query parmap 2> /dev/null | xargs echo -n`;
-
-if($sysparmap) {
-    $parmapdir=$sysparmap;
-    pr2 "'parmap' library is present in $parmapdir";
-} else {
-    pr2 "'parmap' library is not present. Compilation will fail.";
-}
-
 # Check if libpcre-ocaml is available
 # when pcre feature is enabled.
 my $pcredir="";
@@ -352,7 +345,7 @@ if($pcre) {
 pr2 "----------------------------------------------------------------------";
 pr2 "Library configuration:";
 
-my %libPaths = {};
+my %libPaths;
 foreach my $lib (keys %libs) {
   my $isSelected = $libs{$lib};
   if ($isSelected) {
@@ -492,7 +485,6 @@ print CONFIG "
 PYCAMLDIR=$pydir
 MENHIRDIR=$menhirdir
 SEXPDIR=$sexpdir
-PARMAPDIR=$parmapdir
 DYNLINK=$ocamlprefix
 
 # The OPTBIN variable is here to allow to use ocamlc.opt instead of
@@ -576,26 +568,49 @@ LNKLIBS=$strLnklibs
 OPTLNKLIBS=$strOptlnklibs
 INCLIBS=$strInclibs
 FLAGSLIBS=$strFlagslibs
+
+# selected ocaml modules
 ";
 
+sub repl {
+    my $src = $_[0];
+    my $dest = $_[1];
+    my $key = $_[2];
+    my $val = ucfirst($_[3]);
+    my $cmd = "sed -e 's|${key}|${val}|g' ${src} > ${dest}";
+    if (-e $dest) {
+	unlink($dest);
+    }
+    `$cmd`;
+}
 
 my $pythonprefix = $python ? "yes" : "no";
 pr2 "Support for python scripting: $pythonprefix";
-`cd python; ln -sf ${pythonprefix}_pycocci.ml pycocci.ml; `;
+repl('python/pycocci.ml.in', 'python/pycocci.ml', '@PYCOCCI_FILE@', "${pythonprefix}_pycocci");
+print CONFIG "PYCOCCI_FILE=${pythonprefix}_pycocci.ml\n";
+# `cd python; ln -sf ${pythonprefix}_pycocci.ml pycocci.ml; `;
 `cd python; make depend`;
 
 pr2 "Support for ocaml scripting: $ocamlprefix";
-`cd ocaml; ln -sf ${ocamlprefix}_prepare_ocamlcocci.ml prepare_ocamlcocci.ml;`;
+repl('ocaml/prepare_ocamlcocci.ml.in', 'ocaml/prepare_ocamlcocci.ml', '@OCAMLCOCCI_FILE@', "${ocamlprefix}_prepare_ocamlcocci");
+print CONFIG "OCAMLCOCCI_FILE=${ocamlprefix}_prepare_ocamlcocci.ml\n";
+# `cd ocaml; ln -sf ${ocamlprefix}_prepare_ocamlcocci.ml prepare_ocamlcocci.ml;`;
 `cd ocaml; make depend`;
 
 my $pcresuffix = $pcre ? "pcre" : "str";
 pr2 "Support for regexp: $pcresuffix";
-`cd globals; ln -sf regexp_${pcresuffix}.ml regexp.ml; touch regexp.ml;`;
+repl('globals/regexp.ml.in', 'globals/regexp.ml', '@REGEXP_FILE@', "Regexp_${pcresuffix}");
+print CONFIG "REGEXP_FILE=regexp_${pcresuffix}.ml";
+# `cd globals; ln -sf regexp_${pcresuffix}.ml regexp.ml; touch regexp.ml;`;
 `cd globals; make depend`;
 
 pr2 "Modifying globals/config.ml";
-my $command = "perl -p -e 's#Not_found.\*#Not_found->\\\"$src\\\"#' globals/config.ml.in > globals/config.ml";
-`$command`;
+my $version = `cat ./version | tr -d '\n'`;
+`echo -n "$version" > ./version`; # make sure that there are no newlines after version
+my $command1 = "sed -i -e 's|^let version = \".*\"\$|let version = \"$version\"|g' globals/config.ml.in"; # substitute version
+my $command2 = "perl -p -e 's#Not_found.\*#Not_found->\\\"$src\\\"#' globals/config.ml.in > globals/config.ml";
+`$command1`;
+`$command2`;
 
 pr2 "----------------------------------------------------------------------";
 pr2 "  Runtime dependency\n";

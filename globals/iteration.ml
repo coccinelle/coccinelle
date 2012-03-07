@@ -24,7 +24,14 @@ let add_pending_instance (files,a,b) =
       pending_instances_dir := (!base_file_list,a,b) :: !pending_instances_dir
   | Some f ->
       (* if one specifies a file, it is assumed to be the current one *)
-      pending_instances_file := (f,a,b) :: !pending_instances_file
+      (* put at the end of the list of information about this file *)
+      let rec loop = function
+	  [] -> [(f,a,b)]
+	| ((f1,a1,b1) as front)::rest ->
+	    if f = f1
+	    then front :: (loop rest)
+	    else (f,a,b) :: front :: rest in
+      pending_instances_file := loop !pending_instances_file
 					      
 let get_pending_instance _ =
   (if (List.length !pending_instances_file) > 0 or

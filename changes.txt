@@ -37,6 +37,18 @@
 - allow long double, short int, long int, and long long int in SmPL code.
 - gcc constructors allowed in SmPL.  Thanks to Uwe Kleine-Koenig for
   pointing out the problem.
+- Allow ! to appear before () in depends.  Thanks to SF Markus Elfring for
+  noticing the problem.
+- Can add code containing #pragma or #line.
+- Multicharacter command-line options now begin with -- and contain -
+  rather than _.
+- Allow multiple types of hidden metavariables, each preceded by @.
+  Position variables can be attached to these.
+- Python code now receives a structure containing a list of matched
+  elements for list metavariables.  Thanks to Michael Stefaniuc for
+  suggesting this features.
+- Python code now receives expressions and identifiers as ordinary strings,
+  not as elements of specific structures.
 
 ** Features:
 - Preserve spacing before // comments when not at the beginning of a line
@@ -67,6 +79,21 @@
   Pilch for pointing out the problem.
 - Better parsing of K&R C functions.  No longer convert all parameters to
   typedefs.
+- Implement newes as a hash table, for more efficiency on big sets of
+  environments.
+- A local variable that is declared without a type is not considered to be
+  a local variable.  Actually, such a variable is probably really a macro
+  that expends to a declaration, and this macro is not the variable name.
+- Allow iteration to make modifications when the modifications are done
+  inplace.
+- -debug gives information about defined virtual rules and about virtual
+  identifier bindings.
+- no more crashing on c++-like code without the c++ argument.
+- dependencies can have ! on ()
+- Give ocaml code access to Flag and thus the current file name.
+- Slightly more efficient handling of lists.
+- Slightly better error message in the case of inconsistent paths
+- Improve limited size caching
 
 ** Bugfix:
 - Corrected parsing of script strings delimited by a single quote.  Thanks
@@ -113,6 +140,29 @@
 - Strip constraints from metavariables in function prototype treatment
   before comparison, due to incomparability of pcre regexps.
 - Fixed obsolete regexp doc, thanks to Dmitry Osmakov
+- Improved x || ... || y to avoid double modification
+- Transparently allow \( \| and \) to be on lines beginning with -.  The -
+  has no effect.
+- Remove memory leak related to pr2_once management.  Thanks to Robert
+  Gomulka for helping to solve the problem.  Don't use once hashtable if
+  messages won't be printed anyway.
+- Change the type of subtraction mixing pointer and array to have int result.
+  Thanks to Robert Gomulka for noticing the problem.
+- Fix interpretation of dependencies in the presence of virtual rules.
+  Ignore constraints on inherited position metavariables in a rule that
+  will be ignored.
+- Better support meta iterator and meta declarer tokens, and symid tokens.
+- Better indentation after added noindent.
+- Fixed length bug in the treatment of structures.
+- Allow inheriting declaration/field metavariables.
+- Don't drop spaces after parentheses in when no minus code present.
+  Thanks to Terry Wilson for reporting the problem.
+- Keep inherited metavariables in asttomember (preprocessing for matching)
+- allminus for types, to allow removing const, not just matching it
+- improved pretty printing when something is added before a closed brace
+- Allow matching on nameless structs.  Thanks to Ron Minnich for reporting
+  the problem.
+- Pretty printing of const/volatile arrays in smpl code.
 
 * 0.2.5
 ** Language:

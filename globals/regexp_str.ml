@@ -8,6 +8,5 @@ let regexp string =
 
 let string_match regexp string =
   try
-	Str.search_forward regexp string 0;
-	true
+    Str.search_forward regexp string 0 >= 0
   with _ -> false

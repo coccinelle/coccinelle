@@ -134,6 +134,7 @@ and base_expression =
   | FunCall        of expression * string mcode (* ( *) *
                       expression dots * string mcode (* ) *)
   | Assignment     of expression * assignOp mcode * expression * bool
+  | Sequence       of expression * string mcode (* , *) * expression
   | CondExpr       of expression * string mcode (* ? *) * expression option *
 	              string mcode (* : *) * expression
   | Postfix        of expression * fixOp mcode
@@ -164,6 +165,7 @@ and base_expression =
 	              Type_cocci.typeC list option * form * inherited
   | MetaExprList   of meta_name mcode * listlen *
 	              keep_binding * inherited (* only in arg lists *)
+  | AsExpr         of expression * expression (* as expr, always metavar *)
 
   | EComma         of string mcode (* only in arg lists *)
 
@@ -227,7 +229,9 @@ and constant =
 (* Types *)
 
 and base_fullType =
-    Type            of const_vol mcode option * typeC
+    Type            of bool (* true if all minus *) *
+                       const_vol mcode option * typeC
+  | AsType          of fullType * fullType (* as type, always metavar *)
   | DisjType        of fullType list (* only after iso *)
   | OptType         of fullType
   | UniqueType      of fullType
@@ -281,6 +285,9 @@ and base_declaration =
   | TyDecl of fullType * string mcode (* ; *)
   | MacroDecl of ident (* name *) * string mcode (* ( *) *
         expression dots * string mcode (* ) *) * string mcode (* ; *)
+  | MacroDeclInit of ident (* name *) * string mcode (* ( *) *
+        expression dots * string mcode (* ) *) * string mcode (*=*) *
+        initialiser * string mcode (* ; *)
   | Typedef of string mcode (*typedef*) * fullType * typeC * string mcode (*;*)
   | DisjDecl   of declaration list
   | Ddots    of string mcode (* ... *) * declaration option (* whencode *)
@@ -288,6 +295,7 @@ and base_declaration =
   | MetaDecl of meta_name mcode * keep_binding * inherited
   | MetaField of meta_name mcode * keep_binding * inherited
   | MetaFieldList of meta_name mcode * listlen * keep_binding * inherited
+  | AsDecl        of declaration * declaration
 
   | OptDecl    of declaration
   | UniqueDecl of declaration
@@ -300,6 +308,7 @@ and declaration = base_declaration wrap
 and base_initialiser =
     MetaInit of meta_name mcode * keep_binding * inherited
   | MetaInitList of meta_name mcode * listlen * keep_binding * inherited
+  | AsInit of initialiser * initialiser (* as init, always metavar *)
   | InitExpr of expression
   | ArInitList of string mcode (*{*) * initialiser dots * string mcode (*}*)
   | StrInitList of bool (* true if all are - *) *
@@ -470,6 +479,7 @@ and base_statement =
   | FunDecl       of rule_elem (* header *) * rule_elem (* { *) *
      	             statement dots * rule_elem (* } *)
   | Define        of rule_elem (* header *) * statement dots
+  | AsStmt        of statement * statement (* as statement, always metavar *)
   | Dots          of string mcode (* ... *) *
 	             (statement dots,statement) whencode list *
 	             dots_whencode list * dots_whencode list
@@ -660,6 +670,7 @@ val make_meta_decl :
       declaration
 
 val make_term : 'a -> 'a wrap
+val make_inherited_term : 'a -> meta_name list (* inherited vars *) -> 'a wrap
 val make_mcode : 'a -> 'a mcode
 
 val equal_pos : fixpos -> fixpos -> bool

@@ -119,7 +119,8 @@ let create_root_token_table minus =
 	  | Ast0.IsoWhenTag(_) -> failwith "only within iso phase"
 	  | Ast0.IsoWhenTTag(_) -> failwith "only within iso phase"
 	  | Ast0.IsoWhenFTag(_) -> failwith "only within iso phase"
-	  | Ast0.MetaPosTag(p) -> failwith "metapostag only within iso phase"
+	  | Ast0.MetaPosTag(p) -> failwith "not in plus code"
+	  | Ast0.HiddenVarTag(p) -> failwith "only within iso phase"
 	in
 	Hashtbl.add root_token_table key tokens)
     CN.minus_table;
@@ -343,7 +344,8 @@ let call_collect_minus context_nodes :
       | Ast0.IsoWhenTag(_) -> failwith "only within iso phase"
       | Ast0.IsoWhenTTag(_) -> failwith "only within iso phase"
       | Ast0.IsoWhenFTag(_) -> failwith "only within iso phase"
-      | Ast0.MetaPosTag(p) -> failwith "metapostag only within iso phase")
+      | Ast0.MetaPosTag(p) -> failwith "not in plus code"
+      | Ast0.HiddenVarTag(p) -> failwith "only within iso phase")
     context_nodes
 
 (* result of collecting the join points should be sorted in nondecreasing
@@ -419,7 +421,7 @@ let mk_paramdots x = Ast.ParamDotsTag (Ast0toast.parameter_list x)
 let mk_stmtdots x  = Ast.StmtDotsTag (Ast0toast.statement_dots x)
 let mk_decldots x  = Ast.DeclDotsTag (Ast0toast.declaration_dots x)
 let mk_casedots x  = failwith "+ case lines not supported"
-let mk_typeC x     = Ast.FullTypeTag (Ast0toast.typeC x)
+let mk_typeC x     = Ast.FullTypeTag (Ast0toast.typeC false x)
 let mk_init x      = Ast.InitTag (Ast0toast.initialiser x)
 let mk_param x     = Ast.ParamTag (Ast0toast.parameterTypeDef x)
 
@@ -580,7 +582,8 @@ let call_collect_plus context_nodes :
       | Ast0.IsoWhenTag(_) -> failwith "only within iso phase"
       | Ast0.IsoWhenTTag(_) -> failwith "only within iso phase"
       | Ast0.IsoWhenFTag(_) -> failwith "only within iso phase"
-      | Ast0.MetaPosTag(p) -> failwith "metapostag only within iso phase")
+      | Ast0.MetaPosTag(p) -> failwith "not visible here"
+      | Ast0.HiddenVarTag(_) -> failwith "only within iso phase")
     context_nodes
 
 (* The plus fragments are converted to a list of lists of lists.
