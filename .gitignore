@@ -9,7 +9,8 @@ scripts/spatch.byte
 *.cmxa
 *.[ao]
 
-
+*~
+_build
 .depend
 test.ml
 
@@ -18,3 +19,6 @@ Makefile.config
 globals/config.ml
 python/pycocci.ml
 
+globals/regexp.ml
+ocaml/prepare_ocamlcocci.ml
+parsing_cocci/lexer_cli.ml

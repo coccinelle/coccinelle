@@ -8,7 +8,7 @@
 ##############################################################################
 TARGET=coccipython
 
-SOURCES= pycocci_aux.ml pycocci.ml
+SOURCES= pycocci_aux.ml $(PYCOCCI_FILE) pycocci.ml
 
 INCLUDEDIRS_LOCAL = ../commons ../commons/ocamlextra ../globals \
 		    ../parsing_c ../parsing_cocci

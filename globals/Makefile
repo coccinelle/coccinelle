@@ -6,7 +6,7 @@
 ##############################################################################
 TARGET=globals
 
-SRC= flag.ml config.ml iteration.ml regexp.ml
+SRC= flag.ml config.ml iteration.ml $(REGEXP_FILE) regexp.ml
 
 LIBS=
 INCLUDEDIRS= ../commons  $(PCREDIR)
