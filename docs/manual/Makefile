@@ -124,7 +124,7 @@ LATEXDIFFOPT=--type=CTRADITIONAL
 #if multi files ? sed sur les \input{} ? ou create in another dir ?
 latexdiff:
 	latexdiff $(LATEXDIFFOPT) main-old.tex main.tex > main-diff.tex
-	make MAINSRC=main-diff
+	$(MAKE) MAINSRC=main-diff
 	rm -f main-diff.aux
 
 replacediff:

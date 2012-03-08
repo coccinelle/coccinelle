@@ -13,4 +13,4 @@ clean distclean::
 	rm -f spatch.1
 
 all clean distclean::
-	make -C $(SUBDIR) $@
+	$(MAKE) -C $(SUBDIR) $@
