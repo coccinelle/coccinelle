@@ -140,7 +140,7 @@ let command_line args =
   | Some(pre_args,sp,post_args) ->
       (match post_args with
 	first::post_args ->
-	  pre_args @ "--sp_file" ::
+	  pre_args @ "--sp-file" ::
 		     (reparse (tokenize first)) ::
 		     post_args
       | [] -> failwith "--sp needs an argument")

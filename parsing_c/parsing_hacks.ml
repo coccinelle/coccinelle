@@ -1644,9 +1644,9 @@ let pointer = function
   | TAnd _ when !Flag.c_plus_plus -> true
   | _ -> false
 
-let ident_or_star = function
+let ident = function
     TIdent _ -> true
-  | x -> pointer x
+  | _ -> false
 
 (* This function is inefficient, because it will look over a K&R header,
 or function prototype multiple times.  At least when we see a , and are in a
@@ -1990,13 +1990,13 @@ let lookahead2 ~pass next before =
    *)
 
   (*  (xx) yy *)
-  | (TIdent (s, i1)::TCPar i2::(TIdent (_,i3)|TInt (_,i3))::after::_ ,
+  | (TIdent (s, i1)::TCPar i2::(TIdent (_,i3)|TInt (_,i3))::_ ,
     (TOPar info)::x::_)
     when not (TH.is_stuff_taking_parenthized x) (* &&
       Ast_c.line_of_info i2 =|= Ast_c.line_of_info i3 - why useful?
       *)
       && ok_typedef s
-      && not (ident_or_star after) (* possible K&R declaration *)
+      && not (ident x) (* possible K&R declaration *)
       ->
       msg_typedef s i1 29; LP.add_typedef_root s;
       (*TOPar info*)
