@@ -81,7 +81,7 @@ fix-expected:
 	cp tests/SCORE_actual.sexp tests/SCORE_expected_orig.sexp
 
 release:
-	sed -i -e 's|^let version = ".*"$|let version = "$(VERSION)"|g' globals/config.ml.in
+	sed -i -e 's|^let version = ".*"$$|let version = "$(VERSION)"|g' globals/config.ml.in
 	git add ./ version globals/config.ml.in
 	git commit -m "Release $(VERSION)"
 	git tag -a -m "Release $(VERSION)" $(VERSION)
