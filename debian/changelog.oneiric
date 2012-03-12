@@ -1,0 +1,11 @@
+coccinelle (1.0.0-rc10~1110npalix1) oneiric; urgency=low
+
+  * New release 1.0.0-rc10
+
+ -- Nicolas Palix <nicolas.palix@gmail.com>  Mon, 20 Feb 2012 21:25:31 +0100
+
+coccinelle (1.0.0-rc9~npalix1) oneiric; urgency=low
+
+  * New release 1.0.0-rc9
+
+ -- Nicolas Palix <nicolas.palix@gmail.com>  Fri, 03 Feb 2012 22:23:08 +0100
