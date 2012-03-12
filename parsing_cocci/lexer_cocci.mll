@@ -1,5 +1,7 @@
 (*
- * Copyright 2010, INRIA, University of Copenhagen
+ * Copyright 2012, INRIA
+ * Julia Lawall, Gilles Muller
+ * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
  * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
  * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
@@ -554,7 +556,8 @@ rule token = parse
   | "@"  { pass_zero();
 	   if !Data.in_rule_name or not !current_line_started
 	   then (start_line true; TArob)
-	   else (check_minus_context_linetype "@"; TPArob) }
+	   else (check_minus_context_linetype "@";
+		 TPArob (get_current_line_type lexbuf)) }
 
   | "=~"  { start_line true; TTildeEq (get_current_line_type lexbuf) }
   | "!~" { start_line true; TTildeExclEq (get_current_line_type lexbuf) }

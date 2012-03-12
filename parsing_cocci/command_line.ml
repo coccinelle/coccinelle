@@ -1,5 +1,7 @@
 (*
- * Copyright 2010, INRIA, University of Copenhagen
+ * Copyright 2012, INRIA
+ * Julia Lawall, Gilles Muller
+ * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
  * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
  * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
@@ -157,14 +159,14 @@ let tokenize first =
 
 let command_line args =
   let info =
-    try Some (Common.split_when (function x -> x = "-sp") args)
+    try Some (Common.split_when (function x -> List.mem x ["-sp";"--sp"]) args)
     with Not_found -> None in
   match info with
     None -> args
   | Some(pre_args,sp,post_args) ->
       (match post_args with
 	first::post_args ->
-	  pre_args @ "-sp_file" ::
+	  pre_args @ "--sp_file" ::
 		     (reparse (tokenize first)) ::
 		     post_args
-      | [] -> failwith "-sp needs an argument")
+      | [] -> failwith "--sp needs an argument")

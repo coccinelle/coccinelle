@@ -1,6 +1,7 @@
 (* Yoann Padioleau, Julia Lawall
  *
- * Copyright (C) 2010, University of Copenhagen DIKU and INRIA.
+ * Copyright (C) 2012, INRIA.
+ * Copyright (C) 2010, 2011, University of Copenhagen DIKU and INRIA.
  * Copyright (C) 2006, 2007, 2008, 2009 Ecole des Mines de Nantes and DIKU
  *
  * This program is free software; you can redistribute it and/or
@@ -788,7 +789,7 @@ let adjust_after_paren toks =
     match rest with
       ((T2(_,Min _,_)) as a)::rerest -> (* minus *)
 	a :: search_minus true rerest
-    | ((T2(_,Ctx,_)) as a)::rerest when str_of_token2 a = "," ->
+    | ((T2(_,Ctx,_)) as a)::rerest when seen_minus && str_of_token2 a = "," ->
 	(* comma after ( will be deleted, so consider it as minus code
 	   already *)
 	a :: search_minus true rerest
@@ -1100,15 +1101,16 @@ let rec adjust_indentation xs =
 	(match !_current_tabbing with
 	  [] -> aux started xs
 	| _::new_tabbing ->
+            let s = String.concat "" new_tabbing in
 	    _current_tabbing := new_tabbing;
-	    aux started xs)
+	    Cocci2 (s,-1,-1,-1,None)::aux started xs)
     (* border between existing code and cocci code *)
     | ((T2 (tok,_,_)) as x)::((Cocci2("\n",_,_,_,_)) as y)::xs
       when str_of_token2 x =$= "{" ->
 	x::aux true (y::Indent_cocci2::xs)
     | ((Cocci2 _) as x)::((T2 (tok,_,_)) as y)::xs
       when str_of_token2 y =$= "}" ->
-	x::aux started (y::Unindent_cocci2 true::xs)
+	x::aux started (Unindent_cocci2 true::y::xs)
     (* starting the body of the function *)
     | ((T2 (tok,_,_)) as x)::xs when str_of_token2 x =$= "{" ->  x::aux true xs
     | ((Cocci2("{",_,_,_,_)) as a)::xs -> a::aux true xs

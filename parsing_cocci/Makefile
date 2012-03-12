@@ -1,4 +1,6 @@
-# Copyright 2010, INRIA, University of Copenhagen
+# Copyright 2012, INRIA
+# Julia Lawall, Gilles Muller
+# Copyright 2010-2011, INRIA, University of Copenhagen
 # Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
 # Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
 # Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
@@ -32,7 +34,7 @@ SOURCES = flag_parsing_cocci.ml type_cocci.ml ast_cocci.ml ast0_cocci.ml \
 pretty_print_cocci.ml unparse_ast0.ml visitor_ast0_types.ml \
 visitor_ast.ml visitor_ast0.ml compute_lines.ml comm_assoc.ml \
 iso_pattern.ml iso_compile.ml single_statement.ml simple_assignments.ml \
-ast0toast.ml check_meta.ml top_level.ml type_infer.ml \
+get_metas.ml ast0toast.ml check_meta.ml top_level.ml type_infer.ml \
 test_exps.ml unitary_ast0.ml arity.ml index.ml context_neg.ml \
 adjust_pragmas.ml insert_plus.ml function_prototypes.ml \
 unify_ast.ml semantic_cocci.ml data.ml free_vars.ml safe_for_multi_decls.ml \

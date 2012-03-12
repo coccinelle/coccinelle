@@ -38,6 +38,7 @@ type 'a printer = 'a -> unit
 type pretty_printers = {
   expression      : Ast_c.expression printer;
   arg_list        : (Ast_c.argument Ast_c.wrap2 list) printer;
+  arg             : Ast_c.argument printer;
   statement       : Ast_c.statement printer;
   decl            : Ast_c.declaration printer;
   field           : Ast_c.field printer;
@@ -919,8 +920,25 @@ let mk_pretty_printers
 
 	pr_elem rp;
 
-    | (DeclList (_, _) | (MacroDecl _)) -> raise Impossible
+    | MacroDeclInit
+	((s, es, ini), iis::lp::rp::eq::iiend::ifakestart::iisto) ->
+	pr_elem ifakestart;
+	iisto +> List.iter pr_elem; (* static and const *)
+	pr_elem iis;
+	pr_elem lp;
+	es +> List.iter (fun (e, opt) ->
+          assert (List.length opt <= 1);
+          opt +> List.iter pr_elem;
+          pp_argument e;
+	);
 
+	pr_elem rp;
+	pr_elem eq;
+	pp_init ini;
+	pr_elem iiend;
+
+    | (DeclList (_, _) | (MacroDecl _) | (MacroDeclInit _)) ->
+	raise Impossible
 
 (* ---------------------- *)
 and pp_init (init, iinit) =
@@ -1311,6 +1329,7 @@ and pp_init (init, iinit) =
 
   { expression = pp_expression;
     arg_list   = pp_arg_list;
+    arg        = pp_argument;
     statement  = pp_statement;
     decl       = pp_decl;
     field      = pp_field;
@@ -1375,6 +1394,9 @@ let pp_expression_gen ~pr_elem ~pr_space =
 
 let pp_arg_list_gen ~pr_elem ~pr_space =
   (pp_elem_sp pr_elem pr_space).arg_list
+
+let pp_arg_gen ~pr_elem ~pr_space =
+  (pp_elem_sp pr_elem pr_space).arg
 
 let pp_statement_gen ~pr_elem ~pr_space =
   (pp_elem_sp pr_elem pr_space).statement

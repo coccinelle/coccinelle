@@ -1,5 +1,7 @@
 (*
- * Copyright 2010, INRIA, University of Copenhagen
+ * Copyright 2012, INRIA
+ * Julia Lawall, Gilles Muller
+ * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
  * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
  * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
@@ -555,6 +557,7 @@ let one_initialisation_to_affectation x =
 let initialisation_to_affectation decl =
   match decl with
   | B.MacroDecl _ -> F.Decl decl
+  | B.MacroDeclInit _ -> F.Decl decl (* not sure... *)
   | B.DeclList (xs, iis) ->
 
       (* todo?: should not do that if the variable is an array cos
@@ -772,7 +775,7 @@ let satisfies_econstraint c exp : bool =
       (match cst with
       | Ast_c.String (str, _) -> satisfies_regexpconstraint c str
       | Ast_c.MultiString strlist ->
-	  warning "Unable to apply a constraint on an multistring constant!"
+	  warning "Unable to apply a constraint on a multistring constant!"
       | Ast_c.Char  (char , _) -> satisfies_regexpconstraint c char
       | Ast_c.Int   (int  , _) -> satisfies_regexpconstraint c int
       | Ast_c.Float (float, _) -> satisfies_regexpconstraint c float)
@@ -798,7 +801,16 @@ let list_matcher match_dots rebuild_dots match_comma rebuild_comma
 
           (* '...' can take more or less the beginnings of the arguments *)
               let startendxs =
-		Common.zip (Common.inits ys) (Common.tails ys) in
+		(* if eas is empty there is only one possible match.
+		   the same if eas is just a comma *)
+		match eas with
+		  [] -> [(ys,[])]
+		| [c] when not(ys=[]) &&
+		   (match match_comma c with Some _ -> true | None -> false) ->
+		    let r = List.rev ys in
+		    [(List.rev(List.tl r),[List.hd r])]
+		| _ ->
+		  Common.zip (Common.inits ys) (Common.tails ys) in
 	      Some
 		(startendxs +> List.fold_left (fun acc (startxs, endxs) ->
 		  acc >||> (
@@ -1033,6 +1045,12 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
    * any checks. Hopefully now have tagged SP technique.
    *)
 
+  | A.AsExpr(exp,asexp), expb ->
+      expression exp expb >>= (fun exp expb ->
+      expression asexp expb >>= (fun asexp expb ->
+	return(
+	  ((A.AsExpr(exp,asexp)) +> wa,
+	   expb))))
 
   (* old:
    * | A.Edots _, _ -> raise Impossible.
@@ -1136,9 +1154,6 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
           ((B.FunCall (eb, ebs),typ), [ib1;ib2])
         ))))))
 
-
-
-
   | A.Assignment (ea1, opa, ea2, simple),
       ((B.Assignment (eb1, opb, eb2), typ),ii) ->
       let (opbi) = tuple_of_list1 ii in
@@ -1152,6 +1167,17 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
             ((B.Assignment (eb1, opb, eb2), typ), [opbi])
         ))))
       else fail
+
+  | A.Sequence (ea1, opa, ea2),
+      ((B.Sequence (eb1, eb2), typ),ii) ->
+      let (opbi) = tuple_of_list1 ii in
+        expression ea1 eb1 >>= (fun ea1 eb1 ->
+        expression ea2 eb2 >>= (fun ea2 eb2 ->
+        tokenf opa opbi >>= (fun opa opbi ->
+          return (
+            (A.Sequence (ea1, opa, ea2)) +> wa,
+            ((B.Sequence (eb1, eb2), typ), [opbi])
+        ))))
 
   | A.CondExpr(ea1,ia1,ea2opt,ia2,ea3),((B.CondExpr(eb1,eb2opt,eb3),typ),ii) ->
       let (ib1, ib2) = tuple_of_list2 ii in
@@ -1753,6 +1779,17 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
 	    return ((mckstart, allminus,
 		     (A.MetaDecl (ida, keep, inherited))+> A.rewrap decla),
 		    declb))
+
+  | A.AsDecl(dec,asdec), decb ->
+      declaration (mckstart, allminus, dec) decb >>=
+      (fun (mckstart, allminus, dec) decb ->
+	let asmckstart = A.CONTEXT(A.NoPos,A.NOTHING) in
+      declaration (asmckstart,false,asdec) decb >>= (fun (_,_,asdec) decb ->
+	return(
+	((mckstart, allminus,
+	  (A.AsDecl(dec,asdec)) +> A.rewrap decla),
+	 decb))))
+
   | _, (B.DeclList ([var], iiptvirgb::iifakestart::iisto)) ->
       onedecl allminus decla (var,iiptvirgb,iisto) >>=
       (fun decla (var,iiptvirgb,iisto)->
@@ -1849,7 +1886,37 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
 		  )))))))
       | _ -> fail)
 
-  | _, (B.MacroDecl _ |B.DeclList _) ->      fail
+  | A.MacroDeclInit (sa,lpa,eas,rpa,weqa,inia,enda),
+      B.MacroDeclInit ((sb,ebs,inib),ii) ->
+      let (iisb, lpb, rpb, weqb, iiendb, iifakestart, iistob) =
+        (match ii with
+        |  iisb::lpb::rpb::weqb::iiendb::iifakestart::iisto ->
+            (iisb,lpb,rpb,weqb,iiendb, iifakestart,iisto)
+        |  _ -> raise Impossible
+        ) in
+      (if allminus
+      then minusize_list iistob
+      else return ((), iistob)
+      ) >>= (fun () iistob ->
+
+        X.tokenf_mck mckstart iifakestart >>= (fun mckstart iifakestart ->
+        ident DontKnow sa (sb, iisb) >>= (fun sa (sb, iisb) ->
+        tokenf lpa lpb >>= (fun lpa lpb ->
+        tokenf rpa rpb >>= (fun rpa rpb ->
+        tokenf rpa rpb >>= (fun rpa rpb ->
+        tokenf weqa weqb >>= (fun weqa weqb ->
+        tokenf enda iiendb >>= (fun enda iiendb ->
+        arguments (seqstyle eas) (A.undots eas) ebs >>= (fun easundots ebs ->
+	initialiser inia inib >>= (fun inia inib ->
+        let eas = redots eas easundots in
+
+          return (
+            (mckstart, allminus,
+            (A.MacroDecl (sa,lpa,eas,rpa,enda)) +> A.rewrap decla),
+            (B.MacroDecl ((sb,ebs,true),
+                         [iisb;lpb;rpb;iiendb;iifakestart] ++ iistob))
+          )))))))))))
+  | _, (B.MacroDecl _ |B.MacroDeclInit _ |B.DeclList _) ->      fail
 
 
 and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
@@ -1870,7 +1937,8 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
    }, iivirg) ->
 
    (match A.unwrap tya0, typb0 with
-   | A.Type(cv1,tya1), ((qu,il),typb1) ->
+   | A.Type(allminus,cv1,tya1), ((qu,il),typb1) ->
+       (* allminus doesn't seem useful here - nothing done with cv1 *)
 
      (match A.unwrap tya1, typb1 with
      | A.StructUnionDef(tya2, lba, declsa, rba),
@@ -1906,14 +1974,14 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
          let declsa = redots declsa undeclsa in
 
          (match A.unwrap tya2 with
-         | A.Type(cv3, tya3) ->
+         | A.Type(allminus, cv3, tya3) -> (* again allminus not used *)
            (match A.unwrap tya3 with
            | A.MetaType(ida,keep, inherited) ->
 
                fullType tya2 fake_typeb >>= (fun tya2 fake_typeb ->
 		 let tya1 =
 		   A.StructUnionDef(tya2,lba,declsa,rba)+> A.rewrap tya1 in
-		 let tya0 = A.Type(cv1, tya1) +> A.rewrap tya0 in
+		 let tya0 = A.Type(allminus, cv1, tya1) +> A.rewrap tya0 in
 
 
 		 let typb1 = B.StructUnion (sub,sbopt, declsb),
@@ -1943,7 +2011,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
 
                let tya1 = A.StructUnionDef(tya2,lba,declsa,rba)+> A.rewrap tya1
                in
-               let tya0 = A.Type(cv1, tya1) +> A.rewrap tya0 in
+               let tya0 = A.Type(allminus, cv1, tya1) +> A.rewrap tya0 in
 
                match structnameb with
                | _nQ, (B.StructUnionName (sub, s), [iisub;iisbopt]) ->
@@ -2187,6 +2255,13 @@ and (initialiser: (A.initialiser, Ast_c.initialiser) matcher) =  fun ia ib ->
 	     ))
 	  )
 
+    | A.AsInit(ini,asini), inib ->
+	initialiser ini inib >>= (fun ini inib ->
+	initialiser asini inib >>= (fun asini inib ->
+	  return(
+	  ((A.AsInit(ini,asini)) +> A.rewrap ia,
+	   inib))))
+
     | (A.InitExpr expa, ib) ->
         (match A.unwrap expa, ib with
         | A.Edots (mcode, None), ib    ->
@@ -2342,7 +2417,8 @@ and str_initialisers = fun allminus ias (ibs, iicomma) ->
   let ibs_split   = resplit_initialiser ibs iicomma in
 
   if need_unordered_initialisers ibs
-  then initialisers_unordered2 allminus ias_unsplit ibs_split >>=
+  then
+    initialisers_unordered2 allminus ias_unsplit ibs_split >>=
     (fun ias_unsplit ibs_split ->
       return (
       split_icomma ias_unsplit,
@@ -2358,6 +2434,7 @@ and ar_initialisers = fun ias (ibs, iicomma) ->
       (List.map (function (elem,comma) -> [Left elem; Right [comma]]) ibs) in
   initialisers_ordered2 ias ibs >>=
   (fun ias ibs_split ->
+
     let ibs,iicomma =
       match List.rev ibs_split with
 	(Right comma)::rest -> (Ast_c.unsplit_comma (List.rev rest),comma)
@@ -2487,7 +2564,7 @@ and (struct_field: (A.declaration, B.field) matcher) = fun fa fb ->
           pr2_once "warning: bitfield not handled by ast_cocci";
           fail
       | B.Simple (None, typb) ->
-          pr2_once "warning: unamed struct field not handled by ast_cocci";
+          pr2_once "warning: unnamed struct field not handled by ast_cocci";
           fail
       | B.Simple (Some nameidb, typb) ->
 
@@ -2588,7 +2665,7 @@ and (fullType: (A.fullType, Ast_c.fullType) matcher) =
    X.optional_qualifier_flag (fun optional_qualifier ->
    X.all_bound (A.get_inherited typa) >&&>
    match A.unwrap typa, typb with
-   | A.Type(cv,ty1), ((qu,il),ty2) ->
+   | A.Type(allminus,cv,ty1), ((qu,il),ty2) ->
 
        if qu.B.const && qu.B.volatile
        then
@@ -2607,11 +2684,15 @@ and (fullType: (A.fullType, Ast_c.fullType) matcher) =
        (* "iso-by-absence" *)
        | None ->
            let do_stuff () =
-             fullTypebis ty1 ((qu,il), ty2) >>= (fun ty1 fullty2 ->
-               return (
-                 (A.Type(None, ty1)) +> A.rewrap typa,
-                 fullty2
-               ))
+             fullTypebis ty1 ((qu,il), ty2) >>= (fun ty1 ((qu,il), ty2) ->
+             (if allminus
+	     then minusize_list il
+	     else return ((), il)
+	     ) >>= (fun () il ->
+	       return (
+                 (A.Type(allminus, None, ty1)) +> A.rewrap typa,
+                 ((qu,il), ty2)
+               )))
            in
            (match optional_qualifier, qu.B.const || qu.B.volatile with
            | false, false -> do_stuff ()
@@ -2634,7 +2715,7 @@ and (fullType: (A.fullType, Ast_c.fullType) matcher) =
                tokenf x i1 >>= (fun x i1 ->
                fullTypebis ty1 (Ast_c.nQ,ty2) >>= (fun ty1 (_, ty2) ->
                  return (
-                   (A.Type(Some x, ty1)) +> A.rewrap typa,
+                   (A.Type(allminus, Some x, ty1)) +> A.rewrap typa,
                    ((qu, [i1]), ty2)
                  )))
 
@@ -2642,13 +2723,20 @@ and (fullType: (A.fullType, Ast_c.fullType) matcher) =
                tokenf x i1 >>= (fun x i1 ->
                fullTypebis ty1 (Ast_c.nQ,ty2) >>= (fun ty1 (_, ty2) ->
                  return (
-                   (A.Type(Some x, ty1)) +> A.rewrap typa,
+                   (A.Type(allminus, Some x, ty1)) +> A.rewrap typa,
                    ((qu, [i1]), ty2)
                  )))
 
            | _ -> fail
            )
        )
+
+  | A.AsType(ty,asty), tyb ->
+      fullType ty tyb >>= (fun ty tyb ->
+      fullType asty tyb >>= (fun asty tyb ->
+	return(
+	  ((A.AsType(ty,asty)) +> A.rewrap typa,
+	   tyb))))
 
   | A.DisjType typas, typb ->
       typas +>
@@ -2691,7 +2779,7 @@ and simulate_signed ta basea stringsa signaopt tb baseb ii rebuilda =
       (* In ii there is a list, sometimes of length 1 or 2 or 3.
        * And even if in baseb we have a Signed Int, that does not mean
        * that ii is of length 2, cos Signed is the default, so if in signa
-       * we have Signed explicitely ? we cant "accrocher" this mcode to
+       * we have Signed explicitly ? we cant "accrocher" this mcode to
        * something :( So for the moment when there is signed in cocci,
        * we force that there is a signed in c too (done in pattern.ml).
        *)
@@ -2821,11 +2909,11 @@ and simulate_signed_meta ta basea signaopt tb baseb ii rebuilda =
 
       let match_to_type rebaseb =
 	sign signaopt signbopt >>= (fun signaopt iisignbopt ->
-	let fta = A.rewrap basea (A.Type(None,basea)) in
+	let fta = A.rewrap basea (A.Type(false(*don't know*),None,basea)) in
 	let ftb = Ast_c.nQ,(B.BaseType (rebaseb), iibaseb) in
 	fullType fta ftb >>= (fun fta (_,tb) ->
 	  (match A.unwrap fta,tb with
-	    A.Type(_,basea), (B.BaseType baseb, ii) ->
+	    A.Type(_,_,basea), (B.BaseType baseb, ii) ->
 	      return (
 	      (rebuilda (basea, signaopt)) +> A.rewrap ta,
 	      (B.BaseType (baseb), iisignbopt ++ ii)
@@ -2977,7 +3065,7 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
 
 
 
-    (* todo: handle the iso on optionnal size specifification ? *)
+    (* todo: handle the iso on optional size specification ? *)
     | A.Array (typa, ia1, eaopt, ia2), (B.Array (ebopt, typb), ii) ->
         let (ib1, ib2) = tuple_of_list2 ii in
         fullType typa typb >>= (fun typa typb ->
@@ -3025,7 +3113,7 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
 		the part that matched *)
 	     let rec loop s =
 	       match A.unwrap s with
-		 A.Type(None,ty) ->
+		 A.Type(allminus,None,ty) ->
 		   (match A.unwrap ty with
 		     A.StructUnionName(sua, None) ->
 		       (match (term sua, sub) with
@@ -3035,7 +3123,7 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
 		       (fun _ _ ->
 			 tokenf sua iisub >>= (fun sua iisub ->
 			   let ty =
-			     A.Type(None,
+			     A.Type(allminus,None,
 				    A.StructUnionName(sua, None) +> A.rewrap ty)
 			       +> A.rewrap s in
 			   return (ty,[iisub])))
@@ -3129,12 +3217,13 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
 		the part that matched *)
 	     let rec loop s =
 	       match A.unwrap s with
-		 A.Type(None,ty) ->
+		 A.Type(allminus,None,ty) ->
 		   (match A.unwrap ty with
 		     A.EnumName(sua, None) ->
 		       tokenf sua iisub >>= (fun sua iisub ->
 			 let ty =
-			   A.Type(None,A.EnumName(sua, None) +> A.rewrap ty)
+			   A.Type(allminus,None,A.EnumName(sua, None) +>
+				  A.rewrap ty)
 			     +> A.rewrap s in
 			 return (ty,[iisub]))
 		   | _ -> fail)
@@ -3406,7 +3495,7 @@ and compatible_type a (b,local) =
 	loop (a,b)
     | Type_cocci.FunctionPointer a, _ ->
 	failwith
-	  "TODO: function pointer type doesn't store enough information to determine compatability"
+	  "TODO: function pointer type doesn't store enough information to determine compatibility"
     | Type_cocci.Array   a, (qub, (B.Array (eopt, b),ii)) ->
       (* no size info for cocci *)
 	loop (a,b)
@@ -3881,11 +3970,6 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
               )))))))))
       | _ -> raise Impossible
       )
-
-
-
-
-
 
   | A.Decl (mckstart,allminus,decla), F.Decl declb ->
       declaration (mckstart,allminus,decla) declb >>=

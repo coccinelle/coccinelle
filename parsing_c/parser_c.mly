@@ -1362,6 +1362,19 @@ decl2:
        MacroDecl ((fst $3, $5, true), [snd $3;$4;$6;$7;fakeInfo();$1;$2])}
 
 
+ | TMacroDecl TOPar argument_list TCPar teq initialize TPtVirg
+     { function _ ->
+       MacroDeclInit ((fst $1, $3, $6), [snd $1;$2;$4;$5;$7;fakeInfo()]) }
+ | Tstatic TMacroDecl TOPar argument_list TCPar teq initialize TPtVirg
+     { function _ ->
+       MacroDeclInit ((fst $2, $4, $7),[snd $2;$3;$5;$6;$8;fakeInfo();$1]) }
+ | Tstatic TMacroDeclConst TMacroDecl TOPar argument_list TCPar
+     teq initialize TPtVirg
+     { function _ ->
+       MacroDeclInit
+	 ((fst $3, $5, $8), [snd $3;$4;$6;$7;$9;fakeInfo();$1;$2])}
+
+
 /*(*-----------------------------------------------------------------------*)*/
 decl_spec2:
  | storage_class_spec      { {nullDecl with storageD = (fst $1, [snd $1]) } }

@@ -1,5 +1,7 @@
 (*
- * Copyright 2010, INRIA, University of Copenhagen
+ * Copyright 2012, INRIA
+ * Julia Lawall, Gilles Muller
+ * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
  * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
  * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
@@ -493,10 +495,10 @@ let rec nub ls =
 let (mysat2:
   Lib_engine.model ->
   (Lib_engine.ctlcocci * (pred list list)) ->
-  (Lib_engine.mvar list*Lib_engine.metavars_binding) ->
+  (string (*rulename*) * Lib_engine.mvar list*Lib_engine.metavars_binding) ->
   (Lib_engine.numbered_transformation_info * bool *
      Lib_engine.metavars_binding * Lib_engine.metavars_binding list)) =
-  fun (flow, label, states) ctl (used_after, binding) ->
+  fun (flow, label, states) ctl (rulename, used_after, binding) ->
     let binding2 = metavars_binding_to_binding2 binding in
     let (triples,(trans_info2, returned_any_states, used_after_envs)) =
       WRAPPED_ENGINE.satbis (flow, label, states) ctl
@@ -504,7 +506,7 @@ let (mysat2:
     in
     if not (!Flag_parsing_cocci.sgrep_mode || !Flag.sgrep_mode2 ||
             !Flag_matcher.allow_inconsistent_paths)
-    then Check_reachability.check_reachability triples flow;
+    then Check_reachability.check_reachability rulename triples flow;
     let (trans_info2,used_after_fresh_envs) =
       Postprocess_transinfo.process used_after binding2 trans_info2 in
     let used_after_envs =

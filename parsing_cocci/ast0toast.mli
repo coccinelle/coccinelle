@@ -1,5 +1,7 @@
 (*
- * Copyright 2010, INRIA, University of Copenhagen
+ * Copyright 2012, INRIA
+ * Julia Lawall, Gilles Muller
+ * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
  * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
  * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
@@ -41,7 +43,7 @@ val declaration_dots :
     Ast0_cocci.declaration Ast0_cocci.dots ->
       Ast_cocci.declaration Ast_cocci.dots
 val case_line : Ast0_cocci.case_line -> Ast_cocci.case_line
-val typeC : Ast0_cocci.typeC -> Ast_cocci.fullType
+val typeC : bool (*allminus*) -> Ast0_cocci.typeC -> Ast_cocci.fullType
 val declaration : Ast0_cocci.declaration -> Ast_cocci.declaration
 val parameterTypeDef :
     Ast0_cocci.parameterTypeDef -> Ast_cocci.parameterTypeDef

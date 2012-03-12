@@ -1,5 +1,7 @@
 (*
- * Copyright 2010, INRIA, University of Copenhagen
+ * Copyright 2012, INRIA
+ * Julia Lawall, Gilles Muller
+ * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
  * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
  * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
@@ -662,6 +664,10 @@ and get_before_e s a =
   | Ast.Define(header,body) ->
       let (body,_) = get_before body [] in
       (Ast.rewrap s (Ast.Define(header,body)), [Ast.Other s])
+  | Ast.AsStmt(stmt,asstmt) ->
+      let (stmt,_) = get_before_e stmt [] in
+      let (asstmt,_) = get_before_e asstmt [] in
+      (Ast.rewrap s (Ast.AsStmt(stmt,asstmt)),[Ast.Other s])
   | Ast.IfThen(ifheader,branch,aft) ->
       let (br,_) = get_before_e branch [] in
       (Ast.rewrap s (Ast.IfThen(ifheader,br,aft)), [Ast.Other s])
@@ -798,6 +804,10 @@ and get_after_e s a =
   | Ast.Define(header,body) ->
       let (body,_) = get_after body a in
       (Ast.rewrap s (Ast.Define(header,body)), [Ast.Other s])
+  | Ast.AsStmt(stmt,asstmt) ->
+      let (stmt,_) = get_after_e stmt [] in
+      let (asstmt,_) = get_after_e asstmt [] in
+      (Ast.rewrap s (Ast.AsStmt(stmt,asstmt)),[Ast.Other s])
   | Ast.IfThen(ifheader,branch,aft) ->
       let (br,_) = get_after_e branch a in
       (Ast.rewrap s (Ast.IfThen(ifheader,br,aft)),[Ast.Other s])
@@ -2386,6 +2396,12 @@ and statement stmt top after quantified minus_quantified
 	  (Common.union_set mbfvs minus_quantified)
 	  None llabel slabel true guard in
       quantify guard bfvs (make_seq [define_header; body_code])
+  | Ast.AsStmt(stmt,asstmt) ->
+      ctl_and
+	(statement stmt top after quantified minus_quantified
+	   label llabel slabel guard)
+	(statement asstmt top after quantified minus_quantified
+	   label llabel slabel guard)
   | Ast.OptStm(stm) ->
       failwith "OptStm should have been compiled away\n"
   | Ast.UniqueStm(stm) -> failwith "arities not yet supported"

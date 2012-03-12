@@ -1,5 +1,7 @@
 (*
- * Copyright 2010, INRIA, University of Copenhagen
+ * Copyright 2012, INRIA
+ * Julia Lawall, Gilles Muller
+ * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
  * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
  * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
@@ -140,6 +142,9 @@ let rec expression context old_metas table minus e =
   | Ast0.Assignment(left,op,right,_) ->
       expression context old_metas table minus left;
       expression ID old_metas table minus right
+  | Ast0.Sequence(left,op,right) ->
+      expression context old_metas table minus left;
+      expression ID old_metas table minus right
   | Ast0.CondExpr(exp1,why,exp2,colon,exp3) ->
       expression ID old_metas table minus exp1;
       get_opt (expression ID old_metas table minus) exp2;
@@ -186,6 +191,7 @@ let rec expression context old_metas table minus e =
       check_table table minus lenname
   | Ast0.MetaExprList(name,_,_) ->
       check_table table minus name
+  | Ast0.AsExpr(exp,asexp) -> failwith "not generated yet"
   | Ast0.DisjExpr(_,exps,_,_) ->
       List.iter (expression context old_metas table minus) exps
   | Ast0.NestExpr(_,exp_dots,_,w,_) ->
@@ -224,6 +230,7 @@ and typeC old_metas table minus t =
       get_opt (expression ID old_metas table minus) size
   | Ast0.MetaType(name,_) ->
       check_table table minus name
+  | Ast0.AsType(ty,asty) -> failwith "not generated yet"
   | Ast0.DisjType(_,types,_,_) ->
       List.iter (typeC old_metas table minus) types
   | Ast0.EnumName(en,Some id) -> ident GLOBAL old_metas table minus id
@@ -252,11 +259,12 @@ and declaration context old_metas table minus d =
       check_table table minus lenname
   | Ast0.MetaFieldList(name,_,_) ->
       check_table table minus name
+  | Ast0.AsDecl(decl,asdecl) -> failwith "not generated yet"
   | Ast0.Init(stg,ty,id,eq,ini,sem) ->
+      typeC old_metas table minus ty;
+      ident context old_metas table minus id;
       (match Ast0.unwrap ini with
 	Ast0.InitExpr exp ->
-	  typeC old_metas table minus ty;
-	  ident context old_metas table minus id;
 	  expression ID old_metas table minus exp
       |	_ ->
 	  (*
@@ -264,14 +272,18 @@ and declaration context old_metas table minus d =
 	  then
 	    failwith "complex initializer specification not allowed in - code"
 	  else*)
-	    (typeC old_metas table minus ty;
-	     ident context old_metas table minus id;
-	     initialiser old_metas table minus ini))
+	    initialiser old_metas table minus ini)
   | Ast0.UnInit(stg,ty,id,sem) ->
       typeC old_metas table minus ty; ident context old_metas table minus id
   | Ast0.MacroDecl(name,lp,args,rp,sem) ->
       ident GLOBAL old_metas table minus name;
       dots (expression ID old_metas table minus) args
+  | Ast0.MacroDeclInit(name,lp,args,rp,eq,ini,sem) ->
+      ident GLOBAL old_metas table minus name;
+      dots (expression ID old_metas table minus) args;
+      (match Ast0.unwrap ini with
+	Ast0.InitExpr exp -> expression ID old_metas table minus exp
+      |	_ -> initialiser old_metas table minus ini)
   | Ast0.TyDecl(ty,sem) -> typeC old_metas table minus ty
   | Ast0.Typedef(stg,ty,id,sem) ->
       typeC old_metas table minus ty;
@@ -295,6 +307,7 @@ and initialiser old_metas table minus ini =
       check_table table minus lenname
   | Ast0.MetaInitList(name,_,_) ->
       check_table table minus name
+  | Ast0.AsInit(ini,asini) -> failwith "not generated yet"
   | Ast0.InitExpr(exp) -> expression ID old_metas table minus exp
   | Ast0.InitList(lb,initlist,rb,ordered) ->
       dots (initialiser old_metas table minus) initlist
@@ -379,6 +392,7 @@ and statement old_metas table minus s =
   | Ast0.ReturnExpr(ret,exp,sem) -> expression ID old_metas table minus exp
   | Ast0.MetaStmt(name,_) ->     check_table table minus name
   | Ast0.MetaStmtList(name,_) -> check_table table minus name
+  | Ast0.AsStmt(stm,asstm) -> failwith "not generated yet"
   | Ast0.Exp(exp) -> expression ID old_metas table minus exp
   | Ast0.TopExp(exp) -> expression ID old_metas table minus exp
   | Ast0.Ty(ty) -> typeC old_metas table minus ty
@@ -467,11 +481,19 @@ let rule old_metas table minus rules =
 (* --------------------------------------------------------------------- *)
 
 let positions table rules =
-  let mcode x =
+  let rec rmcode x = (* needed for type inference, nonpolymorphic *)
     List.iter
-      (function Ast0.MetaPos(name,constraints,_) ->
-	let pos = Ast0.unwrap_mcode name in
-	(find_loop table pos) := true)
+      (function var ->
+	let name = Ast0.meta_pos_name var in
+	(find_loop table (Ast0.unwrap_mcode name)) := true;
+	rmcode name)
+      (Ast0.get_pos x) in
+  let rec mcode x =
+    List.iter
+      (function var ->
+	let name = Ast0.meta_pos_name var in
+	(find_loop table (Ast0.unwrap_mcode name)) := true;
+	rmcode name)
       (Ast0.get_pos x) in
   let option_default = () in
   let bind x y = () in
@@ -487,9 +509,13 @@ let positions table rules =
 
 let dup_positions rules =
   let mcode x =
-    List.map
-      (function Ast0.MetaPos(name,constraints,_) -> Ast0.unwrap_mcode name)
-      (Ast0.get_pos x) in
+    List.concat
+      (List.map
+	 (function
+	     Ast0.MetaPosTag(Ast0.MetaPos(name,constraints,_)) ->
+	       [Ast0.unwrap_mcode name]
+	   | _ -> [])
+	 (Ast0.get_pos x)) in
   let option_default = [] in
   let bind x y = x@y in
 

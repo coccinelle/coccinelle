@@ -1,5 +1,7 @@
 (*
- * Copyright 2010, INRIA, University of Copenhagen
+ * Copyright 2012, INRIA
+ * Julia Lawall, Gilles Muller
+ * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
  * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
  * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
@@ -23,7 +25,9 @@
 
 
 let lines =
-["Copyright 2010, INRIA, University of Copenhagen";
+["Copyright 2012, INRIA";
+"Julia Lawall, Gilles Muller";
+"Copyright 2010-2011, INRIA, University of Copenhagen";
 "Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix";
 "Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen";
 "Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix";
@@ -66,13 +70,15 @@ let do_one file =
     if Filename.check_suffix file ".pl"    then make_lines else
     if Filename.basename file = "Makefile" then make_lines else
     failwith (Printf.sprintf "unknown file type: %s" file) in
-  let _ = Sys.command (Printf.sprintf "cp %s /tmp/tmpfl" file) in
-  let o = open_out file in
+  let tmpfl = Filename.temp_file "cocci_licence" "orig" in
+  let _     = Sys.command (Printf.sprintf "cp %s %s" file tmpfl) in
+  let o     = open_out file in
   List.iter (function l -> Printf.fprintf o "%s\n" l) lines;
   Printf.fprintf o "\n";
   Printf.fprintf o "\n";
   close_out o;
-  let _ = Sys.command (Printf.sprintf "cat /tmp/tmpfl >> %s" file) in
+  let _ = Sys.command (Printf.sprintf "cat %s >> %s" tmpfl file) in
+  let _ = Sys.command (Printf.sprintf "rm -f %s" tmpfl) in
   ()
 
 (* pad's modif *)

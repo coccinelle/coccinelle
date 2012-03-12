@@ -1,5 +1,7 @@
 (*
- * Copyright 2010, INRIA, University of Copenhagen
+ * Copyright 2012, INRIA
+ * Julia Lawall, Gilles Muller
+ * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
  * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
  * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
@@ -382,11 +384,11 @@ let test_regression_okfailed () =
 
   let newscore  = Common.empty_score () in
   let oks =
-    Common.cmd_to_list ("find -name \"*.ok\"")
+    Common.cmd_to_list ("find . -name \"*.ok\"")
     ++
-    Common.cmd_to_list ("find -name \"*.spatch_ok\"")
+    Common.cmd_to_list ("find . -name \"*.spatch_ok\"")
   in
-  let failed = Common.cmd_to_list ("find -name \"*.failed\"") in
+  let failed = Common.cmd_to_list ("find . -name \"*.failed\"") in
 
   if null (oks ++ failed)
   then failwith "no ok/failed file, you certainly did a make clean"

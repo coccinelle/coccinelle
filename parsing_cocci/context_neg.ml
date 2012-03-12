@@ -1,5 +1,7 @@
 (*
- * Copyright 2010, INRIA, University of Copenhagen
+ * Copyright 2012, INRIA
+ * Julia Lawall, Gilles Muller
+ * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
  * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
  * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
@@ -59,7 +61,8 @@ let set_mcodekind x mcodekind =
   | Ast0.IsoWhenTag(_) -> failwith "only within iso phase"
   | Ast0.IsoWhenTTag(_) -> failwith "only within iso phase"
   | Ast0.IsoWhenFTag(_) -> failwith "only within iso phase"
-  | Ast0.MetaPosTag(p) -> failwith "metapostag only within iso phase"
+  | Ast0.MetaPosTag(p) -> failwith "invisible at this stage"
+  | Ast0.HiddenVarTag(p) -> failwith "hiddenvar only within iso phase"
 
 let set_index x index =
   match x with
@@ -83,7 +86,8 @@ let set_index x index =
   | Ast0.IsoWhenTag(_) -> failwith "only within iso phase"
   | Ast0.IsoWhenTTag(_) -> failwith "only within iso phase"
   | Ast0.IsoWhenFTag(_) -> failwith "only within iso phase"
-  | Ast0.MetaPosTag(p) -> failwith "metapostag only within iso phase"
+  | Ast0.MetaPosTag(p) -> failwith "invisible at this stage"
+  | Ast0.HiddenVarTag(p) -> failwith "hiddenvar only within iso phase"
 
 let get_index = function
     Ast0.DotsExprTag(d) -> Index.expression_dots d
@@ -106,7 +110,8 @@ let get_index = function
   | Ast0.IsoWhenTag(_) -> failwith "only within iso phase"
   | Ast0.IsoWhenTTag(_) -> failwith "only within iso phase"
   | Ast0.IsoWhenFTag(_) -> failwith "only within iso phase"
-  | Ast0.MetaPosTag(p) -> failwith "metapostag only within iso phase"
+  | Ast0.MetaPosTag(p) -> failwith "invisible at this stage"
+  | Ast0.HiddenVarTag(p) -> failwith "hiddenvar only within iso phase"
 
 (* --------------------------------------------------------------------- *)
 (* Collect the line numbers of the plus code.  This is used for disjunctions.
@@ -424,7 +429,8 @@ let classify is_minus all_marked table code =
       | Ast0.Stars(dots,whencode) ->
 	  k (Ast0.rewrap s (Ast0.Stars(dots,[])))
       | Ast0.Disj(starter,statement_dots_list,_,ender) ->
-	  disj_cases s starter statement_dots_list r.VT0.combiner_rec_statement_dots
+	  disj_cases s starter statement_dots_list
+	    r.VT0.combiner_rec_statement_dots
 	    ender
 	(* cases for everything with extra mcode *)
       |	Ast0.FunDecl((info,bef),_,_,_,_,_,_,_,_)
@@ -499,6 +505,8 @@ let rec equal_expression e1 e2 =
   | (Ast0.FunCall(_,lp1,_,rp1),Ast0.FunCall(_,lp2,_,rp2)) ->
       equal_mcode lp1 lp2 && equal_mcode rp1 rp2
   | (Ast0.Assignment(_,op1,_,_),Ast0.Assignment(_,op2,_,_)) ->
+      equal_mcode op1 op2
+  | (Ast0.Sequence(_,op1,_),Ast0.Sequence(_,op2,_)) ->
       equal_mcode op1 op2
   | (Ast0.CondExpr(_,why1,_,colon1,_),Ast0.CondExpr(_,why2,_,colon2,_)) ->
       equal_mcode why1 why2 && equal_mcode colon1 colon2
@@ -587,8 +595,12 @@ let equal_declaration d1 d2 =
       equal_option stg1 stg2 && equal_mcode eq1 eq2 && equal_mcode sem1 sem2
   | (Ast0.UnInit(stg1,_,_,sem1),Ast0.UnInit(stg2,_,_,sem2)) ->
       equal_option stg1 stg2 && equal_mcode sem1 sem2
-  | (Ast0.MacroDecl(nm1,lp1,_,rp1,sem1),Ast0.MacroDecl(nm2,lp2,_,rp2,sem2)) ->
+  | (Ast0.MacroDecl(nm1,lp1,_,rp1,sem1),Ast0.MacroDecl(nm2,lp2,_,rp2,sem2))->
       equal_mcode lp1 lp2 && equal_mcode rp1 rp2 && equal_mcode sem1 sem2
+  | (Ast0.MacroDeclInit(nm1,lp1,_,rp1,eq1,_,sem1),
+     Ast0.MacroDeclInit(nm2,lp2,_,rp2,eq2,_,sem2))->
+      equal_mcode lp1 lp2 && equal_mcode rp1 rp2 && equal_mcode eq1 eq2
+	 && equal_mcode sem1 sem2
   | (Ast0.TyDecl(_,sem1),Ast0.TyDecl(_,sem2)) -> equal_mcode sem1 sem2
   | (Ast0.Ddots(dots1,_),Ast0.Ddots(dots2,_)) -> equal_mcode dots1 dots2
   | (Ast0.OptDecl(_),Ast0.OptDecl(_)) -> true

@@ -1,5 +1,7 @@
 (*
- * Copyright 2010, INRIA, University of Copenhagen
+ * Copyright 2012, INRIA
+ * Julia Lawall, Gilles Muller
+ * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
  * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
  * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
@@ -156,6 +158,8 @@ and unify_expression e1 e2 =
       if unify_mcode op1 op2
       then conjunct_bindings (unify_expression l1 l2) (unify_expression r1 r2)
       else return false
+  | (Ast.Sequence(l1,_,r1),Ast.Sequence(l2,_,r2)) ->
+      conjunct_bindings (unify_expression l1 l2) (unify_expression r1 r2)
   | (Ast.CondExpr(tst1,q1,thn1,c1,els1),Ast.CondExpr(tst2,q2,thn2,c2,els2)) ->
       conjunct_bindings (unify_expression tst1 tst2)
 	(conjunct_bindings (unify_option unify_expression thn1 thn2)
@@ -195,6 +199,13 @@ and unify_expression e1 e2 =
   | (_,Ast.MetaExpr(_,_,_,_,_,_))
   | (_,Ast.MetaExprList(_,_,_,_)) -> return true
 
+  | (Ast.AsExpr(exp1,asexp1),_) ->
+      disjunct_all_bindings
+	(List.map (function x -> unify_expression x e2) [exp1;asexp1])
+  | (_,Ast.AsExpr(exp2,asexp2)) ->
+      disjunct_all_bindings
+	(List.map (function x -> unify_expression x e1) [exp2;asexp2])
+
   | (Ast.EComma(cm1),Ast.EComma(cm2)) -> return true
 
   | (Ast.DisjExpr(e1),_) ->
@@ -220,10 +231,16 @@ and unify_expression e1 e2 =
 
 and unify_fullType ft1 ft2 =
   match (Ast.unwrap ft1,Ast.unwrap ft2) with
-    (Ast.Type(cv1,ty1),Ast.Type(cv2,ty2)) ->
+    (Ast.Type(_,cv1,ty1),Ast.Type(_,cv2,ty2)) ->
       if bool_unify_option unify_mcode cv1 cv2
       then unify_typeC ty1 ty2
       else return false
+  | (Ast.AsType(ty1,asty1),_) ->
+      disjunct_all_bindings
+	(List.map (function x -> unify_fullType x ft2) [ty1;asty1])
+  | (_,Ast.AsType(ty2,asty2)) ->
+      disjunct_all_bindings
+	(List.map (function x -> unify_fullType x ft1) [ty2;asty2])
   | (Ast.DisjType(ft1),_) ->
       disjunct_all_bindings (List.map (function x -> unify_fullType x ft2) ft1)
   | (_,Ast.DisjType(ft2)) ->
@@ -312,6 +329,11 @@ and unify_declaration d1 d2 =
      Ast.MacroDecl(n2,lp2,args2,rp2,sem2)) ->
        conjunct_bindings (unify_ident n1 n2)
 	 (unify_dots unify_expression edots args1 args2)
+  | (Ast.MacroDeclInit(n1,lp1,args1,rp1,eq1,ini1,sem1),
+     Ast.MacroDeclInit(n2,lp2,args2,rp2,eq2,ini2,sem2)) ->
+       conjunct_bindings (unify_ident n1 n2)
+	 (conjunct_bindings (unify_dots unify_expression edots args1 args2)
+	    (unify_initialiser ini1 ini2))
   | (Ast.TyDecl(ft1,s1),Ast.TyDecl(ft2,s2)) -> unify_fullType ft1 ft2
   | (Ast.Typedef(stg1,ft1,id1,s1),Ast.Typedef(stg2,ft2,id2,s2)) ->
       conjunct_bindings (unify_fullType ft1 ft2) (unify_typeC id1 id2)

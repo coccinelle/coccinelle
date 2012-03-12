@@ -1,4 +1,6 @@
-# Copyright 2010, INRIA, University of Copenhagen
+# Copyright 2012, INRIA
+# Julia Lawall, Gilles Muller
+# Copyright 2010-2011, INRIA, University of Copenhagen
 # Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
 # Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
 # Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
@@ -30,7 +32,7 @@
 ##############################################################################
 TARGET=coccipython
 
-SOURCES= pycocci_aux.ml pycocci.ml
+SOURCES= pycocci_aux.ml $(PYCOCCI_FILE) pycocci.ml
 
 INCLUDEDIRS_LOCAL = ../commons ../commons/ocamlextra ../globals \
 		    ../parsing_c ../parsing_cocci

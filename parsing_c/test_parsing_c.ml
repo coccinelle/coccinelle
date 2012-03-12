@@ -483,55 +483,55 @@ let test_xxx a  =
 (*****************************************************************************)
 
 let actions () = [
-  "-tokens_c", "   <file>",
+  "--tokens-c", "   <file>",
   Common.mk_action_1_arg test_tokens_c;
-  "-parse_c", "   <file or dir>",
+  "--parse-c", "   <file or dir>",
   Common.mk_action_n_arg test_parse_c;
-  "-parse_h", "   <file or dir>",
+  "--parse-h", "   <file or dir>",
   Common.mk_action_n_arg test_parse_h;
-  "-parse_ch", "   <file or dir>",
+  "--parse-ch", "   <file or dir>",
   Common.mk_action_n_arg test_parse_ch;
-  "-parse_i", "   <file or dir>",
+  "--parse-i", "   <file or dir>",
   Common.mk_action_n_arg test_parse_i;
 
-  "-parse", "   <file or dir>",
+  "--parse", "   <file or dir>",
   Common.mk_action_n_arg test_parse;
 
-  "-show_flow", "   <file or file:function>",
+  "--show-flow", "   <file or file:function>",
   Common.mk_action_1_arg (local_test_cfg true);
-  "-control_flow", "   <file or file:function>",
+  "--control-flow", "   <file or file:function>",
   Common.mk_action_1_arg (local_test_cfg true);
-  "-control_flow_to_file", "   <file or file:function>",
+  "--control-flow-to-file", "   <file or file:function>",
   Common.mk_action_1_arg (local_test_cfg false);
-  "-test_cfg_ifdef", " <file>",
+  "--test-cfg-ifdef", " <file>",
   Common.mk_action_1_arg test_cfg_ifdef;
-  "-parse_unparse", "   <file>",
+  "--parse-unparse", "   <file>",
   Common.mk_action_1_arg test_parse_unparse;
-(*  "-parse_and_print_sexp", "   <file>",
+(*  "--parse-and-print-sexp", "   <file>",
     Common.mk_action_1_arg parse_and_print_sexp;*)
-  "-type_c", "   <file>",
+  "--type-c", "   <file>",
   Common.mk_action_1_arg test_type_c;
-  "-compare_c", "   <file1> <file2>",
+  "--compare-c", "   <file1> <file2>",
   Common.mk_action_2_arg test_compare_c (* result is in unix code *);
-  "-comment_annotater_c", "   <file>",
+  "--comment-annotater-c", "   <file>",
   Common.mk_action_1_arg test_comment_annotater;
 
-  "-compare_c_hardcoded", "  ",
+  "--compare-c-hardcoded", "  ",
   Common.mk_action_0_arg test_compare_c_hardcoded;
 
-  "-test_attributes", " <file>",
+  "--test-attributes", " <file>",
   Common.mk_action_1_arg test_attributes;
-  "-test_cpp", " <file>",
+  "--test-cpp", " <file>",
   Common.mk_action_1_arg test_cpp;
 
-  "-extract_macros", " <file or dir>",
+  "--extract-macros", " <file or dir>",
   Common.mk_action_1_arg (extract_macros ~selection:false) ;
 
-  "-extract_macros_select", " <file or dir>",
+  "--extract-macros-select", " <file or dir>",
   Common.mk_action_1_arg (extract_macros ~selection:true);
 
 
-  "-xxx", "   <file1> <>",
+  "--xxx", "   <file1> <>",
   Common.mk_action_n_arg test_xxx;
 ]
 

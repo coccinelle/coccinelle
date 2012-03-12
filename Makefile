@@ -1,4 +1,6 @@
-# Copyright 2010, INRIA, University of Copenhagen
+# Copyright 2012, INRIA
+# Julia Lawall, Gilles Muller
+# Copyright 2010-2011, INRIA, University of Copenhagen
 # Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
 # Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
 # Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
@@ -29,7 +31,7 @@
 -include Makefile.config
 -include /etc/lsb-release
 
-VERSION=$(shell cat globals/config.ml.in |grep version |perl -p -e 's/.*"(.*)".*/$$1/;')
+VERSION=$(shell cat ./version)
 CCVERSION=$(shell cat scripts/coccicheck/README |grep "Coccicheck version" |perl -p -e 's/.*version (.*)[ ]*/$$1/;')
 PKGVERSION=$(shell dpkg-parsechangelog -ldebian/changelog.$(DISTRIB_CODENAME) 2> /dev/null \
 	 | sed -n 's/^Version: \(.*\)/\1/p' )
@@ -482,7 +484,7 @@ tags:
 	otags -no-mli-tags -r  .
 
 dependencygraph:
-	find  -name "*.ml" |grep -v "scripts" | xargs ocamldep -I commons -I globals -I ctl -I parsing_cocci -I parsing_c -I engine -I popl09 -I extra > /tmp/dependfull.depend
+	find . -name "*.ml" |grep -v "scripts" | xargs ocamldep -I commons -I globals -I ctl -I parsing_cocci -I parsing_c -I engine -I popl09 -I extra > /tmp/dependfull.depend
 	ocamldot -lr /tmp/dependfull.depend > /tmp/dependfull.dot
 	dot -Tps /tmp/dependfull.dot > /tmp/dependfull.ps
 	ps2pdf /tmp/dependfull.ps /tmp/dependfull.pdf
@@ -540,7 +542,7 @@ distclean:: clean
 	rm -f TAGS
 	rm -f tests/SCORE_actual.sexp
 	rm -f tests/SCORE_best_of_both.sexp
-	find -name ".#*1.*" | xargs rm -f
+	find . -name ".#*1.*" | xargs rm -f
 
 beforedepend::
 

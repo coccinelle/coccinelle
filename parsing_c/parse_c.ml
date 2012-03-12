@@ -1062,7 +1062,7 @@ let parse_cache file =
   if not !Flag_parsing_c.use_cache
   then parse_print_error_heuristic None None file
   else
-  let _ = pr2 "TOFIX: use_cache is not sensitive to changes in the considered macros, include files, etc" in
+  let _ = pr2_once "TOFIX: use_cache is not sensitive to changes in the considered macros, include files, etc" in
   let need_no_changed_files =
     (* should use Sys.argv.(0), would be safer. *)
 
@@ -1089,17 +1089,17 @@ let parse_cache file =
       |	(Some limit,Some prefix) ->
 	  let count =
 	    Common.cmd_to_list
-	      (Printf.sprintf
-		 "test -e %s && ls %s/*.ast_raw %s/*.depend_raw | wc -l"
-		 prefix prefix prefix) in
+	      (Printf.sprintf "test -e %s && find %s -name \"*_raw\" | wc -l"
+		 prefix prefix) in
 	  match count with
 	    [c] ->
 	      if int_of_string c >= limit
 	      then
 		let _ =
 		  Sys.command
-		    (Printf.sprintf "/bin/rm -r %s/*.ast_raw %s/*.depend_raw"
-		       prefix prefix) in
+		    (Printf.sprintf
+		       "find %s -name \"*_raw\" -exec /bin/rm {} \\;"
+		       prefix) in
 		()
 	  | _ -> ());
       (* recompute *)

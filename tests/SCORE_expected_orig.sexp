@@ -18,8 +18,8 @@
  (cast_iso.res Ok) (com.res Ok) (comadd.res Ok) (comments.res Ok)
  (compare.res Ok) (condexp.res Ok) (const.res Ok) (const1bis.res Ok)
  (const_adding.res Ok) (const_array.res Ok) (const_implicit_iso.res Ok)
- (constructor.res Ok) (constty.res Ok) (constx.res Ok) (cs_check.res Ok)
- (cst.res Ok) (cst_null.res Ok) (csw.res Ok)
+ (constrem.res Ok) (constructor.res Ok) (constty.res Ok) (constx.res Ok)
+ (cs_check.res Ok) (cst.res Ok) (cst_null.res Ok) (csw.res Ok)
  (dbg.res
   (Pb
    "INCORRECT:diff token: else VS (\nFile <COCCIOUTPUTFILE>, line 8, column 2,  charpos = 133\n    around = 'else', whole content = \t\telse pr = NULL;(\"PCI\");\nFile \"tests/dbg.res\", line 7, column 5,  charpos = 130\n    around = '(', whole content = \t\tDBG(\"PCI\");\n\n    diff (result(<) vs expected_result(>)) = \n    @@ -4,6 +4,6 @@\n     \tstruct resource *pr, *r = &dev->resource[idx];\n     \n     \tif (pr)\n    -\t\tDBG\n    -\t\telse pr = NULL;(\"PCI\");\n    +\t\tDBG(\"PCI\");\n    +\telse pr = NULL;\n     }\n"))
@@ -45,19 +45,19 @@
  (empty.res Ok) (end_commas.res Ok) (endif.res Ok) (enum.res Ok)
  (exitc.res
   (Pb
-   "PROBLEM\n   exn = Prepare_ocamlcocci.LinkFailure(\"/tmp/exitcf7f019.cmxs\")\n"))
+   "PROBLEM\n   exn = Yes_prepare_ocamlcocci.LinkFailure(\"/tmp/exitc87c840.cmxs\")\n"))
  (exitp.res (Pb "PROBLEM\n   exn = Failure(\"no python\")\n")) (exp.res Ok)
  (expnest.res Ok) (expopt.res Ok) (expopt2.res Ok) (expopt3.res Ok)
  (expopt3_ver1.res Ok) (expopt3_ver2.res Ok)
  (extra.res
   (Pb
-   "PROBLEM\n   exn = Prepare_ocamlcocci.LinkFailure(\"/tmp/extra9e0ca1.cmxs\")\n"))
+   "PROBLEM\n   exn = Yes_prepare_ocamlcocci.LinkFailure(\"/tmp/extra768a97.cmxs\")\n"))
  (fields.res Ok) (fieldsmin.res Ok) (find_long.res Ok) (fix_flow_need.res Ok)
  (fn_todo.res Ok) (fnptr.res Ok) (fnret.res Ok) (fnty.res Ok) (four.res Ok)
  (foura.res Ok) (fp.res Ok) (fsh.res Ok) (fun.res Ok)
  (gilles-question.res Ok) (gotobreak.res Ok) (hd.res Ok) (headers.res Ok)
- (hex.res Ok) (hil1.res Ok) (if.res Ok) (ifbr.res Ok) (ifd.res Ok)
- (ifdef1.res Ok) (ifdef2.res Ok) (ifdef3.res Ok) (ifdef4.res Ok)
+ (hex.res Ok) (hil1.res Ok) (if.res Ok) (ifadd.res Ok) (ifbr.res Ok)
+ (ifd.res Ok) (ifdef1.res Ok) (ifdef2.res Ok) (ifdef3.res Ok) (ifdef4.res Ok)
  (ifdef5.res Ok) (ifdef6.res Ok) (ifdef6a.res Ok) (ifdefmeta.res Ok)
  (ifdefmeta1.res Ok) (ifdefmeta2.res Ok) (ifdefmeta3.res Ok)
  (ifdefmeta4.res
@@ -79,7 +79,7 @@
   (Pb
    "PROBLEM\n   exn = Failure(\"minus: parse error: \\n = File \\\"tests/jloop1.cocci\\\", line 10, column 3,  charpos = 129\\n    around = '...>', whole content =    ...>\\n\")\n"))
  (julia10.res Ok) (julia7.res Ok) (justremove.res Ok) (keep_comma.res Ok)
- (km.res Ok) (kmalloc.res Ok) (kmc.res Ok) (ktype.res Ok)
+ (km.res Ok) (kmalloc.res Ok) (kmc.res Ok) (kr.res Ok) (ktype.res Ok)
  (labels_metastatement.res Ok) (labels_metastatement_ver1.res Ok)
  (lid.res Ok) (line_before_last.res Ok) (list_test.res Ok) (local.res Ok)
  (localid.res Ok) (longconst.res Ok) (longlong.res Ok) (longlongint.res Ok)
@@ -88,9 +88,9 @@
  (metahex.res
   (Pb
    "INCORRECT:diff token: f VS }\nFile \"tests/metahex.c\", line 2, column 2,  charpos = 15\n    around = 'f', whole content =   f(3);\nFile \"tests/metahex.res\", line 2, column 0,  charpos = 13\n    around = '}', whole content = }\n\n    diff (result(<) vs expected_result(>)) = \n    @@ -1,4 +1,2 @@\n     int main() {\n    -  f(3);\n    -  g(0x03);\n     }\n"))
- (metaruleelem.res Ok) (metastatement2.res Ok) (metastatement_for.res Ok)
- (metastatement_if.res Ok) (minenum.res Ok) (minfn.res Ok)
- (mini_null_ref.res Ok) (minstruct.res Ok) (minusdots.res Ok)
+ (metaline.res Ok) (metaruleelem.res Ok) (metastatement2.res Ok)
+ (metastatement_for.res Ok) (metastatement_if.res Ok) (minenum.res Ok)
+ (minfn.res Ok) (mini_null_ref.res Ok) (minstruct.res Ok) (minusdots.res Ok)
  (minusdots_ver1.res Ok)
  (multi_func1.res
   (Pb
@@ -144,16 +144,17 @@
  (strid.res Ok) (strid2.res Ok) (string.res Ok) (struct.res Ok)
  (struct_metavar.res Ok) (struct_typedef.res Ok) (structfoo.res Ok)
  (substruct.res Ok) (sw.res Ok) (switch.res Ok) (switchdecl.res Ok)
- (symbol.res Ok) (td.res Ok) (tern.res Ok) (test0.res Ok) (test1.res Ok)
- (test10.res Ok) (test10_ver1.res Ok) (test11.res Ok) (test11_ver1.res Ok)
- (test12.res Ok) (test2.res Ok) (test3.res Ok) (test4.res Ok) (test5.res Ok)
- (test5_ver1.res Ok) (test6.res Ok) (test7.res Ok) (test8.res Ok)
- (test9.res Ok) (test_s.res Ok) (test_unsigned_meta.res Ok)
- (three_types.res Ok) (threea.res Ok) (top.res Ok) (topdec.res Ok)
- (topdec_ver1.res Ok) (topdec_ver2.res Ok) (toplevel_macrostmt.res Ok)
- (toplevel_struct.res Ok) (tup.res Ok) (twoproto.res Ok) (ty.res Ok)
- (ty1.res Ok) (ty_tyexp.res Ok) (tydisj.res Ok) (tyex.res Ok) (type.res Ok)
- (type1.res Ok) (type_annotated.res Ok) (type_ver1.res Ok)
+ (symbol.res Ok) (td.res Ok) (tdnl.res Ok) (tern.res Ok) (test0.res Ok)
+ (test1.res Ok) (test10.res Ok) (test10_ver1.res Ok) (test11.res Ok)
+ (test11_ver1.res Ok) (test12.res Ok) (test2.res Ok) (test3.res Ok)
+ (test4.res Ok) (test5.res Ok) (test5_ver1.res Ok) (test6.res Ok)
+ (test7.res Ok) (test8.res Ok) (test9.res Ok) (test_s.res Ok)
+ (test_unsigned_meta.res Ok) (three_types.res Ok) (threea.res Ok)
+ (top.res Ok) (topdec.res Ok) (topdec_ver1.res Ok) (topdec_ver2.res Ok)
+ (toplevel_macrostmt.res Ok) (toplevel_struct.res Ok) (tup.res Ok)
+ (twomatch.res Ok) (twoproto.res Ok) (ty.res Ok) (ty1.res Ok)
+ (ty_tyexp.res Ok) (tydisj.res Ok) (tyex.res Ok) (type.res Ok) (type1.res Ok)
+ (type_annotated.res Ok) (type_ver1.res Ok)
  (type_ver2.res
   (Pb
    "INCORRECT:PB parsing only in generated-file\n    diff (result(<) vs expected_result(>)) = \n    @@ -1,5 +1,5 @@\n     int foo() {\n    -  int[10] *x;\n    +  int *x[10];\n       return 0;\n     }\n     \n"))

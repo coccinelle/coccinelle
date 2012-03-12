@@ -1,5 +1,7 @@
 (*
- * Copyright 2010, INRIA, University of Copenhagen
+ * Copyright 2012, INRIA
+ * Julia Lawall, Gilles Muller
+ * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
  * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
  * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
@@ -1629,7 +1631,6 @@ type ('code,'value) cell = Frozen of 'code | Thawed of 'value
 let rec satloop unchecked required required_states
     ((grp,label,states) as m) phi env =
   let rec loop unchecked required required_states phi =
-    (*Common.profile_code "satloop" (fun _ -> *)
     let res =
       match phi with
       A.False              -> []
@@ -1648,14 +1649,19 @@ let rec satloop unchecked required required_states
 	triples_union
 	  (loop unchecked required required_states phi1)
 	  (loop unchecked required required_states phi2)
-    | A.SeqOr(phi1,phi2)      ->
+    | A.SeqOr(phi1,phi2)   ->
 	let res1 = loop unchecked required required_states phi1 in
 	let res2 = loop unchecked required required_states phi2 in
 	let res1neg = unwitify res1 in
-	triples_union res1
-	  (triples_conj
-	     (triples_complement (mkstates states required_states) res1neg)
-	     res2)
+	let pm = !Flag_ctl.partial_match in
+	(match (pm,res1,res2) with
+	  (false,res1,[]) -> res1
+	| (false,[],res2) -> res2
+	| _ ->
+	    triples_union res1
+	      (triples_conj
+		 (triples_complement (mkstates states required_states) res1neg)
+		 res2))
     | A.And(strict,phi1,phi2)     ->
 	(* phi1 is considered to be more likely to be [], because of the
 	   definition of asttoctl.  Could use heuristics such as the size of
@@ -1743,21 +1749,21 @@ let rec satloop unchecked required required_states
 		      phi1res phi2res))
     | A.InnerAnd(phi) ->
 	inner_and(loop unchecked required required_states phi)
-    | A.EX(dir,phi)      ->
+    | A.EX(dir,phi)   ->
 	let new_required_states =
 	  get_children_required_states dir m required_states in
 	satEX dir m (loop unchecked required new_required_states phi)
 	  required_states
-    | A.AX(dir,strict,phi)      ->
+    | A.AX(dir,strict,phi) ->
 	let new_required_states =
 	  get_children_required_states dir m required_states in
 	let res = loop unchecked required new_required_states phi in
 	strict_A1 strict satAX satEX dir m res required_states
-    | A.EF(dir,phi)            ->
+    | A.EF(dir,phi) ->
 	let new_required_states = get_reachable dir m required_states in
 	satEF dir m (loop unchecked required new_required_states phi)
 	  new_required_states
-    | A.AF(dir,strict,phi)            ->
+    | A.AF(dir,strict,phi) ->
 	if !Flag_ctl.loop_in_src_code
 	then
 	  loop unchecked required required_states
@@ -1766,15 +1772,15 @@ let rec satloop unchecked required required_states
 	  let new_required_states = get_reachable dir m required_states in
 	  let res = loop unchecked required new_required_states phi in
 	  strict_A1 strict satAF satEF dir m res new_required_states
-    | A.EG(dir,phi)            ->
+    | A.EG(dir,phi) ->
 	let new_required_states = get_reachable dir m required_states in
 	satEG dir m (loop unchecked required new_required_states phi)
 	  new_required_states
-    | A.AG(dir,strict,phi)            ->
+    | A.AG(dir,strict,phi) ->
 	let new_required_states = get_reachable dir m required_states in
 	let res = loop unchecked required new_required_states phi in
 	strict_A1 strict satAG satEF dir m res new_required_states
-    | A.EU(dir,phi1,phi2)      ->
+    | A.EU(dir,phi1,phi2) ->
 	let new_required_states = get_reachable dir m required_states in
 	(match loop unchecked required new_required_states phi2 with
 	  [] when !pLazyOpt -> []
@@ -1822,17 +1828,18 @@ let rec satloop unchecked required required_states
 		)
     | A.Implies(phi1,phi2) ->
 	loop unchecked required required_states (A.Or(A.Not phi1,phi2))
-    | A.Exists (keep,v,phi)     ->
+    | A.Exists (keep,v,phi) ->
 	let new_required = drop_required v required in
 	triples_witness v unchecked (not keep)
 	  (loop unchecked new_required required_states phi)
-    | A.Let(v,phi1,phi2)   ->
+	  
+    | A.Let(v,phi1,phi2) ->
 	(* should only be used when the properties unchecked, required,
 	   and required_states are known to be the same or at least
 	   compatible between all the uses.  this is not checked. *)
 	let res = loop unchecked required required_states phi1 in
 	satloop unchecked required required_states m phi2 ((v,res) :: env)
-    | A.LetR(dir,v,phi1,phi2)   ->
+    | A.LetR(dir,v,phi1,phi2) ->
 	(* should only be used when the properties unchecked, required,
 	   and required_states are known to be the same or at least
 	   compatible between all the uses.  this is not checked. *)
@@ -1840,7 +1847,7 @@ let rec satloop unchecked required required_states
 	let new_required_states = get_reachable dir m required_states in
 	let res = loop unchecked required new_required_states phi1 in
 	satloop unchecked required required_states m phi2 ((v,res) :: env)
-    | A.Ref(v)             ->
+    | A.Ref(v) ->
 	let res = List.assoc v env in
 	if unchecked
 	then List.map (function (s,th,_) -> (s,th,[])) res
@@ -1856,6 +1863,9 @@ let rec satloop unchecked required required_states
 
 
 (* SAT with tracking *)
+let output str =
+  Printf.printf "%s\n" str
+
 let rec sat_verbose_loop unchecked required required_states annot maxlvl lvl
     ((_,label,states) as m) phi env =
   let anno res children = (annot lvl phi res children,res) in
@@ -1870,24 +1880,24 @@ let rec sat_verbose_loop unchecked required required_states annot maxlvl lvl
       A.False              -> anno [] []
     | A.True               -> anno (triples_top states) []
     | A.Pred(p)            ->
-	Printf.printf "label\n"; flush stdout;
+	output "label";
 	anno (satLabel label required p) []
     | A.Uncheck(phi1) ->
 	let unchecked = if !pUNCHECK_OPT then true else false in
 	let (child1,res1) = satv unchecked required required_states phi1 env in
-	Printf.printf "uncheck\n"; flush stdout;
+	output "uncheck";
 	anno res1 [child1]
     | A.Not(phi1)          ->
 	let (child,res) =
 	  satv unchecked required required_states phi1 env in
-	Printf.printf "not\n"; flush stdout;
+	output "not";
 	anno (triples_complement (mkstates states required_states) res) [child]
     | A.Or(phi1,phi2)      ->
 	let (child1,res1) =
 	  satv unchecked required required_states phi1 env in
 	let (child2,res2) =
 	  satv unchecked required required_states phi2 env in
-	Printf.printf "or\n"; flush stdout;
+	output "or";
 	anno (triples_union res1 res2) [child1; child2]
     | A.SeqOr(phi1,phi2)      ->
 	let (child1,res1) =
@@ -1896,27 +1906,32 @@ let rec sat_verbose_loop unchecked required required_states annot maxlvl lvl
 	  satv unchecked required required_states phi2 env in
 	let res1neg =
 	  List.map (function (s,th,_) -> (s,th,[])) res1 in
-	Printf.printf "seqor\n"; flush stdout;
-	anno (triples_union res1
-		(triples_conj
-		   (triples_complement (mkstates states required_states)
-		      res1neg)
-		   res2))
-	  [child1; child2]
+	output "seqor";
+	let pm = !Flag_ctl.partial_match in
+	(match (pm,res1,res2) with
+	  (false,res1,[]) -> anno res1 [child1; child2]
+	| (false,[],res2) -> anno res2 [child1; child2]
+	| _ ->
+	    anno (triples_union res1
+		    (triples_conj
+		       (triples_complement (mkstates states required_states)
+			  res1neg)
+		       res2))
+	      [child1; child2])
     | A.And(strict,phi1,phi2)     ->
 	let pm = !Flag_ctl.partial_match in
 	(match (pm,satv unchecked required required_states phi1 env) with
 	  (false,(child1,[])) ->
-	    Printf.printf "and\n"; flush stdout; anno [] [child1]
+	    output "and"; anno [] [child1]
 	| (_,(child1,res1)) ->
 	    let new_required = extend_required res1 required in
 	    let new_required_states = get_required_states res1 in
 	    (match (pm,satv unchecked new_required new_required_states phi2
 		      env) with
 	      (false,(child2,[])) ->
-		Printf.printf "and\n"; flush stdout; anno [] [child1;child2]
+		output "and"; anno [] [child1;child2]
 	    | (_,(child2,res2)) ->
-		Printf.printf "and\n"; flush stdout;
+		output "and";
 		let res =
 		  strict_triples_conj strict
 		    (mkstates states required_states)
@@ -1926,7 +1941,7 @@ let rec sat_verbose_loop unchecked required required_states annot maxlvl lvl
 	let pm = !Flag_ctl.partial_match in
 	(match (pm,satv unchecked required required_states phi1 env) with
 	  (false,(child1,[])) ->
-	    Printf.printf "and\n"; flush stdout; anno [] [child1]
+	    output "and"; anno [] [child1]
 	| (_,(child1,res1)) ->
 	    let new_required = extend_required res1 required in
 	    let new_required_states = get_required_states res1 in
@@ -1935,7 +1950,7 @@ let rec sat_verbose_loop unchecked required required_states annot maxlvl lvl
 	    (match (pm,satv unchecked new_required new_required_states phi2
 		env) with
 	      (false,(child2,[])) ->
-		Printf.printf "andany\n"; flush stdout;
+		output "andany";
 		anno res1 [child1;child2]
 	    | (_,(child2,res2)) ->
 		(match res1 with
@@ -1953,7 +1968,7 @@ let rec sat_verbose_loop unchecked required required_states annot maxlvl lvl
 		| [(state,_,_)] ->
 		    let res2 =
 		      List.map (function (s,e,w) -> [(state,e,w)]) res2 in
-		    Printf.printf "andany\n"; flush stdout;
+		    output "andany";
 		    let res =
 		      let s = mkstates states required_states in
 		      List.fold_left
@@ -1968,7 +1983,7 @@ let rec sat_verbose_loop unchecked required required_states annot maxlvl lvl
 	let pm = !Flag_ctl.partial_match in
 	(match (pm,satv unchecked required required_states phi1 env) with
 	  (false,(child1,[])) ->
-	    Printf.printf "and\n"; flush stdout; anno [] [child1]
+	    output "and"; anno [] [child1]
 	| (_,(child1,res1)) ->
 	    let new_required = extend_required res1 required in
 	    let new_required_states = get_required_states res1 in
@@ -1977,7 +1992,7 @@ let rec sat_verbose_loop unchecked required required_states annot maxlvl lvl
 	    (match (pm,satv unchecked new_required new_required_states phi2
 		env) with
 	      (false,(child2,[])) ->
-		Printf.printf "andany\n"; flush stdout;
+		output "andany";
 		anno res1 [child1;child2]
 	    | (_,(child2,res2)) ->
 		let res =
@@ -1993,28 +2008,28 @@ let rec sat_verbose_loop unchecked required required_states annot maxlvl lvl
 		anno res [child1; child2]))
     | A.InnerAnd(phi1) ->
 	let (child1,res1) = satv unchecked required required_states phi1 env in
-	Printf.printf "uncheck\n"; flush stdout;
+	output "uncheck";
 	anno (inner_and res1) [child1]
     | A.EX(dir,phi1)       ->
 	let new_required_states =
 	  get_children_required_states dir m required_states in
 	let (child,res) =
 	  satv unchecked required new_required_states phi1 env in
-	Printf.printf "EX\n"; flush stdout;
+	output "EX";
 	anno (satEX dir m res required_states) [child]
     | A.AX(dir,strict,phi1)       ->
 	let new_required_states =
 	  get_children_required_states dir m required_states in
 	let (child,res) =
 	  satv unchecked required new_required_states phi1 env in
-	Printf.printf "AX\n"; flush stdout;
+	output "AX";
 	let res = strict_A1 strict satAX satEX dir m res required_states in
 	anno res [child]
     | A.EF(dir,phi1)       ->
 	let new_required_states = get_reachable dir m required_states in
 	let (child,res) =
 	  satv unchecked required new_required_states phi1 env in
-	Printf.printf "EF\n"; flush stdout;
+	output "EF";
 	anno (satEF dir m res new_required_states) [child]
     | A.AF(dir,strict,phi1) ->
 	if !Flag_ctl.loop_in_src_code
@@ -2026,7 +2041,7 @@ let rec sat_verbose_loop unchecked required required_states annot maxlvl lvl
 	  (let new_required_states = get_reachable dir m required_states in
 	  let (child,res) =
 	    satv unchecked required new_required_states phi1 env in
-	  Printf.printf "AF\n"; flush stdout;
+	  output "AF";
 	  let res =
 	    strict_A1 strict satAF satEF dir m res new_required_states in
 	  anno res [child])
@@ -2034,13 +2049,13 @@ let rec sat_verbose_loop unchecked required required_states annot maxlvl lvl
 	let new_required_states = get_reachable dir m required_states in
 	let (child,res) =
 	  satv unchecked required new_required_states phi1 env in
-	Printf.printf "EG\n"; flush stdout;
+	output "EG";
 	anno (satEG dir m res new_required_states) [child]
     | A.AG(dir,strict,phi1)       ->
 	let new_required_states = get_reachable dir m required_states in
 	let (child,res) =
 	  satv unchecked required new_required_states phi1 env in
-	Printf.printf "AG\n"; flush stdout;
+	output "AG";
 	let res = strict_A1 strict satAG satEF dir m res new_required_states in
 	anno res [child]
 
@@ -2048,13 +2063,13 @@ let rec sat_verbose_loop unchecked required required_states annot maxlvl lvl
 	let new_required_states = get_reachable dir m required_states in
 	(match satv unchecked required new_required_states phi2 env with
 	  (child2,[]) ->
-	    Printf.printf "EU\n"; flush stdout;
+	    output "EU";
 	    anno [] [child2]
 	| (child2,res2) ->
 	    let new_required = extend_required res2 required in
 	    let (child1,res1) =
 	      satv unchecked new_required new_required_states phi1 env in
-	    Printf.printf "EU\n"; flush stdout;
+	    output "EU";
 	    anno (satEU dir m res1 res2 new_required_states (fun y str -> ()))
 	      [child1; child2])
     | A.AW(dir,strict,phi1,phi2)      ->
@@ -2062,12 +2077,12 @@ let rec sat_verbose_loop unchecked required required_states annot maxlvl lvl
 	  let new_required_states = get_reachable dir m required_states in
 	  (match satv unchecked required new_required_states phi2 env with
 	    (child2,[]) ->
-	      Printf.printf "AW %b\n" unchecked; flush stdout; anno [] [child2]
+	      output (Printf.sprintf "AW %b" unchecked); anno [] [child2]
 	  | (child2,res2) ->
 	      let new_required = extend_required res2 required in
 	      let (child1,res1) =
 		satv unchecked new_required new_required_states phi1 env in
-	      Printf.printf "AW %b\n" unchecked; flush stdout;
+	      output (Printf.sprintf "AW %b" unchecked);
 	      let res =
 		strict_A2 strict satAW satEF dir m res1 res2
 		  new_required_states in
@@ -2076,12 +2091,12 @@ let rec sat_verbose_loop unchecked required required_states annot maxlvl lvl
 	let new_required_states = get_reachable dir m required_states in
 	(match satv unchecked required new_required_states phi2 env with
 	  (child2,[]) ->
-	    Printf.printf "AU\n"; flush stdout; anno [] [child2]
+	    output "AU"; anno [] [child2]
 	| (child2,s2) ->
 	    let new_required = extend_required s2 required in
 	    let (child1,s1) =
 	      satv unchecked new_required new_required_states phi1 env in
-	    Printf.printf "AU\n"; flush stdout;
+	    output "AU";
 	    let res =
 	      strict_A2au strict satAU satEF dir m s1 s2 new_required_states
 		(fun y str -> ()) in
@@ -2094,7 +2109,7 @@ let rec sat_verbose_loop unchecked required required_states annot maxlvl lvl
 		   A[E[phi1 U phi2] & phi1 W phi2]
 		   the and is nonstrict *)
 		(* tmp_res is bigger than s2, so perhaps closer to s1 *)
-	      Printf.printf "AW\n"; flush stdout;
+	      output "AW";
 	      let s1 =
 		triples_conj
 		  (satEU dir m s1 tmp_res new_required_states
@@ -2112,7 +2127,7 @@ let rec sat_verbose_loop unchecked required required_states annot maxlvl lvl
 	let new_required = drop_required v required in
 	let (child,res) =
 	  satv unchecked new_required required_states phi1 env in
-	Printf.printf "exists\n"; flush stdout;
+	output "exists";
 	anno (triples_witness v unchecked (not keep) res) [child]
     | A.Let(v,phi1,phi2)   ->
 	let (child1,res1) =
@@ -2128,7 +2143,7 @@ let rec sat_verbose_loop unchecked required required_states annot maxlvl lvl
 	  satv unchecked required required_states phi2 ((v,res1) :: env) in
 	anno res2 [child1;child2]
     | A.Ref(v)             ->
-	Printf.printf "Ref\n"; flush stdout;
+	output "Ref";
 	let res = List.assoc v env in
 	let res =
 	  if unchecked
@@ -2495,7 +2510,6 @@ let sat m phi reqopt =
       then Common.pr2 "missing something required";
        [])
   with Steps -> []
-;;
 
 (* ********************************************************************** *)
 (* End of Module: CTL_ENGINE                                              *)

@@ -1,5 +1,7 @@
 (*
- * Copyright 2010, INRIA, University of Copenhagen
+ * Copyright 2012, INRIA
+ * Julia Lawall, Gilles Muller
+ * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
  * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
  * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
@@ -34,4 +36,5 @@ type ('a,'b,'c,'d,'e) triples =
      Ast_ctl.generic_witnesstree list) list
 
 val check_reachability :
-    ('a,'b,'c,'d,'e) triples -> Control_flow_c.cflow -> unit
+    string (*rulename*) ->
+      ('a,'b,'c,'d,'e) triples -> Control_flow_c.cflow -> unit

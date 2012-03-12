@@ -9,6 +9,7 @@ type 'a printer = 'a -> unit
 type pretty_printers = {
   expression      : Ast_c.expression printer;
   arg_list        : (Ast_c.argument Ast_c.wrap2 list) printer;
+  arg             : Ast_c.argument printer;
   statement       : Ast_c.statement printer;
   decl            : Ast_c.declaration printer;
   field           : Ast_c.field printer;
@@ -37,6 +38,8 @@ val pp_expression_gen: pr_elem:Ast_c.info printer -> pr_space: unit printer ->
   Ast_c.expression printer
 val pp_arg_list_gen: pr_elem:Ast_c.info printer -> pr_space: unit printer ->
   (Ast_c.argument Ast_c.wrap2 list) printer
+val pp_arg_gen: pr_elem:Ast_c.info printer -> pr_space: unit printer ->
+  Ast_c.argument printer
 val pp_decl_gen: pr_elem:Ast_c.info printer -> pr_space: unit printer ->
   Ast_c.declaration printer
 val pp_field_gen: pr_elem:Ast_c.info printer -> pr_space: unit printer ->

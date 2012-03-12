@@ -295,6 +295,9 @@ let rec expression e =
   | Ast.Assignment(left,op,right,_) ->
       expression left; pr_space(); mcode assignOp op;
       pr_space(); expression right
+  | Ast.Sequence(left,op,right) ->
+      expression left; mcode print_string op;
+      pr_space(); expression right
   | Ast.CondExpr(exp1,why,exp2,colon,exp3) ->
       expression exp1; pr_space(); mcode print_string why;
       print_option (function e -> pr_space(); expression e) exp2;
@@ -348,6 +351,8 @@ let rec expression e =
 	    failwith "have meta param list matching meta exp list\n";
         | _ -> raise Impossible
       )
+
+  | Ast.AsExpr(expr,asexpr) -> expression expr
 
   | Ast.EComma(cm) -> mcode print_string cm
 
@@ -447,7 +452,8 @@ and constant = function
 
 and fullType ft =
   match Ast.unwrap ft with
-    Ast.Type(cv,ty) -> print_option_space (mcode const_vol) cv; typeC ty
+    Ast.Type(_,cv,ty) -> print_option_space (mcode const_vol) cv; typeC ty
+  | Ast.AsType(ty, asty) -> fullType ty
   | Ast.DisjType _ -> failwith "can't be in plus"
   | Ast.OptType(_) | Ast.UniqueType(_) ->
       raise CantBeInPlus
@@ -542,7 +548,7 @@ and storage = function
 
 and print_named_type ty id =
   match Ast.unwrap ty with
-    Ast.Type(None,ty1) ->
+    Ast.Type(_,None,ty1) ->
       (match Ast.unwrap ty1 with
 	Ast.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
 	  print_function_pointer (ty,lp1,star,rp1,lp2,params,rp2)
@@ -555,7 +561,8 @@ and print_named_type ty id =
 	    match Ast.unwrap ty with
 	      Ast.Array(ty,lb,size,rb) ->
 		(match Ast.unwrap ty with
-		  Ast.Type(None,ty) ->
+		  Ast.Type(_,cv,ty) ->
+		    print_option_space (mcode const_vol) cv;
 		    loop ty
 		      (function _ ->
 			k ();
@@ -578,7 +585,7 @@ and ty_space ty =
 
 and ft_space ty =
   match Ast.unwrap ty with
-    Ast.Type(cv,ty) ->
+    Ast.Type(_,cv,ty) ->
       (match Ast.unwrap ty with
 	Ast.Pointer(_,_) -> ()
       | Ast.MetaType(name,_,_) ->
@@ -613,6 +620,8 @@ and declaration d =
 	      print_between force_newline pretty_print_c.Pretty_print_c.field f
           | _ -> raise Impossible)
 
+  | Ast.AsDecl(decl,asdecl) -> declaration decl
+
   | Ast.Init(stg,ty,id,eq,ini,sem) ->
       print_option (mcode storage) stg;
       print_option (function _ -> pr_space()) stg;
@@ -628,6 +637,12 @@ and declaration d =
       ident name; mcode print_string_box lp;
       dots (function _ -> ()) expression args;
       close_box(); mcode print_string rp; mcode print_string sem
+  | Ast.MacroDeclInit(name,lp,args,rp,eq,ini,sem) ->
+      ident name; mcode print_string_box lp;
+      dots (function _ -> ()) expression args;
+      close_box(); mcode print_string rp;
+      pr_space(); mcode print_string eq;
+      pr_space(); initialiser true ini; mcode print_string sem
   | Ast.TyDecl(ty,sem) -> fullType ty; mcode print_string sem
   | Ast.Typedef(stg,ty,id,sem) ->
       mcode print_string stg;
@@ -653,6 +668,7 @@ and initialiser nlcomma i =
           Ast_c.MetaInitListVal ini ->
 	    pretty_print_c.Pretty_print_c.init_list ini
         | _ -> raise Impossible)
+  | Ast.AsInit(init,asinit) -> initialiser nlcomma init
   | Ast.InitExpr(exp) -> expression exp
   | Ast.ArInitList(lb,initlist,rb) ->
       (match Ast.undots initlist with
@@ -939,6 +955,8 @@ let rec statement arity s =
   | Ast.Define(header,body) ->
       rule_elem arity header; pr_space();
       dots force_newline (statement arity) body
+
+  | Ast.AsStmt(stmt,asstmt) -> statement arity stmt
 
   | Ast.Disj([stmt_dots]) ->
       if generating

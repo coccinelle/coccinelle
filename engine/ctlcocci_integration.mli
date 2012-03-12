@@ -1,5 +1,7 @@
 (*
- * Copyright 2010, INRIA, University of Copenhagen
+ * Copyright 2012, INRIA
+ * Julia Lawall, Gilles Muller
+ * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
  * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
  * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
@@ -42,7 +44,7 @@ type pred = Lib_engine.predicate * Ast_cocci.meta_name Ast_ctl.modif
 val mysat :
   Lib_engine.model ->
   (Lib_engine.ctlcocci * (pred list list)) ->
-  (Lib_engine.mvar list * Lib_engine.metavars_binding) ->
+  (string (*rulename*) * Lib_engine.mvar list * Lib_engine.metavars_binding)->
   (Lib_engine.numbered_transformation_info *  bool *
      Lib_engine.metavars_binding * Lib_engine.metavars_binding list)
 

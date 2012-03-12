@@ -1,5 +1,7 @@
 (*
- * Copyright 2010, INRIA, University of Copenhagen
+ * Copyright 2012, INRIA
+ * Julia Lawall, Gilles Muller
+ * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
  * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
  * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
@@ -23,7 +25,7 @@
 
 
 (* create an index for each constructor *)
-(* current max is 155 *)
+(* current max is 157 *)
 
 (* doesn't really work - requires that identical terms with no token
 subterms (eg dots) not appear on the same line *)
@@ -92,6 +94,7 @@ let expression e =
   | Ast0.Constant(const) -> [18]
   | Ast0.FunCall(fn,lp,args,rp) -> [19]
   | Ast0.Assignment(left,op,right,simple) -> [20]
+  | Ast0.Sequence(left,op,right) -> [156]
   | Ast0.CondExpr(exp1,why,exp2,colon,exp3) -> [21]
   | Ast0.Postfix(exp,op) -> [22]
   | Ast0.Infix(exp,op) -> [23]
@@ -118,6 +121,7 @@ let expression e =
   | Ast0.Estars(dots,whencode) -> [40]
   | Ast0.OptExp(exp) -> [41]
   | Ast0.UniqueExp(exp) -> [42]
+  | Ast0.AsExpr _ -> failwith "not possible"
 
 let typeC t =
   match Ast0.unwrap t with
@@ -137,6 +141,7 @@ let typeC t =
   | Ast0.DisjType(_,type_list,_,_) -> [130]
   | Ast0.OptType(ty) -> [45]
   | Ast0.UniqueType(ty) -> [46]
+  | Ast0.AsType _ -> failwith "not possible"
 
 let declaration d =
   match Ast0.unwrap d with
@@ -146,12 +151,14 @@ let declaration d =
   | Ast0.Init(stg,ty,id,eq,exp,sem) -> [54]
   | Ast0.UnInit(stg,ty,id,sem) -> [55]
   | Ast0.MacroDecl(name,lp,args,rp,sem) -> [137]
+  | Ast0.MacroDeclInit(name,lp,args,rp,eq,ini,sem) -> [157]
   | Ast0.TyDecl(ty,sem) -> [116]
   | Ast0.Typedef(stg,ty,id,sem) -> [143]
   | Ast0.DisjDecl(_,decls,_,_) -> [97] (* added after *)
   | Ast0.Ddots(dots,whencode) -> [133]
   | Ast0.OptDecl(decl) -> [56]
   | Ast0.UniqueDecl(decl) -> [57]
+  | Ast0.AsDecl _ -> failwith "not possible"
 
 let initialiser i =
   match Ast0.unwrap i with
@@ -165,6 +172,7 @@ let initialiser i =
   | Ast0.Idots(d,whencode) -> [109]
   | Ast0.OptIni(id) -> [110]
   | Ast0.UniqueIni(id) -> [111]
+  | Ast0.AsInit _ -> failwith "not possible"
 
 let parameterTypeDef p =
   match Ast0.unwrap p with
@@ -213,6 +221,7 @@ let statement s =
   | Ast0.Define(def,id,params,body) -> [119]
   | Ast0.OptStm(re) -> [87]
   | Ast0.UniqueStm(re) -> [88]
+  | Ast0.AsStmt _ -> failwith "not possible"
 
 let case_line c =
   match Ast0.unwrap c with

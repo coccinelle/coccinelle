@@ -1,5 +1,7 @@
 (*
- * Copyright 2010, INRIA, University of Copenhagen
+ * Copyright 2012, INRIA
+ * Julia Lawall, Gilles Muller
+ * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
  * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
  * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
@@ -22,5 +24,8 @@
  *)
 
 
-val exprrep : Ast_c.expression -> string
+val exprlistrep : Ast_c.argument Ast_c.wrap2 list -> string * string list
+val paramlistrep : Ast_c.parameterType Ast_c.wrap2 list -> string * string list
+val initlistrep : Ast_c.initialiser Ast_c.wrap2 list -> string * string list
+val fieldlistrep : Ast_c.field list -> string * string list
 val stringrep : Ast_c.metavar_binding_kind -> string

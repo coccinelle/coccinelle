@@ -1,1 +1,1 @@
-yes_prepare_ocamlcocci.ml
+include Yes_prepare_ocamlcocci

@@ -40,6 +40,15 @@
 - Allow ! to appear before () in depends.  Thanks to SF Markus Elfring for
   noticing the problem.
 - Can add code containing #pragma or #line.
+- Multicharacter command-line options now begin with -- and contain -
+  rather than _.
+- Allow multiple types of hidden metavariables, each preceded by @.
+  Position variables can be attached to these.
+- Python code now receives a structure containing a list of matched
+  elements for list metavariables.  Thanks to Michael Stefaniuc for
+  suggesting this features.
+- Python code now receives expressions and identifiers as ordinary strings,
+  not as elements of specific structures.
 
 ** Features:
 - Preserve spacing before // comments when not at the beginning of a line
@@ -82,6 +91,9 @@
 - no more crashing on c++-like code without the c++ argument.
 - dependencies can have ! on ()
 - Give ocaml code access to Flag and thus the current file name.
+- Slightly more efficient handling of lists.
+- Slightly better error message in the case of inconsistent paths
+- Improve limited size caching
 
 ** Bugfix:
 - Corrected parsing of script strings delimited by a single quote.  Thanks
@@ -141,6 +153,16 @@
   will be ignored.
 - Better support meta iterator and meta declarer tokens, and symid tokens.
 - Better indentation after added noindent.
+- Fixed length bug in the treatment of structures.
+- Allow inheriting declaration/field metavariables.
+- Don't drop spaces after parentheses in when no minus code present.
+  Thanks to Terry Wilson for reporting the problem.
+- Keep inherited metavariables in asttomember (preprocessing for matching)
+- allminus for types, to allow removing const, not just matching it
+- improved pretty printing when something is added before a closed brace
+- Allow matching on nameless structs.  Thanks to Ron Minnich for reporting
+  the problem.
+- Pretty printing of const/volatile arrays in smpl code.
 
 * 0.2.5
 ** Language:

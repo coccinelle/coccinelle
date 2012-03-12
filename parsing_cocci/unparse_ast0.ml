@@ -1,5 +1,7 @@
 (*
- * Copyright 2010, INRIA, University of Copenhagen
+ * Copyright 2012, INRIA
+ * Julia Lawall, Gilles Muller
+ * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
  * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
  * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
@@ -43,13 +45,14 @@ let print_between = Common.print_between
 (* --------------------------------------------------------------------- *)
 (* Positions *)
 
-let meta_pos l =
+let rec meta_pos l =
   List.iter
-    (function
-	Ast0.MetaPos(name,_,_) ->
-	  print_string "@";
-	  let (_,name) = Ast0.unwrap_mcode name in
-	  print_string name)
+    (function var ->
+      let current_name = Ast0.meta_pos_name var in
+      let (_,name) = Ast0.unwrap_mcode current_name in
+      print_string "@";
+      print_string name;
+      meta_pos (Ast0.get_pos current_name))
     l
 
 (* --------------------------------------------------------------------- *)
@@ -181,6 +184,9 @@ let rec expression e =
       | Ast0.Assignment(left,op,right,_) ->
 	  expression left; print_string " "; mcode U.assignOp op;
 	  print_string " "; expression right
+      | Ast0.Sequence(left,op,right) ->
+	  expression left; mcode print_string op;
+	  print_string " "; expression right
       | Ast0.CondExpr(exp1,why,exp2,colon,exp3) ->
 	  expression exp1; print_string " "; mcode print_string why;
 	  print_option (function e -> print_string " "; expression e) exp2;
@@ -251,7 +257,9 @@ let rec expression e =
       | Ast0.Ecircles(dots,None)
       | Ast0.Estars(dots,None) -> mcode print_string dots
       | Ast0.OptExp(exp) -> print_string "?"; expression exp
-      | Ast0.UniqueExp(exp) -> print_string "!"; expression exp)
+      | Ast0.UniqueExp(exp) -> print_string "!"; expression exp
+      |	Ast0.AsExpr(exp,asexp) -> expression exp; print_string "@";
+	  expression asexp)
 
 and expression_dots x = dots (function _ -> ()) expression x
 
@@ -304,7 +312,8 @@ and typeC t =
       | Ast0.MetaType(name,_)-> mcode print_meta name; print_string " "
       | Ast0.DisjType(_,types,_,_) -> do_disj types typeC
       | Ast0.OptType(ty) -> print_string "?"; typeC ty
-      | Ast0.UniqueType(ty) -> print_string "!"; typeC ty)
+      | Ast0.UniqueType(ty) -> print_string "!"; typeC ty
+      | Ast0.AsType(ty,asty) -> typeC ty; print_string "@"; typeC asty)
 
 (* --------------------------------------------------------------------- *)
 (* Variable declaration *)
@@ -353,6 +362,13 @@ and declaration d =
 	  ident name; mcode print_string_box lp;
 	  let _ = dots (function _ -> ()) expression args in
 	  close_box(); mcode print_string rp; mcode print_string sem
+      | Ast0.MacroDeclInit(name,lp,args,rp,eq,ini,sem) ->
+	  ident name; mcode print_string_box lp;
+	  let _ = dots (function _ -> ()) expression args in
+	  close_box(); mcode print_string rp;
+          print_string " ";
+          mcode print_string eq; print_string " "; initialiser ini;
+	  mcode print_string sem
       | Ast0.TyDecl(ty,sem) -> typeC ty; mcode print_string sem
       | Ast0.Typedef(stg,ty,id,sem) ->
 	  mcode print_string stg; typeC ty; typeC id;
@@ -368,7 +384,9 @@ and declaration d =
 	  declaration whencode
       | Ast0.Ddots(dots,None) -> mcode print_string dots
       | Ast0.OptDecl(decl) -> print_string "?"; declaration decl
-      | Ast0.UniqueDecl(decl) -> print_string "!"; declaration decl)
+      | Ast0.UniqueDecl(decl) -> print_string "!"; declaration decl
+      | Ast0.AsDecl(decl,asdecl) ->
+	  declaration decl; print_string "@"; declaration asdecl)
 
 and declaration_dots l = dots (function _ -> ()) declaration l
 
@@ -398,7 +416,9 @@ and initialiser i =
 	  initialiser whencode
       | Ast0.Idots(d,None) -> mcode print_string d
       | Ast0.OptIni(ini) -> print_string "?"; initialiser ini
-      | Ast0.UniqueIni(ini) -> print_string "!"; initialiser ini)
+      | Ast0.UniqueIni(ini) -> print_string "!"; initialiser ini
+      | Ast0.AsInit(ini,asini) -> initialiser ini; print_string "@";
+	  initialiser asini)
 
 and designator = function
       Ast0.DesignatorField(dot,id) -> mcode print_string dot; ident id
@@ -446,7 +466,12 @@ and statement arity s =
 	  print_string arity; mcode print_string lbrace; start_block();
 	  dots force_newline (statement arity) body;
 	  end_block(); print_string arity; mcode print_string rbrace
-      | Ast0.Decl(_,decl) -> print_string arity; declaration decl
+      | Ast0.Decl(_,decl) ->
+	  Printf.printf "statement mcodekind %s\n"
+	    (Dumper.dump (Ast0.get_mcodekind s));
+	  Printf.printf "decl mcodekind %s\n"
+	    (Dumper.dump (Ast0.get_mcodekind decl));
+	  print_string arity; declaration decl
       | Ast0.Seq(lbrace,body,rbrace) ->
 	  print_string arity; mcode print_string lbrace; start_block();
 	  dots force_newline (statement arity) body;
@@ -565,7 +590,9 @@ and statement arity s =
 	  print_string " ";
 	  dots force_newline (statement arity) body
       | Ast0.OptStm(re) -> statement "?" re
-      | Ast0.UniqueStm(re) -> statement "!" re)
+      | Ast0.UniqueStm(re) -> statement "!" re
+      | Ast0.AsStmt(stm,asstm) -> statement arity stm; print_string "@";
+	  statement arity asstm)
 
 and print_define_parameters params =
   match Ast0.unwrap params with
@@ -679,7 +706,8 @@ let unparse_anything x =
   | Ast0.IsoWhenTag(x)   -> U.print_when_modif x
   | Ast0.IsoWhenTTag(e)  -> expression e
   | Ast0.IsoWhenFTag(e)  -> expression e
-  | Ast0.MetaPosTag(var) -> meta_pos [var]);
+  | Ast0.MetaPosTag(var) -> meta_pos [x]
+  | Ast0.HiddenVarTag(var) -> failwith "should not need to be printed");
   quiet := q;
   print_newline()
 

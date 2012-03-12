@@ -72,7 +72,7 @@ type token =
   | TParameter
   | TPOEllipsis of (Data.clt)
   | TPCEllipsis of (Data.clt)
-  | TPArob
+  | TPArob of (Data.clt)
   | TOrLog of (Data.clt)
   | TOr of (Data.clt)
   | TOn

@@ -1,5 +1,7 @@
 (*
- * Copyright 2010, INRIA, University of Copenhagen
+ * Copyright 2012, INRIA
+ * Julia Lawall, Gilles Muller
+ * Copyright 2010-2011, INRIA, University of Copenhagen
  * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
  * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
  * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
@@ -251,29 +253,52 @@ let construct_variables mv e =
     with Not_found -> None
   in
 
+(* Only string in this representation, so no point
   let instantiate_Expression(x) =
     let str = pystring_fromstring (Pycocci_aux.exprrep x) in
     pycocci_instantiate_class "coccilib.elems.Expression"
       (pytuple_fromsingle (str))
   in
+*)
 
+(* Only string in this representation, so no point
   let instantiate_Identifier(x) =
     let str = pystring_fromstring x in
     pycocci_instantiate_class "coccilib.elems.Identifier"
       (pytuple_fromsingle (str))
   in
+*)
+
+  let instantiate_term_list py printer lst  =
+    let (str,elements) = printer lst in
+    let str = pystring_fromstring str in
+    let elements =
+      pytuple_fromarray
+	(Array.of_list (List.map pystring_fromstring elements)) in
+    let repr =
+      pycocci_instantiate_class "coccilib.elems.TermList"
+	(pytuple_fromarray (Array.of_list [str;elements])) in
+    let _ = build_variable py repr in () in
 
   List.iter (function (py,(r,m),_) ->
     match find_binding (r,m) with
       None -> ()
-    | Some (_, Ast_c.MetaExprVal (expr,_)) ->
+(*    | Some (_, Ast_c.MetaExprVal (expr,_)) ->
        let expr_repr = instantiate_Expression(expr) in
        let _ = build_variable py expr_repr in
-       ()
-    | Some (_, Ast_c.MetaIdVal (id,_)) ->
+       () *)
+  (*  | Some (_, Ast_c.MetaIdVal (id,_)) ->
        let id_repr = instantiate_Identifier(id) in
        let _ = build_variable py id_repr in
-       ()
+       () *)
+    | Some (_, Ast_c.MetaExprListVal (exprlist)) ->
+	instantiate_term_list py Pycocci_aux.exprlistrep exprlist
+    | Some (_, Ast_c.MetaParamListVal (paramlist)) ->
+	instantiate_term_list py Pycocci_aux.paramlistrep paramlist
+    | Some (_, Ast_c.MetaInitListVal (initlist)) ->
+	instantiate_term_list py Pycocci_aux.initlistrep initlist
+    | Some (_, Ast_c.MetaFieldListVal (fieldlist)) ->
+	instantiate_term_list py Pycocci_aux.fieldlistrep fieldlist
     | Some (_, Ast_c.MetaPosValList l) ->
        let locs =
 	 List.map
@@ -300,13 +325,10 @@ let construct_variables mv e =
 let construct_script_variables mv =
   List.iter
     (function (_,py) ->
-      let vl =
-	let str =
-	  pystring_fromstring
-	    "initial value: consider using coccinelle.varname" in
-	pycocci_instantiate_class "coccilib.elems.Identifier"
-	  (pytuple_fromsingle (str)) in
-      let _ = build_variable py vl in
+      let str =
+	pystring_fromstring
+	  "initial value: consider using coccinelle.varname" in
+      let _ = build_variable py str in
       ())
     mv
 
