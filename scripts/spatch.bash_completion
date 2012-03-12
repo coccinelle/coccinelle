@@ -42,11 +42,12 @@ _spatch()
     COMPREPLY=()
     cur=${COMP_WORDS[COMP_CWORD]}
     prev=${COMP_WORDS[COMP_CWORD-1]}
-    _spatch_options="-parse_cocci -sp_file -I -dir -patch
-          -iso_file -macro_file -macro_file_builtins
-          -inplace -outplace -use_glimpse -help -o -ignore_unknown_options
-          -include_headers -no_includes -all_includes -local_includes
-          -quiet -very_quiet -debug -timeout -test"
+    _spatch_options="--parse-cocci --sp-file -I --dir --patch
+          --iso-file --macro-file --macro-file-builtins
+          --in-place --out-place -h --help --shorthelp --longhelp -o --ignore-unknown-options
+          --use-glimpse --use-google --use-idutils
+          --include-headers --no-includes --all-includes --local-includes --preprocess
+          --quiet --very-quiet --debug --timeout --test"
 
     if [[ $COMP_CWORD -eq 1 ]]; then
         local IFS=$'\n'
@@ -54,16 +55,16 @@ _spatch()
         return 0
     fi
     case "$prev" in
-        -parse_cocci|-sp_file)
+        --parse-cocci|--sp-file)
             xspec="!*.cocci"
 	    ;;
-        -iso_file)
+        --iso-file)
             xspec="!*.iso"
 	    ;;
-        -macro_file|-macro_file_builtins)
+        --macro-file|--macro-file-builtins)
             xspec="!*.h"
 	    ;;
-        -I|-dir|-patch)
+        -I|--dir|--patch)
             xspec=""
 	    ;;
         *)
