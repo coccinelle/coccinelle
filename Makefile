@@ -22,33 +22,31 @@ LEXER_SOURCES =
 SRC=flag_cocci.ml cocci.ml testing.ml test.ml $(LEXER_SOURCES:.mll=.ml) main.ml
 
 ifeq ($(FEATURE_PYTHON),1)
-PYCMA=pycaml.cma
-# the following is essential for Coccinelle to compile under gentoo (weird)
-#OPTLIBFLAGS=-cclib dllpycaml_stubs.so
+	PYCMA=pycaml.cma
 else
-PYCMA=
+	PYCMA=
 endif
 OPTLIBFLAGS=
 
 ifeq ("$(SEXPDIR)","ocamlsexp")
-SEXPLIB=ocamlsexp/sexplib.cmo
-OPTSEXPLIB=sexplib.cmx
+	SEXPLIB=ocamlsexp/sexplib.cmo
+	OPTSEXPLIB=sexplib.cmx
 else
-SEXPLIB=sexplib.cma
-OPTSEXPLIB=sexplib.cmxa
+	SEXPLIB=sexplib.cma
+	OPTSEXPLIB=sexplib.cmxa
 endif
 
 ifeq ("$(DYNLINK)","no")
-DYNLINK=
+	DYNLINK=
 else
-DYNLINK=dynlink.cma
+	DYNLINK=dynlink.cma
 endif
 
 ifdef PCREDIR
-PCRELIB=pcre.cma
+	PCRELIB=pcre.cma
 else
-PCRELIB=
-PCREDIR=
+	PCRELIB=
+	PCREDIR=
 endif
 
 SEXPSYSCMA=bigarray.cma nums.cma
@@ -64,25 +62,25 @@ LIBS=commons/commons.cma \
 
 # Should we use the local version of pycaml
 ifeq ($(FEATURE_PYTHON),1)
-ifeq ("$(PYCAMLDIR)","pycaml")
-LOCALPYCAML=pycaml
-else
-LOCALPYCAML=
-endif
+	ifeq ("$(PYCAMLDIR)","pycaml")
+		LOCALPYCAML=pycaml
+	else
+		LOCALPYCAML=
+	endif
 endif
 
 # Should we use the local version of menhirLib
 ifeq ("$(MENHIRDIR)","menhirlib")
-LOCALMENHIR=menhirlib
+	LOCALMENHIR=menhirlib
 else
-LOCALMENHIR=
+	LOCALMENHIR=
 endif
 
 # Should we use the local version of ocamlsexp
 ifeq ("$(SEXPDIR)","ocamlsexp")
-LOCALSEXP=ocamlsexp
+	LOCALSEXP=ocamlsexp
 else
-LOCALSEXP=
+	LOCALSEXP=
 endif
 
 # used for depend: and a little for rec & rec.opt
