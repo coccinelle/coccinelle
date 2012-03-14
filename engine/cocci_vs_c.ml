@@ -2658,14 +2658,14 @@ and (fullType: (A.fullType, Ast_c.fullType) matcher) =
        (* "iso-by-absence" *)
        | None ->
            let do_stuff () =
+             fullTypebis ty1 ((qu,il), ty2) >>= (fun ty1 ((qu,il), ty2) ->
              (if allminus
 	     then minusize_list il
 	     else return ((), il)
 	     ) >>= (fun () il ->
-             fullTypebis ty1 ((qu,il), ty2) >>= (fun ty1 fullty2 ->
 	       return (
                  (A.Type(allminus, None, ty1)) +> A.rewrap typa,
-                 fullty2
+                 ((qu,il), ty2)
                )))
            in
            (match optional_qualifier, qu.B.const || qu.B.volatile with

@@ -81,6 +81,7 @@ fix-expected:
 	cp tests/SCORE_actual.sexp tests/SCORE_expected_orig.sexp
 
 release:
+	sed -i -e 's|^let version = ".*"$$|let version = "$(VERSION)"|g' globals/config.ml.in
 	git add ./ version globals/config.ml.in
 	git commit -m "Release $(VERSION)"
 	git tag -a -m "Release $(VERSION)" $(VERSION)
@@ -231,6 +232,7 @@ packsrc: prepack
 	$(MAKE) -C $(TMP)/$(PACKAGE)/debian karmic
 	$(MAKE) -C $(TMP)/$(PACKAGE)/debian maverick
 	$(MAKE) -C $(TMP)/$(PACKAGE)/debian natty
+	$(MAKE) -C $(TMP)/$(PACKAGE)/debian oneiric
 	$(MAKE) push
 	rm -rf  $(TMP)/$(PACKAGE)/
 

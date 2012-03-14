@@ -7,7 +7,7 @@
 -include Makefile.config
 -include /etc/lsb-release
 
-VERSION=$(shell cat globals/config.ml.in |grep version |perl -p -e 's/.*"(.*)".*/$$1/;')
+VERSION=$(shell cat ./version)
 CCVERSION=$(shell cat scripts/coccicheck/README |grep "Coccicheck version" |perl -p -e 's/.*version (.*)[ ]*/$$1/;')
 PKGVERSION=$(shell dpkg-parsechangelog -ldebian/changelog.$(DISTRIB_CODENAME) 2> /dev/null \
 	 | sed -n 's/^Version: \(.*\)/\1/p' )

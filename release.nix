@@ -4,6 +4,7 @@
 , cocciSrc ? { outPath = ./.; revCount = 1234; gitTag = "abcdef"; }
 , testsSrc ? { outPath = ../big-tests; rev = 1234; }
 , officialRelease ? false
+, performRegress ? true
 }:
 
 let
@@ -321,6 +322,6 @@ rec {
   # deb_ubuntu1010_x86_64 = makeDeb_x86_64 (disk: disk.ubuntu1010x86_64);
 
   # extensive tests
-  regress = mkRegress build;
+  regress = assert performRegress; mkRegress build;
   test = checkRegress regress;
 }
