@@ -8,20 +8,44 @@
 # the replies file contains sets of two lines. The
 # first line is an extended regex to match against
 # the command line. The second line is the reply to
-# print to stdout. Variables $BASH_REMATCH[] may be
+# print to stdout. Variables ${BASH_REMATCH[i]} may be
 # used to match against capture groups.
+
+# the replies file assumes that the
+# libpcre and python libraries are installed, and
+# that none of the optional ocaml libraries are
+# installed.
 
 cmdline="$@"
 scriptdir=$(dirname "$BASH_SOURCE")
 responsefile="$scriptdir/replies.txt"
+
+# learning mode
+# echo "$cmdline" >> /tmp/queries.txt
 
 # some helper functions callable from the replacement macros
 function ocamllibdir {
   echo "$(dirname $(which ocaml))/../lib/ocaml"
 }
 
-# debugging
-# echo "$cmdline" >> /tmp/queries.txt
+# outputs with what prefix 'python' was configured
+function pythonprefix {
+  python -c "import sys; print(sys.prefix)" &2>/dev/null || echo "/usr"
+}
+
+# outputs the "include" cflags for python
+function pythoncflags {
+  local version=$1
+
+  echo "-I$(pythonprefix)/include/python${version}"
+}
+
+# outputs the "linker" flags for python
+function pythonlibs {
+  local version=$1
+
+  echo "-L$(pythonprefix)/lib -lpython${version}"
+}
 
 # interate through pattern-response pairs
 while read pattern

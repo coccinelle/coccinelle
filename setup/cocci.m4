@@ -91,7 +91,7 @@ AC_DEFUN([AC_CHECK_COCCI_EXTPKG],
   ])
 
   dnl  check for a local package
-  AS_IF([test "$enable_$1" == xno],
+  AS_IF([test "x$enable_$1" == xno],
   [dnl
     AS_UNSET([pkgdir])
     pkgdir=$COCCI_OCAML_EXTERNAL/$1/
@@ -107,7 +107,7 @@ AC_DEFUN([AC_CHECK_COCCI_EXTPKG],
   ])
 
   dnl  additional handling
-  AS_IF([test "$enable_$1" != xno],
+  AS_IF([test "x$enable_$1" != xno],
   [dnl
     AC_SUBST([FEATURE_$1],[1])
     AC_SUBST([FLAGS_$1],['$(FLAGS_$1)'])
@@ -156,4 +156,55 @@ AC_DEFUN([AC_REQ_COCCI_EXTPKG],
   [dnl
     AC_MSG_ERROR([OCaml package $1 is required. Please make sure it is available.])
   ])
+])
+
+
+dnl  determine python version
+AC_ARG_VAR([PYVER], [python version])
+AC_DEFUN([AC_COCCI_PYVER],
+[dnl
+  AS_IF([test -z "$PYVER"],
+  [dnl  PYVER not set before
+    AC_CHECK_TOOL([PYTHON],[python])
+    AS_IF([test -n "$PYTHON"],
+    [dnl  python interpereter found
+      AC_MSG_CHECKING([for python version])
+      PYVER=`$PYTHON -c "import sys; print(sys.version[[:3]])"`
+      AS_IF([test -n "$PYVER"],[AC_MSG_RESULT([$PYVER])],[AC_MSG_RESULT([no])])
+      AC_SUBST([PYVER])
+    ])
+  ])
+])
+
+
+dnl  determine version date (RTC format)
+AC_DEFUN([AC_COCCI_CONFVERSION],
+[dnl
+  AC_SUBST([CONFVERSION])
+  AC_MSG_NOTICE([determining version suffix])
+
+  AS_IF([test -z "$CONFVERSION" -a -d "./.git"],
+  [dnl  git administration found
+    AC_CHECK_TOOL([GIT],[git])
+    AS_IF([test -n "$GIT"],
+    [dnl  ask git
+      CONFVERSION=`$GIT log -1 --date-order --date=rfc --pretty="format:%cd"`
+    ])
+  ])
+
+  AS_IF([test -z "$CONFVERSION"],
+  [dnl  otherwise, take the current date
+    AC_CHECK_TOOL([DATE],[date])
+    AS_IF([test -n "$DATE"],
+    [dnl
+      CONFVERSION=`$DATE "+%a, %d %b %Y %H:%M:%S %z"`
+    ])
+  ])
+
+  AS_IF([test -z "$CONFVERSION"],
+  [dnl  fallback
+    CONFVERSION=unknown
+  ])
+
+  AC_MSG_NOTICE([version suffix set to $CONFVERSION])
 ])

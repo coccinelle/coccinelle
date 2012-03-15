@@ -80,6 +80,7 @@ FLAGSLIBS=@FLAGS_sexplib@ @FLAGS_menhirLib@ @FLAGS_pycaml@ @FLAGS_pcre@
 FEATURE_TARZAN=@FEATURE_TARZAN@
 FEATURE_PYTHON=@FEATURE_PYTHON@
 
+# these should be obsolete by now
 PCREDIR=@PATH_pcre@
 PYCAMLDIR=@PATH_pycaml@
 MENHIRDIR=@PATH_menhirLib@

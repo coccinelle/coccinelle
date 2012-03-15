@@ -28,8 +28,8 @@ else
 endif
 OPTLIBFLAGS=
 
-ifeq ("$(SEXPDIR)","ocamlsexp")
-	SEXPLIB=ocamlsexp/sexplib.cmo
+ifeq ("$(SEXPDIR)","external/sexplib")
+	SEXPLIB=$(SEXPDIR)/sexplib.cmo
 	OPTSEXPLIB=sexplib.cmx
 else
 	SEXPLIB=sexplib.cma
@@ -60,49 +60,26 @@ LIBS=commons/commons.cma \
      engine/cocciengine.cma popl09/popl.cma \
      extra/extra.cma python/coccipython.cma ocaml/cocciocaml.cma
 
-# Should we use the local version of pycaml
-ifeq ($(FEATURE_PYTHON),1)
-	ifeq ("$(PYCAMLDIR)","pycaml")
-		LOCALPYCAML=pycaml
-	else
-		LOCALPYCAML=
-	endif
-endif
-
-# Should we use the local version of menhirLib
-ifeq ("$(MENHIRDIR)","menhirlib")
-	LOCALMENHIR=menhirlib
-else
-	LOCALMENHIR=
-endif
-
-# Should we use the local version of ocamlsexp
-ifeq ("$(SEXPDIR)","ocamlsexp")
-	LOCALSEXP=ocamlsexp
-else
-	LOCALSEXP=
-endif
-
 # used for depend: and a little for rec & rec.opt
-MAKESUBDIRS=$(LOCALSEXP) commons \
- globals $(LOCALMENHIR) ctl parsing_cocci parsing_c \
+MAKESUBDIRS=commons \
+ globals ctl parsing_cocci parsing_c \
  engine popl09 extra python ocaml \
  $(MAKELIBS)
 
 # used for clean:
 # It is like MAKESUBDIRS but also
 # force cleaning of local library copies
-CLEANSUBDIRS=pycaml ocamlsexp commons \
- globals menhirlib ctl parsing_cocci parsing_c \
+CLEANSUBDIRS=commons \
+ globals ctl parsing_cocci parsing_c \
  engine popl09 extra python ocaml \
  $(CLEANLIBS)
 
-INCLUDEDIRSDEP=commons commons/ocamlextra $(LOCALSEXP) \
- globals $(LOCALMENHIR) $(LOCALPYCAML) ctl \
+INCLUDEDIRSDEP=commons commons/ocamlextra \
+ globals ctl \
  parsing_cocci parsing_c engine popl09 extra python ocaml \
  $(DEPLIBS)
 
-INCLUDEDIRS=$(INCLUDEDIRSDEP) $(SEXPDIR) $(MENHIRDIR) $(PYCAMLDIR) $(PCREDIR) $(INCLIBS)
+INCLUDEDIRS=$(INCLUDEDIRSDEP) $(PCREDIR) $(INCLIBS)
 
 EXTRALINKS=
 LINKFLAGS=$(EXTRALINKS:%=-cclib -l%)
@@ -187,8 +164,8 @@ $(MAKESUBDIRS:%=%.opt):
 #dependencies:
 # commons:
 # globals:
-# menhirlib:
-# parsing_cocci: commons globals menhirlib
+# menhirLib:
+# parsing_cocci: commons globals menhirLib
 # parsing_c:parsing_cocci
 # ctl:globals commons
 # engine: parsing_cocci parsing_c ctl

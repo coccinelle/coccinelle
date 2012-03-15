@@ -22,6 +22,17 @@ pkg-config --exists --print-errors python
 
 pkg-config --print-errors python
 
+pkg-config --cflags python(-([0-9\.]+))?$
+$(pythoncflags "${BASH_REMATCH[2]}")
+
+pkg-config --libs python(-([0-9\.]+))?$
+$(pythonlibs "${BASH_REMATCH[2]}")
+
 pkg-config --exists --print-errors libpcre
 
 pkg-config --print-errors libpcre
+
+pkg-config --cflags libpcre
+
+pkg-config --libs libpcre
+-lpcre
