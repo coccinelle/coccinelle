@@ -16,12 +16,10 @@ INCLUDES=-I ../commons -I ../commons/ocamlextra -I ../globals
 #for warning:  -w A
 #for profiling:  -p -inline 0   with OCAMLOPT
 OCAMLCFLAGS ?= -g -dtypes
-OCAMLC =ocamlc$(OPTBIN) $(OCAMLCFLAGS) $(INCLUDES)
-OCAMLOPT = ocamlopt$(OPTBIN) $(OPTFLAGS) $(INCLUDES)
-OCAMLDEP = ocamldep$(OPTBIN) $(INCLUDES)
-OCAMLMKTOP=ocamlmktop -g -custom $(INCLUDES)
-
-
+OCAMLC_CMD=$(OCAMLC) $(OCAMLCFLAGS) $(INCLUDES)
+OCAMLOPT_CMD=$(OCAMLOPT) $(OPTFLAGS) $(INCLUDES)
+OCAMLDEP_CMD=$(OCAMLDEP) $(INCLUDES)
+OCAMLMKTOP_CMD=$(OCAMLMKTOP) -g -custom $(INCLUDES)
 
 LIB=$(TARGET).cma
 OPTLIB=$(LIB:.cma=.cmxa)
@@ -33,13 +31,13 @@ all: $(LIB)
 all.opt: $(OPTLIB)
 
 $(TARGET).top: $(LIB) test_ctl.cmo
-	$(OCAMLMKTOP) -o $(TARGET).top $(SYSLIBS) $(LIBS) $(OBJS) test_ctl.cmo
+	$(OCAMLMKTOP_CMD) -o $(TARGET).top $(SYSLIBS) $(LIBS) $(OBJS) test_ctl.cmo
 
 $(LIB):  $(OBJS)
-	$(OCAMLC) -a -o $(LIB) $(OBJS)
+	$(OCAMLC_CMD) -a -o $(LIB) $(OBJS)
 
 $(OPTLIB): $(OPTOBJS)
-	$(OCAMLOPT) -a -o $(OPTLIB) $(OPTOBJS)
+	$(OCAMLOPT_CMD) -a -o $(OPTLIB) $(OPTOBJS)
 
 clean::
 	rm -f $(LIB)  $(OPTLIB) $(LIB:.cma=.a) $(TARGET).top
@@ -49,29 +47,27 @@ clean::
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
 
 .ml.cmo:
-	$(OCAMLC) -c $<
+	$(OCAMLC_CMD) -c $<
 
 .mli.cmi:
-	$(OCAMLC) -c $<
+	$(OCAMLC_CMD) -c $<
 
 .ml.cmx:
-	$(OCAMLOPT) -c $<
+	$(OCAMLOPT_CMD) -c $<
 
 
-
-
-# clean rule for others files
+# clean rule for other files
 clean::
 	rm -f *.cm[iox] *.o *.annot
 	rm -f *~ .*~ #*#
 
 depend:
-	$(OCAMLDEP) *.mli *.ml > .depend
+	$(OCAMLDEP_CMD) *.mli *.ml > .depend
 
 distclean::
 	rm -f .depend
 
 .depend:
-	$(OCAMLDEP) *.mli *.ml > .depend
+	$(OCAMLDEP_CMD) *.mli *.ml > .depend
 
 -include .depend

@@ -1,3 +1,5 @@
 #!/bin/sh -e
 
-echo this command is faking menhir (TODO: implement)
+echo "menhir is needed but it is not installed or not configured to be used."
+# echo "mehir commandline: $@"
+exit 1

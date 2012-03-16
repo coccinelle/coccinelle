@@ -633,8 +633,9 @@ REGEXP_FILE
 REGEXP_MODULE
 MAKE_pcre
 PATH_pcre
-OCAML_PKG_pcre
 enable_pcre
+OCAML_PKG_pcre
+enable_pcre_syntax
 HAVE_PCRE
 PCRE_LIBS
 PCRE_CFLAGS
@@ -644,10 +645,11 @@ MAKE_pycaml
 PATH_pycaml
 enable_pycaml
 OCAML_PKG_pycaml
-enable_python
+with_python
 HAVE_PYTHON
 PYTHON_LIBS
 PYTHON_CFLAGS
+PYTHON
 OCAMLCOCCI_FILE
 OCAMLCOCCI_MODULE
 enable_ocaml
@@ -688,6 +690,7 @@ COCCI_OCAML_EXTERNAL
 OCAMLFINDSUBSTITUTED
 OCAMLFIND
 OCAMLVERSIONOK
+OCAMLYACC
 OCAMLLEXDOTOPT
 OCAMLLEX
 OCAMLBUILD
@@ -716,6 +719,9 @@ MKDIR_P
 INSTALL_DATA
 INSTALL_SCRIPT
 INSTALL_PROGRAM
+DATE
+GIT
+CONFVERSION
 COCCI_SRCDIR
 COCCI_VERSION
 target_alias
@@ -755,7 +761,8 @@ PACKAGE_VERSION
 PACKAGE_TARNAME
 PACKAGE_NAME
 PATH_SEPARATOR
-SHELL'
+SHELL
+PYVER'
 ac_subst_files=''
 ac_user_opts='
 enable_option_checking
@@ -765,11 +772,13 @@ enable_sexplib
 enable_menhirLib
 with_menhir
 enable_ocaml
-enable_python
+with_python
 enable_pycaml
+enable_pcre_syntax
 enable_pcre
 '
-      ac_precious_vars='build_alias
+      ac_precious_vars='PYVER
+build_alias
 host_alias
 target_alias
 CC
@@ -782,6 +791,7 @@ PKG_CONFIG
 OCAMLFIND
 COCCI_OCAML_EXTERNAL
 MENHIR
+PYTHON
 PYTHON_CFLAGS
 PYTHON_LIBS
 PCRE_CFLAGS
@@ -1402,10 +1412,9 @@ Optional Features:
   --enable-menhirLib      enable global package menhirLib (yes,no) (default:
                           auto)
   --enable-ocaml          enable ocaml scripting (default: auto)
-  --enable-python         enable python scripting (default: auto)
   --enable-pycaml         enable global package pycaml (yes,no) (default:
                           auto)
-  --enable-pcre           enable pcre regular expression syntax (default:
+  --enable-pcre-syntax    enable pcre regular expression syntax (default:
                           auto)
   --enable-pcre           enable global package pcre (yes,no) (default: auto)
 
@@ -1415,8 +1424,11 @@ Optional Packages:
   --with-pkgconfig        whether to use pkgconfig (default: auto)
   --with-findlib          whether to use OCaml findlib (default: auto)
   --with-menhir           whether to use menhir (default: auto)
+  --with-python           enable python scripting, version of python (e.g.
+                          3.2, default: auto)
 
 Some influential environment variables:
+  PYVER       python version
   CC          C compiler command
   CFLAGS      C compiler flags
   LDFLAGS     linker flags, e.g. -L<lib dir> if you have libraries in a
@@ -1428,8 +1440,9 @@ Some influential environment variables:
   PKG_CONFIG  path to pkg-config
   OCAMLFIND   path to OCaml findlib (ocamlfind)
   COCCI_OCAML_EXTERNAL
-              path to extra ocaml packages (default: $COCCI_SRCDIR)
+              path to extra ocaml packages (default: $COCCI_SRCDIR/external)
   MENHIR      path to menhir
+  PYTHON      path to python when the version is determined automatically
   PYTHON_CFLAGS
               C compiler flags for PYTHON, overriding pkg-config
   PYTHON_LIBS linker flags for PYTHON, overriding pkg-config
@@ -1949,6 +1962,218 @@ COCCI_SRCDIR=$(pwd)
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: configuring coccinelle $COCCI_VERSION in $COCCI_SRCDIR" >&5
 $as_echo "$as_me: configuring coccinelle $COCCI_VERSION in $COCCI_SRCDIR" >&6;}
+
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: determining version suffix" >&5
+$as_echo "$as_me: determining version suffix" >&6;}
+
+  if test -z "$CONFVERSION" -a -d "./.git"; then :
+      if test -n "$ac_tool_prefix"; then
+  # Extract the first word of "${ac_tool_prefix}git", so it can be a program name with args.
+set dummy ${ac_tool_prefix}git; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_GIT+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$GIT"; then
+  ac_cv_prog_GIT="$GIT" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_prog_GIT="${ac_tool_prefix}git"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+GIT=$ac_cv_prog_GIT
+if test -n "$GIT"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $GIT" >&5
+$as_echo "$GIT" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+if test -z "$ac_cv_prog_GIT"; then
+  ac_ct_GIT=$GIT
+  # Extract the first word of "git", so it can be a program name with args.
+set dummy git; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_ac_ct_GIT+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$ac_ct_GIT"; then
+  ac_cv_prog_ac_ct_GIT="$ac_ct_GIT" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_prog_ac_ct_GIT="git"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+ac_ct_GIT=$ac_cv_prog_ac_ct_GIT
+if test -n "$ac_ct_GIT"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_ct_GIT" >&5
+$as_echo "$ac_ct_GIT" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+  if test "x$ac_ct_GIT" = x; then
+    GIT=""
+  else
+    case $cross_compiling:$ac_tool_warned in
+yes:)
+{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using cross tools not prefixed with host triplet" >&5
+$as_echo "$as_me: WARNING: using cross tools not prefixed with host triplet" >&2;}
+ac_tool_warned=yes ;;
+esac
+    GIT=$ac_ct_GIT
+  fi
+else
+  GIT="$ac_cv_prog_GIT"
+fi
+
+    if test -n "$GIT"; then :
+        CONFVERSION=`$GIT log -1 --date-order --date=rfc --pretty="format:%cd"`
+
+fi
+
+fi
+
+  if test -z "$CONFVERSION"; then :
+      if test -n "$ac_tool_prefix"; then
+  # Extract the first word of "${ac_tool_prefix}date", so it can be a program name with args.
+set dummy ${ac_tool_prefix}date; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_DATE+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$DATE"; then
+  ac_cv_prog_DATE="$DATE" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_prog_DATE="${ac_tool_prefix}date"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+DATE=$ac_cv_prog_DATE
+if test -n "$DATE"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $DATE" >&5
+$as_echo "$DATE" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+if test -z "$ac_cv_prog_DATE"; then
+  ac_ct_DATE=$DATE
+  # Extract the first word of "date", so it can be a program name with args.
+set dummy date; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_ac_ct_DATE+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$ac_ct_DATE"; then
+  ac_cv_prog_ac_ct_DATE="$ac_ct_DATE" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_prog_ac_ct_DATE="date"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+ac_ct_DATE=$ac_cv_prog_ac_ct_DATE
+if test -n "$ac_ct_DATE"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_ct_DATE" >&5
+$as_echo "$ac_ct_DATE" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+  if test "x$ac_ct_DATE" = x; then
+    DATE=""
+  else
+    case $cross_compiling:$ac_tool_warned in
+yes:)
+{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using cross tools not prefixed with host triplet" >&5
+$as_echo "$as_me: WARNING: using cross tools not prefixed with host triplet" >&2;}
+ac_tool_warned=yes ;;
+esac
+    DATE=$ac_ct_DATE
+  fi
+else
+  DATE="$ac_cv_prog_DATE"
+fi
+
+    if test -n "$DATE"; then :
+        CONFVERSION=`$DATE "+%a, %d %b %Y %H:%M:%S %z"`
+
+fi
+
+fi
+
+  if test -z "$CONFVERSION"; then :
+      CONFVERSION=unknown
+
+fi
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: version suffix set to $CONFVERSION" >&5
+$as_echo "$as_me: version suffix set to $CONFVERSION" >&6;}
 
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: this configure program uses pkg-config m4 macros" >&5
@@ -3189,7 +3414,7 @@ $as_echo "no" >&6; }
 fi
 
 else
-    PKG_CONFIG=$with_pkg_config
+    PKG_CONFIG="$with_pkg_config"
 
 
 fi
@@ -3197,7 +3422,7 @@ fi
 if test -z "$PKG_CONFIG"; then :
     { $as_echo "$as_me:${as_lineno-$LINENO}: pkg-config not found. Using a scripted substitute." >&5
 $as_echo "$as_me: pkg-config not found. Using a scripted substitute." >&6;}
-  PKG_CONFIG=$COCCI_SRCDIR/setup/fake-subst.sh pkg-config
+  PKG_CONFIG="$COCCI_SRCDIR/setup/fake-subst.sh pkg-config"
 
 
 fi
@@ -4393,6 +4618,100 @@ fi
   fi
 
 
+  if test -n "$ac_tool_prefix"; then
+  # Extract the first word of "${ac_tool_prefix}ocamlyacc", so it can be a program name with args.
+set dummy ${ac_tool_prefix}ocamlyacc; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_OCAMLYACC+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$OCAMLYACC"; then
+  ac_cv_prog_OCAMLYACC="$OCAMLYACC" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_prog_OCAMLYACC="${ac_tool_prefix}ocamlyacc"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+OCAMLYACC=$ac_cv_prog_OCAMLYACC
+if test -n "$OCAMLYACC"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $OCAMLYACC" >&5
+$as_echo "$OCAMLYACC" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+if test -z "$ac_cv_prog_OCAMLYACC"; then
+  ac_ct_OCAMLYACC=$OCAMLYACC
+  # Extract the first word of "ocamlyacc", so it can be a program name with args.
+set dummy ocamlyacc; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_ac_ct_OCAMLYACC+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$ac_ct_OCAMLYACC"; then
+  ac_cv_prog_ac_ct_OCAMLYACC="$ac_ct_OCAMLYACC" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_prog_ac_ct_OCAMLYACC="ocamlyacc"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+ac_ct_OCAMLYACC=$ac_cv_prog_ac_ct_OCAMLYACC
+if test -n "$ac_ct_OCAMLYACC"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_ct_OCAMLYACC" >&5
+$as_echo "$ac_ct_OCAMLYACC" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+  if test "x$ac_ct_OCAMLYACC" = x; then
+    OCAMLYACC="no"
+  else
+    case $cross_compiling:$ac_tool_warned in
+yes:)
+{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using cross tools not prefixed with host triplet" >&5
+$as_echo "$as_me: WARNING: using cross tools not prefixed with host triplet" >&2;}
+ac_tool_warned=yes ;;
+esac
+    OCAMLYACC=$ac_ct_OCAMLYACC
+  fi
+else
+  OCAMLYACC="$ac_cv_prog_OCAMLYACC"
+fi
+
+
+
 
 if test "x$OCAMLC" == xno; then :
     as_fn_error $? "You must install the OCaml compiler" "$LINENO" 5
@@ -4427,7 +4746,12 @@ fi
 
 
 if test "x$OCAMLLEX" == xno; then :
-    as_fn_error $? "You must install OCaml Lexer (the ocamllex command). It should be part of your OCaml distribution." "$LINENO" 5
+    as_fn_error $? "the OCaml Lexer needs to be installed (the ocamllex command). It should be part of your OCaml distribution." "$LINENO" 5
+
+fi
+
+if test "x$OCAMLYACC" == xno; then :
+    as_fn_error $? "The OCaml parser generated needs to be installed (the ocamlyacc command). It should be part of your OCaml distribution." "$LINENO" 5
 
 fi
 
@@ -4649,7 +4973,7 @@ rm -f confcache
 $as_echo "$as_me: verifying basic ocaml modules" >&6;}
 
 
-  COCCI_OCAML_EXTERNAL=$COCCI_SRCDIR
+  COCCI_OCAML_EXTERNAL=$COCCI_SRCDIR/external
 
   { $as_echo "$as_me:${as_lineno-$LINENO}: coccinelle may use external ocaml libraries in $COCCI_OCAML_EXTERNAL" >&5
 $as_echo "$as_me: coccinelle may use external ocaml libraries in $COCCI_OCAML_EXTERNAL" >&6;}
@@ -4907,7 +5231,7 @@ if test "${enable_sexplib+set}" = set; then :
 fi
 
 
-      if test "$enable_sexplib" != xno; then :
+      if test "x$enable_sexplib" != xno; then :
         { GLOBAL_sexplib=; unset GLOBAL_sexplib;}
 
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for OCaml findlib package sexplib" >&5
@@ -4953,7 +5277,7 @@ fi
 
 fi
 
-    if test "$enable_sexplib" == xno; then :
+    if test "x$enable_sexplib" == xno; then :
       { pkgdir=; unset pkgdir;}
     pkgdir=$COCCI_OCAML_EXTERNAL/sexplib/
     { $as_echo "$as_me:${as_lineno-$LINENO}: checking for a local substitute of sexplib" >&5
@@ -4975,16 +5299,16 @@ fi
 
 fi
 
-    if test "$enable_sexplib" != xno; then :
+    if test "x$enable_sexplib" != xno; then :
       FEATURE_sexplib=1
 
     FLAGS_sexplib='$(FLAGS_sexplib)'
 
 
-        if test "$enable_sexplib" == xlocal; then :
-        MODULES_sexplib='$(GLOBAL_sexplib)'
+        if test "x$enable_sexplib" == xlocal; then :
+        MODULES_sexplib='$(LOCAL_sexplib)'
 
-      MODULESOPT_sexplib='$(GLOBALOPT_sexplib)'
+      MODULESOPT_sexplib='$(LOCALOPT_sexplib)'
 
 
             if test -f "$PATH_sexplib/Makefile"; then :
@@ -4998,9 +5322,9 @@ else
 fi
 
 else
-        MODULES_sexplib='$(LOCAL_sexplib)'
+        MODULES_sexplib='$(GLOBAL_sexplib)'
 
-      MODULESOPT_sexplib='$(LOCALOPT_sexplib)'
+      MODULESOPT_sexplib='$(GLOBALOPT_sexplib)'
 
 
 fi
@@ -5020,7 +5344,7 @@ if test "${enable_menhirLib+set}" = set; then :
 fi
 
 
-      if test "$enable_menhirLib" != xno; then :
+      if test "x$enable_menhirLib" != xno; then :
         { GLOBAL_menhirLib=; unset GLOBAL_menhirLib;}
 
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for OCaml findlib package menhirLib" >&5
@@ -5066,7 +5390,7 @@ fi
 
 fi
 
-    if test "$enable_menhirLib" == xno; then :
+    if test "x$enable_menhirLib" == xno; then :
       { pkgdir=; unset pkgdir;}
     pkgdir=$COCCI_OCAML_EXTERNAL/menhirLib/
     { $as_echo "$as_me:${as_lineno-$LINENO}: checking for a local substitute of menhirLib" >&5
@@ -5088,16 +5412,16 @@ fi
 
 fi
 
-    if test "$enable_menhirLib" != xno; then :
+    if test "x$enable_menhirLib" != xno; then :
       FEATURE_menhirLib=1
 
     FLAGS_menhirLib='$(FLAGS_menhirLib)'
 
 
-        if test "$enable_menhirLib" == xlocal; then :
-        MODULES_menhirLib='$(GLOBAL_menhirLib)'
+        if test "x$enable_menhirLib" == xlocal; then :
+        MODULES_menhirLib='$(LOCAL_menhirLib)'
 
-      MODULESOPT_menhirLib='$(GLOBALOPT_menhirLib)'
+      MODULESOPT_menhirLib='$(LOCALOPT_menhirLib)'
 
 
             if test -f "$PATH_menhirLib/Makefile"; then :
@@ -5111,9 +5435,9 @@ else
 fi
 
 else
-        MODULES_menhirLib='$(LOCAL_menhirLib)'
+        MODULES_menhirLib='$(GLOBAL_menhirLib)'
 
-      MODULESOPT_menhirLib='$(LOCALOPT_menhirLib)'
+      MODULESOPT_menhirLib='$(GLOBALOPT_menhirLib)'
 
 
 fi
@@ -5325,12 +5649,12 @@ fi
 
 
 else
-    MENHIR=$with_menhir
+    MENHIR="$with_menhir"
 
 
 fi
 
-if test "x$MENHIR" == xno; then :
+if test -z "$MENHIR" -o "x$MENHIR" == xno; then :
     if test "x$with_menhir" == xyes; then :
       as_fn_error $? "the OCaml parser generator Menhir is enabled explicitly but is not installed" "$LINENO" 5
 
@@ -5389,18 +5713,219 @@ else
 
   OCAMLCOCCI_MODULE=Yes_prepare_ocamlcocci
 
-  OCAMLCOCCI_FILE=no_prepare_ocamlcocci
+  OCAMLCOCCI_FILE=yes_prepare_ocamlcocci.ml
 
 
 fi
 
 
-# Check whether --enable-python was given.
-if test "${enable_python+set}" = set; then :
-  enableval=$enable_python;
+
+
+# Check whether --with-python was given.
+if test "${with_python+set}" = set; then :
+  withval=$with_python;
 fi
 
-if test "x$enable_python" != xno; then :
+if test "x$with_python" != xno; then :
+    if test -z "$with_python" -o "x$with_python" == xyes; then :
+        if test -z "$PYVER"; then :
+      if test -n "$ac_tool_prefix"; then
+  # Extract the first word of "${ac_tool_prefix}python", so it can be a program name with args.
+set dummy ${ac_tool_prefix}python; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_PYTHON+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$PYTHON"; then
+  ac_cv_prog_PYTHON="$PYTHON" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_prog_PYTHON="${ac_tool_prefix}python"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+PYTHON=$ac_cv_prog_PYTHON
+if test -n "$PYTHON"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $PYTHON" >&5
+$as_echo "$PYTHON" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+if test -z "$ac_cv_prog_PYTHON"; then
+  ac_ct_PYTHON=$PYTHON
+  # Extract the first word of "python", so it can be a program name with args.
+set dummy python; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_ac_ct_PYTHON+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$ac_ct_PYTHON"; then
+  ac_cv_prog_ac_ct_PYTHON="$ac_ct_PYTHON" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_prog_ac_ct_PYTHON="python"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+ac_ct_PYTHON=$ac_cv_prog_ac_ct_PYTHON
+if test -n "$ac_ct_PYTHON"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_ct_PYTHON" >&5
+$as_echo "$ac_ct_PYTHON" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+  if test "x$ac_ct_PYTHON" = x; then
+    PYTHON=""
+  else
+    case $cross_compiling:$ac_tool_warned in
+yes:)
+{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using cross tools not prefixed with host triplet" >&5
+$as_echo "$as_me: WARNING: using cross tools not prefixed with host triplet" >&2;}
+ac_tool_warned=yes ;;
+esac
+    PYTHON=$ac_ct_PYTHON
+  fi
+else
+  PYTHON="$ac_cv_prog_PYTHON"
+fi
+
+    if test -n "$PYTHON"; then :
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking for python version" >&5
+$as_echo_n "checking for python version... " >&6; }
+      PYVER=`$PYTHON -c "import sys; print(sys.version[:3])"`
+      if test -n "$PYVER"; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $PYVER" >&5
+$as_echo "$PYVER" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+
+fi
+
+
+else
+      PYVER=$with_python
+
+
+fi
+
+  if test -z "$PYVER"; then :
+      if test "x$with_python" == xyes; then :
+        as_fn_error $? "python scripting enabled explicitly but version could not be determined" "$LINENO" 5
+
+fi
+
+else
+
+pkg_failed=no
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for PYTHON" >&5
+$as_echo_n "checking for PYTHON... " >&6; }
+
+if test -n "$PYTHON_CFLAGS"; then
+    pkg_cv_PYTHON_CFLAGS="$PYTHON_CFLAGS"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"python-\$PYVER\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "python-$PYVER") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_PYTHON_CFLAGS=`$PKG_CONFIG --cflags "python-$PYVER" 2>/dev/null`
+else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
+if test -n "$PYTHON_LIBS"; then
+    pkg_cv_PYTHON_LIBS="$PYTHON_LIBS"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"python-\$PYVER\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "python-$PYVER") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_PYTHON_LIBS=`$PKG_CONFIG --libs "python-$PYVER" 2>/dev/null`
+else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
+
+
+
+if test $pkg_failed = yes; then
+
+if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
+        _pkg_short_errors_supported=yes
+else
+        _pkg_short_errors_supported=no
+fi
+        if test $_pkg_short_errors_supported = yes; then
+	        PYTHON_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors "python-$PYVER" 2>&1`
+        else
+	        PYTHON_PKG_ERRORS=`$PKG_CONFIG --print-errors "python-$PYVER" 2>&1`
+        fi
+	# Put the nasty error message in config.log where it belongs
+	echo "$PYTHON_PKG_ERRORS" >&5
+
+	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+                HAVE_PYTHON=no
+
+elif test $pkg_failed = untried; then
+	HAVE_PYTHON=no
+
+else
+	PYTHON_CFLAGS=$pkg_cv_PYTHON_CFLAGS
+	PYTHON_LIBS=$pkg_cv_PYTHON_LIBS
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+	HAVE_PYTHON=yes
+
+fi
+
+    if test "x$HAVE_PYTHON" != xyes -a "x$with_python" != xyes; then :
+        { $as_echo "$as_me:${as_lineno-$LINENO}: trying the default python version as fallback" >&5
+$as_echo "$as_me: trying the default python version as fallback" >&6;}
 
 pkg_failed=no
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for PYTHON" >&5
@@ -5474,20 +5999,24 @@ fi
 
 fi
 
-if test -z "$enable_python"; then :
+fi
+
+fi
+
+if test -z "$with_python"; then :
     if test "x$HAVE_PYTHON" == xyes; then :
-      enable_python=yes
+      with_python=yes
 
 
 else
-      enable_python=no
+      with_python=no
 
 
 fi
 
 fi
 
-if test "x$enable_python" == xyes; then :
+if test "x$with_python" != xno; then :
     if test "x$HAVE_PYTHON" == xyes; then :
       { $as_echo "$as_me:${as_lineno-$LINENO}: support for python scripts is enabled" >&5
 $as_echo "$as_me: support for python scripts is enabled" >&6;}
@@ -5505,7 +6034,7 @@ if test "${enable_pycaml+set}" = set; then :
 fi
 
 
-      if test "$enable_pycaml" != xno; then :
+      if test "x$enable_pycaml" != xno; then :
         { GLOBAL_pycaml=; unset GLOBAL_pycaml;}
 
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for OCaml findlib package pycaml" >&5
@@ -5551,7 +6080,7 @@ fi
 
 fi
 
-    if test "$enable_pycaml" == xno; then :
+    if test "x$enable_pycaml" == xno; then :
       { pkgdir=; unset pkgdir;}
     pkgdir=$COCCI_OCAML_EXTERNAL/pycaml/
     { $as_echo "$as_me:${as_lineno-$LINENO}: checking for a local substitute of pycaml" >&5
@@ -5573,16 +6102,16 @@ fi
 
 fi
 
-    if test "$enable_pycaml" != xno; then :
+    if test "x$enable_pycaml" != xno; then :
       FEATURE_pycaml=1
 
     FLAGS_pycaml='$(FLAGS_pycaml)'
 
 
-        if test "$enable_pycaml" == xlocal; then :
-        MODULES_pycaml='$(GLOBAL_pycaml)'
+        if test "x$enable_pycaml" == xlocal; then :
+        MODULES_pycaml='$(LOCAL_pycaml)'
 
-      MODULESOPT_pycaml='$(GLOBALOPT_pycaml)'
+      MODULESOPT_pycaml='$(LOCALOPT_pycaml)'
 
 
             if test -f "$PATH_pycaml/Makefile"; then :
@@ -5596,9 +6125,9 @@ else
 fi
 
 else
-        MODULES_pycaml='$(LOCAL_pycaml)'
+        MODULES_pycaml='$(GLOBAL_pycaml)'
 
-      MODULESOPT_pycaml='$(LOCALOPT_pycaml)'
+      MODULESOPT_pycaml='$(GLOBALOPT_pycaml)'
 
 
 fi
@@ -5626,12 +6155,12 @@ else
 fi
 
 
-# Check whether --enable-pcre was given.
-if test "${enable_pcre+set}" = set; then :
-  enableval=$enable_pcre;
+# Check whether --enable-pcre-syntax was given.
+if test "${enable_pcre_syntax+set}" = set; then :
+  enableval=$enable_pcre_syntax;
 fi
 
-if test "x$enable_pcre" != "xno"; then :
+if test "x$enable_pcre_syntax" != "xno"; then :
 
 pkg_failed=no
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for PCRE" >&5
@@ -5702,8 +6231,8 @@ $as_echo "yes" >&6; }
 	HAVE_PCRE=yes
 
 fi
-  if test "x$enable_pcre" == x -a "x$HAVE_PCRE" != xyes; then :
-  enable_pcre=no
+  if test -z "$enable_pcre_syntax" -a "x$HAVE_PCRE" != xyes; then :
+  enable_pcre_syntax=no
 
 fi
     { $as_echo "$as_me:${as_lineno-$LINENO}: configuring package pcre" >&5
@@ -5714,7 +6243,7 @@ if test "${enable_pcre+set}" = set; then :
 fi
 
 
-      if test "$enable_pcre" != xno; then :
+      if test "x$enable_pcre" != xno; then :
         { GLOBAL_pcre=; unset GLOBAL_pcre;}
 
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for OCaml findlib package pcre" >&5
@@ -5760,7 +6289,7 @@ fi
 
 fi
 
-    if test "$enable_pcre" == xno; then :
+    if test "x$enable_pcre" == xno; then :
       { pkgdir=; unset pkgdir;}
     pkgdir=$COCCI_OCAML_EXTERNAL/pcre/
     { $as_echo "$as_me:${as_lineno-$LINENO}: checking for a local substitute of pcre" >&5
@@ -5782,16 +6311,16 @@ fi
 
 fi
 
-    if test "$enable_pcre" != xno; then :
+    if test "x$enable_pcre" != xno; then :
       FEATURE_pcre=1
 
     FLAGS_pcre='$(FLAGS_pcre)'
 
 
-        if test "$enable_pcre" == xlocal; then :
-        MODULES_pcre='$(GLOBAL_pcre)'
+        if test "x$enable_pcre" == xlocal; then :
+        MODULES_pcre='$(LOCAL_pcre)'
 
-      MODULESOPT_pcre='$(GLOBALOPT_pcre)'
+      MODULESOPT_pcre='$(LOCALOPT_pcre)'
 
 
             if test -f "$PATH_pcre/Makefile"; then :
@@ -5805,18 +6334,19 @@ else
 fi
 
 else
-        MODULES_pcre='$(LOCAL_pcre)'
+        MODULES_pcre='$(GLOBAL_pcre)'
 
-      MODULESOPT_pcre='$(LOCALOPT_pcre)'
+      MODULESOPT_pcre='$(GLOBALOPT_pcre)'
 
-
-fi
 
 fi
 
 fi
+    enable_pcre_syntax=$enable_pcre
 
-if test "x$enable_pcre" != xno; then :
+fi
+
+if test "x$enable_pcre_syntax" != xno; then :
     if test "x$HAVE_PCRE" == xyes; then :
       { $as_echo "$as_me:${as_lineno-$LINENO}: support for pcre syntax is enabled" >&5
 $as_echo "$as_me: support for pcre syntax is enabled" >&6;}
@@ -5933,7 +6463,7 @@ rm -f confcache
 FEATURE_TARZAN=1
 
 
-if test "x$enable_python" == xyes; then :
+if test "x$with_python" != xno; then :
     FEATURE_PYTHON=1
 
 
@@ -5946,6 +6476,8 @@ fi
 
 
 ac_config_files="$ac_config_files Makefile.config"
+
+ac_config_files="$ac_config_files version.ml"
 
 ac_config_files="$ac_config_files globals/config.ml"
 
@@ -6677,6 +7209,7 @@ for ac_config_target in $ac_config_targets
 do
   case $ac_config_target in
     "Makefile.config") CONFIG_FILES="$CONFIG_FILES Makefile.config" ;;
+    "version.ml") CONFIG_FILES="$CONFIG_FILES version.ml" ;;
     "globals/config.ml") CONFIG_FILES="$CONFIG_FILES globals/config.ml" ;;
     "globals/regexp.ml") CONFIG_FILES="$CONFIG_FILES globals/regexp.ml" ;;
     "python/pycocci.ml") CONFIG_FILES="$CONFIG_FILES python/pycocci.ml" ;;
@@ -7154,11 +7687,11 @@ menhir:           $MENHIR
 menhirLib module: $OCAML_PKG_menhirLib
 
 ocaml scripting:  $enable_ocaml
-python scripting: $enable_python
-pycaml module:    $OCAML_PKG_pycaml
+python scripting: $with_python
+pycaml module:    $enable_pycaml
 
-pcre regexes:     $enable_pcre
-pcre module:      $OCAML_PKG_pcre
+pcre regexes:     $enable_pcre_syntax
+pcre module:      $enable_pcre
 pcre library:     $HAVE_PCRE
 
 EOF
@@ -7187,7 +7720,7 @@ Then, to test coccinelle run for example:
   \$ spatch -sp_file demos/simple.cocci demos/simple.c -o /tmp/new_simple.c
 EOF
 
-if test "x$enable_python" != "xno"; then
+if test "x$with_python" != "xno"; then
 cat << EOF
 ------------------------------------------------------------------------------
 To use python scripts, install in addition the coccilib runtime library:

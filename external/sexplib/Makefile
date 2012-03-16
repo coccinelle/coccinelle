@@ -1,3 +1,5 @@
+include ../../Makefile.config
+
 ##############################################################################
 # Variables
 ##############################################################################
@@ -12,11 +14,6 @@ SRC= \
   path.ml \
   conv.ml \
   conv_error.ml
-#SOURCES = \
-#  parser.mly \
-#  lexer.mll \
-# sexp.mli path.mli conv.mli
-
 
 TARGET=sexplib
 TARGETPACK=sexplib
@@ -27,37 +24,7 @@ LIB_PACK_NAME = Sexplib
 ##############################################################################
 
 INCLUDES=
-#-I +camlp4
 SYSLIBS= str.cma unix.cma bigarray.cma num.cma
-#INCDIRS = +camlp4
-#pad: take care for bigarray otherwise get some caml_ba_get_1 error msg
-
-##############################################################################
-#OCAMLFLAGS = -for-pack Sexplib
-
-#PACKS = type-conv
-#RESULT = sexplib
-
-#TRASH = pa_sexp_conv.cmi pa_sexp_conv.cmo pa_sexp_conv.annot
-
-#all: \
-#	pack-byte-code pack-native-code \
-#	sexplib.cma sexplib.cmxa \
-#	pa_sexp_conv.cmi pa_sexp_conv.cmo
-#
-#LIBINSTALL_FILES = \
-#  sexp.mli path.mli conv.mli \
-#  sexplib.cmi sexplib.cma sexplib.cmxa sexplib.a \
-#  pa_sexp_conv.cmi pa_sexp_conv.cmo
-#
-#install:	libinstall
-#uninstall:	libuninstall
-#
-#clean::	clean-doc
-#
-#-include $(OCAMLMAKEFILE)
-
-##############################################################################
 
 ##############################################################################
 # Generic variables
@@ -65,22 +32,14 @@ SYSLIBS= str.cma unix.cma bigarray.cma num.cma
 
 #dont use -custom, it makes the bytecode unportable.
 OCAMLCFLAGS ?= -g -dtypes # -w A
-#-for-pack Sexplib
 
 # This flag is also used in subdirectories so don't change its name here.
 OPTFLAGS=
 
-
-OCAMLC=ocamlc$(OPTBIN) $(OCAMLCFLAGS)  $(INCLUDES)  $(SYSINCLUDES) -thread
-OCAMLOPT=ocamlopt$(OPTBIN) $(OPTFLAGS) $(INCLUDES) $(SYSINCLUDES) -thread
-OCAMLLEX=ocamllex #-ml # -ml for debugging lexer, but slightly slower
-OCAMLYACC=ocamlyacc -v
-OCAMLDEP=ocamldep $(INCLUDES)
-OCAMLMKTOP=ocamlmktop -g -custom $(INCLUDES) -thread
-
-#-ccopt -static
-STATIC=
-
+OCAMLC_CMD=$(OCAMLC) $(OCAMLCFLAGS) $(INCLUDES) $(SYSINCLUDES) -thread
+OCAMLOPT_CMD=$(OCAMLOPT) $(OPTFLAGS) $(INCLUDES) $(SYSINCLUDES) -thread
+OCAMLDEP_CMD=$(OCAMLDEP) $(INCLUDES)
+OCAMLMKTOP_CMD=$(OCAMLMKTOP) -g -custom $(INCLUDES) -thread
 
 ##############################################################################
 # Top rules
@@ -93,31 +52,29 @@ all: $(TARGET).cma $(TARGETPACK).cmo
 all.opt: $(TARGET).cmxa $(TARGETPACK).cmx
 
 $(TARGET).cma: $(OBJS)
-	$(OCAMLC) -a -o $@ $(OBJS)
+	$(OCAMLC_CMD) -a -o $@ $(OBJS)
 
 $(TARGET).cmxa: $(OPTOBJS) $(LIBS:.cma=.cmxa)
-	$(OCAMLOPT) -a -o $@ $(OPTOBJS)
+	$(OCAMLOPT_CMD) -a -o $@ $(OPTOBJS)
 
 $(TARGET).top: $(OBJS) $(LIBS)
-	$(OCAMLMKTOP) -o $(TARGET).top $(SYSLIBS) $(LIBS) $(OBJS)
+	$(OCAMLMKTOP_CMD) -o $(TARGET).top $(SYSLIBS) $(LIBS) $(OBJS)
 
 clean::
 	rm -f $(TARGET).top
 
 $(TARGETPACK).cmo: $(OBJS)
-	$(OCAMLC) -pack -o $@ $(OBJS)
+	$(OCAMLC_CMD) -pack -o $@ $(OBJS)
 
 $(TARGETPACK).cmx: $(OPTOBJS)
-	$(OCAMLOPT) -pack -o $@ $(OPTOBJS)
+	$(OCAMLOPT_CMD) -pack -o $@ $(OPTOBJS)
 
 # special handling, fun that they use cpp whereas they claim camplp4 can do everything
 pre_sexp.cmo: pre_sexp.ml
-	$(OCAMLC) -pp "cpp -w" -c $<
+	$(OCAMLC_CMD) -pp "${CPP} -x c -w" -c $<
 
 pre_sexp.cmx: pre_sexp.ml
-	$(OCAMLOPT) -for-pack $(LIB_PACK_NAME) -pp "cpp -w" -c $<
-
-
+	$(OCAMLOPT_CMD) -for-pack $(LIB_PACK_NAME) -pp "${CPP} -w" -c $<
 
 lexer.ml: lexer.mll
 	$(OCAMLLEX) $<
@@ -127,7 +84,7 @@ beforedepend:: lexer.ml
 
 
 parser.ml parser.mli: parser.mly
-	$(OCAMLYACC) $<
+	$(OCAMLYACC) -v $<
 clean::
 	rm -f parser.ml parser.mli parser.output
 beforedepend:: parser.ml parser.mli
@@ -141,26 +98,24 @@ beforedepend:: parser.ml parser.mli
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
 
 .ml.cmo:
-	$(OCAMLC) -c $<
+	$(OCAMLC_CMD) -c $<
 .mli.cmi:
-	$(OCAMLC) -c $<
+	$(OCAMLC_CMD) -c $<
 
 .ml.cmx:
-	$(OCAMLOPT) -for-pack $(LIB_PACK_NAME) -c $<
+	$(OCAMLOPT_CMD) -for-pack $(LIB_PACK_NAME) -c $<
 
 .ml.mldepend:
-	$(OCAMLC) -i $<
+	$(OCAMLC_CMD) -i $<
 
 clean::
 	rm -f *.cm[ioxa] *.o *.a *.cmxa *.annot
 clean::
 	rm -f *~ .*~ gmon.out #*#
 
-beforedepend::
-
 # need also -pp cpp here
-depend:: beforedepend
-	$(OCAMLDEP) -pp "cpp -w" *.mli *.ml    > .depend
+depend::
+	$(OCAMLDEP_CMD) -pp "${CPP} -w" *.mli *.ml > .depend
 
 distclean: clean
 	rm -f .depend

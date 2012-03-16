@@ -72,7 +72,7 @@ AC_DEFUN([AC_CHECK_COCCI_EXTPKG],
 
   dnl  try and find a globally installed version
   dnl  if not, enable_$1 will be "no"
-  AS_IF([test "$enable_$1" != xno],
+  AS_IF([test "x$enable_$1" != xno],
   [dnl
     AC_COCCI_OCAMLPKG([GLOBAL_$1], [$1])
 
@@ -113,10 +113,10 @@ AC_DEFUN([AC_CHECK_COCCI_EXTPKG],
     AC_SUBST([FLAGS_$1],['$(FLAGS_$1)'])
 
     dnl  distinguish global/local
-    AS_IF([test "$enable_$1" == xlocal],
+    AS_IF([test "x$enable_$1" == xlocal],
     [dnl
-      AC_SUBST([MODULES_$1],['$(GLOBAL_$1)'])
-      AC_SUBST([MODULESOPT_$1],['$(GLOBALOPT_$1)'])
+      AC_SUBST([MODULES_$1],['$(LOCAL_$1)'])
+      AC_SUBST([MODULESOPT_$1],['$(LOCALOPT_$1)'])
 
       dnl check if the local directory has a Makefile
       AS_IF([test -f "$PATH_$1/Makefile"],
@@ -128,8 +128,8 @@ AC_DEFUN([AC_CHECK_COCCI_EXTPKG],
       ])
     ],
     [dnl
-      AC_SUBST([MODULES_$1],['$(LOCAL_$1)'])
-      AC_SUBST([MODULESOPT_$1],['$(LOCALOPT_$1)'])
+      AC_SUBST([MODULES_$1],['$(GLOBAL_$1)'])
+      AC_SUBST([MODULESOPT_$1],['$(GLOBALOPT_$1)'])
     ])
   ])
 ])

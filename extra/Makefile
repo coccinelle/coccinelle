@@ -12,34 +12,32 @@ INCLUDES= -I ../commons -I ../globals -I  ../parsing_cocci -I  ../parsing_c
 #for warning:  -w A
 #for profiling:  -p -inline 0   with OCAMLOPT
 OCAMLCFLAGS ?= -g -dtypes
-OCAMLC =ocamlc$(OPTBIN) $(OCAMLCFLAGS) $(INCLUDES)
-OCAMLOPT = ocamlopt$(OPTBIN) $(OPTFLAGS) $(INCLUDES)
-OCAMLDEP = ocamldep$(OPTBIN) $(INCLUDES)
-OCAMLMKTOP=ocamlmktop -g -custom $(INCLUDES)
-
+OCAMLC_CMD=$(OCAMLC) $(OCAMLCFLAGS) $(INCLUDES)
+OCAMLOPT_CMD=$(OCAMLOPT) $(OPTFLAGS) $(INCLUDES)
+OCAMLDEP_CMD=$(OCAMLDEP) $(INCLUDESDEP)
+OCAMLMKTOP_CMD=$(OCAMLMKTOP) -g -custom $(INCLUDES)
 
 OBJS = $(SOURCES:.ml=.cmo)
 OPTOBJS = $(SOURCES:.ml=.cmx)
-
 
 all: $(TARGET).cma
 
 all.opt: $(TARGET).cmxa
 
 $(TARGET).byte: $(OBJS) $(LIBS)
-	$(OCAMLC) -o $(TARGET).byte $(SYSLIBS) $(LIBS) $(OBJS)
+	$(OCAMLC_CMD) -o $(TARGET).byte $(SYSLIBS) $(LIBS) $(OBJS)
 
 $(TARGET).opt: $(OPTOBJS) $(LIBS:.cma=.cmxa)
-	$(OCAMLOPT) -o $(TARGET).opt   $(SYSLIBS:.cma=.cmxa) $(LIBS:.cma=.cmxa)  $(OPTOBJS)
+	$(OCAMLOPT_CMD) -o $(TARGET).opt   $(SYSLIBS:.cma=.cmxa) $(LIBS:.cma=.cmxa)  $(OPTOBJS)
 
 $(TARGET).cma: $(OBJS)
-	$(OCAMLC) -a -o $(TARGET).cma $(OBJS)
+	$(OCAMLC_CMD) -a -o $(TARGET).cma $(OBJS)
 
 $(TARGET).cmxa: $(OPTOBJS) $(LIBS:.cma=.cmxa)
-	$(OCAMLOPT) -a -o $(TARGET).cmxa $(OPTOBJS)
+	$(OCAMLOPT_CMD) -a -o $(TARGET).cmxa $(OPTOBJS)
 
 $(TARGET).top: $(OBJS) $(LIBS)
-	$(OCAMLMKTOP) -o $(TARGET).top $(SYSLIBS) $(LIBS) $(OBJS)
+	$(OCAMLMKTOP_CMD) -o $(TARGET).top $(SYSLIBS) $(LIBS) $(OBJS)
 
 clean::
 	rm -f $(TARGET).byte $(TARGET).opt rm -f $(TARGET).top
@@ -49,14 +47,14 @@ clean::
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
 
 .ml.cmo:
-	$(OCAMLC) -c $<
+	$(OCAMLC_CMD) -c $<
 .mli.cmi:
-	$(OCAMLC) -c $<
+	$(OCAMLC_CMD) -c $<
 .ml.cmx:
-	$(OCAMLOPT) -c $<
+	$(OCAMLOPT_CMD) -c $<
 
 .ml.mldepend:
-	$(OCAMLC) -i $<
+	$(OCAMLC_CMD) -i $<
 
 clean::
 	rm -f *.cm[ioxa] *.o *.a *.cmxa *.annot
@@ -68,8 +66,6 @@ distclean::
 beforedepend::
 
 depend:: beforedepend
-	$(OCAMLDEP) *.mli *.ml    > .depend
+	$(OCAMLDEP_CMD) *.mli *.ml    > .depend
 
 -include .depend
-
-

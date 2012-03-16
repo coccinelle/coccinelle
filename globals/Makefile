@@ -9,19 +9,17 @@ TARGET=globals
 SRC= flag.ml config.ml iteration.ml $(REGEXP_FILE) regexp.ml
 
 LIBS=
-INCLUDEDIRS= ../commons  $(PCREDIR)
+INCLUDEDIRS= ../commons $(PCREDIR)
 
 ##############################################################################
 # Generic variables
 ##############################################################################
 
 INCLUDES=$(INCLUDEDIRS:%=-I %)
-
-OCAMLCFLAGS ?= -g -dtypes
-OCAMLC =ocamlc$(OPTBIN) $(OCAMLCFLAGS) $(INCLUDES)
-OCAMLOPT = ocamlopt$(OPTBIN) $(OPTFLAGS) $(INCLUDES)
-OCAMLDEP = ocamldep$(OPTBIN) $(INCLUDES)
-OCAMLMKTOP=ocamlmktop -g -custom $(INCLUDES)
+OCAMLC_CMD=$(OCAMLC) $(OCAMLCFLAGS) $(INCLUDES)
+OCAMLOPT_CMD=$(OCAMLOPT) $(OPTFLAGS) $(INCLUDES)
+OCAMLDEP_CMD=$(OCAMLDEP) $(INCLUDES)
+OCAMLMKTOP_CMD=$(OCAMLMKTOP) -g -custom $(INCLUDES)
 
 OBJS= $(SRC:.ml=.cmo)
 OPTOBJS= $(SRC:.ml=.cmx)
@@ -34,10 +32,10 @@ all: $(TARGET).cma
 all.opt: $(TARGET).cmxa
 
 $(TARGET).cma: $(LIBS) $(OBJS)
-	$(OCAMLC) -a -o $(TARGET).cma $(OBJS)
+	$(OCAMLC_CMD) -a -o $(TARGET).cma $(OBJS)
 
 $(TARGET).cmxa: $(LIBS:.cma=.cmxa) $(OPTOBJS)
-	$(OCAMLOPT) -a -o $(TARGET).cmxa $(OPTOBJS)
+	$(OCAMLOPT_CMD) -a -o $(TARGET).cmxa $(OPTOBJS)
 
 ##############################################################################
 # Developer rules
@@ -45,14 +43,14 @@ $(TARGET).cmxa: $(LIBS:.cma=.cmxa) $(OPTOBJS)
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
 
 .ml.cmo:
-	$(OCAMLC) -c $<
+	$(OCAMLC_CMD) -c $<
 .mli.cmi:
-	$(OCAMLC) -c $<
+	$(OCAMLC_CMD) -c $<
 .ml.cmx:
-	$(OCAMLOPT) -c $<
+	$(OCAMLOPT_CMD) -c $<
 
 .ml.mldepend:
-	$(OCAMLC) -i $<
+	$(OCAMLC_CMD) -i $<
 
 clean::
 	rm -f *.cm[ioxa] *.o *.a *.cmxa *.annot
@@ -64,10 +62,6 @@ distclean::
 beforedepend::
 
 depend:: beforedepend
-	$(OCAMLDEP) *.mli *.ml    > .depend
+	$(OCAMLDEP_CMD) *.mli *.ml    > .depend
 
 -include .depend
-
-
-
-

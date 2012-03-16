@@ -3,7 +3,7 @@
 # Configuration section
 #############################################################################
 
--include Makefile.libs
+include Makefile.libs
 -include Makefile.config
 -include /etc/lsb-release
 
@@ -15,6 +15,7 @@ PKGVERSION=$(shell dpkg-parsechangelog -ldebian/changelog.$(DISTRIB_CODENAME) 2>
 ##############################################################################
 # Variables
 ##############################################################################
+
 TARGET=spatch
 PRJNAME=coccinelle
 
@@ -28,7 +29,7 @@ else
 endif
 OPTLIBFLAGS=
 
-ifeq ("$(SEXPDIR)","external/sexplib")
+ifeq ("$(FEATURE_sexplib)",1)
 	SEXPLIB=$(SEXPDIR)/sexplib.cmo
 	OPTSEXPLIB=sexplib.cmx
 else
@@ -61,10 +62,9 @@ LIBS=commons/commons.cma \
      extra/extra.cma python/coccipython.cma ocaml/cocciocaml.cma
 
 # used for depend: and a little for rec & rec.opt
-MAKESUBDIRS=commons \
+MAKESUBDIRS=$(MAKELIBS) commons \
  globals ctl parsing_cocci parsing_c \
- engine popl09 extra python ocaml \
- $(MAKELIBS)
+ engine popl09 extra python ocaml
 
 # used for clean:
 # It is like MAKESUBDIRS but also
@@ -108,12 +108,11 @@ OCAMLCFLAGS=
 # to also link with -g.
 OPTFLAGS= -g
 
-OCAMLC=ocamlc$(OPTBIN) $(OCAMLCFLAGS) $(LINKFLAGS) $(INCLUDES)
-OCAMLOPT=ocamlopt$(OPTBIN) $(OPTFLAGS) $(LINKFLAGS) $(INCLUDES)
-OCAMLLEX=ocamllex #-ml # -ml for debugging lexer, but slightly slower
-OCAMLYACC=ocamlyacc -v
-OCAMLDEP=ocamldep $(INCLUDEDIRSDEP:%=-I %)
-OCAMLMKTOP=ocamlmktop -g -custom $(INCLUDES)
+OCAMLC_CMD=$(OCAMLC) $(OCAMLCFLAGS) $(LINKFLAGS) $(INCLUDES)
+OCAMLOPT_CMD=$(OCAMLOPT) $(OPTFLAGS) $(LINKFLAGS) $(INCLUDES)
+OCAMLYACC_CMD=$(OCAMLYACC) -v
+OCAMLDEP_CMD=$(OCAMLDEP) $(INCLUDEDIRSDEP:%=-I %)
+OCAMLMKTOP_CMD=$(OCAMLMKTOP) -g -custom $(INCLUDES)
 
 # can also be set via 'make static'
 CFLAGS=-pie -fPIE -fpic -fPIC -static
@@ -187,13 +186,13 @@ $(OBJS):$(LIBS) $(LNKLIBS)
 $(OPTOBJS):$(LIBS:.cma=.cmxa) $(LNKOPTLIBS)
 
 $(EXEC): $(LIBS) $(OBJS)
-	$(OCAMLC) $(BYTECODE_STATIC) -o $@ $(SYSLIBS) $(SEXPLIB) $(LNKLIBS) $^
+	$(OCAMLC_CMD) $(BYTECODE_STATIC) -o $@ $(SYSLIBS) $(SEXPLIB) $(LNKLIBS) $^
 
 $(EXEC).opt: $(LIBS:.cma=.cmxa) $(OPTOBJS)
-	$(OCAMLOPT) $(STATIC) -o $@ $(SYSLIBS:.cma=.cmxa) $(OPTSEXPLIB) $(OPTLIBFLAGS) $(FLAGSLIB) $(OPTLNKLIBS) $^
+	$(OCAMLOPT_CMD) $(STATIC) -o $@ $(SYSLIBS:.cma=.cmxa) $(OPTSEXPLIB) $(OPTLIBFLAGS) $(FLAGSLIB) $(OPTLNKLIBS) $^
 
 $(EXEC).top: $(LIBS) $(OBJS) $(LNKLIBS)
-	$(OCAMLMKTOP) -custom -o $@ $(SYSLIBS) $(SEXPLIB) $(LNKLIBS) $^
+	$(OCAMLMKTOP_CMD) -custom -o $@ $(SYSLIBS) $(SEXPLIB) $(LNKLIBS) $^
 
 clean::
 	rm -f $(TARGET) $(TARGET).opt $(TARGET).top
@@ -441,7 +440,7 @@ tags:
 	otags -no-mli-tags -r  .
 
 dependencygraph:
-	find . -name "*.ml" |grep -v "scripts" | xargs ocamldep -I commons -I globals -I ctl -I parsing_cocci -I parsing_c -I engine -I popl09 -I extra > /tmp/dependfull.depend
+	find . -name "*.ml" |grep -v "scripts" | xargs $(OCAMLDEP) -I commons -I globals -I ctl -I parsing_cocci -I parsing_c -I engine -I popl09 -I extra > /tmp/dependfull.depend
 	ocamldot -lr /tmp/dependfull.depend > /tmp/dependfull.dot
 	dot -Tps /tmp/dependfull.dot > /tmp/dependfull.ps
 	ps2pdf /tmp/dependfull.ps /tmp/dependfull.pdf
@@ -458,16 +457,6 @@ test.ml:
 
 beforedepend:: test.ml
 
-
-#INC=$(dir $(shell which ocaml))
-#INCX=$(INC:/=)
-#INCY=$(dir $(INCX))
-#INCZ=$(INCY:/=)/lib/ocaml
-#
-#prim.o: prim.c
-#	gcc -c -o prim.o -I $(INCZ) prim.c
-
-
 ##############################################################################
 # Generic ocaml rules
 ##############################################################################
@@ -475,14 +464,14 @@ beforedepend:: test.ml
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
 
 .ml.cmo:
-	$(OCAMLC)    -c $<
+	$(OCAMLC_CMD) -c $<
 .mli.cmi:
-	$(OCAMLC)    -c $<
+	$(OCAMLC_CMD) -c $<
 .ml.cmx:
-	$(OCAMLOPT)  -c $<
+	$(OCAMLOPT_CMD) -c $<
 
 .ml.mldepend:
-	$(OCAMLC) -i $<
+	$(OCAMLC_CMD) -i $<
 
 $(LEXER_SOURCES:.mll=.ml) :	$(LEXER_SOURCES)
 	$(OCAMLLEX) $(LEXER_SOURCES)
@@ -494,8 +483,7 @@ clean::
 distclean:: clean
 	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i $@; done
 	rm -f .depend
-	rm -f Makefile.config
-	rm -f globals/config.ml test.ml
+	rm -f test.ml
 	rm -f TAGS
 	rm -f tests/SCORE_actual.sexp
 	rm -f tests/SCORE_best_of_both.sexp
@@ -504,10 +492,25 @@ distclean:: clean
 beforedepend::
 
 depend:: beforedepend
-	$(OCAMLDEP) *.mli *.ml > .depend
 	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i $@; done
+	$(OCAMLDEP_CMD) *.mli *.ml > .depend
 
 .depend::
 	@if [ ! -f .depend ] ; then $(MAKE) depend ; fi
 
 -include .depend
+
+##############################################################################
+# configure-related
+##############################################################################
+
+distclean::
+	@echo cleaning configured files
+	rm -f Makefile.config
+	rm -rf autom4te.cache
+	rm -f config.status
+	rm -f config.log
+	rm -f version.ml
+	rm -f globals/config.ml
+	rm -f globals/regexp.ml python/pycocci.ml ocaml/prepare_ocamlcocci.ml
+	@echo run 'configure' again prior to building coccinelle

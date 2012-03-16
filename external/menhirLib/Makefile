@@ -1,5 +1,4 @@
-
--include ../Makefile.config
+include ../../Makefile.config
 
 ##############################################################################
 # Variables
@@ -21,13 +20,11 @@ EXTRAOPT=-for-pack MenhirLib
 OCAMLCFLAGS ?=-g -dtypes
 OPTFLAGS=
 
-OCAMLC=ocamlc$(OPTBIN)     $(OCAMLCFLAGS) $(INCLUDES)
-OCAMLOPT= ocamlopt$(OPTBIN) $(OPTFLAGS) $(EXTRAOPT)   $(INCLUDES)
-OCAMLOPT2=ocamlopt$(OPTBIN) $(OPTFLAGS)              $(INCLUDES)
-OCAMLLEX=ocamllex$(OPTBIN)
-OCAMLYACC=ocamlyacc -v
-OCAMLDEP=ocamldep$(OPTBIN) $(INCLUDES)
-OCAMLMKTOP=ocamlmktop -g -custom $(INCLUDES)
+OCAMLC_CMD=$(OCAMLC) $(OCAMLCFLAGS) $(INCLUDES)
+OCAMLOPT_CMD=$(OCAMLOPT) $(OPTFLAGS) $(INCLUDES)
+OCAMLOPT_CMD2=$(OCAMLOPT) $(OPTFLAGS) $(EXTRAOPT) $(INCLUDES)
+OCAMLDEP_CMD=$(OCAMLDEP) $(INCLUDESDEP)
+OCAMLMKTOP_CMD=$(OCAMLMKTOP) -g -custom $(INCLUDES)
 
 OBJS= $(SRC:.ml=.cmo)
 OPTOBJS= $(SRC:.ml=.cmx)
@@ -41,10 +38,10 @@ all.opt: $(TARGET).cmxa menhirLib.cmx
 opt: all.opt
 
 $(TARGET).cma: $(OBJS) $(LIBS)
-	$(OCAMLC) -a -o $@ $(OBJS)
+	$(OCAMLC_CMD) -a -o $@ $(OBJS)
 
 $(TARGET).cmxa: $(OPTOBJS) $(LIBS:.cma=.cmxa)
-	$(OCAMLOPT) -a -o $@ $(OPTOBJS)
+	$(OCAMLOPT_CMD2) -a -o $@ $(OPTOBJS)
 
 # I thought at first that only one file menhirLib.ml
 # was needed but in fact it's a wierd cos menhirLib.cmo results from multi
@@ -54,10 +51,10 @@ $(TARGET).cmxa: $(OPTOBJS) $(LIBS:.cma=.cmxa)
 
 # copy what the menhir authors do in their own makefile
 menhirLib.cmo: $(OBJS)
-	$(OCAMLC) -pack -o menhirLib.cmo $^
+	$(OCAMLC_CMD) -pack -o menhirLib.cmo $^
 
 menhirLib.cmx: $(OPTOBJS)
-	$(OCAMLOPT2) -pack -o menhirLib.cmx $^
+	$(OCAMLOPT_CMD) -pack -o menhirLib.cmx $^
 
 ##############################################################################
 # Generic rules
@@ -65,14 +62,14 @@ menhirLib.cmx: $(OPTOBJS)
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
 
 .ml.cmo:
-	$(OCAMLC) -c $<
+	$(OCAMLC_CMD) -c $<
 .mli.cmi:
-	$(OCAMLC) -c $<
+	$(OCAMLC_CMD) -c $<
 .ml.cmx:
-	$(OCAMLOPT) -c $<
+	$(OCAMLOPT_CMD2) -c $<
 
 .ml.mldepend:
-	$(OCAMLC) -i $<
+	$(OCAMLC_CMD) -i $<
 
 clean::
 	rm -f *.cm[ioxa] *.o *.a *.cmxa *.annot
@@ -80,10 +77,8 @@ clean::
 clean::
 	rm -f *~ .*~ gmon.out #*#
 
-beforedepend::
-
-depend:: beforedepend
-	$(OCAMLDEP) *.mli *.ml    > .depend
+depend::
+	$(OCAMLDEP_CMD) *.mli *.ml > .depend
 
 distclean::
 	rm -f .depend

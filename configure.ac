@@ -56,6 +56,7 @@ AS_IF([test -z "$PKG_CONFIG"],
 dnl  ocaml tools
 AC_PROG_OCAML
 AC_PROG_OCAMLLEX
+AC_PROG_OCAMLYACC
 
 dnl  enforce ocaml tool requirements
 AS_IF([test "x$OCAMLC" == xno],
@@ -67,7 +68,12 @@ AC_CHECK_OCAMLVERSION([3.11])
 
 AS_IF([test "x$OCAMLLEX" == xno],
 [dnl
-  AC_MSG_ERROR([You must install OCaml Lexer (the ocamllex command). It should be part of your OCaml distribution.])
+  AC_MSG_ERROR([the OCaml Lexer needs to be installed (the ocamllex command). It should be part of your OCaml distribution.])
+])
+
+AS_IF([test "x$OCAMLYACC" == xno],
+[dnl
+  AC_MSG_ERROR([The OCaml parser generated needs to be installed (the ocamlyacc command). It should be part of your OCaml distribution.])
 ])
 
 AC_ARG_VAR([OCAMLFIND], [path to OCaml findlib (ocamlfind)])
@@ -101,7 +107,7 @@ dnl
 AC_MSG_NOTICE([verifying basic ocaml modules])
 
 dnl  default dir with external ocaml packages
-AC_COCCI_SET_EXTERNAL_DIR([$COCCI_SRCDIR])
+AC_COCCI_SET_EXTERNAL_DIR([$COCCI_SRCDIR/external])
 
 dnl  set some defaults
 dnl  add a line for each package that is
@@ -157,7 +163,7 @@ AS_IF([test "x$with_menhir" == "xno"],
   AC_SUBST([MENHIR], ["$with_menhir"])
 ])
 
-AS_IF([test "x$MENHIR" == xno],
+AS_IF([test -z "$MENHIR" -o "x$MENHIR" == xno],
 [dnl
   AS_IF([test "x$with_menhir" == xyes],
   [dnl
@@ -205,7 +211,7 @@ AS_IF([test "x$enable_ocaml" == xno],
 [dnl
   AC_SUBST([enable_ocaml],[yes])
   AC_SUBST(OCAMLCOCCI_MODULE,[Yes_prepare_ocamlcocci])
-  AC_SUBST(OCAMLCOCCI_FILE,[no_prepare_ocamlcocci])
+  AC_SUBST(OCAMLCOCCI_FILE,[yes_prepare_ocamlcocci.ml])
 ])
 
 
@@ -241,11 +247,6 @@ AS_IF([test "x$with_python" != xno],
       PKG_CHECK_MODULES([PYTHON], [python],[AC_SUBST(HAVE_PYTHON,[yes])],[AC_SUBST(HAVE_PYTHON,[no])])
     ])
   ])
-
-dnl  AS_IF([test "x$HAVE_PYTHON" != xyes]),
-dnl  [dnl  fallback case
-dnl    PKG_CHECK_MODULES([PYTHON], [python],[AC_SUBST(HAVE_PYTHON,[yes])],[AC_SUBST(HAVE_PYTHON,[no])])
-dnl  ])
 ])
 
 AS_IF([test -z "$with_python"],
@@ -288,7 +289,7 @@ AC_ARG_ENABLE([pcre-syntax], AS_HELP_STRING([--enable-pcre-syntax], [enable pcre
 AS_IF([test "x$enable_pcre_syntax" != "xno"],
 [dnl
   PKG_CHECK_MODULES([PCRE], [libpcre],[AC_SUBST([HAVE_PCRE],[yes])],[AC_SUBST([HAVE_PCRE],[no])])
-  AS_IF([test "x$enable_pcre_syntax" == x -a "x$HAVE_PCRE" != xyes], [AC_SUBST([enable_pcre_syntax],[no])])
+  AS_IF([test -z "$enable_pcre_syntax" -a "x$HAVE_PCRE" != xyes], [AC_SUBST([enable_pcre_syntax],[no])])
   AC_CHECK_COCCI_EXTPKG([pcre])  dnl  will set $enable_pcre to 'yes', 'no', or 'local'
   enable_pcre_syntax=$enable_pcre
 ])
@@ -357,10 +358,10 @@ menhirLib module: $OCAML_PKG_menhirLib
 
 ocaml scripting:  $enable_ocaml
 python scripting: $with_python
-pycaml module:    $OCAML_PKG_pycaml
+pycaml module:    $enable_pycaml
 
 pcre regexes:     $enable_pcre_syntax
-pcre module:      $OCAML_PKG_pcre
+pcre module:      $enable_pcre
 pcre library:     $HAVE_PCRE
 
 EOF

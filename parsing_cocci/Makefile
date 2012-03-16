@@ -22,28 +22,16 @@ get_constants2.ml id_utils.ml adjacency.ml parse_cocci.ml command_line.ml
 LIBS=../commons/commons.cma ../globals/globals.cma
 SYSLIBS = str.cma unix.cma
 
-ifeq ("$(MENHIRDIR)","menhirlib")
-MENHIR_PATH=../$(MENHIRDIR)
-else
-MENHIR_PATH=$(MENHIRDIR)
-endif
-
 INCLUDES = -I ../commons \
 	   -I ../commons/ocamlextra \
 	   -I ../globals \
-	   -I $(MENHIR_PATH)
+	   -I $(MENHIRDIR)
 
-MENHIR=$(MENHIR_PATH)/menhirLib.cmo
-MENHIRO=$(MENHIR_PATH)/menhirLib.cmx
-
+MENHIRMOD=menhirLib.cmo
+MENHIROMOD=menhirLib.cmx
 
 # The Caml compilers.
 OCAMLCFLAGS ?= -g -dtypes
-OCAMLC =ocamlc$(OPTBIN) $(OCAMLCFLAGS) $(INCLUDES)
-OCAMLOPT = ocamlopt$(OPTBIN) $(OPTFLAGS) $(INCLUDES)
-OCAMLLEX = ocamllex$(OPTBIN)
-OCAMLYACC= menhir --table
-OCAMLDEP = ocamldep$(OPTBIN) #$(INCLUDES)
 EXEC=$(TARGET).byte
 EXEC=$(TARGET)
 LIB=$(TARGET).cma
@@ -62,18 +50,15 @@ local: $(EXEC)
 all.opt: $(OPTLIB)
 
 $(LIB): $(GENERATED) $(OBJS)
-	$(OCAMLC) -I $(MENHIR_PATH) -a -o $(LIB) $(MENHIR) $(OBJS)
+	$(OCAMLC) $(OCAMLCFLAGS) $(INCLUDES) -I $(MENHIRDIR) -a -o $(LIB) $(MENHIRMOD) $(OBJS)
 
 
 $(OPTLIB): $(GENERATED) $(OPTOBJS)
-	$(OCAMLOPT) -I $(MENHIR_PATH) -a -o $(OPTLIB) $(MENHIRO) $(OPTOBJS)
+	$(OCAMLOPT) $(OPTFLAGS) $(INCLUDES) -I $(MENHIRDIR) -a -o $(OPTLIB) $(MENHIROMOD) $(OPTOBJS)
 
 
 $(EXEC): $(OBJS) main.cmo $(LIBS)
-	$(OCAMLC) -o $(EXEC) $(SYSLIBS) $(LIBS) $(OBJS) main.cmo
-
-
-
+	$(OCAMLC) $(OCAMLCFLAGS) $(INCLUDES) -o $(EXEC) $(SYSLIBS) $(LIBS) $(OBJS) main.cmo
 
 clean::
 	rm -f $(LIB)
@@ -81,25 +66,23 @@ clean::
 	rm -f $(TARGET)
 
 
-
-
 .SUFFIXES:
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
 
 .ml.cmo:
-	$(OCAMLC) -c $<
+	$(OCAMLC) $(OCAMLCFLAGS) $(INCLUDES) -c $<
 
 .mli.cmi:
-	$(OCAMLC) -c $<
+	$(OCAMLC) $(OCAMLCFLAGS) $(INCLUDES) -c $<
 
 .ml.cmx:
-	$(OCAMLOPT) -c $<
+	$(OCAMLOPT) $(OPTFLAGS) $(INCLUDES) -c $<
 
 $(LEXER_SOURCES:.mll=.ml) :	$(LEXER_SOURCES)
 	$(OCAMLLEX) $(LEXER_SOURCES)
 
 $(PARSER_SOURCES:.mly=.ml) $(PARSER_SOURCES:.mly=.mli) : $(PARSER_SOURCES)
-	$(OCAMLYACC) $(PARSER_SOURCES)
+	$(MENHIR) --table $(PARSER_SOURCES)
 
 $(CLI_LEXER_SOURCES:.mll=.ml): $(CLI_LEXER_SOURCES)
 	$(OCAMLLEX) $(CLI_LEXER_SOURCES)
@@ -108,6 +91,7 @@ $(SCRIPT_LEXER_SOURCES:.mll=.ml): $(SCRIPT_LEXER_SOURCES)
 	$(OCAMLLEX) $(SCRIPT_LEXER_SOURCES)
 
 distclean::
+	@echo cleaning generated parsers and lexers
 	rm -f $(GENERATED)
 
 # clean rule for others files
