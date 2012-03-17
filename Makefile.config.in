@@ -58,18 +58,18 @@ INSTALL_LIB?=$(INSTALL) -m 755
 INSTALL_DATA?=$(INSTALL) -m 644
 
 # Where to install the binary
-BINDIR=$bindir
+BINDIR=${bindir}
 
 # Where to install the man pages
-MANDIR=$mandir
+MANDIR=${mandir}
 
 # Where to install the lib
-LIBDIR=$libdir
+LIBDIR=${libdir}
 
 # Where to install the configuration files
 SHAREDIR=@SHAREDIR@
 
-BASH_COMPLETION_DIR=$(sysconfdir)/bash_completion.d
+BASH_COMPLETION_DIR=${sysconfdir}/bash_completion.d
 
 # selected libraries
 FEATURE_sexplib=@FEATURE_sexplib@

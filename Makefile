@@ -196,8 +196,8 @@ configure:
 	./configure
 
 Makefile.config:
-	@echo "Makefile.config is missing. Have you run ./configure?"
-	@exit 1
+	@echo "Makefile.config is missing. Run ./configure to generate it."
+	exit 1
 
 tools: $(LIBS) $(LNKLIBS)
 	$(MAKE) -C tools
@@ -258,7 +258,7 @@ scripts/spatch.byte: Makefile.config scripts/spatch.sh
 
 # user will use spatch.opt to run spatch.opt (native)
 scripts/spatch.opt: Makefile.config scripts/spatch.sh
-	cp scripts/spatch.sh scripts/spatch
+	cp scripts/spatch.sh scripts/spatch.opt
 
 clean::
 	rm -f scripts/spatch scripts/spatch.byte scripts/spatch.opt
@@ -270,12 +270,12 @@ clean::
 # don't remove DESTDIR, it can be set by package build system like ebuild
 # for staged installation.
 install-common:
-	$MKDIR_P $(DESTDIR)$(BINDIR)
-	$MKDIR_P $(DESTDIR)$(LIBDIR)
-	$MKDIR_P $(DESTDIR)$(SHAREDIR)/ocaml
-	$MKDIR_P $(DESTDIR)$(SHAREDIR)/commons
-	$MKDIR_P $(DESTDIR)$(SHAREDIR)/globals
-	$MKDIR_P $(DESTDIR)$(SHAREDIR)/parsing_c
+	$(MKDIR_P) $(DESTDIR)$(BINDIR)
+	$(MKDIR_P) $(DESTDIR)$(LIBDIR)
+	$(MKDIR_P) $(DESTDIR)$(SHAREDIR)/ocaml
+	$(MKDIR_P) $(DESTDIR)$(SHAREDIR)/commons
+	$(MKDIR_P) $(DESTDIR)$(SHAREDIR)/globals
+	$(MKDIR_P) $(DESTDIR)$(SHAREDIR)/parsing_c
 	$(INSTALL_DATA) standard.h $(DESTDIR)$(SHAREDIR)
 	$(INSTALL_DATA) standard.iso $(DESTDIR)$(SHAREDIR)
 	$(INSTALL_DATA) ocaml/coccilib.cmi $(DESTDIR)$(SHAREDIR)/ocaml/
@@ -284,25 +284,29 @@ install-common:
 	$(INSTALL_DATA) globals/iteration.cmi $(DESTDIR)$(SHAREDIR)/globals/
 
 install-man:
-	$MKDIR_P $(DESTDIR)$(MANDIR)/man1
-	$MKDIR_P $(DESTDIR)$(MANDIR)/man3
+	@echo "Installing manuals in: ${DESTDIR}${MANDIR}"
+	$(MKDIR_P) $(DESTDIR)$(MANDIR)/man1
+	$(MKDIR_P) $(DESTDIR)$(MANDIR)/man3
 	$(INSTALL_DATA) docs/spatch.1 $(DESTDIR)$(MANDIR)/man1/
 	$(INSTALL_DATA) docs/Coccilib.3cocci $(DESTDIR)$(MANDIR)/man3/
 
 install-bash:
-	$MKDIR_P $(DESTDIR)$(BASH_COMPLETION_DIR)
+	@echo "Installing bash completion in: ${DESTDIR}${BASH_COMPLETION_DIR}"
+	$(MKDIR_P) $(DESTDIR)$(BASH_COMPLETION_DIR)
 	$(INSTALL_DATA) scripts/spatch.bash_completion \
 		$(DESTDIR)$(BASH_COMPLETION_DIR)/spatch
 
 install-tools:
-	$MKDIR_P $(DESTDIR)$(BINDIR)
+	@echo "Installing tools in: ${DESTDIR}${BINDIR}"
+	$(MKDIR_P) $(DESTDIR)$(BINDIR)
 	$(INSTALL_PROGRAM) tools/splitpatch \
 		$(DESTDIR)$(BINDIR)/splitpatch
 	$(INSTALL_PROGRAM) tools/cocci-send-email.perl \
 		$(DESTDIR)$(BINDIR)/cocci-send-email.perl
 
 install-python:
-	$MKDIR_P $(DESTDIR)$(SHAREDIR)/python/coccilib/coccigui
+	@echo "Installing python support in: ${DESTDIR}${SHAREDIR}/python"
+	$(MKDIR_P) $(DESTDIR)$(SHAREDIR)/python/coccilib/coccigui
 	$(INSTALL_DATA) python/coccilib/*.py \
 		$(DESTDIR)$(SHAREDIR)/python/coccilib
 	$(INSTALL_DATA) python/coccilib/coccigui/*.py \
