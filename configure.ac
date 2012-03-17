@@ -317,12 +317,17 @@ AS_IF([test "x$enable_pcre_syntax" != xno],
 AC_CACHE_SAVE
 
 
+dnl  obtain the value of $prefix
+AS_IF([test "$prefix" == "NONE"],[prefix=$ac_default_prefix])
+
+
 dnl
 dnl  backwards compatibility
 dnl  defines some variables needed by the Make infrastructure
 dnl
 
-AC_SUBST(FEATURE_TARZAN,[1])  
+AC_SUBST(FEATURE_TARZAN,[1])
+AC_SUBST(SHAREDIR,["${prefix}/share/coccinelle"])
 
 AS_IF([test "x$with_python" != xno],
 [dnl
@@ -343,6 +348,8 @@ AC_CONFIG_FILES([globals/config.ml])
 AC_CONFIG_FILES([globals/regexp.ml])
 AC_CONFIG_FILES([python/pycocci.ml])
 AC_CONFIG_FILES([ocaml/prepare_ocamlcocci.ml])
+AC_CONFIG_FILES([scripts/spatch.sh])
+AC_CONFIG_FILES([docs/spatch.1])
 
 AC_OUTPUT
 
@@ -393,15 +400,12 @@ EOF
 if test "x$with_python" != "xno"; then
 cat << EOF
 ------------------------------------------------------------------------------
-To use python scripts, install in addition the coccilib runtime library:
-
-  \$ make install-python
-
 You may need to set some environment variables so that the python
-libraries are found. For example:
+libraries are found. The frontends for spatch and spatch.opt set
+the following variables:
 
-  \$ export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:$prefix/lib
-  \$ export PYTHONPATH=\$PYTHONPATH:$prefix/share/python
+  \$ export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:$prefix/lib:$prefix/share/coccinelle/python
+  \$ export PYTHONPATH=\$PYTHONPATH:$prefix/share/coccinelle/python
 
 EOF
 fi

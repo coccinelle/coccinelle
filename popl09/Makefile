@@ -65,14 +65,12 @@ clean::
 clean::
 	rm -f *.cm[iox] *.o *.annot
 	rm -f *~ .*~ #*#
-
-depend:
-	$(OCAMLDEP_CMD) *.mli *.ml > .depend
-
-distclean::
 	rm -f .depend
 
-.depend:
-	$(OCAMLDEP_CMD) $(INCLUDE_PATH) *.mli *.ml > .depend
+distclean: clean
+
+.PHONEY: depend
+.depend depend:
+	$(OCAMLDEP_CMD) *.mli *.ml > .depend
 
 -include .depend

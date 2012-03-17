@@ -1,0 +1,28 @@
+#!/bin/sh
+
+SHAREDIR="@prefix@/share/coccinelle"
+LIBDIR="@prefix@/lib"
+
+COCCINELLE_HOME=${COCCINELLE_HOME:=$SHAREDIR}
+#echo setting COCCINELLE_HOME=${COCCINELLE_HOME:=$SHAREDIR}
+
+if [ ! -r "${COCCINELLE_HOME}/standard.iso" ] ; then
+    echo "There is no standard.iso in ${COCCINELLE_HOME}."
+    echo "Are you sure you run a properly installed version of spatch ?\n"
+else
+
+export COCCINELLE_HOME
+
+# set the library path to include $SHAREDIR/python because the
+# pycaml .so-file may reside there
+export LD_LIBRARY_PATH="${LIBDIR}:${SHAREDIR}/python:$LD_LIBRARY_PATH"
+
+# adds the path to the pycoccilib
+export PYTHONPATH="${COCCINELLE_HOME}/python:$PYTHONPATH"
+
+# echo setting LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
+# echo setting PYTHONPATH="$PYTHONPATH"
+
+fi
+
+exec "${COCCINELLE_HOME}/spatch.opt" "$@"

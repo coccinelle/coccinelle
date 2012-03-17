@@ -115,6 +115,7 @@ AC_DEFUN([AC_CHECK_COCCI_EXTPKG],
     dnl  distinguish global/local
     AS_IF([test "x$enable_$1" == xlocal],
     [dnl
+      AC_SUBST([LOCALLIB_$1],[1])
       AC_SUBST([MODULES_$1],['$(LOCAL_$1)'])
       AC_SUBST([MODULESOPT_$1],['$(LOCALOPT_$1)'])
 
@@ -140,6 +141,7 @@ dnl  configuration variables of packages
 AC_DEFUN([AC_COCCI_INIT_PKG_DEFAULT],
 [dnl
   AC_SUBST([FEATURE_$1])
+  AC_SUBST([LOCALLIB_$1])
   AC_SUBST([FLAGS_$1])
   AC_SUBST([MODULES_$1])
   AC_SUBST([MODULESOPT_$1])

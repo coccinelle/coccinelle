@@ -65,13 +65,12 @@ generate_dependencies: generate_dependencies.cmo
 clean:
 	rm -f $(PROGS)
 	rm -f *.cm[ioxa] *.o *.a *.cmxa *.annot
-
-beforedepend::
-
-depend:: beforedepend
-	ocamldep $(INCLUDE) *.mli *.ml    > .depend
-
-distclean:: clean
 	rm -f .depend
+
+distclean: clean
+
+.PHONEY: depend
+.depend depend: beforedepend
+	ocamldep $(INCLUDE) *.mli *.ml > .depend
 
 -include .depend

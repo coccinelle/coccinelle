@@ -1,12 +1,9 @@
-
--include ../Makefile.config
+include ../Makefile.config
 
 ##############################################################################
 # Variables
 ##############################################################################
 TARGET=parsing_c
-
--include ../Makefile.config
 
 # - type_cocci.ml ast_cocci.ml  # + unparse_hrule
 SRC= flag_parsing_c.ml parsing_stat.ml \
@@ -84,14 +81,11 @@ lexer_c.ml: lexer_c.mll
 	$(OCAMLLEX) $<
 clean::
 	rm -f lexer_c.ml
-beforedepend:: lexer_c.ml
-
 
 parser_c.ml parser_c.mli: parser_c.mly
 	$(OCAMLYACC) -v $<
 clean::
 	rm -f parser_c.ml parser_c.mli parser_c.output
-beforedepend:: parser_c.ml parser_c.mli
 
 
 ##############################################################################
@@ -144,16 +138,11 @@ locindiv:
 clean::
 	rm -f *.cm[ioxa] *.o *.a *.cmxa *.annot
 	rm -f *~ .*~ gmon.out #*#
-
-distclean::
 	rm -f .depend
 
-beforedepend::
+distclean: clean
 
-distclean::
-	rm -f .depend
-
-depend:: beforedepend
-	$(OCAMLDEP_CMD) *.mli *.ml    > .depend
+.depend depend: lexer_c.ml parser_c.ml parser_c.mli
+	$(OCAMLDEP_CMD) *.mli *.ml > .depend
 
 -include .depend

@@ -74,21 +74,18 @@ pre_sexp.cmo: pre_sexp.ml
 	$(OCAMLC_CMD) -pp "${CPP} -x c -w" -c $<
 
 pre_sexp.cmx: pre_sexp.ml
-	$(OCAMLOPT_CMD) -for-pack $(LIB_PACK_NAME) -pp "${CPP} -w" -c $<
+	$(OCAMLOPT_CMD) -for-pack $(LIB_PACK_NAME) -pp "${CPP} -x c -w" -c $<
 
 lexer.ml: lexer.mll
 	$(OCAMLLEX) $<
 clean::
 	rm -f lexer.ml
-beforedepend:: lexer.ml
 
 
 parser.ml parser.mli: parser.mly
 	$(OCAMLYACC) -v $<
 clean::
 	rm -f parser.ml parser.mli parser.output
-beforedepend:: parser.ml parser.mli
-
 
 
 ##############################################################################
@@ -113,11 +110,13 @@ clean::
 clean::
 	rm -f *~ .*~ gmon.out #*#
 
-# need also -pp cpp here
-depend::
-	$(OCAMLDEP_CMD) -pp "${CPP} -w" *.mli *.ml > .depend
+clean::
+	rm -f .depend
+
+.PHONEY: depend
+.depend depend: parser.ml parser.mli lexer.ml
+	$(OCAMLDEP_CMD) -pp "${CPP} -x c -w" *.mli *.ml > .depend
 
 distclean: clean
-	rm -f .depend
 
 -include .depend

@@ -41,15 +41,6 @@ let
         ocaml_pcre ocaml_sexplib
         ocaml_extlib pycaml
       ];
-      
-      configurePhase = ''
-        # explicitly run perl because the configure script references a perl outside the nix store
-        # substituting the path to perl is not a good idea as it would invalidate the tarball on
-        # non-nix machines.
-        perl -w ./configure
-        
-        make depend
-      '';
 
       preDist = ''
         local PREVHOME=$HOME
@@ -87,20 +78,8 @@ let
         lib.optional inclPython python
         ++ [ perl texLiveFull ncurses makeWrapper ocamlEnv ];
 
-      # patch the files for use with nix
-      preConfigure = ''
-        sed -i "configure" -e's|/usr/bin/perl|${perl}/bin/perl|g'
-        sed -i "globals/config.ml.in" \
-            -e"s|/usr/local/share|$out/share|g"
-      '';
-
       configureFlags = lib.optional (!inclPython) "--without-python";
-
-      buildPhase = ''
-        make depend 2> >(tee -a "$out/nix-support/make.log" >&2)
-        make all 2> >(tee -a "$out/nix-support/make.log" >&2)
-        make all.opt 2> >(tee -a "$out/nix-support/make.log" >&2)
-      '';
+      makeFlags = "world";
 
       # run checking after installation.
       # also, the test phase may require a yes/no input.

@@ -1,4 +1,4 @@
--include ../Makefile.config
+include ../Makefile.config
 
 TARGET=extra
 
@@ -42,8 +42,6 @@ $(TARGET).top: $(OBJS) $(LIBS)
 clean::
 	rm -f $(TARGET).byte $(TARGET).opt rm -f $(TARGET).top
 
-
-
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
 
 .ml.cmo:
@@ -57,15 +55,14 @@ clean::
 	$(OCAMLC_CMD) -i $<
 
 clean::
+	rm -f .depend
 	rm -f *.cm[ioxa] *.o *.a *.cmxa *.annot
 	rm -f *~ .*~ gmon.out #*#
 
-distclean::
-	rm -f .depend
+distclean: clean
 
-beforedepend::
-
-depend:: beforedepend
-	$(OCAMLDEP_CMD) *.mli *.ml    > .depend
+.PHONY: depend
+.depend depend:
+	$(OCAMLDEP_CMD) *.mli *.ml > .depend
 
 -include .depend

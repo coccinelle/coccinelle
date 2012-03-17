@@ -24,18 +24,12 @@ SRC=flag_cocci.ml cocci.ml testing.ml test.ml $(LEXER_SOURCES:.mll=.ml) main.ml
 
 ifeq ($(FEATURE_PYTHON),1)
 	PYCMA=pycaml.cma
+	PYTHON_INSTALL_TARGET=install-python
 else
 	PYCMA=
+	PYTHON_INSTALL_TARGET=
 endif
 OPTLIBFLAGS=
-
-ifeq ("$(FEATURE_sexplib)",1)
-	SEXPLIB=$(SEXPDIR)/sexplib.cmo
-	OPTSEXPLIB=sexplib.cmx
-else
-	SEXPLIB=sexplib.cma
-	OPTSEXPLIB=sexplib.cmxa
-endif
 
 ifeq ("$(DYNLINK)","no")
 	DYNLINK=
@@ -186,13 +180,13 @@ $(OBJS):$(LIBS) $(LNKLIBS)
 $(OPTOBJS):$(LIBS:.cma=.cmxa) $(LNKOPTLIBS)
 
 $(EXEC): $(LIBS) $(OBJS)
-	$(OCAMLC_CMD) $(BYTECODE_STATIC) -o $@ $(SYSLIBS) $(SEXPLIB) $(LNKLIBS) $^
+	$(OCAMLC_CMD) $(BYTECODE_STATIC) -o $@ $(SYSLIBS) $(LNKLIBS) $^
 
 $(EXEC).opt: $(LIBS:.cma=.cmxa) $(OPTOBJS)
-	$(OCAMLOPT_CMD) $(STATIC) -o $@ $(SYSLIBS:.cma=.cmxa) $(OPTSEXPLIB) $(OPTLIBFLAGS) $(FLAGSLIB) $(OPTLNKLIBS) $^
+	$(OCAMLOPT_CMD) $(STATIC) -o $@ $(SYSLIBS:.cma=.cmxa) $(OPTLIBFLAGS) $(FLAGSLIB) $(OPTLNKLIBS) $^
 
 $(EXEC).top: $(LIBS) $(OBJS) $(LNKLIBS)
-	$(OCAMLMKTOP_CMD) -custom -o $@ $(SYSLIBS) $(SEXPLIB) $(LNKLIBS) $^
+	$(OCAMLMKTOP_CMD) -custom -o $@ $(SYSLIBS) $(LNKLIBS) $^
 
 clean::
 	rm -f $(TARGET) $(TARGET).opt $(TARGET).top
@@ -256,32 +250,16 @@ docs/spatch.1: Makefile.config
 	$(MAKE) -C docs spatch.1
 
 # user will use spatch to run spatch.opt (native)
-scripts/spatch: Makefile.config
-	cp scripts/spatch.sh scripts/spatch.tmp2
-	sed "s|SHAREDIR|$(SHAREDIR)|g" scripts/spatch.tmp2 > scripts/spatch.tmp
-	sed "s|LIBDIR|$(LIBDIR)|g" scripts/spatch.tmp > scripts/spatch
-	rm -f scripts/spatch.tmp2 scripts/spatch.tmp
+scripts/spatch: Makefile.config scripts/spatch.sh
+	cp scripts/spatch.sh scripts/spatch
 
 # user will use spatch to run spatch (bytecode)
-scripts/spatch.byte: Makefile.config
-	cp scripts/spatch.sh scripts/spatch.byte.tmp3
-	sed "s|\.opt||" scripts/spatch.byte.tmp3 > scripts/spatch.byte.tmp2
-	sed "s|SHAREDIR|$(SHAREDIR)|g" scripts/spatch.byte.tmp2 \
-		> scripts/spatch.byte.tmp
-	sed "s|LIBDIR|$(LIBDIR)|g" scripts/spatch.byte.tmp \
-		> scripts/spatch.byte
-	rm -f   scripts/spatch.byte.tmp3 \
-		scripts/spatch.byte.tmp2 \
-		scripts/spatch.byte.tmp
+scripts/spatch.byte: Makefile.config scripts/spatch.sh
+	sed "s|\.opt||" scripts/spatch.sh > scripts/spatch.byte
 
 # user will use spatch.opt to run spatch.opt (native)
-scripts/spatch.opt: Makefile.config
-	cp scripts/spatch.sh scripts/spatch.opt.tmp2
-	sed "s|SHAREDIR|$(SHAREDIR)|g" scripts/spatch.opt.tmp2 \
-		> scripts/spatch.opt.tmp
-	sed "s|LIBDIR|$(LIBDIR)|g" scripts/spatch.opt.tmp \
-		> scripts/spatch.opt
-	rm -f scripts/spatch.opt.tmp scripts/spatch.opt.tmp2
+scripts/spatch.opt: Makefile.config scripts/spatch.sh
+	cp scripts/spatch.sh scripts/spatch
 
 clean::
 	rm -f scripts/spatch scripts/spatch.byte scripts/spatch.opt
@@ -305,7 +283,6 @@ install-common:
 	$(INSTALL_DATA) parsing_c/*.cmi $(DESTDIR)$(SHAREDIR)/parsing_c/
 	$(INSTALL_DATA) commons/*.cmi $(DESTDIR)$(SHAREDIR)/commons/
 	$(INSTALL_DATA) globals/iteration.cmi $(DESTDIR)$(SHAREDIR)/globals/
-	@if [ $(FEATURE_PYTHON) -eq 1 ]; then $(MAKE) install-python; fi
 
 install-man:
 	mkdir -p $(DESTDIR)$(MANDIR)/man1
@@ -335,10 +312,11 @@ install-python:
 		$(DESTDIR)$(SHAREDIR)/python/coccilib/coccigui
 	$(INSTALL_DATA) python/coccilib/coccigui/pygui.gladep \
 		$(DESTDIR)$(SHAREDIR)/python/coccilib/coccigui
-	if [ -f pycaml/dllpycaml_stubs.so ]; then \
-		$(INSTALL_LIB) pycaml/dllpycaml_stubs.so $(DESTDIR)$(LIBDIR) ; fi
+	if [ -n "$LOCAL_pycaml" ]; then \
+		$(INSTALL_LIB) external/pycaml/dllpycaml_stubs.so \
+			$(DESTDIR)$(SHAREDIR)/python ; fi
 
-install: install-man install-common
+install: install-man install-common $(PYTHON_TARGET)
 	@if test -x spatch -a ! -x spatch.opt ; then \
 		$(MAKE) install-byte;fi
 	@if test ! -x spatch -a -x spatch.opt ; then \
@@ -455,8 +433,6 @@ test.ml:
 	echo "let foo_ctl () = failwith \"there is no foo_ctl formula\"" \
 	  > test.ml
 
-beforedepend:: test.ml
-
 ##############################################################################
 # Generic ocaml rules
 ##############################################################################
@@ -473,30 +449,26 @@ beforedepend:: test.ml
 .ml.mldepend:
 	$(OCAMLC_CMD) -i $<
 
-$(LEXER_SOURCES:.mll=.ml) :	$(LEXER_SOURCES)
+$(LEXER_SOURCES:.mll=.ml): $(LEXER_SOURCES)
 	$(OCAMLLEX) $(LEXER_SOURCES)
 
 clean::
+	rm -f .depend
 	rm -f *.cm[iox] *.o *.annot
 	rm -f *~ .*~ *.exe #*#
 
 distclean:: clean
 	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i $@; done
-	rm -f .depend
 	rm -f test.ml
 	rm -f TAGS
 	rm -f tests/SCORE_actual.sexp
 	rm -f tests/SCORE_best_of_both.sexp
 	find . -name ".#*1.*" | xargs rm -f
 
-beforedepend::
-
-depend:: beforedepend
-	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i $@; done
+.PHONEY: depend
+.depend depend: test.ml
+	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i depend; done
 	$(OCAMLDEP_CMD) *.mli *.ml > .depend
-
-.depend::
-	@if [ ! -f .depend ] ; then $(MAKE) depend ; fi
 
 -include .depend
 
@@ -505,7 +477,7 @@ depend:: beforedepend
 ##############################################################################
 
 distclean::
-	@echo cleaning configured files
+	@echo "cleaning configured files"
 	rm -f Makefile.config
 	rm -rf autom4te.cache
 	rm -f config.status
@@ -513,4 +485,8 @@ distclean::
 	rm -f version.ml
 	rm -f globals/config.ml
 	rm -f globals/regexp.ml python/pycocci.ml ocaml/prepare_ocamlcocci.ml
-	@echo run 'configure' again prior to building coccinelle
+	rm -f scripts/spatch.sh
+	@echo "run 'configure' again prior to building coccinelle"
+
+clean::
+	@echo "run 'make depend' prior to building after cleaning"

@@ -1,5 +1,4 @@
-
--include ../Makefile.config
+include ../Makefile.config
 
 ##############################################################################
 # Variables
@@ -52,16 +51,15 @@ $(TARGET).cmxa: $(LIBS:.cma=.cmxa) $(OPTOBJS)
 .ml.mldepend:
 	$(OCAMLC_CMD) -i $<
 
-clean::
+clean:
 	rm -f *.cm[ioxa] *.o *.a *.cmxa *.annot
 	rm -f *~ .*~ gmon.out #*#
-
-distclean::
 	rm -f .depend
 
-beforedepend::
+distclean: clean
 
-depend:: beforedepend
-	$(OCAMLDEP_CMD) *.mli *.ml    > .depend
+.PHONEY: depend
+.depend depend:
+	$(OCAMLDEP_CMD) *.mli *.ml > .depend
 
 -include .depend

@@ -76,11 +76,12 @@ clean::
 
 clean::
 	rm -f *~ .*~ gmon.out #*#
-
-depend::
-	$(OCAMLDEP_CMD) *.mli *.ml > .depend
-
-distclean::
 	rm -f .depend
+
+distclean: clean
+
+.PHONEY: depend
+.depend depend:
+	$(OCAMLDEP_CMD) *.mli *.ml > .depend
 
 -include .depend

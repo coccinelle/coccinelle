@@ -1,4 +1,4 @@
--include ../Makefile.config
+include ../Makefile.config
 
 TARGET=cocci_parser
 
@@ -98,14 +98,11 @@ distclean::
 clean::
 	rm -f *.cm[iox] *.o *.annot
 	rm -f *~ .*~ #*#
-
-distclean::
 	rm -f .depend
 
-depend: $(GENERATED)
-	$(OCAMLDEP) *.mli *.ml > .depend
 
-.depend:
+.PHONEY: depend
+.depend depend: $(GENERATED)
 	$(OCAMLDEP) *.mli *.ml > .depend
 
 -include .depend

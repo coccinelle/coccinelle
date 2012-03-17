@@ -325,12 +325,13 @@ clean::
         rm -f *.cm[iox] *.o *.a *.cma *.cmxa *.annot *~ .*~ ; \
         cd ..; ) \
 	done
+	rm -f .depend
 
-depend:
+distclean: clean
+
+.PHONEY: depend
+.depend depend:
 	$(OCAMLDEP_CMD) *.mli *.ml  > .depend
 	for i in $(SUBDIRS); do $(OCAMLDEP_CMD) $$i/*.ml $$i/*.mli >> .depend; done
-
-distclean::
-	rm -f .depend
 
 -include .depend

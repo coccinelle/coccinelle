@@ -628,6 +628,7 @@ ac_unique_file="cocci.ml"
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
 FEATURE_PYTHON
+SHAREDIR
 FEATURE_TARZAN
 REGEXP_FILE
 REGEXP_MODULE
@@ -673,18 +674,22 @@ OCAML_PKG_unix
 MODULESOPT_pcre
 MODULES_pcre
 FLAGS_pcre
+LOCALLIB_pcre
 FEATURE_pcre
 MODULESOPT_pycaml
 MODULES_pycaml
 FLAGS_pycaml
+LOCALLIB_pycaml
 FEATURE_pycaml
 MODULESOPT_menhirLib
 MODULES_menhirLib
 FLAGS_menhirLib
+LOCALLIB_menhirLib
 FEATURE_menhirLib
 MODULESOPT_sexplib
 MODULES_sexplib
 FLAGS_sexplib
+LOCALLIB_sexplib
 FEATURE_sexplib
 COCCI_OCAML_EXTERNAL
 OCAMLFINDSUBSTITUTED
@@ -5000,6 +5005,10 @@ $as_echo "$as_me: coccinelle may use external ocaml libraries in $COCCI_OCAML_EX
 
 
 
+
+
+
+
 { $as_echo "$as_me:${as_lineno-$LINENO}: the following OCaml packages should be provided by your ocaml installation" >&5
 $as_echo "$as_me: the following OCaml packages should be provided by your ocaml installation" >&6;}
     { haveocamlpkg=; unset haveocamlpkg;}
@@ -5306,7 +5315,9 @@ fi
 
 
         if test "x$enable_sexplib" == xlocal; then :
-        MODULES_sexplib='$(LOCAL_sexplib)'
+        LOCALLIB_sexplib=1
+
+      MODULES_sexplib='$(LOCAL_sexplib)'
 
       MODULESOPT_sexplib='$(LOCALOPT_sexplib)'
 
@@ -5419,7 +5430,9 @@ fi
 
 
         if test "x$enable_menhirLib" == xlocal; then :
-        MODULES_menhirLib='$(LOCAL_menhirLib)'
+        LOCALLIB_menhirLib=1
+
+      MODULES_menhirLib='$(LOCAL_menhirLib)'
 
       MODULESOPT_menhirLib='$(LOCALOPT_menhirLib)'
 
@@ -6109,7 +6122,9 @@ fi
 
 
         if test "x$enable_pycaml" == xlocal; then :
-        MODULES_pycaml='$(LOCAL_pycaml)'
+        LOCALLIB_pycaml=1
+
+      MODULES_pycaml='$(LOCAL_pycaml)'
 
       MODULESOPT_pycaml='$(LOCALOPT_pycaml)'
 
@@ -6318,7 +6333,9 @@ fi
 
 
         if test "x$enable_pcre" == xlocal; then :
-        MODULES_pcre='$(LOCAL_pcre)'
+        LOCALLIB_pcre=1
+
+      MODULES_pcre='$(LOCAL_pcre)'
 
       MODULESOPT_pcre='$(LOCALOPT_pcre)'
 
@@ -6459,8 +6476,15 @@ fi
 rm -f confcache
 
 
+if test "$prefix" == "NONE"; then :
+  prefix=$ac_default_prefix
+fi
+
+
 
 FEATURE_TARZAN=1
+
+SHAREDIR="${prefix}/share/coccinelle"
 
 
 if test "x$with_python" != xno; then :
@@ -6486,6 +6510,10 @@ ac_config_files="$ac_config_files globals/regexp.ml"
 ac_config_files="$ac_config_files python/pycocci.ml"
 
 ac_config_files="$ac_config_files ocaml/prepare_ocamlcocci.ml"
+
+ac_config_files="$ac_config_files scripts/spatch.sh"
+
+ac_config_files="$ac_config_files docs/spatch.1"
 
 
 cat >confcache <<\_ACEOF
@@ -7214,6 +7242,8 @@ do
     "globals/regexp.ml") CONFIG_FILES="$CONFIG_FILES globals/regexp.ml" ;;
     "python/pycocci.ml") CONFIG_FILES="$CONFIG_FILES python/pycocci.ml" ;;
     "ocaml/prepare_ocamlcocci.ml") CONFIG_FILES="$CONFIG_FILES ocaml/prepare_ocamlcocci.ml" ;;
+    "scripts/spatch.sh") CONFIG_FILES="$CONFIG_FILES scripts/spatch.sh" ;;
+    "docs/spatch.1") CONFIG_FILES="$CONFIG_FILES docs/spatch.1" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
   esac
@@ -7723,15 +7753,12 @@ EOF
 if test "x$with_python" != "xno"; then
 cat << EOF
 ------------------------------------------------------------------------------
-To use python scripts, install in addition the coccilib runtime library:
-
-  \$ make install-python
-
 You may need to set some environment variables so that the python
-libraries are found. For example:
+libraries are found. The frontends for spatch and spatch.opt set
+the following variables:
 
-  \$ export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:$prefix/lib
-  \$ export PYTHONPATH=\$PYTHONPATH:$prefix/share/python
+  \$ export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:$prefix/lib:$prefix/share/coccinelle/python
+  \$ export PYTHONPATH=\$PYTHONPATH:$prefix/share/coccinelle/python
 
 EOF
 fi

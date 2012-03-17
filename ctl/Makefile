@@ -1,6 +1,4 @@
-#note: if you add a file (a .mli or .ml), dont forget to do a   make depend
-
--include ../Makefile.config
+include ../Makefile.config
 
 TARGET=ctl
 
@@ -60,14 +58,12 @@ clean::
 clean::
 	rm -f *.cm[iox] *.o *.annot
 	rm -f *~ .*~ #*#
-
-depend:
-	$(OCAMLDEP_CMD) *.mli *.ml > .depend
-
-distclean::
 	rm -f .depend
 
-.depend:
+distclean: clean
+
+.PHONEY: depend
+.depend depend:
 	$(OCAMLDEP_CMD) *.mli *.ml > .depend
 
 -include .depend

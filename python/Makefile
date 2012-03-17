@@ -82,10 +82,10 @@ clean::
 	rm -f $(TARGET)
 	rm -f $(TARGET).byte
 	rm -f $(CTLTARGET)
+	rm -f .depend
 
 distclean::
 	$(MAKE) -C coccilib $@
-	rm -f .depend
 	rm -f pycocci.ml
 
 ##############################################################################
@@ -110,12 +110,8 @@ clean::
 	rm -f *.cm[iox] *.o  *.annot
 	rm -f *~ .*~ #*#
 
-beforedepend:
-
-depend: beforedepend
-	$(OCAMLDEP_CMD) *.mli *.ml > .depend
-
-.depend:
+.PHONEY: depend
+.depend depend:
 	$(OCAMLDEP_CMD) *.mli *.ml > .depend
 
 -include .depend

@@ -66,14 +66,12 @@ clean::
 clean::
 	rm -f *.cm[iox] *.o *.annot
 	rm -f *~ .*~ #*#
-
-depend:
-	$(CAMLDEP_CMD) $(INCLUDE_PATH) *.mli *.ml > .depend
-
-distclean::
 	rm -f .depend
 
-.depend:
+distclean: clean
+
+.PHONEY: depend
+.depend depend:
 	$(CAMLDEP_CMD) $(INCLUDE_PATH) *.mli *.ml > .depend
 
 -include .depend
