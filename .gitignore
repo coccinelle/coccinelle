@@ -8,6 +8,7 @@ scripts/spatch.byte
 *.cm[aiox]
 *.cmxa
 *.[ao]
+*.annot
 
 *~
 _build
@@ -23,3 +24,7 @@ python/pycocci.ml
 globals/regexp.ml
 ocaml/prepare_ocamlcocci.ml
 parsing_cocci/lexer_cli.ml
+scripts/spatch.sh
+
+config.log
+config.status
