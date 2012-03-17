@@ -1,4 +1,3 @@
-
 #############################################################################
 # Configuration section
 #############################################################################
@@ -271,12 +270,12 @@ clean::
 # don't remove DESTDIR, it can be set by package build system like ebuild
 # for staged installation.
 install-common:
-	mkdir -p $(DESTDIR)$(BINDIR)
-	mkdir -p $(DESTDIR)$(LIBDIR)
-	mkdir -p $(DESTDIR)$(SHAREDIR)/ocaml
-	mkdir -p $(DESTDIR)$(SHAREDIR)/commons
-	mkdir -p $(DESTDIR)$(SHAREDIR)/globals
-	mkdir -p $(DESTDIR)$(SHAREDIR)/parsing_c
+	$MKDIR_P $(DESTDIR)$(BINDIR)
+	$MKDIR_P $(DESTDIR)$(LIBDIR)
+	$MKDIR_P $(DESTDIR)$(SHAREDIR)/ocaml
+	$MKDIR_P $(DESTDIR)$(SHAREDIR)/commons
+	$MKDIR_P $(DESTDIR)$(SHAREDIR)/globals
+	$MKDIR_P $(DESTDIR)$(SHAREDIR)/parsing_c
 	$(INSTALL_DATA) standard.h $(DESTDIR)$(SHAREDIR)
 	$(INSTALL_DATA) standard.iso $(DESTDIR)$(SHAREDIR)
 	$(INSTALL_DATA) ocaml/coccilib.cmi $(DESTDIR)$(SHAREDIR)/ocaml/
@@ -285,25 +284,25 @@ install-common:
 	$(INSTALL_DATA) globals/iteration.cmi $(DESTDIR)$(SHAREDIR)/globals/
 
 install-man:
-	mkdir -p $(DESTDIR)$(MANDIR)/man1
-	mkdir -p $(DESTDIR)$(MANDIR)/man3
+	$MKDIR_P $(DESTDIR)$(MANDIR)/man1
+	$MKDIR_P $(DESTDIR)$(MANDIR)/man3
 	$(INSTALL_DATA) docs/spatch.1 $(DESTDIR)$(MANDIR)/man1/
 	$(INSTALL_DATA) docs/Coccilib.3cocci $(DESTDIR)$(MANDIR)/man3/
 
 install-bash:
-	mkdir -p $(DESTDIR)$(BASH_COMPLETION_DIR)
+	$MKDIR_P $(DESTDIR)$(BASH_COMPLETION_DIR)
 	$(INSTALL_DATA) scripts/spatch.bash_completion \
 		$(DESTDIR)$(BASH_COMPLETION_DIR)/spatch
 
 install-tools:
-	mkdir -p $(DESTDIR)$(BINDIR)
+	$MKDIR_P $(DESTDIR)$(BINDIR)
 	$(INSTALL_PROGRAM) tools/splitpatch \
 		$(DESTDIR)$(BINDIR)/splitpatch
 	$(INSTALL_PROGRAM) tools/cocci-send-email.perl \
 		$(DESTDIR)$(BINDIR)/cocci-send-email.perl
 
 install-python:
-	mkdir -p $(DESTDIR)$(SHAREDIR)/python/coccilib/coccigui
+	$MKDIR_P $(DESTDIR)$(SHAREDIR)/python/coccilib/coccigui
 	$(INSTALL_DATA) python/coccilib/*.py \
 		$(DESTDIR)$(SHAREDIR)/python/coccilib
 	$(INSTALL_DATA) python/coccilib/coccigui/*.py \
