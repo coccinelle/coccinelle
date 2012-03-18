@@ -2,6 +2,7 @@ dnl
 dnl  autoconf helper macros for coccinelle
 dnl
 
+
 dnl  check if the ocaml version is recent enough
 dnl    $1: version to test against
 AC_DEFUN([AC_CHECK_OCAMLVERSION],
@@ -166,15 +167,37 @@ AC_ARG_VAR([PYVER], [python version])
 AC_DEFUN([AC_COCCI_PYVER],
 [dnl
   AS_IF([test -z "$PYVER"],
-  [dnl  PYVER not set before
-    AC_CHECK_TOOL([PYTHON],[python])
-    AS_IF([test -n "$PYTHON"],
+  [dnl  PYVER not set before, determine it
+    AS_IF([test -z "$1" -o "x$1" == "xyes"],
+    [dnl  no custom version nor interpreter given
+      AC_CHECK_TOOL([PYTHON],[python])
+    ],
+    [dnl  a version or interpreter was given explicitly
+      AC_MSG_NOTICE([a custom version or python command is given.])
+
+      AS_IF([test -f "$1" -a -x "$1"],
+      [dnl
+        AC_SUBST([PYTHON],[$1])
+      ])
+
+      AC_CHECK_TOOL([PYTHON],[$1])
+      AS_IF([test -z "$PYTHON" -o "x$PYTHON" == xno],
+      [dnl
+        AC_MSG_NOTICE([$1 is not a found as tool, therefore interpreted as version])
+        AC_SUBST([PYVER],[$1])
+      ])
+    ])
+
+    AS_IF([test -n "$PYTHON" -a "x$PYTHON" != xno],
     [dnl  python interpereter found
       AC_MSG_CHECKING([for python version])
       PYVER=`$PYTHON -c "import sys; print(sys.version[[:3]])"`
       AS_IF([test -n "$PYVER"],[AC_MSG_RESULT([$PYVER])],[AC_MSG_RESULT([no])])
       AC_SUBST([PYVER])
     ])
+  ],
+  [dnl  PYVER set before
+    AC_MSG_NOTICE([python version assumed to be $PYVER])
   ])
 ])
 

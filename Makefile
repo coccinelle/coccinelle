@@ -471,8 +471,8 @@ distclean:: clean
 .PHONEY: depend
 .depend depend: test.ml version
 	@echo constructing '.depend'
-	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i depend; done
 	$(OCAMLDEP_CMD) *.mli *.ml > .depend
+	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i depend; done
 
 -include .depend
 

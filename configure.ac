@@ -220,22 +220,24 @@ dnl  variables:
 dnl    with_python: whether to enable the python feature (and what version)
 dnl    OCAML_PKG_pycaml: if "local" use local pycaml package
 AC_ARG_VAR([PYTHON], [path to python when the version is determined automatically])
-AC_ARG_WITH([python], [AS_HELP_STRING([--with-python], [enable python scripting, version of python (e.g. 3.2, default: auto)])])
+AC_ARG_WITH([python], [AS_HELP_STRING([--with-python], [enable python scripting, version of python or path (default: auto)])])
 AS_IF([test "x$with_python" != xno],
 [dnl
-  AS_IF([test -z "$with_python" -o "x$with_python" == xyes],
-  [dnl  determine version
-    AC_COCCI_PYVER
-  ],
-  [dnl  version provided by user explicitly
-    AC_SUBST([PYVER], [$with_python])
+  dnl  an explicitly set --with-python disablees by default the global pycaml
+  AS_IF([test -n "$with_python" -a -z "$enable_pycaml"],
+  [dnl  if explicit python given: 
+    AC_MSG_NOTICE([skipped the selection of a global pycaml module because --with-python is given explicitly but --enable-pycaml is not.])
+    AC_SUBST([enable_pycaml],[no])
   ])
+
+  dnl  sets "$PYVER" if python is available
+  AC_COCCI_PYVER([$with_python])
 
   AS_IF([test -z "$PYVER"],
   [dnl  PYVER undetermined
     AS_IF([test "x$with_python" == xyes],
     [dnl
-      AC_MSG_ERROR([python scripting enabled explicitly but version could not be determined])
+      AC_MSG_ERROR([python scripting is enabled explicitly but the version of python could not be determined])
     ])
   ],
   [dnl
@@ -268,12 +270,6 @@ AS_IF([test "x$with_python" != xno],
   ],
   [dnl
     AC_MSG_ERROR([the python scripts feature is enabled but the pkg-config python library is not found])
-  ])
-
-  AS_IF([test -n "$with_python" -a -z "$enable_pycaml"],
-  [dnl  if explicit python given: 
-    AS_MSG_NOTICE([skipped search for global pycaml module because --with-python is given explicitly but --enable-pycaml is not.])
-    AC_SUBST([enable_pycaml],[no])
   ])
 
   AC_REQ_COCCI_EXTPKG([pycaml])
