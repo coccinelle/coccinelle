@@ -270,14 +270,20 @@ AS_IF([test "x$with_python" != xno],
     AC_MSG_ERROR([the python scripts feature is enabled but the pkg-config python library is not found])
   ])
 
+  AS_IF([test -n "$with_python" -a -z "$enable_pycaml"],
+  [dnl  if explicit python given: 
+    AS_MSG_NOTICE([skipped search for global pycaml module because --with-python is given explicitly but --enable-pycaml is not.])
+    AC_SUBST([enable_pycaml],[no])
+  ])
+
   AC_REQ_COCCI_EXTPKG([pycaml])
-  AC_SUBST(PYCOCCI_MODULE, [Yes_pycocci])
-  AC_SUBST(PYCOCCI_FILE,[yes_pycocci.ml])
+  AC_SUBST([PYCOCCI_MODULE], [Yes_pycocci])
+  AC_SUBST([PYCOCCI_FILE],[yes_pycocci.ml])
 ],
 [dnl
-  AC_SUBST(OCAML_PKG_pycaml, [no])
-  AC_SUBST(PYCOCCI_MODULE, [No_pycocci])
-  AC_SUBST(PYCOCCI_FILE,[no_pycocci.ml])
+  AC_SUBST([OCAML_PKG_pycaml], [no])
+  AC_SUBST([PYCOCCI_MODULE], [No_pycocci])
+  AC_SUBST([PYCOCCI_FILE],[no_pycocci.ml])
 ])
 
 
@@ -304,13 +310,13 @@ AS_IF([test "x$enable_pcre_syntax" != xno],
     AC_MSG_ERROR([the pcre feature is enabled but the pkg-config libpcre library is not found])
   ])
 
-  AC_SUBST(REGEXP_MODULE, [Regexp_pcre])
-  AC_SUBST(REGEXP_FILE,[regexp_pcre.ml])
+  AC_SUBST([REGEXP_MODULE], [Regexp_pcre])
+  AC_SUBST([REGEXP_FILE],[regexp_pcre.ml])
 ],
 [dnl
-  AC_SUBST(OCAML_PKG_pcre, [no])
-  AC_SUBST(REGEXP_MODULE, [Regexp_str])
-  AC_SUBST(REGEXP_FILE,[regexp_str.ml])
+  AC_SUBST([OCAML_PKG_pcre], [no])
+  AC_SUBST([REGEXP_MODULE], [Regexp_str])
+  AC_SUBST([REGEXP_FILE],[regexp_str.ml])
 ])
 
 

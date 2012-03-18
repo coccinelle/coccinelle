@@ -469,7 +469,8 @@ distclean:: clean
 	find . -name ".#*1.*" | xargs rm -f
 
 .PHONEY: depend
-.depend depend: test.ml
+.depend depend: test.ml version
+	@echo constructing '.depend'
 	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i depend; done
 	$(OCAMLDEP_CMD) *.mli *.ml > .depend
 
