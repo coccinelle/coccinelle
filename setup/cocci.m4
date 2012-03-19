@@ -7,7 +7,6 @@ dnl  check if the ocaml version is recent enough
 dnl    $1: version to test against
 AC_DEFUN([AC_CHECK_OCAMLVERSION],
 [dnl
-  AC_REQUIRE([AC_PROG_OCAML])
   AS_UNSET([versioncheck])
   AC_MSG_CHECKING([that the OCaml version is at least $1])
   AS_VERSION_COMPARE([$OCAMLVERSION],[$1],[versioncheck=no],[versioncheck=yes],[versioncheck=yes])
@@ -168,27 +167,15 @@ AC_DEFUN([AC_COCCI_PYVER],
 [dnl
   AS_IF([test -z "$PYVER"],
   [dnl  PYVER not set before, determine it
-    AS_IF([test -z "$1" -o "x$1" == "xyes"],
-    [dnl  no custom version nor interpreter given
-      AC_CHECK_TOOL([PYTHON],[python])
-    ],
-    [dnl  a version or interpreter was given explicitly
-      AC_MSG_NOTICE([a custom version or python command is given.])
+    AC_COCCI_TOOL([PYTHON],[python],[])
 
-      AS_IF([test -f "$1" -a -x "$1"],
-      [dnl
-        AC_SUBST([PYTHON],[$1])
-      ])
-
-      AC_CHECK_TOOL([PYTHON],[$1])
-      AS_IF([test -z "$PYTHON" -o "x$PYTHON" == xno],
-      [dnl
-        AC_MSG_NOTICE([$1 is not a found as tool, therefore interpreted as version])
-        AC_SUBST([PYVER],[$1])
-      ])
+    AS_IF([test "x$PYTHON" == xno -a -n "$with_python" -a "x$with_python" != xyes],
+    [dnl  python interpreter not found, but perhaps it was a version
+      AC_MSG_NOTICE([$1 is not a found as tool, therefore interpreted as version])
+      AC_SUBST([PYVER],[$1])
     ])
 
-    AS_IF([test -n "$PYTHON" -a "x$PYTHON" != xno],
+    AS_IF([test "x$PYTHON" != xno],
     [dnl  python interpereter found
       AC_MSG_CHECKING([for python version])
       PYVER=`$PYTHON -c "import sys; print(sys.version[[:3]])"`
@@ -210,7 +197,7 @@ AC_DEFUN([AC_COCCI_CONFVERSION],
 
   AS_IF([test -z "$CONFVERSION" -a -d "./.git"],
   [dnl  git administration found
-    AC_CHECK_TOOL([GIT],[git])
+    AC_PATH_TOOL([GIT],[git])
     AS_IF([test -n "$GIT"],
     [dnl  ask git
       CONFVERSION=`$GIT log -1 --date-order --date=rfc --pretty="format:%cd"`
@@ -219,7 +206,7 @@ AC_DEFUN([AC_COCCI_CONFVERSION],
 
   AS_IF([test -z "$CONFVERSION"],
   [dnl  otherwise, take the current date
-    AC_CHECK_TOOL([DATE],[date])
+    AC_PATH_TOOL([DATE],[date])
     AS_IF([test -n "$DATE"],
     [dnl
       CONFVERSION=`$DATE "+%a, %d %b %Y %H:%M:%S %z"`
@@ -232,4 +219,90 @@ AC_DEFUN([AC_COCCI_CONFVERSION],
   ])
 
   AC_MSG_NOTICE([version suffix set to $CONFVERSION])
+])
+
+
+dnl  find a tool, with specialized macros for certain cases
+dnl  $1: name of the variable
+dnl  $2: name of the tool
+AC_DEFUN([AC_COCCI_FINDTOOL],
+[dnl
+  AS_IF([test "x$2" == xpkg-config -a "x$1" == xPKG_CONFIG],
+  [dnl  specialized macro for pkg-config (from pkg-config m4 macros)
+    PKG_PROG_PKG_CONFIG
+  ], [test "x$2" == xocamllex -a "x$1" == xOCAMLLEX],
+  [dnl  specialized macro for ocamllex (from ocaml.m4)
+    AC_PROG_OCAMLLEX
+  ], [test "x$2" == xocamlyacc -a "x$1" == xOCAMLYACC],
+  [dnl  specialized macro for ocamlyacc (from ocaml.m4)
+    AC_PROG_OCAMLYACC
+  ],
+  [dnl  generic macro
+    AC_PATH_TOOL([$1], [$2])
+  ])
+])
+
+dnl  find/override a particular tool
+dnl  $1: var name
+dnl  $2: prog name
+dnl  $3: path to substitute (or empty)
+AC_DEFUN([AC_COCCI_TOOL],
+[dnl
+  AC_ARG_VAR([$1], [path to $2])
+  AC_ARG_WITH([$2], [AS_HELP_STRING([--with-$2], [whether/which $2 to use (default: auto)])])
+  AC_SUBST([with_$1],[$with_[]AS_TR_SH([$2])])
+
+  dnl  explicit tool or command given
+  AS_IF([test -n "$with_$1" -a "x$with_$1" != xno -a "x$with_$1" != xyes],
+  [dnl  custom $with_$1 given
+    AC_SUBST([$1], ["$with_$1"])
+  ])
+
+  dnl  searches for the tool (result either empty or 'no' if not found)
+  AS_IF([test "x$with_$1" != xno],
+  [dnl  find the tool
+    AC_COCCI_FINDTOOL([$1],[$2])
+  ])
+
+  AS_IF([test -z "$1" -o "x$1" == xno],
+  [dnl  command not found
+    AS_IF([test "x$with_$1" == xyes],
+    [dnl  abort if a command was given explicitly
+      AC_MSG_ERROR([--with=$2 is given explicitly but not found])
+    ])
+
+    AS_IF([test -n "$3"],
+    [dnl  try substitute
+      AC_MSG_NOTICE([$2 not found. Trying substitute $3.])
+      AC_SUBST([$1],[$3])
+      AC_COCCI_FINDTOOL([$1],[$2])
+      AC_SUBST([SUBSTITUTED_$1], [yes])
+    ])
+  ])
+
+  dnl  $1 will always be defined at the exit of this macro
+  AS_IF([test -z "$1"],[AC_SUBST([$1],[no])])
+])
+
+
+dnl  defines a $1_CMD with $1 if set to a tool, otherwise
+dnl  takes $2
+AC_DEFUN([AC_COCCI_RUNTIME_CMD],
+[dnl
+  AC_ARG_VAR([RUNTIME_$1_CMD], [path to $2])
+  AC_ARG_WITH([runtime-$2], [AS_HELP_STRING([--with-runtime-$2], [override the runtime cmd for $2])])
+  
+  AS_IF([test -z "$RUNTIME_$1_CMD"],
+  [dnl  variable not yet set
+    AS_IF([test "x$with_runtime_[]AS_TR_SH([$2])" == xno],
+    [dnl  with_runtime_$2 set to no: use configured with_$2
+      AC_SUBST([RUNTIME_$1_CMD],[$][$1])
+    ], [test -n "$with_runtime_[]AS_TR_SH([$2])" -a "x$with_runtime_[]AS_TR_SH([$2])" != xyes],
+    [dnl  explicit with_runtime_$2 parameter given: use that as default
+      AC_SUBST([RUNTIME_$1_CMD],[$with_runtime_[]AS_TR_SH([$2])])
+    ],
+    [dnl  otherwise, use $2
+      AC_SUBST([RUNTIME_$1_CMD],[$2])
+    ])
+  ])
 ])

@@ -5,7 +5,7 @@ include ../Makefile.config
 ##############################################################################
 TARGET=globals
 
-SRC= flag.ml config.ml iteration.ml $(REGEXP_FILE) regexp.ml
+SRC=config.ml flag.ml iteration.ml $(REGEXP_FILE) regexp.ml
 
 LIBS=
 INCLUDEDIRS= ../commons $(PCREDIR)

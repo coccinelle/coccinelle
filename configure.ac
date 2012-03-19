@@ -33,39 +33,27 @@ AC_PROG_MKDIR_P
 AC_PROG_CPP
 
 dnl  pkg config is required
-AC_ARG_VAR(PKG_CONFIG, [path to pkg-config])
-AC_ARG_WITH([pkg_config], [AS_HELP_STRING([--with-pkgconfig], [whether to use pkgconfig (default: auto)])])
-AS_IF([test "x$with_pkg_config" == xno],
-[dnl  explicitly set to 'no'
-  AC_MSG_NOTICE([pkg-config is disabled explicitly and a substitute will be used])
-],[test -z "$with_pkg_config" -o "x$with_pkg_config" == xyes],
-[dnl  find menhir if not overriden in the environment
-  PKG_PROG_PKG_CONFIG
-],
-[dnl  path to pkg-config was given as an option
-  AC_SUBST([PKG_CONFIG], ["$with_pkg_config"])
-])
-
-AS_IF([test -z "$PKG_CONFIG"],
+AC_COCCI_TOOL([PKG_CONFIG],[pkg-config],["$COCCI_SRCDIR/setup/fake-subst.sh pkg-config"])
+AS_IF([test "x$PKG_CONFIG" == xno],
 [dnl
-  AC_MSG_NOTICE([pkg-config not found. Using a scripted substitute.])
-  AC_SUBST([PKG_CONFIG], ["$COCCI_SRCDIR/setup/fake-subst.sh pkg-config"])
+  AC_MSG_ERROR([A suitable pkg-config could not be found.])
 ])
 
-
-dnl  ocaml tools
+dnl  ocaml compile
 AC_PROG_OCAML
-AC_PROG_OCAMLLEX
-AC_PROG_OCAMLYACC
-
-dnl  enforce ocaml tool requirements
-AS_IF([test "x$OCAMLC" == xno],
+AC_CHECK_OCAMLVERSION([3.11])
+AS_IF([test "x$OCAMLC" == xno -o "xOCAMLDEP" == xno -o "xOCAMLDOC" == xno -o "xOCAMLMKLIB" == xno],
 [dnl
   AC_MSG_ERROR([You must install the OCaml compiler])
 ])
 
-AC_CHECK_OCAMLVERSION([3.11])
+dnl  ocaml tools
+AC_PROG_CAMLP4
+AC_COCCI_TOOL([OCAMLLEX],[ocamllex],[])
+AC_COCCI_TOOL([OCAMLYACC],[ocamlyacc],[])
+AC_COCCI_TOOL([OCAMLFIND],[ocamlfind],["$COCCI_SRCDIR/setup/fake-subst.sh ocamlfind"])
 
+dnl  enforce ocaml tool requirements
 AS_IF([test "x$OCAMLLEX" == xno],
 [dnl
   AC_MSG_ERROR([the OCaml Lexer needs to be installed (the ocamllex command). It should be part of your OCaml distribution.])
@@ -76,26 +64,18 @@ AS_IF([test "x$OCAMLYACC" == xno],
   AC_MSG_ERROR([The OCaml parser generated needs to be installed (the ocamlyacc command). It should be part of your OCaml distribution.])
 ])
 
-AC_ARG_VAR([OCAMLFIND], [path to OCaml findlib (ocamlfind)])
-AC_ARG_WITH([ocamlfind], [AS_HELP_STRING([--with-findlib], [whether to use OCaml findlib (default: auto)])])
-AS_IF([test "x$with_ocamlfind" == xno],
-[dnl
-  AC_MSG_NOTICE([ocaml findlib is disabled explicitly and a substitute will be used])
-], [test -z "$with_ocamlfind" -o "x$with_ocamlfind" == xyes],
-[dnl  find ocamlfind if not overriden in the environment
-  AC_PROG_FINDLIB
-],
-[dnl  path to findlib was given as an option
-  AC_SUBST([OCAMLFIND], [$with_ocamlfind])
-])
-
 AS_IF([test "x$OCAMLFIND" == xno],
 [dnl
-  AC_SUBST([OCAMLFIND], ["$COCCI_SRCDIR/setup/fake-subst.sh ocamlfind"])
-  AC_SUBST([OCAMLFINDSUBSTITUTED], [yes])
-  AC_MSG_NOTICE([OCaml findlib (the ocamlfind command) not found. Using a scripted substitute.])
+  AC_MSG_ERROR([A suitable OCaml findlib (the ocamlfind command) could not be found.])
 ])
 
+dnl  these variables are substituted for in the code: this guarantees a default for them.
+AC_COCCI_RUNTIME_CMD([OCAMLFIND],[ocamlfind])
+AC_COCCI_RUNTIME_CMD([OCAMLC],[ocamlc])
+AC_COCCI_RUNTIME_CMD([OCAMLOPT],[ocamlopt])
+AC_COCCI_RUNTIME_CMD([OCAMLDEP],[ocamldep])
+AC_COCCI_RUNTIME_CMD([CAMLP4],[camlp4])
+AC_COCCI_RUNTIME_CMD([CAMLP4O],[camlp4o])
 
 AC_CACHE_SAVE
 
@@ -150,28 +130,10 @@ AC_MSG_NOTICE([verifying optional features])
 dnl  menhir handling
 dnl  variables:
 dnl    with_menhir: whether or not menhir must be used
-AC_ARG_VAR(MENHIR, [path to menhir])
-AC_ARG_WITH([menhir], AS_HELP_STRING([--with-menhir], [whether to use menhir (default: auto)]))
-AS_IF([test "x$with_menhir" == "xno"],
+AC_COCCI_TOOL([MENHIR],[menhir],["$COCCI_SRCDIR/setup/fake-menhir.sh menhir"])
+AS_IF([test "x$SUBSTITUTED_MENHIR" == xyes],
 [dnl
-  AC_MSG_NOTICE([the parser generator Menhir is disabled explicitly and a substitute will be used])
-], [test -z "$with_menhir" -o "x$with_menhir" == xyes],
-[dnl  find menhir if not overriden in the environment
-  AC_CHECK_TOOL([MENHIR],[menhir],[no])
-],
-[dnl  path to menhir was given as an option
-  AC_SUBST([MENHIR], ["$with_menhir"])
-])
-
-AS_IF([test -z "$MENHIR" -o "x$MENHIR" == xno],
-[dnl
-  AS_IF([test "x$with_menhir" == xyes],
-  [dnl
-    AC_MSG_ERROR([the OCaml parser generator Menhir is enabled explicitly but is not installed])
-  ])
-
   AC_MSG_NOTICE([pregenerated parsers will be required as substitute for Menhir])
-  AC_SUBST([MENHIR], ["$COCCI_SRCDIR/setup/fake-menhir.sh menhir"])
 ])
 
 
@@ -191,7 +153,8 @@ AS_IF([test "x$OCAML_PKG_dynlink" == xno],
   ])
 ])
 
-AS_IF([test ! -z "$OCAMLFINDSUBSTITUTED"],
+dnl  scripting requirement on ocamlfind
+AS_IF([test -n "$SUBSTITUTED_OCAMLFIND"],
 [dnl
   AS_IF([test -z "$enable_ocaml"],
   [dnl  this is perhaps a bit too strict
@@ -199,7 +162,20 @@ AS_IF([test ! -z "$OCAMLFINDSUBSTITUTED"],
     AC_MSG_NOTICE([ocaml scripting is disabled because it depends on ocamlfind])
   ], [test "x$enable_ocaml" != xno],
   [dnl
-    AC_MSG_NOTICE([warning: ocamlfind is not installed but may be required if ocaml scripts are used])
+    AC_MSG_NOTICE([warning: ocamlfind is not found but may be required if ocaml scripts are used])
+  ])
+])
+
+dnl  scripting requirement on camlp4
+AS_IF([test "x$CAMLP4" == xno],
+[dnl
+  AS_IF([test -z "$enable_ocaml"],
+  [dnl  this is perhaps a bit too strict
+    AC_SUBST([enable_ocaml],no)
+    AC_MSG_NOTICE([ocaml scripting is disabled because it depends on camlp4])
+  ], [test "x$enable_ocaml" != xno],
+  [dnl
+    AC_MSG_NOTICE([warning: camlp4 is not found but may be required if ocaml scripts are used])
   ])
 ])
 
@@ -220,22 +196,22 @@ dnl  variables:
 dnl    with_python: whether to enable the python feature (and what version)
 dnl    OCAML_PKG_pycaml: if "local" use local pycaml package
 AC_ARG_VAR([PYTHON], [path to python when the version is determined automatically])
-AC_ARG_WITH([python], [AS_HELP_STRING([--with-python], [enable python scripting, version of python or path (default: auto)])])
-AS_IF([test "x$with_python" != xno],
+AC_ARG_ENABLE([python], [AS_HELP_STRING([--enable-python], [enable python scripting (yes/no) (default: auto)])])
+AS_IF([test "x$enable_python" != xno],
 [dnl
   dnl  an explicitly set --with-python disablees by default the global pycaml
-  AS_IF([test -n "$with_python" -a -z "$enable_pycaml"],
+  AS_IF([test -n "$enable_python" -a -z "$enable_pycaml"],
   [dnl  if explicit python given: 
-    AC_MSG_NOTICE([skipped the selection of a global pycaml module because --with-python is given explicitly but --enable-pycaml is not.])
+    AC_MSG_NOTICE([skipped the selection of a global pycaml module because --enable-python is given explicitly but --enable-pycaml is not.])
     AC_SUBST([enable_pycaml],[no])
   ])
 
   dnl  sets "$PYVER" if python is available
-  AC_COCCI_PYVER([$with_python])
+  AC_COCCI_PYVER
 
   AS_IF([test -z "$PYVER"],
   [dnl  PYVER undetermined
-    AS_IF([test "x$with_python" == xyes],
+    AS_IF([test "x$enable_python" == xyes],
     [dnl
       AC_MSG_ERROR([python scripting is enabled explicitly but the version of python could not be determined])
     ])
@@ -243,7 +219,7 @@ AS_IF([test "x$with_python" != xno],
   [dnl
     PKG_CHECK_MODULES([PYTHON], [python-$PYVER],[AC_SUBST(HAVE_PYTHON,[yes])],[AC_SUBST(HAVE_PYTHON,[no])])
 
-    AS_IF([test "x$HAVE_PYTHON" != xyes -a "x$with_python" != xyes],
+    AS_IF([test "x$HAVE_PYTHON" != xyes -a "x$enable_python" != xyes],
     [dnl  fallback if the above failed
       AC_MSG_NOTICE([trying the default python version as fallback])
       PKG_CHECK_MODULES([PYTHON], [python],[AC_SUBST(HAVE_PYTHON,[yes])],[AC_SUBST(HAVE_PYTHON,[no])])
@@ -251,18 +227,18 @@ AS_IF([test "x$with_python" != xno],
   ])
 ])
 
-AS_IF([test -z "$with_python"],
+AS_IF([test -z "$enable_python"],
 [dnl
   AS_IF([test "x$HAVE_PYTHON" == xyes],
   [dnl
-    AC_SUBST([with_python],[yes])
+    AC_SUBST([enable_python],[yes])
   ],
   [dnl
-    AC_SUBST([with_python],[no])
+    AC_SUBST([enable_python],[no])
   ])
 ])
 
-AS_IF([test "x$with_python" != xno],
+AS_IF([test "x$enable_python" != xno],
 [dnl
   AS_IF([test "x$HAVE_PYTHON" == xyes],
   [dnl
@@ -331,7 +307,7 @@ dnl
 AC_SUBST(FEATURE_TARZAN,[1])
 AC_SUBST(SHAREDIR,["${prefix}/share/coccinelle"])
 
-AS_IF([test "x$with_python" != xno],
+AS_IF([test "x$enable_python" != xno],
 [dnl
   AC_SUBST(FEATURE_PYTHON,[1])
 ],
@@ -346,6 +322,7 @@ dnl
 
 AC_CONFIG_FILES([Makefile.config])
 AC_CONFIG_FILES([version.ml])
+AC_CONFIG_FILES([commons/commands.ml])
 AC_CONFIG_FILES([globals/config.ml])
 AC_CONFIG_FILES([globals/regexp.ml])
 AC_CONFIG_FILES([python/pycocci.ml])
@@ -366,7 +343,7 @@ menhir:           $MENHIR
 menhirLib module: $OCAML_PKG_menhirLib
 
 ocaml scripting:  $enable_ocaml
-python scripting: $with_python
+python scripting: $enable_python
 pycaml module:    $enable_pycaml
 
 pcre regexes:     $enable_pcre_syntax
@@ -399,7 +376,7 @@ Then, to test coccinelle run for example:
   \$ spatch -sp_file demos/simple.cocci demos/simple.c -o /tmp/new_simple.c
 EOF
 
-if test "x$with_python" != "xno"; then
+if test "x$enable_python" != "xno"; then
 cat << EOF
 ------------------------------------------------------------------------------
 You may need to set some environment variables so that the python

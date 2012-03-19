@@ -8,7 +8,8 @@ include ../Makefile.config
 TARGET=commons
 
 # note: if you add a file (a .mli or .ml), dont forget to redo a 'make depend'
-MYSRC=	common.ml common_extra.ml                \
+MYSRC=	commands.ml                              \
+	common.ml common_extra.ml                \
 	interfaces.ml objet.ml                   \
 	ocollection.ml                           \
 	seti.ml                                  \
@@ -328,6 +329,7 @@ clean::
 	rm -f .depend
 
 distclean: clean
+	rm -f commands.ml
 
 .PHONEY: depend
 .depend depend:

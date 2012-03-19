@@ -17,14 +17,21 @@ let check_cmd cmd =
       Unix.WEXITED 0 -> true
     | _ -> false
 
+(* this function does not work when the executable has an extension like .exe *)
+let to_opt cmd =
+  let n = String.length cmd in
+  if n > 4 && String.compare (String.sub cmd (n-4) 4) ".opt" == 0
+  then cmd
+  else cmd ^ ".opt"
+
 let check_runtime () =
-  let has_opt  = check_cmd (!Flag.ocamlc ^".opt -version 2>&1 > /dev/null") in
-  let has_c    = check_cmd (!Flag.ocamlc ^" -version 2>&1 > /dev/null") in
+  let has_opt  = check_cmd (to_opt (!Flag.ocamlc) ^ " -version 2>&1 > /dev/null") in
+  let has_c    = check_cmd (to_opt (!Flag.ocamlc) ^ " -version 2>&1 > /dev/null") in
     if has_opt then
       begin
-	Flag.ocamlc   := !Flag.ocamlc   ^ ".opt";
-	Flag.ocamlopt := !Flag.ocamlopt ^ ".opt";
-	Flag.ocamldep := !Flag.ocamldep ^ ".opt";
+	Flag.ocamlc   := to_opt (!Flag.ocamlc);
+	Flag.ocamlopt := to_opt (!Flag.ocamlopt);
+	Flag.ocamldep := to_opt (!Flag.ocamldep);
 	Common.pr2 "Using native version of ocamlc/ocamlopt/ocamldep"
       end
     else

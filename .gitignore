@@ -20,7 +20,7 @@ Makefile.config
 
 globals/config.ml
 python/pycocci.ml
-
+commons/commands.ml
 globals/regexp.ml
 ocaml/prepare_ocamlcocci.ml
 parsing_cocci/lexer_cli.ml

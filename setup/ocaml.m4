@@ -1,3 +1,7 @@
+dnl  changes from the original for coccinelle:
+dnl    replaced AC_CHECK_TOOL with AC_PATH_TOOL to obtain full paths
+dnl    removed some of the AC_REQUIRE calls
+
 dnl autoconf macros for OCaml
 dnl
 dnl Copyright © 2009      Richard W.M. Jones
@@ -11,7 +15,7 @@ dnl For documentation, please read the ocaml.m4 man page.
 AC_DEFUN([AC_PROG_OCAML],
 [dnl
   # checking for ocamlc
-  AC_CHECK_TOOL([OCAMLC],[ocamlc],[no])
+  AC_PATH_TOOL([OCAMLC],[ocamlc],[no])
 
   if test "$OCAMLC" != "no"; then
      OCAMLVERSION=`$OCAMLC -v | sed -n -e 's|.*version* *\(.*\)$|\1|p'`
@@ -28,7 +32,7 @@ AC_DEFUN([AC_PROG_OCAML],
      AC_SUBST([OCAMLLIB])
 
      # checking for ocamlopt
-     AC_CHECK_TOOL([OCAMLOPT],[ocamlopt],[no])
+     AC_PATH_TOOL([OCAMLOPT],[ocamlopt],[no])
      OCAMLBEST=byte
      if test "$OCAMLOPT" = "no"; then
 	AC_MSG_WARN([Cannot find ocamlopt; bytecode compilation only.])
@@ -45,7 +49,7 @@ AC_DEFUN([AC_PROG_OCAML],
      AC_SUBST([OCAMLBEST])
 
      # checking for ocamlc.opt
-     AC_CHECK_TOOL([OCAMLCDOTOPT],[ocamlc.opt],[no])
+     AC_PATH_TOOL([OCAMLCDOTOPT],[ocamlc.opt],[no])
      if test "$OCAMLCDOTOPT" != "no"; then
 	TMPVERSION=`$OCAMLCDOTOPT -v | sed -n -e 's|.*version* *\(.*\)$|\1|p' `
 	if test "$TMPVERSION" != "$OCAMLVERSION" ; then
@@ -57,7 +61,7 @@ AC_DEFUN([AC_PROG_OCAML],
 
      # checking for ocamlopt.opt
      if test "$OCAMLOPT" != "no" ; then
-	AC_CHECK_TOOL([OCAMLOPTDOTOPT],[ocamlopt.opt],[no])
+	AC_PATH_TOOL([OCAMLOPTDOTOPT],[ocamlopt.opt],[no])
 	if test "$OCAMLOPTDOTOPT" != "no"; then
 	   TMPVERSION=`$OCAMLOPTDOTOPT -v | sed -n -e 's|.*version* *\(.*\)$|\1|p' `
 	   if test "$TMPVERSION" != "$OCAMLVERSION" ; then
@@ -74,31 +78,31 @@ AC_DEFUN([AC_PROG_OCAML],
   AC_SUBST([OCAMLC])
 
   # checking for ocaml toplevel
-  AC_CHECK_TOOL([OCAML],[ocaml],[no])
+  AC_PATH_TOOL([OCAML],[ocaml],[no])
 
   # checking for ocamldep
-  AC_CHECK_TOOL([OCAMLDEP],[ocamldep],[no])
+  AC_PATH_TOOL([OCAMLDEP],[ocamldep],[no])
 
   # checking for ocamlmktop
-  AC_CHECK_TOOL([OCAMLMKTOP],[ocamlmktop],[no])
+  AC_PATH_TOOL([OCAMLMKTOP],[ocamlmktop],[no])
 
   # checking for ocamlmklib
-  AC_CHECK_TOOL([OCAMLMKLIB],[ocamlmklib],[no])
+  AC_PATH_TOOL([OCAMLMKLIB],[ocamlmklib],[no])
 
   # checking for ocamldoc
-  AC_CHECK_TOOL([OCAMLDOC],[ocamldoc],[no])
+  AC_PATH_TOOL([OCAMLDOC],[ocamldoc],[no])
 
   # checking for ocamlbuild
-  AC_CHECK_TOOL([OCAMLBUILD],[ocamlbuild],[no])
+  AC_PATH_TOOL([OCAMLBUILD],[ocamlbuild],[no])
 ])
 
 
 AC_DEFUN([AC_PROG_OCAMLLEX],
 [dnl
   # checking for ocamllex
-  AC_CHECK_TOOL([OCAMLLEX],[ocamllex],[no])
+  AC_PATH_TOOL([OCAMLLEX],[ocamllex],[no])
   if test "$OCAMLLEX" != "no"; then
-    AC_CHECK_TOOL([OCAMLLEXDOTOPT],[ocamllex.opt],[no])
+    AC_PATH_TOOL([OCAMLLEXDOTOPT],[ocamllex.opt],[no])
     if test "$OCAMLLEXDOTOPT" != "no"; then
 	OCAMLLEX=$OCAMLLEXDOTOPT
     fi
@@ -108,7 +112,7 @@ AC_DEFUN([AC_PROG_OCAMLLEX],
 
 AC_DEFUN([AC_PROG_OCAMLYACC],
 [dnl
-  AC_CHECK_TOOL([OCAMLYACC],[ocamlyacc],[no])
+  AC_PATH_TOOL([OCAMLYACC],[ocamlyacc],[no])
   AC_SUBST([OCAMLYACC])
 ])
 
@@ -118,7 +122,7 @@ AC_DEFUN([AC_PROG_CAMLP4],
   AC_REQUIRE([AC_PROG_OCAML])dnl
 
   # checking for camlp4
-  AC_CHECK_TOOL([CAMLP4],[camlp4],[no])
+  AC_PATH_TOOL([CAMLP4],[camlp4],[no])
   if test "$CAMLP4" != "no"; then
      TMPVERSION=`$CAMLP4 -v 2>&1| sed -n -e 's|.*version *\(.*\)$|\1|p'`
      if test "$TMPVERSION" != "$OCAMLVERSION" ; then
@@ -129,14 +133,14 @@ AC_DEFUN([AC_PROG_CAMLP4],
   AC_SUBST([CAMLP4])
 
   # checking for companion tools
-  AC_CHECK_TOOL([CAMLP4BOOT],[camlp4boot],[no])
-  AC_CHECK_TOOL([CAMLP4O],[camlp4o],[no])
-  AC_CHECK_TOOL([CAMLP4OF],[camlp4of],[no])
-  AC_CHECK_TOOL([CAMLP4OOF],[camlp4oof],[no])
-  AC_CHECK_TOOL([CAMLP4ORF],[camlp4orf],[no])
-  AC_CHECK_TOOL([CAMLP4PROF],[camlp4prof],[no])
-  AC_CHECK_TOOL([CAMLP4R],[camlp4r],[no])
-  AC_CHECK_TOOL([CAMLP4RF],[camlp4rf],[no])
+  AC_PATH_TOOL([CAMLP4BOOT],[camlp4boot],[no])
+  AC_PATH_TOOL([CAMLP4O],[camlp4o],[no])
+  AC_PATH_TOOL([CAMLP4OF],[camlp4of],[no])
+  AC_PATH_TOOL([CAMLP4OOF],[camlp4oof],[no])
+  AC_PATH_TOOL([CAMLP4ORF],[camlp4orf],[no])
+  AC_PATH_TOOL([CAMLP4PROF],[camlp4prof],[no])
+  AC_PATH_TOOL([CAMLP4R],[camlp4r],[no])
+  AC_PATH_TOOL([CAMLP4RF],[camlp4rf],[no])
   AC_SUBST([CAMLP4BOOT])
   AC_SUBST([CAMLP4O])
   AC_SUBST([CAMLP4OF])
@@ -150,10 +154,10 @@ AC_DEFUN([AC_PROG_CAMLP4],
 
 AC_DEFUN([AC_PROG_FINDLIB],
 [dnl
-  AC_REQUIRE([AC_PROG_OCAML])dnl
+  dnl  AC_REQUIRE([AC_PROG_OCAML])dnl
 
   # checking for ocamlfind
-  AC_CHECK_TOOL([OCAMLFIND],[ocamlfind],[no])
+  AC_PATH_TOOL([OCAMLFIND],[ocamlfind],[no])
   AC_SUBST([OCAMLFIND])
 ])
 
@@ -163,7 +167,7 @@ dnl XXX We should define AS_TR_SH if it's not defined already
 dnl (eg. for old autoconf).
 AC_DEFUN([AC_CHECK_OCAML_PKG],
 [dnl
-  AC_REQUIRE([AC_PROG_FINDLIB])dnl
+  dnl  AC_REQUIRE([AC_PROG_FINDLIB])dnl
 
   AC_MSG_CHECKING([for OCaml findlib package $1])
 
