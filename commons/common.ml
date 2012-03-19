@@ -1155,7 +1155,7 @@ let macro_expand s =
   let c = open_out "/tmp/ttttt.ml" in
   begin
     output_string c s; close_out c;
-    command2 ("ocamlc -c -pp '" ^ Commands.camlp4o_cmd ^" pa_extend.cmo q_MLast.cmo -impl' " ^
+    command2 (Commands.ocamlc_cmd ^ " -c -pp '" ^ Commands.camlp4o_cmd ^" pa_extend.cmo q_MLast.cmo -impl' " ^
              "-I +" ^ Commands.camlp4_cmd ^ " -impl macro.ml4");
     command2 (Commands.camlp4o_cmd ^" ./macro.cmo pr_o.cmo /tmp/ttttt.ml");
     Unix.unlink "/tmp/ttttt.ml";
