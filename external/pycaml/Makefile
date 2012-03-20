@@ -34,8 +34,8 @@ pycaml.cmxa: dllpycaml_stubs.so pycaml.cmi pycaml.cmx
 
 clean:
 	rm -f pycaml.mli pycaml.cmi pycaml.cmo pycaml pycaml_ml.o \
-		pycaml.cmx pycaml.cmxa pycaml.cma \
-		libpycaml_stubs.a dllpycaml_stubs.o
+		pycaml.cmx pycaml.cmxa pycaml.cma pycaml.a pycaml.o \
+		libpycaml_stubs.a dllpycaml_stubs.o dllpycaml_stubs.so
 
 distclean: clean
 

@@ -29,3 +29,5 @@ scripts/spatch.sh
 config.log
 config.status
 autom4te.cache
+
+external/pycaml/pycaml.mli
