@@ -19,7 +19,7 @@ LOCAL_pycaml     = pycaml.cma
 LOCALOPT_pycaml  = pycaml.cmxa
 GLOBAL_pycaml    = pycaml.cma
 GLOBALOPT_pycaml = pycaml.cmxa
-FLAGS_pycaml     = 
+FLAGS_pycaml     = -cclib -lpycaml_stubs -cclib "${PYTHON_LIBS}"
 
 # sexplib library
 LOCAL_sexplib     = sexplib.cmo
@@ -33,7 +33,7 @@ LOCAL_pcre     = pcre.cmo
 LOCALOPT_pcre  = pcre.cmx
 GLOBAL_pcre    = pcre.cma
 GLOBALOPT_pcre = pcre.cmxa
-FLAGS_pcre     = -cclib -lpcre
+FLAGS_pcre     = -cclib "${PCRE_LIBS}"
 
 # dynlink library
 LOCAL_dynlink     =

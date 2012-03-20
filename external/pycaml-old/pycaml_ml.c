@@ -177,7 +177,7 @@ value pygencall( value format, value arg ) {
     int fmt = Int_val(Field(format,1));
     PyObject *ob1,*ob2,*ob3;
     void *func = getcustom(Field(format,0));
-    /* int reflect = Int_val(Field(format,2)); */
+    int reflect = Int_val(Field(format,2));
 
     rv = Val_unit;
 
@@ -1393,12 +1393,12 @@ value pytuple_fromarray( value array ) {
     PyObject *tuple = PyTuple_New(Wosize_val(array));
     PyObject *elt;
     int i;
-    /* int x; */
+    int x;
 
     for( i = 0; i < Wosize_val(array); i++ ) {
 	elt = pyunwrap(Field(array,i));
 	Py_INCREF(elt); /* PyTuple_SetItem will steal a reference */
-	PyTuple_SetItem(tuple,i,elt);
+	x = PyTuple_SetItem(tuple,i,elt);
     }
 
     CAMLreturn(pywrap(tuple));
@@ -1460,7 +1460,7 @@ value pymodule_initmodule( value name, value funclist ) {
     CAMLreturn(Val_unit);
 }
 
-void pycaml_setargs(value argv) {
+value pycaml_setargs(value argv) {
   CAMLparam1(argv);
   char* cargv[1];
 

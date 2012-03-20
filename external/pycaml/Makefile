@@ -1,35 +1,42 @@
-#pad: was called Makefile.deb-pycaml before
+include ../../Makefile.config
 
-OCAMLMAKEFILE = OCamlMakefile
-PY_PREFIX = $(shell python getprefix.py)
-PY_VERSION = $(shell python getversion.py)
-CLIBS = python$(PY_VERSION) pthread dl util m c
+OCAMLC_CMD=$(OCAMLC) -thread -ccopt "${PYTHON_CFLAGS}" -cclib "${PYTHON_LIBS}"
+OCAMLOPT_CMD=$(OCAMLOPT) -thread -ccopt "${PYTHON_CFLAGS}" -cclib "${PYTHON_LIBS}"
+OCAMLMKLIB_CMD=$(OCAMLMKLIB)
 
-SOURCES = pycaml.ml pycaml_ml.c
-RESULT = pycaml
-THREADS = yes
-NO_CUSTOM = NO_CUSTOM
+all: pycaml.cma
 
-LIBDIRS = $(PY_PREFIX)/lib/python$(PY_VERSION)/config
-INCDIRS = $(PY_PREFIX)/include/python$(PY_VERSION)
-OCAMLLDFLAGS = -linkall
+pycaml.mli: pycaml.ml
+	$(OCAMLC_CMD) -i $< > pycaml.mli
 
-all.opt: native-code-library pycaml.customtop
+pycaml.cmo: pycaml.ml pycaml.cmi
+	$(OCAMLC_CMD) -c $<
 
-all: pycaml.customtop
+pycaml.cmi: pycaml.mli
+	$(OCAMLC_CMD) -c $<
 
-pycaml.customtop: byte-code-library
-	cp -f dllpycaml_stubs.so ../../
-	ocamlmktop -o pycaml.customtop pycaml.cma
+pycaml_ml.o: pycaml_ml.c
+	$(OCAMLC_CMD) $<
 
-clean::
-	rm -f pycaml.customtop
-	rm -f *.cm[aiox] *.a
+dllpycaml_stubs.so: pycaml_ml.o
+	$(OCAMLMKLIB_CMD) -o pycaml_stubs $<
 
-distclean:: clean
-	rm -rf ._d
-	rm -f ../../dllpycaml_stubs.so
+pycaml.cma: dllpycaml_stubs.so pycaml.cmi pycaml.cmo
+	$(OCAMLC_CMD) -a -custom -linkall -o pycaml.cma pycaml.cmo -dllib -lpycaml_stubs
 
-depend: # added by julia, undoubtedly wrong
+all.opt: pycaml.cmxa
 
--include $(OCAMLMAKEFILE)
+pycaml.cmx: pycaml.ml pycaml.cmi
+	$(OCAMLOPT_CMD) -c $<
+
+pycaml.cmxa: dllpycaml_stubs.so pycaml.cmi pycaml.cmx
+	$(OCAMLOPT_CMD) -a -o pycaml.cmxa pycaml.cmx -cclib -lpycaml_stubs
+
+clean:
+	rm -f pycaml.mli pycaml.cmi pycaml.cmo pycaml pycaml_ml.o \
+		pycaml.cmx pycaml.cmxa pycaml.cma \
+		libpycaml_stubs.a dllpycaml_stubs.o
+
+distclean: clean
+
+depend:

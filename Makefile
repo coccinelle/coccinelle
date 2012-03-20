@@ -28,7 +28,6 @@ else
 	PYCMA=
 	PYTHON_INSTALL_TARGET=
 endif
-OPTLIBFLAGS=
 
 ifeq ("$(DYNLINK)","no")
 	DYNLINK=
@@ -179,13 +178,13 @@ $(OBJS):$(LIBS) $(LNKLIBS)
 $(OPTOBJS):$(LIBS:.cma=.cmxa) $(LNKOPTLIBS)
 
 $(EXEC): $(LIBS) $(OBJS)
-	$(OCAMLC_CMD) $(BYTECODE_STATIC) -o $@ $(SYSLIBS) $(LNKLIBS) $^
+	$(OCAMLC_CMD) $(BYTECODE_STATIC) -o $@ $(FLAGSLIBS) $(SYSLIBS) $(LNKLIBS) $^
 
 $(EXEC).opt: $(LIBS:.cma=.cmxa) $(OPTOBJS)
-	$(OCAMLOPT_CMD) $(STATIC) -o $@ $(SYSLIBS:.cma=.cmxa) $(OPTLIBFLAGS) $(FLAGSLIB) $(OPTLNKLIBS) $^
+	$(OCAMLOPT_CMD) $(STATIC) -o $@ $(SYSLIBS:.cma=.cmxa) $(FLAGSLIBS) $(OPTLNKLIBS) $^
 
 $(EXEC).top: $(LIBS) $(OBJS) $(LNKLIBS)
-	$(OCAMLMKTOP_CMD) -custom -o $@ $(SYSLIBS) $(LNKLIBS) $^
+	$(OCAMLMKTOP_CMD) -custom -o $@ $(SYSLIBS) $(FLAGSLIBS) $(LNKLIBS) $^
 
 clean::
 	rm -f $(TARGET) $(TARGET).opt $(TARGET).top
