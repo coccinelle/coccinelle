@@ -4,14 +4,20 @@
 , cocciSrc ? { outPath = ./.; revCount = 1234; gitTag = "abcdef"; }
 , testsSrc ? { outPath = ../big-tests; rev = 1234; }
 , officialRelease ? false
-, performRegress ? true
+, performRegress ? false
 }:
+
 
 let
   
   # version information
   version = builtins.readFile ./version;
   versionSuffix = if officialRelease then "" else "pre${toString cocciSrc.revCount}-${cocciSrc.gitTag}";
+
+
+  #
+  # Source release (tarball)
+  #
 
   # The source tarball taken from the repository.
   # The tarball should actually be compilable using
@@ -59,6 +65,10 @@ let
     };
 
 
+  #
+  # Builds for specific configurations
+  #
+
   # builds coccinelle, given a ocaml selector function and an ocaml environment builder.
   # the build procedure itself is largely the same as the coccinelle expression in nixpkgs.
   # the result should be a usable nix-expression
@@ -97,7 +107,6 @@ let
       '';
     };
 
-
   # selects which version of ocaml and ocamlPackages to use in nixpkgs.
   selOcaml312 = pkgs:
     { ocaml = pkgs.ocaml_3_12_1;
@@ -107,7 +116,6 @@ let
   #   { ocaml = pkgs.ocaml_3_10_0;
   #     ocamlPackages = pkgs.ocamlPackages_3_10_0;
   #   };
-
 
   # builds an environment with the ocaml packages needed to build coccinelle
   # the mkList function selects which additional packages to include
@@ -122,6 +130,21 @@ let
   libs_rse  = mkOcamlEnv (libs: with libs; [ ocaml_pcre ocaml_sexplib ocaml_extlib ]);
   libs_se   = mkOcamlEnv (libs: with libs; [ ocaml_sexplib ocaml_extlib ]);
   libs_null = mkOcamlEnv (libs: []);
+
+  # different configurations of coccinelle builds based on different ocamls/available libraries
+  build = mkBuild { name = "coccinelle"; ocamlVer = selOcaml312; mkEnv = libs_full; inclPython = true; };
+  build_rse = mkBuild { name = "coccinelle_config1"; ocamlVer = selOcaml312; mkEnv = libs_rse; inclPython = true; };
+  build_se = mkBuild { name = "coccinelle_config2"; ocamlVer = selOcaml312; mkEnv = libs_se; inclPython = true; };
+  build_null_12 = mkBuild { name = "coccinelle_config3"; ocamlVer = selOcaml312; mkEnv = libs_null; inclPython = true; };
+  # build_null_10 = mkBuild { name = "coccinelle_config4"; ocamlVer = selOcaml310; mkEnv = libs_null; inclPython = true; };
+  build_null_12_np = mkBuild { name = "coccinelle_config5"; ocamlVer = selOcaml312; mkEnv = libs_null; inclPython = false; };
+  # build_null_10_np = mkBuild { name = "coccinelle_config6"; ocamlVer = selOcaml310; mkEnv = libs_null; inclPython = false; };
+  build_rse_np = mkBuild { name = "coccinelle_config7"; ocamlVer = selOcaml312; mkEnv = libs_rse; inclPython = false; };
+
+
+  #
+  # Package builders
+  #
 
   # package builder for Debian-based OS'ses
   makeDeb =
@@ -146,6 +169,15 @@ let
 
   makeDeb_i686 = makeDeb "i686-linux";
   makeDeb_x86_64 = makeDeb "x86_64-linux";
+
+  # different debian builds
+  # deb_ubuntu1010_i386 = makeDeb_i686 (disk: disk.ubuntu1010i386);
+  # deb_ubuntu1010_x86_64 = makeDeb_x86_64 (disk: disk.ubuntu1010x86_64);
+
+
+  #
+  # Testing tasks
+  #
 
   mkTask =
     argsfun: { system ? builtins.currentSystem }:
@@ -198,6 +230,13 @@ let
       schedulingPriority = 5;
     };
   });
+
+  report = mkReport [ build build_rse build_se build_null_12 build_null_12_np build_rse_np ];
+
+
+  #
+  # Regression tests
+  #
 
   # Produces regression test results, which can be positive or
   # negative. The build should succeed regardless of the outcome
@@ -280,27 +319,23 @@ let
       };
     });
 
-in # list of jobs
-rec {
-  inherit tarball;
-
-  # different configurations of coccinelle builds based on different ocamls/available libraries
-  build = mkBuild { name = "coccinelle"; ocamlVer = selOcaml312; mkEnv = libs_full; inclPython = true; };
-  build_rse = mkBuild { name = "coccinelle_config1"; ocamlVer = selOcaml312; mkEnv = libs_rse; inclPython = true; };
-  build_se = mkBuild { name = "coccinelle_config2"; ocamlVer = selOcaml312; mkEnv = libs_se; inclPython = true; };
-  build_null_12 = mkBuild { name = "coccinelle_config3"; ocamlVer = selOcaml312; mkEnv = libs_null; inclPython = true; };
-  # build_null_10 = mkBuild { name = "coccinelle_config4"; ocamlVer = selOcaml310; mkEnv = libs_null; inclPython = true; };
-  build_null_12_np = mkBuild { name = "coccinelle_config5"; ocamlVer = selOcaml312; mkEnv = libs_null; inclPython = false; };
-  # build_null_10_np = mkBuild { name = "coccinelle_config6"; ocamlVer = selOcaml310; mkEnv = libs_null; inclPython = false; };
-  build_rse_np = mkBuild { name = "coccinelle_config7"; ocamlVer = selOcaml312; mkEnv = libs_rse; inclPython = false; };
-
-  report = mkReport [ build build_rse build_se build_null_12 build_null_12_np build_rse_np ];
-
-  # different debian builds
-  # deb_ubuntu1010_i386 = makeDeb_i686 (disk: disk.ubuntu1010i386);
-  # deb_ubuntu1010_x86_64 = makeDeb_x86_64 (disk: disk.ubuntu1010x86_64);
-
-  # extensive tests
   regress = assert performRegress; mkRegress build;
   test = checkRegress regress;
-}
+
+  
+  #
+  # collections of build tasks
+  #
+
+  basicAttrs = {
+    inherit tarball;
+    inherit build build_rse build_se build_null_12 build_null_12_np build_rse_np;
+    inherit report;
+  };
+
+  testAttrs = {
+    inherit regress;
+    inherit test;
+  };
+
+in basicAttrs // (if performRegress then testAttrs else {})
