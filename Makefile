@@ -406,6 +406,8 @@ test: $(TARGET)
 testparsing:
 	./$(TARGET) -D standard.h -parse_c -dir tests/
 
+check:
+	no | $(MAKE) test
 
 
 # -inline 0  to see all the functions in the profile.
