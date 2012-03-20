@@ -52,7 +52,7 @@ dnl  with extra ocaml packages
 AC_DEFUN([AC_COCCI_SET_EXTERNAL_DIR],
 [dnl
   AC_ARG_VAR(COCCI_OCAML_EXTERNAL, [path to extra ocaml packages (default: $1)])
-  AC_SUBST([COCCI_OCAML_EXTERNAL],[$1])
+  AC_SUBST([COCCI_OCAML_EXTERNAL],["$1"])
   AC_MSG_NOTICE([coccinelle may use external ocaml libraries in $COCCI_OCAML_EXTERNAL])
 ])
 
@@ -74,15 +74,15 @@ AC_DEFUN([AC_CHECK_COCCI_EXTPKG],
   dnl  if not, enable_$1 will be "no"
   AS_IF([test "x$enable_$1" != xno],
   [dnl
-    AC_COCCI_OCAMLPKG([GLOBAL_$1], [$1])
+    AC_COCCI_OCAMLPKG([GLOBAL_[]$1], [$1])
 
     AS_IF([test "x$GLOBAL_$1" == xyes],
     [dnl  when the package is available
       AC_SUBST([enable_$1],[yes])
-      AC_COCCI_OCAMLPKGDIR([PATH_$1], [$1])
+      AC_COCCI_OCAMLPKGDIR([PATH_[]$1], [$1])
     ],
     [dnl  when the package is not available
-      AS_IF([test "x$enable_$1" == xyes],
+      AS_IF([test "x$enable_[]$1" == xyes],
       [dnl  when explicitly requested the global version
         AC_MSG_ERROR([OCaml package $1 is not available but requested explicitly])
       ])
@@ -91,46 +91,46 @@ AC_DEFUN([AC_CHECK_COCCI_EXTPKG],
   ])
 
   dnl  check for a local package
-  AS_IF([test "x$enable_$1" == xno],
+  AS_IF([test "x$enable_[]$1" == xno],
   [dnl
     AS_UNSET([pkgdir])
-    pkgdir=$COCCI_OCAML_EXTERNAL/$1/
-    AC_MSG_CHECKING([for a local substitute of $1])
+    pkgdir="$COCCI_OCAML_EXTERNAL/$1/"
+    AC_MSG_CHECKING([for a bundled substitute of $1])
     AS_IF([test -d "$pkgdir"],
     [dnl
       AC_MSG_RESULT([yes])
-      AC_MSG_NOTICE([using local substitute for $1 in $pkgdir])
+      AC_MSG_NOTICE([using bundled substitute for $1 in $pkgdir])
       AC_SUBST([enable_$1], [local])
-      AC_SUBST([PATH_$1], [$pkgdir])
+      AC_SUBST([PATH_$1], ["$pkgdir"])
     ],
-    [AC_MSG_RESULT([no, not found: $pkgdir])])
+    [AC_MSG_RESULT([not available])])
   ])
 
   dnl  additional handling
-  AS_IF([test "x$enable_$1" != xno],
+  AS_IF([test "x$enable_[]$1" != xno],
   [dnl
     AC_SUBST([FEATURE_$1],[1])
-    AC_SUBST([FLAGS_$1],['$(FLAGS_$1)'])
+    AC_SUBST([FLAGS_$1],['$(FLAGS_[]$1)'])
 
     dnl  distinguish global/local
-    AS_IF([test "x$enable_$1" == xlocal],
+    AS_IF([test "x$enable_[]$1" == xlocal],
     [dnl
       AC_SUBST([LOCALLIB_$1],[1])
-      AC_SUBST([MODULES_$1],['$(LOCAL_$1)'])
-      AC_SUBST([MODULESOPT_$1],['$(LOCALOPT_$1)'])
+      AC_SUBST([MODULES_$1],['$(LOCAL_[]$1)'])
+      AC_SUBST([MODULESOPT_$1],['$(LOCALOPT_[]$1)'])
 
       dnl check if the local directory has a Makefile
-      AS_IF([test -f "$PATH_$1/Makefile"],
+      AS_IF([test -f "$PATH_[]$1/Makefile"],
       [dnl
-        AC_SUBST([MAKE_$1],[$PATH_$1])
+        AC_SUBST([MAKE_$1],[$PATH_[]$1])
       ],
       [dnl
         AC_SUBST([MAKE_$1],[ ])
       ])
     ],
     [dnl
-      AC_SUBST([MODULES_$1],['$(GLOBAL_$1)'])
-      AC_SUBST([MODULESOPT_$1],['$(GLOBALOPT_$1)'])
+      AC_SUBST([MODULES_$1],['$(GLOBAL_[]$1)'])
+      AC_SUBST([MODULESOPT_$1],['$(GLOBALOPT_[]$1)'])
     ])
   ])
 ])
@@ -154,7 +154,7 @@ dnl  substitute is available.
 AC_DEFUN([AC_REQ_COCCI_EXTPKG],
 [dnl
   AC_CHECK_COCCI_EXTPKG([$1])
-  AS_IF([test "x$enable_s1" == xno],
+  AS_IF([test "x$enable_[]$1" == xno],
   [dnl
     AC_MSG_ERROR([OCaml package $1 is required. Please make sure it is available.])
   ])
@@ -172,14 +172,14 @@ AC_DEFUN([AC_COCCI_PYVER],
     AS_IF([test "x$PYTHON" == xno -a -n "$with_python" -a "x$with_python" != xyes],
     [dnl  python interpreter not found, but perhaps it was a version
       AC_MSG_NOTICE([$1 is not a found as tool, therefore interpreted as version])
-      AC_SUBST([PYVER],[$1])
+      AC_SUBST([PYVER],["$1"])
     ])
 
     AS_IF([test "x$PYTHON" != xno],
     [dnl  python interpereter found
-      AC_MSG_CHECKING([for python version])
+      AC_MSG_CHECKING([python version])
       PYVER=`$PYTHON -c "import sys; print(sys.version[[:3]])"`
-      AS_IF([test -n "$PYVER"],[AC_MSG_RESULT([$PYVER])],[AC_MSG_RESULT([no])])
+      AS_IF([test -n "$PYVER"],[AC_MSG_RESULT([$PYVER found])],[AC_MSG_RESULT([failed])])
       AC_SUBST([PYVER])
     ])
   ],
@@ -197,6 +197,7 @@ AC_DEFUN([AC_COCCI_CONFVERSION],
 
   AS_IF([test -z "$CONFVERSION" -a -d "./.git"],
   [dnl  git administration found
+    AC_MSG_NOTICE([building a version from a git repository])
     AC_PATH_TOOL([GIT],[git])
     AS_IF([test -n "$GIT"],
     [dnl  ask git
@@ -250,12 +251,12 @@ AC_DEFUN([AC_COCCI_TOOL],
 [dnl
   AC_ARG_VAR([$1], [path to $2])
   AC_ARG_WITH([$2], [AS_HELP_STRING([--with-$2], [whether/which $2 to use (default: auto)])])
-  AC_SUBST([with_$1],[$with_[]AS_TR_SH([$2])])
+  AC_SUBST([with_$1],["$with_[]AS_TR_SH([$2])"])
 
   dnl  explicit tool or command given
-  AS_IF([test -n "$with_$1" -a "x$with_$1" != xno -a "x$with_$1" != xyes],
+  AS_IF([test -n "$with_[]$1" -a "x$with_[]$1" != xno -a "x$with_[]$1" != xyes],
   [dnl  custom $with_$1 given
-    AC_SUBST([$1], ["$with_$1"])
+    AC_SUBST([$1], ["$with_[]$1"])
   ])
 
   dnl  searches for the tool (result either empty or 'no' if not found)
@@ -264,7 +265,9 @@ AC_DEFUN([AC_COCCI_TOOL],
     AC_COCCI_FINDTOOL([$1],[$2])
   ])
 
-  AS_IF([test -z "$1" -o "x$1" == xno],
+  AC_MSG_NOTICE([hoi: [$]$1])
+
+  AS_IF([test -z "[$]$1" -o "x[$]$1" == xno],
   [dnl  command not found
     AS_IF([test "x$with_$1" == xyes],
     [dnl  abort if a command was given explicitly
@@ -274,14 +277,14 @@ AC_DEFUN([AC_COCCI_TOOL],
     AS_IF([test -n "$3"],
     [dnl  try substitute
       AC_MSG_NOTICE([$2 not found. Trying substitute $3.])
-      AC_SUBST([$1],[$3])
+      AC_SUBST([$1],["$3"])
       AC_COCCI_FINDTOOL([$1],[$2])
       AC_SUBST([SUBSTITUTED_$1], [yes])
     ])
   ])
 
   dnl  $1 will always be defined at the exit of this macro
-  AS_IF([test -z "$1"],[AC_SUBST([$1],[no])])
+  AS_IF([test -z "[$]$1"],[AC_SUBST([$1],[no])])
 ])
 
 
@@ -299,10 +302,10 @@ AC_DEFUN([AC_COCCI_RUNTIME_CMD],
       AC_SUBST([RUNTIME_$1_CMD],[$][$1])
     ], [test -n "$with_runtime_[]AS_TR_SH([$2])" -a "x$with_runtime_[]AS_TR_SH([$2])" != xyes],
     [dnl  explicit with_runtime_$2 parameter given: use that as default
-      AC_SUBST([RUNTIME_$1_CMD],[$with_runtime_[]AS_TR_SH([$2])])
+      AC_SUBST([RUNTIME_$1_CMD],["$with_runtime_[]AS_TR_SH([$2])"])
     ],
     [dnl  otherwise, use $2
-      AC_SUBST([RUNTIME_$1_CMD],[$2])
+      AC_SUBST([RUNTIME_$1_CMD],["$2"])
     ])
   ])
 ])

@@ -33,7 +33,7 @@ AC_PROG_MKDIR_P
 AC_PROG_CPP
 
 dnl  pkg config is required
-AC_COCCI_TOOL([PKG_CONFIG],[pkg-config],["$COCCI_SRCDIR/setup/fake-subst.sh pkg-config"])
+AC_COCCI_TOOL([PKG_CONFIG],[pkg-config],[$COCCI_SRCDIR/setup/fake-subst.sh pkg-config])
 AS_IF([test "x$PKG_CONFIG" == xno],
 [dnl
   AC_MSG_ERROR([A suitable pkg-config could not be found.])
@@ -42,7 +42,7 @@ AS_IF([test "x$PKG_CONFIG" == xno],
 dnl  ocaml compile
 AC_PROG_OCAML
 AC_CHECK_OCAMLVERSION([3.11])
-AS_IF([test "x$OCAMLC" == xno -o "xOCAMLDEP" == xno -o "xOCAMLDOC" == xno -o "xOCAMLMKLIB" == xno],
+AS_IF([test "x$OCAMLC" == xno -o "x$OCAMLDEP" == xno -o "x$OCAMLDOC" == xno -o "x$OCAMLMKLIB" == xno],
 [dnl
   AC_MSG_ERROR([You must install the OCaml compiler])
 ])
@@ -51,7 +51,7 @@ dnl  ocaml tools
 AC_PROG_CAMLP4
 AC_COCCI_TOOL([OCAMLLEX],[ocamllex],[])
 AC_COCCI_TOOL([OCAMLYACC],[ocamlyacc],[])
-AC_COCCI_TOOL([OCAMLFIND],[ocamlfind],["$COCCI_SRCDIR/setup/fake-subst.sh ocamlfind"])
+AC_COCCI_TOOL([OCAMLFIND],[ocamlfind],[$COCCI_SRCDIR/setup/fake-subst.sh ocamlfind])
 
 dnl  enforce ocaml tool requirements
 AS_IF([test "x$OCAMLLEX" == xno],
@@ -130,7 +130,7 @@ AC_MSG_NOTICE([verifying optional features])
 dnl  menhir handling
 dnl  variables:
 dnl    with_menhir: whether or not menhir must be used
-AC_COCCI_TOOL([MENHIR],[menhir],["$COCCI_SRCDIR/setup/fake-menhir.sh menhir"])
+AC_COCCI_TOOL([MENHIR],[menhir],[$COCCI_SRCDIR/setup/fake-menhir.sh menhir])
 AS_IF([test "x$SUBSTITUTED_MENHIR" == xyes],
 [dnl
   AC_MSG_NOTICE([pregenerated parsers will be required as substitute for Menhir])

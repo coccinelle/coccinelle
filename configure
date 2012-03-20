@@ -2039,7 +2039,9 @@ $as_echo "$as_me: configuring coccinelle $COCCI_VERSION in $COCCI_SRCDIR" >&6;}
 $as_echo "$as_me: determining version suffix" >&6;}
 
   if test -z "$CONFVERSION" -a -d "./.git"; then :
-      if test -n "$ac_tool_prefix"; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: building a version from a git repository" >&5
+$as_echo "$as_me: building a version from a git repository" >&6;}
+    if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}git", so it can be a program name with args.
 set dummy ${ac_tool_prefix}git; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
@@ -3374,7 +3376,7 @@ if test "${with_pkg_config+set}" = set; then :
   withval=$with_pkg_config;
 fi
 
-  with_PKG_CONFIG=$with_pkg_config
+  with_PKG_CONFIG="$with_pkg_config"
 
 
     if test -n "$with_PKG_CONFIG" -a "x$with_PKG_CONFIG" != xno -a "x$with_PKG_CONFIG" != xyes; then :
@@ -3915,15 +3917,18 @@ fi
 
 fi
 
-  if test -z "PKG_CONFIG" -o "xPKG_CONFIG" == xno; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: hoi: $PKG_CONFIG" >&5
+$as_echo "$as_me: hoi: $PKG_CONFIG" >&6;}
+
+  if test -z "$PKG_CONFIG" -o "x$PKG_CONFIG" == xno; then :
       if test "x$with_PKG_CONFIG" == xyes; then :
         as_fn_error $? "--with=pkg-config is given explicitly but not found" "$LINENO" 5
 
 fi
 
-    if test -n ""$COCCI_SRCDIR/setup/fake-subst.sh pkg-config""; then :
-        { $as_echo "$as_me:${as_lineno-$LINENO}: pkg-config not found. Trying substitute \"$COCCI_SRCDIR/setup/fake-subst.sh pkg-config\"." >&5
-$as_echo "$as_me: pkg-config not found. Trying substitute \"$COCCI_SRCDIR/setup/fake-subst.sh pkg-config\"." >&6;}
+    if test -n "$COCCI_SRCDIR/setup/fake-subst.sh pkg-config"; then :
+        { $as_echo "$as_me:${as_lineno-$LINENO}: pkg-config not found. Trying substitute $COCCI_SRCDIR/setup/fake-subst.sh pkg-config." >&5
+$as_echo "$as_me: pkg-config not found. Trying substitute $COCCI_SRCDIR/setup/fake-subst.sh pkg-config." >&6;}
       PKG_CONFIG="$COCCI_SRCDIR/setup/fake-subst.sh pkg-config"
 
         if test "xpkg-config" == xpkg-config -a "xPKG_CONFIG" == xPKG_CONFIG; then :
@@ -4461,7 +4466,7 @@ fi
 
 fi
 
-    if test -z "PKG_CONFIG"; then :
+    if test -z "$PKG_CONFIG"; then :
   PKG_CONFIG=no
 
 fi
@@ -6470,7 +6475,7 @@ if test "${with_ocamllex+set}" = set; then :
   withval=$with_ocamllex;
 fi
 
-  with_OCAMLLEX=$with_ocamllex
+  with_OCAMLLEX="$with_ocamllex"
 
 
     if test -n "$with_OCAMLLEX" -a "x$with_OCAMLLEX" != xno -a "x$with_OCAMLLEX" != xyes; then :
@@ -7011,7 +7016,10 @@ fi
 
 fi
 
-  if test -z "OCAMLLEX" -o "xOCAMLLEX" == xno; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: hoi: $OCAMLLEX" >&5
+$as_echo "$as_me: hoi: $OCAMLLEX" >&6;}
+
+  if test -z "$OCAMLLEX" -o "x$OCAMLLEX" == xno; then :
       if test "x$with_OCAMLLEX" == xyes; then :
         as_fn_error $? "--with=ocamllex is given explicitly but not found" "$LINENO" 5
 
@@ -7020,6 +7028,7 @@ fi
     if test -n ""; then :
         { $as_echo "$as_me:${as_lineno-$LINENO}: ocamllex not found. Trying substitute ." >&5
 $as_echo "$as_me: ocamllex not found. Trying substitute ." >&6;}
+      OCAMLLEX=""
 
         if test "xocamllex" == xpkg-config -a "xOCAMLLEX" == xPKG_CONFIG; then :
 
@@ -7556,7 +7565,7 @@ fi
 
 fi
 
-    if test -z "OCAMLLEX"; then :
+    if test -z "$OCAMLLEX"; then :
   OCAMLLEX=no
 
 fi
@@ -7568,7 +7577,7 @@ if test "${with_ocamlyacc+set}" = set; then :
   withval=$with_ocamlyacc;
 fi
 
-  with_OCAMLYACC=$with_ocamlyacc
+  with_OCAMLYACC="$with_ocamlyacc"
 
 
     if test -n "$with_OCAMLYACC" -a "x$with_OCAMLYACC" != xno -a "x$with_OCAMLYACC" != xyes; then :
@@ -8109,7 +8118,10 @@ fi
 
 fi
 
-  if test -z "OCAMLYACC" -o "xOCAMLYACC" == xno; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: hoi: $OCAMLYACC" >&5
+$as_echo "$as_me: hoi: $OCAMLYACC" >&6;}
+
+  if test -z "$OCAMLYACC" -o "x$OCAMLYACC" == xno; then :
       if test "x$with_OCAMLYACC" == xyes; then :
         as_fn_error $? "--with=ocamlyacc is given explicitly but not found" "$LINENO" 5
 
@@ -8118,6 +8130,7 @@ fi
     if test -n ""; then :
         { $as_echo "$as_me:${as_lineno-$LINENO}: ocamlyacc not found. Trying substitute ." >&5
 $as_echo "$as_me: ocamlyacc not found. Trying substitute ." >&6;}
+      OCAMLYACC=""
 
         if test "xocamlyacc" == xpkg-config -a "xOCAMLYACC" == xPKG_CONFIG; then :
 
@@ -8654,7 +8667,7 @@ fi
 
 fi
 
-    if test -z "OCAMLYACC"; then :
+    if test -z "$OCAMLYACC"; then :
   OCAMLYACC=no
 
 fi
@@ -8666,7 +8679,7 @@ if test "${with_ocamlfind+set}" = set; then :
   withval=$with_ocamlfind;
 fi
 
-  with_OCAMLFIND=$with_ocamlfind
+  with_OCAMLFIND="$with_ocamlfind"
 
 
     if test -n "$with_OCAMLFIND" -a "x$with_OCAMLFIND" != xno -a "x$with_OCAMLFIND" != xyes; then :
@@ -9207,15 +9220,18 @@ fi
 
 fi
 
-  if test -z "OCAMLFIND" -o "xOCAMLFIND" == xno; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: hoi: $OCAMLFIND" >&5
+$as_echo "$as_me: hoi: $OCAMLFIND" >&6;}
+
+  if test -z "$OCAMLFIND" -o "x$OCAMLFIND" == xno; then :
       if test "x$with_OCAMLFIND" == xyes; then :
         as_fn_error $? "--with=ocamlfind is given explicitly but not found" "$LINENO" 5
 
 fi
 
-    if test -n ""$COCCI_SRCDIR/setup/fake-subst.sh ocamlfind""; then :
-        { $as_echo "$as_me:${as_lineno-$LINENO}: ocamlfind not found. Trying substitute \"$COCCI_SRCDIR/setup/fake-subst.sh ocamlfind\"." >&5
-$as_echo "$as_me: ocamlfind not found. Trying substitute \"$COCCI_SRCDIR/setup/fake-subst.sh ocamlfind\"." >&6;}
+    if test -n "$COCCI_SRCDIR/setup/fake-subst.sh ocamlfind"; then :
+        { $as_echo "$as_me:${as_lineno-$LINENO}: ocamlfind not found. Trying substitute $COCCI_SRCDIR/setup/fake-subst.sh ocamlfind." >&5
+$as_echo "$as_me: ocamlfind not found. Trying substitute $COCCI_SRCDIR/setup/fake-subst.sh ocamlfind." >&6;}
       OCAMLFIND="$COCCI_SRCDIR/setup/fake-subst.sh ocamlfind"
 
         if test "xocamlfind" == xpkg-config -a "xOCAMLFIND" == xPKG_CONFIG; then :
@@ -9753,7 +9769,7 @@ fi
 
 fi
 
-    if test -z "OCAMLFIND"; then :
+    if test -z "$OCAMLFIND"; then :
   OCAMLFIND=no
 
 fi
@@ -9788,11 +9804,11 @@ fi
 
 
 elif test -n "$with_runtime_ocamlfind" -a "x$with_runtime_ocamlfind" != xyes; then :
-        RUNTIME_OCAMLFIND_CMD=$with_runtime_ocamlfind
+        RUNTIME_OCAMLFIND_CMD="$with_runtime_ocamlfind"
 
 
 else
-        RUNTIME_OCAMLFIND_CMD=ocamlfind
+        RUNTIME_OCAMLFIND_CMD="ocamlfind"
 
 
 fi
@@ -9813,11 +9829,11 @@ fi
 
 
 elif test -n "$with_runtime_ocamlc" -a "x$with_runtime_ocamlc" != xyes; then :
-        RUNTIME_OCAMLC_CMD=$with_runtime_ocamlc
+        RUNTIME_OCAMLC_CMD="$with_runtime_ocamlc"
 
 
 else
-        RUNTIME_OCAMLC_CMD=ocamlc
+        RUNTIME_OCAMLC_CMD="ocamlc"
 
 
 fi
@@ -9838,11 +9854,11 @@ fi
 
 
 elif test -n "$with_runtime_ocamlopt" -a "x$with_runtime_ocamlopt" != xyes; then :
-        RUNTIME_OCAMLOPT_CMD=$with_runtime_ocamlopt
+        RUNTIME_OCAMLOPT_CMD="$with_runtime_ocamlopt"
 
 
 else
-        RUNTIME_OCAMLOPT_CMD=ocamlopt
+        RUNTIME_OCAMLOPT_CMD="ocamlopt"
 
 
 fi
@@ -9863,11 +9879,11 @@ fi
 
 
 elif test -n "$with_runtime_ocamldep" -a "x$with_runtime_ocamldep" != xyes; then :
-        RUNTIME_OCAMLDEP_CMD=$with_runtime_ocamldep
+        RUNTIME_OCAMLDEP_CMD="$with_runtime_ocamldep"
 
 
 else
-        RUNTIME_OCAMLDEP_CMD=ocamldep
+        RUNTIME_OCAMLDEP_CMD="ocamldep"
 
 
 fi
@@ -9888,11 +9904,11 @@ fi
 
 
 elif test -n "$with_runtime_camlp4" -a "x$with_runtime_camlp4" != xyes; then :
-        RUNTIME_CAMLP4_CMD=$with_runtime_camlp4
+        RUNTIME_CAMLP4_CMD="$with_runtime_camlp4"
 
 
 else
-        RUNTIME_CAMLP4_CMD=camlp4
+        RUNTIME_CAMLP4_CMD="camlp4"
 
 
 fi
@@ -9913,11 +9929,11 @@ fi
 
 
 elif test -n "$with_runtime_camlp4o" -a "x$with_runtime_camlp4o" != xyes; then :
-        RUNTIME_CAMLP4O_CMD=$with_runtime_camlp4o
+        RUNTIME_CAMLP4O_CMD="$with_runtime_camlp4o"
 
 
 else
-        RUNTIME_CAMLP4O_CMD=camlp4o
+        RUNTIME_CAMLP4O_CMD="camlp4o"
 
 
 fi
@@ -10017,7 +10033,7 @@ rm -f confcache
 $as_echo "$as_me: verifying basic ocaml modules" >&6;}
 
 
-  COCCI_OCAML_EXTERNAL=$COCCI_SRCDIR/external
+  COCCI_OCAML_EXTERNAL="$COCCI_SRCDIR/external"
 
   { $as_echo "$as_me:${as_lineno-$LINENO}: coccinelle may use external ocaml libraries in $COCCI_OCAML_EXTERNAL" >&5
 $as_echo "$as_me: coccinelle may use external ocaml libraries in $COCCI_OCAML_EXTERNAL" >&6;}
@@ -10327,22 +10343,22 @@ fi
 
     if test "x$enable_sexplib" == xno; then :
       { pkgdir=; unset pkgdir;}
-    pkgdir=$COCCI_OCAML_EXTERNAL/sexplib/
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for a local substitute of sexplib" >&5
-$as_echo_n "checking for a local substitute of sexplib... " >&6; }
+    pkgdir="$COCCI_OCAML_EXTERNAL/sexplib/"
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for a bundled substitute of sexplib" >&5
+$as_echo_n "checking for a bundled substitute of sexplib... " >&6; }
     if test -d "$pkgdir"; then :
         { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
-      { $as_echo "$as_me:${as_lineno-$LINENO}: using local substitute for sexplib in $pkgdir" >&5
-$as_echo "$as_me: using local substitute for sexplib in $pkgdir" >&6;}
+      { $as_echo "$as_me:${as_lineno-$LINENO}: using bundled substitute for sexplib in $pkgdir" >&5
+$as_echo "$as_me: using bundled substitute for sexplib in $pkgdir" >&6;}
       enable_sexplib=local
 
-      PATH_sexplib=$pkgdir
+      PATH_sexplib="$pkgdir"
 
 
 else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no, not found: $pkgdir" >&5
-$as_echo "no, not found: $pkgdir" >&6; }
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: not available" >&5
+$as_echo "not available" >&6; }
 fi
 
 fi
@@ -10381,7 +10397,7 @@ fi
 
 fi
 
-  if test "x$enable_s1" == xno; then :
+  if test "x$enable_sexplib" == xno; then :
       as_fn_error $? "OCaml package sexplib is required. Please make sure it is available." "$LINENO" 5
 
 fi
@@ -10442,22 +10458,22 @@ fi
 
     if test "x$enable_menhirLib" == xno; then :
       { pkgdir=; unset pkgdir;}
-    pkgdir=$COCCI_OCAML_EXTERNAL/menhirLib/
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for a local substitute of menhirLib" >&5
-$as_echo_n "checking for a local substitute of menhirLib... " >&6; }
+    pkgdir="$COCCI_OCAML_EXTERNAL/menhirLib/"
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for a bundled substitute of menhirLib" >&5
+$as_echo_n "checking for a bundled substitute of menhirLib... " >&6; }
     if test -d "$pkgdir"; then :
         { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
-      { $as_echo "$as_me:${as_lineno-$LINENO}: using local substitute for menhirLib in $pkgdir" >&5
-$as_echo "$as_me: using local substitute for menhirLib in $pkgdir" >&6;}
+      { $as_echo "$as_me:${as_lineno-$LINENO}: using bundled substitute for menhirLib in $pkgdir" >&5
+$as_echo "$as_me: using bundled substitute for menhirLib in $pkgdir" >&6;}
       enable_menhirLib=local
 
-      PATH_menhirLib=$pkgdir
+      PATH_menhirLib="$pkgdir"
 
 
 else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no, not found: $pkgdir" >&5
-$as_echo "no, not found: $pkgdir" >&6; }
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: not available" >&5
+$as_echo "not available" >&6; }
 fi
 
 fi
@@ -10496,7 +10512,7 @@ fi
 
 fi
 
-  if test "x$enable_s1" == xno; then :
+  if test "x$enable_menhirLib" == xno; then :
       as_fn_error $? "OCaml package menhirLib is required. Please make sure it is available." "$LINENO" 5
 
 fi
@@ -10602,7 +10618,7 @@ if test "${with_menhir+set}" = set; then :
   withval=$with_menhir;
 fi
 
-  with_MENHIR=$with_menhir
+  with_MENHIR="$with_menhir"
 
 
     if test -n "$with_MENHIR" -a "x$with_MENHIR" != xno -a "x$with_MENHIR" != xyes; then :
@@ -11143,15 +11159,18 @@ fi
 
 fi
 
-  if test -z "MENHIR" -o "xMENHIR" == xno; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: hoi: $MENHIR" >&5
+$as_echo "$as_me: hoi: $MENHIR" >&6;}
+
+  if test -z "$MENHIR" -o "x$MENHIR" == xno; then :
       if test "x$with_MENHIR" == xyes; then :
         as_fn_error $? "--with=menhir is given explicitly but not found" "$LINENO" 5
 
 fi
 
-    if test -n ""$COCCI_SRCDIR/setup/fake-menhir.sh menhir""; then :
-        { $as_echo "$as_me:${as_lineno-$LINENO}: menhir not found. Trying substitute \"$COCCI_SRCDIR/setup/fake-menhir.sh menhir\"." >&5
-$as_echo "$as_me: menhir not found. Trying substitute \"$COCCI_SRCDIR/setup/fake-menhir.sh menhir\"." >&6;}
+    if test -n "$COCCI_SRCDIR/setup/fake-menhir.sh menhir"; then :
+        { $as_echo "$as_me:${as_lineno-$LINENO}: menhir not found. Trying substitute $COCCI_SRCDIR/setup/fake-menhir.sh menhir." >&5
+$as_echo "$as_me: menhir not found. Trying substitute $COCCI_SRCDIR/setup/fake-menhir.sh menhir." >&6;}
       MENHIR="$COCCI_SRCDIR/setup/fake-menhir.sh menhir"
 
         if test "xmenhir" == xpkg-config -a "xMENHIR" == xPKG_CONFIG; then :
@@ -11689,7 +11708,7 @@ fi
 
 fi
 
-    if test -z "MENHIR"; then :
+    if test -z "$MENHIR"; then :
   MENHIR=no
 
 fi
@@ -11790,7 +11809,7 @@ if test "${with_python+set}" = set; then :
   withval=$with_python;
 fi
 
-  with_PYTHON=$with_python
+  with_PYTHON="$with_python"
 
 
     if test -n "$with_PYTHON" -a "x$with_PYTHON" != xno -a "x$with_PYTHON" != xyes; then :
@@ -12331,7 +12350,10 @@ fi
 
 fi
 
-  if test -z "PYTHON" -o "xPYTHON" == xno; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: hoi: $PYTHON" >&5
+$as_echo "$as_me: hoi: $PYTHON" >&6;}
+
+  if test -z "$PYTHON" -o "x$PYTHON" == xno; then :
       if test "x$with_PYTHON" == xyes; then :
         as_fn_error $? "--with=python is given explicitly but not found" "$LINENO" 5
 
@@ -12340,6 +12362,7 @@ fi
     if test -n ""; then :
         { $as_echo "$as_me:${as_lineno-$LINENO}: python not found. Trying substitute ." >&5
 $as_echo "$as_me: python not found. Trying substitute ." >&6;}
+      PYTHON=""
 
         if test "xpython" == xpkg-config -a "xPYTHON" == xPKG_CONFIG; then :
 
@@ -12876,7 +12899,7 @@ fi
 
 fi
 
-    if test -z "PYTHON"; then :
+    if test -z "$PYTHON"; then :
   PYTHON=no
 
 fi
@@ -12885,20 +12908,21 @@ fi
     if test "x$PYTHON" == xno -a -n "$with_python" -a "x$with_python" != xyes; then :
         { $as_echo "$as_me:${as_lineno-$LINENO}:  is not a found as tool, therefore interpreted as version" >&5
 $as_echo "$as_me:  is not a found as tool, therefore interpreted as version" >&6;}
+      PYVER=""
 
 
 fi
 
     if test "x$PYTHON" != xno; then :
-        { $as_echo "$as_me:${as_lineno-$LINENO}: checking for python version" >&5
-$as_echo_n "checking for python version... " >&6; }
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking python version" >&5
+$as_echo_n "checking python version... " >&6; }
       PYVER=`$PYTHON -c "import sys; print(sys.version[:3])"`
       if test -n "$PYVER"; then :
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $PYVER" >&5
-$as_echo "$PYVER" >&6; }
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $PYVER found" >&5
+$as_echo "$PYVER found" >&6; }
 else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: failed" >&5
+$as_echo "failed" >&6; }
 fi
 
 
@@ -13148,22 +13172,22 @@ fi
 
     if test "x$enable_pycaml" == xno; then :
       { pkgdir=; unset pkgdir;}
-    pkgdir=$COCCI_OCAML_EXTERNAL/pycaml/
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for a local substitute of pycaml" >&5
-$as_echo_n "checking for a local substitute of pycaml... " >&6; }
+    pkgdir="$COCCI_OCAML_EXTERNAL/pycaml/"
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for a bundled substitute of pycaml" >&5
+$as_echo_n "checking for a bundled substitute of pycaml... " >&6; }
     if test -d "$pkgdir"; then :
         { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
-      { $as_echo "$as_me:${as_lineno-$LINENO}: using local substitute for pycaml in $pkgdir" >&5
-$as_echo "$as_me: using local substitute for pycaml in $pkgdir" >&6;}
+      { $as_echo "$as_me:${as_lineno-$LINENO}: using bundled substitute for pycaml in $pkgdir" >&5
+$as_echo "$as_me: using bundled substitute for pycaml in $pkgdir" >&6;}
       enable_pycaml=local
 
-      PATH_pycaml=$pkgdir
+      PATH_pycaml="$pkgdir"
 
 
 else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no, not found: $pkgdir" >&5
-$as_echo "no, not found: $pkgdir" >&6; }
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: not available" >&5
+$as_echo "not available" >&6; }
 fi
 
 fi
@@ -13202,7 +13226,7 @@ fi
 
 fi
 
-  if test "x$enable_s1" == xno; then :
+  if test "x$enable_pycaml" == xno; then :
       as_fn_error $? "OCaml package pycaml is required. Please make sure it is available." "$LINENO" 5
 
 fi
@@ -13359,22 +13383,22 @@ fi
 
     if test "x$enable_pcre" == xno; then :
       { pkgdir=; unset pkgdir;}
-    pkgdir=$COCCI_OCAML_EXTERNAL/pcre/
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for a local substitute of pcre" >&5
-$as_echo_n "checking for a local substitute of pcre... " >&6; }
+    pkgdir="$COCCI_OCAML_EXTERNAL/pcre/"
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for a bundled substitute of pcre" >&5
+$as_echo_n "checking for a bundled substitute of pcre... " >&6; }
     if test -d "$pkgdir"; then :
         { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
-      { $as_echo "$as_me:${as_lineno-$LINENO}: using local substitute for pcre in $pkgdir" >&5
-$as_echo "$as_me: using local substitute for pcre in $pkgdir" >&6;}
+      { $as_echo "$as_me:${as_lineno-$LINENO}: using bundled substitute for pcre in $pkgdir" >&5
+$as_echo "$as_me: using bundled substitute for pcre in $pkgdir" >&6;}
       enable_pcre=local
 
-      PATH_pcre=$pkgdir
+      PATH_pcre="$pkgdir"
 
 
 else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no, not found: $pkgdir" >&5
-$as_echo "no, not found: $pkgdir" >&6; }
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: not available" >&5
+$as_echo "not available" >&6; }
 fi
 
 fi
