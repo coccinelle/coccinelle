@@ -235,7 +235,7 @@ let t_to_s = function
 
 let delete_previous_result_files infile =
   [Ok;SpatchOK;Failed] +> List.iter (fun kind ->
-    Common.command2 ("rm -f " ^ infile ^ t_to_s kind)
+    Common.remove_file (infile ^ t_to_s kind)
   )
 
 (* quite similar to compare_with_expected  below *)

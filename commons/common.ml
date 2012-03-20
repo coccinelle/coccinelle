@@ -3581,6 +3581,11 @@ let timeout_function_opt timeoutvalopt f =
   | Some x -> timeout_function x f
 
 
+(* removes only if the file does not exists *)
+let remove_file path =
+  if Sys.file_exists path
+  then Sys.remove path
+  else ()
 
 (* creation of tmp files, a la gcc *)
 
@@ -3599,7 +3604,7 @@ let erase_temp_files () =
   if not !save_tmp_files then begin
     !_temp_files_created +> List.iter (fun s ->
       (* pr2 ("erasing: " ^ s); *)
-      command2 ("rm -f " ^ s)
+      remove_file s
     );
     _temp_files_created := []
   end
@@ -3608,7 +3613,7 @@ let erase_this_temp_file f =
   if not !save_tmp_files then begin
     _temp_files_created :=
       List.filter (function x -> not (x =$= f)) !_temp_files_created;
-    command2 ("rm -f " ^ f)
+    remove_file f
   end
 
 

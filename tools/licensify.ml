@@ -52,8 +52,7 @@ let do_one file =
   Printf.fprintf o "\n";
   close_out o;
   let _ = Sys.command (Printf.sprintf "cat %s >> %s" tmpfl file) in
-  let _ = Sys.command (Printf.sprintf "rm -f %s" tmpfl) in
-  ()
+  Sys.remove tmpfl
 
 (* pad's modif *)
 let (+>) o f = f o
