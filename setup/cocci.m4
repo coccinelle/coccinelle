@@ -265,8 +265,6 @@ AC_DEFUN([AC_COCCI_TOOL],
     AC_COCCI_FINDTOOL([$1],[$2])
   ])
 
-  AC_MSG_NOTICE([hoi: [$]$1])
-
   AS_IF([test -z "[$]$1" -o "x[$]$1" == xno],
   [dnl  command not found
     AS_IF([test "x$with_$1" == xyes],
@@ -307,5 +305,18 @@ AC_DEFUN([AC_COCCI_RUNTIME_CMD],
     [dnl  otherwise, use $2
       AC_SUBST([RUNTIME_$1_CMD],["$2"])
     ])
+  ])
+])
+
+
+AC_DEFUN([AC_COCCI_YESNO],
+[dnl
+  AC_PATH_TOOL([YES], [yes])
+  AS_IF([test -n "$YES" -a "x$YES" != xno],
+  [dnl
+    AC_SUBST([YES_N_CMD],["$YES n"])
+  ],
+  [dnl
+    AC_SUBST([YES_N_CMD],["echo -e 'n\nn'"])
   ])
 ])

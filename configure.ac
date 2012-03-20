@@ -31,6 +31,7 @@ AC_MSG_NOTICE([verifying basic tools])
 AC_PROG_INSTALL
 AC_PROG_MKDIR_P
 AC_PROG_CPP
+AC_COCCI_YESNO
 
 dnl  pkg config is required
 AC_COCCI_TOOL([PKG_CONFIG],[pkg-config],[$COCCI_SRCDIR/setup/fake-subst.sh pkg-config])

@@ -406,7 +406,7 @@ testparsing:
 	./$(TARGET) -D standard.h -parse_c -dir tests/
 
 check:
-	no | $(MAKE) test
+	$(YES_N_CMD) | ./$(TARGET) -testall --iso-file standard.iso --macro-file-builtins standard.h
 
 
 # -inline 0  to see all the functions in the profile.

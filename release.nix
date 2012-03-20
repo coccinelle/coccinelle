@@ -90,13 +90,6 @@ let
 
       configureFlags = lib.optional (!inclPython) "--without-python";
       makeFlags = "world";
-
-      # run checking after installation.
-      # also, the test phase may require a yes/no input.
-      doCheck = false;
-      postInstall = ''
-        make check
-      '';
     };
 
   # selects which version of ocaml and ocamlPackages to use in nixpkgs.
