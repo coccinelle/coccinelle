@@ -627,6 +627,7 @@ PACKAGE_URL='http://coccinelle.lip6.fr/'
 ac_unique_file="cocci.ml"
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
+MAKETARGET_ALL
 FEATURE_PYTHON
 SHAREDIR
 FEATURE_TARZAN
@@ -738,8 +739,6 @@ OCAMLLEXDOTOPT
 OCAMLLEX
 with_PKG_CONFIG
 PKG_CONFIG
-YES_N_CMD
-YES
 CPP
 OBJEXT
 EXEEXT
@@ -3370,114 +3369,6 @@ ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
 ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
-  if test -n "$ac_tool_prefix"; then
-  # Extract the first word of "${ac_tool_prefix}yes", so it can be a program name with args.
-set dummy ${ac_tool_prefix}yes; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_path_YES+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  case $YES in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_YES="$YES" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
-    ac_cv_path_YES="$as_dir/$ac_word$ac_exec_ext"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-YES=$ac_cv_path_YES
-if test -n "$YES"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $YES" >&5
-$as_echo "$YES" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-
-fi
-if test -z "$ac_cv_path_YES"; then
-  ac_pt_YES=$YES
-  # Extract the first word of "yes", so it can be a program name with args.
-set dummy yes; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_path_ac_pt_YES+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  case $ac_pt_YES in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_ac_pt_YES="$ac_pt_YES" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
-    ac_cv_path_ac_pt_YES="$as_dir/$ac_word$ac_exec_ext"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-ac_pt_YES=$ac_cv_path_ac_pt_YES
-if test -n "$ac_pt_YES"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_pt_YES" >&5
-$as_echo "$ac_pt_YES" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-  if test "x$ac_pt_YES" = x; then
-    YES=""
-  else
-    case $cross_compiling:$ac_tool_warned in
-yes:)
-{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using cross tools not prefixed with host triplet" >&5
-$as_echo "$as_me: WARNING: using cross tools not prefixed with host triplet" >&2;}
-ac_tool_warned=yes ;;
-esac
-    YES=$ac_pt_YES
-  fi
-else
-  YES="$ac_cv_path_YES"
-fi
-
-  if test -n "$YES" -a "x$YES" != xno; then :
-      YES_N_CMD="$YES n"
-
-
-else
-      YES_N_CMD="echo -e 'n\nn'"
-
-
-fi
-
 
 
 
@@ -4026,9 +3917,6 @@ fi
 
 
 fi
-
-  { $as_echo "$as_me:${as_lineno-$LINENO}: hoi: $PKG_CONFIG" >&5
-$as_echo "$as_me: hoi: $PKG_CONFIG" >&6;}
 
   if test -z "$PKG_CONFIG" -o "x$PKG_CONFIG" == xno; then :
       if test "x$with_PKG_CONFIG" == xyes; then :
@@ -7126,9 +7014,6 @@ fi
 
 fi
 
-  { $as_echo "$as_me:${as_lineno-$LINENO}: hoi: $OCAMLLEX" >&5
-$as_echo "$as_me: hoi: $OCAMLLEX" >&6;}
-
   if test -z "$OCAMLLEX" -o "x$OCAMLLEX" == xno; then :
       if test "x$with_OCAMLLEX" == xyes; then :
         as_fn_error $? "--with=ocamllex is given explicitly but not found" "$LINENO" 5
@@ -8228,9 +8113,6 @@ fi
 
 fi
 
-  { $as_echo "$as_me:${as_lineno-$LINENO}: hoi: $OCAMLYACC" >&5
-$as_echo "$as_me: hoi: $OCAMLYACC" >&6;}
-
   if test -z "$OCAMLYACC" -o "x$OCAMLYACC" == xno; then :
       if test "x$with_OCAMLYACC" == xyes; then :
         as_fn_error $? "--with=ocamlyacc is given explicitly but not found" "$LINENO" 5
@@ -9329,9 +9211,6 @@ fi
 
 
 fi
-
-  { $as_echo "$as_me:${as_lineno-$LINENO}: hoi: $OCAMLFIND" >&5
-$as_echo "$as_me: hoi: $OCAMLFIND" >&6;}
 
   if test -z "$OCAMLFIND" -o "x$OCAMLFIND" == xno; then :
       if test "x$with_OCAMLFIND" == xyes; then :
@@ -11269,9 +11148,6 @@ fi
 
 fi
 
-  { $as_echo "$as_me:${as_lineno-$LINENO}: hoi: $MENHIR" >&5
-$as_echo "$as_me: hoi: $MENHIR" >&6;}
-
   if test -z "$MENHIR" -o "x$MENHIR" == xno; then :
       if test "x$with_MENHIR" == xyes; then :
         as_fn_error $? "--with=menhir is given explicitly but not found" "$LINENO" 5
@@ -12459,9 +12335,6 @@ fi
 
 
 fi
-
-  { $as_echo "$as_me:${as_lineno-$LINENO}: hoi: $PYTHON" >&5
-$as_echo "$as_me: hoi: $PYTHON" >&6;}
 
   if test -z "$PYTHON" -o "x$PYTHON" == xno; then :
       if test "x$with_PYTHON" == xyes; then :
@@ -13680,6 +13553,18 @@ if test "x$enable_python" != xno; then :
 
 else
     FEATURE_PYTHON=0
+
+
+fi
+
+
+
+if test "x$OCAMLOPT" != xno; then :
+    MAKETARGET_ALL=world
+
+
+else
+    MAKETARGET_ALL=byte-only
 
 
 fi

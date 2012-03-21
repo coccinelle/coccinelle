@@ -120,21 +120,30 @@ BYTECODE_STATIC=-custom
 .PHONY:: all all.opt byte opt top clean distclean configure
 .PHONY:: $(MAKESUBDIRS) $(MAKESUBDIRS:%=%.opt) subdirs subdirs.opt
 
-all: Makefile.config byte preinstall
+all: $(TARGET_ALL)
 
 opt all.opt: opt-compil preinstall
 
-world: preinstall
+byte-only: Makefile.config byte preinstall
+	@echo successfully build $(EXEC)
+
+world: Makefile.config
 	$(MAKE) byte
 	$(MAKE) opt-compil
+	$(MAKE) preinstall
+	@echo successfully build $(EXEC) and $(EXEC).opt
 
 byte: .depend version.ml
 	$(MAKE) subdirs
 	$(MAKE) $(EXEC)
+	@echo the compilation of $(EXEC) finished
+	@echo $(EXEC) can be installed or used
 
 opt-compil: .depend version.ml
 	$(MAKE) subdirs.opt
 	$(MAKE) $(EXEC).opt
+	@echo the compilation of $(EXEC).opt finished
+	@echo $(EXEC).opt can be installed or used
 
 top: $(EXEC).top
 
@@ -405,8 +414,9 @@ test: $(TARGET)
 testparsing:
 	./$(TARGET) -D standard.h -parse_c -dir tests/
 
+# todo: add pycaml to the dynamic linker path if it is found
 check:
-	$(YES_N_CMD) | ./$(TARGET) -testall --iso-file standard.iso --macro-file-builtins standard.h
+	./$(TARGET) -testall -allow-update-score-file no --iso-file standard.iso --macro-file-builtins standard.h
 
 
 # -inline 0  to see all the functions in the profile.

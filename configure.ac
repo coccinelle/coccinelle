@@ -31,7 +31,6 @@ AC_MSG_NOTICE([verifying basic tools])
 AC_PROG_INSTALL
 AC_PROG_MKDIR_P
 AC_PROG_CPP
-AC_COCCI_YESNO
 
 dnl  pkg config is required
 AC_COCCI_TOOL([PKG_CONFIG],[pkg-config],[$COCCI_SRCDIR/setup/fake-subst.sh pkg-config])
@@ -314,6 +313,22 @@ AS_IF([test "x$enable_python" != xno],
 ],
 [dnl
   AC_SUBST(FEATURE_PYTHON,[0])
+])
+
+
+dnl
+dnl  determine the default make target
+dnl  if ocamlopt is availabe, the default is both
+dnl  the bytecode version and the optimized version
+dnl  of coccinelle.
+dnl
+
+AS_IF([test "x$OCAMLOPT" != xno],
+[dnl  ocamlopt is available
+  AC_SUBST([MAKETARGET_ALL], [world])
+],
+[dnl  ocamlopt is not available
+  AC_SUBST([MAKETARGET_ALL], [byte-only])
 ])
 
 

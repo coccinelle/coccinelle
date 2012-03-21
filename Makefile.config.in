@@ -31,8 +31,8 @@ CPPFLAGS=@CPPFLAGS@
 # portable MKDIR_P
 MKDIR_P=@MKDIR_P@
 
-# 'yes no' or a replacement
-YES_N_CMD=@YES_N_CMD@
+# the default Make target
+TARGET_ALL=@MAKETARGET_ALL@
 
 PYTHON_CFLAGS=@PYTHON_CFLAGS@
 PYTHON_LIBS=@PYTHON_LIBS@
