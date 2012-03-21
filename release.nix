@@ -102,10 +102,10 @@ let
     { ocaml = pkgs.ocaml_3_12_1;
       ocamlPackages = pkgs.ocamlPackages_3_12_1;
     };
-  # selOcaml310 = pkgs:
-  #   { ocaml = pkgs.ocaml_3_10_0;
-  #     ocamlPackages = pkgs.ocamlPackages_3_10_0;
-  #   };
+  selOcaml310 = pkgs:
+    { ocaml = pkgs.ocaml_3_10_0;
+      ocamlPackages = pkgs.ocamlPackages_3_10_0;
+    };
 
   # builds an environment with the ocaml packages needed to build coccinelle
   # the mkList function selects which additional packages to include

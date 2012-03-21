@@ -123,8 +123,8 @@ let (labels_for_ctl: string list (* dropped isos *) ->
 	  (* cases where it it not safe to put something on the outer side
 	     of braces *)
 	  (match node with
-	    F.FunHeader _ | F.DoHeader _ | F.TrueNode _ | F.Else _
-	  | F.InLoopNode _ (* while, for *) | F.SwitchHeader _ ->
+	    F.FunHeader _ | F.DoHeader _ | F.TrueNode | F.Else _
+	  | F.InLoopNode (* while, for *) | F.SwitchHeader _ ->
 	      [nodei, (p,[])]
 	  | _ -> [])
 
