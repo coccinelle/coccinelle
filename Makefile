@@ -332,11 +332,11 @@ install: install-man install-common $(PYTHON_TARGET)
 	@if test -x spatch -a -x spatch.opt ; then \
 		$(MAKE) install-byte; $(MAKE) install-opt;fi
 	@if test ! -x spatch -a ! -x spatch.opt ; then \
-		echo "\n\n\t==> Run 'make', 'make opt', or both first. <==\n\n";fi
+		echo -e "\n\n\t==> Run 'make', 'make opt', or both first. <==\n\n";fi
 	@echo ""
-	@echo "\tYou can also install spatch by copying the program spatch"
-	@echo "\t(available in this directory) anywhere you want and"
-	@echo "\tgive it the right options to find its configuration files."
+	@echo -e "\tYou can also install spatch by copying the program spatch"
+	@echo -e "\t(available in this directory) anywhere you want and"
+	@echo -e "\tgive it the right options to find its configuration files."
 	@echo ""
 
 # user will use spatch to run spatch.opt (native)
@@ -413,7 +413,9 @@ testparsing:
 
 # todo: add pycaml to the dynamic linker path if it is found
 check:
-	./$(TARGET) -testall -allow-update-score-file no --iso-file standard.iso --macro-file-builtins standard.h
+	./$(TARGET) --testall --no-update-score-file \
+		--iso-file ./standard.iso \
+		--macro-file-builtins ./standard.h
 
 
 # -inline 0  to see all the functions in the profile.

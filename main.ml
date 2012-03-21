@@ -632,8 +632,8 @@ let other_options = [
     "   use also file.res";
     "--expected-score-file", Arg.Set_string expected_score_file,
     "   which score file to compare with in -testall";
-    "--allow-update-score-file", Arg.Set allow_update_score_file,
-    "   update the score file when -testall succeeds (default: on)";
+    "--no-update-score-file", Arg.Clear allow_update_score_file,
+    "   do not update the score file when -testall succeeds";
     "--relax-include-path", Arg.Set FC.relax_include_path,
     " ";
   ];

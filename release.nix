@@ -24,16 +24,7 @@ let
   #   ./configure && make depend && make opt && make install
   # on systems other than nix.
   tarball =
-    let
-      pkgs = import nixpkgs {
-        # use ocaml 3.12
-        config.packageOverrides =
-          pkgs:
-          { ocaml = pkgs.ocaml_3_12_1;
-            ocamlPackages = pkgs.ocamlPackages_3_12_1;
-          };
-      };
-      
+    let pkgs = import nixpkgs { };
     in with pkgs; with ocamlPackages; releaseTools.sourceTarball {
       name = "coccinelle-tarball";
       src = cocciSrc;
@@ -42,7 +33,7 @@ let
       inherit versionSuffix;
 
       buildInputs = [
-        perl python texLiveFull
+        python texLiveFull
         ocaml findlib menhir
         ocaml_pcre ocaml_sexplib
         ocaml_extlib pycaml
@@ -69,29 +60,43 @@ let
   # Builds for specific configurations
   #
 
-  # builds coccinelle, given a ocaml selector function and an ocaml environment builder.
-  # the build procedure itself is largely the same as the coccinelle expression in nixpkgs.
+  # builds coccinelle, parameterized over the ocaml and python packages, and the configure flags.
   # the result should be a usable nix-expression
-  mkBuild = { name, ocamlVer, mkEnv, inclPython }: { system ? builtins.currentSystem }:
+
+  # mkConfiguration is a function that takes the nix package collection of the build
+  # (called 'pkgs') and results in a record containing:
+  #  name of the configuration, python packages, ocaml packages selection function
+  #  (which takes the original 'pkgs' as parameter), and ocaml packages. The selection
+  #  function is used by 'mkConfiguration' to determine the appropriate ocamlPackages
+  #  field in 'pkgs'.
+  mkBuild = mkConfiguration: { system ? builtins.currentSystem }:
     let pkgs = import nixpkgs {
           inherit system;
-          config.packageOverrides = ocamlVer;
+          config.packageOverrides = orig : {
+            ocamlPackages = cfg.selOcaml orig;
+          };
         };
-
-        ocamlEnv = mkEnv pkgs;
+        cfg = mkConfiguration pkgs;
     in with pkgs; releaseTools.nixBuild {
-      inherit name;
+      name = "cocci-build-${cfg.name}";
       src = tarball;
-
-      # ocamlEnv contains the ocaml libraries in scope.
-      buildInputs = 
-        lib.optional inclPython python
-        ++ [ perl texLiveFull ncurses makeWrapper ocamlEnv ];
-
-      configureFlags = lib.optional (!inclPython) "--without-python";
-      makeFlags = "world";
+      buildInputs = [ ncurses ocaml ] ++ cfg.ocamls ++ cfg.pythons;
+      configureFlagsArray = cfg.flags;
     };
 
+  build = mkBuild defaultCfg;
+  defaultCfg = pkgs: with pkgs; {
+    name = "default";
+    pythons = [ python ];
+    ocamls = with ocamlPackages; [
+      findlib menhir ocaml_typeconv ocaml_sexplib ocaml_extlib ocaml_pcre pycaml
+    ];
+    flags = [];
+    selOcaml = orig: orig.ocamlPackages;
+  };
+
+
+  /*
   # selects which version of ocaml and ocamlPackages to use in nixpkgs.
   selOcaml312 = pkgs:
     { ocaml = pkgs.ocaml_3_12_1;
@@ -125,6 +130,7 @@ let
   build_null_12_np = mkBuild { name = "coccinelle_config5"; ocamlVer = selOcaml312; mkEnv = libs_null; inclPython = false; };
   # build_null_10_np = mkBuild { name = "coccinelle_config6"; ocamlVer = selOcaml310; mkEnv = libs_null; inclPython = false; };
   build_rse_np = mkBuild { name = "coccinelle_config7"; ocamlVer = selOcaml312; mkEnv = libs_rse; inclPython = false; };
+  */
 
 
   #
@@ -216,7 +222,8 @@ let
     };
   });
 
-  report = mkReport [ build build_rse build_se build_null_12 build_null_12_np build_rse_np ];
+  report = mkReport [ build ];
+  # build_rse build_se build_null_12 build_null_12_np build_rse_np
 
 
   #
@@ -314,7 +321,8 @@ let
 
   basicAttrs = {
     inherit tarball;
-    inherit build build_rse build_se build_null_12 build_null_12_np build_rse_np;
+    inherit build;
+# build_rse build_se build_null_12 build_null_12_np build_rse_np;
     inherit report;
   };
 
