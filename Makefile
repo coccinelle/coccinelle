@@ -323,9 +323,6 @@ install-python:
 		$(DESTDIR)$(SHAREDIR)/python/coccilib/coccigui
 	$(INSTALL_DATA) python/coccilib/coccigui/pygui.gladep \
 		$(DESTDIR)$(SHAREDIR)/python/coccilib/coccigui
-	if [ -n "$LOCAL_pycaml" ]; then \
-		$(INSTALL_LIB) external/pycaml/dllpycaml_stubs.so \
-			$(DESTDIR)$(SHAREDIR)/python ; fi
 
 install: install-man install-common $(PYTHON_TARGET)
 	@if test -x spatch -a ! -x spatch.opt ; then \
