@@ -97,6 +97,7 @@ AC_COCCI_INIT_PKG_DEFAULT([sexplib])
 AC_COCCI_INIT_PKG_DEFAULT([menhirLib])
 AC_COCCI_INIT_PKG_DEFAULT([pycaml])
 AC_COCCI_INIT_PKG_DEFAULT([pcre])
+AC_COCCI_INIT_PKG_DEFAULT([extlib])
 
 dnl  required ocaml packages
 AC_MSG_NOTICE([the following OCaml packages should be provided by your ocaml installation])
@@ -104,17 +105,17 @@ AC_REQ_COCCI_STDPKG([unix])
 AC_REQ_COCCI_STDPKG([bigarray])
 AC_REQ_COCCI_STDPKG([num])
 AC_REQ_COCCI_STDPKG([str])
+AC_REQ_COCCI_STDPKG([threads])
 
 dnl  optional ocaml packages
 AC_MSG_NOTICE([the following packages are usually optional])
 AC_CHECK_OCAML_PKG([dynlink])    dnl  should be part of the ocaml installation
-AC_CHECK_OCAML_PKG([type-conv])  dnl  TODO: is this one used?
-AC_CHECK_OCAML_PKG([extlib])     dnl  TODO: is this one used?
-AC_CHECK_OCAML_PKG([threads])
+AC_CHECK_OCAML_PKG([type-conv])  dnl  TODO: seems to be needed for sexplib?
 
 dnl  required modules (available locally too)
 AC_REQ_COCCI_EXTPKG([sexplib])
 AC_REQ_COCCI_EXTPKG([menhirLib])
+AC_REQ_COCCI_EXTPKG([extlib])
 
 
 AC_CACHE_SAVE

@@ -660,6 +660,10 @@ enable_ocaml
 SUBSTITUTED_MENHIR
 with_MENHIR
 MENHIR
+MAKE_extlib
+PATH_extlib
+enable_extlib
+OCAML_PKG_extlib
 MAKE_menhirLib
 PATH_menhirLib
 enable_menhirLib
@@ -668,14 +672,18 @@ MAKE_sexplib
 PATH_sexplib
 enable_sexplib
 OCAML_PKG_sexplib
-OCAML_PKG_threads
-OCAML_PKG_extlib
 OCAML_PKG_type_conv
 OCAML_PKG_dynlink
+OCAML_PKG_threads
 OCAML_PKG_str
 OCAML_PKG_num
 OCAML_PKG_bigarray
 OCAML_PKG_unix
+MODULESOPT_extlib
+MODULES_extlib
+FLAGS_extlib
+LOCALLIB_extlib
+FEATURE_extlib
 MODULESOPT_pcre
 MODULES_pcre
 FLAGS_pcre
@@ -810,6 +818,7 @@ with_runtime_camlp4
 with_runtime_camlp4o
 enable_sexplib
 enable_menhirLib
+enable_extlib
 with_menhir
 enable_ocaml
 enable_python
@@ -1459,6 +1468,8 @@ Optional Features:
   --enable-sexplib        enable global package sexplib (yes,no) (default:
                           auto)
   --enable-menhirLib      enable global package menhirLib (yes,no) (default:
+                          auto)
+  --enable-extlib         enable global package extlib (yes,no) (default:
                           auto)
   --enable-ocaml          enable ocaml scripting (default: auto)
   --enable-python         enable python scripting (yes/no) (default: auto)
@@ -10053,6 +10064,12 @@ $as_echo "$as_me: coccinelle may use external ocaml libraries in $COCCI_OCAML_EX
 
 
 
+
+
+
+
+
+
 { $as_echo "$as_me:${as_lineno-$LINENO}: the following OCaml packages should be provided by your ocaml installation" >&5
 $as_echo "$as_me: the following OCaml packages should be provided by your ocaml installation" >&6;}
     { haveocamlpkg=; unset haveocamlpkg;}
@@ -10179,6 +10196,37 @@ $as_echo "not found" >&6; }
 
 fi
 
+    { haveocamlpkg=; unset haveocamlpkg;}
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for OCaml findlib package threads" >&5
+$as_echo_n "checking for OCaml findlib package threads... " >&6; }
+
+  unset found
+  unset pkg
+  found=no
+  for pkg in threads  ; do
+    if $OCAMLFIND query $pkg >/dev/null 2>/dev/null; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: result: found" >&5
+$as_echo "found" >&6; }
+      OCAML_PKG_threads=$pkg
+      found=yes
+      break
+    fi
+  done
+  if test "$found" = "no" ; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
+$as_echo "not found" >&6; }
+    OCAML_PKG_threads=no
+  fi
+
+
+
+  haveocamlpkg="$found"
+  if test "x$haveocamlpkg" == xno; then :
+      as_fn_error $? "package threads is required. It should be part of your ocaml installation." "$LINENO" 5
+
+fi
+
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: the following packages are usually optional" >&5
 $as_echo "$as_me: the following packages are usually optional" >&6;}
@@ -10226,53 +10274,6 @@ $as_echo "found" >&6; }
 $as_echo "not found" >&6; }
     OCAML_PKG_type_conv=no
   fi
-
-
-
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for OCaml findlib package extlib" >&5
-$as_echo_n "checking for OCaml findlib package extlib... " >&6; }
-
-  unset found
-  unset pkg
-  found=no
-  for pkg in extlib  ; do
-    if $OCAMLFIND query $pkg >/dev/null 2>/dev/null; then
-      { $as_echo "$as_me:${as_lineno-$LINENO}: result: found" >&5
-$as_echo "found" >&6; }
-      OCAML_PKG_extlib=$pkg
-      found=yes
-      break
-    fi
-  done
-  if test "$found" = "no" ; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
-$as_echo "not found" >&6; }
-    OCAML_PKG_extlib=no
-  fi
-
-
-
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for OCaml findlib package threads" >&5
-$as_echo_n "checking for OCaml findlib package threads... " >&6; }
-
-  unset found
-  unset pkg
-  found=no
-  for pkg in threads  ; do
-    if $OCAMLFIND query $pkg >/dev/null 2>/dev/null; then
-      { $as_echo "$as_me:${as_lineno-$LINENO}: result: found" >&5
-$as_echo "found" >&6; }
-      OCAML_PKG_threads=$pkg
-      found=yes
-      break
-    fi
-  done
-  if test "$found" = "no" ; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
-$as_echo "not found" >&6; }
-    OCAML_PKG_threads=no
-  fi
-
 
 
 
@@ -10503,6 +10504,121 @@ fi
 
   if test "x$enable_menhirLib" == xno; then :
       as_fn_error $? "OCaml package menhirLib is required. Please make sure it is available." "$LINENO" 5
+
+fi
+
+    { $as_echo "$as_me:${as_lineno-$LINENO}: configuring package extlib" >&5
+$as_echo "$as_me: configuring package extlib" >&6;}
+  # Check whether --enable-extlib was given.
+if test "${enable_extlib+set}" = set; then :
+  enableval=$enable_extlib;
+fi
+
+
+      if test "x$enable_extlib" != xno; then :
+        { GLOBAL_extlib=; unset GLOBAL_extlib;}
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for OCaml findlib package extlib" >&5
+$as_echo_n "checking for OCaml findlib package extlib... " >&6; }
+
+  unset found
+  unset pkg
+  found=no
+  for pkg in extlib  ; do
+    if $OCAMLFIND query $pkg >/dev/null 2>/dev/null; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: result: found" >&5
+$as_echo "found" >&6; }
+      OCAML_PKG_extlib=$pkg
+      found=yes
+      break
+    fi
+  done
+  if test "$found" = "no" ; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
+$as_echo "not found" >&6; }
+    OCAML_PKG_extlib=no
+  fi
+
+
+
+  GLOBAL_extlib="$found"
+
+    if test "x$GLOBAL_extlib" == xyes; then :
+        enable_extlib=yes
+
+        PATH_extlib=`$OCAMLFIND query extlib 2>/dev/null`
+
+
+else
+        if test "x$enable_extlib" == xyes; then :
+          as_fn_error $? "OCaml package extlib is not available but requested explicitly" "$LINENO" 5
+
+fi
+      enable_extlib=no
+
+
+fi
+
+fi
+
+    if test "x$enable_extlib" == xno; then :
+      { pkgdir=; unset pkgdir;}
+    pkgdir="$COCCI_OCAML_EXTERNAL/extlib/"
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for a bundled substitute of extlib" >&5
+$as_echo_n "checking for a bundled substitute of extlib... " >&6; }
+    if test -d "$pkgdir"; then :
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+      { $as_echo "$as_me:${as_lineno-$LINENO}: using bundled substitute for extlib in $pkgdir" >&5
+$as_echo "$as_me: using bundled substitute for extlib in $pkgdir" >&6;}
+      enable_extlib=local
+
+      PATH_extlib="$pkgdir"
+
+
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: not available" >&5
+$as_echo "not available" >&6; }
+fi
+
+fi
+
+    if test "x$enable_extlib" != xno; then :
+      FEATURE_extlib=1
+
+    FLAGS_extlib='$(FLAGS_extlib)'
+
+
+        if test "x$enable_extlib" == xlocal; then :
+        LOCALLIB_extlib=1
+
+      MODULES_extlib='$(LOCAL_extlib)'
+
+      MODULESOPT_extlib='$(LOCALOPT_extlib)'
+
+
+            if test -f "$PATH_extlib/Makefile"; then :
+          MAKE_extlib=$PATH_extlib
+
+
+else
+          MAKE_extlib=
+
+
+fi
+
+else
+        MODULES_extlib='$(GLOBAL_extlib)'
+
+      MODULESOPT_extlib='$(GLOBALOPT_extlib)'
+
+
+fi
+
+fi
+
+  if test "x$enable_extlib" == xno; then :
+      as_fn_error $? "OCaml package extlib is required. Please make sure it is available." "$LINENO" 5
 
 fi
 

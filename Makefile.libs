@@ -42,8 +42,8 @@ GLOBAL_dynlink    = dynlink.cma
 GLOBALOPT_dynlink = dynlink.cmxa
 
 # extlib library
-LOCAL_extlib     =
-LOCALOPT_extlib  =
+LOCAL_extlib     = extLib.cma
+LOCALOPT_extlib  = extLib.cmxa
 GLOBAL_extlib    = extLib.cma
 GLOBALOPT_extlib = extLib.cmxa
 FLAGS_extlib     =
