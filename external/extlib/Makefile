@@ -10,35 +10,30 @@ include ../../Makefile.config
 VERSION=1.5.2
 EXTLIB=extlib-${VERSION}
 
-DEPS=$(EXTLIB)/*.ml $(EXTLIB)/*.mli $(EXTLIB)/META
-
-MAKE_CMD=$(MAKE) -C $(EXTLIB)
-
 all: extLib.cma META
 all.opt: extLib.cmxa META
 
 clean:
-	rm -f extLib.cma extLib.cmxa extLib.a META
+	rm -f extLib.cma extLib.cmxa extLib.a META \
+		.depend
 
 distclean: clean
 
-depend:
-
 .PHONEY: all all.opt clean distclean depend
 
+# SOURCES
+MODULES = \
+ enum bitSet dynArray extArray extHashtbl extList extString global IO option \
+ pMap std uChar uTF8 base64 unzip refList optParse dllist
 
-extLib.cma: $(DEPS)
-	$(MAKE_CMD) all
-	cp "${EXTLIB}/extLib.cma" ./extLib.cma
-	$(MAKE_CMD) clean
-	@echo "build extLib.cma"
+MLI=$(MODULES:%=$(EXTLIB)/%.mli)
+SRC=$(MODULES:%=$(EXTLIB)/%.ml) $(EXTLIB)/extLib.ml
 
-extLib.cmxa: $(DEPS)
-	$(MAKE_CMD) opt
-	cp "${EXTLIB}/extLib.cmxa" ./extLib.cmxa
-	cp "${EXTLIB}/extLib.a" ./extLib.a
-	$(MAKE_CMD) clean
-	@echo "build extLib.cmxa"
+extLib.cma: $(MLI) $(SRC)
+	$(OCAMLC) -a -custom -thread -I $(EXTLIB) -o extLib.cma $(MLI) $(SRC)
 
-META: $(DEPS)
-	cp "${EXTLIB}/META" ./META
+extLib.cmxa: $(MLI) $(SRC)
+	$(OCAMLC) -a -thread -I $(EXTLIB) -o extLib.cmxa $(SRC)
+
+META: $(EXTLIB)/META
+	cp $< $@
