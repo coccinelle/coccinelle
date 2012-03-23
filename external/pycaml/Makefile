@@ -29,7 +29,7 @@ all.opt: pycaml.cmxa
 pycaml.cmx: pycaml.ml pycaml.cmi
 	$(OCAMLOPT_CMD) -c $<
 
-pycaml.cmxa: dllpycaml_stubs.so pycaml.cmi pycaml.cmx
+pycaml.cmxa: dllpycaml_stubs.so pycaml.cmx
 	$(OCAMLOPT_CMD) -a -o pycaml.cmxa pycaml.cmx -cclib -lpycaml_stubs
 
 clean:

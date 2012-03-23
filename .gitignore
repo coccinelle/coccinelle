@@ -9,6 +9,7 @@ scripts/spatch.byte
 *.cmxa
 *.[ao]
 *.annot
+*.pyc
 
 *~
 _build

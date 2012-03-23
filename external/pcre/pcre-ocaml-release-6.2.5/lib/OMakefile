@@ -1,0 +1,19 @@
+OCAML_LIBRARIES =
+OCAMLPACKS =
+
+OCAML_LIB_FLAGS += -cclib -lpcre
+
+LIB_CNAMES = pcre_stubs
+LIB_MLNAMES = pcre
+
+OCamlMakeLib(pcre)
+
+
+doc: pcre $(OCAMLDOC_PP)
+  $(OCamlDocs Pcre, *.mli *.ml, \
+  "OCaml Pcre bindings.")
+
+InstantiateOCamlEnv()
+
+doc: pcre $(OCAMLDOC_PP)
+  $(OCamlDocs Pcre, *.mli *.ml, "Perl Compatible Regular Expressions.")

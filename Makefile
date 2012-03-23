@@ -22,10 +22,8 @@ LEXER_SOURCES =
 SRC=flag_cocci.ml cocci.ml testing.ml test.ml $(LEXER_SOURCES:.mll=.ml) main.ml
 
 ifeq ($(FEATURE_PYTHON),1)
-	PYCMA=pycaml.cma
 	PYTHON_INSTALL_TARGET=install-python
 else
-	PYCMA=
 	PYTHON_INSTALL_TARGET=
 endif
 
@@ -35,16 +33,9 @@ else
 	DYNLINK=dynlink.cma
 endif
 
-ifdef PCREDIR
-	PCRELIB=pcre.cma
-else
-	PCRELIB=
-	PCREDIR=
-endif
-
 SEXPSYSCMA=bigarray.cma nums.cma
 
-SYSLIBS=str.cma unix.cma $(SEXPSYSCMA) $(DYNLINK) $(PCRELIB) # threads.cma
+SYSLIBS=str.cma unix.cma $(SEXPSYSCMA) $(DYNLINK)
 LIBS=commons/commons.cma \
      commons/commons_sexp.cma \
      globals/globals.cma \
@@ -73,15 +64,13 @@ INCLUDEDIRSDEP=commons commons/ocamlextra \
 
 INCLUDEDIRS=$(INCLUDEDIRSDEP) $(PCREDIR) $(INCLIBS)
 
-EXTRALINKS=
-LINKFLAGS=$(EXTRALINKS:%=-cclib -l%)
-
 ##############################################################################
 # Generic variables
 ##############################################################################
 
 # sort to remove duplicates
-INCLUDES=$($(sort $INCLUDEDIRS):%=-I %)
+INCLUDESET=$(sort $(INCLUDEDIRS))
+INCLUDES=$(INCLUDESET:%=-I %)
 
 OBJS=    $(SRC:.ml=.cmo)
 OPTOBJS= $(SRC:.ml=.cmx)
@@ -101,8 +90,8 @@ OCAMLCFLAGS=
 # to also link with -g.
 OPTFLAGS= -g
 
-OCAMLC_CMD=$(OCAMLC) $(OCAMLCFLAGS) $(LINKFLAGS) $(INCLUDES)
-OCAMLOPT_CMD=$(OCAMLOPT) $(OPTFLAGS) $(LINKFLAGS) $(INCLUDES)
+OCAMLC_CMD=$(OCAMLC) $(OCAMLCFLAGS) $(INCLUDES)
+OCAMLOPT_CMD=$(OCAMLOPT) $(OPTFLAGS) $(INCLUDES)
 OCAMLYACC_CMD=$(OCAMLYACC) -v
 OCAMLDEP_CMD=$(OCAMLDEP) $(INCLUDEDIRSDEP:%=-I %)
 OCAMLMKTOP_CMD=$(OCAMLMKTOP) -g -custom $(INCLUDES)

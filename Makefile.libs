@@ -33,7 +33,7 @@ LOCAL_pcre     = pcre.cmo
 LOCALOPT_pcre  = pcre.cmx
 GLOBAL_pcre    = pcre.cma
 GLOBALOPT_pcre = pcre.cmxa
-FLAGS_pcre     = -cclib "${PCRE_LIBS}"
+FLAGS_pcre     = -cclib -lpcre_stubs -cclib "${PCRE_LIBS}"
 
 # dynlink library
 LOCAL_dynlink     =
@@ -49,8 +49,8 @@ GLOBALOPT_extlib = extLib.cmxa
 FLAGS_extlib     =
 
 # type conv library
-LOCAL_extlib     = pa_type_conv.cma
-LOCALOPT_extlib  = pa_type_conv.cmxa
-GLOBAL_extlib    = pa_type_conv.cma
-GLOBALOPT_extlib = pa_type_conv.cma
-FLAGS_extlib     =
+LOCAL_type_conv     = pa_type_conv.cma
+LOCALOPT_type_conv  = pa_type_conv.cmxa
+GLOBAL_type_conv    = pa_type_conv.cma
+GLOBALOPT_type_conv = pa_type_conv.cma
+FLAGS_type_conv     =
