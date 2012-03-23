@@ -14,7 +14,7 @@ all: extLib.cma META
 all.opt: extLib.cmxa META
 
 clean:
-	rm -f extLib.cma extLib.cmxa META
+	rm -f extLib.cma extLib.cmxa extLib.a META
 
 distclean: clean
 
@@ -32,6 +32,7 @@ extLib.cma: $(DEPS)
 extLib.cmxa: $(DEPS)
 	$(MAKE_CMD) opt
 	cp "${EXTLIB}/extLib.cmxa" ./extLib.cmxa
+	cp "${EXTLIB}/extLib.a" ./extLib.a
 	$(MAKE_CMD) clean
 	@echo "build extLib.cmxa"
 
