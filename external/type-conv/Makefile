@@ -11,6 +11,7 @@ CAMLP4_CMD=$(CAMLP4O) pa_extend.cmo q_MLast.cmo
 TYCONV_VERSION=3.0.5
 TYCONV_DIR=type_conv-$(TYCONV_VERSION)
 TYCONV_LIB=$(TYCONV_DIR)/lib
+TYCONV_MARKER=$(TYCONV_DIR)/.marker
 
 all: depend pa_type_conv.cma META
 all.opt: depend all pa_type_conv.cmxa META
@@ -23,14 +24,15 @@ clean:
 distclean: clean
 	rm -rf $(TYCONV_DIR)
 
-depend: $(TYCONV_DIR)
+depend: $(TYCONV_MARKER)
 
 $(TYCONV_DIR).tar.gz:
 	@echo "$@ not found. Please download it and drop it in this directory ($(pwd))."
 	@false
 
-$(TYCONV_DIR): $(TYCONV_DIR).tar.gz
+$(TYCONV_MARKER): $(TYCONV_DIR).tar.gz
 	$(TAR) xfvz $<
+	touch $@
 
 .PHONEY: all all.opt clean distclean depend
 

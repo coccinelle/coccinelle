@@ -1,122 +1,95 @@
+# This Makefile serves as a wrapper to bundle the
+# sexplib package without modifications.
+
+# This is a standard build with:
+#  * all files marked with -for-pack Sexplib
+#  * required packages unix num bigarray
+#  * parser.mly requires ocamlyacc
+#  * lexer.mll requires ocamllex
+#  * pre_sexp.ml: use cpp -traditional -undef
+#      (but all other files can be processed with this one as well)
+
 include ../../Makefile.config
 
-##############################################################################
-# Variables
-##############################################################################
+VERSION=7.0.2
+SEXPDIR=sexplib-$(VERSION)
+SEXPLIB=$(SEXPDIR)/lib
+SEXPMARKER=$(SEXPDIR)/.marker
 
-SRC= \
-  type.ml \
-  parser.ml \
-  lexer.ml \
-  pre_sexp.ml \
-  sexp_intf.ml \
-  sexp.ml \
-  path.ml \
-  conv.ml \
-  conv_error.ml
+PP_CMD=$(CPP) -x c -w -traditional -undef
+OCAMLC_CMD=$(OCAMLC) $(OCAMLCFLAGS) -I $(SEXPLIB) -thread -custom -pp "${PP_CMD}"
+OCAMLOPT_CMD=$(OCAMLOPT) $(OPTFLAGS) -I $(SEXPLIB) -thread -pp "${PP_CMD}"
+OCAMLDEP_CMD=$(OCAMLDEP) -I $(SEXPLIB) -pp "${PP_CMD}"
 
-TARGET=sexplib
-TARGETPACK=sexplib
-LIB_PACK_NAME = Sexplib
+all: sexplib.cma META
+all.opt: sexplib.cmxa META
 
-##############################################################################
-# Generic variables
-##############################################################################
-
-INCLUDES=
-SYSLIBS= str.cma unix.cma bigarray.cma num.cma
-
-##############################################################################
-# Generic variables
-##############################################################################
-
-#dont use -custom, it makes the bytecode unportable.
-OCAMLCFLAGS ?= -g -dtypes # -w A
-
-# This flag is also used in subdirectories so don't change its name here.
-OPTFLAGS=
-
-OCAMLC_CMD=$(OCAMLC) $(OCAMLCFLAGS) $(INCLUDES) $(SYSINCLUDES) -thread
-OCAMLOPT_CMD=$(OCAMLOPT) $(OPTFLAGS) $(INCLUDES) $(SYSINCLUDES) -thread
-OCAMLDEP_CMD=$(OCAMLDEP) $(INCLUDES)
-OCAMLMKTOP_CMD=$(OCAMLMKTOP) -g -custom $(INCLUDES) -thread
-
-##############################################################################
-# Top rules
-##############################################################################
-
-OBJS = $(SRC:.ml=.cmo)
-OPTOBJS = $(SRC:.ml=.cmx)
-
-all: $(TARGET).cma $(TARGETPACK).cmo
-all.opt: $(TARGET).cmxa $(TARGETPACK).cmx
-
-$(TARGET).cma: $(OBJS)
-	$(OCAMLC_CMD) -a -o $@ $(OBJS)
-
-$(TARGET).cmxa: $(OPTOBJS) $(LIBS:.cma=.cmxa)
-	$(OCAMLOPT_CMD) -a -o $@ $(OPTOBJS)
-
-$(TARGET).top: $(OBJS) $(LIBS)
-	$(OCAMLMKTOP_CMD) -o $(TARGET).top $(SYSLIBS) $(LIBS) $(OBJS)
-
-clean::
-	rm -f $(TARGET).top
-
-$(TARGETPACK).cmo: $(OBJS)
-	$(OCAMLC_CMD) -pack -o $@ $(OBJS)
-
-$(TARGETPACK).cmx: $(OPTOBJS)
-	$(OCAMLOPT_CMD) -pack -o $@ $(OPTOBJS)
-
-# special handling, fun that they use cpp whereas they claim camplp4 can do everything
-pre_sexp.cmo: pre_sexp.ml
-	$(OCAMLC_CMD) -pp "${CPP} -x c -w" -c $<
-
-pre_sexp.cmx: pre_sexp.ml
-	$(OCAMLOPT_CMD) -for-pack $(LIB_PACK_NAME) -pp "${CPP} -x c -w" -c $<
-
-lexer.ml: lexer.mll
-	$(OCAMLLEX) $<
-clean::
-	rm -f lexer.ml
-
-
-parser.ml parser.mli: parser.mly
-	$(OCAMLYACC) -v $<
-clean::
-	rm -f parser.ml parser.mli parser.output
-
-
-##############################################################################
-# Generic rules
-##############################################################################
-
-.SUFFIXES: .ml .mli .cmo .cmi .cmx
-
-.ml.cmo:
-	$(OCAMLC_CMD) -c $<
-.mli.cmi:
-	$(OCAMLC_CMD) -c $<
-
-.ml.cmx:
-	$(OCAMLOPT_CMD) -for-pack $(LIB_PACK_NAME) -c $<
-
-.ml.mldepend:
-	$(OCAMLC_CMD) -i $<
-
-clean::
-	rm -f *.cm[ioxa] *.o *.a *.cmxa *.annot
-clean::
-	rm -f *~ .*~ gmon.out #*#
-
-clean::
-	rm -f .depend
-
-.PHONEY: depend
-.depend depend: parser.ml parser.mli lexer.ml
-	$(OCAMLDEP_CMD) -pp "${CPP} -x c -w" *.mli *.ml > .depend
+clean:
+	rm -f sexplib.cma sexplib.cmxa META \
+		$(SEXPLIB)/*.cm[ioxa] \
+		$(SEXPLIB)/*.o \
+		$(SEXPLIB)/parser.ml $(SEXPLIB)/parser.mli \
+		$(SEXPLIB)/lexer.ml $(SEXPLIB)/lexer.mli \
+		sexplib.cm[ioxa] sexplib.[oa] \
+		.depend
 
 distclean: clean
+	rm -rf $(SEXPDIR)
+
+$(SEXPMARKER): $(SEXPDIR).tar.gz
+	$(TAR) xfvz $<
+	touch $@
+
+$(SEXPDIR).tar.gz:
+	@echo "$@ not found. Please download it and drop it in this directory ($(pwd))."
+	@false
+
+.PHONEY: all all.opt clean distclean depend
+
+
+# Sources needed for coccinelle
+MODULES=type parser lexer pre_sexp sexp_intf \
+		sexp path conv conv_error
+
+MLI=$(MODULES:%=$(SEXPLIB)/%.mli)
+SRC=$(MODULES:%=$(SEXPLIB)/%.ml)
+
+# Link
+sexplib.cma: .depend $(MLI:.mli=.cmi) $(SRC:.ml=.cmo)
+	$(OCAMLC_CMD) -pack -o sexplib.cmo $(SRC:.ml=.cmo)
+	$(OCAMLC_CMD) -a -o sexplib.cma sexplib.cmo
+
+sexplib.cmxa: .depend $(MLI:.mli=.cmi) $(SRC:.ml=.cmx)
+	$(OCAMLOPT) -pack -o sexplib.cmx $(SRC:.ml=.cmx)
+	$(OCAMLOPT) -a -o sexplib.cmxa sexplib.cmx
+
+# Generic rules
+.SUFFIXES: .ml .mli .cmo .cmi .cmx .mly .mll
+.PRECIOUS: $(MLI) $(SRC)
+
+.mly.ml:
+	$(OCAMLYACC) $< > $@
+
+.mll.ml:
+	$(OCAMLLEX) -o $@ $<
+
+.ml.mli:
+	$(OCAMLC_CMD) -i $< > $@
+
+.mli.cmi:
+	$(OCAMLC_CMD) -for-pack Sexplib -c $<
+
+.ml.cmo:
+	$(OCAMLC_CMD) -for-pack Sexplib -c $<
+
+.ml.cmx:
+	$(OCAMLOPT_CMD) -for-pack Sexplib -c $<
+
+META: $(SEXPLIB)/META
+	cp $< $@
+
+# the 'depend' target
+.depend depend: $(SEXPMARKER) $(SRC)
+	$(OCAMLDEP_CMD) $(SEXPLIB)/*.mli $(SEXPLIB)/*.ml > .depend
 
 -include .depend

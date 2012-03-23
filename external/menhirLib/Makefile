@@ -10,26 +10,29 @@ include ../../Makefile.config
 VERSION=20120123
 MENHIRDIR=menhir-$(VERSION)
 MENHIRLIB=$(MENHIRDIR)/src
+MENHIRMARKER=$(MENHIRLIB)/.marker
 
 OCAMLC_CMD=$(OCAMLC) $(OCAMLCFLAGS) -I $(MENHIRLIB) -thread -custom
 OCAMLOPT_CMD=$(OCAMLOPT) $(OPTFLAGS) -I $(MENHIRLIB) -thread
 OCAMLDEP_CMD=$(OCAMLDEP) -I $(MENHIRLIB)
 
-all: depend menhirLib.cma META
-all.opt: depend menhirLib.cmxa META
+all: menhirLib.cma META
+all.opt: menhirLib.cmxa META
 
 clean:
 	rm -f menhirLib.cma menhirLib.cmxa META \
 		$(MENHIRLIB)/*.cm[ioxa] \
 		$(MENHIRLIB)/*.o \
 		$(MENHIRLIB)/engineTypes.mli $(MENHIRLIB)/tableFormat.mli \
-		menhirLib.cm[ioxa] menhirLib.[oa]
+		menhirLib.cm[ioxa] menhirLib.[oa] \
+		.depend
 
 distclean: clean
 	rm -rf $(MENHIRDIR)
 
-$(MENHIRDIR): $(MENHIRDIR).tar.gz
+$(MENHIRMARKER): $(MENHIRDIR).tar.gz
 	$(TAR) xfvz $<
+	touch $@
 
 $(MENHIRDIR).tar.gz:
 	@echo "$@ not found. Please download it and drop it in this directory ($(pwd))."
@@ -73,7 +76,7 @@ META: $(MENHIRLIB)/META
 	cp $< $@
 
 # the 'depend' target
-.depend depend: $(MENHIRDIR)
+.depend depend: $(MENHIRMARKER)
 	$(OCAMLDEP_CMD) $(MENHIRLIB)/*.mli $(MENHIRLIB)/*.ml > .depend
 
 -include .depend

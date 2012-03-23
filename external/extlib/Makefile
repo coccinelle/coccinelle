@@ -9,6 +9,7 @@ include ../../Makefile.config
 
 VERSION=1.5.2
 EXTLIB=extlib-$(VERSION)
+EXTMARKER=$(EXTLIB)/.marker
 
 all: depend extLib.cma META
 all.opt: depend extLib.cmxa META
@@ -20,10 +21,11 @@ clean:
 distclean: clean
 	rm -rf $(EXTLIB)
 
-depend: $(EXTLIB)
+depend: $(EXTMARKER)
 
-$(EXTLIB): $(EXTLIB).tar.gz
+$(EXTMARKER): $(EXTLIB).tar.gz
 	$(TAR) xfvz $<
+	touch $@
 
 $(EXTLIB).tar.gz:
 	@echo "$@ not found. Please download it and drop it in this directory ($(pwd))."

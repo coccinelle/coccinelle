@@ -11,6 +11,7 @@ OCAMLMKLIB_CMD=$(OCAMLMKLIB)
 PCRE_VERSION=6.2.5
 PCRE_DIR=pcre-ocaml-release-$(PCRE_VERSION)
 PCRE_LIB=$(PCRE_DIR)/lib
+PCRE_MARKER=$(PCRE_DIR)/.marker
 
 all: depend pcre.cma META
 all.opt: depend pcre.cmxa META
@@ -23,13 +24,14 @@ clean:
 distclean: clean
 	rm -rf $(PCRE_DIR)
 
-depend: $(PCRE_DIR)
+depend: $(PCRE_MARKER)
 
 .PHONEY: all all.opt clean distclean depend
 
 # prepare the pcre directory
-$(PCRE_DIR): $(PCRE_DIR).tar.gz
+$(PCRE_MARKER): $(PCRE_DIR).tar.gz
 	$(TAR) xfvz $<
+	touch $@
 
 $(PCRE_DIR).tar.gz:
 	@echo "$@ not found. Please download it and drop it in this directory ($(pwd))."
