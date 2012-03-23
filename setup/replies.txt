@@ -1,20 +1,8 @@
-ocamlfind query unix
+ocamlfind query (unix|bigarray|num|dynlink|str|threads)
 ${ocamllibdir}
 
-ocamlfind query bigarray
-${ocamllibdir}
-
-ocamlfind query num
-$(ocamllibdir)
-
-ocamlfind query dynlink
-${ocamllibdir}
-
-ocamlfind query str
-${ocamllibdir}
-
-ocamlfind query threads
-$(ocamllibdir)
+ocamlfind query camlp4
+$(ocamllibdir)/camlp4
 
 pkg-config --atleast-pkgconfig-version
 

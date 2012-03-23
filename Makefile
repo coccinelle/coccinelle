@@ -80,7 +80,8 @@ LINKFLAGS=$(EXTRALINKS:%=-cclib -l%)
 # Generic variables
 ##############################################################################
 
-INCLUDES=$(INCLUDEDIRS:%=-I %)
+# sort to remove duplicates
+INCLUDES=$($(sort $INCLUDEDIRS):%=-I %)
 
 OBJS=    $(SRC:.ml=.cmo)
 OPTOBJS= $(SRC:.ml=.cmx)

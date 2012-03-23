@@ -634,8 +634,9 @@ FEATURE_TARZAN
 REGEXP_FILE
 REGEXP_MODULE
 MAKE_pcre
-PATH_pcre
 enable_pcre
+GLOBAL_pcre
+PATH_pcre
 OCAML_PKG_pcre
 enable_pcre_syntax
 HAVE_PCRE
@@ -644,6 +645,7 @@ PCRE_CFLAGS
 PYCOCCI_FILE
 PYCOCCI_MODULE
 MAKE_pycaml
+GLOBAL_pycaml
 PATH_pycaml
 OCAML_PKG_pycaml
 enable_python
@@ -661,23 +663,51 @@ SUBSTITUTED_MENHIR
 with_MENHIR
 MENHIR
 MAKE_extlib
-PATH_extlib
 enable_extlib
+GLOBAL_extlib
+PATH_extlib
 OCAML_PKG_extlib
 MAKE_menhirLib
-PATH_menhirLib
 enable_menhirLib
+GLOBAL_menhirLib
+PATH_menhirLib
 OCAML_PKG_menhirLib
 MAKE_sexplib
-PATH_sexplib
 enable_sexplib
+GLOBAL_sexplib
+PATH_sexplib
 OCAML_PKG_sexplib
+MAKE_camlp4
+MODULESOPT_camlp4
+MODULES_camlp4
+LOCALLIB_camlp4
+FLAGS_camlp4
+FEATURE_camlp4
+enable_camlp4
+GLOBAL_camlp4
+PATH_camlp4
+OCAML_PKG_camlp4
+MAKE_type_conv
+MODULESOPT_type_conv
+MODULES_type_conv
+LOCALLIB_type_conv
+FLAGS_type_conv
+FEATURE_type_conv
+enable_type_conv
+GLOBAL_type_conv
+PATH_type_conv
 OCAML_PKG_type_conv
+PATH_dynlink
 OCAML_PKG_dynlink
+PATH_threads
 OCAML_PKG_threads
+PATH_str
 OCAML_PKG_str
+PATH_num
 OCAML_PKG_num
+PATH_bigarray
 OCAML_PKG_bigarray
+PATH_unix
 OCAML_PKG_unix
 MODULESOPT_extlib
 MODULES_extlib
@@ -816,6 +846,8 @@ with_runtime_ocamlopt
 with_runtime_ocamldep
 with_runtime_camlp4
 with_runtime_camlp4o
+enable_type_conv
+enable_camlp4
 enable_sexplib
 enable_menhirLib
 enable_extlib
@@ -1465,6 +1497,10 @@ Optional Features:
   --disable-option-checking  ignore unrecognized --enable/--with options
   --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
+  --enable-type-conv      enable global package type-conv (yes,no) (default:
+                          auto)
+  --enable-camlp4         enable global package camlp4 (yes,no) (default:
+                          auto)
   --enable-sexplib        enable global package sexplib (yes,no) (default:
                           auto)
   --enable-menhirLib      enable global package menhirLib (yes,no) (default:
@@ -10072,7 +10108,6 @@ $as_echo "$as_me: coccinelle may use external ocaml libraries in $COCCI_OCAML_EX
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: the following OCaml packages should be provided by your ocaml installation" >&5
 $as_echo "$as_me: the following OCaml packages should be provided by your ocaml installation" >&6;}
-    { haveocamlpkg=; unset haveocamlpkg;}
 
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for OCaml findlib package unix" >&5
 $as_echo_n "checking for OCaml findlib package unix... " >&6; }
@@ -10097,13 +10132,17 @@ $as_echo "not found" >&6; }
 
 
 
-  haveocamlpkg="$found"
-  if test "x$haveocamlpkg" == xno; then :
+  if test "x$OCAML_PKG_unix" != xno; then :
+    PATH_unix=`$OCAMLFIND query unix 2>/dev/null`
+
+
+fi
+
+  if test "x$OCAML_PKG_unix" == xno; then :
       as_fn_error $? "package unix is required. It should be part of your ocaml installation." "$LINENO" 5
 
 fi
 
-    { haveocamlpkg=; unset haveocamlpkg;}
 
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for OCaml findlib package bigarray" >&5
 $as_echo_n "checking for OCaml findlib package bigarray... " >&6; }
@@ -10128,13 +10167,17 @@ $as_echo "not found" >&6; }
 
 
 
-  haveocamlpkg="$found"
-  if test "x$haveocamlpkg" == xno; then :
+  if test "x$OCAML_PKG_bigarray" != xno; then :
+    PATH_bigarray=`$OCAMLFIND query bigarray 2>/dev/null`
+
+
+fi
+
+  if test "x$OCAML_PKG_bigarray" == xno; then :
       as_fn_error $? "package bigarray is required. It should be part of your ocaml installation." "$LINENO" 5
 
 fi
 
-    { haveocamlpkg=; unset haveocamlpkg;}
 
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for OCaml findlib package num" >&5
 $as_echo_n "checking for OCaml findlib package num... " >&6; }
@@ -10159,13 +10202,17 @@ $as_echo "not found" >&6; }
 
 
 
-  haveocamlpkg="$found"
-  if test "x$haveocamlpkg" == xno; then :
+  if test "x$OCAML_PKG_num" != xno; then :
+    PATH_num=`$OCAMLFIND query num 2>/dev/null`
+
+
+fi
+
+  if test "x$OCAML_PKG_num" == xno; then :
       as_fn_error $? "package num is required. It should be part of your ocaml installation." "$LINENO" 5
 
 fi
 
-    { haveocamlpkg=; unset haveocamlpkg;}
 
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for OCaml findlib package str" >&5
 $as_echo_n "checking for OCaml findlib package str... " >&6; }
@@ -10190,13 +10237,17 @@ $as_echo "not found" >&6; }
 
 
 
-  haveocamlpkg="$found"
-  if test "x$haveocamlpkg" == xno; then :
+  if test "x$OCAML_PKG_str" != xno; then :
+    PATH_str=`$OCAMLFIND query str 2>/dev/null`
+
+
+fi
+
+  if test "x$OCAML_PKG_str" == xno; then :
       as_fn_error $? "package str is required. It should be part of your ocaml installation." "$LINENO" 5
 
 fi
 
-    { haveocamlpkg=; unset haveocamlpkg;}
 
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for OCaml findlib package threads" >&5
 $as_echo_n "checking for OCaml findlib package threads... " >&6; }
@@ -10221,15 +10272,17 @@ $as_echo "not found" >&6; }
 
 
 
-  haveocamlpkg="$found"
-  if test "x$haveocamlpkg" == xno; then :
+  if test "x$OCAML_PKG_threads" != xno; then :
+    PATH_threads=`$OCAMLFIND query threads 2>/dev/null`
+
+
+fi
+
+  if test "x$OCAML_PKG_threads" == xno; then :
       as_fn_error $? "package threads is required. It should be part of your ocaml installation." "$LINENO" 5
 
 fi
 
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: the following packages are usually optional" >&5
-$as_echo "$as_me: the following packages are usually optional" >&6;}
 
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for OCaml findlib package dynlink" >&5
 $as_echo_n "checking for OCaml findlib package dynlink... " >&6; }
@@ -10254,6 +10307,22 @@ $as_echo "not found" >&6; }
 
 
 
+  if test "x$OCAML_PKG_dynlink" != xno; then :
+    PATH_dynlink=`$OCAMLFIND query dynlink 2>/dev/null`
+
+
+fi
+
+    { $as_echo "$as_me:${as_lineno-$LINENO}: configuring package type-conv" >&5
+$as_echo "$as_me: configuring package type-conv" >&6;}
+  # Check whether --enable-type-conv was given.
+if test "${enable_type_conv+set}" = set; then :
+  enableval=$enable_type_conv;
+fi
+
+
+      if test "x$enable_type_conv" != xno; then :
+
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for OCaml findlib package type-conv" >&5
 $as_echo_n "checking for OCaml findlib package type-conv... " >&6; }
 
@@ -10277,6 +10346,211 @@ $as_echo "not found" >&6; }
 
 
 
+  if test "x$OCAML_PKG_type_conv" != xno; then :
+    PATH_type_conv=`$OCAMLFIND query type-conv 2>/dev/null`
+
+
+fi
+
+    GLOBAL_type_conv=$OCAML_PKG_type_conv
+
+
+    if test "x$GLOBAL_type_conv" != xno; then :
+        enable_type_conv=yes
+
+
+else
+        if test "x$enable_type_conv" == xyes; then :
+          as_fn_error $? "OCaml package type-conv is not available but requested explicitly" "$LINENO" 5
+
+fi
+      enable_type_conv=no
+
+
+fi
+
+fi
+
+    if test "x$enable_type_conv" == xno; then :
+      { pkgdir=; unset pkgdir;}
+    pkgdir="$COCCI_OCAML_EXTERNAL/type-conv/"
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for a bundled substitute of type-conv" >&5
+$as_echo_n "checking for a bundled substitute of type-conv... " >&6; }
+    if test -d "$pkgdir"; then :
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+      { $as_echo "$as_me:${as_lineno-$LINENO}: using bundled substitute for type-conv in $pkgdir" >&5
+$as_echo "$as_me: using bundled substitute for type-conv in $pkgdir" >&6;}
+      enable_type_conv=local
+
+      PATH_type_conv="$pkgdir"
+
+
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: not available" >&5
+$as_echo "not available" >&6; }
+fi
+
+fi
+
+    if test "x$enable_type_conv" != xno; then :
+      FEATURE_type_conv=1
+
+    FLAGS_type_conv='$(FLAGS_type_conv)'
+
+
+        if test "x$enable_type_conv" == xlocal; then :
+        LOCALLIB_type_conv=1
+
+      MODULES_type_conv='$(LOCAL_type_conv)'
+
+      MODULESOPT_type_conv='$(LOCALOPT_type_conv)'
+
+
+            if test -f "$PATH_type_conv/Makefile"; then :
+          MAKE_type_conv=$PATH_type_conv
+
+
+else
+          MAKE_type_conv=
+
+
+fi
+
+else
+        MODULES_type_conv='$(GLOBAL_type_conv)'
+
+      MODULESOPT_type_conv='$(GLOBALOPT_type_conv)'
+
+
+fi
+
+fi
+
+  if test "x$enable_type_conv" == xno; then :
+      as_fn_error $? "OCaml package type-conv is required. Please make sure it is available." "$LINENO" 5
+
+fi
+
+    { $as_echo "$as_me:${as_lineno-$LINENO}: configuring package camlp4" >&5
+$as_echo "$as_me: configuring package camlp4" >&6;}
+  # Check whether --enable-camlp4 was given.
+if test "${enable_camlp4+set}" = set; then :
+  enableval=$enable_camlp4;
+fi
+
+
+      if test "x$enable_camlp4" != xno; then :
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for OCaml findlib package camlp4" >&5
+$as_echo_n "checking for OCaml findlib package camlp4... " >&6; }
+
+  unset found
+  unset pkg
+  found=no
+  for pkg in camlp4  ; do
+    if $OCAMLFIND query $pkg >/dev/null 2>/dev/null; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: result: found" >&5
+$as_echo "found" >&6; }
+      OCAML_PKG_camlp4=$pkg
+      found=yes
+      break
+    fi
+  done
+  if test "$found" = "no" ; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
+$as_echo "not found" >&6; }
+    OCAML_PKG_camlp4=no
+  fi
+
+
+
+  if test "x$OCAML_PKG_camlp4" != xno; then :
+    PATH_camlp4=`$OCAMLFIND query camlp4 2>/dev/null`
+
+
+fi
+
+    GLOBAL_camlp4=$OCAML_PKG_camlp4
+
+
+    if test "x$GLOBAL_camlp4" != xno; then :
+        enable_camlp4=yes
+
+
+else
+        if test "x$enable_camlp4" == xyes; then :
+          as_fn_error $? "OCaml package camlp4 is not available but requested explicitly" "$LINENO" 5
+
+fi
+      enable_camlp4=no
+
+
+fi
+
+fi
+
+    if test "x$enable_camlp4" == xno; then :
+      { pkgdir=; unset pkgdir;}
+    pkgdir="$COCCI_OCAML_EXTERNAL/camlp4/"
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for a bundled substitute of camlp4" >&5
+$as_echo_n "checking for a bundled substitute of camlp4... " >&6; }
+    if test -d "$pkgdir"; then :
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+      { $as_echo "$as_me:${as_lineno-$LINENO}: using bundled substitute for camlp4 in $pkgdir" >&5
+$as_echo "$as_me: using bundled substitute for camlp4 in $pkgdir" >&6;}
+      enable_camlp4=local
+
+      PATH_camlp4="$pkgdir"
+
+
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: not available" >&5
+$as_echo "not available" >&6; }
+fi
+
+fi
+
+    if test "x$enable_camlp4" != xno; then :
+      FEATURE_camlp4=1
+
+    FLAGS_camlp4='$(FLAGS_camlp4)'
+
+
+        if test "x$enable_camlp4" == xlocal; then :
+        LOCALLIB_camlp4=1
+
+      MODULES_camlp4='$(LOCAL_camlp4)'
+
+      MODULESOPT_camlp4='$(LOCALOPT_camlp4)'
+
+
+            if test -f "$PATH_camlp4/Makefile"; then :
+          MAKE_camlp4=$PATH_camlp4
+
+
+else
+          MAKE_camlp4=
+
+
+fi
+
+else
+        MODULES_camlp4='$(GLOBAL_camlp4)'
+
+      MODULESOPT_camlp4='$(GLOBALOPT_camlp4)'
+
+
+fi
+
+fi
+
+  if test "x$enable_camlp4" == xno; then :
+      as_fn_error $? "OCaml package camlp4 is required. Please make sure it is available." "$LINENO" 5
+
+fi
+
     { $as_echo "$as_me:${as_lineno-$LINENO}: configuring package sexplib" >&5
 $as_echo "$as_me: configuring package sexplib" >&6;}
   # Check whether --enable-sexplib was given.
@@ -10286,7 +10560,6 @@ fi
 
 
       if test "x$enable_sexplib" != xno; then :
-        { GLOBAL_sexplib=; unset GLOBAL_sexplib;}
 
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for OCaml findlib package sexplib" >&5
 $as_echo_n "checking for OCaml findlib package sexplib... " >&6; }
@@ -10311,12 +10584,17 @@ $as_echo "not found" >&6; }
 
 
 
-  GLOBAL_sexplib="$found"
+  if test "x$OCAML_PKG_sexplib" != xno; then :
+    PATH_sexplib=`$OCAMLFIND query sexplib 2>/dev/null`
 
-    if test "x$GLOBAL_sexplib" == xyes; then :
+
+fi
+
+    GLOBAL_sexplib=$OCAML_PKG_sexplib
+
+
+    if test "x$GLOBAL_sexplib" != xno; then :
         enable_sexplib=yes
-
-        PATH_sexplib=`$OCAMLFIND query sexplib 2>/dev/null`
 
 
 else
@@ -10401,7 +10679,6 @@ fi
 
 
       if test "x$enable_menhirLib" != xno; then :
-        { GLOBAL_menhirLib=; unset GLOBAL_menhirLib;}
 
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for OCaml findlib package menhirLib" >&5
 $as_echo_n "checking for OCaml findlib package menhirLib... " >&6; }
@@ -10426,12 +10703,17 @@ $as_echo "not found" >&6; }
 
 
 
-  GLOBAL_menhirLib="$found"
+  if test "x$OCAML_PKG_menhirLib" != xno; then :
+    PATH_menhirLib=`$OCAMLFIND query menhirLib 2>/dev/null`
 
-    if test "x$GLOBAL_menhirLib" == xyes; then :
+
+fi
+
+    GLOBAL_menhirLib=$OCAML_PKG_menhirLib
+
+
+    if test "x$GLOBAL_menhirLib" != xno; then :
         enable_menhirLib=yes
-
-        PATH_menhirLib=`$OCAMLFIND query menhirLib 2>/dev/null`
 
 
 else
@@ -10516,7 +10798,6 @@ fi
 
 
       if test "x$enable_extlib" != xno; then :
-        { GLOBAL_extlib=; unset GLOBAL_extlib;}
 
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for OCaml findlib package extlib" >&5
 $as_echo_n "checking for OCaml findlib package extlib... " >&6; }
@@ -10541,12 +10822,17 @@ $as_echo "not found" >&6; }
 
 
 
-  GLOBAL_extlib="$found"
+  if test "x$OCAML_PKG_extlib" != xno; then :
+    PATH_extlib=`$OCAMLFIND query extlib 2>/dev/null`
 
-    if test "x$GLOBAL_extlib" == xyes; then :
+
+fi
+
+    GLOBAL_extlib=$OCAML_PKG_extlib
+
+
+    if test "x$GLOBAL_extlib" != xno; then :
         enable_extlib=yes
-
-        PATH_extlib=`$OCAMLFIND query extlib 2>/dev/null`
 
 
 else
@@ -13224,7 +13510,6 @@ fi
 
 
       if test "x$enable_pycaml" != xno; then :
-        { GLOBAL_pycaml=; unset GLOBAL_pycaml;}
 
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for OCaml findlib package pycaml" >&5
 $as_echo_n "checking for OCaml findlib package pycaml... " >&6; }
@@ -13249,12 +13534,17 @@ $as_echo "not found" >&6; }
 
 
 
-  GLOBAL_pycaml="$found"
+  if test "x$OCAML_PKG_pycaml" != xno; then :
+    PATH_pycaml=`$OCAMLFIND query pycaml 2>/dev/null`
 
-    if test "x$GLOBAL_pycaml" == xyes; then :
+
+fi
+
+    GLOBAL_pycaml=$OCAML_PKG_pycaml
+
+
+    if test "x$GLOBAL_pycaml" != xno; then :
         enable_pycaml=yes
-
-        PATH_pycaml=`$OCAMLFIND query pycaml 2>/dev/null`
 
 
 else
@@ -13435,7 +13725,6 @@ fi
 
 
       if test "x$enable_pcre" != xno; then :
-        { GLOBAL_pcre=; unset GLOBAL_pcre;}
 
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for OCaml findlib package pcre" >&5
 $as_echo_n "checking for OCaml findlib package pcre... " >&6; }
@@ -13460,12 +13749,17 @@ $as_echo "not found" >&6; }
 
 
 
-  GLOBAL_pcre="$found"
+  if test "x$OCAML_PKG_pcre" != xno; then :
+    PATH_pcre=`$OCAMLFIND query pcre 2>/dev/null`
 
-    if test "x$GLOBAL_pcre" == xyes; then :
+
+fi
+
+    GLOBAL_pcre=$OCAML_PKG_pcre
+
+
+    if test "x$GLOBAL_pcre" != xno; then :
         enable_pcre=yes
-
-        PATH_pcre=`$OCAMLFIND query pcre 2>/dev/null`
 
 
 else

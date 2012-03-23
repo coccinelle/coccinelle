@@ -1,0 +1,10 @@
+# OASIS_START
+# DO NOT EDIT (digest: 930d721afe073d0e739f92d37dec9f02)
+version = "3.0.4"
+description = "Syntax extension for type-conv"
+requires = "camlp4"
+archive(syntax,preprocessor) = "pa_type_conv.cma"
+archive(syntax,toploop) = "pa_type_conv.cma"
+exists_if = "pa_type_conv.cma"
+# OASIS_STOP
+

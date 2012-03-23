@@ -47,3 +47,10 @@ LOCALOPT_extlib  = extLib.cmxa
 GLOBAL_extlib    = extLib.cma
 GLOBALOPT_extlib = extLib.cmxa
 FLAGS_extlib     =
+
+# type conv library
+LOCAL_extlib     = pa_type_conv.cma
+LOCALOPT_extlib  = pa_type_conv.cmxa
+GLOBAL_extlib    = pa_type_conv.cma
+GLOBALOPT_extlib = pa_type_conv.cma
+FLAGS_extlib     =

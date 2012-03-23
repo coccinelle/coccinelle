@@ -1,0 +1,57 @@
+2011-09-15:  Fixes to improve package dependency resolution.
+
+2011-08-02:  Added missing module type case for "module type of".
+
+2011-07-04:  Merged with Jane Street version.  API changes:
+
+             Removed functions:
+
+               * Gen.ide
+               * Gen.idp
+
+             Removed location arguments from:
+
+               * type_is_recursive
+               * drop_variance_annotations
+
+2010-12-22:  Merged with Jane Street version.  No code changes.
+
+2010-09-25:  Added a missing type case to type_is_recursive.
+             Thanks to Michael Wawrzoniak <mhw@cs.princeton.edu> for this
+             patch!
+
+2010-07-07:  Major changes for compatibility with OCaml 3.12.
+
+2010-06-03:  Improved determination of type-conv paths.
+             Thanks to Jacques Le Normand <rathereasy@gmail.com> for this
+             patch!
+
+2009-09-19:  Added missing type cases for supporting variant types.
+
+2009-01-14:  Added support for type converters that take arguments.
+             Thanks to Jérémie Dimino <jeremie@dimino.org> for this
+             patch!
+
+             Added support for deprecated OCaml syntax, since the compiler
+             still supports it, too.
+
+2008-10-22:  Fixed bug preprocessing labeled arguments in function types.
+
+2008-10-18:  Fix for upcoming OCaml release 3.11.
+
+2008-10-07:  Added a patch to improve handling of type conversion paths.
+
+             Thanks to David Rajchenbach-Teller
+             <David.Teller@ens-lyon.org> for the patch!
+
+2008-08-20:  Added support for exception converters.
+
+2008-07-25:  Fixed bug concerning variance annotations in type
+             definitions within structures.
+
+2008-03-17:  Improved META file and support of toplevel interpreter.
+
+2008-02-11:  Added support for handling variance annotations in
+             signatures, and for empty types.
+
+2007-10-14:  Initial release.

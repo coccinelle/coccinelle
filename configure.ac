@@ -106,13 +106,11 @@ AC_REQ_COCCI_STDPKG([bigarray])
 AC_REQ_COCCI_STDPKG([num])
 AC_REQ_COCCI_STDPKG([str])
 AC_REQ_COCCI_STDPKG([threads])
+AC_COCCI_OCAMLPKG([dynlink])    dnl  should be part of the ocaml installation (but is optional for coccinelle)
 
-dnl  optional ocaml packages
-AC_MSG_NOTICE([the following packages are usually optional])
-AC_CHECK_OCAML_PKG([dynlink])    dnl  should be part of the ocaml installation
-AC_CHECK_OCAML_PKG([type-conv])  dnl  TODO: seems to be needed for sexplib?
-
-dnl  required modules (available locally too)
+dnl  required modules (SOME available locally too)
+AC_REQ_COCCI_EXTPKG([type-conv])
+AC_REQ_COCCI_EXTPKG([camlp4])
 AC_REQ_COCCI_EXTPKG([sexplib])
 AC_REQ_COCCI_EXTPKG([menhirLib])
 AC_REQ_COCCI_EXTPKG([extlib])

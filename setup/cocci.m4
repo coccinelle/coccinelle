@@ -20,7 +20,7 @@ dnl  using ocamlfind to store into $1 the location where
 dnl  a package $2 resides.
 AC_DEFUN([AC_COCCI_OCAMLPKGDIR],
 [dnl
-  $1=`$OCAMLFIND query $2 2>/dev/null`
+  AC_SUBST(AS_TR_SH([PATH_$1]),[`$OCAMLFIND query $1 2>/dev/null`])
 ])
 
 
@@ -29,9 +29,8 @@ dnl  ocaml package given as $2 in the
 dnl  variable given as $1
 AC_DEFUN([AC_COCCI_OCAMLPKG],
 [dnl
-  AS_UNSET([$1])
-  AC_CHECK_OCAML_PKG([$2])
-  $1="$found"   dnl  '$found' is set by AC_CHECK_OCAML_PKG
+  AC_CHECK_OCAML_PKG([$1])
+  AS_IF([test "x$[]AS_TR_SH([OCAML_PKG_$1])" != xno],[AC_COCCI_OCAMLPKGDIR([$1])])
 ])
 
 dnl  requires that the ocaml package is installed.
@@ -39,8 +38,8 @@ dnl  it is assumed that this package is part of the
 dnl  ocaml installation.
 AC_DEFUN([AC_REQ_COCCI_STDPKG],
 [dnl
-  AC_COCCI_OCAMLPKG([haveocamlpkg],[$1])
-  AS_IF([test "x$haveocamlpkg" == xno],
+  AC_COCCI_OCAMLPKG([$1])
+  AS_IF([test "x$[]AS_TR_SH([OCAML_PKG_$1])" == xno],
   [dnl
     AC_MSG_ERROR([package $1 is required. It should be part of your ocaml installation.])
   ])
@@ -72,26 +71,26 @@ AC_DEFUN([AC_CHECK_COCCI_EXTPKG],
 
   dnl  try and find a globally installed version
   dnl  if not, enable_$1 will be "no"
-  AS_IF([test "x$enable_$1" != xno],
+  AS_IF([test "x$[]AS_TR_SH([enable_$1])" != xno],
   [dnl
-    AC_COCCI_OCAMLPKG([GLOBAL_[]$1], [$1])
+    AC_COCCI_OCAMLPKG([$1])
+    AC_SUBST(AS_TR_SH([GLOBAL_$1]),[$[]AS_TR_SH([OCAML_PKG_$1])])
 
-    AS_IF([test "x$GLOBAL_$1" == xyes],
+    AS_IF([test "x$[]AS_TR_SH([GLOBAL_$1])" != xno],
     [dnl  when the package is available
-      AC_SUBST([enable_$1],[yes])
-      AC_COCCI_OCAMLPKGDIR([PATH_[]$1], [$1])
+      AC_SUBST(AS_TR_SH([enable_$1]),[yes])
     ],
     [dnl  when the package is not available
-      AS_IF([test "x$enable_[]$1" == xyes],
+      AS_IF([test "x$[]AS_TR_SH([enable_$1])" == xyes],
       [dnl  when explicitly requested the global version
         AC_MSG_ERROR([OCaml package $1 is not available but requested explicitly])
       ])
-      AC_SUBST([enable_$1],[no])
+      AC_SUBST(AS_TR_SH([enable_$1]),[no])
     ])
   ])
 
   dnl  check for a local package
-  AS_IF([test "x$enable_[]$1" == xno],
+  AS_IF([test "x$AS_TR_SH([enable_$1])" == xno],
   [dnl
     AS_UNSET([pkgdir])
     pkgdir="$COCCI_OCAML_EXTERNAL/$1/"
@@ -100,37 +99,37 @@ AC_DEFUN([AC_CHECK_COCCI_EXTPKG],
     [dnl
       AC_MSG_RESULT([yes])
       AC_MSG_NOTICE([using bundled substitute for $1 in $pkgdir])
-      AC_SUBST([enable_$1], [local])
-      AC_SUBST([PATH_$1], ["$pkgdir"])
+      AC_SUBST(AS_TR_SH([enable_$1]), [local])
+      AC_SUBST(AS_TR_SH([PATH_$1]), ["$pkgdir"])
     ],
     [AC_MSG_RESULT([not available])])
   ])
 
   dnl  additional handling
-  AS_IF([test "x$enable_[]$1" != xno],
+  AS_IF([test "x$[]AS_TR_SH([enable_$1])" != xno],
   [dnl
-    AC_SUBST([FEATURE_$1],[1])
-    AC_SUBST([FLAGS_$1],['$(FLAGS_[]$1)'])
+    AC_SUBST(AS_TR_SH([FEATURE_$1]),[1])
+    AC_SUBST(AS_TR_SH([FLAGS_$1]),['$([]AS_TR_SH([FLAGS_$1]))'])
 
     dnl  distinguish global/local
-    AS_IF([test "x$enable_[]$1" == xlocal],
+    AS_IF([test "x$[]AS_TR_SH([enable_$1])" == xlocal],
     [dnl
-      AC_SUBST([LOCALLIB_$1],[1])
-      AC_SUBST([MODULES_$1],['$(LOCAL_[]$1)'])
-      AC_SUBST([MODULESOPT_$1],['$(LOCALOPT_[]$1)'])
+      AC_SUBST(AS_TR_SH([LOCALLIB_$1]),[1])
+      AC_SUBST(AS_TR_SH([MODULES_$1]),['$(AS_TR_SH([LOCAL_$1]))'])
+      AC_SUBST(AS_TR_SH([MODULESOPT_$1]),['$(AS_TR_SH([LOCALOPT_$1]))'])
 
       dnl check if the local directory has a Makefile
-      AS_IF([test -f "$PATH_[]$1/Makefile"],
+      AS_IF([test -f "$[]AS_TR_SH([PATH_$1])/Makefile"],
       [dnl
-        AC_SUBST([MAKE_$1],[$PATH_[]$1])
+        AC_SUBST(AS_TR_SH([MAKE_$1]),[$[]AS_TR_SH([PATH_$1])])
       ],
       [dnl
-        AC_SUBST([MAKE_$1],[ ])
+        AC_SUBST(AS_TR_SH([MAKE_$1]),[ ])
       ])
     ],
     [dnl
-      AC_SUBST([MODULES_$1],['$(GLOBAL_[]$1)'])
-      AC_SUBST([MODULESOPT_$1],['$(GLOBALOPT_[]$1)'])
+      AC_SUBST(AS_TR_SH([MODULES_$1]),['$(AS_TR_SH([GLOBAL_$1]))'])
+      AC_SUBST(AS_TR_SH([MODULESOPT_$1]),['$(AS_TR_SH([GLOBALOPT_$1]))'])
     ])
   ])
 ])
@@ -140,11 +139,11 @@ dnl  initializes the defaults substitutions for
 dnl  configuration variables of packages
 AC_DEFUN([AC_COCCI_INIT_PKG_DEFAULT],
 [dnl
-  AC_SUBST([FEATURE_$1])
-  AC_SUBST([LOCALLIB_$1])
-  AC_SUBST([FLAGS_$1])
-  AC_SUBST([MODULES_$1])
-  AC_SUBST([MODULESOPT_$1])
+  AC_SUBST(AS_TR_SH([FEATURE_$1]))
+  AC_SUBST(AS_TR_SH([LOCALLIB_$1]))
+  AC_SUBST(AS_TR_SH([FLAGS_$1]))
+  AC_SUBST(AS_TR_SH([MODULES_$1]))
+  AC_SUBST(AS_TR_SH([MODULESOPT_$1]))
 ])
 
 
@@ -154,7 +153,7 @@ dnl  substitute is available.
 AC_DEFUN([AC_REQ_COCCI_EXTPKG],
 [dnl
   AC_CHECK_COCCI_EXTPKG([$1])
-  AS_IF([test "x$enable_[]$1" == xno],
+  AS_IF([test "x$[]AS_TR_SH([enable_$1])" == xno],
   [dnl
     AC_MSG_ERROR([OCaml package $1 is required. Please make sure it is available.])
   ])
