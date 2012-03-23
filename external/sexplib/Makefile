@@ -11,7 +11,7 @@
 
 include ../../Makefile.config
 
-VERSION=7.0.2
+VERSION=7.0.5
 SEXPDIR=sexplib-$(VERSION)
 SEXPLIB=$(SEXPDIR)/lib
 SEXPMARKER=$(SEXPDIR)/.marker
