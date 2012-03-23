@@ -1,0 +1,140 @@
+.\"                                      Hey, EMACS: -*- nroff -*-
+.TH MENHIR 1 "April 19, 2006"
+.\" Please adjust this date whenever revising the manpage.
+.\"
+.\" Some roff macros, for reference:
+.\" .nh        disable hyphenation
+.\" .hy        enable hyphenation
+.\" .ad l      left justify
+.\" .ad b      justify to both left and right margins
+.\" .nf        disable filling
+.\" .fi        enable filling
+.\" .br        insert line break
+.\" .sp <n>    insert n+1 empty lines
+.\" for manpage-specific macros, see man(7)
+
+
+.SH NAME
+menhir \- parser generator for OCaml
+
+
+.SH SYNOPSIS
+.B menhir
+.RI [ options ] " files"
+.SH DESCRIPTION
+.B menhir
+is a LR(1) parser generator for the Objective Caml programming language. That is, Menhir compiles LR(1) grammar specifications down to Objective Caml code. It is mostly compatible with
+.BR ocamlyacc (1).
+
+
+.SH OPTIONS
+.TP
+.B \-h, \-\-help
+Show summary of options.
+.TP
+.BI \-b,\ \-\-base\  basename
+Specifies a base name for the output file(s).
+.TP
+.B \-\-comment
+Include comments in the generated code.
+.TP
+.B \-\-depend
+Invoke ocamldep and display dependencies.
+.TP
+.B \-\-dump
+Describe the automaton in
+.IR basename .automaton.
+.TP
+.B \-\-error\-recovery
+Attempt recovery by discarding tokens after errors.
+.TP
+.B \-\-explain
+Explain conflicts in
+.IR basename .conflicts.
+.TP
+.BI \-\-external\-tokens\  module
+Import token type definition from
+.IR module .
+.TP
+.B \-\-graph
+Write grammar's dependency graph to
+.IR basename .dot.
+.TP
+.B \-\-infer
+Invoke ocamlc for ahead of time type inference.
+.TP
+.B \-\-interpret
+Interpret the sentences provided on stdin.
+.TP
+.B \-\-interpret\-show\-cst
+Show a concrete syntax tree upon acceptance.
+.TP
+.BI \-la,\ \-\-log\-automaton\  level
+Log information about the automaton.
+.TP
+.BI \-lc,\ \-\-log\-code\  level
+Log information about the generated code.
+.TP
+.BI \-lg,\ \-\-log\-grammar\  level
+Log information about the grammar.
+.TP
+.B \-\-no\-inline
+Ignore the %inline keyword.
+.TP
+.B \-\-no\-stdlib
+Do not load the standard library.
+.TP
+.BI \-\-ocamlc\  command
+Specifies how ocamlc should be invoked.
+.TP
+.BI \-\-ocamldep\  command
+Specifies how ocamldep should be invoked.
+.TP
+.B \-\-only\-preprocess
+Print a simplified grammar and exit.
+.TP
+.B \-\-only\-tokens
+Generate token type definition only, no code.
+.TP
+.B \-\-raw\-depend
+Invoke ocamldep and echo its raw output.
+.TP
+.BI \-\-stdlib\  directory
+Specify where the standard library lies.
+.TP
+.B \-\-suggest\-comp\-flags
+Suggest compilation flags for ocaml{c,opt}.
+.TP
+.B \-\-suggest\-link\-flags-byte
+Suggest link flags for ocamlc.
+.TP
+.B \-\-suggest\-link\-flags-opt
+Suggest link flags for ocamlopt.
+.TP
+.B \-t, \-\-table
+Use the table-based back-end.
+.TP
+.B \-\-timings
+Display internal timings.
+.TP
+.B \-\-trace
+Include tracing instructions in the generated code.
+.TP
+.B \-\-version
+Show version number and exit.
+.TP
+.B \-v
+Synonymous with
+.BR \-\-dump\ \-\-explain .
+
+
+.SH SEE ALSO
+.BR ocaml (1).
+
+
+.SH AUTHOR
+.B menhir
+was written by François Pottier and Yann Régis-Gianas.
+.PP
+This manual page was written by Samuel Mimram <smimram@debian.org>,
+for the Debian project (but may be used by others).

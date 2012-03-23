@@ -8,16 +8,18 @@
 include ../../Makefile.config
 
 VERSION=1.5.2
-EXTLIB=extlib-${VERSION}
+EXTLIB=extlib-$(VERSION)
 
 all: extLib.cma META
 all.opt: extLib.cmxa META
 
 clean:
-	rm -f extLib.cma extLib.cmxa extLib.a META \
-		.depend
+	rm -f .depend META extLib.cm[ioxa] extLib.[ao] \
+		$(EXTLIB)/*.cm[ioxa]
 
 distclean: clean
+
+depend:
 
 .PHONEY: all all.opt clean distclean depend
 

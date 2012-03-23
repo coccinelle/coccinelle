@@ -1,0 +1,7 @@
+# This auxiliary Makefile is meant to be included by a client Makefile in
+# addition to Makefile.shared. It is optional. It implements the common case
+# where every .mly file in the current directory is to be viewed as a
+# mono-module grammar specification.
+
+$(foreach module,$(wildcard *.mly),$(eval $(call menhir_monomodule,$(patsubst %.mly,%,$(module)),)))
+
