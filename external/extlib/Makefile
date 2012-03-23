@@ -16,7 +16,7 @@ all.opt: depend extLib.cmxa META
 
 clean:
 	rm -f .depend META extLib.cm[ioxa] extLib.[ao] \
-		$(EXTLIB)/*.cm[ioxa]
+		$(EXTLIB)/*.cm[ioxa] extLib.cmxa
 
 distclean: clean
 	rm -rf $(EXTLIB)
@@ -45,7 +45,7 @@ extLib.cma: $(MLI) $(SRC)
 	$(OCAMLC) -a -custom -thread -I $(EXTLIB) -o extLib.cma $(MLI) $(SRC)
 
 extLib.cmxa: $(MLI) $(SRC)
-	$(OCAMLC) -a -thread -I $(EXTLIB) -o extLib.cmxa $(SRC)
+	$(OCAMLOPT) -a -linkall -thread -I $(EXTLIB) -o extLib.cmxa $(SRC)
 
 META: $(EXTLIB)/META
 	cp $< $@

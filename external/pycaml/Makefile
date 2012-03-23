@@ -1,43 +1,76 @@
 include ../../Makefile.config
 
+PYCAMLFILE=pycaml_0.82.orig.tar.gz
+DEBIANFILE=pycaml_0.82-14.debian.tar.gz
+
+PYCAMLDIR=pycaml
+PYCAMLMARKER=$(PYCAMLDIR)/.marker
+DEBIANDIR=debian
+DEBIANMARKER=$(DEBIANDIR)/.marker
+
 SHARE_FLAGS=-shared -fpic
-OCAMLC_CMD=$(OCAMLC) -thread -ccopt "${PYTHON_CFLAGS}" -cclib "${PYTHON_LIBS}" -cc "${CC} ${CFLAGS} ${SHARE_FLAGS}"
-OCAMLOPT_CMD=$(OCAMLOPT) -thread -ccopt "${PYTHON_CFLAGS}" -cclib "${PYTHON_LIBS}"
+OCAMLC_CMD=$(OCAMLC) -thread -ccopt "${PYTHON_CFLAGS}" -cclib "${PYTHON_LIBS}" -cc "${CC} ${CFLAGS} ${SHARE_FLAGS}" -I $(PYCAMLDIR)
+OCAMLOPT_CMD=$(OCAMLOPT) -thread -ccopt "${PYTHON_CFLAGS}" -cclib "${PYTHON_LIBS}" -I $(PYCAMLDIR)
 OCAMLMKLIB_CMD=$(OCAMLMKLIB)
 
-all: pycaml.cma
 
-pycaml.mli: pycaml.ml
-	$(OCAMLC_CMD) -i $< > pycaml.mli
+all: depend pycaml.cma
 
-pycaml.cmo: pycaml.ml pycaml.cmi
-	$(OCAMLC_CMD) -c $<
+$(PYCAMLDIR)/pycaml.mli: $(PYCAMLDIR)/pycaml.ml
+	$(OCAMLC_CMD) -i $< > $(PYCAMLDIR)/pycaml.mli
 
-pycaml.cmi: pycaml.mli
-	$(OCAMLC_CMD) -c $<
+$(PYCAMLDIR)/pycaml.cmo: $(PYCAMLDIR)/pycaml.ml $(PYCAMLDIR)/pycaml.cmi
+	$(OCAMLC_CMD) -c $< -o $@
 
-pycaml_ml.o: pycaml_ml.c
-	$(OCAMLC_CMD) $<
+$(PYCAMLDIR)/pycaml.cmi: $(PYCAMLDIR)/pycaml.mli
+	$(OCAMLC_CMD) -c $< -o $@
+
+# local copy of the interface
+pycaml.cmi: $(PYCAMLDIR)/pycaml.cmi
+	cp $< $@
+
+pycaml_ml.o: $(PYCAMLDIR)/pycaml_ml.c
+	$(OCAMLC_CMD) $< -o $@
 
 dllpycaml_stubs.so: pycaml_ml.o
 	$(OCAMLMKLIB_CMD) -o pycaml_stubs $<
 
-pycaml.cma: dllpycaml_stubs.so pycaml.cmi pycaml.cmo
+pycaml.cma: dllpycaml_stubs.so pycaml.cmi $(PYCAMLDIR)/pycaml.cmo
 	$(OCAMLC_CMD) -a -custom -linkall -o pycaml.cma pycaml.cmo -dllib -lpycaml_stubs
 
 all.opt: pycaml.cmxa
 
-pycaml.cmx: pycaml.ml pycaml.cmi
+$(PYCAMLDIR)/pycaml.cmx: $(PYCAMLDIR)/pycaml.ml $(PYCAMLDIR)/pycaml.cmi
 	$(OCAMLOPT_CMD) -c $<
 
-pycaml.cmxa: dllpycaml_stubs.so pycaml.cmx
+pycaml.cmxa: dllpycaml_stubs.so $(PYCAMLDIR)/pycaml.cmx
 	$(OCAMLOPT_CMD) -a -o pycaml.cmxa pycaml.cmx -cclib -lpycaml_stubs
 
 clean:
-	rm -f pycaml.mli pycaml.cmi pycaml.cmo pycaml pycaml_ml.o \
-		pycaml.cmx pycaml.cmxa pycaml.cma pycaml.a pycaml.o \
-		libpycaml_stubs.a dllpycaml_stubs.o dllpycaml_stubs.so
+	rm -f $(PYCAMLDIR)/pycaml.mli pycaml.cm[aixo] $(PYCAMLDIR)/pycaml.cm[aixo] \
+		pycaml.[ao] libpycaml_stubs.a dllpycaml_stubs.o dllpycaml_stubs.so \
+		pycaml_ml.o pycaml.cmxa
 
 distclean: clean
+	rm -rf $(PYCAMLDIR) $(DEBIANDIR)
 
-depend:
+
+# construct the directories
+depend: $(PYCAMLMARKER) $(DEBIANMARKER)
+
+$(PYCAMLMARKER): $(PYCAMLFILE) $(DEBIANMARKER)
+	$(TAR) xfvz $<
+	for PATCH in $(shell cat debian/patches/series); do $(PATCH) -d "${PYCAMLDIR}" -p1 < "./debian/patches/$${PATCH}"; done
+	touch $@
+
+$(PYCAMLFILE):
+	@echo "$@ not found. Please download it and drop it in this directory ($(pwd))."
+	@false
+
+$(DEBIANMARKER): $(DEBIANFILE)
+	$(TAR) xfvz $<
+	touch $@
+
+$(DEBIANFILE):
+	@echo "$@ not found. Please download it and drop it in this directory ($(pwd))."
+	@false

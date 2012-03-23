@@ -18,6 +18,7 @@ SHELL?=@SHELL@
 PKG_CONFIG=@PKG_CONFIG@
 INSTALL=@INSTALL@
 TAR=@TAR@
+PATCH=@PATCH@
 
 # paths
 prefix=@prefix@

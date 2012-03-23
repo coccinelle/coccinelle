@@ -6,11 +6,9 @@ By default, packages installed on the system are selected for
 coccinelle's build. This directory can actually be removed if these
 packages are already available.
 
-
-The packages are unmodifie from a particular original version, except for:
-* pycaml
-* sexplib
-
+The packages are unmodified from a particular original version:
+we bundled the original tarballs and build the software from
+these.
 
 Note: the compilation of these libraries may be tied to
 linux platforms because the Makefiles make assumptions
