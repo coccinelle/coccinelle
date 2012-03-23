@@ -110,9 +110,9 @@ BYTECODE_STATIC=-custom
 .PHONY:: all all.opt byte opt top clean distclean configure
 .PHONY:: $(MAKESUBDIRS) $(MAKESUBDIRS:%=%.opt) subdirs subdirs.opt
 
-all: $(TARGET_ALL)
+all: Makefile.config $(TARGET_ALL)
 
-opt all.opt: opt-compil preinstall
+opt all.opt: Makefile.config opt-compil preinstall
 
 byte-only: Makefile.config byte preinstall
 	@echo successfully build $(EXEC)
@@ -164,7 +164,7 @@ $(MAKESUBDIRS:%=%.opt):
 # pycaml:
 # python:pycaml parsing_cocci parsing_c
 
-clean::
+clean:: Makefile.config
 	set -e; for i in $(CLEANSUBDIRS); do $(MAKE) -C $$i $@; done
 	$(MAKE) -C demos/spp $@
 
@@ -195,7 +195,7 @@ configure:
 
 Makefile.config:
 	@echo "Makefile.config is missing. Run ./configure to generate it."
-	exit 1
+	@false
 
 tools: $(LIBS) $(LNKLIBS)
 	$(MAKE) -C tools
@@ -230,7 +230,7 @@ docs:
 	if [ -x "$(TARGET)" -o -x "$(TARGET).opt" ]; \
 		then $(MAKE) -C ocaml doc; fi
 
-clean::
+clean:: Makefile.config
 	$(MAKE) -C docs clean
 	$(MAKE) -C ocaml cleandoc
 
@@ -469,7 +469,7 @@ distclean:: clean
 	find . -name ".#*1.*" | xargs rm -f
 
 .PHONEY: depend
-.depend depend: test.ml version
+.depend depend: Makefile.config test.ml version
 	@echo constructing '.depend'
 	$(OCAMLDEP_CMD) *.mli *.ml > .depend
 	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i depend; done
