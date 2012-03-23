@@ -17,6 +17,7 @@ PATH_camlp4=@PATH_camlp4@
 SHELL?=@SHELL@
 PKG_CONFIG=@PKG_CONFIG@
 INSTALL=@INSTALL@
+TAR=@TAR@
 
 # paths
 prefix=@prefix@

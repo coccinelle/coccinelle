@@ -9,10 +9,11 @@ OCAMLOPT_CMD=$(OCAMLOPT) -thread -ccopt "${PCRE_CFLAGS}" -cclib "${PCRE_LIBS}"
 OCAMLMKLIB_CMD=$(OCAMLMKLIB)
 
 PCRE_VERSION=6.2.5
-PCRE_LIB=pcre-ocaml-release-$(PCRE_VERSION)/lib
+PCRE_DIR=pcre-ocaml-release-$(PCRE_VERSION)
+PCRE_LIB=$(PCRE_DIR)/lib
 
-all: pcre.cma META
-all.opt: pcre.cmxa META
+all: depend pcre.cma META
+all.opt: depend pcre.cmxa META
 
 clean:
 	rm -f dllpcre_stubs.so libpcre_stubs.a pcre_stubs.o \
@@ -20,11 +21,19 @@ clean:
 		pcre.a pcre.cmx pcre.cmxa pcre.o
 
 distclean: clean
+	rm -rf $(PCRE_DIR)
 
-depend:
+depend: $(PCRE_DIR)
 
 .PHONEY: all all.opt clean distclean depend
 
+# prepare the pcre directory
+$(PCRE_DIR): $(PCRE_DIR).tar.gz
+	$(TAR) xfvz $<
+
+$(PCRE_DIR).tar.gz:
+	@echo "$@ not found. Please download it and drop it in this directory ($(pwd))."
+	@false
 
 # handle the building of pcre ourselves
 

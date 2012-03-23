@@ -10,16 +10,24 @@ include ../../Makefile.config
 VERSION=1.5.2
 EXTLIB=extlib-$(VERSION)
 
-all: extLib.cma META
-all.opt: extLib.cmxa META
+all: depend extLib.cma META
+all.opt: depend extLib.cmxa META
 
 clean:
 	rm -f .depend META extLib.cm[ioxa] extLib.[ao] \
 		$(EXTLIB)/*.cm[ioxa]
 
 distclean: clean
+	rm -rf $(EXTLIB)
 
-depend:
+depend: $(EXTLIB)
+
+$(EXTLIB): $(EXTLIB).tar.gz
+	$(TAR) xfvz $<
+
+$(EXTLIB).tar.gz:
+	@echo "$@ not found. Please download it and drop it in this directory ($(pwd))."
+	@false
 
 .PHONEY: all all.opt clean distclean depend
 

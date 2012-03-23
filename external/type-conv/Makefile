@@ -8,11 +8,12 @@ OCAMLC_CMD=$(OCAMLC) -thread -I "${PATH_camlp4}"
 OCAMLOPT_CMD=$(OCAMLOPT) -thread -I "${PATH_camlp4}"
 CAMLP4_CMD=$(CAMLP4O) pa_extend.cmo q_MLast.cmo
 
-TYCONV_VERSION=3.0.4
-TYCONV_LIB=type-conv-$(TYCONV_VERSION)/lib
+TYCONV_VERSION=3.0.5
+TYCONV_DIR=type_conv-$(TYCONV_VERSION)
+TYCONV_LIB=$(TYCONV_DIR)/lib
 
-all: pa_type_conv.cma META
-all.opt: all pa_type_conv.cmxa META
+all: depend pa_type_conv.cma META
+all.opt: depend all pa_type_conv.cmxa META
   # the standard package does not build an optimized version apparently
 
 clean:
@@ -20,8 +21,16 @@ clean:
 		pa_type_conv.cmi META pa_type_conv.a pa_type_conv.cmo pa_type_conv.cmx
 
 distclean: clean
+	rm -rf $(TYCONV_DIR)
 
-depend:
+depend: $(TYCONV_DIR)
+
+$(TYCONV_DIR).tar.gz:
+	@echo "$@ not found. Please download it and drop it in this directory ($(pwd))."
+	@false
+
+$(TYCONV_DIR): $(TYCONV_DIR).tar.gz
+	$(TAR) xfvz $<
 
 .PHONEY: all all.opt clean distclean depend
 
