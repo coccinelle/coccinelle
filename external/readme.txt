@@ -7,6 +7,11 @@ coccinelle's build. This directory can actually be removed if these
 packages are already available.
 
 
+The packages are unmodifie from a particular original version, except for:
+* pycaml
+* sexplib
+
+
 Note: the compilation of these libraries may be tied to
 linux platforms because the Makefiles make assumptions
 about file name convention.

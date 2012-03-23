@@ -1,5 +1,9 @@
 # This Makefile serves as a wrapper to bundle the
-# extlib module without modifications.
+# extlib package without modifications.
+
+# the extlib package is a conventional package that
+# requires a plain compilation of its .ml files and
+# then packed into an archive file.
 
 include ../../Makefile.config
 

@@ -3,7 +3,8 @@
 
 include ../../Makefile.config
 
-OCAMLC_CMD=$(OCAMLC) -thread -ccopt "${PCRE_CFLAGS}" -cclib "${PCRE_LIBS}"
+SHARE_FLAGS=-shared -fpic
+OCAMLC_CMD=$(OCAMLC) -thread -ccopt "${PCRE_CFLAGS}" -cclib "${PCRE_LIBS}" -cc "${CC} ${CFLAGS} ${SHARE_FLAGS}"
 OCAMLOPT_CMD=$(OCAMLOPT) -thread -ccopt "${PCRE_CFLAGS}" -cclib "${PCRE_LIBS}"
 OCAMLMKLIB_CMD=$(OCAMLMKLIB)
 
