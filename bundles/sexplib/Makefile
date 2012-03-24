@@ -36,8 +36,9 @@ clean:
 distclean: clean
 	rm -rf $(SEXPDIR)
 
-$(SEXPMARKER): $(SEXPDIR).tar.gz
+$(SEXPMARKER): $(SEXPDIR).tar.gz sexp-3.11-compat.patch
 	$(TAR) xfvz $<
+	$(PATCH) -d $(SEXPDIR) -p1 < ./sexp-3.11-compat.patch
 	touch $@
 
 $(SEXPDIR).tar.gz:
