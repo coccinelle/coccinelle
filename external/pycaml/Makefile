@@ -60,7 +60,7 @@ depend: $(PYCAMLMARKER) $(DEBIANMARKER)
 
 $(PYCAMLMARKER): $(PYCAMLFILE) $(DEBIANMARKER)
 	$(TAR) xfvz $<
-	for PATCH in $(shell cat debian/patches/series); do $(PATCH) -d "${PYCAMLDIR}" -p1 < "./debian/patches/$${PATCH}"; done
+	set -e; for PATCH in $(shell cat debian/patches/series); do $(PATCH) -d "${PYCAMLDIR}" -p1 < "./debian/patches/$${PATCH}"; done
 	touch $@
 
 $(PYCAMLFILE):

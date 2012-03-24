@@ -117,7 +117,7 @@ opt all.opt: Makefile.config opt-compil preinstall
 byte-only: Makefile.config byte preinstall
 	@echo successfully build $(EXEC)
 
-world: Makefile.config
+world: Makefile.config .depend version.ml
 	$(MAKE) byte
 	$(MAKE) opt-compil
 	$(MAKE) preinstall
@@ -146,10 +146,10 @@ subdirs.opt:
 	$(MAKE) -C commons sexp.opt OPTFLAGS="$(OPTFLAGS)"
 
 $(MAKESUBDIRS):
-	$(MAKE) -C $@ OCAMLCFLAGS="$(OCAMLCFLAGS)" all
+	$(MAKE) -C $@ -j1 OCAMLCFLAGS="$(OCAMLCFLAGS)" all
 
 $(MAKESUBDIRS:%=%.opt):
-	$(MAKE) -C $(@:%.opt=%) OPTFLAGS="$(OPTFLAGS)" all.opt
+	$(MAKE) -C $(@:%.opt=%) -j1 OPTFLAGS="$(OPTFLAGS)" all.opt
 
 #dependencies:
 # commons:
@@ -165,7 +165,7 @@ $(MAKESUBDIRS:%=%.opt):
 # python:pycaml parsing_cocci parsing_c
 
 clean:: Makefile.config
-	set -e; for i in $(CLEANSUBDIRS); do $(MAKE) -C $$i $@; done
+	set -e; for i in $(CLEANSUBDIRS); do $(MAKE) -C $$i -j1 $@; done
 	$(MAKE) -C demos/spp $@
 
 $(LIBS): $(MAKESUBDIRS)
@@ -461,7 +461,7 @@ clean::
 	rm -f *~ .*~ *.exe #*#
 
 distclean:: clean
-	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i $@; done
+	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -j1 -C $$i $@; done
 	rm -f test.ml
 	rm -f TAGS
 	rm -f tests/SCORE_actual.sexp
@@ -472,7 +472,7 @@ distclean:: clean
 .depend depend: Makefile.config test.ml version
 	@echo constructing '.depend'
 	$(OCAMLDEP_CMD) *.mli *.ml > .depend
-	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i depend; done
+	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -j1 -C $$i depend; done
 
 -include .depend
 
