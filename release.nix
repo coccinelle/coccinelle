@@ -79,7 +79,7 @@ let
     in with pkgs; releaseTools.nixBuild {
       name = "cocci-build-${cfg.name}";
       src = tarball;
-      buildInputs = [ ncurses ocaml ] ++ cfg.ocamls ++ cfg.pythons;
+      buildInputs = [ pkgconfig ncurses ocaml ] ++ cfg.ocamls ++ cfg.pythons;
       configureFlagsArray = cfg.flags;
     };
 
@@ -88,10 +88,10 @@ let
     name = "default";
     pythons = [ python ];
     ocamls = with ocamlPackages; [
-      findlib menhir ocaml_typeconv ocaml_sexplib ocaml_extlib ocaml_pcre pycaml
+      findlib menhir # ocaml_typeconv ocaml_sexplib ocaml_extlib ocaml_pcre pycaml
     ];
     flags = [];
-    selOcaml = orig: orig.ocamlPackages;
+    selOcaml = orig: orig.ocamlPackages_3_11_2;
   };
 
 
