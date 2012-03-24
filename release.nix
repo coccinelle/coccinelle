@@ -33,10 +33,9 @@ let
       inherit versionSuffix;
 
       buildInputs = [
-        python texLiveFull
-        ocaml findlib menhir
-        ocaml_pcre ocaml_sexplib
-        ocaml_extlib pycaml
+        ocaml findlib menhir python
+        texLiveFull # for building the documentation
+	pkgconfig  # for the autoconf macros
       ];
 
       preDist = ''
