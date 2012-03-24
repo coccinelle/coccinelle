@@ -43,7 +43,7 @@ AS_IF([test "x$PKG_CONFIG" == xno],
 
 dnl  ocaml compile
 AC_PROG_OCAML
-AC_CHECK_OCAMLVERSION([3.11])
+AC_CHECK_OCAMLVERSION([3.10])
 AS_IF([test "x$OCAMLC" == xno -o "x$OCAMLDEP" == xno -o "x$OCAMLDOC" == xno -o "x$OCAMLMKLIB" == xno],
 [dnl
   AC_MSG_ERROR([You must install the OCaml compiler])
@@ -268,9 +268,14 @@ AC_ARG_ENABLE([pcre-syntax], AS_HELP_STRING([--enable-pcre-syntax], [enable pcre
 AS_IF([test "x$enable_pcre_syntax" != "xno"],
 [dnl
   PKG_CHECK_MODULES([PCRE], [libpcre],[AC_SUBST([HAVE_PCRE],[yes])],[AC_SUBST([HAVE_PCRE],[no])])
-  AS_IF([test -z "$enable_pcre_syntax" -a "x$HAVE_PCRE" != xyes], [AC_SUBST([enable_pcre_syntax],[no])])
-  AC_CHECK_COCCI_EXTPKG([pcre])  dnl  will set $enable_pcre to 'yes', 'no', or 'local'
-  enable_pcre_syntax=$enable_pcre
+  AS_IF([test -z "$enable_pcre_syntax" -a "x$HAVE_PCRE" != xyes],
+  [dnl
+    AC_SUBST([enable_pcre_syntax],[no])
+  ],
+  [dnl
+    AC_CHECK_COCCI_EXTPKG([pcre])  dnl  will set $enable_pcre to 'yes', 'no', or 'local'
+    enable_pcre_syntax=$enable_pcre
+  ])
 ])
 
 AS_IF([test "x$enable_pcre_syntax" != xno],
@@ -284,12 +289,12 @@ AS_IF([test "x$enable_pcre_syntax" != xno],
   ])
 
   AC_SUBST([REGEXP_MODULE], [Regexp_pcre])
-  AC_SUBST([REGEXP_FILE],[regexp_pcre.ml])
+  AC_SUBST([REGEXP_FILE], [regexp_pcre.ml])
 ],
 [dnl
   AC_SUBST([OCAML_PKG_pcre], [no])
   AC_SUBST([REGEXP_MODULE], [Regexp_str])
-  AC_SUBST([REGEXP_FILE],[regexp_str.ml])
+  AC_SUBST([REGEXP_FILE], [regexp_str.ml])
 ])
 
 
