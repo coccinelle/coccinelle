@@ -88,8 +88,8 @@ dnl
 
 AC_MSG_NOTICE([verifying basic ocaml modules])
 
-dnl  default dir with external ocaml packages
-AC_COCCI_SET_EXTERNAL_DIR([$COCCI_SRCDIR/external])
+dnl  default dir with the bundled ocaml packages
+AC_COCCI_SET_EXTERNAL_DIR([$COCCI_SRCDIR/bundles])
 
 dnl  set some defaults
 dnl  add a line for each package that is

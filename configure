@@ -1561,7 +1561,7 @@ Some influential environment variables:
   RUNTIME_CAMLP4O_CMD
               path to camlp4o
   COCCI_OCAML_EXTERNAL
-              path to extra ocaml packages (default: $COCCI_SRCDIR/external)
+              path to extra ocaml packages (default: $COCCI_SRCDIR/bundles)
   MENHIR      path to menhir
   PYTHON      path to python when the version is determined automatically
   PYTHON_CFLAGS
@@ -10151,7 +10151,7 @@ rm -f confcache
 $as_echo "$as_me: verifying basic ocaml modules" >&6;}
 
 
-  COCCI_OCAML_EXTERNAL="$COCCI_SRCDIR/external"
+  COCCI_OCAML_EXTERNAL="$COCCI_SRCDIR/bundles"
 
   { $as_echo "$as_me:${as_lineno-$LINENO}: coccinelle may use external ocaml libraries in $COCCI_OCAML_EXTERNAL" >&5
 $as_echo "$as_me: coccinelle may use external ocaml libraries in $COCCI_OCAML_EXTERNAL" >&6;}
