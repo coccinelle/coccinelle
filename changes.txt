@@ -163,6 +163,7 @@
 - Allow matching on nameless structs.  Thanks to Ron Minnich for reporting
   the problem.
 - Pretty printing of const/volatile arrays in smpl code.
+- Don't allow just dropping an exp or type
 
 * 0.2.5
 ** Language:
