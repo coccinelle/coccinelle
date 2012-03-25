@@ -602,7 +602,7 @@ let other_options = [
   [
     "--use-cache", Arg.Set Flag_parsing_c.use_cache,
     "   use .ast_raw pre-parsed cached C file";
-    "--cache_prefix",
+    "--cache-prefix",
     Arg.String (function s ->
       Flag_parsing_c.cache_prefix := Some s;
       Flag_parsing_c.use_cache := true),

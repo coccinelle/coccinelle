@@ -4,6 +4,7 @@
 , cocciSrc ? { outPath = ./.; revCount = 1234; gitTag = "abcdef"; }
 , testsSrc ? { outPath = ../big-tests; rev = 1234; }
 , officialRelease ? false
+, performRegress ? true
 }:
 
 let
@@ -123,9 +124,9 @@ let
     { ocaml = pkgs.ocaml_3_12_1;
       ocamlPackages = pkgs.ocamlPackages_3_12_1;
     };
-  selOcaml311 = pkgs:
-    { ocaml = pkgs.ocaml_3_11_1;
-      ocamlPackages = pkgs.ocamlPackages_3_11_1;
+  selOcaml310 = pkgs:
+    { ocaml = pkgs.ocaml_3_10_0;
+      ocamlPackages = pkgs.ocamlPackages_3_10_0;
     };
 
 
@@ -309,18 +310,18 @@ rec {
   build_rse = mkBuild { name = "coccinelle_config1"; ocamlVer = selOcaml312; mkEnv = libs_rse; inclPython = true; };
   build_se = mkBuild { name = "coccinelle_config2"; ocamlVer = selOcaml312; mkEnv = libs_se; inclPython = true; };
   build_null_12 = mkBuild { name = "coccinelle_config3"; ocamlVer = selOcaml312; mkEnv = libs_null; inclPython = true; };
-  build_null_11 = mkBuild { name = "coccinelle_config4"; ocamlVer = selOcaml311; mkEnv = libs_null; inclPython = true; };
+  build_null_10 = mkBuild { name = "coccinelle_config4"; ocamlVer = selOcaml310; mkEnv = libs_null; inclPython = true; };
   build_null_12_np = mkBuild { name = "coccinelle_config5"; ocamlVer = selOcaml312; mkEnv = libs_null; inclPython = false; };
-  build_null_11_np = mkBuild { name = "coccinelle_config6"; ocamlVer = selOcaml311; mkEnv = libs_null; inclPython = false; };
+  build_null_10_np = mkBuild { name = "coccinelle_config6"; ocamlVer = selOcaml310; mkEnv = libs_null; inclPython = false; };
   build_rse_np = mkBuild { name = "coccinelle_config7"; ocamlVer = selOcaml312; mkEnv = libs_rse; inclPython = false; };
 
-  report = mkReport [ build build_rse build_se build_null_12 build_null_11 build_null_12_np build_null_11_np build_rse_np ];
+  report = mkReport [ build build_rse build_se build_null_12 build_null_12_np build_rse_np ];
 
   # different debian builds
   # deb_ubuntu1010_i386 = makeDeb_i686 (disk: disk.ubuntu1010i386);
   # deb_ubuntu1010_x86_64 = makeDeb_x86_64 (disk: disk.ubuntu1010x86_64);
 
   # extensive tests
-  regress = mkRegress build;
+  regress = assert performRegress; mkRegress build;
   test = checkRegress regress;
 }

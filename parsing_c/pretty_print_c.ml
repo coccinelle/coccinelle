@@ -659,7 +659,7 @@ let mk_pretty_printers
 
       match ty, iity with
       (* the work is to do in base_type !! *)
-      | (NoType _, iis)                         -> ()
+      | (NoType, iis)                           -> ()
       | (BaseType _, iis)                       -> print_ident ident
       | (Enum  (sopt, enumt), iis)              -> print_ident ident
       | (StructUnion (_, sopt, fields),iis)     -> print_ident ident

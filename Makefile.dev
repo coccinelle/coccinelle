@@ -57,7 +57,7 @@ gitupdate:
 #	git cvsimport -d :ext:topps:/var/cvs/cocci  coccinelle
 
 #UBUNTU=karmic lucid maverick natty
-UBUNTU=lucid maverick natty
+UBUNTU=lucid maverick natty oneiric
 UBUNTURELEASE=$(UBUNTU:%=ubuntu-%)
 
 .PHONY:: ubuntu $(UBUNTURELEASE)
@@ -84,6 +84,9 @@ ubuntu-natty:
 	debchange -c debian/changelog.natty -D natty -v $(VERSION)~1104npalix$(IDX) "New release $(VERSION)"
 
 ubuntu-oneiric:
+	debchange -c debian/changelog.oneiric -D oneiric -v $(VERSION)~1110npalix$(IDX) "New release $(VERSION)"
+
+ubuntu-p:
 	if [ ! -f debian/changelog.$(@:ubuntu-%=%) ] ; then \
 		debchange --create -c debian/changelog.$(@:ubuntu-%=%) -D UNRELEASED \
 			-v $(VERSION)~npalix$(IDX) "New release $(VERSION)" --package $(PRJNAME) ; \
