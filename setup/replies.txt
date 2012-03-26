@@ -1,5 +1,5 @@
 ocamlfind query (unix|bigarray|num|dynlink|str|threads)
-${ocamllibdir}
+$(ocamllibdir)
 
 ocamlfind query camlp4
 $(ocamllibdir)/camlp4
@@ -17,8 +17,10 @@ pkg-config --libs python(-([0-9\.]+))?$
 $(pythonlibs "${BASH_REMATCH[2]}")
 
 pkg-config --exists --print-errors libpcre
+$(checkpcre)
 
 pkg-config --print-errors libpcre
+$(checkpcre)
 
 pkg-config --cflags libpcre
 

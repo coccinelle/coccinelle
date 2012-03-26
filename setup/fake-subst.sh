@@ -25,7 +25,7 @@ responsefile="$scriptdir/replies.txt"
 
 # some helper functions callable from the replacement macros
 function ocamllibdir {
-  echo "$(dirname $(which ocaml))/../lib/ocaml"
+  ocamlc -where
 }
 
 # outputs with what prefix 'python' was configured
@@ -36,15 +36,22 @@ function pythonprefix {
 # outputs the "include" cflags for python
 function pythoncflags {
   local version=$1
+  local prefix="$(pythonprefix)"
 
-  echo "-I$(pythonprefix)/include/python${version}"
+  echo "-I${prefix}/include/python${version}"
 }
 
 # outputs the "linker" flags for python
 function pythonlibs {
   local version=$1
+  local prefix="$(pythonprefix)"
 
-  echo "-L$(pythonprefix)/lib -lpython${version}"
+  echo "-L${prefix}/lib -lpython${version}"
+}
+
+# succeeds only if "/usr/include/pcre.h" exists
+function checkpcre {
+  test -f /usr/include/pcre.h
 }
 
 # interate through pattern-response pairs
@@ -60,7 +67,7 @@ do
 
   if [[ $cmdline =~ $pattern ]]; then
     if test ! -z "$response"; then
-      eval echo $response
+      (eval "R=\"$response\""; echo $R)
     fi
 
     exit 0
