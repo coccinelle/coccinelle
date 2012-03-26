@@ -4,15 +4,15 @@ dnl
 
 
 dnl  check if the ocaml version is recent enough
-dnl    $1: version to test against
+dnl    $1: the variable to assign
+dnl    $2: version to test against
 AC_DEFUN([AC_CHECK_OCAMLVERSION],
 [dnl
   AS_UNSET([versioncheck])
-  AC_MSG_CHECKING([that the OCaml version is at least $1])
-  AS_VERSION_COMPARE([$OCAMLVERSION],[$1],[versioncheck=no],[versioncheck=yes],[versioncheck=yes])
+  AC_MSG_CHECKING([that the OCaml version is at least $2])
+  AS_VERSION_COMPARE([$OCAMLVERSION],[$2],[versioncheck=no],[versioncheck=yes],[versioncheck=yes])
   AC_MSG_RESULT([$versioncheck])
-  AS_IF([test "x$versioncheck" == xno],[AC_MSG_NOTICE([a more recent OCaml installation may be required])])
-  AC_SUBST([OCAMLVERSIONOK], [$versioncheck])
+  AC_SUBST([$1], [$versioncheck])
 ])
 
 
@@ -137,13 +137,14 @@ AC_DEFUN([AC_CHECK_COCCI_EXTPKG],
 
 dnl  initializes the defaults substitutions for
 dnl  configuration variables of packages
-AC_DEFUN([AC_COCCI_INIT_PKG_DEFAULT],
+AC_DEFUN([AC_COCCI_INIT_PKG_EMPTY],
 [dnl
-  AC_SUBST(AS_TR_SH([FEATURE_$1]))
-  AC_SUBST(AS_TR_SH([LOCALLIB_$1]))
-  AC_SUBST(AS_TR_SH([FLAGS_$1]))
-  AC_SUBST(AS_TR_SH([MODULES_$1]))
-  AC_SUBST(AS_TR_SH([MODULESOPT_$1]))
+  AC_SUBST(AS_TR_SH([FEATURE_$1]), [0])
+  AC_SUBST(AS_TR_SH([LOCALLIB_$1]), [0])
+  AC_SUBST(AS_TR_SH([FLAGS_$1]), [ ])
+  AC_SUBST(AS_TR_SH([MODULES_$1]), [ ])
+  AC_SUBST(AS_TR_SH([MODULESOPT_$1]), [ ])
+  AC_SUBST(AS_TR_SH([PATH_$1]), [ ])
 ])
 
 

@@ -3,7 +3,7 @@ module Ast = Ast_cocci
 exception CompileFailure of string
 exception LinkFailure of string
 
-let ext = if Dynlink.is_native then ".cmxs" else ".cma"
+let ext = if Config.dynlink_is_native then ".cmxs" else ".cma"
 
 let sysdir () =
   let sysdircmd = !Flag.ocamlfind ^ " printconf stdlib" in
@@ -38,7 +38,7 @@ let check_runtime () =
       if has_c then
 	Common.pr2 "Using bytecode version of ocamlc/ocamlopt/ocamldep"
       else
-	if Dynlink.is_native then
+	if Config.dynlink_is_native then
 	  failwith
 	    "No OCaml compiler found! Install either ocamlopt or ocamlopt.opt"
 	else
@@ -377,7 +377,7 @@ let load_file mlfile =
     "-thread -g -dtypes -I %s %s -I %s/globals -I %s/ocaml -I %s/parsing_c -I %s/commons "
       (sysdir ()) inc Config.path Config.path Config.path Config.path in
   let (obj, cmd) =
-    if Dynlink.is_native
+    if Config.dynlink_is_native
     then compile_native_cmd flags mlfile
     else compile_bytecode_cmd flags mlfile in
   compile mlfile cmd;
@@ -392,7 +392,7 @@ let load_file mlfile =
 let clean_file mlfile =
   let basefile = Filename.chop_extension mlfile in
   let files =
-    if Dynlink.is_native then
+    if Config.dynlink_is_native then
       [basefile ^ ".cmxs";
        basefile ^ ".cmx";
        basefile ^ ".o";

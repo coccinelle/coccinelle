@@ -17,8 +17,6 @@ PKGVERSION=$(shell dpkg-parsechangelog -ldebian/changelog.$(DISTRIB_CODENAME) 2>
 
 TARGET=spatch
 PRJNAME=coccinelle
-
-LEXER_SOURCES =
 SRC=flag_cocci.ml cocci.ml testing.ml test.ml $(LEXER_SOURCES:.mll=.ml) main.ml
 
 ifeq ($(FEATURE_PYTHON),1)
@@ -27,15 +25,7 @@ else
 	PYTHON_INSTALL_TARGET=
 endif
 
-ifeq ("$(DYNLINK)","no")
-	DYNLINK=
-else
-	DYNLINK=dynlink.cma
-endif
-
-SEXPSYSCMA=bigarray.cma nums.cma
-
-SYSLIBS=str.cma unix.cma $(SEXPSYSCMA) $(DYNLINK)
+SYSLIBS=str.cma unix.cma bigarray.cma nums.cma
 LIBS=commons/commons.cma \
      commons/commons_sexp.cma \
      globals/globals.cma \
@@ -401,7 +391,6 @@ test: $(TARGET)
 testparsing:
 	./$(TARGET) -D standard.h -parse_c -dir tests/
 
-# todo: add pycaml to the dynamic linker path if it is found
 check:
 	./$(TARGET) --testall --no-update-score-file \
 		--iso-file ./standard.iso \
@@ -451,9 +440,6 @@ test.ml:
 
 .ml.mldepend:
 	$(OCAMLC_CMD) -i $<
-
-$(LEXER_SOURCES:.mll=.ml): $(LEXER_SOURCES)
-	$(OCAMLLEX) $(LEXER_SOURCES)
 
 clean::
 	rm -f .depend

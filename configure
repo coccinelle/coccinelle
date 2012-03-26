@@ -628,6 +628,7 @@ ac_unique_file="cocci.ml"
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
 MAKETARGET_ALL
+DYNLINK_IS_NATIVE
 FEATURE_PYTHON
 SHAREDIR
 FEATURE_TARZAN
@@ -636,7 +637,6 @@ REGEXP_MODULE
 MAKE_pcre
 enable_pcre
 GLOBAL_pcre
-PATH_pcre
 OCAML_PKG_pcre
 enable_pcre_syntax
 HAVE_PCRE
@@ -646,7 +646,6 @@ PYCOCCI_FILE
 PYCOCCI_MODULE
 MAKE_pycaml
 GLOBAL_pycaml
-PATH_pycaml
 OCAML_PKG_pycaml
 enable_python
 HAVE_PYTHON
@@ -665,39 +664,22 @@ MENHIR
 MAKE_extlib
 enable_extlib
 GLOBAL_extlib
-PATH_extlib
 OCAML_PKG_extlib
 MAKE_menhirLib
 enable_menhirLib
 GLOBAL_menhirLib
-PATH_menhirLib
 OCAML_PKG_menhirLib
 MAKE_sexplib
 enable_sexplib
 GLOBAL_sexplib
-PATH_sexplib
 OCAML_PKG_sexplib
 MAKE_camlp4
-MODULESOPT_camlp4
-MODULES_camlp4
-LOCALLIB_camlp4
-FLAGS_camlp4
-FEATURE_camlp4
 enable_camlp4
 GLOBAL_camlp4
-PATH_camlp4
 OCAML_PKG_camlp4
-MAKE_type_conv
-MODULESOPT_type_conv
-MODULES_type_conv
-LOCALLIB_type_conv
-FLAGS_type_conv
-FEATURE_type_conv
-enable_type_conv
-GLOBAL_type_conv
-PATH_type_conv
-OCAML_PKG_type_conv
-PATH_dynlink
+MAKE_dynlink
+enable_dynlink
+GLOBAL_dynlink
 OCAML_PKG_dynlink
 PATH_threads
 OCAML_PKG_threads
@@ -709,26 +691,43 @@ PATH_bigarray
 OCAML_PKG_bigarray
 PATH_unix
 OCAML_PKG_unix
-MODULESOPT_extlib
-MODULES_extlib
-FLAGS_extlib
-LOCALLIB_extlib
-FEATURE_extlib
-MODULESOPT_pcre
-MODULES_pcre
-FLAGS_pcre
-LOCALLIB_pcre
-FEATURE_pcre
+PATH_camlp4
+MODULESOPT_camlp4
+MODULES_camlp4
+FLAGS_camlp4
+LOCALLIB_camlp4
+FEATURE_camlp4
+PATH_pycaml
 MODULESOPT_pycaml
 MODULES_pycaml
 FLAGS_pycaml
 LOCALLIB_pycaml
 FEATURE_pycaml
+PATH_pcre
+MODULESOPT_pcre
+MODULES_pcre
+FLAGS_pcre
+LOCALLIB_pcre
+FEATURE_pcre
+PATH_dynlink
+MODULESOPT_dynlink
+MODULES_dynlink
+FLAGS_dynlink
+LOCALLIB_dynlink
+FEATURE_dynlink
+PATH_extlib
+MODULESOPT_extlib
+MODULES_extlib
+FLAGS_extlib
+LOCALLIB_extlib
+FEATURE_extlib
+PATH_menhirLib
 MODULESOPT_menhirLib
 MODULES_menhirLib
 FLAGS_menhirLib
 LOCALLIB_menhirLib
 FEATURE_menhirLib
+PATH_sexplib
 MODULESOPT_sexplib
 MODULES_sexplib
 FLAGS_sexplib
@@ -757,7 +756,8 @@ CAMLP4OF
 CAMLP4O
 CAMLP4BOOT
 CAMLP4
-OCAMLVERSIONOK
+OCAMLATLEAST311
+OCAMLATLEAST310
 OCAMLBUILD
 OCAMLDOC
 OCAMLMKLIB
@@ -848,7 +848,7 @@ with_runtime_ocamlopt
 with_runtime_ocamldep
 with_runtime_camlp4
 with_runtime_camlp4o
-enable_type_conv
+enable_dynlink
 enable_camlp4
 enable_sexplib
 enable_menhirLib
@@ -1499,7 +1499,7 @@ Optional Features:
   --disable-option-checking  ignore unrecognized --enable/--with options
   --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
-  --enable-type-conv      enable global package type-conv (yes,no) (default:
+  --enable-dynlink        enable global package dynlink (yes,no) (default:
                           auto)
   --enable-camlp4         enable global package camlp4 (yes,no) (default:
                           auto)
@@ -5679,16 +5679,38 @@ case $? in #(
 esac
   { $as_echo "$as_me:${as_lineno-$LINENO}: result: $versioncheck" >&5
 $as_echo "$versioncheck" >&6; }
-  if test "x$versioncheck" == xno; then :
-  { $as_echo "$as_me:${as_lineno-$LINENO}: a more recent OCaml installation may be required" >&5
-$as_echo "$as_me: a more recent OCaml installation may be required" >&6;}
-fi
-  OCAMLVERSIONOK=$versioncheck
+  OCAMLATLEAST310=$versioncheck
+
+
+  { versioncheck=; unset versioncheck;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking that the OCaml version is at least 3.11" >&5
+$as_echo_n "checking that the OCaml version is at least 3.11... " >&6; }
+  as_arg_v1=$OCAMLVERSION
+as_arg_v2=3.11
+awk "$as_awk_strverscmp" v1="$as_arg_v1" v2="$as_arg_v2" /dev/null
+case $? in #(
+  1) :
+    versioncheck=no ;; #(
+  0) :
+    versioncheck=yes ;; #(
+  2) :
+    versioncheck=yes ;; #(
+  *) :
+     ;;
+esac
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $versioncheck" >&5
+$as_echo "$versioncheck" >&6; }
+  OCAMLATLEAST311=$versioncheck
+
 
 
 if test "x$OCAMLC" == xno -o "x$OCAMLDEP" == xno -o "x$OCAMLDOC" == xno -o "x$OCAMLMKLIB" == xno; then :
     as_fn_error $? "You must install the OCaml compiler" "$LINENO" 5
 
+fi
+if test "x$OCAMLATLEAST310" == xno; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: a more recent OCaml installation may be required" >&5
+$as_echo "$as_me: a more recent OCaml installation may be required" >&6;}
 fi
 
 
@@ -10157,34 +10179,95 @@ $as_echo "$as_me: verifying basic ocaml modules" >&6;}
 $as_echo "$as_me: coccinelle may use external ocaml libraries in $COCCI_OCAML_EXTERNAL" >&6;}
 
 
+  FEATURE_sexplib=0
+
+  LOCALLIB_sexplib=0
+
+  FLAGS_sexplib=
+
+  MODULES_sexplib=
+
+  MODULESOPT_sexplib=
+
+  PATH_sexplib=
 
 
+  FEATURE_menhirLib=0
+
+  LOCALLIB_menhirLib=0
+
+  FLAGS_menhirLib=
+
+  MODULES_menhirLib=
+
+  MODULESOPT_menhirLib=
+
+  PATH_menhirLib=
 
 
+  FEATURE_extlib=0
+
+  LOCALLIB_extlib=0
+
+  FLAGS_extlib=
+
+  MODULES_extlib=
+
+  MODULESOPT_extlib=
+
+  PATH_extlib=
 
 
+  FEATURE_dynlink=0
+
+  LOCALLIB_dynlink=0
+
+  FLAGS_dynlink=
+
+  MODULES_dynlink=
+
+  MODULESOPT_dynlink=
+
+  PATH_dynlink=
 
 
+  FEATURE_pcre=0
+
+  LOCALLIB_pcre=0
+
+  FLAGS_pcre=
+
+  MODULES_pcre=
+
+  MODULESOPT_pcre=
+
+  PATH_pcre=
 
 
+  FEATURE_pycaml=0
+
+  LOCALLIB_pycaml=0
+
+  FLAGS_pycaml=
+
+  MODULES_pycaml=
+
+  MODULESOPT_pycaml=
+
+  PATH_pycaml=
 
 
+  FEATURE_camlp4=0
 
+  LOCALLIB_camlp4=0
 
+  FLAGS_camlp4=
 
+  MODULES_camlp4=
 
+  MODULESOPT_camlp4=
 
-
-
-
-
-
-
-
-
-
-
-
+  PATH_camlp4=
 
 
 
@@ -10366,6 +10449,16 @@ fi
 fi
 
 
+    { $as_echo "$as_me:${as_lineno-$LINENO}: configuring package dynlink" >&5
+$as_echo "$as_me: configuring package dynlink" >&6;}
+  # Check whether --enable-dynlink was given.
+if test "${enable_dynlink+set}" = set; then :
+  enableval=$enable_dynlink;
+fi
+
+
+      if test "x$enable_dynlink" != xno; then :
+
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for OCaml findlib package dynlink" >&5
 $as_echo_n "checking for OCaml findlib package dynlink... " >&6; }
 
@@ -10395,77 +10488,38 @@ $as_echo "not found" >&6; }
 
 fi
 
-    { $as_echo "$as_me:${as_lineno-$LINENO}: configuring package type-conv" >&5
-$as_echo "$as_me: configuring package type-conv" >&6;}
-  # Check whether --enable-type-conv was given.
-if test "${enable_type_conv+set}" = set; then :
-  enableval=$enable_type_conv;
-fi
+    GLOBAL_dynlink=$OCAML_PKG_dynlink
 
 
-      if test "x$enable_type_conv" != xno; then :
-
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for OCaml findlib package type-conv" >&5
-$as_echo_n "checking for OCaml findlib package type-conv... " >&6; }
-
-  unset found
-  unset pkg
-  found=no
-  for pkg in type-conv  ; do
-    if $OCAMLFIND query $pkg >/dev/null 2>/dev/null; then
-      { $as_echo "$as_me:${as_lineno-$LINENO}: result: found" >&5
-$as_echo "found" >&6; }
-      OCAML_PKG_type_conv=$pkg
-      found=yes
-      break
-    fi
-  done
-  if test "$found" = "no" ; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
-$as_echo "not found" >&6; }
-    OCAML_PKG_type_conv=no
-  fi
-
-
-
-  if test "x$OCAML_PKG_type_conv" != xno; then :
-    PATH_type_conv=`$OCAMLFIND query type-conv 2>/dev/null`
-
-
-fi
-
-    GLOBAL_type_conv=$OCAML_PKG_type_conv
-
-
-    if test "x$GLOBAL_type_conv" != xno; then :
-        enable_type_conv=yes
+    if test "x$GLOBAL_dynlink" != xno; then :
+        enable_dynlink=yes
 
 
 else
-        if test "x$enable_type_conv" == xyes; then :
-          as_fn_error $? "OCaml package type-conv is not available but requested explicitly" "$LINENO" 5
+        if test "x$enable_dynlink" == xyes; then :
+          as_fn_error $? "OCaml package dynlink is not available but requested explicitly" "$LINENO" 5
 
 fi
-      enable_type_conv=no
+      enable_dynlink=no
 
-
-fi
 
 fi
 
-    if test "x$enable_type_conv" == xno; then :
+fi
+
+    if test "x$enable_dynlink" == xno; then :
       { pkgdir=; unset pkgdir;}
-    pkgdir="$COCCI_OCAML_EXTERNAL/type-conv/"
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for a bundled substitute of type-conv" >&5
-$as_echo_n "checking for a bundled substitute of type-conv... " >&6; }
+    pkgdir="$COCCI_OCAML_EXTERNAL/dynlink/"
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for a bundled substitute of dynlink" >&5
+$as_echo_n "checking for a bundled substitute of dynlink... " >&6; }
     if test -d "$pkgdir"; then :
         { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
-      { $as_echo "$as_me:${as_lineno-$LINENO}: using bundled substitute for type-conv in $pkgdir" >&5
-$as_echo "$as_me: using bundled substitute for type-conv in $pkgdir" >&6;}
-      enable_type_conv=local
+      { $as_echo "$as_me:${as_lineno-$LINENO}: using bundled substitute for dynlink in $pkgdir" >&5
+$as_echo "$as_me: using bundled substitute for dynlink in $pkgdir" >&6;}
+      enable_dynlink=local
 
-      PATH_type_conv="$pkgdir"
+      PATH_dynlink="$pkgdir"
 
 
 else
@@ -10475,42 +10529,42 @@ fi
 
 fi
 
-    if test "x$enable_type_conv" != xno; then :
-      FEATURE_type_conv=1
+    if test "x$enable_dynlink" != xno; then :
+      FEATURE_dynlink=1
 
-    FLAGS_type_conv='$(FLAGS_type_conv)'
-
-
-        if test "x$enable_type_conv" == xlocal; then :
-        LOCALLIB_type_conv=1
-
-      MODULES_type_conv='$(LOCAL_type_conv)'
-
-      MODULESOPT_type_conv='$(LOCALOPT_type_conv)'
+    FLAGS_dynlink='$(FLAGS_dynlink)'
 
 
-            if test -f "$PATH_type_conv/Makefile"; then :
-          MAKE_type_conv=$PATH_type_conv
+        if test "x$enable_dynlink" == xlocal; then :
+        LOCALLIB_dynlink=1
+
+      MODULES_dynlink='$(LOCAL_dynlink)'
+
+      MODULESOPT_dynlink='$(LOCALOPT_dynlink)'
+
+
+            if test -f "$PATH_dynlink/Makefile"; then :
+          MAKE_dynlink=$PATH_dynlink
 
 
 else
-          MAKE_type_conv=
+          MAKE_dynlink=
 
 
 fi
 
 else
-        MODULES_type_conv='$(GLOBAL_type_conv)'
+        MODULES_dynlink='$(GLOBAL_dynlink)'
 
-      MODULESOPT_type_conv='$(GLOBALOPT_type_conv)'
+      MODULESOPT_dynlink='$(GLOBALOPT_dynlink)'
 
-
-fi
 
 fi
 
-  if test "x$enable_type_conv" == xno; then :
-      as_fn_error $? "OCaml package type-conv is required. Please make sure it is available." "$LINENO" 5
+fi
+
+  if test "x$enable_dynlink" == xno; then :
+      as_fn_error $? "OCaml package dynlink is required. Please make sure it is available." "$LINENO" 5
 
 fi
 
@@ -12209,6 +12263,14 @@ fi
 
 fi
 
+if test "x$OCAMLATLEAST311" == xno; then :
+    enable_ocaml=no
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: ocaml scripting has been disabled because your OCaml version may not support dynamic linking properly" >&5
+$as_echo "$as_me: ocaml scripting has been disabled because your OCaml version may not support dynamic linking properly" >&6;}
+
+fi
+
 if test -n "$SUBSTITUTED_OCAMLFIND"; then :
     if test -z "$enable_ocaml"; then :
       enable_ocaml=no
@@ -12240,7 +12302,19 @@ fi
 fi
 
 if test "x$enable_ocaml" == xno; then :
-    OCAMLCOCCI_MODULE=No_prepare_ocamlcocci
+      FEATURE_dynlink=0
+
+  LOCALLIB_dynlink=0
+
+  FLAGS_dynlink=
+
+  MODULES_dynlink=
+
+  MODULESOPT_dynlink=
+
+  PATH_dynlink=
+
+      OCAMLCOCCI_MODULE=No_prepare_ocamlcocci
 
   OCAMLCOCCI_FILE=no_prepare_ocamlcocci.ml
 
@@ -13708,7 +13782,18 @@ fi
 
 
 else
-    OCAML_PKG_pycaml=no
+      FEATURE_pycaml=0
+
+  LOCALLIB_pycaml=0
+
+  FLAGS_pycaml=
+
+  MODULES_pycaml=
+
+  MODULESOPT_pycaml=
+
+  PATH_pycaml=
+
 
   PYCOCCI_MODULE=No_pycocci
 
@@ -13934,7 +14019,18 @@ fi
 
 
 else
-    OCAML_PKG_pcre=no
+      FEATURE_pcre=0
+
+  LOCALLIB_pcre=0
+
+  FLAGS_pcre=
+
+  MODULES_pcre=
+
+  MODULESOPT_pcre=
+
+  PATH_pcre=
+
 
   REGEXP_MODULE=Regexp_str
 
@@ -14048,6 +14144,16 @@ if test "x$enable_python" != xno; then :
 
 else
     FEATURE_PYTHON=0
+
+
+fi
+
+if test "x$OCAMLATLEAST311" == xyes; then :
+    DYNLINK_IS_NATIVE=Dynlink.is_native
+
+
+else
+    DYNLINK_IS_NATIVE=false
 
 
 fi

@@ -43,11 +43,14 @@ AS_IF([test "x$PKG_CONFIG" == xno],
 
 dnl  ocaml compile
 AC_PROG_OCAML
-AC_CHECK_OCAMLVERSION([3.10])
+AC_CHECK_OCAMLVERSION([OCAMLATLEAST310],[3.10])
+AC_CHECK_OCAMLVERSION([OCAMLATLEAST311],[3.11])
+
 AS_IF([test "x$OCAMLC" == xno -o "x$OCAMLDEP" == xno -o "x$OCAMLDOC" == xno -o "x$OCAMLMKLIB" == xno],
 [dnl
   AC_MSG_ERROR([You must install the OCaml compiler])
 ])
+AS_IF([test "x$OCAMLATLEAST310" == xno],[AC_MSG_NOTICE([a more recent OCaml installation may be required])])
 
 dnl  ocaml tools
 AC_PROG_CAMLP4
@@ -95,11 +98,13 @@ dnl  set some defaults
 dnl  add a line for each package that is
 dnl  configured via AC_CHECK_COCCI_EXTPKG
 dnl  or AC_REQ_COCCI_EXTPKG
-AC_COCCI_INIT_PKG_DEFAULT([sexplib])
-AC_COCCI_INIT_PKG_DEFAULT([menhirLib])
-AC_COCCI_INIT_PKG_DEFAULT([pycaml])
-AC_COCCI_INIT_PKG_DEFAULT([pcre])
-AC_COCCI_INIT_PKG_DEFAULT([extlib])
+AC_COCCI_INIT_PKG_EMPTY([sexplib])
+AC_COCCI_INIT_PKG_EMPTY([menhirLib])
+AC_COCCI_INIT_PKG_EMPTY([extlib])
+AC_COCCI_INIT_PKG_EMPTY([dynlink])
+AC_COCCI_INIT_PKG_EMPTY([pcre])
+AC_COCCI_INIT_PKG_EMPTY([pycaml])
+AC_COCCI_INIT_PKG_EMPTY([camlp4])
 
 dnl  required ocaml packages
 AC_MSG_NOTICE([the following OCaml packages should be provided by your ocaml installation])
@@ -108,10 +113,9 @@ AC_REQ_COCCI_STDPKG([bigarray])
 AC_REQ_COCCI_STDPKG([num])
 AC_REQ_COCCI_STDPKG([str])
 AC_REQ_COCCI_STDPKG([threads])
-AC_COCCI_OCAMLPKG([dynlink])    dnl  should be part of the ocaml installation (but is optional for coccinelle)
 
-dnl  required modules (SOME available locally too)
-AC_REQ_COCCI_EXTPKG([type-conv])
+dnl  required modules (Some are available locally too)
+AC_REQ_COCCI_EXTPKG([dynlink])
 AC_REQ_COCCI_EXTPKG([camlp4])
 AC_REQ_COCCI_EXTPKG([sexplib])
 AC_REQ_COCCI_EXTPKG([menhirLib])
@@ -154,12 +158,19 @@ AS_IF([test "x$OCAML_PKG_dynlink" == xno],
   ])
 ])
 
+dnl  too old ocaml version, disable dynlink by default
+AS_IF([test "x$OCAMLATLEAST311" == xno],
+[dnl
+  AC_SUBST([enable_ocaml],[no])
+  AC_MSG_NOTICE([ocaml scripting has been disabled because your OCaml version may not support dynamic linking properly])
+])
+
 dnl  scripting requirement on ocamlfind
 AS_IF([test -n "$SUBSTITUTED_OCAMLFIND"],
 [dnl
   AS_IF([test -z "$enable_ocaml"],
   [dnl  this is perhaps a bit too strict
-    AC_SUBST([enable_ocaml],no)
+    AC_SUBST([enable_ocaml],[no])
     AC_MSG_NOTICE([ocaml scripting is disabled because it depends on ocamlfind])
   ], [test "x$enable_ocaml" != xno],
   [dnl
@@ -182,6 +193,7 @@ AS_IF([test "x$CAMLP4" == xno],
 
 AS_IF([test "x$enable_ocaml" == xno],
 [dnl
+  AC_COCCI_INIT_PKG_EMPTY([dynlink])    dnl  prevent linking with it
   AC_SUBST(OCAMLCOCCI_MODULE,[No_prepare_ocamlcocci])
   AC_SUBST(OCAMLCOCCI_FILE,[no_prepare_ocamlcocci.ml])
 ],
@@ -254,7 +266,7 @@ AS_IF([test "x$enable_python" != xno],
   AC_SUBST([PYCOCCI_FILE],[yes_pycocci.ml])
 ],
 [dnl
-  AC_SUBST([OCAML_PKG_pycaml], [no])
+  AC_COCCI_INIT_PKG_EMPTY([pycaml])
   AC_SUBST([PYCOCCI_MODULE], [No_pycocci])
   AC_SUBST([PYCOCCI_FILE],[no_pycocci.ml])
 ])
@@ -292,7 +304,7 @@ AS_IF([test "x$enable_pcre_syntax" != xno],
   AC_SUBST([REGEXP_FILE], [regexp_pcre.ml])
 ],
 [dnl
-  AC_SUBST([OCAML_PKG_pcre], [no])
+  AC_COCCI_INIT_PKG_EMPTY([pcre])
   AC_SUBST([REGEXP_MODULE], [Regexp_str])
   AC_SUBST([REGEXP_FILE], [regexp_str.ml])
 ])
@@ -307,9 +319,9 @@ AS_IF([test "$prefix" == "NONE"],[prefix=$ac_default_prefix])
 
 dnl
 dnl  backwards compatibility
-dnl  defines some variables needed by the Make infrastructure
 dnl
 
+dnl  defines some variables needed by the Make infrastructure
 AC_SUBST(FEATURE_TARZAN,[1])
 AC_SUBST(SHAREDIR,["${prefix}/share/coccinelle"])
 
@@ -319,6 +331,15 @@ AS_IF([test "x$enable_python" != xno],
 ],
 [dnl
   AC_SUBST(FEATURE_PYTHON,[0])
+])
+
+dnl  dynlink stuff depending on the OCaml version
+AS_IF([test "x$OCAMLATLEAST311" == xyes],
+[dnl
+  AC_SUBST([DYNLINK_IS_NATIVE],[Dynlink.is_native])
+],
+[dnl
+  AC_SUBST([DYNLINK_IS_NATIVE],[false])
 ])
 
 

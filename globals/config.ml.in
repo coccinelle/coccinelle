@@ -6,3 +6,5 @@ let path =
 
 let std_iso = ref (Filename.concat path "standard.iso")
 let std_h   = ref (Filename.concat path "standard.h")
+
+let dynlink_is_native = @DYNLINK_IS_NATIVE@

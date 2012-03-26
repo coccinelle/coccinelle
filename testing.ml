@@ -225,11 +225,13 @@ let testall expected_score_file update_score_file =
         (* when there are sufficient number of tests, abort if a substantial
          * amount of tests fail, which would indicate a broken build.
          *)
-        if total > 40 && good < (total * 3) / 4 then
+        if total > 40 && good < (total * 3) / 4
+        then begin
 	  pr2 "Still, less 75% the tests passed. Returning a nonzero exist status.";
-          raise (UnixExit 1)
-        else
-          raise (UnixExit 0);
+          raise (UnixExit 1);
+        end;
+
+        raise (UnixExit 0);
       end
 
   end
