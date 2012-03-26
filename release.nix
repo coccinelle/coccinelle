@@ -86,12 +86,12 @@ let
   build = mkBuild defaultCfg;
   defaultCfg = pkgs: with pkgs; {
     name = "default";
-    pythons = [ python ];
+    pythons = [ python3 ];
     ocamls = with ocamlPackages; [
-      findlib menhir # ocaml_typeconv ocaml_sexplib ocaml_extlib ocaml_pcre pycaml
+      findlib # menhir ocaml_typeconv ocaml_sexplib ocaml_extlib ocaml_pcre pycaml
     ];
     flags = [];
-    selOcaml = orig: orig.ocamlPackages_3_11_2;
+    selOcaml = orig: orig.ocamlPackages;
   };
 
 
