@@ -14148,7 +14148,7 @@ else
 
 fi
 
-if test "x$OCAMLATLEAST311" == xyes; then :
+if test "x$OCAMLATLEAST311" == xyes -a "x$enable_ocaml" == xyes; then :
     DYNLINK_IS_NATIVE=Dynlink.is_native
 
 

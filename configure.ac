@@ -333,8 +333,8 @@ AS_IF([test "x$enable_python" != xno],
   AC_SUBST(FEATURE_PYTHON,[0])
 ])
 
-dnl  dynlink stuff depending on the OCaml version
-AS_IF([test "x$OCAMLATLEAST311" == xyes],
+dnl  dynlink stuff depending on the OCaml version and whether it is enabled
+AS_IF([test "x$OCAMLATLEAST311" == xyes -a "x$enable_ocaml" == xyes],
 [dnl
   AC_SUBST([DYNLINK_IS_NATIVE],[Dynlink.is_native])
 ],
