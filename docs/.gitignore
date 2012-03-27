@@ -4,3 +4,4 @@
 *.out
 *.toc
 spatch.1
+html/
