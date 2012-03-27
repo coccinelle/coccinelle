@@ -69,7 +69,7 @@ distclean: clean
 	$(OCAMLDEP_CMD) *.mli *.ml > .depend
 
 ifneq ($(MAKECMDGOALS),clean)
-	ifneq ($(MAKECMDGOALS),distclean)
-		include .depend
-	endif
+ifneq ($(MAKECMDGOALS),distclean)
+-include .depend
+endif
 endif

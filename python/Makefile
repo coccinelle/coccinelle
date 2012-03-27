@@ -118,6 +118,6 @@ clean::
 
 ifneq ($(MAKECMDGOALS),clean)
 ifneq ($(MAKECMDGOALS),distclean)
-include .depend
+-include .depend
 endif
 endif

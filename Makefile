@@ -107,7 +107,7 @@ BYTECODE_STATIC=-custom
 .PHONY:: all all.opt byte opt top clean distclean configure
 .PHONY:: $(MAKESUBDIRS) $(MAKESUBDIRS:%=%.opt) subdirs subdirs.opt
 
-all: Makefile.config $(TARGET_ALL)
+all: Makefile.config .depend $(TARGET_ALL)
 
 opt all.opt: Makefile.config opt-compil preinstall
 
@@ -492,9 +492,9 @@ clean::
 	@echo "run 'make depend' prior to building after cleaning"
 
 
-# additional ocaml dependencies produced by ocamldep
+# prevent building or using dependencies when cleaning
 ifneq ($(MAKECMDGOALS),clean)
 ifneq ($(MAKECMDGOALS),distclean)
-include .depend
+-include .depend
 endif
 endif

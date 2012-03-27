@@ -82,17 +82,17 @@ clean::
 clean::
 	rm -f *.cm[ioxa] *.o *.a *.cmxa *.annot
 	rm -f *~ .*~ gmon.out #*#
-
-distclean::
 	rm -f .depend
 
-beforedepend::
+distclean: clean
 
-depend:: beforedepend
+.depend depend:
 	$(OCAMLDEP_CMD) *.mli *.ml    > .depend
 
 ifneq ($(MAKECMDGOALS),clean)
 ifneq ($(MAKECMDGOALS),distclean)
-include .depend
+ifneq ($(MAKECMDGOALS),cleandoc)
+-include .depend
+endif
 endif
 endif

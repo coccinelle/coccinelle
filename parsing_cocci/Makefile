@@ -115,6 +115,6 @@ lexer_cli.ml: lexer_cli.mll
 
 ifneq ($(MAKECMDGOALS),clean)
 ifneq ($(MAKECMDGOALS),distclean)
-include .depend
+-include .depend
 endif
 endif
