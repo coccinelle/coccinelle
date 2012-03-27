@@ -1,4 +1,6 @@
--include ../Makefile.config
+ifneq ($(MAKECMDGOALS),distclean)
+include ../Makefile.config
+endif
 
 PROGS=spp gitgrep splitpatch extract_c_and_res #generate_dependencies
 
@@ -73,4 +75,8 @@ distclean: clean
 .depend depend: beforedepend
 	ocamldep $(INCLUDE) *.mli *.ml > .depend
 
--include .depend
+ifneq ($(MAKECMDGOALS),clean)
+ifneq ($(MAKECMDGOALS),distclean)
+include .depend
+endif
+endif

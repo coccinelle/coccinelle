@@ -1,4 +1,6 @@
+ifneq ($(MAKECMDGOALS),distclean)
 include ../Makefile.config
+endif
 
 TARGET=ctl
 
@@ -66,4 +68,8 @@ distclean: clean
 .depend depend:
 	$(OCAMLDEP_CMD) *.mli *.ml > .depend
 
--include .depend
+ifneq ($(MAKECMDGOALS),clean)
+	ifneq ($(MAKECMDGOALS),distclean)
+		include .depend
+	endif
+endif

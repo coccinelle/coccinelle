@@ -1,7 +1,9 @@
 # This Makefile serves as a wrapper to bundle the
 # extlib module without modifications.
 
+ifneq ($(MAKECMDGOALS),distclean)
 include ../../Makefile.config
+endif
 
 SHARE_FLAGS=-shared -fpic
 OCAMLC_CMD=$(OCAMLC) -thread -ccopt "${PCRE_CFLAGS}" -cclib "${PCRE_LIBS}" -cc "${CC} ${CFLAGS} ${SHARE_FLAGS}"

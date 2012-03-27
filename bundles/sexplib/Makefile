@@ -9,7 +9,9 @@
 #  * pre_sexp.ml: use cpp -traditional -undef
 #      (but all other files can be processed with this one as well)
 
+ifneq ($(MAKECMDGOALS),distclean)
 include ../../Makefile.config
+endif
 
 VERSION=7.0.5
 SEXPDIR=sexplib-$(VERSION)
@@ -93,4 +95,8 @@ META: $(SEXPLIB)/META
 .depend depend: $(SEXPMARKER) $(SRC)
 	$(OCAMLDEP_CMD) $(SEXPLIB)/*.mli $(SEXPLIB)/*.ml > .depend
 
--include .depend
+ifneq ($(MAKECMDGOALS),clean)
+ifneq ($(MAKECMDGOALS),distclean)
+include .depend
+endif
+endif

@@ -2,7 +2,9 @@ SUBDIR=manual
 
 .PHONY: all clean distclean spatch.1
 
+ifneq ($(MAKECMDGOALS),distclean)
 include ../Makefile.config
+endif
 
 all:: spatch.1
 

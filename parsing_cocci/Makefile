@@ -1,4 +1,6 @@
+ifneq ($(MAKECMDGOALS),distclean)
 include ../Makefile.config
+endif
 
 TARGET=cocci_parser
 
@@ -105,10 +107,14 @@ clean::
 .depend depend: $(GENERATED)
 	$(OCAMLDEP) *.mli *.ml > .depend
 
--include .depend
-
 lexer_cocci.ml: lexer_cocci.mll
 parser_cocci_menhir.ml: parser_cocci_menhir.mly lexer_cocci.mll
 parser_cocci_menhir.mli: parser_cocci_menhir.mly lexer_cocci.mll
 lexer_script.ml: lexer_script.mll
 lexer_cli.ml: lexer_cli.mll
+
+ifneq ($(MAKECMDGOALS),clean)
+ifneq ($(MAKECMDGOALS),distclean)
+include .depend
+endif
+endif

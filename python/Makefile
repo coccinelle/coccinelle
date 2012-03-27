@@ -1,7 +1,9 @@
 #############################################################################
 # Configuration section
 #############################################################################
--include ../Makefile.config
+ifneq ($(MAKECMDGOALS),distclean)
+include ../Makefile.config
+endif
 
 ##############################################################################
 # Variables
@@ -114,4 +116,8 @@ clean::
 .depend depend:
 	$(OCAMLDEP_CMD) *.mli *.ml > .depend
 
--include .depend
+ifneq ($(MAKECMDGOALS),clean)
+ifneq ($(MAKECMDGOALS),distclean)
+include .depend
+endif
+endif

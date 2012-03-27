@@ -5,7 +5,9 @@
 # requires a plain compilation of its .ml files and
 # then packed into an archive file.
 
+ifneq ($(MAKECMDGOALS),distclean)
 include ../../Makefile.config
+endif
 
 VERSION=1.5.2
 EXTLIB=extlib-$(VERSION)

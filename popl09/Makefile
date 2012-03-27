@@ -1,6 +1,9 @@
 #note: if you add a file (a .mli or .ml), dont forget to do a   make depend
 
--include ../Makefile.config
+ifneq ($(MAKECMDGOALS),distclean)
+include ../Makefile.config
+endif
+
 TARGET = popl
 
 SRC = ast_popl.ml asttopopl.ml insert_quantifiers.ml \
@@ -73,4 +76,8 @@ distclean: clean
 .depend depend:
 	$(OCAMLDEP_CMD) *.mli *.ml > .depend
 
--include .depend
+ifneq ($(MAKECMDGOALS),clean)
+ifneq ($(MAKECMDGOALS),distclean)
+include .depend
+endif
+endif

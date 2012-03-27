@@ -1,6 +1,8 @@
 #note: if you add a file (a .mli or .ml), dont forget to do a   make depend
 
--include ../Makefile.config
+ifneq ($(MAKECMDGOALS),distclean)
+include ../Makefile.config
+endif
 
 TARGET = popl
 
@@ -74,4 +76,8 @@ distclean: clean
 .depend depend:
 	$(CAMLDEP_CMD) $(INCLUDE_PATH) *.mli *.ml > .depend
 
--include .depend
+ifneq ($(MAKECMDGOALS),clean)
+ifneq ($(MAKECMDGOALS),distclean)
+include .depend
+endif
+endif

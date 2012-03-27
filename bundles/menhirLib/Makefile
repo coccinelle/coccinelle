@@ -5,7 +5,9 @@
 # the exception that all modules are packed as a submodule of
 # a master module "MenhirLib" instead of an archive file.
 
+ifneq ($(MAKECMDGOALS),distclean)
 include ../../Makefile.config
+endif
 
 VERSION=20120123
 MENHIRDIR=menhir-$(VERSION)
@@ -79,4 +81,8 @@ META: $(MENHIRLIB)/META
 .depend depend: $(MENHIRMARKER)
 	$(OCAMLDEP_CMD) $(MENHIRLIB)/*.mli $(MENHIRLIB)/*.ml > .depend
 
--include .depend
+ifneq ($(MAKECMDGOALS),clean)
+ifneq ($(MAKECMDGOALS),distclean)
+include .depend
+endif
+endif

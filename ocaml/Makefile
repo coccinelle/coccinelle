@@ -2,7 +2,10 @@
 # Variables
 ##############################################################################
 
+ifneq ($(MAKECMDGOALS),distclean)
 include ../Makefile.config
+endif
+
 include Makefile.doc
 
 TARGET=cocciocaml
@@ -88,4 +91,8 @@ beforedepend::
 depend:: beforedepend
 	$(OCAMLDEP_CMD) *.mli *.ml    > .depend
 
--include .depend
+ifneq ($(MAKECMDGOALS),clean)
+ifneq ($(MAKECMDGOALS),distclean)
+include .depend
+endif
+endif

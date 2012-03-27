@@ -1,4 +1,6 @@
+ifneq ($(MAKECMDGOALS),distclean)
 include ../Makefile.config
+endif
 
 ##############################################################################
 # Variables
@@ -145,4 +147,8 @@ distclean: clean
 .depend depend: lexer_c.ml parser_c.ml parser_c.mli
 	$(OCAMLDEP_CMD) *.mli *.ml > .depend
 
--include .depend
+ifneq ($(MAKECMDGOALS),clean)
+ifneq ($(MAKECMDGOALS),distclean)
+include .depend
+endif
+endif

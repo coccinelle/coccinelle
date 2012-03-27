@@ -1,4 +1,6 @@
+ifneq ($(MAKECMDGOALS),distclean)
 include ../../Makefile.config
+endif
 
 PYCAMLFILE=pycaml_0.82.orig.tar.gz
 DEBIANFILE=pycaml_0.82-14.debian.tar.gz

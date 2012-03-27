@@ -3,7 +3,9 @@
 ##############################################################################
 
 # The main library
+ifneq ($(MAKECMDGOALS),distclean)
 include ../Makefile.config
+endif
 
 TARGET=commons
 
@@ -336,4 +338,8 @@ distclean: clean
 	$(OCAMLDEP_CMD) *.mli *.ml  > .depend
 	for i in $(SUBDIRS); do $(OCAMLDEP_CMD) $$i/*.ml $$i/*.mli >> .depend; done
 
--include .depend
+ifneq ($(MAKECMDGOALS),clean)
+ifneq ($(MAKECMDGOALS),distclean)
+include .depend
+endif
+endif

@@ -3,8 +3,19 @@
 #############################################################################
 
 include Makefile.libs
+
+# 'distclean' does not require configure to have run, and should also
+# clean all the bundled directories. Hence, a special case.
+ifeq ($(MAKECMDGOALS),distclean)
+DISTCLEANDEP:=
+MAKELIBS:=$(dir $(wildcard ./bundles/*/Makefile))
+else
 -include Makefile.config
+DISTCLEANDEP:=clean
+endif
+
 -include /etc/lsb-release
+
 
 VERSION=$(shell cat ./version)
 CCVERSION=$(shell cat scripts/coccicheck/README |grep "Coccicheck version" |perl -p -e 's/.*version (.*)[ ]*/$$1/;')
@@ -34,23 +45,19 @@ LIBS=commons/commons.cma \
      engine/cocciengine.cma popl09/popl.cma \
      extra/extra.cma python/coccipython.cma ocaml/cocciocaml.cma
 
-# used for depend: and a little for rec & rec.opt
 MAKESUBDIRS=$(MAKELIBS) commons \
  globals ctl parsing_cocci parsing_c \
  engine popl09 extra python ocaml
 
-# used for clean:
-# It is like MAKESUBDIRS but also
-# force cleaning of local library copies
 CLEANSUBDIRS=commons \
  globals ctl parsing_cocci parsing_c \
  engine popl09 extra python ocaml \
- $(CLEANLIBS)
+ $(MAKELIBS)
 
 INCLUDEDIRSDEP=commons commons/ocamlextra \
  globals ctl \
  parsing_cocci parsing_c engine popl09 extra python ocaml \
- $(DEPLIBS)
+ $(MAKELIBS)
 
 INCLUDEDIRS=$(INCLUDEDIRSDEP) $(PCREDIR) $(INCLIBS)
 
@@ -113,13 +120,13 @@ world: Makefile.config .depend version.ml
 	$(MAKE) preinstall
 	@echo successfully build $(EXEC) and $(EXEC).opt
 
-byte: .depend version.ml
+byte: Makefile.config .depend version.ml
 	$(MAKE) subdirs
 	$(MAKE) $(EXEC)
 	@echo the compilation of $(EXEC) finished
 	@echo $(EXEC) can be installed or used
 
-opt-compil: .depend version.ml
+opt-compil: Makefile.config .depend version.ml
 	$(MAKE) subdirs.opt
 	$(MAKE) $(EXEC).opt
 	@echo the compilation of $(EXEC).opt finished
@@ -446,7 +453,7 @@ clean::
 	rm -f *.cm[iox] *.o *.annot
 	rm -f *~ .*~ *.exe #*#
 
-distclean:: clean
+distclean:: $(DISTCLEANDEP)
 	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -j1 -C $$i $@; done
 	rm -f test.ml
 	rm -f TAGS
@@ -455,12 +462,15 @@ distclean:: clean
 	find . -name ".#*1.*" | xargs rm -f
 
 .PHONEY: depend
-.depend depend: Makefile.config test.ml version
-	@echo constructing '.depend'
-	$(OCAMLDEP_CMD) *.mli *.ml > .depend
-	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -j1 -C $$i depend; done
+.depend: Makefile.config test.ml version
+	touch .depend  # prevents infinite recursion with 'make depend'
+	$(MAKE) depend
 
--include .depend
+depend:
+	@echo constructing '.depend'
+	rm -f .depend
+	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -j1 -C $$i depend; done
+	$(OCAMLDEP_CMD) *.mli *.ml > .depend
 
 ##############################################################################
 # configure-related
@@ -480,3 +490,11 @@ distclean::
 
 clean::
 	@echo "run 'make depend' prior to building after cleaning"
+
+
+# additional ocaml dependencies produced by ocamldep
+ifneq ($(MAKECMDGOALS),clean)
+ifneq ($(MAKECMDGOALS),distclean)
+include .depend
+endif
+endif
