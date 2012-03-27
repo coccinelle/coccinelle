@@ -342,6 +342,9 @@ AS_IF([test "x$OCAMLATLEAST311" == xyes -a "x$enable_ocaml" == xyes],
   AC_SUBST([DYNLINK_IS_NATIVE],[false])
 ])
 
+dnl  in case of the compilation of the manual
+AC_COCCI_TOOL([PDFLATEX],[pdflatex],[$COCCI_SRCDIR/setup/fake-pdflatex.sh pdflatex])
+
 
 dnl
 dnl  determine the default make target

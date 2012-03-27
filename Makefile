@@ -11,7 +11,7 @@ DISTCLEANDEP:=
 MAKELIBS:=$(dir $(wildcard ./bundles/*/Makefile))
 else
 -include Makefile.config
-DISTCLEANDEP:=clean
+DISTCLEANDEP:=
 endif
 
 -include /etc/lsb-release
@@ -182,7 +182,7 @@ $(EXEC).opt: $(LIBS:.cma=.cmxa) $(OPTOBJS)
 $(EXEC).top: $(LIBS) $(OBJS) $(LNKLIBS)
 	$(OCAMLMKTOP_CMD) -custom -o $@ $(SYSLIBS) $(FLAGSLIBS) $(LNKLIBS) $^
 
-clean::
+clean distclean::
 	rm -f $(TARGET) $(TARGET).opt $(TARGET).top
 
 .PHONY:: tools configure
@@ -215,7 +215,8 @@ purebytecode:
 ##############################################################################
 
 version.ml:
-	./scripts/genversion.sh > version.ml
+	@echo "version.ml is missing. Run ./configure to generate it."
+	@false
 
 ##############################################################################
 # Build documentation
@@ -224,8 +225,11 @@ version.ml:
 
 docs:
 	$(MAKE) -C docs
-	if [ -x "$(TARGET)" -o -x "$(TARGET).opt" ]; \
-		then $(MAKE) -C ocaml doc; fi
+	@echo "coccinelle manuals constructed"
+	@if test -f ./parsing_c/ast_c.cmo; then \
+		$(MAKE) -C ocaml doc; \
+		else echo "note: to obtain coccilib documenation, it is required to build 'spatch' first so that ./parsing_c/ast_c.cmo gets build."; \
+		fi
 
 clean:: Makefile.config
 	$(MAKE) -C docs clean
@@ -448,13 +452,13 @@ test.ml:
 .ml.mldepend:
 	$(OCAMLC_CMD) -i $<
 
-clean::
+clean distclean::
 	rm -f .depend
 	rm -f *.cm[iox] *.o *.annot
 	rm -f *~ .*~ *.exe #*#
 
 distclean:: $(DISTCLEANDEP)
-	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -j1 -C $$i $@; done
+	set -e; for i in $(CLEANSUBDIRS); do $(MAKE) -j1 -C $$i $@; done
 	rm -f test.ml
 	rm -f TAGS
 	rm -f tests/SCORE_actual.sexp

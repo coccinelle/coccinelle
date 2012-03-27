@@ -2,8 +2,13 @@
 # Variables
 ##############################################################################
 
+ifneq ($(MAKECMDGOALS),distclean)
+include ../../Makefile.config
+endif
+
 MAINSRC=main.tex
 SRC=$(wildcard *.tex)
+PDFLATEX_CMD=$(PDFLATEX) -halt-on-error
 
 #tools:
 # latex, pdflatex
@@ -21,20 +26,16 @@ SRC=$(wildcard *.tex)
 all: manual.pdf main_grammar.pdf options.pdf
 
 manual.pdf: $(SRC)
-	pdflatex main.tex
-	pdflatex main.tex
-	mv main.pdf manual.pdf
+	$(PDFLATEX_CMD) manual.tex
+	$(PDFLATEX_CMD) manual.tex
 
 main_grammar.pdf: main_grammar.tex cocci_syntax.tex  macros_listing_cocci.tex macros_grammar.tex macros_common.tex examples.tex tips.tex
-	pdflatex main_grammar.tex
-	pdflatex main_grammar.tex
+	$(PDFLATEX_CMD) main_grammar.tex
+	$(PDFLATEX_CMD) main_grammar.tex
 
-main_options.pdf: main_options.tex spatch_options.tex   macros_options.tex
-	pdflatex main_options.tex
-	pdflatex main_options.tex
-
-options.pdf: main_options.pdf
-	mv main_options.pdf options.pdf
+options.pdf: main_options.tex spatch_options.tex   macros_options.tex
+	$(PDFLATEX_CMD) options.tex
+	$(PDFLATEX_CMD) options.tex
 
 distclean:: clean
 	rm -f manual.pdf cocci_syntax.pdf options.pdf

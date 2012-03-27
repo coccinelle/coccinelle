@@ -1,5 +1,9 @@
 #!/bin/sh -e
 
+# If you don't have menhir installed, but you do have the generated files, then
+# this script fakes menhir by providing the generated files as the result of the
+# menhir invocation.
+
 STATE=0
 base=
 reqml=
@@ -50,9 +54,13 @@ if test -n "$reqml" -a -n "$reqmli" -a -n "$base"; then
   if test "$reqml" != "${base}.ml"; then
     cp -f "$reqml" "${base}.ml"
   fi
+
   if test "$reqmli" != "${base}.mli"; then
     cp -f "$reqmli" "${base}.mli"
   fi
+
+  touch "${base}.ml"
+  touch "${base}.mli"
   exit 0
 else
   echo "error: do not know how to handle: $@" 1>&2
