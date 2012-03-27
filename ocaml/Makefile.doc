@@ -1,4 +1,5 @@
-OCAMLDOC=ocamldoc
+include ../Makefile.config
+
 API=coccilib.mli
 DEST=../docs
 FLAGS=$(INCLUDES) -hide Pervasives
