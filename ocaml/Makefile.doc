@@ -1,4 +1,6 @@
+ifneq ($(MAKECMDGOALS),distclean)
 include ../Makefile.config
+endif
 
 API=coccilib.mli
 DEST=../docs

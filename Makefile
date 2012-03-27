@@ -460,6 +460,7 @@ distclean:: $(DISTCLEANDEP)
 	rm -f tests/SCORE_actual.sexp
 	rm -f tests/SCORE_best_of_both.sexp
 	find . -name ".#*1.*" | xargs rm -f
+	rm -f $(EXEC) $(EXEC).opt $(EXEC).top
 
 .PHONEY: depend
 .depend: Makefile.config test.ml version
