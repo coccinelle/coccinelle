@@ -18,7 +18,8 @@ all.opt: depend extLib.cmxa META
 
 clean:
 	rm -f .depend META extLib.cm[ioxa] extLib.[ao] \
-		$(EXTLIB)/*.cm[ioxa] extLib.cmxa
+		$(EXTLIB)/*.cm[ioxa] extLib.cmxa \
+		.mli-marker
 
 distclean: clean
 	rm -rf $(EXTLIB)
@@ -43,10 +44,17 @@ MODULES = \
 MLI=$(MODULES:%=$(EXTLIB)/%.mli)
 SRC=$(MODULES:%=$(EXTLIB)/%.ml) $(EXTLIB)/extLib.ml
 
-extLib.cma: $(MLI) $(SRC)
+# note: the interface files must be build at must once when compiling both 'all' and 'all.opt'
+# otherwise errors such as 'module X makes inconsistent assumptions about interface Y' may
+# arise. The dependencies on this marker establishes this sharing.
+.mli-marker: $(MLI) $(SRC)
+	$(OCAMLC) -c -thread -I $(EXTLIB) $(MLI)
+	touch .mli-marker
+
+extLib.cma: .mli-marker $(SRC)
 	$(OCAMLC) -a -custom -thread -I $(EXTLIB) -o extLib.cma $(MLI) $(SRC)
 
-extLib.cmxa: $(MLI) $(SRC)
+extLib.cmxa: .mli-marker $(SRC)
 	$(OCAMLOPT) -a -linkall -thread -I $(EXTLIB) -o extLib.cmxa $(SRC)
 
 META: $(EXTLIB)/META

@@ -78,9 +78,7 @@ MPISYSLIBS=mpi.cma
 
 #sexplib
 MYSEXPSRC=sexp_common.ml
-SEXPINCLUDES=-I $(SEXPDIR)        \
-	-I ../ocamltarzan/lib-sexp    \
-	-I ../../ocamltarzan/lib-sexp
+SEXPINCLUDES=-I $(SEXPDIR)
 
 #binprot
 MYBINSRC=bin_common.ml
@@ -246,7 +244,8 @@ clean::
 
 
 #-----------------------------------------------------------------------------
-sexp:
+.PHONEY: sexp.all sexp.opt
+sexp.all:
 	$(MAKE) INCLUDESEXTRA="$(SEXPINCLUDES)" commons_sexp.cma
 sexp.opt:
 	$(MAKE) INCLUDESEXTRA="$(SEXPINCLUDES)" commons_sexp.cmxa

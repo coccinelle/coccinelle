@@ -105,7 +105,7 @@ BYTECODE_STATIC=-custom
 # Top rules
 ##############################################################################
 .PHONY:: all all.opt byte opt top clean distclean configure
-.PHONY:: $(MAKESUBDIRS) $(MAKESUBDIRS:%=%.opt) subdirs subdirs.opt
+.PHONY:: $(MAKESUBDIRS:%=%.all) $(MAKESUBDIRS:%=%.opt) subdirs.all subdirs.opt
 
 all: Makefile.config .depend $(TARGET_ALL)
 
@@ -119,9 +119,10 @@ world: Makefile.config .depend version.ml
 	$(MAKE) opt-compil
 	$(MAKE) preinstall
 	@echo successfully build $(EXEC) and $(EXEC).opt
+	# todo: build documentation too
 
 byte: Makefile.config .depend version.ml
-	$(MAKE) subdirs
+	$(MAKE) subdirs.all
 	$(MAKE) $(EXEC)
 	@echo the compilation of $(EXEC) finished
 	@echo $(EXEC) can be installed or used
@@ -134,16 +135,16 @@ opt-compil: Makefile.config .depend version.ml
 
 top: $(EXEC).top
 
-subdirs:
-	+for D in $(MAKESUBDIRS); do $(MAKE) $$D || exit 1 ; done
-	$(MAKE) -C commons sexp OCAMLCFLAGS="$(OCAMLCFLAGS)"
+subdirs.all:
+	+for D in $(MAKESUBDIRS); do $(MAKE) $$D.all || exit 1 ; done
+	$(MAKE) -C commons sexp.all OCAMLCFLAGS="$(OCAMLCFLAGS)"
 
 subdirs.opt:
 	+for D in $(MAKESUBDIRS); do $(MAKE) $$D.opt || exit 1 ; done
 	$(MAKE) -C commons sexp.opt OPTFLAGS="$(OPTFLAGS)"
 
-$(MAKESUBDIRS):
-	$(MAKE) -C $@ -j1 OCAMLCFLAGS="$(OCAMLCFLAGS)" all
+$(MAKESUBDIRS:%=%.all):
+	$(MAKE) -C $(@:%.all=%) -j1 OCAMLCFLAGS="$(OCAMLCFLAGS)" all
 
 $(MAKESUBDIRS:%=%.opt):
 	$(MAKE) -C $(@:%.opt=%) -j1 OPTFLAGS="$(OPTFLAGS)" all.opt
@@ -165,19 +166,19 @@ clean:: Makefile.config
 	set -e; for i in $(CLEANSUBDIRS); do $(MAKE) -C $$i -j1 $@; done
 	$(MAKE) -C demos/spp $@
 
-$(LIBS): $(MAKESUBDIRS)
+$(LIBS): $(MAKESUBDIRS:%=%.all)
 $(LIBS:.cma=.cmxa): $(MAKESUBDIRS:%=%.opt)
-$(LNKLIBS) : $(MAKESUBDIRS)
+$(LNKLIBS) : $(MAKESUBDIRS:%=%.all)
 $(LNKOPTLIBS) : $(MAKESUBDIRS:%=%.opt)
 
-$(OBJS):$(LIBS) $(LNKLIBS)
-$(OPTOBJS):$(LIBS:.cma=.cmxa) $(LNKOPTLIBS)
+$(OBJS):$(LIBS)
+$(OPTOBJS):$(LIBS:.cma=.cmxa)
 
 $(EXEC): $(LIBS) $(OBJS)
-	$(OCAMLC_CMD) $(BYTECODE_STATIC) -o $@ $(FLAGSLIBS) $(SYSLIBS) $(LNKLIBS) $^
+	$(OCAMLC_CMD) $(BYTECODE_STATIC) $(FLAGSLIBS) -o $@ $(SYSLIBS) $(LNKLIBS) $^
 
 $(EXEC).opt: $(LIBS:.cma=.cmxa) $(OPTOBJS)
-	$(OCAMLOPT_CMD) $(STATIC) -o $@ $(SYSLIBS:.cma=.cmxa) $(FLAGSLIBS) $(OPTLNKLIBS) $^
+	$(OCAMLOPT_CMD) $(STATIC) $(FLAGSLIBS) -o $@ $(SYSLIBS:.cma=.cmxa) $(OPTLNKLIBS) $^
 
 $(EXEC).top: $(LIBS) $(OBJS) $(LNKLIBS)
 	$(OCAMLMKTOP_CMD) -custom -o $@ $(SYSLIBS) $(FLAGSLIBS) $(LNKLIBS) $^
@@ -492,9 +493,6 @@ distclean::
 	rm -f globals/regexp.ml python/pycocci.ml ocaml/prepare_ocamlcocci.ml
 	rm -f scripts/spatch.sh
 	@echo "run 'configure' again prior to building coccinelle"
-
-clean::
-	@echo "run 'make depend' prior to building after cleaning"
 
 
 # prevent building or using dependencies when cleaning

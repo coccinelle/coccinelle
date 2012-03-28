@@ -403,16 +403,17 @@ cat << EOF
 Coccinelle can now be compiled and installed.
 
 
-Prior to compilation, run:
-  \$ make depend
+If you compile coccinelle again after source code changes or
+configuration changes, you may need to run first:
+  \$ make clean
 
 To compile coccinelle, run:
   \$ make all
 
-Or alternatively, for the optimized version:
-  \$ make all.opt
-If you want both, you could use:
-  \$ make world
+Or alternatively, for only 'spatch':
+   \$ make byte-only
+Or for only 'spatch.opt':
+   \$ make opt
 
 
 To install coccinelle, run:

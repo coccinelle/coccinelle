@@ -15264,6 +15264,7 @@ fi
 
 fi
 
+AC_LATEX_CLASS_ARTICLE
 
 
 
