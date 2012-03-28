@@ -322,7 +322,6 @@ dnl  backwards compatibility
 dnl
 
 dnl  defines some variables needed by the Make infrastructure
-AC_SUBST(FEATURE_TARZAN,[1])
 AC_SUBST(SHAREDIR,["${prefix}/share/coccinelle"])
 
 AS_IF([test "x$enable_python" != xno],
@@ -331,6 +330,14 @@ AS_IF([test "x$enable_python" != xno],
 ],
 [dnl
   AC_SUBST(FEATURE_PYTHON,[0])
+])
+
+AS_IF([test "x$enable_ocaml" != xno],
+[dnl
+  AC_SUBST(FEATURE_OCAML,[1])
+],
+[dnl
+  AC_SUBST(FEATURE_OCAML,[0])
 ])
 
 dnl  dynlink stuff depending on the OCaml version and whether it is enabled

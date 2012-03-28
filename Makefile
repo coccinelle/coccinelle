@@ -119,7 +119,7 @@ world: Makefile.config .depend version.ml
 	$(MAKE) opt-compil
 	$(MAKE) preinstall
 	@echo successfully build $(EXEC) and $(EXEC).opt
-	# todo: build documentation too
+	$(MAKE) docs
 
 byte: Makefile.config .depend version.ml
 	$(MAKE) subdirs.all
@@ -225,12 +225,13 @@ version.ml:
 .PHONY:: docs
 
 docs:
-	$(MAKE) -C docs
-	@echo "coccinelle manuals constructed"
-	@if test -f ./parsing_c/ast_c.cmo; then \
-		$(MAKE) -C ocaml doc; \
+	@$(MAKE) -C docs || (echo "warning: ignored the failed construction of the manual" &1>2)
+	@if test "x$FEATURE_OCAML" = x1; then \
+		if test -f ./parsing_c/ast_c.cmo; then \
+			$(MAKE) -C ocaml doc; \
 		else echo "note: to obtain coccilib documenation, it is required to build 'spatch' first so that ./parsing_c/ast_c.cmo gets build."; \
-		fi
+		fi fi
+	@echo "finished building manuals"
 
 clean:: Makefile.config
 	$(MAKE) -C docs clean

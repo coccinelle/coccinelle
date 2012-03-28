@@ -7,6 +7,7 @@ include ../Makefile.config
 endif
 
 all: spatch.1
+	$(MAKE) -C $(SUBDIR) $@
 
 distclean:
 	$(MAKE) -C manual distclean
@@ -14,5 +15,5 @@ distclean:
 	rm -rf ./html
 	rm -rf ./man
 
-all clean:
+clean:
 	$(MAKE) -C $(SUBDIR) $@

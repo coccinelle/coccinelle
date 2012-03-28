@@ -8,16 +8,18 @@ FLAGS=$(INCLUDES) -hide Pervasives
 HTMLFLAGS=-all-params -colorize-code
 MANFLAGS=-man-mini
 
-.PHONY:
+.PHONY: doc
 
 doc: html man
 
-html:
-	mkdir -p $(DEST)/html
+html: $(DEST)/html/index.html
+$(DEST)/html/index.html: $(API) ../parsing_c/ast_c.cmi
+	$(MKDIR_P) $(DEST)/html
 	$(OCAMLDOC) $(FLAGS) -html $(HTMLFLAGS) -d $(DEST)/html $(API)
 
-man:
-	mkdir -p $(DEST)/man
+man: $(DEST)/man/Coccilib.3o
+$(DEST)/man/Coccilib.3o: $(API) ../parsing_c/ast_c.cmi
+	$(MKDIR_P) $(DEST)/man
 	$(OCAMLDOC) $(FLAGS) -man $(MANFLAGS) -d $(DEST)/man $(API)
 
 cleandoc:
