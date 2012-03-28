@@ -360,9 +360,16 @@ dnl  the bytecode version and the optimized version
 dnl  of coccinelle.
 dnl
 
-AS_IF([test "x$OCAMLOPT" != xno],
-[dnl  ocamlopt is available
-  AC_SUBST([MAKETARGET_ALL], [world])
+AC_ARG_ENABLE([build-all], [AS_HELP_STRING([--enable-build-all], [let the default build do spatch(.opt) and documentation build instead of only spatch (default: auto)])])
+AS_IF([test "x$enable_build_all" != xno],
+[dnl
+  AS_IF([test "x$OCAMLOPT" = xno -a "x$enable_build_all" = xyes],
+  [dnl
+    AC_MSG_ERROR([a full build is requested, but ocamlopt is not available])
+  ],
+  [dnl
+    AC_SUBST([MAKETARGET_ALL], [world])
+  ])
 ],
 [dnl  ocamlopt is not available
   AC_SUBST([MAKETARGET_ALL], [byte-only])

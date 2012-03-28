@@ -631,8 +631,8 @@ MAKETARGET_ALL
 SUBSTITUTED_PDFLATEX
 with_PDFLATEX
 PDFLATEX
-FEATURE_OCAML
 DYNLINK_IS_NATIVE
+FEATURE_OCAML
 FEATURE_PYTHON
 SHAREDIR
 REGEXP_FILE
@@ -864,6 +864,7 @@ enable_pycaml
 enable_pcre_syntax
 enable_pcre
 with_pdflatex
+enable_build_all
 '
       ac_precious_vars='PYVER
 build_alias
@@ -1521,6 +1522,9 @@ Optional Features:
   --enable-pcre-syntax    enable pcre regular expression syntax (default:
                           auto)
   --enable-pcre           enable global package pcre (yes,no) (default: auto)
+  --enable-build-all      let the default build do spatch(.opt) and
+                          documentation build instead of only spatch (default:
+                          auto)
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
@@ -14153,6 +14157,16 @@ else
 
 fi
 
+if test "x$enable_ocaml" != xno; then :
+    FEATURE_OCAML=1
+
+
+else
+    FEATURE_OCAML=0
+
+
+fi
+
 if test "x$OCAMLATLEAST311" == xyes -a "x$enable_ocaml" == xyes; then :
     DYNLINK_IS_NATIVE=Dynlink.is_native
 
@@ -14162,8 +14176,6 @@ else
 
 
 fi
-FEATURE_OCAML=$enable_ocaml
-
 
 
 
@@ -15267,9 +15279,20 @@ fi
 
 
 
-if test "x$OCAMLOPT" != xno; then :
-    MAKETARGET_ALL=world
+# Check whether --enable-build-all was given.
+if test "${enable_build_all+set}" = set; then :
+  enableval=$enable_build_all;
+fi
 
+if test "x$enable_build_all" != xno; then :
+    if test "x$OCAMLOPT" = xno -a "x$enable_build_all" = xyes; then :
+      as_fn_error $? "a full build is requested, but ocamlopt is not available" "$LINENO" 5
+
+else
+      MAKETARGET_ALL=world
+
+
+fi
 
 else
     MAKETARGET_ALL=byte-only
