@@ -120,6 +120,8 @@ world: Makefile.config .depend version.ml
 	$(MAKE) preinstall
 	@echo successfully build $(EXEC) and $(EXEC).opt
 	$(MAKE) docs
+	@echo ""
+	@echo -e "\tcoccinelle can now be installed via 'make install'"
 
 byte: Makefile.config .depend version.ml
 	$(MAKE) subdirs.all
