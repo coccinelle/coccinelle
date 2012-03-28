@@ -81,6 +81,13 @@ let
       src = tarball;
       buildInputs = [ pkgconfig ncurses ocamlPackages.ocaml ] ++ cfg.ocamls ++ cfg.pythons;
       configureFlagsArray = cfg.flags;
+      buildPhase = ''
+        mkdir -p "$out/nix-support/"
+        touch "$out/nix-support/make.log"
+        echo "report log $out/nix-support/result.log" >> "$out/nix-support/hydra-build-products"
+
+        make all 2> >(tee -a "$out/nix-support/make.log" >&2)
+      '';
     };
 
   build = mkBuild defaultCfg;
@@ -88,7 +95,7 @@ let
     name = "default";
     pythons = [ python3 ];
     ocamls = with ocamlPackages; [
-      findlib menhir # ocaml_typeconv ocaml_sexplib ocaml_extlib ocaml_pcre pycaml
+      findlib menhir ocaml_sexplib ocaml_extlib ocaml_pcre pycaml
     ];
     flags = [];
     selOcaml = orig: orig.ocamlPackages;
