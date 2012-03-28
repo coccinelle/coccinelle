@@ -18,6 +18,7 @@ test.ml
 version.ml
 
 Makefile.config
+Makefile.override
 result
 
 globals/config.ml

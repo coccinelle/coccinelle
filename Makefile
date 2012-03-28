@@ -17,6 +17,7 @@ endif
 endif
 
 -include /etc/lsb-release
+-include Makefile.override  # local customizations
 
 
 VERSION=$(shell cat ./version)
