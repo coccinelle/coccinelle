@@ -10,8 +10,10 @@ ifeq ($(MAKECMDGOALS),distclean)
 DISTCLEANDEP:=
 MAKELIBS:=$(dir $(wildcard ./bundles/*/Makefile))
 else
+ifneq ($(MAKECMDGOALS),configure)
 -include Makefile.config
 DISTCLEANDEP:=
+endif
 endif
 
 -include /etc/lsb-release
@@ -501,6 +503,8 @@ distclean::
 # prevent building or using dependencies when cleaning
 ifneq ($(MAKECMDGOALS),clean)
 ifneq ($(MAKECMDGOALS),distclean)
+ifneq ($(MAKECMDGOALS),configure)
 -include .depend
+endif
 endif
 endif
