@@ -229,7 +229,7 @@ version.ml:
 .PHONY:: docs
 
 docs:
-	@$(MAKE) -C docs || (echo "warning: ignored the failed construction of the manual" &1>2)
+	@$(MAKE) -C docs || (echo "warning: ignored the failed construction of the manual" 1>&2)
 	@if test "x$FEATURE_OCAML" = x1; then \
 		if test -f ./parsing_c/ast_c.cmo; then \
 			$(MAKE) -C ocaml doc; \
