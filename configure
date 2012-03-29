@@ -628,6 +628,7 @@ ac_unique_file="cocci.ml"
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
 MAKETARGET_ALL
+enable_build_all
 SUBSTITUTED_PDFLATEX
 with_PDFLATEX
 PDFLATEX
@@ -15284,15 +15285,29 @@ if test "${enable_build_all+set}" = set; then :
   enableval=$enable_build_all;
 fi
 
-if test "x$enable_build_all" != xno; then :
-    if test "x$OCAMLOPT" = xno -a "x$enable_build_all" = xyes; then :
+
+if test "x$OCAMLOPT" = xno; then :
+    if test "x$enable_build_all" = xyes; then :
       as_fn_error $? "a full build is requested, but ocamlopt is not available" "$LINENO" 5
 
-else
-      MAKETARGET_ALL=world
+fi
+
+  enable_build_all=no
 
 
 fi
+
+if test "x$OCAMLVERSION" = x3.11.2 -a "x$enable_build_all" != xyes; then :
+    { $as_echo "$as_me:${as_lineno-$LINENO}: the optimized version of coccinelle will not be build by default due to OCaml version $OCAMLVERSION and --enable-build-all is not given to override this decision" >&5
+$as_echo "$as_me: the optimized version of coccinelle will not be build by default due to OCaml version $OCAMLVERSION and --enable-build-all is not given to override this decision" >&6;}
+  enable_build_all=no
+
+
+fi
+
+if test "x$enable_build_all" != xno; then :
+    MAKETARGET_ALL=world
+
 
 else
     MAKETARGET_ALL=byte-only

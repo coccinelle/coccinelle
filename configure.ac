@@ -361,17 +361,28 @@ dnl  of coccinelle.
 dnl
 
 AC_ARG_ENABLE([build-all], [AS_HELP_STRING([--enable-build-all], [let the default build do spatch(.opt) and documentation build instead of only spatch (default: auto)])])
-AS_IF([test "x$enable_build_all" != xno],
+
+AS_IF([test "x$OCAMLOPT" = xno],
 [dnl
-  AS_IF([test "x$OCAMLOPT" = xno -a "x$enable_build_all" = xyes],
+  AS_IF([test "x$enable_build_all" = xyes],
   [dnl
     AC_MSG_ERROR([a full build is requested, but ocamlopt is not available])
-  ],
-  [dnl
-    AC_SUBST([MAKETARGET_ALL], [world])
   ])
+
+  AC_SUBST([enable_build_all],[no])
+])
+
+AS_IF([test "x$OCAMLVERSION" = x3.11.2 -a "x$enable_build_all" != xyes],
+[dnl  the optimized version may not be buildable with ocaml 3.11.2 (know bug), hence disable it by default
+  AC_MSG_NOTICE([the optimized version of coccinelle will not be build by default due to OCaml version $OCAMLVERSION and --enable-build-all is not given to override this decision])
+  AC_SUBST([enable_build_all],[no])
+])
+
+AS_IF([test "x$enable_build_all" != xno],
+[dnl  make 'world' by default
+  AC_SUBST([MAKETARGET_ALL], [world])
 ],
-[dnl  ocamlopt is not available
+[dnl  otherwise, make 'byte-only'
   AC_SUBST([MAKETARGET_ALL], [byte-only])
 ])
 
