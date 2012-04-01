@@ -123,17 +123,25 @@ let commentized xs = xs +> Common.tail_map_filter (function
             ||
             (s =~ "__.*")
         | 3 ->
-            List.mem cppkind [Token_c.CppAttr;Token_c.CppPassingNormal;Token_c.CppDirective]
+	    (match cppkind with
+	      Token_c.CppAttr | Token_c.CppPassingNormal
+            | Token_c.CppDirective | Token_c.CppIfDirective _ -> true
+	    | _ -> false)
             ||
             (s =~ "__.*")
         | 4 ->
-            List.mem cppkind [Token_c.CppAttr;Token_c.CppPassingNormal;Token_c.CppMacro]
+            List.mem cppkind
+	      [Token_c.CppAttr;Token_c.CppPassingNormal;Token_c.CppMacro]
             ||
             (s =~ "__.*")
 
 
         | 5 ->
-            List.mem cppkind [Token_c.CppAttr;Token_c.CppPassingNormal;Token_c.CppDirective;Token_c.CppMacro]
+	    (match cppkind with
+	      Token_c.CppAttr | Token_c.CppPassingNormal
+            | Token_c.CppDirective | Token_c.CppIfDirective _
+            | Token_c.CppMacro -> true
+	    | _ -> false)
             ||
             (s =~ "__.*")
 
