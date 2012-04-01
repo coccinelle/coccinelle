@@ -8,17 +8,27 @@ scripts/spatch.byte
 *.cm[aiox]
 *.cmxa
 *.[ao]
+*.annot
+*.pyc
 
 *~
 _build
 .depend
 test.ml
+version.ml
 
 Makefile.config
+Makefile.override
+result
 
 globals/config.ml
 python/pycocci.ml
-
+commons/commands.ml
 globals/regexp.ml
 ocaml/prepare_ocamlcocci.ml
 parsing_cocci/lexer_cli.ml
+scripts/spatch.sh
+
+config.log
+config.status
+autom4te.cache

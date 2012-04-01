@@ -1,1 +1,1 @@
-include @REGEXP_FILE@
+include @REGEXP_MODULE@

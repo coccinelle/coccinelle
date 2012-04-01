@@ -1145,6 +1145,7 @@ val timeout_function : int -> (unit -> 'a) -> 'a
 
 val timeout_function_opt : int option -> (unit -> 'a) -> 'a
 
+val remove_file : string -> unit
 
 (* creation of /tmp files, a la gcc
  * ex: new_temp_file "cocci" ".c" will give "/tmp/cocci-3252-434465.c"

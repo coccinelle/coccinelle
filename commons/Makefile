@@ -3,12 +3,15 @@
 ##############################################################################
 
 # The main library
--include ../Makefile.config
+ifneq ($(MAKECMDGOALS),distclean)
+include ../Makefile.config
+endif
 
 TARGET=commons
 
 # note: if you add a file (a .mli or .ml), dont forget to redo a 'make depend'
-MYSRC=	common.ml common_extra.ml                \
+MYSRC=	commands.ml                              \
+	common.ml common_extra.ml                \
 	interfaces.ml objet.ml                   \
 	ocollection.ml                           \
 	seti.ml                                  \
@@ -75,14 +78,7 @@ MPISYSLIBS=mpi.cma
 
 #sexplib
 MYSEXPSRC=sexp_common.ml
-ifeq ("$(SEXPDIR)","ocamlsexp")
-SEXPDIRUSED=../$(SEXPDIR)
-else
-SEXPDIRUSED=$(SEXPDIR)
-endif # Use local ocamlsexp
-SEXPINCLUDES=-I $(SEXPDIRUSED)        \
-	-I ../ocamltarzan/lib-sexp    \
-	-I ../../ocamltarzan/lib-sexp
+SEXPINCLUDES=-I $(SEXPDIR)
 
 #binprot
 MYBINSRC=bin_common.ml
@@ -121,16 +117,10 @@ OPTBIN ?= #.opt
 OCAMLCFLAGS ?= -g -dtypes
 
 # The OCaml tools.
-OCAMLC =ocamlc$(OPTBIN) $(OCAMLCFLAGS) $(INCLUDES)
-OCAMLOPT=ocamlopt$(OPTBIN) $(OPTFLAGS) $(INCLUDES)
-OCAMLLEX = ocamllex$(OPTBIN)
-OCAMLYACC= ocamlyacc -v
-OCAMLDEP = ocamldep$(OPTBIN) $(INCLUDES)
-OCAMLMKTOP=ocamlmktop -g -custom $(INCLUDES)
-
-# if need C code
-OCAMLMKLIB=ocamlmklib
-CC=gcc
+OCAMLC_CMD=$(OCAMLC) $(OCAMLCFLAGS) $(INCLUDES)
+OCAMLOPT_CMD=$(OCAMLOPT) $(OPTFLAGS) $(INCLUDES)
+OCAMLDEP_CMD=$(OCAMLDEP) $(INCLUDES)
+OCAMLMKTOP_CMD=$(OCAMLMKTOP) -g -custom $(INCLUDES)
 
 ##############################################################################
 # Top rules
@@ -148,13 +138,13 @@ opt: all.opt
 top: $(TARGET).top
 
 $(LIB): $(OBJS)
-	$(OCAMLC) -a -o $@ $^
+	$(OCAMLC_CMD) -a -o $@ $^
 
 $(OPTLIB): $(OPTOBJS)
-	$(OCAMLOPT) -a -o $@ $^
+	$(OCAMLOPT_CMD) -a -o $@ $^
 
 $(TARGET).top: $(OBJS)
-	$(OCAMLMKTOP) -o $@ $(SYSLIBS) $^
+	$(OCAMLMKTOP_CMD) -o $@ $(SYSLIBS) $^
 
 clean::
 	rm -f $(TARGET).top
@@ -170,10 +160,10 @@ gdbm: commons_gdbm.cma
 gdbm.opt: commons_gdbm.cmxa
 
 commons_gdbm.cma: $(MYGDBMSRC:.ml=.cmo)
-	$(OCAMLC) -a -o $@ $^
+	$(OCAMLC_CMD) -a -o $@ $^
 
 commons_gdbm.cmxa: $(MYGDBMSRC:.ml=.cmx)
-	$(OCAMLOPT) -a -o $@ $^
+	$(OCAMLOPT_CMD) -a -o $@ $^
 
 
 #-----------------------------------------------------------------------------
@@ -183,10 +173,10 @@ bdb.opt:
 	$(MAKE) INCLUDESEXTRA="$(BDBINCLUDES)" commons_bdb.cmxa
 
 commons_bdb.cma: $(MYBDBSRC:.ml=.cmo)
-	$(OCAMLC) -a -o $@ $^
+	$(OCAMLC_CMD) -a -o $@ $^
 
 commons_bdb.cmxa: $(MYBDBSRC:.ml=.cmx)
-	$(OCAMLOPT) -a -o $@ $^
+	$(OCAMLOPT_CMD) -a -o $@ $^
 
 
 
@@ -197,10 +187,10 @@ gui.opt:
 	$(MAKE) INCLUDESEXTRA="$(GUIINCLUDES)" commons_gui.cmxa
 
 commons_gui.cma: $(MYGUISRC:.ml=.cmo)
-	$(OCAMLC) -a -o $@ $^
+	$(OCAMLC_CMD) -a -o $@ $^
 
 commons_gui.cmxa: $(MYGUISRC:.ml=.cmx)
-	$(OCAMLOPT) -a -o $@ $^
+	$(OCAMLOPT_CMD) -a -o $@ $^
 
 
 
@@ -211,10 +201,10 @@ mpi.opt:
 	$(MAKE) INCLUDESEXTRA="$(MPIINCLUDES)" commons_mpi.cmxa
 
 commons_mpi.cma: $(MYMPISRC:.ml=.cmo)
-	$(OCAMLC) -a -o $@ $^
+	$(OCAMLC_CMD) -a -o $@ $^
 
 commons_mpi.cmxa: $(MYMPISRC:.ml=.cmx)
-	$(OCAMLOPT) -a -o $@ $^
+	$(OCAMLOPT_CMD) -a -o $@ $^
 
 #alias
 distribution: mpi
@@ -230,10 +220,10 @@ python.opt:
 
 
 commons_python.cma: $(MYPYSRC:.ml=.cmo)
-	$(OCAMLC) -a -o $@ $^
+	$(OCAMLC_CMD) -a -o $@ $^
 
 commons_python.cmxa: $(MYPYSRC:.ml=.cmx)
-	$(OCAMLOPT) -a -o $@ $^
+	$(OCAMLOPT_CMD) -a -o $@ $^
 
 #-----------------------------------------------------------------------------
 backtrace: commons_backtrace.cma
@@ -254,16 +244,17 @@ clean::
 
 
 #-----------------------------------------------------------------------------
-sexp:
+.PHONEY: sexp.all sexp.opt
+sexp.all:
 	$(MAKE) INCLUDESEXTRA="$(SEXPINCLUDES)" commons_sexp.cma
 sexp.opt:
 	$(MAKE) INCLUDESEXTRA="$(SEXPINCLUDES)" commons_sexp.cmxa
 
 commons_sexp.cma: $(MYSEXPSRC:.ml=.cmo)
-	$(OCAMLC) -a -o $@ $^
+	$(OCAMLC_CMD) -a -o $@ $^
 
 commons_sexp.cmxa: $(MYSEXPSRC:.ml=.cmx)
-	$(OCAMLOPT) -a -o $@ $^
+	$(OCAMLOPT_CMD) -a -o $@ $^
 
 binprot:
 	$(MAKE) INCLUDESEXTRA="$(BININCLUDES)" commons_bin.cma
@@ -271,10 +262,10 @@ binprot.opt:
 	$(MAKE) INCLUDESEXTRA="$(BININCLUDES)" commons_bin.cmxa
 
 commons_bin.cma: $(MYBINSRC:.ml=.cmo)
-	$(OCAMLC) -a -o $@ $^
+	$(OCAMLC_CMD) -a -o $@ $^
 
 commons_bin.cmxa: $(MYBINSRC:.ml=.cmx)
-	$(OCAMLOPT) -a -o $@ $^
+	$(OCAMLOPT_CMD) -a -o $@ $^
 
 ##############################################################################
 # The global "features" lib wrapper
@@ -284,10 +275,10 @@ features: commons_features.cma
 features.opt: commons_features.cmxa
 
 commons_features.cma: features.cmo
-	$(OCAMLC) -a -o $@ $^
+	$(OCAMLC_CMD) -a -o $@ $^
 
 commons_features.cmxa: features.cmx
-	$(OCAMLOPT) -a -o $@ $^
+	$(OCAMLOPT_CMD) -a -o $@ $^
 
 
 ##############################################################################
@@ -321,11 +312,11 @@ dependencygraph2:
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
 
 .ml.cmo:
-	$(OCAMLC)  -c $<
+	$(OCAMLC_CMD)  -c $<
 .mli.cmi:
-	$(OCAMLC)  -c $<
+	$(OCAMLC_CMD)  -c $<
 .ml.cmx:
-	$(OCAMLOPT)  -c $<
+	$(OCAMLOPT_CMD)  -c $<
 
 clean::
 	rm -f *.cm[iox] *.o *.a *.cma *.cmxa *.annot
@@ -336,12 +327,18 @@ clean::
         rm -f *.cm[iox] *.o *.a *.cma *.cmxa *.annot *~ .*~ ; \
         cd ..; ) \
 	done
-
-depend:
-	$(OCAMLDEP) *.mli *.ml  > .depend
-	for i in $(SUBDIRS); do $(OCAMLDEP) $$i/*.ml $$i/*.mli >> .depend; done
-
-distclean::
 	rm -f .depend
 
+distclean: clean
+	rm -f commands.ml
+
+.PHONEY: depend
+.depend depend:
+	$(OCAMLDEP_CMD) *.mli *.ml  > .depend
+	for i in $(SUBDIRS); do $(OCAMLDEP_CMD) $$i/*.ml $$i/*.mli >> .depend; done
+
+ifneq ($(MAKECMDGOALS),clean)
+ifneq ($(MAKECMDGOALS),distclean)
 -include .depend
+endif
+endif

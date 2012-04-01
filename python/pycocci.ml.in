@@ -1,1 +1,1 @@
-include @PYCOCCI_FILE@
+include @PYCOCCI_MODULE@

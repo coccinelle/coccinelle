@@ -4,8 +4,9 @@
 , cocciSrc ? { outPath = ./.; revCount = 1234; gitTag = "abcdef"; }
 , testsSrc ? { outPath = ../big-tests; rev = 1234; }
 , officialRelease ? false
-, performRegress ? true
+, performRegress ? false
 }:
+
 
 let
   
@@ -13,21 +14,17 @@ let
   version = builtins.readFile ./version;
   versionSuffix = if officialRelease then "" else "pre${toString cocciSrc.revCount}-${cocciSrc.gitTag}";
 
+
+  #
+  # Source release (tarball)
+  #
+
   # The source tarball taken from the repository.
   # The tarball should actually be compilable using
   #   ./configure && make depend && make opt && make install
   # on systems other than nix.
   tarball =
-    let
-      pkgs = import nixpkgs {
-        # use ocaml 3.12
-        config.packageOverrides =
-          pkgs:
-          { ocaml = pkgs.ocaml_3_12_1;
-            ocamlPackages = pkgs.ocamlPackages_3_12_1;
-          };
-      };
-      
+    let pkgs = import nixpkgs { };
     in with pkgs; with ocamlPackages; releaseTools.sourceTarball {
       name = "coccinelle-tarball";
       src = cocciSrc;
@@ -36,20 +33,10 @@ let
       inherit versionSuffix;
 
       buildInputs = [
-        perl python texLiveFull
-        ocaml findlib menhir
-        ocaml_pcre ocaml_sexplib
-        ocaml_extlib pycaml
+        ocaml findlib menhir python
+        texLiveFull # for building the documentation
+	pkgconfig  # for the autoconf macros
       ];
-      
-      configurePhase = ''
-        # explicitly run perl because the configure script references a perl outside the nix store
-        # substituting the path to perl is not a good idea as it would invalidate the tarball on
-        # non-nix machines.
-        perl -w ./configure
-        
-        make depend
-      '';
 
       preDist = ''
         local PREVHOME=$HOME
@@ -68,57 +55,54 @@ let
     };
 
 
-  # builds coccinelle, given a ocaml selector function and an ocaml environment builder.
-  # the build procedure itself is largely the same as the coccinelle expression in nixpkgs.
+  #
+  # Builds for specific configurations
+  #
+
+  # builds coccinelle, parameterized over the ocaml and python packages, and the configure flags.
   # the result should be a usable nix-expression
-  mkBuild = { name, ocamlVer, mkEnv, inclPython }: { system ? builtins.currentSystem }:
+
+  # mkConfiguration is a function that takes the nix package collection of the build
+  # (called 'pkgs') and results in a record containing:
+  #  name of the configuration, python packages, ocaml packages selection function
+  #  (which takes the original 'pkgs' as parameter), and ocaml packages. The selection
+  #  function is used by 'mkConfiguration' to determine the appropriate ocamlPackages
+  #  field in 'pkgs'.
+  mkBuild = mkConfiguration: { system ? builtins.currentSystem }:
     let pkgs = import nixpkgs {
           inherit system;
-          config.packageOverrides = ocamlVer;
+          config.packageOverrides = orig : {
+            ocamlPackages = cfg.selOcaml orig;
+          };
         };
-
-        ocamlEnv = mkEnv pkgs;
+        cfg = mkConfiguration pkgs;
     in with pkgs; releaseTools.nixBuild {
-      inherit name;
+      name = "cocci-build-${cfg.name}";
       src = tarball;
-
-      # ocamlEnv contains the ocaml libraries in scope.
-      buildInputs = 
-        lib.optional inclPython python
-        ++ [ perl texLiveFull ncurses makeWrapper ocamlEnv ];
-
-      # patch the files for use with nix
-      preConfigure = ''
-        sed -i "configure" -e's|/usr/bin/perl|${perl}/bin/perl|g'
-        sed -i "globals/config.ml.in" \
-            -e"s|/usr/local/share|$out/share|g"
-      '';
-
-      configureFlags = lib.optional (!inclPython) "--without-python";
-
+      buildInputs = [ pkgconfig ncurses ocamlPackages.ocaml ] ++ cfg.ocamls ++ cfg.pythons;
+      configureFlagsArray = cfg.flags;
       buildPhase = ''
-        make depend 2> >(tee -a "$out/nix-support/make.log" >&2)
+        mkdir -p "$out/nix-support/"
+        touch "$out/nix-support/make.log"
+        echo "report log $out/nix-support/result.log" >> "$out/nix-support/hydra-build-products"
+
         make all 2> >(tee -a "$out/nix-support/make.log" >&2)
-        make all.opt 2> >(tee -a "$out/nix-support/make.log" >&2)
-      '';
-
-      # run checking after installation.
-      # also, the test phase may require a yes/no input.
-      doCheck = false;
-      postInstall = ''
-        wrapProgram "$out/bin/spatch"                              \
-         --prefix "LD_LIBRARY_PATH" ":" "$out/lib"                 \
-         --prefix "PYTHONPATH" ":" "$out/share/coccinelle/python"
-
-        wrapProgram "$out/bin/spatch.opt"                          \
-         --prefix "LD_LIBRARY_PATH" ":" "$out/lib"                 \
-         --prefix "PYTHONPATH" ":" "$out/share/coccinelle/python"
-
-        yes | make test
       '';
     };
 
+  build = mkBuild defaultCfg;
+  defaultCfg = pkgs: with pkgs; {
+    name = "default";
+    pythons = [ python3 ];
+    ocamls = with ocamlPackages; [
+      findlib menhir ocaml_sexplib ocaml_extlib ocaml_pcre pycaml
+    ];
+    flags = [];
+    selOcaml = orig: orig.ocamlPackages;
+  };
 
+
+  /*
   # selects which version of ocaml and ocamlPackages to use in nixpkgs.
   selOcaml312 = pkgs:
     { ocaml = pkgs.ocaml_3_12_1;
@@ -128,7 +112,6 @@ let
     { ocaml = pkgs.ocaml_3_10_0;
       ocamlPackages = pkgs.ocamlPackages_3_10_0;
     };
-
 
   # builds an environment with the ocaml packages needed to build coccinelle
   # the mkList function selects which additional packages to include
@@ -143,6 +126,22 @@ let
   libs_rse  = mkOcamlEnv (libs: with libs; [ ocaml_pcre ocaml_sexplib ocaml_extlib ]);
   libs_se   = mkOcamlEnv (libs: with libs; [ ocaml_sexplib ocaml_extlib ]);
   libs_null = mkOcamlEnv (libs: []);
+
+  # different configurations of coccinelle builds based on different ocamls/available libraries
+  build = mkBuild { name = "coccinelle"; ocamlVer = selOcaml312; mkEnv = libs_full; inclPython = true; };
+  build_rse = mkBuild { name = "coccinelle_config1"; ocamlVer = selOcaml312; mkEnv = libs_rse; inclPython = true; };
+  build_se = mkBuild { name = "coccinelle_config2"; ocamlVer = selOcaml312; mkEnv = libs_se; inclPython = true; };
+  build_null_12 = mkBuild { name = "coccinelle_config3"; ocamlVer = selOcaml312; mkEnv = libs_null; inclPython = true; };
+  # build_null_10 = mkBuild { name = "coccinelle_config4"; ocamlVer = selOcaml310; mkEnv = libs_null; inclPython = true; };
+  build_null_12_np = mkBuild { name = "coccinelle_config5"; ocamlVer = selOcaml312; mkEnv = libs_null; inclPython = false; };
+  # build_null_10_np = mkBuild { name = "coccinelle_config6"; ocamlVer = selOcaml310; mkEnv = libs_null; inclPython = false; };
+  build_rse_np = mkBuild { name = "coccinelle_config7"; ocamlVer = selOcaml312; mkEnv = libs_rse; inclPython = false; };
+  */
+
+
+  #
+  # Package builders
+  #
 
   # package builder for Debian-based OS'ses
   makeDeb =
@@ -167,6 +166,15 @@ let
 
   makeDeb_i686 = makeDeb "i686-linux";
   makeDeb_x86_64 = makeDeb "x86_64-linux";
+
+  # different debian builds
+  # deb_ubuntu1010_i386 = makeDeb_i686 (disk: disk.ubuntu1010i386);
+  # deb_ubuntu1010_x86_64 = makeDeb_x86_64 (disk: disk.ubuntu1010x86_64);
+
+
+  #
+  # Testing tasks
+  #
 
   mkTask =
     argsfun: { system ? builtins.currentSystem }:
@@ -219,6 +227,14 @@ let
       schedulingPriority = 5;
     };
   });
+
+  report = mkReport [ build ];
+  # build_rse build_se build_null_12 build_null_12_np build_rse_np
+
+
+  #
+  # Regression tests
+  #
 
   # Produces regression test results, which can be positive or
   # negative. The build should succeed regardless of the outcome
@@ -301,27 +317,24 @@ let
       };
     });
 
-in # list of jobs
-rec {
-  inherit tarball;
-
-  # different configurations of coccinelle builds based on different ocamls/available libraries
-  build = mkBuild { name = "coccinelle"; ocamlVer = selOcaml312; mkEnv = libs_full; inclPython = true; };
-  build_rse = mkBuild { name = "coccinelle_config1"; ocamlVer = selOcaml312; mkEnv = libs_rse; inclPython = true; };
-  build_se = mkBuild { name = "coccinelle_config2"; ocamlVer = selOcaml312; mkEnv = libs_se; inclPython = true; };
-  build_null_12 = mkBuild { name = "coccinelle_config3"; ocamlVer = selOcaml312; mkEnv = libs_null; inclPython = true; };
-  build_null_10 = mkBuild { name = "coccinelle_config4"; ocamlVer = selOcaml310; mkEnv = libs_null; inclPython = true; };
-  build_null_12_np = mkBuild { name = "coccinelle_config5"; ocamlVer = selOcaml312; mkEnv = libs_null; inclPython = false; };
-  build_null_10_np = mkBuild { name = "coccinelle_config6"; ocamlVer = selOcaml310; mkEnv = libs_null; inclPython = false; };
-  build_rse_np = mkBuild { name = "coccinelle_config7"; ocamlVer = selOcaml312; mkEnv = libs_rse; inclPython = false; };
-
-  report = mkReport [ build build_rse build_se build_null_12 build_null_12_np build_rse_np ];
-
-  # different debian builds
-  # deb_ubuntu1010_i386 = makeDeb_i686 (disk: disk.ubuntu1010i386);
-  # deb_ubuntu1010_x86_64 = makeDeb_x86_64 (disk: disk.ubuntu1010x86_64);
-
-  # extensive tests
   regress = assert performRegress; mkRegress build;
   test = checkRegress regress;
-}
+
+  
+  #
+  # collections of build tasks
+  #
+
+  basicAttrs = {
+    inherit tarball;
+    inherit build;
+# build_rse build_se build_null_12 build_null_12_np build_rse_np;
+    inherit report;
+  };
+
+  testAttrs = {
+    inherit regress;
+    inherit test;
+  };
+
+in basicAttrs // (if performRegress then testAttrs else {})

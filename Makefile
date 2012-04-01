@@ -1,11 +1,24 @@
-
 #############################################################################
 # Configuration section
 #############################################################################
 
--include Makefile.libs
+include Makefile.libs
+
+# 'distclean' does not require configure to have run, and should also
+# clean all the bundled directories. Hence, a special case.
+ifeq ($(MAKECMDGOALS),distclean)
+DISTCLEANDEP:=
+MAKELIBS:=$(dir $(wildcard ./bundles/*/Makefile))
+else
+ifneq ($(MAKECMDGOALS),configure)
 -include Makefile.config
+DISTCLEANDEP:=
+endif
+endif
+
 -include /etc/lsb-release
+-include Makefile.override  # local customizations
+
 
 VERSION=$(shell cat ./version)
 CCVERSION=$(shell cat scripts/coccicheck/README |grep "Coccicheck version" |perl -p -e 's/.*version (.*)[ ]*/$$1/;')
@@ -15,45 +28,18 @@ PKGVERSION=$(shell dpkg-parsechangelog -ldebian/changelog.$(DISTRIB_CODENAME) 2>
 ##############################################################################
 # Variables
 ##############################################################################
+
 TARGET=spatch
 PRJNAME=coccinelle
-
-LEXER_SOURCES =
 SRC=flag_cocci.ml cocci.ml testing.ml test.ml $(LEXER_SOURCES:.mll=.ml) main.ml
 
 ifeq ($(FEATURE_PYTHON),1)
-PYCMA=pycaml.cma
-# the following is essential for Coccinelle to compile under gentoo (weird)
-#OPTLIBFLAGS=-cclib dllpycaml_stubs.so
+	PYTHON_INSTALL_TARGET=install-python
 else
-PYCMA=
-endif
-OPTLIBFLAGS=
-
-ifeq ("$(SEXPDIR)","ocamlsexp")
-SEXPLIB=ocamlsexp/sexplib.cmo
-OPTSEXPLIB=sexplib.cmx
-else
-SEXPLIB=sexplib.cma
-OPTSEXPLIB=sexplib.cmxa
+	PYTHON_INSTALL_TARGET=
 endif
 
-ifeq ("$(DYNLINK)","no")
-DYNLINK=
-else
-DYNLINK=dynlink.cma
-endif
-
-ifdef PCREDIR
-PCRELIB=pcre.cma
-else
-PCRELIB=
-PCREDIR=
-endif
-
-SEXPSYSCMA=bigarray.cma nums.cma
-
-SYSLIBS=str.cma unix.cma $(SEXPSYSCMA) $(DYNLINK) $(PCRELIB) # threads.cma
+SYSLIBS=str.cma unix.cma bigarray.cma nums.cma
 LIBS=commons/commons.cma \
      commons/commons_sexp.cma \
      globals/globals.cma \
@@ -62,58 +48,29 @@ LIBS=commons/commons.cma \
      engine/cocciengine.cma popl09/popl.cma \
      extra/extra.cma python/coccipython.cma ocaml/cocciocaml.cma
 
-# Should we use the local version of pycaml
-ifeq ($(FEATURE_PYTHON),1)
-ifeq ("$(PYCAMLDIR)","pycaml")
-LOCALPYCAML=pycaml
-else
-LOCALPYCAML=
-endif
-endif
+MAKESUBDIRS=$(MAKELIBS) commons \
+ globals ctl parsing_cocci parsing_c \
+ engine popl09 extra python ocaml
 
-# Should we use the local version of menhirLib
-ifeq ("$(MENHIRDIR)","menhirlib")
-LOCALMENHIR=menhirlib
-else
-LOCALMENHIR=
-endif
-
-# Should we use the local version of ocamlsexp
-ifeq ("$(SEXPDIR)","ocamlsexp")
-LOCALSEXP=ocamlsexp
-else
-LOCALSEXP=
-endif
-
-# used for depend: and a little for rec & rec.opt
-MAKESUBDIRS=$(LOCALSEXP) commons \
- globals $(LOCALMENHIR) ctl parsing_cocci parsing_c \
+CLEANSUBDIRS=commons \
+ globals ctl parsing_cocci parsing_c \
  engine popl09 extra python ocaml \
  $(MAKELIBS)
 
-# used for clean:
-# It is like MAKESUBDIRS but also
-# force cleaning of local library copies
-CLEANSUBDIRS=pycaml ocamlsexp commons \
- globals menhirlib ctl parsing_cocci parsing_c \
- engine popl09 extra python ocaml \
- $(CLEANLIBS)
-
-INCLUDEDIRSDEP=commons commons/ocamlextra $(LOCALSEXP) \
- globals $(LOCALMENHIR) $(LOCALPYCAML) ctl \
+INCLUDEDIRSDEP=commons commons/ocamlextra \
+ globals ctl \
  parsing_cocci parsing_c engine popl09 extra python ocaml \
- $(DEPLIBS)
+ $(MAKELIBS)
 
-INCLUDEDIRS=$(INCLUDEDIRSDEP) $(SEXPDIR) $(MENHIRDIR) $(PYCAMLDIR) $(PCREDIR) $(INCLIBS)
-
-EXTRALINKS=
-LINKFLAGS=$(EXTRALINKS:%=-cclib -l%)
+INCLUDEDIRS=$(INCLUDEDIRSDEP) $(PCREDIR) $(INCLIBS)
 
 ##############################################################################
 # Generic variables
 ##############################################################################
 
-INCLUDES=$(INCLUDEDIRS:%=-I %)
+# sort to remove duplicates
+INCLUDESET=$(sort $(INCLUDEDIRS))
+INCLUDES=$(INCLUDESET:%=-I %)
 
 OBJS=    $(SRC:.ml=.cmo)
 OPTOBJS= $(SRC:.ml=.cmx)
@@ -133,12 +90,11 @@ OCAMLCFLAGS=
 # to also link with -g.
 OPTFLAGS= -g
 
-OCAMLC=ocamlc$(OPTBIN) $(OCAMLCFLAGS) $(LINKFLAGS) $(INCLUDES)
-OCAMLOPT=ocamlopt$(OPTBIN) $(OPTFLAGS) $(LINKFLAGS) $(INCLUDES)
-OCAMLLEX=ocamllex #-ml # -ml for debugging lexer, but slightly slower
-OCAMLYACC=ocamlyacc -v
-OCAMLDEP=ocamldep $(INCLUDEDIRSDEP:%=-I %)
-OCAMLMKTOP=ocamlmktop -g -custom $(INCLUDES)
+OCAMLC_CMD=$(OCAMLC) $(OCAMLCFLAGS) $(INCLUDES)
+OCAMLOPT_CMD=$(OCAMLOPT) $(OPTFLAGS) $(INCLUDES)
+OCAMLYACC_CMD=$(OCAMLYACC) -v
+OCAMLDEP_CMD=$(OCAMLDEP) $(INCLUDEDIRSDEP:%=-I %)
+OCAMLMKTOP_CMD=$(OCAMLMKTOP) -g -custom $(INCLUDES)
 
 # can also be set via 'make static'
 CFLAGS=-pie -fPIE -fpic -fPIC -static
@@ -152,45 +108,57 @@ BYTECODE_STATIC=-custom
 # Top rules
 ##############################################################################
 .PHONY:: all all.opt byte opt top clean distclean configure
-.PHONY:: $(MAKESUBDIRS) $(MAKESUBDIRS:%=%.opt) subdirs subdirs.opt
+.PHONY:: $(MAKESUBDIRS:%=%.all) $(MAKESUBDIRS:%=%.opt) subdirs.all subdirs.opt
 
-all: Makefile.config byte preinstall
+all: Makefile.config .depend $(TARGET_ALL)
 
-opt all.opt: opt-compil preinstall
+opt all.opt: Makefile.config opt-compil preinstall
 
-world: preinstall
+byte-only: Makefile.config byte preinstall
+	@echo successfully build $(EXEC)
+
+world: Makefile.config .depend version.ml
 	$(MAKE) byte
 	$(MAKE) opt-compil
+	$(MAKE) preinstall
+	@echo successfully build $(EXEC) and $(EXEC).opt
+	$(MAKE) docs
+	@echo ""
+	@echo -e "\tcoccinelle can now be installed via 'make install'"
 
-byte: .depend
-	$(MAKE) subdirs
+byte: Makefile.config .depend version.ml
+	$(MAKE) subdirs.all
 	$(MAKE) $(EXEC)
+	@echo the compilation of $(EXEC) finished
+	@echo $(EXEC) can be installed or used
 
-opt-compil: .depend
+opt-compil: Makefile.config .depend version.ml
 	$(MAKE) subdirs.opt
 	$(MAKE) $(EXEC).opt
+	@echo the compilation of $(EXEC).opt finished
+	@echo $(EXEC).opt can be installed or used
 
 top: $(EXEC).top
 
-subdirs:
-	+for D in $(MAKESUBDIRS); do $(MAKE) $$D || exit 1 ; done
-	$(MAKE) -C commons sexp OCAMLCFLAGS="$(OCAMLCFLAGS)"
+subdirs.all:
+	+for D in $(MAKESUBDIRS); do $(MAKE) $$D.all || exit 1 ; done
+	$(MAKE) -C commons sexp.all OCAMLCFLAGS="$(OCAMLCFLAGS)"
 
 subdirs.opt:
 	+for D in $(MAKESUBDIRS); do $(MAKE) $$D.opt || exit 1 ; done
 	$(MAKE) -C commons sexp.opt OPTFLAGS="$(OPTFLAGS)"
 
-$(MAKESUBDIRS):
-	$(MAKE) -C $@ OCAMLCFLAGS="$(OCAMLCFLAGS)" all
+$(MAKESUBDIRS:%=%.all):
+	$(MAKE) -C $(@:%.all=%) -j1 OCAMLCFLAGS="$(OCAMLCFLAGS)" all
 
 $(MAKESUBDIRS:%=%.opt):
-	$(MAKE) -C $(@:%.opt=%) OPTFLAGS="$(OPTFLAGS)" all.opt
+	$(MAKE) -C $(@:%.opt=%) -j1 OPTFLAGS="$(OPTFLAGS)" all.opt
 
 #dependencies:
 # commons:
 # globals:
-# menhirlib:
-# parsing_cocci: commons globals menhirlib
+# menhirLib:
+# parsing_cocci: commons globals menhirLib
 # parsing_c:parsing_cocci
 # ctl:globals commons
 # engine: parsing_cocci parsing_c ctl
@@ -199,28 +167,28 @@ $(MAKESUBDIRS:%=%.opt):
 # pycaml:
 # python:pycaml parsing_cocci parsing_c
 
-clean::
-	set -e; for i in $(CLEANSUBDIRS); do $(MAKE) -C $$i $@; done
+clean:: Makefile.config
+	set -e; for i in $(CLEANSUBDIRS); do $(MAKE) -C $$i -j1 $@; done
 	$(MAKE) -C demos/spp $@
 
-$(LIBS): $(MAKESUBDIRS)
+$(LIBS): $(MAKESUBDIRS:%=%.all)
 $(LIBS:.cma=.cmxa): $(MAKESUBDIRS:%=%.opt)
-$(LNKLIBS) : $(MAKESUBDIRS)
+$(LNKLIBS) : $(MAKESUBDIRS:%=%.all)
 $(LNKOPTLIBS) : $(MAKESUBDIRS:%=%.opt)
 
-$(OBJS):$(LIBS) $(LNKLIBS)
-$(OPTOBJS):$(LIBS:.cma=.cmxa) $(LNKOPTLIBS)
+$(OBJS):$(LIBS)
+$(OPTOBJS):$(LIBS:.cma=.cmxa)
 
 $(EXEC): $(LIBS) $(OBJS)
-	$(OCAMLC) $(BYTECODE_STATIC) -o $@ $(SYSLIBS) $(SEXPLIB) $(LNKLIBS) $^
+	$(OCAMLC_CMD) $(BYTECODE_STATIC) $(FLAGSLIBS) -o $@ $(SYSLIBS) $(LNKLIBS) $^
 
 $(EXEC).opt: $(LIBS:.cma=.cmxa) $(OPTOBJS)
-	$(OCAMLOPT) $(STATIC) -o $@ $(SYSLIBS:.cma=.cmxa) $(OPTSEXPLIB) $(OPTLIBFLAGS) $(FLAGSLIB) $(OPTLNKLIBS) $^
+	$(OCAMLOPT_CMD) $(STATIC) $(FLAGSLIBS) -o $@ $(SYSLIBS:.cma=.cmxa) $(OPTLNKLIBS) $^
 
 $(EXEC).top: $(LIBS) $(OBJS) $(LNKLIBS)
-	$(OCAMLMKTOP) -custom -o $@ $(SYSLIBS) $(SEXPLIB) $(LNKLIBS) $^
+	$(OCAMLMKTOP_CMD) -custom -o $@ $(SYSLIBS) $(FLAGSLIBS) $(LNKLIBS) $^
 
-clean::
+clean distclean::
 	rm -f $(TARGET) $(TARGET).opt $(TARGET).top
 
 .PHONY:: tools configure
@@ -229,8 +197,8 @@ configure:
 	./configure
 
 Makefile.config:
-	@echo "Makefile.config is missing. Have you run ./configure?"
-	@exit 1
+	@echo "Makefile.config is missing. Run ./configure to generate it."
+	@false
 
 tools: $(LIBS) $(LNKLIBS)
 	$(MAKE) -C tools
@@ -248,6 +216,13 @@ purebytecode:
 	$(MAKE) BYTECODE_STATIC="" spatch
 	perl -p -i -e 's/^#!.*/#!\/usr\/bin\/ocamlrun/' spatch
 
+##############################################################################
+# Build version information
+##############################################################################
+
+version.ml:
+	@echo "version.ml is missing. Run ./configure to generate it."
+	@false
 
 ##############################################################################
 # Build documentation
@@ -255,11 +230,15 @@ purebytecode:
 .PHONY:: docs
 
 docs:
-	$(MAKE) -C docs
-	if [ -x "$(TARGET)" -o -x "$(TARGET).opt" ]; \
-		then $(MAKE) -C ocaml doc; fi
+	@$(MAKE) -C docs || (echo "warning: ignored the failed construction of the manual" 1>&2)
+	@if test "x$FEATURE_OCAML" = x1; then \
+		if test -f ./parsing_c/ast_c.cmo; then \
+			$(MAKE) -C ocaml doc; \
+		else echo "note: to obtain coccilib documenation, it is required to build 'spatch' first so that ./parsing_c/ast_c.cmo gets build."; \
+		fi fi
+	@echo "finished building manuals"
 
-clean::
+clean:: Makefile.config
 	$(MAKE) -C docs clean
 	$(MAKE) -C ocaml cleandoc
 
@@ -276,32 +255,16 @@ docs/spatch.1: Makefile.config
 	$(MAKE) -C docs spatch.1
 
 # user will use spatch to run spatch.opt (native)
-scripts/spatch: Makefile.config
-	cp scripts/spatch.sh scripts/spatch.tmp2
-	sed "s|SHAREDIR|$(SHAREDIR)|g" scripts/spatch.tmp2 > scripts/spatch.tmp
-	sed "s|LIBDIR|$(LIBDIR)|g" scripts/spatch.tmp > scripts/spatch
-	rm -f scripts/spatch.tmp2 scripts/spatch.tmp
+scripts/spatch: Makefile.config scripts/spatch.sh
+	cp scripts/spatch.sh scripts/spatch
 
 # user will use spatch to run spatch (bytecode)
-scripts/spatch.byte: Makefile.config
-	cp scripts/spatch.sh scripts/spatch.byte.tmp3
-	sed "s|\.opt||" scripts/spatch.byte.tmp3 > scripts/spatch.byte.tmp2
-	sed "s|SHAREDIR|$(SHAREDIR)|g" scripts/spatch.byte.tmp2 \
-		> scripts/spatch.byte.tmp
-	sed "s|LIBDIR|$(LIBDIR)|g" scripts/spatch.byte.tmp \
-		> scripts/spatch.byte
-	rm -f   scripts/spatch.byte.tmp3 \
-		scripts/spatch.byte.tmp2 \
-		scripts/spatch.byte.tmp
+scripts/spatch.byte: Makefile.config scripts/spatch.sh
+	sed "s|\.opt||" scripts/spatch.sh > scripts/spatch.byte
 
 # user will use spatch.opt to run spatch.opt (native)
-scripts/spatch.opt: Makefile.config
-	cp scripts/spatch.sh scripts/spatch.opt.tmp2
-	sed "s|SHAREDIR|$(SHAREDIR)|g" scripts/spatch.opt.tmp2 \
-		> scripts/spatch.opt.tmp
-	sed "s|LIBDIR|$(LIBDIR)|g" scripts/spatch.opt.tmp \
-		> scripts/spatch.opt
-	rm -f scripts/spatch.opt.tmp scripts/spatch.opt.tmp2
+scripts/spatch.opt: Makefile.config scripts/spatch.sh
+	cp scripts/spatch.sh scripts/spatch.opt
 
 clean::
 	rm -f scripts/spatch scripts/spatch.byte scripts/spatch.opt
@@ -313,40 +276,43 @@ clean::
 # don't remove DESTDIR, it can be set by package build system like ebuild
 # for staged installation.
 install-common:
-	mkdir -p $(DESTDIR)$(BINDIR)
-	mkdir -p $(DESTDIR)$(LIBDIR)
-	mkdir -p $(DESTDIR)$(SHAREDIR)/ocaml
-	mkdir -p $(DESTDIR)$(SHAREDIR)/commons
-	mkdir -p $(DESTDIR)$(SHAREDIR)/globals
-	mkdir -p $(DESTDIR)$(SHAREDIR)/parsing_c
+	$(MKDIR_P) $(DESTDIR)$(BINDIR)
+	$(MKDIR_P) $(DESTDIR)$(LIBDIR)
+	$(MKDIR_P) $(DESTDIR)$(SHAREDIR)/ocaml
+	$(MKDIR_P) $(DESTDIR)$(SHAREDIR)/commons
+	$(MKDIR_P) $(DESTDIR)$(SHAREDIR)/globals
+	$(MKDIR_P) $(DESTDIR)$(SHAREDIR)/parsing_c
 	$(INSTALL_DATA) standard.h $(DESTDIR)$(SHAREDIR)
 	$(INSTALL_DATA) standard.iso $(DESTDIR)$(SHAREDIR)
 	$(INSTALL_DATA) ocaml/coccilib.cmi $(DESTDIR)$(SHAREDIR)/ocaml/
 	$(INSTALL_DATA) parsing_c/*.cmi $(DESTDIR)$(SHAREDIR)/parsing_c/
 	$(INSTALL_DATA) commons/*.cmi $(DESTDIR)$(SHAREDIR)/commons/
 	$(INSTALL_DATA) globals/iteration.cmi $(DESTDIR)$(SHAREDIR)/globals/
-	@if [ $(FEATURE_PYTHON) -eq 1 ]; then $(MAKE) install-python; fi
 
 install-man:
-	mkdir -p $(DESTDIR)$(MANDIR)/man1
-	mkdir -p $(DESTDIR)$(MANDIR)/man3
+	@echo "Installing manuals in: ${DESTDIR}${MANDIR}"
+	$(MKDIR_P) $(DESTDIR)$(MANDIR)/man1
+	$(MKDIR_P) $(DESTDIR)$(MANDIR)/man3
 	$(INSTALL_DATA) docs/spatch.1 $(DESTDIR)$(MANDIR)/man1/
 	$(INSTALL_DATA) docs/Coccilib.3cocci $(DESTDIR)$(MANDIR)/man3/
 
 install-bash:
-	mkdir -p $(DESTDIR)$(BASH_COMPLETION_DIR)
+	@echo "Installing bash completion in: ${DESTDIR}${BASH_COMPLETION_DIR}"
+	$(MKDIR_P) $(DESTDIR)$(BASH_COMPLETION_DIR)
 	$(INSTALL_DATA) scripts/spatch.bash_completion \
 		$(DESTDIR)$(BASH_COMPLETION_DIR)/spatch
 
 install-tools:
-	mkdir -p $(DESTDIR)$(BINDIR)
+	@echo "Installing tools in: ${DESTDIR}${BINDIR}"
+	$(MKDIR_P) $(DESTDIR)$(BINDIR)
 	$(INSTALL_PROGRAM) tools/splitpatch \
 		$(DESTDIR)$(BINDIR)/splitpatch
 	$(INSTALL_PROGRAM) tools/cocci-send-email.perl \
 		$(DESTDIR)$(BINDIR)/cocci-send-email.perl
 
 install-python:
-	mkdir -p $(DESTDIR)$(SHAREDIR)/python/coccilib/coccigui
+	@echo "Installing python support in: ${DESTDIR}${SHAREDIR}/python"
+	$(MKDIR_P) $(DESTDIR)$(SHAREDIR)/python/coccilib/coccigui
 	$(INSTALL_DATA) python/coccilib/*.py \
 		$(DESTDIR)$(SHAREDIR)/python/coccilib
 	$(INSTALL_DATA) python/coccilib/coccigui/*.py \
@@ -355,10 +321,8 @@ install-python:
 		$(DESTDIR)$(SHAREDIR)/python/coccilib/coccigui
 	$(INSTALL_DATA) python/coccilib/coccigui/pygui.gladep \
 		$(DESTDIR)$(SHAREDIR)/python/coccilib/coccigui
-	if [ -f pycaml/dllpycaml_stubs.so ]; then \
-		$(INSTALL_LIB) pycaml/dllpycaml_stubs.so $(DESTDIR)$(LIBDIR) ; fi
 
-install: install-man install-common
+install: install-man install-common $(PYTHON_TARGET)
 	@if test -x spatch -a ! -x spatch.opt ; then \
 		$(MAKE) install-byte;fi
 	@if test ! -x spatch -a -x spatch.opt ; then \
@@ -366,11 +330,11 @@ install: install-man install-common
 	@if test -x spatch -a -x spatch.opt ; then \
 		$(MAKE) install-byte; $(MAKE) install-opt;fi
 	@if test ! -x spatch -a ! -x spatch.opt ; then \
-		echo "\n\n\t==> Run 'make', 'make opt', or both first. <==\n\n";fi
+		echo -e "\n\n\t==> Run 'make', 'make opt', or both first. <==\n\n";fi
 	@echo ""
-	@echo "\tYou can also install spatch by copying the program spatch"
-	@echo "\t(available in this directory) anywhere you want and"
-	@echo "\tgive it the right options to find its configuration files."
+	@echo -e "\tYou can also install spatch by copying the program spatch"
+	@echo -e "\t(available in this directory) anywhere you want and"
+	@echo -e "\tgive it the right options to find its configuration files."
 	@echo ""
 
 # user will use spatch to run spatch.opt (native)
@@ -445,6 +409,10 @@ test: $(TARGET)
 testparsing:
 	./$(TARGET) -D standard.h -parse_c -dir tests/
 
+check:
+	./$(TARGET) --testall --no-update-score-file \
+		--iso-file ./standard.iso \
+		--macro-file-builtins ./standard.h
 
 
 # -inline 0  to see all the functions in the profile.
@@ -460,7 +428,7 @@ tags:
 	otags -no-mli-tags -r  .
 
 dependencygraph:
-	find . -name "*.ml" |grep -v "scripts" | xargs ocamldep -I commons -I globals -I ctl -I parsing_cocci -I parsing_c -I engine -I popl09 -I extra > /tmp/dependfull.depend
+	find . -name "*.ml" |grep -v "scripts" | xargs $(OCAMLDEP) -I commons -I globals -I ctl -I parsing_cocci -I parsing_c -I engine -I popl09 -I extra > /tmp/dependfull.depend
 	ocamldot -lr /tmp/dependfull.depend > /tmp/dependfull.dot
 	dot -Tps /tmp/dependfull.dot > /tmp/dependfull.ps
 	ps2pdf /tmp/dependfull.ps /tmp/dependfull.pdf
@@ -475,18 +443,6 @@ test.ml:
 	echo "let foo_ctl () = failwith \"there is no foo_ctl formula\"" \
 	  > test.ml
 
-beforedepend:: test.ml
-
-
-#INC=$(dir $(shell which ocaml))
-#INCX=$(INC:/=)
-#INCY=$(dir $(INCX))
-#INCZ=$(INCY:/=)/lib/ocaml
-#
-#prim.o: prim.c
-#	gcc -c -o prim.o -I $(INCZ) prim.c
-
-
 ##############################################################################
 # Generic ocaml rules
 ##############################################################################
@@ -494,39 +450,62 @@ beforedepend:: test.ml
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
 
 .ml.cmo:
-	$(OCAMLC)    -c $<
+	$(OCAMLC_CMD) -c $<
 .mli.cmi:
-	$(OCAMLC)    -c $<
+	$(OCAMLC_CMD) -c $<
 .ml.cmx:
-	$(OCAMLOPT)  -c $<
+	$(OCAMLOPT_CMD) -c $<
 
 .ml.mldepend:
-	$(OCAMLC) -i $<
+	$(OCAMLC_CMD) -i $<
 
-$(LEXER_SOURCES:.mll=.ml) :	$(LEXER_SOURCES)
-	$(OCAMLLEX) $(LEXER_SOURCES)
-
-clean::
+clean distclean::
+	rm -f .depend
 	rm -f *.cm[iox] *.o *.annot
 	rm -f *~ .*~ *.exe #*#
 
-distclean:: clean
-	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i $@; done
-	rm -f .depend
-	rm -f Makefile.config
-	rm -f globals/config.ml test.ml
+distclean:: $(DISTCLEANDEP)
+	set -e; for i in $(CLEANSUBDIRS); do $(MAKE) -j1 -C $$i $@; done
+	rm -f test.ml
 	rm -f TAGS
 	rm -f tests/SCORE_actual.sexp
 	rm -f tests/SCORE_best_of_both.sexp
 	find . -name ".#*1.*" | xargs rm -f
+	rm -f $(EXEC) $(EXEC).opt $(EXEC).top
 
-beforedepend::
+.PHONEY: depend
+.depend: Makefile.config test.ml version
+	touch .depend  # prevents infinite recursion with 'make depend'
+	$(MAKE) depend
 
-depend:: beforedepend
-	$(OCAMLDEP) *.mli *.ml > .depend
-	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i $@; done
+depend:
+	@echo constructing '.depend'
+	rm -f .depend
+	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -j1 -C $$i depend; done
+	$(OCAMLDEP_CMD) *.mli *.ml > .depend
 
-.depend::
-	@if [ ! -f .depend ] ; then $(MAKE) depend ; fi
+##############################################################################
+# configure-related
+##############################################################################
 
+distclean::
+	@echo "cleaning configured files"
+	rm -f Makefile.config
+	rm -rf autom4te.cache
+	rm -f config.status
+	rm -f config.log
+	rm -f version.ml
+	rm -f globals/config.ml
+	rm -f globals/regexp.ml python/pycocci.ml ocaml/prepare_ocamlcocci.ml
+	rm -f scripts/spatch.sh
+	@echo "run 'configure' again prior to building coccinelle"
+
+
+# prevent building or using dependencies when cleaning
+ifneq ($(MAKECMDGOALS),clean)
+ifneq ($(MAKECMDGOALS),distclean)
+ifneq ($(MAKECMDGOALS),configure)
 -include .depend
+endif
+endif
+endif
