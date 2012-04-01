@@ -110,12 +110,12 @@ BYTECODE_STATIC=-custom
 .PHONY:: all all.opt byte opt top clean distclean configure
 .PHONY:: $(MAKESUBDIRS:%=%.all) $(MAKESUBDIRS:%=%.opt) subdirs.all subdirs.opt
 
+byte-only: Makefile.config byte preinstall
+	@echo successfully built $(EXEC)
+
 all: Makefile.config .depend $(TARGET_ALL)
 
 opt all.opt: Makefile.config opt-compil preinstall
-
-byte-only: Makefile.config byte preinstall
-	@echo successfully build $(EXEC)
 
 world: Makefile.config .depend version.ml
 	$(MAKE) byte
