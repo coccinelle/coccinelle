@@ -50,6 +50,8 @@ let do_one file =
   List.iter (function l -> Printf.fprintf o "%s\n" l) lines;
   Printf.fprintf o "\n";
   Printf.fprintf o "\n";
+  if List.exists (Filename.check_suffix file) [ ".ml" ; ".mli" ; ".mll" ] then
+    Printf.fprintf o "# 0 \"%s\"\n" file;
   close_out o;
   let _ = Sys.command (Printf.sprintf "cat %s >> %s" tmpfl file) in
   Sys.remove tmpfl
