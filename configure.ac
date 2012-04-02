@@ -379,11 +379,11 @@ AS_IF([test "x$OCAMLVERSION" = x3.11.2 -a "x$enable_build_all" != xyes],
 ])
 
 AS_IF([test "x$enable_build_all" != xno],
-[dnl  make 'world' by default
-  AC_SUBST([MAKETARGET_ALL], [world])
+[dnl  include the optimized version by default
+  AC_SUBST([MAKETARGET_ALL], [all-with-opt])
 ],
-[dnl  otherwise, make 'byte-only'
-  AC_SUBST([MAKETARGET_ALL], [byte-only])
+[dnl  otherwise, exclude the optimized version
+  AC_SUBST([MAKETARGET_ALL], [all-without-opt])
 ])
 
 

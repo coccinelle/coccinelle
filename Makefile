@@ -107,17 +107,27 @@ BYTECODE_STATIC=-custom
 ##############################################################################
 # Top rules
 ##############################################################################
-.PHONY:: all all.opt byte opt top clean distclean configure
+.PHONY:: all all.opt byte opt top clean distclean configure opt-compil
 .PHONY:: $(MAKESUBDIRS:%=%.all) $(MAKESUBDIRS:%=%.opt) subdirs.all subdirs.opt
+.PHONY:: all-without-opt all-with-opt byte-only opt-only
 
+# All make targets that are expected to be an entry point have a dependency on
+# 'Makefile.config' to ensure that if Makefile.config is not present, an error
+# message is printed first before any other actions are executed.
+# In addition, the targets that actually build something have a dependency on
+# '.depend' and 'version.ml'.
+
+# dispatches to either 'all-without-opt' or 'all-with-opt'
 all: Makefile.config .depend $(TARGET_ALL)
+world: Makefile.config all-with-opt
 
-opt all.opt: Makefile.config opt-compil preinstall
+# make "all" comes in two flavours
+all-without-opt: Makefile.config byte-only preinstall
+	$(MAKE) docs
+	@echo ""
+	@echo -e "\tcoccinelle can now be installed via 'make install'"
 
-byte-only: Makefile.config byte preinstall
-	@echo successfully build $(EXEC)
-
-world: Makefile.config .depend version.ml
+all-with-opt: Makefile.config .depend version.ml
 	$(MAKE) byte
 	$(MAKE) opt-compil
 	$(MAKE) preinstall
@@ -125,6 +135,12 @@ world: Makefile.config .depend version.ml
 	$(MAKE) docs
 	@echo ""
 	@echo -e "\tcoccinelle can now be installed via 'make install'"
+
+all.opt: Makefile.config opt-only preinstall
+
+# aliases for "byte" and "opt-compil"
+opt opt-only: Makefile.config opt-compil
+byte-only: Makefile.config byte
 
 byte: Makefile.config .depend version.ml
 	$(MAKE) subdirs.all
@@ -266,7 +282,7 @@ scripts/spatch.byte: Makefile.config scripts/spatch.sh
 scripts/spatch.opt: Makefile.config scripts/spatch.sh
 	cp scripts/spatch.sh scripts/spatch.opt
 
-clean::
+distclean::
 	rm -f scripts/spatch scripts/spatch.byte scripts/spatch.opt
 
 ##############################################################################
@@ -473,7 +489,7 @@ distclean:: $(DISTCLEANDEP)
 	find . -name ".#*1.*" | xargs rm -f
 	rm -f $(EXEC) $(EXEC).opt $(EXEC).top
 
-.PHONEY: depend
+.PHONY:: depend
 .depend: Makefile.config test.ml version
 	touch .depend  # prevents infinite recursion with 'make depend'
 	$(MAKE) depend
