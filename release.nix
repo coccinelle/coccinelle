@@ -79,7 +79,7 @@ let
     in with pkgs; releaseTools.nixBuild {
       name = "cocci-build-${cfg.name}";
       src = tarball;
-      buildInputs = [ pkgconfig ncurses ocamlPackages.ocaml ] ++ cfg.ocamls ++ cfg.pythons;
+      buildInputs = [ pkgconfig pcre ncurses ocamlPackages.ocaml ] ++ cfg.ocamls ++ cfg.pythons;
       configureFlagsArray = cfg.flags ++ [ "--enable-release=world" ];
       buildPhase = ''
         mkdir -p "$out/nix-support/"
@@ -320,6 +320,39 @@ let
   regress = assert performRegress; mkRegress build;
   test = checkRegress regress;
 
+
+  #
+  # Performing release actions
+  #
+/*
+  release =
+    let pkgs = import nixpkgs { };
+        name = "release-${version}${versionSuffix}";
+    in with pkgs; releaseTools.nixBuild {
+      inherit name;
+      src = cocciSrc;
+      buildInputs = with ocamlPackages; [
+        pkgconfig ncurses texLiveFull
+        ocaml findlib menhir
+        python
+      ];
+      configureFlagsArray = [ "--enable-release=world" ];
+      
+      buildPhase = ''
+        export HOME=$TMPDIR
+	make opt-only
+	# make fix-expected
+        # make prerelease GIT=echo
+	# make release GIT=echo
+	# make package
+      '';
+
+      installPhase = ''
+        mkdir -p "$out/nix-support/"
+        false doing nothing!
+      '';
+    };
+*/
   
   #
   # collections of build tasks
@@ -330,6 +363,7 @@ let
     inherit build;
 # build_rse build_se build_null_12 build_null_12_np build_rse_np;
     inherit report;
+    # inherit release;
   };
 
   testAttrs = {

@@ -16,7 +16,7 @@ OCAMLOPT_CMD=$(OCAMLOPT) -thread -ccopt "${PYTHON_CFLAGS}" -cclib "${PYTHON_LIBS
 OCAMLMKLIB_CMD=$(OCAMLMKLIB)
 
 
-all: depend pycaml.cma
+all: depend pycaml.cmi pycaml.cma
 
 $(PYCAMLDIR)/pycaml.mli: $(PYCAMLDIR)/pycaml.ml
 	$(OCAMLC_CMD) -i $< > $(PYCAMLDIR)/pycaml.mli
@@ -40,7 +40,7 @@ dllpycaml_stubs.so: pycaml_ml.o
 pycaml.cma: dllpycaml_stubs.so pycaml.cmi $(PYCAMLDIR)/pycaml.cmo
 	$(OCAMLC_CMD) -a -custom -linkall -o pycaml.cma pycaml.cmo -dllib -lpycaml_stubs
 
-all.opt: pycaml.cmxa
+all.opt: depend pycaml.cmi pycaml.cmxa
 
 $(PYCAMLDIR)/pycaml.cmx: $(PYCAMLDIR)/pycaml.ml $(PYCAMLDIR)/pycaml.cmi
 	$(OCAMLOPT_CMD) -c $<

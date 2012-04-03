@@ -7,12 +7,10 @@ include Makefile.libs
 # 'distclean' does not require configure to have run, and should also
 # clean all the bundled directories. Hence, a special case.
 ifeq ($(MAKECMDGOALS),distclean)
-DISTCLEANDEP:=
 MAKELIBS:=$(dir $(wildcard ./bundles/*/Makefile))
 else
 ifneq ($(MAKECMDGOALS),configure)
 -include Makefile.config
-DISTCLEANDEP:=
 endif
 endif
 
@@ -21,7 +19,7 @@ endif
 -include /etc/Makefile.coccinelle  # local customizations, if any
 
 
-VERSION=$(shell cat ./version)
+VERSION=$(shell cat ./version | tr -d '\n')
 CCVERSION=$(shell cat scripts/coccicheck/README |grep "Coccicheck version" |perl -p -e 's/.*version (.*)[ ]*/$$1/;')
 PKGVERSION=$(shell dpkg-parsechangelog -ldebian/changelog.$(DISTRIB_CODENAME) 2> /dev/null \
 	 | sed -n 's/^Version: \(.*\)/\1/p' )
@@ -55,7 +53,7 @@ MAKESUBDIRS=$(MAKELIBS) commons \
 
 CLEANSUBDIRS=commons \
  globals ctl parsing_cocci parsing_c \
- engine popl09 extra python ocaml \
+ engine popl09 extra python ocaml docs \
  $(MAKELIBS)
 
 INCLUDEDIRSDEP=commons commons/ocamlextra \
@@ -236,12 +234,12 @@ distclean::
 
 static:
 	rm -f spatch.opt spatch
-	$(MAKE) STATIC="$(STATICCFLAGS)" spatch.opt
+	$(MAKE) STATIC="$(STATICCFLAGS)" opt-only
 	cp spatch.opt spatch
 
 purebytecode:
 	rm -f spatch.opt spatch
-	$(MAKE) BYTECODE_STATIC="" spatch
+	$(MAKE) BYTECODE_STATIC="" byte-only
 	perl -p -i -e 's/^#!.*/#!\/usr\/bin\/ocamlrun/' spatch
 
 ##############################################################################
@@ -259,7 +257,7 @@ version.ml:
 
 docs:
 	@$(MAKE) -C docs || (echo "warning: ignored the failed construction of the manual" 1>&2)
-	@if test "x$FEATURE_OCAML" = x1; then \
+	@if test "x$(FEATURE_OCAML)" = x1; then \
 		if test -f ./parsing_c/ast_c.cmo; then \
 			$(MAKE) -C ocaml doc; \
 		else echo "note: to obtain coccilib documenation, it is required to build 'spatch' first so that ./parsing_c/ast_c.cmo gets build."; \
@@ -269,9 +267,6 @@ docs:
 clean:: Makefile.config
 	$(MAKE) -C docs clean
 	$(MAKE) -C ocaml cleandoc
-
-distclean::
-	$(MAKE) -C docs distclean
 
 ##############################################################################
 # Pre-Install (customization of spatch frontend script)
@@ -456,7 +451,7 @@ check:
 forprofiling:
 	$(MAKE) OPTFLAGS="-p -inline 0 " opt
 
-clean::
+clean distclean::
 	rm -f gmon.out
 
 tags:
@@ -499,8 +494,8 @@ clean distclean::
 	rm -f *.cm[iox] *.o *.annot
 	rm -f *~ .*~ *.exe #*#
 
-distclean:: $(DISTCLEANDEP)
-	set -e; for i in $(CLEANSUBDIRS); do $(MAKE) -j1 -C $$i $@; done
+distclean::
+	set -e; for i in $(CLEANSUBDIRS); do $(MAKE) -C $$i -j1 $@; done
 	rm -f test.ml
 	rm -f TAGS
 	rm -f tests/SCORE_actual.sexp
@@ -513,7 +508,7 @@ distclean:: $(DISTCLEANDEP)
 	touch .depend  # prevents infinite recursion with 'make depend'
 	$(MAKE) depend
 
-depend:
+depend: Makefile.config test.ml version
 	@echo constructing '.depend'
 	rm -f .depend
 	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -j1 -C $$i depend; done
@@ -525,7 +520,7 @@ depend:
 
 distclean::
 	@echo "cleaning configured files"
-	rm -f Makefile.config
+	if test -z "${KEEP_CONFIG}"; then rm -f Makefile.config; fi
 	rm -rf autom4te.cache
 	rm -f config.status
 	rm -f config.log
@@ -540,7 +535,13 @@ distclean::
 ifneq ($(MAKECMDGOALS),clean)
 ifneq ($(MAKECMDGOALS),distclean)
 ifneq ($(MAKECMDGOALS),configure)
+ifneq ($(MAKECMDGOALS),prerelease)
+ifneq ($(MAKECMDGOALS),release)
+ifneq ($(MAKECMDGOALS),package)
 -include .depend
+endif
+endif
+endif
 endif
 endif
 endif

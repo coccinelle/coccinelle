@@ -27,7 +27,17 @@ commons/commands.ml
 globals/regexp.ml
 ocaml/prepare_ocamlcocci.ml
 parsing_cocci/lexer_cli.ml
+
 scripts/spatch.sh
+scripts/spatch
+scripts/spatch.byte
+scripts/spatch.opt
+
+tests/SCORE_actual.sexp
+tests/SCORE_best_of_both.sexp
+tests/SCORE_expected_orig.sexp
+tests/SCORE_expected.sexp
+tests/SCORE_expected.sexp.save
 
 config.log
 config.status
