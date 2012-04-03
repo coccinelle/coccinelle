@@ -20,7 +20,7 @@ endif
 
 
 VERSION=$(shell cat ./version | tr -d '\n')
-CCVERSION=$(shell cat scripts/coccicheck/README |grep "Coccicheck version" |perl -p -e 's/.*version (.*)[ ]*/$$1/;')
+CCVERSION=$(shell cat scripts/coccicheck/README | egrep -o '[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+' | head -n1)
 PKGVERSION=$(shell dpkg-parsechangelog -ldebian/changelog.$(DISTRIB_CODENAME) 2> /dev/null \
 	 | sed -n 's/^Version: \(.*\)/\1/p' )
 
@@ -240,7 +240,8 @@ static:
 purebytecode:
 	rm -f spatch.opt spatch
 	$(MAKE) BYTECODE_STATIC="" byte-only
-	perl -p -i -e 's/^#!.*/#!\/usr\/bin\/ocamlrun/' spatch
+	# disabled the following command because it does not match
+	# perl -p -i -e 's/^#!.*/#!\/usr\/bin\/ocamlrun/' spatch
 
 ##############################################################################
 # Build version information

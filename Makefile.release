@@ -32,6 +32,7 @@ ifndef OCAMLVERSION
 OCAMLVERSION=$(shell ocaml -version |perl -p -e 's/.*version (.*)/$$1/;')
 endif
 
+# can be overriden in the environment
 ifndef GIT
 GIT=git
 endif
@@ -83,7 +84,7 @@ fix-expected:
 
 release:
 	@echo "Marking version: $(VERSION)"
-	cat ./version | tr -d '\n' > ./version  # remove trailing newlines
+	echo -n "$(VERSION)" > ./version
 	$(GIT) add ./version
 	$(GIT) commit -m "Release $(VERSION)"
 	$(GIT) tag -a -m "Release $(VERSION)" $(VERSION)

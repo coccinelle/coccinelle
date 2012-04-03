@@ -324,8 +324,8 @@ let
   #
   # Performing release actions
   #
-/*
-  release =
+
+  dist =
     let pkgs = import nixpkgs { };
         name = "release-${version}${versionSuffix}";
     in with pkgs; releaseTools.nixBuild {
@@ -340,19 +340,23 @@ let
       
       buildPhase = ''
         export HOME=$TMPDIR
-	make opt-only
-	# make fix-expected
-        # make prerelease GIT=echo
-	# make release GIT=echo
-	# make package
+	make prerelease GIT=echo
+	make release GIT=echo
+	make package
       '';
 
       installPhase = ''
         mkdir -p "$out/nix-support/"
-        false doing nothing!
+	echo "cocci-dist-${version}" > "$out/nix-support/hydra-release-name"
+	cp $TMP/*.tgz "$out/"
+	for file in $out/*.tgz; do
+          echo "file binary-dist $file" >> $out/nix-support/hydra-build-products
+	done
       '';
+
+      dontInstall = false;
+      doCheck = false;
     };
-*/
   
   #
   # collections of build tasks
@@ -363,7 +367,7 @@ let
     inherit build;
 # build_rse build_se build_null_12 build_null_12_np build_rse_np;
     inherit report;
-    # inherit release;
+    inherit dist;
   };
 
   testAttrs = {
