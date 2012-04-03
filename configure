@@ -628,7 +628,7 @@ ac_unique_file="cocci.ml"
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
 MAKETARGET_ALL
-enable_build_all
+enable_release
 SUBSTITUTED_PDFLATEX
 with_PDFLATEX
 PDFLATEX
@@ -865,7 +865,7 @@ enable_pycaml
 enable_pcre_syntax
 enable_pcre
 with_pdflatex
-enable_build_all
+enable_release
 '
       ac_precious_vars='PYVER
 build_alias
@@ -1523,9 +1523,8 @@ Optional Features:
   --enable-pcre-syntax    enable pcre regular expression syntax (default:
                           auto)
   --enable-pcre           enable global package pcre (yes,no) (default: auto)
-  --enable-build-all      let the default build do spatch(.opt) and
-                          documentation build instead of only spatch (default:
-                          auto)
+  --enable-release        build with a release configuration (yes,no, default:
+                          no)
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
@@ -3528,7 +3527,7 @@ fi
 fi
 
     if test "x$with_PKG_CONFIG" != xno; then :
-        if test "xpkg-config" == xpkg-config -a "xPKG_CONFIG" == xPKG_CONFIG; then :
+        if test "xpkg-config" = xpkg-config -a "xPKG_CONFIG" = xPKG_CONFIG; then :
 
 
 if test "x$ac_cv_env_PKG_CONFIG_set" != "xset"; then
@@ -3646,7 +3645,7 @@ $as_echo "no" >&6; }
 
 fi
 
-elif test "xpkg-config" == xocamllex -a "xPKG_CONFIG" == xOCAMLLEX; then :
+elif test "xpkg-config" = xocamllex -a "xPKG_CONFIG" = xOCAMLLEX; then :
         # checking for ocamllex
   if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}ocamllex", so it can be a program name with args.
@@ -3852,7 +3851,7 @@ fi
 
 
 
-elif test "xpkg-config" == xocamlyacc -a "xPKG_CONFIG" == xOCAMLYACC; then :
+elif test "xpkg-config" = xocamlyacc -a "xPKG_CONFIG" = xOCAMLYACC; then :
         if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}ocamlyacc", so it can be a program name with args.
 set dummy ${ac_tool_prefix}ocamlyacc; ac_word=$2
@@ -4059,8 +4058,8 @@ fi
 
 fi
 
-  if test -z "$PKG_CONFIG" -o "x$PKG_CONFIG" == xno; then :
-      if test "x$with_PKG_CONFIG" == xyes; then :
+  if test -z "$PKG_CONFIG" -o "x$PKG_CONFIG" = xno; then :
+      if test "x$with_PKG_CONFIG" = xyes; then :
         as_fn_error $? "--with=pkg-config is given explicitly but not found" "$LINENO" 5
 
 fi
@@ -4070,7 +4069,7 @@ fi
 $as_echo "$as_me: pkg-config not found. Trying substitute $COCCI_SRCDIR/setup/fake-subst.sh pkg-config." >&6;}
       PKG_CONFIG="$COCCI_SRCDIR/setup/fake-subst.sh pkg-config"
 
-        if test "xpkg-config" == xpkg-config -a "xPKG_CONFIG" == xPKG_CONFIG; then :
+        if test "xpkg-config" = xpkg-config -a "xPKG_CONFIG" = xPKG_CONFIG; then :
 
 
 if test "x$ac_cv_env_PKG_CONFIG_set" != "xset"; then
@@ -4188,7 +4187,7 @@ $as_echo "no" >&6; }
 
 fi
 
-elif test "xpkg-config" == xocamllex -a "xPKG_CONFIG" == xOCAMLLEX; then :
+elif test "xpkg-config" = xocamllex -a "xPKG_CONFIG" = xOCAMLLEX; then :
         # checking for ocamllex
   if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}ocamllex", so it can be a program name with args.
@@ -4394,7 +4393,7 @@ fi
 
 
 
-elif test "xpkg-config" == xocamlyacc -a "xPKG_CONFIG" == xOCAMLYACC; then :
+elif test "xpkg-config" = xocamlyacc -a "xPKG_CONFIG" = xOCAMLYACC; then :
         if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}ocamlyacc", so it can be a program name with args.
 set dummy ${ac_tool_prefix}ocamlyacc; ac_word=$2
@@ -4610,7 +4609,7 @@ fi
 
 fi
 
-if test "x$PKG_CONFIG" == xno; then :
+if test "x$PKG_CONFIG" = xno; then :
     as_fn_error $? "A suitable pkg-config could not be found." "$LINENO" 5
 
 fi
@@ -5716,11 +5715,11 @@ $as_echo "$versioncheck" >&6; }
 
 
 
-if test "x$OCAMLC" == xno -o "x$OCAMLDEP" == xno -o "x$OCAMLDOC" == xno -o "x$OCAMLMKLIB" == xno; then :
+if test "x$OCAMLC" = xno -o "x$OCAMLDEP" = xno -o "x$OCAMLDOC" = xno -o "x$OCAMLMKLIB" = xno; then :
     as_fn_error $? "You must install the OCaml compiler" "$LINENO" 5
 
 fi
-if test "x$OCAMLATLEAST310" == xno; then :
+if test "x$OCAMLATLEAST310" = xno; then :
   { $as_echo "$as_me:${as_lineno-$LINENO}: a more recent OCaml installation may be required" >&5
 $as_echo "$as_me: a more recent OCaml installation may be required" >&6;}
 fi
@@ -6646,7 +6645,7 @@ fi
 fi
 
     if test "x$with_OCAMLLEX" != xno; then :
-        if test "xocamllex" == xpkg-config -a "xOCAMLLEX" == xPKG_CONFIG; then :
+        if test "xocamllex" = xpkg-config -a "xOCAMLLEX" = xPKG_CONFIG; then :
 
 
 if test "x$ac_cv_env_PKG_CONFIG_set" != "xset"; then
@@ -6764,7 +6763,7 @@ $as_echo "no" >&6; }
 
 fi
 
-elif test "xocamllex" == xocamllex -a "xOCAMLLEX" == xOCAMLLEX; then :
+elif test "xocamllex" = xocamllex -a "xOCAMLLEX" = xOCAMLLEX; then :
         # checking for ocamllex
   if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}ocamllex", so it can be a program name with args.
@@ -6970,7 +6969,7 @@ fi
 
 
 
-elif test "xocamllex" == xocamlyacc -a "xOCAMLLEX" == xOCAMLYACC; then :
+elif test "xocamllex" = xocamlyacc -a "xOCAMLLEX" = xOCAMLYACC; then :
         if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}ocamlyacc", so it can be a program name with args.
 set dummy ${ac_tool_prefix}ocamlyacc; ac_word=$2
@@ -7177,8 +7176,8 @@ fi
 
 fi
 
-  if test -z "$OCAMLLEX" -o "x$OCAMLLEX" == xno; then :
-      if test "x$with_OCAMLLEX" == xyes; then :
+  if test -z "$OCAMLLEX" -o "x$OCAMLLEX" = xno; then :
+      if test "x$with_OCAMLLEX" = xyes; then :
         as_fn_error $? "--with=ocamllex is given explicitly but not found" "$LINENO" 5
 
 fi
@@ -7188,7 +7187,7 @@ fi
 $as_echo "$as_me: ocamllex not found. Trying substitute ." >&6;}
       OCAMLLEX=""
 
-        if test "xocamllex" == xpkg-config -a "xOCAMLLEX" == xPKG_CONFIG; then :
+        if test "xocamllex" = xpkg-config -a "xOCAMLLEX" = xPKG_CONFIG; then :
 
 
 if test "x$ac_cv_env_PKG_CONFIG_set" != "xset"; then
@@ -7306,7 +7305,7 @@ $as_echo "no" >&6; }
 
 fi
 
-elif test "xocamllex" == xocamllex -a "xOCAMLLEX" == xOCAMLLEX; then :
+elif test "xocamllex" = xocamllex -a "xOCAMLLEX" = xOCAMLLEX; then :
         # checking for ocamllex
   if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}ocamllex", so it can be a program name with args.
@@ -7512,7 +7511,7 @@ fi
 
 
 
-elif test "xocamllex" == xocamlyacc -a "xOCAMLLEX" == xOCAMLYACC; then :
+elif test "xocamllex" = xocamlyacc -a "xOCAMLLEX" = xOCAMLYACC; then :
         if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}ocamlyacc", so it can be a program name with args.
 set dummy ${ac_tool_prefix}ocamlyacc; ac_word=$2
@@ -7745,7 +7744,7 @@ fi
 fi
 
     if test "x$with_OCAMLYACC" != xno; then :
-        if test "xocamlyacc" == xpkg-config -a "xOCAMLYACC" == xPKG_CONFIG; then :
+        if test "xocamlyacc" = xpkg-config -a "xOCAMLYACC" = xPKG_CONFIG; then :
 
 
 if test "x$ac_cv_env_PKG_CONFIG_set" != "xset"; then
@@ -7863,7 +7862,7 @@ $as_echo "no" >&6; }
 
 fi
 
-elif test "xocamlyacc" == xocamllex -a "xOCAMLYACC" == xOCAMLLEX; then :
+elif test "xocamlyacc" = xocamllex -a "xOCAMLYACC" = xOCAMLLEX; then :
         # checking for ocamllex
   if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}ocamllex", so it can be a program name with args.
@@ -8069,7 +8068,7 @@ fi
 
 
 
-elif test "xocamlyacc" == xocamlyacc -a "xOCAMLYACC" == xOCAMLYACC; then :
+elif test "xocamlyacc" = xocamlyacc -a "xOCAMLYACC" = xOCAMLYACC; then :
         if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}ocamlyacc", so it can be a program name with args.
 set dummy ${ac_tool_prefix}ocamlyacc; ac_word=$2
@@ -8276,8 +8275,8 @@ fi
 
 fi
 
-  if test -z "$OCAMLYACC" -o "x$OCAMLYACC" == xno; then :
-      if test "x$with_OCAMLYACC" == xyes; then :
+  if test -z "$OCAMLYACC" -o "x$OCAMLYACC" = xno; then :
+      if test "x$with_OCAMLYACC" = xyes; then :
         as_fn_error $? "--with=ocamlyacc is given explicitly but not found" "$LINENO" 5
 
 fi
@@ -8287,7 +8286,7 @@ fi
 $as_echo "$as_me: ocamlyacc not found. Trying substitute ." >&6;}
       OCAMLYACC=""
 
-        if test "xocamlyacc" == xpkg-config -a "xOCAMLYACC" == xPKG_CONFIG; then :
+        if test "xocamlyacc" = xpkg-config -a "xOCAMLYACC" = xPKG_CONFIG; then :
 
 
 if test "x$ac_cv_env_PKG_CONFIG_set" != "xset"; then
@@ -8405,7 +8404,7 @@ $as_echo "no" >&6; }
 
 fi
 
-elif test "xocamlyacc" == xocamllex -a "xOCAMLYACC" == xOCAMLLEX; then :
+elif test "xocamlyacc" = xocamllex -a "xOCAMLYACC" = xOCAMLLEX; then :
         # checking for ocamllex
   if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}ocamllex", so it can be a program name with args.
@@ -8611,7 +8610,7 @@ fi
 
 
 
-elif test "xocamlyacc" == xocamlyacc -a "xOCAMLYACC" == xOCAMLYACC; then :
+elif test "xocamlyacc" = xocamlyacc -a "xOCAMLYACC" = xOCAMLYACC; then :
         if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}ocamlyacc", so it can be a program name with args.
 set dummy ${ac_tool_prefix}ocamlyacc; ac_word=$2
@@ -8844,7 +8843,7 @@ fi
 fi
 
     if test "x$with_OCAMLFIND" != xno; then :
-        if test "xocamlfind" == xpkg-config -a "xOCAMLFIND" == xPKG_CONFIG; then :
+        if test "xocamlfind" = xpkg-config -a "xOCAMLFIND" = xPKG_CONFIG; then :
 
 
 if test "x$ac_cv_env_PKG_CONFIG_set" != "xset"; then
@@ -8962,7 +8961,7 @@ $as_echo "no" >&6; }
 
 fi
 
-elif test "xocamlfind" == xocamllex -a "xOCAMLFIND" == xOCAMLLEX; then :
+elif test "xocamlfind" = xocamllex -a "xOCAMLFIND" = xOCAMLLEX; then :
         # checking for ocamllex
   if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}ocamllex", so it can be a program name with args.
@@ -9168,7 +9167,7 @@ fi
 
 
 
-elif test "xocamlfind" == xocamlyacc -a "xOCAMLFIND" == xOCAMLYACC; then :
+elif test "xocamlfind" = xocamlyacc -a "xOCAMLFIND" = xOCAMLYACC; then :
         if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}ocamlyacc", so it can be a program name with args.
 set dummy ${ac_tool_prefix}ocamlyacc; ac_word=$2
@@ -9375,8 +9374,8 @@ fi
 
 fi
 
-  if test -z "$OCAMLFIND" -o "x$OCAMLFIND" == xno; then :
-      if test "x$with_OCAMLFIND" == xyes; then :
+  if test -z "$OCAMLFIND" -o "x$OCAMLFIND" = xno; then :
+      if test "x$with_OCAMLFIND" = xyes; then :
         as_fn_error $? "--with=ocamlfind is given explicitly but not found" "$LINENO" 5
 
 fi
@@ -9386,7 +9385,7 @@ fi
 $as_echo "$as_me: ocamlfind not found. Trying substitute $COCCI_SRCDIR/setup/fake-subst.sh ocamlfind." >&6;}
       OCAMLFIND="$COCCI_SRCDIR/setup/fake-subst.sh ocamlfind"
 
-        if test "xocamlfind" == xpkg-config -a "xOCAMLFIND" == xPKG_CONFIG; then :
+        if test "xocamlfind" = xpkg-config -a "xOCAMLFIND" = xPKG_CONFIG; then :
 
 
 if test "x$ac_cv_env_PKG_CONFIG_set" != "xset"; then
@@ -9504,7 +9503,7 @@ $as_echo "no" >&6; }
 
 fi
 
-elif test "xocamlfind" == xocamllex -a "xOCAMLFIND" == xOCAMLLEX; then :
+elif test "xocamlfind" = xocamllex -a "xOCAMLFIND" = xOCAMLLEX; then :
         # checking for ocamllex
   if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}ocamllex", so it can be a program name with args.
@@ -9710,7 +9709,7 @@ fi
 
 
 
-elif test "xocamlfind" == xocamlyacc -a "xOCAMLFIND" == xOCAMLYACC; then :
+elif test "xocamlfind" = xocamlyacc -a "xOCAMLFIND" = xOCAMLYACC; then :
         if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}ocamlyacc", so it can be a program name with args.
 set dummy ${ac_tool_prefix}ocamlyacc; ac_word=$2
@@ -9927,17 +9926,17 @@ fi
 fi
 
 
-if test "x$OCAMLLEX" == xno; then :
+if test "x$OCAMLLEX" = xno; then :
     as_fn_error $? "the OCaml Lexer needs to be installed (the ocamllex command). It should be part of your OCaml distribution." "$LINENO" 5
 
 fi
 
-if test "x$OCAMLYACC" == xno; then :
+if test "x$OCAMLYACC" = xno; then :
     as_fn_error $? "The OCaml parser generated needs to be installed (the ocamlyacc command). It should be part of your OCaml distribution." "$LINENO" 5
 
 fi
 
-if test "x$OCAMLFIND" == xno; then :
+if test "x$OCAMLFIND" = xno; then :
     as_fn_error $? "A suitable OCaml findlib (the ocamlfind command) could not be found." "$LINENO" 5
 
 fi
@@ -9951,7 +9950,7 @@ fi
 
 
   if test -z "$RUNTIME_OCAMLFIND_CMD"; then :
-      if test "x$with_runtime_ocamlfind" == xno; then :
+      if test "x$with_runtime_ocamlfind" = xno; then :
         RUNTIME_OCAMLFIND_CMD=$OCAMLFIND
 
 
@@ -9976,7 +9975,7 @@ fi
 
 
   if test -z "$RUNTIME_OCAMLC_CMD"; then :
-      if test "x$with_runtime_ocamlc" == xno; then :
+      if test "x$with_runtime_ocamlc" = xno; then :
         RUNTIME_OCAMLC_CMD=$OCAMLC
 
 
@@ -10001,7 +10000,7 @@ fi
 
 
   if test -z "$RUNTIME_OCAMLOPT_CMD"; then :
-      if test "x$with_runtime_ocamlopt" == xno; then :
+      if test "x$with_runtime_ocamlopt" = xno; then :
         RUNTIME_OCAMLOPT_CMD=$OCAMLOPT
 
 
@@ -10026,7 +10025,7 @@ fi
 
 
   if test -z "$RUNTIME_OCAMLDEP_CMD"; then :
-      if test "x$with_runtime_ocamldep" == xno; then :
+      if test "x$with_runtime_ocamldep" = xno; then :
         RUNTIME_OCAMLDEP_CMD=$OCAMLDEP
 
 
@@ -10051,7 +10050,7 @@ fi
 
 
   if test -z "$RUNTIME_CAMLP4_CMD"; then :
-      if test "x$with_runtime_camlp4" == xno; then :
+      if test "x$with_runtime_camlp4" = xno; then :
         RUNTIME_CAMLP4_CMD=$CAMLP4
 
 
@@ -10076,7 +10075,7 @@ fi
 
 
   if test -z "$RUNTIME_CAMLP4O_CMD"; then :
-      if test "x$with_runtime_camlp4o" == xno; then :
+      if test "x$with_runtime_camlp4o" = xno; then :
         RUNTIME_CAMLP4O_CMD=$CAMLP4O
 
 
@@ -10315,7 +10314,7 @@ $as_echo "not found" >&6; }
 
 fi
 
-  if test "x$OCAML_PKG_unix" == xno; then :
+  if test "x$OCAML_PKG_unix" = xno; then :
       as_fn_error $? "package unix is required. It should be part of your ocaml installation." "$LINENO" 5
 
 fi
@@ -10350,7 +10349,7 @@ $as_echo "not found" >&6; }
 
 fi
 
-  if test "x$OCAML_PKG_bigarray" == xno; then :
+  if test "x$OCAML_PKG_bigarray" = xno; then :
       as_fn_error $? "package bigarray is required. It should be part of your ocaml installation." "$LINENO" 5
 
 fi
@@ -10385,7 +10384,7 @@ $as_echo "not found" >&6; }
 
 fi
 
-  if test "x$OCAML_PKG_num" == xno; then :
+  if test "x$OCAML_PKG_num" = xno; then :
       as_fn_error $? "package num is required. It should be part of your ocaml installation." "$LINENO" 5
 
 fi
@@ -10420,7 +10419,7 @@ $as_echo "not found" >&6; }
 
 fi
 
-  if test "x$OCAML_PKG_str" == xno; then :
+  if test "x$OCAML_PKG_str" = xno; then :
       as_fn_error $? "package str is required. It should be part of your ocaml installation." "$LINENO" 5
 
 fi
@@ -10455,7 +10454,7 @@ $as_echo "not found" >&6; }
 
 fi
 
-  if test "x$OCAML_PKG_threads" == xno; then :
+  if test "x$OCAML_PKG_threads" = xno; then :
       as_fn_error $? "package threads is required. It should be part of your ocaml installation." "$LINENO" 5
 
 fi
@@ -10508,7 +10507,7 @@ fi
 
 
 else
-        if test "x$enable_dynlink" == xyes; then :
+        if test "x$enable_dynlink" = xyes; then :
           as_fn_error $? "OCaml package dynlink is not available but requested explicitly" "$LINENO" 5
 
 fi
@@ -10519,7 +10518,7 @@ fi
 
 fi
 
-    if test "x$enable_dynlink" == xno; then :
+    if test "x$enable_dynlink" = xno; then :
       { pkgdir=; unset pkgdir;}
     pkgdir="$COCCI_OCAML_EXTERNAL/dynlink/"
     { $as_echo "$as_me:${as_lineno-$LINENO}: checking for a bundled substitute of dynlink" >&5
@@ -10547,7 +10546,7 @@ fi
     FLAGS_dynlink='$(FLAGS_dynlink)'
 
 
-        if test "x$enable_dynlink" == xlocal; then :
+        if test "x$enable_dynlink" = xlocal; then :
         LOCALLIB_dynlink=1
 
       MODULES_dynlink='$(LOCAL_dynlink)'
@@ -10575,7 +10574,7 @@ fi
 
 fi
 
-  if test "x$enable_dynlink" == xno; then :
+  if test "x$enable_dynlink" = xno; then :
       as_fn_error $? "OCaml package dynlink is required. Please make sure it is available." "$LINENO" 5
 
 fi
@@ -10627,7 +10626,7 @@ fi
 
 
 else
-        if test "x$enable_camlp4" == xyes; then :
+        if test "x$enable_camlp4" = xyes; then :
           as_fn_error $? "OCaml package camlp4 is not available but requested explicitly" "$LINENO" 5
 
 fi
@@ -10638,7 +10637,7 @@ fi
 
 fi
 
-    if test "x$enable_camlp4" == xno; then :
+    if test "x$enable_camlp4" = xno; then :
       { pkgdir=; unset pkgdir;}
     pkgdir="$COCCI_OCAML_EXTERNAL/camlp4/"
     { $as_echo "$as_me:${as_lineno-$LINENO}: checking for a bundled substitute of camlp4" >&5
@@ -10666,7 +10665,7 @@ fi
     FLAGS_camlp4='$(FLAGS_camlp4)'
 
 
-        if test "x$enable_camlp4" == xlocal; then :
+        if test "x$enable_camlp4" = xlocal; then :
         LOCALLIB_camlp4=1
 
       MODULES_camlp4='$(LOCAL_camlp4)'
@@ -10694,7 +10693,7 @@ fi
 
 fi
 
-  if test "x$enable_camlp4" == xno; then :
+  if test "x$enable_camlp4" = xno; then :
       as_fn_error $? "OCaml package camlp4 is required. Please make sure it is available." "$LINENO" 5
 
 fi
@@ -10746,7 +10745,7 @@ fi
 
 
 else
-        if test "x$enable_sexplib" == xyes; then :
+        if test "x$enable_sexplib" = xyes; then :
           as_fn_error $? "OCaml package sexplib is not available but requested explicitly" "$LINENO" 5
 
 fi
@@ -10757,7 +10756,7 @@ fi
 
 fi
 
-    if test "x$enable_sexplib" == xno; then :
+    if test "x$enable_sexplib" = xno; then :
       { pkgdir=; unset pkgdir;}
     pkgdir="$COCCI_OCAML_EXTERNAL/sexplib/"
     { $as_echo "$as_me:${as_lineno-$LINENO}: checking for a bundled substitute of sexplib" >&5
@@ -10785,7 +10784,7 @@ fi
     FLAGS_sexplib='$(FLAGS_sexplib)'
 
 
-        if test "x$enable_sexplib" == xlocal; then :
+        if test "x$enable_sexplib" = xlocal; then :
         LOCALLIB_sexplib=1
 
       MODULES_sexplib='$(LOCAL_sexplib)'
@@ -10813,7 +10812,7 @@ fi
 
 fi
 
-  if test "x$enable_sexplib" == xno; then :
+  if test "x$enable_sexplib" = xno; then :
       as_fn_error $? "OCaml package sexplib is required. Please make sure it is available." "$LINENO" 5
 
 fi
@@ -10865,7 +10864,7 @@ fi
 
 
 else
-        if test "x$enable_menhirLib" == xyes; then :
+        if test "x$enable_menhirLib" = xyes; then :
           as_fn_error $? "OCaml package menhirLib is not available but requested explicitly" "$LINENO" 5
 
 fi
@@ -10876,7 +10875,7 @@ fi
 
 fi
 
-    if test "x$enable_menhirLib" == xno; then :
+    if test "x$enable_menhirLib" = xno; then :
       { pkgdir=; unset pkgdir;}
     pkgdir="$COCCI_OCAML_EXTERNAL/menhirLib/"
     { $as_echo "$as_me:${as_lineno-$LINENO}: checking for a bundled substitute of menhirLib" >&5
@@ -10904,7 +10903,7 @@ fi
     FLAGS_menhirLib='$(FLAGS_menhirLib)'
 
 
-        if test "x$enable_menhirLib" == xlocal; then :
+        if test "x$enable_menhirLib" = xlocal; then :
         LOCALLIB_menhirLib=1
 
       MODULES_menhirLib='$(LOCAL_menhirLib)'
@@ -10932,7 +10931,7 @@ fi
 
 fi
 
-  if test "x$enable_menhirLib" == xno; then :
+  if test "x$enable_menhirLib" = xno; then :
       as_fn_error $? "OCaml package menhirLib is required. Please make sure it is available." "$LINENO" 5
 
 fi
@@ -10984,7 +10983,7 @@ fi
 
 
 else
-        if test "x$enable_extlib" == xyes; then :
+        if test "x$enable_extlib" = xyes; then :
           as_fn_error $? "OCaml package extlib is not available but requested explicitly" "$LINENO" 5
 
 fi
@@ -10995,7 +10994,7 @@ fi
 
 fi
 
-    if test "x$enable_extlib" == xno; then :
+    if test "x$enable_extlib" = xno; then :
       { pkgdir=; unset pkgdir;}
     pkgdir="$COCCI_OCAML_EXTERNAL/extlib/"
     { $as_echo "$as_me:${as_lineno-$LINENO}: checking for a bundled substitute of extlib" >&5
@@ -11023,7 +11022,7 @@ fi
     FLAGS_extlib='$(FLAGS_extlib)'
 
 
-        if test "x$enable_extlib" == xlocal; then :
+        if test "x$enable_extlib" = xlocal; then :
         LOCALLIB_extlib=1
 
       MODULES_extlib='$(LOCAL_extlib)'
@@ -11051,7 +11050,7 @@ fi
 
 fi
 
-  if test "x$enable_extlib" == xno; then :
+  if test "x$enable_extlib" = xno; then :
       as_fn_error $? "OCaml package extlib is required. Please make sure it is available." "$LINENO" 5
 
 fi
@@ -11167,7 +11166,7 @@ fi
 fi
 
     if test "x$with_MENHIR" != xno; then :
-        if test "xmenhir" == xpkg-config -a "xMENHIR" == xPKG_CONFIG; then :
+        if test "xmenhir" = xpkg-config -a "xMENHIR" = xPKG_CONFIG; then :
 
 
 if test "x$ac_cv_env_PKG_CONFIG_set" != "xset"; then
@@ -11285,7 +11284,7 @@ $as_echo "no" >&6; }
 
 fi
 
-elif test "xmenhir" == xocamllex -a "xMENHIR" == xOCAMLLEX; then :
+elif test "xmenhir" = xocamllex -a "xMENHIR" = xOCAMLLEX; then :
         # checking for ocamllex
   if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}ocamllex", so it can be a program name with args.
@@ -11491,7 +11490,7 @@ fi
 
 
 
-elif test "xmenhir" == xocamlyacc -a "xMENHIR" == xOCAMLYACC; then :
+elif test "xmenhir" = xocamlyacc -a "xMENHIR" = xOCAMLYACC; then :
         if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}ocamlyacc", so it can be a program name with args.
 set dummy ${ac_tool_prefix}ocamlyacc; ac_word=$2
@@ -11698,8 +11697,8 @@ fi
 
 fi
 
-  if test -z "$MENHIR" -o "x$MENHIR" == xno; then :
-      if test "x$with_MENHIR" == xyes; then :
+  if test -z "$MENHIR" -o "x$MENHIR" = xno; then :
+      if test "x$with_MENHIR" = xyes; then :
         as_fn_error $? "--with=menhir is given explicitly but not found" "$LINENO" 5
 
 fi
@@ -11709,7 +11708,7 @@ fi
 $as_echo "$as_me: menhir not found. Trying substitute $COCCI_SRCDIR/setup/fake-menhir.sh menhir." >&6;}
       MENHIR="$COCCI_SRCDIR/setup/fake-menhir.sh menhir"
 
-        if test "xmenhir" == xpkg-config -a "xMENHIR" == xPKG_CONFIG; then :
+        if test "xmenhir" = xpkg-config -a "xMENHIR" = xPKG_CONFIG; then :
 
 
 if test "x$ac_cv_env_PKG_CONFIG_set" != "xset"; then
@@ -11827,7 +11826,7 @@ $as_echo "no" >&6; }
 
 fi
 
-elif test "xmenhir" == xocamllex -a "xMENHIR" == xOCAMLLEX; then :
+elif test "xmenhir" = xocamllex -a "xMENHIR" = xOCAMLLEX; then :
         # checking for ocamllex
   if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}ocamllex", so it can be a program name with args.
@@ -12033,7 +12032,7 @@ fi
 
 
 
-elif test "xmenhir" == xocamlyacc -a "xMENHIR" == xOCAMLYACC; then :
+elif test "xmenhir" = xocamlyacc -a "xMENHIR" = xOCAMLYACC; then :
         if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}ocamlyacc", so it can be a program name with args.
 set dummy ${ac_tool_prefix}ocamlyacc; ac_word=$2
@@ -12249,7 +12248,7 @@ fi
 
 fi
 
-if test "x$SUBSTITUTED_MENHIR" == xyes; then :
+if test "x$SUBSTITUTED_MENHIR" = xyes; then :
     { $as_echo "$as_me:${as_lineno-$LINENO}: pregenerated parsers will be required as substitute for Menhir" >&5
 $as_echo "$as_me: pregenerated parsers will be required as substitute for Menhir" >&6;}
 
@@ -12261,7 +12260,7 @@ if test "${enable_ocaml+set}" = set; then :
   enableval=$enable_ocaml;
 fi
 
-if test "x$OCAML_PKG_dynlink" == xno; then :
+if test "x$OCAML_PKG_dynlink" = xno; then :
     if test -z "$enable_ocaml"; then :
       enable_ocaml=no
 
@@ -12275,7 +12274,7 @@ fi
 
 fi
 
-if test "x$OCAMLATLEAST311" == xno; then :
+if test "x$OCAMLATLEAST311" = xno; then :
     enable_ocaml=no
 
   { $as_echo "$as_me:${as_lineno-$LINENO}: ocaml scripting has been disabled because your OCaml version may not support dynamic linking properly" >&5
@@ -12298,7 +12297,7 @@ fi
 
 fi
 
-if test "x$CAMLP4" == xno; then :
+if test "x$CAMLP4" = xno; then :
     if test -z "$enable_ocaml"; then :
       enable_ocaml=no
 
@@ -12313,7 +12312,7 @@ fi
 
 fi
 
-if test "x$enable_ocaml" == xno; then :
+if test "x$enable_ocaml" = xno; then :
       FEATURE_dynlink=0
 
   LOCALLIB_dynlink=0
@@ -12375,7 +12374,7 @@ fi
 fi
 
     if test "x$with_PYTHON" != xno; then :
-        if test "xpython" == xpkg-config -a "xPYTHON" == xPKG_CONFIG; then :
+        if test "xpython" = xpkg-config -a "xPYTHON" = xPKG_CONFIG; then :
 
 
 if test "x$ac_cv_env_PKG_CONFIG_set" != "xset"; then
@@ -12493,7 +12492,7 @@ $as_echo "no" >&6; }
 
 fi
 
-elif test "xpython" == xocamllex -a "xPYTHON" == xOCAMLLEX; then :
+elif test "xpython" = xocamllex -a "xPYTHON" = xOCAMLLEX; then :
         # checking for ocamllex
   if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}ocamllex", so it can be a program name with args.
@@ -12699,7 +12698,7 @@ fi
 
 
 
-elif test "xpython" == xocamlyacc -a "xPYTHON" == xOCAMLYACC; then :
+elif test "xpython" = xocamlyacc -a "xPYTHON" = xOCAMLYACC; then :
         if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}ocamlyacc", so it can be a program name with args.
 set dummy ${ac_tool_prefix}ocamlyacc; ac_word=$2
@@ -12906,8 +12905,8 @@ fi
 
 fi
 
-  if test -z "$PYTHON" -o "x$PYTHON" == xno; then :
-      if test "x$with_PYTHON" == xyes; then :
+  if test -z "$PYTHON" -o "x$PYTHON" = xno; then :
+      if test "x$with_PYTHON" = xyes; then :
         as_fn_error $? "--with=python is given explicitly but not found" "$LINENO" 5
 
 fi
@@ -12917,7 +12916,7 @@ fi
 $as_echo "$as_me: python not found. Trying substitute ." >&6;}
       PYTHON=""
 
-        if test "xpython" == xpkg-config -a "xPYTHON" == xPKG_CONFIG; then :
+        if test "xpython" = xpkg-config -a "xPYTHON" = xPKG_CONFIG; then :
 
 
 if test "x$ac_cv_env_PKG_CONFIG_set" != "xset"; then
@@ -13035,7 +13034,7 @@ $as_echo "no" >&6; }
 
 fi
 
-elif test "xpython" == xocamllex -a "xPYTHON" == xOCAMLLEX; then :
+elif test "xpython" = xocamllex -a "xPYTHON" = xOCAMLLEX; then :
         # checking for ocamllex
   if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}ocamllex", so it can be a program name with args.
@@ -13241,7 +13240,7 @@ fi
 
 
 
-elif test "xpython" == xocamlyacc -a "xPYTHON" == xOCAMLYACC; then :
+elif test "xpython" = xocamlyacc -a "xPYTHON" = xOCAMLYACC; then :
         if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}ocamlyacc", so it can be a program name with args.
 set dummy ${ac_tool_prefix}ocamlyacc; ac_word=$2
@@ -13458,7 +13457,7 @@ fi
 fi
 
 
-    if test "x$PYTHON" == xno -a -n "$with_python" -a "x$with_python" != xyes; then :
+    if test "x$PYTHON" = xno -a -n "$with_python" -a "x$with_python" != xyes; then :
         { $as_echo "$as_me:${as_lineno-$LINENO}:  is not a found as tool, therefore interpreted as version" >&5
 $as_echo "$as_me:  is not a found as tool, therefore interpreted as version" >&6;}
       PYVER=""
@@ -13489,7 +13488,7 @@ fi
 
 
   if test -z "$PYVER"; then :
-      if test "x$enable_python" == xyes; then :
+      if test "x$enable_python" = xyes; then :
         as_fn_error $? "python scripting is enabled explicitly but the version of python could not be determined" "$LINENO" 5
 
 fi
@@ -13647,7 +13646,7 @@ fi
 fi
 
 if test -z "$enable_python"; then :
-    if test "x$HAVE_PYTHON" == xyes; then :
+    if test "x$HAVE_PYTHON" = xyes; then :
       enable_python=yes
 
 
@@ -13660,7 +13659,7 @@ fi
 fi
 
 if test "x$enable_python" != xno; then :
-    if test "x$HAVE_PYTHON" == xyes; then :
+    if test "x$HAVE_PYTHON" = xyes; then :
       { $as_echo "$as_me:${as_lineno-$LINENO}: support for python scripts is enabled" >&5
 $as_echo "$as_me: support for python scripts is enabled" >&6;}
 
@@ -13716,7 +13715,7 @@ fi
 
 
 else
-        if test "x$enable_pycaml" == xyes; then :
+        if test "x$enable_pycaml" = xyes; then :
           as_fn_error $? "OCaml package pycaml is not available but requested explicitly" "$LINENO" 5
 
 fi
@@ -13727,7 +13726,7 @@ fi
 
 fi
 
-    if test "x$enable_pycaml" == xno; then :
+    if test "x$enable_pycaml" = xno; then :
       { pkgdir=; unset pkgdir;}
     pkgdir="$COCCI_OCAML_EXTERNAL/pycaml/"
     { $as_echo "$as_me:${as_lineno-$LINENO}: checking for a bundled substitute of pycaml" >&5
@@ -13755,7 +13754,7 @@ fi
     FLAGS_pycaml='$(FLAGS_pycaml)'
 
 
-        if test "x$enable_pycaml" == xlocal; then :
+        if test "x$enable_pycaml" = xlocal; then :
         LOCALLIB_pycaml=1
 
       MODULES_pycaml='$(LOCAL_pycaml)'
@@ -13783,7 +13782,7 @@ fi
 
 fi
 
-  if test "x$enable_pycaml" == xno; then :
+  if test "x$enable_pycaml" = xno; then :
       as_fn_error $? "OCaml package pycaml is required. Please make sure it is available." "$LINENO" 5
 
 fi
@@ -13943,7 +13942,7 @@ fi
 
 
 else
-        if test "x$enable_pcre" == xyes; then :
+        if test "x$enable_pcre" = xyes; then :
           as_fn_error $? "OCaml package pcre is not available but requested explicitly" "$LINENO" 5
 
 fi
@@ -13954,7 +13953,7 @@ fi
 
 fi
 
-    if test "x$enable_pcre" == xno; then :
+    if test "x$enable_pcre" = xno; then :
       { pkgdir=; unset pkgdir;}
     pkgdir="$COCCI_OCAML_EXTERNAL/pcre/"
     { $as_echo "$as_me:${as_lineno-$LINENO}: checking for a bundled substitute of pcre" >&5
@@ -13982,7 +13981,7 @@ fi
     FLAGS_pcre='$(FLAGS_pcre)'
 
 
-        if test "x$enable_pcre" == xlocal; then :
+        if test "x$enable_pcre" = xlocal; then :
         LOCALLIB_pcre=1
 
       MODULES_pcre='$(LOCAL_pcre)'
@@ -14016,7 +14015,7 @@ fi
 fi
 
 if test "x$enable_pcre_syntax" != xno; then :
-    if test "x$HAVE_PCRE" == xyes; then :
+    if test "x$HAVE_PCRE" = xyes; then :
       { $as_echo "$as_me:${as_lineno-$LINENO}: support for pcre syntax is enabled" >&5
 $as_echo "$as_me: support for pcre syntax is enabled" >&6;}
 
@@ -14139,7 +14138,7 @@ fi
 rm -f confcache
 
 
-if test "$prefix" == "NONE"; then :
+if test "$prefix" = "NONE"; then :
   prefix=$ac_default_prefix
 fi
 
@@ -14168,7 +14167,7 @@ else
 
 fi
 
-if test "x$OCAMLATLEAST311" == xyes -a "x$enable_ocaml" == xyes; then :
+if test "x$OCAMLATLEAST311" = xyes -a "x$enable_ocaml" = xyes; then :
     DYNLINK_IS_NATIVE=Dynlink.is_native
 
 
@@ -14195,7 +14194,7 @@ fi
 fi
 
     if test "x$with_PDFLATEX" != xno; then :
-        if test "xpdflatex" == xpkg-config -a "xPDFLATEX" == xPKG_CONFIG; then :
+        if test "xpdflatex" = xpkg-config -a "xPDFLATEX" = xPKG_CONFIG; then :
 
 
 if test "x$ac_cv_env_PKG_CONFIG_set" != "xset"; then
@@ -14313,7 +14312,7 @@ $as_echo "no" >&6; }
 
 fi
 
-elif test "xpdflatex" == xocamllex -a "xPDFLATEX" == xOCAMLLEX; then :
+elif test "xpdflatex" = xocamllex -a "xPDFLATEX" = xOCAMLLEX; then :
         # checking for ocamllex
   if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}ocamllex", so it can be a program name with args.
@@ -14519,7 +14518,7 @@ fi
 
 
 
-elif test "xpdflatex" == xocamlyacc -a "xPDFLATEX" == xOCAMLYACC; then :
+elif test "xpdflatex" = xocamlyacc -a "xPDFLATEX" = xOCAMLYACC; then :
         if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}ocamlyacc", so it can be a program name with args.
 set dummy ${ac_tool_prefix}ocamlyacc; ac_word=$2
@@ -14726,8 +14725,8 @@ fi
 
 fi
 
-  if test -z "$PDFLATEX" -o "x$PDFLATEX" == xno; then :
-      if test "x$with_PDFLATEX" == xyes; then :
+  if test -z "$PDFLATEX" -o "x$PDFLATEX" = xno; then :
+      if test "x$with_PDFLATEX" = xyes; then :
         as_fn_error $? "--with=pdflatex is given explicitly but not found" "$LINENO" 5
 
 fi
@@ -14737,7 +14736,7 @@ fi
 $as_echo "$as_me: pdflatex not found. Trying substitute $COCCI_SRCDIR/setup/fake-pdflatex.sh pdflatex." >&6;}
       PDFLATEX="$COCCI_SRCDIR/setup/fake-pdflatex.sh pdflatex"
 
-        if test "xpdflatex" == xpkg-config -a "xPDFLATEX" == xPKG_CONFIG; then :
+        if test "xpdflatex" = xpkg-config -a "xPDFLATEX" = xPKG_CONFIG; then :
 
 
 if test "x$ac_cv_env_PKG_CONFIG_set" != "xset"; then
@@ -14855,7 +14854,7 @@ $as_echo "no" >&6; }
 
 fi
 
-elif test "xpdflatex" == xocamllex -a "xPDFLATEX" == xOCAMLLEX; then :
+elif test "xpdflatex" = xocamllex -a "xPDFLATEX" = xOCAMLLEX; then :
         # checking for ocamllex
   if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}ocamllex", so it can be a program name with args.
@@ -15061,7 +15060,7 @@ fi
 
 
 
-elif test "xpdflatex" == xocamlyacc -a "xPDFLATEX" == xOCAMLYACC; then :
+elif test "xpdflatex" = xocamlyacc -a "xPDFLATEX" = xOCAMLYACC; then :
         if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}ocamlyacc", so it can be a program name with args.
 set dummy ${ac_tool_prefix}ocamlyacc; ac_word=$2
@@ -15280,39 +15279,57 @@ fi
 
 
 
-# Check whether --enable-build-all was given.
-if test "${enable_build_all+set}" = set; then :
-  enableval=$enable_build_all;
+# Check whether --enable-release was given.
+if test "${enable_release+set}" = set; then :
+  enableval=$enable_release;
 fi
 
 
 if test "x$OCAMLOPT" = xno; then :
-    if test "x$enable_build_all" = xyes; then :
-      as_fn_error $? "a full build is requested, but ocamlopt is not available" "$LINENO" 5
+    if test "x$enable_release" = xyes; then :
+      as_fn_error $? "a release build is requested, but ocamlopt is not available" "$LINENO" 5
 
 fi
 
-  enable_build_all=no
+  enable_release=no
 
 
 fi
 
-if test "x$OCAMLVERSION" = x3.11.2 -a "x$enable_build_all" != xyes; then :
+if test "x$OCAMLVERSION" = x3.11.2 -a "x$enable_release" != xyes; then :
     { $as_echo "$as_me:${as_lineno-$LINENO}: the optimized version of coccinelle will not be build by default due to OCaml version $OCAMLVERSION and --enable-build-all is not given to override this decision" >&5
 $as_echo "$as_me: the optimized version of coccinelle will not be build by default due to OCaml version $OCAMLVERSION and --enable-build-all is not given to override this decision" >&6;}
-  enable_build_all=no
+  enable_release=no
 
 
 fi
 
-if test "x$enable_build_all" != xno; then :
-    MAKETARGET_ALL=world
+if test -z "$enable_release"; then :
+    { $as_echo "$as_me:${as_lineno-$LINENO}: choosing the development Makefile configuration because the release configuration is not explicitly requested." >&5
+$as_echo "$as_me: choosing the development Makefile configuration because the release configuration is not explicitly requested." >&6;}
+  enable_release=no
+
+
+fi
+
+if test "x$enable_release" = xyes; then :
+    MAKETARGET_ALL=all-release
+
+
+elif test "x$enable_release" = xno; then :
+    MAKETARGET_ALL=all-dev
 
 
 else
-    MAKETARGET_ALL=byte-only
+    MAKETARGET_ALL="$enable_release"
 
 
+fi
+
+if test "x$enable_release" != xno; then :
+  SPATCHNAME=spatch.opt
+else
+  SPATCHNAME=spatch
 fi
 
 
@@ -16545,6 +16562,8 @@ pcre regexes:     $enable_pcre_syntax
 pcre module:      $enable_pcre
 pcre library:     $HAVE_PCRE
 
+release config:   $enable_release
+
 EOF
 
 cat << EOF
@@ -16559,25 +16578,18 @@ configuration changes, you may need to run first:
 To compile coccinelle, run:
   \$ make all
 
-Or alternatively, for only 'spatch':
-   \$ make byte-only
-Or for only 'spatch.opt':
-   \$ make opt
-
-
 To install coccinelle, run:
   \$ make install
 
 Then, to test coccinelle run for example:
-  \$ spatch -sp_file demos/simple.cocci demos/simple.c -o /tmp/new_simple.c
+  \$ $SPATCHNAME -sp_file demos/simple.cocci demos/simple.c -o /tmp/new_simple.c
 EOF
 
 if test "x$enable_python" != "xno"; then
 cat << EOF
 ------------------------------------------------------------------------------
 You may need to set some environment variables so that the python
-libraries are found. The frontends for spatch and spatch.opt set
-the following variables:
+libraries are found. The frontend 'spatch' sets the following variables:
 
   \$ export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:$prefix/lib
   \$ export PYTHONPATH=\$PYTHONPATH:$prefix/share/coccinelle/python

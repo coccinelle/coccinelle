@@ -17,7 +17,8 @@ endif
 endif
 
 -include /etc/lsb-release
--include Makefile.override  # local customizations
+-include Makefile.override         # local customizations, if any
+-include /etc/Makefile.coccinelle  # local customizations, if any
 
 
 VERSION=$(shell cat ./version)
@@ -109,7 +110,8 @@ BYTECODE_STATIC=-custom
 ##############################################################################
 .PHONY:: all all.opt byte opt top clean distclean configure opt-compil
 .PHONY:: $(MAKESUBDIRS:%=%.all) $(MAKESUBDIRS:%=%.opt) subdirs.all subdirs.opt
-.PHONY:: all-without-opt all-with-opt byte-only opt-only
+.PHONY:: all-opt all-byte byte-only opt-only
+
 
 # All make targets that are expected to be an entry point have a dependency on
 # 'Makefile.config' to ensure that if Makefile.config is not present, an error
@@ -119,19 +121,29 @@ BYTECODE_STATIC=-custom
 
 # dispatches to either 'all-without-opt' or 'all-with-opt'
 all: Makefile.config .depend $(TARGET_ALL)
-world: Makefile.config all-with-opt
 
-# make "all" comes in two flavours
-all-without-opt: Makefile.config byte-only preinstall
+# make "all" comes in three flavours
+world: Makefile.config .depend version.ml
+	@echo "building both versions of spatch"
+	$(MAKE) byte
+	$(MAKE) opt-compil
+	$(MAKE) preinstall
 	$(MAKE) docs
 	@echo ""
 	@echo -e "\tcoccinelle can now be installed via 'make install'"
 
-all-with-opt: Makefile.config .depend version.ml
+# note: the 'all-dev' target excludes the documentation
+all-dev: Makefile.config .depend version.ml
+	@echo "building the unoptimized version of spatch"
 	$(MAKE) byte
+	$(MAKE) preinstall
+	@echo ""
+	@echo -e "\tcoccinelle can now be installed via 'make install'"
+
+all-release: Makefile.config .depend version.ml
+	@echo building the optimized version of spatch
 	$(MAKE) opt-compil
 	$(MAKE) preinstall
-	@echo successfully build $(EXEC) and $(EXEC).opt
 	$(MAKE) docs
 	@echo ""
 	@echo -e "\tcoccinelle can now be installed via 'make install'"
@@ -273,14 +285,17 @@ docs/spatch.1: Makefile.config
 # user will use spatch to run spatch.opt (native)
 scripts/spatch: Makefile.config scripts/spatch.sh
 	cp scripts/spatch.sh scripts/spatch
+	chmod +x scripts/spatch
 
 # user will use spatch to run spatch (bytecode)
 scripts/spatch.byte: Makefile.config scripts/spatch.sh
-	sed "s|\.opt||" scripts/spatch.sh > scripts/spatch.byte
+	cp scripts/spatch.sh scripts/spatch.byte
+	chmod +x scripts/spatch.byte
 
 # user will use spatch.opt to run spatch.opt (native)
 scripts/spatch.opt: Makefile.config scripts/spatch.sh
 	cp scripts/spatch.sh scripts/spatch.opt
+	chmod +x scripts/spatch.opt
 
 distclean::
 	rm -f scripts/spatch scripts/spatch.byte scripts/spatch.opt

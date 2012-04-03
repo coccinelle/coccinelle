@@ -36,7 +36,7 @@ AC_PATH_PROG([PATCH],[patch])
 
 dnl  pkg config is required
 AC_COCCI_TOOL([PKG_CONFIG],[pkg-config],[$COCCI_SRCDIR/setup/fake-subst.sh pkg-config])
-AS_IF([test "x$PKG_CONFIG" == xno],
+AS_IF([test "x$PKG_CONFIG" = xno],
 [dnl
   AC_MSG_ERROR([A suitable pkg-config could not be found.])
 ])
@@ -46,11 +46,11 @@ AC_PROG_OCAML
 AC_CHECK_OCAMLVERSION([OCAMLATLEAST310],[3.10])
 AC_CHECK_OCAMLVERSION([OCAMLATLEAST311],[3.11])
 
-AS_IF([test "x$OCAMLC" == xno -o "x$OCAMLDEP" == xno -o "x$OCAMLDOC" == xno -o "x$OCAMLMKLIB" == xno],
+AS_IF([test "x$OCAMLC" = xno -o "x$OCAMLDEP" = xno -o "x$OCAMLDOC" = xno -o "x$OCAMLMKLIB" = xno],
 [dnl
   AC_MSG_ERROR([You must install the OCaml compiler])
 ])
-AS_IF([test "x$OCAMLATLEAST310" == xno],[AC_MSG_NOTICE([a more recent OCaml installation may be required])])
+AS_IF([test "x$OCAMLATLEAST310" = xno],[AC_MSG_NOTICE([a more recent OCaml installation may be required])])
 
 dnl  ocaml tools
 AC_PROG_CAMLP4
@@ -59,17 +59,17 @@ AC_COCCI_TOOL([OCAMLYACC],[ocamlyacc],[])
 AC_COCCI_TOOL([OCAMLFIND],[ocamlfind],[$COCCI_SRCDIR/setup/fake-subst.sh ocamlfind])
 
 dnl  enforce ocaml tool requirements
-AS_IF([test "x$OCAMLLEX" == xno],
+AS_IF([test "x$OCAMLLEX" = xno],
 [dnl
   AC_MSG_ERROR([the OCaml Lexer needs to be installed (the ocamllex command). It should be part of your OCaml distribution.])
 ])
 
-AS_IF([test "x$OCAMLYACC" == xno],
+AS_IF([test "x$OCAMLYACC" = xno],
 [dnl
   AC_MSG_ERROR([The OCaml parser generated needs to be installed (the ocamlyacc command). It should be part of your OCaml distribution.])
 ])
 
-AS_IF([test "x$OCAMLFIND" == xno],
+AS_IF([test "x$OCAMLFIND" = xno],
 [dnl
   AC_MSG_ERROR([A suitable OCaml findlib (the ocamlfind command) could not be found.])
 ])
@@ -136,7 +136,7 @@ dnl  menhir handling
 dnl  variables:
 dnl    with_menhir: whether or not menhir must be used
 AC_COCCI_TOOL([MENHIR],[menhir],[$COCCI_SRCDIR/setup/fake-menhir.sh menhir])
-AS_IF([test "x$SUBSTITUTED_MENHIR" == xyes],
+AS_IF([test "x$SUBSTITUTED_MENHIR" = xyes],
 [dnl
   AC_MSG_NOTICE([pregenerated parsers will be required as substitute for Menhir])
 ])
@@ -146,7 +146,7 @@ dnl  ocaml script handling
 dnl  variables:
 dnl    enable_ocaml: whether to enable ocaml scripts
 AC_ARG_ENABLE([ocaml], AS_HELP_STRING([--enable-ocaml], [enable ocaml scripting (default: auto)]))
-AS_IF([test "x$OCAML_PKG_dynlink" == xno],
+AS_IF([test "x$OCAML_PKG_dynlink" = xno],
 [dnl
   AS_IF([test -z "$enable_ocaml"],
   [dnl
@@ -159,7 +159,7 @@ AS_IF([test "x$OCAML_PKG_dynlink" == xno],
 ])
 
 dnl  too old ocaml version, disable dynlink by default
-AS_IF([test "x$OCAMLATLEAST311" == xno],
+AS_IF([test "x$OCAMLATLEAST311" = xno],
 [dnl
   AC_SUBST([enable_ocaml],[no])
   AC_MSG_NOTICE([ocaml scripting has been disabled because your OCaml version may not support dynamic linking properly])
@@ -179,7 +179,7 @@ AS_IF([test -n "$SUBSTITUTED_OCAMLFIND"],
 ])
 
 dnl  scripting requirement on camlp4
-AS_IF([test "x$CAMLP4" == xno],
+AS_IF([test "x$CAMLP4" = xno],
 [dnl
   AS_IF([test -z "$enable_ocaml"],
   [dnl  this is perhaps a bit too strict
@@ -191,7 +191,7 @@ AS_IF([test "x$CAMLP4" == xno],
   ])
 ])
 
-AS_IF([test "x$enable_ocaml" == xno],
+AS_IF([test "x$enable_ocaml" = xno],
 [dnl
   AC_COCCI_INIT_PKG_EMPTY([dynlink])    dnl  prevent linking with it
   AC_SUBST(OCAMLCOCCI_MODULE,[No_prepare_ocamlcocci])
@@ -224,7 +224,7 @@ AS_IF([test "x$enable_python" != xno],
 
   AS_IF([test -z "$PYVER"],
   [dnl  PYVER undetermined
-    AS_IF([test "x$enable_python" == xyes],
+    AS_IF([test "x$enable_python" = xyes],
     [dnl
       AC_MSG_ERROR([python scripting is enabled explicitly but the version of python could not be determined])
     ])
@@ -242,7 +242,7 @@ AS_IF([test "x$enable_python" != xno],
 
 AS_IF([test -z "$enable_python"],
 [dnl
-  AS_IF([test "x$HAVE_PYTHON" == xyes],
+  AS_IF([test "x$HAVE_PYTHON" = xyes],
   [dnl
     AC_SUBST([enable_python],[yes])
   ],
@@ -253,7 +253,7 @@ AS_IF([test -z "$enable_python"],
 
 AS_IF([test "x$enable_python" != xno],
 [dnl
-  AS_IF([test "x$HAVE_PYTHON" == xyes],
+  AS_IF([test "x$HAVE_PYTHON" = xyes],
   [dnl
     AC_MSG_NOTICE([support for python scripts is enabled])
   ],
@@ -292,7 +292,7 @@ AS_IF([test "x$enable_pcre_syntax" != "xno"],
 
 AS_IF([test "x$enable_pcre_syntax" != xno],
 [dnl
-  AS_IF([test "x$HAVE_PCRE" == xyes],
+  AS_IF([test "x$HAVE_PCRE" = xyes],
   [dnl
     AC_MSG_NOTICE([support for pcre syntax is enabled])
   ],
@@ -314,7 +314,7 @@ AC_CACHE_SAVE
 
 
 dnl  obtain the value of $prefix
-AS_IF([test "$prefix" == "NONE"],[prefix=$ac_default_prefix])
+AS_IF([test "$prefix" = "NONE"],[prefix=$ac_default_prefix])
 
 
 dnl
@@ -341,7 +341,7 @@ AS_IF([test "x$enable_ocaml" != xno],
 ])
 
 dnl  dynlink stuff depending on the OCaml version and whether it is enabled
-AS_IF([test "x$OCAMLATLEAST311" == xyes -a "x$enable_ocaml" == xyes],
+AS_IF([test "x$OCAMLATLEAST311" = xyes -a "x$enable_ocaml" = xyes],
 [dnl
   AC_SUBST([DYNLINK_IS_NATIVE],[Dynlink.is_native])
 ],
@@ -360,31 +360,43 @@ dnl  the bytecode version and the optimized version
 dnl  of coccinelle.
 dnl
 
-AC_ARG_ENABLE([build-all], [AS_HELP_STRING([--enable-build-all], [let the default build do spatch(.opt) and documentation build instead of only spatch (default: auto)])])
+AC_ARG_ENABLE([release], [AS_HELP_STRING([--enable-release], [build with a release configuration (yes,no, default: no)])])
 
 AS_IF([test "x$OCAMLOPT" = xno],
 [dnl
-  AS_IF([test "x$enable_build_all" = xyes],
+  AS_IF([test "x$enable_release" = xyes],
   [dnl
-    AC_MSG_ERROR([a full build is requested, but ocamlopt is not available])
+    AC_MSG_ERROR([a release build is requested, but ocamlopt is not available])
   ])
 
-  AC_SUBST([enable_build_all],[no])
+  AC_SUBST([enable_release],[no])
 ])
 
-AS_IF([test "x$OCAMLVERSION" = x3.11.2 -a "x$enable_build_all" != xyes],
+AS_IF([test "x$OCAMLVERSION" = x3.11.2 -a "x$enable_release" != xyes],
 [dnl  the optimized version may not be buildable with ocaml 3.11.2 (know bug), hence disable it by default
   AC_MSG_NOTICE([the optimized version of coccinelle will not be build by default due to OCaml version $OCAMLVERSION and --enable-build-all is not given to override this decision])
-  AC_SUBST([enable_build_all],[no])
+  AC_SUBST([enable_release],[no])
 ])
 
-AS_IF([test "x$enable_build_all" != xno],
-[dnl  include the optimized version by default
-  AC_SUBST([MAKETARGET_ALL], [all-with-opt])
-],
-[dnl  otherwise, exclude the optimized version
-  AC_SUBST([MAKETARGET_ALL], [all-without-opt])
+AS_IF([test -z "$enable_release"],
+[dnl
+  AC_MSG_NOTICE([choosing the development Makefile configuration because the release configuration is not explicitly requested.])
+  AC_SUBST([enable_release], [no])
 ])
+
+AS_IF([test "x$enable_release" = xyes],
+[dnl  include the optimized version by default
+  AC_SUBST([MAKETARGET_ALL], [all-release])
+], [test "x$enable_release" = xno],
+[dnl  otherwise, exclude the optimized version
+  AC_SUBST([MAKETARGET_ALL], [all-dev])
+],
+[dnl  custom target given
+  AC_SUBST([MAKETARGET_ALL], ["$enable_release"])
+])
+
+dnl  which spatch will be constructed
+AS_IF([test "x$enable_release" != xno],[SPATCHNAME=spatch.opt],[SPATCHNAME=spatch])
 
 
 dnl
@@ -421,6 +433,8 @@ pcre regexes:     $enable_pcre_syntax
 pcre module:      $enable_pcre
 pcre library:     $HAVE_PCRE
 
+release config:   $enable_release
+
 EOF
 
 cat << EOF
@@ -435,25 +449,18 @@ configuration changes, you may need to run first:
 To compile coccinelle, run:
   \$ make all
 
-Or alternatively, for only 'spatch':
-   \$ make byte-only
-Or for only 'spatch.opt':
-   \$ make opt
-
-
 To install coccinelle, run:
   \$ make install
 
 Then, to test coccinelle run for example:
-  \$ spatch -sp_file demos/simple.cocci demos/simple.c -o /tmp/new_simple.c
+  \$ $SPATCHNAME -sp_file demos/simple.cocci demos/simple.c -o /tmp/new_simple.c
 EOF
 
 if test "x$enable_python" != "xno"; then
 cat << EOF
 ------------------------------------------------------------------------------
 You may need to set some environment variables so that the python
-libraries are found. The frontends for spatch and spatch.opt set
-the following variables:
+libraries are found. The frontend 'spatch' sets the following variables:
 
   \$ export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:$prefix/lib
   \$ export PYTHONPATH=\$PYTHONPATH:$prefix/share/coccinelle/python
