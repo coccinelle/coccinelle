@@ -80,7 +80,7 @@ let
       name = "cocci-build-${cfg.name}";
       src = tarball;
       buildInputs = [ pkgconfig ncurses ocamlPackages.ocaml ] ++ cfg.ocamls ++ cfg.pythons;
-      configureFlagsArray = cfg.flags;
+      configureFlagsArray = cfg.flags ++ [ "--enable-release=world" ];
       buildPhase = ''
         mkdir -p "$out/nix-support/"
         touch "$out/nix-support/make.log"

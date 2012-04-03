@@ -354,12 +354,12 @@ install-python:
 		$(DESTDIR)$(SHAREDIR)/python/coccilib/coccigui
 
 install: install-man install-common $(PYTHON_TARGET)
-	@if test -x spatch -a ! -x spatch.opt ; then \
-		$(MAKE) install-byte;fi
-	@if test ! -x spatch -a -x spatch.opt ; then \
-		$(MAKE) install-def; $(MAKE) install-opt;fi
-	@if test -x spatch -a -x spatch.opt ; then \
-		$(MAKE) install-byte; $(MAKE) install-opt;fi
+	@if test -x spatch -o -x spatch.opt; then \
+		$(MAKE) install-def;fi
+	@if test -x spatch ; then \
+		$(MAKE) install-byte; fi
+	@if test -x spatch.opt ; then \
+		$(MAKE) install-opt;fi
 	@if test ! -x spatch -a ! -x spatch.opt ; then \
 		echo -e "\n\n\t==> Run 'make', 'make opt', or both first. <==\n\n";fi
 	@echo ""
@@ -368,15 +368,18 @@ install: install-man install-common $(PYTHON_TARGET)
 	@echo -e "\tgive it the right options to find its configuration files."
 	@echo ""
 
-# user will use spatch to run spatch.opt (native)
+#
+# Installation of spatch and spatch.opt and their wrappers
+#
+
+# user will use spatch to run one of the binaries
 install-def:
-	$(INSTALL_PROGRAM) spatch.opt $(DESTDIR)$(SHAREDIR)
 	$(INSTALL_PROGRAM) scripts/spatch $(DESTDIR)$(BINDIR)/spatch
 
-# user will use spatch to run spatch (bytecode)
+# user will use spatch.byte to run spatch (bytecode)
 install-byte:
 	$(INSTALL_PROGRAM) spatch $(DESTDIR)$(SHAREDIR)
-	$(INSTALL_PROGRAM) scripts/spatch.byte $(DESTDIR)$(BINDIR)/spatch
+	$(INSTALL_PROGRAM) scripts/spatch.byte $(DESTDIR)$(BINDIR)/spatch.byte
 
 # user will use spatch.opt to run spatch.opt (native)
 install-opt:
@@ -386,6 +389,7 @@ install-opt:
 uninstall:
 	rm -f $(DESTDIR)$(BINDIR)/spatch
 	rm -f $(DESTDIR)$(BINDIR)/spatch.opt
+	rm -f $(DESTDIR)$(BINDIR)/spatch.byte
 	rm -f $(DESTDIR)$(LIBDIR)/dllpycaml_stubs.so
 	rm -f $(DESTDIR)$(SHAREDIR)/spatch
 	rm -f $(DESTDIR)$(SHAREDIR)/spatch.opt
