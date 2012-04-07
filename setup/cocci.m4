@@ -39,7 +39,7 @@ dnl  ocaml installation.
 AC_DEFUN([AC_REQ_COCCI_STDPKG],
 [dnl
   AC_COCCI_OCAMLPKG([$1])
-  AS_IF([test "x$[]AS_TR_SH([OCAML_PKG_$1])" == xno],
+  AS_IF([test "x$[]AS_TR_SH([OCAML_PKG_$1])" = xno],
   [dnl
     AC_MSG_ERROR([package $1 is required. It should be part of your ocaml installation.])
   ])
@@ -81,7 +81,7 @@ AC_DEFUN([AC_CHECK_COCCI_EXTPKG],
       AC_SUBST(AS_TR_SH([enable_$1]),[yes])
     ],
     [dnl  when the package is not available
-      AS_IF([test "x$[]AS_TR_SH([enable_$1])" == xyes],
+      AS_IF([test "x$[]AS_TR_SH([enable_$1])" = xyes],
       [dnl  when explicitly requested the global version
         AC_MSG_ERROR([OCaml package $1 is not available but requested explicitly])
       ])
@@ -90,7 +90,7 @@ AC_DEFUN([AC_CHECK_COCCI_EXTPKG],
   ])
 
   dnl  check for a local package
-  AS_IF([test "x$AS_TR_SH([enable_$1])" == xno],
+  AS_IF([test "x$AS_TR_SH([enable_$1])" = xno],
   [dnl
     AS_UNSET([pkgdir])
     pkgdir="$COCCI_OCAML_EXTERNAL/$1/"
@@ -112,7 +112,7 @@ AC_DEFUN([AC_CHECK_COCCI_EXTPKG],
     AC_SUBST(AS_TR_SH([FLAGS_$1]),['$([]AS_TR_SH([FLAGS_$1]))'])
 
     dnl  distinguish global/local
-    AS_IF([test "x$[]AS_TR_SH([enable_$1])" == xlocal],
+    AS_IF([test "x$[]AS_TR_SH([enable_$1])" = xlocal],
     [dnl
       AC_SUBST(AS_TR_SH([LOCALLIB_$1]),[1])
       AC_SUBST(AS_TR_SH([MODULES_$1]),['$(AS_TR_SH([LOCAL_$1]))'])
@@ -154,7 +154,7 @@ dnl  substitute is available.
 AC_DEFUN([AC_REQ_COCCI_EXTPKG],
 [dnl
   AC_CHECK_COCCI_EXTPKG([$1])
-  AS_IF([test "x$[]AS_TR_SH([enable_$1])" == xno],
+  AS_IF([test "x$[]AS_TR_SH([enable_$1])" = xno],
   [dnl
     AC_MSG_ERROR([OCaml package $1 is required. Please make sure it is available.])
   ])
@@ -169,7 +169,7 @@ AC_DEFUN([AC_COCCI_PYVER],
   [dnl  PYVER not set before, determine it
     AC_COCCI_TOOL([PYTHON],[python],[])
 
-    AS_IF([test "x$PYTHON" == xno -a -n "$with_python" -a "x$with_python" != xyes],
+    AS_IF([test "x$PYTHON" = xno -a -n "$with_python" -a "x$with_python" != xyes],
     [dnl  python interpreter not found, but perhaps it was a version
       AC_MSG_NOTICE([$1 is not a found as tool, therefore interpreted as version])
       AC_SUBST([PYVER],["$1"])
@@ -228,13 +228,13 @@ dnl  $1: name of the variable
 dnl  $2: name of the tool
 AC_DEFUN([AC_COCCI_FINDTOOL],
 [dnl
-  AS_IF([test "x$2" == xpkg-config -a "x$1" == xPKG_CONFIG],
+  AS_IF([test "x$2" = xpkg-config -a "x$1" = xPKG_CONFIG],
   [dnl  specialized macro for pkg-config (from pkg-config m4 macros)
     PKG_PROG_PKG_CONFIG
-  ], [test "x$2" == xocamllex -a "x$1" == xOCAMLLEX],
+  ], [test "x$2" = xocamllex -a "x$1" = xOCAMLLEX],
   [dnl  specialized macro for ocamllex (from ocaml.m4)
     AC_PROG_OCAMLLEX
-  ], [test "x$2" == xocamlyacc -a "x$1" == xOCAMLYACC],
+  ], [test "x$2" = xocamlyacc -a "x$1" = xOCAMLYACC],
   [dnl  specialized macro for ocamlyacc (from ocaml.m4)
     AC_PROG_OCAMLYACC
   ],
@@ -265,9 +265,9 @@ AC_DEFUN([AC_COCCI_TOOL],
     AC_COCCI_FINDTOOL([$1],[$2])
   ])
 
-  AS_IF([test -z "[$]$1" -o "x[$]$1" == xno],
+  AS_IF([test -z "[$]$1" -o "x[$]$1" = xno],
   [dnl  command not found
-    AS_IF([test "x$with_$1" == xyes],
+    AS_IF([test "x$with_$1" = xyes],
     [dnl  abort if a command was given explicitly
       AC_MSG_ERROR([--with=$2 is given explicitly but not found])
     ])
@@ -295,7 +295,7 @@ AC_DEFUN([AC_COCCI_RUNTIME_CMD],
   
   AS_IF([test -z "$RUNTIME_$1_CMD"],
   [dnl  variable not yet set
-    AS_IF([test "x$with_runtime_[]AS_TR_SH([$2])" == xno],
+    AS_IF([test "x$with_runtime_[]AS_TR_SH([$2])" = xno],
     [dnl  with_runtime_$2 set to no: use configured with_$2
       AC_SUBST([RUNTIME_$1_CMD],[$][$1])
     ], [test -n "$with_runtime_[]AS_TR_SH([$2])" -a "x$with_runtime_[]AS_TR_SH([$2])" != xyes],

@@ -92,7 +92,7 @@ $(CLI_LEXER_SOURCES:.mll=.ml): $(CLI_LEXER_SOURCES)
 $(SCRIPT_LEXER_SOURCES:.mll=.ml): $(SCRIPT_LEXER_SOURCES)
 	$(OCAMLLEX) $(SCRIPT_LEXER_SOURCES)
 
-distclean::
+distclean:: clean
 	@echo cleaning generated parsers and lexers
 	rm -f $(GENERATED)
 

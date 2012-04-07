@@ -7,21 +7,20 @@ include Makefile.libs
 # 'distclean' does not require configure to have run, and should also
 # clean all the bundled directories. Hence, a special case.
 ifeq ($(MAKECMDGOALS),distclean)
-DISTCLEANDEP:=
 MAKELIBS:=$(dir $(wildcard ./bundles/*/Makefile))
 else
 ifneq ($(MAKECMDGOALS),configure)
 -include Makefile.config
-DISTCLEANDEP:=
 endif
 endif
 
 -include /etc/lsb-release
--include Makefile.override  # local customizations
+-include Makefile.override         # local customizations, if any
+-include /etc/Makefile.coccinelle  # local customizations, if any
 
 
-VERSION=$(shell cat ./version)
-CCVERSION=$(shell cat scripts/coccicheck/README |grep "Coccicheck version" |perl -p -e 's/.*version (.*)[ ]*/$$1/;')
+VERSION=$(shell cat ./version | tr -d '\n')
+CCVERSION=$(shell cat scripts/coccicheck/README | egrep -o '[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+' | head -n1)
 PKGVERSION=$(shell dpkg-parsechangelog -ldebian/changelog.$(DISTRIB_CODENAME) 2> /dev/null \
 	 | sed -n 's/^Version: \(.*\)/\1/p' )
 
@@ -54,7 +53,7 @@ MAKESUBDIRS=$(MAKELIBS) commons \
 
 CLEANSUBDIRS=commons \
  globals ctl parsing_cocci parsing_c \
- engine popl09 extra python ocaml \
+ engine popl09 extra python ocaml docs \
  $(MAKELIBS)
 
 INCLUDEDIRSDEP=commons commons/ocamlextra \
@@ -107,24 +106,51 @@ BYTECODE_STATIC=-custom
 ##############################################################################
 # Top rules
 ##############################################################################
-.PHONY:: all all.opt byte opt top clean distclean configure
+.PHONY:: all all.opt byte opt top clean distclean configure opt-compil
 .PHONY:: $(MAKESUBDIRS:%=%.all) $(MAKESUBDIRS:%=%.opt) subdirs.all subdirs.opt
+.PHONY:: all-opt all-byte byte-only opt-only
 
-byte-only: Makefile.config byte preinstall
-	@echo successfully built $(EXEC)
 
+# All make targets that are expected to be an entry point have a dependency on
+# 'Makefile.config' to ensure that if Makefile.config is not present, an error
+# message is printed first before any other actions are executed.
+# In addition, the targets that actually build something have a dependency on
+# '.depend' and 'version.ml'.
+
+# dispatches to either 'all-without-opt' or 'all-with-opt'
 all: Makefile.config .depend $(TARGET_ALL)
 
-opt all.opt: Makefile.config opt-compil preinstall
-
+# make "all" comes in three flavours
 world: Makefile.config .depend version.ml
+	@echo "building both versions of spatch"
 	$(MAKE) byte
 	$(MAKE) opt-compil
 	$(MAKE) preinstall
-	@echo successfully build $(EXEC) and $(EXEC).opt
 	$(MAKE) docs
 	@echo ""
 	@echo -e "\tcoccinelle can now be installed via 'make install'"
+
+# note: the 'all-dev' target excludes the documentation
+all-dev: Makefile.config .depend version.ml
+	@echo "building the unoptimized version of spatch"
+	$(MAKE) byte
+	$(MAKE) preinstall
+	@echo ""
+	@echo -e "\tcoccinelle can now be installed via 'make install'"
+
+all-release: Makefile.config .depend version.ml
+	@echo building the optimized version of spatch
+	$(MAKE) opt-compil
+	$(MAKE) preinstall
+	$(MAKE) docs
+	@echo ""
+	@echo -e "\tcoccinelle can now be installed via 'make install'"
+
+all.opt: Makefile.config opt-only preinstall
+
+# aliases for "byte" and "opt-compil"
+opt opt-only: Makefile.config opt-compil
+byte-only: Makefile.config byte
 
 byte: Makefile.config .depend version.ml
 	$(MAKE) subdirs.all
@@ -208,13 +234,14 @@ distclean::
 
 static:
 	rm -f spatch.opt spatch
-	$(MAKE) STATIC="$(STATICCFLAGS)" spatch.opt
+	$(MAKE) STATIC="$(STATICCFLAGS)" opt-only
 	cp spatch.opt spatch
 
 purebytecode:
 	rm -f spatch.opt spatch
-	$(MAKE) BYTECODE_STATIC="" spatch
-	perl -p -i -e 's/^#!.*/#!\/usr\/bin\/ocamlrun/' spatch
+	$(MAKE) BYTECODE_STATIC="" byte-only
+	# disabled the following command because it does not match
+	# perl -p -i -e 's/^#!.*/#!\/usr\/bin\/ocamlrun/' spatch
 
 ##############################################################################
 # Build version information
@@ -231,7 +258,7 @@ version.ml:
 
 docs:
 	@$(MAKE) -C docs || (echo "warning: ignored the failed construction of the manual" 1>&2)
-	@if test "x$FEATURE_OCAML" = x1; then \
+	@if test "x$(FEATURE_OCAML)" = x1; then \
 		if test -f ./parsing_c/ast_c.cmo; then \
 			$(MAKE) -C ocaml doc; \
 		else echo "note: to obtain coccilib documenation, it is required to build 'spatch' first so that ./parsing_c/ast_c.cmo gets build."; \
@@ -241,9 +268,6 @@ docs:
 clean:: Makefile.config
 	$(MAKE) -C docs clean
 	$(MAKE) -C ocaml cleandoc
-
-distclean::
-	$(MAKE) -C docs distclean
 
 ##############################################################################
 # Pre-Install (customization of spatch frontend script)
@@ -257,16 +281,19 @@ docs/spatch.1: Makefile.config
 # user will use spatch to run spatch.opt (native)
 scripts/spatch: Makefile.config scripts/spatch.sh
 	cp scripts/spatch.sh scripts/spatch
+	chmod +x scripts/spatch
 
 # user will use spatch to run spatch (bytecode)
 scripts/spatch.byte: Makefile.config scripts/spatch.sh
-	sed "s|\.opt||" scripts/spatch.sh > scripts/spatch.byte
+	cp scripts/spatch.sh scripts/spatch.byte
+	chmod +x scripts/spatch.byte
 
 # user will use spatch.opt to run spatch.opt (native)
 scripts/spatch.opt: Makefile.config scripts/spatch.sh
 	cp scripts/spatch.sh scripts/spatch.opt
+	chmod +x scripts/spatch.opt
 
-clean::
+distclean::
 	rm -f scripts/spatch scripts/spatch.byte scripts/spatch.opt
 
 ##############################################################################
@@ -323,12 +350,12 @@ install-python:
 		$(DESTDIR)$(SHAREDIR)/python/coccilib/coccigui
 
 install: install-man install-common $(PYTHON_TARGET)
-	@if test -x spatch -a ! -x spatch.opt ; then \
-		$(MAKE) install-byte;fi
-	@if test ! -x spatch -a -x spatch.opt ; then \
-		$(MAKE) install-def; $(MAKE) install-opt;fi
-	@if test -x spatch -a -x spatch.opt ; then \
-		$(MAKE) install-byte; $(MAKE) install-opt;fi
+	@if test -x spatch -o -x spatch.opt; then \
+		$(MAKE) install-def;fi
+	@if test -x spatch ; then \
+		$(MAKE) install-byte; fi
+	@if test -x spatch.opt ; then \
+		$(MAKE) install-opt;fi
 	@if test ! -x spatch -a ! -x spatch.opt ; then \
 		echo -e "\n\n\t==> Run 'make', 'make opt', or both first. <==\n\n";fi
 	@echo ""
@@ -337,15 +364,18 @@ install: install-man install-common $(PYTHON_TARGET)
 	@echo -e "\tgive it the right options to find its configuration files."
 	@echo ""
 
-# user will use spatch to run spatch.opt (native)
+#
+# Installation of spatch and spatch.opt and their wrappers
+#
+
+# user will use spatch to run one of the binaries
 install-def:
-	$(INSTALL_PROGRAM) spatch.opt $(DESTDIR)$(SHAREDIR)
 	$(INSTALL_PROGRAM) scripts/spatch $(DESTDIR)$(BINDIR)/spatch
 
-# user will use spatch to run spatch (bytecode)
+# user will use spatch.byte to run spatch (bytecode)
 install-byte:
 	$(INSTALL_PROGRAM) spatch $(DESTDIR)$(SHAREDIR)
-	$(INSTALL_PROGRAM) scripts/spatch.byte $(DESTDIR)$(BINDIR)/spatch
+	$(INSTALL_PROGRAM) scripts/spatch.byte $(DESTDIR)$(BINDIR)/spatch.byte
 
 # user will use spatch.opt to run spatch.opt (native)
 install-opt:
@@ -355,6 +385,7 @@ install-opt:
 uninstall:
 	rm -f $(DESTDIR)$(BINDIR)/spatch
 	rm -f $(DESTDIR)$(BINDIR)/spatch.opt
+	rm -f $(DESTDIR)$(BINDIR)/spatch.byte
 	rm -f $(DESTDIR)$(LIBDIR)/dllpycaml_stubs.so
 	rm -f $(DESTDIR)$(SHAREDIR)/spatch
 	rm -f $(DESTDIR)$(SHAREDIR)/spatch.opt
@@ -421,7 +452,7 @@ check:
 forprofiling:
 	$(MAKE) OPTFLAGS="-p -inline 0 " opt
 
-clean::
+clean distclean::
 	rm -f gmon.out
 
 tags:
@@ -464,8 +495,8 @@ clean distclean::
 	rm -f *.cm[iox] *.o *.annot
 	rm -f *~ .*~ *.exe #*#
 
-distclean:: $(DISTCLEANDEP)
-	set -e; for i in $(CLEANSUBDIRS); do $(MAKE) -j1 -C $$i $@; done
+distclean::
+	set -e; for i in $(CLEANSUBDIRS); do $(MAKE) -C $$i -j1 $@; done
 	rm -f test.ml
 	rm -f TAGS
 	rm -f tests/SCORE_actual.sexp
@@ -473,12 +504,12 @@ distclean:: $(DISTCLEANDEP)
 	find . -name ".#*1.*" | xargs rm -f
 	rm -f $(EXEC) $(EXEC).opt $(EXEC).top
 
-.PHONEY: depend
+.PHONY:: depend
 .depend: Makefile.config test.ml version
 	touch .depend  # prevents infinite recursion with 'make depend'
 	$(MAKE) depend
 
-depend:
+depend: Makefile.config test.ml version
 	@echo constructing '.depend'
 	rm -f .depend
 	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -j1 -C $$i depend; done
@@ -490,7 +521,7 @@ depend:
 
 distclean::
 	@echo "cleaning configured files"
-	rm -f Makefile.config
+	if test -z "${KEEP_CONFIG}"; then rm -f Makefile.config; fi
 	rm -rf autom4te.cache
 	rm -f config.status
 	rm -f config.log
@@ -505,7 +536,13 @@ distclean::
 ifneq ($(MAKECMDGOALS),clean)
 ifneq ($(MAKECMDGOALS),distclean)
 ifneq ($(MAKECMDGOALS),configure)
+ifneq ($(MAKECMDGOALS),prerelease)
+ifneq ($(MAKECMDGOALS),release)
+ifneq ($(MAKECMDGOALS),package)
 -include .depend
+endif
+endif
+endif
 endif
 endif
 endif
