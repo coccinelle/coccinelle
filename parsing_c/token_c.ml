@@ -59,11 +59,15 @@ open Common
  *)
 type cppcommentkind =
   | CppDirective
+  | CppIfDirective of ifdef (* ifdef - multipart directive *)
   | CppAttr
   | CppMacro
   | CppPassingNormal (* ifdef 0, cplusplus, etc *)
   | CppPassingCosWouldGetError (* expr passsing *)
   | CppPassingExplicit (* skip_start/end tag *)
+
+(* avoid circularity with Parser_c *)
+and ifdef = IfDef | IfDef0 | Else | Endif | Other
 
 (*****************************************************************************)
 (* Types *)
