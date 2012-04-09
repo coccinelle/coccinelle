@@ -24,6 +24,7 @@
  *)
 
 
+# 0 "./context_neg.ml"
 (* Detects subtrees that are all minus/plus and nodes that are "binding
 context nodes".  The latter is a node whose structure and immediate tokens
 are the same in the minus and plus trees, and such that for every child,
@@ -1034,6 +1035,23 @@ let check_compatible m p =
   | (Ast0.OTHER(_),Ast0.OTHER(_)) -> ()
   | _ -> fail()
 
+(* can't just remove expressions or types, not sure if all cases are needed. *)
+let check_complete m =
+   match Ast0.unwrap m with
+     Ast0.NONDECL(code) ->
+       if is_exp code or is_ty code
+       then
+	 failwith
+	   (Printf.sprintf "invalid minus starting on line %d"
+	      (Ast0.get_line m))
+   | Ast0.CODE(code) ->
+       if isonly is_exp code or isonly is_ty code
+       then
+	 failwith
+           (Printf.sprintf "invalid minus starting on line %d"
+              (Ast0.get_line m))
+   | _ -> ()
+
 (* ------------------------------------------------------------------- *)
 
 (* returns a list of corresponding minus and plus trees *)
@@ -1047,6 +1065,7 @@ let context_neg minus plus =
     | ([],l) ->
 	failwith (Printf.sprintf "%d plus things remaining" (List.length l))
     | (minus,[]) ->
+	List.iter check_complete minus;
 	plus_lines := [];
 	let _ =
 	  List.map

@@ -24,6 +24,7 @@
  *)
 
 
+# 0 "./adjust_pragmas.ml"
 (* Find a directive or comment at the end of a statement.  Things with aft
 given None, because they can accomodate their own directives or comments *)
 

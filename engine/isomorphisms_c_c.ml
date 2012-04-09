@@ -24,6 +24,7 @@
  *)
 
 
+# 0 "./isomorphisms_c_c.ml"
 open Common
 
 (* When in a semantic patch there is f(X) ... f(X) we want to force

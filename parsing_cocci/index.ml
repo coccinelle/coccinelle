@@ -24,6 +24,7 @@
  *)
 
 
+# 0 "./index.ml"
 (* create an index for each constructor *)
 (* current max is 157 *)
 

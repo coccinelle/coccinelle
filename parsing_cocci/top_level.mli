@@ -24,6 +24,7 @@
  *)
 
 
+# 0 "./top_level.mli"
 val top_level :
     bool (* true if must be code *) -> Ast0_cocci.rule -> Ast0_cocci.rule
 

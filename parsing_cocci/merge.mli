@@ -24,6 +24,7 @@
  *)
 
 
+# 0 "./merge.mli"
 val do_merge :
     Ast0_cocci.rule ->
       (Ast_cocci.anything * int * int * int * int) list list list ->

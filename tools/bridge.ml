@@ -24,6 +24,7 @@
  *)
 
 
+# 0 "./bridge.ml"
 let drop_spaces s =
   String.concat "" (Str.split (Str.regexp "[ ]+") s)
 

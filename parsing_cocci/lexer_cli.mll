@@ -24,6 +24,7 @@
  *)
 
 
+# 0 "./lexer_cli.mll"
 (* Lexer for the command line mode *)
 
 {

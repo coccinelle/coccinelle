@@ -24,6 +24,7 @@
  *)
 
 
+# 0 "./flag.ml"
 let sgrep_mode2 = ref false
 
 let show_misc = ref true
@@ -39,10 +40,10 @@ let scanner = ref Grep
 
 let pyoutput = ref "coccilib.output.Console"
 
-let ocamlc = ref "ocamlc"
-let ocamlopt = ref "ocamlopt"
-let ocamldep = ref "ocamldep"
-let ocamlfind = ref "ocamlfind"
+let ocamlc = ref Commands.ocamlc_cmd
+let ocamlopt = ref Commands.ocamlopt_cmd
+let ocamldep = ref Commands.ocamldep_cmd
+let ocamlfind = ref Commands.ocamlfind_cmd
 
 (*"Some" value is the path with respect to which the patch should be created*)
 let patch = ref (None : string option)

@@ -24,6 +24,7 @@
  *)
 
 
+# 0 "./safe_for_multi_decls.ml"
 (* This phase sets the safe_for_multi_decls field, which is normally false,
 to true for transformations on declarations where the only change is on the
 declared variable.  This is the only kind of change on such a declaration

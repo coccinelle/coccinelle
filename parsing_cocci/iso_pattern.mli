@@ -24,6 +24,7 @@
  *)
 
 
+# 0 "./iso_pattern.mli"
 type isomorphism =
     Ast_cocci.metavar list * Ast0_cocci.anything list list * string(*iso name*)
 

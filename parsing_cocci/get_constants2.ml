@@ -24,6 +24,7 @@
  *)
 
 
+# 0 "./get_constants2.ml"
 module Ast = Ast_cocci
 module V = Visitor_ast
 module TC = Type_cocci

@@ -23,8 +23,21 @@ EXCL=$(EXCLUDE:%=--exclude=%)
 BINSRC2=$(BINSRC:%=$(PACKAGE)/%)
 BINSRC2-PY=$(BINSRC-PY:%=$(PACKAGE)/%)
 
+ifndef TMP
 TMP=/tmp
+endif
+
+# should be defined by Makefile.config
+ifndef OCAMLVERSION
 OCAMLVERSION=$(shell ocaml -version |perl -p -e 's/.*version (.*)/$$1/;')
+endif
+
+# can be overriden in the environment
+ifndef GIT
+GIT=git
+endif
+
+
 
 # Procedure to do first time:
 #  cd ~/release
@@ -42,51 +55,42 @@ OCAMLVERSION=$(shell ocaml -version |perl -p -e 's/.*version (.*)/$$1/;')
 #
 #  The project is then automatically licensified.
 #
-#  Remember to comment the -g -dtypes in this Makefile
-#  You can also remove a few things, for instance I removed in this
-#   Makefile things related to popl/ and popl09/
-#  make sure that ocaml is the distribution ocaml of /usr/bin, not ~pad/...
-#
 #  3) make package
 #
 #  if WEBSITE is set properly, you can also run 'make website'
 # Check that run an ocaml in /usr/bin
 
-# To test you can try compile and run spatch from different instances
-# like my ~/coccinelle, ~/release/coccinelle, and the /tmp/coccinelle-0.X
-# downloaded from the website.
-
-# For 'make srctar' it must done from a clean
-# repo such as ~/release/coccinelle. It must also be a repo where
-# the scripts/licensify has been run at least once.
-# For the 'make bintar' I can do it from my original repo.
-
 # The 'git rebase' is in there just in case you started with
 # unpushed changes. However, that is probably something you should
 # not do in the first place.
 
-prerelease:
-	git pull --rebase
+prerelease: Makefile.config
+	@echo "pulling changes from the repository"
+	$(GIT) pull --rebase
 	$(MAKE) fix-expected
-	$(MAKE) distclean
-	sed -i "s|^OCAMLCFLAGS=.*$$|OCAMLCFLAGS=|" Makefile
+	$(MAKE) distclean KEEP_CONFIG=1
 	@echo "\n\tEdit ./version"
 	@echo "\tCommit with 'make release'\n"
+	@echo "\tYou can skip the actual commit using 'GIT=echo make release'"
 
 fix-expected:
+	@echo "going to generate: tests/SCORE_expected_orig.sexp"
 	$(MAKE) distclean
-	./configure --without-python
-	$(MAKE) world
-	yes | ./spatch.opt -testall
+	./configure --disable-python
+	$(MAKE) opt-only
+	yes | ./spatch.opt -testall --iso-file ./standard.iso --macro-file-builtins ./standard.h
 	cp tests/SCORE_actual.sexp tests/SCORE_expected_orig.sexp
+	@echo "generated: test/SCORE_expected_orig.sexp"
 
 release:
-	sed -i -e 's|^let version = ".*"$$|let version = "$(VERSION)"|g' globals/config.ml.in
-	git add ./ version globals/config.ml.in
-	git commit -m "Release $(VERSION)"
-	git tag -a -m "Release $(VERSION)" $(VERSION)
-	git push --mirror
+	@echo "Marking version: $(VERSION)"
+	echo -n "$(VERSION)" > ./version
+	$(GIT) add ./version
+	$(GIT) commit -m "Release $(VERSION)"
+	$(GIT) tag -a -m "Release $(VERSION)" $(VERSION)
+	$(GIT) push --mirror
 	$(MAKE) licensify
+	@echo "\n\tLicensify has run: do not commit any files from now on!"
 	@echo "\n\tRun 'make package'\n"
 
 package:
@@ -97,20 +101,20 @@ package:
 	@echo "\tThe coccinelle SVN repository must be in $(WEBBASE)\n"
 
 package-src:
-	$(MAKE) distclean       # Clean project
+	$(MAKE) distclean KEEP_CONFIG=1  # Clean project (keep the config for the make actions)
 	$(MAKE) srctar
 	$(MAKE) coccicheck
 
 package-nopython:
-	$(MAKE) distclean       # Clean project
-	./configure --without-python
+	$(MAKE) distclean             # Clean project
+	./configure --disable-python  # Reconfigure project without Python support
 	$(MAKE) bintar
 	$(MAKE) bytecodetar
 #	$(MAKE) staticbintar
 
 package-python:
-	$(MAKE) distclean       # Clean project
-	./configure             # Reconfigure project with Python support
+	$(MAKE) distclean            # Clean project
+	./configure --enable-python  # Reconfigure project with Python support
 	$(MAKE) bintar-python
 	$(MAKE) bytecodetar-python
 
@@ -122,22 +126,27 @@ package-python:
 # update: make docs generates pdf but also some ugly .log files, so
 # make clean is there to remove them while not removing the pdf
 # (only distclean remove the pdfs).
-srctar:
+#
+# Prerequisite: a distclean with preservation of Makefile.config
+srctar: Makefile.config
 	$(MAKE) docs
 	$(MAKE) clean
-	cp -a .  $(TMP)/$(PACKAGE)
+	if test -f "$(TMP)/$(PACKAGE)/"; then rm -f "$(TMP)/$(PACKAGE)/"; fi # remove it if it is a symlink
+	$(MKDIR_P) "$(TMP)/$(PACKAGE)/"
+	cp -rfa ./*  "$(TMP)/$(PACKAGE)/"
 	cd $(TMP)/$(PACKAGE); cd parsing_cocci/; $(MAKE) parser_cocci_menhir.ml
+	rm -f $(TMP)/$(PACKAGE)/Makefile.config
 	cd $(TMP); tar cvfz $(PACKAGE).tgz --exclude-vcs $(EXCL) $(PACKAGE)
 	rm -rf  $(TMP)/$(PACKAGE)
 
-bintar: all
+bintar: all-dev
 	$(MAKE) docs
 	rm -f $(TMP)/$(PACKAGE)
 	ln -s `pwd` $(TMP)/$(PACKAGE)
 	cd $(TMP); tar cvfz $(PACKAGE)-bin-x86.tgz --exclude-vcs $(BINSRC2)
 	rm -f $(TMP)/$(PACKAGE)
 
-staticbintar: all.opt
+staticbintar: all-release
 	$(MAKE) docs
 	rm -f $(TMP)/$(PACKAGE)
 	ln -s `pwd` $(TMP)/$(PACKAGE)
@@ -146,7 +155,7 @@ staticbintar: all.opt
 	rm -f $(TMP)/$(PACKAGE)
 
 # add ocaml version in name ?
-bytecodetar: all
+bytecodetar: all-dev
 	$(MAKE) docs
 	rm -f $(TMP)/$(PACKAGE)
 	ln -s `pwd` $(TMP)/$(PACKAGE)
@@ -162,7 +171,7 @@ bintar-python: all
 	rm -f $(TMP)/$(PACKAGE)
 
 # add ocaml version in name ?
-bytecodetar-python: all
+bytecodetar-python: all-dev
 	$(MAKE) docs
 	rm -f $(TMP)/$(PACKAGE)
 	ln -s `pwd` $(TMP)/$(PACKAGE)
@@ -171,7 +180,7 @@ bytecodetar-python: all
 	rm -f $(TMP)/$(PACKAGE)
 
 coccicheck:
-	cp -a `pwd`/scripts/coccicheck $(TMP)/$(CCPACKAGE)
+	cp -a ./scripts/coccicheck $(TMP)/$(CCPACKAGE)
 	tar cvfz $(TMP)/$(CCPACKAGE).tgz -C $(TMP) --exclude-vcs $(CCPACKAGE)
 	rm -rf $(TMP)/$(CCPACKAGE)
 
@@ -232,6 +241,7 @@ packsrc: prepack
 	$(MAKE) -C $(TMP)/$(PACKAGE)/debian karmic
 	$(MAKE) -C $(TMP)/$(PACKAGE)/debian maverick
 	$(MAKE) -C $(TMP)/$(PACKAGE)/debian natty
+	$(MAKE) -C $(TMP)/$(PACKAGE)/debian oneiric
 	$(MAKE) push
 	rm -rf  $(TMP)/$(PACKAGE)/
 

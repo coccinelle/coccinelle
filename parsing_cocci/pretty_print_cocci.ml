@@ -24,6 +24,7 @@
  *)
 
 
+# 0 "./pretty_print_cocci.ml"
 open Format
 module Ast = Ast_cocci
 

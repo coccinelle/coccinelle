@@ -1,1 +1,1 @@
-include @OCAMLCOCCI_FILE@
+include @OCAMLCOCCI_MODULE@

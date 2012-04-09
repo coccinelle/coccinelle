@@ -24,6 +24,7 @@
  *)
 
 
+# 0 "./cocci.ml"
 open Common
 
 module CCI = Ctlcocci_integration

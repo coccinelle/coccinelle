@@ -24,6 +24,7 @@
  *)
 
 
+# 0 "./asttoctl.mli"
 type cocci_predicate = Lib_engine.predicate * string Ast_ctl.modif
 type formula =
     (cocci_predicate,string, Wrapper_ctl.info) Ast_ctl.generic_ctl

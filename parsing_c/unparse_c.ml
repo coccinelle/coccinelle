@@ -396,7 +396,7 @@ let expand_mcode toks =
       |	Ast_c.FakeTok (s,_) ->
 	  push2 (C2 s) toks_out
       |	_ ->
-	  Printf.printf "line: %s\n" (Common.dump info);
+	  Printf.fprintf stderr "line: %s\n" (Common.dump info);
 	  failwith "not an abstract line");
       (!(info.Ast_c.comments_tag)).Ast_c.mafter +>
       List.iter (fun x -> Common.push2 (comment2t2 x) toks_out) in
@@ -493,6 +493,7 @@ let is_minusable_comment = function
       | Parser_c.TComment _
       | Parser_c.TCommentCpp (Token_c.CppAttr, _)
       | Parser_c.TCommentCpp (Token_c.CppMacro, _)
+      | Parser_c.TCommentCpp (Token_c.CppIfDirective _, _)
       | Parser_c.TCommentCpp (Token_c.CppDirective, _) (* result was false *)
         -> true
 
@@ -514,6 +515,7 @@ let is_minusable_comment_nocpp = function
       | Parser_c.TComment _ -> true
       | Parser_c.TCommentCpp (Token_c.CppAttr, _)
       | Parser_c.TCommentCpp (Token_c.CppMacro, _)
+      | Parser_c.TCommentCpp (Token_c.CppIfDirective _, _)
       | Parser_c.TCommentCpp (Token_c.CppDirective, _)
         -> false
 
@@ -544,6 +546,7 @@ let set_minus_comment adj = function
       | Parser_c.TComment _
       | Parser_c.TCommentCpp (Token_c.CppAttr, _)
       | Parser_c.TCommentCpp (Token_c.CppMacro, _)
+      | Parser_c.TCommentCpp (Token_c.CppIfDirective _, _)
       | Parser_c.TCommentCpp (Token_c.CppDirective, _)
         ->
           pr2 (Printf.sprintf "%d: ERASING_COMMENTS: %s"
@@ -556,8 +559,10 @@ let set_minus_comment adj = function
   | Fake2 _ as x -> x
   | _ -> raise Impossible
 
+(* don't touch ifdefs, done after *)
 let set_minus_comment_or_plus adj = function
-    Cocci2 _ | C2 _ | Comma _ | Indent_cocci2 | Unindent_cocci2 _
+    T2(Parser_c.TCommentCpp (Token_c.CppIfDirective _, _),_,_)
+  | Cocci2 _ | C2 _ | Comma _ | Indent_cocci2 | Unindent_cocci2 _
   | EatSpace2 as x -> x
   | x -> set_minus_comment adj x
 
@@ -652,9 +657,9 @@ let remove_minus_and_between_and_expanded_and_fake xs =
 	    else
 	      (* remove spaces after removed stuff, eg a comma after a
 		 function argument *)
-	      let (spaces,rest) = Common.span is_space xs in
+	      (let (spaces,rest) = Common.span is_space xs in
 	      (List.map (set_minus_comment_or_plus adj1) spaces)
-	      @ rest)
+	      @ rest))
     | xs -> failwith "should always start with minus"
   and not_context = function
       (T2(_,Ctx,_) as x) when not (is_minusable_comment x) -> false
@@ -745,6 +750,48 @@ let remove_minus_and_between_and_expanded_and_fake xs =
   let xs = List.rev (from_newline (List.rev xs)) in
   let xs = drop_minus xs in
   xs
+
+let cleanup_ifdefs toks =
+  (* TODO: these functions are horrid, but using tokens caused circularity *)
+  let is_ifdef0 = function
+      T2((Parser_c.TCommentCpp
+	    (Token_c.CppIfDirective Token_c.IfDef0, _)),m,idx) -> true
+    | _ -> false in
+  let is_ifdef = function
+      T2((Parser_c.TCommentCpp
+	    (Token_c.CppIfDirective Token_c.IfDef, _)),m,idx) -> true
+    | t -> is_ifdef0 t in
+  let is_endif = function
+      T2((Parser_c.TCommentCpp
+	    (Token_c.CppIfDirective Token_c.Endif, _)),m,idx) -> true
+    | _ -> false in
+  (* only real comments *)
+let is_whitespace_or_comment if0 = function
+  | (T2 (t,_b,_i)) ->
+      (match t with
+      | Parser_c.TComment _ -> false (* previous pass chooses comments *)
+      | Parser_c.TCommentSpace _ -> true  (* only whitespace *)
+      | Parser_c.TCommentNewline _ (* newline plus whitespace *)
+      |	Parser_c.TCommentCpp (Token_c.CppIfDirective Token_c.Else, _) -> true
+      |	Parser_c.TCommentCpp (Token_c.CppPassingNormal, _) -> if0
+      | t -> false
+      )
+  | _ -> false in
+  let rec loop prev if0s = function
+      [] -> prev
+    | t::rest when is_ifdef0 t -> loop (t::prev) (true::if0s) rest
+    | t::rest when is_ifdef t -> loop (t::prev) (false::if0s) rest
+    | t::rest when is_endif t ->
+	(match if0s with
+	  [] -> loop (t::prev) if0s rest
+	| tgt::if0s ->
+	    let (spaces,prest) =
+	      Common.span (is_whitespace_or_comment tgt) prev in
+	    (match prest with
+	      t1::prest when is_ifdef t1 -> loop prest if0s rest
+	    | _ -> loop (t::prev) [] rest)) (* failed, so drop if0 info *)
+    | x::xs -> loop (x::prev) if0s xs in
+  List.rev (loop [] [] toks)
 
 (* things that should not be followed by space - boundary between SmPL
    code and C code *)
@@ -1297,9 +1344,10 @@ let pp_program2 xs outfile  =
 	      let toks = drop_space_at_endline toks in
 	      let toks = paren_to_space toks in
 	      let toks = drop_end_comma toks in
-              let toks = remove_minus_and_between_and_expanded_and_fake toks in
+	      let toks = remove_minus_and_between_and_expanded_and_fake toks in
+	      let toks = cleanup_ifdefs toks in
               (* assert Origin + Cocci + C and no minus *)
-              let toks = add_space toks in
+	      let toks = add_space toks in
 	      let toks = add_newlines toks tu in
 	      let toks = paren_then_brace toks in
               let toks = fix_tokens toks in

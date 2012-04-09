@@ -24,6 +24,7 @@
  *)
 
 
+# 0 "./licensify.ml"
 let lines =
 ["Copyright 2012, INRIA";
 "Julia Lawall, Gilles Muller";
@@ -76,10 +77,11 @@ let do_one file =
   List.iter (function l -> Printf.fprintf o "%s\n" l) lines;
   Printf.fprintf o "\n";
   Printf.fprintf o "\n";
+  if List.exists (Filename.check_suffix file) [ ".ml" ; ".mli" ; ".mll" ] then
+    Printf.fprintf o "# 0 \"%s\"\n" file;
   close_out o;
   let _ = Sys.command (Printf.sprintf "cat %s >> %s" tmpfl file) in
-  let _ = Sys.command (Printf.sprintf "rm -f %s" tmpfl) in
-  ()
+  Sys.remove tmpfl
 
 (* pad's modif *)
 let (+>) o f = f o

@@ -45,13 +45,13 @@
  (empty.res Ok) (end_commas.res Ok) (endif.res Ok) (enum.res Ok)
  (exitc.res
   (Pb
-   "PROBLEM\n   exn = Yes_prepare_ocamlcocci.LinkFailure(\"/tmp/exitc87c840.cmxs\")\n"))
+   "PROBLEM\n   exn = Yes_prepare_ocamlcocci.LinkFailure(\"/tmp/exitcd9b50a.cmxs\")\n"))
  (exitp.res (Pb "PROBLEM\n   exn = Failure(\"no python\")\n")) (exp.res Ok)
  (expnest.res Ok) (expopt.res Ok) (expopt2.res Ok) (expopt3.res Ok)
  (expopt3_ver1.res Ok) (expopt3_ver2.res Ok)
  (extra.res
   (Pb
-   "PROBLEM\n   exn = Yes_prepare_ocamlcocci.LinkFailure(\"/tmp/extra768a97.cmxs\")\n"))
+   "PROBLEM\n   exn = Yes_prepare_ocamlcocci.LinkFailure(\"/tmp/extrac8550b.cmxs\")\n"))
  (fields.res Ok) (fieldsmin.res Ok) (find_long.res Ok) (fix_flow_need.res Ok)
  (fn_todo.res Ok) (fnptr.res Ok) (fnret.res Ok) (fnty.res Ok) (four.res Ok)
  (foura.res Ok) (fp.res Ok) (fsh.res Ok) (fun.res Ok)
@@ -105,7 +105,7 @@
  (null_type.res Ok)
  (oddifdef.res
   (Pb
-   "INCORRECT:diff token: #else\n VS x\nFile <COCCIOUTPUTFILE>, line 10, column 0,  charpos = 114\n    around = '#else\n', whole content = #else\nFile \"tests/oddifdef.res\", line 10, column 2,  charpos = 116\n    around = 'x', whole content =   x = 0;\n\n    diff (result(<) vs expected_result(>)) = \n    @@ -7,8 +7,9 @@\n         a = 5;\n     \n     #ifdef FOO\n    +  x = 0;\n     #else\n    -\n    +  x = 0;\n     #endif\n     }\n     \n    @@ -21,8 +22,9 @@\n         a = 3;\n     \n     #ifdef FOO\n    +  x = 0;\n     #else\n    -\n    +  x = 0;\n     #endif\n     }\n     \n    @@ -35,7 +37,8 @@\n     #endif\n     \n     #ifdef FOO\n    +  x = 0;\n     #else\n    -\n    +  x = 0;\n     #endif\n     }\n"))
+   "INCORRECT:diff token: } VS #ifdef FOO\nFile <COCCIOUTPUTFILE>, line 10, column 0,  charpos = 104\n    around = '}', whole content = }\nFile \"tests/oddifdef.res\", line 9, column 0,  charpos = 103\n    around = '#ifdef FOO', whole content = #ifdef FOO\n\n    diff (result(<) vs expected_result(>)) = \n    @@ -6,7 +6,11 @@\n         )\n         a = 5;\n     \n    -\n    +#ifdef FOO\n    +  x = 0;\n    +#else\n    +  x = 0;\n    +#endif\n     }\n     \n     void two() {\n    @@ -17,7 +21,11 @@\n     #endif\n         a = 3;\n     \n    -\n    +#ifdef FOO\n    +  x = 0;\n    +#else\n    +  x = 0;\n    +#endif\n     }\n     \n     void three() {\n    @@ -28,5 +36,9 @@\n         meth=SSLv2_client_method();\n     #endif\n     \n    -\n    +#ifdef FOO\n    +  x = 0;\n    +#else\n    +  x = 0;\n    +#endif\n     }\n"))
  (of.res Ok) (oneline.res Ok) (opt.res Ok) (optional_qualifier.res Ok)
  (optional_storage.res Ok) (orexp.res Ok) (overshoot.res Ok) (param.res Ok)
  (param_end.res Ok) (param_ver1.res Ok) (parameters_dots.res Ok)

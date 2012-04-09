@@ -24,6 +24,7 @@
  *)
 
 
+# 0 "./ast0toast.mli"
 val ast0toast :
     string -> Ast_cocci.dependency -> string list (* dropped isos *) ->
       Ast_cocci.exists -> Ast0_cocci.rule -> bool list -> Ast_cocci.ruletype ->

@@ -24,6 +24,7 @@
  *)
 
 
+# 0 "./cocci.mli"
 open Common
 
 (* full_engine takes (coccifile, isofile) and cfiles in parameters and

@@ -24,6 +24,7 @@
  *)
 
 
+# 0 "./wrapper_ctl.mli"
 type info = int
 
 type ('pred, 'mvar) wrapped_ctl =

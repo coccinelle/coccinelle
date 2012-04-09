@@ -24,6 +24,7 @@
  *)
 
 
+# 0 "./type_infer.ml"
 module T = Type_cocci
 module Ast = Ast_cocci
 module Ast0 = Ast0_cocci

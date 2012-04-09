@@ -24,6 +24,7 @@
  *)
 
 
+# 0 "./testing.ml"
 open Common
 open Sexplib
 
@@ -55,7 +56,7 @@ let testone prefix x compare_with_expected_flag =
           if List.length res > 1
           then pr2 ("note that not just " ^ cfile ^ " was involved");
 
-          let tmpfile = "/tmp/"^Common.basename cfile in
+          let tmpfile = new_temp_file (Common.basename cfile) ".c" in
           pr2 (sprintf "One file modified. Result is here: %s" tmpfile);
           Common.command2 ("mv "^outfile^" "^tmpfile);
           tmpfile
@@ -83,7 +84,7 @@ let testone prefix x compare_with_expected_flag =
  * (via -testall). Fortunately such bugs are rare.
  *
  *)
-let testall ?(expected_score_file="tests/SCORE_expected.sexp") () =
+let testall expected_score_file update_score_file =
 
   let score  = empty_score () in
 
@@ -103,7 +104,7 @@ let testall ?(expected_score_file="tests/SCORE_expected.sexp") () =
       let cocci_file = "tests/" ^ base ^ ".cocci" in
       let expected = "tests/" ^ res in
 
-      let timeout_testall = 30 in
+      let timeout_testall = 60 in
 
       try (
         Common.timeout_function timeout_testall  (fun () ->
@@ -239,11 +240,24 @@ let testall ?(expected_score_file="tests/SCORE_expected.sexp") () =
       else begin
         pr2 "Current score is greater than expected :)";
         pr2 (spf "(was expecting %d but got %d)" expected_good good);
-        pr2 "Generating new expected score file and saving old one";
-        Common.command2_y_or_no_exit_if_no
-          (spf "mv %s %s" expected_score_file (expected_score_file ^ ".save"));
-        Common.command2_y_or_no_exit_if_no
-          (spf "mv %s %s" best_of_both_file expected_score_file);
+        if update_score_file then
+        begin
+          pr2 "Generating new expected score file and saving old one";
+          Common.command2_y_or_no_exit_if_no
+            (spf "mv %s %s" expected_score_file (expected_score_file ^ ".save"));
+          Common.command2_y_or_no_exit_if_no
+            (spf "mv %s %s" best_of_both_file expected_score_file);
+        end;
+
+        (* when there are sufficient number of tests, abort if a substantial
+         * amount of tests fail, which would indicate a broken build.
+         *)
+        if total > 40 && good < (total * 3) / 4
+        then begin
+	  pr2 "Still, less 75% the tests passed. Returning a nonzero exist status.";
+          raise (UnixExit 1);
+        end;
+
         raise (UnixExit 0);
       end
 
@@ -261,7 +275,7 @@ let t_to_s = function
 
 let delete_previous_result_files infile =
   [Ok;SpatchOK;Failed] +> List.iter (fun kind ->
-    Common.command2 ("rm -f " ^ infile ^ t_to_s kind)
+    Common.remove_file (infile ^ t_to_s kind)
   )
 
 (* quite similar to compare_with_expected  below *)

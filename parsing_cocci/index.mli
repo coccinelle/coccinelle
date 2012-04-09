@@ -24,6 +24,7 @@
  *)
 
 
+# 0 "./index.mli"
 val expression_dots : Ast0_cocci.expression Ast0_cocci.dots -> int list
 val initialiser_dots : Ast0_cocci.initialiser Ast0_cocci.dots -> int list
 val parameter_dots : Ast0_cocci.parameterTypeDef Ast0_cocci.dots -> int list

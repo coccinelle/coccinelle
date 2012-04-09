@@ -24,6 +24,7 @@
  *)
 
 
+# 0 "./pycocci.mli"
 val build_classes : Ast_cocci.meta_name list -> unit
 val construct_variables :
     (string * Ast_cocci.meta_name * Ast_cocci.metavar) list

@@ -24,6 +24,7 @@
  *)
 
 
+# 0 "./lexer_script.mll"
 {
 open Parser_cocci_menhir
 module D = Data

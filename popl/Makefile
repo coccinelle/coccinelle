@@ -24,7 +24,9 @@
 
 #note: if you add a file (a .mli or .ml), dont forget to do a   make depend
 
--include ../Makefile.config
+ifneq ($(MAKECMDGOALS),distclean)
+include ../Makefile.config
+endif
 
 TARGET = popl
 
@@ -40,13 +42,10 @@ INCLUDE_PATH = -I ../commons -I ../globals \
 #The Caml compilers.
 #for warning:  -w A
 #for profiling:  -p -inline 0   with OCAMLOPT
-CAMLC =ocamlc$(OPTBIN) -dtypes -g
-CAMLOPT=ocamlopt$(OPTBIN)   $(OPTFLAGS)
-CAMLLEX = ocamllex$(OPTBIN)
-CAMLYACC= ocamlyacc
-CAMLDEP = ocamldep$(OPTBIN)
-CAMLMKTOP=ocamlmktop -g -custom
-
+OCAMLC_CMD=$(OCAMLC) -dtypes -g
+OCAMLOPT_CMD=$(OCAMLOPT) $(OPTFLAGS)
+OCAMLDEP_CMD=$(OCAMLDEP)
+OCAMLMKTOP_CMD=$(OCAMLMKTOP) -g -custom
 
 
 LIB=$(TARGET).cma
@@ -59,17 +58,17 @@ all: $(LIB)
 all.opt: $(OPTLIB)
 
 $(TARGET).top: $(LIB)
-	$(CAMLMKTOP) -o $(TARGET).top $(SYSLIBS) $(LIBS) $(OBJS)
+	$(CAMLMKTOP_CMD) -o $(TARGET).top $(SYSLIBS) $(LIBS) $(OBJS)
 
 $(LIB):  $(OBJS)
-	$(CAMLC) -a -o $(LIB) $(OBJS)
+	$(CAMLC_CMD) -a -o $(LIB) $(OBJS)
 
 clean::
 	rm -f $(LIB) $(TARGET).top
 
 
 $(OPTLIB): $(OPTOBJS)
-	$(CAMLOPT) -a -o $(OPTLIB) $(OPTOBJS)
+	$(CAMLOPT_CMD) -a -o $(OPTLIB) $(OPTOBJS)
 
 # clean rule for LIB.opt
 clean::
@@ -80,29 +79,29 @@ clean::
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
 
 .ml.cmo:
-	$(CAMLC) $(INCLUDE_PATH) -c $<
+	$(CAMLC_CMD) $(INCLUDE_PATH) -c $<
 
 .mli.cmi:
-	$(CAMLC) $(INCLUDE_PATH) -c $<
+	$(CAMLC_CMD) $(INCLUDE_PATH) -c $<
 
 .ml.cmx:
-	$(CAMLOPT) $(INCLUDE_PATH) -c $<
-
-
+	$(CAMLOPT_CMD) $(INCLUDE_PATH) -c $<
 
 
 # clean rule for others files
 clean::
 	rm -f *.cm[iox] *.o *.annot
 	rm -f *~ .*~ #*#
-
-depend:
-	$(CAMLDEP) $(INCLUDE_PATH) *.mli *.ml > .depend
-
-distclean::
 	rm -f .depend
 
-.depend:
-	$(CAMLDEP) $(INCLUDE_PATH) *.mli *.ml > .depend
+distclean: clean
 
+.PHONEY: depend
+.depend depend:
+	$(CAMLDEP_CMD) $(INCLUDE_PATH) *.mli *.ml > .depend
+
+ifneq ($(MAKECMDGOALS),clean)
+ifneq ($(MAKECMDGOALS),distclean)
 -include .depend
+endif
+endif

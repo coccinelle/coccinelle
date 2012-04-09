@@ -24,6 +24,7 @@
  *)
 
 
+# 0 "./main.ml"
 open Common
 module FC = Flag_cocci
 
@@ -61,7 +62,7 @@ let test_all = ref false
 let test_okfailed = ref false
 let test_regression_okfailed = ref false
 let expected_score_file = ref ""
-
+let allow_update_score_file = ref true
 
 (* action mode *)
 let action = ref ""
@@ -628,7 +629,7 @@ let other_options = [
   [
     "--use-cache", Arg.Set Flag_parsing_c.use_cache,
     "   use .ast_raw pre-parsed cached C file";
-    "--cache_prefix",
+    "--cache-prefix",
     Arg.String (function s ->
       Flag_parsing_c.cache_prefix := Some s;
       Flag_parsing_c.use_cache := true),
@@ -658,6 +659,8 @@ let other_options = [
     "   use also file.res";
     "--expected-score-file", Arg.Set_string expected_score_file,
     "   which score file to compare with in -testall";
+    "--no-update-score-file", Arg.Clear allow_update_score_file,
+    "   do not update the score file when -testall succeeds";
     "--relax-include-path", Arg.Set FC.relax_include_path,
     " ";
   ];
@@ -1169,9 +1172,10 @@ let main () =
     | []  when !test_all ->
         (if !FC.include_path = []
 	then FC.include_path := ["tests/include"]);
-        if !expected_score_file <> ""
-        then Testing.testall ~expected_score_file:!expected_score_file ()
-        else Testing.testall ()
+        let score_file = if !expected_score_file <> ""
+                         then !expected_score_file
+                         else "tests/SCORE_expected.sexp" in
+        Testing.testall score_file !allow_update_score_file
 
     | [] when !test_regression_okfailed ->
         Testing.test_regression_okfailed ()

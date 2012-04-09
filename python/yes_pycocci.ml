@@ -24,6 +24,7 @@
  *)
 
 
+# 0 "./yes_pycocci.ml"
 open Ast_c
 open Common
 open Pycaml

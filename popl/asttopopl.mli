@@ -24,4 +24,5 @@
  *)
 
 
+# 0 "./asttopopl.mli"
 val top : Ast_cocci.top_level -> Ast_popl.sequence

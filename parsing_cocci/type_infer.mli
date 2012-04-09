@@ -24,4 +24,5 @@
  *)
 
 
+# 0 "./type_infer.mli"
 val type_infer : Ast0_cocci.rule -> unit

@@ -24,6 +24,7 @@
  *)
 
 
+# 0 "./check_reachability.mli"
 type witness =
     (Ograph_extended.nodei, unit,
      (Ograph_extended.nodei, unit, unit) Ast_ctl.generic_ctl list)

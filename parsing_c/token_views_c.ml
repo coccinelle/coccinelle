@@ -74,6 +74,19 @@ let set_as_comment cppkind x =
   else
     x.tok <- TCommentCpp (cppkind, TH.info_of_tok x.tok)
 
+let save_as_comment cppkind x =
+  if TH.is_eof x.tok
+  then () (* otherwise parse_c will be lost if don't find a EOF token *)
+  else
+    let t =
+      match x.tok with
+	TIfdef _ | TIfdefMisc _ | TIfdefVersion _ -> Token_c.IfDef
+      | TIfdefBool _ -> Token_c.IfDef0
+      | TIfdefelse _ | TIfdefelif _ -> Token_c.Else
+      | TEndif _ -> Token_c.Endif
+      | _ -> Token_c.Other in
+    x.tok <- TCommentCpp (cppkind t, TH.info_of_tok x.tok)
+
 let mk_token_extended x =
   let (line, col) = TH.linecol_of_tok x in
   { tok = x;

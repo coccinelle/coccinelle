@@ -24,6 +24,7 @@
  *)
 
 
+# 0 "./ctlcocci_integration.mli"
 open Ograph_extended
 
 val labels_for_ctl :

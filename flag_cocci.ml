@@ -24,6 +24,7 @@
  *)
 
 
+# 0 "./flag_cocci.ml"
 (* the inputs *)
 let show_c = ref false
 let show_cocci = ref false

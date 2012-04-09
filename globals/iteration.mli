@@ -24,6 +24,7 @@
  *)
 
 
+# 0 "./iteration.mli"
 type init_info = (string (* language *) * string (* rule name *)) *
       string list (* defined virtual rules *)
 

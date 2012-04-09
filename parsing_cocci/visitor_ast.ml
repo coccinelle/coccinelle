@@ -24,6 +24,7 @@
  *)
 
 
+# 0 "./visitor_ast.ml"
 module Ast0 = Ast0_cocci
 module Ast = Ast_cocci
 

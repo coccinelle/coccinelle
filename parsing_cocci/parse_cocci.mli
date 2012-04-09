@@ -24,6 +24,7 @@
  *)
 
 
+# 0 "./parse_cocci.mli"
 exception Bad_virt of string
 
 val process :

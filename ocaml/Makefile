@@ -1,9 +1,12 @@
 ##############################################################################
 # Variables
 ##############################################################################
-#TARGET=cocciocaml
--include ../Makefile.config
--include Makefile.doc
+
+ifneq ($(MAKECMDGOALS),distclean)
+include ../Makefile.config
+endif
+
+include Makefile.doc
 
 TARGET=cocciocaml
 
@@ -27,13 +30,10 @@ SYSLIBS= str.cma unix.cma
 OCAMLCFLAGS ?= -g -dtypes
 OPTFLAGS?=$(OCAMLCFLAGS)
 
-OCAMLC=ocamlc$(OPTBIN) $(OCAMLCFLAGS) $(INCLUDES)
-OCAMLOPT=ocamlopt$(OPTBIN) $(OPTFLAGS) $(INCLUDES)
-OCAMLLEX=ocamllex$(OPTBIN) #-ml
-OCAMLYACC=ocamlyacc -v
-OCAMLDEP=ocamldep$(OPTBIN) $(INCLUDES)
-OCAMLMKTOP=ocamlmktop -g -custom $(INCLUDES)
-
+OCAMLC_CMD=$(OCAMLC) $(OCAMLCFLAGS) $(INCLUDES)
+OCAMLOPT_CMD=$(OCAMLOPT) $(OPTFLAGS) $(INCLUDES)
+OCAMLDEP_CMD=$(OCAMLDEP) $(INCLUDES)
+OCAMLMKTOP_CMD=$(OCAMLMKTOP) -g -custom $(INCLUDES)
 
 OBJS = $(SRC:.ml=.cmo)
 OPTOBJS = $(SRC:.ml=.cmx)
@@ -46,13 +46,13 @@ all: $(TARGET).cma
 all.opt: $(TARGET).cmxa
 
 $(TARGET).cma: $(OBJS)
-	$(OCAMLC) -a -o $(TARGET).cma $(OBJS)
+	$(OCAMLC_CMD) -a -o $(TARGET).cma $(OBJS)
 
 $(TARGET).cmxa: $(OPTOBJS) $(LIBS:.cma=.cmxa)
-	$(OCAMLOPT) -a -o $(TARGET).cmxa $(OPTOBJS)
+	$(OCAMLOPT_CMD) -a -o $(TARGET).cmxa $(OPTOBJS)
 
 $(TARGET).top: $(OBJS) $(LIBS)
-	$(OCAMLMKTOP) -o $(TARGET).top $(SYSLIBS) $(LIBS) $(OBJS)
+	$(OCAMLMKTOP_CMD) -o $(TARGET).top $(SYSLIBS) $(LIBS) $(OBJS)
 
 clean::
 	rm -f $(TARGET).top
@@ -70,25 +70,29 @@ clean::
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
 
 .ml.cmo:
-	$(OCAMLC) -c $<
+	$(OCAMLC_CMD) -c $<
 .mli.cmi:
-	$(OCAMLC) -c $<
+	$(OCAMLC_CMD) -c $<
 .ml.cmx:
-	$(OCAMLOPT) -c $<
+	$(OCAMLOPT_CMD) -c $<
 
 .ml.mldepend:
-	$(OCAMLC) -i $<
+	$(OCAMLC_CMD) -i $<
 
 clean::
 	rm -f *.cm[ioxa] *.o *.a *.cmxa *.annot
 	rm -f *~ .*~ gmon.out #*#
-
-distclean::
 	rm -f .depend
 
-beforedepend::
+distclean: clean
 
-depend:: beforedepend
-	$(OCAMLDEP) *.mli *.ml    > .depend
+.depend depend:
+	$(OCAMLDEP_CMD) *.mli *.ml    > .depend
 
+ifneq ($(MAKECMDGOALS),clean)
+ifneq ($(MAKECMDGOALS),distclean)
+ifneq ($(MAKECMDGOALS),cleandoc)
 -include .depend
+endif
+endif
+endif

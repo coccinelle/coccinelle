@@ -24,6 +24,7 @@
  *)
 
 
+# 0 "./pycocci_aux.mli"
 val exprlistrep : Ast_c.argument Ast_c.wrap2 list -> string * string list
 val paramlistrep : Ast_c.parameterType Ast_c.wrap2 list -> string * string list
 val initlistrep : Ast_c.initialiser Ast_c.wrap2 list -> string * string list

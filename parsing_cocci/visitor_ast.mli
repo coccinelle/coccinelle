@@ -24,6 +24,7 @@
  *)
 
 
+# 0 "./visitor_ast.mli"
 type 'a combiner =
     {combiner_ident : Ast_cocci.ident -> 'a;
      combiner_expression : Ast_cocci.expression -> 'a;

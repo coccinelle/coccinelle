@@ -1,0 +1,9 @@
+% INPUT STYLE
+\input{article.hva}
+
+% FANCY SECTION HEADERS WITH NICE COLOURS
+\def\@color{194}
+\input{fancysection.hva}
+
+% FOREGROUND AND BACKGROUND COLOURS
+\renewcommand{\@bodyargs}{TEXT=black BGCOLOR=white}

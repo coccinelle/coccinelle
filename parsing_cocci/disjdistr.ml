@@ -24,6 +24,7 @@
  *)
 
 
+# 0 "./disjdistr.ml"
 module Ast = Ast_cocci
 module V = Visitor_ast
 

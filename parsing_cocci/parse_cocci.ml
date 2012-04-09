@@ -24,6 +24,7 @@
  *)
 
 
+# 0 "./parse_cocci.ml"
 (* splits the entire file into minus and plus fragments, and parses each
 separately (thus duplicating work for the parsing of the context elements) *)
 

@@ -24,6 +24,7 @@
  *)
 
 
+# 0 "./get_constants2.mli"
 type combine =
     And of combine list | Or of combine list | Elem of string | False | True
 

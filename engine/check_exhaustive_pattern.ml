@@ -24,6 +24,7 @@
  *)
 
 
+# 0 "./check_exhaustive_pattern.ml"
 
 (* Just to warn me when there is some news in the types in
  * ast_cocci.ml or even ast_c.ml, so that I can then adjust my code in

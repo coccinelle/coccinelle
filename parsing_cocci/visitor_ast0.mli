@@ -24,6 +24,7 @@
  *)
 
 
+# 0 "./visitor_ast0.mli"
 val combiner_functions : 'a Visitor_ast0_types.combiner_functions
 val combiner :
   ('a -> 'a -> 'a) ->

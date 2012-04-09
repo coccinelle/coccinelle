@@ -24,6 +24,7 @@
  *)
 
 
+# 0 "./adjacency.ml"
 module Ast0 = Ast0_cocci
 module V0 = Visitor_ast0
 module VT0 = Visitor_ast0_types

@@ -24,6 +24,7 @@
  *)
 
 
+# 0 "./type_cocci.mli"
 type inherited = bool (* true if inherited *)
 type keep_binding = Unitary (* need no info *)
   | Nonunitary (* need an env entry *) | Saved (* need a witness *)

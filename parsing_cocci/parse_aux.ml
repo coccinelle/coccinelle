@@ -24,6 +24,7 @@
  *)
 
 
+# 0 "./parse_aux.ml"
 (* exports everything, used only by parser_cocci_menhir.mly *)
 module Ast0 = Ast0_cocci
 module Ast = Ast_cocci

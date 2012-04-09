@@ -94,6 +94,7 @@
 - Slightly more efficient handling of lists.
 - Slightly better error message in the case of inconsistent paths
 - Improve limited size caching
+- Remove #ifdefs when everything else is removed
 
 ** Bugfix:
 - Corrected parsing of script strings delimited by a single quote.  Thanks
@@ -163,6 +164,8 @@
 - Allow matching on nameless structs.  Thanks to Ron Minnich for reporting
   the problem.
 - Pretty printing of const/volatile arrays in smpl code.
+- Don't allow just dropping an exp or type
+- Avoid removing #endif when surrounded by - code
 
 * 0.2.5
 ** Language:

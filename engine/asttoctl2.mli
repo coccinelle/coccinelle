@@ -24,6 +24,7 @@
  *)
 
 
+# 0 "./asttoctl2.mli"
 type cocci_predicate = Lib_engine.predicate * Ast_cocci.meta_name Ast_ctl.modif
 type top_formula = NONDECL of Lib_engine.ctlcocci | CODE of Lib_engine.ctlcocci
 

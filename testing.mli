@@ -24,13 +24,14 @@
  *)
 
 
+# 0 "./testing.mli"
 open Common
 
 (*****************************************************************************)
 (* work with tests/ *)
 (*****************************************************************************)
 val testone : string (*prefix*) -> string (*test*) -> bool (*compare_expected*) -> unit
-val testall : ?expected_score_file:string -> unit -> unit
+val testall : string -> bool -> unit
 
 (*****************************************************************************)
 (* works with tests-big/. The .res, .ok, .spatch_ok, .failed, .var *)

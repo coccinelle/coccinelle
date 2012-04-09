@@ -24,6 +24,7 @@
  *)
 
 
+# 0 "./check_meta.mli"
 val check_meta :
     string ->
     Ast_cocci.metavar list (* old metavariables *) ->

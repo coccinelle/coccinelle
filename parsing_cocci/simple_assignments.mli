@@ -24,4 +24,5 @@
  *)
 
 
+# 0 "./simple_assignments.mli"
 val simple_assignments : Ast0_cocci.rule -> Ast0_cocci.rule

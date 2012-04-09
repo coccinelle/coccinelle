@@ -24,6 +24,7 @@
  *)
 
 
+# 0 "./no_pycocci.ml"
 open Ast_c
 open Common
 open Pycocci_aux

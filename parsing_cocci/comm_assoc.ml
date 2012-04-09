@@ -24,6 +24,7 @@
  *)
 
 
+# 0 "./comm_assoc.ml"
 (* searches for E op ..., for any commutative and associative binary
 operator.  When this satisfies the isomorphism conditions (ie all minus, or
 context for the op and ...), then this is converted to Nested(E,op).

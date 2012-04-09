@@ -24,6 +24,7 @@
  *)
 
 
+# 0 "./cocci_vs_c.ml"
 open Common
 
 module A = Ast_cocci

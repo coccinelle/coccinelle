@@ -24,4 +24,5 @@
  *)
 
 
+# 0 "./semantic_cocci.ml"
 exception Semantic of string

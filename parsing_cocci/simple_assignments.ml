@@ -24,6 +24,7 @@
  *)
 
 
+# 0 "./simple_assignments.ml"
 module Ast0 = Ast0_cocci
 module Ast = Ast_cocci
 module V0 = Visitor_ast0

@@ -1,0 +1,7 @@
+OCAML_LIBRARIES = sexplib
+
+OCamlMakePPDeps($(PA_SEXP_CONV), conv_test)
+
+OCamlMakeProjDefaults(conv_test.exe sexp_test.exe)
+
+InstantiateOCamlEnv()

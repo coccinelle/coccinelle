@@ -24,6 +24,7 @@
  *)
 
 
+# 0 "./compute_lines.mli"
 val compute_lines : bool -> Ast0_cocci.rule -> Ast0_cocci.rule
 
 val compute_statement_dots_lines : bool ->

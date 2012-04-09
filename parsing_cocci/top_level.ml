@@ -24,6 +24,7 @@
  *)
 
 
+# 0 "./top_level.ml"
 (* Reorganize the top level of a rule to be a list of either top-level
 declarations or code dots.  A function declaration is always considered top
 level.  A statement is always considered code dots.  A variable declaration

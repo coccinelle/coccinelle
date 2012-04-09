@@ -24,6 +24,7 @@
  *)
 
 
+# 0 "./gitgrep.ml"
 (* adjust as convenient *)
 let prefix = "/tmp/"
 let prefix = ""

@@ -24,6 +24,7 @@
  *)
 
 
+# 0 "./free_vars.mli"
 (* Used after things can only have one binding.  Positions can have many
 bindings.  These are combined in ctlcocciintegration, ie after the CTL
 generation. *)

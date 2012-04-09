@@ -1,0 +1,68 @@
+# OASIS_START
+# DO NOT EDIT (digest: a1d81a7e4d410a35183ff1a62ca59486)
+# Ignore VCS directories, you can use the same kind of rule outside 
+# OASIS_START/STOP if you want to exclude directories that contains 
+# useless stuff for the build process
+<**/.svn>: -traverse
+<**/.svn>: not_hygienic
+".bzr": -traverse
+".bzr": not_hygienic
+".hg": -traverse
+".hg": not_hygienic
+".git": -traverse
+".git": not_hygienic
+"_darcs": -traverse
+"_darcs": not_hygienic
+# Library sexplib
+"lib": include
+"lib/type.cmx": for-pack(Sexplib)
+"lib/parser.cmx": for-pack(Sexplib)
+"lib/lexer.cmx": for-pack(Sexplib)
+"lib/pre_sexp.cmx": for-pack(Sexplib)
+"lib/sexp_intf.cmx": for-pack(Sexplib)
+"lib/sexp.cmx": for-pack(Sexplib)
+"lib/path.cmx": for-pack(Sexplib)
+"lib/conv.cmx": for-pack(Sexplib)
+"lib/conv_error.cmx": for-pack(Sexplib)
+"lib/exn_magic.cmx": for-pack(Sexplib)
+"lib/std.cmx": for-pack(Sexplib)
+<lib/*.ml{,i}>: pkg_unix
+<lib/*.ml{,i}>: pkg_num
+<lib/*.ml{,i}>: pkg_bigarray
+# Library pa_sexp_conv
+"syntax": include
+<syntax/*.ml{,i}>: pkg_type_conv
+<syntax/*.ml{,i}>: pkg_camlp4.quotations
+<syntax/*.ml{,i}>: pkg_camlp4.extend
+# Executable conv_test
+"lib_test/conv_test.byte": use_pa_sexp_conv
+"lib_test/conv_test.byte": use_sexplib
+"lib_test/conv_test.byte": pkg_unix
+"lib_test/conv_test.byte": pkg_type_conv
+"lib_test/conv_test.byte": pkg_num
+"lib_test/conv_test.byte": pkg_camlp4.quotations
+"lib_test/conv_test.byte": pkg_camlp4.extend
+"lib_test/conv_test.byte": pkg_bigarray
+<lib_test/*.ml{,i}>: use_pa_sexp_conv
+<lib_test/*.ml{,i}>: pkg_type_conv
+<lib_test/*.ml{,i}>: pkg_camlp4.quotations
+<lib_test/*.ml{,i}>: pkg_camlp4.extend
+# Library sexplib_top
+"top": include
+# Executable sexp_test
+"lib_test/sexp_test.byte": use_sexplib
+"lib_test/sexp_test.byte": pkg_unix
+"lib_test/sexp_test.byte": pkg_num
+"lib_test/sexp_test.byte": pkg_bigarray
+<lib_test/*.ml{,i}>: use_sexplib
+<lib_test/*.ml{,i}>: pkg_unix
+<lib_test/*.ml{,i}>: pkg_num
+<lib_test/*.ml{,i}>: pkg_bigarray
+# OASIS_STOP
+<syntax/pa_sexp_conv.ml>: syntax_camlp4o
+<lib/pre_sexp.ml>:pp(cpp -traditional -undef)
+
+"lib_test/conv_test.ml": syntax_camlp4o, pkg_type_conv.syntax
+# Remove this line, once BuildDepends: sexplib... will be taken
+# into account
+"lib_test/conv_test.byte": use_sexplib, pkg_unix, pkg_num, pkg_bigarray

@@ -24,6 +24,7 @@
  *)
 
 
+# 0 "./ast0_cocci.ml"
 module Ast = Ast_cocci
 module TC = Type_cocci
 

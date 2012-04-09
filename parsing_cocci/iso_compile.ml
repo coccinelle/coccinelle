@@ -24,6 +24,7 @@
  *)
 
 
+# 0 "./iso_compile.ml"
 module V0 = Visitor_ast0
 module VT0 = Visitor_ast0_types
 module Ast0 = Ast0_cocci

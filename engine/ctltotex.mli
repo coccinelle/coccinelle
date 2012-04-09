@@ -24,6 +24,7 @@
  *)
 
 
+# 0 "./ctltotex.mli"
 val totex :
   string ->
     Ast_cocci.rule list ->

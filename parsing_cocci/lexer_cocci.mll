@@ -24,6 +24,7 @@
  *)
 
 
+# 0 "./lexer_cocci.mll"
 {
 open Parser_cocci_menhir
 module D = Data
@@ -206,6 +207,8 @@ let id_tokens lexbuf =
   let in_meta = !Data.in_meta && not !Data.saw_struct in
   let in_iso = !Data.in_iso in
   let in_prolog = !Data.in_prolog in
+  (if s = "identifer" && in_meta
+  then Common.pr2 "Warning: should identifer be identifier?");
   match s with
     "metavariable" when in_meta -> check_arity_context_linetype s; TMetavariable
   | "identifier" when in_meta -> check_arity_context_linetype s; TIdentifier

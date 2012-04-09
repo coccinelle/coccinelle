@@ -24,6 +24,7 @@
  *)
 
 
+# 0 "./type_cocci.ml"
 (* for metavariables in general, but here because needed for metatypes *)
 type inherited = bool (* true if inherited *)
 type keep_binding = Unitary (* need no info *)

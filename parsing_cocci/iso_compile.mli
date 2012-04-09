@@ -24,5 +24,6 @@
  *)
 
 
+# 0 "./iso_compile.mli"
 val process : Iso_pattern.isomorphism -> unit
 
