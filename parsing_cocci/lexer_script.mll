@@ -4,6 +4,8 @@ module D = Data
 module Ast = Ast_cocci
 exception Lexical of string
 let tok = Lexing.lexeme
+let file = ref ""
+let language = ref ""
 let inc_line _ = Lexer_cocci.line := !Lexer_cocci.line + 1
 }
 (* ---------------------------------------------------------------------- *)
@@ -16,7 +18,16 @@ let myrule = [^'\'''"''@''/''\n''\r''\011''\012']+
 
 rule token = parse
   | myrule { TScriptData (tok lexbuf) }
-  | ['\n' '\r' '\011' '\012'] { inc_line(); TScriptData (tok lexbuf) }
+  | ['\n' '\r' '\011' '\012']
+      { inc_line();
+	let text = tok lexbuf in
+	let text =
+	  if !language = "ocaml"
+	  then
+	    Printf.sprintf "%s# %d \"%s\"%s"
+	      text !Lexer_cocci.line !file text
+	  else text in
+	TScriptData text }
   | "@@" { TArobArob }
   | "@"  { TArob }
   | "/"  { TScriptData (tok lexbuf) }

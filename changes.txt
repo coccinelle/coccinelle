@@ -108,6 +108,7 @@
 - The configure script uses pkg-config and ocaml findlib and provides many
   flags for tuning/overriding the build process (including the ocaml
   compiler and the C compiler and preprocessor).
+- Add line number directives to the .ml file generated from a .cocci file
 
 ** Bugfix:
 - Corrected parsing of script strings delimited by a single quote.  Thanks
