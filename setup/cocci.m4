@@ -171,8 +171,8 @@ AC_DEFUN([AC_COCCI_PYVER],
 
     AS_IF([test "x$PYTHON" = xno -a -n "$with_python" -a "x$with_python" != xyes],
     [dnl  python interpreter not found, but perhaps it was a version
-      AC_MSG_NOTICE([$1 is not a found as tool, therefore interpreted as version])
-      AC_SUBST([PYVER],["$1"])
+      AC_MSG_NOTICE([$with_python is not a found as tool, therefore interpreted as version])
+      AC_SUBST([PYVER],["$with_python"])
     ])
 
     AS_IF([test "x$PYTHON" != xno],
@@ -257,12 +257,15 @@ AC_DEFUN([AC_COCCI_TOOL],
   AS_IF([test -n "$with_[]$1" -a "x$with_[]$1" != xno -a "x$with_[]$1" != xyes],
   [dnl  custom $with_$1 given
     AC_SUBST([$1], ["$with_[]$1"])
+  ],
+  [dnl  otherwise, use the default
+    AC_SUBST([$1], ["$2"])
   ])
 
   dnl  searches for the tool (result either empty or 'no' if not found)
   AS_IF([test "x$with_$1" != xno],
   [dnl  find the tool
-    AC_COCCI_FINDTOOL([$1],[$2])
+    AC_COCCI_FINDTOOL([$1],["${$1}"])
   ])
 
   AS_IF([test -z "[$]$1" -o "x[$]$1" = xno],

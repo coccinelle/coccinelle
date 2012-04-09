@@ -3524,10 +3524,14 @@ fi
       PKG_CONFIG="$with_PKG_CONFIG"
 
 
+else
+      PKG_CONFIG="pkg-config"
+
+
 fi
 
     if test "x$with_PKG_CONFIG" != xno; then :
-        if test "xpkg-config" = xpkg-config -a "xPKG_CONFIG" = xPKG_CONFIG; then :
+        if test "x"${PKG_CONFIG}"" = xpkg-config -a "xPKG_CONFIG" = xPKG_CONFIG; then :
 
 
 if test "x$ac_cv_env_PKG_CONFIG_set" != "xset"; then
@@ -3645,7 +3649,7 @@ $as_echo "no" >&6; }
 
 fi
 
-elif test "xpkg-config" = xocamllex -a "xPKG_CONFIG" = xOCAMLLEX; then :
+elif test "x"${PKG_CONFIG}"" = xocamllex -a "xPKG_CONFIG" = xOCAMLLEX; then :
         # checking for ocamllex
   if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}ocamllex", so it can be a program name with args.
@@ -3851,7 +3855,7 @@ fi
 
 
 
-elif test "xpkg-config" = xocamlyacc -a "xPKG_CONFIG" = xOCAMLYACC; then :
+elif test "x"${PKG_CONFIG}"" = xocamlyacc -a "xPKG_CONFIG" = xOCAMLYACC; then :
         if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}ocamlyacc", so it can be a program name with args.
 set dummy ${ac_tool_prefix}ocamlyacc; ac_word=$2
@@ -3955,8 +3959,8 @@ fi
 
 else
       if test -n "$ac_tool_prefix"; then
-  # Extract the first word of "${ac_tool_prefix}pkg-config", so it can be a program name with args.
-set dummy ${ac_tool_prefix}pkg-config; ac_word=$2
+  # Extract the first word of "${ac_tool_prefix}"${PKG_CONFIG}"", so it can be a program name with args.
+set dummy ${ac_tool_prefix}"${PKG_CONFIG}"; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
 $as_echo_n "checking for $ac_word... " >&6; }
 if ${ac_cv_path_PKG_CONFIG+:} false; then :
@@ -3998,8 +4002,8 @@ fi
 fi
 if test -z "$ac_cv_path_PKG_CONFIG"; then
   ac_pt_PKG_CONFIG=$PKG_CONFIG
-  # Extract the first word of "pkg-config", so it can be a program name with args.
-set dummy pkg-config; ac_word=$2
+  # Extract the first word of ""${PKG_CONFIG}"", so it can be a program name with args.
+set dummy "${PKG_CONFIG}"; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
 $as_echo_n "checking for $ac_word... " >&6; }
 if ${ac_cv_path_ac_pt_PKG_CONFIG+:} false; then :
@@ -6642,10 +6646,14 @@ fi
       OCAMLLEX="$with_OCAMLLEX"
 
 
+else
+      OCAMLLEX="ocamllex"
+
+
 fi
 
     if test "x$with_OCAMLLEX" != xno; then :
-        if test "xocamllex" = xpkg-config -a "xOCAMLLEX" = xPKG_CONFIG; then :
+        if test "x"${OCAMLLEX}"" = xpkg-config -a "xOCAMLLEX" = xPKG_CONFIG; then :
 
 
 if test "x$ac_cv_env_PKG_CONFIG_set" != "xset"; then
@@ -6763,7 +6771,7 @@ $as_echo "no" >&6; }
 
 fi
 
-elif test "xocamllex" = xocamllex -a "xOCAMLLEX" = xOCAMLLEX; then :
+elif test "x"${OCAMLLEX}"" = xocamllex -a "xOCAMLLEX" = xOCAMLLEX; then :
         # checking for ocamllex
   if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}ocamllex", so it can be a program name with args.
@@ -6969,7 +6977,7 @@ fi
 
 
 
-elif test "xocamllex" = xocamlyacc -a "xOCAMLLEX" = xOCAMLYACC; then :
+elif test "x"${OCAMLLEX}"" = xocamlyacc -a "xOCAMLLEX" = xOCAMLYACC; then :
         if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}ocamlyacc", so it can be a program name with args.
 set dummy ${ac_tool_prefix}ocamlyacc; ac_word=$2
@@ -7073,8 +7081,8 @@ fi
 
 else
       if test -n "$ac_tool_prefix"; then
-  # Extract the first word of "${ac_tool_prefix}ocamllex", so it can be a program name with args.
-set dummy ${ac_tool_prefix}ocamllex; ac_word=$2
+  # Extract the first word of "${ac_tool_prefix}"${OCAMLLEX}"", so it can be a program name with args.
+set dummy ${ac_tool_prefix}"${OCAMLLEX}"; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
 $as_echo_n "checking for $ac_word... " >&6; }
 if ${ac_cv_path_OCAMLLEX+:} false; then :
@@ -7116,8 +7124,8 @@ fi
 fi
 if test -z "$ac_cv_path_OCAMLLEX"; then
   ac_pt_OCAMLLEX=$OCAMLLEX
-  # Extract the first word of "ocamllex", so it can be a program name with args.
-set dummy ocamllex; ac_word=$2
+  # Extract the first word of ""${OCAMLLEX}"", so it can be a program name with args.
+set dummy "${OCAMLLEX}"; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
 $as_echo_n "checking for $ac_word... " >&6; }
 if ${ac_cv_path_ac_pt_OCAMLLEX+:} false; then :
@@ -7741,10 +7749,14 @@ fi
       OCAMLYACC="$with_OCAMLYACC"
 
 
+else
+      OCAMLYACC="ocamlyacc"
+
+
 fi
 
     if test "x$with_OCAMLYACC" != xno; then :
-        if test "xocamlyacc" = xpkg-config -a "xOCAMLYACC" = xPKG_CONFIG; then :
+        if test "x"${OCAMLYACC}"" = xpkg-config -a "xOCAMLYACC" = xPKG_CONFIG; then :
 
 
 if test "x$ac_cv_env_PKG_CONFIG_set" != "xset"; then
@@ -7862,7 +7874,7 @@ $as_echo "no" >&6; }
 
 fi
 
-elif test "xocamlyacc" = xocamllex -a "xOCAMLYACC" = xOCAMLLEX; then :
+elif test "x"${OCAMLYACC}"" = xocamllex -a "xOCAMLYACC" = xOCAMLLEX; then :
         # checking for ocamllex
   if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}ocamllex", so it can be a program name with args.
@@ -8068,7 +8080,7 @@ fi
 
 
 
-elif test "xocamlyacc" = xocamlyacc -a "xOCAMLYACC" = xOCAMLYACC; then :
+elif test "x"${OCAMLYACC}"" = xocamlyacc -a "xOCAMLYACC" = xOCAMLYACC; then :
         if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}ocamlyacc", so it can be a program name with args.
 set dummy ${ac_tool_prefix}ocamlyacc; ac_word=$2
@@ -8172,8 +8184,8 @@ fi
 
 else
       if test -n "$ac_tool_prefix"; then
-  # Extract the first word of "${ac_tool_prefix}ocamlyacc", so it can be a program name with args.
-set dummy ${ac_tool_prefix}ocamlyacc; ac_word=$2
+  # Extract the first word of "${ac_tool_prefix}"${OCAMLYACC}"", so it can be a program name with args.
+set dummy ${ac_tool_prefix}"${OCAMLYACC}"; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
 $as_echo_n "checking for $ac_word... " >&6; }
 if ${ac_cv_path_OCAMLYACC+:} false; then :
@@ -8215,8 +8227,8 @@ fi
 fi
 if test -z "$ac_cv_path_OCAMLYACC"; then
   ac_pt_OCAMLYACC=$OCAMLYACC
-  # Extract the first word of "ocamlyacc", so it can be a program name with args.
-set dummy ocamlyacc; ac_word=$2
+  # Extract the first word of ""${OCAMLYACC}"", so it can be a program name with args.
+set dummy "${OCAMLYACC}"; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
 $as_echo_n "checking for $ac_word... " >&6; }
 if ${ac_cv_path_ac_pt_OCAMLYACC+:} false; then :
@@ -8840,10 +8852,14 @@ fi
       OCAMLFIND="$with_OCAMLFIND"
 
 
+else
+      OCAMLFIND="ocamlfind"
+
+
 fi
 
     if test "x$with_OCAMLFIND" != xno; then :
-        if test "xocamlfind" = xpkg-config -a "xOCAMLFIND" = xPKG_CONFIG; then :
+        if test "x"${OCAMLFIND}"" = xpkg-config -a "xOCAMLFIND" = xPKG_CONFIG; then :
 
 
 if test "x$ac_cv_env_PKG_CONFIG_set" != "xset"; then
@@ -8961,7 +8977,7 @@ $as_echo "no" >&6; }
 
 fi
 
-elif test "xocamlfind" = xocamllex -a "xOCAMLFIND" = xOCAMLLEX; then :
+elif test "x"${OCAMLFIND}"" = xocamllex -a "xOCAMLFIND" = xOCAMLLEX; then :
         # checking for ocamllex
   if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}ocamllex", so it can be a program name with args.
@@ -9167,7 +9183,7 @@ fi
 
 
 
-elif test "xocamlfind" = xocamlyacc -a "xOCAMLFIND" = xOCAMLYACC; then :
+elif test "x"${OCAMLFIND}"" = xocamlyacc -a "xOCAMLFIND" = xOCAMLYACC; then :
         if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}ocamlyacc", so it can be a program name with args.
 set dummy ${ac_tool_prefix}ocamlyacc; ac_word=$2
@@ -9271,8 +9287,8 @@ fi
 
 else
       if test -n "$ac_tool_prefix"; then
-  # Extract the first word of "${ac_tool_prefix}ocamlfind", so it can be a program name with args.
-set dummy ${ac_tool_prefix}ocamlfind; ac_word=$2
+  # Extract the first word of "${ac_tool_prefix}"${OCAMLFIND}"", so it can be a program name with args.
+set dummy ${ac_tool_prefix}"${OCAMLFIND}"; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
 $as_echo_n "checking for $ac_word... " >&6; }
 if ${ac_cv_path_OCAMLFIND+:} false; then :
@@ -9314,8 +9330,8 @@ fi
 fi
 if test -z "$ac_cv_path_OCAMLFIND"; then
   ac_pt_OCAMLFIND=$OCAMLFIND
-  # Extract the first word of "ocamlfind", so it can be a program name with args.
-set dummy ocamlfind; ac_word=$2
+  # Extract the first word of ""${OCAMLFIND}"", so it can be a program name with args.
+set dummy "${OCAMLFIND}"; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
 $as_echo_n "checking for $ac_word... " >&6; }
 if ${ac_cv_path_ac_pt_OCAMLFIND+:} false; then :
@@ -11163,10 +11179,14 @@ fi
       MENHIR="$with_MENHIR"
 
 
+else
+      MENHIR="menhir"
+
+
 fi
 
     if test "x$with_MENHIR" != xno; then :
-        if test "xmenhir" = xpkg-config -a "xMENHIR" = xPKG_CONFIG; then :
+        if test "x"${MENHIR}"" = xpkg-config -a "xMENHIR" = xPKG_CONFIG; then :
 
 
 if test "x$ac_cv_env_PKG_CONFIG_set" != "xset"; then
@@ -11284,7 +11304,7 @@ $as_echo "no" >&6; }
 
 fi
 
-elif test "xmenhir" = xocamllex -a "xMENHIR" = xOCAMLLEX; then :
+elif test "x"${MENHIR}"" = xocamllex -a "xMENHIR" = xOCAMLLEX; then :
         # checking for ocamllex
   if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}ocamllex", so it can be a program name with args.
@@ -11490,7 +11510,7 @@ fi
 
 
 
-elif test "xmenhir" = xocamlyacc -a "xMENHIR" = xOCAMLYACC; then :
+elif test "x"${MENHIR}"" = xocamlyacc -a "xMENHIR" = xOCAMLYACC; then :
         if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}ocamlyacc", so it can be a program name with args.
 set dummy ${ac_tool_prefix}ocamlyacc; ac_word=$2
@@ -11594,8 +11614,8 @@ fi
 
 else
       if test -n "$ac_tool_prefix"; then
-  # Extract the first word of "${ac_tool_prefix}menhir", so it can be a program name with args.
-set dummy ${ac_tool_prefix}menhir; ac_word=$2
+  # Extract the first word of "${ac_tool_prefix}"${MENHIR}"", so it can be a program name with args.
+set dummy ${ac_tool_prefix}"${MENHIR}"; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
 $as_echo_n "checking for $ac_word... " >&6; }
 if ${ac_cv_path_MENHIR+:} false; then :
@@ -11637,8 +11657,8 @@ fi
 fi
 if test -z "$ac_cv_path_MENHIR"; then
   ac_pt_MENHIR=$MENHIR
-  # Extract the first word of "menhir", so it can be a program name with args.
-set dummy menhir; ac_word=$2
+  # Extract the first word of ""${MENHIR}"", so it can be a program name with args.
+set dummy "${MENHIR}"; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
 $as_echo_n "checking for $ac_word... " >&6; }
 if ${ac_cv_path_ac_pt_MENHIR+:} false; then :
@@ -12371,10 +12391,14 @@ fi
       PYTHON="$with_PYTHON"
 
 
+else
+      PYTHON="python"
+
+
 fi
 
     if test "x$with_PYTHON" != xno; then :
-        if test "xpython" = xpkg-config -a "xPYTHON" = xPKG_CONFIG; then :
+        if test "x"${PYTHON}"" = xpkg-config -a "xPYTHON" = xPKG_CONFIG; then :
 
 
 if test "x$ac_cv_env_PKG_CONFIG_set" != "xset"; then
@@ -12492,7 +12516,7 @@ $as_echo "no" >&6; }
 
 fi
 
-elif test "xpython" = xocamllex -a "xPYTHON" = xOCAMLLEX; then :
+elif test "x"${PYTHON}"" = xocamllex -a "xPYTHON" = xOCAMLLEX; then :
         # checking for ocamllex
   if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}ocamllex", so it can be a program name with args.
@@ -12698,7 +12722,7 @@ fi
 
 
 
-elif test "xpython" = xocamlyacc -a "xPYTHON" = xOCAMLYACC; then :
+elif test "x"${PYTHON}"" = xocamlyacc -a "xPYTHON" = xOCAMLYACC; then :
         if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}ocamlyacc", so it can be a program name with args.
 set dummy ${ac_tool_prefix}ocamlyacc; ac_word=$2
@@ -12802,8 +12826,8 @@ fi
 
 else
       if test -n "$ac_tool_prefix"; then
-  # Extract the first word of "${ac_tool_prefix}python", so it can be a program name with args.
-set dummy ${ac_tool_prefix}python; ac_word=$2
+  # Extract the first word of "${ac_tool_prefix}"${PYTHON}"", so it can be a program name with args.
+set dummy ${ac_tool_prefix}"${PYTHON}"; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
 $as_echo_n "checking for $ac_word... " >&6; }
 if ${ac_cv_path_PYTHON+:} false; then :
@@ -12845,8 +12869,8 @@ fi
 fi
 if test -z "$ac_cv_path_PYTHON"; then
   ac_pt_PYTHON=$PYTHON
-  # Extract the first word of "python", so it can be a program name with args.
-set dummy python; ac_word=$2
+  # Extract the first word of ""${PYTHON}"", so it can be a program name with args.
+set dummy "${PYTHON}"; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
 $as_echo_n "checking for $ac_word... " >&6; }
 if ${ac_cv_path_ac_pt_PYTHON+:} false; then :
@@ -13458,9 +13482,9 @@ fi
 
 
     if test "x$PYTHON" = xno -a -n "$with_python" -a "x$with_python" != xyes; then :
-        { $as_echo "$as_me:${as_lineno-$LINENO}:  is not a found as tool, therefore interpreted as version" >&5
-$as_echo "$as_me:  is not a found as tool, therefore interpreted as version" >&6;}
-      PYVER=""
+        { $as_echo "$as_me:${as_lineno-$LINENO}: $with_python is not a found as tool, therefore interpreted as version" >&5
+$as_echo "$as_me: $with_python is not a found as tool, therefore interpreted as version" >&6;}
+      PYVER="$with_python"
 
 
 fi
@@ -14191,10 +14215,14 @@ fi
       PDFLATEX="$with_PDFLATEX"
 
 
+else
+      PDFLATEX="pdflatex"
+
+
 fi
 
     if test "x$with_PDFLATEX" != xno; then :
-        if test "xpdflatex" = xpkg-config -a "xPDFLATEX" = xPKG_CONFIG; then :
+        if test "x"${PDFLATEX}"" = xpkg-config -a "xPDFLATEX" = xPKG_CONFIG; then :
 
 
 if test "x$ac_cv_env_PKG_CONFIG_set" != "xset"; then
@@ -14312,7 +14340,7 @@ $as_echo "no" >&6; }
 
 fi
 
-elif test "xpdflatex" = xocamllex -a "xPDFLATEX" = xOCAMLLEX; then :
+elif test "x"${PDFLATEX}"" = xocamllex -a "xPDFLATEX" = xOCAMLLEX; then :
         # checking for ocamllex
   if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}ocamllex", so it can be a program name with args.
@@ -14518,7 +14546,7 @@ fi
 
 
 
-elif test "xpdflatex" = xocamlyacc -a "xPDFLATEX" = xOCAMLYACC; then :
+elif test "x"${PDFLATEX}"" = xocamlyacc -a "xPDFLATEX" = xOCAMLYACC; then :
         if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}ocamlyacc", so it can be a program name with args.
 set dummy ${ac_tool_prefix}ocamlyacc; ac_word=$2
@@ -14622,8 +14650,8 @@ fi
 
 else
       if test -n "$ac_tool_prefix"; then
-  # Extract the first word of "${ac_tool_prefix}pdflatex", so it can be a program name with args.
-set dummy ${ac_tool_prefix}pdflatex; ac_word=$2
+  # Extract the first word of "${ac_tool_prefix}"${PDFLATEX}"", so it can be a program name with args.
+set dummy ${ac_tool_prefix}"${PDFLATEX}"; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
 $as_echo_n "checking for $ac_word... " >&6; }
 if ${ac_cv_path_PDFLATEX+:} false; then :
@@ -14665,8 +14693,8 @@ fi
 fi
 if test -z "$ac_cv_path_PDFLATEX"; then
   ac_pt_PDFLATEX=$PDFLATEX
-  # Extract the first word of "pdflatex", so it can be a program name with args.
-set dummy pdflatex; ac_word=$2
+  # Extract the first word of ""${PDFLATEX}"", so it can be a program name with args.
+set dummy "${PDFLATEX}"; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
 $as_echo_n "checking for $ac_word... " >&6; }
 if ${ac_cv_path_ac_pt_PDFLATEX+:} false; then :
