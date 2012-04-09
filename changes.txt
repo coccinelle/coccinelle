@@ -95,6 +95,19 @@
 - Slightly better error message in the case of inconsistent paths
 - Improve limited size caching
 - Remove #ifdefs when everything else is removed
+- Mac OSX compatibility (tested on OSX Lion)
+- 'Make depend' is called automatically when starting from a cleaned source
+- Configure flag --enable-release makes 'make' build the optimized version of
+  coccinelle if possible.
+- The installed 'bin/spatch' calls spatch.opt or spatch with default parameters
+  for iso/headers/python. 'bin/spatch.opt' and 'bin/spatch.byte'
+- The bundled packages are now in the 'bundles' subdirectory and in the
+  form of their original tarballs. These are extracted and used on-demand.
+- Compatibility with python 2 and python 3
+- Dropped the dependency on Perl in the Makefiles
+- The configure script uses pkg-config and ocaml findlib and provides many
+  flags for tuning/overriding the build process (including the ocaml
+  compiler and the C compiler and preprocessor).
 - Add line number directives to the .ml file generated from a .cocci file
 
 ** Bugfix:

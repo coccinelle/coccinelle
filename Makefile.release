@@ -64,14 +64,14 @@ endif
 # unpushed changes. However, that is probably something you should
 # not do in the first place.
 
-prerelease: Makefile.config
+prerelease:
 	@echo "pulling changes from the repository"
 	$(GIT) pull --rebase
 	$(MAKE) fix-expected
 	$(MAKE) distclean KEEP_CONFIG=1
 	@echo "\n\tEdit ./version"
 	@echo "\tCommit with 'make release'\n"
-	@echo "\tYou can skip the actual commit using 'GIT=echo make release'"
+	@echo "\t(if you don't want to change the repo, use 'GIT=echo make release' instead)"
 
 fix-expected:
 	@echo "going to generate: tests/SCORE_expected_orig.sexp"

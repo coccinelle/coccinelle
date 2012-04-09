@@ -440,10 +440,8 @@ test: $(TARGET)
 testparsing:
 	./$(TARGET) -D standard.h -parse_c -dir tests/
 
-check:
-	./$(TARGET) --testall --no-update-score-file \
-		--iso-file ./standard.iso \
-		--macro-file-builtins ./standard.h
+check: scripts/spatch
+	COCCINELLE_HOME="$$(pwd)" ./scripts/spatch --testall --no-update-score-file
 
 
 # -inline 0  to see all the functions in the profile.
