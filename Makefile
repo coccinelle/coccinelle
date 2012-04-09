@@ -349,7 +349,7 @@ install-python:
 	$(INSTALL_DATA) python/coccilib/coccigui/pygui.gladep \
 		$(DESTDIR)$(SHAREDIR)/python/coccilib/coccigui
 
-install: install-man install-common $(PYTHON_TARGET)
+install: install-man install-common $(PYTHON_INSTALL_TARGET)
 	@if test -x spatch -o -x spatch.opt; then \
 		$(MAKE) install-def;fi
 	@if test -x spatch ; then \
