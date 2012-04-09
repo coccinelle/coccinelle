@@ -1,3 +1,9 @@
+coccinelle (1.0.0-rc12~1004npalix1) lucid; urgency=low
+
+  * New release 1.0.0-rc12
+
+ -- Nicolas Palix <nicolas.palix@gmail.com>  Tue, 10 Apr 2012 00:37:50 +0200
+
 coccinelle (1.0.0-rc11~1004npalix1) lucid; urgency=low
 
   * New release 1.0.0-rc11
