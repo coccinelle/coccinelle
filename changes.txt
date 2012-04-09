@@ -95,6 +95,7 @@
 - Slightly better error message in the case of inconsistent paths
 - Improve limited size caching
 - Remove #ifdefs when everything else is removed
+- Add line number directives to the .ml file generated from a .cocci file
 
 ** Bugfix:
 - Corrected parsing of script strings delimited by a single quote.  Thanks

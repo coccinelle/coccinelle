@@ -1632,11 +1632,11 @@ let parse_iso_files existing_isos iso_files extra_path =
     List.fold_left
       (function (prev,names) ->
 	function file ->
-	  Lexer_cocci.init ();
 	  let file =
 	    match file with
 	      Common.Left(fl)  -> Filename.concat extra_path fl
 	    | Common.Right(fl) -> Filename.concat Config.path fl in
+	  Lexer_cocci.init ();
 	  let current = parse_iso file in
 	  let new_names = get_names current in
 	  if List.exists (function x -> List.mem x names) new_names
@@ -1681,7 +1681,7 @@ let eval_depend dep virt =
   loop dep
 
 let parse file =
-  Lexer_cocci.init();
+  Lexer_cocci.init ();
   let rec parse_loop file =
   Lexer_cocci.include_init ();
   let table = Common.full_charpos_to_pos file in
@@ -1827,6 +1827,8 @@ let parse file =
 		failwith "Malformed script rule" in
 
           let parse_script_rule name language old_metas deps =
+	    Lexer_script.file := file;
+	    Lexer_script.language := language;
             let get_tokens = tokens_script_all table file false lexbuf in
 
               (* meta-variables *)

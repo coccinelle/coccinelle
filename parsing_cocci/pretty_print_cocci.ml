@@ -874,6 +874,9 @@ let script_header str lang deps code =
   force_newline();
   print_string "@@";
   force_newline();
+  let code =
+    String.concat "\n"
+      (Str.split (Str.regexp "[\n\r\011\012]#.*[\n\r\011\012]") code) in
   print_string code;
   force_newline()
 
