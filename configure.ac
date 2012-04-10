@@ -360,22 +360,26 @@ dnl  the bytecode version and the optimized version
 dnl  of coccinelle.
 dnl
 
+AC_SUBST([MAKETARGET_SPATCH],[opt-only])  dnl  default target for a release build
 AC_ARG_ENABLE([release], [AS_HELP_STRING([--enable-release], [build with a release configuration (yes,no, default: no)])])
 
 AS_IF([test "x$OCAMLOPT" = xno],
 [dnl
-  AS_IF([test "x$enable_release" = xyes],
-  [dnl
-    AC_MSG_ERROR([a release build is requested, but ocamlopt is not available])
-  ])
+  AC_SUBST([MAKETARGET_SPATCH],[byte-only])
 
-  AC_SUBST([enable_release],[no])
+  AS_IF([test -n "$enable_release" -a "x$enable_release" != xyes -a "x$enable_release" != xno],
+  [dnl
+    AC_MSG_NOTICE([warning: ensure that make target $enable_release does not depend on the unavailable ocamlopt])
+  ],
+  [dnl
+    AC_MSG_NOTICE([only the bytecode version of spatch will be enabled for release builds because ocamlopt is absent])
+  ])
 ])
 
-AS_IF([test "x$OCAMLVERSION" = x3.11.2 -a "x$enable_release" != xyes],
+AS_IF([test "x$OCAMLVERSION" = x3.11.2],
 [dnl  the optimized version may not be buildable with ocaml 3.11.2 (know bug), hence disable it by default
-  AC_MSG_NOTICE([the optimized version of coccinelle will not be build by default due to OCaml version $OCAMLVERSION and --enable-build-all is not given to override this decision])
-  AC_SUBST([enable_release],[no])
+  AC_MSG_NOTICE([the optimized version of coccinelle will not be build by default due to OCaml version $OCAMLVERSION])
+  AC_SUBST([MAKETARGET_SPATCH],[byte-only])
 ])
 
 AS_IF([test -z "$enable_release"],
@@ -396,7 +400,7 @@ AS_IF([test "x$enable_release" = xyes],
 ])
 
 dnl  which spatch will be constructed
-AS_IF([test "x$enable_release" != xno],[SPATCHNAME=spatch.opt],[SPATCHNAME=spatch])
+AS_IF([test "x$enable_release" = xyes],[SPATCHNAME=spatch.opt],[SPATCHNAME=spatch])
 
 
 dnl

@@ -140,7 +140,7 @@ all-dev: Makefile.config .depend version.ml
 
 all-release: Makefile.config .depend version.ml
 	@echo building the optimized version of spatch
-	$(MAKE) opt-compil
+	$(MAKE) $(TARGET_SPATCH)
 	$(MAKE) preinstall
 	$(MAKE) docs
 	@echo ""
@@ -222,8 +222,8 @@ clean distclean::
 configure:
 	./configure
 
-Makefile.config:
-	@echo "Makefile.config is missing. Run ./configure to generate it."
+Makefile.config: Makefile.config.in
+	@echo "Makefile.config needs to be (re)build. Run ./configure to generate it."
 	@false
 
 tools: $(LIBS) $(LNKLIBS)

@@ -629,6 +629,7 @@ ac_subst_vars='LTLIBOBJS
 LIBOBJS
 MAKETARGET_ALL
 enable_release
+MAKETARGET_SPATCH
 SUBSTITUTED_PDFLATEX
 with_PDFLATEX
 PDFLATEX
@@ -15313,27 +15314,33 @@ fi
 
 
 
-# Check whether --enable-release was given.
+MAKETARGET_SPATCH=opt-only
+  # Check whether --enable-release was given.
 if test "${enable_release+set}" = set; then :
   enableval=$enable_release;
 fi
 
 
 if test "x$OCAMLOPT" = xno; then :
-    if test "x$enable_release" = xyes; then :
-      as_fn_error $? "a release build is requested, but ocamlopt is not available" "$LINENO" 5
+    MAKETARGET_SPATCH=byte-only
+
+
+  if test -n "$enable_release" -a "x$enable_release" != xyes -a "x$enable_release" != xno; then :
+      { $as_echo "$as_me:${as_lineno-$LINENO}: warning: ensure that make target $enable_release does not depend on the unavailable ocamlopt" >&5
+$as_echo "$as_me: warning: ensure that make target $enable_release does not depend on the unavailable ocamlopt" >&6;}
+
+else
+      { $as_echo "$as_me:${as_lineno-$LINENO}: only the bytecode version of spatch will be enabled for release builds because ocamlopt is absent" >&5
+$as_echo "$as_me: only the bytecode version of spatch will be enabled for release builds because ocamlopt is absent" >&6;}
 
 fi
 
-  enable_release=no
-
-
 fi
 
-if test "x$OCAMLVERSION" = x3.11.2 -a "x$enable_release" != xyes; then :
-    { $as_echo "$as_me:${as_lineno-$LINENO}: the optimized version of coccinelle will not be build by default due to OCaml version $OCAMLVERSION and --enable-build-all is not given to override this decision" >&5
-$as_echo "$as_me: the optimized version of coccinelle will not be build by default due to OCaml version $OCAMLVERSION and --enable-build-all is not given to override this decision" >&6;}
-  enable_release=no
+if test "x$OCAMLVERSION" = x3.11.2; then :
+    { $as_echo "$as_me:${as_lineno-$LINENO}: the optimized version of coccinelle will not be build by default due to OCaml version $OCAMLVERSION" >&5
+$as_echo "$as_me: the optimized version of coccinelle will not be build by default due to OCaml version $OCAMLVERSION" >&6;}
+  MAKETARGET_SPATCH=byte-only
 
 
 fi
@@ -15360,7 +15367,7 @@ else
 
 fi
 
-if test "x$enable_release" != xno; then :
+if test "x$enable_release" = xyes; then :
   SPATCHNAME=spatch.opt
 else
   SPATCHNAME=spatch
