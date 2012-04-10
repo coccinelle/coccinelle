@@ -1,18 +1,33 @@
+# !! This Makefile is OUTDATED
+# It shows how to incorporate
+# Debian's pycaml source package
+# into coccinelle. Howver, at the
+# time of writing, that source
+# package does not work for new
+# python versions. Hence, we switched
+# to another version.
+#
+# If in the future the pycaml
+# package in Debian is upgraded,
+# it may be worth switching to it
+# again.
+
 ifneq ($(MAKECMDGOALS),distclean)
 include ../../Makefile.config
 endif
 
-PYCAMLDIR=chemoelectric-pycaml-8614105
-PYCAMLFILE=$(PYCAMLDIR).tar.gz
-PYCAMLMARKER=$(PYCAMLDIR)/.marker
+PYCAMLFILE=pycaml_0.82.orig.tar.gz
+DEBIANFILE=pycaml_0.82-14.debian.tar.gz
 
-export PYMAJOR=$(shell echo ${PYTHON_VERSION} | sed -e 's/\..*//')
+PYCAMLDIR=pycaml
+PYCAMLMARKER=$(PYCAMLDIR)/.marker
+DEBIANDIR=debian
+DEBIANMARKER=$(DEBIANDIR)/.marker
+
 SHARE_FLAGS=-shared -fpic
-OCAMLFLAGS = -pp "camlp4o -parser Camlp4MacroParser -D PYMAJOR${PYMAJOR}"
-OCAMLC_CMD=$(OCAMLC) $(OCAMLFLAGS) -thread -ccopt "${PYTHON_CFLAGS}" -cclib "${PYTHON_LIBS}" -cc "${CC} ${CFLAGS} ${SHARE_FLAGS}" -I $(PYCAMLDIR)
-OCAMLOPT_CMD=$(OCAMLOPT) $(OCAMLFLAGS) -thread -ccopt "${PYTHON_CFLAGS}" -cclib "${PYTHON_LIBS}" -I $(PYCAMLDIR)
+OCAMLC_CMD=$(OCAMLC) -thread -ccopt "${PYTHON_CFLAGS}" -cclib "${PYTHON_LIBS}" -cc "${CC} ${CFLAGS} ${SHARE_FLAGS}" -I $(PYCAMLDIR)
+OCAMLOPT_CMD=$(OCAMLOPT) -thread -ccopt "${PYTHON_CFLAGS}" -cclib "${PYTHON_LIBS}" -I $(PYCAMLDIR)
 OCAMLMKLIB_CMD=$(OCAMLMKLIB)
-OCAMLDEP_CMD=$(OCAMLDEP) $(OCAMLFLAGS)
 
 
 all: depend pycaml.cmi pycaml.cma
@@ -30,10 +45,10 @@ $(PYCAMLDIR)/pycaml.cmi: $(PYCAMLDIR)/pycaml.mli
 pycaml.cmi: $(PYCAMLDIR)/pycaml.cmi
 	cp $< $@
 
-pycaml_stubs.o: $(PYCAMLDIR)/pycaml_stubs.c
+pycaml_ml.o: $(PYCAMLDIR)/pycaml_ml.c
 	$(OCAMLC_CMD) $< -o $@
 
-dllpycaml_stubs.so: pycaml_stubs.o
+dllpycaml_stubs.so: pycaml_ml.o
 	$(OCAMLMKLIB_CMD) -o pycaml_stubs $<
 
 pycaml.cma: dllpycaml_stubs.so pycaml.cmi $(PYCAMLDIR)/pycaml.cmo
@@ -49,7 +64,7 @@ pycaml.cmxa: dllpycaml_stubs.so $(PYCAMLDIR)/pycaml.cmx
 
 clean:
 	rm -f $(PYCAMLDIR)/pycaml.mli pycaml.cm[aixo] $(PYCAMLDIR)/pycaml.cm[aixo] \
-		pycaml.[ao] libpycaml_stubs.a pycaml_stubs.o dllpycaml_stubs.so \
+		pycaml.[ao] libpycaml_stubs.a dllpycaml_stubs.o dllpycaml_stubs.so \
 		pycaml_ml.o pycaml.cmxa
 
 distclean: clean
@@ -57,13 +72,21 @@ distclean: clean
 
 
 # construct the directories
-depend: $(PYCAMLMARKER)
+depend: $(PYCAMLMARKER) $(DEBIANMARKER)
 
-$(PYCAMLMARKER): $(PYCAMLFILE)
+$(PYCAMLMARKER): $(PYCAMLFILE) $(DEBIANMARKER)
 	$(TAR) xfvz $<
-	$(PATCH) -d "${PYCAMLDIR}" -p1 < ./python3-compat-fix.patch
+	set -e; for PATCH in $(shell cat debian/patches/series); do $(PATCH) -d "${PYCAMLDIR}" -p1 < "./debian/patches/$${PATCH}"; done
 	touch $@
 
 $(PYCAMLFILE):
+	@echo "$@ not found. Please download it and drop it in this directory ($(pwd))."
+	@false
+
+$(DEBIANMARKER): $(DEBIANFILE)
+	$(TAR) xfvz $<
+	touch $@
+
+$(DEBIANFILE):
 	@echo "$@ not found. Please download it and drop it in this directory ($(pwd))."
 	@false

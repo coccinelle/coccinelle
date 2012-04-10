@@ -186,6 +186,10 @@ AC_DEFUN([AC_COCCI_PYVER],
   [dnl  PYVER set before
     AC_MSG_NOTICE([python version assumed to be $PYVER])
   ])
+
+  dnl  determine major version of pyver
+  AC_SUBST([PYVER_MAJOR],[${PYVER%%.*}])
+  AC_MSG_NOTICE([python major version: $PYVER_MAJOR])
 ])
 
 

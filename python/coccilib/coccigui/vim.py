@@ -97,7 +97,7 @@ class VimCallback(object):
         p = Project(self.svc.boss.cmd('buffer', 'get_current').directory)
         c = PythonCodeAssist(p)
         co = c.assist(buffer, offset).completions
-        print co
+        print(co)
         for comp in co:
             self.svc._com.add_completion(server, comp.name)
         # do this a few times

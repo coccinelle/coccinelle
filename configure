@@ -655,6 +655,7 @@ enable_python
 HAVE_PYTHON
 PYTHON_LIBS
 PYTHON_CFLAGS
+PYVER_MAJOR
 SUBSTITUTED_PYTHON
 with_PYTHON
 enable_pycaml
@@ -13509,6 +13510,11 @@ else
 $as_echo "$as_me: python version assumed to be $PYVER" >&6;}
 
 fi
+
+    PYVER_MAJOR=${PYVER%%.*}
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: python major version: $PYVER_MAJOR" >&5
+$as_echo "$as_me: python major version: $PYVER_MAJOR" >&6;}
 
 
   if test -z "$PYVER"; then :
