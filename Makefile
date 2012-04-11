@@ -117,7 +117,7 @@ BYTECODE_STATIC=-custom
 # In addition, the targets that actually build something have a dependency on
 # '.depend' and 'version.ml'.
 
-# dispatches to either 'all-without-opt' or 'all-with-opt'
+# dispatches to either 'all-dev' or 'all-release'
 all: Makefile.config .depend $(TARGET_ALL)
 
 # make "all" comes in three flavours
@@ -350,6 +350,8 @@ install-python:
 		$(DESTDIR)$(SHAREDIR)/python/coccilib/coccigui
 
 install: install-man install-common $(PYTHON_INSTALL_TARGET)
+	rm -f $(DESTDIR)$(SHAREDIR)/spatch
+	rm -f $(DESTDIR)$(SHAREDIR)/spatch.opt
 	@if test -x spatch -o -x spatch.opt; then \
 		$(MAKE) install-def;fi
 	@if test -x spatch ; then \

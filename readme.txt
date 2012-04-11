@@ -6,9 +6,12 @@ style-preserving source-to-source transformations on C source code,
 like for instance to perform some refactorings.
 
 To install Coccinelle from its source, see the instructions in install.txt.
-Once you have installed Coccinelle (either from the source or from one
-of the binary form available on the Coccinelle website), You may have
-to setup a few environment variables so that the Coccinelle program
+Once you have installed coccinelle, there is a script 'spatch' in /usr/bin
+or /usr/local/bin that invokes the Coccinelle program.
+
+If you want to run Coccinelle without installing it, you can run the
+Coccinelle program directly from the download/build directory. You may then
+have to setup a few environment variables so that the Coccinelle program
 knows where to find its configuration files.
 For bash do:
 
@@ -18,10 +21,12 @@ For tcsh do:
 
   $ source env.csh 
 
-You can then test coccinelle with:
+
+You can test coccinelle with:
 
   $ spatch -sp_file demos/simple.cocci demos/simple.c -o /tmp/new_simple.c
 
+If you haven't installed coccinelle, run then ./spatch or ./spatch.opt 
 
 
 
@@ -30,7 +35,6 @@ have to install OCaml (which contains the 'ocamlrun' bytecode interpreter,
 the equivalent of 'java', the Java virtual machine, but for OCaml) and then do:
 
   $ ocamlrun spatch -sp_file demos/simple.cocci demos/simple.c -o /tmp/new_simple.c
-
 
 
 For more information on Coccinelle, type 'make docs' and have a look at the 
