@@ -21,6 +21,9 @@ TAR=@TAR@
 PATCH=@PATCH@
 PDFLATEX=@PDFLATEX@
 
+# copy of the configure flags
+CONFIGURE_FLAGS=@CONFIGURE_FLAGS@
+
 # paths
 prefix=@prefix@
 exec_prefix=@exec_prefix@

@@ -118,11 +118,14 @@ BYTECODE_STATIC=-custom
 # '.depend' and 'version.ml'.
 
 # dispatches to either 'all-dev' or 'all-release'
-all: Makefile.config .depend $(TARGET_ALL)
+all: Makefile.config
+	$(MAKE) .depend
+	$(MAKE) $(TARGET_ALL)
 
 # make "all" comes in three flavours
-world: Makefile.config .depend version.ml
+world: Makefile.config version.ml
 	@echo "building both versions of spatch"
+	$(MAKE) .depend
 	$(MAKE) byte
 	$(MAKE) opt-compil
 	$(MAKE) preinstall
@@ -131,34 +134,41 @@ world: Makefile.config .depend version.ml
 	@echo -e "\tcoccinelle can now be installed via 'make install'"
 
 # note: the 'all-dev' target excludes the documentation
-all-dev: Makefile.config .depend version.ml
+all-dev: Makefile.config version.ml
+	$(MAKE) .depend
 	@echo "building the unoptimized version of spatch"
 	$(MAKE) byte
 	$(MAKE) preinstall
 	@echo ""
 	@echo -e "\tcoccinelle can now be installed via 'make install'"
 
-all-release: Makefile.config .depend version.ml
-	@echo building the optimized version of spatch
+all-release: Makefile.config version.ml
+	@echo building $(TARGET_SPATCH)
+	$(MAKE) .depend
 	$(MAKE) $(TARGET_SPATCH)
 	$(MAKE) preinstall
 	$(MAKE) docs
 	@echo ""
 	@echo -e "\tcoccinelle can now be installed via 'make install'"
 
-all.opt: Makefile.config opt-only preinstall
+all.opt: Makefile.config
+	$(MAKE) .depend
+	$(MAKE) opt-only
+	$(MAKE) preinstall
 
 # aliases for "byte" and "opt-compil"
 opt opt-only: Makefile.config opt-compil
 byte-only: Makefile.config byte
 
-byte: Makefile.config .depend version.ml
+byte: Makefile.config version.ml
+	$(MAKE) .depend
 	$(MAKE) subdirs.all
 	$(MAKE) $(EXEC)
 	@echo the compilation of $(EXEC) finished
 	@echo $(EXEC) can be installed or used
 
-opt-compil: Makefile.config .depend version.ml
+opt-compil: Makefile.config version.ml
+	$(MAKE) .depend
 	$(MAKE) subdirs.opt
 	$(MAKE) $(EXEC).opt
 	@echo the compilation of $(EXEC).opt finished
@@ -194,7 +204,7 @@ $(MAKESUBDIRS:%=%.opt):
 # python:pycaml parsing_cocci parsing_c
 
 clean:: Makefile.config
-	set -e; for i in $(CLEANSUBDIRS); do $(MAKE) -C $$i -j1 $@; done
+	set -e; for i in $(CLEANSUBDIRS); do $(MAKE) -C $$i $@; done
 	$(MAKE) -C demos/spp $@
 
 $(LIBS): $(MAKESUBDIRS:%=%.all)
@@ -220,10 +230,12 @@ clean distclean::
 .PHONY:: tools configure
 
 configure:
-	./configure
+	./configure $(CONFIGURE_FLAGS)
 
-Makefile.config: Makefile.config.in
-	@echo "Makefile.config needs to be (re)build. Run ./configure to generate it."
+# the dependencies on Makefile.config should give a hint to the programmer that
+# configure should be run again
+Makefile.config: Makefile.config.in configure.ac
+	@echo "Makefile.config needs to be (re)build. Run  ./configure $(CONFIGURE_FLAGS) to generate it."
 	@false
 
 tools: $(LIBS) $(LNKLIBS)
@@ -496,7 +508,7 @@ clean distclean::
 	rm -f *~ .*~ *.exe #*#
 
 distclean::
-	set -e; for i in $(CLEANSUBDIRS); do $(MAKE) -C $$i -j1 $@; done
+	set -e; for i in $(CLEANSUBDIRS); do $(MAKE) -C $$i $@; done
 	rm -f test.ml
 	rm -f TAGS
 	rm -f tests/SCORE_actual.sexp
@@ -512,7 +524,7 @@ distclean::
 depend: Makefile.config test.ml version
 	@echo constructing '.depend'
 	rm -f .depend
-	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -j1 -C $$i depend; done
+	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i depend; done
 	$(OCAMLDEP_CMD) *.mli *.ml > .depend
 
 ##############################################################################
