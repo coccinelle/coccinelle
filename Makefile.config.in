@@ -106,6 +106,7 @@ PCREDIR=@PATH_pcre@
 PYCAMLDIR=@PATH_pycaml@
 MENHIRDIR=@PATH_menhirLib@
 SEXPDIR=@PATH_sexplib@
+EXTLIBDIR=@PATH_extlib@
 
 # selected ocaml modules
 PYCOCCI_FILE=@PYCOCCI_FILE@

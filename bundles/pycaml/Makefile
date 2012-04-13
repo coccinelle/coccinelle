@@ -15,7 +15,9 @@ OCAMLMKLIB_CMD=$(OCAMLMKLIB)
 OCAMLDEP_CMD=$(OCAMLDEP) $(OCAMLFLAGS)
 
 
-all: depend pycaml.cmi pycaml.cma
+all: $(PYCAMLMARKER)
+	$(MAKE) all-build
+all-build: $(PYCAMLMARKER) pycaml.cmi pycaml.cma
 
 $(PYCAMLDIR)/pycaml.mli: $(PYCAMLDIR)/pycaml.ml
 	$(OCAMLC_CMD) -i $< > $(PYCAMLDIR)/pycaml.mli
@@ -26,9 +28,9 @@ $(PYCAMLDIR)/pycaml.cmo: $(PYCAMLDIR)/pycaml.ml $(PYCAMLDIR)/pycaml.cmi
 $(PYCAMLDIR)/pycaml.cmi: $(PYCAMLDIR)/pycaml.mli
 	$(OCAMLC_CMD) -c $< -o $@
 
-# local copy of the interface
+# the cmi file apparently needs to be present next to the cma file
 pycaml.cmi: $(PYCAMLDIR)/pycaml.cmi
-	cp $< $@
+	cp -f $< $@
 
 pycaml_stubs.o: $(PYCAMLDIR)/pycaml_stubs.c
 	$(OCAMLC_CMD) $< -o $@
@@ -36,16 +38,18 @@ pycaml_stubs.o: $(PYCAMLDIR)/pycaml_stubs.c
 dllpycaml_stubs.so: pycaml_stubs.o
 	$(OCAMLMKLIB_CMD) -o pycaml_stubs $<
 
-pycaml.cma: dllpycaml_stubs.so pycaml.cmi $(PYCAMLDIR)/pycaml.cmo
-	$(OCAMLC_CMD) -a -custom -linkall -o pycaml.cma pycaml.cmo -dllib -lpycaml_stubs
+pycaml.cma: dllpycaml_stubs.so $(PYCAMLDIR)/pycaml.cmi $(PYCAMLDIR)/pycaml.cmo
+	$(OCAMLC_CMD) -I $(PYCAMLDIR) -a -custom -linkall -o pycaml.cma pycaml.cmo -dllib -lpycaml_stubs
 
-all.opt: depend pycaml.cmi pycaml.cmxa
+all.opt: $(PYCAMLMARKER)
+	$(MAKE) all-opt-build
+all-opt-build: $(PYCAMLMARKER) pycaml.cmi pycaml.cmxa
 
 $(PYCAMLDIR)/pycaml.cmx: $(PYCAMLDIR)/pycaml.ml $(PYCAMLDIR)/pycaml.cmi
 	$(OCAMLOPT_CMD) -c $<
 
 pycaml.cmxa: dllpycaml_stubs.so $(PYCAMLDIR)/pycaml.cmx
-	$(OCAMLOPT_CMD) -a -o pycaml.cmxa pycaml.cmx -cclib -lpycaml_stubs
+	$(OCAMLOPT_CMD) -I $(PYCAMLDIR) -a -o pycaml.cmxa pycaml.cmx -cclib -lpycaml_stubs
 
 clean:
 	rm -f $(PYCAMLDIR)/pycaml.mli pycaml.cm[aixo] $(PYCAMLDIR)/pycaml.cm[aixo] \
@@ -53,8 +57,9 @@ clean:
 		pycaml_ml.o pycaml.cmxa
 
 distclean: clean
-	rm -rf $(PYCAMLDIR) $(DEBIANDIR)
+	rm -rf $(PYCAMLDIR)
 
+.PHONEY: all all.opt all-build all-opt-build distclean clean depend
 
 # construct the directories
 depend: $(PYCAMLMARKER)

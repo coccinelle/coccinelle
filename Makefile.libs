@@ -15,24 +15,24 @@
 
 
 # pycaml library
-LOCAL_pycaml     = pycaml.cma
-LOCALOPT_pycaml  = pycaml.cmxa
-GLOBAL_pycaml    = pycaml.cma
-GLOBALOPT_pycaml = pycaml.cmxa
+LOCAL_pycaml     = $(PYCAMLDIR)/pycaml.cma
+LOCALOPT_pycaml  = $(PYCAMLDIR)/pycaml.cmxa
+GLOBAL_pycaml    = $(PYCAMLDIR)/pycaml.cma
+GLOBALOPT_pycaml = $(PYCAMLDIR)/pycaml.cmxa
 FLAGS_pycaml     = -cclib -lpycaml_stubs -cclib "${PYTHON_LIBS}"
 
 # sexplib library
-LOCAL_sexplib     = sexplib.cmo
-LOCALOPT_sexplib  = sexplib.cmx
-GLOBAL_sexplib    = sexplib.cma
-GLOBALOPT_sexplib = sexplib.cmxa
+LOCAL_sexplib     = $(SEXPDIR)/sexplib.cmo
+LOCALOPT_sexplib  = $(SEXPDIR)/sexplib.cmx
+GLOBAL_sexplib    = $(SEXPDIR)/sexplib.cma
+GLOBALOPT_sexplib = $(SEXPDIR)/sexplib.cmxa
 FLAGS_sexplib     =
 
 # pcre library
-LOCAL_pcre     = pcre.cmo
-LOCALOPT_pcre  = pcre.cmx
-GLOBAL_pcre    = pcre.cma
-GLOBALOPT_pcre = pcre.cmxa
+LOCAL_pcre     = $(PCREDIR)/pcre.cmo
+LOCALOPT_pcre  = $(PCREDIR)/pcre.cmx
+GLOBAL_pcre    = $(PCREDIR)/pcre.cma
+GLOBALOPT_pcre = $(PCREDIR)/pcre.cmxa
 FLAGS_pcre     = -cclib -lpcre_stubs -cclib "${PCRE_LIBS}"
 
 # dynlink library
@@ -42,10 +42,10 @@ GLOBAL_dynlink    = dynlink.cma
 GLOBALOPT_dynlink = dynlink.cmxa
 
 # extlib library
-LOCAL_extlib     = extLib.cma
-LOCALOPT_extlib  = extLib.cmxa
-GLOBAL_extlib    = extLib.cma
-GLOBALOPT_extlib = extLib.cmxa
+LOCAL_extlib     = $(EXTLIBDIR)/extLib.cma
+LOCALOPT_extlib  = $(EXTLIBDIR)/extLib.cmxa
+GLOBAL_extlib    = $(EXTLIBDIR)/extLib.cma
+GLOBALOPT_extlib = $(EXTLIBDIR)/extLib.cmxa
 FLAGS_extlib     =
 
 # type conv library

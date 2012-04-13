@@ -185,10 +185,10 @@ subdirs.opt:
 	$(MAKE) -C commons sexp.opt OPTFLAGS="$(OPTFLAGS)"
 
 $(MAKESUBDIRS:%=%.all):
-	$(MAKE) -C $(@:%.all=%) -j1 OCAMLCFLAGS="$(OCAMLCFLAGS)" all
+	$(MAKE) -C $(@:%.all=%) OCAMLCFLAGS="$(OCAMLCFLAGS)" all
 
 $(MAKESUBDIRS:%=%.opt):
-	$(MAKE) -C $(@:%.opt=%) -j1 OPTFLAGS="$(OPTFLAGS)" all.opt
+	$(MAKE) -C $(@:%.opt=%) OPTFLAGS="$(OPTFLAGS)" all.opt
 
 #dependencies:
 # commons:
