@@ -96,8 +96,8 @@ OCAMLDEP_CMD=$(OCAMLDEP) $(INCLUDEDIRSDEP:%=-I %)
 OCAMLMKTOP_CMD=$(OCAMLMKTOP) -g -custom $(INCLUDES)
 
 # can also be set via 'make static'
-CFLAGS=-pie -fPIE -fpic -fPIC -static
-STATICCFLAGS=$(CFLAGS:%=-ccopt %)
+EXTRACFLAGS=-pie -fPIE -fpic -fPIC -static
+STATICCFLAGS=$(EXTRACFLAGS:%=-ccopt %)
 STATIC= # $(STATICCFLAGS)
 
 # can also be unset via 'make purebytecode'
