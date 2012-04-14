@@ -1882,6 +1882,8 @@ let parse file =
 	     [],tokens) in
 
           let parse_if_script_rule k name language _ deps =
+	    Lexer_script.file := file;
+	    Lexer_script.language := language;
             let get_tokens = tokens_script_all table file false lexbuf in
 
               (* script code *)
