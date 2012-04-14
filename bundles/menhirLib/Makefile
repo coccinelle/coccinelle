@@ -18,8 +18,13 @@ OCAMLC_CMD=$(OCAMLC) $(OCAMLCFLAGS) -I $(MENHIRLIB) -thread -custom
 OCAMLOPT_CMD=$(OCAMLOPT) $(OPTFLAGS) -I $(MENHIRLIB) -thread
 OCAMLDEP_CMD=$(OCAMLDEP) -I $(MENHIRLIB)
 
-all: menhirLib.cma META
-all.opt: menhirLib.cmxa META
+all: .depend
+	$(MAKE) all-build
+all-build: .depend menhirLib.cma META
+
+all.opt: .depend
+	$(MAKE) all-opt-build
+all-opt-build: .depend menhirLib.cmxa META
 
 clean:
 	rm -f menhirLib.cma menhirLib.cmxa META \
@@ -40,7 +45,7 @@ $(MENHIRDIR).tar.gz:
 	@echo "$@ not found. Please download it and drop it in this directory ($(pwd))."
 	@false
 
-.PHONEY: all all.opt clean distclean depend
+.PHONEY: all all.opt all-build all-opt-build clean distclean depend depend-build
 
 # Sources needed for coccinelle
 MODULES=infiniteArray packedIntArray rowDisplacement engineTypes \
@@ -63,7 +68,7 @@ menhirLib.cmxa: .depend $(MLI:.mli=.cmi) $(SRC:.ml=.cmx)
 .PRECIOUS: $(MLI)
 
 .ml.mli:
-	$(OCAMLC_CMD) -i $< > $@
+	$(OCAMLC_CMD) -for-pack MenhirLib -i $< > $@
 
 .mli.cmi:
 	$(OCAMLC_CMD) -for-pack MenhirLib -c $<
@@ -79,10 +84,19 @@ META: $(MENHIRLIB)/META
 
 # the 'depend' target
 .depend depend: $(MENHIRMARKER)
+	$(MAKE) depend-build
+
+depend-build: $(MENHIRMARKER) $(SRC) $(MLI)
 	$(OCAMLDEP_CMD) $(MENHIRLIB)/*.mli $(MENHIRLIB)/*.ml > .depend
+
+# extra dependencies that are needed to generate mli files which
+# are needed for ocamldep
+$(MENHIRLIB)/tableFormat.mli: $(MENHIRLIB)/packedIntArray.cmi $(MENHIRLIB)/engineTypes.cmi
 
 ifneq ($(MAKECMDGOALS),clean)
 ifneq ($(MAKECMDGOALS),distclean)
--include .depend
+ifneq ($(MAKECMDGOALS),depend-build)
+include .depend
+endif
 endif
 endif

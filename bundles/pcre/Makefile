@@ -15,8 +15,12 @@ PCRE_DIR=pcre-ocaml-release-$(PCRE_VERSION)
 PCRE_LIB=$(PCRE_DIR)/lib
 PCRE_MARKER=$(PCRE_DIR)/.marker
 
-all: depend pcre.cma META
-all.opt: depend pcre.cmxa META
+all: $(PCRE_MARKER)
+	$(MAKE) all-build
+all-build: $(PCRE_MARKER) pcre.cma META
+all.opt: $(PCRE_MARKER)
+	$(MAKE) all-opt-build
+all-opt-build: $(PCRE_MARKER) pcre.cmxa META
 
 clean:
 	rm -f dllpcre_stubs.so libpcre_stubs.a pcre_stubs.o \
@@ -28,7 +32,7 @@ distclean: clean
 
 depend: $(PCRE_MARKER)
 
-.PHONEY: all all.opt clean distclean depend
+.PHONEY: all all.opt clean distclean depend all-build all-opt-build
 
 # prepare the pcre directory
 $(PCRE_MARKER): $(PCRE_DIR).tar.gz

@@ -13,8 +13,13 @@ VERSION=1.5.2
 EXTLIB=extlib-$(VERSION)
 EXTMARKER=$(EXTLIB)/.marker
 
-all: depend extLib.cma META
-all.opt: depend extLib.cmxa META
+all: $(EXTMARKER)
+	$(MAKE) all-build
+all-build: $(EXTMARKER) extLib.cma META
+
+all.opt: $(EXTMARKER)
+	$(MAKE) all-opt-build
+all-opt-build: $(EXTMARKER) extLib.cmxa META
 
 clean:
 	rm -f .depend META extLib.cm[ioxa] extLib.[ao] \
@@ -34,7 +39,7 @@ $(EXTLIB).tar.gz:
 	@echo "$@ not found. Please download it and drop it in this directory ($(pwd))."
 	@false
 
-.PHONEY: all all.opt clean distclean depend
+.PHONEY: all all.opt all-build all-opt-build clean distclean depend
 
 # SOURCES
 MODULES = \
