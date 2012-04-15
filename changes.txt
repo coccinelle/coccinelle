@@ -49,6 +49,8 @@
   suggesting this features.
 - Python code now receives expressions and identifiers as ordinary strings,
   not as elements of specific structures.
+- Allow size_t as the type of an array index in smpl code.  Reported by
+  Mansour Moufid.
 
 ** Features:
 - Preserve spacing before // comments when not at the beginning of a line

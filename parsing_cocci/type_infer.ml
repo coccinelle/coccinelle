@@ -103,6 +103,7 @@ let rec propagate_types env =
       T.BaseType(T.IntType)
     | T.BaseType(T.LongType)
     | T.BaseType(T.ShortType)
+    | T.BaseType(T.SizeType)
     | T.MetaType(_,_,_)
     | T.TypeName _
     | T.EnumName _
