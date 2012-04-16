@@ -10,13 +10,15 @@
 # the command line. The second line is the reply to
 # print to stdout. Variables ${BASH_REMATCH[i]} may be
 # used to match against capture groups.
-# (note: that would then only work when the interpreter
-# is bash)
 
 # the replies file assumes that the
 # libpcre and python libraries are installed, and
 # that none of the optional ocaml libraries are
 # installed.
+
+if test -n "${ZSH_VERSION}"; then
+  setopt BASH_REMATCH
+fi
 
 cmdline="$@"
 scriptdir=$(dirname "$BASH_SOURCE")
