@@ -23,6 +23,7 @@ PDFLATEX=@PDFLATEX@
 
 # copy of the configure flags
 CONFIGURE_FLAGS=@CONFIGURE_FLAGS@
+RELEASE_ENABLED=@enable_release@
 
 # paths
 prefix=@prefix@

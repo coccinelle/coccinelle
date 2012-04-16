@@ -90,7 +90,7 @@ BININCLUDES=-I ../ocamltarzan/lib-binprot -I ../../ocamltarzan/lib-binprot
 
 #backtrace
 MYBACKTRACESRC=backtrace.ml
-BACKTRACEINCLUDES=-I $(shell ocamlc -where)
+BACKTRACEINCLUDES=-I $(shell $(OCAMLC) -where)
 
 
 ##############################################################################
@@ -105,7 +105,8 @@ INCLUDES=$(INCLUDEDIRS:%=-I %) $(INCLUDESEXTRA)
 
 # This flag can also be used in subdirectories so don't change its name here.
 # For profiling use:  -p -inline 0
-OPTFLAGS=
+OCAMLCFLAGS ?= -g -dtypes
+OPTFLAGS ?= -g -dtypes
 #-thread
 
 # The OPTBIN variable is here to allow to use ocamlc.opt instead of
@@ -114,11 +115,9 @@ OPTFLAGS=
 # or setenv it to ".opt" in your startup script.
 OPTBIN ?= #.opt
 
-OCAMLCFLAGS ?= -g -dtypes
-
 # The OCaml tools.
-OCAMLC_CMD=$(OCAMLC) $(OCAMLCFLAGS) $(INCLUDES)
-OCAMLOPT_CMD=$(OCAMLOPT) $(OPTFLAGS) $(INCLUDES)
+OCAMLC_CMD=$(OCAMLC) -thread $(OCAMLCFLAGS) $(INCLUDES)
+OCAMLOPT_CMD=$(OCAMLOPT) -thread $(OPTFLAGS) $(INCLUDES)
 OCAMLDEP_CMD=$(OCAMLDEP) $(INCLUDES)
 OCAMLMKTOP_CMD=$(OCAMLMKTOP) -g -custom $(INCLUDES)
 

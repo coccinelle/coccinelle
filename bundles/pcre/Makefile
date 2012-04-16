@@ -5,10 +5,12 @@ ifneq ($(MAKECMDGOALS),distclean)
 include ../../Makefile.config
 endif
 
-SHARE_FLAGS=-shared -fpic
-OCAMLC_CMD=$(OCAMLC) -thread -ccopt "${PCRE_CFLAGS}" -cclib "${PCRE_LIBS}" -cc "${CC} ${CFLAGS} ${SHARE_FLAGS}"
-OCAMLOPT_CMD=$(OCAMLOPT) -thread -ccopt "${PCRE_CFLAGS}" -cclib "${PCRE_LIBS}"
-OCAMLMKLIB_CMD=$(OCAMLMKLIB)
+OCAMLCFLAGS ?= -g -dtypes
+OPTFLAGS ?= -g -dtypes
+
+OCAMLC_CMD=$(OCAMLC) $(OCAMLCFLAGS) -thread $(PCRE_CFLAGS:%=-ccopt %) $(PCRE_LIBS:%=-ccopt %) -cc "${CC} ${CFLAGS}"
+OCAMLOPT_CMD=$(OCAMLOPT) $(OPTFLAGS) -thread $(PCRE_CFLAGS:%=-ccopt %) $(PCRE_LIBS:%=-ccopt %)
+OCAMLMKLIB_CMD=$(OCAMLMKLIB) -custom
 
 PCRE_VERSION=6.2.5
 PCRE_DIR=pcre-ocaml-release-$(PCRE_VERSION)
@@ -16,10 +18,10 @@ PCRE_LIB=$(PCRE_DIR)/lib
 PCRE_MARKER=$(PCRE_DIR)/.marker
 
 all: $(PCRE_MARKER)
-	$(MAKE) all-build
+	@$(MAKE) all-build
 all-build: $(PCRE_MARKER) pcre.cma META
 all.opt: $(PCRE_MARKER)
-	$(MAKE) all-opt-build
+	@$(MAKE) all-opt-build
 all-opt-build: $(PCRE_MARKER) pcre.cmxa META
 
 clean:
@@ -51,20 +53,20 @@ pcre.cmi: $(PCRE_LIB)/pcre.mli
 pcre.cmo: $(PCRE_LIB)/pcre.ml pcre.cmi
 	$(OCAMLC_CMD) -c -o $@ $<
 
-pcre.cma: pcre.cmo dllpcre_stubs.so
-	$(OCAMLC_CMD) -a -custom -linkall -dllib -lpcre_stubs -o $@ $<
+pcre.cma: pcre.cmo libpcre_stubs.a
+	$(OCAMLC_CMD) -a -o $@ $<
 
 pcre.cmx: $(PCRE_LIB)/pcre.ml pcre.cmi
 	$(OCAMLOPT_CMD) -c -o $@ $<
 
-pcre.cmxa: pcre.cmx dllpcre_stubs.so
-	$(OCAMLOPT_CMD) -a -cclib -lpcre_stubs -o pcre.cmxa $<
+pcre.cmxa: pcre.cmx libpcre_stubs.a
+	$(OCAMLOPT_CMD) -a -o pcre.cmxa $<
 
 pcre_stubs.o: $(PCRE_LIB)/pcre_stubs.c
 	$(OCAMLC_CMD) $<
 
-dllpcre_stubs.so: pcre_stubs.o
-	$(OCAMLMKLIB_CMD) -o pcre_stubs $<
+libpcre_stubs.a: pcre_stubs.o
+	$(OCAMLMKLIB_CMD) -oc pcre_stubs $<
 
 META: $(PCRE_LIB)/META
 	cp "${PCRE_LIB}/META" ./META

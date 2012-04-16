@@ -10,6 +10,9 @@ endif
 ##############################################################################
 TARGET=coccipython
 
+OCAMLCFLAGS ?= -g -dtypes
+OPTFLAGS ?= -g -dtypes
+
 SOURCES= pycocci_aux.ml $(PYCOCCI_FILE) pycocci.ml
 
 INCLUDEDIRS_LOCAL = ../commons ../commons/ocamlextra ../globals \
@@ -32,9 +35,8 @@ INCLUDES_DEPEND=$(INCLUDEDIRS_LOCAL:%=-I %) $(INCLUDESEXTRA)
 ##############################################################################
 
 # The Caml compilers.
-OCAMLCFLAGS ?= -g -dtypes
-OCAMLC_CMD=$(OCAMLC) $(OCAMLCFLAGS) $(INCLUDES)
-OCAMLOPT_CMD=$(OCAMLOPT) $(OPTFLAGS) $(INCLUDES)
+OCAMLC_CMD=$(OCAMLC) -thread $(OCAMLCFLAGS) $(INCLUDES)
+OCAMLOPT_CMD=$(OCAMLOPT) -thread $(OPTFLAGS) $(INCLUDES)
 OCAMLDEP_CMD=$(OCAMLDEP) $(INCLUDES_DEPEND)
 OCAMLMKTOP_CMD=$(OCAMLMKTOP) -g -custom $(INCLUDES)
 

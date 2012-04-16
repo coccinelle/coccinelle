@@ -9,21 +9,24 @@ ifneq ($(MAKECMDGOALS),distclean)
 include ../../Makefile.config
 endif
 
+OCAMLCFLAGS ?= -g -dtypes
+OPTFLAGS ?= -g -dtypes
+
 VERSION=20120123
 MENHIRDIR=menhir-$(VERSION)
 MENHIRLIB=$(MENHIRDIR)/src
 MENHIRMARKER=$(MENHIRLIB)/.marker
 
-OCAMLC_CMD=$(OCAMLC) $(OCAMLCFLAGS) -I $(MENHIRLIB) -thread -custom
+OCAMLC_CMD=$(OCAMLC) $(OCAMLCFLAGS) -I $(MENHIRLIB) -thread
 OCAMLOPT_CMD=$(OCAMLOPT) $(OPTFLAGS) -I $(MENHIRLIB) -thread
 OCAMLDEP_CMD=$(OCAMLDEP) -I $(MENHIRLIB)
 
 all: .depend
-	$(MAKE) all-build
+	@$(MAKE) all-build
 all-build: .depend menhirLib.cma META
 
 all.opt: .depend
-	$(MAKE) all-opt-build
+	@$(MAKE) all-opt-build
 all-opt-build: .depend menhirLib.cmxa META
 
 clean:
@@ -84,7 +87,7 @@ META: $(MENHIRLIB)/META
 
 # the 'depend' target
 .depend depend: $(MENHIRMARKER)
-	$(MAKE) depend-build
+	@$(MAKE) depend-build
 
 depend-build: $(MENHIRMARKER) $(SRC) $(MLI)
 	$(OCAMLDEP_CMD) $(MENHIRLIB)/*.mli $(MENHIRLIB)/*.ml > .depend

@@ -19,7 +19,7 @@ LOCAL_pycaml     = $(PYCAMLDIR)/pycaml.cma
 LOCALOPT_pycaml  = $(PYCAMLDIR)/pycaml.cmxa
 GLOBAL_pycaml    = $(PYCAMLDIR)/pycaml.cma
 GLOBALOPT_pycaml = $(PYCAMLDIR)/pycaml.cmxa
-FLAGS_pycaml     = -cclib -lpycaml_stubs -cclib "${PYTHON_LIBS}"
+FLAGS_pycaml     = -cclib -lpycaml_stubs $(PYTHON_LIBS:%=-ccopt %)
 
 # sexplib library
 LOCAL_sexplib     = $(SEXPDIR)/sexplib.cmo
@@ -33,7 +33,7 @@ LOCAL_pcre     = $(PCREDIR)/pcre.cmo
 LOCALOPT_pcre  = $(PCREDIR)/pcre.cmx
 GLOBAL_pcre    = $(PCREDIR)/pcre.cma
 GLOBALOPT_pcre = $(PCREDIR)/pcre.cmxa
-FLAGS_pcre     = -cclib -lpcre_stubs -cclib "${PCRE_LIBS}"
+FLAGS_pcre     = -cclib -lpcre_stubs $(PCRE_LIBS:%=-ccopt %)
 
 # dynlink library
 LOCAL_dynlink     =

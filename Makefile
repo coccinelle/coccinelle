@@ -80,14 +80,21 @@ EXEC=$(TARGET)
 # Generic ocaml variables
 ##############################################################################
 
-OCAMLCFLAGS=
+# differentiate between release and development builds here
+# (typically for improved performance)
+ifeq ($(RELEASE_ENABLED), yes)
+EXTRA_OCAML_FLAGS=-unsafe
+else
+EXTRA_OCAML_FLAGS=-g -dtypes
+endif
 
 # for profiling add  -p -inline 0
 # but 'make forprofiling' below does that for you.
 # This flag is also used in subdirectories so don't change its name here.
 # To enable backtrace support for native code, you need to put -g in OPTFLAGS
 # to also link with -g.
-OPTFLAGS= -g
+export OCAMLCFLAGS=$(EXTRA_OCAML_FLAGS)
+export OPTFLAGS=$(EXTRA_OCAML_FLAGS)
 
 OCAMLC_CMD=$(OCAMLC) $(OCAMLCFLAGS) $(INCLUDES)
 OCAMLOPT_CMD=$(OCAMLOPT) $(OPTFLAGS) $(INCLUDES)
@@ -95,13 +102,12 @@ OCAMLYACC_CMD=$(OCAMLYACC) -v
 OCAMLDEP_CMD=$(OCAMLDEP) $(INCLUDEDIRSDEP:%=-I %)
 OCAMLMKTOP_CMD=$(OCAMLMKTOP) -g -custom $(INCLUDES)
 
-# can also be set via 'make static'
-EXTRACFLAGS=-pie -fPIE -fpic -fPIC -static
-STATICCFLAGS=$(EXTRACFLAGS:%=-ccopt %)
-STATIC= # $(STATICCFLAGS)
+EXTRA_CFLAGS=   # -static -pie -fpie -fPIE -static-libgcc
+EXTRA_OCAML_CFLAGS=$(EXTRA_CFLAGS:%=-ccopt %)
 
 # can also be unset via 'make purebytecode'
-BYTECODE_STATIC=-custom
+# todo: 
+BYTECODE_EXTRA=-custom $(EXTRA_OCAML_CFLAGS) $(EXTRA_OCAML_FLAGS)
 
 ##############################################################################
 # Top rules
@@ -119,7 +125,7 @@ BYTECODE_STATIC=-custom
 
 # dispatches to either 'all-dev' or 'all-release'
 all: Makefile.config
-	$(MAKE) .depend
+	@$(MAKE) .depend
 	$(MAKE) $(TARGET_ALL)
 
 # make "all" comes in three flavours
@@ -135,10 +141,10 @@ world: Makefile.config version.ml
 
 # note: the 'all-dev' target excludes the documentation
 all-dev: Makefile.config version.ml
-	$(MAKE) .depend
+	@$(MAKE) .depend
 	@echo "building the unoptimized version of spatch"
 	$(MAKE) byte
-	$(MAKE) preinstall
+	@$(MAKE) preinstall
 	@echo ""
 	@echo -e "\tcoccinelle can now be installed via 'make install'"
 
@@ -152,7 +158,7 @@ all-release: Makefile.config version.ml
 	@echo -e "\tcoccinelle can now be installed via 'make install'"
 
 all.opt: Makefile.config
-	$(MAKE) .depend
+	@$(MAKE) .depend
 	$(MAKE) opt-only
 	$(MAKE) preinstall
 
@@ -161,9 +167,9 @@ opt opt-only: Makefile.config opt-compil
 byte-only: Makefile.config byte
 
 byte: Makefile.config version.ml
-	$(MAKE) .depend
-	$(MAKE) subdirs.all
-	$(MAKE) $(EXEC)
+	@$(MAKE) .depend
+	@$(MAKE) subdirs.all
+	@$(MAKE) $(EXEC)
 	@echo the compilation of $(EXEC) finished
 	@echo $(EXEC) can be installed or used
 
@@ -177,18 +183,18 @@ opt-compil: Makefile.config version.ml
 top: $(EXEC).top
 
 subdirs.all:
-	+for D in $(MAKESUBDIRS); do $(MAKE) $$D.all || exit 1 ; done
-	$(MAKE) -C commons sexp.all OCAMLCFLAGS="$(OCAMLCFLAGS)"
+	@+for D in $(MAKESUBDIRS); do $(MAKE) $$D.all || exit 1 ; done
+	@$(MAKE) -C commons sexp.all OCAMLCFLAGS="$(OCAMLCFLAGS)"
 
 subdirs.opt:
-	+for D in $(MAKESUBDIRS); do $(MAKE) $$D.opt || exit 1 ; done
-	$(MAKE) -C commons sexp.opt OPTFLAGS="$(OPTFLAGS)"
+	@+for D in $(MAKESUBDIRS); do $(MAKE) $$D.opt || exit 1 ; done
+	@$(MAKE) -C commons sexp.opt OPTFLAGS="$(OPTFLAGS)"
 
 $(MAKESUBDIRS:%=%.all):
-	$(MAKE) -C $(@:%.all=%) OCAMLCFLAGS="$(OCAMLCFLAGS)" all
+	@$(MAKE) -C $(@:%.all=%) OCAMLCFLAGS="$(OCAMLCFLAGS)" all
 
 $(MAKESUBDIRS:%=%.opt):
-	$(MAKE) -C $(@:%.opt=%) OPTFLAGS="$(OPTFLAGS)" all.opt
+	@$(MAKE) -C $(@:%.opt=%) OPTFLAGS="$(OPTFLAGS)" all.opt
 
 #dependencies:
 # commons:
@@ -196,7 +202,7 @@ $(MAKESUBDIRS:%=%.opt):
 # menhirLib:
 # parsing_cocci: commons globals menhirLib
 # parsing_c:parsing_cocci
-# ctl:globals commons
+# ctl:globals commonsg
 # engine: parsing_cocci parsing_c ctl
 # popl09:engine
 # extra: parsing_cocci parsing_c ctl
@@ -204,8 +210,8 @@ $(MAKESUBDIRS:%=%.opt):
 # python:pycaml parsing_cocci parsing_c
 
 clean:: Makefile.config
-	set -e; for i in $(CLEANSUBDIRS); do $(MAKE) -C $$i $@; done
-	$(MAKE) -C demos/spp $@
+	@set -e; for i in $(CLEANSUBDIRS); do $(MAKE) -C $$i $@; done
+	@$(MAKE) -C demos/spp $@
 
 $(LIBS): $(MAKESUBDIRS:%=%.all)
 $(LIBS:.cma=.cmxa): $(MAKESUBDIRS:%=%.opt)
@@ -216,10 +222,10 @@ $(OBJS):$(LIBS)
 $(OPTOBJS):$(LIBS:.cma=.cmxa)
 
 $(EXEC): $(LIBS) $(OBJS)
-	$(OCAMLC_CMD) $(BYTECODE_STATIC) $(FLAGSLIBS) -o $@ $(SYSLIBS) $(LNKLIBS) $^
+	$(OCAMLC_CMD) -thread $(BYTECODE_EXTRA) $(FLAGSLIBS) -o $@ $(SYSLIBS) $(LNKLIBS) $^
 
 $(EXEC).opt: $(LIBS:.cma=.cmxa) $(OPTOBJS)
-	$(OCAMLOPT_CMD) $(STATIC) $(FLAGSLIBS) -o $@ $(SYSLIBS:.cma=.cmxa) $(OPTLNKLIBS) $^
+	$(OCAMLOPT_CMD) -thread $(FLAGSLIBS) -o $@ $(SYSLIBS:.cma=.cmxa) $(OPTLNKLIBS) $^
 
 $(EXEC).top: $(LIBS) $(OBJS) $(LNKLIBS)
 	$(OCAMLMKTOP_CMD) -custom -o $@ $(SYSLIBS) $(FLAGSLIBS) $(LNKLIBS) $^
@@ -242,18 +248,29 @@ tools: $(LIBS) $(LNKLIBS)
 	$(MAKE) -C tools
 
 distclean::
-	if [ -d tools ] ; then $(MAKE) -C tools distclean ; fi
+	@if [ -d tools ] ; then $(MAKE) -C tools distclean ; fi
 
+# it seems impossible to pass "-static" unless all dependent
+# libraries are also available as static archives.
+# set $(STATIC) to -static if you have such libraries.
 static:
 	rm -f spatch.opt spatch
-	$(MAKE) STATIC="$(STATICCFLAGS)" opt-only
+	$(MAKE) $(STATIC) opt-only
 	cp spatch.opt spatch
 
+# This target does not work together with the bundled
+# packages that contain C code. The reason is that it
+# the pure bytecode requires these packages to be available
+# as dynamic link library.
+#
+# it is, however, not clear whether this target makes
+# any sense at all because it seems that it gets linked
+# in custom mode anyway.
 purebytecode:
 	rm -f spatch.opt spatch
-	$(MAKE) BYTECODE_STATIC="" byte-only
-	# disabled the following command because it does not match
-	# perl -p -i -e 's/^#!.*/#!\/usr\/bin\/ocamlrun/' spatch
+	$(MAKE) BYTECODE_EXTRA="" byte-only
+# disabled the following command because it does not match
+# perl -p -i -e 's/^#!.*/#!\/usr\/bin\/ocamlrun/' spatch
 
 ##############################################################################
 # Build version information
@@ -286,6 +303,7 @@ clean:: Makefile.config
 ##############################################################################
 
 preinstall: docs/spatch.1 scripts/spatch scripts/spatch.opt scripts/spatch.byte
+	@echo "generated the wrapper scripts for spatch (the frontends)"
 
 docs/spatch.1: Makefile.config
 	$(MAKE) -C docs spatch.1
@@ -462,7 +480,7 @@ check: scripts/spatch
 # Can also use the profile framework in commons/ and run your program
 # with -profile.
 forprofiling:
-	$(MAKE) OPTFLAGS="-p -inline 0 " opt
+	$(MAKE) OPTFLAGS="-p -inline 0 ${EXTRA_OCAML_FLAGS}" opt
 
 clean distclean::
 	rm -f gmon.out
@@ -516,15 +534,16 @@ distclean::
 	find . -name ".#*1.*" | xargs rm -f
 	rm -f $(EXEC) $(EXEC).opt $(EXEC).top
 
+# using 'touch' to prevent infinite recursion with 'make depend'
 .PHONY:: depend
 .depend: Makefile.config test.ml version
-	touch .depend  # prevents infinite recursion with 'make depend'
-	$(MAKE) depend
+	@touch .depend
+	@$(MAKE) depend
 
 depend: Makefile.config test.ml version
 	@echo constructing '.depend'
-	rm -f .depend
-	set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i depend; done
+	@rm -f .depend
+	@set -e; for i in $(MAKESUBDIRS); do $(MAKE) -C $$i depend; done
 	$(OCAMLDEP_CMD) *.mli *.ml > .depend
 
 ##############################################################################

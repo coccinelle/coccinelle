@@ -475,7 +475,7 @@ Summary with some hints
 configure flags:  $CONFIGURE_FLAGS
 findlib:          $OCAMLFIND	(an actual version is strongly recommended)
 menhir:           $MENHIR	(should be an optional tool)
-menhirLib module: $OCAML_PKG_menhirLib	(for local package use --disable-menhirLib)
+menhirLib module: $enable_mehir	(for local package use --disable-menhirLib)
 
 ocaml scripting:  $enable_ocaml	(overridable with --enable-ocaml)
 python scripting: $enable_python	(overridable with --enable-python)
