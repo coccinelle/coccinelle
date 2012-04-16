@@ -10,6 +10,8 @@
 # the command line. The second line is the reply to
 # print to stdout. Variables ${BASH_REMATCH[i]} may be
 # used to match against capture groups.
+# (note: that would then only work when the interpreter
+# is bash)
 
 # the replies file assumes that the
 # libpcre and python libraries are installed, and
@@ -24,25 +26,25 @@ responsefile="$scriptdir/replies.txt"
 # echo "$cmdline" >> /tmp/queries.txt
 
 # some helper functions callable from the replacement macros
-function ocamllibdir {
-  ocamlc -where &2>/dev/null
+ocamllibdir() {
+  ocamlc -where
 }
 
 # outputs with what prefix 'python' was configured
-function pythonprefix {
-  python -c "import sys; print(sys.prefix)" &2>/dev/null
+pythonprefix() {
+  python -c "import sys; print(sys.prefix)"
 }
 
 # outputs the "include" cflags for python
-function pythoncflags {
+pythoncflags() {
   local version=$1
   local prefix="$(pythonprefix)"
-  test $? == 0
+  test $? = 0
   echo "-I${prefix}/include/python${version}"
 }
 
 # outputs the "linker" flags for python
-function pythonlibs {
+pythonlibs() {
   local version=$1
   local prefix="$(pythonprefix)"
 
@@ -50,11 +52,13 @@ function pythonlibs {
 }
 
 # succeeds only if "/usr/include/pcre.h" exists
-function checkpcre {
+checkpcre() {
   test -f /usr/include/pcre.h
 }
 
 # interate through pattern-response pairs
+found=
+response=
 while read pattern
 do
   # empty lines preceeding pattern
@@ -66,15 +70,20 @@ do
   read response
 
   if [[ $cmdline =~ $pattern ]]; then
-    if test -n "$response"; then
-      (eval "R=\"$response\""; test $? == 0; echo $R)
-      test $? == 0
-    fi
-
-    exit 0
+    found=1 
+    break
   fi
 done < $responsefile
 
-# fallback case
-echo "fake-subst.sh: no substitution for: $cmdline" 1>&2
-exit 1
+if test -n "$found"; then
+  if test -n "$response"; then
+    (eval "R=\"$response\""; test $? = 0; echo $R)
+    test $? = 0
+  fi
+
+  exit 0
+else
+  # fallback case
+  echo "fake-subst.sh: no substitution for: $cmdline" 1>&2
+  exit 1
+fi

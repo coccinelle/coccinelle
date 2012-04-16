@@ -4,13 +4,13 @@
 # this script provides those pdf files as a substitute for the pdflatex invocation.
 
 for arg in "$@"; do
-  basename="${arg%.*}"
-  extension="${arg##*.}"
+  base="${arg%.*}"
+  ext="${arg##*.}"
 
-  if test "x$extension" = xtex; then
-    if test -f "${basename}.pdf"; then
-      echo "fake-pdflatex.sh: ${basename}.pdf provided as substitute for: $@"
-      touch "${basename}.pdf"
+  if test "x$ext" = xtex; then
+    if test -f "${base}.pdf"; then
+      echo "fake-pdflatex.sh: ${base}.pdf provided as substitute for: $@"
+      touch "${base}.pdf"
       exit 1
     fi
   fi
