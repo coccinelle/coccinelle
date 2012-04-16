@@ -15,9 +15,8 @@ DOC=docs/manual/manual.pdf       \
     docs/man                     \
     docs/spatch.1                \
     docs/manual/cocci-python.txt
-BINDLL=dll*
 BINSRC=spatch env.sh env.csh standard.h standard.iso \
-       *.txt $(DOC) demos/* scripts/spatch* $(BINDLL)
+       *.txt $(DOC) demos/* scripts/spatch*
 BINSRC-PY=$(BINSRC) $(PYLIB) python/coccilib/
 
 EXCL=$(EXCLUDE:%=--exclude=%)
@@ -170,7 +169,7 @@ bytecodetar: all-dev
 	  $(PATCHELF) --set-rpath "" dllpycaml_stubs.so; fi
 	@if test -n "${PATHCELF}" -a -f dllpcre_stubs.so; then \
 	  $(PATCHELF) --set-rpath "" dllpcre_stubs.so; fi
-	cd $(TMP); tar cvfz $(PACKAGE)-bin-bytecode-$(OCAMLVERSION).tgz --exclude-vcs $(BINSRC2)
+	cd $(TMP); tar cvfz $(PACKAGE)-bin-bytecode-$(OCAMLVERSION).tgz --exclude-vcs $(BINSRC2) $$(find -L $(PACKAGE) -maxdepth 1 -name 'dll*.so')
 	rm -f $(TMP)/$(PACKAGE)
 	rm -f dllpycaml_stubs.so dllpcre_stubs.so
 
@@ -193,7 +192,7 @@ bytecodetar-python: all-dev
 	   $(PATCHELF) --set-rpath "" dllpycaml_stubs.so; fi
 	@if test -n "${PATHCELF}" -a -f dllpcre_stubs.so; then \
 	   $(PATCHELF) --set-rpath "" dllpcre_stubs.so; fi
-	cd $(TMP); tar cvfz $(PACKAGE)-bin-bytecode-$(OCAMLVERSION)-python.tgz --exclude-vcs $(BINSRC2-PY)
+	cd $(TMP); tar cvfz $(PACKAGE)-bin-bytecode-$(OCAMLVERSION)-python.tgz --exclude-vcs $(BINSRC2-PY) $$(find -L $(PACKAGE) -maxdepth 1 -name 'dll*.so')
 	rm -f $(TMP)/$(PACKAGE)
 	rm -f dllpycaml_stubs.so dllpcre_stubs.so
 

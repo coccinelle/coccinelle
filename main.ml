@@ -1205,7 +1205,7 @@ let main_with_better_error_report () =
       main ()
     with
     | Unix.Unix_error (e, "stat", filename) ->
-        pr2
+        Common.pr2
 	  (spf "ERROR: File %s does not exist: %s"
 	     filename (Unix.error_message e));
         raise (UnixExit (-1))
