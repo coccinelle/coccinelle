@@ -466,9 +466,22 @@ test: $(TARGET)
 testparsing:
 	./$(TARGET) -D standard.h -parse_c -dir tests/
 
+# the check target runs:
+# * some feature tests (depending on what is enabled)
+# * the test suite
 check: scripts/spatch
+	@echo "testing if spatch works on hello world..."
+	@COCCINELLE_HOME="$$(pwd)" ./scripts/spatch --sp-file demos/hello/hello-smpl.cocci demos/hello/helloworld.c --very-quiet | grep -q '+  printf("world, hello!");'
+	@echo "testing if spatch works with regexes..."
+	@COCCINELLE_HOME="$$(pwd)" ./scripts/spatch --sp-file demos/hello/hello-regexp.cocci demos/hello/helloworld.c --very-quiet | grep -q '+  printf("world, hello!");'
+	@if test "x${FEATURE_OCAML}" = x1; then \
+		echo "testing if spatch works with ocaml scripts..."; \
+		COCCINELLE_HOME="$$(pwd)" ./scripts/spatch --sp-file demos/hello/hello-ocaml.cocci demos/hello/helloworld.c --very-quiet | grep -q 'Hello at: 2'; fi
+	@if test "x${FEATURE_PYTHON}" = x1; then \
+		echo "testing if spatch works with python scripts..."; \
+		COCCINELLE_HOME="$$(pwd)" ./scripts/spatch --sp-file demos/hello/hello-python.cocci demos/hello/helloworld.c --very-quiet | grep -q 'Hello at: 2'; fi
+	@echo running the test suite
 	COCCINELLE_HOME="$$(pwd)" ./scripts/spatch --testall --no-update-score-file
-
 
 # -inline 0  to see all the functions in the profile.
 # Can also use the profile framework in commons/ and run your program
