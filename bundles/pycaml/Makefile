@@ -9,11 +9,16 @@ PYCAMLDIR=chemoelectric-pycaml-8614105
 PYCAMLFILE=$(PYCAMLDIR).tar.gz
 PYCAMLMARKER=$(PYCAMLDIR)/.marker
 
+# note: the extra linker flags are needed so that the produced shared
+# library gets linked against libpython.
+EXTRACFLAGS=$(PYTHON_CFLAGS:%=-ccopt %) $(PYTHON_LIBS:%=-ccopt %)
+EXTRALNKFLAGS=$(PYTHON_LIBS:%=-ldopt %)
+
 export PYMAJOR=$(shell echo ${PYTHON_VERSION} | sed -e 's/\..*//')
 OCAMLFLAGS = -pp "camlp4o -parser Camlp4MacroParser -D PYMAJOR${PYMAJOR}"
-OCAMLC_CMD=$(OCAMLC) $(OCAMLCFLAGS) $(OCAMLFLAGS) -g -thread $(PYTHON_CFLAGS:%=-ccopt %) $(PYTHON_LIBS:%=-ccopt %) -cc "${CC} ${CFLAGS}" -I $(PYCAMLDIR)
-OCAMLOPT_CMD=$(OCAMLOPT) $(OPTFLAGS) $(OCAMLFLAGS) -g -thread $(PYTHON_CFLAGS:%=-ccopt %) $(PYTHON_LIBS:%=-ccopt %) -I $(PYCAMLDIR)
-OCAMLMKLIB_CMD=$(OCAMLMKLIB) -custom -linkall
+OCAMLC_CMD=$(OCAMLC) $(OCAMLCFLAGS) $(OCAMLFLAGS) -g -thread $(EXTRACFLAGS) -cc "${CC} ${CFLAGS}" -I $(PYCAMLDIR)
+OCAMLOPT_CMD=$(OCAMLOPT) $(OPTFLAGS) $(OCAMLFLAGS) -g -thread $(EXTRACFLAGS)  -I $(PYCAMLDIR)
+OCAMLMKLIB_CMD=$(OCAMLMKLIB) -linkall $(EXTRALNKFLAGS)
 OCAMLDEP_CMD=$(OCAMLDEP) $(OCAMLFLAGS)
 
 
@@ -35,12 +40,15 @@ pycaml.cmi: $(PYCAMLDIR)/pycaml.cmi
 	cp -f $< $@
 
 pycaml_stubs.o: $(PYCAMLDIR)/pycaml_stubs.c
-	$(OCAMLC_CMD) $< -o $@
+	$(OCAMLC_CMD) -ccopt -shared -ccopt -fPIC $< -o $@
 
 libpycaml_stubs.a: pycaml_stubs.o
-	$(OCAMLMKLIB_CMD) -oc pycaml_stubs $<
+	$(OCAMLMKLIB_CMD) -custom -o pycaml_stubs $<
 
-pycaml.cma: $(PYCAMLDIR)/pycaml.cmo libpycaml_stubs.a $(PYCAMLDIR)/pycaml.cmi
+dllpycaml_stubs.so: pycaml_stubs.o
+	$(OCAMLMKLIB_CMD) -o pycaml_stubs $<
+
+pycaml.cma: $(PYCAMLDIR)/pycaml.cmo $(PYCAMLDIR)/pycaml.cmi libpycaml_stubs.a dllpycaml_stubs.so
 	$(OCAMLC_CMD) -I $(PYCAMLDIR) -a -o pycaml.cma $<
 
 all.opt: $(PYCAMLMARKER)
@@ -50,13 +58,13 @@ all-opt-build: $(PYCAMLMARKER) pycaml.cmi pycaml.cmxa
 $(PYCAMLDIR)/pycaml.cmx: $(PYCAMLDIR)/pycaml.ml $(PYCAMLDIR)/pycaml.cmi
 	$(OCAMLOPT_CMD) -c $<
 
-pycaml.cmxa: $(PYCAMLDIR)/pycaml.cmx libpycaml_stubs.a
+pycaml.cmxa: $(PYCAMLDIR)/pycaml.cmx $(PYCAMLDIR)/pycaml.cmi libpycaml_stubs.a dllpycaml_stubs.so
 	$(OCAMLOPT_CMD) -I $(PYCAMLDIR) -a -o pycaml.cmxa $<
 
 clean:
 	rm -f $(PYCAMLDIR)/pycaml.mli pycaml.cm[aixo] $(PYCAMLDIR)/pycaml.cm[aixo] \
-		pycaml.[ao] libpycaml_stubs.a pycaml_stubs.o dllpycaml_stubs.so \
-		pycaml_ml.o pycaml.cmxa
+		pycaml.[ao] libpycaml_stubs.a pycaml_stubs.o dllpycaml_stubs.so libpycaml_stubs.so \
+		pycaml_ml.o pycaml.cmxa $(PYCAMLDIR)/pycaml.annot
 
 distclean: clean
 	rm -rf $(PYCAMLDIR)

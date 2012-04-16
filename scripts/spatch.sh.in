@@ -7,6 +7,10 @@
 SHAREDIR="@prefix@/share/coccinelle"
 LIBDIR="@prefix@/lib"
 
+if test ! -f "$SHAREDIR"; then
+    SHAREDIR="$(pwd)"
+fi
+
 COCCINELLE_HOME="${COCCINELLE_HOME:=$SHAREDIR}"
 #echo setting COCCINELLE_HOME=${COCCINELLE_HOME:=$SHAREDIR}
 
@@ -21,7 +25,7 @@ else
 
 export COCCINELLE_HOME
 
-export LD_LIBRARY_PATH="${LIBDIR}:$LD_LIBRARY_PATH"
+export LD_LIBRARY_PATH="${LIBDIR}:$LD_LIBRARY_PATH:${SHAREDIR}:${COCCINELLE_HOME}"
 export PYTHONPATH="${COCCINELLE_HOME}/python:$PYTHONPATH"
 
 # echo setting LD_LIBRARY_PATH="$LD_LIBRARY_PATH"

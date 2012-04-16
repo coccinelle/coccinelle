@@ -334,7 +334,7 @@ let
       buildInputs = with ocamlPackages; [
         pkgconfig ncurses texLiveFull
         ocaml findlib menhir
-        python
+        python pcre
       ];
       configureFlagsArray = [ "--enable-release=world" ];
       

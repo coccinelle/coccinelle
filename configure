@@ -642,6 +642,7 @@ SHAREDIR
 REGEXP_FILE
 REGEXP_MODULE
 MAKE_pcre
+OPTFLAGS_pcre
 enable_pcre
 GLOBAL_pcre
 OCAML_PKG_pcre
@@ -652,6 +653,7 @@ PCRE_CFLAGS
 PYCOCCI_FILE
 PYCOCCI_MODULE
 MAKE_pycaml
+OPTFLAGS_pycaml
 GLOBAL_pycaml
 OCAML_PKG_pycaml
 enable_python
@@ -671,22 +673,27 @@ with_MENHIR
 MENHIR
 OPTIMIZED_dynlink
 MAKE_extlib
+OPTFLAGS_extlib
 enable_extlib
 GLOBAL_extlib
 OCAML_PKG_extlib
 MAKE_menhirLib
+OPTFLAGS_menhirLib
 enable_menhirLib
 GLOBAL_menhirLib
 OCAML_PKG_menhirLib
 MAKE_sexplib
+OPTFLAGS_sexplib
 enable_sexplib
 GLOBAL_sexplib
 OCAML_PKG_sexplib
 MAKE_camlp4
+OPTFLAGS_camlp4
 enable_camlp4
 GLOBAL_camlp4
 OCAML_PKG_camlp4
 MAKE_dynlink
+OPTFLAGS_dynlink
 enable_dynlink
 GLOBAL_dynlink
 OCAML_PKG_dynlink
@@ -10571,6 +10578,8 @@ fi
 
     FLAGS_dynlink='$(FLAGS_dynlink)'
 
+    OPTFLAGS_dynlink='$(OPTFLAGS_dynlink)'
+
 
         if test "x$enable_dynlink" = xlocal; then :
         LOCALLIB_dynlink=1
@@ -10689,6 +10698,8 @@ fi
       FEATURE_camlp4=1
 
     FLAGS_camlp4='$(FLAGS_camlp4)'
+
+    OPTFLAGS_camlp4='$(OPTFLAGS_camlp4)'
 
 
         if test "x$enable_camlp4" = xlocal; then :
@@ -10809,6 +10820,8 @@ fi
 
     FLAGS_sexplib='$(FLAGS_sexplib)'
 
+    OPTFLAGS_sexplib='$(OPTFLAGS_sexplib)'
+
 
         if test "x$enable_sexplib" = xlocal; then :
         LOCALLIB_sexplib=1
@@ -10928,6 +10941,8 @@ fi
 
     FLAGS_menhirLib='$(FLAGS_menhirLib)'
 
+    OPTFLAGS_menhirLib='$(OPTFLAGS_menhirLib)'
+
 
         if test "x$enable_menhirLib" = xlocal; then :
         LOCALLIB_menhirLib=1
@@ -11046,6 +11061,8 @@ fi
       FEATURE_extlib=1
 
     FLAGS_extlib='$(FLAGS_extlib)'
+
+    OPTFLAGS_extlib='$(OPTFLAGS_extlib)'
 
 
         if test "x$enable_extlib" = xlocal; then :
@@ -13824,6 +13841,8 @@ fi
 
     FLAGS_pycaml='$(FLAGS_pycaml)'
 
+    OPTFLAGS_pycaml='$(OPTFLAGS_pycaml)'
+
 
         if test "x$enable_pycaml" = xlocal; then :
         LOCALLIB_pycaml=1
@@ -14050,6 +14069,8 @@ fi
       FEATURE_pcre=1
 
     FLAGS_pcre='$(FLAGS_pcre)'
+
+    OPTFLAGS_pcre='$(OPTFLAGS_pcre)'
 
 
         if test "x$enable_pcre" = xlocal; then :
@@ -15425,7 +15446,17 @@ fi
 
 fi
 
-if test -z "$enable_opt" -o "x$enable_opt" = xyes; then :
+# set the default enable-opt setting
+if test -z "$enable_opt"; then :
+    if test "x$enable_release" = xyes -o "x$enable_release" = xno; then :
+      enable_opt="$enable_release"
+
+
+fi
+
+fi
+
+if test "x$enable_opt" = xyes; then :
     SPATCHNAME=spatch.opt
 
   MAKETARGET_SPATCH=opt-only
@@ -16655,7 +16686,7 @@ $as_echo "$as_me: configuration completed" >&6;}
 
 cat << EOF
 ------------------------------------------------------------------------------
-Summary with some hints
+Summary
 
 configure flags:  $CONFIGURE_FLAGS
 findlib:          $OCAMLFIND	(an actual version is strongly recommended)
@@ -16670,7 +16701,8 @@ pcre regexes:     $enable_pcre_syntax	(overridable with --enable-pcre-syntax)
 pcre module:      $enable_pcre	(for local package use --disable-pcre)
 pcre library:     $HAVE_PCRE	(requires the dev version of libpcre)
 
-release config:   $enable_release	(overridable with --enable-release, strongly recommended)
+release config:   $enable_release	(strongly recommended to be 'yes', overridable with --enable-release)
+optimized spatch: $enable_opt	(overridable with --disable-opt)
 
 EOF
 

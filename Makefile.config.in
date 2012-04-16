@@ -6,6 +6,7 @@ LNKLIBS=@MODULES_dynlink@ @MODULES_extlib@ @MODULES_sexplib@ @MODULES_menhirLib@
 OPTLNKLIBS=@MODULESOPT_dynlink@ @MODULESOPT_extlib@ @MODULESOPT_sexplib@ @MODULESOPT_menhirLib@ @MODULESOPT_pycaml@ @MODULESOPT_pcre@
 INCLIBS=@PATH_dynlink@ @PATH_extlib@ @PATH_sexplib@ @PATH_menhirLib@ @PATH_pycaml@ @PATH_pcre@
 FLAGSLIBS=@FLAGS_dynlink@ @FLAGS_extlib@ @FLAGS_sexplib@ @FLAGS_menhirLib@ @FLAGS_pycaml@ @FLAGS_pcre@
+OPTFLAGSLIBS=@OPTFLAGS_dynlink@ @OPTFLAGS_extlib@ @OPTFLAGS_sexplib@ @OPTFLAGS_menhirLib@ @OPTFLAGS_pycaml@ @OPTFLAGS_pcre@
 # * end of library variables
 
 # system packages inc libs

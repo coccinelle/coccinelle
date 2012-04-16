@@ -438,8 +438,17 @@ AS_IF([test "x$OPTIMIZED_dynlink" = xno -a "x$enable_ocaml" = xyes],
   ])
 ])
 
+# set the default enable-opt setting
+AS_IF([test -z "$enable_opt"],
+[dnl
+  AS_IF([test "x$enable_release" = xyes -o "x$enable_release" = xno],
+  [dnl
+    AC_SUBST([enable_opt],["$enable_release"])
+  ])
+])
+
 dnl  variables depending on whether we build the optimized spatch
-AS_IF([test -z "$enable_opt" -o "x$enable_opt" = xyes],
+AS_IF([test "x$enable_opt" = xyes],
 [dnl  default target for the optimized version
   AC_SUBST([SPATCHNAME],[spatch.opt])
   AC_SUBST([MAKETARGET_SPATCH],[opt-only])
@@ -470,7 +479,7 @@ AC_MSG_NOTICE([configuration completed])
 
 cat << EOF
 ------------------------------------------------------------------------------
-Summary with some hints
+Summary
 
 configure flags:  $CONFIGURE_FLAGS
 findlib:          $OCAMLFIND	(an actual version is strongly recommended)
@@ -485,7 +494,8 @@ pcre regexes:     $enable_pcre_syntax	(overridable with --enable-pcre-syntax)
 pcre module:      $enable_pcre	(for local package use --disable-pcre)
 pcre library:     $HAVE_PCRE	(requires the dev version of libpcre)
 
-release config:   $enable_release	(overridable with --enable-release, strongly recommended)
+release config:   $enable_release	(strongly recommended to be 'yes', overridable with --enable-release)
+optimized spatch: $enable_opt	(overridable with --disable-opt)
 
 EOF
 

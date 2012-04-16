@@ -8,9 +8,14 @@ endif
 OCAMLCFLAGS ?= -g -dtypes
 OPTFLAGS ?= -g -dtypes
 
-OCAMLC_CMD=$(OCAMLC) $(OCAMLCFLAGS) -thread $(PCRE_CFLAGS:%=-ccopt %) $(PCRE_LIBS:%=-ccopt %) -cc "${CC} ${CFLAGS}"
-OCAMLOPT_CMD=$(OCAMLOPT) $(OPTFLAGS) -thread $(PCRE_CFLAGS:%=-ccopt %) $(PCRE_LIBS:%=-ccopt %)
-OCAMLMKLIB_CMD=$(OCAMLMKLIB) -custom
+# note: the extra linker flags are needed so that the produced shared
+# library gets dynamically linked to libpcre.
+EXTRACFLAGS=$(PCRE_CFLAGS:%=-ccopt %) $(PCRE_LIBS:%=-ccopt %)
+EXTRALNKFLAGS=$(PCRE_LIBS:%=-ldopt %)
+
+OCAMLC_CMD=$(OCAMLC) $(OCAMLCFLAGS) -thread $(EXTRACFLAGS) -cc "${CC} ${CFLAGS}"
+OCAMLOPT_CMD=$(OCAMLOPT) $(OPTFLAGS) -thread $(EXTRACFLAGS)
+OCAMLMKLIB_CMD=$(OCAMLMKLIB) $(EXTRALNKFLAGS)
 
 PCRE_VERSION=6.2.5
 PCRE_DIR=pcre-ocaml-release-$(PCRE_VERSION)
@@ -27,7 +32,7 @@ all-opt-build: $(PCRE_MARKER) pcre.cmxa META
 clean:
 	rm -f dllpcre_stubs.so libpcre_stubs.a pcre_stubs.o \
 		pcre.cma pcre.cmi pcre.cmo META \
-		pcre.a pcre.cmx pcre.cmxa pcre.o
+		pcre.a pcre.cmx pcre.cmxa pcre.o pcre.annot
 
 distclean: clean
 	rm -rf $(PCRE_DIR)
@@ -53,20 +58,20 @@ pcre.cmi: $(PCRE_LIB)/pcre.mli
 pcre.cmo: $(PCRE_LIB)/pcre.ml pcre.cmi
 	$(OCAMLC_CMD) -c -o $@ $<
 
-pcre.cma: pcre.cmo libpcre_stubs.a
+pcre.cma: pcre.cmo dllpcre_stubs.so
 	$(OCAMLC_CMD) -a -o $@ $<
 
 pcre.cmx: $(PCRE_LIB)/pcre.ml pcre.cmi
 	$(OCAMLOPT_CMD) -c -o $@ $<
 
-pcre.cmxa: pcre.cmx libpcre_stubs.a
+pcre.cmxa: pcre.cmx dllpcre_stubs.so
 	$(OCAMLOPT_CMD) -a -o pcre.cmxa $<
 
 pcre_stubs.o: $(PCRE_LIB)/pcre_stubs.c
-	$(OCAMLC_CMD) $<
+	$(OCAMLC_CMD) -ccopt -shared -ccopt -fPIC $<
 
-libpcre_stubs.a: pcre_stubs.o
-	$(OCAMLMKLIB_CMD) -oc pcre_stubs $<
+dllpcre_stubs.so: pcre_stubs.o
+	$(OCAMLMKLIB_CMD) -o pcre_stubs $<
 
 META: $(PCRE_LIB)/META
 	cp "${PCRE_LIB}/META" ./META

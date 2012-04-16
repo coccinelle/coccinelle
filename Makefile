@@ -99,6 +99,7 @@ BYTECODE_EXTRA=-custom $(EXTRA_OCAML_FLAGS)
 .PHONY:: all all.opt byte opt top clean distclean configure opt-compil
 .PHONY:: $(MAKESUBDIRS:%=%.all) $(MAKESUBDIRS:%=%.opt) subdirs.all subdirs.opt
 .PHONY:: all-opt all-byte byte-only opt-only
+.PHONY:: copy-stubs install-stubs install install-man install-python install-common
 
 
 # All make targets that are expected to be an entry point have a dependency on
@@ -209,7 +210,7 @@ $(EXEC): $(LIBS) $(OBJS)
 	$(OCAMLC_CMD) -thread $(BYTECODE_EXTRA) $(FLAGSLIBS) -o $@ $(SYSLIBS) $(LNKLIBS) $^
 
 $(EXEC).opt: $(LIBS:.cma=.cmxa) $(OPTOBJS)
-	$(OCAMLOPT_CMD) -thread $(FLAGSLIBS) -o $@ $(SYSLIBS:.cma=.cmxa) $(OPTLNKLIBS) $^
+	$(OCAMLOPT_CMD) -thread $(OPTFLAGSLIBS) -o $@ $(SYSLIBS:.cma=.cmxa) $(OPTLNKLIBS) $^
 
 $(EXEC).top: $(LIBS) $(OBJS) $(LNKLIBS)
 	$(OCAMLMKTOP_CMD) -custom -o $@ $(SYSLIBS) $(FLAGSLIBS) $(LNKLIBS) $^
@@ -242,19 +243,20 @@ static:
 	$(MAKE) $(STATIC) opt-only
 	cp spatch.opt spatch
 
-# This target does not work together with the bundled
-# packages that contain C code. The reason is that it
-# the pure bytecode requires these packages to be available
-# as dynamic link library.
-#
-# it is, however, not clear whether this target makes
-# any sense at all because it seems that it gets linked
-# in custom mode anyway.
+# creates a portable version of spatch, which, however, may
+# be dependent on non-portably dynamic libraries. You
+# may need the stubs, see 'copy-stubs'.
 purebytecode:
 	rm -f spatch.opt spatch
 	$(MAKE) BYTECODE_EXTRA="" byte-only
-# disabled the following command because it does not match
-# perl -p -i -e 's/^#!.*/#!\/usr\/bin\/ocamlrun/' spatch
+	sed -i '1 s,^#!.*$$,#!/usr/bin/ocamlrun,g' spatch
+
+# copies the stubs libraries (if any) to the root directory
+copy-stubs:
+	@if test -f ./bundles/pycaml/dllpycaml_stubs.so; then \
+		cp -fv ./bundles/pycaml/dllpycaml_stubs.so .; fi
+	@if test -f ./bundles/pcre/dllpcre_stubs.so; then \
+		cp -fv ./bundles/pcre/dllpcre_stubs.so .; fi
 
 ##############################################################################
 # Build version information
@@ -363,7 +365,14 @@ install-python:
 	$(INSTALL_DATA) python/coccilib/coccigui/pygui.gladep \
 		$(DESTDIR)$(SHAREDIR)/python/coccilib/coccigui
 
-install: install-man install-common $(PYTHON_INSTALL_TARGET)
+install-stubs:
+	$(MKDIR_P) $(DESTDIR)$(SHAREDIR)
+	@if test -f ./bundles/pycaml/dllpycaml_stubs.so; then \
+		cp -fv ./bundles/pycaml/dllpycaml_stubs.so $(DESTDIR)$(SHAREDIR); fi
+	@if test -f ./bundles/pcre/dllpcre_stubs.so; then \
+		cp -fv ./bundles/pcre/dllpcre_stubs.so $(DESTDIR)$(SHAREDIR); fi
+
+install: install-man install-common install-stubs $(PYTHON_INSTALL_TARGET)
 	rm -f $(DESTDIR)$(SHAREDIR)/spatch
 	rm -f $(DESTDIR)$(SHAREDIR)/spatch.opt
 	@if test -x spatch -o -x spatch.opt; then \
@@ -402,7 +411,8 @@ uninstall:
 	rm -f $(DESTDIR)$(BINDIR)/spatch
 	rm -f $(DESTDIR)$(BINDIR)/spatch.opt
 	rm -f $(DESTDIR)$(BINDIR)/spatch.byte
-	rm -f $(DESTDIR)$(LIBDIR)/dllpycaml_stubs.so
+	rm -f $(DESTDIR)$(SHAREDIR)/dllpycaml_stubs.so
+	rm -f $(DESTDIR)$(SHAREDIR)/dllpcre_stubs.so
 	rm -f $(DESTDIR)$(SHAREDIR)/spatch
 	rm -f $(DESTDIR)$(SHAREDIR)/spatch.opt
 	rm -f $(DESTDIR)$(SHAREDIR)/standard.h

@@ -16,7 +16,7 @@ DOC=docs/manual/manual.pdf       \
     docs/spatch.1                \
     docs/manual/cocci-python.txt
 BINSRC=spatch env.sh env.csh standard.h standard.iso \
-       *.txt $(DOC) demos/*
+       *.txt $(DOC) demos/* scripts/spatch.*
 BINSRC-PY=$(BINSRC) $(PYLIB) python/coccilib/
 
 EXCL=$(EXCLUDE:%=--exclude=%)
@@ -105,16 +105,22 @@ package-src:
 	$(MAKE) srctar
 	$(MAKE) coccicheck
 
+# Reconfigures the project without Python support
+# Note: we disable pcre syntax as well to eliminate the dependency
+# on those libraries.
 package-nopython:
-	$(MAKE) distclean             # Clean project
-	./configure --disable-python  # Reconfigure project without Python support
+	$(MAKE) distclean
+	./configure --disable-python --disable-pcre-syntax
 	$(MAKE) bintar
 	$(MAKE) bytecodetar
 #	$(MAKE) staticbintar
 
+# Reconfigure project with Python support
+# Note: we disable pcre syntax as well to eliminate the dependency
+# on those libraries.
 package-python:
-	$(MAKE) distclean            # Clean project
-	./configure --enable-python  # Reconfigure project with Python support
+	$(MAKE) distclean
+	./configure --enable-python --disable-pcre-syntax
 	$(MAKE) bintar-python
 	$(MAKE) bytecodetar-python
 
@@ -160,8 +166,9 @@ bytecodetar: all-dev
 	rm -f $(TMP)/$(PACKAGE)
 	ln -s `pwd` $(TMP)/$(PACKAGE)
 	$(MAKE) purebytecode
+	$(MAKE) copy-stubs
 	cd $(TMP); tar cvfz $(PACKAGE)-bin-bytecode-$(OCAMLVERSION).tgz --exclude-vcs $(BINSRC2)
-	rm -f $(TMP)/$(PACKAGE)
+	rm -f $(TMP)/$(PACKAGE) dllpycaml_stubs.so dllpcre_stubs.so
 
 bintar-python: all
 	$(MAKE) docs

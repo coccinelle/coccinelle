@@ -41,6 +41,7 @@ Then simply type
 
 Other configuration flags of interest:
 --prefix                default: /usr/local
+--disable-opt           build the bytecode version
 --with-python=PATH      choose a specific python executable
 --without-python        no python scripting
 --disable-ocaml         no ocaml scripting
@@ -55,8 +56,9 @@ See ./configure --help for more options
 
 
 When the --enable-release flag was given to ./configure, 'make' will
-compile the optimized version by default. Otherwise, it compiles the
-bytecode version. You could use 'make opt-only' to compile the
+build in release configuration (no debugging symbols, etc.). It
+defaults to the optimized version, unless --disable-opt is given
+to configure. You could use 'make opt-only' to compile the
 optimized version only. Similarly, you can use 'make byte-only' for
 the unoptimized version. 'make install' installs whichever version
 was compiled, and installs a script 'spatch' (the frontend) that invokes
