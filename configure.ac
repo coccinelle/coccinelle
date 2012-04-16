@@ -35,6 +35,7 @@ AC_PROG_MKDIR_P
 AC_PROG_CPP
 AC_PATH_PROG([TAR],[tar])
 AC_PATH_PROG([PATCH],[patch])
+AC_PATH_PROG([PATCHELF],[patchelf])
 
 dnl  pkg config is required
 AC_COCCI_TOOL([PKG_CONFIG],[pkg-config],[$COCCI_SRCDIR/setup/fake-subst.sh pkg-config])

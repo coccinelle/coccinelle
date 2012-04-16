@@ -15,8 +15,9 @@ DOC=docs/manual/manual.pdf       \
     docs/man                     \
     docs/spatch.1                \
     docs/manual/cocci-python.txt
+BINDLL=dll*
 BINSRC=spatch env.sh env.csh standard.h standard.iso \
-       *.txt $(DOC) demos/* scripts/spatch.*
+       *.txt $(DOC) demos/* scripts/spatch* $(BINDLL)
 BINSRC-PY=$(BINSRC) $(PYLIB) python/coccilib/
 
 EXCL=$(EXCLUDE:%=--exclude=%)
@@ -113,7 +114,6 @@ package-nopython:
 	./configure --disable-python --disable-pcre-syntax
 	$(MAKE) bintar
 	$(MAKE) bytecodetar
-#	$(MAKE) staticbintar
 
 # Reconfigure project with Python support
 # Note: we disable pcre syntax as well to eliminate the dependency
@@ -160,31 +160,42 @@ staticbintar: all-release
 	cd $(TMP); tar cvfz $(PACKAGE)-bin-x86-static.tgz --exclude-vcs $(BINSRC2)
 	rm -f $(TMP)/$(PACKAGE)
 
-# add ocaml version in name ?
 bytecodetar: all-dev
 	$(MAKE) docs
 	rm -f $(TMP)/$(PACKAGE)
 	ln -s `pwd` $(TMP)/$(PACKAGE)
 	$(MAKE) purebytecode
 	$(MAKE) copy-stubs
+	@if test -n "${PATCHELF}" -a -f dllpycaml_stubs.so; then \
+	  $(PATCHELF) --set-rpath "" dllpycaml_stubs.so; fi
+	@if test -n "${PATHCELF}" -a -f dllpcre_stubs.so; then \
+	  $(PATCHELF) --set-rpath "" dllpcre_stubs.so; fi
 	cd $(TMP); tar cvfz $(PACKAGE)-bin-bytecode-$(OCAMLVERSION).tgz --exclude-vcs $(BINSRC2)
-	rm -f $(TMP)/$(PACKAGE) dllpycaml_stubs.so dllpcre_stubs.so
+	rm -f $(TMP)/$(PACKAGE)
+	rm -f dllpycaml_stubs.so dllpcre_stubs.so
 
 bintar-python: all
 	$(MAKE) docs
+	@if test -n "${PATCHELF}"; then \
+	   $(PATCHELF) --set-interpreter "/lib/ld-linux.so.2" --set-rpath "" spatch; fi
 	rm -f $(TMP)/$(PACKAGE)
 	ln -s `pwd` $(TMP)/$(PACKAGE)
 	cd $(TMP); tar cvfz $(PACKAGE)-bin-x86-python.tgz --exclude-vcs $(BINSRC2-PY)
 	rm -f $(TMP)/$(PACKAGE)
 
-# add ocaml version in name ?
 bytecodetar-python: all-dev
 	$(MAKE) docs
 	rm -f $(TMP)/$(PACKAGE)
 	ln -s `pwd` $(TMP)/$(PACKAGE)
 	$(MAKE) purebytecode
+	$(MAKE) copy-stubs
+	@if test -n "${PATCHELF}" -a -f dllpycaml_stubs.so; then \
+	   $(PATCHELF) --set-rpath "" dllpycaml_stubs.so; fi
+	@if test -n "${PATHCELF}" -a -f dllpcre_stubs.so; then \
+	   $(PATCHELF) --set-rpath "" dllpcre_stubs.so; fi
 	cd $(TMP); tar cvfz $(PACKAGE)-bin-bytecode-$(OCAMLVERSION)-python.tgz --exclude-vcs $(BINSRC2-PY)
 	rm -f $(TMP)/$(PACKAGE)
+	rm -f dllpycaml_stubs.so dllpcre_stubs.so
 
 coccicheck:
 	cp -a ./scripts/coccicheck $(TMP)/$(CCPACKAGE)
@@ -194,14 +205,13 @@ coccicheck:
 clean-packages::
 	rm -f $(TMP)/$(PACKAGE).tgz
 	rm -f $(TMP)/$(PACKAGE)-bin-x86.tgz
-#	rm -f $(TMP)/$(PACKAGE)-bin-x86-static.tgz
 	rm -f $(TMP)/$(PACKAGE)-bin-bytecode-$(OCAMLVERSION).tgz
 	rm -f $(TMP)/$(PACKAGE)-bin-x86-python.tgz
 	rm -f $(TMP)/$(PACKAGE)-bin-bytecode-$(OCAMLVERSION)-python.tgz
 	rm -f $(TMP)/$(CCPACKAGE).tgz
 
 #
-# No need to licensify 'demos'. Because these is basic building blocks
+# No need to licensify 'demos'. Because these are basic building blocks
 # to use SmPL.
 #
 TOLICENSIFY=ctl engine globals parsing_cocci popl popl09 python scripts tools
