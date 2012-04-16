@@ -23,7 +23,22 @@ PDFLATEX=@PDFLATEX@
 
 # copy of the configure flags
 CONFIGURE_FLAGS=@CONFIGURE_FLAGS@
-RELEASE_ENABLED=@enable_release@
+
+# differentiate between release and development builds here
+# (typically for improved performance)
+ifeq (@enable_release@, yes)
+EXTRA_OCAML_FLAGS=-unsafe
+else
+EXTRA_OCAML_FLAGS=-g -dtypes
+endif
+
+# note that variables are exported and thus cannot be used in
+# definitions of other variables. Use $(EXTRA_OCAML_FLAGS) for that.
+# Todo: since these definitions are not in Makefile.config.in, the
+# defaults can be removed from each individual Makefile in the
+# subdirectories.
+export OCAMLCFLAGS?=$(EXTRA_OCAML_FLAGS)
+export OPTFLAGS?=$(EXTRA_OCAML_FLAGS)
 
 # paths
 prefix=@prefix@

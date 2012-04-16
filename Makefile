@@ -80,34 +80,18 @@ EXEC=$(TARGET)
 # Generic ocaml variables
 ##############################################################################
 
-# differentiate between release and development builds here
-# (typically for improved performance)
-ifeq ($(RELEASE_ENABLED), yes)
-EXTRA_OCAML_FLAGS=-unsafe
-else
-EXTRA_OCAML_FLAGS=-g -dtypes
-endif
-
-# for profiling add  -p -inline 0
-# but 'make forprofiling' below does that for you.
-# This flag is also used in subdirectories so don't change its name here.
-# To enable backtrace support for native code, you need to put -g in OPTFLAGS
-# to also link with -g.
-export OCAMLCFLAGS=$(EXTRA_OCAML_FLAGS)
-export OPTFLAGS=$(EXTRA_OCAML_FLAGS)
-
 OCAMLC_CMD=$(OCAMLC) $(OCAMLCFLAGS) $(INCLUDES)
 OCAMLOPT_CMD=$(OCAMLOPT) $(OPTFLAGS) $(INCLUDES)
 OCAMLYACC_CMD=$(OCAMLYACC) -v
 OCAMLDEP_CMD=$(OCAMLDEP) $(INCLUDEDIRSDEP:%=-I %)
 OCAMLMKTOP_CMD=$(OCAMLMKTOP) -g -custom $(INCLUDES)
 
+# these are unused at the moment (todo: remove)
 EXTRA_CFLAGS=   # -static -pie -fpie -fPIE -static-libgcc
 EXTRA_OCAML_CFLAGS=$(EXTRA_CFLAGS:%=-ccopt %)
 
-# can also be unset via 'make purebytecode'
-# todo: 
-BYTECODE_EXTRA=-custom $(EXTRA_OCAML_CFLAGS) $(EXTRA_OCAML_FLAGS)
+# 'make purebytecode' unsets this definition
+BYTECODE_EXTRA=-custom $(EXTRA_OCAML_FLAGS)
 
 ##############################################################################
 # Top rules
@@ -184,17 +168,17 @@ top: $(EXEC).top
 
 subdirs.all:
 	@+for D in $(MAKESUBDIRS); do $(MAKE) $$D.all || exit 1 ; done
-	@$(MAKE) -C commons sexp.all OCAMLCFLAGS="$(OCAMLCFLAGS)"
+	@$(MAKE) -C commons sexp.all
 
 subdirs.opt:
 	@+for D in $(MAKESUBDIRS); do $(MAKE) $$D.opt || exit 1 ; done
-	@$(MAKE) -C commons sexp.opt OPTFLAGS="$(OPTFLAGS)"
+	@$(MAKE) -C commons sexp.opt
 
 $(MAKESUBDIRS:%=%.all):
-	@$(MAKE) -C $(@:%.all=%) OCAMLCFLAGS="$(OCAMLCFLAGS)" all
+	@$(MAKE) -C $(@:%.all=%) all
 
 $(MAKESUBDIRS:%=%.opt):
-	@$(MAKE) -C $(@:%.opt=%) OPTFLAGS="$(OPTFLAGS)" all.opt
+	@$(MAKE) -C $(@:%.opt=%) all.opt
 
 #dependencies:
 # commons:
