@@ -259,6 +259,7 @@ let
 
 	# initialize essential environment variables
         # for the makefile
+	export COCCINELLE_HOME=${coccinelle}/share/coccinelle
         export COCCIDIR=$TMPDIR
         export SPATCH=${coccinelle}/bin/spatch.opt
         export ISO=${coccinelle}/share/coccinelle/standard.iso
