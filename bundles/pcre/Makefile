@@ -75,3 +75,5 @@ dllpcre_stubs.so: pcre_stubs.o
 
 META: $(PCRE_LIB)/META
 	cp "${PCRE_LIB}/META" ./META
+
+include ../../Makefile.common

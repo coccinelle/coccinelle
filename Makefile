@@ -160,8 +160,8 @@ byte: Makefile.config version.ml
 
 opt-compil: Makefile.config version.ml
 	$(MAKE) .depend
-	$(MAKE) subdirs.opt
-	$(MAKE) $(EXEC).opt
+	$(MAKE) subdirs.opt BUILD_OPT=yes
+	$(MAKE) $(EXEC).opt BUILD_OPT=yes
 	@echo the compilation of $(EXEC).opt finished
 	@echo $(EXEC).opt can be installed or used
 
@@ -274,9 +274,9 @@ version.ml:
 docs:
 	@$(MAKE) -C docs || (echo "warning: ignored the failed construction of the manual" 1>&2)
 	@if test "x$(FEATURE_OCAML)" = x1; then \
-		if test -f ./parsing_c/ast_c.cmo; then \
+		if test -f ./parsing_c/ast_c.cmo -o -f ./parsing_c/ast_c.cmx; then \
 			$(MAKE) -C ocaml doc; \
-		else echo "note: to obtain coccilib documenation, it is required to build 'spatch' first so that ./parsing_c/ast_c.cmo gets build."; \
+		else echo "note: to obtain coccilib documenation, it is required to build 'spatch' first so that ./parsing_c/ast_c.cm* gets build."; \
 		fi fi
 	@echo "finished building manuals"
 
@@ -584,3 +584,5 @@ endif
 endif
 endif
 endif
+
+include Makefile.common

@@ -1,5 +1,9 @@
 MAKESUBDIRS=coccigui
 
+ifneq ($(MAKECMDGOALS),distclean)
+include ../../Makefile.config
+endif
+
 all:
 all.opt:
 
@@ -11,3 +15,5 @@ clean:
 	rm -f *.pyc
 
 distclean: clean
+
+include ../../Makefile.common

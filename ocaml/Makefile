@@ -43,7 +43,8 @@ OPTOBJS = $(SRC:.ml=.cmx)
 # Top rules
 ##############################################################################
 all: $(TARGET).cma
-all.opt: $(TARGET).cmxa
+all.opt:
+	@$(MAKE) $(TARGET).cmxa BUILD_OPT=yes
 
 $(TARGET).cma: $(OBJS)
 	$(OCAMLC_CMD) -a -o $(TARGET).cma $(OBJS)
@@ -96,3 +97,5 @@ ifneq ($(MAKECMDGOALS),cleandoc)
 endif
 endif
 endif
+
+include ../Makefile.common

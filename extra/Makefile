@@ -26,7 +26,8 @@ OPTOBJS = $(SOURCES:.ml=.cmx)
 
 all: $(TARGET).cma
 
-all.opt: $(TARGET).cmxa
+all.opt:
+	@$(MAKE) $(TARGET).cmxa BUILD_OPT=yes
 
 $(TARGET).byte: $(OBJS) $(LIBS)
 	$(OCAMLC_CMD) -o $(TARGET).byte $(SYSLIBS) $(LIBS) $(OBJS)
@@ -74,3 +75,5 @@ ifneq ($(MAKECMDGOALS),distclean)
 -include .depend
 endif
 endif
+
+include ../Makefile.common

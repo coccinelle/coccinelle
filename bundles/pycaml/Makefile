@@ -82,3 +82,5 @@ $(PYCAMLMARKER): $(PYCAMLFILE)
 $(PYCAMLFILE):
 	@echo "$@ not found. Please download it and drop it in this directory ($(pwd))."
 	@false
+
+include ../../Makefile.common

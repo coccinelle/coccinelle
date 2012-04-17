@@ -79,6 +79,7 @@ let
     in with pkgs; releaseTools.nixBuild {
       name = "cocci-build-${cfg.name}";
       src = tarball;
+      enableParallelBuilding = true;
       buildInputs = [ pkgconfig pcre ncurses ocamlPackages.ocaml ] ++ cfg.ocamls ++ cfg.pythons;
       configureFlagsArray = cfg.flags ++ [ "--enable-release=world" ];
       buildPhase = ''

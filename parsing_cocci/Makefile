@@ -52,7 +52,8 @@ OPTOBJS = $(OBJS:.cmo=.cmx)
 all: $(LIB)
 local: $(EXEC)
 
-all.opt: $(OPTLIB)
+all.opt:
+	@$(MAKE) $(OPTLIB) BUILD_OPT=yes
 
 $(LIB): $(GENERATED) $(OBJS)
 	$(OCAMLC) -thread $(OCAMLCFLAGS) $(INCLUDES) -I $(MENHIRDIR) -a -o $(LIB) $(MENHIRMOD) $(OBJS)
@@ -121,3 +122,5 @@ ifneq ($(MAKECMDGOALS),distclean)
 -include .depend
 endif
 endif
+
+include ../Makefile.common

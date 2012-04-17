@@ -111,6 +111,11 @@
   flags for tuning/overriding the build process (including the ocaml
   compiler and the C compiler and preprocessor).
 - Add line number directives to the .ml file generated from a .cocci file
+- Added 'make check' as an alternative to 'make test'. It can run after
+  building spatch, checks whether some featues work (python and ocaml scripts,
+  regexes) if these features are enabled, and then launches the test suite
+  with a 75% success rate requirement. It also does not ask for user input
+  and can be used in autonomous builds.
 
 ** Bugfix:
 - Corrected parsing of script strings delimited by a single quote.  Thanks
@@ -183,6 +188,10 @@
 - Don't allow just dropping an exp or type
 - Avoid removing #endif when surrounded by - code
 - Print some important error messages even with the --very-quiet flag.
+- Fixed parallel building in the Makefiles
+- Fixed the compilation of the "pure bytecode" version. If you use the
+  bundled pycaml or ocaml-pcre, you'll need their stub libraries in
+  your LD_LIBRARY_PATH.
 
 * 0.2.5
 ** Language:

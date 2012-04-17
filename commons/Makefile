@@ -132,7 +132,8 @@ OPTOBJS = $(SRC:.ml=.cmx)
 
 
 all: $(LIB)
-all.opt: $(OPTLIB)
+all.opt:
+	@$(MAKE) $(OPTLIB) BUILD_OPT=yes
 opt: all.opt
 top: $(TARGET).top
 
@@ -341,3 +342,5 @@ ifneq ($(MAKECMDGOALS),distclean)
 -include .depend
 endif
 endif
+
+include ../Makefile.common

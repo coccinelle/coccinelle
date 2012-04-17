@@ -103,3 +103,5 @@ include .depend
 endif
 endif
 endif
+
+include ../../Makefile.common
