@@ -318,7 +318,7 @@ let
       };
     });
 
-  regress = assert performRegress; mkRegress build;
+  regress = mkRegress build;
   test = checkRegress regress;
 
 
