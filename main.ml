@@ -1140,7 +1140,7 @@ let main () =
 		end
 	      else
 		Printf.fprintf stderr
-		  "ERROR: File %s does not exist" testfile
+		  "ERROR: File %s does not exist\n" testfile
 	end
 
     | []  when !test_all ->
@@ -1206,11 +1206,11 @@ let main_with_better_error_report () =
       main ()
     with
     | Unix.Unix_error (e, "stat", filename) ->
-        Printf.fprintf stderr "ERROR: File %s does not exist: %s"
+        Printf.fprintf stderr "ERROR: File %s does not exist: %s\n"
 	  filename (Unix.error_message e);
         raise (UnixExit (-1))
     | Parse_cocci.Bad_virt s ->
-	Printf.fprintf stderr "virtual rule %s not supported" s;
+	Printf.fprintf stderr "virtual rule %s not supported\n" s;
         raise (UnixExit (-1))
 
 (*****************************************************************************)
