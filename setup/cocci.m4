@@ -110,6 +110,7 @@ AC_DEFUN([AC_CHECK_COCCI_EXTPKG],
   [dnl
     AC_SUBST(AS_TR_SH([FEATURE_$1]),[1])
     AC_SUBST(AS_TR_SH([FLAGS_$1]),['$([]AS_TR_SH([FLAGS_$1]))'])
+    AC_SUBST(AS_TR_SH([OPTFLAGS_$1]),['$([]AS_TR_SH([OPTFLAGS_$1]))'])
 
     dnl  distinguish global/local
     AS_IF([test "x$[]AS_TR_SH([enable_$1])" = xlocal],

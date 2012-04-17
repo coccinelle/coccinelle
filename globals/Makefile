@@ -7,6 +7,9 @@ endif
 ##############################################################################
 TARGET=globals
 
+OCAMLCFLAGS ?= -g -dtypes
+OPTFLAGS ?= -g
+
 SRC=config.ml flag.ml iteration.ml $(REGEXP_FILE) regexp.ml
 
 LIBS=
@@ -17,8 +20,8 @@ INCLUDEDIRS= ../commons $(PCREDIR)
 ##############################################################################
 
 INCLUDES=$(INCLUDEDIRS:%=-I %)
-OCAMLC_CMD=$(OCAMLC) $(OCAMLCFLAGS) $(INCLUDES)
-OCAMLOPT_CMD=$(OCAMLOPT) $(OPTFLAGS) $(INCLUDES)
+OCAMLC_CMD=$(OCAMLC) -thread $(OCAMLCFLAGS) $(INCLUDES)
+OCAMLOPT_CMD=$(OCAMLOPT) -thread $(OPTFLAGS) $(INCLUDES)
 OCAMLDEP_CMD=$(OCAMLDEP) $(INCLUDES)
 OCAMLMKTOP_CMD=$(OCAMLMKTOP) -g -custom $(INCLUDES)
 

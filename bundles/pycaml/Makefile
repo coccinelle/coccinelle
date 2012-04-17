@@ -2,21 +2,28 @@ ifneq ($(MAKECMDGOALS),distclean)
 include ../../Makefile.config
 endif
 
+OCAMLCFLAGS ?= -g -dtypes
+OPTFLAGS ?= -g -dtypes
+
 PYCAMLDIR=chemoelectric-pycaml-8614105
 PYCAMLFILE=$(PYCAMLDIR).tar.gz
 PYCAMLMARKER=$(PYCAMLDIR)/.marker
 
+# note: the extra linker flags are needed so that the produced shared
+# library gets linked against libpython.
+EXTRACFLAGS=$(PYTHON_CFLAGS:%=-ccopt %) $(PYTHON_LIBS:%=-ccopt %)
+EXTRALNKFLAGS=$(PYTHON_LIBS:%=-ldopt %)
+
 export PYMAJOR=$(shell echo ${PYTHON_VERSION} | sed -e 's/\..*//')
-SHARE_FLAGS=-shared -fpic
 OCAMLFLAGS = -pp "camlp4o -parser Camlp4MacroParser -D PYMAJOR${PYMAJOR}"
-OCAMLC_CMD=$(OCAMLC) $(OCAMLFLAGS) -thread -ccopt "${PYTHON_CFLAGS}" -cclib "${PYTHON_LIBS}" -cc "${CC} ${CFLAGS} ${SHARE_FLAGS}" -I $(PYCAMLDIR)
-OCAMLOPT_CMD=$(OCAMLOPT) $(OCAMLFLAGS) -thread -ccopt "${PYTHON_CFLAGS}" -cclib "${PYTHON_LIBS}" -I $(PYCAMLDIR)
-OCAMLMKLIB_CMD=$(OCAMLMKLIB)
+OCAMLC_CMD=$(OCAMLC) $(OCAMLCFLAGS) $(OCAMLFLAGS) -g -thread $(EXTRACFLAGS) -cc "${CC} ${CFLAGS}" -I $(PYCAMLDIR)
+OCAMLOPT_CMD=$(OCAMLOPT) $(OPTFLAGS) $(OCAMLFLAGS) -g -thread $(EXTRACFLAGS)  -I $(PYCAMLDIR)
+OCAMLMKLIB_CMD=$(OCAMLMKLIB) -linkall $(EXTRALNKFLAGS)
 OCAMLDEP_CMD=$(OCAMLDEP) $(OCAMLFLAGS)
 
 
 all: $(PYCAMLMARKER)
-	$(MAKE) all-build
+	@$(MAKE) all-build
 all-build: $(PYCAMLMARKER) pycaml.cmi pycaml.cma
 
 $(PYCAMLDIR)/pycaml.mli: $(PYCAMLDIR)/pycaml.ml
@@ -33,28 +40,31 @@ pycaml.cmi: $(PYCAMLDIR)/pycaml.cmi
 	cp -f $< $@
 
 pycaml_stubs.o: $(PYCAMLDIR)/pycaml_stubs.c
-	$(OCAMLC_CMD) $< -o $@
+	$(OCAMLC_CMD) -ccopt -shared -ccopt -fPIC $< -o $@
+
+libpycaml_stubs.a: pycaml_stubs.o
+	$(OCAMLMKLIB_CMD) -custom -o pycaml_stubs $<
 
 dllpycaml_stubs.so: pycaml_stubs.o
 	$(OCAMLMKLIB_CMD) -o pycaml_stubs $<
 
-pycaml.cma: dllpycaml_stubs.so $(PYCAMLDIR)/pycaml.cmi $(PYCAMLDIR)/pycaml.cmo
-	$(OCAMLC_CMD) -I $(PYCAMLDIR) -a -custom -linkall -o pycaml.cma pycaml.cmo -dllib -lpycaml_stubs
+pycaml.cma: $(PYCAMLDIR)/pycaml.cmo $(PYCAMLDIR)/pycaml.cmi libpycaml_stubs.a dllpycaml_stubs.so
+	$(OCAMLC_CMD) -I $(PYCAMLDIR) -a -o pycaml.cma $<
 
 all.opt: $(PYCAMLMARKER)
-	$(MAKE) all-opt-build
+	@$(MAKE) all-opt-build
 all-opt-build: $(PYCAMLMARKER) pycaml.cmi pycaml.cmxa
 
 $(PYCAMLDIR)/pycaml.cmx: $(PYCAMLDIR)/pycaml.ml $(PYCAMLDIR)/pycaml.cmi
 	$(OCAMLOPT_CMD) -c $<
 
-pycaml.cmxa: dllpycaml_stubs.so $(PYCAMLDIR)/pycaml.cmx
-	$(OCAMLOPT_CMD) -I $(PYCAMLDIR) -a -o pycaml.cmxa pycaml.cmx -cclib -lpycaml_stubs
+pycaml.cmxa: $(PYCAMLDIR)/pycaml.cmx $(PYCAMLDIR)/pycaml.cmi libpycaml_stubs.a dllpycaml_stubs.so
+	$(OCAMLOPT_CMD) -I $(PYCAMLDIR) -a -o pycaml.cmxa $<
 
 clean:
 	rm -f $(PYCAMLDIR)/pycaml.mli pycaml.cm[aixo] $(PYCAMLDIR)/pycaml.cm[aixo] \
-		pycaml.[ao] libpycaml_stubs.a pycaml_stubs.o dllpycaml_stubs.so \
-		pycaml_ml.o pycaml.cmxa
+		pycaml.[ao] libpycaml_stubs.a pycaml_stubs.o dllpycaml_stubs.so libpycaml_stubs.so \
+		pycaml_ml.o pycaml.cmxa $(PYCAMLDIR)/pycaml.annot
 
 distclean: clean
 	rm -rf $(PYCAMLDIR)
