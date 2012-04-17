@@ -182,6 +182,7 @@
 - Pretty printing of const/volatile arrays in smpl code.
 - Don't allow just dropping an exp or type
 - Avoid removing #endif when surrounded by - code
+- Print some important error messages even with the --very-quiet flag.
 
 * 0.2.5
 ** Language:

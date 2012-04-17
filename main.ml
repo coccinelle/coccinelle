@@ -1139,7 +1139,8 @@ let main () =
 		  Testing.testone "" x !compare_with_expected
 		end
 	      else
-		pr2 (spf "ERROR: File %s does not exist" testfile)
+		Printf.fprintf stderr
+		  (spf "ERROR: File %s does not exist" testfile)
 	end
 
     | []  when !test_all ->
@@ -1205,12 +1206,11 @@ let main_with_better_error_report () =
       main ()
     with
     | Unix.Unix_error (e, "stat", filename) ->
-        pr2
-	  (spf "ERROR: File %s does not exist: %s"
-	     filename (Unix.error_message e));
+        Printf.fprintf stderr "ERROR: File %s does not exist: %s"
+	  filename (Unix.error_message e);
         raise (UnixExit (-1))
     | Parse_cocci.Bad_virt s ->
-	Common.pr2 (Printf.sprintf "virtual rule %s not supported" s);
+	Printf.fprintf stderr "virtual rule %s not supported" s;
         raise (UnixExit (-1))
 
 (*****************************************************************************)
