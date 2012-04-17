@@ -1140,7 +1140,7 @@ let main () =
 		end
 	      else
 		Printf.fprintf stderr
-		  (spf "ERROR: File %s does not exist" testfile)
+		  "ERROR: File %s does not exist" testfile
 	end
 
     | []  when !test_all ->
