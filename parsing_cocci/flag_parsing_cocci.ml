@@ -6,6 +6,9 @@ let sgrep_mode = ref false (* no longer supported, subsumed by sgrep2 *)
 let show_SP = ref false
 let show_iso_failures = ref true
 
+(* interpret the patch in an inverted way *)
+let interpret_inverted = ref false
+
 let iso_limit = ref (None : int option) (*(Some 3)*)
 let disabled_isos = ref ([] : string list)
 

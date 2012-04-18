@@ -2104,6 +2104,37 @@ ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
+
+ac_aux_dir=
+for ac_dir in setup "$srcdir"/setup; do
+  if test -f "$ac_dir/install-sh"; then
+    ac_aux_dir=$ac_dir
+    ac_install_sh="$ac_aux_dir/install-sh -c"
+    break
+  elif test -f "$ac_dir/install.sh"; then
+    ac_aux_dir=$ac_dir
+    ac_install_sh="$ac_aux_dir/install.sh -c"
+    break
+  elif test -f "$ac_dir/shtool"; then
+    ac_aux_dir=$ac_dir
+    ac_install_sh="$ac_aux_dir/shtool install -c"
+    break
+  fi
+done
+if test -z "$ac_aux_dir"; then
+  as_fn_error $? "cannot find install-sh, install.sh, or shtool in setup \"$srcdir\"/setup" "$LINENO" 5
+fi
+
+# These three variables are undocumented and unsupported,
+# and are intended to be withdrawn in a future Autoconf release.
+# They can cause serious problems if a builder's source tree is in a directory
+# whose full name contains unusual characters.
+ac_config_guess="$SHELL $ac_aux_dir/config.guess"  # Please don't use this var.
+ac_config_sub="$SHELL $ac_aux_dir/config.sub"  # Please don't use this var.
+ac_configure="$SHELL $ac_aux_dir/configure"  # Please don't use this var.
+
+
+
 CONFIGURE_FLAGS=$*
 
 COCCI_VERSION=$PACKAGE_VERSION
@@ -2355,35 +2386,6 @@ $as_echo "$as_me: some fake substitutions for required but unavailable programs 
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: verifying basic tools" >&5
 $as_echo "$as_me: verifying basic tools" >&6;}
-
-ac_aux_dir=
-for ac_dir in "$srcdir" "$srcdir/.." "$srcdir/../.."; do
-  if test -f "$ac_dir/install-sh"; then
-    ac_aux_dir=$ac_dir
-    ac_install_sh="$ac_aux_dir/install-sh -c"
-    break
-  elif test -f "$ac_dir/install.sh"; then
-    ac_aux_dir=$ac_dir
-    ac_install_sh="$ac_aux_dir/install.sh -c"
-    break
-  elif test -f "$ac_dir/shtool"; then
-    ac_aux_dir=$ac_dir
-    ac_install_sh="$ac_aux_dir/shtool install -c"
-    break
-  fi
-done
-if test -z "$ac_aux_dir"; then
-  as_fn_error $? "cannot find install-sh, install.sh, or shtool in \"$srcdir\" \"$srcdir/..\" \"$srcdir/../..\"" "$LINENO" 5
-fi
-
-# These three variables are undocumented and unsupported,
-# and are intended to be withdrawn in a future Autoconf release.
-# They can cause serious problems if a builder's source tree is in a directory
-# whose full name contains unusual characters.
-ac_config_guess="$SHELL $ac_aux_dir/config.guess"  # Please don't use this var.
-ac_config_sub="$SHELL $ac_aux_dir/config.sub"  # Please don't use this var.
-ac_configure="$SHELL $ac_aux_dir/configure"  # Please don't use this var.
-
 
 # Find a good install program.  We prefer a C program (faster),
 # so one script is as good as another.  But avoid the broken or
@@ -15513,23 +15515,7 @@ fi
 
 
 
-ac_config_files="$ac_config_files Makefile.config"
-
-ac_config_files="$ac_config_files version.ml"
-
-ac_config_files="$ac_config_files commons/commands.ml"
-
-ac_config_files="$ac_config_files globals/config.ml"
-
-ac_config_files="$ac_config_files globals/regexp.ml"
-
-ac_config_files="$ac_config_files python/pycocci.ml"
-
-ac_config_files="$ac_config_files ocaml/prepare_ocamlcocci.ml"
-
-ac_config_files="$ac_config_files scripts/spatch.sh"
-
-ac_config_files="$ac_config_files docs/spatch.1"
+ac_config_files="$ac_config_files Makefile.config version.ml commons/commands.ml globals/config.ml globals/regexp.ml python/pycocci.ml ocaml/prepare_ocamlcocci.ml scripts/spatch.sh docs/spatch.1"
 
 
 cat >confcache <<\_ACEOF
@@ -16745,9 +16731,6 @@ pcre library:     $HAVE_PCRE	(requires the dev version of libpcre)
 release config:   $enable_release	(strongly recommended to be 'yes', overridable with --enable-release)
 optimized spatch: $enable_opt	(overridable with --disable-opt)
 
-EOF
-
-cat << EOF
 ------------------------------------------------------------------------------
 Coccinelle can now be compiled and installed.
 

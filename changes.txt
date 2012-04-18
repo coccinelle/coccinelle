@@ -116,6 +116,9 @@
   regexes) if these features are enabled, and then launches the test suite
   with a 75% success rate requirement. It also does not ask for user input
   and can be used in autonomous builds.
+- Added an experimental --reverse to invert the semantic patch before application.
+  Note that not all patches can be inverted, nor is it guaranteed that applying
+  a patch followed by applying its inverse is an identity operation.
 
 ** Bugfix:
 - Corrected parsing of script strings delimited by a single quote.  Thanks

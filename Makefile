@@ -567,6 +567,7 @@ distclean::
 	rm -f globals/config.ml
 	rm -f globals/regexp.ml python/pycocci.ml ocaml/prepare_ocamlcocci.ml
 	rm -f scripts/spatch.sh
+	rm -f aclocal.m4
 	@echo "run 'configure' again prior to building coccinelle"
 
 
