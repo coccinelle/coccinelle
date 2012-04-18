@@ -4,9 +4,9 @@ AC_INIT([coccinelle], m4_esyscmd([cat ./version | tr -d '\n']), [cocci@diku.dk],
 AC_CONFIG_MACRO_DIR([setup])
 AC_CONFIG_AUX_DIR([setup])
 
-AC_SUBST([CONFIGURE_FLAGS], [$*])
-AC_SUBST([COCCI_VERSION], [$PACKAGE_VERSION])
-AC_SUBST([COCCI_SRCDIR], [$(pwd)])
+AC_SUBST([CONFIGURE_FLAGS], ["$*"])
+AC_SUBST([COCCI_VERSION], ["$PACKAGE_VERSION"])
+AC_SUBST([COCCI_SRCDIR], ["$(pwd)"])
 AC_MSG_NOTICE([configuring coccinelle $COCCI_VERSION in $COCCI_SRCDIR])
 
 AC_CONFIG_SRCDIR([cocci.ml])    dnl  this file must be present in our src directory
