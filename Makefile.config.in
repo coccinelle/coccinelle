@@ -28,7 +28,7 @@ CONFIGURE_FLAGS=@CONFIGURE_FLAGS@
 
 # differentiate between release and development builds here
 # (typically for improved performance)
-ifeq (@enable_release@, yes)
+ifneq (@enable_release@, no)
 EXTRA_OCAML_FLAGS=-unsafe
 else
 EXTRA_OCAML_FLAGS=-g -dtypes

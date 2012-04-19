@@ -2135,11 +2135,11 @@ ac_configure="$SHELL $ac_aux_dir/configure"  # Please don't use this var.
 
 
 
-CONFIGURE_FLAGS=$*
+CONFIGURE_FLAGS="$*"
 
-COCCI_VERSION=$PACKAGE_VERSION
+COCCI_VERSION="$PACKAGE_VERSION"
 
-COCCI_SRCDIR=$(pwd)
+COCCI_SRCDIR="$(pwd)"
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: configuring coccinelle $COCCI_VERSION in $COCCI_SRCDIR" >&5
 $as_echo "$as_me: configuring coccinelle $COCCI_VERSION in $COCCI_SRCDIR" >&6;}
@@ -10587,6 +10587,8 @@ else
           as_fn_error $? "OCaml package dynlink is not available but requested explicitly" "$LINENO" 5
 
 fi
+      { $as_echo "$as_me:${as_lineno-$LINENO}: OCaml package dynlink is not available" >&5
+$as_echo "$as_me: OCaml package dynlink is not available" >&6;}
       enable_dynlink=no
 
 
@@ -10708,6 +10710,8 @@ else
           as_fn_error $? "OCaml package camlp4 is not available but requested explicitly" "$LINENO" 5
 
 fi
+      { $as_echo "$as_me:${as_lineno-$LINENO}: OCaml package camlp4 is not available" >&5
+$as_echo "$as_me: OCaml package camlp4 is not available" >&6;}
       enable_camlp4=no
 
 
@@ -10829,6 +10833,8 @@ else
           as_fn_error $? "OCaml package sexplib is not available but requested explicitly" "$LINENO" 5
 
 fi
+      { $as_echo "$as_me:${as_lineno-$LINENO}: OCaml package sexplib is not available" >&5
+$as_echo "$as_me: OCaml package sexplib is not available" >&6;}
       enable_sexplib=no
 
 
@@ -10950,6 +10956,8 @@ else
           as_fn_error $? "OCaml package menhirLib is not available but requested explicitly" "$LINENO" 5
 
 fi
+      { $as_echo "$as_me:${as_lineno-$LINENO}: OCaml package menhirLib is not available" >&5
+$as_echo "$as_me: OCaml package menhirLib is not available" >&6;}
       enable_menhirLib=no
 
 
@@ -11071,6 +11079,8 @@ else
           as_fn_error $? "OCaml package extlib is not available but requested explicitly" "$LINENO" 5
 
 fi
+      { $as_echo "$as_me:${as_lineno-$LINENO}: OCaml package extlib is not available" >&5
+$as_echo "$as_me: OCaml package extlib is not available" >&6;}
       enable_extlib=no
 
 
@@ -12470,7 +12480,7 @@ if test "${enable_python+set}" = set; then :
 fi
 
 if test "x$enable_python" != xno; then :
-      if test -n "$enable_python" -a -z "$enable_pycaml"; then :
+          if test -n "$enable_python" -a -z "$enable_pycaml"; then :
       { $as_echo "$as_me:${as_lineno-$LINENO}: skipped the selection of a global pycaml module because --enable-python is given explicitly but --enable-pycaml is not." >&5
 $as_echo "$as_me: skipped the selection of a global pycaml module because --enable-python is given explicitly but --enable-pycaml is not." >&6;}
     enable_pycaml=no
@@ -12479,6 +12489,7 @@ $as_echo "$as_me: skipped the selection of a global pycaml module because --enab
 fi
 
       if test -z "$PYVER"; then :
+
 
 
 # Check whether --with-python was given.
@@ -13583,6 +13594,59 @@ fi
 fi
 
 
+        if test "x$PYTHON" = xno -a -z "$with_python"; then :
+        for ac_prog in python python3 python3.2 python3.1 python2 python2.7 python2.6 python2.5
+do
+  # Extract the first word of "$ac_prog", so it can be a program name with args.
+set dummy $ac_prog; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path_PYTHON+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $PYTHON in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_PYTHON="$PYTHON" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_PYTHON="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+PYTHON=$ac_cv_path_PYTHON
+if test -n "$PYTHON"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $PYTHON" >&5
+$as_echo "$PYTHON" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+  test -n "$PYTHON" && break
+done
+
+      if test -z "$PYTHON"; then :
+  PYTHON=no
+
+fi
+
+fi
+
     if test "x$PYTHON" = xno -a -n "$with_python" -a "x$with_python" != xyes; then :
         { $as_echo "$as_me:${as_lineno-$LINENO}: $with_python is not a found as tool, therefore interpreted as version" >&5
 $as_echo "$as_me: $with_python is not a found as tool, therefore interpreted as version" >&6;}
@@ -13625,6 +13689,8 @@ $as_echo "$as_me: python major version: $PYVER_MAJOR" >&6;}
 fi
 
 else
+      { $as_echo "$as_me:${as_lineno-$LINENO}: looking for the corresponding python library" >&5
+$as_echo "$as_me: looking for the corresponding python library" >&6;}
 
 pkg_failed=no
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for PYTHON" >&5
@@ -13697,8 +13763,8 @@ $as_echo "yes" >&6; }
 fi
 
     if test "x$HAVE_PYTHON" != xyes -a "x$enable_python" != xyes; then :
-        { $as_echo "$as_me:${as_lineno-$LINENO}: trying the default python version as fallback" >&5
-$as_echo "$as_me: trying the default python version as fallback" >&6;}
+        { $as_echo "$as_me:${as_lineno-$LINENO}: trying the default python library as fallback" >&5
+$as_echo "$as_me: trying the default python library as fallback" >&6;}
 
 pkg_failed=no
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for PYTHON" >&5
@@ -13850,6 +13916,8 @@ else
           as_fn_error $? "OCaml package pycaml is not available but requested explicitly" "$LINENO" 5
 
 fi
+      { $as_echo "$as_me:${as_lineno-$LINENO}: OCaml package pycaml is not available" >&5
+$as_echo "$as_me: OCaml package pycaml is not available" >&6;}
       enable_pycaml=no
 
 
@@ -14079,6 +14147,8 @@ else
           as_fn_error $? "OCaml package pcre is not available but requested explicitly" "$LINENO" 5
 
 fi
+      { $as_echo "$as_me:${as_lineno-$LINENO}: OCaml package pcre is not available" >&5
+$as_echo "$as_me: OCaml package pcre is not available" >&6;}
       enable_pcre=no
 
 

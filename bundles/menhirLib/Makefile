@@ -92,8 +92,8 @@ META: $(MENHIRLIB)/META
 depend-build: $(MENHIRMARKER) $(SRC) $(MLI)
 	$(OCAMLDEP_CMD) $(MENHIRLIB)/*.mli $(MENHIRLIB)/*.ml > .depend
 
-# extra dependencies that are needed to generate mli files which
-# are needed for ocamldep
+# extra dependencies that are needed to generate mli files
+# that are needed for ocamldep
 $(MENHIRLIB)/tableFormat.mli: $(MENHIRLIB)/packedIntArray.cmi $(MENHIRLIB)/engineTypes.cmi
 
 ifneq ($(MAKECMDGOALS),clean)

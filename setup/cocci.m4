@@ -85,6 +85,7 @@ AC_DEFUN([AC_CHECK_COCCI_EXTPKG],
       [dnl  when explicitly requested the global version
         AC_MSG_ERROR([OCaml package $1 is not available but requested explicitly])
       ])
+      AC_MSG_NOTICE([OCaml package $1 is not available])
       AC_SUBST(AS_TR_SH([enable_$1]),[no])
     ])
   ])
@@ -168,7 +169,17 @@ AC_DEFUN([AC_COCCI_PYVER],
 [dnl
   AS_IF([test -z "$PYVER"],
   [dnl  PYVER not set before, determine it
+
+    dnl  first try the generic "python" executable or what the user configured
+    dnl  as commandline parameter
     AC_COCCI_TOOL([PYTHON],[python],[])
+
+    dnl  some fall-back alternatives in case the above did not find anything
+    AS_IF([test "x$PYTHON" = xno -a -z "$with_python"],
+    [dnl
+      AC_PATH_PROGS([PYTHON],[python python3 python3.2 python3.1 python2 python2.7 python2.6 python2.5])
+      AS_IF([test -z "$PYTHON"],[AC_SUBST([PYTHON],[no])])
+    ])
 
     AS_IF([test "x$PYTHON" = xno -a -n "$with_python" -a "x$with_python" != xyes],
     [dnl  python interpreter not found, but perhaps it was a version

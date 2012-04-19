@@ -76,7 +76,7 @@ prerelease:
 fix-expected:
 	@echo "going to generate: tests/SCORE_expected_orig.sexp"
 	$(MAKE) distclean
-	./configure --disable-python
+	./configure --enable-release --disable-python
 	$(MAKE) opt-only
 	yes | ./spatch.opt -testall --iso-file ./standard.iso --macro-file-builtins ./standard.h
 	cp tests/SCORE_actual.sexp tests/SCORE_expected_orig.sexp
@@ -110,7 +110,7 @@ package-src:
 # on those libraries.
 package-nopython:
 	$(MAKE) distclean
-	./configure --disable-python --disable-pcre-syntax
+	./configure --enable-release --disable-python --disable-pcre-syntax --disable-menhirLib --disable-sexplib --disable-extlib --disable-pycaml
 	$(MAKE) bintar
 	$(MAKE) bytecodetar
 
@@ -119,7 +119,7 @@ package-nopython:
 # on those libraries.
 package-python:
 	$(MAKE) distclean
-	./configure --enable-python --disable-pcre-syntax
+	./configure --enable-release --enable-python --disable-pcre-syntax --disable-menhirLib --disable-sexplib --disable-extlib --disable-pycaml
 	$(MAKE) bintar-python
 	$(MAKE) bytecodetar-python
 
@@ -139,7 +139,7 @@ srctar: Makefile.config
 	if test -f "$(TMP)/$(PACKAGE)/"; then rm -f "$(TMP)/$(PACKAGE)/"; fi # remove it if it is a symlink
 	$(MKDIR_P) "$(TMP)/$(PACKAGE)/"
 	cp -rfa ./*  "$(TMP)/$(PACKAGE)/"
-	cd $(TMP)/$(PACKAGE); cd parsing_cocci/; $(MAKE) parser_cocci_menhir.ml
+	cd $(TMP)/$(PACKAGE); $(MAKE) -C parsing_cocci parser_cocci_menhir.ml
 	rm -f $(TMP)/$(PACKAGE)/Makefile.config
 	cd $(TMP); tar cvfz $(PACKAGE).tgz --exclude-vcs $(EXCL) $(PACKAGE)
 	rm -rf  $(TMP)/$(PACKAGE)

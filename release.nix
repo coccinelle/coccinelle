@@ -56,6 +56,157 @@ let
 
 
   #
+  # Helper functions for building configurations
+  #
+
+  selOcamlDefault = orig: orig.ocamlPackages;
+  selOcaml312 = orig: orig.ocamlPackages_3_12_1;
+  selOcaml311 = orig: orig.ocamlPackages_3_11_2;
+  selOcaml310 = orig: orig.ocamlPackages_3_10_0;
+
+  selCommonOcamlPkgs = ocamlPackages: with ocamlPackages; [
+    findlib menhir ocaml_sexplib ocaml_extlib
+  ];
+
+  selMinimalOcamlPkgs = ocamlPackages: with ocamlPackages; [
+    findlib menhir
+  ];
+
+  selAllOcamlPkgs = ocamlPackages: with ocamlPackages; [
+    findlib menhir ocaml_sexplib ocaml_extlib ocaml_pcre pycaml
+  ];
+
+  selCommonInputs = pkgs: [ pkgs.pkgconfig pkgs.pcre ];
+
+  selPythonNone = pkgs: [];
+  selPythonDefault = pkgs: [ pkgs.python ];
+  selPython2 = pkgs: [ pkgs.python27 ];
+  selPython3 = pkgs: [ pkgs.python3 ];
+
+  # creates a configuration for a given python version
+  mkCfgPython = f: pkgs: with (f pkgs); {
+    inherit name pythons flags;
+
+    ocamls = selCommonOcamlPkgs pkgs.ocamlPackages ++ [ pkgs.ocamlPackages.pycaml ];
+    selOcaml = selOcamlDefault;
+    extras = selCommonInputs pkgs;
+  };
+
+  # creates a configuration for a given ocaml version
+  mkCfgOcaml = { name, selOcaml, flags }: pkgs: {
+      inherit flags selOcaml;
+
+    name = "ocaml-${name}";
+    pythons = selPythonDefault pkgs;
+    ocamls = selMinimalOcamlPkgs pkgs.ocamlPackages;
+    extras = selCommonInputs pkgs;
+  };
+
+  # creates a default configuration with additional flags
+  mkCfgDefault = { name, flags }: pkgs: {
+    inherit name flags;
+    pythons = selPythonDefault pkgs;
+    ocamls = selAllOcamlPkgs pkgs.ocamlPackages;
+    selOcaml = selOcamlDefault;
+    extras = selCommonInputs pkgs;
+  };
+
+  # creates a minimal configuration with additional flags
+  mkCfgMinimal = { name, flags }: pkgs: {
+    inherit name flags;
+    pythons = [];
+    ocamls = [];
+    selOcaml = selOcamlDefault;
+    extras = [];
+  };
+
+  # creates a configuration for the given ocaml packages
+  mkCfgPackage = { name, ocamls, flags }: pkgs: {
+    inherit name flags;
+    pythons = selPythonDefault pkgs;
+    ocamls = selMinimalOcamlPkgs pkgs.ocamlPackages ++ ocamls pkgs.ocamlPackages;
+    selOcaml = selOcamlDefault;
+    extras = selCommonInputs pkgs;
+  };
+
+  # creates a configuration with multiple ocaml versions: this gives
+  # conflicts. This is just a test to see whether our build system is
+  # not too much confused in this case. It seems at least that ocamlfind
+  # cannot be used in this setting.
+  mkCfgManyOcaml =
+    let
+      selOcaml = pkgs: ocamlPkgSel: with (ocamlPkgSel pkgs); ocaml;
+      selPkgs = pkgs: ocamlPkgSel: with (ocamlPkgSel pkgs); [ menhir ];
+    in sels: pkgs: {
+      name = "many-ocaml";
+      pythons = [];
+      ocamls = pkgs.lib.concatMap (selPkgs pkgs) sels;
+      selOcaml = selOcamlDefault;
+      flags = [];
+      extras = selCommonInputs pkgs ++ map (selOcaml pkgs) sels;
+    };
+
+
+  #
+  # Configurations
+  #
+
+  defaultCfg = mkCfgDefault { name = "default"; flags = []; };
+  debugCfg = mkCfgDefault { name = "debug"; flags = [ "--enable-release=no" ]; };
+  manyOcamlCfg = mkCfgManyOcaml [ selOcaml312 selOcaml311 selOcaml310 ];
+
+  minimalCfgs = map mkCfgMinimal [
+    { name = "minimal"; flags = []; }
+    { name = "noocamlscripting"; flags = [ "--disable-ocaml" ]; }
+  ];
+
+  # Several configurations testing different python versions.
+  # We exlicitly pass the "--enable-python" flag so that the
+  # build should fail if no suitable python can be detected.
+  pythonCfgs = 
+    map mkCfgPython [
+      ( _ : { name = "no-python"; pythons = []; flags = []; })
+
+      (pkgs: {
+        name = "python2";
+        pythons = selPython2 pkgs;
+        flags = [ "--enable-python" ];
+      })
+
+      (pkgs: {
+        name = "python3";
+        pythons = selPython3 pkgs;
+        flags = [ "--enable-python" ];
+      })
+
+      (pkgs: {
+        name = "many-pythons";
+        pythons = selPython3 pkgs ++ selPython2 pkgs;
+        flags = [ "--with-python=python3" ];
+      })
+    ];
+
+  # Several configurations testing different OCaml versions.
+  # These versions ship with minimal global packages in order
+  # to thest the bundled packages with these ocaml versions.
+  ocamlCfgs = map mkCfgOcaml [
+    { name = "312"; selOcaml = selOcaml312; flags = []; }
+    { name = "311"; selOcaml = selOcaml311; flags = [ "--enable-release=yes" ]; }
+    { name = "310"; selOcaml = selOcaml310; flags = []; }
+  ];
+
+  # Several configurations testing different available
+  # ocaml packages.
+  pkgCfgs = map mkCfgPackage [
+    { name = "extlib"; ocamls = ps: [ ps.ocaml_extlib ]; flags = [ "--enable-extlib" ]; }
+    { name = "pcre"; ocamls = ps: [ ps.ocaml_pcre ]; flags = [ "--enable-pcre-syntax" ]; }
+    { name = "sexplib"; ocamls = ps: [ ps.ocaml_sexplib ]; flags = [ "--enable-sexplib" ]; }
+  ];
+
+  altCfgs = [ debugCfg manyOcamlCfg ] ++ minimalCfgs ++ ocamlCfgs ++ pythonCfgs ++ pkgCfgs;
+
+
+  #
   # Builds for specific configurations
   #
 
@@ -76,12 +227,14 @@ let
           };
         };
         cfg = mkConfiguration pkgs;
+        flags = [ "--enable-release=world" ] ++ cfg.flags;
     in with pkgs; releaseTools.nixBuild {
       name = "cocci-build-${cfg.name}";
       src = tarball;
       enableParallelBuilding = true;
-      buildInputs = [ pkgconfig pcre ncurses ocamlPackages.ocaml ] ++ cfg.ocamls ++ cfg.pythons;
-      configureFlagsArray = cfg.flags ++ [ "--enable-release=world" ];
+      buildInputs = cfg.extras ++ [ ncurses ocamlPackages.ocaml ] ++ cfg.ocamls ++ cfg.pythons;
+      configureFlags = pkgs.lib.concatStringsSep " " flags; # hmm, flags are now not allowed to contain spaces
+      doCheck = true;
       buildPhase = ''
         mkdir -p "$out/nix-support/"
         touch "$out/nix-support/make.log"
@@ -92,52 +245,8 @@ let
     };
 
   build = mkBuild defaultCfg;
-  defaultCfg = pkgs: with pkgs; {
-    name = "default";
-    pythons = [ python3 ];
-    ocamls = with ocamlPackages; [
-      findlib menhir ocaml_sexplib ocaml_extlib ocaml_pcre pycaml
-    ];
-    flags = [];
-    selOcaml = orig: orig.ocamlPackages;
-  };
-
-
-  /*
-  # selects which version of ocaml and ocamlPackages to use in nixpkgs.
-  selOcaml312 = pkgs:
-    { ocaml = pkgs.ocaml_3_12_1;
-      ocamlPackages = pkgs.ocamlPackages_3_12_1;
-    };
-  selOcaml310 = pkgs:
-    { ocaml = pkgs.ocaml_3_10_0;
-      ocamlPackages = pkgs.ocamlPackages_3_10_0;
-    };
-
-  # builds an environment with the ocaml packages needed to build coccinelle
-  # the mkList function selects which additional packages to include
-  mkOcamlEnv = mkList: pkgs:
-    pkgs.buildEnv {
-      name = "cocci-ocamlenv";
-      paths = with pkgs.ocamlPackages; [ pkgs.ocaml findlib menhir ] ++ mkList pkgs.ocamlPackages;
-    };
-
-  # selections of ocaml libraries
-  libs_full = mkOcamlEnv (libs: with libs; [ ocaml_pcre ocaml_sexplib ocaml_extlib pycaml ]);
-  libs_rse  = mkOcamlEnv (libs: with libs; [ ocaml_pcre ocaml_sexplib ocaml_extlib ]);
-  libs_se   = mkOcamlEnv (libs: with libs; [ ocaml_sexplib ocaml_extlib ]);
-  libs_null = mkOcamlEnv (libs: []);
-
-  # different configurations of coccinelle builds based on different ocamls/available libraries
-  build = mkBuild { name = "coccinelle"; ocamlVer = selOcaml312; mkEnv = libs_full; inclPython = true; };
-  build_rse = mkBuild { name = "coccinelle_config1"; ocamlVer = selOcaml312; mkEnv = libs_rse; inclPython = true; };
-  build_se = mkBuild { name = "coccinelle_config2"; ocamlVer = selOcaml312; mkEnv = libs_se; inclPython = true; };
-  build_null_12 = mkBuild { name = "coccinelle_config3"; ocamlVer = selOcaml312; mkEnv = libs_null; inclPython = true; };
-  # build_null_10 = mkBuild { name = "coccinelle_config4"; ocamlVer = selOcaml310; mkEnv = libs_null; inclPython = true; };
-  build_null_12_np = mkBuild { name = "coccinelle_config5"; ocamlVer = selOcaml312; mkEnv = libs_null; inclPython = false; };
-  # build_null_10_np = mkBuild { name = "coccinelle_config6"; ocamlVer = selOcaml310; mkEnv = libs_null; inclPython = false; };
-  build_rse_np = mkBuild { name = "coccinelle_config7"; ocamlVer = selOcaml312; mkEnv = libs_rse; inclPython = false; };
-  */
+  altBuilds = map mkBuild altCfgs;
+  allBuilds = [ build ] ++ altBuilds;
 
 
   #
@@ -229,8 +338,7 @@ let
     };
   });
 
-  report = mkReport [ build ];
-  # build_rse build_se build_null_12 build_null_12_np build_rse_np
+  report = mkReport allBuilds;
 
 
   #
@@ -338,8 +446,8 @@ let
         ocaml findlib menhir
         python pcre
       ];
-      configureFlagsArray = [ "--enable-release=world" ];
-      
+      configureFlagsArray = [ "--enable-release" ];
+
       buildPhase = ''
         export HOME=$TMPDIR
 	make prerelease GIT=echo
@@ -367,7 +475,6 @@ let
   basicAttrs = {
     inherit tarball;
     inherit build;
-# build_rse build_se build_null_12 build_null_12_np build_rse_np;
     inherit report;
     inherit dist;
   };

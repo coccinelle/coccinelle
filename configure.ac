@@ -246,7 +246,9 @@ AC_ARG_VAR([PYTHON], [path to python when the version is determined automaticall
 AC_ARG_ENABLE([python], [AS_HELP_STRING([--enable-python], [enable python scripting (yes/no) (default: auto)])])
 AS_IF([test "x$enable_python" != xno],
 [dnl
-  dnl  an explicitly set --with-python disablees by default the global pycaml
+  dnl  an explicitly set --with-python disables the global pycaml by default
+  dnl  set --enable-pycaml if it is clear that the installed pycaml library
+  dnl  is consistent with the chosen python version
   AS_IF([test -n "$enable_python" -a -z "$enable_pycaml"],
   [dnl  if explicit python given: 
     AC_MSG_NOTICE([skipped the selection of a global pycaml module because --enable-python is given explicitly but --enable-pycaml is not.])
@@ -264,11 +266,12 @@ AS_IF([test "x$enable_python" != xno],
     ])
   ],
   [dnl
+    AC_MSG_NOTICE([looking for the corresponding python library])
     PKG_CHECK_MODULES([PYTHON], [python-$PYVER],[AC_SUBST(HAVE_PYTHON,[yes])],[AC_SUBST(HAVE_PYTHON,[no])])
 
     AS_IF([test "x$HAVE_PYTHON" != xyes -a "x$enable_python" != xyes],
     [dnl  fallback if the above failed
-      AC_MSG_NOTICE([trying the default python version as fallback])
+      AC_MSG_NOTICE([trying the default python library as fallback])
       PKG_CHECK_MODULES([PYTHON], [python],[AC_SUBST(HAVE_PYTHON,[yes])],[AC_SUBST(HAVE_PYTHON,[no])])
     ])
   ])
