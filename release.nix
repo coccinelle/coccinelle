@@ -179,11 +179,12 @@ let
         flags = [ "--enable-python" ];
       })
 
-      (pkgs: {
-        name = "many-pythons";
-        pythons = selPython3 pkgs ++ selPython2 pkgs;
-        flags = [ "--with-python=python3" ];
-      })
+#  disabled for now because this combination is too broken
+#      (pkgs: {
+#        name = "many-pythons";
+#        pythons = selPython3 pkgs ++ selPython2 pkgs;
+#        flags = [ "--with-python=python3" ];
+#      })
     ];
 
   # Several configurations testing different OCaml versions.
@@ -444,7 +445,7 @@ let
       buildInputs = with ocamlPackages; [
         pkgconfig ncurses texLiveFull
         ocaml findlib menhir
-        python pcre
+        python pcre patchelf
       ];
       configureFlagsArray = [ "--enable-release" ];
 
@@ -460,7 +461,7 @@ let
       installPhase = ''
         mkdir -p "$out/nix-support/"
 	echo "cocci-dist-${version}" > "$out/nix-support/hydra-release-name"
-	cp $TMP/*.tgz "$out/"
+	cp $TMPDIR/dists/*.tgz "$out/"
 	for file in $out/*.tgz; do
           echo "file binary-dist $file" >> $out/nix-support/hydra-build-products
 	done
@@ -481,7 +482,11 @@ let
     inherit dist;
   };
 
-  testAttrs = {
+  # artificial dependency on report to ensure that we are not going through
+  # an expensive regression test when there is already something wrong with
+  # the build process.
+  reportFirst = x : if report == null then x else x;
+  testAttrs = reportFirst {
     inherit regress;
     inherit test;
   };

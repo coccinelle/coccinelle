@@ -15,7 +15,7 @@ DOC=docs/manual/manual.pdf       \
     docs/man                     \
     docs/spatch.1                \
     docs/manual/cocci-python.txt
-BINSRC=spatch env.sh env.csh standard.h standard.iso \
+BINSRC=spatch* env.sh env.csh standard.h standard.iso \
        *.txt $(DOC) demos/* scripts/spatch*
 BINSRC-PY=$(BINSRC) $(PYLIB) python/coccilib/
 
@@ -153,6 +153,10 @@ bintar: all-dev
 	$(MAKE) docs
 	rm -f $(TMP)/$(PACKAGE)
 	ln -s `pwd` $(TMP)/$(PACKAGE)
+	@if test -n "${PATCHELF}" -a -f spatch; then \
+	   $(PATCHELF) --set-interpreter "/lib/ld-linux.so.2" --set-rpath "" spatch; fi
+	@if test -n "${PATCHELF}" -a -f spatch.opt; then \
+	   $(PATCHELF) --set-interpreter "/lib/ld-linux.so.2" --set-rpath "" spatch.opt; fi
 	cd $(TMP); tar cvfz $(PACKAGE)-bin-x86.tgz --exclude-vcs $(BINSRC2)
 	rm -f $(TMP)/$(PACKAGE)
 
@@ -180,8 +184,10 @@ bytecodetar: all-dev
 
 bintar-python: all
 	$(MAKE) docs
-	@if test -n "${PATCHELF}"; then \
+	@if test -n "${PATCHELF}" -a -f spatch; then \
 	   $(PATCHELF) --set-interpreter "/lib/ld-linux.so.2" --set-rpath "" spatch; fi
+	@if test -n "${PATCHELF}" -a -f spatch.opt; then \
+	   $(PATCHELF) --set-interpreter "/lib/ld-linux.so.2" --set-rpath "" spatch.opt; fi
 	rm -f $(TMP)/$(PACKAGE)
 	ln -s `pwd` $(TMP)/$(PACKAGE)
 	cd $(TMP); tar cvfz $(PACKAGE)-bin-x86-python.tgz --exclude-vcs $(BINSRC2-PY)
