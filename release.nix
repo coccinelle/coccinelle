@@ -449,10 +449,12 @@ let
       configureFlagsArray = [ "--enable-release" ];
 
       buildPhase = ''
+        export TARGETDIR="$TMPDIR/dists"
+        mkdir -p $TARGETDIR
         export HOME=$TMPDIR
-	make prerelease GIT=echo
-	make release GIT=echo
-	make package
+	make prerelease GIT=echo TMP=$TARGETDIR
+	make release GIT=echo TMP=$TARGETDIR
+	make package TMP=$TARGETDIR
       '';
 
       installPhase = ''

@@ -23,6 +23,11 @@ EXCL=$(EXCLUDE:%=--exclude=%)
 BINSRC2=$(BINSRC:%=$(PACKAGE)/%)
 BINSRC2-PY=$(BINSRC-PY:%=$(PACKAGE)/%)
 
+# TMP should point to a folder that is private to the release
+# process. In addition, it should not be the direct parent of
+# the directory in which the release is performed, because it
+# creates temporary directories that in this case could have
+# a name clash with the current directory.
 ifndef TMP
 TMP=/tmp
 endif
@@ -284,6 +289,8 @@ push:
 # Note: configure first
 dist:
 	$(MAKE) licensify
+	$(MAKE) distclean KEEP_CONFIG=1
 	$(MAKE) docs
+	$(MAKE) -C parsing_cocci parser_cocci_menhir.ml
 	$(MAKE) clean
 	tar cvfz $(PACKAGE).tar.gz --transform="s,^,$(PACKAGE)/,S" --exclude=$(PACKAGE).tar.gz --exclude-backups --exclude-vcs *
