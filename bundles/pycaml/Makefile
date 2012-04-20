@@ -42,13 +42,10 @@ pycaml.cmi: $(PYCAMLDIR)/pycaml.cmi
 pycaml_stubs.o: $(PYCAMLDIR)/pycaml_stubs.c
 	$(OCAMLC_CMD) -ccopt -shared -ccopt -fPIC $< -o $@
 
-libpycaml_stubs.a: pycaml_stubs.o
-	$(OCAMLMKLIB_CMD) -custom -o pycaml_stubs $<
-
 dllpycaml_stubs.so: pycaml_stubs.o
 	$(OCAMLMKLIB_CMD) -o pycaml_stubs $<
 
-pycaml.cma: $(PYCAMLDIR)/pycaml.cmo $(PYCAMLDIR)/pycaml.cmi libpycaml_stubs.a dllpycaml_stubs.so
+pycaml.cma: $(PYCAMLDIR)/pycaml.cmo $(PYCAMLDIR)/pycaml.cmi dllpycaml_stubs.so
 	$(OCAMLC_CMD) -I $(PYCAMLDIR) -a -o pycaml.cma $<
 
 all.opt: $(PYCAMLMARKER)
@@ -58,7 +55,7 @@ all-opt-build: $(PYCAMLMARKER) pycaml.cmi pycaml.cmxa
 $(PYCAMLDIR)/pycaml.cmx: $(PYCAMLDIR)/pycaml.ml $(PYCAMLDIR)/pycaml.cmi
 	$(OCAMLOPT_CMD) -c $<
 
-pycaml.cmxa: $(PYCAMLDIR)/pycaml.cmx $(PYCAMLDIR)/pycaml.cmi libpycaml_stubs.a dllpycaml_stubs.so
+pycaml.cmxa: $(PYCAMLDIR)/pycaml.cmx $(PYCAMLDIR)/pycaml.cmi dllpycaml_stubs.so
 	$(OCAMLOPT_CMD) -I $(PYCAMLDIR) -a -o pycaml.cmxa $<
 
 clean:

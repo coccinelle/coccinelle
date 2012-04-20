@@ -12440,13 +12440,7 @@ fi
 fi
 
 if test -n "$SUBSTITUTED_OCAMLFIND"; then :
-    if test -z "$enable_ocaml"; then :
-      enable_ocaml=no
-
-    { $as_echo "$as_me:${as_lineno-$LINENO}: ocaml scripting is disabled because it depends on ocamlfind" >&5
-$as_echo "$as_me: ocaml scripting is disabled because it depends on ocamlfind" >&6;}
-
-elif test "x$enable_ocaml" != xno; then :
+    if test "x$enable_ocaml" != xno; then :
       { $as_echo "$as_me:${as_lineno-$LINENO}: warning: ocamlfind is not found but may be required when ocaml scripts are used" >&5
 $as_echo "$as_me: warning: ocamlfind is not found but may be required when ocaml scripts are used" >&6;}
 
