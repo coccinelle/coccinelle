@@ -202,7 +202,11 @@ AS_IF([test "x$OPTIMIZED_dynlink" = xno],
 dnl  scripting requirement on ocamlfind
 AS_IF([test -n "$SUBSTITUTED_OCAMLFIND"],
 [dnl
-  AS_IF([test "x$enable_ocaml" != xno],
+  AS_IF([test -z "$enable_ocaml"],
+  [dnl  this is perhaps a bit too strict
+    AC_SUBST([enable_ocaml],[no])
+    AC_MSG_NOTICE([ocaml scripting is disabled because it depends on ocamlfind])
+  ], [test "x$enable_ocaml" != xno],
   [dnl
     AC_MSG_NOTICE([warning: ocamlfind is not found but may be required when ocaml scripts are used])
   ])

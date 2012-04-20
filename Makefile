@@ -474,7 +474,7 @@ check: scripts/spatch
 	@COCCINELLE_HOME="$$(pwd)" ./scripts/spatch --sp-file demos/hello/hello-smpl.cocci demos/hello/helloworld.c --very-quiet | grep -q '+  printf("world, hello!");'
 	@echo "testing if spatch works with regexes..."
 	@COCCINELLE_HOME="$$(pwd)" ./scripts/spatch --sp-file demos/hello/hello-regexp.cocci demos/hello/helloworld.c --very-quiet | grep -q '+  printf("world, hello!");'
-	@if test "x${FEATURE_OCAML}" = x1; then \
+	@if test "x${FEATURE_OCAML}" = x1 -a -z "${NO_OCAMLFIND}"; then \
 		echo "testing if spatch works with ocaml scripts..."; \
 		COCCINELLE_HOME="$$(pwd)" ./scripts/spatch --sp-file demos/hello/hello-ocaml.cocci demos/hello/helloworld.c --very-quiet | grep -q 'Hello at: 2'; fi
 	@if test "x${FEATURE_PYTHON}" = x1; then \
