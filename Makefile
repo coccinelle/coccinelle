@@ -571,14 +571,26 @@ distclean::
 	@echo "run 'configure' again prior to building coccinelle"
 
 
-# prevent building or using dependencies when cleaning
+# don't include depend for those actions that either don't need
+# depend or that call 'make .depend' explicitly.
+# TODO: find a nicer way to express this
 ifneq ($(MAKECMDGOALS),clean)
 ifneq ($(MAKECMDGOALS),distclean)
 ifneq ($(MAKECMDGOALS),configure)
 ifneq ($(MAKECMDGOALS),prerelease)
 ifneq ($(MAKECMDGOALS),release)
 ifneq ($(MAKECMDGOALS),package)
+ifneq ($(MAKECMDGOALS),all-release)
+ifneq ($(MAKECMDGOALS),all-dev)
+ifneq ($(MAKECMDGOALS),all)
+ifneq ($(MAKECMDGOALS),.depend)
+ifneq ($(MAKECMDGOALS),depend)
 -include .depend
+endif
+endif
+endif
+endif
+endif
 endif
 endif
 endif

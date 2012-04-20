@@ -1,4 +1,4 @@
-#!/bin/sh -e
+#! /bin/sh -e
 
 set -e
 
@@ -49,7 +49,12 @@ pythonprefix() {
 }
 
 pythonexists() {
-  python -c "exit(0)"
+  local prefix="${pythonprefix}"
+
+  if test ! -f "${prefix}/Python.h"; then
+    echo "error: ${prefix}/Python.h not found (a development version of python is not installed?)" 1>&2
+    false
+  fi
 }
 
 # outputs the "include" cflags for python
@@ -57,11 +62,6 @@ pythoncflags() {
   local version=$1
   local prefix="$(pythonprefix)"
   test $? = 0
-
-  if test ! -f "${prefix}/Python.h"; then
-    echo "error: ${prefix}/Python.h not found (a development version of python is not installed?)" 1>&2
-    exit 1
-  fi
 
   echo "-I${prefix}/include/python${version}"
 }

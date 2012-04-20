@@ -78,6 +78,8 @@ let
 
   selCommonInputs = pkgs: [ pkgs.pkgconfig pkgs.pcre ];
 
+  selDefaultShell = pkgs: pkgs.stdenv.shell;
+
   selPythonNone = pkgs: [];
   selPythonDefault = pkgs: [ pkgs.python ];
   selPython2 = pkgs: [ pkgs.python27 ];
@@ -90,6 +92,7 @@ let
     ocamls = selCommonOcamlPkgs pkgs.ocamlPackages ++ [ pkgs.ocamlPackages.pycaml ];
     selOcaml = selOcamlDefault;
     extras = selCommonInputs pkgs;
+    shell = selDefaultShell pkgs;
   };
 
   # creates a configuration for a given ocaml version
@@ -100,6 +103,7 @@ let
     pythons = selPythonDefault pkgs;
     ocamls = selMinimalOcamlPkgs pkgs.ocamlPackages;
     extras = selCommonInputs pkgs;
+    shell = selDefaultShell pkgs;
   };
 
   # creates a default configuration with additional flags
@@ -109,6 +113,7 @@ let
     ocamls = selAllOcamlPkgs pkgs.ocamlPackages;
     selOcaml = selOcamlDefault;
     extras = selCommonInputs pkgs;
+    shell = selDefaultShell pkgs;
   };
 
   # creates a minimal configuration with additional flags
@@ -118,6 +123,7 @@ let
     ocamls = [];
     selOcaml = selOcamlDefault;
     extras = [];
+    shell = selDefaultShell pkgs;
   };
 
   # creates a configuration for the given ocaml packages
@@ -127,6 +133,20 @@ let
     ocamls = selMinimalOcamlPkgs pkgs.ocamlPackages ++ ocamls pkgs.ocamlPackages;
     selOcaml = selOcamlDefault;
     extras = selCommonInputs pkgs;
+    shell = selDefaultShell pkgs;
+  };
+
+  # build the project using the given shell
+  # it takes a minimal configuration, but then with all the
+  # libraries that trigger features of coccinelle to be enabled.
+  mkCfgShell = { name, selShell }: pkgs: {
+    inherit name;
+    pythons = selPythonDefault pkgs;
+    ocamls = selMinimalOcamlPkgs pkgs.ocamlPackages;
+    selOcaml = selOcamlDefault;
+    flags = [];
+    extras = [ pkgs.pcre ];
+    shell = selShell pkgs;
   };
 
   # creates a configuration with multiple ocaml versions: this gives
@@ -144,6 +164,7 @@ let
       selOcaml = selOcamlDefault;
       flags = [];
       extras = selCommonInputs pkgs ++ map (selOcaml pkgs) sels;
+      shell = selDefaultShell pkgs;
     };
 
 
@@ -169,18 +190,24 @@ let
       ( _ : { name = "no-python"; pythons = []; flags = []; })
 
       (pkgs: {
-        name = "python2";
+        name = "python2-local";
         pythons = selPython2 pkgs;
-        flags = [ "--enable-python" ];
+        flags = [ "--enable-python" "--disable-pycaml" ];
       })
 
       (pkgs: {
-        name = "python3";
+        name = "python3-local";
+        pythons = selPython3 pkgs;
+        flags = [ "--enable-python" "--disable-pycaml" ];
+      })
+
+      (pkgs: {
+        name = "python3-global";
         pythons = selPython3 pkgs;
         flags = [ "--enable-python" ];
       })
 
-#  disabled for now because this combination is too broken
+#  disabled because this combination does not work in NixOS
 #      (pkgs: {
 #        name = "many-pythons";
 #        pythons = selPython3 pkgs ++ selPython2 pkgs;
@@ -203,9 +230,23 @@ let
     { name = "extlib"; ocamls = ps: [ ps.ocaml_extlib ]; flags = [ "--enable-extlib" ]; }
     { name = "pcre"; ocamls = ps: [ ps.ocaml_pcre ]; flags = [ "--enable-pcre-syntax" ]; }
     { name = "sexplib"; ocamls = ps: [ ps.ocaml_sexplib ]; flags = [ "--enable-sexplib" ]; }
+    { name = "pycaml"; ocamls = ps: [ ps.pycaml ]; flags = [ "--enable-pycaml" ]; }
   ];
 
-  altCfgs = [ debugCfg manyOcamlCfg ] ++ minimalCfgs ++ ocamlCfgs ++ pythonCfgs ++ pkgCfgs;
+  shellCfgs = map mkCfgShell [
+    { name = "bash"; selShell = pkgs: "${pkgs.bash}/bin/bash"; }
+    { name = "dash"; selShell = pkgs: "${pkgs.dash}/bin/dash"; }
+    { name = "zsh"; selShell = pkgs: "${pkgs.zsh}/bin/zsh"; }
+
+    # the configure script is not compatible with tcsh
+    # { name = "tcsh"; selShell = pkgs: "${pkgs.tcsh}/bin/tcsh"; }
+  ];
+
+  altCfgs =
+    [ debugCfg manyOcamlCfg ]
+    ++ minimalCfgs
+    ++ ocamlCfgs ++ pythonCfgs
+    ++ pkgCfgs ++ shellCfgs;
 
 
   #
@@ -217,10 +258,10 @@ let
 
   # mkConfiguration is a function that takes the nix package collection of the build
   # (called 'pkgs') and results in a record containing:
-  #  name of the configuration, python packages, ocaml packages selection function
-  #  (which takes the original 'pkgs' as parameter), and ocaml packages. The selection
-  #  function is used by 'mkConfiguration' to determine the appropriate ocamlPackages
-  #  field in 'pkgs'.
+  # name of the configuration, python packages, ocaml packages selection function
+  # (which takes the original 'pkgs' as parameter), and ocaml packages. The selection
+  # function is used by 'mkConfiguration' to determine the appropriate ocamlPackages
+  # field in 'pkgs'.
   mkBuild = mkConfiguration: { system ? builtins.currentSystem }:
     let pkgs = import nixpkgs {
           inherit system;
@@ -231,18 +272,29 @@ let
         cfg = mkConfiguration pkgs;
         flags = [ "--enable-release=world" ] ++ cfg.flags;
     in with pkgs; releaseTools.nixBuild {
+      inherit (cfg) shell;
       name = "cocci-build-${cfg.name}";
       src = tarball;
       enableParallelBuilding = true;
       buildInputs = cfg.extras ++ [ ncurses ocamlPackages.ocaml ] ++ cfg.ocamls ++ cfg.pythons;
       configureFlags = pkgs.lib.concatStringsSep " " flags; # hmm, flags are now not allowed to contain spaces
       doCheck = true;
+      
       buildPhase = ''
         mkdir -p "$out/nix-support/"
         touch "$out/nix-support/make.log"
         echo "report log $out/nix-support/result.log" >> "$out/nix-support/hydra-build-products"
 
         make all 2> >(tee -a "$out/nix-support/make.log" >&2)
+      '';
+
+      # changes the shell in some of the scripts to the configured one
+      prePatch = ''
+        echo "patching the shell in scripts to: ${cfg.shell}"
+        for script in configure scripts/spatch.sh.in scripts/genversion.sh \
+          setup/fake-subst.sh setup/fake-menhir.sh setup/fake-pdflatex.sh; do
+          substituteInPlace $script --replace '#! /bin/sh' '#! ${cfg.shell}'
+        done
       '';
     };
 
@@ -313,32 +365,32 @@ let
       };
     } // args // { inherit name; });
 
-  mkReport = inputs: mkTask (pkgs: _: with pkgs; {
-    name = "report";
-    builds = map (i: i {}) inputs;
+  mkReport = inputs: mkTask (pkgs: _: with pkgs;
+    let builds = map (i: i { inherit (pkgs.stdenv) system; }) inputs; in {
+      name = "report";
 
-    execPhase = ''
-      echo "collecting logs"
-      for build in $builds; do
-        echo "$build/nix-support/make.log"
-        cat "$build/nix-support/make.log"
-      done
+      execPhase = ''
+        echo "collecting logs"
+        for build in ${lib.concatStringsSep " " builds}; do
+          echo "log: $build/nix-support/make.log"
+          cat "$build/nix-support/make.log"
+        done
 
-      echo "grepping OCaml warnings"
-      if grep -2 "Warning " "$TMPDIR/result.log"
-      then
-        echo "found warnings!"
-        false
-      else
-        echo "there are apparently no significant warnings"
-      fi
-    '';
+        echo "grepping OCaml warnings"
+        if grep -2 "Warning " "$TMPDIR/result.log"
+        then
+          echo "found warnings!"
+          false
+        else
+          echo "there are apparently no significant warnings"
+        fi
+      '';
 
-    meta = {
-      description = "Analysis of the coccinelle build reports";
-      schedulingPriority = 5;
-    };
-  });
+      meta = {
+        description = "Analysis of the coccinelle build reports";
+        schedulingPriority = 5;
+      };
+    });
 
   report = mkReport allBuilds;
 

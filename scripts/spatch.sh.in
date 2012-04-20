@@ -1,4 +1,4 @@
-#!/bin/sh -e
+#! /bin/sh -e
 
 # generic wrapper script to invoke 'spatch' or 'spatch.opt'
 # it sets the python variables (if relevant)
