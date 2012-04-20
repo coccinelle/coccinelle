@@ -481,11 +481,6 @@ let
     inherit build;
     inherit report;
     inherit dist;
-    manypython = mkBuild (mkCfgPython (pkgs: {
-        name = "many-pythons";
-        pythons = selPython3 pkgs ++ selPython2 pkgs;
-        flags = [ "--with-python=python3" ];
-      }));
   };
 
   # artificial dependency on report to ensure that we are not going through
