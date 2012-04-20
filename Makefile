@@ -206,14 +206,14 @@ $(LNKOPTLIBS) : $(MAKESUBDIRS:%=%.opt)
 $(OBJS):$(LIBS)
 $(OPTOBJS):$(LIBS:.cma=.cmxa)
 
-$(EXEC): $(LIBS) $(OBJS)
-	$(OCAMLC_CMD) -thread $(BYTECODE_EXTRA) $(FLAGSLIBS) -o $@ $(SYSLIBS) $(LNKLIBS) $^
+$(EXEC): $(LNKLIBS) $(LIBS) $(OBJS)
+	$(OCAMLC_CMD) -thread $(BYTECODE_EXTRA) $(FLAGSLIBS) -o $@ $(SYSLIBS) $^
 
-$(EXEC).opt: $(LIBS:.cma=.cmxa) $(OPTOBJS)
-	$(OCAMLOPT_CMD) -thread $(OPTFLAGSLIBS) -o $@ $(SYSLIBS:.cma=.cmxa) $(OPTLNKLIBS) $^
+$(EXEC).opt: $(OPTLNKLIBS) $(LIBS:.cma=.cmxa) $(OPTOBJS)
+	$(OCAMLOPT_CMD) -thread $(OPTFLAGSLIBS) -o $@ $(SYSLIBS:.cma=.cmxa) $^
 
-$(EXEC).top: $(LIBS) $(OBJS) $(LNKLIBS)
-	$(OCAMLMKTOP_CMD) -custom -o $@ $(SYSLIBS) $(FLAGSLIBS) $(LNKLIBS) $^
+$(EXEC).top: $(LNKLIBS) $(LIBS) $(OBJS)
+	$(OCAMLMKTOP_CMD) -custom -o $@ $(SYSLIBS) $(FLAGSLIBS) $^
 
 clean distclean::
 	rm -f $(TARGET) $(TARGET).opt $(TARGET).top

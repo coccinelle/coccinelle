@@ -126,6 +126,7 @@ PYCAMLDIR=@PATH_pycaml@
 MENHIRDIR=@PATH_menhirLib@
 SEXPDIR=@PATH_sexplib@
 EXTLIBDIR=@PATH_extlib@
+DYNLINKDIR=@PATH_dynlink@
 
 # selected ocaml modules
 PYCOCCI_FILE=@PYCOCCI_FILE@

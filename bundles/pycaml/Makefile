@@ -11,7 +11,7 @@ PYCAMLMARKER=$(PYCAMLDIR)/.marker
 
 # note: the extra linker flags are needed so that the produced shared
 # library gets linked against libpython.
-EXTRACFLAGS=$(PYTHON_CFLAGS:%=-ccopt %) $(PYTHON_LIBS:%=-ccopt %)
+EXTRACFLAGS=$(PYTHON_CFLAGS:%=-ccopt %) $(PYTHON_LIBS:%=-cclib %)
 EXTRALNKFLAGS=$(PYTHON_LIBS:%=-ldopt %)
 
 export PYMAJOR=$(shell echo ${PYTHON_VERSION} | sed -e 's/\..*//')

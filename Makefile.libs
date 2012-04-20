@@ -14,6 +14,14 @@
 #
 
 
+# *Note*
+# Pay attention to the difference between -cclib and -ccopt: although the documentation
+# of -ccopt suggest that it subsumes -cclib, be sure to use -cclib for library includes.
+#
+# *Note*
+# the order in which library includes are specified matters!
+
+
 # pycaml library
 # Note: we added the pycaml_stubs wrapper twice: once for dynamic and once for
 # static linking. The ocaml compiler should use the static linking with the
@@ -22,8 +30,8 @@ LOCAL_pycaml     = $(PYCAMLDIR)/pycaml.cma
 LOCALOPT_pycaml  = $(PYCAMLDIR)/pycaml.cmxa
 GLOBAL_pycaml    = $(PYCAMLDIR)/pycaml.cma
 GLOBALOPT_pycaml = $(PYCAMLDIR)/pycaml.cmxa
-FLAGS_pycaml     = $(PYTHON_LIBS:%=-ccopt %) -dllib -lpycaml_stubs -cclib -lpycaml_stubs
-OPTFLAGS_pycaml  = $(PYTHON_LIBS:%=-ccopt %) -cclib -lpycaml_stubs
+FLAGS_pycaml     = $(CFLAGS_pycaml:%=-ccopt %) -dllib -lpycaml_stubs -cclib -lpycaml_stubs $(PYTHON_LIBS:%=-cclib %)
+OPTFLAGS_pycaml  = $(CFLAGS_pycaml:%=-ccopt %) -cclib -lpycaml_stubs $(PYTHON_LIBS:%=-cclib %)
 
 # sexplib library
 LOCAL_sexplib     = $(SEXPDIR)/sexplib.cmo
@@ -45,8 +53,8 @@ OPTFLAGS_pcre  = $(PCRE_LIBS:%=-ccopt %) -cclib -lpcre_stubs
 # dynlink library
 LOCAL_dynlink     =
 LOCALOPT_dynlink  =
-GLOBAL_dynlink    = dynlink.cma
-GLOBALOPT_dynlink = dynlink.cmxa
+GLOBAL_dynlink    = $(DYNLINKDIR)/dynlink.cma
+GLOBALOPT_dynlink = $(DYNLINKDIR)/dynlink.cmxa
 FLAGS_dynlink     =
 OPTFLAGS_dynlink  =
 
