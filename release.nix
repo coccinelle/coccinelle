@@ -153,6 +153,7 @@ let
 
   defaultCfg = mkCfgDefault { name = "default"; flags = []; };
   debugCfg = mkCfgDefault { name = "debug"; flags = [ "--enable-release=no" ]; };
+  wrappersCfg = mkCfgDefault { name = "wrappers"; flags = [ "--enable-python" "--enable-ocaml" "--without-pkg-config" "--without-ocamlfind" ]; };
   manyOcamlCfg = mkCfgManyOcaml [ selOcaml312 selOcaml311 selOcaml310 ];
 
   minimalCfgs = map mkCfgMinimal [
@@ -480,6 +481,11 @@ let
     inherit build;
     inherit report;
     inherit dist;
+    manypython = mkBuild (mkCfgPython (pkgs: {
+        name = "many-pythons";
+        pythons = selPython3 pkgs ++ selPython2 pkgs;
+        flags = [ "--with-python=python3" ];
+      }));
   };
 
   # artificial dependency on report to ensure that we are not going through

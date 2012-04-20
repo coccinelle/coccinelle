@@ -267,21 +267,25 @@ AC_DEFUN([AC_COCCI_TOOL],
 [dnl
   AC_ARG_VAR([$1], [path to $2])
   AC_ARG_WITH([$2], [AS_HELP_STRING([--with-$2], [whether/which $2 to use (default: auto)])])
-  AC_SUBST([with_$1],["$with_[]AS_TR_SH([$2])"])
+  AC_SUBST([with_$1],["$with_[]AS_TR_SH([$2])"])  dnl sets with_$1
 
   dnl  explicit tool or command given
   AS_IF([test -n "$with_[]$1" -a "x$with_[]$1" != xno -a "x$with_[]$1" != xyes],
   [dnl  custom $with_$1 given
     AC_SUBST([$1], ["$with_[]$1"])
   ],
-  [dnl  otherwise, use the default
+  [dnl  otherwise, use the default command name
     AC_SUBST([$1], ["$2"])
   ])
 
   dnl  searches for the tool (result either empty or 'no' if not found)
-  AS_IF([test "x$with_$1" != xno],
+  AS_IF([test "x$with_$1" = xno],
+  [dnl  disabled
+    AC_MSG_NOTICE([$2 is disabled explicitly])
+    AC_SUBST([$1], [no])
+  ],
   [dnl  find the tool
-    AC_COCCI_FINDTOOL([$1],["${$1}"])
+    AC_COCCI_FINDTOOL([$1],[[$]$1])
   ])
 
   AS_IF([test -z "[$]$1" -o "x[$]$1" = xno],
