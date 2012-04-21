@@ -750,14 +750,12 @@ let remove_minus_and_between_and_expanded_and_fake xs =
 
   let cleanup_ifdefs toks =
   (* TODO: these functions are horrid, but using tokens caused circularity *)
-    let is_ifdef0 = function
-	T2((Parser_c.TCommentCpp
-	      (Token_c.CppIfDirective Token_c.IfDef0, _)),m,idx) -> true
-      | _ -> false in
     let is_ifdef = function
 	T2((Parser_c.TCommentCpp
 	      (Token_c.CppIfDirective Token_c.IfDef, _)),m,idx) -> true
-      | t -> is_ifdef0 t in
+      | T2((Parser_c.TCommentCpp
+	      (Token_c.CppIfDirective Token_c.IfDef0, _)),m,idx) -> true
+      | t -> false in
     let is_else = function
 	T2((Parser_c.TCommentCpp
 	      (Token_c.CppIfDirective Token_c.Else, _)),m,idx) -> true
@@ -779,7 +777,7 @@ let remove_minus_and_between_and_expanded_and_fake xs =
 	  (match stack with
 	    [] -> ((Some (t,rest)),acc_keywords,acc_code)
 	  | _::stack -> parse_ifdef acc_keywords (add t acc_code) stack rest)
-      | t::rest when is_ifdef t or is_ifdef0 t ->
+      | t::rest when is_ifdef t ->
 	  parse_ifdef acc_keywords (add t acc_code) (()::stack) rest
       | t::rest -> parse_ifdef acc_keywords (add t acc_code) stack rest in
     let unminus = function
@@ -790,7 +788,7 @@ let remove_minus_and_between_and_expanded_and_fake xs =
       | x -> false in
     let rec loop = function
 	[] -> []
-      | t::rest when is_ifdef0 t && is_minus t ->
+      | t::rest when is_ifdef t ->
 	  let (ender,acc_keywords,acc_code) =
 	    parse_ifdef [t] [[]] [] rest in
 	  let acc_code = List.map loop acc_code in
@@ -811,7 +809,6 @@ let remove_minus_and_between_and_expanded_and_fake xs =
     loop toks in
       
   let xs = cleanup_ifdefs xs in
-
   let xs = drop_minus xs in
   xs
 
