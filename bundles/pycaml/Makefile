@@ -11,7 +11,7 @@ PYCAMLMARKER=$(PYCAMLDIR)/.marker
 
 # note: the extra linker flags are needed so that the produced shared
 # library gets linked against libpython.
-EXTRACFLAGS=$(PYTHON_CFLAGS:%=-ccopt %) $(PYTHON_LIBS:%=-ccopt %)
+EXTRACFLAGS=$(PYTHON_CFLAGS:%=-ccopt %) $(PYTHON_LIBS:%=-cclib %)
 EXTRALNKFLAGS=$(PYTHON_LIBS:%=-ldopt %)
 
 export PYMAJOR=$(shell echo ${PYTHON_VERSION} | sed -e 's/\..*//')
@@ -42,13 +42,10 @@ pycaml.cmi: $(PYCAMLDIR)/pycaml.cmi
 pycaml_stubs.o: $(PYCAMLDIR)/pycaml_stubs.c
 	$(OCAMLC_CMD) -ccopt -shared -ccopt -fPIC $< -o $@
 
-libpycaml_stubs.a: pycaml_stubs.o
-	$(OCAMLMKLIB_CMD) -custom -o pycaml_stubs $<
-
 dllpycaml_stubs.so: pycaml_stubs.o
 	$(OCAMLMKLIB_CMD) -o pycaml_stubs $<
 
-pycaml.cma: $(PYCAMLDIR)/pycaml.cmo $(PYCAMLDIR)/pycaml.cmi libpycaml_stubs.a dllpycaml_stubs.so
+pycaml.cma: $(PYCAMLDIR)/pycaml.cmo $(PYCAMLDIR)/pycaml.cmi dllpycaml_stubs.so
 	$(OCAMLC_CMD) -I $(PYCAMLDIR) -a -o pycaml.cma $<
 
 all.opt: $(PYCAMLMARKER)
@@ -58,7 +55,7 @@ all-opt-build: $(PYCAMLMARKER) pycaml.cmi pycaml.cmxa
 $(PYCAMLDIR)/pycaml.cmx: $(PYCAMLDIR)/pycaml.ml $(PYCAMLDIR)/pycaml.cmi
 	$(OCAMLOPT_CMD) -c $<
 
-pycaml.cmxa: $(PYCAMLDIR)/pycaml.cmx $(PYCAMLDIR)/pycaml.cmi libpycaml_stubs.a dllpycaml_stubs.so
+pycaml.cmxa: $(PYCAMLDIR)/pycaml.cmx $(PYCAMLDIR)/pycaml.cmi dllpycaml_stubs.so
 	$(OCAMLOPT_CMD) -I $(PYCAMLDIR) -a -o pycaml.cmxa $<
 
 clean:
@@ -82,3 +79,5 @@ $(PYCAMLMARKER): $(PYCAMLFILE)
 $(PYCAMLFILE):
 	@echo "$@ not found. Please download it and drop it in this directory ($(pwd))."
 	@false
+
+include ../../Makefile.common

@@ -28,7 +28,7 @@ CONFIGURE_FLAGS=@CONFIGURE_FLAGS@
 
 # differentiate between release and development builds here
 # (typically for improved performance)
-ifeq (@enable_release@, yes)
+ifneq (@enable_release@, no)
 EXTRA_OCAML_FLAGS=-unsafe
 else
 EXTRA_OCAML_FLAGS=-g -dtypes
@@ -118,6 +118,7 @@ LOCALLIB_pycaml=@LOCALLIB_pycaml@
 # Features
 FEATURE_PYTHON=@FEATURE_PYTHON@
 FEATURE_OCAML=@FEATURE_OCAML@
+NO_OCAMLFIND=@SUBSTITUTED_OCAMLFIND@
 
 # Include paths
 PCREDIR=@PATH_pcre@
@@ -125,6 +126,7 @@ PYCAMLDIR=@PATH_pycaml@
 MENHIRDIR=@PATH_menhirLib@
 SEXPDIR=@PATH_sexplib@
 EXTLIBDIR=@PATH_extlib@
+DYNLINKDIR=@PATH_dynlink@
 
 # selected ocaml modules
 PYCOCCI_FILE=@PYCOCCI_FILE@

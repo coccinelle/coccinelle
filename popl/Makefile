@@ -33,7 +33,8 @@ OBJS = $(SRC:.ml=.cmo)
 OPTOBJS = $(SRC:.ml=.cmx)
 
 all: $(LIB)
-all.opt: $(OPTLIB)
+all.opt:
+	@$(MAKE) $(OPTLIB) BUILD_OPT=yes
 
 $(TARGET).top: $(LIB)
 	$(OCAMLMKTOP_CMD) -o $(TARGET).top $(SYSLIBS) $(LIBS) $(OBJS)
@@ -83,3 +84,5 @@ ifneq ($(MAKECMDGOALS),distclean)
 -include .depend
 endif
 endif
+
+include ../Makefile.common

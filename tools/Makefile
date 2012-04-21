@@ -9,8 +9,8 @@ PROGS=spp gitgrep splitpatch extract_c_and_res #generate_dependencies
 
 all: $(SUBDIRS) $(PROGS)
 
-# for recursive make
-all.opt: $(PROGS)
+all.opt:
+	@$(MAKE) $(PROGS) BUILD_OPT=yes
 
 gitgrep: gitgrep.ml
 	$(OCAMLOPT) -o gitgrep str.cmxa gitgrep.ml
@@ -83,3 +83,5 @@ ifneq ($(MAKECMDGOALS),distclean)
 -include .depend
 endif
 endif
+
+include ../Makefile.common

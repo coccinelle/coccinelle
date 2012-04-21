@@ -42,3 +42,4 @@ tests/SCORE_expected.sexp.save
 config.log
 config.status
 autom4te.cache
+aclocal.m4

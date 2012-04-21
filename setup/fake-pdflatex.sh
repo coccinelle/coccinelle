@@ -1,4 +1,6 @@
-#!/bin/sh -e
+#! /bin/sh -e
+
+set -e
 
 # If you don't have pdflatex installed, but do have the generated pdf files, then
 # this script provides those pdf files as a substitute for the pdflatex invocation.

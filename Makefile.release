@@ -15,7 +15,7 @@ DOC=docs/manual/manual.pdf       \
     docs/man                     \
     docs/spatch.1                \
     docs/manual/cocci-python.txt
-BINSRC=spatch env.sh env.csh standard.h standard.iso \
+BINSRC=spatch* env.sh env.csh standard.h standard.iso \
        *.txt $(DOC) demos/* scripts/spatch*
 BINSRC-PY=$(BINSRC) $(PYLIB) python/coccilib/
 
@@ -23,6 +23,11 @@ EXCL=$(EXCLUDE:%=--exclude=%)
 BINSRC2=$(BINSRC:%=$(PACKAGE)/%)
 BINSRC2-PY=$(BINSRC-PY:%=$(PACKAGE)/%)
 
+# TMP should point to a folder that is private to the release
+# process. In addition, it should not be the direct parent of
+# the directory in which the release is performed, because it
+# creates temporary directories that in this case could have
+# a name clash with the current directory.
 ifndef TMP
 TMP=/tmp
 endif
@@ -76,7 +81,7 @@ prerelease:
 fix-expected:
 	@echo "going to generate: tests/SCORE_expected_orig.sexp"
 	$(MAKE) distclean
-	./configure --disable-python
+	./configure --enable-release --disable-python
 	$(MAKE) opt-only
 	yes | ./spatch.opt -testall --iso-file ./standard.iso --macro-file-builtins ./standard.h
 	cp tests/SCORE_actual.sexp tests/SCORE_expected_orig.sexp
@@ -110,7 +115,7 @@ package-src:
 # on those libraries.
 package-nopython:
 	$(MAKE) distclean
-	./configure --disable-python --disable-pcre-syntax
+	./configure --enable-release --disable-python --disable-pcre-syntax --disable-menhirLib --disable-sexplib --disable-extlib --disable-pycaml
 	$(MAKE) bintar
 	$(MAKE) bytecodetar
 
@@ -119,7 +124,7 @@ package-nopython:
 # on those libraries.
 package-python:
 	$(MAKE) distclean
-	./configure --enable-python --disable-pcre-syntax
+	./configure --enable-release --enable-python --disable-pcre-syntax --disable-menhirLib --disable-sexplib --disable-extlib --disable-pycaml
 	$(MAKE) bintar-python
 	$(MAKE) bytecodetar-python
 
@@ -139,7 +144,7 @@ srctar: Makefile.config
 	if test -f "$(TMP)/$(PACKAGE)/"; then rm -f "$(TMP)/$(PACKAGE)/"; fi # remove it if it is a symlink
 	$(MKDIR_P) "$(TMP)/$(PACKAGE)/"
 	cp -rfa ./*  "$(TMP)/$(PACKAGE)/"
-	cd $(TMP)/$(PACKAGE); cd parsing_cocci/; $(MAKE) parser_cocci_menhir.ml
+	cd $(TMP)/$(PACKAGE); $(MAKE) -C parsing_cocci parser_cocci_menhir.ml
 	rm -f $(TMP)/$(PACKAGE)/Makefile.config
 	cd $(TMP); tar cvfz $(PACKAGE).tgz --exclude-vcs $(EXCL) $(PACKAGE)
 	rm -rf  $(TMP)/$(PACKAGE)
@@ -148,6 +153,10 @@ bintar: all-dev
 	$(MAKE) docs
 	rm -f $(TMP)/$(PACKAGE)
 	ln -s `pwd` $(TMP)/$(PACKAGE)
+	@if test -n "${PATCHELF}" -a -f spatch; then \
+	   $(PATCHELF) --set-interpreter "/lib/ld-linux.so.2" --set-rpath "" spatch; fi
+	@if test -n "${PATCHELF}" -a -f spatch.opt; then \
+	   $(PATCHELF) --set-interpreter "/lib/ld-linux.so.2" --set-rpath "" spatch.opt; fi
 	cd $(TMP); tar cvfz $(PACKAGE)-bin-x86.tgz --exclude-vcs $(BINSRC2)
 	rm -f $(TMP)/$(PACKAGE)
 
@@ -175,8 +184,10 @@ bytecodetar: all-dev
 
 bintar-python: all
 	$(MAKE) docs
-	@if test -n "${PATCHELF}"; then \
+	@if test -n "${PATCHELF}" -a -f spatch; then \
 	   $(PATCHELF) --set-interpreter "/lib/ld-linux.so.2" --set-rpath "" spatch; fi
+	@if test -n "${PATCHELF}" -a -f spatch.opt; then \
+	   $(PATCHELF) --set-interpreter "/lib/ld-linux.so.2" --set-rpath "" spatch.opt; fi
 	rm -f $(TMP)/$(PACKAGE)
 	ln -s `pwd` $(TMP)/$(PACKAGE)
 	cd $(TMP); tar cvfz $(PACKAGE)-bin-x86-python.tgz --exclude-vcs $(BINSRC2-PY)
@@ -284,6 +295,8 @@ push:
 # Note: configure first
 dist:
 	$(MAKE) licensify
+	$(MAKE) distclean KEEP_CONFIG=1
 	$(MAKE) docs
+	$(MAKE) -C parsing_cocci parser_cocci_menhir.ml
 	$(MAKE) clean
 	tar cvfz $(PACKAGE).tar.gz --transform="s,^,$(PACKAGE)/,S" --exclude=$(PACKAGE).tar.gz --exclude-backups --exclude-vcs *

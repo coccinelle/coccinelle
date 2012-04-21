@@ -58,7 +58,8 @@ CTLOPTOBJS = $(CTLOBJS:.cmo=.cmx)
 
 all: $(LIB)
 
-all.opt: $(OPTLIB)
+all.opt:
+	@$(MAKE) $(OPTLIB) BUILD_OPT=yes
 
 ctl: $(CTLEXEC)
 
@@ -123,3 +124,5 @@ ifneq ($(MAKECMDGOALS),distclean)
 -include .depend
 endif
 endif
+
+include ../Makefile.common

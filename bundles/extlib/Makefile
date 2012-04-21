@@ -67,3 +67,5 @@ extLib.cmxa: .mli-marker $(SRC)
 
 META: $(EXTLIB)/META
 	cp $< $@
+
+include ../../Makefile.common

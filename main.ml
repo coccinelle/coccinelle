@@ -255,6 +255,8 @@ let short_options = [
   "   suffix to use when making a backup for inplace";
   "--out-place", Arg.Set outplace_modif,
   "   store modifications in a .cocci_res file";
+  "--reverse", Arg.Set Flag_parsing_cocci.interpret_inverted,
+  "  invert the semantic patch before applying it";
 
   "-U", Arg.Int (fun n -> Flag_parsing_c.diff_lines := Some (i_to_s n)),
   "  set number of diff context lines";

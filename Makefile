@@ -160,8 +160,8 @@ byte: Makefile.config version.ml
 
 opt-compil: Makefile.config version.ml
 	$(MAKE) .depend
-	$(MAKE) subdirs.opt
-	$(MAKE) $(EXEC).opt
+	$(MAKE) subdirs.opt BUILD_OPT=yes
+	$(MAKE) $(EXEC).opt BUILD_OPT=yes
 	@echo the compilation of $(EXEC).opt finished
 	@echo $(EXEC).opt can be installed or used
 
@@ -206,14 +206,14 @@ $(LNKOPTLIBS) : $(MAKESUBDIRS:%=%.opt)
 $(OBJS):$(LIBS)
 $(OPTOBJS):$(LIBS:.cma=.cmxa)
 
-$(EXEC): $(LIBS) $(OBJS)
-	$(OCAMLC_CMD) -thread $(BYTECODE_EXTRA) $(FLAGSLIBS) -o $@ $(SYSLIBS) $(LNKLIBS) $^
+$(EXEC): $(LNKLIBS) $(LIBS) $(OBJS)
+	$(OCAMLC_CMD) -thread $(BYTECODE_EXTRA) $(FLAGSLIBS) -o $@ $(SYSLIBS) $^
 
-$(EXEC).opt: $(LIBS:.cma=.cmxa) $(OPTOBJS)
-	$(OCAMLOPT_CMD) -thread $(OPTFLAGSLIBS) -o $@ $(SYSLIBS:.cma=.cmxa) $(OPTLNKLIBS) $^
+$(EXEC).opt: $(OPTLNKLIBS) $(LIBS:.cma=.cmxa) $(OPTOBJS)
+	$(OCAMLOPT_CMD) -thread $(OPTFLAGSLIBS) -o $@ $(SYSLIBS:.cma=.cmxa) $^
 
-$(EXEC).top: $(LIBS) $(OBJS) $(LNKLIBS)
-	$(OCAMLMKTOP_CMD) -custom -o $@ $(SYSLIBS) $(FLAGSLIBS) $(LNKLIBS) $^
+$(EXEC).top: $(LNKLIBS) $(LIBS) $(OBJS)
+	$(OCAMLMKTOP_CMD) -custom -o $@ $(SYSLIBS) $(FLAGSLIBS) $^
 
 clean distclean::
 	rm -f $(TARGET) $(TARGET).opt $(TARGET).top
@@ -274,9 +274,9 @@ version.ml:
 docs:
 	@$(MAKE) -C docs || (echo "warning: ignored the failed construction of the manual" 1>&2)
 	@if test "x$(FEATURE_OCAML)" = x1; then \
-		if test -f ./parsing_c/ast_c.cmo; then \
+		if test -f ./parsing_c/ast_c.cmo -o -f ./parsing_c/ast_c.cmx; then \
 			$(MAKE) -C ocaml doc; \
-		else echo "note: to obtain coccilib documenation, it is required to build 'spatch' first so that ./parsing_c/ast_c.cmo gets build."; \
+		else echo "note: to obtain coccilib documenation, it is required to build 'spatch' first so that ./parsing_c/ast_c.cm* gets build."; \
 		fi fi
 	@echo "finished building manuals"
 
@@ -474,7 +474,7 @@ check: scripts/spatch
 	@COCCINELLE_HOME="$$(pwd)" ./scripts/spatch --sp-file demos/hello/hello-smpl.cocci demos/hello/helloworld.c --very-quiet | grep -q '+  printf("world, hello!");'
 	@echo "testing if spatch works with regexes..."
 	@COCCINELLE_HOME="$$(pwd)" ./scripts/spatch --sp-file demos/hello/hello-regexp.cocci demos/hello/helloworld.c --very-quiet | grep -q '+  printf("world, hello!");'
-	@if test "x${FEATURE_OCAML}" = x1; then \
+	@if test "x${FEATURE_OCAML}" = x1 -a -z "${NO_OCAMLFIND}"; then \
 		echo "testing if spatch works with ocaml scripts..."; \
 		COCCINELLE_HOME="$$(pwd)" ./scripts/spatch --sp-file demos/hello/hello-ocaml.cocci demos/hello/helloworld.c --very-quiet | grep -q 'Hello at: 2'; fi
 	@if test "x${FEATURE_PYTHON}" = x1; then \
@@ -567,16 +567,24 @@ distclean::
 	rm -f globals/config.ml
 	rm -f globals/regexp.ml python/pycocci.ml ocaml/prepare_ocamlcocci.ml
 	rm -f scripts/spatch.sh
+	rm -f aclocal.m4
 	@echo "run 'configure' again prior to building coccinelle"
 
 
-# prevent building or using dependencies when cleaning
+# don't include depend for those actions that either don't need
+# depend or that call 'make .depend' explicitly.
+# TODO: find a nicer way to express this
 ifneq ($(MAKECMDGOALS),clean)
 ifneq ($(MAKECMDGOALS),distclean)
 ifneq ($(MAKECMDGOALS),configure)
 ifneq ($(MAKECMDGOALS),prerelease)
 ifneq ($(MAKECMDGOALS),release)
 ifneq ($(MAKECMDGOALS),package)
+ifneq ($(MAKECMDGOALS),all-release)
+ifneq ($(MAKECMDGOALS),all-dev)
+ifneq ($(MAKECMDGOALS),all)
+ifneq ($(MAKECMDGOALS),.depend)
+ifneq ($(MAKECMDGOALS),depend)
 -include .depend
 endif
 endif
@@ -584,3 +592,10 @@ endif
 endif
 endif
 endif
+endif
+endif
+endif
+endif
+endif
+
+include Makefile.common

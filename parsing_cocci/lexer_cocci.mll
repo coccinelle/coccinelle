@@ -4,6 +4,7 @@ module D = Data
 module Ast = Ast_cocci
 module Ast0 = Ast0_cocci
 module P = Parse_aux
+module FC = Flag_parsing_cocci
 exception Lexical of string
 let tok = Lexing.lexeme
 
@@ -58,8 +59,19 @@ let pass_zero _ = col_zero := false
 
 let lexerr s1 s2 = raise (Lexical (Printf.sprintf "%s%s" s1 s2))
 
+let opt_reverse_token token =
+  if !FC.interpret_inverted
+  then match token with
+         D.MINUS        -> D.PLUSPLUS  (* maybe too liberal *)
+       | D.OPTMINUS     -> lexerr "cannot invert token ?- (an optional minus line), which is needed for reversing the patch" ""  
+       | D.UNIQUEMINUS  -> D.PLUS
+       | D.PLUS         -> D.MINUS
+       | D.PLUSPLUS     -> D.MINUS (* may not be sufficient *)
+       | _              -> token
+  else token
+
 let add_current_line_type x =
-  match (x,!current_line_type) with
+  match (opt_reverse_token x,!current_line_type) with
     (D.MINUS,(D.CONTEXT,ln,lln))  ->
       current_line_type := (D.MINUS,ln,lln)
   | (D.MINUS,(D.UNIQUE,ln,lln))   ->

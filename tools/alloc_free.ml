@@ -167,7 +167,7 @@ let _ =
   then
     begin
       let o = open_out (Printf.sprintf "%s/files" !dir) in
-      Printf.fprintf o "#!/bin/sh\n\n";
+      Printf.fprintf o "#! /bin/sh\n\n";
       sedify o !gen !dir l;
       sedify_ors o !gen !dir l;
       Printf.fprintf o "\nwait\n/bin/rm tmp*out\n";

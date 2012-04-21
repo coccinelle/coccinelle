@@ -105,12 +105,21 @@
   for iso/headers/python. 'bin/spatch.opt' and 'bin/spatch.byte'
 - The bundled packages are now in the 'bundles' subdirectory and in the
   form of their original tarballs. These are extracted and used on-demand.
-- Compatibility with python 2 and python 3
+- Compatibility with python 2 and python 3. Also, a small bug is fixed in the order
+  of library includes that caused sometimes trouble when building the pycaml library.
 - Dropped the dependency on Perl in the Makefiles
 - The configure script uses pkg-config and ocaml findlib and provides many
   flags for tuning/overriding the build process (including the ocaml
   compiler and the C compiler and preprocessor).
 - Add line number directives to the .ml file generated from a .cocci file
+- Added 'make check' as an alternative to 'make test'. It can run after
+  building spatch, checks whether some featues work (python and ocaml scripts,
+  regexes) if these features are enabled, and then launches the test suite
+  with a 75% success rate requirement. It also does not ask for user input
+  and can be used in autonomous builds.
+- Added an experimental --reverse to invert the semantic patch before application.
+  Note that not all patches can be inverted, nor is it guaranteed that applying
+  a patch followed by applying its inverse is an identity operation.
 
 ** Bugfix:
 - Corrected parsing of script strings delimited by a single quote.  Thanks
@@ -183,6 +192,10 @@
 - Don't allow just dropping an exp or type
 - Avoid removing #endif when surrounded by - code
 - Print some important error messages even with the --very-quiet flag.
+- Fixed parallel building in the Makefiles
+- Fixed the compilation of the "pure bytecode" version. If you use the
+  bundled pycaml or ocaml-pcre, you'll need their stub libraries in
+  your LD_LIBRARY_PATH.
 
 * 0.2.5
 ** Language:

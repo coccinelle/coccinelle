@@ -157,3 +157,4 @@ clean::
                 *.out \
                 *.toc
 
+include ../../Makefile.common

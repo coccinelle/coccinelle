@@ -2104,11 +2104,42 @@ ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
-CONFIGURE_FLAGS=$*
 
-COCCI_VERSION=$PACKAGE_VERSION
+ac_aux_dir=
+for ac_dir in setup "$srcdir"/setup; do
+  if test -f "$ac_dir/install-sh"; then
+    ac_aux_dir=$ac_dir
+    ac_install_sh="$ac_aux_dir/install-sh -c"
+    break
+  elif test -f "$ac_dir/install.sh"; then
+    ac_aux_dir=$ac_dir
+    ac_install_sh="$ac_aux_dir/install.sh -c"
+    break
+  elif test -f "$ac_dir/shtool"; then
+    ac_aux_dir=$ac_dir
+    ac_install_sh="$ac_aux_dir/shtool install -c"
+    break
+  fi
+done
+if test -z "$ac_aux_dir"; then
+  as_fn_error $? "cannot find install-sh, install.sh, or shtool in setup \"$srcdir\"/setup" "$LINENO" 5
+fi
 
-COCCI_SRCDIR=$(pwd)
+# These three variables are undocumented and unsupported,
+# and are intended to be withdrawn in a future Autoconf release.
+# They can cause serious problems if a builder's source tree is in a directory
+# whose full name contains unusual characters.
+ac_config_guess="$SHELL $ac_aux_dir/config.guess"  # Please don't use this var.
+ac_config_sub="$SHELL $ac_aux_dir/config.sub"  # Please don't use this var.
+ac_configure="$SHELL $ac_aux_dir/configure"  # Please don't use this var.
+
+
+
+CONFIGURE_FLAGS="$*"
+
+COCCI_VERSION="$PACKAGE_VERSION"
+
+COCCI_SRCDIR="$(pwd)"
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: configuring coccinelle $COCCI_VERSION in $COCCI_SRCDIR" >&5
 $as_echo "$as_me: configuring coccinelle $COCCI_VERSION in $COCCI_SRCDIR" >&6;}
@@ -2355,35 +2386,6 @@ $as_echo "$as_me: some fake substitutions for required but unavailable programs 
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: verifying basic tools" >&5
 $as_echo "$as_me: verifying basic tools" >&6;}
-
-ac_aux_dir=
-for ac_dir in "$srcdir" "$srcdir/.." "$srcdir/../.."; do
-  if test -f "$ac_dir/install-sh"; then
-    ac_aux_dir=$ac_dir
-    ac_install_sh="$ac_aux_dir/install-sh -c"
-    break
-  elif test -f "$ac_dir/install.sh"; then
-    ac_aux_dir=$ac_dir
-    ac_install_sh="$ac_aux_dir/install.sh -c"
-    break
-  elif test -f "$ac_dir/shtool"; then
-    ac_aux_dir=$ac_dir
-    ac_install_sh="$ac_aux_dir/shtool install -c"
-    break
-  fi
-done
-if test -z "$ac_aux_dir"; then
-  as_fn_error $? "cannot find install-sh, install.sh, or shtool in \"$srcdir\" \"$srcdir/..\" \"$srcdir/../..\"" "$LINENO" 5
-fi
-
-# These three variables are undocumented and unsupported,
-# and are intended to be withdrawn in a future Autoconf release.
-# They can cause serious problems if a builder's source tree is in a directory
-# whose full name contains unusual characters.
-ac_config_guess="$SHELL $ac_aux_dir/config.guess"  # Please don't use this var.
-ac_config_sub="$SHELL $ac_aux_dir/config.sub"  # Please don't use this var.
-ac_configure="$SHELL $ac_aux_dir/configure"  # Please don't use this var.
-
 
 # Find a good install program.  We prefer a C program (faster),
 # so one script is as good as another.  But avoid the broken or
@@ -3577,7 +3579,6 @@ fi
 
   with_PKG_CONFIG="$with_pkg_config"
 
-
     if test -n "$with_PKG_CONFIG" -a "x$with_PKG_CONFIG" != xno -a "x$with_PKG_CONFIG" != xyes; then :
       PKG_CONFIG="$with_PKG_CONFIG"
 
@@ -3588,8 +3589,14 @@ else
 
 fi
 
-    if test "x$with_PKG_CONFIG" != xno; then :
-        if test "x"${PKG_CONFIG}"" = xpkg-config -a "xPKG_CONFIG" = xPKG_CONFIG; then :
+    if test "x$with_PKG_CONFIG" = xno; then :
+      { $as_echo "$as_me:${as_lineno-$LINENO}: pkg-config is disabled explicitly" >&5
+$as_echo "$as_me: pkg-config is disabled explicitly" >&6;}
+    PKG_CONFIG=no
+
+
+else
+        if test "x$PKG_CONFIG" = xpkg-config -a "xPKG_CONFIG" = xPKG_CONFIG; then :
 
 
 if test "x$ac_cv_env_PKG_CONFIG_set" != "xset"; then
@@ -3707,7 +3714,7 @@ $as_echo "no" >&6; }
 
 fi
 
-elif test "x"${PKG_CONFIG}"" = xocamllex -a "xPKG_CONFIG" = xOCAMLLEX; then :
+elif test "x$PKG_CONFIG" = xocamllex -a "xPKG_CONFIG" = xOCAMLLEX; then :
         # checking for ocamllex
   if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}ocamllex", so it can be a program name with args.
@@ -3913,7 +3920,7 @@ fi
 
 
 
-elif test "x"${PKG_CONFIG}"" = xocamlyacc -a "xPKG_CONFIG" = xOCAMLYACC; then :
+elif test "x$PKG_CONFIG" = xocamlyacc -a "xPKG_CONFIG" = xOCAMLYACC; then :
         if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}ocamlyacc", so it can be a program name with args.
 set dummy ${ac_tool_prefix}ocamlyacc; ac_word=$2
@@ -4017,8 +4024,8 @@ fi
 
 else
       if test -n "$ac_tool_prefix"; then
-  # Extract the first word of "${ac_tool_prefix}"${PKG_CONFIG}"", so it can be a program name with args.
-set dummy ${ac_tool_prefix}"${PKG_CONFIG}"; ac_word=$2
+  # Extract the first word of "${ac_tool_prefix}[$]PKG_CONFIG", so it can be a program name with args.
+set dummy ${ac_tool_prefix}$PKG_CONFIG; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
 $as_echo_n "checking for $ac_word... " >&6; }
 if ${ac_cv_path_PKG_CONFIG+:} false; then :
@@ -4060,8 +4067,8 @@ fi
 fi
 if test -z "$ac_cv_path_PKG_CONFIG"; then
   ac_pt_PKG_CONFIG=$PKG_CONFIG
-  # Extract the first word of ""${PKG_CONFIG}"", so it can be a program name with args.
-set dummy "${PKG_CONFIG}"; ac_word=$2
+  # Extract the first word of "[$]PKG_CONFIG", so it can be a program name with args.
+set dummy $PKG_CONFIG; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
 $as_echo_n "checking for $ac_word... " >&6; }
 if ${ac_cv_path_ac_pt_PKG_CONFIG+:} false; then :
@@ -6699,7 +6706,6 @@ fi
 
   with_OCAMLLEX="$with_ocamllex"
 
-
     if test -n "$with_OCAMLLEX" -a "x$with_OCAMLLEX" != xno -a "x$with_OCAMLLEX" != xyes; then :
       OCAMLLEX="$with_OCAMLLEX"
 
@@ -6710,8 +6716,14 @@ else
 
 fi
 
-    if test "x$with_OCAMLLEX" != xno; then :
-        if test "x"${OCAMLLEX}"" = xpkg-config -a "xOCAMLLEX" = xPKG_CONFIG; then :
+    if test "x$with_OCAMLLEX" = xno; then :
+      { $as_echo "$as_me:${as_lineno-$LINENO}: ocamllex is disabled explicitly" >&5
+$as_echo "$as_me: ocamllex is disabled explicitly" >&6;}
+    OCAMLLEX=no
+
+
+else
+        if test "x$OCAMLLEX" = xpkg-config -a "xOCAMLLEX" = xPKG_CONFIG; then :
 
 
 if test "x$ac_cv_env_PKG_CONFIG_set" != "xset"; then
@@ -6829,7 +6841,7 @@ $as_echo "no" >&6; }
 
 fi
 
-elif test "x"${OCAMLLEX}"" = xocamllex -a "xOCAMLLEX" = xOCAMLLEX; then :
+elif test "x$OCAMLLEX" = xocamllex -a "xOCAMLLEX" = xOCAMLLEX; then :
         # checking for ocamllex
   if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}ocamllex", so it can be a program name with args.
@@ -7035,7 +7047,7 @@ fi
 
 
 
-elif test "x"${OCAMLLEX}"" = xocamlyacc -a "xOCAMLLEX" = xOCAMLYACC; then :
+elif test "x$OCAMLLEX" = xocamlyacc -a "xOCAMLLEX" = xOCAMLYACC; then :
         if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}ocamlyacc", so it can be a program name with args.
 set dummy ${ac_tool_prefix}ocamlyacc; ac_word=$2
@@ -7139,8 +7151,8 @@ fi
 
 else
       if test -n "$ac_tool_prefix"; then
-  # Extract the first word of "${ac_tool_prefix}"${OCAMLLEX}"", so it can be a program name with args.
-set dummy ${ac_tool_prefix}"${OCAMLLEX}"; ac_word=$2
+  # Extract the first word of "${ac_tool_prefix}[$]OCAMLLEX", so it can be a program name with args.
+set dummy ${ac_tool_prefix}$OCAMLLEX; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
 $as_echo_n "checking for $ac_word... " >&6; }
 if ${ac_cv_path_OCAMLLEX+:} false; then :
@@ -7182,8 +7194,8 @@ fi
 fi
 if test -z "$ac_cv_path_OCAMLLEX"; then
   ac_pt_OCAMLLEX=$OCAMLLEX
-  # Extract the first word of ""${OCAMLLEX}"", so it can be a program name with args.
-set dummy "${OCAMLLEX}"; ac_word=$2
+  # Extract the first word of "[$]OCAMLLEX", so it can be a program name with args.
+set dummy $OCAMLLEX; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
 $as_echo_n "checking for $ac_word... " >&6; }
 if ${ac_cv_path_ac_pt_OCAMLLEX+:} false; then :
@@ -7802,7 +7814,6 @@ fi
 
   with_OCAMLYACC="$with_ocamlyacc"
 
-
     if test -n "$with_OCAMLYACC" -a "x$with_OCAMLYACC" != xno -a "x$with_OCAMLYACC" != xyes; then :
       OCAMLYACC="$with_OCAMLYACC"
 
@@ -7813,8 +7824,14 @@ else
 
 fi
 
-    if test "x$with_OCAMLYACC" != xno; then :
-        if test "x"${OCAMLYACC}"" = xpkg-config -a "xOCAMLYACC" = xPKG_CONFIG; then :
+    if test "x$with_OCAMLYACC" = xno; then :
+      { $as_echo "$as_me:${as_lineno-$LINENO}: ocamlyacc is disabled explicitly" >&5
+$as_echo "$as_me: ocamlyacc is disabled explicitly" >&6;}
+    OCAMLYACC=no
+
+
+else
+        if test "x$OCAMLYACC" = xpkg-config -a "xOCAMLYACC" = xPKG_CONFIG; then :
 
 
 if test "x$ac_cv_env_PKG_CONFIG_set" != "xset"; then
@@ -7932,7 +7949,7 @@ $as_echo "no" >&6; }
 
 fi
 
-elif test "x"${OCAMLYACC}"" = xocamllex -a "xOCAMLYACC" = xOCAMLLEX; then :
+elif test "x$OCAMLYACC" = xocamllex -a "xOCAMLYACC" = xOCAMLLEX; then :
         # checking for ocamllex
   if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}ocamllex", so it can be a program name with args.
@@ -8138,7 +8155,7 @@ fi
 
 
 
-elif test "x"${OCAMLYACC}"" = xocamlyacc -a "xOCAMLYACC" = xOCAMLYACC; then :
+elif test "x$OCAMLYACC" = xocamlyacc -a "xOCAMLYACC" = xOCAMLYACC; then :
         if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}ocamlyacc", so it can be a program name with args.
 set dummy ${ac_tool_prefix}ocamlyacc; ac_word=$2
@@ -8242,8 +8259,8 @@ fi
 
 else
       if test -n "$ac_tool_prefix"; then
-  # Extract the first word of "${ac_tool_prefix}"${OCAMLYACC}"", so it can be a program name with args.
-set dummy ${ac_tool_prefix}"${OCAMLYACC}"; ac_word=$2
+  # Extract the first word of "${ac_tool_prefix}[$]OCAMLYACC", so it can be a program name with args.
+set dummy ${ac_tool_prefix}$OCAMLYACC; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
 $as_echo_n "checking for $ac_word... " >&6; }
 if ${ac_cv_path_OCAMLYACC+:} false; then :
@@ -8285,8 +8302,8 @@ fi
 fi
 if test -z "$ac_cv_path_OCAMLYACC"; then
   ac_pt_OCAMLYACC=$OCAMLYACC
-  # Extract the first word of ""${OCAMLYACC}"", so it can be a program name with args.
-set dummy "${OCAMLYACC}"; ac_word=$2
+  # Extract the first word of "[$]OCAMLYACC", so it can be a program name with args.
+set dummy $OCAMLYACC; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
 $as_echo_n "checking for $ac_word... " >&6; }
 if ${ac_cv_path_ac_pt_OCAMLYACC+:} false; then :
@@ -8905,7 +8922,6 @@ fi
 
   with_OCAMLFIND="$with_ocamlfind"
 
-
     if test -n "$with_OCAMLFIND" -a "x$with_OCAMLFIND" != xno -a "x$with_OCAMLFIND" != xyes; then :
       OCAMLFIND="$with_OCAMLFIND"
 
@@ -8916,8 +8932,14 @@ else
 
 fi
 
-    if test "x$with_OCAMLFIND" != xno; then :
-        if test "x"${OCAMLFIND}"" = xpkg-config -a "xOCAMLFIND" = xPKG_CONFIG; then :
+    if test "x$with_OCAMLFIND" = xno; then :
+      { $as_echo "$as_me:${as_lineno-$LINENO}: ocamlfind is disabled explicitly" >&5
+$as_echo "$as_me: ocamlfind is disabled explicitly" >&6;}
+    OCAMLFIND=no
+
+
+else
+        if test "x$OCAMLFIND" = xpkg-config -a "xOCAMLFIND" = xPKG_CONFIG; then :
 
 
 if test "x$ac_cv_env_PKG_CONFIG_set" != "xset"; then
@@ -9035,7 +9057,7 @@ $as_echo "no" >&6; }
 
 fi
 
-elif test "x"${OCAMLFIND}"" = xocamllex -a "xOCAMLFIND" = xOCAMLLEX; then :
+elif test "x$OCAMLFIND" = xocamllex -a "xOCAMLFIND" = xOCAMLLEX; then :
         # checking for ocamllex
   if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}ocamllex", so it can be a program name with args.
@@ -9241,7 +9263,7 @@ fi
 
 
 
-elif test "x"${OCAMLFIND}"" = xocamlyacc -a "xOCAMLFIND" = xOCAMLYACC; then :
+elif test "x$OCAMLFIND" = xocamlyacc -a "xOCAMLFIND" = xOCAMLYACC; then :
         if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}ocamlyacc", so it can be a program name with args.
 set dummy ${ac_tool_prefix}ocamlyacc; ac_word=$2
@@ -9345,8 +9367,8 @@ fi
 
 else
       if test -n "$ac_tool_prefix"; then
-  # Extract the first word of "${ac_tool_prefix}"${OCAMLFIND}"", so it can be a program name with args.
-set dummy ${ac_tool_prefix}"${OCAMLFIND}"; ac_word=$2
+  # Extract the first word of "${ac_tool_prefix}[$]OCAMLFIND", so it can be a program name with args.
+set dummy ${ac_tool_prefix}$OCAMLFIND; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
 $as_echo_n "checking for $ac_word... " >&6; }
 if ${ac_cv_path_OCAMLFIND+:} false; then :
@@ -9388,8 +9410,8 @@ fi
 fi
 if test -z "$ac_cv_path_OCAMLFIND"; then
   ac_pt_OCAMLFIND=$OCAMLFIND
-  # Extract the first word of ""${OCAMLFIND}"", so it can be a program name with args.
-set dummy "${OCAMLFIND}"; ac_word=$2
+  # Extract the first word of "[$]OCAMLFIND", so it can be a program name with args.
+set dummy $OCAMLFIND; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
 $as_echo_n "checking for $ac_word... " >&6; }
 if ${ac_cv_path_ac_pt_OCAMLFIND+:} false; then :
@@ -10585,6 +10607,8 @@ else
           as_fn_error $? "OCaml package dynlink is not available but requested explicitly" "$LINENO" 5
 
 fi
+      { $as_echo "$as_me:${as_lineno-$LINENO}: OCaml package dynlink is not available" >&5
+$as_echo "$as_me: OCaml package dynlink is not available" >&6;}
       enable_dynlink=no
 
 
@@ -10706,6 +10730,8 @@ else
           as_fn_error $? "OCaml package camlp4 is not available but requested explicitly" "$LINENO" 5
 
 fi
+      { $as_echo "$as_me:${as_lineno-$LINENO}: OCaml package camlp4 is not available" >&5
+$as_echo "$as_me: OCaml package camlp4 is not available" >&6;}
       enable_camlp4=no
 
 
@@ -10827,6 +10853,8 @@ else
           as_fn_error $? "OCaml package sexplib is not available but requested explicitly" "$LINENO" 5
 
 fi
+      { $as_echo "$as_me:${as_lineno-$LINENO}: OCaml package sexplib is not available" >&5
+$as_echo "$as_me: OCaml package sexplib is not available" >&6;}
       enable_sexplib=no
 
 
@@ -10948,6 +10976,8 @@ else
           as_fn_error $? "OCaml package menhirLib is not available but requested explicitly" "$LINENO" 5
 
 fi
+      { $as_echo "$as_me:${as_lineno-$LINENO}: OCaml package menhirLib is not available" >&5
+$as_echo "$as_me: OCaml package menhirLib is not available" >&6;}
       enable_menhirLib=no
 
 
@@ -11069,6 +11099,8 @@ else
           as_fn_error $? "OCaml package extlib is not available but requested explicitly" "$LINENO" 5
 
 fi
+      { $as_echo "$as_me:${as_lineno-$LINENO}: OCaml package extlib is not available" >&5
+$as_echo "$as_me: OCaml package extlib is not available" >&6;}
       enable_extlib=no
 
 
@@ -11252,7 +11284,6 @@ fi
 
   with_MENHIR="$with_menhir"
 
-
     if test -n "$with_MENHIR" -a "x$with_MENHIR" != xno -a "x$with_MENHIR" != xyes; then :
       MENHIR="$with_MENHIR"
 
@@ -11263,8 +11294,14 @@ else
 
 fi
 
-    if test "x$with_MENHIR" != xno; then :
-        if test "x"${MENHIR}"" = xpkg-config -a "xMENHIR" = xPKG_CONFIG; then :
+    if test "x$with_MENHIR" = xno; then :
+      { $as_echo "$as_me:${as_lineno-$LINENO}: menhir is disabled explicitly" >&5
+$as_echo "$as_me: menhir is disabled explicitly" >&6;}
+    MENHIR=no
+
+
+else
+        if test "x$MENHIR" = xpkg-config -a "xMENHIR" = xPKG_CONFIG; then :
 
 
 if test "x$ac_cv_env_PKG_CONFIG_set" != "xset"; then
@@ -11382,7 +11419,7 @@ $as_echo "no" >&6; }
 
 fi
 
-elif test "x"${MENHIR}"" = xocamllex -a "xMENHIR" = xOCAMLLEX; then :
+elif test "x$MENHIR" = xocamllex -a "xMENHIR" = xOCAMLLEX; then :
         # checking for ocamllex
   if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}ocamllex", so it can be a program name with args.
@@ -11588,7 +11625,7 @@ fi
 
 
 
-elif test "x"${MENHIR}"" = xocamlyacc -a "xMENHIR" = xOCAMLYACC; then :
+elif test "x$MENHIR" = xocamlyacc -a "xMENHIR" = xOCAMLYACC; then :
         if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}ocamlyacc", so it can be a program name with args.
 set dummy ${ac_tool_prefix}ocamlyacc; ac_word=$2
@@ -11692,8 +11729,8 @@ fi
 
 else
       if test -n "$ac_tool_prefix"; then
-  # Extract the first word of "${ac_tool_prefix}"${MENHIR}"", so it can be a program name with args.
-set dummy ${ac_tool_prefix}"${MENHIR}"; ac_word=$2
+  # Extract the first word of "${ac_tool_prefix}[$]MENHIR", so it can be a program name with args.
+set dummy ${ac_tool_prefix}$MENHIR; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
 $as_echo_n "checking for $ac_word... " >&6; }
 if ${ac_cv_path_MENHIR+:} false; then :
@@ -11735,8 +11772,8 @@ fi
 fi
 if test -z "$ac_cv_path_MENHIR"; then
   ac_pt_MENHIR=$MENHIR
-  # Extract the first word of ""${MENHIR}"", so it can be a program name with args.
-set dummy "${MENHIR}"; ac_word=$2
+  # Extract the first word of "[$]MENHIR", so it can be a program name with args.
+set dummy $MENHIR; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
 $as_echo_n "checking for $ac_word... " >&6; }
 if ${ac_cv_path_ac_pt_MENHIR+:} false; then :
@@ -12468,7 +12505,7 @@ if test "${enable_python+set}" = set; then :
 fi
 
 if test "x$enable_python" != xno; then :
-      if test -n "$enable_python" -a -z "$enable_pycaml"; then :
+          if test -n "$enable_python" -a -z "$enable_pycaml"; then :
       { $as_echo "$as_me:${as_lineno-$LINENO}: skipped the selection of a global pycaml module because --enable-python is given explicitly but --enable-pycaml is not." >&5
 $as_echo "$as_me: skipped the selection of a global pycaml module because --enable-python is given explicitly but --enable-pycaml is not." >&6;}
     enable_pycaml=no
@@ -12479,13 +12516,13 @@ fi
       if test -z "$PYVER"; then :
 
 
+
 # Check whether --with-python was given.
 if test "${with_python+set}" = set; then :
   withval=$with_python;
 fi
 
   with_PYTHON="$with_python"
-
 
     if test -n "$with_PYTHON" -a "x$with_PYTHON" != xno -a "x$with_PYTHON" != xyes; then :
       PYTHON="$with_PYTHON"
@@ -12497,8 +12534,14 @@ else
 
 fi
 
-    if test "x$with_PYTHON" != xno; then :
-        if test "x"${PYTHON}"" = xpkg-config -a "xPYTHON" = xPKG_CONFIG; then :
+    if test "x$with_PYTHON" = xno; then :
+      { $as_echo "$as_me:${as_lineno-$LINENO}: python is disabled explicitly" >&5
+$as_echo "$as_me: python is disabled explicitly" >&6;}
+    PYTHON=no
+
+
+else
+        if test "x$PYTHON" = xpkg-config -a "xPYTHON" = xPKG_CONFIG; then :
 
 
 if test "x$ac_cv_env_PKG_CONFIG_set" != "xset"; then
@@ -12616,7 +12659,7 @@ $as_echo "no" >&6; }
 
 fi
 
-elif test "x"${PYTHON}"" = xocamllex -a "xPYTHON" = xOCAMLLEX; then :
+elif test "x$PYTHON" = xocamllex -a "xPYTHON" = xOCAMLLEX; then :
         # checking for ocamllex
   if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}ocamllex", so it can be a program name with args.
@@ -12822,7 +12865,7 @@ fi
 
 
 
-elif test "x"${PYTHON}"" = xocamlyacc -a "xPYTHON" = xOCAMLYACC; then :
+elif test "x$PYTHON" = xocamlyacc -a "xPYTHON" = xOCAMLYACC; then :
         if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}ocamlyacc", so it can be a program name with args.
 set dummy ${ac_tool_prefix}ocamlyacc; ac_word=$2
@@ -12926,8 +12969,8 @@ fi
 
 else
       if test -n "$ac_tool_prefix"; then
-  # Extract the first word of "${ac_tool_prefix}"${PYTHON}"", so it can be a program name with args.
-set dummy ${ac_tool_prefix}"${PYTHON}"; ac_word=$2
+  # Extract the first word of "${ac_tool_prefix}[$]PYTHON", so it can be a program name with args.
+set dummy ${ac_tool_prefix}$PYTHON; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
 $as_echo_n "checking for $ac_word... " >&6; }
 if ${ac_cv_path_PYTHON+:} false; then :
@@ -12969,8 +13012,8 @@ fi
 fi
 if test -z "$ac_cv_path_PYTHON"; then
   ac_pt_PYTHON=$PYTHON
-  # Extract the first word of ""${PYTHON}"", so it can be a program name with args.
-set dummy "${PYTHON}"; ac_word=$2
+  # Extract the first word of "[$]PYTHON", so it can be a program name with args.
+set dummy $PYTHON; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
 $as_echo_n "checking for $ac_word... " >&6; }
 if ${ac_cv_path_ac_pt_PYTHON+:} false; then :
@@ -13581,6 +13624,59 @@ fi
 fi
 
 
+        if test "x$PYTHON" = xno -a -z "$with_python"; then :
+        for ac_prog in python python3 python3.2 python3.1 python2 python2.7 python2.6 python2.5
+do
+  # Extract the first word of "$ac_prog", so it can be a program name with args.
+set dummy $ac_prog; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path_PYTHON+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $PYTHON in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_PYTHON="$PYTHON" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_PYTHON="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+PYTHON=$ac_cv_path_PYTHON
+if test -n "$PYTHON"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $PYTHON" >&5
+$as_echo "$PYTHON" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+  test -n "$PYTHON" && break
+done
+
+      if test -z "$PYTHON"; then :
+  PYTHON=no
+
+fi
+
+fi
+
     if test "x$PYTHON" = xno -a -n "$with_python" -a "x$with_python" != xyes; then :
         { $as_echo "$as_me:${as_lineno-$LINENO}: $with_python is not a found as tool, therefore interpreted as version" >&5
 $as_echo "$as_me: $with_python is not a found as tool, therefore interpreted as version" >&6;}
@@ -13623,6 +13719,8 @@ $as_echo "$as_me: python major version: $PYVER_MAJOR" >&6;}
 fi
 
 else
+      { $as_echo "$as_me:${as_lineno-$LINENO}: looking for the corresponding python library" >&5
+$as_echo "$as_me: looking for the corresponding python library" >&6;}
 
 pkg_failed=no
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for PYTHON" >&5
@@ -13695,8 +13793,8 @@ $as_echo "yes" >&6; }
 fi
 
     if test "x$HAVE_PYTHON" != xyes -a "x$enable_python" != xyes; then :
-        { $as_echo "$as_me:${as_lineno-$LINENO}: trying the default python version as fallback" >&5
-$as_echo "$as_me: trying the default python version as fallback" >&6;}
+        { $as_echo "$as_me:${as_lineno-$LINENO}: trying the default python library as fallback" >&5
+$as_echo "$as_me: trying the default python library as fallback" >&6;}
 
 pkg_failed=no
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for PYTHON" >&5
@@ -13848,6 +13946,8 @@ else
           as_fn_error $? "OCaml package pycaml is not available but requested explicitly" "$LINENO" 5
 
 fi
+      { $as_echo "$as_me:${as_lineno-$LINENO}: OCaml package pycaml is not available" >&5
+$as_echo "$as_me: OCaml package pycaml is not available" >&6;}
       enable_pycaml=no
 
 
@@ -14077,6 +14177,8 @@ else
           as_fn_error $? "OCaml package pcre is not available but requested explicitly" "$LINENO" 5
 
 fi
+      { $as_echo "$as_me:${as_lineno-$LINENO}: OCaml package pcre is not available" >&5
+$as_echo "$as_me: OCaml package pcre is not available" >&6;}
       enable_pcre=no
 
 
@@ -14319,7 +14421,6 @@ fi
 
   with_PDFLATEX="$with_pdflatex"
 
-
     if test -n "$with_PDFLATEX" -a "x$with_PDFLATEX" != xno -a "x$with_PDFLATEX" != xyes; then :
       PDFLATEX="$with_PDFLATEX"
 
@@ -14330,8 +14431,14 @@ else
 
 fi
 
-    if test "x$with_PDFLATEX" != xno; then :
-        if test "x"${PDFLATEX}"" = xpkg-config -a "xPDFLATEX" = xPKG_CONFIG; then :
+    if test "x$with_PDFLATEX" = xno; then :
+      { $as_echo "$as_me:${as_lineno-$LINENO}: pdflatex is disabled explicitly" >&5
+$as_echo "$as_me: pdflatex is disabled explicitly" >&6;}
+    PDFLATEX=no
+
+
+else
+        if test "x$PDFLATEX" = xpkg-config -a "xPDFLATEX" = xPKG_CONFIG; then :
 
 
 if test "x$ac_cv_env_PKG_CONFIG_set" != "xset"; then
@@ -14449,7 +14556,7 @@ $as_echo "no" >&6; }
 
 fi
 
-elif test "x"${PDFLATEX}"" = xocamllex -a "xPDFLATEX" = xOCAMLLEX; then :
+elif test "x$PDFLATEX" = xocamllex -a "xPDFLATEX" = xOCAMLLEX; then :
         # checking for ocamllex
   if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}ocamllex", so it can be a program name with args.
@@ -14655,7 +14762,7 @@ fi
 
 
 
-elif test "x"${PDFLATEX}"" = xocamlyacc -a "xPDFLATEX" = xOCAMLYACC; then :
+elif test "x$PDFLATEX" = xocamlyacc -a "xPDFLATEX" = xOCAMLYACC; then :
         if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}ocamlyacc", so it can be a program name with args.
 set dummy ${ac_tool_prefix}ocamlyacc; ac_word=$2
@@ -14759,8 +14866,8 @@ fi
 
 else
       if test -n "$ac_tool_prefix"; then
-  # Extract the first word of "${ac_tool_prefix}"${PDFLATEX}"", so it can be a program name with args.
-set dummy ${ac_tool_prefix}"${PDFLATEX}"; ac_word=$2
+  # Extract the first word of "${ac_tool_prefix}[$]PDFLATEX", so it can be a program name with args.
+set dummy ${ac_tool_prefix}$PDFLATEX; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
 $as_echo_n "checking for $ac_word... " >&6; }
 if ${ac_cv_path_PDFLATEX+:} false; then :
@@ -14802,8 +14909,8 @@ fi
 fi
 if test -z "$ac_cv_path_PDFLATEX"; then
   ac_pt_PDFLATEX=$PDFLATEX
-  # Extract the first word of ""${PDFLATEX}"", so it can be a program name with args.
-set dummy "${PDFLATEX}"; ac_word=$2
+  # Extract the first word of "[$]PDFLATEX", so it can be a program name with args.
+set dummy $PDFLATEX; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
 $as_echo_n "checking for $ac_word... " >&6; }
 if ${ac_cv_path_ac_pt_PDFLATEX+:} false; then :
@@ -15513,23 +15620,7 @@ fi
 
 
 
-ac_config_files="$ac_config_files Makefile.config"
-
-ac_config_files="$ac_config_files version.ml"
-
-ac_config_files="$ac_config_files commons/commands.ml"
-
-ac_config_files="$ac_config_files globals/config.ml"
-
-ac_config_files="$ac_config_files globals/regexp.ml"
-
-ac_config_files="$ac_config_files python/pycocci.ml"
-
-ac_config_files="$ac_config_files ocaml/prepare_ocamlcocci.ml"
-
-ac_config_files="$ac_config_files scripts/spatch.sh"
-
-ac_config_files="$ac_config_files docs/spatch.1"
+ac_config_files="$ac_config_files Makefile.config version.ml commons/commands.ml globals/config.ml globals/regexp.ml python/pycocci.ml ocaml/prepare_ocamlcocci.ml scripts/spatch.sh docs/spatch.1"
 
 
 cat >confcache <<\_ACEOF
@@ -16745,9 +16836,6 @@ pcre library:     $HAVE_PCRE	(requires the dev version of libpcre)
 release config:   $enable_release	(strongly recommended to be 'yes', overridable with --enable-release)
 optimized spatch: $enable_opt	(overridable with --disable-opt)
 
-EOF
-
-cat << EOF
 ------------------------------------------------------------------------------
 Coccinelle can now be compiled and installed.
 

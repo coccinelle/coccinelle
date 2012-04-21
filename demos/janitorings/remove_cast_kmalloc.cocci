@@ -6,7 +6,7 @@
 // 
 //     Run this:
 // 
-//         #!/bin/sh
+//         #! /bin/sh
 //         for f in $(grep -Erl "\([^\)]*\) *k[cmz]alloc" *) ; do
 //           echo "De-casting $f..."
 //           perl -pi -e "s/ ?= ?\([^\)]*\) *(k[cmz]alloc) *\(/ = \1\(/" $f
