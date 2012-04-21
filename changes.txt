@@ -96,7 +96,7 @@
 - Slightly more efficient handling of lists.
 - Slightly better error message in the case of inconsistent paths
 - Improve limited size caching
-- Remove #ifdefs when everything else is removed
+- Remove zero #ifdefs when everything else is removed
 - Mac OSX compatibility (tested on OSX Lion)
 - 'Make depend' is called automatically when starting from a cleaned source
 - Configure flag --enable-release makes 'make' build the optimized version of
