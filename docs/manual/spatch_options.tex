@@ -481,6 +481,13 @@ due to running out of steps rather than due to not matching.}
 %   --popl-mark-all} and {\bf --popl-keep-all-wits} implicitly set {\bf
 %   --popl}.}
 
+\rare{--reverse}{Inverts the semantic patch before applying it.
+A potential use case is backporting changes to previous versions. If a
+semantic patch represents an API change, then the reverse undoes the
+API change. Note that inverting a semantic patch is not always possible.
+In particular, the composition of a
+semantic patch with its inverse is not guaranteed to be an empty patch.
+
 \section{Generation of the result}
 
 Normally, the only output is the differences between the original code and
