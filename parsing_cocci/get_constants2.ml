@@ -30,6 +30,13 @@ wanted *)
 type combine =
     And of combine list | Or of combine list | Elem of string | False | True
 
+let rec dep2c = function
+    And l -> Printf.sprintf "(%s)" (String.concat "&" (List.map dep2c l))
+  | Or l -> Printf.sprintf "(%s)" (String.concat "|" (List.map dep2c l))
+  | Elem x -> x
+  | False -> "false"
+  | True -> "true"
+
 (* glimpse often fails on large queries.  We can safely remove arguments of
 && as long as we don't remove all of them (note that there is no negation).
 This tries just removing one of them and then orders the results by
@@ -236,10 +243,11 @@ let drop x = True
 let do_get_constants constants keywords env neg_pos =
   let donothing r k e = k e in
   let option_default = True in
+  let bad_default = False in
   let bind = build_and in
   let inherited ((nm1,_) as x) =
-    (* ignore virtuals *)
-    if nm1 = "virtual" then option_default
+    (* ignore virtuals, can never match *)
+    if nm1 = "virtual" then bad_default
     (* perhaps inherited, but value not required, so no constraints *)
     else if List.mem x neg_pos then option_default
     else (try List.assoc nm1 env with Not_found -> False) in
@@ -261,7 +269,8 @@ let do_get_constants constants keywords env neg_pos =
 	    "NULL" -> keywords "NULL"
 	  | nm -> constants nm)
     | Ast.MetaId(name,_,_,_) | Ast.MetaFunc(name,_,_,_)
-    | Ast.MetaLocalFunc(name,_,_,_) -> bind (k i) (minherited name)
+    | Ast.MetaLocalFunc(name,_,_,_) ->
+	bind (k i) (minherited name)
     | Ast.DisjId(ids) -> disj_union_all (List.map r.V.combiner_ident ids)
     | _ -> k i in
 
@@ -602,7 +611,8 @@ let run rules neg_pos_vars =
 		      else Ast.AndDep (Ast.Dep rule,prev))
 		  deps mv in
 	      (match dependencies env extra_deps with
-		False -> (rest_info, in_plus, (nm,True)::env, nm::locals)
+		False ->
+		  (rest_info, in_plus, (nm,True)::env, nm::locals)
 	      | dependencies ->
 		  (build_or dependencies rest_info, in_plus, env, locals))
           | (Ast.InitialScriptRule (_,_,deps,_),_)

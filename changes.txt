@@ -196,6 +196,7 @@
 - Fixed the compilation of the "pure bytecode" version. If you use the
   bundled pycaml or ocaml-pcre, you'll need their stub libraries in
   your LD_LIBRARY_PATH.
+- For get_constants, virtuals should be false, not true
 
 * 0.2.5
 ** Language:
