@@ -4,7 +4,7 @@
 , cocciSrc ? { outPath = ./.; revCount = 1234; gitTag = "abcdef"; }
 , testsSrc ? { outPath = ../big-tests; rev = 1234; }
 , officialRelease ? false
-, performRegress ? false
+, performRegress ? true
 }:
 
 
@@ -428,12 +428,15 @@ let
         export ISO=${coccinelle}/share/coccinelle/standard.iso
         export DEFS=${coccinelle}/share/coccinelle/standard.h
 
-	# generate the test outcomes
-        make -e all
+	# generate the test outcomes using a parallel build
+        make -e all -j$NIX_BUILD_CORES -l$NIX_BUILD_CORES
 
         # collect the results
 	# note: the tarball is likely to contain useless
-        # symbolic links to files in the nix store. So be it.
+        # symbolic links to files in the nix store. We therefore
+        # delete these symlinks. As a result, you should be able
+        # to unpack the tarball in the tests directory.
+        find "$TMPDIR/tests" -depth -type l -delete
         cd "$TMPDIR"
         tar -czf "$out/results.tar.gz" ./tests
 	echo "file binary-dist $out/results.tar.gz" >> "$out/nix-support/hydra-build-products"

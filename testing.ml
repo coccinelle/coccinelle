@@ -28,8 +28,7 @@ let testone prefix x compare_with_expected_flag =
       | Some (Some outfile) ->
           if List.length res > 1
           then pr2 ("note that not just " ^ cfile ^ " was involved");
-
-          let tmpfile = "/tmp/"^Common.basename cfile in
+          let tmpfile = sprintf "%s/%s" Filename.temp_dir_name (Common.basename cfile) in
           pr2 (sprintf "One file modified. Result is here: %s" tmpfile);
           Common.command2 ("mv "^outfile^" "^tmpfile);
           tmpfile
