@@ -7,7 +7,7 @@
 SHAREDIR="@prefix@/share/coccinelle"
 LIBDIR="@prefix@/lib"
 
-if test ! -f "$SHAREDIR"; then
+if test ! -d "$SHAREDIR"; then
     SHAREDIR="$(pwd)"
 fi
 
