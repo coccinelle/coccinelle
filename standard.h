@@ -363,6 +363,7 @@
 //#define __declspec(x) 
 
 #define __page_aligned(x) 
+#define __aligned(x) 
 #define __vsyscall(x) 
 
 // ----------------------------------------------------------------------------
