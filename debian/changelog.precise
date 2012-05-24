@@ -1,0 +1,5 @@
+coccinelle (1.0.0-rc12~npalix1) precise; urgency=low
+
+  * New release 1.0.0-rc12
+
+ -- Nicolas Palix <nicolas.palix@gmail.com>  Thu, 24 May 2012 23:26:28 +0200
