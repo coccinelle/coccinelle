@@ -1,3 +1,33 @@
+coccinelle (1.0.0-rc12~1010npalix3) maverick; urgency=low
+
+  * New release 1.0.0-rc12
+
+ -- Nicolas Palix <nicolas.palix@gmail.com>  Tue, 10 Apr 2012 01:30:31 +0200
+
+coccinelle (1.0.0-rc12~1010npalix2) maverick; urgency=low
+
+  * New release 1.0.0-rc12
+
+ -- Nicolas Palix <nicolas.palix@gmail.com>  Tue, 10 Apr 2012 01:02:56 +0200
+
+coccinelle (1.0.0-rc12~1010npalix1) maverick; urgency=low
+
+  * New release 1.0.0-rc12
+
+ -- Nicolas Palix <nicolas.palix@gmail.com>  Tue, 10 Apr 2012 00:37:50 +0200
+
+coccinelle (1.0.0-rc11~1010npalix1) maverick; urgency=low
+
+  * New release 1.0.0-rc11
+
+ -- Nicolas Palix <nicolas.palix@gmail.com>  Tue, 13 Mar 2012 00:54:24 +0100
+
+coccinelle (1.0.0-rc10~1010npalix1) maverick; urgency=low
+
+  * New release 1.0.0-rc10
+
+ -- Nicolas Palix <nicolas.palix@gmail.com>  Mon, 20 Feb 2012 21:25:29 +0100
+
 coccinelle (1.0.0-rc7~1010npalix1) maverick; urgency=low
 
   * New release 1.0.0-rc7

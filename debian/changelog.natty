@@ -1,3 +1,33 @@
+coccinelle (1.0.0-rc12~1104npalix3) natty; urgency=low
+
+  * New release 1.0.0-rc12
+
+ -- Nicolas Palix <nicolas.palix@gmail.com>  Tue, 10 Apr 2012 01:30:31 +0200
+
+coccinelle (1.0.0-rc12~1104npalix2) natty; urgency=low
+
+  * New release 1.0.0-rc12
+
+ -- Nicolas Palix <nicolas.palix@gmail.com>  Tue, 10 Apr 2012 01:02:57 +0200
+
+coccinelle (1.0.0-rc12~1104npalix1) natty; urgency=low
+
+  * New release 1.0.0-rc12
+
+ -- Nicolas Palix <nicolas.palix@gmail.com>  Tue, 10 Apr 2012 00:37:51 +0200
+
+coccinelle (1.0.0-rc11~1104npalix1) natty; urgency=low
+
+  * New release 1.0.0-rc11
+
+ -- Nicolas Palix <nicolas.palix@gmail.com>  Tue, 13 Mar 2012 00:54:24 +0100
+
+coccinelle (1.0.0-rc10~1104npalix1) natty; urgency=low
+
+  * New release 1.0.0-rc10
+
+ -- Nicolas Palix <nicolas.palix@gmail.com>  Mon, 20 Feb 2012 21:25:30 +0100
+
 coccinelle (1.0.0-rc7~1104npalix1) natty; urgency=low
 
   * New release 1.0.0-rc7
