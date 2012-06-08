@@ -1435,6 +1435,14 @@ let rec consume_minus_positions toks =
       [] -> []
     | ((PC.TOPar0(_),_) as x)::xs | ((PC.TCPar0(_),_) as x)::xs
     | ((PC.TMid0(_),_) as x)::xs -> x::loop_other xs
+    | x::(PC.TPArob _,_)::(PC.TMetaId(name,constraints,seed,pure,clt),_)::xs ->
+	let x =
+	  process_minus_positions x name clt
+	    (function name ->
+	      Ast0.IdentTag
+		(Ast0.wrap
+		   (Ast0.MetaId(name,constraints,seed,pure)))) in
+	(loop_other (x::xs))
     | x::(PC.TPArob _,_)::(PC.TMetaExp(name,constraints,pure,ty,clt),_)::xs ->
 	let x =
 	  process_minus_positions x name clt

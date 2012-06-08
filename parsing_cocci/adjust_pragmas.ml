@@ -215,6 +215,7 @@ let rec left_ident i =
       call_right left_ident id i (function id -> Ast0.OptIdent(id))
   | Ast0.UniqueIdent(id) ->
       call_right left_ident id i (function id -> Ast0.UniqueIdent(id))
+  | Ast0.AsIdent(id,asid) -> failwith "not possible"
 
 let left_fundecl name fninfo =
   let fncall_right processor data cont =

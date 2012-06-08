@@ -1517,6 +1517,13 @@ and (ident: info_ident -> (A.ident, string * Ast_c.info) matcher) =
       | DontKnow -> failwith "MetaLocalFunc, need more semantic info about id"
       )
 
+  | A.AsIdent(id,asid) ->
+      ident infoidb id ib >>= (fun id ib ->
+      ident infoidb asid ib >>= (fun asid ib ->
+	return(
+	  ((A.AsIdent(id,asid)) +> A.rewrap ida,
+	   ib))))
+
   (* not clear why disj things are needed, after disjdistr? *)
   | A.DisjId ias ->
       ias +> List.fold_left (fun acc ia -> acc >|+|> (ident infoidb ia ib)) fail

@@ -83,6 +83,7 @@ let combiner bind option_default
       | Ast.MetaId(name,_,_,_) -> meta_mcode name
       | Ast.MetaFunc(name,_,_,_) -> meta_mcode name
       | Ast.MetaLocalFunc(name,_,_,_) -> meta_mcode name
+      |	Ast.AsIdent(id,asid) -> bind (ident id) (ident asid)
       | Ast.DisjId(id_list) -> multibind (List.map ident id_list)
       | Ast.OptIdent(id) -> ident id
       | Ast.UniqueIdent(id) -> ident id in
@@ -608,6 +609,7 @@ let rebuilder
 	    Ast.MetaFunc(meta_mcode name,constraints,keep,inherited)
 	| Ast.MetaLocalFunc(name,constraints,keep,inherited) ->
 	    Ast.MetaLocalFunc(meta_mcode name,constraints,keep,inherited)
+	| Ast.AsIdent(id,asid) -> Ast.AsIdent(ident id,ident asid)
 	| Ast.DisjId(id_list) -> Ast.DisjId(List.map ident id_list)
 	| Ast.OptIdent(id) -> Ast.OptIdent(ident id)
 	| Ast.UniqueIdent(id) -> Ast.UniqueIdent(ident id)) in

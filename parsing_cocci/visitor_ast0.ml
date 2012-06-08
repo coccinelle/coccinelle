@@ -133,7 +133,11 @@ let visitor mode bind option_default
 	| Ast0.OptIdent(id) ->
 	    let (n,id) = ident id in (n,Ast0.OptIdent(id))
 	| Ast0.UniqueIdent(id) ->
-	    let (n,id) = ident id in (n,Ast0.UniqueIdent(id))) in
+	    let (n,id) = ident id in (n,Ast0.UniqueIdent(id))
+	| Ast0.AsIdent(id,asid) ->
+	    let (id_n,id) = ident id in
+	    let (asid_n,asid) = ident asid in
+	    (bind id_n asid_n, Ast0.AsIdent(id,asid))) in
     identfn all_functions k i
 
   and expression e =
