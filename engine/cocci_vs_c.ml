@@ -2631,6 +2631,7 @@ and enum_field ida idb =
 	    A.rewrap ida,
 	    (nameidb,Some(opbi,eb2))))))
       |	_ -> failwith "not possible")
+  | A.Assignment(ea1,opa,ea2,init),(nameidb,None) -> fail
   | _ -> failwith "not possible"
 
 (* ------------------------------------------------------------------------- *)
