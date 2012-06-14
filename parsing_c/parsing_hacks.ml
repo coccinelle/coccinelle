@@ -1135,8 +1135,6 @@ let rec find_macro_lineparen xs =
       find_macro_lineparen (xs)
 
 
-
-
   (* on multiple lines *)
   | (Line
         (
@@ -1158,6 +1156,46 @@ let rec find_macro_lineparen xs =
       macro.tok <- TMacroDecl (Ast_c.str_of_info info, info);
 
       find_macro_lineparen (xs)
+
+
+  | (Line (* initializer case *)
+        (
+          PToken ({tok = Tstatic _}) ::
+           PToken ({tok = TIdent (s,_)} as macro) ::
+           Parenthised (xxs,info_parens) ::
+           PToken ({tok = TEq _}) :: rest
+        ))
+    ::xs
+    when (s ==~ regexp_macro) ->
+
+      msg_declare_macro s;
+      let info = TH.info_of_tok macro.tok in
+      macro.tok <- TMacroDecl (Ast_c.str_of_info info, info);
+
+      (* continue with the rest of the line *)
+      find_macro_lineparen ((Line(rest))::xs)
+
+
+  | (Line (* multi-line initializer case *)
+        (
+          (PToken ({tok = Tstatic _})::[]
+          )))
+    ::(Line
+        (
+          PToken ({tok = Tstatic _}) ::
+           PToken ({tok = TIdent (s,_)} as macro) ::
+           Parenthised (xxs,info_parens) ::
+           PToken ({tok = TEq _}) :: rest
+        ))
+    ::xs
+    when (s ==~ regexp_macro) ->
+
+      msg_declare_macro s;
+      let info = TH.info_of_tok macro.tok in
+      macro.tok <- TMacroDecl (Ast_c.str_of_info info, info);
+
+      (* continue with the rest of the line *)
+      find_macro_lineparen ((Line(rest))::xs)
 
 
   (* linuxext: ex: DECLARE_BITMAP();

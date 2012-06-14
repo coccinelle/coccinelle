@@ -1884,7 +1884,6 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
         ident DontKnow sa (sb, iisb) >>= (fun sa (sb, iisb) ->
         tokenf lpa lpb >>= (fun lpa lpb ->
         tokenf rpa rpb >>= (fun rpa rpb ->
-        tokenf rpa rpb >>= (fun rpa rpb ->
         tokenf weqa weqb >>= (fun weqa weqb ->
         tokenf enda iiendb >>= (fun enda iiendb ->
         arguments (seqstyle eas) (A.undots eas) ebs >>= (fun easundots ebs ->
@@ -1893,11 +1892,15 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
 
           return (
             (mckstart, allminus,
-            (A.MacroDecl (sa,lpa,eas,rpa,enda)) +> A.rewrap decla),
-            (B.MacroDecl ((sb,ebs,true),
+            (A.MacroDeclInit(sa,lpa,eas,rpa,weqa,inia,enda)) +> A.rewrap decla),
+            (B.MacroDeclInit ((sb,ebs,inib),
                          [iisb;lpb;rpb;iiendb;iifakestart] ++ iistob))
-          )))))))))))
-  | _, (B.MacroDecl _ |B.MacroDeclInit _ |B.DeclList _) ->      fail
+          ))))))))))
+
+
+  | A.MacroDeclInit (sa,lpa,eas,rpa,weqa,inia,enda), _ -> fail
+
+  | _, (B.MacroDecl _ |B.MacroDeclInit _ |B.DeclList _) -> fail
 
 
 and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
@@ -2192,7 +2195,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
 
    | _, ({B.v_namei = None;}, _) ->
        (* old:   failwith "no variable in this declaration, weird" *)
-       fail
+      fail
 
 
 
