@@ -1855,7 +1855,10 @@ let rec sat_verbose_loop unchecked required required_states annot maxlvl lvl
     | A.True               -> anno (triples_top states) []
     | A.Pred(p)            ->
 	output "label";
-	anno (satLabel label required p) []
+	Printf.printf "before label\n";
+	let res = anno (satLabel label required p) [] in
+	Printf.printf "past label\n";
+	res
     | A.Uncheck(phi1) ->
 	let unchecked = if !pUNCHECK_OPT then true else false in
 	let (child1,res1) = satv unchecked required required_states phi1 env in
@@ -2126,11 +2129,13 @@ let rec sat_verbose_loop unchecked required required_states annot maxlvl lvl
 	anno res []
     | A.XX(phi) -> failwith "should have been removed" in
     let res1 = drop_wits required_states res phi in
+    Printf.printf "about to check res\n";
     if not(res1 = res)
     then
       begin
 	print_required_states required_states;
       print_state "after drop_wits" res1 end;
+    Printf.printf "after to checking res\n";
     (child,res1)
 
 ;;

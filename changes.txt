@@ -199,6 +199,8 @@
   your LD_LIBRARY_PATH.
 - For get_constants, virtuals should be false, not true
 - C parsing of top-level declarers with initializations.
+- Remove constraints in predicates in match result, to avoid PCRE equality
+  problems
 
 * 0.2.5
 ** Language:
