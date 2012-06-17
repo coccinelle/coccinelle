@@ -201,6 +201,8 @@
 - C parsing of top-level declarers with initializations.
 - Remove constraints in predicates in match result, to avoid PCRE equality
   problems
+- Try to improve statement matching when the position of the statement is
+  taken.
 
 * 0.2.5
 ** Language:
