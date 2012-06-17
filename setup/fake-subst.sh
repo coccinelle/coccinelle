@@ -51,10 +51,10 @@ pythonprefix() {
 pythonexists() {
   local prefix="${pythonprefix}"
 
-#  if test ! -f "${prefix}/Python.h"; then
-#    echo "error: ${prefix}/Python.h not found (a development version of python is not installed?)" 1>&2
-#    false
-#  fi
+  if test ! -f "${prefix}/Python.h"; then
+    echo "error: ${prefix}/Python.h not found (a development version of python is not installed?)" 1>&2
+    false
+  fi
 }
 
 # outputs the "include" cflags for python
