@@ -49,10 +49,12 @@ pythonprefix() {
 }
 
 pythonexists() {
-  local prefix="${pythonprefix}"
+  local version=$1
+  local prefix="$(pythonprefix)"
+  test $? = 0
 
-  if test ! -f "${prefix}/Python.h"; then
-    echo "error: ${prefix}/Python.h not found (a development version of python is not installed?)" 1>&2
+  if test ! -f "${prefix}/include/python${version}/Python.h"; then
+    echo "error: ${prefix}/include/python${version}/Python.h not found (a development version of python is not installed?)" 1>&2
     false
   fi
 }
@@ -70,6 +72,7 @@ pythoncflags() {
 pythonlibs() {
   local version=$1
   local prefix="$(pythonprefix)"
+  test $? = 0
 
   echo "-L${prefix}/lib -lpython${version}"
 }
