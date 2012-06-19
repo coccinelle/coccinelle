@@ -61,6 +61,7 @@ let ident i =
     | Ast0.DisjId(_,id_list,_,_) -> [152]
     | Ast0.OptIdent(id) -> [14]
     | Ast0.UniqueIdent(id) -> [15]
+    | Ast0.AsIdent _ -> failwith "not possible"
 
 let expression e =
   match Ast0.unwrap e with

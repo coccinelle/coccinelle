@@ -165,7 +165,7 @@ let rec ident opt_allowed tgt i =
 	  then fail i "opt only allowed in the last disjunct"
       |	_ -> ());
       Ast0.rewrap i (Ast0.DisjId(starter,id_list,mids,ender))
-  | Ast0.OptIdent(_) | Ast0.UniqueIdent(_) ->
+  | Ast0.OptIdent(_) | Ast0.UniqueIdent(_) | Ast0.AsIdent _ ->
       failwith "unexpected code"
 	
 (* --------------------------------------------------------------------- *)

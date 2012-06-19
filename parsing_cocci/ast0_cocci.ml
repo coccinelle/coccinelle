@@ -83,6 +83,7 @@ and base_ident =
   | MetaId        of Ast.meta_name mcode * Ast.idconstraint * Ast.seed * pure
   | MetaFunc      of Ast.meta_name mcode * Ast.idconstraint * pure
   | MetaLocalFunc of Ast.meta_name mcode * Ast.idconstraint * pure
+  | AsIdent       of ident * ident (* as ident, always metavar *)
   | DisjId        of string mcode * ident list *
                      string mcode list (* the |s *) * string mcode
   | OptIdent      of ident
@@ -551,6 +552,10 @@ let rec meta_pos_name = function
 	(* totally fake, just drop the rest, only for isos *)
       meta_pos_name (List.hd vars)
   | MetaPosTag(MetaPos(name,constraints,_)) -> name
+  | IdentTag(i) ->
+      (match unwrap i with
+	MetaId(name,constraints,seed,pure) -> name
+      | _ -> failwith "bad metavariable")
   | ExprTag(e) ->
       (match unwrap e with
 	MetaExpr(name,constraints,ty,form,pure) -> name

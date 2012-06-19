@@ -191,6 +191,7 @@ let check_allminus =
     match Ast0.unwrap e with
       Ast0.DisjId(starter,id_list,mids,ender) ->
 	List.for_all r.VT0.combiner_rec_ident id_list
+    | Ast0.AsIdent(id,asid) -> k id
     | _ -> k e in
 
   let expression r k e =
@@ -375,6 +376,8 @@ and ident i =
 	Ast.MetaFunc(mcode name,constraints,unitary,false)
     | Ast0.MetaLocalFunc(name,constraints,_) ->
 	Ast.MetaLocalFunc(mcode name,constraints,unitary,false)
+    | Ast0.AsIdent(id,asid) ->
+	Ast.AsIdent(ident id,ident asid)
     | Ast0.OptIdent(id) -> Ast.OptIdent(ident id)
     | Ast0.UniqueIdent(id) -> Ast.UniqueIdent(ident id))
 

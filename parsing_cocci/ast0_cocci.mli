@@ -74,6 +74,7 @@ and base_ident =
 	Ast_cocci.seed * pure
   | MetaFunc      of Ast_cocci.meta_name mcode * Ast_cocci.idconstraint * pure
   | MetaLocalFunc of Ast_cocci.meta_name mcode * Ast_cocci.idconstraint * pure
+  | AsIdent       of ident * ident (* as ident, always metavar *)
   | DisjId        of string mcode * ident list *
                      string mcode list (* the |s *) * string mcode
   | OptIdent      of ident

@@ -1517,6 +1517,13 @@ and (ident: info_ident -> (A.ident, string * Ast_c.info) matcher) =
       | DontKnow -> failwith "MetaLocalFunc, need more semantic info about id"
       )
 
+  | A.AsIdent(id,asid) ->
+      ident infoidb id ib >>= (fun id ib ->
+      ident infoidb asid ib >>= (fun asid ib ->
+	return(
+	  ((A.AsIdent(id,asid)) +> A.rewrap ida,
+	   ib))))
+
   (* not clear why disj things are needed, after disjdistr? *)
   | A.DisjId ias ->
       ias +> List.fold_left (fun acc ia -> acc >|+|> (ident infoidb ia ib)) fail
@@ -1877,7 +1884,6 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
         ident DontKnow sa (sb, iisb) >>= (fun sa (sb, iisb) ->
         tokenf lpa lpb >>= (fun lpa lpb ->
         tokenf rpa rpb >>= (fun rpa rpb ->
-        tokenf rpa rpb >>= (fun rpa rpb ->
         tokenf weqa weqb >>= (fun weqa weqb ->
         tokenf enda iiendb >>= (fun enda iiendb ->
         arguments (seqstyle eas) (A.undots eas) ebs >>= (fun easundots ebs ->
@@ -1886,11 +1892,15 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
 
           return (
             (mckstart, allminus,
-            (A.MacroDecl (sa,lpa,eas,rpa,enda)) +> A.rewrap decla),
-            (B.MacroDecl ((sb,ebs,true),
+            (A.MacroDeclInit(sa,lpa,eas,rpa,weqa,inia,enda)) +> A.rewrap decla),
+            (B.MacroDeclInit ((sb,ebs,inib),
                          [iisb;lpb;rpb;iiendb;iifakestart] ++ iistob))
-          )))))))))))
-  | _, (B.MacroDecl _ |B.MacroDeclInit _ |B.DeclList _) ->      fail
+          ))))))))))
+
+
+  | A.MacroDeclInit (sa,lpa,eas,rpa,weqa,inia,enda), _ -> fail
+
+  | _, (B.MacroDecl _ |B.MacroDeclInit _ |B.DeclList _) -> fail
 
 
 and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
@@ -2185,7 +2195,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
 
    | _, ({B.v_namei = None;}, _) ->
        (* old:   failwith "no variable in this declaration, weird" *)
-       fail
+      fail
 
 
 
@@ -2631,6 +2641,7 @@ and enum_field ida idb =
 	    A.rewrap ida,
 	    (nameidb,Some(opbi,eb2))))))
       |	_ -> failwith "not possible")
+  | A.Assignment(ea1,opa,ea2,init),(nameidb,None) -> fail
   | _ -> failwith "not possible"
 
 (* ------------------------------------------------------------------------- *)

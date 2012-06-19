@@ -92,6 +92,7 @@ let rec propagate_types env =
 	| Some t ->
 	    List.iter (function i -> Ast0.set_type i (Some t)) id_list;
 	    Some t)
+    | Ast0.AsIdent _ -> failwith "not possible"
     | _ -> k i in
 
   let strip_cv = function
@@ -270,7 +271,8 @@ let rec propagate_types env =
     | Ast0.MetaLocalFunc(name,_,_) -> [Meta(Ast0.unwrap_mcode name)]
     | Ast0.DisjId(_,id_list,_,_)   -> List.concat (List.map strip id_list)
     | Ast0.OptIdent(id)            -> strip id
-    | Ast0.UniqueIdent(id)         -> strip id in
+    | Ast0.UniqueIdent(id)         -> strip id
+    | Ast0.AsIdent _ -> failwith "not possible" in
 
   let process_whencode notfn allfn exp = function
       Ast0.WhenNot(x) -> let _ = notfn x in ()

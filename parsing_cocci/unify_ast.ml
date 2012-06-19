@@ -107,6 +107,13 @@ let rec unify_ident i1 i2 =
   | (_,Ast.MetaFunc(_,_,_,_))
   | (_,Ast.MetaLocalFunc(_,_,_,_)) -> return true
 
+  | (Ast.AsIdent(id1,asid1),_) ->
+      disjunct_all_bindings
+	(List.map (function x -> unify_ident x i2) [id1;asid1])
+  | (_,Ast.AsIdent(id2,asid2)) ->
+      disjunct_all_bindings
+	(List.map (function x -> unify_ident x i1) [id2;asid2])
+
   | (Ast.DisjId(i1),_) ->
       disjunct_all_bindings (List.map (function x -> unify_ident x i2) i1)
   | (_,Ast.DisjId(i2)) ->

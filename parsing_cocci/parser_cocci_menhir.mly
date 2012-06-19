@@ -1332,6 +1332,7 @@ initialize2:
   /*arithexpr and not eexpr because can have ambiguity with comma*/
   /*dots and nests probably not allowed at top level, haven't looked into why*/
   arith_expr(eexpr,invalid) { Ast0.wrap(Ast0.InitExpr($1)) }
+| nest_expressions_only     { Ast0.wrap(Ast0.InitExpr($1)) }
 | TOBrace initialize_list TCBrace
     { if P.struct_initializer $2
     then
@@ -1470,6 +1471,16 @@ nest_expressions:
 			      Ast0.wrap(Ast0.DOTS(e (P.mkedots "..."))),
 			      P.clt2mcode "...+>" c, None, true)) }
 | TMeta { tmeta_to_exp $1 }
+
+nest_expressions_only:
+  TOEllipsis e=expr_dots(TEllipsis) c=TCEllipsis
+    { Ast0.wrap(Ast0.NestExpr(P.clt2mcode "<..." $1,
+			      Ast0.wrap(Ast0.DOTS(e (P.mkedots "..."))),
+			      P.clt2mcode "...>" c, None, false)) }
+| TPOEllipsis e=expr_dots(TEllipsis) c=TPCEllipsis
+    { Ast0.wrap(Ast0.NestExpr(P.clt2mcode "<+..." $1,
+			      Ast0.wrap(Ast0.DOTS(e (P.mkedots "..."))),
+			      P.clt2mcode "...+>" c, None, true)) }
 
 //whenexp: TWhen TNotEq w=eexpr TLineEnd { w }
 

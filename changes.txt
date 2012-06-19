@@ -51,6 +51,8 @@
   not as elements of specific structures.
 - Allow size_t as the type of an array index in smpl code.  Reported by
   Mansour Moufid.
+- Allow exp@id
+- Allow renaming an expression as an identifier (@i)
 
 ** Features:
 - Preserve spacing before // comments when not at the beginning of a line
@@ -197,6 +199,10 @@
   bundled pycaml or ocaml-pcre, you'll need their stub libraries in
   your LD_LIBRARY_PATH.
 - For get_constants, virtuals should be false, not true
+- C parsing of top-level declarers with initializations.
+- Remove constraints in predicates in match result, to avoid PCRE equality
+  problems
+- Enum assignment matching an enum value shouldn't cause a failure
 
 * 0.2.5
 ** Language:
