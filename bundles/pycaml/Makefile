@@ -74,6 +74,7 @@ depend: $(PYCAMLMARKER)
 $(PYCAMLMARKER): $(PYCAMLFILE)
 	$(TAR) xfvz $<
 	$(PATCH) -d "${PYCAMLDIR}" -p1 < ./python3-compat-fix.patch
+	$(PATCH) -d "${PYCAMLDIR}" -p1 < ./pyunicodeapichanges-fix.patch
 	touch $@
 
 $(PYCAMLFILE):
