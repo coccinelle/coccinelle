@@ -244,7 +244,8 @@ clean::
 
 
 #-----------------------------------------------------------------------------
-.PHONEY: sexp.all sexp.opt
+.PHONEY: sexp sexp.all sexp.opt
+sexp: sexp.all
 sexp.all:
 	$(MAKE) INCLUDESEXTRA="$(SEXPINCLUDES)" commons_sexp.cma
 sexp.opt:

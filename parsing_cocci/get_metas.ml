@@ -59,6 +59,7 @@ let dots fn d =
 	let (n,l) = map_split_bind fn l in (n, Ast0.STARS(l)))
     
 let rec ident i =
+  let (metas,i) =
   rewrap i
     (match Ast0.unwrap i with
       Ast0.Id(name) ->
@@ -72,6 +73,7 @@ let rec ident i =
     | Ast0.MetaLocalFunc(name,constraints,pure) ->
 	let (n,name) = mcode name in
 	(n,Ast0.MetaLocalFunc(name,constraints,pure))
+    | Ast0.AsIdent _ -> failwith "not possible"
     | Ast0.DisjId(starter,id_list,mids,ender) ->
 	do_disj starter id_list mids ender ident
 	  (fun starter id_list mids ender ->
@@ -79,8 +81,15 @@ let rec ident i =
     | Ast0.OptIdent(id) ->
 	let (n,id) = ident id in (n,Ast0.OptIdent(id))
     | Ast0.UniqueIdent(id) ->
-	let (n,id) = ident id in (n,Ast0.UniqueIdent(id)))
-    
+	let (n,id) = ident id in (n,Ast0.UniqueIdent(id))) in
+    List.fold_left
+      (function (other_metas,id) ->
+	function
+	    Ast0.IdentTag(id_meta) ->
+	      (other_metas,Ast0.rewrap id (Ast0.AsIdent(id,id_meta)))
+	  | x -> (x::other_metas,id))
+      ([],i) metas
+
 and expression e =
   let (metas,e) =
     rewrap e
@@ -230,6 +239,10 @@ and expression e =
 	function
 	    Ast0.ExprTag(exp_meta) ->
 	      (other_metas,Ast0.rewrap exp (Ast0.AsExpr(exp,exp_meta)))
+	  | Ast0.IdentTag(id_meta) ->
+	      (other_metas,
+	       Ast0.rewrap exp
+		 (Ast0.AsExpr(exp,Ast0.rewrap exp (Ast0.Ident(id_meta)))))
 	  | x -> (x::other_metas,exp))
       ([],e) metas
 

@@ -272,6 +272,8 @@ let rec ident i =
 			       | _ -> raise Impossible
 			    )
 
+    | Ast.AsIdent(id,asid) -> ident id
+
     | Ast.DisjId(id_list) ->
 	if generating
 	then print_disj_list ident id_list

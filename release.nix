@@ -207,6 +207,12 @@ let
         flags = [ "--enable-python" ];
       })
 
+      (pkgs: {
+        name = "python-nopkgconfig";
+        pythons = selPython2 pkgs;
+        flags = [ "--enable-python" "--without-pkg-config" ];
+      })
+
 #  disabled because this combination does not work in NixOS
 #      (pkgs: {
 #        name = "many-pythons";

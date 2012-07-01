@@ -253,6 +253,7 @@ let rec full_ident i =
       let (id,r) = full_ident id in mkidres i (Ast0.OptIdent(id)) id id r
   | Ast0.UniqueIdent(id) ->
       let (id,r) = full_ident id in mkidres i (Ast0.UniqueIdent(id)) id id r
+  | Ast0.AsIdent _ -> failwith "not possible"
 and ident i = let (id,_) = full_ident i in id
 
 (* --------------------------------------------------------------------- *)

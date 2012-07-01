@@ -96,6 +96,7 @@ let rec left_ident i =
   | Ast0.DisjId(_,id_list,_,_) -> List.exists left_ident id_list
   | Ast0.OptIdent(id) -> left_ident id
   | Ast0.UniqueIdent(id) -> left_ident id
+  | Ast0.AsIdent _ -> failwith "not possible"
 
 let rec right_ident i =
   modif_after i or
@@ -107,6 +108,7 @@ let rec right_ident i =
   | Ast0.DisjId(_,id_list,_,_) -> List.exists right_ident id_list
   | Ast0.OptIdent(id) -> right_ident id
   | Ast0.UniqueIdent(id) -> right_ident id
+  | Ast0.AsIdent _ -> failwith "not possible"
 
 (* --------------------------------------------------------------------- *)
 (* Expression *)
