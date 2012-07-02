@@ -25,6 +25,33 @@
 
 
 # 0 "./get_metas.ml"
+(*
+ * Copyright 2012, INRIA
+ * Julia Lawall, Gilles Muller
+ * Copyright 2010-2011, INRIA, University of Copenhagen
+ * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
+ * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+ * This file is part of Coccinelle.
+ *
+ * Coccinelle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, according to version 2 of the License.
+ *
+ * Coccinelle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The authors reserve the right to distribute this or future versions of
+ * Coccinelle under other licenses.
+ *)
+
+
+# 0 "./get_metas.ml"
 (* --------------------------------------------------------------------- *)
 (* creates AsExpr, etc *)
 (* @ attached metavariables can only be associated with positions, so nothing
@@ -86,6 +113,7 @@ let dots fn d =
 	let (n,l) = map_split_bind fn l in (n, Ast0.STARS(l)))
     
 let rec ident i =
+  let (metas,i) =
   rewrap i
     (match Ast0.unwrap i with
       Ast0.Id(name) ->
@@ -99,6 +127,7 @@ let rec ident i =
     | Ast0.MetaLocalFunc(name,constraints,pure) ->
 	let (n,name) = mcode name in
 	(n,Ast0.MetaLocalFunc(name,constraints,pure))
+    | Ast0.AsIdent _ -> failwith "not possible"
     | Ast0.DisjId(starter,id_list,mids,ender) ->
 	do_disj starter id_list mids ender ident
 	  (fun starter id_list mids ender ->
@@ -106,8 +135,15 @@ let rec ident i =
     | Ast0.OptIdent(id) ->
 	let (n,id) = ident id in (n,Ast0.OptIdent(id))
     | Ast0.UniqueIdent(id) ->
-	let (n,id) = ident id in (n,Ast0.UniqueIdent(id)))
-    
+	let (n,id) = ident id in (n,Ast0.UniqueIdent(id))) in
+    List.fold_left
+      (function (other_metas,id) ->
+	function
+	    Ast0.IdentTag(id_meta) ->
+	      (other_metas,Ast0.rewrap id (Ast0.AsIdent(id,id_meta)))
+	  | x -> (x::other_metas,id))
+      ([],i) metas
+
 and expression e =
   let (metas,e) =
     rewrap e
@@ -257,6 +293,10 @@ and expression e =
 	function
 	    Ast0.ExprTag(exp_meta) ->
 	      (other_metas,Ast0.rewrap exp (Ast0.AsExpr(exp,exp_meta)))
+	  | Ast0.IdentTag(id_meta) ->
+	      (other_metas,
+	       Ast0.rewrap exp
+		 (Ast0.AsExpr(exp,Ast0.rewrap exp (Ast0.Ident(id_meta)))))
 	  | x -> (x::other_metas,exp))
       ([],e) metas
 

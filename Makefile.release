@@ -15,14 +15,19 @@ DOC=docs/manual/manual.pdf       \
     docs/man                     \
     docs/spatch.1                \
     docs/manual/cocci-python.txt
-BINSRC=spatch env.sh env.csh standard.h standard.iso \
-       *.txt $(DOC) demos/*
+BINSRC=spatch* env.sh env.csh standard.h standard.iso \
+       *.txt $(DOC) demos/* scripts/spatch*
 BINSRC-PY=$(BINSRC) $(PYLIB) python/coccilib/
 
 EXCL=$(EXCLUDE:%=--exclude=%)
 BINSRC2=$(BINSRC:%=$(PACKAGE)/%)
 BINSRC2-PY=$(BINSRC-PY:%=$(PACKAGE)/%)
 
+# TMP should point to a folder that is private to the release
+# process. In addition, it should not be the direct parent of
+# the directory in which the release is performed, because it
+# creates temporary directories that in this case could have
+# a name clash with the current directory.
 ifndef TMP
 TMP=/tmp
 endif
@@ -64,19 +69,19 @@ endif
 # unpushed changes. However, that is probably something you should
 # not do in the first place.
 
-prerelease: Makefile.config
+prerelease:
 	@echo "pulling changes from the repository"
 	$(GIT) pull --rebase
 	$(MAKE) fix-expected
 	$(MAKE) distclean KEEP_CONFIG=1
 	@echo "\n\tEdit ./version"
 	@echo "\tCommit with 'make release'\n"
-	@echo "\tYou can skip the actual commit using 'GIT=echo make release'"
+	@echo "\t(if you don't want to change the repo, use 'GIT=echo make release' instead)"
 
 fix-expected:
 	@echo "going to generate: tests/SCORE_expected_orig.sexp"
 	$(MAKE) distclean
-	./configure --disable-python
+	./configure --enable-release --disable-python
 	$(MAKE) opt-only
 	yes | ./spatch.opt -testall --iso-file ./standard.iso --macro-file-builtins ./standard.h
 	cp tests/SCORE_actual.sexp tests/SCORE_expected_orig.sexp
@@ -105,16 +110,21 @@ package-src:
 	$(MAKE) srctar
 	$(MAKE) coccicheck
 
+# Reconfigures the project without Python support
+# Note: we disable pcre syntax as well to eliminate the dependency
+# on those libraries.
 package-nopython:
-	$(MAKE) distclean             # Clean project
-	./configure --disable-python  # Reconfigure project without Python support
+	$(MAKE) distclean
+	./configure --enable-release --disable-python --disable-pcre-syntax --disable-menhirLib --disable-sexplib --disable-extlib --disable-pycaml
 	$(MAKE) bintar
 	$(MAKE) bytecodetar
-#	$(MAKE) staticbintar
 
+# Reconfigure project with Python support
+# Note: we disable pcre syntax as well to eliminate the dependency
+# on those libraries.
 package-python:
-	$(MAKE) distclean            # Clean project
-	./configure --enable-python  # Reconfigure project with Python support
+	$(MAKE) distclean
+	./configure --enable-release --enable-python --disable-pcre-syntax --disable-menhirLib --disable-sexplib --disable-extlib --disable-pycaml
 	$(MAKE) bintar-python
 	$(MAKE) bytecodetar-python
 
@@ -134,7 +144,7 @@ srctar: Makefile.config
 	if test -f "$(TMP)/$(PACKAGE)/"; then rm -f "$(TMP)/$(PACKAGE)/"; fi # remove it if it is a symlink
 	$(MKDIR_P) "$(TMP)/$(PACKAGE)/"
 	cp -rfa ./*  "$(TMP)/$(PACKAGE)/"
-	cd $(TMP)/$(PACKAGE); cd parsing_cocci/; $(MAKE) parser_cocci_menhir.ml
+	cd $(TMP)/$(PACKAGE); $(MAKE) -C parsing_cocci parser_cocci_menhir.ml
 	rm -f $(TMP)/$(PACKAGE)/Makefile.config
 	cd $(TMP); tar cvfz $(PACKAGE).tgz --exclude-vcs $(EXCL) $(PACKAGE)
 	rm -rf  $(TMP)/$(PACKAGE)
@@ -143,6 +153,10 @@ bintar: all-dev
 	$(MAKE) docs
 	rm -f $(TMP)/$(PACKAGE)
 	ln -s `pwd` $(TMP)/$(PACKAGE)
+	@if test -n "${PATCHELF}" -a -f spatch; then \
+	   $(PATCHELF) --set-interpreter "/lib/ld-linux.so.2" --set-rpath "" spatch; fi
+	@if test -n "${PATCHELF}" -a -f spatch.opt; then \
+	   $(PATCHELF) --set-interpreter "/lib/ld-linux.so.2" --set-rpath "" spatch.opt; fi
 	cd $(TMP); tar cvfz $(PACKAGE)-bin-x86.tgz --exclude-vcs $(BINSRC2)
 	rm -f $(TMP)/$(PACKAGE)
 
@@ -154,30 +168,44 @@ staticbintar: all-release
 	cd $(TMP); tar cvfz $(PACKAGE)-bin-x86-static.tgz --exclude-vcs $(BINSRC2)
 	rm -f $(TMP)/$(PACKAGE)
 
-# add ocaml version in name ?
 bytecodetar: all-dev
 	$(MAKE) docs
 	rm -f $(TMP)/$(PACKAGE)
 	ln -s `pwd` $(TMP)/$(PACKAGE)
 	$(MAKE) purebytecode
-	cd $(TMP); tar cvfz $(PACKAGE)-bin-bytecode-$(OCAMLVERSION).tgz --exclude-vcs $(BINSRC2)
+	$(MAKE) copy-stubs
+	@if test -n "${PATCHELF}" -a -f dllpycaml_stubs.so; then \
+	  $(PATCHELF) --set-rpath "" dllpycaml_stubs.so; fi
+	@if test -n "${PATHCELF}" -a -f dllpcre_stubs.so; then \
+	  $(PATCHELF) --set-rpath "" dllpcre_stubs.so; fi
+	cd $(TMP); tar cvfz $(PACKAGE)-bin-bytecode-$(OCAMLVERSION).tgz --exclude-vcs $(BINSRC2) $$(find -L $(PACKAGE) -maxdepth 1 -name 'dll*.so')
 	rm -f $(TMP)/$(PACKAGE)
+	rm -f dllpycaml_stubs.so dllpcre_stubs.so
 
 bintar-python: all
 	$(MAKE) docs
+	@if test -n "${PATCHELF}" -a -f spatch; then \
+	   $(PATCHELF) --set-interpreter "/lib/ld-linux.so.2" --set-rpath "" spatch; fi
+	@if test -n "${PATCHELF}" -a -f spatch.opt; then \
+	   $(PATCHELF) --set-interpreter "/lib/ld-linux.so.2" --set-rpath "" spatch.opt; fi
 	rm -f $(TMP)/$(PACKAGE)
 	ln -s `pwd` $(TMP)/$(PACKAGE)
 	cd $(TMP); tar cvfz $(PACKAGE)-bin-x86-python.tgz --exclude-vcs $(BINSRC2-PY)
 	rm -f $(TMP)/$(PACKAGE)
 
-# add ocaml version in name ?
 bytecodetar-python: all-dev
 	$(MAKE) docs
 	rm -f $(TMP)/$(PACKAGE)
 	ln -s `pwd` $(TMP)/$(PACKAGE)
 	$(MAKE) purebytecode
-	cd $(TMP); tar cvfz $(PACKAGE)-bin-bytecode-$(OCAMLVERSION)-python.tgz --exclude-vcs $(BINSRC2-PY)
+	$(MAKE) copy-stubs
+	@if test -n "${PATCHELF}" -a -f dllpycaml_stubs.so; then \
+	   $(PATCHELF) --set-rpath "" dllpycaml_stubs.so; fi
+	@if test -n "${PATHCELF}" -a -f dllpcre_stubs.so; then \
+	   $(PATCHELF) --set-rpath "" dllpcre_stubs.so; fi
+	cd $(TMP); tar cvfz $(PACKAGE)-bin-bytecode-$(OCAMLVERSION)-python.tgz --exclude-vcs $(BINSRC2-PY) $$(find -L $(PACKAGE) -maxdepth 1 -name 'dll*.so')
 	rm -f $(TMP)/$(PACKAGE)
+	rm -f dllpycaml_stubs.so dllpcre_stubs.so
 
 coccicheck:
 	cp -a ./scripts/coccicheck $(TMP)/$(CCPACKAGE)
@@ -187,14 +215,13 @@ coccicheck:
 clean-packages::
 	rm -f $(TMP)/$(PACKAGE).tgz
 	rm -f $(TMP)/$(PACKAGE)-bin-x86.tgz
-#	rm -f $(TMP)/$(PACKAGE)-bin-x86-static.tgz
 	rm -f $(TMP)/$(PACKAGE)-bin-bytecode-$(OCAMLVERSION).tgz
 	rm -f $(TMP)/$(PACKAGE)-bin-x86-python.tgz
 	rm -f $(TMP)/$(PACKAGE)-bin-bytecode-$(OCAMLVERSION)-python.tgz
 	rm -f $(TMP)/$(CCPACKAGE).tgz
 
 #
-# No need to licensify 'demos'. Because these is basic building blocks
+# No need to licensify 'demos'. Because these are basic building blocks
 # to use SmPL.
 #
 TOLICENSIFY=ctl engine globals parsing_cocci popl popl09 python scripts tools
@@ -268,6 +295,8 @@ push:
 # Note: configure first
 dist:
 	$(MAKE) licensify
+	$(MAKE) distclean KEEP_CONFIG=1
 	$(MAKE) docs
+	$(MAKE) -C parsing_cocci parser_cocci_menhir.ml
 	$(MAKE) clean
 	tar cvfz $(PACKAGE).tar.gz --transform="s,^,$(PACKAGE)/,S" --exclude=$(PACKAGE).tar.gz --exclude-backups --exclude-vcs *

@@ -25,6 +25,33 @@
 
 
 # 0 "./yes_pycocci.ml"
+(*
+ * Copyright 2012, INRIA
+ * Julia Lawall, Gilles Muller
+ * Copyright 2010-2011, INRIA, University of Copenhagen
+ * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
+ * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+ * This file is part of Coccinelle.
+ *
+ * Coccinelle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, according to version 2 of the License.
+ *
+ * Coccinelle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The authors reserve the right to distribute this or future versions of
+ * Coccinelle under other licenses.
+ *)
+
+
+# 0 "./yes_pycocci.ml"
 open Ast_c
 open Common
 open Pycaml
@@ -57,14 +84,16 @@ let _pycocci_tuple6 (a,b,c,d,e,f) =
 
 (* ------------------------------------------------------------------- *)
 
-let check_return_value v =
+let check_return_value msg v =
   if v =*= (pynull ()) then
 	  (pyerr_print ();
+	  Common.pr2 ("while " ^ msg ^ ":");
 	  raise Pycocciexception)
   else ()
-let check_int_return_value v =
+let check_int_return_value msg v =
   if v =|= -1 then
 	  (pyerr_print ();
+          Common.pr2 ("while " ^ msg ^ ":");
 	  raise Pycocciexception)
   else ()
 
@@ -87,8 +116,9 @@ let is_module_loaded module_name =
 
 let load_module module_name =
   if not (is_module_loaded module_name) then
+    (* let _ = Sys.command("python3 -c 'import " ^ module_name ^ "'") in *)
     let m = pyimport_importmodule module_name in
-    check_return_value m;
+    check_return_value ("importing module " ^ module_name) m;
     (module_map := (StringMap.add module_name m (!module_map));
     m)
   else get_module module_name
@@ -105,14 +135,14 @@ let pycocci_get_class_type fqn =
   let (module_name, class_name) = split_fqn fqn in
   let m = get_module module_name in
   let attr = pyobject_getattrstring(m, class_name) in
-  check_return_value attr;
+  check_return_value "obtaining a python class type" attr;
   attr
 
 let pycocci_instantiate_class fqn args =
   let class_type = pycocci_get_class_type fqn in
   let obj =
     pyeval_callobjectwithkeywords(class_type, args, pynull()) in
-  check_return_value obj;
+  check_return_value "instantiating a python class" obj;
   obj
 
 (* end python interaction *)
@@ -122,7 +152,7 @@ let exited = ref false
 
 let include_match v =
   let truth = pyobject_istrue (pytuple_getitem (v, 1)) in
-  check_int_return_value truth;
+  check_int_return_value "testing include_match" truth;
   inc_match := truth != 0;
   _pycocci_none ()
 
@@ -133,18 +163,18 @@ let sp_exit _ =
 let build_method (mname, camlfunc, args) pymodule classx classdict =
   let cmx = pymethod_new(pywrap_closure camlfunc, args, classx) in
   let v = pydict_setitemstring(classdict, mname, cmx) in
-  check_int_return_value v;
+  check_int_return_value ("building python method " ^ mname) v;
   ()
 
 let build_class cname parent methods pymodule =
   let cd = pydict_new() in
-  check_return_value cd;
+  check_return_value "creating a new python dictionary" cd;
   let cx = pyclass_new(pytuple_fromsingle (pycocci_get_class_type parent), cd,
 		       pystring_fromstring cname) in
-  check_return_value cx;
+  check_return_value "creating a new python class" cx;
   List.iter (function meth -> build_method meth pymodule cx cd) methods;
   let v = pydict_setitemstring(pymodule_getdict pymodule, cname, cx) in
-  check_int_return_value v;
+  check_int_return_value ("adding python class " ^ cname) v;
   (cd, cx)
 
 let the_environment = ref []
@@ -175,14 +205,17 @@ let pycocci_init () =
   (* initialize *)
   if not !initialised then (
   initialised := true;
-  Unix.putenv "PYTHONPATH"
-      (Printf.sprintf "%s/coccinelle" (Unix.getenv "HOME"));
+  (* use python_path_base as default (overridable) dir for coccilib *)
+  let python_path_base = Printf.sprintf "%s/coccinelle" (Unix.getenv "HOME") in
+  let python_path = try Unix.getenv "PYTHONPATH" ^ ":" ^ python_path_base
+                    with Not_found -> python_path_base in
+  Unix.putenv "PYTHONPATH" python_path;
   let _ = if not (py_isinitialized () != 0) then
   	(if !Flag.show_misc then Common.pr2 "Initializing python\n%!";
 	py_initialize()) in
 
   (* set argv *)
-  let argv0 = Printf.sprintf "%s%sspatch" (Sys.getcwd ()) (match Sys.os_type with "Win32" -> "\\" | _ -> "/") in
+  let argv0 = Sys.executable_name in
   let _ = _pycocci_setargs argv0 in
 
   coccinelle_module := (pymodule_new "coccinelle");
@@ -200,10 +233,10 @@ let pycocci_init () =
   pyoutputinstance := cx;
   pyoutputdict := cd;
   let v1 = pydict_setitemstring(module_dictionary, "coccinelle", mx) in
-  check_int_return_value v1;
+  check_int_return_value "adding coccinelle python module" v1;
   let mypystring = pystring_fromstring !cocci_file_name in
   let v2 = pydict_setitemstring(cd, "cocci_file", mypystring) in
-  check_int_return_value v2;
+  check_int_return_value "adding python field cocci_file" v2;
   ()) else
   ()
 
@@ -224,7 +257,7 @@ let build_classes env =
 	"include_match" | "has_env_binding" | "exit" -> ()
       | name ->
 	  let v = pydict_delitemstring(dict,name) in
-	  check_int_return_value v)
+	  check_int_return_value ("removing " ^ name ^ " from python coccinelle module") v)
     !added_variables;
   added_variables := [];
   ()
@@ -232,7 +265,7 @@ let build_classes env =
 let build_variable name value =
   let mx = !coccinelle_module in
   added_variables := name :: !added_variables;
-  check_int_return_value
+  check_int_return_value ("build python variable " ^ name)
     (pydict_setitemstring(pymodule_getdict mx, name, value))
 
 let get_variable name =
@@ -342,7 +375,7 @@ let set_coccifile cocci_file =
 
 let pyrun_simplestring s =
   let res = Pycaml.pyrun_simplestring s in
-  check_int_return_value res;
+  check_int_return_value ("running simple python string: " ^ s) res;
   res
 
 let py_isinitialized () =

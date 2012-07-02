@@ -25,6 +25,33 @@
 
 
 # 0 "./type_infer.ml"
+(*
+ * Copyright 2012, INRIA
+ * Julia Lawall, Gilles Muller
+ * Copyright 2010-2011, INRIA, University of Copenhagen
+ * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
+ * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+ * This file is part of Coccinelle.
+ *
+ * Coccinelle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, according to version 2 of the License.
+ *
+ * Coccinelle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The authors reserve the right to distribute this or future versions of
+ * Coccinelle under other licenses.
+ *)
+
+
+# 0 "./type_infer.ml"
 module T = Type_cocci
 module Ast = Ast_cocci
 module Ast0 = Ast0_cocci
@@ -119,6 +146,7 @@ let rec propagate_types env =
 	| Some t ->
 	    List.iter (function i -> Ast0.set_type i (Some t)) id_list;
 	    Some t)
+    | Ast0.AsIdent _ -> failwith "not possible"
     | _ -> k i in
 
   let strip_cv = function
@@ -130,6 +158,7 @@ let rec propagate_types env =
       T.BaseType(T.IntType)
     | T.BaseType(T.LongType)
     | T.BaseType(T.ShortType)
+    | T.BaseType(T.SizeType)
     | T.MetaType(_,_,_)
     | T.TypeName _
     | T.EnumName _
@@ -296,7 +325,8 @@ let rec propagate_types env =
     | Ast0.MetaLocalFunc(name,_,_) -> [Meta(Ast0.unwrap_mcode name)]
     | Ast0.DisjId(_,id_list,_,_)   -> List.concat (List.map strip id_list)
     | Ast0.OptIdent(id)            -> strip id
-    | Ast0.UniqueIdent(id)         -> strip id in
+    | Ast0.UniqueIdent(id)         -> strip id
+    | Ast0.AsIdent _ -> failwith "not possible" in
 
   let process_whencode notfn allfn exp = function
       Ast0.WhenNot(x) -> let _ = notfn x in ()

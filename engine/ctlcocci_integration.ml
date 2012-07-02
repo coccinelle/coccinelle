@@ -25,6 +25,33 @@
 
 
 # 0 "./ctlcocci_integration.ml"
+(*
+ * Copyright 2012, INRIA
+ * Julia Lawall, Gilles Muller
+ * Copyright 2010-2011, INRIA, University of Copenhagen
+ * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
+ * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+ * This file is part of Coccinelle.
+ *
+ * Coccinelle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, according to version 2 of the License.
+ *
+ * Coccinelle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The authors reserve the right to distribute this or future versions of
+ * Coccinelle under other licenses.
+ *)
+
+
+# 0 "./ctlcocci_integration.ml"
 open Common
 
 open Ograph_extended
@@ -484,6 +511,55 @@ let strip env =
       (v,vl))
     env
 
+    (* these remove constraints, at least those that contain pcre regexps,
+       which cannot be compared (problem in the unparser) *)
+let strip_predicate re =
+  let donothing r k e = k e in
+  let mcode mc = mc in
+  let ident r k e =
+    let e = k e in
+    match Ast_cocci.unwrap e with
+      Ast_cocci.MetaId(name,constraints,u,i) ->
+        Ast_cocci.rewrap e
+	  (Ast_cocci.MetaId(name,Ast_cocci.IdNoConstraint,u,i))
+    |  Ast_cocci.MetaFunc(name,constraints,u,i) ->
+        Ast_cocci.rewrap e
+	  (Ast_cocci.MetaFunc(name,Ast_cocci.IdNoConstraint,u,i))
+    |  Ast_cocci.MetaLocalFunc(name,constraints,u,i) ->
+        Ast_cocci.rewrap e
+	  (Ast_cocci.MetaLocalFunc(name,Ast_cocci.IdNoConstraint,u,i))
+    |  _ -> e in
+  let expression r k e =
+    let e = k e in
+    match Ast_cocci.unwrap e with
+      Ast_cocci.MetaErr(name,constraints,u,i) ->
+	Ast_cocci.rewrap e
+	  (Ast_cocci.MetaErr(name,Ast_cocci.NoConstraint,u,i))
+    | Ast_cocci.MetaExpr(name,constraints,u,ty,form,i) ->
+        Ast_cocci.rewrap e
+	  (Ast_cocci.MetaExpr(name,Ast_cocci.NoConstraint,u,ty,form,i))
+    | _ -> e in
+  let fn = Visitor_ast.rebuilder
+      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+      donothing donothing donothing donothing donothing
+      ident expression donothing donothing donothing donothing
+      donothing donothing donothing donothing donothing donothing in
+
+  fn.Visitor_ast.rebuilder_rule_elem re
+
+let clean_trans_info2 trans_info2 =
+  List.map
+    (function a ->
+      (List.map
+	 (function (node,env,pred) ->
+	   let pred =
+	     match pred with
+	       Lib_engine.Match re -> Lib_engine.Match (strip_predicate re)
+	     | _ -> pred in
+	   (node,env,pred))
+	 a))
+    trans_info2
+
 let rec nub ls =
   match ls with
     [] -> []
@@ -492,7 +568,7 @@ let rec nub ls =
 
 (*****************************************************************************)
 (* Call ctl engine *)
-(*****************************************************************************)
+(***************************************************** ************************)
 let (mysat2:
   Lib_engine.model ->
   (Lib_engine.ctlcocci * (pred list list)) ->
@@ -505,6 +581,10 @@ let (mysat2:
       WRAPPED_ENGINE.satbis (flow, label, states) ctl
 	(used_after, binding2)
     in
+    (* drop constraints in the predicate at the end of each match.
+       constraints aren't needed for transformation, and they can contain
+       regular expressions, which are incomparable. *)
+    let trans_info2 = clean_trans_info2 trans_info2 in
     if not (!Flag_parsing_cocci.sgrep_mode || !Flag.sgrep_mode2 ||
             !Flag_matcher.allow_inconsistent_paths)
     then Check_reachability.check_reachability rulename triples flow;

@@ -13,18 +13,26 @@ ifneq ($(MAKECMDGOALS),distclean)
 include ../../Makefile.config
 endif
 
+OCAMLCFLAGS ?= -g -dtypes
+OPTFLAGS ?= -g -dtypes
+
 VERSION=7.0.5
 SEXPDIR=sexplib-$(VERSION)
 SEXPLIB=$(SEXPDIR)/lib
 SEXPMARKER=$(SEXPDIR)/.marker
 
 PP_CMD=$(CPP) -x c -w -traditional -undef
-OCAMLC_CMD=$(OCAMLC) $(OCAMLCFLAGS) -I $(SEXPLIB) -thread -custom -pp "${PP_CMD}"
+OCAMLC_CMD=$(OCAMLC) $(OCAMLCFLAGS) -I $(SEXPLIB) -thread -pp "${PP_CMD}"
 OCAMLOPT_CMD=$(OCAMLOPT) $(OPTFLAGS) -I $(SEXPLIB) -thread -pp "${PP_CMD}"
 OCAMLDEP_CMD=$(OCAMLDEP) -I $(SEXPLIB) -pp "${PP_CMD}"
 
-all: sexplib.cma META
-all.opt: sexplib.cmxa META
+all: .depend
+	@$(MAKE) all-build
+all-build: .depend $(SEXPMARKER) sexplib.cma META
+
+all.opt: .depend
+	@$(MAKE) all-opt-build
+all-opt-build: .depend $(SEXPMARKER) sexplib.cmxa META
 
 clean:
 	rm -f sexplib.cma sexplib.cmxa META \
@@ -47,7 +55,7 @@ $(SEXPDIR).tar.gz:
 	@echo "$@ not found. Please download it and drop it in this directory ($(pwd))."
 	@false
 
-.PHONEY: all all.opt clean distclean depend
+.PHONEY: all all.opt clean distclean depend depend-build all-build all-opt-build
 
 
 # Sources needed for coccinelle
@@ -57,7 +65,7 @@ MODULES=type parser lexer pre_sexp sexp_intf \
 MLI=$(MODULES:%=$(SEXPLIB)/%.mli)
 SRC=$(MODULES:%=$(SEXPLIB)/%.ml)
 
-# Link
+# Link (produces the .cmi file as well)
 sexplib.cma: .depend $(MLI:.mli=.cmi) $(SRC:.ml=.cmo)
 	$(OCAMLC_CMD) -pack -o sexplib.cmo $(SRC:.ml=.cmo)
 	$(OCAMLC_CMD) -a -o sexplib.cma sexplib.cmo
@@ -77,7 +85,7 @@ sexplib.cmxa: .depend $(MLI:.mli=.cmi) $(SRC:.ml=.cmx)
 	$(OCAMLLEX) -o $@ $<
 
 .ml.mli:
-	$(OCAMLC_CMD) -i $< > $@
+	$(OCAMLC_CMD) -for-pack Sexplib -i $< > $@
 
 .mli.cmi:
 	$(OCAMLC_CMD) -for-pack Sexplib -c $<
@@ -92,11 +100,28 @@ META: $(SEXPLIB)/META
 	cp $< $@
 
 # the 'depend' target
-.depend depend: $(SEXPMARKER) $(SRC)
+.depend depend: $(SEXPMARKER)
+	@$(MAKE) depend-build
+
+depend-build: $(SEXPMARKER) $(SRC) $(MLI)
 	$(OCAMLDEP_CMD) $(SEXPLIB)/*.mli $(SEXPLIB)/*.ml > .depend
+
+# extra dependencies that are needed to generate mli files which
+# are needed for ocamldep
+$(SEXPLIB)/lexer.mli: $(SEXPLIB)/parser.cmi
+$(SEXPLIB)/parser.mli: $(SEXPLIB)/type.cmi
+$(SEXPLIB)/sexp_intf.mli: $(SEXPLIB)/pre_sexp.cmi
+$(SEXPLIB)/conv.mli: $(SEXPLIB)/sexp.cmi
+$(SEXPLIB)/sexp.mli: $(SEXPLIB)/sexp_intf.cmi
+$(SEXPLIB)/pre_sexp.mli: $(SEXPLIB)/lexer.cmi
+$(SEXPLIB)/conv_error.mli: $(SEXPLIB)/conv.cmi
 
 ifneq ($(MAKECMDGOALS),clean)
 ifneq ($(MAKECMDGOALS),distclean)
--include .depend
+ifneq ($(MAKECMDGOALS),depend-build)
+include .depend
 endif
 endif
+endif
+
+include ../../Makefile.common

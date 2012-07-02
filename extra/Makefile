@@ -14,8 +14,10 @@ INCLUDES= -I ../commons -I ../globals -I  ../parsing_cocci -I  ../parsing_c
 #for warning:  -w A
 #for profiling:  -p -inline 0   with OCAMLOPT
 OCAMLCFLAGS ?= -g -dtypes
-OCAMLC_CMD=$(OCAMLC) $(OCAMLCFLAGS) $(INCLUDES)
-OCAMLOPT_CMD=$(OCAMLOPT) $(OPTFLAGS) $(INCLUDES)
+OPTFLAGS ?= -g -dtypes
+
+OCAMLC_CMD=$(OCAMLC) -thread $(OCAMLCFLAGS) $(INCLUDES)
+OCAMLOPT_CMD=$(OCAMLOPT) -thread $(OPTFLAGS) $(INCLUDES)
 OCAMLDEP_CMD=$(OCAMLDEP) $(INCLUDESDEP)
 OCAMLMKTOP_CMD=$(OCAMLMKTOP) -g -custom $(INCLUDES)
 
@@ -24,7 +26,8 @@ OPTOBJS = $(SOURCES:.ml=.cmx)
 
 all: $(TARGET).cma
 
-all.opt: $(TARGET).cmxa
+all.opt:
+	@$(MAKE) $(TARGET).cmxa BUILD_OPT=yes
 
 $(TARGET).byte: $(OBJS) $(LIBS)
 	$(OCAMLC_CMD) -o $(TARGET).byte $(SYSLIBS) $(LIBS) $(OBJS)
@@ -72,3 +75,5 @@ ifneq ($(MAKECMDGOALS),distclean)
 -include .depend
 endif
 endif
+
+include ../Makefile.common

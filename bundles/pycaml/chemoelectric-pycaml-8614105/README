@@ -1,0 +1,26 @@
+Bindings for Python and Objective Caml.
+Not thread-safe.
+
+Based on the work of:
+  * Art Yerkes: http://pycaml.sourceforge.net/
+  * Dr. Thomas Fischbacher and Dr. Hans Fangohr:
+       http://nmag.soton.ac.uk/tf/pycaml.html
+
+Doctors Fischbacher and Fangohr included the following acknowledgment:
+"This work has been supported by the EPSRC Grant GR/T09156/01 (UK)."
+(http://www.epsrc.ac.uk/)
+
+This version has been modified primarily for use with Kompostilo
+Typesetter: http://kompostilo.googlecode.com
+
+The author, Barry Schwartz, is disabled and so unable to provide much
+support. He encourages people to fork off their own versions and have
+a lot of fun. :)
+
+Distributed under the GNU Lesser General Public License, version 2.1.
+
+To build, use something like:
+
+  make PYVER=2.6
+
+An ebuild is included for the benefit of Gentoo users.

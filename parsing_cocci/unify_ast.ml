@@ -25,6 +25,33 @@
 
 
 # 0 "./unify_ast.ml"
+(*
+ * Copyright 2012, INRIA
+ * Julia Lawall, Gilles Muller
+ * Copyright 2010-2011, INRIA, University of Copenhagen
+ * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
+ * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+ * This file is part of Coccinelle.
+ *
+ * Coccinelle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, according to version 2 of the License.
+ *
+ * Coccinelle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The authors reserve the right to distribute this or future versions of
+ * Coccinelle under other licenses.
+ *)
+
+
+# 0 "./unify_ast.ml"
 (* --------------------------------------------------------------------- *)
 (* Given two patterns, A and B, determine whether B can match any matched
 subterms of A.  For simplicity, this doesn't maintain an environment; it
@@ -133,6 +160,13 @@ let rec unify_ident i1 i2 =
   | (_,Ast.MetaId(_,_,_,_))
   | (_,Ast.MetaFunc(_,_,_,_))
   | (_,Ast.MetaLocalFunc(_,_,_,_)) -> return true
+
+  | (Ast.AsIdent(id1,asid1),_) ->
+      disjunct_all_bindings
+	(List.map (function x -> unify_ident x i2) [id1;asid1])
+  | (_,Ast.AsIdent(id2,asid2)) ->
+      disjunct_all_bindings
+	(List.map (function x -> unify_ident x i1) [id2;asid2])
 
   | (Ast.DisjId(i1),_) ->
       disjunct_all_bindings (List.map (function x -> unify_ident x i2) i1)

@@ -4,7 +4,7 @@ def build_link(p, msg, color) :
 def print_todo(p, msg="", color="ovl-face1") :
 	if msg == "" : msg = "%s::%s" % (p.file,p.line)
 	link = build_link(p, msg, color)
-	print "* TODO %s" % (link)
+	print ("* TODO %s" % (link))
 
 def print_link(p, msg="", color="ovl-face1") :
 	if msg == "" : msg = "%s::%s" % (p.file,p.line)

@@ -25,6 +25,33 @@
 
 
 # 0 "./ast0toast.ml"
+(*
+ * Copyright 2012, INRIA
+ * Julia Lawall, Gilles Muller
+ * Copyright 2010-2011, INRIA, University of Copenhagen
+ * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
+ * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+ * This file is part of Coccinelle.
+ *
+ * Coccinelle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, according to version 2 of the License.
+ *
+ * Coccinelle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The authors reserve the right to distribute this or future versions of
+ * Coccinelle under other licenses.
+ *)
+
+
+# 0 "./ast0toast.ml"
 (* Arities matter for the minus slice, but not for the plus slice. *)
 
 (* + only allowed on code in a nest (in_nest = true).  ? only allowed on
@@ -218,6 +245,7 @@ let check_allminus =
     match Ast0.unwrap e with
       Ast0.DisjId(starter,id_list,mids,ender) ->
 	List.for_all r.VT0.combiner_rec_ident id_list
+    | Ast0.AsIdent(id,asid) -> k id
     | _ -> k e in
 
   let expression r k e =
@@ -402,6 +430,8 @@ and ident i =
 	Ast.MetaFunc(mcode name,constraints,unitary,false)
     | Ast0.MetaLocalFunc(name,constraints,_) ->
 	Ast.MetaLocalFunc(mcode name,constraints,unitary,false)
+    | Ast0.AsIdent(id,asid) ->
+	Ast.AsIdent(ident id,ident asid)
     | Ast0.OptIdent(id) -> Ast.OptIdent(ident id)
     | Ast0.UniqueIdent(id) -> Ast.UniqueIdent(ident id))
 

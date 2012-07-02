@@ -5,9 +5,11 @@ module D = Data
 module Ast = Ast_cocci
 exception Lexical of string
 let tok = Lexing.lexeme
+let file = ref ""
+let language = ref ""
 let inc_line _ = Lexer_cocci.line := !Lexer_cocci.line + 1
 
-# 11 "lexer_script.ml"
+# 13 "lexer_script.ml"
 let __ocaml_lex_tables = {
   Lexing.lex_base = 
    "\000\000\247\255\248\255\249\255\001\000\001\000\254\255\004\000\
@@ -110,54 +112,62 @@ let rec token lexbuf =
 and __ocaml_lex_token_rec lexbuf __ocaml_lex_state =
   match Lexing.engine __ocaml_lex_tables __ocaml_lex_state lexbuf with
       | 0 ->
-# 17 "lexer_script.mll"
+# 19 "lexer_script.mll"
            ( TScriptData (tok lexbuf) )
-# 116 "lexer_script.ml"
+# 118 "lexer_script.ml"
 
   | 1 ->
-# 18 "lexer_script.mll"
-                              ( inc_line(); TScriptData (tok lexbuf) )
-# 121 "lexer_script.ml"
-
-  | 2 ->
-# 19 "lexer_script.mll"
-         ( TArobArob )
-# 126 "lexer_script.ml"
-
-  | 3 ->
-# 20 "lexer_script.mll"
-         ( TArob )
+# 21 "lexer_script.mll"
+      ( inc_line();
+	let text = tok lexbuf in
+	let text =
+	  if !language = "ocaml"
+	  then
+	    Printf.sprintf "%s# %d \"%s\"%s"
+	      text !Lexer_cocci.line !file text
+	  else text in
+	TScriptData text )
 # 131 "lexer_script.ml"
 
-  | 4 ->
-# 21 "lexer_script.mll"
-         ( TScriptData (tok lexbuf) )
+  | 2 ->
+# 30 "lexer_script.mll"
+         ( TArobArob )
 # 136 "lexer_script.ml"
 
-  | 5 ->
-# 22 "lexer_script.mll"
-                   ( token lexbuf )
+  | 3 ->
+# 31 "lexer_script.mll"
+         ( TArob )
 # 141 "lexer_script.ml"
 
-  | 6 ->
-# 23 "lexer_script.mll"
-         ( TScriptData (Printf.sprintf "\"%s\"" (string lexbuf)) )
+  | 4 ->
+# 32 "lexer_script.mll"
+         ( TScriptData (tok lexbuf) )
 # 146 "lexer_script.ml"
 
-  | 7 ->
-# 24 "lexer_script.mll"
-         ( TScriptData (Printf.sprintf "'%s'" (cstring lexbuf)) )
+  | 5 ->
+# 33 "lexer_script.mll"
+                   ( token lexbuf )
 # 151 "lexer_script.ml"
 
-  | 8 ->
-# 25 "lexer_script.mll"
-         ( EOF )
+  | 6 ->
+# 34 "lexer_script.mll"
+         ( TScriptData (Printf.sprintf "\"%s\"" (string lexbuf)) )
 # 156 "lexer_script.ml"
 
-  | 9 ->
-# 26 "lexer_script.mll"
-      ( raise (Lexical ("unrecognised symbol, in token rule:"^tok lexbuf)) )
+  | 7 ->
+# 35 "lexer_script.mll"
+         ( TScriptData (Printf.sprintf "'%s'" (cstring lexbuf)) )
 # 161 "lexer_script.ml"
+
+  | 8 ->
+# 36 "lexer_script.mll"
+         ( EOF )
+# 166 "lexer_script.ml"
+
+  | 9 ->
+# 37 "lexer_script.mll"
+      ( raise (Lexical ("unrecognised symbol, in token rule:"^tok lexbuf)) )
+# 171 "lexer_script.ml"
 
   | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf; __ocaml_lex_token_rec lexbuf __ocaml_lex_state
 
@@ -166,19 +176,19 @@ and string lexbuf =
 and __ocaml_lex_string_rec lexbuf __ocaml_lex_state =
   match Lexing.engine __ocaml_lex_tables __ocaml_lex_state lexbuf with
       | 0 ->
-# 30 "lexer_script.mll"
+# 41 "lexer_script.mll"
                         ( "" )
-# 172 "lexer_script.ml"
+# 182 "lexer_script.ml"
 
   | 1 ->
 let
-# 31 "lexer_script.mll"
+# 42 "lexer_script.mll"
           x
-# 178 "lexer_script.ml"
+# 188 "lexer_script.ml"
 = Lexing.sub_lexeme_char lexbuf lexbuf.Lexing.lex_start_pos in
-# 31 "lexer_script.mll"
+# 42 "lexer_script.mll"
                         ( (String.make 1 x) ^ string lexbuf )
-# 182 "lexer_script.ml"
+# 192 "lexer_script.ml"
 
   | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf; __ocaml_lex_string_rec lexbuf __ocaml_lex_state
 
@@ -187,19 +197,19 @@ and cstring lexbuf =
 and __ocaml_lex_cstring_rec lexbuf __ocaml_lex_state =
   match Lexing.engine __ocaml_lex_tables __ocaml_lex_state lexbuf with
       | 0 ->
-# 34 "lexer_script.mll"
+# 45 "lexer_script.mll"
                         ( "" )
-# 193 "lexer_script.ml"
+# 203 "lexer_script.ml"
 
   | 1 ->
 let
-# 35 "lexer_script.mll"
+# 46 "lexer_script.mll"
           x
-# 199 "lexer_script.ml"
+# 209 "lexer_script.ml"
 = Lexing.sub_lexeme_char lexbuf lexbuf.Lexing.lex_start_pos in
-# 35 "lexer_script.mll"
+# 46 "lexer_script.mll"
                         ( (String.make 1 x) ^ cstring lexbuf )
-# 203 "lexer_script.ml"
+# 213 "lexer_script.ml"
 
   | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf; __ocaml_lex_cstring_rec lexbuf __ocaml_lex_state
 

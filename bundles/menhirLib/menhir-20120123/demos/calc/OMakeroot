@@ -1,0 +1,15 @@
+#
+# Load the standard configuration.
+#
+open build/Common
+
+#
+# The command-line variables are defined *after* the
+# standard configuration has been loaded.
+#
+DefineCommandVars()
+
+#
+# Include the OMakefile in this directory.
+#
+.SUBDIRS: .

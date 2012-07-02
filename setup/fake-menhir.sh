@@ -1,4 +1,6 @@
-#!/bin/sh -e
+#! /bin/sh -e
+
+set -e
 
 # If you don't have menhir installed, but you do have the generated files, then
 # this script fakes menhir by providing the generated files as the result of the
@@ -10,9 +12,9 @@ reqml=
 reqmli=
 
 for arg in "$@"; do
-  if test "x$STATE" == x0 -a "x$arg" == "x--base" -o "x$arg" == "x-b"; then
+  if test "x$STATE" = x0 -a "x$arg" = "x--base" -o "x$arg" = "x-b"; then
     STATE=1
-  elif test "x$STATE" == x1; then
+  elif test "x$STATE" = x1; then
     base="$arg"
     STATE=0
   else
@@ -21,7 +23,7 @@ for arg in "$@"; do
     extension="${filename##*.}"
 
     # assumes that all commandline parameters ending in .mly are files to be processed by menhir
-    if test "x$extension" == xmly; then
+    if test "x$extension" = xmly; then
       reqml="${basename}.ml"
       reqmli="${basename}.mli"
 

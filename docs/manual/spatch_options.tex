@@ -30,8 +30,9 @@ directory {\tt foodir}:
   cause for concern, unless it occurs in a function that is relevant to the
   semantic patch.
 \item {\tt spatch --sp-file foo.cocci foo.c}: Apply the semantic patch {\tt
-    foo.cocci} to the file {\tt foo.c} and print out any transformations as a
-  diff.  {\tt --sp-file} is optional in this and the following cases.
+    foo.cocci} to the file {\tt foo.c} and print out any transformations as
+  the changes between the original and transformed code, using the program
+  {\tt diff}.  {\tt --sp-file} is optional in this and the following cases.
 \item {\tt spatch --sp-file foo.cocci foo.c --debug}:  The same as the
   previous case, but print out some information about the matching process.
 \item {\tt spatch --sp-file foo.cocci --dir foodir}:  Apply the semantic
@@ -215,7 +216,11 @@ this option prints the regular expression that will be passed to glimpse.}
   option disables this optimization and tries the semantic patch on all files.}
 
 \developer{--test $\langle$file$\rangle$}{ A shortcut for running Coccinelle
-on the semantic patch ``file{\tt{.cocci}}'' and the C file ``file{\tt{.c}}''.}
+on the semantic patch ``file{\tt{.cocci}}'' and the C file
+``file{\tt{.c}}''.  The result is put in the file {\tt
+  /tmp/file{\tt{.res}}}.  If writing a file in /tmp with a non-fresh name
+is a concern, then do not use this option.
+}
 
 \developer{--testall}{A shortcut for running Coccinelle on all files in a
   subdirectory {\tt tests} such that there are all of a {\tt .cocci} file, a {\tt
@@ -476,12 +481,20 @@ due to running out of steps rather than due to not matching.}
 %   --popl-mark-all} and {\bf --popl-keep-all-wits} implicitly set {\bf
 %   --popl}.}
 
+\rare{--reverse}{Inverts the semantic patch before applying it.
+A potential use case is backporting changes to previous versions. If a
+semantic patch represents an API change, then the reverse undoes the
+API change. Note that inverting a semantic patch is not always possible.
+In particular, the composition of a
+semantic patch with its inverse is not guaranteed to be an empty patch.}
+
 \section{Generation of the result}
 
-Normally, the only output is a diff printed to standard output, containing
-the differences between the original code and the transformed code.  If
+Normally, the only output is the differences between the original code and
+the transformed code obtained using the program {\tt diff} with the unified
+format option.  If
 stars are used in column 0 rather than {\tt -} and {\tt +}, then the {\tt
-  -} lines in the diff are the lines that matched the stars.
+  -} lines in the output are the lines that matched the stars.
 
 \normal{--keep-comments}{Don't remove comments adjacent to removed code.}
 
@@ -493,13 +506,17 @@ stars are used in column 0 rather than {\tt -} and {\tt +}, then the {\tt
   patch, within individual lines.}
 
 \rare{-o $\langle$file$\rangle$}{ This causes the transformed code to be
-  placed in the file {\tt file}.  A diff is still printed to the standard
-  output.  This option only makes sense when {\tt -} and {\tt +} are used.}
+  placed in the file {\tt file}.  The difference between the original code
+  and the transformed code is still printed to the standard output using
+  {\tt diff} with the unified format option.  This option only makes sense
+  when {\tt -} and {\tt +} are used.}
 
 \rare{--in-place}{ Modify the input file to contain the transformed code.
-  A diff is still printed to the standard output.  By default, the input
-  file is overwritten when using this option, with no backup.  This option
-  only makes sense when {\tt -} and {\tt +} are used.}
+  The difference between the original code and the transformed code is
+  still printed to the standard output using {\tt diff} with the unified
+  format option.  By default, the input file is overwritten when using this
+  option, with no backup.  This option only makes sense when {\tt -} and
+  {\tt +} are used.}
 
 \rare{--backup-suffix}{The suffix of the file to use in making a backup of
   the original file(s).  This suffix should include the leading ``.'', if
@@ -507,17 +524,19 @@ stars are used in column 0 rather than {\tt -} and {\tt +}, then the {\tt
   {\tt --in-place} is also used.}
 
 \rare{--out-place}{ Store the result of modifying the code in a .cocci-res
-  file.  A diff is still printed to the standard output.  This option only
+  file.  The difference between the original code
+  and the transformed code is still printed to the standard output using
+  {\tt diff} with the unified format option.  This option only
   makes sense when {\tt -} and {\tt +} are used.}
 
-\rare{--no-show-diff}{ Normally, a diff between the original and transformed
-code is printed on the standard output.  This option causes this not to be
-done.}
+\rare{--no-show-diff}{ Normally, the difference between the original and
+  transformed code is printed on the standard output.  This option causes
+  this not to be done.}
 
-\rare{-U}{ Set number of diff context lines.}
+\rare{-U}{ Set number of context lines to be provided by {\tt diff}.}
 
 \rare{--patch $\langle$path$\rangle$}{The prefix of the pathname of the
-  directory or file name that should dropped from the diff line in the
+  directory or file name that should dropped from the {\tt diff} line in the
   generated patch.  This is useful if you want to apply a patch only to a
   subdirectory of a source code tree but want to create a patch that can be
   applied at the root of the source code tree.  An example could be {\tt

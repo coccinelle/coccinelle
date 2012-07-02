@@ -25,6 +25,33 @@
 
 
 # 0 "./function_prototypes.ml"
+(*
+ * Copyright 2012, INRIA
+ * Julia Lawall, Gilles Muller
+ * Copyright 2010-2011, INRIA, University of Copenhagen
+ * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
+ * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+ * This file is part of Coccinelle.
+ *
+ * Coccinelle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, according to version 2 of the License.
+ *
+ * Coccinelle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The authors reserve the right to distribute this or future versions of
+ * Coccinelle under other licenses.
+ *)
+
+
+# 0 "./function_prototypes.ml"
 module Ast0 = Ast0_cocci
 module Ast = Ast_cocci
 module V0 = Visitor_ast0
@@ -37,6 +64,7 @@ let rec get_name name =
     Ast0.Id(nm) -> [Id(Ast0.unwrap_mcode nm)]
   | Ast0.MetaId(nm,_,_,_) | Ast0.MetaFunc(nm,_,_)
   | Ast0.MetaLocalFunc(nm,_,_) -> [Meta(Ast0.unwrap_mcode nm)]
+  | Ast0.AsIdent(id1,id2) -> failwith "not supported"
   | Ast0.DisjId(_,id_list,_,_) -> List.concat (List.map get_name id_list)
   | Ast0.OptIdent(id) | Ast0.UniqueIdent(id) ->
       get_name id

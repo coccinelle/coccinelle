@@ -25,6 +25,33 @@
 
 
 # 0 "./pretty_print_cocci.ml"
+(*
+ * Copyright 2012, INRIA
+ * Julia Lawall, Gilles Muller
+ * Copyright 2010-2011, INRIA, University of Copenhagen
+ * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
+ * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+ * This file is part of Coccinelle.
+ *
+ * Coccinelle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, according to version 2 of the License.
+ *
+ * Coccinelle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The authors reserve the right to distribute this or future versions of
+ * Coccinelle under other licenses.
+ *)
+
+
+# 0 "./pretty_print_cocci.ml"
 open Format
 module Ast = Ast_cocci
 
@@ -210,6 +237,7 @@ let rec ident i =
   | Ast.MetaId(name,_,keep,inherited) -> mcode print_meta name
   | Ast.MetaFunc(name,_,_,_) -> mcode print_meta name
   | Ast.MetaLocalFunc(name,_,_,_) -> mcode print_meta name
+  | Ast.AsIdent(id,asid) -> ident id; print_string "@"; ident asid
   | Ast.DisjId(id_list) -> print_disj_list ident id_list
   | Ast.OptIdent(id) -> print_string "?"; ident id
   | Ast.UniqueIdent(id) -> print_string "!"; ident id
@@ -901,6 +929,9 @@ let script_header str lang deps code =
   force_newline();
   print_string "@@";
   force_newline();
+  let code =
+    String.concat "\n"
+      (Str.split (Str.regexp "[\n\r\011\012]#.*[\n\r\011\012]") code) in
   print_string code;
   force_newline()
 

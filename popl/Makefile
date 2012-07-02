@@ -30,6 +30,9 @@ endif
 
 TARGET = popl
 
+OCAMLCFLAGS ?= -g -dtypes
+OPTFLAGS ?= -g -dtypes
+
 SRC = ast_popl.ml asttopopl.ml insert_quantifiers.ml insert_befaft.ml \
 pretty_print_popl.ml popltoctl.ml popl.ml flag_popl.ml
 
@@ -42,11 +45,10 @@ INCLUDE_PATH = -I ../commons -I ../globals \
 #The Caml compilers.
 #for warning:  -w A
 #for profiling:  -p -inline 0   with OCAMLOPT
-OCAMLC_CMD=$(OCAMLC) -dtypes -g
-OCAMLOPT_CMD=$(OCAMLOPT) $(OPTFLAGS)
+OCAMLC_CMD=$(OCAMLC) -thread $(OCAMLCFLAGS)
+OCAMLOPT_CMD=$(OCAMLOPT) -thread $(OPTFLAGS)
 OCAMLDEP_CMD=$(OCAMLDEP)
 OCAMLMKTOP_CMD=$(OCAMLMKTOP) -g -custom
-
 
 LIB=$(TARGET).cma
 OPTLIB=$(LIB:.cma=.cmxa)
@@ -55,20 +57,21 @@ OBJS = $(SRC:.ml=.cmo)
 OPTOBJS = $(SRC:.ml=.cmx)
 
 all: $(LIB)
-all.opt: $(OPTLIB)
+all.opt:
+	@$(MAKE) $(OPTLIB) BUILD_OPT=yes
 
 $(TARGET).top: $(LIB)
-	$(CAMLMKTOP_CMD) -o $(TARGET).top $(SYSLIBS) $(LIBS) $(OBJS)
+	$(OCAMLMKTOP_CMD) -o $(TARGET).top $(SYSLIBS) $(LIBS) $(OBJS)
 
 $(LIB):  $(OBJS)
-	$(CAMLC_CMD) -a -o $(LIB) $(OBJS)
+	$(OCAMLC_CMD) -a -o $(LIB) $(OBJS)
 
 clean::
 	rm -f $(LIB) $(TARGET).top
 
 
 $(OPTLIB): $(OPTOBJS)
-	$(CAMLOPT_CMD) -a -o $(OPTLIB) $(OPTOBJS)
+	$(OCAMLOPT_CMD) -a -o $(OPTLIB) $(OPTOBJS)
 
 # clean rule for LIB.opt
 clean::
@@ -79,13 +82,13 @@ clean::
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
 
 .ml.cmo:
-	$(CAMLC_CMD) $(INCLUDE_PATH) -c $<
+	$(OCAMLC_CMD) $(INCLUDE_PATH) -c $<
 
 .mli.cmi:
-	$(CAMLC_CMD) $(INCLUDE_PATH) -c $<
+	$(OCAMLC_CMD) $(INCLUDE_PATH) -c $<
 
 .ml.cmx:
-	$(CAMLOPT_CMD) $(INCLUDE_PATH) -c $<
+	$(OCAMLOPT_CMD) $(INCLUDE_PATH) -c $<
 
 
 # clean rule for others files
@@ -98,10 +101,12 @@ distclean: clean
 
 .PHONEY: depend
 .depend depend:
-	$(CAMLDEP_CMD) $(INCLUDE_PATH) *.mli *.ml > .depend
+	$(OCAMLDEP_CMD) $(INCLUDE_PATH) *.mli *.ml > .depend
 
 ifneq ($(MAKECMDGOALS),clean)
 ifneq ($(MAKECMDGOALS),distclean)
 -include .depend
 endif
 endif
+
+include ../Makefile.common

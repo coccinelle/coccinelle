@@ -25,6 +25,33 @@
 
 
 # 0 "./main.ml"
+(*
+ * Copyright 2012, INRIA
+ * Julia Lawall, Gilles Muller
+ * Copyright 2010-2011, INRIA, University of Copenhagen
+ * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
+ * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+ * This file is part of Coccinelle.
+ *
+ * Coccinelle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, according to version 2 of the License.
+ *
+ * Coccinelle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The authors reserve the right to distribute this or future versions of
+ * Coccinelle under other licenses.
+ *)
+
+
+# 0 "./main.ml"
 open Common
 module FC = Flag_cocci
 
@@ -282,6 +309,8 @@ let short_options = [
   "   suffix to use when making a backup for inplace";
   "--out-place", Arg.Set outplace_modif,
   "   store modifications in a .cocci_res file";
+  "--reverse", Arg.Set Flag_parsing_cocci.interpret_inverted,
+  "  invert the semantic patch before applying it";
 
   "-U", Arg.Int (fun n -> Flag_parsing_c.diff_lines := Some (i_to_s n)),
   "  set number of diff context lines";
@@ -1166,7 +1195,8 @@ let main () =
 		  Testing.testone "" x !compare_with_expected
 		end
 	      else
-		pr2 (spf "ERROR: File %s does not exist" testfile)
+		Printf.fprintf stderr
+		  "ERROR: File %s does not exist\n" testfile
 	end
 
     | []  when !test_all ->
@@ -1232,12 +1262,11 @@ let main_with_better_error_report () =
       main ()
     with
     | Unix.Unix_error (e, "stat", filename) ->
-        pr2
-	  (spf "ERROR: File %s does not exist: %s"
-	     filename (Unix.error_message e));
+        Printf.fprintf stderr "ERROR: File %s does not exist: %s\n"
+	  filename (Unix.error_message e);
         raise (UnixExit (-1))
     | Parse_cocci.Bad_virt s ->
-	Common.pr2 (Printf.sprintf "virtual rule %s not supported" s);
+	Printf.fprintf stderr "virtual rule %s not supported\n" s;
         raise (UnixExit (-1))
 
 (*****************************************************************************)

@@ -25,6 +25,33 @@
 
 
 # 0 "./cocci_vs_c.ml"
+(*
+ * Copyright 2012, INRIA
+ * Julia Lawall, Gilles Muller
+ * Copyright 2010-2011, INRIA, University of Copenhagen
+ * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
+ * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+ * This file is part of Coccinelle.
+ *
+ * Coccinelle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, according to version 2 of the License.
+ *
+ * Coccinelle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The authors reserve the right to distribute this or future versions of
+ * Coccinelle under other licenses.
+ *)
+
+
+# 0 "./cocci_vs_c.ml"
 open Common
 
 module A = Ast_cocci
@@ -1544,6 +1571,13 @@ and (ident: info_ident -> (A.ident, string * Ast_c.info) matcher) =
       | DontKnow -> failwith "MetaLocalFunc, need more semantic info about id"
       )
 
+  | A.AsIdent(id,asid) ->
+      ident infoidb id ib >>= (fun id ib ->
+      ident infoidb asid ib >>= (fun asid ib ->
+	return(
+	  ((A.AsIdent(id,asid)) +> A.rewrap ida,
+	   ib))))
+
   (* not clear why disj things are needed, after disjdistr? *)
   | A.DisjId ias ->
       ias +> List.fold_left (fun acc ia -> acc >|+|> (ident infoidb ia ib)) fail
@@ -1904,7 +1938,6 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
         ident DontKnow sa (sb, iisb) >>= (fun sa (sb, iisb) ->
         tokenf lpa lpb >>= (fun lpa lpb ->
         tokenf rpa rpb >>= (fun rpa rpb ->
-        tokenf rpa rpb >>= (fun rpa rpb ->
         tokenf weqa weqb >>= (fun weqa weqb ->
         tokenf enda iiendb >>= (fun enda iiendb ->
         arguments (seqstyle eas) (A.undots eas) ebs >>= (fun easundots ebs ->
@@ -1913,11 +1946,15 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
 
           return (
             (mckstart, allminus,
-            (A.MacroDecl (sa,lpa,eas,rpa,enda)) +> A.rewrap decla),
-            (B.MacroDecl ((sb,ebs,true),
+            (A.MacroDeclInit(sa,lpa,eas,rpa,weqa,inia,enda)) +> A.rewrap decla),
+            (B.MacroDeclInit ((sb,ebs,inib),
                          [iisb;lpb;rpb;iiendb;iifakestart] ++ iistob))
-          )))))))))))
-  | _, (B.MacroDecl _ |B.MacroDeclInit _ |B.DeclList _) ->      fail
+          ))))))))))
+
+
+  | A.MacroDeclInit (sa,lpa,eas,rpa,weqa,inia,enda), _ -> fail
+
+  | _, (B.MacroDecl _ |B.MacroDeclInit _ |B.DeclList _) -> fail
 
 
 and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
@@ -2212,7 +2249,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
 
    | _, ({B.v_namei = None;}, _) ->
        (* old:   failwith "no variable in this declaration, weird" *)
-       fail
+      fail
 
 
 
@@ -2658,6 +2695,7 @@ and enum_field ida idb =
 	    A.rewrap ida,
 	    (nameidb,Some(opbi,eb2))))))
       |	_ -> failwith "not possible")
+  | A.Assignment(ea1,opa,ea2,init),(nameidb,None) -> fail
   | _ -> failwith "not possible"
 
 (* ------------------------------------------------------------------------- *)

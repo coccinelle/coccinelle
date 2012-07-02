@@ -25,12 +25,40 @@
 
 
 # 0 "./lexer_cocci.mll"
+(*
+ * Copyright 2012, INRIA
+ * Julia Lawall, Gilles Muller
+ * Copyright 2010-2011, INRIA, University of Copenhagen
+ * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
+ * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+ * This file is part of Coccinelle.
+ *
+ * Coccinelle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, according to version 2 of the License.
+ *
+ * Coccinelle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The authors reserve the right to distribute this or future versions of
+ * Coccinelle under other licenses.
+ *)
+
+
+# 0 "./lexer_cocci.mll"
 {
 open Parser_cocci_menhir
 module D = Data
 module Ast = Ast_cocci
 module Ast0 = Ast0_cocci
 module P = Parse_aux
+module FC = Flag_parsing_cocci
 exception Lexical of string
 let tok = Lexing.lexeme
 
@@ -85,8 +113,19 @@ let pass_zero _ = col_zero := false
 
 let lexerr s1 s2 = raise (Lexical (Printf.sprintf "%s%s" s1 s2))
 
+let opt_reverse_token token =
+  if !FC.interpret_inverted
+  then match token with
+         D.MINUS        -> D.PLUSPLUS  (* maybe too liberal *)
+       | D.OPTMINUS     -> lexerr "cannot invert token ?- (an optional minus line), which is needed for reversing the patch" ""  
+       | D.UNIQUEMINUS  -> D.PLUS
+       | D.PLUS         -> D.MINUS
+       | D.PLUSPLUS     -> D.MINUS (* may not be sufficient *)
+       | _              -> token
+  else token
+
 let add_current_line_type x =
-  match (x,!current_line_type) with
+  match (opt_reverse_token x,!current_line_type) with
     (D.MINUS,(D.CONTEXT,ln,lln))  ->
       current_line_type := (D.MINUS,ln,lln)
   | (D.MINUS,(D.UNIQUE,ln,lln))   ->

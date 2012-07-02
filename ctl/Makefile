@@ -40,8 +40,9 @@ INCLUDES=-I ../commons -I ../commons/ocamlextra -I ../globals
 #for warning:  -w A
 #for profiling:  -p -inline 0   with OCAMLOPT
 OCAMLCFLAGS ?= -g -dtypes
-OCAMLC_CMD=$(OCAMLC) $(OCAMLCFLAGS) $(INCLUDES)
-OCAMLOPT_CMD=$(OCAMLOPT) $(OPTFLAGS) $(INCLUDES)
+OPTFLAGS ?= -g -dtypes
+OCAMLC_CMD=$(OCAMLC) -thread $(OCAMLCFLAGS) $(INCLUDES)
+OCAMLOPT_CMD=$(OCAMLOPT) -thread $(OPTFLAGS) $(INCLUDES)
 OCAMLDEP_CMD=$(OCAMLDEP) $(INCLUDES)
 OCAMLMKTOP_CMD=$(OCAMLMKTOP) -g -custom $(INCLUDES)
 
@@ -52,7 +53,8 @@ OBJS = $(SRC:.ml=.cmo)
 OPTOBJS = $(SRC:.ml=.cmx)
 
 all: $(LIB)
-all.opt: $(OPTLIB)
+all.opt:
+	@$(MAKE) $(OPTLIB) BUILD_OPT=yes
 
 $(TARGET).top: $(LIB) test_ctl.cmo
 	$(OCAMLMKTOP_CMD) -o $(TARGET).top $(SYSLIBS) $(LIBS) $(OBJS) test_ctl.cmo
@@ -97,3 +99,5 @@ ifneq ($(MAKECMDGOALS),distclean)
 -include .depend
 endif
 endif
+
+include ../Makefile.common

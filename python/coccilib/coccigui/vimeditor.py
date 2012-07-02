@@ -228,7 +228,7 @@ class vim_editor(object):
                                             document=doc, dorefresh=True)
 
     def vim_started(self, server):
-        print 'started'
+        print('started')
 
     def vim_filesave(self, server, *args):
         self.boss.call_command('buffermanager', 'reset_current_document')

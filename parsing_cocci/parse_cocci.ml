@@ -25,6 +25,33 @@
 
 
 # 0 "./parse_cocci.ml"
+(*
+ * Copyright 2012, INRIA
+ * Julia Lawall, Gilles Muller
+ * Copyright 2010-2011, INRIA, University of Copenhagen
+ * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
+ * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+ * This file is part of Coccinelle.
+ *
+ * Coccinelle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, according to version 2 of the License.
+ *
+ * Coccinelle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The authors reserve the right to distribute this or future versions of
+ * Coccinelle under other licenses.
+ *)
+
+
+# 0 "./parse_cocci.ml"
 (* splits the entire file into minus and plus fragments, and parses each
 separately (thus duplicating work for the parsing of the context elements) *)
 
@@ -1462,6 +1489,14 @@ let rec consume_minus_positions toks =
       [] -> []
     | ((PC.TOPar0(_),_) as x)::xs | ((PC.TCPar0(_),_) as x)::xs
     | ((PC.TMid0(_),_) as x)::xs -> x::loop_other xs
+    | x::(PC.TPArob _,_)::(PC.TMetaId(name,constraints,seed,pure,clt),_)::xs ->
+	let x =
+	  process_minus_positions x name clt
+	    (function name ->
+	      Ast0.IdentTag
+		(Ast0.wrap
+		   (Ast0.MetaId(name,constraints,seed,pure)))) in
+	(loop_other (x::xs))
     | x::(PC.TPArob _,_)::(PC.TMetaExp(name,constraints,pure,ty,clt),_)::xs ->
 	let x =
 	  process_minus_positions x name clt
@@ -1659,11 +1694,11 @@ let parse_iso_files existing_isos iso_files extra_path =
     List.fold_left
       (function (prev,names) ->
 	function file ->
-	  Lexer_cocci.init ();
 	  let file =
 	    match file with
 	      Common.Left(fl)  -> Filename.concat extra_path fl
 	    | Common.Right(fl) -> Filename.concat Config.path fl in
+	  Lexer_cocci.init ();
 	  let current = parse_iso file in
 	  let new_names = get_names current in
 	  if List.exists (function x -> List.mem x names) new_names
@@ -1708,7 +1743,7 @@ let eval_depend dep virt =
   loop dep
 
 let parse file =
-  Lexer_cocci.init();
+  Lexer_cocci.init ();
   let rec parse_loop file =
   Lexer_cocci.include_init ();
   let table = Common.full_charpos_to_pos file in
@@ -1854,6 +1889,8 @@ let parse file =
 		failwith "Malformed script rule" in
 
           let parse_script_rule name language old_metas deps =
+	    Lexer_script.file := file;
+	    Lexer_script.language := language;
             let get_tokens = tokens_script_all table file false lexbuf in
 
               (* meta-variables *)
@@ -1907,6 +1944,8 @@ let parse file =
 	     [],tokens) in
 
           let parse_if_script_rule k name language _ deps =
+	    Lexer_script.file := file;
+	    Lexer_script.language := language;
             let get_tokens = tokens_script_all table file false lexbuf in
 
               (* script code *)

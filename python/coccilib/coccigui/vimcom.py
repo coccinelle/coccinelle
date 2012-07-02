@@ -609,7 +609,7 @@ class communication_window(gtk.Window):
         self.send_ex(server, 'w')
 
     def save_as(self, server, filename):
-        print filename
+        print(filename)
         self.send_ex(server, 'saveas %s' % filename)
 
     def undo(self, server):
@@ -715,14 +715,14 @@ class communication_window(gtk.Window):
             evt, d = data.split(sep, 1)
             self.vim_event(server, evt, d)
         else:
-            print 'bad async reply', data
+            print('bad async reply', data)
 
     def vim_event(self, server, evt, d):
         funcname = 'vim_%s' % evt
         if hasattr(self.cb, funcname):
             getattr(self.cb, funcname)(server, *d.split(chr(4)))
         else:
-            print 'unhandled event', evt
+            print('unhandled event', evt)
 
 VimCom = communication_window
 

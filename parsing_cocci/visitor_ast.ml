@@ -25,6 +25,33 @@
 
 
 # 0 "./visitor_ast.ml"
+(*
+ * Copyright 2012, INRIA
+ * Julia Lawall, Gilles Muller
+ * Copyright 2010-2011, INRIA, University of Copenhagen
+ * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
+ * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
+ * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
+ * This file is part of Coccinelle.
+ *
+ * Coccinelle is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, according to version 2 of the License.
+ *
+ * Coccinelle is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * The authors reserve the right to distribute this or future versions of
+ * Coccinelle under other licenses.
+ *)
+
+
+# 0 "./visitor_ast.ml"
 module Ast0 = Ast0_cocci
 module Ast = Ast_cocci
 
@@ -110,6 +137,7 @@ let combiner bind option_default
       | Ast.MetaId(name,_,_,_) -> meta_mcode name
       | Ast.MetaFunc(name,_,_,_) -> meta_mcode name
       | Ast.MetaLocalFunc(name,_,_,_) -> meta_mcode name
+      |	Ast.AsIdent(id,asid) -> bind (ident id) (ident asid)
       | Ast.DisjId(id_list) -> multibind (List.map ident id_list)
       | Ast.OptIdent(id) -> ident id
       | Ast.UniqueIdent(id) -> ident id in
@@ -635,6 +663,7 @@ let rebuilder
 	    Ast.MetaFunc(meta_mcode name,constraints,keep,inherited)
 	| Ast.MetaLocalFunc(name,constraints,keep,inherited) ->
 	    Ast.MetaLocalFunc(meta_mcode name,constraints,keep,inherited)
+	| Ast.AsIdent(id,asid) -> Ast.AsIdent(ident id,ident asid)
 	| Ast.DisjId(id_list) -> Ast.DisjId(List.map ident id_list)
 	| Ast.OptIdent(id) -> Ast.OptIdent(ident id)
 	| Ast.UniqueIdent(id) -> Ast.UniqueIdent(ident id)) in

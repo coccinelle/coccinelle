@@ -5,6 +5,7 @@ module D = Data
 module Ast = Ast_cocci
 module Ast0 = Ast0_cocci
 module P = Parse_aux
+module FC = Flag_parsing_cocci
 exception Lexical of string
 let tok = Lexing.lexeme
 
@@ -59,8 +60,19 @@ let pass_zero _ = col_zero := false
 
 let lexerr s1 s2 = raise (Lexical (Printf.sprintf "%s%s" s1 s2))
 
+let opt_reverse_token token =
+  if !FC.interpret_inverted
+  then match token with
+         D.MINUS        -> D.PLUSPLUS  (* maybe too liberal *)
+       | D.OPTMINUS     -> lexerr "cannot invert token ?- (an optional minus line), which is needed for reversing the patch" ""  
+       | D.UNIQUEMINUS  -> D.PLUS
+       | D.PLUS         -> D.MINUS
+       | D.PLUSPLUS     -> D.MINUS (* may not be sufficient *)
+       | _              -> token
+  else token
+
 let add_current_line_type x =
-  match (x,!current_line_type) with
+  match (opt_reverse_token x,!current_line_type) with
     (D.MINUS,(D.CONTEXT,ln,lln))  ->
       current_line_type := (D.MINUS,ln,lln)
   | (D.MINUS,(D.UNIQUE,ln,lln))   ->
@@ -471,7 +483,7 @@ let drop_spaces s =
   let start = loop 0 in
   String.sub s start (len - start)
 
-# 475 "lexer_cocci.ml"
+# 487 "lexer_cocci.ml"
 let __ocaml_lex_tables = {
   Lexing.lex_base = 
    "\000\000\175\255\176\255\081\000\119\000\181\255\182\255\192\000\
@@ -1459,7 +1471,7 @@ let rec token lexbuf =
 and __ocaml_lex_token_rec lexbuf __ocaml_lex_state =
   match Lexing.new_engine __ocaml_lex_tables __ocaml_lex_state lexbuf with
       | 0 ->
-# 496 "lexer_cocci.mll"
+# 508 "lexer_cocci.mll"
     ( let cls = !current_line_started in
 
       if not cls
@@ -1473,20 +1485,20 @@ and __ocaml_lex_token_rec lexbuf __ocaml_lex_state =
 	  | _ -> reset_line lexbuf; token lexbuf
 	end
       else (reset_line lexbuf; token lexbuf) )
-# 1477 "lexer_cocci.ml"
+# 1489 "lexer_cocci.ml"
 
   | 1 ->
-# 510 "lexer_cocci.mll"
+# 522 "lexer_cocci.mll"
                    ( start_line false; token lexbuf )
-# 1482 "lexer_cocci.ml"
+# 1494 "lexer_cocci.ml"
 
   | 2 ->
 let
-# 512 "lexer_cocci.mll"
+# 524 "lexer_cocci.mll"
                                        after
-# 1488 "lexer_cocci.ml"
+# 1500 "lexer_cocci.ml"
 = Lexing.sub_lexeme lexbuf lexbuf.Lexing.lex_mem.(0) lexbuf.Lexing.lex_curr_pos in
-# 512 "lexer_cocci.mll"
+# 524 "lexer_cocci.mll"
                                               (
     match !current_line_type with
       (D.PLUS,_,_) | (D.PLUSPLUS,_,_) ->
@@ -1497,88 +1509,88 @@ let
 	start_line true;
 	TPragma (Ast.Indent str, get_current_line_type lexbuf)
     | _ -> start_line false; token lexbuf )
-# 1501 "lexer_cocci.ml"
+# 1513 "lexer_cocci.ml"
 
   | 3 ->
-# 524 "lexer_cocci.mll"
+# 536 "lexer_cocci.mll"
    ( match !current_line_type with
       (D.PLUS,_,_) | (D.PLUSPLUS,_,_) ->
 	start_line true;
 	TPragma (Ast.Space (tok lexbuf), get_current_line_type lexbuf)
     | _ -> failwith "attributes only allowedin + code" )
-# 1510 "lexer_cocci.ml"
+# 1522 "lexer_cocci.ml"
 
   | 4 ->
-# 530 "lexer_cocci.mll"
+# 542 "lexer_cocci.mll"
          ( start_line true; TArobArob )
-# 1515 "lexer_cocci.ml"
+# 1527 "lexer_cocci.ml"
 
   | 5 ->
-# 531 "lexer_cocci.mll"
+# 543 "lexer_cocci.mll"
          ( pass_zero();
 	   if !Data.in_rule_name or not !current_line_started
 	   then (start_line true; TArob)
 	   else (check_minus_context_linetype "@";
 		 TPArob (get_current_line_type lexbuf)) )
-# 1524 "lexer_cocci.ml"
+# 1536 "lexer_cocci.ml"
 
   | 6 ->
-# 537 "lexer_cocci.mll"
+# 549 "lexer_cocci.mll"
           ( start_line true; TTildeEq (get_current_line_type lexbuf) )
-# 1529 "lexer_cocci.ml"
+# 1541 "lexer_cocci.ml"
 
   | 7 ->
-# 538 "lexer_cocci.mll"
+# 550 "lexer_cocci.mll"
          ( start_line true; TTildeExclEq (get_current_line_type lexbuf) )
-# 1534 "lexer_cocci.ml"
-
-  | 8 ->
-# 540 "lexer_cocci.mll"
-      ( start_line true; check_minus_context_linetype (tok lexbuf);
-	TWhen (get_current_line_type lexbuf) )
-# 1540 "lexer_cocci.ml"
-
-  | 9 ->
-# 544 "lexer_cocci.mll"
-      ( start_line true; check_minus_context_linetype (tok lexbuf);
-	TEllipsis (get_current_line_type lexbuf) )
 # 1546 "lexer_cocci.ml"
 
-  | 10 ->
-# 555 "lexer_cocci.mll"
-           ( start_line true; check_context_linetype (tok lexbuf);
-	     TOEllipsis (get_current_line_type lexbuf) )
+  | 8 ->
+# 552 "lexer_cocci.mll"
+      ( start_line true; check_minus_context_linetype (tok lexbuf);
+	TWhen (get_current_line_type lexbuf) )
 # 1552 "lexer_cocci.ml"
 
-  | 11 ->
-# 557 "lexer_cocci.mll"
-           ( start_line true; check_context_linetype (tok lexbuf);
-	     TCEllipsis (get_current_line_type lexbuf) )
+  | 9 ->
+# 556 "lexer_cocci.mll"
+      ( start_line true; check_minus_context_linetype (tok lexbuf);
+	TEllipsis (get_current_line_type lexbuf) )
 # 1558 "lexer_cocci.ml"
 
-  | 12 ->
-# 559 "lexer_cocci.mll"
-            ( start_line true; check_minus_context_linetype (tok lexbuf);
-	     TPOEllipsis (get_current_line_type lexbuf) )
+  | 10 ->
+# 567 "lexer_cocci.mll"
+           ( start_line true; check_context_linetype (tok lexbuf);
+	     TOEllipsis (get_current_line_type lexbuf) )
 # 1564 "lexer_cocci.ml"
 
-  | 13 ->
-# 561 "lexer_cocci.mll"
-            ( start_line true; check_minus_context_linetype (tok lexbuf);
-	     TPCEllipsis (get_current_line_type lexbuf) )
+  | 11 ->
+# 569 "lexer_cocci.mll"
+           ( start_line true; check_context_linetype (tok lexbuf);
+	     TCEllipsis (get_current_line_type lexbuf) )
 # 1570 "lexer_cocci.ml"
 
+  | 12 ->
+# 571 "lexer_cocci.mll"
+            ( start_line true; check_minus_context_linetype (tok lexbuf);
+	     TPOEllipsis (get_current_line_type lexbuf) )
+# 1576 "lexer_cocci.ml"
+
+  | 13 ->
+# 573 "lexer_cocci.mll"
+            ( start_line true; check_minus_context_linetype (tok lexbuf);
+	     TPCEllipsis (get_current_line_type lexbuf) )
+# 1582 "lexer_cocci.ml"
+
   | 14 ->
-# 574 "lexer_cocci.mll"
+# 586 "lexer_cocci.mll"
         ( pass_zero();
 	  if !current_line_started
 	  then (start_line true; TMinus (get_current_line_type lexbuf))
           else (patch_or_match PATCH;
 		add_current_line_type D.MINUS; token lexbuf) )
-# 1579 "lexer_cocci.ml"
+# 1591 "lexer_cocci.ml"
 
   | 15 ->
-# 579 "lexer_cocci.mll"
+# 591 "lexer_cocci.mll"
         ( pass_zero();
 	  if !current_line_started
 	  then (start_line true; TPlus (get_current_line_type lexbuf))
@@ -1586,118 +1598,118 @@ let
 	  then TPlus0
           else (patch_or_match PATCH;
 		add_current_line_type D.PLUS; token lexbuf) )
-# 1590 "lexer_cocci.ml"
+# 1602 "lexer_cocci.ml"
 
   | 16 ->
-# 586 "lexer_cocci.mll"
+# 598 "lexer_cocci.mll"
         ( pass_zero();
 	  if !current_line_started
 	  then (start_line true; TWhy (get_current_line_type lexbuf))
           else if !Data.in_meta
 	  then TWhy0
           else (add_current_line_type D.OPT; token lexbuf) )
-# 1600 "lexer_cocci.ml"
+# 1612 "lexer_cocci.ml"
 
   | 17 ->
-# 592 "lexer_cocci.mll"
+# 604 "lexer_cocci.mll"
         ( pass_zero();
 	  if !current_line_started
 	  then (start_line true; TBang (get_current_line_type lexbuf))
           else if !Data.in_meta
 	  then TBang0
           else (add_current_line_type D.UNIQUE; token lexbuf) )
-# 1610 "lexer_cocci.ml"
+# 1622 "lexer_cocci.ml"
 
   | 18 ->
-# 598 "lexer_cocci.mll"
+# 610 "lexer_cocci.mll"
         ( if !Data.in_meta or not !col_zero
 	  then (start_line true; TOPar (get_current_line_type lexbuf))
           else
             (start_line true; check_context_linetype (tok lexbuf);
 	     TOPar0 (get_current_line_type lexbuf)))
-# 1619 "lexer_cocci.ml"
+# 1631 "lexer_cocci.ml"
 
   | 19 ->
-# 603 "lexer_cocci.mll"
+# 615 "lexer_cocci.mll"
           ( start_line true;
 	    TOPar0 (contextify(get_current_line_type lexbuf)) )
-# 1625 "lexer_cocci.ml"
+# 1637 "lexer_cocci.ml"
 
   | 20 ->
-# 605 "lexer_cocci.mll"
+# 617 "lexer_cocci.mll"
         ( if not (!col_zero)
 	  then (start_line true; TOr(get_current_line_type lexbuf))
           else (start_line true;
 		check_context_linetype (tok lexbuf);
 		TMid0 (get_current_line_type lexbuf)))
-# 1634 "lexer_cocci.ml"
+# 1646 "lexer_cocci.ml"
 
   | 21 ->
-# 610 "lexer_cocci.mll"
+# 622 "lexer_cocci.mll"
           ( start_line true;
 	    TMid0 (contextify(get_current_line_type lexbuf)) )
-# 1640 "lexer_cocci.ml"
+# 1652 "lexer_cocci.ml"
 
   | 22 ->
-# 612 "lexer_cocci.mll"
+# 624 "lexer_cocci.mll"
         ( if not !col_zero
 	  then (start_line true; TCPar (get_current_line_type lexbuf))
           else
             (start_line true; check_context_linetype (tok lexbuf);
 	     TCPar0 (get_current_line_type lexbuf)))
-# 1649 "lexer_cocci.ml"
+# 1661 "lexer_cocci.ml"
 
   | 23 ->
-# 617 "lexer_cocci.mll"
+# 629 "lexer_cocci.mll"
           ( start_line true;
 	    TCPar0 (contextify(get_current_line_type lexbuf)) )
-# 1655 "lexer_cocci.ml"
+# 1667 "lexer_cocci.ml"
 
   | 24 ->
-# 620 "lexer_cocci.mll"
+# 632 "lexer_cocci.mll"
         ( start_line true; TOCro (get_current_line_type lexbuf)   )
-# 1660 "lexer_cocci.ml"
+# 1672 "lexer_cocci.ml"
 
   | 25 ->
-# 621 "lexer_cocci.mll"
+# 633 "lexer_cocci.mll"
         ( start_line true; TCCro (get_current_line_type lexbuf)   )
-# 1665 "lexer_cocci.ml"
+# 1677 "lexer_cocci.ml"
 
   | 26 ->
-# 622 "lexer_cocci.mll"
+# 634 "lexer_cocci.mll"
         ( start_line true; TOBrace (get_current_line_type lexbuf) )
-# 1670 "lexer_cocci.ml"
+# 1682 "lexer_cocci.ml"
 
   | 27 ->
-# 623 "lexer_cocci.mll"
+# 635 "lexer_cocci.mll"
         ( start_line true; TCBrace (get_current_line_type lexbuf) )
-# 1675 "lexer_cocci.ml"
+# 1687 "lexer_cocci.ml"
 
   | 28 ->
-# 625 "lexer_cocci.mll"
+# 637 "lexer_cocci.mll"
                    ( start_line true; TPtrOp (get_current_line_type lexbuf)  )
-# 1680 "lexer_cocci.ml"
+# 1692 "lexer_cocci.ml"
 
   | 29 ->
-# 626 "lexer_cocci.mll"
+# 638 "lexer_cocci.mll"
                    ( start_line true; TDot (get_current_line_type lexbuf)    )
-# 1685 "lexer_cocci.ml"
+# 1697 "lexer_cocci.ml"
 
   | 30 ->
-# 627 "lexer_cocci.mll"
+# 639 "lexer_cocci.mll"
                    ( start_line true; TComma (get_current_line_type lexbuf)  )
-# 1690 "lexer_cocci.ml"
+# 1702 "lexer_cocci.ml"
 
   | 31 ->
-# 628 "lexer_cocci.mll"
+# 640 "lexer_cocci.mll"
                    ( start_line true;
 		     if !Data.in_meta
 		     then TMPtVirg (* works better with tokens_all *)
 		     else TPtVirg (get_current_line_type lexbuf) )
-# 1698 "lexer_cocci.ml"
+# 1710 "lexer_cocci.ml"
 
   | 32 ->
-# 634 "lexer_cocci.mll"
+# 646 "lexer_cocci.mll"
                    ( pass_zero();
 		     if !current_line_started
 		     then
@@ -1705,185 +1717,185 @@ let
 		     else
 		       (patch_or_match MATCH;
 			add_current_line_type D.MINUS; token lexbuf) )
-# 1709 "lexer_cocci.ml"
-
-  | 33 ->
-# 641 "lexer_cocci.mll"
-                   ( start_line true;
-		     TDmOp (Ast.Div,get_current_line_type lexbuf) )
-# 1715 "lexer_cocci.ml"
-
-  | 34 ->
-# 643 "lexer_cocci.mll"
-                   ( start_line true;
-		     TDmOp (Ast.Mod,get_current_line_type lexbuf) )
 # 1721 "lexer_cocci.ml"
 
+  | 33 ->
+# 653 "lexer_cocci.mll"
+                   ( start_line true;
+		     TDmOp (Ast.Div,get_current_line_type lexbuf) )
+# 1727 "lexer_cocci.ml"
+
+  | 34 ->
+# 655 "lexer_cocci.mll"
+                   ( start_line true;
+		     TDmOp (Ast.Mod,get_current_line_type lexbuf) )
+# 1733 "lexer_cocci.ml"
+
   | 35 ->
-# 645 "lexer_cocci.mll"
+# 657 "lexer_cocci.mll"
                    ( start_line true;  TTilde (get_current_line_type lexbuf) )
-# 1726 "lexer_cocci.ml"
+# 1738 "lexer_cocci.ml"
 
   | 36 ->
-# 647 "lexer_cocci.mll"
+# 659 "lexer_cocci.mll"
                    ( pass_zero();
  		     if !current_line_started
  		     then
  		       (start_line true; TInc (get_current_line_type lexbuf))
  		     else (patch_or_match PATCH;
  			   add_current_line_type D.PLUSPLUS; token lexbuf) )
-# 1736 "lexer_cocci.ml"
+# 1748 "lexer_cocci.ml"
 
   | 37 ->
-# 653 "lexer_cocci.mll"
+# 665 "lexer_cocci.mll"
                    ( start_line true;  TDec (get_current_line_type lexbuf) )
-# 1741 "lexer_cocci.ml"
+# 1753 "lexer_cocci.ml"
 
   | 38 ->
-# 655 "lexer_cocci.mll"
+# 667 "lexer_cocci.mll"
                    ( start_line true; TEq (get_current_line_type lexbuf) )
-# 1746 "lexer_cocci.ml"
+# 1758 "lexer_cocci.ml"
 
   | 39 ->
-# 657 "lexer_cocci.mll"
+# 669 "lexer_cocci.mll"
                    ( start_line true; mkassign Ast.Minus lexbuf )
-# 1751 "lexer_cocci.ml"
+# 1763 "lexer_cocci.ml"
 
   | 40 ->
-# 658 "lexer_cocci.mll"
+# 670 "lexer_cocci.mll"
                    ( start_line true; mkassign Ast.Plus lexbuf )
-# 1756 "lexer_cocci.ml"
+# 1768 "lexer_cocci.ml"
 
   | 41 ->
-# 660 "lexer_cocci.mll"
+# 672 "lexer_cocci.mll"
                    ( start_line true; mkassign Ast.Mul lexbuf )
-# 1761 "lexer_cocci.ml"
+# 1773 "lexer_cocci.ml"
 
   | 42 ->
-# 661 "lexer_cocci.mll"
+# 673 "lexer_cocci.mll"
                    ( start_line true; mkassign Ast.Div lexbuf )
-# 1766 "lexer_cocci.ml"
+# 1778 "lexer_cocci.ml"
 
   | 43 ->
-# 662 "lexer_cocci.mll"
+# 674 "lexer_cocci.mll"
                    ( start_line true; mkassign Ast.Mod lexbuf )
-# 1771 "lexer_cocci.ml"
+# 1783 "lexer_cocci.ml"
 
   | 44 ->
-# 664 "lexer_cocci.mll"
+# 676 "lexer_cocci.mll"
                    ( start_line true; mkassign Ast.And lexbuf )
-# 1776 "lexer_cocci.ml"
+# 1788 "lexer_cocci.ml"
 
   | 45 ->
-# 665 "lexer_cocci.mll"
+# 677 "lexer_cocci.mll"
                    ( start_line true; mkassign Ast.Or lexbuf )
-# 1781 "lexer_cocci.ml"
+# 1793 "lexer_cocci.ml"
 
   | 46 ->
-# 666 "lexer_cocci.mll"
+# 678 "lexer_cocci.mll"
                    ( start_line true; mkassign Ast.Xor lexbuf )
-# 1786 "lexer_cocci.ml"
+# 1798 "lexer_cocci.ml"
 
   | 47 ->
-# 668 "lexer_cocci.mll"
+# 680 "lexer_cocci.mll"
                    ( start_line true; mkassign Ast.DecLeft lexbuf )
-# 1791 "lexer_cocci.ml"
+# 1803 "lexer_cocci.ml"
 
   | 48 ->
-# 669 "lexer_cocci.mll"
+# 681 "lexer_cocci.mll"
                    ( start_line true; mkassign Ast.DecRight lexbuf )
-# 1796 "lexer_cocci.ml"
+# 1808 "lexer_cocci.ml"
 
   | 49 ->
-# 671 "lexer_cocci.mll"
+# 683 "lexer_cocci.mll"
                    ( start_line true; TDotDot (get_current_line_type lexbuf) )
-# 1801 "lexer_cocci.ml"
+# 1813 "lexer_cocci.ml"
 
   | 50 ->
-# 673 "lexer_cocci.mll"
+# 685 "lexer_cocci.mll"
                    ( start_line true; TEqEq    (get_current_line_type lexbuf) )
-# 1806 "lexer_cocci.ml"
+# 1818 "lexer_cocci.ml"
 
   | 51 ->
-# 674 "lexer_cocci.mll"
+# 686 "lexer_cocci.mll"
                    ( start_line true; TNotEq   (get_current_line_type lexbuf) )
-# 1811 "lexer_cocci.ml"
+# 1823 "lexer_cocci.ml"
 
   | 52 ->
-# 675 "lexer_cocci.mll"
+# 687 "lexer_cocci.mll"
                    ( start_line true;
 		     TLogOp(Ast.SupEq,get_current_line_type lexbuf) )
-# 1817 "lexer_cocci.ml"
+# 1829 "lexer_cocci.ml"
 
   | 53 ->
-# 677 "lexer_cocci.mll"
+# 689 "lexer_cocci.mll"
                    ( start_line true;
 		     if !Data.in_meta
 		     then TSub(get_current_line_type lexbuf)
 		     else TLogOp(Ast.InfEq,get_current_line_type lexbuf) )
-# 1825 "lexer_cocci.ml"
-
-  | 54 ->
-# 681 "lexer_cocci.mll"
-                   ( start_line true;
-		     TLogOp(Ast.Inf,get_current_line_type lexbuf) )
-# 1831 "lexer_cocci.ml"
-
-  | 55 ->
-# 683 "lexer_cocci.mll"
-                   ( start_line true;
-		     TLogOp(Ast.Sup,get_current_line_type lexbuf) )
 # 1837 "lexer_cocci.ml"
 
+  | 54 ->
+# 693 "lexer_cocci.mll"
+                   ( start_line true;
+		     TLogOp(Ast.Inf,get_current_line_type lexbuf) )
+# 1843 "lexer_cocci.ml"
+
+  | 55 ->
+# 695 "lexer_cocci.mll"
+                   ( start_line true;
+		     TLogOp(Ast.Sup,get_current_line_type lexbuf) )
+# 1849 "lexer_cocci.ml"
+
   | 56 ->
-# 686 "lexer_cocci.mll"
+# 698 "lexer_cocci.mll"
                    ( start_line true; TAndLog (get_current_line_type lexbuf) )
-# 1842 "lexer_cocci.ml"
+# 1854 "lexer_cocci.ml"
 
   | 57 ->
-# 687 "lexer_cocci.mll"
+# 699 "lexer_cocci.mll"
                    ( start_line true; TOrLog  (get_current_line_type lexbuf) )
-# 1847 "lexer_cocci.ml"
-
-  | 58 ->
-# 689 "lexer_cocci.mll"
-                   ( start_line true;
-		     TShROp(Ast.DecRight,get_current_line_type lexbuf) )
-# 1853 "lexer_cocci.ml"
-
-  | 59 ->
-# 691 "lexer_cocci.mll"
-                   ( start_line true;
-		     TShLOp(Ast.DecLeft,get_current_line_type lexbuf) )
 # 1859 "lexer_cocci.ml"
 
+  | 58 ->
+# 701 "lexer_cocci.mll"
+                   ( start_line true;
+		     TShROp(Ast.DecRight,get_current_line_type lexbuf) )
+# 1865 "lexer_cocci.ml"
+
+  | 59 ->
+# 703 "lexer_cocci.mll"
+                   ( start_line true;
+		     TShLOp(Ast.DecLeft,get_current_line_type lexbuf) )
+# 1871 "lexer_cocci.ml"
+
   | 60 ->
-# 694 "lexer_cocci.mll"
+# 706 "lexer_cocci.mll"
                    ( start_line true; TAnd    (get_current_line_type lexbuf) )
-# 1864 "lexer_cocci.ml"
+# 1876 "lexer_cocci.ml"
 
   | 61 ->
-# 695 "lexer_cocci.mll"
+# 707 "lexer_cocci.mll"
                    ( start_line true; TXor(get_current_line_type lexbuf) )
-# 1869 "lexer_cocci.ml"
+# 1881 "lexer_cocci.ml"
 
   | 62 ->
-# 697 "lexer_cocci.mll"
+# 709 "lexer_cocci.mll"
                     ( start_line true; TCppConcatOp )
-# 1874 "lexer_cocci.ml"
+# 1886 "lexer_cocci.ml"
 
   | 63 ->
 let
-# 698 "lexer_cocci.mll"
+# 710 "lexer_cocci.mll"
                                                   def
-# 1880 "lexer_cocci.ml"
+# 1892 "lexer_cocci.ml"
 = Lexing.sub_lexeme lexbuf lexbuf.Lexing.lex_start_pos lexbuf.Lexing.lex_mem.(0)
 and
-# 699 "lexer_cocci.mll"
+# 711 "lexer_cocci.mll"
                                    ident
-# 1885 "lexer_cocci.ml"
+# 1897 "lexer_cocci.ml"
 = Lexing.sub_lexeme lexbuf lexbuf.Lexing.lex_mem.(0) lexbuf.Lexing.lex_curr_pos in
-# 700 "lexer_cocci.mll"
+# 712 "lexer_cocci.mll"
       ( start_line true;
 	let (arity,line,lline,offset,col,strbef,straft,pos) as lt =
 	  get_current_line_type lexbuf in
@@ -1893,20 +1905,20 @@ and
 	  (lt,
 	   check_var ident
 	     (arity,line,lline,offset+off,col+off,[],[],[])) )
-# 1897 "lexer_cocci.ml"
+# 1909 "lexer_cocci.ml"
 
   | 64 ->
 let
-# 709 "lexer_cocci.mll"
+# 721 "lexer_cocci.mll"
                                                    def
-# 1903 "lexer_cocci.ml"
+# 1915 "lexer_cocci.ml"
 = Lexing.sub_lexeme lexbuf lexbuf.Lexing.lex_start_pos lexbuf.Lexing.lex_mem.(0)
 and
-# 710 "lexer_cocci.mll"
+# 722 "lexer_cocci.mll"
                                    ident
-# 1908 "lexer_cocci.ml"
+# 1920 "lexer_cocci.ml"
 = Lexing.sub_lexeme lexbuf lexbuf.Lexing.lex_mem.(0) lexbuf.Lexing.lex_curr_pos in
-# 711 "lexer_cocci.mll"
+# 723 "lexer_cocci.mll"
       ( start_line true;
 	let (arity,line,lline,offset,col,strbef,straft,pos) as lt =
 	  get_current_line_type lexbuf in
@@ -1916,20 +1928,20 @@ and
 	  (lt,
 	   check_var ident
 	     (arity,line,lline,offset+off,col+off,[],[],[])) )
-# 1920 "lexer_cocci.ml"
+# 1932 "lexer_cocci.ml"
 
   | 65 ->
 let
-# 720 "lexer_cocci.mll"
+# 732 "lexer_cocci.mll"
                                                    def
-# 1926 "lexer_cocci.ml"
+# 1938 "lexer_cocci.ml"
 = Lexing.sub_lexeme lexbuf lexbuf.Lexing.lex_start_pos lexbuf.Lexing.lex_mem.(0)
 and
-# 721 "lexer_cocci.mll"
+# 733 "lexer_cocci.mll"
                                     ident
-# 1931 "lexer_cocci.ml"
+# 1943 "lexer_cocci.ml"
 = Lexing.sub_lexeme lexbuf lexbuf.Lexing.lex_mem.(0) (lexbuf.Lexing.lex_curr_pos + -1) in
-# 723 "lexer_cocci.mll"
+# 735 "lexer_cocci.mll"
       ( start_line true;
 	let (arity,line,lline,offset,col,strbef,straft,pos) as lt =
 	  get_current_line_type lexbuf in
@@ -1941,36 +1953,36 @@ and
 	   (arity,line,lline,offset+off,col+off,strbef,straft,pos),
 	 offset + off + (String.length ident),
 	 col + off + (String.length ident)) )
-# 1945 "lexer_cocci.ml"
+# 1957 "lexer_cocci.ml"
 
   | 66 ->
-# 735 "lexer_cocci.mll"
+# 747 "lexer_cocci.mll"
       ( TIncludeL
 	  (let str = tok lexbuf in
 	  let start = String.index str '"' in
 	  let finish = String.rindex str '"' in
 	  start_line true;
 	  (process_include start finish str,get_current_line_type lexbuf)) )
-# 1955 "lexer_cocci.ml"
+# 1967 "lexer_cocci.ml"
 
   | 67 ->
-# 742 "lexer_cocci.mll"
+# 754 "lexer_cocci.mll"
       ( TIncludeNL
 	  (let str = tok lexbuf in
 	  let start = String.index str '<' in
 	  let finish = String.rindex str '>' in
 	  start_line true;
 	  (process_include start finish str,get_current_line_type lexbuf)) )
-# 1965 "lexer_cocci.ml"
+# 1977 "lexer_cocci.ml"
 
   | 68 ->
-# 757 "lexer_cocci.mll"
+# 769 "lexer_cocci.mll"
       ( start_line true; check_plus_linetype (tok lexbuf);
 	TPragma (Ast.Noindent(tok lexbuf), get_current_line_type lexbuf) )
-# 1971 "lexer_cocci.ml"
+# 1983 "lexer_cocci.ml"
 
   | 69 ->
-# 760 "lexer_cocci.mll"
+# 772 "lexer_cocci.mll"
       (
        match !current_line_type with
         (D.PLUS,_,_) | (D.PLUSPLUS,_,_) ->
@@ -1981,10 +1993,10 @@ and
 	TPragma (Ast.Indent("/*"^(comment check_comment lexbuf)),
 		 get_current_line_type lexbuf)
       |	_ -> let _ = comment (fun _ -> ()) lexbuf in token lexbuf )
-# 1985 "lexer_cocci.ml"
+# 1997 "lexer_cocci.ml"
 
   | 70 ->
-# 771 "lexer_cocci.mll"
+# 783 "lexer_cocci.mll"
       ( (if !current_line_started
       then lexerr "--- must be at the beginning of the line" "");
 	start_line true;
@@ -1992,10 +2004,10 @@ and
 	  (let str = tok lexbuf in
 	  (drop_spaces(String.sub str 3 (String.length str - 3)),
 	   (get_current_line_type lexbuf))) )
-# 1996 "lexer_cocci.ml"
+# 2008 "lexer_cocci.ml"
 
   | 71 ->
-# 779 "lexer_cocci.mll"
+# 791 "lexer_cocci.mll"
       ( (if !current_line_started
       then lexerr "+++ must be at the beginning of the line" "");
 	start_line true;
@@ -2003,65 +2015,65 @@ and
 	  (let str = tok lexbuf in
 	  (drop_spaces(String.sub str 3 (String.length str - 3)),
 	   (get_current_line_type lexbuf))) )
-# 2007 "lexer_cocci.ml"
+# 2019 "lexer_cocci.ml"
 
   | 72 ->
-# 788 "lexer_cocci.mll"
+# 800 "lexer_cocci.mll"
       ( start_line true; id_tokens lexbuf )
-# 2012 "lexer_cocci.ml"
+# 2024 "lexer_cocci.ml"
 
   | 73 ->
-# 790 "lexer_cocci.mll"
+# 802 "lexer_cocci.mll"
         ( start_line true;
 	  TChar(char lexbuf,get_current_line_type lexbuf) )
-# 2018 "lexer_cocci.ml"
+# 2030 "lexer_cocci.ml"
 
   | 74 ->
-# 792 "lexer_cocci.mll"
+# 804 "lexer_cocci.mll"
         ( start_line true;
 	  TString(string lexbuf,(get_current_line_type lexbuf)) )
-# 2024 "lexer_cocci.ml"
+# 2036 "lexer_cocci.ml"
 
   | 75 ->
 let
-# 794 "lexer_cocci.mll"
+# 806 "lexer_cocci.mll"
              x
-# 2030 "lexer_cocci.ml"
+# 2042 "lexer_cocci.ml"
 = Lexing.sub_lexeme lexbuf lexbuf.Lexing.lex_start_pos lexbuf.Lexing.lex_curr_pos in
-# 794 "lexer_cocci.mll"
+# 806 "lexer_cocci.mll"
                    ( start_line true;
 		     TFloat(x,(get_current_line_type lexbuf)) )
-# 2035 "lexer_cocci.ml"
+# 2047 "lexer_cocci.ml"
 
   | 76 ->
 let
-# 804 "lexer_cocci.mll"
+# 816 "lexer_cocci.mll"
          x
-# 2041 "lexer_cocci.ml"
+# 2053 "lexer_cocci.ml"
 = Lexing.sub_lexeme lexbuf lexbuf.Lexing.lex_start_pos lexbuf.Lexing.lex_curr_pos in
-# 804 "lexer_cocci.mll"
+# 816 "lexer_cocci.mll"
             ( start_line true; TInt(x,(get_current_line_type lexbuf)) )
-# 2045 "lexer_cocci.ml"
+# 2057 "lexer_cocci.ml"
 
   | 77 ->
-# 806 "lexer_cocci.mll"
+# 818 "lexer_cocci.mll"
                    ( TIso )
-# 2050 "lexer_cocci.ml"
+# 2062 "lexer_cocci.ml"
 
   | 78 ->
-# 807 "lexer_cocci.mll"
+# 819 "lexer_cocci.mll"
                    ( TRightIso )
-# 2055 "lexer_cocci.ml"
+# 2067 "lexer_cocci.ml"
 
   | 79 ->
-# 809 "lexer_cocci.mll"
+# 821 "lexer_cocci.mll"
                    ( EOF )
-# 2060 "lexer_cocci.ml"
+# 2072 "lexer_cocci.ml"
 
   | 80 ->
-# 811 "lexer_cocci.mll"
+# 823 "lexer_cocci.mll"
       ( lexerr "unrecognised symbol, in token rule: " (tok lexbuf) )
-# 2065 "lexer_cocci.ml"
+# 2077 "lexer_cocci.ml"
 
   | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf; __ocaml_lex_token_rec lexbuf __ocaml_lex_state
 
@@ -2071,46 +2083,46 @@ and __ocaml_lex_char_rec lexbuf __ocaml_lex_state =
   match Lexing.engine __ocaml_lex_tables __ocaml_lex_state lexbuf with
       | 0 ->
 let
-# 815 "lexer_cocci.mll"
+# 827 "lexer_cocci.mll"
           x
-# 2077 "lexer_cocci.ml"
+# 2089 "lexer_cocci.ml"
 = Lexing.sub_lexeme_char lexbuf lexbuf.Lexing.lex_start_pos in
-# 815 "lexer_cocci.mll"
+# 827 "lexer_cocci.mll"
                                        ( String.make 1 x ^ restchars lexbuf )
-# 2081 "lexer_cocci.ml"
+# 2093 "lexer_cocci.ml"
 
   | 1 ->
 let
-# 817 "lexer_cocci.mll"
+# 829 "lexer_cocci.mll"
                                              x
-# 2087 "lexer_cocci.ml"
+# 2099 "lexer_cocci.ml"
 = Lexing.sub_lexeme lexbuf lexbuf.Lexing.lex_start_pos lexbuf.Lexing.lex_curr_pos in
-# 817 "lexer_cocci.mll"
+# 829 "lexer_cocci.mll"
                                                      ( x ^ restchars lexbuf )
-# 2091 "lexer_cocci.ml"
+# 2103 "lexer_cocci.ml"
 
   | 2 ->
 let
-# 821 "lexer_cocci.mll"
+# 833 "lexer_cocci.mll"
                                   x
-# 2097 "lexer_cocci.ml"
+# 2109 "lexer_cocci.ml"
 = Lexing.sub_lexeme lexbuf lexbuf.Lexing.lex_start_pos lexbuf.Lexing.lex_curr_pos in
-# 821 "lexer_cocci.mll"
+# 833 "lexer_cocci.mll"
                                                      ( x ^ restchars lexbuf )
-# 2101 "lexer_cocci.ml"
+# 2113 "lexer_cocci.ml"
 
   | 3 ->
 let
-# 822 "lexer_cocci.mll"
+# 834 "lexer_cocci.mll"
                  v
-# 2107 "lexer_cocci.ml"
+# 2119 "lexer_cocci.ml"
 = Lexing.sub_lexeme_char lexbuf (lexbuf.Lexing.lex_start_pos + 1)
 and
-# 822 "lexer_cocci.mll"
+# 834 "lexer_cocci.mll"
                                   x
-# 2112 "lexer_cocci.ml"
+# 2124 "lexer_cocci.ml"
 = Lexing.sub_lexeme lexbuf lexbuf.Lexing.lex_start_pos (lexbuf.Lexing.lex_start_pos + 2) in
-# 823 "lexer_cocci.mll"
+# 835 "lexer_cocci.mll"
  (
           (match v with (* Machine specific ? *)
           | 'n' -> ()  | 't' -> ()   | 'v' -> ()  | 'b' -> () | 'r' -> ()
@@ -2122,14 +2134,14 @@ and
 	  );
           x ^ restchars lexbuf
 	)
-# 2126 "lexer_cocci.ml"
+# 2138 "lexer_cocci.ml"
 
   | 4 ->
-# 835 "lexer_cocci.mll"
+# 847 "lexer_cocci.mll"
       ( Common.pr2 ("LEXER: unrecognised symbol in char:"^tok lexbuf);
         tok lexbuf ^ restchars lexbuf
       )
-# 2133 "lexer_cocci.ml"
+# 2145 "lexer_cocci.ml"
 
   | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf; __ocaml_lex_char_rec lexbuf __ocaml_lex_state
 
@@ -2138,52 +2150,52 @@ and restchars lexbuf =
 and __ocaml_lex_restchars_rec lexbuf __ocaml_lex_state =
   match Lexing.engine __ocaml_lex_tables __ocaml_lex_state lexbuf with
       | 0 ->
-# 840 "lexer_cocci.mll"
+# 852 "lexer_cocci.mll"
                                        ( "" )
-# 2144 "lexer_cocci.ml"
+# 2156 "lexer_cocci.ml"
 
   | 1 ->
 let
-# 841 "lexer_cocci.mll"
+# 853 "lexer_cocci.mll"
           x
-# 2150 "lexer_cocci.ml"
+# 2162 "lexer_cocci.ml"
 = Lexing.sub_lexeme_char lexbuf lexbuf.Lexing.lex_start_pos in
-# 841 "lexer_cocci.mll"
+# 853 "lexer_cocci.mll"
                                        ( String.make 1 x ^ restchars lexbuf )
-# 2154 "lexer_cocci.ml"
+# 2166 "lexer_cocci.ml"
 
   | 2 ->
 let
-# 843 "lexer_cocci.mll"
+# 855 "lexer_cocci.mll"
                                              x
-# 2160 "lexer_cocci.ml"
+# 2172 "lexer_cocci.ml"
 = Lexing.sub_lexeme lexbuf lexbuf.Lexing.lex_start_pos lexbuf.Lexing.lex_curr_pos in
-# 843 "lexer_cocci.mll"
+# 855 "lexer_cocci.mll"
                                                      ( x ^ restchars lexbuf )
-# 2164 "lexer_cocci.ml"
+# 2176 "lexer_cocci.ml"
 
   | 3 ->
 let
-# 847 "lexer_cocci.mll"
+# 859 "lexer_cocci.mll"
                                   x
-# 2170 "lexer_cocci.ml"
+# 2182 "lexer_cocci.ml"
 = Lexing.sub_lexeme lexbuf lexbuf.Lexing.lex_start_pos lexbuf.Lexing.lex_curr_pos in
-# 847 "lexer_cocci.mll"
+# 859 "lexer_cocci.mll"
                                                      ( x ^ restchars lexbuf )
-# 2174 "lexer_cocci.ml"
+# 2186 "lexer_cocci.ml"
 
   | 4 ->
 let
-# 848 "lexer_cocci.mll"
+# 860 "lexer_cocci.mll"
                  v
-# 2180 "lexer_cocci.ml"
+# 2192 "lexer_cocci.ml"
 = Lexing.sub_lexeme_char lexbuf (lexbuf.Lexing.lex_start_pos + 1)
 and
-# 848 "lexer_cocci.mll"
+# 860 "lexer_cocci.mll"
                                   x
-# 2185 "lexer_cocci.ml"
+# 2197 "lexer_cocci.ml"
 = Lexing.sub_lexeme lexbuf lexbuf.Lexing.lex_start_pos (lexbuf.Lexing.lex_start_pos + 2) in
-# 849 "lexer_cocci.mll"
+# 861 "lexer_cocci.mll"
  (
           (match v with (* Machine specific ? *)
           | 'n' -> ()  | 't' -> ()   | 'v' -> ()  | 'b' -> () | 'r' -> ()
@@ -2195,14 +2207,14 @@ and
 	  );
           x ^ restchars lexbuf
 	)
-# 2199 "lexer_cocci.ml"
+# 2211 "lexer_cocci.ml"
 
   | 5 ->
-# 861 "lexer_cocci.mll"
+# 873 "lexer_cocci.mll"
       ( Common.pr2 ("LEXER: unrecognised symbol in char:"^tok lexbuf);
         tok lexbuf ^ restchars lexbuf
       )
-# 2206 "lexer_cocci.ml"
+# 2218 "lexer_cocci.ml"
 
   | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf; __ocaml_lex_restchars_rec lexbuf __ocaml_lex_state
 
@@ -2211,52 +2223,52 @@ and string lexbuf =
 and __ocaml_lex_string_rec lexbuf __ocaml_lex_state =
   match Lexing.engine __ocaml_lex_tables __ocaml_lex_state lexbuf with
       | 0 ->
-# 866 "lexer_cocci.mll"
+# 878 "lexer_cocci.mll"
                                               ( "" )
-# 2217 "lexer_cocci.ml"
+# 2229 "lexer_cocci.ml"
 
   | 1 ->
 let
-# 867 "lexer_cocci.mll"
+# 879 "lexer_cocci.mll"
           x
-# 2223 "lexer_cocci.ml"
+# 2235 "lexer_cocci.ml"
 = Lexing.sub_lexeme_char lexbuf lexbuf.Lexing.lex_start_pos in
-# 867 "lexer_cocci.mll"
+# 879 "lexer_cocci.mll"
                                ( Common.string_of_char x ^ string lexbuf )
-# 2227 "lexer_cocci.ml"
+# 2239 "lexer_cocci.ml"
 
   | 2 ->
 let
-# 868 "lexer_cocci.mll"
+# 880 "lexer_cocci.mll"
                                             x
-# 2233 "lexer_cocci.ml"
+# 2245 "lexer_cocci.ml"
 = Lexing.sub_lexeme lexbuf lexbuf.Lexing.lex_start_pos lexbuf.Lexing.lex_curr_pos in
-# 868 "lexer_cocci.mll"
+# 880 "lexer_cocci.mll"
                                               ( x ^ string lexbuf )
-# 2237 "lexer_cocci.ml"
+# 2249 "lexer_cocci.ml"
 
   | 3 ->
 let
-# 869 "lexer_cocci.mll"
+# 881 "lexer_cocci.mll"
                                x
-# 2243 "lexer_cocci.ml"
+# 2255 "lexer_cocci.ml"
 = Lexing.sub_lexeme lexbuf lexbuf.Lexing.lex_start_pos lexbuf.Lexing.lex_curr_pos in
-# 869 "lexer_cocci.mll"
+# 881 "lexer_cocci.mll"
                                               ( x ^ string lexbuf )
-# 2247 "lexer_cocci.ml"
+# 2259 "lexer_cocci.ml"
 
   | 4 ->
 let
-# 870 "lexer_cocci.mll"
+# 882 "lexer_cocci.mll"
                 v
-# 2253 "lexer_cocci.ml"
+# 2265 "lexer_cocci.ml"
 = Lexing.sub_lexeme_char lexbuf (lexbuf.Lexing.lex_start_pos + 1)
 and
-# 870 "lexer_cocci.mll"
+# 882 "lexer_cocci.mll"
                        x
-# 2258 "lexer_cocci.ml"
+# 2270 "lexer_cocci.ml"
 = Lexing.sub_lexeme lexbuf lexbuf.Lexing.lex_start_pos (lexbuf.Lexing.lex_start_pos + 2) in
-# 871 "lexer_cocci.mll"
+# 883 "lexer_cocci.mll"
        (
          (match v with
 	    | 'n' -> ()  | 't' -> ()   | 'v' -> ()  | 'b' -> () | 'r' -> ()
@@ -2269,12 +2281,12 @@ and
 	 );
           x ^ string lexbuf
        )
-# 2273 "lexer_cocci.ml"
+# 2285 "lexer_cocci.ml"
 
   | 5 ->
-# 883 "lexer_cocci.mll"
+# 895 "lexer_cocci.mll"
       ( lexerr "unrecognised symbol: " (tok lexbuf) )
-# 2278 "lexer_cocci.ml"
+# 2290 "lexer_cocci.ml"
 
   | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf; __ocaml_lex_string_rec lexbuf __ocaml_lex_state
 
@@ -2283,46 +2295,46 @@ and comment check_comment lexbuf =
 and __ocaml_lex_comment_rec check_comment lexbuf __ocaml_lex_state =
   match Lexing.engine __ocaml_lex_tables __ocaml_lex_state lexbuf with
       | 0 ->
-# 886 "lexer_cocci.mll"
+# 898 "lexer_cocci.mll"
          ( let s = tok lexbuf in check_comment s; start_line true; s )
-# 2289 "lexer_cocci.ml"
+# 2301 "lexer_cocci.ml"
 
   | 1 ->
-# 888 "lexer_cocci.mll"
+# 900 "lexer_cocci.mll"
       ( let s = tok lexbuf in
         (* even blank line should have a + *)
         check_comment s;
         reset_line lexbuf; s ^ comment check_comment lexbuf )
-# 2297 "lexer_cocci.ml"
+# 2309 "lexer_cocci.ml"
 
   | 2 ->
-# 892 "lexer_cocci.mll"
+# 904 "lexer_cocci.mll"
         ( pass_zero();
 	  if !current_line_started
 	  then (start_line true;
 		let s = tok lexbuf in s^(comment check_comment lexbuf))
 	  else (start_line true; comment check_comment lexbuf) )
-# 2306 "lexer_cocci.ml"
-
-  | 3 ->
-# 899 "lexer_cocci.mll"
-      ( let s = tok lexbuf in
-        check_comment s; start_line true; s ^ comment check_comment lexbuf )
-# 2312 "lexer_cocci.ml"
-
-  | 4 ->
-# 902 "lexer_cocci.mll"
-      ( let s = tok lexbuf in
-        check_comment s; start_line true; s ^ comment check_comment lexbuf )
 # 2318 "lexer_cocci.ml"
 
+  | 3 ->
+# 911 "lexer_cocci.mll"
+      ( let s = tok lexbuf in
+        check_comment s; start_line true; s ^ comment check_comment lexbuf )
+# 2324 "lexer_cocci.ml"
+
+  | 4 ->
+# 914 "lexer_cocci.mll"
+      ( let s = tok lexbuf in
+        check_comment s; start_line true; s ^ comment check_comment lexbuf )
+# 2330 "lexer_cocci.ml"
+
   | 5 ->
-# 905 "lexer_cocci.mll"
+# 917 "lexer_cocci.mll"
       ( start_line true; let s = tok lexbuf in
         Common.pr2 ("LEXER: unrecognised symbol in comment:"^s);
         s ^ comment check_comment lexbuf
       )
-# 2326 "lexer_cocci.ml"
+# 2338 "lexer_cocci.ml"
 
   | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf; __ocaml_lex_comment_rec check_comment lexbuf __ocaml_lex_state
 

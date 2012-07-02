@@ -2,21 +2,29 @@ ifneq ($(MAKECMDGOALS),distclean)
 include ../../Makefile.config
 endif
 
-PYCAMLFILE=pycaml_0.82.orig.tar.gz
-DEBIANFILE=pycaml_0.82-14.debian.tar.gz
+OCAMLCFLAGS ?= -g -dtypes
+OPTFLAGS ?= -g -dtypes
 
-PYCAMLDIR=pycaml
+PYCAMLDIR=chemoelectric-pycaml-8614105
+PYCAMLFILE=$(PYCAMLDIR).tar.gz
 PYCAMLMARKER=$(PYCAMLDIR)/.marker
-DEBIANDIR=debian
-DEBIANMARKER=$(DEBIANDIR)/.marker
 
-SHARE_FLAGS=-shared -fpic
-OCAMLC_CMD=$(OCAMLC) -thread -ccopt "${PYTHON_CFLAGS}" -cclib "${PYTHON_LIBS}" -cc "${CC} ${CFLAGS} ${SHARE_FLAGS}" -I $(PYCAMLDIR)
-OCAMLOPT_CMD=$(OCAMLOPT) -thread -ccopt "${PYTHON_CFLAGS}" -cclib "${PYTHON_LIBS}" -I $(PYCAMLDIR)
-OCAMLMKLIB_CMD=$(OCAMLMKLIB)
+# note: the extra linker flags are needed so that the produced shared
+# library gets linked against libpython.
+EXTRACFLAGS=$(PYTHON_CFLAGS:%=-ccopt %) $(PYTHON_LIBS:%=-cclib %)
+EXTRALNKFLAGS=$(PYTHON_LIBS:%=-ldopt %)
+
+export PYMAJOR=$(shell echo ${PYTHON_VERSION} | sed -e 's/\..*//')
+OCAMLFLAGS = -pp "camlp4o -parser Camlp4MacroParser -D PYMAJOR${PYMAJOR}"
+OCAMLC_CMD=$(OCAMLC) $(OCAMLCFLAGS) $(OCAMLFLAGS) -g -thread $(EXTRACFLAGS) -cc "${CC} ${CFLAGS}" -I $(PYCAMLDIR)
+OCAMLOPT_CMD=$(OCAMLOPT) $(OPTFLAGS) $(OCAMLFLAGS) -g -thread $(EXTRACFLAGS)  -I $(PYCAMLDIR)
+OCAMLMKLIB_CMD=$(OCAMLMKLIB) -linkall $(EXTRALNKFLAGS)
+OCAMLDEP_CMD=$(OCAMLDEP) $(OCAMLFLAGS)
 
 
-all: depend pycaml.cmi pycaml.cma
+all: $(PYCAMLMARKER)
+	@$(MAKE) all-build
+all-build: $(PYCAMLMARKER) pycaml.cmi pycaml.cma
 
 $(PYCAMLDIR)/pycaml.mli: $(PYCAMLDIR)/pycaml.ml
 	$(OCAMLC_CMD) -i $< > $(PYCAMLDIR)/pycaml.mli
@@ -27,52 +35,49 @@ $(PYCAMLDIR)/pycaml.cmo: $(PYCAMLDIR)/pycaml.ml $(PYCAMLDIR)/pycaml.cmi
 $(PYCAMLDIR)/pycaml.cmi: $(PYCAMLDIR)/pycaml.mli
 	$(OCAMLC_CMD) -c $< -o $@
 
-# local copy of the interface
+# the cmi file apparently needs to be present next to the cma file
 pycaml.cmi: $(PYCAMLDIR)/pycaml.cmi
-	cp $< $@
+	cp -f $< $@
 
-pycaml_ml.o: $(PYCAMLDIR)/pycaml_ml.c
-	$(OCAMLC_CMD) $< -o $@
+pycaml_stubs.o: $(PYCAMLDIR)/pycaml_stubs.c
+	$(OCAMLC_CMD) -ccopt -shared -ccopt -fPIC $< -o $@
 
-dllpycaml_stubs.so: pycaml_ml.o
+dllpycaml_stubs.so: pycaml_stubs.o
 	$(OCAMLMKLIB_CMD) -o pycaml_stubs $<
 
-pycaml.cma: dllpycaml_stubs.so pycaml.cmi $(PYCAMLDIR)/pycaml.cmo
-	$(OCAMLC_CMD) -a -custom -linkall -o pycaml.cma pycaml.cmo -dllib -lpycaml_stubs
+pycaml.cma: $(PYCAMLDIR)/pycaml.cmo $(PYCAMLDIR)/pycaml.cmi dllpycaml_stubs.so
+	$(OCAMLC_CMD) -I $(PYCAMLDIR) -a -o pycaml.cma $<
 
-all.opt: depend pycaml.cmi pycaml.cmxa
+all.opt: $(PYCAMLMARKER)
+	@$(MAKE) all-opt-build
+all-opt-build: $(PYCAMLMARKER) pycaml.cmi pycaml.cmxa
 
 $(PYCAMLDIR)/pycaml.cmx: $(PYCAMLDIR)/pycaml.ml $(PYCAMLDIR)/pycaml.cmi
 	$(OCAMLOPT_CMD) -c $<
 
-pycaml.cmxa: dllpycaml_stubs.so $(PYCAMLDIR)/pycaml.cmx
-	$(OCAMLOPT_CMD) -a -o pycaml.cmxa pycaml.cmx -cclib -lpycaml_stubs
+pycaml.cmxa: $(PYCAMLDIR)/pycaml.cmx $(PYCAMLDIR)/pycaml.cmi dllpycaml_stubs.so
+	$(OCAMLOPT_CMD) -I $(PYCAMLDIR) -a -o pycaml.cmxa $<
 
 clean:
 	rm -f $(PYCAMLDIR)/pycaml.mli pycaml.cm[aixo] $(PYCAMLDIR)/pycaml.cm[aixo] \
-		pycaml.[ao] libpycaml_stubs.a dllpycaml_stubs.o dllpycaml_stubs.so \
-		pycaml_ml.o pycaml.cmxa
+		pycaml.[ao] libpycaml_stubs.a pycaml_stubs.o dllpycaml_stubs.so libpycaml_stubs.so \
+		pycaml_ml.o pycaml.cmxa $(PYCAMLDIR)/pycaml.annot
 
 distclean: clean
-	rm -rf $(PYCAMLDIR) $(DEBIANDIR)
+	rm -rf $(PYCAMLDIR)
 
+.PHONEY: all all.opt all-build all-opt-build distclean clean depend
 
 # construct the directories
-depend: $(PYCAMLMARKER) $(DEBIANMARKER)
+depend: $(PYCAMLMARKER)
 
-$(PYCAMLMARKER): $(PYCAMLFILE) $(DEBIANMARKER)
+$(PYCAMLMARKER): $(PYCAMLFILE)
 	$(TAR) xfvz $<
-	set -e; for PATCH in $(shell cat debian/patches/series); do $(PATCH) -d "${PYCAMLDIR}" -p1 < "./debian/patches/$${PATCH}"; done
+	$(PATCH) -d "${PYCAMLDIR}" -p1 < ./python3-compat-fix.patch
 	touch $@
 
 $(PYCAMLFILE):
 	@echo "$@ not found. Please download it and drop it in this directory ($(pwd))."
 	@false
 
-$(DEBIANMARKER): $(DEBIANFILE)
-	$(TAR) xfvz $<
-	touch $@
-
-$(DEBIANFILE):
-	@echo "$@ not found. Please download it and drop it in this directory ($(pwd))."
-	@false
+include ../../Makefile.common

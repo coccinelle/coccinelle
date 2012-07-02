@@ -26,7 +26,7 @@ let to_opt cmd =
 
 let check_runtime () =
   let has_opt  = check_cmd (to_opt (!Flag.ocamlc) ^ " -version 2>&1 > /dev/null") in
-  let has_c    = check_cmd (to_opt (!Flag.ocamlc) ^ " -version 2>&1 > /dev/null") in
+  let has_c    = check_cmd (!Flag.ocamlc ^ " -version 2>&1 > /dev/null") in
     if has_opt then
       begin
 	Flag.ocamlc   := to_opt (!Flag.ocamlc);

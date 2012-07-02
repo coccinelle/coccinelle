@@ -28,6 +28,9 @@ endif
 
 TARGET=cocci_parser
 
+OCAMLCFLAGS ?= -g -dtypes
+OPTFLAGS ?= -g -dtypes
+
 LEXER_SOURCES = lexer_cocci.mll
 CLI_LEXER_SOURCES = lexer_cli.mll
 SCRIPT_LEXER_SOURCES = lexer_script.mll
@@ -73,18 +76,19 @@ OPTOBJS = $(OBJS:.cmo=.cmx)
 all: $(LIB)
 local: $(EXEC)
 
-all.opt: $(OPTLIB)
+all.opt:
+	@$(MAKE) $(OPTLIB) BUILD_OPT=yes
 
 $(LIB): $(GENERATED) $(OBJS)
-	$(OCAMLC) $(OCAMLCFLAGS) $(INCLUDES) -I $(MENHIRDIR) -a -o $(LIB) $(MENHIRMOD) $(OBJS)
+	$(OCAMLC) -thread $(OCAMLCFLAGS) $(INCLUDES) -I $(MENHIRDIR) -a -o $(LIB) $(MENHIRMOD) $(OBJS)
 
 
 $(OPTLIB): $(GENERATED) $(OPTOBJS)
-	$(OCAMLOPT) $(OPTFLAGS) $(INCLUDES) -I $(MENHIRDIR) -a -o $(OPTLIB) $(MENHIROMOD) $(OPTOBJS)
+	$(OCAMLOPT) -thread $(OPTFLAGS) $(INCLUDES) -I $(MENHIRDIR) -a -o $(OPTLIB) $(MENHIROMOD) $(OPTOBJS)
 
 
 $(EXEC): $(OBJS) main.cmo $(LIBS)
-	$(OCAMLC) $(OCAMLCFLAGS) $(INCLUDES) -o $(EXEC) $(SYSLIBS) $(LIBS) $(OBJS) main.cmo
+	$(OCAMLC) -thread $(OCAMLCFLAGS) $(INCLUDES) -o $(EXEC) $(SYSLIBS) $(LIBS) $(OBJS) main.cmo
 
 clean::
 	rm -f $(LIB)
@@ -96,13 +100,13 @@ clean::
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
 
 .ml.cmo:
-	$(OCAMLC) $(OCAMLCFLAGS) $(INCLUDES) -c $<
+	$(OCAMLC) -thread $(OCAMLCFLAGS) $(INCLUDES) -c $<
 
 .mli.cmi:
-	$(OCAMLC) $(OCAMLCFLAGS) $(INCLUDES) -c $<
+	$(OCAMLC) -thread $(OCAMLCFLAGS) $(INCLUDES) -c $<
 
 .ml.cmx:
-	$(OCAMLOPT) $(OPTFLAGS) $(INCLUDES) -c $<
+	$(OCAMLOPT) -thread $(OPTFLAGS) $(INCLUDES) -c $<
 
 $(LEXER_SOURCES:.mll=.ml) :	$(LEXER_SOURCES)
 	$(OCAMLLEX) $(LEXER_SOURCES)
@@ -142,3 +146,5 @@ ifneq ($(MAKECMDGOALS),distclean)
 -include .depend
 endif
 endif
+
+include ../Makefile.common

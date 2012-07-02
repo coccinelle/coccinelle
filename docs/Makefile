@@ -17,3 +17,5 @@ distclean:
 
 clean:
 	$(MAKE) -C $(SUBDIR) $@
+
+include ../Makefile.common

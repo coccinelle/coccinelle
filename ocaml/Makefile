@@ -28,10 +28,10 @@ SYSLIBS= str.cma unix.cma
 #for warning:  -w A
 #for profiling:  -p -inline 0   with OCAMLOPT
 OCAMLCFLAGS ?= -g -dtypes
-OPTFLAGS?=$(OCAMLCFLAGS)
+OPTFLAGS ?= -g -dtypes
 
-OCAMLC_CMD=$(OCAMLC) $(OCAMLCFLAGS) $(INCLUDES)
-OCAMLOPT_CMD=$(OCAMLOPT) $(OPTFLAGS) $(INCLUDES)
+OCAMLC_CMD=$(OCAMLC) -thread $(OCAMLCFLAGS) $(INCLUDES)
+OCAMLOPT_CMD=$(OCAMLOPT) -thread $(OPTFLAGS) $(INCLUDES)
 OCAMLDEP_CMD=$(OCAMLDEP) $(INCLUDES)
 OCAMLMKTOP_CMD=$(OCAMLMKTOP) -g -custom $(INCLUDES)
 
@@ -43,7 +43,8 @@ OPTOBJS = $(SRC:.ml=.cmx)
 # Top rules
 ##############################################################################
 all: $(TARGET).cma
-all.opt: $(TARGET).cmxa
+all.opt:
+	@$(MAKE) $(TARGET).cmxa BUILD_OPT=yes
 
 $(TARGET).cma: $(OBJS)
 	$(OCAMLC_CMD) -a -o $(TARGET).cma $(OBJS)
@@ -96,3 +97,5 @@ ifneq ($(MAKECMDGOALS),cleandoc)
 endif
 endif
 endif
+
+include ../Makefile.common
