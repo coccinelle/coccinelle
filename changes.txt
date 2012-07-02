@@ -51,7 +51,6 @@
   not as elements of specific structures.
 - Allow size_t as the type of an array index in smpl code.  Reported by
   Mansour Moufid.
-- Allow exp@id
 - Allow renaming an expression as an identifier (@i)
 
 ** Features:
