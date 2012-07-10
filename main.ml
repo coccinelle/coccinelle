@@ -1076,6 +1076,11 @@ let main () =
 	    end
 	  else true)
 	!args;
+    (match (!Flag_parsing_c.cache_prefix,!distrib_index) with
+      (Some cp,Some n) ->
+	Flag_parsing_c.cache_prefix :=
+	  Some (Printf.sprintf "%s_%d" cp n)
+    | _ -> ());
     
     (* julia hack so that one can override directories specified on
        * the command line. *)

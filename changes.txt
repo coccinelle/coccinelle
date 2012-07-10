@@ -121,6 +121,7 @@
 - Added an experimental --reverse flag to invert the semantic patch before application.
   Note that not all patches can be inverted, nor is it guaranteed that applying
   a patch followed by applying its inverse is an identity operation.
+- Cache prefix takes distribution index into account.
 
 ** Bugfix:
 - Corrected parsing of script strings delimited by a single quote.  Thanks
