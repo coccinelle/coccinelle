@@ -205,6 +205,7 @@
 - Enum assignment matching an enum value shouldn't cause a
   crash. Likewise, an identifier matching an initialized enum field
   shouldn't cause a crash.
+- Make when forall in an exists rule behave (more) like forall
 
 * 0.2.5
 ** Language:

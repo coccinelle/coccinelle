@@ -1322,6 +1322,7 @@ let dots_au is_strict toend label s wrapcode n x seq_after y quantifier =
      make_match None false
       (wrapcode
 	 (Ast.Continue(Ast.make_mcode "continue",Ast.make_mcode ";"))) in
+  let op = if quantifier = !exists then ctl_au else ctl_anti_au in
   let stop_early =
     if quantifier = Exists
     then Common.Left(CTL.False)
@@ -1356,7 +1357,7 @@ let dots_au is_strict toend label s wrapcode n x seq_after y quantifier =
 	    (quantify false [lv]
 	       (ctl_and CTL.NONSTRICT
 		  (ctl_and CTL.NONSTRICT (truepred label) labelpred)
-		  (ctl_au CTL.NONSTRICT
+		  (op CTL.NONSTRICT
 		     (ctl_and CTL.NONSTRICT (ctl_not v)
 			(ctl_and CTL.NONSTRICT vx preflabelpred))
 		     (ctl_and CTL.NONSTRICT preflabelpred
@@ -1378,12 +1379,11 @@ let dots_au is_strict toend label s wrapcode n x seq_after y quantifier =
 				else*)
 				  (ctl_ag s
 				     (ctl_not seq_after))))))))))) in
-  let op = if quantifier = !exists then ctl_au else ctl_anti_au in
   let v = get_let_ctr() in
   op s x
     (match stop_early with
-      Common.Left x1 -> ctl_or y x1
-    | Common.Right stop_early ->
+      Common.Left x1 -> Printf.printf "left\n"; ctl_or y x1
+    | Common.Right stop_early -> Printf.printf "right\n";
 	CTL.Let(v,y,
 		ctl_or (CTL.Ref v)
 		  (ctl_and CTL.NONSTRICT (label_pred_maker label)
