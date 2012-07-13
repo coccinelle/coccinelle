@@ -14,6 +14,7 @@
 ** Features:
 - New scripting languages
 - more than one SP on the command line
+- interpret #if, as is done for #ifdef
 
 ** Bugfix:
 - Add more information in documentation, man pages and wiki
