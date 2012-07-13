@@ -122,6 +122,8 @@
   Note that not all patches can be inverted, nor is it guaranteed that applying
   a patch followed by applying its inverse is an identity operation.
 - Cache prefix takes distribution index into account.
+- Add --defined and --undefined options allowing some code not to be
+  touched.  Suggested by Eric Leblond.
 
 ** Bugfix:
 - Corrected parsing of script strings delimited by a single quote.  Thanks

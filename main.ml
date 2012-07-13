@@ -540,8 +540,10 @@ let other_options = [
 
     "--disable-multi-pass", Arg.Set Flag_parsing_c.disable_multi_pass, " ";
 
-    "--noif0-passing",      Arg.Clear Flag_parsing_c.if0_passing,
-    " ";
+    "--noif0-passing",      Arg.Clear Flag_parsing_c.if0_passing, " ";
+    "--defined", Arg.String (Flag_parsing_c.add Flag_parsing_c.defined), " ";
+    "--undefined", Arg.String
+        (Flag_parsing_c.add Flag_parsing_c.undefined), " ";
     "--noadd-typedef-root", Arg.Clear Flag_parsing_c.add_typedef_root, " ";
     (* could use Flag_parsing_c.options_algo instead *)
 
