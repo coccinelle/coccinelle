@@ -25,33 +25,6 @@
 
 
 # 0 "./asttoctl2.ml"
-(*
- * Copyright 2012, INRIA
- * Julia Lawall, Gilles Muller
- * Copyright 2010-2011, INRIA, University of Copenhagen
- * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
- * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
- * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
- * This file is part of Coccinelle.
- *
- * Coccinelle is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, according to version 2 of the License.
- *
- * Coccinelle is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
- *
- * The authors reserve the right to distribute this or future versions of
- * Coccinelle under other licenses.
- *)
-
-
-# 0 "./asttoctl2.ml"
 (* for MINUS and CONTEXT, pos is always None in this file *)
 (*search for require*)
 (* true = don't see all matched nodes, only modified ones *)
@@ -1376,6 +1349,7 @@ let dots_au is_strict toend label s wrapcode n x seq_after y quantifier =
      make_match None false
       (wrapcode
 	 (Ast.Continue(Ast.make_mcode "continue",Ast.make_mcode ";"))) in
+  let op = if quantifier = !exists then ctl_au else ctl_anti_au in
   let stop_early =
     if quantifier = Exists
     then Common.Left(CTL.False)
@@ -1410,7 +1384,7 @@ let dots_au is_strict toend label s wrapcode n x seq_after y quantifier =
 	    (quantify false [lv]
 	       (ctl_and CTL.NONSTRICT
 		  (ctl_and CTL.NONSTRICT (truepred label) labelpred)
-		  (ctl_au CTL.NONSTRICT
+		  (op CTL.NONSTRICT
 		     (ctl_and CTL.NONSTRICT (ctl_not v)
 			(ctl_and CTL.NONSTRICT vx preflabelpred))
 		     (ctl_and CTL.NONSTRICT preflabelpred
@@ -1432,12 +1406,11 @@ let dots_au is_strict toend label s wrapcode n x seq_after y quantifier =
 				else*)
 				  (ctl_ag s
 				     (ctl_not seq_after))))))))))) in
-  let op = if quantifier = !exists then ctl_au else ctl_anti_au in
   let v = get_let_ctr() in
   op s x
     (match stop_early with
-      Common.Left x1 -> ctl_or y x1
-    | Common.Right stop_early ->
+      Common.Left x1 -> Printf.printf "left\n"; ctl_or y x1
+    | Common.Right stop_early -> Printf.printf "right\n";
 	CTL.Let(v,y,
 		ctl_or (CTL.Ref v)
 		  (ctl_and CTL.NONSTRICT (label_pred_maker label)

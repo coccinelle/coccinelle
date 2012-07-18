@@ -490,10 +490,20 @@ rule token = parse
 
 
   (* can have some ifdef 0  hence the letter|digit even at beginning of word *)
-  | "#" [' ''\t']* "ifdef"  [' ''\t']+ (letter|digit) ((letter|digit)*) [' ''\t']*
-      { TIfdef (no_ifdef_mark(), tokinfo lexbuf) }
-  | "#" [' ''\t']* "ifndef" [' ''\t']+ (letter|digit) ((letter|digit)*) [' ''\t']*
-      { TIfdef (no_ifdef_mark(), tokinfo lexbuf) }
+  | "#" [' ''\t']* "ifdef"  [' ''\t']+
+    (((letter|digit) ((letter|digit)*)) as x) [' ''\t']*
+      { if List.mem x !Flag_parsing_c.undefined
+        then TIfdefBool (false, no_ifdef_mark(), tokinfo lexbuf)
+        else if List.mem x !Flag_parsing_c.defined
+        then TIfdefBool (true, no_ifdef_mark(), tokinfo lexbuf)
+        else TIfdef (no_ifdef_mark(), tokinfo lexbuf) }
+  | "#" [' ''\t']* "ifndef" [' ''\t']+
+     (((letter|digit) ((letter|digit)*)) as x) [' ''\t']*
+      { if List.mem x !Flag_parsing_c.defined
+        then TIfdefBool (false, no_ifdef_mark(), tokinfo lexbuf)
+        else if List.mem x !Flag_parsing_c.undefined
+        then TIfdefBool (true, no_ifdef_mark(), tokinfo lexbuf)
+        else TIfdef (no_ifdef_mark(), tokinfo lexbuf) }
   | "#" [' ''\t']* "if" [' ' '\t']+
       { let info = tokinfo lexbuf in
         TIfdef (no_ifdef_mark(), info +> tok_add_s (cpp_eat_until_nl lexbuf))

@@ -25,33 +25,6 @@
 
 
 # 0 "./cocci_vs_c.ml"
-(*
- * Copyright 2012, INRIA
- * Julia Lawall, Gilles Muller
- * Copyright 2010-2011, INRIA, University of Copenhagen
- * Julia Lawall, Rene Rydhof Hansen, Gilles Muller, Nicolas Palix
- * Copyright 2005-2009, Ecole des Mines de Nantes, University of Copenhagen
- * Yoann Padioleau, Julia Lawall, Rene Rydhof Hansen, Henrik Stuart, Gilles Muller, Nicolas Palix
- * This file is part of Coccinelle.
- *
- * Coccinelle is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, according to version 2 of the License.
- *
- * Coccinelle is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with Coccinelle.  If not, see <http://www.gnu.org/licenses/>.
- *
- * The authors reserve the right to distribute this or future versions of
- * Coccinelle under other licenses.
- *)
-
-
-# 0 "./cocci_vs_c.ml"
 open Common
 
 module A = Ast_cocci
@@ -2684,6 +2657,7 @@ and enum_field ida idb =
     A.Ident(id),(nameidb,None) ->
       ident_cpp DontKnow id nameidb >>= (fun id nameidb ->
         return ((A.Ident id) +> A.rewrap ida, (nameidb,None)))
+  | A.Ident(id),(nameidb,Some _) -> fail (* should we have an iso? *)
   | A.Assignment(ea1,opa,ea2,init),(nameidb,Some(opbi,eb2)) ->
       (match A.unwrap ea1 with
 	A.Ident(id) ->
@@ -2696,7 +2670,7 @@ and enum_field ida idb =
 	    (nameidb,Some(opbi,eb2))))))
       |	_ -> failwith "not possible")
   | A.Assignment(ea1,opa,ea2,init),(nameidb,None) -> fail
-  | _ -> failwith "not possible"
+  | _ -> failwith ("not possible: "^(Dumper.dump (A.unwrap ida)))
 
 (* ------------------------------------------------------------------------- *)
 and (fullType: (A.fullType, Ast_c.fullType) matcher) =
