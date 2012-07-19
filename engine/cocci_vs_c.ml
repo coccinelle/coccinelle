@@ -2630,6 +2630,7 @@ and enum_field ida idb =
     A.Ident(id),(nameidb,None) ->
       ident_cpp DontKnow id nameidb >>= (fun id nameidb ->
         return ((A.Ident id) +> A.rewrap ida, (nameidb,None)))
+  | A.Ident(id),(nameidb,Some _) -> fail (* should we have an iso? *)
   | A.Assignment(ea1,opa,ea2,init),(nameidb,Some(opbi,eb2)) ->
       (match A.unwrap ea1 with
 	A.Ident(id) ->
@@ -2642,7 +2643,7 @@ and enum_field ida idb =
 	    (nameidb,Some(opbi,eb2))))))
       |	_ -> failwith "not possible")
   | A.Assignment(ea1,opa,ea2,init),(nameidb,None) -> fail
-  | _ -> failwith "not possible"
+  | _ -> failwith ("not possible: "^(Dumper.dump (A.unwrap ida)))
 
 (* ------------------------------------------------------------------------- *)
 and (fullType: (A.fullType, Ast_c.fullType) matcher) =

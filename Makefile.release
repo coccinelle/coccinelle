@@ -29,7 +29,7 @@ BINSRC2-PY=$(BINSRC-PY:%=$(PACKAGE)/%)
 # creates temporary directories that in this case could have
 # a name clash with the current directory.
 ifndef TMP
-TMP=/tmp
+TMP=/var/tmp
 endif
 
 # should be defined by Makefile.config
@@ -69,6 +69,25 @@ endif
 # unpushed changes. However, that is probably something you should
 # not do in the first place.
 
+release-help:
+	@echo "To make a release, perform the following steps:"
+	@echo ""
+	@echo "1. Make sure that all changes are committed and pushed."
+	@echo "   (making a release will destroy any uncommitted changes)"
+	@echo "   Preferably, start from a fresh clone of the coccinelle repo."
+	@echo "2. Run 'make prerelease'. It will generate some files that are not"
+	@echo "   in the repository but part of the release tarballs."
+	@echo "3. Edit ./version. It must be a new version."
+	@echo "4. Run 'make release'. It makes changes to the git repository that"
+	@echo "   are not idempotent. Running this step again is likely to result"
+	@echo "   in some git errors. These are not dramatic and are therefore"
+	@echo "   ignored."
+	@echo "5. Run 'make package'. It will build many tarballs."
+	@echo "6. Run 'make website'. Make sure that $(WEBBASE) exists beforehand."
+	@echo "   Hint: run step 5 and 6 directly after each other. The tarballs"
+	@echo "         are stored temporarily in $(TMP)."
+	@echo "7. Updated some webpages and commit them to svn."
+
 prerelease:
 	@echo "pulling changes from the repository"
 	$(GIT) pull --rebase
@@ -76,7 +95,8 @@ prerelease:
 	$(MAKE) distclean KEEP_CONFIG=1
 	@echo "\n\tEdit ./version"
 	@echo "\tCommit with 'make release'\n"
-	@echo "\t(if you don't want to change the repo, use 'GIT=echo make release' instead)"
+	@echo "\t* set the GIT env variable to 'echo' to skip performing any git commands"
+	@echo "\t* changes to files other than ./version will not be committed automatically."
 
 fix-expected:
 	@echo "going to generate: tests/SCORE_expected_orig.sexp"
@@ -91,8 +111,8 @@ release:
 	@echo "Marking version: $(VERSION)"
 	echo -n "$(VERSION)" > ./version
 	$(GIT) add ./version
-	$(GIT) commit -m "Release $(VERSION)"
-	$(GIT) tag -a -m "Release $(VERSION)" $(VERSION)
+	-$(GIT) commit -m "Release $(VERSION)"
+	-$(GIT) tag -a -m "Release $(VERSION)" $(VERSION)
 	$(GIT) push --mirror
 	$(MAKE) licensify
 	@echo "\n\tLicensify has run: do not commit any files from now on!"

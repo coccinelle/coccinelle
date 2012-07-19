@@ -14,6 +14,7 @@
 ** Features:
 - New scripting languages
 - more than one SP on the command line
+- interpret #if, as is done for #ifdef
 
 ** Bugfix:
 - Add more information in documentation, man pages and wiki
@@ -51,7 +52,6 @@
   not as elements of specific structures.
 - Allow size_t as the type of an array index in smpl code.  Reported by
   Mansour Moufid.
-- Allow exp@id
 - Allow renaming an expression as an identifier (@i)
 
 ** Features:
@@ -122,6 +122,9 @@
 - Added an experimental --reverse flag to invert the semantic patch before application.
   Note that not all patches can be inverted, nor is it guaranteed that applying
   a patch followed by applying its inverse is an identity operation.
+- Cache prefix takes distribution index into account.
+- Add --defined and --undefined options allowing some code not to be
+  touched.  Suggested by Eric Leblond.
 
 ** Bugfix:
 - Corrected parsing of script strings delimited by a single quote.  Thanks
@@ -202,7 +205,10 @@
 - C parsing of top-level declarers with initializations.
 - Remove constraints in predicates in match result, to avoid PCRE equality
   problems
-- Enum assignment matching an enum value shouldn't cause a failure
+- Enum assignment matching an enum value shouldn't cause a
+  crash. Likewise, an identifier matching an initialized enum field
+  shouldn't cause a crash.
+- Make when forall in an exists rule behave (more) like forall
 
 * 0.2.5
 ** Language:
