@@ -1,6 +1,6 @@
 # Hydra build file for coccinelle
 
-{ nixpkgs ? /etc/nixos/nixpkgs
+{ nixpkgs ? "/etc/nixos/nixpkgs"
 , cocciSrc ? { outPath = ./.; revCount = 1234; gitTag = "abcdef"; }
 , testsSrc ? { outPath = ../big-tests; rev = 1234; }
 , officialRelease ? false
@@ -60,6 +60,7 @@ let
   #
 
   selOcamlDefault = orig: orig.ocamlPackages;
+  selOcaml400 = orig: orig.ocamlPackages_4_00_0;
   selOcaml312 = orig: orig.ocamlPackages_3_12_1;
   selOcaml311 = orig: orig.ocamlPackages_3_11_2;
   selOcaml310 = orig: orig.ocamlPackages_3_10_0;
@@ -175,7 +176,7 @@ let
   defaultCfg = mkCfgDefault { name = "default"; flags = []; };
   debugCfg = mkCfgDefault { name = "debug"; flags = [ "--enable-release=no" ]; };
   wrappersCfg = mkCfgDefault { name = "wrappers"; flags = [ "--enable-python" "--enable-ocaml" "--without-pkg-config" "--without-ocamlfind" ]; };
-  manyOcamlCfg = mkCfgManyOcaml [ selOcaml312 selOcaml311 selOcaml310 ];
+  manyOcamlCfg = mkCfgManyOcaml [ selOcaml400 selOcaml312 selOcaml311 selOcaml310 ];
 
   minimalCfgs = map mkCfgMinimal [
     { name = "minimal"; flags = []; }
