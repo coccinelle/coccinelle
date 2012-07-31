@@ -324,14 +324,14 @@ let make_mail_header o date maintainers ctr number subject =
   else Printf.fprintf o "Subject: [PATCH %d/%d] %s\n\n" ctr number subject
 
 let make_message_files subject cover message date maintainer_table
-    patch front add_ext =
+    patch front add_ext nomerge =
   let ctr = ref 0 in
   let elements =
     Hashtbl.fold
       (function (services,maintainers) ->
 	function diffs ->
 	  function rest ->
-	    if services=[default_string]
+	    if services=[default_string] or nomerge
 	    then
 	      (* if no maintainer, then one file per diff *)
 	      (List.map
@@ -428,7 +428,7 @@ let generate_command front cover generated =
 	(String.concat " " ((front^".cover") :: generated)));
   close_out o
 
-let make_output_files subject cover message maintainer_table patch =
+let make_output_files subject cover message maintainer_table patch nomerge =
   let date = List.hd (cmd_to_list "date") in
   let front = safe_chop_extension patch in
   let add_ext =
@@ -437,18 +437,22 @@ let make_output_files subject cover message maintainer_table patch =
     | None -> (function s -> s) in
   let generated =
     make_message_files subject cover message date maintainer_table
-      patch front add_ext in
+      patch front add_ext nomerge in
   make_cover_file (List.length generated) subject cover front date
     maintainer_table;
   generate_command front cover generated
 
 (* ------------------------------------------------------------------------ *)
 
+let nomerge = ref false
+
 let parse_args l =
   let (other_args,files) =
-    List.partition
-      (function a -> String.length a > 1 && String.get a 0 = '-')
+    List.partition (function a -> String.length a > 1 && String.get a 0 = '-')
       l in
+  let (nomergep,other_args) =
+    List.partition (function a -> a = "-nomerge") other_args in
+  (if not(nomergep = []) then nomerge := true);
   match files with
     [file] -> (file,String.concat " " other_args)
   | _ -> failwith "Only one file allowed"
@@ -467,4 +471,4 @@ let _ =
   let maintainer_table = resolve_maintainers patches in
   (if !found_a_maintainer = false then git_options := !not_linux);
   (if not (git_args = "") then git_options := !git_options^" "^git_args);
-  make_output_files subject cover message maintainer_table file
+  make_output_files subject cover message maintainer_table file !nomerge

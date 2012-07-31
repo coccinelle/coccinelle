@@ -1382,8 +1382,8 @@ let dots_au is_strict toend label s wrapcode n x seq_after y quantifier =
   let v = get_let_ctr() in
   op s x
     (match stop_early with
-      Common.Left x1 -> Printf.printf "left\n"; ctl_or y x1
-    | Common.Right stop_early -> Printf.printf "right\n";
+      Common.Left x1 -> ctl_or y x1
+    | Common.Right stop_early ->
 	CTL.Let(v,y,
 		ctl_or (CTL.Ref v)
 		  (ctl_and CTL.NONSTRICT (label_pred_maker label)
