@@ -125,6 +125,9 @@
 - Cache prefix takes distribution index into account.
 - Add --defined and --undefined options allowing some code not to be
   touched.  Suggested by Eric Leblond.
+- Dropped the need for the ocaml-extlib and ocaml-sexplib packages.
+- Changed the file format of the regression test results. Files in the old format
+  are no longer readable by spatch.
 
 ** Bugfix:
 - Corrected parsing of script strings delimited by a single quote.  Thanks
@@ -209,6 +212,7 @@
   crash. Likewise, an identifier matching an initialized enum field
   shouldn't cause a crash.
 - Make when forall in an exists rule behave (more) like forall
+- Ocaml 4.00.0 compatibility fixes
 
 * 0.2.5
 ** Language:
