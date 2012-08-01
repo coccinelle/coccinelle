@@ -34,8 +34,9 @@ distclean: clean
 
 depend: $(EXTMARKER)
 
-$(EXTMARKER): $(EXTLIB).tar.gz
+$(EXTMARKER): $(EXTLIB).tar.gz hashtable-ocaml4-compat.patch
 	$(TAR) xfvz $<
+	$(PATCH) -d $(EXTLIB) -p1 < ./hashtable-ocaml4-compat.patch
 	touch $@
 
 $(EXTLIB).tar.gz:
