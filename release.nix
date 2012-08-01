@@ -226,6 +226,7 @@ let
   # These versions ship with minimal global packages in order
   # to thest the bundled packages with these ocaml versions.
   ocamlCfgs = map mkCfgOcaml [
+    { name = "400"; selOcaml = selOcaml400; flags = [ "--enable-release=world" ]; }
     { name = "312"; selOcaml = selOcaml312; flags = []; }
     { name = "311"; selOcaml = selOcaml311; flags = [ "--enable-release=yes" ]; }
     { name = "310"; selOcaml = selOcaml310; flags = []; }
