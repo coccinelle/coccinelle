@@ -66,7 +66,7 @@ let
   selOcaml310 = orig: orig.ocamlPackages_3_10_0;
 
   selCommonOcamlPkgs = ocamlPackages: with ocamlPackages; [
-    findlib menhir ocaml_sexplib ocaml_extlib
+    findlib menhir ocaml_sexplib
   ];
 
   selMinimalOcamlPkgs = ocamlPackages: with ocamlPackages; [
@@ -74,7 +74,7 @@ let
   ];
 
   selAllOcamlPkgs = ocamlPackages: with ocamlPackages; [
-    findlib menhir ocaml_sexplib ocaml_extlib ocaml_pcre pycaml
+    findlib menhir ocaml_sexplib ocaml_pcre pycaml
   ];
 
   selCommonInputs = pkgs: [ pkgs.pkgconfig pkgs.pcre ];
@@ -234,7 +234,6 @@ let
   # Several configurations testing different available
   # ocaml packages.
   pkgCfgs = map mkCfgPackage [
-    { name = "extlib"; ocamls = ps: [ ps.ocaml_extlib ]; flags = [ "--enable-extlib" ]; }
     { name = "pcre"; ocamls = ps: [ ps.ocaml_pcre ]; flags = [ "--enable-pcre-syntax" ]; }
     { name = "sexplib"; ocamls = ps: [ ps.ocaml_sexplib ]; flags = [ "--enable-sexplib" ]; }
     { name = "pycaml"; ocamls = ps: [ ps.pycaml ]; flags = [ "--enable-pycaml" ]; }
