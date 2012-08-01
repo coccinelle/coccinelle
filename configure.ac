@@ -104,7 +104,6 @@ dnl  set some defaults
 dnl  add a line for each package that is
 dnl  configured via AC_CHECK_COCCI_EXTPKG
 dnl  or AC_REQ_COCCI_EXTPKG
-AC_COCCI_INIT_PKG_EMPTY([sexplib])
 AC_COCCI_INIT_PKG_EMPTY([menhirLib])
 AC_COCCI_INIT_PKG_EMPTY([dynlink])
 AC_COCCI_INIT_PKG_EMPTY([pcre])
@@ -122,7 +121,6 @@ AC_REQ_COCCI_STDPKG([threads])
 dnl  required modules (Some are available locally too)
 AC_REQ_COCCI_EXTPKG([dynlink])
 AC_REQ_COCCI_EXTPKG([camlp4])
-AC_REQ_COCCI_EXTPKG([sexplib])
 AC_REQ_COCCI_EXTPKG([menhirLib])
 
 

@@ -1,5 +1,4 @@
 open Common
-open Sexplib
 
 (*****************************************************************************)
 (* Test framework *)
@@ -149,9 +148,6 @@ let testall expected_score_file update_score_file =
     pr2 "regression testing  information";
     pr2 "--------------------------------";
 
-    (* now default argument of testall:
-    let expected_score_file = "tests/SCORE_expected.sexp" in
-    *)
     let expected_score_file_orig = "tests/SCORE_expected_orig.sexp" in
     let best_of_both_file = "tests/SCORE_best_of_both.sexp" in
     let actual_score_file = "tests/SCORE_actual.sexp" in
@@ -160,16 +156,22 @@ let testall expected_score_file update_score_file =
     let (expected_score : score) =
       if Sys.file_exists expected_score_file
       then
+        Common.load_score expected_score_file ()
+        (*
         let sexp = Sexp.load_sexp expected_score_file in
         Sexp_common.score_of_sexp sexp
+        *)
       else
         if Sys.file_exists expected_score_file_orig
         then begin
           pr2 (spf "use expected orig file (%s)" expected_score_file_orig);
           Common.command2 (spf "cp %s %s" expected_score_file_orig
                                           expected_score_file);
-          let sexp = Sexp.load_sexp expected_score_file in
+          (*
+	  let sexp = Sexp.load_sexp expected_score_file in
           Sexp_common.score_of_sexp sexp
+	  *)
+	  Common.load_score expected_score_file ()
         end
        else
           empty_score()
@@ -177,16 +179,21 @@ let testall expected_score_file update_score_file =
 
     let new_bestscore = Common.regression_testing_vs score expected_score in
 
-
+    (*
     let xs = Common.hash_to_list score in
     let sexp = Sexp_common.sexp_of_score_list xs in
     let s_score = Sexp.to_string_hum sexp in
     Common.write_file ~file:(actual_score_file) s_score;
+    *)
+    Common.save_score score actual_score_file;
 
+    (*
     let xs2 = Common.hash_to_list new_bestscore in
     let sexp2 = Sexp_common.sexp_of_score_list xs2 in
     let s_score2 = Sexp.to_string_hum sexp2 in
     Common.write_file ~file:(best_of_both_file) s_score2;
+    *)
+    Common.save_score new_bestscore best_of_both_file;
 
     Common.print_total_score score;
 

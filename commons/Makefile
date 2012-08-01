@@ -76,10 +76,6 @@ MYMPISRC=distribution.ml
 MPIINCLUDES=-I ../ocamlmpi -I ../../ocamlmpi -I +ocamlmpi
 MPISYSLIBS=mpi.cma
 
-#sexplib
-MYSEXPSRC=sexp_common.ml
-SEXPINCLUDES=-I $(SEXPDIR)
-
 #binprot
 MYBINSRC=bin_common.ml
 BININCLUDES=-I ../ocamltarzan/lib-binprot -I ../../ocamltarzan/lib-binprot
@@ -244,19 +240,6 @@ clean::
 
 
 #-----------------------------------------------------------------------------
-.PHONEY: sexp sexp.all sexp.opt
-sexp: sexp.all
-sexp.all:
-	$(MAKE) INCLUDESEXTRA="$(SEXPINCLUDES)" commons_sexp.cma
-sexp.opt:
-	$(MAKE) INCLUDESEXTRA="$(SEXPINCLUDES)" commons_sexp.cmxa
-
-commons_sexp.cma: $(MYSEXPSRC:.ml=.cmo)
-	$(OCAMLC_CMD) -a -o $@ $^
-
-commons_sexp.cmxa: $(MYSEXPSRC:.ml=.cmx)
-	$(OCAMLOPT_CMD) -a -o $@ $^
-
 binprot:
 	$(MAKE) INCLUDESEXTRA="$(BININCLUDES)" commons_bin.cma
 binprot.opt:

@@ -697,11 +697,6 @@ OPTFLAGS_menhirLib
 enable_menhirLib
 GLOBAL_menhirLib
 OCAML_PKG_menhirLib
-MAKE_sexplib
-OPTFLAGS_sexplib
-enable_sexplib
-GLOBAL_sexplib
-OCAML_PKG_sexplib
 MAKE_camlp4
 OPTFLAGS_camlp4
 enable_camlp4
@@ -752,12 +747,6 @@ MODULES_menhirLib
 FLAGS_menhirLib
 LOCALLIB_menhirLib
 FEATURE_menhirLib
-PATH_sexplib
-MODULESOPT_sexplib
-MODULES_sexplib
-FLAGS_sexplib
-LOCALLIB_sexplib
-FEATURE_sexplib
 COCCI_OCAML_EXTERNAL
 RUNTIME_CAMLP4O_CMD
 RUNTIME_CAMLP4_CMD
@@ -877,7 +866,6 @@ with_runtime_camlp4
 with_runtime_camlp4o
 enable_dynlink
 enable_camlp4
-enable_sexplib
 enable_menhirLib
 with_menhir
 enable_ocaml
@@ -1530,8 +1518,6 @@ Optional Features:
   --enable-dynlink        enable global package dynlink (yes,no) (default:
                           auto)
   --enable-camlp4         enable global package camlp4 (yes,no) (default:
-                          auto)
-  --enable-sexplib        enable global package sexplib (yes,no) (default:
                           auto)
   --enable-menhirLib      enable global package menhirLib (yes,no) (default:
                           auto)
@@ -10289,19 +10275,6 @@ $as_echo "$as_me: verifying basic ocaml modules" >&6;}
 $as_echo "$as_me: coccinelle may use external ocaml libraries in $COCCI_OCAML_EXTERNAL" >&6;}
 
 
-  FEATURE_sexplib=0
-
-  LOCALLIB_sexplib=0
-
-  FLAGS_sexplib=
-
-  MODULES_sexplib=
-
-  MODULESOPT_sexplib=
-
-  PATH_sexplib=
-
-
   FEATURE_menhirLib=0
 
   LOCALLIB_menhirLib=0
@@ -10789,129 +10762,6 @@ fi
 
   if test "x$enable_camlp4" = xno; then :
       as_fn_error $? "OCaml package camlp4 is required. Please make sure it is available." "$LINENO" 5
-
-fi
-
-    { $as_echo "$as_me:${as_lineno-$LINENO}: configuring package sexplib" >&5
-$as_echo "$as_me: configuring package sexplib" >&6;}
-  # Check whether --enable-sexplib was given.
-if test "${enable_sexplib+set}" = set; then :
-  enableval=$enable_sexplib;
-fi
-
-
-      if test "x$enable_sexplib" != xno; then :
-
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for OCaml findlib package sexplib" >&5
-$as_echo_n "checking for OCaml findlib package sexplib... " >&6; }
-
-  unset found
-  unset pkg
-  found=no
-  for pkg in sexplib  ; do
-    if $OCAMLFIND query $pkg >/dev/null 2>/dev/null; then
-      { $as_echo "$as_me:${as_lineno-$LINENO}: result: found" >&5
-$as_echo "found" >&6; }
-      OCAML_PKG_sexplib=$pkg
-      found=yes
-      break
-    fi
-  done
-  if test "$found" = "no" ; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
-$as_echo "not found" >&6; }
-    OCAML_PKG_sexplib=no
-  fi
-
-
-
-  if test "x$OCAML_PKG_sexplib" != xno; then :
-    PATH_sexplib=`$OCAMLFIND query sexplib 2>/dev/null`
-
-
-fi
-
-    GLOBAL_sexplib=$OCAML_PKG_sexplib
-
-
-    if test "x$GLOBAL_sexplib" != xno; then :
-        enable_sexplib=yes
-
-
-else
-        if test "x$enable_sexplib" = xyes; then :
-          as_fn_error $? "OCaml package sexplib is not available but requested explicitly" "$LINENO" 5
-
-fi
-      { $as_echo "$as_me:${as_lineno-$LINENO}: OCaml package sexplib is not available" >&5
-$as_echo "$as_me: OCaml package sexplib is not available" >&6;}
-      enable_sexplib=no
-
-
-fi
-
-fi
-
-    if test "x$enable_sexplib" = xno; then :
-      { pkgdir=; unset pkgdir;}
-    pkgdir="$COCCI_OCAML_EXTERNAL/sexplib/"
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for a bundled substitute of sexplib" >&5
-$as_echo_n "checking for a bundled substitute of sexplib... " >&6; }
-    if test -d "$pkgdir"; then :
-        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
-      { $as_echo "$as_me:${as_lineno-$LINENO}: using bundled substitute for sexplib in $pkgdir" >&5
-$as_echo "$as_me: using bundled substitute for sexplib in $pkgdir" >&6;}
-      enable_sexplib=local
-
-      PATH_sexplib="$pkgdir"
-
-
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: not available" >&5
-$as_echo "not available" >&6; }
-fi
-
-fi
-
-    if test "x$enable_sexplib" != xno; then :
-      FEATURE_sexplib=1
-
-    FLAGS_sexplib='$(FLAGS_sexplib)'
-
-    OPTFLAGS_sexplib='$(OPTFLAGS_sexplib)'
-
-
-        if test "x$enable_sexplib" = xlocal; then :
-        LOCALLIB_sexplib=1
-
-      MODULES_sexplib='$(LOCAL_sexplib)'
-
-      MODULESOPT_sexplib='$(LOCALOPT_sexplib)'
-
-
-            if test -f "$PATH_sexplib/Makefile"; then :
-          MAKE_sexplib=$PATH_sexplib
-
-
-else
-          MAKE_sexplib=
-
-
-fi
-
-else
-        MODULES_sexplib='$(GLOBAL_sexplib)'
-
-      MODULESOPT_sexplib='$(GLOBALOPT_sexplib)'
-
-
-fi
-
-fi
-
-  if test "x$enable_sexplib" = xno; then :
-      as_fn_error $? "OCaml package sexplib is required. Please make sure it is available." "$LINENO" 5
 
 fi
 

@@ -40,7 +40,6 @@ endif
 
 SYSLIBS=str.cma unix.cma bigarray.cma nums.cma
 LIBS=commons/commons.cma \
-     commons/commons_sexp.cma \
      globals/globals.cma \
      ctl/ctl.cma \
      parsing_cocci/cocci_parser.cma parsing_c/parsing_c.cma \
@@ -169,11 +168,9 @@ top: $(EXEC).top
 
 subdirs.all:
 	@+for D in $(MAKESUBDIRS); do $(MAKE) $$D.all || exit 1 ; done
-	@$(MAKE) -C commons sexp.all
 
 subdirs.opt:
 	@+for D in $(MAKESUBDIRS); do $(MAKE) $$D.opt || exit 1 ; done
-	@$(MAKE) -C commons sexp.opt
 
 $(MAKESUBDIRS:%=%.all):
 	@$(MAKE) -C $(@:%.all=%) all
