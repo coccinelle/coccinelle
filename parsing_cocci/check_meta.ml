@@ -133,6 +133,9 @@ let rec expression context old_metas table minus e =
   | Ast0.Binary(left,op,right) ->
       expression ID old_metas table minus left;
       expression ID old_metas table minus right
+  | Ast0.Nested(left,op,right) ->
+      expression ID old_metas table minus left;
+      expression ID old_metas table minus right
   | Ast0.Paren(lp,exp,rp) ->
       expression ID old_metas table minus exp
   | Ast0.ArrayAccess(exp1,lb,exp2,rb) ->
@@ -173,6 +176,8 @@ let rec expression context old_metas table minus e =
       dots (expression ID old_metas table minus) exp_dots;
       get_opt (expression ID old_metas table minus) w
   | Ast0.Edots(_,Some x) | Ast0.Ecircles(_,Some x) | Ast0.Estars(_,Some x) ->
+      expression ID old_metas table minus x
+  | Ast0.OptExp(x) | Ast0.UniqueExp(x) ->
       expression ID old_metas table minus x
   | _ -> () (* no metavariable subterms *)
 
@@ -589,6 +594,7 @@ let check_meta rname old_metas inherited_metavars metavars minus plus =
   let err_table = make_table (err@ierr) in
   let other_table = make_table other in
   let iother_table = make_table iother in
+
   add_to_fresh_table fresh;
   rule old_metas [iother_table;other_table;err_table] true minus;
   positions [iother_table;other_table] minus;

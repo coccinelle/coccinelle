@@ -67,6 +67,9 @@ let print_option_prespace fn = function
 let print_option_space fn = function
     None -> ()
   | Some x -> fn x; pr_space() in
+let print_option_prespace fn = function
+    None -> ()
+  | Some x -> pr_space(); fn x in
 let print_between = Common.print_between in
 
 let outdent _ = () (* should go to leftmost col, does nothing now *) in
@@ -454,7 +457,12 @@ and constant = function
 
 and fullType ft =
   match Ast.unwrap ft with
-    Ast.Type(_,cv,ty) -> print_option_space (mcode const_vol) cv; typeC ty
+    Ast.Type(_,cv,ty) ->
+      (match Ast.unwrap ty with
+	Ast.Pointer(_,_) ->
+	  typeC ty; print_option_prespace (mcode const_vol) cv
+      |	_ -> print_option_space (mcode const_vol) cv; typeC ty)
+      
   | Ast.AsType(ty, asty) -> fullType ty
   | Ast.DisjType _ -> failwith "can't be in plus"
   | Ast.OptType(_) | Ast.UniqueType(_) ->

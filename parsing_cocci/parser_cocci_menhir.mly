@@ -698,8 +698,12 @@ all_basic_types:
 | ty=non_signable_types { ty }
 
 ctype:
-  cv=ioption(const_vol) ty=all_basic_types m=list(TMul)
-    { P.pointerify (P.make_cv cv ty) m }
+  cv=ioption(const_vol) ty=all_basic_types m=list(mul)
+    { List.fold_left
+	(function prev ->
+	  function (star,cv) ->
+	    P.make_cv cv (P.pointerify prev [star]))
+	(P.make_cv cv ty) m }
 | r=Tsigned
     { Ast0.wrap(Ast0.Signed(P.clt2mcode Ast.Signed r,None)) }
 | r=Tunsigned
@@ -708,6 +712,8 @@ ctype:
     { let (mids,code) = t in
       Ast0.wrap
 	(Ast0.DisjType(P.clt2mcode "(" lp,code,mids, P.clt2mcode ")" rp)) }
+
+mul: a=TMul b=ioption(const_vol) { (a,b) }
 
 mctype:
 | TMeta { tmeta_to_type $1 }
