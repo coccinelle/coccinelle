@@ -215,6 +215,7 @@
   shouldn't cause a crash.
 - Make when forall in an exists rule behave (more) like forall
 - Ocaml 4.00.0 compatibility fixes
+- Drop inlines, reduce parser code size
 
 * 0.2.5
 ** Language:

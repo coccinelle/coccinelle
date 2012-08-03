@@ -558,7 +558,8 @@ expression_type:
     { P.ty_pointerify
 	(Type_cocci.StructUnionName (Type_cocci.Union,Type_cocci.NoName)) m }
 
-%inline metakind_atomic_expe:
+%inline
+ metakind_atomic_expe:
   TExpression
     { (fun arity name pure check_meta constraints ->
       let tok = check_meta(Ast.MetaExpDecl(arity,name,None)) in
@@ -606,7 +607,6 @@ arity: TBang0 { Ast.UNIQUE }
 
 /* ---------------------------------------------------------------------- */
 
-%inline
 signable_types:
   ty=Tchar
     { Ast0.wrap(Ast0.BaseType(Ast.CharType,[P.clt2mcode "char" ty])) }
@@ -646,7 +646,6 @@ signable_types:
 	    [P.clt2mcode "long" ty1;P.clt2mcode "long" ty2;
 	      P.clt2mcode "int" ty3])) }
 
-%inline
 non_signable_types:
   ty=Tvoid
     { Ast0.wrap(Ast0.BaseType(Ast.VoidType,[P.clt2mcode "void" ty])) }
@@ -688,7 +687,6 @@ non_signable_types:
 | p=TTypeId
     { Ast0.wrap(Ast0.TypeName(P.id2mcode p)) }
 
-%inline
 all_basic_types:
   r=Tsigned ty=signable_types
     { Ast0.wrap(Ast0.Signed(P.clt2mcode Ast.Signed r,Some ty)) }
