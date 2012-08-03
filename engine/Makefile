@@ -9,7 +9,8 @@ endif
 TARGET=cocciengine
 CTLTARGET=engine
 
-SRC= flag_matcher.ml lib_engine.ml pretty_print_engine.ml \
+SRC= externalanalysis.ml \
+	flag_matcher.ml lib_engine.ml pretty_print_engine.ml \
       check_exhaustive_pattern.ml \
       check_reachability.ml \
       c_vs_c.ml isomorphisms_c_c.ml \

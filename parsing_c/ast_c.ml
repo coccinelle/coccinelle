@@ -987,6 +987,11 @@ let compare_pos ii1 ii2 =
 let equal_posl (l1,c1) (l2,c2) =
   (l1 =|= l2) && (c1 =|= c2)
 
+let compare_posl (l1,c1) (l2,c2) =
+  match l2 - l1 with
+    0 -> c2 - c1
+  | r -> r
+
 let info_to_fixpos ii =
   match pinfo_of_info ii with
     OriginTok pi -> Ast_cocci.Real pi.Common.charpos
