@@ -334,8 +334,13 @@ and storage = function
 and fullType ft =
   match Ast.unwrap ft with
     Ast.Type(_,cv,ty) ->
-      print_option (function x -> mcode const_vol x; print_string " ") cv;
-      typeC ty
+      (match Ast.unwrap ty with
+	Ast.Pointer(_,_) ->
+	  typeC ty;
+	  print_option (function x -> print_string " "; mcode const_vol x) cv
+      |	_ ->
+	  print_option (function x -> mcode const_vol x; print_string " ") cv;
+	  typeC ty)
   | Ast.AsType(ty,asty) -> fullType ty; print_string "@"; fullType asty
   | Ast.DisjType(decls) -> print_disj_list fullType decls
   | Ast.OptType(ty) -> print_string "?"; fullType ty

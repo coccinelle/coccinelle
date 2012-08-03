@@ -295,7 +295,12 @@ let visitor mode bind option_default
 	  Ast0.ConstVol(cv,ty) ->
 	    let (cv_n,cv) = cv_mcode cv in
 	    let (ty_n,ty) = typeC ty in
-	    (bind cv_n ty_n, Ast0.ConstVol(cv,ty))
+	    let front =
+	      (* bind in the right order *)
+	      match Ast0.unwrap ty with
+		Ast0.Pointer(ty,star) -> bind ty_n cv_n
+	      |	_ -> bind cv_n ty_n in
+	    (front, Ast0.ConstVol(cv,ty))
 	| Ast0.BaseType(ty,strings) ->
 	    let (strings_n,strings) = map_split_bind string_mcode strings in
 	    (strings_n, Ast0.BaseType(ty,strings))
