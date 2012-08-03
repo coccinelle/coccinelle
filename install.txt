@@ -28,8 +28,13 @@ On Debian/Ubuntu, install the following packages
 
 On Fedora, install the following packages
  - pkgconfig (optional, but strongly recommended)
+ - chrpath
  - ocaml
  - ocaml-findlib
+ - ocaml-camlp4-devel
+ - ocaml-findlib-devel
+ - ocaml-ocamldoc
+ - ocaml-pcre-devel
 
 Note that on Fedora, there is currently not a
 package for menhir and pycaml. However, coccinelle
