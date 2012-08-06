@@ -17,11 +17,42 @@
  * types of analysis apart.
  *)
 
-module PoslMap = Map.Make
-  (struct
+
+(* provides a search structure for providing a map from posl to
+ * some value, and search operations that find the nearest posl.
+ * This is mainly a hack for backwards compatibility with older
+ * ocaml versions that provide only limited functionality on
+ * Maps.
+ *)
+module PoslMap = struct
+  module PComp = struct
     type t      = Ast_c.posl
     let compare = Ast_c.compare_posl
-  end)
+  end
+
+  module PMap = Map.Make (PComp)
+  module PSet = Set.Make (PComp)
+
+  type 'a t = (PSet.t * 'a PMap.t)
+
+  let empty          = (PSet.empty, PMap.empty)
+  let mem x (s, _)   = PSet.mem x s
+  let find k (_, m)  = PMap.find k m
+  let add k v (s, m) = (PSet.add k s, PMap.add k v m)
+
+  (* throws Not_found if such a key does not exist *)
+  let nearest_key find_smaller k s =
+    match PSet.split k s with
+      (_, true, _) -> k
+    | (smaller, false, greater) ->
+      match find_smaller with
+	true  -> PSet.max_elt smaller
+      | false -> PSet.min_elt greater
+
+  (* throws Not_found if such an entry does not exist *)
+  let find_nearest find_smaller (s, m) k =
+    PMap.find (nearest_key find_smaller k s) m
+end
 
 module StringMap = Map.Make (String)
 
@@ -134,22 +165,14 @@ let load_external_results filename =
   done with End_of_file -> ();
   close_in chan
 
-let find_key find_smaller m k =
-  match PoslMap.split k m with
-    (_, Some r, _) -> r
-  | (smaller, None, greater) ->
-      let (_, r) =
-        match find_smaller with
-	  true  -> PoslMap.max_binding smaller
-	| false -> PoslMap.min_binding greater in
-      r
+
 
 (* finds all nearest results in the map that enclose the given position *)
 let find_results filename p_begin p_end =
   try
     let m_begin = StringMap.find filename !current_map in
-    let m_end   = find_key true m_begin p_begin in
-    let results = find_key false m_end p_end in
+    let m_end   = PoslMap.find_nearest true m_begin p_begin in
+    let results = PoslMap.find_nearest false m_end p_end in
     results
   with Not_found -> []
 
