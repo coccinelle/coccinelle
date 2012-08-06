@@ -1,9 +1,14 @@
 module Int64Set : Set.S with type elt = int64
 
+type bound = int64 option
+
 type result =
     IntSet of Int64Set.t
-  | IntBounds of int64 option * int64 option
+  | IntBounds of bound * bound
   | Other of string
+
+val show_bound : bound -> string
+val show_result : result -> string
 
 val load_external_results : string -> unit
 val find_results : Common.filename -> Ast_c.posl -> Ast_c.posl -> result list
@@ -17,6 +22,8 @@ val satisfy1 :
 
 val has_any_result : Common.filename -> Ast_c.posl -> Ast_c.posl -> bool
 val for_all :
+  (result -> bool) -> Common.filename -> Ast_c.posl -> Ast_c.posl -> bool
+val for_all1 :
   (result -> bool) -> Common.filename -> Ast_c.posl -> Ast_c.posl -> bool
 val exists :
   (result -> bool) -> Common.filename -> Ast_c.posl -> Ast_c.posl -> bool

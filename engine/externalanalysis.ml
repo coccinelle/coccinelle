@@ -27,13 +27,39 @@ module StringMap = Map.Make (String)
 
 module Int64Set = Set.Make (Int64)
 
+(* bound: either concrete or unbounded *)
+type bound = int64 option
+
 (* The type of analysis results, which for the moment focusses on integers.
  * The lower bound should be smaller or equal to the upper bound (not enforced)
  *)
 type result =
     IntSet      of Int64Set.t
-  | IntBounds   of int64 option * int64 option
+  | IntBounds   of bound * bound
   | Other       of string
+
+(* for printing *)
+let show_bound b =
+  match b with
+    None   -> "*"
+  | Some i -> Printf.sprintf "%Ld" i
+
+let show_result result =
+  let out = Buffer.create 120 in
+  begin match result with
+    IntSet s ->
+      Buffer.add_string out "{";
+      Int64Set.iter (fun i ->
+	Buffer.add_string out (Printf.sprintf "%Ld;" i)) s;
+      Buffer.add_string out "}"
+  | IntBounds (l, u) ->
+      Buffer.add_string out (show_bound l);
+      Buffer.add_string out "-";
+      Buffer.add_string out (show_bound u)
+  | Other s ->
+      Buffer.add_string out s
+  end;
+  Buffer.contents out
 
 (* search structure for results *)
 type result_map = (((result list) PoslMap.t) PoslMap.t) StringMap.t
@@ -120,10 +146,12 @@ let find_key find_smaller m k =
 
 (* finds all nearest results in the map that enclose the given position *)
 let find_results filename p_begin p_end =
-  let m_begin = StringMap.find filename !current_map in
-  let m_end   = find_key true m_begin p_begin in
-  let results = find_key false m_end p_end in
-  results
+  try
+    let m_begin = StringMap.find filename !current_map in
+    let m_end   = find_key true m_begin p_begin in
+    let results = find_key false m_end p_end in
+    results
+  with Not_found -> []
 
 
 (* 
@@ -212,11 +240,15 @@ let has_any_result = satisfy (fun rs -> List.length rs > 0)
 
 let for_all p = satisfy (List.for_all p)
 
+let for_all1 p = satisfy
+  (fun rs -> List.length rs > 0 && List.for_all p rs)
+
 let exists p = satisfy (List.exists p)
 
 let single_int c r =
   match r with
-    IntSet s                   -> Int64Set.equal (Int64Set.singleton c) s
+  | IntSet s when Int64Set.is_empty s -> true  (* unreachable memory, thus any propery holds *)
+  | IntSet s                   -> Int64Set.equal (Int64Set.singleton c) s
   | IntBounds (Some l, Some u) -> l == c && u == c
   | _                          -> false
 
@@ -226,6 +258,6 @@ let contains_int c r =
   | IntBounds (l, u) -> within_bounds c l u
   | _                -> false
 
-let has_only_nul = for_all (single_int Int64.zero)
+let has_only_nul = for_all1 (single_int Int64.zero)
 let has_also_nul = exists (contains_int Int64.zero)
 let has_also_int c = exists (contains_int Int64.zero)

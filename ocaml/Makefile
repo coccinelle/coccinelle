@@ -15,7 +15,7 @@ SRC=coccilib.ml ocamlcocci_aux.ml $(OCAMLCOCCI_FILE) prepare_ocamlcocci.ml run_o
 #LIBS=../commons/commons.cma ../parsing_c/parsing_c.cma
 #INCLUDES= -I ../commons -I ../parsing_c
 INCLUDES = -I ../commons -I ../commons/ocamlextra -I ../globals \
-	       -I ../parsing_cocci -I ../parsing_c
+	       -I ../parsing_cocci -I ../parsing_c -I ../engine
 LIBS=../commons/commons.cma ../globals/globals.cma \
      ../parsing_c/parsing_c.cma ../parsing_cocci/cocci_parser.cma
 
