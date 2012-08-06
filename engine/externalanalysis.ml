@@ -8,6 +8,13 @@
  *   E;n;int_1;...;int_n      (an integer set)
  *   I;bnd;bnd     (integer bounds, either integer or empty)
  *   other
+ *
+ * Note: for the moment the analysis results are assumed to be
+ * integer ranges or sets. Other types of analysis results will
+ * be regarded as a plain string.
+ *
+ * Todo: implement a proper querying facility that keeps different
+ * types of analysis apart.
  *)
 
 module PoslMap = Map.Make
@@ -18,23 +25,33 @@ module PoslMap = Map.Make
 
 module StringMap = Map.Make (String)
 
+module Int64Set = Set.Make (Int64)
+
+(* The type of analysis results, which for the moment focusses on integers.
+ * The lower bound should be smaller or equal to the upper bound (not enforced)
+ *)
 type result =
-    IntSet      of int64 list
+    IntSet      of Int64Set.t
   | IntBounds   of int64 option * int64 option
   | Other       of string
 
+(* search structure for results *)
 type result_map = (((result list) PoslMap.t) PoslMap.t) StringMap.t
 
 let empty_map : result_map = StringMap.empty
 
+(* this module is organized that it contains the analysis results as a singleton. *)
 let current_map = ref empty_map
 
+(* regular expressions for extracting results from the .csv file *)
 let loc_regexp       = Str.regexp "\\([^;]*\\);\\([0-9]+\\);\\([0-9]+\\);\\([0-9]+\\);\\([0-9]+\\);\\(.+\\)"
 let intset_regexp    = Str.regexp "E;\\([0-9]+\\)\\(\\(;[0-9]+\\)*\\)"
 let intbounds_regexp = Str.regexp "I;\\([0-9]*\\);\\([0-9]*\\)"
 let split_regexp     = Str.regexp "[;]"
 
-(* skips over unparsable entries *)
+(* Loading of results from a .cvs-like format.
+ * Skips over unparsable entries without reporting an error.
+ *)
 let load_external_results filename =
   let chan = open_in filename in
   try while true do
@@ -59,8 +76,10 @@ let load_external_results filename =
 		true  ->
 		  let n_fields = int_of_string (Str.matched_group 1 s_data) in
 		  let s_fields = Str.matched_group 2 s_data in
-		  let ints = Str.bounded_split split_regexp s_fields n_fields in
-		  IntSet (List.map Int64.of_string ints)
+		  let strs = Str.bounded_split split_regexp s_fields n_fields in
+		  let ints = List.map Int64.of_string strs in
+		  let set = List.fold_right Int64Set.add ints Int64Set.empty in
+		  IntSet set
 	      | false ->
 		  match Str.string_match intbounds_regexp s_data 0 with
 		    true  -> let mk_bound s =
@@ -105,3 +124,108 @@ let find_results filename p_begin p_end =
   let m_end   = find_key true m_begin p_begin in
   let results = find_key false m_end p_end in
   results
+
+
+(* 
+ * some convenience functions on analysis results.
+ *)
+
+let within_bounds c l u =
+  match (l, u) with
+    (None, None)     -> true
+  | (None, Some k)   -> c <= k
+  | (Some k, None)   -> k <= c
+  | (Some k, Some n) -> k <= c && c <= n
+
+let contains_bounds m n l u =
+  match (l, u) with
+    (None, None)     -> true
+  | (None, Some k)   -> begin
+      match (m, n) with
+        (_, None)    -> false
+      | (_, Some j)  -> j <= k
+    end
+  | (Some k, None)   -> begin
+      match (m, n) with
+	(None, _)    -> false
+      | (Some j, _)  -> k <= j
+    end
+  | (Some k, Some q) -> begin
+      match (m, n) with
+	(Some i, Some j) -> k <= i && j <= q
+      | _                -> false
+    end
+
+(* given two result values, computes their intersection. An empty intersection
+   is indicated with a None result value.
+*)
+let intersect_results r1 r2 =
+  let sets s1 s2 =
+    match Int64Set.inter s1 s2 with
+      s when Int64Set.is_empty s -> None
+    | s                          -> Some (IntSet s) in
+  let bounds_set r l u s =
+    if Int64Set.for_all (fun c -> within_bounds c l u) s
+    then Some r
+    else None in
+  let bounds r m n l u =
+    if contains_bounds m n l u
+    then Some r
+    else None in
+  match r1 with
+    IntSet s1 -> begin
+      match r2 with
+	IntSet s2        -> sets s1 s2
+      | IntBounds (l, u) -> bounds_set r2 l u s1
+      | Other _          -> None
+      end
+  | IntBounds (l, u) -> begin
+      match r2 with
+	IntSet s2        -> bounds_set r1 l u s2
+      | IntBounds (m, n) -> bounds r1 l u m n
+      | Other _          -> None
+      end
+  | Other _ -> None
+
+(* a predicate over the analysis results *)
+let satisfy f filename p_begin p_end =
+  try f (find_results filename p_begin p_end)
+  with Not_found -> false
+
+(* satisfy, but with the intersection of all analysis results. *)
+let satisfy1 f =
+  let inter mbR r =
+    match mbR with
+      None   -> None
+    | Some s -> intersect_results r s in
+  satisfy
+    begin fun ls ->
+      match ls with
+        []        -> false
+      | (x :: xs) ->
+	  match List.fold_left inter (Some x) xs with
+	    None   -> false
+	  | Some r -> f r
+    end
+
+let has_any_result = satisfy (fun rs -> List.length rs > 0)
+
+let for_all p = satisfy (List.for_all p)
+
+let exists p = satisfy (List.exists p)
+
+let single_int c r =
+  match r with
+    IntSet s                   -> Int64Set.equal (Int64Set.singleton c) s
+  | IntBounds (Some l, Some u) -> l == c && u == c
+  | _                          -> false
+
+let contains_int c r =
+  match r with
+    IntSet s         -> Int64Set.mem c s
+  | IntBounds (l, u) -> within_bounds c l u
+  | _                -> false
+
+let has_only_nul = for_all (single_int Int64.zero)
+let has_also_nul = exists (contains_int Int64.zero)
+let has_also_int c = exists (contains_int Int64.zero)
