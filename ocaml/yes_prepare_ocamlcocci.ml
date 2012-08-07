@@ -374,7 +374,7 @@ let load_file mlfile =
 (*   let linklibs = link_libs lklibs in *)
   let flags =
     Printf.sprintf
-    "-thread -g -dtypes -I %s %s -I %s/globals -I %s/ocaml -I %s/parsing_c -I %s/commons "
+    "-g -I %s %s -I %s/globals -I %s/ocaml -I %s/parsing_c -I %s/commons "
       (sysdir ()) inc Config.path Config.path Config.path Config.path in
   let (obj, cmd) =
     if Config.dynlink_is_native
