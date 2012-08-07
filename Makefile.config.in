@@ -2,7 +2,7 @@
 
 # * for each library $1, add another entry in the same manner
 MAKELIBS=@MAKE_dynlink@ @MAKE_menhirLib@ @MAKE_pycaml@ @MAKE_pcre@
-LNKLIBS=@MODULES_dynlink@ @MODULES_menhirLib@ @MODULES_pycaml@ @MODULES_pcre@
+LNKLIBS=@MODULES_dynlink@ @MODULES_menhirLib@ @MODULES_pycaml@ @MODULES_pcre@ @MODULES_profiling@
 OPTLNKLIBS=@MODULESOPT_dynlink@ @MODULESOPT_menhirLib@ @MODULESOPT_pycaml@ @MODULESOPT_pcre@
 INCLIBS=@PATH_dynlink@ @PATH_menhirLib@ @PATH_pycaml@ @PATH_pcre@
 FLAGSLIBS=@FLAGS_dynlink@ @FLAGS_menhirLib@ @FLAGS_pycaml@ @FLAGS_pcre@

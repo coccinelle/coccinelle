@@ -28,7 +28,6 @@ MYSRC=	commands.ml                              \
 	oarray.ml				 \
 	ocollection/ograph2way.ml		 \
 	ograph_simple.ml ograph_extended.ml	 \
-	ofullcommon.ml                           \
 	glimpse.ml parser_combinators.ml
 
 # src from other authors, got from the web or caml hump

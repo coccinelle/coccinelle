@@ -487,7 +487,7 @@ forprofiling:
 	$(MAKE) OPTFLAGS="-p -inline 0 ${EXTRA_OCAML_FLAGS}" opt
 
 clean distclean::
-	rm -f gmon.out
+	rm -f gmon.out ocamlprof.dump
 
 tags:
 	otags -no-mli-tags -r  .
