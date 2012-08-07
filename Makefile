@@ -204,10 +204,10 @@ $(OBJS):$(LIBS)
 $(OPTOBJS):$(LIBS:.cma=.cmxa)
 
 $(EXEC): $(LNKLIBS) $(LIBS) $(OBJS)
-	$(OCAMLC_CMD) -thread $(BYTECODE_EXTRA) $(FLAGSLIBS) -o $@ $(SYSLIBS) $^
+	$(OCAMLC_CMD) $(BYTECODE_EXTRA) $(FLAGSLIBS) -o $@ $(SYSLIBS) $^
 
 $(EXEC).opt: $(OPTLNKLIBS) $(LIBS:.cma=.cmxa) $(OPTOBJS)
-	$(OCAMLOPT_CMD) -thread $(OPTFLAGSLIBS) -o $@ $(SYSLIBS:.cma=.cmxa) $^
+	$(OCAMLOPT_CMD) $(OPTFLAGSLIBS) -o $@ $(SYSLIBS:.cma=.cmxa) $^
 
 $(EXEC).top: $(LNKLIBS) $(LIBS) $(OBJS)
 	$(OCAMLMKTOP_CMD) -custom -o $@ $(SYSLIBS) $(FLAGSLIBS) $^

@@ -707,8 +707,6 @@ OPTFLAGS_dynlink
 enable_dynlink
 GLOBAL_dynlink
 OCAML_PKG_dynlink
-PATH_threads
-OCAML_PKG_threads
 PATH_str
 OCAML_PKG_str
 PATH_num
@@ -10480,41 +10478,6 @@ fi
 
   if test "x$OCAML_PKG_str" = xno; then :
       as_fn_error $? "package str is required. It should be part of your ocaml installation." "$LINENO" 5
-
-fi
-
-
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for OCaml findlib package threads" >&5
-$as_echo_n "checking for OCaml findlib package threads... " >&6; }
-
-  unset found
-  unset pkg
-  found=no
-  for pkg in threads  ; do
-    if $OCAMLFIND query $pkg >/dev/null 2>/dev/null; then
-      { $as_echo "$as_me:${as_lineno-$LINENO}: result: found" >&5
-$as_echo "found" >&6; }
-      OCAML_PKG_threads=$pkg
-      found=yes
-      break
-    fi
-  done
-  if test "$found" = "no" ; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
-$as_echo "not found" >&6; }
-    OCAML_PKG_threads=no
-  fi
-
-
-
-  if test "x$OCAML_PKG_threads" != xno; then :
-    PATH_threads=`$OCAMLFIND query threads 2>/dev/null`
-
-
-fi
-
-  if test "x$OCAML_PKG_threads" = xno; then :
-      as_fn_error $? "package threads is required. It should be part of your ocaml installation." "$LINENO" 5
 
 fi
 

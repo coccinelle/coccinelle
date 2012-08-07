@@ -116,7 +116,6 @@ AC_REQ_COCCI_STDPKG([unix])
 AC_REQ_COCCI_STDPKG([bigarray])
 AC_REQ_COCCI_STDPKG([num])
 AC_REQ_COCCI_STDPKG([str])
-AC_REQ_COCCI_STDPKG([threads])
 
 dnl  required modules (Some are available locally too)
 AC_REQ_COCCI_EXTPKG([dynlink])

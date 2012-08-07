@@ -21,8 +21,8 @@ INCLUDE_PATH = -I ../commons -I ../globals \
 #The Caml compilers.
 #for warning:  -w A
 #for profiling:  -p -inline 0   with OCAMLOPT
-OCAMLC_CMD=$(OCAMLC) -thread $(OCAMLCFLAGS)
-OCAMLOPT_CMD=$(OCAMLOPT) -thread $(OPTFLAGS)
+OCAMLC_CMD=$(OCAMLC) $(OCAMLCFLAGS)
+OCAMLOPT_CMD=$(OCAMLOPT) $(OPTFLAGS)
 OCAMLDEP_CMD=$(OCAMLDEP)
 OCAMLMKTOP_CMD=$(OCAMLMKTOP) -g -custom
 

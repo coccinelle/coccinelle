@@ -40,8 +40,8 @@ INCLUDE=-I ../commons -I ../extra -I  ../parsing_c
 LIBS=../commons/commons.cma ../globals/globals.cma \
      ../parsing_c/parsing_c.cma ../extra/extra.cma
 
-OCAMLC_CMD=$(OCAMLC) -thread $(OCAMLCFLAGS) $(INCLUDE)
-OCAMLOPT_CMD=$(OCAMLOPT) -thread $(OPTFLAGS) $(INCLUDE)
+OCAMLC_CMD=$(OCAMLC) $(OCAMLCFLAGS) $(INCLUDE)
+OCAMLOPT_CMD=$(OCAMLOPT) $(OPTFLAGS) $(INCLUDE)
 OCAMLDEP_CMD=$(OCAMLDEP) $(INCLUDE)
 OCAMLMKTOP_CMD=$(OCAMLMKTOP) -g -custom $(INCLUDE)
 OCAMLYACC_CMD=$(OCAMLYACC) -v

@@ -56,15 +56,15 @@ all.opt:
 	@$(MAKE) $(OPTLIB) BUILD_OPT=yes
 
 $(LIB): $(GENERATED) $(OBJS)
-	$(OCAMLC) -thread $(OCAMLCFLAGS) $(INCLUDES) -I $(MENHIRDIR) -a -o $(LIB) $(MENHIRMOD) $(OBJS)
+	$(OCAMLC) $(OCAMLCFLAGS) $(INCLUDES) -I $(MENHIRDIR) -a -o $(LIB) $(MENHIRMOD) $(OBJS)
 
 
 $(OPTLIB): $(GENERATED) $(OPTOBJS)
-	$(OCAMLOPT) -thread $(OPTFLAGS) $(INCLUDES) -I $(MENHIRDIR) -a -o $(OPTLIB) $(MENHIROMOD) $(OPTOBJS)
+	$(OCAMLOPT) $(OPTFLAGS) $(INCLUDES) -I $(MENHIRDIR) -a -o $(OPTLIB) $(MENHIROMOD) $(OPTOBJS)
 
 
 $(EXEC): $(OBJS) main.cmo $(LIBS)
-	$(OCAMLC) -thread $(OCAMLCFLAGS) $(INCLUDES) -o $(EXEC) $(SYSLIBS) $(LIBS) $(OBJS) main.cmo
+	$(OCAMLC) $(OCAMLCFLAGS) $(INCLUDES) -o $(EXEC) $(SYSLIBS) $(LIBS) $(OBJS) main.cmo
 
 clean::
 	rm -f $(LIB)
@@ -76,13 +76,13 @@ clean::
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
 
 .ml.cmo:
-	$(OCAMLC) -thread $(OCAMLCFLAGS) $(INCLUDES) -c $<
+	$(OCAMLC) $(OCAMLCFLAGS) $(INCLUDES) -c $<
 
 .mli.cmi:
-	$(OCAMLC) -thread $(OCAMLCFLAGS) $(INCLUDES) -c $<
+	$(OCAMLC) $(OCAMLCFLAGS) $(INCLUDES) -c $<
 
 .ml.cmx:
-	$(OCAMLOPT) -thread $(OPTFLAGS) $(INCLUDES) -c $<
+	$(OCAMLOPT) $(OPTFLAGS) $(INCLUDES) -c $<
 
 $(LEXER_SOURCES:.mll=.ml) :	$(LEXER_SOURCES)
 	$(OCAMLLEX) $(LEXER_SOURCES)
