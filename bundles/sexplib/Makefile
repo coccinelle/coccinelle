@@ -13,8 +13,8 @@ ifneq ($(MAKECMDGOALS),distclean)
 include ../../Makefile.config
 endif
 
-OCAMLCFLAGS ?= -g -dtypes
-OPTFLAGS ?= -g -dtypes
+OCAMLCFLAGS ?= -g
+OPTFLAGS ?= -g
 
 VERSION=7.0.5
 SEXPDIR=sexplib-$(VERSION)

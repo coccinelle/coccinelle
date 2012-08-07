@@ -101,8 +101,8 @@ INCLUDES=$(INCLUDEDIRS:%=-I %) $(INCLUDESEXTRA)
 
 # This flag can also be used in subdirectories so don't change its name here.
 # For profiling use:  -p -inline 0
-OCAMLCFLAGS ?= -g -dtypes
-OPTFLAGS ?= -g -dtypes
+OCAMLCFLAGS ?= -g
+OPTFLAGS ?= -g
 
 # The OPTBIN variable is here to allow to use ocamlc.opt instead of
 # ocaml, when it is available, which speeds up compilation. So

@@ -6,8 +6,8 @@ endif
 
 TARGET = popl
 
-OCAMLCFLAGS ?= -g -dtypes
-OPTFLAGS ?= -g -dtypes
+OCAMLCFLAGS ?= -g
+OPTFLAGS ?= -g
 
 SRC = ast_popl.ml asttopopl.ml insert_quantifiers.ml \
 pretty_print_popl.ml flag_popl.ml popltoctl.ml popl.ml

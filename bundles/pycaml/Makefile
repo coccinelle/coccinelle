@@ -2,8 +2,8 @@ ifneq ($(MAKECMDGOALS),distclean)
 include ../../Makefile.config
 endif
 
-OCAMLCFLAGS ?= -g -dtypes
-OPTFLAGS ?= -g -dtypes
+OCAMLCFLAGS ?= -g
+OPTFLAGS ?= -g
 
 PYCAMLDIR=chemoelectric-pycaml-8614105
 PYCAMLFILE=$(PYCAMLDIR).tar.gz

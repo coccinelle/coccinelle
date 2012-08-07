@@ -10,8 +10,8 @@ endif
 ##############################################################################
 TARGET=coccipython
 
-OCAMLCFLAGS ?= -g -dtypes
-OPTFLAGS ?= -g -dtypes
+OCAMLCFLAGS ?= -g
+OPTFLAGS ?= -g
 
 SOURCES= pycocci_aux.ml $(PYCOCCI_FILE) pycocci.ml
 

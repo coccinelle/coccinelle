@@ -10,7 +10,7 @@ OPTFLAGSLIBS=@OPTFLAGS_dynlink@ @OPTFLAGS_menhirLib@ @OPTFLAGS_pycaml@ @OPTFLAGS
 # * end of library variables
 
 # system packages inc libs
-SYSINCLIBS=@PATH_unix@ @PATH_bigarray@ @PATH_num@ @PATH_str@ @PATH_threads@ @PATH_dynlink@
+SYSINCLIBS=@PATH_unix@ @PATH_bigarray@ @PATH_num@ @PATH_str@ @PATH_dynlink@
 
 # camlp4 library location
 PATH_camlp4=@PATH_camlp4@
@@ -31,6 +31,8 @@ CONFIGURE_FLAGS=@CONFIGURE_FLAGS@
 ifneq (@enable_release@, no)
 EXTRA_OCAML_FLAGS=-unsafe
 else
+# -dtypes is depricated and can be replaced with -annot for newer
+# versions of ocaml.
 EXTRA_OCAML_FLAGS=-g -dtypes
 endif
 

@@ -4,8 +4,8 @@ endif
 
 TARGET=cocci_parser
 
-OCAMLCFLAGS ?= -g -dtypes
-OPTFLAGS ?= -g -dtypes
+OCAMLCFLAGS ?= -g
+OPTFLAGS ?= -g
 
 LEXER_SOURCES = lexer_cocci.mll
 CLI_LEXER_SOURCES = lexer_cli.mll

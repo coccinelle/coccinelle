@@ -7,7 +7,7 @@ endif
 ##############################################################################
 TARGET=globals
 
-OCAMLCFLAGS ?= -g -dtypes
+OCAMLCFLAGS ?= -g
 OPTFLAGS ?= -g
 
 SRC=config.ml flag.ml iteration.ml $(REGEXP_FILE) regexp.ml

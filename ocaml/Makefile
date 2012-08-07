@@ -27,8 +27,8 @@ SYSLIBS= str.cma unix.cma
 
 #for warning:  -w A
 #for profiling:  -p -inline 0   with OCAMLOPT
-OCAMLCFLAGS ?= -g -dtypes
-OPTFLAGS ?= -g -dtypes
+OCAMLCFLAGS ?= -g
+OPTFLAGS ?= -g
 
 OCAMLC_CMD=$(OCAMLC) $(OCAMLCFLAGS) $(INCLUDES)
 OCAMLOPT_CMD=$(OCAMLOPT) $(OPTFLAGS) $(INCLUDES)
