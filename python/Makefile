@@ -92,6 +92,7 @@ clean::
 distclean::
 	$(MAKE) -C coccilib $@
 	rm -f pycocci.ml
+	rm -f *.cm[iox] *.o  *.annot
 
 ##############################################################################
 # Generic ocaml rules
