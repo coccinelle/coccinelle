@@ -532,9 +532,9 @@ clean distclean::
 distclean::
 	set -e; for i in $(CLEANSUBDIRS); do $(MAKE) -C $$i $@; done
 	rm -f test.ml
-	rm -f TAGS
-	rm -f tests/SCORE_actual.sexp
-	rm -f tests/SCORE_best_of_both.sexp
+	rm -f TAGS *.native *.byte *.d.native *.p.byte
+	rm -rf _build _log
+	rm -f tests/SCORE_actual.sexp tests/SCORE_best_of_both.sexp
 	find . -name ".#*1.*" | xargs rm -f
 	rm -f $(EXEC) $(EXEC).opt $(EXEC).top
 
