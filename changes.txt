@@ -55,6 +55,7 @@
 - Allow renaming an expression as an identifier (@i)
 - Support const/volatile after *.  Thanks to Lars-Peter Clausen for
   pointing out the problem.
+- Support variable declarations in the first element of a for loop header.
 
 ** Features:
 - Preserve spacing before // comments when not at the beginning of a line

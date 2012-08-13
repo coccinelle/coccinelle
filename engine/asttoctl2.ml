@@ -1568,7 +1568,8 @@ and make_whencond_headers e e1 label guard quantified =
     header_pred
       (Ast.rewrap e
 	 (Ast.ForHeader
-	    (Ast.make_mcode "for",Ast.make_mcode "(",None,Ast.make_mcode ";",
+	    (Ast.make_mcode "for",Ast.make_mcode "(",
+	     Ast.ForExp(None,Ast.make_mcode ";"),
 	     Some e1,Ast.make_mcode ";",None,Ast.make_mcode ")"))) in
   let if_headers =
     List.fold_left ctl_or CTL.False (List.map if_header e1) in

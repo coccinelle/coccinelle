@@ -1091,6 +1091,9 @@ statement:
 | TFor TOPar option(eexpr) TPtVirg option(eexpr) TPtVirg
     option(eexpr) TCPar single_statement
     { P.forloop $1 $2 $3 $4 $5 $6 $7 $8 $9 }
+| TFor TOPar one_decl_var option(eexpr) TPtVirg
+    option(eexpr) TCPar single_statement
+    { P.forloop2 $1 $2 $3 $4 $5 $6 $7 $8 }
 | TWhile TOPar eexpr TCPar single_statement
     { P.whileloop $1 $2 $3 $4 $5 }
 | TDo single_statement TWhile TOPar eexpr TCPar TPtVirg

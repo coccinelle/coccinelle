@@ -982,15 +982,14 @@ iteration:
  | Tdo statement Twhile TOPar expr TCPar TPtVirg
      { DoWhile ($2,$5),              [$1;$3;$4;$6;$7] }
  | Tfor TOPar expr_statement expr_statement TCPar statement
-     { For ($3,$4,(None, []),$6),    [$1;$2;$5]}
+     { For (ForExp $3,$4,(None, []),$6),    [$1;$2;$5]}
  | Tfor TOPar expr_statement expr_statement expr TCPar statement
-     { For ($3,$4,(Some $5, []),$7), [$1;$2;$6] }
+     { For (ForExp $3,$4,(Some $5, []),$7), [$1;$2;$6] }
  /*(* c++ext: for(int i = 0; i < n; i++)*)*/
- | Tfor TOPar decl expr_statement expr_opt TCPar statement
-     {
-       (* pr2 "DECL in for"; *)
-       MacroIteration ("toto", [], $7),[$1;$2;$6] (* TODOfake ast, TODO need decl2 ? *)
-     }
+ | Tfor TOPar decl expr_statement TCPar statement
+     { For (ForDecl ($3 Ast_c.LocalDecl),$4,(None, []),$6),    [$1;$2;$5]}
+ | Tfor TOPar decl expr_statement expr TCPar statement
+     { For (ForDecl ($3 Ast_c.LocalDecl),$4,(Some $5, []),$7), [$1;$2;$6] }
  /*(* cppext: *)*/
  | TMacroIterator TOPar argument_list_ne TCPar statement
      { MacroIteration (fst $1, $3, $5), [snd $1;$2;$4] }

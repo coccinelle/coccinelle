@@ -597,10 +597,9 @@ let rec rule_elem arity re =
       mcode print_string whl; print_string " "; mcode print_string_box lp;
       expression exp; close_box(); mcode print_string rp;
       mcode print_string sem
-  | Ast.ForHeader(fr,lp,e1,sem1,e2,sem2,e3,rp) ->
+  | Ast.ForHeader(fr,lp,first,e2,sem2,e3,rp) ->
       print_string arity;
-      mcode print_string fr; mcode print_string_box lp;
-      print_option expression e1; mcode print_string sem1;
+      mcode print_string fr; mcode print_string_box lp; forinfo first;
       print_option expression e2; mcode print_string sem2;
       print_option expression e3; close_box();
       mcode print_string rp; print_string " "
@@ -656,6 +655,12 @@ let rec rule_elem arity re =
 	res;
       force_newline(); print_string ")"
 
+and forinfo = function
+    Ast.ForExp(e1,sem1) ->
+      print_option expression e1; mcode print_string sem1
+  | Ast.ForDecl (bef,allminus,decl) ->
+      mcode (function _ -> ()) ((),Ast.no_info,bef,[]);
+      declaration decl
 
 and print_define_parameters params =
   match Ast.unwrap params with
@@ -834,6 +839,7 @@ let _ =
     | Ast.IncFileTag(x) -> inc_file x
     | Ast.Rule_elemTag(x) -> rule_elem "" x
     | Ast.StatementTag(x) -> statement "" x
+    | Ast.ForInfoTag(x) -> forinfo x
     | Ast.CaseLineTag(x) -> case_line "" x
     | Ast.ConstVolTag(x) -> const_vol x
     | Ast.Token(x,Some info) -> print_string_befaft print_string x info

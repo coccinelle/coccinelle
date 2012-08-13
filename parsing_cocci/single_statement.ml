@@ -234,7 +234,7 @@ and left_statement s =
       modif_before_mcode iff
   | Ast0.While(whl,lp,exp,rp,body,(info,aft)) -> modif_before_mcode whl
   | Ast0.Do(d,body,whl,lp,exp,rp,sem) -> modif_before_mcode d
-  | Ast0.For(fr,lp,e1,sem1,e2,sem2,e3,rp,body,(info,aft)) ->
+  | Ast0.For(fr,lp,first,e2,sem2,e3,rp,body,(info,aft)) ->
       modif_before_mcode fr
   | Ast0.Iterator(nm,lp,args,rp,body,(info,aft)) -> left_ident nm
   | Ast0.Switch(switch,lp,exp,rp,lb,decls,cases,rb) ->
@@ -276,7 +276,7 @@ and right_statement s =
       modif_after_mcodekind aft
   | Ast0.While(whl,lp,exp,rp,body,(info,aft)) -> modif_after_mcodekind aft
   | Ast0.Do(d,body,whl,lp,exp,rp,sem) -> modif_after_mcode sem
-  | Ast0.For(fr,lp,e1,sem1,e2,sem2,e3,rp,body,(info,aft)) ->
+  | Ast0.For(fr,lp,first,e2,sem2,e3,rp,body,(info,aft)) ->
       modif_after_mcodekind aft
   | Ast0.Iterator(nm,lp,args,rp,body,(info,aft)) ->
       modif_after_mcodekind aft
@@ -397,7 +397,7 @@ and contains_only_minus =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     dots dots dots dots dots dots
     identifier expression typeC donothing donothing declaration
-    statement case_line donothing
+    statement donothing case_line donothing
 
 
 (* needs a special case when there is a Disj or an empty DOTS *)
@@ -559,10 +559,10 @@ let rec statement dots_before dots_after s =
       do_one
 	(Ast0.rewrap s
 	   (Ast0.Do(d,statement false false body,whl,lp,exp,rp,sem)))
-  | Ast0.For(fr,lp,e1,sem1,e2,sem2,e3,rp,body,x) ->
+  | Ast0.For(fr,lp,first,e2,sem2,e3,rp,body,x) ->
       do_one
 	(Ast0.rewrap s
-	   (Ast0.For(fr,lp,e1,sem1,e2,sem2,e3,rp,
+	   (Ast0.For(fr,lp,first,e2,sem2,e3,rp,
 		     statement false false body,x)))
   | Ast0.Iterator(nm,lp,args,rp,body,x) ->
       do_one

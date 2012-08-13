@@ -817,10 +817,9 @@ and rule_elem arity re =
       mcode print_string whl; pr_space(); mcode print_string_box lp;
       expression exp; close_box(); mcode print_string rp;
       mcode print_string sem
-  | Ast.ForHeader(fr,lp,e1,sem1,e2,sem2,e3,rp) ->
+  | Ast.ForHeader(fr,lp,first,e2,sem2,e3,rp) ->
       pr_arity arity;
-      mcode print_string fr; mcode print_string_box lp;
-      print_option expression e1; mcode print_string sem1;
+      mcode print_string fr; mcode print_string_box lp; forinfo first;
       print_option expression e2; mcode print_string sem2;
       print_option expression e3; close_box();
       mcode print_string rp
@@ -886,6 +885,11 @@ and rule_elem arity re =
   | Ast.MetaStmtList(name,_,_) ->
       failwith
 	"MetaStmtList not supported (not even in ast_c metavars binding)"
+
+and forinfo = function
+    Ast.ForExp(e1,sem1) ->
+      print_option expression e1; mcode print_string sem1
+  | Ast.ForDecl (_,_,decl) -> declaration decl
 
 and print_define_parameters params =
   match Ast.unwrap params with
@@ -1069,6 +1073,7 @@ let rec pp_any = function
 
   | Ast.Rule_elemTag(x) -> rule_elem "" x; false
   | Ast.StatementTag(x) -> statement "" x; false
+  | Ast.ForInfoTag(x) -> forinfo x; false
   | Ast.CaseLineTag(x) -> case_line "" x; false
 
   | Ast.ConstVolTag(x) -> const_vol x unknown unknown; false

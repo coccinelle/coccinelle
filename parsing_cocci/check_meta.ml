@@ -356,8 +356,12 @@ and statement old_metas table minus s =
   | Ast0.Do(d,body,wh,lp,exp,rp,sem) ->
       statement old_metas table minus body;
       expression ID old_metas table minus exp
-  | Ast0.For(fr,lp,exp1,sem1,exp2,sem2,exp3,rp,body,_) ->
-      get_opt (expression ID old_metas table minus) exp1;
+  | Ast0.For(fr,lp,first,exp2,sem2,exp3,rp,body,_) ->
+      (match Ast0.unwrap first with
+	Ast0.ForExp(exp1,sem1) ->
+	  get_opt (expression ID old_metas table minus) exp1
+      |	Ast0.ForDecl (_,decl) ->
+	  declaration ID old_metas table minus decl);
       get_opt (expression ID old_metas table minus) exp2;
       get_opt (expression ID old_metas table minus) exp3;
       statement old_metas table minus body
@@ -483,7 +487,7 @@ let positions table rules =
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing donothing donothing
-      donothing donothing in
+      donothing donothing donothing in
 
   List.iter fn.VT0.combiner_rec_top_level rules
 
@@ -537,7 +541,7 @@ let dup_positions rules =
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing donothing donothing donothing
       donothing expression typeC donothing donothing declaration statement
-      donothing donothing in
+      donothing donothing donothing in
 
   let res =
     List.sort compare

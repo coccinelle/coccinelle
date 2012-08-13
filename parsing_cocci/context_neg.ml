@@ -30,6 +30,7 @@ let set_mcodekind x mcodekind =
   | Ast0.DeclTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.InitTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.StmtTag(d) -> Ast0.set_mcodekind d mcodekind
+  | Ast0.ForInfoTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.CaseLineTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.TopTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.IsoWhenTag(_) -> failwith "only within iso phase"
@@ -55,6 +56,7 @@ let set_index x index =
   | Ast0.InitTag(d) -> Ast0.set_index d index
   | Ast0.DeclTag(d) -> Ast0.set_index d index
   | Ast0.StmtTag(d) -> Ast0.set_index d index
+  | Ast0.ForInfoTag(d) -> Ast0.set_index d index
   | Ast0.CaseLineTag(d) -> Ast0.set_index d index
   | Ast0.TopTag(d) -> Ast0.set_index d index
   | Ast0.IsoWhenTag(_) -> failwith "only within iso phase"
@@ -79,6 +81,7 @@ let get_index = function
   | Ast0.InitTag(d) -> Index.initialiser d
   | Ast0.DeclTag(d) -> Index.declaration d
   | Ast0.StmtTag(d) -> Index.statement d
+  | Ast0.ForInfoTag(d) -> Index.forinfo d
   | Ast0.CaseLineTag(d) -> Index.case_line d
   | Ast0.TopTag(d) -> Index.top_level d
   | Ast0.IsoWhenTag(_) -> failwith "only within iso phase"
@@ -129,7 +132,7 @@ let collect_plus_lines top =
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing donothing donothing
-      donothing donothing in
+      donothing donothing donothing in
   fn.VT0.combiner_rec_top_level top
 
 (* --------------------------------------------------------------------- *)
@@ -414,7 +417,7 @@ let classify is_minus all_marked table code =
       | Ast0.IfThenElse(_,_,_,_,_,_,_,(info,aft))
       | Ast0.Iterator(_,_,_,_,_,(info,aft))
       | Ast0.While(_,_,_,_,_,(info,aft))
-      | Ast0.For(_,_,_,_,_,_,_,_,_,(info,aft)) ->
+      | Ast0.For(_,_,_,_,_,_,_,_,(info,aft)) ->
 	  bind (k s) (nc_mcode ((),(),info,aft,(),-1))
       |	_ -> k s
 
@@ -429,7 +432,7 @@ let classify is_minus all_marked table code =
       (do_nothing Ast0.dotsParam) (do_nothing Ast0.dotsStmt)
       (do_nothing Ast0.dotsDecl) (do_nothing Ast0.dotsCase)
       ident expression typeC initialiser param declaration
-      statement case_line (do_top Ast0.top) in
+      statement (do_nothing Ast0.forinfo) case_line (do_top Ast0.top) in
   combiner.VT0.combiner_rec_top_level code
 
 (* --------------------------------------------------------------------- *)
@@ -659,10 +662,16 @@ let rec equal_statement s1 s2 =
   | (Ast0.Do(d1,_,whl1,lp1,_,rp1,sem1),Ast0.Do(d2,_,whl2,lp2,_,rp2,sem2)) ->
       equal_mcode whl1 whl2 && equal_mcode d1 d2 &&
       equal_mcode lp1 lp2 && equal_mcode rp1 rp2 && equal_mcode sem1 sem2
-  | (Ast0.For(fr1,lp1,_,sem11,_,sem21,_,rp1,_,_),
-     Ast0.For(fr2,lp2,_,sem12,_,sem22,_,rp2,_,_)) ->
+  | (Ast0.For(fr1,lp1,first1,_,sem21,_,rp1,_,_),
+     Ast0.For(fr2,lp2,first2,_,sem22,_,rp2,_,_)) ->
+       let first =
+	 match (Ast0.unwrap first1,Ast0.unwrap first2) with
+	   (Ast0.ForExp(_,sem1),Ast0.ForExp(_,sem2)) -> 
+	     equal_mcode sem1 sem2
+	 | (Ast0.ForDecl _,Ast0.ForDecl _) -> true
+	 | _ -> false in
        equal_mcode fr1 fr2 && equal_mcode lp1 lp2 &&
-       equal_mcode sem11 sem12 && equal_mcode sem21 sem22 &&
+       first && equal_mcode sem21 sem22 &&
        equal_mcode rp1 rp2
   | (Ast0.Iterator(nm1,lp1,_,rp1,_,_),Ast0.Iterator(nm2,lp2,_,rp2,_,_)) ->
       equal_mcode lp1 lp2 && equal_mcode rp1 rp2
@@ -797,7 +806,7 @@ let contextify_all =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
     do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
-    do_nothing do_nothing do_nothing
+    do_nothing do_nothing do_nothing do_nothing
 
 let contextify_whencode =
   let bind x y = () in

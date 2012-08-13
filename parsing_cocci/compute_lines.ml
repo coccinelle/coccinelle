@@ -850,18 +850,32 @@ let rec statement s =
 	let rp = normal_mcode rp in
 	mkres s (Ast0.Do(d,body,wh,lp,exp,rp,sem))
 	  (promote_mcode d) (promote_mcode sem)
-    | Ast0.For(fr,lp,exp1,sem1,exp2,sem2,exp3,rp,body,(_,aft)) ->
+    | Ast0.For(fr,lp,first,exp2,sem2,exp3,rp,body,(_,aft)) ->
 	let fr = normal_mcode fr in
 	let lp = normal_mcode lp in
-	let exp1 = get_option expression exp1 in
-	let sem1 = normal_mcode sem1 in
+	let first =
+	  match Ast0.unwrap first with
+	    Ast0.ForExp(None,sem1) ->
+	      let sem1 = normal_mcode sem1 in
+	      mkres first (Ast0.ForExp(None,sem1))
+		(promote_mcode sem1) (promote_mcode sem1)
+	  | Ast0.ForExp(Some exp1,sem1) ->
+	      let exp1 = expression exp1 in
+	      let sem1 = normal_mcode sem1 in
+	      mkres first (Ast0.ForExp(Some exp1,sem1))
+		exp1 (promote_mcode sem1)
+	  | Ast0.ForDecl((_,bef),decl) ->
+	      let decl = declaration decl in
+	      let left = promote_to_statement_start decl bef in
+	      mkres first (Ast0.ForDecl ((Ast0.get_info left,bef),decl))
+		decl decl in
 	let exp2 = get_option expression exp2 in
 	let sem2 = normal_mcode sem2 in
 	let exp3 = get_option expression exp3 in
 	let rp = normal_mcode rp in
 	let body = statement body in
 	let right = promote_to_statement body aft in
-	mkres s (Ast0.For(fr,lp,exp1,sem1,exp2,sem2,exp3,rp,body,
+	mkres s (Ast0.For(fr,lp,first,exp2,sem2,exp3,rp,body,
 			  (Ast0.get_info right,aft)))
 	  (promote_mcode fr) right
     | Ast0.Iterator(nm,lp,args,rp,body,(_,aft)) ->

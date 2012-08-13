@@ -259,12 +259,15 @@ let mk_pretty_printers
         pr_elem iifakend
 
 
-    | Iteration  (For ((e1opt,il1),(e2opt,il2),(e3opt, il3),st)),
+    | Iteration  (For (first,(e2opt,il2),(e3opt, il3),st)),
         [i1;i2;i3;iifakend] ->
 
           pr_elem i1; pr_space();
           pr_elem i2;
-          pp_statement (Ast_c.mk_st (ExprStatement e1opt) il1);
+	  (match first with
+	    ForExp (e1opt,il1) ->
+              pp_statement (Ast_c.mk_st (ExprStatement e1opt) il1)
+	  | ForDecl decl -> pp_decl decl);
           pp_statement (Ast_c.mk_st (ExprStatement e2opt) il2);
           assert (null il3);
           pp_statement (Ast_c.mk_st (ExprStatement e3opt) il3);
@@ -320,7 +323,7 @@ let mk_pretty_printers
     | Compound _ | ExprStatement _
     | Selection  (If (_, _, _)) | Selection  (Switch (_, _))
     | Iteration  (While (_, _)) | Iteration  (DoWhile (_, _))
-    | Iteration  (For ((_,_), (_,_), (_, _), _))
+    | Iteration  (For (_, (_,_), (_, _), _))
     | Iteration  (MacroIteration (_,_,_))
     | Jump ((Continue|Break|Return)) | Jump (ReturnExpr _)
     | Jump (GotoComputed _)
@@ -1197,7 +1200,7 @@ and pp_init (init, iinit) =
 	pr2 "XXX";
 
 
-    | F.ForHeader (_st, (((e1opt,i1), (e2opt,i2), (e3opt,i3)), ii)) ->
+    | F.ForHeader (_st, ((first, (e2opt,i2), (e3opt,i3)), ii)) ->
         (*
            iif i1; iif i2; iif i3;
            iif ii;
