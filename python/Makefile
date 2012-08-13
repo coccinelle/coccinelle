@@ -10,8 +10,8 @@ endif
 ##############################################################################
 TARGET=coccipython
 
-OCAMLCFLAGS ?= -g -dtypes
-OPTFLAGS ?= -g -dtypes
+OCAMLCFLAGS ?= -g
+OPTFLAGS ?= -g
 
 SOURCES= pycocci_aux.ml $(PYCOCCI_FILE) pycocci.ml
 
@@ -35,8 +35,8 @@ INCLUDES_DEPEND=$(INCLUDEDIRS_LOCAL:%=-I %) $(INCLUDESEXTRA)
 ##############################################################################
 
 # The Caml compilers.
-OCAMLC_CMD=$(OCAMLC) -thread $(OCAMLCFLAGS) $(INCLUDES)
-OCAMLOPT_CMD=$(OCAMLOPT) -thread $(OPTFLAGS) $(INCLUDES)
+OCAMLC_CMD=$(OCAMLC) $(OCAMLCFLAGS) $(INCLUDES)
+OCAMLOPT_CMD=$(OCAMLOPT) $(OPTFLAGS) $(INCLUDES)
 OCAMLDEP_CMD=$(OCAMLDEP) $(INCLUDES_DEPEND)
 OCAMLMKTOP_CMD=$(OCAMLMKTOP) -g -custom $(INCLUDES)
 
@@ -92,6 +92,7 @@ clean::
 distclean::
 	$(MAKE) -C coccilib $@
 	rm -f pycocci.ml
+	rm -f *.cm[iox] *.o  *.annot
 
 ##############################################################################
 # Generic ocaml rules

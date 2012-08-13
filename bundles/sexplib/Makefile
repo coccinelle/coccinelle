@@ -13,8 +13,8 @@ ifneq ($(MAKECMDGOALS),distclean)
 include ../../Makefile.config
 endif
 
-OCAMLCFLAGS ?= -g -dtypes
-OPTFLAGS ?= -g -dtypes
+OCAMLCFLAGS ?= -g
+OPTFLAGS ?= -g
 
 VERSION=7.0.5
 SEXPDIR=sexplib-$(VERSION)
@@ -22,8 +22,8 @@ SEXPLIB=$(SEXPDIR)/lib
 SEXPMARKER=$(SEXPDIR)/.marker
 
 PP_CMD=$(CPP) -x c -w -traditional -undef
-OCAMLC_CMD=$(OCAMLC) $(OCAMLCFLAGS) -I $(SEXPLIB) -thread -pp "${PP_CMD}"
-OCAMLOPT_CMD=$(OCAMLOPT) $(OPTFLAGS) -I $(SEXPLIB) -thread -pp "${PP_CMD}"
+OCAMLC_CMD=$(OCAMLC) $(OCAMLCFLAGS) -I $(SEXPLIB) -pp "${PP_CMD}"
+OCAMLOPT_CMD=$(OCAMLOPT) $(OPTFLAGS) -I $(SEXPLIB) -pp "${PP_CMD}"
 OCAMLDEP_CMD=$(OCAMLDEP) -I $(SEXPLIB) -pp "${PP_CMD}"
 
 all: .depend

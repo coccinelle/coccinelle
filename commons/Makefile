@@ -28,7 +28,6 @@ MYSRC=	commands.ml                              \
 	oarray.ml				 \
 	ocollection/ograph2way.ml		 \
 	ograph_simple.ml ograph_extended.ml	 \
-	ofullcommon.ml                           \
 	glimpse.ml parser_combinators.ml
 
 # src from other authors, got from the web or caml hump
@@ -101,9 +100,8 @@ INCLUDES=$(INCLUDEDIRS:%=-I %) $(INCLUDESEXTRA)
 
 # This flag can also be used in subdirectories so don't change its name here.
 # For profiling use:  -p -inline 0
-OCAMLCFLAGS ?= -g -dtypes
-OPTFLAGS ?= -g -dtypes
-#-thread
+OCAMLCFLAGS ?= -g
+OPTFLAGS ?= -g
 
 # The OPTBIN variable is here to allow to use ocamlc.opt instead of
 # ocaml, when it is available, which speeds up compilation. So
@@ -112,8 +110,8 @@ OPTFLAGS ?= -g -dtypes
 OPTBIN ?= #.opt
 
 # The OCaml tools.
-OCAMLC_CMD=$(OCAMLC) -thread $(OCAMLCFLAGS) $(INCLUDES)
-OCAMLOPT_CMD=$(OCAMLOPT) -thread $(OPTFLAGS) $(INCLUDES)
+OCAMLC_CMD=$(OCAMLC) $(OCAMLCFLAGS) $(INCLUDES)
+OCAMLOPT_CMD=$(OCAMLOPT) $(OPTFLAGS) $(INCLUDES)
 OCAMLDEP_CMD=$(OCAMLDEP) $(INCLUDES)
 OCAMLMKTOP_CMD=$(OCAMLMKTOP) -g -custom $(INCLUDES)
 

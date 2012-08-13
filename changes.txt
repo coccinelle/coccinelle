@@ -131,6 +131,9 @@
 - Dropped the need for the ocaml-extlib and ocaml-sexplib packages.
 - Changed the file format of the regression test results. Files in the old format
   are no longer readable by spatch.
+- Added a crude mechanism for integrating the results of external analyses with
+  coccinelle, using positions to connect them together. This is an experimental
+  feature. See demos/external_ana.{c,cocci,data}.
 
 ** Bugfix:
 - Corrected parsing of script strings delimited by a single quote.  Thanks

@@ -47,7 +47,7 @@ let
       postDist = ''
         export HOME=$PREVHOME  # restore the home directory
 
-        ensureDir "$out/tarballs"
+        mkdir -p "$out/tarballs"
 
         # rename the tarball to give it a version-specific name
         cp coccinelle-*.tar.gz "$out/tarballs/coccinelle-${version}${versionSuffix}.tar.gz"
@@ -94,6 +94,7 @@ let
     selOcaml = selOcamlDefault;
     extras = selCommonInputs pkgs;
     shell = selDefaultShell pkgs;
+    extraAttrs = { };
   };
 
   # creates a configuration for a given ocaml version
@@ -105,16 +106,18 @@ let
     ocamls = selMinimalOcamlPkgs pkgs.ocamlPackages;
     extras = selCommonInputs pkgs;
     shell = selDefaultShell pkgs;
+    extraAttrs = { };
   };
 
   # creates a default configuration with additional flags
-  mkCfgDefault = { name, flags }: pkgs: {
+  mkCfgDefault = { name, flags, extra ? {} }: pkgs: {
     inherit name flags;
     pythons = selPythonDefault pkgs;
     ocamls = selAllOcamlPkgs pkgs.ocamlPackages;
     selOcaml = selOcamlDefault;
     extras = selCommonInputs pkgs;
     shell = selDefaultShell pkgs;
+    extraAttrs = extra;
   };
 
   # creates a minimal configuration with additional flags
@@ -125,6 +128,7 @@ let
     selOcaml = selOcamlDefault;
     extras = [];
     shell = selDefaultShell pkgs;
+    extraAttrs = { };
   };
 
   # creates a configuration for the given ocaml packages
@@ -135,6 +139,7 @@ let
     selOcaml = selOcamlDefault;
     extras = selCommonInputs pkgs;
     shell = selDefaultShell pkgs;
+    extraAttrs = { };
   };
 
   # build the project using the given shell
@@ -148,6 +153,7 @@ let
     flags = [];
     extras = [ pkgs.pcre ];
     shell = selShell pkgs;
+    extraAttrs = { };
   };
 
   # creates a configuration with multiple ocaml versions: this gives
@@ -166,6 +172,7 @@ let
       flags = [];
       extras = selCommonInputs pkgs ++ map (selOcaml pkgs) sels;
       shell = selDefaultShell pkgs;
+      extraAttrs = { };
     };
 
 
@@ -279,7 +286,7 @@ let
         };
         cfg = mkConfiguration pkgs;
         flags = [ "--enable-release=world" ] ++ cfg.flags;
-    in with pkgs; releaseTools.nixBuild {
+    in with pkgs; releaseTools.nixBuild ({
       inherit (cfg) shell;
       name = "cocci-build-${cfg.name}";
       src = tarball;
@@ -304,11 +311,26 @@ let
           substituteInPlace $script --replace '#! /bin/sh' '#! ${cfg.shell}'
         done
       '';
-    };
+    } // cfg.extraAttrs);
 
   build = mkBuild defaultCfg;
   altBuilds = map mkBuild altCfgs;
   allBuilds = [ build ] ++ altBuilds;
+
+  # compile with ocaml profiling turned on and then running the
+  # test suite to collect results.
+  profileCfg = mkCfgDefault {
+    name = "profiling";
+    flags = [ "--enable-release=profile" ];
+    extra = {
+      installPhase = ''
+        mkdir -p "$out/nix-support"
+        cp ocamlprof.dump "$out/ocamlprof.dump"
+        echo "file binary $out/ocamlprof.dump" >> "$out/nix-support/hydra-build-products"
+      '';
+    };
+  };
+  profile = mkBuild profileCfg {};
 
 
   #
@@ -357,8 +379,8 @@ let
       phases = [ "runPhase" ];
 
       runPhase = ''
-        ensureDir "$out"
-        ensureDir "$out/nix-support"
+        mkdir -p "$out"
+        mkdir -p "$out/nix-support"
         touch "$TMPDIR/result.log"
         exec > >(tee -a "$TMPDIR/result.log") 2> >(tee -a "$TMPDIR/result.log" >&2)
         runHook execPhase
@@ -423,7 +445,7 @@ let
         # as this directory contains large
         # files, we'll create links to the
         # individual files.
-        ensureDir "$TMPDIR/tests"
+        mkdir -p "$TMPDIR/tests"
         cp -rs ${testsSrc}/* "$TMPDIR/tests/"
 	chmod -R u+w "$TMPDIR/tests/"
         cd "$TMPDIR/tests"
@@ -469,7 +491,7 @@ let
         # as this directory contains large
         # files, we'll create links to the
         # individual files.
-        ensureDir "$TMPDIR/tests"
+        mkdir -p "$TMPDIR/tests"
         cp -rs ${testsSrc}/* "$TMPDIR/tests/"
 	chmod -R u+w "$TMPDIR/tests/"
 
@@ -544,6 +566,7 @@ let
     inherit build;
     inherit report;
     inherit dist;
+    inherit profile;
   };
 
   # artificial dependency on report to ensure that we are not going through

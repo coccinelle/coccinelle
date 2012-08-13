@@ -204,10 +204,10 @@ $(OBJS):$(LIBS)
 $(OPTOBJS):$(LIBS:.cma=.cmxa)
 
 $(EXEC): $(LNKLIBS) $(LIBS) $(OBJS)
-	$(OCAMLC_CMD) -thread $(BYTECODE_EXTRA) $(FLAGSLIBS) -o $@ $(SYSLIBS) $^
+	$(OCAMLC_CMD) $(BYTECODE_EXTRA) $(FLAGSLIBS) -o $@ $(SYSLIBS) $^
 
 $(EXEC).opt: $(OPTLNKLIBS) $(LIBS:.cma=.cmxa) $(OPTOBJS)
-	$(OCAMLOPT_CMD) -thread $(OPTFLAGSLIBS) -o $@ $(SYSLIBS:.cma=.cmxa) $^
+	$(OCAMLOPT_CMD) $(OPTFLAGSLIBS) -o $@ $(SYSLIBS:.cma=.cmxa) $^
 
 $(EXEC).top: $(LNKLIBS) $(LIBS) $(OBJS)
 	$(OCAMLMKTOP_CMD) -custom -o $@ $(SYSLIBS) $(FLAGSLIBS) $^
@@ -487,7 +487,7 @@ forprofiling:
 	$(MAKE) OPTFLAGS="-p -inline 0 ${EXTRA_OCAML_FLAGS}" opt
 
 clean distclean::
-	rm -f gmon.out
+	rm -f gmon.out ocamlprof.dump
 
 tags:
 	otags -no-mli-tags -r  .
@@ -532,9 +532,9 @@ clean distclean::
 distclean::
 	set -e; for i in $(CLEANSUBDIRS); do $(MAKE) -C $$i $@; done
 	rm -f test.ml
-	rm -f TAGS
-	rm -f tests/SCORE_actual.sexp
-	rm -f tests/SCORE_best_of_both.sexp
+	rm -f TAGS *.native *.byte *.d.native *.p.byte
+	rm -rf _build _log
+	rm -f tests/SCORE_actual.sexp tests/SCORE_best_of_both.sexp
 	find . -name ".#*1.*" | xargs rm -f
 	rm -f $(EXEC) $(EXEC).opt $(EXEC).top
 

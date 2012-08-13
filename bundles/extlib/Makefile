@@ -9,8 +9,8 @@ ifneq ($(MAKECMDGOALS),distclean)
 include ../../Makefile.config
 endif
 
-OCAMLCFLAGS ?= -g -dtypes
-OPTFLAGS ?= -g -dtypes
+OCAMLCFLAGS ?= -g
+OPTFLAGS ?= -g
 
 VERSION=1.5.2
 EXTLIB=extlib-$(VERSION)
@@ -57,14 +57,14 @@ SRC=$(MODULES:%=$(EXTLIB)/%.ml) $(EXTLIB)/extLib.ml
 # otherwise errors such as 'module X makes inconsistent assumptions about interface Y' may
 # arise. The dependencies on this marker establishes this sharing.
 .mli-marker: $(MLI) $(SRC)
-	$(OCAMLC) $(OCAMLCFLAGS) -c -thread -I $(EXTLIB) $(MLI)
+	$(OCAMLC) $(OCAMLCFLAGS) -c -I $(EXTLIB) $(MLI)
 	touch .mli-marker
 
 extLib.cma: .mli-marker $(SRC)
-	$(OCAMLC) $(OCAMLCFLAGS) -a -thread -I $(EXTLIB) -o extLib.cma $(MLI) $(SRC)
+	$(OCAMLC) $(OCAMLCFLAGS) -a -I $(EXTLIB) -o extLib.cma $(MLI) $(SRC)
 
 extLib.cmxa: .mli-marker $(SRC)
-	$(OCAMLOPT) $(OPTFLAGS) -a -thread -I $(EXTLIB) -o extLib.cmxa $(SRC)
+	$(OCAMLOPT) $(OPTFLAGS) -a -I $(EXTLIB) -o extLib.cmxa $(SRC)
 
 META: $(EXTLIB)/META
 	cp $< $@

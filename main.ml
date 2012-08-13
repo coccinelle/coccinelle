@@ -588,6 +588,9 @@ let other_options = [
     "--show-trace-profile", Arg.Set Common.show_trace_profile,
     "   show trace";
     "--save-tmp-files",     Arg.Set Common.save_tmp_files,   " ";
+    "--external-analysis-file", Arg.String
+      (Externalanalysis.load_external_results),
+    "  import results from an external analysis";
   ];
 
   "concurrency",

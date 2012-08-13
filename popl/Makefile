@@ -6,8 +6,8 @@ endif
 
 TARGET = popl
 
-OCAMLCFLAGS ?= -g -dtypes
-OPTFLAGS ?= -g -dtypes
+OCAMLCFLAGS ?= -g
+OPTFLAGS ?= -g
 
 SRC = ast_popl.ml asttopopl.ml insert_quantifiers.ml insert_befaft.ml \
 pretty_print_popl.ml popltoctl.ml popl.ml flag_popl.ml
@@ -21,8 +21,8 @@ INCLUDE_PATH = -I ../commons -I ../globals \
 #The Caml compilers.
 #for warning:  -w A
 #for profiling:  -p -inline 0   with OCAMLOPT
-OCAMLC_CMD=$(OCAMLC) -thread $(OCAMLCFLAGS)
-OCAMLOPT_CMD=$(OCAMLOPT) -thread $(OPTFLAGS)
+OCAMLC_CMD=$(OCAMLC) $(OCAMLCFLAGS)
+OCAMLOPT_CMD=$(OCAMLOPT) $(OPTFLAGS)
 OCAMLDEP_CMD=$(OCAMLDEP)
 OCAMLMKTOP_CMD=$(OCAMLMKTOP) -g -custom
 

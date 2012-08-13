@@ -51,6 +51,7 @@ dnl  ocaml compile
 AC_PROG_OCAML
 AC_CHECK_OCAMLVERSION([OCAMLATLEAST310],[3.10])
 AC_CHECK_OCAMLVERSION([OCAMLATLEAST311],[3.11])
+AC_SUBST([OCAMLCORIG],["$OCAMLC"])
 
 AS_IF([test "x$OCAMLC" = xno -o "x$OCAMLDEP" = xno -o "x$OCAMLDOC" = xno -o "x$OCAMLMKLIB" = xno],
 [dnl
@@ -63,6 +64,7 @@ AC_PROG_CAMLP4
 AC_COCCI_TOOL([OCAMLLEX],[ocamllex],[])
 AC_COCCI_TOOL([OCAMLYACC],[ocamlyacc],[])
 AC_COCCI_TOOL([OCAMLFIND],[ocamlfind],[$COCCI_SRCDIR/setup/fake-subst.sh ocamlfind])
+AC_COCCI_TOOL([OCAMLPROF],[ocamlprof],[])
 
 dnl  enforce ocaml tool requirements
 AS_IF([test "x$OCAMLLEX" = xno],
@@ -88,7 +90,7 @@ AC_COCCI_RUNTIME_CMD([OCAMLDEP],[ocamldep])
 AC_COCCI_RUNTIME_CMD([CAMLP4],[camlp4])
 AC_COCCI_RUNTIME_CMD([CAMLP4O],[camlp4o])
 
-AC_CACHE_SAVE
+dnl  AC_CACHE_SAVE
 
 
 dnl
@@ -116,7 +118,6 @@ AC_REQ_COCCI_STDPKG([unix])
 AC_REQ_COCCI_STDPKG([bigarray])
 AC_REQ_COCCI_STDPKG([num])
 AC_REQ_COCCI_STDPKG([str])
-AC_REQ_COCCI_STDPKG([threads])
 
 dnl  required modules (Some are available locally too)
 AC_REQ_COCCI_EXTPKG([dynlink])
@@ -124,7 +125,7 @@ AC_REQ_COCCI_EXTPKG([camlp4])
 AC_REQ_COCCI_EXTPKG([menhirLib])
 
 
-AC_CACHE_SAVE
+dnl  AC_CACHE_SAVE
 
 
 dnl
@@ -343,7 +344,7 @@ AS_IF([test "x$enable_pcre_syntax" != xno],
 ])
 
 
-AC_CACHE_SAVE
+dnl  AC_CACHE_SAVE
 
 
 dnl  obtain the value of $prefix
@@ -387,19 +388,32 @@ AC_COCCI_TOOL([PDFLATEX],[pdflatex],[$COCCI_SRCDIR/setup/fake-pdflatex.sh pdflat
 
 
 dnl  determine release configuration
-AC_ARG_ENABLE([release], [AS_HELP_STRING([--enable-release], [build with a release configuration (yes,no, default: no)])])
+AC_ARG_ENABLE([release], [AS_HELP_STRING([--enable-release], [build with a release configuration (yes,no,profile default: no)])])
 AS_IF([test -z "$enable_release"],
 [dnl
   AC_MSG_NOTICE([choosing the development Makefile configuration because the release configuration is not explicitly requested.])
   AC_SUBST([enable_release], [no])
 ])
 
+AC_SUBST([MODULES_profiling],[])
 AS_IF([test "x$enable_release" = xyes],
 [dnl  set the default target to 'release' when enable_release is given
   AC_SUBST([MAKETARGET_ALL], [all-release])
 ], [test "x$enable_release" = xno],
 [dnl  otherwise, set the default target to 'dev'
   AC_SUBST([MAKETARGET_ALL], [all-dev])
+], [test "x$enable_release" = xprofile],
+[dnl  selected profiling
+  AS_IF([test -z "$OCAMLPROF" -o "x$OCAMLPROF" = xno],
+  [dnl
+    AC_MSG_ERROR([ocamlprof is required for profiling, but is absent.])
+  ])
+
+  dnl  configuration-time overrides for profiling
+  AC_SUBST([MAKETARGET_ALL], [all-dev])
+  AC_SUBST([OCAMLC], ["$COCCI_SRCDIR/setup/wrapper-ocamlcp.sh \"$OCAMLCORIG\" \"$OCAMLPROF\""])
+  AC_SUBST([MODULES_profiling], [profiling.cmo])
+  AC_MSG_NOTICE([configured coccinelle for profiling])
 ],
 [dnl  custom target given
   AC_SUBST([MAKETARGET_ALL], ["$enable_release"])
