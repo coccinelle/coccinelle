@@ -10,6 +10,7 @@
 - virtual typedef, declarer name, iterator name
 - regexps for type metavariables
 - 'symbol' metadeclaration for C identifiers that are guaranteed not intended as meta variables. 
+- allow mixing isomorpisms with normal rules
 
 ** Features:
 - New scripting languages
