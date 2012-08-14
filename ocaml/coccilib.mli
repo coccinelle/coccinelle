@@ -83,3 +83,72 @@ val fcts : (string, param_type list -> string ref list -> unit) Hashtbl.t
 val print_main : ?color:string -> string -> pos list -> unit
 val print_sec  : ?color:string -> string -> pos list -> unit
 val print_secs : ?color:string -> string -> pos list -> unit
+
+
+(* ---------------------------------------------------------------------- *)
+(* Pos transformations *)
+
+(** convert the filename of a pos to its basename *)
+val basename_pos : pos -> pos
+
+
+(* ---------------------------------------------------------------------- *)
+(* External analysis *)
+
+(** external analysis integration. Note: do not use after transformations. *)
+module Ana :
+  sig
+    (** the type of analysis results: currently only integer ranges. *)
+    type result = Externalanalysis.result
+    type bound  = Externalanalysis.bound
+
+    (** convert a result value to a string for showing. *)
+    val show_result : result -> string
+
+    (** convert a bound to a string for showing. *)
+    val show_bound : bound -> string
+
+    (** loads some analysis results from the given file. *)
+    val load_results : string -> unit
+
+    (** finds the analysis results for a given position. *)
+    val find : pos -> result list
+
+    (** computes the intersection of analysis results, if possible. *)
+    val inter :
+      result -> result -> result option
+
+    (** predicate over a list of analysis results of a given position. *)
+    val satisfy : (result list -> bool) -> pos -> bool
+
+    (** predicate over the intersection of analysis results. *)
+    val satisfy1 : (result -> bool) -> pos -> bool
+
+    (** true if an analysis result exists for the given position. *)
+    val has_any : pos -> bool
+
+    (** predicate over all analysis results of a given position. *)
+    val for_all : (result -> bool) -> pos -> bool
+
+    (** predicate over all analysis results (at least one) of a given position. *)
+    val for_all1 : (result -> bool) -> pos -> bool
+
+    (** true if the predicate is satisfied for at least one result
+        of a given position. *)
+    val exists : (result -> bool) -> pos -> bool
+
+    (** true if the result contains only a single integer as range *)
+    val single_int : int64 -> result -> bool
+
+    (** true if the result range contains the given integer. *)
+    val contains_int : int64 -> result -> bool
+
+    (** analysis result of the position has only the zero value. *)
+    val has_only_nul : pos -> bool
+
+    (** analysis result of the position contains also the zero value. *)
+    val has_also_nul : pos -> bool
+
+    (** analysis result of the position contains also the given integer. *)
+    val has_also_int : int64 -> pos -> bool
+  end

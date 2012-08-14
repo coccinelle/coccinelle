@@ -370,11 +370,25 @@ let rec propagate_types env =
 	let fenv = List.concat (List.map get_binding (Ast0.undots params)) in
 	(propagate_types (fenv@env)).VT0.combiner_rec_statement_dots body
     | Ast0.IfThen(_,_,exp,_,_,_) | Ast0.IfThenElse(_,_,exp,_,_,_,_,_)
-    | Ast0.While(_,_,exp,_,_,_) | Ast0.Do(_,_,_,_,exp,_,_)
-    | Ast0.For(_,_,_,_,Some exp,_,_,_,_,_) ->
+    | Ast0.While(_,_,exp,_,_,_) | Ast0.Do(_,_,_,_,exp,_,_) ->
 	let _ = k s in
-	post_bool exp;
-	None
+        post_bool exp;
+        None
+    | Ast0.For(a,b,first,exp,c,d,e,f,g) ->
+	(match Ast0.unwrap first with
+	  Ast0.ForExp _ ->
+	    (match exp with
+	      Some exp ->
+		let _ = k s in
+		post_bool exp;
+		None
+	    | None -> k s)
+	| Ast0.ForDecl (_,decl) ->
+	(* not super elegant..., reuses a ; (d) *)
+	    let newenv = (process_decl env decl)@env in
+	    let dummy = Ast0.rewrap first (Ast0.ForExp (None,c)) in
+	    (propagate_types newenv).VT0.combiner_rec_statement
+	      (Ast0.rewrap s (Ast0.For(a,b,dummy,exp,c,d,e,f,g))))
     | Ast0.Switch(_,_,exp,_,_,decls,cases,_) ->
 	let senv = process_statement_list r env (Ast0.undots decls) in
 	let res =

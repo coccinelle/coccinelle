@@ -61,12 +61,12 @@ let end_block () = unindent true; force_newline () in
 let print_string_box s = print_string s in
 
 let print_option = Common.do_option in
-let print_option_prespace fn = function
-    None -> ()
-  | Some x -> pr_space(); fn x in
 let print_option_space fn = function
     None -> ()
   | Some x -> fn x; pr_space() in
+let print_option_prespace fn = function
+    None -> ()
+  | Some x -> pr_space(); fn x in
 let print_between = Common.print_between in
 
 let outdent _ = () (* should go to leftmost col, does nothing now *) in
@@ -454,7 +454,12 @@ and constant = function
 
 and fullType ft =
   match Ast.unwrap ft with
-    Ast.Type(_,cv,ty) -> print_option_space (mcode const_vol) cv; typeC ty
+    Ast.Type(_,cv,ty) ->
+      (match Ast.unwrap ty with
+	Ast.Pointer(_,_) ->
+	  typeC ty; print_option_prespace (mcode const_vol) cv
+      |	_ -> print_option_space (mcode const_vol) cv; typeC ty)
+      
   | Ast.AsType(ty, asty) -> fullType ty
   | Ast.DisjType _ -> failwith "can't be in plus"
   | Ast.OptType(_) | Ast.UniqueType(_) ->
@@ -812,10 +817,9 @@ and rule_elem arity re =
       mcode print_string whl; pr_space(); mcode print_string_box lp;
       expression exp; close_box(); mcode print_string rp;
       mcode print_string sem
-  | Ast.ForHeader(fr,lp,e1,sem1,e2,sem2,e3,rp) ->
+  | Ast.ForHeader(fr,lp,first,e2,sem2,e3,rp) ->
       pr_arity arity;
-      mcode print_string fr; mcode print_string_box lp;
-      print_option expression e1; mcode print_string sem1;
+      mcode print_string fr; mcode print_string_box lp; forinfo first;
       print_option expression e2; mcode print_string sem2;
       print_option expression e3; close_box();
       mcode print_string rp
@@ -881,6 +885,11 @@ and rule_elem arity re =
   | Ast.MetaStmtList(name,_,_) ->
       failwith
 	"MetaStmtList not supported (not even in ast_c metavars binding)"
+
+and forinfo = function
+    Ast.ForExp(e1,sem1) ->
+      print_option expression e1; mcode print_string sem1
+  | Ast.ForDecl (_,_,decl) -> declaration decl
 
 and print_define_parameters params =
   match Ast.unwrap params with
@@ -1064,6 +1073,7 @@ let rec pp_any = function
 
   | Ast.Rule_elemTag(x) -> rule_elem "" x; false
   | Ast.StatementTag(x) -> statement "" x; false
+  | Ast.ForInfoTag(x) -> forinfo x; false
   | Ast.CaseLineTag(x) -> case_line "" x; false
 
   | Ast.ConstVolTag(x) -> const_vol x unknown unknown; false

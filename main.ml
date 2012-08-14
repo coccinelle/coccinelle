@@ -540,8 +540,10 @@ let other_options = [
 
     "--disable-multi-pass", Arg.Set Flag_parsing_c.disable_multi_pass, " ";
 
-    "--noif0-passing",      Arg.Clear Flag_parsing_c.if0_passing,
-    " ";
+    "--noif0-passing",      Arg.Clear Flag_parsing_c.if0_passing, " ";
+    "--defined", Arg.String (Flag_parsing_c.add Flag_parsing_c.defined), " ";
+    "--undefined", Arg.String
+        (Flag_parsing_c.add Flag_parsing_c.undefined), " ";
     "--noadd-typedef-root", Arg.Clear Flag_parsing_c.add_typedef_root, " ";
     (* could use Flag_parsing_c.options_algo instead *)
 
@@ -586,6 +588,9 @@ let other_options = [
     "--show-trace-profile", Arg.Set Common.show_trace_profile,
     "   show trace";
     "--save-tmp-files",     Arg.Set Common.save_tmp_files,   " ";
+    "--external-analysis-file", Arg.String
+      (Externalanalysis.load_external_results),
+    "  import results from an external analysis";
   ];
 
   "concurrency",
@@ -1076,6 +1081,11 @@ let main () =
 	    end
 	  else true)
 	!args;
+    (match (!Flag_parsing_c.cache_prefix,!distrib_index) with
+      (Some cp,Some n) ->
+	Flag_parsing_c.cache_prefix :=
+	  Some (Printf.sprintf "%s_%d" cp n)
+    | _ -> ());
     
     (* julia hack so that one can override directories specified on
        * the command line. *)

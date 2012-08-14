@@ -12,7 +12,6 @@ scripts/spatch.byte
 *.pyc
 
 *~
-_build
 .depend
 test.ml
 version.ml
@@ -43,3 +42,10 @@ config.log
 config.status
 autom4te.cache
 aclocal.m4
+
+_build
+_log
+*.native
+*.byte
+*.d.native
+*.p.byte

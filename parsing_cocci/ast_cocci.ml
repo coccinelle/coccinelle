@@ -438,7 +438,7 @@ and base_rule_elem =
 	             expression * string mcode (* ) *) *
                      string mcode (* ; *)
   | ForHeader     of string mcode (* for *) * string mcode (* ( *) *
-                     expression option * string mcode (*;*) *
+                     forinfo *
 	             expression option * string mcode (*;*) *
                      expression option * string mcode (* ) *)
   | IteratorHeader of ident (* name *) * string mcode (* ( *) *
@@ -470,6 +470,11 @@ and base_rule_elem =
   | Case          of string mcode (* case *) * expression * string mcode (*:*)
   | Default       of string mcode (* default *) * string mcode (*:*)
   | DisjRuleElem  of rule_elem list
+
+and forinfo =
+    ForExp of expression option * string mcode (*;*)
+  | ForDecl of mcodekind (* before the decl *) *
+        bool (* true if all minus *) * declaration
 
 and fninfo =
     FStorage of storage mcode
@@ -624,6 +629,7 @@ and anything =
   | IncFileTag          of inc_file
   | Rule_elemTag        of rule_elem
   | StatementTag        of statement
+  | ForInfoTag          of forinfo
   | CaseLineTag         of case_line
   | ConstVolTag         of const_vol
   | Token               of string * info option
@@ -733,21 +739,22 @@ and tag2c = function
   | SignTag _ -> "SignTag"
   | IdentTag _ -> "IdentTag"
   | ExpressionTag _ -> "ExpressionTag"
-  | ConstantTag _ -> "ConstantTag"
-  | UnaryOpTag _ -> "UnaryOpTag"
-  | AssignOpTag _ -> "AssignOpTag"
-  | FixOpTag _ -> "FixOpTag"
-  | BinaryOpTag _ -> "BinaryOpTag"
-  | ArithOpTag _ -> "ArithOpTag"
+  | ConstantTag _  -> "ConstantTag"
+  | UnaryOpTag _   -> "UnaryOpTag"
+  | AssignOpTag _  -> "AssignOpTag"
+  | FixOpTag _     -> "FixOpTag"
+  | BinaryOpTag _  -> "BinaryOpTag"
+  | ArithOpTag _   -> "ArithOpTag"
   | LogicalOpTag _ -> "LogicalOpTag"
   | DeclarationTag _ -> "DeclarationTag"
-  | InitTag _ -> "InitTag"
-  | StorageTag _ -> "StorageTag"
-  | IncFileTag _ -> "IncFileTag"
+  | InitTag _      -> "InitTag"
+  | StorageTag _   -> "StorageTag"
+  | IncFileTag _   -> "IncFileTag"
   | Rule_elemTag _ -> "Rule_elemTag"
   | StatementTag _ -> "StatementTag"
-  | CaseLineTag _ -> "CaseLineTag"
-  | ConstVolTag _ -> "ConstVolTag"
+  | ForInfoTag _   -> "ForInfoTag"
+  | CaseLineTag _  -> "CaseLineTag"
+  | ConstVolTag _  -> "ConstVolTag"
   | Token _ -> "Token"
   | Pragma _ -> "Pragma"
   | Code _ -> "Code"

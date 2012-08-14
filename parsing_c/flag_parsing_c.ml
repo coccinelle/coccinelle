@@ -169,6 +169,11 @@ let disable_add_typedef = ref false
 let if0_passing = ref true
 let add_typedef_root = ref true
 
+(* defined and undefined constants *)
+let add c s = c := (Str.split (Str.regexp ",") s) @ !c
+let defined = ref ([] : string list)
+let undefined = ref ([] : string list)
+
 let cmdline_flags_parsing_algos () = [
 
     "--directive-passing",              Arg.Set cpp_directive_passing,

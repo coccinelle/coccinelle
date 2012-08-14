@@ -1,6 +1,6 @@
 # Hydra build file for coccinelle
 
-{ nixpkgs ? /etc/nixos/nixpkgs
+{ nixpkgs ? "/etc/nixos/nixpkgs"
 , cocciSrc ? { outPath = ./.; revCount = 1234; gitTag = "abcdef"; }
 , testsSrc ? { outPath = ../big-tests; rev = 1234; }
 , officialRelease ? false
@@ -47,7 +47,7 @@ let
       postDist = ''
         export HOME=$PREVHOME  # restore the home directory
 
-        ensureDir "$out/tarballs"
+        mkdir -p "$out/tarballs"
 
         # rename the tarball to give it a version-specific name
         cp coccinelle-*.tar.gz "$out/tarballs/coccinelle-${version}${versionSuffix}.tar.gz"
@@ -60,12 +60,13 @@ let
   #
 
   selOcamlDefault = orig: orig.ocamlPackages;
+  selOcaml400 = orig: orig.ocamlPackages_4_00_0;
   selOcaml312 = orig: orig.ocamlPackages_3_12_1;
   selOcaml311 = orig: orig.ocamlPackages_3_11_2;
   selOcaml310 = orig: orig.ocamlPackages_3_10_0;
 
   selCommonOcamlPkgs = ocamlPackages: with ocamlPackages; [
-    findlib menhir ocaml_sexplib ocaml_extlib
+    findlib menhir ocaml_sexplib
   ];
 
   selMinimalOcamlPkgs = ocamlPackages: with ocamlPackages; [
@@ -73,7 +74,7 @@ let
   ];
 
   selAllOcamlPkgs = ocamlPackages: with ocamlPackages; [
-    findlib menhir ocaml_sexplib ocaml_extlib ocaml_pcre pycaml
+    findlib menhir ocaml_sexplib ocaml_pcre pycaml
   ];
 
   selCommonInputs = pkgs: [ pkgs.pkgconfig pkgs.pcre ];
@@ -93,6 +94,7 @@ let
     selOcaml = selOcamlDefault;
     extras = selCommonInputs pkgs;
     shell = selDefaultShell pkgs;
+    extraAttrs = { };
   };
 
   # creates a configuration for a given ocaml version
@@ -104,16 +106,18 @@ let
     ocamls = selMinimalOcamlPkgs pkgs.ocamlPackages;
     extras = selCommonInputs pkgs;
     shell = selDefaultShell pkgs;
+    extraAttrs = { };
   };
 
   # creates a default configuration with additional flags
-  mkCfgDefault = { name, flags }: pkgs: {
+  mkCfgDefault = { name, flags, extra ? {} }: pkgs: {
     inherit name flags;
     pythons = selPythonDefault pkgs;
     ocamls = selAllOcamlPkgs pkgs.ocamlPackages;
     selOcaml = selOcamlDefault;
     extras = selCommonInputs pkgs;
     shell = selDefaultShell pkgs;
+    extraAttrs = extra;
   };
 
   # creates a minimal configuration with additional flags
@@ -124,6 +128,7 @@ let
     selOcaml = selOcamlDefault;
     extras = [];
     shell = selDefaultShell pkgs;
+    extraAttrs = { };
   };
 
   # creates a configuration for the given ocaml packages
@@ -134,6 +139,7 @@ let
     selOcaml = selOcamlDefault;
     extras = selCommonInputs pkgs;
     shell = selDefaultShell pkgs;
+    extraAttrs = { };
   };
 
   # build the project using the given shell
@@ -147,6 +153,7 @@ let
     flags = [];
     extras = [ pkgs.pcre ];
     shell = selShell pkgs;
+    extraAttrs = { };
   };
 
   # creates a configuration with multiple ocaml versions: this gives
@@ -165,6 +172,7 @@ let
       flags = [];
       extras = selCommonInputs pkgs ++ map (selOcaml pkgs) sels;
       shell = selDefaultShell pkgs;
+      extraAttrs = { };
     };
 
 
@@ -175,7 +183,7 @@ let
   defaultCfg = mkCfgDefault { name = "default"; flags = []; };
   debugCfg = mkCfgDefault { name = "debug"; flags = [ "--enable-release=no" ]; };
   wrappersCfg = mkCfgDefault { name = "wrappers"; flags = [ "--enable-python" "--enable-ocaml" "--without-pkg-config" "--without-ocamlfind" ]; };
-  manyOcamlCfg = mkCfgManyOcaml [ selOcaml312 selOcaml311 selOcaml310 ];
+  manyOcamlCfg = mkCfgManyOcaml [ selOcaml400 selOcaml312 selOcaml311 selOcaml310 ];
 
   minimalCfgs = map mkCfgMinimal [
     { name = "minimal"; flags = []; }
@@ -207,6 +215,12 @@ let
         flags = [ "--enable-python" ];
       })
 
+      (pkgs: {
+        name = "python-nopkgconfig";
+        pythons = selPython2 pkgs;
+        flags = [ "--enable-python" "--without-pkg-config" ];
+      })
+
 #  disabled because this combination does not work in NixOS
 #      (pkgs: {
 #        name = "many-pythons";
@@ -219,6 +233,8 @@ let
   # These versions ship with minimal global packages in order
   # to thest the bundled packages with these ocaml versions.
   ocamlCfgs = map mkCfgOcaml [
+    { name = "400nat"; selOcaml = selOcaml400; flags = [ "--enable-release=yes" ]; }
+    { name = "400byt"; selOcaml = selOcaml400; flags = []; }
     { name = "312"; selOcaml = selOcaml312; flags = []; }
     { name = "311"; selOcaml = selOcaml311; flags = [ "--enable-release=yes" ]; }
     { name = "310"; selOcaml = selOcaml310; flags = []; }
@@ -227,7 +243,6 @@ let
   # Several configurations testing different available
   # ocaml packages.
   pkgCfgs = map mkCfgPackage [
-    { name = "extlib"; ocamls = ps: [ ps.ocaml_extlib ]; flags = [ "--enable-extlib" ]; }
     { name = "pcre"; ocamls = ps: [ ps.ocaml_pcre ]; flags = [ "--enable-pcre-syntax" ]; }
     { name = "sexplib"; ocamls = ps: [ ps.ocaml_sexplib ]; flags = [ "--enable-sexplib" ]; }
     { name = "pycaml"; ocamls = ps: [ ps.pycaml ]; flags = [ "--enable-pycaml" ]; }
@@ -271,7 +286,7 @@ let
         };
         cfg = mkConfiguration pkgs;
         flags = [ "--enable-release=world" ] ++ cfg.flags;
-    in with pkgs; releaseTools.nixBuild {
+    in with pkgs; releaseTools.nixBuild ({
       inherit (cfg) shell;
       name = "cocci-build-${cfg.name}";
       src = tarball;
@@ -296,11 +311,26 @@ let
           substituteInPlace $script --replace '#! /bin/sh' '#! ${cfg.shell}'
         done
       '';
-    };
+    } // cfg.extraAttrs);
 
   build = mkBuild defaultCfg;
   altBuilds = map mkBuild altCfgs;
   allBuilds = [ build ] ++ altBuilds;
+
+  # compile with ocaml profiling turned on and then running the
+  # test suite to collect results.
+  profileCfg = mkCfgDefault {
+    name = "profiling";
+    flags = [ "--enable-release=profile" ];
+    extra = {
+      installPhase = ''
+        mkdir -p "$out/nix-support"
+        cp ocamlprof.dump "$out/ocamlprof.dump"
+        echo "file binary $out/ocamlprof.dump" >> "$out/nix-support/hydra-build-products"
+      '';
+    };
+  };
+  profile = mkBuild profileCfg {};
 
 
   #
@@ -349,8 +379,8 @@ let
       phases = [ "runPhase" ];
 
       runPhase = ''
-        ensureDir "$out"
-        ensureDir "$out/nix-support"
+        mkdir -p "$out"
+        mkdir -p "$out/nix-support"
         touch "$TMPDIR/result.log"
         exec > >(tee -a "$TMPDIR/result.log") 2> >(tee -a "$TMPDIR/result.log" >&2)
         runHook execPhase
@@ -415,7 +445,7 @@ let
         # as this directory contains large
         # files, we'll create links to the
         # individual files.
-        ensureDir "$TMPDIR/tests"
+        mkdir -p "$TMPDIR/tests"
         cp -rs ${testsSrc}/* "$TMPDIR/tests/"
 	chmod -R u+w "$TMPDIR/tests/"
         cd "$TMPDIR/tests"
@@ -461,7 +491,7 @@ let
         # as this directory contains large
         # files, we'll create links to the
         # individual files.
-        ensureDir "$TMPDIR/tests"
+        mkdir -p "$TMPDIR/tests"
         cp -rs ${testsSrc}/* "$TMPDIR/tests/"
 	chmod -R u+w "$TMPDIR/tests/"
 
@@ -536,6 +566,7 @@ let
     inherit build;
     inherit report;
     inherit dist;
+    inherit profile;
   };
 
   # artificial dependency on report to ensure that we are not going through

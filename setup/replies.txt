@@ -15,14 +15,15 @@ pkg-config --atleast-pkgconfig-version
 
 
 
-pkg-config --exists --print-errors python
+pkg-config --exists --print-errors python(-([0-9\\.]+))?\$
+s,^pkg-config --exists --print-errors python(-([0-9\\.]+))?\$,\\2,
+$(pythonexists "${MATCH}")
 
-$(pythonexists)
 
+pkg-config --print-errors python(-([0-9\\.]+))?\$
+s,^pkg-config --print-errors python(-([0-9\\.]+))?\$,\\2,
+$(pythonexists "${MATCH}")
 
-pkg-config --print-errors python
-
-$(pythonexists)
 
 
 pkg-config --cflags python(-([0-9\\.]+))?\$

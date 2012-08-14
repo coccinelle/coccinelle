@@ -11,6 +11,7 @@ val expression_dots :
       Ast_cocci.expression Ast_cocci.dots
 val initialiser : Ast0_cocci.initialiser -> Ast_cocci.initialiser
 val statement : Ast0_cocci.statement -> Ast_cocci.statement
+val forinfo : Ast0_cocci.forinfo -> Ast_cocci.forinfo
 val statement_dots :
     Ast0_cocci.statement Ast0_cocci.dots -> Ast_cocci.statement Ast_cocci.dots
 val declaration_dots :

@@ -1,3 +1,9 @@
+ ** News **
+
+- Coccinelle no longer needs ocaml-sexplib nor ocaml-extlib.
+- Parallel building is possible when you do not build the bytecode
+  and native version of spatch simultaneously.
+
 
  ** Compilation **
 
@@ -18,14 +24,17 @@ On Debian/Ubuntu, install the following packages
  - ocaml-native-compilers (or alternatively ocaml) 
  - ocaml-findlib
  - libpycaml-ocaml-dev
- - libsexplib-camlp4-dev
  - menhir and libmenhir-ocaml-dev
 
 On Fedora, install the following packages
  - pkgconfig (optional, but strongly recommended)
+ - chrpath
  - ocaml
  - ocaml-findlib
- - ocaml-sexplib-devel
+ - ocaml-camlp4-devel
+ - ocaml-findlib-devel
+ - ocaml-ocamldoc
+ - ocaml-pcre-devel
 
 Note that on Fedora, there is currently not a
 package for menhir and pycaml. However, coccinelle

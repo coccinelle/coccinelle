@@ -133,6 +133,9 @@ let rec expression context old_metas table minus e =
   | Ast0.Binary(left,op,right) ->
       expression ID old_metas table minus left;
       expression ID old_metas table minus right
+  | Ast0.Nested(left,op,right) ->
+      expression ID old_metas table minus left;
+      expression ID old_metas table minus right
   | Ast0.Paren(lp,exp,rp) ->
       expression ID old_metas table minus exp
   | Ast0.ArrayAccess(exp1,lb,exp2,rb) ->
@@ -173,6 +176,8 @@ let rec expression context old_metas table minus e =
       dots (expression ID old_metas table minus) exp_dots;
       get_opt (expression ID old_metas table minus) w
   | Ast0.Edots(_,Some x) | Ast0.Ecircles(_,Some x) | Ast0.Estars(_,Some x) ->
+      expression ID old_metas table minus x
+  | Ast0.OptExp(x) | Ast0.UniqueExp(x) ->
       expression ID old_metas table minus x
   | _ -> () (* no metavariable subterms *)
 
@@ -351,8 +356,12 @@ and statement old_metas table minus s =
   | Ast0.Do(d,body,wh,lp,exp,rp,sem) ->
       statement old_metas table minus body;
       expression ID old_metas table minus exp
-  | Ast0.For(fr,lp,exp1,sem1,exp2,sem2,exp3,rp,body,_) ->
-      get_opt (expression ID old_metas table minus) exp1;
+  | Ast0.For(fr,lp,first,exp2,sem2,exp3,rp,body,_) ->
+      (match Ast0.unwrap first with
+	Ast0.ForExp(exp1,sem1) ->
+	  get_opt (expression ID old_metas table minus) exp1
+      |	Ast0.ForDecl (_,decl) ->
+	  declaration ID old_metas table minus decl);
       get_opt (expression ID old_metas table minus) exp2;
       get_opt (expression ID old_metas table minus) exp3;
       statement old_metas table minus body
@@ -478,7 +487,7 @@ let positions table rules =
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing donothing donothing
-      donothing donothing in
+      donothing donothing donothing in
 
   List.iter fn.VT0.combiner_rec_top_level rules
 
@@ -532,7 +541,7 @@ let dup_positions rules =
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing donothing donothing donothing
       donothing expression typeC donothing donothing declaration statement
-      donothing donothing in
+      donothing donothing donothing in
 
   let res =
     List.sort compare
@@ -589,6 +598,7 @@ let check_meta rname old_metas inherited_metavars metavars minus plus =
   let err_table = make_table (err@ierr) in
   let other_table = make_table other in
   let iother_table = make_table iother in
+
   add_to_fresh_table fresh;
   rule old_metas [iother_table;other_table;err_table] true minus;
   positions [iother_table;other_table] minus;

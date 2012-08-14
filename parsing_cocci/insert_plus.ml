@@ -74,7 +74,7 @@ it *)
       (donothing Ast0.dotsDecl) (donothing Ast0.dotsCase)
       (donothing Ast0.ident) expression (donothing Ast0.typeC) initialiser
       (donothing Ast0.param) (donothing Ast0.decl) statement
-      (donothing Ast0.case_line) topfn in
+      (donothing Ast0.forinfo) (donothing Ast0.case_line) topfn in
   res.VT0.combiner_rec_top_level e
 
 (* --------------------------------------------------------------------- *)
@@ -114,6 +114,7 @@ let create_root_token_table minus =
 	  | Ast0.InitTag(d) -> Ast0.get_index d
 	  | Ast0.DeclTag(d) -> Ast0.get_index d
 	  | Ast0.StmtTag(d) -> Ast0.get_index d
+	  | Ast0.ForInfoTag(d) -> Ast0.get_index d
 	  | Ast0.CaseLineTag(d) -> Ast0.get_index d
 	  | Ast0.TopTag(d) -> Ast0.get_index d
 	  | Ast0.IsoWhenTag(_) -> failwith "only within iso phase"
@@ -210,12 +211,13 @@ bind to that; not good for isomorphisms *)
  (*     Ast0.IfThen(_,_,_,_,_,aft)
     | Ast0.IfThenElse(_,_,_,_,_,_,_,aft)
     | Ast0.While(_,_,_,_,_,aft)
-    | Ast0.For(_,_,_,_,_,_,_,_,_,aft)
+    | Ast0.For(_,_,_,_,_,_,_,_,aft)
     | Ast0.Iterator(_,_,_,_,_,aft) ->
 	redo_branched (do_nothing r k s) aft*)
     | Ast0.FunDecl((info,bef),fninfo,name,lp,params,rp,lbrace,body,rbrace) ->
 	(Toplevel,info,bef)::(k s)
-    | Ast0.Decl((info,bef),decl) -> (Decl,info,bef)::(k s)
+    | Ast0.Decl((info,bef),decl) ->
+	(Decl,info,bef)::(k s)
     | Ast0.Nest(starter,stmt_dots,ender,whencode,multi) ->
 	mcode starter @ r.VT0.combiner_rec_statement_dots stmt_dots @
 	mcode ender
@@ -225,6 +227,12 @@ bind to that; not good for isomorphisms *)
 	(* put the + code on the thing, not on the opt *)
 	r.VT0.combiner_rec_statement s
     | _ -> do_nothing r k s in
+
+  let forinfo r k s =
+    match Ast0.unwrap s with
+      Ast0.ForDecl((info,bef),decl) ->
+	(Decl,info,bef)::(k s)
+    | _ -> k s in
 
   let expression r k e =
     match Ast0.unwrap e with
@@ -286,7 +294,8 @@ bind to that; not good for isomorphisms *)
   V0.flat_combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     edots idots pdots sdots ddots cdots
-    ident expression typeC initialiser param decl statement case_line do_top
+    ident expression typeC initialiser param decl statement forinfo
+    case_line do_top
 
 
 let call_collect_minus context_nodes :
@@ -335,6 +344,9 @@ let call_collect_minus context_nodes :
       | Ast0.StmtTag(e) ->
 	  (Ast0.get_index e,
 	   (collect_minus_join_points e).VT0.combiner_rec_statement e)
+      | Ast0.ForInfoTag(e) ->
+	  (Ast0.get_index e,
+	   (collect_minus_join_points e).VT0.combiner_rec_forinfo e)
       | Ast0.CaseLineTag(e) ->
 	  (Ast0.get_index e,
 	   (collect_minus_join_points e).VT0.combiner_rec_case_line e)
@@ -410,6 +422,7 @@ let mk_topdeclaration x   = Ast.DeclarationTag (Ast0toast.declaration x)
 let mk_storage x          = Ast.StorageTag x
 let mk_inc_file x         = Ast.IncFileTag x
 let mk_statement x        = Ast.StatementTag (Ast0toast.statement x)
+let mk_forinfo x          = Ast.ForInfoTag (Ast0toast.forinfo x)
 let mk_case_line x        = Ast.CaseLineTag (Ast0toast.case_line x)
 let mk_const_vol x        = Ast.ConstVolTag x
 let mk_token x info       = Ast.Token (x,Some info)
@@ -491,7 +504,7 @@ let collect_plus_nodes root =
 	(do_nothing mk_statement r k e) @ (info aft)
     | Ast0.While(whl,lp,exp,rp,body,aft) ->
 	(do_nothing mk_statement r k e) @ (info aft)
-    | Ast0.For(fr,lp,e1,sem1,e2,sem2,e3,rp,body,aft) ->
+    | Ast0.For(fr,lp,first,e2,sem2,e3,rp,body,aft) ->
 	(do_nothing mk_statement r k e) @ (info aft)
     | Ast0.Iterator(nm,lp,args,rp,body,aft) ->
 	(do_nothing mk_statement r k e) @ (info aft)
@@ -525,7 +538,7 @@ let collect_plus_nodes root =
     (do_nothing mk_ident) (do_nothing mk_expression)
     (do_nothing mk_typeC) (do_nothing mk_init) (do_nothing mk_param)
     (do_nothing mk_declaration)
-    stmt (do_nothing mk_case_line) toplevel
+    stmt (do_nothing mk_forinfo) (do_nothing mk_case_line) toplevel
 
 let call_collect_plus context_nodes :
     (int * (Ast0.info * Ast.count * Ast.anything) list) list =
@@ -573,6 +586,9 @@ let call_collect_plus context_nodes :
       | Ast0.StmtTag(e) ->
 	  (Ast0.get_index e,
 	   (collect_plus_nodes e).VT0.combiner_rec_statement e)
+      | Ast0.ForInfoTag(e) ->
+	  (Ast0.get_index e,
+	   (collect_plus_nodes e).VT0.combiner_rec_forinfo e)
       | Ast0.CaseLineTag(e) ->
 	  (Ast0.get_index e,
 	   (collect_plus_nodes e).VT0.combiner_rec_case_line e)
@@ -1032,7 +1048,7 @@ let reevaluate_contextness =
 	 (donothing r k e) @ (info aft)
      | Ast0.While(whl,lp,exp,rp,body,aft) ->
 	 (donothing r k e) @ (info aft)
-     | Ast0.For(fr,lp,e1,sem1,e2,sem2,e3,rp,body,aft) ->
+     | Ast0.For(fr,lp,first,e2,sem2,e3,rp,body,aft) ->
 	 (donothing r k e) @ (info aft)
      | Ast0.Iterator(nm,lp,args,rp,body,aft) ->
 	 (donothing r k e) @ (info aft)
@@ -1042,8 +1058,8 @@ let reevaluate_contextness =
     V0.flat_combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing donothing donothing donothing donothing
-      donothing
-      donothing donothing donothing donothing stmt donothing donothing in
+      donothing donothing
+      donothing donothing donothing stmt donothing donothing donothing in
   res.VT0.combiner_rec_top_level
 
 (* --------------------------------------------------------------------- *)

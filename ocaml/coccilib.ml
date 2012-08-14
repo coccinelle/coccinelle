@@ -85,3 +85,62 @@ let print_sec ?color:(color="ovl-face2") msg ps =
 
 let print_secs ?color:(color="ovl-face2") msg ps =
   List.iter (function i -> print_link ~color:color ~msg:msg i) ps
+
+(*
+pos transformations
+*)
+
+let basename_pos pos = { pos with file = Filename.basename (pos.file) }
+
+
+(*
+external analysis results interface
+(in a separate module to not pollute the namespace)
+*)
+
+module Ana = struct
+  type result = Externalanalysis.result
+  type bound  = Externalanalysis.bound
+
+  let show_bound = Externalanalysis.show_bound
+  let show_result = Externalanalysis.show_result
+
+  let load_results =
+    Externalanalysis.load_external_results
+
+  let find pos = 
+    Externalanalysis.find_results pos.file (pos.line, pos.col) (pos.line_end, pos.col_end)
+
+  let inter = Externalanalysis.intersect_results
+
+  let satisfy f pos =
+    Externalanalysis.satisfy f pos.file (pos.line, pos.col) (pos.line_end, pos.col_end)
+
+  let satisfy1 f pos = 
+    Externalanalysis.satisfy1 f pos.file (pos.line, pos.col) (pos.line_end, pos.col_end)
+
+  let has_any pos =
+    Externalanalysis.has_any_result pos.file (pos.line, pos.col) (pos.line_end, pos.col_end)
+
+  let for_all p pos =
+    Externalanalysis.for_all p pos.file (pos.line, pos.col) (pos.line_end, pos.col_end)
+
+  let for_all1 p pos =
+    Externalanalysis.for_all1 p pos.file (pos.line, pos.col) (pos.line_end, pos.col_end)
+
+  let exists p pos =
+    Externalanalysis.exists p pos.file (pos.line, pos.col) (pos.line_end, pos.col_end)
+
+  let single_int = Externalanalysis.single_int
+  let contains_int = Externalanalysis.contains_int
+
+  let has_only_nul pos =
+    Externalanalysis.has_only_nul pos.file (pos.line, pos.col) (pos.line_end, pos.col_end)
+
+  let has_also_nul pos =
+    Externalanalysis.has_also_nul pos.file (pos.line, pos.col) (pos.line_end, pos.col_end)
+
+  let has_also_int c pos =
+    Externalanalysis.has_also_int c pos.file (pos.line, pos.col) (pos.line_end, pos.col_end)
+
+end

@@ -317,9 +317,22 @@ control-flow graph when doing so represents valid code.  {\bf
 default.
 }
 
-\rare{--use-if0-code}{ Normally code under \#if 0 is ignored.  If this
+\rare{--noif0-passing}{ Normally code under \#if 0 is ignored.  If this
 option is set then the code is considered, just like the code under any
 other \#ifdef.}
+
+\rare{--defined $s$}{The string $s$ is a comma-separated list of constants
+  that should be considered to be defined, with respect to uses of {\tt
+    \#ifdef} and {\tt \#ifndef} in C code.  No spaces should appear in $s$.
+  Multiple {\bf --defined} arguments can be provided and the list of
+  strings accumulates.  For the provided strings any {\tt \#else}s of {\tt
+    \#ifdef}s are ignored and any {\tt \#ifndef}s are ignored, unless the
+  argument {\bf --noif0-passing} is also given, in which case {\bf
+    --defined} has no effect.  Note that occurrences of {\tt \#define} in
+  the C code have no effect on the list of defined constants.}
+
+\rare{--undefined $s$}{Analogous to {\bf --defined} except that the strings
+  represent constants that should be considered to be undefined.}
 
 \developer{--noadd-typedef-root}{This seems to reduce the scope of a
   typedef declaration found in the C code.}
@@ -518,9 +531,9 @@ stars are used in column 0 rather than {\tt -} and {\tt +}, then the {\tt
   option, with no backup.  This option only makes sense when {\tt -} and
   {\tt +} are used.}
 
-\rare{--backup-suffix}{The suffix of the file to use in making a backup of
-  the original file(s).  This suffix should include the leading ``.'', if
-  one is desired.  This option only has an effect when the option
+\rare{--backup-suffix $s$}{The suffix $s$ of the file to use in making a
+  backup of the original file(s).  This suffix should include the leading
+  ``.'', if one is desired.  This option only has an effect when the option
   {\tt --in-place} is also used.}
 
 \rare{--out-place}{ Store the result of modifying the code in a .cocci-res
@@ -596,6 +609,16 @@ functions.}
 
 \developer{--disable-once}{Print various warning messages every time some
 condition occurs, rather than only once.}
+
+\subsection{External analyses}
+
+\developer{--external-analysis-file}{Loads in the contents of a database
+produced by some external analysis tool. Each entry contains the analysis
+result of a particular source location. Currently, such a database is a
+.csv file providing integer bounds or an integer set for some subset of
+the source locations that references an integer memory location.
+This database can be inspected with coccilib functions, e.g. to
+control the pattern match process.}
 
 \subsection{Miscellaneous}
 

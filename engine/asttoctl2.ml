@@ -1326,6 +1326,7 @@ let dots_au is_strict toend label s wrapcode n x seq_after y quantifier =
      make_match None false
       (wrapcode
 	 (Ast.Continue(Ast.make_mcode "continue",Ast.make_mcode ";"))) in
+  let op = if quantifier = !exists then ctl_au else ctl_anti_au in
   let stop_early =
     if quantifier = Exists
     then Common.Left(CTL.False)
@@ -1360,7 +1361,7 @@ let dots_au is_strict toend label s wrapcode n x seq_after y quantifier =
 	    (quantify false [lv]
 	       (ctl_and CTL.NONSTRICT
 		  (ctl_and CTL.NONSTRICT (truepred label) labelpred)
-		  (ctl_au CTL.NONSTRICT
+		  (op CTL.NONSTRICT
 		     (ctl_and CTL.NONSTRICT (ctl_not v)
 			(ctl_and CTL.NONSTRICT vx preflabelpred))
 		     (ctl_and CTL.NONSTRICT preflabelpred
@@ -1382,7 +1383,6 @@ let dots_au is_strict toend label s wrapcode n x seq_after y quantifier =
 				else*)
 				  (ctl_ag s
 				     (ctl_not seq_after))))))))))) in
-  let op = if quantifier = !exists then ctl_au else ctl_anti_au in
   let v = get_let_ctr() in
   op s x
     (match stop_early with
@@ -1572,7 +1572,8 @@ and make_whencond_headers e e1 label guard quantified =
     header_pred
       (Ast.rewrap e
 	 (Ast.ForHeader
-	    (Ast.make_mcode "for",Ast.make_mcode "(",None,Ast.make_mcode ";",
+	    (Ast.make_mcode "for",Ast.make_mcode "(",
+	     Ast.ForExp(None,Ast.make_mcode ";"),
 	     Some e1,Ast.make_mcode ";",None,Ast.make_mcode ")"))) in
   let if_headers =
     List.fold_left ctl_or CTL.False (List.map if_header e1) in

@@ -1,0 +1,186 @@
+diff -ru /tmp/chemoelectric-pycaml-8614105/pycaml.ml ./chemoelectric-pycaml-8614105/pycaml.ml
+--- /tmp/chemoelectric-pycaml-8614105/pycaml.ml	2011-10-01 02:05:57.000000000 +0200
++++ ./chemoelectric-pycaml-8614105/pycaml.ml	2012-06-24 14:00:29.004094271 +0200
+@@ -178,9 +178,11 @@
+ external pymethod_class : pyobject -> pyobject = "PyMethod_Class_wrapper"
+ END
+ external pymodule_getdict : pyobject -> pyobject = "PyModule_GetDict_wrapper"
++IFDEF PYMAJOR3 THEN
+ external pyunicode_asutf8string : pyobject -> pyobject = "PyUnicode_AsUTF8String_wrapper"
+ external pyunicode_asutf16string : pyobject -> pyobject = "PyUnicode_AsUTF16String_wrapper"
+ external pyunicode_asutf32string : pyobject -> pyobject = "PyUnicode_AsUTF32String_wrapper"
++END
+ external pyobject_repr : pyobject -> pyobject = "PyObject_Repr_wrapper"
+ external pyimport_reloadmodule : pyobject -> pyobject = "PyImport_ReloadModule_wrapper"
+ external pyimport_import : pyobject -> pyobject = "PyImport_Import_wrapper"
+@@ -273,7 +275,9 @@
+ external pymapping_size : pyobject -> int = "PyMapping_Size_wrapper"
+ external pymapping_length : pyobject -> int = "PyMapping_Length_wrapper"
+ external pyiter_check : pyobject -> int = "PyIter_Check_wrapper"
++IFDEF PYMAJOR3 THEN
+ external pyunicode_getsize : pyobject -> int = "PyUnicode_GetSize_wrapper"
++END
+ 
+ (* Type19 *)
+ external pyobject_hasattr : (pyobject * pyobject) -> int = "PyObject_HasAttr_wrapper"
+@@ -326,7 +330,11 @@
+ (* Type28 *)
+ external pyimport_addmodule : string -> pyobject = "PyImport_AddModule_wrapper"
+ external pybytes_fromstring : string -> pyobject = "PyBytes_FromString_wrapper"
++IFDEF PYMAJOR2 THEN
+ external pystring_fromstring : string -> pyobject = "PyBytes_FromString_wrapper" (* Legacy support *)
++ELSE
++external pystring_fromstring : string -> pyobject = "PyUnicode_FromString_wrapper" (* Legacy support *)
++ENDIF
+ external pymodule_new : string -> pyobject = "PyModule_New_wrapper"
+ external pyimport_importmodule : string -> pyobject = "PyImport_ImportModule_wrapper"
+ 
+@@ -380,15 +388,11 @@
+ 
+ (* Type42 *)
+ external pyslice_new : (pyobject * pyobject * pyobject) -> pyobject = "PySlice_New_wrapper"
+-IFDEF PYMAJOR2 THEN
+ external pyclass_new : (pyobject * pyobject * pyobject) -> pyobject = "PyClass_New_wrapper"
++IFDEF PYMAJOR2 THEN
+ external pyinstance_new : (pyobject * pyobject * pyobject) -> pyobject = "PyInstance_New_wrapper"
+ END
+-IFDEF PYMAJOR2 THEN
+ external pymethod_new : (pyobject * pyobject * pyobject) -> pyobject = "PyMethod_New_wrapper"
+-ELSE
+-external pymethod_new : (pyobject * pyobject) -> pyobject = "PyMethod_New_wrapper"
+-END
+ external pyeval_callobjectwithkeywords : (pyobject * pyobject * pyobject) -> pyobject = "PyEval_CallObjectWithKeywords_wrapper"
+ external pynumber_power : (pyobject * pyobject * pyobject) -> pyobject = "PyNumber_Power_wrapper"
+ external pynumber_inplacepower : (pyobject * pyobject * pyobject) -> pyobject = "PyNumber_InPlacePower_wrapper"
+@@ -432,16 +436,9 @@
+ external pysequence_delslice : (pyobject * int * int) -> int = "PySequence_DelSlice_wrapper"
+ 
+ (* TypeUTF8Decoder *)
++IFDEF PYMAJOR3 THEN
+ external pyunicode_decodeutf8 : (string * string option) -> pyobject = "PyUnicode_DecodeUTF8_wrapper"
+-
+-(* TypeUTF16Decoder *)
+-external pyunicode_decodeutf16 : (string * string option * int option) -> pyobject = "PyUnicode_DecodeUTF16_wrapper"
+-external pyunicode_decodeutf32 : (string * string option * int option) -> pyobject = "PyUnicode_DecodeUTF32_wrapper"
+-
+-(*-----------------------------------------------------------------------*)
+-
+-external pyunicode_fromunicode : (int -> int) -> int -> pyobject = "PyUnicode_FromUnicode_wrapper"
+-external pyunicode_asunicode   : pyobject -> int array = "PyUnicode_AsUnicode_wrapper"
++END
+ 
+ (*-----------------------------------------------------------------------*)
+ 
+@@ -959,6 +956,7 @@
+   in
+     work_fun
+ 
++IFDEF PYMAJOR3 THEN
+ (* OCaml string encoded in UTF-8 --> Python 3 string type (= Python 2 unicode type) *)
+ let pythonize_string s =
+   pyunicode_decodeutf8(s, None)
+@@ -976,6 +974,7 @@
+             | BytesType   -> pybytes_asstringandsize s
+             | _ -> assert false
+     end
++END
+ 
+ (* FIX: Maybe rewrite this as an unpythonizing_function. *)
+ let python_interfaced_function
+diff -ru /tmp/chemoelectric-pycaml-8614105/pycaml_stubs.c ./chemoelectric-pycaml-8614105/pycaml_stubs.c
+--- /tmp/chemoelectric-pycaml-8614105/pycaml_stubs.c	2011-10-01 02:05:57.000000000 +0200
++++ ./chemoelectric-pycaml-8614105/pycaml_stubs.c	2012-06-24 13:36:40.714560368 +0200
+@@ -789,9 +789,11 @@
+ Type14(PyMethod_Class, pywrap)
+ #endif
+ 
++#if PY_MAJOR_VERSION >= 3
+ Type14(PyUnicode_AsUTF8String, pywrap_steal)
+ Type14(PyUnicode_AsUTF16String, pywrap_steal)
+ Type14(PyUnicode_AsUTF32String, pywrap_steal)
++#endif
+ Type14(PyObject_Repr, pywrap_steal)
+ Type14(PyImport_ReloadModule, pywrap_steal)
+ Type14(PyImport_Import, pywrap_steal)
+@@ -938,7 +940,9 @@
+ Type18(PyMapping_Size)
+ Type18(PyMapping_Length)
+ Type18(PyIter_Check)
++#if PY_MAJOR_VERSION >= 3
+ Type18(PyUnicode_GetSize)
++#endif
+ 
+ /*-----------------------------------------------------------------------*/
+ 
+@@ -1096,6 +1100,9 @@
+ Type28(PyImport_AddModule, pywrap)
+ 
+ Type28(PyBytes_FromString, pywrap_steal)
++#if PY_MAJOR_VERSION >= 3
++Type28(PyUnicode_FromString, pywrap_steal)
++#endif
+ Type28(PyModule_New, pywrap_steal)
+ Type28(PyImport_ImportModule, pywrap_steal)
+ 
+@@ -1300,7 +1307,7 @@
+         CAMLparam1(py_args);                                    \
+                                                                 \
+         PyObject *new_obj = func(pyunwrap(Field(py_args, 0)),   \
+-                                 pyunwrap(Field(py_args, 1)));  \
++                                 pyunwrap(Field(py_args, 2)));  \
+         CAMLreturn(wrap_obj(new_obj));                          \
+     }
+ #endif
+@@ -1313,6 +1320,22 @@
+ #if PY_MAJOR_VERSION <= 2
+ Type42(PyClass_New, pywrap_steal)
+ Type42(PyInstance_New, pywrap_steal)
++#else
++/* Calls the builtin-function: type(name,bases,dict), with the
++ * name of the class, tuples of parent names, and dictionary
++ * with initializations of fields.
++ */
++CAMLprim value PyClass_New_wrapper(value py_args)
++{
++  CAMLparam1(py_args);
++  PyObject *bases = pyunwrap(Field(py_args, 0));
++  PyObject *dict = pyunwrap(Field(py_args, 1));
++  PyObject *name = pyunwrap(Field(py_args, 2));
++  PyObject *new_obj = 
++    PyObject_CallFunctionObjArgs
++    ( (PyObject *) &PyType_Type, name, bases, dict, NULL);
++  CAMLreturn(pywrap_steal(new_obj));
++}
+ #endif
+ 
+ Type42a(PyMethod_New, pywrap_steal)
+@@ -1493,7 +1516,7 @@
+       Type54(PySequence_DelSlice)
+ 
+ /*-----------------------------------------------------------------------*/
+-
++#if PY_MAJOR_VERSION >= 3
+ #define TypeUTF8Decoder(func, wrap_obj)                                 \
+     CAMLprim value func##_wrapper(value py_args)                        \
+     {                                                                   \
+@@ -1513,9 +1536,9 @@
+     }
+ 
+ TypeUTF8Decoder(PyUnicode_DecodeUTF8, pywrap_steal)
+-
++#endif
+ /*-----------------------------------------------------------------------*/
+-
++#if 0
+ #define TypeUTF16Decoder(func, wrap_obj)                                \
+     CAMLprim value func##_wrapper(value py_args)                        \
+     {                                                                   \
+@@ -1589,7 +1612,7 @@
+ 
+     CAMLreturn(result);
+ }
+-
++#endif
+ /*-----------------------------------------------------------------------*/
+ 
+ /* Value -> Pyobject */

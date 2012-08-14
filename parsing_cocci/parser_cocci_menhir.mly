@@ -558,7 +558,8 @@ expression_type:
     { P.ty_pointerify
 	(Type_cocci.StructUnionName (Type_cocci.Union,Type_cocci.NoName)) m }
 
-%inline metakind_atomic_expe:
+%inline
+ metakind_atomic_expe:
   TExpression
     { (fun arity name pure check_meta constraints ->
       let tok = check_meta(Ast.MetaExpDecl(arity,name,None)) in
@@ -606,7 +607,6 @@ arity: TBang0 { Ast.UNIQUE }
 
 /* ---------------------------------------------------------------------- */
 
-%inline
 signable_types:
   ty=Tchar
     { Ast0.wrap(Ast0.BaseType(Ast.CharType,[P.clt2mcode "char" ty])) }
@@ -646,7 +646,6 @@ signable_types:
 	    [P.clt2mcode "long" ty1;P.clt2mcode "long" ty2;
 	      P.clt2mcode "int" ty3])) }
 
-%inline
 non_signable_types:
   ty=Tvoid
     { Ast0.wrap(Ast0.BaseType(Ast.VoidType,[P.clt2mcode "void" ty])) }
@@ -688,7 +687,6 @@ non_signable_types:
 | p=TTypeId
     { Ast0.wrap(Ast0.TypeName(P.id2mcode p)) }
 
-%inline
 all_basic_types:
   r=Tsigned ty=signable_types
     { Ast0.wrap(Ast0.Signed(P.clt2mcode Ast.Signed r,Some ty)) }
@@ -698,8 +696,12 @@ all_basic_types:
 | ty=non_signable_types { ty }
 
 ctype:
-  cv=ioption(const_vol) ty=all_basic_types m=list(TMul)
-    { P.pointerify (P.make_cv cv ty) m }
+  cv=ioption(const_vol) ty=all_basic_types m=list(mul)
+    { List.fold_left
+	(function prev ->
+	  function (star,cv) ->
+	    P.make_cv cv (P.pointerify prev [star]))
+	(P.make_cv cv ty) m }
 | r=Tsigned
     { Ast0.wrap(Ast0.Signed(P.clt2mcode Ast.Signed r,None)) }
 | r=Tunsigned
@@ -708,6 +710,8 @@ ctype:
     { let (mids,code) = t in
       Ast0.wrap
 	(Ast0.DisjType(P.clt2mcode "(" lp,code,mids, P.clt2mcode ")" rp)) }
+
+mul: a=TMul b=ioption(const_vol) { (a,b) }
 
 mctype:
 | TMeta { tmeta_to_type $1 }
@@ -1087,6 +1091,9 @@ statement:
 | TFor TOPar option(eexpr) TPtVirg option(eexpr) TPtVirg
     option(eexpr) TCPar single_statement
     { P.forloop $1 $2 $3 $4 $5 $6 $7 $8 $9 }
+| TFor TOPar one_decl_var option(eexpr) TPtVirg
+    option(eexpr) TCPar single_statement
+    { P.forloop2 $1 $2 $3 $4 $5 $6 $7 $8 }
 | TWhile TOPar eexpr TCPar single_statement
     { P.whileloop $1 $2 $3 $4 $5 }
 | TDo single_statement TWhile TOPar eexpr TCPar TPtVirg
