@@ -16096,7 +16096,7 @@ fi
 
     MAKETARGET_ALL=all-dev
 
-  OCAMLC="$COCCI_SRCDIR/setup/wrapper-ocamlcp.sh \'$OCAMLCORIG\' \'$OCAMLPROF\'"
+  OCAMLC="$COCCI_SRCDIR/setup/wrapper-ocamlcp.sh $OCAMLCORIG $OCAMLPROF"
 
   MODULES_profiling=profiling.cmo
 
