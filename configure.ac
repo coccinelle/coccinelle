@@ -411,7 +411,7 @@ AS_IF([test "x$enable_release" = xyes],
 
   dnl  configuration-time overrides for profiling
   AC_SUBST([MAKETARGET_ALL], [all-dev])
-  AC_SUBST([OCAMLC], ["$COCCI_SRCDIR/setup/wrapper-ocamlcp.sh \"$OCAMLCORIG\" \"$OCAMLPROF\""])
+  AC_SUBST([OCAMLC], ["$COCCI_SRCDIR/setup/wrapper-ocamlcp.sh \'$OCAMLCORIG\' \'$OCAMLPROF\'"])
   AC_SUBST([MODULES_profiling], [profiling.cmo])
   AC_MSG_NOTICE([configured coccinelle for profiling])
 ],

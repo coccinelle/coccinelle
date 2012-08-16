@@ -1,4 +1,4 @@
-# 0 "myocamlbuild.ml.in"
+# 2 "myocamlbuild.ml.in"
 
 (*
  * This file is a plugin that provides the needed customization of
