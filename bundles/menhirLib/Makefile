@@ -33,6 +33,7 @@ clean:
 	rm -f menhirLib.cma menhirLib.cmxa META \
 		$(MENHIRLIB)/*.cm[ioxa] \
 		$(MENHIRLIB)/*.o \
+		$(MENHIRLIB)/*.annot \
 		$(MENHIRLIB)/engineTypes.mli $(MENHIRLIB)/tableFormat.mli \
 		menhirLib.cm[ioxa] menhirLib.[oa] \
 		.depend

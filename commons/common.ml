@@ -309,6 +309,7 @@ let reset_pr_indent () =
  * this file.
  *)
 
+(* don't the code below, use the Dumper module in ocamlextra instead.
 (* start of dumper.ml *)
 
 (* Dump an OCaml value into a printable string.
@@ -397,6 +398,7 @@ let rec dump r =
 let dump v = dump (repr v)
 
 (* end of dumper.ml *)
+*)
 
 (*
 let (dump : 'a -> string) = fun x ->
@@ -405,7 +407,7 @@ let (dump : 'a -> string) = fun x ->
 
 
 (* ---------------------------------------------------------------------- *)
-let pr2_gen x = pr2 (dump x)
+let pr2_gen x = pr2 (Dumper.dump x)
 
 
 
@@ -759,7 +761,7 @@ let _ex1 = example (enum 1 4 = [1;2;3;4])
 let assert_equal a b =
   if not (a = b)
   then failwith ("assert_equal: those 2 values are not equal:\n\t" ^
-                 (dump a) ^ "\n\t" ^ (dump b) ^ "\n")
+                 (Dumper.dump a) ^ "\n\t" ^ (Dumper.dump b) ^ "\n")
 
 let (example2: string -> bool -> unit) = fun s b ->
   try assert b with x -> failwith s
@@ -1397,7 +1399,7 @@ exception WrongFormat of string
 (* old: let _TODO () = failwith "TODO",  now via fix_caml with raise Todo *)
 
 let internal_error s = failwith ("internal error: "^s)
-let error_cant_have x = internal_error ("cant have this case: " ^(dump x))
+let error_cant_have x = internal_error ("cant have this case: " ^(Dumper.dump x))
 let myassert cond = if cond then () else failwith "assert error"
 
 
@@ -1414,7 +1416,7 @@ let myassert cond = if cond then () else failwith "assert error"
  * In fact dont have to name it, use +> (fun v -> ...)  so when want
  * erase debug just have to erase one line.
  *)
-let warning s v = (pr2 ("Warning: " ^ s ^ "; value = " ^ (dump v)); v)
+let warning s v = (pr2 ("Warning: " ^ s ^ "; value = " ^ (Dumper.dump v)); v)
 
 
 
@@ -4703,7 +4705,7 @@ let assoc_option  k l =
 let assoc_with_err_msg k l =
   try List.assoc k l
   with Not_found ->
-    pr2 (spf "pb assoc_with_err_msg: %s" (dump k));
+    pr2 (spf "pb assoc_with_err_msg: %s" (Dumper.dump k));
     raise Not_found
 
 (*****************************************************************************)
@@ -5554,7 +5556,7 @@ let full_charpos_to_pos a =
   profile_code "Common.full_charpos_to_pos" (fun () -> full_charpos_to_pos2 a)
 
 let test_charpos file =
-  full_charpos_to_pos file +> dump +> pr2
+  full_charpos_to_pos file +> Dumper.dump +> pr2
 
 
 

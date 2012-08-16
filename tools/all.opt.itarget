@@ -1,0 +1,8 @@
+gitgrep.native
+gitsort.native
+process_isoprofile.native
+alloc_free.native
+bridge.native
+spp.native
+splitpatch.native
+extract_c_and_res.native

@@ -16180,7 +16180,7 @@ fi
 
 
 
-ac_config_files="$ac_config_files Makefile.config version.ml commons/commands.ml globals/config.ml globals/regexp.ml python/pycocci.ml ocaml/prepare_ocamlcocci.ml scripts/spatch.sh docs/spatch.1"
+ac_config_files="$ac_config_files Makefile.config version.ml commons/commands.ml globals/config.ml globals/regexp.ml python/pycocci.ml ocaml/prepare_ocamlcocci.ml scripts/spatch.sh docs/spatch.1 myocamlbuild.ml"
 
 
 cat >confcache <<\_ACEOF
@@ -16900,6 +16900,7 @@ do
     "ocaml/prepare_ocamlcocci.ml") CONFIG_FILES="$CONFIG_FILES ocaml/prepare_ocamlcocci.ml" ;;
     "scripts/spatch.sh") CONFIG_FILES="$CONFIG_FILES scripts/spatch.sh" ;;
     "docs/spatch.1") CONFIG_FILES="$CONFIG_FILES docs/spatch.1" ;;
+    "myocamlbuild.ml") CONFIG_FILES="$CONFIG_FILES myocamlbuild.ml" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
   esac

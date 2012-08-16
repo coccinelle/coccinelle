@@ -488,6 +488,7 @@ AC_CONFIG_FILES([
   ocaml/prepare_ocamlcocci.ml
   scripts/spatch.sh
   docs/spatch.1
+  myocamlbuild.ml
 ])
 
 AC_OUTPUT

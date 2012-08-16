@@ -38,7 +38,7 @@ endif
 
 # note that variables are exported and thus cannot be used in
 # definitions of other variables. Use $(EXTRA_OCAML_FLAGS) for that.
-# Todo: since these definitions are not in Makefile.config.in, the
+# Todo: since these definitions are now in Makefile.config.in, the
 # defaults can be removed from each individual Makefile in the
 # subdirectories.
 export OCAMLCFLAGS?=$(EXTRA_OCAML_FLAGS)

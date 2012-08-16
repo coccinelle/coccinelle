@@ -76,6 +76,8 @@ $(PYCAMLMARKER): $(PYCAMLFILE)
 #	$(PATCH) -d "${PYCAMLDIR}" -p1 < ./python3-compat-fix.patch
 #	$(PATCH) -d "${PYCAMLDIR}" -p1 < ./pyunicodeapichanges-fix.patch
 	$(PATCH) -d "${PYCAMLDIR}" -p2 < ./removeunicode.patch
+	$(PATCH) -d "${PYCAMLDIR}" -p1 < ./ignoreheader.patch
+	$(PATCH) -d "${PYCAMLDIR}" -p1 < ./elim-warnings.patch
 	rm -f "${PYCAMLDIR}/pycaml.mli"
 	touch $@
 
