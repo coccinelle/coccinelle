@@ -24,6 +24,10 @@ all.opt: $(EXTMARKER)
 	@$(MAKE) all-opt-build
 all-opt-build: $(EXTMARKER) extLib.cmxa META
 
+# prepares the source bundle for building.
+.prepare: $(EXTMARKER)
+	touch .prepare
+
 clean:
 	rm -f .depend META extLib.cm[ioxa] extLib.[ao] \
 		$(EXTLIB)/*.cm[ioxa] extLib.cmxa \

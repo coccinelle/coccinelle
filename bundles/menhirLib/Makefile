@@ -29,6 +29,10 @@ all.opt: .depend
 	@$(MAKE) all-opt-build
 all-opt-build: .depend menhirLib.cmxa META
 
+# prepares the source bundle for building.
+.prepare: $(MENHIRMARKER)
+	touch .prepare
+
 clean:
 	rm -f menhirLib.cma menhirLib.cmxa META \
 		$(MENHIRLIB)/*.cm[ioxa] \

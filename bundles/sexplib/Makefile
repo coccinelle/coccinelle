@@ -34,6 +34,10 @@ all.opt: .depend
 	@$(MAKE) all-opt-build
 all-opt-build: .depend $(SEXPMARKER) sexplib.cmxa META
 
+# prepares the source bundle for building.
+.prepare: $(SEXPMARKER)
+	touch .prepare
+
 clean:
 	rm -f sexplib.cma sexplib.cmxa META \
 		$(SEXPLIB)/*.cm[ioxa] \

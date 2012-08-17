@@ -58,6 +58,10 @@ $(PYCAMLDIR)/pycaml.cmx: $(PYCAMLDIR)/pycaml.ml $(PYCAMLDIR)/pycaml.cmi
 pycaml.cmxa: $(PYCAMLDIR)/pycaml.cmx $(PYCAMLDIR)/pycaml.cmi dllpycaml_stubs.so
 	$(OCAMLOPT_CMD) -I $(PYCAMLDIR) -a -o pycaml.cmxa $<
 
+# prepares the source bundle for building.
+.prepare: $(PYCAMLMARKER)
+	touch .prepare
+
 clean:
 	rm -f $(PYCAMLDIR)/pycaml.mli pycaml.cm[aixo] $(PYCAMLDIR)/pycaml.cm[aixo] \
 		pycaml.[ao] libpycaml_stubs.a pycaml_stubs.o dllpycaml_stubs.so libpycaml_stubs.so \

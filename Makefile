@@ -178,6 +178,14 @@ $(MAKESUBDIRS:%=%.all):
 $(MAKESUBDIRS:%=%.opt):
 	@$(MAKE) -C $(@:%.opt=%) all.opt
 
+# This make target prepares the bundled software for building.
+# Note that running 'make' in these subdirectories will
+# automatically prepare the bundled software.
+.PHONY:: prepare-bundles
+prepare-bundles: $(MAKELIBS:%/.prepare)
+$(MAKELIBS:%=%/.prepare):
+	@$(MAKE) -C $(@:%.prepare=%) .prepare
+
 #dependencies:
 # commons:
 # globals:

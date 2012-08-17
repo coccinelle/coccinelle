@@ -29,6 +29,10 @@ all.opt: $(PCRE_MARKER)
 	@$(MAKE) all-opt-build
 all-opt-build: $(PCRE_MARKER) pcre.cmxa META
 
+# prepares the source bundle for building.
+.prepare: $(PCRE_MARKER)
+	touch .prepare
+
 clean:
 	rm -f dllpcre_stubs.so libpcre_stubs.a pcre_stubs.o \
 		pcre.cma pcre.cmi pcre.cmo META \
