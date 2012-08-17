@@ -51,6 +51,7 @@ OPTOBJS = $(SRC:.ml=.cmx)
 ##############################################################################
 # Top rules
 ##############################################################################
+ifneq ($(FEATURE_OCAMLBUILD),yes)
 all: $(TARGET).cma
 all.opt:
 	@$(MAKE) $(TARGET).cmxa BUILD_OPT=yes
@@ -66,7 +67,16 @@ $(TARGET).top: $(OBJS) $(LIBS)
 
 clean::
 	rm -f $(TARGET).top
+else
+all:
+	cd .. && $(OCAMLBUILD) engine/engine.cma
 
+all.opt:
+	cd .. && $(OCAMLBUILD) engine/engine.cmxa
+
+clean::
+	cd .. && $(OCAMLBUILD) -clean
+endif
 
 
 ##############################################################################

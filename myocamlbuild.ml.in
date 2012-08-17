@@ -279,6 +279,14 @@ let _ = dispatch begin
 	if not_empty profiling_modules then
           flag ["ocaml"; "link"; "byte"]
 	    (S [A profiling_modules]);
+
+	(* the warning about unused function arguments are disabled
+         * for files with this tag. *)
+	flag ["nowarn20"; "ocaml"; "compile"] (S [A "-w"; A "-20"]);
+
+	(* adds the custom option, unless 'nocustom' is given as a tag *)
+	if not (Tags.mem "nocustom" (tags_of_pathname "myocamlbuild.ml"))
+	then flag ["ocaml"; "link"; "byte"] (A "-custom");
 	()
 
     | _ -> ()

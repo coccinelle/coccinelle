@@ -56,6 +56,7 @@ OPTOBJS = $(OBJS:.cmo=.cmx)
 CTLOBJS = $(CTLSOURCES:.ml=.cmo)
 CTLOPTOBJS = $(CTLOBJS:.cmo=.cmx)
 
+ifneq ($(FEATURE_OCAMLBUILD),yes)
 all: $(LIB)
 
 all.opt:
@@ -80,7 +81,14 @@ $(EXEC): $(OBJS) main.cmo $(LIBS)
 
 $(CTLEXEC): $(CTLOBJS) $(LIBS)
 	$(OCAMLC_CMD) -o $(CTLEXEC) $(SYSLIBS) $(LIBS) $(CTLOBJS)
-
+else
+all:
+	cd .. && $(OCAMLBUILD) python/python.cma
+all.opt:
+	cd .. && $(OCAMLBUILD) python/python.cmxa
+clean::
+	cd .. && $(OCAMLBUILD) -clean
+endif
 
 clean::
 	rm -f $(OPTLIB) $(LIB:.cma=.a)

@@ -13,14 +13,30 @@ MANFLAGS=-man-mini
 doc: html man
 
 html: $(DEST)/html/index.html
-$(DEST)/html/index.html: $(API) ../parsing_c/ast_c.cmi
-	$(MKDIR_P) $(DEST)/html
-	$(OCAMLDOC) $(FLAGS) -html $(HTMLFLAGS) -d $(DEST)/html $(API)
-
 man: $(DEST)/man/Coccilib.3o
+
+ifneq ($(FEATURE_OCAMLBUILD),yes)
 $(DEST)/man/Coccilib.3o: $(API) ../parsing_c/ast_c.cmi
 	$(MKDIR_P) $(DEST)/man
 	$(OCAMLDOC) $(FLAGS) -man $(MANFLAGS) -d $(DEST)/man $(API)
+
+$(DEST)/html/index.html: $(API) ../parsing_c/ast_c.cmi
+	$(MKDIR_P) $(DEST)/html
+	$(OCAMLDOC) $(FLAGS) -html $(HTMLFLAGS) -d $(DEST)/html $(API)
+else
+# The dependencies below are slightly under-specified.
+# It is possible that only dependencies of coccilib.ml and ast_c.ml
+# have changed. In that case, run clean beforehand.
+$(DEST)/man/Coccilib.3o: coccilib.ml ../parsing_c/ast_c.ml
+	$(MKDIR_P) $(DEST)/man
+	cd .. && $(OCAMLBUILD) ocaml/man.docdir/index.html
+	cp -r ../_build/ocaml/man.docdir/* $(DEST)/man/
+
+$(DEST)/html/index.html: coccilib.ml ../parsing_c/ast_c.ml
+	$(MKDIR_P) $(DEST)/html
+	cd .. && $(OCAMLBUILD) ocaml/html.docdir/index.html
+	cp -r ../_build/ocaml/html.docdir/* $(DEST)/html/
+endif
 
 cleandoc:
 	rm -rf $(DEST)/html $(DEST)/man

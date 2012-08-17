@@ -65,6 +65,7 @@ OPTOBJS = $(SRC:.ml=.cmx)
 ##############################################################################
 # Top rules
 ##############################################################################
+ifneq ($(FEATURE_OCAMLBUILD),yes)
 all: $(TARGET).cma
 all.opt:
 	@$(MAKE) $(TARGET).cmxa BUILD_OPT=yes
@@ -90,6 +91,16 @@ parser_c.ml parser_c.mli: parser_c.mly
 	$(OCAMLYACC) -v $<
 clean::
 	rm -f parser_c.ml parser_c.mli parser_c.output
+else
+all:
+	cd .. && $(OCAMLBUILD) parsing_c/parsing_c.cma
+
+all.opt:
+	cd .. && $(OCAMLBUILD) parsing_c/parsing_c.cmxa
+
+clean::
+	cd .. && $(OCAMLBUILD) -clean
+endif
 
 
 ##############################################################################
