@@ -148,7 +148,9 @@ distclean: clean
 
 ifneq ($(MAKECMDGOALS),clean)
 ifneq ($(MAKECMDGOALS),distclean)
+ifneq ($(FEATURE_OCAMLBUILD),yes)
 -include .depend
+endif
 endif
 endif
 

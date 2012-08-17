@@ -44,6 +44,7 @@ clean:
 
 distclean: clean
 	rm -rf $(MENHIRDIR)
+	rm -f .prepare
 
 $(MENHIRMARKER): $(MENHIRDIR).tar.gz
 	$(TAR) xfvz $<
@@ -104,7 +105,9 @@ $(MENHIRLIB)/tableFormat.mli: $(MENHIRLIB)/packedIntArray.cmi $(MENHIRLIB)/engin
 ifneq ($(MAKECMDGOALS),clean)
 ifneq ($(MAKECMDGOALS),distclean)
 ifneq ($(MAKECMDGOALS),depend-build)
-include .depend
+ifneq ($(FEATURE_OCAMLBUILD),yes)
+-include .depend
+endif
 endif
 endif
 endif

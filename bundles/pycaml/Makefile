@@ -69,6 +69,7 @@ clean:
 
 distclean: clean
 	rm -rf $(PYCAMLDIR)
+	rm -f .prepare
 
 .PHONEY: all all.opt all-build all-opt-build distclean clean depend
 

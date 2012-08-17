@@ -1,3 +1,5 @@
+dnl  run 'autoreconf -I setup' to generate configure from this file.
+
 dnl  standard initialization (we only use autoconf not automake)
 AC_PREREQ([2.68])
 AC_INIT([coccinelle], m4_esyscmd([cat ./version | tr -d '\n']), [cocci@diku.dk], [], [http://coccinelle.lip6.fr/])
@@ -455,7 +457,7 @@ AS_IF([test "x$OPTIMIZED_dynlink" = xno -a "x$enable_ocaml" = xyes],
   ])
 ])
 
-# set the default enable-opt setting
+dnl  set the default enable-opt setting
 AS_IF([test -z "$enable_opt"],
 [dnl
   AS_IF([test "x$enable_release" = xyes -o "x$enable_release" = xno],
@@ -473,6 +475,22 @@ AS_IF([test "x$enable_opt" = xyes],
 [dnl  default target for the bytecode version
   AC_SUBST([SPATCHNAME], [spatch])
   AC_SUBST([MAKETARGET_SPATCH], [byte-only])
+])
+
+
+dnl  ocamlbuild handling
+AC_ARG_ENABLE([ocamlbuild], AS_HELP_STRING([--enable-ocamlbuild], [enable ocamlbuild support (default: no)]))
+AS_IF([test "x$enable_ocamlbuild" = xyes],
+[dnl  ocamlbuild support requested
+  AS_IF([test -z "$OCAMLBUILD" -o "x$OCAMLBUILD" = xno],
+  [dnl
+    AC_MSG_ERROR([Ocamlbuild is required but is not installed.])
+  ])
+
+  AC_SUBST([FEATURE_OCAMLBUILD], [yes])
+],
+[dnl  default: disable ocamlbuild support
+  AC_SUBST([FEATURE_OCAMLBUILD], [ ])
 ])
 
 

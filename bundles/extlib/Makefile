@@ -35,6 +35,7 @@ clean:
 
 distclean: clean
 	rm -rf $(EXTLIB)
+	rm -f .prepare
 
 depend: $(EXTMARKER)
 

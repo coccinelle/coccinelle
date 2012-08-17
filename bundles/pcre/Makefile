@@ -40,6 +40,7 @@ clean:
 
 distclean: clean
 	rm -rf $(PCRE_DIR)
+	rm -f .prepare
 
 depend: $(PCRE_MARKER)
 

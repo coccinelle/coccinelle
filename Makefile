@@ -234,6 +234,9 @@ Makefile.config: Makefile.config.in configure.ac
 	@echo "Makefile.config needs to be (re)build. Run  ./configure $(CONFIGURE_FLAGS) to generate it."
 	@false
 
+# as above, also for the ocamlbuild plugin
+myocamlbuild.ml: myocamlbuild.ml.in configure.ac
+
 tools: $(LIBS) $(LNKLIBS)
 	$(MAKE) -C tools
 
@@ -590,7 +593,9 @@ ifneq ($(MAKECMDGOALS),all-dev)
 ifneq ($(MAKECMDGOALS),all)
 ifneq ($(MAKECMDGOALS),.depend)
 ifneq ($(MAKECMDGOALS),depend)
+ifneq ($(FEATURE_OCAMLBUILD),yes)
 -include .depend
+endif
 endif
 endif
 endif

@@ -49,6 +49,7 @@ clean:
 
 distclean: clean
 	rm -rf $(SEXPDIR)
+	rm -f .prepare
 
 $(SEXPMARKER): $(SEXPDIR).tar.gz sexp-3.10-compat.patch
 	$(TAR) xfvz $<
@@ -123,7 +124,9 @@ $(SEXPLIB)/conv_error.mli: $(SEXPLIB)/conv.cmi
 ifneq ($(MAKECMDGOALS),clean)
 ifneq ($(MAKECMDGOALS),distclean)
 ifneq ($(MAKECMDGOALS),depend-build)
-include .depend
+ifneq ($(FEATURE_OCAMLBUILD),yes)
+-include .depend
+endif
 endif
 endif
 endif
