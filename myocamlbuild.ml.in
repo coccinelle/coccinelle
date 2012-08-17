@@ -40,12 +40,15 @@ let menhir_path     = "@MENHIR@"
 let pycaml_path     = "@PATH_pycaml@"
 let pcre_path       = "@PATH_pcre@"
 let menhirLib_path  = "@PATH_menhirLib@"
+let dynlink_path    = "@PATH_dynlink@"
 
 let pcre_cflags     = "@PCRE_CFLAGS@"
 let pcre_ldflags    = "@PCRE_LIBS@"
 let python_cflags   = "@PYTHON_CFLAGS@"
 let python_ldflags  = "@PYTHON_LIBS@"
 let python_major_version = "@PYVER_MAJOR@"
+
+let profiling_modules = "@MODULES_profiling@"
 
 
 (* The plugin code starts here. *)
@@ -151,11 +154,14 @@ let setup_package name modname rootdir =
  * This setup routine should be called before the others to ensure
  * that these modules appear first on the ocaml commandlines.
  *)
-let setup_basic_libs () =
+let setup_basic_libs use_dynlink =
   ocaml_lib ~extern:true ~tag_name:"use_base" "unix";
   ocaml_lib ~extern:true ~tag_name:"use_base" "str";
   ocaml_lib ~extern:true ~tag_name:"use_base" "nums";
-  ocaml_lib ~extern:true ~tag_name:"use_base" "bigarray"
+  ocaml_lib ~extern:true ~tag_name:"use_base" "bigarray";
+  if use_dynlink then
+    ocaml_lib ~extern:true ~tag_name:"use_base" "dynlink";
+  ()
 
 (* The menhir package provides individual object files
  * instead of an archive.
@@ -200,8 +206,22 @@ let setup_pcre () =
   setup_stubs "pcre" pcre_dir;
   setup_clib "pcre" pcre_cflags pcre_ldflags
 
+(* Some utility code on strings and paths. *)
+let any_non_space str =
+  let have_non_space = ref false in
+  String.iter begin
+    fun c -> match c with
+        ' '  -> ()
+      | '\t' -> ()
+      | _    -> have_non_space := true
+    end str;
+  !have_non_space
+
+let not_empty str =
+  String.length str > 0 && any_non_space str
+
 let is_path_configured path =
-  String.length path > 0 && Pathname.exists path
+  not_empty path && Pathname.exists path
 
 (* Note: the setup of the modules is done before the hygiene phase
  * in order to benefit from additional "include" tags that may be
@@ -229,7 +249,8 @@ let _ = dispatch begin
         ()
 
     | Before_hygiene ->
-	setup_basic_libs ();
+	let use_dynlink = is_path_configured dynlink_path in
+	setup_basic_libs use_dynlink;
 
 	if is_path_configured menhirLib_path then
           setup_menhirLib ();
@@ -253,7 +274,12 @@ let _ = dispatch begin
 	  (S [A "-colorize-code"; A "-short-functors"; A "-all-params"]);
         flag ["gen_man"; "ocaml"; "doc"]
 	  (S [A "-man"; A "-man-mini"]);
-        ()
+
+	(* when profiling, link with profiling.cmo *)
+	if not_empty profiling_modules then
+          flag ["ocaml"; "link"; "byte"]
+	    (S [A profiling_modules]);
+	()
 
     | _ -> ()
 end

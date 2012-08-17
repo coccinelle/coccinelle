@@ -88,7 +88,7 @@
 <main.byte>: custom
 
 # library dependencies of spatch.
-<main.{native,byte}>: thread, use_base, use_dynlink, use_menhirLib, use_pcre, use_pycaml
+<main.{native,byte}>: thread, use_base, use_menhirLib, use_pcre, use_pycaml
 
 
 # Build tools/all.otarget for all tools, or
