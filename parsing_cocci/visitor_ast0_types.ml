@@ -40,6 +40,7 @@ type 'n all_functions =
       parameter : (Ast0.parameterTypeDef,'n) inout;
       parameter_list : (Ast0.parameter_list,'n) inout;
       statement : (Ast0.statement,'n) inout;
+      forinfo : (Ast0.forinfo,'n) inout;
       case_line : (Ast0.case_line,'n) inout;
       top_level : (Ast0.top_level,'n) inout;
       expression_dots : (Ast0.expression Ast0.dots,'n) inout;
@@ -64,6 +65,7 @@ type 'n combiner_rec_functions =
       combiner_rec_parameter : (Ast0.parameterTypeDef,'n) combiner_inout;
       combiner_rec_parameter_list : (Ast0.parameter_list,'n) combiner_inout;
       combiner_rec_statement : (Ast0.statement,'n) combiner_inout;
+      combiner_rec_forinfo   : (Ast0.forinfo,'n) combiner_inout;
       combiner_rec_case_line : (Ast0.case_line,'n) combiner_inout;
       combiner_rec_top_level : (Ast0.top_level,'n) combiner_inout;
       combiner_rec_expression_dots :
@@ -106,6 +108,7 @@ type 'n combiner_functions =
    combiner_paramfn : (Ast0.parameterTypeDef,'n) ccode;
    combiner_declfn : (Ast0.declaration,'n) ccode;
    combiner_stmtfn : (Ast0.statement,'n) ccode;
+   combiner_forinfofn : (Ast0.forinfo,'n) ccode;
    combiner_casefn : (Ast0.case_line,'n) ccode;
    combiner_topfn : (Ast0.top_level,'n) ccode}
 
@@ -125,6 +128,7 @@ type rebuilder_rec_functions =
       rebuilder_rec_parameter : Ast0.parameterTypeDef rebuilder_inout;
       rebuilder_rec_parameter_list : Ast0.parameter_list rebuilder_inout;
       rebuilder_rec_statement : Ast0.statement rebuilder_inout;
+      rebuilder_rec_forinfo : Ast0.forinfo rebuilder_inout;
       rebuilder_rec_case_line : Ast0.case_line rebuilder_inout;
       rebuilder_rec_top_level : Ast0.top_level rebuilder_inout;
       rebuilder_rec_expression_dots :
@@ -167,6 +171,7 @@ type rebuilder_functions =
    rebuilder_paramfn : Ast0.parameterTypeDef rcode;
    rebuilder_declfn : Ast0.declaration rcode;
    rebuilder_stmtfn : Ast0.statement rcode;
+   rebuilder_forinfofn : Ast0.forinfo rcode;
    rebuilder_casefn : Ast0.case_line rcode;
    rebuilder_topfn : Ast0.top_level rcode}
 
@@ -204,5 +209,6 @@ type 'n combiner_rebuilder_functions =
    combiner_rebuilder_paramfn : (Ast0.parameterTypeDef,'n) rccode;
    combiner_rebuilder_declfn : (Ast0.declaration,'n) rccode;
    combiner_rebuilder_stmtfn : (Ast0.statement,'n) rccode;
+   combiner_rebuilder_forinfofn : (Ast0.forinfo,'n) rccode;
    combiner_rebuilder_casefn : (Ast0.case_line,'n) rccode;
    combiner_rebuilder_topfn : (Ast0.top_level,'n) rccode}

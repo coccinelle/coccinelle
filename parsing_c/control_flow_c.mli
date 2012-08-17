@@ -26,7 +26,7 @@ type node = node1 * string (* For debugging. Used by print_graph *)
   | DoHeader      of statement * info
   | DoWhileTail   of expression wrap
   | ForHeader     of statement *
-                 (exprStatement wrap * exprStatement wrap * exprStatement wrap)
+                 (declOrExpr * exprStatement wrap * exprStatement wrap)
                  wrap
   | SwitchHeader  of statement * expression wrap
   | MacroIterHeader of statement * (string * argument wrap2 list) wrap

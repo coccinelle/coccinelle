@@ -1,8 +1,0 @@
-USEPDFLATEX = true
-DOC = README
-
-LaTeXDocument($(DOC), $(DOC))
-
-doc: $(DOC).pdf
-
-.DEFAULT: $(DOC).pdf

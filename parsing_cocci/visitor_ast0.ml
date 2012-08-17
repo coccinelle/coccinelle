@@ -43,7 +43,7 @@ let visitor mode bind option_default
     binary_mcode cv_mcode sign_mcode struct_mcode storage_mcode
     inc_mcode
     dotsexprfn dotsinitfn dotsparamfn dotsstmtfn dotsdeclfn dotscasefn
-    identfn exprfn tyfn initfn paramfn declfn stmtfn casefn topfn =
+    identfn exprfn tyfn initfn paramfn declfn stmtfn forinfofn casefn topfn =
   let multibind l =
     let rec loop = function
 	[] -> option_default
@@ -322,7 +322,12 @@ let visitor mode bind option_default
 	  Ast0.ConstVol(cv,ty) ->
 	    let (cv_n,cv) = cv_mcode cv in
 	    let (ty_n,ty) = typeC ty in
-	    (bind cv_n ty_n, Ast0.ConstVol(cv,ty))
+	    let front =
+	      (* bind in the right order *)
+	      match Ast0.unwrap ty with
+		Ast0.Pointer(ty,star) -> bind ty_n cv_n
+	      |	_ -> bind cv_n ty_n in
+	    (front, Ast0.ConstVol(cv,ty))
 	| Ast0.BaseType(ty,strings) ->
 	    let (strings_n,strings) = map_split_bind string_mcode strings in
 	    (strings_n, Ast0.BaseType(ty,strings))
@@ -668,18 +673,17 @@ let visitor mode bind option_default
 	    let (sem_n,sem) = string_mcode sem in
 	    (multibind [d_n;body_n;whl_n;lp_n;exp_n;rp_n;sem_n],
 	     Ast0.Do(d,body,whl,lp,exp,rp,sem))
-	| Ast0.For(fr,lp,e1,sem1,e2,sem2,e3,rp,body,aft) ->
+	| Ast0.For(fr,lp,first,e2,sem2,e3,rp,body,aft) ->
 	    let (fr_n,fr) = string_mcode fr in
 	    let (lp_n,lp) = string_mcode lp in
-	    let (e1_n,e1) = get_option expression e1 in
-	    let (sem1_n,sem1) = string_mcode sem1 in
+	    let (first_n,first) = forinfo first in
 	    let (e2_n,e2) = get_option expression e2 in
 	    let (sem2_n,sem2) = string_mcode sem2 in
 	    let (e3_n,e3) = get_option expression e3 in
 	    let (rp_n,rp) = string_mcode rp in
 	    let (body_n,body) = statement body in
-	    (multibind [fr_n;lp_n;e1_n;sem1_n;e2_n;sem2_n;e3_n;rp_n;body_n],
-	     Ast0.For(fr,lp,e1,sem1,e2,sem2,e3,rp,body,aft))
+	    (multibind [fr_n;lp_n;first_n;e2_n;sem2_n;e3_n;rp_n;body_n],
+	     Ast0.For(fr,lp,first,e2,sem2,e3,rp,body,aft))
 	| Ast0.Iterator(nm,lp,args,rp,body,aft) ->
 	    let (nm_n,nm) = ident nm in
 	    let (lp_n,lp) = string_mcode lp in
@@ -795,6 +799,19 @@ let visitor mode bind option_default
 	    (bind stm_n asstm_n, Ast0.AsStmt(stm,asstm))) in
     let (n,s) = stmtfn all_functions k s in
     (n,if mode = REBUILDER then process_bef_aft s else s)
+
+  and forinfo fi =
+    let k fi =
+      rewrap fi
+	(match Ast0.unwrap fi with
+	  Ast0.ForExp(e1,sem1) ->
+	    let (e1_n,e1) = get_option expression e1 in
+	    let (sem1_n,sem1) = string_mcode sem1 in
+	    (bind e1_n sem1_n, Ast0.ForExp(e1,sem1))
+	| Ast0.ForDecl (bef,decl) ->
+	    let (decl_n,decl) = declaration decl in
+	    (decl_n,Ast0.ForDecl (bef,decl))) in
+    forinfofn all_functions k fi
 
   (* not parameterizable for now... *)
   and define_parameters p =
@@ -950,6 +967,9 @@ let visitor mode bind option_default
       | Ast0.StmtTag(stmt) ->
 	  let (stmt_n,stmt) = statement stmt in
 	  (stmt_n,Ast0.StmtTag(stmt))
+      | Ast0.ForInfoTag(fi) ->
+	  let (fi_n,fi) = forinfo fi in
+	  (fi_n,Ast0.ForInfoTag(fi))
       | Ast0.CaseLineTag(c) ->
 	  let (c_n,c) = case_line c in
 	  (c_n,Ast0.CaseLineTag(c))
@@ -980,6 +1000,7 @@ let visitor mode bind option_default
       VT0.parameter = parameterTypeDef;
       VT0.parameter_list = parameter_list;
       VT0.statement = statement;
+      VT0.forinfo = forinfo;
       VT0.case_line = case_line;
       VT0.top_level = top_level;
       VT0.expression_dots = expression_dots;
@@ -1015,6 +1036,7 @@ let combiner_functions =
    VT0.combiner_paramfn = (fun r k e -> k e);
    VT0.combiner_declfn = (fun r k e -> k e);
    VT0.combiner_stmtfn = (fun r k e -> k e);
+   VT0.combiner_forinfofn = (fun r k e -> k e);
    VT0.combiner_casefn = (fun r k e -> k e);
    VT0.combiner_topfn = (fun r k e -> k e)}
 
@@ -1037,6 +1059,8 @@ let combiner_dz r =
       (function e -> let (n,_) = r.VT0.parameter_list e in n);
       VT0.combiner_rec_statement =
       (function e -> let (n,_) = r.VT0.statement e in n);
+      VT0.combiner_rec_forinfo =
+      (function e -> let (n,_) = r.VT0.forinfo e in n);
       VT0.combiner_rec_case_line =
       (function e -> let (n,_) = r.VT0.case_line e in n);
       VT0.combiner_rec_top_level =
@@ -1083,6 +1107,7 @@ let combiner bind option_default functions =
     (fun r k e -> (functions.VT0.combiner_paramfn (dz r) (xk k) e, e))
     (fun r k e -> (functions.VT0.combiner_declfn (dz r) (xk k) e, e))
     (fun r k e -> (functions.VT0.combiner_stmtfn (dz r) (xk k) e, e))
+    (fun r k e -> (functions.VT0.combiner_forinfofn (dz r) (xk k) e, e))
     (fun r k e -> (functions.VT0.combiner_casefn (dz r) (xk k) e, e))
     (fun r k e -> (functions.VT0.combiner_topfn (dz r) (xk k) e, e)))
 
@@ -1091,7 +1116,7 @@ let flat_combiner bind option_default
     binary_mcode cv_mcode sign_mcode struct_mcode storage_mcode
     inc_mcode
     dotsexprfn dotsinitfn dotsparamfn dotsstmtfn dotsdeclfn dotscasefn
-    identfn exprfn tyfn initfn paramfn declfn stmtfn casefn topfn =
+    identfn exprfn tyfn initfn paramfn declfn stmtfn forinfofn casefn topfn =
   let dz = combiner_dz in
   let xk k e = let (n,_) = k e in n in
   combiner_dz (visitor COMBINER bind option_default
@@ -1120,6 +1145,7 @@ let flat_combiner bind option_default
     (fun r k e -> (paramfn (dz r) (xk k) e, e))
     (fun r k e -> (declfn (dz r) (xk k) e, e))
     (fun r k e -> (stmtfn (dz r) (xk k) e, e))
+    (fun r k e -> (forinfofn (dz r) (xk k) e, e))
     (fun r k e -> (casefn (dz r) (xk k) e, e))
     (fun r k e -> (topfn (dz r) (xk k) e, e)))
 
@@ -1149,6 +1175,7 @@ let rebuilder_functions =
    VT0.rebuilder_paramfn = (fun r k e -> k e);
    VT0.rebuilder_declfn = (fun r k e -> k e);
    VT0.rebuilder_stmtfn = (fun r k e -> k e);
+   VT0.rebuilder_forinfofn = (fun r k e -> k e);
    VT0.rebuilder_casefn = (fun r k e -> k e);
    VT0.rebuilder_topfn = (fun r k e -> k e)}
 
@@ -1171,6 +1198,8 @@ let rebuilder_dz r =
       (function e -> let (_,e) = r.VT0.parameter_list e in e);
       VT0.rebuilder_rec_statement =
       (function e -> let (_,e) = r.VT0.statement e in e);
+      VT0.rebuilder_rec_forinfo =
+      (function e -> let (_,e) = r.VT0.forinfo e in e);
       VT0.rebuilder_rec_case_line =
       (function e -> let (_,e) = r.VT0.case_line e in e);
       VT0.rebuilder_rec_top_level =
@@ -1216,6 +1245,7 @@ let rebuilder functions =
     (fun r k e -> ((),functions.VT0.rebuilder_paramfn (dz r) (xk k) e))
     (fun r k e -> ((),functions.VT0.rebuilder_declfn (dz r) (xk k) e))
     (fun r k e -> ((),functions.VT0.rebuilder_stmtfn (dz r) (xk k) e))
+    (fun r k e -> ((),functions.VT0.rebuilder_forinfofn (dz r) (xk k) e))
     (fun r k e -> ((),functions.VT0.rebuilder_casefn (dz r) (xk k) e))
     (fun r k e -> ((),functions.VT0.rebuilder_topfn (dz r) (xk k) e)))
 
@@ -1224,7 +1254,7 @@ let flat_rebuilder
     binary_mcode cv_mcode sign_mcode struct_mcode storage_mcode
     inc_mcode
     dotsexprfn dotsinitfn dotsparamfn dotsstmtfn dotsdeclfn dotscasefn
-    identfn exprfn tyfn initfn paramfn declfn stmtfn casefn topfn =
+    identfn exprfn tyfn initfn paramfn declfn stmtfn forinfofn casefn topfn =
   let dz = rebuilder_dz in
   let xk k e = let (_,e) = k e in e in
   rebuilder_dz
@@ -1254,6 +1284,7 @@ let flat_rebuilder
     (fun r k e -> ((),paramfn (dz r) (xk k) e))
     (fun r k e -> ((),declfn (dz r) (xk k) e))
     (fun r k e -> ((),stmtfn (dz r) (xk k) e))
+    (fun r k e -> ((),forinfofn (dz r) (xk k) e))
     (fun r k e -> ((),casefn (dz r) (xk k) e))
     (fun r k e -> ((),topfn (dz r) (xk k) e)))
 
@@ -1295,6 +1326,7 @@ let combiner_rebuilder_functions =
    VT0.combiner_rebuilder_paramfn = (fun r k e -> k e);
    VT0.combiner_rebuilder_declfn = (fun r k e -> k e);
    VT0.combiner_rebuilder_stmtfn = (fun r k e -> k e);
+   VT0.combiner_rebuilder_forinfofn = (fun r k e -> k e);
    VT0.combiner_rebuilder_casefn = (fun r k e -> k e);
    VT0.combiner_rebuilder_topfn = (fun r k e -> k e)}
 
@@ -1325,5 +1357,6 @@ let combiner_rebuilder bind option_default functions =
     functions.VT0.combiner_rebuilder_paramfn
     functions.VT0.combiner_rebuilder_declfn
     functions.VT0.combiner_rebuilder_stmtfn
+    functions.VT0.combiner_rebuilder_forinfofn
     functions.VT0.combiner_rebuilder_casefn
     functions.VT0.combiner_rebuilder_topfn

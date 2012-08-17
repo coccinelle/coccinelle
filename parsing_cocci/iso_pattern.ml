@@ -62,7 +62,7 @@ let strip_info =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing
+    donothing donothing donothing
 
 let anything_equal = function
     (Ast0.DotsExprTag(d1),Ast0.DotsExprTag(d2)) ->
@@ -437,7 +437,7 @@ let match_maker checks_needed context_required whencode_allowed =
     V0.flat_combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       donothing donothing donothing donothing donothing donothing
-      ident expression typeC init param decl stmt donothing
+      ident expression typeC init param decl stmt donothing donothing
       donothing in
 
   let add_pure_list_binding name pure is_pure builder1 builder2 lst =
@@ -1108,12 +1108,20 @@ let match_maker checks_needed context_required whencode_allowed =
 		 [check_mcode d1 d; check_mcode w1 w; check_mcode lp1 lp;
 		   check_mcode rp1 rp; match_statement bodya bodyb;
 		   match_expr expa expb]
-	  | (Ast0.For(f1,lp1,e1a,sc1a,e2a,sc2a,e3a,rp1,bodya,_),
-	     Ast0.For(f,lp,e1b,sc1b,e2b,sc2b,e3b,rp,bodyb,_)) ->
+	  | (Ast0.For(f1,lp1,firsta,e2a,sc2a,e3a,rp1,bodya,_),
+	     Ast0.For(f,lp,firstb,e2b,sc2b,e3b,rp,bodyb,_)) ->
+	       let first =
+		 match (Ast0.unwrap firsta,Ast0.unwrap firstb) with
+		   (Ast0.ForExp(e1a,sc1a),Ast0.ForExp(e1b,sc1b)) ->
+		     conjunct_bindings
+		       (check_mcode sc2a sc2b)
+		       (match_option match_expr e1a e1b)
+		 | (Ast0.ForDecl (_,decla),Ast0.ForDecl (_,declb)) ->
+		     match_decl decla declb
+		 | _ -> return false in
 	       conjunct_many_bindings
-		 [check_mcode f1 f; check_mcode lp1 lp; check_mcode sc1a sc1b;
+		 [check_mcode f1 f; check_mcode lp1 lp; first;
 		   check_mcode sc2a sc2b; check_mcode rp1 rp;
-		   match_option match_expr e1a e1b;
 		   match_option match_expr e2a e2b;
 		   match_option match_expr e3a e3b;
 		   match_statement bodya bodyb]
@@ -1416,7 +1424,7 @@ let make_minus =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     dots dots dots dots dots dots
     donothing expression donothing initialiser donothing declaration
-    statement donothing donothing
+    statement donothing donothing donothing
 
 (* --------------------------------------------------------------------- *)
 (* rebuild mcode cells in an instantiated alt *)
@@ -1481,8 +1489,8 @@ let rebuild_mcode start_line =
 		 (info,copy_mcodekind mc))
 	   | Ast0.While(whl,lp,exp,rp,body,(info,mc)) ->
 	       Ast0.While(whl,lp,exp,rp,body,(info,copy_mcodekind mc))
-	   | Ast0.For(fr,lp,e1,sem1,e2,sem2,e3,rp,body,(info,mc)) ->
-	       Ast0.For(fr,lp,e1,sem1,e2,sem2,e3,rp,body,
+	   | Ast0.For(fr,lp,first,e2,sem2,e3,rp,body,(info,mc)) ->
+	       Ast0.For(fr,lp,first,e2,sem2,e3,rp,body,
 			(info,copy_mcodekind mc))
 	   | Ast0.Iterator(nm,lp,args,rp,body,(info,mc)) ->
 	       Ast0.Iterator(nm,lp,args,rp,body,(info,copy_mcodekind mc))
@@ -1504,7 +1512,7 @@ let rebuild_mcode start_line =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing
-    donothing statement donothing donothing
+    donothing statement donothing donothing donothing
 
 (* --------------------------------------------------------------------- *)
 (* The problem of whencode.  If an isomorphism contains dots in multiple
@@ -1949,6 +1957,7 @@ let instantiate bindings mv_bindings =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     (dots elist) donothing (dots plist) (dots slist) donothing donothing
     identfn exprfn tyfn initfn paramfn declfn stmtfn donothing donothing
+    donothing
 
 (* --------------------------------------------------------------------- *)
 
@@ -2083,13 +2092,13 @@ let extra_copy_stmt_plus model e =
     | Ast0.IfThen(_,_,_,_,_,(info,aft))
     | Ast0.IfThenElse(_,_,_,_,_,_,_,(info,aft))
     | Ast0.While(_,_,_,_,_,(info,aft))
-    | Ast0.For(_,_,_,_,_,_,_,_,_,(info,aft))
+    | Ast0.For(_,_,_,_,_,_,_,_,(info,aft))
     | Ast0.Iterator(_,_,_,_,_,(info,aft)) ->
 	(match Ast0.unwrap e with
 	  Ast0.IfThen(_,_,_,_,_,(info,aft1))
 	| Ast0.IfThenElse(_,_,_,_,_,_,_,(info,aft1))
 	| Ast0.While(_,_,_,_,_,(info,aft1))
-	| Ast0.For(_,_,_,_,_,_,_,_,_,(info,aft1))
+	| Ast0.For(_,_,_,_,_,_,_,_,(info,aft1))
 	| Ast0.Iterator(_,_,_,_,_,(info,aft1)) ->
 	    merge_plus aft aft1
 	| _ -> merge_plus aft (Ast0.get_mcodekind e))
@@ -2590,7 +2599,7 @@ let rewrap =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing
+    donothing donothing donothing
 
 let rewrap_anything = function
     Ast0.DotsExprTag(d) ->
@@ -2616,6 +2625,7 @@ let rewrap_anything = function
   | Ast0.ParamTag(d) -> Ast0.ParamTag(rewrap.VT0.rebuilder_rec_parameter d)
   | Ast0.DeclTag(d) -> Ast0.DeclTag(rewrap.VT0.rebuilder_rec_declaration d)
   | Ast0.StmtTag(d) -> Ast0.StmtTag(rewrap.VT0.rebuilder_rec_statement d)
+  | Ast0.ForInfoTag(d) -> Ast0.ForInfoTag(rewrap.VT0.rebuilder_rec_forinfo d)
   | Ast0.CaseLineTag(d) ->
       Ast0.CaseLineTag(rewrap.VT0.rebuilder_rec_case_line d)
   | Ast0.TopTag(d) -> Ast0.TopTag(rewrap.VT0.rebuilder_rec_top_level d)

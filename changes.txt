@@ -10,6 +10,7 @@
 - virtual typedef, declarer name, iterator name
 - regexps for type metavariables
 - 'symbol' metadeclaration for C identifiers that are guaranteed not intended as meta variables. 
+- allow mixing isomorpisms with normal rules
 
 ** Features:
 - New scripting languages
@@ -53,6 +54,9 @@
 - Allow size_t as the type of an array index in smpl code.  Reported by
   Mansour Moufid.
 - Allow renaming an expression as an identifier (@i)
+- Support const/volatile after *.  Thanks to Lars-Peter Clausen for
+  pointing out the problem.
+- Support variable declarations in the first element of a for loop header.
 
 ** Features:
 - Preserve spacing before // comments when not at the beginning of a line
@@ -125,6 +129,12 @@
 - Cache prefix takes distribution index into account.
 - Add --defined and --undefined options allowing some code not to be
   touched.  Suggested by Eric Leblond.
+- Dropped the need for the ocaml-extlib and ocaml-sexplib packages.
+- Changed the file format of the regression test results. Files in the old format
+  are no longer readable by spatch.
+- Added a crude mechanism for integrating the results of external analyses with
+  coccinelle, using positions to connect them together. This is an experimental
+  feature. See demos/external_ana.{c,cocci,data}.
 
 ** Bugfix:
 - Corrected parsing of script strings delimited by a single quote.  Thanks
@@ -209,6 +219,9 @@
   crash. Likewise, an identifier matching an initialized enum field
   shouldn't cause a crash.
 - Make when forall in an exists rule behave (more) like forall
+- Ocaml 4.00.0 compatibility fixes
+- Drop inlines, reduce parser code size
+- Bind const_vol in the right order in Ast0 visitor
 
 * 0.2.5
 ** Language:

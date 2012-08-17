@@ -4087,28 +4087,39 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
 
 
 
-  | A.ForHeader (ia1, ia2, ea1opt, ia3, ea2opt, ia4, ea3opt, ia5),
-    F.ForHeader (st, (((eb1opt,ib3s), (eb2opt,ib4s), (eb3opt,ib4vide)), ii))
+  | A.ForHeader (ia1, ia2, firsta, ea2opt, ia4, ea3opt, ia5),
+    F.ForHeader (st, ((firstb, (eb2opt,ib4s), (eb3opt,ib4vide)), ii))
     ->
       assert (null ib4vide);
       let (ib1, ib2, ib5) = tuple_of_list3 ii in
-      let ib3 = tuple_of_list1 ib3s in
       let ib4 = tuple_of_list1 ib4s in
 
+      (match (firsta,firstb) with
+	(A.ForExp(ea1opt, ia3),B.ForExp(eb1opt,ib3s)) ->
+	  let ib3 = tuple_of_list1 ib3s in
+	  tokenf ia3 ib3 >>= (fun ia3 ib3 ->
+	  option expression ea1opt eb1opt >>= (fun ea1opt eb1opt ->
+	    return (A.ForExp(ea1opt, ia3),B.ForExp(eb1opt,[ib3]))))
+      |	(A.ForDecl (mckstart,allminus,decla),B.ForDecl declb) ->
+	  declaration (mckstart,allminus,decla) declb >>=
+	  (fun (mckstart,allminus,decla) declb ->
+	    return (
+            A.ForDecl (mckstart,allminus,decla),
+            B.ForDecl declb
+          ))
+      |	_ -> fail)
+	>>=
+      (fun firsta firstb ->
       tokenf ia1 ib1 >>= (fun ia1 ib1 ->
       tokenf ia2 ib2 >>= (fun ia2 ib2 ->
-      tokenf ia3 ib3 >>= (fun ia3 ib3 ->
       tokenf ia4 ib4 >>= (fun ia4 ib4 ->
       tokenf ia5 ib5 >>= (fun ia5 ib5 ->
-      option expression ea1opt eb1opt >>= (fun ea1opt eb1opt ->
       option expression ea2opt eb2opt >>= (fun ea2opt eb2opt ->
       option expression ea3opt eb3opt >>= (fun ea3opt eb3opt ->
         return (
-          A.ForHeader (ia1, ia2, ea1opt, ia3, ea2opt, ia4, ea3opt, ia5),
-          F.ForHeader (st, (((eb1opt,[ib3]), (eb2opt,[ib4]), (eb3opt,[])),
-                           [ib1;ib2;ib5]))
-
-        )))))))))
+          A.ForHeader(ia1, ia2, firsta, ea2opt, ia4, ea3opt, ia5),
+          F.ForHeader(st,((firstb,(eb2opt,[ib4]),(eb3opt,[])),[ib1;ib2;ib5]))
+        ))))))))
 
 
   | A.SwitchHeader(ia1,ia2,ea,ia3), F.SwitchHeader (st, (eb,ii)) ->

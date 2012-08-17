@@ -1,4 +1,0 @@
-repo: 3f3ede295629c1705d0d9cacc5eb2987690a5e09
-node: 66fbcdf675878b902292050afc697ac5ed26bee0
-branch: default
-tag: forge-release-7.0.5

@@ -406,7 +406,7 @@ let do_get_constants constants keywords env neg_pos =
 	bind (keywords "while") (k re)
     | Ast.WhileTail(whl,lp,exp,rp,sem) ->
 	bind (keywords "do") (k re)
-    | Ast.ForHeader(fr,lp,e1,sem1,e2,sem2,e3,rp) ->
+    | Ast.ForHeader(fr,lp,first,e2,sem2,e3,rp) ->
 	bind (keywords "for") (k re)
     | Ast.SwitchHeader(switch,lp,exp,rp) ->
 	bind (keywords "switch") (k re)

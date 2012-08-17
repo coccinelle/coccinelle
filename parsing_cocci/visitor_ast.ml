@@ -361,9 +361,9 @@ let combiner bind option_default
       | Ast.WhileTail(whl,lp,exp,rp,sem) ->
 	  multibind [string_mcode whl; string_mcode lp; expression exp;
 		      string_mcode rp; string_mcode sem]
-      | Ast.ForHeader(fr,lp,e1,sem1,e2,sem2,e3,rp) ->
-	  multibind [string_mcode fr; string_mcode lp;
-		      get_option expression e1; string_mcode sem1;
+      | Ast.ForHeader(fr,lp,first,e2,sem2,e3,rp) ->
+	  let first = forinfo first in
+	  multibind [string_mcode fr; string_mcode lp; first;
 		      get_option expression e2; string_mcode sem2;
 		      get_option expression e3; string_mcode rp]
       | Ast.IteratorHeader(nm,lp,args,rp) ->
@@ -397,6 +397,14 @@ let combiner bind option_default
 	  multibind [string_mcode case; expression exp; string_mcode colon]
       |	Ast.DisjRuleElem(res) -> multibind (List.map rule_elem res) in
     rulefn all_functions k re
+
+  (* not parameterisable, for now *)
+  and forinfo fi =
+    let k = function
+	Ast.ForExp(e1,sem1) ->
+	  bind (get_option expression e1) (string_mcode sem1)
+      | Ast.ForDecl (_,_,decl) -> declaration decl in
+    k fi
 
   (* not parameterizable for now... *)
   and define_parameters p =
@@ -534,6 +542,7 @@ let combiner bind option_default
       | Ast.IncFileTag(stg) -> option_default
       | Ast.Rule_elemTag(rule) -> rule_elem rule
       | Ast.StatementTag(rule) -> statement rule
+      | Ast.ForInfoTag(rule) -> forinfo rule
       | Ast.CaseLineTag(case) -> case_line case
       | Ast.ConstVolTag(cv) -> option_default
       | Ast.Token(tok,info) -> option_default
@@ -879,9 +888,9 @@ let rebuilder
 	| Ast.WhileTail(whl,lp,exp,rp,sem) ->
 	    Ast.WhileTail(string_mcode whl, string_mcode lp, expression exp,
 			  string_mcode rp, string_mcode sem)
-	| Ast.ForHeader(fr,lp,e1,sem1,e2,sem2,e3,rp) ->
-	    Ast.ForHeader(string_mcode fr, string_mcode lp,
-			  get_option expression e1, string_mcode sem1,
+	| Ast.ForHeader(fr,lp,first,e2,sem2,e3,rp) ->
+	    let first = forinfo first in
+	    Ast.ForHeader(string_mcode fr, string_mcode lp, first,
 			  get_option expression e2, string_mcode sem2,
 			  get_option expression e3, string_mcode rp)
 	| Ast.IteratorHeader(whl,lp,args,rp) ->
@@ -924,6 +933,15 @@ let rebuilder
 	    Ast.Case(string_mcode case,expression exp,string_mcode colon)
 	| Ast.DisjRuleElem(res) -> Ast.DisjRuleElem(List.map rule_elem res)) in
     rulefn all_functions k re
+
+  (* not parameterizable for now... *)
+  and forinfo fi =
+    let k = function
+      Ast.ForExp(e1,sem1) ->
+	Ast.ForExp(get_option expression e1,string_mcode sem1)
+    | Ast.ForDecl (bef,allminus,decl) ->
+	Ast.ForDecl(bef,allminus,declaration decl) in
+    k fi
 
   (* not parameterizable for now... *)
   and define_parameters p =
@@ -1078,6 +1096,7 @@ let rebuilder
       | Ast.IncFileTag(stg) as x -> x
       | Ast.Rule_elemTag(rule) -> Ast.Rule_elemTag(rule_elem rule)
       | Ast.StatementTag(rule) -> Ast.StatementTag(statement rule)
+      | Ast.ForInfoTag(rule) -> Ast.ForInfoTag(forinfo rule)
       | Ast.CaseLineTag(case) -> Ast.CaseLineTag(case_line case)
       | Ast.ConstVolTag(cv) as x -> x
       | Ast.Token(tok,info) as x -> x

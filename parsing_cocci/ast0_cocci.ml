@@ -335,8 +335,7 @@ and base_statement =
                      string mcode (* while *) * string mcode (* ( *) *
 	             expression * string mcode (* ) *) *
                      string mcode (* ; *)
-  | For           of string mcode (* for *) * string mcode (* ( *) *
-                     expression option * string mcode (*;*) *
+  | For           of string mcode (* for *) * string mcode (* ( *) * forinfo *
 	             expression option * string mcode (*;*) *
                      expression option * string mcode (* ) *) * statement *
 	             (info * mcodekind) (* after info *)
@@ -382,6 +381,12 @@ and base_statement =
 	define_parameters (*params*) * statement dots
   | OptStm   of statement
   | UniqueStm of statement
+
+and base_forinfo =
+    ForExp of expression option * string mcode (*;*)
+  | ForDecl of (info * mcodekind) (* before the decl *) * declaration
+
+and forinfo = base_forinfo wrap
 
 and fninfo =
     FStorage of Ast.storage mcode
@@ -470,6 +475,7 @@ and anything =
   | InitTag of initialiser
   | DeclTag of declaration
   | StmtTag of statement
+  | ForInfoTag of forinfo
   | CaseLineTag of case_line
   | TopTag of top_level
   | IsoWhenTag of Ast.when_modifier
@@ -491,6 +497,7 @@ let param x = ParamTag x
 let ini x = InitTag x
 let decl x = DeclTag x
 let stmt x = StmtTag x
+let forinfo x = ForInfoTag x
 let case_line x = CaseLineTag x
 let top x = TopTag x
 

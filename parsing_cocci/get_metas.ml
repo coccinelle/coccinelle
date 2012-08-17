@@ -619,18 +619,25 @@ and statement s =
 	  let (sem_n,sem) = mcode sem in
 	  (multibind [d_n;body_n;whl_n;lp_n;exp_n;rp_n;sem_n],
 	   Ast0.Do(d,body,whl,lp,exp,rp,sem))
-      | Ast0.For(fr,lp,e1,sem1,e2,sem2,e3,rp,body,aft) ->
+      | Ast0.For(fr,lp,first,e2,sem2,e3,rp,body,aft) ->
 	  let (fr_n,fr) = mcode fr in
 	  let (lp_n,lp) = mcode lp in
-	  let (e1_n,e1) = get_option expression e1 in
-	  let (sem1_n,sem1) = mcode sem1 in
+	  let (first_n,first) =
+	    match Ast0.unwrap first with
+	      Ast0.ForExp(e1,sem1) ->
+		let (e1_n,e1) = get_option expression e1 in
+		let (sem1_n,sem1) = mcode sem1 in
+		(bind e1_n sem1_n, Ast0.rewrap first (Ast0.ForExp(e1,sem1)))
+	    | Ast0.ForDecl (bef,decl) ->
+		let (decl_n,decl) = declaration decl in
+		(decl_n,Ast0.rewrap first (Ast0.ForDecl (bef,decl))) in
 	  let (e2_n,e2) = get_option expression e2 in
 	  let (sem2_n,sem2) = mcode sem2 in
 	  let (e3_n,e3) = get_option expression e3 in
 	  let (rp_n,rp) = mcode rp in
 	  let (body_n,body) = statement body in
-	  (multibind [fr_n;lp_n;e1_n;sem1_n;e2_n;sem2_n;e3_n;rp_n;body_n],
-	   Ast0.For(fr,lp,e1,sem1,e2,sem2,e3,rp,body,aft))
+	  (multibind [fr_n;lp_n;first_n;e2_n;sem2_n;e3_n;rp_n;body_n],
+	   Ast0.For(fr,lp,first,e2,sem2,e3,rp,body,aft))
       | Ast0.Iterator(nm,lp,args,rp,body,aft) ->
 	  let (nm_n,nm) = ident nm in
 	  let (lp_n,lp) = mcode lp in

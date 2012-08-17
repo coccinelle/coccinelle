@@ -28,7 +28,6 @@ MYSRC=	commands.ml                              \
 	oarray.ml				 \
 	ocollection/ograph2way.ml		 \
 	ograph_simple.ml ograph_extended.ml	 \
-	ofullcommon.ml                           \
 	glimpse.ml parser_combinators.ml
 
 # src from other authors, got from the web or caml hump
@@ -76,10 +75,6 @@ MYMPISRC=distribution.ml
 MPIINCLUDES=-I ../ocamlmpi -I ../../ocamlmpi -I +ocamlmpi
 MPISYSLIBS=mpi.cma
 
-#sexplib
-MYSEXPSRC=sexp_common.ml
-SEXPINCLUDES=-I $(SEXPDIR)
-
 #binprot
 MYBINSRC=bin_common.ml
 BININCLUDES=-I ../ocamltarzan/lib-binprot -I ../../ocamltarzan/lib-binprot
@@ -105,9 +100,8 @@ INCLUDES=$(INCLUDEDIRS:%=-I %) $(INCLUDESEXTRA)
 
 # This flag can also be used in subdirectories so don't change its name here.
 # For profiling use:  -p -inline 0
-OCAMLCFLAGS ?= -g -dtypes
-OPTFLAGS ?= -g -dtypes
-#-thread
+OCAMLCFLAGS ?= -g
+OPTFLAGS ?= -g
 
 # The OPTBIN variable is here to allow to use ocamlc.opt instead of
 # ocaml, when it is available, which speeds up compilation. So
@@ -116,8 +110,8 @@ OPTFLAGS ?= -g -dtypes
 OPTBIN ?= #.opt
 
 # The OCaml tools.
-OCAMLC_CMD=$(OCAMLC) -thread $(OCAMLCFLAGS) $(INCLUDES)
-OCAMLOPT_CMD=$(OCAMLOPT) -thread $(OPTFLAGS) $(INCLUDES)
+OCAMLC_CMD=$(OCAMLC) $(OCAMLCFLAGS) $(INCLUDES)
+OCAMLOPT_CMD=$(OCAMLOPT) $(OPTFLAGS) $(INCLUDES)
 OCAMLDEP_CMD=$(OCAMLDEP) $(INCLUDES)
 OCAMLMKTOP_CMD=$(OCAMLMKTOP) -g -custom $(INCLUDES)
 
@@ -244,19 +238,6 @@ clean::
 
 
 #-----------------------------------------------------------------------------
-.PHONEY: sexp sexp.all sexp.opt
-sexp: sexp.all
-sexp.all:
-	$(MAKE) INCLUDESEXTRA="$(SEXPINCLUDES)" commons_sexp.cma
-sexp.opt:
-	$(MAKE) INCLUDESEXTRA="$(SEXPINCLUDES)" commons_sexp.cmxa
-
-commons_sexp.cma: $(MYSEXPSRC:.ml=.cmo)
-	$(OCAMLC_CMD) -a -o $@ $^
-
-commons_sexp.cmxa: $(MYSEXPSRC:.ml=.cmx)
-	$(OCAMLOPT_CMD) -a -o $@ $^
-
 binprot:
 	$(MAKE) INCLUDESEXTRA="$(BININCLUDES)" commons_bin.cma
 binprot.opt:

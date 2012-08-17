@@ -508,10 +508,13 @@ and statement arity s =
 	  mcode print_string whl; print_string " "; mcode print_string_box lp;
 	  expression exp; close_box(); mcode print_string rp;
 	  mcode print_string sem
-      | Ast0.For(fr,lp,e1,sem1,e2,sem2,e3,rp,body,(info,aft)) ->
+      | Ast0.For(fr,lp,first,e2,sem2,e3,rp,body,(info,aft)) ->
 	  print_string arity;
 	  mcode print_string fr; mcode print_string_box lp;
-	  print_option expression e1; mcode print_string sem1;
+	  (match Ast0.unwrap first with
+	    Ast0.ForExp(e1,sem1) ->
+	      print_option expression e1; mcode print_string sem1
+	  | Ast0.ForDecl (_,decl) -> declaration decl);
 	  print_option expression e2; mcode print_string sem2;
 	  print_option expression e3; close_box();
 	  mcode print_string rp; print_string " "; statement arity body;
@@ -703,6 +706,12 @@ let unparse_anything x =
   | Ast0.StmtTag(d)  ->
       print_string "Stm:"; force_newline();
       statement "" d
+  | Ast0.ForInfoTag(fi)  ->
+      print_string "ForInfo:"; force_newline();
+      (match Ast0.unwrap fi with
+	Ast0.ForExp(e1,sem1) ->
+	  print_option expression e1; mcode print_string sem1
+      | Ast0.ForDecl (_,decl) -> declaration decl)
   | Ast0.CaseLineTag(d)  -> case_line "" d
   | Ast0.TopTag(d)       -> top_level d
   | Ast0.IsoWhenTag(x)   -> U.print_when_modif x

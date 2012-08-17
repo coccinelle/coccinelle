@@ -443,7 +443,7 @@ and base_rule_elem =
 	             expression * string mcode (* ) *) *
                      string mcode (* ; *)
   | ForHeader     of string mcode (* for *) * string mcode (* ( *) *
-                     expression option * string mcode (*;*) *
+                     forinfo *
 	             expression option * string mcode (*;*) *
                      expression option * string mcode (* ) *)
   | IteratorHeader of ident (* name *) * string mcode (* ( *) *
@@ -474,6 +474,11 @@ and base_rule_elem =
   | Case          of string mcode (* case *) * expression * string mcode (*:*)
   | Default       of string mcode (* default *) * string mcode (*:*)
   | DisjRuleElem  of rule_elem list
+
+and forinfo =
+    ForExp of expression option * string mcode (*;*)
+  | ForDecl of mcodekind (* before the decl *) *
+        bool (* true if all minus *) * declaration
 
 and fninfo =
     FStorage of storage mcode
@@ -624,6 +629,7 @@ and anything =
   | IncFileTag          of inc_file
   | Rule_elemTag        of rule_elem
   | StatementTag        of statement
+  | ForInfoTag          of forinfo
   | CaseLineTag         of case_line
   | ConstVolTag         of const_vol
   | Token               of string * info option

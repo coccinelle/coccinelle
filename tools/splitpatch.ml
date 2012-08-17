@@ -267,6 +267,28 @@ let uctr = ref 0
 
 let found_a_maintainer = ref false
 
+let common_prefix l1 l2 =
+  let rec loop = function
+      ([],_) | (_,[]) -> []
+    | (x::xs,y::ys) when x = y -> x :: (loop (xs,ys))
+    | _ -> [] in
+  match loop (l1,l2) with
+    [] -> None
+  | res -> Some (String.concat "/" res)
+
+let find_common_path file cell =
+  let fs = Str.split (Str.regexp "/") file in
+  let rec loop = function
+      [] ->
+	let c1 = ref [] in
+	cell := ((ref file),c1)::!cell;
+	c1
+    | (f,c1)::xs ->
+	(match common_prefix fs (Str.split (Str.regexp "/") !f) with
+	  None -> loop xs
+	| Some cp -> f := cp; c1) in
+  loop !cell
+
 let resolve_maintainers patches =
   let maintainer_table = Hashtbl.create (List.length patches) in
   List.iter
@@ -298,39 +320,14 @@ let resolve_maintainers patches =
 		      let cell = ref [] in
 		      Hashtbl.add maintainer_table info cell;
 		      cell in
-		  cell := (file,(diff_line :: rest)) :: !cell
+		  let cell1 = find_common_path file cell in
+		  cell1 := (file,(diff_line :: rest)) :: !cell1
 	      |	_ -> failwith "filename not found")
 	  | _ ->
 	      failwith (Printf.sprintf "prefix a/ not found in %s" diff_line))
       |	_ -> failwith "bad diff line")
     patches;
   maintainer_table
-
-(* ------------------------------------------------------------------------ *)
-
-let common_prefix l1 l2 =
-  let rec loop = function
-      ([],_) | (_,[]) -> []
-    | (x::xs,y::ys) when x = y -> x :: (loop (xs,ys))
-    | _ -> [] in
-  match loop (l1,l2) with
-    [] ->
-      failwith
-	(Printf.sprintf "found nothing in common for %s and %s"
-	   (String.concat "/" l1) (String.concat "/" l2))
-  | res -> res
-
-let merge_files the_rest = function
-    [l] -> l
-  | files ->
-      let butlast l = if the_rest then l else List.rev(List.tl(List.rev l)) in
-      match List.map (function s -> Str.split (Str.regexp "/") s) files with
-	first::rest ->
-	  let rec loop res = function
-	      [] -> String.concat "/" res
-	    | x::rest -> loop (common_prefix res x) rest in
-	  loop (butlast first) rest
-      | _ -> failwith "not possible"
 
 (* ------------------------------------------------------------------------ *)
 
@@ -351,37 +348,42 @@ let make_mail_header o date maintainers ctr number subject =
   else Printf.fprintf o "Subject: [PATCH %d/%d] %s\n\n" ctr number subject
 
 let make_message_files subject cover message date maintainer_table
-    patch front add_ext =
+    patch front add_ext nomerge =
   let ctr = ref 0 in
   let elements =
     Hashtbl.fold
       (function (services,maintainers) ->
 	function diffs ->
 	  function rest ->
-	    if services=[default_string]
+	    if services=[default_string] or nomerge
 	    then
 	      (* if no maintainer, then one file per diff *)
+	      let diffs =
+		List.concat
+		  (List.map (function (common,diffs) -> !diffs) !diffs) in
 	      (List.map
 		 (function (file,diff) ->
 		   ctr := !ctr + 1;
-		   (!ctr,true,maintainers,[file],[diff]))
-		 (List.rev !diffs)) @
+		   (file,(!ctr,true,maintainers,[file],[diff])))
+		 (List.rev diffs)) @
 	      rest
 	    else
-	      begin
-		ctr := !ctr + 1;
-		let (files,diffs) = List.split (List.rev !diffs) in
-		(!ctr,false,maintainers,files,diffs)::rest
-	      end)
+	      (List.map
+		 (function (common,diffs) ->
+		   ctr := !ctr + 1;
+		   let (files,diffs) = List.split (List.rev !diffs) in
+		   (!common,(!ctr,false,maintainers,files,diffs)))
+		 !diffs) @
+	      rest)
       maintainer_table [] in
   let number = List.length elements in
   let generated =
     List.map
-      (function (ctr,the_rest,maintainers,files,diffs) ->
+      (function (common,(ctr,the_rest,maintainers,files,diffs)) ->
 	let output_file = add_ext(Printf.sprintf "%s%d" front ctr) in
 	let o = open_out output_file in
 	make_mail_header o date maintainers ctr number
-	  (Printf.sprintf "%s: %s" (merge_files the_rest files) subject);
+	  (Printf.sprintf "%s: %s" common subject);
 	print_all o message;
 	Printf.fprintf o "\n---\n";
 	let (nm,o1) = Filename.open_temp_file "patch" "patch" in
@@ -455,7 +457,7 @@ let generate_command front cover generated =
 	(String.concat " " ((front^".cover") :: generated)));
   close_out o
 
-let make_output_files subject cover message maintainer_table patch =
+let make_output_files subject cover message maintainer_table patch nomerge =
   let date = List.hd (cmd_to_list "date") in
   let front = safe_chop_extension patch in
   let add_ext =
@@ -464,18 +466,22 @@ let make_output_files subject cover message maintainer_table patch =
     | None -> (function s -> s) in
   let generated =
     make_message_files subject cover message date maintainer_table
-      patch front add_ext in
+      patch front add_ext nomerge in
   make_cover_file (List.length generated) subject cover front date
     maintainer_table;
   generate_command front cover generated
 
 (* ------------------------------------------------------------------------ *)
 
+let nomerge = ref false
+
 let parse_args l =
   let (other_args,files) =
-    List.partition
-      (function a -> String.length a > 1 && String.get a 0 = '-')
+    List.partition (function a -> String.length a > 1 && String.get a 0 = '-')
       l in
+  let (nomergep,other_args) =
+    List.partition (function a -> a = "-nomerge") other_args in
+  (if not(nomergep = []) then nomerge := true);
   match files with
     [file] -> (file,String.concat " " other_args)
   | _ -> failwith "Only one file allowed"
@@ -494,4 +500,4 @@ let _ =
   let maintainer_table = resolve_maintainers patches in
   (if !found_a_maintainer = false then git_options := !not_linux);
   (if not (git_args = "") then git_options := !git_options^" "^git_args);
-  make_output_files subject cover message maintainer_table file
+  make_output_files subject cover message maintainer_table file !nomerge

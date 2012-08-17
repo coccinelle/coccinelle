@@ -610,6 +610,16 @@ functions.}
 \developer{--disable-once}{Print various warning messages every time some
 condition occurs, rather than only once.}
 
+\subsection{External analyses}
+
+\developer{--external-analysis-file}{Loads in the contents of a database
+produced by some external analysis tool. Each entry contains the analysis
+result of a particular source location. Currently, such a database is a
+.csv file providing integer bounds or an integer set for some subset of
+the source locations that references an integer memory location.
+This database can be inspected with coccilib functions, e.g. to
+control the pattern match process.}
+
 \subsection{Miscellaneous}
 
 \rare{--quiet}{Suppress most output.  This is the default.}

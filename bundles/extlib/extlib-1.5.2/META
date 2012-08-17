@@ -1,4 +1,0 @@
-version="1.5.2"
-description="Extended standard library"
-archive(byte)="extLib.cma"
-archive(native)="extLib.cmxa"

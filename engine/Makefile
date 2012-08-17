@@ -33,7 +33,8 @@ endif
 TARGET=cocciengine
 CTLTARGET=engine
 
-SRC= flag_matcher.ml lib_engine.ml pretty_print_engine.ml \
+SRC= externalanalysis.ml \
+	flag_matcher.ml lib_engine.ml pretty_print_engine.ml \
       check_exhaustive_pattern.ml \
       check_reachability.ml \
       c_vs_c.ml isomorphisms_c_c.ml \
@@ -59,11 +60,11 @@ SYSLIBS= str.cma unix.cma
 
 #for warning:  -w A
 #for profiling:  -p -inline 0   with OCAMLOPT
-OCAMLCFLAGS ?= -g -dtypes
-OPTFLAGS ?= -g -dtypes
+OCAMLCFLAGS ?= -g
+OPTFLAGS ?= -g
 
-OCAMLC_CMD=$(OCAMLC) -thread $(OCAMLCFLAGS) $(INCLUDES)
-OCAMLOPT_CMD=$(OCAMLOPT) -thread $(OPTFLAGS) $(INCLUDES)
+OCAMLC_CMD=$(OCAMLC) $(OCAMLCFLAGS) $(INCLUDES)
+OCAMLOPT_CMD=$(OCAMLOPT) $(OPTFLAGS) $(INCLUDES)
 OCAMLDEP_CMD=$(OCAMLDEP) $(INCLUDESDEP)
 OCAMLMKTOP_CMD=$(OCAMLMKTOP) -g -custom $(INCLUDES)
 

@@ -49,6 +49,11 @@ let rec disjmult f = function
       let rest = disjmult f xs in
       disjmult2 cur rest (function cur -> function rest -> cur :: rest)
 
+let rec disjmult_two fstart frest (start,rest) =
+  let cur = fstart start in
+  let rest = disjmult frest rest in
+  disjmult2 cur rest (function cur -> function rest -> (cur,rest))
+
 let disjoption f = function
     None -> [None]
   | Some x -> List.map (function x -> Some x) (f x)
@@ -356,12 +361,20 @@ let rec disj_rule_elem r k re =
   | Ast.WhileTail(whl,lp,exp,rp,sem) ->
       orify_rule_elem re exp
 	(function exp -> Ast.rewrap re (Ast.WhileTail(whl,lp,exp,rp,sem)))
-  | Ast.ForHeader(fr,lp,e1,sem1,e2,sem2,e3,rp) ->
-      generic_orify_rule_elem (disjmult (disjoption disjexp)) re [e1;e2;e3]
-	(function
-	    [exp1;exp2;exp3] ->
-	      Ast.rewrap re (Ast.ForHeader(fr,lp,exp1,sem1,exp2,sem2,exp3,rp))
-	  | _ -> failwith "not possible")
+  | Ast.ForHeader(fr,lp,first,e2,sem2,e3,rp) ->
+      let disjfirst = function
+	  Ast.ForExp(e1,sem1) ->
+	    List.map (function e1 -> Ast.ForExp(e1,sem1))
+	      (disjoption disjexp e1)
+	| Ast.ForDecl (bef,allminus,decl) ->
+	    List.map (function decl -> Ast.ForDecl (bef,allminus,decl))
+	      (disjdecl decl) in
+      generic_orify_rule_elem
+	(disjmult_two disjfirst (disjoption disjexp)) re (first,[e2;e3])
+        (function
+            (first,[exp2;exp3]) ->
+              Ast.rewrap re (Ast.ForHeader(fr,lp,first,exp2,sem2,exp3,rp))
+          |  _ -> failwith "not possible")
   | Ast.IteratorHeader(whl,lp,args,rp) ->
       generic_orify_rule_elem (disjdots disjexp) re args
 	(function args -> Ast.rewrap re (Ast.IteratorHeader(whl,lp,args,rp)))

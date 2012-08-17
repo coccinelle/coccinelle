@@ -47,7 +47,7 @@ let sequence_tokens =
   V0.flat_combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing donothing
-    donothing donothing
+    donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
 
 (* In general, we will get a list of lists:

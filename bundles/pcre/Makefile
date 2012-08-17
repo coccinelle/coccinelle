@@ -5,16 +5,16 @@ ifneq ($(MAKECMDGOALS),distclean)
 include ../../Makefile.config
 endif
 
-OCAMLCFLAGS ?= -g -dtypes
-OPTFLAGS ?= -g -dtypes
+OCAMLCFLAGS ?= -g
+OPTFLAGS ?= -g
 
 # note: the extra linker flags are needed so that the produced shared
 # library gets dynamically linked to libpcre.
 EXTRACFLAGS=$(PCRE_CFLAGS:%=-ccopt %) $(PCRE_LIBS:%=-ccopt %)
 EXTRALNKFLAGS=$(PCRE_LIBS:%=-ldopt %)
 
-OCAMLC_CMD=$(OCAMLC) $(OCAMLCFLAGS) -thread $(EXTRACFLAGS) -cc "${CC} ${CFLAGS}"
-OCAMLOPT_CMD=$(OCAMLOPT) $(OPTFLAGS) -thread $(EXTRACFLAGS)
+OCAMLC_CMD=$(OCAMLC) $(OCAMLCFLAGS) $(EXTRACFLAGS) -cc "${CC} ${CFLAGS}"
+OCAMLOPT_CMD=$(OCAMLOPT) $(OPTFLAGS) $(EXTRACFLAGS)
 OCAMLMKLIB_CMD=$(OCAMLMKLIB) $(EXTRALNKFLAGS)
 
 PCRE_VERSION=6.2.5

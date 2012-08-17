@@ -80,9 +80,9 @@ let set_test_poss =
 	Ast0.rewrap s (Ast0.While(i,lp,process_exp e,rp,s1,aft))
     | Ast0.Do(d,s1,w,lp,e,rp,sc) ->
 	Ast0.rewrap s (Ast0.Do(d,s1,w,lp,process_exp e,rp,sc))
-    | Ast0.For(f,lp,e1,sc1,Some e2,sc2,e3,rp,s1,aft) ->
+    | Ast0.For(f,lp,first,Some e2,sc2,e3,rp,s1,aft) ->
 	Ast0.rewrap s
-	  (Ast0.For(f,lp,e1,sc1,Some (process_exp e2),sc2,e3,rp,s1,aft))
+	  (Ast0.For(f,lp,first,Some (process_exp e2),sc2,e3,rp,s1,aft))
     | Ast0.Dots(d,wc) ->
 	Ast0.rewrap s (Ast0.Dots(d,List.map process_wc wc))
     | Ast0.Nest(l,s1,r,wc,m) ->
