@@ -146,6 +146,17 @@ let setup_package name modname rootdir =
   else setup_bundle rootdir
 
 
+(* Most files depend on these standard modules, hence we setup a
+ * single tag for them.
+ * This setup routine should be called before the others to ensure
+ * that these modules appear first on the ocaml commandlines.
+ *)
+let setup_basic_libs () =
+  ocaml_lib ~extern:true ~tag_name:"use_base" "unix";
+  ocaml_lib ~extern:true ~tag_name:"use_base" "str";
+  ocaml_lib ~extern:true ~tag_name:"use_base" "nums";
+  ocaml_lib ~extern:true ~tag_name:"use_base" "bigarray"
+
 (* The menhir package provides individual object files
  * instead of an archive.
  *)
@@ -218,6 +229,8 @@ let _ = dispatch begin
         ()
 
     | Before_hygiene ->
+	setup_basic_libs ();
+
 	if is_path_configured menhirLib_path then
           setup_menhirLib ();
 
@@ -230,7 +243,7 @@ let _ = dispatch begin
 
     | After_rules ->
 	(* produces a slightly faster native version *)
-	flag ["ocaml"; "compile"; "native"] (A "-unsafe");
+	(* flag ["ocaml"; "compile"; "native"] (A "-unsafe"); *)
 
 	(* adds debugging info (including exception backtraces) *)
 	flag ["ocaml"; "compile"] (A "-g");

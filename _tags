@@ -1,3 +1,7 @@
+# Compile all .ml files against some base libraries
+# (defined in the plugin as unix,str,nums and bigarray)
+<**/*.ml>: use_base
+
 #
 # Cocci sources and directories
 #
@@ -13,10 +17,6 @@
 <parsing_cocci/parser_cocci_menhir.ml>: use_menhirLib
 
 <parsing_c>: include
-<parsing_c/flag_parsing_c.ml>: use_nums
-<parsing_c/lexer_c.mll>: use_nums
-<parsing_c/parser_c.mly>: use_nums
-
 <ctl>: include
 <engine>: include
 <popl09>: include
@@ -70,9 +70,11 @@
 # source distribution to make some preprocessors
 # optional
 
-<parsing_cocci/lexer_cli.mll>:              not_hygienic
-<parsing_cocci/lexer_script.mll>:           not_hygienic
-<parsing_cocci/lexer_cocci.mll>:            not_hygienic
+<parsing_c/parser_c.mly>:         not_hygienic
+<parsing_c/lexer_c.mll>:          not_hygienic
+<parsing_cocci/lexer_cli.mll>:    not_hygienic
+<parsing_cocci/lexer_script.mll>: not_hygienic
+<parsing_cocci/lexer_cocci.mll>:  not_hygienic
 <parsing_cocci/parser_cocci_menhir.mly>:    not_hygienic
 <parsing_cocci/parser_cocci_menhir.ml{,i}>: precious
 
@@ -86,21 +88,21 @@
 <main.byte>: custom
 
 # library dependencies of spatch.
-<main.{native,byte}>: thread, use_nums, use_str, use_unix, use_bigarray, use_dynlink, use_menhirLib, use_pcre, use_pycaml
+<main.{native,byte}>: thread, use_base, use_dynlink, use_menhirLib, use_pcre, use_pycaml
 
 
 # Build tools/all.otarget for all tools, or
 # tools/all.opt.otarget for all tools with the native compiler.
 
-<tools/gitgrep.{byte,native}>:             use_str
-<tools/gitsort.{byte,native}>:             use_str
-<tools/process_isoprofile.{byte,native}>:  use_str
-<tools/alloc_free.{byte,native}>:          use_str
-<tools/bridge.{byte,native}>:              use_str
-<tools/spp.{byte,native}>:                 use_str, use_bigarray, use_unix
-<tools/splitpatch.{byte,native}>:          use_str, use_unix
-<tools/extract_c_and_res.{byte,native}>:   use_str, use_bigarray, use_unix
-<tools/distributed/cleanup.{byte,native}>: use_str
+<tools/gitgrep.{byte,native}>:             use_base
+<tools/gitsort.{byte,native}>:             use_base
+<tools/process_isoprofile.{byte,native}>:  use_base
+<tools/alloc_free.{byte,native}>:          use_base
+<tools/bridge.{byte,native}>:              use_base
+<tools/spp.{byte,native}>:                 use_base
+<tools/splitpatch.{byte,native}>:          use_base
+<tools/extract_c_and_res.{byte,native}>:   use_base
+<tools/distributed/cleanup.{byte,native}>: use_base
 
 
 #
