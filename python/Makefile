@@ -68,7 +68,7 @@ $(LIB): $(OBJS)
 	$(OCAMLC_CMD) -a -o $(LIB) $(OBJS)
 
 clean::
-	rm -f $(LIB)
+	rm -f $(TARGET).cma $(TARGET).a $(TARGET).o $(TARGET).cmxa
 
 
 $(OPTLIB): $(OPTOBJS)
