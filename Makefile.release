@@ -46,7 +46,7 @@ endif
 # to save important configure flags.
 remember_ocamlbuild:=$(FEATURE_OCAMLBUILD)
 
-ifneq ($(remember_ocamlbuild),yes)
+ifeq ($(remember_ocamlbuild),yes)
 	extra_configure_flags := --enable-ocamlbuild
 else
 	extra_configure_flags :=
