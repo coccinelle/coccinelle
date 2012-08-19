@@ -826,7 +826,7 @@ and rule_elem arity re =
   | Ast.IteratorHeader(nm,lp,args,rp) ->
       pr_arity arity;
       ident nm; pr_space(); mcode print_string_box lp;
-      dots (function _ -> ()) expression args; close_box();
+      dots (function _ -> ()) arg_expression args; close_box();
       mcode print_string rp
 
   | Ast.SwitchHeader(switch,lp,exp,rp) ->

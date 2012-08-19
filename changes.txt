@@ -222,6 +222,8 @@
 - Ocaml 4.00.0 compatibility fixes
 - Drop inlines, reduce parser code size
 - Bind const_vol in the right order in Ast0 visitor
+- use arg_expression for printing iterator arguments instead of expression,
+  to get the right spacing.  Thanks to Lars-Peter Clausen for the fix.
 
 * 0.2.5
 ** Language:
