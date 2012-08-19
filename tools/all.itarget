@@ -1,0 +1,8 @@
+gitgrep.byte
+gitsort.byte
+process_isoprofile.byte
+alloc_free.byte
+bridge.byte
+spp.byte
+splitpatch.byte
+extract_c_and_res.byte

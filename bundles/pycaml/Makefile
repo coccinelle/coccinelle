@@ -58,6 +58,10 @@ $(PYCAMLDIR)/pycaml.cmx: $(PYCAMLDIR)/pycaml.ml $(PYCAMLDIR)/pycaml.cmi
 pycaml.cmxa: $(PYCAMLDIR)/pycaml.cmx $(PYCAMLDIR)/pycaml.cmi dllpycaml_stubs.so
 	$(OCAMLOPT_CMD) -I $(PYCAMLDIR) -a -o pycaml.cmxa $<
 
+# prepares the source bundle for building.
+.prepare: $(PYCAMLMARKER)
+	touch .prepare
+
 clean:
 	rm -f $(PYCAMLDIR)/pycaml.mli pycaml.cm[aixo] $(PYCAMLDIR)/pycaml.cm[aixo] \
 		pycaml.[ao] libpycaml_stubs.a pycaml_stubs.o dllpycaml_stubs.so libpycaml_stubs.so \
@@ -65,6 +69,7 @@ clean:
 
 distclean: clean
 	rm -rf $(PYCAMLDIR)
+	rm -f .prepare
 
 .PHONEY: all all.opt all-build all-opt-build distclean clean depend
 
@@ -76,6 +81,8 @@ $(PYCAMLMARKER): $(PYCAMLFILE)
 #	$(PATCH) -d "${PYCAMLDIR}" -p1 < ./python3-compat-fix.patch
 #	$(PATCH) -d "${PYCAMLDIR}" -p1 < ./pyunicodeapichanges-fix.patch
 	$(PATCH) -d "${PYCAMLDIR}" -p2 < ./removeunicode.patch
+	$(PATCH) -d "${PYCAMLDIR}" -p1 < ./ignoreheader.patch
+	$(PATCH) -d "${PYCAMLDIR}" -p1 < ./elim-warnings.patch
 	rm -f "${PYCAMLDIR}/pycaml.mli"
 	touch $@
 

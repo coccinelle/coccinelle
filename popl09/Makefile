@@ -32,6 +32,7 @@ OPTLIB=$(LIB:.cma=.cmxa)
 OBJS = $(SRC:.ml=.cmo)
 OPTOBJS = $(SRC:.ml=.cmx)
 
+ifneq ($(FEATURE_OCAMLBUILD),yes)
 all: $(LIB)
 all.opt:
 	@$(MAKE) $(OPTLIB) BUILD_OPT=yes
@@ -44,6 +45,16 @@ $(LIB):  $(OBJS)
 
 clean::
 	rm -f $(LIB) $(TARGET).top
+else
+all:
+	cd .. && $(OCAMLBUILD) popl09/popl09.cma
+
+all.opt:
+	cd .. && $(OCAMLBUILD) popl09/popl09.cmxa
+
+clean::
+	cd .. && $(OCAMLBUILD) -clean
+endif
 
 
 $(OPTLIB): $(OPTOBJS)
@@ -81,7 +92,9 @@ distclean: clean
 
 ifneq ($(MAKECMDGOALS),clean)
 ifneq ($(MAKECMDGOALS),distclean)
+ifneq ($(FEATURE_OCAMLBUILD),yes)
 -include .depend
+endif
 endif
 endif
 

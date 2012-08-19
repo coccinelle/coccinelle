@@ -6,8 +6,6 @@ ifneq ($(MAKECMDGOALS),distclean)
 include ../Makefile.config
 endif
 
-include Makefile.doc
-
 TARGET=cocciocaml
 
 SRC=coccilib.ml ocamlcocci_aux.ml $(OCAMLCOCCI_FILE) prepare_ocamlcocci.ml run_ocamlcocci.ml
@@ -42,6 +40,7 @@ OPTOBJS = $(SRC:.ml=.cmx)
 ##############################################################################
 # Top rules
 ##############################################################################
+ifneq ($(FEATURE_OCAMLBUILD),yes)
 all: $(TARGET).cma
 all.opt:
 	@$(MAKE) $(TARGET).cmxa BUILD_OPT=yes
@@ -57,7 +56,18 @@ $(TARGET).top: $(OBJS) $(LIBS)
 
 clean::
 	rm -f $(TARGET).top
+else
+all:
+	cd .. && $(OCAMLBUILD) ocaml/ocaml.cma
 
+all.opt:
+	cd .. && $(OCAMLBUILD) ocaml/ocaml.cmxa
+
+clean::
+	cd .. && $(OCAMLBUILD) -clean
+endif
+
+include Makefile.doc
 
 
 ##############################################################################
@@ -93,7 +103,9 @@ distclean: clean
 ifneq ($(MAKECMDGOALS),clean)
 ifneq ($(MAKECMDGOALS),distclean)
 ifneq ($(MAKECMDGOALS),cleandoc)
+ifneq ($(FEATURE_OCAMLBUILD),yes)
 -include .depend
+endif
 endif
 endif
 endif

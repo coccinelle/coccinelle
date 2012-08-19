@@ -97,9 +97,12 @@ BYTECODE_EXTRA=-custom $(EXTRA_OCAML_FLAGS)
 ##############################################################################
 .PHONY:: all all.opt byte opt top clean distclean configure opt-compil
 .PHONY:: $(MAKESUBDIRS:%=%.all) $(MAKESUBDIRS:%=%.opt) subdirs.all subdirs.opt
-.PHONY:: all-opt all-byte byte-only opt-only
+.PHONY:: all-opt all-byte byte-only opt-only pure-byte
 .PHONY:: copy-stubs install-stubs install install-man install-python install-common
 
+
+# below follow the main make targets when ocamlbuild is not enabled
+ifneq ($(FEATURE_OCAMLBUILD),yes)
 
 # All make targets that are expected to be an entry point have a dependency on
 # 'Makefile.config' to ensure that if Makefile.config is not present, an error
@@ -146,10 +149,6 @@ all.opt: Makefile.config
 	$(MAKE) opt-only
 	$(MAKE) preinstall
 
-# aliases for "byte" and "opt-compil"
-opt opt-only: Makefile.config opt-compil
-byte-only: Makefile.config byte
-
 byte: Makefile.config version.ml
 	@$(MAKE) .depend
 	@$(MAKE) subdirs.all
@@ -166,6 +165,65 @@ opt-compil: Makefile.config version.ml
 
 top: $(EXEC).top
 
+# ocamlbuild version of the main make targets
+else
+
+all: Makefile.config
+	$(MAKE) $(TARGET_ALL)
+
+world: Makefile.config myocamlbuild.ml version.ml prepare-bundles
+	@echo "building both versions of spatch"
+	$(MAKE) byte
+	$(MAKE) opt-compil
+	$(MAKE) preinstall
+	$(MAKE) docs
+	@echo ""
+	@echo -e "\tcoccinelle can now be installed via 'make install'"
+
+# note: the 'all-dev' target excludes the documentation and is less noisy
+all-dev: Makefile.config myocamlbuild.ml version.ml prepare-bundles
+	$(MAKE) byte
+	@$(MAKE) preinstall
+
+all-release: Makefile.config myocamlbuild.ml version.ml prepare-bundles
+	@echo building $(TARGET_SPATCH)
+	$(MAKE) $(TARGET_SPATCH)
+	$(MAKE) preinstall
+	$(MAKE) docs
+	@echo ""
+	@echo -e "\tcoccinelle can now be installed via 'make install'"
+
+all.opt: Makefile.config myocamlbuild.ml version.ml prepare-bundles
+	$(MAKE) opt-only
+	$(MAKE) preinstall
+
+byte: Makefile.config myocamlbuild.ml version.ml prepare-bundles
+	$(OCAMLBUILD) main.byte
+	cp _build/main.byte $(EXEC)
+	@echo the compilation of $(EXEC) finished
+	@echo $(EXEC) can be installed or used
+
+pure-byte: Makefile.config myocamlbuild.ml version.ml prepare-bundles
+	$(OCAMLBUILD) -tag nocustom main.byte
+	cp _build/main.byte $(EXEC)
+	@echo the compilation of $(EXEC) finished
+	@echo $(EXEC) can be installed or used
+
+opt-compil: Makefile.config myocamlbuild.ml version.ml prepare-bundles
+	$(OCAMLBUILD) main.native
+	cp _build/main.native $(EXEC).opt
+	@echo the compilation of $(EXEC).opt finished
+	@echo $(EXEC).opt can be installed or used
+
+# end of main build target distinction on ocamlbuild
+endif
+
+# aliases for "byte" and "opt-compil"
+opt opt-only: Makefile.config opt-compil
+byte-only: Makefile.config byte
+
+
+
 subdirs.all:
 	@+for D in $(MAKESUBDIRS); do $(MAKE) $$D.all || exit 1 ; done
 
@@ -177,6 +235,14 @@ $(MAKESUBDIRS:%=%.all):
 
 $(MAKESUBDIRS:%=%.opt):
 	@$(MAKE) -C $(@:%.opt=%) all.opt
+
+# This make target prepares the bundled software for building.
+# Note that running 'make' in these subdirectories will
+# automatically prepare the bundled software.
+.PHONY:: prepare-bundles
+prepare-bundles: $(MAKELIBS:%/.prepare)
+$(MAKELIBS:%=%/.prepare):
+	@$(MAKE) -C $(@:%.prepare=%) .prepare
 
 #dependencies:
 # commons:
@@ -215,6 +281,16 @@ $(EXEC).top: $(LNKLIBS) $(LIBS) $(OBJS)
 clean distclean::
 	rm -f $(TARGET) $(TARGET).opt $(TARGET).top
 
+clean::
+	@if test -n "${OCAMLBUILD}" -d _build; then \
+		$(OCAMLBUILD) -clean; fi
+
+# distclean can run without ocamlbuild configured.
+distclean::
+	-@if test -d _build; then \
+		ocamlbuild -clean; fi
+	rm -rf _build _log
+
 .PHONY:: tools configure
 
 configure:
@@ -225,6 +301,9 @@ configure:
 Makefile.config: Makefile.config.in configure.ac
 	@echo "Makefile.config needs to be (re)build. Run  ./configure $(CONFIGURE_FLAGS) to generate it."
 	@false
+
+# as above, also for the ocamlbuild plugin
+myocamlbuild.ml: myocamlbuild.ml.in configure.ac
 
 tools: $(LIBS) $(LNKLIBS)
 	$(MAKE) -C tools
@@ -245,15 +324,27 @@ static:
 # may need the stubs, see 'copy-stubs'.
 purebytecode:
 	rm -f spatch.opt spatch
+ifneq ($(FEATURE_OCAMLBUILD),yes)
 	$(MAKE) BYTECODE_EXTRA="" byte-only
+else
+	@$(MAKE) pure-byte
+endif
 	sed -i '1 s,^#!.*$$,#!/usr/bin/ocamlrun,g' spatch
 
 # copies the stubs libraries (if any) to the root directory
+ifneq ($(FEATURE_OCAMLBUILD),yes)
 copy-stubs:
 	@if test -f ./bundles/pycaml/dllpycaml_stubs.so; then \
 		cp -fv ./bundles/pycaml/dllpycaml_stubs.so .; fi
 	@if test -f ./bundles/pcre/dllpcre_stubs.so; then \
 		cp -fv ./bundles/pcre/dllpcre_stubs.so .; fi
+else
+copy-stubs:
+	@if test -f _build/bundles/pycaml/dllpycaml_stubs.so; then \
+		cp -fv _build/bundles/pycaml/dllpycaml_stubs.so .; fi
+	@if test -f _build/bundles/pcre/dllpcre_stubs.so; then \
+		cp -fv _build/bundles/pcre/dllpcre_stubs.so .; fi
+endif
 
 ##############################################################################
 # Build version information
@@ -270,11 +361,16 @@ version.ml:
 
 docs:
 	@$(MAKE) -C docs || (echo "warning: ignored the failed construction of the manual" 1>&2)
+ifneq ($(FEATURE_OCAMLBUILD),yes)
 	@if test "x$(FEATURE_OCAML)" = x1; then \
 		if test -f ./parsing_c/ast_c.cmo -o -f ./parsing_c/ast_c.cmx; then \
 			$(MAKE) -C ocaml doc; \
 		else echo "note: to obtain coccilib documenation, it is required to build 'spatch' first so that ./parsing_c/ast_c.cm* gets build."; \
 		fi fi
+else
+	@if test "x$(FEATURE_OCAML)" = x1; then \
+		$(MAKE) -C ocaml doc; fi
+endif
 	@echo "finished building manuals"
 
 clean:: Makefile.config
@@ -533,7 +629,6 @@ distclean::
 	set -e; for i in $(CLEANSUBDIRS); do $(MAKE) -C $$i $@; done
 	rm -f test.ml
 	rm -f TAGS *.native *.byte *.d.native *.p.byte
-	rm -rf _build _log
 	rm -f tests/SCORE_actual.sexp tests/SCORE_best_of_both.sexp
 	find . -name ".#*1.*" | xargs rm -f
 	rm -f $(EXEC) $(EXEC).opt $(EXEC).top
@@ -582,7 +677,9 @@ ifneq ($(MAKECMDGOALS),all-dev)
 ifneq ($(MAKECMDGOALS),all)
 ifneq ($(MAKECMDGOALS),.depend)
 ifneq ($(MAKECMDGOALS),depend)
+ifneq ($(FEATURE_OCAMLBUILD),yes)
 -include .depend
+endif
 endif
 endif
 endif

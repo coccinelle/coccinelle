@@ -29,16 +29,22 @@ all.opt: .depend
 	@$(MAKE) all-opt-build
 all-opt-build: .depend menhirLib.cmxa META
 
+# prepares the source bundle for building.
+.prepare: $(MENHIRMARKER)
+	touch .prepare
+
 clean:
 	rm -f menhirLib.cma menhirLib.cmxa META \
 		$(MENHIRLIB)/*.cm[ioxa] \
 		$(MENHIRLIB)/*.o \
+		$(MENHIRLIB)/*.annot \
 		$(MENHIRLIB)/engineTypes.mli $(MENHIRLIB)/tableFormat.mli \
 		menhirLib.cm[ioxa] menhirLib.[oa] \
 		.depend
 
 distclean: clean
 	rm -rf $(MENHIRDIR)
+	rm -f .prepare
 
 $(MENHIRMARKER): $(MENHIRDIR).tar.gz
 	$(TAR) xfvz $<
@@ -99,7 +105,9 @@ $(MENHIRLIB)/tableFormat.mli: $(MENHIRLIB)/packedIntArray.cmi $(MENHIRLIB)/engin
 ifneq ($(MAKECMDGOALS),clean)
 ifneq ($(MAKECMDGOALS),distclean)
 ifneq ($(MAKECMDGOALS),depend-build)
-include .depend
+ifneq ($(FEATURE_OCAMLBUILD),yes)
+-include .depend
+endif
 endif
 endif
 endif

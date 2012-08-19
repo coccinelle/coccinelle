@@ -502,7 +502,7 @@ let pp_rule local_metas ast env srcfile =
 	Ast_c.AbstractLineTok _ -> pr (Ast_c.str_of_info info)
       | Ast_c.FakeTok (s,_) -> pr s
       |	_ ->
-	  Printf.printf "line: %s\n" (Common.dump info);
+	  Printf.printf "line: %s\n" (Dumper.dump info);
 	  error rule "not an abstract line" in
     let pr_space _ = pr " " in
     Unparse_cocci.pp_list_list_any

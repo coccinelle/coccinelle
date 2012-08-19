@@ -42,6 +42,16 @@ ifndef GIT
 GIT=git
 endif
 
+# the release process rewrites the Makefile.config, so we need
+# to save important configure flags.
+remember_ocamlbuild:=$(FEATURE_OCAMLBUILD)
+
+ifeq ($(remember_ocamlbuild),yes)
+	extra_configure_flags := --enable-ocamlbuild
+else
+	extra_configure_flags :=
+endif
+
 
 
 # Procedure to do first time:
@@ -101,7 +111,7 @@ prerelease:
 fix-expected:
 	@echo "going to generate: tests/SCORE_expected_orig.sexp"
 	$(MAKE) distclean
-	./configure --enable-release --disable-python
+	./configure --enable-release --disable-python $(extra_configure_flags)
 	$(MAKE) opt-only
 	yes | ./spatch.opt -testall --iso-file ./standard.iso --macro-file-builtins ./standard.h
 	cp tests/SCORE_actual.sexp tests/SCORE_expected_orig.sexp
@@ -135,7 +145,7 @@ package-src:
 # on those libraries.
 package-nopython:
 	$(MAKE) distclean
-	./configure --enable-release --disable-python --disable-pcre-syntax --disable-menhirLib --disable-sexplib --disable-extlib --disable-pycaml
+	./configure --enable-release --disable-python --disable-pcre-syntax --disable-menhirLib --disable-sexplib --disable-extlib --disable-pycaml  $(extra_configure_flags)
 	$(MAKE) bintar
 	$(MAKE) bytecodetar
 
@@ -144,7 +154,7 @@ package-nopython:
 # on those libraries.
 package-python:
 	$(MAKE) distclean
-	./configure --enable-release --enable-python --disable-pcre-syntax --disable-menhirLib --disable-sexplib --disable-extlib --disable-pycaml
+	./configure --enable-release --enable-python --disable-pcre-syntax --disable-menhirLib --disable-sexplib --disable-extlib --disable-pycaml $(extra_configure_flags)
 	$(MAKE) bintar-python
 	$(MAKE) bytecodetar-python
 
@@ -164,7 +174,8 @@ srctar: Makefile.config
 	if test -f "$(TMP)/$(PACKAGE)/"; then rm -f "$(TMP)/$(PACKAGE)/"; fi # remove it if it is a symlink
 	$(MKDIR_P) "$(TMP)/$(PACKAGE)/"
 	cp -rfa ./*  "$(TMP)/$(PACKAGE)/"
-	cd $(TMP)/$(PACKAGE); $(MAKE) -C parsing_cocci parser_cocci_menhir.ml
+	cd $(TMP)/$(PACKAGE); $(MAKE) -C parsing_cocci parser_cocci_menhir.ml; \
+	   $(MAKE) -C parsing_cocci parser_cocci_menhir.mli
 	rm -f $(TMP)/$(PACKAGE)/Makefile.config
 	cd $(TMP); tar cvfz $(PACKAGE).tgz --exclude-vcs $(EXCL) $(PACKAGE)
 	rm -rf  $(TMP)/$(PACKAGE)

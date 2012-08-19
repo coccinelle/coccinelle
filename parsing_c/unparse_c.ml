@@ -333,7 +333,7 @@ let comment2t2 = function
       C2(info.Common.str)
   | (Token_c.TCommentCpp x,(info : Token_c.info)) ->
       C2("\n"^info.Common.str^"\n")
-  | x -> failwith (Printf.sprintf "unexpected comment %s" (Common.dump x))
+  | x -> failwith (Printf.sprintf "unexpected comment %s" (Dumper.dump x))
 
 let expand_mcode toks =
   let toks_out = ref [] in
@@ -396,7 +396,7 @@ let expand_mcode toks =
       |	Ast_c.FakeTok (s,_) ->
 	  push2 (C2 s) toks_out
       |	_ ->
-	  Printf.fprintf stderr "line: %s\n" (Common.dump info);
+	  Printf.fprintf stderr "line: %s\n" (Dumper.dump info);
 	  failwith "not an abstract line");
       (!(info.Ast_c.comments_tag)).Ast_c.mafter +>
       List.iter (fun x -> Common.push2 (comment2t2 x) toks_out) in
