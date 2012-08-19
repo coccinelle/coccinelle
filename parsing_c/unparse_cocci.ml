@@ -69,6 +69,12 @@ let print_option_prespace fn = function
   | Some x -> pr_space(); fn x in
 let print_between = Common.print_between in
 
+let rec param_print_between between fn = function
+  | [] -> ()
+  | [x] -> fn x
+  | x::xs -> fn x; between x; param_print_between between fn xs in
+
+
 let outdent _ = () (* should go to leftmost col, does nothing now *) in
 
 let pretty_print_c =
@@ -229,9 +235,9 @@ in
 (* --------------------------------------------------------------------- *)
 let dots between fn d =
   match Ast.unwrap d with
-    Ast.DOTS(l) -> print_between between fn l
-  | Ast.CIRCLES(l) -> print_between between fn l
-  | Ast.STARS(l) -> print_between between fn l
+    Ast.DOTS(l) -> param_print_between between fn l
+  | Ast.CIRCLES(l) -> param_print_between between fn l
+  | Ast.STARS(l) -> param_print_between between fn l
 in
 
 let nest_dots starter ender fn f d =
@@ -1107,7 +1113,12 @@ let rec pp_any = function
 
   (* this is not '...', but a list of expr/statement/params, and
      normally there should be no '...' inside them *)
-  | Ast.ExprDotsTag(x) -> dots (function _ -> ()) expression x; false
+  | Ast.ExprDotsTag(x) ->
+      let check_comma cm =
+	match Ast.unwrap cm with
+	  Ast.EComma(cm) -> pr_space()
+	| _ -> () in
+      dots check_comma expression x; false
   | Ast.ParamDotsTag(x) -> parameter_list x; false
   | Ast.StmtDotsTag(x) -> dots force_newline (statement "") x; false
   | Ast.DeclDotsTag(x) -> dots force_newline declaration x; false

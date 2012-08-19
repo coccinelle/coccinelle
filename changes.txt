@@ -224,6 +224,8 @@
 - Bind const_vol in the right order in Ast0 visitor
 - use arg_expression for printing iterator arguments instead of expression,
   to get the right spacing.  Thanks to Lars-Peter Clausen for the fix.
+- Better spacing for generated argument lists.  Thanks to Lars-Peter Clausen
+  for reporting the problem.
 
 * 0.2.5
 ** Language:
