@@ -26,12 +26,12 @@ $(DEST)/html/index.html: coccilib.cmi ../parsing_c/ast_c.cmi
 		    -html $(HTMLFLAGS) -d $(DEST)/html ../parsing_c/ast_c.ml coccilib.ml
 else
 
-$(DEST)/man/Coccilib.3o: ../_build/ocaml/coccilib.cmi
+$(DEST)/man/Coccilib.3o: ../_build/ocaml/coccilib.cmi coccilib.ml exposed_modules.ml man.odocl
 	$(MKDIR_P) $(DEST)/man
 	cd .. && $(OCAMLBUILD) ocaml/man.docdir/index.html
 	cp -r ../_build/ocaml/man.docdir/* $(DEST)/man/
 
-$(DEST)/html/index.html: ../_build/ocaml/coccilib.cmi
+$(DEST)/html/index.html: ../_build/ocaml/coccilib.cmi coccilib.ml exposed_modules.ml html.odocl
 	$(MKDIR_P) $(DEST)/html
 	cd .. && $(OCAMLBUILD) ocaml/html.docdir/index.html
 	cp -r ../_build/ocaml/html.docdir/* $(DEST)/html/
