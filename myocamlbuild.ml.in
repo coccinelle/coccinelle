@@ -53,6 +53,7 @@ let profiling_modules = "@MODULES_profiling@"
 
 (* The plugin code starts here. *)
 open Ocamlbuild_plugin
+open Command
 
 (* Removes double separators and single dots from
  * a path. It does not resolve symlinks or turn
@@ -60,7 +61,7 @@ open Ocamlbuild_plugin
  *)
 let rec normalize_path path =
   let parent = Pathname.dirname path in
-  if Pathname.equal parent path
+  if Pathname.equal path "/" || Pathname.equal parent "/" || Pathname.equal parent path
   then path
   else let name = Pathname.basename path in
        if Pathname.equal name "."

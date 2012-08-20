@@ -206,20 +206,20 @@ all.opt: Makefile.config myocamlbuild.ml version.ml prepare-bundles
 	$(MAKE) preinstall
 
 byte: Makefile.config myocamlbuild.ml version.ml prepare-bundles
-	$(OCAMLBUILD) main.byte
+	$(OCAMLBUILD) -j 0 main.byte
 	cp _build/main.byte $(EXEC)
 
 pure-byte: Makefile.config myocamlbuild.ml version.ml prepare-bundles
-	$(OCAMLBUILD) -tag nocustom main.byte
+	$(OCAMLBUILD) -j 0 -tag nocustom main.byte
 	cp _build/main.byte $(EXEC)
 
 opt-compil: Makefile.config myocamlbuild.ml version.ml prepare-bundles
-	$(OCAMLBUILD) main.native
+	$(OCAMLBUILD) -j 0 main.native
 	cp _build/main.native $(EXEC).opt
 
 # the .cmi file of coccilib
 _build/ocaml/coccilib.cmi:
-	$(OCAMLBUILD) ocaml/coccilib.cmi
+	$(OCAMLBUILD) -j 0 ocaml/coccilib.cmi
 ocaml/coccilib/coccilib.cmi: _build/ocaml/coccilib.cmi
 	cp _build/ocaml/coccilib.cmi ocaml/coccilib/coccilib.cmi
 
