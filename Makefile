@@ -208,20 +208,14 @@ all.opt: Makefile.config myocamlbuild.ml version.ml prepare-bundles
 byte: Makefile.config myocamlbuild.ml version.ml prepare-bundles
 	$(OCAMLBUILD) main.byte
 	cp _build/main.byte $(EXEC)
-	@echo the compilation of $(EXEC) finished
-	@echo $(EXEC) can be installed or used
 
 pure-byte: Makefile.config myocamlbuild.ml version.ml prepare-bundles
 	$(OCAMLBUILD) -tag nocustom main.byte
 	cp _build/main.byte $(EXEC)
-	@echo the compilation of $(EXEC) finished
-	@echo $(EXEC) can be installed or used
 
 opt-compil: Makefile.config myocamlbuild.ml version.ml prepare-bundles
 	$(OCAMLBUILD) main.native
 	cp _build/main.native $(EXEC).opt
-	@echo the compilation of $(EXEC).opt finished
-	@echo $(EXEC).opt can be installed or used
 
 # the .cmi file of coccilib
 _build/ocaml/coccilib.cmi:
@@ -404,7 +398,6 @@ clean:: Makefile.config
 ##############################################################################
 
 preinstall: docs/spatch.1 scripts/spatch scripts/spatch.opt scripts/spatch.byte
-	@echo "generated the wrapper scripts for spatch (the frontends)"
 
 docs/spatch.1: Makefile.config
 	$(MAKE) -C docs spatch.1
