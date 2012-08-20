@@ -2,11 +2,11 @@
 *)
 
 
+(**/**)
 (** Coccinelle modules accessible from an ocaml script.
 *)
-(**/**)
 include Exposed_modules
-
+(**/**)
 
 (** A value of type {b pos} describes a position in a source file.
 *)
@@ -59,6 +59,7 @@ type param_type =
 *)
 let fcts : (string, param_type list -> string ref list -> unit) Hashtbl.t =
   Hashtbl.create 11 (* Use prime number *)
+(**/**)
 
 (* ---------------------------------------------------------------------- *)
 (* Match management *)

@@ -2,7 +2,6 @@ ifneq ($(MAKECMDGOALS),distclean)
 include ../Makefile.config
 endif
 
-API=coccilib.mli
 DEST=../docs
 FLAGS=$(INCLUDES) -hide Pervasives
 HTMLFLAGS=-all-params -colorize-code
@@ -16,13 +15,15 @@ html: $(DEST)/html/index.html
 man: $(DEST)/man/Coccilib.3o
 
 ifneq ($(FEATURE_OCAMLBUILD),yes)
-$(DEST)/man/Coccilib.3o: $(API) ../parsing_c/ast_c.cmi
+$(DEST)/man/Coccilib.3o: coccilib.cmi ../parsing_c/ast_c.cmi
 	$(MKDIR_P) $(DEST)/man
-	$(OCAMLDOC) $(FLAGS) -man $(MANFLAGS) -d $(DEST)/man $(API)
+	$(OCAMLDOC) $(FLAGS) -hide Exposed_modules \
+		    -man $(MANFLAGS) -d $(DEST)/man ../parsing_c/ast_c.ml coccilib.ml
 
-$(DEST)/html/index.html: $(API) ../parsing_c/ast_c.cmi
+$(DEST)/html/index.html: coccilib.cmi ../parsing_c/ast_c.cmi
 	$(MKDIR_P) $(DEST)/html
-	$(OCAMLDOC) $(FLAGS) -html $(HTMLFLAGS) -d $(DEST)/html $(API)
+	$(OCAMLDOC) $(FLAGS) -hide Exposed_modules \
+		    -html $(HTMLFLAGS) -d $(DEST)/html ../parsing_c/ast_c.ml coccilib.ml
 else
 
 $(DEST)/man/Coccilib.3o: ../_build/ocaml/coccilib.cmi
