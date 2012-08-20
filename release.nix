@@ -248,6 +248,7 @@ let
     { name = "pycaml"; ocamls = ps: [ ps.pycaml ]; flags = [ "--enable-pycaml" ]; }
   ];
 
+  # Tests using several different types of shells.
   shellCfgs = map mkCfgShell [
     { name = "bash"; selShell = pkgs: "${pkgs.bash}/bin/bash"; }
     { name = "dash"; selShell = pkgs: "${pkgs.dash}/bin/dash"; }
@@ -257,11 +258,39 @@ let
     # { name = "tcsh"; selShell = pkgs: "${pkgs.tcsh}/bin/tcsh"; }
   ];
 
+  #
+  # Configurations for the compilation of coccinelle using ocamlbuild.
+  #
+
+  ocamlbuildZeroCfg = mkCfgMinimal {
+    name  = "ocamlbuild-zero";
+    flags = [ "--enable-ocamlbuild" "--enable-release" ];
+  };
+
+  ocamlbuildFullCfg = mkCfgDefault {
+    name  = "ocamlbuild-full";
+    flags = [ "--enable-ocamlbuild" "--enable-release" ];
+  };
+
+  ocamlbuildCfgs = map mkCfgOcaml [
+    { name = "ocamlbuild-400nat"; selOcaml = selOcaml400;
+      flags = [ "--enable-ocamlbuild" "--enable-release=yes" ]; }
+    { name = "ocamlbuild-400byte"; selOcaml = selOcaml400;
+      flags = [ "--enable-ocamlbuild" ]; }
+    { name = "ocamlbuild-312"; selOcaml = selOcaml312;
+      flags = [ "--enable-ocamlbuild" "--enable-release" ]; }
+    { name = "ocamlbuild-311"; selOcaml = selOcaml311;
+      flags = [ "--enable-ocamlbuild" ]; }
+    { name = "ocamlbuild-310"; selOcaml = selOcaml310;
+      flags = [ "--enable-ocamlbuild" "--enable-release" ]; }
+  ] ++ [ ocamlbuildZeroCfg ocamlbuildFullCfg ];
+
   altCfgs =
     [ debugCfg manyOcamlCfg ]
     ++ minimalCfgs
     ++ ocamlCfgs ++ pythonCfgs
-    ++ pkgCfgs ++ shellCfgs;
+    ++ pkgCfgs ++ shellCfgs
+    ++ ocamlbuildCfgs;
 
 
   #

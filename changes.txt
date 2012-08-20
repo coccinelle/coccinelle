@@ -232,6 +232,9 @@
   ocaml version of coccilib, and allows us to specify which modules
   can be accessed by an ocaml script. The coccilib.cmi must either
   reside in $COCCI_DIR/ocaml/ or $COCCI_DIR/ocaml/coccilib/.
+- Ocamlbuild-based compilation of coccinelle (experimental). In a
+  cleaned repository, use the configure option --enable-ocamlbuild to
+  enable it. The Makefiles will then use ocamlbuild.
 
 * 0.2.5
 ** Language:
