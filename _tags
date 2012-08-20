@@ -28,6 +28,10 @@
 <python>: include
 <python/yes_pycocci.ml>: thread, use_pycaml
 
+# some users have a symlink 'result' pointing to the outcome
+# of the build, which causes troubles with the hygiene check.
+<result>: -traverse
+
 
 #
 # Subdirectories
