@@ -96,8 +96,9 @@ Note: The test target is intended for developers. In particular, you
       should not expect that every test will pass.
 
 In order to use the OCaml scripting feature in SmPL, you must compile
-Coccinelle with at least OCaml version 3.11.
-
+Coccinelle with at least OCaml version 3.11. An extra file, coccilib.cmi,
+is produced and installed in /usr/share/cocci/ocaml, which is needed for
+the compilation of ocaml scripts.
 
 
  ** Bash integration **

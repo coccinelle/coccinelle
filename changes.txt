@@ -226,6 +226,12 @@
   to get the right spacing.  Thanks to Lars-Peter Clausen for the fix.
 - Better spacing for generated argument lists.  Thanks to Lars-Peter Clausen
   for reporting the problem.
+- Collect all module interfaces for ocaml scripting in a single
+  coccilib.cmi file, with the list of exposed internal modules in
+  ocaml/exposed_modules.ml. This simplifies the installation of the
+  ocaml version of coccilib, and allows us to specify which modules
+  can be accessed by an ocaml script. The coccilib.cmi must either
+  reside in $COCCI_DIR/ocaml/ or $COCCI_DIR/ocaml/coccilib/.
 
 * 0.2.5
 ** Language:

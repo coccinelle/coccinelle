@@ -24,18 +24,21 @@ $(DEST)/html/index.html: $(API) ../parsing_c/ast_c.cmi
 	$(MKDIR_P) $(DEST)/html
 	$(OCAMLDOC) $(FLAGS) -html $(HTMLFLAGS) -d $(DEST)/html $(API)
 else
-# The dependencies below are slightly under-specified.
-# It is possible that only dependencies of coccilib.ml and ast_c.ml
-# have changed. In that case, run clean beforehand.
-$(DEST)/man/Coccilib.3o: coccilib.ml ../parsing_c/ast_c.ml
+
+$(DEST)/man/Coccilib.3o: ../_build/ocaml/coccilib.cmi
 	$(MKDIR_P) $(DEST)/man
 	cd .. && $(OCAMLBUILD) ocaml/man.docdir/index.html
 	cp -r ../_build/ocaml/man.docdir/* $(DEST)/man/
 
-$(DEST)/html/index.html: coccilib.ml ../parsing_c/ast_c.ml
+$(DEST)/html/index.html: ../_build/ocaml/coccilib.cmi
 	$(MKDIR_P) $(DEST)/html
 	cd .. && $(OCAMLBUILD) ocaml/html.docdir/index.html
 	cp -r ../_build/ocaml/html.docdir/* $(DEST)/html/
+
+# build coccilib.cmi if needed
+../_build/ocaml/coccilib.cmi:
+	cd .. && $(OCAMLBUILD) ocaml/coccilib.cmi
+
 endif
 
 cleandoc:

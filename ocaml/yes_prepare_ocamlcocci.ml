@@ -372,10 +372,11 @@ let load_libs libs =
 let load_file mlfile =
   let (ldlibs (* , lklibs *), inc) = dep_flag mlfile in
 (*   let linklibs = link_libs lklibs in *)
+  (* add ocaml and ocaml/coccilib as search directories for the ocaml scripting *)
   let flags =
     Printf.sprintf
-    "-g -I %s %s -I %s/globals -I %s/ocaml -I %s/parsing_c -I %s/commons "
-      (sysdir ()) inc Config.path Config.path Config.path Config.path in
+      "-g -I %s %s -I %s/ocaml/coccilib -I %s/ocaml"
+      (sysdir ()) inc Config.path Config.path in
   let (obj, cmd) =
     if Config.dynlink_is_native
     then compile_native_cmd flags mlfile
