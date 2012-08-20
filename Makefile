@@ -375,7 +375,11 @@ version.ml:
 ##############################################################################
 .PHONY:: docs
 
+ifneq ($(FEATURE_OCAMLBUILD),yes)
 docs:
+else
+docs: prepare-bundles
+endif
 	@$(MAKE) -C docs || (echo "warning: ignored the failed construction of the manual" 1>&2)
 ifneq ($(FEATURE_OCAMLBUILD),yes)
 	@if test "x$(FEATURE_OCAML)" = x1; then \
@@ -644,7 +648,8 @@ distclean::
 	set -e; for i in $(CLEANSUBDIRS); do $(MAKE) -C $$i $@; done
 	rm -f test.ml
 	rm -f TAGS *.native *.byte *.d.native *.p.byte
-	rm -f tests/SCORE_actual.sexp tests/SCORE_best_of_both.sexp
+	if test -z "${KEEP_GENERATED}"; then \
+		rm -f tests/SCORE_actual.sexp tests/SCORE_best_of_both.sexp; fi
 	find . -name ".#*1.*" | xargs rm -f
 	rm -f $(EXEC) $(EXEC).opt $(EXEC).top
 
@@ -670,7 +675,8 @@ distclean::
 	rm -rf autom4te.cache
 	rm -f config.status
 	rm -f config.log
-	rm -f version.ml
+	if test -z "${KEEP_GENERATED}"; then \
+		rm -f version.ml; fi
 	rm -f globals/config.ml
 	rm -f globals/regexp.ml python/pycocci.ml ocaml/prepare_ocamlcocci.ml
 	rm -f scripts/spatch.sh

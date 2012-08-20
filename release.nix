@@ -562,7 +562,7 @@ let
         ocaml findlib menhir
         python pcre patchelf
       ];
-      configureFlagsArray = [ "--enable-release" ];
+      configureFlags = "--enable-release";
 
       buildPhase = ''
         export TARGETDIR="$TMPDIR/dists"

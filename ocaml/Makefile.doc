@@ -43,4 +43,5 @@ $(DEST)/html/index.html: ../_build/ocaml/coccilib.cmi coccilib.ml exposed_module
 endif
 
 cleandoc:
-	rm -rf $(DEST)/html $(DEST)/man
+	@if test -z "${KEEP_GENERATED}"; then \
+		rm -rf $(DEST)/html $(DEST)/man; fi

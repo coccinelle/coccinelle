@@ -119,8 +119,9 @@ $(SCRIPT_LEXER_SOURCES:.mll=.ml): $(SCRIPT_LEXER_SOURCES)
 	$(OCAMLLEX) $(SCRIPT_LEXER_SOURCES)
 
 distclean:: clean
-	@echo cleaning generated parsers and lexers
-	rm -f $(GENERATED)
+	if test -z "${KEEP_GENERATED}"; then \
+		@echo cleaning generated parsers and lexers; \
+		rm -f $(GENERATED); fi
 
 # clean rule for others files
 clean::
