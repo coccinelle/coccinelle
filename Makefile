@@ -652,6 +652,7 @@ distclean::
 		rm -f tests/SCORE_actual.sexp tests/SCORE_best_of_both.sexp; fi
 	find . -name ".#*1.*" | xargs rm -f
 	rm -f $(EXEC) $(EXEC).opt $(EXEC).top
+	rm -f setup/Makefile setup/pkg.m4
 
 # using 'touch' to prevent infinite recursion with 'make depend'
 .PHONY:: depend

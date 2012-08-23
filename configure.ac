@@ -5,6 +5,7 @@ AC_PREREQ([2.68])
 AC_INIT([coccinelle], m4_esyscmd([cat ./version | tr -d '\n']), [cocci@diku.dk], [], [http://coccinelle.lip6.fr/])
 AC_CONFIG_MACRO_DIR([setup])
 AC_CONFIG_AUX_DIR([setup])
+AM_INIT_AUTOMAKE
 
 AC_SUBST([CONFIGURE_FLAGS], ["$*"])
 AC_SUBST([COCCI_VERSION], ["$PACKAGE_VERSION"])
@@ -507,6 +508,8 @@ AC_CONFIG_FILES([
   scripts/spatch.sh
   docs/spatch.1
   myocamlbuild.ml
+
+  setup/Makefile
 ])
 
 AC_OUTPUT
