@@ -31,6 +31,23 @@ if test -z "${BASH_SOURCE}"; then
   BASH_SOURCE=$0
 fi
 
+
+#
+# Before we actually try to substitute a given
+# command, we first try to execute the original command 
+#
+
+# Check if the given program exists.
+if command -v "$1" > /dev/null; then
+  # exits the script if the command succeeds.
+  $@ && exit $?
+fi
+
+
+#
+# Trying a substitute
+#
+
 cmdline="$@"
 scriptdir=$(dirname "${BASH_SOURCE}")
 responsefile="${scriptdir}/replies.txt"
@@ -116,6 +133,7 @@ if test -n "${found}"; then
   exit 0
 else
   # fallback case
-  echo "fake-subst.sh: no substitution for: ${cmdline}" 1>&2
-  exit 1
+  echo "fake-subst.sh: no substitution for: ${cmdline}. Running the 
+original." 1>&2
+  exec $@
 fi
