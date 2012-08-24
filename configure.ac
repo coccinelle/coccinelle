@@ -1,5 +1,5 @@
-dnl  run 'automake -ac' to update setup/{install-sh,missing}
-dnl  run 'autoreconf' to update configure,setup/pkg.m4
+dnl  run 'autoreconf' to obtain aclocal.m4, and update configure and setup/pkg.m4
+dnl  run 'automake -acf' to update setup/{install-sh,missing}
 
 dnl  standard initialization (we only use autoconf not automake)
 AC_PREREQ([2.68])
