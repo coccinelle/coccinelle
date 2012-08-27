@@ -1,3 +1,8 @@
+(* Note: this module passes paths to other commands, but does not take
+ * quoting into account. Thus, if these paths contain spaces, it's likely
+ * that things go wrong.
+ *)
+
 module Ast = Ast_cocci
 
 exception CompileFailure of string
@@ -238,8 +243,65 @@ let prepare coccifile code =
       Some file
     end
 
-let filter_dep (accld, accinc) dep =
-  match dep with
+(* give a path to the coccilib cmi file *)
+let find_cmifile name =
+  let path1 = Printf.sprintf "%s/ocaml/%s.cmi" Config.path name in
+  if Sys.file_exists path1 then path1 else
+  let path2 = Printf.sprintf "%s/ocaml/coccilib/%s.cmi" Config.path name in
+  if Sys.file_exists path2 then path2 else
+  raise (CompileFailure ("No coccilib.cmi in " ^ path1 ^ " or " ^ path2))
+
+(* extract upper case identifiers from the cmi file. This will be an
+ * approximation of the modules referenced by the coccilib, which are
+ * thus present in the application and do not need to be loaded by
+ * the dynamic linker.
+ *)
+
+module ModuleSet = Set.Make(String)
+
+let approx_coccilib_deps cmi =
+  let chan = open_in_bin cmi in
+  let tbl = Hashtbl.create 1024 in
+  let buf = Buffer.create 140 in
+  begin
+  try
+    while true do
+      let c = input_char chan in
+      let has_ident = Buffer.length buf > 0 in
+      if has_ident
+      then begin
+        if (c >= 'a' && c <= 'z') ||
+           (c >= 'A' && c <= 'Z') ||
+           (c >= '0' && c <= '9') ||
+           c == '_' || c == '\''
+        then Buffer.add_char buf c
+        else begin
+          if Buffer.length buf >= 3
+          then begin
+            let key = Buffer.contents buf in
+            if Hashtbl.mem tbl key
+            then ()
+            else Hashtbl.add tbl (Buffer.contents buf) ()
+          end;
+          Buffer.clear buf
+        end
+      end
+      else begin
+        if c >= 'A' && c <= 'Z'
+        then (* perhaps the begin of a captialized identifier *)
+          Buffer.add_char buf c
+        else ()
+      end
+    done
+  with End_of_file -> ()
+  end;
+  close_in chan;
+  tbl
+
+let filter_dep existing_deps (accld, accinc) dep =
+  if Hashtbl.mem existing_deps dep
+  then (accld, accinc)  (* skip an existing dep *)
+  else match dep with
       (* Built-in and OCaml defaults are filtered out *)
       "Arg" | "Arith_status" | "Array" | "ArrayLabels" | "Big_int" | "Bigarray"
     | "Buffer" | "Callback" | "CamlinternalLazy" | "CamlinternalMod"
@@ -255,13 +317,7 @@ let filter_dep (accld, accinc) dep =
     | "Queue" | "Random" | "Scanf" | "Set" | "Sort" | "Stack" | "StdLabels"
     | "Str" | "Stream"
     | "String" | "StringLabels" | "Sys" | "ThreadUnix" | "Unix" | "UnixLabels"
-    | "Weak"
-
-    (* Coccilib is filtered out too *)
-    | "Coccilib" | "Common" | "Ast_c" | "Visitor_c" | "Lib_parsing_c"
-    | "Iteration" | "Flag" ->
-	(accld, accinc)
-
+    | "Weak"     -> (accld, accinc)
     | "Dbm"      -> ("dbm"::accld, accinc)
     | "Graphics" -> ("graphics"::accld, accinc)
     | "Thread"   -> ("thread"::accld, accinc)
@@ -277,12 +333,14 @@ let get_dir p =
   let dir = List.hd (Common.cmd_to_list inclcmd) in
     (dir, p)
 
-let parse_dep mlfile depout =
+let parse_dep cmifile mlfile depout =
+  let empty_deps = ([], "") in
+  let existing_deps = approx_coccilib_deps cmifile in
   let re_colon = Str.regexp_string ":" in
   match Str.split re_colon depout with
     _::[dep] ->
       let deplist = Str.split (Str.regexp_string " ") dep in
-      let (libs, orderdep) = List.fold_left filter_dep ([],[]) deplist in
+      let (libs, orderdep) = List.fold_left (filter_dep existing_deps) ([],[]) deplist in
       if libs <> [] || orderdep <> [] then
 	begin
 	  if check_cmd (!Flag.ocamlfind ^ " printconf 2>&1 > /dev/null")
@@ -296,33 +354,33 @@ let parse_dep mlfile depout =
 	    let flags =
 	      String.concat " " (List.map (fun (d,_) -> "-I "^d) inclflags) in
 	    if flags <> "" || libs <> []
-	    then
-	      begin
-		Common.pr2
-		  ("Extra OCaml packages used in the semantic patch:"^ plist);
-		(alllibs (* , inclflags *), flags)
-	      end
-	    else
-	      raise
-		(CompileFailure
-		   ("ocamlfind did not find "^
+	    then begin
+	      Common.pr2
+		("Extra OCaml packages used in the semantic patch:"^ plist);
+		(alllibs, flags)
+	    end
+            else begin
+  	      Common.pr2 ("Warning: ocamlfind did not find "^
 		       (if (List.length libs + List.length orderdep) = 1
 			then "this package:"
-			else "one of these packages:")^ plist))
-	  else
-	    raise
-	      (CompileFailure ("ocamlfind not found but "^mlfile^" uses "^dep))
+			else "one of these packages:")^ plist);
+              empty_deps
+            end
+	  else begin
+	    Common.pr2 ("Warning: ocamlfind not found but "^mlfile^" uses "^dep);
+            empty_deps
+          end
 	end
       else
-	([] (* , [] *), "")
+	empty_deps
   | _ ->
       raise
 	(CompileFailure ("Wrong dependencies for "^mlfile^" (Got "^depout^")"))
 
-let dep_flag mlfile =
+let dep_flag cmifile mlfile =
   let depcmd  = !Flag.ocamldep ^" -modules "^mlfile in
   match Common.cmd_to_list depcmd with
-    [dep] -> parse_dep mlfile dep
+    [dep] -> parse_dep cmifile mlfile dep
   | err ->
       List.iter (function x -> Common.pr2 (x^"\n")) err;
       raise (CompileFailure ("Failed ocamldep for "^mlfile))
@@ -342,24 +400,12 @@ let compile mlfile cmd =
       0 -> ()
     | _ -> raise (CompileFailure mlfile)
 
-let rec load_obj obj =
-  try
-    Dynlink.loadfile obj
+let load_obj obj =
+  Dynlink.allow_unsafe_modules true;
+  try Dynlink.loadfile obj
   with Dynlink.Error e ->
-    match e with
-	Dynlink.Unsafe_file ->
-	  Dynlink.allow_unsafe_modules true;
-	  load_obj obj
-      | _ ->
-	  Common.pr2 (Dynlink.error_message e);
-	  raise (LinkFailure obj)
-
-(*
-let link_lib (dir, name) = name ^ ext
-
-let link_libs libs =
-    String.concat " " (List.map link_lib libs)
-*)
+    Common.pr2 (Dynlink.error_message e);
+    raise (LinkFailure obj)
 
 let load_lib (dir, name) =
   let obj = dir ^ "/" ^name ^ ext in
@@ -370,13 +416,13 @@ let load_libs libs =
   List.iter load_lib libs
 
 let load_file mlfile =
-  let (ldlibs (* , lklibs *), inc) = dep_flag mlfile in
-(*   let linklibs = link_libs lklibs in *)
+  let cmifile = find_cmifile "coccilib" in
+  let (ldlibs, inc) = dep_flag cmifile mlfile in
   (* add ocaml and ocaml/coccilib as search directories for the ocaml scripting *)
   let flags =
     Printf.sprintf
-      "-g -I %s %s -I %s/ocaml/coccilib -I %s/ocaml"
-      (sysdir ()) inc Config.path Config.path in
+      "-g -I %s %s -I %s"
+      (sysdir ()) inc (Filename.dirname cmifile) in
   let (obj, cmd) =
     if Config.dynlink_is_native
     then compile_native_cmd flags mlfile
@@ -385,10 +431,7 @@ let load_file mlfile =
   Common.pr2 "Compilation OK!";
   load_libs ldlibs;
   Common.pr2 "Loading ML code of the SP...";
-  try Dynlink.loadfile obj
-  with Dynlink.Error e ->
-    Common.pr2 (Dynlink.error_message e);
-    raise (LinkFailure obj)
+  load_obj obj
 
 let clean_file mlfile =
   let basefile = Filename.chop_extension mlfile in
