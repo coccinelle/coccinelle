@@ -66,6 +66,7 @@ let tokinfo lexbuf  =
     };
    (* must generate a new ref each time, otherwise share *)
     cocci_tag = ref Ast_c.emptyAnnot;
+    annots_tag = Token_annot.empty;
     comments_tag = ref Ast_c.emptyComments;
   }
 
