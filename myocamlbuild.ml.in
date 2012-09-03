@@ -53,6 +53,7 @@ let profiling_modules = "@MODULES_profiling@"
 
 (* The plugin code starts here. *)
 open Ocamlbuild_plugin
+open Command
 
 (* Removes double separators and single dots from
  * a path. It does not resolve symlinks or turn
@@ -60,7 +61,7 @@ open Ocamlbuild_plugin
  *)
 let rec normalize_path path =
   let parent = Pathname.dirname path in
-  if Pathname.equal parent path
+  if Pathname.equal path "/" || Pathname.equal parent "/" || Pathname.equal parent path
   then path
   else let name = Pathname.basename path in
        if Pathname.equal name "."
@@ -114,9 +115,11 @@ let setup_stubs name stubs_dir =
     dep [tag; "link"; "ocaml"] [path_a];
   let stubs_arg = Printf.sprintf "-l%s_stubs" name in
   flag [tag; "ocaml"; "link"; "byte"]
-    (S[A "-I"; A stubs_dir; A "-dllib"; A stubs_arg; A "-cclib"; A stubs_arg]);
+    (S[A "-I"; P stubs_dir; A "-dllib"; A stubs_arg; A "-cclib"; A stubs_arg]);
   flag [tag; "ocaml"; "link"; "native"]
-    (S[A "-I"; A stubs_dir; A "-cclib"; A stubs_arg])
+    (S[A "-I"; P stubs_dir; A "-cclib"; A stubs_arg]);
+  flag [tag; "ocaml"; "doc"]
+    (S[A "-I"; P stubs_dir])
 
 (* The use of bundled software is simply the
  * inclusion of the appropriate source directory.
@@ -138,7 +141,8 @@ let setup_module name modname rootdir =
   let compile_args = S [A "-I"; P rootdir] in
   flag [tag; "ocaml"; "compile"] compile_args;
   flag [tag; "ocaml"; "byte"; "link"; "program"]   (link_args false);
-  flag [tag; "ocaml"; "native"; "link"; "program"] (link_args true)
+  flag [tag; "ocaml"; "native"; "link"; "program"] (link_args true);
+  flag [tag; "ocaml"; "doc"] (S[A "-I"; P rootdir])
 
 (* Sets up the use of either a bundled source package or precompiled module. *)
 let setup_package name modname rootdir =

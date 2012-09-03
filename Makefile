@@ -165,6 +165,10 @@ opt-compil: Makefile.config version.ml
 
 top: $(EXEC).top
 
+# the .cmi file of coccilib
+ocaml/coccilib/coccilib.cmi: ocaml/coccilib.cmi
+	cp ocaml/coccilib.cmi ocaml/coccilib/coccilib.cmi
+
 # ocamlbuild version of the main make targets
 else
 
@@ -175,6 +179,7 @@ world: Makefile.config myocamlbuild.ml version.ml prepare-bundles
 	@echo "building both versions of spatch"
 	$(MAKE) byte
 	$(MAKE) opt-compil
+	@$(MAKE) coccilib-cmi
 	$(MAKE) preinstall
 	$(MAKE) docs
 	@echo ""
@@ -183,11 +188,13 @@ world: Makefile.config myocamlbuild.ml version.ml prepare-bundles
 # note: the 'all-dev' target excludes the documentation and is less noisy
 all-dev: Makefile.config myocamlbuild.ml version.ml prepare-bundles
 	$(MAKE) byte
+	@$(MAKE) coccilib-cmi
 	@$(MAKE) preinstall
 
 all-release: Makefile.config myocamlbuild.ml version.ml prepare-bundles
 	@echo building $(TARGET_SPATCH)
 	$(MAKE) $(TARGET_SPATCH)
+	@$(MAKE) coccilib-cmi
 	$(MAKE) preinstall
 	$(MAKE) docs
 	@echo ""
@@ -195,25 +202,26 @@ all-release: Makefile.config myocamlbuild.ml version.ml prepare-bundles
 
 all.opt: Makefile.config myocamlbuild.ml version.ml prepare-bundles
 	$(MAKE) opt-only
+	@$(MAKE) coccilib-cmi
 	$(MAKE) preinstall
 
 byte: Makefile.config myocamlbuild.ml version.ml prepare-bundles
-	$(OCAMLBUILD) main.byte
+	$(OCAMLBUILD) -j 0 main.byte
 	cp _build/main.byte $(EXEC)
-	@echo the compilation of $(EXEC) finished
-	@echo $(EXEC) can be installed or used
 
 pure-byte: Makefile.config myocamlbuild.ml version.ml prepare-bundles
-	$(OCAMLBUILD) -tag nocustom main.byte
+	$(OCAMLBUILD) -j 0 -tag nocustom main.byte
 	cp _build/main.byte $(EXEC)
-	@echo the compilation of $(EXEC) finished
-	@echo $(EXEC) can be installed or used
 
 opt-compil: Makefile.config myocamlbuild.ml version.ml prepare-bundles
-	$(OCAMLBUILD) main.native
+	$(OCAMLBUILD) -j 0 main.native
 	cp _build/main.native $(EXEC).opt
-	@echo the compilation of $(EXEC).opt finished
-	@echo $(EXEC).opt can be installed or used
+
+# the .cmi file of coccilib
+_build/ocaml/coccilib.cmi:
+	$(OCAMLBUILD) -j 0 ocaml/coccilib.cmi
+ocaml/coccilib/coccilib.cmi: _build/ocaml/coccilib.cmi
+	cp _build/ocaml/coccilib.cmi ocaml/coccilib/coccilib.cmi
 
 # end of main build target distinction on ocamlbuild
 endif
@@ -222,6 +230,12 @@ endif
 opt opt-only: Makefile.config opt-compil
 byte-only: Makefile.config byte
 
+
+# ensures that coccilib.cmi gets build
+.PHONY:: coccilib-cmi
+coccilib-cmi: ocaml/coccilib/coccilib.cmi
+distclean::
+	rm -f ocaml/coccilib/coccilib.cmi
 
 
 subdirs.all:
@@ -240,8 +254,10 @@ $(MAKESUBDIRS:%=%.opt):
 # Note that running 'make' in these subdirectories will
 # automatically prepare the bundled software.
 .PHONY:: prepare-bundles
-prepare-bundles: $(MAKELIBS:%/.prepare)
+prepare-bundles: $(MAKELIBS:%=%/.prepare)
+
 $(MAKELIBS:%=%/.prepare):
+	echo $@
 	@$(MAKE) -C $(@:%.prepare=%) .prepare
 
 #dependencies:
@@ -359,7 +375,11 @@ version.ml:
 ##############################################################################
 .PHONY:: docs
 
+ifneq ($(FEATURE_OCAMLBUILD),yes)
 docs:
+else
+docs: prepare-bundles
+endif
 	@$(MAKE) -C docs || (echo "warning: ignored the failed construction of the manual" 1>&2)
 ifneq ($(FEATURE_OCAMLBUILD),yes)
 	@if test "x$(FEATURE_OCAML)" = x1; then \
@@ -382,7 +402,6 @@ clean:: Makefile.config
 ##############################################################################
 
 preinstall: docs/spatch.1 scripts/spatch scripts/spatch.opt scripts/spatch.byte
-	@echo "generated the wrapper scripts for spatch (the frontends)"
 
 docs/spatch.1: Makefile.config
 	$(MAKE) -C docs spatch.1
@@ -411,19 +430,19 @@ distclean::
 
 # don't remove DESTDIR, it can be set by package build system like ebuild
 # for staged installation.
-install-common:
+install-common: ocaml/coccilib/coccilib.cmi
 	$(MKDIR_P) $(DESTDIR)$(BINDIR)
 	$(MKDIR_P) $(DESTDIR)$(LIBDIR)
 	$(MKDIR_P) $(DESTDIR)$(SHAREDIR)/ocaml
-	$(MKDIR_P) $(DESTDIR)$(SHAREDIR)/commons
-	$(MKDIR_P) $(DESTDIR)$(SHAREDIR)/globals
-	$(MKDIR_P) $(DESTDIR)$(SHAREDIR)/parsing_c
+#	$(MKDIR_P) $(DESTDIR)$(SHAREDIR)/commons
+#	$(MKDIR_P) $(DESTDIR)$(SHAREDIR)/globals
+#	$(MKDIR_P) $(DESTDIR)$(SHAREDIR)/parsing_c
 	$(INSTALL_DATA) standard.h $(DESTDIR)$(SHAREDIR)
 	$(INSTALL_DATA) standard.iso $(DESTDIR)$(SHAREDIR)
-	$(INSTALL_DATA) ocaml/coccilib.cmi $(DESTDIR)$(SHAREDIR)/ocaml/
-	$(INSTALL_DATA) parsing_c/*.cmi $(DESTDIR)$(SHAREDIR)/parsing_c/
-	$(INSTALL_DATA) commons/*.cmi $(DESTDIR)$(SHAREDIR)/commons/
-	$(INSTALL_DATA) globals/iteration.cmi $(DESTDIR)$(SHAREDIR)/globals/
+	$(INSTALL_DATA) ocaml/coccilib/coccilib.cmi $(DESTDIR)$(SHAREDIR)/ocaml/
+#	$(INSTALL_DATA) parsing_c/*.cmi $(DESTDIR)$(SHAREDIR)/parsing_c/
+#	$(INSTALL_DATA) commons/*.cmi $(DESTDIR)$(SHAREDIR)/commons/
+#	$(INSTALL_DATA) globals/iteration.cmi $(DESTDIR)$(SHAREDIR)/globals/
 
 install-man:
 	@echo "Installing manuals in: ${DESTDIR}${MANDIR}"
@@ -629,9 +648,11 @@ distclean::
 	set -e; for i in $(CLEANSUBDIRS); do $(MAKE) -C $$i $@; done
 	rm -f test.ml
 	rm -f TAGS *.native *.byte *.d.native *.p.byte
-	rm -f tests/SCORE_actual.sexp tests/SCORE_best_of_both.sexp
+	if test -z "${KEEP_GENERATED}"; then \
+		rm -f tests/SCORE_actual.sexp tests/SCORE_best_of_both.sexp; fi
 	find . -name ".#*1.*" | xargs rm -f
 	rm -f $(EXEC) $(EXEC).opt $(EXEC).top
+	rm -f setup/Makefile
 
 # using 'touch' to prevent infinite recursion with 'make depend'
 .PHONY:: depend
@@ -655,7 +676,8 @@ distclean::
 	rm -rf autom4te.cache
 	rm -f config.status
 	rm -f config.log
-	rm -f version.ml
+	if test -z "${KEEP_GENERATED}"; then \
+		rm -f version.ml; fi
 	rm -f globals/config.ml
 	rm -f globals/regexp.ml python/pycocci.ml ocaml/prepare_ocamlcocci.ml
 	rm -f scripts/spatch.sh

@@ -1,15 +1,16 @@
-dnl  run 'autoreconf -I setup' to generate configure from this file.
+dnl  run 'autoreconf' to obtain aclocal.m4, and update configure and setup/pkg.m4
+dnl  run 'automake -acf' to update setup/{install-sh,missing}
 
 dnl  standard initialization (we only use autoconf not automake)
 AC_PREREQ([2.68])
 AC_INIT([coccinelle], m4_esyscmd([cat ./version | tr -d '\n']), [cocci@diku.dk], [], [http://coccinelle.lip6.fr/])
 AC_CONFIG_MACRO_DIR([setup])
 AC_CONFIG_AUX_DIR([setup])
-
 AC_SUBST([CONFIGURE_FLAGS], ["$*"])
 AC_SUBST([COCCI_VERSION], ["$PACKAGE_VERSION"])
 AC_SUBST([COCCI_SRCDIR], ["$(pwd)"])
 AC_MSG_NOTICE([configuring coccinelle $COCCI_VERSION in $COCCI_SRCDIR])
+AM_INIT_AUTOMAKE
 
 AC_CONFIG_SRCDIR([cocci.ml])    dnl  this file must be present in our src directory
 AC_COCCI_CONFVERSION
@@ -40,16 +41,25 @@ AC_PROG_MKDIR_P
 AC_PROG_CPP
 AC_PATH_PROG([TAR],[tar])
 AC_PATH_PROG([PATCH],[patch])
+
+dnl  patchelf is an optional dependency and in principle not used for building coccinelle
 AC_PATH_PROG([PATCHELF],[patchelf])
 
-dnl  pkg config is required
-AC_COCCI_TOOL([PKG_CONFIG],[pkg-config],[$COCCI_SRCDIR/setup/fake-subst.sh pkg-config])
+dnl  pkg config is required, but we have an alternative script for it
+AC_COCCI_TOOL([PKG_CONFIG],[pkg-config])
 AS_IF([test "x$PKG_CONFIG" = xno],
-[dnl
-  AC_MSG_ERROR([A suitable pkg-config could not be found.])
+[dnl  no specific pkg-config configured
+  AC_SUBST([PKG_CONFIG_ORIG],[pkg-config])
+],
+[dnl  a specific pkg-config configured
+  AC_SUBST([PKG_CONFIG_ORIG],[$PKG_CONFIG])
 ])
 
-dnl  ocaml compile
+dnl  always use the wrapper around pkg-config
+AC_SUBST([PKG_CONFIG],["$COCCI_SRCDIR/setup/fake-subst.sh $PKG_CONFIG_ORIG"])
+
+
+dnl  ocaml compiler configuration
 AC_PROG_OCAML
 AC_CHECK_OCAMLVERSION([OCAMLATLEAST310],[3.10])
 AC_CHECK_OCAMLVERSION([OCAMLATLEAST311],[3.11])
@@ -507,6 +517,8 @@ AC_CONFIG_FILES([
   scripts/spatch.sh
   docs/spatch.1
   myocamlbuild.ml
+
+  setup/Makefile
 ])
 
 AC_OUTPUT

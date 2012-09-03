@@ -136,7 +136,7 @@ package:
 	@echo "\tThe coccinelle SVN repository must be in $(WEBBASE)\n"
 
 package-src:
-	$(MAKE) distclean KEEP_CONFIG=1  # Clean project (keep the config for the make actions)
+	./configure --enable-release --disable-python --disable-pcre-syntax $(extra_configure_flags)
 	$(MAKE) srctar
 	$(MAKE) coccicheck
 
@@ -145,7 +145,7 @@ package-src:
 # on those libraries.
 package-nopython:
 	$(MAKE) distclean
-	./configure --enable-release --disable-python --disable-pcre-syntax --disable-menhirLib --disable-sexplib --disable-extlib --disable-pycaml  $(extra_configure_flags)
+	./configure --enable-release --disable-python --disable-pcre-syntax --disable-menhirLib --disable-pycaml  $(extra_configure_flags)
 	$(MAKE) bintar
 	$(MAKE) bytecodetar
 
@@ -154,7 +154,7 @@ package-nopython:
 # on those libraries.
 package-python:
 	$(MAKE) distclean
-	./configure --enable-release --enable-python --disable-pcre-syntax --disable-menhirLib --disable-sexplib --disable-extlib --disable-pycaml $(extra_configure_flags)
+	./configure --enable-release --enable-python --disable-pcre-syntax --disable-menhirLib --disable-pycaml $(extra_configure_flags)
 	$(MAKE) bintar-python
 	$(MAKE) bytecodetar-python
 
@@ -166,16 +166,14 @@ package-python:
 # update: make docs generates pdf but also some ugly .log files, so
 # make clean is there to remove them while not removing the pdf
 # (only distclean remove the pdfs).
-#
-# Prerequisite: a distclean with preservation of Makefile.config
 srctar: Makefile.config
 	$(MAKE) docs
-	$(MAKE) clean
+	$(MAKE) -C parsing_cocci parser_cocci_menhir.ml
+	$(MAKE) -C parsing_cocci parser_cocci_menhir.mli
+	$(MAKE) distclean KEEP_GENERATED=1 KEEP_CONFIG=1
 	if test -f "$(TMP)/$(PACKAGE)/"; then rm -f "$(TMP)/$(PACKAGE)/"; fi # remove it if it is a symlink
 	$(MKDIR_P) "$(TMP)/$(PACKAGE)/"
 	cp -rfa ./*  "$(TMP)/$(PACKAGE)/"
-	cd $(TMP)/$(PACKAGE); $(MAKE) -C parsing_cocci parser_cocci_menhir.ml; \
-	   $(MAKE) -C parsing_cocci parser_cocci_menhir.mli
 	rm -f $(TMP)/$(PACKAGE)/Makefile.config
 	cd $(TMP); tar cvfz $(PACKAGE).tgz --exclude-vcs $(EXCL) $(PACKAGE)
 	rm -rf  $(TMP)/$(PACKAGE)
@@ -326,8 +324,7 @@ push:
 # Note: configure first
 dist:
 	$(MAKE) licensify
-	$(MAKE) distclean KEEP_CONFIG=1
 	$(MAKE) docs
 	$(MAKE) -C parsing_cocci parser_cocci_menhir.ml
-	$(MAKE) clean
+	$(MAKE) distclean KEEP_CONFIG=1 KEEP_GENERATED=1
 	tar cvfz $(PACKAGE).tar.gz --transform="s,^,$(PACKAGE)/,S" --exclude=$(PACKAGE).tar.gz --exclude-backups --exclude-vcs *

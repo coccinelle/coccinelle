@@ -21,10 +21,16 @@
 <engine>: include
 <popl09>: include
 <extra>: include
+
 <ocaml>: include
+<ocaml/coccilib.ml{,i}>: use_pcre
 
 <python>: include
 <python/yes_pycocci.ml>: thread, use_pycaml
+
+# some users have a symlink 'result' pointing to the outcome
+# of the build, which causes troubles with the hygiene check.
+<result>: -traverse
 
 
 #
@@ -70,13 +76,14 @@
 # source distribution to make some preprocessors
 # optional
 
-<parsing_c/parser_c.mly>:         not_hygienic
-<parsing_c/lexer_c.mll>:          not_hygienic
-<parsing_cocci/lexer_cli.mll>:    not_hygienic
-<parsing_cocci/lexer_script.mll>: not_hygienic
-<parsing_cocci/lexer_cocci.mll>:  not_hygienic
+<parsing_c/parser_c.mly>:                   not_hygienic
+<parsing_c/lexer_c.mll>:                    not_hygienic
+<parsing_cocci/lexer_cli.mll>:              not_hygienic
+<parsing_cocci/lexer_script.mll>:           not_hygienic
+<parsing_cocci/lexer_cocci.mll>:            not_hygienic
 <parsing_cocci/parser_cocci_menhir.mly>:    not_hygienic
 <parsing_cocci/parser_cocci_menhir.ml{,i}>: precious
+<ocaml/coccilib/coccilib.cmi>:		    not_hygienic
 
 
 #
@@ -110,5 +117,5 @@
 # Documentation
 #
 
-<ocaml/man.docdir/index.html>: gen_man
-<ocaml/html.docdir/index.html>: gen_html
+<ocaml/man.docdir/index.html>: gen_man, use_menhirLib, use_pcre, use_pycaml
+<ocaml/html.docdir/index.html>: gen_html, use_menhirLib, use_pcre, use_pycaml
