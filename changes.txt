@@ -237,6 +237,8 @@
   enable it. The Makefiles will then use ocamlbuild.
 - Ocamlscripts can access more of coccinelle: the file
   ocaml/exposed_modules.ml specifies which modules are accessible.
+- Use arg_expression to print macro arguments.  Thanks to Lars-Peter
+  Clausen for the fix.
 
 * 0.2.5
 ** Language:
