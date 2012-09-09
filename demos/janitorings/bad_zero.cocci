@@ -33,7 +33,7 @@ expression *E;
 
 
 @@
-identifier *X;
+idexpression *X;
 statement S;
 @@
 
@@ -42,7 +42,7 @@ statement S;
   S
 
 @@
-identifier *X;
+idexpression *X;
 statement S;
 @@
 
