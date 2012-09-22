@@ -239,6 +239,8 @@
   ocaml/exposed_modules.ml specifies which modules are accessible.
 - Use arg_expression to print macro arguments.  Thanks to Lars-Peter
   Clausen for the fix.
+- Remove some trailing whitespace due to unindent or added if braces.
+  Thanks to Eric LeBlond for reporting one of the problems.
 
 * 0.2.5
 ** Language:
