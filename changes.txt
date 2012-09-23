@@ -241,6 +241,8 @@
   Clausen for the fix.
 - Remove some trailing whitespace due to unindent or added if braces.
   Thanks to Eric LeBlond for reporting one of the problems.
+- Remove undesired newline after if header when body is a metavariable.
+  Thanks to Eric LeBlond for reporting the problem.
 
 * 0.2.5
 ** Language:

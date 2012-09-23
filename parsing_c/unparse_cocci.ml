@@ -1,4 +1,5 @@
 (*
+ * Copyright (C) 2012, INRIA.
  * Copyright (C) 2010, University of Copenhagen DIKU and INRIA.
  * Copyright (C) 2006, 2007 Julia Lawall
  *
@@ -207,20 +208,24 @@ in
 
 (* --------------------------------------------------------------------- *)
 
-let handle_metavar name fn =
+let lookup_metavar name =
   let ((_,b) as s,info,mc,pos) = name in
   let line = info.Ast.line in
   let lcol = info.Ast.column in
-  match Common.optionise (fun () -> List.assoc s env) with
+  let rcol = if lcol = unknown then unknown else lcol + (String.length b) in
+  let res = Common.optionise (fun () -> List.assoc s env) in
+  (res,b,line,lcol,rcol) in
+
+let handle_metavar name fn =
+  let (res,name_string,line,lcol,rcol) = lookup_metavar name in
+  match res with
     None ->
-      let name_string (_,s) = s in
       if generating
-      then
-	mcode (function _ -> print_string (name_string s)) name
+      then mcode (function _ -> print_string name_string) name
       else
 	failwith
 	  (Printf.sprintf "SP line %d: Not found a value in env for: %s"
-	     line (name_string s))
+	     line name_string)
   | Some e  ->
       pr_barrier line lcol;
       (if generating
@@ -228,8 +233,6 @@ let handle_metavar name fn =
 	(* call mcode to preserve the -+ annotation *)
 	mcode (fun _ _ _ -> fn e) name
       else fn e);
-      let rcol =
-	if lcol = unknown then unknown else lcol + (String.length b) in
       pr_barrier line rcol
 in
 (* --------------------------------------------------------------------- *)
@@ -599,18 +602,25 @@ and ty_space ty =
 and ft_space ty =
   match Ast.unwrap ty with
     Ast.Type(_,cv,ty) ->
-      (match Ast.unwrap ty with
-	Ast.Pointer(_,_) -> ()
-      | Ast.MetaType(name,_,_) ->
-	  (match List.assoc (Ast.unwrap_mcode name) env with
-            Ast_c.MetaTypeVal (tq,ty) ->
-	      (match Ast_c.unwrap ty with
-		Ast_c.Pointer(_,_) -> ()
-	      |	_ -> pr_space())
-	  | _ -> pr_space())
-      | _ -> pr_space())
+      let isptr =
+	match Ast.unwrap ty with
+	  Ast.Pointer(_,_) -> true
+	| Ast.MetaType(name,_,_) ->
+	    let (res,name_string,line,lcol,rcol) = lookup_metavar name in
+	    (match res with
+	      None ->
+		failwith
+		  (Printf.sprintf "variable %s not known on SP line %d\n"
+		     name_string line)
+	    | Some (Ast_c.MetaTypeVal (tq,ty)) ->
+		(match Ast_c.unwrap ty with
+		  Ast_c.Pointer(_,_) ->  true
+		| _ -> false)
+	    | _ -> false)
+	| _ -> false in
+      if isptr then () else pr_space()
   | _ -> pr_space()
-
+	
 and declaration d =
   match Ast.unwrap d with
     Ast.MetaDecl(name,_,_) ->
@@ -920,11 +930,32 @@ and print_fninfo = function
   | Ast.FAttr(attr) -> mcode print_string attr; pr_space() in
 
 let indent_if_needed s f =
-  match Ast.unwrap s with
-    Ast.Seq(lbrace,body,rbrace) -> pr_space(); f()
-  | _ ->
+  let isseq =
+    match Ast.unwrap s with
+      Ast.Seq(lbrace,body,rbrace) -> true
+    | Ast.Atomic s ->
+	(match Ast.unwrap s with
+	| Ast.MetaStmt(name,_,_,_) ->
+	    let (res,name_string,line,lcol,rcol) = lookup_metavar name in
+	    (match res with
+	      None ->
+		failwith
+		  (Printf.sprintf "variable %s not known on SP line %d\n"
+		     name_string line)
+	    | Some (Ast_c.MetaStmtVal stm) ->
+		(match Ast_c.unwrap stm with
+		  Ast_c.Compound _ -> true
+		| _ -> false)
+	    | _ -> failwith "bad metavariable value")
+	| _ -> false)
+    | _ -> false in
+  if isseq
+  then begin pr_space(); f() end
+  else
+    begin
       (*no newline at the end - someone else will do that*)
-      start_block(); f(); unindent true in
+      start_block(); f(); unindent true
+    end in
 
 let rec statement arity s =
   match Ast.unwrap s with
