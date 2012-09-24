@@ -872,11 +872,12 @@ let paren_then_brace toks =
 	else x :: search_paren xs
     | x::xs -> x :: search_paren xs
   and search_plus xs =
-    let (spaces, rest) = Common.span is_whitespace xs in
+    let (spaces, rest) = Common.span is_space xs in
+    let (nls, rest) = Common.span is_newline rest in
     match rest with
       (* move the brace up to the previous line *)
       ((Cocci2("{",_,_,_,_)) as x) :: (((Cocci2 _) :: _) as rest) ->
-	(C2 " ") :: x :: spaces @ rest
+	spaces @ x :: nls @ rest
     | _ -> xs in
   search_paren toks
 
@@ -1163,13 +1164,15 @@ let rec adjust_indentation xs =
 	    _current_tabbing := tu::(!_current_tabbing);
 	     (* can't be C2, for later phases *)
 	     Cocci2 (tu,-1,-1,-1,None)::aux started xs)
-    | Unindent_cocci2(permanent)::xs ->
+    | Unindent_cocci2(permanent)::((Cocci2("\n",_,_,_,_)) as x)::xs ->
+	(* seems only relevant if there is a following cocci newline *)
 	(match !_current_tabbing with
 	  [] -> aux started xs
 	| _::new_tabbing ->
             let s = String.concat "" new_tabbing in
 	    _current_tabbing := new_tabbing;
-	    Cocci2 (s,-1,-1,-1,None)::aux started xs)
+	    x::Cocci2 (s,-1,-1,-1,None)::aux started xs)
+    | Unindent_cocci2(permanent)::xs -> aux started xs
     (* border between existing code and cocci code *)
     | ((T2 (tok,_,_)) as x)::((Cocci2("\n",_,_,_,_)) as y)::xs
       when str_of_token2 x =$= "{" ->

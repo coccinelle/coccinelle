@@ -1,12 +1,13 @@
 @@
-iterator list_for_each;
+iterator name list_for_each;
 statement S;
 expression head;
 struct list_head *pos;
 @@
 - for (pos = head.next; pos != &head; pos = pos->next) 
--  S
-//+ list_for_each(pos, &head) 
++ list_for_each(pos, &head) 
+  S
+
 
 
 @@
@@ -16,8 +17,8 @@ expression head;
 struct list_head *pos;
 @@
 - for (pos = head->next; pos != head; pos = pos->next) 
--  S
-//+ list_for_each(pos, head) 
++ list_for_each(pos, head) 
+  S
 
 
 
