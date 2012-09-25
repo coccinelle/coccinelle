@@ -43,7 +43,7 @@ AC_PATH_PROG([TAR],[tar])
 AC_PATH_PROG([PATCH],[patch])
 
 dnl  ensures that INSTALL points to an absolute install-sh when that one is configured.
-AS_IF([test "$INSTALL" = "setup/install-sh -c"],
+AS_IF([test "$INSTALL" = "setup/install-sh -c" -o "$INSTALL" = "./setup-install-sh -c"],
 [dnl
   AC_SUBST([INSTALL], ["$COCCI_SRCDIR/$INSTALL"])
 ])
