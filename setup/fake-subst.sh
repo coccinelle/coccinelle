@@ -65,10 +65,18 @@ pythonprefix() {
   python -c "import sys; print(sys.prefix)"
 }
 
+pythonversion() {
+  python -c "import sys; print('%d.%d' % (sys.version_info[0], sys.version_info[1]))"
+}
+
 pythonexists() {
   local version=$1
   local prefix="$(pythonprefix)"
   test $? = 0
+
+  if test -z "$version"; then
+    version="$(pythonversion)"
+  fi
 
   if test ! -f "${prefix}/include/python${version}/Python.h"; then
     echo "error: ${prefix}/include/python${version}/Python.h not found (a development version of python is not installed?)" 1>&2
@@ -122,7 +130,7 @@ done < "${responsefile}"
 if test -n "${found}"; then
   MATCH=no
   if test -n "${replace}"; then
-    MATCH="$(echo "$cmdline" | sed -r "${replace}")"
+    MATCH="$(echo "$cmdline" | sed -E "${replace}")"
   fi
 
   if test -n "${response}"; then
