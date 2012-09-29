@@ -1,18 +1,3 @@
-(* Yoann Padioleau
- *
- * Copyright (C) 2010, University of Copenhagen DIKU and INRIA.
- * Copyright (C) 2009 University of Urbana Champaign
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License (GPL)
- * version 2 as published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * file license.txt for more details.
- *)
-
 open Common
 
 open Oset
@@ -334,8 +319,11 @@ let is_dangerous_macro def =
       else true
 
   (* ex: AP_DECLARE(x) x  *)
-  | Cpp_token_c.Params([s1]), Cpp_token_c.DefineBody [TIdent (s2,i1)] ->
-      s1 =$= s2
+  | Cpp_token_c.Params([s1]),
+	Cpp_token_c.DefineBody [TIdent (s2,i1)] ->
+	  (match s1 with
+	    Cpp_token_c.FixedArg s1 -> s1 =$= s2
+	  | Cpp_token_c.VariadicArg _ -> false)
 
   (* keyword aliases. eg: APR_inline __inline__ *)
   | Cpp_token_c.NoParam, Cpp_token_c.DefineBody [x] ->
@@ -485,3 +473,4 @@ let extract_dangerous_macros xs =
 
   let grouped = Common.group_assoc_bykey_eff final_macros in
   grouped
+
