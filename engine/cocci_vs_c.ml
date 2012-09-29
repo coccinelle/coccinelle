@@ -761,7 +761,7 @@ let satisfies_econstraint c exp : bool =
 
 let list_matcher match_dots rebuild_dots match_comma rebuild_comma
     match_metalist rebuild_metalist mktermval special_cases
-    element distrf get_iis = fun eas ebs ->
+    element distrf get_iis lenfilter = fun eas ebs ->
   let rec loop = function
       [], [] -> return ([], [])
     | [], eb::ebs -> fail
@@ -865,7 +865,7 @@ let list_matcher match_dots rebuild_dots match_comma rebuild_comma
 		    then fail
 		    else
 		      let startxs' = Ast_c.unsplit_comma startxs in
-		      let len = List.length  startxs' in
+		      let len = List.length (lenfilter startxs') in
 
 		      (match leninfo with
 		      | A.MetaListLen (lenname,lenkeep,leninherited) ->
@@ -1577,7 +1577,7 @@ and arguments_bis = fun eas ebs ->
   list_matcher match_dots build_dots match_comma build_comma
     match_metalist build_metalist mktermval
     special_cases argument X.distrf_args
-    Lib_parsing_c.ii_of_args eas ebs
+    Lib_parsing_c.ii_of_args (function x -> x) eas ebs
 
 and argument arga argb =
   X.all_bound (A.get_inherited arga) >&&>
@@ -1669,7 +1669,7 @@ and parameters_bis eas ebs =
   list_matcher match_dots build_dots match_comma build_comma
     match_metalist build_metalist mktermval
     special_cases parameter X.distrf_params
-    Lib_parsing_c.ii_of_params eas ebs
+    Lib_parsing_c.ii_of_params (function x -> x) eas ebs
 
 (*
    let split_register_param = fun (hasreg, idb, ii_b_s) ->
@@ -2418,7 +2418,6 @@ and ar_initialisers = fun ias (ibs, iicomma) ->
       (List.map (function (elem,comma) -> [Left elem; Right [comma]]) ibs) in
   initialisers_ordered2 ias ibs >>=
   (fun ias ibs_split ->
-
     let ibs,iicomma =
       match List.rev ibs_split with
 	(Right comma)::rest -> (Ast_c.unsplit_comma (List.rev rest),comma)
@@ -2449,7 +2448,8 @@ and initialisers_ordered2 = fun ias ibs ->
   let no_ii x = failwith "not possible" in
   list_matcher match_dots build_dots match_comma build_comma
     match_metalist build_metalist mktermval
-    special_cases initialiser X.distrf_inis no_ii ias ibs
+    special_cases initialiser X.distrf_inis no_ii
+    (function x -> x) ias ibs
 
 and initialisers_unordered2 = fun allminus ias ibs ->
   match ias, ibs with
@@ -2519,9 +2519,20 @@ and (struct_fields: (A.declaration list, B.field list) matcher) =
     let startxs = unmake_ebs startxs in
     X.distrf_struct_fields mcode startxs >>=
     (fun mcode startxs -> return (mcode,make_ebs startxs)) in
+  let filter_fields l =
+    List.filter
+      (function x ->
+	match Ast_c.unwrap x with
+	  Ast_c.DeclarationField fld -> true
+	| Ast_c.EmptyField info -> true
+	| Ast_c.MacroDeclField decl -> true
+	| Ast_c.CppDirectiveStruct cpp -> false
+	| Ast_c.IfdefStruct ifdef -> false)
+      l in
   list_matcher match_dots build_dots match_comma build_comma
     match_metalist build_metalist mktermval
-    special_cases struct_field distrf no_ii eas (make_ebs ebs) >>=
+    special_cases struct_field distrf no_ii
+    filter_fields eas (make_ebs ebs) >>=
   (fun eas ebs -> return (eas,unmake_ebs ebs))
 
 and (struct_field: (A.declaration, B.field) matcher) = fun fa fb ->
@@ -2622,7 +2633,7 @@ and enum_fields = fun eas ebs ->
   list_matcher match_dots build_dots match_comma build_comma
     match_metalist build_metalist mktermval
     special_cases enum_field X.distrf_enum_fields
-    Lib_parsing_c.ii_of_enum_fields eas ebs
+    Lib_parsing_c.ii_of_enum_fields (function x -> x) eas ebs
 
 and enum_field ida idb =
   X.all_bound (A.get_inherited ida) >&&>
@@ -3650,7 +3661,8 @@ and define_paramsbis = fun eas ebs ->
   let no_ii x = failwith "not possible" in
   list_matcher match_dots build_dots match_comma build_comma
     match_metalist build_metalist mktermval
-    special_cases define_parameter X.distrf_define_params no_ii eas ebs
+    special_cases define_parameter X.distrf_define_params no_ii
+    (function x -> x) eas ebs
 
 and define_parameter = fun parama paramb ->
   match A.unwrap parama, paramb with

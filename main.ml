@@ -286,9 +286,8 @@ let short_options = [
   "    For integration in a toolchain (must be set before the first unknown option)";
   "--include-headers", Arg.Set include_headers,
   "    process header files independently";
-  "-I",   Arg.String (fun x ->
-			FC.include_path:= x::!FC.include_path
-		     ),
+  "-I",   Arg.String (fun x -> FC.include_path:= x::!FC.include_path),
+  "--include", Arg.String (fun x -> FC.extra_includes= x::!FC.extra_includes),
   "  <dir> containing the header files (optional)";
 
   "--preprocess", Arg.Set preprocess,

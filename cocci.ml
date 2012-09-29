@@ -631,7 +631,7 @@ let (includes_to_parse:
 	 Flag_cocci.include_options -> 'a) = fun xs choose_includes ->
   match choose_includes with
     Flag_cocci.I_UNSPECIFIED -> failwith "not possible"
-  | Flag_cocci.I_NO_INCLUDES -> []
+  | Flag_cocci.I_NO_INCLUDES -> !Flag_cocci.extra_includes
   | x ->
       let all_includes =
 	List.mem x
@@ -674,7 +674,10 @@ let (includes_to_parse:
 		  )
 	  | _ -> None))
 	+> List.concat
-	+> (fun x -> (List.rev (Common.uniq (List.rev x)))) (*uniq keeps last*)
+	+> (fun x ->
+	  (List.rev
+	     (Common.uniq
+		(!Flag_cocci.extra_includes@(List.rev x)))))(*uniq keeps last*)
 
 let rec interpret_dependencies local global = function
     Ast_cocci.Dep s      -> List.mem s local
