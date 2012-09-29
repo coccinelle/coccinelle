@@ -801,6 +801,7 @@ PKG_CONFIG_PATH
 with_PKG_CONFIG
 PKG_CONFIG
 PATCHELF
+INSTALL
 PATCH
 TAR
 CPP
@@ -4128,6 +4129,12 @@ $as_echo "no" >&6; }
 fi
 
 
+
+if test "$INSTALL" = "setup/install-sh -c" -o "$INSTALL" = "./setup-install-sh -c"; then :
+    INSTALL="$COCCI_SRCDIR/$INSTALL"
+
+
+fi
 
 # Extract the first word of "patchelf", so it can be a program name with args.
 set dummy patchelf; ac_word=$2

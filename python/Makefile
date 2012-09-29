@@ -1,3 +1,4 @@
+
 #############################################################################
 # Configuration section
 #############################################################################
@@ -96,6 +97,7 @@ clean::
 	rm -f $(TARGET).byte
 	rm -f $(CTLTARGET)
 	rm -f .depend
+	rm -f coccipython.cmxa coccipython.a
 
 distclean::
 	$(MAKE) -C coccilib $@

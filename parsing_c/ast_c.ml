@@ -100,6 +100,9 @@ type info = {
   (* set in comment_annotater_c.ml *)
   comments_tag: comments_around ref;
 
+  (* annotations on the token (mutable) *)
+  mutable annots_tag: Token_annot.annots
+
   (* todo? token_info : sometimes useful to know what token it was *)
   }
 and il = info list
@@ -827,6 +830,7 @@ let no_virt_pos = ({str="";charpos=0;line=0;column=0;file=""},-1)
 let fakeInfo pi  =
   { pinfo = FakeTok ("",no_virt_pos);
     cocci_tag = ref emptyAnnot;
+    annots_tag = Token_annot.empty;
     comments_tag = ref emptyComments;
   }
 
@@ -1032,6 +1036,7 @@ let al_info tokenindex x =
 	 file = "";
 	 str = str_of_info x});
     cocci_tag = ref emptyAnnot;
+    annots_tag = Token_annot.empty;
     comments_tag = ref emptyComments;
   }
 
@@ -1052,6 +1057,7 @@ let real_al_info x =
 	 file = "";
 	 str = str_of_info x});
     cocci_tag = ref emptyAnnot;
+    annots_tag = Token_annot.empty;
     comments_tag = ref emptyComments;
   }
 
@@ -1077,12 +1083,14 @@ let al_info_cpp tokenindex x =
 	 file = "";
 	 str = str_of_info x});
     cocci_tag = ref emptyAnnot;
+    annots_tag = Token_annot.empty;
     comments_tag = ref (al_comments !(x.comments_tag));
   }
 
 let semi_al_info_cpp x =
   { x with
     cocci_tag = ref emptyAnnot;
+    annots_tag = Token_annot.empty;
     comments_tag = ref (al_comments !(x.comments_tag));
   }
 
@@ -1095,6 +1103,7 @@ let real_al_info_cpp x =
 	 file = "";
 	 str = str_of_info x});
     cocci_tag = ref emptyAnnot;
+    annots_tag = Token_annot.empty;
     comments_tag =  ref (al_comments !(x.comments_tag));
   }
 
@@ -1243,3 +1252,15 @@ let get_local_ii_of_st_inlining_ii_of_name st =
 let name_of_parameter param =
   param.p_namei +> Common.map_option (str_of_name)
 
+
+(* ------------------------------------------------------------------------- *)
+(* Annotations on tokens *)
+(* ------------------------------------------------------------------------- *)
+
+(* to put a given annotation on a token *)
+let put_annot_info info key value =
+  info.annots_tag <- Token_annot.put_annot key value info.annots_tag
+
+(* to check if an annotation has such a token *)
+let get_annot_info info key =
+  Token_annot.get_annot info.annots_tag key

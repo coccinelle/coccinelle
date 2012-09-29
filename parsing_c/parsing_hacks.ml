@@ -410,6 +410,7 @@ let mark_end_define ii =
         Common.charpos = Ast_c.pos_of_info ii + 1
       };
       cocci_tag = ref Ast_c.emptyAnnot;
+      annots_tag = Token_annot.empty;
       comments_tag = ref Ast_c.emptyComments;
     }
   in
@@ -575,6 +576,7 @@ let new_info posadd str ii =
       };
     (* must generate a new ref each time, otherwise share *)
     cocci_tag = ref Ast_c.emptyAnnot;
+    annots_tag = Token_annot.empty;
     comments_tag = ref Ast_c.emptyComments;
    }
 

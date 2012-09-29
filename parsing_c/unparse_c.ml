@@ -1240,7 +1240,6 @@ let fix_tokens toks =
   toks +> List.map (fun x -> x.tok2)
 
 
-
 (*****************************************************************************)
 (* Final unparsing (and debugging support) *)
 (*****************************************************************************)
@@ -1287,7 +1286,37 @@ let print_all_tokens2 pr xs =
       end
     );
   else
-    xs +> List.iter (fun x -> pr (str_of_token2 x))
+    let to_whitespace s = 
+          let r = String.copy s in
+	  for i = 1 to String.length r do
+	    let c = String.get r (i-1) in
+	    match c with
+	      ' ' | '\t' | '\r' | '\n' -> ()
+	    | _ -> String.set r (i-1) ' '
+          done;
+	  r in
+    let hiding_level = ref 0 in
+    let handle_token t =
+          let s = str_of_token2 t in
+	  let hide_current =
+                match t with
+                  T2 (t,_,_) ->
+                    let i = TH.info_of_tok t in
+                    begin
+                      match Ast_c.get_annot_info i Token_annot.Exclude_start with
+                        None   -> ()
+	              | Some _ -> hiding_level := !hiding_level + 1
+                    end;
+                    let hide_current = !hiding_level > 0 in
+                    begin
+		      match Ast_c.get_annot_info i Token_annot.Exclude_end with
+                        None   -> ()
+	              | Some _ -> hiding_level := max (!hiding_level - 1) 0
+                    end;
+		    hide_current
+                | _ -> !hiding_level > 0 in
+          if hide_current then to_whitespace s else s in
+    xs +> List.iter (fun x -> pr (handle_token x))
 
 
 
@@ -1360,9 +1389,9 @@ let pp_program2 xs outfile  =
 	    then
 	      (* nothing else to do for sgrep *)
 	      drop_expanded(drop_fake(drop_minus toks))
-	    else
+	    else begin
               (* phase2: can now start to filter and adjust *)
-	       (let (toks,tu) = adjust_indentation toks in
+	      let (toks,tu) = adjust_indentation toks in
 	      let toks = adjust_eat_space toks in
 	      let toks = adjust_before_semicolon toks in(*before remove minus*)
 	      let toks = adjust_after_paren toks in(*also before remove minus*)
@@ -1375,7 +1404,8 @@ let pp_program2 xs outfile  =
 	      let toks = add_newlines toks tu in
 	      let toks = paren_then_brace toks in
               let toks = fix_tokens toks in
-	       toks) in
+	      toks
+            end in
 
           (* in theory here could reparse and rework the ast! or
            * apply some SP. Not before cos julia may have generated

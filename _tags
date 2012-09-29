@@ -110,6 +110,7 @@
 <tools/spp.{byte,native}>:                 use_base
 <tools/splitpatch.{byte,native}>:          use_base
 <tools/extract_c_and_res.{byte,native}>:   use_base
+<tools/cstripenv.{byte,native}>:           use_base, use_pcre
 <tools/distributed/cleanup.{byte,native}>: use_base
 
 

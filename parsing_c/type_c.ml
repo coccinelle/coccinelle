@@ -84,6 +84,7 @@ let mk_fulltype bt str =
     Ast_c.cocci_tag =
      {contents =
        Some (Ast_cocci.CONTEXT (Ast_cocci.NoPos, Ast_cocci.NOTHING), [])};
+    Ast_c.annots_tag = Token_annot.empty;
     Ast_c.comments_tag = {contents =
         {Ast_c.mbefore = []; Ast_c.mafter = [];
          Ast_c.mbefore2 = []; Ast_c.mafter2 = []
