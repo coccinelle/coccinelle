@@ -121,7 +121,7 @@ let print_token2 = function
       let b_str =
 	match b with
 	  Min (index,adj) ->
-	    Printf.sprintf "-%d[%s]"
+	    Printf.sprintf "-.%d[%s]"
 	      (match adj with Ast_cocci.ADJ n -> n | _ -> -1)
 	      (String.concat " " (List.map string_of_int index))
 	| Ctx -> "" in
@@ -296,11 +296,13 @@ let displace_fake_nodes toks =
 	(match !(info.cocci_tag) with
         | Some x ->
           (match x with
-	    (Ast_cocci.CONTEXT(_,Ast_cocci.BEFORE _),_)
-	  | (Ast_cocci.MINUS(_,_,_,Ast_cocci.REPLACEMENT _),_) ->
+	    (Ast_cocci.CONTEXT(_,Ast_cocci.BEFORE _),_) ->
 	    (* move the fake node forwards *)
 	      let (whitespace,rest) = Common.span is_whitespace aft in
 	      bef @ whitespace @ fake :: (loop rest)
+	  | (Ast_cocci.MINUS(_,_,_,Ast_cocci.REPLACEMENT _),_)
+	      (* for , replacement is more likely to be like after, but not
+		 clear... *)
 	  | (Ast_cocci.CONTEXT(_,Ast_cocci.AFTER _),_) ->
 	    (* move the fake node backwards *)
 	      let revbef = List.rev bef in
@@ -344,12 +346,13 @@ let expand_mcode toks =
     match t with
     | Fake1 info ->
         let str = Ast_c.str_of_info info in
-        if str =$= ""
+	let isminus = match minus with Min _ -> true | Ctx -> false in
+	(* don't add fake string if the thing should be removed *)
+        if str =$= "" or isminus
         then push2 (Fake2 minus) toks_out
 	(* fx the fake "," at the end of a structure or enum.
 	   no idea what other fake info there can be... *)
 	else push2 (Comma str) toks_out
-
 
     | T1 tok ->
 	(*let (a,b) = !((TH.info_of_tok tok).cocci_tag) in*)
