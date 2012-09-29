@@ -478,7 +478,8 @@ let collect_plus_nodes root =
     | Ast0.CONTEXT _ -> let (bef,aft) = extract_strings info in bef@aft
     | _ -> [] in
 
-  let info (i,_) = let (bef,aft) = extract_strings i in bef@aft in
+  let info (i,_,_) = let (bef,aft) = extract_strings i in bef@aft in
+  let pre_info (i,_) = let (bef,aft) = extract_strings i in bef@aft in
 
   let do_nothing fn r k e =
     match Ast0.get_mcodekind e with
@@ -495,9 +496,9 @@ let collect_plus_nodes root =
     | Ast0.Ty(ty) -> r.VT0.combiner_rec_typeC ty
     | Ast0.TopInit(init) -> r.VT0.combiner_rec_initialiser init
     | Ast0.Decl(bef,decl) ->
-	(info bef) @ (do_nothing mk_statement r k e)
+	(pre_info bef) @ (do_nothing mk_statement r k e)
     | Ast0.FunDecl(bef,fi,name,lp,params,rp,lbrace,body,rbrace) ->
-	(info bef) @ (do_nothing mk_statement r k e)
+	(pre_info bef) @ (do_nothing mk_statement r k e)
     | Ast0.IfThen(iff,lp,exp,rp,branch1,aft) ->
 	(do_nothing mk_statement r k e) @ (info aft)
     | Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2,aft) ->
@@ -1022,7 +1023,12 @@ let reevaluate_contextness =
        Ast0.CONTEXT(mc) -> let (ba,_,_) = !mc in [ba]
      | _ -> [] in
 
-   let info (_,mc) =
+   let pre_info (_,mc) =
+     match mc with
+       Ast0.CONTEXT(mc) -> let (ba,_,_) = !mc in [ba]
+     | _ -> [] in
+
+   let info (_,mc,_) =
      match mc with
        Ast0.CONTEXT(mc) -> let (ba,_,_) = !mc in [ba]
      | _ -> [] in
@@ -1039,9 +1045,9 @@ let reevaluate_contextness =
    let stmt r k e =
      match Ast0.unwrap e with
        Ast0.Decl(bef,decl) ->
-	 (info bef) @ (donothing r k e)
+	 (pre_info bef) @ (donothing r k e)
      | Ast0.FunDecl(bef,fi,name,lp,params,rp,lbrace,body,rbrace) ->
-	 (info bef) @ (donothing r k e)
+	 (pre_info bef) @ (donothing r k e)
      | Ast0.IfThen(iff,lp,exp,rp,branch1,aft) ->
 	 (donothing r k e) @ (info aft)
      | Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2,aft) ->

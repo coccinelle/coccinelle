@@ -398,6 +398,20 @@ metadec:
 list_len:
   pure_ident_or_meta_ident { Common.Left $1 }
 | TInt { let (x,clt) = $1 in Common.Right (int_of_string x) }
+| TVirtual TDot pure_ident
+    { let nm = ("virtual",P.id2name $3) in
+    Iteration.parsed_virtual_identifiers :=
+      Common.union_set [snd nm]
+        !Iteration.parsed_virtual_identifiers;
+    try
+    Common.Right (int_of_string
+		    (List.assoc (snd nm) !Flag.defined_virtual_env))
+    with Not_found | Failure "int_of_string" ->
+      begin
+	Common.Left (Some "virtual",P.id2name $3)
+      end
+    }
+
 
 %inline metakind_fresh:
   TFresh TIdentifier

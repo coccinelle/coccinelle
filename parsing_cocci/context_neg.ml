@@ -413,12 +413,12 @@ let classify is_minus all_marked table code =
       |	Ast0.FunDecl((info,bef),_,_,_,_,_,_,_,_)
       | Ast0.Decl((info,bef),_) ->
 	  bind (nc_mcode ((),(),info,bef,(),-1)) (k s)
-      | Ast0.IfThen(_,_,_,_,_,(info,aft))
-      | Ast0.IfThenElse(_,_,_,_,_,_,_,(info,aft))
-      | Ast0.Iterator(_,_,_,_,_,(info,aft))
-      | Ast0.While(_,_,_,_,_,(info,aft))
-      | Ast0.For(_,_,_,_,_,_,_,_,(info,aft)) ->
-	  bind (k s) (nc_mcode ((),(),info,aft,(),-1))
+      | Ast0.IfThen(_,_,_,_,_,(info,aft,adj))
+      | Ast0.IfThenElse(_,_,_,_,_,_,_,(info,aft,adj))
+      | Ast0.Iterator(_,_,_,_,_,(info,aft,adj))
+      | Ast0.While(_,_,_,_,_,(info,aft,adj))
+      | Ast0.For(_,_,_,_,_,_,_,_,(info,aft,adj)) ->
+	  bind (k s) (nc_mcode ((),(),info,aft,(),adj))
       |	_ -> k s
 
 ) in

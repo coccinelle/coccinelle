@@ -287,8 +287,9 @@ let short_options = [
   "--include-headers", Arg.Set include_headers,
   "    process header files independently";
   "-I",   Arg.String (fun x -> FC.include_path:= x::!FC.include_path),
-  "--include", Arg.String (fun x -> FC.extra_includes= x::!FC.extra_includes),
-  "  <dir> containing the header files (optional)";
+  "  <dir> containing the header files";
+  "--include", Arg.String (fun x -> FC.extra_includes:=x::!FC.extra_includes),
+  "  file to consider as being included";
 
   "--preprocess", Arg.Set preprocess,
   " run the C preprocessor before applying the semantic match";

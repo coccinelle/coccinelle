@@ -2086,6 +2086,8 @@ let process file isofile verbose =
 		      some restrictions on the -+ code *)
 		   ([],_) | (_,Ast.Generated) -> ([],minus)
 		 | _ -> Iso_pattern.apply_isos chosen_isos minus rule_name in
+	       (* must be before adj *)
+	       let minus = Commas_on_lists.process minus in
 	       (* after iso, because iso can intro ... *)
 	       let minus = Adjacency.compute_adjacency minus in
 	       let minus = Comm_assoc.comm_assoc minus rule_name dropiso in

@@ -1,3 +1,7 @@
+module Ast0 = Ast0_cocci
+module V0 = Visitor_ast0
+module VT0 = Visitor_ast0_types
+
 (* Add commas in init lists or exp lists, if needed.  This must be done
 before the adjacency calculation so that the commas get the right
 adjacency numbers.  This is needed for correct formatting in unparse_c.ml *)
@@ -50,10 +54,11 @@ let base_typeC r k t =
   | _ -> t
 
 let initialiser r k i =
+  let i = k i in
   match Ast0.unwrap i with
-    Ast0.InitList(lb,initlist,rb,true) ->
+    Ast0.InitList(lb,initlist,rb,ordered) ->
       let initlist = add_init_comma initlist in
-      Ast0.rewrap i (Ast0.InitList(lb,initlist,rb,true))
+      Ast0.rewrap i (Ast0.InitList(lb,initlist,rb,ordered))
   | _ -> i
 
 let process p =
