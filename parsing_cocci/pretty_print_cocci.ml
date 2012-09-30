@@ -468,11 +468,9 @@ and declaration d =
   | Ast.Init(stg,ty,id,eq,ini,sem) ->
       print_option (mcode storage) stg; print_named_type ty id;
       print_string " "; mcode print_string eq;
-      print_string (Printf.sprintf " !%b! " (Ast.get_safe_decl d));
       print_string " "; initialiser ini; mcode print_string sem
   | Ast.UnInit(stg,ty,id,sem) ->
       print_option (mcode storage) stg; print_named_type ty id;
-      print_string (Printf.sprintf " !%b! " (Ast.get_safe_decl d));
       mcode print_string sem
   | Ast.MacroDecl(name,lp,args,rp,sem) ->
       ident name; mcode print_string_box lp;
