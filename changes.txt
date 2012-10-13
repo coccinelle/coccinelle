@@ -246,6 +246,7 @@
 - Improve macro expansion to take into account variable numbers of
   arguments
 - Don't count macros or ifdefs in counting fields
+- Better counting of indent size when indent contains multiple tabs
 
 * 0.2.5
 ** Language:
