@@ -177,7 +177,7 @@ let check_up_to_date a b  =
       optionise (fun () -> List.assoc dir das),
       optionise (fun () -> List.assoc dir dbs)
     with
-    | None, None -> raise Impossible
+    | None, None -> raise (Impossible 57)
     | None, Some gbs -> pr2 ("new directory appeared:" ^ dir)
     | Some gas, None -> pr2 ("old directory disappeared:" ^ dir)
     | Some gas, Some gbs ->
@@ -186,7 +186,7 @@ let check_up_to_date a b  =
         let all_files = afiles $+$ bfiles in
         all_files +> List.iter (fun file ->
           match List.mem file afiles, List.mem file bfiles with
-          | false, false -> raise Impossible
+          | false, false -> raise (Impossible 58)
           | false, true -> pr2 ("new file appeared:" ^ file ^ " in " ^ dir)
           | true, false -> pr2 ("old file disappeared:" ^ file  ^ " in " ^ dir)
           | true, true -> ()

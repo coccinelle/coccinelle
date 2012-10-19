@@ -268,17 +268,17 @@ let rec ident i =
     | Ast.MetaId(name,_,_,_) ->
 	handle_metavar name (function
 			       | (Ast_c.MetaIdVal (id,_)) -> print_text id
-			       | _ -> raise Impossible
+			       | _ -> raise (Impossible 142)
 			    )
     | Ast.MetaFunc(name,_,_,_) ->
 	handle_metavar name (function
 			       | (Ast_c.MetaFuncVal id) -> print_text id
-			       | _ -> raise Impossible
+			       | _ -> raise (Impossible 143)
 			    )
     | Ast.MetaLocalFunc(name,_,_,_) ->
 	handle_metavar name (function
 			       | (Ast_c.MetaLocalFuncVal id) -> print_text id
-			       | _ -> raise Impossible
+			       | _ -> raise (Impossible 144)
 			    )
 
     | Ast.AsIdent(id,asid) -> ident id
@@ -351,7 +351,7 @@ let rec expression e =
       handle_metavar name  (function
         | Ast_c.MetaExprVal (exp,_) ->
             pretty_print_c.Pretty_print_c.expression exp
-        | _ -> raise Impossible
+        | _ -> raise (Impossible 145)
       )
 
   | Ast.MetaExprList (name,_,_,_) ->
@@ -360,7 +360,7 @@ let rec expression e =
             pretty_print_c.Pretty_print_c.arg_list args
 	| Ast_c.MetaParamListVal _ ->
 	    failwith "have meta param list matching meta exp list\n";
-        | _ -> raise Impossible
+        | _ -> raise (Impossible 146)
       )
 
   | Ast.AsExpr(expr,asexpr) -> expression expr
@@ -518,7 +518,7 @@ and typeC ty =
       handle_metavar name  (function
           Ast_c.MetaTypeVal exp ->
             pretty_print_c.Pretty_print_c.ty exp
-        | _ -> raise Impossible)
+        | _ -> raise (Impossible 147))
 
 and baseType = function
     Ast.VoidType -> print_string "void"
@@ -628,20 +628,20 @@ and declaration d =
 	(function
 	    Ast_c.MetaDeclVal d ->
               pretty_print_c.Pretty_print_c.decl d
-          | _ -> raise Impossible)
+          | _ -> raise (Impossible 148))
   | Ast.MetaField(name,_,_) ->
       handle_metavar name
 	(function
 	    Ast_c.MetaFieldVal f ->
               pretty_print_c.Pretty_print_c.field f
-          | _ -> raise Impossible)
+          | _ -> raise (Impossible 149))
 
   | Ast.MetaFieldList(name,_,_,_) ->
       handle_metavar name
 	(function
 	    Ast_c.MetaFieldListVal f ->
 	      print_between force_newline pretty_print_c.Pretty_print_c.field f
-          | _ -> raise Impossible)
+          | _ -> raise (Impossible 150))
 
   | Ast.AsDecl(decl,asdecl) -> declaration decl
 
@@ -685,12 +685,12 @@ and initialiser nlcomma i =
       handle_metavar name  (function
           Ast_c.MetaInitVal ini ->
             pretty_print_c.Pretty_print_c.init ini
-        | _ -> raise Impossible)
+        | _ -> raise (Impossible 151))
   | Ast.MetaInitList(name,_,_,_) ->
       handle_metavar name  (function
           Ast_c.MetaInitListVal ini ->
 	    pretty_print_c.Pretty_print_c.init_list ini
-        | _ -> raise Impossible)
+        | _ -> raise (Impossible 152))
   | Ast.AsInit(init,asinit) -> initialiser nlcomma init
   | Ast.InitExpr(exp) -> expression exp
   | Ast.ArInitList(lb,initlist,rb) ->
@@ -758,13 +758,13 @@ and parameterTypeDef p =
 	(function
 	    Ast_c.MetaParamVal p ->
               pretty_print_c.Pretty_print_c.param p
-          | _ -> raise Impossible)
+          | _ -> raise (Impossible 153))
   | Ast.MetaParamList(name,_,_,_) ->
       handle_metavar name
 	(function
 	    Ast_c.MetaParamListVal p ->
               pretty_print_c.Pretty_print_c.paramlist p
-          | _ -> raise Impossible)
+          | _ -> raise (Impossible 154))
 
   | Ast.PComma(cm) -> mcode print_string cm
   | Ast.Pdots(dots) | Ast.Pcircles(dots) when generating ->
@@ -890,13 +890,13 @@ and rule_elem arity re =
       else raise CantBeInPlus
 
   | Ast.MetaRuleElem(name,_,_) ->
-      raise Impossible
+      raise (Impossible 155)
 
   | Ast.MetaStmt(name,_,_,_) ->
       handle_metavar name  (function
         | Ast_c.MetaStmtVal stm ->
             pretty_print_c.Pretty_print_c.statement stm
-        | _ -> raise Impossible
+        | _ -> raise (Impossible 156)
                            )
   | Ast.MetaStmtList(name,_,_) ->
       failwith

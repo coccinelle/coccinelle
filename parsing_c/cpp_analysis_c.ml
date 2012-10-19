@@ -122,7 +122,7 @@ let check_no_loop_graph g =
       let file =
         match !node with
         | (file, _)::xs -> file
-        | [] -> raise Impossible
+        | [] -> raise (Impossible 74)
       in
       (* in apache/srclib/apr/include/arch/win32/apr_dbg_win32_handles.h
        * we get some __ROOT__ -> CreateMutexA -> CreateMutexA because
@@ -185,7 +185,7 @@ let slice_of_callgraph_macros (g: callgraph_macros) goodnodes =
 (* get the longuest one ? or the one that contains the dangerous macro ? *)
 let get_single_file_and_def_of_node k v =
   match !v with
-  | [] -> raise Impossible
+  | [] -> raise (Impossible 75)
   | [file, def] -> file, def
   | (file, def)::y::ys ->
       pr2 (spf "multiple def for %s but I kept only one" k);
@@ -259,12 +259,15 @@ let rec (recurse_expand_macro_topological_order:
   else
     let remaining = g#nodes#tolist in
     (match remaining with
-    | [] -> raise Impossible
+    | [] -> () (* christia: commented this out: raise (Impossible 76)
+		* This seems to be the case when there are no 
+		* problematic macros. Which is possible. 
+		*)
     | [(k,n)] ->
         assert (k = rootname);
         (* end recursion *)
         ()
-    | x::y::xs ->
+    | (k, v)::y::xs ->
         let leafs = (g#leaf_nodes ())#tolist in
         pr2 (spf "step: %d, %s" depth (leafs +> Common.join " "));
 
@@ -274,7 +277,7 @@ let rec (recurse_expand_macro_topological_order:
           (spf "/tmp/graph-%d.dot" depth)
           g;
 
-        assert(not (null leafs));
+        assert(not (null leafs)); 
 
 
         (* little specialisation to avoid useless work *)

@@ -324,7 +324,7 @@ let is_ifdef_and_same_tag tag x =
   | IfdefStmt (IfdefDirective ((_, tag2),_)) ->
       tag =*= tag2
   | StmtElem _ | CppDirectiveStmt _ -> false
-  | IfdefStmt2 _ -> raise Impossible
+  | IfdefStmt2 _ -> raise (Impossible 77)
 
 
 
@@ -364,7 +364,7 @@ let group_ifdef tag xs =
   xxs +> List.map snd +> List.map (fun x ->
     match x with
     | IfdefStmt y -> y
-    | StmtElem _ | CppDirectiveStmt _ | IfdefStmt2 _ -> raise Impossible
+    | StmtElem _ | CppDirectiveStmt _ | IfdefStmt2 _ -> raise (Impossible 78)
   ),
   xxs +> List.map fst,
   xs

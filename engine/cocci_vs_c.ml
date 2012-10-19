@@ -83,7 +83,7 @@ let mcode_contain_plus = function
   | A.CONTEXT _ -> true
   | A.MINUS (_,_,_,A.NOREPLACEMENT) -> false
   | A.MINUS (_,_,_,A.REPLACEMENT _) -> true (* repl is nonempty *)
-  | A.PLUS _ -> raise Impossible
+  | A.PLUS _ -> raise (Impossible 13)
 
 let mcode_simple_minus = function
   | A.MINUS (_,_,_,A.NOREPLACEMENT) -> true
@@ -108,7 +108,7 @@ let generalize_mcode ia =
   let (s1, i, mck, pos) = ia in
   let new_mck =
     match mck with
-    | A.PLUS _ -> raise Impossible
+    | A.PLUS _ -> raise (Impossible 14)
     | A.CONTEXT (A.NoPos,x) ->
 	A.CONTEXT (A.DontCarePos,x)
     | A.MINUS   (A.NoPos,inst,adj,x) ->
@@ -117,7 +117,7 @@ let generalize_mcode ia =
     | A.CONTEXT ((A.FixPos _|A.DontCarePos), _)
     | A.MINUS ((A.FixPos _|A.DontCarePos), _, _, _)
         ->
-        raise Impossible
+        raise (Impossible 15)
   in
   (s1, i, new_mck, pos)
 
@@ -289,7 +289,7 @@ let equal_metavarval valu valu' =
       |B.MetaParamListVal _|B.MetaParamVal _|B.MetaExprListVal _
       |B.MetaExprVal _|B.MetaLocalFuncVal _|B.MetaFuncVal _|B.MetaIdVal _
     ), _
-      -> raise Impossible
+      -> raise (Impossible 16)
 
 (* probably only one argument needs to be stripped, because inherited
 metavariables containing expressions are stripped in advance. But don't
@@ -355,7 +355,7 @@ let equal_inh_metavarval valu valu'=
       |B.MetaParamListVal _|B.MetaParamVal _|B.MetaExprListVal _
       |B.MetaExprVal _|B.MetaLocalFuncVal _|B.MetaFuncVal _|B.MetaIdVal _
     ), _
-      -> raise Impossible
+      -> raise (Impossible 17)
 
 
 (*---------------------------------------------------------------------------*)
@@ -450,7 +450,7 @@ let resplit_initialiser ibs iicomma =
       let commas = List.map snd (x::xs) +> List.flatten in
       let commas = commas @ [iicomma] in
       zip elems commas
-  | _ -> raise Impossible
+  | _ -> raise (Impossible 18)
 
 
 
@@ -486,9 +486,9 @@ let structdef_to_struct_name ty =
       | None, _ ->
           ty
 
-      | x -> raise Impossible
+      | x -> raise (Impossible 19)
       )
-  | _ -> raise Impossible
+  | _ -> raise (Impossible 20)
 
 (*---------------------------------------------------------------------------*)
 let one_initialisation_to_affectation x =
@@ -516,7 +516,7 @@ let one_initialisation_to_affectation x =
                     *)
             match !tybis with
             | Some ty_with_typename_completed -> ty_with_typename_completed
-            | None -> raise Impossible
+            | None -> raise (Impossible 21)
           in
 
           let typ = ref (Some (typexp,local), Ast_c.NotTest) in
@@ -700,7 +700,7 @@ let tokenf = X.tokenf
 let fail2 () =
   match X.mode with
   | PatternMode -> fail
-  | TransformMode -> raise Impossible
+  | TransformMode -> raise (Impossible 22)
 
 
 let (option: ('a,'b) matcher -> ('a option,'b option) matcher)= fun f t1 t2 ->
@@ -907,7 +907,7 @@ let list_matcher match_dots rebuild_dots match_comma rebuild_comma
 		element ea eb >>= (fun ea eb ->
 		  loop (eas, ebs) >>= (fun eas ebs ->
 		    return (ea::eas, Left eb::ebs)))
-	    | (Right y)::ys -> raise Impossible
+	    | (Right y)::ys -> raise (Impossible 23)
 	    | [] -> fail) in
   loop (eas,ebs)
 
@@ -1384,7 +1384,7 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
   | A.Ecircles _,    _
   | A.Estars _,    _
       ->
-	raise Impossible
+	raise (Impossible 24)
 
   | A.DisjExpr eas, eb ->
       eas +> List.fold_left (fun acc ea -> acc >|+|> (expression ea eb)) fail
@@ -1731,7 +1731,7 @@ and parameter = fun parama paramb ->
 	| None, Some _ -> fail)
   | (A.OptParam _ | A.UniqueParam _), _ ->
       failwith "not handling Opt/Unique for Param"
-  | A.Pcircles (_), ys -> raise Impossible (* in Ordered mode *)
+  | A.Pcircles (_), ys -> raise (Impossible 25) (* in Ordered mode *)
   | _ -> fail
 
 (* ------------------------------------------------------------------------- *)
@@ -1814,7 +1814,7 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
         (match ii with
         | iisb::lpb::rpb::iiendb::iifakestart::iisto ->
             (iisb,lpb,rpb,iiendb, iifakestart,iisto)
-        | _ -> raise Impossible
+        | _ -> raise (Impossible 26)
         ) in
       (if allminus
       then minusize_list iistob
@@ -1844,7 +1844,7 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
             (match ii with
             | iisb::lpb::rpb::iifakestart::iisto ->
 		(iisb,lpb,rpb,iifakestart,iisto)
-            | _ -> raise Impossible) in
+            | _ -> raise (Impossible 27)) in
 	  (if allminus
 	  then minusize_list iistob
 	  else return ((), iistob)) >>=
@@ -1873,7 +1873,7 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
         (match ii with
         |  iisb::lpb::rpb::weqb::iiendb::iifakestart::iisto ->
             (iisb,lpb,rpb,weqb,iiendb, iifakestart,iisto)
-        |  _ -> raise Impossible
+        |  _ -> raise (Impossible 28)
         ) in
       (if allminus
       then minusize_list iistob
@@ -1986,7 +1986,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
                      },
                        iivirg),iiptvirgb,iistob)
                      )
-		 | _ -> raise Impossible
+		 | _ -> raise (Impossible 29)
              )
 
 	   (* do we need EnumName here too? *)
@@ -2015,9 +2015,9 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
                      },
                       iivirg),iiptvirgb,iistob)
                    )
-               | _ -> raise Impossible
+               | _ -> raise (Impossible 30)
              )
-           | _ -> raise Impossible
+           | _ -> raise (Impossible 31)
            )
          | _ -> fail
        )))))
@@ -2154,7 +2154,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
              match fake_typeb with
              | _nQ, ((B.TypeName (nameidb, _typ)), []) ->
                  return (ida, nameidb)
-             | _ -> raise Impossible
+             | _ -> raise (Impossible 32)
            )
 
        | A.TypeName sa ->
@@ -2175,7 +2175,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
                -> raise Todo
            )
 
-       | _ -> raise Impossible
+       | _ -> raise (Impossible 33)
 
        ) >>= (fun ida nameidb ->
          return (
@@ -2210,7 +2210,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
 
    (* only in struct type decls *)
    | A.Ddots(dots,whencode), _ ->
-       raise Impossible
+       raise (Impossible 34)
 
    | A.OptDecl _,    _ | A.UniqueDecl _,     _ ->
        failwith "not handling Opt/Unique Decl"
@@ -2281,7 +2281,7 @@ and (initialiser: (A.initialiser, Ast_c.initialiser) matcher) =  fun ia ib ->
                 (B.InitList ibs, ib1::ib2::iicommaopt)
               ))))
 
-        | _ -> raise Impossible
+        | _ -> raise (Impossible 35)
         )
 
     | (A.StrInitList (allminus, ia1, ias, ia2, []), (B.InitList ibs, ii)) ->
@@ -2296,7 +2296,7 @@ and (initialiser: (A.initialiser, Ast_c.initialiser) matcher) =  fun ia ib ->
                 (B.InitList ibs, ib1::ib2::iicommaopt)
               ))))
 
-        | _ -> raise Impossible
+        | _ -> raise (Impossible 36)
         )
 
     | (A.StrInitList (allminus, i1, ias, i2, whencode),
@@ -2337,7 +2337,7 @@ and (initialiser: (A.initialiser, Ast_c.initialiser) matcher) =  fun ia ib ->
 
 
     | A.IComma(comma), _ ->
-        raise Impossible
+        raise (Impossible 37)
 
     | A.UniqueIni _,_ | A.OptIni _,_ ->
       failwith "not handling Opt/Unique on initialisers"
@@ -2487,7 +2487,7 @@ and initialiser_comma (x,xcomma) (y, commay) =
           return (
           (x, (A.IComma commax) +> A.rewrap xcomma),
           (y, commay))))
-  | _ -> raise Impossible (* unsplit_iicomma wrong *)
+  | _ -> raise (Impossible 38) (* unsplit_iicomma wrong *)
 
 (* ------------------------------------------------------------------------- *)
 and (struct_fields: (A.declaration list, B.field list) matcher) =
@@ -2551,7 +2551,7 @@ and (struct_field: (A.declaration, B.field) matcher) = fun fa fb ->
     let iiptvirgb = tuple_of_list1 iiptvirg in
 
     (match onefield_multivars with
-    | [] -> raise Impossible
+    | [] -> raise (Impossible 39)
     | [onevar,iivirg] ->
       assert (null iivirg);
       (match onevar with
@@ -2596,7 +2596,7 @@ and (struct_field: (A.declaration, B.field) matcher) = fun fa fb ->
                         (B.FieldDeclList ([onevar, iivirg], [iiptvirgb])))
                     )
                   )
-              | _ -> raise Impossible
+              | _ -> raise (Impossible 40)
             )
       )
 
@@ -2851,7 +2851,7 @@ and simulate_signed ta basea stringsa signaopt tb baseb ii rebuilda =
                (rebuilda ([stringa], signaopt)) +> A.rewrap ta,
                (B.BaseType (baseb), iisignbopt ++ [ibaseb])
                )))
-          | _ -> raise Impossible
+          | _ -> raise (Impossible 41)
 
           )
 
@@ -2869,7 +2869,7 @@ and simulate_signed ta basea stringsa signaopt tb baseb ii rebuilda =
               )))))
 	  | [ibase1b;ibase2b] -> fail (* int omitted *)
 	  | [] -> fail (* should something be done in this case? *)
-	  | _ -> raise Impossible)
+	  | _ -> raise (Impossible 42))
 
 
       | A.LongLongType, B.IntType (B.Si (_, B.CLongLong))
@@ -2889,7 +2889,7 @@ and simulate_signed ta basea stringsa signaopt tb baseb ii rebuilda =
 	  | [ibase1b] -> fail (* short or long *)
 	  | [ibase1b;ibase2b;ibase3b] -> fail (* long long case *)
 	  | [] -> fail (* should something be done in this case? *)
-	  | _ -> raise Impossible)
+	  | _ -> raise (Impossible 43))
 
       | _, (B.Void|B.FloatType _|B.IntType _
 	    |B.SizeType|B.SSizeType|B.PtrDiffType) -> fail
@@ -2961,7 +2961,7 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
         | [], B.IntType (B.Si (_sign, B.CInt)) ->
             sign (Some signa) signbopt >>= (fun signaopt iisignbopt ->
               match signaopt with
-              | None -> raise Impossible
+              | None -> raise (Impossible 45)
               | Some signa ->
                   return (
                     (A.SignedT (signa,None)) +> A.rewrap ta,
@@ -3140,7 +3140,7 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
                match fake_su with
                | _nQ, (B.StructUnionName (sub, sb), [iisub;iisb]) ->
                    return (ty,  [iisub; iisb])
-               | _ -> raise Impossible)
+               | _ -> raise (Impossible 46))
 	 | _ -> fail in
 
        process_type
@@ -3239,7 +3239,7 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
                match fake_su with
                | _nQ, (B.EnumName sb, [iisub;iisb]) ->
                    return (ty,  [iisub; iisb])
-               | _ -> raise Impossible)
+               | _ -> raise (Impossible 47))
 	 | _ -> fail in
 
        process_type
@@ -3672,7 +3672,7 @@ and define_parameter = fun parama paramb ->
         return ((A.DParam ida)+> A.rewrap parama,(idb, [ib1])))
   | (A.OptDParam _ | A.UniqueDParam _), _ ->
       failwith "handling Opt/Unique for define parameters"
-  | A.DPcircles (_), ys -> raise Impossible (* in Ordered mode *)
+  | A.DPcircles (_), ys -> raise (Impossible 48) (* in Ordered mode *)
   | _ -> fail
 
 (*****************************************************************************)
@@ -3966,7 +3966,7 @@ let rec (rule_elem_node: (A.rule_elem, Control_flow_c.node) matcher) =
                            ioparenb::icparenb::iifakestart::iistob)
                 )
               )))))))))
-      | _ -> raise Impossible
+      | _ -> raise (Impossible 49)
       )
 
   | A.Decl (mckstart,allminus,decla), F.Decl declb ->

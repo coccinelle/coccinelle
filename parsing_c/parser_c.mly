@@ -69,7 +69,7 @@ let addStorageD  = function
 let addInlineD  = function
   | ((true,ii), ({inlineD = (false,[])} as v)) -> { v with inlineD=(true,[ii])}
   | ((true,ii), ({inlineD = (true, ii2)} as v)) -> warning "duplicate inline" v
-  | _ -> raise Impossible
+  | _ -> raise (Impossible 86)
 
 
 let addTypeD     = function
@@ -664,7 +664,7 @@ ident_extra_cpp:
      {
        CppConcatenatedName (
          match $3 with
-         | [] -> raise Impossible
+         | [] -> raise (Impossible 87)
          | (x,concatnull)::xs ->
              assert(null concatnull);
              (mk_string_wrap $1, [])::(x,[$2])::xs
@@ -769,7 +769,7 @@ new_argument:
 	   let fty = mk_ty (Array (Some $3, ty.Ast_c.p_type)) [$2;$4] in
 	   let pty = { ty with p_type = fty } in
 	   Right(ArgType pty)
-       | _ -> raise Impossible
+       | _ -> raise (Impossible 88)
      } 
 
 unary_op:
@@ -1572,7 +1572,7 @@ field_declaration:
           *)
      }
 
- |  spec_qualif_list TPtVirg
+ | spec_qualif_list TPtVirg
      {
        (* gccext: allow empty elements if it is a structdef or enumdef *)
        let (returnType,storage) = fixDeclSpecForDecl $1 in
@@ -1789,18 +1789,18 @@ define_val:
        DefineType typ
      }
 
-/* can be in conflict with decl_spec, maybe change fixDeclSpecForMacro
+/*(* can be in conflict with decl_spec, maybe change fixDeclSpecForMacro
  * to also allow storage ?
  | storage_class_spec { DefineTodo }
  | Tinline { DefineTodo }
-*/
+*)*/
 
- /*(* a few special cases *)*/
- | stat_or_decl stat_or_decl_list { DefineTodo }
-/*
+ | stat_or_decl stat_or_decl_list 
+     { DefineMulti (List.map (fun (StmtElem e) -> e) ($1 :: $2)) }
+/*(*
  | statement statement { DefineTodo }
  | decl function_definition { DefineTodo }
-*/
+*)*/
 
 
 

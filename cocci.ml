@@ -789,7 +789,7 @@ let rec update_include_rel_pos cs =
       match c with
       | Ast_c.Local x -> Left (x, aref)
       | Ast_c.NonLocal x -> Right (x, aref)
-      | Ast_c.Weird x -> raise Impossible
+      | Ast_c.Weird x -> raise (Impossible 161)
     ) in
 
   update_rel_pos_bis locals;
@@ -2009,7 +2009,7 @@ let check_duplicate_modif2 xs =
   let groups = Common.group_assoc_bykey_eff xs in
   groups +> Common.map_filter (fun (file, xs) ->
     match xs with
-    | [] -> raise Impossible
+    | [] -> raise (Impossible 162)
     | [res] -> Some (file, res)
     | res::xs ->
         match res with

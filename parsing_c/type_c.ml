@@ -206,9 +206,9 @@ let structdef_to_struct_name ty =
           qu, Ast_c.mk_tybis (StructUnionName (su, s)) [i1;i2]
       | None, _ ->
           ty
-      | x -> raise Impossible
+      | x -> raise (Impossible 126)
       )
-  | _ -> raise Impossible
+  | _ -> raise (Impossible 127)
 
 
 (*****************************************************************************)
@@ -234,7 +234,7 @@ let type_of_decl decl =
   match decl with
   | Ast_c.DeclList (xs,ii1) ->
       (match xs with
-      | [] -> raise Impossible
+      | [] -> raise (Impossible 128)
 
       (* todo? for other xs ? *)
       | (x,ii2)::xs ->
@@ -256,7 +256,7 @@ let structdef_of_decl decl =
   match decl with
   | Ast_c.DeclList (xs,ii1) ->
       (match xs with
-      | [] -> raise Impossible
+      | [] -> raise (Impossible 129)
 
       (* todo? for other xs ? *)
       | (x,ii2)::xs ->
@@ -266,10 +266,10 @@ let structdef_of_decl decl =
           (match Ast_c.unwrap_typeC v_type with
           | Ast_c.StructUnion (su, _must_be_some, fields) ->
               (su, fields)
-          | _ -> raise Impossible
+          | _ -> raise (Impossible 130)
           )
       )
-  | Ast_c.MacroDecl _ | Ast_c.MacroDeclInit _ -> raise Impossible
+  | Ast_c.MacroDecl _ | Ast_c.MacroDeclInit _ -> raise (Impossible 131)
 
 
 

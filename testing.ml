@@ -34,7 +34,7 @@ let testone prefix x compare_with_expected_flag =
       | Some None ->
           pr2 "no modification on the input file";
           cfile
-      | None -> raise Impossible
+      | None -> raise (Impossible 163)
     in
     if compare_with_expected_flag
     then
@@ -69,7 +69,7 @@ let testall expected_score_file update_score_file =
   begin
     expected_result_files +> List.iter (fun res ->
       let x =
-        if res =~ "\\(.*\\).res" then matched1 res else raise Impossible in
+        if res =~ "\\(.*\\).res" then matched1 res else raise (Impossible 164) in
       let base = if x =~ "\\(.*\\)_ver[0-9]+" then matched1 x else x in
       let cfile      = "tests/" ^ x ^ ".c" in
       let cocci_file = "tests/" ^ base ^ ".cocci" in

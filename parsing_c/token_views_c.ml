@@ -305,7 +305,7 @@ let line_of_paren = function
   | PToken x -> x.line
   | Parenthised (xxs, info_parens) ->
       (match info_parens with
-      | [] -> raise Impossible
+      | [] -> raise (Impossible 121)
       | x::xs -> x.line
       )
 
@@ -352,7 +352,7 @@ let rec mk_body_function_grouped xs =
           | [] ->
               pr2 "PB:not found closing brace in fuzzy parsing";
               [NotBodyLine body]
-          | _ -> raise Impossible
+          | _ -> raise (Impossible 122)
           )
 
       | _ ->
@@ -411,9 +411,9 @@ let tokens_of_paren_ordered xs =
               (match List.rev xs with
               | cpar::xs ->
                   opar, cpar, List.rev xs
-              | _ -> raise Impossible
+              | _ -> raise (Impossible 123)
               )
-          | _ -> raise Impossible
+          | _ -> raise (Impossible 124)
         in
         push2 opar g;
         aux_args (xxs,commas);
@@ -427,7 +427,7 @@ let tokens_of_paren_ordered xs =
         xs +> List.iter aux_tokens_ordered;
         push2 comma g;
         aux_args (ys::xxs, commas)
-    | _ -> raise Impossible
+    | _ -> raise (Impossible 125)
 
   in
 

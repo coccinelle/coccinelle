@@ -418,7 +418,7 @@ let (satbis_to_trans_info:
 	  ::prev
 	     (* see BindGood in asttotctl2 *)
       | Lib_engine.BindGood (_) -> prev
-      | _ -> raise Impossible
+      | _ -> raise (Impossible 50)
     ) []
 
 (*****************************************************************************)

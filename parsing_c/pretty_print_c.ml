@@ -155,7 +155,7 @@ let mk_pretty_printers
     | ArrayAccess (_,_) | RecordAccess (_,_) | RecordPtAccess (_,_)
     | SizeOfExpr (_) | SizeOfType (_) | Cast (_,_)
     | StatementExpr (_) | Constructor _
-    | ParenExpr (_) | New (_) | Delete (_)),_ -> raise Impossible
+    | ParenExpr (_) | New (_) | Delete (_)),_ -> raise (Impossible 95)
     );
 
     if !Flag_parsing_c.pretty_print_type_info
@@ -243,7 +243,7 @@ let mk_pretty_printers
         | _st2, [i4;iifakend] -> pr_elem i4;
 	    indent_if_needed st2 (function _ -> pp_statement st2);
 	    pr_elem iifakend
-        | x -> raise Impossible
+        | x -> raise (Impossible 96)
         )
     | Selection  (Switch (e, st)), [i1;i2;i3;iifakend] ->
         pr_elem i1; pr_space(); pr_elem i2; pp_expression e; pr_elem i3;
@@ -309,7 +309,7 @@ let mk_pretty_printers
             pr_elem iasm; pr_elem ivolatile; pr_elem iopar;
             pp_asmbody asmbody;
             pr_elem icpar; pr_elem iptvirg
-        | _ -> raise Impossible
+        | _ -> raise (Impossible 97)
         )
 
     | NestedFunc def, ii ->
@@ -328,7 +328,7 @@ let mk_pretty_printers
     | Jump ((Continue|Break|Return)) | Jump (ReturnExpr _)
     | Jump (GotoComputed _)
     | Decl _
-	), _ -> raise Impossible
+	), _ -> raise (Impossible 98)
 
   and pp_statement_seq = function
     | StmtElem st -> pp_statement st
@@ -342,7 +342,7 @@ let mk_pretty_printers
     | if1::ifxs ->
 	pp_ifdef if1;
 	pp_ifdef_tree_sequence_aux  ifxs xxs
-    | _ -> raise Impossible
+    | _ -> raise (Impossible 99)
 
 (* XXX elsif YYY elsif ZZZ endif *)
   and pp_ifdef_tree_sequence_aux ifdefs xxs =
@@ -382,7 +382,7 @@ let mk_pretty_printers
 		pr_elem iopar;
 		pp_expression e;
 		pr_elem icpar
-	    | _ -> raise Impossible))
+	    | _ -> raise (Impossible 100)))
         ))
 
 
@@ -455,7 +455,7 @@ let mk_pretty_printers
               pr_elem i1; pr_elem i2; pr_elem i3;
           | None, [i1;i2;i3] ->
               pr_elem i1; pr_elem i2;
-          | x -> raise Impossible
+          | x -> raise (Impossible 101)
 	  );
 
           fields +> List.iter pp_field;
@@ -463,7 +463,7 @@ let mk_pretty_printers
           (match sopt,iis with
           | Some s , [i1;i2;i3;i4] -> pr_elem i4
           | None, [i1;i2;i3] ->       pr_elem i3;
-          | x -> raise Impossible
+          | x -> raise (Impossible 102)
 	  );
 
 
@@ -476,7 +476,7 @@ let mk_pretty_printers
               pr_elem i1; pr_elem i2; pr_elem i3;
           | (None, ([i1;i2;i3]|[i1;i2;i3;_])) ->
               pr_elem i1; pr_elem i2
-          | x -> raise Impossible
+          | x -> raise (Impossible 103)
 	  );
 
           enumt +> List.iter (fun ((name, eopt), iicomma) ->
@@ -497,7 +497,7 @@ let mk_pretty_printers
               pr_elem i4; pr_elem i3 (* trailing comma *)
 
 
-          | x -> raise Impossible
+          | x -> raise (Impossible 104)
 	  );
 
 
@@ -533,7 +533,7 @@ let mk_pretty_printers
               pr_elem itypeof; pr_elem iopar;
               pp_expression e;
               pr_elem icpar;
-          | _ -> raise Impossible
+          | _ -> raise (Impossible 105)
           )
 
       | (TypeOfType (t), iis) ->
@@ -543,14 +543,14 @@ let mk_pretty_printers
               pr_elem itypeof; pr_elem iopar;
               pp_type t;
               pr_elem icpar;
-          | _ -> raise Impossible
+          | _ -> raise (Impossible 106)
 	  )
 
       | (Pointer _ | (*ParenType _ |*) Array _ | FunctionType _
             (* | StructUnion _ | Enum _ | BaseType _ *)
             (* | StructUnionName _ | EnumName _ | TypeName _  *)
             (* | TypeOfExpr _ | TypeOfType _ *)
-         ), _ -> raise Impossible
+         ), _ -> raise (Impossible 107)
 
   and pp_field_list fields = fields +>  Common.print_between pr_nl pp_field
   and pp_field = function
@@ -615,7 +615,7 @@ let mk_pretty_printers
 		      pp_expression expr
 			)); (* iter other vars *)
 
-	| [] -> raise Impossible
+	| [] -> raise (Impossible 108)
 	      ); (* onefield_multivars *)
 	assert (List.length iiptvirg =|= 1);
 	iiptvirg +> List.iter pr_elem;
@@ -750,7 +750,7 @@ let mk_pretty_printers
 
 
       | (FunctionType _ | Array _ | ParenType _ | Pointer _), _ ->
-	  raise Impossible
+	  raise (Impossible 109)
 
 
   and (pp_type_left: fullType -> unit) =
@@ -778,7 +778,7 @@ let mk_pretty_printers
       | TypeOfType _, _ -> ()
       | TypeOfExpr _, _ -> ()
 
-      | (FunctionType _ | Array _ | Pointer _), _ -> raise Impossible
+      | (FunctionType _ | Array _ | Pointer _), _ -> raise (Impossible 110)
 
 
   and pp_param param =
@@ -835,7 +835,7 @@ let mk_pretty_printers
     | TypeOfType _, _ -> ()
     | TypeOfExpr _, _ -> ()
 
-    | (FunctionType _ | Array _ | Pointer _), _ -> raise Impossible
+    | (FunctionType _ | Array _ | Pointer _), _ -> raise (Impossible 111)
 
   and pp_type t =
     pp_type_with_ident None None t Ast_c.noattr
@@ -866,7 +866,7 @@ let mk_pretty_printers
 	    | Ast_c.ValInit(iini,init) -> pr_elem iini; pp_init init
 	    | Ast_c.ConstrInit((init,[lp;rp])) ->
 		pr_elem lp; pp_arg_list init; pr_elem rp
-	    | Ast_c.ConstrInit _ -> raise Impossible)
+	    | Ast_c.ConstrInit _ -> raise (Impossible 112))
 	| None -> pp_type returnType
 	);
 
@@ -888,10 +888,10 @@ let mk_pretty_printers
 	    | Ast_c.ValInit(iini,init) -> pr_elem iini; pp_init init
 	    | Ast_c.ConstrInit((init,[lp;rp])) ->
 		pr_elem lp; pp_arg_list init; pr_elem rp
-	    | Ast_c.ConstrInit _ -> raise Impossible);
+	    | Ast_c.ConstrInit _ -> raise (Impossible 113));
 
 
-	| x -> raise Impossible
+	| x -> raise (Impossible 114)
 	);
 
 	pr_elem iivirg;
@@ -941,7 +941,7 @@ let mk_pretty_printers
 	pr_elem iiend;
 
     | (DeclList (_, _) | (MacroDecl _) | (MacroDeclInit _)) ->
-	raise Impossible
+	raise (Impossible 115)
 
 (* ---------------------- *)
 and pp_init (init, iinit) =
@@ -972,7 +972,7 @@ and pp_init (init, iinit) =
 
       | (InitIndexOld _ | InitFieldOld _ | InitDesignators _
       | InitList _ | InitExpr _
-	  ), _ -> raise Impossible
+	  ), _ -> raise (Impossible 116)
 
   and pp_init_list ini = pp_list pp_init ini
 
@@ -987,7 +987,7 @@ and pp_init (init, iinit) =
 	pp_expression e2; pr_elem iccro;
 
     | (DesignatorField _ | DesignatorIndex _ | DesignatorRange _
-	), _ -> raise Impossible
+	), _ -> raise (Impossible 117)
 
 
 (* ---------------------- *)
@@ -1064,7 +1064,7 @@ and pp_init (init, iinit) =
         pr_elem i1;
         statxs +> List.iter pp_statement_seq;
         pr_elem i2;
-    | _ -> raise Impossible
+    | _ -> raise (Impossible 118)
 
   and pp_param_list paramst = pp_list pp_param paramst
 
@@ -1096,7 +1096,7 @@ and pp_init (init, iinit) =
                   pr_elem iwhile; pr_elem iopar;
                   pp_expression e;
                   pr_elem icpar
-              | _ -> raise Impossible
+              | _ -> raise (Impossible 119)
 	      )
           | DefineFunction def -> pp_def def
 
@@ -1155,7 +1155,7 @@ and pp_init (init, iinit) =
 
     | IfdefTop ifdefdir -> pp_ifdef ifdefdir
 
-    | (MacroTop _) -> raise Impossible in
+    | (MacroTop _) -> raise (Impossible 120) in
 
 
 
