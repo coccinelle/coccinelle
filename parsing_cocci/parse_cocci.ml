@@ -1043,20 +1043,17 @@ let rec translate_when_true_false = function
 
 (* ----------------------------------------------------------------------- *)
 
-(* In a nest, if the nest is -, all of the nested code must also be -.
-All are converted to context, because the next takes care of the -. *)
+(* In a nest, if the nest is -, all of the nested code must also be -. *)
 let check_nests tokens =
   let is_minus t =
     let (line_type,a,b,c,d,e,f,g) = get_clt t in
     List.mem line_type [D.MINUS;D.OPTMINUS;D.UNIQUEMINUS] in
-  let drop_minus t =
+  let check_minus t =
     let clt = try Some(get_clt t) with Failure _ -> None in
 	match clt with
 	  Some (line_type,a,b,c,d,e,f,g) ->
 	    (match line_type with
-	      D.MINUS -> update_clt t (D.CONTEXT,a,b,c,d,e,f,g)
-	    | D.OPTMINUS -> update_clt t (D.OPT,a,b,c,d,e,f,g)
-	    | D.UNIQUEMINUS -> update_clt t (D.UNIQUE,a,b,c,d,e,f,g)
+	      D.MINUS | D.OPTMINUS | D.UNIQUEMINUS -> t
 	    | _ -> failwith "minus token expected")
 	| None -> t in
   let rec outside = function
@@ -1066,11 +1063,11 @@ let check_nests tokens =
   and inside stack = function
       [] -> failwith "missing nest end"
     | ((PC.TPCEllipsis(clt),q) as t)::r ->
-	(drop_minus t)
+	(check_minus t)
 	:: (if stack = 0 then outside r else inside (stack - 1) r)
     | ((PC.TPOEllipsis(clt),q) as t)::r ->
-	(drop_minus t) :: (inside (stack + 1) r)
-    | t :: r -> (drop_minus t) :: (inside stack r) in
+	(check_minus t) :: (inside (stack + 1) r)
+    | t :: r -> (check_minus t) :: (inside stack r) in
   outside tokens
 
 let check_parentheses tokens =

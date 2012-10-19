@@ -442,10 +442,6 @@ and statement arity s =
 	  dots force_newline (statement arity) body;
 	  end_block(); print_string arity; mcode print_string rbrace
       | Ast0.Decl(_,decl) ->
-	  Printf.printf "statement mcodekind %s\n"
-	    (Dumper.dump (Ast0.get_mcodekind s));
-	  Printf.printf "decl mcodekind %s\n"
-	    (Dumper.dump (Ast0.get_mcodekind decl));
 	  print_string arity; declaration decl
       | Ast0.Seq(lbrace,body,rbrace) ->
 	  print_string arity; mcode print_string lbrace; start_block();

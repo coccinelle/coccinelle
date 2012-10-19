@@ -643,6 +643,7 @@ module type PARAM =
       (A.expression, B.expression) matcher -> (A.expression, F.node) matcher
 
     val cocciExpExp :
+      A.mcodekind ->
       (A.expression, B.expression) matcher ->
 	(A.expression, B.expression) matcher
 
@@ -1348,7 +1349,10 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
   | A.NestExpr(starter,exps,ender,None,true), eb ->
       (match A.unwrap exps with
 	A.DOTS [exp] ->
-	  X.cocciExpExp expression exp eb >>= (fun exp eb ->
+	  (* if minus and trafo do nothing *)
+	  X.cocciExpExp (A.get_mcodekind starter)
+	    expression exp eb >>= (fun exp eb ->
+	  (* minus and trafo will do something here *)
           X.distrf_e (dots2metavar starter) eb >>= (fun mcode eb ->
             return (
             (A.NestExpr

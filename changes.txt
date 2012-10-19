@@ -135,6 +135,8 @@
 - Added a crude mechanism for integrating the results of external analyses with
   coccinelle, using positions to connect them together. This is an experimental
   feature. See demos/external_ana.{c,cocci,data}.
+- Try to do better pretty printing when array elements are individually
+  replaced
 
 ** Bugfix:
 - Corrected parsing of script strings delimited by a single quote.  Thanks
@@ -247,6 +249,8 @@
   arguments
 - Don't count macros or ifdefs in counting fields
 - Better counting of indent size when indent contains multiple tabs
+- Get the right annotation on trailing , that is after a nest.  Requires
+  avoiding double processing in transformation_c.ml
 
 * 0.2.5
 ** Language:

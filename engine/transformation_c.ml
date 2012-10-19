@@ -132,7 +132,10 @@ module XTRANS = struct
 
   (* same as cocciExp, but for expressions in an expression, not expressions
      in a node *)
-  let cocciExpExp = fun expf expa expb -> fun tin ->
+  let cocciExpExp = fun mc expf expa expb -> fun tin ->
+    match mc with
+      Ast_cocci.MINUS _ -> Some (expa,expb) (* do nothing *)
+    | _ ->
 
     let bigf = {
       Visitor_c.default_visitor_c_s with
