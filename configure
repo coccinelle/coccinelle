@@ -4136,6 +4136,12 @@ if test "$INSTALL" = "setup/install-sh -c" -o "$INSTALL" = "./setup-install-sh -
 
 fi
 
+if test "$MKDIR_P" = "setup/install-sh -c -d" -o "$INSTALL" = "./setup-install-sh -c -d"; then :
+    MKDIR_P="$COCCI_SRCDIR/$MKDIR_P"
+
+
+fi
+
 # Extract the first word of "patchelf", so it can be a program name with args.
 set dummy patchelf; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5

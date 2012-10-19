@@ -981,7 +981,12 @@ let add_newlines toks tabbing_unit =
       match tabbing_unit with
 	Some ("\t",_) -> ("\t",8)
       | Some ("",_) -> ("\t",8) (* not sure why... *)
-      | Some (s,_) -> (s,String.length s) (* assuming only spaces *)
+      | Some (s,_) ->
+	  let len = ref 0 in
+	  String.iter
+	    (function '\t' -> len := !len + 8 | _ -> len := !len + 1)
+	    s;
+	  (s,!len) (* assuming only tabs or spaces *)
       |	None -> ("\t",8) in
     let rec loop seen =
       if seen + tlen <= n
